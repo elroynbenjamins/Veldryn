@@ -15,9 +15,24 @@ import {
 } from '../theme/regional-resource-assets';
 import {C,radii} from '../theme/theme';
 
+// The newer plated-dish exports deliberately retain generous transparent
+// breathing room. At a 32–48 px inventory size that made the meals read much
+// smaller than raw ingredients and older dishes, so zoom just those exports
+// inside the existing clipped artwork frame.
+const platedDishZoom:Readonly<Partial<Record<string,number>>>={
+  COOKED_MEADOW_PERCH:1.45,
+  BAKED_CAVE_LOACH:1.4,
+  ROASTED_OATHSCALE:1.4,
+  ROASTED_CROWN_CARP:1.4,
+  GRILLED_OASIS_CARP:1.42,
+  GLASSFIN_FEAST:1.38,
+  ASHLANDS_EMBER_STEW:1.35,
+  CHARRED_EMBERFIN:1.42,
+};
+
 function AtlasCell({source,column,row,cell,sheetWidth,sheetHeight,size}:{source:any;column:number;row:number;cell:number;sheetWidth:number;sheetHeight:number;size:number}){
-  const scale=size/cell;
-  return <View style={{width:size,height:size,overflow:'hidden'}}>
+  const inset=.06,displaySize=size*(1-inset*2),scale=displaySize/cell,offset=size*inset;
+  return <View style={{width:size,height:size,overflow:'hidden'}}><View style={{position:'absolute',left:offset,top:offset,width:displaySize,height:displaySize,overflow:'hidden'}}>
     <Image
       source={source}
       resizeMode="stretch"
@@ -26,11 +41,11 @@ function AtlasCell({source,column,row,cell,sheetWidth,sheetHeight,size}:{source:
         position:'absolute',
         width:sheetWidth*scale,
         height:sheetHeight*scale,
-        left:-column*size,
-        top:-row*size,
+        left:-column*displaySize,
+        top:-row*displaySize,
       }}
     />
-  </View>;
+  </View></View>;
 }
 
 export function ResourceArtwork({itemId,size=58,framed=true}:{itemId:string;size?:number;framed?:boolean}){
@@ -38,7 +53,8 @@ export function ResourceArtwork({itemId,size=58,framed=true}:{itemId:string;size
   // This is more reliable in the hosted web renderer, where atlas sources can
   // be present but fail to paint while leaving the layout space intact.
   const source=resourceIconSource(itemId);
-  if(source)return <View style={[s.art,{width:size,height:size},framed&&s.frame]}><Image source={source} resizeMode="contain" fadeDuration={0} style={s.image}/></View>;
+  const zoom=platedDishZoom[itemId]??1;
+  if(source)return <View style={[s.art,{width:size,height:size},framed&&s.frame]}><Image source={source} resizeMode="contain" fadeDuration={0} style={[s.image,zoom!==1&&{transform:[{scale:zoom}]}]}/></View>;
 
   const consumable=consumableArtworkCell(itemId);
   if(consumable)return <View style={[s.art,{width:size,height:size},framed&&s.frame]}><AtlasCell source={consumableArtworkSheet(consumable.sheet)} column={consumable.column} row={consumable.row} cell={CONSUMABLE_ART_CELL} sheetWidth={CONSUMABLE_ART_SHEET_SIZE} sheetHeight={CONSUMABLE_ART_SHEET_SIZE} size={size}/></View>;

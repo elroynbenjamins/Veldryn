@@ -1,4 +1,4 @@
-import {createCharacter,newGame,startGathering} from '../src/core/game';
+import {createCharacter,effectiveStats,newGame,startGathering} from '../src/core/game';
 import {settleStartupActivity} from '../src/core/playability';
 
 function ok(condition:unknown,message:string){if(!condition)throw new Error(message)}
@@ -12,4 +12,10 @@ ok(resumed.reward!==null,'Completed offline actions should create a startup summ
 ok(resumed.reward!.kills>0&&resumed.reward!.xp>0&&resumed.reward!.items.length>0,'Startup summary should include actions, XP, and resources');
 ok(resumed.activity?.kind==='woodcutting'&&resumed.activity.targetId==='GREENWOOD_TREE','Startup summary should retain the completed skill and target');
 ok(resumed.state.activity?.lastClaimAtMs===60_000,'Startup rewards should settle exactly once');
+const wounded=createCharacter(newGame(0),'IRONWARDEN','Recovery Tester');
+wounded.character!.currentHp=Math.floor(effectiveStats(wounded).hp/2);
+const resting={...wounded,outOfCombatSinceMs:0};
+const recovered=settleStartupActivity(resting,60_000);
+ok(recovered.state.character!.currentHp>wounded.character!.currentHp,'Out-of-combat startup recovery should restore health');
+ok(recovered.state.character!.currentHp<=effectiveStats(recovered.state).hp,'Out-of-combat recovery must respect max HP');
 console.log('Startup activity summary tests passed.');

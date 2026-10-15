@@ -1,6 +1,6 @@
 import type {EquipmentTierId,EquipmentSlot} from './equipment-types-v22';
 export type EquipmentPathV28='Foundation'|'Specialist'|'Alternate';
-export const SET_EFFORT_HOURS_V28:Readonly<Record<EquipmentTierId,readonly [number,number]>>={T1:[1.5,2],T2:[3,4],T3:[6,8],T4:[9,12],T5:[13,16],T6:[18,22],T7:[22,28],T8:[27,34],T9:[32,42]};
+export const SET_EFFORT_HOURS_V28:Readonly<Record<EquipmentTierId,readonly [number,number]>>={T1:[4,6],T2:[8,11],T3:[14,19],T4:[22,28],T5:[30,38],T6:[40,50],T7:[52,64],T8:[66,80],T9:[82,100]};
 export const SLOT_EFFORT_MULT_V28:Readonly<Record<EquipmentSlot,number>>={Helmet:.85,Chest:1.2,Gloves:.7,Legs:1,Boots:.75,Weapon:1.35,'Off-hand':1.15};
 export const FINAL_CRAFT_TIMER_RANGE_MIN_V28:Readonly<Record<EquipmentTierId,readonly [number,number]>>={T1:[1,3],T2:[3,6],T3:[5,10],T4:[8,15],T5:[12,20],T6:[15,25],T7:[20,30],T8:[25,40],T9:[30,45]};
 type Split={skilling:number;combat:number;dungeon:number};

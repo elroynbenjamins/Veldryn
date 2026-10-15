@@ -1,5 +1,6 @@
 import type {ClassId, GearSlot} from '../core/types';
 import catalog from './equipment_catalog_t1_t9_v33.json';
+import {CLASS_ICON_ACCENT} from './class-icon-colors';
 
 export interface EquipmentSetDef {
   id:string;
@@ -55,11 +56,12 @@ for(const piece of catalog.pieces as Array<Record<string,string|number>>){
 
 export const EQUIPMENT_SETS:EquipmentSetDef[]=(catalog.sets as Array<Record<string,string|number>>).map(set=>{
   const palette=paletteByTier[String(set.Tier)]??paletteByTier.T1;
+  const classId=classIdByCatalogName[String(set.Class)];
   return {
-    id:String(set['Set ID']),name:String(set['Set Name']),classId:classIdByCatalogName[String(set.Class)],
+    id:String(set['Set ID']),name:String(set['Set Name']),classId,
     itemIds:piecesBySet.get(String(set['Set ID']))??[],twoPiece:String(set['2pc Bonus v33']),fourPiece:String(set['4pc Bonus v33']),
     sixPiece:String(set['6pc Bonus v33']),eightPiece:String(set['8pc Bonus v33']),tenPiece:String(set['10pc Bonus v33']),
-    source:`${String(set.Region)} · ${String(set['Build Focus'])}`,accent:palette.accent,surface:palette.surface,
+    source:`${String(set.Region)} · ${String(set['Build Focus'])}`,accent:CLASS_ICON_ACCENT[classId],surface:palette.surface,
     tier:String(set.Tier),region:String(set.Region),path:String(set.Path),requiredLevel:Number(set['Set Unlock Level']),
     buildFocus:String(set['Build Focus']),
   };

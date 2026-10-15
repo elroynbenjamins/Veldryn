@@ -15,7 +15,7 @@ export const FROSTMARCH_EQUIPMENT_POLICY_V33={
 
 export function validateFrostmarchEquipmentPolicyV33():string[]{
   const errors=validateCatalogV33();
-  if(FROSTMARCH_EQUIPMENT_POLICY_V33.catalogSetCount!==243)errors.push('set_count');
-  if(FROSTMARCH_EQUIPMENT_POLICY_V33.catalogPieceCount!==2430)errors.push('piece_count');
+  if(FROSTMARCH_EQUIPMENT_POLICY_V33.catalogSetCount!==162)errors.push('set_count');
+  if(FROSTMARCH_EQUIPMENT_POLICY_V33.catalogPieceCount!==1620)errors.push('piece_count');
   return errors;
 }

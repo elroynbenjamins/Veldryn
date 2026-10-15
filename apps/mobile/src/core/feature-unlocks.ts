@@ -1,10 +1,9 @@
 import type {GameState} from './types';
 
-export type EarlyFeatureId='workingToward'|'dailySupplies'|'events'|'pets'|'accountBonuses'|'friends'|'companions'|'social'|'contracts'|'masteryHall'|'guild'|'rankings';
-export const EARLY_FEATURE_DESTINATION_ORDER=['Progression','DailySupplies','Events','AccountBonuses','Friends','Companions','Social','MasteryHall','Guild','Rankings'] as const;
+export type EarlyFeatureId='dailySupplies'|'events'|'pets'|'accountBonuses'|'friends'|'companions'|'social'|'contracts'|'masteryHall'|'guild'|'rankings';
+export const EARLY_FEATURE_DESTINATION_ORDER=['DailySupplies','Events','AccountBonuses','Friends','Companions','Social','MasteryHall','Guild','Rankings'] as const;
 
 export const EARLY_FEATURE_UNLOCKS={
- workingToward:{questId:'QST_002',title:'Working Toward',requirement:'Complete First Blood, First Skill',description:'Goal planning appears after the player has completed the first guided skill milestone.'},
  dailySupplies:{questId:'QST_002',title:'Daily Supplies',requirement:'Complete First Blood, First Skill',description:'The daily reward track appears after the player understands basic skilling.'},
  events:{questId:'QST_002',title:'Events',requirement:'Complete First Blood, First Skill',description:'Live events appear early enough that new players do not miss limited-time content.'},
  pets:{questId:'QST_003',title:'Pets',requirement:'Complete A Hound\'s Trail',description:'Pets unlock after you have learned the basics of combat, gathering and early regional progression.'},
@@ -43,17 +42,11 @@ export interface EarlyFeatureUnlockMoment{
  description:string;
  bullets:string[];
  actionLabel:string;
- destination:'Collections'|'Companions'|'Guild'|'Progression';
+ destination:'Collections'|'Companions'|'Guild';
 }
 export function newlyUnlockedEarlyFeatures(before:GameState|null|undefined,after:GameState|null|undefined):EarlyFeatureUnlockMoment[]{
  if(!before||!after)return [];
  const out:EarlyFeatureUnlockMoment[]=[];
- if(!earlyFeatureUnlocked(before,'workingToward')&&earlyFeatureUnlocked(after,'workingToward'))out.push({
-  id:'workingToward',eyebrow:'NEW SYSTEM',title:'Plan your next goal',
-  description:'Working Toward and Daily Supplies are now available.',
-  bullets:['Choose a goal to see the materials and steps you need.','Open Daily Supplies from Home to collect your daily reward.'],
-  actionLabel:'Choose a goal',destination:'Progression',
- });
  if(!earlyFeatureUnlocked(before,'pets')&&earlyFeatureUnlocked(after,'pets'))out.push({
   id:'pets',eyebrow:'NEW SYSTEM',title:'Pets Unlocked',
   description:'Rare pets can now appear from eligible combat, gathering and exploration activities.',
@@ -77,7 +70,7 @@ export function newlyUnlockedEarlyFeatures(before:GameState|null|undefined,after
 
 export function earlyFeatureForDestination(destination:string):EarlyFeatureId|undefined{
  const map:Record<string,EarlyFeatureId>={
-  Progression:'workingToward',DailySupplies:'dailySupplies',AccountBonuses:'accountBonuses',
+  DailySupplies:'dailySupplies',AccountBonuses:'accountBonuses',
   Companions:'companions',Friends:'friends',Social:'social',MasteryHall:'masteryHall',
   Guild:'guild',Rankings:'rankings',
  };

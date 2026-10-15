@@ -8,7 +8,8 @@ export interface AlchemyRecipe {
   id:string;name:string;skillId:'alchemy';level:number;seconds:number;xp:number;gold:number;
   inputs:ItemStack[];output:ItemStack;
 }
-export const MAX_ALCHEMY_BATCHES=100;
+// Timed recipes always reserve one craft per click.
+export const MAX_ALCHEMY_BATCHES=1;
 export const POTIONS:readonly PotionDefinition[]=[
   {id:'DEWLEAF_DRAUGHT',name:'Dewleaf Draught',effect:{kind:'healing',maxHpFraction:.25},description:'Restore 25% of maximum HP outside a hunt. No effect at full health.'},
   {id:'RIVERHEART_DRAUGHT',name:'Riverheart Draught',effect:{kind:'healing',maxHpFraction:.45},description:'Restore 45% of maximum HP outside a hunt. No effect at full health.'},

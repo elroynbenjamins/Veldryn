@@ -22,6 +22,9 @@ ok(panel.includes("onMoveWaiting(job.id,'up')")&&panel.includes("onMoveWaiting(j
 ok(panel.includes('Starts in ~'),'Waiting rows must show approximate automatic start timing');
 ok(card.includes('Queue craft ·'),'Recipe CTA must switch to Queue craft when active slots are full but backlog space remains');
 ok(card.includes('freeWaiting'),'Recipe availability must consider waiting backlog capacity');
+const collection=read('src/components/SmithingCollection.tsx');
+ok(collection.includes("'Add to forge'"),'Equipment set crafting must make adding another piece to an available forge slot explicit');
+ok(!app.includes("timed?(result.message??'Forge updated')"),'Timed forge additions must not open a blocking completion dialog');
 ok(skills.includes('onMoveCraftWaiting'),'Skills must wire forge backlog priority');
 ok(commands.includes("craft_move:['id','direction']")&&commands.includes("case 'craft_move'"),'Online-authoritative commands must validate and execute backlog moves');
 ok(app.includes("type:'craft_move'")&&app.includes('moveWaitingEquipmentCraft'),'Mobile online/local paths must both support backlog reordering');

@@ -4,12 +4,13 @@ import {radii,spacing,touchTargetMin,touchTargetPreferred,typography} from '../t
 import {useGameTheme} from '../theme/ThemeContext';
 
 type Tone='primary'|'secondary'|'danger';
-type Props={title:string;onPress:()=>void;disabled?:boolean;loading?:boolean;selected?:boolean;tone?:Tone;compact?:boolean};
-export function GameButton({title,onPress,disabled=false,loading=false,selected,tone='primary',compact=false}:Props){
+type ButtonColors={backgroundColor:string;borderColor:string;textColor:string};
+type Props={title:string;onPress:()=>void;disabled?:boolean;loading?:boolean;selected?:boolean;tone?:Tone;compact?:boolean;colors?:ButtonColors};
+export function GameButton({title,onPress,disabled=false,loading=false,selected,tone='primary',compact=false,colors}:Props){
   const C=useGameTheme();
   const [focused,setFocused]=useState(false),inactive=disabled||loading;
-  const toneStyle=tone==='primary'?{borderColor:C.primaryButtonBorder,backgroundColor:C.primaryButton}:tone==='danger'?{borderColor:C.dangerButtonBorder,backgroundColor:C.dangerButton}:{borderColor:C.secondaryButtonBorder,backgroundColor:C.secondaryButton};
-  const labelColor=tone==='primary'?C.primaryButtonText:tone==='danger'?C.dangerButtonText:C.secondaryButtonText;
+  const toneStyle=colors??(tone==='primary'?{borderColor:C.primaryButtonBorder,backgroundColor:C.primaryButton}:tone==='danger'?{borderColor:C.dangerButtonBorder,backgroundColor:C.dangerButton}:{borderColor:C.secondaryButtonBorder,backgroundColor:C.secondaryButton});
+  const labelColor=colors?.textColor??(tone==='primary'?C.primaryButtonText:tone==='danger'?C.dangerButtonText:C.secondaryButtonText);
   const selectedStyle=selected?{borderColor:C.selectionLine,backgroundColor:tone==='secondary'?C.selection:toneStyle.backgroundColor}:undefined;
   return <Pressable accessibilityRole="button" accessibilityLabel={title} accessibilityState={{disabled:inactive,busy:loading,selected}}
     disabled={inactive} onPress={onPress} onFocus={()=>setFocused(true)} onBlur={()=>setFocused(false)}

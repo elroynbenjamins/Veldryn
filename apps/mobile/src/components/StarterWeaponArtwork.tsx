@@ -14,8 +14,8 @@ export function hasStarterWeaponArtwork(itemId:string){return !!CELL_BY_ITEM_ID[
 export function StarterWeaponArtwork({itemId,size=58}:{itemId:string;size?:number}){
   const cell=CELL_BY_ITEM_ID[itemId];
   if(!cell)return null;
-  const scale=size/CELL_SIZE;
-  return <View accessible={false} style={[s.frame,{width:size,height:size}]}><Image source={STARTER_WEAPON_SHEET} resizeMode="stretch" style={{position:'absolute',width:SHEET_SIZE*scale,height:SHEET_SIZE*scale,left:-cell.column*size,top:-cell.row*size}}/></View>;
+  const inset=.06,displaySize=size*(1-inset*2),scale=displaySize/CELL_SIZE,offset=size*inset;
+  return <View accessible={false} style={[s.frame,{width:size,height:size}]}><Image source={STARTER_WEAPON_SHEET} resizeMode="stretch" style={{position:'absolute',width:SHEET_SIZE*scale,height:SHEET_SIZE*scale,left:offset-cell.column*displaySize,top:offset-cell.row*displaySize}}/></View>;
 }
 
 const s=StyleSheet.create({frame:{overflow:'hidden'}});

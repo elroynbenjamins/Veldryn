@@ -1,10 +1,10 @@
 import {ThemedNavigationIcon} from './ThemedNavigationIcon';
 import {useEffect,useMemo,useState} from 'react';
 import {Pressable,ScrollView,StyleSheet,Text,View} from 'react-native';
-import {effectiveStats} from '../core/game';
+import {effectiveStats,previewActivityReward} from '../core/game';
 import {formatGameNumber} from '../core/number-format';
 import {normalizeQuickNavDestinations,QUICK_NAV_DESTINATIONS,QuickNavDestination} from '../core/quick-navigation';
-import type {GameState} from '../core/types';
+import type {GameState,RewardBundle} from '../core/types';
 import {equipmentTheme,type ThemeColors} from '../theme/theme';
 import {useGameTheme} from '../theme/ThemeContext';
 import {environmentForActivity,environmentForZone} from '../core/world-weather';
@@ -18,21 +18,34 @@ import type {NavigationBadge} from '../core/navigation-notifications';
 import {onlineConfigured} from '../online/supabase';
 import {navigationText} from '../i18n/navigation';
 import {progressionEnvironmentText} from '../i18n/progression';
+import {liveHealthState} from '../core/live-health';
+import type {GameCommand} from '../core/game-commands';
+import type {ActiveActivity} from '../core/types';
+import {QuickFoodSheet} from './QuickFoodSheet';
+import {useGameplayText} from '../i18n/gameplay';
 
 
 
 type Props={
   state:GameState;
   nowMs:number;
+  reward?:RewardBundle;
   labelForDestination:(destination:QuickNavDestination)=>string;
   onNavigate:(destination:QuickNavDestination)=>void;
   onChangeDestinations:(destinations:QuickNavDestination[])=>void|Promise<void>;
   onOpenActivity:()=>void;
+  onRecoverCombat?:()=>void;
+  onFoodCommand?:(command:GameCommand)=>Promise<void>;
   attention?:Partial<Record<QuickNavDestination,NavigationBadge>>;
   online?:boolean;
 };
 
-export function GameTopBar({state,nowMs,labelForDestination,onNavigate,onChangeDestinations,onOpenActivity,attention={},online=onlineConfigured}:Props){
+export function GameTopBar({state,nowMs,reward,labelForDestination,onNavigate,onChangeDestinations,onOpenActivity,onRecoverCombat,onFoodCommand,attention={},online=onlineConfigured}:Props){
+  const {gt}=useGameplayText();
+  const [foodOpen,setFoodOpen]=useState(false),[recoveryHunt,setRecoveryHunt]=useState<ActiveActivity|null>(null);
+  const combatReward=useMemo(()=>reward??(state.activity?.kind==='combat'?previewActivityReward(state,nowMs):undefined),[reward,state,nowMs]);
+  const healthState=useMemo(()=>liveHealthState(state,nowMs,combatReward),[state,nowMs,combatReward]);
+  function openFood(){if(state.activity)setRecoveryHunt(state.activity.kind==='combat'?state.activity:null);setFoodOpen(true);}
   const tr=(text:string,params?:Record<string,string|number>)=>navigationText(state.settings.language,text,params);
   const C=useGameTheme(),equipmentColors=equipmentTheme(C),styles=useMemo(()=>makeStyles(C),[C]);
   const active=normalizeQuickNavDestinations(state.settings.quickNavDestinations);
@@ -42,8 +55,7 @@ export function GameTopBar({state,nowMs,labelForDestination,onNavigate,onChangeD
   const [saving,setSaving]=useState(false);
   const [draft,setDraft]=useState<QuickNavDestination[]>(active);
   useEffect(()=>{if(!open)setDraft(active)},[open,state.settings.quickNavDestinations]);
-  const maxHp=Math.max(1,effectiveStats(state).hp),currentHp=Math.max(0,Math.min(maxHp,state.character?.currentHp??0));
-  const hpPercent=`${Math.round(currentHp/maxHp*100)}%` as `${number}%`;
+  const maxHp=Math.max(1,effectiveStats(state).hp),currentHp=Math.max(0,Math.min(maxHp,healthState.character?.currentHp??0)),hpRatio=currentHp/maxHp,hpPercent=`${Math.round(hpRatio*100)}%` as `${number}%`,hpColor=hpRatio<=.25?C.bad:hpRatio<=.5?C.warning:C.good;
   const activity=state.activity;
   const environment=activity?environmentForActivity(activity):environmentForZone(currentRegionId(state),nowMs);
   const selected=new Set(draft);
@@ -64,16 +76,17 @@ export function GameTopBar({state,nowMs,labelForDestination,onNavigate,onChangeD
       <Pressable accessibilityRole="button" accessibilityState={{expanded:environmentOpen}} accessibilityLabel={`${progressionEnvironmentText(state.settings.language,environment.seasonName)}, ${progressionEnvironmentText(state.settings.language,environment.weatherName)}`} accessibilityHint={tr("Shows season, weather, and activity effects")} onPress={()=>setEnvironmentOpen(true)} style={({pressed})=>[styles.environmentButton,{borderColor:environment.weatherColor},pressed&&styles.pressed]}>
         <EnvironmentArtwork type="season" id={environment.seasonId} size={24}/><View style={styles.environmentDivider}/><EnvironmentArtwork type="weather" id={environment.weatherId} size={24}/><View style={[styles.seasonStrip,{backgroundColor:environment.seasonColor}]}/>{activity&&<View style={styles.lockedDot}/>} 
       </Pressable>
-      <View accessible accessibilityRole="text" style={styles.hpBlock} accessibilityLabel={tr('{current} of {max} health',{current:Math.floor(currentHp),max:Math.floor(maxHp)})}>
-        <View style={styles.hpHeading}><Text style={styles.hpLabel}>{tr("HP")}</Text><Text style={styles.hpValue}>{Math.floor(currentHp)}/{Math.floor(maxHp)}</Text></View>
-        <View style={styles.hpTrack}><View style={[styles.hpFill,{width:hpPercent}]}/></View>
-      </View>
+      <Pressable accessibilityRole="button" disabled={!onFoodCommand} onPress={openFood} style={({pressed})=>[styles.hpBlock,{borderColor:hpColor},pressed&&styles.pressed]} accessibilityHint={gt('Food & recovery')} accessibilityLabel={tr('{current} of {max} health',{current:Math.floor(currentHp),max:Math.floor(maxHp)})+', auto-eat '+state.settings.autoEatThresholdPct+'%'}>
+        <View style={styles.hpHeading}><Text style={[styles.hpLabel,{color:hpColor}]}>{tr("HP")}</Text><View style={styles.hpHeadingRight}><Text style={styles.hpAuto}>AUTO {state.settings.autoEatThresholdPct}%</Text><Text style={styles.hpValue}>{Math.floor(currentHp)}/{Math.floor(maxHp)}</Text></View></View>
+        <View style={styles.hpTrack}><View style={[styles.hpFill,{width:hpPercent,backgroundColor:hpColor}]}/></View>
+      </Pressable>
       <View accessible accessibilityRole="text" accessibilityLabel={(online?tr('Online')+' · ':'')+tr('{amount} gold',{amount:formatGameNumber(state.character?.gold??0,state.settings.numberMode,state.settings.language)})} style={styles.goldBlock}><Text style={styles.goldLabel}>{tr("GOLD")}</Text><View style={styles.goldValueRow}>{online?<View accessible={false} style={styles.onlineDot}/>:null}<Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={.78} style={styles.goldValue}>{formatGameNumber(state.character?.gold??0,state.settings.numberMode,state.settings.language)}</Text></View></View>
       <Pressable accessibilityRole="button" accessibilityLabel={attentionTotal?tr('Open quick navigation, {count} need attention',{count:attentionTotal}):tr('Open quick navigation')} accessibilityHint={tr("Opens five customizable navigation shortcuts")} onPress={()=>setOpen(true)} style={({pressed})=>[styles.menuButton,pressed&&styles.pressed]}>
         <View style={styles.menuLine}/><View style={styles.menuLine}/><View style={styles.menuLine}/>{attentionTotal>0?<View style={styles.menuBadge}><Text style={styles.menuBadgeText}>{attentionTotal>9?'9+':attentionTotal}</Text></View>:null}
       </Pressable>
     </View>
-    <ActiveActivityBar state={state} nowMs={nowMs} onOpen={onOpenActivity}/>
+    <ActiveActivityBar state={state} nowMs={nowMs} reward={combatReward} onOpen={onOpenActivity} onRecoverCombat={onFoodCommand?openFood:onRecoverCombat}/>
+    {foodOpen&&onFoodCommand?<QuickFoodSheet key={state.character?.id} state={healthState} hunt={recoveryHunt} stopped={!!combatReward?.stoppedReason} onCommand={onFoodCommand} onClose={()=>setFoodOpen(false)} onInventory={()=>{setFoodOpen(false);if(onRecoverCombat)onRecoverCombat();else onNavigate('Inventory');}}/>:null}
     <EnvironmentDetailsModal visible={environmentOpen} environment={environment} nowMs={nowMs} locked={!!activity} activityKind={activity?.kind} reduceMotion={state.settings.reduceMotion} onClose={()=>setEnvironmentOpen(false)}/>
     <GameModalSurface visible={open} reduceMotion={state.settings.reduceMotion} onClose={close} backdropLabel={tr("Close quick navigation")} surfaceStyle={styles.sheet}>
           <GameModalHeader eyebrow={tr("PLAYER SHORTCUTS")} title={customizing?tr("Choose five destinations"):tr("Quick navigation")} onClose={close} closeDisabled={saving}/>
@@ -97,7 +110,7 @@ export function GameTopBar({state,nowMs,labelForDestination,onNavigate,onChangeD
 function makeStyles(C:ThemeColors){const equipmentColors=equipmentTheme(C);return StyleSheet.create({
   shell:{paddingTop:4,minHeight:56,flexDirection:'row',alignItems:'center',gap:6,paddingHorizontal:8,paddingBottom:4,backgroundColor:C.navBg,borderBottomWidth:1,borderBottomColor:C.line},
   environmentButton:{width:50,height:38,position:'relative',overflow:'hidden',flexDirection:'row',alignItems:'center',justifyContent:'center',gap:2,borderWidth:1,backgroundColor:equipmentColors.panelRaised,borderRadius:8},environmentDivider:{width:1,height:22,backgroundColor:equipmentColors.line},seasonStrip:{position:'absolute',left:0,right:0,bottom:0,height:2},lockedDot:{position:'absolute',right:3,top:3,width:6,height:6,borderRadius:3,backgroundColor:equipmentColors.gold},
-  hpBlock:{flex:1,minWidth:72,gap:2},hpHeading:{flexDirection:'row',alignItems:'center',justifyContent:'space-between'},hpLabel:{color:C.muted,fontSize:9,fontWeight:'900',letterSpacing:.8},hpTrack:{height:6,overflow:'hidden',backgroundColor:C.inputBg,borderRadius:2},hpFill:{height:'100%',backgroundColor:C.good},hpValue:{color:C.text,fontSize:10,fontWeight:'800',fontVariant:['tabular-nums']},
+  hpBlock:{flex:1,minWidth:88,minHeight:44,justifyContent:'center',gap:3,paddingHorizontal:7,borderWidth:1,borderRadius:8,backgroundColor:C.panel},hpHeading:{flexDirection:'row',alignItems:'center',justifyContent:'space-between',gap:4},hpHeadingRight:{flexDirection:'row',alignItems:'center',justifyContent:'flex-end',gap:4,flexShrink:1},hpLabel:{fontSize:9,fontWeight:'900',letterSpacing:.8},hpAuto:{fontSize:7,color:C.muted,fontWeight:'900',letterSpacing:.3},hpTrack:{height:6,overflow:'hidden',backgroundColor:C.inputBg,borderRadius:99},hpFill:{height:'100%',borderRadius:99},hpValue:{color:C.text,fontSize:10,fontWeight:'800',fontVariant:['tabular-nums']},
   goldBlock:{width:72,alignItems:'flex-end'},goldLabel:{color:C.muted,fontSize:9,fontWeight:'900',letterSpacing:1},goldValueRow:{width:'100%',flexDirection:'row',alignItems:'center',justifyContent:'flex-end',gap:5},onlineDot:{width:7,height:7,borderRadius:99,backgroundColor:C.good,shadowColor:C.good,shadowOpacity:.7,shadowRadius:3},goldValue:{flexShrink:1,color:equipmentColors.goldSoft,fontSize:13,fontWeight:'900',textAlign:'right',fontVariant:['tabular-nums']},
   menuButton:{width:44,height:44,position:'relative',alignItems:'center',justifyContent:'center',gap:5,borderWidth:1,borderColor:C.secondaryButtonBorder,backgroundColor:C.panel,borderRadius:6},menuLine:{width:23,height:2,backgroundColor:C.text,borderRadius:1},menuBadge:{position:'absolute',right:-6,top:-6,minWidth:18,height:18,paddingHorizontal:4,alignItems:'center',justifyContent:'center',borderRadius:9,borderWidth:2,borderColor:C.bg,backgroundColor:C.notification},menuBadgeText:{fontSize:8,lineHeight:10,color:C.notificationText,fontWeight:'900'},pressed:{opacity:.66},
   sheet:{maxHeight:'82%'},helper:{color:C.muted,fontSize:12,marginBottom:8},

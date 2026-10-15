@@ -65,6 +65,7 @@ backend/.online-all-expeditions-build/
 backend/.online-check/
 backend/.online-release-build/
 backend/.online-target-build/
+backend/.v33-equipment-build/
 backend/.readiness-build/
 backend/.readiness-online/
 backend/dist-coop-composition/
@@ -73,3 +74,8 @@ marketing/**/veldryn-play-store-*.zip
 # Generated mobile snapshots/exports should never be committed.
 apps/mobile/.*-export*/
 apps/mobile/.*-build*/
+apps/mobile/.release-*-audit*/
+
+# Local visual review captures.
+/restored-veilbreak-event.png
+/screenshot-*.png

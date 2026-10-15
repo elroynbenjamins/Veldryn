@@ -1,5 +1,5 @@
 import {assert} from './test-assert';
-import {claimActivity,combatSustainProjection,effectiveStats,previewActivityReward} from '../src/core/game';
+import {claimActivity,combatSustainProjection,effectiveStats,previewActivityReward,startCombat} from '../src/core/game';
 import {REGIONAL_COMBAT_FIXTURES,regionalCombatFixture} from '../src/core/regional-combat-fixtures';
 import {equipCombatCompanion,unlockCombatCompanion} from '../src/core/combat-companions';
 import {itemDef} from '../src/content/items';
@@ -18,6 +18,17 @@ for(const region of REGIONAL_COMBAT_FIXTURES)for(const cls of CLASSES)for(const 
 const s=fixture(),short=previewActivityReward(s,T+H/4),long=previewActivityReward(s,T+8*H);
 assert.ok(short.endHp!<s.character!.currentHp&&!short.stoppedReason,'starter monsters should gradually injure a prepared player');
 assert.ok(long.stoppedReason&&long.endHp===1,'unfed hunt must stop at injury');
+const injured=fixture();injured.character!.currentHp=1;
+const injuredPreview=previewActivityReward(injured,T);
+assert.equal(injuredPreview.stoppedReason,'Too injured','stale combat at 1 HP stops before another cycle');
+assert.equal(injuredPreview.kills,0);
+assert.equal(previewActivityReward(injured,T+H).kills,0,'waiting while injured cannot earn kills');
+let rejected=false;
+try{startCombat({...injured,activity:null},injured.activity!.targetId,T);}catch(error){rejected=error instanceof Error&&error.message.includes('Too injured');}
+assert.ok(rejected,'starting combat at 1 HP must require recovery');
+const stopped=claimActivity(s,T+8*H);
+assert.ok(!stopped.state.activity,'claiming injury removes the active hunt');
+assert.equal(previewActivityReward(s,T+9*H).kills,long.kills,'kills freeze after defeat');
 const settled=claimActivity(s,T+H/4);
 assert.ok(settled.state.character!.currentHp<s.character!.currentHp,'claiming must preserve lost HP');
 assert.ok(settled.state.character!.level>=s.character!.level,'fixture XP must match its level');

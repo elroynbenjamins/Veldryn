@@ -1,5 +1,5 @@
-/** Event systems remain authored but stay out of the released game until the first live event launches. */
-export const EVENTS_RELEASED=false;
+/** Enable the event client; the authoritative server window controls access and rewards. */
+export const EVENTS_RELEASED=true;
 /** Arena is authored and testable, but stays out of the release build until its authenticated service ships. */
 export const ARENA_RELEASED=false;
 

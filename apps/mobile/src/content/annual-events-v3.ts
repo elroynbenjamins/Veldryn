@@ -112,7 +112,7 @@ export const HEARTBOND_EVENT:LiveEventDef={
     {points:1000,reward:{kind:'emote',id:'emote_heart_greeting',name:'Heart Greeting',rarity:'rare'}},
     {points:4000,reward:{kind:'pet',id:'EVT_PET_003',name:'Rosebud Bun',rarity:'uncommon'}},
     {points:6500,reward:{kind:'title',id:'title_heartbound',name:'Heartbound',rarity:'epic'}},
-    {points:10000,reward:{kind:'companion',id:'EVT_UNIT_002',name:'Vowbound Cherub',rarity:'mythic'}},
+    {points:10000,reward:{kind:'companion',id:'EVT_UNIT_002',name:'Vowbound Cherub',rarity:'epic'}},
   ],
   objectives:[
     {id:'bond_defense',name:'Bond Defense',description:'Defeat 280 ordinary enemies while helping festival routes.',source:'combat',required:280,rewardCurrency:280,rewardPrestige:1},

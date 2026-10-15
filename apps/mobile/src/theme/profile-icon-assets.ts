@@ -21,10 +21,15 @@ export const profilePortraitIcons:Record<string,ImageSourcePropType>={
  'starter:traveling-alchemist':require('../../assets/profile-icons-v1/traveling-alchemist.webp'),
  'starter:dawn-priestess':require('../../assets/profile-icons-v1/dawn-priestess.webp'),
  'starter:stonebound-explorer':require('../../assets/profile-icons-v1/stonebound-explorer.webp'),
+ 'starter:gilded-duelist':require('../../assets/profile-icons-v1/gilded-duelist.png'),
+ 'starter:runic-scholar':require('../../assets/profile-icons-v1/runic-scholar.webp'),
+ 'starter:dune-warden':require('../../assets/profile-icons-v1/dune-warden.webp'),
  'creature:MOSS_RAT':require('../../assets/profile-icons-v1/moss-rat.webp'),
  'creature:IRONWOOD_WOLF':require('../../assets/profile-icons-v1/ironwood-wolf.webp'),
  'creature:FALLEN_KNIGHT':require('../../assets/profile-icons-v1/fallen-knight.webp'),
  'event:spirit-lantern':require('../../assets/profile-icons-v1/spirit-lantern.webp'),
+ 'event:veilbreak-2026-lantern-warden':require('../../assets/profile-icons-v1/veilbreak-2026-lantern-warden_runtime.webp'),
+ 'event:veilbreak-2026-pumpkin-moon':require('../../assets/profile-icons-v1/veilbreak-2026-pumpkin-moon_runtime.webp'),
 };
 export function profileIconArtwork(id:string|undefined):ImageSourcePropType|undefined{
  return id?.startsWith('class:')?showcaseClassIcons[id.slice(6) as ClassId]:id?profilePortraitIcons[id]:undefined;

@@ -11,9 +11,8 @@ console.log('onboarding-guide-v1 passed');
 
 // Level alone must not advertise quest-gated systems.
 state.character.level=100;
-for(const id of ['working_toward','guilds','combat_companions','chat_social','companion_trials'])equal(unlockedGameGuide(state).some(row=>row.id===id),false,id+' waits for its quest');
+for(const id of ['guilds','combat_companions','chat_social','companion_trials'])equal(unlockedGameGuide(state).some(row=>row.id===id),false,id+' waits for its quest');
 state.quests=state.quests.map((row:any)=>({...row,status:row.questId==='QST_002'?'claimed':row.status}));
-equal(unlockedGameGuide(state).some(row=>row.id==='working_toward'),true,'goal guide follows claimed QST_002');
 state.otherCharacters=[{quests:[{questId:'QST_005',status:'claimed'}]}];
 for(const id of ['guilds','combat_companions','chat_social','companion_trials'])equal(unlockedGameGuide(state).some(row=>row.id===id),true,id+' respects account-wide unlock');
 state.account.liveEvent={enabled:true};

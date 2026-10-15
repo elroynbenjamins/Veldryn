@@ -1,5 +1,5 @@
 import {useSyncExternalStore} from 'react';
-import {ScrollView,StyleSheet,Text,View} from 'react-native';
+import {StyleSheet,Text,View} from 'react-native';
 import {gameAlerts} from '../core/game-alerts';
 import {GameThemeProvider,useGameTheme} from '../theme/ThemeContext';
 import {GameLanguageProvider,useGameLanguage} from '../i18n/GameLanguageProvider';
@@ -17,10 +17,10 @@ function AlertDialog({snapshot}:{snapshot:ReturnType<typeof gameAlerts.getSnapsh
  const close=()=>gameAlerts.dismiss(current.id);
  return <GameModalSurface visible onClose={close} presentation="dialog" reduceMotion={snapshot.reduceMotion} dismissOnBackdrop={current.options?.cancelable===true} surfaceStyle={{borderColor:C.accent,padding:18}}>
   <GameModalHeader eyebrow="VELDRYN" title={current.title} onClose={close}/>
-  <ScrollView contentContainerStyle={styles.body} keyboardShouldPersistTaps="handled">
+  <View style={styles.body}>
    {current.message?<Text selectable style={{color:C.text,fontSize:15,lineHeight:22}}>{current.message}</Text>:null}
    <View style={styles.actions}>{current.buttons.map((button,index)=><GameButton key={index} title={button.text??sharedText(language,'OK')} tone={button.style==='destructive'?'danger':button.style==='cancel'?'secondary':'primary'} onPress={()=>gameAlerts.press(current.id,index)}/>)}</View>
-  </ScrollView>
+  </View>
  </GameModalSurface>;
 }
 const styles=StyleSheet.create({body:{gap:18,paddingTop:12,paddingBottom:2},actions:{gap:8}});

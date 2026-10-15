@@ -1,57 +1,11 @@
 import type {LiveEventVisualKey} from '../content/live-event-visual-keys';
-import {EVENT_BACKGROUNDS} from '../theme/event-backgrounds';
-export interface LiveEventVisualBundle{heroBackground:number;showcaseBackground?:number;badgeIcon?:number;commonCurrencyIcon?:number;prestigeCurrencyIcon?:number;candyIcon?:number;discoveryArt:Readonly<Record<string,number>>;rewardArt:Readonly<Record<string,number>>}
+export interface LiveEventVisualBundle{heroBackground:number;showcaseBackground?:number;badgeIcon?:number;commonCurrencyIcon?:number;prestigeCurrencyIcon?:number;candyIcon?:number;discoveryArt:Readonly<Record<string,number>>;rewardArt:Readonly<Record<string,number>>;enemyArt?:Readonly<Record<string,number>>}
 const EMPTY_ART:Readonly<Record<string,number>>=Object.freeze({});
 const VEILBREAK:LiveEventVisualBundle={
- heroBackground:EVENT_BACKGROUNDS.veilbreak,
- badgeIcon:require('../../assets/events/veilbreak/badge.png'),
- commonCurrencyIcon:require('../../assets/events/veilbreak/currency_veil_shard.png'),
- prestigeCurrencyIcon:require('../../assets/events/veilbreak/currency_lantern_ember.png'),
- candyIcon:require('../../assets/events/veilbreak/candy_gloam.png'),
- discoveryArt:{
-  gloam_cinder:require('../../assets/events/veilbreak/discovery_gloam_cinder.png'),
-  waxen_sigil:require('../../assets/events/veilbreak/discovery_waxen_sigil.png'),
-  breach_fragment:require('../../assets/events/veilbreak/discovery_breach_fragment.png'),
- },
- rewardArt:{
-  EVT_PET_013:require('../../assets/event_collectibles/veilbreak/pets/EVT_PET_013_Gloomkin.png'),
-  EVT_PET_014:require('../../assets/event_collectibles/veilbreak/pets/EVT_PET_014_Lantern_Mimic.png'),
-  EVT_UNIT_007:require('../../assets/event_collectibles/veilbreak/companions/EVT_UNIT_007_Veil_Hound.png'),
- },
+ heroBackground:require('../../assets/card-backgrounds/veilbreak_portrait.webp'),showcaseBackground:require('../../assets/card-backgrounds/veilbreak_wide_v2.webp'),badgeIcon:require('../../assets/events/veilbreak/badge.png'),commonCurrencyIcon:require('../../assets/events/veilbreak/currency_veil_shard.png'),prestigeCurrencyIcon:require('../../assets/events/veilbreak/currency_lantern_ember.png'),candyIcon:require('../../assets/events/veilbreak/candy_gloam_runtime.webp'),
+ discoveryArt:{gloam_cinder:require('../../assets/events/veilbreak/discovery_gloam_cinder_runtime.webp'),waxen_sigil:require('../../assets/events/veilbreak/discovery_waxen_sigil_runtime.webp'),breach_fragment:require('../../assets/events/veilbreak/discovery_breach_fragment_runtime.webp')},
+ rewardArt:{EVT_PET_013:require('../../assets/event_collectibles/veilbreak/pets/EVT_PET_013_Gloomkin_runtime.webp'),EVT_PET_014:require('../../assets/event_collectibles/veilbreak/pets/EVT_PET_014_Lantern_Mimic_runtime.webp'),EVT_UNIT_007:require('../../assets/event_collectibles/veilbreak/companions/EVT_UNIT_007_Veil_Hound_runtime.webp'),EVT_UNIT_008:require('../../assets/event_collectibles/veilbreak/companions/EVT_UNIT_008_Hollow_Knightling_runtime.webp'),EVT_UNIT_011:require('../../assets/event_collectibles/veilbreak/companions/EVT_UNIT_011_Lantern_Keeper_runtime.webp'),'event:veilbreak-2026-lantern-warden':require('../../assets/profile-icons-v1/veilbreak-2026-lantern-warden_runtime.webp'),'event:veilbreak-2026-pumpkin-moon':require('../../assets/profile-icons-v1/veilbreak-2026-pumpkin-moon_runtime.webp'),bg_veilbreak:require('../../assets/profile-backgrounds/bg_veilbreak.webp'),border_halloween_veil:require('../../assets/guild-customization/borders/border_halloween_veil_runtime.webp'),halloween_pumpkin_lantern:require('../../assets/guild-customization/banners/banner_halloween_pumpkin_lantern_runtime.webp'),halloween_bat_moon:require('../../assets/guild-customization/banners/banner_halloween_bat_moon_runtime.webp'),'EVT_ANNUAL_010_2026:candy:skill':require('../../assets/events/veilbreak/candy_gloam_runtime.webp'),'EVT_ANNUAL_010_2026:candy:combat':require('../../assets/events/veilbreak/candy_gloam_runtime.webp'),'EVT_ANNUAL_010_2026:candy:companion':require('../../assets/events/veilbreak/candy_gloam_runtime.webp'),emote_candle_circle:require('../../assets/events/veilbreak/emote_candle_circle_runtime.webp'),emote_laughing_crow:require('../../assets/events/veilbreak/emote_laughing_crow_runtime.webp'),emote_lantern_watch:require('../../assets/events/veilbreak/emote_lantern_watch_runtime.webp'),emote_sleeping_scarecrow:require('../../assets/events/veilbreak/emote_sleeping_scarecrow_runtime.webp'),emote_veil_salute:require('../../assets/events/veilbreak/emote_veil_salute_runtime.webp')},
 };
-const HARVESTWAKE:LiveEventVisualBundle={
- showcaseBackground:require('../../assets/events/harvestwake/showcase-guardian-v2.webp'),
- heroBackground:require('../../assets/events/harvestwake/landscape-v2.webp'),
- badgeIcon:require('../../assets/events/harvestwake/badge.webp'),
- commonCurrencyIcon:require('../../assets/events/harvestwake/currency_harvest_mark.webp'),
- prestigeCurrencyIcon:require('../../assets/events/harvestwake/currency_amber_seed.webp'),
- candyIcon:require('../../assets/events/harvestwake/candy_harvest_taffy.webp'),
- discoveryArt:{
-  whispering_husk:require('../../assets/events/harvestwake/discovery_whispering_husk.webp'),
-  golden_field_feather:require('../../assets/events/harvestwake/discovery_golden_field_feather.webp'),
-  amber_artisan_seal:require('../../assets/events/harvestwake/discovery_amber_artisan_seal.webp'),
-  guardian_lantern:require('../../assets/events/harvestwake/discovery_guardian_lantern.webp'),
- },
- rewardArt:{
-  EVT_PET_011:require('../../assets/event_collectibles/harvestwake/pets/EVT_PET_011_Pumpkin_Piglet.webp'),
-  EVT_PET_012:require('../../assets/event_collectibles/harvestwake/pets/EVT_PET_012_Golden_Sheafling.webp'),
-  EVT_UNIT_006:require('../../assets/events/harvestwake/guardian-master-v2.webp'),
-  pet_harvest_fox:require('../../assets/events/harvestwake/pet_harvest_fox.webp'),
-  pet_field_mouse:require('../../assets/events/harvestwake/pet_field_mouse.webp'),
-  pet_straw_sparrow:require('../../assets/events/harvestwake/pet_straw_sparrow.webp'),
-  pet_amber_owl:require('../../assets/events/harvestwake/pet_amber_owl.webp'),
-  emote_harvest_cheer:require('../../assets/events/harvestwake/emote_harvest_cheer.webp'),
-  emote_scarecrow_salute:require('../../assets/events/harvestwake/emote_scarecrow_salute.webp'),
-  bg_grand_storehouse:require('../../assets/events/harvestwake/landscape-v2.webp'),
-  bg_harvestwake:require('../../assets/events/harvestwake/landscape-v2.webp'),
-  bg_spirit_storehouse:require('../../assets/events/harvestwake/landscape-v2.webp'),
-  frame_amber_vine:require('../../assets/profile-borders/frame_amber_vine.webp'),
-  frame_wheat_crown:require('../../assets/profile-borders/frame_wheat_crown.webp'),
- },
-};
-const GENERIC:LiveEventVisualBundle={heroBackground:require('../../assets/events/harvestwake/landscape-v2.webp'),discoveryArt:EMPTY_ART,rewardArt:EMPTY_ART};
-export function liveEventVisuals(visualKey?:LiveEventVisualKey){return visualKey==='harvestwake'?HARVESTWAKE:visualKey==='veilbreak'?VEILBREAK:visualKey?{...GENERIC,heroBackground:EVENT_BACKGROUNDS[visualKey]}:GENERIC;}
-export function liveEventVisualCoverage(visualKey:LiveEventVisualKey,discoveryIds:readonly string[]=[]){
- const bundle=liveEventVisuals(visualKey);
- return {dedicatedBundle:visualKey==='harvestwake'||visualKey==='veilbreak',badgeArt:!!bundle.badgeIcon,commonCurrencyArt:!!bundle.commonCurrencyIcon,prestigeCurrencyArt:!!bundle.prestigeCurrencyIcon,discoveryArtCount:discoveryIds.filter(id=>!!bundle.discoveryArt[id]).length,discoveryTotal:discoveryIds.length};
-}
+const GENERIC:LiveEventVisualBundle={heroBackground:require('../../assets/card-backgrounds/veilbreak_portrait.webp'),discoveryArt:EMPTY_ART,rewardArt:EMPTY_ART};
+export function liveEventVisuals(visualKey?:LiveEventVisualKey){return visualKey==='veilbreak'?VEILBREAK:GENERIC;}
+export function liveEventVisualCoverage(visualKey:LiveEventVisualKey,discoveryIds:readonly string[]=[]){const bundle=liveEventVisuals(visualKey);return {dedicatedBundle:visualKey==='veilbreak',badgeArt:!!bundle.badgeIcon,commonCurrencyArt:!!bundle.commonCurrencyIcon,prestigeCurrencyArt:!!bundle.prestigeCurrencyIcon,discoveryArtCount:discoveryIds.filter(id=>!!bundle.discoveryArt[id]).length,discoveryTotal:discoveryIds.length};}

@@ -17,11 +17,8 @@ import {companionCombatContribution} from './combat-companions';
 import {monsterMastery} from './monster-mastery';
 import {dailySuppliesHomeSummary} from './daily-supplies-home';
 import {contractBoardSummary} from './contract-board-summary';
-import {workingTowardReadyCount} from './working-toward';
 import {newlyUnlockedGameGuide} from './onboarding';
 import {eventReadyClaimCount} from './live-events';
-import {firstTrackedRecipePreparation} from './recipe-preparation-tracking';
-import type {WorkingTowardDestination} from './working-toward';
 import {equipmentCraftQueueModel} from './equipment-crafting-queue';
 import {companionAttentionSummary} from './companion-attention';
 import {earlyFeatureUnlocked} from './feature-unlocks';
@@ -32,35 +29,28 @@ const COMBAT_EXPECTED_SCALE=1.3;
 
 export type DashboardDestination='World'|'Skills'|'Inventory'|'Quests'|'Character'|'Settings';
 export interface DashboardRecommendation{title:string;detail:string;button:string;destination:DashboardDestination;zoneId?:string;priority:'urgent'|'progress'|'upgrade'}
-export type HomeReadyKind='quests'|'daily'|'events'|'goals'|'forge'|'weekly'|'companions';
+export type HomeReadyKind='quests'|'daily'|'events'|'forge'|'weekly'|'companions';
 export interface HomeSessionReadyAction{kind:HomeReadyKind;title:string;detail:string;button:string}
 export interface HomeSessionSummary{
  readyTotal:number;
  storyRewards:number;
  dailyReady:boolean;
  eventRewards:number;
- goalReady:number;
- goalTotal:number;
  weeklyComplete:number;
  weeklyTotal:number;
  weeklyRewards:number;
  forgeReady:number;
  companionAttention:number;
  newUnlocks:number;
- goalNext?:string;
- goalNextStep?:string;
- goalNextBlocked?:boolean;
- goalNextDestination?:WorkingTowardDestination;
  primaryReady?:HomeSessionReadyAction;
 }
 export function homeSessionSummary(state:GameState,nowMs=Date.now()):HomeSessionSummary{
  const storyRewards=state.quests.filter(row=>row.status==='complete').length;
- const dailyUnlocked=earlyFeatureUnlocked(state,'dailySupplies'),eventUnlocked=earlyFeatureUnlocked(state,'events'),goalsUnlocked=earlyFeatureUnlocked(state,'workingToward'),contractsUnlocked=earlyFeatureUnlocked(state,'contracts'),companionsUnlocked=earlyFeatureUnlocked(state,'companions');
+ const dailyUnlocked=earlyFeatureUnlocked(state,'dailySupplies'),eventUnlocked=earlyFeatureUnlocked(state,'events'),contractsUnlocked=earlyFeatureUnlocked(state,'contracts'),companionsUnlocked=earlyFeatureUnlocked(state,'companions');
  const dailyReady=dailyUnlocked&&dailySuppliesHomeSummary(state,nowMs).canClaim;
  const eventRewards=eventUnlocked?eventReadyClaimCount(state,nowMs):0;
- const goalReady=goalsUnlocked?workingTowardReadyCount(state):0,goalTotal=goalsUnlocked?(state.character?.progressionGoals?.length??0):0;
- const weekly=contractsUnlocked?contractBoardSummary(state,nowMs):{complete:0,total:0,pendingRewards:0} as ReturnType<typeof contractBoardSummary>,weeklyRewards=weekly.pendingRewards,forgeReady=equipmentCraftQueueModel(state,nowMs).ready,companionSummary=companionsUnlocked?companionAttentionSummary(state,nowMs):undefined,companionAttention=companionSummary?companionSummary.expeditionClaims+companionSummary.bondRewards+companionSummary.ascensions+companionSummary.sanctuaryClaims+companionSummary.codexClaims+companionSummary.monthlyTrialClaims:0,newUnlocks=newlyUnlockedGameGuide(state).length,trackedPreparation=firstTrackedRecipePreparation(state),goalNext=trackedPreparation?.status==='complete'?undefined:trackedPreparation?.nextLabel,goalNextStep=trackedPreparation?.status==='complete'?undefined:trackedPreparation?.stepLabel,goalNextBlocked=trackedPreparation?.status==='blocked',goalNextDestination=trackedPreparation?.status==='complete'?undefined:trackedPreparation?.destination;
- const readyTotal=storyRewards+(dailyReady?1:0)+eventRewards+goalReady+forgeReady+weeklyRewards+companionAttention;
+ const weekly=contractsUnlocked?contractBoardSummary(state,nowMs):{complete:0,total:0,pendingRewards:0} as ReturnType<typeof contractBoardSummary>,weeklyRewards=weekly.pendingRewards,forgeReady=equipmentCraftQueueModel(state,nowMs).ready,companionSummary=companionsUnlocked?companionAttentionSummary(state,nowMs):undefined,companionAttention=companionSummary?companionSummary.expeditionClaims+companionSummary.bondRewards+companionSummary.ascensions+companionSummary.sanctuaryClaims+companionSummary.codexClaims+companionSummary.monthlyTrialClaims:0,newUnlocks=newlyUnlockedGameGuide(state).length;
+ const readyTotal=storyRewards+(dailyReady?1:0)+eventRewards+forgeReady+weeklyRewards+companionAttention;
  const primaryReady:HomeSessionReadyAction|undefined=forgeReady
   ?{kind:'forge',title:forgeReady===1?'Forge craft ready':forgeReady+' Forge crafts ready',detail:'Completed Forge jobs are waiting to be claimed and may be occupying ready capacity.',button:'Open Forge'}
   :storyRewards
@@ -73,10 +63,8 @@ export function homeSessionSummary(state:GameState,nowMs=Date.now()):HomeSession
       ?{kind:'events',title:eventRewards===1?'Event reward ready':eventRewards+' event rewards ready',detail:'Your active event has claimable rewards or gifts.',button:'Open Event'}
       :companionAttention
        ?{kind:'companions',title:companionAttention===1?'Companion action ready':companionAttention+' Companion actions ready',detail:'Companion rewards, training, Ascension or Sanctuary progression can be handled now.',button:'Open Companions'}
-       :goalReady
-        ?{kind:'goals',title:goalReady===1?'Pinned goal complete':goalReady+' pinned goals complete',detail:'Review completed Working Toward goals and choose what to pursue next.',button:'Open Goals'}
-        :undefined;
- return {readyTotal,storyRewards,dailyReady,eventRewards,goalReady,goalTotal,weeklyComplete:weekly.complete,weeklyTotal:weekly.total,weeklyRewards,forgeReady,companionAttention,newUnlocks,goalNext,goalNextStep,goalNextBlocked,goalNextDestination,primaryReady};
+       :undefined;
+ return {readyTotal,storyRewards,dailyReady,eventRewards,weeklyComplete:weekly.complete,weeklyTotal:weekly.total,weeklyRewards,forgeReady,companionAttention,newUnlocks,primaryReady};
 }
 
 /** A single, deterministic next-step recommendation for the home screen. */

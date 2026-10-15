@@ -22,5 +22,11 @@ export function DungeonPartyRoles({language,note}:{language:Language;note?:strin
  const C=useGameTheme();return <View style={{gap:10}}><View style={{flexDirection:'row',flexWrap:'wrap',gap:8,justifyContent:'space-between'}}>{(['tank','damage','damage','support'] as const).map((role,i)=><RoleBadge key={i} role={role} label={t(language,`coopUi.${role}`)}/>)}</View>{note?<Text style={{color:C.muted,fontSize:12,lineHeight:18}}>{note}</Text>:null}</View>;
 }
 export function DungeonReward({title,detail,source}:{title:string;detail?:string;source?:ImageSourcePropType}){
- const C=useGameTheme();return <View style={{flexDirection:'row',gap:12,alignItems:'center'}}><View style={{width:44,height:44,borderRadius:10,backgroundColor:C.specialSurface,alignItems:'center',justifyContent:'center'}}>{source?<Image source={source} style={{width:36,height:36}} resizeMode="contain"/>:<UiIcon name="ward" size={28}/>}</View><View style={{flex:1,gap:3}}><Text style={{fontSize:16,lineHeight:22,fontWeight:'600',color:C.text}}>{title}</Text>{detail?<Text style={{fontSize:12,lineHeight:18,color:C.muted}}>{detail}</Text>:null}</View></View>;
+ const C=useGameTheme(),isExpedition=title.toLowerCase().includes('expedition marks');return <View style={{flexDirection:'row',gap:12,alignItems:'center'}}><View style={{width:44,height:44,borderRadius:10,backgroundColor:isExpedition?C.accentSurface:C.specialSurface,alignItems:'center',justifyContent:'center',borderWidth:1,borderColor:isExpedition?C.accent:C.line}}>{source?<Image source={source} style={{width:36,height:36}} resizeMode="contain"/>:isExpedition?<ExpeditionMarkIcon/>:<UiIcon name="ward" size={28}/>}</View><View style={{flex:1,gap:3}}><Text style={{fontSize:16,lineHeight:22,fontWeight:'600',color:C.text}}>{title}</Text>{detail?<Text style={{fontSize:12,lineHeight:18,color:C.muted}}>{detail}</Text>:null}</View></View>;
+}
+
+/** A compact compass-seal for the persistent co-op expedition currency. */
+function ExpeditionMarkIcon(){
+ const C=useGameTheme();
+ return <View accessibilityLabel="Expedition Marks icon" style={{width:28,height:28,borderRadius:14,borderWidth:1.5,borderColor:C.accent,alignItems:'center',justifyContent:'center'}}><View style={{width:16,height:16,transform:[{rotate:'45deg'}],borderWidth:1.5,borderColor:C.accent,backgroundColor:C.accentSurface,alignItems:'center',justifyContent:'center'}}><View style={{width:5,height:5,borderRadius:3,backgroundColor:C.accent}}/></View></View>;
 }

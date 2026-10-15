@@ -58,6 +58,10 @@ export function validateGameCommand(value:unknown):GameCommand{
  const row=value as Record<string,unknown>;
  if(Object.keys(row).some(key=>key!=='type'&&key!=='args')||typeof row.type!=='string'||!Object.prototype.hasOwnProperty.call(fields,row.type))throw new Error('invalid_command');
  const args=row.args??{};if(!args||typeof args!=='object'||Array.isArray(args)||Object.keys(args).some(key=>!fields[row.type as string].includes(key)))throw new Error('invalid_command_arguments');
+ // Older clients send an explicit count of one. Accept that shape while enforcing
+ // the single-craft rule before settling activity or reserving any ingredients.
+ const countKey=row.type==='faith_practice'?'count':row.type==='alchemy_start'||row.type==='processing_start'?'batches':undefined;
+ if(countKey&&(args as Record<string,unknown>)[countKey]!==undefined&&(args as Record<string,unknown>)[countKey]!==1)throw new Error(`invalid_${countKey}`);
  if(row.type==='create'||row.type==='roster_create'||row.type==='qa_prepare'||row.type==='qa_switch_class'){
   const creation=args as Record<string,unknown>;
   oneOf(creation.classId,CLASSES.map(item=>item.id));
@@ -107,13 +111,20 @@ export function executeGameCommand(previous:GameState,value:unknown,now:number,o
  if(!Number.isSafeInteger(now)||now<previous.createdAtMs)throw new Error('invalid_server_clock');
  const credit=(source:GameState['activity'],earned:RewardBundle)=>{if(!source||earned.kills<=0)return;if(source.kind==='combat')contributions.push({kind:'combat',contentId:source.targetId,units:earned.kills,startedAtMs:Math.max(source.lastClaimAtMs,now-earned.elapsedSeconds*1000)});else if(['mining','woodcutting','fishing','herbalism'].includes(source.kind))contributions.push({kind:'gathering',contentId:source.targetId,units:earned.kills,startedAtMs:Math.max(source.lastClaimAtMs,now-earned.elapsedSeconds*1000)});};
  const settle=()=>{const source=state.activity,result=game.claimActivity(state,now);state=result.state;reward=result.reward;if(result.reward.activityResults){for(const segment of result.reward.activityResults){const {activity,reward:earned}=segment;if(earned.kills>0&&(activity.kind==='combat'||['mining','woodcutting','fishing','herbalism'].includes(activity.kind)))contributions.push({kind:activity.kind==='combat'?'combat':'gathering',contentId:activity.targetId,units:earned.kills,startedAtMs:activity.lastClaimAtMs});}}else credit(source,result.reward);};
+ const settleAndStop=()=>{settle();state=game.stopActivity(state,now);};
  // Settle before any mutation that can alter past activity rates, food, gear or inventory.
- const settlementFreeCommand=command.type==='queue_add'||command.type==='queue_remove'||command.type==='queue_move'||command.type==='queue_clear'||command.type==='queue_start'||command.type==='daily_supplies_claim'||command.type==='roster_delete'||command.type.startsWith('qa_');
- if(state.character&&command.type!=='create'&&!settlementFreeCommand)settle();
+ // Event weekly contracts are automatic. Keep the retired accept command
+ // compatible with older clients without needlessly settling an activity.
+ const settlementFreeCommand=command.type==='queue_add'||command.type==='queue_remove'||command.type==='queue_move'||command.type==='queue_clear'||command.type==='queue_start'||command.type==='daily_supplies_claim'||command.type==='roster_delete'||command.type==='event_accept'||command.type.startsWith('qa_');
+ // Starting a new activity replaces the old one in a single trusted operation. This also
+ // returns unfinished reserved work (such as brews) through its normal stop path.
+ const activityStartCommand=['start','explore','class_training','faith_practice','alchemy_start','processing_start'].includes(command.type);
+ if(state.character&&command.type!=='create'&&!settlementFreeCommand){if(activityStartCommand)settleAndStop();else settle();}
  state=refreshCompanions(state,now);
  if(command.type.startsWith('companion_')&&!earlyFeatureUnlocked(state,'companions'))throw new Error('companion_system_locked');
  if((command.type==='daily_supplies_claim'||command.type==='daily_supplies_activate')&&!earlyFeatureUnlocked(state,'dailySupplies'))throw new Error('daily_supplies_locked');
- if((command.type==='goals_set'||command.type==='idle_rules_set')&&!earlyFeatureUnlocked(state,'workingToward'))throw new Error('working_toward_locked');
+ if(command.type==='goals_set')throw new Error('goals_retired');
+ if(command.type==='idle_rules_set'&&!earlyFeatureUnlocked(state,'contracts'))throw new Error('contract_board_locked');
  if(command.type==='seasonal'&&!earlyFeatureUnlocked(state,'contracts'))throw new Error('contract_board_locked');
  if(command.type.startsWith('event_')&&!earlyFeatureUnlocked(state,'events'))throw new Error('events_locked');
  const companionMetricBefore=command.type.startsWith('companion_')?companionCommandEconomySnapshot(state):undefined;
@@ -147,12 +158,12 @@ export function executeGameCommand(previous:GameState,value:unknown,now:number,o
    state={...state,character:{...state.character,herbalismMethodId:method}};
    message='Herbalism method set to '+method;break;
   }
-  case 'faith_practice':state=reserveFaithPractice(state,text(a,'tierId'),integer(a,'count',1,1000),now);break;
+  case 'faith_practice':state=reserveFaithPractice(state,text(a,'tierId'),1,now);break;
   case 'faith_blessing':state=updateFaithPreference(state,'blessing',text(a,'id'));break;
   case 'faith_favorite':state=updateFaithPreference(state,'favorite',text(a,'id'),a.enabled===true);break;
   case 'faith_hide':state=updateFaithPreference(state,'hide',undefined,a.enabled===true);break;
-  case 'alchemy_start':state=game.beginAlchemyBatch(state,text(a,'id'),integer(a,'batches',1,100),now);break;
-  case 'processing_start':state=game.beginProcessingBatch(state,text(a,'id'),integer(a,'batches',1,100),now);break;
+  case 'alchemy_start':state=game.beginAlchemyBatch(state,text(a,'id'),1,now);break;
+  case 'processing_start':state=game.beginProcessingBatch(state,text(a,'id'),1,now);break;
   case 'class_focus':{
    const focus=oneOf(a.focus,['balanced','primary','secondary']);if(!state.character)throw new Error('character_required');
    state.character={...state.character,trainingFocus:focus};
@@ -202,10 +213,10 @@ export function executeGameCommand(previous:GameState,value:unknown,now:number,o
   case 'queue_remove':state=removeQueuedActivity(state,integer(a,'index',0,activityQueueCapacity(state)-1));break;
   case 'queue_move':state=moveQueuedActivity(state,integer(a,'index',0,activityQueueCapacity(state)-1),oneOf(a.direction,['up','down']));break;
   case 'queue_clear':state=clearActivityQueue(state);break;
-  case 'queue_start':if(state.activity)settle();state=game.startNextQueuedActivity(state,now);break;
+  case 'queue_start':if(state.activity||state.character?.classTraining)settleAndStop();state=game.startNextQueuedActivity(state,now);break;
   case 'start':{const kind=oneOf(a.kind,['combat','gathering']),tacticId=a.tacticId===undefined?undefined:oneOf(a.tacticId,COMBAT_TACTIC_IDS),goalId=a.goalId===undefined?undefined:oneOf(a.goalId,HUNT_GOAL_IDS);if(kind!=='combat'&&(tacticId||goalId))throw new Error('invalid_combat_activity_option');state=transitionActivity(state,now,{kind,id:text(a,'id'),...(tacticId?{tacticId}: {}),...(goalId?{goalId}: {})}).state;break;}
   case 'explore':state=game.startExploration(state,text(a,'id'),now);break;
-  case 'stop':state=game.stopActivity(state);break;
+  case 'stop':state=game.stopActivity(state,now);break;
   case 'travel':state=game.travelToRegion(state,text(a,'id'),now).state;break;
   case 'boss':{const result=game.challengeFallenKnight(state,now);state=result.state;message=result.message;won=result.won;storyBossBattle=result.battle;if(won)contributions.push({kind:'boss',contentId:'FALLEN_KNIGHT',units:1});break;}
   case 'craft':{

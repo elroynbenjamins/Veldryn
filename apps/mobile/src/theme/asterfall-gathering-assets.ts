@@ -1,9 +1,9 @@
 import type {ImageSourcePropType} from 'react-native';
 
-export const ASTERFALL_GATHERING_CELL=64;
-export const ASTERFALL_GATHERING_SHEET_WIDTH=192;
-export const ASTERFALL_GATHERING_SHEET_HEIGHT=128;
-export const asterfallGatheringSheet:ImageSourcePropType=require('../../assets/asterfall-logs-fish-v1.webp');
+export const ASTERFALL_GATHERING_CELL=256;
+export const ASTERFALL_GATHERING_SHEET_WIDTH=768;
+export const ASTERFALL_GATHERING_SHEET_HEIGHT=512;
+export const asterfallGatheringSheet:ImageSourcePropType=require('../../assets/asterfall-logs-fish-v2.png');
 
 export interface AsterfallGatheringCell{column:number;row:number;}
 export const asterfallGatheringCellById:Readonly<Record<string,AsterfallGatheringCell>>={

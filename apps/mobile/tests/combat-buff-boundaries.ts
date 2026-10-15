@@ -43,7 +43,7 @@ assert.ok(many.foodConsumed!<single.foodConsumed!,'sixty uses protect more than 
 const settled=claimActivity(one,T+8*H);assert.ok(!settled.state.character!.preparation,'spent potion must be cleared');
 assert.equal(claimActivity(settled.state,T+8*H).reward.kills,0,'retry must not award more kills');
 
-const eventId='EVT_ANNUAL_009_2026',candy=eventCandies(liveEventDef(eventId)!).find(row=>row.kind==='combat')!;
+const eventId='EVT_ANNUAL_010_2026',candy=eventCandies(liveEventDef(eventId)!).find(row=>row.kind==='combat')!;
 const event=fixture();event.account.liveEvent={eventId,enabled:true,startsAtMs:T-H,endsAtMs:T+24*H};
 event.character!.activeEventCandies={combat:{eventId,itemId:candy.id,remainingSeconds:7200,lastUpdatedAtMs:T}};
 assert.ok(eventCandyStatus(event,T+H,'combat').active);assert.ok(!eventCandyStatus(event,T+3*H,'combat').active);

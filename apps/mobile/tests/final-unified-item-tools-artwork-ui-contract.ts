@@ -21,10 +21,10 @@ for(const id of craftedIds)ok(crafted.includes(id+':require('),'Missing direct c
 for(const id of arcaneIds)ok(arcane.includes(id+':'),'Missing unified arcane artwork mapping for '+id);
 for(const id of toolIds)ok(tools.includes(id+':'),'Missing regenerated gathering tool mapping for '+id);
 
-ok(gathering.includes("require('../../assets/asterfall-logs-fish-v1.webp')"),'Logs/fish atlas must be bundled');
-ok(crafted.includes("require('../../assets/crafted-items-v1/"),'Crafted items must use direct production image assets');
-ok(arcane.includes("require('../../assets/arcane-materials-v1.png')"),'Arcane atlas must be bundled');
-ok(tools.includes("require('../../assets/tools/gathering-tools-v2.webp')"),'Gathering tools must use v2 regenerated atlas');
+ok(gathering.includes("require('../../assets/asterfall-logs-fish-v2.png')"),'Logs/fish atlas must be bundled');
+ok(crafted.includes("require('../../assets/food-v2/")||crafted.includes("require('../../assets/crafted-items-v1/"),'Crafted items must use direct production image assets');
+ok(arcane.includes("require('../../assets/arcane-materials-v2.png')"),'Arcane atlas must be bundled');
+ok(tools.includes("require('../../assets/tools/gathering-tools-v3.png')"),'Gathering tools must use v3 regenerated atlas');
 
 ok(resolver.includes('hasAsterfallGatheringArtwork(itemId)'),'Shared resolver must recognize logs/fish atlas');
 ok(resolver.includes('hasArcaneMaterialArtwork(itemId)'),'Shared resolver must recognize arcane atlas');

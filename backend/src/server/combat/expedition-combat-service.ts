@@ -12,6 +12,7 @@ export interface BuildExpeditionEncounterInput {
   enemyHpMultiplier?:number;
   enemyDefenseMultiplier?:number;
   bossTuning?:EncounterBossTuning;
+  enemyLevel?:number;
 }
 export interface ResolveExpeditionCombatInput extends BuildExpeditionEncounterInput {
   runId:string;
@@ -66,7 +67,8 @@ export function buildExpeditionEncounter(input:BuildExpeditionEncounterInput):Co
   const factory=EXPEDITION_ENCOUNTERS[input.encounterId]; if(!factory) throw new Error(`unknown_encounter:${input.encounterId}`);
   const tuning=input.bossTuning,removed=new Set(tuning?.removeAbilityIds??[]);
   return factory().map(enemy=>{
-    const base={...enemy,stats:{...enemy.stats,maxHp:enemy.stats.maxHp*(input.enemyHpMultiplier??1),attackPower:enemy.stats.attackPower*(input.enemyAttackMultiplier??1),defense:enemy.stats.defense*(input.enemyDefenseMultiplier??1)}};
+    const levelRatio=input.enemyLevel===undefined?1:Math.max(.65,Math.min(1.2,input.enemyLevel/Math.max(1,enemy.level)));
+    const base={...enemy,level:input.enemyLevel??enemy.level,stats:{...enemy.stats,maxHp:enemy.stats.maxHp*levelRatio*(input.enemyHpMultiplier??1),attackPower:enemy.stats.attackPower*levelRatio*(input.enemyAttackMultiplier??1),defense:enemy.stats.defense*levelRatio*(input.enemyDefenseMultiplier??1)}};
     if(!base.boss||!tuning)return base;
     const abilities=base.abilities.filter(ability=>!removed.has(ability.id)).map(ability=>{
       const damageMultiplier=tuning.abilityDamageMultipliers?.[ability.id]??1,cooldownMultiplier=tuning.abilityCooldownMultipliers?.[ability.id]??1;

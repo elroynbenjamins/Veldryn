@@ -34,6 +34,8 @@ ok(rejected,'Later regions must require the prior scouting route even after the 
 const later={...beginner,character:{...beginner.character!,level:30},exploredRouteIds:['SCOUT_IRONWOOD','SCOUT_OLD_MINES','SCOUT_KINGS_ROAD'],skills:beginner.skills.map(skill=>skill.skillId==='exploration'?{...skill,level:18}:skill)};
 const sunscar=travelToRegion(later,'SUNSCAR',7).state;
 ok(currentRegionId(sunscar)==='SUNSCAR','Later-region travel must persist Sunscar');
+const interruptedScout=startExploration(startCombat({...sunscar,unlockedMonsterIds:[...sunscar.unlockedMonsterIds,'SUNSCAR_SCORPION']},'SUNSCAR_SCORPION',8),'SCOUT_SUNSCAR',9);
+ok(interruptedScout.activity?.kind==='exploration'&&interruptedScout.activity.targetId==='SCOUT_SUNSCAR','Starting scouting should stop the current activity and begin exploration immediately');
 const sunscarScout=startExploration(sunscar,'SCOUT_SUNSCAR',8);
 const sunscarMapped=claimActivity(sunscarScout,218008).state;
 ok(sunscarMapped.unlockedMonsterIds.includes('SUNSCAR_SCORPION'),'Sunscar scouting must unlock its first authored encounter');

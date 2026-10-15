@@ -9,7 +9,7 @@ export function veilbreakCompanionMilestones(classId:ClassId):EventMilestone[]{
  return ['EVT_UNIT_011','EVT_UNIT_008','EVT_UNIT_007']
   .map(id=>EVENT_COMPANIONS.find(companion=>companion.id===id)!)
   .filter(companion=>companion.role!==role)
-  .map((companion,index)=>({points:index===0?16000:20000,reward:{kind:'companion',id:companion.id,name:companion.name,rarity:companion.rarity==='prestige'?'mythic':'epic'}}));
+  .map((companion,index)=>({points:index===0?16000:20000,reward:{kind:'companion',id:companion.id,name:companion.name,rarity:'epic' as const}}));
 }
 
 const gifts:LiveEventDef['dailyGifts']=[
@@ -43,7 +43,7 @@ export const VEILBREAK_EVENT:LiveEventDef={
     communityName:'Lantern Ward',
     projectTitle:'Ward preparation',
     projectNoun:'ward focus',
-    contractsTitle:'DAILY VEIL CONTRACTS',
+    contractsTitle:'WEEKLY VEIL ACTIVITIES',
     shopTitle:'VEILBREAK SHOP',
     collectionTitle:'Veilbreak collection',
     closedTitle:'The veil is sealing',
@@ -78,9 +78,18 @@ export const VEILBREAK_EVENT:LiveEventDef={
     {id:'weekly_lantern_craft',name:'Master Lanternwright',description:'Complete 50 crafting recipes this week.',source:'crafting',required:50,rewardCurrency:1100,rewardPrestige:2},
   ],
   shop:[
-    // The remaining role completes the Trial trio; keep this saving goal out of daily rotation.
-    ...EVENT_COMPANIONS.filter(companion=>companion.origin.id==='EVENT_VEILBREAK').map(companion=>({id:`veil_trial_${companion.id.toLowerCase()}`,reward:{kind:'companion' as const,id:companion.id,name:companion.name,rarity:'mythic' as const},currency:'common' as const,cost:20000,limit:1,classRole:companion.role,alwaysAvailable:true})),
+    // One fixed, long-term companion goal keeps the event shop legible. The other
+    // two Veilbreak companions are earned from class-aware reputation milestones.
+    ...EVENT_COMPANIONS.filter(companion=>companion.id==='EVT_UNIT_011').map(companion=>({id:`veil_trial_${companion.id.toLowerCase()}`,reward:{kind:'companion' as const,id:companion.id,name:companion.name,rarity:'epic' as const},currency:'common' as const,cost:20000,limit:1,alwaysAvailable:true})),
     {id:'laughing_crow',reward:{kind:'emote',id:'emote_laughing_crow',name:'Laughing Crow',rarity:'rare'},currency:'common',cost:900,limit:1},
+    {id:'veil_salute',reward:{kind:'emote',id:'emote_veil_salute',name:'Veil Salute',rarity:'rare'},currency:'common',cost:1100,limit:1,minLevel:8},
+    {id:'candle_circle',reward:{kind:'emote',id:'emote_candle_circle',name:'Candle Circle',rarity:'rare'},currency:'common',cost:1250,limit:1,minLevel:12},
+    {id:'gloam_candy_skill',reward:{kind:'candy',id:'EVT_ANNUAL_010_2026:candy:skill',name:'Gloam Candy',rarity:'common',quantity:1},currency:'common',cost:250,limit:5},
+    {id:'gloam_candy_battle',reward:{kind:'candy',id:'EVT_ANNUAL_010_2026:candy:combat',name:'Gloam Candy · Battle',rarity:'common',quantity:1},currency:'common',cost:300,limit:5,minLevel:8},
+    {id:'gloam_candy_bond',reward:{kind:'candy',id:'EVT_ANNUAL_010_2026:candy:companion',name:'Gloam Candy · Bond',rarity:'common',quantity:1},currency:'common',cost:350,limit:5,minLevel:12},
+    {id:'companion_essence_cache',reward:{kind:'companion_essence',id:'companion_essence_100',name:'Companion Essence Cache',rarity:'uncommon',quantity:100},currency:'common',cost:750,limit:3,minLevel:10},
+    {id:'lantern_coin_purse',reward:{kind:'gold',id:'gold_2500',name:'Lantern Coin Purse',rarity:'common',quantity:2500},currency:'common',cost:450,limit:5,minLevel:5},
+    {id:'warden_treasury',reward:{kind:'gold',id:'gold_10000',name:'Warden Treasury',rarity:'uncommon',quantity:10000},currency:'common',cost:1600,limit:2,minLevel:20},
     {id:'candlewarden_title',reward:{kind:'title',id:'title_candlewarden',name:'Candlewarden',rarity:'epic'},currency:'common',cost:1800,limit:1},
     {id:'night_patrol_title',reward:{kind:'title',id:'title_night_patrol',name:'Night Patrol',rarity:'rare'},currency:'common',cost:1200,limit:1},
     {id:'veil_lantern_mimic',reward:{kind:'pet',id:'EVT_PET_014',name:'Lantern Mimic',rarity:'epic'},currency:'prestige',cost:10,limit:1},

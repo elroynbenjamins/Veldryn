@@ -18,8 +18,7 @@ export function CustomizationUnlockPopup({entries,reduceMotion=false,onClose,onP
  const language=useGameLanguage();
  const C=useGameTheme(),s=useMemo(()=>makeStyles(C),[C]);
  const hasProfile=entries.length>0;
- return <GameModalSurface visible={entries.length>0} presentation="dialog" reduceMotion={reduceMotion} onClose={onClose} backdropLabel={profileT(language,"Close customization rewards")} surfaceStyle={s.card}>
-  <ScrollView style={s.scroll} contentContainerStyle={s.content} showsVerticalScrollIndicator={false} showsHorizontalScrollIndicator={false}>
+ const content=<>
    <View style={s.badge}><Text style={s.badgeMark}>✦</Text></View>
    <Text style={s.kicker}>{profileT(language,"NEW CUSTOMIZATION")}</Text>
    <Text accessibilityRole="header" style={s.heading}>{entries.length===1?profileT(language,"Reward unlocked"):profileT(language,"Rewards unlocked")}</Text>
@@ -32,7 +31,9 @@ export function CustomizationUnlockPopup({entries,reduceMotion=false,onClose,onP
     {hasProfile?<GameButton title={profileT(language,"Customize Profile")} onPress={onProfile}/>:null}
     <GameButton title={profileT(language,"Later")} tone="secondary" onPress={onClose}/>
    </View>
-  </ScrollView>
+  </>;
+ return <GameModalSurface visible={entries.length>0} presentation="dialog" reduceMotion={reduceMotion} onClose={onClose} backdropLabel={profileT(language,"Close customization rewards")} surfaceStyle={s.card}>
+  {entries.length===1?<View style={s.content}>{content}</View>:<ScrollView style={s.scroll} contentContainerStyle={s.content} showsVerticalScrollIndicator={false} showsHorizontalScrollIndicator={false}>{content}</ScrollView>}
  </GameModalSurface>;
 }
 

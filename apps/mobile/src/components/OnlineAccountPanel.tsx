@@ -1,8 +1,10 @@
+import {gameAlert} from '../core/game-alerts';
 import {accountText,accountError} from '../i18n/account';
 import {GameTextInput as TextInput} from './GameTextInput';
 import {useEffect,useMemo,useRef,useState} from 'react';
-import {Alert,AppState,Keyboard,Platform,Pressable,ScrollView,StyleSheet,Text,View} from 'react-native';
+import {AppState,Keyboard,Platform,Pressable,ScrollView,StyleSheet,Text,View} from 'react-native';
 import {GameButton} from './GameButton';
+import {GoogleBrandButton} from './GoogleBrandButton';
 import {GameModalHeader,GameModalSurface} from './GameModalSurface';
 import {Panel} from './Panel';
 import type {GameState} from '../core/types';
@@ -56,7 +58,7 @@ export function OnlineAccountPanel({state}:{state:GameState}){
  return <Panel><Text accessibilityRole="header" style={s.title}>{auth.recovering?a("Reset your password"):changingPassword?a("Change password"):auth.session?a("Your account"):creating?a("Create your VELDRYN account"):a("Welcome to VELDRYN")}</Text>
   {!!displayedNotice&&<View accessibilityRole="alert" style={[s.noticeCard,displayedTone==='success'&&s.noticeSuccessCard,displayedTone==='info'&&s.noticeInfoCard]}><Text style={displayedTone==='success'?s.noticeLabelSuccess:displayedTone==='info'?s.noticeLabelInfo:s.noticeLabel}>{displayedTone==='success'?a("ACCOUNT UPDATED"):displayedTone==='info'?a("ACCOUNT STATUS"):a("ACCOUNT NOTICE")}</Text><Text style={s.notice}>{displayedTone==='error'?accountError(language,displayedNotice):a(displayedNotice)}</Text></View>}
   {editingPassword?<>{passwordInput}<GameButton title={a("Save new password")} disabled={busy} onPress={()=>void run(savePassword)}/><GameButton title={a("Cancel")} tone="secondary" disabled={busy} onPress={cancelPassword}/></>:!auth.session?<>
-   {!creating&&googleSignInConfigured&&<><GameButton title={busy?a("Connecting…"):a("Continue with Google")} disabled={busy} onPress={()=>void run(async()=>{await signInOrLinkGoogle();success('Signed in with Google.');})}/><Text style={s.googleHint}>{a("Use the Google account on this Android device. No password is required.")}</Text></>}
+   {!creating&&googleSignInConfigured&&<><GoogleBrandButton title={busy?a("Connecting…"):a("Continue with Google")} loading={busy} onPress={()=>void run(async()=>{await signInOrLinkGoogle();success('Signed in with Google.');})}/><Text style={s.googleHint}>{a("Use the Google account on this Android device. No password is required.")}</Text></>}
    {creating&&<><Text style={s.label}>{a("Username")}</Text><TextInput accessibilityLabel={a("Username")} value={username} onChangeText={setUsername} maxLength={20} placeholder={a("Username")} placeholderTextColor={C.muted} style={s.input}/></>}
    {emailInput}{passwordInput}
    <GameButton title={busy?a("Connecting…"):creating?a("Create account"):a("Sign in")} disabled={busy} onPress={()=>void run(async()=>{if(creating){const result=await createOnlineAccount(email,password,username);if(!result.confirmed){success('Confirmation email sent. Check your inbox before signing in.');showVerification(email,'signup');}}else await signInWithPassword(email,password);})}/>
@@ -86,11 +88,11 @@ export function OnlineAccountPanel({state}:{state:GameState}){
     <GameButton title={a("Save account password")} disabled={busy||auth.refreshing} onPress={()=>void run(async()=>{await finishGuestAccount(password,accountId);success('Account linked. Your characters and progress are kept.');})}/>
    </>}
    {linkStep==='linked'&&<GameButton title={a("Change password")} tone="secondary" disabled={busy||auth.refreshing} onPress={()=>{if(running.current||!ownsView())return;setPassword('');setPasswordVisible(false);setNotice('');setChangingPassword(true);}}/>}
-   {googleSignInConfigured&&!googleLinked&&<GameButton title={busy?a("Connecting…"):a("Link Google account")} tone="secondary" disabled={busy||auth.refreshing} onPress={()=>void run(async()=>{await signInOrLinkGoogle();success('Google account linked. Your characters and progress are kept.');})}/>}
+   {googleSignInConfigured&&!googleLinked&&<GoogleBrandButton title={busy?a("Connecting…"):a("Link Google account")} loading={busy||auth.refreshing} onPress={()=>void run(async()=>{await signInOrLinkGoogle();success('Google account linked. Your characters and progress are kept.');})}/>}
    {googleLinked&&<Text style={s.googleLinked}>✓ {a("Google account linked")}</Text>}
-   {playGamesConfigured&&<><GameButton title={busy?a("Connecting…"):a("Connect Google Play Games")} tone="secondary" disabled={busy||auth.refreshing} onPress={()=>void run(async()=>{const {signInPlayGames}=await import('../online/play-games');const result=await signInPlayGames();if(!result.authenticated)throw new Error('Google Play Games sign-in was not completed.');success(result.displayName?`Google Play Games connected as ${result.displayName}.`:'Google Play Games connected.');})}/><Text style={s.googleHint}>{a("Play Games is separate from your VELDRYN account and is used for Google Play game services.")}</Text></>}
+   {playGamesConfigured&&<><GoogleBrandButton title={busy?a("Connecting…"):a("Connect Google Play Games")} loading={busy||auth.refreshing} onPress={()=>void run(async()=>{const {signInPlayGames}=await import('../online/play-games');const result=await signInPlayGames();if(!result.authenticated)throw new Error('Google Play Games sign-in was not completed.');success(result.displayName?`Google Play Games connected as ${result.displayName}.`:'Google Play Games connected.');})}/><Text style={s.googleHint}>{a("Play Games is separate from your VELDRYN account and is used for Google Play game services.")}</Text></>}
    <Text style={s.text}>{serverGameplayEnabled?a("Every successful gameplay action is saved online. Sign in on another device to continue."):a("Local save uploads do not grant online progression.")}</Text>
-   <GameButton title={a("Sign out")} tone="secondary" disabled={busy} onPress={()=>{if(auth.session?.user.is_anonymous)Alert.alert(a("Sign out of guest account?"),a("Add an email first so you can recover this account."),[{text:a("Stay signed in")},{text:a("Sign out"),style:'destructive',onPress:()=>void run(signOut)}]);else void run(signOut);}}/>
+   <GameButton title={a("Sign out")} tone="secondary" disabled={busy} onPress={()=>{if(auth.session?.user.is_anonymous)gameAlert.alert(a("Sign out of guest account?"),a("Add an email first so you can recover this account."),[{text:a("Stay signed in")},{text:a("Sign out"),style:'destructive',onPress:()=>void run(signOut)}]);else void run(signOut);}}/>
   </>}
   {verificationPrompt&&verificationPrompt.accountId===accountId&&<GameModalSurface visible onClose={closeVerification} presentation="dialog" reduceMotion={state.settings.reduceMotion} dismissOnBackdrop={false}>
    <GameModalHeader title={a("Verify your email")} onClose={closeVerification}/>

@@ -1,5 +1,7 @@
 # Dependencies are installed by EAS.
 node_modules/
+**/node_modules/
+.pnpm-store/
 
 # Local Expo/build output and generated previews.
 .expo/
@@ -48,3 +50,53 @@ tests/
 *.ai
 *.xcf
 *.kra
+
+# This EAS project lives in a monorepo. Patterns above are resolved from the
+# repository root during archive creation, so explicitly exclude the mobile
+# machine outputs as well as their project-local spellings. These are all
+# generated/review inputs; Metro does not need them for a production bundle.
+apps/mobile/node_modules/
+apps/mobile/android/
+apps/mobile/ios/
+apps/mobile/.expo/
+apps/mobile/.expo-*/
+apps/mobile/.codex-*/
+apps/mobile/.*-export*/
+apps/mobile/.*-build*/
+apps/mobile/*-export/
+apps/mobile/*-build/
+apps/mobile/dist/
+apps/mobile/.web-pet-preview/
+apps/mobile/.codex-tmp/
+apps/mobile/.expo-helmet-check/
+apps/mobile/art-review/
+apps/mobile/art-archive/
+apps/mobile/tests/
+apps/mobile/*.log
+
+# Monorepo material not used by the mobile Metro build.
+control-center/
+docs/
+marketing/
+tools/
+supabase/
+output/
+artifacts/
+.codex/
+.codex-*/
+.codex-upstream/
+.codex-v21-reference/
+.codex-remote-attachments/
+.visual-polish-core-check/
+VELDRYN_v17_SocialLiveOpsPartyEvents/
+VELDRYN_v21_SunscarFrostmarch/
+cargo_charter_visual_pack_v1.zip
+
+# Mobile imports a small shared backend source surface. Keep only that surface
+# rather than uploading backend data, build outputs, and installed packages.
+backend/*
+!backend/src/
+!backend/src/**
+!backend/package.json
+!backend/pnpm-lock.yaml
+!backend/tsconfig.json

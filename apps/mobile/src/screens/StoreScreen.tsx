@@ -10,7 +10,7 @@ import {spacing,typography,type ThemeColors} from '../theme/theme';
 export function StoreScreen({state,onChange,onOpenAccount}:{state:GameState;onChange:(next:GameState)=>void;onOpenAccount:()=>void}){
  const C=useGameTheme(),s=useMemo(()=>styles(C),[C]);
  const a=(text:string)=>accountText(state.settings.language,text);
- return <ScrollView contentContainerStyle={s.root} showsVerticalScrollIndicator={false}>
+ return <ScrollView contentContainerStyle={s.root} showsVerticalScrollIndicator={false} showsHorizontalScrollIndicator={false}>
   <Text accessibilityRole="header" style={s.title}>{a('Store')}</Text>
   <Text style={s.intro}>{a('VIP, VIP+ and Supporter. View benefits and manage your purchases.')}</Text>
   <GooglePlayCommercePanel state={state} onChange={onChange}/>

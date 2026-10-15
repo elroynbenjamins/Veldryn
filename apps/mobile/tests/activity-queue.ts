@@ -72,10 +72,11 @@ ok((advanced.state.character?.activityQueue?.length??0)===0,'Successful transiti
 ok((advanced.reward.activityResults?.[1]?.activity.startedAtMs??Infinity)<now+4*60*60*1000,'Queued hunt should begin at the planned stop boundary, not login time');
 
 let unsafe=createCharacter(newGame(now),'WAYFINDER','Safety Queue');
-unsafe={...unsafe,unlockedMonsterIds:['MOSS_RAT','FIELD_WISP'],inventory:{...unsafe.inventory,stacks:[]},character:{...(unsafe.character!),currentHp:1}};
+unsafe={...unsafe,unlockedMonsterIds:['MOSS_RAT','FIELD_WISP'],inventory:{...unsafe.inventory,stacks:[]}};
 unsafe=startCombat(unsafe,'MOSS_RAT',now,'balanced','open');
 unsafe=enqueueActivity(unsafe,{kind:'combat',targetId:'FIELD_WISP'});
 const waitingHandoff=activityQueueHandoffStatus(unsafe);ok(!waitingHandoff.armed&&waitingHandoff.nextReady&&waitingHandoff.nextLabel?.includes('Field Wisp'),'Queue without a planned stop should report waiting even when the next action itself is startable');
+unsafe={...unsafe,character:{...unsafe.character!,currentHp:1}};
 const safetyStop=claimActivity(unsafe,now+180_000);
 ok(!safetyStop.state.activity,'Injury stop should end the current hunt');
 ok(safetyStop.state.character?.activityQueue?.length===1,'Safety stop must preserve the queued action');

@@ -9,6 +9,7 @@ import {recipePreparationTrackingView,recipePreparationTransitionNotices} from '
 import {workingTowardExecutionOverview,workingTowardExecutionPlan,workingTowardStopRule} from '../src/core/working-toward-execution';
 import {activityQueueCapacity} from '../src/core/activity-queue';
 import {executeGameCommand} from '../src/core/game-commands';
+import {retireGoalPlanner} from '../src/core/retired-goal-planner';
 import {workingTowardInventoryProtectionMap} from '../src/core/working-toward-inventory';
 import {bulkSelectionSummary} from '../src/core/inventory-bulk';
 
@@ -47,7 +48,7 @@ equal(huntStop?.conditions[0]?.targetId,'MOSS_RAT','stop-at-goal retains the exa
 equal(huntStop?.conditions[0]?.value,50,'stop-at-goal retains the exact kill target');
 ok(huntStop?.stopIfOutOfFood&&huntStop.stopIfRewardsWouldOverflow&&huntStop.finishCurrentCycle,'generated stop-at-goal rule keeps food, overflow and cycle safety');
 const armedGoalState={...state,character:{...state.character!,progressionGoals:[huntGoal],idleRulesV40:[huntStop!],activeIdleRuleIdV40:huntStop!.id}};
-const clearedGoalState=executeGameCommand(armedGoalState,{type:'goals_set',args:{goals:[]}},2000).state;
+const clearedGoalState=retireGoalPlanner(armedGoalState);
 ok(!(clearedGoalState.character?.idleRulesV40??[]).some(rule=>rule.id===huntStop!.id),'trusted goal removal also removes its generated stop rule');
 equal(clearedGoalState.character?.activeIdleRuleIdV40,undefined,'trusted goal removal deactivates an orphaned generated stop rule');
 const activeHuntState=startCombat({...state,character:{...state.character!,progressionGoals:[huntGoal]}},'MOSS_RAT',1000);

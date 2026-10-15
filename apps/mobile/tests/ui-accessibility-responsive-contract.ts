@@ -147,7 +147,7 @@ ok(eventResponsive.includes('tabsStack')&&eventResponsive.includes("tabStack:{fl
 ok(eventResponsive.includes('buttonRowStack')&&eventResponsive.includes('rewardStack')&&eventResponsive.includes("claimStack:{width:'100%'}"),'Event paired actions and reward claim rows must stack instead of squeezing on constrained layouts');
 
 const top=read('src/components/GameTopBar.tsx');
-ok(top.includes('accessible accessibilityRole="text" style={styles.hpBlock}'),'Top-bar health must be exposed as one readable accessibility element');
+ok(top.includes('accessibilityRole="button"')&&top.includes('style={({pressed})=>[styles.hpBlock'),'Top-bar health must be exposed as one readable recovery action');
 ok(top.includes("tr('{amount} gold'")&&top.includes('style={styles.goldBlock}')&&top.includes('<View accessible accessibilityRole="text" accessibilityLabel='),'Top-bar Gold must be exposed as one localized readable accessibility element');
 
 console.log('PASS: responsive layouts, touch targets, keyboard behavior and screen-reader semantics remain accessible');

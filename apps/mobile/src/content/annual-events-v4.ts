@@ -43,7 +43,7 @@ export const SUNCREST_GAMES_EVENT:LiveEventDef={
     {points:1000,reward:{kind:'emote',id:'emote_laurel_salute',name:'Laurel Salute',rarity:'rare'}},
     {points:4000,reward:{kind:'pet',id:'EVT_PET_007',name:'Laurel Lynx',rarity:'rare'}},
     {points:6500,reward:{kind:'title',id:'title_suncrest_victor',name:'Suncrest Victor',rarity:'epic'}},
-    {points:10000,reward:{kind:'companion',id:'EVT_UNIT_004',name:'Suncrest Champion',rarity:'mythic'}},
+    {points:10000,reward:{kind:'companion',id:'EVT_UNIT_004',name:'Suncrest Champion',rarity:'epic'}},
   ],
   objectives:[
     {id:'arena_training',name:'Arena Training',description:'Defeat 380 ordinary enemies during Games training.',source:'combat',required:380,rewardCurrency:340,rewardPrestige:1},
@@ -161,7 +161,7 @@ export const MERCHANT_GUILD_FESTIVAL_EVENT:LiveEventDef={
   maxProgress:10000,
   claimGraceDays:7,
   visualKey:'merchant_guild',
-  signature:{kind:'trade',label:'SIGNATURE · CARAVAN NETWORK',title:'Invest in the fair while deciding what to keep for yourself',description:'Merchant & Guild Festival is the economy-and-social annual event. Earn Guild Scrip through regular activities, choose a trade focus, and contribute part of your wallet toward the shared Guild Pavilion.',highlights:['Shared Guild Pavilion milestones','Trade-route project choice','Gilded Road seasonal expedition']},
+  signature:{kind:'trade',label:'SIGNATURE · CARAVAN NETWORK',title:'Escort the Gilded Road and keep the guild fair moving',description:'Merchant & Guild Festival is the economy-and-social annual event. Earn Guild Scrip through regular activities, choose a trade focus, escort a caravan through a short level-scaled combat route, and contribute part of your wallet toward the shared Guild Pavilion.',highlights:['Caravan Escort with three level-scaled routes','Shared Guild Pavilion milestones','Gilded Road seasonal expedition']},
   ui:{
     prepareTitle:'Prepare the guild fair',
     dailyGiftTitle:'Today’s Guild Gift',
@@ -184,7 +184,7 @@ export const MERCHANT_GUILD_FESTIVAL_EVENT:LiveEventDef={
     {points:10000,reward:{kind:'companion',id:'EVT_UNIT_010',name:'Caravan Sentinel',rarity:'epic'}},
   ],
   objectives:[
-    {id:'route_defense',name:'Route Defense',description:'Defeat 280 ordinary enemies threatening trade routes.',source:'combat',required:280,rewardCurrency:280,rewardPrestige:1},
+    {id:'route_defense',name:'Route Defense',description:'Defeat 280 ordinary enemies threatening trade routes, including Caravan Escort encounters.',source:'combat',required:280,rewardCurrency:280,rewardPrestige:1},
     {id:'trade_supplies',name:'Trade Supplies',description:'Spend 180 active minutes gathering guild materials.',source:'gathering',required:180,rewardCurrency:260,rewardPrestige:1},
     {id:'guild_orders',name:'Guild Orders',description:'Complete 12 crafting recipes for festival orders.',source:'crafting',required:12,rewardCurrency:390,rewardPrestige:1},
     {id:'caravan_guardian',name:'Caravan Guardian',description:'Defeat an eligible event boss.',source:'boss',required:1,rewardCurrency:500,rewardPrestige:2},

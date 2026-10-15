@@ -14,6 +14,7 @@ export interface CoopEventExpeditionPreview{
   finalBoss:string;
   status:CoopEventExpeditionStatus;
   minLevel:number;
+  levelScaling?:{minLevel:number;maxLevel:number};
   rewardMarks:number;
   routeNodeCount?:number;
   mechanic?:{id:string;label:string;description:string;startValue:number;maxValue:number;lowThreshold:number;highThreshold:number};
@@ -54,6 +55,7 @@ export interface SeasonalEventExpeditionIdentity{
   enemies:readonly string[];
   finalBoss:string;
   minLevel:number;
+ levelScaling?:{minLevel:number;maxLevel:number};
   rewardMarks:number;
 }
 
@@ -63,7 +65,7 @@ const EVENT_EXPEDITION_IDENTITIES:Readonly<Record<string,SeasonalEventExpedition
   EVT_ANNUAL_003:{seriesId:'EVT_ANNUAL_003',expeditionId:'EVENT_BLOOMWAKE_THORNHEART_GROVE',eventName:'Bloomwake',name:'Thornheart Grove',description:'Push into an overgrown sacred grove where awakened spring magic has grown feral and predatory.',routeHighlights:['Overgrown Shrine','Pollen Hollow','Rootbound Grove'],questline:['Wake the Old Groves','Clear the Feral Bloom','Restore the Heartroot'],enemies:['Briarling Swarm','Pollenmaw','Rootbound Stag'],finalBoss:'The Thornheart Ancient',minLevel:30,rewardMarks:98},
   EVT_ANNUAL_006:{seriesId:'EVT_ANNUAL_006',expeditionId:'EVENT_SUNCREST_SHATTERED_ISLES',eventName:'Suncrest Games',name:'The Shattered Isles',description:'Island arenas, pirate camps and sun shrines form a summer expedition route.',routeHighlights:['Coastal Ruins','Sun Shrine','Pirate Camp'],questline:['Enter the Island Trials','Break the Corsair Line','Challenge the First Champion'],enemies:['Suncrest Corsair','Shoreline Colossus','Solar Reef Warden'],finalBoss:'Aureon, First Champion',minLevel:45,rewardMarks:96},
   EVT_ANNUAL_008:{seriesId:'EVT_ANNUAL_008',expeditionId:'EVENT_STARFALL_ASTRAL_RIFT',eventName:'Starfall Nights',name:'Astral Rift Expedition',description:'Cross meteor fields and celestial ruins as instability builds toward the rift nexus.',routeHighlights:['Meteor Field','Star Shrine','Rift Gate'],questline:['Survey the Meteor Field','Stabilize the Star Shrine','Seal the Astral Rift'],enemies:['Astral Marauder','Meteoric Sentinel','Riftbound Herald'],finalBoss:'The Constellation Eater',minLevel:70,rewardMarks:118},
-  EVT_ANNUAL_010:{seriesId:'EVT_ANNUAL_010',expeditionId:'EVENT_VEILBREAK_GLOAM_BREACH',eventName:'The Veilbreak',name:'The Gloam Breach',description:'Enter a ruptured ward district where shades are extinguishing lanterns and pulling the streets into the Gloam.',routeHighlights:['Lantern Gate','Hollow Chapel','Gloam Crossing'],questline:['Relight the Lantern Gate','Seal the Hollow Chapel','Hunt the Hollow Regent'],enemies:['Veilshade Stalker','Lantern-Eater','Hollow Warden'],finalBoss:'The Hollow Regent',minLevel:35,rewardMarks:102},
+  EVT_ANNUAL_010:{seriesId:'EVT_ANNUAL_010',expeditionId:'EVENT_VEILBREAK_GLOAM_BREACH',eventName:'The Veilbreak',name:'The Gloam Breach',description:'Enter a ruptured ward district where shades are extinguishing lanterns and pulling the streets into the Gloam.',routeHighlights:['Lantern Gate','Hollow Chapel','Gloam Crossing'],questline:['Relight the Lantern Gate','Seal the Hollow Chapel','Hunt the Hollow Regent'],enemies:['Veilshade Stalker','Lantern-Eater','Hollow Warden'],finalBoss:'The Hollow Regent',minLevel:15,levelScaling:{minLevel:15,maxLevel:35},rewardMarks:102},
   EVT_ANNUAL_011:{seriesId:'EVT_ANNUAL_011',expeditionId:'EVENT_MERCHANT_GILDED_ROAD',eventName:'Merchant & Guild Festival',name:'The Gilded Road',description:'Escort a high-value guild caravan through sabotaged tollgates, raider camps and a seized counting house.',routeHighlights:['Broken Tollgate','Caravan Crossroads','Seized Counting House'],questline:['Secure the Broken Tollgate','Recover the Stolen Ledgers','Retake the Counting House'],enemies:['Road Reaver','Ledger Hexer','Iron Tollkeeper'],finalBoss:'The Coinbound Captain',minLevel:35,rewardMarks:100},
   EVT_ANNUAL_012:{seriesId:'EVT_ANNUAL_012',expeditionId:'EVENT_FROSTFALL_AURORA_HOLLOW',eventName:'Frostfall Festival',name:'Aurora Hollow',description:'Follow stolen festival bells into a frozen hollow where winter spirits have turned the celebration into a deadly procession.',routeHighlights:['Snowbell Pass','Frozen Giftworks','Aurora Belfry'],questline:['Recover the Snowbells','Clear the Frozen Giftworks','Ring the Aurora Belfry'],enemies:['Rimefang Marauder','Bellfrost Spirit','Giftwork Colossus'],finalBoss:'The Rimebell Colossus',minLevel:35,rewardMarks:104},
 };
@@ -84,6 +86,7 @@ export function validateCoopEventExpeditionPreview(value:CoopEventExpeditionPrev
   if(!value.id.trim()||!value.eventName.trim()||!value.name.trim()||!value.description.trim()||!value.finalBoss.trim())throw new Error('invalid_event_expedition_preview');
   if(value.status!=='preview'&&value.status!=='available')throw new Error('invalid_event_expedition_status');
   if(!Number.isInteger(value.minLevel)||value.minLevel<1||!Number.isInteger(value.rewardMarks)||value.rewardMarks<0)throw new Error('invalid_event_expedition_requirements');
+  if(value.levelScaling&&(!Number.isInteger(value.levelScaling.minLevel)||!Number.isInteger(value.levelScaling.maxLevel)||value.levelScaling.minLevel<value.minLevel||value.levelScaling.maxLevel<value.levelScaling.minLevel))throw new Error('invalid_event_level_scaling');
   if(value.status==='available'&&!value.liveEventId?.trim())throw new Error('available_event_requires_live_event');
   if(value.routeHighlights.length<3||new Set(value.routeHighlights.map(item=>item.trim().toLocaleLowerCase())).size!==value.routeHighlights.length||value.routeHighlights.some(item=>!item.trim()))throw new Error('invalid_event_route_highlights');
   if(value.routeNodeCount!==undefined&&(!Number.isInteger(value.routeNodeCount)||value.routeNodeCount<5||value.routeNodeCount>7))throw new Error('invalid_event_route_length');

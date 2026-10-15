@@ -70,7 +70,7 @@ export function SettingsScreen({state,onLanguage,onReset,onChange,onRefreshComme
   const {width}=useWindowDimensions(),phone=width<768;
   const section=phone?selectedSection:selectedSection??'gameplay';
   const navigationStyles=useMemo(()=>makeNavigationStyles(theme),[theme]);
-  const sections:SettingsSection[]=['gameplay','appearance','accessibility','account','store','data','guide',...(__DEV__&&!online?['developer' as const]:[])];
+  const sections:SettingsSection[]=['store','gameplay','appearance','accessibility','account','data','guide',...(__DEV__&&!online?['developer' as const]:[])];
   const sectionLabel=(value:SettingsSection)=>value==='guide'?a('Help & Guide'):value==='store'?a('Store'):a(value.charAt(0).toUpperCase()+value.slice(1));
   const sectionDescription=(value:SettingsSection)=>value==='gameplay'?a("Tune combat, number display, and auto-eat behavior."):value==='appearance'?a("Choose a complete UI theme. Gameplay colors keep the same meaning in every theme."):value==='accessibility'?a("Make text, motion, and language fit your play style."):value==='account'?a("Manage your connected account and profile preferences."):value==='store'?a("Manage VIP, VIP+, Supporter and restore Google Play purchases."):value==='data'?a("Export, import, or recover your local progress."):value==='guide'?a("Browse the interactive VELDRYN help guide."):a("Development tools and visual QA controls.");
   const scrollRef=useRef<ScrollView>(null),scrollPositions=useRef<Record<string,number>>({}),restoredPage=useRef<string|undefined>(undefined);
@@ -83,7 +83,7 @@ export function SettingsScreen({state,onLanguage,onReset,onChange,onRefreshComme
   },[phone,selectedSection,guideId]);
   const afk=offlineCapBreakdown(state);
   const update=(partial:Partial<GameState['settings']>)=>onChange({...state,settings:{...state.settings,...partial}});
-  const restoreDefaults=()=>update({numberMode:'abbreviated',autoEatThresholdPct:40,stopCombatWhenOutOfFood:true,chatDockLines:1});
+  const restoreDefaults=()=>update({numberMode:'abbreviated',autoEatThresholdPct:40,stopCombatWhenOutOfFood:true,autoJoinWorldChat:true,defaultWorldChat:1,chatDockLines:1});
   return <View style={navigationStyles.screen}>
     {phone&&section&&<Pressable accessibilityRole="button" accessibilityLabel={a('Back to settings')} onPress={()=>setSection(null)} style={({pressed})=>[navigationStyles.back,pressed&&s.pressed]}><UiIcon name="back" size={24}/><Text style={navigationStyles.backText}>{t(language,'settings.title')}</Text></Pressable>}
     <ScrollView key={pageKey} ref={scrollRef} keyboardShouldPersistTaps="handled" keyboardDismissMode="on-drag" onContentSizeChange={restoreScroll} onScroll={event=>{if(restoredPage.current===pageKey)scrollPositions.current[pageKey]=event.nativeEvent.contentOffset.y;}} scrollEventThrottle={16} contentContainerStyle={[s.root,{backgroundColor:theme.bg}]} showsVerticalScrollIndicator={false} showsHorizontalScrollIndicator={false}>
@@ -111,6 +111,8 @@ export function SettingsScreen({state,onLanguage,onReset,onChange,onRefreshComme
       <Text style={[s.settingLabel,{color:theme.text}]}>{a("Auto-eat threshold")}</Text><Text style={[s.sub,{color:theme.muted}]}>{a("Eat equipped food when HP falls below the selected level.")}</Text><View style={s.choices}>{([20,40,60,80] as const).map(threshold=><SettingChip key={threshold} label={a('{percent}% HP',{percent:threshold})} selected={state.settings.autoEatThresholdPct===threshold} onPress={()=>update({autoEatThresholdPct:threshold})}/>)}</View>
       <SettingToggle language={language} label={a("Stop combat when out of food")} value={state.settings.stopCombatWhenOutOfFood} onValueChange={value=>update({stopCombatWhenOutOfFood:value})}/>
       <Text style={[s.settingLabel,{color:theme.text}]}>{a("Collapsed chat preview")}</Text><Text style={[s.sub,{color:theme.muted}]}>{a("Choose how many recent World chat messages stay visible in the translucent bar above navigation. Tap the bar to open full chat.")}</Text><View style={s.choices}>{([1,2,3] as const).map(lines=><SettingChip key={lines} label={lines===1?a("1 line · compact"):a('{count} lines',{count:lines})} selected={(state.settings.chatDockLines??1)===lines} onPress={()=>update({chatDockLines:lines})}/>)}</View>
+      <SettingToggle language={language} label={a("Show chat")} description={a("Show the chat dock above navigation. Turn it off to keep chat hidden while you play.")} value={state.settings.autoJoinWorldChat!==false} onValueChange={autoJoinWorldChat=>update({autoJoinWorldChat})}/>
+      <Text style={[s.settingLabel,{color:theme.text}]}>{a("Default World channel")}</Text><Text style={[s.sub,{color:theme.muted}]}>{a("Choose the World conversation shown whenever you open chat.")}</Text><View style={s.choices}>{([{id:1,label:'English'},{id:2,label:'Spanish'},{id:3,label:'Global 1'},{id:4,label:'Global 2'}] as const).map(channel=><SettingChip key={channel.id} label={channel.label} selected={(state.settings.defaultWorldChat??1)===channel.id} onPress={()=>update({defaultWorldChat:channel.id})}/>)}</View>
       <GameButton compact title={a("Restore gameplay defaults")} tone="secondary" onPress={restoreDefaults}/>
     </Panel>
     <Panel>

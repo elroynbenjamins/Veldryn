@@ -13,7 +13,7 @@ export function GemArtwork({itemId,size=58,framed=true}:{itemId:string;size?:num
  const language=useGameLanguage(),tr=(source:string,params?:Record<string,string|number>)=>visualText(language,source,params);
   const cell=gemArtworkCellV1(itemId);
   if(!cell)return null;
-  const scale=size/GEM_SPRITE_V1_CELL;
+  const inset=.06,displaySize=size*(1-inset*2),scale=displaySize/GEM_SPRITE_V1_CELL,offset=size*inset;
   const sheetSize=GEM_SPRITE_V1_SIZE*scale;
   return <View accessibilityLabel={tr('Gem artwork')} style={[s.art,{width:size,height:size},framed&&s.frame]}>
     <View style={{width:size,height:size,overflow:'hidden'}}>
@@ -25,8 +25,8 @@ export function GemArtwork({itemId,size=58,framed=true}:{itemId:string;size?:num
           position:'absolute',
           width:sheetSize,
           height:sheetSize,
-          left:-cell.column*size,
-          top:-cell.row*size,
+          left:offset-cell.column*displaySize,
+          top:offset-cell.row*displaySize,
         }}
       />
     </View>

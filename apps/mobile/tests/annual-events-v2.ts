@@ -1,7 +1,7 @@
 import {LIVE_EVENT_CATALOG} from '../src/content/live-events';
 import {VEILBREAK_EVENT,FROSTFALL_EVENT} from '../src/content/annual-events-v2';
-// Simulate a future event release in this isolated test, without enabling it in production.
-LIVE_EVENT_CATALOG.push(VEILBREAK_EVENT,FROSTFALL_EVENT);
+// Isolate historical event definitions in this isolated test, without enabling it in production.
+LIVE_EVENT_CATALOG.splice(0,LIVE_EVENT_CATALOG.length,VEILBREAK_EVENT,FROSTFALL_EVENT);
 import {createCharacter,newGame} from '../src/core/game';
 import type {GameState} from '../src/core/types';
 import {applyEventDiscoveries,applyEventDrops,claimEventDiscovery,claimEventReward,eventLifecycle,eventShopOffers,purchaseEventOffer} from '../src/core/live-events';

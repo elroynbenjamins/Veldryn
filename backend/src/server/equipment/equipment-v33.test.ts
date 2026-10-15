@@ -4,9 +4,17 @@ import { resolveSetBonusesV33 } from './equipment-set-resolver-v33';
 import { setCraftProgressV33 } from './equipment-settlement-v33';
 import { EQUIPMENT_SLOT_ORDER_V33 } from './equipment-types-v33';
 
-assert.equal(EQUIPMENT_SETS_V33.length, 243);
-assert.equal(EQUIPMENT_PIECES_V33.length, 2430);
+assert.equal(EQUIPMENT_SETS_V33.length, 162);
+assert.equal(EQUIPMENT_PIECES_V33.length, 1620);
 assert.deepEqual(validateCatalogV33(), []);
+const pathsByTierAndClass=new Map<string,string[]>();
+for(const set of EQUIPMENT_SETS_V33){
+  const key=`${set.tier}|${set.className}`;
+  const paths=pathsByTierAndClass.get(key)??[];
+  paths.push(set.path);pathsByTierAndClass.set(key,paths);
+}
+assert.equal(pathsByTierAndClass.size,81);
+for(const [key,paths] of pathsByTierAndClass)assert.deepEqual(paths.sort(),['Alternate','Foundation'],`${key} keeps the two intended paths`);
 
 const firstSet = EQUIPMENT_SETS_V33[0];
 assert.ok(firstSet);

@@ -15,6 +15,12 @@ for(const name of ['Aelric','Éowyn','Łukasz','Anne-Marie',"O'Connor",'Van Hels
 for(const name of ['🔥Mage','Aelric_','Aelric123','Aelric!','Борис','李雷','A--B',"O''Brien",'@Admin','A.elric']){
  ok(characterNameError(name),'Reject unsafe character name: '+name);
 }
+for(const name of ['Admin','Developer','Game Master','Veldryn','Support']){
+ ok(characterNameError(name),'Reject reserved character name: '+name);
+}
+for(const name of ['Fuck','Shit','Bitch','Nazi']){
+ ok(characterNameError(name),'Reject offensive character name: '+name);
+}
 equal(characterNameError('A'),'Use at least 2 characters.','Character minimum length');
 ok(characterNameError('A'.repeat(21)),'Character maximum length');
 

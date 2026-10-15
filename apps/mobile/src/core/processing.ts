@@ -7,7 +7,8 @@ import {characterPermanentMultipliers} from './permanent-boosts';
 import {professionMasteryMultipliers} from './profession-mastery-v40';
 import {totalXpAtLevel} from './progression';
 
-export const MAX_PROCESSING_BATCHES=100;
+// Timed recipes always reserve one craft per click.
+export const MAX_PROCESSING_BATCHES=1;
 export type ProcessingSkillId=Extract<SkillId,'smithing'|'cooking'|'tailoring'|'enchanting'>;
 export interface ProcessingBatchState{
   version:1;
@@ -39,18 +40,19 @@ export function processingRecipeDef(recipeId:string):Recipe|undefined{
 }
 export function isTimedProcessingRecipe(recipeId:string){return !!processingRecipeDef(recipeId);}
 
-export function processingAvailability(state:GameState,recipeId:string,batches=1){
+/** UI may opt into replacement readiness; the start primitive itself remains strict. */
+export function processingAvailability(state:GameState,recipeId:string,batches=1,allowActivityReplacement=false){
   const recipe=processingRecipeDef(recipeId),countValid=Number.isSafeInteger(batches)&&batches>=1&&batches<=MAX_PROCESSING_BATCHES,count=countValid?batches:1;
   const inputs=(recipe?.inputs??[]).map(input=>({...input,quantity:input.quantity*count,inventory:storedQuantity(state.inventory.stacks,input.itemId),bank:storedQuantity(state.bank.stacks,input.itemId)}));
   const gold=(recipe?.gold??0)*count,skill=recipe?state.skills.find(entry=>entry.skillId===recipe.skillId):undefined;
   const materialMax=recipe&&recipe.inputs.length?Math.min(...recipe.inputs.map(input=>Math.floor((storedQuantity(state.inventory.stacks,input.itemId)+storedQuantity(state.bank.stacks,input.itemId))/input.quantity))):MAX_PROCESSING_BATCHES;
   const goldMax=recipe?.gold?Math.floor((state.character?.gold??0)/recipe.gold):MAX_PROCESSING_BATCHES;
   const maxBatches=Math.max(0,Math.min(MAX_PROCESSING_BATCHES,materialMax,goldMax));
-  const reason=!recipe?'This recipe is not a repeatable processing recipe.':!state.character?'Create a character first.':!countValid?`Choose 1–${MAX_PROCESSING_BATCHES} whole batches.`:
-    state.activity?'Stop the current activity before starting processing.':recipe.classId&&recipe.classId!==state.character.classId?'This recipe belongs to another class.':
+  const reason=!recipe?'This recipe is not a repeatable processing recipe.':!state.character?'Create a character first.':!countValid?'Recipes are made one at a time.':
+    state.activity&&!allowActivityReplacement?'Stop the current activity before starting processing.':recipe.classId&&recipe.classId!==state.character.classId?'This recipe belongs to another class.':
     state.character.level<(recipe.characterLevel??1)?`Requires character level ${recipe.characterLevel}.`:(skill?.level??0)<recipe.level?`Requires ${recipe.skillId} level ${recipe.level}.`:
     state.character.gold<gold?`Requires ${gold} Gold on this character.`:inputs.some(input=>input.inventory+input.bank<input.quantity)?'Missing ingredients. Inventory and Bank are available; overflow is not.':'Ready to reserve and process.';
-  return {ready:!!recipe&&!!state.character&&countValid&&!state.activity&&(!recipe.classId||recipe.classId===state.character.classId)&&state.character.level>=(recipe.characterLevel??1)&&(skill?.level??0)>=recipe.level&&state.character.gold>=gold&&inputs.every(input=>input.inventory+input.bank>=input.quantity),reason,inputs,gold,maxBatches,recipe};
+  return {ready:!!recipe&&!!state.character&&countValid&&(allowActivityReplacement||!state.activity)&&(!recipe.classId||recipe.classId===state.character.classId)&&state.character.level>=(recipe.characterLevel??1)&&(skill?.level??0)>=recipe.level&&state.character.gold>=gold&&inputs.every(input=>input.inventory+input.bank>=input.quantity),reason,inputs,gold,maxBatches,recipe};
 }
 
 /** Reserves every chosen batch up front. Outputs and skill XP arrive only as timed cycles complete. */
@@ -91,7 +93,8 @@ export function processingRefund(processing:ProcessingBatchState){
 export function normalizeProcessingBatch(value:unknown,targetId:string):ProcessingBatchState{
   const p=value as ProcessingBatchState|undefined,recipe=processingRecipeDef(targetId);
   const integer=(n:unknown,min:number,max:number)=>Number.isSafeInteger(n)&&Number(n)>=min&&Number(n)<=max;
-  const valid=!!p&&!!recipe&&p.version===1&&p.recipeId===targetId&&p.skillId===recipe.skillId&&integer(p.totalBatches,1,MAX_PROCESSING_BATCHES)&&integer(p.remainingBatches,1,p.totalBatches)&&
+  // Existing reservations may contain multiple operations from older saves; let them finish safely.
+  const valid=!!p&&!!recipe&&p.version===1&&p.recipeId===targetId&&p.skillId===recipe.skillId&&integer(p.totalBatches,1,100)&&integer(p.remainingBatches,1,p.totalBatches)&&
     integer(p.goldPerBatch,0,100000)&&Number.isFinite(p.cycleSeconds)&&p.cycleSeconds>=1&&p.cycleSeconds<=86400&&Number.isFinite(p.xpPerBatch)&&p.xpPerBatch>=0&&p.xpPerBatch<=100000&&
     p.outputPerBatch?.itemId===recipe.output.itemId&&integer(p.outputPerBatch?.quantity,1,10000)&&Array.isArray(p.inputsPerBatch)&&p.inputsPerBatch.length===recipe.inputs.length&&
     recipe.inputs.every(input=>p.inputsPerBatch.filter(saved=>saved.itemId===input.itemId&&integer(saved.quantity,1,10000)).length===1);

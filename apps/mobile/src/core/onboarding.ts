@@ -1,7 +1,7 @@
 import {accountQuestClaimed,earlyFeatureUnlocked,type FeatureUnlockHost} from './feature-unlocks';
 import {EVENTS_RELEASED} from './release-flags';
-export type GameGuideId='getting_started'|'seasons_weather'|'chat_social'|'working_toward'|'gathering_crafting'|'faith_blessings'|'guilds'|'combat_companions'|'coop_dungeons'|'companion_trials'|'live_events'|'additional_characters';
-export type GameGuideDestination='Home'|'World'|'Skills'|'Inventory'|'Character'|'Guild'|'Coop'|'Progression'|'Companions'|'Social'|'More'|'Events'|'Settings';
+export type GameGuideId='getting_started'|'seasons_weather'|'chat_social'|'gathering_crafting'|'faith_blessings'|'guilds'|'combat_companions'|'coop_dungeons'|'companion_trials'|'live_events'|'additional_characters';
+export type GameGuideDestination='Home'|'World'|'Skills'|'Inventory'|'Character'|'Guild'|'Coop'|'Companions'|'Social'|'More'|'Events'|'Settings';
 export interface OnboardingGuideState{seenGuideIds:GameGuideId[];acknowledgedGuideIds:GameGuideId[];}
 export interface GameGuideDefinition{id:GameGuideId;title:string;summary:string;unlockHint:string;destination:GameGuideDestination;unlock:(state:OnboardingGuideHost)=>boolean;}
 export interface OnboardingGuideHost extends FeatureUnlockHost{character?:{level?:number}|null;defeatedBossIds?:readonly string[];account:{guildMember?:boolean;unlockedCombatCompanionIds?:readonly string[];companionTrialProgress?:unknown;liveEvent?:{enabled?:boolean}|null;unlockedCharacterSlots?:number;guideState?:Partial<OnboardingGuideState>;}}
@@ -10,7 +10,6 @@ export const GAME_GUIDE:readonly GameGuideDefinition[]=[
  {id:'getting_started',title:'Your first steps',summary:'Choose activities, collect progress, improve gear and follow your current goal.',unlockHint:'Create your first character.',destination:'Home',unlock:s=>!!s.character},
  {id:'seasons_weather',title:'Seasons & Weather',summary:'Check the weather in World before choosing your next activity.',unlockHint:'Reach character level 2.',destination:'World',unlock:s=>!!s.character&&level(s)>=2},
  {id:'chat_social',title:'Chat & player profiles',summary:'Use English, Spanish, Global 1 and Global 2 conversations plus social tools.',unlockHint:'Complete Into Ironwood',destination:'Social',unlock:s=>earlyFeatureUnlocked(s,'social')},
- {id:'working_toward',title:'Working Toward',summary:'Pick a personal target and get concrete next steps.',unlockHint:'Complete First Blood, First Skill',destination:'Progression',unlock:s=>earlyFeatureUnlocked(s,'workingToward')},
  {id:'gathering_crafting',title:'Gathering & Crafting',summary:'Gather regional resources, process them and craft upgrades over time.',unlockHint:'Claim your first story reward.',destination:'Skills',unlock:s=>accountQuestClaimed(s,'QST_001')},
  {id:'faith_blessings',title:'Faith & Blessings',summary:'Recover Holy Water, train Faith and choose one active blessing.',unlockHint:'Reach character level 5.',destination:'Skills',unlock:s=>!!s.character&&level(s)>=5},
  {id:'guilds',title:'Guilds',summary:'Join a persistent social group for chat, projects and asynchronous PvE.',unlockHint:'Reach Level 10 and complete Into Ironwood',destination:'Guild',unlock:s=>earlyFeatureUnlocked(s,'guild')},
@@ -24,7 +23,6 @@ export const GAME_GUIDE_STEPS:Record<GameGuideId,readonly string[]>={
  getting_started:['Start a hunt in Combat, then collect rewards on Home.','Claim completed story rewards in the Asterfall Journal to unlock your next objective.'],
  seasons_weather:['Open World and check the current weather.','Choose a region and review its available activities.'],
  chat_social:['Open Social to browse players and party recruitment.','Choose a player to view their profile before inviting them.'],
- working_toward:['Choose a goal in Working Toward.','Follow its next step to gather materials or improve your character.'],
  gathering_crafting:['Choose Mining, Woodcutting or Fishing in Skills.','Start gathering, then collect rewards on Home to gain skill XP.','Use the gathered materials in crafting recipes.'],
  faith_blessings:['Choose Faith in Skills and review the Holy Water cost.','Train Faith, then select one unlocked blessing.'],
  guilds:['Browse recruiting guilds and review their requirements.','After joining, open Projects to contribute and use guild chat to meet your guild.'],

@@ -1,5 +1,7 @@
 const LATIN_WORD=String.raw`\p{Script=Latin}[\p{Script=Latin}\p{M}]*`;
 const SAFE_IDENTITY_NAME=new RegExp(`^${LATIN_WORD}(?:[ '-]${LATIN_WORD})*$`,'u');
+const RESERVED_NAME_TOKENS=new Set(['admin','administrator','moderator','mod','developer','dev','staff','support','system','official','owner','gamemaster','game master','gm','bot','null','undefined','deleted','veldryn']);
+const OFFENSIVE_NAME_TOKENS=new Set(['fuck','fucker','fucking','shit','shite','bitch','cunt','dick','pussy','whore','slut','bastard','retard','rape','rapist','pedo','porn','nazi','nigger','nigga']);
 
 export function normalizeIdentityName(value:string){
  return value.normalize('NFKC')
@@ -15,6 +17,9 @@ function identityNameError(value:string,min:number,max:number,label:string){
  if(name.length<min)return `Use at least ${min} characters.`;
  if(name.length>max)return `Use no more than ${max} characters.`;
  if(!SAFE_IDENTITY_NAME.test(name))return `Use Latin letters, single spaces, apostrophes, or hyphens for ${label}.`;
+ const tokens=name.toLocaleLowerCase().split(/[ '-]+/).filter(Boolean),compact=tokens.join('');
+ if(tokens.some(token=>RESERVED_NAME_TOKENS.has(token))||RESERVED_NAME_TOKENS.has(compact))return 'That name is reserved and cannot be used.';
+ if(tokens.some(token=>OFFENSIVE_NAME_TOKENS.has(token))||OFFENSIVE_NAME_TOKENS.has(compact))return 'That name is not allowed.';
  return '';
 }
 

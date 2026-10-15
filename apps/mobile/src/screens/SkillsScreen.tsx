@@ -4,7 +4,7 @@ import {SearchField} from '../components/SearchField';
 import {ActivityArtwork} from '../components/ActivityArtwork';
 import {ThemedIcon} from '../components/ThemedNavigationIcon';
 import {useMemo,useState} from 'react';
-import {Alert,Image,Pressable,ScrollView,StyleSheet,Text,View,useWindowDimensions} from 'react-native';
+import {Image,Pressable,ScrollView,StyleSheet,Text,View,useWindowDimensions} from 'react-native';
 import {GameState,GatheringSkillId,SkillId} from '../core/types';
 import {GATHERING,RECIPES} from '../content/skills';
 import {MONSTERS} from '../content/monsters';
@@ -38,11 +38,9 @@ import {GameModalHeader,GameModalSurface} from '../components/GameModalSurface';
 import {ExplorationPanel} from '../components/ExplorationPanel';
 import {GatheringActivityList} from '../components/GatheringActivityList';
 import {CraftingRecipeBrowser} from '../components/CraftingRecipeBrowser';
-import {SmithingCollection,SmithingHeader} from '../components/SmithingCollection';
+import {EquipmentCraftingHeader,SmithingCollection} from '../components/SmithingCollection';
 import {progressAnticipation} from '../core/progress-anticipation';
 import {skillIdentity,type SkillIdentityTone} from '../core/profession-mastery-presentation';
-import {MAX_PINNED_GOALS} from '../core/progression-goals-v40';
-import {recipePreparationGoalForRecipe} from '../core/recipe-preparation-goals';
 import {HerbalismMethodPanel} from '../components/HerbalismMethodPanel';
 import {EnchantingRefineryPanel} from '../components/EnchantingRefineryPanel';
 import {skillMilestoneOverview,skillTrainingFocus} from '../core/skill-milestones';
@@ -54,7 +52,6 @@ export function SkillsScreen({state,now=Date.now(),onGather,onQueueGather,onQueu
   const mode=initialMode;
   const initialRecipe=initialRecipeId?RECIPES.find(row=>row.id===initialRecipeId):undefined,goalAction=initialActionId?gatheringDefs.find(row=>row.id===initialActionId):initialRecipe;
   const [openTools,setOpenTools]=useState<Record<string,boolean>>({});
-  const trackPreparationGoal=async(recipe:(typeof RECIPES)[number],batches:number,initialStepCount:number)=>{const character=state.character;if(!character)return;const goals=character.progressionGoals??[];if(goals.some(goal=>goal.kind==='recipe_preparation'&&goal.recipeId===recipe.id))return;if(goals.length>=MAX_PINNED_GOALS){Alert.alert(gt("Working Toward"),gt("Remove a pinned goal before tracking this preparation route."));return;}const goal=recipePreparationGoalForRecipe({state,recipe,batches,initialStepCount,nowMs:Date.now()});try{await onCommand({type:'goals_set',args:{goals:[...goals,goal]}});}catch(error){Alert.alert(gt("Working Toward"),error instanceof Error?gl(error.message):gt("Could not track this preparation route."));}};
   const region=WORLD_ZONES.find(zone=>zone.id===currentRegionId(state))??WORLD_ZONES[0];
   if(mode==='gathering'&&initialSkill==='regional-gathering'){
     const gatheringSkillIds=(['mining','woodcutting','fishing','herbalism'] as GatheringSkillId[]).filter(skillId=>
@@ -76,9 +73,9 @@ export function SkillsScreen({state,now=Date.now(),onGather,onQueueGather,onQueu
       {!gatheringSkillIds.length?<Text style={s.unavailable}>{gl("No gathering activities are available in this region yet.")}</Text>:null}
     </ScrollView>;
   }
-  if(mode==='crafting'&&initialSkill==='smithing')return <ScrollView contentContainerStyle={{padding:16,gap:14,paddingBottom:32,maxWidth:660,width:'100%',alignSelf:'center'}} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled" showsHorizontalScrollIndicator={false}>
-    <SmithingHeader state={state} onBack={onBackToHub}/>
-    <SmithingCollection state={state} initialQuery={initialRecipe?.name??''} preferredRecipeId={initialRecipeId} onCraft={onCraft} onProcessingStart={(id,batches)=>onCommand({type:'processing_start',args:{id,batches}})} onNavigate={onNavigateCraftingSource} onCraftPrerequisites={onCraftPrerequisites} onTrackPreparation={trackPreparationGoal} queueProps={{state,onClaim:onClaimCraft,onClaimAll:onClaimAllCrafts,onCancel:onCancelCraft,onMoveWaiting:onMoveCraftWaiting,forgeResults,onDismissForgeResults}}/>
+  if(mode==='crafting'&&(initialSkill==='smithing'||initialSkill==='tailoring'))return <ScrollView contentContainerStyle={{padding:16,gap:14,paddingBottom:32,maxWidth:660,width:'100%',alignSelf:'center'}} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled" showsHorizontalScrollIndicator={false}>
+    <EquipmentCraftingHeader state={state} skillId={initialSkill} onBack={onBackToHub}/>
+    <SmithingCollection state={state} skillId={initialSkill} initialQuery={initialRecipe?.name??''} preferredRecipeId={initialRecipeId} onCraft={onCraft} onProcessingStart={id=>onCommand({type:'processing_start',args:{id}})} onNavigate={onNavigateCraftingSource} onCraftPrerequisites={onCraftPrerequisites} queueProps={{state,onClaim:onClaimCraft,onClaimAll:onClaimAllCrafts,onCancel:onCancelCraft,onMoveWaiting:onMoveCraftWaiting,forgeResults,onDismissForgeResults}}/>
   </ScrollView>;
   if(!initialSkill)return <View style={{flex:1}}><View style={s.plannerBody}><ActivityQueuePlanner state={state} onCommand={onCommand}/></View><SkillHub state={state} onSelect={onSelectSkill??(()=>{})} onCombat={onOpenCombat}/></View>;
   if(initialSkill==='exploration')return <ScrollView contentContainerStyle={s.root} showsVerticalScrollIndicator={false} showsHorizontalScrollIndicator={false}><DetailBack onPress={onBackToHub}/><SkillHero state={state} skillId="exploration" kind={gt("Discovery skill")}/><ExplorationPanel state={state} onCommand={onCommand}/></ScrollView>;
@@ -117,7 +114,7 @@ export function SkillsScreen({state,now=Date.now(),onGather,onQueueGather,onQueu
           return <View key={tool.id} style={s.toolRow}><GatheringToolArtwork itemId={tool.id} size={48}/><View style={s.flex}><Text style={s.toolName}>T{tool.tier} · {tool.name}</Text><Text style={s.toolEffect}>{gt('{percent}% faster · {skill} {level} · Level {character} · Smithing {smithing}',{percent:Math.round((1-tool.actionTimeMultiplier)*100),skill:gl(tool.skillId),level:tool.unlockLevel,character:tool.requiredCharacterLevel,smithing:tool.recipe.level})}</Text><Text style={s.toolRequirement}>{blueprintText}{banked?' · '+gt('in Bank'):carried&&skillReady&&characterReady?' · '+gt('Ready'):''}</Text></View><View style={s.toolButton}><GameButton title={title} disabled={disabled} selected={equipped} tone={equipped?'primary':'secondary'} onPress={action}/></View></View>;
         })}</Panel>}
         {mode==='gathering'&&<GatheringActivityList state={state} skillId={gatheringSkill} skillLevel={sk.level} preferredActionId={initialActionId} onGather={onGather} onNavigate={onNavigateCraftingSource}/>}
-        {mode==='crafting'&&<CraftingRecipeBrowser state={state} skillId={sk.skillId as 'smithing'|'cooking'|'alchemy'|'tailoring'|'enchanting'} initialQuery={initialRecipe?.name??''} preferredRecipeId={initialRecipeId} onCraft={onCraft} onAlchemyStart={(id,batches)=>onCommand({type:'alchemy_start',args:{id,batches}})} onProcessingStart={(id,batches)=>onCommand({type:'processing_start',args:{id,batches}})} onNavigate={onNavigateCraftingSource} onCraftPrerequisites={onCraftPrerequisites} onTrackPreparation={trackPreparationGoal}/>} 
+        {mode==='crafting'&&<CraftingRecipeBrowser state={state} skillId={sk.skillId as 'smithing'|'cooking'|'alchemy'|'tailoring'|'enchanting'} initialQuery={initialRecipe?.name??''} preferredRecipeId={initialRecipeId} onCraft={onCraft} onAlchemyStart={id=>onCommand({type:'alchemy_start',args:{id}})} onProcessingStart={id=>onCommand({type:'processing_start',args:{id}})} onNavigate={onNavigateCraftingSource} onCraftPrerequisites={onCraftPrerequisites}/>}
       </View>;
     })}
   </ScrollView>;

@@ -1,5 +1,5 @@
 import {createCharacter,newGame,effectiveStats} from '../src/core/game';
-import {profileIconCollection,selectProfileIcon,normalizeProfileIcon,canUseProfileIcon,newlyUnlockedProfileIcons} from '../src/core/profile-icons';
+import {EVENT_PROFILE_ICON_ARTWORK_IDS,profileIconCollection,selectProfileIcon,normalizeProfileIcon,canUseProfileIcon,newlyUnlockedProfileIcons} from '../src/core/profile-icons';
 import {executeGameCommand} from '../src/core/game-commands';
 import {LIVE_EVENT_CATALOG} from '../src/content/live-events';
 import {collectionOwnershipSnapshotFromGameState} from '../src/core/collection-sets-v45';
@@ -8,8 +8,8 @@ function check(value:unknown,message:string):asserts value{if(!value)throw new E
 function rejects(fn:()=>unknown){let rejected=false;try{fn()}catch{rejected=true}check(rejected,'unowned icon must be rejected');}
 const state=createCharacter(newGame(1000),'IRONWARDEN','Aster');
 check(state.character!.profileIconId==='class:IRONWARDEN','default class icon');
-check(profileIconCollection(state).length===19,'pet and companion portraits are temporarily excluded');
-check(profileIconCollection(state).filter(row=>row.unlocked).length===15,'nine emblems and six starter portraits available');
+check(profileIconCollection(state).length===13,'catalog retains two released event icons alongside class, starters, and boss');
+check(profileIconCollection(state).filter(row=>row.unlocked).length===10,'current class emblem and nine starter portraits available');
 check(canUseProfileIcon(state,'starter:hooded-ranger'),'starter portrait available');
 rejects(()=>selectProfileIcon(state,'companion:UNIT_008'));
 rejects(()=>selectProfileIcon(state,'creature:MOSS_RAT'));
@@ -17,14 +17,15 @@ const recruited={...state,account:{...state.account,unlockedCombatCompanionIds:[
 check(!canUseProfileIcon(recruited,'companion:UNIT_008'),'companion portraits stay unavailable while temporarily removed');
 check(newlyUnlockedProfileIcons(state,recruited).length===0,'companion unlock does not announce a removed portrait');
 check(!collectionOwnershipSnapshotFromGameState(state).ownedKeys['profile_icon:companion:UNIT_008'],'locked icons excluded from ownership');
-for(const points of [9,10])check(canUseProfileIcon({...state,character:{...state.character!,monsterMasteryPoints:{MOSS_RAT:points}}},'creature:MOSS_RAT')===(points===10),'mastery threshold');
+for(const points of [9,10])check(canUseProfileIcon({...state,character:{...state.character!,monsterMasteryPoints:{MOSS_RAT:points}}},'creature:MOSS_RAT')===false,'ordinary monster mastery no longer unlocks profile portraits');
 check(canUseProfileIcon({...state,defeatedBossIds:['FALLEN_KNIGHT']},'creature:FALLEN_KNIGHT'),'boss defeat unlocks portrait');
 check(!canUseProfileIcon({...state,account:{...state.account,unlockedCosmeticPetIds:['EVT_PET_011']}},'event:pumpkin-piglet'),'festival pet portrait stays unavailable while removed');
 check(!canUseProfileIcon({...state,account:{...state.account,unlockedCombatCompanionIds:['EVT_UNIT_006']}},'event:harvest-guardian'),'festival companion portrait stays unavailable while removed');
 check(normalizeProfileIcon({...recruited,character:{...recruited.character!,profileIconId:'companion:UNIT_008'}}).character!.profileIconId==='class:IRONWARDEN','removed companion portrait falls back to class icon');
 const before=JSON.stringify(effectiveStats(state));
-const selected=selectProfileIcon(state,'class:DAWNKEEPER');
-check(selected.character!.profileIconId==='class:DAWNKEEPER','selected icon persists');
+rejects(()=>selectProfileIcon(state,'class:DAWNKEEPER'));
+const selected=selectProfileIcon(state,'starter:hooded-ranger');
+check(selected.character!.profileIconId==='starter:hooded-ranger','selected icon persists');
 check(JSON.stringify(effectiveStats(selected))===before,'icon selection cannot change combat stats');
 rejects(()=>selectProfileIcon(state,'equipment-set:T1_001'));
 rejects(()=>executeGameCommand(state,{type:'profile',args:{profileIconId:'unearned-event-icon'}},1000));
@@ -38,6 +39,10 @@ check(normalizeSave(eventSelected).character!.profileIconId===eventIcon.id,'even
 const otherClassIcon=LIVE_EVENT_CATALOG.flatMap(e=>e.milestones('DAWNKEEPER')).find(row=>row.reward.kind==='profile_icon')!.reward;
 check(selectProfileIcon({...state,account:{...state.account,unlockedProfileIconIds:[otherClassIcon.id]}},otherClassIcon.id).character!.profileIconId===otherClassIcon.id,'account icons can be used by another class');
 check(profileIconCollection(earned).find(row=>row.id===eventIcon.id)!.artworkReady,'event art ready');
+for(const id of ['event:veilbreak-2026-lantern-warden','event:veilbreak-2026-pumpkin-moon']){
+ check(EVENT_PROFILE_ICON_ARTWORK_IDS.has(id),'Veilbreak event profile icon is registered as having dedicated artwork');
+ check(profileIconCollection({...state,account:{...state.account,unlockedProfileIconIds:[id]}}).find(row=>row.id===id)?.artworkReady,'Veilbreak event profile icon reports its artwork as ready');
+}
 check(JSON.stringify(effectiveStats(eventSelected))===before,'event icon grants no bonus');
 check(collectionOwnershipSnapshotFromGameState(earned).ownedKeys['profile_icon:'+eventIcon.id],'event icon tracked in collections');
 check(normalizeProfileIcon({...state,character:{...state.character!,profileIconId:'unknown'}}).character!.profileIconId==='class:IRONWARDEN','invalid icon falls back to class');

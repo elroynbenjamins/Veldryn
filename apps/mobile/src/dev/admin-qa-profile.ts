@@ -7,7 +7,10 @@ import {classSkillsFor} from '../content/class-skills';
 export const ADMIN_QA_CLASSES:ClassId[]=['IRONWARDEN','BASTION','DREADGUARD','DAWNKEEPER','WAYFINDER','RAVAGER','HEXWEAVER','KNIFE_DANCER','STONECALLER'];
 
 function freshQaCharacter(classId:ClassId,bodyPresentation:BodyPresentation,nowMs:number){
-  return createCharacter(newGame(nowMs),classId,'Veldryn Admin',bodyPresentation);
+  // Player-facing name validation correctly rejects staff impersonation. Apply
+  // the QA identity only inside this privileged fixture after valid creation.
+  const state=createCharacter(newGame(nowMs),classId,'Sandbox Hero',bodyPresentation);
+  return {...state,character:{...state.character!,name:'Veldryn Admin'}};
 }
 
 /**

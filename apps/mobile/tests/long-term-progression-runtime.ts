@@ -1,7 +1,8 @@
+import {legacyCraftingReservation} from './legacy-crafting-fixture';
 import {claimActivity,createCharacter,newGame,previewActivityReward,startGathering} from '../src/core/game';
 import {applyTrustedLongTermProgression} from '../src/core/long-term-progression-runtime';
 import {masteryPointsForRank,professionMasteryView} from '../src/core/profession-mastery-v40';
-import {previewAlchemyReward,startAlchemyBatch} from '../src/core/alchemy';
+import {previewAlchemyReward} from '../src/core/alchemy';
 import {claimForgeJob,equipmentCraftDurationSeconds,startEquipmentCraft,timedEquipmentRecipe} from '../src/core/equipment-crafting-queue';
 import {RECIPES} from '../src/content/skills';
 import {professionMasteryDiscoveryRecords,professionMasteryRecommendedTarget} from '../src/core/profession-mastery-presentation';
@@ -90,14 +91,14 @@ let alchemyBase=createCharacter(newGame(masteryStart),'IRONWARDEN','MasteryAlche
 alchemyBase={...alchemyBase,character:{...alchemyBase.character!,level:100,gold:100000},skills:alchemyBase.skills.map(row=>row.skillId==='alchemy'?{...row,level:100}:row),inventory:{...alchemyBase.inventory,stacks:[{itemId:'DEWLEAF',quantity:500}]}};
 const brewId='BREW_DEWLEAF_DRAUGHT';
 const alchemyMaster={...alchemyBase,account:{...alchemyBase.account,professionMasteryByAction:{[brewId]:{actionId:brewId,points:masteryPointsForRank(50),updatedAtMs:masteryStart}}}};
-const masteredBrew=startAlchemyBatch(alchemyMaster,brewId,20,masteryStart);
+const masteredBrew=legacyCraftingReservation(alchemyMaster,'alchemy',brewId,20,masteryStart);
 ok((masteredBrew.activity?.brew?.cycleSeconds??60)<60,'Rank 30/50 speed bonus shortens Alchemy cycle time');
 ok((masteredBrew.activity?.brew?.xpPerBatch??24)>24,'Rank 10 XP bonus is snapshotted into Alchemy batches');
 const masteredBrewReward=previewAlchemyReward(masteredBrew,(masteredBrew.activity!.brew!.cycleSeconds*20)+.01);
 equal(masteredBrewReward.craftingActions,20,'Mastered Alchemy batch completes the reserved action count');
 equal(masteredBrewReward.items.find(row=>row.itemId==='DEWLEAF_DRAUGHT')?.quantity,21,'Rank 20/40 Alchemy yield bonus grants +5% output with deterministic remainder handling');
 
-const claimBrew=startAlchemyBatch(alchemyBase,brewId,2,masteryStart);
+const claimBrew=legacyCraftingReservation(alchemyBase,'alchemy',brewId,2,masteryStart);
 const claimedBrew=claimActivity(claimBrew,masteryStart+61_000);
 ok((claimedBrew.state.account.professionMasteryByAction?.[brewId]?.points??0)>=1,'Settled Alchemy batches advance recipe mastery');
 

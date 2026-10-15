@@ -36,24 +36,34 @@ const timerRange:Record<string,{base:number;min:number;max:number}>={
 };
 const tierGold:Record<string,number>={T1:120,T2:420,T3:900,T4:1800,T5:3500,T6:10000,T7:18000,T8:30000,T9:50000};
 const tierXp:Record<string,number>={T1:120,T2:250,T3:450,T4:700,T5:1100,T6:1600,T7:2200,T8:2900,T9:3800};
-export const TIER_CHARACTER_LEVEL_FLOOR:Record<string,number>={T1:2,T2:6,T3:13,T4:19,T5:26,T6:36,T7:46,T8:58,T9:71};
-export const TIER_CRAFTING_LEVEL_FLOOR:Record<string,number>={T1:1,T2:3,T3:10,T4:16,T5:23,T6:33,T7:43,T8:55,T9:68};
+/** Raw and processed inputs are the long-form progression cost; final assembly
+ * remains a short queue action. These multipliers keep players in a tier long
+ * enough to learn its regional gathering loop before the next floor unlocks. */
+const TIER_MATERIAL_MULTIPLIER:Record<string,number>={T1:8,T2:6,T3:5,T4:4,T5:1,T6:1,T7:1,T8:1,T9:1};
+/**
+ * Tier pacing deliberately leaves room for a player to finish a meaningful
+ * Fieldborn kit before the next rarity appears.  The old floors put T2/T3
+ * beside the first regional enemies, which made the first tier feel like a
+ * disposable tutorial item.
+ */
+export const TIER_CHARACTER_LEVEL_FLOOR:Record<string,number>={T1:2,T2:12,T3:26,T4:40,T5:55,T6:70,T7:82,T8:96,T9:110};
+export const TIER_CRAFTING_LEVEL_FLOOR:Record<string,number>={T1:1,T2:8,T3:20,T4:34,T5:49,T6:64,T7:76,T8:90,T9:104};
 export const EQUIPMENT_CRAFT_SKILL_BY_CLASS:Record<ClassId,'smithing'|'tailoring'>={
   IRONWARDEN:'smithing',BASTION:'smithing',DREADGUARD:'smithing',RAVAGER:'smithing',
   WAYFINDER:'tailoring',HEXWEAVER:'tailoring',KNIFE_DANCER:'tailoring',DAWNKEEPER:'tailoring',STONECALLER:'tailoring',
 };
 
 const pathMaterial:Record<string,Record<string,string>>={
-  T1:{Foundation:'MOSS_FIBER',Specialist:'WISP_DUST',Alternate:'BOAR_HIDE'},
-  T2:{Foundation:'WOLF_PELT',Specialist:'THORN_SAP',Alternate:'IRONWOOD_FANG'},
-  T3:{Foundation:'TROLL_HIDE',Specialist:'THORN_SAP',Alternate:'WOLF_PELT'},
-  T4:{Foundation:'TORN_OATHCLOTH',Specialist:'LANTERNSTEEL_SHARD',Alternate:'ECHO_QUARTZ'},
+  T1:{Foundation:'MOSS_FIBER',Alternate:'BOAR_HIDE'},
+  T2:{Foundation:'WOLF_PELT',Alternate:'IRONWOOD_FANG'},
+  T3:{Foundation:'TROLL_HIDE',Alternate:'WOLF_PELT'},
+  T4:{Foundation:'TORN_OATHCLOTH',Alternate:'ECHO_QUARTZ'},
 };
 const tailoringPathMaterial:Record<string,Record<string,string>>={
-  T1:{Foundation:'BOAR_HIDE',Specialist:'WISP_DUST',Alternate:'THORN_SAP'},
-  T2:{Foundation:'BOAR_HIDE',Specialist:'THORN_SAP',Alternate:'IRONWOOD_FANG'},
-  T3:{Foundation:'TROLL_HIDE',Specialist:'THORN_SAP',Alternate:'WOLF_PELT'},
-  T4:{Foundation:'TORN_OATHCLOTH',Specialist:'OATHGLASS_SHARD',Alternate:'ECHO_TOUCHED_PELT'},
+  T1:{Foundation:'BOAR_HIDE',Alternate:'THORN_SAP'},
+  T2:{Foundation:'BOAR_HIDE',Alternate:'IRONWOOD_FANG'},
+  T3:{Foundation:'TROLL_HIDE',Alternate:'WOLF_PELT'},
+  T4:{Foundation:'TORN_OATHCLOTH',Alternate:'ECHO_TOUCHED_PELT'},
 };
 
 function q(base:number,multiplier:number){return Math.max(1,Math.round(base*multiplier));}
@@ -63,6 +73,7 @@ function mergeInputs(inputs:{itemId:string;quantity:number}[]){
   return [...totals].map(([itemId,quantity])=>({itemId,quantity}));
 }
 function ingredients(tier:string,path:string,multiplier:number,skillId:'smithing'|'tailoring'){
+  multiplier*=TIER_MATERIAL_MULTIPLIER[tier]??1;
   if(skillId==='tailoring'){
     const accent=tailoringPathMaterial[tier]?.[path];
     switch(tier){

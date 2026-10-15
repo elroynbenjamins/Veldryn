@@ -6,6 +6,7 @@ import {useAuthSession} from './AuthSessionProvider';
 
 type SocialState=PartySocialSnapshot&{accountId:string;characterId:string|null;error:string;loading:boolean;refresh:()=>Promise<void>};
 const empty={party:null,contracts:[],serverTime:''};
+const PARTY_REFRESH_MS=30_000,IDLE_SOCIAL_REFRESH_MS=120_000;
 const Context=createContext<SocialState>({...empty,accountId:'',characterId:null,error:'',loading:false,refresh:async()=>{}});
 export function PartySocialProvider({children}:{children:React.ReactNode}){
  const {session}=useAuthSession(),accountId=session?.user.id??'';
@@ -42,10 +43,13 @@ export function PartySocialProvider({children}:{children:React.ReactNode}){
   setState({...empty,accountId,characterId:null,error:'',loading:!!accountId});
   void refresh(false);
   let previous=AppState.currentState;
-  const timer=setInterval(()=>{if(AppState.currentState==='active')void refresh(false);},30000);
+  // Active parties need quick state changes; players outside one do not need the
+  // same polling cost. Mutations and foregrounding still refresh immediately.
+  const interval=state.party?PARTY_REFRESH_MS:IDLE_SOCIAL_REFRESH_MS;
+  const timer=setInterval(()=>{if(AppState.currentState==='active')void refresh(false);},interval);
   const foreground=AppState.addEventListener('change',next=>{const resumed=previous!=='active'&&next==='active';previous=next;if(resumed)void refresh();});
   return()=>{generation.current++;inFlight.current=null;clearInterval(timer);foreground.remove();};
- },[accountId,refresh]);
+ },[accountId,refresh,state.party]);
  const visibleState=state.accountId===accountId?state:{...empty,accountId,characterId:null,error:'',loading:!!accountId};
  return <Context.Provider value={{...visibleState,refresh}}>{children}</Context.Provider>;
 }

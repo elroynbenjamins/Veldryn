@@ -10,9 +10,13 @@ import {C,radii} from '../theme/theme';
 
 export function GatheringToolArtwork({itemId,size=58,framed=true}:{itemId:string;size?:number;framed?:boolean}){
   const cell=gatheringToolCells[itemId];if(!cell)return null;
-  const scale=size/GATHERING_TOOL_CELL;
+ // Source art intentionally fills most of its atlas cell. Leave a small inset
+ // when presenting it in compact recipe rows so glow, handles and hooks do not
+ // get cut off by the square crop.
+ const inset=.06,displaySize=size*(1-inset*2),scale=displaySize/GATHERING_TOOL_CELL;
   const atlasWidth=GATHERING_TOOL_SHEET_WIDTH*scale;
   const atlasHeight=GATHERING_TOOL_SHEET_HEIGHT*scale;
-  return <View style={[s.crop,{width:size,height:size},framed&&s.frame]}><Image source={gatheringToolAtlas} resizeMode="stretch" style={{position:'absolute',width:atlasWidth,height:atlasHeight,left:-cell.column*size,top:-cell.row*size}}/></View>;
+ const offset=size*inset;
+ return <View style={[s.crop,{width:size,height:size},framed&&s.frame]}><Image source={gatheringToolAtlas} resizeMode="stretch" style={{position:'absolute',width:atlasWidth,height:atlasHeight,left:offset-cell.column*displaySize,top:offset-cell.row*displaySize}}/></View>;
 }
 const s=StyleSheet.create({crop:{overflow:'hidden',alignItems:'center',justifyContent:'center'},frame:{borderWidth:1,borderColor:C.line,borderRadius:radii.sm,backgroundColor:'#09121a'}});

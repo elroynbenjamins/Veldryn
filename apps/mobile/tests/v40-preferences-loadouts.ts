@@ -6,22 +6,21 @@ function ok(value:unknown,message:string){if(!value)throw new Error(message)}
 function eq(actual:unknown,expected:unknown,message:string){if(actual!==expected)throw new Error(`${message}: expected ${String(expected)}, got ${String(actual)}`)}
 
 let state=createCharacter(newGame(1000),'IRONWARDEN','Planner','male');
-state={...state,quests:state.quests.map(row=>row.questId==='QST_002'?{...row,status:'claimed' as const,progress:2}:row)};
+state={...state,quests:state.quests.map(row=>row.questId==='QST_005'?{...row,status:'claimed' as const,progress:1}:row)};
 const characterId=state.character!.id;
-let result=executeGameCommand(state,{type:'goals_set',args:{goals:[{id:'skill-mining',characterId,kind:'skill_level',title:'Mining 10',createdAtMs:1000,pinnedAtMs:1000,skillId:'mining',targetLevel:10}]}},2000,{accountId:'acct',eventId:'goal'});
-state=result.state;
-eq(state.character?.progressionGoals?.length,1,'goal command stores one validated goal');
-eq(state.character?.progressionGoals?.[0].characterId,characterId,'goal remains character-bound');
+let goalsRetired=false;
+try{executeGameCommand(state,{type:'goals_set',args:{goals:[]}},2000,{accountId:'acct',eventId:'goal'});}catch(error){goalsRetired=error instanceof Error&&error.message==='goals_retired';}
+ok(goalsRetired,'the retired Working Toward command must remain unavailable to online clients');
 
-result=executeGameCommand(state,{type:'idle_rules_set',args:{rules:[{id:'one-hour',characterId,name:'Safe 1h',conditions:[{id:'duration',kind:'duration_seconds',value:3600,enabled:true}],stopIfOutOfFood:true,stopIfRewardsWouldOverflow:true,finishCurrentCycle:true}],activeId:'one-hour'}},3000,{accountId:'acct',eventId:'idle'});
+let result=executeGameCommand(state,{type:'idle_rules_set',args:{rules:[{id:'one-hour',characterId,name:'Safe 1h',conditions:[{id:'duration',kind:'duration_seconds',value:3600,enabled:true}],stopIfOutOfFood:true,stopIfRewardsWouldOverflow:true,finishCurrentCycle:true}],activeId:'one-hour'}},3000,{accountId:'acct',eventId:'idle'});
 state=result.state;
 eq(state.character?.activeIdleRuleIdV40,'one-hour','idle rule command activates validated rule');
 eq(state.character?.idleRulesV40?.[0].conditions[0].kind,'duration_seconds','idle rule remains stop-only duration condition');
 
 state=saveCharacterLoadout(state,0,'Boss');
-result=executeGameCommand(state,{type:'loadout_save',args:{index:1,name:'Gathering'}},4000,{accountId:'acct',eventId:'loadout-save'});
-state=result.state;
-eq(state.character?.savedLoadouts?.length,2,'server loadout save command persists another slot');
+let baseSlotRejected=false;
+try{executeGameCommand(state,{type:'loadout_save',args:{index:1,name:'Gathering'}},4000,{accountId:'acct',eventId:'loadout-save'});}catch{baseSlotRejected=true}
+ok(baseSlotRejected,'server loadout save command rejects the second slot without an entitlement');
 const first=state.character?.savedLoadouts?.find(row=>row.slotIndex===0);
 ok(first,'first loadout should exist');
 result=executeGameCommand(state,{type:'loadout_apply',args:{id:first!.id}},5000,{accountId:'acct',eventId:'loadout-apply'});
@@ -43,17 +42,17 @@ eq(result.state.account.weeklyOrders?.schemaVersion,41,'idle settlement still ad
 
 const vipPlusState={...state,account:{...state.account,entitlements:{vip_plus:true}}};
 const {characterLoadoutSlotCount}=require('../src/core/character-loadouts') as typeof import('../src/core/character-loadouts');
-eq(characterLoadoutSlotCount(state),3,'Base accounts keep three loadout slots');
-eq(characterLoadoutSlotCount({...state,account:{...state.account,entitlements:{vip:true}}}),4,'VIP adds one permanent loadout slot');
-eq(characterLoadoutSlotCount(vipPlusState),4,'VIP+ independently adds one permanent loadout slot');
-const fourth=saveCharacterLoadout(vipPlusState,3,'VIP+ Fourth');
-eq(fourth.character?.savedLoadouts?.some(row=>row.slotIndex===3),true,'VIP+ can save into fourth loadout slot');
-let fifthRejected=false;try{saveCharacterLoadout(vipPlusState,4,'Locked Fifth')}catch{fifthRejected=true}
-ok(fifthRejected,'VIP+ alone cannot use the fifth slot reserved for both permanent tiers');
+eq(characterLoadoutSlotCount(state),1,'Base accounts keep one loadout slot');
+eq(characterLoadoutSlotCount({...state,account:{...state.account,entitlements:{vip:true}}}),2,'VIP adds one permanent loadout slot');
+eq(characterLoadoutSlotCount(vipPlusState),2,'VIP+ independently adds one permanent loadout slot');
+const second=saveCharacterLoadout(vipPlusState,1,'VIP+ Second');
+eq(second.character?.savedLoadouts?.some(row=>row.slotIndex===1),true,'VIP+ can save into the second loadout slot');
+let thirdRejected=false;try{saveCharacterLoadout(vipPlusState,2,'Locked Third')}catch{thirdRejected=true}
+ok(thirdRejected,'VIP+ alone cannot use a third slot reserved for both permanent tiers');
 const both={...vipPlusState,account:{...vipPlusState.account,entitlements:{vip:true,vip_plus:true}}};
-eq(characterLoadoutSlotCount(both),5,'Both permanent tiers add two loadout slots');
-const fifth=saveCharacterLoadout(both,4,'Both Tiers Fifth');
-eq(fifth.character?.savedLoadouts?.some(row=>row.slotIndex===4),true,'Owning both tiers can save into fifth loadout slot');
+eq(characterLoadoutSlotCount(both),3,'Both permanent tiers add two loadout slots');
+const third=saveCharacterLoadout(both,2,'Both Tiers Third');
+eq(third.character?.savedLoadouts?.some(row=>row.slotIndex===2),true,'Owning both tiers can save into the third loadout slot');
 const fs=require('fs') as {readFileSync:(path:string,encoding:string)=>string};
 const savedLoadoutUi=fs.readFileSync('src/components/SavedLoadoutsPanel.tsx','utf8');
 const profileEditorUi=fs.readFileSync('src/components/ProfileEditor.tsx','utf8');
@@ -61,4 +60,4 @@ const appUi=fs.readFileSync('App.tsx','utf8');
 ok(savedLoadoutUi.includes("type:'loadout_save'")&&savedLoadoutUi.includes("type:'loadout_apply'")&&savedLoadoutUi.includes("type:'loadout_delete'"),'Saved Loadouts UI must emit authoritative loadout commands when online');
 ok(savedLoadoutUi.includes('if(onCommand)await onCommand(command);else await onChange(action())'),'Saved Loadouts UI must keep offline fallback without bypassing the online command path');
 ok(profileEditorUi.includes('onCommand={onCommand}')&&/<ProfileEditor\b[^>]*onCommand=\{runCompanionCommand\}/.test(appUi),'Character profile editor must wire Saved Loadouts to the authoritative command executor');
-console.log('PASS: V40 Working Toward, exact duration Idle Rules and Saved Loadouts use validated online command paths');
+console.log('PASS: retired Working Toward commands, exact duration Idle Rules and Saved Loadouts use validated online command paths');

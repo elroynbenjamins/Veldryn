@@ -14,7 +14,7 @@ function withSetPieces(state:GameState,setId:string,count:number){
 }
 
 const coverage=equipmentSetBonusCoverage();
-ok(coverage.setCount===243,'Expected all 243 V33 sets in runtime coverage');
+ok(coverage.setCount===162,'Expected all 162 shipped V33 sets in runtime coverage');
 ok(coverage.unsupportedStatic.length===0,'Every 2/4/8/10 V33 bonus must parse as an always-on runtime stat: '+coverage.unsupportedStatic.slice(0,3).join(' | '));
 
 const oathbound=EQUIPMENT_SETS.find(row=>row.id==='T1_001');if(!oathbound)throw new Error('Missing Oathbound Rampart');

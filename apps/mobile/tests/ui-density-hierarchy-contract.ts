@@ -1,5 +1,5 @@
 export {};
-const fs=require('fs') as {readFileSync:(path:string,encoding:string)=>string};
+const fs=require('fs') as {readFileSync:(path:string,encoding:string)=>string;existsSync:(path:string)=>boolean};
 function ok(value:boolean,message:string){if(!value)throw new Error(message)}
 const read=(path:string)=>fs.readFileSync(path,'utf8');
 
@@ -17,16 +17,16 @@ const sessionOverview=read('src/components/HomeSessionOverview.tsx');
 ok(home.includes('<HomeSessionOverview'),'Home must expose one compact session-priority surface');
 ok(home.indexOf('s.guide,guide.priority')<home.indexOf('<HomeSessionOverview')&&home.indexOf('s.guide,guide.priority')>=0,"Next Step guidance must precede the session overview for new players");
 ok(home.indexOf('<HomeSessionOverview')<home.indexOf('ASTERFALL CAMPAIGN'),'Session priorities must appear before broader campaign/planning detail');
-ok(home.includes('showProgress&&<View style={s.expanded}>')&&home.includes('goalsUnlocked?<WorkingTowardSummary')&&home.includes('contractsUnlocked?<ContractBoardSummary')&&home.includes('dailyUnlocked?<DailySuppliesSummary')&&home.includes('<SkillDashboard state={state}'),'Full goals, weekly, daily and skill snapshots must stay behind the secondary progress disclosure and respect staged unlocks');
+ok(home.includes('showProgress&&<View style={s.expanded}>')&&home.includes('contractsUnlocked?<ContractBoardSummary')&&home.includes('dailyUnlocked?<DailySuppliesSummary')&&home.includes('<SkillDashboard state={state}'),'Weekly, daily and skill snapshots must stay behind the secondary progress disclosure and respect staged unlocks');
 ok((home.match(/<SkillDashboard/g)??[]).length===1,'Home must not duplicate the full skill snapshot outside its secondary progress area');
-ok(home.includes('Goals, daily & skill progress')&&home.includes('goalsUnlocked?a("Working Toward"):null')&&home.includes('contractsUnlocked?a("Contract Board"):null')&&home.includes('dailyUnlocked?a("Daily Supplies"):null')&&home.includes('a("skill snapshot")')&&home.includes(".filter(Boolean).join(' · ')"),"Home secondary disclosure must clearly describe only the currently unlocked systems it contains");
-ok(sessionOverview.includes('SESSION OVERVIEW')&&sessionOverview.includes('label={a("READY")}')&&sessionOverview.includes("label={a('GOALS')}")&&sessionOverview.includes("label={a('WEEKLY')}")&&sessionOverview.includes("label={a('NEW')}"),"Home session overview must preserve the four compact action categories");
-ok(sessionOverview.includes("earlyFeatureUnlocked(state,'workingToward')")&&sessionOverview.includes("earlyFeatureUnlocked(state,'contracts')")&&sessionOverview.includes('a("LOCKED")')&&sessionOverview.includes('onPress={goalsUnlocked?onGoals:undefined}')&&sessionOverview.includes('onPress={weeklyUnlocked?onWeekly:undefined}'),"Locked Home GOALS/WEEKLY cells must remain visible but non-actionable until their staged account unlocks");
+ok(home.includes('Character, campaign & skills')&&home.includes('contractsUnlocked?a("Contract Board"):null')&&home.includes('dailyUnlocked?a("Daily Supplies"):null')&&home.includes('a("skill snapshot")')&&home.includes(".filter(Boolean).join(' · ')"),"Home secondary disclosure must clearly describe only the currently unlocked systems it contains");
+ok(sessionOverview.includes('SESSION OVERVIEW')&&sessionOverview.includes('label={a("READY")}')&&sessionOverview.includes("label={a('WEEKLY')}")&&sessionOverview.includes("label={a('NEW')}"),"Home session overview must preserve compact ready, weekly and new action categories");
+ok(sessionOverview.includes("earlyFeatureUnlocked(state,'contracts')")&&sessionOverview.includes('a("LOCKED")')&&sessionOverview.includes('onPress={weeklyUnlocked?onWeekly:undefined}'),"Locked Home WEEKLY cells must remain visible but non-actionable until their staged account unlock");
 ok(sessionOverview.includes("cell:{position:'relative',flex:1,minWidth:0,minHeight:48"),'Home session cells must stay compact while retaining accessible touch height');
 ok(sessionOverview.includes('useWindowDimensions')&&sessionOverview.includes("width<350||fontScale>=1.25")&&sessionOverview.includes("cellStack:{flex:0,flexBasis:'48%'"),'Home session overview must collapse to a clean 2×2 layout on narrow phones or larger text');
 ok(sessionOverview.includes('goodSurface')&&sessionOverview.includes('infoSurface')&&sessionOverview.includes('specialSurface')&&sessionOverview.includes('accentSurface'),'Home session cells must use semantic theme surfaces for restrained color emphasis');
 const dashboardCore=read('src/core/dashboard.ts');
-ok(dashboardCore.includes('homeSessionSummary')&&dashboardCore.includes("kind:'quests'")&&dashboardCore.includes("kind:'daily'")&&dashboardCore.includes("kind:'events'")&&dashboardCore.includes("kind:'goals'")&&dashboardCore.includes("kind:'forge'")&&dashboardCore.includes("kind:'weekly'")&&dashboardCore.includes("kind:'companions'"),'Home ready-now priority must include core claimable operational systems');
+ok(dashboardCore.includes('homeSessionSummary')&&dashboardCore.includes("kind:'quests'")&&dashboardCore.includes("kind:'daily'")&&dashboardCore.includes("kind:'events'")&&dashboardCore.includes("kind:'forge'")&&dashboardCore.includes("kind:'weekly'")&&dashboardCore.includes("kind:'companions'"),'Home ready-now priority must include every claimable operational system');
 ok(dashboardCore.includes('equipmentCraftQueueModel')&&dashboardCore.includes('companionAttentionSummary')&&dashboardCore.includes('weeklyRewards'),'Home ready-now counts must derive from authoritative Forge, Companion and Contract systems');
 
 ok(home.includes('identityCopy:{flex:1,minWidth:0,gap:5}')&&home.includes('levelBadge:'),'Home identity must combine character XP and level into one compact modern header');
@@ -84,7 +84,7 @@ ok(masteryCore.includes("{rank:10,kind:'xp'")&&masteryCore.includes("{rank:20,ki
 const gatheringSkills=read('src/components/GatheringActivityList.tsx');
 ok(gatheringSkills.includes('Tap a resource to begin gathering.'),'Normal gathering skills must state their direct-tap interaction');
 ok(gatheringSkills.includes('accessibilityRole="button"')&&gatheringSkills.includes('onPress={start}'),'Each gathering resource must begin directly from its row');
-ok(gatheringSkills.includes('Have: ${formatGameNumber(available')&&gatheringSkills.includes('view.cycleSeconds.toFixed(1)'),'Gathering rows must show stored resource count and action duration');
+ok(gatheringSkills.includes('Have: ${formatGameNumber(available')&&gatheringSkills.includes('Math.ceil(view.cycleSeconds)'),'Gathering rows must show stored resource count and an easy-to-scan rounded action duration');
 ok(gatheringSkills.includes('gatheringProgressionAction'),'Locked gathering rows must still route to the useful training destination');
 ok(gatheringSkills.includes('gatheringBalanceProjection'),'Gathering duration must continue using the shared rate projection');
 const balanceProjection=read('src/core/balance-projection.ts');
@@ -94,30 +94,26 @@ const craftingBrowser=read('src/components/CraftingRecipeBrowser.tsx');
 ok(craftingBrowser.includes("(!recipe.classId||recipe.classId===state.character?.classId)"),'Crafting lists must hide recipes restricted to other classes');
 ok(craftingBrowser.includes('label:gt("READY NOW"),tone:\'ready\'')&&craftingBrowser.includes('label:gt("NEEDS REQUIREMENTS"),tone:\'needs\'')&&craftingBrowser.includes('label:gt("LOCKED"),tone:\'locked\''),"Crafting recipes must remain grouped by actionable state");
 ok(craftingBrowser.includes("filterToggle:{minHeight:44"),'Crafting filters must use a compact accessible dropdown control');
-ok(craftingBrowser.includes('alchemyAvailability')&&craftingBrowser.includes("Stop the current activity before brewing."),'Alchemy recipe readiness must use the reserved batch system');
+ok(craftingBrowser.includes('alchemyAvailability')&&craftingBrowser.includes('processingAvailability(state,recipe.id,undefined,true)'),'Timed skill recipes must remain startable while another activity is settled and replaced');
 ok(craftingBrowser.includes('preferredRecipeId'),'Crafting lists must preserve exact deep-linked recipe selection');
 ok(craftingBrowser.includes('initialExpanded={recipe.id===preferredRecipeId}'),'Deep-linked crafting targets must arrive already expanded');
 ok(craftingBrowser.includes('processingAvailability')&&craftingBrowser.includes('onProcessingStart'),'Repeatable stackable recipes must route through reserved timed processing');
 ok(craftingBrowser.includes('equipmentCraftAvailability')&&craftingBrowser.includes('timedEquipmentRecipe'),'Crafting groups must use real forge-start semantics for timed equipment');
 
 const recipeCard=read('src/components/RecipeCard.tsx');
-ok(recipeCard.includes("processing?ct('Process ×{count} · {time}'")&&recipeCard.includes('Progress continues offline.')&&recipeCard.includes('outputPerHour'),'Processing cards must expose batch controls, offline timing and material throughput');
+ok(recipeCard.includes("processing?ct('Process · {time}'")&&recipeCard.includes('Progress continues offline.')&&recipeCard.includes('outputPerHour'),'Processing cards must expose offline timing and material throughput');
 ok(recipeCard.includes("head:{minHeight:96"),'Recipe rows must remain compact');
 ok(recipeCard.includes("statusText=forgeFull?"),'Collapsed recipe cards must expose the actual blocking state');
-ok(recipeCard.includes('BATCH SIZE')&&recipeCard.includes("Brew ×"),'Alchemy recipe cards must expose batch-size and timed brew controls');
+ok(recipeCard.includes("alchemy?ct('Brew · {time}'")&&recipeCard.includes('Progress continues offline.'),'Alchemy recipe cards must expose timed brewing controls and offline progress');
 ok(skills.includes("type:'alchemy_start'"),'Skills must route Alchemy through the authoritative alchemy_start command');
 ok(recipeCard.includes('recipeProgressionSources')&&recipeCard.includes('MISSING SOURCES'),'All recipe types must expose actionable material/prerequisite sources');
 ok(recipeCard.includes('Other sources ·')&&recipeCard.includes('sourceTypeLabel')&&recipeCard.includes('accessibilityState={{expanded:!!openSources[row.key]}}'),'Recipe material sources must keep one primary route compact and disclose typed alternatives on demand');
 ok(recipeCard.includes('initialExpanded=false')&&recipeCard.includes('useState(initialExpanded)'),'Recipe cards must support exact-target auto-expansion from progression navigation');
 ok(recipeCard.includes('recipeSkillTrainingAction')&&recipeCard.includes('recipeCharacterTrainingAction'),'Recipe level blockers must expose skill and character training actions');
 ok(recipeCard.includes('RECIPE MASTERY')&&recipeCard.includes('professionMasteryMultipliers'),'Recipe cards must show live per-recipe mastery and effective values');
-ok(recipeCard.includes('TIMED PACE')&&recipeCard.includes('batches/hr')&&recipeCard.includes('outputPerHour')&&recipeCard.includes('XP/hr'),'Timed crafting must expose batch rate, output/hour, XP/hour and level ETA');
-ok(recipeCard.includes('Track preparation')&&recipeCard.includes('Tracked in Working Toward')&&recipeCard.includes('onTrackPreparation(recipe,multiplier,preparationRoute.steps.length)'),'Preparation routes must support one-tap persistent Working Toward tracking without duplicate pins');
-ok(recipeCard.includes('trackedPreparation.status===\'complete\'?gt("GOAL DONE"):gt("TRACKED")')&&recipeCard.includes('trackedTag'),"Collapsed recipe rows must visibly retain persistent preparation tracking state");
-ok(recipeCard.includes('trackedComplete?gt("Preparation goal complete"):tracked?gt("Tracked in Working Toward"):gt("Track preparation")'),"Completed preparation goals must stop looking merely active inside the recipe disclosure");
-ok(craftingBrowser.includes('onTrackPreparation={onTrackPreparation}')&&skills.includes('trackPreparationGoal')&&skills.includes("type:'goals_set'"),'Crafting screens must persist preparation tracking through the canonical goals command');
-ok(skills.includes('MAX_PINNED_GOALS')&&skills.includes("goal.kind==='recipe_preparation'&&goal.recipeId===recipe.id"),'Preparation tracking must respect the shared three-goal cap and avoid duplicate pins for the same recipe');
+ok(recipeCard.includes('TIMED PACE')&&recipeCard.includes('actions/hr')&&recipeCard.includes('outputPerHour')&&recipeCard.includes('XP/hr'),'Timed crafting must expose action rate, output/hour, XP/hour and level ETA');
 
+if(fs.existsSync('src/screens/ProgressionPlannerScreen.tsx')){
 const skillNavigation=read('src/core/skill-progression-navigation.ts');
 ok(skillNavigation.includes('workingTowardItemSource'),'Skill progression navigation must reuse the canonical Working Toward item-source resolver');
 ok(skillNavigation.includes('isTimedProcessingRecipe')&&skillNavigation.includes('processingAvailability'),'Training recommendations must use reserved timed-processing readiness for repeatable batch recipes');
@@ -165,6 +161,7 @@ ok(dashboard.includes('firstTrackedRecipePreparation')&&dashboard.includes('goal
 ok(homeSession.includes('Continue preparation')&&homeSession.includes('Review preparation')&&homeSession.includes('onGoalNext(summary.goalNextDestination!)'),'Home session overview must directly continue or review the exact tracked preparation step');
 ok(homeSession.includes('summary.primaryReady?<GameButton')&&homeSession.includes(':summary.goalNext&&summary.goalNextDestination?'),'Tracked preparation continuation must remain below higher-priority ready-now claims');
 ok(read('src/screens/HomeScreen.tsx').includes('onGoalNext={onNavigateGoal}'),'Home must route tracked preparation continuation through canonical Working Toward navigation');
+}
 
 const appMastery=read('App.tsx');
 const actionFeedback=read('src/components/ActionFeedback.tsx');
@@ -186,7 +183,6 @@ ok(snapshot.includes('useGameTheme'),'Home skill snapshot must use the active th
 for(const path of [
  'src/components/ActivityCard.tsx',
  'src/components/ActionQueuePanel.tsx',
- 'src/components/WorkingTowardSummary.tsx',
  'src/components/ContractBoardSummary.tsx',
  'src/components/DailySuppliesSummary.tsx',
  'src/components/NewUnlocksPanel.tsx',
@@ -299,8 +295,8 @@ ok(startupScreen.includes("from 'react-native-safe-area-context'")&&!startupScre
 
 
 const collections=read('src/screens/CollectionsScreen.tsx');
-ok(collections.includes('columns=width<340?2:')&&collections.includes('cardWidth=(width-(columns-1)*10)/columns'),"Collections pet grid must keep two-column cards viable on narrow phones");
-ok(collections.includes('setDetailId(row.id)')&&collections.includes("detail.selected?'Currently equipped'")&&collections.includes('disabled={!state.character||!detail.owned||detail.selected'),"Collection cards must open details and prevent equipping locked or already selected items");
+ok(collections.includes('columns=width<340||Math.max(fontScale,state.settings.textScale)>=1.2?1:width<620?2:3')&&collections.includes('<FlatList'),"Collector journal must virtualize compact cards and use one column for narrow screens or larger text");
+ok(collections.includes('onOpen(row.id)')&&collections.includes('GameModalSurface visible presentation="sheet"')&&collections.includes("detail.selected?'Currently equipped'")&&collections.includes('disabled={!state.character||!detail.owned||detail.selected'),"Journal cards must open themed details and prevent equipping locked or already selected items");
 
 const petBonusOverview=read('src/screens/PetBonusOverviewScreen.tsx');
 ok(petBonusOverview.includes('accessibilityState={{expanded:showBonusHelp}}')&&petBonusOverview.includes('HOW PET BONUSES WORK'),'Pet Bonus explanation must use progressive disclosure so collection controls remain closer to the top');
@@ -330,13 +326,9 @@ ok(arena.includes('<GameButton compact title={st("Clear slot")} tone="secondary"
 ok(arena.includes("choices:{flexDirection:'row',flexWrap:'wrap'"),'Arena roster choices must wrap instead of forcing one tall row per character');
 
 const event=read('src/screens/EventScreen.tsx');
-ok(event.includes('discoveryCount:{...typography.title,color:C.special}'),'Event discovery emphasis must use the semantic theme token');
-ok(event.includes("claim:{width:'100%'}")&&event.includes('<GameButton compact title={claimed?'),"Event repeated reward actions must remain compact");
-ok(event.includes("type JournalSection='Discoveries'|'Collection'|'Milestones'")&&event.includes("journalSection==='Discoveries'")&&event.includes("journalSection==='Collection'")&&event.includes("journalSection==='Milestones'"),'Event Journal must split discoveries, collection and milestones into separate mobile workloads instead of one long feed');
-ok(event.includes('{t("EVENT DETAILS ·")} {definition.signature.label}')&&event.includes('accessibilityState={{expanded:showEventDetails}}'),"Secondary event identity detail must use progressive disclosure while the active event actions stay visible");
-ok(event.includes('journalTabs:{flexDirection:\'row\'')&&event.includes('journalTab:{flex:1,minHeight:44'),'Event Journal sub-navigation must remain compact and touch-accessible');
-ok(event.includes('history.slice(0,showEventArchive?history.length:6)')&&event.includes('t("Show older festivals · {count}",{count:history.length-6})'),"Inactive Event archive must cap the initial history instead of growing indefinitely year over year");
-ok(event.includes('accessibilityState={{expanded:showProjectDetails}}')&&event.includes("(!projectId||showProjectDetails)?<View style={s.choiceList}"),'Locked event project alternatives must collapse after selection while the contribution controls remain on the main Commons surface');
+ok(event.includes('backgroundColor:C.accentSurface')&&event.includes('accentSurface={C.goodSurface}'),'Event currency and daily-reward emphasis must use semantic theme surfaces');
+ok(event.includes("claimStack:{width:'100%'}")&&event.includes('<GameButton compact title={claimed?'),"Event repeated reward actions must remain compact on constrained screens");
+ok(event.includes("(['Overview','Activities','Shop','Rewards'] as Tab[])")&&event.includes('tab===\'Activities\'')&&event.includes('tab===\'Shop\'')&&event.includes('tab===\'Rewards\''),'Event navigation must split overview, activities, shop and rewards into separate mobile workloads');
 
 const quests=read('src/screens/QuestScreen.tsx');
 const questModes=read('src/components/QuestModeSwitch.tsx');
@@ -354,9 +346,6 @@ ok(questApp.includes("focusedWeeklyOrderId={questFocusOrderId}")&&questApp.inclu
 ok(questApp.includes("destination.tab==='World'&&destination.zoneId")&&questApp.includes('setGoalRegionId(destination.zoneId)'),'Story Journal destinations must preserve their authored World region instead of dropping zone context');
 ok(quests.includes('onOpenWeeklyBoss')&&questApp.includes("monsterId:'FALLEN_KNIGHT'")&&questApp.includes("regionId:'KINGS_ROAD'"),'Weekly boss action must keep its exact destination');
 
-const progressionPlanner=read('src/screens/ProgressionPlannerScreen.tsx');
-ok(progressionPlanner.includes('ADVANCED IDLE RULES')&&progressionPlanner.includes('showIdleRules&&<IdleRulesEditorV40'),'Working Toward must keep advanced Idle Rules behind a secondary disclosure rather than permanently lengthening the common goal workflow');
-ok(progressionPlanner.includes('accessibilityState={{expanded:showIdleRules}}')&&progressionPlanner.includes("secondaryDisclosure:{minHeight:54"),'Working Toward advanced disclosure must expose state accessibly and retain a safe mobile touch target');
 
 const settings=read('src/screens/SettingsScreen.tsx');
 ok(settings.includes('themeChoice:{minHeight:82'),'Theme preview cards must stay compact enough to compare all themes');

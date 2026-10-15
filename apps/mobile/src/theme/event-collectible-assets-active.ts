@@ -1,10 +1,12 @@
 import type {ImageSourcePropType} from 'react-native';
 
-/** Only visuals for the currently released event belong in the mobile bundle. */
+/** Permanently retained released-event visuals. Veilbreak is the first release. */
 export const eventPetSourceById=new Map<string,ImageSourcePropType>([
- ['EVT_PET_011',require('../../assets/event_collectibles/harvestwake/pets/EVT_PET_011_Pumpkin_Piglet.webp')],
- ['EVT_PET_012',require('../../assets/event_collectibles/harvestwake/pets/EVT_PET_012_Golden_Sheafling.webp')],
+ ['EVT_PET_013',require('../../assets/event_collectibles/veilbreak/pets/EVT_PET_013_Gloomkin_runtime.webp')],
+ ['EVT_PET_014',require('../../assets/event_collectibles/veilbreak/pets/EVT_PET_014_Lantern_Mimic_runtime.webp')],
 ]);
 export const eventCompanionSourceById=new Map<string,ImageSourcePropType>([
- ['EVT_UNIT_006',require('../../assets/event_collectibles/harvestwake/companions/EVT_UNIT_006_Harvest_Guardian.webp')],
+ ['EVT_UNIT_007',require('../../assets/event_collectibles/veilbreak/companions/EVT_UNIT_007_Veil_Hound_runtime.webp')],
+ ['EVT_UNIT_008',require('../../assets/event_collectibles/veilbreak/companions/EVT_UNIT_008_Hollow_Knightling_runtime.webp')],
+ ['EVT_UNIT_011',require('../../assets/event_collectibles/veilbreak/companions/EVT_UNIT_011_Lantern_Keeper_runtime.webp')],
 ]);

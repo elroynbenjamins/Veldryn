@@ -25,7 +25,7 @@ export const PERSONAL_RECORDS_V43:PersonalRecordDefinition[]=[
  {id:'most_items_crafted_in_day',category:'profession',label:'Most items crafted in one day',unit:'number',rule:'max',description:'Highest server-day total of crafted items.'},
  {id:'most_food_cooked_in_day',category:'profession',label:'Most food cooked in one day',unit:'number',rule:'max',description:'Highest server-day total of cooking outputs.'},
  {id:'most_bars_smelted_in_day',category:'profession',label:'Most bars smelted in one day',unit:'number',rule:'max',description:'Highest server-day total of smelting outputs.'},
- {id:'largest_crafting_batch',category:'profession',label:'Largest crafting batch',unit:'number',rule:'max',description:'Largest completed quantity in a single trusted crafting batch.'},
+ {id:'largest_crafting_batch',category:'profession',label:'Largest craft result',unit:'number',rule:'max',description:'Largest completed quantity from one trusted craft.'},
  {id:'most_profession_xp_settlement',category:'profession',label:'Most profession XP in one settlement',unit:'xp',rule:'max',description:'Largest profession XP payout from one trusted settlement.'},
  {id:'longest_activity_seconds',category:'activity',label:'Longest uninterrupted activity',unit:'seconds',rule:'max',description:'Longest continuous eligible activity before stopping.'},
  {id:'most_actions_single_settlement',category:'activity',label:'Most actions in one settlement',unit:'number',rule:'max',description:'Largest number of completed actions in one trusted settlement.'},

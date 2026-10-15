@@ -12,14 +12,15 @@ import {formatGameNumber} from '../core/number-format';
 import {activityProgressFeedback,formatBalanceDuration,type LevelPaceProjection} from '../core/balance-projection';
 
 function duration(seconds:number){
-  if(seconds<60)return `${seconds}s`;
-  const hours=Math.floor(seconds/3600),minutes=Math.floor((seconds%3600)/60);
+  const wholeSeconds=Math.ceil(Math.max(0,seconds));
+  if(wholeSeconds<60)return `${wholeSeconds}s`;
+  const hours=Math.floor(wholeSeconds/3600),minutes=Math.floor((wholeSeconds%3600)/60);
   return hours?`${hours}h ${minutes}m`:`${minutes}m`;
 }
 
 const kindLabel:Record<ActivityKind,string>={combat:'COMBAT',mining:'MINING',woodcutting:'WOODCUTTING',fishing:'FISHING',herbalism:'HERBALISM',alchemy:'ALCHEMY',processing:'PROCESSING',faith:'FAITH',training:'TRAINING',exploration:'EXPLORATION'};
-const nextLabel:Record<ActivityKind,string>={combat:'NEXT ENCOUNTER',mining:'NEXT ACTION',woodcutting:'NEXT ACTION',fishing:'NEXT ACTION',herbalism:'NEXT ACTION',alchemy:'NEXT BREW',processing:'NEXT BATCH',faith:'NEXT PRACTICE',training:'NEXT DRILL',exploration:'NEXT ROUTE'};
-const rewardLabel:Record<ActivityKind,string>={combat:'kills ready',mining:'actions ready',woodcutting:'actions ready',fishing:'actions ready',herbalism:'actions ready',alchemy:'brews ready',processing:'batches ready',faith:'practices ready',training:'drills ready',exploration:'routes ready'};
+const nextLabel:Record<ActivityKind,string>={combat:'NEXT ENCOUNTER',mining:'NEXT ACTION',woodcutting:'NEXT ACTION',fishing:'NEXT ACTION',herbalism:'NEXT ACTION',alchemy:'NEXT BREW',processing:'NEXT CRAFT',faith:'NEXT PRACTICE',training:'NEXT DRILL',exploration:'NEXT ROUTE'};
+const rewardLabel:Record<ActivityKind,string>={combat:'kills ready',mining:'actions ready',woodcutting:'actions ready',fishing:'actions ready',herbalism:'actions ready',alchemy:'brews ready',processing:'crafts ready',faith:'practices ready',training:'drills ready',exploration:'routes ready'};
 const feedbackKind=(kind:ActivityKind)=>kind==='combat'?'combat':kind==='alchemy'||kind==='processing'?'crafting':kind==='faith'?'faith':kind==='training'?'training':kind==='exploration'?'exploration':'gathering';
 
 export function ActivityCard({title,kind,activity,cycleSeconds,capHours,preview,rates,levelPace,reduceMotion=false,numberMode='abbreviated',onClaim,onStop}:{title:string;kind:ActivityKind;activity?:ActiveActivity;cycleSeconds:number;capHours:number;preview:RewardBundle;rates:{actionsPerHour:number;xpPerHour:number;goldPerHour:number};levelPace?:LevelPaceProjection;reduceMotion?:boolean;numberMode?:'abbreviated'|'exact';onClaim:()=>void;onStop:()=>void}){

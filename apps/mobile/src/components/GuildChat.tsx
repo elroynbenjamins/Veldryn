@@ -1,6 +1,7 @@
+import {gameAlert} from '../core/game-alerts';
 import {useSocialText} from '../i18n/social';
 import {useEffect,useMemo,useRef,useState} from 'react';
-import {Alert,AppState,StyleSheet,Text,View} from 'react-native';
+import {AppState,StyleSheet,Text,View} from 'react-native';
 import {GameButton} from './GameButton';
 import {ChatComposer} from './ChatComposer';
 import {ChatMessageRow} from './ChatMessageRow';
@@ -29,7 +30,7 @@ export function GuildChat({language,currentPlayerName,unlockedEmoteIds=[],trayId
  if(!onlineConfigured)return <View style={s.unavailable}><Text style={s.title}>{ot(language,'chat.guild')}</Text><Text style={s.note}>{st("Guild Chat requires online services. No simulated chat is shown.")}</Text></View>;
  const send=async()=>{
   const clean=body.trim();if(!clean||sending.current||!guild)return;
-  if(chatEmoteCount(clean)>CHAT_MAX_EMOTES_PER_MESSAGE){Alert.alert(st("Guild chat"),st("Use at most 2 emotes in one message."));return}const locked=chatUnavailableEmoteIds(clean,unlockedEmoteIds);if(locked.length){Alert.alert(st("Guild chat"),st("One or more emotes in this message are still locked."));return}
+  if(chatEmoteCount(clean)>CHAT_MAX_EMOTES_PER_MESSAGE){gameAlert.alert(st("Guild chat"),st("Use at most 2 emotes in one message."));return}const locked=chatUnavailableEmoteIds(clean,unlockedEmoteIds);if(locked.length){gameAlert.alert(st("Guild chat"),st("One or more emotes in this message are still locked."));return}
   if(!pending.current||pending.current.body!==clean)pending.current={body:clean,key:guildChatCommandKey()};
   const request=pending.current;
   sending.current=true;setBusy(true);setError('');

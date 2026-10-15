@@ -16,5 +16,5 @@ export const CRAFTING_UI_RULES_V31={
   rarityOdds:'Common 88.8% · Uncommon 8% · Rare 2.5% · Epic 0.6% · Mythic 0.1%',
 } as const;
 
-export function formatQueueTimeV31(seconds:number){if(seconds<60)return `${seconds}s`;const m=Math.ceil(seconds/60);return m<60?`${m}m`:`${Math.floor(m/60)}h ${m%60}m`;}
+export function formatQueueTimeV31(seconds:number){const wholeSeconds=Math.ceil(Math.max(0,seconds));if(wholeSeconds<60)return `${wholeSeconds}s`;const m=Math.ceil(wholeSeconds/60);return m<60?`${m}m`:`${Math.floor(m/60)}h ${m%60}m`;}
 export function sourceActionLabelV31(action:string){return ({gather:'Go gather',train_skill:'Train skill',hunt:'Hunt source',run_content:'Open content',unlock_recipe:'View unlock',register_item:'Content setup',level_character:'Level character'} as Record<string,string>)[action]??'View';}

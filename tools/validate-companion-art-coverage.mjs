@@ -8,7 +8,7 @@ const companionContent=[
   readFileSync(resolve(repoRoot,'apps/mobile/src/content/event-companions-v2.ts'),'utf8'),
 ].join('\n');
 const masterRegistry=readFileSync(resolve(repoRoot,'apps/mobile/src/theme/master-roster-assets.ts'),'utf8');
-const eventRegistry=readFileSync(resolve(repoRoot,'apps/mobile/src/theme/event-collectible-assets.ts'),'utf8');
+const eventRegistry=readFileSync(resolve(repoRoot,'apps/mobile/src/theme/event-collectible-assets-active.ts'),'utf8');
 const resolver=readFileSync(resolve(repoRoot,'apps/mobile/src/theme/companion-art.ts'),'utf8');
 
 const fail=(message)=>{throw new Error(message)};
@@ -18,11 +18,15 @@ const fail=(message)=>{throw new Error(message)};
 const ids=[...companionContent.matchAll(/(?:id:|regional\()\s*'((?:EVT_)?UNIT_\d{3})'/g)].map(match=>match[1]);
 const unique=[...new Set(ids)].sort();
 
-// EVT_UNIT_008 is intentionally unreleased; Veilbreak has one companion reward.
-const eventIds=Array.from({length:10},(_,i)=>`EVT_UNIT_${String(i+1).padStart(3,'0')}`).filter(id=>id!=='EVT_UNIT_008');
-if(unique.length!==24+eventIds.length)fail(`expected 33 canonical combat companions, found ${unique.length}`);
+// Future authored companions do not ship until released. Every released mapping
+// and every companion in the current event must have a definition and portrait.
+const eventIds=[...eventRegistry.matchAll(/\['(EVT_UNIT_\d{3})'/g)].map(match=>match[1]);
+const activeEvent=readFileSync(resolve(repoRoot,'apps/mobile/src/content/veilbreak-event.ts'),'utf8').split('export const FROSTFALL_EVENT')[0];
+for(const id of new Set(activeEvent.match(/EVT_UNIT_\d{3}/g)??[])){
+  if(!eventIds.includes(id))fail(`active Veilbreak reward has no portrait: ${id}`);
+}
 
-for(const id of unique){
+for(const id of unique.filter(id=>!id.startsWith('EVT_')).concat(eventIds)){
   const masterCount=(masterRegistry.match(new RegExp(`\\['${id}'`,'g'))??[]).length;
   const eventCount=(eventRegistry.match(new RegExp(`\\['${id}'`,'g'))??[]).length;
   const total=masterCount+eventCount;
@@ -37,4 +41,4 @@ for(const id of eventIds){
 }
 if(!resolver.includes('masterCompanionSourceById.get(id)')||!resolver.includes('eventCompanionSourceById.get(id)'))fail('companion resolver is missing canonical registries');
 
-console.log('PASS: companion art coverage validated (24 permanent + 9 event portraits)');
+console.log(`PASS: companion art coverage validated (24 permanent + ${eventIds.length} released event portraits)`);

@@ -49,13 +49,15 @@ async function main(){
 
  // New unlocks remain independently discoverable even when settlement happened during editing.
  let combat=startCombat(createCharacter(newGame(now),'IRONWARDEN','Unlock Tester'),'MOSS_RAT',now);
- combat={...combat,character:{...combat.character!,monsterMasteryPoints:{MOSS_RAT:9}}};
+ combat={...combat,defeatedBossIds:[]};
  const cosmeticWithUnlock=executeGameCommand(combat,{type:'profile_icon',args:{id:'starter:hooded-ranger'}},later);
- ok(newlyUnlockedProfileIcons(combat,cosmeticWithUnlock.state).some(row=>row.id==='creature:MOSS_RAT'),'genuine mastery icon unlock must survive an incidental cosmetic settlement');
+ cosmeticWithUnlock.state={...cosmeticWithUnlock.state,defeatedBossIds:['FALLEN_KNIGHT']};
+ ok(newlyUnlockedProfileIcons(combat,cosmeticWithUnlock.state).some(row=>row.id==='creature:FALLEN_KNIGHT'),'genuine mastery icon unlock must survive an incidental cosmetic settlement');
  equal(commandProgressFeedback({type:'profile_icon'},combat,cosmeticWithUnlock).collected,null,'a genuine unlock does not turn profile editing into a reward claim popup');
  const earnedUnlock=executeGameCommand(combat,{type:'claim'},later);
+ earnedUnlock.state={...earnedUnlock.state,defeatedBossIds:['FALLEN_KNIGHT']};
  ok(commandProgressFeedback({type:'claim'},combat,earnedUnlock).collected,'genuine combat reward claim must still be presented');
- ok(newlyUnlockedProfileIcons(combat,earnedUnlock.state).some(row=>row.id==='creature:MOSS_RAT'),'genuine reward claims must still expose new cosmetic unlocks');
+ ok(newlyUnlockedProfileIcons(combat,earnedUnlock.state).some(row=>row.id==='creature:FALLEN_KNIGHT'),'genuine reward claims must still expose new cosmetic unlocks');
 
  const masteryBefore={...before,account:{...before.account,professionMasteryByAction:{GREENWOOD_TREE:{actionId:'GREENWOOD_TREE',points:masteryPointsForRank(9),updatedAtMs:now}}}};
  const masteryAfter={...masteryBefore,account:{...masteryBefore.account,professionMasteryByAction:{GREENWOOD_TREE:{actionId:'GREENWOOD_TREE',points:masteryPointsForRank(10),updatedAtMs:later}}}};
@@ -63,7 +65,10 @@ async function main(){
  equal(commandProgressFeedback({type:'profile'},masteryBefore,{state:masteryAfter}).masteryNotices,[],'profile saves remain quiet when only a rank change is returned');
  const emptyReward={xp:0,gold:0,kills:0,elapsedSeconds:0,items:[]};
  const levelAfter={...before,character:{...before.character!,level:before.character!.level+1}};
- ok(commandProgressFeedback({type:'quest'},before,{state:levelAfter,reward:emptyReward}).collected?.progressionMoments.some(row=>row.kind==='character_level'),'real level transitions must still be celebrated without an item or XP bundle');
+ equal(commandProgressFeedback({type:'quest'},before,{state:levelAfter,reward:emptyReward}).collected,null,'quest rewards must not open the activity-collection modal');
+ for(const type of ['start','stop','travel','eat','food','equip','craft','processing_start','alchemy_start','faith_practice','queue_start','boss','event_daily','event_shop']){
+  equal(commandProgressFeedback({type},before,claimed).collected,null,type+' must settle progress without opening Collect Rewards');
+ }
 
  for(const command of [{type:'profile',args:{profileIconId:'starter:hooded-ranger'}},{type:'claim'}] satisfies GameCommand[]){
   let pending:PendingGameCommand|null=null,storedResponse:OnlineSnapshot|null=null,attempts=0;

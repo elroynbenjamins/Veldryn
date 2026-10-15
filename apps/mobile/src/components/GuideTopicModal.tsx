@@ -20,7 +20,7 @@ export function GuideTopicModal({language:languageOverride,definition,visible,on
     <ScrollView contentContainerStyle={s.content} showsVerticalScrollIndicator={false} showsHorizontalScrollIndicator={false}>
       <Text style={s.summary}>{a(definition.summary)}</Text>
       {GAME_GUIDE_STEPS[definition.id].map((step,index)=><View key={step} style={s.step}><Text style={s.number}>{index+1}</Text><Text style={s.detail}>{a(step)}</Text></View>)}
-      {onOpen?<GameButton title={a("Open {screen}",{screen:a(definition.destination==='Progression'?'Working Toward':definition.destination==='More'?'Account':definition.destination==='Coop'?'Co-op Dungeons':definition.destination)})} onPress={()=>onOpen(definition.destination)}/>:null}
+      {onOpen?<GameButton title={a("Open {screen}",{screen:a(definition.destination==='More'?'Account':definition.destination==='Coop'?'Co-op Dungeons':definition.destination)})} onPress={()=>onOpen(definition.destination)}/>:null}
       <GameButton compact title={a("Close")} tone="secondary" onPress={onClose}/>
     </ScrollView>
   </GameModalSurface>;

@@ -20,13 +20,13 @@ ok(prestigeCompanion.badge.includes('PRESTIGE'),'prestige companion badge names 
 const rareCompanion=profileCollectionPrestige({kind:'companion',id:'UNIT_004'});
 equal(rareCompanion.tone,'rare','rare companion receives rare presentation');
 
-const legendaryBackground=profileCollectionPrestige({kind:'background',id:'bg_grand_storehouse'});
-equal(legendaryBackground.tone,'prestige','legendary event background receives prestige presentation');
-ok(legendaryBackground.badge.includes('LEGENDARY'),'legendary background badge names rarity');
+const veilbreakPet=profileCollectionPrestige({kind:'pet',id:'EVT_PET_013'});
+equal(veilbreakPet.tone,'rare','Gloomkin receives its released Veilbreak rarity presentation');
+ok(veilbreakPet.badge.includes('RARE'),'Gloomkin badge names its rarity');
 
-const epicBorder=profileCollectionPrestige({kind:'border',id:'frame_amber_vine'});
-equal(epicBorder.tone,'elite','epic event border receives elite presentation');
-ok(epicBorder.badge.includes('EPIC'),'epic border badge names rarity');
+const lanternMimic=profileCollectionPrestige({kind:'pet',id:'EVT_PET_014'});
+equal(lanternMimic.tone,'elite','Lantern Mimic receives its Epic Veilbreak presentation');
+ok(lanternMimic.badge.includes('EPIC'),'Lantern Mimic badge names its rarity');
 
 const standardItem=profileCollectionPrestige({kind:'item',id:'unknown_item'});
 equal(standardItem.tone,'standard','unknown item safely falls back to standard presentation');

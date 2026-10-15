@@ -7,9 +7,10 @@ import {gatheringToolDef} from '../content/gathering-tools';
 /** Settle earned rewards before replacing or stopping an activity. Pure and atomic. */
 export function transitionActivity(state:GameState,nowMs:number,next?:{kind:'combat'|'gathering';id:string;tacticId?:CombatTacticId;goalId?:HuntGoalId}){
   const claimed=claimActivity(state,nowMs);
+  const stopped=stopActivity(claimed.state,nowMs);
   const updated=next
-    ?next.kind==='combat'?startCombat(claimed.state,next.id,nowMs,next.tacticId??'balanced',next.goalId??'open'):startGathering(claimed.state,next.id,nowMs)
-    :stopActivity(claimed.state,nowMs);
+    ?next.kind==='combat'?startCombat(stopped,next.id,nowMs,next.tacticId??'balanced',next.goalId??'open'):startGathering(stopped,next.id,nowMs)
+    :stopped;
   return {state:updated,reward:claimed.reward};
 }
 
@@ -20,8 +21,9 @@ export function rewardHasProgress(reward:RewardBundle){
 
 /** Settle a persisted idle activity once on cold startup without consuming a partial zero-action cycle. */
 export function settleStartupActivity(state:GameState,nowMs:number):{state:GameState;reward:RewardBundle|null;activity:ActiveActivity|null}{
-  if(!state.character||!state.activity&&!state.character.classTraining)return {state,reward:null,activity:null};
+  if(!state.character)return {state,reward:null,activity:null};
   const activity=state.activity,claimed=claimActivity(state,nowMs);
+  if(!activity&&!state.character.classTraining)return {state:claimed.state,reward:null,activity:null};
   if(state.character.classTraining)return {state:claimed.state,reward:rewardHasProgress(claimed.reward)?claimed.reward:null,activity:null};
   return rewardHasProgress(claimed.reward)?{state:claimed.state,reward:claimed.reward,activity}:{state,reward:null,activity:null};
 }

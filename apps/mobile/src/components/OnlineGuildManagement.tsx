@@ -1,6 +1,7 @@
+import {gameAlert} from '../core/game-alerts';
 import {useSocialText} from '../i18n/social';
 import {useEffect,useMemo,useState} from 'react';
-import {Alert,Pressable,StyleSheet,Text,View} from 'react-native';
+import {Pressable,StyleSheet,Text,View} from 'react-native';
 import {GameButton} from './GameButton';
 import {Panel} from './Panel';
 import {ChatPlayerSheet,type ChatPlayerIdentity} from './ChatPlayerSheet';
@@ -42,36 +43,36 @@ export function OnlineGuildManagement({onApplicationsChanged}:{onApplicationsCha
     setGuild(details);setMembers(roster);setApplications(apps);
    }else{setGuild(null);setMembers([]);setApplications([]);setLeadership(null);}
    setLoaded(true);
-  }catch(error){Alert.alert(st("Guild"),error instanceof Error?error.message:st("Unable to load your online guild."))}
+  }catch(error){gameAlert.alert(st("Guild"),error instanceof Error?error.message:st("Unable to load your online guild."))}
   finally{setBusy(false)}
  };
  useEffect(()=>{void load()},[]);
  if(!onlineConfigured||(!loaded&&!busy))return null;
- const respondInvite=async(id:string,accept:boolean)=>{setBusy(true);try{await respondGuildInvitation(id,accept);await load();onApplicationsChanged?.()}catch(error){Alert.alert(st("Guild invitation"),error instanceof Error?error.message:st("Unable to respond to this Guild invitation."))}finally{setBusy(false)}};
+ const respondInvite=async(id:string,accept:boolean)=>{setBusy(true);try{await respondGuildInvitation(id,accept);await load();onApplicationsChanged?.()}catch(error){gameAlert.alert(st("Guild invitation"),error instanceof Error?error.message:st("Unable to respond to this Guild invitation."))}finally{setBusy(false)}};
  const invitePanel=invitations.length?<Panel><View style={s.sectionHead}><Text style={s.section}>{st("GUILD INVITATIONS")}</Text><Text style={s.sectionMeta}>{invitations.length} pending</Text></View>{invitations.map(invite=>{const expiry=recruitmentTimeLabel(Date.parse(invite.expiresAt),Date.now());return <SocialInvitationCard key={invite.id} name={invite.guildName} guildTag={invite.guildTag} guild status={st("GUILD INVITE")} statusTone="info" detail={'Invited by '+invite.inviterName+' · '+invite.memberCount+'/'+invite.memberCap+' members · Min Lv. '+invite.minimumLevel} expiry={expiry.text} warning={role?'You are already in a Guild. Leave it before accepting another Guild invitation.':undefined} actions={<><GameButton compact title={role?st("Already joined"):st("Accept")} disabled={busy||!!role} onPress={()=>void respondInvite(invite.id,true)}/><GameButton compact title={st("Decline")} tone="secondary" disabled={busy} onPress={()=>void respondInvite(invite.id,false)}/></>}/>})}</Panel>:null;
  if(!role||!guild)return <View style={s.stack}>{invitePanel}<Panel><Text style={s.title}>{st("My guild · online")}</Text><Text style={s.sub}>{st("You have not joined an online guild yet.")}</Text><GameButton title={st("Refresh my guild")} tone="secondary" disabled={busy} onPress={()=>void load()}/></Panel></View>;
- const review=async(id:string,accept:boolean)=>{setBusy(true);try{await reviewGuildApplication(id,accept);await load();onApplicationsChanged?.()}catch(error){Alert.alert(st("Guild application"),error instanceof Error?error.message:st("Unable to review application."))}finally{setBusy(false)}};
- const cancelInvite=async(id:string)=>{setBusy(true);try{await cancelGuildInvitation(id);await load()}catch(error){Alert.alert(st("Guild invitation"),error instanceof Error?error.message:st("Unable to cancel invitation."))}finally{setBusy(false)}};
+ const review=async(id:string,accept:boolean)=>{setBusy(true);try{await reviewGuildApplication(id,accept);await load();onApplicationsChanged?.()}catch(error){gameAlert.alert(st("Guild application"),error instanceof Error?error.message:st("Unable to review application."))}finally{setBusy(false)}};
+ const cancelInvite=async(id:string)=>{setBusy(true);try{await cancelGuildInvitation(id);await load()}catch(error){gameAlert.alert(st("Guild invitation"),error instanceof Error?error.message:st("Unable to cancel invitation."))}finally{setBusy(false)}};
  const manageMember=(member:GuildMember)=>{
   if(!role)return;
   const permissions=guildMemberManagement(role,member.role,member.account_id===ownAccountId);
-  const runMember=async(action:()=>Promise<unknown>,fallback:string)=>{if(busy)return;setBusy(true);try{await action();await load();onApplicationsChanged?.()}catch(error){Alert.alert(st("Guild member"),error instanceof Error?error.message:fallback)}finally{setBusy(false)}};
+  const runMember=async(action:()=>Promise<unknown>,fallback:string)=>{if(busy)return;setBusy(true);try{await action();await load();onApplicationsChanged?.()}catch(error){gameAlert.alert(st("Guild member"),error instanceof Error?error.message:fallback)}finally{setBusy(false)}};
   const choices:{text:string;style?:'default'|'cancel'|'destructive';onPress?:()=>void}[]=[{text:'Cancel',style:'cancel'}];
-  if(permissions.canTransferLeadership)choices.unshift({text:'Transfer Leadership',onPress:()=>Alert.alert(st("Transfer Guild leadership?"),member.display_name+' will become Guild Leader. You will become an Officer.',[{text:st("Cancel"),style:'cancel'},{text:st("Transfer"),onPress:()=>void runMember(()=>transferGuildLeadership(member.account_id),'Unable to transfer leadership.')}])});
+  if(permissions.canTransferLeadership)choices.unshift({text:'Transfer Leadership',onPress:()=>gameAlert.alert(st("Transfer Guild leadership?"),member.display_name+' will become Guild Leader. You will become an Officer.',[{text:st("Cancel"),style:'cancel'},{text:st("Transfer"),onPress:()=>void runMember(()=>transferGuildLeadership(member.account_id),'Unable to transfer leadership.')}])});
   if(permissions.canPromote)choices.unshift({text:'Promote to Officer',onPress:()=>void runMember(()=>updateGuildMemberRole(member.account_id,'officer'),'Unable to promote member.')});
   if(permissions.canDemote)choices.unshift({text:'Demote to Member',onPress:()=>void runMember(()=>updateGuildMemberRole(member.account_id,'member'),'Unable to demote officer.')});
   if(permissions.canRemove)choices.unshift({text:'Remove from Guild',style:'destructive',onPress:()=>void runMember(()=>removeGuildMember(member.account_id),'Unable to remove member.')});
-  Alert.alert(member.display_name,st("Guild member controls"),choices);
+  gameAlert.alert(member.display_name,st("Guild member controls"),choices);
  };
- const leaveCurrentGuild=()=>Alert.alert(st("Leave Guild?"),st("You will lose access to Guild projects, chat and member benefits until you join another Guild."),[
+ const leaveCurrentGuild=()=>gameAlert.alert(st("Leave Guild?"),st("You will lose access to Guild projects, chat and member benefits until you join another Guild."),[
   {text:st("Cancel"),style:'cancel'},
-  {text:st("Leave Guild"),style:'destructive',onPress:()=>void (async()=>{setBusy(true);try{await leaveGuild();await load();onApplicationsChanged?.()}catch(error){Alert.alert(st("Leave Guild"),error instanceof Error?error.message:st("Unable to leave Guild."))}finally{setBusy(false)}})()}
+  {text:st("Leave Guild"),style:'destructive',onPress:()=>void (async()=>{setBusy(true);try{await leaveGuild();await load();onApplicationsChanged?.()}catch(error){gameAlert.alert(st("Leave Guild"),error instanceof Error?error.message:st("Unable to leave Guild."))}finally{setBusy(false)}})()}
  ]);
- const disbandCurrentGuild=()=>Alert.alert(st("Disband Guild?"),st("This permanently closes the Guild for every member and removes its shared Guild progress."),[
+ const disbandCurrentGuild=()=>gameAlert.alert(st("Disband Guild?"),st("This permanently closes the Guild for every member and removes its shared Guild progress."),[
   {text:st("Cancel"),style:'cancel'},
-  {text:'Continue',style:'destructive',onPress:()=>Alert.alert(st("Confirm disband"),'Disband '+(guild?.name??'this Guild')+' permanently?',[
+  {text:'Continue',style:'destructive',onPress:()=>gameAlert.alert(st("Confirm disband"),'Disband '+(guild?.name??'this Guild')+' permanently?',[
    {text:st("Cancel"),style:'cancel'},
-   {text:st("Disband"),style:'destructive',onPress:()=>void (async()=>{setBusy(true);try{await disbandGuild();await load();onApplicationsChanged?.()}catch(error){Alert.alert(st("Disband Guild"),error instanceof Error?error.message:st("Unable to disband Guild."))}finally{setBusy(false)}})()}
+   {text:st("Disband"),style:'destructive',onPress:()=>void (async()=>{setBusy(true);try{await disbandGuild();await load();onApplicationsChanged?.()}catch(error){gameAlert.alert(st("Disband Guild"),error instanceof Error?error.message:st("Unable to disband Guild."))}finally{setBusy(false)}})()}
   ])}
  ]);
  const openMember=(member:GuildMember)=>setSelected({account_id:member.account_id,sender_name:member.display_name,guild_tag:member.guild_tag,guild_tag_color_id:member.guild_tag_color_id,player_badges:member.player_badges});

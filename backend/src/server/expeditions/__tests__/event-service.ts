@@ -39,6 +39,12 @@ for(const definition of EVENT_EXPEDITIONS){
 assert.deepEqual(effects,new Set(['boss_attack_down','boss_hp_down','boss_defense_down','reward_bonus','preboss_heal']));
 const veil=EVENT_EXPEDITIONS.find(item=>item.id==='EVENT_VEILBREAK_GLOAM_BREACH')!,veilService=new EventExpeditionService(new MemoryEventRunRepository(),'veil-telegraph-secret');
 const veilRun=veilService.start({requestId:'veil-telegraph-request',runId:'veil-telegraph-run',accountId:'a',eventId:veil.id,activeLiveEventId:'EVT_ANNUAL_010_2026',members,players,nowMs:now});
+assert.equal(veil.minLevel,15);
+assert.deepEqual(veil.levelScaling,{minLevel:15,maxLevel:35});
+assert.equal(veilRun.syncLevel,35,'high-level lobbies should clamp to the Veilbreak bracket');
+const mixedPlayers=players.map((player,index)=>({...player,level:[15,20,25,35][index]}));
+const mixedVeil=veilService.start({requestId:'veil-mixed-request',runId:'veil-mixed-run',accountId:'a',eventId:veil.id,activeLiveEventId:'EVT_ANNUAL_010_2026',members,players:mixedPlayers,nowMs:now});
+assert.equal(mixedVeil.syncLevel,24,'Veilbreak should sync to the lobby average within its bracket');
 const fullVeil=eventBossMechanicProjection({...veilRun,objective:{id:veil.objective.id,count:veil.objective.maxCount}})!;
 assert.ok(fullVeil.telegraph.suppressedAbilities.some(ability=>ability.label==='Lantern Extinction'));
 assert.ok(!fullVeil.telegraph.castAbilities.some(ability=>ability.label==='Lantern Extinction'));
@@ -67,4 +73,9 @@ assert.equal(run.rewardMarks,suncrest.rewardMarks+beforeBoss.rewardBonus+objecti
 assert.equal(service.claimReward({runId:run.id,accountId:'a',requestId:'event-claim'}).marks,run.rewardMarks);
 assert.equal(service.claimReward({runId:run.id,accountId:'a',requestId:'event-claim'}).idempotentReplay,true);
 assert.equal(service.choose({runId:run.id,accountId:'a',optionNodeId:'boss',requestId:'event-choice-boss'}).phase,'completed');
+const clearRepo=new MemoryEventRunRepository(),clearService=new EventExpeditionService(clearRepo,'daily-clear-secret');
+for(let index=0;index<3;index++)clearRepo.save({...run,id:`daily-clear-run-${index}`,requestId:`daily-clear-request-${index}`,settlement:'pending',phase:'completed',rewardMarks:1});
+assert.equal(clearService.claimReward({runId:'daily-clear-run-0',accountId:'a',requestId:'daily-clear-0',nowMs:now}).marks,1);
+assert.equal(clearService.claimReward({runId:'daily-clear-run-1',accountId:'a',requestId:'daily-clear-1',nowMs:now}).marks,1);
+assert.throws(()=>clearService.claimReward({runId:'daily-clear-run-2',accountId:'a',requestId:'daily-clear-2',nowMs:now}),/event_daily_clear_limit/);
 console.log('event service tests passed');

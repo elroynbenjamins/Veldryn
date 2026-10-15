@@ -15,19 +15,23 @@ import {EquipmentCraftQueuePanel} from './EquipmentCraftQueuePanel';
 import {ActivityArtwork} from './ActivityArtwork';
 import {progressWithinLevel} from '../core/progression';
 
-type Props=Omit<ComponentProps<typeof CraftingRecipeBrowser>,'skillId'|'category'> & {queueProps:ComponentProps<typeof EquipmentCraftQueuePanel>};
+type EquipmentCraftingSkill='smithing'|'tailoring';
+type Props=Omit<ComponentProps<typeof CraftingRecipeBrowser>,'skillId'|'category'> & {queueProps:ComponentProps<typeof EquipmentCraftQueuePanel>;skillId?:EquipmentCraftingSkill};
 const slots=['helmet','chest','gloves','legs','boots','weapon','offhand','cape','amulet','ring'];
 const slotLabels:Record<string,string>={helmet:'Helmet',chest:'Chest',gloves:'Gloves',legs:'Legs',boots:'Boots',weapon:'Weapon',offhand:'Off-hand',cape:'Cape',amulet:'Necklace',ring:'Ring'};
 
-export function SmithingHeader({state,onBack}:{state:Props['state'];onBack?:()=>void}){
- const C=useGameTheme(),{gl}=useGameplayText(),skill=state.skills.find(row=>row.skillId==='smithing'),p=progressWithinLevel(skill?.xp??0,skill?.level??1),ratio=(skill?.level??1)>=100?1:Math.max(0,Math.min(1,p.current/Math.max(1,p.need)));
- return <View style={{gap:10}}>{onBack?<Pressable accessibilityRole="button" onPress={onBack} style={{minHeight:44,justifyContent:'center',alignSelf:'flex-start'}}><Text style={{fontSize:16,color:C.muted}}>‹  {gl('Skills')}</Text></Pressable>:null}<View style={s.between}><View style={{flexDirection:'row',alignItems:'center',gap:10}}><ActivityArtwork id="smithing" size={36}/><Text accessibilityRole="header" style={{fontSize:26,fontWeight:'700',color:C.text}}>{gl('Smithing')}</Text></View><Text style={[s.body,{color:C.text}]}>{gl('Level')} {skill?.level??1}</Text></View><View style={{flexDirection:'row',alignItems:'center',gap:10}}><View style={{flex:1,height:6,backgroundColor:C.line,borderRadius:3,overflow:'hidden'}}><View style={{height:6,width:`${ratio*100}%`,backgroundColor:C.accent}}/></View><Text style={[s.caption,{color:C.muted}]}>{(skill?.level??1)>=100?gl('Mastered'):Math.floor(p.current)+' / '+p.need+' XP'}</Text></View></View>;
+export function EquipmentCraftingHeader({state,onBack,skillId='smithing'}:{state:Props['state'];onBack?:()=>void;skillId?:EquipmentCraftingSkill}){
+ const C=useGameTheme(),{gl}=useGameplayText(),skill=state.skills.find(row=>row.skillId===skillId),p=progressWithinLevel(skill?.xp??0,skill?.level??1),ratio=(skill?.level??1)>=100?1:Math.max(0,Math.min(1,p.current/Math.max(1,p.need)));
+ return <View style={{gap:10}}>{onBack?<Pressable accessibilityRole="button" onPress={onBack} style={{minHeight:44,justifyContent:'center',alignSelf:'flex-start'}}><Text style={{fontSize:16,color:C.muted}}>‹  {gl('Skills')}</Text></Pressable>:null}<View style={s.between}><View style={{flexDirection:'row',alignItems:'center',gap:10}}><ActivityArtwork id={skillId} size={36}/><Text accessibilityRole="header" style={{fontSize:26,fontWeight:'700',color:C.text}}>{gl(skillId)}</Text></View><Text style={[s.body,{color:C.text}]}>{gl('Level')} {skill?.level??1}</Text></View><View style={{flexDirection:'row',alignItems:'center',gap:10}}><View style={{flex:1,height:6,backgroundColor:C.line,borderRadius:3,overflow:'hidden'}}><View style={{height:6,width:`${ratio*100}%`,backgroundColor:C.accent}}/></View><Text style={[s.caption,{color:C.muted}]}>{(skill?.level??1)>=100?gl('Mastered'):Math.floor(p.current)+' / '+p.need+' XP'}</Text></View></View>;
 }
+
+/** @deprecated Use EquipmentCraftingHeader so Tailoring and Smithing stay in the same set browser. */
+export const SmithingHeader=EquipmentCraftingHeader;
 
 /** Collection browsing is presentation only; existing forge commands own all costs and gates. */
 export function SmithingCollection(props:Props){
- const {state,preferredRecipeId,onCraft,queueProps}=props,C=useGameTheme(),{gl,gt,language}=useGameplayText();
- const recipes=useMemo(()=>RECIPES.filter(r=>r.skillId==='smithing'&&!r.noviceSetId&&(!r.classId||r.classId===state.character?.classId)),[state.character?.classId]);
+ const {state,preferredRecipeId,onCraft,queueProps,skillId='smithing'}=props,C=useGameTheme(),{gl,gt,language}=useGameplayText();
+ const recipes=useMemo(()=>RECIPES.filter(r=>r.skillId===skillId&&!r.noviceSetId&&(!r.classId||r.classId===state.character?.classId)),[state.character?.classId,skillId]);
  const preferred=recipes.find(r=>r.id===preferredRecipeId);
  const [tab,setTab]=useState<'equipment'|'materials'|'tools'>(preferred&&!preferred.v33SetId?(itemDef(preferred.output.itemId).type==='tool'?'tools':'materials'):'equipment');
  const sets=useMemo(()=>EQUIPMENT_SETS.filter(set=>recipes.some(r=>r.v33SetId===set.id)),[recipes]);
@@ -70,10 +74,10 @@ export function SmithingCollection(props:Props){
     <Pressable accessibilityRole="button" accessibilityState={{expanded:detailsOpen}} onPress={()=>setDetailsOpen(!detailsOpen)} style={[s.disclosure,panel]}><Text style={[s.body,muted]}>{gl('Details & sources')}</Text><Text style={muted}>{detailsOpen?'⌃':'⌄'}</Text></Pressable>
     {detailsOpen?<RecipeCard key={recipe.id} state={state} recipe={recipe} status={status} onCraft={onCraft} onNavigate={props.onNavigate} onCraftPrerequisites={props.onCraftPrerequisites} onTrackPreparation={props.onTrackPreparation} detailsOnly/>:null}
     {error?<Text accessibilityRole="alert" style={{color:C.bad}}>{error}</Text>:null}
-    <Pressable accessibilityRole="button" accessibilityState={{disabled:!ready}} disabled={!ready} onPress={()=>{try{onCraft(recipe.id)}catch(e){setError(e instanceof Error?e.message:String(e))}}} style={({pressed})=>[s.craft,{backgroundColor:C.primaryButton,borderColor:C.primaryButtonBorder,opacity:ready?1:.5},pressed&&s.pressed]}><ActivityArtwork id="smithing" size={24}/><Text style={[s.body,{color:C.primaryButtonText,fontWeight:'700'}]}>{gl(queue.freeSlots<=0?'Queue craft':'Craft')} · {formatQueueTimeV31(equipmentCraftDurationSeconds(state,recipe.id))} · {recipe.gold} {gl('Gold')}</Text></Pressable>
+    <Pressable accessibilityRole="button" accessibilityState={{disabled:!ready}} disabled={!ready} onPress={()=>{try{onCraft(recipe.id)}catch(e){setError(e instanceof Error?e.message:String(e))}}} style={({pressed})=>[s.craft,{backgroundColor:C.primaryButton,borderColor:C.primaryButtonBorder,opacity:ready?1:.5},pressed&&s.pressed]}><ActivityArtwork id={skillId} size={24}/><Text style={[s.body,{color:C.primaryButtonText,fontWeight:'700'}]}>{gl(queue.freeSlots<=0?'Queue craft':'Add to forge')} · {formatQueueTimeV31(equipmentCraftDurationSeconds(state,recipe.id))} · {recipe.gold} {gl('Gold')}</Text></Pressable>
    </View>
-  </>:tab==='equipment'?<Text style={[s.body,muted]}>{gl('No recipes available.')}</Text>:<CraftingRecipeBrowser key={tab} {...props} skillId="smithing" category={tab} initialQuery={preferred&&!preferred.v33SetId?props.initialQuery:''}/>}
-  <Pressable accessibilityRole="button" accessibilityState={{expanded:queueOpen}} onPress={()=>setQueueOpen(!queueOpen)} style={[s.queue,panel]}><ActivityArtwork id="smithing" size={28}/><View style={s.flex}><Text style={[s.body,text]}>{gl('Forge')} · {queue.active} {gl('active')}{queue.ready?' · '+queue.ready+' '+gl('Ready'):''}{queue.waiting?' · '+queue.waiting+' '+gl('Waiting'):''}</Text>{active?<View style={[s.track,{backgroundColor:C.line}]}><View style={{width:`${progress*100}%`,height:4,backgroundColor:C.accent}}/></View>:null}</View>{active?<Text style={[s.caption,muted]}>{formatQueueTimeV31(active.remainingSeconds)}</Text>:null}<Text style={muted}>{queueOpen?'⌃':'›'}</Text></Pressable>
+  </>:tab==='equipment'?<Text style={[s.body,muted]}>{gl('No recipes available.')}</Text>:<CraftingRecipeBrowser key={tab} {...props} skillId={skillId} category={tab} initialQuery={preferred&&!preferred.v33SetId?props.initialQuery:''}/>}
+  <Pressable accessibilityRole="button" accessibilityState={{expanded:queueOpen}} onPress={()=>setQueueOpen(!queueOpen)} style={[s.queue,panel]}><ActivityArtwork id={skillId} size={28}/><View style={s.flex}><Text style={[s.body,text]}>{gl('Forge')} · {queue.active} {gl('active')}{queue.ready?' · '+queue.ready+' '+gl('Ready'):''}{queue.waiting?' · '+queue.waiting+' '+gl('Waiting'):''}</Text>{active?<View style={[s.track,{backgroundColor:C.line}]}><View style={{width:`${progress*100}%`,height:4,backgroundColor:C.accent}}/></View>:null}</View>{active?<Text style={[s.caption,muted]}>{formatQueueTimeV31(active.remainingSeconds)}</Text>:null}<Text style={muted}>{queueOpen?'⌃':'›'}</Text></Pressable>
   {queueOpen||queue.ready>0||props.queueProps.forgeResults?.length?<EquipmentCraftQueuePanel {...queueProps}/>:null}
  </View>;
 }

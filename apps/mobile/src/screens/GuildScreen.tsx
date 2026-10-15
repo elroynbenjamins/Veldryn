@@ -1,10 +1,11 @@
+import {gameAlert} from '../core/game-alerts';
 import {useSocialText} from '../i18n/social';
 import {useGameLanguage} from '../i18n/GameLanguageProvider';
 import {socialLabel} from '../i18n/social';
 import {IdentityArtwork} from '../components/SocialIdentity';
 import {GuildIdentitySummary} from '../components/GuildIdentitySummary';
 import {useState,type ReactNode,useMemo} from 'react';
-import {Alert,Modal,Pressable,ScrollView,StyleSheet,Text,View} from 'react-native';
+import {Modal,Pressable,ScrollView,StyleSheet,Text,View} from 'react-native';
 import {GameButton} from '../components/GameButton';
 import {Panel} from '../components/Panel';
 import {OnlineGuildMusterPanel} from '../components/OnlineGuildMusterPanel';
@@ -66,7 +67,7 @@ export function GuildScreen({state,onChange,onlineDirectory,onlineManagement,onl
   const localPlayerRole='Officer' as LocalGuildMember['role'];
   const canUpgradeSkills=localPlayerRole==='Leader'||localPlayerRole==='Officer';
   const [memberRoles,setMemberRoles]=useState<Record<string,LocalGuildMember['role']>>({}),[selectedMember,setSelectedMember]=useState<LocalGuildMember|null>(null);
-  const manageMember=(member:LocalGuildMember)=>{const current=memberRoles[member.name]??member.role;Alert.alert(member.name,`${current} · Level ${member.level}`,[{text:'Cancel',style:'cancel'},{text:current==='Member'?'Promote to Officer':'Demote to Member',onPress:()=>setMemberRoles(previous=>({...previous,[member.name]:current==='Member'?'Officer':'Member'}))},{text:'View member activity',onPress:()=>Alert.alert(member.name,member.status)}])};
+  const manageMember=(member:LocalGuildMember)=>{const current=memberRoles[member.name]??member.role;gameAlert.alert(member.name,`${current} · Level ${member.level}`,[{text:'Cancel',style:'cancel'},{text:current==='Member'?'Promote to Officer':'Demote to Member',onPress:()=>setMemberRoles(previous=>({...previous,[member.name]:current==='Member'?'Officer':'Member'}))},{text:'View member activity',onPress:()=>gameAlert.alert(member.name,member.status)}])};
   return <><ScrollView contentContainerStyle={s.root} keyboardShouldPersistTaps="handled" keyboardDismissMode="on-drag" showsVerticalScrollIndicator={false} showsHorizontalScrollIndicator={false}>
     <Text accessibilityRole="header" style={s.h}>Guild</Text>
     <View accessibilityRole="tablist" style={s.tabs}>{(['Home','PvE','Roster','Skills','Bank'] as const).map(value=><TabChip key={value} label={value==='Roster'?st('Roster · {count}',{count:joined?ROSTER.length:0}):value} selected={section===value} onPress={()=>setSection(value)}/>)}</View>

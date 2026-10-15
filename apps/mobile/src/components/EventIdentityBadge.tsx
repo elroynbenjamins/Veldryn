@@ -25,6 +25,8 @@ export function EventIdentityBadge({event,visualKey,accent='#f2c14e',size=72}:{e
 }
 const s=StyleSheet.create({
   frame:{alignItems:'center',justifyContent:'center',overflow:'hidden',borderWidth:1,backgroundColor:'rgba(7,17,28,.82)',shadowOpacity:.3,shadowRadius:8,shadowOffset:{width:0,height:0},elevation:2},
-  art:{alignSelf:'center'},
+  // The source badge has a tiny optical bias to the right; a one-pixel
+  // correction keeps the eye centered at the rendered sizes used in the UI.
+  art:{alignSelf:'center',transform:[{translateX:-1}]},
   glyph:{fontWeight:'900',textAlign:'center'},
 });

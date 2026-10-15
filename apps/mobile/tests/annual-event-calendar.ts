@@ -8,7 +8,7 @@ function ok(value:unknown,message:string){if(!value)fail(message)}
 let state=createCharacter(newGame(1),'IRONWARDEN','Calendar Tester');
 let rows=annualEventCalendar(state);
 
-equal(rows.length,9,'production annual event count');
+equal(rows.length,8,'eight scheduled events remain after retiring Harvestwake');
 equal(rows[0]?.eventId,'EVT_ANNUAL_001_2026','Turning of the Age starts the annual calendar');
 equal(rows[0]?.windowLabel,'Dec 29 – Jan 4','Turning window label');
 equal(rows[1]?.eventId,'EVT_ANNUAL_002_2026','Heartbond follows Turning');

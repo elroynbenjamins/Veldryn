@@ -48,7 +48,7 @@ export function CompanionTutorial({state,now,step,onAdvance,onFinish}:{state:Gam
      {COMPANION_TOUR_STEPS.map((row,position)=><View key={row.section} style={{flex:1,height:4,borderRadius:2,backgroundColor:position<=index?C.accent:C.line}}/>)}
     </View>
    </View>
-   <ScrollView key={index} contentContainerStyle={{padding:16,gap:12}} showsVerticalScrollIndicator>
+   <ScrollView key={index} contentContainerStyle={{padding:16,gap:12}} showsVerticalScrollIndicator={false} showsHorizontalScrollIndicator={false}>
     <View accessibilityLiveRegion="polite" style={{padding:14,borderRadius:18,backgroundColor:C.infoSurface,borderWidth:1,borderColor:C.info,gap:8}}>
      <View style={{flexDirection:'row',alignItems:'center',gap:10}}><UiIcon name={icons[index]} size={26}/><Text accessibilityRole="header" style={{fontSize:18,fontWeight:'600',color:C.text,flex:1}}>{t(current.title)}</Text></View>
      <Text style={{fontSize:14,lineHeight:20,color:C.text}}>{t(current.body)}</Text>

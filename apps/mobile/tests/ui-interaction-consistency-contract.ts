@@ -25,7 +25,6 @@ for(const path of [
  'src/components/StoryBossBattleModal.tsx',
  'src/components/ChatPlayerSheet.tsx',
  'src/screens/DailySuppliesScreen.tsx',
- 'src/screens/ProgressionPlannerScreen.tsx',
  'src/screens/PetBonusOverviewScreen.tsx',
 ]){
  const source=read(path);
@@ -108,10 +107,6 @@ ok(inventory.includes('reduceMotion={state.settings.reduceMotion}'),'Inventory m
 const daily=read('src/screens/DailySuppliesScreen.tsx');
 ok(daily.includes('GameModalHeader')&&daily.includes('accessibilityRole="radio"'),'Daily Supplies picker must use shared header and radio semantics');
 
-const planner=read('src/screens/ProgressionPlannerScreen.tsx');
-ok(planner.includes('GameModalHeader')&&planner.includes('GameModalSurface'),'Working Toward goal creation must use the shared interaction shell');
-ok(planner.includes('backgroundColor:C.selection'),'Working Toward selected options must use semantic selection styling');
-ok(planner.includes('sheetScroll')&&planner.includes('keyboardShouldPersistTaps="handled"')&&planner.includes('keyboardDismissMode="on-drag"'),'Working Toward goal authoring must keep actions reachable and tappable while the number keyboard is open');
 const idleRules=read('src/components/IdleRulesEditorV40.tsx');
 ok(idleRules.includes('GameModalHeader')&&idleRules.includes('reduceMotion={state.settings.reduceMotion}'),'Advanced Idle Rules must use the shared motion-safe sheet/header interaction');
 ok(idleRules.includes('quickBlocked')&&idleRules.includes('idle_rule_limit_reached'),'Quick Idle Rule presets must surface and enforce the five-rule safety boundary');

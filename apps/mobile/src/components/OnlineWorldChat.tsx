@@ -1,6 +1,7 @@
+import {gameAlert} from '../core/game-alerts';
 import {useSocialText} from '../i18n/social';
 import {useEffect,useMemo,useRef,useState} from 'react';
-import {Alert,Pressable,ScrollView,StyleSheet,Text,View} from 'react-native';
+import {Pressable,ScrollView,StyleSheet,Text,View} from 'react-native';
 import {GameButton} from './GameButton';
 import {Panel} from './Panel';
 import {ChatPlayerSheet} from './ChatPlayerSheet';
@@ -30,8 +31,8 @@ export function OnlineWorldChat({playerName,language,unlockedEmoteIds=[],trayIds
  if(!open&&!embedded)return <Panel><Text style={s.title}>{ot(language,'chat.world')}</Text><Text style={s.note}>{ot(language,'chat.closed')}</Text><GameButton title={ot(language,'chat.open')} onPress={()=>setOpen(true)}/></Panel>;
  const send=async()=>{
   const body=text.trim();if(!body||sending.current||!accountId)return;
-  if(chatEmoteCount(body)>CHAT_MAX_EMOTES_PER_MESSAGE){Alert.alert(st("World chat"),st("Use at most 2 emotes in one message."));return}
-  if(chatUnavailableEmoteIds(body,unlockedEmoteIds).length){Alert.alert(st("World chat"),st("One or more emotes in this message are still locked."));return}
+  if(chatEmoteCount(body)>CHAT_MAX_EMOTES_PER_MESSAGE){gameAlert.alert(st("World chat"),st("Use at most 2 emotes in one message."));return}
+  if(chatUnavailableEmoteIds(body,unlockedEmoteIds).length){gameAlert.alert(st("World chat"),st("One or more emotes in this message are still locked."));return}
   let request=pending.current.get(draftKey);
   if(!request||request.body!==body){request={body,key:worldChatCommandKey()};pending.current.set(draftKey,request);}
   sending.current=true;setBusy(true);
@@ -43,7 +44,7 @@ export function OnlineWorldChat({playerName,language,unlockedEmoteIds=[],trayIds
    // channels or editing while sending must not erase a different draft.
    setDrafts(previous=>previous[draftKey]?.trim()===body?{...previous,[draftKey]:''}:previous);
    await refresh();
-  }catch(reason){if(currentAccount.current===accountId&&pending.current.get(draftKey)===request)Alert.alert(st("World chat"),reason instanceof Error?reason.message:st("Unable to send message."));}
+  }catch(reason){if(currentAccount.current===accountId&&pending.current.get(draftKey)===request)gameAlert.alert(st("World chat"),reason instanceof Error?reason.message:st("Unable to send message."));}
   finally{sending.current=false;setBusy(false);}
  };
  const mentionNames=[...new Map(rows.map(row=>[row.sender_name.toLocaleLowerCase(),row.sender_name])).values()];

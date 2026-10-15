@@ -1,6 +1,7 @@
+import {gameAlert} from '../core/game-alerts';
 import {useSocialText} from '../i18n/social';
 import {useEffect,useMemo,useState} from 'react';
-import {Alert,Pressable,StyleSheet,Text,View} from 'react-native';
+import {Pressable,StyleSheet,Text,View} from 'react-native';
 import {GuildCrest} from './SocialIdentity';
 import {GameTextInput as TextInput} from './GameTextInput';
 import {GameButton} from './GameButton';
@@ -18,12 +19,12 @@ export function OnlineGuildBrowser(){
  const st=useSocialText();
  const C=useGameTheme(),s=useMemo(()=>makeStyles(C),[C]);
  const [guilds,setGuilds]=useState<OnlineGuild[]>([]),[busy,setBusy]=useState(false),[loaded,setLoaded]=useState(false),[name,setName]=useState(''),[tag,setTag]=useState(''),[tagStatus,setTagStatus]=useState<GuildTagAvailability|null>(null),[showCreate,setShowCreate]=useState(false),[policy,setPolicy]=useState<'open'|'apply'>('open');
- const load=async()=>{if(!onlineConfigured)return;setBusy(true);try{setGuilds(await browseGuilds());setLoaded(true)}catch(error){Alert.alert(st("Guilds"),error instanceof Error?error.message:st("Unable to load guilds."))}finally{setBusy(false)}};
+ const load=async()=>{if(!onlineConfigured)return;setBusy(true);try{setGuilds(await browseGuilds());setLoaded(true)}catch(error){gameAlert.alert(st("Guilds"),error instanceof Error?error.message:st("Unable to load guilds."))}finally{setBusy(false)}};
  useEffect(()=>{void load()},[]);useEffect(()=>setTagStatus(null),[tag]);if(!onlineConfigured)return null;
  const nameIssue=name?guildNameError(name):'';
- const checkTag=async()=>{setBusy(true);try{const result=await guildTagAvailability(tag);setTagStatus(result);return result}catch(error){Alert.alert(st("Guild tag"),error instanceof Error?error.message:st("Unable to check that tag."));return null}finally{setBusy(false)}};
- const join=async(guild:OnlineGuild)=>{setBusy(true);try{const result=await requestGuildMembership(guild.id);Alert.alert(result==='joined'?'Guild joined':'Application sent',result==='joined'?`You joined ${guild.name}.`:`${guild.name} will review your application.`);await load()}catch(error){Alert.alert(st("Guilds"),error instanceof Error?error.message:st("Unable to join guild."))}finally{setBusy(false)}};
- const create=async()=>{setBusy(true);try{const status=tagStatus?.normalizedTag===normalizeGuildTag(tag)?tagStatus:await guildTagAvailability(tag);setTagStatus(status);if(!status.available)throw new Error(guildTagAvailabilityMessage(status));await createOnlineGuild(normalizeGuildName(name),status.normalizedTag!,policy,1);setName('');setTag('');setTagStatus(null);setShowCreate(false);Alert.alert(st("Guild created"),st("Your guild tag is permanently reserved and visible with your guild identity."));await load()}catch(error){Alert.alert(st("Create guild"),error instanceof Error?error.message:st("Unable to create guild."))}finally{setBusy(false)}};
+ const checkTag=async()=>{setBusy(true);try{const result=await guildTagAvailability(tag);setTagStatus(result);return result}catch(error){gameAlert.alert(st("Guild tag"),error instanceof Error?error.message:st("Unable to check that tag."));return null}finally{setBusy(false)}};
+ const join=async(guild:OnlineGuild)=>{setBusy(true);try{const result=await requestGuildMembership(guild.id);gameAlert.alert(result==='joined'?'Guild joined':'Application sent',result==='joined'?`You joined ${guild.name}.`:`${guild.name} will review your application.`);await load()}catch(error){gameAlert.alert(st("Guilds"),error instanceof Error?error.message:st("Unable to join guild."))}finally{setBusy(false)}};
+ const create=async()=>{setBusy(true);try{const status=tagStatus?.normalizedTag===normalizeGuildTag(tag)?tagStatus:await guildTagAvailability(tag);setTagStatus(status);if(!status.available)throw new Error(guildTagAvailabilityMessage(status));await createOnlineGuild(normalizeGuildName(name),status.normalizedTag!,policy,1);setName('');setTag('');setTagStatus(null);setShowCreate(false);gameAlert.alert(st("Guild created"),st("Your guild tag is permanently reserved and visible with your guild identity."));await load()}catch(error){gameAlert.alert(st("Create guild"),error instanceof Error?error.message:st("Unable to create guild."))}finally{setBusy(false)}};
 
  return <Panel>
   <View style={s.header}><View style={s.flex}><Text style={s.eyebrow}>{st("GUILD DIRECTORY")}</Text><Text style={s.title}>{st("Find a Guild")}</Text><Text style={s.sub}>{st("Browse live Guild identities and join policies. Three-letter tags are globally unique.")}</Text></View><View style={s.headerAction}><GameButton compact title={showCreate?st("Close create"):st("Create")} tone="secondary" onPress={()=>setShowCreate(v=>!v)}/></View></View>

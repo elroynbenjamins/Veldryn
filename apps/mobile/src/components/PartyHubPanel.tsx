@@ -1,3 +1,4 @@
+import {gameAlert} from '../core/game-alerts';
 import {useSocialText} from '../i18n/social';
 import {CompactPlayerIdentity} from './CompactPlayerIdentity';
 import {RecruitmentListing} from './RecruitmentListing';
@@ -5,7 +6,7 @@ import {GameButton} from './GameButton';
 import {equipmentTheme,radii,typography,type ThemeColors} from '../theme/theme';
 import {useGameTheme} from '../theme/ThemeContext';
 import React from 'react';
-import { Alert, Pressable, StyleSheet, Text, View } from 'react-native';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
 import {
   EMPTY_RECRUITMENT_FILTERS,
   contractProgressRatio,
@@ -79,7 +80,7 @@ export function PartyHubPanel(props: PartyHubPanelProps) {
         <Pressable accessibilityRole="button" accessibilityLabel={`Open ${member.characterName}'s profile`} disabled={!props.onOpenMemberProfile} onPress={()=>props.onOpenMemberProfile?.(member)} style={({pressed})=>[styles.memberIdentity,pressed&&styles.memberPressed]}>
           <CompactPlayerIdentity accountId={member.accountId} badges={member.playerBadges} name={member.characterName} className={member.className} status={member.isLeader?'PARTY LEADER':member.role.toUpperCase()} statusTone={member.isLeader?'accent':'info'} hint={props.onOpenMemberProfile?st("VIEW PROFILE ›"):undefined}/>
         </Pressable>
-        {(()=>{const permissions=partyMemberManagement(canManageParty,props.accountId,member.accountId);return permissions.canTransfer||permissions.canRemove?<View style={styles.memberActions}><GameButton compact title="•••" tone="secondary" onPress={()=>Alert.alert(member.characterName,'Manage party member',[...(permissions.canTransfer?[{text:st('Lead'),onPress:()=>props.onTransferLeadership?.(member)}]:[]),...(permissions.canRemove?[{text:st('Kick'),onPress:()=>props.onRemoveMember?.(member)}]:[]),{text:'Cancel',style:'cancel'}])}/></View>:null})()}
+        {(()=>{const permissions=partyMemberManagement(canManageParty,props.accountId,member.accountId);return permissions.canTransfer||permissions.canRemove?<View style={styles.memberActions}><GameButton compact title="•••" tone="secondary" onPress={()=>gameAlert.alert(member.characterName,'Manage party member',[...(permissions.canTransfer?[{text:st('Lead'),onPress:()=>props.onTransferLeadership?.(member)}]:[]),...(permissions.canRemove?[{text:st('Kick'),onPress:()=>props.onRemoveMember?.(member)}]:[]),{text:'Cancel',style:'cancel'}])}/></View>:null})()}
       </View>)}
     </View>}
 

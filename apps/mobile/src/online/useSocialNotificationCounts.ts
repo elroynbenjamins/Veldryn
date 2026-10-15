@@ -23,6 +23,7 @@ export interface SocialNotificationCounts{
 }
 
 const ZERO:SocialNotificationCounts={friendRequests:0,chatUnread:0,chatMentions:0,guildChatUnread:0,guildChatMentions:0,guildFirstUnreadMessageId:undefined,partyChatUnread:0,partyChatMentions:0,partyFirstUnreadMessageId:undefined,guild:0,guildApplications:0,guildInvites:0,party:0,partyInvites:0,events:0,account:0};
+const BACKGROUND_NOTIFICATION_REFRESH_MS=60_000;
 
 export function useSocialNotificationCounts(){
   const {session}=useAuthSession(),accountId=session?.user.id;
@@ -76,7 +77,7 @@ export function useSocialNotificationCounts(){
   useEffect(()=>{
     inFlight.current=null;countsAccount.current=accountId;setCounts(ZERO);void refresh(false);
     let previous=AppState.currentState;
-    const id=setInterval(()=>{if(AppState.currentState==='active')void refresh(false);},30000);
+    const id=setInterval(()=>{if(AppState.currentState==='active')void refresh(false);},BACKGROUND_NOTIFICATION_REFRESH_MS);
     const sub=AppState.addEventListener('change',status=>{const resumed=previous!=='active'&&status==='active';previous=status;if(resumed)void refresh();});
     return()=>{inFlight.current=null;clearInterval(id);sub.remove();};
   },[accountId,refresh]);

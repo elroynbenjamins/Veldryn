@@ -66,8 +66,8 @@ export class OnlineEventExpeditionRuntime{
   const record=deriveOnlineCoopLoadout(accountId,game.state,game.version);
   if(record.characterId!==request.characterId||request.loadoutId!=='current')throw new GameplayError('loadout_not_owned',403);
   if(request.loadoutRevision!==record.revision){const replay=await this.receipt(accountId,'event_start_v1',accountId,request.requestId,hash);if(replay)return replay.response;throw new GameplayError('stale_game_version',409);}
-  const freeze=(source:AuthoritativeLoadoutRecord)=>resolveAndFreezeLoadout({accountId:source.accountId,characterId:source.characterId,loadoutId:source.loadoutId,expectedRevision:source.revision,minLevel:definition.minLevel,syncLevel:definition.minLevel,repository:{getOwnedLoadout:()=>source}});
-  const controller=freeze(record);
+  const freeze=(source:AuthoritativeLoadoutRecord,syncLevel=definition.minLevel)=>resolveAndFreezeLoadout({accountId:source.accountId,characterId:source.characterId,loadoutId:source.loadoutId,expectedRevision:source.revision,minLevel:definition.minLevel,syncLevel,repository:{getOwnedLoadout:()=>source}});
+  const controllerForRole=freeze(record,definition.minLevel);
   const raw=await this.services.rpc<Echo[]>('eligible_online_coop_echoes_server_v1',{p_actor_account_id:accountId,p_min_level:definition.minLevel});
   const profiles:PublishedEcho[]=[];
   for(const echo of raw){
@@ -75,12 +75,14 @@ export class OnlineEventExpeditionRuntime{
    try{profiles.push({profileId:echo.profileId,sourceAccountId:echo.sourceAccountId,publishedAtMs:echo.publishedAtMs,optedIn:true,contentVersion:ONLINE_COOP_BALANCE_VERSION,blockedAccountIds:[],snapshot:freeze(echo.record)});}catch{continue;}
   }
   const seed=this.services.randomId()+this.services.randomId();
-  const selected=recruitEligibleEchoes({serverSecret:seed,requestId:request.requestId,controllerAccountId:accountId,controllerRole:controller.readiness.role,controllerClassId:controller.classId,contentVersion:ONLINE_COOP_BALANCE_VERSION,nowMs:game.serverNow,profiles});
-  const snapshots=[controller,...selected.map(echo=>echo.snapshot)],runId=this.services.randomId(),repository=new MemoryEventRunRepository(),domain=new EventExpeditionService(repository,seed);
+  const selected=recruitEligibleEchoes({serverSecret:seed,requestId:request.requestId,controllerAccountId:accountId,controllerRole:controllerForRole.readiness.role,controllerClassId:controllerForRole.classId,contentVersion:ONLINE_COOP_BALANCE_VERSION,nowMs:game.serverNow,profiles});
+  const selectedSources=selected.map(echo=>raw.find(item=>item.profileId===echo.profileId)).filter((value):value is Echo=>Boolean(value));
+  const scaling=definition.levelScaling,averageLobbyLevel=scaling?Math.max(scaling.minLevel,Math.min(scaling.maxLevel,Math.round([record.characterLevel,...selectedSources.map(echo=>echo.record.characterLevel)].reduce((sum,level)=>sum+level,0)/(1+selectedSources.length)))):definition.minLevel;
+  const controller=freeze(record,averageLobbyLevel),snapshots=[controller,...selectedSources.map(echo=>freeze(echo.record,averageLobbyLevel))],runId=this.services.randomId(),repository=new MemoryEventRunRepository(),domain=new EventExpeditionService(repository,seed);
   const run=domain.start({requestId:request.requestId,runId,accountId,eventId:definition.id,activeLiveEventId:runtime.eventId,members:snapshots.map(snapshot=>({accountId:snapshot.accountId,characterId:snapshot.characterId,role:snapshot.readiness.role})),players:snapshots.map(player),nowMs:game.serverNow});
   const members=snapshots.map((snapshot,index)=>{
    if(index===0)return {snapshot,sourceHash:onlineCoopLoadoutHash(record),profileId:null};
-   const chosen=selected[index-1],source=raw.find(item=>item.profileId===chosen.profileId);if(!source)throw new GameplayError('echo_no_longer_eligible',409);
+   const chosen=selected[index-1],source=selectedSources[index-1];if(!source)throw new GameplayError('echo_no_longer_eligible',409);
    return {snapshot,sourceHash:onlineCoopLoadoutHash(source.record),profileId:chosen.profileId};
   });
   return this.services.rpc('start_online_event_expedition_server_v1',{p_account_id:accountId,p_game_version:game.version,p_request_id:request.requestId,p_request_hash:hash,p_run_id:runId,p_live_event_id:runtime.eventId,p_private_state:{run,seed,liveEventId:runtime.eventId},p_client_projection:projectOnlineEventRun(run,1,runtime.eventId),p_members:members,p_seed_hash:digest(seed)});
@@ -105,7 +107,7 @@ export class OnlineEventExpeditionRuntime{
   const request={requestId},hash=digest(request),prior=await this.receipt(accountId,'event_claim_v1',runId,requestId,hash);if(prior)return prior.response;
   const loaded=await this.services.rpc<Loaded>('load_online_event_expedition_server_v1',{p_account_id:accountId,p_run_id:runId});
   const repository=new MemoryEventRunRepository();repository.save(loaded.privateState.run);
-  const domain=new EventExpeditionService(repository,loaded.privateState.seed),reward=domain.claimReward({runId,accountId,requestId});
+  const domain=new EventExpeditionService(repository,loaded.privateState.seed),reward=domain.claimReward({runId,accountId,requestId,nowMs:loaded.serverNow});
   const run=repository.get(runId);if(!run)throw new GameplayError('event_run_not_found');
   const projection=projectOnlineEventRun(run,loaded.stateVersion+1,loaded.privateState.liveEventId);
   return this.services.rpc('claim_online_event_expedition_server_v1',{p_account_id:accountId,p_run_id:runId,p_expected_version:loaded.stateVersion,p_request_id:requestId,p_request_hash:hash,p_marks:reward.marks,p_private_state:{run,seed:loaded.privateState.seed,liveEventId:loaded.privateState.liveEventId},p_client_projection:projection});

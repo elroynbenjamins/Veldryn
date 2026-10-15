@@ -13,9 +13,9 @@ import {isV33EquipmentCraftingMaterial,v33EquipmentMaterialUse} from '../src/cor
 
 function ok(value:unknown,message:string){if(!value)throw new Error(message)}
 
-ok(V33_EQUIPMENT_RECIPES.length===2430,'All 2,430 V33 equipment pieces need a recipe');
-ok(new Set(V33_EQUIPMENT_RECIPES.map(row=>row.id)).size===2430,'V33 recipe IDs must be unique');
-ok(new Set(V33_EQUIPMENT_RECIPES.map(row=>row.output.itemId)).size===2430,'Every V33 piece should have exactly one generated output recipe');
+ok(V33_EQUIPMENT_RECIPES.length===1620,'All 1,620 V33 equipment pieces need a recipe');
+ok(new Set(V33_EQUIPMENT_RECIPES.map(row=>row.id)).size===1620,'V33 recipe IDs must be unique');
+ok(new Set(V33_EQUIPMENT_RECIPES.map(row=>row.output.itemId)).size===1620,'Every V33 piece should have exactly one generated output recipe');
 ok(V33_EQUIPMENT_RECIPES.every(row=>RECIPES.some(recipe=>recipe.id===row.id&&recipe.output.itemId===row.output.itemId)),'All generated V33 recipes must be registered in RECIPES');
 ok(V33_EQUIPMENT_RECIPES.every(row=>row.inputs.length>=2&&row.inputs.every(input=>itemDef(input.itemId).type==='material')),'Every V33 recipe needs registered material inputs');
 ok(V33_EQUIPMENT_RECIPES.every(row=>new Set(row.inputs.map(input=>input.itemId)).size===row.inputs.length),'V33 recipes must merge duplicate material rows');
@@ -25,7 +25,7 @@ ok(V33_EQUIPMENT_RECIPES.every(row=>row.level>=(TIER_CRAFTING_LEVEL_FLOOR[row.v3
 
 const finishedGearDrops=MONSTERS.flatMap(monster=>monster.drops.map(drop=>({monster,drop}))).filter(row=>itemDef(row.drop.itemId).type==='gear');
 ok(finishedGearDrops.length===0,'Combat must not bypass V33 crafting with finished equipment drops');
-const combatFedV33Materials=['MOSS_FIBER','WISP_DUST','BOAR_HIDE','WOLF_PELT','IRONWOOD_FANG','THORN_SAP','TROLL_HIDE','OATHGLASS_SHARD','TORN_OATHCLOTH','LANTERNSTEEL_SHARD','ECHO_QUARTZ','AMBERGLASS','ASTRAL_SCRIPT','RIMEGLASS','CHOIR_BLOOM'];
+const combatFedV33Materials=['MOSS_FIBER','BOAR_HIDE','WOLF_PELT','IRONWOOD_FANG','THORN_SAP','TROLL_HIDE','OATHGLASS_SHARD','TORN_OATHCLOTH','ECHO_QUARTZ','AMBERGLASS','ASTRAL_SCRIPT','RIMEGLASS','CHOIR_BLOOM'];
 for(const itemId of combatFedV33Materials){
   ok(isV33EquipmentCraftingMaterial(itemId),itemId+' must feed at least one V33 equipment recipe');
   ok(MONSTERS.some(monster=>monster.drops.some(drop=>drop.itemId===itemId)),itemId+' must retain a combat source for Equipment 2.0');

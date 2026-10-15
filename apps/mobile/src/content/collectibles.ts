@@ -39,7 +39,9 @@ export const PROFILE_COLLECTIBLES:readonly CollectibleDefinition[]=[
 export const COLLECTIBLES:readonly CollectibleDefinition[]=[
   ...CORE_PET_COLLECTIBLES,
   ...(EVENTS_RELEASED?EVENT_PET_COLLECTIBLES:[]),
-  ...PROFILE_COLLECTIBLES.filter(row=>EVENTS_RELEASED||row.collectionGroup!=='event'),
+  // The authored event backgrounds/borders below are unreleased Harvestwake
+  // prototypes. Retain their definitions for future authoring, not the journal.
+  ...PROFILE_COLLECTIBLES.filter(row=>row.collectionGroup!=='event'),
 ];
 
 export const COLLECTIBLE_TARGET_LABELS:Record<CollectibleTarget,string>={hp:'Maximum HP',attack:'Attack',defense:'Defense',skillXp:'Skill XP',characterXp:'Combat XP',gold:'Ordinary combat Gold',gatheringYield:'Ordinary gathered materials',dropChance:'Ordinary drop chance',actionSpeed:'Action speed',cookingSpeed:'Cooking speed',herbalismSpeed:'Herbalism speed',healingEffectiveness:'Healing effectiveness',craftingSpeed:'Crafting speed',dungeonReward:'Dungeon reward quantity',fishingSpeed:'Fishing speed',materialPreservation:'Material preservation',guildContribution:'Guild contribution'};

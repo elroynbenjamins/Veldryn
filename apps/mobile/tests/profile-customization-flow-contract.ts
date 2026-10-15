@@ -4,13 +4,14 @@ const fs=require('fs') as {readFileSync:(path:string,encoding:string)=>string};
 function ok(value:boolean,message:string){if(!value)throw new Error(message)}
 
 const app=fs.readFileSync('App.tsx','utf8');
+const discard=fs.readFileSync('src/components/ProfileDiscardChangesModal.tsx','utf8');
 const screen=fs.readFileSync('src/screens/ProfileCustomizeScreen.tsx','utf8');
 const appearance=fs.readFileSync('src/components/ProfileEditor.tsx','utf8');
 const identity=fs.readFileSync('src/components/OnlineProfileExtensionPanel.tsx','utf8');
 const preview=fs.readFileSync('src/components/ProfileAudiencePreviewModal.tsx','utf8');
 
 ok(app.includes('profileCustomizeDirty'),'App must track profile customization dirty state');
-ok(app.includes('Discard profile changes?')&&app.includes('Keep editing')&&app.includes('Discard changes'),'Leaving customization must require an explicit discard choice');
+ok(app.includes('<ProfileDiscardChangesModal')&&discard.includes('Discard profile changes?')&&discard.includes('Keep editing')&&discard.includes('Discard changes'),'Leaving customization must require an explicit discard choice');
 ok(app.includes("tab!=='ProfileCustomize'||!profileCustomizeDirty"),'Navigation guard must only intercept dirty Customize Profile exits');
 ok(app.includes('onDirtyChange={setProfileCustomizeDirty}'),'Customize Profile must report dirty state to app navigation');
 

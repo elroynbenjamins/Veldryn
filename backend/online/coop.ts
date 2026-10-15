@@ -123,7 +123,7 @@ export function coopHandler(services:GameplayServices){
    catch(error){if(error instanceof GameplayError&&error.message==='not_live_run')return json(await runtime.choose(accountId,run![1],parseCoopDecisionCommand(body)));throw error;}
   }catch(error){
    const message=error instanceof Error?error.message:'server_error',code=message.toLowerCase();
-   const status=/^(stale_|idempotency_|node_resolving|account_already_participating|echo_no_longer_eligible|ticket_not_queued|ready_check_closed|loadout_changed_since_queue|reservation_conflict|event_not_live|event_claim_closed)/.test(code)?409:
+   const status=/^(stale_|idempotency_|node_resolving|account_already_participating|echo_no_longer_eligible|ticket_not_queued|ready_check_closed|loadout_changed_since_queue|reservation_conflict|event_not_live|event_claim_closed|event_daily_clear_limit)/.test(code)?409:
     /^(not_participant|loadout_not_owned|ticket_not_owned|not_ready_member)/.test(code)?403:
     /^(invalid_|unknown_expedition|unknown_event_expedition|dungeon_|character_|role_not_ready|illegal_equipment|echo_pool_unavailable|run_not_awaiting_choice|event_level_requirement|event_reward_not_ready|event_run_not_awaiting_choice|event_run_not_found)/.test(code)?400:error instanceof GameplayError?error.status:503;
    return json({error:status===503?'Server temporarily unavailable. Retry the pending action.':code},status);

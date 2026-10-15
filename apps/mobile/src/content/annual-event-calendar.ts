@@ -24,7 +24,6 @@ const WINDOWS:Record<string,{windowLabel:string;order:number}>={
   EVT_ANNUAL_003_2026:{windowLabel:'March / April',order:3},
   EVT_ANNUAL_006_2026:{windowLabel:'June / July',order:6},
   EVT_ANNUAL_008_2026:{windowLabel:'August',order:8},
-  EVT_ANNUAL_009_2026:{windowLabel:'September',order:9},
   EVT_ANNUAL_010_2026:{windowLabel:'Oct 10 – Nov 2',order:10},
   EVT_ANNUAL_011_2026:{windowLabel:'Nov 6 – Nov 29',order:11},
   EVT_ANNUAL_012_2026:{windowLabel:'Dec 1 – Dec 29',order:12},

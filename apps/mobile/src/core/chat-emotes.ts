@@ -17,8 +17,10 @@ export function chatUnavailableEmoteIds(value:string,unlockedIds:readonly string
 }
 
 export function availableChatEmotes(unlockedIds:readonly string[]=[],bodyPresentation?:'male'|'female'){
- void unlockedIds;
- return rows.filter(row=>starterIds.has(row.id)&&(!bodyPresentation||row.category===bodyPresentation));
+ void unlockedIds; void bodyPresentation;
+ // Body presentation no longer gates the catalog. Both launch sets stay available
+ // because characters do not have a gender lock in the current editor.
+ return rows.filter(row=>starterIds.has(row.id));
 }
 
 export function normalizeChatEmoteTrayIds(value:unknown){

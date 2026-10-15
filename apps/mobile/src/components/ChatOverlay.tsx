@@ -60,10 +60,18 @@ function AccountChatOverlay({state,visible,onOpen,onClose,onEmoteTrayChange,guil
   },[visible,state.account.guildMember]);
   const guildAvailable=onlineConfigured?onlineGuildAvailable:state.account.guildMember;
   useEffect(()=>{if(!guildAvailable&&channel==='guild')setChannel('world');},[guildAvailable,channel]);
+  const wasVisible=useRef(false),chatEnabled=state.settings.autoJoinWorldChat!==false;
+  useEffect(()=>{
+    if(visible&&!wasVisible.current){
+      selectChannel('world');
+      setWorldChannel(Math.max(0,Math.min(WORLD_CHANNELS.length-1,(state.settings.defaultWorldChat??1)-1)));
+    }
+    wasVisible.current=visible;
+  },[visible,state.settings.defaultWorldChat]);
   const closeChat=()=>{onChatRead?.();onClose();};
   return <>
-    {!visible&&<ChatDock enabled={onlineConfigured} onOpen={onOpen} lines={state.settings.chatDockLines??1} unreadCount={guildUnread+partyUnread} mentionCount={guildMentions+partyMentions}/>}
-    <Modal visible={visible} transparent statusBarTranslucent animationType={state.settings.reduceMotion?'none':'fade'} onRequestClose={closeChat}>
+    {!visible&&chatEnabled&&<ChatDock enabled={onlineConfigured} onOpen={onOpen} lines={state.settings.chatDockLines??1} unreadCount={guildUnread+partyUnread} mentionCount={guildMentions+partyMentions}/>}
+    <Modal visible={visible&&chatEnabled} transparent statusBarTranslucent animationType={state.settings.reduceMotion?'none':'fade'} onRequestClose={closeChat}>
       <View style={[s.modalRoot,{paddingTop:Math.max(insets.top,8),paddingBottom:bottomOffset}]}>
         <Pressable accessible={false} accessibilityElementsHidden importantForAccessibility="no-hide-descendants" onPress={closeChat} style={StyleSheet.absoluteFill}/>
         <KeyboardAvoidingView behavior={Platform.OS==='ios'?'padding':'height'} keyboardVerticalOffset={insets.top} style={s.keyboard}><View accessibilityViewIsModal onAccessibilityEscape={closeChat} style={[s.window,expandWindow&&s.windowExpanded]}>

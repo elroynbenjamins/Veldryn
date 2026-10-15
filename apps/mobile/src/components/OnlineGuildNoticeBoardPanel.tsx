@@ -1,6 +1,7 @@
+import {gameAlert} from '../core/game-alerts';
 import {useSocialText} from '../i18n/social';
 import {useEffect,useMemo,useState} from 'react';
-import {Alert,StyleSheet,Text,View} from 'react-native';
+import {StyleSheet,Text,View} from 'react-native';
 import {GameButton} from './GameButton';
 import {GameTextInput} from './GameTextInput';
 import {LoadingState} from './LoadingState';
@@ -24,7 +25,7 @@ export function OnlineGuildNoticeBoardPanel(){
  const load=async()=>{setLoading(true);setError('');try{const next=await guildNoticeBoardState();setBoard(next);setDraft(next?.body??'');setEditing(false)}catch(reason){setError(reason instanceof Error?reason.message:st("Unable to load the Guild Notice Board."))}finally{setLoading(false)}};
  useEffect(()=>{void load()},[]);
  const clean=normalized(draft),dirty=clean!==(board?.body??'');
- const save=async()=>{if(!board?.canEdit||busy||!dirty)return;setBusy(true);setError('');try{const next=await updateGuildNoticeBoard(clean);setBoard(next);setDraft(next.body);setEditing(false)}catch(reason){const message=reason instanceof Error?reason.message:st("Unable to update the Guild Notice Board.");setError(message);Alert.alert(st("Guild Notice Board"),message)}finally{setBusy(false)}};
+ const save=async()=>{if(!board?.canEdit||busy||!dirty)return;setBusy(true);setError('');try{const next=await updateGuildNoticeBoard(clean);setBoard(next);setDraft(next.body);setEditing(false)}catch(reason){const message=reason instanceof Error?reason.message:st("Unable to update the Guild Notice Board.");setError(message);gameAlert.alert(st("Guild Notice Board"),message)}finally{setBusy(false)}};
 
  if(loading&&!board)return <LoadingState label={st("Loading Guild Notice Board…")} detail={st("Syncing the private member bulletin.")} compact/>;
  if(!board)return <Panel><Text style={s.title}>{st("Guild Notice Board")}</Text><Text style={s.copy}>{error||'Join a Guild to view its member-only Notice Board.'}</Text><GameButton compact title={st("Retry")} tone="secondary" onPress={()=>void load()}/></Panel>;

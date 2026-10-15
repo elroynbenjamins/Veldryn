@@ -25,7 +25,7 @@ export function alchemyAvailability(state:GameState,recipeId:string,batches=1) {
   const materialMax=recipe?Math.min(...recipe.inputs.map(input=>Math.floor((storedQuantity(state.inventory.stacks,input.itemId)+storedQuantity(state.bank.stacks,input.itemId))/input.quantity))):0;
   const goldMax=recipe?.gold?Math.floor((state.character?.gold??0)/recipe.gold):MAX_ALCHEMY_BATCHES;
   const maxBatches=Math.max(0,Math.min(MAX_ALCHEMY_BATCHES,materialMax,goldMax));
-  const reason=!recipe?'Unknown alchemy recipe.':!state.character?'Create a character first.':!countValid?`Choose 1–${MAX_ALCHEMY_BATCHES} whole batches.`:
+  const reason=!recipe?'Unknown alchemy recipe.':!state.character?'Create a character first.':!countValid?'Recipes are made one at a time.':
     (skill?.level??0)<recipe.level?`Requires Alchemy level ${recipe.level}.`:(state.character.gold<gold)?`Requires ${gold} Gold on this character.`:
     inputs.some(input=>input.inventory+input.bank<input.quantity)?'Missing ingredients. Inventory and Bank are available; overflow is not.':'Ready to reserve and brew.';
   return {ready:!!recipe&&!!state.character&&countValid&&(skill?.level??0)>=recipe.level&&state.character.gold>=gold&&inputs.every(input=>input.inventory+input.bank>=input.quantity),reason,inputs,gold,maxBatches,recipe};
@@ -75,7 +75,8 @@ export function alchemyRefund(brew:AlchemyBatchState) {
 export function normalizeAlchemyBatch(value:unknown,targetId:string):AlchemyBatchState {
   const b=value as AlchemyBatchState|undefined,recipe=alchemyRecipeDef(targetId);
   const integer=(n:unknown,min:number,max:number)=>Number.isSafeInteger(n)&&Number(n)>=min&&Number(n)<=max;
-  const valid=!!b&&!!recipe&&b.version===1&&b.recipeId===targetId&&integer(b.totalBatches,1,MAX_ALCHEMY_BATCHES)&&integer(b.remainingBatches,1,b.totalBatches)&&
+  // Existing reservations may contain multiple operations from older saves; let them finish safely.
+  const valid=!!b&&!!recipe&&b.version===1&&b.recipeId===targetId&&integer(b.totalBatches,1,100)&&integer(b.remainingBatches,1,b.totalBatches)&&
     integer(b.goldPerBatch,0,100000)&&Number.isFinite(b.cycleSeconds)&&b.cycleSeconds>=1&&b.cycleSeconds<=86400&&
     Number.isFinite(b.xpPerBatch)&&b.xpPerBatch>=0&&b.xpPerBatch<=100000&&
     b.outputPerBatch?.itemId===recipe.output.itemId&&integer(b.outputPerBatch?.quantity,1,100)&&

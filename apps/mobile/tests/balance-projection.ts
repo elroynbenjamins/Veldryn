@@ -110,7 +110,7 @@ ok(!poorPlan.complete&&poorPlan.etaSeconds===undefined&&poorPlan.goldShortfall==
 
 const fittingRecipe=RECIPES.find(row=>row.id==='FORGE_REINFORCED_FITTING')!,prepareRoute=recipePreparationRoute(chainState,fittingRecipe);
 ok(prepareRoute.steps.length===4,'Prepare Materials must collapse the Reinforced Fitting dependency graph into four ordered route steps');
-ok(prepareRoute.steps.map(step=>step.label).join(' > ')==='Gather 8× Aster-Iron Ore > Smelt Aster-Iron Batch ×1 > Gather 2× Ironwood Log > Forge Reinforced Fitting','Prepare Materials must keep leaf acquisition before dependent processing and the final craft');
+ok(prepareRoute.steps.map(step=>step.label).join(' > ')==='Gather 8× Aster-Iron Ore > Smelt Aster-Iron Ingot ×1 > Gather 2× Ironwood Log > Forge Reinforced Fitting','Prepare Materials must keep leaf acquisition before dependent processing and the final craft');
 ok(prepareRoute.steps[0].kind==='gathering'&&prepareRoute.steps[0].destination?.kind==='skills'&&prepareRoute.steps[1].kind==='crafting'&&prepareRoute.steps[1].state==='after'&&prepareRoute.steps[3].kind==='final_craft'&&prepareRoute.steps[3].stateLabel==='FINAL','Prepare Materials steps must carry exact navigation types and dependency-aware states');
 ok(prepareRoute.complete&&prepareRoute.totalGold===100&&(prepareRoute.etaSeconds??0)>0&&recipePreparationRouteLabel(prepareRoute).includes('4 steps'),'Fully modeled preparation routes must expose total Gold, total ETA and compact step count');
 ok(prepareRoute.chainLabel.includes('Aster-Iron Ore → Aster-Iron Ingot → Reinforced Fitting')&&prepareRoute.chainLabel.includes('+1 other input'),'Collapsed preparation summary must show the deepest crafted source chain without hiding parallel inputs');

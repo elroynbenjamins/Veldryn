@@ -26,7 +26,7 @@ export function EquipmentSlotPicker({state,slot,onEquip,onClose}:{state:GameStat
  }
  return <GameModalSurface visible onClose={close} dismissOnBackdrop={!busy} reduceMotion={state.settings.reduceMotion}>
   <GameModalHeader eyebrow={profileText(language,'Available equipment')} title={profileText(language,EQUIPMENT_SLOT_LABELS[slot])} onClose={close} closeDisabled={!!busy}/>
-  <ScrollView contentContainerStyle={s.body}>
+  <ScrollView contentContainerStyle={s.body} showsVerticalScrollIndicator={false} showsHorizontalScrollIndicator={false}>
    {items.length?items.map(item=>{const stats=enhancedGearStats(state,item.id),rank=gearEnhancement(state,item.id).rank;return <View key={item.id} style={s.item}>
     <View style={s.details}><EquipmentArtwork item={item} size={48} framed={false}/><View style={s.copy}>
      <Text style={s.name}>{item.name}{rank?` +${rank}`:''}</Text>

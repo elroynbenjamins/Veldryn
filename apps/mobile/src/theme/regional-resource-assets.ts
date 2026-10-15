@@ -2,10 +2,10 @@
  * 5 columns × 4 rows, 64 px logical cells. Artwork is transparent and frame-free;
  * rarity framing remains a UI responsibility.
  */
-export const REGIONAL_RESOURCE_SHEET_WIDTH=320;
-export const REGIONAL_RESOURCE_SHEET_HEIGHT=256;
-export const REGIONAL_RESOURCE_CELL=64;
-export const regionalResourceSheet=require('../../assets/regional-resources-v1.webp');
+export const REGIONAL_RESOURCE_SHEET_WIDTH=1280;
+export const REGIONAL_RESOURCE_SHEET_HEIGHT=1024;
+export const REGIONAL_RESOURCE_CELL=256;
+export const regionalResourceSheet=require('../../assets/regional-resources-v2.png');
 
 export interface RegionalResourceCell{column:number;row:number;}
 export const regionalResourceCellById:Readonly<Record<string,RegionalResourceCell>>={

@@ -3,7 +3,7 @@
     "name": "VELDRYN",
     "slug": "veldryn",
     "scheme": "veldryn",
-    "version": "0.1.0",
+    "version": "0.9.5",
     "orientation": "portrait",
     "userInterfaceStyle": "dark",
     "icon": "./assets/app-icon-v1/icon-1024.png",
@@ -25,6 +25,14 @@
     },
     "plugins": [
       "expo-iap",
+      [
+        "expo-splash-screen",
+        {
+          "image": "./assets/events-startup-v1/branding/loading_circle.png",
+          "resizeMode": "contain",
+          "backgroundColor": "#101C2C"
+        }
+      ],
       "./plugins/with-veldryn-play-games"
     ]
   }

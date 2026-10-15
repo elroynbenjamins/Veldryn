@@ -1,29 +1,37 @@
 import {useGameplayText} from '../i18n/gameplay';
-import {useEffect,useMemo,useRef} from 'react';
-import {Animated,Easing,Pressable,StyleSheet,Text,View} from 'react-native';
+import {useMemo} from 'react';
+import {Pressable,StyleSheet,Text,View} from 'react-native';
 import {MONSTERS} from '../content/monsters';
 import {GATHERING,RECIPES} from '../content/skills';
 import {HERB_NODES} from '../content/herbalism';
-import type {GameState} from '../core/types';
+import type {GameState,RewardBundle} from '../core/types';
 import {typography,equipmentTheme,type ThemeColors} from '../theme/theme';
 import {useGameTheme} from '../theme/ThemeContext';
 import {ActivityArtwork} from './ActivityArtwork';
 import {MonsterPortraitFrame} from './MonsterPortraitFrame';
 import {activeGatheringRuntimeProjection,activityProgressFeedback} from '../core/balance-projection';
-import {activeCombatRuntimeProjection} from '../core/game';
-import {combatPresentation} from '../core/combat-presentation';
+import {activeCombatRuntimeProjection,previewActivityReward} from '../core/game';
 
 const labels:Record<string,string>={combat:'HUNTING',mining:'MINING',woodcutting:'WOODCUTTING',fishing:'FISHING',herbalism:'HERBALISM',alchemy:'ALCHEMY',processing:'PROCESSING',faith:'FAITH',training:'TRAINING',hunting:'HUNTING',exploration:'EXPLORATION'};
 function elapsed(startedAtMs:number,nowMs:number){const total=Math.max(0,Math.floor((nowMs-startedAtMs)/1000)),hours=Math.floor(total/3600),minutes=Math.floor(total%3600/60),seconds=total%60;return hours?`${hours}h ${minutes}m`:minutes?`${minutes}m ${seconds}s`:`${seconds}s`;}
 
-type ActiveActivityBarProps={state:GameState;nowMs:number;onOpen:()=>void};
+type ActiveActivityBarProps={state:GameState;nowMs:number;reward?:RewardBundle;onOpen:()=>void;onRecoverCombat?:()=>void};
 export function ActiveActivityBar(props:ActiveActivityBarProps){
- // Mount animation hooks only for an active session; starting/stopping cannot change hook order.
- return props.state.activity?<RunningActivityBar {...props}/>:null;
+ const {gt,gl}=useGameplayText(),C=useGameTheme(),s=useMemo(()=>makeStyles(C),[C]);
+ const reward=useMemo(()=>props.reward??(props.state.activity?.kind==='combat'?previewActivityReward(props.state,props.nowMs):undefined),[props.reward,props.state,props.nowMs]);
+ if(reward?.stoppedReason){
+  const injured=reward.stoppedReason.toLowerCase().includes('injured');
+  const monster=MONSTERS.find(entry=>entry.id===props.state.activity?.targetId);
+  return <Pressable accessibilityRole="button" accessibilityLabel={gt(injured?'Combat stopped. Too injured. Open food.':'Combat stopped. View results.')} onPress={injured?props.onRecoverCombat??props.onOpen:props.onOpen} style={({pressed})=>[s.root,s.combat,pressed&&s.pressed]}>
+   <View style={[s.art,s.combatArt]}>{monster?<MonsterPortraitFrame monster={monster} size={28} framed={false} reduceMotion/>:<ActivityArtwork id="combat" size={28}/>}</View>
+   <View style={s.copy}><Text style={s.combatName}>{gt('Combat stopped')}</Text><Text style={s.combatMeta}>{gl(reward.stoppedReason)}</Text></View>{injured?<Text style={s.recover}>{gt('Food')}</Text>:null}<Text style={s.chevron}>›</Text>
+  </Pressable>;
+ }
+ return props.state.activity?<RunningActivityBar {...props} combatKills={reward?.kills}/>:null;
 }
-function RunningActivityBar({state,nowMs,onOpen}:ActiveActivityBarProps){
+function RunningActivityBar({state,nowMs,onOpen,combatKills}:ActiveActivityBarProps&{combatKills?:number}){
  const {gt,gl,language}=useGameplayText();
- const C=useGameTheme(),equipmentColors=equipmentTheme(C),s=useMemo(()=>makeStyles(C),[C]);
+ const C=useGameTheme(),s=useMemo(()=>makeStyles(C),[C]);
  const activity=state.activity;
  if(!activity)return null;
  const combat=activity.kind==='combat';
@@ -35,22 +43,26 @@ function RunningActivityBar({state,nowMs,onOpen}:ActiveActivityBarProps){
  const cycleElapsedSeconds=Math.max(0,(nowMs-activity.lastClaimAtMs)/1000),cycleProgressSeconds=(activity.progressFraction??0)*cycleSeconds+cycleElapsedSeconds;
  const completedCycles=Math.floor(cycleProgressSeconds/cycleSeconds),progressPct=Math.round((cycleProgressSeconds%cycleSeconds)/cycleSeconds*100),progress=`${progressPct}%` as `${number}%`;
  const progressKind=combat?'combat':activity.kind==='alchemy'||activity.kind==='processing'?'crafting':activity.kind==='faith'?'faith':activity.kind==='training'?'training':activity.kind==='exploration'?'exploration':'gathering',phase=activityProgressFeedback(progressKind,progressPct/100),cycleRemaining=Math.max(1,Math.ceil(cycleSeconds-(cycleProgressSeconds%cycleSeconds)));
- const sessionKills=combat?(activity.sessionKills??0)+completedCycles:0;
- const combatView=combat&&monster?combatPresentation(state,monster,cycleProgressSeconds,cycleSeconds):undefined;
- const cycleCopy=combat?gt('NEXT KILL · {seconds}s',{seconds:cycleRemaining}):`${gl(phase).replace('…','').toLocaleUpperCase(language)} · ${cycleRemaining}s`;
- const hitEffect=useRef(new Animated.Value(0)).current;
- useEffect(()=>{
-  hitEffect.stopAnimation();hitEffect.setValue(0);
-  if(!combat||state.settings.reduceMotion)return;
-  const pause=Math.max(240,Math.round(cycleSeconds*650));
-  const animation=Animated.loop(Animated.sequence([Animated.delay(pause),Animated.timing(hitEffect,{toValue:1,duration:110,easing:Easing.out(Easing.cubic),useNativeDriver:true}),Animated.timing(hitEffect,{toValue:0,duration:280,easing:Easing.in(Easing.quad),useNativeDriver:true})]));
-  animation.start();return()=>animation.stop();
- },[combat,cycleSeconds,hitEffect,state.settings.reduceMotion]);
- const slashOpacity=hitEffect.interpolate({inputRange:[0,.12,.58,1],outputRange:[0,1,.55,0]}),slashScale=hitEffect.interpolate({inputRange:[0,.16,1],outputRange:[.2,1,1.22]});
+ const sessionKills=combat?(activity.sessionKills??0)+(combatKills??completedCycles):0;
+ const cycleCopy=combat?gt('Next kill {seconds}s',{seconds:cycleRemaining}):`${gl(phase).replace('…','').toLocaleUpperCase(language)} · ${cycleRemaining}s`;
+ if(combat)return <Pressable accessibilityRole="button" accessibilityLabel={gt('{kind} {name}, active for {duration}',{kind:gl(labels[activity.kind]),name,duration:elapsed(activity.startedAtMs,nowMs)})} accessibilityHint={gt("Opens the active activity")} onPress={onOpen} style={({pressed})=>[s.root,s.combat,pressed&&s.pressed]}>
+  <View style={[s.art,s.combatArt]}>{monster?<MonsterPortraitFrame monster={monster} size={28} framed={false} reduceMotion={state.settings.reduceMotion}/>:<ActivityArtwork id="combat" size={28}/>}</View>
+  <View style={s.copy}><Text numberOfLines={1} style={s.combatName}>{name}</Text><Text numberOfLines={1} style={s.combatMeta}>{cycleCopy} · {gt('{count} kills',{count:sessionKills})}</Text></View>
+  <Text style={s.time}>{elapsed(activity.startedAtMs,nowMs)}</Text><Text style={s.chevron}>›</Text>
+  <View pointerEvents="none" style={s.combatTrack}><View style={[s.fill,s.combatFill,{width:progress}]}/></View>
+ </Pressable>;
  return <Pressable accessibilityRole="button" accessibilityLabel={gt('{kind} {name}, active for {duration}',{kind:gl(labels[activity.kind]),name,duration:elapsed(activity.startedAtMs,nowMs)})} accessibilityHint={gt("Opens the active activity")} onPress={onOpen} style={({pressed})=>[s.root,combat?s.combat:s.skilling,pressed&&s.pressed]}>
   <View style={s.art}>{monster?<MonsterPortraitFrame monster={monster} size={32} active reduceMotion={state.settings.reduceMotion} framed={false}/>:<ActivityArtwork id={(crafting?.skillId??activity.kind) as any} size={30}/>}</View>
-  <View style={s.copy}><View style={s.line}><Text numberOfLines={1} style={s.name}>{name}</Text><Text style={s.time}>{elapsed(activity.startedAtMs,nowMs)}</Text></View><View style={s.meta}><Text style={[s.kind,combat?s.combatText:s.skillText]}>{gl(labels[activity.kind])}</Text><Text numberOfLines={1} style={s.cycle}>{cycleCopy}</Text></View>{combat?<><View style={s.combatStats}><Text style={s.hpText}>HP {combatView?.enemyHp??monster?.hp??0}/{combatView?.enemyMaxHp??monster?.hp??0}</Text><Text style={s.damageText}>−{combatView?.playerHit??0}</Text><Text style={s.takenText}>{gt("KILL #")}{sessionKills+1} · ~{Math.round(combatRuntime?.killsPerHour??0)}/hr</Text><Animated.View pointerEvents="none" style={[s.hitSlash,s.hitSlashBright,{opacity:slashOpacity,transform:[{rotate:'-28deg'},{scaleX:slashScale}]}]}/><Animated.View pointerEvents="none" style={[s.hitSlash,s.hitSlashSoft,{opacity:slashOpacity,transform:[{rotate:'30deg'},{scaleX:slashScale}]}]}/></View><View style={s.track}><View style={[s.fill,s.combatFill,{width:`${Math.max(2,Math.round(((combatView?.enemyHp??1)/Math.max(1,combatView?.enemyMaxHp??1))*100))}%` as `${number}%`}]}/></View></>:<View style={s.track}><View style={[s.fill,s.skillFill,{width:progress}]}/></View>}</View>
+  <View style={s.copy}><View style={s.line}><Text numberOfLines={1} style={s.name}>{name}</Text><Text style={s.time}>{elapsed(activity.startedAtMs,nowMs)}</Text></View><View style={s.meta}><Text style={[s.kind,s.skillText]}>{gl(labels[activity.kind])}</Text><Text numberOfLines={1} style={s.cycle}>{cycleCopy}</Text></View><View style={s.track}><View style={[s.fill,s.skillFill,{width:progress}]}/></View></View>
   <Text style={s.chevron}>›</Text>
  </Pressable>;
 }
-function makeStyles(C:ThemeColors){const equipmentColors=equipmentTheme(C);return StyleSheet.create({root:{minHeight:52,flexDirection:'row',alignItems:'center',gap:8,paddingHorizontal:10,paddingVertical:5,backgroundColor:C.panel,borderBottomWidth:1},combat:{borderBottomColor:C.bad},skilling:{borderBottomColor:C.info},pressed:{opacity:.78},art:{width:36,height:36,alignItems:'center',justifyContent:'center',borderRadius:9,backgroundColor:C.stage},copy:{flex:1,minWidth:0,gap:2},line:{flexDirection:'row',alignItems:'baseline',gap:8},name:{...typography.bodyStrong,color:C.text,flex:1},time:{...typography.caption,color:C.muted,fontVariant:['tabular-nums']},meta:{flexDirection:'row',alignItems:'center',gap:8},kind:{fontSize:10,lineHeight:13,fontWeight:'900',letterSpacing:.8},combatText:{color:C.bad},skillText:{color:C.info},cycle:{fontSize:9,lineHeight:12,color:C.muted,fontWeight:'800'},combatStats:{position:'relative',flexDirection:'row',alignItems:'center',gap:8},hpText:{fontSize:10,color:C.warning,fontWeight:'800'},damageText:{fontSize:10,color:C.bad,fontWeight:'900'},takenText:{fontSize:10,color:C.good,fontWeight:'800',marginLeft:'auto'},hitSlash:{position:'absolute',left:'35%',top:5,width:46,height:3,borderRadius:3},hitSlashBright:{backgroundColor:'#fff1ad',shadowColor:'#ffd36e',shadowOpacity:.9,shadowRadius:4},hitSlashSoft:{backgroundColor:'#ffd36e',height:2,shadowColor:'#fff1ad',shadowOpacity:.65,shadowRadius:3},track:{height:4,overflow:'hidden',borderRadius:2,backgroundColor:C.panel2,position:'relative'},fill:{height:'100%',borderRadius:3},combatFill:{backgroundColor:C.bad},skillFill:{backgroundColor:C.info},chevron:{color:equipmentColors.goldSoft,fontSize:24,lineHeight:28}});}
+function makeStyles(C:ThemeColors){const equipmentColors=equipmentTheme(C);return StyleSheet.create({
+ root:{minHeight:52,flexDirection:'row',alignItems:'center',gap:8,paddingHorizontal:10,paddingVertical:5,backgroundColor:C.panel,borderBottomWidth:1},
+ combat:{minHeight:44,borderBottomColor:C.bad,position:'relative',paddingBottom:6},skilling:{borderBottomColor:C.info},pressed:{opacity:.78},
+ art:{width:36,height:36,alignItems:'center',justifyContent:'center',borderRadius:9,backgroundColor:C.stage},combatArt:{width:28,height:28,borderRadius:7},
+ copy:{flex:1,minWidth:0,gap:2},line:{flexDirection:'row',alignItems:'baseline',gap:8},name:{...typography.bodyStrong,color:C.text,flex:1},
+ combatName:{fontSize:12,lineHeight:16,fontWeight:'800',color:C.text},combatMeta:{fontSize:11,lineHeight:14,color:C.muted},recover:{fontSize:12,fontWeight:'800',color:C.bad},
+ time:{...typography.caption,color:C.muted,fontVariant:['tabular-nums']},meta:{flexDirection:'row',alignItems:'center',gap:8},kind:{fontSize:10,lineHeight:13,fontWeight:'900',letterSpacing:.8},skillText:{color:C.info},cycle:{fontSize:9,lineHeight:12,color:C.muted,fontWeight:'800'},
+ track:{height:4,overflow:'hidden',borderRadius:2,backgroundColor:C.panel2,position:'relative'},combatTrack:{position:'absolute',left:0,right:0,bottom:0,height:2,backgroundColor:C.panel2,overflow:'hidden'},fill:{height:'100%',borderRadius:3},combatFill:{backgroundColor:C.bad},skillFill:{backgroundColor:C.info},chevron:{color:equipmentColors.goldSoft,fontSize:24,lineHeight:28}
+ });}

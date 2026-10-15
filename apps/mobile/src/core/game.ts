@@ -86,7 +86,7 @@ const COMBAT_MONSTER_DAMAGE_SCALE=1.13;
 export const REGIONAL_COMBAT_PRESSURE:Readonly<Record<string,number>>={Greenfields:1.00,Silverbrook:1.04,'Ironwood Forest':1.08,'Old Mines':1.12,"King's Road":1.16,Sunscar:1.20,Frostmarch:1.25,Ashlands:1.30};
 /** Starter hunts resolve much faster than late hunts. These ordinary-hunt
  * factors keep regional food demand within its authored provisioning budget. */
-export const REGIONAL_HUNT_DAMAGE_TUNING:Readonly<Record<string,number>>={Greenfields:.36,Silverbrook:.25,'Ironwood Forest':.40,'Old Mines':.55,"King's Road":.75,Ashlands:.40};
+export const REGIONAL_HUNT_DAMAGE_TUNING:Readonly<Record<string,number>>={Greenfields:.36,Silverbrook:.25,'Ironwood Forest':.40,'Old Mines':.55,"King's Road":.42,Ashlands:.40};
 export type RegionalMonsterPressureBand='entry'|'standard'|'hard';
 export const REGIONAL_MONSTER_PRESSURE_MULTIPLIER:Readonly<Record<RegionalMonsterPressureBand,number>>={entry:.92,standard:1,hard:1.10};
 export const REGIONAL_FOOD_SUSTAIN_TARGETS:Readonly<Record<string,{foodPerHourMin:number;foodPerHourMax:number}>>={Greenfields:{foodPerHourMin:2,foodPerHourMax:4},Silverbrook:{foodPerHourMin:3,foodPerHourMax:5},'Ironwood Forest':{foodPerHourMin:2,foodPerHourMax:4},'Old Mines':{foodPerHourMin:2,foodPerHourMax:5},"King's Road":{foodPerHourMin:2,foodPerHourMax:5},Sunscar:{foodPerHourMin:2,foodPerHourMax:5},Frostmarch:{foodPerHourMin:1.75,foodPerHourMax:5},Ashlands:{foodPerHourMin:1.75,foodPerHourMax:4}};
@@ -193,10 +193,20 @@ export function startCombat(state:GameState,monsterId:string,nowMs:number,combat
   state=settleOutOfCombatRecovery(finishClassDrills(state,nowMs),nowMs);
   if(!state.character)throw new Error('Create a character first');
   const m=MONSTERS.find(x=>x.id===monsterId);if(!m)throw new Error('Unknown monster');
+  if(state.character.currentHp<=1)throw new Error('Too injured to fight. Eat food or recover health before starting combat.');
   if(!state.unlockedMonsterIds.includes(monsterId))throw new Error('Monster not unlocked');
   if(m.boss)throw new Error('Bosses use challengeFallenKnight');
   if(zoneIdForTarget(monsterId)!==currentRegionId(state))throw new Error(`Travel to ${m.zone} before fighting ${m.name}`);
   return {...state,outOfCombatSinceMs:undefined,character:{...state.character,activityQueuePausedReason:undefined},activity:{kind:'combat',targetId:monsterId,combatTacticId:normalizeCombatTactic(combatTacticId),...(huntGoalSnapshot(normalizeHuntGoalId(huntGoalId))?{huntGoal:huntGoalSnapshot(normalizeHuntGoalId(huntGoalId))}:{}),sessionKills:0,sessionChampions:0,startedAtMs:nowMs,lastClaimAtMs:nowMs,classFocus:normalizeTrainingFocus(state.character.trainingFocus),classTrainingSnapshot:{faithBlessingId:selectedFaithBlessing(state)?.id},environment:captureActivityEnvironment(monsterId,nowMs)}}
+}
+
+/** Returns the highest crafted V33 tier currently worn (starter/novice gear is 0). */
+function highestEquippedV33Tier(state:GameState){
+  if(!state.character)return 0;
+  return Object.values(state.character.equipment).reduce((highest,itemId)=>{
+    const match=typeof itemId==='string'?/^T([1-9])P_/.exec(itemId):undefined;
+    return Math.max(highest,match?Number(match[1]):0);
+  },0);
 }
 
 function tryStartNextQueuedActivity(state:GameState,nowMs:number,throwOnFailure=false,index=0):GameState{
@@ -327,9 +337,17 @@ function combatRuntimeDetails(state:GameState,monsterId:string,nowMs=Date.now())
   const expected=(m.attack*1.2+m.defense*.8+m.level*2.2)*COMBAT_EXPECTED_SCALE;
   const setOutput=secondary.playerOutputMultiplier*setCombat.penetrationMultiplier;
   const combatCandy=eventCandyUtilityMultiplier(state,nowMs,'combat');
-  const speed=Math.max(COMBAT_SPEED_MIN,Math.min(COMBAT_SPEED_MAX,boostedPower/Math.max(1,expected)))*style.speedMultiplier*tactic.speedMultiplier*modifiers.combatSpeedMultiplier*companion.outputMultiplier*(1+monsterMastery(state,monsterId).damageBonus)*(1+effectGems.combat_speed)*setOutput*combatCandy;
+  // Regional elites are the first real reason to finish the current tier. A
+  // player can still scout them in starter gear, but the missing tier creates
+  // a clear time and sustain cost instead of making early equipment optional.
+  const wornTier=highestEquippedV33Tier(state);
+  const expectedTier=regionalMonsterPressureBand(m.id)==='hard'?(m.level>=22?2:m.level>=10?1:0):0;
+  const tierGap=Math.max(0,expectedTier-wornTier);
+  const progressionSpeedPenalty=tierGap===0?1:Math.max(.62,1-tierGap*.18);
+  const progressionDamagePenalty=tierGap===0?1:1+tierGap*.12;
+  const speed=Math.max(COMBAT_SPEED_MIN,Math.min(COMBAT_SPEED_MAX,boostedPower/Math.max(1,expected)))*style.speedMultiplier*tactic.speedMultiplier*modifiers.combatSpeedMultiplier*companion.outputMultiplier*(1+monsterMastery(state,monsterId).damageBonus)*(1+effectGems.combat_speed)*setOutput*combatCandy*progressionSpeedPenalty;
   const killCycleSeconds=m.secondsPerKill*COMBAT_TIME_SCALE*(environment?.actionTimeMultiplier??1)/speed;
-  return {c,m,stats,modifiers,companion,style,tactic,environment,effectGems,setCombat,secondary,boostedDefense,killCycleSeconds};
+  return {c,m,stats,modifiers,companion,style,tactic,environment,effectGems,setCombat,secondary,boostedDefense,killCycleSeconds,progressionDamagePenalty};
 }
 
 /** Shared ordinary-hunt damage; fractional HP preserves small defensive bonuses. */
@@ -337,7 +355,7 @@ function combatEncounterDamage(runtime:ReturnType<typeof combatRuntimeDetails>,c
  const {m,c,stats,modifiers,companion,style,tactic,effectGems,setCombat,secondary,boostedDefense,killCycleSeconds}=runtime;
  const raw=Math.max(1,Math.round(m.attack*COMBAT_MONSTER_DAMAGE_SCALE)-Math.floor(boostedDefense*.58));
  const regionalPressure=(REGIONAL_COMBAT_PRESSURE[m.zone]??1)*REGIONAL_MONSTER_PRESSURE_MULTIPLIER[regionalMonsterPressureBand(m.id)];
- const damage=Math.max(.1,(raw*.48+m.level*.16)*(REGIONAL_HUNT_DAMAGE_TUNING[m.zone]??1)*regionalPressure*secondary.incomingPressureMultiplier*style.damageTakenMultiplier*tactic.damageTakenMultiplier*(champion?CHAMPION_DAMAGE_MULTIPLIER:1)*modifiers.incomingDamageMultiplier*companion.incomingDamageMultiplier*(1-effectGems.damage_reduction)*Math.max(.5,1-setCombat.stats.ward)*(c.preparation?preparationEffects(c.preparation).damage:1));
+ const damage=Math.max(.1,(raw*.48+m.level*.16)*(REGIONAL_HUNT_DAMAGE_TUNING[m.zone]??1)*regionalPressure*secondary.incomingPressureMultiplier*style.damageTakenMultiplier*tactic.damageTakenMultiplier*(champion?CHAMPION_DAMAGE_MULTIPLIER:1)*modifiers.incomingDamageMultiplier*companion.incomingDamageMultiplier*(1-effectGems.damage_reduction)*Math.max(.5,1-setCombat.stats.ward)*(c.preparation?preparationEffects(c.preparation).damage:1)*runtime.progressionDamagePenalty);
  const healing=stats.hp*companion.directHealingPctPerHour*killCycleSeconds/3600;
  const floor=Math.max(REGIONAL_MIN_ATTRITION_HP_PER_HOUR[m.zone]??0,stats.hp*MIN_UNHEALED_HP_FRACTION_PER_HOUR)*killCycleSeconds/3600;
  const incoming=Math.max(floor,damage);
@@ -384,6 +402,7 @@ function simulateCombat(state:GameState,monsterId:string,elapsed:number,nowMs=Da
  const food=c.equippedFoodId?itemDef(c.equippedFoodId):undefined,threshold=Math.max(10,Math.min(90,state.settings.autoEatThresholdPct))/100;
  let foodLeft=stackQty(state.inventory.stacks,c.equippedFoodId),foodConsumed=0,hp=Math.min(c.currentHp??prepared.stats.hp,prepared.stats.hp),championKills=0,stoppedReason='',preparationEncounters=0,qualifyingActivitySeconds=elapsed;
  const completed:Array<{atMs:number;candy:boolean}>=[];
+ if(hp<=1)return {kills:0,completed,championKills:0,foodConsumed:0,endHp:1,stoppedReason:'Too injured',qualifyingActivitySeconds:0,nextProgressFraction:0,preparationEncounters:0};
  for(const encounter of timeline.encounters){
   const runtime={...(encounter.prepared?prepared:plain),killCycleSeconds:encounter.cycleSeconds};
   const champion=isChampionEncounter(c.id,state.activity?.lastClaimAtMs??0,monsterId,completed.length),exchange=combatEncounterDamage(runtime,champion);
@@ -391,7 +410,7 @@ function simulateCombat(state:GameState,monsterId:string,elapsed:number,nowMs=Da
   // A healer can offset incoming pressure, but cannot rescue a lethal hit.
   hp=hp-exchange.damage<=0?0:Math.min(runtime.stats.hp,hp-exchange.net);
   while(food?.heal&&foodLeft>0&&hp>0&&hp/runtime.stats.hp<=threshold){hp=Math.min(runtime.stats.hp,hp+Math.max(1,Math.ceil(food.heal*runtime.modifiers.healingEffectivenessMultiplier)));foodLeft--;foodConsumed++;}
-  if(hp<=0){hp=1;stoppedReason=food&&state.settings.stopCombatWhenOutOfFood?'Out of food / too injured':'Too injured';qualifyingActivitySeconds=(encounter.atMs-startsAtMs)/1000;break;}
+  if(hp<=1){hp=1;stoppedReason=food&&state.settings.stopCombatWhenOutOfFood?'Out of food / too injured':'Too injured';qualifyingActivitySeconds=(encounter.atMs-startsAtMs)/1000;break;}
   completed.push({atMs:encounter.atMs,candy:encounter.candy});if(champion)championKills++;
  }
  return {kills:completed.length,completed,championKills,foodConsumed,endHp:hp,stoppedReason,qualifyingActivitySeconds,nextProgressFraction:stoppedReason?0:timeline.nextProgressFraction,preparationEncounters};
@@ -657,7 +676,7 @@ function claimActivitySegment(state:GameState,nowMs:number){
     const finalState=reconcileCombatCompanionUnlocks(progressed,nowMs);
     return {state:finalState,reward:withCompanionUnlocks(reward,state,finalState)};
   }
-  const preview=previewActivityReward(state,nowMs);if(!state.character||!state.activity){const recovered=settleOutOfCombatRecovery(state,nowMs);return {state:recovered,reward:preview};}
+  if(!state.character||!state.activity){const recovered=settleOutOfCombatRecovery(state,nowMs);return {state:recovered,reward:previewActivityReward(state,nowMs)};}
   const idleWindow=idleRuleSettlementWindow(state,nowMs),settledAtMs=idleWindow.settleAtMs,idleStopReason=idleWindow.shouldStop?idleWindow.reason:undefined,supply=previewStandardActivityRewardWithSupplies(state,settledAtMs),boosted=supply.reward;
   const reward:RewardBundle=idleWindow.shouldStop&&!boosted.stoppedReason?{...boosted,stoppedReason:idleStopReason,goalReached:!idleWindow.safety}:boosted;
   if(state.activity.kind!=='combat'){
@@ -808,7 +827,7 @@ export function claimOverflowToBank(state:GameState):GameState{
 
 export function startGathering(state:GameState,targetId:string,nowMs:number):GameState{if(HERB_NODES.some(x=>x.id===targetId))return startHerbalism(state,targetId,nowMs);state=finishClassDrills(state,nowMs);const g=GATHERING.find(x=>x.id===targetId);if(!g)throw new Error('Unknown gathering target');const skill=state.skills.find(x=>x.skillId===g.skillId);if(!skill||skill.level<g.unlockLevel)throw new Error('Skill level too low');if(g.zoneId!==currentRegionId(state)){const zone=WORLD_ZONES.find(entry=>entry.id===g.zoneId);throw new Error(`Travel to ${zone?.name??g.zoneId} before gathering ${g.name}`)}return {...state,outOfCombatSinceMs:undefined,character:state.character?{...state.character,activityQueuePausedReason:undefined}:null,activity:{skillAffinity:captureSkillAffinity(state,g.skillId),kind:g.skillId,targetId,startedAtMs:nowMs,lastClaimAtMs:nowMs,environment:captureActivityEnvironment(targetId,nowMs)}}}
 export function startHerbalism(state:GameState,targetId:string,nowMs:number):GameState{state=finishClassDrills(state,nowMs);const g=HERB_NODES.find(x=>x.id===targetId);if(!g)throw new Error('Unknown herbalism node');const skill=state.skills.find(x=>x.skillId==='herbalism');if(!skill||skill.level<g.unlockLevel)throw new Error('Herbalism level too low');if(g.zoneId!==currentRegionId(state))throw new Error(`Travel to ${g.zoneId} before gathering ${g.name}`);if(state.activity)throw new Error('Settle and stop the current activity first');const method=herbalismMethod(state.character?.herbalismMethodId,skill.level);return {...state,outOfCombatSinceMs:undefined,character:state.character?{...state.character,activityQueuePausedReason:undefined}:null,activity:{skillAffinity:captureSkillAffinity(state,'herbalism'),kind:'herbalism',targetId,startedAtMs:nowMs,lastClaimAtMs:nowMs,environment:captureActivityEnvironment(targetId,nowMs),herbalismMethodId:method.id}}}
-export function startExploration(state:GameState,routeId:string,nowMs:number):GameState{state=finishClassDrills(state,nowMs);const route=explorationRoute(routeId);if(!route)throw new Error('Unknown exploration route');if(!state.character||state.character.level<route.requiredLevel)throw new Error(`Reach character level ${route.requiredLevel} to explore this route`);const exploration=state.skills.find(skill=>skill.skillId==='exploration');if(!exploration||exploration.level<route.requiredExplorationLevel)throw new Error(`Reach Exploration level ${route.requiredExplorationLevel} to scout this route`);if(route.zoneId!==currentRegionId(state))throw new Error(`Travel to ${route.zoneId} before exploring`);if(state.activity)throw new Error('Settle and stop the current activity first');return {...state,outOfCombatSinceMs:undefined,activity:{kind:'exploration',targetId:routeId,startedAtMs:nowMs,lastClaimAtMs:nowMs,environment:captureActivityEnvironment(routeId,nowMs)}}}
+export function startExploration(state:GameState,routeId:string,nowMs:number):GameState{const route=explorationRoute(routeId);if(!route)throw new Error('Unknown exploration route');state=finishClassDrills(state,nowMs);if(!state.character||state.character.level<route.requiredLevel)throw new Error(`Reach character level ${route.requiredLevel} to explore this route`);const exploration=state.skills.find(skill=>skill.skillId==='exploration');if(!exploration||exploration.level<route.requiredExplorationLevel)throw new Error(`Reach Exploration level ${route.requiredExplorationLevel} to scout this route`);if(route.zoneId!==currentRegionId(state))throw new Error(`Travel to ${route.zoneId} before exploring`);if(state.activity){state=claimActivity(state,nowMs).state;state=stopActivity(state,nowMs);}return {...state,outOfCombatSinceMs:undefined,activity:{kind:'exploration',targetId:routeId,startedAtMs:nowMs,lastClaimAtMs:nowMs,environment:captureActivityEnvironment(routeId,nowMs)}}}
 export function equipGatheringTool(state:GameState,itemId:string,nowMs=Date.now()):GameState{
   if(!state.character)throw new Error('Create a character first');
   const tool=gatheringToolDef(itemId);if(!tool)throw new Error('Not a gathering tool');

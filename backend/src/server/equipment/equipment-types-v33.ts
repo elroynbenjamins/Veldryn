@@ -5,8 +5,9 @@ export const SET_BONUS_SLOTS_V33:readonly EquipmentSlotV33[]=[...EQUIPMENT_SLOT_
 export const SET_PIECE_SLOTS_V33:readonly EquipmentSlotV33[]=[...EQUIPMENT_SLOT_ORDER_V33];
 export const SET_THRESHOLDS_V33=[2,4,6,8,10] as const;
 export type SetThresholdPiecesV33=(typeof SET_THRESHOLDS_V33)[number];
+export type EquipmentSetPathV33='Foundation'|'Alternate';
 export interface SetThresholdV33{pieces:SetThresholdPiecesV33;description:string;}
-export interface EquipmentSetV33{id:string;tier:EquipmentTierIdV33;tierName:string;region:string;levelMin:number;levelMax:number;unlockLevel:number;className:string;role:'Tank'|'Damage'|'Support';path:'Foundation'|'Specialist'|'Alternate';name:string;focus:string;primaryStat:string;secondaryStat:string;tertiaryStat:string;thresholds:readonly SetThresholdV33[];}
-export interface EquipmentPieceV33{id:string;setId:string;tier:EquipmentTierIdV33;className:string;role:string;path:string;setName:string;slot:EquipmentSlotV33;name:string;requiredLevel:number;countsForSetBonus:true;primaryStat:string;secondaryStat:string;}
+export interface EquipmentSetV33{id:string;tier:EquipmentTierIdV33;tierName:string;region:string;levelMin:number;levelMax:number;unlockLevel:number;className:string;role:'Tank'|'Damage'|'Support';path:EquipmentSetPathV33;name:string;focus:string;primaryStat:string;secondaryStat:string;tertiaryStat:string;thresholds:readonly SetThresholdV33[];}
+export interface EquipmentPieceV33{id:string;setId:string;tier:EquipmentTierIdV33;className:string;role:string;path:EquipmentSetPathV33;setName:string;slot:EquipmentSlotV33;name:string;requiredLevel:number;countsForSetBonus:true;primaryStat:string;secondaryStat:string;}
 export interface EquippedPieceV33{pieceId:string;setId:string;slot:EquipmentSlotV33;}
 export interface ActiveSetBonusV33{setId:string;pieceCount:number;thresholds:readonly SetThresholdV33[];}

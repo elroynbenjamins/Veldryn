@@ -42,7 +42,7 @@ function makeStyles(C:ThemeColors){return StyleSheet.create({
   keyboardAvoider:{width:'100%',alignItems:'center'},
   surface:{width:'100%',alignSelf:'center',backgroundColor:C.bg,borderWidth:1,borderColor:C.lineStrong},
   sheet:{maxWidth:720,maxHeight:'92%',paddingHorizontal:14,paddingTop:8,borderTopLeftRadius:radii.lg,borderTopRightRadius:radii.lg},
-  dialog:{maxWidth:520,maxHeight:'90%',padding:spacing.lg,borderRadius:radii.lg},
+  dialog:{maxWidth:520,maxHeight:'96%',padding:spacing.lg,borderRadius:radii.lg},
   grabber:{width:42,height:4,alignSelf:'center',marginBottom:8,borderRadius:99,backgroundColor:C.lineStrong},
   header:{minHeight:48,flexDirection:'row',alignItems:'center',gap:10},
   headerCopy:{flex:1,minWidth:0},

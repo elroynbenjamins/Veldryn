@@ -1,5 +1,9 @@
 # Ironwarden T1 equipment icon candidates
 
+Follow [the shared equipment atlas direction](ART_DIRECTION.md) for all new
+or revised sheets. It defines compact runtime dimensions, class-icon accents,
+and the required Foundation/Alternate silhouette differences.
+
 The three `-v2` transparent 5 x 2 sheets were accepted as the Ironwarden T1
 equipment icon designs. Runtime copies are bound in
 `../../assets/equipment-t1-ironwarden/` and cropped by the inventory renderer.

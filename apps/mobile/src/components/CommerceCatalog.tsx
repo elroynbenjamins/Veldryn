@@ -17,7 +17,7 @@ export function CommerceCatalog({language:languageOverride,owned,checking=false,
  const contextLanguage=useGameLanguage(),language=languageOverride??contextLanguage;
  const a=(text:string,params?:Record<string,string|number>)=>accountText(language,text,params);
 
-  return <View style={{gap:spacing.sm,marginVertical:spacing.sm}}>
+  return <View style={{gap:spacing.md,marginVertical:spacing.sm}}>
     {premiumProductRows(owned,checking).map(row=><CommerceProductRow
       key={row.id} language={language} productId={row.id}
       title={row.id==='supporter_monthly'&&row.owned?row.title:a(row.id==='supporter_monthly'?'{name} · monthly':'{name} · permanent',{name:row.title})}

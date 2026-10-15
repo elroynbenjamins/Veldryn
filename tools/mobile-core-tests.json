@@ -1,4 +1,7 @@
 [
+  "../../tools/validate-edge-function-auth-contract.cjs",
+  ".core-build/apps/mobile/tests/released-event-connections.js",
+  ".core-build/apps/mobile/tests/live-health-recovery.js",
   "tests/guild-heraldry.cjs",
   "tests/card-appearance.cjs",
   "tests/guild-background-client.cjs",
@@ -31,6 +34,7 @@
   ".core-build/apps/mobile/tests/equipment-decision-ui-contract.js",
   ".core-build/apps/mobile/tests/equipment-set-runtime.js",
   ".core-build/apps/mobile/tests/equipment-set-runtime-ui-contract.js",
+  ".core-build/apps/mobile/tests/equipment-items-v33.js",
   ".core-build/apps/mobile/tests/equipment-crafting-source-v33.js",
   ".core-build/apps/mobile/tests/equipment-crafting-source-ui-contract.js",
   ".core-build/apps/mobile/tests/equipment-timed-crafting-queue.js",

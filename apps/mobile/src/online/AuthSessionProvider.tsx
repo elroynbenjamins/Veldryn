@@ -1,5 +1,6 @@
+import {gameAlert} from '../core/game-alerts';
 import React,{createContext,useCallback,useContext,useEffect,useMemo,useRef,useState} from 'react';
-import {Alert,AppState} from 'react-native';
+import {AppState} from 'react-native';
 import * as Linking from 'expo-linking';
 import type {Session} from '@supabase/supabase-js';
 import {isAuthCallbackUrl} from '../core/auth-callback';
@@ -67,7 +68,7 @@ export function AuthSessionProvider({children}:{children:React.ReactNode}){
     // when the email opened in another browser). Keep and check the same guest.
     const refreshed=await refreshAccount().catch(()=>null);
     if(previous?.user.is_anonymous&&refreshed?.user.id===previous.user.id&&verifiedAccountEmail(refreshed.user))return;
-    if(alive){const message=cause instanceof Error?cause.message:'Account link could not be verified.';setError(message);Alert.alert('Account link',message);}
+    if(alive){const message=cause instanceof Error?cause.message:'Account link could not be verified.';setError(message);gameAlert.alert('Account link',message);}
    }
   };
   // Keep this callback synchronous. Supabase holds its auth lock while notifying

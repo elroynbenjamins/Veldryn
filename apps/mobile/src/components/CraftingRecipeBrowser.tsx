@@ -19,7 +19,7 @@ type CraftingSkillId=Extract<SkillId,'smithing'|'cooking'|'alchemy'|'tailoring'|
 type RecipeStatus={ready:boolean;reason:string;inputs:Array<{itemId:string;quantity:number;inventory:number;bank:number}>};
 type Row={recipe:(typeof RECIPES)[number];status:RecipeStatus};
 
-export function CraftingRecipeBrowser({state,skillId,initialQuery='',preferredRecipeId,category,onCraft,onAlchemyStart,onProcessingStart,onNavigate,onCraftPrerequisites,onTrackPreparation}:{state:GameState;skillId:CraftingSkillId;initialQuery?:string;preferredRecipeId?:string;category?:'materials'|'tools';onCraft:(id:string)=>void;onAlchemyStart?:(id:string,batches:number)=>Promise<void>|void;onProcessingStart?:(id:string,batches:number)=>Promise<void>|void;onNavigate?:(destination:WorkingTowardDestination)=>void;onCraftPrerequisites?:(recipeId:string)=>void;onTrackPreparation?:(recipe:(typeof RECIPES)[number],batches:number,initialStepCount:number)=>Promise<void>|void}){
+export function CraftingRecipeBrowser({state,skillId,initialQuery='',preferredRecipeId,category,onCraft,onAlchemyStart,onProcessingStart,onNavigate,onCraftPrerequisites,onTrackPreparation}:{state:GameState;skillId:CraftingSkillId;initialQuery?:string;preferredRecipeId?:string;category?:'materials'|'tools';onCraft:(id:string)=>void;onAlchemyStart?:(id:string)=>Promise<void>|void;onProcessingStart?:(id:string)=>Promise<void>|void;onNavigate?:(destination:WorkingTowardDestination)=>void;onCraftPrerequisites?:(recipeId:string)=>void;onTrackPreparation?:(recipe:(typeof RECIPES)[number],batches:number,initialStepCount:number)=>Promise<void>|void}){
  const {gt,gl,language}=useGameplayText();
  const C=useGameTheme(),s=useMemo(()=>makeStyles(C),[C]);
  const [query,setQuery]=useState(initialQuery),[readyOnly,setReadyOnly]=useState(false),[filterOpen,setFilterOpen]=useState(false),[limit,setLimit]=useState(12);
@@ -27,8 +27,7 @@ export function CraftingRecipeBrowser({state,skillId,initialQuery='',preferredRe
  const all:Row[]=useMemo(()=>RECIPES.filter(recipe=>recipe.skillId===skillId&&!recipe.noviceSetId&&(!recipe.classId||recipe.classId===state.character?.classId)).sort((a,b)=>a.level-b.level||a.name.localeCompare(b.name)).map(recipe=>{
   try {
    const processing=isTimedProcessingRecipe(recipe.id),timedEquipment=Boolean(timedEquipmentRecipe(recipe.id));
-   const base=skillId==='alchemy'?alchemyAvailability(state,recipe.id,1):processing?processingAvailability(state,recipe.id,1):timedEquipment?equipmentCraftAvailability(state,recipe.id):recipeAvailability(state,recipe.id);
-   const status=skillId==='alchemy'&&state.activity?{...base,ready:false,reason:gt("Stop the current activity before brewing.")}:base;
+   const status=skillId==='alchemy'?alchemyAvailability(state,recipe.id):processing?processingAvailability(state,recipe.id,undefined,true):timedEquipment?equipmentCraftAvailability(state,recipe.id):recipeAvailability(state,recipe.id);
    return {recipe,status};
   } catch(error) {
    console.warn('[CraftingRecipeBrowser] Recipe unavailable:',recipe.id,error);

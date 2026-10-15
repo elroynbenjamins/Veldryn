@@ -3,13 +3,14 @@ const fs=require('fs') as {readFileSync:(path:string,encoding:string)=>string};
 const read=(path:string)=>fs.readFileSync(path,'utf8');
 function ok(value:boolean,message:string){if(!value)throw new Error(message)}
 
-import {CHAT_EMOTE_TRAY_SIZE,CHAT_MAX_EMOTES_PER_MESSAGE,chatEmoteCount,defaultChatEmoteTray,normalizeChatEmoteTrayIds} from '../src/core/chat-emotes';
+import {CHAT_EMOTE_TRAY_SIZE,CHAT_MAX_EMOTES_PER_MESSAGE,availableChatEmotes,chatEmoteCount,defaultChatEmoteTray,normalizeChatEmoteTrayIds} from '../src/core/chat-emotes';
 
 ok(CHAT_EMOTE_TRAY_SIZE===5,'Production chat tray must have exactly five quick slots');
 ok(CHAT_MAX_EMOTES_PER_MESSAGE===2,'Production chat must allow at most two emotes per message');
 ok(defaultChatEmoteTray('male').length===5&&defaultChatEmoteTray('female').length===5,'Both body presentations must resolve a five-emote default tray');
 ok(normalizeChatEmoteTrayIds([...defaultChatEmoteTray('male'),'male_01']).length===5,'Tray normalization must de-duplicate and cap at five');
 ok(chatEmoteCount(':male_01: hello :female_01:')===2,'Emote counting must recognize two valid shortcodes');
+ok(availableChatEmotes([], 'male').some(row=>row.id==='female_01')&&availableChatEmotes([], 'female').some(row=>row.id==='male_01'),'Both launch emote sets must be available regardless of body presentation');
 
 const types=read('src/core/types.ts');
 ok(types.includes('chatDockLines?:1|2|3'),'Game settings must persist a 1/2/3-line collapsed chat preference');
@@ -70,7 +71,7 @@ ok(picker.includes('Choose your 5 emotes'),'Production picker must expose five-s
 ok(picker.includes('Save 5'),'Production tray editor must save exactly five slots');
 ok(picker.includes('CHAT_EMOTE_TRAY_SIZE'),'Production picker must use the canonical tray size');
 ok(picker.includes('usedCount>=CHAT_MAX_EMOTES_PER_MESSAGE'),'Quick emote insertion must disable after two emotes are already in the draft');
-ok(picker.includes('availableChatEmotes(unlockedIds,bodyPresentation)'),'Tray editing must show only the presentation-matched starter emotes for now');
+ok(picker.includes('availableChatEmotes(unlockedIds,bodyPresentation)'),'Tray editing must show the complete starter emote catalog for every character');
 ok(picker.includes('chatEmoteArtwork'),'Tray slots must show the actual emote PNGs');
 ok(picker.includes('useWindowDimensions')&&picker.includes("stackControls=width<360||fontScale>=1.25"),'Emote tray controls must adapt to narrow phones and large text');
 ok(picker.includes('headingRowStack')&&picker.includes('actionsStack')&&picker.includes("actionStack:{flex:0,width:'100%'}"),'Emote editing header and save actions must stack instead of squeezing');

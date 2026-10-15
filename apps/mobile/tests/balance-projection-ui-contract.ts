@@ -5,7 +5,7 @@ const read=(path:string)=>fs.readFileSync(path,'utf8');
 
 const gathering=read('src/components/GatheringActivityList.tsx');
 ok(gathering.includes('gatheringBalanceProjection'),'Gathering UI must use the shared balance projection instead of duplicating rate math');
-ok(gathering.includes('Have: ${formatGameNumber(available')&&gathering.includes('view.cycleSeconds.toFixed(1)'),'Simple gathering rows must show resource count and current action duration');
+ok(gathering.includes('Have: ${formatGameNumber(available')&&gathering.includes('Math.ceil(view.cycleSeconds)'),'Simple gathering rows must show resource count and current rounded action duration');
 ok(gathering.includes('onPress={start}')&&gathering.includes('onGather(activity.id)'),'Gathering rows must start the selected resource directly');
 
 const activity=read('src/components/ActivityCard.tsx');
@@ -20,8 +20,8 @@ ok(home.includes('levelPace={levelPace}'),'Home must pass live level pace into t
 const activeBar=read('src/components/ActiveActivityBar.tsx');
 ok(activeBar.includes('activeCombatRuntimeProjection(state)'),'Active combat bar must use the authoritative regional hunt cycle');
 ok(activeBar.includes('activeGatheringRuntimeProjection(state)'),'Active gathering bar must use runtime-equivalent gathering pace');
-ok(activeBar.includes('NEXT KILL')&&activeBar.includes('combatPresentation'),'Active combat feedback must synchronize presentation with the authoritative hunt cycle');
-ok(activeBar.includes('HP {combatView?.enemyHp')&&activeBar.includes('−{combatView?.playerHit'),'Active combat feedback must keep satisfying enemy HP and damage feedback');
+ok(activeBar.includes('activeCombatRuntimeProjection(state)')&&activeBar.includes("gt('Next kill {seconds}s'"),'Active combat feedback must synchronize its countdown with the authoritative hunt cycle');
+ok(activeBar.includes("gt('{count} kills'")&&activeBar.includes('combatTrack'),'Active combat feedback must keep compact kill progress and a visual hunt-cycle bar');
 
 const battleStage=read('src/components/BattleStage.tsx');
 ok(battleStage.includes('slashBright')&&battleStage.includes('sparkTravel'),'Expanded combat preview must include slash and particle hit feedback');

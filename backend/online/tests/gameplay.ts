@@ -4,9 +4,11 @@ import {totalXpAtLevel} from '../../../apps/mobile/src/core/progression';
 import type {GameState} from '../../../apps/mobile/src/core/types';
 async function main(){
  let state:GameState|null=null,version=0,commits=0,clock=1700000000000,transportFailure=false,generatedIds=0,blockedDeleteCharacterId:string|null=null,deletedCommitCharacterId:string|null=null;
+ const commandMetrics:Record<string,unknown>[]=[];
  const receipts=new Map<string,{response:unknown;requestHash:string}>();
  const services:GameplayServices={authenticate:async token=>token==='alice-token'?'alice':null,randomId:()=>['11111111-1111-4111-8111-111111111111','33333333-3333-4333-8333-333333333333'][generatedIds++]??'44444444-4444-4444-8444-444444444444',randomRoll:()=>.25,
   rpc:async<T>(name:string,args:Record<string,unknown>):Promise<T>=>{
+   if(name==='record_online_command_outcome_server_v1'){commandMetrics.push(args);return null as T;}
    if(name==='read_online_game_receipt_server_v1')return (receipts.get(args.p_request_id as string)??null) as T;
    if(name==='load_online_game_server_v1')return {state:structuredClone(state),version,serverNow:clock,characterId:state?.character?.id??null,walletGold:state?.character?.gold??null,guildMember:false,communityProgress:{}} as T;
    if(name==='character_delete_coop_guard_server_v1')return {blocked:args.p_character_id===blockedDeleteCharacterId,reason:'Leave the Live co-op queue or ready check before deleting this character.'} as T;
@@ -90,6 +92,11 @@ async function main(){
  state={...state!,activity:{kind:'combat',targetId:'MOSS_RAT',startedAtMs:clock-60000,lastClaimAtMs:clock-60000}};
  const qaCombat=await qaRequest({type:'claim'},'qa-combat-effort-01',22);assert.equal(qaCombat.status,200);
  const qaCombatPayload=await qaCombat.json();assert.ok(qaCombatPayload.reward.combatEffort,'QA fixture actually contains combat effort');assert.deepEqual(qaCombatPayload.guildProjectEffort,[]);assert.deepEqual(qaCombatPayload.guildPveEffort,[],'Admin QA must never credit live guild PvE');
- console.log('PASS authenticated gameplay HTTP, input authority, Admin QA authorization, canonical replay, stale version and lost-response recovery');
+ assert.ok(commandMetrics.some(metric=>metric.p_outcome==='committed'&&metric.p_command_type==='create'),'committed commands emit aggregate outcome telemetry');
+ assert.ok(commandMetrics.some(metric=>metric.p_outcome==='replayed'&&metric.p_command_type==='create'),'receipt replays emit aggregate outcome telemetry');
+ assert.ok(commandMetrics.some(metric=>metric.p_outcome==='conflict'),'stale or conflicting commands emit aggregate conflict telemetry');
+ assert.ok(commandMetrics.some(metric=>metric.p_outcome==='retryable_failure'&&metric.p_command_type==='claim'),'lost responses emit retryable telemetry');
+ assert.ok(commandMetrics.every(metric=>Object.keys(metric).every(key=>['p_outcome','p_command_type','p_latency_ms'].includes(key))),'command telemetry never carries player or request identifiers');
+ console.log('PASS authenticated gameplay HTTP, input authority, Admin QA authorization, canonical replay, stale version, lost-response recovery and aggregate command telemetry');
 }
 void main().catch(error=>{console.error(error);process.exitCode=1;});

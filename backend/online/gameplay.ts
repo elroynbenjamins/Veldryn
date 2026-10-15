@@ -21,6 +21,11 @@ function canonical(value:unknown):string{if(value===null||typeof value!=='object
 export function gameplayHandler(services:GameplayServices){return async(request:Request):Promise<Response>=>{
  if(request.method==='OPTIONS')return new Response(null,{status:204,headers});
  if(!['GET','POST'].includes(request.method))return json({error:'method_not_allowed'},405);
+ const startedAt=Date.now();let telemetryCommandType:string|undefined;
+ const recordOutcome=(outcome:'committed'|'replayed'|'conflict'|'rejected'|'retryable_failure')=>{
+  if(!telemetryCommandType)return;
+  return services.rpc('record_online_command_outcome_server_v1',{p_outcome:outcome,p_command_type:telemetryCommandType,p_latency_ms:Math.max(0,Date.now()-startedAt)}).catch(()=>{});
+ };
  try{
   const bearer=request.headers.get('authorization')?.match(/^Bearer (\S+)$/i)?.[1];
   if(!bearer)return json({error:'auth_required'},401);
@@ -32,12 +37,12 @@ export function gameplayHandler(services:GameplayServices){return async(request:
    const raw=await request.text();if(raw.length>16384)return json({error:'request_too_large'},413);
    try{body=JSON.parse(raw);}catch{throw new GameplayError('invalid_json');}if(!body||typeof body!=='object'||Array.isArray(body)||Object.keys(body).some(key=>!['requestId','expectedVersion','command'].includes(key)))throw new GameplayError('invalid_request');
    if(typeof body.requestId!=='string'||!/^[a-zA-Z0-9_-]{8,128}$/.test(body.requestId)||!Number.isSafeInteger(body.expectedVersion)||(body.expectedVersion as number)<0)throw new GameplayError('invalid_request');
-   try{command=validateGameCommand(body.command);}catch(e){throw new GameplayError(e instanceof Error?e.message:'invalid_command');}
+   try{command=validateGameCommand(body.command);telemetryCommandType=command.type;}catch(e){throw new GameplayError(e instanceof Error?e.message:'invalid_command');}
    if(command.type.startsWith('qa_')&&!adminQa)throw new GameplayError('admin_qa_required',403);
    requestHash=await hash(canonical(command));
    try{await services.rpc('record_player_activity_server_v1',{p_account_id:accountId,p_kind:command.type.startsWith('event_')?'event_action':'gameplay_action'});}catch{/* Activity analytics are best-effort and must never block gameplay. */}
    const prior=await services.rpc<{response:unknown;requestHash:string}|null>('read_online_game_receipt_server_v1',{p_account_id:accountId,p_request_id:body.requestId});
-   if(prior){if(prior.requestHash!==requestHash)return json({error:'idempotency_key_conflict'},409);return json(prior.response);}
+   if(prior){if(prior.requestHash!==requestHash){await recordOutcome('conflict');return json({error:'idempotency_key_conflict'},409);}await recordOutcome('replayed');return json(prior.response);}
   }
   const loaded=await services.rpc<LoadedGame>('load_online_game_server_v1',{p_account_id:accountId});
   const state=loaded.state??newGame(loaded.serverNow);
@@ -49,8 +54,8 @@ export function gameplayHandler(services:GameplayServices){return async(request:
   if(body.expectedVersion!==loaded.version){
    // Another request may commit this key between the first receipt read and state read.
    const committed=await services.rpc<{response:unknown;requestHash:string}|null>('read_online_game_receipt_server_v1',{p_account_id:accountId,p_request_id:body.requestId});
-   if(committed)return committed.requestHash===requestHash?json(committed.response):json({error:'idempotency_key_conflict'},409);
-   return json({error:'stale_state',state,version:loaded.version,serverNow:loaded.serverNow,accountId},409);
+   if(committed){if(committed.requestHash===requestHash){await recordOutcome('replayed');return json(committed.response);}await recordOutcome('conflict');return json({error:'idempotency_key_conflict'},409);}
+   await recordOutcome('conflict');return json({error:'stale_state',state,version:loaded.version,serverNow:loaded.serverNow,accountId},409);
   }
   if(command.type==='roster_delete'){
    const characterId=(command.args as {id:string}).id;
@@ -75,6 +80,7 @@ export function gameplayHandler(services:GameplayServices){return async(request:
   const commitRpc='commit_online_game_guild_pve_v1';
   const committed=await services.rpc(commitRpc,{p_account_id:accountId,p_expected_version:loaded.version,p_expected_gold:loaded.walletGold,p_request_id:body.requestId,p_request_hash:requestHash,p_response:response,p_contributions:contributions,...(command.type==='roster_delete'?{p_deleted_character_id:(command.args as {id:string}).id}: {})});
   try{await services.rpc('guild_quest_record_contributions_v1',{p_account_id:accountId,p_contributions:contributions.map(e=>({...e,units:(e as typeof e&{questUnits?:number}).questUnits??e.units}))});}catch{/* Quest telemetry must not invalidate an already committed gameplay action. */}
+  await recordOutcome('committed');
   return json(committed);
- }catch(error){const message=error instanceof Error?error.message:'server_error';const conflict=/stale_state|idempotency_key_conflict/.test(message);const status=conflict?409:error instanceof GameplayError?error.status:503;return json({error:status===503?'Server temporarily unavailable. Retry the pending action.':message},status);}
+ }catch(error){const message=error instanceof Error?error.message:'server_error';const conflict=/stale_state|idempotency_key_conflict/.test(message);const status=conflict?409:error instanceof GameplayError?error.status:503;await recordOutcome(conflict?'conflict':status===503?'retryable_failure':'rejected');return json({error:status===503?'Server temporarily unavailable. Retry the pending action.':message},status);}
 };}

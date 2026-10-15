@@ -81,3 +81,4 @@ apps/mobile/.release-*-audit*/
 /screenshot-*.png
 apps/mobile/.release-bundle-*/
 apps/mobile/.release-*-exit*.txt
+backend/.online-build/

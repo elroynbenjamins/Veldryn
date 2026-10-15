@@ -329,7 +329,9 @@ function VeldrynApp(){
   // Event configuration is server-authoritative, but it changes on a live-ops cadence, not a frame cadence.
   // Foregrounding still refreshes immediately so a returning player never waits for the next scheduled check.
   useEffect(()=>{if(!onlineConfigured)return;void syncLiveEventRuntime();const id=setInterval(()=>void syncLiveEventRuntime(),60_000);const sub=AppState.addEventListener('change',status=>{if(status==='active')void syncLiveEventRuntime();});return()=>{clearInterval(id);sub.remove();}},[syncLiveEventRuntime]);
-  const needsLiveClock=!!state?.activity||!!state?.character?.classTraining;
+  // Keep high-frequency UI clocks only on screens that visibly depend on active progress.
+  // Inventory, account settings, chat and social screens do not need full-screen refreshes every 2 seconds.
+  const needsLiveClock=(!!state?.activity||!!state?.character?.classTraining)&&(['Home','Combat','Skills','World','Character','Quests'].includes(tab));
   // This is presentation-only. Server authority and reward settlement do not poll on this clock.
   useEffect(()=>{setNow(Date.now());const id=setInterval(()=>setNow(Date.now()),needsLiveClock?2_000:60_000);return()=>clearInterval(id)},[needsLiveClock]);
   useEffect(()=>{if(!preparationNotices.length||collected||forgeResults)return;const timer=setTimeout(()=>setPreparationNotices(current=>current.slice(1)),4500);return()=>clearTimeout(timer)},[preparationNotices,collected,forgeResults]);

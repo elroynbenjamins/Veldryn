@@ -245,7 +245,7 @@ function VeldrynApp(){
     return()=>{clearTimeout(timer);startupOpacity.stopAnimation();appEntranceOpacity.stopAnimation();appEntranceY.stopAnimation();};
   },[startupBlocking,state?.settings.reduceMotion,startupOpacity,appEntranceOpacity,appEntranceY]);
   useEffect(()=>{let alive=true;
-    const check=async()=>{try{const result=await Promise.race([fetchAppVersionGate(),new Promise<null>(resolve=>setTimeout(()=>resolve(null),2500))]);if(alive&&result)setVersionGate(result);}finally{if(alive)setVersionGateChecked(true);}};
+    const check=async()=>{let timeout:ReturnType<typeof setTimeout>|undefined;try{const result=await Promise.race([fetchAppVersionGate(),new Promise<null>(resolve=>{timeout=setTimeout(()=>resolve(null),2500)})]);if(alive&&result)setVersionGate(result);}catch(error){console.warn('[VersionGate] Could not refresh release policy',error);}finally{if(timeout)clearTimeout(timeout);if(alive)setVersionGateChecked(true);}};
     void check();
     const listener=AppState.addEventListener('change',next=>{if(next==='active')void check();});
     return()=>{alive=false;listener.remove();};

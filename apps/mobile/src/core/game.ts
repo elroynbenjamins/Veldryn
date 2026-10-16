@@ -38,7 +38,7 @@ import {companionCombatContribution,reconcileCombatCompanionUnlocks,grantCompani
 import {awardCompanionRematchBondstone,companionRematchBondstoneStatus,recordCompanionActivity} from './companion-runtime';
 import {monsterMastery,recordMonsterMastery} from './monster-mastery';
 import {awardClassSkillXp,awardCombatClassXp,characterClassEffects,characterClassSkills,CLASS_DRILL_BASE_XP,normalizeTrainingFocus,settleClassDrills} from './class-skills';
-import {settleFaithPractice,cancelFaithPractice,normalizeFaith,selectedFaithBlessing} from './faith';
+import {reserveFaithPractice,settleFaithPractice,cancelFaithPractice,normalizeFaith,selectedFaithBlessing} from './faith';
 import {HOLY_WATER_ID} from '../content/faith';
 import {previewAlchemyReward,alchemyRefund,startAlchemyBatch,preparationEffects,spendPreparationEncounter} from './alchemy';
 import {previewProcessingReward,processingRefund,startProcessingBatch} from './processing';
@@ -219,7 +219,11 @@ function tryStartNextQueuedActivity(state:GameState,nowMs:number,throwOnFailure=
   if(!readiness.ready)throw new Error(readiness.blocker);
   const started=next.kind==='combat'
    ?startCombat(state,next.targetId,nowMs,next.combatTacticId??'balanced',next.huntGoalId??'open')
-   :startGathering(state,next.targetId,nowMs);
+   :next.kind==='faith'
+    ?reserveFaithPractice(state,next.targetId,next.faithPracticeCount!,nowMs)
+    :next.kind==='exploration'
+     ?startExploration(state,next.targetId,nowMs)
+     :startGathering(state,next.targetId,nowMs);
   if(next.kind==='combat'&&state.character.activityQueueCombatRecovery){
    const firstCycle=combatRuntimeDetails(started,next.targetId).killCycleSeconds;
    if(simulateCombat(started,next.targetId,firstCycle).stoppedReason)throw new Error('Recover more health before resuming queued combat.');
@@ -249,7 +253,7 @@ function autoAdvanceActivityQueue(state:GameState,nowMs:number,source:ActiveActi
  }
  const next=tryStartNextQueuedActivity(state,nowMs,false);
  if(next.activity||!state.character.activityQueueCombatRecovery)return next;
- const safeIndex=state.character.activityQueue?.findIndex(entry=>entry.kind==='gathering'&&queuedActivityReadiness(state,entry).ready)??-1;
+ const safeIndex=state.character.activityQueue?.findIndex(entry=>entry.kind!=='combat'&&queuedActivityReadiness(state,entry).ready)??-1;
  if(safeIndex>=0)return tryStartNextQueuedActivity(state,nowMs,false,safeIndex);
  return source.kind!=='combat'?continueCompletedQueueActivity(next,nowMs,source,reward):next;
 }
@@ -259,7 +263,7 @@ function recoverCombatQueue(state:GameState,nowMs:number,reason:string){
  const minimumFood=Math.max(state.settings.stopCombatWhenOutOfFood||rule?.stopIfOutOfFood?1:0,...(rule?.conditions.filter(row=>row.enabled&&row.kind==='food_below').map(row=>row.value+1)??[]));
  state={...state,character:{...state.character,activityQueueCombatRecovery:{needsHealing:reason.toLowerCase().includes('injured'),minimumFood}}};
  const queue=normalizeActivityQueue(state.character!.activityQueue,activityQueueCapacity(state));
- const safeIndex=queue.findIndex(entry=>entry.kind==='gathering'&&queuedActivityReadiness(state,entry).ready);
+ const safeIndex=queue.findIndex(entry=>entry.kind!=='combat'&&queuedActivityReadiness(state,entry).ready);
  return safeIndex>=0?tryStartNextQueuedActivity(state,nowMs,false,safeIndex):pauseActivityQueue(state,reason);
 }
 function pauseActivityQueue(state:GameState,reason:string){
@@ -641,6 +645,7 @@ function claimActivitySegment(state:GameState,nowMs:number){
   state=reconcileWeeklyOrderRollover(state,nowMs).state;
   if(state.character?.classTraining){const r=settleClassDrills(state,nowMs,offlineCapSeconds(state)),next=reconcileCombatCompanionUnlocks(r.state,nowMs);return {state:next,reward:withCompanionUnlocks(r.reward,state,next)};}
   if(state.activity?.kind==='faith'){
+    const source=state.activity;
     const settled=settleFaithPractice(state,nowMs,offlineCapSeconds(state)),boost=previewDailySupplyTimedReward(state,settled.reward,'skill'),reward=boost.reward;
     const routed=settled.refund?routeRewards(state,[{itemId:HOLY_WATER_ID,quantity:settled.refund}],nowMs):{inventory:state.inventory,bank:state.bank,overflow:state.overflow};
     const faith=normalizeFaith(settled.state.character!.faith);
@@ -651,7 +656,8 @@ function claimActivitySegment(state:GameState,nowMs:number){
     const skills=state.skills.map(x=>x.skillId==='faith'?{...x,xp:faithXp,level:levelFromXp(faithXp)}:x);
     const nextBase={...settled.state,...routed,skills,character:{...settled.state.character!,faith:{...faith,xp:faithXp}},activity:faith?.practice?{...state.activity,lastClaimAtMs:nowMs}:null} as GameState;
     const next=commitDailySupplyTimedBoost(nextBase,boost),reconciled=reconcileCombatCompanionUnlocks(next,nowMs);
-    return {state:reconciled,reward:withCompanionUnlocks(reward,state,reconciled)};
+    const queuedState=!faith.practice&&source.queueManaged?autoAdvanceActivityQueue(reconciled,nowMs,source,{...reward,goalReached:true}):reconciled;
+    return {state:queuedState,reward:withCompanionUnlocks(reward,state,queuedState)};
   }
   if(state.activity?.kind==='alchemy'){
     if(nowMs<=state.activity.lastClaimAtMs)return {state,reward:previewActivityReward(state,state.activity.lastClaimAtMs)};

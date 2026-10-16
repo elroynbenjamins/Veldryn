@@ -58,6 +58,19 @@ ok(reorderedCommand.activity?.lastClaimAtMs===lastClaim,'Reordering the queue mu
 ok(reorderedCommand.character?.activityQueue?.[0]?.targetId==='FIELD_WISP'&&reorderedCommand.character?.activityQueue?.[1]?.targetId==='MOSS_RAT','Trusted queue_move should reorder adjacent entries');
 rejects(()=>executeGameCommand(withSecond,{type:'queue_move',args:{index:1,direction:'sideways'}},now+60_002),'Queue move should reject unknown directions');
 rejects(()=>validateGameCommand({type:'queue_add',args:{kind:'gathering',id:'X',goalId:'kills_50'}}),'Gathering queue entries must reject combat-only options');
+rejects(()=>validateGameCommand({type:'queue_add',args:{kind:'faith',id:'FAITH_QUIET'}}),'Faith queue entries require a practice count');
+rejects(()=>validateGameCommand({type:'queue_add',args:{kind:'exploration',id:'SCOUT_GREENFIELDS',goal:{kind:'item_quantity',value:1}}}),'Exploration queue entries only accept duration goals');
+
+let faithAndExploration=createCharacter(newGame(now),'WAYFINDER','Faith Queue');
+faithAndExploration={...faithAndExploration,inventory:{...faithAndExploration.inventory,stacks:[...faithAndExploration.inventory.stacks,{itemId:'HOLY_WATER',quantity:2}]}};
+faithAndExploration=executeGameCommand(faithAndExploration,{type:'queue_add',args:{kind:'faith',id:'FAITH_QUIET',count:1}},now).state;
+faithAndExploration=executeGameCommand(faithAndExploration,{type:'queue_add',args:{kind:'exploration',id:'SCOUT_GREENFIELDS',goal:{kind:'duration_seconds',value:60}}},now).state;
+ok(queuedActivityReadiness(faithAndExploration,faithAndExploration.character?.activityQueue?.[0]).ready,'Queued Faith practice checks tier and Holy Water readiness');
+ok(queuedActivityReadiness(faithAndExploration,faithAndExploration.character?.activityQueue?.[1]).ready,'Queued Exploration checks the route and current region');
+faithAndExploration=executeGameCommand(faithAndExploration,{type:'queue_start'},now).state;
+ok(faithAndExploration.activity?.kind==='faith'&&faithAndExploration.activity.faithPractice?.remainingPractices===1,'Queue start reserves the selected Faith practices');
+const faithAdvanced=claimActivity(faithAndExploration,now+30_000);
+ok(faithAdvanced.state.activity?.kind==='exploration'&&faithAdvanced.state.activity.targetId==='SCOUT_GREENFIELDS','Finished queued Faith practice advances into queued Exploration');
 
 let planned=createCharacter(newGame(now),'WAYFINDER','Planned Queue');
 planned={...planned,unlockedMonsterIds:['MOSS_RAT','FIELD_WISP']};

@@ -7,6 +7,9 @@ import {WORLD_ZONES} from '../content/world-map';
 import {COMBAT_TACTIC_IDS,COMBAT_TACTICS} from './combat-tactics';
 import {HUNT_GOAL_IDS,HUNT_GOALS} from './hunt-goals';
 import {accountEntitlementBenefits} from './account-entitlements';
+import {FAITH_TIERS} from '../content/faith';
+import {EXPLORATION_ROUTES} from '../content/exploration';
+import {faithLevel,faithPracticeAvailability} from './faith';
 
 export const BASE_ACTIVITY_QUEUE=2;
 export const MAX_ACTIVITY_QUEUE=3;
@@ -31,10 +34,16 @@ export function activityQueueCapacity(state:GameState){return Math.min(MAX_ACTIV
 export function normalizeQueuedActivity(value:unknown):QueuedActivity|undefined{
  if(!value||typeof value!=='object'||Array.isArray(value))return undefined;
  const row=value as Record<string,unknown>,kind=row.kind,targetId=typeof row.targetId==='string'?row.targetId.trim():'';
- if((kind!=='combat'&&kind!=='gathering')||!targetId||targetId.length>100)return undefined;
+ if((kind!=='combat'&&kind!=='gathering'&&kind!=='faith'&&kind!=='exploration')||!targetId||targetId.length>100)return undefined;
  const goal=normalizeActivityQueueGoal(row.goal);
- if(row.goal!==undefined&&(!goal||(kind==='combat'&&!['duration_seconds','session_kills'].includes(goal.kind))||(kind==='gathering'&&goal.kind==='session_kills')))return undefined;
+ if(row.goal!==undefined&&(!goal||(kind==='combat'&&!['duration_seconds','session_kills'].includes(goal.kind))||(kind==='gathering'&&goal.kind==='session_kills')||(kind==='faith')||(kind==='exploration'&&goal.kind!=='duration_seconds')))return undefined;
  if(kind==='gathering')return {kind,targetId,...(goal?{goal}:{})};
+ if(kind==='exploration')return {kind,targetId,...(goal?{goal}:{})};
+ if(kind==='faith'){
+  const faithPracticeCount=row.faithPracticeCount;
+  if(!Number.isSafeInteger(faithPracticeCount)||Number(faithPracticeCount)<1||Number(faithPracticeCount)>1000)return undefined;
+  return {kind,targetId,faithPracticeCount:Number(faithPracticeCount)};
+ }
  const combatTacticId=COMBAT_TACTIC_IDS.includes(row.combatTacticId as any)?row.combatTacticId as QueuedActivity['combatTacticId']:undefined;
  const huntGoalId=HUNT_GOAL_IDS.includes(row.huntGoalId as any)?row.huntGoalId as QueuedActivity['huntGoalId']:undefined;
  return {kind,targetId,...(combatTacticId?{combatTacticId}:{}),...(huntGoalId?{huntGoalId}:{}),...(goal?{goal}:{})};
@@ -74,6 +83,11 @@ export function activityQueueLabel(activity:QueuedActivity){
   const monster=MONSTERS.find(row=>row.id===activity.targetId),tactic=activity.combatTacticId?COMBAT_TACTICS[activity.combatTacticId]:undefined,goal=activity.huntGoalId?HUNT_GOALS[activity.huntGoalId]:undefined;
   return [monster?.name??activity.targetId,tactic&&tactic.id!=='balanced'?tactic.name:undefined,activity.goal?activityQueueGoalLabel(activity.goal):goal&&goal.id!=='open'?goal.label:undefined].filter(Boolean).join(' · ');
  }
+ if(activity.kind==='faith'){
+  const tier=FAITH_TIERS.find(row=>row.id===activity.targetId);
+  return [tier?.name??activity.targetId,activity.faithPracticeCount?`${activity.faithPracticeCount.toLocaleString()} practices`:undefined].filter(Boolean).join(' · ');
+ }
+ if(activity.kind==='exploration')return [EXPLORATION_ROUTES.find(row=>row.id===activity.targetId)?.name??activity.targetId,activity.goal?activityQueueGoalLabel(activity.goal):undefined].filter(Boolean).join(' · ');
  return [[...GATHERING,...HERB_NODES].find(row=>row.id===activity.targetId)?.name??activity.targetId,activity.goal?activityQueueGoalLabel(activity.goal):undefined].filter(Boolean).join(' · ');
 }
 
@@ -87,13 +101,24 @@ export interface ActivityQueueHandoffStatus{
  nextBlocker?:string;
 }
 export interface QueuedActivityReadiness{ready:boolean;blocker?:string}
-export function queueSkillReadiness(state:GameState,skillId:GatheringSkillId|'combat'):QueuedActivityReadiness{
+export function queueSkillReadiness(state:GameState,skillId:GatheringSkillId|'combat'|'faith'|'exploration'):QueuedActivityReadiness{
  if(!state.character)return {ready:false,blocker:'Create a character first.'};
  const region=WORLD_ZONES.find(zone=>zone.id===state.currentRegionId),regionName=region?.name??state.currentRegionId;
  if(skillId==='combat'){
   const monsters=MONSTERS.filter(row=>!row.boss&&row.zone===region?.name);
   if(!monsters.length)return {ready:false,blocker:`Not available in ${regionName}.`};
   return monsters.some(row=>state.unlockedMonsterIds.includes(row.id))?{ready:true}:{ready:false,blocker:`No enemies unlocked in ${regionName}.`};
+ }
+ if(skillId==='faith'){
+  const level=faithLevel(state),tier=FAITH_TIERS.find(row=>row.level<=level);
+  return tier?{ready:true}:{ready:false,blocker:'No Faith practices are unlocked yet.'};
+ }
+ if(skillId==='exploration'){
+  const routes=EXPLORATION_ROUTES.filter(row=>row.zoneId===state.currentRegionId);
+  if(!routes.length)return {ready:false,blocker:`Not available in ${regionName}.`};
+  const level=state.skills.find(row=>row.skillId==='exploration')?.level??1;
+  const required=Math.min(...routes.map(row=>row.requiredExplorationLevel));
+  return level>=required?{ready:true}:{ready:false,blocker:`Requires Exploration level ${required} in ${regionName}.`};
  }
  const nodes=[...GATHERING,...HERB_NODES].filter(row=>row.skillId===skillId&&row.zoneId===state.currentRegionId);
  if(!nodes.length)return {ready:false,blocker:`Not available in ${regionName}.`};
@@ -117,6 +142,21 @@ export function queuedActivityReadiness(state:GameState,activity:QueuedActivity|
   }
   return {ready:true,blocker:undefined};
  }
+ if(activity.kind==='faith'){
+  const tier=FAITH_TIERS.find(row=>row.id===activity.targetId),count=activity.faithPracticeCount;
+  if(!tier||!count)return {ready:false,blocker:'Queued Faith practice is no longer available.'};
+  const availability=faithPracticeAvailability(state,tier.id,count);
+  return availability.ready?{ready:true}:{ready:false,blocker:availability.reason};
+ }
+ if(activity.kind==='exploration'){
+  const route=EXPLORATION_ROUTES.find(row=>row.id===activity.targetId);
+  if(!route)return {ready:false,blocker:'Queued exploration route is no longer available.'};
+  if(route.zoneId!==state.currentRegionId)return {ready:false,blocker:`Travel to ${WORLD_ZONES.find(zone=>zone.id===route.zoneId)?.name??route.zoneId} before ${route.name}.`};
+  if(state.character.level<route.requiredLevel)return {ready:false,blocker:`Reach character level ${route.requiredLevel} for ${route.name}.`};
+  const level=state.skills.find(skill=>skill.skillId==='exploration')?.level??1;
+  if(level<route.requiredExplorationLevel)return {ready:false,blocker:`Requires Exploration level ${route.requiredExplorationLevel} for ${route.name}.`};
+  return {ready:true,blocker:undefined};
+ }
  const gather=[...GATHERING,...HERB_NODES].find(row=>row.id===activity.targetId);
  if(!gather)return {ready:false,blocker:'Queued gathering activity is no longer available.'};
  const region=WORLD_ZONES.find(zone=>zone.id===gather.zoneId);
@@ -128,6 +168,7 @@ export function queuedActivityReadiness(state:GameState,activity:QueuedActivity|
 function activeRegionId(state:GameState){
  const activity=state.activity;if(!activity)return undefined;
  if(activity.kind==='combat'){const monster=MONSTERS.find(row=>row.id===activity.targetId);return monster?WORLD_ZONES.find(zone=>zone.name===monster.zone)?.id:undefined;}
+ if(activity.kind==='exploration')return EXPLORATION_ROUTES.find(row=>row.id===activity.targetId)?.zoneId;
  return [...GATHERING,...HERB_NODES].find(row=>row.id===activity.targetId)?.zoneId;
 }
 function activityCanAdvanceWeeklyOrder(state:GameState,orderId:string){

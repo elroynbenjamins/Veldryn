@@ -44940,6 +44940,10 @@ var QUESTS = [
   { id: "QST_015", name: "Beyond the Green", description: "Claim victory over the Fallen Knight and reach level 25.", kind: "level", required: 25, rewardGold: 1250, rewardItemId: "OATHGLASS_CAPE", rewardItemQty: 1, act: 3, location: "Eastern Oathgate", story: "With the Knight defeated, the sealed routes beyond Asterfall begin to open. The victory ends one chapter, but the echoes carried on the wind make it clear the broken oath was never confined to the green lands." }
 ];
 
+// apps/mobile/src/core/activity-queue.ts
+init_faith();
+init_faith2();
+
 // apps/mobile/src/core/game.ts
 init_progression();
 
@@ -44986,7 +44990,7 @@ var QUICK_NAV_DESTINATIONS = [
   "Party",
   "Empty"
 ];
-var DEFAULT_QUICK_NAV_DESTINATIONS = ["Guild", "Dungeon", "Character", "Quests", "Empty"];
+var DEFAULT_QUICK_NAV_DESTINATIONS = ["Quests", "Dungeon", "Companions", "Guild", "Settings"];
 var allowed = new Set(QUICK_NAV_DESTINATIONS);
 
 // apps/mobile/src/core/account-roster.ts

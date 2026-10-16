@@ -8,6 +8,7 @@ ok(hubReturn.includes('<ActivityQueuePlanner'),'Queue planning belongs on the ma
 ok(skills.split('<ActivityQueuePlanner').length===2&&!skills.includes('<ActionQueuePanel'),'Individual skill screens must not contain queue controls');
 const planner=read('src/components/ActivityQueuePlanner.tsx');
 for(const label of ['Choose queue skill','Choose queued activity','Resource quantity','Skill level','Duration','Enemies defeated'])ok(planner.includes(label),'Planner exposes '+label);
+for(const label of ["id:'faith'","id:'exploration'",'Practices to reserve','faithPracticeCount'])ok(planner.includes(label),'Planner supports queued '+label);
 ok(planner.includes('<GameModalSurface')&&planner.includes('<ScrollView'),'Queue planning uses a scrollable shared popup');
 ok(planner.includes('queue_set_goal')&&planner.includes('queue_add'),'Planner can configure the current activity and add future activities');
 ok(planner.includes('activityQueueCapacity(state)')&&planner.includes('queuedActivityReadiness'),'Planner respects capacity and activity availability');

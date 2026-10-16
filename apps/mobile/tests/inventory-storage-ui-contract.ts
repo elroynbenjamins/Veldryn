@@ -17,7 +17,7 @@ ok(!screenSource.includes('FILTERS & DISPLAY'),'Inventory must not regress to th
 ok(!screenSource.includes('showFilters'),'Inventory must not regress to the old large filter disclosure');
 ok(screenSource.includes('filterOpen')&&screenSource.includes('filterSheet')&&screenSource.includes('Filter items. Current filter:'),'Inventory category filters must use one compact control and a themed sheet');
 ok(!screenSource.includes('controlStrip')&&!screenSource.includes('ChoiceChip'),'Inventory must not regress to a long horizontal category strip');
-ok(screenSource.includes('sortMenu')&&screenSource.includes('setSort(option.id)')&&screenSource.includes('Move ·'),'Inventory must expose a sort menu and retain transfer quantity in view options');
+ok(screenSource.includes('sortMenu')&&screenSource.includes('setSort(option.id)')&&screenSource.includes('MOVE / SELL AMOUNT')&&screenSource.includes('Custom move or sell amount'),'Inventory must expose a sort menu and a visible custom amount control for moving and selling');
 ok(screenSource.includes("{id:'potion',label:'Potions'}"),'Potion filter category must remain available');
 ok(screenSource.includes("{id:'gem',label:'Gems'}")&&screenSource.includes("{id:'quest',label:'Quest'}"),'Gem and quest filter categories must remain available');
 ok(screenSource.includes("{id:'favorites',label:'★ Favorites'}")&&screenSource.includes("{id:'favorite',label:'Favorites first'}"),'Favorites filter and sort must remain available');

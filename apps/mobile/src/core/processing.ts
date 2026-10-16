@@ -7,8 +7,8 @@ import {characterPermanentMultipliers} from './permanent-boosts';
 import {professionMasteryMultipliers} from './profession-mastery-v40';
 import {totalXpAtLevel} from './progression';
 
-// Timed recipes always reserve one craft per click.
-export const MAX_PROCESSING_BATCHES=1;
+// One processing start reserves the complete AFK run, capped by its normal AFK window.
+export const MAX_PROCESSING_BATCHES=10_000;
 export type ProcessingSkillId=Extract<SkillId,'smithing'|'cooking'|'tailoring'|'enchanting'>;
 export interface ProcessingBatchState{
   version:1;
@@ -48,7 +48,7 @@ export function processingAvailability(state:GameState,recipeId:string,batches=1
   const materialMax=recipe&&recipe.inputs.length?Math.min(...recipe.inputs.map(input=>Math.floor((storedQuantity(state.inventory.stacks,input.itemId)+storedQuantity(state.bank.stacks,input.itemId))/input.quantity))):MAX_PROCESSING_BATCHES;
   const goldMax=recipe?.gold?Math.floor((state.character?.gold??0)/recipe.gold):MAX_PROCESSING_BATCHES;
   const maxBatches=Math.max(0,Math.min(MAX_PROCESSING_BATCHES,materialMax,goldMax));
-  const reason=!recipe?'This recipe is not a repeatable processing recipe.':!state.character?'Create a character first.':!countValid?'Recipes are made one at a time.':
+  const reason=!recipe?'This recipe is not a repeatable processing recipe.':!state.character?'Create a character first.':!countValid?`Choose 1–${MAX_PROCESSING_BATCHES.toLocaleString()} batches.`:
     state.activity&&!allowActivityReplacement?'Stop the current activity before starting processing.':recipe.classId&&recipe.classId!==state.character.classId?'This recipe belongs to another class.':
     state.character.level<(recipe.characterLevel??1)?`Requires character level ${recipe.characterLevel}.`:(skill?.level??0)<recipe.level?`Requires ${recipe.skillId} level ${recipe.level}.`:
     state.character.gold<gold?`Requires ${gold} Gold on this character.`:inputs.some(input=>input.inventory+input.bank<input.quantity)?'Missing ingredients. Inventory and Bank are available; overflow is not.':'Ready to reserve and process.';
@@ -73,6 +73,17 @@ export function startProcessingBatch(state:GameState,recipeId:string,batches:num
     activity:{kind:'processing',targetId:recipe.id,startedAtMs:nowMs,lastClaimAtMs:nowMs,progressFraction:0,bonusSnapshot:bonuses,skillAffinity:captureSkillAffinity(state,recipe.skillId),processing}};
 }
 
+/** Starts as many cycles as the available materials, Gold and the current AFK allowance permit. */
+export function startProcessingUntilLimited(state:GameState,recipeId:string,nowMs:number,afkCapSeconds:number):GameState{
+ const status=processingAvailability(state,recipeId,1);
+ if(!status.ready)throw new Error(status.reason);
+ const pace=professionActionPace(state,status.recipe!,'batch');
+ const timeBatches=Math.floor(afkCapSeconds/pace.cycleSeconds);
+ const batches=Math.min(status.maxBatches,timeBatches,MAX_PROCESSING_BATCHES);
+ if(batches<1)throw new Error('Not enough AFK time for one processing cycle.');
+ return startProcessingBatch(state,recipeId,batches,nowMs);
+}
+
 export function previewProcessingReward(state:GameState,elapsed:number):RewardBundle{
   const activity=state.activity,processing=activity?.processing;
   if(activity?.kind!=='processing'||!processing)throw new Error('Missing reserved processing batch.');
@@ -94,7 +105,7 @@ export function normalizeProcessingBatch(value:unknown,targetId:string):Processi
   const p=value as ProcessingBatchState|undefined,recipe=processingRecipeDef(targetId);
   const integer=(n:unknown,min:number,max:number)=>Number.isSafeInteger(n)&&Number(n)>=min&&Number(n)<=max;
   // Existing reservations may contain multiple operations from older saves; let them finish safely.
-  const valid=!!p&&!!recipe&&p.version===1&&p.recipeId===targetId&&p.skillId===recipe.skillId&&integer(p.totalBatches,1,100)&&integer(p.remainingBatches,1,p.totalBatches)&&
+  const valid=!!p&&!!recipe&&p.version===1&&p.recipeId===targetId&&p.skillId===recipe.skillId&&integer(p.totalBatches,1,MAX_PROCESSING_BATCHES)&&integer(p.remainingBatches,1,p.totalBatches)&&
     integer(p.goldPerBatch,0,100000)&&Number.isFinite(p.cycleSeconds)&&p.cycleSeconds>=1&&p.cycleSeconds<=86400&&Number.isFinite(p.xpPerBatch)&&p.xpPerBatch>=0&&p.xpPerBatch<=100000&&
     p.outputPerBatch?.itemId===recipe.output.itemId&&integer(p.outputPerBatch?.quantity,1,10000)&&Array.isArray(p.inputsPerBatch)&&p.inputsPerBatch.length===recipe.inputs.length&&
     recipe.inputs.every(input=>p.inputsPerBatch.filter(saved=>saved.itemId===input.itemId&&integer(saved.quantity,1,10000)).length===1);

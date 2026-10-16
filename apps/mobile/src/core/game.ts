@@ -41,7 +41,7 @@ import {awardClassSkillXp,awardCombatClassXp,characterClassEffects,characterClas
 import {reserveFaithPractice,settleFaithPractice,cancelFaithPractice,normalizeFaith,selectedFaithBlessing} from './faith';
 import {HOLY_WATER_ID} from '../content/faith';
 import {previewAlchemyReward,alchemyRefund,startAlchemyBatch,preparationEffects,spendPreparationEncounter} from './alchemy';
-import {previewProcessingReward,processingRefund,startProcessingBatch} from './processing';
+import {previewProcessingReward,processingRefund,startProcessingUntilLimited} from './processing';
 import {potionDef} from '../content/alchemy';
 import {applyTrustedLongTermProgression,reconcileWeeklyOrderRollover} from './long-term-progression-runtime';
 import {applyLocalBalanceSnapshot} from './balance-telemetry';
@@ -56,7 +56,7 @@ import {regionalSecondaryExchange} from './regional-enemy-stats';
 import {simulateFallenKnightStoryBattle,type FallenKnightBattleResult,type FallenKnightPlayerSnapshot} from './story-boss';
 import {FALLEN_KNIGHT_CLEAR_REWARD,FALLEN_KNIGHT_WEEKLY_BOUNTY_REWARD,fallenKnightWeeklyStatus,recordFallenKnightWeeklyVictory} from './weekly-boss';
 export function beginAlchemyBatch(state:GameState,recipeId:string,batches:number,nowMs:number){return startAlchemyBatch(finishClassDrills(state,nowMs),recipeId,batches,nowMs);}
-export function beginProcessingBatch(state:GameState,recipeId:string,batches:number,nowMs:number){return startProcessingBatch(finishClassDrills(state,nowMs),recipeId,batches,nowMs);}
+export function beginProcessingBatch(state:GameState,recipeId:string,nowMs:number){const ready=finishClassDrills(state,nowMs);return startProcessingUntilLimited(ready,recipeId,nowMs,offlineCapSeconds(ready));}
 
 function longTermAccountScope(state:GameState){return state.account.longTermAccountScopeId??`local-account:${state.createdAtMs}`;}
 

@@ -1,6 +1,6 @@
 import {legacyCraftingReservation} from './legacy-crafting-fixture';
 import {transitionActivity} from '../src/core/playability';
-import {claimActivity,createCharacter,newGame,previewActivityReward,startClassTraining,startCombat,stopActivity} from '../src/core/game';
+import {claimActivity,createCharacter,newGame,offlineCapSeconds,previewActivityReward,startClassTraining,startCombat,stopActivity} from '../src/core/game';
 import {executeGameCommand} from '../src/core/game-commands';
 import {processingAvailability,processingRecipeDef} from '../src/core/processing';
 import {recipeTrainingReady} from '../src/core/skill-progression-navigation';
@@ -35,8 +35,13 @@ equal(cooked.state.skills.find(row=>row.skillId==='cooking')?.xp,100,'non-affini
 
 let state=fresh();
 const availability=processingAvailability(state,'SMELT_COPPER_INGOT',1);
-ok(availability.ready&&availability.maxBatches===1,'new processing starts reserve exactly one craft');
-throws(()=>executeGameCommand(state,{type:'processing_start',args:{id:'SMELT_COPPER_INGOT',batches:5}},now),'new commands reject multiple crafts');
+ok(availability.ready&&availability.maxBatches===10,'processing exposes all resource-limited crafts');
+throws(()=>executeGameCommand(state,{type:'processing_start',args:{id:'SMELT_COPPER_INGOT',batches:5}},now),'client-selected processing batch counts remain rejected');
+const automatic=executeGameCommand(state,{type:'processing_start',args:{id:'SMELT_COPPER_INGOT'}},now).state;
+equal(automatic.activity?.processing?.remainingBatches,10,'processing start reserves every affordable material batch');
+const longRun={...fresh(100_000),character:{...fresh(100_000).character!,gold:1_000_000}};
+const afkLimited=executeGameCommand(longRun,{type:'processing_start',args:{id:'SMELT_COPPER_INGOT'}},now).state;
+equal(afkLimited.activity?.processing?.remainingBatches,Math.floor(offlineCapSeconds(longRun)/afkLimited.activity!.processing!.cycleSeconds),'processing reservation stops at the normal AFK time allowance');
 const copperTraining=RECIPES.find(row=>row.id==='SMELT_COPPER_INGOT');
 ok(copperTraining&&recipeTrainingReady(state,copperTraining),'skill training recommendations recognize a ready timed-processing recipe');
 const beforeGold=state.character!.gold;
@@ -78,11 +83,11 @@ equal(drills.character!.classSkills?.reduce((sum,row)=>sum+row.xp,0),24,'earned 
 let replaced=startCombat(fresh(),'MOSS_RAT',now);
 replaced=executeGameCommand(replaced,{type:'processing_start',args:{id:'SMELT_COPPER_INGOT',batches:1}},now+60_000).state;
 equal(replaced.activity?.kind,'processing','starting processing settles and replaces an active hunt');
-equal(replaced.activity?.processing?.remainingBatches,1,'replacement reserves the requested processing batch');
+equal(replaced.activity?.processing?.remainingBatches,10,'replacement reserves every affordable processing batch');
 const normalized=normalizeSave(structuredClone(state));
 equal(normalized.activity?.kind,'processing','save normalization preserves processing reservations');
 equal(normalized.activity?.processing?.remainingBatches,5,'save normalization preserves reserved batch count');
 throws(()=>executeGameCommand(fresh(),{type:'craft',args:{id:'SMELT_COPPER_INGOT'}},now),'public instant-craft command cannot bypass timed processing');
-throws(()=>executeGameCommand(fresh(2000),{type:'processing_start',args:{id:'SMELT_COPPER_INGOT',batches:101}},now),'processing batch size is server-authoritatively capped');
+throws(()=>executeGameCommand(fresh(2000),{type:'processing_start',args:{id:'SMELT_COPPER_INGOT',batches:101}},now),'client-selected processing batch counts are server-authoritatively rejected');
 throws(()=>executeGameCommand(fresh(),{type:'processing_start',args:{id:v33GearRecipe.id,batches:1}},now),'Equipment 2.0 gear recipes cannot enter the stackable processing activity');
 console.log('PASS: reserved timed processing, class affinity, offline progress, refunds and command authority');

@@ -166,7 +166,7 @@ export function executeGameCommand(previous:GameState,value:unknown,now:number,o
   case 'faith_favorite':state=updateFaithPreference(state,'favorite',text(a,'id'),a.enabled===true);break;
   case 'faith_hide':state=updateFaithPreference(state,'hide',undefined,a.enabled===true);break;
   case 'alchemy_start':state=game.beginAlchemyBatch(state,text(a,'id'),1,now);break;
-  case 'processing_start':state=game.beginProcessingBatch(state,text(a,'id'),1,now);break;
+  case 'processing_start':state=game.beginProcessingBatch(state,text(a,'id'),now);break;
   case 'class_focus':{
    const focus=oneOf(a.focus,['balanced','primary','secondary']);if(!state.character)throw new Error('character_required');
    state.character={...state.character,trainingFocus:focus};

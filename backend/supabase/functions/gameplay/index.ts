@@ -48564,7 +48564,7 @@ function spendPreparationEncounter(preparation, itemId) {
 
 // apps/mobile/src/core/processing.ts
 init_progression();
-var MAX_PROCESSING_BATCHES = 1;
+var MAX_PROCESSING_BATCHES = 1e4;
 function storedQuantity2(stacks, itemId) {
   return stacks.filter((stack) => stack.itemId === itemId).reduce((total, stack) => total + stack.quantity, 0);
 }
@@ -48594,7 +48594,7 @@ function processingAvailability(state, recipeId, batches = 1, allowActivityRepla
   const materialMax = recipe2 && recipe2.inputs.length ? Math.min(...recipe2.inputs.map((input) => Math.floor((storedQuantity2(state.inventory.stacks, input.itemId) + storedQuantity2(state.bank.stacks, input.itemId)) / input.quantity))) : MAX_PROCESSING_BATCHES;
   const goldMax = recipe2?.gold ? Math.floor((state.character?.gold ?? 0) / recipe2.gold) : MAX_PROCESSING_BATCHES;
   const maxBatches = Math.max(0, Math.min(MAX_PROCESSING_BATCHES, materialMax, goldMax));
-  const reason = !recipe2 ? "This recipe is not a repeatable processing recipe." : !state.character ? "Create a character first." : !countValid ? "Recipes are made one at a time." : state.activity && !allowActivityReplacement ? "Stop the current activity before starting processing." : recipe2.classId && recipe2.classId !== state.character.classId ? "This recipe belongs to another class." : state.character.level < (recipe2.characterLevel ?? 1) ? `Requires character level ${recipe2.characterLevel}.` : (skill2?.level ?? 0) < recipe2.level ? `Requires ${recipe2.skillId} level ${recipe2.level}.` : state.character.gold < gold ? `Requires ${gold} Gold on this character.` : inputs.some((input) => input.inventory + input.bank < input.quantity) ? "Missing ingredients. Inventory and Bank are available; overflow is not." : "Ready to reserve and process.";
+  const reason = !recipe2 ? "This recipe is not a repeatable processing recipe." : !state.character ? "Create a character first." : !countValid ? `Choose 1\u2013${MAX_PROCESSING_BATCHES.toLocaleString()} batches.` : state.activity && !allowActivityReplacement ? "Stop the current activity before starting processing." : recipe2.classId && recipe2.classId !== state.character.classId ? "This recipe belongs to another class." : state.character.level < (recipe2.characterLevel ?? 1) ? `Requires character level ${recipe2.characterLevel}.` : (skill2?.level ?? 0) < recipe2.level ? `Requires ${recipe2.skillId} level ${recipe2.level}.` : state.character.gold < gold ? `Requires ${gold} Gold on this character.` : inputs.some((input) => input.inventory + input.bank < input.quantity) ? "Missing ingredients. Inventory and Bank are available; overflow is not." : "Ready to reserve and process.";
   return { ready: !!recipe2 && !!state.character && countValid && (allowActivityReplacement || !state.activity) && (!recipe2.classId || recipe2.classId === state.character.classId) && state.character.level >= (recipe2.characterLevel ?? 1) && (skill2?.level ?? 0) >= recipe2.level && state.character.gold >= gold && inputs.every((input) => input.inventory + input.bank >= input.quantity), reason, inputs, gold, maxBatches, recipe: recipe2 };
 }
 function startProcessingBatch(state, recipeId, batches, nowMs) {
@@ -48628,6 +48628,15 @@ function startProcessingBatch(state, recipeId, batches, nowMs) {
     bank: { ...state.bank, stacks: bank },
     activity: { kind: "processing", targetId: recipe2.id, startedAtMs: nowMs, lastClaimAtMs: nowMs, progressFraction: 0, bonusSnapshot: bonuses, skillAffinity: captureSkillAffinity(state, recipe2.skillId), processing }
   };
+}
+function startProcessingUntilLimited(state, recipeId, nowMs, afkCapSeconds) {
+  const status = processingAvailability(state, recipeId, 1);
+  if (!status.ready) throw new Error(status.reason);
+  const pace = professionActionPace(state, status.recipe, "batch");
+  const timeBatches = Math.floor(afkCapSeconds / pace.cycleSeconds);
+  const batches = Math.min(status.maxBatches, timeBatches, MAX_PROCESSING_BATCHES);
+  if (batches < 1) throw new Error("Not enough AFK time for one processing cycle.");
+  return startProcessingBatch(state, recipeId, batches, nowMs);
 }
 function previewProcessingReward(state, elapsed) {
   const activity = state.activity, processing = activity?.processing;
@@ -50058,8 +50067,9 @@ function recordFallenKnightWeeklyVictory(state, nowMs) {
 function beginAlchemyBatch(state, recipeId, batches, nowMs) {
   return startAlchemyBatch(finishClassDrills(state, nowMs), recipeId, batches, nowMs);
 }
-function beginProcessingBatch(state, recipeId, batches, nowMs) {
-  return startProcessingBatch(finishClassDrills(state, nowMs), recipeId, batches, nowMs);
+function beginProcessingBatch(state, recipeId, nowMs) {
+  const ready = finishClassDrills(state, nowMs);
+  return startProcessingUntilLimited(ready, recipeId, nowMs, offlineCapSeconds(ready));
 }
 function longTermAccountScope(state) {
   return state.account.longTermAccountScopeId ?? `local-account:${state.createdAtMs}`;
@@ -53887,7 +53897,7 @@ function executeGameCommand(previous, value, now, options = {}) {
       state = beginAlchemyBatch(state, text(a, "id"), 1, now);
       break;
     case "processing_start":
-      state = beginProcessingBatch(state, text(a, "id"), 1, now);
+      state = beginProcessingBatch(state, text(a, "id"), now);
       break;
     case "class_focus": {
       const focus = oneOf(a.focus, ["balanced", "primary", "secondary"]);

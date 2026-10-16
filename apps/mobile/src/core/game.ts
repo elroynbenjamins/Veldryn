@@ -707,6 +707,7 @@ function claimActivitySegment(state:GameState,nowMs:number){
   if(reward.foodConsumed && state.character.equippedFoodId)baseInventory=consume(baseInventory,state.character.equippedFoodId,reward.foodConsumed);
   const routed=routeRewards({...state,inventory:{...state.inventory,stacks:baseInventory}} as GameState,reward.items,settledAtMs);
   const shouldStop=!!reward.stoppedReason||idleWindow.shouldStop;
+  const combatStoppedAtMs=reward.stoppedReason?Math.min(settledAtMs,state.activity.lastClaimAtMs+Math.max(0,reward.qualifyingActivitySeconds??reward.elapsedSeconds)*1000):settledAtMs;
   const monster=MONSTERS.find(m=>m.id===state.activity!.targetId)!;
   const trained=awardCombatClassXp(state.character,reward.kills,monster.xp*environmentEffectForActivity(state.activity).effect.xpMultiplier*characterPermanentMultipliers(state).skillXpMultiplier,state.activity.classFocus).character;
   const skills=state.skills.map(skill=>{
@@ -714,7 +715,7 @@ function claimActivitySegment(state:GameState,nowMs:number){
     const nextXp=Math.min(totalXpAtLevel(100),skill.xp+(reward.explorationXp??0));
     return {...skill,xp:nextXp,level:levelFromXp(nextXp)};
   });
-  const nextBase={...state,skills,...routed,outOfCombatSinceMs:shouldStop?settledAtMs:undefined,character:{...state.character,xp,level,gold:state.character.gold+reward.gold,currentHp:reward.endHp??state.character.currentHp},activity:shouldStop?null:{...state.activity,lastClaimAtMs:settledAtMs,progressFraction:reward.nextProgressFraction,sessionKills:(state.activity.sessionKills??0)+reward.kills,sessionChampions:(state.activity.sessionChampions??0)+(reward.championEncounters?.count??0)},unlockedMonsterIds:[...new Set([...state.unlockedMonsterIds,...unlocked])]} as GameState;
+  const nextBase={...state,skills,...routed,outOfCombatSinceMs:shouldStop?combatStoppedAtMs:undefined,character:{...state.character,xp,level,gold:state.character.gold+reward.gold,currentHp:reward.endHp??state.character.currentHp},activity:shouldStop?null:{...state.activity,lastClaimAtMs:settledAtMs,progressFraction:reward.nextProgressFraction,sessionKills:(state.activity.sessionKills??0)+reward.kills,sessionChampions:(state.activity.sessionChampions??0)+(reward.championEncounters?.count??0)},unlockedMonsterIds:[...new Set([...state.unlockedMonsterIds,...unlocked])]} as GameState;
   let next=commitDailySupplyTimedBoost(nextBase,supply);
   next.character={...next.character!,classSkills:trained.classSkills,classSkillRemainders:trained.classSkillRemainders,masteryMaterialRemainders:reward.masteryMaterialRemainders};
   if(next.character.preparation&&(reward.preparationEncounters??reward.kills)>0){let prep=next.character.preparation;for(let i=0;i<(reward.preparationEncounters??reward.kills);i++)prep=spendPreparationEncounter(prep,prep?.itemId) as typeof prep;next.character={...next.character,preparation:prep};}
@@ -726,8 +727,12 @@ function claimActivitySegment(state:GameState,nowMs:number){
   const petReward:RewardBundle=petResult.drops.length?{...reward,petDrops:petResult.drops}:reward;
   const finalState=recordCompanionActivity(progressed,'combat',state.activity.targetId,reward.kills,settledAtMs);
   const plannedQueueAdvance=idleWindow.shouldStop&&!idleWindow.safety&&!reward.stoppedReason?.includes('injured')&&!reward.stoppedReason?.includes('Out of food');
-  const queuedState=plannedQueueAdvance?autoAdvanceActivityQueue(finalState,settledAtMs,state.activity,reward):shouldStop?(idleWindow.combatRecovery?recoverCombatQueue(finalState,settledAtMs,reward.stoppedReason??idleStopReason??'Combat recovery required.'):pauseActivityQueue(finalState,reward.stoppedReason??idleStopReason??'Safety stop reached.')):finalState;
-  return {state:queuedState,reward:withCompanionUnlocks(petReward,state,queuedState)}
+  const queuedState=plannedQueueAdvance?autoAdvanceActivityQueue(finalState,settledAtMs,state.activity,reward):shouldStop?(idleWindow.combatRecovery?recoverCombatQueue(finalState,combatStoppedAtMs,reward.stoppedReason??idleStopReason??'Combat recovery required.'):pauseActivityQueue(finalState,reward.stoppedReason??idleStopReason??'Safety stop reached.')):finalState;
+  // A combat stop can occur well before the player returns. Apply the recovery
+  // window from that exact stop time now, rather than requiring a second claim
+  // or a new foreground action before offline healing becomes visible.
+  const recovered=settleOutOfCombatRecovery(queuedState,nowMs);
+  return {state:recovered,reward:withCompanionUnlocks(petReward,state,recovered)}
 }
 
 export function finishClassDrills(state:GameState,now:number):GameState{

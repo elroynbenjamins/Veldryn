@@ -25,6 +25,9 @@ ok(screenSource.includes("{id:'new',label:'New'}")&&screenSource.includes("{id:'
 ok(card.includes('newItem&&<View style={s.newBadge}')&&card.includes('gt("New").toLocaleUpperCase(language)'),'New stored items must show a compact NEW badge');
 ok(screenSource.includes('Mark all seen')&&screenSource.includes('onAcknowledgeItem'),'New item acknowledgement controls must remain available');
 ok(screenSource.includes('BULK MANAGEMENT')&&screenSource.includes('Select shown')&&screenSource.includes('onBulkAction'),'Bulk management must stay temporary and player-invoked');
+ok(screenSource.includes('beginInventorySubmission')&&screenSource.includes('inventoryBusyRef.current'),'Inventory mutations must synchronously lock duplicate submissions');
+ok(screenSource.includes('<Modal transparent visible={inventoryBusyLabel!==null}')&&screenSource.includes('<ActivityIndicator size="large" color={C.accent}/>'),'Inventory mutations must show a blocking progress indicator while awaiting confirmation');
+ok(screenSource.includes('Moving items to Bank…')&&screenSource.includes('Moving items to Inventory…')&&screenSource.includes('Selling items…'),'Selling and item transfers must explain the active transaction');
 ok(screenSource.includes("accessibilityRole={selectMode?'checkbox':'button'}")&&screenSource.includes('itemSelectedOn'),'Inventory grid tiles must expose accessible selection controls only in selection mode');
 ok(bulk.includes('bulkTransferSelected')&&bulk.includes('bulkSellSelected')&&bulk.includes('bulkSalvageSelected'),'Bulk actions must use shared core helpers');
 ok(bulk.includes("state.settings.favoriteItemIds")&&bulk.includes('hasEnhancement')&&bulk.includes('equippedFoodId'),'Bulk disposal must protect favorites, enhanced gear, and auto-eat food');

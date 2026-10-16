@@ -28,6 +28,7 @@ try{startCombat({...injured,activity:null},injured.activity!.targetId,T);}catch(
 assert.ok(rejected,'starting combat at 1 HP must require recovery');
 const stopped=claimActivity(s,T+8*H);
 assert.ok(!stopped.state.activity,'claiming injury removes the active hunt');
+assert.ok(stopped.state.character!.currentHp>1,'time remaining after an offline injury stop must apply out-of-combat recovery immediately');
 assert.equal(previewActivityReward(s,T+9*H).kills,long.kills,'kills freeze after defeat');
 const settled=claimActivity(s,T+H/4);
 assert.ok(settled.state.character!.currentHp<s.character!.currentHp,'claiming must preserve lost HP');
@@ -49,9 +50,10 @@ let frequent=structuredClone(over);
 for(let hour=1;hour<=24&&frequent.activity;hour++){
  const priorHp=frequent.character!.currentHp;
  frequent=claimActivity(JSON.parse(JSON.stringify(frequent)),T+hour*H).state;
- assert.ok(frequent.character!.currentHp<=priorHp,'hourly claims and save reloads must not grant free healing');
+ if(frequent.activity)assert.ok(frequent.character!.currentHp<=priorHp,'hourly claims while combat continues must not grant free healing');
 }
 assert.ok(!frequent.activity,'overgeared unhealed players must eventually stop across claims');
+assert.ok(frequent.character!.currentHp>1,'the final offline claim must include recovery after the actual injury stop time');
 healer=equipCombatCompanion(unlockCombatCompanion(over,'UNIT_003',T),'UNIT_003');
 healer.account.combatCompanionProgress!['UNIT_003']={...healer.account.combatCompanionProgress!['UNIT_003'],level:60,ascensionTier:3,bondLevel:10,bondXp:100000,bondTraitUnlocked:true};
 healer.character!.currentHp=effectiveStats(healer).hp;

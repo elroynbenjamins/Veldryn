@@ -20,7 +20,8 @@ ok(codex.includes("mobileGemItemIdV1(familyId,3)"),'Resonance Cache choices must
 ok(enhancement.includes('itemId={gem.id} size={44}'),'Socket candidate rows must show the actual owned gem');
 ok(enhancement.includes('gemResultBody'),'Socket result feedback must include gem art');
 ok(enhancement.includes('gemCompareArt'),'Replace/extract confirmation must visually identify the selected gems');
-ok(rewards.includes('hasGemArtworkV1(x.itemId)'),'Reward popup must render gem/catalyst art');
+ok(rewards.includes("import {ItemArtwork} from './ItemArtwork'"),'Reward popup must use the shared artwork resolver');
+ok(rewards.includes('<ItemArtwork itemId={x.itemId} size={34}/>'),'Reward popup must render raw and refined gem artwork through the shared resolver');
 ok(inspect.includes('hasGemArtworkV1(item.id)'),'Quick inspect must render gem/catalyst art');
 ok(queueCore.includes('outputItemId'),'Forge queue model must expose craft output identity');
 ok(queue.includes('job.outputItemId'),'Forge queue rows must render their output art');

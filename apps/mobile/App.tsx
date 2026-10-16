@@ -201,6 +201,7 @@ function VeldrynApp(){
   }
   const appStateRef=useRef(AppState.currentState);
   const settlingRef=useRef(false);
+  const onlineForegroundSettlementRef=useRef(false);
   const onlineStartupSettlementAccountRef=useRef<string|undefined>(undefined);
   const [showAdminQa,setShowAdminQa]=useState(false);
   const [creatingRoster,setCreatingRoster]=useState(false);
@@ -301,8 +302,10 @@ function VeldrynApp(){
     // The initial read only restores server state. Settle once through the
     // authoritative command path so elapsed rewards are committed and shown.
     onlineStartupSettlementAccountRef.current=arrivalKey;
-    if(snapshot.state.activity||snapshot.state.character.classTraining)void perform({type:'claim'},true,true);
+    if(snapshot.state.activity||snapshot.state.character.classTraining)void perform({type:'claim'},true,true).finally(()=>{onlineForegroundSettlementRef.current=false;});
+    else if(onlineForegroundSettlementRef.current){onlineForegroundSettlementRef.current=false;setOfflineSettling(false);}
   },[online.snapshot,online.foregroundRevision,online.loading,online.busy,online.pending,auth.session?.user.id]);
+  useEffect(()=>{if(online.error&&onlineForegroundSettlementRef.current){onlineForegroundSettlementRef.current=false;setOfflineSettling(false);}},[online.error]);
   useEffect(()=>{stateRef.current=state},[state]);
   useEffect(()=>{const characterId=state?.character?.id;if(!characterId){setTutorialCompleted([]);setTutorialDismissedId(undefined);return;}let active=true;void loadFirstSessionTutorialCompleted(characterId).then(ids=>{if(active)setTutorialCompleted(ids)});return()=>{active=false};},[state?.character?.id]);
   const tutorialStep=useMemo(()=>state?.character?firstSessionTutorialStep(state,tutorialCompleted):undefined,[state,tutorialCompleted]);
@@ -327,7 +330,7 @@ function VeldrynApp(){
   useEffect(()=>{if(tab!=='Skills'){setSelectedSkill(undefined);setGoalActionId(undefined);setGoalRecipeId(undefined)}},[tab]);
   useEffect(()=>{if(tab!=='Combat')setGoalMonsterId(undefined)},[tab]);
   useEffect(()=>{const subscription=BackHandler.addEventListener('hardwareBackPress',goBack);return()=>subscription.remove()},[goBack]);
-  useEffect(()=>{const subscription=AppState.addEventListener('change',nextStatus=>{if(serverGameplayEnabled)return;const wasAway=appStateRef.current==='background'||appStateRef.current==='inactive';appStateRef.current=nextStatus;if(!wasAway||nextStatus!=='active'||settlingRef.current)return;const current=stateRef.current;if(!current?.character)return;settlingRef.current=true;setOfflineSettling(true);setTimeout(()=>{const settled=settleStartupActivity(current,Date.now());const changed=settled.state!==current;if(changed){stateRef.current=settled.state;setState(settled.state);void repo.save(settled.state).catch(()=>showAlert('Save pending','Your returned progress is safe in memory, but could not be saved yet.'));}if(settled.reward){queuePreparationNotices(current,settled.state);setCollected({reward:settled.reward,activity:settled.activity,welcomeBack:true,progressionMoments:rewardProgressionMoments(current,settled.state)});}setOfflineSettling(false);settlingRef.current=false},0)});return()=>subscription.remove()},[]);
+  useEffect(()=>{const subscription=AppState.addEventListener('change',nextStatus=>{const wasAway=appStateRef.current==='background'||appStateRef.current==='inactive';appStateRef.current=nextStatus;if(!wasAway||nextStatus!=='active'||settlingRef.current)return;const current=stateRef.current;if(!current?.character)return;if(serverGameplayEnabled){if(current.activity||current.character.classTraining){onlineForegroundSettlementRef.current=true;setOfflineSettling(true);}return;}settlingRef.current=true;setOfflineSettling(true);setTimeout(()=>{const settled=settleStartupActivity(current,Date.now());const changed=settled.state!==current;if(changed){stateRef.current=settled.state;setState(settled.state);void repo.save(settled.state).catch(()=>showAlert('Save pending','Your returned progress is safe in memory, but could not be saved yet.'));}if(settled.reward){queuePreparationNotices(current,settled.state);setCollected({reward:settled.reward,activity:settled.activity,welcomeBack:true,progressionMoments:rewardProgressionMoments(current,settled.state)});}setOfflineSettling(false);settlingRef.current=false},0)});return()=>subscription.remove()},[]);
   useEffect(()=>{const multiplier=state?.settings.textScale??1.5;for(const component of [Text,TextInput]){const scalable=component as typeof component&{defaultProps?:Record<string,unknown>};scalable.defaultProps={...(scalable.defaultProps??{}),allowFontScaling:true,maxFontSizeMultiplier:multiplier}}},[state?.settings.textScale]);
   const coopEntrySource=useMemo(()=>__DEV__&&!serverGameplayEnabled&&!coopOnlineConfigured?createCoopDungeonFixtureSource(state?.settings.language??recoveryLanguage,state?.character):realCoopEntrySource,[state?.settings.language,state?.character,recoveryLanguage]);
   function queueMasteryNotice(before:GameState|null|undefined,after:GameState|null|undefined){const moments=masteryRankProgressionMoments(before,after);if(moments.length)setMasteryNotices(moments);}
@@ -352,14 +355,14 @@ function VeldrynApp(){
       void addProfileAttentionKeys(scope,keys);
     }
   }
-  async function perform(command?:GameCommand,presentRewards=true,welcomeBack=false){try{
+  async function perform(command?:GameCommand,presentRewards=true,welcomeBack=false){if(welcomeBack)setOfflineSettling(true);try{
     const before=stateRef.current,result=await online.execute(command);
     queuePreparationNotices(before,result.state);stateRef.current=result.state;setState(result.state);queueCustomizationUnlocks(before,result.state);
     if(result.executedCommand.type==='quest')queueFeatureUnlockMoments(before,result.state);
     const feedback=commandProgressFeedback(result.executedCommand,before,result);
     if(presentRewards){if(feedback.collected)setCollected({...feedback.collected,welcomeBack});else if(feedback.masteryNotices.length)setMasteryNotices(feedback.masteryNotices);}
     return result;
-  }catch(error){const message=error instanceof Error?error.message:'Please retry.';if(command&&['withdraw','deposit','sell','bulk_transfer','bulk_sell'].includes(command.type)&&/gameplay action is already being saved/i.test(message))return null;showAlert('Online action',message);return null;}}
+  }catch(error){const message=error instanceof Error?error.message:'Please retry.';if(command&&['withdraw','deposit','sell','bulk_transfer','bulk_sell'].includes(command.type)&&/gameplay action is already being saved/i.test(message))return null;showAlert('Online action',message);return null;}finally{if(welcomeBack)setOfflineSettling(false);}}
   async function applyOnlineAdminQa(classId:ClassId){const result=await perform({type:'qa_prepare',args:{classId}});if(!result)throw new Error('Admin QA profile was not confirmed by the server.');}
   async function refillOnlineAdminQa(){const result=await perform({type:'qa_refill'});if(!result)throw new Error('Admin QA refill was not confirmed by the server.');}
   async function saveNameStyle(style:PlayerNameStylePreference){
@@ -578,7 +581,7 @@ const next=normalizeProfileIcon(candidate);queuePreparationNotices(current,next)
   <FeatureUnlockPopup moment={mainScreenTourIndex===undefined&&!collected&&!customizationUnlocks.length?featureUnlockMoments[0]:undefined} reduceMotion={state.settings.reduceMotion} onLater={()=>setFeatureUnlockMoments(current=>current.slice(1))} onOpen={()=>{const moment=featureUnlockMoments[0];setFeatureUnlockMoments(current=>current.slice(1));if(moment)setTab(moment.destination);}}/>
   <CustomizationUnlockPopup entries={mainScreenTourIndex===undefined&&!collected?customizationUnlocks:[]} reduceMotion={state.settings.reduceMotion} onClose={()=>setCustomizationUnlocks([])} onProfile={()=>{setCustomizationUnlocks([]);setTab('ProfileCustomize')}} onCharacter={()=>{setCustomizationUnlocks([]);setTab('Character')}}/>
   <ProfileDiscardChangesModal visible={!!profileDiscardAction} reduceMotion={state.settings.reduceMotion} onKeepEditing={()=>setProfileDiscardAction(null)} onDiscard={()=>{const action=profileDiscardAction;setProfileDiscardAction(null);setProfileCustomizeDirty(false);action?.();}}/>
-  {offlineSettling&&<View style={s.offlineLoadingOverlay}><LoadingState label={appText(state.settings.language,'Calculating offline rewards…')} detail={appText(state.settings.language,'Loading your progress from while you were away.')}/></View>}
+  {offlineSettling&&<View style={s.offlineLoadingOverlay}><LoadingState label={appText(state.settings.language,'Calculating offline rewards…')} detail={appText(state.settings.language,'Calculating rewards from your time away.')}/></View>}
   <ForgeRarityRevealModal results={forgeResults??[]} reduceMotion={state.settings.reduceMotion} onClose={()=>setForgeResults(null)} onInventory={()=>{setForgeResults(null);setTab('Inventory')}}/>
   {storyBossBattle&&<StoryBossBattleModal state={state} battle={storyBossBattle.battle} message={storyBossBattle.message} onClose={()=>setStoryBossBattle(null)}/>}
   </SafeAreaView></GameThemeProvider>;

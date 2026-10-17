@@ -38,6 +38,7 @@ export function PublicProfileScene({profile,height=205,reduceMotion=false,showGu
    <GuildTaggedPlayerName accountId={profile.accountId} badges={profile.playerBadges} name={profile.character.name||profile.displayName} nameStyle={profile.nameStyle??undefined} reduceMotion={reduceMotion} style={s.name}/>
    <Text numberOfLines={1} style={s.title}>{profile.title}</Text>
    <Text style={s.meta}>{profileT(language,'Lv. {level}',{level:profile.character.level})} · {className}</Text>
+   {profile.combatPower!==undefined?<Text style={s.power}>COMBAT POWER · {profile.combatPower.toLocaleString()}</Text>:null}
   </View>
   {showGuild&&guild?<View style={s.guildAnchor}><ProfileGuildAffiliation guild={guild}/></View>:null}
   <CharacterPortraitSelection classId={classId} body={profile.character.bodyPresentation} profileIconId={profile.character.profileIconId} compact style={s.character}/>
@@ -57,4 +58,5 @@ function makeStyles(C:ThemeColors){return StyleSheet.create({
  guildAnchor:{position:'absolute',left:22,bottom:20,maxWidth:'58%',zIndex:4},
  character:{position:'absolute',left:20,top:24,width:96,height:96,zIndex:2},
  pet:{position:'absolute',right:22,bottom:20,width:58,height:58,zIndex:3},
+ power:{fontSize:8,lineHeight:11,color:C.good,fontWeight:'900',letterSpacing:.55,marginTop:3},
 });}

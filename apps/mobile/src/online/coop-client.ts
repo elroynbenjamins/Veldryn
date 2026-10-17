@@ -43,8 +43,16 @@ async function journal(){
 }
 const mutate=async<T>(path:string,body:object)=>(await (await journal()).execute({path,body:body as PendingCoopCommand['body']})) as T;
 export const coopRequestId=()=>`coop-${Date.now()}-${Math.random().toString(36).slice(2,12)}`;
+async function publicProfilePower(accountId:string):Promise<{combatPower:number}|null>{
+ if(!supabase||!apiBase)throw new Error('Profile score service is not configured.');
+ const session=(await supabase.auth.getSession()).data.session;if(!session)throw new Error('Sign in to view player profiles.');
+ const response=await fetch(`${apiBase}/coop/profiles/${accountId}/power`,{headers:{Authorization:`Bearer ${session.access_token}`,apikey:process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY??'','Content-Type':'application/json'}});
+ const payload=await response.json();if(!response.ok)throw new Error(payload?.error??'Profile score unavailable.');
+ return payload as {combatPower:number}|null;
+}
 export const coopClient={
  entry:()=>request<CoopEntryData>('/coop/entry'),
+ profilePower:publicProfilePower,
  liveQueue:()=>request<LiveQueueView>('/coop/queue'),
  liveRecruitment:()=>request<CoopLiveRecruitmentPost[]>('/coop/lfg'),
  joinLive:(body:CoopStartBody)=>mutate<LiveQueueView>('/coop/queue',body),

@@ -4,6 +4,7 @@ import {OnlineLiveQueue} from './live-queue';
 import {OnlineLiveReady} from './live-ready';
 import {OnlineLiveRuntime} from './live-runtime';
 import {OnlineCoopLfg} from './coop-lfg';
+import {publicProfileCombatPower} from './public-profile-power';
 import {OnlineEventExpeditionRuntime,type OnlineEventExpeditionStartRequest} from './event-expedition-runtime';
 import {GameplayError,type GameplayServices} from './gameplay';
 import {parseCoopRunRequest,parseCoopDecisionCommand,parseCoopReadyCommand} from '../src/server/coop/api-contracts';
@@ -22,6 +23,12 @@ export function coopHandler(services:GameplayServices){
    const bearer=request.headers.get('authorization')?.match(/^Bearer (\S+)$/i)?.[1];
    if(!bearer)return json({error:'auth_required'},401);
    const accountId=await services.authenticate(bearer);if(!accountId)return json({error:'invalid_session'},401);
+
+   const profilePower=path.match(new RegExp('/coop/profiles/('+uuid+')/power$'));
+   if(profilePower){
+    if(request.method!=='GET')return json({error:'method_not_allowed'},405);
+    return json(await publicProfileCombatPower(services,accountId,profilePower[1]));
+   }
 
    const lfgRoot=path.endsWith('/coop/lfg'),lfgClose=path.endsWith('/coop/lfg/close');
    if(lfgRoot||lfgClose){

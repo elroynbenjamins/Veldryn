@@ -14,6 +14,7 @@ export interface ProfileExtensionSelfV43{
 export interface PublicPlayerProfileV43{
  guild?:ProfileGuildIdentity|null;
  accountId:string;displayName:string;visibility:ProfileVisibilityV43;
+ combatPower?:number;
  guildTag?:string|null;guildTagColorId?:string|null;nameStyle?:PlayerNameStylePreference|null;playerBadges?:PlayerBadgeIdentity;
  character:{id:string;name:string;classId:string;level:number;bodyPresentation:'male'|'female';profileIconId:string};
  title:string;backgroundId:string;borderId?:string|null;petId?:string|null;bio:string;favoriteSkillId?:string|null;favoriteCompanionId?:string|null;

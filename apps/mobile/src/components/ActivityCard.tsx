@@ -33,6 +33,7 @@ export function ActivityCard({title,kind,activity,cycleSeconds,capHours,preview,
   const hasRewards=readyCount>0||!!preview.stoppedReason;
   const loot=preview.items.map(stack=>`${formatGameNumber(stack.quantity,numberMode,language)}× ${itemDef(stack.itemId).name}`).join(' · ');
   const capped=preview.elapsedSeconds>=capHours*60*60;
+  const reserveSeconds=Math.max(0,Math.floor(capHours*3600-preview.elapsedSeconds));
   const cycleProgress=preview.stoppedReason||capped?1:preview.nextProgressFraction??(preview.elapsedSeconds%cycleSeconds)/cycleSeconds;
   const remaining=Math.max(1,Math.ceil(cycleSeconds*(1-Math.max(0,Math.min(1,cycleProgress))))),goal=activity?.kind==='combat'?huntGoalProgress(activity,preview.kills,preview.championEncounters?.count??0):undefined,momentum=activity?.kind==='combat'?huntMomentumStatus((activity.sessionKills??0)+preview.kills):undefined;
   return <Panel>
@@ -43,6 +44,7 @@ export function ActivityCard({title,kind,activity,cycleSeconds,capHours,preview,
       </View>
       <View style={[s.status,(capped||!!preview.stoppedReason)&&s.statusCapped]}><Text style={[s.statusText,preview.stoppedReason?s.statusStopped:capped?s.statusCappedText:s.statusActive]}>{preview.stoppedReason?gt("STOPPED"):capped?`${capHours}H CAP`:gt("ACTIVE")}</Text></View>
     </View>
+    {!preview.stoppedReason&&<Text style={s.reserveHint}>AFK reserve remaining: {reserveSeconds>0?duration(reserveSeconds):'Full · collect to continue'}</Text>}
     <View accessible accessibilityRole="progressbar" accessibilityLabel={`${title} action progress`} accessibilityValue={{min:0,max:100,now:Math.round(cycleProgress*100)}} style={s.progressBlock}><View style={s.progressMeta}><Text style={s.progressLabel}>{preview.stoppedReason?gt("ACTIVITY STOPPED"):capped?gt("OFFLINE STORAGE FULL"):nextLabel[kind]}</Text><Text style={s.progressTime}>{preview.stoppedReason||capped?'—':`${remaining}s`}</Text></View><View style={s.track}><View style={[s.fill,{width:`${cycleProgress*100}%`}]}>{!reduceMotion&&<Animated.View style={[s.shine,{transform:[{translateX:pulse.interpolate({inputRange:[0,1],outputRange:[-90,260]})}]}]}/>}</View></View>{!preview.stoppedReason&&!capped?<Text style={s.phaseText}>{activityProgressFeedback(feedbackKind(kind),cycleProgress)}</Text>:null}</View>
     {levelPace?<View accessible accessibilityRole="progressbar" accessibilityLabel={levelPace.label+' level progress'} accessibilityValue={{min:0,max:100,now:Math.round(levelPace.progress*100)}} style={s.levelProgress}><View style={s.progressMeta}><Text style={s.levelProgressLabel}>{levelPace.level>=100?levelPace.label.toUpperCase()+' · LEVEL 100':levelPace.label.toUpperCase()+' · LV '+levelPace.level+' → '+levelPace.nextLevel}</Text><Text style={s.levelProgressEta}>{levelPace.level>=100?gt("MAX"):'~'+formatBalanceDuration(levelPace.etaSeconds)}</Text></View><View style={s.levelTrack}><View style={[s.levelFill,{width:((levelPace.level>=100?100:Math.max(2,levelPace.progress*100))+'%') as `${number}%`}]}/></View><Text style={s.levelProgressMeta}>{levelPace.level>=100?gt("Maximum level reached"):formatGameNumber(Math.ceil(levelPace.remainingXp),numberMode,language)+' XP remaining · '+formatGameNumber(Math.round(levelPace.xpPerHour),numberMode,language)+' XP/hr'}</Text></View>:null}
     {!!preview.stoppedReason&&<View accessibilityRole="alert" style={s.stopNotice}><Text style={s.noticeLabel}>{gt("ACTIVITY STOPPED")}</Text><Text style={s.capNotice}>{preview.stoppedReason}. Collect to settle combat, then heal or equip food in Inventory.</Text></View>}
@@ -65,7 +67,7 @@ export function ActivityCard({title,kind,activity,cycleSeconds,capHours,preview,
 function makeStyles(C:ThemeColors){return StyleSheet.create({
   heading:{flexDirection:'row',justifyContent:'space-between',alignItems:'flex-start',gap:spacing.md},
   headingCopy:{flex:1},eyebrow:{...typography.caption,color:C.accent,fontWeight:'900',letterSpacing:1},
-  title:{...typography.title,color:C.text},detail:{...typography.body,color:C.muted},
+  title:{...typography.title,color:C.text},detail:{...typography.body,color:C.muted},reserveHint:{...typography.caption,color:C.info,fontWeight:'800'},
   status:{borderWidth:1,borderColor:C.good,borderRadius:99,paddingHorizontal:spacing.sm,paddingVertical:spacing.xs},
   statusCapped:{borderColor:C.warning},statusText:{...typography.caption,fontWeight:'900'},statusActive:{color:C.good},statusCappedText:{color:C.warning},statusStopped:{color:C.bad},
   goal:{gap:4,padding:spacing.sm,borderWidth:1,borderColor:C.info,borderRadius:8,backgroundColor:C.infoSurface},goalLabel:{...typography.caption,color:C.info,fontWeight:'900',letterSpacing:.7},goalValue:{...typography.caption,color:C.text,fontWeight:'900'},goalTrack:{height:7,borderRadius:4,overflow:'hidden',backgroundColor:C.bg},goalFill:{height:'100%',backgroundColor:C.info},

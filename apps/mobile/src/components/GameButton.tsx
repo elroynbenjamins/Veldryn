@@ -1,21 +1,37 @@
-import {useState} from 'react';
+import {useRef,useState} from 'react';
 import {ActivityIndicator,Pressable,StyleSheet,Text} from 'react-native';
 import {radii,spacing,touchTargetMin,touchTargetPreferred,typography} from '../theme/theme';
 import {useGameTheme} from '../theme/ThemeContext';
 
 type Tone='primary'|'secondary'|'danger';
 type ButtonColors={backgroundColor:string;borderColor:string;textColor:string};
-type Props={title:string;onPress:()=>void;disabled?:boolean;loading?:boolean;selected?:boolean;tone?:Tone;compact?:boolean;colors?:ButtonColors};
+type Props={title:string;onPress:()=>unknown;disabled?:boolean;loading?:boolean;selected?:boolean;tone?:Tone;compact?:boolean;colors?:ButtonColors};
 export function GameButton({title,onPress,disabled=false,loading=false,selected,tone='primary',compact=false,colors}:Props){
   const C=useGameTheme();
-  const [focused,setFocused]=useState(false),inactive=disabled||loading;
+  const [focused,setFocused]=useState(false),[pending,setPending]=useState(false);
+  const pendingRef=useRef(false);
+  const inactive=disabled||loading||pending;
+  const execute=()=>{
+    if(inactive||pendingRef.current)return;
+    pendingRef.current=true;
+    try{
+      const result=onPress();
+      if(result&&typeof (result as PromiseLike<unknown>).then==='function'){
+        setPending(true);
+        void Promise.resolve(result).catch(error=>{
+          // Callers can display contextual errors; never leave a rejected promise unhandled.
+          console.warn('[GameButton] Action failed',error);
+        }).finally(()=>{pendingRef.current=false;setPending(false)});
+      }else{pendingRef.current=false;}
+    }catch(error){pendingRef.current=false;throw error;}
+  };
   const toneStyle=colors??(tone==='primary'?{borderColor:C.primaryButtonBorder,backgroundColor:C.primaryButton}:tone==='danger'?{borderColor:C.dangerButtonBorder,backgroundColor:C.dangerButton}:{borderColor:C.secondaryButtonBorder,backgroundColor:C.secondaryButton});
   const labelColor=colors?.textColor??(tone==='primary'?C.primaryButtonText:tone==='danger'?C.dangerButtonText:C.secondaryButtonText);
   const selectedStyle=selected?{borderColor:C.selectionLine,backgroundColor:tone==='secondary'?C.selection:toneStyle.backgroundColor}:undefined;
-  return <Pressable accessibilityRole="button" accessibilityLabel={title} accessibilityState={{disabled:inactive,busy:loading,selected}}
-    disabled={inactive} onPress={onPress} onFocus={()=>setFocused(true)} onBlur={()=>setFocused(false)}
+  return <Pressable accessibilityRole="button" accessibilityLabel={title} accessibilityState={{disabled:inactive,busy:loading||pending,selected}}
+    disabled={inactive} onPress={execute} onFocus={()=>setFocused(true)} onBlur={()=>setFocused(false)}
     style={({pressed})=>[s.button,compact&&s.compact,toneStyle,selectedStyle,focused&&s.focused,pressed&&!inactive&&s.pressed,inactive&&s.disabled]}>
-    {loading&&<ActivityIndicator color={labelColor} size="small"/>}
+    {(loading||pending)&&<ActivityIndicator color={labelColor} size="small"/>}
     <Text textBreakStrategy="balanced" android_hyphenationFrequency="normal" style={[s.label,{color:labelColor}]}>{title}</Text>
   </Pressable>;
 }

@@ -52,6 +52,7 @@
   ".core-build/apps/mobile/tests/profile-icons.js",
   ".core-build/apps/mobile/tests/equipment-screen.js",
   ".core-build/apps/mobile/tests/quick-navigation.js",
+  ".core-build/apps/mobile/tests/release-notes.js",
   ".core-build/apps/mobile/tests/combat-region.js",
   ".core-build/apps/mobile/tests/combat-presentation.js",
   ".core-build/apps/mobile/tests/combat-tactics.js",

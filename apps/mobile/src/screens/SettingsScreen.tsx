@@ -28,6 +28,7 @@ type Props={
   initialSection?:SettingsSection;
   onNavigateGuide?:(destination:GameGuideDestination)=>void;
   onStartMainScreenTour?:()=>void;
+  onOpenUpdates?:()=>void;
   online?:boolean;
   state:GameState;
   onLanguage:(language:GameState['settings']['language'])=>void;
@@ -60,7 +61,7 @@ function RedeemCodePanel({language,onRedeemCode}:{language:Language;onRedeemCode
  return <Panel><Text style={[s.title,{color:C.text}]}>{a('Redeem code')}</Text><Text style={[s.sub,{color:C.muted}]}>{a('Enter a promotional code from an official VELDRYN announcement or event.')}</Text><View style={s.redeemRow}><TextInput accessibilityLabel={a('Redeem code')} autoCapitalize="characters" autoCorrect={false} value={code} onChangeText={value=>{setCode(value.replace(/\s/g,''));setStatus('')}} placeholder={a('ENTER CODE')} placeholderTextColor={C.muted} style={[s.codeInput,{color:C.text,borderColor:C.line,backgroundColor:C.inputBg}]}/><GameButton compact title={busy?a('Checking…'):a('Redeem')} disabled={!code.trim()||busy} onPress={()=>void redeem()}/></View>{status?<Text accessibilityLiveRegion="polite" style={[s.redeemStatus,{color:onRedeemCode?C.info:C.muted}]}>{status}</Text>:null}</Panel>;
 }
 
-export function SettingsScreen({state,onLanguage,onReset,onChange,onRefreshCommerce,onExport,onImport,onRedeemCode,onOpenCoopUiGallery,initialSection,onNavigateGuide,onStartMainScreenTour,online=false}:Props){
+export function SettingsScreen({state,onLanguage,onReset,onChange,onRefreshCommerce,onExport,onImport,onRedeemCode,onOpenCoopUiGallery,onOpenUpdates,initialSection,onNavigateGuide,onStartMainScreenTour,online=false}:Props){
  const language=state.settings.language;
  const a=(text:string,params?:Record<string,string|number>)=>accountText(language,text,params);
 
@@ -148,7 +149,7 @@ export function SettingsScreen({state,onLanguage,onReset,onChange,onRefreshComme
       {!online&&<GameButton title={a("Delete local save")} tone="danger" onPress={onReset}/>}
     </Panel></>}
     {section==='developer'&&__DEV__&&!online&&<DeveloperTools state={state} onChange={onChange} onOpenCoopUiGallery={onOpenCoopUiGallery}/>}
-    <View style={s.footerLinks}><GameButton compact title={a("Privacy Policy")} tone="secondary" onPress={()=>openExternal(PRIVACY_POLICY_URL)}/></View>
+    <View style={s.footerLinks}>{onOpenUpdates?<GameButton compact title={a("What's New & Updates")} tone="secondary" onPress={onOpenUpdates}/>:null}<GameButton compact title={a("Privacy Policy")} tone="secondary" onPress={()=>openExternal(PRIVACY_POLICY_URL)}/></View>
     <View>
       <Text selectable style={s.sub}>{appBuildText(language,'version',{version:APP_BUILD_INFO.version})}{APP_BUILD_INFO.buildNumber?` · ${appBuildText(language,'build',{build:APP_BUILD_INFO.buildNumber})}`:''}</Text>
       <Text selectable style={s.sub}>{appBuildText(language,'channel',{channel:APP_BUILD_INFO.releaseChannel})}</Text>

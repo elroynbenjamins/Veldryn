@@ -13,6 +13,6 @@ if(focus.equippedCount!==1||focus.emptySlots!==9||focus.next.kind!=='fill-slots'
 if(focus.openSockets>focus.totalSockets)throw new Error('Loadout focus socket summary cannot report more open sockets than total sockets');
 const enhancedState={...state,character:{...state.character!,gearEnhancements:{basic_sword:{rank:2,failures:1,gemIds:[]}}}};
 const enhancedWeapon=equipmentScreenModel(enhancedState).slots.find(slot=>slot.slot==='weapon');
-if(enhancedWeapon?.enhancement?.rank!==2||enhancedWeapon.enhancedStats?.attack!==5)throw new Error('Equipment tiles and inspector must expose the live enhanced rank and stats');
+if(enhancedWeapon?.enhancement?.rank!==2||enhancedWeapon.enhancedStats?.attack!==4.32)throw new Error('Equipment tiles and inspector must expose the live enhanced rank and stats');
 if(state.character?.bodyPresentation!=='female')throw new Error('Saved character presentation must remain authoritative');
 console.log('PASS: equipment screen uses ten live slots, canonical stats, loadout guides, contextual focus and saved presentation');

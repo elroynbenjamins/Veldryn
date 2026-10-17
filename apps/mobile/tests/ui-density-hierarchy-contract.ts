@@ -39,7 +39,7 @@ ok(account.includes('<Text numberOfLines={singleColumn?2:1} style={s.description
 ok(account.includes('ACCOUNT HUB')&&account.includes('header:{minHeight:86'),'Account must use a compact raised hub header rather than a plain title stack');
 ok(account.includes('attentionPriority')&&account.includes('attentionDestinations.slice(0,3)'),'Account must surface at most three immediate attention destinations before the full navigation grid');
 ok(account.includes('tileAttention:{borderWidth:1,borderColor:C.selectionLine')&&account.includes('iconFrameAttention:'),'Account destinations needing attention must gain restrained theme-semantic emphasis without changing layout');
-ok(account.includes("if(id==='Collections')return 'Inventory'")&&account.includes("if(id==='Achievements')return 'Quests'")&&account.includes("if(id==='MasteryHall')return 'Skills'"),'Account identity and prestige destinations must use distinct meaningful existing icons rather than all reusing Social');
+ok(account.includes("if(id==='Collections')return 'Inventory'")&&!account.includes("if(id==='Achievements')return 'Quests'")&&account.includes("if(id==='MasteryHall')return 'Skills'"),'Account identity and prestige destinations must use distinct meaningful existing icons without exposing unfinished Achievements');
 ok(!account.includes("items:['Home','Progression','Quests','Skills'"),'Account must not duplicate the persistent Skills bottom-navigation destination');
 ok(account.includes("singleColumn=width<350||fontScale>=1.25")&&account.includes('attentionQuickWide'),'Account hub and attention rail must preserve narrow-phone / large-text responsiveness');
 
@@ -101,7 +101,7 @@ ok(craftingBrowser.includes('processingAvailability')&&craftingBrowser.includes(
 ok(craftingBrowser.includes('equipmentCraftAvailability')&&craftingBrowser.includes('timedEquipmentRecipe'),'Crafting groups must use real forge-start semantics for timed equipment');
 
 const recipeCard=read('src/components/RecipeCard.tsx');
-ok(recipeCard.includes("processing?ct('Process · {time}'")&&recipeCard.includes('Progress continues offline.')&&recipeCard.includes('outputPerHour'),'Processing cards must expose offline timing and material throughput');
+ok(recipeCard.includes("processing?gl('Process available resources')")&&recipeCard.includes("processing?gl('Runs until materials, Gold, or your AFK time runs out.')")&&recipeCard.includes('outputPerHour'),'Processing cards must expose its continuous offline rule and material throughput');
 ok(recipeCard.includes("head:{minHeight:96"),'Recipe rows must remain compact');
 ok(recipeCard.includes("statusText=forgeFull?"),'Collapsed recipe cards must expose the actual blocking state');
 ok(recipeCard.includes("alchemy?ct('Brew · {time}'")&&recipeCard.includes('Progress continues offline.'),'Alchemy recipe cards must expose timed brewing controls and offline progress');

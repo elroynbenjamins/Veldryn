@@ -4,14 +4,17 @@ import {effectiveOwnedGearRarity} from './crafted-gear-instances';
 import {craftedRarityStatMultiplier} from './crafted-gear-rarity';
 import {GameState,GearEnhancementState,GemEffectId,GemSocketKind,GemStat,ItemStack} from './types';
 import {mobileGemFamilyV1} from '../content/gems-v1';
+import {v33EquipmentRecipeForItem} from '../content/equipment-recipes-v33';
 import {assertEffectGemEquipAllowedV1,canonicalGemMetaV1,gemUnsocketCostForStateV1} from './gem-progression-v1';
 
-export const MAX_UPGRADE_RANK=10;
-export const UPGRADE_STAT_PER_RANK=.03;
+/** Each regional kit has four optional improvements.  A full set gains 16%,
+ * still below the base-stat jump to the next equipment tier. */
+export const MAX_UPGRADE_RANK=4;
+export const UPGRADE_STAT_PER_RANK=.04;
 export const EQUIPMENT_GEM_SOCKET_COUNT=2;
-const SUCCESS_BY_TARGET=[0,1,.95,.85,.70,.55,.40,.28,.18,.10,.05];
-const DUST_BY_TARGET=[0,4,8,15,24,36,52,72,96,125,160];
-const CORE_BY_TARGET=[0,0,0,0,1,2,3,5,7,10,14];
+const SUCCESS_BY_TARGET=[0,.95,.82,.67,.52];
+const DUST_BY_TARGET=[0,6,14,28,48];
+const CORE_BY_TARGET=[0,0,1,2,4];
 const RARITY_COST:Record<ItemRarity,number>={common:1,uncommon:1.2,rare:1.6,epic:2.2,legendary:3.2,mythic:4.5};
 
 function safeGem(id:unknown){
@@ -45,12 +48,19 @@ export function gearEnhancement(state:GameState,itemId:string):GearEnhancementSt
 export function hasEnhancement(state:GameState,itemId:string){const enhancement=gearEnhancement(state,itemId);return enhancement.rank>0||enhancement.gemIds.length>0;}
 export function gemSocketCapacity(itemId:string){const item=itemDef(itemId);return item.type==='gear'?EQUIPMENT_GEM_SOCKET_COUNT:0;}
 export function gemSocketState(state:GameState,itemId:string){const enhancement=gearEnhancement(state,itemId);return {statGemId:enhancement.statGemId,effectGemId:enhancement.effectGemId,filled:Number(Boolean(enhancement.statGemId))+Number(Boolean(enhancement.effectGemId)),capacity:gemSocketCapacity(itemId)};}
+export type UpgradeMaterialCost={itemId:string;quantity:number};
+/** Uses the item's own regional recipe inputs, rather than a generic currency. */
+export function upgradeMaterialCosts(itemId:string,targetRank:number):UpgradeMaterialCost[]{
+  const recipe=v33EquipmentRecipeForItem(itemId);if(!recipe)return [];
+  const ratio=targetRank===1?.12:targetRank===2?.18:targetRank===3?.27:targetRank===4?.38:0;
+  return recipe.inputs.map(input=>({itemId:input.itemId,quantity:Math.max(1,Math.ceil(input.quantity*ratio))}));
+}
 export function upgradeQuote(state:GameState,itemId:string){
   const item=itemDef(itemId);if(item.type!=='gear')throw new Error('Only equipment can be upgraded');
   const current=gearEnhancement(state,itemId),targetRank=current.rank+1;
-  if(targetRank>MAX_UPGRADE_RANK)return {currentRank:current.rank,targetRank,successChance:0,dust:0,cores:0,gold:0,maxed:true};
+  if(targetRank>MAX_UPGRADE_RANK)return {currentRank:current.rank,targetRank,successChance:0,dust:0,cores:0,gold:0,materials:[] as UpgradeMaterialCost[],maxed:true};
   const rarity=effectiveOwnedGearRarity(state,itemId),pity=Math.min(.10,current.failures*.02);
-  return {currentRank:current.rank,targetRank,successChance:Math.min(1,SUCCESS_BY_TARGET[targetRank]+pity),dust:DUST_BY_TARGET[targetRank],cores:CORE_BY_TARGET[targetRank],gold:Math.ceil(150*targetRank*targetRank*RARITY_COST[rarity]/10)*10,maxed:false};
+  return {currentRank:current.rank,targetRank,successChance:Math.min(1,SUCCESS_BY_TARGET[targetRank]+pity),dust:DUST_BY_TARGET[targetRank],cores:CORE_BY_TARGET[targetRank],gold:Math.ceil(150*targetRank*targetRank*RARITY_COST[rarity]/10)*10,materials:upgradeMaterialCosts(itemId,targetRank),maxed:false};
 }
 function qty(stacks:ItemStack[],id:string){return stacks.find(s=>s.itemId===id)?.quantity??0;}
 export function combinedQuantity(state:GameState,id:string){return qty(state.inventory.stacks,id)+qty(state.bank.stacks,id);}
@@ -60,10 +70,11 @@ function setEnhancement(state:GameState,itemId:string,value:GearEnhancementState
 function requireEquipped(state:GameState,itemId:string){if(!state.character||!Object.values(state.character.equipment).includes(itemId))throw new Error('Equip this item first');}
 export function attemptEquipmentUpgrade(state:GameState,itemId:string,roll=Math.random()){
   requireEquipped(state,itemId);if(roll<0||roll>=1)throw new Error('Invalid upgrade roll');
-  const quote=upgradeQuote(state,itemId);if(quote.maxed)throw new Error('This item is already +10');
+  const quote=upgradeQuote(state,itemId);if(quote.maxed)throw new Error('This item already has all four regional improvements');
   if(state.character!.gold<quote.gold)throw new Error(`Need ${quote.gold} gold`);
   let next:GameState={...state,character:{...state.character!,gold:state.character!.gold-quote.gold}};
   next=consumeAcross(next,'TEMPERING_DUST',quote.dust);if(quote.cores)next=consumeAcross(next,'TEMPERING_CORE',quote.cores);
+  for(const material of quote.materials)next=consumeAcross(next,material.itemId,material.quantity);
   const prior=gearEnhancement(state,itemId),success=roll<quote.successChance;
   const rank=success?quote.targetRank:prior.rank;
   next=setEnhancement(next,itemId,{...prior,rank,failures:success?0:prior.failures+1});
@@ -111,8 +122,11 @@ export function replaceGem(state:GameState,itemId:string,gemId:string){
   next=setEnhancement(next,itemId,{...enhancement,statGemId:kind==='stat'?gemId:enhancement.statGemId,effectGemId:kind==='effect'?gemId:enhancement.effectGemId,gemIds:[]});
   return next;
 }
-export function gearStatsAtRank(itemId:string,rank:number){const item=itemDef(itemId),m=1+Math.max(0,Math.min(MAX_UPGRADE_RANK,rank))*UPGRADE_STAT_PER_RANK,scale=(value:number)=>value>0?Math.ceil(value*m):Math.round(value*m);return {hp:scale(item.hp??0),attack:scale(item.attack??0),defense:scale(item.defense??0)};}
-export function enhancedGearStats(state:GameState,itemId:string){const stats=gearStatsAtRank(itemId,gearEnhancement(state,itemId).rank),rarity=effectiveOwnedGearRarity(state,itemId),m=craftedRarityStatMultiplier(itemId,rarity),scale=(value:number)=>value>0?Math.ceil(value*m):Math.round(value*m);return {hp:scale(stats.hp),attack:scale(stats.attack),defense:scale(stats.defense)};}
+/** Keep equipment values fractional until all equipped pieces are combined in
+ * effectiveStats. Rounding each low-stat item separately turns a stated 4%
+ * improvement into an accidental 25–100% jump. */
+export function gearStatsAtRank(itemId:string,rank:number){const item=itemDef(itemId),m=1+Math.max(0,Math.min(MAX_UPGRADE_RANK,rank))*UPGRADE_STAT_PER_RANK,scale=(value:number)=>value*m;return {hp:scale(item.hp??0),attack:scale(item.attack??0),defense:scale(item.defense??0)};}
+export function enhancedGearStats(state:GameState,itemId:string){const stats=gearStatsAtRank(itemId,gearEnhancement(state,itemId).rank),rarity=effectiveOwnedGearRarity(state,itemId),m=craftedRarityStatMultiplier(itemId,rarity),scale=(value:number)=>value*m;return {hp:scale(stats.hp),attack:scale(stats.attack),defense:scale(stats.defense)};}
 export function equippedGemBonuses(state:GameState):Record<GemStat,number>{const result={attack:0,defense:0,hp:0};if(!state.character)return result;for(const itemId of Object.values(state.character.equipment)){if(!itemId)continue;const gemId=gearEnhancement(state,itemId).statGemId;if(!gemId)continue;const gem=itemDef(gemId);if(gem.type==='gem'&&gem.gemStat)result[gem.gemStat]+=gem.gemPercent??0;}return result;}
 
 export type EquippedEffectGemBonuses=Record<GemEffectId,number>;

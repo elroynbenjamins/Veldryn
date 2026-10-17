@@ -29,14 +29,11 @@ equal(failure?.pityAfterPct,4,'failure result must expose improved pity');
 
 const modal=fs.readFileSync('src/components/EquipmentEnhancementModal.tsx','utf8');
 ok(modal.includes('UPGRADE SUCCESS'),'enhancement modal must celebrate a committed success');
-ok(modal.includes('TEMPERING FAILED'),'enhancement modal must clearly identify a protected failure');
-ok(modal.includes('PROTECTED'),'failure presentation must reinforce rank protection');
-ok(modal.includes('trackBase')&&modal.includes('trackPity'),'success chance bar must distinguish base chance from pity');
-ok(modal.includes('Enhancement rank ${enhancement.rank} of 10')&&modal.includes('rankStepFilled')&&modal.includes('rankStepNext'),'enhancement UI must show compact +1 to +10 rank progression');
-ok(modal.includes('% BASE')&&modal.includes('% PITY'),'chance breakdown must label base chance and pity');
-ok(modal.includes('Try again ·'),'failure flow must support an immediate repeat attempt');
-ok(modal.includes('riskApprovedTarget'),'high-rank confirmation should be remembered for repeat attempts at the same target rank');
+ok(modal.includes('Regional improvement ${enhancement.rank} of ${MAX_UPGRADE_RANK}')&&modal.includes('rankStepFilled')&&modal.includes('rankStepNext'),'enhancement UI must show the four regional improvement ranks');
+ok(modal.includes('quote.materials.map'),'enhancement UI must show the item-specific regional material costs');
+ok(modal.includes('A failed tempering consumes its cost')&&modal.includes('Try again ·'),'regional tempering must make its protected failure loop clear');
+ok(modal.includes('riskApprovedTarget'),'the final improvement should require an intentional confirmation');
 ok(modal.includes('Animated.sequence'),'upgrade outcomes must have a brief motion response when reduced motion is disabled');
 ok(modal.includes('reduceMotion'),'upgrade feedback must respect reduced-motion settings');
 
-console.log('PASS equipment upgrade feedback makes success, protected failure, pity and repeat attempts legible');
+console.log('PASS equipment upgrade feedback makes four regional improvements and protected failure legible');

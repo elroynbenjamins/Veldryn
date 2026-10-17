@@ -26,7 +26,7 @@ import {professionMasteryActionDefinition,professionMasteryMasteredRecords,skill
 
 const label=(value?:string)=>value?value.replace(/[_:-]+/g,' ').replace(/\b\w/g,letter=>letter.toUpperCase()):'Default';
 
-type ProfileDestination='Customize'|'Collections'|'Achievements'|'Rankings'|'MasteryHall';
+type ProfileDestination='Customize'|'Collections'|'Rankings'|'MasteryHall';
 
 export function ProfileScreen({state,onNavigate}:{state:GameState;onNavigate?:(destination:ProfileDestination)=>void}){
  const language=useGameLanguage();
@@ -64,7 +64,6 @@ export function ProfileScreen({state,onNavigate}:{state:GameState;onNavigate?:(d
    </View>
    <View style={s.quickActions}>
     <View style={s.action}><GameButton compact title={profileT(language,"Collections")} tone="secondary" onPress={()=>onNavigate?.('Collections')}/></View>
-    <View style={s.action}><GameButton compact title={profileT(language,"Achievements")} tone="secondary" onPress={()=>onNavigate?.('Achievements')}/></View>
     <View style={s.action}><GameButton compact title={profileT(language,"Rankings")} tone="secondary" onPress={()=>onNavigate?.('Rankings')}/></View>
    </View>
   </Panel>

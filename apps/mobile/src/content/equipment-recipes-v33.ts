@@ -39,7 +39,14 @@ const tierXp:Record<string,number>={T1:120,T2:250,T3:450,T4:700,T5:1100,T6:1600,
 /** Raw and processed inputs are the long-form progression cost; final assembly
  * remains a short queue action. These multipliers keep players in a tier long
  * enough to learn its regional gathering loop before the next floor unlocks. */
-const TIER_MATERIAL_MULTIPLIER:Record<string,number>={T1:8,T2:6,T3:5,T4:4,T5:1,T6:1,T7:1,T8:1,T9:1};
+/**
+ * A full kit should be a regional goal, not a multi-day wall at the first
+ * tiers.  The previous 8→1 cliff made early equipment disproportionately
+ * expensive, then made later regional materials pile up with too few sinks.
+ * This curve keeps early tiers meaningful while allowing late regional
+ * materials to stay usable after standard combat drops were reduced.
+ */
+const TIER_MATERIAL_MULTIPLIER:Record<string,number>={T1:3,T2:2.5,T3:2.25,T4:2,T5:1,T6:.8,T7:.8,T8:.75,T9:.75};
 /**
  * Tier pacing deliberately leaves room for a player to finish a meaningful
  * Fieldborn kit before the next rarity appears.  The old floors put T2/T3

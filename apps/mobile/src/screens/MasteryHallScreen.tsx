@@ -15,7 +15,7 @@ import {equipmentTheme,radii,spacing,typography,type ThemeColors} from '../theme
 import {useGameTheme} from '../theme/ThemeContext';
 
 const tierLabel=(value:string)=>value.charAt(0).toUpperCase()+value.slice(1);
-export function MasteryHallScreen({state,onOpenSkill,onNavigate,onAchievements,onProfile}:{state:GameState;onOpenSkill?:(skillId:SkillId)=>void;onNavigate?:(destination:WorkingTowardDestination)=>void;onAchievements?:()=>void;onProfile?:()=>void}){
+export function MasteryHallScreen({state,onOpenSkill,onNavigate,onProfile}:{state:GameState;onOpenSkill?:(skillId:SkillId)=>void;onNavigate?:(destination:WorkingTowardDestination)=>void;onProfile?:()=>void}){
   const contextLanguage=useGameLanguage(),language=state.settings.language??contextLanguage;
   const t=(key:ProgressionKey,params?:Record<string,string|number>)=>progressionT(language,key,params);
   const p=(text:string)=>progressionText(language,text);
@@ -33,7 +33,7 @@ export function MasteryHallScreen({state,onOpenSkill,onNavigate,onAchievements,o
    <View style={s.panelHead}><View style={s.flex}><Text style={s.section}>{t("MASTERY HALL LADDER")}</Text><Text style={s.title}>{next?t("Next recognition: {title}",{title:next.title}):t("Mastery Hall Grandmaster")}</Text></View><Text style={[s.status,titleUnlocked&&s.statusDone]}>{titleUnlocked?t("TITLE EARNED"):summary.mastered+' R50'}</Text></View>
    <View style={s.ladder}>{ladder.map(row=>{const complete=summary.mastered>=row.target,unlocked=journal?.unlockedAchievements?.[row.id]!==undefined;return <View key={row.id} style={[s.tier,complete&&s.tierDone]}><Text style={[s.tierRank,complete&&s.tierRankDone]}>{p(tierLabel(row.tier))}</Text><Text style={s.tierTarget}>{row.target} R50</Text><Text style={complete?s.done:s.meta}>{unlocked?t("EARNED"):complete?t("READY"):t("LOCKED")}</Text></View>})}</View>
    {masterwork?<View style={[s.titleReward,titleUnlocked&&s.titleRewardDone]}><View style={s.flex}><Text style={s.rewardLabel}>{t("GRANDMASTER TITLE")}</Text><Text style={s.rewardName}>{masterwork.name}</Text><Text style={s.meta}>{masterwork.description}</Text></View><Text style={[s.prestigeBadge,titleUnlocked&&{color:E.goldSoft,borderColor:E.goldSoft}]}>{titleUnlocked?t("UNLOCKED"):'20 R50'}</Text></View>:null}
-   <GameButton compact title={t("View Achievements & Titles")} tone="secondary" onPress={()=>onAchievements?.()}/>
+   <GameButton compact title={t("Open Profile & Titles")} tone="secondary" onPress={()=>onProfile?.()}/>
   </Panel>
 
   <Panel>

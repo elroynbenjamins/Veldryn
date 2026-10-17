@@ -101,7 +101,7 @@ for(const path of ['src/screens/HomeScreen.tsx','src/screens/WorldScreen.tsx','s
 ok(top.includes('<EnvironmentDetailsModal')&&top.includes('onPress={()=>setEnvironmentOpen(true)}'),'The top-left bar must remain the weather details entry');
 
 const inventory=read('src/screens/InventoryScreen.tsx');
-ok(inventory.includes('GameModalSurface')&&!inventory.includes('<Modal'),'Inventory filter must use the shared modal shell');
+ok(inventory.includes('<GameModalSurface visible={filterOpen}'),'Inventory filter must use the shared modal shell');
 ok(inventory.includes('reduceMotion={state.settings.reduceMotion}'),'Inventory modal interactions must respect reduced motion');
 
 const daily=read('src/screens/DailySuppliesScreen.tsx');

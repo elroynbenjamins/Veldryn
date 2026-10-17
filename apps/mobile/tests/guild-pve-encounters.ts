@@ -1,5 +1,5 @@
 const assert={equal:(a:unknown,b:unknown)=>{if(a!==b)throw Error(`${a} !== ${b}`)},deepEqual:(a:unknown,b:unknown)=>{if(JSON.stringify(a)!==JSON.stringify(b))throw Error('Deep equality failed')}};
-import {guildPveView,type GuildPveEncounter} from '../src/core/guild-pve-encounters';
+import {guildPveActivitySummary,guildPvePresentation,guildPveView,type GuildPveEncounter} from '../src/core/guild-pve-encounters';
 const row:GuildPveEncounter={rosterSize:12,personalCap:30000,dailyCap:6000,dailyUsed:1000,eligible:true,id:'test',kind:'weekly',name:'Boss',startsAt:'2026-10-01T00:00:00Z',endsAt:'2026-10-08T00:00:00Z',claimEndsAt:'2026-10-15T00:00:00Z',maxHp:500000,damage:250000,personalDamage:1000,allowanceUsed:1000,contributors:5,claimed:[]};
 const live=Date.parse('2026-10-04T00:00:00Z');
 assert.deepEqual(guildPveView(row,live).milestones.map(x=>x.ready),[true,true,false]);
@@ -12,4 +12,17 @@ assert.equal(guildPveView(row,Date.parse(row.claimEndsAt)).milestones.some(x=>x.
 assert.equal(guildPveView({...row,allowanceUsed:50000},live).allowance,0);
 assert.equal(guildPveView({...row,damage:500000},live).status,'Defeated');
 assert.equal(guildPveView({...row,damage:500000},live).active,false);
+assert.equal(guildPveView({...row,attemptCap:3,attemptsUsed:2},live).attemptsRemaining,1);
+assert.equal(guildPveView({...row,attemptCap:3,attemptsUsed:3},live).canContribute,false);
+assert.equal(guildPveView({...row,attemptCap:3,attemptsUsed:1,pendingAttempts:1},live).canContribute,false);
+assert.equal(guildPveView({...row,attemptCap:3,attemptsUsed:1,guildLevel:2,requiredGuildLevel:3},live).canContribute,false);
+const weeklyPresentation=guildPvePresentation(row);
+assert.equal(weeklyPresentation.bossName,'Rootbound Colossus');
+assert.deepEqual(weeklyPresentation.activities,['combat']);
+assert.equal(guildPvePresentation({...row,name:'Fallen Oathbreaker'}).visualKey,'fallen_knight');
+assert.equal(guildPvePresentation({...row,name:'Granite Moss Troll'}).mechanicName,'Seismic Swing');
+const veilPresentation=guildPvePresentation({...row,kind:'event',name:'The Veilbreak',eventId:'EVT_ANNUAL_010_2026'});
+assert.equal(veilPresentation.bossName,'Gloam Riftwarden');
+assert.deepEqual(veilPresentation.activities,['combat']);
+assert.equal(guildPveActivitySummary('event').includes('three attempts per seven days'),true);
 console.log('PASS Guild PvE thresholds, eligibility, claims, allowance, lifecycle boundaries');

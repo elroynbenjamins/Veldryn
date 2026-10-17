@@ -77,7 +77,7 @@ export function itemInspectModel(state:GameState,itemId:string){
   const inventoryQuantity=state.inventory.stacks.find(stack=>stack.itemId===itemId)?.quantity??0;
   const bankQuantity=state.bank.stacks.find(stack=>stack.itemId===itemId)?.quantity??0;
   const effectLines:string[]=[];
-  let upgrade:undefined|{rank:number;nextRank:number;successChance:number;dust:number;cores:number;gold:number;maxed:boolean;failures:number;equipped:boolean};
+  let upgrade:undefined|{rank:number;nextRank:number;successChance:number;dust:number;cores:number;gold:number;materials:{itemId:string;name:string;quantity:number}[];maxed:boolean;failures:number;equipped:boolean};
   let sockets:undefined|{filled:number;capacity:number;statGemName?:string;effectGemName?:string};
   let stats:undefined|{attack:number;defense:number;hp:number};
   let gearDecision:ItemGearDecision|undefined;
@@ -85,7 +85,7 @@ export function itemInspectModel(state:GameState,itemId:string){
   if(item.type==='gear'){
     const enhancement=gearEnhancement(state,itemId),quote=upgradeQuote(state,itemId),enhanced=enhancedGearStats(state,itemId);
     stats=enhanced;
-    upgrade={rank:enhancement.rank,nextRank:quote.targetRank,successChance:quote.successChance,dust:quote.dust,cores:quote.cores,gold:quote.gold,maxed:quote.maxed,failures:enhancement.failures,equipped:!!state.character&&Object.values(state.character.equipment).includes(itemId)};
+    upgrade={rank:enhancement.rank,nextRank:quote.targetRank,successChance:quote.successChance,dust:quote.dust,cores:quote.cores,gold:quote.gold,materials:quote.materials.map(material=>({itemId:material.itemId,name:itemDef(material.itemId).name,quantity:material.quantity})),maxed:quote.maxed,failures:enhancement.failures,equipped:!!state.character&&Object.values(state.character.equipment).includes(itemId)};
     const capacity=gemSocketCapacity(itemId),slotState=gemSocketState(state,itemId);
     sockets={filled:slotState.filled,capacity,statGemName:slotState.statGemId?itemDef(slotState.statGemId).name:undefined,effectGemName:slotState.effectGemId?itemDef(slotState.effectGemId).name:undefined};
     if(state.character&&item.slot){

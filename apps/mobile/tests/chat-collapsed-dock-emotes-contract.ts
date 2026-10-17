@@ -31,6 +31,7 @@ ok(settings.includes('<ChatEmotePicker settingsMode'),'Settings must expose the 
 
 const dock=read('src/components/ChatDock.tsx');
 ok(dock.includes('lines?:1|2|3'),'Chat dock must support the persisted 1/2/3-line preference');
+ok(dock.includes('selectedChannel?:number')&&dock.includes('selectedChannel-1'),'Chat dock must load the selected default World channel rather than always showing English');
 ok(dock.includes("width:'100%'"),'Collapsed chat must be a full-width strip above navigation');
 ok(!dock.includes("position:'absolute'"),'Collapsed chat must participate in layout instead of floating over game controls');
 ok(!dock.includes('PanResponder'),'Collapsed chat must not drift away from navigation via drag positioning');
@@ -38,7 +39,8 @@ ok(dock.includes('rows.slice(-lines)'),'Collapsed chat must show the selected nu
 ok(dock.includes('onPress={onOpen}'),'Tapping the collapsed strip must open full chat');
 
 const overlay=read('src/components/ChatOverlay.tsx');
-ok(overlay.includes('lines={state.settings.chatDockLines??1}'),'Chat overlay must pass the saved dock height preference');
+ok(overlay.includes('lines={state.settings.chatDockLines??1}')&&overlay.includes('selectedChannel={state.settings.defaultWorldChat??1}'),'Chat overlay must pass saved dock height and default channel preferences');
+ok(overlay.includes('if(!chatEnabled&&visible)onClose();'),'Turning off chat must close an already-open overlay instead of leaving it hidden in the background');
 ok(overlay.includes('trayIds={state.settings.chatEmoteTrayIds}'),'All overlay chat channels must receive the saved quick tray');
 ok(overlay.includes('onTrayChange={onEmoteTrayChange}'),'All overlay chat channels must be able to persist edited tray choices');
 ok(overlay.includes('useSafeAreaInsets')&&overlay.includes('bottomOffset=72+'),'Expanded chat must use real safe-area offsets above navigation');

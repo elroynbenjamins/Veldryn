@@ -13,7 +13,7 @@ export function GameModalSurface({visible,onClose,reduceMotion=false,presentatio
   return <Modal visible={visible} transparent statusBarTranslucent animationType={reduceMotion?'none':'fade'} onRequestClose={onClose}>
     <View style={[s.backdrop,!sheet&&s.center,{paddingTop:Math.max(spacing.sm,insets.top)},!sheet&&{paddingBottom:Math.max(spacing.lg,insets.bottom+spacing.sm)}]}>
       {dismissOnBackdrop?<Pressable accessible={false} accessibilityLabel={backdropLabel} accessibilityElementsHidden importantForAccessibility="no-hide-descendants" onPress={onClose} style={StyleSheet.absoluteFill}/>:<View pointerEvents="none" style={StyleSheet.absoluteFill}/>} 
-      <KeyboardAvoidingView behavior={Platform.OS==='ios'?'padding':'height'} keyboardVerticalOffset={insets.top} style={s.keyboardAvoider}>
+      <KeyboardAvoidingView behavior={Platform.OS==='ios'?'padding':'height'} keyboardVerticalOffset={insets.top} style={[s.keyboardAvoider,sheet?s.keyboardSheet:s.keyboardDialog]}>
       <View accessibilityViewIsModal onAccessibilityEscape={onClose} style={[s.surface,sheet?s.sheet:s.dialog,sheet&&{paddingBottom:Math.max(spacing.lg,insets.bottom+spacing.sm)},surfaceStyle]}>
         {sheet?<View style={s.grabber}/>:null}
         {children}
@@ -39,7 +39,9 @@ export function GameModalHeader({eyebrow,title,onClose,closeDisabled=false,leadi
 function makeStyles(C:ThemeColors){return StyleSheet.create({
   backdrop:{flex:1,justifyContent:'flex-end',backgroundColor:C.overlay},
   center:{justifyContent:'center',alignItems:'center',padding:spacing.lg},
-  keyboardAvoider:{width:'100%',alignItems:'center'},
+  keyboardAvoider:{width:'100%',flex:1,alignItems:'center'},
+  keyboardSheet:{justifyContent:'flex-end'},
+  keyboardDialog:{justifyContent:'center'},
   surface:{width:'100%',alignSelf:'center',backgroundColor:C.bg,borderWidth:1,borderColor:C.lineStrong},
   sheet:{maxWidth:720,maxHeight:'92%',paddingHorizontal:14,paddingTop:8,borderTopLeftRadius:radii.lg,borderTopRightRadius:radii.lg},
   dialog:{maxWidth:520,maxHeight:'96%',padding:spacing.lg,borderRadius:radii.lg},

@@ -9,7 +9,7 @@ const base=createCharacter(newGame(1),'IRONWARDEN','Explorer');
 const rate=(id:string)=>{const route=EXPLORATION_ROUTES.find(row=>row.id===id)!;return route.xp*3600/route.seconds};
 const green=rate('SCOUT_GREENFIELDS'),oldMines=rate('SCOUT_OLD_MINES'),sunscar=rate('SCOUT_SUNSCAR'),frost=rate('SCOUT_FROSTMARCH'),ash=rate('SCOUT_ASHLANDS');
 
-ok(green===1440,'Starter Exploration pace should remain unchanged');
+ok(green===1800,'Starter Exploration pace should make early region discovery feel brisk');
 ok(oldMines>green&&sunscar>oldMines&&frost>sunscar&&ash>frost,'Exploration XP/hour should rise with later routes');
 
 const at=(level:number,xpPerHour:number)=>{
@@ -35,6 +35,6 @@ const combatClaim=claimActivity(combat,61_000);
 ok(combatClaim.state.skills.find(row=>row.skillId==='exploration')!.xp===explorationBefore+(combatClaim.reward.explorationXp??0),'Combat Exploration XP must settle into the Exploration skill');
 
 const frostRoute=EXPLORATION_ROUTES.find(row=>row.id==='SCOUT_FROSTMARCH')!,ashRoute=EXPLORATION_ROUTES.find(row=>row.id==='SCOUT_ASHLANDS')!;
-ok(frostRoute.seconds===300&&ashRoute.seconds===360,'Exploration acceleration must not increase route completion frequency or pet/discovery roll cadence');
+ok(frostRoute.seconds===240&&ashRoute.seconds===288,'Exploration routes should stay 20% faster so later-region discovery does not become an unnecessary wait');
 
 console.log('PASS: Exploration combines active scouting, passive combat familiarity, encounter discovery and later-region route gates');

@@ -13,7 +13,7 @@ import {useGameTheme} from '../theme/ThemeContext';
 import {PersonalRecordsPanel} from '../components/PersonalRecordsPanel';
 import {MasteryHallPanel} from '../components/MasteryHallPanel';
 
-export type JournalDestination='Achievements'|'Collections'|'Profile'|'Bestiary';
+export type JournalDestination='Collections'|'Profile'|'Bestiary';
 export function AdventurersJournalScreen({state,onNavigate}:{state:GameState;onNavigate:(destination:JournalDestination)=>void}){
   const C=useGameTheme(),s=useMemo(()=>makeStyles(C),[C]);
   const contextLanguage=useGameLanguage(),language=state.settings.language??contextLanguage;
@@ -28,7 +28,7 @@ export function AdventurersJournalScreen({state,onNavigate}:{state:GameState;onN
  return <ScrollView contentContainerStyle={s.root} showsVerticalScrollIndicator={false} showsHorizontalScrollIndicator={false}>
   <Text style={s.kicker}>{t("COLLECTIONS & PROGRESS")}</Text><Text accessibilityRole="header" style={s.heading}>{t("Adventurer's Journal")}</Text><Text style={s.sub}>{t("Long-term achievements, titles, records and collection progress in one place.")}</Text>
   <View style={s.stats}><View style={s.stat}><Text style={s.statValue}>{JOURNAL_ACHIEVEMENTS_V42.length}</Text><Text style={s.statLabel}>{t("ACHIEVEMENTS")}</Text></View><View style={s.stat}><Text style={s.statValue}>{JOURNAL_TITLES_V42.length}</Text><Text style={s.statLabel}>{t("TITLES")}</Text></View><View style={s.stat}><Text style={s.statValue}>{PERSONAL_RECORDS_V43.length}</Text><Text style={s.statLabel}>{t("RECORDS")}</Text></View></View>
-  <Panel><Text style={s.title}>{t("Long-term Achievements")}</Text><Text style={s.sub}>{t("{count} categories · Novice → Adventurer → Veteran → Master → Grandmaster. Rewards are cosmetic titles rather than power.",{count:categories.length})}</Text><GameButton title={t("Open Achievements")} onPress={()=>onNavigate('Achievements')}/></Panel>
+  <Panel><Text style={s.title}>{t("Long-term Achievements")}</Text><Text style={s.sub}>{t("{count} categories · Novice → Adventurer → Veteran → Master → Grandmaster. Rewards are cosmetic titles rather than power.",{count:categories.length})}</Text></Panel>
   <Panel><Text style={s.title}>{t("Titles")}</Text><Text style={s.sub}>{JOURNAL_TITLES_V42.map(row=>row.name).join(' · ')}</Text><GameButton title={t("Open Profile & Titles")} tone="secondary" onPress={()=>onNavigate('Profile')}/></Panel>
   <MasteryHallPanel state={state}/>
   <PersonalRecordsPanel state={state}/>

@@ -13,7 +13,7 @@ ok(profile.includes('FAVORITES'),'Profile favorites must remain a distinct compa
 ok(profile.includes('ABOUT'),'Profile biography/actions must remain grouped under About');
 ok(profile.includes("root:{padding:spacing.md,gap:10"),'Profile screen must retain compact density');
 ok(profile.includes("minHeight:50"),'Career stat cells must remain compact');
-ok(profile.includes('title={profileT(language,"Customize")}')&&profile.includes('title={profileT(language,"Collections")}')&&profile.includes('title={profileT(language,"Achievements")}')&&profile.includes('title={profileT(language,"Rankings")}'),'Profile actions must remain directly accessible');
+ok(profile.includes('title={profileT(language,"Customize")}')&&profile.includes('title={profileT(language,"Collections")}')&&profile.includes('title={profileT(language,"Rankings")}')&&!profile.includes("onNavigate?.('Achievements')"),'Profile must not route players into the unfinished online Achievements screen');
 ok(!profile.includes('identityHead')&&!profile.includes('IdentityRow'),'Profile must not reintroduce the redundant second identity block');
 ok(profile.includes('label={profileT(language,"BOSSES")}')&&profile.includes('label={profileT(language,"COLLECTIBLES")}'),'Career snapshot must cover boss and collection progression');
 ok(profile.includes('<MasteryHallPanel state={state}')&&profile.includes("onNavigate?.('MasteryHall')"),'Profile must expose the account-wide Mastery Hall summary and link to the full Hall');

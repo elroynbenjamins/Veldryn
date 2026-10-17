@@ -61,6 +61,7 @@ function AccountChatOverlay({state,visible,onOpen,onClose,onEmoteTrayChange,guil
   const guildAvailable=onlineConfigured?onlineGuildAvailable:state.account.guildMember;
   useEffect(()=>{if(!guildAvailable&&channel==='guild')setChannel('world');},[guildAvailable,channel]);
   const wasVisible=useRef(false),chatEnabled=state.settings.autoJoinWorldChat!==false;
+  useEffect(()=>{if(!chatEnabled&&visible)onClose();},[chatEnabled,visible,onClose]);
   useEffect(()=>{
     if(visible&&!wasVisible.current){
       selectChannel('world');
@@ -70,7 +71,7 @@ function AccountChatOverlay({state,visible,onOpen,onClose,onEmoteTrayChange,guil
   },[visible,state.settings.defaultWorldChat]);
   const closeChat=()=>{onChatRead?.();onClose();};
   return <>
-    {!visible&&chatEnabled&&<ChatDock enabled={onlineConfigured} onOpen={onOpen} lines={state.settings.chatDockLines??1} unreadCount={guildUnread+partyUnread} mentionCount={guildMentions+partyMentions}/>}
+    {!visible&&chatEnabled&&<ChatDock enabled={onlineConfigured} onOpen={onOpen} lines={state.settings.chatDockLines??1} selectedChannel={state.settings.defaultWorldChat??1} unreadCount={guildUnread+partyUnread} mentionCount={guildMentions+partyMentions}/>}
     <Modal visible={visible&&chatEnabled} transparent statusBarTranslucent animationType={state.settings.reduceMotion?'none':'fade'} onRequestClose={closeChat}>
       <View style={[s.modalRoot,{paddingTop:Math.max(insets.top,8),paddingBottom:bottomOffset}]}>
         <Pressable accessible={false} accessibilityElementsHidden importantForAccessibility="no-hide-descendants" onPress={closeChat} style={StyleSheet.absoluteFill}/>

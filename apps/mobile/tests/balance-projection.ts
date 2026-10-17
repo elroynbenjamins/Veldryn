@@ -77,6 +77,9 @@ const expected=dropExpectation(rareMaterial.chance,rareMaterial.min,rareMaterial
 close(expected.oneIn,1/rareMaterial.chance,.001,'Drop odds must be the reciprocal of per-kill chance');
 ok(expected.averageFindSeconds>echoPace.cycleSeconds,'Rare material average find time must exceed one kill cycle');
 const mossMaterial=rat.drops.find(drop=>drop.itemId==='MOSS_FIBER')!,mossExpected=dropExpectation(mossMaterial.chance,mossMaterial.min,mossMaterial.max,combat.killsPerHour);
+close(mossMaterial.chance,.275,.000001,'Ordinary monster material drop chance must be halved');
+const blueprintMonster=MONSTERS.find(row=>row.id==='THORNLING')!,hatchetBlueprint=blueprintMonster.drops.find(drop=>drop.itemId==='BP_ASTER_IRON_HATCHET')!;
+close(hatchetBlueprint.chance,.05,.000001,'Blueprint drop chance must not be reduced with material drops');
 ok(mossExpected.averageFindSeconds<5*60,'Starter required materials should arrive frequently rather than carrying the grind');
 ok(MONSTERS.every(monster=>monster.drops.every(drop=>itemDef(drop.itemId).type!=='gear')),'Monster loot must not bypass Equipment 2.0 crafting with finished gear drops');
 const oracle=MONSTERS.find(row=>row.id==='DUNE_ORACLE')!,oraclePace=combatBaselineProjection(oracle),sigil=oracle.drops.find(drop=>drop.itemId==='SWIFT_SIGIL')!,sigilExpected=dropExpectation(sigil.chance,sigil.min,sigil.max,oraclePace.killsPerHour);
@@ -84,6 +87,8 @@ ok(sigilExpected.averageFindSeconds>=3*3600&&sigilExpected.averageFindSeconds<=1
 ok(dropPaceBand(sigilExpected.averageFindSeconds).band==='chase','Build-defining sigils should remain explicitly classified as chase rewards');
 const boss=MONSTERS.find(row=>row.id==='FALLEN_KNIGHT')!;
 ok(boss.drops.some(drop=>drop.itemId==='TORN_OATHCLOTH'&&drop.chance===1)&&boss.drops.every(drop=>itemDef(drop.itemId).type!=='gear'),'Boss loot must award crafting inputs/special rewards rather than legacy finished gear');
+ok(!MONSTERS.filter(monster=>!monster.boss).some(monster=>monster.drops.some(drop=>drop.itemId==='TEMPERING_CORE')),'Tempering Cores must be a boss-focused improvement material, not a routine enemy drop');
+ok(boss.drops.some(drop=>drop.itemId==='TEMPERING_CORE'&&drop.chance===1),'Boss loot must remain the reliable Tempering Core source');
 ok(dropPaceBand(13*3600).band==='long_chase'&&dropPaceBand(5*60).band==='frequent','Drop pace labels must distinguish frequent and long-chase rewards');
 ok(formatBalanceDuration(30)==='<1m'&&formatBalanceDuration(3600)==='1h'&&formatBalanceDuration(90000)==='1d 1h','Balance duration labels must stay compact and readable');
 const gatherAcquisition=acquisitionProjectionForDestination(state,'GREENWOOD_LOG',10,{kind:'skills',skillId:'woodcutting',mode:'gathering',actionId:'GREENWOOD_TREE',regionId:'GREENFIELDS',button:'Gather',detail:''});
@@ -135,9 +140,9 @@ ok(activityProgressFeedback('training',.8)==='Refining form…'&&activityProgres
 
 const activityBase=createCharacter(newGame(1),'IRONWARDEN','Activity Pace Tester');
 const exploreState={...activityBase,activity:{kind:'exploration',targetId:'SCOUT_GREENFIELDS',startedAtMs:1,lastClaimAtMs:1} as any};
-close(activityCycleSeconds(exploreState),60,.001,'Exploration Home cycle must use the authored route duration');
+close(activityCycleSeconds(exploreState),48,.001,'Exploration Home cycle must use the authored route duration');
 const exploreRate=activityRate(exploreState),exploreLevel=activeActivityLevelPace(exploreState,exploreRate.xpPerHour);
-close(exploreRate.xpPerHour,1440,.001,'Starter Exploration Home rate must match settlement XP/hour');
+close(exploreRate.xpPerHour,1800,.001,'Starter Exploration Home rate must match settlement XP/hour');
 ok(exploreLevel?.label==='Exploration','Active Exploration must resolve the Exploration skill level bar');
 
 const faithState={...activityBase,activity:{kind:'faith',targetId:'FAITH_QUIET',startedAtMs:1,lastClaimAtMs:1} as any};

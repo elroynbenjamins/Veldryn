@@ -1,4 +1,5 @@
 import type {EquipmentDecisionModel} from '../core/equipment-decision';
+import {itemDef} from '../content/items';
 import {personalRecordDefinition} from '../core/personal-records-v43';
 import {SUPPORTED_LANGUAGES,type Language} from './languages';
 import {createTranslator} from './translator';
@@ -6,6 +7,7 @@ import {createTranslator} from './translator';
 // English source keys are limited to authored UI copy, never player-authored text.
 // Each row contains de, es, nl, it and fr, in SUPPORTED_LANGUAGES order after en.
 export const profileTranslationRows = {
+  "All regional improvements complete": ["Alle regionalen Verbesserungen abgeschlossen","Todas las mejoras regionales completadas","Alle regionale verbeteringen voltooid","Tutti i miglioramenti regionali completati","Toutes les améliorations régionales sont terminées"],
   "Guild card": ["Gildenkarte","Tarjeta del gremio","Gildekaart","Scheda della gilda","Fiche de guilde"],
   "Open guild card: {guild}": ["Gildenkarte öffnen: {guild}","Abrir tarjeta del gremio: {guild}","Gildekaart openen: {guild}","Apri scheda della gilda: {guild}","Ouvrir la fiche de guilde : {guild}"],
   "Loading guild card": ["Gildenkarte wird geladen","Cargando tarjeta del gremio","Gildekaart laden","Caricamento scheda della gilda","Chargement de la fiche de guilde"],
@@ -412,7 +414,6 @@ export const profileTranslationRows = {
   "Gold": ["Gold","Oro","Goud","Oro","Or"],
   "Dust": ["Staub","Polvo","Stof","Polvere","Poussière"],
   "Cores": ["Kerne","Núcleos","Kernen","Nuclei","Noyaux"],
-  "Maximum rank +10": ["Maximaler Rang +10","Rango máximo +10","Maximale rang +10","Grado massimo +10","Rang maximum +10"],
   "Next +{rank} · {chance}% · Missing {materials}": ["Nächster +{rank} · {chance}% · Es fehlen {materials}","Siguiente +{rank} · {chance}% · Faltan {materials}","Volgende +{rank} · {chance}% · Ontbreekt {materials}","Prossimo +{rank} · {chance}% · Mancano {materials}","Prochain +{rank} · {chance}% · Manque {materials}"],
   "Next +{rank} · {chance}% · Materials ready": ["Nächster +{rank} · {chance}% · Materialien bereit","Siguiente +{rank} · {chance}% · Materiales listos","Volgende +{rank} · {chance}% · Materialen klaar","Prossimo +{rank} · {chance}% · Materiali pronti","Prochain +{rank} · {chance}% · Matériaux prêts"],
   "Fill empty equipment slots: {count}": ["Leere Ausrüstungsplätze füllen: {count}","Completa ranuras vacías: {count}","Vul lege uitrustingsplaatsen: {count}","Riempi spazi vuoti: {count}","Remplir les emplacements vides : {count}"],
@@ -746,11 +747,12 @@ export function profileBadge(language:Language,source:string):string{
 }
 export function profileUpgradeSummary(language:Language,model:EquipmentDecisionModel):string{
   const upgrade=model.upgrade;
-  if(upgrade.maxed)return profileT(language,'Maximum rank +10');
+  if(upgrade.maxed)return profileT(language,'All regional improvements complete');
   const missing = (['gold','dust','cores'] as const).flatMap(key=>{
     const amount=upgrade[key].missing;
     return amount?[amount.toLocaleString(language)+' '+profileT(language,key==='gold'?'Gold':key==='dust'?'Dust':'Cores')]:[];
   });
+  for(const material of upgrade.materials)if(material.missing)missing.push(material.missing.toLocaleString(language)+' '+itemDef(material.itemId).name);
   const params={rank:upgrade.targetRank,chance:Math.round(upgrade.successChance*100),materials:missing.join(', ')};
   return profileT(language,missing.length?'Next +{rank} · {chance}% · Missing {materials}':'Next +{rank} · {chance}% · Materials ready',params);
 }

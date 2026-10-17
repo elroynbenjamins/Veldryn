@@ -28,6 +28,7 @@ export interface EquipmentDecisionModel{
     gold:{owned:number;needed:number;missing:number};
     dust:{owned:number;needed:number;missing:number};
     cores:{owned:number;needed:number;missing:number};
+    materials:{itemId:string;owned:number;needed:number;missing:number}[];
     canAfford:boolean;
     failures:number;
   };
@@ -67,19 +68,21 @@ export function equipmentDecisionModel(state:GameState,itemId:string):EquipmentD
       gold:{owned:goldOwned,needed:quote.gold,missing:missing(goldOwned,quote.gold)},
       dust:{owned:dustOwned,needed:quote.dust,missing:missing(dustOwned,quote.dust)},
       cores:{owned:coresOwned,needed:quote.cores,missing:missing(coresOwned,quote.cores)},
-      canAfford:!quote.maxed&&goldOwned>=quote.gold&&dustOwned>=quote.dust&&coresOwned>=quote.cores,
+      materials:quote.materials.map(material=>{const owned=combinedQuantity(state,material.itemId);return {itemId:material.itemId,needed:material.quantity,owned,missing:missing(owned,material.quantity)}}),
+      canAfford:!quote.maxed&&goldOwned>=quote.gold&&dustOwned>=quote.dust&&coresOwned>=quote.cores&&quote.materials.every(material=>combinedQuantity(state,material.itemId)>=material.quantity),
       failures:enhancement.failures,
     },
   };
 }
 
 export function equipmentUpgradeSummary(model:EquipmentDecisionModel){
-  if(model.upgrade.maxed)return 'Maximum rank +10';
+  if(model.upgrade.maxed)return 'All regional improvements complete';
   const chance=Math.round(model.upgrade.successChance*100);
   const missing:string[]=[];
   if(model.upgrade.gold.missing)missing.push(model.upgrade.gold.missing.toLocaleString()+' gold');
   if(model.upgrade.dust.missing)missing.push(model.upgrade.dust.missing+' Dust');
   if(model.upgrade.cores.missing)missing.push(model.upgrade.cores.missing+' Cores');
+  for(const material of model.upgrade.materials)if(material.missing)missing.push(material.missing+' '+itemDef(material.itemId).name);
   return missing.length
     ? 'Next +'+model.upgrade.targetRank+' · '+chance+'% · Missing '+missing.join(', ')
     : 'Next +'+model.upgrade.targetRank+' · '+chance+'% · Materials ready';

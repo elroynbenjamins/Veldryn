@@ -92,7 +92,6 @@ import {CollectionsScreen} from './src/screens/CollectionsScreen';
 import {ProfileScreen} from './src/screens/ProfileScreen';
 import {ProfileCustomizeScreen} from './src/screens/ProfileCustomizeScreen';
 import {ProfileDiscardChangesModal} from './src/components/ProfileDiscardChangesModal';
-import {AchievementsScreen} from './src/screens/AchievementsScreen';
 import {ActivityOverviewScreen} from './src/screens/ActivityOverviewScreen';
 import {DailySuppliesScreen} from './src/screens/DailySuppliesScreen';
 import {RewardsInboxScreen} from './src/screens/RewardsInboxScreen';
@@ -130,7 +129,7 @@ import {firstSessionTutorialStep,type FirstSessionTutorialId} from './src/core/f
 import {MAIN_SCREEN_TOUR,mainScreenTourStep} from './src/core/main-screen-tour';
 import {completeFirstSessionTutorialStep,loadFirstSessionTutorialCompleted} from './src/storage/first-session-tutorial';
 
-type Tab=QuickNavDestination|'Activity'|'DailySupplies'|'AccountBonuses'|'RewardsInbox'|'MasteryHall'|'Arena'|'Rankings'|'Collections'|'Profile'|'ProfileCustomize'|'Achievements'|'Combat'|'Coop';
+type Tab=QuickNavDestination|'Activity'|'DailySupplies'|'AccountBonuses'|'RewardsInbox'|'MasteryHall'|'Arena'|'Rankings'|'Collections'|'Profile'|'ProfileCustomize'|'Combat'|'Coop';
 type PrimaryTab='Skills'|'World'|'Character'|'Inventory'|'More';
 const primaryTabs:PrimaryTab[]=['Character','Skills','World','Inventory','More'];
 function tabLabel(language:Language,tab:Tab):string{
@@ -144,7 +143,6 @@ function tabLabel(language:Language,tab:Tab):string{
     case 'Collections':return appText(language,'Collections');
     case 'Profile':return appText(language,'Profile');
     case 'ProfileCustomize':return appText(language,'Customize Profile');
-    case 'Achievements':return appText(language,'Achievements');
   }
 }
 const repo=new AsyncStorageGameRepository();
@@ -548,7 +546,7 @@ const next=normalizeProfileIcon(candidate);queuePreparationNotices(current,next)
     {tab==='DailySupplies'&&<DailySuppliesScreen state={state} nowMs={now} onCommand={runCompanionCommand}/>}
     {tab==='RewardsInbox'&&<RewardsInboxScreen state={state} online={serverGameplayEnabled} onRefresh={async()=>online.refresh()} onEventClaim={async id=>{if(serverGameplayEnabled){if(!await perform({type:'event_reward',args:{id}},false))throw new Error('Event reward was not confirmed.');return;}const result=executeGameCommand(state,{type:'event_reward',args:{id}},Date.now());await commit(result.state)}}/>}
     {tab==='AccountBonuses'&&<AccountBonusesScreen state={state}/>}
-    {tab==='MasteryHall'&&<MasteryHallScreen state={state} onOpenSkill={skillId=>{setSelectedSkill(skillId);setSkillsMode(['mining','woodcutting','fishing','herbalism'].includes(skillId)?'gathering':'crafting');setTab('Skills')}} onNavigate={openWorkingTowardDestination} onAchievements={()=>setTab('Achievements')} onProfile={()=>{setProfileCustomizeSection('Identity');setTab('ProfileCustomize')}}/>}
+    {tab==='MasteryHall'&&<MasteryHallScreen state={state} onOpenSkill={skillId=>{setSelectedSkill(skillId);setSkillsMode(['mining','woodcutting','fishing','herbalism'].includes(skillId)?'gathering':'crafting');setTab('Skills')}} onNavigate={openWorkingTowardDestination} onProfile={()=>{setProfileCustomizeSection('Identity');setTab('ProfileCustomize')}}/>}
     {tab==='Companions'&&<CompanionsScreen state={state} language={state.settings.language} now={now} onCommand={runCompanionCommand} onCreate={()=>setCreatingRoster(true)} onNavigateSource={source=>{
       if(source.kind==='combat'){const currentZone=WORLD_ZONES.find(zone=>zone.id===state.currentRegionId)?.name;setTab(currentZone===source.zoneName?'Combat':'World');return;}
       if(source.kind==='crafting'){setSelectedSkill(source.skillId as SkillId);setSkillsMode('crafting');setTab('Skills');return;}
@@ -568,9 +566,8 @@ const next=normalizeProfileIcon(candidate);queuePreparationNotices(current,next)
     {tab==='Collections'&&<CollectionsScreen state={state} onChange={candidate=>void commit(candidate)}/>}
     {tab==='Profile'&&<ProfileScreen state={state} onNavigate={destination=>{if(destination==='Customize'){setProfileCustomizeSection('Appearance');setTab('ProfileCustomize');return;}setTab(destination)}}/>}
     {tab==='ProfileCustomize'&&<ProfileCustomizeScreen key={profileAttentionScope} state={state} initialSection={profileCustomizeSection} onChange={commit} onSaveNameStyle={saveNameStyle} onNavigateSource={destination=>setTab(destination)} onDirtyChange={setProfileCustomizeDirty}/>}
-    {tab==='Achievements'&&<AchievementsScreen reduceMotion={state.settings.reduceMotion} onProfile={()=>setTab('ProfileCustomize')}/>}
   </View>
-  <EventStartPopup runtime={eventStartPopup} reduceMotion={state.settings.reduceMotion} onOpen={()=>{setEventStartPopup(null);setTab('Events')}} onClose={()=>setEventStartPopup(null)}/>
+  <EventStartPopup runtime={creationWelcome?null:eventStartPopup} reduceMotion={state.settings.reduceMotion} onOpen={()=>{setEventStartPopup(null);setTab('Events')}} onClose={()=>setEventStartPopup(null)}/>
   <ChatOverlay state={state} visible={showChatOverlay} onOpen={()=>setShowChatOverlay(true)} onClose={()=>setShowChatOverlay(false)} onEmoteTrayChange={ids=>commit({...state,settings:{...state.settings,chatEmoteTrayIds:ids}})} guildUnread={notificationCounts.guildChatUnread} guildMentions={notificationCounts.guildChatMentions} guildFirstUnreadMessageId={notificationCounts.guildFirstUnreadMessageId} partyUnread={notificationCounts.partyChatUnread} partyMentions={notificationCounts.partyChatMentions} partyFirstUnreadMessageId={notificationCounts.partyFirstUnreadMessageId} onChatRead={()=>void refreshSocialNotifications()}/>
   {!collected&&!forgeResults?.some(row=>row.qualityProc)&&preparationNotices.length?<View style={s.masteryNotice}><ActionFeedback message={preparationNotices[0].message} tone={preparationNotices[0].tone} reduceMotion={state.settings.reduceMotion} compact actionLabel={preparationNotices[0].actionLabel} onAction={()=>openPreparationNotice(preparationNotices[0])}/></View>:!collected&&!forgeResults?.some(row=>row.qualityProc)&&masteryNotices.length?<View style={s.masteryNotice}><ActionFeedback message={masteryRankNoticeMessage(masteryNotices)} tone={masteryNotices.some(moment=>moment.mastered)?'success':'info'} reduceMotion={state.settings.reduceMotion} compact/></View>:null}
     <PrimaryNavigation destinations={primaryTabs} active={activePrimary} labelFor={item=>tabLabel(state.settings.language,item)} onNavigate={setTab} badges={primaryBadges} guidedDestination={(mainScreenTour?.highlightPrimary??visibleTutorialStep?.highlightPrimary) as PrimaryTab|undefined}/>

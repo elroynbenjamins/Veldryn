@@ -9,10 +9,10 @@ import {ChatMessageText} from './ChatMessageText';
 import {GuildTaggedPlayerName} from './GuildTaggedPlayerName';
 import {ThemedIcon} from './ThemedNavigationIcon';
 
-export function ChatDock({enabled,onOpen,lines=1,unreadCount=0,mentionCount=0,active=true}:{enabled:boolean;onOpen:()=>void;lines?:1|2|3;unreadCount?:number;mentionCount?:number;active?:boolean}){
+export function ChatDock({enabled,onOpen,lines=1,selectedChannel=1,unreadCount=0,mentionCount=0,active=true}:{enabled:boolean;onOpen:()=>void;lines?:1|2|3;selectedChannel?:number;unreadCount?:number;mentionCount?:number;active?:boolean}){
  const st=useSocialText();
  const C=useGameTheme(),s=useMemo(()=>makeStyles(C),[C]);
- const channelId=WORLD_CHANNELS[0].id;
+ const channelIndex=Math.max(0,Math.min(WORLD_CHANNELS.length-1,selectedChannel-1)),channelId=WORLD_CHANNELS[channelIndex].id;
  const {value:history}=useChatFeed<WorldMessage[]>({key:`world:${channelId}`,read:()=>worldMessages(channelId),initial:[],active:enabled&&active,channelType:'world',channelId});
  const rows=enabled?history:[];
  const shown=rows.slice(-lines),latest=shown[shown.length-1],height=lines===1?48:lines===2?68:88;

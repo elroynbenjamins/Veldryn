@@ -1,16 +1,19 @@
 import {createCharacter,effectiveStats,newGame,previewActivityReward,salvageItem,sellItem,startCombat} from '../src/core/game';
-import {attemptEquipmentUpgrade,equippedEffectGemBonuses,gearEnhancement,gemSocketCapacity,normalizeEnhancementGemSlots,socketGem,unsocketGem,upgradeQuote} from '../src/core/equipment-enhancement';
+import {attemptEquipmentUpgrade,equippedEffectGemBonuses,gearEnhancement,gearStatsAtRank,gemSocketCapacity,normalizeEnhancementGemSlots,socketGem,unsocketGem,upgradeQuote} from '../src/core/equipment-enhancement';
 import {V33_EQUIPMENT_RECIPES} from '../src/content/equipment-recipes-v33';
 import {itemDef} from '../src/content/items';
 function ok(condition:unknown,message:string){if(!condition)throw new Error(message)}
 
-const ringId=V33_EQUIPMENT_RECIPES.find(row=>row.classId==='IRONWARDEN'&&row.v33EquipmentTier==='T1'&&itemDef(row.output.itemId).slot==='ring')!.output.itemId;
+const ringRecipe=V33_EQUIPMENT_RECIPES.find(row=>row.classId==='IRONWARDEN'&&row.v33EquipmentTier==='T1'&&itemDef(row.output.itemId).slot==='ring')!;
+const ringId=ringRecipe.output.itemId;
 let state=createCharacter(newGame(1),'IRONWARDEN','Smith','male');
-state={...state,character:{...state.character!,gold:100000,equipment:{...state.character!.equipment,ring:ringId}},inventory:{...state.inventory,stacks:[...state.inventory.stacks,{itemId:'TEMPERING_DUST',quantity:999},{itemId:'TEMPERING_CORE',quantity:99},{itemId:'WARD_SHARD',quantity:2},{itemId:'SWIFT_SIGIL',quantity:1}]}}; 
+state={...state,character:{...state.character!,gold:100000,equipment:{...state.character!.equipment,ring:ringId}},inventory:{...state.inventory,stacks:[...ringRecipe.inputs.map(input=>({itemId:input.itemId,quantity:999})),{itemId:'TEMPERING_DUST',quantity:999},{itemId:'TEMPERING_CORE',quantity:99},{itemId:'WARD_SHARD',quantity:2},{itemId:'SWIFT_SIGIL',quantity:1}]}};
 ok(gemSocketCapacity(ringId)===2,'Every equipment piece should expose one Stat and one Effect socket');
-ok(upgradeQuote(state,ringId).successChance===1,'The first upgrade should be guaranteed');
+ok(Math.abs(upgradeQuote(state,ringId).successChance-.95)<.000001,'The first regional improvement should have its authored 95% chance');
+ok(upgradeQuote(state,ringId).materials.length===ringRecipe.inputs.length,'Regional improvement must consume the gear recipe materials');
+ok(Math.abs(gearStatsAtRank(ringId,1).defense-(itemDef(ringId).defense??0)*1.04)<.000001,'A +4% improvement must preserve fractional item stats until equipped totals are calculated');
 const before=effectiveStats(state);
-const upgraded=attemptEquipmentUpgrade(state,ringId,.99).state;
+const upgraded=attemptEquipmentUpgrade(state,ringId,.1).state;
 ok(gearEnhancement(upgraded,ringId).rank===1,'Successful upgrade should increase rank');
 ok(effectiveStats(upgraded).defense>before.defense,'Upgrade should increase effective defense');
 
@@ -38,11 +41,16 @@ ok((extracted.inventory.stacks.find(stack=>stack.itemId==='WARD_SHARD')?.quantit
 const legacy=normalizeEnhancementGemSlots({rank:0,failures:0,gemIds:['WARD_SHARD','EMBER_SHARD','SWIFT_SIGIL']});
 ok(legacy.statGemId==='WARD_SHARD'&&legacy.effectGemId==='SWIFT_SIGIL','Legacy arrays should normalize into the first valid Stat and Effect Gem');
 
-const dangerous={...upgraded,character:{...upgraded.character!,gearEnhancements:{[ringId]:{rank:6,failures:0,gemIds:[]}}}};
-const failed=attemptEquipmentUpgrade(dangerous,ringId,.99);
-ok(!failed.result.success&&!failed.result.downgraded&&failed.result.newRank===6,'Failure should preserve the current rank');
+const second=attemptEquipmentUpgrade(upgraded,ringId,.1).state;
+ok(gearEnhancement(second,ringId).rank===2,'Second regional improvement should increase rank');
+const failed=attemptEquipmentUpgrade(second,ringId,.99);
+ok(!failed.result.success&&!failed.result.downgraded&&failed.result.newRank===2,'Failure should preserve the current regional improvement rank');
 ok(gearEnhancement(failed.state,ringId).failures===1,'Failure should increment pity');
-ok(Math.abs(upgradeQuote(failed.state,ringId).successChance-.30)<.000001,'Pity should add two percentage points to the same target rank');
+ok(Math.abs(upgradeQuote(failed.state,ringId).successChance-.69)<.000001,'Pity should add two percentage points to the same target rank');
+const third=attemptEquipmentUpgrade(failed.state,ringId,.1).state;
+const fourth=attemptEquipmentUpgrade(third,ringId,.1).state;
+ok(gearEnhancement(fourth,ringId).rank===4,'Fourth regional improvement should complete the item');
+ok(upgradeQuote(fourth,ringId).maxed,'Each item must stop after four optional regional improvements');
 const storedEnhanced={...upgraded,inventory:{...upgraded.inventory,stacks:[...upgraded.inventory.stacks,{itemId:ringId,quantity:1}]}};
 let soldEnhanced=false,salvagedEnhanced=false;try{sellItem(storedEnhanced,ringId)}catch{soldEnhanced=true}try{salvageItem(storedEnhanced,ringId)}catch{salvagedEnhanced=true}
 ok(soldEnhanced&&salvagedEnhanced,'Enhanced gear must be protected from disposal in the domain layer');

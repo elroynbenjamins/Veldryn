@@ -75,7 +75,7 @@ ok(copperInspect.usedIn.some(recipe=>recipe.name==='Smelt Copper Ingot'&&recipe.
 const ingotInspect=itemInspectModel(state,'COPPER_INGOT');
 ok(ingotInspect.sources.some(source=>source.kind==='crafting'&&source.title==='Smelt Copper Ingot'),'Quick Inspect exposes crafting acquisition sources');
 const gearInspect=itemInspectModel(state,'basic_sword');
-ok(gearInspect.upgrade?.rank===0&&gearInspect.upgrade.successChance===1&&gearInspect.upgrade.nextRank===1,'Quick Inspect exposes the guaranteed first equipment upgrade chance');
+ok(gearInspect.upgrade?.rank===0&&gearInspect.upgrade.successChance===.95&&gearInspect.upgrade.nextRank===1,'Quick Inspect exposes the first regional equipment upgrade chance');
 ok(gearInspect.stats?.attack===4&&gearInspect.sockets?.capacity===2,'Quick Inspect exposes effective stats and the fixed Stat/Effect socket capacity');
 const copperGatherSource=copperInspect.sources.find(source=>source.title==='Copper Vein');
 ok(copperGatherSource?.navigation?.kind==='skills'&&copperGatherSource.navigation.actionId==='COPPER_VEIN'&&copperGatherSource.navigation.regionId==='OLD_MINES','Gathering Quick Inspect routes to the exact source and region');
@@ -104,7 +104,7 @@ const gearReadyState={...state,character:{...state.character!,level:Math.max(sta
 const v33Gear=itemInspectModel(gearReadyState,ironwardenWeapon.output.itemId);
 ok(v33Gear.gearDecision?.compatible===true&&v33Gear.gearDecision.replaces?.name==='Basic Sword','Gear Check identifies the currently equipped replacement');
 ok((v33Gear.gearDecision?.loadoutDelta.attack??0)>0&&(v33Gear.gearDecision?.loadoutDelta.power??0)>0,'Gear Check exposes positive whole-loadout deltas');
-ok((v33Gear.gearDecision?.maxLoadoutGain.attack??0)>0&&v33Gear.gearDecision?.maxRank===10,'Gear Check exposes remaining +10 loadout potential');
+ok((v33Gear.gearDecision?.maxLoadoutGain.attack??0)>0&&v33Gear.gearDecision?.maxRank===4,'Gear Check exposes remaining +4 loadout potential');
 const setPreviewLevel=Math.max(itemDef('T1P_002').requiredLevel??1,itemDef('T1P_003').requiredLevel??1);
 const setState={...state,character:{...state.character!,level:setPreviewLevel,equipment:{...state.character!.equipment,gloves:'T1P_003'}}};
 const oathboundInspect=itemInspectModel(setState,'T1P_002');

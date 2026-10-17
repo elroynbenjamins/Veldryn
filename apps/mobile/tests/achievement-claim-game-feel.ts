@@ -20,7 +20,7 @@ ok(screen.includes('result.idempotentReplay'),'claim feedback must consume the a
 ok(screen.includes('Animated.sequence')&&screen.includes('reduceMotion'),'achievement celebration motion must respect Reduce Motion');
 ok(screen.includes('Achievement showcase updated.'),'showcase saves need lightweight committed feedback');
 
-ok(app.includes("<AchievementsScreen reduceMotion={state.settings.reduceMotion}"),'Achievements screen must receive the player motion preference');
-ok(app.includes("onProfile={()=>setTab('ProfileCustomize')}"),'title reward action must route to profile customization');
+ok(!app.includes('<AchievementsScreen'),'The unfinished online Achievements screen must not be mounted for players');
+ok(app.includes("onProfile={()=>{setProfileCustomizeSection('Identity');setTab('ProfileCustomize')}}"),'Journal title customization must remain reachable from the Mastery Hall');
 
 console.log('PASS achievement claims provide committed reward, score, title and idempotency feedback');

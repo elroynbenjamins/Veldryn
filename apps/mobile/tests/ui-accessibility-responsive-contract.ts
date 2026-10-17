@@ -145,10 +145,24 @@ const eventResponsive=read('src/screens/EventScreen.tsx');
 ok(eventResponsive.includes('useWindowDimensions')&&eventResponsive.includes("stackEvent=width<360||fontScale>=1.25"),'Events must adapt dense navigation/actions to narrow phones and large text');
 ok(eventResponsive.includes('tabsStack')&&eventResponsive.includes("tabStack:{flexGrow:0,flexBasis:'50%'}"),'Event main navigation must become a readable two-by-two grid when constrained');
 ok(eventResponsive.includes('buttonRowStack')&&eventResponsive.includes('rewardStack')&&eventResponsive.includes("claimStack:{width:'100%'}"),'Event paired actions and reward claim rows must stack instead of squeezing on constrained layouts');
+const eventStartPopup=read('src/components/EventStartPopup.tsx');
+ok(eventStartPopup.includes("surface:{height:'94%',maxHeight:'96%'")&&eventStartPopup.includes('hero:{height:238')&&eventStartPopup.includes('content:{flexGrow:1')&&eventStartPopup.includes('actions:{flexShrink:0'),'Event announcement must use the available dialog height while keeping its actions visible');
+const modalSurface=read('src/components/GameModalSurface.tsx');
+ok(modalSurface.includes("style={[s.keyboardAvoider,sheet?s.keyboardSheet:s.keyboardDialog]}")&&modalSurface.includes("keyboardAvoider:{width:'100%',flex:1")&&modalSurface.includes("keyboardDialog:{justifyContent:'center'}"),'Dialog and sheet percentage heights must resolve against a full safe-area container');
+const bestiaryModal=read('src/screens/BestiaryScreen.tsx');
+ok(bestiaryModal.includes("sheet:{maxHeight:'92%'")&&bestiaryModal.includes('optionList:{maxHeight:220,flexShrink:1')&&bestiaryModal.includes('actions:{flexDirection:\'row\',gap:8,marginTop:8,flexShrink:0'),'Bestiary filter actions must remain visible when the filter list grows');
+const eventOfferModal=read('src/screens/EventScreen.tsx');
+ok(eventOfferModal.includes('style={s.previewScroll}')&&eventOfferModal.includes("previewCard:{width:'100%',maxWidth:360,maxHeight:'92%'")&&eventOfferModal.includes('previewContent:{padding:spacing.lg,gap:10,alignItems:\'center\'}'),'Event offer previews must scroll inside a tall bounded card instead of clipping their actions');
+const playerProfileModal=read('src/components/PlayerProfileCard.tsx');
+ok(playerProfileModal.includes('ScrollView')&&playerProfileModal.includes("card:{width:'100%',maxWidth:460,maxHeight:'92%'")&&playerProfileModal.includes('scroll:{flexShrink:1}'),'Profile cards must scroll inside a bounded dialog on short screens');
 
 const top=read('src/components/GameTopBar.tsx');
 ok(top.includes('accessibilityRole="button"')&&top.includes('style={({pressed})=>[styles.hpBlock'),'Top-bar health must be exposed as one readable recovery action');
 ok(top.includes("tr('{amount} gold'")&&top.includes('style={styles.goldBlock}')&&top.includes('<View accessible accessibilityRole="text" accessibilityLabel='),'Top-bar Gold must be exposed as one localized readable accessibility element');
+
+const quickFood=read('src/components/QuickFoodSheet.tsx');
+ok(quickFood.includes("gt('Health is full')")&&quickFood.includes("gt('Eat {name} · restore {hp} HP'"),'Equipped-food action must explain a full-health state and name the food when it can heal');
+ok(quickFood.includes('style={s.foodScroll}')&&quickFood.includes('foodArtwork:{width:44,height:44'),'Food rows must reserve an unclipped artwork frame inside a scrollable sheet');
 
 console.log('PASS: responsive layouts, touch targets, keyboard behavior and screen-reader semantics remain accessible');
 

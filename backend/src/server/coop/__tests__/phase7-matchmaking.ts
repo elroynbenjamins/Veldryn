@@ -2,7 +2,7 @@ import { strict as assert } from 'node:assert';
 import { chooseBoundedCoopMatch, chooseQuickMatchExpedition, MemoryQueueRepository, readyRosterFromReservedTickets, resolvedAutoTier, type CoopQueueTicket } from '../queue-service';
 const now=100_000;
 const defaultClass=(id:string,role:'tank'|'damage'|'support')=>role==='tank'?'IRONWARDEN':role==='support'?'DAWNKEEPER':id.endsWith('2')||id.endsWith('4')?'RAVAGER':'WAYFINDER';
-const ticket=(id:string,role:'tank'|'damage'|'support',accountId=id,classId=defaultClass(id,role)):CoopQueueTicket=>({id,accountId,characterId:`char-${id}`,role,classId,normalizedReadiness:1,loadoutId:`load-${id}`,loadoutRevision:1,loadoutSnapshotHash:`hash-${id}`,expeditionId:'EXP_001',tier:1,contentVersion:'v1',balanceVersion:'b1',serviceRegion:'eu',enqueuedAtMs:0,heartbeatExpiresAtMs:now+10_000,status:'queued'});
+const ticket=(id:string,role:'tank'|'damage'|'support',accountId=id,classId=defaultClass(id,role)):CoopQueueTicket=>({id,accountId,characterId:`char-${id}`,role,classId,normalizedReadiness:1,powerIndex:10_000,loadoutId:`load-${id}`,loadoutRevision:1,loadoutSnapshotHash:`hash-${id}`,expeditionId:'EXP_001',tier:1,contentVersion:'v1',balanceVersion:'b1',serviceRegion:'eu',enqueuedAtMs:0,heartbeatExpiresAtMs:now+10_000,status:'queued'});
 assert.equal(chooseBoundedCoopMatch([ticket('d1','damage'),ticket('d2','damage'),ticket('d3','damage'),ticket('d4','damage')],now),null);
 assert.equal(chooseBoundedCoopMatch([ticket('t','tank'),ticket('d1','damage'),ticket('d2','damage')],now),null);
 assert.equal(chooseQuickMatchExpedition([{expeditionId:'EXP_001',tank:0,damage:2,support:1,oldestQueuedAtMs:0},{expeditionId:'EXP_002',tank:0,damage:0,support:0}],['EXP_002','EXP_001'],'tank',now),'EXP_001','Quick Match should fill the role-short dungeon first');
@@ -13,6 +13,8 @@ const duplicateDamage=[ticket('td','tank'),ticket('same-dps-1','damage','dps-a',
 assert.equal(chooseBoundedCoopMatch(duplicateDamage,now),null,'Live matchmaking must never pair two copies of the same Damage class');
 const alternateDamage=[...duplicateDamage,ticket('different-dps','damage','dps-c','RAVAGER')];
 const alternateCandidate=chooseBoundedCoopMatch(alternateDamage,now);assert.ok(alternateCandidate);assert.ok(alternateCandidate!.ticketIds.includes('different-dps'),'matcher should use another Damage class when one is available');
+const mismatchedPower=[{...ticket('pt','tank'),powerIndex:10_000},{...ticket('pd1','damage'),powerIndex:10_100},{...ticket('pd2','damage'),powerIndex:9_950},{...ticket('ps','support'),powerIndex:20_000}];
+assert.equal(chooseBoundedCoopMatch(mismatchedPower,now),null,'matching must not form an impossible power-spread party');
 const repository=new MemoryQueueRepository();valid.forEach(row=>repository.add(row));
 const first=repository.reserve(candidate!,'reservation-a',now,now+20_000);assert.equal(first.every(row=>row.status==='reserved'),true);
 const readyRoster=readyRosterFromReservedTickets(first);assert.equal(readyRoster[0].loadoutRevision,1);assert.equal(readyRoster.every(row=>row.loadoutSnapshotHash.startsWith('hash-')),true);

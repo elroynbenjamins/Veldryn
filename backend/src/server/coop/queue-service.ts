@@ -4,7 +4,7 @@ import { hasExactCoopRoles } from './invariants';
 import type { ReadyRosterMember } from './ready-checks';
 
 export interface CoopQueueTicket {
- id:string; accountId:string; characterId:string; role:CoopRole; classId:string; normalizedReadiness:number;
+ id:string; accountId:string; characterId:string; role:CoopRole; classId:string; normalizedReadiness:number; powerIndex:number;
  loadoutId:string; loadoutRevision:number; loadoutSnapshotHash:string;
  expeditionId:string; tier:number; contentVersion:string; balanceVersion:string; serviceRegion:string;
  enqueuedAtMs:number; heartbeatExpiresAtMs:number; status:'queued'|'reserved'|'cancelled'|'expired';
@@ -23,6 +23,12 @@ export interface CoopQuickMatchDemand {
 export function queuePartition(ticket:CoopQueueTicket):string{return `${ticket.expeditionId}|${ticket.contentVersion}|${ticket.balanceVersion}`;}
 export function resolvedAutoTier(tickets:readonly CoopQueueTicket[]):number{if(!tickets.length)throw new Error('empty_match');const tier=Math.min(...tickets.map(ticket=>ticket.tier));if(!Number.isInteger(tier)||tier<1||tier>5)throw new Error('invalid_auto_tier');return tier;}
 function ticketScore(ticket:CoopQueueTicket,nowMs:number):number{return Math.min(120,(nowMs-ticket.enqueuedAtMs)/1_000)-Math.abs(1-ticket.normalizedReadiness)*20;}
+
+function compatiblePower(a:CoopQueueTicket,b:CoopQueueTicket,nowMs:number):boolean{
+ const fraction=(ticket:CoopQueueTicket)=>Math.min(.40,.10+Math.max(0,nowMs-ticket.enqueuedAtMs)/60_000*.05);
+ const within=(value:number,reference:CoopQueueTicket)=>value>=reference.powerIndex*(1-fraction(reference))&&value<=reference.powerIndex*(1+fraction(reference));
+ return a.powerIndex>0&&b.powerIndex>0&&within(a.powerIndex,b)&&within(b.powerIndex,a);
+}
 
 export function chooseQuickMatchExpedition(demands:readonly CoopQuickMatchDemand[],eligibleExpeditionIds:readonly string[],role:CoopRole,nowMs:number):string|null{
  if(!eligibleExpeditionIds.length)return null;
@@ -54,7 +60,7 @@ export function chooseBoundedCoopMatch(tickets:readonly CoopQueueTicket[],nowMs:
   for(const tank of tanks)for(const support of supports)for(let first=0;first<damage.length-1;first++)for(let second=first+1;second<damage.length;second++){
    const set=[tank,damage[first],damage[second],support];
    if(requiredTicketIds.some(id=>!set.some(ticket=>ticket.id===id)))continue;
-   if(!canMatch(set))continue;
+   if(!canMatch(set)||set.some((ticket,index)=>set.slice(index+1).some(other=>!compatiblePower(ticket,other,nowMs))))continue;
    if(new Set(set.map(ticket=>ticket.accountId)).size!==4||new Set(set.map(ticket=>ticket.characterId)).size!==4)continue;
    if(!hasExactCoopRoles(set.map(ticket=>ticket.role)))continue;
    const damageClasses=set.filter(ticket=>ticket.role==='damage').map(ticket=>ticket.classId.trim().toUpperCase());

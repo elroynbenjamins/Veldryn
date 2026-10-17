@@ -5,6 +5,7 @@ import type { CapabilityTag, RoleReadinessResult } from './role-readiness';
 import { deriveRole, evaluateRoleReadiness } from './role-readiness';
 import { normalizeCombatInput, ROOTBOUND_ROLE_REFERENCES, type NormalizedCombatInput } from './normalization';
 import { validateCoopRoster, validateUniqueDamageClasses } from './invariants';
+import { dungeonPowerIndex } from './dungeon-power';
 
 export interface AuthoritativeLoadoutRecord {
   accountId: string;
@@ -32,6 +33,8 @@ export interface FrozenLoadoutSnapshot {
   revision: number;
   normalized: NormalizedCombatInput;
   readiness: RoleReadinessResult;
+  /** Canonical score used for co-op matching; calculated from server data only. */
+  dungeonPower?: number;
   snapshotHash: string;
 }
 
@@ -71,7 +74,8 @@ export function resolveAndFreezeLoadout(input: {
     : normalized.snapshot.attackPower / reference.attackPower) / referenceScale;
   const readiness = evaluateRoleReadiness(record.classId, primary, record.capabilities);
   if (!readiness.ready) throw new Error(`role_not_ready:${readiness.failures.join(',')}`);
-  const frozen = { accountId: record.accountId, characterId: record.characterId, classId: record.classId, loadoutId: record.loadoutId, revision: record.revision, normalized, readiness };
+  const frozen = { accountId: record.accountId, characterId: record.characterId, classId: record.classId, loadoutId: record.loadoutId, revision: record.revision, normalized, readiness,
+    dungeonPower: dungeonPowerIndex({ normalized, companion: record.stats.combatCompanion }) };
   return { ...frozen, snapshotHash: createHash('sha256').update(canonical(frozen)).digest().toString('hex') };
 }
 

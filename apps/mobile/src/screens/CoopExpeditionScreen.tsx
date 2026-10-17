@@ -22,6 +22,7 @@ import {clt} from '../i18n';
 import {presentEventExpeditionRun,validateCoopEventExpeditionPreview,type CoopEventExpeditionPreview,type CoopEventRunServerProjection} from '../core/coop-event-expeditions';
 import type {CoopChatMessage} from '../online/coop-client';
 import {noCoopProfileIcon,useCoopProfileIcons} from '../online/coop-profile-icons';
+import {combatPowerRating} from '../core/combat-power';
 
 export function CoopExpeditionScreen({onClose,language,state,entrySource=realCoopEntrySource,initialDungeonId,onInitialDungeonHandled,initialEventLiveId,onInitialEventHandled,onRewardsChanged}:{onClose:()=>void;language:Language;state:GameState;entrySource?:CoopEntrySource;initialDungeonId?:string;onInitialDungeonHandled?:()=>void;initialEventLiveId?:string;onInitialEventHandled?:()=>void;onRewardsChanged?:()=>void|Promise<void>}){
  const st=useSocialText();
@@ -139,7 +140,7 @@ export function CoopExpeditionScreen({onClose,language,state,entrySource=realCoo
     setSelectedEvent(undefined);acceptEventRun(started);
   })}/>;
   if(selected&&showLoadouts&&tier&&state.character)return <View style={{flex:1}}>{retry}<CoopLoadoutSelection state={state} language={language} dungeonId={selected.id} dungeonName={selected.name} tier={tier} mode={mode} loadouts={entry?.loadouts??[]} notice={notice} refreshing={loading||busy} onBack={()=>{setShowLoadouts(false);setNotice('')}} onRefresh={()=>void load()} onIntent={intent=>void action(async()=>{if(entrySource.kind!=='real'){setNotice(clt(language,'intentOnly'));return;}if(intent.mode==='live'){if(!coopLiveReadyEnabled)throw new Error(st("Live matchmaking is not enabled yet."));await coopClient.joinLive({requestId:coopRequestId(),dungeonId:intent.dungeonId,tier:intent.tier,characterId:intent.characterId,loadoutId:intent.loadoutId,loadoutRevision:intent.loadoutRevision});setShowLive(true);return;}const started=await realCoopQModeSource.start(intent,coopRequestId());setRun(started.run);})}/></View>;
-  if(selected)return <CoopDungeonDetails language={language} dungeon={selected} currentLevel={state.character?.level??0} mode={mode} tier={tier} liveFellowshipRemaining={entry?.liveFellowshipRemaining} notice={notice} onBack={()=>{setSelected(undefined);setNotice('')}} onMode={next=>{setMode(next);setNotice('')}} onTier={next=>{setTier(next);setNotice('')}} onContinue={resolvedTier=>{setTier(resolvedTier);setShowLoadouts(true)}}/>;
+  if(selected)return <CoopDungeonDetails language={language} dungeon={selected} currentLevel={state.character?.level??0} currentPower={combatPowerRating(state).total} mode={mode} tier={tier} liveFellowshipRemaining={entry?.liveFellowshipRemaining} notice={notice} onBack={()=>{setSelected(undefined);setNotice('')}} onMode={next=>{setMode(next);setNotice('')}} onTier={next=>{setTier(next);setNotice('')}} onContinue={resolvedTier=>{setTier(resolvedTier);setShowLoadouts(true)}}/>;
   return <View style={{flex:1}}>
     {retry}
     {entrySource.kind==='real'&&entry?.gameVersion&&<View style={{paddingHorizontal:16,paddingTop:8}}>

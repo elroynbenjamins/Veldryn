@@ -54,6 +54,9 @@ try{
   try{await db.exec(readFileSync(path.join(migrations,file),'utf8'));}
   catch(error){throw new Error(`Guild migration ${file} failed: ${String(error)}`);}
  }
+ try{
+  await db.exec(readFileSync(path.join(here,'supabase','tests','guild_shop_security.sql'),'utf8'));
+ }catch(error){throw new Error(`Guild Shop role grants or RLS gate failed: ${String(error)}`);}
  assert.equal((await single(`select has_function_privilege('service_role',
   'public.guild_shop_purchase_server_v4(uuid,text)','EXECUTE') as permitted`)).permitted,false);
  assert.equal((await single(`select has_function_privilege('service_role',

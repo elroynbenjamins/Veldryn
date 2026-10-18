@@ -25,6 +25,8 @@ alter table public.guild_cosmetic_unlocks
  add constraint guild_cosmetic_unlocks_source_kind_check check (
   source_kind in ('guild_level','guild_hall','guild_pve','event','admin','construction')
  );
+-- The completion trigger runs as the trusted service caller (SECURITY INVOKER).
+grant select,insert on public.guild_cosmetic_unlocks to service_role;
 
 create table if not exists public.guild_construction_cosmetic_releases (
  unlock_id text primary key,

@@ -1,0 +1,21 @@
+import {strict as assert} from 'node:assert';
+import {validateGuildShopPurchase} from '../../../packages/guild-shop/src/purchase-policy';
+import {validateConstructionDonation} from '../../../packages/guild-shop/src/construction-policy';
+import {validateEventGuildTokenReward} from '../../../packages/guild-shop/src/event-rewards';
+
+assert.equal(validateGuildShopPurchase('guild_pet_01',3,2000,[]).ok,true);
+assert.deepEqual(validateGuildShopPurchase('guild_pet_01',2,2000,[]),{ok:false,reason:'guild_level_locked'});
+assert.deepEqual(validateGuildShopPurchase('guild_pet_01',3,1999,[]),{ok:false,reason:'insufficient_tokens'});
+assert.deepEqual(validateGuildShopPurchase('guild_pet_01',3,5000,['guild_pet_01']),{ok:false,reason:'already_owned'});
+assert.deepEqual(validateGuildShopPurchase('guild_pet_01',null,5000,[]),{ok:false,reason:'guild_membership_required'});
+assert.deepEqual(validateGuildShopPurchase('__unknown',20,100000,[]),{ok:false,reason:'unknown_item'});
+const donation={templateId:'stormwatch_banner',guildLevel:5,completed:false,resourceId:'GREENWOOD_LOG',amount:100,alreadyContributed:0};
+assert.equal(validateConstructionDonation(donation).ok,true);
+assert.deepEqual(validateConstructionDonation({...donation,amount:10001}),{ok:false,reason:'exceeds_remaining'});
+assert.deepEqual(validateConstructionDonation({...donation,alreadyContributed:9999,amount:2}),{ok:false,reason:'exceeds_remaining'});
+assert.deepEqual(validateConstructionDonation({...donation,completed:true}),{ok:false,reason:'project_completed'});
+assert.deepEqual(validateConstructionDonation({...donation,guildLevel:4}),{ok:false,reason:'guild_level_locked'});
+assert.deepEqual(validateConstructionDonation({...donation,resourceId:'FANTASY_CURRENCY'}),{ok:false,reason:'invalid_resource'});
+assert.deepEqual(validateEventGuildTokenReward({eventId:'veilbreak',activity:'boss_completion',milestoneId:'boss1',tokens:75}),{ok:true,claimKey:'guild-event:veilbreak:boss_completion:boss1',tokens:75});
+assert.deepEqual(validateEventGuildTokenReward({eventId:'veilbreak',activity:'boss_completion',milestoneId:'boss1',tokens:99}),{ok:false,reason:'invalid_reward'});
+console.log('Guild token shop policy tests passed.');

@@ -7,6 +7,7 @@ import {GameTextInput} from './GameTextInput';
 import {GuildCrest} from './SocialIdentity';
 import {GuildIdentitySummary} from './GuildIdentitySummary';
 import {GuildBannerArtwork,GuildFrameSwatch} from './GuildHeraldry';
+import {guildBannerSourceByKey,guildBorderSourceByKey} from '../theme/guild-customization-assets';
 import {GuildBackgroundPicker} from './GuildBackgroundPicker';
 import {Panel} from './Panel';
 import {normalizeGuildBackgroundId,type GuildBackgroundId,GUILD_BANNERS,GUILD_FRAMES,visibleGuildNameColors,guildCosmeticUnlockLabel,isGuildCosmeticUnlocked,normalizeGuildBannerId,normalizeGuildFrameId,normalizeGuildMotto,normalizeGuildNameColorId,normalizeGuildNameplateId,type GuildAppearanceEntitlements,type GuildBannerId,type GuildFrameId,type GuildNameColorId,type GuildNameplateId} from '../core/guild-customization';
@@ -29,6 +30,10 @@ export function OnlineGuildCustomizationPanel(){
  if(!guild)return <Panel><Text style={s.title}>{st("Guild customization")}</Text><Text style={s.help}>{st("Join or create a guild before choosing guild visuals.")}</Text></Panel>;
  const appearanceDirty=backgroundId!==normalizeGuildBackgroundId(guild.background_id)||bannerId!==normalizeGuildBannerId(guild.banner_id)||frameId!==normalizeGuildFrameId(guild.profile_frame_id)||nameColorId!==normalizeGuildNameColorId(guild.name_color_id)||nameplateId!==normalizeGuildNameplateId(guild.nameplate_id)||tagColorId!==(guild.tag_color_id??'tag_silver')||normalizeGuildMotto(motto)!==normalizeGuildMotto(guild.motto);
  const tagDirty=normalizeGuildTag(tag)!==(guild.tag??'');
+ const selectedBanner=GUILD_BANNERS.find(entry=>entry.id===bannerId);
+ const selectedFrame=GUILD_FRAMES.find(entry=>entry.id===frameId);
+ const constructionArtReady=(!selectedBanner||selectedBanner.unlock.type!=='construction'||guildBannerSourceByKey.has(selectedBanner.assetKey))
+  &&(!selectedFrame||selectedFrame.unlock.type!=='construction'||guildBorderSourceByKey.has(selectedFrame.assetKey));
  return <Panel>
   <View style={s.heading}><GuildCrest size={54} bannerId={bannerId} frameId={frameId}/><View style={s.flex}><Text style={s.eyebrow}>{st("GUILD APPEARANCE")}</Text><Text style={s.title}>{guild.name}</Text><Text style={s.help}>{editable?st("Leader / Officer access"):st("Read-only · Leader or Officer required")}</Text></View><View style={[s.saveState,appearanceDirty&&s.saveStateDirty]}><Text style={[s.saveStateText,appearanceDirty&&s.saveStateTextDirty]}>{appearanceDirty?st("UNSAVED"):st("SAVED")}</Text></View></View>
   <GuildIdentitySummary name={guild.name} tag={guild.tag} tagColorId={tagColorId} level={guild.level} backgroundId={backgroundId} bannerId={bannerId} frameId={frameId} nameColorId={nameColorId} nameplateId={nameplateId} motto={normalizeGuildMotto(motto)}/>
@@ -36,12 +41,35 @@ export function OnlineGuildCustomizationPanel(){
   <View style={s.sectionHead}><Text style={s.section}>{st("GUILD TAG")}</Text><Text style={s.sectionMeta}>{tagDirty?st("Change pending"):st("Permanent identity")}</Text></View><View style={s.warningCard}><Text style={s.warning}>{st("Changing a tag permanently retires the old one. It will never return to the available pool.")}</Text></View><View style={s.tagRow}><GameTextInput editable={editable&&!busy} autoCapitalize="characters" value={tag} onChangeText={value=>setTag(normalizeGuildTag(value).slice(0,3))} maxLength={3} placeholder={st("TAG")} placeholderTextColor={C.muted} style={[s.input,s.tagInput]}/><GameButton title={st("Change tag")} tone="danger" disabled={!editable||busy||tag.length!==3||!tagDirty} onPress={()=>void saveTag()}/></View>
   <Text style={s.section}>{st("Tag color")}</Text><View style={s.row}>{GUILD_TAG_COLORS.map(entry=>{const unlocked=entry.minimumGuildLevel?entitlements.guildLevel>=entry.minimumGuildLevel:entry.achievementId?entitlements.pveAchievementIds.includes(entry.achievementId):true;return <Pressable key={entry.id} disabled={!editable||busy||!unlocked} onPress={()=>setTagColorId(entry.id)} style={[s.option,entry.id===tagColorId&&s.selected,!unlocked&&s.locked]}><View style={[s.colorDot,{backgroundColor:entry.color}]}/><Text style={s.optionText}>{entry.name}</Text><Text style={s.meta}>{unlocked?st("Available"):entry.minimumGuildLevel?`Guild Level ${entry.minimumGuildLevel}`:st("Guild achievement required")}</Text></Pressable>})}</View>
 
-  <Text style={s.section}>{st("Banner / emblem")}</Text><View style={s.grid}>{GUILD_BANNERS.map(entry=><Pressable key={entry.id} disabled={!editable||busy} onPress={()=>setBannerId(entry.id)} style={[s.bannerCard,entry.id===bannerId&&s.selected]}><View style={{alignItems:'center'}}><GuildBannerArtwork height={88} bannerId={entry.id}/></View><Text style={s.cardName}>{entry.name}</Text></Pressable>)}</View>
+  <Text style={s.section}>{st("Banner / emblem")}</Text><View style={s.grid}>{GUILD_BANNERS.map(entry=>{
+   const unlocked=isGuildCosmeticUnlocked(entry.unlock,entitlements);
+   const artworkReady=entry.unlock.type!=='construction'||guildBannerSourceByKey.has(entry.assetKey);
+   const selectable=unlocked&&artworkReady;
+   return <Pressable key={entry.id} disabled={!editable||busy||!selectable} accessibilityRole="button"
+    accessibilityState={{selected:entry.id===bannerId,disabled:!selectable}}
+    onPress={()=>setBannerId(entry.id)}
+    style={[s.bannerCard,entry.id===bannerId&&s.selected,!selectable&&s.locked]}>
+    <View style={{alignItems:'center'}}><GuildBannerArtwork height={88} bannerId={entry.id}/></View>
+    <Text style={s.cardName}>{entry.name}</Text>
+    {entry.unlock.type==='construction'?<Text style={s.meta}>{!artworkReady?'Artwork pending':unlocked?'Built by your Guild':guildCosmeticUnlockLabel(entry.unlock)}</Text>:null}
+   </Pressable>;
+  })}</View>
   <Text style={s.section}>{st("Card background")}</Text><GuildBackgroundPicker selected={backgroundId} onSelect={setBackgroundId} entitlements={entitlements} disabled={!editable||busy||guild.background_id===undefined}/>{guild.background_id===undefined?<Text style={s.help}>{st('Backgrounds will be available after the server update.')}</Text>:null}
-  <Text style={s.section}>{st("Profile border")}</Text><View style={s.row}>{GUILD_FRAMES.map(entry=>{const unlocked=isGuildCosmeticUnlocked(entry.unlock,entitlements);return <Pressable key={entry.id} disabled={!editable||busy||!unlocked} onPress={()=>setFrameId(entry.id)} style={[s.option,entry.id===frameId&&{borderColor:entry.accent,backgroundColor:C.selection},!unlocked&&s.locked]}><GuildFrameSwatch frameId={entry.id}/><Text style={s.optionText}>{entry.name}</Text><Text style={s.meta}>{unlocked?st("Available"):guildCosmeticUnlockLabel(entry.unlock)}</Text></Pressable>})}</View>
+  <Text style={s.section}>{st("Profile border")}</Text><View style={s.row}>{GUILD_FRAMES.map(entry=>{
+   const unlocked=isGuildCosmeticUnlocked(entry.unlock,entitlements);
+   const artworkReady=entry.unlock.type!=='construction'||guildBorderSourceByKey.has(entry.assetKey);
+   const selectable=unlocked&&artworkReady;
+   return <Pressable key={entry.id} disabled={!editable||busy||!selectable}
+    accessibilityRole="button" accessibilityState={{selected:entry.id===frameId,disabled:!selectable}}
+    onPress={()=>setFrameId(entry.id)}
+    style={[s.option,entry.id===frameId&&{borderColor:entry.accent,backgroundColor:C.selection},!selectable&&s.locked]}>
+    <GuildFrameSwatch frameId={entry.id}/><Text style={s.optionText}>{entry.name}</Text>
+    <Text style={s.meta}>{!artworkReady?'Artwork pending':unlocked?st("Available"):guildCosmeticUnlockLabel(entry.unlock)}</Text>
+   </Pressable>;
+  })}</View>
   <Text style={s.section}>{st("Guild name color")}</Text><View style={s.row}>{visibleGuildNameColors(entitlements).map(entry=>{const unlocked=isGuildCosmeticUnlocked(entry.unlock,entitlements);return <Pressable key={entry.id} disabled={!editable||busy||!unlocked} onPress={()=>setNameColorId(entry.id)} style={[s.option,entry.id===nameColorId&&s.selected,!unlocked&&s.locked]}><View style={[s.colorDot,{backgroundColor:entry.color}]}/><Text style={s.optionText}>{entry.name}</Text><Text style={s.meta}>{unlocked?st("Available"):guildCosmeticUnlockLabel(entry.unlock)}</Text></Pressable>})}</View>
   <Text style={s.section}>{st("Guild motto")}</Text><GameTextInput editable={editable&&!busy} value={motto} onChangeText={value=>setMotto(value.slice(0,80))} maxLength={80} placeholder={st("Stronger together.")} placeholderTextColor={C.muted} style={s.input}/><Text style={s.counter}>{motto.length}/80</Text>
-  {editable?<GameButton title={busy?st("Saving…"):appearanceDirty?st("Save Guild Appearance"):st("Appearance Saved")} disabled={busy||!appearanceDirty} onPress={()=>void save()}/>:null}
+  {editable?<GameButton title={busy?st("Saving…"):appearanceDirty?st("Save Guild Appearance"):st("Appearance Saved")} disabled={busy||!appearanceDirty||!constructionArtReady} onPress={()=>void save()}/>:null}
  </Panel>;
 }
 function makeStyles(C:ThemeColors){return StyleSheet.create({heading:{flexDirection:'row',alignItems:'center',gap:spacing.sm},flex:{flex:1,minWidth:0},eyebrow:{...typography.caption,color:C.accent,fontWeight:'900',letterSpacing:.8},title:{...typography.title,color:C.text},help:{...typography.caption,color:C.muted},saveState:{paddingHorizontal:7,paddingVertical:4,borderWidth:1,borderColor:C.good,borderRadius:99,backgroundColor:C.goodSurface},saveStateDirty:{borderColor:C.warning,backgroundColor:C.warningSurface},saveStateText:{fontSize:8,color:C.good,fontWeight:'900',letterSpacing:.6},saveStateTextDirty:{color:C.warning},sectionHead:{flexDirection:'row',alignItems:'center',justifyContent:'space-between',gap:8,marginTop:12},sectionMeta:{fontSize:8.5,color:C.muted,fontWeight:'800'},warningCard:{padding:7,borderWidth:1,borderColor:C.warning,borderRadius:radii.sm,backgroundColor:C.warningSurface,marginBottom:6},warning:{...typography.caption,color:C.warning},meta:{color:C.muted,fontSize:10,marginTop:5},section:{...typography.caption,color:C.accent,fontWeight:'900',letterSpacing:.75,marginTop:12,marginBottom:6},grid:{flexDirection:'row',flexWrap:'wrap',gap:7},bannerCard:{width:'31%',minWidth:88,padding:6,borderWidth:1,borderColor:C.line,borderRadius:radii.md,backgroundColor:C.panel2},selected:{borderColor:C.accent,backgroundColor:'#272417'},locked:{opacity:.42},cardName:{color:C.text,fontSize:10,fontWeight:'800',marginTop:5},row:{flexDirection:'row',flexWrap:'wrap',gap:7},tagRow:{flexDirection:'row',gap:8,alignItems:'flex-start'},tagInput:{flex:1,fontWeight:'900',letterSpacing:3},option:{minWidth:120,flexGrow:1,padding:8,borderWidth:1,borderColor:C.line,borderRadius:radii.md,backgroundColor:C.panel2},optionText:{color:C.text,fontSize:11,fontWeight:'800',marginTop:5},colorDot:{width:24,height:24,borderRadius:12,borderWidth:1,borderColor:C.line},input:{minHeight:44,borderWidth:1,borderColor:C.line,borderRadius:radii.md,backgroundColor:C.inputBg,color:C.text,paddingHorizontal:12},counter:{color:C.muted,textAlign:'right',fontSize:10,marginTop:3}});}

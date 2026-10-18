@@ -13,6 +13,7 @@ import {BoardTabs} from '../components/BoardTabs';
 import {GUILD_SKILL_NODES,GUILD_MAJOR_BRANCHES} from '../content/guild-skill-paths';
 import {GuildSpecializationPaths} from '../components/GuildSpecializationPaths';
 import {OnlineGuildMusterPanel} from '../components/OnlineGuildMusterPanel';
+import {OnlineGuildTokenShopPanel} from '../components/OnlineGuildTokenShopPanel';
 import {GuildActivitySummaryPanel} from '../components/GuildActivitySummaryPanel';
 import {GuildQuestPanel} from '../components/GuildQuestPanel';
 import {GameState} from '../core/types';
@@ -35,12 +36,12 @@ const GUILD_TREE_BUFFS:Record<string,{label:string;perTier:number}>={professions
 const GUILD_BANK_DAILY_CAP=1000;
 const GUILD_BANK_RESOURCES=[{itemId:'MOSS_FIBER',label:'Moss Fiber'},{itemId:'GREENWOOD_LOG',label:'Greenwood Log'},{itemId:'IRONWOOD_LOG',label:'Ironwood Log'},{itemId:'ASTER_IRON_INGOT',label:'Aster-Iron Ingot'},{itemId:'OATHGLASS_SHARD',label:'Oathglass Shard'},{itemId:'OATHSTONE_INGOT',label:'Oathstone Ingot'}] as const;
 const GUILD_PROJECT_COST={MOSS_FIBER:200,GREENWOOD_LOG:120,IRONWOOD_LOG:60,ASTER_IRON_INGOT:20};
-export function GuildScreen({state,onChange,onlineDirectory,onlineManagement,onlineBoard,onlineProjects,onlinePve,onlineHall,onlineChat,onlineCustomize,onlineChatUnread=0,onlineChatMentions=0,online=false,initialPve=false,onInitialPveHandled}:{online?:boolean;state:GameState;onChange:(next:GameState)=>void;onlineDirectory?:ReactNode;onlineManagement?:ReactNode;onlineBoard?:ReactNode;onlineProjects?:ReactNode;onlinePve?:ReactNode;onlineHall?:ReactNode;onlineChat?:ReactNode;onlineCustomize?:ReactNode;onlineChatUnread?:number;onlineChatMentions?:number;initialPve?:boolean;onInitialPveHandled?:()=>void}){
+export function GuildScreen({state,onChange,onlineDirectory,onlineManagement,onlineBoard,onlineProjects,onlinePve,onlineHall,onlineChat,onlineCustomize,onlineChatUnread=0,onlineChatMentions=0,online=false,onTokenRewardsChanged,initialPve=false,onInitialPveHandled}:{onTokenRewardsChanged?:()=>void|Promise<unknown>;online?:boolean;state:GameState;onChange:(next:GameState)=>void;onlineDirectory?:ReactNode;onlineManagement?:ReactNode;onlineBoard?:ReactNode;onlineProjects?:ReactNode;onlinePve?:ReactNode;onlineHall?:ReactNode;onlineChat?:ReactNode;onlineCustomize?:ReactNode;onlineChatUnread?:number;onlineChatMentions?:number;initialPve?:boolean;onInitialPveHandled?:()=>void}){
  const st=useSocialText();
   const language=useGameLanguage();
  const C=useGameTheme(),s=useMemo(()=>makeStyles(C),[C]);
   const [activityView,setActivityView]=useState<'Quests'|'Muster'|'Projects'>('Quests');
-  const [section,setSection]=useState<GuildSection>(initialPve?'PvE':'Home'),[onlineSection,setOnlineSection]=useState<OnlineGuildSection>(initialPve?'PvE':'Home');
+  const [section,setSection]=useState<GuildSection>(initialPve?'PvE':'Home'),[onlineSection,setOnlineSection]=useState<OnlineGuildSection>(initialPve?'PvE':'Home'),[hallSection,setHallSection]=useState<'Facilities'|'Shop'>('Facilities');
   useEffect(()=>{if(initialPve)onInitialPveHandled?.()},[]);
   if(online)return <ScrollView contentContainerStyle={s.root} keyboardShouldPersistTaps="handled" keyboardDismissMode="on-drag" showsVerticalScrollIndicator={false} showsHorizontalScrollIndicator={false}>
     {onlineSection==='Activities'||onlineSection==='Hall'?<GuildBoardHero title={onlineSection==='Activities'?'Guild Activity Board':'Guild Hall'} subtitle={onlineSection==='Activities'?'Shared objectives, daily participation and weekly Projects.':'Facilities, permanent skill paths and Guild accomplishments.'}/>:<View style={s.onlineHero}><View style={s.heroIcon}><ThemedIcon name="guild" size={34}/></View><View style={s.flex}><Text style={s.kicker}>{st("GUILD NETWORK")}</Text><Text accessibilityRole="header" style={s.h}>Guild Home</Text><Text style={s.sub}>Membership, shared progress, chat and Guild identity in one place.</Text></View><View style={s.onlinePill}><View style={s.onlineDot}/><Text style={s.onlinePillText}>ONLINE</Text></View></View>}
@@ -54,7 +55,12 @@ export function GuildScreen({state,onChange,onlineDirectory,onlineManagement,onl
       {activityView==='Projects'?<><GuildSectionHeader label={st("SHARED PROGRESSION")} title={st("Guild Projects")} copy={st("Hunt or gather to progress your automatic weekly Project, and review recent Guild activity.")}/>{onlineProjects}</>:null}
     </View>:null}
     {onlineSection==='PvE'?onlinePve:null}
-    {onlineSection==='Hall'?onlineHall:null}
+    {onlineSection==='Hall'?<View style={s.sectionStack}>
+     <View accessibilityRole="tablist" style={s.onlineTabs}>
+      {(['Facilities','Shop'] as const).map(value=><TabChip key={value} label={value==='Shop'?'Guild Shop':value} selected={hallSection===value} onPress={()=>setHallSection(value)}/>)}
+     </View>
+     {hallSection==='Facilities'?onlineHall:<OnlineGuildTokenShopPanel onRewardsChanged={onTokenRewardsChanged}/>}
+    </View>:null}
     {onlineSection==='Chat'?onlineChat:null}
     {onlineSection==='Manage'?<View style={s.sectionStack}><GuildSectionHeader label={st("RECRUITMENT")} title={st("Directory & Creation")} copy={st("Find another Guild when eligible, or create and configure a new Guild identity.")}/>{onlineDirectory}<GuildSectionHeader label={st("IDENTITY")} title={st("Guild Appearance")} copy={st("Manage the Guild tag, banner, border, colors, nameplate and motto with role-based permissions.")}/>{onlineCustomize}<GameButton compact title="Roadmap & future content" tone="secondary" onPress={()=>setOnlineSection('Future')}/></View>:null}
     {onlineSection==='Future'?<GuildFutureContent/>:null}

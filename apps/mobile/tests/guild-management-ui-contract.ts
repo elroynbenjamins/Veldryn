@@ -24,7 +24,7 @@ ok(app.includes('onlineCustomize={<OnlineGuildCustomizationPanel/>}'),'Guild scr
 
 for(const label of ['Home','PvE','Roster','Activities','Hall','Chat','Manage'])ok(screen.includes("'"+label+"'"),'Consolidated online Guild tabs must include '+label);
 ok(screen.includes("onlineSection==='Roster'?onlineManagement:null"),'Roster tab must render authoritative Guild management');
-ok(screen.includes("onlineSection==='Hall'?onlineHall:null"),'Hall tab must render Hall content');
+ok(screen.includes("onlineSection==='Hall'?<View")&&screen.includes("hallSection==='Facilities'?onlineHall:<OnlineGuildTokenShopPanel")&&screen.includes("(['Facilities','Shop'] as const)"),'Hall must retain its facilities and nest the Guild Shop without adding an eighth destination');
 ok(screen.includes('<OnlineGuildMusterPanel/>')&&screen.includes("onlineSection==='PvE'?onlinePve:null"),"Guild navigation must preserve Muster and a dedicated PvE destination");
 ok(screen.includes("onlineSection==='Manage'?<View")&&screen.includes('{onlineDirectory}')&&screen.includes('{onlineCustomize}'),'Manage must preserve Guild directory/creation and appearance customization');
 ok(screen.includes('title={st("Guild Appearance")}')&&screen.includes('title={st("Directory & Creation")}'),'Manage must keep clear localized recruitment and identity hierarchy');
@@ -32,7 +32,19 @@ ok(screen.includes("root:{padding:spacing.md,gap:10"),'Online Guild shell must r
 
 ok(customization.includes('appearanceDirty='),'Guild customization must track unsaved appearance changes');
 ok(customization.includes('appearanceDirty?st("UNSAVED"):st("SAVED")'),'Guild customization must surface localized saved/unsaved state');
-ok(customization.includes("disabled={busy||!appearanceDirty}"),'Guild appearance save must only enable when something changed');
+ok(customization.includes("disabled={busy||!appearanceDirty||!constructionArtReady}"),'Guild appearance save must only enable when something changed');
+ok(customization.includes('guildBannerSourceByKey.has(entry.assetKey)')&&customization.includes('guildBorderSourceByKey.has(entry.assetKey)'),
+ 'Constructed Guild cosmetics must require registered artwork before player selection');
+ok(customization.includes('!constructionArtReady'),
+ 'Missing Guild construction artwork must disable appearance saves');
+const constructedCore=read('src/core/guild-customization.ts');
+ok(constructedCore.includes("'guild_banner_stormwatch'")&&constructedCore.includes("'guild_frame_verdant'"),
+ 'Constructed banner and frame must have canonical Guild Appearance IDs');
+ok(constructedCore.includes("case'construction':return (s.constructionUnlockIds?.includes"),
+ 'Constructed Guild cosmetics must require ownership and server release flags');
+const onlineSocial=read('src/online/social.ts');
+ok(onlineSocial.includes("guild_construction_appearance_rewards_v1")&&onlineSocial.includes("update_guild_appearance_with_construction_v1"),
+ 'Guild customizer must retrieve verified construction ownership and route changes to guarded SQL');
 ok(customization.includes('tagDirty='),'Guild tag changes must have a separate dirty state');
 ok(customization.includes('backgroundColor:C.warningSurface'),'Permanent tag warning must be theme-safe');
 ok(customization.includes('backgroundColor:C.selection'),'Selected Guild cosmetics must be theme-safe');

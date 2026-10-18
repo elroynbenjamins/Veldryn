@@ -10,13 +10,22 @@ equal(normalizeGuildNameplateId(null),'classic','Invalid nameplate must fall bac
 equal(normalizeGuildMotto('  Stronger   together.  '),'Stronger together.','Motto whitespace must normalize');
 equal(normalizeGuildMotto(''),'Stronger together.','Empty motto must fall back');
 equal(normalizeGuildMotto('x'.repeat(100)).length,80,'Motto must cap at 80 characters');
-equal(GUILD_BANNERS.filter(x=>x.unlock.type!=='event').length,8,'All supplied base banners must be present');
-equal(GUILD_FRAMES.filter(x=>x.unlock.type!=='event').length,9,'All supplied progression borders must be present');
+equal(GUILD_BANNERS.filter(x=>x.unlock.type!=='event'&&x.unlock.type!=='construction').length,8,'All supplied base banners must be present');
+equal(GUILD_FRAMES.filter(x=>x.unlock.type!=='event'&&x.unlock.type!=='construction').length,9,'All supplied progression borders must be present');
 equal(GUILD_NAME_COLORS.length,2,'Only basic and implemented event color exist');
 equal(normalizeGuildNameColorId('name_amethyst'),'name_ivory','Valid name color must be preserved');
 equal(isGuildCosmeticUnlocked({type:'guild_level',level:5},{guildLevel:4,bannerGalleryTier:0,pveAchievementIds:[]}),false,'Level cosmetic must stay locked');
 equal(isGuildCosmeticUnlocked({type:'guild_level',level:5},{guildLevel:5,bannerGalleryTier:0,pveAchievementIds:[]}),true,'Level cosmetic unlock boundary');
 equal(guildCosmeticUnlockLabel({type:'banner_gallery_tier',tier:4}),'Banner Gallery Tier 4','Unlock label');
+const constructionBanner=GUILD_BANNERS.find(x=>x.id==='guild_banner_stormwatch')!;
+const constructionFrame=GUILD_FRAMES.find(x=>x.id==='guild_frame_verdant')!;
+const craftState={guildLevel:10,bannerGalleryTier:0,pveAchievementIds:[]};
+equal(isGuildCosmeticUnlocked(constructionBanner.unlock,craftState),false,'Construction banner is not free');
+equal(isGuildCosmeticUnlocked(constructionBanner.unlock,{...craftState,constructionReleasedIds:['guild_banner_stormwatch']}),false,'Art release never grants unearned Guild rewards');
+equal(isGuildCosmeticUnlocked(constructionBanner.unlock,{...craftState,constructionUnlockIds:['guild_banner_stormwatch']}),false,'Completed Guild structure remains locked until artwork release');
+equal(isGuildCosmeticUnlocked(constructionBanner.unlock,{...craftState,constructionUnlockIds:['guild_banner_stormwatch'],constructionReleasedIds:['guild_banner_stormwatch']}),true,'Constructed Guild art requires both ownership and release');
+equal(isGuildCosmeticUnlocked(constructionFrame.unlock,craftState),false,'Constructed frame remains separately locked');
+
 console.log('PASS: guild customization IDs and motto normalization are stable');
 
 const base={guildLevel:10,bannerGalleryTier:5,pveAchievementIds:['guild_pve_raid_hard_clear']};

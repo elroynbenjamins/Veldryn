@@ -1,0 +1,12 @@
+import { strict as assert } from "node:assert";
+import { validateEventGuildTokenReward } from "../src/event-rewards";
+const event = {eventId:"veilbreak_2026",activity:"boss_completion" as const,milestoneId:"boss_1",tokens:75};
+const accepted=validateEventGuildTokenReward(event);
+assert.deepEqual(accepted,{ok:true,claimKey:"guild-event:veilbreak_2026:boss_completion:boss_1",tokens:75});
+assert.deepEqual(validateEventGuildTokenReward({...event,tokens:76}),{ok:false,reason:"invalid_reward"});
+assert.deepEqual(validateEventGuildTokenReward({...event,eventId:"../unsafe"}),{ok:false,reason:"invalid_event"});
+assert.deepEqual(validateEventGuildTokenReward({...event,milestoneId:""}),{ok:false,reason:"invalid_milestone"});
+assert.deepEqual(validateEventGuildTokenReward({...event,activity:"not_real" as typeof event.activity}),{ok:false,reason:"invalid_reward"});
+const high=validateEventGuildTokenReward({eventId:"event",activity:"final_guild_milestone",milestoneId:"last",tokens:400});
+assert.equal(high.ok,true);
+console.log("Guild event reward policy tests passed");

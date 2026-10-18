@@ -8,9 +8,11 @@ function check(value:unknown,message:string):asserts value{if(!value)throw new E
 function rejects(fn:()=>unknown){let rejected=false;try{fn()}catch{rejected=true}check(rejected,'unowned icon must be rejected');}
 const state=createCharacter(newGame(1000),'IRONWARDEN','Aster');
 check(state.character!.profileIconId==='class:IRONWARDEN','default class icon');
-check(profileIconCollection(state).length===13,'catalog retains two released event icons alongside class, starters, and boss');
+check(profileIconCollection(state).length===14,'catalog includes a locked guild icon alongside class, starters, boss and two event icons');
 check(profileIconCollection(state).filter(row=>row.unlocked).length===10,'current class emblem and nine starter portraits available');
 check(canUseProfileIcon(state,'starter:hooded-ranger'),'starter portrait available');
+check(!canUseProfileIcon(state,'guild:stormwatch-crest'),'guild icon is locked until purchased');
+check(canUseProfileIcon({...state,account:{...state.account,unlockedProfileIconIds:['guild:stormwatch-crest']}},'guild:stormwatch-crest'),'purchased guild icon becomes usable');
 rejects(()=>selectProfileIcon(state,'companion:UNIT_008'));
 rejects(()=>selectProfileIcon(state,'creature:MOSS_RAT'));
 const recruited={...state,account:{...state.account,unlockedCombatCompanionIds:['UNIT_008']}};

@@ -1,5 +1,6 @@
 import {EVENT_PET_COLLECTIBLES} from './event-collectible-content-active';
 import {CORE_PET_COLLECTIBLES} from './core-pets';
+import {GUILD_PET_COLLECTIBLES} from './guild-pets-v1';
 import {EVENTS_RELEASED} from '../core/release-flags';
 
 export type CollectibleKind='pet'|'background'|'border';
@@ -29,6 +30,9 @@ export const PROFILE_COLLECTIBLES:readonly CollectibleDefinition[]=[
   entry('ironwood-dawn','background','Ironwood Dawn','skillXp','Reach character level 10',200,10,'profile'),
   entry('silverbrook-mist','background','Silverbrook Mist','gatheringYield','Reach character level 20',200,20,'profile'),
   entry('oathglass-hall','background','Oathglass Hall','hp','Reach character level 25',200,25,'profile'),
+  entry('guild-border-silver','border','Fellowship Silver','guildContribution','Guild Token Shop · Guild Level 2',200,undefined,'profile'),
+  entry('guild-border-emerald','border','Verdant Covenant','skillXp','Guild Token Shop · Guild Level 8',200,undefined,'profile'),
+  entry('guild-border-royal','border','Royal Concord','defense','Guild Token Shop · Guild Level 14',200,undefined,'profile'),
   entry('bg_harvestwake','background','Golden Fields','gold','Harvestwake event shop',200,undefined,'event'),
   entry('bg_grand_storehouse','background','Grand Storehouse','gatheringYield','Harvestwake reputation milestone',200,undefined,'event'),
   entry('bg_spirit_storehouse','background','Spirit Storehouse','defense','Guardian Lantern discovery',200,undefined,'event'),
@@ -39,6 +43,7 @@ export const PROFILE_COLLECTIBLES:readonly CollectibleDefinition[]=[
 
 export const COLLECTIBLES:readonly CollectibleDefinition[]=[
   ...CORE_PET_COLLECTIBLES,
+  ...GUILD_PET_COLLECTIBLES,
   ...(EVENTS_RELEASED?EVENT_PET_COLLECTIBLES:[]),
   // The authored event backgrounds/borders below are unreleased Harvestwake
   // prototypes. Retain their definitions for future authoring, not the journal.

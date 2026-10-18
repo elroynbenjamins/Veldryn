@@ -84,8 +84,32 @@ export async function reviewGuildApplication(applicationId:string,accept:boolean
 export async function myGuild(){const client=requireClient();const {data:{session},error:userError}=await client.auth.getSession();if(userError)throw userError;const user=session?.user;if(!user)throw new Error('Sign in before viewing a guild.');const {data,error}=await client.from('guild_members').select('guild_id,role').eq('account_id',user.id).maybeSingle();if(error)throw error;return data?{...(data as {guild_id:string;role:'leader'|'officer'|'member'}),account_id:user.id}:null;}
 export async function guildDetails(guildId:string){return await readGuildProjection(guildId) as unknown as OnlineGuild;}
 export async function updateGuildCustomization(input:{bannerId:GuildBannerId;profileFrameId:GuildFrameId;nameplateId:GuildNameplateId;motto:string}){const client=requireClient();const {data,error}=await client.rpc('update_guild_customization',{p_banner_id:input.bannerId,p_profile_frame_id:input.profileFrameId,p_nameplate_id:input.nameplateId,p_motto:input.motto});if(error)throw error;return (data?.[0]??null) as {guild_id:string;banner_id:GuildBannerId;profile_frame_id:GuildFrameId;nameplate_id:GuildNameplateId;motto:string}|null;}
-export async function guildAppearanceEntitlements(){const client=requireClient();const {data,error}=await client.rpc('guild_appearance_entitlements_v4');if(error)throw error;const row=data?.[0];return {guildLevel:Number(row?.guild_level??1),bannerGalleryTier:Number(row?.banner_gallery_tier??0),pveAchievementIds:(row?.pve_achievement_ids??[]) as string[],eventCosmeticIds:(row?.event_cosmetic_ids??[]) as string[],revealedEventColorIds:(row?.revealed_event_color_ids??[]) as string[]} satisfies GuildAppearanceEntitlements;}
-export async function updateGuildAppearance(input:{backgroundId:GuildBackgroundId;bannerId:GuildBannerId;borderId:GuildFrameId;nameColorId:GuildNameColorId;tagColorId:GuildTagColorId;nameplateId:GuildNameplateId;motto:string}){const client=requireClient();let {data,error}=await client.rpc('update_guild_appearance_with_background_v3',{p_background_id:input.backgroundId,p_banner_id:input.bannerId,p_border_id:input.borderId,p_name_color_id:input.nameColorId,p_tag_color_id:input.tagColorId,p_nameplate_id:input.nameplateId,p_motto:input.motto});if(error)throw error;if(!data?.[0])throw new Error('Guild appearance update was not confirmed.');return data[0] as {background_id?:GuildBackgroundId;guild_id:string;banner_id:GuildBannerId;border_id:GuildFrameId;name_color_id:GuildNameColorId;tag_color_id:GuildTagColorId;nameplate_id:GuildNameplateId;motto:string;revision:number}|undefined;}
+export async function guildAppearanceEntitlements(){
+ const client=requireClient();
+ const [base,constructed]=await Promise.all([
+  client.rpc('guild_appearance_entitlements_v4'),
+  client.rpc('guild_construction_appearance_rewards_v1'),
+ ]);
+ if(base.error)throw base.error;
+ // When the app updates before its migration, all constructed cosmetics stay
+ // locked and ordinary Guild Appearance still works.
+ if(constructed.error&&constructed.error.code!=='PGRST202'&&constructed.error.code!=='42883')
+  throw constructed.error;
+ const row=base.data?.[0];
+ const rewardRows=(Array.isArray(constructed.data)?constructed.data:[]) as
+  Array<{unlock_id:string;cosmetic_kind:string;owned:boolean;released:boolean}>;
+ return {
+  guildLevel:Number(row?.guild_level??1),
+  bannerGalleryTier:Number(row?.banner_gallery_tier??0),
+  pveAchievementIds:(row?.pve_achievement_ids??[]) as string[],
+  eventCosmeticIds:(row?.event_cosmetic_ids??[]) as string[],
+  revealedEventColorIds:(row?.revealed_event_color_ids??[]) as string[],
+  constructionUnlockIds:rewardRows.filter(reward=>reward.owned).map(reward=>reward.unlock_id),
+  constructionReleasedIds:rewardRows.filter(reward=>reward.released).map(reward=>reward.unlock_id),
+ } satisfies GuildAppearanceEntitlements;
+}
+export async function updateGuildAppearance(input:{backgroundId:GuildBackgroundId;bannerId:GuildBannerId;borderId:GuildFrameId;nameColorId:GuildNameColorId;tagColorId:GuildTagColorId;nameplateId:GuildNameplateId;motto:string}){const client=requireClient();const usesConstruction=input.bannerId==='guild_banner_stormwatch'||input.borderId==='guild_frame_verdant';
+ let {data,error}=await client.rpc(usesConstruction?'update_guild_appearance_with_construction_v1':'update_guild_appearance_with_background_v3',{p_background_id:input.backgroundId,p_banner_id:input.bannerId,p_border_id:input.borderId,p_name_color_id:input.nameColorId,p_tag_color_id:input.tagColorId,p_nameplate_id:input.nameplateId,p_motto:input.motto});if(error)throw error;if(!data?.[0])throw new Error('Guild appearance update was not confirmed.');return data[0] as {background_id?:GuildBackgroundId;guild_id:string;banner_id:GuildBannerId;border_id:GuildFrameId;name_color_id:GuildNameColorId;tag_color_id:GuildTagColorId;nameplate_id:GuildNameplateId;motto:string;revision:number}|undefined;}
 export type GuildWeeklyState={guild_id:string;project_progress:number;project_goal:number;boss_hp:number;boss_max_hp:number};
 export async function guildWeeklyState(){const client=requireClient();const {data,error}=await client.rpc('guild_weekly_state');if(error)throw error;return (data?.[0]??null) as GuildWeeklyState|null;}
 export async function guildContribute(kind:'project'|'boss',amount:number){const client=requireClient();const {data,error}=await client.rpc('guild_contribute',{p_kind:kind,p_amount:amount});if(error)throw error;return (data?.[0]??null) as {project_progress:number;boss_hp:number}|null;}

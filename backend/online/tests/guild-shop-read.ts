@@ -10,7 +10,7 @@ async function run() {
   rpc: async <T>(name:string,args:Record<string,unknown>) => {
    calls.push({name,args});
    if(name==="guild_construction_snapshot_server_v1")return [] as unknown as T;
-   return {balance:3000,earnedThisWeek:125,ownedItemIds:["border_silver"]} as unknown as T;
+   return {balance:3000,earnedThisWeek:125,claimedDailyKinds:[],ownedItemIds:["border_silver"]} as unknown as T;
   },
  };
  const handler = guildShopReadHandler(services);

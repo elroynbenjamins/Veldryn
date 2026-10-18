@@ -59,7 +59,7 @@ export function OnlineGuildTokenShopPanel(){
    {visible.map(card=><View key={card.id} style={styles.reward}>
     <View style={styles.between}><Text style={styles.rewardTitle}>{card.title}</Text><Text style={styles.price}>{card.price.toLocaleString()} Tokens</Text></View>
     <Text style={styles.meta}>Guild Lv {card.requiredGuildLevel} · {STATUS_LABELS[card.status]}</Text>
-    {card.status!=='owned'?<View style={styles.track}><View style={[styles.fill,{width:`${Math.round(card.progressToPrice*100)}%`}]}/></View>:null}
+    {card.status!=='owned'?<View style={styles.track}><View style={[styles.fill,{width:`${Math.round(card.progressToPrice*100)}%` as `${number}%`}]}/></View>:null}
     {card.status==='insufficient_tokens'?<Text style={styles.hint}>{Math.max(0,card.price-(snapshot?.balance??0)).toLocaleString()} more tokens needed</Text>:null}
     {card.status==='guild_level_locked'?<Text style={styles.hint}>Reach Guild Level {card.requiredGuildLevel} to unlock this reward.</Text>:null}
    </View>)}

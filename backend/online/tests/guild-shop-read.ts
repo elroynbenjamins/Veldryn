@@ -1,4 +1,4 @@
-import { guildShopReadHandler, guildShopDailyClaimHandler, guildShopPurchaseHandler, guildShopEventClaimHandler, type GuildShopReadServices } from "../guild-shop-read";
+import { guildShopReadHandler, guildShopDailyClaimHandler, guildShopPurchaseHandler, guildShopEventClaimHandler, guildConstructionDonationHandler, type GuildShopReadServices } from "../guild-shop-read";
 function assert(value: unknown, message: string): asserts value {
  if (!value) throw new Error(message);
 }
@@ -9,7 +9,7 @@ async function run() {
   guildLevelForAccount: async () => 7,
   rpc: async <T>(name:string,args:Record<string,unknown>) => {
    calls.push({name,args});
-   if(name==="guild_construction_snapshot_server_v1"||name==="guild_shop_event_community_rewards_server_v1")return [] as unknown as T;
+   if(name==="guild_construction_snapshot_server_v1"||name==="guild_shop_event_community_rewards_server_v1"||name==="guild_construction_enabled_server_v1")return [] as unknown as T;
    return {balance:3000,earnedThisWeek:125,claimedDailyKinds:[],enabledItemIds:[],ownedItemIds:["border_silver"]} as unknown as T;
   },
  };
@@ -27,7 +27,7 @@ async function run() {
  assert(body.cards.find(x=>x.id==="border_silver")?.status==="owned","owned cosmetics");
  assert(body.cards.find(x=>x.id==="guild_pet_02")?.status==="insufficient_tokens","unaffordable pet");
  assert(body.cards.find(x=>x.id==="guild_companion_01")?.status==="guild_level_locked","guild level lock");
- assert(calls.length===3 && calls[0].name==="guild_shop_snapshot_server_v1" && calls[1].name==="guild_construction_snapshot_server_v1" && calls[2].name==="guild_shop_event_community_rewards_server_v1","all authenticated read-only RPCs called");
+ assert(calls.length===4 && calls[0].name==="guild_shop_snapshot_server_v1" && calls[1].name==="guild_construction_snapshot_server_v1" && calls[2].name==="guild_shop_event_community_rewards_server_v1" && calls[3].name==="guild_construction_enabled_server_v1","all authenticated read-only RPCs called");
  assert(calls[0].args.p_account_id==="11111111-1111-4111-8111-111111111111","verified identity forwarded");
  const noGuild = guildShopReadHandler({...services,guildLevelForAccount:async()=>null});
  const blocked = await noGuild(new Request("https://example.test/guild/shop",{headers:{authorization:"Bearer valid"}}));
@@ -83,6 +83,23 @@ async function run() {
  assert(eventGood.status===200,'event claim forwarded');
  assert(eventCalls.length===1 && eventCalls[0].name==='guild_shop_claim_event_community_server_v1','event claim uses trusted SQL');
  assert(eventCalls[0].args.p_account_id==='11111111-1111-4111-8111-111111111111','event claim uses authenticated account');
+
+ const donationCalls:Array<{name:string;args:Record<string,unknown>}>=[];
+ const donate=guildConstructionDonationHandler({...services,rpc:async<T>(name:string,args:Record<string,unknown>)=>{
+  donationCalls.push({name,args});return {alreadyProcessed:false,completed:false} as unknown as T;
+ }});
+ const donateInput={templateId:'stormwatch_banner',resourceId:'GREENWOOD_LOG',amount:5,requestKey:'guild_donation_a123'};
+ const donateUri=claimUri+'&action=donate';
+ const donateBad=await donate(new Request(donateUri,{method:'POST',headers:{authorization:'Bearer valid'},body:JSON.stringify({...donateInput,amount:-1})}));
+ assert(donateBad.status===400,'negative donations rejected');
+ const donateSpoof=await donate(new Request(donateUri,{method:'POST',headers:{authorization:'Bearer valid'},body:JSON.stringify({...donateInput,accountId:'victim'})}));
+ assert(donateSpoof.status===400,'client account spoof rejected');
+ const donateUnknown=await donate(new Request(donateUri,{method:'POST',headers:{authorization:'Bearer valid'},body:JSON.stringify({...donateInput,resourceId:'DIAMONDS'})}));
+ assert(donateUnknown.status===400,'unknown material rejected');
+ const donateOk=await donate(new Request(donateUri,{method:'POST',headers:{authorization:'Bearer valid'},body:JSON.stringify(donateInput)}));
+ assert(donateOk.status===200,'valid donation forwarded');
+ assert(donationCalls.length===1&&donationCalls[0].name==='guild_construction_donate_server_v2','construction donation uses locked SQL');
+ assert(donationCalls[0].args.p_account_id==='11111111-1111-4111-8111-111111111111','donation account comes from bearer auth');
  console.log("guild shop read handler tests passed");
 }
 void run();

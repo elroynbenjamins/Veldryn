@@ -1,4 +1,4 @@
-import { guildShopReadHandler, guildShopDailyClaimHandler, guildShopPurchaseHandler, type GuildShopReadServices } from "../guild-shop-read";
+import { guildShopReadHandler, guildShopDailyClaimHandler, guildShopPurchaseHandler, guildShopEventClaimHandler, type GuildShopReadServices } from "../guild-shop-read";
 function assert(value: unknown, message: string): asserts value {
  if (!value) throw new Error(message);
 }
@@ -9,8 +9,8 @@ async function run() {
   guildLevelForAccount: async () => 7,
   rpc: async <T>(name:string,args:Record<string,unknown>) => {
    calls.push({name,args});
-   if(name==="guild_construction_snapshot_server_v1")return [] as unknown as T;
-   return {balance:3000,earnedThisWeek:125,claimedDailyKinds:[],ownedItemIds:["border_silver"]} as unknown as T;
+   if(name==="guild_construction_snapshot_server_v1"||name==="guild_shop_event_community_rewards_server_v1")return [] as unknown as T;
+   return {balance:3000,earnedThisWeek:125,claimedDailyKinds:[],enabledItemIds:[],ownedItemIds:["border_silver"]} as unknown as T;
   },
  };
  const handler = guildShopReadHandler(services);
@@ -27,7 +27,7 @@ async function run() {
  assert(body.cards.find(x=>x.id==="border_silver")?.status==="owned","owned cosmetics");
  assert(body.cards.find(x=>x.id==="guild_pet_02")?.status==="insufficient_tokens","unaffordable pet");
  assert(body.cards.find(x=>x.id==="guild_companion_01")?.status==="guild_level_locked","guild level lock");
- assert(calls.length===2 && calls[0].name==="guild_shop_snapshot_server_v1" && calls[1].name==="guild_construction_snapshot_server_v1","both read-only RPCs called for authorized requests");
+ assert(calls.length===3 && calls[0].name==="guild_shop_snapshot_server_v1" && calls[1].name==="guild_construction_snapshot_server_v1" && calls[2].name==="guild_shop_event_community_rewards_server_v1","all authenticated read-only RPCs called");
  assert(calls[0].args.p_account_id==="11111111-1111-4111-8111-111111111111","verified identity forwarded");
  const noGuild = guildShopReadHandler({...services,guildLevelForAccount:async()=>null});
  const blocked = await noGuild(new Request("https://example.test/guild/shop",{headers:{authorization:"Bearer valid"}}));
@@ -68,6 +68,21 @@ async function run() {
  assert(purchaseCalls.length===1&&purchaseCalls[0].name==='guild_shop_purchase_server_v3','only server-priced purchase API called');
  assert(purchaseCalls[0].args.p_account_id==='11111111-1111-4111-8111-111111111111','purchase account comes from auth');
  assert(purchaseCalls[0].args.p_item_id==='guild_pet_01','SKU is transmitted without price');
+
+ const eventCalls:Array<{name:string;args:Record<string,unknown>}>=[];
+ const eventClaim=guildShopEventClaimHandler({...services,rpc:async<T>(name:string,args:Record<string,unknown>)=>{
+  eventCalls.push({name,args});return 350 as unknown as T;
+ }});
+ const eventBad=await eventClaim(new Request(claimUri,{method:'POST',headers:{authorization:'Bearer valid'},body:'{"eventId":"veilbreak","milestonePercent":101}'}));
+ assert(eventBad.status===400,'unsupported community milestones rejected');
+ const eventSpoof=await eventClaim(new Request(claimUri,{method:'POST',headers:{authorization:'Bearer valid'},body:'{"eventId":"veilbreak","milestonePercent":100,"tokens":99999}'}));
+ assert(eventSpoof.status===400,'client-provided reward values rejected');
+ const eventUnauthorized=await eventClaim(new Request(claimUri,{method:'POST',body:'{"eventId":"veilbreak","milestonePercent":100}'}));
+ assert(eventUnauthorized.status===401,'event claims require authentication');
+ const eventGood=await eventClaim(new Request(claimUri,{method:'POST',headers:{authorization:'Bearer valid'},body:'{"eventId":"veilbreak","milestonePercent":100}'}));
+ assert(eventGood.status===200,'event claim forwarded');
+ assert(eventCalls.length===1 && eventCalls[0].name==='guild_shop_claim_event_community_server_v1','event claim uses trusted SQL');
+ assert(eventCalls[0].args.p_account_id==='11111111-1111-4111-8111-111111111111','event claim uses authenticated account');
  console.log("guild shop read handler tests passed");
 }
 void run();

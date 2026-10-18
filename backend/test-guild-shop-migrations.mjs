@@ -73,7 +73,7 @@ try{
   insert into public.guild_appearance(guild_id,banner_id,border_id,name_color_id,
    tag_color_id,nameplate_id,background_id,revision)
   values(v_gid,p_banner_id,p_border_id,p_name_color_id,p_tag_color_id,p_nameplate_id,
-   p_background_id,1) on conflict(guild_id) do update set
+   p_background_id,1) on conflict on constraint guild_appearance_pkey do update set
    banner_id=excluded.banner_id,border_id=excluded.border_id,
    name_color_id=excluded.name_color_id,tag_color_id=excluded.tag_color_id,
    nameplate_id=excluded.nameplate_id,background_id=excluded.background_id,

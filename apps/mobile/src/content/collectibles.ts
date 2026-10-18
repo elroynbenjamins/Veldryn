@@ -1,5 +1,6 @@
 import {EVENT_PET_COLLECTIBLES} from './event-collectible-content-active';
 import {CORE_PET_COLLECTIBLES} from './core-pets';
+import {GUILD_PET_COLLECTIBLES} from './guild-pets-v1';
 import {EVENTS_RELEASED} from '../core/release-flags';
 
 export type CollectibleKind='pet'|'background'|'border';
@@ -38,6 +39,7 @@ export const PROFILE_COLLECTIBLES:readonly CollectibleDefinition[]=[
 
 export const COLLECTIBLES:readonly CollectibleDefinition[]=[
   ...CORE_PET_COLLECTIBLES,
+  ...GUILD_PET_COLLECTIBLES,
   ...(EVENTS_RELEASED?EVENT_PET_COLLECTIBLES:[]),
   // The authored event backgrounds/borders below are unreleased Harvestwake
   // prototypes. Retain their definitions for future authoring, not the journal.

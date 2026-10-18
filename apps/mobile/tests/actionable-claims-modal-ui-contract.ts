@@ -7,6 +7,7 @@ const app=read('App.tsx');
 const attention=read('src/core/navigation-notifications.ts');
 const account=read('src/screens/MoreScreen.tsx');
 const inspector=read('src/components/ItemQuickInspect.tsx');
+const confirmation=read('src/components/ConfirmModal.tsx');
 
 ok(app.includes('...actionableClaimNotifications({storyRewards:storyClaimCount,eventClaims:eventClaimCount,overflowStacks:overflowStackCount})'),
  'Only earned, unclaimed quest/event rewards and real overflow contribute to navigation dots');
@@ -30,4 +31,8 @@ ok(inspector.includes('const model=useMemo(()=>itemId?itemInspectModel(state,ite
 ok(inspector.includes('prioritizeItemSources(model.sources)'),
  'Item sources stay sorted by actionable navigation readiness');
 
+ok(confirmation.includes('<GameModalSurface visible={visible} presentation="dialog"')&&confirmation.includes('stackActions=width<360||fontScale>=1.25'),
+ 'All confirmation modals retain the shared responsive layout and safe area behavior');
+ok(confirmation.includes('surface:{maxWidth:460,padding:spacing.md')&&confirmation.includes('actions:{flexDirection:\'row\',gap:spacing.sm'),
+ 'Confirmation sheets keep a compact maximum width and button spacing');
 console.log('PASS: actionable claim indicators and common compact item modal integration');

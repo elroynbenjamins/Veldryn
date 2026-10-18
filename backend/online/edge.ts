@@ -1,6 +1,6 @@
 import {gameplayHandler,GameplayError,type GameplayServices} from './gameplay';
 import {regionalCombatHandlerV1} from './regional-combat';
-import {guildShopReadHandler} from './guild-shop-read';
+import {guildShopReadHandler,guildShopDailyClaimHandler} from './guild-shop-read';
 declare const Deno:{env:{get(name:string):string|undefined};serve(handler:(request:Request)=>Promise<Response>):void};
 const url=Deno.env.get('SUPABASE_URL')!,serviceKey=Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!,anonKey=Deno.env.get('SUPABASE_ANON_KEY')!;
 if(!url||!serviceKey||!anonKey)throw new Error('server_configuration_missing');
@@ -11,14 +11,16 @@ const services:GameplayServices={
  randomId:()=>crypto.randomUUID(),randomRoll:()=>crypto.getRandomValues(new Uint32Array(1))[0]/4294967296,
 };
 const gameplay=gameplayHandler(services),regionalCombat=regionalCombatHandlerV1(services);
-const guildShop=guildShopReadHandler({
+const guildShopServices={
  authenticate:services.authenticate,
  rpc:services.rpc,
  guildLevelForAccount:accountId=>services.rpc<number|null>('guild_shop_guild_level_server_v1',{p_account_id:accountId}),
-});
+};
+const guildShop=guildShopReadHandler(guildShopServices);
+const guildShopClaim=guildShopDailyClaimHandler(guildShopServices);
 Deno.serve(request=>{
  const route=new URL(request.url);
  if(route.pathname.includes('/regional-combat'))return regionalCombat(request);
- if(route.searchParams.get('view')==='guild-shop')return guildShop(request);
+ if(route.searchParams.get('view')==='guild-shop')return request.method==='POST'?guildShopClaim(request):guildShop(request);
  return gameplay(request);
 });

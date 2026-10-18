@@ -5,7 +5,7 @@ import {OnlineGuildConstructionPanel} from './OnlineGuildConstructionPanel';
 import {Panel} from './Panel';
 import {useGameTheme} from '../theme/ThemeContext';
 import type {ThemeColors} from '../theme/theme';
-import {claimOnlineGuildDailyTokens,claimOnlineGuildEventBonus,purchaseOnlineGuildTokenReward,loadOnlineGuildTokenShop,type GuildTokenShopCategory,type GuildTokenShopSnapshot} from '../online/guild-token-shop';
+import {claimOnlineGuildDailyTokens,claimOnlineGuildEventBonus,claimOnlineGuildWeeklyTokens,purchaseOnlineGuildTokenReward,loadOnlineGuildTokenShop,type GuildTokenShopCategory,type GuildTokenShopSnapshot,type GuildWeeklyRewardKind} from '../online/guild-token-shop';
 
 type Filter='all'|GuildTokenShopCategory;
 const FILTERS:readonly {id:Filter;label:string}[]=[
@@ -26,6 +26,17 @@ export function OnlineGuildTokenShopPanel({onRewardsChanged}:{onRewardsChanged?:
  const [claiming,setClaiming]=useState<'attendance'|'contribution'|null>(null),[claimNotice,setClaimNotice]=useState('');
  const [purchasing,setPurchasing]=useState<string|null>(null);
  const [eventBusy,setEventBusy]=useState<string|null>(null);
+ const [weeklyBusy,setWeeklyBusy]=useState<GuildWeeklyRewardKind|null>(null);
+ const claimWeekly=async(kind:GuildWeeklyRewardKind)=>{
+  if(weeklyBusy||loading||claiming||eventBusy||purchasing)return;
+  setWeeklyBusy(kind);setError('');setClaimNotice('');
+  try{
+   const credited=await claimOnlineGuildWeeklyTokens(kind);
+   setClaimNotice(credited>0?`+ ${credited} weekly Guild Tokens earned!`:'Already claimed or weekly cap reached.');
+   setSnapshot(await loadOnlineGuildTokenShop());
+  }catch(reason){setError(reason instanceof Error?reason.message:'Could not claim weekly Guild reward.');}
+  finally{setWeeklyBusy(null);}
+ };
  const claimEvent=async(eventId:string,milestonePercent:number)=>{
   if(eventBusy||loading||claiming||purchasing)return;
   const key=eventId+':'+milestonePercent;
@@ -95,6 +106,24 @@ export function OnlineGuildTokenShopPanel({onRewardsChanged}:{onRewardsChanged?:
     {claimNotice?<Text accessibilityLiveRegion="polite" style={styles.success}>{claimNotice}</Text>:null}
    </View>:null}
   </Panel>
+  {snapshot?.weeklyRewards.length?<Panel>
+   <Text style={styles.kicker}>WEEKLY GUILD GOALS</Text>
+   <Text style={styles.section}>Earn together</Text>
+   <Text style={styles.copy}>Complete four daily Muster check-ins, contribute meaningfully to a Guild Project, or claim a weekly Guild Boss reward. These count toward your normal 250-token cap.</Text>
+   {snapshot.weeklyRewards.map(reward=>{
+    const title=reward.kind==='attendance'?'Four-day participation':reward.kind==='project'?'Guild Project contribution':'Guild Boss reward';
+    return <View key={reward.kind} style={styles.eventRow}>
+     <View style={{flex:1}}>
+      <Text style={styles.rewardTitle}>{title}</Text>
+      <Text style={styles.meta}>+{reward.tokens} Guild Tokens · {reward.claimed?'Claimed':reward.eligible?'Ready to claim':'In progress'}</Text>
+     </View>
+     <GameButton compact tone="secondary"
+      title={reward.claimed?'Claimed':weeklyBusy===reward.kind?'Claiming…':'Claim'}
+      disabled={!reward.eligible||reward.claimed||!!weeklyBusy||loading||!!claiming||!!purchasing||!!eventBusy}
+      onPress={()=>void claimWeekly(reward.kind)}/>
+    </View>;
+   })}
+  </Panel>:null}
   <Panel>
    <View style={styles.between}><Text style={styles.section}>Exclusive rewards</Text>{loading?<ActivityIndicator color={C.accent}/>:<GameButton compact tone="secondary" title="Refresh" onPress={()=>void retry()}/>}</View>
    <Text style={styles.notice}>Only released rewards can be purchased. Rewards remain locked while final artwork and transaction testing are completed.</Text>

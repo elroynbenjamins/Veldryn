@@ -1,5 +1,5 @@
 import {useGameplayText} from '../i18n/gameplay';
-import {useMemo} from 'react';
+import {useMemo,useState} from 'react';
 import {Pressable,StyleSheet,Text,View,useWindowDimensions} from 'react-native';
 import type {GameState} from '../core/types';
 import {activityQueueCapacity,activityQueueHandoffStatus,activityQueueLabel,activityQueueGoalLabel,normalizeActivityQueue,queuedActivityReadiness} from '../core/activity-queue';
@@ -9,6 +9,7 @@ import {useGameTheme} from '../theme/ThemeContext';
 
 export function ActionQueuePanel({state,onRemove,onMove,onClear,onStartNext}:{state:GameState;onRemove:(index:number)=>void;onMove:(index:number,direction:'up'|'down')=>void;onClear:()=>void;onStartNext:()=>void}){
  const {gt,gl,language}=useGameplayText();
+ const [managing,setManaging]=useState(false),[confirmClear,setConfirmClear]=useState(false);
  const C=useGameTheme(),s=useMemo(()=>makeStyles(C),[C]),{width,fontScale}=useWindowDimensions(),stackRows=width<480||fontScale>=1.25;
  const capacity=activityQueueCapacity(state),queue=normalizeActivityQueue(state.character?.activityQueue,capacity),paused=state.character?.activityQueuePausedReason,handoff=activityQueueHandoffStatus(state);
  const canResume=!!state.character?.activityQueueCombatRecovery&&state.activity?.kind!=='combat'&&state.activity?.queueGoalCompletedAtMs!==undefined&&queue[0]?.kind==='combat';
@@ -19,10 +20,32 @@ export function ActionQueuePanel({state,onRemove,onMove,onClear,onStartNext}:{st
   return <View style={s.handoff}><Text style={s.handoffTitle}>{complete?(state.character?.activityQueueCombatRecovery?gt("GATHERING CONTINUES"):gt("ALL QUEUE GOALS COMPLETED")):gt("CURRENT ACTIVITY GOAL")}</Text><Text style={s.pauseText}>{complete?gt("Still {activity}",{activity:gl(activity.kind==='combat'?'Hunt':activity.kind)}):activity.queueGoal?gl(activityQueueGoalLabel(activity.queueGoal)):gl(activity.huntGoal?.label)||gt("Open-ended activity")}</Text></View>;
  }
  return <View style={s.panel}>
-  <View style={[s.header,stackRows&&s.headerStack]}><View style={s.flex}><Text style={s.kicker}>{gt("ACTION QUEUE")} · {queue.length}/{capacity}</Text></View>{queue.length>1&&<View style={[s.clear,stackRows&&s.clearStack]}><GameButton compact title={gt("Clear")} tone="secondary" onPress={onClear}/></View>}</View>
+  <View style={[s.header,stackRows&&s.headerStack]}>
+   <View style={s.flex}><Text style={s.kicker}>{gt("ACTION QUEUE")} · {queue.length}/{capacity}</Text><Text style={s.sub}>{managing?gt("Reorder or remove waiting activities."):gt("Waiting activities run in this order.")}</Text></View>
+   <Pressable accessibilityRole="button" accessibilityLabel={managing?gt("Finish managing queue"):gt("Manage queued activities")}
+    accessibilityState={{expanded:managing}} onPress={()=>{setManaging(value=>!value);setConfirmClear(false);}}
+    style={({pressed})=>[s.manageButton,pressed&&s.arrowPressed]}>
+    <Text style={s.manageText}>{managing?gt("Done"):gt("Manage")}</Text>
+   </Pressable>
+  </View>
+  {managing&&queue.length>0?<View style={s.clearActions}>
+   {confirmClear?<><Text style={[s.pauseText,s.flex]}>{gt("Clear all waiting activities? Current activity will continue.")}</Text><View style={s.clearButtons}><GameButton compact title={gt("Cancel")} tone="secondary" onPress={()=>setConfirmClear(false)}/><GameButton compact title={gt("Confirm clear")} tone="secondary" onPress={()=>{setConfirmClear(false);setManaging(false);onClear();}}/></View></>:
+    <View style={s.clearInline}><Text style={[s.sub,s.flex]}>{gt("Changes are saved in your queue.")}</Text><GameButton compact title={gt("Clear queue")} tone="secondary" onPress={()=>setConfirmClear(true)}/></View>}
+  </View>:null}
   {paused&&<View style={s.pause}><Text style={s.pauseTitle}>{state.activity?gt("QUEUED ACTIVITY WAITING"):gt("QUEUE PAUSED")}</Text><Text style={s.pauseText}>{gl(paused)}</Text></View>}
   {!paused&&state.activity&&<View style={handoff.armed?(handoff.nextReady?s.handoff:s.blocked):s.waiting}><Text style={handoff.armed?(handoff.nextReady?s.handoffTitle:s.blockedTitle):s.waitingTitle}>{handoff.armed?(handoff.nextReady?gt("HANDOFF ARMED"):gt("HANDOFF WILL PAUSE")):gt("QUEUE WAITING")}</Text><Text style={s.pauseText}>{handoff.armed?(handoff.nextReady?`${gl(handoff.sourceLabel)} → ${gl(handoff.nextLabel)}`:gt("{source} can stop this activity, but {next} cannot start yet.",{source:gl(handoff.sourceLabel),next:gl(handoff.nextLabel)})):gt("Current activity has no handoff goal. Queued activities are waiting.")}</Text>{handoff.armed&&!handoff.nextReady&&handoff.nextBlocker?<Text style={s.blocker}>{gl(handoff.nextBlocker)}</Text>:null}{handoff.armed&&handoff.safetyEnabled?<Text style={s.safety}>{gt("Combat recovery blocks hunting; storage safety stops all activities.")}</Text>:null}</View>}
-  {queue.map((entry,index)=>{const readiness=queuedActivityReadiness(state,entry),label=gl(activityQueueLabel(entry));return <View key={`${index}:${entry.kind}:${entry.targetId}`} style={[s.row,stackRows&&s.rowStack]}><View style={s.rowInfo}><View style={s.index}><Text style={s.indexText}>{index+1}</Text></View><View style={s.flex}><Text style={s.name}>{label}</Text><Text style={readiness.ready?s.readyMeta:s.blockedMeta}>{entry.kind==='combat'?gt("Hunt"):gt("Gathering")}{index===0?' · '+gt('next'):''} · {readiness.ready?gt("Ready"):gl(readiness.blocker)||gt("Blocked")}</Text></View></View><View style={[s.controls,stackRows&&s.controlsStack]}><Pressable accessibilityRole="button" accessibilityLabel={gt("Move {label} up",{label})} accessibilityState={{disabled:index===0}} disabled={index===0} onPress={()=>onMove(index,'up')} style={({pressed})=>[s.arrow,index===0&&s.arrowDisabled,pressed&&index>0&&s.arrowPressed]}><Text style={s.arrowText}>↑</Text></Pressable><Pressable accessibilityRole="button" accessibilityLabel={gt("Move {label} down",{label})} accessibilityState={{disabled:index===queue.length-1}} disabled={index===queue.length-1} onPress={()=>onMove(index,'down')} style={({pressed})=>[s.arrow,index===queue.length-1&&s.arrowDisabled,pressed&&index<queue.length-1&&s.arrowPressed]}><Text style={s.arrowText}>↓</Text></Pressable><View style={[s.remove,stackRows&&s.removeStack]}><GameButton compact title={gt("Remove")} tone="secondary" onPress={()=>onRemove(index)}/></View></View></View>})}
+  {queue.map((entry,index)=>{const readiness=queuedActivityReadiness(state,entry),label=gl(activityQueueLabel(entry));return <View key={`${index}:${entry.kind}:${entry.targetId}`} style={[s.row,managing&&stackRows&&s.rowStack]}>
+   <View style={s.rowInfo}><View style={s.index}><Text style={s.indexText}>{index+1}</Text></View>
+    <View style={s.flex}><Text style={s.name}>{label}</Text>
+     <Text style={readiness.ready?s.readyMeta:s.blockedMeta}>{entry.kind==='combat'?gt("Hunt"):entry.kind==='gathering'?gt("Gathering"):gl(entry.kind)}{index===0?' · '+gt('next'):''} · {readiness.ready?gt("Ready"):gl(readiness.blocker)||gt("Blocked")}</Text>
+    </View>
+   </View>
+   {managing?<View style={[s.controls,stackRows&&s.controlsStack]}>
+    <Pressable accessibilityRole="button" accessibilityLabel={gt("Move {label} up",{label})} accessibilityState={{disabled:index===0}} disabled={index===0} onPress={()=>onMove(index,'up')} style={({pressed})=>[s.arrow,index===0&&s.arrowDisabled,pressed&&index>0&&s.arrowPressed]}><Text style={s.arrowText}>↑</Text></Pressable>
+    <Pressable accessibilityRole="button" accessibilityLabel={gt("Move {label} down",{label})} accessibilityState={{disabled:index===queue.length-1}} disabled={index===queue.length-1} onPress={()=>onMove(index,'down')} style={({pressed})=>[s.arrow,index===queue.length-1&&s.arrowDisabled,pressed&&index<queue.length-1&&s.arrowPressed]}><Text style={s.arrowText}>↓</Text></Pressable>
+    <View style={[s.remove,stackRows&&s.removeStack]}><GameButton compact title={gt("Remove")} tone="secondary" onPress={()=>onRemove(index)}/></View>
+   </View>:null}
+  </View>})}
   {!state.activity&&!handoff.nextReady&&handoff.nextBlocker?<View style={s.blocked}><Text style={s.blockedTitle}>{gt("NEXT ACTION BLOCKED")}</Text><Text style={s.blocker}>{gl(handoff.nextBlocker)}</Text></View>:null}
   {(!state.activity||canResume)&&<GameButton title={canResume?gt("Resume queued combat"):handoff.nextReady?gt("Start next queued action"):gt("Next action unavailable")} disabled={!handoff.nextReady} onPress={onStartNext}/>}
  </View>;
@@ -30,7 +53,7 @@ export function ActionQueuePanel({state,onRemove,onMove,onClear,onStartNext}:{st
 
 function makeStyles(C:ThemeColors){const equipmentColors=equipmentTheme(C);return StyleSheet.create({
  panel:{gap:6,padding:spacing.sm,borderWidth:1,borderColor:equipmentColors.selectedLine,borderRadius:radii.md,backgroundColor:C.panel},
- header:{flexDirection:'row',alignItems:'center',gap:spacing.sm},headerStack:{alignItems:'stretch',flexDirection:'column'},flex:{flex:1,minWidth:0},clear:{width:78},clearStack:{width:'100%'},controls:{flexDirection:'row',alignItems:'center',gap:4},controlsStack:{width:'100%'},arrow:{width:44,height:44,alignItems:'center',justifyContent:'center',borderWidth:1,borderColor:C.line,borderRadius:radii.sm,backgroundColor:C.bg},arrowDisabled:{opacity:.28},arrowPressed:{opacity:.65},arrowText:{color:C.accent,fontSize:18,fontWeight:'900'},remove:{width:72},removeStack:{flex:1,width:'auto'},
+ header:{flexDirection:'row',alignItems:'center',gap:spacing.sm},headerStack:{alignItems:'stretch',flexDirection:'column'},flex:{flex:1,minWidth:0},manageButton:{minHeight:44,minWidth:86,justifyContent:'center',alignItems:'center',paddingHorizontal:12,borderRadius:radii.sm,borderWidth:1,borderColor:C.line,backgroundColor:C.panel2},manageText:{...typography.caption,color:C.accent,fontWeight:'900'},clearActions:{padding:spacing.sm,borderWidth:1,borderColor:C.warning,borderRadius:radii.sm,backgroundColor:C.warningSurface,gap:8},clearInline:{flexDirection:'row',alignItems:'center',gap:8},clearButtons:{flexDirection:'row',justifyContent:'flex-end',flexWrap:'wrap',gap:8},controls:{flexDirection:'row',alignItems:'center',gap:4},controlsStack:{width:'100%'},arrow:{width:44,height:44,alignItems:'center',justifyContent:'center',borderWidth:1,borderColor:C.line,borderRadius:radii.sm,backgroundColor:C.bg},arrowDisabled:{opacity:.28},arrowPressed:{opacity:.65},arrowText:{color:C.accent,fontSize:18,fontWeight:'900'},remove:{width:72},removeStack:{flex:1,width:'auto'},
  kicker:{...typography.caption,color:equipmentColors.goldSoft,fontWeight:'900',letterSpacing:.8},sub:{...typography.caption,color:C.muted},
  row:{minHeight:52,flexDirection:'row',alignItems:'center',gap:spacing.sm,padding:spacing.sm,borderRadius:radii.sm,backgroundColor:C.panel2},rowStack:{alignItems:'stretch',flexDirection:'column'},rowInfo:{flex:1,minWidth:0,flexDirection:'row',alignItems:'center',gap:spacing.sm},
  index:{width:28,height:28,alignItems:'center',justifyContent:'center',borderRadius:14,borderWidth:1,borderColor:C.info},indexText:{...typography.caption,color:C.info,fontWeight:'900'},

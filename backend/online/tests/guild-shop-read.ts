@@ -1,4 +1,4 @@
-import { guildShopReadHandler, guildShopDailyClaimHandler, guildShopPurchaseHandler, guildShopEventClaimHandler, guildConstructionDonationHandler, type GuildShopReadServices } from "../guild-shop-read";
+import { guildShopReadHandler, guildShopDailyClaimHandler, guildShopPurchaseHandler, guildShopEventClaimHandler, guildConstructionDonationHandler, guildShopWeeklyClaimHandler, type GuildShopReadServices } from "../guild-shop-read";
 function assert(value: unknown, message: string): asserts value {
  if (!value) throw new Error(message);
 }
@@ -9,7 +9,7 @@ async function run() {
   guildLevelForAccount: async () => 7,
   rpc: async <T>(name:string,args:Record<string,unknown>) => {
    calls.push({name,args});
-   if(name==="guild_construction_snapshot_server_v1"||name==="guild_shop_event_community_rewards_server_v1"||name==="guild_construction_enabled_server_v1")return [] as unknown as T;
+   if(name==="guild_construction_snapshot_server_v1"||name==="guild_shop_event_community_rewards_server_v1"||name==="guild_construction_enabled_server_v1"||name==="guild_shop_weekly_rewards_server_v1")return [] as unknown as T;
    return {balance:3000,earnedThisWeek:125,claimedDailyKinds:[],enabledItemIds:[],ownedItemIds:["border_silver"]} as unknown as T;
   },
  };
@@ -27,7 +27,7 @@ async function run() {
  assert(body.cards.find(x=>x.id==="border_silver")?.status==="owned","owned cosmetics");
  assert(body.cards.find(x=>x.id==="guild_pet_02")?.status==="insufficient_tokens","unaffordable pet");
  assert(body.cards.find(x=>x.id==="guild_companion_01")?.status==="guild_level_locked","guild level lock");
- assert(calls.length===4 && calls[0].name==="guild_shop_snapshot_server_v1" && calls[1].name==="guild_construction_snapshot_server_v1" && calls[2].name==="guild_shop_event_community_rewards_server_v1" && calls[3].name==="guild_construction_enabled_server_v1","all authenticated read-only RPCs called");
+ assert(calls.length===5 && calls[0].name==="guild_shop_snapshot_server_v1" && calls[1].name==="guild_construction_snapshot_server_v1" && calls[2].name==="guild_shop_event_community_rewards_server_v1" && calls[3].name==="guild_construction_enabled_server_v1" && calls[4].name==="guild_shop_weekly_rewards_server_v1","all authenticated read-only RPCs called");
  assert(calls[0].args.p_account_id==="11111111-1111-4111-8111-111111111111","verified identity forwarded");
  const noGuild = guildShopReadHandler({...services,guildLevelForAccount:async()=>null});
  const blocked = await noGuild(new Request("https://example.test/guild/shop",{headers:{authorization:"Bearer valid"}}));
@@ -100,6 +100,22 @@ async function run() {
  assert(donateOk.status===200,'valid donation forwarded');
  assert(donationCalls.length===1&&donationCalls[0].name==='guild_construction_donate_server_v2','construction donation uses locked SQL');
  assert(donationCalls[0].args.p_account_id==='11111111-1111-4111-8111-111111111111','donation account comes from bearer auth');
+
+ const weeklyCalls:Array<{name:string;args:Record<string,unknown>}>=[];
+ const weekly=guildShopWeeklyClaimHandler({...services,rpc:async<T>(name:string,args:Record<string,unknown>)=>{
+  weeklyCalls.push({name,args});return 50 as unknown as T;
+ }});
+ const weeklyUri=claimUri+'&action=weekly-claim';
+ const weeklyNoAuth=await weekly(new Request(weeklyUri,{method:'POST',body:'{"kind":"attendance"}'}));
+ assert(weeklyNoAuth.status===401,'weekly reward needs bearer auth');
+ const weeklyInvalid=await weekly(new Request(weeklyUri,{method:'POST',headers:{authorization:'Bearer valid'},body:'{"kind":"free_tokens"}'}));
+ assert(weeklyInvalid.status===400,'unknown weekly reward refused');
+ const weeklySpoof=await weekly(new Request(weeklyUri,{method:'POST',headers:{authorization:'Bearer valid'},body:'{"kind":"project","amount":9999}'}));
+ assert(weeklySpoof.status===400,'weekly reward amount cannot be set by client');
+ const weeklyOk=await weekly(new Request(weeklyUri,{method:'POST',headers:{authorization:'Bearer valid'},body:'{"kind":"attendance"}'}));
+ assert(weeklyOk.status===200,'valid weekly reward forwarded');
+ assert(weeklyCalls.length===1&&weeklyCalls[0].name==='guild_shop_claim_weekly_server_v1','weekly reward uses verified SQL');
+ assert(weeklyCalls[0].args.p_account_id==='11111111-1111-4111-8111-111111111111','weekly claim account is authenticated');
  console.log("guild shop read handler tests passed");
 }
 void run();

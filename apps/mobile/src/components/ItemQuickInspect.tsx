@@ -20,9 +20,9 @@ import {GemArtwork} from './GemArtwork';
 import {hasGemArtworkV1,hasRawGemArtworkV1,rawGemSpriteSourceV1} from '../theme/gem-assets';
 import type {WorkingTowardDestination} from '../core/working-toward';
 
-function InspectArt({state,itemId}:{state:GameState;itemId:string}){
+function InspectArt({itemId,model}:{itemId:string;model:ReturnType<typeof itemInspectModel>}){
  const {gl,language}=useGameplayText();
-  const C=useGameTheme(),model=itemInspectModel(state,itemId),item=model.item;
+  const C=useGameTheme(),item=model.item;
   if(item.type==='gear'&&hasEquipmentArtwork(item))return <EquipmentArtwork item={item} framed={false}/>;
   if(item.type==='tool')return <GatheringToolArtwork itemId={item.id} size={72} framed={false}/>;
   if(hasRawGemArtworkV1(item.id))return <Image source={rawGemSpriteSourceV1} resizeMode="contain" style={{width:72,height:72}}/>;
@@ -36,8 +36,9 @@ export function ItemQuickInspect({state,itemId,onClose,onNavigate,actions}:{stat
  const it=(key:keyof typeof itemDetailRows,params?:Record<string,string|number>)=>itemDetailText(language,key,params);
  const contentText=(value:string)=>itemDetailContent(language,value,gl);
   const C=useGameTheme(),s=useMemo(()=>makeStyles(C),[C]),[sourceDisclosure,setSourceDisclosure]=useState<Record<string,boolean>>({}),[useLimits,setUseLimits]=useState<Record<string,number>>({});
-  if(!itemId)return null;
-  const model=itemInspectModel(state,itemId),item=model.item,rarity=model.rarity,upgrade=model.upgrade,sockets=model.sockets,gearDecision=model.gearDecision,nameColor=rarityNameColor(model.rarityId,C.dark,C.text);
+  const model=useMemo(()=>itemId?itemInspectModel(state,itemId):undefined,[state,itemId]);
+  if(!itemId||!model)return null;
+  const item=model.item,rarity=model.rarity,upgrade=model.upgrade,sockets=model.sockets,gearDecision=model.gearDecision,nameColor=rarityNameColor(model.rarityId,C.dark,C.text);
   const sources=prioritizeItemSources(model.sources),uses=prioritizeItemUses(model.usedIn);
   const primarySource=sources[0],otherSources=sources.slice(1),otherSourcesOpen=!!sourceDisclosure[itemId];
   const useLimit=useLimits[itemId]??4,useRows=uses.slice(0,useLimit);
@@ -51,7 +52,7 @@ export function ItemQuickInspect({state,itemId,onClose,onNavigate,actions}:{stat
       <View style={s.sheet}>
         <View style={s.grabber}/>
         <View style={s.hero}>
-          <View style={[s.artBox,{borderColor:rarity.color,backgroundColor:rarity.surface}]}><InspectArt state={state} itemId={itemId}/></View>
+          <View style={[s.artBox,{borderColor:rarity.color,backgroundColor:rarity.surface}]}><InspectArt itemId={itemId} model={model}/></View>
           <View style={s.heroCopy}>
             <Text style={[s.rarity,{color:rarity.color}]}>{rarity.symbol+' '+contentText(rarity.label).toLocaleUpperCase(language)+' · '+contentText(item.type).toLocaleUpperCase(language)}</Text>
             <Text numberOfLines={2} style={[s.name,{color:nameColor}]}>{item.name+(upgrade?.rank?' +'+upgrade.rank:'')}</Text>

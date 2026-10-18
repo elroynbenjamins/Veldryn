@@ -55,7 +55,7 @@ export function guildShopReadHandler(services: GuildShopReadServices) {
 export function guildShopDailyClaimHandler(services: GuildShopReadServices) {
  return async (request: Request): Promise<Response> => {
   if (request.method !== "POST") return json({error:"method_not_allowed"},405);
-  const token = request.headers.get("authorization")?.match(/^Bearer (\\S+)$/i)?.[1];
+  const token = request.headers.get("authorization")?.match(/^Bearer (\S+)$/i)?.[1];
   if (!token) return json({error:"auth_required"},401);
   const accountId=await services.authenticate(token);
   if (!accountId) return json({error:"invalid_session"},401);

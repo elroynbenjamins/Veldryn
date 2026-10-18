@@ -1,4 +1,4 @@
-import {badgeDisplay,buildNavigationBadges,buildQuickNavigationBadges,buildSubrouteBadges,destinationForNotification,mergeRouteBadges,type NavigationNotification} from '../src/core/navigation-notifications';
+import {actionableClaimNotifications,badgeDisplay,buildNavigationBadges,buildQuickNavigationBadges,buildSubrouteBadges,destinationForNotification,mergeRouteBadges,type NavigationNotification} from '../src/core/navigation-notifications';
 function ok(value:unknown,message:string){if(!value)throw new Error(message)}
 function equal<T>(actual:T,expected:T,message:string){if(actual!==expected)throw new Error(`${message}: ${String(actual)} !== ${String(expected)}`)}
 
@@ -40,4 +40,21 @@ equal(quick['Friends']?.count,2,'Friend requests should route directly to Friend
 equal(quick['Skills']?.count,3,'Finished Forge jobs should route directly to Skills in quick navigation');
 ok(quick['Companions']?.dot,'Companion attention should route directly to Companions in quick navigation');
 equal(badgeDisplay(100),'99+','Large counts are capped for display');
+const claimable=actionableClaimNotifications({storyRewards:3,eventClaims:2,overflowStacks:1});
+equal(claimable.filter(row=>row.unread).length,3,'Only three genuinely actionable claim categories');
+equal(buildQuickNavigationBadges(claimable)['Quests']?.count,3,'Completed story reward count reaches Quests shortcut');
+equal(buildQuickNavigationBadges(claimable)['Events']?.count,2,'Earned active event rewards reach Events shortcut');
+ok(buildQuickNavigationBadges(claimable)['Inventory']?.dot,'Inventory overflow is actionable as a dot, not a noisy stack count');
+equal(buildNavigationBadges(claimable).world.count,3,'World primary navigation includes unclaimed story rewards');
+equal(buildNavigationBadges(claimable).account.count,2,'Account primary navigation includes event rewards');
+ok(buildNavigationBadges(claimable).inventory.dot,'Inventory primary navigation marks outstanding overflow');
+ok(!buildNavigationBadges(claimable).character.dot,'Earned quest rewards do not falsely flag Character');
+const cleared=actionableClaimNotifications({storyRewards:0,eventClaims:0,overflowStacks:0});
+ok(!Object.values(buildQuickNavigationBadges(cleared)).some(badge=>badge.dot),'Badges vanish immediately after confirmed claims/overflow cleanup');
+const corrupted=actionableClaimNotifications({storyRewards:Number.NaN,eventClaims:-3,overflowStacks:Number.POSITIVE_INFINITY});
+ok(!Object.values(buildQuickNavigationBadges(corrupted)).some(badge=>badge.dot),'Corrupt counters never generate fake or permanent alerts');
+const duped=buildQuickNavigationBadges([...claimable,...claimable]);
+equal(duped['Quests']?.count,3,'Stable claim IDs deduplicate repeat game-state reads');
+equal(destinationForNotification('inventory_overflow').subroute,'inventory.overflow','Overflow badge points to actual inventory storage management');
+equal(destinationForNotification('story_reward_ready').subroute,'world.story-journal','Story reward route is distinct from weekly contracts');
 console.log('PASS v51 navigation notification hierarchy');

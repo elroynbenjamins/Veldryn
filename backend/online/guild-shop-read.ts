@@ -34,6 +34,7 @@ export function guildShopReadHandler(services: GuildShopReadServices) {
    if (!snapshot || !Number.isSafeInteger(snapshot.balance) || !Array.isArray(snapshot.ownedItemIds) || !Array.isArray(construction))
     return json({error:"invalid_shop_snapshot"},503);
    return json({
+    guildLevel,
     balance:snapshot.balance,
     earnedThisWeek:snapshot.earnedThisWeek,
     weeklyCap:250,

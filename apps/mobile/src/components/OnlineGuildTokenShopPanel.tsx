@@ -1,6 +1,7 @@
 import {useEffect,useMemo,useState} from 'react';
 import {ActivityIndicator,Pressable,StyleSheet,Text,View} from 'react-native';
 import {GameButton} from './GameButton';
+import {OnlineGuildConstructionPanel} from './OnlineGuildConstructionPanel';
 import {Panel} from './Panel';
 import {useGameTheme} from '../theme/ThemeContext';
 import type {ThemeColors} from '../theme/theme';
@@ -65,6 +66,7 @@ export function OnlineGuildTokenShopPanel(){
    </View>)}
    {snapshot&&!visible.length?<Text style={styles.copy}>No rewards in this category yet.</Text>:null}
   </Panel>
+  {snapshot?<OnlineGuildConstructionPanel snapshot={snapshot}/>:null}
  </View>;
 }
 function makeStyles(C:ThemeColors){return StyleSheet.create({

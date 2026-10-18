@@ -20,10 +20,68 @@ try{
  await db.exec(`
  create role anon; create role authenticated; create role service_role bypassrls;
  create schema auth;
+ create function auth.uid() returns uuid language sql stable as
+ 'select nullif(current_setting(''app.test_uid'',true),'''')::uuid';
+ create function auth.jwt() returns jsonb language sql stable as 'select ''{}''::jsonb';
  create table auth.users(id uuid primary key);
- create table public.guilds(id uuid primary key,level integer not null);
+ create table public.guilds(
+  id uuid primary key,level integer not null,
+  banner_id text not null default 'world_tree_green',
+  profile_frame_id text not null default 'classic',
+  name_color_id text not null default 'name_ivory',
+  tag_color_id text not null default 'tag_silver',
+  nameplate_id text not null default 'classic',
+  motto text not null default 'Stronger together.',
+  background_id text not null default 'plain');
  create table public.guild_members(guild_id uuid references public.guilds(id),
-  account_id uuid references auth.users(id),primary key(account_id));
+  account_id uuid references auth.users(id),role text not null default 'leader',primary key(account_id));
+ create table public.guild_appearance(
+  guild_id uuid primary key references public.guilds(id),
+  banner_id text not null default 'world_tree_green',
+  border_id text not null default 'classic',
+  name_color_id text not null default 'name_ivory',
+  tag_color_id text not null default 'tag_silver',
+  nameplate_id text not null default 'classic',
+  background_id text not null default 'plain',
+  revision bigint not null default 0,
+  updated_at timestamptz not null default now());
+ create table public.guild_cosmetic_unlocks(
+  guild_id uuid not null references public.guilds(id),
+  unlock_id text not null,
+  source_kind text not null check(source_kind in ('guild_level','guild_hall','guild_pve','event','admin')),
+  source_ref text not null,
+  unlocked_at timestamptz not null default now(),
+  primary key(guild_id,unlock_id),
+  constraint guild_cosmetic_unlocks_source_kind_check
+   check(source_kind in ('guild_level','guild_hall','guild_pve','event','admin')));
+ create or replace function public.update_guild_appearance_with_background_v3(
+  p_banner_id text,p_border_id text,p_name_color_id text,p_tag_color_id text,
+  p_nameplate_id text,p_motto text,p_background_id text
+ ) returns table(
+  guild_id uuid,banner_id text,border_id text,name_color_id text,
+  tag_color_id text,nameplate_id text,motto text,revision bigint,background_id text
+ ) language plpgsql security definer as $f$
+ declare v_gid uuid;begin
+  select gm.guild_id into v_gid from public.guild_members gm where gm.account_id=auth.uid();
+  if v_gid is null then raise exception 'NOT_IN_GUILD';end if;
+  if p_banner_id not in ('world_tree_green','swordwing_blue') or
+     p_border_id not in ('classic','bronze_fellowship') then raise exception 'BASE_COSMETIC_DENIED';end if;
+  update public.guilds g set
+   banner_id=p_banner_id,profile_frame_id=p_border_id,name_color_id=p_name_color_id,
+   tag_color_id=p_tag_color_id,nameplate_id=p_nameplate_id,motto=p_motto,
+   background_id=p_background_id where g.id=v_gid;
+  insert into public.guild_appearance(guild_id,banner_id,border_id,name_color_id,
+   tag_color_id,nameplate_id,background_id,revision)
+  values(v_gid,p_banner_id,p_border_id,p_name_color_id,p_tag_color_id,p_nameplate_id,
+   p_background_id,1) on conflict(guild_id) do update set
+   banner_id=excluded.banner_id,border_id=excluded.border_id,
+   name_color_id=excluded.name_color_id,tag_color_id=excluded.tag_color_id,
+   nameplate_id=excluded.nameplate_id,background_id=excluded.background_id,
+   revision=public.guild_appearance.revision+1;
+  return query select g.id,g.banner_id,g.profile_frame_id,g.name_color_id,
+   g.tag_color_id,g.nameplate_id,g.motto,a.revision,g.background_id
+   from public.guilds g join public.guild_appearance a on a.guild_id=g.id where g.id=v_gid;
+ end $f$;
  create table public.guild_muster_daily(
   guild_id uuid not null,account_id uuid not null,activity_date date not null,
   check_in_points integer not null default 0,combat_points integer not null default 0,
@@ -188,6 +246,39 @@ try{
  assert.equal(completed.result.completed,true,'last contribution completes project');
  const unlock=await single('select unlock_id from public.guild_construction_unlocks where guild_id=$1',[guild]);
  assert.equal(unlock.unlock_id,'guild_banner_stormwatch','cosmetic unlock issued once for guild');
+ const projection=await single(
+  'select source_kind,source_ref from public.guild_cosmetic_unlocks where guild_id=$1 and unlock_id=$2',
+  [guild,'guild_banner_stormwatch']);
+ assert.equal(projection.source_kind,'construction','constructed Guild cosmetics share canonical unlock records');
+ assert.equal(projection.source_ref,'stormwatch_banner','cosmetic tracks original construction project');
+ await db.query(`select set_config('app.test_uid',$1,false)`,[account]);
+ const beforeArt=await db.query('select * from public.guild_construction_appearance_rewards_v1()');
+ assert.equal(beforeArt.rows.find(x=>x.unlock_id==='guild_banner_stormwatch')?.owned,true);
+ assert.equal(beforeArt.rows.find(x=>x.unlock_id==='guild_banner_stormwatch')?.released,false);
+ const saveArgs=[ 'guild_banner_stormwatch','classic','name_ivory','tag_silver',
+   'classic','New motto','plain'];
+ await fail(`select * from public.update_guild_appearance_with_construction_v1(
+  $1,$2,$3,$4,$5,$6,$7)`,saveArgs);
+ // Artwork/operator release is distinct from a member having completed the
+ // structure: both are required for a Guild cosmetics save.
+ await db.exec(`update public.guild_construction_cosmetic_releases
+  set released=true where unlock_id='guild_banner_stormwatch'`);
+ const savedConstruction=await db.query(`select * from public.update_guild_appearance_with_construction_v1(
+  $1,$2,$3,$4,$5,$6,$7)`,saveArgs);
+ assert.equal(savedConstruction.rows[0].banner_id,'guild_banner_stormwatch');
+ assert.equal(Number(savedConstruction.rows[0].revision),1,'single optimistic guild appearance revision');
+ assert.equal((await single('select banner_id from public.guild_appearance where guild_id=$1',[guild])).banner_id,'guild_banner_stormwatch');
+ await db.query(`update public.guild_members set role='member' where account_id=$1`,[account]);
+ await fail(`select * from public.update_guild_appearance_with_construction_v1(
+  $1,$2,$3,$4,$5,$6,$7)`,saveArgs);
+ await db.query(`update public.guild_members set role='leader' where account_id=$1`,[account]);
+ await fail(`select * from public.update_guild_appearance_with_construction_v1(
+  'world_tree_green','guild_frame_verdant','name_ivory','tag_silver','classic','New motto','plain')`);
+ assert.equal((await single(`select has_function_privilege('anon',
+  'public.update_guild_appearance_with_construction_v1(text,text,text,text,text,text,text)','EXECUTE') as allowed`)).allowed,false);
+ assert.equal((await single(`select has_function_privilege('authenticated',
+  'public.update_guild_appearance_with_construction_v1(text,text,text,text,text,text,text)','EXECUTE') as allowed`)).allowed,true);
+
  assert.equal((await donate('MOSS_FIBER',1,'donation_fiber_one')).result.alreadyProcessed,true);
  await fail(`select public.guild_construction_donate_server_v2($1,'stormwatch_banner','gold',100,'donation_gold_two')`,[account]);
  console.log(`Guild Shop database migrations and transactional invariants passed (${guildFiles.length} migrations).`);

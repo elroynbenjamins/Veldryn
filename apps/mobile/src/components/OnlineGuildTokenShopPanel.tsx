@@ -5,7 +5,7 @@ import {OnlineGuildConstructionPanel} from './OnlineGuildConstructionPanel';
 import {Panel} from './Panel';
 import {useGameTheme} from '../theme/ThemeContext';
 import type {ThemeColors} from '../theme/theme';
-import {loadOnlineGuildTokenShop,type GuildTokenShopCategory,type GuildTokenShopSnapshot} from '../online/guild-token-shop';
+import {claimOnlineGuildDailyTokens,loadOnlineGuildTokenShop,type GuildTokenShopCategory,type GuildTokenShopSnapshot} from '../online/guild-token-shop';
 
 type Filter='all'|GuildTokenShopCategory;
 const FILTERS:readonly {id:Filter;label:string}[]=[
@@ -23,6 +23,17 @@ export function OnlineGuildTokenShopPanel(){
  const [snapshot,setSnapshot]=useState<GuildTokenShopSnapshot|null>(null);
  const [filter,setFilter]=useState<Filter>('all');
  const [loading,setLoading]=useState(true),[error,setError]=useState('');
+ const [claiming,setClaiming]=useState<'attendance'|'contribution'|null>(null),[claimNotice,setClaimNotice]=useState('');
+ const claim=async(kind:'attendance'|'contribution')=>{
+  if(claiming||loading)return;
+  setClaiming(kind);setError('');setClaimNotice('');
+  try{
+   const credited=await claimOnlineGuildDailyTokens(kind);
+   setClaimNotice(credited>0?`+ ${credited} Guild Tokens earned!`:'Already claimed or normal weekly cap reached.');
+   setSnapshot(await loadOnlineGuildTokenShop());
+  }catch(reason){setError(reason instanceof Error?reason.message:'Unable to claim Guild Tokens.');}
+  finally{setClaiming(null);}
+ };
  useEffect(()=>{
   let active=true;
   const load=async()=>{
@@ -50,6 +61,15 @@ export function OnlineGuildTokenShopPanel(){
     <View style={styles.weekly}><Text style={styles.mini}>NORMAL WEEKLY CAP</Text><Text style={styles.weeklyNumber}>{snapshot?`${snapshot.earnedThisWeek}/${snapshot.weeklyCap}`:'0/250'}</Text></View>
    </View>
    <Text style={styles.note}>Guild event milestones can award additional tokens above the normal weekly cap. Your balance remains yours when changing guilds.</Text>
+   {snapshot?<View style={styles.claimBlock}>
+    <Text style={styles.mini}>VERIFIED DAILY GUILD MUSTER</Text>
+    <View style={styles.dailyRow}>
+     <GameButton compact tone="secondary" title={snapshot.claimedDailyKinds.includes('attendance')?'Check-in claimed':claiming==='attendance'?'Claiming…':'Claim 10 · Check-in'} disabled={loading||claiming!==null||snapshot.claimedDailyKinds.includes('attendance')} onPress={()=>void claim('attendance')}/>
+     <GameButton compact tone="secondary" title={snapshot.claimedDailyKinds.includes('contribution')?'Contribution claimed':claiming==='contribution'?'Claiming…':'Claim 10 · Activity'} disabled={loading||claiming!==null||snapshot.claimedDailyKinds.includes('contribution')} onPress={()=>void claim('contribution')}/>
+    </View>
+    <Text style={styles.note}>Check in or complete verified Combat and Skilling through Guild Muster to earn these rewards. Each claim is available once per UTC day.</Text>
+    {claimNotice?<Text accessibilityLiveRegion="polite" style={styles.success}>{claimNotice}</Text>:null}
+   </View>:null}
   </Panel>
   <Panel>
    <View style={styles.between}><Text style={styles.section}>Exclusive rewards</Text>{loading?<ActivityIndicator color={C.accent}/>:<GameButton compact tone="secondary" title="Refresh" onPress={()=>void retry()}/>}</View>
@@ -79,6 +99,7 @@ function makeStyles(C:ThemeColors){return StyleSheet.create({
  between:{flexDirection:'row',justifyContent:'space-between',alignItems:'center',gap:8},
  section:{fontSize:16,fontWeight:'800',color:C.text},
  notice:{fontSize:10,color:C.warning,lineHeight:15,marginTop:8},
+ claimBlock:{marginTop:12,gap:8},dailyRow:{flexDirection:'row',flexWrap:'wrap',gap:8},success:{fontSize:10,color:C.good},
  error:{fontSize:11,color:C.bad,marginTop:8},
  filters:{flexDirection:'row',flexWrap:'wrap',gap:6,marginTop:12,marginBottom:4},
  filter:{paddingVertical:6,paddingHorizontal:10,borderWidth:1,borderRadius:8,borderColor:C.lineStrong,backgroundColor:C.panel2},

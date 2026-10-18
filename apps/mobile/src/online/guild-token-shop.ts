@@ -14,6 +14,7 @@ export interface GuildConstructionProgress{
 }
 export interface GuildTokenShopSnapshot{
  guildLevel:number;balance:number;earnedThisWeek:number;weeklyCap:number;cards:GuildTokenShopCard[];
+ claimedDailyKinds:Array<"attendance"|"contribution">;
  constructionTemplates:GuildConstructionTemplate[];construction:GuildConstructionProgress[];
 }
 const categories=new Set<string>(['pet','companion','border','profile_icon','emote_set']);
@@ -25,7 +26,8 @@ function validateSnapshot(value:unknown):GuildTokenShopSnapshot{
  if(!Number.isSafeInteger(o.guildLevel)||Number(o.guildLevel)<1
     ||!Number.isSafeInteger(o.balance)||Number(o.balance)<0
     ||!Number.isSafeInteger(o.earnedThisWeek)||Number(o.earnedThisWeek)<0
-    ||o.weeklyCap!==250||!Array.isArray(o.cards)
+    ||o.weeklyCap!==250||!Array.isArray(o.claimedDailyKinds)
+    ||o.claimedDailyKinds.some(k=>k!=="attendance"&&k!=="contribution")||!Array.isArray(o.cards)
     ||!Array.isArray(o.constructionTemplates)||!Array.isArray(o.construction))throw new Error('Invalid Guild Token Shop response.');
  const cards:GuildTokenShopCard[]=o.cards.map((candidate:unknown)=>{
   if(!candidate||typeof candidate!=='object')throw new Error('Invalid Guild Shop reward.');
@@ -56,7 +58,7 @@ function validateSnapshot(value:unknown):GuildTokenShopSnapshot{
   return progress;
  });
  return {guildLevel:o.guildLevel as number,balance:o.balance as number,earnedThisWeek:o.earnedThisWeek as number,
-  weeklyCap:o.weeklyCap as number,cards,constructionTemplates,construction};
+  weeklyCap:o.weeklyCap as number,cards,claimedDailyKinds:o.claimedDailyKinds as Array<"attendance"|"contribution">,constructionTemplates,construction};
 }
 
 /** Guild Tokens are distinct from the existing Quartermaster's Guild Marks.
@@ -77,5 +79,32 @@ export async function loadOnlineGuildTokenShop():Promise<GuildTokenShopSnapshot|
   const value=await response.json();
   if(!response.ok)throw new Error(typeof value?.error==='string'?value.error:'Guild Token Shop unavailable.');
   return validateSnapshot(value);
+ }finally{clearTimeout(timeout);}
+}
+
+/** Claim a standard daily reward from actual server-verified Guild Muster.
+ * Calling twice is safe: the database uses a stable daily claim key.
+ */
+export async function claimOnlineGuildDailyTokens(kind:'attendance'|'contribution'):Promise<number>{
+ if(!supabase||!supabasePublicEndpoint||!supabasePublicKey)throw new Error('Online services are unavailable.');
+ const {data:{session},error}=await supabase.auth.getSession();
+ if(error)throw error;
+ if(!session)throw new Error('Please sign in again.');
+ const controller=new AbortController(),timeout=setTimeout(()=>controller.abort(),15000);
+ try{
+  const response=await fetch(`${supabasePublicEndpoint}/functions/v1/gameplay?view=guild-shop`,{
+   method:'POST',signal:controller.signal,
+   headers:{Authorization:`Bearer ${session.access_token}`,apikey:supabasePublicKey,'Content-Type':'application/json'},
+   body:JSON.stringify({kind}),
+  });
+  const body=await response.json();
+  if(!response.ok){
+   if(body?.error==='guild_daily_reward_not_earned')
+    throw new Error(kind==='attendance'?'Check in with Guild Muster first.':'Contribute through verified Combat or Skilling first.');
+   throw new Error(typeof body?.error==='string'?body.error:'Unable to claim Guild Tokens.');
+  }
+  if(!Number.isSafeInteger(body?.credited)||body.credited<0||body.credited>10)
+   throw new Error('The reward could not be verified. Please refresh.');
+  return body.credited as number;
  }finally{clearTimeout(timeout);}
 }

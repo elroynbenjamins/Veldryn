@@ -4,6 +4,7 @@ export interface GuildShopSnapshot {
  balance: number;
  earnedThisWeek: number;
  ownedItemIds: string[];
+ claimedDailyKinds: Array<'attendance'|'contribution'>;
 }
 export interface GuildShopReadServices {
  authenticate(token: string): Promise<string | null>;
@@ -37,6 +38,7 @@ export function guildShopReadHandler(services: GuildShopReadServices) {
     guildLevel,
     balance:snapshot.balance,
     earnedThisWeek:snapshot.earnedThisWeek,
+    claimedDailyKinds:Array.isArray(snapshot.claimedDailyKinds)?snapshot.claimedDailyKinds:[],
     weeklyCap:250,
     catalogue:GUILD_SHOP_CATALOGUE,
     constructionTemplates:GUILD_CONSTRUCTION_TEMPLATES,

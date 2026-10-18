@@ -28,12 +28,14 @@ export function guildShopReadHandler(services: GuildShopReadServices) {
   try {
    const guildLevel = await services.guildLevelForAccount(accountId);
    if (guildLevel === null) return json({error:"guild_membership_required"},403);
-   const [snapshot,construction] = await Promise.all([
+   const [snapshot,construction,eventBonuses] = await Promise.all([
     services.rpc<GuildShopSnapshot>("guild_shop_snapshot_server_v1",{p_account_id:accountId}),
     services.rpc<Array<{templateId:string;completed:boolean;resources:Record<string,number>}>>(
       "guild_construction_snapshot_server_v1",{p_account_id:accountId}),
+    services.rpc<Array<{eventId:string;milestonePercent:number;tokens:number;claimed:boolean}>>(
+      "guild_shop_event_community_rewards_server_v1",{p_account_id:accountId}),
    ]);
-   if (!snapshot || !Number.isSafeInteger(snapshot.balance) || !Array.isArray(snapshot.ownedItemIds) || !Array.isArray(construction))
+   if (!snapshot || !Number.isSafeInteger(snapshot.balance) || !Array.isArray(snapshot.ownedItemIds) || !Array.isArray(construction) || !Array.isArray(eventBonuses))
     return json({error:"invalid_shop_snapshot"},503);
    return json({
     guildLevel,
@@ -44,6 +46,7 @@ export function guildShopReadHandler(services: GuildShopReadServices) {
     catalogue:GUILD_SHOP_CATALOGUE,
     constructionTemplates:GUILD_CONSTRUCTION_TEMPLATES,
     construction,
+    eventBonuses,
     cards:buildGuildShopCards({guildLevel,tokenBalance:snapshot.balance,ownedItemIds:snapshot.ownedItemIds}).map(card=>({
      ...card,released:Array.isArray(snapshot.enabledItemIds)&&snapshot.enabledItemIds.includes(card.id),
     })),
@@ -117,5 +120,36 @@ export function guildShopPurchaseHandler(services:GuildShopReadServices){
   }catch{
    return json({error:"guild_token_purchase_unavailable"},503);
   }
+ };
+}
+
+/** Claim a finite event milestone after existing event reward validation.
+ * The event claim record is the sole source of truth; no client token amount.
+ */
+export function guildShopEventClaimHandler(services:GuildShopReadServices){
+ return async(request:Request):Promise<Response>=>{
+  if(request.method!=="POST")return json({error:"method_not_allowed"},405);
+  const token=request.headers.get("authorization")?.match(/^Bearer (\S+)$/i)?.[1];
+  if(!token)return json({error:"auth_required"},401);
+  const accountId=await services.authenticate(token);
+  if(!accountId)return json({error:"invalid_session"},401);
+  const raw=await request.text();
+  if(raw.length>512)return json({error:"request_too_large"},413);
+  let input:unknown;
+  try{input=JSON.parse(raw);}catch{return json({error:"invalid_json"},400);}
+  if(!input||typeof input!=="object"||Array.isArray(input))return json({error:"invalid_request"},400);
+  const body=input as Record<string,unknown>;
+  if(Object.keys(body).length!==2||typeof body.eventId!=="string"
+    ||!/^[A-Za-z0-9_-]{1,80}$/.test(body.eventId)
+    ||![25,50,75,100].includes(body.milestonePercent as number))
+   return json({error:"invalid_event_reward"},400);
+  try{
+   const credited=await services.rpc<number>("guild_shop_claim_event_community_server_v1",{
+    p_account_id:accountId,p_event_id:body.eventId,p_milestone_percent:body.milestonePercent,
+   });
+   if(!Number.isSafeInteger(credited)||credited<0||credited>350)
+    return json({error:"invalid_claim_result"},503);
+   return json({credited});
+  }catch{return json({error:"event_token_claim_unavailable"},503);}
  };
 }

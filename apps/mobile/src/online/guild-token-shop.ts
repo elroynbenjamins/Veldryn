@@ -15,11 +15,15 @@ export interface GuildConstructionProgress{
 export interface GuildTokenEventBonus{
  eventId:string;milestonePercent:number;tokens:number;claimed:boolean;
 }
+export type GuildWeeklyRewardKind='attendance'|'project'|'boss';
+export interface GuildTokenWeeklyReward{
+ kind:GuildWeeklyRewardKind;tokens:number;eligible:boolean;claimed:boolean;
+}
 export interface GuildTokenShopSnapshot{
  guildLevel:number;balance:number;earnedThisWeek:number;weeklyCap:number;cards:GuildTokenShopCard[];
  claimedDailyKinds:Array<"attendance"|"contribution">;
  constructionTemplates:GuildConstructionTemplate[];construction:GuildConstructionProgress[];
- eventBonuses:GuildTokenEventBonus[];
+ eventBonuses:GuildTokenEventBonus[];weeklyRewards:GuildTokenWeeklyReward[];
 }
 const categories=new Set<string>(['pet','companion','border','profile_icon','emote_set']);
 const statuses=new Set<string>(['owned','guild_level_locked','insufficient_tokens','eligible']);
@@ -33,7 +37,7 @@ function validateSnapshot(value:unknown):GuildTokenShopSnapshot{
     ||o.weeklyCap!==250||!Array.isArray(o.claimedDailyKinds)
     ||o.claimedDailyKinds.some(k=>k!=="attendance"&&k!=="contribution")||!Array.isArray(o.cards)
     ||!Array.isArray(o.constructionTemplates)||!Array.isArray(o.construction)
-    ||!Array.isArray(o.eventBonuses))throw new Error('Invalid Guild Token Shop response.');
+    ||!Array.isArray(o.eventBonuses)||!Array.isArray(o.weeklyRewards))throw new Error('Invalid Guild Token Shop response.');
  const cards:GuildTokenShopCard[]=o.cards.map((candidate:unknown)=>{
   if(!candidate||typeof candidate!=='object')throw new Error('Invalid Guild Shop reward.');
   const c=candidate as Record<string,unknown>;
@@ -72,8 +76,18 @@ function validateSnapshot(value:unknown):GuildTokenShopSnapshot{
    ||typeof reward.claimed!=='boolean')throw new Error('Invalid event reward.');
   return reward as unknown as GuildTokenEventBonus;
  });
+ const weeklyRewards:GuildTokenWeeklyReward[]=o.weeklyRewards.map((value:unknown)=>{
+  if(!value||typeof value!=='object')throw new Error('Invalid weekly Guild reward.');
+  const reward=value as Record<string,unknown>;
+  const expected={attendance:50,project:40,boss:30} as const;
+  if(typeof reward.kind!=='string'||!(reward.kind in expected)
+    ||reward.tokens!==expected[reward.kind as GuildWeeklyRewardKind]
+    ||typeof reward.eligible!=='boolean'||typeof reward.claimed!=='boolean')
+   throw new Error('Invalid weekly Guild reward.');
+  return reward as unknown as GuildTokenWeeklyReward;
+ });
  return {guildLevel:o.guildLevel as number,balance:o.balance as number,earnedThisWeek:o.earnedThisWeek as number,
-  weeklyCap:o.weeklyCap as number,cards,claimedDailyKinds:o.claimedDailyKinds as Array<"attendance"|"contribution">,constructionTemplates,construction,eventBonuses};
+  weeklyCap:o.weeklyCap as number,cards,claimedDailyKinds:o.claimedDailyKinds as Array<"attendance"|"contribution">,constructionTemplates,construction,eventBonuses,weeklyRewards};
 }
 
 /** Guild Tokens are distinct from the existing Quartermaster's Guild Marks.
@@ -167,6 +181,29 @@ export async function claimOnlineGuildEventBonus(eventId:string,milestonePercent
    typeof value?.error==='string'?value.error:'Unable to claim Guild event bonus.');
   if(!Number.isSafeInteger(value?.credited)||value.credited<0||value.credited>400)
    throw new Error('Event reward result could not be verified.');
+  return value.credited as number;
+ }finally{clearTimeout(timeout);}
+}
+
+/** The backend validates a qualifying goal against recorded Guild activity,
+ * determines the amount, and observes the shared 250 normal weekly cap.
+ */
+export async function claimOnlineGuildWeeklyTokens(kind:GuildWeeklyRewardKind):Promise<number>{
+ if(!supabase||!supabasePublicEndpoint||!supabasePublicKey)throw new Error('Online services are unavailable.');
+ const {data:{session},error}=await supabase.auth.getSession();
+ if(error)throw error;
+ if(!session)throw new Error('Sign in to claim weekly Guild Tokens.');
+ const controller=new AbortController(),timeout=setTimeout(()=>controller.abort(),15000);
+ try{
+  const response=await fetch(`${supabasePublicEndpoint}/functions/v1/gameplay?view=guild-shop&action=weekly-claim`,{
+   method:'POST',signal:controller.signal,
+   headers:{Authorization:`Bearer ${session.access_token}`,apikey:supabasePublicKey,'Content-Type':'application/json'},
+   body:JSON.stringify({kind}),
+  });
+  const value=await response.json();
+  if(!response.ok)throw new Error(typeof value?.error==='string'?value.error:'Weekly Guild reward could not be claimed.');
+  if(!Number.isSafeInteger(value?.credited)||value.credited<0||value.credited>50)
+   throw new Error('The weekly reward result could not be verified.');
   return value.credited as number;
  }finally{clearTimeout(timeout);}
 }

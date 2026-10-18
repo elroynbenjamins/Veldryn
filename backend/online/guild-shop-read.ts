@@ -5,6 +5,7 @@ export interface GuildShopSnapshot {
  earnedThisWeek: number;
  ownedItemIds: string[];
  claimedDailyKinds: Array<'attendance'|'contribution'>;
+ enabledItemIds: string[];
 }
 export interface GuildShopReadServices {
  authenticate(token: string): Promise<string | null>;
@@ -43,7 +44,9 @@ export function guildShopReadHandler(services: GuildShopReadServices) {
     catalogue:GUILD_SHOP_CATALOGUE,
     constructionTemplates:GUILD_CONSTRUCTION_TEMPLATES,
     construction,
-    cards:buildGuildShopCards({guildLevel,tokenBalance:snapshot.balance,ownedItemIds:snapshot.ownedItemIds}),
+    cards:buildGuildShopCards({guildLevel,tokenBalance:snapshot.balance,ownedItemIds:snapshot.ownedItemIds}).map(card=>({
+     ...card,released:Array.isArray(snapshot.enabledItemIds)&&snapshot.enabledItemIds.includes(card.id),
+    })),
    });
   } catch {
    return json({error:"guild_shop_temporarily_unavailable"},503);

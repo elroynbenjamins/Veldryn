@@ -8,7 +8,7 @@ assert.deepEqual(validateGuildShopPurchase("guild_pet_01",2,5000,[]),{ok:false,r
 assert.deepEqual(validateGuildShopPurchase("guild_pet_01",3,5000,["guild_pet_01"]),{ok:false,reason:"already_owned"});
 assert.deepEqual(validateGuildShopPurchase("guild_pet_01",null,5000,[]),{ok:false,reason:"guild_membership_required"});
 assert.deepEqual(validateGuildShopPurchase("nonexistent",20,99999,[]),{ok:false,reason:"unknown_item"});
-const donation={templateId:"stormwatch_banner",guildLevel:5,completed:false,resourceId:"wood",amount:100,alreadyContributed:0};
+const donation={templateId:"stormwatch_banner",guildLevel:5,completed:false,resourceId:"GREENWOOD_LOG",amount:100,alreadyContributed:0};
 assert.equal(validateConstructionDonation(donation).ok,true);
 assert.deepEqual(validateConstructionDonation({...donation,guildLevel:4}),{ok:false,reason:"guild_level_locked"});
 assert.deepEqual(validateConstructionDonation({...donation,completed:true}),{ok:false,reason:"project_completed"});

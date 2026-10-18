@@ -127,7 +127,7 @@ export function OnlineGuildTokenShopPanel({onRewardsChanged}:{onRewardsChanged?:
   </Panel>:null}
   <Panel>
    <View style={styles.between}><Text style={styles.section}>Exclusive rewards</Text>{loading?<ActivityIndicator color={C.accent}/>:<GameButton compact tone="secondary" title="Refresh" onPress={()=>void retry()}/>}</View>
-   <Text style={styles.notice}>Only released rewards can be purchased. Rewards remain locked while final artwork and transaction testing are completed.</Text>
+   <Text style={styles.notice}>Only released rewards can be purchased. Guild levels above 10 are future progression content; their rewards will unlock after that cap expands.</Text>
    {error?<Text accessibilityRole="alert" style={styles.error}>{error}</Text>:null}
    {!loading&&!error&&!snapshot?<Text style={styles.copy}>Join a guild to browse its permanent rewards.</Text>:null}
    <View style={styles.filters}>{FILTERS.map(tab=><Pressable key={tab.id} accessibilityRole="button" accessibilityState={{selected:filter===tab.id}} onPress={()=>setFilter(tab.id)} style={[styles.filter,filter===tab.id&&styles.filterSelected]}><Text style={[styles.filterText,filter===tab.id&&styles.filterTextSelected]}>{tab.label}</Text></Pressable>)}</View>
@@ -136,7 +136,7 @@ export function OnlineGuildTokenShopPanel({onRewardsChanged}:{onRewardsChanged?:
     <Text style={styles.meta}>Guild Lv {card.requiredGuildLevel} · {STATUS_LABELS[card.status]}</Text>
     {card.status!=='owned'?<View style={styles.track}><View style={[styles.fill,{width:`${Math.round(card.progressToPrice*100)}%` as `${number}%`}]}/></View>:null}
     {card.status==='insufficient_tokens'?<Text style={styles.hint}>{Math.max(0,card.price-(snapshot?.balance??0)).toLocaleString()} more tokens needed</Text>:null}
-    {card.status==='guild_level_locked'?<Text style={styles.hint}>Reach Guild Level {card.requiredGuildLevel} to unlock this reward.</Text>:null}
+    {card.status==='guild_level_locked'?<Text style={styles.hint}>{card.requiredGuildLevel>10?`Future Guild progression · Level ${card.requiredGuildLevel}`:`Reach Guild Level ${card.requiredGuildLevel} to unlock this reward.`}</Text>:null}
     {card.released&&card.status==='eligible'?<GameButton compact title={purchasing===card.id?'Purchasing…':'Unlock reward'} disabled={loading||!!purchasing||claiming!==null||!!weeklyBusy||!!eventBusy} onPress={()=>void buy(card.id)}/>:null}
     {!card.released&&card.status!=='owned'?<Text style={styles.hint}>Coming soon · Reward not released</Text>:null}
    </View>)}

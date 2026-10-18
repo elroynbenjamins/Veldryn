@@ -4,7 +4,7 @@ export type GuildTokenShopCategory='pet'|'companion'|'border'|'profile_icon'|'em
 export type GuildTokenShopStatus='owned'|'guild_level_locked'|'insufficient_tokens'|'eligible';
 export interface GuildTokenShopCard{
  id:string;title:string;category:GuildTokenShopCategory;requiredGuildLevel:number;
- price:number;status:GuildTokenShopStatus;progressToPrice:number;
+ price:number;status:GuildTokenShopStatus;progressToPrice:number;released:boolean;
 }
 export interface GuildConstructionTemplate{
  id:string;guildLevel:number;gold:number;materials:Array<{materialKey:string;amount:number}>;unlockId:string;
@@ -36,6 +36,7 @@ function validateSnapshot(value:unknown):GuildTokenShopSnapshot{
    ||!categories.has(String(c.category))||!statuses.has(String(c.status))
    ||!Number.isSafeInteger(c.price)||Number(c.price)<0
    ||!Number.isSafeInteger(c.requiredGuildLevel)||Number(c.requiredGuildLevel)<1
+   ||typeof c.released!=='boolean'
    ||typeof c.progressToPrice!=='number'||!Number.isFinite(c.progressToPrice)
    ||c.progressToPrice<0||c.progressToPrice>1)throw new Error('Invalid Guild Shop reward.');
   return c as unknown as GuildTokenShopCard;
@@ -106,5 +107,28 @@ export async function claimOnlineGuildDailyTokens(kind:'attendance'|'contributio
   if(!Number.isSafeInteger(body?.credited)||body.credited<0||body.credited>10)
    throw new Error('The reward could not be verified. Please refresh.');
   return body.credited as number;
+ }finally{clearTimeout(timeout);}
+}
+
+/** An account can own each reward once. If the HTTP response is lost, replay
+ * the same SKU: SQL returns already_owned without charging a second time.
+ */
+export async function purchaseOnlineGuildTokenReward(itemId:string):Promise<'purchased'|'already_owned'>{
+ if(!supabase||!supabasePublicEndpoint||!supabasePublicKey)throw new Error('Online services are unavailable.');
+ const {data:{session},error}=await supabase.auth.getSession();
+ if(error)throw error;
+ if(!session)throw new Error('Sign in to purchase Guild rewards.');
+ const controller=new AbortController(),timeout=setTimeout(()=>controller.abort(),20000);
+ try{
+  const response=await fetch(`${supabasePublicEndpoint}/functions/v1/gameplay?view=guild-shop&action=purchase`,{
+   method:'POST',signal:controller.signal,
+   headers:{Authorization:`Bearer ${session.access_token}`,apikey:supabasePublicKey,'Content-Type':'application/json'},
+   body:JSON.stringify({itemId}),
+  });
+  const body=await response.json();
+  if(!response.ok)throw new Error(typeof body?.error==='string'?body.error:'Unable to purchase Guild reward.');
+  if(body?.status!=='purchased'&&body?.status!=='already_owned')
+   throw new Error('Purchase status could not be verified. Refresh your Guild Shop.');
+  return body.status as 'purchased'|'already_owned';
  }finally{clearTimeout(timeout);}
 }

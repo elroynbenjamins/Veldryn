@@ -40,6 +40,6 @@ export function guildShopEligibility(entry: GuildShopEntry, guildLevel: number, 
 /** Project costs are provisional until mapped to canonical material IDs. */
 export const GUILD_CONSTRUCTION_TEMPLATES = [
   { id:"stormwatch_banner",guildLevel:5,gold:300000,materials:[
-    { materialKey:"wood",amount:10000 },{ materialKey:"iron",amount:5000 },{ materialKey:"cloth",amount:2000 },
+    { materialKey:"GREENWOOD_LOG",amount:10000 },{ materialKey:"ASTER_IRON_INGOT",amount:5000 },{ materialKey:"MOSS_FIBER",amount:2000 },
   ],unlockId:"guild_banner_stormwatch" },
 ] as const;

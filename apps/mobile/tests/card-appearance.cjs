@@ -46,6 +46,6 @@ for(const id of ['bloomwake','veilbreak','frostfall','heartbond','starfall','vol
  for(const variant of ['wide_v2','square_v2','portrait'])assert.ok(futureVariants.includes(id+'_'+variant+'.webp'),'Future background variant must remain archived: '+id+'_'+variant+'.webp');
 }
 for(const file of ['ProfileScenePreview.tsx','PublicProfileScene.tsx','ProfileEditor.tsx'])assert.ok(read('src/components/'+file).includes('<ProfileFrameOverlay'));
-const online=read('src/components/OnlineGuildCustomizationPanel.tsx');assert.ok(online.includes('background_id:result.background_id'));assert.ok(online.includes('backgroundId!==normalizeGuildBackgroundId(guild.background_id)'));assert.ok(online.includes('disabled={!editable||busy}'));
+const online=read('src/components/OnlineGuildCustomizationPanel.tsx');assert.ok(online.includes('background_id:result.background_id'));assert.ok(online.includes('backgroundId!==normalizeGuildBackgroundId(guild.background_id)'));assert.ok(online.includes('disabled={!editable||busy||!selectable}')&&online.includes('!constructionArtReady'),'Guild artwork selectors must respect edit permissions and construction art/release gates');
 assert.ok(read('src/core/save-normalization.ts').includes('guildBackgroundId:normalizeGuildBackgroundId'));
 console.log('PASS: card artwork variants, personal frame geometry, unlock gates and persistence wiring');

@@ -18,7 +18,7 @@ const STATUS_LABELS={
 } as const;
 
 /** Read-only until atomic purchase + in-game entitlement delivery are available. */
-export function OnlineGuildTokenShopPanel(){
+export function OnlineGuildTokenShopPanel({onRewardsChanged}:{onRewardsChanged?:()=>void|Promise<unknown>}){
  const C=useGameTheme(),styles=useMemo(()=>makeStyles(C),[C]);
  const [snapshot,setSnapshot]=useState<GuildTokenShopSnapshot|null>(null);
  const [filter,setFilter]=useState<Filter>('all');
@@ -43,6 +43,7 @@ export function OnlineGuildTokenShopPanel(){
   try{
    const status=await purchaseOnlineGuildTokenReward(itemId);
    setClaimNotice(status==='purchased'?'Reward unlocked for your account!':'Already owned. No additional Guild Tokens were spent.');
+   await onRewardsChanged?.();
    setSnapshot(await loadOnlineGuildTokenShop());
   }catch(reason){setError(reason instanceof Error?reason.message:'Unable to confirm reward purchase.');}
   finally{setPurchasing(null);}

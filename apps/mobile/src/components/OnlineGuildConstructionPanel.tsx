@@ -90,7 +90,7 @@ export function OnlineGuildConstructionPanel({
     </View><Text style={s.percent}>{Math.round(completion*100)}%</Text></View>
     {requirements.map(res=>{
      const amount=Math.max(0,row?.resources[res.key]??0),pct=res.required?Math.min(100,Math.round(amount/res.required*100)):100;
-     const active=selectedHere&&selected.resourceId===res.key;
+     const active=selectedHere&&selected?.resourceId===res.key;
      return <Pressable key={res.key} disabled={!canDonate||amount>=res.required}
       accessibilityRole="button" accessibilityState={{selected:active,disabled:!canDonate||amount>=res.required}}
       accessibilityLabel={`Donate ${resourceName(res.key)} to ${resourceName(template.id)}`}

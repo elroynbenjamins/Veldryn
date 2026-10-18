@@ -47,7 +47,7 @@ try{
   catch(error){throw new Error(`Guild migration ${file} failed: ${String(error)}`);}
  }
  assert.equal((await single(`select has_function_privilege('service_role',
-  'public.guild_shop_purchase_server_v3(uuid,text)','EXECUTE') as permitted`)).permitted,false);
+  'public.guild_shop_purchase_server_v4(uuid,text)','EXECUTE') as permitted`)).permitted,false);
  assert.equal((await single(`select has_function_privilege('service_role',
   'public.guild_shop_grant_tokens_server_v1(uuid,text,bigint,boolean)','EXECUTE') as permitted`)).permitted,false);
  assert.equal((await single(`select has_function_privilege('authenticated',
@@ -78,18 +78,26 @@ try{
  // These controlled test-only writes simulate the release switch and earned balance.
  await db.query('update public.guild_shop_wallets set balance=10000 where account_id=$1',[account]);
  await db.exec(`update public.guild_shop_reward_catalogue
-  set enabled=true where item_id in ('guild_pet_01','guild_companion_01');`);
- const pet=await single(`select public.guild_shop_purchase_server_v3($1,'guild_pet_01') as result`,[account]);
+  set enabled=true where item_id in ('guild_pet_01','guild_companion_01','emotes_fellowship');`);
+ const pet=await single(`select public.guild_shop_purchase_server_v4($1,'guild_pet_01') as result`,[account]);
  assert.equal(pet.result.status,'purchased');
- assert.equal((await single(`select public.guild_shop_purchase_server_v3($1,'guild_pet_01') as result`,[account])).result.status,'already_owned');
- const companion=await single(`select public.guild_shop_purchase_server_v3($1,'guild_companion_01') as result`,[account]);
+ assert.equal((await single(`select public.guild_shop_purchase_server_v4($1,'guild_pet_01') as result`,[account])).result.status,'already_owned');
+ const companion=await single(`select public.guild_shop_purchase_server_v4($1,'guild_companion_01') as result`,[account]);
  assert.equal(companion.result.status,'purchased');
+ // A five-emote bundle is one token debit with five permanent entitlements.
+ await db.query('update public.guild_shop_wallets set balance=5000 where account_id=$1',[account]);
+ const emotes=await single(`select public.guild_shop_purchase_server_v4($1,'emotes_fellowship') as result`,[account]);
+ assert.equal(emotes.result.status,'purchased');
+ assert.equal(emotes.result.rewardIds.length,5);
+ const emoteReplay=await single(`select public.guild_shop_purchase_server_v4($1,'emotes_fellowship') as result`,[account]);
+ assert.equal(emoteReplay.result.status,'already_owned');
  const saved=await single('select state,revision from public.online_game_states where account_id=$1',[account]);
  assert.ok(saved.state.account.unlockedCosmeticPetIds.includes('GUILD_PET_001'));
  assert.ok(saved.state.account.unlockedCombatCompanionIds.includes('GUILD_UNIT_001'));
  assert.equal(saved.state.account.combatCompanionProgress.GUILD_UNIT_001.level,1);
- assert.equal(Number((await single('select balance from public.guild_shop_wallets where account_id=$1',[account])).balance),2000);
- await fail(`select public.guild_shop_purchase_server_v3($1,'guild_pet_02')`,[account]);
+ assert.deepEqual(saved.state.account.unlockedEmoteIds,['pet_set_a_01','pet_set_a_02','pet_set_a_03','pet_set_a_04','pet_set_a_05']);
+ assert.equal(Number((await single('select balance from public.guild_shop_wallets where account_id=$1',[account])).balance),3750);
+ await fail(`select public.guild_shop_purchase_server_v4($1,'guild_pet_02')`,[account]);
 
  // Construction donation checks same-row replay and inventory/gold deduction.
  const donate=(resource,amount,key)=>single(

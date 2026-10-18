@@ -28,6 +28,13 @@ try{
   guild_id uuid not null,account_id uuid not null,activity_date date not null,
   check_in_points integer not null default 0,combat_points integer not null default 0,
   skilling_points integer not null default 0);
+ create table public.guild_project_instances(
+  id uuid primary key,guild_id uuid not null,started_at timestamptz not null,
+  meaningful_contributor_threshold integer);
+ create table public.guild_project_member_progress(
+  project_instance_id uuid,account_id uuid,raw_points bigint,last_contribution_at timestamptz);
+ create table public.guild_pve_encounters_v1(id uuid primary key,guild_id uuid,kind text not null);
+ create table public.guild_pve_claims_v1(account_id uuid,encounter_id uuid,claimed_at timestamptz);
  create table public.event_community_claims(
   account_id uuid not null,event_id text not null,milestone_percent smallint not null,
   claimed_at timestamptz default now());
@@ -81,6 +88,25 @@ try{
  assert.equal(Number((await single('select balance from public.guild_shop_wallets where account_id=$1',[account])).balance),370);
  assert.equal(Number((await single('select earned from public.guild_shop_weekly where account_id=$1',[account])).earned),20);
  await fail(`select public.guild_shop_claim_event_community_server_v1($1,'veilbreak',25)`,[account]);
+ // Weekly rewards use existing validated project/encounter records, never user
+ // input. The 250 standard cap remains independent of event bonus Tokens.
+ await fail(`select public.guild_shop_claim_weekly_server_v1($1,'project')`,[account]);
+ const projectId='44444444-4444-4444-8444-444444444444';
+ const encounterId='55555555-5555-4555-8555-555555555555';
+ await db.query(`insert into public.guild_project_instances(id,guild_id,started_at,meaningful_contributor_threshold)
+  values($1,$2,now(),10)`,[projectId,guild]);
+ await db.query(`insert into public.guild_project_member_progress
+  (project_instance_id,account_id,raw_points,last_contribution_at)
+  values($1,$2,20,now())`,[projectId,account]);
+ await db.query(`insert into public.guild_pve_encounters_v1(id,guild_id,kind)
+  values($1,$2,'weekly')`,[encounterId,guild]);
+ await db.query(`insert into public.guild_pve_claims_v1(account_id,encounter_id,claimed_at)
+  values($1,$2,now())`,[account,encounterId]);
+ assert.equal(Number((await single(`select public.guild_shop_claim_weekly_server_v1($1,'project') as n`,[account])).n),40);
+ assert.equal(Number((await single(`select public.guild_shop_claim_weekly_server_v1($1,'project') as n`,[account])).n),0);
+ assert.equal(Number((await single(`select public.guild_shop_claim_weekly_server_v1($1,'boss') as n`,[account])).n),30);
+ assert.equal(Number((await single('select earned from public.guild_shop_weekly where account_id=$1',[account])).earned),90);
+
 
  // These controlled test-only writes simulate the release switch and earned balance.
  await db.query('update public.guild_shop_wallets set balance=10000 where account_id=$1',[account]);

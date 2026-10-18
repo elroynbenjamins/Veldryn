@@ -5,6 +5,16 @@ export interface PendingGuildDonation{
  templateId:string;resourceId:string;amount:number;requestKey:string;
 }
 type DonationResult={alreadyProcessed:boolean;completed:boolean};
+const knownDonationsRejections:Readonly<Record<string,string>>={
+ insufficient_gold:'You do not have enough Gold to contribute that amount.',
+ insufficient_construction_materials:'You do not have enough of that material in your inventory.',
+ construction_resource_target_exceeded:'Another member completed this resource goal. Refresh and choose a smaller amount.',
+ construction_already_completed:'Your guild has already finished this project.',
+ construction_donations_not_released:'This construction project is not open for donations yet.',
+ guild_level_locked:'Your guild has not unlocked this construction project.',
+ guild_membership_required:'You must be in a guild to contribute.',
+ guild_construction_request_conflict:'That saved donation receipt no longer matches. Refresh the project before donating.',
+};
 
 async function currentSession(){
  if(!supabase||!supabasePublicEndpoint||!supabasePublicKey)
@@ -61,7 +71,16 @@ export async function donateOnlineGuildConstruction(
    body:JSON.stringify(receipt),
   });
   const result=await response.json();
-  if(!response.ok)throw new Error(typeof result?.error==='string'?result.error:'Guild donation status unknown. Retry the same receipt.');
+  if(!response.ok){
+   const code=typeof result?.error==='string'?result.error:'';
+   if(Object.prototype.hasOwnProperty.call(knownDonationsRejections,code)){
+    // Authoritative SQL rejected the transaction, so nothing was deducted.
+    // Clear the failed receipt; network failures still preserve theirs.
+    await AsyncStorage.removeItem(key);
+    throw new Error(knownDonationsRejections[code]);
+   }
+   throw new Error('Guild donation status unknown. Retry the same receipt.');
+  }
   if(typeof result?.alreadyProcessed!=='boolean'||typeof result?.completed!=='boolean')
    throw new Error('Guild donation status unknown. Retry the same receipt.');
   await AsyncStorage.removeItem(key);

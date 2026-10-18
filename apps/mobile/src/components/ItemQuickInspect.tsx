@@ -37,13 +37,13 @@ export function ItemQuickInspect({state,itemId,onClose,onNavigate,actions}:{stat
  const contentText=(value:string)=>itemDetailContent(language,value,gl);
   const C=useGameTheme(),s=useMemo(()=>makeStyles(C),[C]),[sourceDisclosure,setSourceDisclosure]=useState<Record<string,boolean>>({}),[useLimits,setUseLimits]=useState<Record<string,number>>({});
   const model=useMemo(()=>itemId?itemInspectModel(state,itemId):undefined,[state,itemId]);
+  const craftPath=useMemo(()=>itemId&&model?.item.type==='gear'?equipmentCraftingPath(state,itemId):undefined,[state,itemId,model?.item.type]);
   if(!itemId||!model)return null;
   const item=model.item,rarity=model.rarity,upgrade=model.upgrade,sockets=model.sockets,gearDecision=model.gearDecision,nameColor=rarityNameColor(model.rarityId,C.dark,C.text);
   const sources=prioritizeItemSources(model.sources),uses=prioritizeItemUses(model.usedIn);
   const primarySource=sources[0],otherSources=sources.slice(1),otherSourcesOpen=!!sourceDisclosure[itemId];
   const useLimit=useLimits[itemId]??4,useRows=uses.slice(0,useLimit);
   const readyUses=uses.filter(row=>row.availability.status==='ready').length;
-  const craftPath=item.type==='gear'?equipmentCraftingPath(state,itemId):undefined;
   const upgradeChance=upgrade?Math.round(upgrade.successChance*100):0;
   const upgradeColor=upgrade?.maxed?C.good:upgradeChance>=70?C.good:upgradeChance>=30?C.warning:C.bad;
   return <Modal visible transparent statusBarTranslucent animationType={state.settings.reduceMotion?'none':'fade'} onRequestClose={onClose}>

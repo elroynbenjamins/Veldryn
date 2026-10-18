@@ -9,7 +9,7 @@ async function run() {
   guildLevelForAccount: async () => 7,
   rpc: async <T>(name:string,args:Record<string,unknown>) => {
    calls.push({name,args});
-   return {balance:3000,earnedThisWeek:125,ownedItemIds:["border_silver"]} as T;
+   return {balance:3000,earnedThisWeek:125,ownedItemIds:["border_silver"]} as unknown as T;
   },
  };
  const handler = guildShopReadHandler(services);

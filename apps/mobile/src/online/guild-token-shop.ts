@@ -12,10 +12,14 @@ export interface GuildConstructionTemplate{
 export interface GuildConstructionProgress{
  templateId:string;completed:boolean;resources:Record<string,number>;
 }
+export interface GuildTokenEventBonus{
+ eventId:string;milestonePercent:number;tokens:number;claimed:boolean;
+}
 export interface GuildTokenShopSnapshot{
  guildLevel:number;balance:number;earnedThisWeek:number;weeklyCap:number;cards:GuildTokenShopCard[];
  claimedDailyKinds:Array<"attendance"|"contribution">;
  constructionTemplates:GuildConstructionTemplate[];construction:GuildConstructionProgress[];
+ eventBonuses:GuildTokenEventBonus[];
 }
 const categories=new Set<string>(['pet','companion','border','profile_icon','emote_set']);
 const statuses=new Set<string>(['owned','guild_level_locked','insufficient_tokens','eligible']);
@@ -28,7 +32,8 @@ function validateSnapshot(value:unknown):GuildTokenShopSnapshot{
     ||!Number.isSafeInteger(o.earnedThisWeek)||Number(o.earnedThisWeek)<0
     ||o.weeklyCap!==250||!Array.isArray(o.claimedDailyKinds)
     ||o.claimedDailyKinds.some(k=>k!=="attendance"&&k!=="contribution")||!Array.isArray(o.cards)
-    ||!Array.isArray(o.constructionTemplates)||!Array.isArray(o.construction))throw new Error('Invalid Guild Token Shop response.');
+    ||!Array.isArray(o.constructionTemplates)||!Array.isArray(o.construction)
+    ||!Array.isArray(o.eventBonuses))throw new Error('Invalid Guild Token Shop response.');
  const cards:GuildTokenShopCard[]=o.cards.map((candidate:unknown)=>{
   if(!candidate||typeof candidate!=='object')throw new Error('Invalid Guild Shop reward.');
   const c=candidate as Record<string,unknown>;
@@ -58,8 +63,17 @@ function validateSnapshot(value:unknown):GuildTokenShopSnapshot{
    throw new Error('Invalid construction progress.');
   return progress;
  });
+ const eventBonuses:GuildTokenEventBonus[]=o.eventBonuses.map((value:unknown)=>{
+  if(!value||typeof value!=='object')throw new Error('Invalid event reward.');
+  const reward=value as Record<string,unknown>;
+  if(typeof reward.eventId!=='string'||!/^[A-Za-z0-9_-]{1,80}$/.test(reward.eventId)
+   ||![25,50,75,100].includes(Number(reward.milestonePercent))
+   ||!Number.isSafeInteger(reward.tokens)||Number(reward.tokens)<1||Number(reward.tokens)>400
+   ||typeof reward.claimed!=='boolean')throw new Error('Invalid event reward.');
+  return reward as unknown as GuildTokenEventBonus;
+ });
  return {guildLevel:o.guildLevel as number,balance:o.balance as number,earnedThisWeek:o.earnedThisWeek as number,
-  weeklyCap:o.weeklyCap as number,cards,claimedDailyKinds:o.claimedDailyKinds as Array<"attendance"|"contribution">,constructionTemplates,construction};
+  weeklyCap:o.weeklyCap as number,cards,claimedDailyKinds:o.claimedDailyKinds as Array<"attendance"|"contribution">,constructionTemplates,construction,eventBonuses};
 }
 
 /** Guild Tokens are distinct from the existing Quartermaster's Guild Marks.
@@ -130,5 +144,29 @@ export async function purchaseOnlineGuildTokenReward(itemId:string):Promise<'pur
   if(body?.status!=='purchased'&&body?.status!=='already_owned')
    throw new Error('Purchase status could not be verified. Refresh your Guild Shop.');
   return body.status as 'purchased'|'already_owned';
+ }finally{clearTimeout(timeout);}
+}
+
+/** Event milestone reward amounts are exclusively determined by the server.
+ * This call only supplies the identifier of an already-claimed event milestone.
+ */
+export async function claimOnlineGuildEventBonus(eventId:string,milestonePercent:number):Promise<number>{
+ if(!supabase||!supabasePublicEndpoint||!supabasePublicKey)throw new Error('Online services are unavailable.');
+ const {data:{session},error}=await supabase.auth.getSession();
+ if(error)throw error;
+ if(!session)throw new Error('Sign in to claim Guild event rewards.');
+ const controller=new AbortController(),timeout=setTimeout(()=>controller.abort(),15000);
+ try{
+  const response=await fetch(`${supabasePublicEndpoint}/functions/v1/gameplay?view=guild-shop&action=event-claim`,{
+   method:'POST',signal:controller.signal,
+   headers:{Authorization:`Bearer ${session.access_token}`,apikey:supabasePublicKey,'Content-Type':'application/json'},
+   body:JSON.stringify({eventId,milestonePercent}),
+  });
+  const value=await response.json();
+  if(!response.ok)throw new Error(
+   typeof value?.error==='string'?value.error:'Unable to claim Guild event bonus.');
+  if(!Number.isSafeInteger(value?.credited)||value.credited<0||value.credited>400)
+   throw new Error('Event reward result could not be verified.');
+  return value.credited as number;
  }finally{clearTimeout(timeout);}
 }

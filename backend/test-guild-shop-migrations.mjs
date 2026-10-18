@@ -108,6 +108,28 @@ try{
  assert.equal(Number((await single('select earned from public.guild_shop_weekly where account_id=$1',[account])).earned),90);
 
 
+
+ // Separate test account verifies cap rounding, event bonuses and replay.
+ // Token wallets are bound to an account, not an individual character.
+ const cappedAccount='66666666-6666-4666-8666-666666666666';
+ await db.query('insert into auth.users(id) values ($1)',[cappedAccount]);
+ await db.query('insert into public.guild_members(guild_id,account_id) values($1,$2)',[guild,cappedAccount]);
+ await db.query(`insert into public.guild_muster_daily(guild_id,account_id,activity_date,check_in_points)
+  values($1,$2,(now() at time zone 'utc')::date,10)`,[guild,cappedAccount]);
+ await db.query(`insert into public.event_community_claims(account_id,event_id,milestone_percent)
+  values($1,'veilbreak',25)`,[cappedAccount]);
+ await db.query(`insert into public.guild_shop_weekly(account_id,week_start,earned)
+  values($1,date_trunc('week',now() at time zone 'utc')::date,248)`,[cappedAccount]);
+ const firstCap=await single(`select public.guild_shop_claim_daily_server_v1($1,'attendance') as credited`,[cappedAccount]);
+ assert.equal(Number(firstCap.credited),2,'normal grant stops exactly at 250 weekly cap');
+ const capReplay=await single(`select public.guild_shop_claim_daily_server_v1($1,'attendance') as credited`,[cappedAccount]);
+ assert.equal(Number(capReplay.credited),0,'capped request cannot replay');
+ const eventAboveCap=await single(`select public.guild_shop_claim_event_community_server_v1($1,'veilbreak',25) as credited`,[cappedAccount]);
+ assert.equal(Number(eventAboveCap.credited),100,'limited event milestone bypasses regular weekly cap');
+ assert.equal(Number((await single('select earned from public.guild_shop_weekly where account_id=$1',[cappedAccount])).earned),250,'weekly tracker is not affected by event claim');
+ assert.equal(Number((await single('select balance from public.guild_shop_wallets where account_id=$1',[cappedAccount])).balance),102,'token wallet sums capped standard plus extra event rewards');
+ assert.equal(Number((await single(`select public.guild_shop_claim_event_community_server_v1($1,'veilbreak',25) as credited`,[cappedAccount])).credited),0,'event milestone never doubles');
+
  // These controlled test-only writes simulate the release switch and earned balance.
  await db.query('update public.guild_shop_wallets set balance=10000 where account_id=$1',[account]);
  await db.exec(`update public.guild_shop_reward_catalogue

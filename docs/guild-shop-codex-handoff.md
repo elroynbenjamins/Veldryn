@@ -18,7 +18,9 @@ Branch: `feature/guild-shop-foundation`; base: `main`.
 - `guild_shop_reward_catalogue.enabled` defaults **false** for all 12 shop SKU rows.
 - Purchase function `guild_shop_purchase_server_v4(uuid,text)` remains **not executable by service_role** until a staging smoke and merchandise approval.
 - `guild_construction_templates.enabled` defaults **false**, and `guild_construction_donate_server_v2(...)` remains inaccessible to service_role until construction entitlement/art verification.
-- The first Guild banner, guild border and hall decoration have completion records in `guild_construction_unlocks`, but their ID-to-GuildCustomization mapping/art and entitlement checks are not implemented yet. Keep construction spending OFF until these are correctly selectable in guild settings.
+- **New:** server-side construction-to-Guild Appearance adapter in migration `20261018092300_guild_construction_cosmetic_adapter.sql` projects completed structures into canonical `guild_cosmetic_unlocks`. A member-scoped `guild_construction_appearance_rewards_v1()` RPC reports ownership and server release flags; an officer-only `update_guild_appearance_with_construction_v1` wraps existing v3 appearance validation and atomically saves a crafted banner/frame. UI reports artwork pending and will not allow selection until artwork is registered.
+- New construction cosmetics `guild_banner_stormwatch` and `guild_frame_verdant` use asset keys `banner_guild_stormwatch` and `border_guild_verdant` respectively. Codex should author/register images under `apps/mobile/src/theme/guild-customization-assets.ts` with these **exact keys**. The Guild hall statue `guild_decoration_fellowship_statue` has a durable entitlement but no placement/art interface yet.
+- `guild_construction_cosmetic_releases.released` defaults **false** per artwork; switch on only after content approval. This is independent from `guild_construction_templates.enabled`, so the donation and equip controls are separately safeguarded.
 - Pet art `GUILD_PET_001..002`, companion portrait art `GUILD_UNIT_001..003`, three player-border visuals, and `guild:stormwatch-crest` icon art are not authored/registered yet; profile icon explicitly reports `artworkReady=false`.
 - Level-14/15/18/20 rewards are long-term roadmap content; verify compatibility with the actual deployed Guild level cap/progression before enabling them.
 - **No live migrations, Edge deployment, release flags or production transactions were applied by this PR work.**
@@ -32,12 +34,12 @@ Branch: `feature/guild-shop-foundation`; base: `main`.
 
 ## Codex integration/merge checklist
 1. Fetch latest `main` and rebase/merge `feature/guild-shop-foundation`, resolve conflicts. Keep legacy Quartermaster/Guild Marks intact.
-2. Confirm all 23 Guild Shop migrations **900–922** apply in chronological order on current staging schema, and the new Guild private tables/claims are service-only.
+2. Confirm all 24 Guild Shop migrations **900–923** apply in chronological order on current staging schema, and the new Guild private tables/claims are service-only.
 3. Verify real rewards survive game save, reload, account character switch and reconciliation to canonical collections/companions/emotes. Test role restriction for guild combat companions.
-4. Add/register missing pet, companion, player profile border/icon and construction artwork; integrate `guild_construction_unlocks` into canonical GuildCustomization entitlements, validating officer permissions when equipping guild cosmetics.
+4. Add/register missing pet, companion, player profile border/icon and construction artwork; verify the new server-construction GuildAppearance adapter on staging (ownership, membership, release, officer permissions and saved revision) and register the two exact asset keys above.
 5. Verify guild level progression supports gated later rewards (or keep those locked as future content).
 6. After staging validates safe purchase delivery, explicitly grant service_role EXECUTE on **only** `guild_shop_purchase_server_v4`; enable individually approved SKU rows in `guild_shop_reward_catalogue`. Never enable v1/v2/v3 legacy buy.
-7. After construction reward application works, explicitly grant `guild_construction_donate_server_v2` to service_role; enable individually approved construction templates. Maintain idempotency and available Gold/material checks.
+7. After the construction artifact and appearance adapter work end-to-end, set the corresponding `guild_construction_cosmetic_releases.released` flag, then explicitly grant `guild_construction_donate_server_v2` to service_role; enable individually approved construction templates. Maintain idempotency and available Gold/material checks.
 8. Deploy matching Gameplay Edge build, repeat end-to-end authenticated QA, test bad/suspended/missing guild membership, unavailable purchases and full inventory sync.
 9. Require up-to-date PR CI and review before the **Codex-managed** merge to `main`; deploy DB/Edge in a safe migration plan before an AAB that exposes new Shop controls.
 

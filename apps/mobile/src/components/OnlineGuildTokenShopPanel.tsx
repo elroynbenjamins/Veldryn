@@ -38,7 +38,7 @@ export function OnlineGuildTokenShopPanel({onRewardsChanged}:{onRewardsChanged?:
   finally{setWeeklyBusy(null);}
  };
  const claimEvent=async(eventId:string,milestonePercent:number)=>{
-  if(eventBusy||loading||claiming||purchasing)return;
+  if(eventBusy||weeklyBusy||loading||claiming||purchasing)return;
   const key=eventId+':'+milestonePercent;
   setEventBusy(key);setError('');setClaimNotice('');
   try{
@@ -49,7 +49,7 @@ export function OnlineGuildTokenShopPanel({onRewardsChanged}:{onRewardsChanged?:
   finally{setEventBusy(null);}
  };
  const buy=async(itemId:string)=>{
-  if(purchasing||loading||claiming)return;
+  if(purchasing||eventBusy||weeklyBusy||loading||claiming)return;
   setPurchasing(itemId);setError('');setClaimNotice('');
   try{
    const status=await purchaseOnlineGuildTokenReward(itemId);
@@ -60,7 +60,7 @@ export function OnlineGuildTokenShopPanel({onRewardsChanged}:{onRewardsChanged?:
   finally{setPurchasing(null);}
  };
  const claim=async(kind:'attendance'|'contribution')=>{
-  if(claiming||loading)return;
+  if(claiming||eventBusy||weeklyBusy||purchasing||loading)return;
   setClaiming(kind);setError('');setClaimNotice('');
   try{
    const credited=await claimOnlineGuildDailyTokens(kind);
@@ -137,7 +137,7 @@ export function OnlineGuildTokenShopPanel({onRewardsChanged}:{onRewardsChanged?:
     {card.status!=='owned'?<View style={styles.track}><View style={[styles.fill,{width:`${Math.round(card.progressToPrice*100)}%` as `${number}%`}]}/></View>:null}
     {card.status==='insufficient_tokens'?<Text style={styles.hint}>{Math.max(0,card.price-(snapshot?.balance??0)).toLocaleString()} more tokens needed</Text>:null}
     {card.status==='guild_level_locked'?<Text style={styles.hint}>Reach Guild Level {card.requiredGuildLevel} to unlock this reward.</Text>:null}
-    {card.released&&card.status==='eligible'?<GameButton compact title={purchasing===card.id?'Purchasing…':'Unlock reward'} disabled={loading||!!purchasing||claiming!==null} onPress={()=>void buy(card.id)}/>:null}
+    {card.released&&card.status==='eligible'?<GameButton compact title={purchasing===card.id?'Purchasing…':'Unlock reward'} disabled={loading||!!purchasing||claiming!==null||!!weeklyBusy||!!eventBusy} onPress={()=>void buy(card.id)}/>:null}
     {!card.released&&card.status!=='owned'?<Text style={styles.hint}>Coming soon · Reward not released</Text>:null}
    </View>)}
    {snapshot&&!visible.length?<Text style={styles.copy}>No rewards in this category yet.</Text>:null}
@@ -155,7 +155,7 @@ export function OnlineGuildTokenShopPanel({onRewardsChanged}:{onRewardsChanged?:
      </View>
      <GameButton compact tone="secondary"
       title={reward.claimed?'Claimed':eventBusy===key?'Claiming…':'Claim'}
-      disabled={reward.claimed||!!eventBusy||loading||!!claiming||!!purchasing}
+      disabled={reward.claimed||!!eventBusy||!!weeklyBusy||loading||!!claiming||!!purchasing}
       onPress={()=>void claimEvent(reward.eventId,reward.milestonePercent)}/>
     </View>;
    })}

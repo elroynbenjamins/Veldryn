@@ -1,4 +1,4 @@
-import { guildShopReadHandler, type GuildShopReadServices } from "../guild-shop-read";
+import { guildShopReadHandler, guildShopDailyClaimHandler, type GuildShopReadServices } from "../guild-shop-read";
 function assert(value: unknown, message: string): asserts value {
  if (!value) throw new Error(message);
 }
@@ -32,6 +32,25 @@ async function run() {
  const noGuild = guildShopReadHandler({...services,guildLevelForAccount:async()=>null});
  const blocked = await noGuild(new Request("https://example.test/guild/shop",{headers:{authorization:"Bearer valid"}}));
  assert(blocked.status===403,"nonmembers blocked");
+
+ const claimCalls: Array<{name:string;args:Record<string,unknown>}>=[];
+ const claim=guildShopDailyClaimHandler({...services,rpc:async<T>(name:string,args:Record<string,unknown>)=>{
+  claimCalls.push({name,args});
+  return 10 as unknown as T;
+ }});
+ const claimUri="https://example.test/gameplay?view=guild-shop";
+ const claimNoAuth=await claim(new Request(claimUri,{method:"POST",body:'{"kind":"attendance"}'}));
+ assert(claimNoAuth.status===401,"claim requires bearer token");
+ const claimBad=await claim(new Request(claimUri,{method:"POST",headers:{authorization:"Bearer valid"},body:'{"kind":"fake"}'}));
+ assert(claimBad.status===400,"unknown reward rejected");
+ const claimGet=await claim(new Request(claimUri,{method:"GET"}));
+ assert(claimGet.status===405,"claim must use POST");
+ const claimGood=await claim(new Request(claimUri,{method:"POST",headers:{authorization:"Bearer valid"},body:'{"kind":"contribution"}'}));
+ assert(claimGood.status===200,"verified claim succeeds");
+ assert((await claimGood.json() as {credited:number}).credited===10,"authoritative credit returned");
+ assert(claimCalls.length===1&&claimCalls[0].name==="guild_shop_claim_daily_server_v1","only verified claim RPC called");
+ assert(claimCalls[0].args.p_kind==="contribution","reward kind forwarded");
+ assert(claimCalls[0].args.p_account_id==="11111111-1111-4111-8111-111111111111","authenticated account forwarded");
  console.log("guild shop read handler tests passed");
 }
 void run();

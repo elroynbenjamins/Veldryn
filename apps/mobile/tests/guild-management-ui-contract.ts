@@ -33,6 +33,18 @@ ok(screen.includes("root:{padding:spacing.md,gap:10"),'Online Guild shell must r
 ok(customization.includes('appearanceDirty='),'Guild customization must track unsaved appearance changes');
 ok(customization.includes('appearanceDirty?st("UNSAVED"):st("SAVED")'),'Guild customization must surface localized saved/unsaved state');
 ok(customization.includes("disabled={busy||!appearanceDirty}"),'Guild appearance save must only enable when something changed');
+ok(customization.includes('guildBannerSourceByKey.has(entry.assetKey)')&&customization.includes('guildBorderSourceByKey.has(entry.assetKey)'),
+ 'Constructed Guild cosmetics must require registered artwork before player selection');
+ok(customization.includes('!constructionArtReady'),
+ 'Missing Guild construction artwork must disable appearance saves');
+const constructedCore=read('src/core/guild-customization.ts');
+ok(constructedCore.includes("'guild_banner_stormwatch'")&&constructedCore.includes("'guild_frame_verdant'"),
+ 'Constructed banner and frame must have canonical Guild Appearance IDs');
+ok(constructedCore.includes("case'construction':return (s.constructionUnlockIds?.includes"),
+ 'Constructed Guild cosmetics must require ownership and server release flags');
+const onlineSocial=read('src/online/social.ts');
+ok(onlineSocial.includes("guild_construction_appearance_rewards_v1")&&onlineSocial.includes("update_guild_appearance_with_construction_v1"),
+ 'Guild customizer must retrieve verified construction ownership and route changes to guarded SQL');
 ok(customization.includes('tagDirty='),'Guild tag changes must have a separate dirty state');
 ok(customization.includes('backgroundColor:C.warningSurface'),'Permanent tag warning must be theme-safe');
 ok(customization.includes('backgroundColor:C.selection'),'Selected Guild cosmetics must be theme-safe');

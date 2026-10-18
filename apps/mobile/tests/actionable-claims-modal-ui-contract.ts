@@ -7,6 +7,7 @@ const app=read('App.tsx');
 const attention=read('src/core/navigation-notifications.ts');
 const account=read('src/screens/MoreScreen.tsx');
 const inspector=read('src/components/ItemQuickInspect.tsx');
+const quickNav=read('src/components/GameTopBar.tsx');
 const confirmation=read('src/components/ConfirmModal.tsx');
 
 ok(app.includes('...actionableClaimNotifications({storyRewards:storyClaimCount,eventClaims:eventClaimCount,overflowStacks:overflowStackCount})'),
@@ -19,6 +20,8 @@ ok(attention.includes("story_reward_ready:'Quests'")&&attention.includes("invent
  'Actionable claims lead to existing destinations instead of adding tabs');
 ok(account.includes("if(id==='Quests'&&storyRewardCount>0)")&&account.includes("if(id==='Events'&&eventRewardCount>0)"),
  'Account hub only highlights quests and events with outstanding claims');
+ok(quickNav.includes("([...QUICK_NAV_DESTINATIONS,'Events'] as QuickNavDestination[])"),
+ 'Event claims are exposed in quick-nav attention even when Events is not an assignable shortcut');
 ok(account.includes("const attentionPriority:MoreDestination[]=['Quests','Events'"),
  'Account hub prioritizes genuinely claimable rewards');
 

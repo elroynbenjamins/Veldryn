@@ -19,9 +19,9 @@ export type GuildShopEntry = Readonly<{
 export const GUILD_SHOP_CATALOGUE: readonly GuildShopEntry[] = [
   { id:"guild_pet_01",category:"pet",name:"Guild Pet I",guildLevel:3,tokenCost:2000,oneTimePerAccount:true },
   { id:"guild_pet_02",category:"pet",name:"Guild Pet II",guildLevel:7,tokenCost:4000,oneTimePerAccount:true },
-  { id:"guild_companion_01",category:"companion",name:"Epic Companion I",guildLevel:10,tokenCost:6000,oneTimePerAccount:true },
-  { id:"guild_companion_02",category:"companion",name:"Epic Companion II",guildLevel:15,tokenCost:8000,oneTimePerAccount:true },
-  { id:"guild_companion_03",category:"companion",name:"Epic Companion III",guildLevel:20,tokenCost:10000,oneTimePerAccount:true },
+  { id:"guild_companion_01",category:"companion",name:"Elite Guild Companion I",guildLevel:10,tokenCost:6000,oneTimePerAccount:true },
+  { id:"guild_companion_02",category:"companion",name:"Elite Guild Companion II",guildLevel:15,tokenCost:8000,oneTimePerAccount:true },
+  { id:"guild_companion_03",category:"companion",name:"Elite Guild Companion III",guildLevel:20,tokenCost:10000,oneTimePerAccount:true },
   { id:"border_silver",category:"border",name:"Silver Profile Border",guildLevel:2,tokenCost:750,oneTimePerAccount:true },
   { id:"icon_guild",category:"profile_icon",name:"Guild Profile Icon",guildLevel:4,tokenCost:1000,oneTimePerAccount:true },
   { id:"emotes_fellowship",category:"emote_set",name:"Fellowship (5 Emotes)",guildLevel:5,tokenCost:1250,oneTimePerAccount:true },

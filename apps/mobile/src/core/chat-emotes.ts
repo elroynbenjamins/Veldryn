@@ -13,14 +13,15 @@ export function chatEmoteCount(value:string){return [...value.matchAll(/:([a-z0-
 
 export function chatUnavailableEmoteIds(value:string,unlockedIds:readonly string[]=[]){
  const unlocked=new Set(unlockedIds);
- return [...new Set([...value.matchAll(/:([a-z0-9_]+):/g)].map(match=>match[1]).filter(id=>{const def=catalog.get(id);return !!def&&def.defaultAvailable===false&&!unlocked.has(id)}))];
+ return [...new Set([...value.matchAll(/:([a-z0-9_]+):/g)].map(match=>match[1]).filter(id=>{const def=catalog.get(id);return !!def&&!starterIds.has(id)&&!unlocked.has(id)}))];
 }
 
 export function availableChatEmotes(unlockedIds:readonly string[]=[],bodyPresentation?:'male'|'female'){
- void unlockedIds; void bodyPresentation;
- // Body presentation no longer gates the catalog. Both launch sets stay available
- // because characters do not have a gender lock in the current editor.
- return rows.filter(row=>starterIds.has(row.id));
+ void bodyPresentation;
+ // Everyone retains both starter sets. Every additional emote requires a
+ // server-granted, account-bound unlock, including permanent Guild Shop packs.
+ const owned=new Set(unlockedIds);
+ return rows.filter(row=>starterIds.has(row.id)||owned.has(row.id));
 }
 
 export function normalizeChatEmoteTrayIds(value:unknown){

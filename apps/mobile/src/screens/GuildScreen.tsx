@@ -46,7 +46,7 @@ const GUILD_SKILL_NODES:GuildSkillNode[]=[
 ];
 const GUILD_MAJOR_BRANCHES=['Professions','Fellowship','Vanguard'] as const;
 
-export function GuildScreen({state,onChange,onlineDirectory,onlineManagement,onlineBoard,onlineProjects,onlinePve,onlineHall,onlineChat,onlineCustomize,onlineChatUnread=0,onlineChatMentions=0,online=false}:{online?:boolean;state:GameState;onChange:(next:GameState)=>void;onlineDirectory?:ReactNode;onlineManagement?:ReactNode;onlineBoard?:ReactNode;onlineProjects?:ReactNode;onlinePve?:ReactNode;onlineHall?:ReactNode;onlineChat?:ReactNode;onlineCustomize?:ReactNode;onlineChatUnread?:number;onlineChatMentions?:number}){
+export function GuildScreen({state,onChange,onlineDirectory,onlineManagement,onlineBoard,onlineProjects,onlinePve,onlineHall,onlineChat,onlineCustomize,onlineChatUnread=0,onlineChatMentions=0,online=false,onTokenRewardsChanged}:{onTokenRewardsChanged?:()=>void|Promise<unknown>;online?:boolean;state:GameState;onChange:(next:GameState)=>void;onlineDirectory?:ReactNode;onlineManagement?:ReactNode;onlineBoard?:ReactNode;onlineProjects?:ReactNode;onlinePve?:ReactNode;onlineHall?:ReactNode;onlineChat?:ReactNode;onlineCustomize?:ReactNode;onlineChatUnread?:number;onlineChatMentions?:number}){
  const st=useSocialText();
   const language=useGameLanguage();
  const C=useGameTheme(),s=useMemo(()=>makeStyles(C),[C]);
@@ -59,7 +59,7 @@ export function GuildScreen({state,onChange,onlineDirectory,onlineManagement,onl
     {onlineSection==='Activities'?<View style={s.sectionStack}><GuildSectionHeader label={st("DAILY & WEEKLY")} title={st("Muster & Rally")} copy={st("Daily participation rolls into the shared weekly Rally without adding another currency.")}/><OnlineGuildMusterPanel/><GuildSectionHeader label={st("INTENTIONAL PROGRESSION")} title={st("Guild Quests")} copy={st("Weekly cooperative objectives are the primary way to push and maintain Guild Activity through normal verified play.")}/><GuildQuestPanel/><GuildSectionHeader label={st("SHARED PROGRESSION")} title={st("Guild Projects")} copy={st("Hunt or gather to progress your automatic weekly Project, and review recent Guild activity.")}/>{onlineProjects}</View>:null}
     {onlineSection==='PvE'?onlinePve:null}
     {onlineSection==='Hall'?onlineHall:null}
-    {onlineSection==='Shop'?<OnlineGuildTokenShopPanel/>:null}
+    {onlineSection==='Shop'?<OnlineGuildTokenShopPanel onRewardsChanged={onTokenRewardsChanged}/>:null}
     {onlineSection==='Chat'?onlineChat:null}
     {onlineSection==='Manage'?<View style={s.sectionStack}><GuildSectionHeader label={st("RECRUITMENT")} title={st("Directory & Creation")} copy={st("Find another Guild when eligible, or create and configure a new Guild identity.")}/>{onlineDirectory}<GuildSectionHeader label={st("IDENTITY")} title={st("Guild Appearance")} copy={st("Manage the Guild tag, banner, border, colors, nameplate and motto with role-based permissions.")}/>{onlineCustomize}<GameButton compact title="Roadmap & future content" tone="secondary" onPress={()=>setOnlineSection('Future')}/></View>:null}
     {onlineSection==='Future'?<GuildFutureContent/>:null}

@@ -5,7 +5,7 @@ import {OnlineGuildConstructionPanel} from './OnlineGuildConstructionPanel';
 import {Panel} from './Panel';
 import {useGameTheme} from '../theme/ThemeContext';
 import type {ThemeColors} from '../theme/theme';
-import {claimOnlineGuildDailyTokens,purchaseOnlineGuildTokenReward,loadOnlineGuildTokenShop,type GuildTokenShopCategory,type GuildTokenShopSnapshot} from '../online/guild-token-shop';
+import {claimOnlineGuildDailyTokens,claimOnlineGuildEventBonus,purchaseOnlineGuildTokenReward,loadOnlineGuildTokenShop,type GuildTokenShopCategory,type GuildTokenShopSnapshot} from '../online/guild-token-shop';
 
 type Filter='all'|GuildTokenShopCategory;
 const FILTERS:readonly {id:Filter;label:string}[]=[
@@ -25,6 +25,18 @@ export function OnlineGuildTokenShopPanel(){
  const [loading,setLoading]=useState(true),[error,setError]=useState('');
  const [claiming,setClaiming]=useState<'attendance'|'contribution'|null>(null),[claimNotice,setClaimNotice]=useState('');
  const [purchasing,setPurchasing]=useState<string|null>(null);
+ const [eventBusy,setEventBusy]=useState<string|null>(null);
+ const claimEvent=async(eventId:string,milestonePercent:number)=>{
+  if(eventBusy||loading||claiming||purchasing)return;
+  const key=eventId+':'+milestonePercent;
+  setEventBusy(key);setError('');setClaimNotice('');
+  try{
+   const credited=await claimOnlineGuildEventBonus(eventId,milestonePercent);
+   setClaimNotice(credited>0?`+ ${credited} bonus Guild Tokens from the event!`:'This milestone was already claimed.');
+   setSnapshot(await loadOnlineGuildTokenShop());
+  }catch(reason){setError(reason instanceof Error?reason.message:'Could not claim Guild event bonus.');}
+  finally{setEventBusy(null);}
+ };
  const buy=async(itemId:string)=>{
   if(purchasing||loading||claiming)return;
   setPurchasing(itemId);setError('');setClaimNotice('');
@@ -99,6 +111,24 @@ export function OnlineGuildTokenShopPanel(){
    </View>)}
    {snapshot&&!visible.length?<Text style={styles.copy}>No rewards in this category yet.</Text>:null}
   </Panel>
+  {snapshot&&snapshot.eventBonuses.length>0?<Panel>
+   <Text style={styles.kicker}>SEASONAL BONUSES</Text>
+   <Text style={styles.section}>Event Guild Tokens</Text>
+   <Text style={styles.copy}>Already-earned community milestones award extra Guild Tokens outside the regular 250-per-week limit. Each reward can be claimed once.</Text>
+   {snapshot.eventBonuses.map(reward=>{
+    const key=reward.eventId+':'+reward.milestonePercent;
+    return <View key={key} style={styles.eventRow}>
+     <View style={{flex:1}}>
+      <Text style={styles.rewardTitle}>{reward.eventId.replace(/[_-]/g,' ')} · {reward.milestonePercent}%</Text>
+      <Text style={styles.meta}>+{reward.tokens} bonus Guild Tokens</Text>
+     </View>
+     <GameButton compact tone="secondary"
+      title={reward.claimed?'Claimed':eventBusy===key?'Claiming…':'Claim'}
+      disabled={reward.claimed||!!eventBusy||loading||!!claiming||!!purchasing}
+      onPress={()=>void claimEvent(reward.eventId,reward.milestonePercent)}/>
+    </View>;
+   })}
+  </Panel>:null}
   {snapshot?<OnlineGuildConstructionPanel snapshot={snapshot}/>:null}
  </View>;
 }
@@ -112,6 +142,7 @@ function makeStyles(C:ThemeColors){return StyleSheet.create({
  between:{flexDirection:'row',justifyContent:'space-between',alignItems:'center',gap:8},
  section:{fontSize:16,fontWeight:'800',color:C.text},
  notice:{fontSize:10,color:C.warning,lineHeight:15,marginTop:8},
+ eventRow:{flexDirection:'row',alignItems:'center',gap:8,paddingVertical:10,borderBottomColor:C.line,borderBottomWidth:1},
  claimBlock:{marginTop:12,gap:8},dailyRow:{flexDirection:'row',flexWrap:'wrap',gap:8},success:{fontSize:10,color:C.good},
  error:{fontSize:11,color:C.bad,marginTop:8},
  filters:{flexDirection:'row',flexWrap:'wrap',gap:6,marginTop:12,marginBottom:4},

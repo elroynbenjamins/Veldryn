@@ -87,3 +87,35 @@ export function guildShopDailyClaimHandler(services: GuildShopReadServices) {
   }
  };
 }
+
+/** Atomic entitlement-backed purchase. SQL release switch and service-role
+ * EXECUTE grant both default OFF, so this endpoint cannot spend live Tokens yet.
+ */
+export function guildShopPurchaseHandler(services:GuildShopReadServices){
+ return async(request:Request):Promise<Response>=>{
+  if(request.method!=="POST")return json({error:"method_not_allowed"},405);
+  const token=request.headers.get("authorization")?.match(/^Bearer (\S+)$/i)?.[1];
+  if(!token)return json({error:"auth_required"},401);
+  const accountId=await services.authenticate(token);
+  if(!accountId)return json({error:"invalid_session"},401);
+  const raw=await request.text();
+  if(raw.length>1024)return json({error:"request_too_large"},413);
+  let input:unknown;
+  try{input=JSON.parse(raw);}catch{return json({error:"invalid_json"},400);}
+  if(!input||typeof input!=="object"||Array.isArray(input))return json({error:"invalid_request"},400);
+  const body=input as Record<string,unknown>;
+  if(Object.keys(body).length!==1||typeof body.itemId!=="string"||!GUILD_SHOP_CATALOGUE.some(c=>c.id===body.itemId))
+   return json({error:"unknown_guild_reward"},400);
+  try{
+   const result=await services.rpc<{status:string;balance:number;rewardId?:string}>("guild_shop_purchase_server_v3",{
+    p_account_id:accountId,p_item_id:body.itemId,
+   });
+   if(!result||(result.status!=="purchased"&&result.status!=="already_owned")
+    ||!Number.isSafeInteger(result.balance)||result.balance<0)
+    return json({error:"invalid_purchase_result"},503);
+   return json(result);
+  }catch{
+   return json({error:"guild_token_purchase_unavailable"},503);
+  }
+ };
+}

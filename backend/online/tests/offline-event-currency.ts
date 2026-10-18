@@ -4,7 +4,7 @@ import {createCharacter,newGame,startGathering} from '../../../apps/mobile/src/c
 import {startProcessingBatch} from '../../../apps/mobile/src/core/processing';
 import type {GameState,RewardBundle} from '../../../apps/mobile/src/core/types';
 async function main(){
- const T=Date.UTC(2026,8,15,12),ID='EVT_ANNUAL_009_2026';
+ const T=Date.UTC(2026,9,15,12),ID='EVT_ANNUAL_010_2026';
  for(const mode of ['gathering','processing'] as const){
   let state=createCharacter(newGame(T),'IRONWARDEN','Server currency');state.character!.gold=10000;
   state.inventory.stacks=[{itemId:'COPPER_ORE',quantity:100}];

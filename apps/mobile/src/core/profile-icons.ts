@@ -30,7 +30,7 @@ export function profileIconCollection(state:GameState):ProfileIconEntry[]{
  const base=CLASSES.filter(row=>row.id===activeClass).map(row=>({id:`class:${row.id}`,name:row.name,group:'Class',source:'Your active character class.',unlocked:true,artworkReady:true,selected:selected===`class:${row.id}`}));
  const owned=new Set(state.account.unlockedProfileIconIds??[]);
  const characters=[state.character,...(state.otherCharacters??[]).map(row=>row.character)];
- const portraits=PROFILE_ICON_CATALOG.map(row=>({...row,artworkReady:true,selected:selected===row.id,unlocked:
+ const portraits=PROFILE_ICON_CATALOG.map(row=>({...row,artworkReady:row.id!=='guild:stormwatch-crest',selected:selected===row.id,unlocked:
   row.group==='Starter'||owned.has(row.id)
   ||(row.monsterId!==undefined&&characters.some(c=>(c?.monsterMasteryPoints?.[row.monsterId!]??0)>=10))
   ||(row.bossId!==undefined&&state.defeatedBossIds.includes(row.bossId))}));

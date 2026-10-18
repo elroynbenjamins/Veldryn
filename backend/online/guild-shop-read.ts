@@ -28,15 +28,16 @@ export function guildShopReadHandler(services: GuildShopReadServices) {
   try {
    const guildLevel = await services.guildLevelForAccount(accountId);
    if (guildLevel === null) return json({error:"guild_membership_required"},403);
-   const [snapshot,construction,eventBonuses,constructionEnabled] = await Promise.all([
+   const [snapshot,construction,eventBonuses,constructionEnabled,weeklyRewards] = await Promise.all([
     services.rpc<GuildShopSnapshot>("guild_shop_snapshot_server_v1",{p_account_id:accountId}),
     services.rpc<Array<{templateId:string;completed:boolean;resources:Record<string,number>}>>(
       "guild_construction_snapshot_server_v1",{p_account_id:accountId}),
     services.rpc<Array<{eventId:string;milestonePercent:number;tokens:number;claimed:boolean}>>(
       "guild_shop_event_community_rewards_server_v1",{p_account_id:accountId}),
     services.rpc<string[]>("guild_construction_enabled_server_v1",{p_account_id:accountId}),
+    services.rpc<Array<{kind:string;tokens:number;eligible:boolean;claimed:boolean}>>("guild_shop_weekly_rewards_server_v1",{p_account_id:accountId}),
    ]);
-   if (!snapshot || !Number.isSafeInteger(snapshot.balance) || !Array.isArray(snapshot.ownedItemIds) || !Array.isArray(construction) || !Array.isArray(eventBonuses) || !Array.isArray(constructionEnabled))
+   if (!snapshot || !Number.isSafeInteger(snapshot.balance) || !Array.isArray(snapshot.ownedItemIds) || !Array.isArray(construction) || !Array.isArray(eventBonuses) || !Array.isArray(constructionEnabled) || !Array.isArray(weeklyRewards))
     return json({error:"invalid_shop_snapshot"},503);
    return json({
     guildLevel,
@@ -50,6 +51,7 @@ export function guildShopReadHandler(services: GuildShopReadServices) {
     })),
     construction,
     eventBonuses,
+    weeklyRewards,
     cards:buildGuildShopCards({guildLevel,tokenBalance:snapshot.balance,ownedItemIds:snapshot.ownedItemIds}).map(card=>({
      ...card,released:Array.isArray(snapshot.enabledItemIds)&&snapshot.enabledItemIds.includes(card.id),
     })),
@@ -192,5 +194,32 @@ export function guildConstructionDonationHandler(services:GuildShopReadServices)
     return json({error:"invalid_donation_result"},503);
    return json(result);
   }catch{return json({error:"guild_construction_donation_unavailable"},503);}
+ };
+}
+
+/** Weekly goals are verified against guild Muster, project and PvE tables. */
+export function guildShopWeeklyClaimHandler(services:GuildShopReadServices){
+ return async(request:Request):Promise<Response>=>{
+  if(request.method!=="POST")return json({error:"method_not_allowed"},405);
+  const token=request.headers.get("authorization")?.match(/^Bearer (\S+)$/i)?.[1];
+  if(!token)return json({error:"auth_required"},401);
+  const accountId=await services.authenticate(token);
+  if(!accountId)return json({error:"invalid_session"},401);
+  const raw=await request.text();
+  if(raw.length>512)return json({error:"request_too_large"},413);
+  let input:unknown;
+  try{input=JSON.parse(raw);}catch{return json({error:"invalid_json"},400);}
+  if(!input||typeof input!=="object"||Array.isArray(input))return json({error:"invalid_request"},400);
+  const body=input as Record<string,unknown>;
+  if(Object.keys(body).length!==1||!['attendance','project','boss'].includes(body.kind as string))
+   return json({error:"invalid_weekly_guild_reward"},400);
+  try{
+   const credited=await services.rpc<number>("guild_shop_claim_weekly_server_v1",{
+    p_account_id:accountId,p_kind:body.kind,
+   });
+   if(!Number.isSafeInteger(credited)||credited<0||credited>50)
+    return json({error:"invalid_claim_result"},503);
+   return json({credited});
+  }catch{return json({error:"weekly_guild_reward_not_earned_or_unavailable"},503);}
  };
 }

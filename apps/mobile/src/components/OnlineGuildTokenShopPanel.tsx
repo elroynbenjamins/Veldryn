@@ -130,7 +130,7 @@ export function OnlineGuildTokenShopPanel({onRewardsChanged}:{onRewardsChanged?:
     </View>;
    })}
   </Panel>:null}
-  {snapshot?<OnlineGuildConstructionPanel snapshot={snapshot}/>:null}
+  {snapshot?<OnlineGuildConstructionPanel snapshot={snapshot} onRewardsChanged={onRewardsChanged} onReload={retry}/>:null}
  </View>;
 }
 function makeStyles(C:ThemeColors){return StyleSheet.create({

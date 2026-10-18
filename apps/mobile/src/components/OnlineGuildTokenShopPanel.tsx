@@ -86,6 +86,7 @@ export function OnlineGuildTokenShopPanel({onRewardsChanged}:{onRewardsChanged?:
   finally{setLoading(false);}
  };
  const visible=snapshot?.cards.filter(card=>filter==='all'||card.category===filter)??[];
+ const normalCapReached=!!snapshot&&snapshot.earnedThisWeek>=snapshot.weeklyCap;
  return <View style={styles.root}>
   <Panel>
    <Text style={styles.kicker}>GUILD REWARDS</Text>
@@ -99,8 +100,8 @@ export function OnlineGuildTokenShopPanel({onRewardsChanged}:{onRewardsChanged?:
    {snapshot?<View style={styles.claimBlock}>
     <Text style={styles.mini}>VERIFIED DAILY GUILD MUSTER</Text>
     <View style={styles.dailyRow}>
-     <GameButton compact tone="secondary" title={snapshot.claimedDailyKinds.includes('attendance')?'Check-in claimed':claiming==='attendance'?'Claiming…':'Claim 10 · Check-in'} disabled={loading||claiming!==null||snapshot.claimedDailyKinds.includes('attendance')} onPress={()=>void claim('attendance')}/>
-     <GameButton compact tone="secondary" title={snapshot.claimedDailyKinds.includes('contribution')?'Contribution claimed':claiming==='contribution'?'Claiming…':'Claim 10 · Activity'} disabled={loading||claiming!==null||snapshot.claimedDailyKinds.includes('contribution')} onPress={()=>void claim('contribution')}/>
+     <GameButton compact tone="secondary" title={snapshot.claimedDailyKinds.includes('attendance')?'Check-in claimed':normalCapReached?'Weekly cap reached':claiming==='attendance'?'Claiming…':'Claim 10 · Check-in'} disabled={loading||normalCapReached||claiming!==null||!!weeklyBusy||!!eventBusy||!!purchasing||snapshot.claimedDailyKinds.includes('attendance')} onPress={()=>void claim('attendance')}/>
+     <GameButton compact tone="secondary" title={snapshot.claimedDailyKinds.includes('contribution')?'Contribution claimed':normalCapReached?'Weekly cap reached':claiming==='contribution'?'Claiming…':'Claim 10 · Activity'} disabled={loading||normalCapReached||claiming!==null||!!weeklyBusy||!!eventBusy||!!purchasing||snapshot.claimedDailyKinds.includes('contribution')} onPress={()=>void claim('contribution')}/>
     </View>
     <Text style={styles.note}>Check in or complete verified Combat and Skilling through Guild Muster to earn these rewards. Each claim is available once per UTC day.</Text>
     {claimNotice?<Text accessibilityLiveRegion="polite" style={styles.success}>{claimNotice}</Text>:null}
@@ -118,8 +119,8 @@ export function OnlineGuildTokenShopPanel({onRewardsChanged}:{onRewardsChanged?:
       <Text style={styles.meta}>+{reward.tokens} Guild Tokens · {reward.claimed?'Claimed':reward.eligible?'Ready to claim':'In progress'}</Text>
      </View>
      <GameButton compact tone="secondary"
-      title={reward.claimed?'Claimed':weeklyBusy===reward.kind?'Claiming…':'Claim'}
-      disabled={!reward.eligible||reward.claimed||!!weeklyBusy||loading||!!claiming||!!purchasing||!!eventBusy}
+      title={reward.claimed?'Claimed':normalCapReached?'Weekly cap reached':weeklyBusy===reward.kind?'Claiming…':'Claim'}
+      disabled={!reward.eligible||reward.claimed||normalCapReached||!!weeklyBusy||loading||!!claiming||!!purchasing||!!eventBusy}
       onPress={()=>void claimWeekly(reward.kind)}/>
     </View>;
    })}

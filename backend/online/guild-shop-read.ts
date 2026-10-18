@@ -1,4 +1,4 @@
-import { GUILD_SHOP_CATALOGUE } from "../../packages/guild-shop/src/catalogue";
+import { GUILD_SHOP_CATALOGUE, GUILD_CONSTRUCTION_TEMPLATES } from "../../packages/guild-shop/src/catalogue";
 import { buildGuildShopCards } from "../../packages/guild-shop/src/view-model";
 export interface GuildShopSnapshot {
  balance: number;
@@ -26,14 +26,20 @@ export function guildShopReadHandler(services: GuildShopReadServices) {
   try {
    const guildLevel = await services.guildLevelForAccount(accountId);
    if (guildLevel === null) return json({error:"guild_membership_required"},403);
-   const snapshot = await services.rpc<GuildShopSnapshot>("guild_shop_snapshot_server_v1",{p_account_id:accountId});
-   if (!snapshot || !Number.isSafeInteger(snapshot.balance) || !Array.isArray(snapshot.ownedItemIds))
+   const [snapshot,construction] = await Promise.all([
+    services.rpc<GuildShopSnapshot>("guild_shop_snapshot_server_v1",{p_account_id:accountId}),
+    services.rpc<Array<{templateId:string;completed:boolean;resources:Record<string,number>}>>(
+      "guild_construction_snapshot_server_v1",{p_account_id:accountId}),
+   ]);
+   if (!snapshot || !Number.isSafeInteger(snapshot.balance) || !Array.isArray(snapshot.ownedItemIds) || !Array.isArray(construction))
     return json({error:"invalid_shop_snapshot"},503);
    return json({
     balance:snapshot.balance,
     earnedThisWeek:snapshot.earnedThisWeek,
     weeklyCap:250,
     catalogue:GUILD_SHOP_CATALOGUE,
+    constructionTemplates:GUILD_CONSTRUCTION_TEMPLATES,
+    construction,
     cards:buildGuildShopCards({guildLevel,tokenBalance:snapshot.balance,ownedItemIds:snapshot.ownedItemIds}),
    });
   } catch {

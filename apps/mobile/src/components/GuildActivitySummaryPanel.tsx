@@ -21,8 +21,8 @@ export function GuildActivityMeter({state,compact=false}:{state:OnlineGuildActiv
  const next=guildActivityNextMilestone(Math.min(100,state.activityPercent)),reserve=Math.max(0,state.activityPercent-100);
  const decayLabel=state.decayMode==='protected'?'Protected today':state.decayMode==='partial'?'-'+state.partialDecayPercent+'% if today ends here':'-'+state.inactiveDecayPercent+'% if inactive';
  const unlocked=GUILD_ACTIVITY_MILESTONE_DEFS.filter(row=>state.activityPercent>=row.threshold);
- return <Panel>
-  <View style={s.head}><View style={s.flex}><Text style={s.kicker}>{st("ACTIVE GUILD")}</Text><Text style={s.title}>{state.activityPercent}% Guild Activity</Text></View><StatusPill label={state.activityPercent>=100?st("MAX ACTIVITY"):state.decayMode==='protected'?st("PROTECTED"):st("BUILDING")} tone={state.activityPercent>=60?'good':'info'}/></View>
+ return <Panel style={compact?s.compact:undefined}>
+  <View style={s.head}><View style={s.flex}>{!compact?<Text style={s.kicker}>{st("ACTIVE GUILD")}</Text>:null}<Text style={[s.title,compact&&s.compactTitle]}>{state.activityPercent}% Guild Activity</Text></View><StatusPill label={state.activityPercent>=100?st("MAX ACTIVITY"):state.decayMode==='protected'?st("PROTECTED"):st("BUILDING")} tone={state.activityPercent>=60?'good':'info'}/></View>
   <View accessibilityRole="progressbar" accessibilityLabel="Guild Activity" aria-valuemin={0} aria-valuemax={100} aria-valuenow={Math.min(100,state.activityPercent)} accessibilityValue={{min:0,max:100,now:Math.min(100,state.activityPercent)}} style={s.track}><View style={[s.fill,{width:((Math.min(100,state.activityPercent))+'%') as any}]}/>{GUILD_ACTIVITY_MILESTONE_DEFS.filter(row=>row.threshold<100).map(row=><View key={row.threshold} accessible={false} pointerEvents="none" style={{position:'absolute',top:0,bottom:0,width:1,left:(row.threshold+'%') as any,backgroundColor:C.stage}}/>)}</View>
   {reserve>0?<Text style={s.reserveText}>{st("Activity Reserve")} {reserve}/10% · bonuses remain capped at 100%; reserve absorbs future decay.</Text>:null}
   {next?<Text style={s.next}>{compact?`Next: ${next.threshold}% · ${next.name}`:`${Math.max(0,next.threshold-state.activityPercent)}% until ${next.name} · ${next.description}`}</Text>:<Text style={s.next}>{st("All Guild Activity milestones active.")}</Text>}
@@ -36,6 +36,7 @@ export function GuildActivityMeter({state,compact=false}:{state:OnlineGuildActiv
 }
 
 function makeStyles(C:ThemeColors){return StyleSheet.create({
+ compact:{gap:2},compactTitle:{fontSize:17,lineHeight:23},
  disclosure:{minHeight:44,flexDirection:'row',alignItems:'center',justifyContent:'space-between',gap:8},detailLink:{fontSize:12,lineHeight:18,color:C.info,fontWeight:'600'},head:{flexDirection:'row',alignItems:'center',gap:8},flex:{flex:1,minWidth:0},kicker:{...typography.caption,color:C.accent,fontWeight:'900',letterSpacing:.8},title:{...typography.title,color:C.text},
  track:{height:9,borderRadius:5,overflow:'hidden',backgroundColor:C.panel2,marginVertical:8,position:'relative'},fill:{height:'100%',backgroundColor:C.good},reserve:{position:'absolute',top:0,bottom:0,backgroundColor:C.info},reserveText:{fontSize:12,color:C.info,fontWeight:'900',marginTop:3},
  metaRow:{flexDirection:'row',flexWrap:'wrap',justifyContent:'space-between',gap:6},meta:{fontSize:12,color:C.muted,fontWeight:'700'},decay:{fontSize:12,color:C.info,fontWeight:'900'},

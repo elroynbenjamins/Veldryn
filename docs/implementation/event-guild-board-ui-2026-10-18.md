@@ -45,3 +45,13 @@ Native device verification remains outstanding.
 - Upgrade confirmation hides the branch browser and active-bonus summary to keep the resource review and confirmation action together.
 - Event banners identify the current section and show multi-day deadlines in days and hours.
 - Rechecked TypeScript, six existing event/UI regression tests and 24 refined layouts at 320/390 pixels across all three themes. Browser interaction checks covered affordability filtering, empty-state recovery, balance preview, purchase/Owned transitions and Guild Activity disclosure.
+
+## Density and hierarchy pass
+
+- Reduced non-overview event banners to 92px and tightened section spacing. Categories and the affordability toggle now share a wrapping control row with 44px minimum touch targets; the offer count stays visible below.
+- Removed the extra outer Guild Quest frame and the boxed personal contribution surface. Rarity joins the quest metadata, completion remains explicit, and the summary combines completion and earned Activity.
+- Shortened the Activities banner and compact Activity meter while retaining their text, milestone disclosure and reserve information.
+- Upgrade review keeps Confirm as the primary button and uses a quieter, keyboard-accessible Cancel action with a 44px minimum target.
+- Added an optional `shell=1` memory preview using the actual GameTopBar and PrimaryNavigation. Its secondary back row is a preview stand-in; the Guild fixture still uses a reduced destination set, so this does not replace full-app/native validation.
+- Validation: full TypeScript check and six existing event/UI regression checks passed. Eighteen browser layouts at 320/390 CSS pixels across three themes had no horizontal overflow; changed controls retained their minimum targets. Checked Activity details, category/affordability filtering, enabled purchase review and cancellation restoring upgrade browsing. No browser console errors appeared.
+- Evidence: `output/event-shop-density-shell.png`, `output/guild-board-density-shell.png`, `output/guild-upgrade-density-shell.png`. Physical-device and OS enlarged-text validation remain outstanding.

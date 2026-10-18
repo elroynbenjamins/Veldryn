@@ -40,7 +40,7 @@ try{
  `);
  const migrations=path.join(here,'supabase','migrations');
  const guildFiles=readdirSync(migrations)
-  .filter(name=>/^20261018\d{6}_guild.*\.sql$/.test(name)).sort();
+  .filter(name=>/^2026101809\d{4}_guild.*\.sql$/.test(name)).sort();
  assert.ok(guildFiles.length>=18,`Expected complete Guild Shop migration chain; got ${guildFiles.length}`);
  for(const file of guildFiles){
   try{await db.exec(readFileSync(path.join(migrations,file),'utf8'));}

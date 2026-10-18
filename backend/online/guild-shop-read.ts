@@ -110,7 +110,7 @@ export function guildShopPurchaseHandler(services:GuildShopReadServices){
   if(Object.keys(body).length!==1||typeof body.itemId!=="string"||!GUILD_SHOP_CATALOGUE.some(c=>c.id===body.itemId))
    return json({error:"unknown_guild_reward"},400);
   try{
-   const result=await services.rpc<{status:string;balance:number;rewardId?:string}>("guild_shop_purchase_server_v3",{
+   const result=await services.rpc<{status:string;balance:number;rewardId?:string}>("guild_shop_purchase_server_v4",{
     p_account_id:accountId,p_item_id:body.itemId,
    });
    if(!result||(result.status!=="purchased"&&result.status!=="already_owned")

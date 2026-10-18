@@ -32,7 +32,7 @@ ok(screen.includes("root:{padding:spacing.md,gap:10"),'Online Guild shell must r
 
 ok(customization.includes('appearanceDirty='),'Guild customization must track unsaved appearance changes');
 ok(customization.includes('appearanceDirty?st("UNSAVED"):st("SAVED")'),'Guild customization must surface localized saved/unsaved state');
-ok(customization.includes("disabled={busy||!appearanceDirty}"),'Guild appearance save must only enable when something changed');
+ok(customization.includes("disabled={busy||!appearanceDirty||!constructionArtReady}"),'Guild appearance save must only enable when something changed');
 ok(customization.includes('guildBannerSourceByKey.has(entry.assetKey)')&&customization.includes('guildBorderSourceByKey.has(entry.assetKey)'),
  'Constructed Guild cosmetics must require registered artwork before player selection');
 ok(customization.includes('!constructionArtReady'),

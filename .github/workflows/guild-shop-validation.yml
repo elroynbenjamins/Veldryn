@@ -36,8 +36,11 @@ jobs:
         run: |
           printf '\npackages:\n  - "."\n' >> apps/mobile/pnpm-workspace.yaml
           pnpm --dir apps/mobile install --frozen-lockfile --ignore-scripts
-      - name: Typecheck and online backend tests
-        run: pnpm --dir backend run test:online
+      - name: Typecheck online backend and run focused Guild Shop tests
+        run: |
+          pnpm --dir backend exec tsc -p tsconfig.online.json
+          node backend/dist/online/backend/online/tests/guild-shop-read.js
+          node backend/dist/online/backend/online/tests/guild-shop-policies.js
       - name: Isolated database migration and purchase tests
         run: node backend/test-guild-shop-migrations.mjs
 

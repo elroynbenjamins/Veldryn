@@ -50,6 +50,8 @@ try{
   'public.guild_shop_purchase_server_v4(uuid,text)','EXECUTE') as permitted`)).permitted,false);
  assert.equal((await single(`select has_function_privilege('service_role',
   'public.guild_shop_grant_tokens_server_v1(uuid,text,bigint,boolean)','EXECUTE') as permitted`)).permitted,false);
+ assert.equal((await single(`select has_function_privilege('service_role',
+  'public.guild_construction_donate_server_v2(uuid,text,text,integer,text)','EXECUTE') as permitted`)).permitted,false);
  assert.equal((await single(`select has_function_privilege('authenticated',
   'public.guild_shop_claim_daily_server_v1(uuid,text)','EXECUTE') as permitted`)).permitted,false);
  await db.query('insert into auth.users(id) values ($1)',[account]);
@@ -61,7 +63,7 @@ try{
   values($1,'veilbreak',100)`,[account]);
  await db.query(`insert into public.online_game_states(account_id,character_id,state)
   values($1,$2,$3::jsonb)`,[account,character,JSON.stringify({
-  inventory:{stacks:[{itemId:'GREENWOOD_LOG',quantity:80}]},
+  inventory:{stacks:[{itemId:'GREENWOOD_LOG',quantity:80},{itemId:'ASTER_IRON_INGOT',quantity:2},{itemId:'MOSS_FIBER',quantity:2}]},
   account:{unlockedCosmeticPetIds:[],unlockedCombatCompanionIds:[],
    unlockedProfileIconIds:[],unlockedProfileBorderIds:[],combatCompanionProgress:{}}
  })]);
@@ -99,9 +101,16 @@ try{
  assert.equal(Number((await single('select balance from public.guild_shop_wallets where account_id=$1',[account])).balance),3750);
  await fail(`select public.guild_shop_purchase_server_v4($1,'guild_pet_02')`,[account]);
 
+ // Construction requires explicit per-project release even with full SQL privileges.
+ const enabledBefore=await single('select public.guild_construction_enabled_server_v1($1) as enabled',[account]);
+ assert.deepEqual(enabledBefore.enabled,[]);
+ await fail(`select public.guild_construction_donate_server_v2($1,'stormwatch_banner','gold',100,'donation_gold_one')`,[account]);
+ await db.exec(`update public.guild_construction_templates set enabled=true where template_id='stormwatch_banner';`);
+ const enabledAfter=await single('select public.guild_construction_enabled_server_v1($1) as enabled',[account]);
+ assert.deepEqual(enabledAfter.enabled,['stormwatch_banner']);
  // Construction donation checks same-row replay and inventory/gold deduction.
  const donate=(resource,amount,key)=>single(
-  'select public.guild_construction_donate_server_v1($1,$2,$3,$4,$5) as result',
+  'select public.guild_construction_donate_server_v2($1,$2,$3,$4,$5) as result',
   [account,'stormwatch_banner',resource,amount,key]);
  const donation=await donate('gold',100,'donation_gold_one');
  assert.equal(donation.result.alreadyProcessed,false);
@@ -110,8 +119,19 @@ try{
  await donate('GREENWOOD_LOG',25,'donation_logs_one');
  const after=await single('select state from public.online_game_states where account_id=$1',[account]);
  assert.equal(after.state.inventory.stacks[0].quantity,55);
- await fail('select public.guild_construction_donate_server_v1($1,\'stormwatch_banner\',\'GREENWOOD_LOG\',999999,\'donation_logs_two\')',[account]);
+ await fail('select public.guild_construction_donate_server_v2($1,\'stormwatch_banner\',\'GREENWOOD_LOG\',999999,\'donation_logs_two\')',[account]);
  const project=await single(`select public.guild_construction_snapshot_server_v1($1) as snapshot`,[account]);
  assert.equal(project.snapshot[0].resources.GREENWOOD_LOG,25);
+ // Rebalance only the isolated fixture's project targets to test completion.
+ await db.exec(`update public.guild_construction_requirements set required_amount=
+  case resource_id when 'gold' then 100 when 'GREENWOOD_LOG' then 25 else 1 end
+  where template_id='stormwatch_banner';`);
+ await donate('ASTER_IRON_INGOT',1,'donation_iron_one');
+ const completed=await donate('MOSS_FIBER',1,'donation_fiber_one');
+ assert.equal(completed.result.completed,true,'last contribution completes project');
+ const unlock=await single('select unlock_id from public.guild_construction_unlocks where guild_id=$1',[guild]);
+ assert.equal(unlock.unlock_id,'guild_banner_stormwatch','cosmetic unlock issued once for guild');
+ assert.equal((await donate('MOSS_FIBER',1,'donation_fiber_one')).result.alreadyProcessed,true);
+ await fail(`select public.guild_construction_donate_server_v2($1,'stormwatch_banner','gold',100,'donation_gold_two')`,[account]);
  console.log(`Guild Shop database migrations and transactional invariants passed (${guildFiles.length} migrations).`);
 }finally{await db.close();}

@@ -42,4 +42,10 @@ export const GUILD_CONSTRUCTION_TEMPLATES = [
   { id:"stormwatch_banner",guildLevel:5,gold:300000,materials:[
     { materialKey:"GREENWOOD_LOG",amount:10000 },{ materialKey:"ASTER_IRON_INGOT",amount:5000 },{ materialKey:"MOSS_FIBER",amount:2000 },
   ],unlockId:"guild_banner_stormwatch" },
+  { id:"verdant_guild_frame",guildLevel:9,gold:520000,materials:[
+    { materialKey:"GREENWOOD_LOG",amount:18000 },{ materialKey:"ASTER_IRON_INGOT",amount:8000 },{ materialKey:"MOSS_FIBER",amount:4000 },
+  ],unlockId:"guild_frame_verdant" },
+  { id:"fellowship_statue",guildLevel:14,gold:900000,materials:[
+    { materialKey:"IRONWOOD_LOG",amount:22000 },{ materialKey:"ASTER_IRON_INGOT",amount:12000 },{ materialKey:"OATHGLASS_SHARD",amount:4000 },
+  ],unlockId:"guild_decoration_fellowship_statue" },
 ] as const;

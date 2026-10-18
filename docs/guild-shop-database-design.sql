@@ -1,0 +1,11 @@
+-- Guild Shop database design (review before applying)
+-- Account IDs and guild IDs must be matched to the existing production schema.
+-- Wallet: account_id, balance (nonnegative), updated_at.
+-- Ledger: account_id, unique claim_key per account, signed amount, source kind, created_at.
+-- Weekly earnings: account_id, Monday UTC week_start, earned (0..250).
+-- Purchases: unique (account_id,item_id), guild_id, token_cost, purchased_at.
+-- Construction projects: unique (guild_id,template_id), status, completed_at.
+-- Contributions: unique (account_id,donation_key), guild_id, template_id, resource_id, amount.
+-- All six tables must have row level security enabled.
+-- No direct client writes. Purchase, grant and donation must be atomic server operations.
+-- Do not deploy schema until guild membership, resource ownership and account ID types are confirmed.

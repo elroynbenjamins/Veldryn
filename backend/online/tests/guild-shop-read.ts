@@ -100,6 +100,19 @@ async function run() {
  assert(donateOk.status===200,'valid donation forwarded');
  assert(donationCalls.length===1&&donationCalls[0].name==='guild_construction_donate_server_v2','construction donation uses locked SQL');
  assert(donationCalls[0].args.p_account_id==='11111111-1111-4111-8111-111111111111','donation account comes from bearer auth');
+ const declined=guildConstructionDonationHandler({...services,rpc:async<T>():Promise<T>=>{
+  throw new Error('insufficient_gold');
+ }});
+ const declinedResult=await declined(new Request(donateUri,{method:'POST',headers:{authorization:'Bearer valid'},body:JSON.stringify(donateInput)}));
+ assert(declinedResult.status===422,'verified insufficient balance has actionable rejection status');
+ assert((await declinedResult.json() as {error:string}).error==='insufficient_gold','safe validation reason forwarded');
+ const hidden=guildConstructionDonationHandler({...services,rpc:async<T>():Promise<T>=>{
+  throw new Error('sensitive_database_statement');
+ }});
+ const hiddenResult=await hidden(new Request(donateUri,{method:'POST',headers:{authorization:'Bearer valid'},body:JSON.stringify(donateInput)}));
+ assert(hiddenResult.status===503,'unrecognized transaction errors stay retryable');
+ assert((await hiddenResult.json() as {error:string}).error==='guild_construction_donation_unavailable','no internal errors leaked');
+
 
  const weeklyCalls:Array<{name:string;args:Record<string,unknown>}>=[];
  const weekly=guildShopWeeklyClaimHandler({...services,rpc:async<T>(name:string,args:Record<string,unknown>)=>{

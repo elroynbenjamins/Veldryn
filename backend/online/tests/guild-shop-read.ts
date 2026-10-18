@@ -65,7 +65,7 @@ async function run() {
  assert(purchasePrice.status===400,'client prices refused');
  const purchaseOk=await purchase(new Request(claimUri,{method:'POST',headers:{authorization:'Bearer valid'},body:'{"itemId":"guild_pet_01"}'}));
  assert(purchaseOk.status===200,'verified purchase returned');
- assert(purchaseCalls.length===1&&purchaseCalls[0].name==='guild_shop_purchase_server_v3','only server-priced purchase API called');
+ assert(purchaseCalls.length===1&&purchaseCalls[0].name==='guild_shop_purchase_server_v4','only server-priced purchase API called');
  assert(purchaseCalls[0].args.p_account_id==='11111111-1111-4111-8111-111111111111','purchase account comes from auth');
  assert(purchaseCalls[0].args.p_item_id==='guild_pet_01','SKU is transmitted without price');
 

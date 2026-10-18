@@ -34,6 +34,7 @@ try{
  create table public.online_game_states(
   account_id uuid primary key,character_id uuid,state jsonb,revision bigint not null default 1,
   updated_at timestamptz not null default now());
+ create table public.chat_messages(account_id uuid not null, body text not null);
  create table public.character_wallets(
   character_id uuid primary key,gold bigint not null,
   updated_at timestamptz not null default now());
@@ -68,6 +69,10 @@ try{
    unlockedProfileIconIds:[],unlockedProfileBorderIds:[],combatCompanionProgress:{}}
  })]);
  await db.query('insert into public.character_wallets(character_id,gold) values ($1,1000)',[character]);
+ // Server accepts starter art, but never premium Guild emotes before unlock.
+ await db.query('insert into public.chat_messages(account_id,body) values ($1,$2)',[account,'Hello :male_01:']);
+ await fail('insert into public.chat_messages(account_id,body) values ($1,$2)',[account,'Hello :pet_set_a_01:']);
+ await fail('insert into public.chat_messages(account_id,body) values ($1,$2)',[account,':male_01::male_02::male_03:']);
  assert.equal(Number((await single('select public.guild_shop_claim_daily_server_v1($1,\'attendance\') as n',[account])).n),10);
  assert.equal(Number((await single('select public.guild_shop_claim_daily_server_v1($1,\'attendance\') as n',[account])).n),0);
  assert.equal(Number((await single('select public.guild_shop_claim_daily_server_v1($1,\'contribution\') as n',[account])).n),10);
@@ -98,6 +103,7 @@ try{
  assert.ok(saved.state.account.unlockedCombatCompanionIds.includes('GUILD_UNIT_001'));
  assert.equal(saved.state.account.combatCompanionProgress.GUILD_UNIT_001.level,1);
  assert.deepEqual(saved.state.account.unlockedEmoteIds,['pet_set_a_01','pet_set_a_02','pet_set_a_03','pet_set_a_04','pet_set_a_05']);
+ await db.query('insert into public.chat_messages(account_id,body) values ($1,$2)',[account,'Guild cheers :pet_set_a_01:']);
  assert.equal(Number((await single('select balance from public.guild_shop_wallets where account_id=$1',[account])).balance),3750);
  await fail(`select public.guild_shop_purchase_server_v4($1,'guild_pet_02')`,[account]);
 

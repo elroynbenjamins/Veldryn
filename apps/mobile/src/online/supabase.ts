@@ -12,6 +12,9 @@ const PRODUCTION_SUPABASE_ANON_KEY='sb_publishable_EBP2NTN1cNnwDFFg3idkwg_DiNu5z
 // silently fall back to the demo/offline social UI if EAS fails to inject them.
 const url=process.env.EXPO_PUBLIC_SUPABASE_URL??(!__DEV__?PRODUCTION_SUPABASE_URL:undefined);
 const key=process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY??(!__DEV__?PRODUCTION_SUPABASE_ANON_KEY:undefined);
+/** Publishable client configuration for authenticated custom Edge GET routes. */
+export const supabasePublicEndpoint=url;
+export const supabasePublicKey=key;
 
 const secureStorage={
   getItem:(storageKey:string)=>SecureStore.getItemAsync(storageKey),

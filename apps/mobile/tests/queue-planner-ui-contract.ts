@@ -16,6 +16,18 @@ ok(planner.includes('queueSkillReadiness(state,skill.id)')&&planner.includes('di
 const popup=read('src/components/RewardPopup.tsx');
 const queue=read('src/components/ActionQueuePanel.tsx');
 ok(queue.includes('stackRows=width<480||fontScale>=1.25'),'Phone queue controls must stack below the activity details');
+ok(queue.includes('accessibilityState={{expanded:managing}}')&&queue.includes('managing?<View style=')&&queue.includes('Confirm clear'),
+ 'Waiting queue stays compact until Manage is expanded, and destructive clear requires inline confirmation');
+ok(queue.includes('onClear();')&&queue.includes('setConfirmClear(false)'),
+ 'Clear queue still uses the existing queue_clear command without a new modal or gameplay path');
+const quickInspect=read('src/components/ItemQuickInspect.tsx');
+ok(quickInspect.includes('prioritizeItemSources(model.sources)')&&quickInspect.includes('prioritizeItemUses(model.usedIn)'),
+ 'Quick Inspect promotes accessible sources and crafting uses');
+ok(quickInspect.includes('setUseLimits(previous=>')&&quickInspect.includes('Math.min(uses.length,useLimit+4)'),
+ 'Long crafting-use catalogues expand four rows at a time');
+ok(quickInspect.includes('const model=useMemo(()=>itemId?itemInspectModel(state,itemId):undefined,[state,itemId])'),
+ 'Item inspection model is memoized across disclosure-only renders');
+
 ok(queue.includes('<Text style={s.name}>{label}</Text>')&&queue.includes('<Text style={readiness.ready?s.readyMeta:s.blockedMeta}>'),'Queue activity names, goals and blocking reasons must wrap rather than truncate');
 ok(!popup.includes('LOOT TYPES')&&!popup.includes('Effective pace')&&!popup.includes('actionsPerHour'),'Irrelevant summary metrics remain removed');
 const footer=popup.indexOf('</ScrollView><View'),continueButton=popup.indexOf('title={gt("Continue")}');

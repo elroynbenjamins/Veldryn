@@ -1,6 +1,6 @@
 import type {QuickNavDestination} from './quick-navigation';
 export type PrimaryNavigationId='character'|'skills'|'world'|'inventory'|'account';
-export type NotificationKind='friend_request'|'party_invite'|'guild_invite'|'guild_application'|'chat_unread'|'weekly_order_complete'|'reward_ready'|'collection_unlock'|'profile_customization'|'event_reward_ready'|'account_action'|'companion_attention'|'equipment_craft_ready';
+export type NotificationKind='friend_request'|'party_invite'|'guild_invite'|'guild_application'|'chat_unread'|'weekly_order_complete'|'story_reward_ready'|'inventory_overflow'|'reward_ready'|'collection_unlock'|'profile_customization'|'event_reward_ready'|'account_action'|'companion_attention'|'equipment_craft_ready';
 export interface NavigationNotification{key:string;kind:NotificationKind;count?:number;unread?:boolean}
 export interface NavigationBadge{count:number;dot:boolean;display?:string}
 export type NavigationBadgeMap=Record<PrimaryNavigationId,NavigationBadge>;
@@ -13,6 +13,8 @@ export const NOTIFICATION_DESTINATIONS:Record<NotificationKind,NotificationDesti
  guild_application:{primary:'account',subroute:'social.guild.applications',mode:'count'},
  chat_unread:{primary:'account',subroute:'social.chat',mode:'count'},
  weekly_order_complete:{primary:'world',subroute:'world.weekly-orders',mode:'dot'},
+ story_reward_ready:{primary:'world',subroute:'world.story-journal',mode:'count'},
+ inventory_overflow:{primary:'inventory',subroute:'inventory.overflow',mode:'dot'},
  reward_ready:{primary:'character',subroute:'character.rewards',mode:'dot'},
  collection_unlock:{primary:'account',subroute:'collections',mode:'dot'},
  profile_customization:{primary:'account',subroute:'profile.customize',mode:'dot'},
@@ -66,6 +68,8 @@ export const QUICK_NOTIFICATION_DESTINATIONS:Record<NotificationKind,QuickNavDes
  guild_application:'Guild',
  chat_unread:'Social',
  weekly_order_complete:'Quests',
+ story_reward_ready:'Quests',
+ inventory_overflow:'Inventory',
  reward_ready:'Home',
  collection_unlock:'Account',
  profile_customization:'Account',
@@ -88,4 +92,20 @@ export function buildQuickNavigationBadges(rows:NavigationNotification[]):QuickN
   badge.display=badgeDisplay(badge.count);if(badge.count>0)badge.dot=true;out[destination]=badge;
  }
  return out;
+}
+
+/** Local-only claim indicators. Always derived from actually completed state,
+ * not dismissed/seen flags: a badge clears when its claim is fulfilled.
+ * There are no extra timers, network reads, popups, or new destinations.
+ */
+export function actionableClaimNotifications(input:{
+ storyRewards:number;eventClaims:number;overflowStacks:number;
+}):NavigationNotification[]{
+ const count=(n:number)=>Number.isFinite(n)?Math.max(0,Math.floor(n)):0;
+ const story=count(input.storyRewards),events=count(input.eventClaims),overflow=count(input.overflowStacks);
+ return [
+  {key:'story-rewards-claimable',kind:'story_reward_ready',count:story,unread:story>0},
+  {key:'event-rewards-claimable',kind:'event_reward_ready',count:events,unread:events>0},
+  {key:'overflow-items-waiting',kind:'inventory_overflow',unread:overflow>0},
+ ];
 }

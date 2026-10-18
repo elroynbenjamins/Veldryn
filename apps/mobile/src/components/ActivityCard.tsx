@@ -10,6 +10,7 @@ import {spacing,typography,type ThemeColors} from '../theme/theme';
 import {useGameTheme} from '../theme/ThemeContext';
 import {formatGameNumber} from '../core/number-format';
 import {activityProgressFeedback,formatBalanceDuration,type LevelPaceProjection} from '../core/balance-projection';
+import {idleActivityInsights,type IdleResourceRate} from '../core/idle-activity-insights';
 
 function duration(seconds:number){
   const wholeSeconds=Math.ceil(Math.max(0,seconds));
@@ -23,10 +24,14 @@ const nextLabel:Record<ActivityKind,string>={combat:'NEXT ENCOUNTER',mining:'NEX
 const rewardLabel:Record<ActivityKind,string>={combat:'kills ready',mining:'actions ready',woodcutting:'actions ready',fishing:'actions ready',herbalism:'actions ready',alchemy:'brews ready',processing:'crafts ready',faith:'practices ready',training:'drills ready',exploration:'routes ready'};
 const feedbackKind=(kind:ActivityKind)=>kind==='combat'?'combat':kind==='alchemy'||kind==='processing'?'crafting':kind==='faith'?'faith':kind==='training'?'training':kind==='exploration'?'exploration':'gathering';
 
-export function ActivityCard({title,kind,activity,cycleSeconds,capHours,preview,rates,levelPace,reduceMotion=false,numberMode='abbreviated',onClaim,onStop}:{title:string;kind:ActivityKind;activity?:ActiveActivity;cycleSeconds:number;capHours:number;preview:RewardBundle;rates:{actionsPerHour:number;xpPerHour:number;goldPerHour:number};levelPace?:LevelPaceProjection;reduceMotion?:boolean;numberMode?:'abbreviated'|'exact';onClaim:()=>void;onStop:()=>void}){
+export function ActivityCard({title,kind,activity,cycleSeconds,capHours,preview,rates,resourceRate,maxHp,levelPace,reduceMotion=false,numberMode='abbreviated',onClaim,onStop}:{title:string;kind:ActivityKind;activity?:ActiveActivity;cycleSeconds:number;capHours:number;preview:RewardBundle;rates:{actionsPerHour:number;xpPerHour:number;goldPerHour:number};resourceRate?:IdleResourceRate;maxHp?:number;levelPace?:LevelPaceProjection;reduceMotion?:boolean;numberMode?:'abbreviated'|'exact';onClaim:()=>void;onStop:()=>void}){
  const {gt,gl,language}=useGameplayText();
   const C=useGameTheme(),s=useMemo(()=>makeStyles(C),[C]);
   const [showDetails,setShowDetails]=useState(false);
+  const insights=idleActivityInsights({kind,rates,preview,resource:resourceRate,maxHp});
+  const formatRate=(value:number)=>value>0&&value<10&&value%1!==0
+   ?value.toLocaleString(language,{maximumFractionDigits:1,minimumFractionDigits:1})
+   :formatGameNumber(Math.round(value),numberMode,language);
   const pulse=useRef(new Animated.Value(0)).current;
   useEffect(()=>{pulse.setValue(0);if(reduceMotion)return;const loop=Animated.loop(Animated.timing(pulse,{toValue:1,duration:1100,easing:Easing.linear,useNativeDriver:true}));loop.start();return()=>loop.stop()},[pulse,reduceMotion]);
   const readyCount=kind==='combat'?preview.kills:kind==='alchemy'||kind==='processing'?(preview.craftingActions??0):kind==='faith'?(preview.faithActions??0):kind==='training'?(preview.trainingActions??0):preview.kills;
@@ -44,6 +49,12 @@ export function ActivityCard({title,kind,activity,cycleSeconds,capHours,preview,
       </View>
       <View style={[s.status,(capped||!!preview.stoppedReason)&&s.statusCapped]}><Text style={[s.statusText,preview.stoppedReason?s.statusStopped:capped?s.statusCappedText:s.statusActive]}>{preview.stoppedReason?gt("STOPPED"):capped?`${capHours}H CAP`:gt("ACTIVE")}</Text></View>
     </View>
+    <View accessible accessibilityLabel="Estimated current activity rates" style={s.insightGrid}>
+      {insights.metrics.map(metric=><View key={metric.id} style={s.insightCell}>
+        <Text numberOfLines={1} style={s.insightLabel}>{metric.label}</Text>
+        <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={.8} style={s.insightValue}>≈ {formatRate(metric.perHour)}</Text>
+      </View>)}
+    </View>
     {!preview.stoppedReason&&<Text style={s.reserveHint}>AFK reserve remaining: {reserveSeconds>0?duration(reserveSeconds):'Full · collect to continue'}</Text>}
     <View accessible accessibilityRole="progressbar" accessibilityLabel={`${title} action progress`} accessibilityValue={{min:0,max:100,now:Math.round(cycleProgress*100)}} style={s.progressBlock}><View style={s.progressMeta}><Text style={s.progressLabel}>{preview.stoppedReason?gt("ACTIVITY STOPPED"):capped?gt("OFFLINE STORAGE FULL"):nextLabel[kind]}</Text><Text style={s.progressTime}>{preview.stoppedReason||capped?'—':`${remaining}s`}</Text></View><View style={s.track}><View style={[s.fill,{width:`${cycleProgress*100}%`}]}>{!reduceMotion&&<Animated.View style={[s.shine,{transform:[{translateX:pulse.interpolate({inputRange:[0,1],outputRange:[-90,260]})}]}]}/>}</View></View>{!preview.stoppedReason&&!capped?<Text style={s.phaseText}>{activityProgressFeedback(feedbackKind(kind),cycleProgress)}</Text>:null}</View>
     {levelPace?<View accessible accessibilityRole="progressbar" accessibilityLabel={levelPace.label+' level progress'} accessibilityValue={{min:0,max:100,now:Math.round(levelPace.progress*100)}} style={s.levelProgress}><View style={s.progressMeta}><Text style={s.levelProgressLabel}>{levelPace.level>=100?levelPace.label.toUpperCase()+' · LEVEL 100':levelPace.label.toUpperCase()+' · LV '+levelPace.level+' → '+levelPace.nextLevel}</Text><Text style={s.levelProgressEta}>{levelPace.level>=100?gt("MAX"):'~'+formatBalanceDuration(levelPace.etaSeconds)}</Text></View><View style={s.levelTrack}><View style={[s.levelFill,{width:((levelPace.level>=100?100:Math.max(2,levelPace.progress*100))+'%') as `${number}%`}]}/></View><Text style={s.levelProgressMeta}>{levelPace.level>=100?gt("Maximum level reached"):formatGameNumber(Math.ceil(levelPace.remainingXp),numberMode,language)+' XP remaining · '+formatGameNumber(Math.round(levelPace.xpPerHour),numberMode,language)+' XP/hr'}</Text></View>:null}
@@ -59,13 +70,33 @@ export function ActivityCard({title,kind,activity,cycleSeconds,capHours,preview,
     {capped&&!preview.stoppedReason&&<View style={s.stopNotice}><Text style={s.noticeLabel}>{gt("STORAGE FULL")}</Text><Text style={s.capNotice}>{gt("Offline storage is full. Collect now to resume earning.")}</Text></View>}
     <View style={s.activityActions}><View style={s.action}><GameButton title={hasRewards?gt("Collect Rewards"):gt("Rewards building…")} onPress={onClaim} disabled={!hasRewards}/></View><View style={s.action}><GameButton title={gt("Collect & stop")} tone="secondary" onPress={onStop}/></View></View>
     <Pressable accessibilityRole="button" accessibilityState={{expanded:showDetails}} onPress={()=>setShowDetails(value=>!value)} style={s.detailsToggle}><Text style={s.detailsLabel}>{showDetails?gt("HIDE DETAILS"):gt("RATES & DETAILS")}</Text><Text style={s.detailsMark}>{showDetails?'−':'+'}</Text></Pressable>
-    {showDetails&&<View style={s.details}><Text style={s.detail}>{duration(preview.elapsedSeconds)} since last claim · up to {capHours} hours offline</Text><View style={s.rateRow}><Text style={s.rate}>≈ {formatGameNumber(rates.actionsPerHour,numberMode,language)}/hr</Text><Text style={s.rate}>+{formatGameNumber(rates.xpPerHour,numberMode,language)} XP/hr</Text>{rates.goldPerHour>0&&<Text style={s.rate}>+{formatGameNumber(rates.goldPerHour,numberMode,language)} gold/hr</Text>}</View>{kind==='combat'&&<><Text style={s.detail}>Projected health: {preview.endHp??'—'} HP · Food used: {preview.foodConsumed??0}</Text>{(preview.explorationXp??0)>0?<Text style={s.detail}>Regional familiarity · +{formatGameNumber(preview.explorationXp??0,numberMode,language)} Exploration XP</Text>:null}</>}{loot?<Text style={s.loot}>{loot}</Text>:null}</View>}
+    {showDetails&&<View style={s.details}>
+      <Text style={s.detail}>{duration(preview.elapsedSeconds)} since last claim · up to {capHours} hours offline</Text>
+      <Text style={s.detail}>Hourly rates are estimates at your current setup; rewards are only earned while the activity can run.</Text>
+      {insights.resourceName?<Text style={s.detail}>Main resource: {insights.resourceName} · actual yields vary per action.</Text>:null}
+      {kind==='combat'&&insights.combat?<View style={s.combatInsights}>
+        <Text style={s.combatInsightsTitle}>COMBAT EFFICIENCY · UNCLAIMED WINDOW</Text>
+        <View style={s.rateRow}>
+          {insights.combat.killsPerHour!==undefined?<Text style={s.rate}>≈ {formatRate(insights.combat.killsPerHour)} buffered kills/hr</Text>:<Text style={s.detail}>Buffered kills: {insights.combat.bufferedKills}</Text>}
+          <Text style={s.detail}>Food consumed: {insights.combat.foodUsed}</Text>
+          {insights.combat.foodPerHour!==undefined?<Text style={s.rate}>≈ {formatRate(insights.combat.foodPerHour)} food/hr</Text>:null}
+        </View>
+        <Text style={[s.detail,insights.combat.lowProjectedHp&&s.healthRisk]}>Projected HP: {insights.combat.projectedHp===undefined?'—':Math.round(insights.combat.projectedHp)}{insights.combat.lowProjectedHp?' · Low health; check food before continuing.':''}</Text>
+        {insights.combat.killsPerHour===undefined?<Text style={s.detail}>Buffered hourly efficiency appears after 10 minutes of combat.</Text>:null}
+        {(preview.explorationXp??0)>0?<Text style={s.detail}>Regional familiarity · +{formatGameNumber(preview.explorationXp??0,numberMode,language)} Exploration XP</Text>:null}
+      </View>:null}
+      {loot?<Text style={s.loot}>{loot}</Text>:null}
+    </View>}
 
   </Panel>;
 }
 
 function makeStyles(C:ThemeColors){return StyleSheet.create({
   heading:{flexDirection:'row',justifyContent:'space-between',alignItems:'flex-start',gap:spacing.md},
+  insightGrid:{flexDirection:'row',flexWrap:'wrap',gap:6},
+  insightCell:{minWidth:0,flex:1,borderRadius:8,borderWidth:1,borderColor:C.line,backgroundColor:C.panel2,paddingHorizontal:7,paddingVertical:7,gap:2},
+  insightLabel:{fontSize:8,lineHeight:11,fontWeight:'800',letterSpacing:.35,color:C.muted},
+  insightValue:{fontSize:13,lineHeight:18,fontWeight:'900',color:C.text,fontVariant:['tabular-nums']},
   headingCopy:{flex:1},eyebrow:{...typography.caption,color:C.accent,fontWeight:'900',letterSpacing:1},
   title:{...typography.title,color:C.text},detail:{...typography.body,color:C.muted},reserveHint:{...typography.caption,color:C.info,fontWeight:'800'},
   status:{borderWidth:1,borderColor:C.good,borderRadius:99,paddingHorizontal:spacing.sm,paddingVertical:spacing.xs},
@@ -80,5 +111,9 @@ function makeStyles(C:ThemeColors){return StyleSheet.create({
   detailsToggle:{minHeight:42,flexDirection:'row',alignItems:'center',justifyContent:'space-between',borderTopWidth:1,borderTopColor:C.line},detailsLabel:{...typography.caption,color:C.accent,fontWeight:'900',letterSpacing:.8},detailsMark:{fontSize:22,color:C.accent},details:{gap:spacing.xs},
   capNotice:{...typography.body,color:C.text},noticeLabel:{...typography.caption,color:C.warning,fontWeight:'900',letterSpacing:1},stopNotice:{gap:4,padding:spacing.sm,borderWidth:1,borderColor:C.warning,borderRadius:8,backgroundColor:C.warningSurface},
   progressBlock:{gap:spacing.xs,paddingVertical:spacing.xs},progressMeta:{flexDirection:'row',flexWrap:'wrap',gap:6,justifyContent:'space-between'},progressLabel:{...typography.caption,color:C.accent,fontWeight:'900',letterSpacing:1},progressTime:{...typography.bodyStrong,color:C.text},phaseText:{...typography.caption,color:C.muted,fontWeight:'700'},levelProgress:{gap:4,padding:spacing.sm,borderWidth:1,borderColor:C.info,borderRadius:8,backgroundColor:C.infoSurface},levelProgressLabel:{fontSize:9,color:C.info,fontWeight:'900',letterSpacing:.65},levelProgressEta:{...typography.caption,color:C.text,fontWeight:'900'},levelTrack:{height:6,borderRadius:3,overflow:'hidden',backgroundColor:C.bg},levelFill:{height:'100%',backgroundColor:C.info},levelProgressMeta:{fontSize:9,lineHeight:12,color:C.muted,fontWeight:'700'},activityActions:{flexDirection:'row',gap:8},action:{flex:1,minWidth:0},track:{height:12,borderRadius:8,overflow:'hidden',backgroundColor:C.bg,borderWidth:1,borderColor:C.line},fill:{height:'100%',overflow:'hidden',backgroundColor:C.good,borderRadius:8},shine:{position:'absolute',width:54,height:'100%',backgroundColor:'rgba(255,255,255,.28)'},
-  rateRow:{flexDirection:'row',flexWrap:'wrap',gap:spacing.sm},rate:{...typography.caption,color:C.info,fontWeight:'800'},
+  rateRow:{flexDirection:'row',flexWrap:'wrap',gap:spacing.sm},
+  rate:{...typography.caption,color:C.info,fontWeight:'800'},
+  combatInsights:{gap:5,padding:spacing.sm,borderRadius:8,backgroundColor:C.panel2,borderWidth:1,borderColor:C.line},
+  combatInsightsTitle:{...typography.caption,color:C.info,fontWeight:'900',letterSpacing:.6},
+  healthRisk:{color:C.warning,fontWeight:'800'},
 });}

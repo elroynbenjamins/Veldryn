@@ -52,6 +52,10 @@ const lastClaim=commandState.activity!.lastClaimAtMs;
 const commandQueued=executeGameCommand(commandState,{type:'queue_add',args:{kind:'combat',id:'MOSS_RAT',tacticId:'guarded',goalId:'kills_50'}},now+60_000).state;
 ok(commandQueued.activity?.lastClaimAtMs===lastClaim,'Editing the queue must not claim or shift the active activity clock');
 ok(commandQueued.character?.activityQueue?.[0]?.combatTacticId==='guarded','Trusted queue command should preserve combat options');
+const clearedWaiting=executeGameCommand(commandQueued,{type:'queue_clear'},now+60_003).state;
+ok((clearedWaiting.character?.activityQueue?.length??0)===0,'Clear queue removes waiting entries only');
+ok(clearedWaiting.activity?.targetId===commandQueued.activity?.targetId&&clearedWaiting.activity?.lastClaimAtMs===lastClaim,
+ 'Clear queue preserves the running hunt and its last-claim clock without extra settlement');
 const withSecond=executeGameCommand(commandQueued,{type:'queue_add',args:{kind:'combat',id:'FIELD_WISP'}},now+60_001).state;
 const reorderedCommand=executeGameCommand(withSecond,{type:'queue_move',args:{index:1,direction:'up'}},now+60_002).state;
 ok(reorderedCommand.activity?.lastClaimAtMs===lastClaim,'Reordering the queue must remain settlement-free');

@@ -5,6 +5,7 @@ import {GameState,RewardBundle,SkillId} from '../core/types';
 import {CLASSES} from '../content/classes';
 import {MONSTERS} from '../content/monsters';
 import {GATHERING} from '../content/skills';
+import {itemDef} from '../content/items';
 import {HERB_NODES} from '../content/herbalism';
 import {alchemyRecipeDef} from '../content/alchemy';
 import {explorationRoute} from '../content/exploration';
@@ -29,7 +30,8 @@ import {ContractBoardSummary} from '../components/ContractBoardSummary';
 import {weeklyOrderDestination} from '../core/weekly-order-integrations-v41';
 import {DailySuppliesSummary} from '../components/DailySuppliesSummary';
 import {HomeSessionOverview} from '../components/HomeSessionOverview';
-import {activeActivityLevelPace} from '../core/balance-projection';
+import {activeActivityLevelPace,activeGatheringRuntimeProjection} from '../core/balance-projection';
+import {effectiveStats} from '../core/game';
 import {earlyFeatureUnlocked} from '../core/feature-unlocks';
 import {HomeAdventureHeader} from '../components/HomeAdventureHeader';
 import {processingRecipeDef} from '../core/processing';
@@ -44,13 +46,24 @@ export function HomeScreen({state,preview,nowMs,onClaim,onStop,onQueueRemove,onQ
  const activityMonster=MONSTERS.find(x=>x.id===state.activity?.targetId),activityGather=[...GATHERING,...HERB_NODES].find(x=>x.id===state.activity?.targetId),activityAlchemy=state.activity?.kind==='alchemy'?alchemyRecipeDef(state.activity.targetId):undefined,activityRoute=state.activity?.kind==='exploration'?explorationRoute(state.activity.targetId):undefined,activityFaith=state.activity?.kind==='faith'?FAITH_TIERS.find(row=>row.id===state.activity?.targetId):undefined;
  const activityProcessing=state.activity?.kind==='processing'?processingRecipeDef(state.activity.targetId):undefined;
  const activityName=activityMonster&&state.activity?.kind==='combat'?activityMonster.name:activityGather?.name??activityAlchemy?.name??activityProcessing?.name??activityRoute?.name??activityFaith?.name??state.activity?.targetId.replace(/_/g,' ').replace(/\b\w/g,char=>char.toUpperCase());
- const cycle=activityCycleSeconds(state),guide=dashboardRecommendation(state),campaign=campaignProgressSummary(state),rate=activityRate(state),levelPace=activeActivityLevelPace(state,rate.xpPerHour),afk=offlineCapBreakdown(state);
+ const gatherPace=useMemo(()=>activeGatheringRuntimeProjection(state),[state]);
+ const rate=useMemo(()=>{
+  const base=activityRate(state);
+  return gatherPace?{
+   actionsPerHour:gatherPace.actionsPerHour,
+   xpPerHour:gatherPace.xpPerHour,
+   goldPerHour:base.goldPerHour,
+  }:base;
+ },[state,gatherPace]);
+ const resourceRate=gatherPace?{name:itemDef(gatherPace.definition.itemId).name,itemsPerHour:gatherPace.itemsPerHour}:undefined;
+ const combatMaxHp=useMemo(()=>state.activity?.kind==='combat'?effectiveStats(state).hp:undefined,[state]);
+ const cycle=activityCycleSeconds(state),guide=dashboardRecommendation(state),campaign=campaignProgressSummary(state),levelPace=activeActivityLevelPace(state,rate.xpPerHour),afk=offlineCapBreakdown(state);
  const completed=state.quests.filter(q=>q.status==='complete').length,monster=state.activity?.kind==='combat'?MONSTERS.find(x=>x.id===state.activity?.targetId):undefined;
  const contractsUnlocked=earlyFeatureUnlocked(state,'contracts'),dailyUnlocked=earlyFeatureUnlocked(state,'dailySupplies');
  const guidePanel=(<View style={[s.guide,guide.priority==='urgent'&&s.urgent]}><View style={s.guideTop}><Text style={[s.guideKicker,guide.priority==='urgent'&&s.guideKickerUrgent]}>{guide.priority==='urgent'?a("ATTENTION"):a("NEXT STEP")}</Text><Text style={[s.guideState,guide.priority==='urgent'&&s.guideStateUrgent]}>{guide.priority==='urgent'?a("NOW"):a("RECOMMENDED")}</Text></View><Text style={s.title}>{a(guide.title)}</Text><Text style={s.small}>{a(guide.detail)}</Text><GameButton compact title={a(guide.button)} tone={guide.priority==='urgent'?'primary':'secondary'} onPress={()=>onNavigate(guide.destination,guide.zoneId)}/></View>);
  return <ScrollView contentContainerStyle={s.root} showsVerticalScrollIndicator={false} showsHorizontalScrollIndicator={false}>
   <HomeAdventureHeader state={state}/>
-  {state.activity&&activityName?<ActivityCard title={activityName} kind={state.activity.kind} activity={state.activity} cycleSeconds={cycle} capHours={afk.hours} preview={preview} rates={rate} levelPace={levelPace} reduceMotion={state.settings.reduceMotion} numberMode={state.settings.numberMode} onClaim={onClaim} onStop={onStop}/>:<Panel><Text style={s.title}>{a("Your next adventure")}</Text><Text style={s.small}>{a("Choose a hunt or gathering activity to start earning.")}</Text><GameButton title={a("Explore activities")} onPress={onOpenCombat}/></Panel>}
+  {state.activity&&activityName?<ActivityCard title={activityName} kind={state.activity.kind} activity={state.activity} cycleSeconds={cycle} capHours={afk.hours} preview={preview} rates={rate} resourceRate={resourceRate} maxHp={combatMaxHp} levelPace={levelPace} reduceMotion={state.settings.reduceMotion} numberMode={state.settings.numberMode} onClaim={onClaim} onStop={onStop}/>:<Panel><Text style={s.title}>{a("Your next adventure")}</Text><Text style={s.small}>{a("Choose a hunt or gathering activity to start earning.")}</Text><GameButton title={a("Explore activities")} onPress={onOpenCombat}/></Panel>}
   {guide.priority==='urgent'?guidePanel:null}
   <HomeSessionOverview compact state={state} nowMs={nowMs} onQuests={()=>onNavigate('Quests')} onDaily={()=>onNavigate('DailySupplies')} onEvents={()=>onNavigate('Events')} onWeekly={onOpenContracts} onForge={()=>onOpenSkill('smithing')} onCompanions={()=>onNavigate('Companions')} onNew={onOpenGuide??(()=>onNavigate('Settings'))}/>
   {guide.priority!=='urgent'?guidePanel:null}

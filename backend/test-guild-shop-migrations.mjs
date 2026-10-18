@@ -48,7 +48,7 @@ try{
  create table public.guild_cosmetic_unlocks(
   guild_id uuid not null references public.guilds(id),
   unlock_id text not null,
-  source_kind text not null check(source_kind in ('guild_level','guild_hall','guild_pve','event','admin')),
+  source_kind text not null,
   source_ref text not null,
   unlocked_at timestamptz not null default now(),
   primary key(guild_id,unlock_id),

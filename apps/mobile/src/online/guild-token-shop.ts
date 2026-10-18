@@ -7,7 +7,7 @@ export interface GuildTokenShopCard{
  price:number;status:GuildTokenShopStatus;progressToPrice:number;released:boolean;
 }
 export interface GuildConstructionTemplate{
- id:string;guildLevel:number;gold:number;materials:Array<{materialKey:string;amount:number}>;unlockId:string;
+ id:string;guildLevel:number;gold:number;materials:Array<{materialKey:string;amount:number}>;unlockId:string;enabled:boolean;
 }
 export interface GuildConstructionProgress{
  templateId:string;completed:boolean;resources:Record<string,number>;
@@ -48,7 +48,7 @@ function validateSnapshot(value:unknown):GuildTokenShopSnapshot{
  });
  const constructionTemplates:GuildConstructionTemplate[]=o.constructionTemplates.map((value:unknown)=>{
   const template=value as GuildConstructionTemplate;
-  if(!template||typeof template.id!=='string'||typeof template.unlockId!=='string'
+  if(!template||typeof template.id!=='string'||typeof template.unlockId!=='string'||typeof template.enabled!=='boolean'
    ||!Number.isSafeInteger(template.guildLevel)||template.guildLevel<1
    ||!Number.isSafeInteger(template.gold)||template.gold<0||!Array.isArray(template.materials)
    ||template.materials.some(m=>typeof m.materialKey!=='string'||!Number.isSafeInteger(m.amount)||m.amount<=0))

@@ -193,7 +193,19 @@ export function guildConstructionDonationHandler(services:GuildShopReadServices)
     ||typeof result.completed!=="boolean")
     return json({error:"invalid_donation_result"},503);
    return json(result);
-  }catch{return json({error:"guild_construction_donation_unavailable"},503);}
+  }catch(reason){
+   // Only expose known player-fixable validation errors. Network/database
+   // failures stay indistinguishable and are retried with the same receipt.
+   const code=reason instanceof Error?reason.message:'';
+   if([
+    'insufficient_gold','insufficient_construction_materials',
+    'construction_resource_target_exceeded','construction_already_completed',
+    'construction_donations_not_released','guild_level_locked',
+    'guild_membership_required','guild_construction_request_conflict',
+   ].includes(code))return json({error:code},code==='insufficient_gold'
+    ||code==='insufficient_construction_materials'?422:409);
+   return json({error:"guild_construction_donation_unavailable"},503);
+  }
  };
 }
 

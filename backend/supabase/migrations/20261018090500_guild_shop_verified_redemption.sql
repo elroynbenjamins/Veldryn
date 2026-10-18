@@ -1,10 +1,10 @@
 -- Bind every verified claim to an authoritative reward amount and type.
 alter table public.guild_shop_claim_sources
- add column if not exists reward_amount bigint not null default 0
+ add column if not exists reward_amount bigint not null default 1
  check (reward_amount between 1 and 100000),
  add column if not exists reward_kind text not null default 'standard'
  check (reward_kind in ('standard','event'));
--- The defaults above only affect future schema upgrades; no live rows exist yet.
+-- Default is a schema-compatibility fallback only. Trusted event verification must\n-- explicitly supply the correct amount and reward kind for each source.
 -- Retire the previous caller-amount API before exposing any reward redemption.
 drop function if exists public.guild_shop_redeem_verified_claim_server_v1(uuid,text,bigint,boolean);
 create or replace function public.guild_shop_redeem_verified_claim_server_v2(

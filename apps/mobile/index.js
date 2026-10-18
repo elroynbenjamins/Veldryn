@@ -1,8 +1,14 @@
 import {registerRootComponent} from 'expo';
 // Explicit developer-only fixture entry; normal and release builds use App.
 const App=__DEV__&&process.env.EXPO_PUBLIC_VISUAL_QA==='1'
-  ?(process.env.EXPO_PUBLIC_VISUAL_QA_SCREEN==='guild-pve'
+  ?(process.env.EXPO_PUBLIC_VISUAL_QA_SCREEN==='boards'
+    ?require('./src/dev/BoardExperienceReview').default
+    :process.env.EXPO_PUBLIC_VISUAL_QA_SCREEN==='guild-pve'
     ?require('./src/dev/GuildPveReview').default
+    :process.env.EXPO_PUBLIC_VISUAL_QA_SCREEN==='event-rewards'
+    ?require('./src/dev/EventRewardReview').default
+    :process.env.EXPO_PUBLIC_VISUAL_QA_SCREEN==='profile-frame'
+    ?require('./src/dev/GloamwardProfileReview').default
     :process.env.EXPO_PUBLIC_VISUAL_QA_SCREEN==='companions'
     ?require('./src/dev/CompanionScreenReview').default
     :process.env.EXPO_PUBLIC_VISUAL_QA_SCREEN==='crafting'

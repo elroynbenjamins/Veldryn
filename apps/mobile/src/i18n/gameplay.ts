@@ -2,10 +2,32 @@ import {SUPPORTED_LANGUAGES,type Language} from './languages';
 import {createTranslator} from './translator';
 import {useGameLanguage} from './GameLanguageProvider';
 import {battleText} from './battle';
+import {useMemo} from 'react';
 
 // Every row is complete, in en/de/es/nl/it/fr order. English phrases are typed keys.
 type TranslationRow=readonly [string,string,string,string,string,string];
 const common={
+  'Reserved work complete':['Reserved work complete','Reservierte Arbeit abgeschlossen','Trabajo reservado completado','Gereserveerd werk voltooid','Lavoro riservato completato','Travail réservé terminé'],
+  'Starts this brew until its materials, Gold, or your AFK time runs out.':['Starts this brew until its materials, Gold, or your AFK time runs out.','Braut, bis Materialien, Gold oder AFK-Zeit aufgebraucht sind.','Elabora hasta agotar materiales, oro o tiempo AFK.','Brouwt tot materialen, goud of AFK-tijd op zijn.','Prepara fino a esaurire materiali, oro o tempo AFK.','Prépare jusqu’à épuisement des matériaux, de l’or ou du temps AFK.'],
+  'Start brewing':['Start brewing','Brauen starten','Empezar a elaborar','Begin met brouwen','Inizia preparazione','Commencer la préparation'],
+  'Start continuous brewing.':['Start continuous brewing.','Fortlaufendes Brauen starten.','Iniciar elaboración continua.','Start doorlopend brouwen.','Avvia preparazione continua.','Démarrer la préparation continue.'],
+  'Start continuous processing.':['Start continuous processing.','Fortlaufende Verarbeitung starten.','Iniciar procesamiento continuo.','Start doorlopende verwerking.','Avvia lavorazione continua.','Démarrer la transformation continue.'],
+  'Hide recipe details':['Hide recipe details','Rezeptdetails ausblenden','Ocultar detalles de receta','Verberg receptdetails','Nascondi dettagli ricetta','Masquer les détails de la recette'],
+  'Show recipe details':['Show recipe details','Rezeptdetails anzeigen','Mostrar detalles de receta','Toon receptdetails','Mostra dettagli ricetta','Afficher les détails de la recette'],
+  'Tap to brew':['Tap to brew','Zum Brauen tippen','Toca para elaborar','Tik om te brouwen','Tocca per preparare','Touchez pour préparer'],
+  'Tap to process':['Tap to process','Zum Verarbeiten tippen','Toca para procesar','Tik om te verwerken','Tocca per lavorare','Touchez pour transformer'],
+  'Starting…':['Starting…','Wird gestartet…','Iniciando…','Starten…','Avvio…','Démarrage…'],
+  'Materials and Gold are checked when this queued brew starts.':['Materials and Gold are checked when this queued brew starts.','Materialien und Gold werden beim Start des eingereihten Rezepts geprüft.','Los materiales y el oro se comprueban al iniciar esta receta en cola.','Materialen en goud worden gecontroleerd wanneer dit brouwsel begint.','Materiali e oro vengono verificati all’avvio della ricetta in coda.','Les matériaux et l’or sont vérifiés au début de cette préparation en file.'],
+  'SEASONAL EVENT':['SEASONAL EVENT','SAISONEREIGNIS','EVENTO DE TEMPORADA','SEIZOENSEVENEMENT','EVENTO STAGIONALE','ÉVÉNEMENT SAISONNIER'],
+  'LIVE':['LIVE','LIVE','ACTIVO','LIVE','ATTIVO','EN COURS'],
+  'ENDS':['ENDS','ENDET','TERMINA','EINDIGT','TERMINA','FIN'],
+  'WAYS TO HELP':['WAYS TO HELP','SO KANNST DU HELFEN','FORMAS DE AYUDAR','ZO KUN JE HELPEN','COME AIUTARE','COMMENT PARTICIPER'],
+  '{count} activities':['{count} activities','{count} Aktivitäten','{count} actividades','{count} activiteiten','{count} attività','{count} activités'],
+  'YOUR NEXT MOVE':['YOUR NEXT MOVE','DEIN NÄCHSTER SCHRITT','TU SIGUIENTE PASO','JE VOLGENDE STAP','IL TUO PROSSIMO PASSO','VOTRE PROCHAINE ÉTAPE'],
+  'Earned automatically from eligible play':['Earned automatically from eligible play','Automatisch durch passende Aktivitäten verdient','Se obtiene automáticamente con actividades válidas','Automatisch verdiend met geschikte activiteiten','Ottenuto automaticamente dalle attività idonee','Gagné automatiquement avec les activités admissibles'],
+  'Open {event}':['Open {event}','{event} öffnen','Abrir {event}','Open {event}','Apri {event}','Ouvrir {event}'],
+  'Not now':['Not now','Nicht jetzt','Ahora no','Niet nu','Non ora','Pas maintenant'],
+  'Close event announcement':['Close event announcement','Ereignisankündigung schließen','Cerrar anuncio del evento','Sluit evenementaankondiging','Chiudi annuncio evento','Fermer l’annonce de l’événement'],
   'Recipe temporarily unavailable.':['Recipe temporarily unavailable.','Rezept vorübergehend nicht verfügbar.','Receta no disponible temporalmente.','Recept tijdelijk niet beschikbaar.','Ricetta temporaneamente non disponibile.','Recette temporairement indisponible.'],
   'Ready to brew':['Ready to brew','Bereit zum Brauen','Listo para elaborar','Klaar om te brouwen','Pronto per la preparazione','Prêt à préparer'],
   'Ready to process':['Ready to process','Bereit zur Verarbeitung','Listo para procesar','Klaar om te verwerken','Pronto per la lavorazione','Prêt à transformer'],
@@ -884,5 +906,5 @@ export function localizeGameplay(language:Language,value:string|undefined):strin
 }
 export function useGameplayText(){
   const language=useGameLanguage();
-  return {language,gt:(key:GameplayKey,params?:Record<string,string|number>)=>gameplayTranslate(language,key,params),gl:(value:string|undefined)=>localizeGameplay(language,value)};
+  return useMemo(()=>({language,gt:(key:GameplayKey,params?:Record<string,string|number>)=>gameplayTranslate(language,key,params),gl:(value:string|undefined)=>localizeGameplay(language,value)}),[language]);
 }

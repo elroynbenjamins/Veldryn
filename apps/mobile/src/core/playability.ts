@@ -1,4 +1,4 @@
-import {RECIPES} from '../content/skills';
+import {recipeDef} from '../content/skills';
 import {ActiveActivity,CombatTacticId,GameState,RewardBundle} from './types';
 import type {HuntGoalId} from './hunt-goals';
 import {claimActivity,craftRecipe,startCombat,startGathering,startHerbalism,stopActivity} from './game';
@@ -30,7 +30,7 @@ export function settleStartupActivity(state:GameState,nowMs:number):{state:GameS
 
 /** Reuse the pure craft operation so UI checks include bank use and output capacity. */
 export function recipeAvailability(state:GameState,recipeId:string){
-  const recipe=RECIPES.find(item=>item.id===recipeId);
+  const recipe=recipeDef(recipeId);
   if(!recipe)return {ready:false,reason:'Unknown recipe',inputs:[]};
   const learned=!recipe.requiredKnowledgeId||(state.account.unlockedKnowledgeIds??[]).includes(recipe.requiredKnowledgeId);
   const sourceInputs=learned||!recipe.knowledgeItemId?recipe.inputs:[{itemId:recipe.knowledgeItemId,quantity:1},...recipe.inputs];

@@ -3,7 +3,7 @@ import {ItemRarity} from '../core/item-rarity';
 import {NOVICE_ITEMS} from './novice-sets';
 import {TOOL_BLUEPRINT_ITEMS,TOOL_ITEMS} from './gathering-tools';
 import {HERB_ITEMS} from './herbalism';
-import {POTION_ITEMS} from './alchemy';
+import {ALCHEMY_EQUIPMENT_INFUSION_ITEMS,POTION_ITEMS} from './alchemy';
 import {EQUIPMENT_ITEMS_V33} from './equipment-items-v33';
 import {GEM_ITEMS_V1,RAW_GEM_ITEMS_V1,type MobileGemGradeV1} from './gems-v1';
 export interface ItemDef {
@@ -25,6 +25,7 @@ const BASE_ITEMS:ItemDef[]=[
 ...TOOL_BLUEPRINT_ITEMS,
 ...HERB_ITEMS,
 ...POTION_ITEMS,
+...ALCHEMY_EQUIPMENT_INFUSION_ITEMS,
 // Enhancement economy. Gems are intentionally scarce drops; tempering materials are universal.
 {id:'GEM_DUST',name:'Gem Dust',type:'material',value:18,rarity:'uncommon'},
 {id:'REGIONAL_CATALYST',name:'Regional Catalyst',type:'material',value:650,rarity:'epic'},
@@ -100,11 +101,11 @@ const BASE_ITEMS:ItemDef[]=[
 {id:'ASHLANDS_EMBER_STEW',name:'Ashlands Ember Stew',type:'food',heal:390,readiness:17,value:520,rarity:'epic'},
 {id:'OASIS_CARP',name:'Oasis Carp',type:'material',value:100,rarity:'uncommon'},
 {id:'GLASSFIN',name:'Glassfin',type:'material',value:170,rarity:'rare'},
-{id:'SCORPION_VENOM',name:'Scorpion Venom',type:'material',value:130,rarity:'uncommon'},
+{id:'SCORPION_VENOM',name:'Scorpion Venom',type:'material',value:130,rarity:'rare'},
 {id:'ROYAL_CHITIN',name:'Royal Chitin',type:'material',value:300,rarity:'rare'},
 {id:'TYRANT_SEAL',name:'Tyrant Seal',type:'material',value:620,rarity:'rare'},
 {id:'WHITEPINE_LOG',name:'Whitepine Log',type:'material',value:120,rarity:'uncommon'},
-{id:'RIME_RESIN',name:'Rime Resin',type:'material',value:190,rarity:'uncommon'},
+{id:'RIME_RESIN',name:'Rime Resin',type:'material',value:190,rarity:'rare'},
 {id:'WINTERMINT',name:'Wintermint',type:'material',value:170,rarity:'uncommon'},
 {id:'ICEFIN',name:'Icefin',type:'material',value:180,rarity:'rare'},
 {id:'BELLFIN_SCALE',name:'Bellfin Scale',type:'material',value:260,rarity:'rare'},
@@ -147,4 +148,6 @@ const BASE_ITEMS:ItemDef[]=[
 
 ];
 export const ITEMS:ItemDef[]=[...BASE_ITEMS,...EQUIPMENT_ITEMS_V33];
-export function itemDef(id:string){const x=ITEMS.find(i=>i.id===id); if(!x) throw new Error(`Unknown item ${id}`); return x;}
+const itemsById=new Map(ITEMS.map(item=>[item.id,item]));
+if(itemsById.size!==ITEMS.length)throw new Error('Duplicate item IDs in the item catalog');
+export function itemDef(id:string){const x=itemsById.get(id); if(!x) throw new Error(`Unknown item ${id}`); return x;}

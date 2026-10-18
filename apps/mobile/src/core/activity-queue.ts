@@ -10,6 +10,8 @@ import {accountEntitlementBenefits} from './account-entitlements';
 import {FAITH_TIERS} from '../content/faith';
 import {EXPLORATION_ROUTES} from '../content/exploration';
 import {faithLevel,faithPracticeAvailability} from './faith';
+import {alchemyAvailability} from './alchemy';
+import {ALCHEMY_RECIPES,alchemyRecipeDef} from '../content/alchemy';
 
 export const BASE_ACTIVITY_QUEUE=2;
 export const MAX_ACTIVITY_QUEUE=3;
@@ -34,9 +36,9 @@ export function activityQueueCapacity(state:GameState){return Math.min(MAX_ACTIV
 export function normalizeQueuedActivity(value:unknown):QueuedActivity|undefined{
  if(!value||typeof value!=='object'||Array.isArray(value))return undefined;
  const row=value as Record<string,unknown>,kind=row.kind,targetId=typeof row.targetId==='string'?row.targetId.trim():'';
- if((kind!=='combat'&&kind!=='gathering'&&kind!=='faith'&&kind!=='exploration')||!targetId||targetId.length>100)return undefined;
+ if((kind!=='combat'&&kind!=='gathering'&&kind!=='faith'&&kind!=='exploration'&&kind!=='alchemy')||!targetId||targetId.length>100)return undefined;
  const goal=normalizeActivityQueueGoal(row.goal);
- if(row.goal!==undefined&&(!goal||(kind==='combat'&&!['duration_seconds','session_kills'].includes(goal.kind))||(kind==='gathering'&&goal.kind==='session_kills')||(kind==='faith')||(kind==='exploration'&&goal.kind!=='duration_seconds')))return undefined;
+ if(row.goal!==undefined&&(!goal||(kind==='combat'&&!['duration_seconds','session_kills'].includes(goal.kind))||(kind==='gathering'&&goal.kind==='session_kills')||(kind==='faith'||kind==='alchemy')||(kind==='exploration'&&goal.kind!=='duration_seconds')))return undefined;
  if(kind==='gathering')return {kind,targetId,...(goal?{goal}:{})};
  if(kind==='exploration')return {kind,targetId,...(goal?{goal}:{})};
  if(kind==='faith'){
@@ -44,6 +46,7 @@ export function normalizeQueuedActivity(value:unknown):QueuedActivity|undefined{
   if(!Number.isSafeInteger(faithPracticeCount)||Number(faithPracticeCount)<1||Number(faithPracticeCount)>1000)return undefined;
   return {kind,targetId,faithPracticeCount:Number(faithPracticeCount)};
  }
+ if(kind==='alchemy')return {kind,targetId};
  const combatTacticId=COMBAT_TACTIC_IDS.includes(row.combatTacticId as any)?row.combatTacticId as QueuedActivity['combatTacticId']:undefined;
  const huntGoalId=HUNT_GOAL_IDS.includes(row.huntGoalId as any)?row.huntGoalId as QueuedActivity['huntGoalId']:undefined;
  return {kind,targetId,...(combatTacticId?{combatTacticId}:{}),...(huntGoalId?{huntGoalId}:{}),...(goal?{goal}:{})};
@@ -88,6 +91,7 @@ export function activityQueueLabel(activity:QueuedActivity){
   return [tier?.name??activity.targetId,activity.faithPracticeCount?`${activity.faithPracticeCount.toLocaleString()} practices`:undefined].filter(Boolean).join(' · ');
  }
  if(activity.kind==='exploration')return [EXPLORATION_ROUTES.find(row=>row.id===activity.targetId)?.name??activity.targetId,activity.goal?activityQueueGoalLabel(activity.goal):undefined].filter(Boolean).join(' · ');
+ if(activity.kind==='alchemy')return alchemyRecipeDef(activity.targetId)?.name??activity.targetId;
  return [[...GATHERING,...HERB_NODES].find(row=>row.id===activity.targetId)?.name??activity.targetId,activity.goal?activityQueueGoalLabel(activity.goal):undefined].filter(Boolean).join(' · ');
 }
 
@@ -101,7 +105,7 @@ export interface ActivityQueueHandoffStatus{
  nextBlocker?:string;
 }
 export interface QueuedActivityReadiness{ready:boolean;blocker?:string}
-export function queueSkillReadiness(state:GameState,skillId:GatheringSkillId|'combat'|'faith'|'exploration'):QueuedActivityReadiness{
+export function queueSkillReadiness(state:GameState,skillId:GatheringSkillId|'combat'|'faith'|'exploration'|'alchemy'):QueuedActivityReadiness{
  if(!state.character)return {ready:false,blocker:'Create a character first.'};
  const region=WORLD_ZONES.find(zone=>zone.id===state.currentRegionId),regionName=region?.name??state.currentRegionId;
  if(skillId==='combat'){
@@ -120,10 +124,22 @@ export function queueSkillReadiness(state:GameState,skillId:GatheringSkillId|'co
   const required=Math.min(...routes.map(row=>row.requiredExplorationLevel));
   return level>=required?{ready:true}:{ready:false,blocker:`Requires Exploration level ${required} in ${regionName}.`};
  }
+ if(skillId==='alchemy'){
+  const level=state.skills.find(row=>row.skillId==='alchemy')?.level??0;
+  return ALCHEMY_RECIPES.some(recipe=>recipe.level<=level)?{ready:true}:{ready:false,blocker:'No Alchemy recipes are unlocked yet.'};
+ }
  const nodes=[...GATHERING,...HERB_NODES].filter(row=>row.skillId===skillId&&row.zoneId===state.currentRegionId);
  if(!nodes.length)return {ready:false,blocker:`Not available in ${regionName}.`};
  const required=Math.min(...nodes.map(row=>row.unlockLevel)),level=state.skills.find(row=>row.skillId===skillId)?.level??1;
  return level>=required?{ready:true}:{ready:false,blocker:`Requires ${skillId} level ${required} in ${regionName}.`};
+}
+/** Scheduling may precede gathering its inputs. Execution always uses strict readiness. */
+export function queuedActivityPlanningReadiness(state:GameState,activity:QueuedActivity|undefined):QueuedActivityReadiness{
+ if(activity?.kind!=='alchemy')return queuedActivityReadiness(state,activity);
+ const recipe=alchemyRecipeDef(activity.targetId),level=state.skills.find(row=>row.skillId==='alchemy')?.level??0;
+ if(!state.character)return {ready:false,blocker:'Create a character first.'};
+ if(!recipe)return {ready:false,blocker:'Queued alchemy recipe is no longer available.'};
+ return level>=recipe.level?{ready:true}:{ready:false,blocker:`Requires Alchemy level ${recipe.level}.`};
 }
 export function queuedActivityReadiness(state:GameState,activity:QueuedActivity|undefined):QueuedActivityReadiness{
  if(!activity)return {ready:false,blocker:undefined as string|undefined};
@@ -156,6 +172,10 @@ export function queuedActivityReadiness(state:GameState,activity:QueuedActivity|
   const level=state.skills.find(skill=>skill.skillId==='exploration')?.level??1;
   if(level<route.requiredExplorationLevel)return {ready:false,blocker:`Requires Exploration level ${route.requiredExplorationLevel} for ${route.name}.`};
   return {ready:true,blocker:undefined};
+ }
+ if(activity.kind==='alchemy'){
+  const availability=alchemyAvailability(state,activity.targetId);
+  return availability.ready?{ready:true,blocker:undefined}:{ready:false,blocker:availability.reason};
  }
  const gather=[...GATHERING,...HERB_NODES].find(row=>row.id===activity.targetId);
  if(!gather)return {ready:false,blocker:'Queued gathering activity is no longer available.'};
@@ -203,8 +223,9 @@ export function activityQueueHandoffStatus(state:GameState):ActivityQueueHandoff
  const completed=activity?.queueGoalCompletedAtMs!==undefined;
  const huntGoal=!completed&&activity?.kind==='combat'?activity.huntGoal:undefined;
  const queueGoal=!completed?activity?.queueGoal:undefined;
- const sources=[queueGoal?activityQueueGoalLabel(queueGoal):undefined,huntGoal?.label,!completed&&nonSafetyApplicable?rule?.name:undefined].filter(Boolean) as string[];
+ const finiteReservation=activity?.kind==='alchemy'||activity?.kind==='faith';
+ const sources=[queueGoal?activityQueueGoalLabel(queueGoal):undefined,huntGoal?.label,finiteReservation?'Reserved work complete':undefined,!completed&&nonSafetyApplicable?rule?.name:undefined].filter(Boolean) as string[];
  const safetyEnabled=!!rule&&(rule.stopIfOutOfFood||rule.stopIfRewardsWouldOverflow||rule.conditions.some(condition=>condition.enabled&&(condition.kind==='food_below'||condition.kind==='free_slots_below')));
  const readiness=queuedActivityReadiness(state,next);
- return {armed:!!activity&&!!next&&!completed&&(!!queueGoal||!!huntGoal||nonSafetyApplicable),sourceLabel:sources.join(' + ')||undefined,nextLabel:next?activityQueueLabel(next):undefined,safetyEnabled,nextReady:readiness.ready,nextBlocker:readiness.blocker};
+ return {armed:!!activity&&!!next&&!completed&&(!!queueGoal||!!huntGoal||finiteReservation||nonSafetyApplicable),sourceLabel:sources.join(' + ')||undefined,nextLabel:next?activityQueueLabel(next):undefined,safetyEnabled,nextReady:readiness.ready,nextBlocker:readiness.blocker};
 }

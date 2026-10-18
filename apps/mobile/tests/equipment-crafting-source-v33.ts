@@ -10,6 +10,7 @@ import {MONSTERS} from '../src/content/monsters';
 import {HERB_NODES} from '../src/content/herbalism';
 import {combatBaselineProjection,dropExpectation,gatheringBalanceProjection} from '../src/core/balance-projection';
 import {isV33EquipmentCraftingMaterial,v33EquipmentMaterialUse} from '../src/core/equipment-loot-v33';
+import {ALCHEMY_EQUIPMENT_INFUSIONS} from '../src/content/alchemy';
 
 function ok(value:unknown,message:string){if(!value)throw new Error(message)}
 
@@ -22,6 +23,9 @@ ok(V33_EQUIPMENT_RECIPES.every(row=>new Set(row.inputs.map(input=>input.itemId))
 ok(V33_EQUIPMENT_RECIPES.every(row=>row.skillId===EQUIPMENT_CRAFT_SKILL_BY_CLASS[row.classId]),'Every V33 recipe must use its class primary crafting profession');
 ok(V33_EQUIPMENT_RECIPES.every(row=>row.characterLevel>=(TIER_CHARACTER_LEVEL_FLOOR[row.v33EquipmentTier]??1)),'Every V33 recipe must respect its tier character floor');
 ok(V33_EQUIPMENT_RECIPES.every(row=>row.level>=(TIER_CRAFTING_LEVEL_FLOOR[row.v33EquipmentTier]??1)),'Every V33 recipe must respect its tier profession floor');
+const infusionByTier={T1:'VERDANT_BINDING_RESIN',T2:'VERDANT_BINDING_RESIN',T3:'OATHGLASS_SOLVENT',T4:'OATHGLASS_SOLVENT',T5:'SUNFUSED_FIXATIVE',T6:'SUNFUSED_FIXATIVE',T7:'RIMEWARD_DISTILLATE',T8:'RIMEWARD_DISTILLATE',T9:'CINDERHEART_ELIXIR'} as const;
+ok(ALCHEMY_EQUIPMENT_INFUSIONS.every(infusion=>V33_EQUIPMENT_RECIPES.some(recipe=>recipe.inputs.some(input=>input.itemId===infusion.id))),'Every crafted Alchemy infusion must feed equipment');
+for(const [tier,infusionId] of Object.entries(infusionByTier))ok(V33_EQUIPMENT_RECIPES.filter(recipe=>recipe.v33EquipmentTier===tier).every(recipe=>recipe.inputs.some(input=>input.itemId===infusionId)),tier+' equipment must require its regional Alchemy infusion');
 
 const finishedGearDrops=MONSTERS.flatMap(monster=>monster.drops.map(drop=>({monster,drop}))).filter(row=>itemDef(row.drop.itemId).type==='gear');
 ok(finishedGearDrops.length===0,'Combat must not bypass V33 crafting with finished equipment drops');

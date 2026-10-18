@@ -52,6 +52,12 @@ ok(eventProgress(state,eventId)===projectProgress+24,'Veilbreak project choice s
 
 state={...state,account:{...state.account,eventPrestigeBalanceById:{...(state.account.eventPrestigeBalanceById??{}),[eventId]:10}}};
 ok(eventShopOffers(state,t0+2).some(offer=>offer.id==='veil_lantern_mimic'),'Lantern Mimic should be offered by Veilbreak');
+ok(eventShopOffers(state,t0+2).some(offer=>offer.id==='gloamward_frame'),'Gloamward Frame should be offered by Veilbreak');
+let gatedFrameRejected=false;try{purchaseEventOffer(state,'gloamward_frame',t0+2)}catch{gatedFrameRejected=true}
+ok(gatedFrameRejected,'Gloamward Frame should respect its level 10 shop gate');
+state={...state,character:{...state.character!,level:10}};
+state=purchaseEventOffer(state,'gloamward_frame',t0+2);
+ok(state.account.unlockedProfileBorderIds?.includes('frame_gloamward')===true,'Veilbreak shop purchase should permanently unlock the personal Gloamward Frame');
 state=purchaseEventOffer(state,'veil_lantern_mimic',t0+2);
 ok(state.account.unlockedCosmeticPetIds?.includes('EVT_PET_014')===true,'Veilbreak shop purchase should unlock Lantern Mimic permanently');
 ok(eventPrestigeBalance(state,eventId)===0,'Prestige shop purchase should spend Lantern Embers');

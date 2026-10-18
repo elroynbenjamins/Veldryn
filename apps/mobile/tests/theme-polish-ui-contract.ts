@@ -39,7 +39,9 @@ const checks:Array<[string,string[],string[]]>= [
   ['src/screens/ClassSelectScreen.tsx',['backgroundColor:C.badSurface'],["backgroundColor:'#2a1b20'"]],
   ['src/screens/CombatScreen.tsx',['backgroundColor:equipmentColors.panel','backgroundColor:C.panel'],["shade:{...StyleSheet.absoluteFillObject,backgroundColor:'rgba(7,12,20,.8)'"]],
   ['src/screens/RankingsScreen.tsx',['chipTextSelected:{color:C.text}','backgroundColor:C.accentSurface','backgroundColor:C.panel2',"statusTone={entry.isSelf?'good':'muted'}"],["chipTextSelected:{color:'#d9f3ff'}","backgroundColor:'#302713'","backgroundColor:'#202833'","backgroundColor:'#2d2118'","youText:{fontSize:6.5,color:'#d9f3ff'"]],
-  ['src/screens/EventScreen.tsx',['backgroundColor:C.accentSurface','accentSurface={C.goodSurface}','backgroundColor:C.selection'],["backgroundColor:'#20180f'","backgroundColor:'#2b2317'","backgroundColor:'#17352a'","tabActive:{backgroundColor:'#20384A'}"]],
+  ['src/screens/EventScreen.tsx',['backgroundColor:C.accentSurface','<BoardTabs'],["backgroundColor:'#20180f'","backgroundColor:'#2b2317'","backgroundColor:'#17352a'","tabActive:{backgroundColor:'#20384A'}"]],
+  ['src/components/BoardTabs.tsx',['selected?C.selection:C.panel','selected?C.selectionLine:C.line'],["backgroundColor:'#20384A'"]],
+  ['src/components/EventOverview.tsx',['backgroundColor:C.accentSurface','accentSurface={C.goodSurface}','backgroundColor:C.panel2'],["backgroundColor:'#20180f'","backgroundColor:'#2b2317'","backgroundColor:'#17352a'"]],
   ['src/components/RewardPopup.tsx',['backgroundColor:C.accentSurface','backgroundColor:C.goodSurface','backgroundColor:C.warningSurface','backgroundColor:C.infoSurface','backgroundColor:C.specialSurface','color:C.special'],["backgroundColor:'#05090f'","backgroundColor:'#2b2417'","backgroundColor:'#14261d'","backgroundColor:'#132333'","backgroundColor:'#332515'","#cba0f5","#d6b1ee","#f4d8ff","#5d3674"]],
   ['src/screens/QuestScreen.tsx',['C.special'],['#b88ae3']],
 ];

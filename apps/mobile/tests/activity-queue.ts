@@ -1,5 +1,5 @@
-import {claimActivity,createCharacter,newGame,startCombat,stopActivity} from '../src/core/game';
-import {activityQueueCapacity,activityQueueHandoffStatus,enqueueActivity,moveQueuedActivity,queuedActivityReadiness,queueSkillReadiness} from '../src/core/activity-queue';
+import {claimActivity,createCharacter,newGame,offlineCapSeconds,startCombat,stopActivity} from '../src/core/game';
+import {activityQueueCapacity,activityQueueHandoffStatus,enqueueActivity,moveQueuedActivity,queuedActivityPlanningReadiness,queuedActivityReadiness,queueSkillReadiness} from '../src/core/activity-queue';
 import {executeGameCommand,validateGameCommand} from '../src/core/game-commands';
 import {normalizeSave} from '../src/core/save-normalization';
 import {weeklyOrderBoardForState} from '../src/core/long-term-progression-runtime';
@@ -60,6 +60,32 @@ rejects(()=>executeGameCommand(withSecond,{type:'queue_move',args:{index:1,direc
 rejects(()=>validateGameCommand({type:'queue_add',args:{kind:'gathering',id:'X',goalId:'kills_50'}}),'Gathering queue entries must reject combat-only options');
 rejects(()=>validateGameCommand({type:'queue_add',args:{kind:'faith',id:'FAITH_QUIET'}}),'Faith queue entries require a practice count');
 rejects(()=>validateGameCommand({type:'queue_add',args:{kind:'exploration',id:'SCOUT_GREENFIELDS',goal:{kind:'item_quantity',value:1}}}),'Exploration queue entries only accept duration goals');
+let alchemyQueued=createCharacter(newGame(now),'WAYFINDER','Alchemy Queue');
+alchemyQueued={...alchemyQueued,inventory:{...alchemyQueued.inventory,stacks:[...alchemyQueued.inventory.stacks,{itemId:'DEWLEAF',quantity:20}]}};
+ok(queueSkillReadiness(alchemyQueued,'alchemy').ready,'Alchemy becomes queueable when a brew is ready');
+alchemyQueued=executeGameCommand(alchemyQueued,{type:'queue_add',args:{kind:'alchemy',id:'BREW_DEWLEAF_DRAUGHT'}},now).state;
+ok(queuedActivityReadiness(alchemyQueued,alchemyQueued.character?.activityQueue?.[0]).ready,'Queued Alchemy checks its recipe, materials and Gold');
+alchemyQueued=executeGameCommand(alchemyQueued,{type:'queue_start'},now).state;
+ok(alchemyQueued.activity?.kind==='alchemy'&&(alchemyQueued.activity.brew?.remainingBatches??0)>1,'Queue start launches an Alchemy run until the normal AFK cap');
+let alchemyHandoff=createCharacter(newGame(now),'WAYFINDER','Alchemy Handoff');
+alchemyHandoff={...alchemyHandoff,inventory:{...alchemyHandoff.inventory,stacks:[...alchemyHandoff.inventory.stacks,{itemId:'DEWLEAF',quantity:2}]}};
+alchemyHandoff=executeGameCommand(alchemyHandoff,{type:'queue_add',args:{kind:'alchemy',id:'BREW_DEWLEAF_DRAUGHT'}},now).state;
+alchemyHandoff=executeGameCommand(alchemyHandoff,{type:'queue_add',args:{kind:'gathering',id:'GREENWOOD_TREE',goal:{kind:'duration_seconds',value:60}}},now).state;
+alchemyHandoff=executeGameCommand(alchemyHandoff,{type:'queue_start'},now).state;
+const alchemyAdvanced=claimActivity(alchemyHandoff,now+60_000);
+ok(alchemyAdvanced.state.activity?.kind==='woodcutting'&&alchemyAdvanced.state.activity.targetId==='GREENWOOD_TREE','Finished queued Alchemy should hand off to the next queued activity');
+const alchemyLate=claimActivity(alchemyHandoff,now+600_000);
+ok(alchemyLate.reward.activityResults?.some(row=>row.activity.kind==='woodcutting'&&row.activity.startedAtMs===now+60_000&&row.reward.items.length>0),'Late login must apply the remaining offline time after the brewing completion boundary');
+const alchemySplit=claimActivity(alchemyAdvanced.state,now+600_000);
+ok(JSON.stringify(alchemyLate.reward.items)===JSON.stringify([...alchemyAdvanced.reward.items,...alchemySplit.reward.items]),'Late and split queue claims should preserve the same brewing and gathering outputs');
+const partialBrew=claimActivity(alchemyHandoff,now+30_000),afterPartialBrew=claimActivity(partialBrew.state,now+600_000);
+ok(JSON.stringify(afterPartialBrew.reward.items)===JSON.stringify(alchemyLate.reward.items),'A partial brew claim must preserve the exact completion boundary and later gathering output');
+const cappedAlchemyHandoff=claimActivity(alchemyHandoff,now+24*3600_000);
+ok(cappedAlchemyHandoff.reward.elapsedSeconds<=offlineCapSeconds(alchemyHandoff),'Alchemy handoff must share one AFK allowance with its successor');
+ok(claimActivity(cappedAlchemyHandoff.state,now+24*3600_000).reward.items.length===0,'Repeating a capped queue claim must not grant another offline allowance');
+const noIngredients=createCharacter(newGame(now),'WAYFINDER','Future Brew'),futureBrew={kind:'alchemy' as const,targetId:'BREW_DEWLEAF_DRAUGHT'};
+ok(queuedActivityPlanningReadiness(noIngredients,futureBrew).ready&&!queuedActivityReadiness(noIngredients,futureBrew).ready,'An unlocked brew may be planned before gathering its materials but must not execute without them');
+ok(!queuedActivityPlanningReadiness(noIngredients,{kind:'alchemy',targetId:'BREW_CINDERHEART_ELIXIR'}).ready,'Planning must retain Alchemy level gates');
 
 let faithAndExploration=createCharacter(newGame(now),'WAYFINDER','Faith Queue');
 faithAndExploration={...faithAndExploration,inventory:{...faithAndExploration.inventory,stacks:[...faithAndExploration.inventory.stacks,{itemId:'HOLY_WATER',quantity:2}]}};
@@ -71,6 +97,10 @@ faithAndExploration=executeGameCommand(faithAndExploration,{type:'queue_start'},
 ok(faithAndExploration.activity?.kind==='faith'&&faithAndExploration.activity.faithPractice?.remainingPractices===1,'Queue start reserves the selected Faith practices');
 const faithAdvanced=claimActivity(faithAndExploration,now+30_000);
 ok(faithAdvanced.state.activity?.kind==='exploration'&&faithAdvanced.state.activity.targetId==='SCOUT_GREENFIELDS','Finished queued Faith practice advances into queued Exploration');
+const faithLate=claimActivity(faithAndExploration,now+600_000);
+ok(faithLate.reward.activityResults?.some(row=>row.activity.kind==='exploration'&&row.activity.startedAtMs===now+30_000&&row.reward.elapsedSeconds>0),'Late login must carry remaining offline time from Faith into Exploration');
+const faithPartial=claimActivity(faithAndExploration,now+15_000),faithAfterPartial=claimActivity(faithPartial.state,now+600_000);
+ok(faithAfterPartial.reward.activityResults?.some(row=>row.activity.kind==='exploration'&&row.activity.startedAtMs===now+30_000),'A partial Faith claim must preserve its completion boundary');
 
 let planned=createCharacter(newGame(now),'WAYFINDER','Planned Queue');
 planned={...planned,unlockedMonsterIds:['MOSS_RAT','FIELD_WISP']};

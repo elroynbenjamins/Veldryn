@@ -1,6 +1,6 @@
 import {captureSkillAffinity,affinityXpRemainderKey} from './class-skill-affinities';
 import {professionActionPace} from './profession-action-pace';
-import {RECIPES,type Recipe} from '../content/skills';
+import {recipeDef,type Recipe} from '../content/skills';
 import {itemDef} from '../content/items';
 import type {GameState,ItemStack,RewardBundle,SkillId} from './types';
 import {characterPermanentMultipliers} from './permanent-boosts';
@@ -33,7 +33,7 @@ function take(stacks:readonly ItemStack[],itemId:string,quantity:number):ItemSta
   return next;
 }
 export function processingRecipeDef(recipeId:string):Recipe|undefined{
-  const recipe=RECIPES.find(row=>row.id===recipeId);
+  const recipe=recipeDef(recipeId);
   if(!recipe||!recipe.repeatableTraining||recipe.skillId==='alchemy'||recipe.noviceSetId)return undefined;
   const output=itemDef(recipe.output.itemId);
   return output.type==='material'||output.type==='food'?recipe:undefined;

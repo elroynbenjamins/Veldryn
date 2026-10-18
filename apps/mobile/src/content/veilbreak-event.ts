@@ -84,6 +84,7 @@ export const VEILBREAK_EVENT:LiveEventDef={
     {id:'laughing_crow',reward:{kind:'emote',id:'emote_laughing_crow',name:'Laughing Crow',rarity:'rare'},currency:'common',cost:900,limit:1},
     {id:'veil_salute',reward:{kind:'emote',id:'emote_veil_salute',name:'Veil Salute',rarity:'rare'},currency:'common',cost:1100,limit:1,minLevel:8},
     {id:'candle_circle',reward:{kind:'emote',id:'emote_candle_circle',name:'Candle Circle',rarity:'rare'},currency:'common',cost:1250,limit:1,minLevel:12},
+    {id:'gloamward_frame',reward:{kind:'border',id:'frame_gloamward',name:'Gloamward Frame',rarity:'epic'},currency:'common',cost:2200,limit:1,minLevel:10},
     {id:'gloam_candy_skill',reward:{kind:'candy',id:'EVT_ANNUAL_010_2026:candy:skill',name:'Gloam Candy',rarity:'common',quantity:1},currency:'common',cost:250,limit:5},
     {id:'gloam_candy_battle',reward:{kind:'candy',id:'EVT_ANNUAL_010_2026:candy:combat',name:'Gloam Candy · Battle',rarity:'common',quantity:1},currency:'common',cost:300,limit:5,minLevel:8},
     {id:'gloam_candy_bond',reward:{kind:'candy',id:'EVT_ANNUAL_010_2026:candy:companion',name:'Gloam Candy · Bond',rarity:'common',quantity:1},currency:'common',cost:350,limit:5,minLevel:12},

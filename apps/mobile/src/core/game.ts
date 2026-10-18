@@ -7,7 +7,7 @@ import {COMBAT_COMPANIONS} from '../content/combat-companions';
 import {classSkillsFor} from '../content/class-skills';
 import {MONSTERS} from '../content/monsters';
 import {itemDef} from '../content/items';
-import {GATHERING,RECIPES} from '../content/skills';
+import {GATHERING,recipeDef} from '../content/skills';
 import {HERB_NODES,HERBALISM_ESSENCE_BY_ZONE,herbalismInsightMultiplier,herbalismMethod} from '../content/herbalism';
 import {explorationRoute} from '../content/exploration';
 import {QUESTS} from '../content/quests';
@@ -39,8 +39,8 @@ import {awardCompanionRematchBondstone,companionRematchBondstoneStatus,recordCom
 import {monsterMastery,recordMonsterMastery} from './monster-mastery';
 import {awardClassSkillXp,awardCombatClassXp,characterClassEffects,characterClassSkills,CLASS_DRILL_BASE_XP,normalizeTrainingFocus,settleClassDrills} from './class-skills';
 import {reserveFaithPractice,settleFaithPractice,cancelFaithPractice,normalizeFaith,selectedFaithBlessing} from './faith';
-import {HOLY_WATER_ID} from '../content/faith';
-import {previewAlchemyReward,alchemyRefund,startAlchemyBatch,preparationEffects,spendPreparationEncounter} from './alchemy';
+import {FAITH_TIERS,HOLY_WATER_ID} from '../content/faith';
+import {previewAlchemyReward,alchemyRefund,startAlchemyUntilLimited,preparationEffects,spendPreparationEncounter} from './alchemy';
 import {previewProcessingReward,processingRefund,startProcessingUntilLimited} from './processing';
 import {potionDef} from '../content/alchemy';
 import {applyTrustedLongTermProgression,reconcileWeeklyOrderRollover} from './long-term-progression-runtime';
@@ -55,7 +55,7 @@ import {professionMasteryMultipliers} from './profession-mastery-v40';
 import {regionalSecondaryExchange} from './regional-enemy-stats';
 import {simulateFallenKnightStoryBattle,type FallenKnightBattleResult,type FallenKnightPlayerSnapshot} from './story-boss';
 import {FALLEN_KNIGHT_CLEAR_REWARD,FALLEN_KNIGHT_WEEKLY_BOUNTY_REWARD,fallenKnightWeeklyStatus,recordFallenKnightWeeklyVictory} from './weekly-boss';
-export function beginAlchemyBatch(state:GameState,recipeId:string,batches:number,nowMs:number){return startAlchemyBatch(finishClassDrills(state,nowMs),recipeId,batches,nowMs);}
+export function beginAlchemyBatch(state:GameState,recipeId:string,nowMs:number){const ready=finishClassDrills(state,nowMs);return startAlchemyUntilLimited(ready,recipeId,nowMs,offlineCapSeconds(ready));}
 export function beginProcessingBatch(state:GameState,recipeId:string,nowMs:number){const ready=finishClassDrills(state,nowMs);return startProcessingUntilLimited(ready,recipeId,nowMs,offlineCapSeconds(ready));}
 
 function longTermAccountScope(state:GameState){return state.account.longTermAccountScopeId??`local-account:${state.createdAtMs}`;}
@@ -223,6 +223,8 @@ function tryStartNextQueuedActivity(state:GameState,nowMs:number,throwOnFailure=
     ?reserveFaithPractice(state,next.targetId,next.faithPracticeCount!,nowMs)
     :next.kind==='exploration'
      ?startExploration(state,next.targetId,nowMs)
+     :next.kind==='alchemy'
+      ?beginAlchemyBatch(state,next.targetId,nowMs)
      :startGathering(state,next.targetId,nowMs);
   if(next.kind==='combat'&&state.character.activityQueueCombatRecovery){
    const firstCycle=combatRuntimeDetails(started,next.targetId).killCycleSeconds;
@@ -256,6 +258,11 @@ function autoAdvanceActivityQueue(state:GameState,nowMs:number,source:ActiveActi
  const safeIndex=state.character.activityQueue?.findIndex(entry=>entry.kind!=='combat'&&queuedActivityReadiness(state,entry).ready)??-1;
  if(safeIndex>=0)return tryStartNextQueuedActivity(state,nowMs,false,safeIndex);
  return source.kind!=='combat'?continueCompletedQueueActivity(next,nowMs,source,reward):next;
+}
+/** Timed, finite queue entries (Faith and Alchemy) end cleanly when their work is spent. */
+function startFinishedQueuedActivity(state:GameState,nowMs:number){
+ if(!state.character?.activityQueue?.length)return state;
+ return tryStartNextQueuedActivity(state,nowMs,false);
 }
 function recoverCombatQueue(state:GameState,nowMs:number,reason:string){
  if(!state.character)return state;
@@ -612,6 +619,21 @@ export function claimSeasonalContract(state:GameState,period:SeasonalPeriod,cont
   return applyLocalBalanceSnapshot(refreshQuests({...state,...routed,character:{...state.character,xp,level,gold:state.character.gold+contract.rewardGold},account:{...state.account,seasonalContractClaimIds:claimed}} as GameState),nowMs);
 }
 
+/** Finite reservations hand off at the cycle boundary, not at the later login. */
+function queuedReservationEnd(state:GameState):number|undefined{
+ const activity=state.activity;
+ if(!activity||(!activity.queueManaged&&!state.character?.activityQueue?.length))return undefined;
+ if(activity.kind==='alchemy'&&activity.brew)return activity.lastClaimAtMs+Math.ceil(Math.max(0,activity.brew.remainingBatches-(activity.progressFraction??0))*activity.brew.cycleSeconds*1000);
+ if(activity.kind==='faith'){
+  const practice=normalizeFaith(state.character?.faith).practice,reservation=activity.faithPractice,tier=FAITH_TIERS.find(row=>row.id===(practice?.tierId??reservation?.tierId));
+  if(!tier)return undefined;
+  const remaining=practice?.remaining??reservation?.remainingPractices??0,progress=practice?.progressMs??Math.floor((reservation?.progressFraction??0)*60000);
+  const xp=Math.max(state.character?.faith?.xp??0,state.skills.find(row=>row.skillId==='faith')?.xp??0),toMastery=Math.ceil(Math.max(0,totalXpAtLevel(100)-xp)/tier.xp);
+  return (practice?.lastClaimAtMs??reservation?.lastClaimAtMs??activity.lastClaimAtMs)+Math.max(0,Math.min(remaining,toMastery)*tier.seconds*1000-progress);
+ }
+ return undefined;
+}
+
 export function claimActivity(state:GameState,nowMs:number):{state:GameState;reward:RewardBundle}{
  const source=state.activity;
  if(!source||(!source.queueManaged&&!state.character?.activityQueue?.length))return claimActivitySegment(state,nowMs);
@@ -620,7 +642,8 @@ export function claimActivity(state:GameState,nowMs:number):{state:GameState;rew
  const results:NonNullable<RewardBundle['activityResults']>=[];
  const limit=(state.character?.activityQueue?.length??0)+2;
  for(let index=0;index<limit&&state.activity;index++){
-  const activity=state.activity,result=claimActivitySegment(state,until);
+  const activity=state.activity,completion=queuedReservationEnd(state),segmentUntil=completion===undefined?until:Math.min(until,Math.max(activity.lastClaimAtMs,completion)),result=claimActivitySegment(state,segmentUntil);
+  if(completion!==undefined&&completion<=until&&result.state.activity!==activity&&!(result.state.activity?.kind===activity.kind&&result.state.activity.startedAtMs===activity.startedAtMs))result.reward.goalReached=true;
   results.push({activity,reward:result.reward,goalReached:!!result.reward.goalReached});
   state=result.state;
   const recoveredToGathering=activity.kind==='combat'&&state.activity&&state.activity.kind!=='combat';
@@ -656,10 +679,11 @@ function claimActivitySegment(state:GameState,nowMs:number){
     const skills=state.skills.map(x=>x.skillId==='faith'?{...x,xp:faithXp,level:levelFromXp(faithXp)}:x);
     const nextBase={...settled.state,...routed,skills,character:{...settled.state.character!,faith:{...faith,xp:faithXp}},activity:faith?.practice?{...state.activity,lastClaimAtMs:nowMs}:null} as GameState;
     const next=commitDailySupplyTimedBoost(nextBase,boost),reconciled=reconcileCombatCompanionUnlocks(next,nowMs);
-    const queuedState=!faith.practice&&source.queueManaged?autoAdvanceActivityQueue(reconciled,nowMs,source,{...reward,goalReached:true}):reconciled;
+    const queuedState=!faith.practice&&(source.queueManaged||state.character?.activityQueue?.length)?startFinishedQueuedActivity(reconciled,nowMs):reconciled;
     return {state:queuedState,reward:withCompanionUnlocks(reward,state,queuedState)};
   }
   if(state.activity?.kind==='alchemy'){
+    const source=state.activity;
     if(nowMs<=state.activity.lastClaimAtMs)return {state,reward:previewActivityReward(state,state.activity.lastClaimAtMs)};
     const elapsed=Math.min(offlineCapSeconds(state),Math.max(0,(nowMs-state.activity.lastClaimAtMs)/1000)),raw=previewAlchemyReward(state,elapsed),baseReward={...raw,...timedEventRewards(state,'crafting',raw.craftingCompletedAtMs??[])},boost=previewDailySupplyTimedReward(state,baseReward,'crafting'),reward=boost.reward,brew=state.activity.brew!;
     const routed=routeRewards(state,reward.items,nowMs);
@@ -667,7 +691,9 @@ function claimActivitySegment(state:GameState,nowMs:number){
     const nextBase={...state,...routed,skills,rewardRemainders:reward.nextRewardRemainders,activity:reward.nextBrewRemaining?{...state.activity,lastClaimAtMs:nowMs,progressFraction:reward.nextProgressFraction,brew:{...brew,remainingBatches:reward.nextBrewRemaining}}:null} as GameState;
     const next=commitDailySupplyTimedBoost(nextBase,boost),actions=reward.craftingActions??0;
     const progressed=actions>0?applyTrustedLongTermProgression(next,[{kind:'crafting',contentId:brew.recipeId,units:actions,startedAtMs:state.activity.lastClaimAtMs}],reward,nowMs,{accountId:longTermAccountScope(state),eventId:`alchemy:${state.character?.id??'unknown'}:${brew.recipeId}:${state.activity.lastClaimAtMs}:${nowMs}`}).state:next;
-    return {state:applyEventDiscoveries(applyEventDrops(progressed,reward.eventDrops??[]),reward.eventDiscoveries??[]),reward};
+    const eventApplied=applyEventDiscoveries(applyEventDrops(progressed,reward.eventDrops??[]),reward.eventDiscoveries??[]);
+    const queuedState=!reward.nextBrewRemaining&&(source.queueManaged||state.character?.activityQueue?.length)?startFinishedQueuedActivity(eventApplied,nowMs):eventApplied;
+    return {state:queuedState,reward};
   }
   if(state.activity?.kind==='processing'){
     if(nowMs<=state.activity.lastClaimAtMs)return {state,reward:previewActivityReward(state,state.activity.lastClaimAtMs)};
@@ -887,7 +913,7 @@ export function unequipGatheringTool(state:GameState,skillId:GatheringSkillId,no
 export function craftRecipe(state:GameState,recipeId:string,nowMs=Date.now()):GameState{
   if(!state.character)throw new Error('No character');
   if(recipeId.startsWith('BREW_'))throw new Error('Timed alchemy recipes must be started as a batch.');
-  const r=RECIPES.find(x=>x.id===recipeId);if(!r)throw new Error('Unknown recipe');
+  const r=recipeDef(recipeId);if(!r)throw new Error('Unknown recipe');
   if(r.classId&&r.classId!==state.character.classId)throw new Error('This recipe belongs to another class');
   if(state.character.level<(r.characterLevel??1))throw new Error(`Requires character level ${r.characterLevel}`);
   if(r.requiresCraftedItemId&&!state.character.craftedNoviceItemIds?.includes(r.requiresCraftedItemId))throw new Error(`Craft ${itemDef(r.requiresCraftedItemId).name} first`);

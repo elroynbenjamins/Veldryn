@@ -108,9 +108,9 @@ function makeStyles(C:ThemeColors){const equipmentColors=equipmentTheme(C);retur
  highlights:{gap:6},
  sectionHead:{flexWrap:'wrap',flexDirection:'row',alignItems:'center',justifyContent:'space-between',gap:8},
  section:{...typography.caption,color:C.accent,fontWeight:'900',letterSpacing:.8},
- sectionMeta:{fontSize:8,color:C.muted,fontWeight:'800'},
+ sectionMeta:{fontSize:11,color:C.muted,fontWeight:'800'},
  stats:{flexDirection:'row',flexWrap:'wrap',gap:5},
  stat:{width:'31.8%',minWidth:88,minHeight:50,paddingHorizontal:6,paddingVertical:5,borderWidth:1,borderColor:C.line,borderRadius:radii.sm,backgroundColor:C.panel2,alignItems:'center',justifyContent:'center'},
  statValue:{fontSize:17,lineHeight:21,fontWeight:'900',color:C.text},
- statLabel:{fontSize:7.5,lineHeight:10,color:C.muted,fontWeight:'900',letterSpacing:.55,marginTop:1,textAlign:'center'},
+ statLabel:{fontSize:11,lineHeight:15,color:C.muted,fontWeight:'900',letterSpacing:.55,marginTop:1,textAlign:'center'},
 });}

@@ -18,6 +18,7 @@ import {useGameTheme} from '../theme/ThemeContext';
 type CraftingSkillId=Extract<SkillId,'smithing'|'cooking'|'alchemy'|'tailoring'|'enchanting'>;
 type RecipeStatus={ready:boolean;reason:string;inputs:Array<{itemId:string;quantity:number;inventory:number;bank:number}>};
 type Row={recipe:(typeof RECIPES)[number];status:RecipeStatus};
+const recipeGroups=new Map<string,(typeof RECIPES)>();
 
 export function CraftingRecipeBrowser({state,skillId,initialQuery='',preferredRecipeId,category,onCraft,onAlchemyStart,onProcessingStart,onNavigate,onCraftPrerequisites,onTrackPreparation}:{state:GameState;skillId:CraftingSkillId;initialQuery?:string;preferredRecipeId?:string;category?:'materials'|'tools';onCraft:(id:string)=>void;onAlchemyStart?:(id:string)=>Promise<void>|void;onProcessingStart?:(id:string)=>Promise<void>|void;onNavigate?:(destination:WorkingTowardDestination)=>void;onCraftPrerequisites?:(recipeId:string)=>void;onTrackPreparation?:(recipe:(typeof RECIPES)[number],batches:number,initialStepCount:number)=>Promise<void>|void}){
  const {gt,gl,language}=useGameplayText();
@@ -27,8 +28,17 @@ export function CraftingRecipeBrowser({state,skillId,initialQuery='',preferredRe
  // Filter recipes before expensive inventory, bank, alchemy and equipment checks.
  // Typing into search now evaluates only recipes that can actually be shown.
  const q=query.trim().toLowerCase();
- const recipes=useMemo(()=>RECIPES.filter(recipe=>recipe.skillId===skillId&&!recipe.noviceSetId&&(!recipe.classId||recipe.classId===state.character?.classId))
-  .sort((a,b)=>a.level-b.level||a.name.localeCompare(b.name)),[skillId,state.character?.classId]);
+ const recipes=useMemo(()=>{
+  const key=skillId+':'+state.character?.classId,cached=recipeGroups.get(key);if(cached)return cached;
+  const group=RECIPES.filter(recipe=>recipe.skillId===skillId&&!recipe.noviceSetId&&(!recipe.classId||recipe.classId===state.character?.classId)).sort((a,b)=>a.level-b.level||a.name.localeCompare(b.name));
+  recipeGroups.set(key,group);return group;
+ },[skillId,state.character?.classId]);
+ const stored=useMemo(()=>{
+  const inventory=new Map<string,number>(),bank=new Map<string,number>();
+  for(const row of state.inventory.stacks)inventory.set(row.itemId,(inventory.get(row.itemId)??0)+row.quantity);
+  for(const row of state.bank.stacks)bank.set(row.itemId,(bank.get(row.itemId)??0)+row.quantity);
+  return {inventory,bank};
+ },[state.inventory.stacks,state.bank.stacks]);
  const visibleRecipes=useMemo(()=>recipes.filter(recipe=>{
   try{
    if(category){
@@ -40,6 +50,7 @@ export function CraftingRecipeBrowser({state,skillId,initialQuery='',preferredRe
  }),[recipes,category,q]);
  const matching:Row[]=useMemo(()=>visibleRecipes.map(recipe=>{
   try{
+   if(recipe.level>skillLevel||(recipe.characterLevel??1)>characterLevel)return {recipe,status:{ready:false,reason:recipe.level>skillLevel?`Requires ${gl(recipe.skillId)} level ${recipe.level}.`:`Requires character level ${recipe.characterLevel}.`,inputs:recipe.inputs.map(input=>({...input,inventory:stored.inventory.get(input.itemId)??0,bank:stored.bank.get(input.itemId)??0}))}};
    const processing=isTimedProcessingRecipe(recipe.id),timedEquipment=Boolean(timedEquipmentRecipe(recipe.id));
    const status=skillId==='alchemy'?alchemyAvailability(state,recipe.id):processing?processingAvailability(state,recipe.id,undefined,true):timedEquipment?equipmentCraftAvailability(state,recipe.id):recipeAvailability(state,recipe.id);
    return {recipe,status};
@@ -47,7 +58,7 @@ export function CraftingRecipeBrowser({state,skillId,initialQuery='',preferredRe
    console.warn('[CraftingRecipeBrowser] Recipe unavailable:',recipe.id,error);
    return {recipe,status:{ready:false,reason:gt("Recipe temporarily unavailable."),inputs:[]}};
   }
- }),[visibleRecipes,state,skillId,gt]);
+ }),[visibleRecipes,state,skillId,skillLevel,characterLevel,stored,gt,gl]);
  const ready=matching.filter(row=>row.status.ready),locked=matching.filter(row=>!row.status.ready&&(row.recipe.level>skillLevel||(row.recipe.characterLevel??1)>characterLevel));
  const lockedIds=new Set(locked.map(row=>row.recipe.id)),needs=matching.filter(row=>!row.status.ready&&!lockedIds.has(row.recipe.id));
  const groups:{label:string;tone:'ready'|'needs'|'locked';rows:Row[]}[]=readyOnly?[{label:gt("READY NOW"),tone:'ready',rows:ready}]:[{label:gt("READY NOW"),tone:'ready',rows:ready},{label:gt("NEEDS REQUIREMENTS"),tone:'needs',rows:needs},{label:gt("LOCKED"),tone:'locked',rows:locked}].filter(group=>group.rows.length>0) as {label:string;tone:'ready'|'needs'|'locked';rows:Row[]}[];

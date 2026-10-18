@@ -30,6 +30,7 @@ for(const recipe of equipment){
  ok(characterFloor!==undefined&&craftFloor!==undefined,'Unknown equipment tier '+tier);
  ok((recipe.characterLevel??0)>=characterFloor,recipe.id+' is below '+tier+' character floor');
  ok(recipe.level>=craftFloor,recipe.id+' is below '+tier+' crafting floor');
+ ok((recipe.characterLevel??1)<=100&&recipe.level<=100,recipe.id+' must be reachable within the character and profession level cap');
  ok(recipe.level<=Math.max(1,(recipe.characterLevel??1)+5),recipe.id+' crafting gate runs too far ahead of its character gate');
 }
 for(let i=1;i<=9;i++){

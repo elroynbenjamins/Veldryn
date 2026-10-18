@@ -1,4 +1,5 @@
 import type {ImageSourcePropType} from 'react-native';
+import catalog from '../content/equipment_catalog_t1_t9_v33.json';
 export const equipmentSheetBySet:Record<string,ImageSourcePropType>={
   T1_001:require('../../assets/equipment-t1-ironwarden/T1_001-oathbound-rampart-icon-sheet-legfix.webp'),
   T1_003:require('../../assets/equipment-t1-ironwarden/T1_003-emberwatch-reprisal-icon-sheet-legfix.webp'),
@@ -81,66 +82,24 @@ export const equipmentSheetBySet:Record<string,ImageSourcePropType>={
   T7_001:require('../../assets/equipment-t7-ironwarden/T7_001-frostiron-rampart-icon-sheet.png'),
   T7_003:require('../../assets/equipment-t7-ironwarden/T7_003-bellguard-reprisal-icon-sheet.png'),
 };
-const pieceIdsBySet:Record<string,readonly string[]>={
-  T1_001:['T1P_001','T1P_002','T1P_003','T1P_004','T1P_005','T1P_006','T1P_007','T1X_001','T1X_002','T1X_003'],
-  T1_003:['T1P_015','T1P_016','T1P_017','T1P_018','T1P_019','T1P_020','T1P_021','T1X_007','T1X_008','T1X_009'],
-  T1_022:['T1P_148','T1P_149','T1P_150','T1P_151','T1P_152','T1P_153','T1P_154','T1X_064','T1X_065','T1X_066'],
-  T1_024:['T1P_162','T1P_163','T1P_164','T1P_165','T1P_166','T1P_167','T1P_168','T1X_070','T1X_071','T1X_072'],
-  T1_004:['T1P_022','T1P_023','T1P_024','T1P_025','T1P_026','T1P_027','T1P_028','T1X_010','T1X_011','T1X_012'],
-  T1_006:['T1P_036','T1P_037','T1P_038','T1P_039','T1P_040','T1P_041','T1P_042','T1X_016','T1X_017','T1X_018'],
-  T1_007:['T1P_043','T1P_044','T1P_045','T1P_046','T1P_047','T1P_048','T1P_049','T1X_019','T1X_020','T1X_021'],
-  T1_009:['T1P_057','T1P_058','T1P_059','T1P_060','T1P_061','T1P_062','T1P_063','T1X_025','T1X_026','T1X_027'],
-  T1_010:['T1P_064','T1P_065','T1P_066','T1P_067','T1P_068','T1P_069','T1P_070','T1X_028','T1X_029','T1X_030'],
-  T1_012:['T1P_078','T1P_079','T1P_080','T1P_081','T1P_082','T1P_083','T1P_084','T1X_034','T1X_035','T1X_036'],
-  T1_013:['T1P_085','T1P_086','T1P_087','T1P_088','T1P_089','T1P_090','T1P_091','T1X_037','T1X_038','T1X_039'],
-  T1_015:['T1P_099','T1P_100','T1P_101','T1P_102','T1P_103','T1P_104','T1P_105','T1X_043','T1X_044','T1X_045'],
-  T1_019:['T1P_127','T1P_128','T1P_129','T1P_130','T1P_131','T1P_132','T1P_133','T1X_055','T1X_056','T1X_057'],
-  T1_021:['T1P_141','T1P_142','T1P_143','T1P_144','T1P_145','T1P_146','T1P_147','T1X_061','T1X_062','T1X_063'],
-  T1_025:['T1P_169','T1P_170','T1P_171','T1P_172','T1P_173','T1P_174','T1P_175','T1X_073','T1X_074','T1X_075'],
-  T1_027:['T1P_183','T1P_184','T1P_185','T1P_186','T1P_187','T1P_188','T1P_189','T1X_079','T1X_080','T1X_081'],
-  T2_019:['T2P_316','T2P_317','T2P_318','T2P_319','T2P_320','T2P_321','T2P_322','T2X_055','T2X_056','T2X_057'],
-  T2_021:['T2P_330','T2P_331','T2P_332','T2P_333','T2P_334','T2P_335','T2P_336','T2X_061','T2X_062','T2X_063'],
-  T2_025:['T2P_358','T2P_359','T2P_360','T2P_361','T2P_362','T2P_363','T2P_364','T2X_073','T2X_074','T2X_075'],
-  T2_027:['T2P_372','T2P_373','T2P_374','T2P_375','T2P_376','T2P_377','T2P_378','T2X_079','T2X_080','T2X_081'],
-  T2_001:['T2P_190','T2P_191','T2P_192','T2P_193','T2P_194','T2P_195','T2P_196','T2X_001','T2X_002','T2X_003'],
-  T2_003:['T2P_204','T2P_205','T2P_206','T2P_207','T2P_208','T2P_209','T2P_210','T2X_007','T2X_008','T2X_009'],
-  T2_004:['T2P_211','T2P_212','T2P_213','T2P_214','T2P_215','T2P_216','T2P_217','T2X_010','T2X_011','T2X_012'],
-  T2_006:['T2P_225','T2P_226','T2P_227','T2P_228','T2P_229','T2P_230','T2P_231','T2X_016','T2X_017','T2X_018'],
-  T3_001:['T3P_379','T3P_380','T3P_381','T3P_382','T3P_383','T3P_384','T3P_385','T3X_001','T3X_002','T3X_003'],
-  T3_003:['T3P_393','T3P_394','T3P_395','T3P_396','T3P_397','T3P_398','T3P_399','T3X_007','T3X_008','T3X_009'],
-  T3_010:['T3P_442','T3P_443','T3P_444','T3P_445','T3P_446','T3P_447','T3P_448','T3X_028','T3X_029','T3X_030'],
-  T3_012:['T3P_456','T3P_457','T3P_458','T3P_459','T3P_460','T3P_461','T3P_462','T3X_034','T3X_035','T3X_036'],
-  T2_016:['T2P_295','T2P_296','T2P_297','T2P_298','T2P_299','T2P_300','T2P_301','T2X_046','T2X_047','T2X_048'],
-  T2_018:['T2P_309','T2P_310','T2P_311','T2P_312','T2P_313','T2P_314','T2P_315','T2X_052','T2X_053','T2X_054'],
-  T3_016:['T3P_484','T3P_485','T3P_486','T3P_487','T3P_488','T3P_489','T3P_490','T3X_046','T3X_047','T3X_048'],
-  T3_018:['T3P_498','T3P_499','T3P_500','T3P_501','T3P_502','T3P_503','T3P_504','T3X_052','T3X_053','T3X_054'],
-  T4_001:['T4P_568','T4P_569','T4P_570','T4P_571','T4P_572','T4P_573','T4P_574','T4X_001','T4X_002','T4X_003'],
-  T4_003:['T4P_582','T4P_583','T4P_584','T4P_585','T4P_586','T4P_587','T4P_588','T4X_007','T4X_008','T4X_009'],
-  T4_004:['T4P_589','T4P_590','T4P_591','T4P_592','T4P_593','T4P_594','T4P_595','T4X_010','T4X_011','T4X_012'],
-  T4_006:['T4P_603','T4P_604','T4P_605','T4P_606','T4P_607','T4P_608','T4P_609','T4X_016','T4X_017','T4X_018'],
-  T4_007:['T4P_610','T4P_611','T4P_612','T4P_613','T4P_614','T4P_615','T4P_616','T4X_019','T4X_020','T4X_021'],
-  T4_009:['T4P_624','T4P_625','T4P_626','T4P_627','T4P_628','T4P_629','T4P_630','T4X_025','T4X_026','T4X_027'],
-  T4_010:['T4P_631','T4P_632','T4P_633','T4P_634','T4P_635','T4P_636','T4P_637','T4X_028','T4X_029','T4X_030'],
-  T4_012:['T4P_645','T4P_646','T4P_647','T4P_648','T4P_649','T4P_650','T4P_651','T4X_034','T4X_035','T4X_036'],
-  T4_013:['T4P_652','T4P_653','T4P_654','T4P_655','T4P_656','T4P_657','T4P_658','T4X_037','T4X_038','T4X_039'],
-  T4_015:['T4P_666','T4P_667','T4P_668','T4P_669','T4P_670','T4P_671','T4P_672','T4X_043','T4X_044','T4X_045'],
-  T4_016:['T4P_673','T4P_674','T4P_675','T4P_676','T4P_677','T4P_678','T4P_679','T4X_046','T4X_047','T4X_048'],
-  T4_018:['T4P_687','T4P_688','T4P_689','T4P_690','T4P_691','T4P_692','T4P_693','T4X_052','T4X_053','T4X_054'],
-  T4_019:['T4P_694','T4P_695','T4P_696','T4P_697','T4P_698','T4P_699','T4P_700','T4X_055','T4X_056','T4X_057'],
-  T4_021:['T4P_708','T4P_709','T4P_710','T4P_711','T4P_712','T4P_713','T4P_714','T4X_061','T4X_062','T4X_063'],
-  T4_022:['T4P_715','T4P_716','T4P_717','T4P_718','T4P_719','T4P_720','T4P_721','T4X_064','T4X_065','T4X_066'],
-  T4_024:['T4P_729','T4P_730','T4P_731','T4P_732','T4P_733','T4P_734','T4P_735','T4X_070','T4X_071','T4X_072'],
-  T4_025:['T4P_736','T4P_737','T4P_738','T4P_739','T4P_740','T4P_741','T4P_742','T4X_073','T4X_074','T4X_075'],
-  T4_027:['T4P_750','T4P_751','T4P_752','T4P_753','T4P_754','T4P_755','T4P_756','T4X_079','T4X_080','T4X_081'],
-  T5_001:['T5P_757','T5P_758','T5P_759','T5P_760','T5P_761','T5P_762','T5P_763','T5X_001','T5X_002','T5X_003'],
-  T5_003:['T5P_771','T5P_772','T5P_773','T5P_774','T5P_775','T5P_776','T5P_777','T5X_007','T5X_008','T5X_009'],
-  T5_007:['T5P_799','T5P_800','T5P_801','T5P_802','T5P_803','T5P_804','T5P_805','T5X_019','T5X_020','T5X_021'],
-  T5_009:['T5P_813','T5P_814','T5P_815','T5P_816','T5P_817','T5P_818','T5P_819','T5X_025','T5X_026','T5X_027'],
-  T6_001:['T6P_946','T6P_947','T6P_948','T6P_949','T6P_950','T6P_951','T6P_952','T6X_001','T6X_002','T6X_003'],
-  T6_003:['T6P_960','T6P_961','T6P_962','T6P_963','T6P_964','T6P_965','T6P_966','T6X_007','T6X_008','T6X_009'],
-  T7_001:['T7P_1135','T7P_1136','T7P_1137','T7P_1138','T7P_1139','T7P_1140','T7P_1141','T7X_001','T7X_002','T7X_003'],
-  T7_003:['T7P_1149','T7P_1150','T7P_1151','T7P_1152','T7P_1153','T7P_1154','T7P_1155','T7X_007','T7X_008','T7X_009'],
-};
+const pieceIdsBySet=(catalog.pieces as Array<Record<string,string|number>>).reduce<Record<string,string[]>>((bySet,piece)=>{
+  const setId=String(piece['Set ID']);
+  (bySet[setId]??=[]).push(String(piece['Piece ID']));
+  return bySet;
+},{});
+
+/** Resolves the live catalogue item IDs to the static Metro asset for their set. */
 export const equipmentArtworkSetByItemId:Partial<Record<string,string>>=Object.fromEntries(
-  Object.entries(pieceIdsBySet).flatMap(([setId,ids])=>ids.map(id=>[id,setId])),
+  Object.entries(pieceIdsBySet)
+    .filter(([setId])=>Boolean(equipmentSheetBySet[setId]))
+    .flatMap(([setId,ids])=>ids.map(id=>[id,setId])),
 );
+
+export function equipmentArtworkCoverage(){
+  const catalogSetIds=new Set((catalog.sets as Array<Record<string,string|number>>).map(set=>String(set['Set ID'])));
+  const mappedSetIds=Object.keys(equipmentSheetBySet);
+  const missingCatalogSets=mappedSetIds.filter(setId=>!catalogSetIds.has(setId));
+  const incompleteMappedSets=mappedSetIds.filter(setId=>(pieceIdsBySet[setId]?.length??0)!==10);
+  const missingMappedPieces=mappedSetIds.flatMap(setId=>(pieceIdsBySet[setId]??[]).filter(itemId=>equipmentArtworkSetByItemId[itemId]!==setId));
+  return {mappedSetCount:mappedSetIds.length,missingCatalogSets,incompleteMappedSets,missingMappedPieces};
+}

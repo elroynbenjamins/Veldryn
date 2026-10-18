@@ -75,3 +75,6 @@ export const RECIPES:Recipe[]=[
 {id:'COOK_ICEFISH',name:'Frosted Icefin',skillId:'cooking',level:48,xp:1100,gold:900,seconds:300,repeatableTraining:true,inputs:[{itemId:'ICEFIN',quantity:3},{itemId:'WINTERMINT',quantity:1},{itemId:'WHITEPINE_LOG',quantity:1}],output:{itemId:'FROSTED_ICEFIN',quantity:3}},
 {id:'COOK_EMBERFIN',name:'Char Emberfin',skillId:'cooking',level:74,xp:1650,gold:1200,seconds:420,repeatableTraining:true,inputs:[{itemId:'EMBERFIN',quantity:3},{itemId:'ASHEN_MYRRH',quantity:1},{itemId:'CINDERWOOD_LOG',quantity:1}],output:{itemId:'CHARRED_EMBERFIN',quantity:3}},
 ];
+const recipesById=new Map(RECIPES.map(recipe=>[recipe.id,recipe]));
+if(recipesById.size!==RECIPES.length)throw new Error('Duplicate recipe IDs in the recipe catalog');
+export function recipeDef(id:string){return recipesById.get(id);}

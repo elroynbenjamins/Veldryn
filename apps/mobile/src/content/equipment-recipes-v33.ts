@@ -36,6 +36,13 @@ const timerRange:Record<string,{base:number;min:number;max:number}>={
 };
 const tierGold:Record<string,number>={T1:120,T2:420,T3:900,T4:1800,T5:3500,T6:10000,T7:18000,T8:30000,T9:50000};
 const tierXp:Record<string,number>={T1:120,T2:250,T3:450,T4:700,T5:1100,T6:1600,T7:2200,T8:2900,T9:3800};
+const infusionByTier:Record<string,{itemId:string;quantity:number}>={
+  T1:{itemId:'VERDANT_BINDING_RESIN',quantity:1},T2:{itemId:'VERDANT_BINDING_RESIN',quantity:1},
+  T3:{itemId:'OATHGLASS_SOLVENT',quantity:1},T4:{itemId:'OATHGLASS_SOLVENT',quantity:2},
+  T5:{itemId:'SUNFUSED_FIXATIVE',quantity:1},T6:{itemId:'SUNFUSED_FIXATIVE',quantity:2},
+  T7:{itemId:'RIMEWARD_DISTILLATE',quantity:1},T8:{itemId:'RIMEWARD_DISTILLATE',quantity:2},
+  T9:{itemId:'CINDERHEART_ELIXIR',quantity:3},
+};
 /** Raw and processed inputs are the long-form progression cost; final assembly
  * remains a short queue action. These multipliers keep players in a tier long
  * enough to learn its regional gathering loop before the next floor unlocks. */
@@ -53,8 +60,8 @@ const TIER_MATERIAL_MULTIPLIER:Record<string,number>={T1:3,T2:2.5,T3:2.25,T4:2,T
  * beside the first regional enemies, which made the first tier feel like a
  * disposable tutorial item.
  */
-export const TIER_CHARACTER_LEVEL_FLOOR:Record<string,number>={T1:2,T2:12,T3:26,T4:40,T5:55,T6:70,T7:82,T8:96,T9:110};
-export const TIER_CRAFTING_LEVEL_FLOOR:Record<string,number>={T1:1,T2:8,T3:20,T4:34,T5:49,T6:64,T7:76,T8:90,T9:104};
+export const TIER_CHARACTER_LEVEL_FLOOR:Record<string,number>={T1:2,T2:12,T3:26,T4:40,T5:55,T6:70,T7:82,T8:92,T9:100};
+export const TIER_CRAFTING_LEVEL_FLOOR:Record<string,number>={T1:1,T2:8,T3:20,T4:34,T5:49,T6:64,T7:76,T8:89,T9:97};
 export const EQUIPMENT_CRAFT_SKILL_BY_CLASS:Record<ClassId,'smithing'|'tailoring'>={
   IRONWARDEN:'smithing',BASTION:'smithing',DREADGUARD:'smithing',RAVAGER:'smithing',
   WAYFINDER:'tailoring',HEXWEAVER:'tailoring',KNIFE_DANCER:'tailoring',DAWNKEEPER:'tailoring',STONECALLER:'tailoring',
@@ -128,7 +135,7 @@ export const V33_EQUIPMENT_RECIPES:V33EquipmentRecipeDef[]=(catalog.pieces as Ar
     xp:q(tierXp[tier]??120,multiplier),
     gold:q(tierGold[tier]??120,multiplier),
     seconds:clamp(Math.round(range.base*multiplier),range.min,range.max),
-    inputs:mergeInputs(ingredients(tier,String(piece.Path),multiplier,skillId)),
+    inputs:mergeInputs([...ingredients(tier,String(piece.Path),multiplier,skillId),infusionByTier[tier]]),
     output:{itemId:String(piece['Piece ID']),quantity:1},
     classId,
     characterLevel,

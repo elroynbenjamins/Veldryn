@@ -8,8 +8,8 @@ export interface AlchemyRecipe {
   id:string;name:string;skillId:'alchemy';level:number;seconds:number;xp:number;gold:number;
   inputs:ItemStack[];output:ItemStack;
 }
-// Timed recipes always reserve one craft per click.
-export const MAX_ALCHEMY_BATCHES=1;
+// One start reserves a full AFK run, bounded by resources, Gold and the AFK cap.
+export const MAX_ALCHEMY_BATCHES=10_000;
 export const POTIONS:readonly PotionDefinition[]=[
   {id:'DEWLEAF_DRAUGHT',name:'Dewleaf Draught',effect:{kind:'healing',maxHpFraction:.25},description:'Restore 25% of maximum HP outside a hunt. No effect at full health.'},
   {id:'RIVERHEART_DRAUGHT',name:'Riverheart Draught',effect:{kind:'healing',maxHpFraction:.45},description:'Restore 45% of maximum HP outside a hunt. No effect at full health.'},
@@ -21,6 +21,16 @@ export const POTIONS:readonly PotionDefinition[]=[
   {id:'GREATER_WARD_TONIC',name:'Greater Ward Tonic',effect:{kind:'preparation',attackFraction:0,damageReductionFraction:.06,encounters:45},description:'6% less incoming damage for 45 resolved ordinary encounters.'},
   {id:'OATH_WARD_TONIC',name:'Oath Ward Tonic',effect:{kind:'preparation',attackFraction:0,damageReductionFraction:.08,encounters:60},description:'8% less incoming damage for 60 resolved ordinary encounters.'},
 ];
+/** Regional infusion reagents turn Alchemy into a deliberate part of the gear
+ * loop. They are consumed for initial assembly and naturally reappear in the
+ * existing regional-upgrade costs through the equipment recipe itself. */
+export const ALCHEMY_EQUIPMENT_INFUSIONS=Object.freeze([
+  {id:'VERDANT_BINDING_RESIN',name:'Verdant Binding Resin',rarity:'rare' as const,value:70,description:'A dewleaf resin that binds early regional gear.'},
+  {id:'OATHGLASS_SOLVENT',name:'Oathglass Solvent',rarity:'rare' as const,value:310,description:'A crystalline solvent for Oathstone-era gear.'},
+  {id:'SUNFUSED_FIXATIVE',name:'Sunfused Fixative',rarity:'epic' as const,value:720,description:'A heat-stable fixative for Sunscar equipment.'},
+  {id:'RIMEWARD_DISTILLATE',name:'Rimeward Distillate',rarity:'epic' as const,value:1320,description:'A frostbound distillate for Frostmarch equipment.'},
+  {id:'CINDERHEART_ELIXIR',name:'Cinderheart Elixir',rarity:'legendary' as const,value:1600,description:'A volatile Ashlands elixir for capstone equipment.'},
+] as const);
 const recipe=(potionId:string,level:number,seconds:number,xp:number,gold:number,inputs:ItemStack[],suffix=''):AlchemyRecipe=>({
   id:`BREW_${potionId}${suffix}`,name:POTIONS.find(p=>p.id===potionId)!.name,skillId:'alchemy',level,seconds,xp,gold,inputs,output:{itemId:potionId,quantity:1},
 });
@@ -37,9 +47,15 @@ export const ALCHEMY_RECIPES:readonly AlchemyRecipe[]=[
   recipe('GREATER_VIGOR_TONIC',35,132,550,32,[{itemId:'SUNSCALE',quantity:2},{itemId:'RIVER_MINT',quantity:2}],'_SUNSCAR'),
   recipe('OATH_VIGOR_TONIC',75,174,1700,98,[{itemId:'WINTERMINT',quantity:2},{itemId:'OATHBLOSSOM',quantity:2}],'_FROSTMARCH'),
   recipe('OATH_WARD_TONIC',85,190,2150,128,[{itemId:'ASHEN_MYRRH',quantity:2},{itemId:'FROSTBLOOM',quantity:2}],'_ASHLANDS'),
+  {id:'BREW_VERDANT_BINDING_RESIN',name:'Verdant Binding Resin',skillId:'alchemy',level:1,seconds:90,xp:95,gold:18,inputs:[{itemId:'DEWLEAF',quantity:5},{itemId:'MOSS_FIBER',quantity:12},{itemId:'WISP_DUST',quantity:3},{itemId:'ASTERFALL_BOTANICAL_ESSENCE',quantity:1}],output:{itemId:'VERDANT_BINDING_RESIN',quantity:1}},
+  {id:'BREW_OATHGLASS_SOLVENT',name:'Oathglass Solvent',skillId:'alchemy',level:20,seconds:135,xp:420,gold:55,inputs:[{itemId:'IRONBLOOM',quantity:4},{itemId:'OATHGLASS_SHARD',quantity:4},{itemId:'ECHO_QUARTZ',quantity:2},{itemId:'ASTERFALL_BOTANICAL_ESSENCE',quantity:1}],output:{itemId:'OATHGLASS_SOLVENT',quantity:1}},
+  {id:'BREW_SUNFUSED_FIXATIVE',name:'Sunfused Fixative',skillId:'alchemy',level:49,seconds:165,xp:950,gold:110,inputs:[{itemId:'SUNSCALE',quantity:3},{itemId:'AMBERGLASS',quantity:2},{itemId:'SCORPION_VENOM',quantity:2}],output:{itemId:'SUNFUSED_FIXATIVE',quantity:1}},
+  {id:'BREW_RIMEWARD_DISTILLATE',name:'Rimeward Distillate',skillId:'alchemy',level:76,seconds:195,xp:1750,gold:220,inputs:[{itemId:'WINTERMINT',quantity:3},{itemId:'RIMEGLASS',quantity:2},{itemId:'RIME_RESIN',quantity:3}],output:{itemId:'RIMEWARD_DISTILLATE',quantity:1}},
+  {id:'BREW_CINDERHEART_ELIXIR',name:'Cinderheart Elixir',skillId:'alchemy',level:96,seconds:225,xp:3000,gold:420,inputs:[{itemId:'ASHEN_MYRRH',quantity:4},{itemId:'BLACKGLASS_CORE',quantity:2},{itemId:'CINDER_HEART',quantity:1}],output:{itemId:'CINDERHEART_ELIXIR',quantity:1}},
 ];
 export const POTION_ITEMS:ItemDef[]=POTIONS.map(potion=>({id:potion.id,name:potion.name,type:'potion',
   value:potion.id==='DEWLEAF_DRAUGHT'?4:potion.id.includes('OATH')?32:potion.id.includes('GREATER')?20:8,
   rarity:potion.id.includes('OATH')?'rare':potion.id.includes('GREATER')?'uncommon':'common',passive:potion.description}));
+export const ALCHEMY_EQUIPMENT_INFUSION_ITEMS:ItemDef[]=ALCHEMY_EQUIPMENT_INFUSIONS.map(infusion=>({id:infusion.id,name:infusion.name,type:'material',value:infusion.value,rarity:infusion.rarity,passive:infusion.description}));
 export const potionDef=(id:string|undefined)=>POTIONS.find(p=>p.id===id);
 export const alchemyRecipeDef=(id:string)=>ALCHEMY_RECIPES.find(recipe=>recipe.id===id);

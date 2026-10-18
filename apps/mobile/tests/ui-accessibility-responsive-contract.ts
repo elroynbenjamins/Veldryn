@@ -108,7 +108,7 @@ ok(skills.includes('keyboardDismissMode="on-drag"'),'Skills search/crafting flow
 
 const quest=read('src/screens/QuestScreen.tsx');
 ok(quest.includes('filterChip:{minHeight:44'),'Quest filters must retain a 44px touch target');
-ok(quest.includes('accessibilityRole="tab" accessibilityState={{selected}}'),'Quest filter controls must use tab semantics');
+ok(quest.includes('accessibilityRole="tab"')&&quest.includes('accessibilityState={{selected}}'),'Quest filter controls must use tab semantics');
 ok(quest.includes('keyboardDismissMode="on-drag"'),'Quest search must dismiss the keyboard on drag');
 
 const friends=read('src/screens/FriendsScreen.tsx');
@@ -116,7 +116,7 @@ ok(friends.includes('tabChip:{minHeight:44'),'Friends tabs must retain a 44px to
 ok(friends.includes('keyboardDismissMode="on-drag"'),'Friends search must dismiss the keyboard on drag');
 
 const guild=read('src/screens/GuildScreen.tsx');
-ok(guild.includes('tabChip:{minHeight:44'),'Guild tabs must retain a 44px touch target');
+ok(guild.includes('tabChip:{minHeight:52'),'Guild tabs must exceed the 44px touch target');
 ok(guild.includes('accessibilityLabel={badgeLabel?'),'Guild tab badges must be included in the tab accessibility label');
 ok((guild.match(/keyboardShouldPersistTaps="handled"/g)??[]).length>=3&&guild.includes('keyboardDismissMode="on-drag"'),'Guild directory, chat and customization controls must remain tappable while their child fields have the keyboard open');
 
@@ -142,17 +142,18 @@ ok(petBonus.includes("filterButton:{minHeight:44")&&petBonus.includes("filterOpt
 ok(petBonus.includes('filterWrapStack')&&petBonus.includes('petCardStack'),'Pet Bonus filters and pet cards must become full-width when constrained');
 
 const eventResponsive=read('src/screens/EventScreen.tsx');
-ok(eventResponsive.includes('useWindowDimensions')&&eventResponsive.includes("stackEvent=width<360||fontScale>=1.25"),'Events must adapt dense navigation/actions to narrow phones and large text');
-ok(eventResponsive.includes('tabsStack')&&eventResponsive.includes("tabStack:{flexGrow:0,flexBasis:'50%'}"),'Event main navigation must become a readable two-by-two grid when constrained');
-ok(eventResponsive.includes('buttonRowStack')&&eventResponsive.includes('rewardStack')&&eventResponsive.includes("claimStack:{width:'100%'}"),'Event paired actions and reward claim rows must stack instead of squeezing on constrained layouts');
+const boardTabs=read('src/components/BoardTabs.tsx');
+ok(eventResponsive.includes('<BoardTabs')&&boardTabs.includes('minHeight:54')&&boardTabs.includes('minWidth:0'),'Event navigation must use the shared flexible tabs with accessible touch targets');
+const eventTrail=read('src/components/EventRewardTrail.tsx');
+const eventShop=read('src/components/EventShopCatalogue.tsx');
+ok(eventShop.includes('flexWrap:\'wrap\'')&&eventTrail.includes('narrow=width<360||fontScale>=1.25')&&eventTrail.includes('narrow&&s.statusStack')&&eventTrail.includes("statusStack:{flexDirection:'column',alignItems:'flex-start'}"),'Event shop details and reward trail labels must wrap or stack instead of squeezing on constrained layouts');
 const eventStartPopup=read('src/components/EventStartPopup.tsx');
-ok(eventStartPopup.includes("surface:{height:'94%',maxHeight:'96%'")&&eventStartPopup.includes('hero:{height:238')&&eventStartPopup.includes('content:{flexGrow:1')&&eventStartPopup.includes('actions:{flexShrink:0'),'Event announcement must use the available dialog height while keeping its actions visible');
+ok(eventStartPopup.includes("surface:{maxHeight:'94%'")&&eventStartPopup.includes('<ScrollView style={s.bodyScroll}')&&eventStartPopup.includes('bodyScroll:{flexGrow:0,flexShrink:1}')&&eventStartPopup.includes('actions:{flexShrink:0')&&!eventStartPopup.includes('content:{flexGrow:1'),'Event announcement must size to its content, scroll on short screens and keep its actions outside the scroll');
 const modalSurface=read('src/components/GameModalSurface.tsx');
 ok(modalSurface.includes("style={[s.keyboardAvoider,sheet?s.keyboardSheet:s.keyboardDialog]}")&&modalSurface.includes("keyboardAvoider:{width:'100%',flex:1")&&modalSurface.includes("keyboardDialog:{justifyContent:'center'}"),'Dialog and sheet percentage heights must resolve against a full safe-area container');
 const bestiaryModal=read('src/screens/BestiaryScreen.tsx');
 ok(bestiaryModal.includes("sheet:{maxHeight:'92%'")&&bestiaryModal.includes('optionList:{maxHeight:220,flexShrink:1')&&bestiaryModal.includes('actions:{flexDirection:\'row\',gap:8,marginTop:8,flexShrink:0'),'Bestiary filter actions must remain visible when the filter list grows');
-const eventOfferModal=read('src/screens/EventScreen.tsx');
-ok(eventOfferModal.includes('style={s.previewScroll}')&&eventOfferModal.includes("previewCard:{width:'100%',maxWidth:360,maxHeight:'92%'")&&eventOfferModal.includes('previewContent:{padding:spacing.lg,gap:10,alignItems:\'center\'}'),'Event offer previews must scroll inside a tall bounded card instead of clipping their actions');
+ok(eventShop.includes("expanded?<View style={[s.detail")&&eventShop.includes("preview:{flexDirection:'row',alignItems:'center',gap:10,flexWrap:'wrap'}")&&eventShop.includes('<GameButton title={pendingId===offer.id'),'Event offer previews must expand inline, wrap their content and keep the purchase action visible');
 const playerProfileModal=read('src/components/PlayerProfileCard.tsx');
 ok(playerProfileModal.includes('ScrollView')&&playerProfileModal.includes("card:{width:'100%',maxWidth:460,maxHeight:'92%'")&&playerProfileModal.includes('scroll:{flexShrink:1}'),'Profile cards must scroll inside a bounded dialog on short screens');
 

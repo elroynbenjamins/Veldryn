@@ -1,4 +1,5 @@
-import {Image,ImageBackground,StyleSheet,Text,View} from 'react-native';
+import {Image,ImageBackground,ScrollView,StyleSheet,Text,View,useWindowDimensions} from 'react-native';
+import {useGameplayText} from '../i18n/gameplay';
 import type {LiveEventRuntime} from '../core/types';
 import {liveEventDef} from '../content/live-events';
 import {liveEventVisuals} from '../ui/live-event-visuals-active';
@@ -11,34 +12,38 @@ import {useMemo} from 'react';
 /** A deliberately short launch card: detail belongs on the event hub, not in the interruption. */
 export function EventStartPopup({runtime,reduceMotion,onOpen,onClose}:{runtime:LiveEventRuntime|null;reduceMotion:boolean;onOpen:()=>void;onClose:()=>void}){
  const C=useGameTheme(),s=useMemo(()=>makeStyles(C),[C]);
+ const {gt,gl,language}=useGameplayText(),{width,fontScale}=useWindowDimensions(),stackActions=width<360||fontScale>=1.3;
  if(!runtime)return null;
  const definition=liveEventDef(runtime.eventId),visuals=liveEventVisuals(definition?.visualKey),accent=definition?.accent??C.accent;
  const nextObjective=definition?.objectives[0];
- const ends=new Date(runtime.endsAtMs).toLocaleDateString(undefined,{month:'short',day:'numeric'});
+ const ends=new Date(runtime.endsAtMs).toLocaleDateString(language,{month:'short',day:'numeric'});
  const activityCount=definition?.objectives.length??0;
- return <GameModalSurface visible presentation="dialog" reduceMotion={reduceMotion} onClose={onClose} backdropLabel="Close event announcement" surfaceStyle={[s.surface,{borderColor:accent}]}>
+ return <GameModalSurface visible presentation="dialog" reduceMotion={reduceMotion} onClose={onClose} backdropLabel={gt('Close event announcement')} surfaceStyle={[s.surface,{borderColor:accent}]}>
+  <ScrollView style={s.bodyScroll} contentContainerStyle={s.bodyContent} showsVerticalScrollIndicator={false} showsHorizontalScrollIndicator={false}>
   <ImageBackground source={visuals.heroBackground} imageStyle={s.heroImage} style={s.hero}>
    <View style={s.heroShade}/><View style={[s.heroGlow,{backgroundColor:accent}]}/>
-   <View style={s.heroTop}><Text style={[s.eventTag,{color:accent}]}>SEASONAL EVENT</Text><View style={s.livePill}><View style={[s.liveDot,{backgroundColor:accent}]}/><Text style={s.liveText}>LIVE</Text></View></View>
+   <View style={s.heroTop}><Text style={[s.eventTag,{color:accent}]}>{gt('SEASONAL EVENT')}</Text><View style={s.livePill}><View style={[s.liveDot,{backgroundColor:accent}]}/><Text style={s.liveText}>{gt('LIVE')}</Text></View></View>
    {visuals.badgeIcon?<View style={[s.badgeShell,{borderColor:accent}]}><Image source={visuals.badgeIcon} resizeMode="contain" accessibilityLabel="Event badge" style={s.badge}/></View>:null}
    <View style={s.heroCopy}><Text accessibilityRole="header" style={s.eventName}>{definition?.name??runtime.eventId}</Text><Text numberOfLines={2} style={s.heroTitle}>{definition?.signature.title??'A new chapter is here'}</Text></View>
-   <View style={s.heroStats}><View style={s.heroStat}><Text style={s.heroStatLabel}>ENDS</Text><Text style={s.heroStatValue}>{ends}</Text></View><View style={s.heroStat}><Text style={s.heroStatLabel}>WAYS TO HELP</Text><Text style={s.heroStatValue}>{activityCount} activities</Text></View></View>
+   <View style={s.heroStats}><View style={s.heroStat}><Text style={s.heroStatLabel}>{gt('ENDS')}</Text><Text style={s.heroStatValue}>{ends}</Text></View><View style={s.heroStat}><Text style={s.heroStatLabel}>{gt('WAYS TO HELP')}</Text><Text style={s.heroStatValue}>{gt('{count} activities',{count:activityCount})}</Text></View></View>
   </ImageBackground>
   <View style={s.content}>
-   <Text style={[s.eyebrow,{color:accent}]}>YOUR NEXT MOVE</Text>
+   <Text style={[s.eyebrow,{color:accent}]}>{gt('YOUR NEXT MOVE')}</Text>
    <View style={[s.objectiveCard,{borderColor:accent}]}>
     <View style={[s.objectiveMark,{backgroundColor:accent}]}><Text style={s.objectiveMarkText}>✦</Text></View>
     <View style={s.flex}><Text style={s.objectiveTitle}>{nextObjective?.name??'Join the ward effort'}</Text><Text numberOfLines={2} style={s.objectiveCopy}>{nextObjective?.description??'Keep playing to build event progress and uncover seasonal rewards.'}</Text></View>
    </View>
-   <View style={s.rewardRow}>{visuals.commonCurrencyIcon?<Image source={visuals.commonCurrencyIcon} style={s.currencyIcon}/>:null}<View style={s.flex}><Text style={s.rewardTitle}>{definition?.currencyName??'Event currency'}</Text><Text style={s.rewardCopy}>Earned automatically from eligible play</Text></View>{visuals.prestigeCurrencyIcon?<Image source={visuals.prestigeCurrencyIcon} style={s.currencyIcon}/>:null}</View>
+   <View style={s.rewardRow}>{visuals.commonCurrencyIcon?<Image source={visuals.commonCurrencyIcon} style={s.currencyIcon}/>:null}<View style={s.flex}><Text style={s.rewardTitle}>{gl(definition?.currencyName??'Event currency')}</Text><Text style={s.rewardCopy}>{gt('Earned automatically from eligible play')}</Text></View>{visuals.prestigeCurrencyIcon?<Image source={visuals.prestigeCurrencyIcon} style={s.currencyIcon}/>:null}</View>
   </View>
-  <View style={s.actions}><View style={s.flex}><GameButton title="Open Veilbreak" onPress={onOpen}/></View><GameButton title="Not now" tone="secondary" onPress={onClose}/></View>
+  </ScrollView>
+  <View style={[s.actions,stackActions&&s.actionsStack]}><View style={stackActions?s.fullWidth:s.flex}><GameButton title={gt('Open {event}',{event:definition?.name??runtime.eventId})} onPress={onOpen}/></View><GameButton title={gt('Not now')} tone="secondary" onPress={onClose}/></View>
  </GameModalSurface>;
 }
 
 function makeStyles(C:ThemeColors){return StyleSheet.create({
- surface:{height:'94%',maxHeight:'96%',overflow:'hidden',padding:0,backgroundColor:C.bg},
- hero:{height:238,justifyContent:'flex-end',padding:spacing.lg,position:'relative',overflow:'hidden'},
+ surface:{maxHeight:'94%',overflow:'hidden',padding:0,backgroundColor:C.bg},
+ bodyScroll:{flexGrow:0,flexShrink:1},bodyContent:{flexGrow:0},fullWidth:{width:'100%'},actionsStack:{flexDirection:'column',alignItems:'stretch'},
+ hero:{minHeight:238,justifyContent:'flex-end',padding:spacing.lg,paddingTop:140,position:'relative',overflow:'hidden'},
  heroImage:{opacity:.94},
  heroShade:{...StyleSheet.absoluteFill,backgroundColor:'rgba(4,8,17,.52)'},
  heroGlow:{position:'absolute',right:-80,bottom:-105,width:260,height:260,borderRadius:999,opacity:.18},
@@ -54,7 +59,7 @@ function makeStyles(C:ThemeColors){return StyleSheet.create({
  heroStats:{zIndex:2,flexDirection:'row',gap:8,marginTop:spacing.md},
  heroStat:{minWidth:106,paddingHorizontal:9,paddingVertical:7,borderWidth:1,borderColor:'rgba(255,255,255,.18)',borderRadius:radii.sm,backgroundColor:'rgba(5,10,20,.65)'},
  heroStatLabel:{fontSize:8,color:'rgba(255,255,255,.64)',fontWeight:'900',letterSpacing:.8},heroStatValue:{fontSize:12,color:'#fff',fontWeight:'800',marginTop:2},
- content:{flexGrow:1,gap:spacing.sm,padding:spacing.lg,paddingBottom:spacing.md},eyebrow:{fontSize:10,fontWeight:'900',letterSpacing:1.25},
+ content:{gap:spacing.sm,padding:spacing.lg,paddingBottom:spacing.md},eyebrow:{fontSize:10,fontWeight:'900',letterSpacing:1.25},
  objectiveCard:{flexDirection:'row',alignItems:'center',gap:10,padding:spacing.md,borderWidth:1,borderLeftWidth:4,borderRadius:radii.sm,backgroundColor:C.panel2},
  objectiveMark:{width:30,height:30,borderRadius:15,alignItems:'center',justifyContent:'center'},objectiveMarkText:{fontSize:15,color:'#fff',fontWeight:'900'},
  flex:{flex:1,minWidth:0},objectiveTitle:{...typography.bodyStrong,color:C.text},objectiveCopy:{...typography.caption,color:C.muted,lineHeight:17,marginTop:2},

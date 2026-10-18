@@ -69,7 +69,7 @@ export function validateGameCommand(value:unknown):GameCommand{
  }
  if((row.type==='roster_switch'||row.type==='roster_delete')&&typeof (args as Record<string,unknown>).id!=='string')throw new Error('invalid_id');
  if(row.type==='roster_delete'&&typeof (args as Record<string,unknown>).confirmation!=='string')throw new Error('invalid_confirmation');
- if(row.type==='start'||row.type==='queue_add'){const start=args as Record<string,unknown>,kind=oneOf(start.kind,row.type==='queue_add'?['combat','gathering','faith','exploration']:['combat','gathering']);if(start.tacticId!==undefined)oneOf(start.tacticId,COMBAT_TACTIC_IDS);if(start.goalId!==undefined)oneOf(start.goalId,HUNT_GOAL_IDS);if(kind!=='combat'&&(start.tacticId!==undefined||start.goalId!==undefined))throw new Error('invalid_combat_activity_option');if(row.type==='queue_add'){if(kind==='faith')integer(start,'count',1,1000);if(kind!=='faith'&&start.count!==undefined)throw new Error('invalid_count');const goal=start.goal===undefined?undefined:normalizeActivityQueueGoal(start.goal);if(start.goal!==undefined&&!goal)throw new Error('invalid_queue_goal');if(goal&&(kind==='faith'||kind==='combat'&&!['duration_seconds','session_kills'].includes(goal.kind)||kind==='gathering'&&goal.kind==='session_kills'||kind==='exploration'&&goal.kind!=='duration_seconds'))throw new Error('invalid_queue_goal');}}
+ if(row.type==='start'||row.type==='queue_add'){const start=args as Record<string,unknown>,kind=oneOf(start.kind,row.type==='queue_add'?['combat','gathering','faith','exploration','alchemy']:['combat','gathering']);if(start.tacticId!==undefined)oneOf(start.tacticId,COMBAT_TACTIC_IDS);if(start.goalId!==undefined)oneOf(start.goalId,HUNT_GOAL_IDS);if(kind!=='combat'&&(start.tacticId!==undefined||start.goalId!==undefined))throw new Error('invalid_combat_activity_option');if(row.type==='queue_add'){if(kind==='faith')integer(start,'count',1,1000);if(kind!=='faith'&&start.count!==undefined)throw new Error('invalid_count');const goal=start.goal===undefined?undefined:normalizeActivityQueueGoal(start.goal);if(start.goal!==undefined&&!goal)throw new Error('invalid_queue_goal');if(goal&&(kind==='faith'||kind==='alchemy'||kind==='combat'&&!['duration_seconds','session_kills'].includes(goal.kind)||kind==='gathering'&&goal.kind==='session_kills'||kind==='exploration'&&goal.kind!=='duration_seconds'))throw new Error('invalid_queue_goal');}}
  if(row.type==='bulk_transfer'){const bulk=args as Record<string,unknown>;oneOf(bulk.location,['inventory','bank']);stringArray(bulk,'ids');}
  if(row.type==='bulk_sell'||row.type==='bulk_salvage')stringArray(args as Record<string,unknown>,'ids');
  return {type:row.type,args:args as Record<string,unknown>};
@@ -165,7 +165,7 @@ export function executeGameCommand(previous:GameState,value:unknown,now:number,o
   case 'faith_blessing':state=updateFaithPreference(state,'blessing',text(a,'id'));break;
   case 'faith_favorite':state=updateFaithPreference(state,'favorite',text(a,'id'),a.enabled===true);break;
   case 'faith_hide':state=updateFaithPreference(state,'hide',undefined,a.enabled===true);break;
-  case 'alchemy_start':state=game.beginAlchemyBatch(state,text(a,'id'),1,now);break;
+  case 'alchemy_start':state=game.beginAlchemyBatch(state,text(a,'id'),now);break;
   case 'processing_start':state=game.beginProcessingBatch(state,text(a,'id'),now);break;
   case 'class_focus':{
    const focus=oneOf(a.focus,['balanced','primary','secondary']);if(!state.character)throw new Error('character_required');
@@ -204,7 +204,7 @@ export function executeGameCommand(previous:GameState,value:unknown,now:number,o
   case 'roster_delete':state=deleteAccountCharacter(state,text(a,'id'),text(a,'confirmation',80),now);break;
   case 'arena_slot':{const index=integer(a,'index',0,2) as 0|1|2;state=setArenaSquadSlot(state,index,a.characterId===undefined?undefined:text(a,'characterId',80));break;}
   case 'claim':break;
-  case 'queue_add':{const kind=oneOf(a.kind,['combat','gathering','faith','exploration']),combatTacticId=a.tacticId===undefined?undefined:oneOf(a.tacticId,COMBAT_TACTIC_IDS),huntGoalId=a.goalId===undefined?undefined:oneOf(a.goalId,HUNT_GOAL_IDS),goal=normalizeActivityQueueGoal(a.goal),faithPracticeCount=kind==='faith'?integer(a,'count',1,1000):undefined;if(a.goal!==undefined&&!goal)throw new Error('invalid_queue_goal');state=enqueueActivity(state,{kind,targetId:text(a,'id'),...(combatTacticId?{combatTacticId}:{}),...(huntGoalId?{huntGoalId}:{}),...(faithPracticeCount?{faithPracticeCount}:{}),...(goal?{goal}:{})});break;}
+  case 'queue_add':{const kind=oneOf(a.kind,['combat','gathering','faith','exploration','alchemy']),combatTacticId=a.tacticId===undefined?undefined:oneOf(a.tacticId,COMBAT_TACTIC_IDS),huntGoalId=a.goalId===undefined?undefined:oneOf(a.goalId,HUNT_GOAL_IDS),goal=normalizeActivityQueueGoal(a.goal),faithPracticeCount=kind==='faith'?integer(a,'count',1,1000):undefined;if(a.goal!==undefined&&!goal)throw new Error('invalid_queue_goal');state=enqueueActivity(state,{kind,targetId:text(a,'id'),...(combatTacticId?{combatTacticId}:{}),...(huntGoalId?{huntGoalId}:{}),...(faithPracticeCount?{faithPracticeCount}:{}),...(goal?{goal}:{})});break;}
   case 'queue_set_goal':{
    const goal=normalizeActivityQueueGoal(a.goal),id=text(a,'id');
    if(!goal)throw new Error('invalid_queue_goal');

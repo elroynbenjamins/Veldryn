@@ -34,6 +34,7 @@ export const PROFILE_COLLECTIBLES:readonly CollectibleDefinition[]=[
   entry('bg_spirit_storehouse','background','Spirit Storehouse','defense','Guardian Lantern discovery',200,undefined,'event'),
   entry('frame_amber_vine','border','Amber Vine','defense','Harvestwake reputation milestone',200,undefined,'event'),
   entry('frame_wheat_crown','border','Wheat Crown','gold','Harvestwake event shop',200,undefined,'event'),
+  entry('frame_gloamward','border','Gloamward Frame','dropChance','Veilbreak event shop',200,undefined,'event'),
 ];
 
 export const COLLECTIBLES:readonly CollectibleDefinition[]=[

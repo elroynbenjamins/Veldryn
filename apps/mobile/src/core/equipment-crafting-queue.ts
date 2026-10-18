@@ -1,6 +1,6 @@
 import {captureSkillAffinity,normalizeSkillAffinitySnapshot,affinityXpRemainderKey,settleAffinitySkillXp} from './class-skill-affinities';
 import {professionActionPace} from './profession-action-pace';
-import {RECIPES,type Recipe} from '../content/skills';
+import {RECIPES,recipeDef,type Recipe} from '../content/skills';
 import {itemDef} from '../content/items';
 import {unlockedCharacterSlots} from './account-roster';
 import {characterPermanentMultipliers} from './permanent-boosts';
@@ -68,7 +68,7 @@ export function isTimedEquipmentRecipe(recipe:Recipe){
 }
 
 export function timedEquipmentRecipe(recipeId:string){
-  const recipe=RECIPES.find(row=>row.id===recipeId);
+  const recipe=recipeDef(recipeId);
   return recipe&&isTimedEquipmentRecipe(recipe)?recipe:undefined;
 }
 
@@ -359,7 +359,7 @@ export function equipmentCraftQueueModel(state:GameState,nowMs:number){
   const slotInfo=equipmentCraftSlotBreakdown(state),queue=projectedEquipmentCraftingQueue(state,nowMs);
   const waitingIds=queue.filter(row=>isWaiting(row,nowMs)).map(row=>row.id);
   const jobs=queue.map(job=>{
-    const recipe=RECIPES.find(row=>row.id===job.recipeId),gemRecipe=gemCombineRecipeV1(job.recipeId)??gemRefineRecipeV1(job.recipeId),ready=isReady(job,nowMs),waiting=isWaiting(job,nowMs),active=isActive(job,nowMs);
+    const recipe=recipeDef(job.recipeId),gemRecipe=gemCombineRecipeV1(job.recipeId)??gemRefineRecipeV1(job.recipeId),ready=isReady(job,nowMs),waiting=isWaiting(job,nowMs),active=isActive(job,nowMs);
     const durationSeconds=Math.ceil(jobDurationMs(job)/1000);
     const outputItemId=recipe?.output.itemId??gemRecipe?.output.itemId;
     return {...job,name:recipe?itemDef(recipe.output.itemId).name:gemRecipe?.name??job.recipeId,outputItemId,forgeKind:gemRecipe?'gem' as const:'equipment' as const,status:ready?'ready' as const:waiting?'waiting' as const:'active' as const,

@@ -101,10 +101,10 @@ ok(craftingBrowser.includes('processingAvailability')&&craftingBrowser.includes(
 ok(craftingBrowser.includes('equipmentCraftAvailability')&&craftingBrowser.includes('timedEquipmentRecipe'),'Crafting groups must use real forge-start semantics for timed equipment');
 
 const recipeCard=read('src/components/RecipeCard.tsx');
-ok(recipeCard.includes("processing?gl('Process available resources')")&&recipeCard.includes("processing?gl('Runs until materials, Gold, or your AFK time runs out.')")&&recipeCard.includes('outputPerHour'),'Processing cards must expose its continuous offline rule and material throughput');
+ok(recipeCard.includes("processing?gl('Process available resources')")&&recipeCard.includes("gl('Runs until materials, Gold, or your AFK time runs out.')")&&recipeCard.includes('outputPerHour'),'Processing cards must expose its continuous offline rule and material throughput');
 ok(recipeCard.includes("head:{minHeight:96"),'Recipe rows must remain compact');
-ok(recipeCard.includes("statusText=forgeFull?"),'Collapsed recipe cards must expose the actual blocking state');
-ok(recipeCard.includes("alchemy?ct('Brew · {time}'")&&recipeCard.includes('Progress continues offline.'),'Alchemy recipe cards must expose timed brewing controls and offline progress');
+ok(recipeCard.includes("statusText=starting?")&&recipeCard.includes("gt(\"Forge + backlog full\")")&&recipeCard.includes('craftText(effectiveStatus.reason)'),'Collapsed recipe cards must expose starting and blocking states');
+ok(recipeCard.includes("alchemy?ct('Brew · {time}'")&&recipeCard.includes('instantStart=craftReady&&(alchemy||processing)')&&recipeCard.includes('startInstant')&&recipeCard.includes('expandToggle'),'Alchemy recipe cards must immediately start a continuous brew while retaining a separate details control');
 ok(skills.includes("type:'alchemy_start'"),'Skills must route Alchemy through the authoritative alchemy_start command');
 ok(recipeCard.includes('recipeProgressionSources')&&recipeCard.includes('MISSING SOURCES'),'All recipe types must expose actionable material/prerequisite sources');
 ok(recipeCard.includes('Other sources ·')&&recipeCard.includes('sourceTypeLabel')&&recipeCard.includes('accessibilityState={{expanded:!!openSources[row.key]}}'),'Recipe material sources must keep one primary route compact and disclose typed alternatives on demand');
@@ -326,8 +326,10 @@ ok(arena.includes('<GameButton compact title={st("Clear slot")} tone="secondary"
 ok(arena.includes("choices:{flexDirection:'row',flexWrap:'wrap'"),'Arena roster choices must wrap instead of forcing one tall row per character');
 
 const event=read('src/screens/EventScreen.tsx');
-ok(event.includes('backgroundColor:C.accentSurface')&&event.includes('accentSurface={C.goodSurface}'),'Event currency and daily-reward emphasis must use semantic theme surfaces');
-ok(event.includes("claimStack:{width:'100%'}")&&event.includes('<GameButton compact title={claimed?'),"Event repeated reward actions must remain compact on constrained screens");
+const eventOverview=read('src/components/EventOverview.tsx');
+ok(event.includes('backgroundColor:C.accentSurface')&&eventOverview.includes('accentSurface={C.goodSurface}'),'Event currency and daily-reward emphasis must use semantic theme surfaces');
+const eventTrail=read('src/components/EventRewardTrail.tsx');
+ok(event.includes('<EventRewardTrail')&&eventTrail.includes('<GameButton compact title={pending?')&&eventTrail.includes('{ready?<GameButton'),"Event trail must show compact full-width claim actions only for earned, unclaimed rewards");
 ok(event.includes("(['Overview','Activities','Shop','Rewards'] as Tab[])")&&event.includes('tab===\'Activities\'')&&event.includes('tab===\'Shop\'')&&event.includes('tab===\'Rewards\''),'Event navigation must split overview, activities, shop and rewards into separate mobile workloads');
 
 const quests=read('src/screens/QuestScreen.tsx');

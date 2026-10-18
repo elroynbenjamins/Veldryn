@@ -49,4 +49,9 @@ export const ingredientIcons={
  FALLEN_KNIGHT_SIGIL:require('../../assets/ingredient-icons-v1/fallen_knight_sigil.webp'),
  TEMPERING_DUST:require('../../assets/ingredient-icons-v1/tempering_dust.webp'),
  TEMPERING_CORE:require('../../assets/ingredient-icons-v1/tempering_core.webp'),
+ VERDANT_BINDING_RESIN:require('../../assets/ingredient-icons-v1/equipment-infusions/verdant_binding_resin.png'),
+ OATHGLASS_SOLVENT:require('../../assets/ingredient-icons-v1/equipment-infusions/oathglass_solvent.png'),
+ SUNFUSED_FIXATIVE:require('../../assets/ingredient-icons-v1/equipment-infusions/sunfused_fixative.png'),
+ RIMEWARD_DISTILLATE:require('../../assets/ingredient-icons-v1/equipment-infusions/rimeward_distillate.png'),
+ CINDERHEART_ELIXIR:require('../../assets/ingredient-icons-v1/equipment-infusions/cinderheart_elixir.png'),
 } satisfies Record<string,ImageSourcePropType>;

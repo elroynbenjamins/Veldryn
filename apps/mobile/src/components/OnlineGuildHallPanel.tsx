@@ -3,64 +3,48 @@ import {useEffect,useMemo,useState} from 'react';
 import {ActivityIndicator,StyleSheet,Text,View} from 'react-native';
 import {GameButton} from './GameButton';
 import {Panel} from './Panel';
+import {BoardTabs} from './BoardTabs';
+import {QuestBoard} from './QuestBoard';
+import {GuildSpecializationPaths} from './GuildSpecializationPaths';
+import {StatBar} from './StatBar';
+import {ActivityArtwork} from './ActivityArtwork';
 import {GUILD_HALL_FACILITIES,DEFAULT_GUILD_HALL_POLICY} from '../core/guild-hall-v44';
 import {loadOnlineGuildHallV44} from '../online/guild-hall-v44';
-import {radii,spacing,typography,type ThemeColors} from '../theme/theme';
+import {type ThemeColors} from '../theme/theme';
 import {useGameTheme} from '../theme/ThemeContext';
 
 type Projection=Awaited<ReturnType<typeof loadOnlineGuildHallV44>>;
-
 export function OnlineGuildHallPanel(){
- const st=useSocialText();
- const C=useGameTheme(),s=useMemo(()=>makeStyles(C),[C]);
+ const st=useSocialText(),C=useGameTheme(),s=useMemo(()=>makeStyles(C),[C]);
  const [projection,setProjection]=useState<Projection>(null),[loading,setLoading]=useState(true),[error,setError]=useState('');
- const load=async()=>{setLoading(true);setError('');try{setProjection(await loadOnlineGuildHallV44())}catch(reason){setError(reason instanceof Error?reason.message:st("Unable to load Guild Hall."))}finally{setLoading(false)}};
+ const load=async()=>{setLoading(true);setError('');try{setProjection(await loadOnlineGuildHallV44())}catch(reason){setError(reason instanceof Error?reason.message:st('Unable to load Guild Hall.'))}finally{setLoading(false)}};
  useEffect(()=>{void load()},[]);
- if(loading&&!projection)return <Panel><Text style={s.title}>{st("Guild Hall")}</Text><ActivityIndicator color={C.accent}/></Panel>;
- if(error&&!projection)return <Panel><Text style={s.title}>{st("Guild Hall")}</Text><Text style={s.error}>{error}</Text><GameButton title={st("Retry")} tone="secondary" onPress={()=>void load()}/></Panel>;
- if(!projection)return <Panel><Text style={s.title}>{st("Guild Hall")}</Text><Text style={s.sub}>{st("Join a Guild to unlock long-term Guild Hall progression.")}</Text></Panel>;
- const {state,level,stage,benefits}=projection;
- const nextThreshold=DEFAULT_GUILD_HALL_POLICY.hallLevelThresholds[level]??DEFAULT_GUILD_HALL_POLICY.hallLevelThresholds[DEFAULT_GUILD_HALL_POLICY.hallLevelThresholds.length-1];
- const prev=DEFAULT_GUILD_HALL_POLICY.hallLevelThresholds[Math.max(0,level-1)]??0;
- const pct=level>=10?100:Math.max(0,Math.min(100,(state.hallProgress-prev)/Math.max(1,nextThreshold-prev)*100));
+ if(loading&&!projection)return <Panel><Text style={s.title}>{st('Guild Hall')}</Text><ActivityIndicator color={C.accent}/></Panel>;
+ if(error&&!projection)return <Panel><Text style={s.title}>{st('Guild Hall')}</Text><Text style={s.error}>{error}</Text><GameButton title={st('Retry')} tone="secondary" onPress={()=>void load()}/></Panel>;
+ if(!projection)return <Panel><Text style={s.title}>{st('Guild Hall')}</Text><Text style={s.sub}>{st('Join a Guild to unlock long-term Guild Hall progression.')}</Text></Panel>;
+ return <GuildHallView projection={projection} loading={loading} error={error} onRefresh={()=>void load()}/>;
+}
+export function GuildHallView({projection,loading=false,error='',onRefresh}:{projection:NonNullable<Projection>;loading?:boolean;error?:string;onRefresh?:()=>void}){
+ const st=useSocialText(),C=useGameTheme(),s=useMemo(()=>makeStyles(C),[C]),[section,setSection]=useState<'Facilities'|'Skills'|'Trophies'>('Facilities');
+ const {state,level,stage}=projection;
+ const nextThreshold=DEFAULT_GUILD_HALL_POLICY.hallLevelThresholds[level]??DEFAULT_GUILD_HALL_POLICY.hallLevelThresholds[9],prev=DEFAULT_GUILD_HALL_POLICY.hallLevelThresholds[Math.max(0,level-1)]??0;
  return <View style={s.root}>
-  <Panel>
-   <View style={s.between}><View style={s.flex}><Text style={s.kicker}>{st("GUILD HALL")}</Text><Text style={s.title}>{stage}</Text><Text style={s.sub}>{state.hallProgress.toLocaleString()} Hall Progress · {state.lifetimeProjectsCompleted} completed projects</Text></View><View style={s.levelBadge}><Text style={s.level}>Lv {level}</Text><Text style={s.levelMax}>/10</Text></View></View>
-   <View accessibilityRole="progressbar" accessibilityValue={{min:0,max:100,now:pct}} style={s.track}><View style={[s.fill,{width:(pct+'%') as any}]}/></View>
-   <Text style={s.note}>{level<10?Math.max(0,nextThreshold-state.hallProgress).toLocaleString()+' Hall Progress to level '+(level+1):'Launch Hall level cap reached.'}</Text>
-  </Panel>
-  <Panel>
-   <View style={s.sectionHead}><Text style={s.title}>{st("Facilities")}</Text><Text style={s.sectionMeta}>{st("Automatic progression")}</Text></View>
-   <Text style={s.sub}>Facilities improve through authored Guild Projects. Hall Progress is never spent.</Text>
-   {GUILD_HALL_FACILITIES.map(def=>{const facility=state.facilities[def.id];return <View key={def.id} style={s.facility}><View style={s.flex}><Text style={s.facilityName}>{def.name}</Text><Text style={s.note}>{def.description}</Text></View><View style={s.tier}><Text style={s.tierText}>T{facility.tier}/5</Text></View></View>})}
-  </Panel>
-  <Panel>
-   <View style={s.sectionHead}><Text style={s.title}>{st("Guild Skill Trees")}</Text><Text style={s.sectionMeta}>Launch cap · Lv 10</Text></View>
-   <Text style={s.sub}>Hall facilities now represent progression visually. Permanent bonuses are chosen through three Guild Skill Trees instead of stacking automatically from Hall tiers.</Text>
-   <View style={s.skillTree}><Text style={s.skillTreeTitle}>{st("PROFESSIONS")}</Text><Text style={s.note}>Non-combat only · Skilling XP, gathering speed and production speed · up to +6% per line.</Text></View>
-   <View style={s.skillTree}><Text style={s.skillTreeTitle}>{st("FELLOWSHIP")}</Text><Text style={s.note}>Member capacity, Guild Quests, Project options and cooperative-system unlocks.</Text></View>
-   <View style={s.skillTree}><Text style={s.skillTreeTitle}>{st("VANGUARD")}</Text><Text style={s.note}>Guild-content-only combat damage, defence, support and boss/raid contribution.</Text></View>
-   <Text style={s.cap}>Ranks use Guild Skill Points. Higher tree tiers require communal Development Projects and resources.</Text>
-  </Panel>
-  <Panel>
-   <View style={s.sectionHead}><Text style={s.title}>{st("Trophy Room")}</Text><Text style={s.sectionMeta}>{state.trophies.length} recorded</Text></View>
-   {state.trophies.slice(0,5).map(trophy=><View key={trophy.trophyKey} style={s.trophy}><Text style={s.facilityName}>{trophy.label}</Text><Text style={s.note}>{trophy.description||trophy.sourceKind} · {new Date(trophy.earnedAtMs).toLocaleDateString()}</Text></View>)}
-   {!state.trophies.length?<View style={s.empty}><Text style={s.emptyTitle}>{st("No trophies yet")}</Text><Text style={s.note}>Completed eligible Guild Projects and raids will appear here. Future Guild Legacy will preserve major trophies and season records permanently.</Text></View>:null}
-  </Panel>
-  <GameButton compact title={loading?st("Refreshing…"):st("Refresh Guild Hall")} tone="secondary" disabled={loading} onPress={()=>void load()}/>
-  {!!error&&<Text style={s.error}>{error}</Text>}
+  <Panel><View style={s.between}><View style={s.flex}><Text style={s.kicker}>GUILD HALL</Text><Text accessibilityRole="header" style={s.title}>{stage}</Text><Text style={s.sub}>{state.lifetimeProjectsCompleted} completed projects</Text></View><View style={s.levelBadge}><Text style={s.level}>Lv {level}</Text><Text style={s.levelMax}>/10</Text></View></View><StatBar rounded label="Hall Progress" current={level>=10?1:state.hallProgress-prev} max={level>=10?1:nextThreshold-prev}/><Text style={s.note}>{level<10?Math.max(0,nextThreshold-state.hallProgress).toLocaleString()+' Hall Progress to level '+(level+1):'Launch Hall level cap reached.'}</Text></Panel>
+  <BoardTabs label="Guild Hall sections" items={(['Facilities','Skills','Trophies'] as const).map(id=>({id,label:id}))} value={section} onChange={setSection}/>
+  {section==='Facilities'?<QuestBoard><Text style={s.kicker}>{st('Automatic progression')}</Text><Text style={s.sub}>Facilities improve through authored Guild Projects. Hall Progress is never spent.</Text>
+   {GUILD_HALL_FACILITIES.map(def=>{const facility=state.facilities[def.id],tier=facility.tier,threshold=DEFAULT_GUILD_HALL_POLICY.facilityProgressThresholds[tier],requiredLevel=def.tierHallLevels[tier];return <View key={def.id} style={s.facility}>
+    <View style={s.between}><ActivityArtwork id={def.id==='workshop'?'smithing':def.id==='training_room'?'training':'exploration'} size={36}/><View style={s.flex}><Text style={s.facilityName}>{def.name}</Text><Text style={s.note}>{tier>=5?'Max tier':`Tier ${tier} → ${tier+1}`}</Text></View><Text style={s.tierText}>T{tier}/5</Text></View><Text style={s.sub}>{def.description}</Text>
+    {tier<5?<><StatBar rounded label="Facility progress" current={Math.min(facility.progress,threshold)} max={threshold}/><Text style={[s.note,{color:level<requiredLevel?C.warning:C.muted}]}>{level<requiredLevel?`Hall Level ${requiredLevel} required · `:''}{Math.max(0,threshold-facility.progress).toLocaleString()} more facility progress from Projects</Text></>:null}
+   </View>})}
+  </QuestBoard>:null}
+  {section==='Skills'?<View style={s.root}><Panel><Text style={s.title}>Guild Skill Trees</Text><Text style={s.sub}>Permanent bonuses are chosen through three Guild Skill Trees. Hall facilities represent progression visually; their tiers do not automatically stack stat bonuses.</Text></Panel><GuildSpecializationPaths/></View>:null}
+  {section==='Trophies'?<QuestBoard><View style={s.between}><Text style={s.title}>{st('Trophy Room')}</Text><Text style={s.note}>{state.trophies.length} recorded</Text></View>
+   <Text style={s.sub}>Future Guild Legacy will preserve major trophies and season records permanently.</Text>
+   {state.trophies.slice(0,10).map(trophy=><View key={trophy.trophyKey} style={s.facility}><Text style={s.facilityName}>{trophy.label}</Text><Text style={s.sub}>{trophy.description||trophy.sourceKind}</Text><Text style={s.note}>{new Date(trophy.earnedAtMs).toLocaleDateString()}</Text></View>)}
+   {!state.trophies.length?<Text style={s.sub}>No trophies yet. Completed eligible Guild Projects and raids will appear here.</Text>:null}
+  </QuestBoard>:null}
+  {onRefresh?<GameButton compact title={loading?st('Refreshing…'):st('Refresh Guild Hall')} tone="secondary" disabled={loading} onPress={onRefresh}/>:null}
+  {!!error&&<Text accessibilityRole="alert" style={s.error}>{error}</Text>}
  </View>;
 }
-
-function makeStyles(C:ThemeColors){return StyleSheet.create({
- root:{gap:10},kicker:{...typography.caption,color:C.accent,fontWeight:'900',letterSpacing:.9},title:{...typography.title,color:C.text},sub:{fontSize:10,lineHeight:14,color:C.muted,marginTop:2},note:{fontSize:9,lineHeight:12,color:C.muted},
- between:{flexDirection:'row',alignItems:'center',justifyContent:'space-between',gap:8},flex:{flex:1,minWidth:0},
- sectionHead:{flexDirection:'row',alignItems:'center',justifyContent:'space-between',gap:8},sectionMeta:{fontSize:8.5,color:C.muted,fontWeight:'800'},
- levelBadge:{flexDirection:'row',alignItems:'baseline',paddingHorizontal:8,paddingVertical:5,borderRadius:radii.md,borderWidth:1,borderColor:C.lineStrong,backgroundColor:C.warningSurface},
- level:{color:C.accent,fontSize:16,fontWeight:'900'},levelMax:{color:C.muted,fontSize:9},
- track:{height:8,borderRadius:4,overflow:'hidden',backgroundColor:C.panel2,marginTop:8},fill:{height:'100%',backgroundColor:C.accent},
- facility:{minHeight:54,flexDirection:'row',alignItems:'center',gap:8,borderTopWidth:1,borderTopColor:C.line,paddingVertical:7},facilityName:{fontSize:10.5,color:C.text,fontWeight:'900'},
- tier:{minWidth:50,height:28,borderRadius:radii.sm,borderWidth:1,borderColor:C.line,backgroundColor:C.panel2,alignItems:'center',justifyContent:'center'},tierText:{fontSize:9,color:C.accent,fontWeight:'900'},
- skillTree:{gap:2,padding:8,borderWidth:1,borderColor:C.line,borderRadius:radii.sm,backgroundColor:C.panel2,marginTop:6},skillTreeTitle:{fontSize:9,color:C.accent,fontWeight:'900',letterSpacing:.65},cap:{fontSize:8.5,lineHeight:12,color:C.muted,marginTop:6},
- trophy:{paddingVertical:7,borderTopWidth:1,borderTopColor:C.line},empty:{minHeight:64,alignItems:'center',justifyContent:'center',gap:2,borderWidth:1,borderStyle:'dashed',borderColor:C.line,borderRadius:radii.sm,backgroundColor:C.panel2},emptyTitle:{fontSize:10.5,color:C.text,fontWeight:'900'},error:{color:C.bad},
-});}
+function makeStyles(C:ThemeColors){return StyleSheet.create({root:{gap:12},kicker:{fontSize:11,lineHeight:16,color:C.info,fontWeight:'700',letterSpacing:.7},title:{fontSize:19,lineHeight:25,color:C.text,fontWeight:'700'},sub:{fontSize:13,lineHeight:19,color:C.muted},note:{fontSize:12,lineHeight:18,color:C.muted},between:{flexDirection:'row',alignItems:'center',gap:10,justifyContent:'space-between'},flex:{flex:1,minWidth:0,gap:4},levelBadge:{flexDirection:'row',alignItems:'baseline',paddingHorizontal:8,paddingVertical:5,borderRadius:8,borderWidth:1,borderColor:C.lineStrong,backgroundColor:C.warningSurface},level:{color:C.accent,fontSize:18,fontWeight:'700'},levelMax:{color:C.muted,fontSize:12},facility:{padding:12,gap:10,borderWidth:1,borderColor:C.line,borderRadius:10,backgroundColor:C.panelRaised},facilityName:{fontSize:15,lineHeight:21,color:C.text,fontWeight:'700'},tierText:{fontSize:13,color:C.accent,fontWeight:'600'},error:{fontSize:13,lineHeight:19,color:C.bad}});}

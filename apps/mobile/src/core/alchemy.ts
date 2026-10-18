@@ -48,6 +48,17 @@ export function startAlchemyBatch(state:GameState,recipeId:string,batches:number
     inventory:{...state.inventory,stacks:inventory},bank:{...state.bank,stacks:bank},
     activity:{kind:'alchemy',targetId:recipeId,startedAtMs:nowMs,lastClaimAtMs:nowMs,progressFraction:0,bonusSnapshot:bonuses,skillAffinity:captureSkillAffinity(state,'alchemy'),brew}};
 }
+
+/** Starts as many brews as resources, Gold and the active AFK window allow. */
+export function startAlchemyUntilLimited(state:GameState,recipeId:string,nowMs:number,afkCapSeconds:number):GameState{
+ const status=alchemyAvailability(state,recipeId,1);
+ if(!status.ready)throw new Error(status.reason);
+ const pace=professionActionPace(state,status.recipe!,'batch');
+ const timeBatches=Math.floor(afkCapSeconds/pace.cycleSeconds);
+ const batches=Math.min(status.maxBatches,timeBatches,MAX_ALCHEMY_BATCHES);
+ if(batches<1)throw new Error('Not enough AFK time for one brewing cycle.');
+ return startAlchemyBatch(state,recipeId,batches,nowMs);
+}
 export function previewAlchemyReward(state:GameState,elapsed:number):RewardBundle {
   const activity=state.activity,brew=activity?.brew;
   if(activity?.kind!=='alchemy'||!brew)throw new Error('Missing reserved alchemy batch.');
@@ -76,7 +87,7 @@ export function normalizeAlchemyBatch(value:unknown,targetId:string):AlchemyBatc
   const b=value as AlchemyBatchState|undefined,recipe=alchemyRecipeDef(targetId);
   const integer=(n:unknown,min:number,max:number)=>Number.isSafeInteger(n)&&Number(n)>=min&&Number(n)<=max;
   // Existing reservations may contain multiple operations from older saves; let them finish safely.
-  const valid=!!b&&!!recipe&&b.version===1&&b.recipeId===targetId&&integer(b.totalBatches,1,100)&&integer(b.remainingBatches,1,b.totalBatches)&&
+  const valid=!!b&&!!recipe&&b.version===1&&b.recipeId===targetId&&integer(b.totalBatches,1,MAX_ALCHEMY_BATCHES)&&integer(b.remainingBatches,1,b.totalBatches)&&
     integer(b.goldPerBatch,0,100000)&&Number.isFinite(b.cycleSeconds)&&b.cycleSeconds>=1&&b.cycleSeconds<=86400&&
     Number.isFinite(b.xpPerBatch)&&b.xpPerBatch>=0&&b.xpPerBatch<=100000&&
     b.outputPerBatch?.itemId===recipe.output.itemId&&integer(b.outputPerBatch?.quantity,1,100)&&

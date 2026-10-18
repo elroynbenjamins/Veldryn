@@ -1,4 +1,4 @@
-import { guildShopReadHandler, guildShopDailyClaimHandler, type GuildShopReadServices } from "../guild-shop-read";
+import { guildShopReadHandler, guildShopDailyClaimHandler, guildShopPurchaseHandler, type GuildShopReadServices } from "../guild-shop-read";
 function assert(value: unknown, message: string): asserts value {
  if (!value) throw new Error(message);
 }
@@ -51,6 +51,23 @@ async function run() {
  assert(claimCalls.length===1&&claimCalls[0].name==="guild_shop_claim_daily_server_v1","only verified claim RPC called");
  assert(claimCalls[0].args.p_kind==="contribution","reward kind forwarded");
  assert(claimCalls[0].args.p_account_id==="11111111-1111-4111-8111-111111111111","authenticated account forwarded");
+
+ const purchaseCalls: Array<{name:string;args:Record<string,unknown>}>=[];
+ const purchase=guildShopPurchaseHandler({...services,rpc:async<T>(name:string,args:Record<string,unknown>)=>{
+  purchaseCalls.push({name,args});
+  return {status:'purchased',balance:1000,rewardId:'GUILD_PET_001'} as unknown as T;
+ }});
+ const purchaseNoAuth=await purchase(new Request(claimUri,{method:'POST',body:'{"itemId":"guild_pet_01"}'}));
+ assert(purchaseNoAuth.status===401,'purchase requires auth');
+ const purchaseInvalid=await purchase(new Request(claimUri,{method:'POST',headers:{authorization:'Bearer valid'},body:'{"itemId":"unknown"}'}));
+ assert(purchaseInvalid.status===400,'unknown SKU refused before transaction');
+ const purchasePrice=await purchase(new Request(claimUri,{method:'POST',headers:{authorization:'Bearer valid'},body:'{"itemId":"guild_pet_01","price":1}'}));
+ assert(purchasePrice.status===400,'client prices refused');
+ const purchaseOk=await purchase(new Request(claimUri,{method:'POST',headers:{authorization:'Bearer valid'},body:'{"itemId":"guild_pet_01"}'}));
+ assert(purchaseOk.status===200,'verified purchase returned');
+ assert(purchaseCalls.length===1&&purchaseCalls[0].name==='guild_shop_purchase_server_v3','only server-priced purchase API called');
+ assert(purchaseCalls[0].args.p_account_id==='11111111-1111-4111-8111-111111111111','purchase account comes from auth');
+ assert(purchaseCalls[0].args.p_item_id==='guild_pet_01','SKU is transmitted without price');
  console.log("guild shop read handler tests passed");
 }
 void run();

@@ -114,7 +114,8 @@ import {signInAsGuest,signOut} from './src/online/account';
 import {fetchAppVersionGate,openStoreListing,type VersionGateResult} from './src/online/app-version-gate';
 import {GameButton} from './src/components/GameButton';
 import type {GameCommand} from './src/core/game-commands';
-import {buildNavigationBadges,buildQuickNavigationBadges,type NavigationNotification} from './src/core/navigation-notifications';
+import {actionableClaimNotifications,buildNavigationBadges,buildQuickNavigationBadges,type NavigationNotification} from './src/core/navigation-notifications';
+import {eventReadyClaimCount} from './src/core/live-events';
 import {companionAttentionSummary} from './src/core/companion-attention';
 import {earlyFeatureLockReason,earlyFeatureUnlocked,newlyUnlockedEarlyFeatures,type EarlyFeatureUnlockMoment} from './src/core/feature-unlocks';
 import type {WorkingTowardDestination} from './src/core/working-toward';
@@ -560,8 +561,12 @@ const next=normalizeProfileIcon(candidate);queuePreparationNotices(current,next)
   const dailySuppliesReady=dailySuppliesUnlocked&&dailySuppliesStatus(state,now).canClaim;
   const contractBoard=contractsUnlocked?contractBoardSummary(state,now):{pendingRewards:0};
   const equipmentForge=equipmentCraftQueueModel(state,now);
+  const storyClaimCount=state.quests.filter(row=>row.status==='complete').length;
+  const eventClaimCount=earlyFeatureUnlocked(state,'events')?eventReadyClaimCount(state,now):0;
+  const overflowStackCount=state.overflow.stacks.filter(stack=>stack.quantity>0).length;
   const lockedAccountDestinations=Object.fromEntries((['DailySupplies','AccountBonuses','Companions','Friends','Social','MasteryHall','Guild','Rankings'] as MoreDestination[]).flatMap(destination=>{const reason=earlyFeatureLockReason(state,destination);return reason?[[destination,reason]]:[]})) as Partial<Record<MoreDestination,string>>;
   const navigationNotifications:NavigationNotification[]=[
+    ...actionableClaimNotifications({storyRewards:storyClaimCount,eventClaims:eventClaimCount,overflowStacks:overflowStackCount}),
     {key:'activity-reward-ready',kind:'reward_ready',unread:rewardHasProgress(preview)},
     {key:'companion-attention',kind:'companion_attention',unread:companionAttention.hasAttention},
     {key:'daily-supplies-ready',kind:'account_action',unread:dailySuppliesReady},

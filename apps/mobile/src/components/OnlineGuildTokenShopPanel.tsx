@@ -5,7 +5,7 @@ import {OnlineGuildConstructionPanel} from './OnlineGuildConstructionPanel';
 import {Panel} from './Panel';
 import {useGameTheme} from '../theme/ThemeContext';
 import type {ThemeColors} from '../theme/theme';
-import {claimOnlineGuildDailyTokens,loadOnlineGuildTokenShop,type GuildTokenShopCategory,type GuildTokenShopSnapshot} from '../online/guild-token-shop';
+import {claimOnlineGuildDailyTokens,purchaseOnlineGuildTokenReward,loadOnlineGuildTokenShop,type GuildTokenShopCategory,type GuildTokenShopSnapshot} from '../online/guild-token-shop';
 
 type Filter='all'|GuildTokenShopCategory;
 const FILTERS:readonly {id:Filter;label:string}[]=[
@@ -24,6 +24,17 @@ export function OnlineGuildTokenShopPanel(){
  const [filter,setFilter]=useState<Filter>('all');
  const [loading,setLoading]=useState(true),[error,setError]=useState('');
  const [claiming,setClaiming]=useState<'attendance'|'contribution'|null>(null),[claimNotice,setClaimNotice]=useState('');
+ const [purchasing,setPurchasing]=useState<string|null>(null);
+ const buy=async(itemId:string)=>{
+  if(purchasing||loading||claiming)return;
+  setPurchasing(itemId);setError('');setClaimNotice('');
+  try{
+   const status=await purchaseOnlineGuildTokenReward(itemId);
+   setClaimNotice(status==='purchased'?'Reward unlocked for your account!':'Already owned. No additional Guild Tokens were spent.');
+   setSnapshot(await loadOnlineGuildTokenShop());
+  }catch(reason){setError(reason instanceof Error?reason.message:'Unable to confirm reward purchase.');}
+  finally{setPurchasing(null);}
+ };
  const claim=async(kind:'attendance'|'contribution')=>{
   if(claiming||loading)return;
   setClaiming(kind);setError('');setClaimNotice('');
@@ -73,7 +84,7 @@ export function OnlineGuildTokenShopPanel(){
   </Panel>
   <Panel>
    <View style={styles.between}><Text style={styles.section}>Exclusive rewards</Text>{loading?<ActivityIndicator color={C.accent}/>:<GameButton compact tone="secondary" title="Refresh" onPress={()=>void retry()}/>}</View>
-   <Text style={styles.notice}>Preview only · Purchasing unlocks when real collectible delivery is connected and tested.</Text>
+   <Text style={styles.notice}>Only released rewards can be purchased. Rewards remain locked while final artwork and transaction testing are completed.</Text>
    {error?<Text accessibilityRole="alert" style={styles.error}>{error}</Text>:null}
    {!loading&&!error&&!snapshot?<Text style={styles.copy}>Join a guild to browse its permanent rewards.</Text>:null}
    <View style={styles.filters}>{FILTERS.map(tab=><Pressable key={tab.id} accessibilityRole="button" accessibilityState={{selected:filter===tab.id}} onPress={()=>setFilter(tab.id)} style={[styles.filter,filter===tab.id&&styles.filterSelected]}><Text style={[styles.filterText,filter===tab.id&&styles.filterTextSelected]}>{tab.label}</Text></Pressable>)}</View>
@@ -83,6 +94,8 @@ export function OnlineGuildTokenShopPanel(){
     {card.status!=='owned'?<View style={styles.track}><View style={[styles.fill,{width:`${Math.round(card.progressToPrice*100)}%` as `${number}%`}]}/></View>:null}
     {card.status==='insufficient_tokens'?<Text style={styles.hint}>{Math.max(0,card.price-(snapshot?.balance??0)).toLocaleString()} more tokens needed</Text>:null}
     {card.status==='guild_level_locked'?<Text style={styles.hint}>Reach Guild Level {card.requiredGuildLevel} to unlock this reward.</Text>:null}
+    {card.released&&card.status==='eligible'?<GameButton compact title={purchasing===card.id?'Purchasing…':'Unlock reward'} disabled={loading||!!purchasing||claiming!==null} onPress={()=>void buy(card.id)}/>:null}
+    {!card.released&&card.status!=='owned'?<Text style={styles.hint}>Coming soon · Reward not released</Text>:null}
    </View>)}
    {snapshot&&!visible.length?<Text style={styles.copy}>No rewards in this category yet.</Text>:null}
   </Panel>

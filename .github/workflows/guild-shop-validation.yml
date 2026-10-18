@@ -28,6 +28,8 @@ jobs:
           node-version: 22
           cache: pnpm
           cache-dependency-path: backend/pnpm-lock.yaml
+      - name: Supply pnpm 9 workspace root (CI only)
+        run: printf '\npackages:\n  - "."\n' >> backend/pnpm-workspace.yaml
       - name: Install pinned backend dependencies
         run: pnpm --dir backend install --frozen-lockfile
       - name: Typecheck and online backend tests
@@ -48,6 +50,8 @@ jobs:
           node-version: 22
           cache: pnpm
           cache-dependency-path: apps/mobile/pnpm-lock.yaml
+      - name: Supply pnpm 9 workspace root (CI only)
+        run: printf '\npackages:\n  - "."\n' >> apps/mobile/pnpm-workspace.yaml
       - name: Install pinned mobile dependencies
         run: pnpm --dir apps/mobile install --frozen-lockfile --ignore-scripts
       - name: Typecheck mobile

@@ -1,4 +1,4 @@
-import {supabase} from './supabase';
+import {supabase,supabasePublicEndpoint,supabasePublicKey} from './supabase';
 
 export type GuildTokenShopCategory='pet'|'companion'|'border'|'profile_icon'|'emote_set';
 export type GuildTokenShopStatus='owned'|'guild_level_locked'|'insufficient_tokens'|'eligible';
@@ -63,15 +63,15 @@ function validateSnapshot(value:unknown):GuildTokenShopSnapshot{
  * Read-only: no token balance or purchase authority is stored on-device.
  */
 export async function loadOnlineGuildTokenShop():Promise<GuildTokenShopSnapshot|null>{
- if(!supabase)throw new Error('Online services are unavailable.');
+ if(!supabase||!supabasePublicEndpoint||!supabasePublicKey)throw new Error('Online services are unavailable.');
  const {data:{session},error:authError}=await supabase.auth.getSession();
  if(authError)throw authError;
  if(!session)throw new Error('Sign in to view the Guild Token Shop.');
  const controller=new AbortController(),timeout=setTimeout(()=>controller.abort(),15000);
  try{
-  const response=await fetch(`${supabase.supabaseUrl}/functions/v1/gameplay?view=guild-shop`,{
+  const response=await fetch(`${supabasePublicEndpoint}/functions/v1/gameplay?view=guild-shop`,{
    method:'GET',signal:controller.signal,
-   headers:{Authorization:`Bearer ${session.access_token}`,apikey:supabase.supabaseKey},
+   headers:{Authorization:`Bearer ${session.access_token}`,apikey:supabasePublicKey},
   });
   if(response.status===403)return null;
   const value=await response.json();

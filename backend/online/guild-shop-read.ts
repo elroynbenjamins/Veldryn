@@ -28,14 +28,15 @@ export function guildShopReadHandler(services: GuildShopReadServices) {
   try {
    const guildLevel = await services.guildLevelForAccount(accountId);
    if (guildLevel === null) return json({error:"guild_membership_required"},403);
-   const [snapshot,construction,eventBonuses] = await Promise.all([
+   const [snapshot,construction,eventBonuses,constructionEnabled] = await Promise.all([
     services.rpc<GuildShopSnapshot>("guild_shop_snapshot_server_v1",{p_account_id:accountId}),
     services.rpc<Array<{templateId:string;completed:boolean;resources:Record<string,number>}>>(
       "guild_construction_snapshot_server_v1",{p_account_id:accountId}),
     services.rpc<Array<{eventId:string;milestonePercent:number;tokens:number;claimed:boolean}>>(
       "guild_shop_event_community_rewards_server_v1",{p_account_id:accountId}),
+    services.rpc<string[]>("guild_construction_enabled_server_v1",{p_account_id:accountId}),
    ]);
-   if (!snapshot || !Number.isSafeInteger(snapshot.balance) || !Array.isArray(snapshot.ownedItemIds) || !Array.isArray(construction) || !Array.isArray(eventBonuses))
+   if (!snapshot || !Number.isSafeInteger(snapshot.balance) || !Array.isArray(snapshot.ownedItemIds) || !Array.isArray(construction) || !Array.isArray(eventBonuses) || !Array.isArray(constructionEnabled))
     return json({error:"invalid_shop_snapshot"},503);
    return json({
     guildLevel,
@@ -44,7 +45,9 @@ export function guildShopReadHandler(services: GuildShopReadServices) {
     claimedDailyKinds:Array.isArray(snapshot.claimedDailyKinds)?snapshot.claimedDailyKinds:[],
     weeklyCap:250,
     catalogue:GUILD_SHOP_CATALOGUE,
-    constructionTemplates:GUILD_CONSTRUCTION_TEMPLATES,
+    constructionTemplates:GUILD_CONSTRUCTION_TEMPLATES.map(template=>({
+      ...template,enabled:constructionEnabled.includes(template.id),
+    })),
     construction,
     eventBonuses,
     cards:buildGuildShopCards({guildLevel,tokenBalance:snapshot.balance,ownedItemIds:snapshot.ownedItemIds}).map(card=>({
@@ -151,5 +154,43 @@ export function guildShopEventClaimHandler(services:GuildShopReadServices){
     return json({error:"invalid_claim_result"},503);
    return json({credited});
   }catch{return json({error:"event_token_claim_unavailable"},503);}
+ };
+}
+
+/** Item/gold deduction and donation receipt execute together in one locked SQL
+ * transaction. The SQL release gate and EXECUTE privilege are OFF by default.
+ */
+export function guildConstructionDonationHandler(services:GuildShopReadServices){
+ return async(request:Request):Promise<Response>=>{
+  if(request.method!=="POST")return json({error:"method_not_allowed"},405);
+  const token=request.headers.get("authorization")?.match(/^Bearer (\S+)$/i)?.[1];
+  if(!token)return json({error:"auth_required"},401);
+  const accountId=await services.authenticate(token);
+  if(!accountId)return json({error:"invalid_session"},401);
+  const raw=await request.text();
+  if(raw.length>1024)return json({error:"request_too_large"},413);
+  let input:unknown;
+  try{input=JSON.parse(raw);}catch{return json({error:"invalid_json"},400);}
+  if(!input||typeof input!=="object"||Array.isArray(input))return json({error:"invalid_request"},400);
+  const body=input as Record<string,unknown>;
+  if(Object.keys(body).length!==4||typeof body.templateId!=="string"
+   ||typeof body.resourceId!=="string"
+   ||!Number.isSafeInteger(body.amount)||Number(body.amount)<1||Number(body.amount)>1000000
+   ||typeof body.requestKey!=="string"||!/^[A-Za-z0-9_-]{8,128}$/.test(body.requestKey))
+   return json({error:"invalid_donation"},400);
+  const template=GUILD_CONSTRUCTION_TEMPLATES.find(t=>t.id===body.templateId);
+  if(!template||!(['gold',...template.materials.map(m=>m.materialKey)] as string[]).includes(body.resourceId))
+   return json({error:"invalid_construction_resource"},400);
+  try{
+   const result=await services.rpc<{alreadyProcessed:boolean;completed:boolean}>(
+    "guild_construction_donate_server_v2",{
+     p_account_id:accountId,p_template_id:body.templateId,p_resource_id:body.resourceId,
+     p_amount:body.amount,p_request_key:body.requestKey,
+   });
+   if(!result||typeof result.alreadyProcessed!=="boolean"
+    ||typeof result.completed!=="boolean")
+    return json({error:"invalid_donation_result"},503);
+   return json(result);
+  }catch{return json({error:"guild_construction_donation_unavailable"},503);}
  };
 }

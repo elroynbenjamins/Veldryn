@@ -47,6 +47,8 @@ Recent production work on main includes:
 - Monthly Companion Trial foundations and event companion support.
 - Public profile identity is intentionally separate from companion/pet combat art.
 
+Player-to-player trading and the player Market are permanently removed. NPC selling, Event Shops, and the Guild Shop remain supported.
+
 ### Social and multiplayer
 
 - Friends, Guilds, Parties, LFG/LFM, public profiles, Guild recruitment, Guild projects, notice boards, roles, tags, customization, and social notifications.

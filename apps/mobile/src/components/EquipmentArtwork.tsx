@@ -34,8 +34,10 @@ export function EquipmentArtwork({item,compact=false,framed=true,size:requestedS
     const aspect=equipmentSheetCellAspect(sheet);
     const cellWidth=aspect>=1?size:size*aspect;
     const cellHeight=aspect>=1?size/aspect:size;
-    const inset=.06,displayWidth=cellWidth*(1-inset*2),displayHeight=cellHeight*(1-inset*2);
-    return <View accessibilityLabel={tr('{name} equipment artwork',{name:item.name})} style={[s.frame,frameStyle]}><View style={{width:cellWidth,height:cellHeight,overflow:'hidden'}}><Image source={sheet} resizeMode="stretch" style={{position:'absolute',width:displayWidth*5,height:displayHeight*2,left:cellWidth*inset-(slotIndex%5)*displayWidth,top:cellHeight*inset-Math.floor(slotIndex/5)*displayHeight}}/></View></View>;
+    // Crop within each source cell rather than simply nudging the atlas. The
+    // latter can reveal a neighbouring icon at the top/left edge of a tile.
+    const inset=.06,inner=1-inset*2,scale=1/inner;
+    return <View accessibilityLabel={tr('{name} equipment artwork',{name:item.name})} style={[s.frame,frameStyle]}><View style={{width:cellWidth,height:cellHeight,overflow:'hidden'}}><Image source={sheet} resizeMode="stretch" style={{position:'absolute',width:cellWidth*5*scale,height:cellHeight*2*scale,left:-((slotIndex%5)+inset)*cellWidth*scale,top:-(Math.floor(slotIndex/5)+inset)*cellHeight*scale}}/></View></View>;
   }
   return <View accessibilityLabel={tr('{name} equipment marker',{name:item.name})} style={[s.frame,frameStyle]}><Text style={[s.marker,{color:meta.color}]}>◇</Text></View>;
 }

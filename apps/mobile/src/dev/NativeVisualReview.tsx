@@ -42,6 +42,7 @@ function fixture():GameState{
  state.skills=state.skills.map(s=>({...s,level:25,xp:4000}));
  state.settings.reduceMotion=true;
  const review=startCombat(state,'MOSS_RAT',now-600000);
+ if(!process.env.EXPO_PUBLIC_VISUAL_QA_SCREEN||process.env.EXPO_PUBLIC_VISUAL_QA_SCREEN==='home')review.character!.activityQueue=[{kind:'gathering',targetId:'GREENWOOD_TREE',goal:{kind:'duration_seconds',value:360}},{kind:'gathering',targetId:'MEADOW_PERCH_POOL',goal:{kind:'duration_seconds',value:480}}];
  if(process.env.EXPO_PUBLIC_VISUAL_QA_SCREEN==='topbar-idle')return {...review,activity:null};
  if(process.env.EXPO_PUBLIC_VISUAL_QA_SCREEN==='topbar-skill')return {...review,activity:{kind:'mining',targetId:'COPPER_VEIN',startedAtMs:now-147000,lastClaimAtMs:now-147000}};
  if(process.env.EXPO_PUBLIC_VISUAL_QA_SCREEN==='journal')review.quests=review.quests.map((q,index)=>index===0?{...q,status:'complete',progress:5}:q);

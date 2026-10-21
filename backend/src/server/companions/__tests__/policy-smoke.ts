@@ -1,6 +1,10 @@
-import {companionLevelCap,sanitizePersistedCompanionLoadout,validateCompanionLoadout,validateProgressionSnapshot} from '../policy';
+import {CHARACTER_COMPANION_COMBAT_MODES,companionLevelCap,sanitizePersistedCompanionLoadout,validateCompanionLoadout,validateProgressionSnapshot} from '../policy';
 const ok=(v:unknown,m:string)=>{if(!v)throw new Error(m)};
 for(const [classId,companionId] of [['WAYFINDER','UNIT_001'],['IRONWARDEN','UNIT_002'],['DAWNKEEPER','UNIT_003']] as const)ok(validateCompanionLoadout({classId,companionId,ownedCompanionIds:[companionId]}).ok===false,'Same-role server validation failed');
+for(const combatMode of CHARACTER_COMPANION_COMBAT_MODES){
+ ok(validateCompanionLoadout({classId:'WAYFINDER',companionId:'UNIT_001',ownedCompanionIds:['UNIT_001'],combatMode}).ok===false,`Same-role companion accepted in ${combatMode}`);
+ ok(validateCompanionLoadout({classId:'WAYFINDER',companionId:'UNIT_002',ownedCompanionIds:['UNIT_002'],combatMode}).ok,`Cross-role companion rejected in ${combatMode}`);
+}
 ok(validateCompanionLoadout({classId:'WAYFINDER',companionId:'UNIT_002',ownedCompanionIds:['UNIT_002']}).ok,'Cross-role server validation failed');
 ok(validateCompanionLoadout({classId:'WAYFINDER',companionId:'UNIT_002',ownedCompanionIds:[]}).ok===false,'Locked companion server validation failed');
 ok(sanitizePersistedCompanionLoadout({classId:'WAYFINDER',companionId:'UNIT_001',ownedCompanionIds:['UNIT_001']})===null,'Invalid persisted loadout was not cleared');

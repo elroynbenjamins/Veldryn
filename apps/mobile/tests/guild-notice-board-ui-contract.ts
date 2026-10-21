@@ -14,9 +14,12 @@ ok(app.includes("import {OnlineGuildNoticeBoardPanel}"),'App must import the onl
 ok(app.includes('onlineBoard={<OnlineGuildNoticeBoardPanel/>}'),'App must wire the Notice Board into the Guild screen');
 
 ok(screen.includes("'Home'"),'Consolidated online Guild sections must include Home');
-ok(screen.includes('<GuildOnlineHome onNavigate={setOnlineSection} board={onlineBoard} chatUnread={onlineChatUnread}/>'),'Guild Home must render the member Notice Board content');
-ok(screen.includes('{board}'),'Guild Home dashboard must keep the Notice Board visible before deeper Guild routes');
-ok(screen.includes('<GuildOnlineHome')&&screen.includes('CURRENT PRIORITY')&&screen.includes('{board}</View>'),"Guild Home must provide clear dashboard context around the Notice Board");
+const home=read('src/components/GuildHomeActions.tsx');
+ok(screen.includes('<GuildHomeHeader board={onlineBoard}/>'),'Guild Home must place the private notice with its identity header');
+ok(screen.includes('motto={guild.motto}/>:<GuildBoardHero compact title="Guild Home" subtitle={status}/>}{board}'),'Guild identity must precede its private notice');
+ok(screen.indexOf('<GuildHomeHeader board={onlineBoard}/>')<screen.indexOf('contentContainerStyle={s.onlineTabs}'),'Guild card and private notice must precede navigation and actions');
+ok(home.indexOf('{board}')>=0&&home.indexOf('{board}')<home.indexOf('{activity}'),'Home previews must keep the notice above participation cards');
+ok(home.includes('MEMBER NOTICE BOARD')&&home.includes('DAILY GUILD PARTICIPATION'),"Guild Home must provide clear context around daily participation and the Notice Board");
 
 ok(board.includes('MEMBER NOTICE BOARD'),'Notice Board must have clear Guild-member context');
 ok(board.includes('<StatusPill label={st("MEMBERS ONLY")} tone="good"/>'),'Notice Board must clearly communicate its private audience with localized text');

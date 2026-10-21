@@ -1,6 +1,6 @@
 import type {EventActivitySource} from '../content/live-events';
 import {seasonalEventExpeditionInfo} from './coop-event-expeditions';
-import {eventDailyFestivalBlessing,eventEffectiveDropRate,eventLifecycle,eventProjectChoice,eventProgress} from './live-events';
+import {eventCurrencyBonusBps,eventDailyFestivalBlessing,eventEffectiveDropRate,eventLifecycle,eventProjectChoice,eventProgress} from './live-events';
 import type {GameState} from './types';
 
 export const EVENT_GUILD_BOSS_REQUIRED_LEVEL=3;
@@ -29,7 +29,7 @@ export function eventOverview(state:GameState,nowMs=Date.now()){
   discoveries:definition.discoveries.filter(discovery=>discovery.chance>0),
   blessing:event.phase==='active'?eventDailyFestivalBlessing(state,nowMs):undefined,
   focus:eventProjectChoice(state,definition.id),
-  expedition:expedition?{...expedition,levelReady:state.character.level>=expedition.minLevel}:undefined,
+  expedition:expedition?{...expedition,rewardMarks:Math.floor(expedition.rewardMarks*(1+eventCurrencyBonusBps(state,definition.id,nowMs)/10000)),levelReady:state.character.level>=expedition.minLevel}:undefined,
   hasGuildBoss:definition.objectives.some(objective=>objective.source==='boss'),
   guildMember:!!state.account.guildMember,
  };

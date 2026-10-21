@@ -6,6 +6,7 @@ import {QuestBoard} from './QuestBoard';
 import {QuestPosting} from './QuestPosting';
 import {ActivityArtwork} from './ActivityArtwork';
 import {GameButton} from './GameButton';
+import {LoadingState} from './LoadingState';
 import {StatBar} from './StatBar';
 import {StatusPill} from './StatusPill';
 import {loadOnlineGuildQuests,type OnlineGuildQuest} from '../online/guild-quests';
@@ -20,8 +21,8 @@ export function GuildQuestPanel(){
  const refresh=useCallback(async()=>{setLoading(true);setError('');try{setQuests(await loadOnlineGuildQuests())}catch(e){setError(e instanceof Error?e.message:st('Could not load Guild Quests.'))}finally{setLoading(false)}},[]);
  useEffect(()=>{void refresh()},[]);
  const C=useGameTheme();
- if(loading)return <Panel><Text style={{color:C.muted}}>{st('Loading this week’s objectives…')}</Text></Panel>;
- if(error)return <Panel><Text style={{color:C.bad}}>{error}</Text><GameButton title={st('TRY AGAIN')} tone="secondary" onPress={()=>void refresh()}/></Panel>;
+ if(loading)return <LoadingState compact label={st('Loading this week’s objectives…')}/>;
+ if(error)return <Panel><Text style={{color:C.bad}}>{error}</Text><GameButton title={st('TRY AGAIN')} tone="secondary" onPress={()=>refresh()}/></Panel>;
  return <GuildQuestBoard quests={quests}/>;
 }
 

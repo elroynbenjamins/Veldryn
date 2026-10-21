@@ -5,6 +5,7 @@ import {Pressable,StyleSheet,Text,View} from 'react-native';
 import {GuildCrest} from './SocialIdentity';
 import {GameTextInput as TextInput} from './GameTextInput';
 import {GameButton} from './GameButton';
+import {LoadingState} from './LoadingState';
 import {Panel} from './Panel';
 import {radii,spacing,typography,type ThemeColors} from '../theme/theme';
 import {useGameTheme} from '../theme/ThemeContext';
@@ -34,14 +35,15 @@ export function OnlineGuildBrowser(){
    <TextInput accessibilityLabel={st("New guild name")} value={name} onChangeText={setName} maxLength={GUILD_NAME_MAX_LENGTH} placeholder={st("Guild name")} placeholderTextColor={C.muted} style={s.input}/>
    <Text style={s.helper}>{name.length}/{GUILD_NAME_MAX_LENGTH}</Text>
    {name?<Text style={[s.helper,nameIssue&&s.invalid]}>{nameIssue||'Latin letters, spaces, apostrophes and hyphens only.'}</Text>:null}
-   <View style={s.tagRow}><TextInput accessibilityLabel={st("Guild tag")} autoCapitalize="characters" value={tag} onChangeText={value=>setTag(normalizeGuildTag(value).slice(0,3))} maxLength={3} placeholder={st("TAG")} placeholderTextColor={C.muted} style={[s.input,s.tagInput]}/><View style={s.check}><GameButton compact title={st("Check tag")} tone="secondary" disabled={busy||tag.length!==3} onPress={()=>void checkTag()}/></View></View>
+   <View style={s.tagRow}><TextInput accessibilityLabel={st("Guild tag")} autoCapitalize="characters" value={tag} onChangeText={value=>setTag(normalizeGuildTag(value).slice(0,3))} maxLength={3} placeholder={st("TAG")} placeholderTextColor={C.muted} style={[s.input,s.tagInput]}/><View style={s.check}><GameButton compact title={st("Check tag")} tone="secondary" disabled={busy||tag.length!==3} onPress={()=>checkTag()}/></View></View>
    <Text style={[s.helper,tagStatus?.available&&s.available,tagStatus&&!tagStatus.available&&s.invalid]}>{tagStatus?guildTagAvailabilityMessage(tagStatus):'Exactly three letters. A claimed tag can never be reused.'}</Text>
    <View style={s.sectionHead}><Text style={s.section}>{st("JOIN POLICY")}</Text><Text style={s.sectionMeta}>{policy==='open'?st("Instant join"):st("Officer review")}</Text></View>
    <View style={s.actions}><PolicyChip label={st("Open")} selected={policy==='open'} disabled={busy} onPress={()=>setPolicy('open')}/><PolicyChip label={st("Applications")} selected={policy==='apply'} disabled={busy} onPress={()=>setPolicy('apply')}/></View>
-   <GameButton title={st("Create Guild")} disabled={busy||!!nameIssue||normalizeGuildName(name).length<3||tag.length!==3||!tagStatus?.available} onPress={()=>void create()}/>
+   <GameButton title={st("Create Guild")} disabled={busy||!!nameIssue||normalizeGuildName(name).length<3||tag.length!==3||!tagStatus?.available} onPress={()=>create()}/>
   </View>:null}
 
-  <View style={s.directoryHead}><Text style={s.section}>{st("AVAILABLE GUILDS")}</Text><View style={s.directoryMeta}><Text style={s.sectionMeta}>{guilds.length} shown</Text><GameButton compact title={busy?st("Loading…"):st("Refresh")} tone="secondary" disabled={busy} onPress={()=>void load()}/></View></View>
+  <View style={s.directoryHead}><Text style={s.section}>{st("AVAILABLE GUILDS")}</Text><View style={s.directoryMeta}><Text style={s.sectionMeta}>{guilds.length} shown</Text><GameButton compact title={busy?st("Loading…"):st("Refresh")} tone="secondary" disabled={busy} onPress={()=>load()}/></View></View>
+  {busy&&!loaded?<LoadingState compact/>:null}
   {loaded&&!guilds.length?<View style={s.emptyCard}><Text style={s.emptyTitle}>{st("No online Guilds yet")}</Text><Text style={s.empty}>{st("Create the first Guild, or refresh after other players have founded one.")}</Text></View>:null}
   {guilds.map(guild=>{
    const nameColor=GUILD_NAME_COLORS.find(row=>row.id===normalizeGuildNameColorId(guild.name_color_id))?.color??C.text;
@@ -53,7 +55,7 @@ export function OnlineGuildBrowser(){
      <View style={s.metaRow}><View style={s.levelPill}><Text style={s.levelText}>LV. {guild.level}</Text></View><View style={[s.policyPill,guild.join_policy==='open'?s.policyOpen:guild.join_policy==='apply'?s.policyApply:s.policyInvite]}><Text style={[s.policyPillText,guild.join_policy==='open'?s.policyOpenText:guild.join_policy==='apply'?s.policyApplyText:s.policyInviteText]}>{policyLabel}</Text></View><Text style={s.meta}>{guild.member_cap} cap · Min Lv. {guild.minimum_level}</Text></View>
      {guild.motto?<Text numberOfLines={1} style={s.motto}>“{guild.motto}”</Text>:null}
     </View>
-    <View style={s.joinAction}><GameButton compact title={guild.join_policy==='open'?st("Join"):guild.join_policy==='apply'?st("Apply"):st("Invite only")} tone="secondary" disabled={busy||guild.join_policy==='invite'} onPress={()=>void join(guild)}/></View>
+    <View style={s.joinAction}><GameButton compact title={guild.join_policy==='open'?st("Join"):guild.join_policy==='apply'?st("Apply"):st("Invite only")} tone="secondary" disabled={busy||guild.join_policy==='invite'} onPress={()=>join(guild)}/></View>
    </View>;
   })}
  </Panel>;

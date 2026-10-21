@@ -1,14 +1,13 @@
 import type {LiveEventDef,EventMilestone} from './live-events';
 import type {ClassId} from '../core/types';
-import {classCompanionRole} from '../core/companion-roles';
 import {EVENT_COMPANIONS} from './event-companions-v2';
 
-/** Stable IDs preserve prior claims; the active class only sees usable roles. */
-export function veilbreakCompanionMilestones(classId:ClassId):EventMilestone[]{
- const role=classCompanionRole(classId);
- return ['EVT_UNIT_011','EVT_UNIT_008','EVT_UNIT_007']
+/** Stable IDs preserve prior claims; ownership supports full Trial/Expedition role coverage. */
+export function veilbreakCompanionMilestones(_classId:ClassId):EventMilestone[]{
+ // Lantern Keeper is the fixed shop goal. The other two companions remain
+ // earnable by every class; normal-combat equip rules are enforced separately.
+ return ['EVT_UNIT_008','EVT_UNIT_007']
   .map(id=>EVENT_COMPANIONS.find(companion=>companion.id===id)!)
-  .filter(companion=>companion.role!==role)
   .map((companion,index)=>({points:index===0?16000:20000,reward:{kind:'companion',id:companion.id,name:companion.name,rarity:'epic' as const}}));
 }
 
@@ -82,9 +81,11 @@ export const VEILBREAK_EVENT:LiveEventDef={
     // two Veilbreak companions are earned from class-aware reputation milestones.
     ...EVENT_COMPANIONS.filter(companion=>companion.id==='EVT_UNIT_011').map(companion=>({id:`veil_trial_${companion.id.toLowerCase()}`,reward:{kind:'companion' as const,id:companion.id,name:companion.name,rarity:'epic' as const},currency:'common' as const,cost:20000,limit:1,alwaysAvailable:true})),
     {id:'laughing_crow',reward:{kind:'emote',id:'emote_laughing_crow',name:'Laughing Crow',rarity:'rare'},currency:'common',cost:900,limit:1},
-    {id:'veil_salute',reward:{kind:'emote',id:'emote_veil_salute',name:'Veil Salute',rarity:'rare'},currency:'common',cost:1100,limit:1,minLevel:8},
-    {id:'candle_circle',reward:{kind:'emote',id:'emote_candle_circle',name:'Candle Circle',rarity:'rare'},currency:'common',cost:1250,limit:1,minLevel:12},
+    // Stable IDs retain existing purchases while the rewards now read as useful chat reactions.
+    {id:'veil_salute',reward:{kind:'emote',id:'emote_veil_salute',name:'Pumpkin Panic',rarity:'rare'},currency:'common',cost:1100,limit:1,minLevel:8},
+    {id:'candle_circle',reward:{kind:'emote',id:'emote_candle_circle',name:'Gloam Facepalm',rarity:'rare'},currency:'common',cost:1250,limit:1,minLevel:12},
     {id:'gloamward_frame',reward:{kind:'border',id:'frame_gloamward',name:'Gloamward Frame',rarity:'epic'},currency:'common',cost:2200,limit:1,minLevel:10},
+    {id:'veilbreak_background',reward:{kind:'background',id:'bg_veilbreak',name:'Veilbreak Gothic Moonruins',rarity:'epic'},currency:'common',cost:1800,limit:1},
     {id:'gloam_candy_skill',reward:{kind:'candy',id:'EVT_ANNUAL_010_2026:candy:skill',name:'Gloam Candy',rarity:'common',quantity:1},currency:'common',cost:250,limit:5},
     {id:'gloam_candy_battle',reward:{kind:'candy',id:'EVT_ANNUAL_010_2026:candy:combat',name:'Gloam Candy · Battle',rarity:'common',quantity:1},currency:'common',cost:300,limit:5,minLevel:8},
     {id:'gloam_candy_bond',reward:{kind:'candy',id:'EVT_ANNUAL_010_2026:candy:companion',name:'Gloam Candy · Bond',rarity:'common',quantity:1},currency:'common',cost:350,limit:5,minLevel:12},

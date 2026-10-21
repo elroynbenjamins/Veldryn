@@ -23,8 +23,8 @@ ok(app.includes('onlineHall={<OnlineGuildHallPanel/>}'),'Guild screen must recei
 ok(app.includes('onlineCustomize={<OnlineGuildCustomizationPanel/>}'),'Guild screen must receive Guild customization content');
 
 for(const label of ['Home','PvE','Roster','Activities','Hall','Chat','Manage'])ok(screen.includes("'"+label+"'"),'Consolidated online Guild tabs must include '+label);
-ok(screen.includes("onlineSection==='Roster'?onlineManagement:null"),'Roster tab must render authoritative Guild management');
-ok(screen.includes("onlineSection==='Hall'?<View")&&screen.includes("hallSection==='Facilities'?onlineHall:<OnlineGuildTokenShopPanel")&&screen.includes("(['Facilities','Shop'] as const)"),'Hall must retain its facilities and nest the Guild Shop without adding an eighth destination');
+ok(screen.includes("onlineSection==='Roster'?")&&screen.includes('cloneElement(onlineManagement'),'Roster tab must render authoritative Guild management');
+ok(screen.includes("onlineSection==='Hall'?<View")&&screen.includes("hallSection==='Shop'")&&screen.includes("(['Facilities','Skills','Trophies','Shop'] as const)")&&screen.includes('<OnlineGuildTokenShopPanel')&&screen.includes('cloneElement(onlineHall'),'Hall must retain its four shared sections and nest the Guild Shop without adding an eighth destination');
 ok(screen.includes('<OnlineGuildMusterPanel/>')&&screen.includes("onlineSection==='PvE'?onlinePve:null"),"Guild navigation must preserve Muster and a dedicated PvE destination");
 ok(screen.includes("onlineSection==='Manage'?<View")&&screen.includes('{onlineDirectory}')&&screen.includes('{onlineCustomize}'),'Manage must preserve Guild directory/creation and appearance customization');
 ok(screen.includes('title={st("Guild Appearance")}')&&screen.includes('title={st("Directory & Creation")}'),'Manage must keep clear localized recruitment and identity hierarchy');

@@ -1,6 +1,9 @@
 import {createSourceTranslator,type TranslationRow} from './source-catalog';
 
 export const SHARED_MESSAGES={
+ 'Retry':['Erneut versuchen','Reintentar','Opnieuw proberen','Riprova','Réessayer'],
+ 'Unable to check for updates':['Updates konnten nicht geprüft werden','No se pudieron buscar actualizaciones','Kan niet op updates controleren','Impossibile verificare gli aggiornamenti','Impossible de rechercher les mises à jour'],
+ 'Connect to the internet and retry to verify this version of VELDRYN.':['Verbinde dich mit dem Internet und versuche es erneut, um diese VELDRYN-Version zu überprüfen.','Conéctate a internet y reintenta para verificar esta versión de VELDRYN.','Maak verbinding met internet en probeer opnieuw om deze versie van VELDRYN te controleren.','Connettiti a internet e riprova per verificare questa versione di VELDRYN.','Connecte-toi à Internet et réessaie pour vérifier cette version de VELDRYN.'],
  'Close':['Schließen','Cerrar','Sluiten','Chiudi','Fermer'],
  'Close dialog':['Dialog schließen','Cerrar diálogo','Venster sluiten','Chiudi finestra','Fermer la fenêtre'],
  'Cancel confirmation':['Bestätigung abbrechen','Cancelar confirmación','Bevestiging annuleren','Annulla conferma','Annuler la confirmation'],

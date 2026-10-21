@@ -23,7 +23,7 @@ export function EventActivityBoard({state,now,currencyName,prestigeName,busy,pen
     <Text style={[s.copy,{color:C.muted}]}>{objective.description}</Text>
     <StatBar rounded label="Activity progress" current={Math.min(contract.progress,objective.required)} max={objective.required} reduceMotion={state.settings.reduceMotion}/>
     <Text style={[s.copy,{color:C.text}]}>{objective.rewardCurrency.toLocaleString()} {currencyName}{objective.rewardPrestige>0?` · ${objective.rewardPrestige} ${prestigeName}`:''}</Text>
-    {contract.claimed?<StatusPill label="CLAIMED" tone="good"/>:ready?<GameButton title={pendingId===objective.id?'Claiming…':'Claim reward'} disabled={busy} onPress={()=>{void onClaim(objective.id)}}/>:open?<GameButton title={objective.source==='combat'?'Go hunting':objective.source==='gathering'?'Open gathering':objective.source==='crafting'?'Open crafting':'Open event boss'} tone="secondary" onPress={open}/>:<Text style={[s.copy,{color:C.muted}]}>{Math.max(0,objective.required-contract.progress).toLocaleString()} remaining</Text>}
+    {contract.claimed?<StatusPill label="CLAIMED" tone="good"/>:ready?<GameButton title={pendingId===objective.id?'Claiming…':'Claim reward'} disabled={busy} onPress={()=>{return onClaim(objective.id)}}/>:open?<GameButton title={objective.source==='combat'?'Go hunting':objective.source==='gathering'?'Open gathering':objective.source==='crafting'?'Open crafting':'Open event boss'} tone="secondary" onPress={open}/>:<Text style={[s.copy,{color:C.muted}]}>{Math.max(0,objective.required-contract.progress).toLocaleString()} remaining</Text>}
    </QuestPosting>;
   })}
  </QuestBoard>;

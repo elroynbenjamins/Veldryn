@@ -1,3 +1,4 @@
+import {versionedFetch as fetch} from './versioned-fetch';
 import {supabase,supabasePublicEndpoint,supabasePublicKey} from './supabase';
 
 export type GuildTokenShopCategory='pet'|'companion'|'border'|'profile_icon'|'emote_set';

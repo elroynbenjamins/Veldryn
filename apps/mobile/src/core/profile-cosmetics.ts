@@ -6,6 +6,8 @@ export const BASE_PROFILE_BACKGROUNDS=[
   {id:'silverbrook-mist',name:'Silverbrook Mist',region:'SILVERBROOK'},
   {id:'oathglass-hall',name:'Oathglass Hall',region:'KINGS_ROAD'},
 ] as const;
+/** Permanent Guild Token Shop borders may be previewed before they are purchased. */
+export const GUILD_TOKEN_PROFILE_BORDERS=new Set(['guild-border-silver','guild-border-emerald','guild-border-royal']);
 export function canUseProfileCosmetic(state:GameState,kind:'background'|'border'|'pet',id:string){
   if(!id)return kind!=='background';
   if(kind==='background'&&BASE_PROFILE_BACKGROUNDS.some(item=>item.id===id))return true;
@@ -16,6 +18,7 @@ export function canUseProfileCosmetic(state:GameState,kind:'background'|'border'
 /** Future event assets must stay out of the profile gallery until their event releases. */
 export function profileCosmeticReleased(state:GameState,kind:'background'|'border',id:string,nowMs=Date.now()){
   if(kind==='background'&&BASE_PROFILE_BACKGROUNDS.some(item=>item.id===id))return true;
+  if(kind==='border'&&GUILD_TOKEN_PROFILE_BORDERS.has(id))return true;
   if(canUseProfileCosmetic(state,kind,id))return true;
   if(!state.character)return false;
   const rewards=LIVE_EVENT_CATALOG.flatMap(event=>[

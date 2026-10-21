@@ -4,7 +4,7 @@ import {Image,Pressable,ScrollView,StyleSheet,Text,TextInput,useWindowDimensions
 import type {ActivityQueueGoal,GameState,GatheringSkillId,QueuedActivity} from '../core/types';
 import type {GameCommand} from '../core/game-commands';
 import {activityQueueCapacity,activityQueueRegion,activityQueueAvailableRegions,activityQueueCrossRegionAllowed,activityQueueGoalIssue,currentActivityNeedsQueueHandoff,currentActivityHandoffGoalIssue,normalizeActivityQueueGoal,queuedActivityReadiness,queuedActivityPlanningReadiness,queueSkillReadiness} from '../core/activity-queue';
-import {GATHERING} from '../content/skills';
+import {GATHERING,RECIPES} from '../content/skills';
 import {HERB_NODES} from '../content/herbalism';
 import {MONSTERS} from '../content/monsters';
 import {FAITH_TIERS,HOLY_WATER_ID} from '../content/faith';
@@ -20,6 +20,7 @@ import {GameButton} from './GameButton';
 import {GameModalHeader,GameModalSurface} from './GameModalSurface';
 import {ActivityArtwork} from './ActivityArtwork';
 import {ActionQueuePanel} from './ActionQueuePanel';
+import {processingRecipeDef} from '../core/processing';
 
 const goals:Array<{kind:ActivityQueueGoal['kind'];label:string}>=[
  {kind:'item_quantity',label:'Resource quantity'},
@@ -27,10 +28,10 @@ const goals:Array<{kind:ActivityQueueGoal['kind'];label:string}>=[
  {kind:'duration_seconds',label:'Duration'},
  {kind:'session_kills',label:'Enemies defeated'},
 ];
-type QueueSkillId=GatheringSkillId|'combat'|'faith'|'exploration'|'alchemy';
-const skills:Array<{id:QueueSkillId;label:string}>=[{id:'combat',label:'Combat'},{id:'woodcutting',label:'Woodcutting'},{id:'mining',label:'Mining'},{id:'fishing',label:'Fishing'},{id:'herbalism',label:'Herbalism'},{id:'alchemy',label:'Alchemy'},{id:'faith',label:'Faith'},{id:'exploration',label:'Exploration'}];
-const activities:Array<{id:string;name:string;skillId:QueueSkillId;itemId?:string}>=[...GATHERING,...HERB_NODES,...MONSTERS.filter(row=>!row.boss).map(row=>({id:row.id,name:row.name,skillId:'combat' as const})),...ALCHEMY_RECIPES.map(row=>({id:row.id,name:row.name,skillId:'alchemy' as const})),...FAITH_TIERS.map(row=>({id:row.id,name:row.name,skillId:'faith' as const,itemId:HOLY_WATER_ID})),...EXPLORATION_ROUTES.map(row=>({id:row.id,name:row.name,skillId:'exploration' as const}))];
-function queueKindForSkill(skillId:QueueSkillId):QueuedActivity['kind']{return skillId==='combat'?'combat':skillId==='faith'?'faith':skillId==='exploration'?'exploration':skillId==='alchemy'?'alchemy':'gathering';}
+type QueueSkillId=GatheringSkillId|'combat'|'faith'|'exploration'|'alchemy'|'smithing'|'cooking';
+const skills:Array<{id:QueueSkillId;label:string}>=[{id:'combat',label:'Combat'},{id:'woodcutting',label:'Woodcutting'},{id:'mining',label:'Mining'},{id:'fishing',label:'Fishing'},{id:'herbalism',label:'Herbalism'},{id:'smithing',label:'Smithing'},{id:'cooking',label:'Cooking'},{id:'alchemy',label:'Alchemy'},{id:'faith',label:'Faith'},{id:'exploration',label:'Exploration'}];
+const activities:Array<{id:string;name:string;skillId:QueueSkillId;itemId?:string}>=[...GATHERING,...HERB_NODES,...MONSTERS.filter(row=>!row.boss).map(row=>({id:row.id,name:row.name,skillId:'combat' as const})),...RECIPES.filter(recipe=>(recipe.skillId==='smithing'||recipe.skillId==='cooking')&&!!processingRecipeDef(recipe.id)).map(recipe=>({id:recipe.id,name:recipe.name,skillId:recipe.skillId as 'smithing'|'cooking'})),...ALCHEMY_RECIPES.map(row=>({id:row.id,name:row.name,skillId:'alchemy' as const})),...FAITH_TIERS.map(row=>({id:row.id,name:row.name,skillId:'faith' as const,itemId:HOLY_WATER_ID})),...EXPLORATION_ROUTES.map(row=>({id:row.id,name:row.name,skillId:'exploration' as const}))];
+function queueKindForSkill(skillId:QueueSkillId):QueuedActivity['kind']{return skillId==='combat'?'combat':skillId==='faith'?'faith':skillId==='exploration'?'exploration':skillId==='alchemy'?'alchemy':skillId==='smithing'||skillId==='cooking'?'processing':'gathering';}
 
 export function ActivityQueuePlanner({state,onCommand}:{state:GameState;onCommand:(command:GameCommand)=>Promise<void>}){
  const {gt,gl,language}=useGameplayText();
@@ -40,19 +41,19 @@ export function ActivityQueuePlanner({state,onCommand}:{state:GameState;onComman
  const [regionFilter,setRegionFilter]=useState(state.currentRegionId);
  const availableRegions=activityQueueAvailableRegions(state);
  const selectedRegion=availableRegions.some(row=>row.id===regionFilter)?regionFilter:state.currentRegionId;
- const nodes=activities.filter(row=>row.skillId===skillId&&(!activityQueueRegion({kind:queueKindForSkill(row.skillId),targetId:row.id})||activityQueueRegion({kind:queueKindForSkill(row.skillId),targetId:row.id})?.id===selectedRegion)),combat=skillId==='combat',faith=skillId==='faith',alchemy=skillId==='alchemy',exploration=skillId==='exploration',queueKind=queueKindForSkill(skillId);
+ const nodes=activities.filter(row=>row.skillId===skillId&&(!activityQueueRegion({kind:queueKindForSkill(row.skillId),targetId:row.id})||activityQueueRegion({kind:queueKindForSkill(row.skillId),targetId:row.id})?.id===selectedRegion)),combat=skillId==='combat',faith=skillId==='faith',alchemy=skillId==='alchemy',processing=skillId==='smithing'||skillId==='cooking',exploration=skillId==='exploration',queueKind=queueKindForSkill(skillId);
  const [open,setOpen]=useState(false),[choose,setChoose]=useState(false),[selected,setSelected]=useState(''),[kind,setKind]=useState<ActivityQueueGoal['kind']>('item_quantity'),[amount,setAmount]=useState('500'),[busy,setBusy]=useState(false),[error,setError]=useState('');
  const [handoffChoice,setHandoffChoice]=useState<'30m'|'60m'|'keep_running'>('30m');
  const node=nodes.find(row=>row.id===selected)??nodes[0];
- const current=!faith&&!alchemy&&!!node&&state.activity?.targetId===node.id&&state.activity.kind===(queueKind==='gathering'?skillId:queueKind);
+ const current=!faith&&!alchemy&&!processing&&!!node&&state.activity?.targetId===node.id&&state.activity.kind===(queueKind==='gathering'?skillId:queueKind);
  const ready=node?queuedActivityPlanningReadiness(state,{kind:queueKind,targetId:node.id,...(faith?{faithPracticeCount:Number(amount)}:{})}):{ready:false};
  const canStartNow=!!node&&queuedActivityReadiness(state,{kind:queueKind,targetId:node.id,...(faith?{faithPracticeCount:Number(amount)}:{})}).ready;
  const full=(state.character?.activityQueue?.length??0)>=activityQueueCapacity(state);
  const count=Number(amount),goal=normalizeActivityQueueGoal({kind,value:kind==='duration_seconds'?count*60:count});
- const valid=alchemy?true:faith?amount.trim()!==''&&Number.isSafeInteger(count)&&count>=1&&count<=1000:amount.trim()!==''&&Number.isSafeInteger(count)&&!!goal;
+ const valid=alchemy||processing?true:faith?amount.trim()!==''&&Number.isSafeInteger(count)&&count>=1&&count<=1000:amount.trim()!==''&&Number.isSafeInteger(count)&&!!goal;
  const stored=node?[...state.inventory.stacks,...state.bank.stacks,...state.overflow.stacks].filter(row=>row.itemId===node.itemId).reduce((sum,row)=>sum+row.quantity,0):0;
  const level=state.skills.find(row=>row.skillId===skillId)?.level??1;
- const targetReached=!faith&&!alchemy&&(kind==='item_quantity'?count<=stored:kind==='skill_level'?count<=level:false);
+ const targetReached=!faith&&!alchemy&&!processing&&(kind==='item_quantity'?count<=stored:kind==='skill_level'?count<=level:false);
  const targetIssue=goal&&node?activityQueueGoalIssue(state,{kind:queueKind,targetId:node.id,goal}):undefined;
  const needsHandoff=!current&&currentActivityNeedsQueueHandoff(state);
  const canSetHandoff=!!state.activity&&['combat','mining','woodcutting','fishing','herbalism'].includes(state.activity.kind);
@@ -70,10 +71,10 @@ export function ActivityQueuePlanner({state,onCommand}:{state:GameState;onComman
   setHandoffChoice('30m');setSkillId(entry.skillId);setSelected(entry.id);setKind(selectedKind);setAmount(String(saved?(saved.kind==='duration_seconds'?saved.value/60:saved.value):entry.skillId==='faith'||entry.skillId==='alchemy'?1:defaultValue));setError('');setChoose(false);setChooseSkill(false);setOpen(true);
  };
  const save=async()=>{
-  if(!node||!valid||targetReached||targetIssue||currentIssue||(!alchemy&&!faith&&!goal)||busy||!ready.ready||(!current&&full))return;
+  if(!node||!valid||targetReached||targetIssue||currentIssue||(!alchemy&&!faith&&!processing&&!goal)||busy||!ready.ready||(!current&&full))return;
   setBusy(true);setError('');
   try{
-   await onCommand({type:current?'queue_set_goal':'queue_add',args:current?{id:node.id,goal}:{kind:queueKind,id:node.id,...(faith?{count}:alchemy?{}:{goal}),...(needsHandoff&&state.activity?(keepRunning?{keepCurrentRunning:true}:{handoffTargetId:state.activity.targetId,handoffGoal:currentGoal}):{})}});
+   await onCommand({type:current?'queue_set_goal':'queue_add',args:current?{id:node.id,goal}:{kind:queueKind,id:node.id,...(faith?{count}:alchemy||processing?{}:{goal}),...(needsHandoff&&state.activity?(keepRunning?{keepCurrentRunning:true}:{handoffTargetId:state.activity.targetId,handoffGoal:currentGoal}):{})}});
    if(canStartNow&&!current&&!state.activity&&!state.character?.activityQueue?.length)await onCommand({type:'queue_start'});
    setOpen(false);
   }catch(e){setError(e instanceof Error?e.message:gt("Could not update the queue."));}finally{setBusy(false);}
@@ -101,9 +102,9 @@ export function ActivityQueuePlanner({state,onCommand}:{state:GameState;onComman
      {node?.itemId?<ResourceArtwork itemId={node.itemId} size={40}/>:<ActivityArtwork id={skillId}/>}<View style={s.flex}><Text style={s.name}>{node?.name??gt("No activity available")}</Text><Text style={s.meta}>{current?gt("Currently active"):ready.ready?gt("Available"):gl(ready.blocker)}</Text></View><Image source={uiIcons.next} style={s.icon}/>
     </Pressable>
     {choose?<View style={s.options}>{nodes.map(row=>{const availability=queuedActivityPlanningReadiness(state,{kind:queueKind,targetId:row.id,...(faith?{faithPracticeCount:count}:{})});return <Pressable key={row.id} accessibilityRole="radio" accessibilityState={{checked:node?.id===row.id,disabled:!availability.ready}} disabled={!availability.ready||busy} onPress={()=>{setSelected(row.id);setChoose(false);setError('');}} style={[s.option,!availability.ready&&s.disabled]}><Text style={s.name}>{row.name}</Text>{!availability.ready?<Text style={s.meta}>{gl(availability.blocker)}</Text>:null}</Pressable>;})}</View>:null}
-    {faith||alchemy?null:<><Text style={s.label}>{gt("Goal")}</Text>
+    {faith||alchemy||processing?null:<><Text style={s.label}>{gt("Goal")}</Text>
     <View accessibilityRole="radiogroup">{goals.filter(option=>combat?['session_kills','duration_seconds'].includes(option.kind):exploration?option.kind==='duration_seconds':option.kind!=='session_kills').map(option=><Pressable key={option.kind} accessibilityRole="radio" accessibilityState={{checked:kind===option.kind}} disabled={busy} onPress={()=>{setKind(option.kind);setAmount(String(option.kind==='session_kills'?50:option.kind==='duration_seconds'?180:option.kind==='skill_level'?Math.min(100,level+1):Math.max(500,stored+100)));setError('');}} style={s.radioRow}><View style={[s.radio,kind===option.kind&&s.radioSelected]}/><Text style={s.name}>{gl(option.label)}</Text></Pressable>)}</View></>}
-    {alchemy?<Text style={s.meta}>{gt('Starts this brew until its materials, Gold, or your AFK time runs out.')} {gt('Materials and Gold are checked when this queued brew starts.')}</Text>:<><Text style={s.label}>{faith?gl('Practices to reserve'):kind==='session_kills'?gt("Enemies to defeat"):kind==='duration_seconds'?gt("Minutes"):kind==='skill_level'?gt("Target skill level"):gt('Total {item} in storage',{item:node?.itemId?itemDef(node.itemId).name:gt('resources')})}</Text>
+    {alchemy||processing?<Text style={s.meta}>{processing?gt('Processes this recipe until its materials, Gold, or your AFK time runs out.'):gt('Starts this brew until its materials, Gold, or your AFK time runs out.')} {gt('Materials and Gold are checked when this queued activity starts.')}</Text>:<><Text style={s.label}>{faith?gl('Practices to reserve'):kind==='session_kills'?gt("Enemies to defeat"):kind==='duration_seconds'?gt("Minutes"):kind==='skill_level'?gt("Target skill level"):gt('Total {item} in storage',{item:node?.itemId?itemDef(node.itemId).name:gt('resources')})}</Text>
     <TextInput accessibilityLabel={faith?gl('Faith practices to reserve'):gt("Queue goal amount")} keyboardType="number-pad" editable={!busy} value={amount} onChangeText={setAmount} style={s.input}/>
     <Text style={s.meta}>{faith?gl(`Uses ${((FAITH_TIERS.find(row=>row.id===node?.id)?.water??0)*count).toLocaleString(language)} Holy Water.`):kind==='session_kills'?gt("New defeats in this activity"):kind==='duration_seconds'?gt("1-1800 minutes"):kind==='skill_level'?gt("Current level: {level} / 100",{level}):gt("Currently stored: {count}",{count:stored.toLocaleString(language)})}</Text></>}
     {valid&&targetReached?<Text accessibilityRole="alert" style={s.warning}>{targetIssue??gt("This goal is already reached.")}</Text>:null}
@@ -122,7 +123,7 @@ export function ActivityQueuePlanner({state,onCommand}:{state:GameState;onComman
     </View>:null}
     {error?<Text accessibilityRole="alert" style={s.warning}>{gl(error)}</Text>:null}
    </ScrollView>
-   <View style={s.footer}><GameButton title={busy?gt("Saving..."):current?gt("Set current goal"):canStartNow&&!state.activity&&!state.character?.activityQueue?.length?faith?gl('Start practice'):alchemy?gt('Start brewing'):gt("Start with goal"):gt("Add to queue")} onPress={()=>void save()} disabled={busy||!valid||targetReached||!!targetIssue||!!currentIssue||!ready.ready||(!current&&full)}/></View>
+   <View style={s.footer}><GameButton title={busy?gt("Saving..."):current?gt("Set current goal"):canStartNow&&!state.activity&&!state.character?.activityQueue?.length?faith?gl('Start practice'):alchemy?gt('Start brewing'):processing?gt('Start processing'):gt("Start with goal"):gt("Add to queue")} onPress={()=>void save()} disabled={busy||!valid||targetReached||!!targetIssue||!!currentIssue||!ready.ready||(!current&&full)}/></View>
   </GameModalSurface>
  </>;
 }

@@ -10,6 +10,9 @@ const raw:Array<[string,string,CompanionRole,CompanionRarity,string,number,numbe
  ['UNIT_013','Dune Stalker','damage','rare','REG_SUNSCAR',190,27,15,2.2,'damage',1.10],['UNIT_014','Oasis Djinnling','support','elite','REG_SUNSCAR',205,18,15,2.2,'heal',.05],['UNIT_015','Solar Scarab','tank','elite','REG_SUNSCAR',205,18,25,2.2,'shield',.05],['UNIT_016',"Tyrant's Heir",'tank','prestige','REG_SUNSCAR',225,18,25,2.2,'shield',.06],
  ['UNIT_017','Rime Wolf Pup','damage','rare','REG_FROSTMARCH',190,27,15,2.2,'damage',1.10],['UNIT_018','Bell Sprite','support','elite','REG_FROSTMARCH',205,18,15,2.2,'heal',.05],['UNIT_019','Choir Golem','tank','elite','REG_FROSTMARCH',205,18,25,2.2,'shield',.05],['UNIT_020','Wyrm Echo','damage','prestige','REG_FROSTMARCH',225,27,15,2.2,'damage',1.18],
  ['UNIT_021','Obsidian Drakelet','damage','rare','REG_ASHLANDS',190,27,15,2.2,'damage',1.10],['UNIT_022','Forge Custodian','tank','elite','REG_ASHLANDS',205,18,25,2.2,'shield',.05],['UNIT_023','Primal Spark','damage','elite','REG_ASHLANDS',205,27,15,2.2,'damage',1.14],['UNIT_024','Regent Shade','support','prestige','REG_ASHLANDS',225,18,15,2.2,'heal',.06],
+ ['GUILD_UNIT_001','Stormwatch Sentinel','tank','elite','GUILD_TOKEN_SHOP',205,18,25,2.2,'mitigation',.07],
+ ['GUILD_UNIT_002','Oathbound Seeker','damage','elite','GUILD_TOKEN_SHOP',205,27,15,2.0,'damage',1.08],
+ ['GUILD_UNIT_003','Dawncall Herald','support','elite','GUILD_TOKEN_SHOP',205,18,15,2.2,'utility',.05],
  ['EVT_UNIT_001','Keeper of First Dawn','support','elite','EVENT_TURNING_OF_THE_AGE',205,18,15,2.2,'utility',.05],
  ['EVT_UNIT_002','Vowbound Cherub','support','prestige','EVENT_HEARTBOND_FESTIVAL',225,18,15,2.2,'utility',.05],
  ['EVT_UNIT_003','Bloomwarden','tank','elite','EVENT_BLOOMWAKE',205,18,24,2.2,'mitigation',.06],
@@ -17,8 +20,8 @@ const raw:Array<[string,string,CompanionRole,CompanionRarity,string,number,numbe
  ['EVT_UNIT_005','Astral Wayfarer','damage','elite','EVENT_STARFALL_NIGHTS',205,25,15,2.2,'damage',1.08],
  ['EVT_UNIT_006','Harvest Guardian','tank','elite','EVENT_HARVESTWAKE',205,18,24,2.2,'mitigation',.06],
  ['EVT_UNIT_007','Veil Hound','damage','elite','EVENT_VEILBREAK',205,25,15,2.2,'damage',1.08],
- ['EVT_UNIT_008','Gravebell Gargoyle','tank','elite','EVENT_VEILBREAK',205,18,24,2.2,'mitigation',.07],
- ['EVT_UNIT_011','Lanternwing','support','elite','EVENT_VEILBREAK',205,18,15,2.2,'utility',.05],
+ ['EVT_UNIT_008','Hollow Knightling','tank','elite','EVENT_VEILBREAK',205,18,24,2.2,'mitigation',.07],
+ ['EVT_UNIT_011','Lantern Keeper','support','elite','EVENT_VEILBREAK',205,18,15,2.2,'utility',.05],
  ['EVT_UNIT_009','Frostbell Herald','support','elite','EVENT_FROSTFALL_FESTIVAL',205,18,15,2.2,'utility',.05],
  ['EVT_UNIT_010','Caravan Sentinel','support','elite','EVENT_MERCHANT_GUILD_FESTIVAL',205,18,15,2.2,'utility',.05],
 ];
@@ -35,6 +38,9 @@ const COMPANION_IDENTITY_PROFILES:Record<string,CompanionIdentityProfile>={
  UNIT_022:{activeName:'Forge Barrier',activeShieldMultiplier:1.13,defenseMultiplier:1.04,activeReflectPct:.05,bond:{activeReflectPct:.04}},
  UNIT_023:{activeName:'Primal Arc',activeDamageMultiplier:1.06,hasteBonus:.03,activeCooldownMultiplier:.96,bond:{activeDamageMultiplier:1.03}},
  UNIT_024:{activeName:"Regent's Decree",activeHealMultiplier:1.08,activeCooldownMultiplier:.94,hasteBonus:.02,defenseMultiplier:1.02,bond:{activeHealMultiplier:1.05,defenseMultiplier:1.02}},
+ GUILD_UNIT_001:{activeName:'Stormwatch Aegis',mitigationMultiplier:1.12,defenseMultiplier:1.04,bond:{mitigationMultiplier:1.06,defenseMultiplier:1.02}},
+ GUILD_UNIT_002:{activeName:'Oathstrike',activeDamageMultiplier:1.06,activeExecuteBonus:.055,bond:{activeExecuteBonus:.025}},
+ GUILD_UNIT_003:{activeName:'Dawncall',utilityMultiplier:1.06,hasteBonus:.018,bond:{utilityMultiplier:1.04}},
  EVT_UNIT_001:{activeName:'First Dawn',utilityMultiplier:1.08,activeHealMultiplier:1.05,activeCooldownMultiplier:.95,hasteBonus:.02,bond:{utilityMultiplier:1.04,hasteBonus:.01}},
  EVT_UNIT_002:{activeName:'Vow Link',utilityMultiplier:1.06,activeHealMultiplier:1.12,defenseMultiplier:1.02,bond:{activeHealMultiplier:1.05,defenseMultiplier:1.02}},
  EVT_UNIT_003:{activeName:'Living Bastion',mitigationMultiplier:1.12,defenseMultiplier:1.04,bond:{mitigationMultiplier:1.06,defenseMultiplier:1.02}},
@@ -110,6 +116,18 @@ const CUSTOM_TECHNIQUE_SEEDS:Record<string,readonly TechniqueSeed[]>={
     {suffix:'REGENTS_WARD',name:"Regent's Ward",description:'Lean into defensive utility for difficult fights.',effects:[{kind:'defense',value:.08},{kind:'heal_strength',value:.08}]},
     {suffix:'SHADE_COMMAND',name:'Shade Command',description:'Cycle tactical support effects more quickly.',effects:[{kind:'haste',value:.08},{kind:'cooldown',value:-.08}]},
   ],
+  GUILD_UNIT_001:[
+    {suffix:'AEGIS_BULWARK',name:'Aegis Bulwark',description:'Deepen the Sentinel’s sheltering ward.',effects:[{kind:'shield_strength',value:.08},{kind:'defense',value:.06}]},
+    {suffix:'WATCHFUL_REPRISAL',name:'Watchful Reprisal',description:'Turn steady defense into a measured counter.',effects:[{kind:'reflect',value:.07},{kind:'shield_strength',value:.06}]},
+  ],
+  GUILD_UNIT_002:[
+    {suffix:'OATHSTRIKE',name:'Oathstrike',description:'Sharpen the Seeker’s decisive finishing blow.',effects:[{kind:'damage',value:.05},{kind:'execute',value:.07}]},
+    {suffix:'TRAILFINDER',name:'Trailfinder',description:'Keep the Seeker moving from mark to mark.',effects:[{kind:'haste',value:.10},{kind:'cooldown',value:-.06}]},
+  ],
+  GUILD_UNIT_003:[
+    {suffix:'DAWNCALL',name:'Dawncall',description:'Carry a brighter restorative refrain through the party.',effects:[{kind:'heal_strength',value:.08},{kind:'haste',value:.06}]},
+    {suffix:'SKYLARK_CADENCE',name:'Skylark Cadence',description:'Raise the tempo of the Herald’s support cycle.',effects:[{kind:'haste',value:.09},{kind:'cooldown',value:-.07}]},
+  ],
   EVT_UNIT_001:[
     {suffix:'FIRST_LIGHT',name:'First Light',description:'Strengthen the Keeper’s opening protection.',effects:[{kind:'shield_strength',value:.12},{kind:'haste',value:.04}]},
     {suffix:'NEW_DAWN',name:'New Dawn',description:'Trade peak protection for faster support cycles.',effects:[{kind:'cooldown',value:-.12}]},
@@ -139,7 +157,7 @@ const CUSTOM_TECHNIQUE_SEEDS:Record<string,readonly TechniqueSeed[]>={
     {suffix:'SHADOW_CHASE',name:'Shadow Chase',description:'Stay on debuffed targets with faster attacks and actives.',effects:[{kind:'haste',value:.08},{kind:'cooldown',value:-.07}]},
   ],
   EVT_UNIT_008:[
-    {suffix:'GRAVEBELL_WARD',name:'Gravebell Ward',description:'Reinforce the Gargoyle’s ward for prolonged frontline pressure.',effects:[{kind:'shield_strength',value:.15},{kind:'defense',value:.05}]},
+    {suffix:'GRAVEBELL_WARD',name:'Gravebell Ward',description:'Reinforce the Knightling’s ward for prolonged frontline pressure.',effects:[{kind:'shield_strength',value:.15},{kind:'defense',value:.05}]},
     {suffix:'TOLL_OF_STONE',name:'Toll of Stone',description:'Trade a little ward strength for faster defensive cycling.',effects:[{kind:'defense',value:.08},{kind:'cooldown',value:-.06}]},
   ],
   EVT_UNIT_011:[

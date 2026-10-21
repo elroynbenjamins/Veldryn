@@ -47,6 +47,8 @@ export interface Recipe{id:string;name:string;skillId:'smithing'|'cooking'|'alch
 export const RECIPES:Recipe[]=[
 ...ALCHEMY_RECIPES as Recipe[],
 ...NOVICE_RECIPES,
+// Keep the full catalog authoritative for crafting, progression, and save
+// compatibility. Presentation layers apply their release gate separately.
 ...(V33_EQUIPMENT_RECIPES as Recipe[]),
 ...(TOOL_RECIPES as Recipe[]),
 {id:'SMELT_COPPER_INGOT',name:'Smelt Copper Ingot',skillId:'smithing',level:1,xp:80,gold:30,seconds:36,repeatableTraining:true,inputs:[{itemId:'COPPER_ORE',quantity:10}],output:{itemId:'COPPER_INGOT',quantity:5}},

@@ -14,7 +14,7 @@ export function CoopPartyChat({messages,busy,onSend}:{messages:CoopChatMessage[]
  const send=async()=>{const value=text.trim();if(!value||busy)return;await onSend(value);setText('');};
  return <FantasyPanel variant="selected"><Text style={s.title}>{st("Party chat")}</Text><Text style={s.copy}>{st("Only current Live party members can read this room.")}</Text>
   <View style={s.messages}>{messages.length?messages.slice(-8).map(message=><Text key={message.id} style={s.message}><Text style={s.sender}>{message.senderName}: </Text>{message.body}</Text>):<Text style={s.copy}>{st("No messages yet.")}</Text>}</View>
-  <ChatComposer accessibilityLabel={st("Party chat message")} value={text} onChangeText={setText} onSend={()=>void send()} busy={busy} editable={!busy} placeholder={st("Message your party…")}/>
+  <ChatComposer accessibilityLabel={st("Party chat message")} value={text} onChangeText={setText} onSend={()=>send()} busy={busy} editable={!busy} placeholder={st("Message your party…")}/>
  </FantasyPanel>;
 }
 

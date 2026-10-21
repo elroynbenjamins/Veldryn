@@ -1,3 +1,4 @@
+import {versionedFetch as fetch} from './versioned-fetch';
 import {supabase} from './supabase';
 declare const process:{env:Record<string,string|undefined>};
 import type {AchievementClaimResult,AchievementShowcaseResult,AchievementSnapshotProjection} from '../core/achievement-types';

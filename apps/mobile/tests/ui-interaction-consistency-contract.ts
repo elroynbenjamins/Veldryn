@@ -57,8 +57,8 @@ ok(top.includes('loading={saving}')&&top.includes('GameButton title={tr("Save fi
 const combat=read('src/screens/CombatScreen.tsx');
 ok(!combat.includes('HUNT PLAN')&&!combat.includes('showPlan')&&!combat.includes('STOP GOAL'),'Combat must not expose the removed Hunt Plan controls');
 ok(combat.includes('<CombatXpSplit state={state} onCommand={onCommand}/>'),'Combat must expose the saved skill XP split');
-// Training is a bounded disclosure in the persistent bottom dock. Check its
-// actual JSX hierarchy so scroll wrappers and formatting do not hide regressions.
+// Combat controls intentionally follow the monster cards so the encounter list
+// owns the first screenful. Loot expands from each card's right-hand control.
 const ts=require('typescript') as typeof import('typescript');
 type UiNode=import('typescript').Node;
 const combatTree=ts.createSourceFile('CombatScreen.tsx',combat,ts.ScriptTarget.Latest,true,ts.ScriptKind.TSX);
@@ -79,16 +79,15 @@ function jsxValue(node:UiNode|undefined,name:string){
  if(!attribute.initializer)return 'true';
  return ts.isJsxExpression(attribute.initializer)?attribute.initializer.expression?.getText().replace(/\s+/g,''):ts.isStringLiteral(attribute.initializer)?attribute.initializer.text:undefined;
 }
-const trainingDisclosure=findUiNode(combatTree,node=>ts.isConditionalExpression(node)&&node.condition.getText(combatTree)==='showTraining'&&jsxName(node.whenTrue)==='ScrollView') as import('typescript').ConditionalExpression|undefined;
-const trainingScroll=trainingDisclosure?.whenTrue,trainingDock=trainingDisclosure?.parent.parent;
-const trainingSplit=findUiNode(trainingScroll,node=>jsxName(node)==='CombatXpSplit');
-const trainingToggle=findUiNode(trainingDock,node=>jsxName(node)==='Pressable'&&jsxValue(node,'accessibilityState')==='{expanded:showTraining}');
+const trainingDisclosure=findUiNode(combatTree,node=>ts.isConditionalExpression(node)&&node.condition.getText(combatTree)==='showTraining'&&jsxName(node.whenTrue)==='CombatXpSplit') as import('typescript').ConditionalExpression|undefined;
+const trainingSplit=trainingDisclosure?.whenTrue;
+const trainingToggle=findUiNode(combatTree,node=>jsxName(node)==='Pressable'&&jsxValue(node,'accessibilityState')==='{expanded:showTraining}');
 ok(jsxValue(trainingToggle,'accessibilityRole')==='button'&&Boolean(jsxValue(trainingToggle,'onPress')?.includes('setShowTraining(value=>!value)')),'Training disclosure must expose expanded state and a working accessible toggle');
 ok(Boolean(trainingDisclosure&&trainingDisclosure.whenFalse.kind===ts.SyntaxKind.NullKeyword)&&jsxValue(trainingSplit,'state')==='state'&&jsxValue(trainingSplit,'onCommand')==='onCommand','Expanded training disclosure must contain the saved XP split and its authoritative command callback');
-ok(jsxValue(trainingScroll,'nestedScrollEnabled')==='true'&&Boolean(jsxValue(trainingScroll,'style')?.match(/maxHeight:height\*(?:0?\.\d+)/)),'Expanded training controls must remain scrollable within a bounded fraction of the screen height');
-const combatRoot=trainingDock?.parent;
-const combatContent=combatRoot&&ts.isJsxElement(combatRoot)?combatRoot.children.find(node=>jsxName(node)==='ScrollView'):undefined;
-ok(jsxName(trainingDock)==='View'&&jsxValue(trainingDock,'style')==='s.dock'&&Boolean(combatContent&&trainingDock&&combatContent.end<trainingDock.pos&&findUiNode(combatContent,node=>jsxName(node)==='RegionEncounterList')),'Training disclosure must remain in the persistent dock outside the enemy-list scroller');
+const encounterListIndex=combat.indexOf('<RegionEncounterList'),queueIndex=combat.indexOf('<ActionQueuePanel'),trainingIndex=combat.indexOf('Training XP');
+ok(encounterListIndex>=0&&queueIndex>encounterListIndex&&trainingIndex>queueIndex&&!combat.includes('style={s.dock}'),'Combat actions must follow the encounter list inside its scroll surface');
+const combatEncounterList=read('src/components/RegionEncounterList.tsx');
+ok(combatEncounterList.includes('s.lootToggle')&&combatEncounterList.includes('setExpandedId(expanded?null:monster.id);onInspect?.(monster.id);'),'Loot details must expand from the right side of each monster row');
 const split=read('src/components/CombatXpSplit.tsx');
 ok(split.includes("type:'class_focus'")&&split.includes('normalizeTrainingFocus'),'XP split must use the existing authoritative character setting');
 ok(split.includes('accessibilityRole="radiogroup"')&&split.includes('accessibilityRole="radio"')&&split.includes('minHeight:44'),'XP ratios must be accessible single-choice controls');

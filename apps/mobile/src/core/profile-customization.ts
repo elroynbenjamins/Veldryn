@@ -90,6 +90,14 @@ function eventProfileRewardSource(state:GameState,kind:ProfileRewardKind,id:stri
 }
 
 export function profileRewardSource(state:GameState,kind:ProfileRewardKind,id:string):ProfileRewardSource{
+ if(kind==='border'){
+  const guildBorder={
+   'guild-border-silver':{name:'Fellowship Silver',detail:'Guild Token Shop · Guild Level 2.'},
+   'guild-border-emerald':{name:'Verdant Covenant',detail:'Guild Token Shop · Guild Level 8.'},
+   'guild-border-royal':{name:'Royal Concord',detail:'Guild Token Shop · Guild Level 14.'},
+  }[id];
+  if(guildBorder)return {kind,id,...guildBorder,label:'Guild Token Shop',destination:'Guild',actionLabel:'Open Guild'};
+ }
  if(kind==='title'){
   const title=PROFILE_TITLES.find(row=>row.id===id);
   if(title){

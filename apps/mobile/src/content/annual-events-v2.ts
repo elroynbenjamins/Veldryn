@@ -65,7 +65,7 @@ export const VEILBREAK_EVENT:LiveEventDef={
     {id:'weekly_lantern_craft',name:'Master Lanternwright',description:'Complete 50 crafting recipes this week.',source:'crafting',required:50,rewardCurrency:1100,rewardPrestige:2},
   ],
   shop:[
-    {id:'veil_salute',reward:{kind:'emote',id:'emote_veil_salute',name:'Veil Salute',rarity:'rare'},currency:'common',cost:900,limit:1},
+    {id:'veil_salute',reward:{kind:'emote',id:'emote_veil_salute',name:'Pumpkin Panic',rarity:'rare'},currency:'common',cost:900,limit:1},
     {id:'candlewarden_title',reward:{kind:'title',id:'title_candlewarden',name:'Candlewarden',rarity:'epic'},currency:'common',cost:1800,limit:1},
     {id:'night_patrol_title',reward:{kind:'title',id:'title_night_patrol',name:'Night Patrol',rarity:'rare'},currency:'common',cost:1200,limit:1},
     {id:'veil_lantern_mimic',reward:{kind:'pet',id:'EVT_PET_014',name:'Lantern Mimic',rarity:'epic'},currency:'prestige',cost:10,limit:1},
@@ -83,7 +83,7 @@ export const VEILBREAK_EVENT:LiveEventDef={
   communityMilestones:[],
   discoveries:[
     {id:'gloam_cinder',name:'Gloam Cinder',description:'A cold ember sometimes left behind after ordinary combat.',source:'combat',chance:.003,required:5,reward:{kind:'title',id:'title_gloam_touched',name:'Gloam-Touched',rarity:'rare'}},
-    {id:'waxen_sigil',name:'Waxen Sigil',description:'A binding mark occasionally left after crafting.',source:'crafting',chance:.06,required:3,reward:{kind:'emote',id:'emote_candle_circle',name:'Candle Circle',rarity:'rare'}},
+    {id:'waxen_sigil',name:'Waxen Sigil',description:'A binding mark occasionally left after crafting.',source:'crafting',chance:.06,required:3,reward:{kind:'emote',id:'emote_candle_circle',name:'Gloam Facepalm',rarity:'rare'}},
     {id:'breach_fragment',name:'Breach Fragment',description:'A shard of condensed veil carried by eligible bosses.',source:'boss',chance:.25,required:1,reward:{kind:'title',id:'title_breach_sealer',name:'Breach Sealer',rarity:'epic'}},
   ],
 };

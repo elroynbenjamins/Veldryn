@@ -14,29 +14,33 @@ import {type ThemeColors} from '../theme/theme';
 import {useGameTheme} from '../theme/ThemeContext';
 
 type Projection=Awaited<ReturnType<typeof loadOnlineGuildHallV44>>;
-export function OnlineGuildHallPanel(){
+type HallSection='Facilities'|'Skills'|'Trophies';
+interface HallNavigation{activeSection?:HallSection;onSectionChange?:(section:HallSection|'Shop')=>void;}
+export function OnlineGuildHallPanel(navigation:HallNavigation){
  const st=useSocialText(),C=useGameTheme(),s=useMemo(()=>makeStyles(C),[C]);
  const [projection,setProjection]=useState<Projection>(null),[loading,setLoading]=useState(true),[error,setError]=useState('');
  const load=async()=>{setLoading(true);setError('');try{setProjection(await loadOnlineGuildHallV44())}catch(reason){setError(reason instanceof Error?reason.message:st('Unable to load Guild Hall.'))}finally{setLoading(false)}};
  useEffect(()=>{void load()},[]);
- if(loading&&!projection)return <Panel><Text style={s.title}>{st('Guild Hall')}</Text><ActivityIndicator color={C.accent}/></Panel>;
- if(error&&!projection)return <Panel><Text style={s.title}>{st('Guild Hall')}</Text><Text style={s.error}>{error}</Text><GameButton title={st('Retry')} tone="secondary" onPress={()=>void load()}/></Panel>;
- if(!projection)return <Panel><Text style={s.title}>{st('Guild Hall')}</Text><Text style={s.sub}>{st('Join a Guild to unlock long-term Guild Hall progression.')}</Text></Panel>;
- return <GuildHallView projection={projection} loading={loading} error={error} onRefresh={()=>void load()}/>;
+ const navigationTabs=navigation.onSectionChange?<BoardTabs compact label="Guild Hall sections" items={(['Facilities','Skills','Trophies','Shop'] as const).map(id=>({id,label:id}))} value={navigation.activeSection??'Facilities'} onChange={navigation.onSectionChange}/>:null;
+ if(loading&&!projection)return <View style={s.root}>{navigationTabs}<Panel><Text style={s.title}>{st('Guild Hall')}</Text><ActivityIndicator color={C.accent}/></Panel></View>;
+ if(error&&!projection)return <View style={s.root}>{navigationTabs}<Panel><Text style={s.title}>{st('Guild Hall')}</Text><Text style={s.error}>{error}</Text><GameButton title={st('Retry')} tone="secondary" onPress={()=>load()}/></Panel></View>;
+ if(!projection)return <View style={s.root}>{navigationTabs}<Panel><Text style={s.title}>{st('Guild Hall')}</Text><Text style={s.sub}>{st('Join a Guild to unlock long-term Guild Hall progression.')}</Text></Panel></View>;
+ return <GuildHallView {...navigation} projection={projection} loading={loading} error={error} onRefresh={()=>load()}/>;
 }
-export function GuildHallView({projection,loading=false,error='',onRefresh}:{projection:NonNullable<Projection>;loading?:boolean;error?:string;onRefresh?:()=>void}){
- const st=useSocialText(),C=useGameTheme(),s=useMemo(()=>makeStyles(C),[C]),[section,setSection]=useState<'Facilities'|'Skills'|'Trophies'>('Facilities');
+export function GuildHallView({projection,loading=false,error='',onRefresh,activeSection,onSectionChange}:{projection:NonNullable<Projection>;loading?:boolean;error?:string;onRefresh?:()=>void}&HallNavigation){
+ const st=useSocialText(),C=useGameTheme(),s=useMemo(()=>makeStyles(C),[C]),[localSection,setSection]=useState<HallSection>('Facilities');
+ const section=activeSection??localSection;
  const {state,level,stage}=projection;
  const nextThreshold=DEFAULT_GUILD_HALL_POLICY.hallLevelThresholds[level]??DEFAULT_GUILD_HALL_POLICY.hallLevelThresholds[9],prev=DEFAULT_GUILD_HALL_POLICY.hallLevelThresholds[Math.max(0,level-1)]??0;
  return <View style={s.root}>
+  <BoardTabs compact label="Guild Hall sections" items={(onSectionChange?['Facilities','Skills','Trophies','Shop'] as const:['Facilities','Skills','Trophies'] as const).map(id=>({id,label:id}))} value={section} onChange={value=>{if(onSectionChange)onSectionChange(value);else if(value!=='Shop')setSection(value)}}/>
   <Panel><View style={s.between}><View style={s.flex}><Text style={s.kicker}>GUILD HALL</Text><Text accessibilityRole="header" style={s.title}>{stage}</Text><Text style={s.sub}>{state.lifetimeProjectsCompleted} completed projects</Text></View><View style={s.levelBadge}><Text style={s.level}>Lv {level}</Text><Text style={s.levelMax}>/10</Text></View></View><StatBar rounded label="Hall Progress" current={level>=10?1:state.hallProgress-prev} max={level>=10?1:nextThreshold-prev}/><Text style={s.note}>{level<10?Math.max(0,nextThreshold-state.hallProgress).toLocaleString()+' Hall Progress to level '+(level+1):'Launch Hall level cap reached.'}</Text></Panel>
-  <BoardTabs label="Guild Hall sections" items={(['Facilities','Skills','Trophies'] as const).map(id=>({id,label:id}))} value={section} onChange={setSection}/>
-  {section==='Facilities'?<QuestBoard><Text style={s.kicker}>{st('Automatic progression')}</Text><Text style={s.sub}>Facilities improve through authored Guild Projects. Hall Progress is never spent.</Text>
+  {section==='Facilities'?<View style={s.root}><Text style={s.kicker}>{st('Automatic progression')}</Text><Text style={s.sub}>Facilities improve through authored Guild Projects. Hall Progress is never spent.</Text>
    {GUILD_HALL_FACILITIES.map(def=>{const facility=state.facilities[def.id],tier=facility.tier,threshold=DEFAULT_GUILD_HALL_POLICY.facilityProgressThresholds[tier],requiredLevel=def.tierHallLevels[tier];return <View key={def.id} style={s.facility}>
-    <View style={s.between}><ActivityArtwork id={def.id==='workshop'?'smithing':def.id==='training_room'?'training':'exploration'} size={36}/><View style={s.flex}><Text style={s.facilityName}>{def.name}</Text><Text style={s.note}>{tier>=5?'Max tier':`Tier ${tier} → ${tier+1}`}</Text></View><Text style={s.tierText}>T{tier}/5</Text></View><Text style={s.sub}>{def.description}</Text>
+    <View style={s.between}><ActivityArtwork id={def.id==='workshop'?'smithing':def.id==='training_room'?'training':'exploration'} size={48}/><View style={s.flex}><Text style={s.facilityName}>{def.name}</Text><Text style={s.note}>{tier>=5?'Max tier':`Tier ${tier} → ${tier+1}`}</Text></View><Text style={s.tierText}>T{tier}/5</Text></View><Text style={s.sub}>{def.description}</Text>
     {tier<5?<><StatBar rounded label="Facility progress" current={Math.min(facility.progress,threshold)} max={threshold}/><Text style={[s.note,{color:level<requiredLevel?C.warning:C.muted}]}>{level<requiredLevel?`Hall Level ${requiredLevel} required · `:''}{Math.max(0,threshold-facility.progress).toLocaleString()} more facility progress from Projects</Text></>:null}
    </View>})}
-  </QuestBoard>:null}
+  </View>:null}
   {section==='Skills'?<View style={s.root}><Panel><Text style={s.title}>Guild Skill Trees</Text><Text style={s.sub}>Permanent bonuses are chosen through three Guild Skill Trees. Hall facilities represent progression visually; their tiers do not automatically stack stat bonuses.</Text></Panel><GuildSpecializationPaths/></View>:null}
   {section==='Trophies'?<QuestBoard><View style={s.between}><Text style={s.title}>{st('Trophy Room')}</Text><Text style={s.note}>{state.trophies.length} recorded</Text></View>
    <Text style={s.sub}>Future Guild Legacy will preserve major trophies and season records permanently.</Text>

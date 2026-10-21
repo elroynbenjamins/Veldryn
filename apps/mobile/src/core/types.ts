@@ -14,7 +14,7 @@ export interface GearEnhancementState { rank:number; failures:number; statGemId?
 export type ActivityKind = 'combat' | 'mining' | 'woodcutting' | 'fishing' | 'herbalism' | 'alchemy' | 'processing' | 'faith' | 'training' | 'exploration';
 export type CombatTacticId='assault'|'balanced'|'guarded';
 export interface ActivityQueueGoal {kind:'duration_seconds'|'item_quantity'|'skill_level'|'session_kills';value:number;}
-export interface QueuedActivity {kind:'combat'|'gathering'|'faith'|'exploration'|'alchemy';targetId:string;combatTacticId?:CombatTacticId;huntGoalId?:import('./hunt-goals').HuntGoalId;faithPracticeCount?:number;goal?:ActivityQueueGoal;}
+export interface QueuedActivity {kind:'combat'|'gathering'|'faith'|'exploration'|'alchemy'|'processing';targetId:string;combatTacticId?:CombatTacticId;huntGoalId?:import('./hunt-goals').HuntGoalId;faithPracticeCount?:number;goal?:ActivityQueueGoal;}
 export type GatheringSkillId='mining'|'woodcutting'|'fishing'|'herbalism';
 export type SeasonId='spring'|'summer'|'autumn'|'winter';
 export type WeatherId='clear'|'rain'|'mist'|'storm'|'bloomwind'|'heatwave'|'harvest_wind'|'snow'|'frost';

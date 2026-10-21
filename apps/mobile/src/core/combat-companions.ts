@@ -38,8 +38,13 @@ export const CLASS_COMPANION_ROLE:Record<VeldrynClassId,CombatCompanionRole>={
   DAWNKEEPER:'support',STONECALLER:'support',
   WAYFINDER:'damage',RAVAGER:'damage',HEXWEAVER:'damage',KNIFE_DANCER:'damage',
 };
+/** Character-led combat always requires a companion with a different role.
+ * Companion Trials and Sanctuary Expeditions build companion-only teams and are exempt. */
+export type CharacterCompanionCombatMode='normal_combat'|'dungeon'|'guild_boss'|'event_boss'|'world_boss'|'arena'|'future_character_combat';
+export const CHARACTER_COMPANION_COMBAT_MODES:readonly CharacterCompanionCombatMode[]=['normal_combat','dungeon','guild_boss','event_boss','world_boss','arena','future_character_combat'];
 export const classCompanionRole=(classId:VeldrynClassId):CombatCompanionRole=>CLASS_COMPANION_ROLE[classId];
-export const canEquipCompanion=(characterRole:CombatCompanionRole,companionRole:CombatCompanionRole)=>characterRole!==companionRole;
+export const canUseCharacterCombatCompanion=(characterRole:CombatCompanionRole,companionRole:CombatCompanionRole,_mode:CharacterCompanionCombatMode)=>characterRole!==companionRole;
+export const canEquipCompanion=(characterRole:CombatCompanionRole,companionRole:CombatCompanionRole)=>canUseCharacterCombatCompanion(characterRole,companionRole,'normal_combat');
 export const usableCompanionRoles=(companionRole:CombatCompanionRole):CombatCompanionRole[]=>(['damage','tank','support'] as CombatCompanionRole[]).filter(role=>role!==companionRole);
 
 export const defaultCompanionSanctuary=():CompanionSanctuaryState=>({trainingGroundLevel:0,essenceBasinLevel:0,bondHallLevel:0,expeditionPensLevel:0,masteryChamberLevel:0});

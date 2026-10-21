@@ -29,7 +29,7 @@ export function ChatEmotePicker({onPick,unlockedIds=[],trayIds=[],bodyPresentati
       <View style={s.quickGrid}>{draft.map((id,index)=><EmoteButton key={id} emote={byId.get(id)} id={id} labelPrefix={st('Slot {slot}: ',{slot:index+1})} selected onPress={()=>toggle(id)}/>)}</View>
       <Text style={s.help}>{st("Tap selected emotes to remove them, then choose replacements below. Save becomes available when all 5 slots are filled.")}</Text>
       <ScrollView nestedScrollEnabled showsHorizontalScrollIndicator={false} showsVerticalScrollIndicator={false} style={s.catalogScroll} contentContainerStyle={s.catalog}>{available.map(emote=><EmoteButton key={emote.id} emote={emote} id={emote.id} selected={draft.includes(emote.id)} disabled={!draft.includes(emote.id)&&draft.length>=CHAT_EMOTE_TRAY_SIZE} onPress={()=>toggle(emote.id)}/>)}</ScrollView>
-      <View style={[s.actions,stackControls&&s.actionsStack]}><View style={[s.action,stackControls&&s.actionStack]}><GameButton compact title={st("Reset")} tone="secondary" onPress={reset}/></View><View style={[s.action,stackControls&&s.actionStack]}><GameButton compact title={st("Save 5")} disabled={draft.length!==CHAT_EMOTE_TRAY_SIZE} onPress={()=>void save()}/></View></View>
+      <View style={[s.actions,stackControls&&s.actionsStack]}><View style={[s.action,stackControls&&s.actionStack]}><GameButton compact title={st("Reset")} tone="secondary" onPress={reset}/></View><View style={[s.action,stackControls&&s.actionStack]}><GameButton compact title={st("Save 5")} disabled={draft.length!==CHAT_EMOTE_TRAY_SIZE} onPress={()=>save()}/></View></View>
     </>}
   </View>}
  </View>;

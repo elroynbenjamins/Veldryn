@@ -3,22 +3,27 @@ import {COMPANION_SERVER_DEFINITIONS,COMPANION_RARITY_MAX_LEVEL} from './content
 export type CompanionRole='damage'|'tank'|'support';
 export type CompanionRarity='standard'|'rare'|'elite'|'prestige';
 export type CharacterClassId='IRONWARDEN'|'BASTION'|'DREADGUARD'|'DAWNKEEPER'|'WAYFINDER'|'RAVAGER'|'HEXWEAVER'|'KNIFE_DANCER'|'STONECALLER';
+/** Every mode where a player character brings one companion as combat support.
+ * Companion-only Trials and Sanctuary Expeditions deliberately do not use this policy. */
+export type CharacterCompanionCombatMode='normal_combat'|'dungeon'|'guild_boss'|'event_boss'|'world_boss'|'arena'|'future_character_combat';
+export const CHARACTER_COMPANION_COMBAT_MODES:readonly CharacterCompanionCombatMode[]=['normal_combat','dungeon','guild_boss','event_boss','world_boss','arena','future_character_combat'];
 
 export const CLASS_ROLE:Record<CharacterClassId,CompanionRole>={IRONWARDEN:'tank',BASTION:'tank',DREADGUARD:'tank',DAWNKEEPER:'support',STONECALLER:'support',WAYFINDER:'damage',RAVAGER:'damage',HEXWEAVER:'damage',KNIFE_DANCER:'damage'};
 export const COMPANION_ROLE=Object.fromEntries(COMPANION_SERVER_DEFINITIONS.map(x=>[x.id,x.role])) as Record<string,CompanionRole>;
 export const COMPANION_RARITY=Object.fromEntries(COMPANION_SERVER_DEFINITIONS.map(x=>[x.id,x.rarity])) as Record<string,CompanionRarity>;
 export const RARITY_MAX_LEVEL=COMPANION_RARITY_MAX_LEVEL;
 export const STAGE_CAPS:Record<CompanionRarity,readonly [number,number,number,number]>={standard:[10,20,20,20],rare:[10,20,25,25],elite:[10,20,25,30],prestige:[10,20,25,35]};
-export const canEquipCompanion=(characterRole:CompanionRole,companionRole:CompanionRole)=>characterRole!==companionRole;
+export const canUseCharacterCombatCompanion=(characterRole:CompanionRole,companionRole:CompanionRole,_mode:CharacterCompanionCombatMode)=>characterRole!==companionRole;
+export const canEquipCompanion=(characterRole:CompanionRole,companionRole:CompanionRole)=>canUseCharacterCombatCompanion(characterRole,companionRole,'normal_combat');
 
-export interface AuthoritativeCompanionLoadoutInput{classId:CharacterClassId;companionId?:string|null;ownedCompanionIds:readonly string[];busyCompanionIds?:readonly string[];}
+export interface AuthoritativeCompanionLoadoutInput{classId:CharacterClassId;companionId?:string|null;ownedCompanionIds:readonly string[];busyCompanionIds?:readonly string[];combatMode?:CharacterCompanionCombatMode;}
 export function validateCompanionLoadout(input:AuthoritativeCompanionLoadoutInput){
   if(!input.companionId)return {ok:true as const,companionId:null};
   const role=COMPANION_ROLE[input.companionId];if(!role)return {ok:false as const,reason:'unknown_companion'};
   if(!input.ownedCompanionIds.includes(input.companionId))return {ok:false as const,reason:'companion_not_owned'};
   if(input.busyCompanionIds?.includes(input.companionId))return {ok:false as const,reason:'companion_busy'};
   const characterRole=CLASS_ROLE[input.classId];if(!characterRole)return {ok:false as const,reason:'unknown_character_class'};
-  if(!canEquipCompanion(characterRole,role))return {ok:false as const,reason:'same_role_restricted'};
+  if(!canUseCharacterCombatCompanion(characterRole,role,input.combatMode??'normal_combat'))return {ok:false as const,reason:'same_role_restricted'};
   return {ok:true as const,companionId:input.companionId};
 }
 export function sanitizePersistedCompanionLoadout(input:AuthoritativeCompanionLoadoutInput){const checked=validateCompanionLoadout(input);return checked.ok?checked.companionId:null;}

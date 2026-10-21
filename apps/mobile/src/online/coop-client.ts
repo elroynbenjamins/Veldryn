@@ -1,3 +1,4 @@
+import {versionedFetch as fetch} from './versioned-fetch';
 import {supabase} from './supabase';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import {CoopCommandJournal,CoopRequestError,type PendingCoopCommand} from '../core/coop-command-journal';
@@ -33,7 +34,7 @@ async function request<T>(path:string,method='GET',body?:unknown,expectedAccount
   const response=await fetch(`${apiBase}${path}`,{method,signal:controller.signal,headers:{Authorization:`Bearer ${session.access_token}`,apikey:process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY??'','Content-Type':'application/json'},body:body===undefined?undefined:JSON.stringify(body)});
   const payload=await response.json();
   if((await supabase.auth.getSession()).data.session?.user.id!==session.user.id)throw new Error('Account changed.');
-  if(!response.ok)throw new CoopRequestError(payload?.error??payload?.message??payload?.code??'Co-op request failed.',response.status>=400&&response.status<500&&![408,429].includes(response.status));return payload as T;
+  if(!response.ok)throw new CoopRequestError(payload?.error??payload?.message??payload?.code??'Co-op request failed.',response.status>=400&&response.status<500&&![408,426,429].includes(response.status));return payload as T;
  }finally{clearTimeout(timeout);}
 }
 const journals=new Map<string,CoopCommandJournal>();

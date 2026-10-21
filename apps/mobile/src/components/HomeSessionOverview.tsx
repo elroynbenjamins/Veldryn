@@ -1,12 +1,14 @@
 import {accountText} from '../i18n/account';
 import {useMemo} from 'react';
-import {Pressable,StyleSheet,Text,View,useWindowDimensions} from 'react-native';
+import {Image,Pressable,StyleSheet,Text,View,useWindowDimensions} from 'react-native';
 import type {GameState} from '../core/types';
 import {homeSessionSummary,type HomeReadyKind} from '../core/dashboard';
 import {earlyFeatureUnlocked} from '../core/feature-unlocks';
 import {GameButton} from './GameButton';
 import {radii,spacing,typography,type ThemeColors} from '../theme/theme';
 import {useGameTheme} from '../theme/ThemeContext';
+import {eventLifecycle} from '../core/live-events';
+import {liveEventVisuals} from '../ui/live-event-visuals-active';
 
 export function HomeSessionOverview({state,nowMs,onQuests,onDaily,onEvents,onWeekly,onForge,onCompanions,onNew,compact=false}:{compact?:boolean;state:GameState;nowMs:number;onQuests:()=>void;onDaily:()=>void;onEvents:()=>void;onWeekly:()=>void;onForge:()=>void;onCompanions:()=>void;onNew:()=>void}){
  const language=state.settings.language;
@@ -22,7 +24,8 @@ export function HomeSessionOverview({state,nowMs,onQuests,onDaily,onEvents,onWee
  if(summary.weeklyRewards)parts.push(a('{count} contract',{count:summary.weeklyRewards}));
  if(summary.companionAttention)parts.push(a('{count} companion',{count:summary.companionAttention}));
  const visibleParts=parts.slice(0,4),hiddenPartCount=Math.max(0,parts.length-visibleParts.length),readyDisplay=summary.readyTotal>99?'99+':String(summary.readyTotal);
- if(compact)return summary.readyTotal>0?<View style={[s.root,s.readyRoot]}><View style={s.head}><View style={s.flex}><Text style={s.title}>{a(summary.primaryReady?.title??'No immediate claims')}</Text><Text style={s.meta}>{visibleParts.join(' · ')}</Text></View><Text style={s.readyBadge}>{a('{count} READY',{count:readyDisplay})}</Text></View>{summary.primaryReady?<GameButton compact title={a(summary.primaryReady.button)} onPress={()=>openReady(summary.primaryReady!.kind)}/>:null}</View>:null;
+ const event=eventLifecycle(state,nowMs),eventBadge=summary.primaryReady?.kind==='events'&&event?liveEventVisuals(event.definition.visualKey).badgeIcon:undefined;
+ if(compact)return summary.readyTotal>0?<View style={[s.root,s.readyRoot]}><View style={s.head}>{eventBadge?<Image source={eventBadge} resizeMode="contain" style={{width:42,height:42}}/>:null}<View style={s.flex}><Text style={s.title}>{a(summary.primaryReady?.title??'No immediate claims')}</Text><Text style={s.meta}>{visibleParts.join(' · ')}</Text></View><Text style={s.readyBadge}>{a('{count} READY',{count:readyDisplay})}</Text></View>{summary.primaryReady?<GameButton compact title={a(summary.primaryReady.button)} onPress={()=>openReady(summary.primaryReady!.kind)}/>:null}</View>:null;
  return <View style={[s.root,summary.readyTotal>0&&s.readyRoot]}>
   <View style={s.head}><View style={s.flex}><Text style={s.kicker}>{a('SESSION OVERVIEW')}</Text><Text style={s.title}>{a(summary.primaryReady?.title??'No immediate claims')}</Text><Text style={s.meta}>{summary.primaryReady?a(summary.primaryReady.detail):a(weeklyUnlocked?'Your next progression step is shown above. Use this row to jump into weekly progress.':'Keep following the campaign to unlock weekly systems.')}</Text></View>{summary.readyTotal>0?<Text style={s.readyBadge}>{a('{count} READY',{count:readyDisplay})}</Text>:<Text style={s.clearBadge}>{a('CLEAR')}</Text>}</View>
   <View style={s.cells}>

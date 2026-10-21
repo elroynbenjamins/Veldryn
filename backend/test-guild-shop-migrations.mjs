@@ -106,7 +106,7 @@ try{
  `);
  const migrations=path.join(here,'supabase','migrations');
  const guildFiles=readdirSync(migrations)
-  .filter(name=>/^2026101809\d{4}_guild.*\.sql$/.test(name)).sort();
+  .filter(name=>/^2026101809\d{4}_guild.*\.sql$/.test(name)||name==='20261103000002_guild_token_shop_release_v1.sql').sort();
  assert.ok(guildFiles.length>=18,`Expected complete Guild Shop migration chain; got ${guildFiles.length}`);
  for(const file of guildFiles){
   try{await db.exec(readFileSync(path.join(migrations,file),'utf8'));}
@@ -116,11 +116,15 @@ try{
   await db.exec(readFileSync(path.join(here,'supabase','tests','guild_shop_security.sql'),'utf8'));
  }catch(error){throw new Error(`Guild Shop role grants or RLS gate failed: ${String(error)}`);}
  assert.equal((await single(`select has_function_privilege('service_role',
-  'public.guild_shop_purchase_server_v4(uuid,text)','EXECUTE') as permitted`)).permitted,false);
+  'public.guild_shop_purchase_server_v4(uuid,text)','EXECUTE') as permitted`)).permitted,true);
  assert.equal((await single(`select has_function_privilege('service_role',
   'public.guild_shop_grant_tokens_server_v1(uuid,text,bigint,boolean)','EXECUTE') as permitted`)).permitted,false);
  assert.equal((await single(`select has_function_privilege('service_role',
   'public.guild_construction_donate_server_v2(uuid,text,text,integer,text)','EXECUTE') as permitted`)).permitted,false);
+ assert.deepEqual((await db.query(`select item_id from public.guild_shop_reward_catalogue where enabled=true order by item_id`)).rows.map(row=>row.item_id),[
+  'border_emerald','border_royal','border_silver','emotes_adventure','emotes_fellowship','emotes_legends',
+  'guild_companion_01','guild_companion_02','guild_companion_03','guild_pet_01','guild_pet_02','icon_guild',
+ ],'only the twelve reviewed permanent Guild Token Shop rewards are released');
  assert.equal((await single(`select has_function_privilege('authenticated',
   'public.guild_shop_claim_daily_server_v1(uuid,text)','EXECUTE') as permitted`)).permitted,false);
  await db.query('insert into auth.users(id) values ($1)',[account]);
@@ -191,10 +195,8 @@ try{
  assert.equal(Number((await single('select balance from public.guild_shop_wallets where account_id=$1',[cappedAccount])).balance),102,'token wallet sums capped standard plus extra event rewards');
  assert.equal(Number((await single(`select public.guild_shop_claim_event_community_server_v1($1,'veilbreak',25) as credited`,[cappedAccount])).credited),0,'event milestone never doubles');
 
- // These controlled test-only writes simulate the release switch and earned balance.
+ // The release migration enables the reviewed catalogue; test only supplies earned balance.
  await db.query('update public.guild_shop_wallets set balance=10000 where account_id=$1',[account]);
- await db.exec(`update public.guild_shop_reward_catalogue
-  set enabled=true where item_id in ('guild_pet_01','guild_companion_01','emotes_fellowship');`);
  const pet=await single(`select public.guild_shop_purchase_server_v4($1,'guild_pet_01') as result`,[account]);
  assert.equal(pet.result.status,'purchased');
  assert.equal((await single(`select public.guild_shop_purchase_server_v4($1,'guild_pet_01') as result`,[account])).result.status,'already_owned');
@@ -214,7 +216,9 @@ try{
  assert.deepEqual(saved.state.account.unlockedEmoteIds,['pet_set_a_01','pet_set_a_02','pet_set_a_03','pet_set_a_04','pet_set_a_05']);
  await db.query('insert into public.chat_messages(account_id,body) values ($1,$2)',[account,'Guild cheers :pet_set_a_01:']);
  assert.equal(Number((await single('select balance from public.guild_shop_wallets where account_id=$1',[account])).balance),3750);
- await fail(`select public.guild_shop_purchase_server_v4($1,'guild_pet_02')`,[account]);
+ await db.query('update public.guild_shop_wallets set balance=10000 where account_id=$1',[account]);
+ assert.equal((await single(`select public.guild_shop_purchase_server_v4($1,'guild_pet_02') as result`,[account])).result.status,'purchased');
+ await fail(`select public.guild_shop_purchase_server_v4($1,'not_a_guild_shop_reward')`,[account]);
 
  // Construction requires explicit per-project release even with full SQL privileges.
  const enabledBefore=await single('select public.guild_construction_enabled_server_v1($1) as enabled',[account]);

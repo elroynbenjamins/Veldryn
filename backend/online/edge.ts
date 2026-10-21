@@ -1,4 +1,5 @@
 import {gameplayHandler,GameplayError,type GameplayServices} from './gameplay';
+import {withReleaseGate,releasePolicyLoader} from './release-gate';
 import {regionalCombatHandlerV1} from './regional-combat';
 import {guildShopReadHandler,guildShopDailyClaimHandler,guildShopPurchaseHandler,guildShopEventClaimHandler,guildConstructionDonationHandler,guildShopWeeklyClaimHandler,type GuildShopReadServices} from './guild-shop-read';
 declare const Deno:{env:{get(name:string):string|undefined};serve(handler:(request:Request)=>Promise<Response>):void};
@@ -22,7 +23,7 @@ const guildShopPurchase=guildShopPurchaseHandler(guildShopServices);
 const guildShopEventClaim=guildShopEventClaimHandler(guildShopServices);
 const guildConstructionDonation=guildConstructionDonationHandler(guildShopServices);
 const guildShopWeeklyClaim=guildShopWeeklyClaimHandler(guildShopServices);
-Deno.serve(request=>{
+Deno.serve(withReleaseGate(async request=>{
  const route=new URL(request.url);
  if(route.pathname.includes('/regional-combat'))return regionalCombat(request);
  if(route.searchParams.get('view')==='guild-shop'){
@@ -33,4 +34,4 @@ Deno.serve(request=>{
   return request.method==='POST'?guildShopClaim(request):guildShop(request);
  }
  return gameplay(request);
-});
+},releasePolicyLoader(url,anonKey)));

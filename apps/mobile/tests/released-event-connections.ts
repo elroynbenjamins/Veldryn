@@ -5,7 +5,6 @@ import {COLLECTIBLES} from '../src/content/collectibles';
 import {EVENT_COMPANIONS} from '../src/content/event-companions-v2';
 import {createCharacter,newGame} from '../src/core/game';
 import {activeLiveEvent,setLocalEventEnabled} from '../src/core/live-events';
-import {classCompanionRole} from '../src/core/companion-roles';
 import {profileIconCollection,canUseProfileIcon} from '../src/core/profile-icons';
 import {canUseProfileCosmetic} from '../src/core/profile-cosmetics';
 import {executeGameCommand} from '../src/core/game-commands';
@@ -30,6 +29,13 @@ for(const event of LIVE_EVENT_CATALOG){
  for(const cls of CLASSES){
   const milestones=event.milestones(cls.id).map(row=>row.reward);
   const rewards=[...milestones,...event.shop.map(row=>row.reward)];
+  if(event.id==='EVT_ANNUAL_010_2026'){
+   const shopCompanionIds=new Set(event.shop.filter(row=>row.reward.kind==='companion').map(row=>row.reward.id));
+   const milestoneCompanionIds=milestones.filter(reward=>reward.kind==='companion').map(reward=>reward.id);
+   assert.ok(milestoneCompanionIds.every(id=>!shopCompanionIds.has(id)),`${cls.id} must not receive the fixed Veilbreak shop companion again from milestones`);
+   assert.deepEqual(milestoneCompanionIds,['EVT_UNIT_008','EVT_UNIT_007'],`${cls.id} receives Tank and Damage companions for Trials and Expeditions`);
+   assert.deepEqual([...shopCompanionIds],['EVT_UNIT_011'],`${cls.id} sees the Support companion only as the fixed shop goal`);
+  }
   for(const reward of rewards){
    if(reward.kind==='pet'){
     const pet=COLLECTIBLES.find(row=>row.kind==='pet'&&row.id===reward.id);
@@ -40,7 +46,6 @@ for(const event of LIVE_EVENT_CATALOG){
     const companion=EVENT_COMPANIONS.find(row=>row.id===reward.id);
     assert.ok(companion,`${reward.id} must have combat data`);
     assert.equal(companion?.name,reward.name,`${reward.id} uses its canonical portrait identity`);
-    if(milestones.includes(reward))assert.notEqual(companion?.role,classCompanionRole(cls.id),'milestone reward must fit an available companion role');
    }
   }
  }

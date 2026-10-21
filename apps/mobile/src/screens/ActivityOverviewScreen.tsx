@@ -73,8 +73,8 @@ export function ActivityOverviewScreen({state,now,onSwitch,onCreate,onDelete}:{s
     <Text style={s.confirmLabel}>{a('Type {confirmation} to unlock the delete actions.',{confirmation:required})}</Text>
     <GameTextInput accessibilityLabel={a("Character deletion confirmation")} autoCapitalize="characters" autoCorrect={false} editable={!busy&&!blockReason} value={confirmation} onChangeText={value=>{setConfirmation(value);setError('')}} placeholder={required}/>
     {!!error&&<Text accessibilityRole="alert" style={s.error}>{accountError(language,error)}</Text>}
-    <GameButton title={busy?a("Deleting…"):a("Delete & choose new class")} loading={busy} disabled={!onDelete||!confirmed||!!blockReason||busy} tone="danger" onPress={()=>void remove(true)}/>
-    {entries.length>1?<GameButton title={a("Delete character only")} disabled={!onDelete||!confirmed||!!blockReason||busy} tone="secondary" onPress={()=>void remove(false)}/>:null}
+    <GameButton title={busy?a("Deleting…"):a("Delete & choose new class")} loading={busy} disabled={!onDelete||!confirmed||!!blockReason||busy} tone="danger" onPress={()=>remove(true)}/>
+    {entries.length>1?<GameButton title={a("Delete character only")} disabled={!onDelete||!confirmed||!!blockReason||busy} tone="secondary" onPress={()=>remove(false)}/>:null}
     <Text style={s.footnote}>{entries.length===1?a("This is your only character. After deletion you return to class creation."):a("Choosing a new class deletes this character first, frees the slot, and then opens class creation. Plain delete keeps you on the remaining roster.")}</Text>
    </ScrollView>:null}
   </GameModalSurface>

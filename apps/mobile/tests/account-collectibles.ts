@@ -1,6 +1,7 @@
 import {COLLECTIBLES,PROFILE_COLLECTIBLES,validateCollectibleCatalog} from '../src/content/collectibles';
 import {CORE_PET_COLLECTIBLES,validateCorePetCatalog} from '../src/content/core-pets';
-import {EVENT_PET_COLLECTIBLES} from '../src/content/event-collectible-content';
+import {EVENT_PET_COLLECTIBLES} from '../src/content/event-collectible-content-active';
+import {GUILD_PET_COLLECTIBLES} from '../src/content/guild-pets-v1';
 import {collectionBonusBreakdown,selectCollectible,unlockCollectible} from '../src/core/collectibles';
 import {normalizeOwnedPetIds,normalizeSelectedPetId} from '../src/core/pet-collection';
 import {createCharacter,newGame} from '../src/core/game';
@@ -14,10 +15,10 @@ validateCollectibleCatalog();
 validateCorePetCatalog();
 
 equal(CORE_PET_COLLECTIBLES.length,33,'canonical core pet count');
-equal(EVENT_PET_COLLECTIBLES.length,18,'active event pet count');
+equal(EVENT_PET_COLLECTIBLES.length,2,'released event pet count');
 equal(
   COLLECTIBLES.length,
-  CORE_PET_COLLECTIBLES.length+(EVENTS_RELEASED?EVENT_PET_COLLECTIBLES.length:0)+PROFILE_COLLECTIBLES.filter(row=>EVENTS_RELEASED||row.collectionGroup!=='event').length,
+  CORE_PET_COLLECTIBLES.length+GUILD_PET_COLLECTIBLES.length+(EVENTS_RELEASED?EVENT_PET_COLLECTIBLES.length:0)+PROFILE_COLLECTIBLES.filter(row=>row.collectionGroup!=='event').length,
   'combined collectible catalog count',
 );
 

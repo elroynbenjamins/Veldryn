@@ -9,18 +9,20 @@ import {liveEventVisuals} from '../ui/live-event-visuals-active';
 import {BoardTabs} from './BoardTabs';
 import {GameButton} from './GameButton';
 import {RewardArt} from './EventRewardArt';
+import {ProfileScenePreview} from './ProfileScenePreview';
 
 const FILTERS=[{id:'all',label:'All'},{id:'collectibles',label:'Collectibles'},{id:'supplies',label:'Supplies'}] as const;
 type Filter=typeof FILTERS[number]['id'];
 const supply=(reward:EventReward)=>['candy','gold','companion_essence'].includes(reward.kind);
 function kindLabel(reward:EventReward){
- const names:Record<EventReward['kind'],string>={pet:'Pet',companion:'Companion',emote:'Emote',title:'Title',candy:'Consumable',gold:'Gold',companion_essence:'Companion Essence',profile_icon:'Profile icon',background:'Background',border:'Border',guild_name_color:'Guild name color',guild_frame:'Guild frame',guild_banner:'Guild banner'};
+ const names:Record<EventReward['kind'],string>={pet:'Pet',companion:'Companion',emote:'Emote',title:'Title',candy:'Consumable',gold:'Gold',companion_essence:'Companion Essence',profile_icon:'Profile icon',background:'Personal profile background',border:'Border',guild_name_color:'Guild name color',guild_frame:'Guild frame',guild_banner:'Guild banner'};
  return names[reward.kind];
 }
 function description(reward:EventReward,definition:LiveEventDef){
  if(reward.kind==='candy')return eventCandies(definition).find(row=>row.id===reward.id)?.description??'Event consumable.';
  if(reward.kind==='gold')return `Adds ${(reward.quantity??0).toLocaleString()} Gold to this character.`;
  if(reward.kind==='companion_essence')return `Adds ${(reward.quantity??0).toLocaleString()} Companion Essence to your account.`;
+ if(reward.kind==='background')return 'Permanent background for your personal profile card. Equip it from Character → Customize → Backgrounds after unlocking.';
  return `Permanent ${kindLabel(reward).toLowerCase()} · Account unlock`;
 }
 export function EventShopCatalogue({state,definition,offers,currency,prestige,busy,pendingId,onBuy}:{state:GameState;definition:LiveEventDef;offers:EventShopOffer[];currency:number;prestige:number;busy:boolean;pendingId:string|null;onBuy:(offer:EventShopOffer)=>Promise<void>}){
@@ -46,8 +48,9 @@ export function EventShopCatalogue({state,definition,offers,currency,prestige,bu
     </Pressable>
     {unavailable&&!owned?<Text style={[s.availability,{color:sold?C.muted:C.warning}]}>{unavailable}</Text>:null}
     {expanded?<View style={[s.detail,{borderTopColor:C.line}]}>
-     <View style={s.preview}><RewardArt reward={offer.reward} definition={definition} size={92}/><View style={s.flex}><Text style={[s.eyebrow,{color:C.info}]}>{offer.reward.rarity.toUpperCase()} · {kindLabel(offer.reward).toUpperCase()}</Text><Text style={[s.copy,{color:C.text}]}>{description(offer.reward,definition)}</Text></View></View>
-     <View style={[s.balanceReview,{backgroundColor:C.panel2}]}><Text style={[s.meta,{color:C.muted}]}>{name}</Text><View style={s.balanceNumbers}><View style={s.flex}><Text style={[s.meta,{color:C.muted}]}>Balance</Text><Text style={[s.amount,{color:C.text}]}>{balance.toLocaleString()}</Text></View><View style={s.flex}><Text style={[s.meta,{color:C.muted}]}>Cost</Text><Text style={[s.amount,{color:C.text}]}>{offer.cost.toLocaleString()}</Text></View><View style={s.flex}><Text style={[s.meta,{color:C.muted}]}>{shortfall?'Missing':'After'}</Text><Text style={[s.amount,{color:shortfall?C.warning:C.good}]}>{(shortfall||balance-offer.cost).toLocaleString()}</Text></View></View></View>
+     {offer.reward.kind==='background'&&state.character?<ProfileScenePreview state={state} backgroundId={offer.reward.id}/>:null}
+     <View style={s.preview}>{offer.reward.kind!=='background'?<RewardArt reward={offer.reward} definition={definition} size={92}/>:null}<View style={s.flex}><Text style={[s.eyebrow,{color:C.info}]}>{offer.reward.rarity.toUpperCase()} · {kindLabel(offer.reward).toUpperCase()}</Text><Text style={[s.copy,{color:C.text}]}>{description(offer.reward,definition)}</Text></View></View>
+     {owned?<Text style={[s.copy,{color:C.good}]}>Permanently unlocked on your account.</Text>:<View style={[s.balanceReview,{backgroundColor:C.panel2}]}><Text style={[s.meta,{color:C.muted}]}>{name}</Text><View style={s.balanceNumbers}><View style={s.flex}><Text style={[s.meta,{color:C.muted}]}>Balance</Text><Text style={[s.amount,{color:C.text}]}>{balance.toLocaleString()}</Text></View><View style={s.flex}><Text style={[s.meta,{color:C.muted}]}>Cost</Text><Text style={[s.amount,{color:C.text}]}>{offer.cost.toLocaleString()}</Text></View><View style={s.flex}><Text style={[s.meta,{color:C.muted}]}>{shortfall?'Missing':'After'}</Text><Text style={[s.amount,{color:shortfall?C.warning:C.good}]}>{(shortfall||balance-offer.cost).toLocaleString()}</Text></View></View></View>}
      <GameButton title={pendingId===offer.id?'Purchasing…':owned?'Owned':sold?'Sold out':locked?`Level ${offer.minLevel}+ required`:`Buy · ${offer.cost.toLocaleString()} ${name}`} disabled={busy||!!unavailable} loading={pendingId===offer.id} onPress={()=>onBuy(offer)}/>
     </View>:null}
    </View>;

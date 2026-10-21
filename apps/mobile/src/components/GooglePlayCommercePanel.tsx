@@ -289,11 +289,11 @@ function AndroidGooglePlayCommercePanel({state,onChange,online=false,onRefreshCo
     <CommerceCatalog language={language} owned={benefits} checking={ownershipChecking} ready={!busy&&!refreshing&&!ownershipChecking&&signedIn&&!!context&&context.checkoutAvailable!==false&&connected}
       price={id=>id==='supporter_monthly'?subscriptionPrice(sub,offer):productPrice(byId(id))}
       available={id=>id==='supporter_monthly'?!!offer?.offerTokenAndroid:!!byId(id)}
-      onBuy={id=>void buy(id)}/>
+      onBuy={id=>buy(id)}/>
     <Text style={s.muted}>{a("Owned and active benefits include redeemed codes.")}</Text>
     <GameButton compact title={a("Manage Supporter in Google Play")} tone="secondary" disabled={busy||!signedIn} onPress={manageSupporter}/>
-    <GameButton compact title={refreshing?a("Refreshing purchases…"):a("Refresh purchases")} tone="secondary" disabled={busy||refreshing||!signedIn} onPress={()=>void refresh()}/>
-    <GameButton compact title={busy?a("Checking purchases…"):a("Restore purchases")} tone="secondary" disabled={busy||refreshing||!signedIn} onPress={()=>void restore()}/>
+    <GameButton compact title={refreshing?a("Refreshing purchases…"):a("Refresh purchases")} tone="secondary" disabled={busy||refreshing||!signedIn} onPress={()=>refresh()}/>
+    <GameButton compact title={busy?a("Checking purchases…"):a("Restore purchases")} tone="secondary" disabled={busy||refreshing||!signedIn} onPress={()=>restore()}/>
     <Text style={s.foot}>{a("VIP and VIP+ are one-time purchases. Supporter stacks with them while the subscription is active. There are no ads and no paid PvP power.")}</Text>
   </Panel>;
 }

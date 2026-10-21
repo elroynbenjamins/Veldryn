@@ -1,7 +1,9 @@
 import {Image,StyleSheet,View} from 'react-native';
 
 const STARTER_WEAPON_SHEET=require('../../assets/starter-weapons-v1.webp');
-const SHEET_SIZE=1274;
+// The source WebP is 1254 × 1254. Using the former 1274px estimate shifted
+// later cells far enough to reveal a sliver of their neighbour at small sizes.
+const SHEET_SIZE=1254;
 const CELL_SIZE=SHEET_SIZE/3;
 const CELL_BY_ITEM_ID:Record<string,{column:number;row:number}>={
   basic_sword:{column:0,row:0},basic_tower_shield:{column:1,row:0},basic_chained_weapon:{column:2,row:0},
@@ -14,8 +16,10 @@ export function hasStarterWeaponArtwork(itemId:string){return !!CELL_BY_ITEM_ID[
 export function StarterWeaponArtwork({itemId,size=58}:{itemId:string;size?:number}){
   const cell=CELL_BY_ITEM_ID[itemId];
   if(!cell)return null;
-  const inset=.06,displaySize=size*(1-inset*2),scale=displaySize/CELL_SIZE,offset=size*inset;
-  return <View accessible={false} style={[s.frame,{width:size,height:size}]}><Image source={STARTER_WEAPON_SHEET} resizeMode="stretch" style={{position:'absolute',width:SHEET_SIZE*scale,height:SHEET_SIZE*scale,left:offset-cell.column*displaySize,top:offset-cell.row*displaySize}}/></View>;
+  // Crop inside the source cell itself. Padding the atlas position after it
+  // has been scaled exposes pixels from the previous row/column.
+  const inset=.06,inner=1-inset*2,scale=size/(CELL_SIZE*inner);
+  return <View accessible={false} style={[s.frame,{width:size,height:size}]}><Image source={STARTER_WEAPON_SHEET} resizeMode="stretch" style={{position:'absolute',width:SHEET_SIZE*scale,height:SHEET_SIZE*scale,left:-(cell.column+inset)*CELL_SIZE*scale,top:-(cell.row+inset)*CELL_SIZE*scale}}/></View>;
 }
 
 const s=StyleSheet.create({frame:{overflow:'hidden'}});

@@ -59,7 +59,7 @@ function RedeemCodePanel({language,onRedeemCode}:{language:Language;onRedeemCode
   catch(error){setStatus(error instanceof Error?error.message:a('Unable to redeem this code.'));}
   finally{setBusy(false);}
  };
- return <Panel><Text style={[s.title,{color:C.text}]}>{a('Redeem code')}</Text><Text style={[s.sub,{color:C.muted}]}>{a('Enter a promotional code from an official VELDRYN announcement or event.')}</Text><View style={s.redeemRow}><TextInput accessibilityLabel={a('Redeem code')} autoCapitalize="characters" autoCorrect={false} value={code} onChangeText={value=>{setCode(value.replace(/\s/g,''));setStatus('')}} placeholder={a('ENTER CODE')} placeholderTextColor={C.muted} style={[s.codeInput,{color:C.text,borderColor:C.line,backgroundColor:C.inputBg}]}/><GameButton compact title={busy?a('Checking…'):a('Redeem')} disabled={!code.trim()||busy} onPress={()=>void redeem()}/></View>{status?<Text accessibilityLiveRegion="polite" style={[s.redeemStatus,{color:onRedeemCode?C.info:C.muted}]}>{status}</Text>:null}</Panel>;
+ return <Panel><Text style={[s.title,{color:C.text}]}>{a('Redeem code')}</Text><Text style={[s.sub,{color:C.muted}]}>{a('Enter a promotional code from an official VELDRYN announcement or event.')}</Text><View style={s.redeemRow}><TextInput accessibilityLabel={a('Redeem code')} autoCapitalize="characters" autoCorrect={false} value={code} onChangeText={value=>{setCode(value.replace(/\s/g,''));setStatus('')}} placeholder={a('ENTER CODE')} placeholderTextColor={C.muted} style={[s.codeInput,{color:C.text,borderColor:C.line,backgroundColor:C.inputBg}]}/><GameButton compact title={busy?a('Checking…'):a('Redeem')} disabled={!code.trim()||busy} onPress={()=>redeem()}/></View>{status?<Text accessibilityLiveRegion="polite" style={[s.redeemStatus,{color:onRedeemCode?C.info:C.muted}]}>{status}</Text>:null}</Panel>;
 }
 
 export function SettingsScreen({state,onLanguage,onReset,onChange,onRefreshCommerce,onExport,onImport,onRedeemCode,onOpenCoopUiGallery,onOpenUpdates,initialSection,onNavigateGuide,onStartMainScreenTour,online=false}:Props){
@@ -145,7 +145,7 @@ export function SettingsScreen({state,onLanguage,onReset,onChange,onRefreshComme
       <Text style={[s.sub,{color:theme.muted}]}>{state.activity?a('Active: {target} ({kind})',{target:state.activity.targetId,kind:a(state.activity.kind.charAt(0).toUpperCase()+state.activity.kind.slice(1))}):a("No activity running")}</Text>
       <GameButton title={a("Stop current activity")} tone="danger" disabled={!state.activity} onPress={()=>onChange({...state,activity:null})}/>
     </Panel>
-    <>{online?<GameButton title={a("Export a copy of my online save")} tone="secondary" onPress={()=>void onExport()}/>:<SaveTransferPanel language={language} onExport={onExport} onImport={onImport} reduceMotion={state.settings.reduceMotion}/>}</>
+    <>{online?<GameButton title={a("Export a copy of my online save")} tone="secondary" onPress={()=>onExport()}/>:<SaveTransferPanel language={language} onExport={onExport} onImport={onImport} reduceMotion={state.settings.reduceMotion}/>}</>
     <Panel>
       <Text style={[s.title,{color:theme.text}]}>{t(state.settings.language,'settings.privacy')}</Text>
       <Text style={[s.sub,{color:theme.muted}]}>{online?a("Your account and gameplay progress are stored on VELDRYN servers. Your older local save stays on this device."):a("Offline progress remains on this device. Local progress cannot be uploaded as online rewards.")}</Text>

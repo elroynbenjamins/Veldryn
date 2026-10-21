@@ -76,7 +76,7 @@ export function PlayerNameStyleEditor({state,draft,onDraftChange,onSaveNameStyle
    <SettingToggle label={profileT(language,"Slow flowing gradient")} description={profileT(language,"Reduced Motion always renders this as a static gradient.")} value={draft.mode==='gradient'&&draft.animation==='flow'} disabled={!entitlements.canUseAdvanced||draft.mode!=='gradient'||saving} onValueChange={value=>{if(draft.mode==='gradient'){onDraftChange({...draft,animation:value?'flow':'none'});setMessage('');}}}/>
   </View>
   {inputDirty?<Text style={s.meta}>{profileT(language,"Preview your color changes before saving.")}</Text>:null}
-  <View style={s.footer}><GameButton compact title={profileT(language,"Use default name")} tone="secondary" disabled={saving} onPress={()=>previewStyle({mode:'default',animation:'none'})}/><View style={s.save}><GameButton title={saving?profileT(language,"Saving…"):profileT(language,"Save name style")} loading={saving} disabled={!canApply||inputDirty||saving} onPress={()=>void save()}/></View></View>
+  <View style={s.footer}><GameButton compact title={profileT(language,"Use default name")} tone="secondary" disabled={saving} onPress={()=>previewStyle({mode:'default',animation:'none'})}/><View style={s.save}><GameButton title={saving?profileT(language,"Saving…"):profileT(language,"Save name style")} loading={saving} disabled={!canApply||inputDirty||saving} onPress={()=>save()}/></View></View>
   {message?<Text accessibilityRole="alert" style={s.message}>{profileText(language,message)}</Text>:null}
  </View>;
 }

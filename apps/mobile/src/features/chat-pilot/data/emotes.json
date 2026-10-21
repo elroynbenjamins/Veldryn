@@ -830,5 +830,40 @@
       1254,
       1254
     ]
+  },
+  {
+    "id": "emote_laughing_crow",
+    "label": "Laughing Crow",
+    "category": "pets",
+    "file": "../../../assets/events/veilbreak/emote_laughing_crow_runtime.webp",
+    "defaultAvailable": false
+  },
+  {
+    "id": "emote_lantern_watch",
+    "label": "Lantern Watch",
+    "category": "pets",
+    "file": "../../../assets/events/veilbreak/emote_lantern_watch_runtime.webp",
+    "defaultAvailable": false
+  },
+  {
+    "id": "emote_sleeping_scarecrow",
+    "label": "Sleeping Scarecrow",
+    "category": "pets",
+    "file": "../../../assets/events/veilbreak/emote_sleeping_scarecrow_runtime.webp",
+    "defaultAvailable": false
+  },
+  {
+    "id": "emote_veil_salute",
+    "label": "Pumpkin Panic",
+    "category": "pets",
+    "file": "../../../assets/events/veilbreak/emote_pumpkin_panic_runtime.webp",
+    "defaultAvailable": false
+  },
+  {
+    "id": "emote_candle_circle",
+    "label": "Gloam Facepalm",
+    "category": "pets",
+    "file": "../../../assets/events/veilbreak/emote_gloam_facepalm_runtime.webp",
+    "defaultAvailable": false
   }
 ]

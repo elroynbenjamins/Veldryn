@@ -1,9 +1,12 @@
 {
   "name": "veldryn-offline-prototype",
-  "version": "0.9.5",
+  "version": "1.0.0",
   "private": true,
   "main": "index.js",
   "scripts": {
+    "test:app-version-gate": "node tests/app-version-gate.cjs",
+    "test:online-loading": "node tests/online-loading-interactions.cjs",
+    "test:event-currency-promotion": "node ../../tools/run-mobile-tests.mjs event-currency-promotion",
     "eas-build-post-install": "node scripts/write-build-source.mjs",
     "start": "expo start",
     "android": "expo run:android",
@@ -17,6 +20,8 @@
     "typecheck": "tsc --noEmit",
     "test:companions": "node ../../tools/run-mobile-tests.mjs companion-integration class-skills monster-mastery",
     "test:master-roster": "node ../../tools/validate-master-roster-assets.mjs && node ../../tools/validate-companion-art-coverage.mjs",
+    "test:guild-shop-art": "node ../../tools/validate-guild-token-shop-assets.mjs",
+    "test:guild-ui": "node tests/guild-token-shop-interactions.cjs && node tests/guild-roster-interactions.cjs && node ../../tools/run-mobile-tests.mjs guild-management-ui-contract guild-chat-projects-ui-contract guild-notice-board-ui-contract guild-muster-ui-contract v44-guild-hall",
     "test:event-release-graph": "node ../../tools/validate-event-release-graph.mjs",
     "test:release-bundle": "expo export --platform android --output-dir .release-bundle-audit && node ../../tools/validate-mobile-export-budget.mjs .release-bundle-audit",
     "test:online": "tsc -p tsconfig.core.json --outDir .core-build && node .core-build/apps/mobile/tests/online-gameplay.js",

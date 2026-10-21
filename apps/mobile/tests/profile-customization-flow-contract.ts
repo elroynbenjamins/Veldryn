@@ -22,6 +22,9 @@ ok(screen.includes('onDraftChange={setIdentityDraft}'),'Identity draft must feed
 ok(screen.includes('Preview as others see me')&&screen.includes('ProfileAudiencePreviewModal'),'Customize Profile must expose the audience preview');
 
 ok(appearance.includes('onDirtyChange?:(dirty:boolean)=>void')&&appearance.includes('onPreviewStateChange?:(preview:GameState)=>void'),'Appearance editor must expose draft/dirty callbacks');
+ok(appearance.includes("['All','Starter','Class','Combat','Event']")&&!appearance.includes("['All','Starter','Class','Companion','Combat','Event']"),'Profile icon filters must not expose the retired Companion tab');
+ok(appearance.includes("const borderName=(id:string)=>profileRewardSource(state,'border',id).name")&&appearance.includes('name={borderName(key)}'),'Border cards must use their player-facing reward names');
+ok(appearance.includes('style={s.petImage}')&&appearance.includes('petImage:{width:\'100%\',height:\'100%\'}'),'Pet cards must size visible art explicitly inside the gallery');
 ok(appearance.includes('JOURNAL_TITLES_V42')&&appearance.includes("journalTitles.map"),'Earned Adventurer\'s Journal titles must be selectable from Profile customization');
 ok(identity.includes('onDirtyChange?:(dirty:boolean)=>void')&&identity.includes('onDraftChange?:(draft:ProfileExtensionSelfV43|null)=>void'),'Social profile editor must expose draft/dirty callbacks');
 ok(identity.includes("picker==='mastery'")&&identity.includes("label:profileT(language,'Mastery'),count:value.masteryShowcaseActionIds.length")&&identity.includes("profileT(language,'{label} {count}/3 ▾'"),'Social profile editor must expose a three-slot R50 mastery showcase picker');

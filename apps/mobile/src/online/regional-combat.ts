@@ -1,3 +1,4 @@
+import {versionedFetch as fetch} from './versioned-fetch';
 import {supabase} from './supabase';
 declare const process:{env:Record<string,string|undefined>};
 const url=process.env.EXPO_PUBLIC_SUPABASE_URL;

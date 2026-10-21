@@ -37,7 +37,7 @@ export function deriveOnlineCoopLoadout(accountId:string,state:GameState,version
  });
  const capabilities:CapabilityTag[]=role==='tank'?['threat','defense']:role==='support'?['restore','mitigate','utility']:['damage'];
  const companionId=character.equippedCombatCompanionId;
- const companionPolicy=validateCompanionLoadout({classId:character.classId,companionId,ownedCompanionIds:state.account.unlockedCombatCompanionIds??[]});
+ const companionPolicy=validateCompanionLoadout({classId:character.classId,companionId,ownedCompanionIds:state.account.unlockedCombatCompanionIds??[],combatMode:'dungeon'});
  if(!companionPolicy.ok)throw new Error(companionPolicy.reason);
  if(companionId)assertCompanionIdle(state,companionId);
  const combatCompanion=companionId?companionOwned(state)[companionId]:undefined;

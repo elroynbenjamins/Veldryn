@@ -1,6 +1,6 @@
 import type {ActivityQueueGoal,GameState,GatheringSkillId,QueuedActivity} from './types';
 import type {IdleStopCondition} from './idle-rules-v40';
-import {GATHERING} from '../content/skills';
+import {GATHERING,RECIPES} from '../content/skills';
 import {HERB_NODES} from '../content/herbalism';
 import {MONSTERS} from '../content/monsters';
 import {WORLD_ZONES} from '../content/world-map';
@@ -14,9 +14,13 @@ import {alchemyAvailability} from './alchemy';
 import {ALCHEMY_RECIPES,alchemyRecipeDef} from '../content/alchemy';
 import {itemDef} from '../content/items';
 import {regionTravelAvailability,regionTravelLockReason} from './world-navigation';
+import {processingAvailability,processingRecipeDef} from './processing';
 
 export const BASE_ACTIVITY_QUEUE=2;
 export const MAX_ACTIVITY_QUEUE=3;
+function processingRecipesForSkill(skillId:'smithing'|'cooking'){
+ return RECIPES.filter(recipe=>recipe.skillId===skillId&&!!processingRecipeDef(recipe.id));
+}
 export function normalizeQueueCombatRecovery(value:unknown):{needsHealing:boolean;minimumFood:number}|undefined{
  if(!value||typeof value!=='object'||Array.isArray(value))return undefined;
  const row=value as Record<string,unknown>;
@@ -74,7 +78,7 @@ export function activityQueueAvailableRegions(state:GameState){
 }
 /** Called at queue creation, without requiring auto-travel to be switched on. */
 export function activityQueueSchedulingIssue(state:GameState,activity:Pick<QueuedActivity,'kind'|'targetId'>):string|undefined{
- if(activity.kind==='faith'||activity.kind==='alchemy')return undefined;
+ if(activity.kind==='faith'||activity.kind==='alchemy'||activity.kind==='processing')return undefined;
  const required=activityQueueRegion(activity);
  if(!required)return 'This activity has no valid region. Choose a different activity.';
  if(required.id===state.currentRegionId)return undefined;
@@ -95,7 +99,7 @@ export function activityQueueSchedulingIssue(state:GameState,activity:Pick<Queue
 }
 /** Auto-travel is an execution permission, separate from scheduling permissions. */
 export function activityQueueLocationIssue(state:GameState,activity:Pick<QueuedActivity,'kind'|'targetId'>,allowAutoTravel=true):string|undefined{
- if(activity.kind==='faith'||activity.kind==='alchemy')return undefined;
+ if(activity.kind==='faith'||activity.kind==='alchemy'||activity.kind==='processing')return undefined;
  const required=activityQueueRegion(activity);
  if(!required)return 'This activity has no valid region. Choose a different activity.';
  if(required.id===state.currentRegionId)return undefined;
@@ -133,9 +137,9 @@ export function activityQueueCapacity(state:GameState){return Math.min(MAX_ACTIV
 export function normalizeQueuedActivity(value:unknown):QueuedActivity|undefined{
  if(!value||typeof value!=='object'||Array.isArray(value))return undefined;
  const row=value as Record<string,unknown>,kind=row.kind,targetId=typeof row.targetId==='string'?row.targetId.trim():'';
- if((kind!=='combat'&&kind!=='gathering'&&kind!=='faith'&&kind!=='exploration'&&kind!=='alchemy')||!targetId||targetId.length>100)return undefined;
+ if((kind!=='combat'&&kind!=='gathering'&&kind!=='faith'&&kind!=='exploration'&&kind!=='alchemy'&&kind!=='processing')||!targetId||targetId.length>100)return undefined;
  const goal=normalizeActivityQueueGoal(row.goal);
- if(row.goal!==undefined&&(!goal||(kind==='combat'&&!['duration_seconds','session_kills'].includes(goal.kind))||(kind==='gathering'&&goal.kind==='session_kills')||(kind==='faith'||kind==='alchemy')||(kind==='exploration'&&goal.kind!=='duration_seconds')))return undefined;
+ if(row.goal!==undefined&&(!goal||(kind==='combat'&&!['duration_seconds','session_kills'].includes(goal.kind))||(kind==='gathering'&&goal.kind==='session_kills')||(kind==='faith'||kind==='alchemy'||kind==='processing')||(kind==='exploration'&&goal.kind!=='duration_seconds')))return undefined;
  if(kind==='gathering')return {kind,targetId,...(goal?{goal}:{})};
  if(kind==='exploration')return {kind,targetId,...(goal?{goal}:{})};
  if(kind==='faith'){
@@ -144,6 +148,7 @@ export function normalizeQueuedActivity(value:unknown):QueuedActivity|undefined{
   return {kind,targetId,faithPracticeCount:Number(faithPracticeCount)};
  }
  if(kind==='alchemy')return {kind,targetId};
+ if(kind==='processing')return {kind,targetId};
  const combatTacticId=COMBAT_TACTIC_IDS.includes(row.combatTacticId as any)?row.combatTacticId as QueuedActivity['combatTacticId']:undefined;
  const huntGoalId=HUNT_GOAL_IDS.includes(row.huntGoalId as any)?row.huntGoalId as QueuedActivity['huntGoalId']:undefined;
  return {kind,targetId,...(combatTacticId?{combatTacticId}:{}),...(huntGoalId?{huntGoalId}:{}),...(goal?{goal}:{})};
@@ -193,6 +198,7 @@ export function activityQueueLabel(activity:QueuedActivity){
  }
  if(activity.kind==='exploration')return [EXPLORATION_ROUTES.find(row=>row.id===activity.targetId)?.name??activity.targetId,activity.goal?activityQueueGoalLabel(activity.goal):undefined].filter(Boolean).join(' · ');
  if(activity.kind==='alchemy')return alchemyRecipeDef(activity.targetId)?.name??activity.targetId;
+ if(activity.kind==='processing')return processingRecipeDef(activity.targetId)?.name??activity.targetId;
  return [[...GATHERING,...HERB_NODES].find(row=>row.id===activity.targetId)?.name??activity.targetId,activity.goal?activityQueueGoalLabel(activity.goal):undefined].filter(Boolean).join(' · ');
 }
 
@@ -206,7 +212,7 @@ export interface ActivityQueueHandoffStatus{
  nextBlocker?:string;
 }
 export interface QueuedActivityReadiness{ready:boolean;blocker?:string}
-export function queueSkillReadiness(state:GameState,skillId:GatheringSkillId|'combat'|'faith'|'exploration'|'alchemy'):QueuedActivityReadiness{
+export function queueSkillReadiness(state:GameState,skillId:GatheringSkillId|'combat'|'faith'|'exploration'|'alchemy'|'smithing'|'cooking'):QueuedActivityReadiness{
  if(!state.character)return {ready:false,blocker:'Create a character first.'};
  const region=WORLD_ZONES.find(zone=>zone.id===state.currentRegionId),regionName=region?.name??state.currentRegionId;
  if(skillId==='combat'){
@@ -229,6 +235,10 @@ export function queueSkillReadiness(state:GameState,skillId:GatheringSkillId|'co
   const level=state.skills.find(row=>row.skillId==='alchemy')?.level??0;
   return ALCHEMY_RECIPES.some(recipe=>recipe.level<=level)?{ready:true}:{ready:false,blocker:'No Alchemy recipes are unlocked yet.'};
  }
+ if(skillId==='smithing'||skillId==='cooking'){
+  const level=state.skills.find(row=>row.skillId===skillId)?.level??0;
+  return processingRecipesForSkill(skillId).some(recipe=>recipe.level<=level)?{ready:true}:{ready:false,blocker:`No ${skillId} recipes are unlocked yet.`};
+ }
  const nodes=[...GATHERING,...HERB_NODES].filter(row=>row.skillId===skillId&&row.zoneId===state.currentRegionId);
  if(!nodes.length)return {ready:false,blocker:`Not available in ${regionName}.`};
  const required=Math.min(...nodes.map(row=>row.unlockLevel)),level=state.skills.find(row=>row.skillId===skillId)?.level??1;
@@ -236,7 +246,7 @@ export function queueSkillReadiness(state:GameState,skillId:GatheringSkillId|'co
 }
 /** Scheduling may precede gathering its inputs. Execution always uses strict readiness. */
 export function queuedActivityPlanningReadiness(state:GameState,activity:QueuedActivity|undefined):QueuedActivityReadiness{
- if(activity?.kind!=='alchemy'){
+ if(activity?.kind!=='alchemy'&&activity?.kind!=='processing'){
   if(activity){
    const issue=activityQueueSchedulingIssue(state,activity);
    if(issue)return {ready:false,blocker:issue};
@@ -244,6 +254,12 @@ export function queuedActivityPlanningReadiness(state:GameState,activity:QueuedA
   // A paid player may plan an unlocked remote activity even with auto-travel off.
   // Execution still checks the toggle and the latest entitlement independently.
   return queuedActivityReadiness(activity&&activityQueueCrossRegionAllowed(state)?{...state,settings:{...state.settings,autoTravelQueuedActivities:true}}:state,activity);
+ }
+ if(activity.kind==='processing'){
+  const recipe=processingRecipeDef(activity.targetId),level=state.skills.find(row=>row.skillId===recipe?.skillId)?.level??0;
+  if(!state.character)return {ready:false,blocker:'Create a character first.'};
+  if(!recipe)return {ready:false,blocker:'Queued processing recipe is no longer available.'};
+  return level>=recipe.level?{ready:true}:{ready:false,blocker:`Requires ${recipe.skillId} level ${recipe.level}.`};
  }
  const recipe=alchemyRecipeDef(activity.targetId),level=state.skills.find(row=>row.skillId==='alchemy')?.level??0;
  if(!state.character)return {ready:false,blocker:'Create a character first.'};
@@ -287,6 +303,10 @@ export function queuedActivityReadiness(state:GameState,activity:QueuedActivity|
  }
  if(activity.kind==='alchemy'){
   const availability=alchemyAvailability(state,activity.targetId);
+  return availability.ready?{ready:true,blocker:undefined}:{ready:false,blocker:availability.reason};
+ }
+ if(activity.kind==='processing'){
+  const availability=processingAvailability(state,activity.targetId,1,true);
   return availability.ready?{ready:true,blocker:undefined}:{ready:false,blocker:availability.reason};
  }
  const gather=[...GATHERING,...HERB_NODES].find(row=>row.id===activity.targetId);

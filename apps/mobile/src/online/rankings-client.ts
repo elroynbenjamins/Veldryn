@@ -1,3 +1,4 @@
+import {versionedFetch as fetch} from './versioned-fetch';
 import {supabase} from './supabase';
 import type {RankingBoardId,RankingBoardSnapshot} from '../core/rankings';
 declare const process:{env:Record<string,string|undefined>};

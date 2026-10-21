@@ -35,7 +35,7 @@ ok(guildScreen.includes('{onlineProjects}')&&guildScreen.includes("onlineSection
 ok(guildScreen.includes('title={st("Guild Projects")}')&&guildScreen.includes("onlineSection==='PvE'?onlinePve:null"),"Activities must label Projects and keep PvE in its dedicated destination");
 ok(guildScreen.includes("onlineSection==='Chat'?onlineChat:null"),'Chat tab must render Guild Chat');
 ok(guildScreen.includes("onlineSection==='Manage'?<View")&&guildScreen.includes('{onlineDirectory}')&&guildScreen.includes('{onlineCustomize}'),'Manage must preserve Directory and Customize capabilities');
-ok(guildScreen.includes('<GuildOnlineHome onNavigate={setOnlineSection} board={onlineBoard} chatUnread={onlineChatUnread}/>'),'Guild Home must preserve the member Notice Board');
+ok(guildScreen.includes('<GuildHomeHeader board={onlineBoard}/>'),'Guild Home must preserve the member Notice Board at the top');
 ok(guildScreen.includes("badge={value==='Chat'?Math.max(onlineChatUnread,onlineChatMentions):0}"),'Guild Chat tab must surface unread/mention attention');
 ok(guildScreen.includes('tabBadgeWarning:{backgroundColor:C.warning}'),'Guild Chat mentions must have warning emphasis');
 

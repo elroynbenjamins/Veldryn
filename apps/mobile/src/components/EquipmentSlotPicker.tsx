@@ -32,7 +32,7 @@ export function EquipmentSlotPicker({state,slot,onEquip,onClose}:{state:GameStat
      <Text style={s.name}>{item.name}{rank?` +${rank}`:''}</Text>
      <Text style={s.stats}>{profileText(language,'Attack')} {Number.isInteger(stats.attack)?stats.attack:stats.attack.toFixed(1)} · {profileText(language,'Defense')} {Number.isInteger(stats.defense)?stats.defense:stats.defense.toFixed(1)} · {profileText(language,'HP')} {Number.isInteger(stats.hp)?stats.hp:stats.hp.toFixed(1)}</Text>
     </View></View>
-    <GameButton compact title={gt('Equip')} loading={busy===item.id} disabled={!!busy} onPress={()=>void equip(item.id)}/>
+    <GameButton compact title={gt('Equip')} loading={busy===item.id} disabled={!!busy} onPress={()=>equip(item.id)}/>
    </View>}):<Text style={s.empty}>{profileText(language,'None available in Inventory.')}</Text>}
    {!!error&&<Text accessibilityLiveRegion="polite" style={s.error}>{error}</Text>}
   </ScrollView>

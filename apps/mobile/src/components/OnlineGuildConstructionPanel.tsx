@@ -67,7 +67,7 @@ export function OnlineGuildConstructionPanel({
    <Text style={s.projectName}>Previous donation needs confirmation</Text>
    <Text style={s.copy}>{pending.amount.toLocaleString()} {resourceName(pending.resourceId)} · {resourceName(pending.templateId)}</Text>
    <View style={s.actions}>
-    <GameButton compact title={busy?'Checking…':'Retry same receipt'} disabled={busy} onPress={()=>void donate(pending)}/>
+    <GameButton compact title={busy?'Checking…':'Retry same receipt'} disabled={busy} onPress={()=>donate(pending)}/>
     <GameButton compact title="Discard local retry" tone="secondary" disabled={busy} onPress={confirmDiscard}/>
    </View>
   </View>:null}
@@ -106,7 +106,7 @@ export function OnlineGuildConstructionPanel({
       <TextInput accessibilityLabel="Donation amount" value={quantity} onChangeText={setQuantity}
        keyboardType="number-pad" maxLength={7} selectTextOnFocus style={s.input}/>
       <GameButton compact title={busy?'Saving…':'Donate'} disabled={busy||!validQuantity}
-       onPress={()=>void donate({templateId:template.id,resourceId:chosen.key,amount:donationAmount})}/>
+       onPress={()=>donate({templateId:template.id,resourceId:chosen.key,amount:donationAmount})}/>
      </View>
      <View style={s.actions}>{[10,100,1000].map(value=><Pressable key={value} onPress={()=>setQuantity(String(Math.min(value,remaining,1000000)))}
       accessibilityRole="button" style={s.preset}><Text style={s.presetText}>{value.toLocaleString()}</Text></Pressable>)}</View>

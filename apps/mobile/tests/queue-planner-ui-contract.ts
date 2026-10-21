@@ -4,8 +4,10 @@ function ok(value:boolean,message:string){if(!value)throw new Error(message);}
 const read=(path:string)=>fs.readFileSync(path,'utf8');
 const skills=read('src/screens/SkillsScreen.tsx');
 const hubReturn=skills.split('\n').find(line=>line.includes('if(!initialSkill)return'))??'';
-ok(hubReturn.includes('<ActivityQueuePlanner'),'Queue planning belongs on the main Skills screen');
+ok(hubReturn.includes('<SkillHub')&&hubReturn.includes('onCommand={onCommand}'),'Queue planning commands belong to the scrolling Skills hub');
 ok(skills.split('<ActivityQueuePlanner').length===2&&!skills.includes('<ActionQueuePanel'),'Individual skill screens must not contain queue controls');
+const focusPosition=skills.indexOf('{focus?<Pressable'),queuePosition=skills.indexOf('<ActivityQueuePlanner'),combatPosition=skills.indexOf('{section(gt("COMBAT SKILLS")');
+ok(focusPosition>=0&&queuePosition>focusPosition&&combatPosition>queuePosition,'Queue activity must scroll between Training Focus and Combat Skills');
 const planner=read('src/components/ActivityQueuePlanner.tsx');
 for(const label of ['Choose queue skill','Choose queued activity','Resource quantity','Skill level','Duration','Enemies defeated'])ok(planner.includes(label),'Planner exposes '+label);
 for(const label of ["id:'faith'","id:'exploration'","id:'alchemy'",'Practices to reserve','faithPracticeCount','Starts this brew until its materials'])ok(planner.includes(label),'Planner supports queued '+label);

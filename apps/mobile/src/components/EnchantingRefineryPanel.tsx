@@ -31,12 +31,12 @@ export function EnchantingRefineryPanel({state,onCommand}:{state:GameState;onCom
         <Text style={s.meta}>Unrefined owned ×{row.raw} · +{Math.floor(pace.xpPerAction+1e-9).toLocaleString()} Enchanting XP · {duration(pace.cycleSeconds)}</Text>
         <Text style={s.reagents}>{reagents||gt("No extra reagent")} · {r.gold.toLocaleString()}  {gt("Gold")}</Text>
       </View>
-      <View style={s.action}><GameButton compact title={row.ready?gt("Refine"):reason} disabled={!row.ready} onPress={()=>void onCommand({type:'gem_refine',args:{familyId:r.familyId,grade:r.grade}})}/></View>
+      <View style={s.action}><GameButton compact title={row.ready?gt("Refine"):reason} disabled={!row.ready} onPress={()=>onCommand({type:'gem_refine',args:{familyId:r.familyId,grade:r.grade}})}/></View>
     </View>;
   })}
   {rows.length>8?<Text style={s.more}>+{rows.length-8} more unrefined gem stacks are available.</Text>:null}
   <View style={s.researchBlock}><Text style={s.eyebrow}>EFFECT GEM RESEARCH · LV {GEM_RESEARCH_V1.level}</Text><Text style={s.copy}>{gt("Found an Effect Gem family but missed its recipe drop? Study one unrefined copy to permanently discover that family’s combine recipe.")}</Text>
-   {research.length===0?<Text style={s.meta}>{gt("No researchable Effect Gem families owned right now.")}</Text>:research.slice(0,5).map(row=>{const family=row.family!;return <View key={family.familyId} style={s.researchRow}><View style={s.flex}><Text style={s.name}>{family.name}</Text><Text style={s.meta}>Consumes 1 lowest-grade unrefined copy · {GEM_RESEARCH_V1.dust} Gem Dust · {GEM_RESEARCH_V1.gold.toLocaleString()} Gold · +{gemResearchXpV1(state)} XP</Text></View><View style={s.action}><GameButton compact title={row.ready?gt("Research"):row.reason.replace(/\.$/,'')} disabled={!row.ready} onPress={()=>void onCommand({type:'gem_research',args:{familyId:family.familyId}})}/></View></View>;})}
+   {research.length===0?<Text style={s.meta}>{gt("No researchable Effect Gem families owned right now.")}</Text>:research.slice(0,5).map(row=>{const family=row.family!;return <View key={family.familyId} style={s.researchRow}><View style={s.flex}><Text style={s.name}>{family.name}</Text><Text style={s.meta}>Consumes 1 lowest-grade unrefined copy · {GEM_RESEARCH_V1.dust} Gem Dust · {GEM_RESEARCH_V1.gold.toLocaleString()} Gold · +{gemResearchXpV1(state)} XP</Text></View><View style={s.action}><GameButton compact title={row.ready?gt("Research"):row.reason.replace(/\.$/,'')} disabled={!row.ready} onPress={()=>onCommand({type:'gem_research',args:{familyId:family.familyId}})}/></View></View>;})}
   </View>
  </Panel>;
 }

@@ -56,7 +56,7 @@ export function ProfileScreen({state,onNavigate}:{state:GameState;onNavigate?:(d
   </View>
 
   {publicSelf?<PublicProfileScene profile={publicSelf} showGuild={false}/>:<ProfileScenePreview state={state} backgroundId={background}/>}
-  {publicError?<View accessibilityRole="alert" style={s.syncCard}><View style={s.flex}><Text style={s.syncTitle}>{profileT(language,"Online profile could not refresh")}</Text><Text style={s.syncText}>{profileT(language,"Your local identity is still shown safely. Retry to refresh privacy and showcase selections.")}</Text></View><View style={s.syncButton}><GameButton compact title={profileT(language,"Retry")} tone="secondary" onPress={()=>void refreshPublic()}/></View></View>:null}
+  {publicError?<View accessibilityRole="alert" style={s.syncCard}><View style={s.flex}><Text style={s.syncTitle}>{profileT(language,"Online profile could not refresh")}</Text><Text style={s.syncText}>{profileT(language,"Your local identity is still shown safely. Retry to refresh privacy and showcase selections.")}</Text></View><View style={s.syncButton}><GameButton compact title={profileT(language,"Retry")} tone="secondary" onPress={()=>refreshPublic()}/></View></View>:null}
 
   <Panel>
    <View style={s.aboutRow}>

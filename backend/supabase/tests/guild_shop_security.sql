@@ -1,7 +1,8 @@
 -- Guild Shop privilege regression checks.
 -- Execute ONLY in a disposable database with all Guild Shop migrations applied.
 -- The event and normal token grant entrypoints are trusted-service only;
--- permanent purchases/construction spends remain deliberately unreleased.
+-- Permanent shop purchases are released only through the trusted server role;
+-- construction spends remain deliberately unreleased.
 begin;
 do $$
 declare v_can_grant boolean; v_can_legacy_buy boolean;
@@ -13,11 +14,12 @@ begin
  if v_can_grant or v_can_legacy_buy then
   raise exception 'guild_unsafe_legacy_rpc_exposed';
  end if;
- if has_function_privilege('service_role',
+ if not has_function_privilege('service_role',
   'public.guild_shop_purchase_server_v4(uuid,text)','EXECUTE')
-  or has_function_privilege('service_role',
+ then raise exception 'guild_shop_purchase_rpc_missing';end if;
+ if has_function_privilege('service_role',
   'public.guild_construction_donate_server_v2(uuid,text,text,integer,text)','EXECUTE')
- then raise exception 'guild_unreleased_spend_rpc_exposed';end if;
+ then raise exception 'guild_unreleased_construction_rpc_exposed';end if;
 
  if not has_function_privilege('service_role',
   'public.guild_shop_redeem_verified_claim_server_v2(uuid,text)','EXECUTE')

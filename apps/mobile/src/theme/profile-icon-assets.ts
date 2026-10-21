@@ -30,6 +30,7 @@ export const profilePortraitIcons:Record<string,ImageSourcePropType>={
  'event:spirit-lantern':require('../../assets/profile-icons-v1/spirit-lantern.webp'),
  'event:veilbreak-2026-lantern-warden':require('../../assets/profile-icons-v1/veilbreak-2026-lantern-warden_runtime.webp'),
  'event:veilbreak-2026-pumpkin-moon':require('../../assets/profile-icons-v1/veilbreak-2026-pumpkin-moon_runtime.webp'),
+ 'guild:stormwatch-crest':require('../../assets/profile-icons-v1/guild-stormwatch-crest.png'),
 };
 export function profileIconArtwork(id:string|undefined):ImageSourcePropType|undefined{
  return id?.startsWith('class:')?showcaseClassIcons[id.slice(6) as ClassId]:id?profilePortraitIcons[id]:undefined;

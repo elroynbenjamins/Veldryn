@@ -1,5 +1,6 @@
 import {GameState,ItemStack} from './types';
 import {itemDef} from '../content/items';
+import {isReleasedEquipmentItemId} from '../content/equipment-release';
 import {depositToBank,withdrawFromBank,effectiveStats} from './game';
 import {characterPermanentMultipliers} from './permanent-boosts';
 
@@ -31,7 +32,7 @@ export function storageCapacityStatus(stacks:ItemStack[],capacity:number){
 }
 export function visibleStacks(stacks:ItemStack[],query:string,filter:InventoryFilter,sort:InventorySort,favoriteItemIds:readonly string[]=[],newItemIds:readonly string[]=[]){
   const term=query.trim().toLowerCase(),favorites=new Set(favoriteItemIds),newItems=new Set(newItemIds);
-  return stacks.filter(stack=>{const item=itemDef(stack.itemId),specialMatch=filter==='favorites'?favorites.has(item.id):filter==='new'?newItems.has(item.id):false;return stack.quantity>0&&item.name.toLowerCase().includes(term)&&(filter==='all'||filter==='favorites'||filter==='new'?filter==='all'||specialMatch:item.type===filter)}).sort((a,b)=>{
+  return stacks.filter(stack=>{const item=itemDef(stack.itemId),specialMatch=filter==='favorites'?favorites.has(item.id):filter==='new'?newItems.has(item.id):false;return stack.quantity>0&&(item.type!=='gear'||isReleasedEquipmentItemId(item.id))&&item.name.toLowerCase().includes(term)&&(filter==='all'||filter==='favorites'||filter==='new'?filter==='all'||specialMatch:item.type===filter)}).sort((a,b)=>{
     const first=itemDef(a.itemId),second=itemDef(b.itemId);
     const newDifference=sort==='new'?Number(newItems.has(second.id))-Number(newItems.has(first.id)):0;
     const favoriteDifference=sort==='favorite'?Number(favorites.has(second.id))-Number(favorites.has(first.id)):0;

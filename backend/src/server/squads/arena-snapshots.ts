@@ -5,6 +5,7 @@ import type {AuthoritativeLoadoutRecord} from '../coop/loadout-snapshots';
 import {normalizeCombatInput,ROOTBOUND_ROLE_REFERENCES} from '../coop/normalization';
 import {deriveRole} from '../coop/role-readiness';
 import {individualCompanionPower} from '../companions/team';
+import {validateCompanionLoadout,type CharacterClassId} from '../companions/policy';
 import type {ArenaPosition,ArenaSquadSnapshot} from './arena';
 
 export const ARENA_MIN_LEVEL=15;
@@ -25,6 +26,10 @@ function freezeFighter(accountId:string,selection:ArenaCharacterSelection,reposi
   const snapshot={...normalized.snapshot,maxHp:converge(normalized.snapshot.maxHp,reference.maxHp*scale,.35),attackPower:converge(normalized.snapshot.attackPower,reference.attackPower*scale,.30),healingPower:converge(normalized.snapshot.healingPower,reference.healingPower*scale,.30),defense:converge(normalized.snapshot.defense,reference.defense*scale,.35),accuracy:converge(normalized.snapshot.accuracy,reference.accuracy*scale,.5,.9,1.1),evasion:converge(normalized.snapshot.evasion,reference.evasion*scale,.5,.9,1.1)};
   const normalizedPower=Math.max(1,Math.round(snapshot.maxHp*.08+snapshot.attackPower*1.7+snapshot.healingPower*.9+snapshot.defense*.9+snapshot.accuracy*.15+snapshot.evasion*.15));
   const combatCompanion=record.stats.combatCompanion?structuredClone(record.stats.combatCompanion):undefined;
+  if(combatCompanion){
+    const companionPolicy=validateCompanionLoadout({classId:record.classId as CharacterClassId,companionId:combatCompanion.companionId,ownedCompanionIds:[combatCompanion.companionId],combatMode:'arena'});
+    if(!companionPolicy.ok)throw new Error(`arena_${companionPolicy.reason}`);
+  }
   // The character remains the primary Arena fighter; the frozen companion snapshot adds a bounded assist budget.
   const companionNormalizedPower=combatCompanion?Math.max(1,Math.round(individualCompanionPower(combatCompanion)*.08)):undefined;
   return {characterId:record.characterId,classId:record.classId,displayName:record.stats.displayName,position:selection.position,role,normalizedPower,stats:snapshot,abilities:structuredClone(normalized.abilities as AbilityDefinition[]),...(combatCompanion?{combatCompanion,companionNormalizedPower}: {})};

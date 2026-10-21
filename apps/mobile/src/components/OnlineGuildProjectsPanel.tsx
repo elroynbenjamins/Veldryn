@@ -31,7 +31,7 @@ export function OnlineGuildProjectsPanel({onRewardsChanged}:{onRewardsChanged?:(
  const act=async(kind:'vote'|'start'|'claim',candidateId:string)=>{const key=kind+':'+candidateId;setBusy(key);setError('');try{if(kind==='vote')await voteOnlineGuildProjectCandidate(candidateId);else if(kind==='start')await startOnlineGuildProjectCandidate(candidateId);else {await claimOnlineGuildProjectReward(candidateId);await onRewardsChanged?.();}await load()}catch(reason){setError(reason instanceof Error?reason.message:st("Guild Project action failed."))}finally{setBusy('')}};
  useEffect(()=>{void load()},[]);
  if(loading&&!snapshot)return <LoadingState label={st("Loading Guild Projects…")} detail={st("Syncing shared Project progress and recent Guild activity.")}/>;
- if(error&&!snapshot)return <Panel><Text style={s.title}>{st("Guild Projects")}</Text><Text style={s.error}>{error}</Text><GameButton compact title={st("Retry")} tone="secondary" onPress={()=>void load()}/></Panel>;
+ if(error&&!snapshot)return <Panel><Text style={s.title}>{st("Guild Projects")}</Text><Text style={s.error}>{error}</Text><GameButton compact title={st("Retry")} tone="secondary" onPress={()=>load()}/></Panel>;
  if(!snapshot)return <Panel><Text style={s.title}>{st("Guild Projects")}</Text><Text style={s.copy}>{st("Join a Guild to view shared Projects and recent Guild activity.")}</Text></Panel>;
 
  const active=snapshot.projects.filter(row=>row.status==='active'),completed=snapshot.projects.filter(row=>row.status==='completed').slice(0,4);
@@ -39,15 +39,15 @@ export function OnlineGuildProjectsPanel({onRewardsChanged}:{onRewardsChanged?:(
   <QuestBoard>
    <View style={s.sectionHead}><View style={s.flex}><Text style={s.kicker}>{st("GUILD PROJECTS")}</Text><Text style={s.title}>{st("Shared Progress")}</Text></View><StatusPill label={st("LIVE")} tone="good"/></View>
    <Text style={s.copy}>One weekly project starts automatically, from Guild Level 1. Hunt or gather to contribute. A new project opens every Monday at 00:00 UTC.</Text>
-   {snapshot.candidates.length?<View style={s.board}><View style={s.sectionHead}><Text style={s.boardTitle}>{st("NEXT WEEKLY PROJECT")}</Text><Text style={s.sectionMeta}>{st("1 vote per member")}</Text></View>{snapshot.candidates.map(candidate=><CandidateCard key={candidate.id} candidate={candidate} busy={busy} onVote={()=>void act('vote',candidate.id)} onStart={()=>void act('start',candidate.id)}/>)}</View>:null}
-   {active.length?active.map(project=><GuildProjectPosting key={project.id} project={project} onClaim={()=>void act('claim',project.id)} busy={!!busy} expanded={expanded===project.id} onToggle={()=>setExpanded(id=>id===project.id?null:project.id)}/>):<View style={s.empty}><Text style={s.emptyTitle}>{st("No active Guild Project")}</Text><Text style={s.emptyText}>Your next weekly project will appear here automatically.</Text></View>}
+   {snapshot.candidates.length?<View style={s.board}><View style={s.sectionHead}><Text style={s.boardTitle}>{st("NEXT WEEKLY PROJECT")}</Text><Text style={s.sectionMeta}>{st("1 vote per member")}</Text></View>{snapshot.candidates.map(candidate=><CandidateCard key={candidate.id} candidate={candidate} busy={busy} onVote={()=>act('vote',candidate.id)} onStart={()=>act('start',candidate.id)}/>)}</View>:null}
+   {active.length?active.map(project=><GuildProjectPosting key={project.id} project={project} onClaim={()=>act('claim',project.id)} busy={!!busy} expanded={expanded===project.id} onToggle={()=>setExpanded(id=>id===project.id?null:project.id)}/>):<View style={s.empty}><Text style={s.emptyTitle}>{st("No active Guild Project")}</Text><Text style={s.emptyText}>Your next weekly project will appear here automatically.</Text></View>}
   </QuestBoard>
-  {completed.length?<Panel><View style={s.sectionHead}><Text style={s.title}>{st("Recent completions")}</Text><Text style={s.sectionMeta}>{completed.length} shown</Text></View>{completed.map(project=><GuildProjectPosting key={project.id} project={project} onClaim={()=>void act('claim',project.id)} busy={!!busy} compact expanded={expanded===project.id} onToggle={()=>setExpanded(id=>id===project.id?null:project.id)}/>)}</Panel>:null}
+  {completed.length?<Panel><View style={s.sectionHead}><Text style={s.title}>{st("Recent completions")}</Text><Text style={s.sectionMeta}>{completed.length} shown</Text></View>{completed.map(project=><GuildProjectPosting key={project.id} project={project} onClaim={()=>act('claim',project.id)} busy={!!busy} compact expanded={expanded===project.id} onToggle={()=>setExpanded(id=>id===project.id?null:project.id)}/>)}</Panel>:null}
   <Panel>
    <View style={s.sectionHead}><Text style={s.title}>{st("Guild Activity")}</Text><Text style={s.sectionMeta}>{snapshot.activity.length} recent</Text></View>
    <GuildActivityFeedPanel entries={snapshot.activity}/>
   </Panel>
-  <GameButton compact title={loading?st("Refreshing…"):st("Refresh Projects")} tone="secondary" disabled={loading} onPress={()=>void load()}/>
+  <GameButton compact title={loading?st("Refreshing…"):st("Refresh Projects")} tone="secondary" disabled={loading} onPress={()=>load()}/>
   <Text style={s.safety}>Earn 20 effort per active minute, up to 2,400 per earned UTC day. In guilds with two or more members, one member can supply at most half the goal. Contribute 300 effort to qualify for 500 Gold. Claim within seven days after the week ends.</Text>
   {!!error&&<Text style={s.error}>{error}</Text>}
  </View>;

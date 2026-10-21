@@ -10,6 +10,7 @@ import {expeditionEncounterPreview} from '../src/server/combat/expedition-combat
 import type {CoopDecisionCommand,CoopRole} from '../src/shared/coop-types';
 import {deriveOnlineCoopLoadout,onlineCoopLoadoutHash,ONLINE_COOP_BALANCE_VERSION} from './coop-loadout';
 import {GameplayError,type GameplayServices} from './gameplay';
+import {promotedEventCurrency} from '../../apps/mobile/src/content/event-currency-promotion';
 
 interface Game {state:GameState|null;version:number;serverNow:number;liveEvent?:GameState['account']['liveEvent'];}
 interface Echo {profileId:string;sourceAccountId:string;publishedAtMs:number;record:AuthoritativeLoadoutRecord;}
@@ -21,7 +22,7 @@ export interface OnlineEventExpeditionStartRequest {requestId:string;eventExpedi
 const digest=(value:unknown)=>createHash('sha256').update(JSON.stringify(value)).digest('hex');
 const player=(snapshot:FrozenLoadoutSnapshot)=>combatantFromVerifiedSnapshot(snapshot.normalized.snapshot,snapshot.normalized.abilities);
 function role(value:string):CoopRole{if(value==='tank'||value==='damage'||value==='support')return value;throw new GameplayError('invalid_coop_role');}
-export function projectOnlineEventRun(run:EventRun,version:number,liveEventId:string){
+export function projectOnlineEventRun(run:EventRun,version:number,liveEventId:string,serverNow=Date.now()){
  const definition=EVENT_EXPEDITIONS.find(item=>item.id===run.eventId);if(!definition)throw new GameplayError('unknown_event_expedition');
  const current=run.graph.nodes.find(node=>node.nodeId===run.currentNodeId);
  const options=run.phase==='awaiting_choice'&&current?current.nextNodeIds.map(id=>run.graph.nodes.find(node=>node.nodeId===id)).filter((node):node is NonNullable<typeof node>=>Boolean(node)).map(node=>effectiveEventNode(run,node)).map(node=>({nodeId:node.nodeId,kind:node.kind,risk:node.risk,rewardTag:node.rewardTag,title:node.title,mechanicDelta:node.mechanicDelta??0,objectiveDelta:node.objectiveDelta??0,reactionLabel:node.reactionLabel,...(['battle','elite','boss'].includes(node.kind)?{encounterPreview:expeditionEncounterPreview(node.contentId)}:{})})):[];
@@ -42,7 +43,7 @@ export function projectOnlineEventRun(run:EventRun,version:number,liveEventId:st
   runId:run.id,eventExpeditionId:run.eventId,liveEventId,eventName:definition.eventName,dungeonName:definition.name,phase:run.phase,
   stateVersion:version,decisionId:run.currentNodeId,decisionRevision:version,
   team:run.players.map((member,index)=>{const state=run.persistentState.actors[member.id],companionId=(member.tags??[]).find(tag=>tag.startsWith('companion:'))?.slice('companion:'.length),bodyTag=(member.tags??[]).find(tag=>tag.startsWith('body:'))?.slice('body:'.length),bodyPresentation=bodyTag==='female'?'female' as const:bodyTag==='male'?'male' as const:undefined;return{memberId:member.id,displayName:member.name,role:role(member.role),classId:member.classId??'',bodyPresentation,companionId,kind:index===0?'controller' as const:'echo' as const,effectiveLevel:member.level,currentHp:state?.hp??member.stats.maxHp,maximumHp:member.stats.maxHp,downed:state?.downed??false};}),
-  options,mechanic,objective,bossMechanic,bossRecap,lastCombat:projectCombatReplay(run.lastResolution),settlement:{status:run.settlement,rewardMarks:run.rewardMarks??(definition.rewardMarks+mechanic.rewardBonus+objective.rewardBonus)},
+  options,mechanic,objective,bossMechanic,bossRecap,lastCombat:projectCombatReplay(run.lastResolution),settlement:{status:run.settlement,rewardMarks:run.rewardMarks??promotedEventCurrency(liveEventId,definition.rewardMarks+mechanic.rewardBonus+objective.rewardBonus,serverNow)},
  };
 }
 
@@ -85,7 +86,7 @@ export class OnlineEventExpeditionRuntime{
    const chosen=selected[index-1],source=selectedSources[index-1];if(!source)throw new GameplayError('echo_no_longer_eligible',409);
    return {snapshot,sourceHash:onlineCoopLoadoutHash(source.record),profileId:chosen.profileId};
   });
-  return this.services.rpc('start_online_event_expedition_server_v1',{p_account_id:accountId,p_game_version:game.version,p_request_id:request.requestId,p_request_hash:hash,p_run_id:runId,p_live_event_id:runtime.eventId,p_private_state:{run,seed,liveEventId:runtime.eventId},p_client_projection:projectOnlineEventRun(run,1,runtime.eventId),p_members:members,p_seed_hash:digest(seed)});
+  return this.services.rpc('start_online_event_expedition_server_v1',{p_account_id:accountId,p_game_version:game.version,p_request_id:request.requestId,p_request_hash:hash,p_run_id:runId,p_live_event_id:runtime.eventId,p_private_state:{run,seed,liveEventId:runtime.eventId},p_client_projection:projectOnlineEventRun(run,1,runtime.eventId,game.serverNow),p_members:members,p_seed_hash:digest(seed)});
  }
  async load(accountId:string,runId:string){
   const loaded=await this.services.rpc<Loaded>('load_online_event_expedition_server_v1',{p_account_id:accountId,p_run_id:runId});
@@ -99,8 +100,10 @@ export class OnlineEventExpeditionRuntime{
   const repository=new MemoryEventRunRepository();repository.save(before);
   const domain=new EventExpeditionService(repository,loaded.privateState.seed);
   const run=domain.choose({runId,accountId,optionNodeId:request.optionId,requestId:request.requestId});
+  // Freeze the promotion into the first completed result. Claim/retry reads this stored amount.
+  if(run.phase==='completed'&&before.phase!=='completed'&&run.rewardMarks!==undefined)run.rewardMarks=promotedEventCurrency(loaded.privateState.liveEventId,run.rewardMarks,loaded.serverNow);
   const result=run.lastResolution;if(!result)throw new GameplayError('event_resolution_missing');
-  const projection=projectOnlineEventRun(run,loaded.stateVersion+1,loaded.privateState.liveEventId);
+  const projection=projectOnlineEventRun(run,loaded.stateVersion+1,loaded.privateState.liveEventId,loaded.serverNow);
   return this.services.rpc('advance_online_event_expedition_server_v1',{p_account_id:accountId,p_run_id:runId,p_expected_version:loaded.stateVersion,p_request_id:request.requestId,p_request_hash:hash,p_private_state:{run,seed:loaded.privateState.seed,liveEventId:loaded.privateState.liveEventId},p_client_projection:projection,p_node_id:result.nodeId,p_result:result.result,p_start_state_hash:digest(before.persistentState)});
  }
  async claim(accountId:string,runId:string,requestId:string){
@@ -109,7 +112,7 @@ export class OnlineEventExpeditionRuntime{
   const repository=new MemoryEventRunRepository();repository.save(loaded.privateState.run);
   const domain=new EventExpeditionService(repository,loaded.privateState.seed),reward=domain.claimReward({runId,accountId,requestId,nowMs:loaded.serverNow});
   const run=repository.get(runId);if(!run)throw new GameplayError('event_run_not_found');
-  const projection=projectOnlineEventRun(run,loaded.stateVersion+1,loaded.privateState.liveEventId);
+  const projection=projectOnlineEventRun(run,loaded.stateVersion+1,loaded.privateState.liveEventId,loaded.serverNow);
   return this.services.rpc('claim_online_event_expedition_server_v1',{p_account_id:accountId,p_run_id:runId,p_expected_version:loaded.stateVersion,p_request_id:requestId,p_request_hash:hash,p_marks:reward.marks,p_private_state:{run,seed:loaded.privateState.seed,liveEventId:loaded.privateState.liveEventId},p_client_projection:projection});
  }
 }

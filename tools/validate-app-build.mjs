@@ -36,8 +36,9 @@ function gate(info,{platform='android',row=null,legacyRow=null,connected=true}={
     let filter;
     const query={
       select(){return query;},
+      abortSignal(){return query;},
       eq(column,value){filter={column,value};reads.push(filter);return query;},
-      async maybeSingle(){return {data:filter.column==='platform'?row:legacyRow,error:null};},
+      async maybeSingle(){return {data:filter.column==='platform'?row:legacyRow,error:filter.column==='platform'&&legacyRow?{code:'42703'}:null};},
     };
     return query;
   }};
@@ -45,6 +46,8 @@ function gate(info,{platform='android',row=null,legacyRow=null,connected=true}={
     'react-native':{Platform:{OS:platform},Linking:{openURL:async()=>{throw new Error('Version reads must not open the store');}}},
     './supabase':{supabase:connected?supabase:null},
     '../app-build':{APP_BUILD_INFO:info},
+    '@react-native-async-storage/async-storage':{getItem:async()=>null,setItem:async()=>{}},
+    '../core/app-release-policy':load('apps/mobile/src/core/app-release-policy.ts',{}),
   }),reads};
 }
 
@@ -77,7 +80,7 @@ assert.equal(legacy.policy.title,'Update preview');
 assert.equal(legacy.currentVersion,nativeInfo.version);
 assert.deepEqual(legacyGate.reads,[{column:'platform',value:'android'},{column:'channel',value:'preview'}]);
 const offline=await gate(build(),{connected:false}).fetchAppVersionGate();
-assert.deepEqual(offline,{currentVersion:appConfig.expo.version,policy:null,updateRequired:false,updateAvailable:false,maintenanceMode:false});
+assert.deepEqual(offline,{currentVersion:appConfig.expo.version,policy:null,updateRequired:false,updateAvailable:false,maintenanceMode:false,verificationFailed:true});
 console.log('PASS legacy release-channel policies and unavailable online configuration');
 
 const translator=load('apps/mobile/src/i18n/translator.ts',{});

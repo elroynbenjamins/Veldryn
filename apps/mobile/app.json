@@ -3,7 +3,7 @@
     "name": "VELDRYN",
     "slug": "veldryn",
     "scheme": "veldryn",
-    "version": "0.9.5",
+    "version": "1.0.0",
     "orientation": "portrait",
     "userInterfaceStyle": "dark",
     "icon": "./assets/app-icon-v1/icon-1024.png",

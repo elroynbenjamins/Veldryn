@@ -1,3 +1,4 @@
+import {versionedFetch as fetch} from './versioned-fetch';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import {supabase,supabasePublicEndpoint,supabasePublicKey} from './supabase';
 

@@ -1,6 +1,6 @@
 import {profileT} from '../i18n/profile';
 import {useGameLanguage} from '../i18n/GameLanguageProvider';
-import {useMemo} from 'react';
+import {useMemo,useState} from 'react';
 import {Image,StyleSheet,Text,View} from 'react-native';
 import {CLASSES} from '../content/classes';
 import type {GameState} from '../core/types';
@@ -25,23 +25,24 @@ import {usePlayerBadges} from '../online/PlayerBadgeProvider';
 
 export function ProfileScenePreview({state,backgroundId}:{state:GameState;backgroundId:string}){
  const language=useGameLanguage();
+ const [previewWidth,setPreviewWidth]=useState(320),compact=previewWidth<300;
  const C=useGameTheme(),s=useMemo(()=>makeStyles(C),[C]),badges=usePlayerBadges();
  const character=state.character!,background=profileBackgroundPreviewById.get(backgroundId),base=BASE_PROFILE_BACKGROUNDS.find(item=>item.id===backgroundId);
  if(!background&&!base)return null;
  const className=CLASSES.find(item=>item.id===character.classId)?.name??character.classId;
  const rewards=LIVE_EVENT_CATALOG.flatMap(event=>[...event.milestones(character.classId).map(m=>m.reward),...event.shop.map(o=>o.reward)]);
  const pet=rewards.find(reward=>reward.id===character.selectedCosmeticPetId),petCollectible=COLLECTIBLES.find(row=>row.id===character.selectedCosmeticPetId&&row.kind==='pet'),petSource=petArtSource(character.selectedCosmeticPetId??''),borderSource=profileBorderSourceById.get(character.profileBorderId??'');
- return <View accessibilityLabel={profileT(language,"{name}'s profile preview with {background}",{name:character.name,background:background?.name??base?.name??''})} style={s.frame}>
+ return <View onLayout={event=>setPreviewWidth(event.nativeEvent.layout.width)} accessibilityLabel={profileT(language,"{name}'s profile preview with {background}",{name:character.name,background:background?.name??base?.name??''})} style={s.frame}>
   <View style={[s.surface,!!borderSource&&s.framedSurface]}>
   <View style={s.scene}>
    {background?<CardBackground sources={personalBackgroundVariants.get(backgroundId)??{wide:background.source,square:background.source}}/>:<RegionArtwork regionId={base!.region}/>}
-   <View style={{...StyleSheet.absoluteFill,backgroundColor:C.dark?'rgba(3,4,5,.72)':'rgba(255,255,255,.68)'}}/><View style={s.identityPlate}>
+   <View style={{...StyleSheet.absoluteFill,backgroundColor:C.dark?'rgba(3,4,5,.72)':'rgba(255,255,255,.68)'}}/><View style={[s.identityPlate,compact&&s.compactIdentity]}>
     <Text style={s.eyebrow}>{profileT(language,"PLAYER SHOWCASE")}</Text>
-    <View style={s.nameRow}><PlayerStyledName name={character.name} nameStyle={effectivePlayerNameStyle(state)} reduceMotion={state.settings.reduceMotion} numberOfLines={1} style={s.name}/><PlayerBadges identity={badges.identity}/></View>
+    <View style={s.nameRow}><PlayerStyledName name={character.name} nameStyle={effectivePlayerNameStyle(state)} reduceMotion={state.settings.reduceMotion} numberOfLines={1} style={[s.name,compact&&s.compactName]}/><PlayerBadges identity={badges.identity}/></View>
     <Text numberOfLines={1} style={s.title}>{character.profileTitle??profileT(language,"New Adventurer")}</Text>
-    <Text style={s.meta}>{profileT(language,'Lv. {level}',{level:character.level})} · {className}</Text>
+    <Text numberOfLines={1} style={s.meta}>{profileT(language,'Lv. {level}',{level:character.level})} · {className}</Text>
    </View>
-   <CharacterPortrait state={state} style={s.character}/>
+   <CharacterPortrait state={state} style={[s.character,compact&&s.compactCharacter]}/>
    {petSource&&<View style={s.petBadge}><Image source={petSource} accessibilityLabel={pet?.name??petCollectible?.name??profileT(language,"Pet preview")} resizeMode="contain" style={s.petImage}/></View>}
   </View>
   </View>
@@ -55,6 +56,7 @@ function makeStyles(C:ThemeColors){return StyleSheet.create({
  framedSurface:{margin:8,borderRadius:4},
  scene:{width:'100%',minHeight:190,alignItems:'center',overflow:'hidden',backgroundColor:C.stage},
  character:{position:'absolute',left:20,top:24,width:96,height:96,zIndex:2},
+ compactCharacter:{left:12,top:24,width:64,height:64},compactIdentity:{left:88,right:12},compactName:{fontSize:16,lineHeight:22},
  petBadge:{position:'absolute',right:22,bottom:20,zIndex:3},petImage:{width:56,height:56},
  nameRow:{flexDirection:'row',alignItems:'center',gap:5},
 });}

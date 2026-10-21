@@ -20,6 +20,11 @@ equal(eventTitle.destination,'Events','event title routes to Events');
 ok(eventTitle.label.includes('Veilbreak'),'event title identifies its release event');
 ok(eventTitle.detail.includes('800'),'event title shows the exact Veil Reputation threshold');
 
+const guildBorder=profileRewardSource(state,'border','guild-border-silver');
+equal(guildBorder.destination,'Guild','guild border routes to Guild');
+equal(guildBorder.label,'Guild Token Shop','guild border identifies its shop source');
+equal(guildBorder.name,'Fellowship Silver','guild border keeps its player-facing display name');
+
 const eventUnlockState={...state,account:{...state.account,
  unlockedTitleIds:['title_veil_watcher'],
 }};

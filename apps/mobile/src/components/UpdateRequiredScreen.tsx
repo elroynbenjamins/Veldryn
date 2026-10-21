@@ -1,16 +1,17 @@
-import {ActivityIndicator,SafeAreaView,StyleSheet,Text,View} from 'react-native';
+import {SafeAreaView,StyleSheet,Text,View} from 'react-native';
 import {GameButton} from './GameButton';
 import {C} from '../theme/theme';
 import {useGameLanguage} from '../i18n/GameLanguageProvider';
 import {sharedText} from '../i18n/shared';
 
-export function UpdateRequiredScreen({title,message,currentVersion,minimumVersion,onUpdate,maintenance=false}:{title:string;message:string;currentVersion:string;minimumVersion?:string;onUpdate:()=>void;maintenance?:boolean}){
+export function UpdateRequiredScreen({title,message,currentVersion,minimumVersion,onUpdate,onRetry,maintenance=false,verificationError=false}:{title:string;message:string;currentVersion:string;minimumVersion?:string;onUpdate:()=>void|Promise<void>;onRetry?:()=>Promise<void>;maintenance?:boolean;verificationError?:boolean}){
   const language=useGameLanguage();
   return <SafeAreaView style={s.root}><View style={s.card}>
-    <Text style={s.kicker}>{sharedText(language,maintenance?'SERVICE STATUS':'UPDATE REQUIRED')}</Text>
-    <Text accessibilityRole="header" style={s.title}>{title}</Text>
-    <Text style={s.message}>{message}</Text>
-    {!maintenance?<><View style={s.versionRow}><Text style={s.versionLabel}>{sharedText(language,'Installed')}</Text><Text style={s.versionValue}>{currentVersion}</Text></View>{minimumVersion?<View style={s.versionRow}><Text style={s.versionLabel}>{sharedText(language,'Required')}</Text><Text style={s.versionValue}>{minimumVersion}+</Text></View>:null}<GameButton title={sharedText(language,'Update VELDRYN')} onPress={onUpdate}/><Text style={s.note}>{sharedText(language,'The game will continue normally after the supported version is installed.')}</Text></>:<><ActivityIndicator color={C.accent}/><Text style={s.note}>{sharedText(language,'Try again after maintenance has finished.')}</Text></>}
+    <Text style={s.kicker}>{sharedText(language,maintenance||verificationError?'SERVICE STATUS':'UPDATE REQUIRED')}</Text>
+    <Text accessibilityRole="header" style={s.title}>{sharedText(language,title)}</Text>
+    <Text style={s.message}>{sharedText(language,message)}</Text>
+    {!maintenance&&!verificationError?<><View style={s.versionRow}><Text style={s.versionLabel}>{sharedText(language,'Installed')}</Text><Text style={s.versionValue}>{currentVersion}</Text></View>{minimumVersion?<View style={s.versionRow}><Text style={s.versionLabel}>{sharedText(language,'Required')}</Text><Text style={s.versionValue}>{minimumVersion}+</Text></View>:null}<GameButton title={sharedText(language,'Update VELDRYN')} onPress={onUpdate}/><Text style={s.note}>{sharedText(language,'The game will continue normally after the supported version is installed.')}</Text></>:maintenance?<Text style={s.note}>{sharedText(language,'Try again after maintenance has finished.')}</Text>:null}
+    {onRetry?<GameButton title={sharedText(language,'Retry')} onPress={onRetry}/>:null}
   </View></SafeAreaView>;
 }
 const s=StyleSheet.create({

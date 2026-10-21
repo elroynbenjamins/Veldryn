@@ -1,6 +1,7 @@
 import type {CombatCompanionRarity,CompanionAbilityDefinition,CompanionDefinition,CompanionEffectDefinition,CompanionSanctuaryUpgrade} from '../core/combat-companion-types';
 import {EVENT_COMPANIONS} from './event-companions-v2';
 import {GUILD_COMBAT_COMPANIONS} from './guild-companions-v1';
+import {RELEASED_EVENT_COMPANIONS} from './event-companions-active';
 import {EVENTS_RELEASED} from '../core/release-flags';
 
 /**
@@ -146,5 +147,5 @@ const REGIONAL_COMPANIONS:CompanionDefinition[]=[
 /** Complete authored catalog for event-engine validation and admin QA. */
 export const ALL_COMBAT_COMPANIONS:CompanionDefinition[]=[...ASTERFALL_COMPANIONS,...REGIONAL_COMPANIONS,...GUILD_COMBAT_COMPANIONS,...EVENT_COMPANIONS];
 /** Player-facing roster excludes event companions until live events are released. */
-export const COMBAT_COMPANIONS:CompanionDefinition[]=EVENTS_RELEASED?ALL_COMBAT_COMPANIONS:[...ASTERFALL_COMPANIONS,...REGIONAL_COMPANIONS,...GUILD_COMBAT_COMPANIONS];
+export const COMBAT_COMPANIONS:CompanionDefinition[]=EVENTS_RELEASED?[...ASTERFALL_COMPANIONS,...REGIONAL_COMPANIONS,...GUILD_COMBAT_COMPANIONS,...RELEASED_EVENT_COMPANIONS]:[...ASTERFALL_COMPANIONS,...REGIONAL_COMPANIONS,...GUILD_COMBAT_COMPANIONS];
 export const combatCompanionDef=(id:string)=>ALL_COMBAT_COMPANIONS.find(entry=>entry.id===id);

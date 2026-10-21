@@ -1,5 +1,8 @@
 import {createCharacter,newGame,previewActivityReward,startCombat} from '../src/core/game';
 import {liveEventDef} from '../src/content/live-events';
+import {canUseProfileCosmetic,profileCosmeticReleased} from '../src/core/profile-cosmetics';
+import {profileRewardSource} from '../src/core/profile-customization';
+import {executeGameCommand} from '../src/core/game-commands';
 import {acceptEventContract,activeLiveEvent,applyEventDiscoveries,applyEventDrops,chooseEventProject,claimAllEventMilestones,claimEventDailyGift,claimEventDiscovery,claimEventReward,consumeEventCandy,eventCandyStatus,eventCollectionJournal,eventContractBoard,eventDailyGift,eventEffectiveDropRate,eventLifecycle,eventPrestigeBalance,eventProgress,eventRewardClaimed,eventShopOffers,purchaseEventOffer,setLocalEventEnabled} from '../src/core/live-events';
 
 function ok(condition:boolean,message:string){if(!condition)throw new Error(message);}
@@ -61,6 +64,20 @@ ok(state.account.unlockedProfileBorderIds?.includes('frame_gloamward')===true,'V
 state=purchaseEventOffer(state,'veil_lantern_mimic',t0+2);
 ok(state.account.unlockedCosmeticPetIds?.includes('EVT_PET_014')===true,'Veilbreak shop purchase should unlock Lantern Mimic permanently');
 ok(eventPrestigeBalance(state,eventId)===0,'Prestige shop purchase should spend Lantern Embers');
+
+const backgroundOffer=eventShopOffers(state,t0+2).find(offer=>offer.id==='veilbreak_background');
+ok(backgroundOffer?.reward.kind==='background'&&backgroundOffer.reward.id==='bg_veilbreak','Veilbreak must offer a personal profile background');
+ok(profileCosmeticReleased(state,'background','bg_veilbreak'),'Released event background is discoverable before purchase');
+ok(!canUseProfileCosmetic(state,'background','bg_veilbreak'),'Previewing an event background cannot grant ownership');
+const backgroundSource=profileRewardSource(state,'background','bg_veilbreak');
+ok(backgroundSource.destination==='Events'&&backgroundSource.detail.includes('1,800 Veil Shards'),'Profile gallery must explain the exact event shop unlock');
+state=purchaseEventOffer(state,'veilbreak_background',t0+2);
+ok(canUseProfileCosmetic(state,'background','bg_veilbreak'),'Shop purchase permanently unlocks the personal background');
+ok(eventCollectionJournal(state,t0+2).some(entry=>entry.reward.id==='bg_veilbreak'&&entry.owned),'Event collection must reflect owned background');
+let duplicateBackgroundRejected=false;try{purchaseEventOffer(state,'veilbreak_background',t0+2)}catch{duplicateBackgroundRejected=true}
+ok(duplicateBackgroundRejected,'A background cannot be purchased twice');
+state=executeGameCommand(state,{type:'profile',args:{profileBackgroundId:'bg_veilbreak'}},t0+2).state;
+ok(state.character?.profileBackgroundId==='bg_veilbreak','Purchased background must equip on the personal profile card');
 
 const eventEnd=state.account.liveEvent!.endsAtMs;
 const graceTime=eventEnd+60_000;

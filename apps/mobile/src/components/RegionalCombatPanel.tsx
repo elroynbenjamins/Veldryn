@@ -76,7 +76,7 @@ export function RegionalCombatPanel({state,onRewardsChanged}:{state:GameState;on
       {!!last.result.result.replayCues.length&&<View style={s.timeline}><Text style={s.timelineTitle}>{gt("KEY MOMENTS")}</Text>{last.result.result.replayCues.slice(-6).map((cue,index)=><Text key={cue.atMs+':'+cue.type+':'+index} style={s.timelineRow}>{cueText(cue)}</Text>)}</View>}
       <View style={s.rewardReveal}><Text style={s.timelineTitle}>{gt("REWARD")}</Text><Text style={s.rewardResult}>{rewardText(last.result)}</Text></View>
     </View>:null}
-    <GameButton compact disabled={locked||cadenceLocked||Boolean(busy)} loading={active} title={active?gt("Resolving…"):availability.dailyCapped?gt("Daily cap reached"):availability.coolingDown?'Ready in '+compactDuration(availability.readyInMs):encounter.kind==='regional_boss'?gt("Challenge boss"):gt("Challenge")} tone={encounter.kind==='regional_boss'?'primary':'secondary'} onPress={()=>void run(encounter.id)}/>
+    <GameButton compact disabled={locked||cadenceLocked||Boolean(busy)} loading={active} title={active?gt("Resolving…"):availability.dailyCapped?gt("Daily cap reached"):availability.coolingDown?'Ready in '+compactDuration(availability.readyInMs):encounter.kind==='regional_boss'?gt("Challenge boss"):gt("Challenge")} tone={encounter.kind==='regional_boss'?'primary':'secondary'} onPress={()=>run(encounter.id)}/>
    </View>;
   })}</View>
   {!!notice&&<View accessibilityRole="alert" style={s.notice}><Text style={s.noticeText}>{gl(notice)}</Text></View>}

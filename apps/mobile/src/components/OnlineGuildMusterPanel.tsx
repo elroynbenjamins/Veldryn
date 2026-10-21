@@ -21,7 +21,7 @@ export function OnlineGuildMusterPanel(){
  const load=async()=>{setLoading(true);setError('');try{const snapshot=await loadOnlineGuildMuster();setState(snapshot?.state??null);setMembers(snapshot?.members??[]);}catch(reason){setError(reason instanceof Error?reason.message:st("Unable to load Guild Muster."))}finally{setLoading(false)}};
  useEffect(()=>{void load()},[]);
  if(loading&&!state)return <LoadingState label={st("Loading Guild Muster…")} detail={st("Checking today’s attendance and verified Guild contribution.")}/>;
- if(error&&!state)return <Panel><Text style={s.title}>{st("Guild Muster")}</Text><Text style={s.error}>{error}</Text><GameButton compact title={st("Retry")} tone="secondary" onPress={()=>void load()}/></Panel>;
+ if(error&&!state)return <Panel><Text style={s.title}>{st("Guild Muster")}</Text><Text style={s.error}>{error}</Text><GameButton compact title={st("Retry")} tone="secondary" onPress={()=>load()}/></Panel>;
  if(!state)return <Panel><Text style={s.title}>{st("Guild Muster")}</Text><Text style={s.copy}>Join a Guild to take part in daily Muster and the shared weekly Rally.</Text></Panel>;
 
  const dailyPct=guildMusterDailyPercent(state.dailyPoints),rallyPct=guildMusterRallyPercent(state.rallyMarks,state.rallyTarget),hallBonus=state.hallBonusBps/100,activityPct=state.activityPercent,nextActivity=guildActivityNextMilestone(activityPct);
@@ -77,7 +77,7 @@ export function OnlineGuildMusterPanel(){
    </View>)}
    {members.length>visibleMembers.length?<Text style={s.note}>+{members.length-visibleMembers.length} more members contribute to the Rally.</Text>:null}
   </Panel>
-  <GameButton compact title={loading?st("Refreshing…"):st("Refresh Muster")} tone="secondary" disabled={loading} onPress={()=>void load()}/>
+  <GameButton compact title={loading?st("Refreshing…"):st("Refresh Muster")} tone="secondary" disabled={loading} onPress={()=>load()}/>
   {!!error&&<Text style={s.error}>{error}</Text>}
  </View>;
 }

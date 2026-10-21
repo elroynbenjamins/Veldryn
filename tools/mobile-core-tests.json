@@ -1,4 +1,7 @@
 [
+  "tests/profile-pet-art-assets.cjs",
+  "tests/app-version-gate.cjs",
+  "tests/online-loading-interactions.cjs",
   "../../tools/validate-edge-function-auth-contract.cjs",
   "../../tools/validate-online-staging-smoke.mjs",
   ".core-build/apps/mobile/tests/released-event-connections.js",
@@ -91,6 +94,7 @@
   ".core-build/apps/mobile/tests/save-transfer.js",
   ".core-build/apps/mobile/tests/localization.js",
   ".core-build/apps/mobile/tests/live-events.js",
+  ".core-build/apps/mobile/tests/event-currency-promotion.js",
   ".core-build/apps/mobile/tests/event-reward-trail.js",
   ".core-build/apps/mobile/tests/event-overview.js",
   ".core-build/apps/mobile/tests/live-event-catalog.js",

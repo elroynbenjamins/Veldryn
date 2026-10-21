@@ -29,16 +29,17 @@ const command=(s:GameState,type:string,args?:Record<string,unknown>,time=now)=>{
 const specialRequirement=COMPANION_SPECIAL_CHALLENGES.find(row=>row.id==='CHALLENGE_OATHGLASS_KNIGHTLING')!.requirements[0],specialRequirementProgress=companionUnlockRequirementProgress(specialRequirement,companionUnlockFacts(fixture()));ok(specialRequirementProgress.current===0&&specialRequirementProgress.total===20&&!specialRequirementProgress.complete,'special challenge requirement progress exposes current and target values');
 const suggestedTrialTeam=recommendedCompanionTrialTeam(fixture());ok(suggestedTrialTeam.ready&&suggestedTrialTeam.ids.length===3&&suggestedTrialTeam.power>0,'Trial guidance builds a complete available role team');ok(new Set(suggestedTrialTeam.ids.map(id=>companionServerDefinition(id)?.role)).size===3,'Trial guidance always covers Tank Damage Support');ok(companionAvailability(fixture(),'UNIT_001').status==='available','idle owned companion reports available');
 let expeditionGuide=fixture();for(const id of ids)expeditionGuide.account.combatCompanionProgress![id]={...expeditionGuide.account.combatCompanionProgress![id],level:5};expeditionGuide.account.companionSanctuary!.expeditionPensLevel=1;const suggestedExpedition=recommendedCompanionMissionTeam(expeditionGuide,'MISSION_SCOUT_2H',now);ok(suggestedExpedition.ready&&suggestedExpedition.ids.length>=1&&suggestedExpedition.ids.length<=2&&!!suggestedExpedition.grade,'Expedition guidance finds a valid mission team');ok(suggestedExpedition.bonusRequirementMet,'Expedition guidance prefers a valid bonus-condition team');expeditionGuide=command(expeditionGuide,'companion_equip',{id:'UNIT_001'});const equippedExcluded=recommendedCompanionMissionTeam(expeditionGuide,'MISSION_SCOUT_2H',now);ok(equippedExcluded.ready&&!equippedExcluded.ids.includes('UNIT_001'),'Expedition guidance excludes the currently equipped companion');
-const permanentCompanions=ALL_COMBAT_COMPANIONS.filter(def=>def.origin.type!=='event'),eventCompanions=ALL_COMBAT_COMPANIONS.filter(def=>def.origin.type==='event');
+ const permanentCompanions=ALL_COMBAT_COMPANIONS.filter(def=>def.origin.type!=='event'),regionalCompanions=permanentCompanions.filter(def=>def.id.startsWith('UNIT_')),guildCompanions=permanentCompanions.filter(def=>def.id.startsWith('GUILD_UNIT_')),eventCompanions=ALL_COMBAT_COMPANIONS.filter(def=>def.origin.type==='event');
 // Veilbreak now carries two milestone companions plus Lanternwing in the event shop.
 const expectedPermanentIds=Array.from({length:24},(_,index)=>`UNIT_${String(index+1).padStart(3,'0')}`);
 const expectedEventIds=Array.from({length:11},(_,index)=>`EVT_UNIT_${String(index+1).padStart(3,'0')}`);
-ok(ALL_COMBAT_COMPANIONS.length===35,'authored roster contains 24 permanent and 11 event companions');
-ok(permanentCompanions.length===24,'permanent companion count remains 24');
-ok(permanentCompanions.map(def=>def.id).sort().join(',')===expectedPermanentIds.join(','),'permanent companion ids remain UNIT_001 through UNIT_024');
+ ok(ALL_COMBAT_COMPANIONS.length===38,'authored roster contains 27 permanent and 11 event companions');
+ ok(permanentCompanions.length===27,'permanent companion count includes three Guild Token Shop companions');
+ ok(regionalCompanions.map(def=>def.id).sort().join(',')===expectedPermanentIds.join(','),'regional companion ids remain UNIT_001 through UNIT_024');
+ ok(guildCompanions.map(def=>def.id).sort().join(',')==='GUILD_UNIT_001,GUILD_UNIT_002,GUILD_UNIT_003','Guild Token Shop companion IDs remain stable');
 ok(eventCompanions.length===11,'event roster contains the 11 authored companion rewards');
-ok(COMBAT_COMPANIONS.length===24,'unreleased event companions stay out of the active catalog');
-ok(COMBAT_COMPANIONS.every(def=>def.origin.type!=='event'),'active catalog contains no unreleased event companions');
+ ok(COMBAT_COMPANIONS.length===30,'active catalog contains permanent companions and the three released Veilbreak companions only');
+ ok(COMBAT_COMPANIONS.filter(def=>def.origin.type==='event').map(def=>def.id).sort().join(',')==='EVT_UNIT_007,EVT_UNIT_008,EVT_UNIT_011','active catalog contains only released Veilbreak companions');
 ok(new Set(ALL_COMBAT_COMPANIONS.map(def=>def.id)).size===ALL_COMBAT_COMPANIONS.length,'permanent and event companion ids are unique');
 ok(eventCompanions.map(def=>def.id).sort().join(',')===expectedEventIds.join(','),'event companion ids cover EVT_UNIT_001 through EVT_UNIT_011');
 const mobileIds=new Set(ALL_COMBAT_COMPANIONS.map(def=>def.id));

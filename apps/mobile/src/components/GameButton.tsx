@@ -30,7 +30,7 @@ export function GameButton({title,onPress,disabled=false,loading=false,selected,
   const selectedStyle=selected?{borderColor:C.selectionLine,backgroundColor:tone==='secondary'?C.selection:toneStyle.backgroundColor}:undefined;
   return <Pressable accessibilityRole="button" accessibilityLabel={title} accessibilityState={{disabled:inactive,busy:loading||pending,selected}}
     disabled={inactive} onPress={execute} onFocus={()=>setFocused(true)} onBlur={()=>setFocused(false)}
-    style={({pressed})=>[s.button,compact&&s.compact,toneStyle,selectedStyle,focused&&s.focused,pressed&&!inactive&&s.pressed,inactive&&s.disabled]}>
+    style={({pressed})=>[s.button,compact&&s.compact,toneStyle,selectedStyle,focused&&s.focused,pressed&&!inactive&&s.pressed,inactive&&!loading&&!pending&&s.disabled]}>
     {(loading||pending)&&<ActivityIndicator color={labelColor} size="small"/>}
     <Text textBreakStrategy="balanced" android_hyphenationFrequency="normal" style={[s.label,{color:labelColor}]}>{title}</Text>
   </Pressable>;

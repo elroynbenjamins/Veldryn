@@ -13,6 +13,7 @@ export function useOnlineGame(){
  const repo=useMemo(()=>serverGameplayEnabled&&accountId?createOnlineGameRepository(accountId):null,[accountId]);
  const active=useRef(repo);active.current=repo;
  const nameStyleSaving=useRef<typeof repo>(null);
+ const commandSaving=useRef<typeof repo>(null);
  const refreshInFlight=useRef<{repo:typeof repo;promise:Promise<OnlineSnapshot|undefined>}|null>(null);
  const [foregroundRevision,setForegroundRevision]=useState(0);
  const [snapshot,setSnapshot]=useState<OnlineSnapshot|null>(null),[loading,setLoading]=useState(false),[busy,setBusy]=useState(false),[error,setError]=useState(''),[pending,setPending]=useState(false);
@@ -39,10 +40,10 @@ export function useOnlineGame(){
   const sub=AppState.addEventListener('change',next=>{foreground=next==='active';if(foreground)heartbeat();});
   return()=>{clearInterval(timer);sub.remove();};
  },[accountId]);
- const execute=async(command?:GameCommand)=>{if(!repo)throw new Error('Sign in before playing online.');if(nameStyleSaving.current===repo)throw new Error('Your name style is still saving. Please wait.');setBusy(true);setError('');try{const next=await repo.execute(command);if(active.current!==repo)throw new Error('Account changed while saving.');setSnapshot(next);setPending(false);return next;}catch(e){if(active.current===repo){setPending(await repo.hasPending());if(repo.snapshot)setSnapshot(repo.snapshot);setError(e instanceof Error?e.message:'Unable to save. Retry the pending action.');}throw e;}finally{if(active.current===repo)setBusy(false);}};
+ const execute=async(command?:GameCommand)=>{if(!repo)throw new Error('Sign in before playing online.');if(nameStyleSaving.current===repo)throw new Error('Your name style is still saving. Please wait.');if(commandSaving.current===repo)throw new Error('A gameplay action is already being saved.');commandSaving.current=repo;setBusy(true);setError('');try{const next=await repo.execute(command);if(active.current!==repo)throw new Error('Account changed while saving.');setSnapshot(next);setPending(false);return next;}catch(e){if(active.current===repo){setPending(await repo.hasPending());if(repo.snapshot)setSnapshot(repo.snapshot);setError(e instanceof Error?e.message:'Unable to save. Retry the pending action.');}throw e;}finally{if(commandSaving.current===repo)commandSaving.current=null;if(active.current===repo)setBusy(false);}};
  const saveNameStyle=async(style:PlayerNameStylePreference)=>{
   if(!repo||active.current!==repo)throw new Error('Sign in before changing your name style.');
-  if(busy||nameStyleSaving.current===repo)throw new Error('Another change is still saving. Please wait.');
+  if(busy||commandSaving.current===repo||nameStyleSaving.current===repo)throw new Error('Another change is still saving. Please wait.');
   nameStyleSaving.current=repo;setBusy(true);setError('');
   try{return await saveAndRefreshPlayerNameStyle(style,{
    accountId:repo.accountId,isCurrent:()=>active.current===repo,

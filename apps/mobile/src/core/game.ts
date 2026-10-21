@@ -231,6 +231,8 @@ function tryStartNextQueuedActivity(state:GameState,nowMs:number,throwOnFailure=
      ?startExploration(launch,next.targetId,nowMs)
      :next.kind==='alchemy'
       ?beginAlchemyBatch(launch,next.targetId,nowMs)
+      :next.kind==='processing'
+       ?beginProcessingBatch(launch,next.targetId,nowMs)
      :startGathering(launch,next.targetId,nowMs);
   if(next.kind==='combat'&&state.character.activityQueueCombatRecovery){
    const firstCycle=combatRuntimeDetails(started,next.targetId).killCycleSeconds;
@@ -265,7 +267,7 @@ function autoAdvanceActivityQueue(state:GameState,nowMs:number,source:ActiveActi
  if(safeIndex>=0)return tryStartNextQueuedActivity(state,nowMs,false,safeIndex,false);
  return source.kind!=='combat'?continueCompletedQueueActivity(next,nowMs,source,reward):next;
 }
-/** Timed, finite queue entries (Faith and Alchemy) end cleanly when their work is spent. */
+/** Timed, finite queue entries end cleanly when their work is spent. */
 function startFinishedQueuedActivity(state:GameState,nowMs:number){
  if(!state.character?.activityQueue?.length)return state;
  return tryStartNextQueuedActivity(state,nowMs,false);
@@ -590,6 +592,7 @@ export function previewActivityReward(state:GameState,nowMs:number):RewardBundle
     return previewDailySupplyTimedReward(state,base,'crafting').reward;
   }
   if(state.activity?.kind==='processing'){
+    const source=state.activity;
     const elapsed=Math.min(offlineCapSeconds(state),Math.max(0,(nowMs-state.activity.lastClaimAtMs)/1000)),raw=previewProcessingReward(state,elapsed),base={...raw,...timedEventRewards(state,'crafting',raw.craftingCompletedAtMs??[])};
     return previewDailySupplyTimedReward(state,base,'crafting').reward;
   }
@@ -637,6 +640,7 @@ function queuedReservationEnd(state:GameState):number|undefined{
  const activity=state.activity;
  if(!activity||(!activity.queueManaged&&!state.character?.activityQueue?.length))return undefined;
  if(activity.kind==='alchemy'&&activity.brew)return activity.lastClaimAtMs+Math.ceil(Math.max(0,activity.brew.remainingBatches-(activity.progressFraction??0))*activity.brew.cycleSeconds*1000);
+ if(activity.kind==='processing'&&activity.processing)return activity.lastClaimAtMs+Math.ceil(Math.max(0,activity.processing.remainingBatches-(activity.progressFraction??0))*activity.processing.cycleSeconds*1000);
  if(activity.kind==='faith'){
   const practice=normalizeFaith(state.character?.faith).practice,reservation=activity.faithPractice,tier=FAITH_TIERS.find(row=>row.id===(practice?.tierId??reservation?.tierId));
   if(!tier)return undefined;
@@ -709,6 +713,7 @@ function claimActivitySegment(state:GameState,nowMs:number){
     return {state:queuedState,reward};
   }
   if(state.activity?.kind==='processing'){
+    const source=state.activity;
     if(nowMs<=state.activity.lastClaimAtMs)return {state,reward:previewActivityReward(state,state.activity.lastClaimAtMs)};
     const elapsed=Math.min(offlineCapSeconds(state),Math.max(0,(nowMs-state.activity.lastClaimAtMs)/1000)),raw=previewProcessingReward(state,elapsed),baseReward={...raw,...timedEventRewards(state,'crafting',raw.craftingCompletedAtMs??[])},boost=previewDailySupplyTimedReward(state,baseReward,'crafting'),reward=boost.reward,processing=state.activity.processing!;
     const routed=routeRewards(state,reward.items,nowMs),nextXp=(state.skills.find(x=>x.skillId===processing.skillId)?.xp??0)+(reward.xp??0);
@@ -719,7 +724,8 @@ function claimActivitySegment(state:GameState,nowMs:number){
     progressed=applyEventDiscoveries(applyEventDrops(progressed,reward.eventDrops??[]),reward.eventDiscoveries??[]);
     progressed=refreshQuests(progressed);
     const finalState=reconcileCombatCompanionUnlocks(progressed,nowMs);
-    return {state:finalState,reward:withCompanionUnlocks(reward,state,finalState)};
+    const queuedState=!reward.nextProcessingRemaining&&(source.queueManaged||state.character?.activityQueue?.length)?startFinishedQueuedActivity(finalState,nowMs):finalState;
+    return {state:queuedState,reward:withCompanionUnlocks(reward,state,queuedState)};
   }
   if(!state.character||!state.activity){const recovered=settleOutOfCombatRecovery(state,nowMs);return {state:recovered,reward:previewActivityReward(state,nowMs)};}
   const idleWindow=idleRuleSettlementWindow(state,nowMs),settledAtMs=idleWindow.settleAtMs,idleStopReason=idleWindow.shouldStop?idleWindow.reason:undefined,supply=previewStandardActivityRewardWithSupplies(state,settledAtMs),boosted=supply.reward;

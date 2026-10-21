@@ -22,13 +22,13 @@ export function SaveTransferPanel({language:languageOverride,onExport,onImport,r
   return <Panel>
     <Text style={s.title}>{a("Save backup")}</Text>
     <Text style={s.body}>{a("Export a versioned JSON backup through your phone's share sheet, or paste one back into VELDRYN.")}</Text>
-    {!visible&&!!error?<Text accessibilityRole="alert" style={s.error}>{accountError(language,error,'The save could not be exported.')}</Text>:null}<View style={s.actions}><View style={s.flex}><GameButton title={a("Export save")} tone="secondary" loading={exportBusy} disabled={busy} onPress={()=>void exportSave()}/></View><View style={s.flex}><GameButton title={a("Import save…")} tone="secondary" disabled={busy||exportBusy} onPress={()=>{setError('');setVisible(true)}}/></View></View>
+    {!visible&&!!error?<Text accessibilityRole="alert" style={s.error}>{accountError(language,error,'The save could not be exported.')}</Text>:null}<View style={s.actions}><View style={s.flex}><GameButton title={a("Export save")} tone="secondary" loading={exportBusy} disabled={busy} onPress={()=>exportSave()}/></View><View style={s.flex}><GameButton title={a("Import save…")} tone="secondary" disabled={busy||exportBusy} onPress={()=>{setError('');setVisible(true)}}/></View></View>
     <GameModalSurface visible={visible} presentation="dialog" reduceMotion={reduceMotion} onClose={close} backdropLabel={a("Cancel save import")}>
       <GameModalHeader eyebrow={a("SAVE BACKUP")} title={a("Import save backup")} onClose={close} closeDisabled={busy}/>
       <Text style={s.body}>{a("Paste the complete JSON backup. It is validated and migrated before replacing the current local save.")}</Text>
       <ScrollView keyboardShouldPersistTaps="handled" style={s.scroll} showsVerticalScrollIndicator={false} showsHorizontalScrollIndicator={false}><TextInput accessibilityLabel={a("VELDRYN save backup JSON")} value={raw} onChangeText={setRaw} multiline autoCapitalize="none" autoCorrect={false} placeholder={a("Paste backup JSON here")} style={s.input}/></ScrollView>
       {!!error&&<Text accessibilityRole="alert" accessibilityLiveRegion="polite" style={s.error}>{accountError(language,error,'The save could not be imported.')}</Text>}
-      <View style={s.actions}><View style={s.flex}><GameButton title={a("Cancel")} tone="secondary" disabled={busy} onPress={close}/></View><View style={s.flex}><GameButton title={a("Validate & import")} loading={busy} disabled={!raw.trim()} onPress={()=>void importSave()}/></View></View>
+      <View style={s.actions}><View style={s.flex}><GameButton title={a("Cancel")} tone="secondary" disabled={busy} onPress={close}/></View><View style={s.flex}><GameButton title={a("Validate & import")} loading={busy} disabled={!raw.trim()} onPress={()=>importSave()}/></View></View>
     </GameModalSurface>
   </Panel>;
 }

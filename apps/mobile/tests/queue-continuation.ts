@@ -1,5 +1,5 @@
 import {claimActivity,createCharacter,newGame,offlineCapSeconds,startCombat,startGathering,startNextQueuedActivity,stopActivity} from '../src/core/game';
-import {enqueueActivity,normalizeActivityQueueGoal} from '../src/core/activity-queue';
+import {enqueueActivity,normalizeActivityQueueGoal,queuedActivityReadiness} from '../src/core/activity-queue';
 import {executeGameCommand} from '../src/core/game-commands';
 import {normalizeSave} from '../src/core/save-normalization';
 import {settleStartupActivity} from '../src/core/playability';
@@ -45,14 +45,11 @@ ok(later.state.activity?.queueGoalCompletedAtMs!==undefined,'remaining duration 
 
 state=base();
 state={...state,inventory:{...state.inventory,stacks:[...state.inventory.stacks,{itemId:'GREENWOOD_LOG',quantity:500}]}};
-state=enqueueActivity(state,{kind:'gathering',targetId:'GREENWOOD_TREE',goal:{kind:'item_quantity',value:500}});
-state=startNextQueuedActivity(state,t);
-const instant=settleStartupActivity(state,t);
-ok(instant.reward,'zero-time goal completion is presented and persisted');
-eq(instant.state.activity?.queueGoalCompletedAtMs,t,'startup keeps an already-reached goal completion');
-const already=claimActivity(state,t+120_000);
-eq(already.state.activity?.queueGoalCompletedAtMs,t,'already completed goal advances at the boundary');
-ok(already.reward.kills>0,'zero-duration goal does not prevent continuing');
+rejects(()=>enqueueActivity(state,{kind:'gathering',targetId:'GREENWOOD_TREE',goal:{kind:'item_quantity',value:500}}),'Already-held inventory goals must be rejected at creation');
+const oldEntry={kind:'gathering' as const,targetId:'GREENWOOD_TREE',goal:{kind:'item_quantity' as const,value:500}};
+const legacy={...state,character:{...state.character!,activityQueue:[oldEntry]}};
+rejects(()=>startNextQueuedActivity(legacy,t),'Legacy already-reached goal should pause instead of starting and instantly completing');
+ok(!queuedActivityReadiness(legacy,oldEntry).ready,'Legacy queue readiness explains a target that is already in storage');
 
 state=enqueueActivity(base(),{kind:'gathering',targetId:'GREENWOOD_TREE',goal:{kind:'skill_level',value:2}});
 state=startNextQueuedActivity(state,t);

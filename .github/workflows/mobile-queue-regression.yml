@@ -1,0 +1,46 @@
+name: Mobile queue regression validation
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - 'apps/mobile/src/core/activity-queue.ts'
+      - 'apps/mobile/src/core/activity-stop-presentation.ts'
+      - 'apps/mobile/src/core/game-commands.ts'
+      - 'apps/mobile/src/components/ActionQueuePanel.tsx'
+      - 'apps/mobile/src/components/HomeQueueComposer.tsx'
+      - 'apps/mobile/src/components/ActivityQueuePlanner.tsx'
+      - 'apps/mobile/src/components/ActiveActivityBar.tsx'
+      - 'apps/mobile/src/components/ActivityCard.tsx'
+      - 'apps/mobile/src/screens/HomeScreen.tsx'
+      - 'apps/mobile/App.tsx'
+      - 'apps/mobile/tests/activity-queue.ts'
+      - 'apps/mobile/tests/queue-continuation.ts'
+      - '.github/workflows/mobile-queue-regression.yml'
+jobs:
+  queue-regressions:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: apps/mobile
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+          cache-dependency-path: apps/mobile/pnpm-lock.yaml
+      - run: pnpm install --frozen-lockfile
+      - name: Typecheck native app
+        run: pnpm typecheck
+      - name: Compile core regression tests
+        run: pnpm exec tsc -p tsconfig.core.json --outDir .core-build
+      - name: Exercise queue goals, continuation and combat recovery
+        run: |
+          node .core-build/apps/mobile/tests/activity-queue.js
+          node .core-build/apps/mobile/tests/queue-continuation.js
+          node .core-build/apps/mobile/tests/queue-combat-recovery.js

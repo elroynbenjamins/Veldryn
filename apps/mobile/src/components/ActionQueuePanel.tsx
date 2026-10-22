@@ -7,7 +7,7 @@ import {GameButton} from './GameButton';
 import {equipmentTheme,radii,spacing,typography,type ThemeColors} from '../theme/theme';
 import {useGameTheme} from '../theme/ThemeContext';
 
-export function ActionQueuePanel({state,onRemove,onMove,onClear,onStartNext}:{state:GameState;onRemove:(index:number)=>void;onMove:(index:number,direction:'up'|'down')=>void;onClear:()=>void;onStartNext:()=>void}){
+export function ActionQueuePanel({state,onRemove,onMove,onClear,onStartNext,onAdd}:{state:GameState;onAdd?:()=>void;onRemove:(index:number)=>void;onMove:(index:number,direction:'up'|'down')=>void;onClear:()=>void;onStartNext:()=>void}){
  const {gt,gl,language}=useGameplayText();
  const [managing,setManaging]=useState(false),[confirmClear,setConfirmClear]=useState(false);
  const C=useGameTheme(),s=useMemo(()=>makeStyles(C),[C]),{width,fontScale}=useWindowDimensions(),stackRows=width<480||fontScale>=1.25;
@@ -15,9 +15,9 @@ export function ActionQueuePanel({state,onRemove,onMove,onClear,onStartNext}:{st
  const canResume=!!state.character?.activityQueueCombatRecovery&&state.activity?.kind!=='combat'&&state.activity?.queueGoalCompletedAtMs!==undefined&&queue[0]?.kind==='combat';
  if(!queue.length){
   const activity=state.activity;
-  if(!activity?.queueManaged)return null;
+  if(!activity?.queueManaged)return onAdd?<View style={s.panel}><View style={s.header}><View style={s.flex}><Text style={s.kicker}>{gt('ACTION QUEUE')} · 0/{capacity}</Text><Text style={s.sub}>{gt('Plan your next activity here.')}</Text></View></View><GameButton title={gt('＋ Add activity')} tone="secondary" onPress={onAdd}/></View>:null;
   const complete=activity.queueGoalCompletedAtMs!==undefined;
-  return <View style={s.handoff}><Text style={s.handoffTitle}>{complete?(state.character?.activityQueueCombatRecovery?gt("GATHERING CONTINUES"):gt("ALL QUEUE GOALS COMPLETED")):gt("CURRENT ACTIVITY GOAL")}</Text><Text style={s.pauseText}>{complete?gt("Still {activity}",{activity:gl(activity.kind==='combat'?'Hunt':activity.kind)}):activity.queueGoal?gl(activityQueueGoalLabel(activity.queueGoal)):gl(activity.huntGoal?.label)||gt("Open-ended activity")}</Text></View>;
+  return <View style={s.panel}><View style={s.handoff}><Text style={s.handoffTitle}>{complete?(state.character?.activityQueueCombatRecovery?gt("GATHERING CONTINUES"):gt("ALL QUEUE GOALS COMPLETED")):gt("CURRENT ACTIVITY GOAL")}</Text><Text style={s.pauseText}>{complete?gt("Still {activity}",{activity:gl(activity.kind==='combat'?'Hunt':activity.kind)}):activity.queueGoal?gl(activityQueueGoalLabel(activity.queueGoal)):gl(activity.huntGoal?.label)||gt("Open-ended activity")}</Text></View>{onAdd?<GameButton compact title={gt('＋ Add activity')} tone="secondary" onPress={onAdd}/>:null}</View>;
  }
  return <View style={s.panel}>
   <View style={[s.header,stackRows&&s.headerStack]}>
@@ -28,6 +28,7 @@ export function ActionQueuePanel({state,onRemove,onMove,onClear,onStartNext}:{st
     <Text style={s.manageText}>{managing?gt("Done"):gt("Manage")}</Text>
    </Pressable>
   </View>
+  {onAdd?<GameButton compact title={queue.length>=capacity?gt('Queue full'):gt('＋ Add activity')} tone="secondary" disabled={queue.length>=capacity} onPress={onAdd}/>:null}
   {managing&&queue.length>0?<View style={s.clearActions}>
    {confirmClear?<><Text style={[s.pauseText,s.flex]}>{gt("Clear all waiting activities? Current activity will continue.")}</Text><View style={s.clearButtons}><GameButton compact title={gt("Cancel")} tone="secondary" onPress={()=>setConfirmClear(false)}/><GameButton compact title={gt("Confirm clear")} tone="secondary" onPress={()=>{setConfirmClear(false);setManaging(false);onClear();}}/></View></>:
     <View style={s.clearInline}><Text style={[s.sub,s.flex]}>{gt("Changes are saved in your queue.")}</Text><GameButton compact title={gt("Clear queue")} tone="secondary" onPress={()=>setConfirmClear(true)}/></View>}

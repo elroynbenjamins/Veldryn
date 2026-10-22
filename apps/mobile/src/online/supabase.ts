@@ -3,7 +3,7 @@ import {createClient,processLock,type SupabaseClient} from '@supabase/supabase-j
 import {Platform} from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import {chunkedAuthStorage} from '../core/auth-callback';
-import {networkRequestCategory,networkRequestMetricsEnabled,recordNetworkRequest} from '../core/network-request-metrics';
+import {currentNetworkMetricsRoute,networkRequestCategory,networkRequestMetricsEnabled,recordNetworkRequest} from '../core/network-request-metrics';
 
 declare const process:{env:Record<string,string|undefined>};
 
@@ -29,12 +29,12 @@ const secureStorage={
 const monitoredSupabaseFetch:typeof fetch=(input,init)=>{
  if(!networkRequestMetricsEnabled())return fetch(input,init);
  const source=typeof input==='string'?input:typeof input==='object'&&input&&'url'in input?String(input.url):String(input);
- const category=networkRequestCategory(source),started=Date.now();
+ const category=networkRequestCategory(source),started=Date.now(),originRoute=currentNetworkMetricsRoute();
  return fetch(input,init).then(response=>{
-  recordNetworkRequest(category,Date.now()-started,response.ok);
+  recordNetworkRequest(category,Date.now()-started,response.ok,originRoute);
   return response;
  },error=>{
-  recordNetworkRequest(category,Date.now()-started,false);
+  recordNetworkRequest(category,Date.now()-started,false,originRoute);
   throw error;
  });
 };

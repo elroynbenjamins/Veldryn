@@ -1,5 +1,5 @@
 import {supabase} from './supabase';
-import {currentPlayerIdentityViewer,ensurePlayerIdentityViewer,peekPlayerIdentity,playerIdentityNeedsRefresh,storePlayerIdentities,type CachedPlayerIdentity} from './player-identity-cache';
+import {currentPlayerIdentityViewer,ensurePlayerIdentityViewer,peekPlayerIdentity,playerIdentityDetailsNeedRefresh,playerIdentityNeedsRefresh,storePlayerIdentities,type CachedPlayerIdentity} from './player-identity-cache';
 import {CHAT_RECENT_MESSAGE_LIMIT} from './chat-history';
 import {normalizePlayerBadges,type PlayerBadgeIdentity} from '../core/player-badges';
 import {guildNameError,normalizeGuildName} from '../core/identity-names';
@@ -65,32 +65,36 @@ export async function guildIdentities(accountIds:readonly string[]):Promise<Map<
  const {data:{session}}=await client.auth.getSession();
  const viewer=session?.user.id??'';
  await ensurePlayerIdentityViewer(viewer);
- const stale=unique.filter(id=>playerIdentityNeedsRefresh(id));
- // Coalesce concurrent requests from chat, roster and player-card surfaces.
- const missing=stale.filter(id=>!pendingIdentityQueries.has(viewer+':'+id));
- for(let i=0;i<missing.length;i+=100){
-  const batch=missing.slice(i,i+100);
-  const query=(async()=>{
-   const args={p_account_ids:batch};
-   let result=await client.rpc('guild_identities_v3',args);
-   if(result.error?.code==='PGRST202')result=await client.rpc('guild_identities_v2',args);
-   if(result.error?.code==='PGRST202')result=await client.rpc('guild_identities',args);
-   if(result.error)throw result.error;
-   if(currentPlayerIdentityViewer()!==viewer)return;
-   const found=new Map<string,CachedPlayerIdentity>();
-   for(const row of result.data??[]){
-    found.set(row.account_id,{
-     profile_icon_id:row.profile_icon_id??null,class_id:row.class_id??null,
-     guild_tag:row.guild_tag??null,guild_tag_color_id:row.guild_tag_color_id??null,
-     player_name_style:row.player_name_style??null,player_badges:normalizePlayerBadges(row.player_badges),
-    });
-   }
-   storePlayerIdentities(found);
-  })();
-  for(const id of batch)pendingIdentityQueries.set(viewer+':'+id,query);
-  // Wait for completion before deleting the flight, even if it fails.
-  void query.finally(()=>{for(const id of batch){if(pendingIdentityQueries.get(viewer+':'+id)===query)pendingIdentityQueries.delete(viewer+':'+id);}}).catch(()=>{});
+ const staleIcons=unique.filter(id=>playerIdentityNeedsRefresh(id));
+ const staleDetails=unique.filter(id=>!playerIdentityNeedsRefresh(id)&&playerIdentityDetailsNeedRefresh(id));
+ // Full public-profile RPC is expensive; use it at most once per day per icon.
+ // Guild tags, name styles and badges use the lighter v2 endpoint every 5 min.
+ for(const [candidates,includeIcon] of [[staleIcons,true],[staleDetails,false]] as const){
+  const missing=candidates.filter(id=>!pendingIdentityQueries.has(viewer+':'+id));
+  for(let i=0;i<missing.length;i+=100){
+   const batch=missing.slice(i,i+100);
+   const query=(async()=>{
+    const args={p_account_ids:batch};
+    let result=await client.rpc(includeIcon?'guild_identities_v3':'guild_identities_v2',args);
+    if(result.error?.code==='PGRST202')result=await client.rpc('guild_identities_v2',args);
+    if(result.error?.code==='PGRST202')result=await client.rpc('guild_identities',args);
+    if(result.error)throw result.error;
+    if(currentPlayerIdentityViewer()!==viewer)return;
+    const found=new Map<string,CachedPlayerIdentity>();
+    for(const row of result.data??[]){
+     found.set(row.account_id,{
+      profile_icon_id:row.profile_icon_id??null,class_id:row.class_id??null,
+      guild_tag:row.guild_tag??null,guild_tag_color_id:row.guild_tag_color_id??null,
+      player_name_style:row.player_name_style??null,player_badges:normalizePlayerBadges(row.player_badges),
+     });
+    }
+    storePlayerIdentities(found,Date.now(),includeIcon);
+   })();
+   for(const id of batch)pendingIdentityQueries.set(viewer+':'+id,query);
+   void query.finally(()=>{for(const id of batch){if(pendingIdentityQueries.get(viewer+':'+id)===query)pendingIdentityQueries.delete(viewer+':'+id);}}).catch(()=>{});
+  }
  }
+ const stale=[...new Set([...staleIcons,...staleDetails])];
  const flights=[...new Set(stale.map(id=>pendingIdentityQueries.get(viewer+':'+id)).filter((v):v is Promise<void>=>!!v))];
  const settled=await Promise.allSettled(flights);
  // Stale artwork is preferable to an empty avatar on network failure.

@@ -220,7 +220,9 @@ export function executeGameCommand(previous:GameState,value:unknown,now:number,o
    }
    // Enqueue first so a full/invalid queue cannot alter the running activity.
    const queued=enqueueActivity(state,{kind,targetId:text(a,'id'),...(combatTacticId?{combatTacticId}:{}),...(huntGoalId?{huntGoalId}:{}),...(faithPracticeCount?{faithPracticeCount}:{}),...(goal?{goal}:{})});
-   state=handoffGoal?{...queued,activity:{...queued.activity!,queueManaged:true,queueGoal:handoffGoal,queueGoalCompletedAtMs:undefined,startedAtMs:now,...(queued.activity!.kind==='combat'?{sessionKills:0,sessionChampions:0}: {})}}:queued;
+   const source=queued.activity;
+   if(handoffGoal&&!source)throw new Error('Current activity ended before setting its handoff.');
+   state=handoffGoal&&source?{...queued,activity:{...source,queueManaged:true,queueGoal:handoffGoal,queueGoalCompletedAtMs:undefined,startedAtMs:now,...(source.kind==='combat'?{sessionKills:0,sessionChampions:0}: {})}}:queued;
    break;
   }
   case 'queue_set_goal':{
@@ -228,7 +230,9 @@ export function executeGameCommand(previous:GameState,value:unknown,now:number,o
    if(!goal)throw new Error('invalid_queue_goal');
    const goalIssue=currentActivityHandoffGoalIssue(state,id,goal);
    if(goalIssue)throw new Error(goalIssue);
-   state={...state,activity:{...state.activity,queueManaged:true,queueGoal:goal,queueGoalCompletedAtMs:undefined,startedAtMs:now,...(state.activity.kind==='combat'?{sessionKills:0,sessionChampions:0}: {})}};
+   const source=state.activity;
+   if(!source)throw new Error('Activity changed. Select its goal again.');
+   state={...state,activity:{...source,queueManaged:true,queueGoal:goal,queueGoalCompletedAtMs:undefined,startedAtMs:now,...(source.kind==='combat'?{sessionKills:0,sessionChampions:0}: {})}};
    break;
   }
   case 'queue_remove':state=removeQueuedActivity(state,integer(a,'index',0,activityQueueCapacity(state)-1));break;

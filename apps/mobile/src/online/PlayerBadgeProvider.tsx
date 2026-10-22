@@ -3,7 +3,7 @@ import {AppState} from 'react-native';
 import {useAuthSession} from './AuthSessionProvider';
 import {loadPlayerBadgePreferences,updatePlayerBadgePreferences,type PlayerBadgePreferences} from './player-badges';
 import {guildIdentities,type SocialProfileIcon} from './social';
-import {peekPlayerIdentity,subscribePlayerIdentityChanges} from './player-identity-cache';
+import {peekPlayerIdentity,playerIdentityDetailsNeedRefresh,playerIdentityNeedsRefresh,subscribePlayerIdentityChanges} from './player-identity-cache';
 import type {PlayerBadgeIdentity} from '../core/player-badges';
 
 export type BadgeState=PlayerBadgePreferences&{accountId:string;loading:boolean;busy:boolean;error:string;setVisible:(visible:boolean)=>Promise<void>;refresh:()=>Promise<void>};
@@ -31,7 +31,7 @@ export function PlayerBadgeProvider({children}:{children:ReactNode}){
   const load=async()=>{
    const version=++request,ids=[...watched.current.keys()];
    if(!accountId||!ids.length){
-    if(alive&&version===request)setRemote({accountId,identities:new Map(),icons:new Map()});
+    if(alive&&version===request)setRemote(previous=>previous.accountId===accountId&&!previous.icons.size?previous:{accountId,identities:new Map(),icons:new Map()});
     return;
    }
    try{
@@ -46,13 +46,13 @@ export function PlayerBadgeProvider({children}:{children:ReactNode}){
    showCached(id);
    // An explicit invalidation fetches the fresh row; an optimistic icon
    // update is already fresh and is served from the shared cache.
-   void load();
+   if(playerIdentityNeedsRefresh(id)||playerIdentityDetailsNeedRefresh(id))void load();
   });
   const batch=setTimeout(()=>void load(),50);
   // This timer checks the cache, not the server. Fetch only if rows expired.
-  const timer=setInterval(()=>{if(AppState.currentState==='active')void load();},5*60*1000);
+  const timer=setInterval(()=>{if(AppState.currentState==='active'&&watched.current.size)void load();},5*60*1000);
   const foreground=AppState.addEventListener('change',next=>{
-   if(next==='active')void load();
+   if(next==='active'&&watched.current.size)void load();
    // Do not blank avatars on background/foreground transitions.
   });
   return()=>{alive=false;request++;clearTimeout(batch);clearInterval(timer);foreground.remove();unsubscribe();};

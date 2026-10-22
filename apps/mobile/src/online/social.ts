@@ -1,5 +1,6 @@
 import {supabase} from './supabase';
 import {CHAT_RECENT_MESSAGE_LIMIT} from './chat-history';
+import {socialListIdentityIds,withSocialListIdentities} from '../core/social-list-projection';
 import {normalizePlayerBadges,type PlayerBadgeIdentity} from '../core/player-badges';
 import {guildNameError,normalizeGuildName} from '../core/identity-names';
 import type {GuildAppearanceEntitlements,GuildBackgroundId,GuildBannerId,GuildFrameId,GuildNameColorId,GuildNameplateId} from '../core/guild-customization';
@@ -131,10 +132,10 @@ export async function friendsOverview():Promise<{friends:FriendEntry[];requests:
  const friendRows=(friendsResult.data??[]) as FriendEntry[];
  const requestRows=(requestsResult.data??[]) as FriendRequest[];
  const blockedRows=(blockedResult.data??[]) as BlockedPlayer[];
- const identities=await guildIdentities([...new Set([...friendRows,...requestRows].map(row=>row.account_id))]);
+ const identities=await guildIdentities(socialListIdentityIds(friendRows,requestRows));
  return {
-  friends:friendRows.map(row=>({...row,...identities.get(row.account_id)})),
-  requests:requestRows.map(row=>({...row,...identities.get(row.account_id)})),
+  friends:withSocialListIdentities(friendRows,identities),
+  requests:withSocialListIdentities(requestRows,identities),
   blocked:blockedRows,
  };
 }

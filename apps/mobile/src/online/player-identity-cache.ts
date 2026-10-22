@@ -1,4 +1,5 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import {identityFieldExpired,mergeSocialWithCachedIcon,PLAYER_ICON_REFRESH_MS,PLAYER_SOCIAL_REFRESH_MS} from '../core/player-identity-cache-policy';
 import type {PlayerBadgeIdentity} from '../core/player-badges';
 import type {PlayerNameStylePreference} from '../core/player-name-style';
 
@@ -14,8 +15,8 @@ export type CachedPlayerIdentity={
 };
 type Entry={value:CachedPlayerIdentity;iconFetchedAt:number;detailsFetchedAt:number};
 type Saved={version:1;entries:[string,Entry][]};
-export const PLAYER_IDENTITY_TTL_MS=24*60*60*1000;
-export const PLAYER_IDENTITY_DETAILS_TTL_MS=5*60*1000;
+export const PLAYER_IDENTITY_TTL_MS=PLAYER_ICON_REFRESH_MS;
+export const PLAYER_IDENTITY_DETAILS_TTL_MS=PLAYER_SOCIAL_REFRESH_MS;
 const MAX_ENTRIES=500;
 const STORAGE_PREFIX='veldryn:public-player-identities:v1:';
 const entries=new Map<string,Entry>();
@@ -62,16 +63,16 @@ export function peekPlayerIdentity(id:string){
 }
 export function playerIdentityNeedsRefresh(id:string,now=Date.now()){
  const entry=entries.get(id);
- return !entry||now-entry.iconFetchedAt>=PLAYER_IDENTITY_TTL_MS||now<entry.iconFetchedAt;
+ return identityFieldExpired(entry?.iconFetchedAt,PLAYER_IDENTITY_TTL_MS,now);
 }
 export function playerIdentityDetailsNeedRefresh(id:string,now=Date.now()){
  const entry=entries.get(id);
- return !entry||now-entry.detailsFetchedAt>=PLAYER_IDENTITY_DETAILS_TTL_MS||now<entry.detailsFetchedAt;
+ return identityFieldExpired(entry?.detailsFetchedAt,PLAYER_IDENTITY_DETAILS_TTL_MS,now);
 }
 export function storePlayerIdentities(rows:ReadonlyMap<string,CachedPlayerIdentity>,now=Date.now(),includesIcon=true){
  for(const [id,value] of rows){
   const old=entries.get(id);
-  const merged=includesIcon?value:{...value,profile_icon_id:old?.value.profile_icon_id??null,class_id:old?.value.class_id??null};
+  const merged=mergeSocialWithCachedIcon(old?.value,value,includesIcon);
   entries.delete(id);entries.set(id,{value:merged,iconFetchedAt:includesIcon?now:old?.iconFetchedAt??0,detailsFetchedAt:now});
  }
  trimCache();scheduleSave();

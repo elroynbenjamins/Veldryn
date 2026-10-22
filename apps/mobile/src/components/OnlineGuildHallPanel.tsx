@@ -17,12 +17,12 @@ type Projection=Awaited<ReturnType<typeof loadOnlineGuildHallV44>>;
 export function OnlineGuildHallPanel(){
  const st=useSocialText(),C=useGameTheme(),s=useMemo(()=>makeStyles(C),[C]);
  const [projection,setProjection]=useState<Projection>(null),[loading,setLoading]=useState(true),[error,setError]=useState('');
- const load=async()=>{setLoading(true);setError('');try{setProjection(await loadOnlineGuildHallV44())}catch(reason){setError(reason instanceof Error?reason.message:st('Unable to load Guild Hall.'))}finally{setLoading(false)}};
+ const load=async(force=false)=>{setLoading(true);setError('');try{setProjection(await loadOnlineGuildHallV44(force))}catch(reason){setError(reason instanceof Error?reason.message:st('Unable to load Guild Hall.'))}finally{setLoading(false)}};
  useEffect(()=>{void load()},[]);
  if(loading&&!projection)return <Panel><Text style={s.title}>{st('Guild Hall')}</Text><ActivityIndicator color={C.accent}/></Panel>;
  if(error&&!projection)return <Panel><Text style={s.title}>{st('Guild Hall')}</Text><Text style={s.error}>{error}</Text><GameButton title={st('Retry')} tone="secondary" onPress={()=>void load()}/></Panel>;
  if(!projection)return <Panel><Text style={s.title}>{st('Guild Hall')}</Text><Text style={s.sub}>{st('Join a Guild to unlock long-term Guild Hall progression.')}</Text></Panel>;
- return <GuildHallView projection={projection} loading={loading} error={error} onRefresh={()=>void load()}/>;
+ return <GuildHallView projection={projection} loading={loading} error={error} onRefresh={()=>void load(true)}/>;
 }
 export function GuildHallView({projection,loading=false,error='',onRefresh}:{projection:NonNullable<Projection>;loading?:boolean;error?:string;onRefresh?:()=>void}){
  const st=useSocialText(),C=useGameTheme(),s=useMemo(()=>makeStyles(C),[C]),[section,setSection]=useState<'Facilities'|'Skills'|'Trophies'>('Facilities');

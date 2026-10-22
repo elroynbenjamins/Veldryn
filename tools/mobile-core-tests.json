@@ -1,4 +1,5 @@
 [
+  ".core-build/apps/mobile/tests/primary-tab-routing.js",
   "../../tools/validate-edge-function-auth-contract.cjs",
   "../../tools/validate-online-staging-smoke.mjs",
   ".core-build/apps/mobile/tests/released-event-connections.js",

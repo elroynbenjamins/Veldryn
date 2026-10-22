@@ -10,6 +10,7 @@ Home → Add to Queue and Skills → Activity Queue now present an explicit **Cu
 - **At next skill level** — available in Home when currently gathering and below skill level 100; validated strictly above current level.
 - **Keep current activity running** — explicit informed opt-out. The queued job will **not** start automatically unless the player stops the current job or an applicable idle rule triggers.
 - The handoff section is omitted when the active job already has an applicable stop (queue goal, Hunt Goal, eligible Idle Rule or naturally finite Alchemy/Faith work), no activity is running, or queued entries already exist.
+- **Already queued activities:** the Home queue panel detects an active open-ended job with waiting entries and offers a one-tap **Stop current activity after 30 minutes** remedy. It uses the existing trusted \`queue_set_goal\` action to preserve waiting entries and arm their first handoff without needing a new queue entry.
 - For activity types without a custom handoff option, the interface explains that the job must finish or be stopped manually.
 - The waiting queue remains below the active activity and shows whether a handoff is armed or blocked.
 

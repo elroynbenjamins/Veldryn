@@ -10,8 +10,10 @@ function load(file,dependencies={}){const sandbox={exports:{},require:name=>depe
  const guild=await social.profileGuildByTag('BLM');assert.equal(guild.name,'The Bloomwardens');assert.equal(guild.bannerId,'world_tree_green');assert.equal(query[0].table,'guilds');assert.equal(query[0].key,'tag');assert.equal(query[0].value,'BLM');
  const fixture={accountId:'player',character:{name:'Aster'},masteryShowcaseActionIds:[]};
  let profileResult=fixture,tag='BLM',lookupCount=0,fail=false,gone=false;
+ const {RequestSingleflight}=load('core/request-singleflight.ts');
  const profiles=load('online/profile-extension-v43.ts',{
-  './supabase':{supabase:{rpc:async()=>({data:profileResult,error:null})}},
+  '../core/request-singleflight':{RequestSingleflight},
+  './supabase':{supabase:{auth:{getSession:async()=>({data:{session:{user:{id:'viewer'}}},error:null})},rpc:async()=>({data:profileResult,error:null})}},
   './social':{guildIdentities:async()=>new Map([['player',{guild_tag:tag,guild_tag_color_id:'tag_emerald'}]]),profileGuildByTag:async()=>{lookupCount++;if(fail)throw Error('offline');return gone?null:guild}},
  });
  assert.equal((await profiles.publicPlayerProfileV43('player')).guild.name,'The Bloomwardens');

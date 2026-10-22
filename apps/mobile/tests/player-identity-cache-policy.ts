@@ -7,7 +7,7 @@ ok(identityFieldExpired(0,PLAYER_ICON_REFRESH_MS,now),'invalidated icon refreshe
 ok(identityFieldExpired(now+1,PLAYER_ICON_REFRESH_MS,now),'clock rollback refreshes');
 ok(!identityFieldExpired(now-PLAYER_SOCIAL_REFRESH_MS+1,PLAYER_SOCIAL_REFRESH_MS,now),'social data stays fresh five minutes');
 ok(identityFieldExpired(now-PLAYER_SOCIAL_REFRESH_MS,PLAYER_SOCIAL_REFRESH_MS,now),'social details refresh independently');
-const icon={profile_icon_id:'icon_17',class_id:'IRONWARDEN',guild_tag:'OLD'};
+const icon:{profile_icon_id:string|null;class_id:string|null;guild_tag:string}={profile_icon_id:'icon_17',class_id:'IRONWARDEN',guild_tag:'OLD'};
 const social={profile_icon_id:null,class_id:null,guild_tag:'NEW'};
 const combined=mergeSocialWithCachedIcon(icon,social,false);
 ok(combined.profile_icon_id==='icon_17'&&combined.class_id==='IRONWARDEN','lightweight fetch must retain cached appearance');

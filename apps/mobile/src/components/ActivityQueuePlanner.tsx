@@ -3,13 +3,14 @@ import {useMemo,useState} from 'react';
 import {Image,Pressable,ScrollView,StyleSheet,Text,TextInput,useWindowDimensions,View} from 'react-native';
 import type {ActivityQueueGoal,GameState,GatheringSkillId,QueuedActivity} from '../core/types';
 import type {GameCommand} from '../core/game-commands';
-import {activityQueueCapacity,activityQueueGoalIssue,normalizeActivityQueueGoal,queuedActivityReadiness,queuedActivityPlanningReadiness,queueSkillReadiness} from '../core/activity-queue';
+import {activityQueueCapacity,activityQueueRegion,activityQueueGoalIssue,normalizeActivityQueueGoal,queuedActivityReadiness,queuedActivityPlanningReadiness,queueSkillReadiness} from '../core/activity-queue';
 import {GATHERING} from '../content/skills';
 import {HERB_NODES} from '../content/herbalism';
 import {MONSTERS} from '../content/monsters';
 import {FAITH_TIERS,HOLY_WATER_ID} from '../content/faith';
 import {EXPLORATION_ROUTES} from '../content/exploration';
 import {ALCHEMY_RECIPES} from '../content/alchemy';
+import {WORLD_ZONES} from '../content/world-map';
 import {itemDef} from '../content/items';
 import {useGameTheme} from '../theme/ThemeContext';
 import {uiIcons} from '../theme/ui-icons';
@@ -36,7 +37,7 @@ export function ActivityQueuePlanner({state,onCommand}:{state:GameState;onComman
  const C=useGameTheme(),s=useMemo(()=>styles(C),[C]);
  const {height}=useWindowDimensions();
  const [skillId,setSkillId]=useState<QueueSkillId>("woodcutting"),[chooseSkill,setChooseSkill]=useState(false);
- const nodes=activities.filter(row=>row.skillId===skillId),combat=skillId==='combat',faith=skillId==='faith',alchemy=skillId==='alchemy',exploration=skillId==='exploration',queueKind=queueKindForSkill(skillId);
+ const nodes=activities.filter(row=>row.skillId===skillId&&(!activityQueueRegion({kind:queueKindForSkill(row.skillId),targetId:row.id})||activityQueueRegion({kind:queueKindForSkill(row.skillId),targetId:row.id})?.id===state.currentRegionId)),combat=skillId==='combat',faith=skillId==='faith',alchemy=skillId==='alchemy',exploration=skillId==='exploration',queueKind=queueKindForSkill(skillId);
  const [open,setOpen]=useState(false),[choose,setChoose]=useState(false),[selected,setSelected]=useState(''),[kind,setKind]=useState<ActivityQueueGoal['kind']>('item_quantity'),[amount,setAmount]=useState('500'),[busy,setBusy]=useState(false),[error,setError]=useState('');
  const node=nodes.find(row=>row.id===selected)??nodes[0];
  const current=!faith&&!alchemy&&!!node&&state.activity?.targetId===node.id&&state.activity.kind===(queueKind==='gathering'?skillId:queueKind);
@@ -76,11 +77,12 @@ export function ActivityQueuePlanner({state,onCommand}:{state:GameState;onComman
    <GameModalHeader eyebrow={gt("Skills").toLocaleUpperCase(language)} title={gt("Activity queue")} onClose={close} closeDisabled={busy}/>
    <ScrollView style={s.scroll} contentContainerStyle={s.content} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false} showsHorizontalScrollIndicator={false}>
     <View pointerEvents={busy?'none':'auto'}><ActionQueuePanel state={state} onRemove={index=>void manage({type:'queue_remove',args:{index}})} onMove={(index,direction)=>void manage({type:'queue_move',args:{index,direction}})} onClear={()=>void manage({type:'queue_clear'})} onStartNext={()=>void manage({type:'queue_start'})}/></View>
+    <Text style={s.meta}>{gt('Queue location: {region}',{region:WORLD_ZONES.find(zone=>zone.id===state.currentRegionId)?.name??state.currentRegionId})} · {gt('Regional activities must be queued in their own region.')}</Text>
     <Text style={s.label}>{gt("Skill")}</Text>
     <Pressable accessibilityRole="button" accessibilityLabel={gt("Choose queue skill")} accessibilityState={{expanded:chooseSkill}} disabled={busy} onPress={()=>{setChooseSkill(value=>!value);setChoose(false);}} style={s.selection}><ActivityArtwork id={skillId}/><Text style={[s.name,s.flex]}>{gl(skills.find(row=>row.id===skillId)?.label)}</Text><Image source={uiIcons.next} style={s.icon}/></Pressable>
     {chooseSkill?<View style={s.options}>{skills.map(skill=>{
      const availability=queueSkillReadiness(state,skill.id),disabled=busy||!availability.ready;
-     return <Pressable key={skill.id} accessibilityRole="radio" accessibilityState={{checked:skillId===skill.id,disabled}} disabled={disabled} onPress={()=>{setSkillId(skill.id);const available=activities.filter(row=>row.skillId===skill.id);setSelected((available.find(row=>queuedActivityPlanningReadiness(state,{kind:queueKindForSkill(skill.id),targetId:row.id,...(skill.id==='faith'?{faithPracticeCount:1}:{})}).ready)??available[0])?.id??'');setKind(skill.id==='combat'?'session_kills':skill.id==='exploration'?'duration_seconds':'item_quantity');setAmount(skill.id==='combat'?'50':skill.id==='faith'||skill.id==='alchemy'?'1':skill.id==='exploration'?'30':'500');setChooseSkill(false);setChoose(false);setError('');}} style={[s.option,{flexDirection:'row',alignItems:'center',gap:10},!availability.ready&&s.disabled]}><ActivityArtwork id={skill.id} size={28}/><View style={s.flex}><Text style={s.name}>{gl(skill.label)}</Text>{!availability.ready?<Text style={s.meta}>{gl(availability.blocker)}</Text>:null}</View></Pressable>;
+     return <Pressable key={skill.id} accessibilityRole="radio" accessibilityState={{checked:skillId===skill.id,disabled}} disabled={disabled} onPress={()=>{setSkillId(skill.id);const available=activities.filter(row=>row.skillId===skill.id&&(!activityQueueRegion({kind:queueKindForSkill(row.skillId),targetId:row.id})||activityQueueRegion({kind:queueKindForSkill(row.skillId),targetId:row.id})?.id===state.currentRegionId));setSelected((available.find(row=>queuedActivityPlanningReadiness(state,{kind:queueKindForSkill(skill.id),targetId:row.id,...(skill.id==='faith'?{faithPracticeCount:1}:{})}).ready)??available[0])?.id??'');setKind(skill.id==='combat'?'session_kills':skill.id==='exploration'?'duration_seconds':'item_quantity');setAmount(skill.id==='combat'?'50':skill.id==='faith'||skill.id==='alchemy'?'1':skill.id==='exploration'?'30':'500');setChooseSkill(false);setChoose(false);setError('');}} style={[s.option,{flexDirection:'row',alignItems:'center',gap:10},!availability.ready&&s.disabled]}><ActivityArtwork id={skill.id} size={28}/><View style={s.flex}><Text style={s.name}>{gl(skill.label)}</Text>{!availability.ready?<Text style={s.meta}>{gl(availability.blocker)}</Text>:null}</View></Pressable>;
     })}</View>:null}
     <Text style={s.label}>{gt("Activity")}</Text>
     <Pressable accessibilityRole="button" accessibilityLabel={gt("Choose queued activity")} accessibilityState={{expanded:choose}} disabled={busy} onPress={()=>setChoose(value=>!value)} style={s.selection}>

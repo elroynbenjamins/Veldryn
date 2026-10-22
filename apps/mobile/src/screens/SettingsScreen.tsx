@@ -22,6 +22,7 @@ import {ChatEmotePicker} from '../components/ChatEmotePicker';
 import {GuideTopicModal} from '../components/GuideTopicModal';
 import {acknowledgeGameGuide,guideDefinition} from '../core/onboarding';
 import {offlineCapBreakdown} from '../core/game';
+import {activityQueueCrossRegionAllowed} from '../core/activity-queue';
 import type {GameGuideId,GameGuideDestination} from '../core/onboarding';
 
 type Props={
@@ -82,9 +83,9 @@ export function SettingsScreen({state,onLanguage,onReset,onChange,onRefreshComme
     const subscription=BackHandler.addEventListener('hardwareBackPress',()=>{setSection(null);return true;});
     return()=>subscription.remove();
   },[phone,selectedSection,guideId]);
-  const afk=offlineCapBreakdown(state);
+  const afk=offlineCapBreakdown(state),premiumRegionQueue=activityQueueCrossRegionAllowed(state);
   const update=(partial:Partial<GameState['settings']>)=>onChange({...state,settings:{...state.settings,...partial}});
-  const restoreDefaults=()=>update({numberMode:'abbreviated',autoEatThresholdPct:40,stopCombatWhenOutOfFood:true,autoJoinWorldChat:true,defaultWorldChat:1,chatDockLines:1});
+  const restoreDefaults=()=>update({numberMode:'abbreviated',autoEatThresholdPct:40,stopCombatWhenOutOfFood:true,autoTravelQueuedActivities:false,autoJoinWorldChat:true,defaultWorldChat:1,chatDockLines:1});
   return <View style={navigationStyles.screen}>
     {phone&&section&&<Pressable accessibilityRole="button" accessibilityLabel={a('Back to settings')} onPress={()=>setSection(null)} style={({pressed})=>[navigationStyles.back,pressed&&s.pressed]}><UiIcon name="back" size={24}/><Text style={navigationStyles.backText}>{t(language,'settings.title')}</Text></Pressable>}
     <ScrollView key={pageKey} ref={scrollRef} keyboardShouldPersistTaps="handled" keyboardDismissMode="on-drag" onContentSizeChange={restoreScroll} onScroll={event=>{if(restoredPage.current===pageKey)scrollPositions.current[pageKey]=event.nativeEvent.contentOffset.y;}} scrollEventThrottle={16} contentContainerStyle={[s.root,{backgroundColor:theme.bg}]} showsVerticalScrollIndicator={false} showsHorizontalScrollIndicator={false}>
@@ -111,6 +112,8 @@ export function SettingsScreen({state,onLanguage,onReset,onChange,onRefreshComme
       <Text style={[s.settingLabel,{color:theme.text}]}>{a("Number display")}</Text><View style={s.choices}>{(['abbreviated','exact'] as const).map(mode=><SettingChip key={mode} label={mode==='abbreviated'?a("Abbreviated · 1.2K"):a("Exact · 1,200")} selected={state.settings.numberMode===mode} onPress={()=>update({numberMode:mode})}/>)}</View>
       <Text style={[s.settingLabel,{color:theme.text}]}>{a("Auto-eat threshold")}</Text><Text style={[s.sub,{color:theme.muted}]}>{a("Eat equipped food when HP falls below the selected level.")}</Text><View style={s.choices}>{([20,40,60,80] as const).map(threshold=><SettingChip key={threshold} label={a('{percent}% HP',{percent:threshold})} selected={state.settings.autoEatThresholdPct===threshold} onPress={()=>update({autoEatThresholdPct:threshold})}/>)}</View>
       <SettingToggle language={language} label={a("Stop combat when out of food")} value={state.settings.stopCombatWhenOutOfFood} onValueChange={value=>update({stopCombatWhenOutOfFood:value})}/>
+      <SettingToggle language={language} label={a("Auto-travel between queued activities")} description={premiumRegionQueue?a("Automatically switch between already-unlocked regions only after a safe queue handoff. Does not reset the AFK limit."):a("Available with VIP, VIP+ or Supporter. Free players can still queue activities in their current region.")}
+        value={premiumRegionQueue&&state.settings.autoTravelQueuedActivities===true} disabled={!premiumRegionQueue} onValueChange={value=>update({autoTravelQueuedActivities:value})}/>
       <Text style={[s.settingLabel,{color:theme.text}]}>{a("Collapsed chat preview")}</Text><Text style={[s.sub,{color:theme.muted}]}>{a("Choose how many recent World chat messages stay visible in the translucent bar above navigation. Tap the bar to open full chat.")}</Text><View style={s.choices}>{([1,2,3] as const).map(lines=><SettingChip key={lines} label={lines===1?a("1 line · compact"):a('{count} lines',{count:lines})} selected={(state.settings.chatDockLines??1)===lines} onPress={()=>update({chatDockLines:lines})}/>)}</View>
       <SettingToggle language={language} label={a("Show chat")} description={a("Show the chat dock above navigation. Turn it off to keep chat hidden while you play.")} value={state.settings.autoJoinWorldChat!==false} onValueChange={autoJoinWorldChat=>update({autoJoinWorldChat})}/>
       <Text style={[s.settingLabel,{color:theme.text}]}>{a("Default World channel")}</Text><Text style={[s.sub,{color:theme.muted}]}>{a("Choose the World conversation shown whenever you open chat.")}</Text><View style={s.choices}>{([{id:1,label:'English'},{id:2,label:'Spanish'},{id:3,label:'Global 1'},{id:4,label:'Global 2'}] as const).map(channel=><SettingChip key={channel.id} label={channel.label} selected={(state.settings.defaultWorldChat??1)===channel.id} onPress={()=>update({defaultWorldChat:channel.id})}/>)}</View>

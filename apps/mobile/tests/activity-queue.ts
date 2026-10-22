@@ -1,8 +1,8 @@
-import {claimActivity,createCharacter,newGame,offlineCapSeconds,startCombat,stopActivity} from '../src/core/game';
+import {claimActivity,createCharacter,newGame,offlineCapSeconds,startCombat,stopActivity,travelToRegion} from '../src/core/game';
 import {activityQueueCapacity,activityQueueRegion,activityQueueLocationIssue,activityQueueGoalCurrentValue,activityQueueGoalIssue,activityQueueHandoffStatus,enqueueActivity,moveQueuedActivity,queuedActivityPlanningReadiness,queuedActivityReadiness,queueSkillReadiness} from '../src/core/activity-queue';
 import {executeGameCommand,validateGameCommand} from '../src/core/game-commands';
 import {activityStopPresentation} from '../src/core/activity-stop-presentation';
-import {totalXpAtLevel} from '../src/core/progression';
+import {totalXpAtLevel,characterTotalXpAtLevel} from '../src/core/progression';
 import {normalizeSave} from '../src/core/save-normalization';
 import {weeklyOrderBoardForState} from '../src/core/long-term-progression-runtime';
 
@@ -184,6 +184,23 @@ blockedStart={...blockedStart,unlockedMonsterIds:['MOSS_RAT','SILVERFIN_SWARM']}
 blockedStart={...blockedStart,character:{...blockedStart.character!,activityQueue:[remoteCombat]}};
 const blockedStartStatus=activityQueueHandoffStatus(blockedStart);
 ok(!blockedStartStatus.nextReady&&(blockedStartStatus.nextBlocker??'').includes('Travel to Silverbrook'),'Idle queue preflight should block a known cross-region manual start before the command is sent');
+
+// Travelling manually keeps waiting regional work without quietly moving or dropping it.
+let traveller=createCharacter(newGame(now),'WAYFINDER','Queue Traveller');
+traveller={...traveller,character:{...traveller.character!,level:8,xp:characterTotalXpAtLevel(8)}};
+traveller=enqueueActivity(traveller,{kind:'gathering',targetId:'GREENWOOD_TREE',goal:{kind:'duration_seconds',value:60}});
+const travelledAway=travelToRegion(traveller,'SILVERBROOK',now+5_000).state;
+ok(travelledAway.currentRegionId==='SILVERBROOK','Explicit travel moves player to chosen region');
+ok(travelledAway.character?.activityQueue?.[0]?.targetId==='GREENWOOD_TREE','Travel must preserve queued activities from former region');
+ok((travelledAway.character?.activityQueuePausedReason??'').includes('Travel to Greenfields'),'Travel marks former-region pending work as blocked');
+ok(!queuedActivityReadiness(travelledAway,travelledAway.character?.activityQueue?.[0]).ready,'Travel does not allow queued gathering to start in another location');
+const returnedHome=travelToRegion(travelledAway,'GREENFIELDS',now+10_000).state;
+ok(!returnedHome.character?.activityQueuePausedReason,'Returning to queued job region removes obsolete location warning');
+ok(queuedActivityReadiness(returnedHome,returnedHome.character?.activityQueue?.[0]).ready,'Returning to required region restores queued gathering readiness');
+const legacyAtDestination={...blockedStart,currentRegionId:'SILVERBROOK',character:{...blockedStart.character!,level:8,xp:characterTotalXpAtLevel(8)}};
+ok(queuedActivityReadiness(legacyAtDestination,legacyAtDestination.character?.activityQueue?.[0]).ready,'Legacy cross-region entry becomes valid when player explicitly travels to its region');
+const localRegion={...wrongRegion,currentRegionId:'SILVERBROOK'};
+ok(!activityQueueLocationIssue(localRegion,remoteCombat),'Current-region queue creation passes location restriction');
 
 // Regression: existing holdings and skill levels are not valid future queue goals.
 let strict=createCharacter(newGame(now),'WAYFINDER','Strict Queue');

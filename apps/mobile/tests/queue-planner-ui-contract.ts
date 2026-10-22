@@ -12,7 +12,13 @@ for(const label of ["id:'faith'","id:'exploration'","id:'alchemy'",'Practices to
 ok(planner.includes('<GameModalSurface')&&planner.includes('<ScrollView'),'Queue planning uses a scrollable shared popup');
 ok(planner.includes('queue_set_goal')&&planner.includes('queue_add'),'Planner can configure the current activity and add future activities');
 ok(planner.includes('activityQueueCapacity(state)')&&planner.includes('queuedActivityReadiness'),'Planner respects capacity and activity availability');
-ok(planner.includes('queueSkillReadiness(state,skill.id)')&&planner.includes('disabled={disabled}')&&planner.includes('{gl(availability.blocker)}'),'Unavailable skills are disabled with a localized visible reason');
+ok(planner.includes('queueSkillReadiness({...state,currentRegionId:selectedRegion},skill.id)')&&planner.includes('disabled={disabled}')&&planner.includes('{gl(availability.blocker)}'),'Unavailable skills in selected queue region are disabled with a localized reason');
+ok(planner.includes('activityQueueAvailableRegions(state)')&&planner.includes('activityQueueCrossRegionAllowed(state)')&&planner.includes('setRegionFilter(zone.id)'),'Skills planner supports unlocked premium regions');
+ok(planner.includes('state.settings.autoTravelQueuedActivities')&&planner.includes('Auto-travel is off.'),'Skills planner explains manual-travel versus auto-travel handoff');
+const homeComposer=read('src/components/HomeQueueComposer.tsx');
+ok(homeComposer.includes('activityQueueAvailableRegions(state)')&&homeComposer.includes('setRegionId(zone.id)')&&homeComposer.includes('autoTravelQueuedActivities'),'Home composer provides eligible region choices and explains auto-travel');
+const settings=read('src/screens/SettingsScreen.tsx');
+ok(settings.includes('Auto-travel between queued activities')&&settings.includes('disabled={!premiumRegionQueue}')&&settings.includes('autoTravelQueuedActivities:value'),'Paid queue travel has a guarded gameplay settings switch');
 const popup=read('src/components/RewardPopup.tsx');
 const queue=read('src/components/ActionQueuePanel.tsx');
 ok(queue.includes('stackRows=width<480||fontScale>=1.25'),'Phone queue controls must stack below the activity details');

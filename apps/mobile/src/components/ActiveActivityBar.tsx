@@ -11,6 +11,7 @@ import {ActivityArtwork} from './ActivityArtwork';
 import {MonsterPortraitFrame} from './MonsterPortraitFrame';
 import {activeGatheringRuntimeProjection,activityProgressFeedback} from '../core/balance-projection';
 import {activeCombatRuntimeProjection,previewActivityReward} from '../core/game';
+import {activityStopPresentation} from '../core/activity-stop-presentation';
 
 const labels:Record<string,string>={combat:'HUNTING',mining:'MINING',woodcutting:'WOODCUTTING',fishing:'FISHING',herbalism:'HERBALISM',alchemy:'ALCHEMY',processing:'PROCESSING',faith:'FAITH',training:'TRAINING',hunting:'HUNTING',exploration:'EXPLORATION'};
 function elapsed(startedAtMs:number,nowMs:number){const total=Math.max(0,Math.floor((nowMs-startedAtMs)/1000)),hours=Math.floor(total/3600),minutes=Math.floor(total%3600/60),seconds=total%60;return hours?`${hours}h ${minutes}m`:minutes?`${minutes}m ${seconds}s`:`${seconds}s`;}
@@ -20,11 +21,12 @@ export function ActiveActivityBar(props:ActiveActivityBarProps){
  const {gt,gl}=useGameplayText(),C=useGameTheme(),s=useMemo(()=>makeStyles(C),[C]);
  const reward=useMemo(()=>props.reward??(props.state.activity?.kind==='combat'?previewActivityReward(props.state,props.nowMs):undefined),[props.reward,props.state,props.nowMs]);
  if(reward?.stoppedReason){
-  const injured=reward.stoppedReason.toLowerCase().includes('injured');
+  const stop=activityStopPresentation(reward.stoppedReason);
   const monster=MONSTERS.find(entry=>entry.id===props.state.activity?.targetId);
-  return <Pressable accessibilityRole="button" accessibilityLabel={gt(injured?'Combat stopped. Too injured. Open food.':'Combat stopped. View results.')} onPress={injured?props.onRecoverCombat??props.onOpen:props.onOpen} style={({pressed})=>[s.root,s.combat,pressed&&s.pressed]}>
-   <View style={[s.art,s.combatArt]}>{monster?<MonsterPortraitFrame monster={monster} size={28} framed={false} reduceMotion/>:<ActivityArtwork id="combat" size={28}/>}</View>
-   <View style={s.copy}><Text style={s.combatName}>{gt('Combat stopped')}</Text><Text style={s.combatMeta}>{gl(reward.stoppedReason)}</Text></View>{injured?<Text style={s.recover}>{gt('Food')}</Text>:null}<Text style={s.chevron}>›</Text>
+  const isCombat=props.state.activity?.kind==='combat';
+  return <Pressable accessibilityRole="button" accessibilityLabel={gt(stop.title)+'. '+gl(reward.stoppedReason)+'. '+gt('Open Home to collect rewards.')} onPress={props.onOpen} style={({pressed})=>[s.root,isCombat?s.combat:s.skilling,pressed&&s.pressed]}>
+   <View style={[s.art,isCombat&&s.combatArt]}>{isCombat&&monster?<MonsterPortraitFrame monster={monster} size={28} framed={false} reduceMotion/>:<ActivityArtwork id={(props.state.activity?.kind==='processing'?'cooking':props.state.activity?.kind??'combat') as any} size={28}/>}</View>
+   <View style={s.copy}><Text style={s.combatName}>{gt(stop.title)}</Text><Text style={s.combatMeta} numberOfLines={1}>{gl(reward.stoppedReason)} · {gt('Collect rewards on Home')}</Text></View>{stop.category==='recovery'&&props.onRecoverCombat?<Pressable accessibilityRole="button" accessibilityLabel={gt('Open food and gear')} onPress={props.onRecoverCombat} style={s.recoverButton}><Text style={s.recover}>{gt('Food')}</Text></Pressable>:null}<Text style={s.chevron}>›</Text>
   </Pressable>;
  }
  return props.state.activity?<RunningActivityBar {...props} combatKills={reward?.kills}/>:null;
@@ -58,6 +60,7 @@ function RunningActivityBar({state,nowMs,onOpen,combatKills}:ActiveActivityBarPr
  </Pressable>;
 }
 function makeStyles(C:ThemeColors){const equipmentColors=equipmentTheme(C);return StyleSheet.create({
+ recoverButton:{minHeight:38,minWidth:48,alignItems:'center',justifyContent:'center',borderWidth:1,borderColor:C.warning,borderRadius:8,backgroundColor:C.warningSurface},
  root:{minHeight:52,flexDirection:'row',alignItems:'center',gap:8,paddingHorizontal:10,paddingVertical:5,backgroundColor:C.panel,borderBottomWidth:1},
  combat:{minHeight:44,borderBottomColor:C.bad,position:'relative',paddingBottom:6},skilling:{borderBottomColor:C.info},pressed:{opacity:.78},
  art:{width:36,height:36,alignItems:'center',justifyContent:'center',borderRadius:9,backgroundColor:C.stage},combatArt:{width:28,height:28,borderRadius:7},

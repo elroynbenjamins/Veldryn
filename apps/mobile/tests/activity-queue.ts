@@ -2,6 +2,7 @@ import {claimActivity,createCharacter,newGame,offlineCapSeconds,startCombat,stop
 import {activityQueueCapacity,activityQueueGoalCurrentValue,activityQueueGoalIssue,activityQueueHandoffStatus,enqueueActivity,moveQueuedActivity,queuedActivityPlanningReadiness,queuedActivityReadiness,queueSkillReadiness} from '../src/core/activity-queue';
 import {executeGameCommand,validateGameCommand} from '../src/core/game-commands';
 import {activityStopPresentation} from '../src/core/activity-stop-presentation';
+import {totalXpAtLevel} from '../src/core/progression';
 import {normalizeSave} from '../src/core/save-normalization';
 import {weeklyOrderBoardForState} from '../src/core/long-term-progression-runtime';
 
@@ -186,7 +187,7 @@ rejects(()=>enqueueActivity(strict,storageGoal),'Client scheduling refuses an al
 rejects(()=>executeGameCommand(strict,{type:'queue_add',args:{kind:'gathering',id:'GREENWOOD_TREE',goal:storageGoal.goal}},now),'Authoritative queue add refuses a reached storage goal');
 ok(!queuedActivityReadiness(strict,storageGoal).ready,'Old saved queues with already-met goals must not auto-start');
 ok(queuedActivityReadiness(strict,{...storageGoal,goal:{kind:'item_quantity',value:211}}).ready,'A higher storage goal remains startable');
-strict={...strict,skills:strict.skills.map(row=>row.skillId==='woodcutting'?{...row,level:12}:row)};
+strict={...strict,skills:strict.skills.map(row=>row.skillId==='woodcutting'?{...row,level:12,xp:totalXpAtLevel(12)}:row)};
 const levelGoal={kind:'gathering' as const,targetId:'GREENWOOD_TREE',goal:{kind:'skill_level' as const,value:12}};
 rejects(()=>enqueueActivity(strict,levelGoal),'Client scheduling refuses same-level goals');
 rejects(()=>executeGameCommand(strict,{type:'queue_add',args:{kind:'gathering',id:'GREENWOOD_TREE',goal:levelGoal.goal}},now),'Trusted commands reject same-level goals');

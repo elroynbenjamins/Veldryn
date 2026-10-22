@@ -69,7 +69,7 @@ export function activityQueueRegion(activity:Pick<QueuedActivity,'kind'|'targetI
 export function activityQueueLocationIssue(state:GameState,activity:Pick<QueuedActivity,'kind'|'targetId'>):string|undefined{
  if(activity.kind==='faith'||activity.kind==='alchemy')return undefined;
  const required=activityQueueRegion(activity);
- if(!required)return undefined; // Unknown targets are rejected by readiness / execution.
+ if(!required)return 'This activity has no valid region. Choose a different activity.';
  if(required.id===state.currentRegionId)return undefined;
  const current=WORLD_ZONES.find(zone=>zone.id===state.currentRegionId)?.name??state.currentRegionId;
  return `Travel to ${required.name} before queuing this activity (currently in ${current}). The queue cannot travel automatically.`;

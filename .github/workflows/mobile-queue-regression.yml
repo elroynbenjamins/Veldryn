@@ -20,6 +20,7 @@ on:
       - 'apps/mobile/App.tsx'
       - 'apps/mobile/tests/activity-queue.ts'
       - 'apps/mobile/tests/queue-premium-travel.ts'
+      - 'apps/mobile/tests/queue-planner-ui-contract.ts'
       - 'apps/mobile/tests/queue-continuation.ts'
       - '.github/workflows/mobile-queue-regression.yml'
 jobs:
@@ -51,3 +52,4 @@ jobs:
           node .core-build/apps/mobile/tests/queue-continuation.js
           node .core-build/apps/mobile/tests/queue-combat-recovery.js
           node .core-build/apps/mobile/tests/queue-premium-travel.js
+          node .core-build/apps/mobile/tests/queue-planner-ui-contract.js

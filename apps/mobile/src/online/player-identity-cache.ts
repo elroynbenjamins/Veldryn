@@ -12,9 +12,10 @@ export type CachedPlayerIdentity={
  guild_tag_color_id:string|null;player_name_style:PlayerNameStylePreference|null;
  player_badges:PlayerBadgeIdentity|undefined;
 };
-type Entry={value:CachedPlayerIdentity;fetchedAt:number};
+type Entry={value:CachedPlayerIdentity;iconFetchedAt:number;detailsFetchedAt:number};
 type Saved={version:1;entries:[string,Entry][]};
 export const PLAYER_IDENTITY_TTL_MS=24*60*60*1000;
+export const PLAYER_IDENTITY_DETAILS_TTL_MS=5*60*1000;
 const MAX_ENTRIES=500;
 const STORAGE_PREFIX='veldryn:public-player-identities:v1:';
 const entries=new Map<string,Entry>();
@@ -45,7 +46,7 @@ export async function ensurePlayerIdentityViewer(viewer:string){
   const data=JSON.parse(raw) as Saved;
   if(data?.version!==1||!Array.isArray(data.entries))return;
   for(const [id,entry] of data.entries){
-   if(typeof id==='string'&&entry&&Number.isFinite(entry.fetchedAt)&&entry.value&&typeof entry.value==='object'){
+   if(typeof id==='string'&&entry&&Number.isFinite(entry.iconFetchedAt)&&Number.isFinite(entry.detailsFetchedAt)&&entry.value&&typeof entry.value==='object'){
     entries.set(id,entry);
    }
   }
@@ -61,10 +62,18 @@ export function peekPlayerIdentity(id:string){
 }
 export function playerIdentityNeedsRefresh(id:string,now=Date.now()){
  const entry=entries.get(id);
- return !entry||now-entry.fetchedAt>=PLAYER_IDENTITY_TTL_MS||now<entry.fetchedAt;
+ return !entry||now-entry.iconFetchedAt>=PLAYER_IDENTITY_TTL_MS||now<entry.iconFetchedAt;
 }
-export function storePlayerIdentities(rows:ReadonlyMap<string,CachedPlayerIdentity>,now=Date.now()){
- for(const [id,value] of rows){entries.delete(id);entries.set(id,{value,fetchedAt:now});}
+export function playerIdentityDetailsNeedRefresh(id:string,now=Date.now()){
+ const entry=entries.get(id);
+ return !entry||now-entry.detailsFetchedAt>=PLAYER_IDENTITY_DETAILS_TTL_MS||now<entry.detailsFetchedAt;
+}
+export function storePlayerIdentities(rows:ReadonlyMap<string,CachedPlayerIdentity>,now=Date.now(),includesIcon=true){
+ for(const [id,value] of rows){
+  const old=entries.get(id);
+  const merged=includesIcon?value:{...value,profile_icon_id:old?.value.profile_icon_id??null,class_id:old?.value.class_id??null};
+  entries.delete(id);entries.set(id,{value:merged,iconFetchedAt:includesIcon?now:old?.iconFetchedAt??0,detailsFetchedAt:now});
+ }
  trimCache();scheduleSave();
 }
 export function subscribePlayerIdentityChanges(listener:(accountId:string)=>void){
@@ -73,9 +82,9 @@ export function subscribePlayerIdentityChanges(listener:(accountId:string)=>void
 /** Called after the owner saves a new icon. Avoids waiting for any polling. */
 export function publishOwnProfileIcon(accountId:string,profileIconId:string,classId:string){
  if(!accountId||!currentViewer||currentViewer!==accountId)return;
- const previous=entries.get(accountId)?.value;
+ const old=entries.get(accountId),previous=old?.value;
  entries.delete(accountId);
- entries.set(accountId,{fetchedAt:Date.now(),value:{
+ entries.set(accountId,{iconFetchedAt:Date.now(),detailsFetchedAt:old?.detailsFetchedAt??0,value:{
   profile_icon_id:profileIconId,class_id:classId,
   guild_tag:previous?.guild_tag??null,guild_tag_color_id:previous?.guild_tag_color_id??null,
   player_name_style:previous?.player_name_style??null,player_badges:previous?.player_badges,
@@ -86,6 +95,6 @@ export function publishOwnProfileIcon(accountId:string,profileIconId:string,clas
 /** Mark a row stale, e.g. after name-style/badge preference changes. */
 export function invalidatePlayerIdentity(accountId:string){
  const previous=entries.get(accountId);
- if(previous)entries.set(accountId,{...previous,fetchedAt:0});
+ if(previous)entries.set(accountId,{...previous,detailsFetchedAt:0});
  for(const listener of listeners)listener(accountId);
 }

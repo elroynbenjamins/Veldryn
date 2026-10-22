@@ -17,6 +17,10 @@ ok(planner.includes('activityQueueAvailableRegions(state)')&&planner.includes('a
 ok(planner.includes('state.settings.autoTravelQueuedActivities')&&planner.includes('Auto-travel is off.'),'Skills planner explains manual-travel versus auto-travel handoff');
 const homeComposer=read('src/components/HomeQueueComposer.tsx');
 ok(homeComposer.includes('activityQueueAvailableRegions(state)')&&homeComposer.includes('setRegionId(zone.id)')&&homeComposer.includes('autoTravelQueuedActivities'),'Home composer provides eligible region choices and explains auto-travel');
+ok(homeComposer.includes('CURRENT ACTIVITY HANDOFF')&&homeComposer.includes("'30m'")&&homeComposer.includes('keepCurrentRunning:true')&&homeComposer.includes('handoffGoal'),'Home queue composer defaults to a clearly confirmed 30-minute or explicitly open-ended current handoff');
+ok(planner.includes('Current activity handoff')&&planner.includes('handoffTargetId:state.activity.targetId')&&planner.includes('handoffGoal:currentGoal'),'Skills planner saves current stop and queue entry atomically');
+const app=read('App.tsx');
+ok(app.includes('handoffGoal:handoff.goal')&&app.includes('handoffTargetId:handoff.targetId'),'Home submits the combined queue command rather than separate mutations');
 const settings=read('src/screens/SettingsScreen.tsx');
 ok(settings.includes('Auto-travel between queued activities')&&settings.includes('disabled={!premiumRegionQueue}')&&settings.includes('autoTravelQueuedActivities:value'),'Paid queue travel has a guarded gameplay settings switch');
 const popup=read('src/components/RewardPopup.tsx');

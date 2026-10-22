@@ -7,6 +7,8 @@ import {useMemo} from 'react';
 // Every row is complete, in en/de/es/nl/it/fr order. English phrases are typed keys.
 type TranslationRow=readonly [string,string,string,string,string,string];
 const common={
+  "Queue location: {region}":["Queue location: {region}","Warteschlangenort: {region}","Región de la cola: {region}","Wachtrijlocatie: {region}","Regione della coda: {region}","Région de la file : {region}"],
+  "Regional activities must be queued in their own region.":["Regional activities must be queued in their own region.","Regionale Aktivitäten müssen in ihrer jeweiligen Region eingereiht werden.","Las actividades regionales solo pueden añadirse en su propia región.","Regionale activiteiten kun je alleen toevoegen in hun eigen regio.","Le attività regionali vanno messe in coda nella loro regione.","Les activités régionales doivent être ajoutées dans leur propre région."],
   "Open World":["Open World","Welt öffnen","Abrir Mundo","Open Wereld","Apri Mondo","Ouvrir Monde"],
   "Open food & gear":["Open food & gear","Nahrung und Ausrüstung öffnen","Abrir comida y equipo","Open voedsel en uitrusting","Apri cibo ed equipaggiamento","Ouvrir nourriture et équipement"],
   "Open Skills":["Open Skills","Fertigkeiten öffnen","Abrir habilidades","Open Vaardigheden","Apri abilità","Ouvrir compétences"],

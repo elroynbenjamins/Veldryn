@@ -7,12 +7,16 @@ import {GameButton} from './GameButton';
 import {equipmentTheme,radii,spacing,typography,type ThemeColors} from '../theme/theme';
 import {useGameTheme} from '../theme/ThemeContext';
 
-export function ActionQueuePanel({state,onRemove,onMove,onClear,onStartNext,onAdd}:{state:GameState;onAdd?:()=>void;onRemove:(index:number)=>void;onMove:(index:number,direction:'up'|'down')=>void;onClear:()=>void;onStartNext:()=>void}){
+export function ActionQueuePanel({state,onRemove,onMove,onClear,onStartNext,onAdd,onResolve}:{state:GameState;onAdd?:()=>void;onResolve?:(destination:'Inventory'|'World'|'Skills')=>void;onRemove:(index:number)=>void;onMove:(index:number,direction:'up'|'down')=>void;onClear:()=>void;onStartNext:()=>void}){
  const {gt,gl,language}=useGameplayText();
  const [managing,setManaging]=useState(false),[confirmClear,setConfirmClear]=useState(false);
  const C=useGameTheme(),s=useMemo(()=>makeStyles(C),[C]),{width,fontScale}=useWindowDimensions(),stackRows=width<480||fontScale>=1.25;
  const capacity=activityQueueCapacity(state),queue=normalizeActivityQueue(state.character?.activityQueue,capacity),paused=state.character?.activityQueuePausedReason,handoff=activityQueueHandoffStatus(state);
  const canResume=!!state.character?.activityQueueCombatRecovery&&state.activity?.kind!=='combat'&&state.activity?.queueGoalCompletedAtMs!==undefined&&queue[0]?.kind==='combat';
+ const blocker=!handoff.nextReady?handoff.nextBlocker:undefined;
+ const problem=blocker??paused;
+ const nextStep=problem&&/travel to|not available in/i.test(problem)?{destination:'World' as const,label:gt('Open World')}:problem&&/heal|injured|food|health|restock/i.test(problem)?{destination:'Inventory' as const,label:gt('Open food & gear')}:problem&&/ingredients|alchemy|materials|gold/i.test(problem)?{destination:'Skills' as const,label:gt('Open Skills')}:undefined;
+ const staleGoal=!!problem&&/already holding|already level|level 100|storage target above/i.test(problem);
  if(!queue.length){
   const activity=state.activity;
   if(!activity?.queueManaged)return onAdd?<View style={s.panel}><View style={s.header}><View style={s.flex}><Text style={s.kicker}>{gt('ACTION QUEUE')} · 0/{capacity}</Text><Text style={s.sub}>{gt('Plan your next activity here.')}</Text></View></View><GameButton title={gt('＋ Add activity')} tone="secondary" onPress={onAdd}/></View>:null;
@@ -33,7 +37,7 @@ export function ActionQueuePanel({state,onRemove,onMove,onClear,onStartNext,onAd
    {confirmClear?<><Text style={[s.pauseText,s.flex]}>{gt("Clear all waiting activities? Current activity will continue.")}</Text><View style={s.clearButtons}><GameButton compact title={gt("Cancel")} tone="secondary" onPress={()=>setConfirmClear(false)}/><GameButton compact title={gt("Confirm clear")} tone="secondary" onPress={()=>{setConfirmClear(false);setManaging(false);onClear();}}/></View></>:
     <View style={s.clearInline}><Text style={[s.sub,s.flex]}>{gt("Changes are saved in your queue.")}</Text><GameButton compact title={gt("Clear queue")} tone="secondary" onPress={()=>setConfirmClear(true)}/></View>}
   </View>:null}
-  {paused&&<View style={s.pause}><Text style={s.pauseTitle}>{state.activity?gt("QUEUED ACTIVITY WAITING"):gt("QUEUE PAUSED")}</Text><Text style={s.pauseText}>{gl(paused)}</Text></View>}
+  {paused&&<View style={s.pause}><Text style={s.pauseTitle}>{handoff.nextReady?gt('READY TO RETRY'):state.activity?gt("QUEUED ACTIVITY WAITING"):gt("QUEUE PAUSED")}</Text><Text style={s.pauseText}>{handoff.nextReady?gt('The blocker has cleared. You can start the next queued action.'):gl(paused)}</Text></View>}
   {!paused&&state.activity&&<View style={handoff.armed?(handoff.nextReady?s.handoff:s.blocked):s.waiting}><Text style={handoff.armed?(handoff.nextReady?s.handoffTitle:s.blockedTitle):s.waitingTitle}>{handoff.armed?(handoff.nextReady?gt("HANDOFF ARMED"):gt("HANDOFF WILL PAUSE")):gt("QUEUE WAITING")}</Text><Text style={s.pauseText}>{handoff.armed?(handoff.nextReady?`${gl(handoff.sourceLabel)} → ${gl(handoff.nextLabel)}`:gt("{source} can stop this activity, but {next} cannot start yet.",{source:gl(handoff.sourceLabel),next:gl(handoff.nextLabel)})):gt("Current activity has no handoff goal. Queued activities are waiting.")}</Text>{handoff.armed&&!handoff.nextReady&&handoff.nextBlocker?<Text style={s.blocker}>{gl(handoff.nextBlocker)}</Text>:null}{handoff.armed&&handoff.safetyEnabled?<Text style={s.safety}>{gt("Combat recovery blocks hunting; storage safety stops all activities.")}</Text>:null}</View>}
   {queue.map((entry,index)=>{const readiness=queuedActivityReadiness(state,entry),label=gl(activityQueueLabel(entry));return <View key={`${index}:${entry.kind}:${entry.targetId}`} style={[s.row,managing&&stackRows&&s.rowStack]}>
    <View style={s.rowInfo}><View style={s.index}><Text style={s.indexText}>{index+1}</Text></View>
@@ -48,6 +52,8 @@ export function ActionQueuePanel({state,onRemove,onMove,onClear,onStartNext,onAd
    </View>:null}
   </View>})}
   {!state.activity&&!handoff.nextReady&&handoff.nextBlocker?<View style={s.blocked}><Text style={s.blockedTitle}>{gt("NEXT ACTION BLOCKED")}</Text><Text style={s.blocker}>{gl(handoff.nextBlocker)}</Text></View>:null}
+  {staleGoal?<Text style={s.blocker}>{gt('This goal was already reached. Remove it and add the activity again with a higher target or a time goal.')}</Text>:null}
+  {onResolve&&nextStep&&!handoff.nextReady?<GameButton compact title={nextStep.label} tone="secondary" onPress={()=>onResolve(nextStep.destination)}/>:null}
   {(!state.activity||canResume)&&<GameButton title={canResume?gt("Resume queued combat"):handoff.nextReady?gt("Start next queued action"):gt("Next action unavailable")} disabled={!handoff.nextReady} onPress={onStartNext}/>}
  </View>;
 }

@@ -1,4 +1,5 @@
 import {supabase} from './supabase';
+import {currentPlayerIdentityViewer,ensurePlayerIdentityViewer,peekPlayerIdentity,playerIdentityNeedsRefresh,storePlayerIdentities,type CachedPlayerIdentity} from './player-identity-cache';
 import {CHAT_RECENT_MESSAGE_LIMIT} from './chat-history';
 import {normalizePlayerBadges,type PlayerBadgeIdentity} from '../core/player-badges';
 import {guildNameError,normalizeGuildName} from '../core/identity-names';
@@ -55,7 +56,48 @@ export async function profileGuildByTag(tag:string):Promise<ProfileGuildIdentity
  return data?{id:data.id,name:data.name,tag:data.tag,tagColorId:data.tag_color_id,nameColorId:data.name_color_id,bannerId:data.banner_id}:null;
 }
 export interface SocialProfileIcon {profile_icon_id?:string|null;class_id?:string|null;}
-export async function guildIdentities(accountIds:readonly string[]):Promise<Map<string,SocialProfileIcon&{guild_tag?:string|null;guild_tag_color_id?:string|null;player_name_style?:PlayerNameStylePreference|null;player_badges?:PlayerBadgeIdentity}>>{const unique=[...new Set(accountIds.filter(Boolean))];if(!unique.length)return new Map();const client=requireClient();const rows:any[]=[];for(let i=0;i<unique.length;i+=100){const args={p_account_ids:unique.slice(i,i+100)};let result=await client.rpc('guild_identities_v3',args);if(result.error?.code==='PGRST202')result=await client.rpc('guild_identities_v2',args);if(result.error?.code==='PGRST202')result=await client.rpc('guild_identities',args);if(result.error)throw result.error;rows.push(...(result.data??[]));}return new Map(rows.map((row:any)=>[row.account_id,{profile_icon_id:row.profile_icon_id??null,class_id:row.class_id??null,guild_tag:row.guild_tag??null,guild_tag_color_id:row.guild_tag_color_id??null,player_name_style:row.player_name_style??null,player_badges:normalizePlayerBadges(row.player_badges)}]));}
+const pendingIdentityQueries=new Map<string,Promise<void>>();
+/** Shared, viewer-scoped batch cache: no per-message or per-icon RPC polling. */
+export async function guildIdentities(accountIds:readonly string[]):Promise<Map<string,SocialProfileIcon&{guild_tag?:string|null;guild_tag_color_id?:string|null;player_name_style?:PlayerNameStylePreference|null;player_badges?:PlayerBadgeIdentity}>>{
+ const unique=[...new Set(accountIds.filter(Boolean))];
+ if(!unique.length)return new Map();
+ const client=requireClient();
+ const {data:{session}}=await client.auth.getSession();
+ const viewer=session?.user.id??'';
+ await ensurePlayerIdentityViewer(viewer);
+ const stale=unique.filter(id=>playerIdentityNeedsRefresh(id));
+ // Coalesce concurrent requests from chat, roster and player-card surfaces.
+ const missing=stale.filter(id=>!pendingIdentityQueries.has(viewer+':'+id));
+ for(let i=0;i<missing.length;i+=100){
+  const batch=missing.slice(i,i+100);
+  const query=(async()=>{
+   const args={p_account_ids:batch};
+   let result=await client.rpc('guild_identities_v3',args);
+   if(result.error?.code==='PGRST202')result=await client.rpc('guild_identities_v2',args);
+   if(result.error?.code==='PGRST202')result=await client.rpc('guild_identities',args);
+   if(result.error)throw result.error;
+   if(currentPlayerIdentityViewer()!==viewer)return;
+   const found=new Map<string,CachedPlayerIdentity>();
+   for(const row of result.data??[]){
+    found.set(row.account_id,{
+     profile_icon_id:row.profile_icon_id??null,class_id:row.class_id??null,
+     guild_tag:row.guild_tag??null,guild_tag_color_id:row.guild_tag_color_id??null,
+     player_name_style:row.player_name_style??null,player_badges:normalizePlayerBadges(row.player_badges),
+    });
+   }
+   storePlayerIdentities(found);
+  })();
+  for(const id of batch)pendingIdentityQueries.set(viewer+':'+id,query);
+  // Wait for completion before deleting the flight, even if it fails.
+  void query.finally(()=>{for(const id of batch){if(pendingIdentityQueries.get(viewer+':'+id)===query)pendingIdentityQueries.delete(viewer+':'+id);}}).catch(()=>{});
+ }
+ const flights=[...new Set(stale.map(id=>pendingIdentityQueries.get(viewer+':'+id)).filter((v):v is Promise<void>=>!!v))];
+ const settled=await Promise.allSettled(flights);
+ // Stale artwork is preferable to an empty avatar on network failure.
+ if(settled.some(item=>item.status==='rejected')&&!unique.some(id=>peekPlayerIdentity(id)))throw (settled.find(item=>item.status==='rejected') as PromiseRejectedResult).reason;
+ if(currentPlayerIdentityViewer()!==viewer)return new Map();
+ return new Map(unique.flatMap(id=>{const row=peekPlayerIdentity(id);return row?[[id,row] as const]:[];}));
+}
 async function withGuildIdentities<T extends {account_id:string}>(rows:T[]){const identities=await guildIdentities(rows.map(row=>row.account_id));return rows.map(row=>({...row,...identities.get(row.account_id)}));}
 /** Cosmetic identity lookup failure must not hide already-authorized messages. */
 export async function withChatIdentities<T extends {account_id:string}>(rows:T[]):Promise<T[]>{try{return await withGuildIdentities(rows);}catch{return rows;}}

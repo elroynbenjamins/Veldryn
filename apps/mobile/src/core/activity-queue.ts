@@ -52,6 +52,28 @@ export function activityQueueGoalIssue(state:GameState,activity:Pick<QueuedActiv
  const item=itemDef(node.itemId).name;
  return `Already holding ${current.toLocaleString()} ${item} across inventory, bank and overflow. Choose a storage target above ${current.toLocaleString()}.`;
 }
+/** Regional work is tied to a real world location; Faith and Alchemy can run anywhere. */
+export function activityQueueRegion(activity:Pick<QueuedActivity,'kind'|'targetId'>):{id:string;name:string}|undefined{
+ let id:string|undefined;
+ if(activity.kind==='combat'){
+  const monster=MONSTERS.find(row=>row.id===activity.targetId);
+  id=monster?WORLD_ZONES.find(zone=>zone.name===monster.zone)?.id:undefined;
+ }else if(activity.kind==='gathering'){
+  id=[...GATHERING,...HERB_NODES].find(row=>row.id===activity.targetId)?.zoneId;
+ }else if(activity.kind==='exploration'){
+  id=EXPLORATION_ROUTES.find(row=>row.id===activity.targetId)?.zoneId;
+ }
+ const region=id?WORLD_ZONES.find(zone=>zone.id===id):undefined;
+ return region?{id:region.id,name:region.name}:undefined;
+}
+export function activityQueueLocationIssue(state:GameState,activity:Pick<QueuedActivity,'kind'|'targetId'>):string|undefined{
+ if(activity.kind==='faith'||activity.kind==='alchemy')return undefined;
+ const required=activityQueueRegion(activity);
+ if(!required)return undefined; // Unknown targets are rejected by readiness / execution.
+ if(required.id===state.currentRegionId)return undefined;
+ const current=WORLD_ZONES.find(zone=>zone.id===state.currentRegionId)?.name??state.currentRegionId;
+ return `Travel to ${required.name} before queuing this activity (currently in ${current}). The queue cannot travel automatically.`;
+}
 export function activityQueueCapacity(state:GameState){return Math.min(MAX_ACTIVITY_QUEUE,BASE_ACTIVITY_QUEUE+accountEntitlementBenefits(state).actionQueueSlots);}
 
 export function normalizeQueuedActivity(value:unknown):QueuedActivity|undefined{
@@ -83,6 +105,8 @@ export function enqueueActivity(state:GameState,activity:QueuedActivity):GameSta
  if(queue.length>=capacity)throw new Error(`Action queue is full (${capacity}/${capacity}).`);
  const goalIssue=activityQueueGoalIssue(state,next);
  if(goalIssue)throw new Error(goalIssue);
+ const locationIssue=activityQueueLocationIssue(state,next);
+ if(locationIssue)throw new Error(locationIssue);
  return {...state,character:{...state.character,activityQueue:[...queue,next]}};
 }
 export function removeQueuedActivity(state:GameState,index:number):GameState{
@@ -174,7 +198,8 @@ export function queuedActivityReadiness(state:GameState,activity:QueuedActivity|
   if(!monster)return {ready:false,blocker:'Queued monster is no longer available.'};
   if(!state.unlockedMonsterIds.includes(monster.id))return {ready:false,blocker:`${monster.name} is not unlocked yet.`};
   const region=WORLD_ZONES.find(zone=>zone.name===monster.zone);
-  if(region?.id&&region.id!==state.currentRegionId)return {ready:false,blocker:`Travel to ${monster.zone} before ${monster.name}.`};
+  const locationIssue=activityQueueLocationIssue(state,activity);
+  if(locationIssue)return {ready:false,blocker:locationIssue};
   const recovery=state.character.activityQueueCombatRecovery;
   if(recovery?.needsHealing&&state.character.currentHp<=1)return {ready:false,blocker:'Heal before resuming queued combat.'};
   if(recovery&&recovery.minimumFood>0){
@@ -192,7 +217,8 @@ export function queuedActivityReadiness(state:GameState,activity:QueuedActivity|
  if(activity.kind==='exploration'){
   const route=EXPLORATION_ROUTES.find(row=>row.id===activity.targetId);
   if(!route)return {ready:false,blocker:'Queued exploration route is no longer available.'};
-  if(route.zoneId!==state.currentRegionId)return {ready:false,blocker:`Travel to ${WORLD_ZONES.find(zone=>zone.id===route.zoneId)?.name??route.zoneId} before ${route.name}.`};
+  const locationIssue=activityQueueLocationIssue(state,activity);
+  if(locationIssue)return {ready:false,blocker:locationIssue};
   if(state.character.level<route.requiredLevel)return {ready:false,blocker:`Reach character level ${route.requiredLevel} for ${route.name}.`};
   const level=state.skills.find(skill=>skill.skillId==='exploration')?.level??1;
   if(level<route.requiredExplorationLevel)return {ready:false,blocker:`Requires Exploration level ${route.requiredExplorationLevel} for ${route.name}.`};
@@ -205,7 +231,8 @@ export function queuedActivityReadiness(state:GameState,activity:QueuedActivity|
  const gather=[...GATHERING,...HERB_NODES].find(row=>row.id===activity.targetId);
  if(!gather)return {ready:false,blocker:'Queued gathering activity is no longer available.'};
  const region=WORLD_ZONES.find(zone=>zone.id===gather.zoneId);
- if(gather.zoneId!==state.currentRegionId)return {ready:false,blocker:`Travel to ${region?.name??gather.zoneId} before ${gather.name}.`};
+ const locationIssue=activityQueueLocationIssue(state,activity);
+ if(locationIssue)return {ready:false,blocker:locationIssue};
  const level=state.skills.find(skill=>skill.skillId===gather.skillId)?.level??1;
  if(level<gather.unlockLevel)return {ready:false,blocker:`Requires ${gather.skillId} level ${gather.unlockLevel} for ${gather.name}.`};
  return {ready:true,blocker:undefined};

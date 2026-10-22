@@ -43382,20 +43382,6 @@ var WORLD_ZONES = [
   { availability: "inDevelopment", id: "VEILLANDS", name: "The Veillands", subtitle: "A reality-thin frontier beyond the known road", minLevel: 91, maxLevel: 110, x: 0.82, y: 0.08, accent: "#8a6bc9", symbol: "\u25C8", developmentNote: "The Veillands is a future high-level region. Its travel preview is visible now, while enemies, gathering routes and progression rewards remain in development.", plannedActivities: ["High-level combat", "Regional gathering", "Elite encounters", "Region progression"] }
 ];
 
-// ../apps/mobile/src/content/equipment-release.ts
-var MAX_RELEASED_EQUIPMENT_TIER = 4;
-function equipmentTierNumber(tier) {
-  return Number(String(tier ?? "").replace(/\D/g, "")) || 0;
-}
-function isReleasedEquipmentTier(tier) {
-  const number = equipmentTierNumber(tier);
-  return number > 0 && number <= MAX_RELEASED_EQUIPMENT_TIER;
-}
-function isReleasedEquipmentItemId(itemId) {
-  const match = /^T(\d+)[PX]_\d{3}$/.exec(itemId);
-  return !match || Number(match[1]) <= MAX_RELEASED_EQUIPMENT_TIER;
-}
-
 // ../apps/mobile/src/content/skills.ts
 var GATHERING = [
   { id: "COPPER_VEIN", skillId: "mining", name: "Copper Vein", unlockLevel: 1, seconds: 15, xp: 9, itemId: "COPPER_ORE", min: 1, max: 2, zoneId: "OLD_MINES" },
@@ -43436,9 +43422,9 @@ var GATHERING = [
 var RECIPES = [
   ...ALCHEMY_RECIPES,
   ...NOVICE_RECIPES,
-  // Keep unreleased catalog data for save compatibility, while only exposing
-  // the tiers whose visual equipment sets have shipped.
-  ...V33_EQUIPMENT_RECIPES.filter((recipe2) => isReleasedEquipmentTier(recipe2.v33EquipmentTier)),
+  // Keep the full catalog authoritative for crafting, progression, and save
+  // compatibility. Presentation layers apply their release gate separately.
+  ...V33_EQUIPMENT_RECIPES,
   ...TOOL_RECIPES,
   { id: "SMELT_COPPER_INGOT", name: "Smelt Copper Ingot", skillId: "smithing", level: 1, xp: 80, gold: 30, seconds: 36, repeatableTraining: true, inputs: [{ itemId: "COPPER_ORE", quantity: 10 }], output: { itemId: "COPPER_INGOT", quantity: 5 } },
   { id: "SMELT_ASTER_IRON_INGOT", name: "Smelt Aster-Iron Ingot", skillId: "smithing", level: 8, xp: 140, gold: 50, seconds: 42, repeatableTraining: true, inputs: [{ itemId: "ASTER_IRON_ORE", quantity: 8 }], output: { itemId: "ASTER_IRON_INGOT", quantity: 4 } },
@@ -46967,6 +46953,7 @@ function accountEntitlementBenefits(state) {
     bankSlots: (vip ? 20 : 0) + (vipPlus ? 30 : 0),
     loadoutSlots: (vip ? 1 : 0) + (vipPlus ? 1 : 0),
     actionQueueSlots: vipPlus ? 1 : 0,
+    crossRegionActivityQueue: vip || vipPlus || supporter,
     forgeSlots: (vipPlus ? 1 : 0) + (supporter ? 1 : 0),
     solidRgbNames: vipPlus || supporter,
     advancedNameStyles: supporter,
@@ -47486,6 +47473,136 @@ function spendPreparationEncounter(preparation, itemId) {
   return preparation.remainingEncounters > 1 ? { ...preparation, remainingEncounters: preparation.remainingEncounters - 1 } : void 0;
 }
 
+// ../apps/mobile/src/core/world-navigation.ts
+var REGION_SCOUT_REQUIREMENTS = {
+  OLD_MINES: "SCOUT_IRONWOOD",
+  KINGS_ROAD: "SCOUT_OLD_MINES",
+  SUNSCAR: "SCOUT_KINGS_ROAD",
+  FROSTMARCH: "SCOUT_SUNSCAR",
+  ASHLANDS: "SCOUT_FROSTMARCH"
+};
+function regionTravelLockReason(state, zone) {
+  if (worldZoneInDevelopment(zone)) return zone.name + " is still in development";
+  const level = state.character?.level ?? 1;
+  if (level < zone.minLevel) return `Reach Level ${zone.minLevel} to travel to ${zone.name}`;
+  const routeId = REGION_SCOUT_REQUIREMENTS[zone.id];
+  if (routeId && !(state.exploredRouteIds ?? []).includes(routeId)) {
+    const source = routeId.replace(/^SCOUT_/, "").replace(/_/g, " ").toLowerCase().replace(/\b\w/g, (char) => char.toUpperCase());
+    return `Complete ${source} scouting to discover the route to ${zone.name}`;
+  }
+  return void 0;
+}
+function regionTravelAvailability(state, zone) {
+  if (worldZoneInDevelopment(zone)) return "inDevelopment";
+  return regionTravelLockReason(state, zone) ? "locked" : "available";
+}
+
+// ../apps/mobile/src/core/processing.ts
+init_progression();
+var MAX_PROCESSING_BATCHES = 1e4;
+function storedQuantity2(stacks, itemId) {
+  return stacks.filter((stack) => stack.itemId === itemId).reduce((total, stack) => total + stack.quantity, 0);
+}
+function take2(stacks, itemId, quantity4) {
+  let remaining = quantity4;
+  const next = stacks.map((stack) => {
+    const amount = stack.itemId === itemId ? Math.min(remaining, stack.quantity) : 0;
+    remaining -= amount;
+    return { ...stack, quantity: stack.quantity - amount };
+  }).filter((stack) => stack.quantity > 0);
+  if (remaining > 0) throw new Error("Not enough ingredients.");
+  return next;
+}
+function processingRecipeDef(recipeId) {
+  const recipe2 = recipeDef(recipeId);
+  if (!recipe2 || !recipe2.repeatableTraining || recipe2.skillId === "alchemy" || recipe2.noviceSetId) return void 0;
+  const output = itemDef(recipe2.output.itemId);
+  return output.type === "material" || output.type === "food" ? recipe2 : void 0;
+}
+function isTimedProcessingRecipe(recipeId) {
+  return !!processingRecipeDef(recipeId);
+}
+function processingAvailability(state, recipeId, batches = 1, allowActivityReplacement = false) {
+  const recipe2 = processingRecipeDef(recipeId), countValid = Number.isSafeInteger(batches) && batches >= 1 && batches <= MAX_PROCESSING_BATCHES, count = countValid ? batches : 1;
+  const inputs = (recipe2?.inputs ?? []).map((input) => ({ ...input, quantity: input.quantity * count, inventory: storedQuantity2(state.inventory.stacks, input.itemId), bank: storedQuantity2(state.bank.stacks, input.itemId) }));
+  const gold = (recipe2?.gold ?? 0) * count, skill2 = recipe2 ? state.skills.find((entry2) => entry2.skillId === recipe2.skillId) : void 0;
+  const materialMax = recipe2 && recipe2.inputs.length ? Math.min(...recipe2.inputs.map((input) => Math.floor((storedQuantity2(state.inventory.stacks, input.itemId) + storedQuantity2(state.bank.stacks, input.itemId)) / input.quantity))) : MAX_PROCESSING_BATCHES;
+  const goldMax = recipe2?.gold ? Math.floor((state.character?.gold ?? 0) / recipe2.gold) : MAX_PROCESSING_BATCHES;
+  const maxBatches = Math.max(0, Math.min(MAX_PROCESSING_BATCHES, materialMax, goldMax));
+  const reason = !recipe2 ? "This recipe is not a repeatable processing recipe." : !state.character ? "Create a character first." : !countValid ? `Choose 1\u2013${MAX_PROCESSING_BATCHES.toLocaleString()} batches.` : state.activity && !allowActivityReplacement ? "Stop the current activity before starting processing." : recipe2.classId && recipe2.classId !== state.character.classId ? "This recipe belongs to another class." : state.character.level < (recipe2.characterLevel ?? 1) ? `Requires character level ${recipe2.characterLevel}.` : (skill2?.level ?? 0) < recipe2.level ? `Requires ${recipe2.skillId} level ${recipe2.level}.` : state.character.gold < gold ? `Requires ${gold} Gold on this character.` : inputs.some((input) => input.inventory + input.bank < input.quantity) ? "Missing ingredients. Inventory and Bank are available; overflow is not." : "Ready to reserve and process.";
+  return { ready: !!recipe2 && !!state.character && countValid && (allowActivityReplacement || !state.activity) && (!recipe2.classId || recipe2.classId === state.character.classId) && state.character.level >= (recipe2.characterLevel ?? 1) && (skill2?.level ?? 0) >= recipe2.level && state.character.gold >= gold && inputs.every((input) => input.inventory + input.bank >= input.quantity), reason, inputs, gold, maxBatches, recipe: recipe2 };
+}
+function startProcessingBatch(state, recipeId, batches, nowMs) {
+  if (!Number.isFinite(nowMs) || nowMs < 0) throw new Error("Invalid processing time.");
+  const status = processingAvailability(state, recipeId, batches);
+  if (!status.ready) throw new Error(status.reason);
+  const recipe2 = status.recipe;
+  let inventory = state.inventory.stacks, bank = state.bank.stacks;
+  for (const input of status.inputs) {
+    const fromInventory = Math.min(storedQuantity2(inventory, input.itemId), input.quantity);
+    inventory = take2(inventory, input.itemId, fromInventory);
+    bank = take2(bank, input.itemId, input.quantity - fromInventory);
+  }
+  const bonuses = characterPermanentMultipliers(state), pace = professionActionPace(state, recipe2, "batch");
+  const processing = {
+    version: 1,
+    recipeId: recipe2.id,
+    skillId: recipe2.skillId,
+    totalBatches: batches,
+    remainingBatches: batches,
+    inputsPerBatch: recipe2.inputs.map((input) => ({ ...input })),
+    goldPerBatch: recipe2.gold,
+    outputPerBatch: { ...recipe2.output },
+    cycleSeconds: pace.cycleSeconds,
+    xpPerBatch: pace.xpPerAction
+  };
+  return {
+    ...state,
+    character: { ...state.character, gold: state.character.gold - status.gold },
+    inventory: { ...state.inventory, stacks: inventory },
+    bank: { ...state.bank, stacks: bank },
+    activity: { kind: "processing", targetId: recipe2.id, startedAtMs: nowMs, lastClaimAtMs: nowMs, progressFraction: 0, bonusSnapshot: bonuses, skillAffinity: captureSkillAffinity(state, recipe2.skillId), processing }
+  };
+}
+function startProcessingUntilLimited(state, recipeId, nowMs, afkCapSeconds) {
+  const status = processingAvailability(state, recipeId, 1);
+  if (!status.ready) throw new Error(status.reason);
+  const pace = professionActionPace(state, status.recipe, "batch");
+  const timeBatches = Math.floor(afkCapSeconds / pace.cycleSeconds);
+  const batches = Math.min(status.maxBatches, timeBatches, MAX_PROCESSING_BATCHES);
+  if (batches < 1) throw new Error("Not enough AFK time for one processing cycle.");
+  return startProcessingBatch(state, recipeId, batches, nowMs);
+}
+function previewProcessingReward(state, elapsed) {
+  const activity = state.activity, processing = activity?.processing;
+  if (activity?.kind !== "processing" || !processing) throw new Error("Missing reserved processing batch.");
+  const progress = elapsed / processing.cycleSeconds + (activity.progressFraction ?? 0), actions = Math.min(processing.remainingBatches, Math.max(0, Math.floor(progress + 1e-10))), remaining = processing.remainingBatches - actions, remainders = { ...state.rewardRemainders ?? {} };
+  const xpKey = activity.skillAffinity ? affinityXpRemainderKey(state.character.id, processing.skillId) : `xp:processing:${processing.skillId}`, rawXp = actions * processing.xpPerBatch + (remainders[xpKey] ?? 0), wholeXp = Math.floor(rawXp + 1e-10), skill2 = state.skills.find((row) => row.skillId === processing.skillId);
+  const xp = Math.max(0, Math.min(wholeXp, totalXpAtLevel(100) - (skill2?.xp ?? 0)));
+  remainders[xpKey] = xp < wholeXp ? 0 : Math.max(0, rawXp - wholeXp);
+  const mastery = professionMasteryMultipliers(processing.recipeId, state.account.professionMasteryByAction?.[processing.recipeId]), yieldKey = `mastery:processing:${processing.recipeId}:yield`, yieldRaw = actions * processing.outputPerBatch.quantity * mastery.yield + (remainders[yieldKey] ?? 0), yieldQuantity = Math.floor(yieldRaw + 1e-10);
+  remainders[yieldKey] = Math.max(0, yieldRaw - yieldQuantity);
+  const first = Math.max(0, (1 - (activity.progressFraction ?? 0)) * processing.cycleSeconds), times = Array.from({ length: actions }, (_, index) => Math.round(activity.lastClaimAtMs + (first + index * processing.cycleSeconds) * 1e3));
+  const qualifyingActivitySeconds = remaining ? elapsed : actions ? Math.max(0, Math.min(elapsed, (times[times.length - 1] - activity.lastClaimAtMs) / 1e3)) : 0;
+  return {
+    xp,
+    gold: 0,
+    items: actions && yieldQuantity ? [{ itemId: processing.outputPerBatch.itemId, quantity: yieldQuantity }] : [],
+    kills: 0,
+    craftingActions: actions,
+    elapsedSeconds: elapsed,
+    qualifyingActivitySeconds,
+    nextProcessingRemaining: remaining,
+    nextProgressFraction: remaining ? Math.max(0, Math.min(1 - Number.EPSILON, progress - actions)) : 0,
+    nextRewardRemainders: remainders,
+    craftingCompletedAtMs: times,
+    stoppedReason: remaining ? void 0 : "Reserved processing batch complete"
+  };
+}
+function processingRefund(processing) {
+  return { items: processing.inputsPerBatch.map((input) => ({ itemId: input.itemId, quantity: input.quantity * processing.remainingBatches })), gold: processing.goldPerBatch * processing.remainingBatches };
+}
+
 // ../apps/mobile/src/core/activity-queue.ts
 var BASE_ACTIVITY_QUEUE = 2;
 var MAX_ACTIVITY_QUEUE = 3;
@@ -47496,15 +47613,103 @@ function normalizeActivityQueueGoal(value) {
   const kind = row.kind, maximum = kind === "skill_level" ? 100 : kind === "duration_seconds" ? 30 * 3600 : 1e6;
   return Number(row.value) <= maximum ? { kind, value: Number(row.value) } : void 0;
 }
+function activityQueueGoalLabel(goal) {
+  return goal.kind === "duration_seconds" ? `${goal.value / 60} min` : goal.kind === "skill_level" ? `Level ${goal.value}` : goal.kind === "session_kills" ? `${goal.value.toLocaleString()} defeats` : `${goal.value.toLocaleString()} in storage`;
+}
+function activityQueueGoalCurrentValue(state, activity) {
+  if (activity.kind !== "gathering") return void 0;
+  const node = [...GATHERING, ...HERB_NODES].find((row) => row.id === activity.targetId);
+  if (!node) return void 0;
+  if (activity.goal?.kind === "skill_level") return state.skills.find((row) => row.skillId === node.skillId)?.level ?? 1;
+  if (activity.goal?.kind === "item_quantity") return [...state.inventory.stacks, ...state.bank.stacks, ...state.overflow.stacks].reduce((total, row) => total + (row.itemId === node.itemId ? row.quantity : 0), 0);
+  return void 0;
+}
+function activityQueueGoalIssue(state, activity) {
+  const goal = activity.goal;
+  if (!goal || activity.kind !== "gathering" || goal.kind !== "skill_level" && goal.kind !== "item_quantity") return void 0;
+  const current = activityQueueGoalCurrentValue(state, activity);
+  if (current === void 0 || goal.value > current) return void 0;
+  const node = [...GATHERING, ...HERB_NODES].find((row) => row.id === activity.targetId);
+  if (goal.kind === "skill_level") return current >= 100 ? `${node.skillId} is already level 100. Choose a duration or resource goal.` : `${node.skillId} is already level ${current}. Choose level ${current + 1} or higher.`;
+  const item = itemDef(node.itemId).name;
+  return `Already holding ${current.toLocaleString()} ${item} across inventory, bank and overflow. Choose a storage target above ${current.toLocaleString()}.`;
+}
+function activityQueueRegion(activity) {
+  let id;
+  if (activity.kind === "combat") {
+    const monster = MONSTERS.find((row) => row.id === activity.targetId);
+    id = monster ? WORLD_ZONES.find((zone) => zone.name === monster.zone)?.id : void 0;
+  } else if (activity.kind === "gathering") {
+    id = [...GATHERING, ...HERB_NODES].find((row) => row.id === activity.targetId)?.zoneId;
+  } else if (activity.kind === "exploration") {
+    id = EXPLORATION_ROUTES.find((row) => row.id === activity.targetId)?.zoneId;
+  }
+  const region = id ? WORLD_ZONES.find((zone) => zone.id === id) : void 0;
+  return region ? { id: region.id, name: region.name } : void 0;
+}
+function activityQueueCrossRegionAllowed(state) {
+  return accountEntitlementBenefits(state).crossRegionActivityQueue;
+}
+function activityQueueSchedulingIssue(state, activity) {
+  if (activity.kind === "faith" || activity.kind === "alchemy" || activity.kind === "processing") return void 0;
+  const required = activityQueueRegion(activity);
+  if (!required) return "This activity has no valid region. Choose a different activity.";
+  if (required.id === state.currentRegionId) return void 0;
+  const region = WORLD_ZONES.find((zone) => zone.id === required.id);
+  if (!activityQueueCrossRegionAllowed(state)) return `Travel to ${required.name} before queuing this activity. VIP, VIP+ or Supporter can queue unlocked regions remotely.`;
+  if (regionTravelAvailability(state, region) !== "available") return regionTravelLockReason(state, region) ?? `Unlock ${required.name} before queuing it.`;
+  if (activity.kind === "combat" && !state.unlockedMonsterIds.includes(activity.targetId)) return "Unlock this enemy before queuing it from another region.";
+  if (activity.kind === "gathering") {
+    const node = [...GATHERING, ...HERB_NODES].find((row) => row.id === activity.targetId);
+    if ((state.skills.find((skill2) => skill2.skillId === node.skillId)?.level ?? 1) < node.unlockLevel) return `Requires ${node.skillId} level ${node.unlockLevel} before queuing ${node.name}.`;
+  }
+  if (activity.kind === "exploration") {
+    const route = EXPLORATION_ROUTES.find((row) => row.id === activity.targetId);
+    if ((state.character?.level ?? 1) < route.requiredLevel) return `Reach character level ${route.requiredLevel} before queuing ${route.name}.`;
+    if ((state.skills.find((skill2) => skill2.skillId === "exploration")?.level ?? 1) < route.requiredExplorationLevel) return `Requires Exploration level ${route.requiredExplorationLevel} before queuing ${route.name}.`;
+  }
+  return void 0;
+}
+function activityQueueLocationIssue(state, activity, allowAutoTravel = true) {
+  if (activity.kind === "faith" || activity.kind === "alchemy" || activity.kind === "processing") return void 0;
+  const required = activityQueueRegion(activity);
+  if (!required) return "This activity has no valid region. Choose a different activity.";
+  if (required.id === state.currentRegionId) return void 0;
+  const current = WORLD_ZONES.find((zone) => zone.id === state.currentRegionId)?.name ?? state.currentRegionId;
+  if (!activityQueueCrossRegionAllowed(state)) return `Travel to ${required.name} to use this activity. Current region: ${current}. Cross-region queuing requires VIP, VIP+ or Supporter.`;
+  const region = WORLD_ZONES.find((zone) => zone.id === required.id);
+  if (regionTravelAvailability(state, region) !== "available") return regionTravelLockReason(state, region) ?? `Unlock ${required.name} before continuing.`;
+  if (!allowAutoTravel || state.settings.autoTravelQueuedActivities !== true) return `Travel to ${required.name} to continue, or enable Auto-travel in Settings. Current region: ${current}.`;
+  return void 0;
+}
+function currentActivityHandoffGoalIssue(state, targetId, goal) {
+  const activity = state.activity;
+  if (!activity || activity.targetId !== targetId) return "The current activity changed. Reopen the queue and choose its handoff again.";
+  if (activity.queueGoalCompletedAtMs !== void 0) return "The current activity has already reached its goal. Collect results before choosing a new handoff.";
+  if (!["combat", "mining", "woodcutting", "fishing", "herbalism"].includes(activity.kind)) return "This activity does not support a custom queue handoff. Wait for it to finish or stop it manually.";
+  if (activity.kind === "combat") {
+    if (goal.kind !== "duration_seconds" && goal.kind !== "session_kills") return "Combat handoffs require a time or defeat target.";
+  } else if (!["duration_seconds", "item_quantity", "skill_level"].includes(goal.kind)) return "Gathering handoffs require a time, inventory or skill target.";
+  if (!normalizeActivityQueueGoal(goal)) return "Choose a valid handoff target.";
+  return activityQueueGoalIssue(state, { kind: activity.kind === "combat" ? "combat" : "gathering", targetId, goal });
+}
+function currentActivityNeedsQueueHandoff(state) {
+  if (!state.activity || state.activity.queueGoalCompletedAtMs !== void 0) return false;
+  const queue = normalizeActivityQueue(state.character?.activityQueue, activityQueueCapacity(state));
+  if (queue.length) return false;
+  const probe = state.activity.kind === "combat" ? { kind: "combat", targetId: state.activity.targetId } : { kind: "gathering", targetId: state.activity.targetId };
+  const planned = state.character ? { ...state, character: { ...state.character, activityQueue: [...queue, probe] } } : state;
+  return !activityQueueHandoffStatus(planned).armed;
+}
 function activityQueueCapacity(state) {
   return Math.min(MAX_ACTIVITY_QUEUE, BASE_ACTIVITY_QUEUE + accountEntitlementBenefits(state).actionQueueSlots);
 }
 function normalizeQueuedActivity(value) {
   if (!value || typeof value !== "object" || Array.isArray(value)) return void 0;
   const row = value, kind = row.kind, targetId = typeof row.targetId === "string" ? row.targetId.trim() : "";
-  if (kind !== "combat" && kind !== "gathering" && kind !== "faith" && kind !== "exploration" && kind !== "alchemy" || !targetId || targetId.length > 100) return void 0;
+  if (kind !== "combat" && kind !== "gathering" && kind !== "faith" && kind !== "exploration" && kind !== "alchemy" && kind !== "processing" || !targetId || targetId.length > 100) return void 0;
   const goal = normalizeActivityQueueGoal(row.goal);
-  if (row.goal !== void 0 && (!goal || kind === "combat" && !["duration_seconds", "session_kills"].includes(goal.kind) || kind === "gathering" && goal.kind === "session_kills" || (kind === "faith" || kind === "alchemy") || kind === "exploration" && goal.kind !== "duration_seconds")) return void 0;
+  if (row.goal !== void 0 && (!goal || kind === "combat" && !["duration_seconds", "session_kills"].includes(goal.kind) || kind === "gathering" && goal.kind === "session_kills" || (kind === "faith" || kind === "alchemy" || kind === "processing") || kind === "exploration" && goal.kind !== "duration_seconds")) return void 0;
   if (kind === "gathering") return { kind, targetId, ...goal ? { goal } : {} };
   if (kind === "exploration") return { kind, targetId, ...goal ? { goal } : {} };
   if (kind === "faith") {
@@ -47513,6 +47718,7 @@ function normalizeQueuedActivity(value) {
     return { kind, targetId, faithPracticeCount: Number(faithPracticeCount) };
   }
   if (kind === "alchemy") return { kind, targetId };
+  if (kind === "processing") return { kind, targetId };
   const combatTacticId = COMBAT_TACTIC_IDS.includes(row.combatTacticId) ? row.combatTacticId : void 0;
   const huntGoalId = HUNT_GOAL_IDS.includes(row.huntGoalId) ? row.huntGoalId : void 0;
   return { kind, targetId, ...combatTacticId ? { combatTacticId } : {}, ...huntGoalId ? { huntGoalId } : {}, ...goal ? { goal } : {} };
@@ -47529,7 +47735,11 @@ function enqueueActivity(state, activity) {
   const capacity = activityQueueCapacity(state), queue = normalizeActivityQueue(state.character.activityQueue, capacity), next = normalizeQueuedActivity(activity);
   if (!next) throw new Error("Invalid queued activity.");
   if (queue.length >= capacity) throw new Error(`Action queue is full (${capacity}/${capacity}).`);
-  return { ...state, character: { ...state.character, activityQueue: [...queue, next], activityQueuePausedReason: void 0 } };
+  const goalIssue = activityQueueGoalIssue(state, next);
+  if (goalIssue) throw new Error(goalIssue);
+  const locationIssue = activityQueueSchedulingIssue(state, next);
+  if (locationIssue) throw new Error(locationIssue);
+  return { ...state, character: { ...state.character, activityQueue: [...queue, next] } };
 }
 function removeQueuedActivity(state, index) {
   if (!state.character) throw new Error("Create a character first.");
@@ -47551,15 +47761,31 @@ function clearActivityQueue(state) {
   if (!state.character) return state;
   return { ...state, character: { ...state.character, activityQueue: [], activityQueuePausedReason: void 0, activityQueueCombatRecovery: void 0 } };
 }
-function queuedActivityReadiness(state, activity) {
+function activityQueueLabel(activity) {
+  if (activity.kind === "combat") {
+    const monster = MONSTERS.find((row) => row.id === activity.targetId), tactic = activity.combatTacticId ? COMBAT_TACTICS[activity.combatTacticId] : void 0, goal = activity.huntGoalId ? HUNT_GOALS[activity.huntGoalId] : void 0;
+    return [monster?.name ?? activity.targetId, tactic && tactic.id !== "balanced" ? tactic.name : void 0, activity.goal ? activityQueueGoalLabel(activity.goal) : goal && goal.id !== "open" ? goal.label : void 0].filter(Boolean).join(" \xB7 ");
+  }
+  if (activity.kind === "faith") {
+    const tier = FAITH_TIERS.find((row) => row.id === activity.targetId);
+    return [tier?.name ?? activity.targetId, activity.faithPracticeCount ? `${activity.faithPracticeCount.toLocaleString()} practices` : void 0].filter(Boolean).join(" \xB7 ");
+  }
+  if (activity.kind === "exploration") return [EXPLORATION_ROUTES.find((row) => row.id === activity.targetId)?.name ?? activity.targetId, activity.goal ? activityQueueGoalLabel(activity.goal) : void 0].filter(Boolean).join(" \xB7 ");
+  if (activity.kind === "alchemy") return alchemyRecipeDef(activity.targetId)?.name ?? activity.targetId;
+  if (activity.kind === "processing") return processingRecipeDef(activity.targetId)?.name ?? activity.targetId;
+  return [[...GATHERING, ...HERB_NODES].find((row) => row.id === activity.targetId)?.name ?? activity.targetId, activity.goal ? activityQueueGoalLabel(activity.goal) : void 0].filter(Boolean).join(" \xB7 ");
+}
+function queuedActivityReadiness(state, activity, allowAutoTravel = true) {
   if (!activity) return { ready: false, blocker: void 0 };
   if (!state.character) return { ready: false, blocker: "Create a character first." };
+  const goalIssue = activityQueueGoalIssue(state, activity);
+  if (goalIssue) return { ready: false, blocker: goalIssue };
   if (activity.kind === "combat") {
     const monster = MONSTERS.find((row) => row.id === activity.targetId);
     if (!monster) return { ready: false, blocker: "Queued monster is no longer available." };
     if (!state.unlockedMonsterIds.includes(monster.id)) return { ready: false, blocker: `${monster.name} is not unlocked yet.` };
-    const region2 = WORLD_ZONES.find((zone) => zone.name === monster.zone);
-    if (region2?.id && region2.id !== state.currentRegionId) return { ready: false, blocker: `Travel to ${monster.zone} before ${monster.name}.` };
+    const locationIssue2 = activityQueueLocationIssue(state, activity, allowAutoTravel);
+    if (locationIssue2) return { ready: false, blocker: locationIssue2 };
     const recovery = state.character.activityQueueCombatRecovery;
     if (recovery?.needsHealing && state.character.currentHp <= 1) return { ready: false, blocker: "Heal before resuming queued combat." };
     if (recovery && recovery.minimumFood > 0) {
@@ -47577,7 +47803,8 @@ function queuedActivityReadiness(state, activity) {
   if (activity.kind === "exploration") {
     const route = EXPLORATION_ROUTES.find((row) => row.id === activity.targetId);
     if (!route) return { ready: false, blocker: "Queued exploration route is no longer available." };
-    if (route.zoneId !== state.currentRegionId) return { ready: false, blocker: `Travel to ${WORLD_ZONES.find((zone) => zone.id === route.zoneId)?.name ?? route.zoneId} before ${route.name}.` };
+    const locationIssue2 = activityQueueLocationIssue(state, activity, allowAutoTravel);
+    if (locationIssue2) return { ready: false, blocker: locationIssue2 };
     if (state.character.level < route.requiredLevel) return { ready: false, blocker: `Reach character level ${route.requiredLevel} for ${route.name}.` };
     const level2 = state.skills.find((skill2) => skill2.skillId === "exploration")?.level ?? 1;
     if (level2 < route.requiredExplorationLevel) return { ready: false, blocker: `Requires Exploration level ${route.requiredExplorationLevel} for ${route.name}.` };
@@ -47587,10 +47814,14 @@ function queuedActivityReadiness(state, activity) {
     const availability = alchemyAvailability(state, activity.targetId);
     return availability.ready ? { ready: true, blocker: void 0 } : { ready: false, blocker: availability.reason };
   }
+  if (activity.kind === "processing") {
+    const availability = processingAvailability(state, activity.targetId, 1, true);
+    return availability.ready ? { ready: true, blocker: void 0 } : { ready: false, blocker: availability.reason };
+  }
   const gather = [...GATHERING, ...HERB_NODES].find((row) => row.id === activity.targetId);
   if (!gather) return { ready: false, blocker: "Queued gathering activity is no longer available." };
-  const region = WORLD_ZONES.find((zone) => zone.id === gather.zoneId);
-  if (gather.zoneId !== state.currentRegionId) return { ready: false, blocker: `Travel to ${region?.name ?? gather.zoneId} before ${gather.name}.` };
+  const locationIssue = activityQueueLocationIssue(state, activity, allowAutoTravel);
+  if (locationIssue) return { ready: false, blocker: locationIssue };
   const level = state.skills.find((skill2) => skill2.skillId === gather.skillId)?.level ?? 1;
   if (level < gather.unlockLevel) return { ready: false, blocker: `Requires ${gather.skillId} level ${gather.unlockLevel} for ${gather.name}.` };
   return { ready: true, blocker: void 0 };
@@ -47631,6 +47862,19 @@ function activityCanAdvanceCondition(state, condition) {
     return [...GATHERING, ...HERB_NODES].find((row) => row.id === activity.targetId)?.itemId === condition.targetId;
   }
   return false;
+}
+function activityQueueHandoffStatus(state) {
+  const queue = normalizeActivityQueue(state.character?.activityQueue, activityQueueCapacity(state)), next = queue[0], character = state.character, activity = state.activity;
+  const rule = character?.activeIdleRuleIdV40 ? character.idleRulesV40?.find((row) => row.id === character.activeIdleRuleIdV40) : void 0;
+  const nonSafetyApplicable = rule?.conditions.some((condition) => condition.kind !== "food_below" && condition.kind !== "free_slots_below" && activityCanAdvanceCondition(state, condition)) ?? false;
+  const completed = activity?.queueGoalCompletedAtMs !== void 0;
+  const huntGoal = !completed && activity?.kind === "combat" ? activity.huntGoal : void 0;
+  const queueGoal = !completed ? activity?.queueGoal : void 0;
+  const finiteReservation = activity?.kind === "alchemy" || activity?.kind === "faith";
+  const sources = [queueGoal ? activityQueueGoalLabel(queueGoal) : void 0, huntGoal?.label, finiteReservation ? "Reserved work complete" : void 0, !completed && nonSafetyApplicable ? rule?.name : void 0].filter(Boolean);
+  const safetyEnabled = !!rule && (rule.stopIfOutOfFood || rule.stopIfRewardsWouldOverflow || rule.conditions.some((condition) => condition.enabled && (condition.kind === "food_below" || condition.kind === "free_slots_below")));
+  const readiness = queuedActivityReadiness(state, next);
+  return { armed: !!activity && !!next && !completed && (!!queueGoal || !!huntGoal || finiteReservation || nonSafetyApplicable), sourceLabel: sources.join(" + ") || void 0, nextLabel: next ? activityQueueLabel(next) : void 0, safetyEnabled, nextReady: readiness.ready, nextBlocker: readiness.blocker };
 }
 
 // ../apps/mobile/src/core/activity-rewards.ts
@@ -48061,30 +48305,6 @@ function currentRegionId(state) {
   const activityZone = usable(state.activity?.environment?.zoneId);
   if (activityZone) return activityZone;
   return WORLD_ZONES[0].id;
-}
-
-// ../apps/mobile/src/core/world-navigation.ts
-var REGION_SCOUT_REQUIREMENTS = {
-  OLD_MINES: "SCOUT_IRONWOOD",
-  KINGS_ROAD: "SCOUT_OLD_MINES",
-  SUNSCAR: "SCOUT_KINGS_ROAD",
-  FROSTMARCH: "SCOUT_SUNSCAR",
-  ASHLANDS: "SCOUT_FROSTMARCH"
-};
-function regionTravelLockReason(state, zone) {
-  if (worldZoneInDevelopment(zone)) return zone.name + " is still in development";
-  const level = state.character?.level ?? 1;
-  if (level < zone.minLevel) return `Reach Level ${zone.minLevel} to travel to ${zone.name}`;
-  const routeId = REGION_SCOUT_REQUIREMENTS[zone.id];
-  if (routeId && !(state.exploredRouteIds ?? []).includes(routeId)) {
-    const source = routeId.replace(/^SCOUT_/, "").replace(/_/g, " ").toLowerCase().replace(/\b\w/g, (char) => char.toUpperCase());
-    return `Complete ${source} scouting to discover the route to ${zone.name}`;
-  }
-  return void 0;
-}
-function regionTravelAvailability(state, zone) {
-  if (worldZoneInDevelopment(zone)) return "inDevelopment";
-  return regionTravelLockReason(state, zone) ? "locked" : "available";
 }
 
 // ../apps/mobile/src/core/item-rarity.ts
@@ -48806,112 +49026,6 @@ function equipmentSetCombatModifiers(state, baseCritChance = 0.05, baseAccuracy 
 // ../apps/mobile/src/core/game.ts
 init_faith2();
 init_faith();
-
-// ../apps/mobile/src/core/processing.ts
-init_progression();
-var MAX_PROCESSING_BATCHES = 1e4;
-function storedQuantity2(stacks, itemId) {
-  return stacks.filter((stack) => stack.itemId === itemId).reduce((total, stack) => total + stack.quantity, 0);
-}
-function take2(stacks, itemId, quantity4) {
-  let remaining = quantity4;
-  const next = stacks.map((stack) => {
-    const amount = stack.itemId === itemId ? Math.min(remaining, stack.quantity) : 0;
-    remaining -= amount;
-    return { ...stack, quantity: stack.quantity - amount };
-  }).filter((stack) => stack.quantity > 0);
-  if (remaining > 0) throw new Error("Not enough ingredients.");
-  return next;
-}
-function processingRecipeDef(recipeId) {
-  const recipe2 = recipeDef(recipeId);
-  if (!recipe2 || !recipe2.repeatableTraining || recipe2.skillId === "alchemy" || recipe2.noviceSetId) return void 0;
-  const output = itemDef(recipe2.output.itemId);
-  return output.type === "material" || output.type === "food" ? recipe2 : void 0;
-}
-function isTimedProcessingRecipe(recipeId) {
-  return !!processingRecipeDef(recipeId);
-}
-function processingAvailability(state, recipeId, batches = 1, allowActivityReplacement = false) {
-  const recipe2 = processingRecipeDef(recipeId), countValid = Number.isSafeInteger(batches) && batches >= 1 && batches <= MAX_PROCESSING_BATCHES, count = countValid ? batches : 1;
-  const inputs = (recipe2?.inputs ?? []).map((input) => ({ ...input, quantity: input.quantity * count, inventory: storedQuantity2(state.inventory.stacks, input.itemId), bank: storedQuantity2(state.bank.stacks, input.itemId) }));
-  const gold = (recipe2?.gold ?? 0) * count, skill2 = recipe2 ? state.skills.find((entry2) => entry2.skillId === recipe2.skillId) : void 0;
-  const materialMax = recipe2 && recipe2.inputs.length ? Math.min(...recipe2.inputs.map((input) => Math.floor((storedQuantity2(state.inventory.stacks, input.itemId) + storedQuantity2(state.bank.stacks, input.itemId)) / input.quantity))) : MAX_PROCESSING_BATCHES;
-  const goldMax = recipe2?.gold ? Math.floor((state.character?.gold ?? 0) / recipe2.gold) : MAX_PROCESSING_BATCHES;
-  const maxBatches = Math.max(0, Math.min(MAX_PROCESSING_BATCHES, materialMax, goldMax));
-  const reason = !recipe2 ? "This recipe is not a repeatable processing recipe." : !state.character ? "Create a character first." : !countValid ? `Choose 1\u2013${MAX_PROCESSING_BATCHES.toLocaleString()} batches.` : state.activity && !allowActivityReplacement ? "Stop the current activity before starting processing." : recipe2.classId && recipe2.classId !== state.character.classId ? "This recipe belongs to another class." : state.character.level < (recipe2.characterLevel ?? 1) ? `Requires character level ${recipe2.characterLevel}.` : (skill2?.level ?? 0) < recipe2.level ? `Requires ${recipe2.skillId} level ${recipe2.level}.` : state.character.gold < gold ? `Requires ${gold} Gold on this character.` : inputs.some((input) => input.inventory + input.bank < input.quantity) ? "Missing ingredients. Inventory and Bank are available; overflow is not." : "Ready to reserve and process.";
-  return { ready: !!recipe2 && !!state.character && countValid && (allowActivityReplacement || !state.activity) && (!recipe2.classId || recipe2.classId === state.character.classId) && state.character.level >= (recipe2.characterLevel ?? 1) && (skill2?.level ?? 0) >= recipe2.level && state.character.gold >= gold && inputs.every((input) => input.inventory + input.bank >= input.quantity), reason, inputs, gold, maxBatches, recipe: recipe2 };
-}
-function startProcessingBatch(state, recipeId, batches, nowMs) {
-  if (!Number.isFinite(nowMs) || nowMs < 0) throw new Error("Invalid processing time.");
-  const status = processingAvailability(state, recipeId, batches);
-  if (!status.ready) throw new Error(status.reason);
-  const recipe2 = status.recipe;
-  let inventory = state.inventory.stacks, bank = state.bank.stacks;
-  for (const input of status.inputs) {
-    const fromInventory = Math.min(storedQuantity2(inventory, input.itemId), input.quantity);
-    inventory = take2(inventory, input.itemId, fromInventory);
-    bank = take2(bank, input.itemId, input.quantity - fromInventory);
-  }
-  const bonuses = characterPermanentMultipliers(state), pace = professionActionPace(state, recipe2, "batch");
-  const processing = {
-    version: 1,
-    recipeId: recipe2.id,
-    skillId: recipe2.skillId,
-    totalBatches: batches,
-    remainingBatches: batches,
-    inputsPerBatch: recipe2.inputs.map((input) => ({ ...input })),
-    goldPerBatch: recipe2.gold,
-    outputPerBatch: { ...recipe2.output },
-    cycleSeconds: pace.cycleSeconds,
-    xpPerBatch: pace.xpPerAction
-  };
-  return {
-    ...state,
-    character: { ...state.character, gold: state.character.gold - status.gold },
-    inventory: { ...state.inventory, stacks: inventory },
-    bank: { ...state.bank, stacks: bank },
-    activity: { kind: "processing", targetId: recipe2.id, startedAtMs: nowMs, lastClaimAtMs: nowMs, progressFraction: 0, bonusSnapshot: bonuses, skillAffinity: captureSkillAffinity(state, recipe2.skillId), processing }
-  };
-}
-function startProcessingUntilLimited(state, recipeId, nowMs, afkCapSeconds) {
-  const status = processingAvailability(state, recipeId, 1);
-  if (!status.ready) throw new Error(status.reason);
-  const pace = professionActionPace(state, status.recipe, "batch");
-  const timeBatches = Math.floor(afkCapSeconds / pace.cycleSeconds);
-  const batches = Math.min(status.maxBatches, timeBatches, MAX_PROCESSING_BATCHES);
-  if (batches < 1) throw new Error("Not enough AFK time for one processing cycle.");
-  return startProcessingBatch(state, recipeId, batches, nowMs);
-}
-function previewProcessingReward(state, elapsed) {
-  const activity = state.activity, processing = activity?.processing;
-  if (activity?.kind !== "processing" || !processing) throw new Error("Missing reserved processing batch.");
-  const progress = elapsed / processing.cycleSeconds + (activity.progressFraction ?? 0), actions = Math.min(processing.remainingBatches, Math.max(0, Math.floor(progress + 1e-10))), remaining = processing.remainingBatches - actions, remainders = { ...state.rewardRemainders ?? {} };
-  const xpKey = activity.skillAffinity ? affinityXpRemainderKey(state.character.id, processing.skillId) : `xp:processing:${processing.skillId}`, rawXp = actions * processing.xpPerBatch + (remainders[xpKey] ?? 0), wholeXp = Math.floor(rawXp + 1e-10), skill2 = state.skills.find((row) => row.skillId === processing.skillId);
-  const xp = Math.max(0, Math.min(wholeXp, totalXpAtLevel(100) - (skill2?.xp ?? 0)));
-  remainders[xpKey] = xp < wholeXp ? 0 : Math.max(0, rawXp - wholeXp);
-  const mastery = professionMasteryMultipliers(processing.recipeId, state.account.professionMasteryByAction?.[processing.recipeId]), yieldKey = `mastery:processing:${processing.recipeId}:yield`, yieldRaw = actions * processing.outputPerBatch.quantity * mastery.yield + (remainders[yieldKey] ?? 0), yieldQuantity = Math.floor(yieldRaw + 1e-10);
-  remainders[yieldKey] = Math.max(0, yieldRaw - yieldQuantity);
-  const first = Math.max(0, (1 - (activity.progressFraction ?? 0)) * processing.cycleSeconds), times = Array.from({ length: actions }, (_, index) => Math.round(activity.lastClaimAtMs + (first + index * processing.cycleSeconds) * 1e3));
-  const qualifyingActivitySeconds = remaining ? elapsed : actions ? Math.max(0, Math.min(elapsed, (times[times.length - 1] - activity.lastClaimAtMs) / 1e3)) : 0;
-  return {
-    xp,
-    gold: 0,
-    items: actions && yieldQuantity ? [{ itemId: processing.outputPerBatch.itemId, quantity: yieldQuantity }] : [],
-    kills: 0,
-    craftingActions: actions,
-    elapsedSeconds: elapsed,
-    qualifyingActivitySeconds,
-    nextProcessingRemaining: remaining,
-    nextProgressFraction: remaining ? Math.max(0, Math.min(1 - Number.EPSILON, progress - actions)) : 0,
-    nextRewardRemainders: remainders,
-    craftingCompletedAtMs: times,
-    stoppedReason: remaining ? void 0 : "Reserved processing batch complete"
-  };
-}
-function processingRefund(processing) {
-  return { items: processing.inputsPerBatch.map((input) => ({ itemId: input.itemId, quantity: input.quantity * processing.remainingBatches })), gold: processing.goldPerBatch * processing.remainingBatches };
-}
 
 // ../apps/mobile/src/core/profile-icons.ts
 var EVENT_PROFILE_ICON_ARTWORK_IDS = /* @__PURE__ */ new Set([
@@ -50394,7 +50508,7 @@ function newGame(nowMs) {
     defeatedBossIds: [],
     skills: ["mining", "woodcutting", "fishing", "smithing", "cooking", "herbalism", "alchemy", "exploration", "tailoring", "enchanting", "faith"].map((skillId) => ({ skillId, xp: 0, level: 1 })),
     account: { createdCharacterCount: 1, unlockedCharacterSlots: 1, guildMember: false, patronTier: "none", guildBannerId: "world_tree_green", guildProfileFrameId: "classic", guildNameplateId: "classic", guildMotto: "Stronger together.", guildContribution: 0, guildProjectProgress: 0, guildBossHp: 1e5, guildProjectClaimed: false, guildJoinPolicy: "open", guildMinimumLevel: 10, guildApplicationStatus: "none", seasonalContractClaimIds: [] },
-    settings: { language: "en", uiTheme: "obsidian", numberMode: "abbreviated", reduceMotion: false, textScale: 1, autoEatThresholdPct: 40, stopCombatWhenOutOfFood: true, autoJoinWorldChat: true, defaultWorldChat: 1, chatDockLines: 1, chatEmoteTrayIds: [], quickNavDestinations: [...DEFAULT_QUICK_NAV_DESTINATIONS], favoriteItemIds: [], seenItemIds: [] }
+    settings: { language: "en", uiTheme: "obsidian", numberMode: "abbreviated", reduceMotion: false, textScale: 1, autoEatThresholdPct: 40, stopCombatWhenOutOfFood: true, autoTravelQueuedActivities: false, autoJoinWorldChat: true, defaultWorldChat: 1, chatDockLines: 1, chatEmoteTrayIds: [], quickNavDestinations: [...DEFAULT_QUICK_NAV_DESTINATIONS], favoriteItemIds: [], seenItemIds: [] }
   };
 }
 function createCharacter(state, classId, name = "Adventurer", bodyPresentation = "male") {
@@ -50499,15 +50613,17 @@ function highestEquippedV33Tier(state) {
     return Math.max(highest, match ? Number(match[1]) : 0);
   }, 0);
 }
-function tryStartNextQueuedActivity(state, nowMs, throwOnFailure = false, index = 0) {
+function tryStartNextQueuedActivity(state, nowMs, throwOnFailure = false, index = 0, allowAutoTravel = true) {
   if (!state.character) throw new Error("Create a character first.");
   if (state.activity) throw new Error("Stop the current activity before starting the queue.");
   const queue = normalizeActivityQueue(state.character.activityQueue, activityQueueCapacity(state)), next = queue[index];
   if (!next) throw new Error("Action queue is empty.");
   try {
-    const readiness = queuedActivityReadiness(state, next);
+    const readiness = queuedActivityReadiness(state, next, allowAutoTravel);
     if (!readiness.ready) throw new Error(readiness.blocker);
-    const started = next.kind === "combat" ? startCombat(state, next.targetId, nowMs, next.combatTacticId ?? "balanced", next.huntGoalId ?? "open") : next.kind === "faith" ? reserveFaithPractice(state, next.targetId, next.faithPracticeCount, nowMs) : next.kind === "exploration" ? startExploration(state, next.targetId, nowMs) : next.kind === "alchemy" ? beginAlchemyBatch(state, next.targetId, nowMs) : startGathering(state, next.targetId, nowMs);
+    const destination = activityQueueRegion(next);
+    const launch = allowAutoTravel && destination && destination.id !== state.currentRegionId ? { ...state, currentRegionId: destination.id } : state;
+    const started = next.kind === "combat" ? startCombat(launch, next.targetId, nowMs, next.combatTacticId ?? "balanced", next.huntGoalId ?? "open") : next.kind === "faith" ? reserveFaithPractice(launch, next.targetId, next.faithPracticeCount, nowMs) : next.kind === "exploration" ? startExploration(launch, next.targetId, nowMs) : next.kind === "alchemy" ? beginAlchemyBatch(launch, next.targetId, nowMs) : next.kind === "processing" ? beginProcessingBatch(launch, next.targetId, nowMs) : startGathering(launch, next.targetId, nowMs);
     if (next.kind === "combat" && state.character.activityQueueCombatRecovery) {
       const firstCycle = combatRuntimeDetails(started, next.targetId).killCycleSeconds;
       if (simulateCombat2(started, next.targetId, firstCycle).stoppedReason) throw new Error("Recover more health before resuming queued combat.");
@@ -50537,8 +50653,8 @@ function autoAdvanceActivityQueue(state, nowMs, source, reward2) {
   }
   const next = tryStartNextQueuedActivity(state, nowMs, false);
   if (next.activity || !state.character.activityQueueCombatRecovery) return next;
-  const safeIndex = state.character.activityQueue?.findIndex((entry2) => entry2.kind !== "combat" && queuedActivityReadiness(state, entry2).ready) ?? -1;
-  if (safeIndex >= 0) return tryStartNextQueuedActivity(state, nowMs, false, safeIndex);
+  const safeIndex = state.character.activityQueue?.findIndex((entry2) => entry2.kind !== "combat" && queuedActivityReadiness(state, entry2, false).ready) ?? -1;
+  if (safeIndex >= 0) return tryStartNextQueuedActivity(state, nowMs, false, safeIndex, false);
   return source.kind !== "combat" ? continueCompletedQueueActivity(next, nowMs, source, reward2) : next;
 }
 function startFinishedQueuedActivity(state, nowMs) {
@@ -50551,8 +50667,8 @@ function recoverCombatQueue(state, nowMs, reason) {
   const minimumFood = Math.max(state.settings.stopCombatWhenOutOfFood || rule?.stopIfOutOfFood ? 1 : 0, ...rule?.conditions.filter((row) => row.enabled && row.kind === "food_below").map((row) => row.value + 1) ?? []);
   state = { ...state, character: { ...state.character, activityQueueCombatRecovery: { needsHealing: reason.toLowerCase().includes("injured"), minimumFood } } };
   const queue = normalizeActivityQueue(state.character.activityQueue, activityQueueCapacity(state));
-  const safeIndex = queue.findIndex((entry2) => entry2.kind !== "combat" && queuedActivityReadiness(state, entry2).ready);
-  return safeIndex >= 0 ? tryStartNextQueuedActivity(state, nowMs, false, safeIndex) : pauseActivityQueue(state, reason);
+  const safeIndex = queue.findIndex((entry2) => entry2.kind !== "combat" && queuedActivityReadiness(state, entry2, false).ready);
+  return safeIndex >= 0 ? tryStartNextQueuedActivity(state, nowMs, false, safeIndex, false) : pauseActivityQueue(state, reason);
 }
 function pauseActivityQueue(state, reason) {
   if (!state.character || !normalizeActivityQueue(state.character.activityQueue, activityQueueCapacity(state)).length) return state;
@@ -50565,7 +50681,12 @@ function travelToRegion(state, regionId, nowMs) {
   if (!state.character || regionTravelAvailability(state, zone) !== "available") throw new Error(regionTravelLockReason(state, zone) ?? `Cannot travel to ${zone.name} yet`);
   if (currentRegionId(state) === zone.id) return { state, reward: { xp: 0, gold: 0, items: [], kills: 0, elapsedSeconds: 0 } };
   const settled = claimActivity(state, nowMs);
-  return { state: { ...settled.state, currentRegionId: zone.id, activity: null, outOfCombatSinceMs: nowMs }, reward: settled.reward };
+  const travelled = { ...settled.state, currentRegionId: zone.id, activity: null, outOfCombatSinceMs: nowMs };
+  const next = normalizeActivityQueue(travelled.character?.activityQueue, activityQueueCapacity(travelled))[0];
+  const locationIssue = next ? activityQueueLocationIssue(travelled, next) : void 0;
+  const previousPause = travelled.character?.activityQueuePausedReason;
+  const pause = locationIssue ?? (previousPause?.startsWith("Travel to ") ? void 0 : previousPause);
+  return { state: travelled.character ? { ...travelled, character: { ...travelled.character, activityQueuePausedReason: pause } } : travelled, reward: settled.reward };
 }
 function stackItems(existing, incoming) {
   const m = /* @__PURE__ */ new Map();
@@ -50890,6 +51011,7 @@ function previewActivityReward(state, nowMs) {
     return previewDailySupplyTimedReward(state, base, "crafting").reward;
   }
   if (state.activity?.kind === "processing") {
+    const source = state.activity;
     const elapsed = Math.min(offlineCapSeconds(state), Math.max(0, (nowMs - state.activity.lastClaimAtMs) / 1e3)), raw2 = previewProcessingReward(state, elapsed), base = { ...raw2, ...timedEventRewards(state, "crafting", raw2.craftingCompletedAtMs ?? []) };
     return previewDailySupplyTimedReward(state, base, "crafting").reward;
   }
@@ -50941,6 +51063,7 @@ function queuedReservationEnd(state) {
   const activity = state.activity;
   if (!activity || !activity.queueManaged && !state.character?.activityQueue?.length) return void 0;
   if (activity.kind === "alchemy" && activity.brew) return activity.lastClaimAtMs + Math.ceil(Math.max(0, activity.brew.remainingBatches - (activity.progressFraction ?? 0)) * activity.brew.cycleSeconds * 1e3);
+  if (activity.kind === "processing" && activity.processing) return activity.lastClaimAtMs + Math.ceil(Math.max(0, activity.processing.remainingBatches - (activity.progressFraction ?? 0)) * activity.processing.cycleSeconds * 1e3);
   if (activity.kind === "faith") {
     const practice = normalizeFaith(state.character?.faith).practice, reservation = activity.faithPractice, tier = FAITH_TIERS.find((row) => row.id === (practice?.tierId ?? reservation?.tierId));
     if (!tier) return void 0;
@@ -51012,6 +51135,7 @@ function claimActivitySegment(state, nowMs) {
     return { state: queuedState2, reward: reward3 };
   }
   if (state.activity?.kind === "processing") {
+    const source = state.activity;
     if (nowMs <= state.activity.lastClaimAtMs) return { state, reward: previewActivityReward(state, state.activity.lastClaimAtMs) };
     const elapsed = Math.min(offlineCapSeconds(state), Math.max(0, (nowMs - state.activity.lastClaimAtMs) / 1e3)), raw2 = previewProcessingReward(state, elapsed), baseReward = { ...raw2, ...timedEventRewards(state, "crafting", raw2.craftingCompletedAtMs ?? []) }, boost = previewDailySupplyTimedReward(state, baseReward, "crafting"), reward3 = boost.reward, processing = state.activity.processing;
     const routed2 = routeRewards(state, reward3.items, nowMs), nextXp = (state.skills.find((x) => x.skillId === processing.skillId)?.xp ?? 0) + (reward3.xp ?? 0);
@@ -51022,7 +51146,8 @@ function claimActivitySegment(state, nowMs) {
     progressed2 = applyEventDiscoveries(applyEventDrops(progressed2, reward3.eventDrops ?? []), reward3.eventDiscoveries ?? []);
     progressed2 = refreshQuests(progressed2);
     const finalState2 = reconcileCombatCompanionUnlocks(progressed2, nowMs);
-    return { state: finalState2, reward: withCompanionUnlocks(reward3, state, finalState2) };
+    const queuedState2 = !reward3.nextProcessingRemaining && (source.queueManaged || state.character?.activityQueue?.length) ? startFinishedQueuedActivity(finalState2, nowMs) : finalState2;
+    return { state: queuedState2, reward: withCompanionUnlocks(reward3, state, queuedState2) };
   }
   if (!state.character || !state.activity) {
     const recovered2 = settleOutOfCombatRecovery(state, nowMs);
@@ -51117,7 +51242,6 @@ function equipItem(state, itemId) {
   if (!state.character) throw new Error("No character");
   const d = itemDef(itemId);
   if (d.type !== "gear" || !d.slot) throw new Error("Not gear");
-  if (!isReleasedEquipmentItemId(itemId)) throw new Error("This equipment tier is not available yet.");
   if (d.classRestriction && d.classRestriction !== state.character.classId) throw new Error("This gear belongs to another class");
   if (state.character.level < (d.requiredLevel ?? 1)) throw new Error(`Requires character level ${d.requiredLevel}`);
   let stacks = consume2(state.inventory.stacks, itemId, 1);
@@ -52005,6 +52129,13 @@ function deleteAccountCharacter(state, id, confirmation, now) {
   if (replacement) return { ...state, character: replacement.character, inventory: replacement.inventory, overflow: recovery.overflow, activity: replacement.activity, skills: replacement.skills, quests: replacement.quests, currentRegionId: replacement.currentRegionId, bank: recovery.bank, otherCharacters: remaining, account };
   const fresh = newGame(now);
   return { ...state, character: null, inventory: fresh.inventory, overflow: recovery.overflow, activity: null, skills: fresh.skills, quests: fresh.quests, currentRegionId: fresh.currentRegionId, bank: recovery.bank, otherCharacters: [], account };
+}
+
+// ../apps/mobile/src/content/equipment-release.ts
+var MAX_RELEASED_EQUIPMENT_TIER = 4;
+function isReleasedEquipmentItemId(itemId) {
+  const match = /^T(\d+)[PX]_\d{3}$/.exec(itemId);
+  return !match || Number(match[1]) <= MAX_RELEASED_EQUIPMENT_TIER;
 }
 
 // ../apps/mobile/src/core/loadout-storage.ts
@@ -53946,7 +54077,7 @@ var fields = {
   create: ["classId", "name", "body"],
   claim: [],
   start: ["kind", "id", "tacticId", "goalId"],
-  queue_add: ["kind", "id", "tacticId", "goalId", "goal", "count"],
+  queue_add: ["kind", "id", "tacticId", "goalId", "goal", "count", "handoffGoal", "handoffTargetId", "keepCurrentRunning"],
   queue_set_goal: ["id", "goal"],
   queue_remove: ["index"],
   queue_move: ["index", "direction"],
@@ -54041,7 +54172,7 @@ function validateGameCommand(value) {
   if ((row.type === "roster_switch" || row.type === "roster_delete") && typeof args.id !== "string") throw new Error("invalid_id");
   if (row.type === "roster_delete" && typeof args.confirmation !== "string") throw new Error("invalid_confirmation");
   if (row.type === "start" || row.type === "queue_add") {
-    const start = args, kind = oneOf(start.kind, row.type === "queue_add" ? ["combat", "gathering", "faith", "exploration", "alchemy"] : ["combat", "gathering"]);
+    const start = args, kind = oneOf(start.kind, row.type === "queue_add" ? ["combat", "gathering", "faith", "exploration", "alchemy", "processing"] : ["combat", "gathering"]);
     if (start.tacticId !== void 0) oneOf(start.tacticId, COMBAT_TACTIC_IDS);
     if (start.goalId !== void 0) oneOf(start.goalId, HUNT_GOAL_IDS);
     if (kind !== "combat" && (start.tacticId !== void 0 || start.goalId !== void 0)) throw new Error("invalid_combat_activity_option");
@@ -54050,7 +54181,7 @@ function validateGameCommand(value) {
       if (kind !== "faith" && start.count !== void 0) throw new Error("invalid_count");
       const goal = start.goal === void 0 ? void 0 : normalizeActivityQueueGoal(start.goal);
       if (start.goal !== void 0 && !goal) throw new Error("invalid_queue_goal");
-      if (goal && (kind === "faith" || kind === "alchemy" || kind === "combat" && !["duration_seconds", "session_kills"].includes(goal.kind) || kind === "gathering" && goal.kind === "session_kills" || kind === "exploration" && goal.kind !== "duration_seconds")) throw new Error("invalid_queue_goal");
+      if (goal && (kind === "faith" || kind === "alchemy" || kind === "processing" || kind === "combat" && !["duration_seconds", "session_kills"].includes(goal.kind) || kind === "gathering" && goal.kind === "session_kills" || kind === "exploration" && goal.kind !== "duration_seconds")) throw new Error("invalid_queue_goal");
     }
   }
   if (row.type === "bulk_transfer") {
@@ -54104,7 +54235,7 @@ function validateGameSettings(value) {
   oneOf(result.numberMode, ["abbreviated", "exact"]);
   oneOf(result.uiTheme ?? "obsidian", ["obsidian", "ember", "ivory"]);
   if (![1, 1.15, 1.3, 1.5].includes(result.textScale) || !Number.isFinite(result.autoEatThresholdPct) || result.autoEatThresholdPct < 0 || result.autoEatThresholdPct > 100) throw new Error("invalid_settings");
-  for (const key of ["reduceMotion", "stopCombatWhenOutOfFood", "autoJoinWorldChat"]) if (typeof result[key] !== "boolean") throw new Error("invalid_settings");
+  for (const key of ["reduceMotion", "stopCombatWhenOutOfFood", "autoTravelQueuedActivities", "autoJoinWorldChat"]) if (typeof result[key] !== "boolean") throw new Error("invalid_settings");
   if (![1, 2, 3, 4].includes(result.defaultWorldChat ?? 0) || ![1, 2, 3].includes(result.chatDockLines ?? 0) || !Array.isArray(result.quickNavDestinations) || result.quickNavDestinations.length > 8 || result.quickNavDestinations.some((id) => !QUICK_NAV_DESTINATIONS.some((destination) => destination === id))) throw new Error("invalid_settings");
   const favoriteItemIds = result.favoriteItemIds, seenItemIds = result.seenItemIds, chatEmoteTrayIds = result.chatEmoteTrayIds;
   if (!Array.isArray(chatEmoteTrayIds) || chatEmoteTrayIds.length !== 0 && chatEmoteTrayIds.length !== CHAT_EMOTE_TRAY_SIZE || normalizeChatEmoteTrayIds(chatEmoteTrayIds).length !== chatEmoteTrayIds.length) throw new Error("invalid_settings");
@@ -54139,7 +54270,7 @@ function executeGameCommand(previous, value, now, options = {}) {
     settle();
     state = stopActivity(state, now);
   };
-  const settlementFreeCommand = command.type === "queue_add" || command.type === "queue_remove" || command.type === "queue_move" || command.type === "queue_clear" || command.type === "queue_start" || command.type === "daily_supplies_claim" || command.type === "roster_delete" || command.type === "event_accept" || command.type.startsWith("qa_");
+  const settlementFreeCommand = command.type === "queue_add" && a.handoffGoal === void 0 || command.type === "queue_remove" || command.type === "queue_move" || command.type === "queue_clear" || command.type === "queue_start" || command.type === "daily_supplies_claim" || command.type === "roster_delete" || command.type === "event_accept" || command.type.startsWith("qa_");
   const activityStartCommand = ["start", "explore", "class_training", "faith_practice", "alchemy_start", "processing_start"].includes(command.type);
   if (state.character && command.type !== "create" && !settlementFreeCommand) {
     if (activityStartCommand) settleAndStop();
@@ -54295,17 +54426,33 @@ function executeGameCommand(previous, value, now, options = {}) {
     case "claim":
       break;
     case "queue_add": {
-      const kind = oneOf(a.kind, ["combat", "gathering", "faith", "exploration", "alchemy"]), combatTacticId = a.tacticId === void 0 ? void 0 : oneOf(a.tacticId, COMBAT_TACTIC_IDS), huntGoalId = a.goalId === void 0 ? void 0 : oneOf(a.goalId, HUNT_GOAL_IDS), goal = normalizeActivityQueueGoal(a.goal), faithPracticeCount = kind === "faith" ? integer(a, "count", 1, 1e3) : void 0;
+      const kind = oneOf(a.kind, ["combat", "gathering", "faith", "exploration", "alchemy", "processing"]), combatTacticId = a.tacticId === void 0 ? void 0 : oneOf(a.tacticId, COMBAT_TACTIC_IDS), huntGoalId = a.goalId === void 0 ? void 0 : oneOf(a.goalId, HUNT_GOAL_IDS), goal = normalizeActivityQueueGoal(a.goal), faithPracticeCount = kind === "faith" ? integer(a, "count", 1, 1e3) : void 0;
       if (a.goal !== void 0 && !goal) throw new Error("invalid_queue_goal");
-      state = enqueueActivity(state, { kind, targetId: text(a, "id"), ...combatTacticId ? { combatTacticId } : {}, ...huntGoalId ? { huntGoalId } : {}, ...faithPracticeCount ? { faithPracticeCount } : {}, ...goal ? { goal } : {} });
+      const handoffGoal = a.handoffGoal === void 0 ? void 0 : normalizeActivityQueueGoal(a.handoffGoal);
+      if (a.handoffGoal !== void 0 && !handoffGoal) throw new Error("invalid_queue_handoff_goal");
+      if (a.keepCurrentRunning !== void 0 && a.keepCurrentRunning !== true) throw new Error("invalid_queue_handoff_choice");
+      if (a.handoffTargetId !== void 0 && !handoffGoal) throw new Error("Handoff activity was not selected.");
+      if (handoffGoal && a.keepCurrentRunning === true) throw new Error("Choose either a stop goal or keep running, not both.");
+      if (handoffGoal) {
+        const targetId = text(a, "handoffTargetId");
+        if (state.character?.activityQueue?.length || !currentActivityNeedsQueueHandoff(state)) throw new Error("The current activity already has a handoff or the queue changed. Refresh and try again.");
+        const issue = currentActivityHandoffGoalIssue(state, targetId, handoffGoal);
+        if (issue) throw new Error(issue);
+      }
+      const queued = enqueueActivity(state, { kind, targetId: text(a, "id"), ...combatTacticId ? { combatTacticId } : {}, ...huntGoalId ? { huntGoalId } : {}, ...faithPracticeCount ? { faithPracticeCount } : {}, ...goal ? { goal } : {} });
+      const source = queued.activity;
+      if (handoffGoal && !source) throw new Error("Current activity ended before setting its handoff.");
+      state = handoffGoal && source ? { ...queued, activity: { ...source, queueManaged: true, queueGoal: handoffGoal, queueGoalCompletedAtMs: void 0, startedAtMs: now, ...source.kind === "combat" ? { sessionKills: 0, sessionChampions: 0 } : {} } } : queued;
       break;
     }
     case "queue_set_goal": {
       const goal = normalizeActivityQueueGoal(a.goal), id = text(a, "id");
       if (!goal) throw new Error("invalid_queue_goal");
-      if (!state.activity || state.activity.targetId !== id || !["mining", "woodcutting", "fishing", "herbalism", "combat"].includes(state.activity.kind)) throw new Error("Activity changed. Select its goal again.");
-      if (state.activity.kind === "combat" && !["duration_seconds", "session_kills"].includes(goal.kind) || state.activity.kind !== "combat" && goal.kind === "session_kills") throw new Error("invalid_combat_activity_option");
-      state = { ...state, activity: { ...state.activity, queueManaged: true, queueGoal: goal, queueGoalCompletedAtMs: void 0, startedAtMs: now, ...state.activity.kind === "combat" ? { sessionKills: 0, sessionChampions: 0 } : {} } };
+      const goalIssue = currentActivityHandoffGoalIssue(state, id, goal);
+      if (goalIssue) throw new Error(goalIssue);
+      const source = state.activity;
+      if (!source) throw new Error("Activity changed. Select its goal again.");
+      state = { ...state, activity: { ...source, queueManaged: true, queueGoal: goal, queueGoalCompletedAtMs: void 0, startedAtMs: now, ...source.kind === "combat" ? { sessionKills: 0, sessionChampions: 0 } : {} } };
       break;
     }
     case "queue_remove":

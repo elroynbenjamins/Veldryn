@@ -79,7 +79,7 @@ export function HomeQueueComposer({visible,state,onClose,onAdd,onOpenSkills}:Pro
    <View style={s.tabs}>
     {([['combat','Combat'],['gathering','Gathering'],['crafting','Crafting']] as const).map(([id,label])=><Pressable key={id} accessibilityRole="tab" accessibilityState={{selected:category===id}} onPress={()=>selectCategory(id)} style={[s.tab,category===id&&s.activeTab]}><Text style={[s.tabLabel,category===id&&s.activeTabLabel]}>{label}</Text></Pressable>)}
    </View>
-   <ScrollView style={s.scroll} contentContainerStyle={s.content} keyboardShouldPersistTaps="handled">
+   <ScrollView style={s.scroll} contentContainerStyle={s.content} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false} showsHorizontalScrollIndicator={false}>
     {category==='crafting'?<View style={s.note}><Text style={s.infoStrong}>Alchemy reservations</Text><Text style={s.muted}>Alchemy is supported in the activity queue. Equipment Forge and Cooking have independent crafting flows; no automatic multi-step crafting is implied.</Text><GameButton compact title="Open Skills / Forge" tone="secondary" onPress={()=>{onClose();onOpenSkills();}}/></View>:null}
     {category!=='crafting'&&premium?<View style={s.note}><Text style={s.section}>UNLOCKED QUEUE REGIONS</Text><View style={s.goalGrid}>{regions.map(zone=><Pressable key={zone.id} accessibilityRole="radio" accessibilityState={{checked:zone.id===selectedRegionId}} disabled={busy} onPress={()=>{setRegionId(zone.id);setSelectedId('');}} style={[s.chip,zone.id===selectedRegionId&&s.chipSelected]}><Text style={[s.chipText,zone.id===selectedRegionId&&s.chipTextSelected]}>{zone.id===selectedRegionId?'✓ ':''}{zone.name}</Text></Pressable>)}</View>{selectedRegionId!==state.currentRegionId?<Text style={s.muted}>{state.settings.autoTravelQueuedActivities?'Auto-travel will switch to this unlocked region at a normal queue handoff.':'Auto-travel is disabled. You can plan this activity now, but must enable Auto-travel in Gameplay Settings or travel manually before it starts.'}</Text>:null}</View>:null}
     {category!=='crafting'?<Text style={s.section}>AVAILABLE IN {region?.name?.toUpperCase()??'THIS REGION'}</Text>:<Text style={s.section}>UNLOCKED ALCHEMY RECIPES</Text>} 
@@ -108,7 +108,7 @@ export function HomeQueueComposer({visible,state,onClose,onAdd,onOpenSkills}:Pro
       <Text style={s.muted}>Ready means the queue accepts this activity; it does not guarantee combat survival, free inventory space or future materials.</Text>
     </View>:null}
    </ScrollView>
-   <View style={s.footer}><GameButton compact title="Cancel" tone="secondary" disabled={busy} onPress={onClose}/><View style={s.action}><GameButton title={busy?'Adding…':full?'Queue full':needsHandoff?'Confirm handoff & add':'Add to queue'} disabled={!canAdd} onPress={()=>void add()}/></View></View>
+   <View style={s.footer}><GameButton compact title="Cancel" tone="secondary" disabled={busy} onPress={onClose}/><View style={s.action}><GameButton title={busy?'Adding…':full?'Queue full':needsHandoff?'Confirm handoff & add':'Add to queue'} disabled={!canAdd} onPress={add}/></View></View>
  </GameModalSurface>;
 }
 function styles(C:ThemeColors){return StyleSheet.create({

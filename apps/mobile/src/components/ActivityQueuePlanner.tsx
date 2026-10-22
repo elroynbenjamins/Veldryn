@@ -123,7 +123,7 @@ export function ActivityQueuePlanner({state,onCommand}:{state:GameState;onComman
     </View>:null}
     {error?<Text accessibilityRole="alert" style={s.warning}>{gl(error)}</Text>:null}
    </ScrollView>
-   <View style={s.footer}><GameButton title={busy?gt("Saving..."):current?gt("Set current goal"):canStartNow&&!state.activity&&!state.character?.activityQueue?.length?faith?gl('Start practice'):alchemy?gt('Start brewing'):processing?gt('Start processing'):gt("Start with goal"):gt("Add to queue")} onPress={()=>void save()} disabled={busy||!valid||targetReached||!!targetIssue||!!currentIssue||!ready.ready||(!current&&full)}/></View>
+   <View style={s.footer}><GameButton title={busy?gt("Saving..."):current?gt("Set current goal"):canStartNow&&!state.activity&&!state.character?.activityQueue?.length?faith?gl('Start practice'):alchemy?gt('Start brewing'):processing?gt('Start processing'):gt("Start with goal"):gt("Add to queue")} onPress={save} disabled={busy||!valid||targetReached||!!targetIssue||!!currentIssue||!ready.ready||(!current&&full)}/></View>
   </GameModalSurface>
  </>;
 }

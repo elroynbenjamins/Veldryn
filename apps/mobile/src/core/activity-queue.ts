@@ -13,6 +13,7 @@ import {faithLevel,faithPracticeAvailability} from './faith';
 import {alchemyAvailability} from './alchemy';
 import {ALCHEMY_RECIPES,alchemyRecipeDef} from '../content/alchemy';
 import {itemDef} from '../content/items';
+import {regionTravelAvailability,regionTravelLockReason} from './world-navigation';
 
 export const BASE_ACTIVITY_QUEUE=2;
 export const MAX_ACTIVITY_QUEUE=3;
@@ -66,13 +67,44 @@ export function activityQueueRegion(activity:Pick<QueuedActivity,'kind'|'targetI
  const region=id?WORLD_ZONES.find(zone=>zone.id===id):undefined;
  return region?{id:region.id,name:region.name}:undefined;
 }
-export function activityQueueLocationIssue(state:GameState,activity:Pick<QueuedActivity,'kind'|'targetId'>):string|undefined{
+export function activityQueueCrossRegionAllowed(state:GameState){return accountEntitlementBenefits(state).crossRegionActivityQueue;}
+/** Regions selectable in the composer. Travel unlocks are evaluated on the player, never inferred from paid status. */
+export function activityQueueAvailableRegions(state:GameState){
+ return WORLD_ZONES.filter(region=>region.id===state.currentRegionId||(activityQueueCrossRegionAllowed(state)&&regionTravelAvailability(state,region)==='available'));
+}
+/** Called at queue creation, without requiring auto-travel to be switched on. */
+export function activityQueueSchedulingIssue(state:GameState,activity:Pick<QueuedActivity,'kind'|'targetId'>):string|undefined{
+ if(activity.kind==='faith'||activity.kind==='alchemy')return undefined;
+ const required=activityQueueRegion(activity);
+ if(!required)return 'This activity has no valid region. Choose a different activity.';
+ if(required.id===state.currentRegionId)return undefined;
+ const region=WORLD_ZONES.find(zone=>zone.id===required.id)!;
+ if(!activityQueueCrossRegionAllowed(state))return `Travel to ${required.name} before queuing this activity. VIP, VIP+ or Supporter can queue unlocked regions remotely.`;
+ if(regionTravelAvailability(state,region)!=='available')return regionTravelLockReason(state,region)??`Unlock ${required.name} before queuing it.`;
+ if(activity.kind==='combat'&&!state.unlockedMonsterIds.includes(activity.targetId))return 'Unlock this enemy before queuing it from another region.';
+ if(activity.kind==='gathering'){
+  const node=[...GATHERING,...HERB_NODES].find(row=>row.id===activity.targetId)!;
+  if((state.skills.find(skill=>skill.skillId===node.skillId)?.level??1)<node.unlockLevel)return `Requires ${node.skillId} level ${node.unlockLevel} before queuing ${node.name}.`;
+ }
+ if(activity.kind==='exploration'){
+  const route=EXPLORATION_ROUTES.find(row=>row.id===activity.targetId)!;
+  if((state.character?.level??1)<route.requiredLevel)return `Reach character level ${route.requiredLevel} before queuing ${route.name}.`;
+  if((state.skills.find(skill=>skill.skillId==='exploration')?.level??1)<route.requiredExplorationLevel)return `Requires Exploration level ${route.requiredExplorationLevel} before queuing ${route.name}.`;
+ }
+ return undefined;
+}
+/** Auto-travel is an execution permission, separate from scheduling permissions. */
+export function activityQueueLocationIssue(state:GameState,activity:Pick<QueuedActivity,'kind'|'targetId'>,allowAutoTravel=true):string|undefined{
  if(activity.kind==='faith'||activity.kind==='alchemy')return undefined;
  const required=activityQueueRegion(activity);
  if(!required)return 'This activity has no valid region. Choose a different activity.';
  if(required.id===state.currentRegionId)return undefined;
  const current=WORLD_ZONES.find(zone=>zone.id===state.currentRegionId)?.name??state.currentRegionId;
- return `Travel to ${required.name} to use this activity. Current region: ${current}. The queue cannot travel automatically.`;
+ if(!activityQueueCrossRegionAllowed(state))return `Travel to ${required.name} to use this activity. Current region: ${current}. Cross-region queuing requires VIP, VIP+ or Supporter.`;
+ const region=WORLD_ZONES.find(zone=>zone.id===required.id)!;
+ if(regionTravelAvailability(state,region)!=='available')return regionTravelLockReason(state,region)??`Unlock ${required.name} before continuing.`;
+ if(!allowAutoTravel||state.settings.autoTravelQueuedActivities!==true)return `Travel to ${required.name} to continue, or enable Auto-travel in Settings. Current region: ${current}.`;
+ return undefined;
 }
 export function activityQueueCapacity(state:GameState){return Math.min(MAX_ACTIVITY_QUEUE,BASE_ACTIVITY_QUEUE+accountEntitlementBenefits(state).actionQueueSlots);}
 
@@ -105,7 +137,7 @@ export function enqueueActivity(state:GameState,activity:QueuedActivity):GameSta
  if(queue.length>=capacity)throw new Error(`Action queue is full (${capacity}/${capacity}).`);
  const goalIssue=activityQueueGoalIssue(state,next);
  if(goalIssue)throw new Error(goalIssue);
- const locationIssue=activityQueueLocationIssue(state,next);
+ const locationIssue=activityQueueSchedulingIssue(state,next);
  if(locationIssue)throw new Error(locationIssue);
  return {...state,character:{...state.character,activityQueue:[...queue,next]}};
 }
@@ -182,13 +214,21 @@ export function queueSkillReadiness(state:GameState,skillId:GatheringSkillId|'co
 }
 /** Scheduling may precede gathering its inputs. Execution always uses strict readiness. */
 export function queuedActivityPlanningReadiness(state:GameState,activity:QueuedActivity|undefined):QueuedActivityReadiness{
- if(activity?.kind!=='alchemy')return queuedActivityReadiness(state,activity);
+ if(activity?.kind!=='alchemy'){
+  if(activity){
+   const issue=activityQueueSchedulingIssue(state,activity);
+   if(issue)return {ready:false,blocker:issue};
+  }
+  // A paid player may plan an unlocked remote activity even with auto-travel off.
+  // Execution still checks the toggle and the latest entitlement independently.
+  return queuedActivityReadiness(activity&&activityQueueCrossRegionAllowed(state)?{...state,settings:{...state.settings,autoTravelQueuedActivities:true}}:state,activity);
+ }
  const recipe=alchemyRecipeDef(activity.targetId),level=state.skills.find(row=>row.skillId==='alchemy')?.level??0;
  if(!state.character)return {ready:false,blocker:'Create a character first.'};
  if(!recipe)return {ready:false,blocker:'Queued alchemy recipe is no longer available.'};
  return level>=recipe.level?{ready:true}:{ready:false,blocker:`Requires Alchemy level ${recipe.level}.`};
 }
-export function queuedActivityReadiness(state:GameState,activity:QueuedActivity|undefined):QueuedActivityReadiness{
+export function queuedActivityReadiness(state:GameState,activity:QueuedActivity|undefined,allowAutoTravel=true):QueuedActivityReadiness{
  if(!activity)return {ready:false,blocker:undefined as string|undefined};
  if(!state.character)return {ready:false,blocker:'Create a character first.'};
  const goalIssue=activityQueueGoalIssue(state,activity);
@@ -197,7 +237,7 @@ export function queuedActivityReadiness(state:GameState,activity:QueuedActivity|
   const monster=MONSTERS.find(row=>row.id===activity.targetId);
   if(!monster)return {ready:false,blocker:'Queued monster is no longer available.'};
   if(!state.unlockedMonsterIds.includes(monster.id))return {ready:false,blocker:`${monster.name} is not unlocked yet.`};
-  const locationIssue=activityQueueLocationIssue(state,activity);
+  const locationIssue=activityQueueLocationIssue(state,activity,allowAutoTravel);
   if(locationIssue)return {ready:false,blocker:locationIssue};
   const recovery=state.character.activityQueueCombatRecovery;
   if(recovery?.needsHealing&&state.character.currentHp<=1)return {ready:false,blocker:'Heal before resuming queued combat.'};
@@ -216,7 +256,7 @@ export function queuedActivityReadiness(state:GameState,activity:QueuedActivity|
  if(activity.kind==='exploration'){
   const route=EXPLORATION_ROUTES.find(row=>row.id===activity.targetId);
   if(!route)return {ready:false,blocker:'Queued exploration route is no longer available.'};
-  const locationIssue=activityQueueLocationIssue(state,activity);
+  const locationIssue=activityQueueLocationIssue(state,activity,allowAutoTravel);
   if(locationIssue)return {ready:false,blocker:locationIssue};
   if(state.character.level<route.requiredLevel)return {ready:false,blocker:`Reach character level ${route.requiredLevel} for ${route.name}.`};
   const level=state.skills.find(skill=>skill.skillId==='exploration')?.level??1;
@@ -229,7 +269,7 @@ export function queuedActivityReadiness(state:GameState,activity:QueuedActivity|
  }
  const gather=[...GATHERING,...HERB_NODES].find(row=>row.id===activity.targetId);
  if(!gather)return {ready:false,blocker:'Queued gathering activity is no longer available.'};
- const locationIssue=activityQueueLocationIssue(state,activity);
+ const locationIssue=activityQueueLocationIssue(state,activity,allowAutoTravel);
  if(locationIssue)return {ready:false,blocker:locationIssue};
  const level=state.skills.find(skill=>skill.skillId===gather.skillId)?.level??1;
  if(level<gather.unlockLevel)return {ready:false,blocker:`Requires ${gather.skillId} level ${gather.unlockLevel} for ${gather.name}.`};

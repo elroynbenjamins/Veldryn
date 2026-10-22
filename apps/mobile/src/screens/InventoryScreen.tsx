@@ -70,11 +70,12 @@ export function InventoryScreen({state,viewMemory,foodRequest=0,onEquip,onFood,o
   const [inspectId,setInspectId]=useState<string|null>(null);
   const [showStorage,setShowStorage]=useState(false),[filterOpen,setFilterOpen]=useState(false);
   const [selectMode,setSelectMode]=useState(false),[selectedIds,setSelectedIds]=useState<string[]>([]),[bulkPending,setBulkPending]=useState<BulkPending>(null);
-  const [equipMoment,setEquipMoment]=useState<EquipmentChangeFeedback|null>(null),equipmentSnapshotRef=useRef(equipmentFeedbackSnapshot(state));
+  const equipmentSnapshot=useMemo(()=>equipmentFeedbackSnapshot(state),[state]);
+  const [equipMoment,setEquipMoment]=useState<EquipmentChangeFeedback|null>(null),equipmentSnapshotRef=useRef(equipmentSnapshot);
   const [inventoryIntent,setInventoryIntent]=useState<InventoryFeedbackIntent|null>(null),[inventoryFeedback,setInventoryFeedback]=useState<InventoryActionFeedback|null>(null);
   const [inventoryBusyLabel,setInventoryBusyLabel]=useState<string|null>(null),inventoryBusyRef=useRef(false);
   const carriedGold=state.character?.gold??0,bankGold=state.bank.gold??0,customGoldAmount=Number(bankGoldAmount),validCustomGold=Number.isSafeInteger(customGoldAmount)&&customGoldAmount>0;
-  useEffect(()=>{const next=equipmentFeedbackSnapshot(state),previous=equipmentSnapshotRef.current;equipmentSnapshotRef.current=next;if(previous.characterId!==next.characterId){setEquipMoment(null);return;}const result=equipmentChangeFeedback(previous,next);if(result)setEquipMoment(result)},[state]);
+  useEffect(()=>{const next=equipmentSnapshot,previous=equipmentSnapshotRef.current;equipmentSnapshotRef.current=next;if(previous.characterId!==next.characterId){setEquipMoment(null);return;}const result=equipmentChangeFeedback(previous,next);if(result)setEquipMoment(result)},[equipmentSnapshot]);
   useEffect(()=>{if(!inventoryIntent)return;const result=resolveInventoryActionFeedback(inventoryIntent,state);if(result){setInventoryFeedback(result);setInventoryIntent(null)}},[state,inventoryIntent]);
   useEffect(()=>{if(!inventoryIntent)return;const timer=setTimeout(()=>setInventoryIntent(null),12000);return()=>clearTimeout(timer)},[inventoryIntent]);
   useEffect(()=>{if(!inventoryFeedback)return;const timer=setTimeout(()=>setInventoryFeedback(null),4500);return()=>clearTimeout(timer)},[inventoryFeedback]);
@@ -86,11 +87,23 @@ export function InventoryScreen({state,viewMemory,foodRequest=0,onEquip,onFood,o
   const transferGold=async(direction:'deposit'|'withdraw',amount:number)=>{const available=direction==='deposit'?carriedGold:bankGold;if(!Number.isSafeInteger(amount)||amount<1||amount>available){setError(direction==='deposit'?'Enter a valid amount of carried Gold.':'Enter a valid amount of Bank Gold.');return;}const success=await beginInventorySubmission(direction==='deposit'?gt("Moving Gold to Bank…"):gt("Moving Gold to Inventory…"),()=>onBankGoldTransfer(direction,amount));if(success)setBankGoldAmount('')};
   const runInventory=(request:InventoryFeedbackRequest,action:()=>void|Promise<unknown>)=>{const intent=inventoryFeedbackIntent(state,request),label=request.kind==='sell'||request.kind==='bulk_sell'?gt("Selling items…"):request.kind==='withdraw'||request.kind==='bulk_transfer'&&request.direction==='withdraw'?gt("Moving items to Inventory…"):request.kind==='deposit'||request.kind==='bulk_transfer'?gt("Moving items to Bank…"):gt("Updating inventory…");void beginInventorySubmission(label,async()=>{await action();setInventoryIntent(intent);setInventoryFeedback(null)})};
   const confirm=()=>{if(!pending)return;const action=pending,request:InventoryFeedbackRequest=action.kind==='deposit'?{kind:"deposit",itemId:action.item.id,quantity:action.quantity}:action.kind==='sell'?{kind:"sell",itemId:action.item.id,quantity:action.quantity}:{kind:"salvage",itemId:action.item.id,quantity:1};setPending(null);requestAnimationFrame(()=>runInventory(request,()=>action.kind==='deposit'?onDeposit(action.item.id,action.quantity):action.kind==='sell'?onSell(action.item.id,action.quantity):onSalvage(action.item.id)))};
-  const favorites=inventoryFavoriteIds(state),favoriteSet=new Set(favorites),newItemIds=inventoryNewItemIds(state),newItemSet=new Set(newItemIds),goalProtection=workingTowardInventoryProtectionMap(state);
-  const effectiveInventoryCapacity=entitlementStorageCapacity(state,"inventory"),effectiveBankCapacity=entitlementStorageCapacity(state,"bank"),inventoryCapacity=storageCapacityStatus(state.inventory.stacks,effectiveInventoryCapacity),bankCapacity=storageCapacityStatus(state.bank.stacks,effectiveBankCapacity),activeCapacity=location==='inventory'?inventoryCapacity:bankCapacity;
-  const activeNewCount=new Set(state[location].stacks.filter(stack=>stack.quantity>0&&newItemSet.has(stack.itemId)).map(stack=>stack.itemId)).size;
-  const stacks=visibleStacks(state[location].stacks,query,filter,sort,favorites,newItemIds);
-  const selectedSet=new Set(selectedIds),selectionSummary=bulkSelectionSummary(state,selectedIds,location);
+  const favorites=useMemo(()=>inventoryFavoriteIds(state),[state.settings.favoriteItemIds]);
+  const favoriteSet=useMemo(()=>new Set(favorites),[favorites]);
+  const newItemIds=useMemo(()=>inventoryNewItemIds(state),[state.inventory.stacks,state.bank.stacks,state.settings.seenItemIds]);
+  const newItemSet=useMemo(()=>new Set(newItemIds),[newItemIds]);
+  // Working Toward can depend on recipes, other resources and progression;
+  // memoize by the authoritative snapshot, never by inventory alone.
+  const goalProtection=useMemo(()=>workingTowardInventoryProtectionMap(state),[state]);
+  const capacities=useMemo(()=>{
+    const inventoryLimit=entitlementStorageCapacity(state,'inventory'),bankLimit=entitlementStorageCapacity(state,'bank');
+    return {inventory:storageCapacityStatus(state.inventory.stacks,inventoryLimit),bank:storageCapacityStatus(state.bank.stacks,bankLimit)};
+  },[state]);
+  const inventoryCapacity=capacities.inventory,bankCapacity=capacities.bank,activeCapacity=location==='inventory'?inventoryCapacity:bankCapacity;
+  const activeStacks=state[location].stacks;
+  const activeNewCount=useMemo(()=>new Set(activeStacks.filter(stack=>stack.quantity>0&&newItemSet.has(stack.itemId)).map(stack=>stack.itemId)).size,[activeStacks,newItemSet]);
+  const stacks=useMemo(()=>visibleStacks(activeStacks,query,filter,sort,favorites,newItemIds),[activeStacks,query,filter,sort,favorites,newItemIds]);
+  const selectedSet=useMemo(()=>new Set(selectedIds),[selectedIds]);
+  const selectionSummary=useMemo(()=>bulkSelectionSummary(state,selectedIds,location),[state,selectedIds,location]);
   const exitSelection=()=>{setSelectMode(false);setSelectedIds([]);setBulkPending(null)};
   const changeLocation=(value:BulkStorageLocation)=>{if(value===location)return;exitSelection();setLocation(value)};
   const toggleSelection=(itemId:string)=>{setSelectedIds(current=>{if(current.includes(itemId))return current.filter(id=>id!==itemId);if(current.length>=100){setError(gt("Select up to 100 item stacks at once."));return current;}setError('');return [...current,itemId]})};
@@ -120,9 +133,9 @@ export function InventoryScreen({state,viewMemory,foodRequest=0,onEquip,onFood,o
       ?[bulkPending.kind==='sell'?gt('Sell {stacks} eligible stacks ({items} items) for {gold} gold?',{stacks:selectionSummary.sellableStackCount,items:selectionSummary.sellableUnitCount,gold:formatGameNumber(selectionSummary.sellGold,state.settings.numberMode,state.settings.language)}):gt('Salvage {stacks} eligible equipment stacks ({items} items)?',{stacks:selectionSummary.salvageableStackCount,items:selectionSummary.salvageableUnitCount}),bulkPending.kind==='sell'?(selectionSummary.sellProtectedCount?gt('{count} selected stacks are excluded by protection or sell rules.',{count:selectionSummary.sellProtectedCount}):''):(selectionSummary.salvageProtectedCount?gt('{count} selected stacks are protected or not salvageable.',{count:selectionSummary.salvageProtectedCount}):''),selectionSummary.goalProtectedCount?gt('{count} Working Toward stacks remain protected.',{count:selectionSummary.goalProtectedCount}):'',gt('This cannot be undone.')].filter(Boolean).join(' ')
       :'';
   const confirmBulk=()=>{if(!bulkPending)return;const action=bulkPending,actionLocation=location,request:InventoryFeedbackRequest=action.kind==='transfer'?{kind:'bulk_transfer',direction:actionLocation==='inventory'?"deposit":"withdraw",stacks:selectionSummary.transferableStackCount,units:selectionSummary.transferableUnitCount}:action.kind==='sell'?{kind:'bulk_sell',stacks:selectionSummary.sellableStackCount,units:selectionSummary.sellableUnitCount,gold:selectionSummary.sellGold}:{kind:'bulk_salvage',stacks:selectionSummary.salvageableStackCount,units:selectionSummary.salvageableUnitCount};setBulkPending(null);exitSelection();requestAnimationFrame(()=>runInventory(request,()=>onBulkAction(action.kind,actionLocation,action.ids)))};
-  const remaining=claimOverflowToBank(state).overflow.stacks.reduce((sum,item)=>sum+item.quantity,0);
+  const remaining=useMemo(()=>claimOverflowToBank(state).overflow.stacks.reduce((sum,item)=>sum+item.quantity,0),[state]);
   const overflowCount=state.overflow.stacks.reduce((sum,item)=>sum+item.quantity,0);
-  const inventoryUpgrade=storageUpgradePreview(state,"inventory"),bankUpgrade=storageUpgradePreview(state,"bank");
+  const inventoryUpgrade=useMemo(()=>storageUpgradePreview(state,'inventory'),[state]),bankUpgrade=useMemo(()=>storageUpgradePreview(state,'bank'),[state]);
   const inspected=inspectId?itemDef(inspectId):undefined,carried=location==='inventory';
   const inspectActions=inspected?<View style={s.inspectActions}>
     {carried&&inspected.type==='gear'?<GameButton compact title={gt("Compare stats")} tone="secondary" onPress={()=>{setPreviewId(inspected.id);closeInspect()}}/>:null}

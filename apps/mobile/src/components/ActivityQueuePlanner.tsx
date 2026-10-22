@@ -3,7 +3,7 @@ import {useMemo,useState} from 'react';
 import {Image,Pressable,ScrollView,StyleSheet,Text,TextInput,useWindowDimensions,View} from 'react-native';
 import type {ActivityQueueGoal,GameState,GatheringSkillId,QueuedActivity} from '../core/types';
 import type {GameCommand} from '../core/game-commands';
-import {activityQueueCapacity,activityQueueRegion,activityQueueAvailableRegions,activityQueueCrossRegionAllowed,activityQueueGoalIssue,normalizeActivityQueueGoal,queuedActivityReadiness,queuedActivityPlanningReadiness,queueSkillReadiness} from '../core/activity-queue';
+import {activityQueueCapacity,activityQueueRegion,activityQueueAvailableRegions,activityQueueCrossRegionAllowed,activityQueueGoalIssue,currentActivityNeedsQueueHandoff,currentActivityHandoffGoalIssue,normalizeActivityQueueGoal,queuedActivityReadiness,queuedActivityPlanningReadiness,queueSkillReadiness} from '../core/activity-queue';
 import {GATHERING} from '../content/skills';
 import {HERB_NODES} from '../content/herbalism';
 import {MONSTERS} from '../content/monsters';
@@ -42,6 +42,7 @@ export function ActivityQueuePlanner({state,onCommand}:{state:GameState;onComman
  const selectedRegion=availableRegions.some(row=>row.id===regionFilter)?regionFilter:state.currentRegionId;
  const nodes=activities.filter(row=>row.skillId===skillId&&(!activityQueueRegion({kind:queueKindForSkill(row.skillId),targetId:row.id})||activityQueueRegion({kind:queueKindForSkill(row.skillId),targetId:row.id})?.id===selectedRegion)),combat=skillId==='combat',faith=skillId==='faith',alchemy=skillId==='alchemy',exploration=skillId==='exploration',queueKind=queueKindForSkill(skillId);
  const [open,setOpen]=useState(false),[choose,setChoose]=useState(false),[selected,setSelected]=useState(''),[kind,setKind]=useState<ActivityQueueGoal['kind']>('item_quantity'),[amount,setAmount]=useState('500'),[busy,setBusy]=useState(false),[error,setError]=useState('');
+ const [handoffChoice,setHandoffChoice]=useState<'30m'|'60m'|'keep_running'>('30m');
  const node=nodes.find(row=>row.id===selected)??nodes[0];
  const current=!faith&&!alchemy&&!!node&&state.activity?.targetId===node.id&&state.activity.kind===(queueKind==='gathering'?skillId:queueKind);
  const ready=node?queuedActivityPlanningReadiness(state,{kind:queueKind,targetId:node.id,...(faith?{faithPracticeCount:Number(amount)}:{})}):{ready:false};
@@ -53,6 +54,11 @@ export function ActivityQueuePlanner({state,onCommand}:{state:GameState;onComman
  const level=state.skills.find(row=>row.skillId===skillId)?.level??1;
  const targetReached=!faith&&!alchemy&&(kind==='item_quantity'?count<=stored:kind==='skill_level'?count<=level:false);
  const targetIssue=goal&&node?activityQueueGoalIssue(state,{kind:queueKind,targetId:node.id,goal}):undefined;
+ const needsHandoff=!current&&currentActivityNeedsQueueHandoff(state);
+ const canSetHandoff=!!state.activity&&['combat','mining','woodcutting','fishing','herbalism'].includes(state.activity.kind);
+ const keepRunning=!canSetHandoff||handoffChoice==='keep_running';
+ const currentGoal=needsHandoff&&!keepRunning?{kind:'duration_seconds' as const,value:handoffChoice==='60m'?3600:1800}:undefined;
+ const currentIssue=currentGoal&&state.activity?currentActivityHandoffGoalIssue(state,state.activity.targetId,currentGoal):undefined;
  const close=()=>{if(!busy)setOpen(false);};
  const launch=()=>{
   const active=activities.find(row=>row.id===state.activity?.targetId),entry=active??activities.find(row=>queuedActivityPlanningReadiness(state,{kind:queueKindForSkill(row.skillId),targetId:row.id,...(row.skillId==='faith'?{faithPracticeCount:1}:{})}).ready)??activities[0],saved=active?state.activity?.queueGoal:undefined;
@@ -61,13 +67,13 @@ export function ActivityQueuePlanner({state,onCommand}:{state:GameState;onComman
   const storedNow=selectedItem?[...state.inventory.stacks,...state.bank.stacks,...state.overflow.stacks].reduce((sum,row)=>sum+(row.itemId===selectedItem?row.quantity:0),0):0;
   const defaultValue=selectedKind==='item_quantity'?Math.min(1000000,Math.max(500,storedNow+100)):selectedKind==='skill_level'?Math.min(100,(state.skills.find(row=>row.skillId===entry.skillId)?.level??1)+1):selectedKind==='duration_seconds'?30:50;
   setRegionFilter(activityQueueRegion({kind:queueKindForSkill(entry.skillId),targetId:entry.id})?.id??state.currentRegionId);
-  setSkillId(entry.skillId);setSelected(entry.id);setKind(selectedKind);setAmount(String(saved?(saved.kind==='duration_seconds'?saved.value/60:saved.value):entry.skillId==='faith'||entry.skillId==='alchemy'?1:defaultValue));setError('');setChoose(false);setChooseSkill(false);setOpen(true);
+  setHandoffChoice('30m');setSkillId(entry.skillId);setSelected(entry.id);setKind(selectedKind);setAmount(String(saved?(saved.kind==='duration_seconds'?saved.value/60:saved.value):entry.skillId==='faith'||entry.skillId==='alchemy'?1:defaultValue));setError('');setChoose(false);setChooseSkill(false);setOpen(true);
  };
  const save=async()=>{
-  if(!node||!valid||targetReached||targetIssue||(!alchemy&&!faith&&!goal)||busy||!ready.ready||(!current&&full))return;
+  if(!node||!valid||targetReached||targetIssue||currentIssue||(!alchemy&&!faith&&!goal)||busy||!ready.ready||(!current&&full))return;
   setBusy(true);setError('');
   try{
-   await onCommand({type:current?'queue_set_goal':'queue_add',args:current?{id:node.id,goal}:{kind:queueKind,id:node.id,...(faith?{count}:alchemy?{}:{goal})}});
+   await onCommand({type:current?'queue_set_goal':'queue_add',args:current?{id:node.id,goal}:{kind:queueKind,id:node.id,...(faith?{count}:alchemy?{}:{goal}),...(needsHandoff&&state.activity?(keepRunning?{keepCurrentRunning:true}:{handoffTargetId:state.activity.targetId,handoffGoal:currentGoal}):{})}});
    if(canStartNow&&!current&&!state.activity&&!state.character?.activityQueue?.length)await onCommand({type:'queue_start'});
    setOpen(false);
   }catch(e){setError(e instanceof Error?e.message:gt("Could not update the queue."));}finally{setBusy(false);}
@@ -103,9 +109,20 @@ export function ActivityQueuePlanner({state,onCommand}:{state:GameState;onComman
     {valid&&targetReached?<Text accessibilityRole="alert" style={s.warning}>{targetIssue??gt("This goal is already reached.")}</Text>:null}
     {!valid?<Text style={s.warning}>{gt("Enter a whole number from 1 to {max}.",{max:(faith?1000:kind==='duration_seconds'?1800:kind==='skill_level'?100:1000000).toLocaleString(language)})}</Text>:null}
     {!current&&full?<Text style={s.warning}>{gt("Queue full ({count} activities).",{count:activityQueueCapacity(state)})}</Text>:null}
+    {needsHandoff&&state.activity?<View style={s.options}>
+     <Text style={s.label}>{gt('Current activity handoff')}</Text>
+     <Text style={s.meta}>{gt('Your running activity needs a stop condition for this queued job to begin automatically.')}</Text>
+     {canSetHandoff?([
+       ['30m',gt('Stop current activity after 30 minutes')],
+       ['60m',gt('Stop current activity after 60 minutes')],
+       ['keep_running',gt('Keep running · queued activities will wait')]
+     ] as const).map(([id,label])=><Pressable key={id} accessibilityRole="radio" accessibilityState={{checked:handoffChoice===id}} onPress={()=>setHandoffChoice(id)} disabled={busy} style={s.radioRow}><View style={[s.radio,handoffChoice===id&&s.radioSelected]}/><Text style={[s.name,s.flex]}>{label}</Text></Pressable>):<Text style={s.warning}>{gt('This current activity must finish or be stopped manually before the queue can advance.')}</Text>}
+     {keepRunning?<Text accessibilityRole="alert" style={s.warning}>{gt('The queue will NOT advance automatically until your current activity stops or an applicable idle rule triggers.')}</Text>:<Text style={s.meta}>{gt('Your selected stop and the new queue entry are saved together. The timer starts when you confirm.')}</Text>}
+     {currentIssue?<Text accessibilityRole="alert" style={s.warning}>{gl(currentIssue)}</Text>:null}
+    </View>:null}
     {error?<Text accessibilityRole="alert" style={s.warning}>{gl(error)}</Text>:null}
    </ScrollView>
-   <View style={s.footer}><GameButton title={busy?gt("Saving..."):current?gt("Set current goal"):canStartNow&&!state.activity&&!state.character?.activityQueue?.length?faith?gl('Start practice'):alchemy?gt('Start brewing'):gt("Start with goal"):gt("Add to queue")} onPress={()=>void save()} disabled={busy||!valid||targetReached||!!targetIssue||!ready.ready||(!current&&full)}/></View>
+   <View style={s.footer}><GameButton title={busy?gt("Saving..."):current?gt("Set current goal"):canStartNow&&!state.activity&&!state.character?.activityQueue?.length?faith?gl('Start practice'):alchemy?gt('Start brewing'):gt("Start with goal"):gt("Add to queue")} onPress={()=>void save()} disabled={busy||!valid||targetReached||!!targetIssue||!!currentIssue||!ready.ready||(!current&&full)}/></View>
   </GameModalSurface>
  </>;
 }

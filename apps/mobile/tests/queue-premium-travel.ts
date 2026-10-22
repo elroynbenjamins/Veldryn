@@ -43,7 +43,7 @@ rejects(()=>enqueueActivity(vip(leveled()),{kind:'combat',targetId:'SILVERFIN_SW
 ok(!accountEntitlementBenefits(leveled()).crossRegionActivityQueue,'Default entitlement omits cross-region travel');
 eq(validateGameSettings({...base().settings,autoTravelQueuedActivities:true}).autoTravelQueuedActivities,true,'Trusted settings command accepts the toggle');
 rejects(()=>validateGameSettings({...base().settings,autoTravelQueuedActivities:'yes'}),'Trusted settings reject an invalid toggle');
-eq(normalizeSave(JSON.parse(JSON.stringify(enabled(vip(leveled())))).settings.autoTravelQueuedActivities,true,'Auto travel preference survives save normalization');
+eq(normalizeSave(JSON.parse(JSON.stringify(enabled(vip(leveled()))))).settings.autoTravelQueuedActivities,true,'Auto travel preference survives save normalization');
 eq(normalizeSave(JSON.parse(JSON.stringify(leveled()))).settings.autoTravelQueuedActivities,false,'Old saves default to auto-travel off');
 
 // Two consecutive auto-travels must settle exactly at 60s and 120s,

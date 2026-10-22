@@ -6,7 +6,7 @@ import {GATHERING} from '../content/skills';
 import {HERB_NODES} from '../content/herbalism';
 import {ALCHEMY_RECIPES} from '../content/alchemy';
 import {WORLD_ZONES} from '../content/world-map';
-import {activityQueueAvailableRegions,activityQueueCrossRegionAllowed,activityQueueCapacity,activityQueueGoalCurrentValue,activityQueueGoalIssue,activityQueueHandoffStatus,enqueueActivity,normalizeActivityQueue,queuedActivityPlanningReadiness,queuedActivityReadiness} from '../core/activity-queue';
+import {activityQueueAvailableRegions,activityQueueCrossRegionAllowed,activityQueueCapacity,activityQueueGoalCurrentValue,activityQueueGoalIssue,activityQueueHandoffStatus,currentActivityHandoffGoalIssue,enqueueActivity,normalizeActivityQueue,queuedActivityPlanningReadiness,queuedActivityReadiness} from '../core/activity-queue';
 import {GameModalHeader,GameModalSurface} from './GameModalSurface';
 import {GameButton} from './GameButton';
 import {ActivityArtwork} from './ActivityArtwork';
@@ -17,19 +17,22 @@ import type {ThemeColors} from '../theme/theme';
 type Category='combat'|'gathering'|'crafting';
 type Preset='kills50'|'kills100'|'time15'|'time30'|'items100'|'items250'|'nextLevel'|'open';
 type Candidate={id:string;name:string;subtitle:string;activity:QueuedActivity;level?:number};
-type Props={visible:boolean;state:GameState;onClose:()=>void;onAdd:(entry:QueuedActivity)=>Promise<boolean>;onSetCurrentGoal:(goal:ActivityQueueGoal)=>Promise<boolean>;onOpenSkills:()=>void};
+type CurrentHandoffChoice='30m'|'60m'|'next_level'|'keep_running';
+type CurrentHandoffPlan={targetId:string;goal?:ActivityQueueGoal;keepCurrentRunning?:true};
+type Props={visible:boolean;state:GameState;onClose:()=>void;onAdd:(entry:QueuedActivity,handoff?:CurrentHandoffPlan)=>Promise<boolean>;onOpenSkills:()=>void};
 
-export function HomeQueueComposer({visible,state,onClose,onAdd,onSetCurrentGoal,onOpenSkills}:Props){
+export function HomeQueueComposer({visible,state,onClose,onAdd,onOpenSkills}:Props){
  const C=useGameTheme(),s=useMemo(()=>styles(C),[C]);
  const [category,setCategory]=useState<Category>('combat');
  const [selectedId,setSelectedId]=useState('');
  const [preset,setPreset]=useState<Preset>('kills50');
+ const [handoffChoice,setHandoffChoice]=useState<CurrentHandoffChoice>('30m');
  const [busy,setBusy]=useState(false);
  const [regionId,setRegionId]=useState(state.currentRegionId);
  const regions=activityQueueAvailableRegions(state),premium=activityQueueCrossRegionAllowed(state);
  const selectedRegionId=regions.some(row=>row.id===regionId)?regionId:state.currentRegionId;
  const region=WORLD_ZONES.find(row=>row.id===selectedRegionId);
- useEffect(()=>{if(visible){setRegionId(state.currentRegionId);setSelectedId('');}},[visible,state.currentRegionId]);
+ useEffect(()=>{if(visible){setRegionId(state.currentRegionId);setSelectedId('');setHandoffChoice('30m');}},[visible,state.currentRegionId]);
  const alchemyLevel=state.skills.find(row=>row.skillId==='alchemy')?.level??1;
  const combat:Candidate[]=MONSTERS.filter(row=>!row.boss&&row.zone===region?.name&&state.unlockedMonsterIds.includes(row.id)).map(row=>({id:row.id,name:row.name,subtitle:'Level '+row.level+' · '+region?.name,activity:{kind:'combat',targetId:row.id}}));
  const gathering:Candidate[]=[...GATHERING,...HERB_NODES].filter(row=>row.zoneId===selectedRegionId&&(state.skills.find(skill=>skill.skillId===row.skillId)?.level??1)>=row.unlockLevel).map(row=>({id:row.id,name:row.name,subtitle:row.skillId+' · Level '+row.unlockLevel,activity:{kind:'gathering',targetId:row.id},level:state.skills.find(skill=>skill.skillId===row.skillId)?.level??1}));
@@ -45,16 +48,31 @@ export function HomeQueueComposer({visible,state,onClose,onAdd,onSetCurrentGoal,
  const entry:QueuedActivity|undefined=selected?{...selected.activity,...(category!=='crafting'&&goal?{goal}:{})}:undefined;
  const runtime=queuedActivityReadiness(state,entry),planning=queuedActivityPlanningReadiness(state,entry);
  const goalIssue=entry?activityQueueGoalIssue(state,entry):undefined;
- // A missing ingredient is a valid Alchemy plan, but will block execution until available.
- const canAdd=!!entry&&!full&&planning.ready&&!goalIssue&&!busy;
+ // Missing Alchemy ingredients may be planned, but execution waits for materials.
  let preview=activityQueueHandoffStatus(state);
  if(entry&&!full&&queue.length===0){try{preview=activityQueueHandoffStatus(enqueueActivity(state,entry));}catch{/* Surface the full/invalid warning instead. */}}
  const hasActive=!!state.activity;
  const needsHandoff=hasActive&&queue.length===0&&!preview.armed&&!state.activity?.queueGoalCompletedAtMs;
  const canSetCurrentGoal=needsHandoff&&!!state.activity&&['combat','mining','woodcutting','fishing','herbalism'].includes(state.activity.kind);
+ const currentActivity=state.activity;
+ const currentSkill= currentActivity&&currentActivity.kind!=='combat'
+  ?[...GATHERING,...HERB_NODES].find(row=>row.id===currentActivity.targetId)?.skillId:undefined;
+ const currentLevel=currentSkill?state.skills.find(row=>row.skillId===currentSkill)?.level??1:undefined;
+ const canNextLevel=canSetCurrentGoal&&currentLevel!==undefined&&currentLevel<100;
+ const handoffGoal:ActivityQueueGoal|undefined=canSetCurrentGoal?
+  handoffChoice==='30m'?{kind:'duration_seconds',value:1800}:
+  handoffChoice==='60m'?{kind:'duration_seconds',value:3600}:
+  handoffChoice==='next_level'&&canNextLevel?{kind:'skill_level',value:currentLevel!+1}:undefined:undefined;
+ const explicitKeep=handoffChoice==='keep_running'||!canSetCurrentGoal;
+ const handoffIssue=needsHandoff&&!explicitKeep&&currentActivity
+  ?handoffGoal?currentActivityHandoffGoalIssue(state,currentActivity.targetId,handoffGoal):'Choose a valid handoff option.':undefined;
+ const canAdd=!!entry&&!full&&planning.ready&&!goalIssue&&!busy&&(!needsHandoff||explicitKeep||!!handoffGoal)&&!handoffIssue;
  const selectCategory=(next:Category)=>{setCategory(next);setSelectedId('');setPreset(next==='combat'?'kills50':next==='gathering'?'time30':'open');};
- const add=async()=>{if(!entry||!canAdd)return;setBusy(true);try{if(await onAdd(entry))onClose();}finally{setBusy(false)}};
- const setHandoff=async()=>{if(!canSetCurrentGoal||busy)return;setBusy(true);try{await onSetCurrentGoal({kind:'duration_seconds',value:1800});}finally{setBusy(false)}};
+ const add=async()=>{if(!entry||!canAdd)return;setBusy(true);try{
+  const handoff=needsHandoff&&currentActivity
+   ?{targetId:currentActivity.targetId,...(explicitKeep?{keepCurrentRunning:true as const}:{goal:handoffGoal})}:undefined;
+  if(await onAdd(entry,handoff))onClose();
+ }finally{setBusy(false)}};
  return <GameModalSurface visible={visible} reduceMotion={state.settings.reduceMotion} onClose={onClose} dismissOnBackdrop={!busy} surfaceStyle={s.surface}>
    <GameModalHeader eyebrow="HOME · COMMAND DECK" title="Add to activity queue" onClose={onClose} closeDisabled={busy}/>
    <View style={s.headline}><Text style={s.muted}>Choose a job for the next free queue slot.</Text><Text style={s.count}>{queue.length}/{capacity} queued</Text></View>
@@ -74,13 +92,23 @@ export function HomeQueueComposer({visible,state,onClose,onAdd,onSetCurrentGoal,
       </Pressable>;
     })}
     {selected&&category!=='crafting'?<View style={s.goals}><Text style={s.section}>STOP / HANDOFF TARGET</Text><View style={s.goalGrid}>{options.map(option=><Pressable key={option.id} accessibilityRole="radio" accessibilityState={{checked:chosen===option.id}} disabled={busy} onPress={()=>setPreset(option.id)} style={[s.chip,chosen===option.id&&s.chipSelected]}><Text style={[s.chipText,chosen===option.id&&s.chipTextSelected]}>{option.label}</Text></Pressable>)}</View>{goalIssue?<Text accessibilityRole="alert" style={s.warning}>{goalIssue}</Text>:null}{chosen==='open'?<Text style={s.warning}>Without a queue goal, this activity does not trigger a handoff by itself. Applicable idle rules may still stop it.</Text>:<Text style={s.muted}>{chosen==='items100'||chosen==='items250'?`You hold ${stored.toLocaleString()} now. Stop at ${goal?.value.toLocaleString()} total across inventory, bank and overflow. `:''}This target applies after the queued activity starts, not to the current activity.</Text>}</View>:null}
+    {needsHandoff&&currentActivity?<View style={s.goals}>
+      <Text style={s.section}>CURRENT ACTIVITY HANDOFF</Text>
+      <Text style={s.name}>{currentActivity.kind==='combat'?'Combat':currentSkill??currentActivity.kind} is running</Text>
+      <Text style={s.muted}>Choose when to leave your current activity. A 30-minute stop begins when you confirm this queue entry.</Text>
+      {canSetCurrentGoal?<View style={s.goalGrid}>
+       {([['30m','After 30 minutes'],['60m','After 60 minutes'],...(canNextLevel?[['next_level','At next skill level']]:[]),['keep_running','Keep running · queue waits']] as Array<[CurrentHandoffChoice,string]>).map(([id,label])=><Pressable key={id} accessibilityRole="radio" accessibilityState={{checked:handoffChoice===id}} disabled={busy} onPress={()=>setHandoffChoice(id)} style={[s.chip,handoffChoice===id&&s.chipSelected]}><Text style={[s.chipText,handoffChoice===id&&s.chipTextSelected]}>{handoffChoice===id?'✓ ':''}{label}</Text></Pressable>)}
+      </View>:<Text style={s.warning}>This activity cannot accept a custom handoff target. It must finish on its own, or you must stop it manually.</Text>}
+      {handoffIssue?<Text accessibilityRole="alert" style={s.warning}>{handoffIssue}</Text>:null}
+      {explicitKeep?<Text accessibilityRole="alert" style={s.warning}>Queued activities will NOT start automatically while the current activity continues. Stop it manually or configure an applicable stop rule.</Text>:<Text style={s.good}>● The queue will advance after this goal, provided the next activity is ready and safety rules allow it.</Text>}
+     </View>:null}
     {entry?<View style={s.safety}><Text style={s.section}>READINESS & HANDOFF SAFETY</Text><Text style={runtime.ready?s.good:s.warning}>{runtime.ready?'● Can run with current unlocks and location.':'● '+(runtime.blocker??'Activity not ready.')}</Text>{category==='crafting'&&!runtime.ready&&planning.ready?<Text style={s.muted}>You can plan this recipe, but the queue will pause until the required ingredients and Gold are available.</Text>:null}
-      {full?<Text style={s.warning}>Queue is full. Remove an entry before adding another.</Text>:hasActive&&queue.length>0?<Text style={s.muted}>This job will follow the {queue.length} already queued {queue.length===1?'entry':'entries'}. Existing handoff goals and safety rules remain in control.</Text>:needsHandoff?<><Text style={s.warning}>The current activity has no eligible automatic stop. This queued job will wait until you stop it or set a valid target.</Text>{canSetCurrentGoal?<GameButton compact title={busy?'Setting handoff…':'Set current activity to stop in 30m'} disabled={busy} tone="secondary" onPress={()=>void setHandoff()}/>:null}</>:hasActive?<Text style={preview.armed?s.good:s.muted}>{preview.armed?'A handoff trigger is configured for the active activity.':'The current activity must finish or stop before the next job begins.'}</Text>:<Text style={s.muted}>No activity is running. Add this job, then use Start next from the queue.</Text>}
+      {full?<Text style={s.warning}>Queue is full. Remove an entry before adding another.</Text>:hasActive&&queue.length>0?<Text style={s.muted}>This job will follow the {queue.length} already queued {queue.length===1?'entry':'entries'}. Existing handoff goals and safety rules remain in control.</Text>:needsHandoff?<><Text style={s.warning}>The current activity has no eligible automatic stop. This queued job will wait until you stop it or set a valid target.</Text>{canSetCurrentGoal?<Text style={s.muted}>Your selected current-activity handoff is saved together with this queue entry.</Text>:null}</>:hasActive?<Text style={preview.armed?s.good:s.muted}>{preview.armed?'A handoff trigger is configured for the active activity.':'The current activity must finish or stop before the next job begins.'}</Text>:<Text style={s.muted}>No activity is running. Add this job, then use Start next from the queue.</Text>}
       {preview.safetyEnabled?<Text style={s.muted}>Your configured food, inventory and recovery safety rules remain active.</Text>:null}
       <Text style={s.muted}>Ready means the queue accepts this activity; it does not guarantee combat survival, free inventory space or future materials.</Text>
     </View>:null}
    </ScrollView>
-   <View style={s.footer}><GameButton compact title="Cancel" tone="secondary" disabled={busy} onPress={onClose}/><View style={s.action}><GameButton title={busy?'Adding…':full?'Queue full':'Add to queue'} disabled={!canAdd} onPress={()=>void add()}/></View></View>
+   <View style={s.footer}><GameButton compact title="Cancel" tone="secondary" disabled={busy} onPress={onClose}/><View style={s.action}><GameButton title={busy?'Adding…':full?'Queue full':needsHandoff?'Confirm handoff & add':'Add to queue'} disabled={!canAdd} onPress={()=>void add()}/></View></View>
  </GameModalSurface>;
 }
 function styles(C:ThemeColors){return StyleSheet.create({

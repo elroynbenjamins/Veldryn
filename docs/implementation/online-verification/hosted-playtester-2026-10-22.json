@@ -1,0 +1,130 @@
+{
+  "project": "nyjwigipamnvpdvpauuv",
+  "runAt": "2026-10-22T17:06:06.234Z",
+  "checks": [
+    {
+      "name": "disposable confirmed account created",
+      "status": "PASS"
+    },
+    {
+      "name": "real password sign-in",
+      "status": "PASS"
+    },
+    {
+      "name": "fresh account starts empty",
+      "status": "PASS"
+    },
+    {
+      "name": "server-owned character created",
+      "status": "PASS"
+    },
+    {
+      "name": "starter supplies arrive online",
+      "status": "PASS"
+    },
+    {
+      "name": "inventory to bank transfer persists",
+      "status": "PASS"
+    },
+    {
+      "name": "bank withdrawal restores starter item",
+      "status": "PASS"
+    },
+    {
+      "name": "selling an item updates authoritative Gold and inventory",
+      "status": "PASS"
+    },
+    {
+      "name": "locked regional travel is denied",
+      "status": "PASS",
+      "detail": "HTTP 400"
+    },
+    {
+      "name": "already reached skill goal is rejected",
+      "status": "PASS",
+      "detail": "HTTP 400"
+    },
+    {
+      "name": "remote region is rejected",
+      "status": "PASS",
+      "detail": "HTTP 400"
+    },
+    {
+      "name": "future Smithing may be planned",
+      "status": "PASS"
+    },
+    {
+      "name": "unfunded Smithing cannot start",
+      "status": "PASS",
+      "detail": "HTTP 400"
+    },
+    {
+      "name": "clear removes waiting work",
+      "status": "PASS"
+    },
+    {
+      "name": "base account queue capacity is enforced",
+      "status": "PASS",
+      "detail": "HTTP 400"
+    },
+    {
+      "name": "queued work can be reordered",
+      "status": "PASS"
+    },
+    {
+      "name": "reorder persists both entries",
+      "status": "PASS"
+    },
+    {
+      "name": "queued woodcutting starts",
+      "status": "PASS"
+    },
+    {
+      "name": "queue survives server reload",
+      "status": "PASS"
+    },
+    {
+      "name": "concurrent identical claim settles once",
+      "status": "PASS"
+    },
+    {
+      "name": "woodcutting hands off to fishing",
+      "status": "PASS"
+    },
+    {
+      "name": "both queued entries are consumed",
+      "status": "PASS"
+    },
+    {
+      "name": "gathering grants server-owned items",
+      "status": "PASS",
+      "detail": "MEADOW_PERCH:2"
+    },
+    {
+      "name": "lost-response retry returns exact receipt",
+      "status": "PASS"
+    },
+    {
+      "name": "relogin restores queued rewards",
+      "status": "PASS"
+    },
+    {
+      "name": "atomic current activity handoff is armed",
+      "status": "PASS"
+    },
+    {
+      "name": "active gathering hands off to fishing",
+      "status": "PASS"
+    },
+    {
+      "name": "combat earns real server XP",
+      "status": "PASS"
+    },
+    {
+      "name": "final server state stays idle and versioned",
+      "status": "PASS"
+    }
+  ],
+  "status": "PASS",
+  "cleanup": "PASS"
+}

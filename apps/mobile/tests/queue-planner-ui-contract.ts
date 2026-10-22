@@ -28,7 +28,8 @@ const queue=read('src/components/ActionQueuePanel.tsx');
 ok(queue.includes('stackRows=width<480||fontScale>=1.25'),'Phone queue controls must stack below the activity details');
 ok(queue.includes('accessibilityState={{expanded:managing}}')&&queue.includes('managing?<View style=')&&queue.includes('Confirm clear'),
  'Waiting queue stays compact until Manage is expanded, and destructive clear requires inline confirmation');
-ok(queue.includes('onClear();')&&queue.includes('setConfirmClear(false)'),
+ok(queue.includes('onSetCurrentHandoff')&&queue.includes('Current activity handoff required')&&queue.includes('Stop current activity after 30 minutes'),'Already-queued open-ended activities offer the 30-minute remedy');
+ok(queue.includes('onClear();')&&queue.includes('setConfirmClear(false'),
  'Clear queue still uses the existing queue_clear command without a new modal or gameplay path');
 const quickInspect=read('src/components/ItemQuickInspect.tsx');
 ok(quickInspect.includes('prioritizeItemSources(model.sources)')&&quickInspect.includes('prioritizeItemUses(model.usedIn)'),

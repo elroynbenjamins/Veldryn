@@ -197,7 +197,6 @@ export function queuedActivityReadiness(state:GameState,activity:QueuedActivity|
   const monster=MONSTERS.find(row=>row.id===activity.targetId);
   if(!monster)return {ready:false,blocker:'Queued monster is no longer available.'};
   if(!state.unlockedMonsterIds.includes(monster.id))return {ready:false,blocker:`${monster.name} is not unlocked yet.`};
-  const region=WORLD_ZONES.find(zone=>zone.name===monster.zone);
   const locationIssue=activityQueueLocationIssue(state,activity);
   if(locationIssue)return {ready:false,blocker:locationIssue};
   const recovery=state.character.activityQueueCombatRecovery;
@@ -230,7 +229,6 @@ export function queuedActivityReadiness(state:GameState,activity:QueuedActivity|
  }
  const gather=[...GATHERING,...HERB_NODES].find(row=>row.id===activity.targetId);
  if(!gather)return {ready:false,blocker:'Queued gathering activity is no longer available.'};
- const region=WORLD_ZONES.find(zone=>zone.id===gather.zoneId);
  const locationIssue=activityQueueLocationIssue(state,activity);
  if(locationIssue)return {ready:false,blocker:locationIssue};
  const level=state.skills.find(skill=>skill.skillId===gather.skillId)?.level??1;

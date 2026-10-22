@@ -1,5 +1,5 @@
 import {claimActivity,createCharacter,newGame,offlineCapSeconds,startCombat,stopActivity} from '../src/core/game';
-import {activityQueueCapacity,activityQueueHandoffStatus,enqueueActivity,moveQueuedActivity,queuedActivityPlanningReadiness,queuedActivityReadiness,queueSkillReadiness} from '../src/core/activity-queue';
+import {activityQueueCapacity,activityQueueGoalCurrentValue,activityQueueGoalIssue,activityQueueHandoffStatus,enqueueActivity,moveQueuedActivity,queuedActivityPlanningReadiness,queuedActivityReadiness,queueSkillReadiness} from '../src/core/activity-queue';
 import {executeGameCommand,validateGameCommand} from '../src/core/game-commands';
 import {normalizeSave} from '../src/core/save-normalization';
 import {weeklyOrderBoardForState} from '../src/core/long-term-progression-runtime';
@@ -170,5 +170,31 @@ blockedStart={...blockedStart,unlockedMonsterIds:['MOSS_RAT','SILVERFIN_SWARM']}
 blockedStart=enqueueActivity(blockedStart,{kind:'combat',targetId:'SILVERFIN_SWARM'});
 const blockedStartStatus=activityQueueHandoffStatus(blockedStart);
 ok(!blockedStartStatus.nextReady&&(blockedStartStatus.nextBlocker??'').includes('Travel to Silverbrook'),'Idle queue preflight should block a known cross-region manual start before the command is sent');
+
+// Regression: existing holdings and skill levels are not valid future queue goals.
+let strict=createCharacter(newGame(now),'WAYFINDER','Strict Queue');
+strict={...strict,
+ inventory:{...strict.inventory,stacks:[...strict.inventory.stacks,{itemId:'GREENWOOD_LOG',quantity:140}]},
+ bank:{...strict.bank,stacks:[...strict.bank.stacks,{itemId:'GREENWOOD_LOG',quantity:60}]},
+ overflow:{...strict.overflow,stacks:[...strict.overflow.stacks,{itemId:'GREENWOOD_LOG',quantity:10}]},
+};
+const storageGoal={kind:'gathering' as const,targetId:'GREENWOOD_TREE',goal:{kind:'item_quantity' as const,value:210}};
+ok(activityQueueGoalCurrentValue(strict,storageGoal)===210,'Queue storage baseline includes inventory, bank and overflow');
+ok((activityQueueGoalIssue(strict,storageGoal)??'').includes('Already holding 210'),'Already met goal explains the stored amount');
+rejects(()=>enqueueActivity(strict,storageGoal),'Client scheduling refuses an already reached storage goal');
+rejects(()=>executeGameCommand(strict,{type:'queue_add',args:{kind:'gathering',id:'GREENWOOD_TREE',goal:storageGoal.goal}},now),'Authoritative queue add refuses a reached storage goal');
+ok(!queuedActivityReadiness(strict,storageGoal).ready,'Old saved queues with already-met goals must not auto-start');
+ok(queuedActivityReadiness(strict,{...storageGoal,goal:{kind:'item_quantity',value:211}}).ready,'A higher storage goal remains startable');
+strict={...strict,skills:strict.skills.map(row=>row.skillId==='woodcutting'?{...row,level:12}:row)};
+const levelGoal={kind:'gathering' as const,targetId:'GREENWOOD_TREE',goal:{kind:'skill_level' as const,value:12}};
+rejects(()=>enqueueActivity(strict,levelGoal),'Client scheduling refuses same-level goals');
+rejects(()=>executeGameCommand(strict,{type:'queue_add',args:{kind:'gathering',id:'GREENWOOD_TREE',goal:levelGoal.goal}},now),'Trusted commands reject same-level goals');
+ok(!queuedActivityReadiness(strict,levelGoal).ready,'Old saved queue skill goals below the current level cannot instantly advance');
+ok(queuedActivityReadiness(strict,{...levelGoal,goal:{kind:'skill_level',value:13}}).ready,'Next skill level is a valid goal');
+const activeStrict=executeGameCommand(strict,{type:'start',args:{kind:'gathering',id:'GREENWOOD_TREE'}},now).state;
+rejects(()=>executeGameCommand(activeStrict,{type:'queue_set_goal',args:{id:'GREENWOOD_TREE',goal:storageGoal.goal}},now),'Setting an already-met goal on the current activity must be rejected');
+rejects(()=>executeGameCommand(activeStrict,{type:'queue_set_goal',args:{id:'GREENWOOD_TREE',goal:levelGoal.goal}},now),'Current activity cannot set a past skill-level goal');
+const allowedStrict=executeGameCommand(activeStrict,{type:'queue_set_goal',args:{id:'GREENWOOD_TREE',goal:{kind:'duration_seconds',value:60}}},now).state;
+ok(allowedStrict.activity?.queueGoal?.value===60,'Duration-based goals still work after goal safeguards');
 
 console.log(JSON.stringify({status:'PASS',plannedNext:advanced.state.activity?.targetId,safetyReason:safetyStop.state.character?.activityQueuePausedReason,regionReason:paused.state.character?.activityQueuePausedReason}));

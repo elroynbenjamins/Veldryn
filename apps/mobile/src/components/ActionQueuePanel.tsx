@@ -15,7 +15,7 @@ export function ActionQueuePanel({state,onRemove,onMove,onClear,onStartNext,onAd
  const canResume=!!state.character?.activityQueueCombatRecovery&&state.activity?.kind!=='combat'&&state.activity?.queueGoalCompletedAtMs!==undefined&&queue[0]?.kind==='combat';
  const blocker=!handoff.nextReady?handoff.nextBlocker:undefined;
  const problem=blocker??paused;
- const nextStep=problem&&/travel to|not available in/i.test(problem)?{destination:'World' as const,label:gt('Open World')}:problem&&/heal|injured|food|health|restock/i.test(problem)?{destination:'Inventory' as const,label:gt('Open food & gear')}:problem&&(queue[0]?.kind==='alchemy'||/ingredients|alchemy|materials|gold/i.test(problem))?{destination:'Skills' as const,label:gt('Open Skills')}:undefined;
+ const nextStep=problem&&/travel to|not available in/i.test(problem)?{destination:'World' as const,label:gt('Open World')}:problem&&/heal|injured|food|health|restock|storage|overflow|free slot/i.test(problem)?{destination:'Inventory' as const,label:gt('Open food & gear')}:problem&&(queue[0]?.kind==='alchemy'||/ingredients|alchemy|materials|gold/i.test(problem))?{destination:'Skills' as const,label:gt('Open Skills')}:undefined;
  const staleGoal=!!problem&&/already holding|already level|level 100|storage target above/i.test(problem);
  if(!queue.length){
   const activity=state.activity;

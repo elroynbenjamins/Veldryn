@@ -1,5 +1,5 @@
 import {claimActivity,createCharacter,newGame,offlineCapSeconds,startCombat,stopActivity} from '../src/core/game';
-import {activityQueueCapacity,activityQueueGoalCurrentValue,activityQueueGoalIssue,activityQueueHandoffStatus,enqueueActivity,moveQueuedActivity,queuedActivityPlanningReadiness,queuedActivityReadiness,queueSkillReadiness} from '../src/core/activity-queue';
+import {activityQueueCapacity,activityQueueRegion,activityQueueLocationIssue,activityQueueGoalCurrentValue,activityQueueGoalIssue,activityQueueHandoffStatus,enqueueActivity,moveQueuedActivity,queuedActivityPlanningReadiness,queuedActivityReadiness,queueSkillReadiness} from '../src/core/activity-queue';
 import {executeGameCommand,validateGameCommand} from '../src/core/game-commands';
 import {activityStopPresentation} from '../src/core/activity-stop-presentation';
 import {totalXpAtLevel} from '../src/core/progression';
@@ -146,7 +146,19 @@ const futureHandoff=activityQueueHandoffStatus(futureRuled);ok(!futureHandoff.ar
 let wrongRegion=createCharacter(newGame(now),'WAYFINDER','Region Queue');
 wrongRegion={...wrongRegion,unlockedMonsterIds:['MOSS_RAT','SILVERFIN_SWARM']};
 wrongRegion=startCombat(wrongRegion,'MOSS_RAT',now,'balanced','kills_50');
-wrongRegion=enqueueActivity(wrongRegion,{kind:'combat',targetId:'SILVERFIN_SWARM'});
+const remoteCombat={kind:'combat' as const,targetId:'SILVERFIN_SWARM'};
+ok(activityQueueRegion(remoteCombat)?.name==='Silverbrook','Queued location lookup should resolve the authored combat region');
+ok((activityQueueLocationIssue(wrongRegion,remoteCombat)??'').includes('Travel to Silverbrook'),'Cross-region schedule explains location before sending the request');
+rejects(()=>enqueueActivity(wrongRegion,remoteCombat),'Queue must refuse combat located outside the current region');
+rejects(()=>executeGameCommand(wrongRegion,{type:'queue_add',args:{kind:'combat',id:'SILVERFIN_SWARM'}},now),'Trusted server command refuses cross-region combat');
+rejects(()=>enqueueActivity(wrongRegion,{kind:'gathering',targetId:'SILVERBROOK_SHOAL'}),'Queue must refuse gathering in a different region');
+rejects(()=>executeGameCommand(wrongRegion,{type:'queue_add',args:{kind:'gathering',id:'SILVERBROOK_SHOAL'}},now),'Trusted server command refuses cross-region gathering');
+rejects(()=>enqueueActivity(wrongRegion,{kind:'exploration',targetId:'SCOUT_SILVERBROOK',goal:{kind:'duration_seconds',value:60}}),'Queue must refuse remote exploration routes');
+rejects(()=>executeGameCommand(wrongRegion,{type:'queue_add',args:{kind:'exploration',id:'SCOUT_SILVERBROOK',goal:{kind:'duration_seconds',value:60}}},now),'Trusted server command refuses cross-region exploration');
+rejects(()=>enqueueActivity(wrongRegion,{kind:'combat',targetId:'NONEXISTENT_MONSTER'}),'Queue must refuse targets without a valid region');
+// Older saves may still contain entries from another region; those must remain
+// in the queue, display the travel requirement and never auto-teleport.
+wrongRegion={...wrongRegion,character:{...wrongRegion.character!,activityQueue:[remoteCombat]}};
 const queuedRowReadiness=queuedActivityReadiness(wrongRegion,wrongRegion.character!.activityQueue![0]);
 ok(!queuedRowReadiness.ready&&(queuedRowReadiness.blocker??'').includes('Travel to Silverbrook'),'Each queued row should expose its own travel blocker before becoming next');
 const blockedPreview=activityQueueHandoffStatus(wrongRegion);
@@ -169,7 +181,7 @@ startNext=executeGameCommand(startNext,{type:'queue_start'},now).state;
 ok(startNext.activity?.targetId==='MOSS_RAT'&&!startNext.character?.activityQueue?.length,'Start-next command should consume and start the first valid queued action');
 let blockedStart=createCharacter(newGame(now),'WAYFINDER','Blocked Start');
 blockedStart={...blockedStart,unlockedMonsterIds:['MOSS_RAT','SILVERFIN_SWARM']};
-blockedStart=enqueueActivity(blockedStart,{kind:'combat',targetId:'SILVERFIN_SWARM'});
+blockedStart={...blockedStart,character:{...blockedStart.character!,activityQueue:[remoteCombat]}};
 const blockedStartStatus=activityQueueHandoffStatus(blockedStart);
 ok(!blockedStartStatus.nextReady&&(blockedStartStatus.nextBlocker??'').includes('Travel to Silverbrook'),'Idle queue preflight should block a known cross-region manual start before the command is sent');
 

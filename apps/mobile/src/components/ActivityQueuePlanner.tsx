@@ -3,7 +3,7 @@ import {useMemo,useState} from 'react';
 import {Image,Pressable,ScrollView,StyleSheet,Text,TextInput,useWindowDimensions,View} from 'react-native';
 import type {ActivityQueueGoal,GameState,GatheringSkillId,QueuedActivity} from '../core/types';
 import type {GameCommand} from '../core/game-commands';
-import {activityQueueCapacity,normalizeActivityQueueGoal,queuedActivityReadiness,queuedActivityPlanningReadiness,queueSkillReadiness} from '../core/activity-queue';
+import {activityQueueCapacity,activityQueueGoalIssue,normalizeActivityQueueGoal,queuedActivityReadiness,queuedActivityPlanningReadiness,queueSkillReadiness} from '../core/activity-queue';
 import {GATHERING} from '../content/skills';
 import {HERB_NODES} from '../content/herbalism';
 import {MONSTERS} from '../content/monsters';
@@ -48,13 +48,18 @@ export function ActivityQueuePlanner({state,onCommand}:{state:GameState;onComman
  const stored=node?[...state.inventory.stacks,...state.bank.stacks,...state.overflow.stacks].filter(row=>row.itemId===node.itemId).reduce((sum,row)=>sum+row.quantity,0):0;
  const level=state.skills.find(row=>row.skillId===skillId)?.level??1;
  const targetReached=!faith&&!alchemy&&(kind==='item_quantity'?count<=stored:kind==='skill_level'?count<=level:false);
+ const targetIssue=goal&&node?activityQueueGoalIssue(state,{kind:queueKind,targetId:node.id,goal}):undefined;
  const close=()=>{if(!busy)setOpen(false);};
  const launch=()=>{
   const active=activities.find(row=>row.id===state.activity?.targetId),entry=active??activities.find(row=>queuedActivityPlanningReadiness(state,{kind:queueKindForSkill(row.skillId),targetId:row.id,...(row.skillId==='faith'?{faithPracticeCount:1}:{})}).ready)??activities[0],saved=active?state.activity?.queueGoal:undefined;
-  setSkillId(entry.skillId);setSelected(entry.id);setKind(saved?.kind??(entry.skillId==='combat'?'session_kills':entry.skillId==='exploration'?'duration_seconds':'item_quantity'));setAmount(String(saved?(saved.kind==='duration_seconds'?saved.value/60:saved.value):entry.skillId==='combat'?50:entry.skillId==='faith'||entry.skillId==='alchemy'?1:entry.skillId==='exploration'?30:500));setError('');setChoose(false);setChooseSkill(false);setOpen(true);
+  const selectedKind=saved?.kind??(entry.skillId==='combat'?'session_kills':entry.skillId==='exploration'?'duration_seconds':'item_quantity');
+  const selectedItem=activities.find(row=>row.id===entry.id)?.itemId;
+  const storedNow=selectedItem?[...state.inventory.stacks,...state.bank.stacks,...state.overflow.stacks].reduce((sum,row)=>sum+(row.itemId===selectedItem?row.quantity:0),0):0;
+  const defaultValue=selectedKind==='item_quantity'?Math.min(1000000,Math.max(500,storedNow+100)):selectedKind==='skill_level'?Math.min(100,(state.skills.find(row=>row.skillId===entry.skillId)?.level??1)+1):selectedKind==='duration_seconds'?30:50;
+  setSkillId(entry.skillId);setSelected(entry.id);setKind(selectedKind);setAmount(String(saved?(saved.kind==='duration_seconds'?saved.value/60:saved.value):entry.skillId==='faith'||entry.skillId==='alchemy'?1:defaultValue));setError('');setChoose(false);setChooseSkill(false);setOpen(true);
  };
  const save=async()=>{
-  if(!node||!valid||(!alchemy&&!faith&&!goal)||busy||!ready.ready||(!current&&full))return;
+  if(!node||!valid||targetReached||targetIssue||(!alchemy&&!faith&&!goal)||busy||!ready.ready||(!current&&full))return;
   setBusy(true);setError('');
   try{
    await onCommand({type:current?'queue_set_goal':'queue_add',args:current?{id:node.id,goal}:{kind:queueKind,id:node.id,...(faith?{count}:alchemy?{}:{goal})}});
@@ -87,12 +92,12 @@ export function ActivityQueuePlanner({state,onCommand}:{state:GameState;onComman
     {alchemy?<Text style={s.meta}>{gt('Starts this brew until its materials, Gold, or your AFK time runs out.')} {gt('Materials and Gold are checked when this queued brew starts.')}</Text>:<><Text style={s.label}>{faith?gl('Practices to reserve'):kind==='session_kills'?gt("Enemies to defeat"):kind==='duration_seconds'?gt("Minutes"):kind==='skill_level'?gt("Target skill level"):gt('Total {item} in storage',{item:node?.itemId?itemDef(node.itemId).name:gt('resources')})}</Text>
     <TextInput accessibilityLabel={faith?gl('Faith practices to reserve'):gt("Queue goal amount")} keyboardType="number-pad" editable={!busy} value={amount} onChangeText={setAmount} style={s.input}/>
     <Text style={s.meta}>{faith?gl(`Uses ${((FAITH_TIERS.find(row=>row.id===node?.id)?.water??0)*count).toLocaleString(language)} Holy Water.`):kind==='session_kills'?gt("New defeats in this activity"):kind==='duration_seconds'?gt("1-1800 minutes"):kind==='skill_level'?gt("Current level: {level} / 100",{level}):gt("Currently stored: {count}",{count:stored.toLocaleString(language)})}</Text></>}
-    {valid&&targetReached?<Text style={s.warning}>{gt("This goal is already reached.")}</Text>:null}
+    {valid&&targetReached?<Text accessibilityRole="alert" style={s.warning}>{targetIssue??gt("This goal is already reached.")}</Text>:null}
     {!valid?<Text style={s.warning}>{gt("Enter a whole number from 1 to {max}.",{max:(faith?1000:kind==='duration_seconds'?1800:kind==='skill_level'?100:1000000).toLocaleString(language)})}</Text>:null}
     {!current&&full?<Text style={s.warning}>{gt("Queue full ({count} activities).",{count:activityQueueCapacity(state)})}</Text>:null}
     {error?<Text accessibilityRole="alert" style={s.warning}>{gl(error)}</Text>:null}
    </ScrollView>
-   <View style={s.footer}><GameButton title={busy?gt("Saving..."):current?gt("Set current goal"):canStartNow&&!state.activity&&!state.character?.activityQueue?.length?faith?gl('Start practice'):alchemy?gt('Start brewing'):gt("Start with goal"):gt("Add to queue")} onPress={()=>void save()} disabled={busy||!valid||!ready.ready||(!current&&full)}/></View>
+   <View style={s.footer}><GameButton title={busy?gt("Saving..."):current?gt("Set current goal"):canStartNow&&!state.activity&&!state.character?.activityQueue?.length?faith?gl('Start practice'):alchemy?gt('Start brewing'):gt("Start with goal"):gt("Add to queue")} onPress={()=>void save()} disabled={busy||!valid||targetReached||!!targetIssue||!ready.ready||(!current&&full)}/></View>
   </GameModalSurface>
  </>;
 }

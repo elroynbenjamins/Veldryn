@@ -50,7 +50,7 @@ export function PlayerBadgeProvider({children}:{children:ReactNode}){
   });
   const batch=setTimeout(()=>void load(),50);
   // This timer checks the cache, not the server. Fetch only if rows expired.
-  const timer=setInterval(()=>{if(AppState.currentState==='active')void load();},60*60*1000);
+  const timer=setInterval(()=>{if(AppState.currentState==='active')void load();},5*60*1000);
   const foreground=AppState.addEventListener('change',next=>{
    if(next==='active')void load();
    // Do not blank avatars on background/foreground transitions.

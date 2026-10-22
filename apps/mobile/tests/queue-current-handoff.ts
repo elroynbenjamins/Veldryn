@@ -79,6 +79,15 @@ eq(keep.character?.activityQueue?.length,1,'Queue saved when player accepts open
 const keepLate=claimActivity(keep,t+3600_000);
 eq(keepLate.state.activity?.targetId,'GREENWOOD_TREE','Open-ended Woodcutting keeps running offline');
 eq(keepLate.state.character?.activityQueue?.length,1,'Open-ended queue remains pending after an hour');
+// Older queued jobs with no current handoff can be repaired from the Home queue panel
+// without clearing the queue or choosing another activity.
+const legacyRunning=chopping();
+const legacyWaiting={...legacyRunning,character:{...legacyRunning.character!,activityQueue:[{kind:'gathering' as const,targetId:'MEADOW_PERCH_POOL',goal:{kind:'duration_seconds' as const,value:60}}]}};
+ok(!activityQueueHandoffStatus(legacyWaiting).armed,'Existing open-ended queue is not falsely marked as armed');
+const repaired=executeGameCommand(legacyWaiting,{type:'queue_set_goal',args:{id:'GREENWOOD_TREE',goal:goal30}},at);
+eq(repaired.state.character?.activityQueue?.[0].targetId,'MEADOW_PERCH_POOL','Repair preserves the old queue');
+eq(repaired.state.activity?.startedAtMs,at,'Repair starts the 30-minute timer at confirmation');
+eq(claimActivity(repaired.state,at+1860_000).state.activity?.targetId,'MEADOW_PERCH_POOL','Repaired queue runs offline');
 const command=validateGameCommand({type:'queue_add',args:{...fish,handoffTargetId:'GREENWOOD_TREE',handoffGoal:goal30}});
 eq(command.type,'queue_add','New atomic fields allowed by trusted validator');
 

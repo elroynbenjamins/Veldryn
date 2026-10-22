@@ -12,7 +12,7 @@ import {HERB_NODES,HERBALISM_ESSENCE_BY_ZONE,herbalismInsightMultiplier,herbalis
 import {explorationRoute} from '../content/exploration';
 import {QUESTS} from '../content/quests';
 import {GameState,ClassId,RewardBundle,ItemStack,GearSlot,BodyPresentation,GatheringSkillId,CombatTacticId} from './types';
-import {activityQueueCapacity,normalizeActivityQueue,activityCanAdvanceCondition,queuedActivityReadiness} from './activity-queue';
+import {activityQueueCapacity,activityQueueLocationIssue,normalizeActivityQueue,activityCanAdvanceCondition,queuedActivityReadiness} from './activity-queue';
 import type {ActiveActivity} from './types';
 import {combineActivityRewards} from './activity-rewards';
 import {characterLevelFromXp,levelFromXp,totalXpAtLevel} from './progression';
@@ -286,7 +286,14 @@ export function travelToRegion(state:GameState,regionId:string,nowMs:number){
   if(!state.character||regionTravelAvailability(state,zone)!=='available')throw new Error(regionTravelLockReason(state,zone)??`Cannot travel to ${zone.name} yet`);
   if(currentRegionId(state)===zone.id)return {state,reward:{xp:0,gold:0,items:[],kills:0,elapsedSeconds:0} as RewardBundle};
   const settled=claimActivity(state,nowMs);
-  return {state:{...settled.state,currentRegionId:zone.id,activity:null,outOfCombatSinceMs:nowMs},reward:settled.reward};
+  const travelled={...settled.state,currentRegionId:zone.id,activity:null,outOfCombatSinceMs:nowMs};
+  const next=normalizeActivityQueue(travelled.character?.activityQueue,activityQueueCapacity(travelled))[0];
+  const locationIssue=next?activityQueueLocationIssue(travelled,next):undefined;
+  // Travel never deletes queue entries or silently restarts them. Flag pending work
+  // that belongs to the previous region, and clear obsolete location-only warnings.
+  const previousPause=travelled.character?.activityQueuePausedReason;
+  const pause=locationIssue??(previousPause?.includes('The queue cannot travel automatically.')?undefined:previousPause);
+  return {state:travelled.character?{...travelled,character:{...travelled.character,activityQueuePausedReason:pause}}:travelled,reward:settled.reward};
 }
 
 export function stackItems(existing:ItemStack[],incoming:ItemStack[]):ItemStack[]{const m=new Map<string,number>();for(const s of existing)m.set(s.itemId,(m.get(s.itemId)||0)+s.quantity);for(const s of incoming)m.set(s.itemId,(m.get(s.itemId)||0)+s.quantity);return [...m.entries()].filter(([,q])=>q>0).map(([itemId,quantity])=>({itemId,quantity}));}

@@ -64,6 +64,7 @@
   ".core-build/apps/mobile/tests/hunt-session-goals.js",
   ".core-build/apps/mobile/tests/hunt-momentum.js",
   ".core-build/apps/mobile/tests/activity-queue.js",
+  ".core-build/apps/mobile/tests/queue-premium-travel.js",
   ".core-build/apps/mobile/tests/daily-supplies.js",
   ".core-build/apps/mobile/tests/account-bonuses.js",
   ".core-build/apps/mobile/tests/vip-supporter-entitlements.js",

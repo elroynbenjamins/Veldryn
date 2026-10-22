@@ -9,7 +9,7 @@ let activeRoute='Startup';
 let enabled=false;
 const LIMIT=160;
 const SAFE_ROUTES=new Set(['Startup','Home','Character','Skills','World','Inventory','More','Guild','Friends','Social','Party','Combat','Coop','Events','Profile','ProfileCustomize','Settings','Collections','Other']);
-export function enableNetworkRequestMetrics(value:boolean){enabled=value;if(!value)buckets.clear();}
+export function enableNetworkRequestMetrics(value:boolean){enabled=value;}
 export function networkRequestMetricsEnabled(){return enabled;}
 export function setNetworkMetricsRoute(route:string){activeRoute=SAFE_ROUTES.has(route)?route:'Other';}
 export function networkRequestCategory(url:string):string{

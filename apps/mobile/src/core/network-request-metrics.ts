@@ -12,6 +12,7 @@ const SAFE_ROUTES=new Set(['Startup','Home','Character','Skills','World','Invent
 export function enableNetworkRequestMetrics(value:boolean){enabled=value;}
 export function networkRequestMetricsEnabled(){return enabled;}
 export function setNetworkMetricsRoute(route:string){activeRoute=SAFE_ROUTES.has(route)?route:'Other';}
+export function currentNetworkMetricsRoute(){return activeRoute;}
 export function networkRequestCategory(url:string):string{
  // Parse only the endpoint name; never retain the incoming URL or parameters.
  const rpcSegment=url.includes('/rest/v1/rpc/')?'/rest/v1/rpc/':url.includes('/functions/v1/')?'/functions/v1/':'';

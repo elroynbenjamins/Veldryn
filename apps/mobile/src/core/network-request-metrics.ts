@@ -14,8 +14,12 @@ export function networkRequestMetricsEnabled(){return enabled;}
 export function setNetworkMetricsRoute(route:string){activeRoute=SAFE_ROUTES.has(route)?route:'Other';}
 export function networkRequestCategory(url:string):string{
  // Parse only the endpoint name; never retain the incoming URL or parameters.
- const match=url.match(/\\/(?:rest\\/v1\\/rpc|functions\\/v1)\\/([a-zA-Z0-9_-]+)/);
- if(match)return (url.includes('/functions/')?'function:':'rpc:')+match[1];
+ const rpcSegment=url.includes('/rest/v1/rpc/')?'/rest/v1/rpc/':url.includes('/functions/v1/')?'/functions/v1/':'';
+ if(rpcSegment){
+  const after=url.slice(url.indexOf(rpcSegment)+rpcSegment.length);
+  const name=after.split(/[/?#]/)[0];
+  if(/^[a-zA-Z0-9_-]+$/.test(name))return (rpcSegment.includes('functions')?'function:':'rpc:')+name;
+ }
  if(url.includes('/auth/v1/'))return 'auth';
  if(url.includes('/rest/v1/'))return 'rest:table';
  if(url.includes('/storage/v1/'))return 'storage';

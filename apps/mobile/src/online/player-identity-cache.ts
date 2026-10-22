@@ -53,6 +53,7 @@ export async function ensurePlayerIdentityViewer(viewer:string){
  }).catch(()=>{});
  await ready;
 }
+export function currentPlayerIdentityViewer(){return currentViewer;}
 export function peekPlayerIdentity(id:string){
  const found=entries.get(id);
  if(found){entries.delete(id);entries.set(id,found);}

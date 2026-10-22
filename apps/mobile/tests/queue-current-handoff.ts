@@ -50,7 +50,7 @@ ok(capped.reward.offlineCapReached&&capped.reward.elapsedSeconds<=cap,'One offli
 
 const invalidStart=chopping();
 rejects(()=>executeGameCommand(invalidStart,{type:'queue_add',args:{...fish,handoffTargetId:'WRONG',handoffGoal:goal30}},t),'Stale current-activity ID rejects atomic scheduling');
-eq(invalidStart.character?.activityQueue?.length,0,'Failure leaves queue unchanged');
+eq(invalidStart.character?.activityQueue?.length??0,0,'Failure leaves queue unchanged');
 eq(invalidStart.activity?.queueGoal,undefined,'Failure leaves current woodcutting open-ended');
 for(const v of [0,-1,1.5,108001,Infinity,NaN])rejects(()=>atomic({handoffTargetId:'GREENWOOD_TREE',handoffGoal:{kind:'duration_seconds',value:v}}),'Reject invalid current-activity duration '+v);
 rejects(()=>atomic({handoffTargetId:'GREENWOOD_TREE',handoffGoal:{kind:'session_kills',value:20}}),'Gathering cannot use a combat defeat handoff');

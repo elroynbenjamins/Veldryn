@@ -5,6 +5,8 @@ import {useGameTheme} from '../theme/ThemeContext';
 import type {ThemeColors} from '../theme/theme';
 import {earlyFeatureUnlocked} from '../core/feature-unlocks';
 import {activityQueueCapacity,normalizeActivityQueue} from '../core/activity-queue';
+import {ThemedIcon} from './ThemedNavigationIcon';
+import type {UiIconName} from '../theme/ui-icons';
 
 type Props={state:GameState;onGuild:()=>void;onDungeons:()=>void;onContracts:()=>void;onForge:()=>void;onQueue:()=>void};
 export function HomeCommandDeck({state,onGuild,onDungeons,onContracts,onForge,onQueue}:Props){
@@ -15,20 +17,20 @@ export function HomeCommandDeck({state,onGuild,onDungeons,onContracts,onForge,on
  return <View style={s.section}>
   <View style={s.head}><View><Text style={s.kicker}>ADVENTURER'S COMMAND DECK</Text><Text style={s.title}>Your next moves</Text></View><Text style={s.sub}>QUICK ACCESS</Text></View>
   {guild?<Pressable accessibilityRole="button" accessibilityLabel={member?'Open Guild Hall':'Find a Guild'} onPress={onGuild} style={({pressed})=>[s.guild,pressed&&s.pressed]}>
-    <View style={s.guildMark}><Text style={s.guildGlyph}>⚑</Text></View>
+    <View style={s.guildMark}><ThemedIcon name="guild" size={31}/></View>
     <View style={s.flex}><Text style={s.tileName}>{member?'Guild Hall':'Find your Guild'}</Text><Text style={s.tileHint}>{member?'Projects · Guild Shop · Chat':'Guild projects, events and co-op rewards'}</Text></View><Text style={s.chevron}>›</Text>
   </Pressable>:null}
   <View style={s.grid}>
-    <DeckAction label="Activity queue" detail={queue.length+' / '+capacity+' queued'} mark="☷" onPress={onQueue} C={C} s={s}/>
-    {social?<DeckAction label="Dungeons" detail="Co-op expeditions" mark="◇" onPress={onDungeons} C={C} s={s}/>:null}
-    {contracts?<DeckAction label="Contracts" detail="Weekly objectives" mark="✧" onPress={onContracts} C={C} s={s}/>:null}
-    <DeckAction label="Forge" detail="Crafting & upgrades" mark="⚒" onPress={onForge} C={C} s={s}/>
+    <DeckAction label="Activity queue" detail={queue.length+' / '+capacity+' queued'} mark="calendar" onPress={onQueue} s={s}/>
+    {social?<DeckAction label="Dungeons" detail="Co-op expeditions" mark="dungeon" onPress={onDungeons} s={s}/>:null}
+    {contracts?<DeckAction label="Contracts" detail="Weekly objectives" mark="quests" onPress={onContracts} s={s}/>:null}
+    <DeckAction label="Forge" detail="Crafting & upgrades" mark="skills" onPress={onForge} s={s}/>
   </View>
  </View>;
 }
-function DeckAction({label,detail,mark,onPress,C,s}:{label:string;detail:string;mark:string;onPress:()=>void;C:ThemeColors;s:ReturnType<typeof styles>}){
+function DeckAction({label,detail,mark,onPress,s}:{label:string;detail:string;mark:UiIconName;onPress:()=>void;s:ReturnType<typeof styles>}){
  return <Pressable accessibilityRole="button" accessibilityLabel={label} accessibilityHint={detail} onPress={onPress} style={({pressed})=>[s.tile,pressed&&s.pressed]}>
-  <Text style={s.mark}>{mark}</Text><View style={s.flex}><Text numberOfLines={1} style={s.tileName}>{label}</Text><Text numberOfLines={1} style={s.tileHint}>{detail}</Text></View><Text style={s.chevron}>›</Text>
+  <ThemedIcon name={mark} size={27}/><View style={s.flex}><Text numberOfLines={1} style={s.tileName}>{label}</Text><Text numberOfLines={1} style={s.tileHint}>{detail}</Text></View><Text style={s.chevron}>›</Text>
  </Pressable>;
 }
 function styles(C:ThemeColors){return StyleSheet.create({

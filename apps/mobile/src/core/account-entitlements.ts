@@ -9,6 +9,7 @@ export interface AccountEntitlementBenefits{
   bankSlots:number;
   loadoutSlots:number;
   actionQueueSlots:number;
+  crossRegionActivityQueue:boolean;
   forgeSlots:number;
   solidRgbNames:boolean;
   advancedNameStyles:boolean;
@@ -44,6 +45,7 @@ export function accountEntitlementBenefits(state:GameState):AccountEntitlementBe
     bankSlots:(vip?20:0)+(vipPlus?30:0),
     loadoutSlots:(vip?1:0)+(vipPlus?1:0),
     actionQueueSlots:vipPlus?1:0,
+    crossRegionActivityQueue:vip||vipPlus||supporter,
     forgeSlots:(vipPlus?1:0)+(supporter?1:0),
     solidRgbNames:vipPlus||supporter,
     advancedNameStyles:supporter,

@@ -1,5 +1,6 @@
 import {supabase} from './supabase';
 import {myGuild} from './social';
+import {ShortLivedReadCache} from '../core/short-lived-read-cache';
 import type {GuildActivityView,GuildProjectFocus,GuildProjectKind} from '../core/guild-projects-v18';
 
 type ProjectRow={
@@ -32,8 +33,14 @@ function resourceLabel(snapshot:Record<string,unknown>|null,resourceId:string,ki
  return kind==='gold'?'Gold':humanize(resourceId);
 }
 
-export async function loadOnlineGuildProjectsV18():Promise<OnlineGuildProjectsSnapshot|null>{
- const membership=await myGuild();if(!membership)return null;
+const projectReads=new ShortLivedReadCache<OnlineGuildProjectsSnapshot>(20_000);
+export async function loadOnlineGuildProjectsV18(force=false):Promise<OnlineGuildProjectsSnapshot|null>{
+ // Check the current authoritative membership on every visit/read, including
+ // cache hits. A stale guild projection must not outlive access revocation.
+ const membership=await myGuild();if(!membership){projectReads.clear();return null;}
+ return projectReads.read(membership.account_id+':'+membership.guild_id,()=>readGuildProjects(membership),force);
+}
+async function readGuildProjects(membership:NonNullable<Awaited<ReturnType<typeof myGuild>>>):Promise<OnlineGuildProjectsSnapshot>{
  const db=client();
  const prepared=await db.rpc('prepare_guild_projects_v2');if(prepared.error)throw prepared.error;
  const [projectResult,candidateResult]=await Promise.all([
@@ -78,7 +85,7 @@ export async function loadOnlineGuildProjectsV18():Promise<OnlineGuildProjectsSn
  return{guildId:membership.guild_id,projects,candidates,activity};
 }
 
-export async function voteOnlineGuildProjectCandidate(candidateId:string){const db=client();const {data,error}=await db.rpc('guild_project_vote_v1',{p_candidate_id:candidateId});if(error)throw error;return data as string;}
-export async function startOnlineGuildProjectCandidate(candidateId:string){const db=client();const {data,error}=await db.rpc('guild_project_start_v1',{p_candidate_id:candidateId});if(error)throw error;return data as string;}
+export async function voteOnlineGuildProjectCandidate(candidateId:string){const db=client();const {data,error}=await db.rpc('guild_project_vote_v1',{p_candidate_id:candidateId});if(error)throw error;projectReads.clear();return data as string;}
+export async function startOnlineGuildProjectCandidate(candidateId:string){const db=client();const {data,error}=await db.rpc('guild_project_start_v1',{p_candidate_id:candidateId});if(error)throw error;projectReads.clear();return data as string;}
 
-export async function claimOnlineGuildProjectReward(id:string){const {data,error}=await client().rpc('claim_guild_project_reward_v2',{p_project:id});if(error)throw error;return data;}
+export async function claimOnlineGuildProjectReward(id:string){const {data,error}=await client().rpc('claim_guild_project_reward_v2',{p_project:id});if(error)throw error;projectReads.clear();return data;}

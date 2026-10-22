@@ -32,7 +32,7 @@ Implemented October 22, 2026 in mobile shared gameplay code.
 The focused workflow `.github/workflows/mobile-queue-regression.yml` runs native typechecking, core compilation, premium gameplay regression tests and UI contracts.
 
 ## Before releasing 1.0
-- Deploy the updated online gameplay backend, not just the mobile app. Confirm commerce entitlements are refreshed from the existing server purchase validation path before remote handoffs.
+- Deploy the updated online gameplay backend, not just the mobile app. The existing \`private.project_online_game_commerce_v1\` projection in \`backend/supabase/migrations/20261101000000_online_game_commerce_projection.sql\` refreshes paid flags from server-owned commerce entitlements on online load; verify this migration is applied in staging/production, particularly before relying on Supporter expiry behavior.
 - Staging/manual QA: free and all paid tiers, Supporter expiry/refund, unlocked vs locked regions, no food, low HP, full storage, missing Alchemy ingredients, handoff while offline, multi-hop offline cap, app restart, reconnect / stale state conflict, toggling auto-travel with waiting remote work.
 - The general `Mobile core validation` workflow may remain blocked at Expo Doctor until the Expo SDK patch in the lockfile matches the expected patch; this is separate from the focused queue suite.
 

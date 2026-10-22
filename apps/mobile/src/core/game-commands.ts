@@ -18,7 +18,7 @@ import {normalizeProgressionGoals} from './progression-goals-v40';
 import {normalizeIdleRuleSets,validateActiveIdleRuleId} from './idle-rules-v40';
 import {COMBAT_TACTIC_IDS} from './combat-tactics';
 import {HUNT_GOAL_IDS} from './hunt-goals';
-import {activityQueueCapacity,clearActivityQueue,enqueueActivity,moveQueuedActivity,removeQueuedActivity,normalizeActivityQueueGoal,activityQueueGoalIssue} from './activity-queue';
+import {activityQueueCapacity,clearActivityQueue,enqueueActivity,moveQueuedActivity,removeQueuedActivity,normalizeActivityQueueGoal,activityQueueGoalIssue,currentActivityHandoffGoalIssue,currentActivityNeedsQueueHandoff} from './activity-queue';
 import {activateDailySupplyBoost,claimDailySupplies,DAILY_SUPPLY_BOOST_TYPES,dailySupplyBoostLabel} from './daily-supplies';
 import {bulkSalvageSelected,bulkSellSelected,bulkTransferSelected} from './inventory-bulk';
 import {normalizeChatEmoteTrayIds,CHAT_EMOTE_TRAY_SIZE} from './chat-emotes';
@@ -42,7 +42,7 @@ const fields:Record<string,readonly string[]>={
  companion_monthly:['id'],companion_supplies:[],companion_bond_reward:['id','level'],companion_boss_rematch:[],
  companion_equip:['id'],companion_unequip:[],companion_housing_upgrade:['id'],companion_level:['id'],companion_ascend:['id'],companion_master:['id'],companion_upgrade:['id'],companion_training:[],companion_essence:[],
  companion_trial_start:['ids','floor'],companion_trial_floor:['id','floor'],companion_trial_abandon:['id'],companion_assignment_start:['id','ids','food'],companion_assignment_claim:['id'],companion_technique:['id','technique'],companion_codex:['id'],companion_showcase:['id','ids'],companion_weekly:['id'],companion_special:['id','ids'],
- create:['classId','name','body'],claim:[],start:['kind','id','tacticId','goalId'],queue_add:['kind','id','tacticId','goalId','goal','count'],queue_set_goal:['id','goal'],queue_remove:['index'],queue_move:['index','direction'],queue_clear:[],queue_start:[],explore:['id'],stop:[],travel:['id'],boss:[],craft:['id'],craft_claim:['id'],craft_claim_all:[],craft_cancel:['id'],craft_move:['id','direction'],craft_prerequisites:['id'],use_potion:['id'],discard_preparation:[],
+ create:['classId','name','body'],claim:[],start:['kind','id','tacticId','goalId'],queue_add:['kind','id','tacticId','goalId','goal','count','handoffGoal','handoffTargetId','keepCurrentRunning'],queue_set_goal:['id','goal'],queue_remove:['index'],queue_move:['index','direction'],queue_clear:[],queue_start:[],explore:['id'],stop:[],travel:['id'],boss:[],craft:['id'],craft_claim:['id'],craft_claim_all:[],craft_cancel:['id'],craft_move:['id','direction'],craft_prerequisites:['id'],use_potion:['id'],discard_preparation:[],
  roster_create:['classId','name','body'],roster_switch:['id'],roster_delete:['id','confirmation'],
  equip:['id'],unequip:['slot'],food:['id'],eat:['id'],sell:['id','quantity'],salvage:['id'],
  bank_sell:['id','quantity'],bank_gold_deposit:['amount'],bank_gold_withdraw:['amount'],deposit:['id','quantity'],withdraw:['id','quantity'],deposit_materials:[],bulk_transfer:['location','ids'],bulk_sell:['ids'],bulk_salvage:['ids'],storage:['location'],overflow:[],
@@ -118,7 +118,7 @@ export function executeGameCommand(previous:GameState,value:unknown,now:number,o
  // Settle before any mutation that can alter past activity rates, food, gear or inventory.
  // Event weekly contracts are automatic. Keep the retired accept command
  // compatible with older clients without needlessly settling an activity.
- const settlementFreeCommand=command.type==='queue_add'||command.type==='queue_remove'||command.type==='queue_move'||command.type==='queue_clear'||command.type==='queue_start'||command.type==='daily_supplies_claim'||command.type==='roster_delete'||command.type==='event_accept'||command.type.startsWith('qa_');
+ const settlementFreeCommand=(command.type==='queue_add'&&a.handoffGoal===undefined)||command.type==='queue_remove'||command.type==='queue_move'||command.type==='queue_clear'||command.type==='queue_start'||command.type==='daily_supplies_claim'||command.type==='roster_delete'||command.type==='event_accept'||command.type.startsWith('qa_');
  // Starting a new activity replaces the old one in a single trusted operation. This also
  // returns unfinished reserved work (such as brews) through its normal stop path.
  const activityStartCommand=['start','explore','class_training','faith_practice','alchemy_start','processing_start'].includes(command.type);
@@ -204,13 +204,29 @@ export function executeGameCommand(previous:GameState,value:unknown,now:number,o
   case 'roster_delete':state=deleteAccountCharacter(state,text(a,'id'),text(a,'confirmation',80),now);break;
   case 'arena_slot':{const index=integer(a,'index',0,2) as 0|1|2;state=setArenaSquadSlot(state,index,a.characterId===undefined?undefined:text(a,'characterId',80));break;}
   case 'claim':break;
-  case 'queue_add':{const kind=oneOf(a.kind,['combat','gathering','faith','exploration','alchemy']),combatTacticId=a.tacticId===undefined?undefined:oneOf(a.tacticId,COMBAT_TACTIC_IDS),huntGoalId=a.goalId===undefined?undefined:oneOf(a.goalId,HUNT_GOAL_IDS),goal=normalizeActivityQueueGoal(a.goal),faithPracticeCount=kind==='faith'?integer(a,'count',1,1000):undefined;if(a.goal!==undefined&&!goal)throw new Error('invalid_queue_goal');state=enqueueActivity(state,{kind,targetId:text(a,'id'),...(combatTacticId?{combatTacticId}:{}),...(huntGoalId?{huntGoalId}:{}),...(faithPracticeCount?{faithPracticeCount}:{}),...(goal?{goal}:{})});break;}
+  case 'queue_add':{
+   const kind=oneOf(a.kind,['combat','gathering','faith','exploration','alchemy']),combatTacticId=a.tacticId===undefined?undefined:oneOf(a.tacticId,COMBAT_TACTIC_IDS),huntGoalId=a.goalId===undefined?undefined:oneOf(a.goalId,HUNT_GOAL_IDS),goal=normalizeActivityQueueGoal(a.goal),faithPracticeCount=kind==='faith'?integer(a,'count',1,1000):undefined;
+   if(a.goal!==undefined&&!goal)throw new Error('invalid_queue_goal');
+   const handoffGoal=a.handoffGoal===undefined?undefined:normalizeActivityQueueGoal(a.handoffGoal);
+   if(a.handoffGoal!==undefined&&!handoffGoal)throw new Error('invalid_queue_handoff_goal');
+   if(a.keepCurrentRunning!==undefined&&a.keepCurrentRunning!==true)throw new Error('invalid_queue_handoff_choice');
+   if(a.handoffTargetId!==undefined&&!handoffGoal)throw new Error('Handoff activity was not selected.');
+   if(handoffGoal&&a.keepCurrentRunning===true)throw new Error('Choose either a stop goal or keep running, not both.');
+   if(handoffGoal){
+    const targetId=text(a,'handoffTargetId');
+    if(state.character?.activityQueue?.length||!currentActivityNeedsQueueHandoff(state))throw new Error('The current activity already has a handoff or the queue changed. Refresh and try again.');
+    const issue=currentActivityHandoffGoalIssue(state,targetId,handoffGoal);
+    if(issue)throw new Error(issue);
+   }
+   // Enqueue first so a full/invalid queue cannot alter the running activity.
+   const queued=enqueueActivity(state,{kind,targetId:text(a,'id'),...(combatTacticId?{combatTacticId}:{}),...(huntGoalId?{huntGoalId}:{}),...(faithPracticeCount?{faithPracticeCount}:{}),...(goal?{goal}:{})});
+   state=handoffGoal?{...queued,activity:{...queued.activity!,queueManaged:true,queueGoal:handoffGoal,queueGoalCompletedAtMs:undefined,startedAtMs:now,...(queued.activity!.kind==='combat'?{sessionKills:0,sessionChampions:0}: {})}}:queued;
+   break;
+  }
   case 'queue_set_goal':{
    const goal=normalizeActivityQueueGoal(a.goal),id=text(a,'id');
    if(!goal)throw new Error('invalid_queue_goal');
-   if(!state.activity||state.activity.targetId!==id||!['mining','woodcutting','fishing','herbalism','combat'].includes(state.activity.kind))throw new Error('Activity changed. Select its goal again.');
-   if(state.activity.kind==='combat'&&!['duration_seconds','session_kills'].includes(goal.kind)||state.activity.kind!=='combat'&&goal.kind==='session_kills')throw new Error('invalid_combat_activity_option');
-   const goalIssue=activityQueueGoalIssue(state,{kind:state.activity.kind==='combat'?'combat':'gathering',targetId:id,goal});
+   const goalIssue=currentActivityHandoffGoalIssue(state,id,goal);
    if(goalIssue)throw new Error(goalIssue);
    state={...state,activity:{...state.activity,queueManaged:true,queueGoal:goal,queueGoalCompletedAtMs:undefined,startedAtMs:now,...(state.activity.kind==='combat'?{sessionKills:0,sessionChampions:0}: {})}};
    break;

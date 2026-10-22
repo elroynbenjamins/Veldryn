@@ -72,7 +72,7 @@ export function activityQueueLocationIssue(state:GameState,activity:Pick<QueuedA
  if(!required)return 'This activity has no valid region. Choose a different activity.';
  if(required.id===state.currentRegionId)return undefined;
  const current=WORLD_ZONES.find(zone=>zone.id===state.currentRegionId)?.name??state.currentRegionId;
- return `Travel to ${required.name} before queuing this activity (currently in ${current}). The queue cannot travel automatically.`;
+ return `Travel to ${required.name} to use this activity. Current region: ${current}. The queue cannot travel automatically.`;
 }
 export function activityQueueCapacity(state:GameState){return Math.min(MAX_ACTIVITY_QUEUE,BASE_ACTIVITY_QUEUE+accountEntitlementBenefits(state).actionQueueSlots);}
 

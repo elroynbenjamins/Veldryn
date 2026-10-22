@@ -1,6 +1,7 @@
 import {claimActivity,createCharacter,newGame,offlineCapSeconds,startCombat,stopActivity} from '../src/core/game';
 import {activityQueueCapacity,activityQueueGoalCurrentValue,activityQueueGoalIssue,activityQueueHandoffStatus,enqueueActivity,moveQueuedActivity,queuedActivityPlanningReadiness,queuedActivityReadiness,queueSkillReadiness} from '../src/core/activity-queue';
 import {executeGameCommand,validateGameCommand} from '../src/core/game-commands';
+import {activityStopPresentation} from '../src/core/activity-stop-presentation';
 import {normalizeSave} from '../src/core/save-normalization';
 import {weeklyOrderBoardForState} from '../src/core/long-term-progression-runtime';
 
@@ -196,5 +197,12 @@ rejects(()=>executeGameCommand(activeStrict,{type:'queue_set_goal',args:{id:'GRE
 rejects(()=>executeGameCommand(activeStrict,{type:'queue_set_goal',args:{id:'GREENWOOD_TREE',goal:levelGoal.goal}},now),'Current activity cannot set a past skill-level goal');
 const allowedStrict=executeGameCommand(activeStrict,{type:'queue_set_goal',args:{id:'GREENWOOD_TREE',goal:{kind:'duration_seconds',value:60}}},now).state;
 ok(allowedStrict.activity?.queueGoal?.value===60,'Duration-based goals still work after goal safeguards');
+
+ok(activityStopPresentation('Hunt goal reached: 50 kills.').category==='completed','Completed hunt goal is not mislabeled as injury');
+ok(activityStopPresentation('Queue goal reached.').category==='completed','Queued goals show a completion state');
+ok(activityStopPresentation('Too injured').category==='recovery','Combat injuries explain food and healing');
+ok(activityStopPresentation('Out of food / too injured').category==='recovery','Missing combat food explains recovery');
+ok(activityStopPresentation('Storage cannot safely accept the next reward.').category==='storage','Overflow safety instructs storage cleanup');
+ok(activityStopPresentation('Server interrupted the activity').category==='paused','Unexpected stops have a generic actionable fallback');
 
 console.log(JSON.stringify({status:'PASS',plannedNext:advanced.state.activity?.targetId,safetyReason:safetyStop.state.character?.activityQueuePausedReason,regionReason:paused.state.character?.activityQueuePausedReason}));

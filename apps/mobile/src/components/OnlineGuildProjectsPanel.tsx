@@ -28,15 +28,23 @@ export function OnlineGuildProjectsPanel({onRewardsChanged}:{onRewardsChanged?:(
  const st=useSocialText();
  const C=useGameTheme(),s=useMemo(()=>makeStyles(C),[C]);
  const [snapshot,setSnapshot]=useState<OnlineGuildProjectsSnapshot|null>(null),[loading,setLoading]=useState(true),[error,setError]=useState(''),[expanded,setExpanded]=useState<string|null>(null),[busy,setBusy]=useState('');
- const mounted=useRef(true),readPending=useRef(false);
- const load=async(force=false)=>{
-  if(readPending.current)return;
-  readPending.current=true;setLoading(true);
-  try{
-   const next=await loadOnlineGuildProjectsV18(force);
-   if(mounted.current){setSnapshot(next);setError('');}
-  }catch(reason){if(mounted.current)setError(reason instanceof Error?reason.message:st("Unable to load Guild Projects."))}
-  finally{readPending.current=false;if(mounted.current)setLoading(false);}
+ const mounted=useRef(true),readFlight=useRef<Promise<void>|null>(null);
+ const load=(force=false):Promise<void>=>{
+  if(!mounted.current)return Promise.resolve();
+  // Never discard a post-claim forced refresh just because an older periodic
+  // read is still in flight. Wait for that read and then revalidate.
+  if(readFlight.current)return force?readFlight.current.then(()=>load(true)):readFlight.current;
+  const request=(async()=>{
+   setLoading(true);
+   try{
+    const next=await loadOnlineGuildProjectsV18(force);
+    if(mounted.current){setSnapshot(next);setError('');}
+   }catch(reason){if(mounted.current)setError(reason instanceof Error?reason.message:st("Unable to load Guild Projects."))}
+   finally{if(mounted.current)setLoading(false);}
+  })();
+  readFlight.current=request;
+  void request.finally(()=>{if(readFlight.current===request)readFlight.current=null;});
+  return request;
  };
  const act=async(kind:'vote'|'start'|'claim',candidateId:string)=>{const key=kind+':'+candidateId;setBusy(key);setError('');try{if(kind==='vote')await voteOnlineGuildProjectCandidate(candidateId);else if(kind==='start')await startOnlineGuildProjectCandidate(candidateId);else {await claimOnlineGuildProjectReward(candidateId);await onRewardsChanged?.();}await load(true)}catch(reason){setError(reason instanceof Error?reason.message:st("Guild Project action failed."))}finally{setBusy('')}};
  useEffect(()=>{

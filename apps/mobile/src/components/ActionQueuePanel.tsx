@@ -2,7 +2,7 @@ import {useGameplayText} from '../i18n/gameplay';
 import {useMemo,useState} from 'react';
 import {Pressable,StyleSheet,Text,View,useWindowDimensions} from 'react-native';
 import type {GameState} from '../core/types';
-import {activityQueueCapacity,activityQueueHandoffStatus,activityQueueLabel,activityQueueGoalLabel,normalizeActivityQueue,queuedActivityReadiness} from '../core/activity-queue';
+import {activityQueueCapacity,activityQueueRegion,activityQueueHandoffStatus,activityQueueLabel,activityQueueGoalLabel,normalizeActivityQueue,queuedActivityReadiness} from '../core/activity-queue';
 import {GameButton} from './GameButton';
 import {equipmentTheme,radii,spacing,typography,type ThemeColors} from '../theme/theme';
 import {useGameTheme} from '../theme/ThemeContext';
@@ -39,10 +39,10 @@ export function ActionQueuePanel({state,onRemove,onMove,onClear,onStartNext,onAd
   </View>:null}
   {paused&&<View style={s.pause}><Text style={s.pauseTitle}>{handoff.nextReady&&(!state.activity||canResume)?gt('READY TO RETRY'):state.activity?gt("QUEUED ACTIVITY WAITING"):gt("QUEUE PAUSED")}</Text><Text style={s.pauseText}>{handoff.nextReady&&(!state.activity||canResume)?gt('The blocker has cleared. You can start the next queued action.'):gl(paused)}</Text></View>}
   {!paused&&state.activity&&<View style={handoff.armed?(handoff.nextReady?s.handoff:s.blocked):s.waiting}><Text style={handoff.armed?(handoff.nextReady?s.handoffTitle:s.blockedTitle):s.waitingTitle}>{handoff.armed?(handoff.nextReady?gt("HANDOFF ARMED"):gt("HANDOFF WILL PAUSE")):gt("QUEUE WAITING")}</Text><Text style={s.pauseText}>{handoff.armed?(handoff.nextReady?`${gl(handoff.sourceLabel)} → ${gl(handoff.nextLabel)}`:gt("{source} can stop this activity, but {next} cannot start yet.",{source:gl(handoff.sourceLabel),next:gl(handoff.nextLabel)})):gt("Current activity has no handoff goal. Queued activities are waiting.")}</Text>{handoff.armed&&!handoff.nextReady&&handoff.nextBlocker?<Text style={s.blocker}>{gl(handoff.nextBlocker)}</Text>:null}{handoff.armed&&handoff.safetyEnabled?<Text style={s.safety}>{gt("Combat recovery blocks hunting; storage safety stops all activities.")}</Text>:null}</View>}
-  {queue.map((entry,index)=>{const readiness=queuedActivityReadiness(state,entry),label=gl(activityQueueLabel(entry));return <View key={`${index}:${entry.kind}:${entry.targetId}`} style={[s.row,managing&&stackRows&&s.rowStack]}>
+  {queue.map((entry,index)=>{const readiness=queuedActivityReadiness(state,entry),label=gl(activityQueueLabel(entry)),region=activityQueueRegion(entry);return <View key={`${index}:${entry.kind}:${entry.targetId}`} style={[s.row,managing&&stackRows&&s.rowStack]}>
    <View style={s.rowInfo}><View style={s.index}><Text style={s.indexText}>{index+1}</Text></View>
     <View style={s.flex}><Text style={s.name}>{label}</Text>
-     <Text style={readiness.ready?s.readyMeta:s.blockedMeta}>{entry.kind==='combat'?gt("Hunt"):entry.kind==='gathering'?gt("Gathering"):gl(entry.kind)}{index===0?' · '+gt('next'):''} · {readiness.ready?gt("Ready"):gl(readiness.blocker)||gt("Blocked")}</Text>
+     <Text style={readiness.ready?s.readyMeta:s.blockedMeta}>{entry.kind==='combat'?gt("Hunt"):entry.kind==='gathering'?gt("Gathering"):gl(entry.kind)}{index===0?' · '+gt('next'):''}{region?' · '+region.name:''} · {readiness.ready?gt("Ready"):gl(readiness.blocker)||gt("Blocked")}</Text>
     </View>
    </View>
    {managing?<View style={[s.controls,stackRows&&s.controlsStack]}>

@@ -39,7 +39,7 @@
     "@noble/hashes": "1.8.0",
     "@react-native-async-storage/async-storage": "2.2.0",
     "@supabase/supabase-js": "^2.115.0",
-    "expo": "~57.0.29",
+    "expo": "~57.0.31",
     "expo-application": "~57.0.3",
     "expo-iap": "5.0.1",
     "expo-linking": "~57.0.13",

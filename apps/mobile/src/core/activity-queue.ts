@@ -106,6 +106,28 @@ export function activityQueueLocationIssue(state:GameState,activity:Pick<QueuedA
  if(!allowAutoTravel||state.settings.autoTravelQueuedActivities!==true)return `Travel to ${required.name} to continue, or enable Auto-travel in Settings. Current region: ${current}.`;
  return undefined;
 }
+/** Validate a stop goal for an active activity before any queue mutation. */
+export function currentActivityHandoffGoalIssue(state:GameState,targetId:string,goal:ActivityQueueGoal):string|undefined{
+ const activity=state.activity;
+ if(!activity||activity.targetId!==targetId)return 'The current activity changed. Reopen the queue and choose its handoff again.';
+ if(activity.queueGoalCompletedAtMs!==undefined)return 'The current activity has already reached its goal. Collect results before choosing a new handoff.';
+ if(!['combat','mining','woodcutting','fishing','herbalism'].includes(activity.kind))return 'This activity does not support a custom queue handoff. Wait for it to finish or stop it manually.';
+ if(activity.kind==='combat'){
+  if(goal.kind!=='duration_seconds'&&goal.kind!=='session_kills')return 'Combat handoffs require a time or defeat target.';
+ }else if(!['duration_seconds','item_quantity','skill_level'].includes(goal.kind))return 'Gathering handoffs require a time, inventory or skill target.';
+ if(!normalizeActivityQueueGoal(goal))return 'Choose a valid handoff target.';
+ return activityQueueGoalIssue(state,{kind:activity.kind==='combat'?'combat':'gathering',targetId,goal});
+}
+/** Only the first added queue item may arm a new stop on an otherwise unbounded activity. */
+export function currentActivityNeedsQueueHandoff(state:GameState):boolean{
+ if(!state.activity||state.activity.queueGoalCompletedAtMs!==undefined)return false;
+ const queue=normalizeActivityQueue(state.character?.activityQueue,activityQueueCapacity(state));
+ if(queue.length)return false;
+ const probe=state.activity.kind==='combat'?{kind:'combat' as const,targetId:state.activity.targetId}:{kind:'gathering' as const,targetId:state.activity.targetId};
+ // Handoff readiness needs a queued entry, but should not trigger any state mutations.
+ const planned:GameState=state.character?{...state,character:{...state.character,activityQueue:[...queue,probe]}}:state;
+ return !activityQueueHandoffStatus(planned).armed;
+}
 export function activityQueueCapacity(state:GameState){return Math.min(MAX_ACTIVITY_QUEUE,BASE_ACTIVITY_QUEUE+accountEntitlementBenefits(state).actionQueueSlots);}
 
 export function normalizeQueuedActivity(value:unknown):QueuedActivity|undefined{

@@ -90,6 +90,7 @@ import {CombatScreen} from './src/screens/CombatScreen';
 import type {SkillId} from './src/core/types';
 import {PrimaryNavigation} from './src/components/PrimaryNavigation';
 import {primaryNavForRoute} from './src/core/primary-tab-routing';
+import {setNetworkMetricsRoute} from './src/core/network-request-metrics';
 import {attemptEquipmentUpgrade,replaceGem,socketGem,unsocketGem} from './src/core/equipment-enhancement';
 import {claimResonanceCacheV1,dismantleGemV1,gemCombineRecipeIdV1,gemRefineRecipeIdV1} from './src/core/gem-progression-v1';
 import {SocialScreen} from './src/screens/SocialScreen';
@@ -167,6 +168,7 @@ function VeldrynApp(){
   const [recoveryLanguage,setRecoveryLanguage]=useState<Language>('en');
   useEffect(()=>{gameAlerts.configure({themeId:state?.settings.uiTheme,language:state?.settings.language??recoveryLanguage,reduceMotion:state?.settings.reduceMotion??false});},[state?.settings.uiTheme,state?.settings.language,state?.settings.reduceMotion,recoveryLanguage]);
   const [tab,setCurrentTab]=useState<Tab>('Home');
+  useEffect(()=>setNetworkMetricsRoute(tab),[tab]);
   const [settingsSection,setSettingsSection]=useState<'guide'|'store'|undefined>();
   const [tabHistory,setTabHistory]=useState<Tab[]>([]);
   const [questMode,setQuestMode]=useState<QuestMode>('story');

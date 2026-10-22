@@ -33,4 +33,4 @@ async function test(){
   console.log('PASS short lived cache: singleflight, account isolation, TTL, mutation, races, failures, bounds');
  }finally{Date.now=realNow;}
 }
-void test().catch(error=>{console.error(error);process.exitCode=1;});
+void test().catch(error=>{console.error(error);throw error;});

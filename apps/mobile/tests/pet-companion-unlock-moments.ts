@@ -26,6 +26,5 @@ assert.deepEqual(newlyUnlockedEarlyFeatures(base,both).map(x=>x.id),['pets','com
 console.log('PASS one-time Pet, Companion and Guild feature unlock moments');
 
 const planning={...base,quests:base.quests.map(q=>q.questId==='QST_002'?{...q,status:'claimed' as const}:q)};
-assert.deepEqual(newlyUnlockedEarlyFeatures(base,planning).map(row=>row.id),['workingToward']);
-assert.equal(newlyUnlockedEarlyFeatures(base,planning)[0].destination,'Progression');
+assert.deepEqual(newlyUnlockedEarlyFeatures(base,planning).map(row=>row.id),[],'Retired Working Toward must not reappear as an unlock popup');
 assert.equal(newlyUnlockedEarlyFeatures(planning,planning).length,0,'planning introduction is not repeated');

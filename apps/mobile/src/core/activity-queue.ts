@@ -12,6 +12,7 @@ import {EXPLORATION_ROUTES} from '../content/exploration';
 import {faithLevel,faithPracticeAvailability} from './faith';
 import {alchemyAvailability} from './alchemy';
 import {ALCHEMY_RECIPES,alchemyRecipeDef} from '../content/alchemy';
+import {itemDef} from '../content/items';
 
 export const BASE_ACTIVITY_QUEUE=2;
 export const MAX_ACTIVITY_QUEUE=3;
@@ -30,6 +31,26 @@ export function normalizeActivityQueueGoal(value:unknown):ActivityQueueGoal|unde
 }
 export function activityQueueGoalLabel(goal:ActivityQueueGoal){
  return goal.kind==='duration_seconds'?`${goal.value/60} min`:goal.kind==='skill_level'?`Level ${goal.value}`:goal.kind==='session_kills'?`${goal.value.toLocaleString()} defeats`:`${goal.value.toLocaleString()} in storage`;
+}
+/** The same inventory + bank + overflow totals used by idle rule completion. */
+export function activityQueueGoalCurrentValue(state:GameState,activity:Pick<QueuedActivity,'kind'|'targetId'|'goal'>):number|undefined{
+ if(activity.kind!=='gathering')return undefined;
+ const node=[...GATHERING,...HERB_NODES].find(row=>row.id===activity.targetId);
+ if(!node)return undefined;
+ if(activity.goal?.kind==='skill_level')return state.skills.find(row=>row.skillId===node.skillId)?.level??1;
+ if(activity.goal?.kind==='item_quantity')return [...state.inventory.stacks,...state.bank.stacks,...state.overflow.stacks].reduce((total,row)=>total+(row.itemId===node.itemId?row.quantity:0),0);
+ return undefined;
+}
+/** Reject already-completed goals at creation and again before a saved entry starts. */
+export function activityQueueGoalIssue(state:GameState,activity:Pick<QueuedActivity,'kind'|'targetId'|'goal'>):string|undefined{
+ const goal=activity.goal;
+ if(!goal||activity.kind!=='gathering'||(goal.kind!=='skill_level'&&goal.kind!=='item_quantity'))return undefined;
+ const current=activityQueueGoalCurrentValue(state,activity);
+ if(current===undefined||goal.value>current)return undefined;
+ const node=[...GATHERING,...HERB_NODES].find(row=>row.id===activity.targetId)!;
+ if(goal.kind==='skill_level')return current>=100?`${node.skillId} is already level 100. Choose a duration or resource goal.`:`${node.skillId} is already level ${current}. Choose level ${current+1} or higher.`;
+ const item=itemDef(node.itemId).name;
+ return `Already holding ${current.toLocaleString()} ${item} across inventory, bank and overflow. Choose a storage target above ${current.toLocaleString()}.`;
 }
 export function activityQueueCapacity(state:GameState){return Math.min(MAX_ACTIVITY_QUEUE,BASE_ACTIVITY_QUEUE+accountEntitlementBenefits(state).actionQueueSlots);}
 
@@ -60,7 +81,9 @@ export function enqueueActivity(state:GameState,activity:QueuedActivity):GameSta
  const capacity=activityQueueCapacity(state),queue=normalizeActivityQueue(state.character.activityQueue,capacity),next=normalizeQueuedActivity(activity);
  if(!next)throw new Error('Invalid queued activity.');
  if(queue.length>=capacity)throw new Error(`Action queue is full (${capacity}/${capacity}).`);
- return {...state,character:{...state.character,activityQueue:[...queue,next],activityQueuePausedReason:undefined}};
+ const goalIssue=activityQueueGoalIssue(state,next);
+ if(goalIssue)throw new Error(goalIssue);
+ return {...state,character:{...state.character,activityQueue:[...queue,next]}};
 }
 export function removeQueuedActivity(state:GameState,index:number):GameState{
  if(!state.character)throw new Error('Create a character first.');
@@ -144,6 +167,8 @@ export function queuedActivityPlanningReadiness(state:GameState,activity:QueuedA
 export function queuedActivityReadiness(state:GameState,activity:QueuedActivity|undefined):QueuedActivityReadiness{
  if(!activity)return {ready:false,blocker:undefined as string|undefined};
  if(!state.character)return {ready:false,blocker:'Create a character first.'};
+ const goalIssue=activityQueueGoalIssue(state,activity);
+ if(goalIssue)return {ready:false,blocker:goalIssue};
  if(activity.kind==='combat'){
   const monster=MONSTERS.find(row=>row.id===activity.targetId);
   if(!monster)return {ready:false,blocker:'Queued monster is no longer available.'};

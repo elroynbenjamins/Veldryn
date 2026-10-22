@@ -24,9 +24,9 @@ export function ActiveActivityBar(props:ActiveActivityBarProps){
   const stop=activityStopPresentation(reward.stoppedReason);
   const monster=MONSTERS.find(entry=>entry.id===props.state.activity?.targetId);
   const isCombat=props.state.activity?.kind==='combat';
-  return <Pressable accessibilityRole="button" accessibilityLabel={gt(stop.title)+'. '+gl(reward.stoppedReason)+'. '+gt('Open Home to collect rewards.')} onPress={props.onOpen} style={({pressed})=>[s.root,isCombat?s.combat:s.skilling,pressed&&s.pressed]}>
+  return <Pressable accessibilityRole="button" accessibilityLabel={gl(stop.title)+'. '+gl(reward.stoppedReason)+'. '+gt('Open Home to collect rewards.')} onPress={props.onOpen} style={({pressed})=>[s.root,isCombat?s.combat:s.skilling,pressed&&s.pressed]}>
    <View style={[s.art,isCombat&&s.combatArt]}>{isCombat&&monster?<MonsterPortraitFrame monster={monster} size={28} framed={false} reduceMotion/>:<ActivityArtwork id={(props.state.activity?.kind==='processing'?'cooking':props.state.activity?.kind??'combat') as any} size={28}/>}</View>
-   <View style={s.copy}><Text style={s.combatName}>{gt(stop.title)}</Text><Text style={s.combatMeta} numberOfLines={1}>{gl(reward.stoppedReason)} · {gt('Collect rewards on Home')}</Text></View>{stop.category==='recovery'&&props.onRecoverCombat?<Pressable accessibilityRole="button" accessibilityLabel={gt('Open food and gear')} onPress={props.onRecoverCombat} style={s.recoverButton}><Text style={s.recover}>{gt('Food')}</Text></Pressable>:null}<Text style={s.chevron}>›</Text>
+   <View style={s.copy}><Text style={s.combatName}>{gl(stop.title)}</Text><Text style={s.combatMeta} numberOfLines={1}>{gl(reward.stoppedReason)} · {gt('Collect rewards on Home')}</Text></View>{stop.category==='recovery'&&props.onRecoverCombat?<Pressable accessibilityRole="button" accessibilityLabel={gt('Open food and gear')} onPress={props.onRecoverCombat} style={s.recoverButton}><Text style={s.recover}>{gt('Food')}</Text></Pressable>:null}<Text style={s.chevron}>›</Text>
   </Pressable>;
  }
  return props.state.activity?<RunningActivityBar {...props} combatKills={reward?.kills}/>:null;

@@ -18,6 +18,9 @@ Scope: Action Queue and Home Command Deck queue composer. Core code is shared by
 - Faith and Exploration: supported by the existing Skills queue planner and core service.
 - Forge/Cooking: not supported by Action Queue; remain separate crafting flows.
 - The queue does not auto-travel, bypass unlocks, equip food or override storage safeguards.
+- **Location:** new combat, gathering and exploration queue entries can only be created while standing in their authored region. Both the Home and Skills planners show only current-region activities; shared online/offline commands enforce the same rule. Faith and Alchemy are region-independent.
+- When manual travel makes an existing saved queue activity wrong-region, the queue keeps the activity and shows the destination rather than removing, auto-starting or auto-travelling. Returning to the required region clears obsolete location warnings.
+- Regression coverage includes blocked cross-region scheduling (direct/online commands), invalid targets, legacy pending work, safe manual travel away and return.
 - Activities queued without a stop condition on the currently running activity **wait** rather than interrupt it.
 - Start next remains a deliberate action when no activity is running.
 - Pending rewards / skill gains can change the stored baseline after planning. If an older or newly surpassed goal becomes complete before execution, the entry pauses and explains the issue instead of silently transitioning.

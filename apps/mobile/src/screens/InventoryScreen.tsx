@@ -98,6 +98,7 @@ export function InventoryScreen({state,viewMemory,foodRequest=0,onEquip,onFood,o
     const inventoryLimit=entitlementStorageCapacity(state,'inventory'),bankLimit=entitlementStorageCapacity(state,'bank');
     return {inventory:storageCapacityStatus(state.inventory.stacks,inventoryLimit),bank:storageCapacityStatus(state.bank.stacks,bankLimit)};
   },[state]);
+  const effectiveInventoryCapacity=capacities.inventory.capacity,effectiveBankCapacity=capacities.bank.capacity;
   const inventoryCapacity=capacities.inventory,bankCapacity=capacities.bank,activeCapacity=location==='inventory'?inventoryCapacity:bankCapacity;
   const activeStacks=state[location].stacks;
   const activeNewCount=useMemo(()=>new Set(activeStacks.filter(stack=>stack.quantity>0&&newItemSet.has(stack.itemId)).map(stack=>stack.itemId)).size,[activeStacks,newItemSet]);

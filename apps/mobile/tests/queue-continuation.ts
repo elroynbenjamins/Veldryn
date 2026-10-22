@@ -2,7 +2,6 @@ import {claimActivity,createCharacter,newGame,offlineCapSeconds,startCombat,star
 import {enqueueActivity,normalizeActivityQueueGoal,queuedActivityReadiness} from '../src/core/activity-queue';
 import {executeGameCommand} from '../src/core/game-commands';
 import {normalizeSave} from '../src/core/save-normalization';
-import {settleStartupActivity} from '../src/core/playability';
 import type {GameState} from '../src/core/types';
 
 function ok(value:unknown,message:string):asserts value{if(!value)throw new Error(message);}

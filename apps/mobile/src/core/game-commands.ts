@@ -18,7 +18,7 @@ import {normalizeProgressionGoals} from './progression-goals-v40';
 import {normalizeIdleRuleSets,validateActiveIdleRuleId} from './idle-rules-v40';
 import {COMBAT_TACTIC_IDS} from './combat-tactics';
 import {HUNT_GOAL_IDS} from './hunt-goals';
-import {activityQueueCapacity,clearActivityQueue,enqueueActivity,moveQueuedActivity,removeQueuedActivity,normalizeActivityQueueGoal} from './activity-queue';
+import {activityQueueCapacity,clearActivityQueue,enqueueActivity,moveQueuedActivity,removeQueuedActivity,normalizeActivityQueueGoal,activityQueueGoalIssue} from './activity-queue';
 import {activateDailySupplyBoost,claimDailySupplies,DAILY_SUPPLY_BOOST_TYPES,dailySupplyBoostLabel} from './daily-supplies';
 import {bulkSalvageSelected,bulkSellSelected,bulkTransferSelected} from './inventory-bulk';
 import {normalizeChatEmoteTrayIds,CHAT_EMOTE_TRAY_SIZE} from './chat-emotes';
@@ -210,6 +210,8 @@ export function executeGameCommand(previous:GameState,value:unknown,now:number,o
    if(!goal)throw new Error('invalid_queue_goal');
    if(!state.activity||state.activity.targetId!==id||!['mining','woodcutting','fishing','herbalism','combat'].includes(state.activity.kind))throw new Error('Activity changed. Select its goal again.');
    if(state.activity.kind==='combat'&&!['duration_seconds','session_kills'].includes(goal.kind)||state.activity.kind!=='combat'&&goal.kind==='session_kills')throw new Error('invalid_combat_activity_option');
+   const goalIssue=activityQueueGoalIssue(state,{kind:state.activity.kind==='combat'?'combat':'gathering',targetId:id,goal});
+   if(goalIssue)throw new Error(goalIssue);
    state={...state,activity:{...state.activity,queueManaged:true,queueGoal:goal,queueGoalCompletedAtMs:undefined,startedAtMs:now,...(state.activity.kind==='combat'?{sessionKills:0,sessionChampions:0}: {})}};
    break;
   }

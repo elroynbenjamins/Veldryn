@@ -12,7 +12,7 @@ import {HERB_NODES,HERBALISM_ESSENCE_BY_ZONE,herbalismInsightMultiplier,herbalis
 import {explorationRoute} from '../content/exploration';
 import {QUESTS} from '../content/quests';
 import {GameState,ClassId,RewardBundle,ItemStack,GearSlot,BodyPresentation,GatheringSkillId,CombatTacticId} from './types';
-import {activityQueueCapacity,activityQueueLocationIssue,normalizeActivityQueue,activityCanAdvanceCondition,queuedActivityReadiness} from './activity-queue';
+import {activityQueueCapacity,activityQueueRegion,activityQueueLocationIssue,normalizeActivityQueue,activityCanAdvanceCondition,queuedActivityReadiness} from './activity-queue';
 import type {ActiveActivity} from './types';
 import {combineActivityRewards} from './activity-rewards';
 import {characterLevelFromXp,levelFromXp,totalXpAtLevel} from './progression';
@@ -209,23 +209,29 @@ function highestEquippedV33Tier(state:GameState){
   },0);
 }
 
-function tryStartNextQueuedActivity(state:GameState,nowMs:number,throwOnFailure=false,index=0):GameState{
+function tryStartNextQueuedActivity(state:GameState,nowMs:number,throwOnFailure=false,index=0,allowAutoTravel=true):GameState{
  if(!state.character)throw new Error('Create a character first.');
  if(state.activity)throw new Error('Stop the current activity before starting the queue.');
  const queue=normalizeActivityQueue(state.character.activityQueue,activityQueueCapacity(state)),next=queue[index];
  if(!next)throw new Error('Action queue is empty.');
  try{
-  const readiness=queuedActivityReadiness(state,next);
+  const readiness=queuedActivityReadiness(state,next,allowAutoTravel);
   if(!readiness.ready)throw new Error(readiness.blocker);
+  const destination=activityQueueRegion(next);
+  // The previous activity has already been settled before this call. Travel
+  // changes location only at the actual handoff boundary, never earns extra
+  // offline time, and never bypasses travel, content or entitlement gates.
+  const launch=allowAutoTravel&&destination&&destination.id!==state.currentRegionId
+   ?{...state,currentRegionId:destination.id}:state;
   const started=next.kind==='combat'
-   ?startCombat(state,next.targetId,nowMs,next.combatTacticId??'balanced',next.huntGoalId??'open')
+   ?startCombat(launch,next.targetId,nowMs,next.combatTacticId??'balanced',next.huntGoalId??'open')
    :next.kind==='faith'
-    ?reserveFaithPractice(state,next.targetId,next.faithPracticeCount!,nowMs)
+    ?reserveFaithPractice(launch,next.targetId,next.faithPracticeCount!,nowMs)
     :next.kind==='exploration'
-     ?startExploration(state,next.targetId,nowMs)
+     ?startExploration(launch,next.targetId,nowMs)
      :next.kind==='alchemy'
-      ?beginAlchemyBatch(state,next.targetId,nowMs)
-     :startGathering(state,next.targetId,nowMs);
+      ?beginAlchemyBatch(launch,next.targetId,nowMs)
+     :startGathering(launch,next.targetId,nowMs);
   if(next.kind==='combat'&&state.character.activityQueueCombatRecovery){
    const firstCycle=combatRuntimeDetails(started,next.targetId).killCycleSeconds;
    if(simulateCombat(started,next.targetId,firstCycle).stoppedReason)throw new Error('Recover more health before resuming queued combat.');
@@ -255,8 +261,8 @@ function autoAdvanceActivityQueue(state:GameState,nowMs:number,source:ActiveActi
  }
  const next=tryStartNextQueuedActivity(state,nowMs,false);
  if(next.activity||!state.character.activityQueueCombatRecovery)return next;
- const safeIndex=state.character.activityQueue?.findIndex(entry=>entry.kind!=='combat'&&queuedActivityReadiness(state,entry).ready)??-1;
- if(safeIndex>=0)return tryStartNextQueuedActivity(state,nowMs,false,safeIndex);
+ const safeIndex=state.character.activityQueue?.findIndex(entry=>entry.kind!=='combat'&&queuedActivityReadiness(state,entry,false).ready)??-1;
+ if(safeIndex>=0)return tryStartNextQueuedActivity(state,nowMs,false,safeIndex,false);
  return source.kind!=='combat'?continueCompletedQueueActivity(next,nowMs,source,reward):next;
 }
 /** Timed, finite queue entries (Faith and Alchemy) end cleanly when their work is spent. */
@@ -270,8 +276,8 @@ function recoverCombatQueue(state:GameState,nowMs:number,reason:string){
  const minimumFood=Math.max(state.settings.stopCombatWhenOutOfFood||rule?.stopIfOutOfFood?1:0,...(rule?.conditions.filter(row=>row.enabled&&row.kind==='food_below').map(row=>row.value+1)??[]));
  state={...state,character:{...state.character,activityQueueCombatRecovery:{needsHealing:reason.toLowerCase().includes('injured'),minimumFood}}};
  const queue=normalizeActivityQueue(state.character!.activityQueue,activityQueueCapacity(state));
- const safeIndex=queue.findIndex(entry=>entry.kind!=='combat'&&queuedActivityReadiness(state,entry).ready);
- return safeIndex>=0?tryStartNextQueuedActivity(state,nowMs,false,safeIndex):pauseActivityQueue(state,reason);
+ const safeIndex=queue.findIndex(entry=>entry.kind!=='combat'&&queuedActivityReadiness(state,entry,false).ready);
+ return safeIndex>=0?tryStartNextQueuedActivity(state,nowMs,false,safeIndex,false):pauseActivityQueue(state,reason);
 }
 function pauseActivityQueue(state:GameState,reason:string){
  if(!state.character||!normalizeActivityQueue(state.character.activityQueue,activityQueueCapacity(state)).length)return state;
@@ -292,7 +298,7 @@ export function travelToRegion(state:GameState,regionId:string,nowMs:number){
   // Travel never deletes queue entries or silently restarts them. Flag pending work
   // that belongs to the previous region, and clear obsolete location-only warnings.
   const previousPause=travelled.character?.activityQueuePausedReason;
-  const pause=locationIssue??(previousPause?.includes('The queue cannot travel automatically.')?undefined:previousPause);
+  const pause=locationIssue??(previousPause?.startsWith('Travel to ')?undefined:previousPause);
   return {state:travelled.character?{...travelled,character:{...travelled.character,activityQueuePausedReason:pause}}:travelled,reward:settled.reward};
 }
 

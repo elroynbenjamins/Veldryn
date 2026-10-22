@@ -19,6 +19,7 @@ on:
       - 'apps/mobile/src/screens/HomeScreen.tsx'
       - 'apps/mobile/App.tsx'
       - 'apps/mobile/tests/activity-queue.ts'
+      - 'apps/mobile/tests/queue-premium-travel.ts'
       - 'apps/mobile/tests/queue-continuation.ts'
       - '.github/workflows/mobile-queue-regression.yml'
 jobs:

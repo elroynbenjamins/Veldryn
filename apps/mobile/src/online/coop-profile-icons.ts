@@ -26,14 +26,6 @@ export async function loadCoopProfileIcons(scope:CoopProfileIconScope,ids:readon
 }
 
 /** Keep identity refreshes outside the gameplay poll and discard stale viewer/scope results. */
-const COOP_ICON_TTL_MS=24*60*60*1000;
-const COOP_ICON_CACHE_LIMIT=100;
-const cachedCoopIcons=new Map<string,{icons:CoopProfileIcons;fetchedAt:number}>();
-function rememberCoopIcons(key:string,icons:CoopProfileIcons){
- cachedCoopIcons.delete(key);cachedCoopIcons.set(key,{icons,fetchedAt:Date.now()});
- while(cachedCoopIcons.size>COOP_ICON_CACHE_LIMIT)cachedCoopIcons.delete(cachedCoopIcons.keys().next().value!);
-}
-/** No gameplay-poll coupling; stable icons are reused across screen visits. */
 export function useCoopProfileIcons(scope:CoopProfileIconScope,ids:readonly string[],enabled=true,rosterKey:string|number=''):CoopProfileIcons{
  const accountId=useAuthSession().session?.user.id??'';
  const requestedIds=[...new Set(ids.filter(id=>uuid.test(id)))].sort().slice(0,100);
@@ -41,25 +33,25 @@ export function useCoopProfileIcons(scope:CoopProfileIconScope,ids:readonly stri
  const key=enabled&&accountId&&idsKey?`${accountId}|${scope}|${idsKey}|${rosterKey}`:'';
  const [result,setResult]=useState<{key:string;icons:CoopProfileIcons}>({key:'',icons:noIcons});
  useEffect(()=>{
-  if(!key){setResult({key:'',icons:noIcons});return;}
-  let stopped=false,pending=false;
-  const previous=cachedCoopIcons.get(key);
-  setResult({key,icons:previous?.icons??noIcons});
+  setResult({key,icons:noIcons});
+  if(!key)return;
+  let stopped=false,generation=0,pending=0;
   const load=async()=>{
    if(stopped||pending||(AppState.currentState!==null&&AppState.currentState!=='active'))return;
-   const cached=cachedCoopIcons.get(key);
-   if(cached&&Date.now()-cached.fetchedAt<COOP_ICON_TTL_MS)return;
-   pending=true;
+   const request=++generation;pending=request;
    try{
     const icons=await loadCoopProfileIcons(scope,idsKey.split(','));
-    if(!stopped){rememberCoopIcons(key,icons);setResult({key,icons});}
-   }catch{/* Retain last known artwork on temporary network failure. */}
-   finally{pending=false;}
+    if(!stopped&&request===generation)setResult({key,icons});
+   }catch{if(!stopped&&request===generation)setResult({key,icons:noIcons});}
+   finally{if(pending===request)pending=0;}
   };
   void load();
-  const timer=setInterval(()=>void load(),60*60*1000);
-  const listener=AppState.addEventListener('change',next=>{if(next==='active')void load();});
-  return()=>{stopped=true;clearInterval(timer);listener.remove();};
+  const timer=setInterval(()=>void load(),60000);
+  const listener=AppState.addEventListener('change',next=>{
+   generation++;pending=0;setResult({key,icons:noIcons});
+   if(next==='active')void load();
+  });
+  return()=>{stopped=true;generation++;clearInterval(timer);listener.remove();};
  },[key,scope,idsKey]);
  return key&&result.key===key?result.icons:noIcons;
 }

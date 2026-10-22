@@ -46,3 +46,4 @@ jobs:
           node .core-build/apps/mobile/tests/activity-queue.js
           node .core-build/apps/mobile/tests/queue-continuation.js
           node .core-build/apps/mobile/tests/queue-combat-recovery.js
+          node .core-build/apps/mobile/tests/queue-premium-travel.js

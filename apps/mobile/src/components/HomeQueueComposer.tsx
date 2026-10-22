@@ -1,4 +1,4 @@
-import {useMemo,useState} from 'react';
+import {useEffect,useMemo,useState} from 'react';
 import {Pressable,ScrollView,StyleSheet,Text,View} from 'react-native';
 import type {ActivityQueueGoal,GameState,QueuedActivity} from '../core/types';
 import {MONSTERS} from '../content/monsters';
@@ -6,7 +6,7 @@ import {GATHERING} from '../content/skills';
 import {HERB_NODES} from '../content/herbalism';
 import {ALCHEMY_RECIPES} from '../content/alchemy';
 import {WORLD_ZONES} from '../content/world-map';
-import {activityQueueCapacity,activityQueueGoalCurrentValue,activityQueueGoalIssue,activityQueueHandoffStatus,enqueueActivity,normalizeActivityQueue,queuedActivityPlanningReadiness,queuedActivityReadiness} from '../core/activity-queue';
+import {activityQueueAvailableRegions,activityQueueCrossRegionAllowed,activityQueueCapacity,activityQueueGoalCurrentValue,activityQueueGoalIssue,activityQueueHandoffStatus,enqueueActivity,normalizeActivityQueue,queuedActivityPlanningReadiness,queuedActivityReadiness} from '../core/activity-queue';
 import {GameModalHeader,GameModalSurface} from './GameModalSurface';
 import {GameButton} from './GameButton';
 import {ActivityArtwork} from './ActivityArtwork';
@@ -25,10 +25,14 @@ export function HomeQueueComposer({visible,state,onClose,onAdd,onSetCurrentGoal,
  const [selectedId,setSelectedId]=useState('');
  const [preset,setPreset]=useState<Preset>('kills50');
  const [busy,setBusy]=useState(false);
- const region=WORLD_ZONES.find(row=>row.id===state.currentRegionId);
+ const [regionId,setRegionId]=useState(state.currentRegionId);
+ const regions=activityQueueAvailableRegions(state),premium=activityQueueCrossRegionAllowed(state);
+ const selectedRegionId=regions.some(row=>row.id===regionId)?regionId:state.currentRegionId;
+ const region=WORLD_ZONES.find(row=>row.id===selectedRegionId);
+ useEffect(()=>{if(visible){setRegionId(state.currentRegionId);setSelectedId('');}},[visible,state.currentRegionId]);
  const alchemyLevel=state.skills.find(row=>row.skillId==='alchemy')?.level??1;
  const combat:Candidate[]=MONSTERS.filter(row=>!row.boss&&row.zone===region?.name&&state.unlockedMonsterIds.includes(row.id)).map(row=>({id:row.id,name:row.name,subtitle:'Level '+row.level+' · '+region?.name,activity:{kind:'combat',targetId:row.id}}));
- const gathering:Candidate[]=[...GATHERING,...HERB_NODES].filter(row=>row.zoneId===state.currentRegionId&&(state.skills.find(skill=>skill.skillId===row.skillId)?.level??1)>=row.unlockLevel).map(row=>({id:row.id,name:row.name,subtitle:row.skillId+' · Level '+row.unlockLevel,activity:{kind:'gathering',targetId:row.id},level:state.skills.find(skill=>skill.skillId===row.skillId)?.level??1}));
+ const gathering:Candidate[]=[...GATHERING,...HERB_NODES].filter(row=>row.zoneId===selectedRegionId&&(state.skills.find(skill=>skill.skillId===row.skillId)?.level??1)>=row.unlockLevel).map(row=>({id:row.id,name:row.name,subtitle:row.skillId+' · Level '+row.unlockLevel,activity:{kind:'gathering',targetId:row.id},level:state.skills.find(skill=>skill.skillId===row.skillId)?.level??1}));
  const crafting:Candidate[]=ALCHEMY_RECIPES.filter(row=>row.level<=alchemyLevel).map(row=>({id:row.id,name:row.name,subtitle:'Alchemy · Level '+row.level,activity:{kind:'alchemy',targetId:row.id}}));
  const candidates=category==='combat'?combat:category==='gathering'?gathering:crafting;
  const selected=candidates.find(row=>row.id===selectedId)??candidates[0];
@@ -59,7 +63,8 @@ export function HomeQueueComposer({visible,state,onClose,onAdd,onSetCurrentGoal,
    </View>
    <ScrollView style={s.scroll} contentContainerStyle={s.content} keyboardShouldPersistTaps="handled">
     {category==='crafting'?<View style={s.note}><Text style={s.infoStrong}>Alchemy reservations</Text><Text style={s.muted}>Alchemy is supported in the activity queue. Equipment Forge and Cooking have independent crafting flows; no automatic multi-step crafting is implied.</Text><GameButton compact title="Open Skills / Forge" tone="secondary" onPress={()=>{onClose();onOpenSkills();}}/></View>:null}
-    {category!=='crafting'?<Text style={s.section}>AVAILABLE IN {region?.name?.toUpperCase()??'THIS REGION'}</Text>:<Text style={s.section}>UNLOCKED ALCHEMY RECIPES</Text>}
+    {category!=='crafting'&&premium?<View style={s.note}><Text style={s.section}>UNLOCKED QUEUE REGIONS</Text><View style={s.goalGrid}>{regions.map(zone=><Pressable key={zone.id} accessibilityRole="radio" accessibilityState={{checked:zone.id===selectedRegionId}} disabled={busy} onPress={()=>{setRegionId(zone.id);setSelectedId('');}} style={[s.chip,zone.id===selectedRegionId&&s.chipSelected]}><Text style={[s.chipText,zone.id===selectedRegionId&&s.chipTextSelected]}>{zone.id===selectedRegionId?'✓ ':''}{zone.name}</Text></Pressable>)}</View>{selectedRegionId!==state.currentRegionId?<Text style={s.muted}>{state.settings.autoTravelQueuedActivities?'Auto-travel will switch to this unlocked region at a normal queue handoff.':'Auto-travel is disabled. You can plan this activity now, but must enable Auto-travel in Gameplay Settings or travel manually before it starts.'}</Text>:null}</View>:null}
+    {category!=='crafting'?<Text style={s.section}>AVAILABLE IN {region?.name?.toUpperCase()??'THIS REGION'}</Text>:<Text style={s.section}>UNLOCKED ALCHEMY RECIPES</Text>} 
     {candidates.length===0?<View style={s.note}><Text style={s.name}>No activities unlocked here yet</Text><Text style={s.muted}>Visit the appropriate Combat or Skills screen to unlock more options, or travel to another region.</Text></View>:candidates.map(row=>{
       const ready=queuedActivityReadiness(state,row.activity),plan=queuedActivityPlanningReadiness(state,row.activity);
       return <Pressable key={row.id} accessibilityRole="radio" accessibilityState={{checked:selected?.id===row.id,disabled:!plan.ready}} disabled={!plan.ready||busy} onPress={()=>setSelectedId(row.id)} style={[s.option,selected?.id===row.id&&s.optionSelected,!plan.ready&&s.unavailable]}>

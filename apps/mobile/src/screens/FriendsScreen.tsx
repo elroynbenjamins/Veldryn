@@ -11,7 +11,7 @@ import {ActionFeedback} from '../components/ActionFeedback';
 import {EmptyState} from '../components/EmptyState';
 import {LoadingState} from '../components/LoadingState';
 import {onlineConfigured,supabase} from '../online/supabase';
-import {blockedPlayers,cancelFriendRequest,friendRequests,friends,removeFriend,respondFriendRequest,searchPlayers,sendFriendRequest,setPlayerBlocked,type BlockedPlayer,type FriendEntry,type FriendRequest,type FriendSearchResult} from '../online/social';
+import {cancelFriendRequest,friendsOverview,removeFriend,respondFriendRequest,searchPlayers,sendFriendRequest,setPlayerBlocked,type BlockedPlayer,type FriendEntry,type FriendRequest,type FriendSearchResult} from '../online/social';
 import {radii,spacing,typography,equipmentTheme,type ThemeColors} from '../theme/theme';
 import {useGameTheme} from '../theme/ThemeContext';
 
@@ -30,7 +30,7 @@ export function FriendsScreen({onNotificationsChanged}:{onNotificationsChanged?:
     const {data}=await supabase!.auth.getSession();
     if(!data.session){setSignedIn(false);return;}
     setSignedIn(true);
-    const [nextFriends,nextRequests,nextBlocked]=await Promise.all([friends(),friendRequests(),blockedPlayers()]);
+    const {friends:nextFriends,requests:nextRequests,blocked:nextBlocked}=await friendsOverview();
     setFriendRows(nextFriends);setRequestRows(nextRequests);setBlockedRows(nextBlocked);
     if(firstLoad.current){if(nextRequests.some(request=>request.direction==='incoming'))setSection('Requests');firstLoad.current=false;}
   }
@@ -41,7 +41,13 @@ export function FriendsScreen({onNotificationsChanged}:{onNotificationsChanged?:
     if(busy||term.length<2)return;
     const revision=++searchRevision.current;
     setSearchedQuery(null);setResults([]);
-    await run(async()=>{const next=await searchPlayers(term);if(revision===searchRevision.current){setResults(next);setSearchedQuery(term);}});
+    // Searching doesn't mutate friendships: don't refetch all three lists.
+    setBusy(true);setError('');
+    try{
+      const next=await searchPlayers(term);
+      if(revision===searchRevision.current){setResults(next);setSearchedQuery(term);}
+    }catch(reason){if(revision===searchRevision.current)setError(reason instanceof Error?reason.message:st("Please try again."));}
+    finally{setBusy(false);}
   }
   const openProfile=(row:{account_id:string;display_name:string;player_badges?:import('../core/player-badges').PlayerBadgeIdentity;guild_tag?:string|null;guild_tag_color_id?:string|null},relationship?:ChatPlayerIdentity['relationship'])=>setSelectedProfile({account_id:row.account_id,sender_name:row.display_name,guild_tag:row.guild_tag,guild_tag_color_id:row.guild_tag_color_id,player_badges:row.player_badges,relationship});
     const incoming=requestRows.filter(row=>row.direction==='incoming'),outgoing=requestRows.filter(row=>row.direction==='outgoing');
@@ -59,7 +65,10 @@ export function FriendsScreen({onNotificationsChanged}:{onNotificationsChanged?:
     </Panel>}
     {section==='Requests'&&<Panel><Text style={s.title}>{incoming.length?st('Requests · {count} incoming',{count:incoming.length}):st('Requests')}</Text>{incoming.map(request=><View key={request.request_id} style={s.row}><Pressable accessibilityRole="button" accessibilityLabel={st("Open {name}'s profile",{name:request.display_name})} onPress={()=>openProfile(request,request.direction==='incoming'?'incoming_pending':'outgoing_pending')} style={({pressed})=>[s.profileLink,pressed&&s.pressed]}><CompactPlayerIdentity accountId={request.account_id} badges={request.player_badges} name={request.display_name} status={st("WANTS TO BE FRIENDS")} statusTone="info" hint={st("VIEW PROFILE ›")}/></Pressable><View style={s.miniActions}><GameButton compact title={st("Accept")} disabled={busy} onPress={()=>void run(()=>respondFriendRequest(request.request_id,true).then(()=>{}))}/><GameButton compact title={st("Decline")} tone="secondary" disabled={busy} onPress={()=>void run(()=>respondFriendRequest(request.request_id,false).then(()=>{}))}/></View></View>)}{outgoing.map(request=><View key={request.request_id} style={s.row}><Pressable accessibilityRole="button" accessibilityLabel={st("Open {name}'s profile",{name:request.display_name})} onPress={()=>openProfile(request,request.direction==='incoming'?'incoming_pending':'outgoing_pending')} style={({pressed})=>[s.profileLink,pressed&&s.pressed]}><CompactPlayerIdentity accountId={request.account_id} badges={request.player_badges} name={request.display_name} status={st("REQUEST PENDING")} statusTone="warning" hint={st("VIEW PROFILE ›")}/></Pressable><GameButton compact title={st("Cancel")} tone="secondary" disabled={busy} onPress={()=>void run(()=>cancelFriendRequest(request.request_id))}/></View>)}{!requestRows.length?<EmptyState compact title={st("No pending requests")} message={st("Incoming and outgoing friend requests will appear here.")} icon="friends"/>:null}</Panel>}
     {section==='Friends'&&<><Panel><Text style={s.title}>{st('Friends · {count}',{count:friendRows.length})}</Text>{friendRows.map(friend=><View key={friend.account_id} style={s.row}><Pressable accessibilityRole="button" accessibilityLabel={st("Open {name}'s profile",{name:friend.display_name})} onPress={()=>openProfile(friend,'friend')} style={({pressed})=>[s.profileLink,pressed&&s.pressed]}><CompactPlayerIdentity accountId={friend.account_id} badges={friend.player_badges} name={friend.display_name} guildTag={friend.guild_tag} guildTagColorId={friend.guild_tag_color_id} className={friend.class_id} characterName={friend.character_name} level={friend.level} profileTitle={friend.profile_title} status={st("FRIEND")} statusTone="good" hint={st("VIEW PROFILE ›")}/></Pressable><Pressable accessibilityRole="button" accessibilityLabel={st('Manage friendship with {name}',{name:friend.display_name})} onPress={()=>gameAlert.alert(friend.display_name,st("Manage this friendship."),[{text:st("Cancel")},{text:st("Remove friend"),style:'destructive',onPress:()=>void run(()=>removeFriend(friend.account_id))},{text:st("Block"),style:'destructive',onPress:()=>void run(()=>setPlayerBlocked(friend.account_id,true))}])} style={s.manage}><Text style={s.manageText}>•••</Text></Pressable></View>)}{!friendRows.length?<EmptyState compact title={st("No friends yet")} message={st("Use Find players to send your first friend request.")} icon="friends"/>:null}</Panel>{blockedRows.length?<Panel><Text style={s.title}>{st('Blocked players · {count}',{count:blockedRows.length})}</Text>{blockedRows.map(player=><View key={player.account_id} style={s.row}><CompactPlayerIdentity accountId={player.account_id} badges={player.player_badges} name={player.display_name} status={st("BLOCKED")} statusTone="muted" hint={st("Hidden from search and requests")}/><GameButton compact title={st("Unblock")} tone="secondary" disabled={busy} onPress={()=>void run(()=>setPlayerBlocked(player.account_id,false))}/></View>)}</Panel>:null}</>}
-  <ChatPlayerSheet message={selectedProfile} onClose={()=>setSelectedProfile(null)} onRelationshipChanged={()=>void refresh()} onBlocked={accountId=>{setSelectedProfile(null);setFriendRows(rows=>rows.filter(row=>row.account_id!==accountId));setResults(rows=>rows.filter(row=>row.account_id!==accountId));}}/>
+  <ChatPlayerSheet message={selectedProfile} onClose={()=>setSelectedProfile(null)} onRelationshipChanged={(accountId,next)=>{
+    const current=friendRows.some(row=>row.account_id===accountId)?'friend':requestRows.find(row=>row.account_id===accountId)?.direction==='incoming'?'incoming_pending':requestRows.some(row=>row.account_id===accountId)?'outgoing_pending':results.find(row=>row.account_id===accountId)?.relationship??'none';
+    if(current!==next)void refresh();
+   }} onBlocked={accountId=>{setSelectedProfile(null);setFriendRows(rows=>rows.filter(row=>row.account_id!==accountId));setResults(rows=>rows.filter(row=>row.account_id!==accountId));void refresh();}}/>
   </ScrollView>;
 }
 

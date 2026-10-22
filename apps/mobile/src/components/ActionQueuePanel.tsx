@@ -7,7 +7,7 @@ import {GameButton} from './GameButton';
 import {equipmentTheme,radii,spacing,typography,type ThemeColors} from '../theme/theme';
 import {useGameTheme} from '../theme/ThemeContext';
 
-export function ActionQueuePanel({state,onRemove,onMove,onClear,onStartNext,onAdd,onResolve}:{state:GameState;onAdd?:()=>void;onResolve?:(destination:'Inventory'|'World'|'Skills')=>void;onRemove:(index:number)=>void;onMove:(index:number,direction:'up'|'down')=>void;onClear:()=>void;onStartNext:()=>void}){
+export function ActionQueuePanel({state,onRemove,onMove,onClear,onStartNext,onAdd,onResolve,onSetCurrentHandoff}:{state:GameState;onAdd?:()=>void;onResolve?:(destination:'Inventory'|'World'|'Skills')=>void;onSetCurrentHandoff?:()=>void;onRemove:(index:number)=>void;onMove:(index:number,direction:'up'|'down')=>void;onClear:()=>void;onStartNext:()=>void}){
  const {gt,gl,language}=useGameplayText();
  const [managing,setManaging]=useState(false),[confirmClear,setConfirmClear]=useState(false);
  const C=useGameTheme(),s=useMemo(()=>makeStyles(C),[C]),{width,fontScale}=useWindowDimensions(),stackRows=width<480||fontScale>=1.25;
@@ -38,6 +38,11 @@ export function ActionQueuePanel({state,onRemove,onMove,onClear,onStartNext,onAd
     <View style={s.clearInline}><Text style={[s.sub,s.flex]}>{gt("Changes are saved in your queue.")}</Text><GameButton compact title={gt("Clear queue")} tone="secondary" onPress={()=>setConfirmClear(true)}/></View>}
   </View>:null}
   {paused&&<View style={s.pause}><Text style={s.pauseTitle}>{handoff.nextReady&&(!state.activity||canResume)?gt('READY TO RETRY'):state.activity?gt("QUEUED ACTIVITY WAITING"):gt("QUEUE PAUSED")}</Text><Text style={s.pauseText}>{handoff.nextReady&&(!state.activity||canResume)?gt('The blocker has cleared. You can start the next queued action.'):gl(paused)}</Text></View>}
+  {onSetCurrentHandoff&&state.activity&&state.activity.queueGoalCompletedAtMs===undefined&&!handoff.armed&&['combat','mining','woodcutting','fishing','herbalism'].includes(state.activity.kind)?<View style={s.waiting}>
+   <Text style={s.waitingTitle}>{gt('Current activity handoff required')}</Text>
+   <Text style={s.pauseText}>{gt('Your current activity will keep running until it has a stop goal. Give it a 30-minute limit so the waiting queue can start automatically.')}</Text>
+   <GameButton compact title={gt('Stop current activity after 30 minutes')} tone="secondary" onPress={onSetCurrentHandoff}/>
+  </View>:null}
   {!paused&&state.activity&&<View style={handoff.armed?(handoff.nextReady?s.handoff:s.blocked):s.waiting}><Text style={handoff.armed?(handoff.nextReady?s.handoffTitle:s.blockedTitle):s.waitingTitle}>{handoff.armed?(handoff.nextReady?gt("HANDOFF ARMED"):gt("HANDOFF WILL PAUSE")):gt("QUEUE WAITING")}</Text><Text style={s.pauseText}>{handoff.armed?(handoff.nextReady?`${gl(handoff.sourceLabel)} → ${gl(handoff.nextLabel)}`:gt("{source} can stop this activity, but {next} cannot start yet.",{source:gl(handoff.sourceLabel),next:gl(handoff.nextLabel)})):gt("Current activity has no handoff goal. Queued activities are waiting.")}</Text>{handoff.armed&&!handoff.nextReady&&handoff.nextBlocker?<Text style={s.blocker}>{gl(handoff.nextBlocker)}</Text>:null}{handoff.armed&&handoff.safetyEnabled?<Text style={s.safety}>{gt("Combat recovery blocks hunting; storage safety stops all activities.")}</Text>:null}</View>}
   {queue.map((entry,index)=>{const readiness=queuedActivityReadiness(state,entry),label=gl(activityQueueLabel(entry)),region=activityQueueRegion(entry);return <View key={`${index}:${entry.kind}:${entry.targetId}`} style={[s.row,managing&&stackRows&&s.rowStack]}>
    <View style={s.rowInfo}><View style={s.index}><Text style={s.indexText}>{index+1}</Text></View>

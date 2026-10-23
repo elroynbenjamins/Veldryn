@@ -15,6 +15,10 @@ export interface CraftedGearRetentionEntry {
   instance:CraftedGearInstance;
   /** Must be verified by the server; never inferred from itemId-only stacks. */
   location:CraftedGearInstanceLocation;
+  /** Explicitly resolved by the authoritative account snapshot, never inferred from itemId. */
+  ownershipVerified?:boolean;
+  /** Includes every character's equipment, Favorites, locks, sockets and loadouts. */
+  protectionsVerified?:boolean;
   locked?:boolean;
   favorite?:boolean;
   savedLoadout?:boolean;
@@ -41,7 +45,8 @@ export function compareCraftedGearRetentionPower(a:CraftedGearInstance,b:Crafted
 export function craftedGearCanAutoSell(entry:CraftedGearRetentionEntry){
   const gear=entry.instance,enhancement=gear.enhancement;
   return (entry.location==='inventory'||entry.location==='bank')
-    &&!entry.locked&&!entry.favorite&&!entry.savedLoadout
+    &&entry.ownershipVerified===true&&entry.protectionsVerified===true
+    &&entry.locked===false&&entry.favorite===false&&entry.savedLoadout===false
     &&enhancement.rank===0
     &&!enhancement.statGemId&&!enhancement.effectGemId
     &&enhancement.gemIds.length===0;
@@ -75,11 +80,11 @@ export function planCraftedGearRetention(
   const enhancement=incoming.enhancement;
   if(enhancement.rank!==0||enhancement.statGemId||enhancement.effectGemId||enhancement.gemIds.length>0)
     return {action:'manual_review',reason:'incoming_protected'};
-  const weakestOverall=existing.slice().sort((a,b)=>compareCraftedGearRetentionPower(a.instance,b.instance))[0];
+  const weakestOverall=existing.slice().sort((a,b)=>compareCraftedGearRetentionPower(a.instance,b.instance)||a.instance.id.localeCompare(b.instance.id))[0];
   if(compareCraftedGearRetentionPower(incoming,weakestOverall.instance)<=0)
     return {action:'sell_incoming',reason:'incoming_is_weakest',instanceId:incoming.id};
   const eligible=existing.filter(craftedGearCanAutoSell)
-    .sort((a,b)=>compareCraftedGearRetentionPower(a.instance,b.instance));
+    .sort((a,b)=>compareCraftedGearRetentionPower(a.instance,b.instance)||a.instance.id.localeCompare(b.instance.id));
   if(!eligible.length)return {action:'manual_review',reason:'no_eligible_copy'};
   const weakestEligible=eligible[0];
   // Do not sacrifice an older, stronger piece when the new roll cannot improve it.

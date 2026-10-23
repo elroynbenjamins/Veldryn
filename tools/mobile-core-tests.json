@@ -95,6 +95,7 @@
   ".core-build/apps/mobile/tests/event-reward-trail.js",
   ".core-build/apps/mobile/tests/event-overview.js",
   ".core-build/apps/mobile/tests/early-onboarding-exposure.js",
+  ".core-build/apps/mobile/tests/seasonal-quests.js",
   ".core-build/apps/mobile/tests/live-event-catalog.js",
   ".core-build/apps/mobile/tests/annual-event-calendar.js",
   ".core-build/apps/mobile/tests/annual-events-v3.js",

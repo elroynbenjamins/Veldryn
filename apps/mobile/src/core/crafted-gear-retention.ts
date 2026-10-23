@@ -15,6 +15,8 @@ export interface CraftedGearRetentionEntry {
   instance:CraftedGearInstance;
   /** Must be verified by the server; never inferred from itemId-only stacks. */
   location:CraftedGearInstanceLocation;
+  /** Current character carrying this item, not necessarily the original crafter. */
+  holderCharacterId?:string;
   /** Explicitly resolved by the authoritative account snapshot, never inferred from itemId. */
   ownershipVerified?:boolean;
   /** Includes every character's equipment, Favorites, locks, sockets and loadouts. */
@@ -45,6 +47,7 @@ export function compareCraftedGearRetentionPower(a:CraftedGearInstance,b:Crafted
 export function craftedGearCanAutoSell(entry:CraftedGearRetentionEntry){
   const gear=entry.instance,enhancement=gear.enhancement;
   return (entry.location==='inventory'||entry.location==='bank')
+    &&(entry.location==='bank'||(typeof entry.holderCharacterId==='string'&&entry.holderCharacterId.length>0))
     &&entry.ownershipVerified===true&&entry.protectionsVerified===true
     &&entry.locked===false&&entry.favorite===false&&entry.savedLoadout===false
     &&enhancement.rank===0

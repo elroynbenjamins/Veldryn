@@ -90,7 +90,7 @@ ok(TARGET_CRAFTED_GEAR_COPIES_PER_ITEM===7,'Players must be able to keep seven c
 const copyTemplate=craftedGearInstances(state)[0];
 const sevenCopies=Array.from({length:7},(_,i)=>({
   instance:{...copyTemplate,id:`quality-${i}`,sourceReceiptKey:`quality-${i}`,rarity:'common' as const,quality:10+i*10},
-  location:'inventory' as const,
+  location:'inventory' as const,ownershipVerified:true,protectionsVerified:true,locked:false,favorite:false,savedLoadout:false,
 }));
 const incomingLow={...copyTemplate,id:'new-low',quality:1,rarity:'common' as const};
 const incomingHigh={...copyTemplate,id:'new-high',quality:90,rarity:'epic' as const};
@@ -110,6 +110,11 @@ ok(protectedDecision.action==='sell_existing'&&protectedDecision.instanceId==='q
 const allProtected=sevenCopies.map(entry=>({...entry,locked:true}));
 const blockedDecision=planCraftedGearRetention(allProtected,incomingHigh,'keep_best_seven');
 ok(blockedDecision.action==='manual_review'&&blockedDecision.reason==='no_eligible_copy','Do not sell valuable new results if all existing copies are protected');
+ok(!craftedGearCanAutoSell({...sevenCopies[0],ownershipVerified:undefined}),'Ownership must be independently verified before auto-sale');
+ok(!craftedGearCanAutoSell({...sevenCopies[0],protectionsVerified:undefined}),'Missing protection verification must fail closed');
+ok(!craftedGearCanAutoSell({...sevenCopies[0],locked:undefined}),'Missing lock state must fail closed');
+ok(!craftedGearCanAutoSell({...sevenCopies[0],favorite:undefined}),'Missing favorite state must fail closed');
+ok(!craftedGearCanAutoSell({...sevenCopies[0],savedLoadout:undefined}),'Missing loadout state must fail closed');
 ok(!craftedGearCanAutoSell({...sevenCopies[0],location:'equipped'}),'Equipped copies must never be auto-sold');
 ok(!craftedGearCanAutoSell({...sevenCopies[0],location:'unknown'}),'Legacy ambiguous storage must never be auto-sold');
 ok(!craftedGearCanAutoSell({...sevenCopies[0],savedLoadout:true}),'Saved loadout copies must never be auto-sold');

@@ -86,6 +86,8 @@ export interface CraftedGearInstance{
   rarity:import('./item-rarity').ItemRarity;
   /** Deterministic 1–100 forge roll. Optional for backwards-compatible saves. */
   quality?:number;
+  /** Per-copy protection, independent of the old item-type Favorite setting. */
+  locked?:boolean;
   acquireSource:'craft';
   sourceReceiptKey:string;
   createdAtMs:number;

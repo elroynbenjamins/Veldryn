@@ -21,4 +21,16 @@ for(const setId of sheetSetIds){
 const thornmaw=piecesBySet.get('T2_013')??[];
 ok(thornmaw.length===10&&thornmaw[0]==='T2P_274'&&thornmaw[9]==='T2X_039','Thornmaw Assault must use the current T2 catalogue item IDs');
 
+const starterWeapon=fs.readFileSync('src/components/StarterWeaponArtwork.tsx','utf8');
+const classCreation=fs.readFileSync('src/screens/ClassSelectScreen.tsx','utf8');
+const equipment=fs.readFileSync('src/components/EquipmentArtwork.tsx','utf8');
+const inventoryArtwork=fs.readFileSync('src/components/ItemArtwork.tsx','utf8');
+const equipmentPreview=fs.readFileSync('src/components/EquipmentPreview.tsx','utf8');
+ok(starterWeapon.includes('starterWeaponArtworkLayout(itemId,size)'),'Starter sprite must use the safe shared crop geometry');
+ok(starterWeapon.includes("frame:{overflow:'hidden'}"),'Atlas crops must stay clipped to their preview frame');
+ok(classCreation.includes('<StarterWeaponArtwork itemId={starter.id} size={52}/>'),'Class creation shares the fitted starter weapon rendering');
+ok(equipment.includes('<StarterWeaponArtwork itemId={item.id} size={size}/>'),'Equipped items use the same fitted starter weapon rendering');
+ok(inventoryArtwork.includes('<EquipmentArtwork item={item} compact framed={false}/>'),'Inventory thumbnails reuse the shared starter weapon artwork');
+ok(equipmentPreview.includes('<EquipmentArtwork item={item} size={112} framed={false}/>'),'Large equipment previews reuse the same safe crop');
+
 console.log('PASS: authored equipment sheets resolve every current catalogue piece, including Thornmaw Assault');

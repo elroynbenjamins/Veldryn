@@ -258,12 +258,18 @@ function forgeOwnedCopyLocations(state:GameState,itemId:string):CraftedGearReten
   const rows=records.map(instance=>{
     const loc=audit.linked.find(row=>row.instanceId===instance.id);
     if(!loc)return null;
-    const savedLoadout=characters.some(c=>c?.savedLoadouts?.some(p=>Object.values(p.equipmentInstanceIds??{}).includes(instance.id)));
+    const savedLoadout=characters.some(c=>c?.savedLoadouts?.some(p=>
+      Object.values(p.equipmentInstanceIds??{}).includes(instance.id)
+      ||Object.entries(p.equipment).some(([slot,id])=>id===itemId&&!p.equipmentInstanceIds?.[slot as import('./types').GearSlot])));
+    const legacyEnhanced=characters.some(c=>{
+      const value=c?.gearEnhancements?.[itemId];
+      return !!value&&(value.rank>0||!!value.statGemId||!!value.effectGemId||(value.gemIds?.length??0)>0);
+    });
     const accessible=loc.place==='bank'||loc.place==='inventory'&&loc.holderCharacterId===state.character?.id;
     return {
       instance,location:loc.place==='overflow'?'unknown':loc.place,
       holderCharacterId:loc.holderCharacterId,
-      ownershipVerified:true,protectionsVerified:accessible,
+      ownershipVerified:true,protectionsVerified:accessible&&!legacyEnhanced,
       locked:instance.locked===true,
       favorite:state.settings.favoriteItemIds?.includes(itemId)===true,
       savedLoadout,

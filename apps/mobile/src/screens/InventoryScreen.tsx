@@ -25,7 +25,7 @@ import {formatGameNumber} from '../core/number-format';
 import {ot} from '../i18n';
 import {itemRarity,rarityMeta} from '../core/item-rarity';
 import {effectiveOwnedGearRarity,craftedGearInstances} from '../core/crafted-gear-instances';
-import {craftedGearCopiesAt} from '../core/crafted-gear-ownership';
+import {auditCraftedGearOwnership,craftedGearCopiesAt} from '../core/crafted-gear-ownership';
 import type {GameCommand} from '../core/game-commands';
 import {bulkSelectionSummary,type BulkStorageLocation} from '../core/inventory-bulk';
 import type {WorkingTowardDestination} from '../core/working-toward';
@@ -129,6 +129,11 @@ export function InventoryScreen({state,viewMemory,foodRequest=0,onEquip,onFood,o
   const inspected=inspectId?itemDef(inspectId):undefined,carried=location==='inventory';
   const exactRecords=craftedGearInstances(state),exactCopies=inspected?.type==='gear'?craftedGearCopiesAt(state,inspected.id,location).map(row=>exactRecords.find(record=>record.id===row.instanceId)!).filter(Boolean):[];
   const hasLegacyStack=inspected?state[location].stacks.some(row=>row.itemId===inspected.id&&row.instanceId===undefined&&row.quantity>0):false;
+  const legacyStackIndex=inspected?state[location].stacks.findIndex(row=>row.itemId===inspected.id&&row.instanceId===undefined&&row.quantity>0):-1;
+  const linkAudit=inspected?.type==='gear'?auditCraftedGearOwnership(state):undefined;
+  const unlinkedForgeCopies=inspected?.type==='gear'&&linkAudit&&!linkAudit.problems.length
+    ?exactRecords.filter(row=>row.itemId===inspected.id&&linkAudit.unlocatedInstanceIds.includes(row.id))
+    :[];
   const inspectActions=inspected?<View style={s.inspectActions}>
     {carried&&inspected.type==='gear'?<GameButton compact title={gt("Compare stats")} tone="secondary" onPress={()=>{setPreviewId(inspected.id);closeInspect()}}/>:null}
     {hasLegacyStack&&carried&&inspected.type==='gear'?<GameButton compact title={gt('Equip {slot}',{slot:gl(inspected.slot)})} onPress={()=>{run(()=>onEquip(inspected.id));closeInspect()}}/>:null}
@@ -139,6 +144,17 @@ export function InventoryScreen({state,viewMemory,foodRequest=0,onEquip,onFood,o
     {hasLegacyStack&&!carried&&inspected.value>0&&!favoriteSet.has(inspected.id)?<GameButton compact title={gt('Sell {count} · {gold}g',{count:transferAmount(state.bank.stacks.find(stack=>stack.itemId===inspected.id)?.quantity??0,quantity),gold:formatGameNumber(inspected.value*transferAmount(state.bank.stacks.find(stack=>stack.itemId===inspected.id)?.quantity??0,quantity),state.settings.numberMode,state.settings.language)})} tone="secondary" onPress={()=>{const amount=transferAmount(state.bank.stacks.find(stack=>stack.itemId===inspected.id)?.quantity??0,quantity);beginInventorySubmission(gt("Selling items…"),()=>onBankSell(inspected.id,amount));closeInspect()}}/>:null}
     {hasLegacyStack&&carried&&inspected.value>0&&!favoriteSet.has(inspected.id)?<GameButton compact title={gt('Sell {count} · {gold}g',{count:transferAmount(state.inventory.stacks.find(stack=>stack.itemId===inspected.id)?.quantity??0,quantity),gold:formatGameNumber(inspected.value*transferAmount(state.inventory.stacks.find(stack=>stack.itemId===inspected.id)?.quantity??0,quantity),state.settings.numberMode,state.settings.language)})} tone="secondary" onPress={()=>{const amount=transferAmount(state.inventory.stacks.find(stack=>stack.itemId===inspected.id)?.quantity??0,quantity);setPending({kind:"sell",item:inspected,quantity:amount});closeInspect()}}/>:null}
     {hasLegacyStack&&carried&&inspected.salvage&&!favoriteSet.has(inspected.id)?<GameButton compact title={gt("Salvage 1")} tone="danger" onPress={()=>{setPending({kind:"salvage",item:inspected,quantity:1});closeInspect()}}/>:null}
+    {legacyStackIndex>=0&&unlinkedForgeCopies.length>0&&<View style={s.quantityPanel}>
+      <Text style={s.quantityTitle}>LINK OLDER FORGE EQUIPMENT</Text>
+      <Text style={s.sub}>This item was saved before unique-copy tracking. Choose the original Forge roll to associate with one unlinked physical copy. This does not change the roll or create another item. Unequip old equipment first if it is currently worn.</Text>
+      {unlinkedForgeCopies.map(record=><View key={record.id} style={s.row}>
+        <Text style={[s.sub,s.flex]}>{rarityMeta(record.rarity).label} · Quality {record.quality??'unknown'}/100</Text>
+        <GameButton compact title="Link copy" tone="secondary" disabled={!onCommand||inventoryBusyLabel!==null} onPress={()=>void beginInventorySubmission('Linking legacy equipment copy…',async()=>{
+          await onCommand!({type:'gear_link_legacy',args:{instanceId:record.id,from:location,stackIndex:legacyStackIndex}});
+          closeInspect();
+        })}/>
+      </View>)}
+    </View>}
     {exactCopies.length>0&&<View style={s.quantityPanel}>
       <Text style={s.quantityTitle}>INDIVIDUAL EQUIPMENT · {exactCopies.length} COPIES HERE</Text>
       {exactCopies.map(copy=><View key={copy.id} style={s.quantityPanel}>

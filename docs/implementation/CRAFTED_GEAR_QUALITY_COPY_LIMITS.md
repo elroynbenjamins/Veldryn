@@ -23,8 +23,11 @@ Status: **draft foundation — not release-ready** (23 October 2026).
 2. `TARGET_CRAFTED_GEAR_COPIES_PER_ITEM=7` with account-wide read-only `craftedGearCopyCapacity`.
 3. `CraftedGearAutoSellMode = 'off' | 'keep_best_seven'`, optional account preference persisted by normalizing saved state, **defaulting to off**. This option is **not exposed as an enabled player-facing toggle yet**.
 4. Pure retention planning in `apps/mobile/src/core/crafted-gear-retention.ts`, returning keep / sell incoming / sell eligible existing / manual-review without modifying data. It requires server-confirmed exact-instance locations for existing-copy disposal.
-5. Regression coverage added to `apps/mobile/tests/equipment-crafted-instance-results.ts` for quality persistence, seven-copy decision logic, disabled default, tie retention, locked/marked/enhanced/socketed/equipped/loadout safeguards, legacy unknown quality, and oversized save protection.
+5. Regression coverage added to `apps/mobile/tests/equipment-crafted-instance-results.ts` for quality persistence, seven-copy decision logic, disabled default, tie retention, fail-closed ownership/protection verification, locked/marked/enhanced/socketed/equipped/loadout safeguards, legacy unknown quality, and oversized save protection.
 6. Old crafted-instance records are never silently truncated during save normalization. The old global 500-instance safety boundary still refuses new instance creation without evicting any already owned gear.
+7. `craftedGearLegacyOwnershipAudit` counts existing physical gear in active and alternate characters' Inventories, Bank, overflow and equipped slots to highlight discrepancies **without guessing which instance lives where**. Balanced counts never imply auto-sell readiness.
+8. Claim All now leaves a blocked Forge receipt ready on an expected storage-cap error and checks subsequent completed jobs; player-facing command messages include the number blocked, rather than silently dropping results.
+9. `craftedGearCanAutoSell` fails closed: only candidates with server-confirmed ownership + protection snapshot and explicit `locked=false`, `favorite=false`, `savedLoadout=false` are eligible. Existing legacy call paths never provide that authoritative evidence, so the actual auto-sale stays disabled.
 
 **Nothing in this branch executes an auto-sale, activates seven-copy enforcement, changes combat stats, or publishes a setting toggle.** A decision planner cannot safely transfer ownership or remove a copy from the current item-ID-based Inventory/Bank system.
 

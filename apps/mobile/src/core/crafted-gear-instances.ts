@@ -91,15 +91,18 @@ export function effectiveOwnedGearRarity(state:GameState,itemId:string,ownerChar
   return bestCraftedInstanceForItem(state,itemId,ownerCharacterId)?.rarity??itemRarity(itemDef(itemId));
 }
 
+export function draftCraftedGearInstance(args:{itemId:string;ownerCharacterId:string;jobId:string;createdAtMs:number;roll:number}):CraftedGearInstance{
+  return {
+    id:`gear:${args.ownerCharacterId}:${args.jobId}`,itemId:args.itemId,ownerCharacterId:args.ownerCharacterId,
+    rarity:craftedGearRarity(args.itemId,args.roll),quality:craftedGearQualityRoll(args.roll,args.jobId),
+    locked:false,acquireSource:'craft',sourceReceiptKey:args.jobId,createdAtMs:args.createdAtMs,enhancement:emptyEnhancement(),
+  };
+}
 export function createCraftedGearInstance(state:GameState,args:{itemId:string;ownerCharacterId:string;jobId:string;createdAtMs:number;roll:number}){
-  const rarity=craftedGearRarity(args.itemId,args.roll),quality=craftedGearQualityRoll(args.roll,args.jobId);
   const previous=craftedGearInstances(state);
   if(previous.some(row=>row.sourceReceiptKey===args.jobId))throw new Error('Crafting receipt has already been claimed');
   if(previous.length>=MAX_CRAFTED_GEAR_INSTANCES)throw new Error('Crafted equipment storage is full; existing equipment was not removed');
-  const instance:CraftedGearInstance={
-    id:`gear:${args.ownerCharacterId}:${args.jobId}`,itemId:args.itemId,ownerCharacterId:args.ownerCharacterId,rarity,quality,
-    acquireSource:'craft',sourceReceiptKey:args.jobId,createdAtMs:args.createdAtMs,enhancement:emptyEnhancement(),
-  };
+  const instance=draftCraftedGearInstance(args);
   return {state:{...state,account:{...state.account,craftedGearInstances:[...previous,instance]}},instance};
 }
 

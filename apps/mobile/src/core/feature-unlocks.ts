@@ -19,7 +19,7 @@ export const EARLY_FEATURE_UNLOCKS={
 
 /** Convert internal gameplay permission failures into actionable player feedback. */
 export function playerFacingGameplayError(message:string){
- return message==='events_locked'?'Events are temporarily unavailable. Please try again.':message;
+ return message==='events_locked'?'Events are temporarily unavailable. Please try again.':message==='contract_board_locked'?EARLY_FEATURE_UNLOCKS.contracts.requirement+' and claim its quest reward to unlock the Contract Board.':message;
 }
 
 export interface FeatureUnlockHost{quests?:readonly {questId:string;status:string}[];otherCharacters?:readonly {quests:readonly {questId:string;status:string}[]}[];account:{guildMember?:boolean};}

@@ -61,6 +61,43 @@ ok(commonClaim.result.duplicateCount===1,'Second crafted copy should report one 
 ok(craftedGearInstances(state).length===2,'Duplicate gear crafts must remain distinct owned instances');
 ok(auditCraftedGearOwnership(state).consistent,'New Forge claims must physically link both distinct equipment copies to their authoritative instance records');
 ok(craftedGearCopyCapacity(state,recipe.output.itemId).count===2&&craftedGearCopyCapacity(state,recipe.output.itemId).remaining===TARGET_CRAFTED_GEAR_COPIES_PER_ITEM-2,'Per-item copy capacity must count account owned copies');
+const copiesAtCap=Array.from({length:7},(_,i)=>({
+  ...craftedGearInstances(state)[0],id:`fixture-seventh:${i}`,sourceReceiptKey:`fixture-seventh:${i}`,rarity:'mythic' as const,quality:100,locked:false,
+}));
+const cappedInventory={...state.inventory,stacks:[
+  ...state.inventory.stacks.filter(row=>row.itemId!==recipe.output.itemId),
+  ...copiesAtCap.map(row=>({itemId:row.itemId,quantity:1,instanceId:row.id})),
+]};
+const cappedSeed={...state,inventory:cappedInventory,account:{...state.account,craftedGearInstances:copiesAtCap,craftedGearAutoSellMode:'off' as const}};
+ok(auditCraftedGearOwnership(cappedSeed).consistent,'Seven physical tagged copies must be correctly linked before mass-crafting settlement');
+const cappedStart=startEquipmentCraft(cappedSeed,recipe.id,job.completesAtMs+10000).state;
+const cappedJob=equipmentCraftingQueue(cappedStart)[0];
+let sevenLimitRefused=false;try{claimEquipmentCraft(cappedStart,cappedJob.id,cappedJob.completesAtMs,.5)}catch(error){sevenLimitRefused=error instanceof Error&&error.message.includes('copy limit')}
+ok(sevenLimitRefused,'Without opt-in, an eighth Forge copy must be held ready, never placed over the seven-copy cap');
+const opted=executeGameCommand(cappedStart,{type:'gear_autosell',args:{enabled:true}},cappedJob.completesAtMs-100).state;
+const beforeAutoGold=opted.character!.gold;
+const autoWeak=claimEquipmentCraft(opted,cappedJob.id,cappedJob.completesAtMs,.5);
+ok(autoWeak.result.autoSold==='incoming','Weaker eighth Forge copy should auto-vendor itself after explicit opt-in');
+ok(autoWeak.state.character!.gold-beforeAutoGold===itemDef(recipe.output.itemId).value,'Selling weaker incoming gear must credit exactly its vendor Gold');
+ok(craftedGearCopyCapacity(autoWeak.state,recipe.output.itemId).count===7&&
+  auditCraftedGearOwnership(autoWeak.state).consistent,'Auto-vendoring a weak new copy must preserve the seven existing tagged physical items');
+ok(!equipmentCraftingQueue(autoWeak.state).some(row=>row.id===cappedJob.id),'Auto-vendored Forge jobs must complete and not claim twice');
+let autoReplayRejected=false;try{claimEquipmentCraft(autoWeak.state,cappedJob.id,cappedJob.completesAtMs,.5)}catch{autoReplayRejected=true}
+ok(autoReplayRejected,'Replaying auto-sale must never grant Gold twice');
+const replaceCopies=copiesAtCap.map(row=>({...row,rarity:'common' as const,quality:1}));
+const upgradeSeed={...cappedSeed,account:{...cappedSeed.account,craftedGearInstances:replaceCopies,craftedGearAutoSellMode:'keep_best_seven' as const}};
+const upgradeStarted=startEquipmentCraft(upgradeSeed,recipe.id,job.completesAtMs+12000).state;
+const upgradeJob=equipmentCraftingQueue(upgradeStarted)[0];
+const upgraded=claimEquipmentCraft(upgradeStarted,upgradeJob.id,upgradeJob.completesAtMs,.002);
+ok(upgraded.result.autoSold==='existing'&&upgraded.state.account.craftedGearInstances?.length===7,'A stronger new Forge roll must replace one exact eligible existing copy');
+ok(auditCraftedGearOwnership(upgraded.state).consistent,'Automatic replacement must not orphan, duplicate or silently erase another copy');
+ok(upgraded.state.inventory.stacks.some(row=>row.instanceId===upgraded.result.instanceId),'Better newly forged equipment must be physically delivered with its own exact instance ID');
+const protectedCopies=replaceCopies.map(row=>({...row,locked:true}));
+const protectedStarted=startEquipmentCraft({...upgradeSeed,account:{...upgradeSeed.account,craftedGearInstances:protectedCopies}},recipe.id,job.completesAtMs+13000).state;
+const protectedJob=equipmentCraftingQueue(protectedStarted)[0];
+let pendingProtected=false;try{claimEquipmentCraft(protectedStarted,protectedJob.id,protectedJob.completesAtMs,.002)}catch(error){pendingProtected=error instanceof Error&&error.message.includes('manual review')}
+ok(pendingProtected,'If all prior copies are locked, the higher-tier result must stay pending for manual selection');
+
 const physicalAudit=craftedGearLegacyOwnershipAudit(state,recipe.output.itemId);
 ok(physicalAudit.recordedCraftedCopies===2&&physicalAudit.physicalCopies===2,'Legacy ownership audit must reconcile two Forge copies with their two physical stacks');
 ok(physicalAudit.verifiedForAutoSell===false,'Matching legacy stock counts must never authorize a sale by instance ID');

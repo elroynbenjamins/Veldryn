@@ -1,4 +1,5 @@
 import {itemDef} from '../content/items';
+import {TARGET_CRAFTED_GEAR_COPIES_PER_ITEM} from './crafted-gear-instances';
 import type {CraftedGearInstance} from './types';
 import {
   craftedGearCanAutoSell,
@@ -41,10 +42,14 @@ export function proposeCraftedGearSettlement(args:{
   existing:readonly CraftedGearRetentionEntry[];
   incoming:CraftedGearInstance;
   incomingStorage:'inventory'|'bank';
+  /** Verified character receiving the fresh item, when not delivered to Bank. */
+  incomingHolderCharacterId?:string;
   mode:CraftedGearAutoSellMode;
   committedReceiptKeys:readonly string[];
 }):CraftedGearSettlementProposal{
   const {existing,incoming,incomingStorage,mode,committedReceiptKeys}=args;
+  if(incomingStorage==='inventory'&&(!args.incomingHolderCharacterId||!args.incomingHolderCharacterId.trim()))
+    throw new Error('Missing verified incoming inventory owner');
   if(!incoming.id||!incoming.sourceReceiptKey||!incoming.ownerCharacterId)
     throw new Error('Invalid Forge instance receipt');
   if(committedReceiptKeys.includes(incoming.sourceReceiptKey)
@@ -75,13 +80,17 @@ export function proposeCraftedGearSettlement(args:{
   const def=itemDef(sold.itemId);
   if(def.type!=='gear'||!Number.isSafeInteger(def.value)||def.value<0)throw new Error('Invalid vendor value');
   const location=retention.action==='sell_incoming'?incomingStorage:existing.find(entry=>entry.instance.id===sold.id)!.location;
+  const currentHolder=retention.action==='sell_incoming'
+    ?args.incomingHolderCharacterId
+    :existing.find(entry=>entry.instance.id===sold.id)?.holderCharacterId;
+  if(location==='inventory'&&!currentHolder)throw new Error('Missing verified sale recipient');
   const credit:CraftedGearSaleCredit=location==='bank'
     ?{amount:def.value,destination:'bank'}
-    :{amount:def.value,destination:'character',characterId:sold.ownerCharacterId};
+    :{amount:def.value,destination:'character',characterId:currentHolder};
   const instances=retention.action==='sell_incoming'
     ?owned
     :[...owned.filter(row=>row.id!==sold.id),incoming];
-  if(instances.length>7)throw new Error('Retention proposal exceeds crafted equipment limit');
+  if(instances.length>TARGET_CRAFTED_GEAR_COPIES_PER_ITEM)throw new Error('Retention proposal exceeds crafted equipment limit');
 
   return {status:'ready',instances,retention,receipt:{
     receiptKey:incoming.sourceReceiptKey,incomingInstanceId:incoming.id,

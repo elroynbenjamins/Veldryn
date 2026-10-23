@@ -1,6 +1,6 @@
 import {assert} from './test-assert';
 import {createCharacter,newGame} from '../src/core/game';
-import {EARLY_FEATURE_DESTINATION_ORDER,EARLY_FEATURE_UNLOCKS,earlyFeatureLockReason,earlyFeatureUnlocked} from '../src/core/feature-unlocks';
+import {EARLY_FEATURE_DESTINATION_ORDER,EARLY_FEATURE_UNLOCKS,earlyFeatureLockReason,earlyFeatureUnlocked,playerFacingGameplayError} from '../src/core/feature-unlocks';
 import {homeSessionSummary} from '../src/core/dashboard';
 import {executeGameCommand} from '../src/core/game-commands';
 
@@ -21,6 +21,8 @@ expectLocked(state,{type:'daily_supplies_claim',args:{characterId:state.characte
 expectLocked(state,{type:'goals_set',args:{goals:[]}},'goals_retired');
 expectLocked(state,{type:'seasonal',args:{period:'weekly',id:'anything'}},'contract_board_locked');
 expectLocked(state,{type:'event_daily'},'events_locked');
+assert.equal(playerFacingGameplayError('events_locked'),'Complete First Blood, First Skill and claim its quest reward to unlock Events.');
+assert.equal(playerFacingGameplayError('event_not_active'),'event_not_active','Unrelated errors must retain their original detail');
 
 state=claimQuest(state,'QST_002',2);
 for(const id of ['dailySupplies','events'] as const)assert.equal(earlyFeatureUnlocked(state,id),true,id+' should unlock at QST_002');

@@ -158,6 +158,10 @@ export function linkLegacyCraftedGearInstance(state:GameState,instanceId:string,
   const record=craftedGearInstances(state).find(row=>row.id===instanceId);
   if(!record)throw new Error('Unknown Forge quality record');
   if(!audit.unlocatedInstanceIds.includes(instanceId))throw new Error('Forge quality record already linked to an equipment copy');
+  const physical=[state.inventory.stacks,state.bank.stacks,state.overflow.stacks,...(state.otherCharacters??[]).flatMap(row=>[row.inventory.stacks,row.overflow.stacks])].reduce((sum,stacks)=>sum+stacks.reduce((n,row)=>n+(row.itemId===record.itemId?row.quantity:0),0),0)
+    +[state.character,...(state.otherCharacters??[]).map(row=>row.character)].reduce((n,character)=>n+Object.values(character?.equipment??{}).filter(id=>id===record.itemId).length,0);
+  const recorded=craftedGearInstances(state).filter(row=>row.itemId===record.itemId).length;
+  if(physical!==recorded)throw new Error('Legacy equipment count mismatch; inspect unmatched gear before associating Forge quality');
   const container=state[from],source=container.stacks[stackIndex];
   if(!source||source.itemId!==record.itemId||source.instanceId!==undefined||!Number.isSafeInteger(source.quantity)||source.quantity<1)
     throw new Error('Select an unlinked physical copy of exactly the same equipment item');

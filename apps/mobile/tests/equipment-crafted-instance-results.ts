@@ -65,6 +65,10 @@ const orphanAudit=craftedGearLegacyOwnershipAudit({...state,inventory:{...state.
 ok(orphanAudit.minimumUnlocatedInstanceCount>=1,'Removing stack evidence must surface unlocated record risk rather than silently deleting ownership');
 const otherCharacterId='account-alt',otherCharacterAudit=craftedGearLegacyOwnershipAudit({...state,otherCharacters:[{character:{...state.character!,id:otherCharacterId,equipment:{weapon:recipe.output.itemId}},inventory:{stacks:[],capacity:10},overflow:{stacks:[],expiresAtMs:null},activity:null,skills:state.skills,quests:state.quests,currentRegionId:'Greenfields'}]},recipe.output.itemId);
 ok(otherCharacterAudit.equippedCopies>=1&&otherCharacterAudit.physicalCopies===physicalAudit.physicalCopies+1,'Legacy audit must count equipment worn by an alternate account character');
+const accountWithExtraGear={...state,otherCharacters:[{character:{...state.character!,id:otherCharacterId,equipment:{weapon:recipe.output.itemId}},inventory:{stacks:[],capacity:10},overflow:{stacks:[],expiresAtMs:null},activity:null,skills:state.skills,quests:state.quests,currentRegionId:'Greenfields'}]};
+ok(craftedGearCopyCapacity(accountWithExtraGear,recipe.output.itemId).count===3,'Seven-copy projection must count legacy physical gear not yet linked to a Forge instance');
+ok(craftedGearCopyCapacity(accountWithExtraGear,recipe.output.itemId).verified===false,'Legacy stock-count agreement must not be mistaken for verified item identity');
+
 
 ok(new Set(craftedGearInstances(state).map(row=>row.id)).size===2,'Duplicate crafted copies need distinct instance IDs');
 ok(bestCraftedInstanceForItem(state,recipe.output.itemId)?.rarity==='epic','Lower-rarity duplicate must not displace the better owned copy');

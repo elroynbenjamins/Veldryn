@@ -77,7 +77,7 @@ function combinedQuantity(state:GameState,itemId:string){return quantity(state.i
 function consume(stacks:ItemStack[],itemId:string,amount:number){
   let left=amount;
   const next=stacks.map(row=>{
-    if(row.itemId!==itemId||left<=0)return row;
+    if(row.itemId!==itemId||left<=0||row.instanceId!==undefined)return row;
     const used=Math.min(left,row.quantity);left-=used;return {...row,quantity:row.quantity-used};
   }).filter(row=>row.quantity>0);
   return {stacks:next,used:amount-left};

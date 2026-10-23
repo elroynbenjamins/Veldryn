@@ -83,6 +83,26 @@ const taggedState={...state,inventory:{...state.inventory,stacks:state.inventory
   row.itemId===recipe.output.itemId?{...row,instanceId:ownedIds[taggedIndex++]}:row)}};
 const linkedAudit=auditCraftedGearOwnership(taggedState);
 ok(linkedAudit.consistent&&linkedAudit.linked.length===2,'Explicit instance markers should verify exactly two physical Forge copies');
+const equippedByCommand=executeGameCommand(taggedState,{type:'gear_equip',args:{instanceId:ownedIds[0]}},1200);
+ok(equippedByCommand.state.character?.equipmentInstanceIds?.[itemDef(recipe.output.itemId).slot!]===ownedIds[0],'Validated game command must equip the selected exact-copy receipt');
+ok(auditCraftedGearOwnership(equippedByCommand.state).consistent,'Equipped exact-copy command must preserve ownership audit consistency');
+let equippedSaleDenied=false;try{executeGameCommand(equippedByCommand.state,{type:'gear_sell',args:{instanceId:ownedIds[0]}},1201)}catch(error){equippedSaleDenied=error instanceof Error&&error.message.includes('Unequip')}
+ok(equippedSaleDenied,'An equipped exact gear copy must never be sold without unequipping');
+const unequippedByCommand=executeGameCommand(equippedByCommand.state,{type:'gear_unequip',args:{instanceId:ownedIds[0]}},1202);
+ok(auditCraftedGearOwnership(unequippedByCommand.state).consistent&&
+  unequippedByCommand.state.inventory.stacks.some(row=>row.instanceId===ownedIds[0]),'Validated unequip must restore the identical instance to Inventory');
+const lockedByCommand=executeGameCommand(unequippedByCommand.state,{type:'gear_lock',args:{instanceId:ownedIds[0],locked:true}},1203);
+let lockedSaleDenied=false;try{executeGameCommand(lockedByCommand.state,{type:'gear_sell',args:{instanceId:ownedIds[0]}},1204)}catch(error){lockedSaleDenied=error instanceof Error&&error.message.includes('locked')}
+ok(lockedSaleDenied,'Server command must refuse to sell a locked individual copy');
+const movedByCommand=executeGameCommand(unequippedByCommand.state,{type:'gear_move',args:{instanceId:ownedIds[0],to:'bank'}},1205);
+ok(movedByCommand.state.bank.stacks.some(row=>row.instanceId===ownedIds[0]),'Validated exact bank command should retain the original instance ID');
+const beforeBankGold=movedByCommand.state.bank.gold??0;
+const soldByCommand=executeGameCommand(movedByCommand.state,{type:'gear_sell',args:{instanceId:ownedIds[0]}},1206);
+ok((soldByCommand.state.bank.gold??0)-beforeBankGold===itemDef(recipe.output.itemId).value,'Selling a specified Bank copy must credit exactly one vendor reward to Bank');
+ok(craftedGearInstances(soldByCommand.state).every(row=>row.id!==ownedIds[0])&&auditCraftedGearOwnership(soldByCommand.state).consistent,'Exact-copy sale must remove physical and unique records together without touching other copies');
+let replayedSaleDenied=false;try{executeGameCommand(soldByCommand.state,{type:'gear_sell',args:{instanceId:ownedIds[0]}},1207)}catch{replayedSaleDenied=true}
+ok(replayedSaleDenied,'Repeated exact-item sale must not credit Gold again');
+
 const extraLegacyCopy={...taggedState,bank:{...taggedState.bank,stacks:[...taggedState.bank.stacks,{itemId:recipe.output.itemId,quantity:1}]}};
 ok(auditCraftedGearOwnership(extraLegacyCopy).unmarkedPhysicalCopies===1&&!auditCraftedGearOwnership(extraLegacyCopy).consistent,'An additional unmarked physical copy must prevent an exact-ownership all-clear');
 ok(craftedGearCopiesAt(taggedState,recipe.output.itemId,'inventory').length===2,'Copy selection must use exact inventory instance markers');

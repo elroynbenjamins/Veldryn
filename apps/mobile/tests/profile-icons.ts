@@ -8,6 +8,11 @@ function check(value:unknown,message:string):asserts value{if(!value)throw new E
 function rejects(fn:()=>unknown){let rejected=false;try{fn()}catch{rejected=true}check(rejected,'unowned icon must be rejected');}
 const state=createCharacter(newGame(1000),'IRONWARDEN','Aster');
 check(state.character!.profileIconId==='class:IRONWARDEN','default class icon');
+check(newlyUnlockedProfileIcons(newGame(1000),state).length===0,'first character does not announce its free class portrait');
+const otherClassCharacter=createCharacter(newGame(1000),'WAYFINDER','New Wayfinder');
+check(otherClassCharacter.character!.profileIconId==='class:WAYFINDER','another class starts with its own portrait');
+check(newlyUnlockedProfileIcons(newGame(1000),otherClassCharacter).length===0,'another class starter icon is not announced');
+check(newlyUnlockedProfileIcons(state,otherClassCharacter).length===0,'changing active class does not announce a free class portrait');
 check(profileIconCollection(state).length===14,'catalog includes a locked guild icon alongside class, starters, boss and two event icons');
 check(profileIconCollection(state).filter(row=>row.unlocked).length===10,'current class emblem and nine starter portraits available');
 check(canUseProfileIcon(state,'starter:hooded-ranger'),'starter portrait available');
@@ -35,6 +40,8 @@ rejects(()=>executeGameCommand(state,{type:'skin',args:{id:'starting'}},1000));
 const eventIcon=LIVE_EVENT_CATALOG.flatMap(e=>e.milestones('IRONWARDEN')).find(row=>row.reward.kind==='profile_icon')!.reward;
 rejects(()=>selectProfileIcon(state,eventIcon.id));
 const earned={...state,account:{...state.account,unlockedProfileIconIds:[eventIcon.id]}};
+check(newlyUnlockedProfileIcons(state,earned).some(row=>row.id===eventIcon.id),'newly earned event icon still announces');
+check(newlyUnlockedProfileIcons(state,{...state,defeatedBossIds:['FALLEN_KNIGHT']}).some(row=>row.id==='creature:FALLEN_KNIGHT'),'newly earned boss icon still announces');
 const eventSelected=executeGameCommand(earned,{type:'profile_icon',args:{id:eventIcon.id}},1000).state;
 check(eventSelected.character!.profileIconId===eventIcon.id,'earned event icon selectable');
 check(normalizeSave(eventSelected).character!.profileIconId===eventIcon.id,'event icon survives save normalization');

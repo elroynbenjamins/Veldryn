@@ -5,7 +5,7 @@ import {itemRarity,type ItemRarity} from './item-rarity';
 
 export const MAX_CRAFTED_GEAR_INSTANCES=500;
 /** Proposed account-wide, per-base-item copy limit. Do not enforce until per-copy disposal is available. */
-export const TARGET_CRAFTED_GEAR_COPIES_PER_ITEM=5;
+export const TARGET_CRAFTED_GEAR_COPIES_PER_ITEM=7;
 
 /** Quality is persisted on each instance, never synthesized from a mutable client clock. */
 export function craftedGearQualityRoll(trustedRoll:number,jobId:string){

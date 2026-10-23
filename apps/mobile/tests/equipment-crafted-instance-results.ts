@@ -57,7 +57,7 @@ state=commonClaim.state;
 ok(commonClaim.result.rarity==='common','Second non-proc craft should preserve Common rarity');
 ok(commonClaim.result.duplicateCount===1,'Second crafted copy should report one duplicate copy');
 ok(craftedGearInstances(state).length===2,'Duplicate gear crafts must remain distinct owned instances');
-ok(craftedGearCopyCapacity(state,recipe.output.itemId).count===2&&craftedGearCopyCapacity(state,recipe.output.itemId).remaining===TARGET_CRAFTED_GEAR_COPIES_PER_ITEM-2,'Per-item copy capacity must count only its owner's copies');
+ok(craftedGearCopyCapacity(state,recipe.output.itemId).count===2&&craftedGearCopyCapacity(state,recipe.output.itemId).remaining===TARGET_CRAFTED_GEAR_COPIES_PER_ITEM-2,'Per-item copy capacity must count account owned copies');
 ok(new Set(craftedGearInstances(state).map(row=>row.id)).size===2,'Duplicate crafted copies need distinct instance IDs');
 ok(bestCraftedInstanceForItem(state,recipe.output.itemId)?.rarity==='epic','Lower-rarity duplicate must not displace the better owned copy');
 ok(effectiveOwnedGearRarity(state,recipe.output.itemId)==='epic','Best-copy compatibility layer must retain Epic effective rarity');

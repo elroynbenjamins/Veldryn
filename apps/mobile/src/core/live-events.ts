@@ -5,6 +5,8 @@ import {unlockCombatCompanion} from './combat-companions';
 import {awardCompanionCandyXp} from './companion-runtime';
 
 export type EventPhase='upcoming'|'active'|'claiming';
+/** Keep seasonal announcements out of the first few levels without gating event gameplay. */
+export function canAnnounceLiveEventStart(characterLevel:number|undefined|null){return (characterLevel??0)>=5;}
 export function eventLifecycle(state:GameState,nowMs=Date.now()){const runtime=state.account.liveEvent;if(!runtime?.enabled)return null;const definition=liveEventDef(runtime.eventId);if(!definition)return null;const claimEndsAtMs=runtime.graceEndsAtMs??runtime.endsAtMs+definition.claimGraceDays*86400_000;if(nowMs<runtime.startsAtMs)return {runtime,definition,phase:'upcoming' as const,claimEndsAtMs};if(nowMs<runtime.endsAtMs)return {runtime,definition,phase:'active' as const,claimEndsAtMs};if(nowMs<claimEndsAtMs)return {runtime,definition,phase:'claiming' as const,claimEndsAtMs};return null;}
 export function activeLiveEvent(state:GameState,nowMs=Date.now()){const event=eventLifecycle(state,nowMs);return event?.phase==='active'?event:null;}
 export function claimableLiveEvent(state:GameState,nowMs=Date.now()){const event=eventLifecycle(state,nowMs);return event?.phase==='active'||event?.phase==='claiming'?event:null;}

@@ -1,6 +1,6 @@
 import {V33_EQUIPMENT_RECIPES} from '../src/content/equipment-recipes-v33';
 import {createCharacter,newGame} from '../src/core/game';
-import {claimEquipmentCraft,equipmentCraftingQueue,startEquipmentCraft} from '../src/core/equipment-crafting-queue';
+import {claimAllReadyEquipmentCrafts,claimEquipmentCraft,equipmentCraftingQueue,startEquipmentCraft} from '../src/core/equipment-crafting-queue';
 import {CRAFTED_EPIC_CHANCE,CRAFTED_MYTHIC_CHANCE,craftedGearRarity,craftedRarityStatMultiplier} from '../src/core/crafted-gear-rarity';
 import {MAX_CRAFTED_GEAR_INSTANCES,TARGET_CRAFTED_GEAR_COPIES_PER_ITEM,bestCraftedInstanceForItem,craftedGearCopyCapacity,craftedGearInstances,craftedGearQualityRoll,craftClaimSubRoll,effectiveOwnedGearRarity,normalizeCraftedGearInstances,createCraftedGearInstance} from '../src/core/crafted-gear-instances';
 import {enhancedGearStats,upgradeQuote} from '../src/core/equipment-enhancement';
@@ -85,6 +85,12 @@ let capacityError=false;
 try{createCraftedGearInstance({...state,account:{...state.account,craftedGearInstances:oversized}},{itemId:recipe.output.itemId,ownerCharacterId:state.character!.id,jobId:'overflow',createdAtMs:99999,roll:.9})}
 catch(error){capacityError=error instanceof Error&&error.message.includes('storage is full')}
 ok(capacityError,'New crafting must fail rather than evicting an existing copy at the global safety boundary');
+const fullQueueState={...commandStart.state,account:{...commandStart.state.account,craftedGearInstances:oversized}};
+const beforeQueueIds=equipmentCraftingQueue(fullQueueState).map(row=>row.id);
+const safelyBlocked=claimAllReadyEquipmentCrafts(fullQueueState,onlineJob.completesAtMs,.41);
+ok(safelyBlocked.claimed.length===0&&safelyBlocked.blocked.length===1,'Mass claim must leave the full-cap equipment result blocked, not crash or auto-delete');
+ok(equipmentCraftingQueue(safelyBlocked.state).map(row=>row.id).join(',')===beforeQueueIds.join(','),'A blocked Forge receipt must remain ready to claim after freeing space');
+ok(craftedGearInstances(safelyBlocked.state).length===oversized.length,'Mass-claim storage failure must never evict equipment');
 
 ok(TARGET_CRAFTED_GEAR_COPIES_PER_ITEM===7,'Players must be able to keep seven copies of each base equipment item');
 const copyTemplate=craftedGearInstances(state)[0];

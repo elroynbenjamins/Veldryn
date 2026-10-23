@@ -22,7 +22,7 @@ const screen=fs.readFileSync('src/screens/EventScreen.tsx','utf8'),ui=fs.readFil
 ok(screen.includes('<EventOverview')&&screen.includes('guildPveBoard()'),'Event Overview must render the hub and check authoritative Guild Boss access');
 ok(ui.includes('Activity drop rates')&&ui.includes('Rare discoveries')&&ui.includes('FEATURED ACTIVITIES'),'Overview must explain currency rates, discovery chances and event activities');
 ok(ui.includes('view.expedition.levelReady')&&ui.includes('bossLevelReady'),'Activity actions must expose character and Guild level gates');
-ok(ui.includes("earlyFeatureUnlocked(state,'events')")&&ui.includes("!active||!eventsUnlocked")&&ui.includes('Gift locked')&&ui.includes('EARLY_FEATURE_UNLOCKS.events.requirement'),'Festival gifts must show the quest unlock reason and disable claims until Events are unlocked');
+ok(ui.includes("dailyClaimed?'Claimed':'Claim daily gift'")&&ui.includes('disabled={dailyClaimed||dailyPending||!active}')&&!ui.includes('!eventsUnlocked'),'Festival gifts must be claimable by any level when the event is active and not already claimed');
 ok(screen.includes('playerFacingGameplayError(error instanceof Error?error.message'),'Event claim errors must translate internal server codes into player-facing feedback');
 ok(app.includes("onOpenGuildEventBoss={()=>{setGuildInitialPve(true);setTab('Guild')}")&&guild.includes("initialPve?'PvE':'Home'"),'Guild event boss actions must land directly on Guild PvE');
 ok(app.includes("source==='gathering'?'gathering':'crafting'")&&screen.includes('onOpenEventActivity'),'Normal event earning routes must navigate to their real screens');

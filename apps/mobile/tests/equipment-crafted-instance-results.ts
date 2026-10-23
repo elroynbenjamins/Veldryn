@@ -2,7 +2,7 @@ import {V33_EQUIPMENT_RECIPES} from '../src/content/equipment-recipes-v33';
 import {createCharacter,newGame} from '../src/core/game';
 import {claimEquipmentCraft,equipmentCraftingQueue,startEquipmentCraft} from '../src/core/equipment-crafting-queue';
 import {CRAFTED_EPIC_CHANCE,CRAFTED_MYTHIC_CHANCE,craftedGearRarity,craftedRarityStatMultiplier} from '../src/core/crafted-gear-rarity';
-import {bestCraftedInstanceForItem,craftedGearInstances,craftClaimSubRoll,effectiveOwnedGearRarity} from '../src/core/crafted-gear-instances';
+import {MAX_CRAFTED_GEAR_INSTANCES,TARGET_CRAFTED_GEAR_COPIES_PER_ITEM,bestCraftedInstanceForItem,craftedGearCopyCapacity,craftedGearInstances,craftedGearQualityRoll,craftClaimSubRoll,effectiveOwnedGearRarity,normalizeCraftedGearInstances,createCraftedGearInstance} from '../src/core/crafted-gear-instances';
 import {enhancedGearStats,upgradeQuote} from '../src/core/equipment-enhancement';
 import {itemDef} from '../src/content/items';
 import {itemRarity} from '../src/core/item-rarity';
@@ -39,6 +39,9 @@ state=epicClaim.state;
 ok(epicClaim.result.rarity==='epic'&&epicClaim.result.qualityProc,'Trusted .002 claim roll should produce an Epic quality proc');
 ok(craftedGearInstances(state).length===1,'Claimed Forge gear must create a persisted instance');
 ok(craftedGearInstances(state)[0].id.includes(job.id),'Crafted instance identity must derive from its authoritative Forge receipt');
+ok(epicClaim.result.quality!==undefined&&epicClaim.result.quality>=1&&epicClaim.result.quality<=100,'Crafted equipment must persist a bounded 1–100 quality roll');
+ok(epicClaim.result.quality===craftedGearQualityRoll(.002,job.id),'Quality must be deterministic from the trusted roll and job ID');
+ok(craftedGearQualityRoll(.123456,'job-a')===craftedGearQualityRoll(.123456,'job-a'),'Retry must retain the same quality');
 ok(craftedGearInstances(state)[0].enhancement.rank===0&&craftedGearInstances(state)[0].enhancement.gemIds.length===0,'Fresh crafted instance must start unenhanced and unsocketed');
 ok(effectiveOwnedGearRarity(state,recipe.output.itemId)==='epic','Best owned crafted copy should become effective rarity');
 ok(craftedRarityStatMultiplier(recipe.output.itemId,'epic')>1,'Epic T1 proc must provide a real stat multiplier');
@@ -53,6 +56,7 @@ state=commonClaim.state;
 ok(commonClaim.result.rarity==='common','Second non-proc craft should preserve Common rarity');
 ok(commonClaim.result.duplicateCount===1,'Second crafted copy should report one duplicate copy');
 ok(craftedGearInstances(state).length===2,'Duplicate gear crafts must remain distinct owned instances');
+ok(craftedGearCopyCapacity(state,recipe.output.itemId).count===2&&craftedGearCopyCapacity(state,recipe.output.itemId).remaining===TARGET_CRAFTED_GEAR_COPIES_PER_ITEM-2,'Per-item copy capacity must count only its owner's copies');
 ok(new Set(craftedGearInstances(state).map(row=>row.id)).size===2,'Duplicate crafted copies need distinct instance IDs');
 ok(bestCraftedInstanceForItem(state,recipe.output.itemId)?.rarity==='epic','Lower-rarity duplicate must not displace the better owned copy');
 ok(effectiveOwnedGearRarity(state,recipe.output.itemId)==='epic','Best-copy compatibility layer must retain Epic effective rarity');
@@ -73,5 +77,12 @@ ok(craftedGearInstances(commandClaim.state)[0]?.rarity==='mythic','Authoritative
 const normalized=normalizeSave({...state,version:6} as any);
 ok(normalized.account.craftedGearInstances?.length===2,'Save normalization must preserve crafted gear instances');
 ok(normalized.account.craftedGearInstances?.some(row=>row.rarity==='epic'),'Save normalization must preserve crafted instance rarity');
+ok(normalized.account.craftedGearInstances?.every(row=>row.quality!==undefined),'Save normalization must preserve deterministic crafted quality');
+const oversized=Array.from({length:MAX_CRAFTED_GEAR_INSTANCES+1},(_,i)=>({...craftedGearInstances(state)[0],id:`oversized:${i}`,sourceReceiptKey:`oversized:${i}`}));
+ok(normalizeCraftedGearInstances(oversized).length===oversized.length,'Legacy over-cap saves must never silently lose crafted instances during normalization');
+let capacityError=false;
+try{createCraftedGearInstance({...state,account:{...state.account,craftedGearInstances:oversized}},{itemId:recipe.output.itemId,ownerCharacterId:state.character!.id,jobId:'overflow',createdAtMs:99999,roll:.9})}
+catch(error){capacityError=error instanceof Error&&error.message.includes('storage is full')}
+ok(capacityError,'New crafting must fail rather than evicting an existing copy at the global safety boundary');
 
-console.log('PASS: Forge rarity uses 0.60% Epic / 0.10% Mythic upward procs with trusted instance-backed settlement and meaningful stats');
+console.log('PASS: Forge rarity and unique quality rolls persist, per-item target is projected, and excess saved items are never silently evicted');

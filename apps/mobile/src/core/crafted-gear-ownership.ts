@@ -187,8 +187,10 @@ function protectedGear(state:GameState,record:CraftedGearInstance){
   if(enhancement.rank>0||enhancement.statGemId||enhancement.effectGemId||enhancement.gemIds.length>0)
     throw new Error('Enhanced or socketed equipment cannot be sold or salvaged');
   const characters=[state.character,...(state.otherCharacters??[]).map(entry=>entry.character)].filter(Boolean);
-  if(characters.some(character=>character?.savedLoadouts?.some(preset=>Object.values(preset.equipmentInstanceIds??{}).includes(record.id))))
+  if(characters.some(character=>character?.savedLoadouts?.some(preset=>Object.values(preset.equipmentInstanceIds??{}).includes(record.id)||Object.entries(preset.equipment).some(([slot,id])=>id===record.itemId&&!preset.equipmentInstanceIds?.[slot as GearSlot]))))
     throw new Error('A saved loadout protects this equipment copy');
+  if(characters.some(character=>{const old=character?.gearEnhancements?.[record.itemId];return !!old&&(old.rank>0||!!old.statGemId||!!old.effectGemId||(old.gemIds?.length??0)>0)}))
+    throw new Error('Legacy equipment enhancements require manual review before disposal');
 }
 export function disposeCraftedGearInstance(state:GameState,instanceId:string,method:'sell'|'salvage'):GameState{
   if(!state.character)throw new Error('No active character');

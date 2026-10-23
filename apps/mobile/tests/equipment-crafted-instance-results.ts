@@ -59,6 +59,7 @@ state=commonClaim.state;
 ok(commonClaim.result.rarity==='common','Second non-proc craft should preserve Common rarity');
 ok(commonClaim.result.duplicateCount===1,'Second crafted copy should report one duplicate copy');
 ok(craftedGearInstances(state).length===2,'Duplicate gear crafts must remain distinct owned instances');
+ok(auditCraftedGearOwnership(state).consistent,'New Forge claims must physically link both distinct equipment copies to their authoritative instance records');
 ok(craftedGearCopyCapacity(state,recipe.output.itemId).count===2&&craftedGearCopyCapacity(state,recipe.output.itemId).remaining===TARGET_CRAFTED_GEAR_COPIES_PER_ITEM-2,'Per-item copy capacity must count account owned copies');
 const physicalAudit=craftedGearLegacyOwnershipAudit(state,recipe.output.itemId);
 ok(physicalAudit.recordedCraftedCopies===2&&physicalAudit.physicalCopies===2,'Legacy ownership audit must reconcile two Forge copies with their two physical stacks');
@@ -74,7 +75,8 @@ ok(craftedGearCopyCapacity(accountWithExtraGear,recipe.output.itemId).verified==
 
 ok(new Set(craftedGearInstances(state).map(row=>row.id)).size===2,'Duplicate crafted copies need distinct instance IDs');
 
-const legacyLinkAudit=auditCraftedGearOwnership(state);
+const legacyState={...state,inventory:{...state.inventory,stacks:state.inventory.stacks.map(row=>row.itemId===recipe.output.itemId?{itemId:row.itemId,quantity:row.quantity}:row)}};
+const legacyLinkAudit=auditCraftedGearOwnership(legacyState);
 ok(legacyLinkAudit.unlocatedInstanceIds.length===2&&!legacyLinkAudit.consistent,'Legacy untagged Forge copies must remain unverified, never guessed');
 ok(legacyLinkAudit.unmarkedPhysicalCopies===2,'Untagged physical copies of an owned crafted item must remain visible in the migration audit');
 const ownedIds=craftedGearInstances(state).map(row=>row.id);
@@ -121,7 +123,7 @@ ok(craftedGearInstances(lockedOnce).find(row=>row.id===ownedIds[1])?.locked!==tr
 ok(normalizeSave(lockedOnce).account.craftedGearInstances?.find(row=>row.id===firstCopy)?.locked===true,'Save migration must preserve per-copy protection');
 const unlockedOnce=setCraftedGearInstanceLock(lockedOnce,firstCopy,false);
 ok(craftedGearInstances(unlockedOnce).find(row=>row.id===firstCopy)?.locked===false,'Unlock should be reversible and exact');
-let legacyLockDenied=false;try{setCraftedGearInstanceLock(state,firstCopy,true)}catch(error){legacyLockDenied=error instanceof Error&&error.message.includes('not verified')}
+let legacyLockDenied=false;try{setCraftedGearInstanceLock(legacyState,firstCopy,true)}catch(error){legacyLockDenied=error instanceof Error&&error.message.includes('not verified')}
 ok(legacyLockDenied,'Never allow a per-copy lock action against an unlocated legacy receipt');
 
 ok(backTransfer.inventory.stacks.filter(row=>row.itemId===recipe.output.itemId).length===2,'Exact transfer must preserve duplicate copies of the same item definition');

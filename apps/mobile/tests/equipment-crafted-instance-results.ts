@@ -1,5 +1,5 @@
 import {V33_EQUIPMENT_RECIPES} from '../src/content/equipment-recipes-v33';
-import {claimOverflowToBank,createCharacter,depositToBank,newGame,sellItem,stackItems} from '../src/core/game';
+import {claimOverflowToBank,createCharacter,depositToBank,equipItem,newGame,sellItem,stackItems,unequipItem} from '../src/core/game';
 import {claimAllReadyEquipmentCrafts,claimEquipmentCraft,equipmentCraftingQueue,startEquipmentCraft} from '../src/core/equipment-crafting-queue';
 import {CRAFTED_EPIC_CHANCE,CRAFTED_MYTHIC_CHANCE,craftedGearRarity,craftedRarityStatMultiplier} from '../src/core/crafted-gear-rarity';
 import {MAX_CRAFTED_GEAR_INSTANCES,TARGET_CRAFTED_GEAR_COPIES_PER_ITEM,bestCraftedInstanceForItem,craftedGearCopyCapacity,craftedGearInstances,craftedGearQualityRoll,craftClaimSubRoll,effectiveOwnedGearRarity,normalizeCraftedGearInstances,createCraftedGearInstance,craftedGearLegacyOwnershipAudit} from '../src/core/crafted-gear-instances';
@@ -115,6 +115,14 @@ let genericSaleDenied=false;try{sellItem(taggedState,recipe.output.itemId,1)}cat
 ok(genericSaleDenied,'Legacy item-type selling must not silently sell a uniquely identified forged copy');
 let genericDepositDenied=false;try{depositToBank(taggedState,recipe.output.itemId,1)}catch(error){genericDepositDenied=error instanceof Error&&error.message.includes('individual equipment copy')}
 ok(genericDepositDenied,'Legacy item-type Bank transfers must not strip the copy identity');
+
+const craftedSlot=itemDef(recipe.output.itemId).slot!;
+const equippedTagged={...taggedState,character:{...taggedState.character!,equipment:{...taggedState.character!.equipment,[craftedSlot]:recipe.output.itemId},equipmentInstanceIds:{[craftedSlot]:firstCopy}}};
+let legacyUnequipDenied=false;try{unequipItem(equippedTagged,craftedSlot)}catch(error){legacyUnequipDenied=error instanceof Error&&error.message.includes('exact equipped copy')}
+ok(legacyUnequipDenied,'Legacy unequip must reject an instance-bound slot until exact-copy movement is available');
+let legacySwapDenied=false;try{equipItem(equippedTagged,recipe.output.itemId)}catch(error){legacySwapDenied=error instanceof Error&&error.message.includes('exact equipped copy')}
+ok(legacySwapDenied,'Legacy item-type equip must never silently overwrite a bound instance ID');
+
 const toOverflow={...bankTransfer,
   bank:{...bankTransfer.bank,stacks:bankTransfer.bank.stacks.filter(row=>row.instanceId!==firstCopy)},
   overflow:{stacks:[{itemId:recipe.output.itemId,quantity:1,instanceId:firstCopy}],expiresAtMs:123456}};

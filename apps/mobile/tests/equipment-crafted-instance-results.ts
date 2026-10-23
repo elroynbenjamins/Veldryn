@@ -10,7 +10,7 @@ import {executeGameCommand} from '../src/core/game-commands';
 import {normalizeSave} from '../src/core/save-normalization';
 import {craftedGearCanAutoSell,planCraftedGearRetention,compareCraftedGearRetentionPower} from '../src/core/crafted-gear-retention';
 import {proposeCraftedGearSettlement} from '../src/core/crafted-gear-settlement';
-import {auditCraftedGearOwnership,craftedGearCopiesAt,moveCraftedGearInstance} from '../src/core/crafted-gear-ownership';
+import {auditCraftedGearOwnership,craftedGearCopiesAt,moveCraftedGearInstance,setCraftedGearInstanceLock} from '../src/core/crafted-gear-ownership';
 
 function ok(value:unknown,message:string){if(!value)throw new Error(message)}
 
@@ -95,6 +95,15 @@ ok(bankTransfer.character!.gold===firstGold,'Inventory-to-Bank equipment transfe
 const backTransfer=moveCraftedGearInstance(bankTransfer,firstCopy,'inventory');
 ok(auditCraftedGearOwnership(backTransfer).consistent&&
   backTransfer.inventory.stacks.filter(row=>row.instanceId===firstCopy).length===1,'Bank return must restore the original instance ID');
+const lockedOnce=setCraftedGearInstanceLock(taggedState,firstCopy,true);
+ok(craftedGearInstances(lockedOnce).find(row=>row.id===firstCopy)?.locked===true,'Lock command must protect only the selected physical copy');
+ok(craftedGearInstances(lockedOnce).find(row=>row.id===ownedIds[1])?.locked!==true,'Locking a copy must not lock every item of its base type');
+ok(normalizeSave(lockedOnce).account.craftedGearInstances?.find(row=>row.id===firstCopy)?.locked===true,'Save migration must preserve per-copy protection');
+const unlockedOnce=setCraftedGearInstanceLock(lockedOnce,firstCopy,false);
+ok(craftedGearInstances(unlockedOnce).find(row=>row.id===firstCopy)?.locked===false,'Unlock should be reversible and exact');
+let legacyLockDenied=false;try{setCraftedGearInstanceLock(state,firstCopy,true)}catch(error){legacyLockDenied=error instanceof Error&&error.message.includes('not verified')}
+ok(legacyLockDenied,'Never allow a per-copy lock action against an unlocated legacy receipt');
+
 ok(backTransfer.inventory.stacks.filter(row=>row.itemId===recipe.output.itemId).length===2,'Exact transfer must preserve duplicate copies of the same item definition');
 const duplicateMarkerState={...taggedState,bank:{...taggedState.bank,stacks:[...taggedState.bank.stacks,{itemId:recipe.output.itemId,quantity:1,instanceId:firstCopy}]}};
 ok(auditCraftedGearOwnership(duplicateMarkerState).problems.some(message=>message.includes('Duplicate physical copy')),'Duplicate instance markers must be rejected');
@@ -171,6 +180,7 @@ ok(!craftedGearCanAutoSell({...sevenCopies[0],holderCharacterId:undefined}),'Unk
 ok(!craftedGearCanAutoSell({...sevenCopies[0],location:'equipped'}),'Equipped copies must never be auto-sold');
 ok(!craftedGearCanAutoSell({...sevenCopies[0],location:'unknown'}),'Legacy ambiguous storage must never be auto-sold');
 ok(!craftedGearCanAutoSell({...sevenCopies[0],savedLoadout:true}),'Saved loadout copies must never be auto-sold');
+ok(!craftedGearCanAutoSell({...sevenCopies[0],instance:{...sevenCopies[0].instance,locked:true}}),'Persisted per-instance locks must override an otherwise eligible auto-sale snapshot');
 ok(!craftedGearCanAutoSell({...sevenCopies[0],favorite:true}),'Favorite copies must never be auto-sold');
 ok(!craftedGearCanAutoSell({...sevenCopies[0],instance:{...sevenCopies[0].instance,enhancement:{...sevenCopies[0].instance.enhancement,rank:1}}}),'Enhanced equipment must never be auto-sold');
 ok(!craftedGearCanAutoSell({...sevenCopies[0],instance:{...sevenCopies[0].instance,enhancement:{...sevenCopies[0].instance.enhancement,effectGemId:'SWIFT_SIGIL'}}}),'Socketed equipment must never be auto-sold');

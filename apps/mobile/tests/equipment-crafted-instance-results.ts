@@ -9,6 +9,7 @@ import {itemRarity} from '../src/core/item-rarity';
 import {executeGameCommand} from '../src/core/game-commands';
 import {normalizeSave} from '../src/core/save-normalization';
 import {craftedGearCanAutoSell,planCraftedGearRetention,compareCraftedGearRetentionPower} from '../src/core/crafted-gear-retention';
+import {proposeCraftedGearSettlement} from '../src/core/crafted-gear-settlement';
 
 function ok(value:unknown,message:string){if(!value)throw new Error(message)}
 
@@ -108,7 +109,7 @@ ok(TARGET_CRAFTED_GEAR_COPIES_PER_ITEM===7,'Players must be able to keep seven c
 const copyTemplate=craftedGearInstances(state)[0];
 const sevenCopies=Array.from({length:7},(_,i)=>({
   instance:{...copyTemplate,id:`quality-${i}`,sourceReceiptKey:`quality-${i}`,rarity:'common' as const,quality:10+i*10},
-  location:'inventory' as const,ownershipVerified:true,protectionsVerified:true,locked:false,favorite:false,savedLoadout:false,
+  location:'inventory' as const,holderCharacterId:state.character!.id,ownershipVerified:true,protectionsVerified:true,locked:false,favorite:false,savedLoadout:false,
 }));
 const incomingLow={...copyTemplate,id:'new-low',quality:1,rarity:'common' as const};
 const incomingHigh={...copyTemplate,id:'new-high',quality:90,rarity:'epic' as const};
@@ -133,6 +134,7 @@ ok(!craftedGearCanAutoSell({...sevenCopies[0],protectionsVerified:undefined}),'M
 ok(!craftedGearCanAutoSell({...sevenCopies[0],locked:undefined}),'Missing lock state must fail closed');
 ok(!craftedGearCanAutoSell({...sevenCopies[0],favorite:undefined}),'Missing favorite state must fail closed');
 ok(!craftedGearCanAutoSell({...sevenCopies[0],savedLoadout:undefined}),'Missing loadout state must fail closed');
+ok(!craftedGearCanAutoSell({...sevenCopies[0],holderCharacterId:undefined}),'Unknown current inventory holder must prevent sale and misrouted Gold');
 ok(!craftedGearCanAutoSell({...sevenCopies[0],location:'equipped'}),'Equipped copies must never be auto-sold');
 ok(!craftedGearCanAutoSell({...sevenCopies[0],location:'unknown'}),'Legacy ambiguous storage must never be auto-sold');
 ok(!craftedGearCanAutoSell({...sevenCopies[0],savedLoadout:true}),'Saved loadout copies must never be auto-sold');
@@ -143,5 +145,29 @@ ok(planCraftedGearRetention([...sevenCopies,sevenCopies[0]],incomingHigh,'keep_b
 ok(planCraftedGearRetention(sevenCopies.map((entry,i)=>i===0?{...entry,instance:{...entry.instance,quality:undefined}}:entry),incomingHigh,'keep_best_seven').action==='manual_review','Legacy unrolled quality must not be silently ranked or deleted');
 ok(normalizeSave({...state,account:{...state.account,craftedGearAutoSellMode:'keep_best_seven'}} as any).account.craftedGearAutoSellMode==='keep_best_seven','Explicit Keep Best Seven preference must survive save normalization');
 ok(normalizeSave({...state,account:{...state.account,craftedGearAutoSellMode:undefined}} as any).account.craftedGearAutoSellMode==='off','Older saves must default to auto-sell off');
+
+const settlementInput={existing:sevenCopies,incoming:incomingHigh,incomingStorage:'inventory' as const,incomingHolderCharacterId:state.character!.id,mode:'keep_best_seven' as const,committedReceiptKeys:[] as string[]};
+const proposedUpgrade=proposeCraftedGearSettlement(settlementInput);
+ok(proposedUpgrade.status==='ready'&&proposedUpgrade.instances.length===7,'Prepared settlement must preserve seven copies without mutating state');
+ok(proposedUpgrade.status==='ready'&&proposedUpgrade.receipt.soldInstanceId==='quality-0'&&proposedUpgrade.receipt.action==='sell_existing','Prepared Forge proposal must select the exact weakest instance');
+ok(proposedUpgrade.status==='ready'&&proposedUpgrade.receipt.credit?.destination==='character'&&proposedUpgrade.receipt.credit?.characterId===state.character!.id,'Proposed vendor Gold must target the current verified item holder');
+ok(sevenCopies[0].instance.id==='quality-0'&&sevenCopies.length===7,'Preparing settlement must not mutate originals');
+const bankProposal=proposeCraftedGearSettlement({...settlementInput,existing:sevenCopies.map((entry,i)=>i===0?{...entry,location:'bank' as const,holderCharacterId:undefined}:entry)});
+ok(bankProposal.status==='ready'&&bankProposal.receipt.credit?.destination==='bank','Selling a Bank-owned exact instance must credit Bank Gold');
+const incomingBankProposal=proposeCraftedGearSettlement({...settlementInput,incoming:incomingLow,incomingStorage:'bank',incomingHolderCharacterId:undefined});
+ok(incomingBankProposal.status==='ready'&&incomingBankProposal.receipt.action==='sell_incoming'&&incomingBankProposal.receipt.credit?.destination==='bank','A weak freshly forged Bank-bound copy should sell itself into Bank Gold');
+const manualProposal=proposeCraftedGearSettlement({...settlementInput,mode:'off'});
+ok(manualProposal.status==='blocked'&&manualProposal.instances.length===7,'Auto-sell off must prepare no disposal and retain original ownership');
+const unverifiedProposal=proposeCraftedGearSettlement({...settlementInput,existing:sevenCopies.map(entry=>({...entry,ownershipVerified:undefined}))});
+ok(unverifiedProposal.status==='blocked','Missing ownership proof must block an existing-copy replacement proposal');
+let duplicateReceiptDenied=false;
+try{proposeCraftedGearSettlement({...settlementInput,committedReceiptKeys:[incomingHigh.sourceReceiptKey]})}
+catch(error){duplicateReceiptDenied=error instanceof Error&&error.message==='Forge receipt already settled'}
+ok(duplicateReceiptDenied,'Proposed Forge replacement must reject already settled receipts to prevent double Gold');
+let absentHolderDenied=false;
+try{proposeCraftedGearSettlement({...settlementInput,incomingHolderCharacterId:undefined})}
+catch(error){absentHolderDenied=error instanceof Error&&error.message.includes('incoming inventory owner')}
+ok(absentHolderDenied,'Proposed seller must not guess the incoming inventory Gold recipient');
+
 
 console.log('PASS: Forge rarity, unique quality, seven-copy policy, opt-in retention plan and no-loss bounds are covered');

@@ -123,6 +123,23 @@ export function moveCraftedGearInstance(state:GameState,instanceId:string,to:'in
   return {...state,bank:{...state.bank,stacks:withoutInstance(state.bank.stacks,instanceId)},inventory:{...state.inventory,stacks:inventoryStacks}};
 }
 
+/**
+ * Exact-copy lock state reducer for future trusted commands. The server must
+ * perform the same ownership check under an account lock before persisting.
+ * Only this character's physical copy, its equipped slots or a Bank copy can
+ * be toggled; a missing/ambiguous legacy instance is never guessed.
+ */
+export function setCraftedGearInstanceLock(state:GameState,instanceId:string,locked:boolean):GameState{
+  if(typeof locked!=='boolean')throw new Error('Invalid equipment lock state');
+  if(!state.character)throw new Error('No character');
+  const {location}=resolveTracked(state,instanceId);
+  if(location.place!=='bank'&&location.holderCharacterId!==state.character.id)
+    throw new Error('Cannot change another character\'s equipment protection');
+  const records=craftedGearInstances(state);
+  return {...state,account:{...state.account,craftedGearInstances:records.map(record=>
+    record.id===instanceId?{...record,locked}:record)}};
+}
+
 /** Exact-copy visibility for future slot and bank UIs. Does not select an untagged legacy copy. */
 export function craftedGearCopiesAt(state:GameState,itemId:string,place:'inventory'|'bank'){
   const audit=auditCraftedGearOwnership(state);

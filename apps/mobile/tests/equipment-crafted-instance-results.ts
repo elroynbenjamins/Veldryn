@@ -154,6 +154,8 @@ ok(tieDecision.action==='sell_incoming','Equal-strength rolls must keep the olde
 const partlyProtected=sevenCopies.map((entry,i)=>({...entry,locked:i===0}));
 const protectedDecision=planCraftedGearRetention(partlyProtected,incomingHigh,'keep_best_seven');
 ok(protectedDecision.action==='sell_existing'&&protectedDecision.instanceId==='quality-1','Auto-sell must skip locked copies and target the next-lowest eligible item');
+const protectedUpgrade=planCraftedGearRetention(partlyProtected,{...incomingLow,quality:15},'keep_best_seven');
+ok(protectedUpgrade.action==='manual_review','A new roll stronger than the weakest protected copy must not be auto-sold just because weaker eligible copies do not exist');
 const allProtected=sevenCopies.map(entry=>({...entry,locked:true}));
 const blockedDecision=planCraftedGearRetention(allProtected,incomingHigh,'keep_best_seven');
 ok(blockedDecision.action==='manual_review'&&blockedDecision.reason==='no_eligible_copy','Do not sell valuable new results if all existing copies are protected');

@@ -76,12 +76,15 @@ ok(new Set(craftedGearInstances(state).map(row=>row.id)).size===2,'Duplicate cra
 
 const legacyLinkAudit=auditCraftedGearOwnership(state);
 ok(legacyLinkAudit.unlocatedInstanceIds.length===2&&!legacyLinkAudit.consistent,'Legacy untagged Forge copies must remain unverified, never guessed');
+ok(legacyLinkAudit.unmarkedPhysicalCopies===2,'Untagged physical copies of an owned crafted item must remain visible in the migration audit');
 const ownedIds=craftedGearInstances(state).map(row=>row.id);
 let taggedIndex=0;
 const taggedState={...state,inventory:{...state.inventory,stacks:state.inventory.stacks.map(row=>
   row.itemId===recipe.output.itemId?{...row,instanceId:ownedIds[taggedIndex++]}:row)}};
 const linkedAudit=auditCraftedGearOwnership(taggedState);
 ok(linkedAudit.consistent&&linkedAudit.linked.length===2,'Explicit instance markers should verify exactly two physical Forge copies');
+const extraLegacyCopy={...taggedState,bank:{...taggedState.bank,stacks:[...taggedState.bank.stacks,{itemId:recipe.output.itemId,quantity:1}]}};
+ok(auditCraftedGearOwnership(extraLegacyCopy).unmarkedPhysicalCopies===1&&!auditCraftedGearOwnership(extraLegacyCopy).consistent,'An additional unmarked physical copy must prevent an exact-ownership all-clear');
 ok(craftedGearCopiesAt(taggedState,recipe.output.itemId,'inventory').length===2,'Copy selection must use exact inventory instance markers');
 const firstCopy=ownedIds[0],firstGold=taggedState.character!.gold;
 const bankTransfer=moveCraftedGearInstance(taggedState,firstCopy,'bank');

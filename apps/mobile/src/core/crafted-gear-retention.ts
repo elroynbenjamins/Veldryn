@@ -63,14 +63,18 @@ export function planCraftedGearRetention(
   if(existing.length>TARGET_CRAFTED_GEAR_COPIES_PER_ITEM)return {action:'manual_review',reason:'over_limit'};
   if(existing.some(row=>row.instance.itemId!==incoming.itemId)||new Set([...existing.map(row=>row.instance.id),incoming.id]).size!==existing.length+1)
     return {action:'manual_review',reason:'inconsistent_instances'};
+  // Copies may be legacy/unrolled while there is still room. Do not require
+  // a quality ranking before the item reaches its seven-copy pool limit.
+  if(existing.length<TARGET_CRAFTED_GEAR_COPIES_PER_ITEM)return {action:'keep',reason:'under_limit'};
+  if(mode==='off')return {action:'manual_review',reason:'disabled'};
   const validQuality=(quality:number|undefined)=>quality!==undefined&&Number.isInteger(quality)&&quality>=1&&quality<=100;
   if(existing.some(row=>!validQuality(row.instance.quality))||!validQuality(incoming.quality))
     return {action:'manual_review',reason:'legacy_unknown_quality'};
-  // Before the cap is reached, no replacement is needed, even when auto-sell is off.
-  if(existing.length<TARGET_CRAFTED_GEAR_COPIES_PER_ITEM)return {action:'keep',reason:'under_limit'};
-  if(mode==='off')return {action:'manual_review',reason:'disabled'};
-  const newEntry:CraftedGearRetentionEntry={instance:incoming,location:'inventory'};
-  if(!craftedGearCanAutoSell(newEntry))return {action:'manual_review',reason:'incoming_protected'};
+  // Newly minted gear has not entered any storage location; inspect its actual
+  // enhancement instead of pretending it already has verified Inventory ownership.
+  const enhancement=incoming.enhancement;
+  if(enhancement.rank!==0||enhancement.statGemId||enhancement.effectGemId||enhancement.gemIds.length>0)
+    return {action:'manual_review',reason:'incoming_protected'};
   const weakestOverall=existing.slice().sort((a,b)=>compareCraftedGearRetentionPower(a.instance,b.instance))[0];
   if(compareCraftedGearRetentionPower(incoming,weakestOverall.instance)<=0)
     return {action:'sell_incoming',reason:'incoming_is_weakest',instanceId:incoming.id};

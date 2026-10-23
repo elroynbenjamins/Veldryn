@@ -28,7 +28,7 @@ export type CraftedGearRetentionDecision=
 
 /** Base rarity and quality both matter; a higher tier dominates the <=10% quality spread. */
 export function craftedGearRetentionPower(instance:CraftedGearInstance){
-  if(!Number.isInteger(instance.quality)||instance.quality===undefined||instance.quality<1||instance.quality>100)throw new Error('Unrolled crafted quality');
+  if(instance.quality===undefined||!Number.isInteger(instance.quality)||instance.quality<1||instance.quality>100)throw new Error('Unrolled crafted quality');
   const quality=.95+(instance.quality-1)/99*.1;
   return rarityMeta(instance.rarity).statMultiplier*quality;
 }
@@ -63,7 +63,7 @@ export function planCraftedGearRetention(
   if(existing.length>TARGET_CRAFTED_GEAR_COPIES_PER_ITEM)return {action:'manual_review',reason:'over_limit'};
   if(existing.some(row=>row.instance.itemId!==incoming.itemId)||new Set([...existing.map(row=>row.instance.id),incoming.id]).size!==existing.length+1)
     return {action:'manual_review',reason:'inconsistent_instances'};
-  const validQuality=(quality:number|undefined)=>Number.isInteger(quality)&&quality!==undefined&&quality>=1&&quality<=100;
+  const validQuality=(quality:number|undefined)=>quality!==undefined&&Number.isInteger(quality)&&quality>=1&&quality<=100;
   if(existing.some(row=>!validQuality(row.instance.quality))||!validQuality(incoming.quality))
     return {action:'manual_review',reason:'legacy_unknown_quality'};
   // Before the cap is reached, no replacement is needed, even when auto-sell is off.

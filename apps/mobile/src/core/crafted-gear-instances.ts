@@ -30,6 +30,7 @@ export function normalizeCraftedGearInstances(raw:unknown):CraftedGearInstance[]
         return [{
           id:String(row.id).slice(0,180),itemId:item.id,ownerCharacterId:String(row.ownerCharacterId).slice(0,120),rarity,
           quality:Number.isInteger(row.quality)&&row.quality>=1&&row.quality<=100?row.quality:undefined,
+          locked:row.locked===true,
           acquireSource:'craft' as const,sourceReceiptKey:String(row.sourceReceiptKey??row.id).slice(0,200),
           createdAtMs:Math.max(0,Math.floor(Number(row.createdAtMs)||0)),
           enhancement:{rank:Math.max(0,Math.min(4,Math.floor(Number(enhancement.rank)||0))),failures:Math.max(0,Math.floor(Number(enhancement.failures)||0)),statGemId:typeof enhancement.statGemId==='string'?enhancement.statGemId:undefined,effectGemId:typeof enhancement.effectGemId==='string'?enhancement.effectGemId:undefined,gemIds:Array.isArray(enhancement.gemIds)?enhancement.gemIds.filter((x:any)=>typeof x==='string').slice(0,2):[]},

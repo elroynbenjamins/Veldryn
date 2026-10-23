@@ -141,6 +141,37 @@ export function setCraftedGearInstanceLock(state:GameState,instanceId:string,loc
     record.id===instanceId?{...record,locked}:record)}};
 }
 
+/**
+ * Explicit legacy reconciliation. The player chooses which physical untagged
+ * equipment copy receives which pre-existing Forge receipt. It never guesses
+ * mappings automatically, creates gear or changes rarity/quality.
+ *
+ * Only the active character's Inventory and shared Bank are handled here;
+ * legacy equipped gear must be unequipped first. The server must persist this
+ * as a single revision-fenced account command.
+ */
+export function linkLegacyCraftedGearInstance(state:GameState,instanceId:string,from:'inventory'|'bank',stackIndex:number):GameState{
+  if(!state.character)throw new Error('No active character');
+  if(!Number.isSafeInteger(stackIndex)||stackIndex<0)throw new Error('Invalid physical equipment selection');
+  const audit=auditCraftedGearOwnership(state);
+  if(audit.problems.length)throw new Error('Existing equipment identity conflicts must be resolved before reconciliation');
+  const record=craftedGearInstances(state).find(row=>row.id===instanceId);
+  if(!record)throw new Error('Unknown Forge quality record');
+  if(!audit.unlocatedInstanceIds.includes(instanceId))throw new Error('Forge quality record already linked to an equipment copy');
+  const container=state[from],source=container.stacks[stackIndex];
+  if(!source||source.itemId!==record.itemId||source.instanceId!==undefined||!Number.isSafeInteger(source.quantity)||source.quantity<1)
+    throw new Error('Select an unlinked physical copy of exactly the same equipment item');
+  const replacement=source.quantity===1
+    ?[{itemId:source.itemId,quantity:1,instanceId:record.id}]
+    :[{itemId:source.itemId,quantity:source.quantity-1},{itemId:source.itemId,quantity:1,instanceId:record.id}];
+  if(source.quantity>1&&container.stacks.length>=entitlementStorageCapacity(state,from))
+    throw new Error('Free one storage slot before separating a legacy equipment stack');
+  const stacks=[...container.stacks.slice(0,stackIndex),...replacement,...container.stacks.slice(stackIndex+1)];
+  const next={...state,[from]:{...container,stacks}} as GameState;
+  if(auditCraftedGearOwnership(next).problems.length)throw new Error('Legacy equipment reconciliation would create duplicate copy identity');
+  return next;
+}
+
 /** Exact-copy equipment changes require a server-validated command. */
 export function equipCraftedGearInstance(state:GameState,instanceId:string):GameState{
   if(!state.character)throw new Error('No active character');

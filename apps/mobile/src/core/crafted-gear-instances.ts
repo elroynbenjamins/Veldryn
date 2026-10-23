@@ -45,6 +45,40 @@ export function craftedGearCopyCapacity(state:GameState,itemId:string){
   const owned=craftedGearInstances(state).filter(row=>row.itemId===itemId);
   return {count:owned.length,limit:TARGET_CRAFTED_GEAR_COPIES_PER_ITEM,remaining:Math.max(0,TARGET_CRAFTED_GEAR_COPIES_PER_ITEM-owned.length)};
 }
+/** Account-wide legacy ownership audit before any item-ID -> instance-ID migration.
+ * Counts every physical location without guessing which identical copy it holds.
+ * A balanced count is NOT proof of ownership, locks, socketing or loadout safety.
+ */
+export function craftedGearLegacyOwnershipAudit(state:GameState,itemId:string){
+  const count=(stacks:readonly {itemId:string;quantity:number}[]|undefined)=>
+    (stacks??[]).reduce((sum,stack)=>sum+(stack.itemId===itemId&&Number.isSafeInteger(stack.quantity)&&stack.quantity>0?stack.quantity:0),0);
+  const equipped=(equipment:Record<string,string|undefined>|undefined)=>
+    Object.values(equipment??{}).filter(id=>id===itemId).length;
+  const characterInventory=count(state.inventory.stacks)
+    +(state.otherCharacters??[]).reduce((sum,entry)=>sum+count(entry.inventory.stacks),0);
+  const characterOverflow=count(state.overflow.stacks)
+    +(state.otherCharacters??[]).reduce((sum,entry)=>sum+count(entry.overflow.stacks),0);
+  const equippedCopies=equipped(state.character?.equipment)
+    +(state.otherCharacters??[]).reduce((sum,entry)=>sum+equipped(entry.character.equipment),0);
+  const bankCopies=count(state.bank.stacks);
+  const physicalCount=characterInventory+characterOverflow+equippedCopies+bankCopies;
+  const instances=craftedGearInstances(state).filter(row=>row.itemId===itemId);
+  return {
+    itemId,
+    recordedCraftedCopies:instances.length,
+    physicalCopies:physicalCount,
+    inventoryCopies:characterInventory,
+    bankCopies,
+    overflowCopies:characterOverflow,
+    equippedCopies,
+    /** Physical stacks may also contain uncrafted gear, hence this is only a lower-bound warning. */
+    minimumUnlocatedInstanceCount:Math.max(0,instances.length-physicalCount),
+    possibleUntrackedCopies:Math.max(0,physicalCount-instances.length),
+    /** No copy-specific ownership evidence exists in legacy itemId-only slots. */
+    verifiedForAutoSell:false as const,
+  };
+}
+
 export function bestCraftedInstanceForItem(state:GameState,itemId:string,ownerCharacterId=state.character?.id){
   return craftedInstancesForItem(state,itemId,ownerCharacterId).slice().sort((a,b)=>craftedRarityStatMultiplier(itemId,b.rarity)-craftedRarityStatMultiplier(itemId,a.rarity)||b.enhancement.rank-a.enhancement.rank||(b.quality??0)-(a.quality??0)||b.createdAtMs-a.createdAtMs)[0];
 }

@@ -49,7 +49,7 @@ export function craftedGearCanAutoSell(entry:CraftedGearRetentionEntry){
   return (entry.location==='inventory'||entry.location==='bank')
     &&(entry.location==='bank'||(typeof entry.holderCharacterId==='string'&&entry.holderCharacterId.length>0))
     &&entry.ownershipVerified===true&&entry.protectionsVerified===true
-    &&entry.locked===false&&entry.favorite===false&&entry.savedLoadout===false
+    &&entry.locked===false&&gear.locked!==true&&entry.favorite===false&&entry.savedLoadout===false
     &&!!enhancement&&enhancement.rank===0
     &&!enhancement.statGemId&&!enhancement.effectGemId
     &&Array.isArray(enhancement.gemIds)&&enhancement.gemIds.length===0;

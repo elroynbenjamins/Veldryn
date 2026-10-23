@@ -45735,7 +45735,7 @@ function companionExpeditionStaminaCost(durationHours) {
 // apps/mobile/src/core/feature-unlocks.ts
 var EARLY_FEATURE_UNLOCKS = {
   dailySupplies: { questId: "QST_002", title: "Daily Supplies", requirement: "Complete First Blood, First Skill", description: "The daily reward track appears after the player understands basic skilling." },
-  events: { questId: "QST_002", title: "Events", requirement: "Complete First Blood, First Skill", description: "Live events appear early enough that new players do not miss limited-time content." },
+  events: { questId: "", title: "Events", requirement: "Available from the start", description: "All players can enter live events and earn their general rewards from level 1. Individual event activities may have their own requirements." },
   pets: { questId: "QST_003", title: "Pets", requirement: "Complete A Hound's Trail", description: "Pets unlock after you have learned the basics of combat, gathering and early regional progression." },
   accountBonuses: { questId: "QST_003", title: "Account Bonuses", requirement: "Complete A Hound's Trail", description: "Account-wide bonus summaries appear alongside the first collectible system." },
   friends: { questId: "QST_003", title: "Friends", requirement: "Complete A Hound's Trail", description: "Friends unlock once the first regional combat loop has been completed." },
@@ -45751,6 +45751,7 @@ function accountQuestClaimed(state, questId) {
   return (state.otherCharacters ?? []).some((entry2) => entry2.quests.some((row) => row.questId === questId && row.status === "claimed"));
 }
 function earlyFeatureUnlocked(state, id) {
+  if (id === "events") return true;
   const rule = EARLY_FEATURE_UNLOCKS[id];
   if (id === "guild" && state.account.guildMember) return true;
   return accountQuestClaimed(state, rule.questId);

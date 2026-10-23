@@ -32,6 +32,9 @@ assert.ok(giftBefore&&!giftBefore.claimed,'A level-one character should be eligi
 const levelOneClaim=executeGameCommand(liveLevelOne,{type:'event_daily'},eventNow).state;
 assert.equal(eventDailyGift(levelOneClaim,eventNow)?.claimed,true,'Level-one gift claims should be accepted and persisted');
 assert.equal(levelOneClaim.account.eventProgressById?.[eventId],giftBefore!.gift.rewardCurrency,'Level-one claims should award the exact event currency amount');
+const earnedMilestoneState={...levelOneClaim,account:{...levelOneClaim.account,eventProgressById:{...(levelOneClaim.account.eventProgressById??{}),[eventId]:50_000}}};
+const milestoneClaim=executeGameCommand(earnedMilestoneState,{type:'event_reward',args:{id:'emote_lantern_watch'}},eventNow+1).state;
+assert.ok(milestoneClaim.account.unlockedEmoteIds?.includes('emote_lantern_watch'),'Level-one players should be able to unlock earned festival cosmetics');
 let duplicateGiftError='';try{executeGameCommand(levelOneClaim,{type:'event_daily'},eventNow);}catch(error){duplicateGiftError=error instanceof Error?error.message:'';}
 assert.equal(duplicateGiftError,"Today's festival gift was already claimed.",'Daily gift must still be protected against duplicate claims');
 assert.equal(playerFacingGameplayError('events_locked'),'Events are temporarily unavailable. Please try again.');

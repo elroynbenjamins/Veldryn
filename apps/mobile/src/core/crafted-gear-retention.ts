@@ -90,8 +90,10 @@ export function planCraftedGearRetention(
     .sort((a,b)=>compareCraftedGearRetentionPower(a.instance,b.instance)||a.instance.id.localeCompare(b.instance.id));
   if(!eligible.length)return {action:'manual_review',reason:'no_eligible_copy'};
   const weakestEligible=eligible[0];
-  // Do not sacrifice an older, stronger piece when the new roll cannot improve it.
+  // The new item beat the weakest owned copy. If that copy is protected,
+  // selling the new item would violate Keep Best 7, so defer to manual review
+  // rather than disposing of an earned upgrade without the player's consent.
   if(compareCraftedGearRetentionPower(incoming,weakestEligible.instance)<=0)
-    return {action:'sell_incoming',reason:'incoming_is_weakest',instanceId:incoming.id};
+    return {action:'manual_review',reason:'no_eligible_copy'};
   return {action:'sell_existing',reason:'replace_weaker_unprotected',instanceId:weakestEligible.instance.id};
 }

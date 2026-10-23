@@ -95,6 +95,7 @@ const sevenCopies=Array.from({length:7},(_,i)=>({
 const incomingLow={...copyTemplate,id:'new-low',quality:1,rarity:'common' as const};
 const incomingHigh={...copyTemplate,id:'new-high',quality:90,rarity:'epic' as const};
 ok(planCraftedGearRetention(sevenCopies.slice(0,6),incomingHigh,'off').action==='keep','Copy limit should not affect crafts below seven, even when auto-sell is disabled');
+ok(planCraftedGearRetention(sevenCopies.slice(0,6).map((entry,i)=>i===0?{...entry,instance:{...entry.instance,quality:undefined}}:entry),incomingHigh,'keep_best_seven').action==='keep','Legacy unrolled equipment must remain claimable while still below the copy limit');
 ok(planCraftedGearRetention(sevenCopies,incomingHigh,'off').action==='manual_review','Mass craft auto-sell must be opt-in, never default');
 const lowDecision=planCraftedGearRetention(sevenCopies,incomingLow,'keep_best_seven');
 ok(lowDecision.action==='sell_incoming'&&lowDecision.instanceId==='new-low','A weaker new roll should sell itself and preserve all seven originals');

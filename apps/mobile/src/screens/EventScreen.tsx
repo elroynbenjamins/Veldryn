@@ -2,6 +2,7 @@ import {useEffect,useMemo,useRef,useState} from 'react';
 import {Image,ImageBackground,ScrollView,StyleSheet,Text,View} from 'react-native';
 import type {GameCommand} from '../core/game-commands';
 import type {GameState} from '../core/types';
+import {playerFacingGameplayError} from '../core/feature-unlocks';
 import {ActionFeedback,type FeedbackTone} from '../components/ActionFeedback';
 import {AnnualEventCalendarPanel} from '../components/AnnualEventCalendarPanel';
 import {GameButton} from '../components/GameButton';
@@ -51,7 +52,7 @@ function EventContent({state,onChange,onCommand,onOpenSeasonalExpedition,onOpenG
   void guildPveBoard().then(rows=>{if(live)setGuildBoss(rows.find(row=>row.kind==='event'&&row.eventId===event.definition.id)??null)}).catch(()=>{if(live){setGuildBoss(null);setGuildBossError(true)}}).finally(()=>{if(live)setGuildBossLoading(false)});
   return()=>{live=false};
  },[authoritativeGuildPve,event?.definition.id,event?.phase,tab]);
- const act=async(message:string,local:()=>GameState,command:GameCommand,pendingId:string=command.type)=>{if(busy.current)return;busy.current=true;setPendingAction(pendingId);setNotice('');try{if(onCommand){if(!await onCommand(command))throw new Error(command.type==='event_reward'?eventRewardText(language,'Reward could not be confirmed. Please retry.'):'Action could not be confirmed. Please retry.');}else await onChange(local());setTone('success');setNotice(message);}catch(error){setTone('error');setNotice(error instanceof Error?error.message:'Action could not be completed.');}finally{busy.current=false;setPendingAction(null);}};
+ const act=async(message:string,local:()=>GameState,command:GameCommand,pendingId:string=command.type)=>{if(busy.current)return;busy.current=true;setPendingAction(pendingId);setNotice('');try{if(onCommand){if(!await onCommand(command))throw new Error(command.type==='event_reward'?eventRewardText(language,'Reward could not be confirmed. Please retry.'):'Action could not be confirmed. Please retry.');}else await onChange(local());setTone('success');setNotice(message);}catch(error){setTone('error');setNotice(playerFacingGameplayError(error instanceof Error?error.message:'Action could not be completed.'));}finally{busy.current=false;setPendingAction(null);}};
  if(!event)return <ScrollView contentContainerStyle={s.page} showsVerticalScrollIndicator={false} showsHorizontalScrollIndicator={false}><Text style={[s.heading,{color:C.text}]}>Events</Text><Text style={[s.muted,{color:C.muted}]}>No event is active right now.</Text><AnnualEventCalendarPanel state={state}/></ScrollView>;
  if(event.phase==='upcoming')return <ScrollView contentContainerStyle={s.page} showsVerticalScrollIndicator={false} showsHorizontalScrollIndicator={false}><EventHero definition={event.definition} endsAtMs={event.runtime.startsAtMs}/><Panel><Text style={[s.heading,{color:C.text}]}>Coming soon</Text><Text style={[s.muted,{color:C.muted}]}>This event opens when its live window begins.</Text></Panel><AnnualEventCalendarPanel state={state} highlightEventId={event.definition.id}/></ScrollView>;
  const definition=event.definition,currency=eventCurrencyBalance(state,definition.id),prestige=eventPrestigeBalance(state,definition.id),daily=eventDailyGift(state,now),offers=eventShopOffers(state,now);

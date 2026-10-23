@@ -1,66 +1,41 @@
-# Crafted equipment quality, seven-copy retention and opt-in auto-sell
+# Unique forged gear, quality rolls and Keep Best 7
 
-Status: **draft foundation — not release-ready** (23 October 2026).
+**Status:** implemented on draft PR #601, **not merged or deployed** (2026-10-23). This document describes draft behavior, not a production release.
 
-## Agreed player experience
+## Player-facing contract
 
-- An account may keep **seven copies of each exact base equipment item ID** in total. Count all five characters, equipped and unequipped items, their Inventories and the shared Bank. Different equipment item IDs receive separate seven-copy pools.
-- Each crafted non-novice gear instance has a deterministic, persisted, server-owned quality **1–100** and one of the existing rarity tiers. The 0.60% Epic and 0.10% Mythic upgrade-proc rates stay unchanged; misses retain authored base rarity.
-- Target quality effect is **±5% item base stats**, secondary to rarity and the current +0…+4 enhancement and two sockets. **Not active until exact per-instance equipment and combat stats are complete.**
-- Add an account-level **Keep Best 7** toggle, **off by default**. When off, a full set requires the player to manage copies before claiming an eighth. When on, mass crafting can continue and finished items may be automatically sold, subject to the safeguards below.
-- At the seventh-copy boundary, compare the *newly rolled* copy with the seven owned copies by **rarity tier then quality** (effectively their stat strength; the quality spread is less than the gap between adjacent rarities).
-  - A weaker or tied fresh roll is automatically sold (the older copy wins ties) and the player gets its ordinary vendor Gold.
-  - A strictly better fresh roll replaces **the weakest verified eligible existing copy**, with Gold paid for the disposed copy.
-  - Never automatically sell an equipped copy, upgraded item, socketed gem, manually locked copy, favorite, a saved-loadout reference, or a copy with unknown/legacy location or quality.
-  - If a safe existing victim is unavailable for a stronger roll, **keep the completed Forge job pending for manual review**; do not sacrifice the stronger roll, exceed the cap silently or destroy a protected item.
-  - No auto-salvage or conversion to materials in the first release; the auto-action is ordinary vendor selling only.
-- Show the retained rarity + quality and Gold outcome for each claimed craft, a concise batch summary (kept / new copies sold / old copies replaced / blocked), and a direct Manage Copies action. Preserve fully traceable receipts.
-- Auto-sell must never turn on by itself during migration or after purchase of VIP/Supporter.
+- Each new timed non-novice Forge equipment result is issued as **one physically tagged copy** with a unique `instanceId`, rarity and deterministic quality roll **1–100**. Tier procs are unchanged (0.60% Epic; 0.10% Mythic). Quality affects equipped stat calculations by a bounded **±5%**; upgrades and two socket types remain separate.
+- Each account can have up to **seven physical copies of each exact equipment item ID**, across five characters, equipped items, inventories, Bank and overflow. Conservative copy projections count untagged legacy equipment too. Old over-cap saves are not truncated.
+- **Keep Best 7** opt-in toggle on the Forge screen, default **OFF**, persisted account-wide by a validated `gear_autosell` command.
+- With OFF, an eighth finished Forge craft **stays ready** until the player makes room.
+- With ON, if the existing seven copies are linked to their actual storage and server-verified, compare the incoming item with their rarity × quality. A weak or tied incoming roll sells itself; a stronger incoming roll sells the weakest **eligible** owned copy. Credits are routed to the actual holder or Bank.
+- Auto-sale **never** disposes equipped, locked, favorited, enhanced, socketed, loadout-protected, unknown-location or legacy-ambiguous copies. A stronger new craft whose weaker existing copies cannot safely be replaced **stays pending** for manual review.
+- The Forge result shows quality and whether the new or an older copy was automatically sold for vendor Gold.
+- Inventory and Bank have per-copy management: inspect individual rarity/quality, **Equip, Transfer, Lock/Unlock, Sell or Salvage** the precise instance, with destructive confirmation. The Character screen routes unequipping uniquely tagged gear through an exact-copy command.
+- Saving/applying a loadout preserves the selected instance ID. Applying a mixed legacy/unique loadout is all-or-nothing: missing, inaccessible or ambiguous required copies abort without committing a partial state.
+- **Legacy item-type** sell/transfer/bulk/equip operations cannot silently consume or erase an individually tagged copy. Legacy copies without a tag still use existing functionality where safe.
 
-## Implemented in this draft branch
+## Implementation
 
-1. `CraftedGearInstance.quality?: number`, computed deterministically from the trusted Forge roll + job receipt, persisted with each unique item and displayed on the Forge claim result.
-2. `TARGET_CRAFTED_GEAR_COPIES_PER_ITEM=7` with account-wide read-only `craftedGearCopyCapacity`.
-3. `CraftedGearAutoSellMode = 'off' | 'keep_best_seven'`, optional account preference persisted by normalizing saved state, **defaulting to off**. This option is **not exposed as an enabled player-facing toggle yet**.
-4. Pure retention planning in `apps/mobile/src/core/crafted-gear-retention.ts`, returning keep / sell incoming / sell eligible existing / manual-review without modifying data. It requires server-confirmed exact-instance locations for existing-copy disposal.
-5. Regression coverage added to `apps/mobile/tests/equipment-crafted-instance-results.ts` for quality persistence, seven-copy decision logic, disabled default, tie retention, fail-closed ownership/protection verification, locked/marked/enhanced/socketed/equipped/loadout safeguards, legacy unknown quality, and oversized save protection.
-6. Old crafted-instance records are never silently truncated during save normalization. The old global 500-instance safety boundary still refuses new instance creation without evicting any already owned gear.
-7. `craftedGearLegacyOwnershipAudit` counts existing physical gear in active and alternate characters' Inventories, Bank, overflow and equipped slots to highlight discrepancies **without guessing which instance lives where**. Balanced counts never imply auto-sell readiness.
-8. Claim All now leaves a blocked Forge receipt ready on an expected storage-cap error and checks subsequent completed jobs; player-facing command messages include the number blocked, rather than silently dropping results.
-9. `craftedGearCanAutoSell` fails closed: only candidates with server-confirmed ownership + protection snapshot and explicit `locked=false`, `favorite=false`, `savedLoadout=false` are eligible. Existing legacy call paths never provide that authoritative evidence, so the actual auto-sale stays disabled.
-10. `proposeCraftedGearSettlement` provides a deterministic, **non-mutating** exact-instance replacement plan with receipt replay checks and a Gold-credit destination matching the **verified current holder**, not the original crafter. Any missing holder, incomplete protection verification, unknown quality or duplicate Forge receipt prevents a sale. It does not mutate player possessions or perform server database writes.
-11. The seven-copy projection now conservatively counts `max(physical owned equipment, recorded crafted instances)` so previously acquired non-Forge equipment cannot be overlooked. This projected count is explicitly marked **unverified** until item-ID stacks are migrated to exact ownership.
-12. Partial Claim All skips predictable full-storage failures, preserves blocked receipts, reports pending jobs and still attempts other ready Forge/Gem claims. Unknown errors are still thrown instead of swallowed.
-13. `ItemStack.instanceId?` and `CharacterState.equipmentInstanceIds?` provide backward-compatible identity markers. The new `crafted-gear-ownership.ts` audits exact markers across active and alternate characters' inventories, overflow, equipment slots and shared Bank; it detects missing records, duplicate physical markers, mismatched item definitions, and unmarked physical copies. No arbitrary legacy-copy mapping is performed.
-14. `moveCraftedGearInstance` implements a lossless, exact-ID Inventory/Bank transfer reducer, with verification and capacity checks, for future server-authoritative calls. `setCraftedGearInstanceLock` toggles a single verified physical copy; locks persist and cannot be bypassed by the retention planner. Neither is exposed as an untrusted live network action yet.
-15. Shared `game.ts` stacking/overflow routing now preserve tagged individual copies, and generic item-type consumption refuses to consume them; legacy equipping/unequipping also refuses to erase a tagged equipped slot. The player-facing exact-copy equip/sell/salvage flow is **not yet ready**.
-16. Ownership, Bank round-trip, lock and marker-safety regression tests are included in `equipment-crafted-instance-results.ts`. TypeScript + these Forge cases passed on a completed CI commit, but unrelated full-suite validation remains red as described below.
+- `apps/mobile/src/core/crafted-gear-instances.ts`: deterministic 1–100 rolls, optional quality/lock for older saves, seven-copy projection, globally bounded instance creation with **no silent eviction**.
+- `apps/mobile/src/core/crafted-gear-ownership.ts`: cross-character physical ownership audit, precise Inventory ↔ Bank moves, per-copy lock, equip/unequip, manual sell/salvage with exact physical removal and one vendor Gold credit. Unknown/duplicate instance markers fail closed.
+- `apps/mobile/src/core/crafted-gear-retention.ts` and `crafted-gear-settlement.ts`: eligibility filtering, protected-item checks, deterministic rarity/quality comparison and settlement proposals with receipt replay protection.
+- `apps/mobile/src/core/equipment-crafting-queue.ts`: Forge claim issues physical instance markers; enforces the 7-copy limit; performs optional exact-copy replacement and reward grant together in the immutable game command state; blocked claims remain ready; Claim All continues other eligible jobs.
+- `apps/mobile/src/core/game-commands.ts`: validated `gear_equip`, `gear_unequip`, `gear_move`, `gear_lock`, `gear_sell`, `gear_salvage`, `gear_autosell` command types. Commands execute on trusted state through the established server command pipeline; clients cannot specify Forge RNG or modify state directly in server mode.
+- `apps/mobile/src/core/equipment-enhancement.ts`: enhancement rank, sockets, rarity and quality use the **actually equipped instance** where the equipped slot has a physical ID. Legacy untagged equipment retains the old compatibility path.
+- `apps/mobile/src/core/character-loadouts.ts`: save/normalize exact instance IDs, validated atomic loadout application. Legacy loadouts unrelated to tagged gear continue to function.
+- `apps/mobile/src/core/game.ts` and `inventory-bulk.ts`: marker-safe stacking, overflow, generic-item-consumption and type-based bulk action protections.
+- `InventoryScreen`, `EquipmentCraftQueuePanel`, `SkillsScreen` and `App.tsx`: functional per-copy actions and the optional auto-sale switch.
+- `apps/mobile/tests/equipment-crafted-instance-results.ts`: tagged claims, account-wide count, seven-copy overflow, weak incoming vendor sale, stronger exact-copy replacement, locked items, no double Gold on replay, exact equip/unequip/transfer/sell/lock/salvage, saved loadout references, legacy fallback and no-loss state normalization.
 
-**Nothing in this branch executes an auto-sale, activates seven-copy enforcement, changes combat stats, or publishes a setting toggle.** A decision planner cannot safely transfer ownership or remove a copy from the current item-ID-based Inventory/Bank system.
+## Known release blockers before merge
 
-## Prerequisites for safe activation
+1. **Legacy migration and review workflow.** Existing crafted records in old saves may be unlocated because their physical Inventory/Bank stacks had only `itemId`. The implementation never guesses which roll belongs to which untagged physical copy. Such accounts can remain blocked from Keep Best 7 until an explicit, auditable ownership reconciliation tool is implemented and tested. Legacy type-based enhancements and unbound saved loadouts also remain protected.
+2. **Server concurrency.** The code updates the command's immutable GameState in one operation, but an actual two-device concurrency and replay test against the production-style server persistence transaction has **not** been performed. Validate account revision fencing, duplicate command delivery, claim-vs-equip-vs-sale, overlapping claim-all, cash balance integrity and rollback.
+3. **Old clients / online deployment.** Older mobile clients know only `itemId` and might mishandle new instance-tagged gear. Ensure backend minimum-version gating and compatible migration before serving tagged Forge rewards to users on old builds.
+4. **UI and migration QA.** Exercise mixed legacy/unique inventories, all five characters, saved loadouts, Bank and Overflow, storage cap, socketed/locked/favorite equipment, exact-copy sorting/selection and screen-reader labels on Android devices.
+5. **Global storage cap.** The existing 500 unique-instance safety ceiling still applies; it must show a comprehensible management path without evicting gear and allow existing over-cap legacy saves to load.
+6. **CI and baseline.** The latest completed TypeScript, Forge regression, and SQL jobs passed on inspected commits. The overall Mobile UX suite still fails on the unrelated Home navigation contract and Mobile core's Expo patch expectation (~57.0.31 vs installed 57.0.29). A fully green final SHA and Android build are required.
+7. **Economy/balance.** Revalidate ±5% quality across upgrades, gems, equipment tiers, combat and dungeon snapshot calculation. Audit sold-item Gold destination and absence of duplicate rewards in a database-backed transaction.
 
-1. **Canonical unique ownership.** Finish migrating equipment slots, Inventory, Bank, loadouts, related transfers, saved stats, enhancements, gem sockets, item inspection, manual sell and salvage to distinguish `instanceId` from static `itemId`. The optional marker and exact Bank-move/lock foundation is present, but **existing Forge claim rewards are deliberately not tagged yet** until all legacy mutation paths and server commands can preserve those markers. All copy-sensitive actions must select an exact owned instance. Include offline and online migrations for legacy stacks, five-character accounts and existing enhanced items; preserve provenance and quantities. No implicit selection of the strongest copy across a shared Bank.
-2. **Protected-copy eligibility.** Server-confirm location, **current holder character**, locks, Favorites, enhanced rank, gems, equipped status and all saved-loadout references. Explicitly include other characters. Unknown provenance/location/quality always means manual review, not automatic deletion.
-3. **Opt-in UI.** Add an accessible toggle in the equipment Forge screen: `Auto-sell lowest when 7/7`, default off. Explain that higher rarity outweighs quality, never sold protections, and the expected Gold destination. Display counts and claim status; allow reverting it at any time. Persist preference account-wide with a server command. Do not enable it if server feature support is absent.
-4. **Authoritative atomic replacement.** At Forge claim time, roll server-side and compare current values, validate owner and exact victim, debit/credit physical inventory and vendor Gold, append a retention receipt, mark Forge job claimed and create/retain the surviving instance **in one fenced, idempotent transaction**. No optimistic local disposal. Always rerun validation under locks; race with equipping, moving, selling or opening a different client must not cause data loss. On failure, leave pending job and possessions unchanged.
-5. **Mass claim logic.** Process each completed job deterministically in order, updating simulated capacity after each committed claim; support incoming auto-sale without first reserving an eighth permanent instance. If seven are full and auto-sell off, stop claiming that item only and communicate exactly why. If the best new roll is blocked by protected copies, keep that job claimable for review, not silently sell it. Do not break unrelated Gem claims.
-6. **Stats + display.** Calculate quality/rarity from the *selected equipped instance* only; migrate current base-item-ID/best-copy compatibility behavior before applying any quality multiplier. Verify PvE and co-op snapshot normalization, regional progression, level requirements, sockets, saved loadouts and mobile stat comparison.
-7. **Economy + audit.** Credit existing vendor sell value only after an actual, audited auto-sale. Don't award a second crafted-item sale via a repeated receipt, and don't auto-return socketed gems. No fake row deletion to bypass the 500-instance account safety cap. A per-item seven-copy limit does not necessarily remove the need for a separate overall account storage budget.
-8. **QA gate.** Run mobile typecheck, crafted-instance and Forge tests, save migration checks, a fresh Supabase migration/SQL suite, concurrent claim-vs-equip and double-claim tests, claim-all under fullness, cross-device/offline regression, zero-loss rollback, Android UI tests and combat balance matrix. Reconcile with current main before merging.
-
-## Current CI status (23 October 2026)
-
-- The completed Forge-specific regression check and mobile TypeScript checks pass on the inspected draft commits.
-- The full Mobile UX suite fails on `Home must not falsely select Account or another persistent bottom destination` (navigation contract unrelated to gear).
-- The Mobile core SDK compatibility check expects Expo `~57.0.31` but the checkout uses `57.0.29`.
-- A prior Guild Shop isolated SQL test failed with `weekly_guild_reward_not_earned`; later inspected Guild Shop SQL checks succeeded, so do not assume a stable baseline without the latest matrix.
-- No Android or multi-device test of the new exact-copy commands has been run. Do not merge based only on isolated passing Forge cases.
-
-## Storage and performance
-
-Keep one compact row per physical equipment instance (base item catalog ID, unique instance ID, quality integer, rarity enum, enhancement, socket state, ownership, location and protection flags). All derived stats come from definitions plus instance modifiers. No new base item definition, stat-history rows or continuous Realtime subscription is required for each roll. The largest engineering risk is incorrect identity and transaction handling—not database storage.
-
-## Release gate
-
-The draft branch adds safe policy preparation only. **Do not expose the auto-sell toggle or execute actual disposals until every copy-sensitive path is authoritative, server-atomic and validated.** No production migration, data, or deployment is changed by this draft.
+**Release policy:** Keep PR #601 **draft and unmerged**. Do not deploy until blockers, particularly legacy reconciliation, old-client compatibility and concurrent server settlement, are independently verified.

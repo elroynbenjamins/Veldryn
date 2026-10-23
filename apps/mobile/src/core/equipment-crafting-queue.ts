@@ -289,14 +289,27 @@ export function claimEquipmentCraft(state:GameState,jobId:string,nowMs:number,ra
 
 export function claimAllReadyEquipmentCrafts(state:GameState,nowMs:number,trustedRoll=Math.random()){
   let next=withProjectedQueue(state,nowMs),claimed:string[]=[],results:ReturnType<typeof craftedInstanceResult>[]=[],gemClaims=0;
+  const blocked:{jobId:string;reason:string}[]=[];
   for(const job of equipmentCraftingQueue(next).filter(row=>isReady(row,nowMs))){
     try{
       const result=claimForgeJob(next,job.id,nowMs,craftClaimSubRoll(trustedRoll,job.id));next=result.state;claimed.push(job.id);
       if(result.kind==='equipment')results.push(result.result);else gemClaims++;
     }
-    catch(error){if(error instanceof Error&&(error.message==='Inventory and Bank are full'||error.message.startsWith('Bank is full')))break;throw error;}
+    catch(error){
+      if(error instanceof Error&&(
+        error.message==='Inventory and Bank are full'
+        ||error.message.startsWith('Bank is full')
+        ||error.message.startsWith('Crafted equipment storage is full')
+      )){
+        // A blocked equipment receipt must remain ready; do not lose it or
+        // prevent another finished job (notably Gem combines) from claiming.
+        blocked.push({jobId:job.id,reason:error.message});
+        continue;
+      }
+      throw error;
+    }
   }
-  return {state:next,claimed,results,gemClaims};
+  return {state:next,claimed,results,gemClaims,blocked};
 }
 
 export const EQUIPMENT_CRAFT_CANCEL_GOLD_REFUND=.90;

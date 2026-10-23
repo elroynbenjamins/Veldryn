@@ -10,6 +10,7 @@ import {executeGameCommand} from '../src/core/game-commands';
 import {normalizeSave} from '../src/core/save-normalization';
 import {craftedGearCanAutoSell,planCraftedGearRetention,compareCraftedGearRetentionPower} from '../src/core/crafted-gear-retention';
 import {proposeCraftedGearSettlement} from '../src/core/crafted-gear-settlement';
+import {auditCraftedGearOwnership,craftedGearCopiesAt,moveCraftedGearInstance} from '../src/core/crafted-gear-ownership';
 
 function ok(value:unknown,message:string){if(!value)throw new Error(message)}
 
@@ -72,6 +73,33 @@ ok(craftedGearCopyCapacity(accountWithExtraGear,recipe.output.itemId).verified==
 
 
 ok(new Set(craftedGearInstances(state).map(row=>row.id)).size===2,'Duplicate crafted copies need distinct instance IDs');
+
+const legacyLinkAudit=auditCraftedGearOwnership(state);
+ok(legacyLinkAudit.unlocatedInstanceIds.length===2&&!legacyLinkAudit.consistent,'Legacy untagged Forge copies must remain unverified, never guessed');
+const ownedIds=craftedGearInstances(state).map(row=>row.id);
+let taggedIndex=0;
+const taggedState={...state,inventory:{...state.inventory,stacks:state.inventory.stacks.map(row=>
+  row.itemId===recipe.output.itemId?{...row,instanceId:ownedIds[taggedIndex++]}:row)}};
+const linkedAudit=auditCraftedGearOwnership(taggedState);
+ok(linkedAudit.consistent&&linkedAudit.linked.length===2,'Explicit instance markers should verify exactly two physical Forge copies');
+ok(craftedGearCopiesAt(taggedState,recipe.output.itemId,'inventory').length===2,'Copy selection must use exact inventory instance markers');
+const firstCopy=ownedIds[0],firstGold=taggedState.character!.gold;
+const bankTransfer=moveCraftedGearInstance(taggedState,firstCopy,'bank');
+ok(bankTransfer.bank.stacks.some(row=>row.instanceId===firstCopy)&&
+  !bankTransfer.inventory.stacks.some(row=>row.instanceId===firstCopy),'Exact transfer must remove and re-add only the selected copy');
+ok(auditCraftedGearOwnership(bankTransfer).consistent,'Bank transfer must not orphan or duplicate Forge identity');
+ok(bankTransfer.character!.gold===firstGold,'Inventory-to-Bank equipment transfer must not create or spend Gold');
+const backTransfer=moveCraftedGearInstance(bankTransfer,firstCopy,'inventory');
+ok(auditCraftedGearOwnership(backTransfer).consistent&&
+  backTransfer.inventory.stacks.filter(row=>row.instanceId===firstCopy).length===1,'Bank return must restore the original instance ID');
+ok(backTransfer.inventory.stacks.filter(row=>row.itemId===recipe.output.itemId).length===2,'Exact transfer must preserve duplicate copies of the same item definition');
+const duplicateMarkerState={...taggedState,bank:{...taggedState.bank,stacks:[...taggedState.bank.stacks,{itemId:recipe.output.itemId,quantity:1,instanceId:firstCopy}]}};
+ok(auditCraftedGearOwnership(duplicateMarkerState).problems.some(message=>message.includes('Duplicate physical copy')),'Duplicate instance markers must be rejected');
+let conflictBlocked=false;try{moveCraftedGearInstance(duplicateMarkerState,firstCopy,'bank')}catch(error){conflictBlocked=error instanceof Error&&error.message.includes('identity conflict')}
+ok(conflictBlocked,'Moving equipment with a duplicate physical copy marker must fail closed');
+const mismatchState={...taggedState,inventory:{...taggedState.inventory,stacks:taggedState.inventory.stacks.map(row=>row.instanceId===firstCopy?{...row,itemId:'TRAVEL_RATION'}:row)}};
+ok(auditCraftedGearOwnership(mismatchState).problems.some(message=>message.includes('definition mismatch')),'A forged instance must never be assigned to a different base item');
+
 ok(bestCraftedInstanceForItem(state,recipe.output.itemId)?.rarity==='epic','Lower-rarity duplicate must not displace the better owned copy');
 ok(effectiveOwnedGearRarity(state,recipe.output.itemId)==='epic','Best-copy compatibility layer must retain Epic effective rarity');
 

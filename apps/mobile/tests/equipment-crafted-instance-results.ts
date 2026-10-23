@@ -2,7 +2,7 @@ import {V33_EQUIPMENT_RECIPES} from '../src/content/equipment-recipes-v33';
 import {createCharacter,newGame} from '../src/core/game';
 import {claimAllReadyEquipmentCrafts,claimEquipmentCraft,equipmentCraftingQueue,startEquipmentCraft} from '../src/core/equipment-crafting-queue';
 import {CRAFTED_EPIC_CHANCE,CRAFTED_MYTHIC_CHANCE,craftedGearRarity,craftedRarityStatMultiplier} from '../src/core/crafted-gear-rarity';
-import {MAX_CRAFTED_GEAR_INSTANCES,TARGET_CRAFTED_GEAR_COPIES_PER_ITEM,bestCraftedInstanceForItem,craftedGearCopyCapacity,craftedGearInstances,craftedGearQualityRoll,craftClaimSubRoll,effectiveOwnedGearRarity,normalizeCraftedGearInstances,createCraftedGearInstance} from '../src/core/crafted-gear-instances';
+import {MAX_CRAFTED_GEAR_INSTANCES,TARGET_CRAFTED_GEAR_COPIES_PER_ITEM,bestCraftedInstanceForItem,craftedGearCopyCapacity,craftedGearInstances,craftedGearQualityRoll,craftClaimSubRoll,effectiveOwnedGearRarity,normalizeCraftedGearInstances,createCraftedGearInstance,craftedGearLegacyOwnershipAudit} from '../src/core/crafted-gear-instances';
 import {enhancedGearStats,upgradeQuote} from '../src/core/equipment-enhancement';
 import {itemDef} from '../src/content/items';
 import {itemRarity} from '../src/core/item-rarity';
@@ -58,6 +58,14 @@ ok(commonClaim.result.rarity==='common','Second non-proc craft should preserve C
 ok(commonClaim.result.duplicateCount===1,'Second crafted copy should report one duplicate copy');
 ok(craftedGearInstances(state).length===2,'Duplicate gear crafts must remain distinct owned instances');
 ok(craftedGearCopyCapacity(state,recipe.output.itemId).count===2&&craftedGearCopyCapacity(state,recipe.output.itemId).remaining===TARGET_CRAFTED_GEAR_COPIES_PER_ITEM-2,'Per-item copy capacity must count account owned copies');
+const physicalAudit=craftedGearLegacyOwnershipAudit(state,recipe.output.itemId);
+ok(physicalAudit.recordedCraftedCopies===2&&physicalAudit.physicalCopies===2,'Legacy ownership audit must reconcile two Forge copies with their two physical stacks');
+ok(physicalAudit.verifiedForAutoSell===false,'Matching legacy stock counts must never authorize a sale by instance ID');
+const orphanAudit=craftedGearLegacyOwnershipAudit({...state,inventory:{...state.inventory,stacks:state.inventory.stacks.filter(row=>row.itemId!==recipe.output.itemId)}},recipe.output.itemId);
+ok(orphanAudit.minimumUnlocatedInstanceCount>=1,'Removing stack evidence must surface unlocated record risk rather than silently deleting ownership');
+const otherCharacterId='account-alt',otherCharacterAudit=craftedGearLegacyOwnershipAudit({...state,otherCharacters:[{character:{...state.character!,id:otherCharacterId,equipment:{weapon:recipe.output.itemId}},inventory:{stacks:[],capacity:10},overflow:{stacks:[],expiresAtMs:null},activity:null,skills:state.skills,quests:state.quests,currentRegionId:'Greenfields'}]},recipe.output.itemId);
+ok(otherCharacterAudit.equippedCopies>=1&&otherCharacterAudit.physicalCopies===physicalAudit.physicalCopies+1,'Legacy audit must count equipment worn by an alternate account character');
+
 ok(new Set(craftedGearInstances(state).map(row=>row.id)).size===2,'Duplicate crafted copies need distinct instance IDs');
 ok(bestCraftedInstanceForItem(state,recipe.output.itemId)?.rarity==='epic','Lower-rarity duplicate must not displace the better owned copy');
 ok(effectiveOwnedGearRarity(state,recipe.output.itemId)==='epic','Best-copy compatibility layer must retain Epic effective rarity');

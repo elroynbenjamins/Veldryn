@@ -126,7 +126,7 @@ ok(linkedAudit.consistent&&linkedAudit.linked.length===2,'Explicit instance mark
 const equippedByCommand=executeGameCommand(taggedState,{type:'gear_equip',args:{instanceId:ownedIds[0]}},1200);
 ok(equippedByCommand.state.character?.equipmentInstanceIds?.[itemDef(recipe.output.itemId).slot!]===ownedIds[0],'Validated game command must equip the selected exact-copy receipt');
 ok(auditCraftedGearOwnership(equippedByCommand.state).consistent,'Equipped exact-copy command must preserve ownership audit consistency');
-const loadoutWithCopy=saveCharacterLoadout(equippedByCommand.state,0,'Exact sword',1210);
+const loadoutWithCopy=saveCharacterLoadout({...equippedByCommand.state,character:{...equippedByCommand.state.character!,equippedFoodId:undefined}},0,'Exact sword',1210);
 ok(loadoutWithCopy.character!.savedLoadouts?.[0]?.equipmentInstanceIds?.[itemDef(recipe.output.itemId).slot!]===ownedIds[0],'Saved loadouts must persist the specific rarity/quality equipment instance');
 const loadoutCleared=executeGameCommand(loadoutWithCopy,{type:'gear_unequip',args:{instanceId:ownedIds[0]}},1211).state;
 let loadoutDisposalDenied=false;try{executeGameCommand(loadoutCleared,{type:'gear_sell',args:{instanceId:ownedIds[0]}},1212)}catch(error){loadoutDisposalDenied=error instanceof Error&&error.message.includes('saved loadout')}

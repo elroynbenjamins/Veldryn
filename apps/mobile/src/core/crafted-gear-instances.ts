@@ -42,8 +42,12 @@ export function craftedGearInstances(state:GameState){return normalizeCraftedGea
 export function craftedInstancesForItem(state:GameState,itemId:string,ownerCharacterId=state.character?.id){return craftedGearInstances(state).filter(row=>row.itemId===itemId&&(!ownerCharacterId||row.ownerCharacterId===ownerCharacterId));}
 /** Read-only capacity projection until inventory/bank/equipped items select instance IDs for safe disposal. */
 export function craftedGearCopyCapacity(state:GameState,itemId:string){
-  const owned=craftedGearInstances(state).filter(row=>row.itemId===itemId);
-  return {count:owned.length,limit:TARGET_CRAFTED_GEAR_COPIES_PER_ITEM,remaining:Math.max(0,TARGET_CRAFTED_GEAR_COPIES_PER_ITEM-owned.length)};
+  // Existing equipment may predate unique Forge instances or originate from
+  // non-Forge rewards. Never undercount those physical copies while projecting
+  // the eventual seven-copy account-wide cap.
+  const audit=craftedGearLegacyOwnershipAudit(state,itemId);
+  const count=Math.max(audit.physicalCopies,audit.recordedCraftedCopies);
+  return {count,limit:TARGET_CRAFTED_GEAR_COPIES_PER_ITEM,remaining:Math.max(0,TARGET_CRAFTED_GEAR_COPIES_PER_ITEM-count),verified:false as const};
 }
 /** Account-wide legacy ownership audit before any item-ID -> instance-ID migration.
  * Counts every physical location without guessing which identical copy it holds.

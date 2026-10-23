@@ -14,12 +14,14 @@ export interface VerifiedGearLocation{
 export interface CraftedGearOwnershipAudit{
   linked:VerifiedGearLocation[];
   unlocatedInstanceIds:string[];
+  /** Physical copies of a crafted item that lack any instance marker. */
+  unmarkedPhysicalCopies:number;
   problems:string[];
   /** This is a consistency audit, NOT verification of locks/loadout protection. */
   consistent:boolean;
 }
 
-const empty=():CraftedGearOwnershipAudit=>({linked:[],unlocatedInstanceIds:[],problems:[],consistent:false});
+const empty=():CraftedGearOwnershipAudit=>({linked:[],unlocatedInstanceIds:[],unmarkedPhysicalCopies:0,problems:[],consistent:false});
 
 /**
  * Only an explicit matching instanceId marker establishes where a copy is.
@@ -34,6 +36,7 @@ export function auditCraftedGearOwnership(state:GameState):CraftedGearOwnershipA
     else byId.set(record.id,record);
   }
   const observed=new Map<string,VerifiedGearLocation>();
+  const trackedItemIds=new Set(definitions.map(row=>row.itemId));
   const register=(instanceId:string,itemId:string,place:VerifiedGearPlace,holderCharacterId?:string,slot?:GearSlot)=>{
     const record=byId.get(instanceId);
     if(!record){audit.problems.push(`Unrecognized crafted instance marker: ${instanceId}`);return;}
@@ -45,7 +48,11 @@ export function auditCraftedGearOwnership(state:GameState):CraftedGearOwnershipA
   };
   const scanStacks=(stacks:readonly ItemStack[]|undefined,place:VerifiedGearPlace,holderCharacterId?:string)=>{
     for(const stack of stacks??[]){
-      if(stack.instanceId===undefined)continue;
+      if(stack.instanceId===undefined){
+        if(trackedItemIds.has(stack.itemId)&&Number.isSafeInteger(stack.quantity)&&stack.quantity>0)
+          audit.unmarkedPhysicalCopies+=stack.quantity;
+        continue;
+      }
       if(typeof stack.instanceId!=='string'||!stack.instanceId.trim()||stack.quantity!==1){
         audit.problems.push(`Invalid tagged equipment stack: ${String(stack.instanceId)}`);
         continue;
@@ -57,6 +64,10 @@ export function auditCraftedGearOwnership(state:GameState):CraftedGearOwnershipA
     if(!character)return;
     scanStacks(inventory.stacks,'inventory',character.id);
     scanStacks(overflow.stacks,'overflow',character.id);
+    for(const [slot,itemId] of Object.entries(character.equipment)){
+      if(itemId&&trackedItemIds.has(itemId)&&!character.equipmentInstanceIds?.[slot as GearSlot])
+        audit.unmarkedPhysicalCopies+=1;
+    }
     for(const [slot,instanceId] of Object.entries(character.equipmentInstanceIds??{})){
       if(typeof instanceId!=='string'||!instanceId.trim()){audit.problems.push(`Invalid equipped copy marker: ${slot}`);continue;}
       const itemId=character.equipment[slot as GearSlot];
@@ -68,7 +79,7 @@ export function auditCraftedGearOwnership(state:GameState):CraftedGearOwnershipA
   for(const entry of state.otherCharacters??[])scanCharacter(entry.character,entry.inventory,entry.overflow);
   scanStacks(state.bank.stacks,'bank');
   audit.unlocatedInstanceIds=[...byId.keys()].filter(id=>!observed.has(id));
-  audit.consistent=audit.problems.length===0&&audit.unlocatedInstanceIds.length===0;
+  audit.consistent=audit.problems.length===0&&audit.unlocatedInstanceIds.length===0&&audit.unmarkedPhysicalCopies===0;
   return audit;
 }
 

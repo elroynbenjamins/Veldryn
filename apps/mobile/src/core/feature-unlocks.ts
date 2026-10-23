@@ -17,6 +17,11 @@ export const EARLY_FEATURE_UNLOCKS={
  rankings:{questId:'QST_011',title:'Rankings',requirement:'Reach Level 20 and complete Place Among Guilds',description:'Prestige rankings unlock later at Level 20, after the player has had time to establish their character and social identity.'},
 } as const;
 
+/** Convert internal gameplay permission failures into actionable player feedback. */
+export function playerFacingGameplayError(message:string){
+ return message==='events_locked'?EARLY_FEATURE_UNLOCKS.events.requirement+' and claim its quest reward to unlock Events.':message;
+}
+
 export interface FeatureUnlockHost{quests?:readonly {questId:string;status:string}[];otherCharacters?:readonly {quests:readonly {questId:string;status:string}[]}[];account:{guildMember?:boolean};}
 export function accountQuestClaimed(state:FeatureUnlockHost,questId:string){
  if(state.quests?.some(row=>row.questId===questId&&row.status==='claimed'))return true;

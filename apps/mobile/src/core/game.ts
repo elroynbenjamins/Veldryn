@@ -311,7 +311,7 @@ export function stackItems(existing:ItemStack[],incoming:ItemStack[]):ItemStack[
       seen.add(row.instanceId);individual.push({...row});
     }else quantities.set(row.itemId,(quantities.get(row.itemId)??0)+row.quantity);
   }
-  return [...quantities.entries()].filter(([,q])=>q>0).map(([itemId,quantity])=>({itemId,quantity}),...individual];
+  return [...quantities.entries()].filter(([,q])=>q>0).map(([itemId,quantity])=>({itemId,quantity})).concat(individual);
 }
 
 export function usedSlots(stacks:ItemStack[]){return stacks.filter(s=>s.quantity>0).length;}

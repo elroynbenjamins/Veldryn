@@ -117,6 +117,16 @@ const legacyState={...state,inventory:{...state.inventory,stacks:state.inventory
 const legacyLinkAudit=auditCraftedGearOwnership(legacyState);
 ok(legacyLinkAudit.unlocatedInstanceIds.length===2&&!legacyLinkAudit.consistent,'Legacy untagged Forge copies must remain unverified, never guessed');
 ok(legacyLinkAudit.unmarkedPhysicalCopies===2,'Untagged physical copies of an owned crafted item must remain visible in the migration audit');
+const legacyIndex=legacyState.inventory.stacks.findIndex(row=>row.itemId===recipe.output.itemId&&row.instanceId===undefined);
+const originalLegacyId=craftedGearInstances(legacyState)[0].id;
+const manuallyLinked=executeGameCommand(legacyState,{type:'gear_link_legacy',args:{instanceId:originalLegacyId,from:'inventory',stackIndex:legacyIndex}},1180).state;
+ok(manuallyLinked.inventory.stacks.some(row=>row.instanceId===originalLegacyId),'Manual legacy reconciliation must attach the original Forge receipt to the chosen physical item');
+ok(auditCraftedGearOwnership(manuallyLinked).unlocatedInstanceIds.length===1,'Matching one legacy copy must not guess which remaining copy owns the other Forge roll');
+let repeatedLinkDenied=false;try{executeGameCommand(manuallyLinked,{type:'gear_link_legacy',args:{instanceId:originalLegacyId,from:'inventory',stackIndex:legacyIndex}},1181)}catch{repeatedLinkDenied=true}
+ok(repeatedLinkDenied,'A legacy Forge receipt already linked to one item cannot be reused to create another');
+const originalLegacyRecords=craftedGearInstances(manuallyLinked);
+ok(originalLegacyRecords.length===2&&originalLegacyRecords[0].quality===craftedGearInstances(legacyState)[0].quality,'Legacy reconciliation must never reroll, delete or duplicate forged equipment');
+
 const ownedIds=craftedGearInstances(state).map(row=>row.id);
 let taggedIndex=0;
 const taggedState={...state,inventory:{...state.inventory,stacks:state.inventory.stacks.map(row=>

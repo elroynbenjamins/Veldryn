@@ -38,6 +38,7 @@
   ".core-build/apps/mobile/tests/equipment-set-runtime.js",
   ".core-build/apps/mobile/tests/equipment-set-runtime-ui-contract.js",
   ".core-build/apps/mobile/tests/equipment-artwork-wiring-ui-contract.js",
+  ".core-build/apps/mobile/tests/starter-weapon-artwork-layout.js",
   ".core-build/apps/mobile/tests/equipment-items-v33.js",
   ".core-build/apps/mobile/tests/equipment-crafting-source-v33.js",
   ".core-build/apps/mobile/tests/equipment-crafting-source-ui-contract.js",

@@ -50,9 +50,9 @@ export function craftedGearCanAutoSell(entry:CraftedGearRetentionEntry){
     &&(entry.location==='bank'||(typeof entry.holderCharacterId==='string'&&entry.holderCharacterId.length>0))
     &&entry.ownershipVerified===true&&entry.protectionsVerified===true
     &&entry.locked===false&&entry.favorite===false&&entry.savedLoadout===false
-    &&enhancement.rank===0
+    &&!!enhancement&&enhancement.rank===0
     &&!enhancement.statGemId&&!enhancement.effectGemId
-    &&enhancement.gemIds.length===0;
+    &&Array.isArray(enhancement.gemIds)&&enhancement.gemIds.length===0;
 }
 
 /**

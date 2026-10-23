@@ -1,8 +1,12 @@
 import {createCharacter,newGame,previewActivityReward,startCombat} from '../src/core/game';
 import {liveEventDef} from '../src/content/live-events';
-import {acceptEventContract,activeLiveEvent,applyEventDiscoveries,applyEventDrops,chooseEventProject,claimAllEventMilestones,claimEventDailyGift,claimEventDiscovery,claimEventReward,consumeEventCandy,eventCandyStatus,eventCollectionJournal,eventContractBoard,eventDailyGift,eventEffectiveDropRate,eventLifecycle,eventPrestigeBalance,eventProgress,eventRewardClaimed,eventShopOffers,purchaseEventOffer,setLocalEventEnabled} from '../src/core/live-events';
+import {canAnnounceLiveEventStart,acceptEventContract,activeLiveEvent,applyEventDiscoveries,applyEventDrops,chooseEventProject,claimAllEventMilestones,claimEventDailyGift,claimEventDiscovery,claimEventReward,consumeEventCandy,eventCandyStatus,eventCollectionJournal,eventContractBoard,eventDailyGift,eventEffectiveDropRate,eventLifecycle,eventPrestigeBalance,eventProgress,eventRewardClaimed,eventShopOffers,purchaseEventOffer,setLocalEventEnabled} from '../src/core/live-events';
 
 function ok(condition:boolean,message:string){if(!condition)throw new Error(message);}
+
+ok(!canAnnounceLiveEventStart(undefined),'no character never receives a seasonal announcement');
+ok(!canAnnounceLiveEventStart(1)&&!canAnnounceLiveEventStart(4),'first four levels have no seasonal announcement');
+ok(canAnnounceLiveEventStart(5)&&canAnnounceLiveEventStart(20),'seasonal announcement is eligible at level five and later');
 
 const t0=2_000_000;
 const eventId='EVT_ANNUAL_010_2026';

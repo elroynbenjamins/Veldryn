@@ -1,7 +1,8 @@
 import {ITEMS,itemDef} from '../content/items';
 import {COMBAT_COMPANIONS} from '../content/combat-companions';
 import type {CharacterLoadoutPreset,GameState,GearSlot} from './types';
-import {effectiveStats} from './game';
+import {effectiveStats,equipItem,unequipItem,withdrawFromBank} from './game';
+import {equipCraftedGearInstance,unequipCraftedGearInstance,moveCraftedGearInstance,auditCraftedGearOwnership} from './crafted-gear-ownership';
 import {equipCombatCompanion,unequipCombatCompanion} from './combat-companions';
 import {planLoadoutStorage} from './loadout-storage';
 import {accountEntitlementBenefits,entitlementStorageCapacity} from './account-entitlements';
@@ -16,4 +17,50 @@ export function normalizeCharacterLoadouts(value:any,classId:string,slotCount=CH
 export function saveCharacterLoadout(state:GameState,index:number,name?:string,nowMs=Date.now()):GameState{if(!state.character)throw new Error('Create a character first.');const capacity=characterLoadoutSlotCount(state);if(index<0||index>=capacity)throw new Error('Invalid loadout slot.');const current=normalizeCharacterLoadouts(state.character.savedLoadouts,state.character.classId,capacity),existing=current.find(entry=>entry.slotIndex===index),preset:CharacterLoadoutPreset={id:existing?.id??`loadout-${index+1}`,slotIndex:index,name:cleanName(name,existing?.name??`Loadout ${index+1}`),classId:state.character.classId,equipment:{...state.character.equipment},equipmentInstanceIds:{...(state.character.equipmentInstanceIds??{})},foodId:state.character.equippedFoodId,companionId:state.character.equippedCombatCompanionId,createdAtMs:existing?.createdAtMs??nowMs,updatedAtMs:nowMs};return {...state,character:{...state.character,savedLoadouts:[...current.filter(entry=>entry.slotIndex!==index),preset].sort((a,b)=>a.slotIndex-b.slotIndex)}};}
 export function renameCharacterLoadout(state:GameState,id:string,name:string,nowMs=Date.now()):GameState{if(!state.character)throw new Error('Create a character first.');const list=normalizeCharacterLoadouts(state.character.savedLoadouts,state.character.classId,characterLoadoutSlotCount(state)),index=list.findIndex(entry=>entry.id===id);if(index<0)throw new Error('Loadout not found.');const next=[...list];next[index]={...next[index],name:cleanName(name,next[index].name),updatedAtMs:nowMs};return {...state,character:{...state.character,savedLoadouts:next}};}
 export function deleteCharacterLoadout(state:GameState,id:string):GameState{return !state.character?state:{...state,character:{...state.character,savedLoadouts:normalizeCharacterLoadouts(state.character.savedLoadouts,state.character.classId,characterLoadoutSlotCount(state)).filter(entry=>entry.id!==id)}};}
-export function applyCharacterLoadout(state:GameState,id:string):GameState{if(!state.character)throw new Error('Create a character first.');if(state.activity?.kind==='combat')throw new Error('Stop combat before changing loadouts.');const preset=normalizeCharacterLoadouts(state.character.savedLoadouts,state.character.classId,characterLoadoutSlotCount(state)).find(entry=>entry.id===id);if(!preset)throw new Error('Loadout not found.');const affected=new Set([...Object.values(state.character.equipment),...Object.values(preset.equipment)].filter((id):id is string=>!!id));if(Object.keys(state.character.equipmentInstanceIds??{}).length||Object.keys(preset.equipmentInstanceIds??{}).length||[...state.inventory.stacks,...state.bank.stacks].some(row=>row.instanceId&&affected.has(row.itemId)))throw new Error('This loadout includes unique equipment copies; use exact-copy equipment actions before applying a legacy loadout.');for(const slot of slots){const wanted=preset.equipment[slot];if(!wanted)continue;const def=itemDef(wanted);if(def.type!=='gear'||def.slot!==slot||def.classRestriction&&def.classRestriction!==state.character.classId)throw new Error(`${def.name} is not valid for this loadout.`);}let planned;try{planned=planLoadoutStorage({inventory:state.inventory.stacks,bank:state.bank.stacks,inventoryCapacity:entitlementStorageCapacity(state,'inventory'),bankCapacity:entitlementStorageCapacity(state,'bank'),currentEquipment:state.character.equipment,desiredEquipment:preset.equipment});}catch(error){if(error instanceof Error&&error.message.startsWith('MISSING:'))throw new Error(`${itemDef(error.message.slice(8)).name} is not equipped, in Inventory, or in Bank.`);throw error;}if(preset.foodId&&!planned.inventory.some(entry=>entry.itemId===preset.foodId&&entry.quantity>0))throw new Error(`${itemDef(preset.foodId).name} must be carried in Inventory before this loadout can use it.`);let next={...state,inventory:{...state.inventory,stacks:planned.inventory},bank:{...state.bank,stacks:planned.bank},character:{...state.character,equipment:preset.equipment,equippedFoodId:preset.foodId}} as GameState;next=preset.companionId?equipCombatCompanion(next,preset.companionId):unequipCombatCompanion(next);next.character!.currentHp=Math.min(next.character!.currentHp,effectiveStats(next).hp);return next;}
+/** Applies saved copy IDs through the same exact-instance actions as Inventory.
+ * All operations are computed against a private immutable candidate. If one
+ * move fails, the caller receives an exception and commits no partial swap.
+ */
+function applyExactCharacterLoadout(state:GameState,preset:CharacterLoadoutPreset):GameState{
+  if(!state.character)throw new Error('No active character');
+  const audit=auditCraftedGearOwnership(state);
+  if(audit.problems.length)throw new Error('Equipment identity conflict; resolve it before applying a loadout');
+  let next=state;
+  for(const slot of slots){
+    const wanted=preset.equipment[slot],wantedCopy=preset.equipmentInstanceIds?.[slot];
+    const current=next.character!.equipment[slot],currentCopy=next.character!.equipmentInstanceIds?.[slot];
+    if(wantedCopy&&currentCopy===wantedCopy&&current===wanted)continue;
+    if(!wantedCopy&&!currentCopy&&wanted===current)continue;
+    if(!wanted){
+      if(currentCopy)next=unequipCraftedGearInstance(next,currentCopy);
+      else if(current)next=unequipItem(next,slot);
+      continue;
+    }
+    if(wantedCopy){
+      let loc=auditCraftedGearOwnership(next).linked.find(row=>row.instanceId===wantedCopy);
+      if(!loc)throw new Error('A saved equipment copy cannot be found. Review this loadout manually.');
+      if(loc.place==='bank'){
+        next=moveCraftedGearInstance(next,wantedCopy,'inventory');
+        loc=auditCraftedGearOwnership(next).linked.find(row=>row.instanceId===wantedCopy);
+      }
+      if(loc?.place!=='inventory'||loc.holderCharacterId!==next.character?.id)
+        throw new Error('The saved equipment copy belongs to another character or cannot be equipped');
+      next=equipCraftedGearInstance(next,wantedCopy);
+    }else{
+      if(currentCopy)next=unequipCraftedGearInstance(next,currentCopy);
+      if(!next.inventory.stacks.some(row=>row.itemId===wanted&&row.instanceId===undefined&&row.quantity>0)){
+        if(!next.bank.stacks.some(row=>row.itemId===wanted&&row.instanceId===undefined&&row.quantity>0))
+          throw new Error(`${itemDef(wanted).name} is not available as an unassigned equipment copy`);
+        next=withdrawFromBank(next,wanted,1);
+      }
+      next=equipItem(next,wanted);
+    }
+  }
+  if(preset.foodId&&!next.inventory.stacks.some(entry=>entry.itemId===preset.foodId&&entry.quantity>0))
+    throw new Error(`${itemDef(preset.foodId).name} must be carried in Inventory before this loadout can use it.`);
+  next={...next,character:{...next.character!,equippedFoodId:preset.foodId}};
+  next=preset.companionId?equipCombatCompanion(next,preset.companionId):unequipCombatCompanion(next);
+  next.character!.currentHp=Math.min(next.character!.currentHp,effectiveStats(next).hp);
+  return next;
+}
+export function applyCharacterLoadout(state:GameState,id:string):GameState{if(!state.character)throw new Error('Create a character first.');if(state.activity?.kind==='combat')throw new Error('Stop combat before changing loadouts.');const preset=normalizeCharacterLoadouts(state.character.savedLoadouts,state.character.classId,characterLoadoutSlotCount(state)).find(entry=>entry.id===id);if(!preset)throw new Error('Loadout not found.');const affected=new Set([...Object.values(state.character.equipment),...Object.values(preset.equipment)].filter((id):id is string=>!!id));if(Object.keys(state.character.equipmentInstanceIds??{}).length||Object.keys(preset.equipmentInstanceIds??{}).length||[...state.inventory.stacks,...state.bank.stacks].some(row=>row.instanceId&&affected.has(row.itemId)))return applyExactCharacterLoadout(state,preset);for(const slot of slots){const wanted=preset.equipment[slot];if(!wanted)continue;const def=itemDef(wanted);if(def.type!=='gear'||def.slot!==slot||def.classRestriction&&def.classRestriction!==state.character.classId)throw new Error(`${def.name} is not valid for this loadout.`);}let planned;try{planned=planLoadoutStorage({inventory:state.inventory.stacks,bank:state.bank.stacks,inventoryCapacity:entitlementStorageCapacity(state,'inventory'),bankCapacity:entitlementStorageCapacity(state,'bank'),currentEquipment:state.character.equipment,desiredEquipment:preset.equipment});}catch(error){if(error instanceof Error&&error.message.startsWith('MISSING:'))throw new Error(`${itemDef(error.message.slice(8)).name} is not equipped, in Inventory, or in Bank.`);throw error;}if(preset.foodId&&!planned.inventory.some(entry=>entry.itemId===preset.foodId&&entry.quantity>0))throw new Error(`${itemDef(preset.foodId).name} must be carried in Inventory before this loadout can use it.`);let next={...state,inventory:{...state.inventory,stacks:planned.inventory},bank:{...state.bank,stacks:planned.bank},character:{...state.character,equipment:preset.equipment,equippedFoodId:preset.foodId}} as GameState;next=preset.companionId?equipCombatCompanion(next,preset.companionId):unequipCombatCompanion(next);next.character!.currentHp=Math.min(next.character!.currentHp,effectiveStats(next).hp);return next;}

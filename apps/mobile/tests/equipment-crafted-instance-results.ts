@@ -155,6 +155,12 @@ ok(replayedSaleDenied,'Repeated exact-item sale must not credit Gold again');
 const extraLegacyCopy={...taggedState,bank:{...taggedState.bank,stacks:[...taggedState.bank.stacks,{itemId:recipe.output.itemId,quantity:1}]}};
 ok(auditCraftedGearOwnership(extraLegacyCopy).unmarkedPhysicalCopies===1&&!auditCraftedGearOwnership(extraLegacyCopy).consistent,'An additional unmarked physical copy must prevent an exact-ownership all-clear');
 ok(craftedGearCopiesAt(taggedState,recipe.output.itemId,'inventory').length===2,'Copy selection must use exact inventory instance markers');
+const commonEquippedById=executeGameCommand(taggedState,{type:'gear_equip',args:{instanceId:ownedIds[1]}},1198).state;
+const epicEquippedById=executeGameCommand(taggedState,{type:'gear_equip',args:{instanceId:ownedIds[0]}},1199).state;
+const commonActualStats=enhancedGearStats(commonEquippedById,recipe.output.itemId);
+const epicActualStats=enhancedGearStats(epicEquippedById,recipe.output.itemId);
+ok(epicActualStats.hp>commonActualStats.hp||epicActualStats.attack>commonActualStats.attack||epicActualStats.defense>commonActualStats.defense,'Equipped combat stats must reflect the selected unique rarity/quality roll, not the strongest item in Bank');
+
 const firstCopy=ownedIds[0],firstGold=taggedState.character!.gold;
 const bankTransfer=moveCraftedGearInstance(taggedState,firstCopy,'bank');
 ok(bankTransfer.bank.stacks.some(row=>row.instanceId===firstCopy)&&

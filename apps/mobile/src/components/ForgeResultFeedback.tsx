@@ -15,7 +15,7 @@ const RARITY_ORDER:ItemRarity[]=['common','uncommon','rare','epic','legendary','
 function highest(results:readonly ForgeCraftResult[]){return results.slice().sort((a,b)=>RARITY_ORDER.indexOf(b.rarity)-RARITY_ORDER.indexOf(a.rarity))[0];}
 export function forgeClaimBannerMessage(results:readonly ForgeCraftResult[]){
   if(!results.length)return '';
-  if(results.length===1){const result=results[0],item=itemDef(result.itemId);return `Forged ${item.name} · ${rarityMeta(result.rarity).label}${result.quality?` · quality ${result.quality}/100`:''}${result.duplicateCount?` · copy ${result.duplicateCount+1}`:''}.`;}
+  if(results.length===1){const result=results[0],item=itemDef(result.itemId);return `Forged ${item.name} · ${rarityMeta(result.rarity).label}${result.quality?` · quality ${result.quality}/100`:''}${result.autoSold==='incoming'?` · auto-sold new copy for ${result.saleGold} Gold`:result.autoSold==='existing'?` · sold a weaker existing copy for ${result.saleGold} Gold`:result.duplicateCount?` · copy ${result.duplicateCount+1}`:''}.`;}
   const best=highest(results);return `${results.length} equipment pieces claimed · best result ${rarityMeta(best.rarity).label}.`;
 }
 

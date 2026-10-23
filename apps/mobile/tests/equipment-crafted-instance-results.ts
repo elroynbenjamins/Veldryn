@@ -10,6 +10,7 @@ import {executeGameCommand} from '../src/core/game-commands';
 import {normalizeSave} from '../src/core/save-normalization';
 import {craftedGearCanAutoSell,planCraftedGearRetention,compareCraftedGearRetentionPower} from '../src/core/crafted-gear-retention';
 import {proposeCraftedGearSettlement} from '../src/core/crafted-gear-settlement';
+import {applyCharacterLoadout,saveCharacterLoadout} from '../src/core/character-loadouts';
 import {auditCraftedGearOwnership,craftedGearCopiesAt,moveCraftedGearInstance,setCraftedGearInstanceLock} from '../src/core/crafted-gear-ownership';
 
 function ok(value:unknown,message:string){if(!value)throw new Error(message)}
@@ -125,6 +126,15 @@ ok(linkedAudit.consistent&&linkedAudit.linked.length===2,'Explicit instance mark
 const equippedByCommand=executeGameCommand(taggedState,{type:'gear_equip',args:{instanceId:ownedIds[0]}},1200);
 ok(equippedByCommand.state.character?.equipmentInstanceIds?.[itemDef(recipe.output.itemId).slot!]===ownedIds[0],'Validated game command must equip the selected exact-copy receipt');
 ok(auditCraftedGearOwnership(equippedByCommand.state).consistent,'Equipped exact-copy command must preserve ownership audit consistency');
+const loadoutWithCopy=saveCharacterLoadout(equippedByCommand.state,0,'Exact sword',1210);
+ok(loadoutWithCopy.character!.savedLoadouts?.[0]?.equipmentInstanceIds?.[itemDef(recipe.output.itemId).slot!]===ownedIds[0],'Saved loadouts must persist the specific rarity/quality equipment instance');
+const loadoutCleared=executeGameCommand(loadoutWithCopy,{type:'gear_unequip',args:{instanceId:ownedIds[0]}},1211).state;
+let loadoutDisposalDenied=false;try{executeGameCommand(loadoutCleared,{type:'gear_sell',args:{instanceId:ownedIds[0]}},1212)}catch(error){loadoutDisposalDenied=error instanceof Error&&error.message.includes('saved loadout')}
+ok(loadoutDisposalDenied,'Saved loadout references must protect their physical equipment copies from sale');
+const restoredExactLoadout=applyCharacterLoadout(loadoutCleared,loadoutWithCopy.character!.savedLoadouts![0].id);
+ok(restoredExactLoadout.character?.equipmentInstanceIds?.[itemDef(recipe.output.itemId).slot!]===ownedIds[0],'Applying a saved loadout must re-equip the exact selected equipment copy');
+ok(auditCraftedGearOwnership(restoredExactLoadout).consistent,'A saved exact-copy loadout apply must not duplicate equipment');
+
 let equippedSaleDenied=false;try{executeGameCommand(equippedByCommand.state,{type:'gear_sell',args:{instanceId:ownedIds[0]}},1201)}catch(error){equippedSaleDenied=error instanceof Error&&error.message.includes('Unequip')}
 ok(equippedSaleDenied,'An equipped exact gear copy must never be sold without unequipping');
 const unequippedByCommand=executeGameCommand(equippedByCommand.state,{type:'gear_unequip',args:{instanceId:ownedIds[0]}},1202);

@@ -52,7 +52,7 @@ export function craftedGearCopyCapacity(state:GameState,itemId:string){
 export function craftedGearLegacyOwnershipAudit(state:GameState,itemId:string){
   const count=(stacks:readonly {itemId:string;quantity:number}[]|undefined)=>
     (stacks??[]).reduce((sum,stack)=>sum+(stack.itemId===itemId&&Number.isSafeInteger(stack.quantity)&&stack.quantity>0?stack.quantity:0),0);
-  const equipped=(equipment:Record<string,string|undefined>|undefined)=>
+  const equipped=(equipment:object|undefined)=>
     Object.values(equipment??{}).filter(id=>id===itemId).length;
   const characterInventory=count(state.inventory.stacks)
     +(state.otherCharacters??[]).reduce((sum,entry)=>sum+count(entry.inventory.stacks),0);

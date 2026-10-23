@@ -8,6 +8,7 @@ import {itemDef} from '../src/content/items';
 import {itemRarity} from '../src/core/item-rarity';
 import {executeGameCommand} from '../src/core/game-commands';
 import {normalizeSave} from '../src/core/save-normalization';
+import {craftedGearCanAutoSell,planCraftedGearRetention,compareCraftedGearRetentionPower} from '../src/core/crafted-gear-retention';
 
 function ok(value:unknown,message:string){if(!value)throw new Error(message)}
 
@@ -85,4 +86,38 @@ try{createCraftedGearInstance({...state,account:{...state.account,craftedGearIns
 catch(error){capacityError=error instanceof Error&&error.message.includes('storage is full')}
 ok(capacityError,'New crafting must fail rather than evicting an existing copy at the global safety boundary');
 
-console.log('PASS: Forge rarity and unique quality rolls persist, per-item target is projected, and excess saved items are never silently evicted');
+ok(TARGET_CRAFTED_GEAR_COPIES_PER_ITEM===7,'Players must be able to keep seven copies of each base equipment item');
+const copyTemplate=craftedGearInstances(state)[0];
+const sevenCopies=Array.from({length:7},(_,i)=>({
+  instance:{...copyTemplate,id:`quality-${i}`,sourceReceiptKey:`quality-${i}`,rarity:'common' as const,quality:10+i*10},
+  location:'inventory' as const,
+}));
+const incomingLow={...copyTemplate,id:'new-low',quality:1,rarity:'common' as const};
+const incomingHigh={...copyTemplate,id:'new-high',quality:90,rarity:'epic' as const};
+ok(planCraftedGearRetention(sevenCopies.slice(0,6),incomingHigh,'off').action==='keep','Copy limit should not affect crafts below seven, even when auto-sell is disabled');
+ok(planCraftedGearRetention(sevenCopies,incomingHigh,'off').action==='manual_review','Mass craft auto-sell must be opt-in, never default');
+const lowDecision=planCraftedGearRetention(sevenCopies,incomingLow,'keep_best_seven');
+ok(lowDecision.action==='sell_incoming'&&lowDecision.instanceId==='new-low','A weaker new roll should sell itself and preserve all seven originals');
+const highDecision=planCraftedGearRetention(sevenCopies,incomingHigh,'keep_best_seven');
+ok(highDecision.action==='sell_existing'&&highDecision.instanceId==='quality-0','A better new roll should replace the weakest unprotected copy');
+ok(compareCraftedGearRetentionPower(incomingHigh,sevenCopies[6].instance)>0,'Tier and quality comparator must prefer Epic over Common even when Common has higher quality');
+const tieDecision=planCraftedGearRetention(sevenCopies,{...sevenCopies[0].instance,id:'equal-new'},'keep_best_seven');
+ok(tieDecision.action==='sell_incoming','Equal-strength rolls must keep the older existing equipment');
+const partlyProtected=sevenCopies.map((entry,i)=>({...entry,locked:i===0}));
+const protectedDecision=planCraftedGearRetention(partlyProtected,incomingHigh,'keep_best_seven');
+ok(protectedDecision.action==='sell_existing'&&protectedDecision.instanceId==='quality-1','Auto-sell must skip locked copies and target the next-lowest eligible item');
+const allProtected=sevenCopies.map(entry=>({...entry,locked:true}));
+const blockedDecision=planCraftedGearRetention(allProtected,incomingHigh,'keep_best_seven');
+ok(blockedDecision.action==='manual_review'&&blockedDecision.reason==='no_eligible_copy','Do not sell valuable new results if all existing copies are protected');
+ok(!craftedGearCanAutoSell({...sevenCopies[0],location:'equipped'}),'Equipped copies must never be auto-sold');
+ok(!craftedGearCanAutoSell({...sevenCopies[0],location:'unknown'}),'Legacy ambiguous storage must never be auto-sold');
+ok(!craftedGearCanAutoSell({...sevenCopies[0],savedLoadout:true}),'Saved loadout copies must never be auto-sold');
+ok(!craftedGearCanAutoSell({...sevenCopies[0],favorite:true}),'Favorite copies must never be auto-sold');
+ok(!craftedGearCanAutoSell({...sevenCopies[0],instance:{...sevenCopies[0].instance,enhancement:{...sevenCopies[0].instance.enhancement,rank:1}}}),'Enhanced equipment must never be auto-sold');
+ok(!craftedGearCanAutoSell({...sevenCopies[0],instance:{...sevenCopies[0].instance,enhancement:{...sevenCopies[0].instance.enhancement,effectGemId:'SWIFT_SIGIL'}}}),'Socketed equipment must never be auto-sold');
+ok(planCraftedGearRetention([...sevenCopies,sevenCopies[0]],incomingHigh,'keep_best_seven').action==='manual_review','Pre-existing over-limit records must require manual review instead of eviction');
+ok(planCraftedGearRetention(sevenCopies.map((entry,i)=>i===0?{...entry,instance:{...entry.instance,quality:undefined}}:entry),incomingHigh,'keep_best_seven').action==='manual_review','Legacy unrolled quality must not be silently ranked or deleted');
+ok(normalizeSave({...state,account:{...state.account,craftedGearAutoSellMode:'keep_best_seven'}} as any).account.craftedGearAutoSellMode==='keep_best_seven','Explicit Keep Best Seven preference must survive save normalization');
+ok(normalizeSave({...state,account:{...state.account,craftedGearAutoSellMode:undefined}} as any).account.craftedGearAutoSellMode==='off','Older saves must default to auto-sell off');
+
+console.log('PASS: Forge rarity, unique quality, seven-copy policy, opt-in retention plan and no-loss bounds are covered');

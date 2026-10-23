@@ -4,7 +4,7 @@ import {itemDef} from '../content/items';
 import {itemRarity,type ItemRarity} from './item-rarity';
 
 export const MAX_CRAFTED_GEAR_INSTANCES=500;
-/** Proposed per-character, per-base-item copy limit. Do not enforce until per-copy disposal is available. */
+/** Proposed account-wide, per-base-item copy limit. Do not enforce until per-copy disposal is available. */
 export const TARGET_CRAFTED_GEAR_COPIES_PER_ITEM=5;
 
 /** Quality is persisted on each instance, never synthesized from a mutable client clock. */
@@ -41,8 +41,8 @@ export function normalizeCraftedGearInstances(raw:unknown):CraftedGearInstance[]
 export function craftedGearInstances(state:GameState){return normalizeCraftedGearInstances(state.account.craftedGearInstances);}
 export function craftedInstancesForItem(state:GameState,itemId:string,ownerCharacterId=state.character?.id){return craftedGearInstances(state).filter(row=>row.itemId===itemId&&(!ownerCharacterId||row.ownerCharacterId===ownerCharacterId));}
 /** Read-only capacity projection until inventory/bank/equipped items select instance IDs for safe disposal. */
-export function craftedGearCopyCapacity(state:GameState,itemId:string,ownerCharacterId=state.character?.id){
-  const owned=craftedInstancesForItem(state,itemId,ownerCharacterId);
+export function craftedGearCopyCapacity(state:GameState,itemId:string){
+  const owned=craftedGearInstances(state).filter(row=>row.itemId===itemId);
   return {count:owned.length,limit:TARGET_CRAFTED_GEAR_COPIES_PER_ITEM,remaining:Math.max(0,TARGET_CRAFTED_GEAR_COPIES_PER_ITEM-owned.length)};
 }
 export function bestCraftedInstanceForItem(state:GameState,itemId:string,ownerCharacterId=state.character?.id){

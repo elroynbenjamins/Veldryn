@@ -1,5 +1,5 @@
 import {V33_EQUIPMENT_RECIPES} from '../src/content/equipment-recipes-v33';
-import {createCharacter,newGame} from '../src/core/game';
+import {claimOverflowToBank,createCharacter,depositToBank,newGame,sellItem,stackItems} from '../src/core/game';
 import {claimAllReadyEquipmentCrafts,claimEquipmentCraft,equipmentCraftingQueue,startEquipmentCraft} from '../src/core/equipment-crafting-queue';
 import {CRAFTED_EPIC_CHANCE,CRAFTED_MYTHIC_CHANCE,craftedGearRarity,craftedRarityStatMultiplier} from '../src/core/crafted-gear-rarity';
 import {MAX_CRAFTED_GEAR_INSTANCES,TARGET_CRAFTED_GEAR_COPIES_PER_ITEM,bestCraftedInstanceForItem,craftedGearCopyCapacity,craftedGearInstances,craftedGearQualityRoll,craftClaimSubRoll,effectiveOwnedGearRarity,normalizeCraftedGearInstances,createCraftedGearInstance,craftedGearLegacyOwnershipAudit} from '../src/core/crafted-gear-instances';
@@ -105,6 +105,23 @@ let legacyLockDenied=false;try{setCraftedGearInstanceLock(state,firstCopy,true)}
 ok(legacyLockDenied,'Never allow a per-copy lock action against an unlocated legacy receipt');
 
 ok(backTransfer.inventory.stacks.filter(row=>row.itemId===recipe.output.itemId).length===2,'Exact transfer must preserve duplicate copies of the same item definition');
+
+const composed=stackItems([{itemId:recipe.output.itemId,quantity:1,instanceId:firstCopy}], [{itemId:'TRAVEL_RATION',quantity:2},{itemId:'TRAVEL_RATION',quantity:3}]);
+ok(composed.find(row=>row.instanceId===firstCopy)?.quantity===1&&
+  composed.find(row=>row.itemId==='TRAVEL_RATION')?.quantity===5,'Stack aggregation must retain unique copy receipts while combining ordinary resources');
+let duplicateMergeDenied=false;try{stackItems([{itemId:recipe.output.itemId,quantity:1,instanceId:firstCopy}],[{itemId:recipe.output.itemId,quantity:1,instanceId:firstCopy}])}catch(error){duplicateMergeDenied=error instanceof Error&&error.message.includes('Duplicate')}
+ok(duplicateMergeDenied,'Stack aggregation must reject duplicated physical equipment identity');
+let genericSaleDenied=false;try{sellItem(taggedState,recipe.output.itemId,1)}catch(error){genericSaleDenied=error instanceof Error&&error.message.includes('individual equipment copy')}
+ok(genericSaleDenied,'Legacy item-type selling must not silently sell a uniquely identified forged copy');
+let genericDepositDenied=false;try{depositToBank(taggedState,recipe.output.itemId,1)}catch(error){genericDepositDenied=error instanceof Error&&error.message.includes('individual equipment copy')}
+ok(genericDepositDenied,'Legacy item-type Bank transfers must not strip the copy identity');
+const toOverflow={...bankTransfer,
+  bank:{...bankTransfer.bank,stacks:bankTransfer.bank.stacks.filter(row=>row.instanceId!==firstCopy)},
+  overflow:{stacks:[{itemId:recipe.output.itemId,quantity:1,instanceId:firstCopy}],expiresAtMs:123456}};
+const collectedOverflow=claimOverflowToBank(toOverflow);
+ok(collectedOverflow.bank.stacks.some(row=>row.instanceId===firstCopy)&&
+  collectedOverflow.overflow.stacks.length===0,'Overflow-to-Bank routing must preserve an individual gear receipt');
+
 const duplicateMarkerState={...taggedState,bank:{...taggedState.bank,stacks:[...taggedState.bank.stacks,{itemId:recipe.output.itemId,quantity:1,instanceId:firstCopy}]}};
 ok(auditCraftedGearOwnership(duplicateMarkerState).problems.some(message=>message.includes('Duplicate physical copy')),'Duplicate instance markers must be rejected');
 let conflictBlocked=false;try{moveCraftedGearInstance(duplicateMarkerState,firstCopy,'bank')}catch(error){conflictBlocked=error instanceof Error&&error.message.includes('identity conflict')}

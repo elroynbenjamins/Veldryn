@@ -20,7 +20,7 @@ function duration(seconds:number){
   return m<60?m+'m':Math.floor(m/60)+'h '+(m%60)+'m';
 }
 
-export function EquipmentCraftQueuePanel({state,onClaim,onClaimAll,onCancel,onMoveWaiting,forgeResults,onDismissForgeResults}:{state:GameState;onClaim:(jobId:string)=>void;onClaimAll:()=>void;onCancel:(jobId:string)=>void;onMoveWaiting:(jobId:string,direction:'up'|'down')=>void;forgeResults?:readonly ForgeCraftResult[]|null;onDismissForgeResults?:()=>void}){
+export function EquipmentCraftQueuePanel({state,onClaim,onClaimAll,onCancel,onMoveWaiting,forgeResults,onDismissForgeResults,onSetAutoSell}:{state:GameState;onClaim:(jobId:string)=>void;onClaimAll:()=>void;onSetAutoSell?:(enabled:boolean)=>void|Promise<unknown>;onCancel:(jobId:string)=>void;onMoveWaiting:(jobId:string,direction:'up'|'down')=>void;forgeResults?:readonly ForgeCraftResult[]|null;onDismissForgeResults?:()=>void}){
  const {gt,gl,language}=useGameplayText();
   const C=useGameTheme(),E=equipmentTheme(C),s=useMemo(()=>makeStyles(C),[C]);
   const [now,setNow]=useState(Date.now()),[showUnlocks,setShowUnlocks]=useState(false);
@@ -30,6 +30,7 @@ export function EquipmentCraftQueuePanel({state,onClaim,onClaimAll,onCancel,onMo
   return <View style={s.card}>
     <View style={s.head}><View style={s.flex}><Text style={s.eyebrow}>{gt("EQUIPMENT FORGE")}</Text><Text style={s.title}>{gt("Crafting Queue")}</Text><Text style={s.meta}>{model.active}/{model.slotInfo.capacity} active · {model.waiting}/{model.waitingCapacity} waiting · {model.ready} finished</Text></View><View style={[s.slotBadge,{borderColor:model.freeSlots?C.good:C.warning}]}><Text style={[s.slotValue,{color:model.freeSlots?C.good:C.warning}]}>{model.slotInfo.capacity}</Text><Text style={s.slotLabel}>{gt("ACTIVE")}</Text></View></View>
     {!!forgeResults?.length&&<ForgeClaimBanner results={forgeResults} reduceMotion={state.settings.reduceMotion} onDismiss={onDismissForgeResults??NOOP}/>}
+    <View style={s.group}><View style={s.groupHead}><View style={s.flex}><Text style={s.groupLabel}>KEEP BEST 7 · PER EQUIPMENT TYPE</Text><Text style={s.meta}>Optional mass-craft auto-sell. Rarity first, then quality. Equipped, locked, upgraded and saved-loadout gear stay protected.</Text></View><GameButton compact tone={state.account.craftedGearAutoSellMode==='keep_best_seven'?'primary':'secondary'} title={state.account.craftedGearAutoSellMode==='keep_best_seven'?'Auto-sell ON':'Auto-sell OFF'} disabled={!onSetAutoSell} onPress={()=>void onSetAutoSell?.(state.account.craftedGearAutoSellMode!=='keep_best_seven')}/></View></View>
 
     {readyJobs.length>0&&<View style={s.group}><Text style={s.groupLabel}>{gt("FINISHED")}</Text>{readyJobs.map(job=><View key={job.id} style={[s.job,s.jobReady]}>{job.outputItemId?<ItemArtwork itemId={job.outputItemId} size={44}/>:null}<View style={s.flex}><Text style={s.jobName}>{job.name}</Text><Text style={s.meta}>{gt("Finished · ready to claim")}</Text></View><GameButton compact title={gt("Claim")} onPress={()=>onClaim(job.id)}/></View>)}</View>}
 

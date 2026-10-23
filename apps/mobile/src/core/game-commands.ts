@@ -25,6 +25,7 @@ import {normalizeChatEmoteTrayIds,CHAT_EMOTE_TRAY_SIZE} from './chat-emotes';
 import {cancelEquipmentCraft,claimAllReadyEquipmentCrafts,claimEquipmentCraft,claimForgeJob,moveWaitingEquipmentCraft,startEquipmentCraft,startGemCombine,startGemRefinement,timedEquipmentRecipe} from './equipment-crafting-queue';
 import {claimResonanceCacheV1,dismantleGemV1,gemCombineRecipeIdV1,gemRefineRecipeIdV1,researchEffectGemV1} from './gem-progression-v1';
 import {craftEquipmentPrerequisites} from './equipment-crafting-prerequisites';
+import {equipCraftedGearInstance,unequipCraftedGearInstance,moveCraftedGearInstance,setCraftedGearInstanceLock,disposeCraftedGearInstance,linkLegacyCraftedGearInstance} from './crafted-gear-ownership';
 import {buildAdminQaState,refillAdminQaResources} from '../dev/admin-qa-profile';
 import {isTimedProcessingRecipe} from './processing';
 import type {FallenKnightBattleResult} from './story-boss';
@@ -44,7 +45,7 @@ const fields:Record<string,readonly string[]>={
  companion_trial_start:['ids','floor'],companion_trial_floor:['id','floor'],companion_trial_abandon:['id'],companion_assignment_start:['id','ids','food'],companion_assignment_claim:['id'],companion_technique:['id','technique'],companion_codex:['id'],companion_showcase:['id','ids'],companion_weekly:['id'],companion_special:['id','ids'],
  create:['classId','name','body'],claim:[],start:['kind','id','tacticId','goalId'],queue_add:['kind','id','tacticId','goalId','goal','count','handoffGoal','handoffTargetId','keepCurrentRunning'],queue_set_goal:['id','goal'],queue_remove:['index'],queue_move:['index','direction'],queue_clear:[],queue_start:[],explore:['id'],stop:[],travel:['id'],boss:[],craft:['id'],craft_claim:['id'],craft_claim_all:[],craft_cancel:['id'],craft_move:['id','direction'],craft_prerequisites:['id'],use_potion:['id'],discard_preparation:[],
  roster_create:['classId','name','body'],roster_switch:['id'],roster_delete:['id','confirmation'],
- equip:['id'],unequip:['slot'],food:['id'],eat:['id'],sell:['id','quantity'],salvage:['id'],
+ equip:['id'],unequip:['slot'],gear_equip:['instanceId'],gear_unequip:['instanceId'],gear_move:['instanceId','to'],gear_lock:['instanceId','locked'],gear_sell:['instanceId'],gear_salvage:['instanceId'],gear_autosell:['enabled'],gear_link_legacy:['instanceId','from','stackIndex'],food:['id'],eat:['id'],sell:['id','quantity'],salvage:['id'],
  bank_sell:['id','quantity'],bank_gold_deposit:['amount'],bank_gold_withdraw:['amount'],deposit:['id','quantity'],withdraw:['id','quantity'],deposit_materials:[],bulk_transfer:['location','ids'],bulk_sell:['ids'],bulk_salvage:['ids'],storage:['location'],overflow:[],
  equip_tool:['id'],equip_set:[],upgrade:['id'],socket:['id','gemId'],replace_socket:['id','gemId'],unsocket:['id','index'],gem_combine:['familyId','grade'],gem_refine:['familyId','grade'],gem_research:['familyId'],gem_dismantle:['gemId','quantity'],resonance_cache_claim:['familyId'],profile_icon:['id'],
  loadout_save:['index','name'],loadout_apply:['id'],loadout_delete:['id'],arena_slot:['index','characterId'],goals_set:['goals'],idle_rules_set:['rules','activeId'],daily_supplies_claim:['characterId'],daily_supplies_activate:['type'],
@@ -264,9 +265,14 @@ export function executeGameCommand(previous:GameState,value:unknown,now:number,o
    if(options.randomRoll===undefined)throw new Error('trusted_random_required');const result=claimAllReadyEquipmentCrafts(state,now,options.randomRoll);state=result.state;forgeResults=result.results;
    for(const id of result.claimed){if(!beforeIds.has(id))continue;const job=previous.account.equipmentCraftingQueue?.find(row=>row.id===id);if(job)contributions.push({kind:'crafting',contentId:job.recipeId,units:1});}
    const equipmentCount=result.claimed.length-result.gemClaims,procCount=result.results.filter(row=>row.qualityProc).length;
+   const blockedMessage=result.blocked.length
+    ?` · ${result.blocked.length} waiting for space (${result.blocked[0].reason})`
+    :'';
    message=result.claimed.length
-    ?`${result.claimed.length} forge job${result.claimed.length===1?'':'s'} claimed · ${equipmentCount} equipment · ${result.gemClaims} gem combine${result.gemClaims===1?'':'s'} · ${procCount} quality proc${procCount===1?'':'s'}`
-    :'No finished forge jobs';
+    ?`${result.claimed.length} forge job${result.claimed.length===1?'':'s'} claimed · ${equipmentCount} equipment · ${result.gemClaims} gem combine${result.gemClaims===1?'':'s'} · ${procCount} quality proc${procCount===1?'':'s'}${blockedMessage}`
+    :result.blocked.length
+      ?`${result.blocked.length} forge job${result.blocked.length===1?' remains':'s remain'} ready: ${result.blocked[0].reason}`
+      :'No finished forge jobs';
    break;
   }
   case 'craft_cancel':{
@@ -280,6 +286,14 @@ export function executeGameCommand(previous:GameState,value:unknown,now:number,o
   }
   case 'use_potion':state=game.usePotion(state,text(a,'id'));break;
   case 'discard_preparation':state=game.discardPreparation(state);break;
+  case 'gear_link_legacy':state=linkLegacyCraftedGearInstance(state,text(a,'instanceId',180),oneOf(a.from,['inventory','bank']),integer(a,'stackIndex',0,1000));message='Legacy Forge copy linked to its existing rarity and quality record';break;
+  case 'gear_autosell':{if(typeof a.enabled!=='boolean')throw new Error('invalid_autosell_preference');state={...state,account:{...state.account,craftedGearAutoSellMode:a.enabled?'keep_best_seven':'off'}};message=a.enabled?'Keep Best 7 enabled — only verified, unprotected copies can be sold':'Automatic equipment selling disabled';break;}
+  case 'gear_equip':state=equipCraftedGearInstance(state,text(a,'instanceId',180));message='Equipment copy equipped';break;
+  case 'gear_unequip':state=unequipCraftedGearInstance(state,text(a,'instanceId',180));message='Equipment copy unequipped';break;
+  case 'gear_move':state=moveCraftedGearInstance(state,text(a,'instanceId',180),oneOf(a.to,['inventory','bank']));message='Equipment copy transferred';break;
+  case 'gear_lock':{if(typeof a.locked!=='boolean')throw new Error('invalid_locked');state=setCraftedGearInstanceLock(state,text(a,'instanceId',180),a.locked);message=a.locked?'Equipment copy locked':'Equipment copy unlocked';break;}
+  case 'gear_sell':state=disposeCraftedGearInstance(state,text(a,'instanceId',180),'sell');message='Equipment copy sold';break;
+  case 'gear_salvage':state=disposeCraftedGearInstance(state,text(a,'instanceId',180),'salvage');message='Equipment copy salvaged';break;
   case 'equip':state=game.equipItem(state,text(a,'id'));break;
   case 'unequip':state=game.unequipItem(state,oneOf(a.slot,['weapon','offhand','helmet','chest','legs','boots','gloves','cape','amulet','ring']) as GearSlot);break;
   case 'food':state=game.equipFood(state,text(a,'id'));break;

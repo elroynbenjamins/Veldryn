@@ -6,7 +6,10 @@ import {unlockedCharacterSlots} from './account-roster';
 import {characterPermanentMultipliers} from './permanent-boosts';
 import {levelFromXp,totalXpAtLevel} from './progression';
 import type {EquipmentCraftJob,GameState,ItemStack,SkillState} from './types';
-import {craftClaimSubRoll,craftedInstanceResult,createCraftedGearInstance} from './crafted-gear-instances';
+import {craftClaimSubRoll,craftedInstanceResult,createCraftedGearInstance,draftCraftedGearInstance,craftedGearCopyCapacity,craftedGearInstances} from './crafted-gear-instances';
+import {auditCraftedGearOwnership,disposeCraftedGearInstance} from './crafted-gear-ownership';
+import {proposeCraftedGearSettlement} from './crafted-gear-settlement';
+import type {CraftedGearRetentionEntry} from './crafted-gear-retention';
 import {gemCombineRecipeV1,gemRefineRecipeV1,isGemFamilyRecipeUnlockedV1} from './gem-progression-v1';
 import {professionMasteryMultipliers} from './profession-mastery-v40';
 import {applyTrustedLongTermProgression} from './long-term-progression-runtime';
@@ -77,7 +80,7 @@ function combinedQuantity(state:GameState,itemId:string){return quantity(state.i
 function consume(stacks:ItemStack[],itemId:string,amount:number){
   let left=amount;
   const next=stacks.map(row=>{
-    if(row.itemId!==itemId||left<=0)return row;
+    if(row.itemId!==itemId||left<=0||row.instanceId!==undefined)return row;
     const used=Math.min(left,row.quantity);left-=used;return {...row,quantity:row.quantity-used};
   }).filter(row=>row.quantity>0);
   return {stacks:next,used:amount-left};
@@ -246,6 +249,60 @@ function grantCraftOutput(state:GameState,recipe:{output:{itemId:string;quantity
   return {...state,inventory:{...state.inventory,stacks:inv.stacks},bank:{...state.bank,stacks:bank.stacks}};
 }
 
+function forgeOwnedCopyLocations(state:GameState,itemId:string):CraftedGearRetentionEntry[]|null{
+  const audit=auditCraftedGearOwnership(state);
+  const records=craftedGearInstances(state).filter(row=>row.itemId===itemId);
+  const physical=craftGearPhysicalCopies(state,itemId);
+  if(audit.problems.length||audit.unmarkedPhysicalCopies>0||records.length!==physical)return null;
+  const characters=[state.character,...(state.otherCharacters??[]).map(entry=>entry.character)].filter(Boolean);
+  const rows=records.map(instance=>{
+    const loc=audit.linked.find(row=>row.instanceId===instance.id);
+    if(!loc)return null;
+    const savedLoadout=characters.some(c=>c?.savedLoadouts?.some(p=>
+      Object.values(p.equipmentInstanceIds??{}).includes(instance.id)
+      ||Object.entries(p.equipment).some(([slot,id])=>id===itemId&&!p.equipmentInstanceIds?.[slot as import('./types').GearSlot])));
+    const legacyEnhanced=characters.some(c=>{
+      const value=c?.gearEnhancements?.[itemId];
+      return !!value&&(value.rank>0||!!value.statGemId||!!value.effectGemId||(value.gemIds?.length??0)>0);
+    });
+    const accessible=loc.place==='bank'||loc.place==='inventory'&&loc.holderCharacterId===state.character?.id;
+    return {
+      instance,location:loc.place==='overflow'?'unknown':loc.place,
+      holderCharacterId:loc.holderCharacterId,
+      ownershipVerified:true,protectionsVerified:accessible&&!legacyEnhanced,
+      locked:instance.locked===true,
+      favorite:state.settings.favoriteItemIds?.includes(itemId)===true,
+      savedLoadout,
+    } as CraftedGearRetentionEntry;
+  });
+  return rows.every(Boolean)?rows as CraftedGearRetentionEntry[]:null;
+}
+function craftGearPhysicalCopies(state:GameState,itemId:string){
+  const count=(rows:ItemStack[])=>rows.reduce((n,row)=>n+(row.itemId===itemId?row.quantity:0),0);
+  const equipped=(equipment:Record<string,string|undefined>)=>Object.values(equipment).filter(id=>id===itemId).length;
+  return count(state.inventory.stacks)+count(state.bank.stacks)+count(state.overflow.stacks)
+    +equipped(state.character?.equipment??{})
+    +(state.otherCharacters??[]).reduce((n,row)=>n+count(row.inventory.stacks)+count(row.overflow.stacks)+equipped(row.character.equipment),0);
+}
+function deliverExactForgeCopy(state:GameState,itemId:string,instanceId:string,ownerId:string){
+  const stack:ItemStack={itemId,quantity:1,instanceId};
+  const invAllowed=state.character?.id===ownerId&&state.inventory.stacks.length<state.inventory.capacity;
+  if(invAllowed)return {...state,inventory:{...state.inventory,stacks:[...state.inventory.stacks,stack]}} as GameState;
+  if(state.bank.stacks.length<state.bank.capacity)
+    return {...state,bank:{...state.bank,stacks:[...state.bank.stacks,stack]}} as GameState;
+  throw new Error(state.character?.id===ownerId?'Inventory and Bank are full':'Bank is full; free Bank space before claiming this character\'s equipment');
+}
+function applyForgeSaleCredit(state:GameState,amount:number,destination:'bank'|'character',holder?:string):GameState{
+  if(!Number.isSafeInteger(amount)||amount<0)throw new Error('Invalid Forge sale proceeds');
+  if(destination==='bank'){
+    const gold=(state.bank.gold??0)+amount;if(!Number.isSafeInteger(gold))throw new Error('Bank Gold exceeds supported limit');
+    return {...state,bank:{...state.bank,gold}};
+  }
+  if(!state.character||state.character.id!==holder)throw new Error('Sale owner must be the active character');
+  const gold=state.character.gold+amount;if(!Number.isSafeInteger(gold))throw new Error('Carried Gold exceeds supported limit');
+  return {...state,character:{...state.character,gold}};
+}
+
 function awardOwnerSkillXp(state:GameState,ownerCharacterId:string,recipe:Pick<Recipe,'id'|'skillId'|'xp'>,job:EquipmentCraftJob){
   const ownerSkills=state.character?.id===ownerCharacterId?state.skills:state.otherCharacters?.find(entry=>entry.character.id===ownerCharacterId)?.skills;
   if(!ownerSkills)throw new Error('Crafting owner is no longer available');
@@ -266,15 +323,43 @@ export function claimForgeJob(state:GameState,jobId:string,nowMs:number,rarityRo
   if(job.completesAtMs>nowMs)throw new Error(job.startedAtMs>nowMs?'This forge job is still waiting for a slot':'This forge job is still in progress');
   const equipmentRecipe=timedEquipmentRecipe(job.recipeId),gemCombineRecipe=gemCombineRecipeV1(job.recipeId),gemRefineRecipe=gemRefineRecipeV1(job.recipeId),gemRecipe=gemCombineRecipe??gemRefineRecipe,recipe=equipmentRecipe??gemRecipe;
   if(!recipe)throw new Error('Crafting recipe is no longer available');
-  let next=grantCraftOutput(projected,recipe,job.ownerCharacterId);
+  let next=projected;
   if(equipmentRecipe){
+    const itemId=equipmentRecipe.output.itemId,args={itemId,ownerCharacterId:job.ownerCharacterId,jobId:job.id,createdAtMs:nowMs,roll:rarityRoll};
+    const draft=draftCraftedGearInstance(args),capacity=craftedGearCopyCapacity(next,itemId),mode=next.account.craftedGearAutoSellMode??'off';
+    let saleGold=0,autoSold:'incoming'|'existing'|undefined;
+    if(capacity.count>=capacity.limit){
+      if(mode!=='keep_best_seven')throw new Error('Equipment copy limit reached (7/7); enable Keep Best 7 or manage copies');
+      const entries=forgeOwnedCopyLocations(next,itemId);
+      if(!entries)throw new Error('Equipment copy ownership requires manual review before auto-selling');
+      const proposed=proposeCraftedGearSettlement({
+        existing:entries,incoming:draft,
+        incomingStorage:next.character?.id===job.ownerCharacterId?'inventory':'bank',
+        incomingHolderCharacterId:next.character?.id===job.ownerCharacterId?job.ownerCharacterId:undefined,
+        mode,committedReceiptKeys:[],
+      });
+      if(proposed.status==='blocked')throw new Error('Equipment requires manual review: '+proposed.retention.reason);
+      if(proposed.receipt.action==='sell_incoming'){
+        const credit=proposed.receipt.credit!;
+        next=applyForgeSaleCredit(next,credit.amount,credit.destination,credit.characterId);
+        saleGold=credit.amount;autoSold='incoming';
+      }else if(proposed.receipt.action==='sell_existing'){
+        const victim=proposed.receipt.soldInstanceId!;
+        next=disposeCraftedGearInstance(next,victim,'sell');
+        saleGold=proposed.receipt.credit?.amount??0;autoSold='existing';
+      }
+    }
+    if(autoSold!=='incoming'){
+      next=deliverExactForgeCopy(next,itemId,draft.id,job.ownerCharacterId);
+      next=createCraftedGearInstance(next,args).state;
+    }
     next=awardOwnerSkillXp(next,job.ownerCharacterId,equipmentRecipe,job);
-    const created=createCraftedGearInstance(next,{itemId:equipmentRecipe.output.itemId,ownerCharacterId:job.ownerCharacterId,jobId:job.id,createdAtMs:nowMs,roll:rarityRoll});
-    next=created.state;
     next={...next,account:{...next.account,equipmentCraftingQueue:queue.filter(row=>row.id!==jobId)}};
     next=applyTrustedLongTermProgression(next,[{kind:'crafting',contentId:equipmentRecipe.id,units:1,startedAtMs:job.startedAtMs}],undefined,nowMs,{accountId:next.account.longTermAccountScopeId??`local-account:${next.createdAtMs}`,eventId:`forge:${job.id}:${nowMs}`}).state;
-    return {state:next,recipe:equipmentRecipe,job,kind:'equipment' as const,instance:created.instance,result:craftedInstanceResult(next,created.instance)};
+    return {state:next,recipe:equipmentRecipe,job,kind:'equipment' as const,instance:draft,
+      result:{...craftedInstanceResult(next,draft),autoSold,saleGold}};
   }
+  next=grantCraftOutput(next,recipe,job.ownerCharacterId);
   next=awardOwnerSkillXp(next,job.ownerCharacterId,gemRecipe!,job);
   next={...next,account:{...next.account,equipmentCraftingQueue:queue.filter(row=>row.id!==jobId)}};
   next=applyTrustedLongTermProgression(next,[{kind:'crafting',contentId:gemRecipe!.id,units:1,startedAtMs:job.startedAtMs}],undefined,nowMs,{accountId:next.account.longTermAccountScopeId??`local-account:${next.createdAtMs}`,eventId:`forge:${job.id}:${nowMs}`}).state;
@@ -289,14 +374,30 @@ export function claimEquipmentCraft(state:GameState,jobId:string,nowMs:number,ra
 
 export function claimAllReadyEquipmentCrafts(state:GameState,nowMs:number,trustedRoll=Math.random()){
   let next=withProjectedQueue(state,nowMs),claimed:string[]=[],results:ReturnType<typeof craftedInstanceResult>[]=[],gemClaims=0;
+  const blocked:{jobId:string;reason:string}[]=[];
   for(const job of equipmentCraftingQueue(next).filter(row=>isReady(row,nowMs))){
     try{
       const result=claimForgeJob(next,job.id,nowMs,craftClaimSubRoll(trustedRoll,job.id));next=result.state;claimed.push(job.id);
       if(result.kind==='equipment')results.push(result.result);else gemClaims++;
     }
-    catch(error){if(error instanceof Error&&(error.message==='Inventory and Bank are full'||error.message.startsWith('Bank is full')))break;throw error;}
+    catch(error){
+      if(error instanceof Error&&(
+        error.message==='Inventory and Bank are full'
+        ||error.message.startsWith('Bank is full')
+        ||error.message.startsWith('Crafted equipment storage is full')
+        ||error.message.startsWith('Equipment copy limit reached')
+        ||error.message.startsWith('Equipment copy ownership requires manual review')
+        ||error.message.startsWith('Equipment requires manual review')
+      )){
+        // A blocked equipment receipt must remain ready; do not lose it or
+        // prevent another finished job (notably Gem combines) from claiming.
+        blocked.push({jobId:job.id,reason:error.message});
+        continue;
+      }
+      throw error;
+    }
   }
-  return {state:next,claimed,results,gemClaims};
+  return {state:next,claimed,results,gemClaims,blocked};
 }
 
 export const EQUIPMENT_CRAFT_CANCEL_GOLD_REFUND=.90;

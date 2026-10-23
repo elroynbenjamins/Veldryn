@@ -292,7 +292,7 @@ function applyForgeSaleCredit(state:GameState,amount:number,destination:'bank'|'
     const gold=(state.bank.gold??0)+amount;if(!Number.isSafeInteger(gold))throw new Error('Bank Gold exceeds supported limit');
     return {...state,bank:{...state.bank,gold}};
   }
-  if(state.character?.id!==holder)throw new Error('Sale owner must be the active character');
+  if(!state.character||state.character.id!==holder)throw new Error('Sale owner must be the active character');
   const gold=state.character.gold+amount;if(!Number.isSafeInteger(gold))throw new Error('Carried Gold exceeds supported limit');
   return {...state,character:{...state.character,gold}};
 }

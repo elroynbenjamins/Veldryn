@@ -1,25 +1,17 @@
 import {Image,StyleSheet,View} from 'react-native';
+import {STARTER_WEAPON_CELLS,starterWeaponArtworkLayout} from '../core/starter-weapon-artwork-layout';
 
 const STARTER_WEAPON_SHEET=require('../../assets/starter-weapons-v1.webp');
-// The source WebP is 1254 × 1254. Using the former 1274px estimate shifted
-// later cells far enough to reveal a sliver of their neighbour at small sizes.
-const SHEET_SIZE=1254;
-const CELL_SIZE=SHEET_SIZE/3;
-const CELL_BY_ITEM_ID:Record<string,{column:number;row:number}>={
-  basic_sword:{column:0,row:0},basic_tower_shield:{column:1,row:0},basic_chained_weapon:{column:2,row:0},
-  basic_bow:{column:0,row:1},basic_two_handed_weapon:{column:1,row:1},basic_wand:{column:2,row:1},
-  basic_main_hand_blade:{column:0,row:2},basic_mace:{column:1,row:2},basic_staff:{column:2,row:2},
-};
 
-export function hasStarterWeaponArtwork(itemId:string){return !!CELL_BY_ITEM_ID[itemId];}
+export function hasStarterWeaponArtwork(itemId:string){
+  return Object.prototype.hasOwnProperty.call(STARTER_WEAPON_CELLS,itemId);
+}
 
 export function StarterWeaponArtwork({itemId,size=58}:{itemId:string;size?:number}){
-  const cell=CELL_BY_ITEM_ID[itemId];
-  if(!cell)return null;
-  // Crop inside the source cell itself. Padding the atlas position after it
-  // has been scaled exposes pixels from the previous row/column.
-  const inset=.06,inner=1-inset*2,scale=size/(CELL_SIZE*inner);
-  return <View accessible={false} style={[s.frame,{width:size,height:size}]}><Image source={STARTER_WEAPON_SHEET} resizeMode="stretch" style={{position:'absolute',width:SHEET_SIZE*scale,height:SHEET_SIZE*scale,left:-(cell.column+inset)*CELL_SIZE*scale,top:-(cell.row+inset)*CELL_SIZE*scale}}/></View>;
+  const crop=starterWeaponArtworkLayout(itemId,size);
+  if(!crop)return null;
+  // Only the selected atlas cell appears through this clipped frame.
+  return <View accessible={false} style={[s.frame,{width:size,height:size}]}><Image source={STARTER_WEAPON_SHEET} resizeMode="stretch" style={{position:'absolute',width:crop.sheetSize,height:crop.sheetSize,left:crop.left,top:crop.top}}/></View>;
 }
 
 const s=StyleSheet.create({frame:{overflow:'hidden'}});

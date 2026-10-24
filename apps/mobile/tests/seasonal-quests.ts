@@ -15,6 +15,13 @@ if(daily.some(q=>q.rarity==='epic'||q.rarity==='legendary')||m.some(q=>q.rarity=
 const complete={...state,character:{...state.character!,xp:100000,equipment:{weapon:'basic_sword',helmet:'ASTER_IRON_HELM',chest:'ASTER_IRON_CHEST',legs:'ASTER_IRON_LEGS',boots:'ASTER_IRON_BOOTS',gloves:'ASTER_IRON_GLOVES'},craftedNoviceItemIds:['a','b','c','d','e','f','g']},skills:state.skills.map(skill=>({...skill,xp:10000,level:20})),unlockedMonsterIds:['MOSS_RAT','FIELD_WISP','ROADSIDE_BOAR','SILVERFIN_SWARM','IRONWOOD_WOLF','VENOM_WEAVER','THORNLING']};
 if(seasonalQuestBoard(complete,'daily',date)[0].progress!==0)throw new Error('Lifetime XP must not complete a new combat contract');
 const earned=recordSeasonalActivity(complete,'combat',100,date.getTime());
+const earlyLevelOne=recordSeasonalActivity(state,'combat',100,date.getTime());
+const levelOneWeekly=seasonalQuestBoard(earlyLevelOne,'weekly',date)[0];
+if(levelOneWeekly.progress<levelOneWeekly.required||earlyLevelOne.quests.some(q=>q.questId==='QST_005'&&q.status==='claimed'))throw new Error('The test requires a completed weekly challenge without the Contract Board unlock');
+const earlyWeekly=executeGameCommand(earlyLevelOne,{type:'seasonal',args:{period:'weekly',id:levelOneWeekly.id}},date.getTime()).state;
+if(!earlyWeekly.account.seasonalContractClaimIds?.includes(levelOneWeekly.id)||earlyWeekly.character!.gold!==earlyLevelOne.character!.gold+levelOneWeekly.rewardGold||earlyWeekly.character!.xp!==earlyLevelOne.character!.xp+levelOneWeekly.rewardXp)throw new Error('Weekly rarity cache must be claimable before QST_005 and award the exact rewards');
+let secondWeeklyRejected=false;try{executeGameCommand(earlyWeekly,{type:'seasonal',args:{period:'weekly',id:levelOneWeekly.id}},date.getTime())}catch(e){secondWeeklyRejected=e instanceof Error&&e.message==='This contract reward was already claimed.'}
+if(!secondWeeklyRejected)throw new Error('Online command must reject duplicate early weekly cache claims');
 const ready=seasonalQuestBoard(earned,'daily',date)[0];
 const claimed=claimSeasonalContract(earned,'daily',ready.id,date.getTime());
 if(claimed.character!.gold!==complete.character!.gold+ready.rewardGold||claimed.character!.xp!==complete.character!.xp+ready.rewardXp||!claimed.account.seasonalContractClaimIds?.includes(ready.id))throw new Error('Contract claim must award and persist exactly once');

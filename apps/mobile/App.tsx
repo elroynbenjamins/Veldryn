@@ -117,7 +117,7 @@ import type {GameCommand} from './src/core/game-commands';
 import {actionableClaimNotifications,buildNavigationBadges,buildQuickNavigationBadges,type NavigationNotification} from './src/core/navigation-notifications';
 import {eventReadyClaimCount} from './src/core/live-events';
 import {companionAttentionSummary} from './src/core/companion-attention';
-import {earlyFeatureLockReason,earlyFeatureUnlocked,newlyUnlockedEarlyFeatures,type EarlyFeatureUnlockMoment} from './src/core/feature-unlocks';
+import {earlyFeatureLockReason,earlyFeatureUnlocked,newlyUnlockedEarlyFeatures,playerFacingGameplayError,type EarlyFeatureUnlockMoment} from './src/core/feature-unlocks';
 import type {WorkingTowardDestination} from './src/core/working-toward';
 import {retireGoalPlanner} from './src/core/retired-goal-planner';
 import {recipePreparationTransitionNotices,type RecipePreparationTransitionNotice} from './src/core/recipe-preparation-tracking';
@@ -414,7 +414,7 @@ function VeldrynApp(){
     const feedback=commandProgressFeedback(result.executedCommand,before,result);
     if(presentRewards){if(feedback.collected)setCollected({...feedback.collected,welcomeBack,...(welcomeBack&&before?{welcomeReport:buildWelcomeBackFromStates(before,result.state,feedback.collected.reward,feedback.collected.activity)}:{})});else if(feedback.masteryNotices.length)setMasteryNotices(feedback.masteryNotices);}
     return result;
-  }catch(error){const message=error instanceof Error?error.message:'Please retry.';if(command&&['withdraw','deposit','sell','bulk_transfer','bulk_sell'].includes(command.type)&&/gameplay action is already being saved/i.test(message))return null;setOnlineActionError(message);return null;}finally{if(welcomeBack)setOfflineSettling(false);}}
+  }catch(error){const message=error instanceof Error?error.message:'Please retry.';if(command&&['withdraw','deposit','sell','bulk_transfer','bulk_sell'].includes(command.type)&&/gameplay action is already being saved/i.test(message))return null;setOnlineActionError(playerFacingGameplayError(message));return null;}finally{if(welcomeBack)setOfflineSettling(false);}}
   async function inventoryCommand(command:GameCommand,local:()=>GameState){
     if(serverGameplayEnabled){const result=await perform(command);if(!result)throw new Error('Inventory action was not confirmed. Please retry.');return;}
     await commit(local());

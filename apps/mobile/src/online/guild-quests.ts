@@ -1,4 +1,6 @@
 import {supabase} from './supabase';
+import {myGuild} from './social';
+import {ShortLivedReadCache} from '../core/short-lived-read-cache';
 
 export type GuildQuestCategory='Combat'|'Skilling'|'Mixed'|'Crafting';
 export type GuildQuestRarity='common'|'uncommon'|'rare'|'epic'|'legendary';
@@ -10,7 +12,13 @@ export interface OnlineGuildQuest{
 }
 function client(){if(!supabase)throw new Error('Online services are not configured in this build.');return supabase;}
 function num(v:unknown){const n=Number(v);return Number.isFinite(n)?Math.max(0,Math.floor(n)):0;}
-export async function loadOnlineGuildQuests():Promise<OnlineGuildQuest[]>{
+const questReads=new ShortLivedReadCache<OnlineGuildQuest[]>(20_000);
+export async function loadOnlineGuildQuests(force=false):Promise<OnlineGuildQuest[]>{
+ const membership=await myGuild();
+ if(!membership){questReads.clear();return [];}
+ return questReads.read(membership.account_id+':'+membership.guild_id,readQuestState,force);
+}
+async function readQuestState():Promise<OnlineGuildQuest[]>{
  const {data,error}=await client().rpc('guild_quest_state_v1');
  if(error)throw error;
  return ((data??[]) as Record<string,unknown>[]).map(row=>({

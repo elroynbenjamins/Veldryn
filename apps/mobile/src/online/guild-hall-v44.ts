@@ -1,13 +1,19 @@
 import {supabase} from './supabase';
 import {myGuild} from './social';
+import {ShortLivedReadCache} from '../core/short-lived-read-cache';
 import {GUILD_HALL_FACILITIES,guildHallBenefits,guildHallFacilityTier,guildHallLevel,guildHallVisualStage,newGuildHallState,type GuildHallFacilityId,type GuildHallState,type GuildHallTrophy} from '../core/guild-hall-v44';
 
 type HallRow={guild_id:string;hall_progress:number|string;lifetime_projects_completed:number;facilities:Record<string,{facilityId?:string;progress?:number;updatedAtMs?:number}>|null;revision:number;created_at:string;updated_at:string};
 type TrophyRow={trophy_key:string;label:string;description:string;source_kind:string;source_id:string;earned_at:string};
 function requireClient(){if(!supabase)throw new Error('Online services are not configured in this build.');return supabase;}
 
-export async function loadOnlineGuildHallV44():Promise<{state:GuildHallState;level:number;stage:string;benefits:ReturnType<typeof guildHallBenefits>}|null>{
- const membership=await myGuild();if(!membership)return null;
+type HallProjection={state:GuildHallState;level:number;stage:string;benefits:ReturnType<typeof guildHallBenefits>};
+const hallReads=new ShortLivedReadCache<HallProjection>(60_000);
+export async function loadOnlineGuildHallV44(force=false):Promise<HallProjection|null>{
+ const membership=await myGuild();if(!membership){hallReads.clear();return null;}
+ return hallReads.read(membership.account_id+':'+membership.guild_id,()=>readGuildHall(membership),force);
+}
+async function readGuildHall(membership:NonNullable<Awaited<ReturnType<typeof myGuild>>>):Promise<HallProjection>{
  const client=requireClient();
  const [{data:hall,error:hallError},{data:trophies,error:trophyError}]=await Promise.all([
    client.from('guild_halls').select('guild_id,hall_progress,lifetime_projects_completed,facilities,revision,created_at,updated_at').eq('guild_id',membership.guild_id).maybeSingle(),

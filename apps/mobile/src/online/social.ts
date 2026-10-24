@@ -1,5 +1,6 @@
 import {supabase} from './supabase';
 import {CHAT_RECENT_MESSAGE_LIMIT} from './chat-history';
+import {socialListIdentityIds,withSocialListIdentities} from '../core/social-list-projection';
 import {normalizePlayerBadges,type PlayerBadgeIdentity} from '../core/player-badges';
 import {guildNameError,normalizeGuildName} from '../core/identity-names';
 import type {GuildAppearanceEntitlements,GuildBackgroundId,GuildBannerId,GuildFrameId,GuildNameColorId,GuildNameplateId} from '../core/guild-customization';
@@ -116,6 +117,28 @@ export async function guildContribute(kind:'project'|'boss',amount:number){const
 export async function searchPlayers(query:string){const client=requireClient();const clean=query.trim();if(clean.length<2)throw new Error('Enter at least two characters.');const {data,error}=await client.rpc('social_player_search',{p_query:clean,p_limit:20});if(error)throw error;return withGuildIdentities((data??[]) as FriendSearchResult[]);}
 export async function friends(){const client=requireClient();const {data,error}=await client.rpc('friend_list');if(error)throw error;return withGuildIdentities((data??[]) as FriendEntry[]);}
 export async function friendRequests(){const client=requireClient();const {data,error}=await client.rpc('friend_request_list');if(error)throw error;return withGuildIdentities((data??[]) as FriendRequest[]);}
+/** Load social lists once, then resolve public cosmetics in one bounded batch.
+ * Membership and block decisions still come from the existing server RPCs.
+ * Blocked players are not included in the public cosmetic lookup.
+ */
+export async function friendsOverview():Promise<{friends:FriendEntry[];requests:FriendRequest[];blocked:BlockedPlayer[]}>{
+ const client=requireClient();
+ const [friendsResult,requestsResult,blockedResult]=await Promise.all([
+  client.rpc('friend_list'),client.rpc('friend_request_list'),client.rpc('blocked_player_list'),
+ ]);
+ if(friendsResult.error)throw friendsResult.error;
+ if(requestsResult.error)throw requestsResult.error;
+ if(blockedResult.error)throw blockedResult.error;
+ const friendRows=(friendsResult.data??[]) as FriendEntry[];
+ const requestRows=(requestsResult.data??[]) as FriendRequest[];
+ const blockedRows=(blockedResult.data??[]) as BlockedPlayer[];
+ const identities=await guildIdentities(socialListIdentityIds(friendRows,requestRows));
+ return {
+  friends:withSocialListIdentities(friendRows,identities),
+  requests:withSocialListIdentities(requestRows,identities),
+  blocked:blockedRows,
+ };
+}
 export async function friendRelationshipState(accountId:string):Promise<{relationship:FriendRelationship;requestId?:string}>{
  const client=requireClient();
  const [{data:friendData,error:friendError},{data:requestData,error:requestError}]=await Promise.all([

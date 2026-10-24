@@ -1,0 +1,41 @@
+name: Release economy validation
+on:
+  pull_request:
+    paths:
+      - 'backend/src/**'
+      - 'backend/data/**'
+      - 'backend/package.json'
+      - 'backend/pnpm-lock.yaml'
+      - '.github/workflows/release-economy-validation.yml'
+  push:
+    branches: [main, fix/release-1-hardening]
+    paths:
+      - 'backend/src/**'
+      - 'backend/data/**'
+      - 'backend/package.json'
+      - 'backend/pnpm-lock.yaml'
+      - '.github/workflows/release-economy-validation.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  economy:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+          cache-dependency-path: backend/pnpm-lock.yaml
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm typecheck
+      - run: pnpm test:release-economy
+      - run: pnpm backend-pass-smoke
+      - run: pnpm production-smoke

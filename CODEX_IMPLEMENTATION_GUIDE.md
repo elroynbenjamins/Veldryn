@@ -15,7 +15,7 @@ If workbook and code conflict, preserve the workbook value unless a documented p
 
 ## Current authority model
 - Current prototype: local repository is authoritative for testing only.
-- Future production: server becomes authoritative for combat, loot, currency, crafting, Market, guilds, PvP, raids, Echo/squad rewards, chat moderation, entitlements and progression claims.
+- Future production: server becomes authoritative for combat, loot, currency, crafting, guilds, PvP, raids, Echo/squad rewards, chat moderation, entitlements and progression claims.
 - UI never owns gameplay truth. Screens call repository/domain functions.
 - Never embed a Supabase assumption directly in a screen component.
 
@@ -65,4 +65,8 @@ At minimum run:
 Add deterministic tests whenever modifying progression, loot, offline claims, crafting, quests, item stats or boss gates.
 
 ## First Codex task
-Improve and complete the v0.4 offline Asterfall vertical slice described in `MVP_SCOPE.md`. Do not add Supabase deployment, live multiplayer, production Market or monetization. Prioritize the core loop: kill -> loot -> compare -> equip -> stronger target -> quest/boss progression.
+Improve and complete the v0.4 offline Asterfall vertical slice described in `MVP_SCOPE.md`. Do not add Supabase deployment, live multiplayer, monetization. Prioritize the core loop: kill -> loot -> compare -> equip -> stronger target -> quest/boss progression.
+
+## Retired player market
+
+Player-to-player trading and the player Market are permanently removed, not deferred launch features. Do not reintroduce their UI, API routes, escrow, or runtime services. NPC selling, the Event Shop, and the Guild Shop remain separate supported systems. Keep historical database migrations so existing installations can upgrade and clean resets remain reproducible.

@@ -1,5 +1,7 @@
 # VELDRYN Offline MVP Scope — Milestone 1: The Fallen Knight
 
+> Historical Milestone 1 scope, not the current 1.0 release inventory. See README.md and docs/implementation/TEST_CONTRACT.md for current implemented systems and verification boundaries. Player Market remains permanently removed.
+
 ## Definition of done
 A fresh local account can:
 Create a character -> learn the Home/activity loop -> fight Asterfall monsters -> earn/equip/salvage/sell gear -> gather/craft useful items -> complete onboarding quests -> reach level 25 -> defeat the Fallen Knight -> see Sunscar unlocked/teased.
@@ -24,7 +26,7 @@ Create a character -> learn the Home/activity loop -> fight Asterfall monsters -
 - Live co-op.
 - Q-Mode/Echo recruitment UI.
 - Guilds.
-- Production Market.
+- Player Market / player-to-player trading (permanently removed).
 - Arena / Squad Arena / Triad Trials.
 - Raids.
 - Chat/network moderation UI.

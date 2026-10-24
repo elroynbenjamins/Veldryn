@@ -51,6 +51,6 @@ export class VeldrynRemoteConfig {
 /** Integration rules:
  * - Every authoritative endpoint enforces its feature gate; UI hiding is convenience only.
  * - For immutable Party Event caps: effectiveCap = min(definitionCap, remote safety hard cap). Never raise a live definition cap remotely.
- * - Existing Live Dungeon runs/crafting jobs/market escrow should settle safely when new-entry switches are disabled.
+ * - Existing Live Dungeon runs/crafting jobs should settle safely when new-entry switches are disabled.
  * - Cache is intentionally short (15s default) for emergency response; preserve last good cache if your repository transiently fails.
  */

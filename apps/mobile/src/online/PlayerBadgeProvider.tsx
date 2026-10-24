@@ -3,6 +3,7 @@ import {AppState} from 'react-native';
 import {useAuthSession} from './AuthSessionProvider';
 import {loadPlayerBadgePreferences,updatePlayerBadgePreferences,type PlayerBadgePreferences} from './player-badges';
 import {guildIdentities,type SocialProfileIcon} from './social';
+import {peekPlayerIdentity,playerIdentityDetailsNeedRefresh,playerIdentityNeedsRefresh,subscribePlayerIdentityChanges} from './player-identity-cache';
 import type {PlayerBadgeIdentity} from '../core/player-badges';
 
 export type BadgeState=PlayerBadgePreferences&{accountId:string;loading:boolean;busy:boolean;error:string;setVisible:(visible:boolean)=>Promise<void>;refresh:()=>Promise<void>};
@@ -17,13 +18,44 @@ export function PlayerBadgeProvider({children}:{children:ReactNode}){
  const watch=useCallback((id:string)=>{watched.current.set(id,(watched.current.get(id)??0)+1);setWatchVersion(value=>value+1);return()=>{const count=(watched.current.get(id)??1)-1;if(count)watched.current.set(id,count);else watched.current.delete(id);setWatchVersion(value=>value+1);};},[]);
  useEffect(()=>{
   let alive=true,request=0;
-  const load=async()=>{const version=++request;const ids=[...watched.current.keys()];
-   try{const rows=accountId&&ids.length?await guildIdentities(ids):new Map();if(alive&&version===request)setRemote({accountId,identities:new Map([...rows].map(([id,row])=>[id,row.player_badges])),icons:rows});}
-   catch{if(alive&&version===request)setRemote({accountId,identities:new Map(),icons:new Map()});}
+  const showCached=(changedId:string)=>{
+   const row=peekPlayerIdentity(changedId);
+   if(!row)return;
+   setRemote(previous=>{
+    if(previous.accountId!==accountId)return previous;
+    const identities=new Map(previous.identities),icons=new Map(previous.icons);
+    identities.set(changedId,row.player_badges);icons.set(changedId,row);
+    return {...previous,identities,icons};
+   });
   };
-  const batch=setTimeout(()=>void load(),50),timer=setInterval(()=>{if(AppState.currentState==='active')void load();},60000);
-  const foreground=AppState.addEventListener('change',next=>{if(next==='active')void load();else{request++;setRemote({accountId,identities:new Map(),icons:new Map()});}});
-  return()=>{alive=false;clearTimeout(batch);clearInterval(timer);foreground.remove();};
+  const load=async()=>{
+   const version=++request,ids=[...watched.current.keys()];
+   if(!accountId||!ids.length){
+    if(alive&&version===request)setRemote(previous=>previous.accountId===accountId&&!previous.icons.size?previous:{accountId,identities:new Map(),icons:new Map()});
+    return;
+   }
+   try{
+    const rows=await guildIdentities(ids);
+    if(alive&&version===request)setRemote({
+     accountId,identities:new Map([...rows].map(([id,row])=>[id,row.player_badges])),icons:rows,
+    });
+   }catch{/* Preserve the last good public icons while offline. */}
+  };
+  const unsubscribe=subscribePlayerIdentityChanges(id=>{
+   if(!watched.current.has(id))return;
+   showCached(id);
+   // An explicit invalidation fetches the fresh row; an optimistic icon
+   // update is already fresh and is served from the shared cache.
+   if(playerIdentityNeedsRefresh(id)||playerIdentityDetailsNeedRefresh(id))void load();
+  });
+  const batch=setTimeout(()=>void load(),50);
+  // This timer checks the cache, not the server. Fetch only if rows expired.
+  const timer=setInterval(()=>{if(AppState.currentState==='active'&&watched.current.size)void load();},5*60*1000);
+  const foreground=AppState.addEventListener('change',next=>{
+   if(next==='active'&&watched.current.size)void load();
+   // Do not blank avatars on background/foreground transitions.
+  });
+  return()=>{alive=false;request++;clearTimeout(batch);clearInterval(timer);foreground.remove();unsubscribe();};
  },[accountId,watchVersion]);
  const refresh=useCallback(async()=>{
   if(saving.current)return;

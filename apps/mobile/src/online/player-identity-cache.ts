@@ -1,0 +1,101 @@
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import {identityFieldExpired,mergeSocialWithCachedIcon,PLAYER_ICON_REFRESH_MS,PLAYER_SOCIAL_REFRESH_MS} from '../core/player-identity-cache-policy';
+import type {PlayerBadgeIdentity} from '../core/player-badges';
+import type {PlayerNameStylePreference} from '../core/player-name-style';
+
+/**
+ * Only already-authorized public identity projections are cached. Artwork is
+ * bundled with the client; never download or persist image binaries per user.
+ * The viewer-scoped key prevents identities crossing sign-in boundaries.
+ */
+export type CachedPlayerIdentity={
+ profile_icon_id:string|null;class_id:string|null;guild_tag:string|null;
+ guild_tag_color_id:string|null;player_name_style:PlayerNameStylePreference|null;
+ player_badges:PlayerBadgeIdentity|undefined;
+};
+type Entry={value:CachedPlayerIdentity;iconFetchedAt:number;detailsFetchedAt:number};
+type Saved={version:1;entries:[string,Entry][]};
+export const PLAYER_IDENTITY_TTL_MS=PLAYER_ICON_REFRESH_MS;
+export const PLAYER_IDENTITY_DETAILS_TTL_MS=PLAYER_SOCIAL_REFRESH_MS;
+const MAX_ENTRIES=500;
+const STORAGE_PREFIX='veldryn:public-player-identities:v1:';
+const entries=new Map<string,Entry>();
+const listeners=new Set<(accountId:string)=>void>();
+let currentViewer='',ready:Promise<void>=Promise.resolve(),saveTimer:ReturnType<typeof setTimeout>|undefined;
+
+function trimCache(){
+ while(entries.size>MAX_ENTRIES)entries.delete(entries.keys().next().value!);
+}
+function storageKey(viewer:string){return STORAGE_PREFIX+viewer;}
+function scheduleSave(){
+ if(!currentViewer||saveTimer)return;
+ const viewer=currentViewer;
+ saveTimer=setTimeout(()=>{
+  saveTimer=undefined;
+  if(viewer!==currentViewer)return;
+  const snapshot:Saved={version:1,entries:[...entries]};
+  void AsyncStorage.setItem(storageKey(viewer),JSON.stringify(snapshot)).catch(()=>{});
+ },250);
+}
+export async function ensurePlayerIdentityViewer(viewer:string){
+ if(viewer===currentViewer){await ready;return;}
+ if(saveTimer){clearTimeout(saveTimer);saveTimer=undefined;}
+ currentViewer=viewer;entries.clear();
+ if(!viewer){ready=Promise.resolve();return;}
+ ready=AsyncStorage.getItem(storageKey(viewer)).then(raw=>{
+  if(viewer!==currentViewer||!raw)return;
+  const data=JSON.parse(raw) as Saved;
+  if(data?.version!==1||!Array.isArray(data.entries))return;
+  for(const [id,entry] of data.entries){
+   if(typeof id==='string'&&entry&&Number.isFinite(entry.iconFetchedAt)&&Number.isFinite(entry.detailsFetchedAt)&&entry.value&&typeof entry.value==='object'){
+    entries.set(id,entry);
+   }
+  }
+  trimCache();
+ }).catch(()=>{});
+ await ready;
+}
+export function currentPlayerIdentityViewer(){return currentViewer;}
+export function peekPlayerIdentity(id:string){
+ const found=entries.get(id);
+ if(found){entries.delete(id);entries.set(id,found);}
+ return found?.value;
+}
+export function playerIdentityNeedsRefresh(id:string,now=Date.now()){
+ const entry=entries.get(id);
+ return identityFieldExpired(entry?.iconFetchedAt,PLAYER_IDENTITY_TTL_MS,now);
+}
+export function playerIdentityDetailsNeedRefresh(id:string,now=Date.now()){
+ const entry=entries.get(id);
+ return identityFieldExpired(entry?.detailsFetchedAt,PLAYER_IDENTITY_DETAILS_TTL_MS,now);
+}
+export function storePlayerIdentities(rows:ReadonlyMap<string,CachedPlayerIdentity>,now=Date.now(),includesIcon=true){
+ for(const [id,value] of rows){
+  const old=entries.get(id);
+  const merged=mergeSocialWithCachedIcon(old?.value,value,includesIcon);
+  entries.delete(id);entries.set(id,{value:merged,iconFetchedAt:includesIcon?now:old?.iconFetchedAt??0,detailsFetchedAt:now});
+ }
+ trimCache();scheduleSave();
+}
+export function subscribePlayerIdentityChanges(listener:(accountId:string)=>void){
+ listeners.add(listener);return()=>{listeners.delete(listener);};
+}
+/** Called after the owner saves a new icon. Avoids waiting for any polling. */
+export function publishOwnProfileIcon(accountId:string,profileIconId:string,classId:string){
+ if(!accountId||!currentViewer||currentViewer!==accountId)return;
+ const old=entries.get(accountId),previous=old?.value;
+ entries.delete(accountId);
+ entries.set(accountId,{iconFetchedAt:Date.now(),detailsFetchedAt:old?.detailsFetchedAt??0,value:{
+  profile_icon_id:profileIconId,class_id:classId,
+  guild_tag:previous?.guild_tag??null,guild_tag_color_id:previous?.guild_tag_color_id??null,
+  player_name_style:previous?.player_name_style??null,player_badges:previous?.player_badges,
+ }});
+ trimCache();scheduleSave();
+ for(const listener of listeners)listener(accountId);
+}
+/** Mark a row stale, e.g. after name-style/badge preference changes. */
+export function invalidatePlayerIdentity(accountId:string){
+ const previous=entries.get(accountId);
+ if(previous)entries.set(accountId,{...previous,detailsFetchedAt:0});
+ for(const listener of listeners)listener(accountId);
+}

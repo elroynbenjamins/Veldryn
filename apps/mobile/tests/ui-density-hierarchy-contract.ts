@@ -281,7 +281,7 @@ const appShell=read('App.tsx');
 const packageJson=read('package.json');
 ok(primaryNavigation.includes('useSafeAreaInsets'),'Bottom navigation must use real safe-area metrics');
 ok(primaryNavigation.includes('active?:T'),'Bottom navigation must support a neutral selection state for the session Home dashboard');
-ok(appShell.includes("tab==='Home'?undefined"),'Home must not falsely select Account or another persistent bottom destination');
+ok(appShell.includes("const activePrimary:PrimaryTab=primaryNavForRoute(tab)")&&appShell.includes("const primaryTabs:PrimaryTab[]=['Home','Character','Skills','World','Inventory','More']"),'Home is a first-class first-position tab and highlights Home, not Account');
 ok(primaryNavigation.includes("Math.max(bottom,Platform.OS==='android'?8:4)"),'Bottom navigation must own the native bottom inset on both Android and iOS without reducing touch safety');
 ok(!primaryNavigation.includes("Dimensions.get('screen')")&&!primaryNavigation.includes('StatusBar.currentHeight'),'Bottom navigation must not regress to screen-height/status-bar heuristics');
 ok(appShell.includes('<SafeAreaProvider>'),'App root must provide safe-area metrics');

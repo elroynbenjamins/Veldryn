@@ -7,6 +7,7 @@ import {radii,spacing,typography,type ThemeColors} from '../theme/theme';
 import type {ClassId,GameState} from '../core/types';
 import {ADMIN_QA_CLASSES,buildAdminQaState,refillAdminQaResources} from '../dev/admin-qa-profile';
 import {setLocalEventEnabled} from '../core/live-events';
+import {enableNetworkRequestMetrics,networkRequestMetricsEnabled,networkRequestSnapshot,resetNetworkRequestMetrics,type NetworkRequestSummary} from '../core/network-request-metrics';
 
 const labels:Record<ClassId,string>={
   IRONWARDEN:'Ironwarden',BASTION:'Bastion',DREADGUARD:'Dreadguard',DAWNKEEPER:'Dawnkeeper',
@@ -25,6 +26,7 @@ type Props={
 export function AdminQaScreen({state,onChange,onApplyQa,onRefillQa,onClose,onOpenDungeon}:Props){
   const C=useGameTheme(),s=useMemo(()=>styles(C),[C]);
   const [busy,setBusy]=useState(false),online=!!onApplyQa;
+  const [requestMetrics,setRequestMetrics]=useState(networkRequestSnapshot),[captureActive,setCaptureActive]=useState(networkRequestMetricsEnabled);
   const run=async(work:()=>void|Promise<void>)=>{if(busy)return;setBusy(true);try{await work()}catch(error){gameAlert.alert('Admin QA',error instanceof Error?error.message:String(error))}finally{setBusy(false)}};
   const apply=async(classId:ClassId)=>{
     if(onApplyQa){await onApplyQa(classId);return;}
@@ -41,6 +43,13 @@ export function AdminQaScreen({state,onChange,onApplyQa,onRefillQa,onClose,onOpe
     <View style={s.card}><Text style={s.cardTitle}>Full-access profile</Text><Text style={s.body}>Level 100, max test skills, all monsters/bosses unlocked, five character slots, VIP/VIP+/Supporter flags, large storage, premium currency and enough materials to exercise crafting recipes.</Text><GameButton title={state.character?'Apply / reset QA profile':'Create Admin QA character'} disabled={busy} onPress={()=>void run(()=>apply(state.character?.classId??'IRONWARDEN'))}/><GameButton title="Refill gold + materials" disabled={busy||!state.character} onPress={()=>void run(refill)}/>{onChange?<GameButton title="Enable Veilbreak" disabled={busy} tone="secondary" onPress={()=>void run(()=>onChange(setLocalEventEnabled(state,true,Date.now(),'EVT_ANNUAL_010_2026')))}/>:null}</View>
     <View style={s.card}><Text style={s.cardTitle}>Class switcher</Text><Text style={s.body}>Reuse the same QA account and character ID while changing its class test profile, so all nine class-restricted equipment paths can be exercised.</Text><View style={s.grid}>{ADMIN_QA_CLASSES.map(classId=><View key={classId} style={s.cell}><GameButton title={labels[classId]} disabled={busy||state.character?.classId===classId} onPress={()=>void run(()=>apply(classId))}/></View>)}</View></View>
     <View style={s.card}><Text style={s.cardTitle}>Dungeon lab</Text><Text style={s.body}>Use the normal online dungeon runtime. Q-mode can fill missing roles from the tested QA Echo pool; Live mode still requires real connected clients.</Text><GameButton title="Open Dungeon" disabled={!state.character} onPress={onOpenDungeon}/></View>
+    <View style={s.card}><Text style={s.cardTitle}>Network requests (session)</Text>
+      <Text style={s.body}>Optional QA capture. Counts actual Supabase HTTP calls by screen and RPC, without player identifiers, URLs or payloads. Realtime socket frames and other services are excluded.</Text>
+      <Text style={s.body}>Capture: {captureActive?'ON':'OFF'} · Requests: {requestMetrics.count} · Failures: {requestMetrics.failures}</Text>
+      <View style={s.grid}><View style={s.cell}><GameButton title={captureActive?'Pause capture':'Start capture'} tone="secondary" onPress={()=>{enableNetworkRequestMetrics(!captureActive);setCaptureActive(!captureActive);setRequestMetrics(networkRequestSnapshot());}}/></View><View style={s.cell}><GameButton title="Update counts" tone="secondary" onPress={()=>setRequestMetrics(networkRequestSnapshot())}/></View><View style={s.cell}><GameButton title="Reset counts" tone="secondary" onPress={()=>{resetNetworkRequestMetrics();setRequestMetrics(networkRequestSnapshot());}}/></View></View>
+      {requestMetrics.rows.slice(0,16).map((row:NetworkRequestSummary)=><Text key={row.route+':'+row.operation} style={s.body}>{row.route} · {row.operation} · {row.count} req · {row.count?Math.round(row.totalMs/row.count):0}ms avg{row.failures?' · '+row.failures+' failed':''}</Text>)}
+      {requestMetrics.rows.length>16?<Text style={s.body}>Only the 16 most frequent request groups are shown.</Text>:null}
+    </View>
     <View style={s.warning}><Text style={s.warningTitle}>QA isolation</Text><Text style={s.body}>Admin QA gameplay contributions are suppressed from the normal progression/ranking contribution pipeline. Keep this role limited to dedicated test accounts.</Text></View>
   </ScrollView>;
 }

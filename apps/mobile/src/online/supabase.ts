@@ -3,6 +3,7 @@ import {createClient,processLock,type SupabaseClient} from '@supabase/supabase-j
 import {Platform} from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import {chunkedAuthStorage} from '../core/auth-callback';
+import {currentNetworkMetricsRoute,networkRequestCategory,networkRequestMetricsEnabled,recordNetworkRequest} from '../core/network-request-metrics';
 
 declare const process:{env:Record<string,string|undefined>};
 
@@ -22,12 +23,29 @@ const secureStorage={
   removeItem:(storageKey:string)=>SecureStore.deleteItemAsync(storageKey),
 };
 
+/** Counts actual Supabase HTTP requests during an explicitly enabled QA capture.
+ * Category and aggregate latency only; never records endpoint parameters or payloads.
+ */
+const monitoredSupabaseFetch:typeof fetch=(input,init)=>{
+ if(!networkRequestMetricsEnabled())return fetch(input,init);
+ const source=typeof input==='string'?input:typeof input==='object'&&input&&'url'in input?String(input.url):String(input);
+ const category=networkRequestCategory(source),started=Date.now(),originRoute=currentNetworkMetricsRoute();
+ return fetch(input,init).then(response=>{
+  recordNetworkRequest(category,Date.now()-started,response.ok,originRoute);
+  return response;
+ },error=>{
+  recordNetworkRequest(category,Date.now()-started,false,originRoute);
+  throw error;
+ });
+};
+
 /** Undefined until the public Expo environment variables have been supplied. */
 export const supabase:SupabaseClient|undefined=url&&key?createClient(url,key,{
   // In the pinned v2 SDK, updateUser can overwrite tokens from an overlapping
   // automatic refresh. This lock protects SDK-internal session writes; account.ts
   // also orders explicit auth intents, including sign-in paths that bypass it.
   auth:{storage:Platform.OS==='web'?AsyncStorage:chunkedAuthStorage(secureStorage),flowType:'pkce',autoRefreshToken:true,persistSession:true,detectSessionInUrl:false,lock:processLock},
+  global:{fetch:monitoredSupabaseFetch},
 }):undefined;
 
 export const onlineConfigured=Boolean(supabase);

@@ -1,0 +1,23 @@
+import {currentNetworkMetricsRoute,enableNetworkRequestMetrics,networkRequestCategory,networkRequestSnapshot,recordNetworkRequest,resetNetworkRequestMetrics,setNetworkMetricsRoute} from '../src/core/network-request-metrics';
+function ok(value:unknown,message:string){if(!value)throw new Error(message);}
+enableNetworkRequestMetrics(true);
+setNetworkMetricsRoute('Home');
+recordNetworkRequest(networkRequestCategory('https://example.test/rest/v1/rpc/guild_identities?p_account_ids=private'),125,true);
+recordNetworkRequest(networkRequestCategory('https://example.test/rest/v1/rpc/guild_identities?p_account_ids=secret'),75,true);
+recordNetworkRequest(networkRequestCategory('https://example.test/auth/v1/token?apikey=secret'),70,false);
+setNetworkMetricsRoute('Inventory');
+recordNetworkRequest(networkRequestCategory('https://example.test/rest/v1/items?character_id=secret'),25,true);
+const origin=currentNetworkMetricsRoute();
+setNetworkMetricsRoute('Friends');
+recordNetworkRequest('rpc:slow_request',50,true,origin);
+const result=networkRequestSnapshot();
+ok(result.count===5&&result.failures===1,'Request totals and failures counted');
+ok(result.rows.find(row=>row.operation==='rpc:guild_identities')?.count===2,'Identical RPCs grouped by screen');
+ok(result.rows.find(row=>row.operation==='rpc:guild_identities')?.totalMs===200,'Elapsed time aggregates without URL data');
+ok(result.rows.some(row=>row.route==='Inventory'&&row.operation==='rest:table'),'Screen routing groups requests separately');
+ok(result.rows.some(row=>row.route==='Inventory'&&row.operation==='rpc:slow_request')&&!result.rows.some(row=>row.route==='Friends'&&row.operation==='rpc:slow_request'),'Late HTTP responses retain their originating screen after navigation');
+ok(!JSON.stringify(result).includes('secret')&&!JSON.stringify(result).includes('private'),'No URLs, query strings or account IDs in stats');
+resetNetworkRequestMetrics();ok(networkRequestSnapshot().count===0,'QA reset is immediate');
+enableNetworkRequestMetrics(false);
+recordNetworkRequest('auth',100,true);ok(networkRequestSnapshot().count===0,'Disabled metrics collect nothing');
+console.log('PASS privacy-safe network request counts, per-screen grouping, elapsed time and reset');

@@ -65,7 +65,7 @@ ok(discovery.includes("guildPolicy(selected)==='FULL'")&&discovery.includes('sel
 ok(onlineSocial.includes("guild_directory_v1")&&onlineSocial.includes("PGRST202"),'Guild directory must use the private-roster-safe projection and retain rollout fallback');
 ok(management.includes('Search Guild members')&&management.includes('visibleMembers.map')&&management.includes('memberSearch:{minHeight:44'),
  'Guild roster search must be theme-aware and maintain usable touch/input size');
-ok(management.includes('Number(leadership.inactiveDays??0)>=14?<View'),'Succession safety should interrupt members only when its warning threshold is reached');
+ok(management.includes('const warningLeadership=leadership&&Number(leadership.inactiveDays??0)>=14?leadership:null')&&management.includes('{warningLeadership?<View'),'Succession safety should interrupt members only when its warning threshold is reached');
 
 ok(customization.includes('appearanceDirty='),'Guild customization must track unsaved appearance changes');
 ok(customization.includes('appearanceDirty?st("UNSAVED"):st("SAVED")'),'Guild customization must surface localized saved/unsaved state');

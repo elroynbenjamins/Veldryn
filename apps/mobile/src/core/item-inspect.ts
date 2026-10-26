@@ -16,7 +16,7 @@ import {materialAcquisitionPlanForDestination,materialAcquisitionPlanSummary} fr
 
 export type ItemInspectSourceKind='gathering'|'crafting'|'combat'|'dungeon'|'starting';
 export interface ItemInspectSource{kind:ItemInspectSourceKind;typeLabel?:string;title:string;detail:string;navigation?:WorkingTowardDestination;availability?:WorkingTowardDestinationAvailability;estimatedSeconds?:number;estimateLabel?:string;chainLabel?:string;chainBlockedReason?:string;}
-export interface ItemRecipeUse{recipeId:string;name:string;outputItemId:string;outputName:string;skill:string;level:number;quantity:number;navigation:WorkingTowardDestination;availability:WorkingTowardDestinationAvailability;}
+export interface ItemRecipeUse{recipeId:string;name:string;outputItemId:string;outputName:string;skill:string;level:number;quantity:number;isRecipeUnlock:boolean;navigation:WorkingTowardDestination;availability:WorkingTowardDestinationAvailability;}
 export interface ItemGearDecision{
  compatible:boolean;alreadyEquipped:boolean;replaces?:{itemId:string;name:string;rank:number};
  loadoutBefore:{attack:number;defense:number;hp:number;power:number};loadoutAfter:{attack:number;defense:number;hp:number;power:number};loadoutDelta:{attack:number;defense:number;hp:number;power:number};
@@ -69,11 +69,19 @@ export function itemInspectModel(state:GameState,itemId:string){
     sources.splice(0,sources.length,...materialSources);
   }
 
-  const usedIn:Omit<ItemRecipeUse,'availability'>[]=RECIPES.flatMap(recipe=>recipe.inputs.filter(input=>input.itemId===itemId).map(input=>({
-    recipeId:recipe.id,name:recipe.name,outputItemId:recipe.output.itemId,outputName:itemDef(recipe.output.itemId).name,
-    skill:title(recipe.skillId),level:recipe.level,quantity:input.quantity,
-    navigation:{kind:'skills',skillId:recipe.skillId,mode:recipe.noviceSetId?'novice':'crafting',recipeId:recipe.id,button:'View recipe',detail:`Open ${recipe.name}.`} as WorkingTowardDestination,
-  })));
+  const usedIn:Omit<ItemRecipeUse,'availability'>[]=RECIPES.flatMap(recipe=>{
+    // Ordinary ingredients retain their existing uses. A learned recipe/blueprint
+    // is a knowledge unlock, not an input consumed by each crafting attempt.
+    const amounts=recipe.inputs.filter(input=>input.itemId===itemId).map(input=>input.quantity);
+    const isRecipeBlueprint=!!item.knowledgeUnlockId
+      &&recipe.knowledgeItemId===itemId&&recipe.requiredKnowledgeId===item.knowledgeUnlockId;
+    if(isRecipeBlueprint)amounts.push(0);
+    return amounts.map(quantity=>({
+      recipeId:recipe.id,name:recipe.name,outputItemId:recipe.output.itemId,outputName:itemDef(recipe.output.itemId).name,
+      skill:title(recipe.skillId),level:recipe.level,quantity,isRecipeUnlock:isRecipeBlueprint&&quantity===0,
+      navigation:{kind:'skills',skillId:recipe.skillId,mode:'crafting',recipeId:recipe.id,button:'View recipe',detail:`Open ${recipe.name}.`} as WorkingTowardDestination,
+    }));
+  });
 
   const inventoryQuantity=state.inventory.stacks.find(stack=>stack.itemId===itemId)?.quantity??0;
   const bankQuantity=state.bank.stacks.find(stack=>stack.itemId===itemId)?.quantity??0;

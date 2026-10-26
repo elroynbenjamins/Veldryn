@@ -17,7 +17,7 @@ as $guild_directory$
   'minimum_level',g.minimum_level,'join_policy',g.join_policy,
   'banner_id',g.banner_id,'profile_frame_id',g.profile_frame_id,
   'name_color_id',g.name_color_id,'nameplate_id',g.nameplate_id,
-  'motto',g.motto,'background_id',g.background_id
+  'motto',g.motto,'background_id',to_jsonb(g)->>'background_id'
  )
  from public.guilds g
  where auth.uid() is not null

@@ -80,7 +80,7 @@ export function GuildDiscoveryFlow({onJoined}:{onJoined:()=>void}){
  };
  const back=()=>{setError('');setPage(page==='details'?'find':'welcome')};
  const nameProblem=name?guildNameError(name):'';
- return <ScrollView contentContainerStyle={s.root} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
+ return <ScrollView contentContainerStyle={s.root} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false} showsHorizontalScrollIndicator={false}>
   {page==='welcome'?<>
    <Panel><View style={s.hero}><View style={s.heroIcon}><ThemedIcon name="guild" size={42}/></View><Text accessibilityRole="header" style={s.h1}>Find your Guild</Text><Text style={s.subtitle}>Adventure together, tackle Guild Projects, and earn shared rewards.</Text></View>
     <GameButton title="Find a Guild" onPress={openFind}/>

@@ -81,7 +81,7 @@ export function GuildScreen({state,onChange,onlineManagement,onlineBoard,onlineP
      {hallSection==='Facilities'?onlineHall:<OnlineGuildTokenShopPanel onRewardsChanged={onTokenRewardsChanged}/>}
     </View>:null}
     {onlineSection==='Chat'?onlineChat:null}
-    {onlineSection==='Manage'?<View style={s.sectionStack}><GuildSectionHeader label={st("IDENTITY")} title={st("Guild Appearance")} copy={st("Manage the Guild banner, border, colors, nameplate and motto with role-based permissions.")}/>{onlineCustomize}<GameButton compact title="Roadmap & future content" tone="secondary" onPress={()=>setOnlineSection('Future')}/></View>:null}
+    {onlineSection==='Manage'?<View style={s.sectionStack}><GuildSectionHeader label={st("IDENTITY")} title={st("Guild Appearance")} copy={st("Manage the Guild tag, banner, border, colors, nameplate and motto with role-based permissions.")}/>{onlineCustomize}<GameButton compact title="Roadmap & future content" tone="secondary" onPress={()=>setOnlineSection('Future')}/></View>:null}
     {onlineSection==='Future'?<GuildFutureContent/>:null}
   </ScrollView>;
   const joined=state.account.guildMember,contribution=state.account.guildContribution??0,project=Math.max(state.account.guildProjectProgress??0,Math.min(1000,contribution)),bossHp=state.account.guildBossHp??100000;

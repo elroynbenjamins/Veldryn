@@ -20,7 +20,7 @@ import {guildChatCommandKey,guildChatState,guildRoster,markSocialChatRead,sendGu
 export function GuildChat({language,currentPlayerName,unlockedEmoteIds=[],trayIds=[],bodyPresentation='male',onTrayChange,firstUnreadMessageId,onRead,reduceMotion=false,active=true}:{language:Language;currentPlayerName?:string;unlockedEmoteIds?:readonly string[];trayIds?:readonly string[];bodyPresentation?:'male'|'female';onTrayChange?:(ids:string[])=>void|Promise<void>;firstUnreadMessageId?:string;onRead?:()=>void;reduceMotion?:boolean;active?:boolean}){
  const st=useSocialText();
  const C=useGameTheme(),s=useMemo(()=>makeStyles(C),[C]);
- const {value:snapshot,error:loadError,accountId,refresh:load,setValue:setSnapshot}=useChatFeed<GuildChatState|null>({key:'guild:current',read:()=>guildChatState(),initial:null,active});
+ const {value:snapshot,error:loadError,accountId,refresh:load,setValue:setSnapshot}=useChatFeed<GuildChatState|null>({key:'guild:current',read:()=>guildChatState(),initial:null,active,channelType:'guild',channelIdFromValue:value=>value?.guild?.id});
  const [selected,setSelected]=useState<GuildChatMessage|null>(null),[body,setBody]=useState(''),[mentionNames,setMentionNames]=useState<string[]>([]),[busy,setBusy]=useState(false),[sendError,setError]=useState('');
  const pending=useRef<{body:string;key:string}|null>(null),sending=useRef(false),activeRef=useRef(active),onReadRef=useRef(onRead);activeRef.current=active;onReadRef.current=onRead;
  const guild=snapshot?.guild??null,messages=snapshot?.messages??[],error=sendError||loadError,scope=`${accountId}:${guild?.id??''}`,currentScope=useRef(scope);currentScope.current=scope;

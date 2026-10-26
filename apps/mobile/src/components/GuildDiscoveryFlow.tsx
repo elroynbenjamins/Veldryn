@@ -25,6 +25,7 @@ export function GuildDiscoveryFlow({onJoined}:{onJoined:()=>void}){
  const [search,setSearch]=useState(''),[filter,setFilter]=useState<DirectoryFilter>('recruiting');
  const [guilds,setGuilds]=useState<OnlineGuild[]>([]),[selected,setSelected]=useState<OnlineGuild|null>(null);
  const [loading,setLoading]=useState(false),[busy,setBusy]=useState(false),[error,setError]=useState('');
+ const [reloadIndex,setReloadIndex]=useState(0);
  const [invites,setInvites]=useState<GuildInvitationView[]>([]);
  const [requested,setRequested]=useState<string[]>([]);
  const [name,setName]=useState(''),[tag,setTag]=useState(''),[tagStatus,setTagStatus]=useState<GuildTagAvailability|null>(null);
@@ -38,7 +39,7 @@ export function GuildDiscoveryFlow({onJoined}:{onJoined:()=>void}){
    void searchOnlineGuilds(search,filter).then(rows=>{if(alive)setGuilds(rows)}).catch(reason=>{if(alive)setError(messageOf(reason))}).finally(()=>{if(alive)setLoading(false)});
   },search?300:0);
   return()=>{alive=false;clearTimeout(timer)};
- },[page,search,filter]);
+ },[page,search,filter,reloadIndex]);
  const openFind=()=>{setError('');setPage('find')};
  const apply=async(guild:OnlineGuild)=>{
   if(busy||requested.includes(guild.id))return;
@@ -130,7 +131,7 @@ export function GuildDiscoveryFlow({onJoined}:{onJoined:()=>void}){
    <GameButton title="Create Guild" disabled={busy||!!nameProblem||normalizeGuildName(name).length<3||!tagStatus?.available||tagStatus.normalizedTag!==normalizeGuildTag(tag)} onPress={()=>void create()}/>
   </Panel>:null}
 
-  {error?<Panel><Text accessibilityRole="alert" style={s.error}>{error}</Text><GameButton compact title="Retry" tone="secondary" onPress={()=>{if(page==='find'){setSearch(value=>value+' ');setSearch(value=>value.trim())}else setError('')}}/></Panel>:null}
+  {error?<Panel><Text accessibilityRole="alert" style={s.error}>{error}</Text><GameButton compact title="Retry" tone="secondary" onPress={()=>{setError('');if(page==='find')setReloadIndex(value=>value+1)}}/></Panel>:null}
  </ScrollView>;
 }
 

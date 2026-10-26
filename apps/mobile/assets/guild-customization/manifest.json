@@ -9,7 +9,8 @@
     {"id":"banner_wolf_mountain","name":"Wolf of the Peaks","file":"banners/banner_wolf_mountain.png","unlock":"default"},
     {"id":"banner_arcane_eye","name":"Arcane Eye","file":"banners/banner_arcane_eye.png","unlock":"default"},
     {"id":"banner_lion_sun","name":"Sun-Crowned Lion","file":"banners/banner_lion_sun.png","unlock":"default"},
-    {"id":"banner_forge_emerald","name":"Emerald Forge","file":"banners/banner_forge_emerald.png","unlock":"default"}
+    {"id":"banner_forge_emerald","name":"Emerald Forge","file":"banners/banner_forge_emerald.png","unlock":"default"},
+    {"id":"banner_guild_stormwatch","name":"Stormwatch Banner","file":"banners/banner_guild_stormwatch.webp","unlock":"construction:guild_banner_stormwatch"}
   ],
   "borders": [
     {"id":"border_founder_iron","file":"borders/border_founder_iron.png","unlock":"default"},
@@ -20,7 +21,8 @@
     {"id":"border_sapphire_dungeon","file":"borders/border_sapphire_dungeon.png","unlock":"guild_pve_dungeon_25"},
     {"id":"border_crimson_bossbreaker","file":"borders/border_crimson_bossbreaker.png","unlock":"guild_pve_bossbreaker"},
     {"id":"border_amethyst_raidforged","file":"borders/border_amethyst_raidforged.png","unlock":"guild_pve_raid_first_clear"},
-    {"id":"border_mythic_conqueror","file":"borders/border_mythic_conqueror.png","unlock":"guild_pve_raid_hard_clear"}
+    {"id":"border_mythic_conqueror","file":"borders/border_mythic_conqueror.png","unlock":"guild_pve_raid_hard_clear"},
+    {"id":"border_guild_verdant","file":"borders/border_guild_verdant.webp","unlock":"construction:guild_frame_verdant"}
   ],
   "nameplates": [
     {"id":"nameplate_royal_sapphire","file":"nameplates/nameplate_royal_sapphire.png","unlock":"banner_gallery_tier:4"}

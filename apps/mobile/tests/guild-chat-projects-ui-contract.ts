@@ -67,7 +67,8 @@ ok(projectTransport.includes('GUILD_WEEKLY_PROJECT_ALREADY_ACTIVE'),'Server must
 
 ok(chat.includes('MEMBERS ONLY'),'Guild Chat must keep member-only context');
 ok(chat.includes('GuildTaggedPlayerName name={guild.name}'),'Guild Chat header must use the shared Guild identity treatment');
-ok(chat.includes('<ChatMessageRow')&&read('src/components/ChatMessageRow.tsx').includes('rolePill'),"Guild Chat roles must use compact semantic role pills");
+const chatMessageRow=read('src/components/ChatMessageRow.tsx');
+ok(chat.includes('<ChatMessageRow')&&chatMessageRow.includes('rolePill')&&chatMessageRow.includes('accessibilityLabel={roleLabel}')&&!chatMessageRow.includes('role.toUpperCase()'),"Guild Chat roles must use compact, accessible rank badges without repeated role text");
 ok(chat.includes('<ChatComposer')&&chat.includes('busy={busy}')&&chat.includes('onSend={onSend}'),'Guild Chat must use the shared composer with its existing send and busy state');
 ok(composer.includes('width:touchTargetPreferred')&&composer.includes('minHeight:touchTargetPreferred')&&composer.includes('flexShrink:0'),'Guild Chat send action must retain a compact, accessible touch target');
 

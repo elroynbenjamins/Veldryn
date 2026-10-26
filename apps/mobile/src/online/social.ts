@@ -15,7 +15,7 @@ export const WORLD_CHANNELS=[
   {id:'world-4',name:'Global 2',language:'Global'},
 ] as const;
 export type WorldMessage={id:string;sender_name:string;body:string;created_at:string;account_id:string;guild_tag?:string|null;guild_tag_color_id?:string|null;player_name_style?:PlayerNameStylePreference|null;player_badges?:PlayerBadgeIdentity};
-export type OnlineGuild={background_id?:GuildBackgroundId;id:string;name:string;tag:string|null;tag_color_id:GuildTagColorId;level:number;member_cap:number;minimum_level:number;join_policy:'open'|'apply'|'invite';banner_id:GuildBannerId;profile_frame_id:GuildFrameId;name_color_id:GuildNameColorId;nameplate_id:GuildNameplateId;motto:string};
+export type OnlineGuild={background_id?:GuildBackgroundId;member_count?:number;id:string;name:string;tag:string|null;tag_color_id:GuildTagColorId;level:number;member_cap:number;minimum_level:number;join_policy:'open'|'apply'|'invite';banner_id:GuildBannerId;profile_frame_id:GuildFrameId;name_color_id:GuildNameColorId;nameplate_id:GuildNameplateId;motto:string};
 export type GuildMember={account_id:string;display_name:string;role:'leader'|'officer'|'member';joined_at:string;guild_tag?:string|null;guild_tag_color_id?:string|null;player_name_style?:PlayerNameStylePreference|null;player_badges?:PlayerBadgeIdentity};
 export type GuildApplication={id:string;account_id:string;created_at:string;status:'pending'|'accepted'|'declined'|'withdrawn'};
 export type FriendRelationship='none'|'friend'|'outgoing_pending'|'incoming_pending';
@@ -76,7 +76,13 @@ export async function browseGuilds(){return (await readGuildProjection()??[]) as
 /** Search the actual directory, not just the top 25 cached guilds. */
 export async function searchOnlineGuilds(search='',filter:'recruiting'|'open'|'apply'|'all'='recruiting'){
  const client=requireClient();
+ // A new member-count projection keeps private Guild rosters undisclosed.
+ // Older deployments still use the original directory query.
+
  const clean=search.trim().replace(/[^a-zA-Z0-9 '\-]/g,'').slice(0,40);
+ const directory=await client.rpc('guild_directory_v1',{p_search:clean,p_filter:filter,p_limit:50});
+ if(!directory.error)return (directory.data??[]) as unknown as OnlineGuild[];
+ if(!['PGRST202','42883'].includes(directory.error.code??''))throw directory.error;
  const build=(fields:string)=>{
   let query=client.from('guilds').select(fields);
   if(filter==='recruiting')query=query.in('join_policy',['open','apply']);

@@ -21,6 +21,7 @@ export interface GuildTokenWeeklyReward{
 }
 export interface GuildTokenShopSnapshot{
  guildLevel:number;balance:number;earnedThisWeek:number;weeklyCap:number;cards:GuildTokenShopCard[];
+ unavailableSections?:string[];
  claimedDailyKinds:Array<"attendance"|"contribution">;
  constructionTemplates:GuildConstructionTemplate[];construction:GuildConstructionProgress[];
  eventBonuses:GuildTokenEventBonus[];weeklyRewards:GuildTokenWeeklyReward[];
@@ -86,7 +87,7 @@ function validateSnapshot(value:unknown):GuildTokenShopSnapshot{
    throw new Error('Invalid weekly Guild reward.');
   return reward as unknown as GuildTokenWeeklyReward;
  });
- return {guildLevel:o.guildLevel as number,balance:o.balance as number,earnedThisWeek:o.earnedThisWeek as number,
+ return {unavailableSections:Array.isArray(o.unavailableSections)?o.unavailableSections.filter((item):item is string=>typeof item==='string'):[],guildLevel:o.guildLevel as number,balance:o.balance as number,earnedThisWeek:o.earnedThisWeek as number,
   weeklyCap:o.weeklyCap as number,cards,claimedDailyKinds:o.claimedDailyKinds as Array<"attendance"|"contribution">,constructionTemplates,construction,eventBonuses,weeklyRewards};
 }
 

@@ -8,6 +8,7 @@ import {useEffect,useState,type ReactNode,useMemo} from 'react';
 import {ActivityIndicator,Modal,Pressable,ScrollView,StyleSheet,Text,View} from 'react-native';
 import {myGuild} from '../online/social';
 import {GuildDiscoveryFlow} from '../components/GuildDiscoveryFlow';
+import {GuildMemberIdentity} from '../components/GuildMemberIdentity';
 import {GameButton} from '../components/GameButton';
 import {Panel} from '../components/Panel';
 import {GuildBoardHero} from '../components/GuildBoardHero';
@@ -223,18 +224,24 @@ function GuildOnlineHome({onNavigate,board,chatUnread=0}:{onNavigate:(section:On
  const language=useGameLanguage();
  const C=useGameTheme(),s=useMemo(()=>makeStyles(C),[C]);
  const destinations=[
-  ['PvE','guild','WEEKLY & EVENT BOSSES','Fight together through everyday combat.'],
-  ['Activities','quests','Muster & Rally','Daily Muster, quests and shared progress.'],
-  ['Roster','friends','MEMBERS & APPLICATIONS','Members, roles, invitations and leadership safety.'],
-  ['Hall','settings','FACILITIES & TROPHIES','Facilities and long-term progression.'],
-  ['Chat','chat','GUILD CHAT',chatUnread?`${chatUnread} unread messages`:'Stay in touch with your guild.'],
+  ['Hall','guild','GUILD HALL','Facilities, progress, trophies & shop.'],
+  ['Roster','friends','GUILD MEMBERS','Roster, applications and invitations.'],
+  ['Activities','quests','GUILD ACTIVITIES','Quests, Muster and Projects.'],
+  ['Chat','chat','GUILD CHAT',chatUnread?String(chatUnread)+' unread messages':'Talk to your Guild.'],
+  ['PvE','guild','GUILD BOSSES','Weekly and event challenges.'],
+  ['Manage','settings','GUILD IDENTITY','Appearance and Guild settings.'],
  ] as const;
  return <View style={s.homeStack}>
-  <View style={s.homeWelcome}><View style={s.flex}><Text style={s.homeWelcomeKicker}>YOUR GUILD AT A GLANCE</Text><Text style={s.homeWelcomeTitle}>Build something together</Text><Text style={s.homeWelcomeCopy}>Choose a destination or check the shared activity meter below.</Text></View><ThemedIcon name="guild" size={46}/></View>
-  {board?<View style={s.priorityWrap}><Text style={s.priorityLabel}>CURRENT PRIORITY</Text>{board}</View>:null}
+  <GuildMemberIdentity/>
+  <View style={s.groupHeader}><Text style={s.groupLabel}>GUILD HUB</Text><Text style={s.groupTitle}>Where would you like to go?</Text><Text style={s.groupCopy}>Your Guild tools in one place.</Text></View>
+  <View style={s.homeGrid}>{destinations.map(([section,icon,label,copy])=><Pressable key={section} accessibilityRole="button" accessibilityLabel={st('Open Guild {section}',{section:socialLabel(language,section)})} onPress={()=>onNavigate(section)} style={({pressed})=>[s.homeCard,pressed&&s.pressed]}>
+   <View style={s.homeCardIcon}><ThemedIcon name={icon} size={28}/></View>
+   <View style={s.homeCardCopy}><Text style={s.homeLabel}>{socialLabel(language,label)}</Text><Text style={s.homeTitle}>{socialLabel(language,section==='Roster'?'Members':section==='PvE'?'Bosses':section==='Manage'?'Customize':section)}</Text><Text style={s.homeCopy}>{socialLabel(language,copy)}</Text></View>
+   {section==='Chat'&&chatUnread>0?<View style={s.tabBadge}><Text style={s.tabBadgeText}>{chatUnread>99?'99+':chatUnread}</Text></View>:null}
+  </Pressable>)}</View>
   <GuildActivitySummaryPanel compact/>
-  <View style={s.homeGrid}>{destinations.map(([section,icon,label,copy])=><Pressable key={section} accessibilityRole="button" accessibilityLabel={st('Open Guild {section}',{section:socialLabel(language,section)})} onPress={()=>onNavigate(section)} style={({pressed})=>[s.homeCard,pressed&&s.pressed]}><View style={s.homeCardIcon}><ThemedIcon name={icon} size={28}/></View><View style={s.homeCardCopy}><Text style={s.homeLabel}>{socialLabel(language,label)}</Text><Text style={s.homeTitle}>{socialLabel(language,section)}</Text><Text style={s.homeCopy}>{socialLabel(language,copy)}</Text></View><Text style={s.homeOpen}>›</Text></Pressable>)}</View>
-  <View style={s.homeSecondary}><GameButton compact title={st("Manage Guild")} tone="secondary" onPress={()=>onNavigate('Manage')}/><GameButton compact title="Roadmap" tone="secondary" onPress={()=>onNavigate('Future')}/></View>
+  {board?<View style={s.priorityWrap}><Text style={s.priorityLabel}>CURRENT PRIORITY</Text>{board}</View>:null}
+  <View style={s.homeSecondary}><GameButton compact title="Roadmap & future Guild content" tone="secondary" onPress={()=>onNavigate('Future')}/></View>
  </View>;
 }
 

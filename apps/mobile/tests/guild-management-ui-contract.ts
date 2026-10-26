@@ -75,8 +75,11 @@ ok(customization.includes('guildBannerSourceByKey.has(entry.assetKey)')&&customi
 ok(customization.includes('!constructionArtReady'),
  'Missing Guild construction artwork must disable appearance saves');
 const constructedCore=read('src/core/guild-customization.ts');
+const customizationAssets=read('src/theme/guild-customization-assets.ts');
 ok(constructedCore.includes("'guild_banner_stormwatch'")&&constructedCore.includes("'guild_frame_verdant'"),
  'Constructed banner and frame must have canonical Guild Appearance IDs');
+ok(customizationAssets.includes("'banner_halloween_pumpkin_lantern'")&&customizationAssets.includes("'banner_halloween_bat_moon'"),
+ 'Both Veilbreak event banners must retain registered Guild Appearance artwork');
 ok(constructedCore.includes("case'construction':return (s.constructionUnlockIds?.includes"),
  'Constructed Guild cosmetics must require ownership and server release flags');
 

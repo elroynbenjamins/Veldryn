@@ -10,7 +10,9 @@
     {"id":"banner_arcane_eye","name":"Arcane Eye","file":"banners/banner_arcane_eye.png","unlock":"default"},
     {"id":"banner_lion_sun","name":"Sun-Crowned Lion","file":"banners/banner_lion_sun.png","unlock":"default"},
     {"id":"banner_forge_emerald","name":"Emerald Forge","file":"banners/banner_forge_emerald.png","unlock":"default"},
-    {"id":"banner_guild_stormwatch","name":"Stormwatch Banner","file":"banners/banner_guild_stormwatch.webp","unlock":"construction:guild_banner_stormwatch"}
+    {"id":"banner_guild_stormwatch","name":"Stormwatch Banner","file":"banners/banner_guild_stormwatch.webp","unlock":"construction:guild_banner_stormwatch"},
+    {"id":"banner_halloween_pumpkin_lantern","name":"Pumpkin Lantern","file":"banners/banner_halloween_pumpkin_lantern_runtime.webp","unlock":"event:veilbreak"},
+    {"id":"banner_halloween_bat_moon","name":"Bat Moon","file":"banners/banner_halloween_bat_moon_runtime.webp","unlock":"event:veilbreak"}
   ],
   "borders": [
     {"id":"border_founder_iron","file":"borders/border_founder_iron.png","unlock":"default"},

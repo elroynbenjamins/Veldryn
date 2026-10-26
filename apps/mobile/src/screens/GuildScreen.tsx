@@ -38,7 +38,7 @@ const GUILD_TREE_BUFFS:Record<string,{label:string;perTier:number}>={professions
 const GUILD_BANK_DAILY_CAP=1000;
 const GUILD_BANK_RESOURCES=[{itemId:'MOSS_FIBER',label:'Moss Fiber'},{itemId:'GREENWOOD_LOG',label:'Greenwood Log'},{itemId:'IRONWOOD_LOG',label:'Ironwood Log'},{itemId:'ASTER_IRON_INGOT',label:'Aster-Iron Ingot'},{itemId:'OATHGLASS_SHARD',label:'Oathglass Shard'},{itemId:'OATHSTONE_INGOT',label:'Oathstone Ingot'}] as const;
 const GUILD_PROJECT_COST={MOSS_FIBER:200,GREENWOOD_LOG:120,IRONWOOD_LOG:60,ASTER_IRON_INGOT:20};
-export function GuildScreen({state,onChange,onlineManagement,onlineBoard,onlineProjects,onlinePve,onlineHall,onlineChat,onlineCustomize,onlineChatUnread=0,onlineChatMentions=0,online=false,onTokenRewardsChanged,initialPve=false,onInitialPveHandled}:{onTokenRewardsChanged?:()=>void|Promise<unknown>;online?:boolean;state:GameState;onChange:(next:GameState)=>void;onlineManagement?:ReactNode;onlineBoard?:ReactNode;onlineProjects?:ReactNode;onlinePve?:ReactNode;onlineHall?:ReactNode;onlineChat?:ReactNode;onlineCustomize?:ReactNode;onlineChatUnread?:number;onlineChatMentions?:number;initialPve?:boolean;onInitialPveHandled?:()=>void}){
+export function GuildScreen({state,onChange,onlineManagement,onlineBoard,onlineProjects,onlinePve,onlineHall,onlineChat,onlineCustomize,onlineChatUnread=0,onlineChatMentions=0,online=false,membershipRevision=0,onTokenRewardsChanged,initialPve=false,onInitialPveHandled}:{onTokenRewardsChanged?:()=>void|Promise<unknown>;online?:boolean;membershipRevision?:number;state:GameState;onChange:(next:GameState)=>void;onlineManagement?:ReactNode;onlineBoard?:ReactNode;onlineProjects?:ReactNode;onlinePve?:ReactNode;onlineHall?:ReactNode;onlineChat?:ReactNode;onlineCustomize?:ReactNode;onlineChatUnread?:number;onlineChatMentions?:number;initialPve?:boolean;onInitialPveHandled?:()=>void}){
  const st=useSocialText();
   const language=useGameLanguage();
  const C=useGameTheme(),s=useMemo(()=>makeStyles(C),[C]);
@@ -58,7 +58,7 @@ export function GuildScreen({state,onChange,onlineManagement,onlineBoard,onlineP
    void myGuild().then(membership=>{if(mounted)setGuildMembership(membership?'member':'none')})
     .catch(reason=>{if(mounted){setGuildLoadError(reason instanceof Error?reason.message:'Unable to check Guild membership.');setGuildMembership('error')}});
    return()=>{mounted=false};
-  },[online]);
+  },[online,membershipRevision]);
   if(online&&guildMembership==='loading')return <Panel><Text style={s.title}>Guild</Text><ActivityIndicator color={C.accent}/></Panel>;
   if(online&&guildMembership==='error')return <Panel><Text style={s.title}>Unable to open Guilds</Text><Text style={s.sub}>{guildLoadError}</Text><GameButton title="Retry" onPress={reloadGuildMembership}/></Panel>;
   if(online&&guildMembership==='none')return <GuildDiscoveryFlow onJoined={reloadGuildMembership}/>;

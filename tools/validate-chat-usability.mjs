@@ -30,6 +30,7 @@ for(const [needle,label] of [
  ['if(nearBottomRef.current)','no forced scrolling while reading history'],
  ['firstUnreadMessageId','unread-boundary input'],
  ['items[0].id','history-window unread fallback'],
+ ['setDividerCleared(true);readAck.caughtUp(latestId)','NEW divider clears only when the displayed log reaches latest and acknowledges its cursor'],
 ])need(log,needle,label);
 
 for(const [needle,label] of [

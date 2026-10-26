@@ -90,6 +90,24 @@ export async function searchOnlineGuilds(search='',filter:'recruiting'|'open'|'a
  return (result.data??[]) as unknown as OnlineGuild[];
 }
 
+/** Only the signed-in player's own pending requests; never a public applicant roster. */
+export async function pendingGuildApplications(){
+ const client=requireClient();
+ const {data:{session},error:sessionError}=await client.auth.getSession();
+ if(sessionError)throw sessionError;
+ if(!session?.user)throw new Error('Sign in before viewing applications.');
+ const {data,error}=await client.from('guild_applications').select('guild_id,created_at').eq('account_id',session.user.id).eq('status','pending').order('created_at',{ascending:false}).limit(20);
+ if(error)throw error;
+ return (data??[]) as {guild_id:string;created_at:string}[];
+}
+
+/** RLS intentionally limits this to the authenticated player's own guild. */
+export async function ownGuildMemberCount(guildId:string){
+ const {count,error}=await requireClient().from('guild_members').select('account_id',{count:'exact',head:true}).eq('guild_id',guildId);
+ if(error)throw error;
+ return count??0;
+}
+
 export async function requestGuildMembership(guildId:string){const client=requireClient();const {data,error}=await client.rpc('request_guild_membership',{p_guild_id:guildId});if(error)throw error;return data as 'joined'|'applied';}
 export async function guildTagAvailability(tag:string){const client=requireClient();const {data,error}=await client.rpc('guild_tag_availability',{p_tag:tag});if(error)throw error;const row=data?.[0];return {input:tag,normalizedTag:row?.normalized_tag??undefined,valid:row?.reason!=='invalid_format',available:row?.available===true,reason:row?.reason??undefined} as GuildTagAvailability;}
 export async function createOnlineGuild(name:string,tag:string,joinPolicy:'open'|'apply'|'invite',minimumLevel:number){const client=requireClient(),normalizedName=normalizeGuildName(name),nameError=guildNameError(normalizedName);if(nameError)throw new Error(nameError);const {data,error}=await client.rpc('create_guild',{p_name:normalizedName,p_tag:tag.trim(),p_join_policy:joinPolicy,p_minimum_level:minimumLevel});if(error)throw error;return data as string;}

@@ -1,30 +1,29 @@
 import {createCharacter,newGame} from '../src/core/game';
 import {itemInspectModel} from '../src/core/item-inspect';
 import {RECIPES} from '../src/content/skills';
+import {TOOL_BLUEPRINT_ITEMS} from '../src/content/gathering-tools';
 import {prioritizeItemUses} from '../src/core/item-source-display';
 function ok(condition:unknown,message:string):asserts condition{if(!condition)throw new Error(message);}
-const state=createCharacter(newGame(1000),'IRONWARDEN','Recipe Link Test');
-const ordinary=RECIPES.find(row=>row.id==='SMELT_COPPER_INGOT')!;
+const state=createCharacter(newGame(1000),'IRONWARDEN','Blueprint Link Test');
+
+// Ordinary materials continue listing their uses but do not gain the blueprint-only button.
 const copper=itemInspectModel(state,'COPPER_ORE');
-const smelt=copper.usedIn.find(row=>row.recipeId===ordinary.id)!;
-ok(!!smelt,'Copper Ore lists its smelting recipe');
-ok(smelt.outputItemId==='COPPER_INGOT'&&smelt.outputName==='Copper Ingot','Crafting use identifies the actual output item');
-ok(smelt.quantity===10,'Crafting use retains ingredient quantity');
-ok(smelt.navigation.kind==='skills'&&smelt.navigation.recipeId===ordinary.id&&smelt.navigation.mode==='crafting'&&smelt.navigation.skillId==='smithing','View recipe targets the precise Smithing recipe');
-ok(smelt.availability.canNavigate===true,'Even an ingredient without enough materials can open recipe details');
-const novice=RECIPES.find(row=>row.noviceSetId&&row.classId==='IRONWARDEN')!;
-ok(!!novice,'A class-matching novice recipe exists');
-const noviceUses=itemInspectModel(state,novice.inputs[0].itemId).usedIn;
-const matching=noviceUses.find(row=>row.recipeId===novice.id)!;
-ok(matching.navigation.kind==='skills'&&matching.navigation.mode==='novice'&&matching.navigation.recipeId===novice.id,'Novice recipes navigate to the novice workshop instead of the filtered standard catalog');
-ok(matching.availability.canNavigate===true,'Matching class novice recipe remains navigable');
-const other=RECIPES.find(row=>row.noviceSetId&&row.classId&&row.classId!=='IRONWARDEN')!;
-ok(!!other,'Another class novice recipe exists');
-const otherUse=itemInspectModel(state,other.inputs[0].itemId).usedIn.find(row=>row.recipeId===other.id)!;
-ok(otherUse.availability.status==='locked'&&otherUse.availability.canNavigate===false,'Other class recipes show requirements without a broken navigation action');
-const setRecipe=RECIPES.find(row=>row.v33SetId&&(!row.classId||row.classId==='IRONWARDEN'))!;
-ok(!!setRecipe,'A craftable equipment-set recipe exists');
-const setUse=itemInspectModel(state,setRecipe.inputs[0].itemId).usedIn.find(row=>row.recipeId===setRecipe.id)!;
-ok(setUse.navigation.kind==='skills'&&setUse.navigation.recipeId===setRecipe.id,'Equipment recipe links preserve precise output and recipe ID');
-ok(prioritizeItemUses(copper.usedIn).some(row=>row.recipeId===smelt.recipeId),'Ordering keeps navigation metadata');
-console.log('PASS: ingredient crafting links identify outputs and route standard, novice, set and other-class recipes safely');
+const smelt=copper.usedIn.find(row=>row.recipeId==='SMELT_COPPER_INGOT');
+ok(!!smelt,'Copper Ore still lists its smelting recipe');
+ok(!smelt.isRecipeUnlock&&smelt.quantity===10,'Normal ingredients retain their required quantity and ordinary row presentation');
+ok(prioritizeItemUses(copper.usedIn).some(row=>row.recipeId===smelt.recipeId),'Existing ingredient use ordering is preserved');
+
+// Actual learnable blueprints are quest/knowledge items, not crafting ingredients.
+ok(TOOL_BLUEPRINT_ITEMS.length>0,'The game has authored recipe-blueprint items');
+for(const blueprint of TOOL_BLUEPRINT_ITEMS){
+  const recipe=RECIPES.find(row=>row.knowledgeItemId===blueprint.id&&row.requiredKnowledgeId===blueprint.knowledgeUnlockId);
+  ok(!!recipe,'Every recipe blueprint corresponds to a real, learnable crafting recipe: '+blueprint.id);
+  const inspect=itemInspectModel(state,blueprint.id);
+  const link=inspect.usedIn.find(row=>row.recipeId===recipe.id);
+  ok(!!link&&link.isRecipeUnlock,'Inspecting a recipe blueprint exposes its craftable item: '+blueprint.id);
+  ok(link.quantity===0,'Blueprint is a knowledge unlock, not a per-craft ingredient: '+blueprint.id);
+  ok(link.outputItemId===recipe.output.itemId,'Blueprint opens the actual craftable item: '+blueprint.id);
+  ok(link.navigation.kind==='skills'&&link.navigation.mode==='crafting'&&link.navigation.skillId===recipe.skillId&&link.navigation.recipeId===recipe.id,'Blueprint links to the precise crafting recipe: '+blueprint.id);
+  ok(link.availability.canNavigate===true,'Locked crafting requirements must not prevent viewing the recipe: '+blueprint.id);
+}
+console.log('PASS: recipe-blueprint items link to their actual crafted output; ordinary ingredients keep their previous uses');

@@ -128,6 +128,7 @@ export function OnlineGuildTokenShopPanel({onRewardsChanged}:{onRewardsChanged?:
   <Panel>
    <View style={styles.between}><Text style={styles.section}>Exclusive rewards</Text>{loading?<ActivityIndicator color={C.accent}/>:<GameButton compact tone="secondary" title="Refresh" onPress={()=>void retry()}/>}</View>
    <Text style={styles.notice}>Only released rewards can be purchased. Guild levels above 10 are future progression content; their rewards will unlock after that cap expands.</Text>
+   {snapshot?.unavailableSections?.length?<Text accessibilityRole="alert" style={styles.notice}>Some Guild Shop sections are temporarily unavailable ({snapshot.unavailableSections.join(', ')}). Your balance and available rewards are still shown; refresh to check again.</Text>:null}
    {error?<Text accessibilityRole="alert" style={styles.error}>{error}</Text>:null}
    {!loading&&!error&&!snapshot?<Text style={styles.copy}>Join a guild to browse its permanent rewards.</Text>:null}
    <View style={styles.filters}>{FILTERS.map(tab=><Pressable key={tab.id} accessibilityRole="button" accessibilityState={{selected:filter===tab.id}} onPress={()=>setFilter(tab.id)} style={[styles.filter,filter===tab.id&&styles.filterSelected]}><Text style={[styles.filterText,filter===tab.id&&styles.filterTextSelected]}>{tab.label}</Text></Pressable>)}</View>

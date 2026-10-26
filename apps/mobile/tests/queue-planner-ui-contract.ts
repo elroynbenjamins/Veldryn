@@ -19,7 +19,8 @@ ok(planner.includes('activityQueueAvailableRegions(state)')&&planner.includes('a
 ok(planner.includes('state.settings.autoTravelQueuedActivities')&&planner.includes('Auto-travel is off.'),'Skills planner explains manual-travel versus auto-travel handoff');
 const homeComposer=read('src/components/HomeQueueComposer.tsx');
 ok(homeComposer.includes('activityQueueAvailableRegions(state)')&&homeComposer.includes('setRegionId(zone.id)')&&homeComposer.includes('autoTravelQueuedActivities'),'Home composer provides eligible region choices and explains auto-travel');
-ok(homeComposer.includes('CURRENT ACTIVITY HANDOFF')&&homeComposer.includes("'30m'")&&homeComposer.includes('keepCurrentRunning:true')&&homeComposer.includes('handoffGoal'),'Home queue composer defaults to a clearly confirmed 30-minute or explicitly open-ended current handoff');
+ok(homeComposer.includes('CURRENT ACTIVITY HANDOFF')&&homeComposer.includes("useState<CurrentHandoffChoice>('4h')")&&homeComposer.includes("'2h','After 2 hours'")&&homeComposer.includes("'6h','After 6 hours'")&&homeComposer.includes('keepCurrentRunning:true')&&homeComposer.includes('handoffGoal'),'Home queue composer defaults to 4 hours and offers 2, 4 and 6-hour or explicitly open-ended handoffs');
+for(const label of ['250 defeats','500 defeats','1,000 defeats','2 hours','4 hours','6 hours'])ok(homeComposer.includes(label),'Home queue composer exposes '+label);
 ok(planner.includes('Current activity handoff')&&planner.includes('handoffTargetId:state.activity.targetId')&&planner.includes('handoffGoal:currentGoal'),'Skills planner saves current stop and queue entry atomically');
 const app=read('App.tsx');
 ok(app.includes('handoffGoal:handoff.goal')&&app.includes('handoffTargetId:handoff.targetId'),'Home submits the combined queue command rather than separate mutations');
@@ -30,7 +31,7 @@ const queue=read('src/components/ActionQueuePanel.tsx');
 ok(queue.includes('stackRows=width<480||fontScale>=1.25'),'Phone queue controls must stack below the activity details');
 ok(queue.includes('accessibilityState={{expanded:managing}}')&&queue.includes('managing?<View style=')&&queue.includes('Confirm clear'),
  'Waiting queue stays compact until Manage is expanded, and destructive clear requires inline confirmation');
-ok(queue.includes('onSetCurrentHandoff')&&queue.includes('Current activity handoff required')&&queue.includes('Stop current activity after 30 minutes'),'Already-queued open-ended activities offer the 30-minute remedy');
+ok(queue.includes('onSetCurrentHandoff')&&queue.includes('Current activity handoff required')&&queue.includes('Stop current activity after 4 hours'),'Already-queued open-ended activities offer the 4-hour remedy');
 ok(queue.includes('onClear();')&&queue.includes('setConfirmClear(false'),
  'Clear queue still uses the existing queue_clear command without a new modal or gameplay path');
 const quickInspect=read('src/components/ItemQuickInspect.tsx');

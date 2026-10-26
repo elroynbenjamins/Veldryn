@@ -1,6 +1,6 @@
 import {SkillId} from '../core/types';
 
-export type QuestKind='kills'|'item'|'equip'|'level'|'skillLevel'|'craft'|'boss';
+export type QuestKind='kills'|'item'|'equip'|'level'|'skillLevel'|'craft'|'exploration'|'boss';
 export type QuestAct=1|2|3;
 export interface QuestActDef{act:QuestAct;name:string;subtitle:string;}
 export const QUEST_ACTS:Record<QuestAct,QuestActDef>={
@@ -16,7 +16,7 @@ export interface QuestDef{
 export const QUESTS:QuestDef[]=[
 {id:'QST_001',name:'A Name in the Ledger',description:'Defeat 5 Moss Rats.',kind:'kills',targetId:'MOSS_RAT',required:5,rewardGold:40,rewardItemId:'MOSS_FIBER',rewardItemQty:5,act:1,location:'Greenfields',story:'The local ledger has more missing names than living ones. A simple rat cull is hardly heroic, but it is the first chance to prove you can return from the road.'},
 {id:'QST_002',name:'First Blood, First Skill',description:'Reach level 2 in any guided gathering skill.',kind:'skillLevel',required:2,rewardGold:60,rewardItemId:'COPPER_ORE',rewardItemQty:4,act:1,location:'Greenfields Camp',story:'Steel alone will not carry you through Asterfall. The camp quartermaster sends you to learn the land, gather what it gives, and stop depending on supplies brought from safer places.'},
-{id:'QST_003',name:"A Hound's Trail",description:'Defeat 6 Ironwood Wolves.',kind:'kills',targetId:'IRONWOOD_WOLF',required:6,rewardGold:90,rewardItemId:'WOLF_PELT',rewardItemQty:3,act:1,location:'Ironwood Verge',story:'Wolves are leaving the deep wood and following old patrol trails toward the farms. Their tracks circle something farther inside, but first the road has to be made safe.'},
+{id:'QST_003',name:"A Hound's Trail",description:'Complete Trace Ironwood paths to discover the Ironwood Wolf encounter.',kind:'exploration',targetId:'SCOUT_IRONWOOD',skillId:'exploration',required:1,rewardGold:90,rewardItemId:'IRONWOOD_LOG',rewardItemQty:4,act:1,location:'Ironwood Verge',story:'The wardens have found wolf tracks along the Ironwood verge, but no reliable path to the pack. Trace the old forest trails first, reveal where the wolves are hunting, and open the road for future expeditions.'},
 {id:'QST_004',name:'Tools of the Trade',description:'Equip at least 2 pieces of gear.',kind:'equip',required:2,rewardGold:110,rewardItemId:'GREENWOOD_LOG',rewardItemQty:6,act:1,location:'Asterfall Workshop',story:'The smith laughs at the state of your equipment and refuses to call luck a fighting style. If you intend to push deeper, you will need a kit built for more than field vermin.'},
 {id:'QST_005',name:'Into Ironwood',description:'Reach character level 10.',kind:'level',required:10,rewardGold:160,rewardItemId:'IRONWOOD_LOG',rewardItemQty:4,act:1,location:'Ironwood Gate',story:'Rumours from the forest no longer sound like frightened farmers exaggerating. Something beneath the roots is stirring, and the wardens will only open the deeper paths to adventurers who have survived long enough to matter.'},
 {id:'QST_006',name:'Thorn Beneath',description:'Defeat 8 Thornlings.',kind:'kills',targetId:'THORNLING',required:8,rewardGold:210,rewardItemId:'THORN_SAP',rewardItemQty:5,act:2,location:'Ironwood Deep',story:'Thornlings are gathering around trees marked with old oath-runes. Their growth is too deliberate to be natural, as if the forest is remembering a command nobody living can hear.'},

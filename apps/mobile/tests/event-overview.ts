@@ -18,11 +18,13 @@ ok(low.expedition&&!low.expedition.levelReady,'Under-level characters must see a
 const grace=eventOverview(base,base.account.liveEvent!.endsAtMs)!;
 ok(grace.event.phase==='claiming'&&!grace.blessing&&grace.sources.every(row=>row.effectiveRate===row.baseRate),'Claim grace must not present earning boosts as active');
 ok(eventOverview(fresh,now)===null,'No active event must not invent an overview');
-const screen=fs.readFileSync('src/screens/EventScreen.tsx','utf8'),ui=fs.readFileSync('src/components/EventOverview.tsx','utf8'),app=fs.readFileSync('App.tsx','utf8'),guild=fs.readFileSync('src/screens/GuildScreen.tsx','utf8');
+const screen=fs.readFileSync('src/screens/EventScreen.tsx','utf8'),ui=fs.readFileSync('src/components/EventOverview.tsx','utf8'),candyUi=fs.readFileSync('src/components/EventCandyPanel.tsx','utf8'),app=fs.readFileSync('App.tsx','utf8'),guild=fs.readFileSync('src/screens/GuildScreen.tsx','utf8');
 ok(screen.includes('<EventOverview')&&screen.includes('guildPveBoard()'),'Event Overview must render the hub and check authoritative Guild Boss access');
 ok(ui.includes('Activity drop rates')&&ui.includes('Rare discoveries')&&ui.includes('FEATURED ACTIVITIES'),'Overview must explain currency rates, discovery chances and event activities');
 ok(ui.includes('view.expedition.levelReady')&&ui.includes('bossLevelReady'),'Activity actions must expose character and Guild level gates');
 ok(ui.includes("dailyClaimed?'Claimed':'Claim daily gift'")&&ui.includes('disabled={dailyClaimed||dailyPending||!active}')&&!ui.includes('!eventsUnlocked'),'Festival gifts must be claimable by any level when the event is active and not already claimed');
+ok(ui.includes('<EventCandyPanel')&&screen.includes("type:'event_candy'")&&screen.includes('consumeEventCandy(state,now,kind)'),'Event Overview candy actions must use the shared local and authoritative online command paths');
+ok(candyUi.includes('eventCandyChargesById')&&candyUi.includes('eventCandyStatus(state,now,candy.kind)')&&candyUi.includes('Equip a combat companion first'),'Event candy UI must show balances, live timers and the Bond target requirement');
 ok(screen.includes('playerFacingGameplayError(error instanceof Error?error.message'),'Event claim errors must translate internal server codes into player-facing feedback');
 ok(app.includes("onOpenGuildEventBoss={()=>{setGuildInitialPve(true);setTab('Guild')}")&&guild.includes("initialPve?'PvE':'Home'"),'Guild event boss actions must land directly on Guild PvE');
 ok(app.includes("source==='gathering'?'gathering':'crafting'")&&screen.includes('onOpenEventActivity'),'Normal event earning routes must navigate to their real screens');

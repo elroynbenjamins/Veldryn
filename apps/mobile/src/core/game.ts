@@ -610,6 +610,7 @@ export function refreshQuests(state:GameState,lastCombatTarget?:string,lastKills
     if(d.kind==='equip')progress=Object.values(state.character?.equipment||{}).filter(Boolean).length;
     if(d.kind==='level')progress=state.character?.level||0;
     if(d.kind==='skillLevel')progress=Math.max(...state.skills.map(x=>x.level));
+    if(d.kind==='exploration')progress=(state.exploredRouteIds??[]).includes(d.targetId||'')?1:0;
     if(d.kind==='boss')progress=state.defeatedBossIds.includes(d.targetId||'')?1:0;
     return {...q,progress:Math.min(d.required,progress),status:progress>=d.required?'complete':'active'};
   });

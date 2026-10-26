@@ -45,6 +45,9 @@ async function main(){
  await assert.rejects(gameplay.createOnlineGameRepository('account').transport.send({}),error=>error.definitive===false);
  const coop=load('src/online/coop-client.ts',{...services,'../core/coop-command-journal':{CoopRequestError:CommandError,CoopCommandJournal:class{}}});
  await assert.rejects(coop.coopClient.entry(),error=>error.definitive===false);
+ const releaseCoop=load('src/online/coop-client.ts',{...services,'./supabase':{...services['./supabase'],supabasePublicEndpoint:'https://production.invalid'},'../core/coop-command-journal':{CoopRequestError:CommandError,CoopCommandJournal:class{}}},{__DEV__:false,process:{env:{}}});
+ assert.equal(releaseCoop.coopOnlineConfigured,true,'release builds retain the deployed co-op endpoint when EAS variables are absent');
+ assert.equal(releaseCoop.coopLiveReadyEnabled,true,'release builds retain deployed Live matchmaking when EAS variables are absent');
  // A delayed older policy read cannot undo a newer backend rejection.
  offline=false;row={...row,minimum_version:'0.1.0'};gate=load('src/online/app-version-gate.ts',mocks);
  await gate.fetchAppVersionGate();

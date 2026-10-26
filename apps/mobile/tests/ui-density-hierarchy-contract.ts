@@ -26,8 +26,8 @@ ok(sessionOverview.includes("cell:{position:'relative',flex:1,minWidth:0,minHeig
 ok(sessionOverview.includes('useWindowDimensions')&&sessionOverview.includes("width<350||fontScale>=1.25")&&sessionOverview.includes("cellStack:{flex:0,flexBasis:'48%'"),'Home session overview must collapse to a clean 2×2 layout on narrow phones or larger text');
 ok(sessionOverview.includes('goodSurface')&&sessionOverview.includes('infoSurface')&&sessionOverview.includes('specialSurface')&&sessionOverview.includes('accentSurface'),'Home session cells must use semantic theme surfaces for restrained color emphasis');
 const dashboardCore=read('src/core/dashboard.ts');
-ok(dashboardCore.includes('homeSessionSummary')&&dashboardCore.includes("kind:'quests'")&&dashboardCore.includes("kind:'daily'")&&dashboardCore.includes("kind:'events'")&&dashboardCore.includes("kind:'forge'")&&dashboardCore.includes("kind:'weekly'")&&dashboardCore.includes("kind:'companions'"),'Home ready-now priority must include every claimable operational system');
-ok(dashboardCore.includes('equipmentCraftQueueModel')&&dashboardCore.includes('companionAttentionSummary')&&dashboardCore.includes('weeklyRewards'),'Home ready-now counts must derive from authoritative Forge, Companion and Contract systems');
+ok(dashboardCore.includes('homeSessionSummary')&&dashboardCore.includes("kind:'quests'")&&dashboardCore.includes("kind:'daily'")&&dashboardCore.includes("kind:'events'")&&dashboardCore.includes("kind:'forge'")&&!dashboardCore.includes("kind:'weekly',title:")&&dashboardCore.includes("kind:'companions'"),'Home ready-now priority must include claimable systems without treating auto-settled Contract receipts as actions');
+ok(dashboardCore.includes('equipmentCraftQueueModel')&&dashboardCore.includes('companionAttentionSummary')&&dashboardCore.includes('weeklyRewards=0'),'Home ready-now counts must derive from authoritative systems and keep auto-settled Contract receipts out of the ready total');
 
 ok(home.includes('identityCopy:{flex:1,minWidth:0,gap:5}')&&home.includes('levelBadge:'),'Home identity must combine character XP and level into one compact modern header');
 ok(home.includes('guideTop:')&&home.includes('RECOMMENDED')&&home.includes("borderLeftColor:C.info"),'Home Next Step must retain a clear modern recommendation treatment');
@@ -195,6 +195,10 @@ for(const path of [
 
 const activeActivityBar=read('src/components/ActiveActivityBar.tsx');
 ok(activeActivityBar.includes('activityProgressFeedback')&&activeActivityBar.includes("gl(phase).replace('…','').toLocaleUpperCase(language)")&&activeActivityBar.includes('cycleRemaining'),"Collapsed active-activity strip must show the same real cycle phase and next-action countdown as Home");
+ok(activeActivityBar.includes("activity.kind==='exploration'?explorationRoute(activity.targetId)")&&activeActivityBar.includes('route?.seconds??gatherRuntime?.cycleSeconds'),'Active Exploration must render its authored route name and cycle duration instead of a frozen one-second fallback');
+
+const encounterLockCards=read('src/components/RegionEncounterList.tsx');
+ok(encounterLockCards.includes('encounterLockRequirement(state,monster)')&&encounterLockCards.includes("lock?.kind==='exploration'?t(\"SCOUT\")+' '+lock.routeName"),'Locked encounter cards must show their actual scouting requirement after the level requirement is met');
 
 const activity=read('src/components/ActivityCard.tsx');
 ok(activity.includes('activityActions:{flexDirection:\'row\''),'Activity actions must remain on one compact row');

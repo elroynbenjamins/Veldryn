@@ -75,6 +75,7 @@ marketing/**/veldryn-play-store-*.zip
 apps/mobile/.*-export*/
 apps/mobile/.*-build*/
 apps/mobile/.release-*-audit*/
+apps/mobile/.release-readiness-*/
 
 # Local visual review captures.
 /restored-veilbreak-event.png

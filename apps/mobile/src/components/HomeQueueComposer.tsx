@@ -15,9 +15,9 @@ import {useGameTheme} from '../theme/ThemeContext';
 import type {ThemeColors} from '../theme/theme';
 
 type Category='combat'|'gathering'|'crafting';
-type Preset='kills50'|'kills100'|'time15'|'time30'|'items100'|'items250'|'nextLevel'|'open';
+type Preset='kills250'|'kills500'|'kills1000'|'time2h'|'time4h'|'time6h'|'items100'|'items250'|'nextLevel'|'open';
 type Candidate={id:string;name:string;subtitle:string;activity:QueuedActivity;level?:number};
-type CurrentHandoffChoice='30m'|'60m'|'next_level'|'keep_running';
+type CurrentHandoffChoice='2h'|'4h'|'6h'|'next_level'|'keep_running';
 type CurrentHandoffPlan={targetId:string;goal?:ActivityQueueGoal;keepCurrentRunning?:true};
 type Props={visible:boolean;state:GameState;onClose:()=>void;onAdd:(entry:QueuedActivity,handoff?:CurrentHandoffPlan)=>Promise<boolean>;onOpenSkills:()=>void};
 
@@ -25,14 +25,14 @@ export function HomeQueueComposer({visible,state,onClose,onAdd,onOpenSkills}:Pro
  const C=useGameTheme(),s=useMemo(()=>styles(C),[C]);
  const [category,setCategory]=useState<Category>('combat');
  const [selectedId,setSelectedId]=useState('');
- const [preset,setPreset]=useState<Preset>('kills50');
- const [handoffChoice,setHandoffChoice]=useState<CurrentHandoffChoice>('30m');
+ const [preset,setPreset]=useState<Preset>('kills500');
+ const [handoffChoice,setHandoffChoice]=useState<CurrentHandoffChoice>('4h');
  const [busy,setBusy]=useState(false);
  const [regionId,setRegionId]=useState(state.currentRegionId);
  const regions=activityQueueAvailableRegions(state),premium=activityQueueCrossRegionAllowed(state);
  const selectedRegionId=regions.some(row=>row.id===regionId)?regionId:state.currentRegionId;
  const region=WORLD_ZONES.find(row=>row.id===selectedRegionId);
- useEffect(()=>{if(visible){setRegionId(state.currentRegionId);setSelectedId('');setHandoffChoice('30m');}},[visible,state.currentRegionId]);
+ useEffect(()=>{if(visible){setRegionId(state.currentRegionId);setSelectedId('');setHandoffChoice('4h');}},[visible,state.currentRegionId]);
  const alchemyLevel=state.skills.find(row=>row.skillId==='alchemy')?.level??1;
  const combat:Candidate[]=MONSTERS.filter(row=>!row.boss&&row.zone===region?.name&&state.unlockedMonsterIds.includes(row.id)).map(row=>({id:row.id,name:row.name,subtitle:'Level '+row.level+' · '+region?.name,activity:{kind:'combat',targetId:row.id}}));
  const gathering:Candidate[]=[...GATHERING,...HERB_NODES].filter(row=>row.zoneId===selectedRegionId&&(state.skills.find(skill=>skill.skillId===row.skillId)?.level??1)>=row.unlockLevel).map(row=>({id:row.id,name:row.name,subtitle:row.skillId+' · Level '+row.unlockLevel,activity:{kind:'gathering',targetId:row.id},level:state.skills.find(skill=>skill.skillId===row.skillId)?.level??1}));
@@ -41,10 +41,10 @@ export function HomeQueueComposer({visible,state,onClose,onAdd,onOpenSkills}:Pro
  const selected=candidates.find(row=>row.id===selectedId)??candidates[0];
  const capacity=activityQueueCapacity(state),queue=normalizeActivityQueue(state.character?.activityQueue,capacity),full=queue.length>=capacity;
  const stored=selected?activityQueueGoalCurrentValue(state,{...selected.activity,goal:{kind:'item_quantity',value:1}})??0:0;
- const options:{id:Preset;label:string}[]=category==='combat'?[{id:'kills50',label:'50 defeats'},{id:'kills100',label:'100 defeats'},{id:'time15',label:'15 minutes'},{id:'time30',label:'30 minutes'},{id:'open',label:'No auto-stop'}]:
- category==='gathering'?[{id:'items100',label:'+100 in storage'},{id:'items250',label:'+250 in storage'},{id:'time15',label:'15 minutes'},{id:'time30',label:'30 minutes'},...(selected&&selected.level!==undefined&&selected.level<100?[{id:'nextLevel' as const,label:'Next skill level'}]:[]),{id:'open',label:'No auto-stop'}]:[];
- const chosen=options.some(row=>row.id===preset)?preset:category==='combat'?'kills50':'time30';
- const goal:ActivityQueueGoal|undefined=chosen==='kills50'?{kind:'session_kills',value:50}:chosen==='kills100'?{kind:'session_kills',value:100}:chosen==='items100'?{kind:'item_quantity',value:Math.min(1000000,stored+100)}:chosen==='items250'?{kind:'item_quantity',value:Math.min(1000000,stored+250)}:chosen==='time15'?{kind:'duration_seconds',value:900}:chosen==='time30'?{kind:'duration_seconds',value:1800}:chosen==='nextLevel'&&selected?.level!==undefined?{kind:'skill_level',value:Math.min(100,selected.level+1)}:undefined;
+ const options:{id:Preset;label:string}[]=category==='combat'?[{id:'kills250',label:'250 defeats'},{id:'kills500',label:'500 defeats'},{id:'kills1000',label:'1,000 defeats'},{id:'time2h',label:'2 hours'},{id:'time4h',label:'4 hours'},{id:'time6h',label:'6 hours'},{id:'open',label:'No auto-stop'}]:
+ category==='gathering'?[{id:'items100',label:'+100 in storage'},{id:'items250',label:'+250 in storage'},{id:'time2h',label:'2 hours'},{id:'time4h',label:'4 hours'},{id:'time6h',label:'6 hours'},...(selected&&selected.level!==undefined&&selected.level<100?[{id:'nextLevel' as const,label:'Next skill level'}]:[]),{id:'open',label:'No auto-stop'}]:[];
+ const chosen=options.some(row=>row.id===preset)?preset:category==='combat'?'kills500':'time4h';
+ const goal:ActivityQueueGoal|undefined=chosen==='kills250'?{kind:'session_kills',value:250}:chosen==='kills500'?{kind:'session_kills',value:500}:chosen==='kills1000'?{kind:'session_kills',value:1000}:chosen==='items100'?{kind:'item_quantity',value:Math.min(1000000,stored+100)}:chosen==='items250'?{kind:'item_quantity',value:Math.min(1000000,stored+250)}:chosen==='time2h'?{kind:'duration_seconds',value:7200}:chosen==='time4h'?{kind:'duration_seconds',value:14400}:chosen==='time6h'?{kind:'duration_seconds',value:21600}:chosen==='nextLevel'&&selected?.level!==undefined?{kind:'skill_level',value:Math.min(100,selected.level+1)}:undefined;
  const entry:QueuedActivity|undefined=selected?{...selected.activity,...(category!=='crafting'&&goal?{goal}:{})}:undefined;
  const runtime=queuedActivityReadiness(state,entry),planning=queuedActivityPlanningReadiness(state,entry);
  const goalIssue=entry?activityQueueGoalIssue(state,entry):undefined;
@@ -60,14 +60,15 @@ export function HomeQueueComposer({visible,state,onClose,onAdd,onOpenSkills}:Pro
  const currentLevel=currentSkill?state.skills.find(row=>row.skillId===currentSkill)?.level??1:undefined;
  const canNextLevel=canSetCurrentGoal&&currentLevel!==undefined&&currentLevel<100;
  const handoffGoal:ActivityQueueGoal|undefined=canSetCurrentGoal?
-  handoffChoice==='30m'?{kind:'duration_seconds',value:1800}:
-  handoffChoice==='60m'?{kind:'duration_seconds',value:3600}:
+  handoffChoice==='2h'?{kind:'duration_seconds',value:7200}:
+  handoffChoice==='4h'?{kind:'duration_seconds',value:14400}:
+  handoffChoice==='6h'?{kind:'duration_seconds',value:21600}:
   handoffChoice==='next_level'&&canNextLevel?{kind:'skill_level',value:currentLevel!+1}:undefined:undefined;
  const explicitKeep=handoffChoice==='keep_running'||!canSetCurrentGoal;
  const handoffIssue=needsHandoff&&!explicitKeep&&currentActivity
   ?handoffGoal?currentActivityHandoffGoalIssue(state,currentActivity.targetId,handoffGoal):'Choose a valid handoff option.':undefined;
  const canAdd=!!entry&&!full&&planning.ready&&!goalIssue&&!busy&&(!needsHandoff||explicitKeep||!!handoffGoal)&&!handoffIssue;
- const selectCategory=(next:Category)=>{setCategory(next);setSelectedId('');setPreset(next==='combat'?'kills50':next==='gathering'?'time30':'open');};
+ const selectCategory=(next:Category)=>{setCategory(next);setSelectedId('');setPreset(next==='combat'?'kills500':next==='gathering'?'time4h':'open');};
  const add=async()=>{if(!entry||!canAdd)return;setBusy(true);try{
   const handoff=needsHandoff&&currentActivity
    ?{targetId:currentActivity.targetId,...(explicitKeep?{keepCurrentRunning:true as const}:{goal:handoffGoal})}:undefined;
@@ -95,9 +96,9 @@ export function HomeQueueComposer({visible,state,onClose,onAdd,onOpenSkills}:Pro
     {needsHandoff&&currentActivity?<View style={s.goals}>
       <Text style={s.section}>CURRENT ACTIVITY HANDOFF</Text>
       <Text style={s.name}>{currentActivity.kind==='combat'?'Combat':currentSkill??currentActivity.kind} is running</Text>
-      <Text style={s.muted}>Choose when to leave your current activity. A 30-minute stop begins when you confirm this queue entry.</Text>
+      <Text style={s.muted}>Choose when to leave your current activity. The default 4-hour stop begins when you confirm this queue entry.</Text>
       {canSetCurrentGoal?<View style={s.goalGrid}>
-       {([['30m','After 30 minutes'],['60m','After 60 minutes'],...(canNextLevel?[['next_level','At next skill level']]:[]),['keep_running','Keep running · queue waits']] as Array<[CurrentHandoffChoice,string]>).map(([id,label])=><Pressable key={id} accessibilityRole="radio" accessibilityState={{checked:handoffChoice===id}} disabled={busy} onPress={()=>setHandoffChoice(id)} style={[s.chip,handoffChoice===id&&s.chipSelected]}><Text style={[s.chipText,handoffChoice===id&&s.chipTextSelected]}>{handoffChoice===id?'✓ ':''}{label}</Text></Pressable>)}
+       {([['2h','After 2 hours'],['4h','After 4 hours'],['6h','After 6 hours'],...(canNextLevel?[['next_level','At next skill level']]:[]),['keep_running','Keep running · queue waits']] as Array<[CurrentHandoffChoice,string]>).map(([id,label])=><Pressable key={id} accessibilityRole="radio" accessibilityState={{checked:handoffChoice===id}} disabled={busy} onPress={()=>setHandoffChoice(id)} style={[s.chip,handoffChoice===id&&s.chipSelected]}><Text style={[s.chipText,handoffChoice===id&&s.chipTextSelected]}>{handoffChoice===id?'✓ ':''}{label}</Text></Pressable>)}
       </View>:<Text style={s.warning}>This activity cannot accept a custom handoff target. It must finish on its own, or you must stop it manually.</Text>}
       {handoffIssue?<Text accessibilityRole="alert" style={s.warning}>{handoffIssue}</Text>:null}
       {explicitKeep?<Text accessibilityRole="alert" style={s.warning}>Queued activities will NOT start automatically while the current activity continues. Stop it manually or configure an applicable stop rule.</Text>:<Text style={s.good}>● The queue will advance after this goal, provided the next activity is ready and safety rules allow it.</Text>}

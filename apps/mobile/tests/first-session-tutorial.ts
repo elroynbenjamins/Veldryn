@@ -14,8 +14,9 @@ for(let i=0;i<questIds.length;i++)check(`${questIds[i]} complete means claim, no
 check('gathering follows first quest claim',()=>assert.equal(step(at(1))?.id,'first_skill'));
 check('running guided gathering explains skill XP collection',()=>{const s=at(1);s.activity={kind:'fishing',targetId:'MEADOW_PERCH_POOL'};assert.equal(step(s)?.id,'first_skill_collect')});
 check('processing is not a gathering tutorial objective',()=>{const s=at(1);s.activity={kind:'processing',targetId:'SMELT_COPPER_INGOT'};assert.equal(step(s)?.id,'first_skill')});
-check('level 6 does not show a duplicate wolf preparation popup',()=>assert.equal(step(at(2,6)),undefined));
-check('level 7 gets the single wolf objective',()=>{assert.equal(step(at(2,7))?.id,'ironwood_hunt');assert.ok(step(at(2,7))?.hint.includes('Ironwood Forest'))});
+check('level 6 does not show scouting before its route unlock',()=>assert.equal(step(at(2,6)),undefined));
+check('level 7 directs the player to scout before hunting',()=>{assert.equal(step(at(2,7))?.id,'ironwood_scout');assert.equal(step(at(2,7))?.destination,'Skills');assert.ok(step(at(2,7))?.hint.includes('Trace Ironwood paths'))});
+check('running Ironwood scouting explains route collection',()=>{const s=at(2,7);s.activity={kind:'exploration',targetId:'SCOUT_IRONWOOD'};assert.equal(step(s)?.id,'ironwood_scout_collect');assert.equal(step(s)?.destination,'Home')});
 check('equipment goal counts the starter weapon',()=>{assert.equal(step(at(3))?.destination,'Inventory');assert.ok(step(at(3))?.body.includes('already counts as one'))});
 check('level 10 objective distinguishes character and skill levels',()=>{assert.equal(step(at(4))?.id,'level_ten');assert.ok(step(at(4))?.body.includes('not the total'));assert.ok(step(at(4))?.hint.includes('combat rewards'))});
 check('no extra Account tour after QST_005',()=>assert.equal(step(at(5,10)),undefined));

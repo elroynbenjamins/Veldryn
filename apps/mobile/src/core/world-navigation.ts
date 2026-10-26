@@ -4,6 +4,7 @@ import {GATHERING} from '../content/skills';
 import {HERB_NODES} from '../content/herbalism';
 import {GameState} from './types';
 import {ITEMS} from '../content/items';
+import {EXPLORATION_ROUTES} from '../content/exploration';
 
 export type RegionTravelAvailability='available'|'locked'|'inDevelopment';
 const REGION_SCOUT_REQUIREMENTS:Partial<Record<string,string>>={
@@ -35,11 +36,26 @@ export function regionEncounters(state:GameState,zoneName:string,query:string,av
   const search=query.trim().toLowerCase();
   return MONSTERS.filter(monster=>monster.zone===zoneName&&monster.name.toLowerCase().includes(search)&&(!availableOnly||encounterUnlocked(state,monster)));
 }
+export type EncounterLockRequirement=
+  |{kind:'level';level:number}
+  |{kind:'exploration';routeId:string;routeName:string}
+  |{kind:'story'}
+  |{kind:'regionProgression'};
+export function encounterLockRequirement(state:GameState,monster:MonsterDef):EncounterLockRequirement|undefined{
+  const region=WORLD_ZONES.find(zone=>zone.name===monster.zone),level=state.character?.level??0;
+  if(level<(region?.minLevel??1))return {kind:'level',level:region?.minLevel??1};
+  if(monster.boss){
+    if(level<monster.unlockLevel)return {kind:'level',level:monster.unlockLevel};
+    return state.quests.find(q=>q.questId==='QST_014')?.status==='locked'?{kind:'story'}:undefined;
+  }
+  if(state.unlockedMonsterIds.includes(monster.id))return undefined;
+  if(level<monster.unlockLevel)return {kind:'level',level:monster.unlockLevel};
+  const route=EXPLORATION_ROUTES.find(row=>row.unlockMonsterId===monster.id);
+  if(route&&!(state.exploredRouteIds??[]).includes(route.id))return {kind:'exploration',routeId:route.id,routeName:route.name};
+  return {kind:'regionProgression'};
+}
 export function encounterUnlocked(state:GameState,monster:MonsterDef){
-  const region=WORLD_ZONES.find(zone=>zone.name===monster.zone);
-  if(!state.character||state.character.level<(region?.minLevel??1))return false;
-  if(monster.boss)return state.character.level>=monster.unlockLevel&&state.quests.find(q=>q.questId==='QST_014')?.status!=='locked';
-  return state.unlockedMonsterIds.includes(monster.id);
+  return encounterLockRequirement(state,monster)===undefined;
 }
 export interface RegionActivitySummary{
   regionId:string;

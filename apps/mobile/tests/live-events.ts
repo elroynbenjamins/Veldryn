@@ -33,7 +33,7 @@ const progressBeforeGift=eventProgress(state,eventId);
 state=claimEventDailyGift(state,t0);
 ok(eventProgress(state,eventId)===progressBeforeGift+gift.gift.rewardCurrency,'Daily gift should grant Veil Reputation');
 ok(eventCandyStatus(state,t0).candy?.name==='Gloam Candy','Veilbreak should use its own event candy');
-state=consumeEventCandy(state,t0);
+state=executeGameCommand(state,{type:'event_candy',args:{kind:'skill'}},t0).state;
 ok(state.account.eventCandyChargesById?.[`${eventId}:candy:skill`]===0,'Using Gloam Candy should consume its charge');
 
 state=applyEventDiscoveries(state,[{eventId,discoveryId:'gloam_cinder',name:'Gloam Cinder',quantity:5}]);

@@ -1,12 +1,12 @@
 import {useRef,useState} from 'react';
-import {ActivityIndicator,Pressable,StyleSheet,Text} from 'react-native';
+import {ActivityIndicator,Pressable,StyleSheet,Text,type StyleProp,type ViewStyle} from 'react-native';
 import {radii,spacing,touchTargetMin,touchTargetPreferred,typography} from '../theme/theme';
 import {useGameTheme} from '../theme/ThemeContext';
 
 type Tone='primary'|'secondary'|'danger';
 type ButtonColors={backgroundColor:string;borderColor:string;textColor:string};
-type Props={title:string;onPress:()=>unknown;disabled?:boolean;loading?:boolean;selected?:boolean;tone?:Tone;compact?:boolean;colors?:ButtonColors};
-export function GameButton({title,onPress,disabled=false,loading=false,selected,tone='primary',compact=false,colors}:Props){
+type Props={title:string;onPress:()=>unknown;disabled?:boolean;loading?:boolean;selected?:boolean;tone?:Tone;compact?:boolean;colors?:ButtonColors;style?:StyleProp<ViewStyle>};
+export function GameButton({title,onPress,disabled=false,loading=false,selected,tone='primary',compact=false,colors,style}:Props){
   const C=useGameTheme();
   const [focused,setFocused]=useState(false),[pending,setPending]=useState(false);
   const pendingRef=useRef(false);
@@ -30,7 +30,7 @@ export function GameButton({title,onPress,disabled=false,loading=false,selected,
   const selectedStyle=selected?{borderColor:C.selectionLine,backgroundColor:tone==='secondary'?C.selection:toneStyle.backgroundColor}:undefined;
   return <Pressable accessibilityRole="button" accessibilityLabel={title} accessibilityState={{disabled:inactive,busy:loading||pending,selected}}
     disabled={inactive} onPress={execute} onFocus={()=>setFocused(true)} onBlur={()=>setFocused(false)}
-    style={({pressed})=>[s.button,compact&&s.compact,toneStyle,selectedStyle,focused&&s.focused,pressed&&!inactive&&s.pressed,inactive&&!loading&&!pending&&s.disabled]}>
+    style={({pressed})=>[s.button,compact&&s.compact,toneStyle,selectedStyle,style,focused&&s.focused,pressed&&!inactive&&s.pressed,inactive&&!loading&&!pending&&s.disabled]}>
     {(loading||pending)&&<ActivityIndicator color={labelColor} size="small"/>}
     <Text textBreakStrategy="balanced" android_hyphenationFrequency="normal" style={[s.label,{color:labelColor}]}>{title}</Text>
   </Pressable>;

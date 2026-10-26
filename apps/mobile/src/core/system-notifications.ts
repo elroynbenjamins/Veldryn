@@ -12,8 +12,6 @@ export function systemNotifications(state:GameState,nowMs=Date.now()):SystemNoti
  const notices:SystemNotice[]=[];
  const completedCrafts=equipmentCraftingQueue(state).filter(job=>job.completesAtMs<=nowMs).length;
  if(completedCrafts)notices.push({id:'forge-ready',title:tr('Forge ready'),body:tr('Crafts ready to claim from Skills: {count}',{count:completedCrafts}),tone:'good'});
- const pendingWeekly=state.account.weeklyOrderPendingRewards?.length??0;
- if(pendingWeekly)notices.push({id:'weekly-orders',title:tr('Weekly rewards ready'),body:tr('Weekly rewards ready to claim: {count}',{count:pendingWeekly}),tone:'good'});
  const overflow=state.overflow.stacks.reduce((total,row)=>total+row.quantity,0);
  if(overflow)notices.push({id:'overflow',title:tr('Storage attention'),body:tr('Items in overflow: {count}. Move them to the Bank from Inventory.',{count:overflow}),tone:'warning'});
  const event=eventLifecycle(state,nowMs);

@@ -428,7 +428,7 @@ entrypoint = "./functions/gameplay/index.ts"
 [functions.coop]
 enabled = true
 # Every request is authenticated against Supabase Auth inside the handler.
-# The mobile co-op feature flag remains off until production release checks pass.
+# Mobile release profiles enable co-op; the handler still verifies every bearer token itself.
 verify_jwt = false
 entrypoint = "./functions/coop/index.ts"
 

@@ -1,7 +1,7 @@
 import type {ImageSourcePropType} from 'react-native';
 /** Dedicated artwork for the remaining crafting ingredients. */
 export const ingredientIcons={
- MOSS_FIBER:require('../../assets/ingredient-icons-v1/moss_fiber.webp'),
+ MOSS_FIBER:require('../../assets/ingredient-icons-v2/moss_fiber.webp'),
  ASTERFALL_BOTANICAL_ESSENCE:require('../../assets/ingredient-icons-v1/asterfall_botanical_essence.png'),
  SUNSCAR_BOTANICAL_ESSENCE:require('../../assets/ingredient-icons-v1/sunscar_botanical_essence.png'),
  FROSTMARCH_BOTANICAL_ESSENCE:require('../../assets/ingredient-icons-v1/frostmarch_botanical_essence_runtime.webp'),
@@ -26,8 +26,8 @@ export const ingredientIcons={
  FROSTIRON:require('../../assets/ingredient-icons-v1/frostiron.webp'),
  RIMEGLASS:require('../../assets/ingredient-icons-v1/rimeglass.webp'),
  CHOIR_BLOOM:require('../../assets/ingredient-icons-v1/choir_bloom.webp'),
- WISP_DUST:require('../../assets/ingredient-icons-v1/wisp_dust.webp'),
- THORN_SAP:require('../../assets/ingredient-icons-v1/thorn_sap.webp'),
+ WISP_DUST:require('../../assets/ingredient-icons-v2/wisp_dust.webp'),
+ THORN_SAP:require('../../assets/ingredient-icons-v2/thorn_sap.webp'),
  TROLL_HIDE:require('../../assets/ingredient-icons-v1/troll_hide.webp'),
  LANTERNSTEEL_SHARD:require('../../assets/ingredient-icons-v1/lanternsteel_shard.webp'),
  FALLEN_RIVET:require('../../assets/ingredient-icons-v1/fallen_rivet.webp'),
@@ -38,9 +38,9 @@ export const ingredientIcons={
  RUNEBOUND_CORE:require('../../assets/ingredient-icons-v1/runebound_core_icon.webp'),
  ECHO_BAT_WING:require('../../assets/ingredient-icons-v1/echo_bat_wing.webp'),
  ROYAL_CHITIN:require('../../assets/ingredient-icons-v1/royal_chitin.webp'),
- BOAR_HIDE:require('../../assets/ingredient-icons-v1/boar_hide.webp'),
- WOLF_PELT:require('../../assets/ingredient-icons-v1/wolf_pelt.webp'),
- IRONWOOD_FANG:require('../../assets/ingredient-icons-v1/ironwood_fang.webp'),
+ BOAR_HIDE:require('../../assets/ingredient-icons-v2/boar_hide.webp'),
+ WOLF_PELT:require('../../assets/ingredient-icons-v2/wolf_pelt.webp'),
+ IRONWOOD_FANG:require('../../assets/ingredient-icons-v2/ironwood_fang.webp'),
  BLACKGLASS_CORE:require('../../assets/ingredient-icons-v1/blackglass_core.webp'),
  CINDER_HEART:require('../../assets/ingredient-icons-v1/cinder_heart.webp'),
  REGENT_SIGIL:require('../../assets/ingredient-icons-v1/regent_sigil.webp'),

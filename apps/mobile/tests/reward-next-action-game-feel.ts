@@ -28,7 +28,9 @@ ok(popup.includes("candidate.kind==='pet'&&onCollections"),'new pets must route 
 ok(popup.includes("candidate.kind==='inventory'&&onInventory"),'exceptional gear/gems must route to Inventory when supported');
 ok(popup.includes("candidate.kind==='skill'&&candidate.skillId&&onSkill"),'new skill unlocks must route to the exact skill when supported');
 ok(popup.includes('onClose();nextAction.action();'),'reward popup must close before navigating to the follow-up surface');
-ok(popup.includes("title={gl(nextAction.label)}")&&popup.includes('title={gt("Continue")} tone="secondary" onPress={onClose}'),'meaningful rewards need one obvious primary follow-up while retaining Continue');
+ok(popup.includes("title={gl(nextAction.label)}")&&popup.includes('title={gt("Continue")}')&&popup.includes('tone="secondary" onPress={onClose}'),'meaningful rewards need one obvious primary follow-up while retaining Continue');
+ok(popup.includes('rewardAction:{flex:1,minWidth:0}')&&!popup.includes('rewardActionPrimary:{flex:2'),'reward follow-up and Continue buttons must use equal action slots');
+ok(popup.includes('style={[s.rewardAction,stackActions&&s.rewardActionStack]}'),'reward action buttons must stretch to the same row height and stack full-width for narrow layouts');
 
 ok(app.includes("onInventory={()=>setTab('Inventory')}"),'App must wire reward gear follow-up to Inventory');
 ok(app.includes("onCollections={()=>setTab('Collections')}"),'App must wire pet follow-up to Collections');

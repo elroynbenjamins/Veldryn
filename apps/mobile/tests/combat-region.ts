@@ -1,10 +1,17 @@
 import {claimActivity,createCharacter,newGame,startCombat,startExploration,startGathering,travelToRegion} from '../src/core/game';
 import {currentRegionId} from '../src/core/combat-region';
-import {encounterUnlocked,nextRegionUnlock,orderedTravelRegions,regionActivitySummary,regionEncounters} from '../src/core/world-navigation';
+import {encounterLockRequirement,encounterUnlocked,nextRegionUnlock,orderedTravelRegions,regionActivitySummary,regionEncounters} from '../src/core/world-navigation';
+import {MONSTERS} from '../src/content/monsters';
 
 const ok=(condition:unknown,message:string)=>{if(!condition)throw new Error(message)};
 const beginner=createCharacter(newGame(0),'IRONWARDEN','Region Test');
 ok(currentRegionId(beginner)==='GREENFIELDS','A new character must begin in Greenfields');
+const ironwoodWolf=MONSTERS.find(monster=>monster.id==='IRONWOOD_WOLF')!,venomWeaver=MONSTERS.find(monster=>monster.id==='VENOM_WEAVER')!;
+const levelSevenIronwood={...beginner,character:{...beginner.character!,level:7},currentRegionId:'IRONWOOD'};
+const wolfLock=encounterLockRequirement(levelSevenIronwood,ironwoodWolf);
+ok(wolfLock?.kind==='exploration'&&wolfLock.routeName==='Trace Ironwood paths','Level-ready Ironwood Wolf must explain its Exploration unlock instead of repeating Level 7');
+const weaverLock=encounterLockRequirement(levelSevenIronwood,venomWeaver);
+ok(weaverLock?.kind==='level'&&weaverLock.level===8,'A genuinely level-locked encounter must retain its exact level requirement');
 
 let rejected=false;
 try{startGathering(beginner,'COPPER_VEIN',1)}catch{rejected=true}

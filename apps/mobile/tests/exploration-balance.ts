@@ -1,7 +1,8 @@
-import {claimActivity,createCharacter,newGame,previewActivityReward,startCombat} from '../src/core/game';
+import {claimActivity,createCharacter,newGame,previewActivityReward,refreshQuests,startCombat,startExploration} from '../src/core/game';
 import {EXPLORATION_ROUTES} from '../src/content/exploration';
 import {skillLevelPace} from '../src/core/balance-projection';
 import {totalXpAtLevel} from '../src/core/progression';
+import type {GameState} from '../src/core/types';
 
 function ok(value:unknown,message:string){if(!value)throw new Error(message)}
 
@@ -25,7 +26,13 @@ const progressionLevels=EXPLORATION_ROUTES.map(row=>row.requiredExplorationLevel
 ok(progressionLevels.every((value,index)=>index===0||value>=progressionLevels[index-1]),'Exploration route requirements must rise with world progression');
 ok(EXPLORATION_ROUTES.find(row=>row.id==='SCOUT_IRONWOOD')?.unlockZoneId==='OLD_MINES','Ironwood scouting should discover the first Exploration-gated region');
 
-let combat=createCharacter(newGame(1000),'IRONWARDEN','Field Explorer');
+let storyScout:GameState={...base,currentRegionId:'IRONWOOD',character:{...base.character!,level:7},skills:base.skills.map(row=>row.skillId==='exploration'?{...row,level:2,xp:120}:row),quests:base.quests.map(row=>row.questId==='QST_001'||row.questId==='QST_002'?{...row,status:'claimed' as const}:row.questId==='QST_003'?{...row,status:'active' as const}:row)};
+storyScout=startExploration(storyScout,'SCOUT_IRONWOOD',1);
+const storyExplored=claimActivity(storyScout,97_001).state;
+ok(storyExplored.unlockedMonsterIds.includes('IRONWOOD_WOLF'),'Ironwood scouting should reveal the wolf encounter');
+ok(refreshQuests(storyExplored).quests.find(row=>row.questId==='QST_003')?.status==='complete','A Hound\'s Trail should complete from the required scouting route');
+
+let combat:GameState=createCharacter(newGame(1000),'IRONWARDEN','Field Explorer');
 combat=startCombat(combat,'MOSS_RAT',1000);
 const combatPreview=previewActivityReward(combat,61_000);
 ok((combatPreview.explorationXp??0)>0,'Normal combat should grant a small amount of passive Exploration XP');

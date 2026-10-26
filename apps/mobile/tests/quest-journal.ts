@@ -11,6 +11,7 @@ ok(journalEntries(state,'all',' oathgate ').length===2,'Search includes authored
 ok(journalEntries(state,'all',' ferrymen ').length===1,'Search includes authored story text');
 ok(journalEntries(state,'claimed','').length===0,'Empty completed filter');
 ok(questDestination(QUESTS[0]).zoneId==='GREENFIELDS','Rat quest navigates to region');
+ok(questDestination(QUESTS[2]).tab==='Skills'&&questDestination(QUESTS[2]).skillId==='exploration','Hound trail opens Exploration before the locked wolf encounter');
 ok(questDestination(QUESTS[3]).tab==='Inventory','Equip quest destination');
 ok(questDestination(QUESTS[6]).tab==='Skills','Gatherable item destination');
 ok(questDestination(QUESTS[13]).zoneId==='KINGS_ROAD','Boss destination');

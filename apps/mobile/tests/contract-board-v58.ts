@@ -4,6 +4,7 @@ import {applyTrustedLongTermProgression,reconcileWeeklyOrderRollover,weeklyOrder
 import {applyWeeklyOrderProgress,generateWeeklyOrders} from '../src/core/weekly-orders-v41';
 import {weeklyOrderDestination,weeklyOrderGoal,weeklyOrderIdleRule,weeklyOrderQueueActivity} from '../src/core/weekly-order-integrations-v41';
 import {contractBoardRegionFocus,contractBoardSummary} from '../src/core/contract-board-summary';
+import {systemNotifications} from '../src/core/system-notifications';
 import type {GameState} from '../src/core/types';
 
 function ok(value:unknown,message:string){if(!value)throw new Error(message)}
@@ -59,7 +60,9 @@ if(initialSummary.nextOrder?.regionId)ok(initialSummary.nextOrder.regionId===sum
 const completedBoard=structuredClone(generated);for(const row of completedBoard.orders)row.progress=row.target;completedBoard.completionClaimed=true;
 const completedSummary=contractBoardSummary({...summaryState,account:{...summaryState.account,weeklyOrders:completedBoard,weeklyOrderPendingRewards:[{claimKey:'weekly-summary-test',rewardRef:'weekly_orders_completion',label:'Weekly Orders completion reward',weekKey:completedBoard.weekKey}]}},now);
 ok(completedSummary.complete===completedSummary.total&&!completedSummary.nextOrder,'Completed Contract Board summary should have no next job');
-ok(completedSummary.pendingRewards===1&&completedSummary.completionRewardQueued,'Home Contract Board summary should surface queued weekly rewards and completion state');
+ok(completedSummary.securedRewards===1&&completedSummary.completionRewardSecured,'Home Contract Board summary should retain settled reward receipts without presenting another claim action');
+const completedState={...summaryState,account:{...summaryState.account,weeklyOrders:completedBoard,weeklyOrderPendingRewards:[{claimKey:'weekly-summary-test',rewardRef:'weekly_orders_completion',label:'Weekly Orders completion reward',weekKey:completedBoard.weekKey}]}};
+ok(!systemNotifications(completedState,now).some(row=>row.id==='weekly-orders'),'Automatically settled Contract rewards must not remain as claimable system notifications');
 
 const regional=generated.orders.find(row=>row.kind==='regional')!;
 const direct=applyWeeklyOrderProgress(generated,{eventId:'regional-progress',characterId:state.character!.id,kind:'regional',targetId:regional.targetId,amount:3,completedAtMs:now});

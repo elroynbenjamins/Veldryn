@@ -2,13 +2,14 @@ import {QUESTS,QuestDef} from '../content/quests';
 import {MONSTERS} from '../content/monsters';
 import {WORLD_ZONES} from '../content/world-map';
 import {GATHERING} from '../content/skills';
-import {GameState} from './types';
+import {GameState,SkillId} from './types';
 
 export type JournalFilter='current'|'all'|'claimed'|'locked';
-export type QuestDestination={tab:'World'|'Skills'|'Inventory';zoneId?:string;label:string;hint:string};
+export type QuestDestination={tab:'World'|'Skills'|'Inventory';zoneId?:string;skillId?:SkillId;label:string;hint:string};
 export function questDestination(def:QuestDef):QuestDestination{
   const monster=MONSTERS.find(item=>item.id===def.targetId);
   if((def.kind==='kills'||def.kind==='boss')&&monster)return {tab:'World',zoneId:WORLD_ZONES.find(zone=>zone.name===monster.zone)?.id,label:`Visit ${monster.zone}`,hint:`${monster.name} · character level ${monster.unlockLevel}. Collect hunt rewards on Home to update kill objectives.`};
+  if(def.kind==='exploration')return {tab:'Skills',skillId:'exploration',label:'Open Exploration',hint:'Travel to Ironwood Forest, then Scout Trace Ironwood paths. Collect one completed route to discover the Ironwood Wolf encounter.'};
   if(def.kind==='equip')return {tab:'Inventory',label:'Open equipment',hint:'Equip gear from Inventory. Items in Bank must be withdrawn first.'};
   if(def.kind==='item'){
     const gathering=GATHERING.find(item=>item.itemId===def.targetId);

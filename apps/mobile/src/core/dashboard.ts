@@ -49,15 +49,13 @@ export function homeSessionSummary(state:GameState,nowMs=Date.now()):HomeSession
  const dailyUnlocked=earlyFeatureUnlocked(state,'dailySupplies'),eventUnlocked=earlyFeatureUnlocked(state,'events'),contractsUnlocked=earlyFeatureUnlocked(state,'contracts'),companionsUnlocked=earlyFeatureUnlocked(state,'companions');
  const dailyReady=dailyUnlocked&&dailySuppliesHomeSummary(state,nowMs).canClaim;
  const eventRewards=eventUnlocked?eventReadyClaimCount(state,nowMs):0;
- const weekly=contractsUnlocked?contractBoardSummary(state,nowMs):{complete:0,total:0,pendingRewards:0} as ReturnType<typeof contractBoardSummary>,weeklyRewards=weekly.pendingRewards,forgeReady=equipmentCraftQueueModel(state,nowMs).ready,companionSummary=companionsUnlocked?companionAttentionSummary(state,nowMs):undefined,companionAttention=companionSummary?companionSummary.expeditionClaims+companionSummary.bondRewards+companionSummary.ascensions+companionSummary.sanctuaryClaims+companionSummary.codexClaims+companionSummary.monthlyTrialClaims:0,newUnlocks=newlyUnlockedGameGuide(state).length;
+ const weekly=contractsUnlocked?contractBoardSummary(state,nowMs):{complete:0,total:0} as ReturnType<typeof contractBoardSummary>,weeklyRewards=0,forgeReady=equipmentCraftQueueModel(state,nowMs).ready,companionSummary=companionsUnlocked?companionAttentionSummary(state,nowMs):undefined,companionAttention=companionSummary?companionSummary.expeditionClaims+companionSummary.bondRewards+companionSummary.ascensions+companionSummary.sanctuaryClaims+companionSummary.codexClaims+companionSummary.monthlyTrialClaims:0,newUnlocks=newlyUnlockedGameGuide(state).length;
  const readyTotal=storyRewards+(dailyReady?1:0)+eventRewards+forgeReady+weeklyRewards+companionAttention;
  const primaryReady:HomeSessionReadyAction|undefined=forgeReady
   ?{kind:'forge',title:forgeReady===1?'Forge craft ready':forgeReady+' Forge crafts ready',detail:'Completed Forge jobs are waiting to be claimed and may be occupying ready capacity.',button:'Open Forge'}
   :storyRewards
    ?{kind:'quests',title:storyRewards===1?'Story reward ready':storyRewards+' story rewards ready',detail:'Claim completed Asterfall chapters to unlock the next story beat.',button:'Open Journal'}
-   :weeklyRewards
-    ?{kind:'weekly',title:weeklyRewards===1?'Contract reward ready':weeklyRewards+' Contract rewards ready',detail:'Weekly Contract Board rewards are queued for review.',button:'Open Contracts'}
-    :dailyReady
+   :dailyReady
      ?{kind:'daily',title:'Daily Supplies ready',detail:"Today's account-wide supply claim is available.",button:'Open Daily Supplies'}
      :eventRewards
       ?{kind:'events',title:eventRewards===1?'Event reward ready':eventRewards+' event rewards ready',detail:'Your active event has claimable rewards or gifts.',button:'Open Event'}

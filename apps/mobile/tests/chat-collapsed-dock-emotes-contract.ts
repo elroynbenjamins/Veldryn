@@ -56,7 +56,7 @@ ok(overlay.includes("<SystemNoticeLog state={state} active={visible&&channel==='
 ok(!overlay.includes('System notices are not available yet.'),'The System channel must not regress to the unavailable placeholder');
 
 const systemNotices=read('src/core/system-notifications.ts');
-ok(systemNotices.includes('equipmentCraftingQueue(state)')&&systemNotices.includes('weeklyOrderPendingRewards'),'System notices must cover completed forge jobs and claimable weekly rewards');
+ok(systemNotices.includes('equipmentCraftingQueue(state)')&&!systemNotices.includes('weeklyOrderPendingRewards'),'System notices must cover completed Forge jobs without presenting auto-settled Contract receipts as claimable rewards');
 ok(systemNotices.includes('state.overflow.stacks')&&systemNotices.includes('eventLifecycle(state,nowMs)'),'System notices must cover storage attention and event lifecycle updates');
 const systemLog=read('src/components/SystemNoticeLog.tsx');
 ok(systemLog.includes('systemNotifications(state,now)')&&systemLog.includes('No system notices right now.'),'The read-only System feed must render actionable state notices and an honest empty state');

@@ -1,5 +1,5 @@
 import {versionedFetch as fetch} from './versioned-fetch';
-import {supabase} from './supabase';
+import {supabase,supabasePublicEndpoint} from './supabase';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import {CoopCommandJournal,CoopRequestError,type PendingCoopCommand} from '../core/coop-command-journal';
 import type {CoopMode,CoopRunView} from '../core/coop-presentation';
@@ -10,12 +10,14 @@ import type {CoopEventExpeditionPreview,CoopEventRunServerProjection} from '../c
 import type {LiveQueueView,LiveReadyView} from '../core/coop-live-lobby';
 import type {CoopLiveRecruitmentPost} from '../core/coop-live-recruitment';
 declare const process:{env:Record<string,string|undefined>};
-const apiBase=process.env.EXPO_PUBLIC_COOP_API_URL?.replace(/\/$/,'');
-export const coopRogueliteEnabled=process.env.EXPO_PUBLIC_COOP_ROGUELITE_V1==='true';
+const isDevelopment=typeof __DEV__==='undefined'||__DEV__;
+const productionApiBase=supabasePublicEndpoint?`${supabasePublicEndpoint.replace(/\/$/,'')}/functions/v1/coop`:undefined;
+const apiBase=(process.env.EXPO_PUBLIC_COOP_API_URL??(!isDevelopment?productionApiBase:undefined))?.replace(/\/$/,'');
+export const coopRogueliteEnabled=process.env.EXPO_PUBLIC_COOP_ROGUELITE_V1===undefined?!isDevelopment:process.env.EXPO_PUBLIC_COOP_ROGUELITE_V1==='true';
 export const coopOnlineConfigured=Boolean(coopRogueliteEnabled&&apiBase&&supabase);
-// Release profiles enable Live after the backend migration and hosted ready-
-// check smoke test are deployed alongside the client.
-export const coopLiveReadyEnabled=process.env.EXPO_PUBLIC_COOP_LIVE_READY_V1==='true';
+// Production has a deployed Live backend. An explicit false still provides an
+// emergency build-time kill switch for either co-op surface.
+export const coopLiveReadyEnabled=process.env.EXPO_PUBLIC_COOP_LIVE_READY_V1===undefined?!isDevelopment:process.env.EXPO_PUBLIC_COOP_LIVE_READY_V1==='true';
 export interface CoopEntryData {dungeons:CoopDungeonProjection[];eventExpeditions?:CoopEventExpeditionPreview[];loadouts:CoopLoadoutProjection[];liveRecruitment?:CoopLiveRecruitmentPost[];liveFellowshipRemaining?:number;serverNow?:number;activeRun?:CoopRunView;activeRunProjection?:CoopQModeServerProjection;activeEventRunProjection?:CoopEventRunServerProjection;echoSharing?:boolean;gameVersion?:number;}
 export interface CoopStartBody {requestId:string;dungeonId:string;tier:1|2|3|4|5;characterId:string;loadoutId:string;loadoutRevision:number;}
 export interface CoopQuickStartBody {requestId:string;characterId:string;loadoutId:string;loadoutRevision:number;}

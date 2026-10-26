@@ -8,8 +8,8 @@ export interface ContractBoardSummary{
  endsAtMs:number;
  total:number;
  complete:number;
- pendingRewards:number;
- completionRewardQueued:boolean;
+ securedRewards:number;
+ completionRewardSecured:boolean;
  nextOrder?:WeeklyOrder;
 }
 
@@ -17,7 +17,9 @@ function progressRatio(order:WeeklyOrder){return order.target>0?Math.max(0,Math.
 
 export function contractBoardSummary(state:GameState,nowMs=Date.now()):ContractBoardSummary{
  const board=weeklyOrderBoardForState(state,nowMs);
- const pending=(state.account.weeklyOrderPendingRewards??[]).filter(row=>row.weekKey===board.weekKey);
+ // Weekly Order claims are settled automatically by the trusted progression
+ // path. These persisted rows are grant receipts, not player claim actions.
+ const receipts=(state.account.weeklyOrderPendingRewards??[]).filter(row=>row.weekKey===board.weekKey);
  const incomplete=board.orders.filter(order=>order.progress<order.target);
  const nextOrder=[...incomplete].sort((a,b)=>{
   const currentA=a.regionId&&a.regionId===state.currentRegionId?0:1,currentB=b.regionId&&b.regionId===state.currentRegionId?0:1;
@@ -28,8 +30,8 @@ export function contractBoardSummary(state:GameState,nowMs=Date.now()):ContractB
   endsAtMs:board.endsAtMs,
   total:board.orders.length,
   complete:board.orders.filter(order=>order.progress>=order.target).length,
-  pendingRewards:pending.length,
-  completionRewardQueued:board.completionClaimed,
+  securedRewards:receipts.length,
+  completionRewardSecured:board.completionClaimed,
   nextOrder,
  };
 }

@@ -25,12 +25,14 @@ ok(WEEKLY_CONTRACT_TARGET_MULTIPLIER===2,'Weekly contracts must cost exactly twi
 ok(!candidates.some(row=>row.kind==='profession'&&row.source.kind==='recipe'),'Work Orders must not offer 2,700+ amulet crafts or any other recipe-grind objectives');
 ok(candidates.filter(row=>row.kind==='profession').every(row=>row.professionKind==='gathering'),'Work Orders must be repeatable woodcutting, mining, fishing or herbalism activities');
 ok(generated.orders.every(row=>row.kind!=='profession'||row.professionKind==='gathering'),'New weekly boards must only select sustainable gathering work');
+function priorFriendlyTarget(value:number){if(value<=10)return Math.max(1,Math.round(value));if(value<100)return Math.max(5,Math.round(value/5)*5);if(value<500)return Math.max(10,Math.round(value/10)*10);return Math.max(50,Math.round(value/50)*50);}
 for(const order of generated.orders){
  const candidate=candidates.find(row=>row.kind===order.kind&&((row.kind==='hunt'?row.monsterId:row.kind==='regional'?row.regionId:row.actionId)===order.targetId));
  ok(!!candidate,'Every generated order must retain an authored source');
  const minutes=order.kind==='hunt'?DEFAULT_WEEKLY_ORDER_POLICY.huntTargetMinutes:order.kind==='regional'?DEFAULT_WEEKLY_ORDER_POLICY.regionalTargetMinutes:DEFAULT_WEEKLY_ORDER_POLICY.professionTargetMinutes;
  const floor=order.kind==='hunt'?DEFAULT_WEEKLY_ORDER_POLICY.minimumHuntTarget:order.kind==='regional'?DEFAULT_WEEKLY_ORDER_POLICY.minimumRegionalTarget:DEFAULT_WEEKLY_ORDER_POLICY.minimumProfessionTarget;
- ok(order.target>=2*Math.max(floor,Math.floor(candidate!.estimatedPerHour*minutes/60)-50),'Every normal Contract Board target should be at least doubled relative to the old progression floor');
+ const formerTarget=Math.max(floor,priorFriendlyTarget(candidate!.estimatedPerHour*minutes/60));
+ ok(order.target===(candidate!.kind==='hunt'&&candidate!.boss?1:formerTarget*2),'Contract target must exactly double its previous rounded value, except the one-boss bounty');
 }
 
 const bossBoard=generateWeeklyOrders(accountId+'-boss',now,postStoryCandidates),bossOrder=bossBoard.orders.find(row=>row.kind==='hunt'&&row.targetId==='FALLEN_KNIGHT');

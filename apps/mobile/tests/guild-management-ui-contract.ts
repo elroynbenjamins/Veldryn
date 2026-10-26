@@ -10,6 +10,7 @@ const customization=read('src/components/OnlineGuildCustomizationPanel.tsx');
 const identity=read('src/components/GuildIdentitySummary.tsx');
 const hall=read('src/components/OnlineGuildHallPanel.tsx');
 const discovery=read('src/components/GuildDiscoveryFlow.tsx');
+const onlineSocial=read('src/online/social.ts');
 const memberIdentity=read('src/components/GuildMemberIdentity.tsx');
 const pve=read('src/components/OnlineGuildPve.tsx')+read('src/components/GuildRaidEncounter.tsx');
 
@@ -78,7 +79,7 @@ ok(constructedCore.includes("'guild_banner_stormwatch'")&&constructedCore.includ
  'Constructed banner and frame must have canonical Guild Appearance IDs');
 ok(constructedCore.includes("case'construction':return (s.constructionUnlockIds?.includes"),
  'Constructed Guild cosmetics must require ownership and server release flags');
-const onlineSocial=read('src/online/social.ts');
+
 ok(onlineSocial.includes("guild_construction_appearance_rewards_v1")&&onlineSocial.includes("update_guild_appearance_with_construction_v1"),
  'Guild customizer must retrieve verified construction ownership and route changes to guarded SQL');
 ok(customization.includes('tagDirty='),'Guild tag changes must have a separate dirty state');

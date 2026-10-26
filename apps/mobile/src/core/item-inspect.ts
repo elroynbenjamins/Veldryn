@@ -16,7 +16,7 @@ import {materialAcquisitionPlanForDestination,materialAcquisitionPlanSummary} fr
 
 export type ItemInspectSourceKind='gathering'|'crafting'|'combat'|'dungeon'|'starting';
 export interface ItemInspectSource{kind:ItemInspectSourceKind;typeLabel?:string;title:string;detail:string;navigation?:WorkingTowardDestination;availability?:WorkingTowardDestinationAvailability;estimatedSeconds?:number;estimateLabel?:string;chainLabel?:string;chainBlockedReason?:string;}
-export interface ItemRecipeUse{name:string;skill:string;level:number;quantity:number;navigation:WorkingTowardDestination;availability:WorkingTowardDestinationAvailability;}
+export interface ItemRecipeUse{recipeId:string;name:string;outputItemId:string;outputName:string;skill:string;level:number;quantity:number;navigation:WorkingTowardDestination;availability:WorkingTowardDestinationAvailability;}
 export interface ItemGearDecision{
  compatible:boolean;alreadyEquipped:boolean;replaces?:{itemId:string;name:string;rank:number};
  loadoutBefore:{attack:number;defense:number;hp:number;power:number};loadoutAfter:{attack:number;defense:number;hp:number;power:number};loadoutDelta:{attack:number;defense:number;hp:number;power:number};
@@ -70,8 +70,9 @@ export function itemInspectModel(state:GameState,itemId:string){
   }
 
   const usedIn:Omit<ItemRecipeUse,'availability'>[]=RECIPES.flatMap(recipe=>recipe.inputs.filter(input=>input.itemId===itemId).map(input=>({
-    name:recipe.name,skill:title(recipe.skillId),level:recipe.level,quantity:input.quantity,
-    navigation:{kind:'skills',skillId:recipe.skillId,mode:'crafting',recipeId:recipe.id,button:'Open recipe',detail:`Open ${recipe.name}.`} as WorkingTowardDestination,
+    recipeId:recipe.id,name:recipe.name,outputItemId:recipe.output.itemId,outputName:itemDef(recipe.output.itemId).name,
+    skill:title(recipe.skillId),level:recipe.level,quantity:input.quantity,
+    navigation:{kind:'skills',skillId:recipe.skillId,mode:recipe.noviceSetId?'novice':'crafting',recipeId:recipe.id,button:'View recipe',detail:`Open ${recipe.name}.`} as WorkingTowardDestination,
   })));
 
   const inventoryQuantity=state.inventory.stacks.find(stack=>stack.itemId===itemId)?.quantity??0;
@@ -124,7 +125,14 @@ export function itemInspectModel(state:GameState,itemId:string){
   if(item.salvage)effectLines.push(`Salvage: ${item.salvage.quantity}× ${itemDef(item.salvage.itemId).name}`);
 
   const actionableSources=sources.map(source=>source.navigation?{...source,availability:workingTowardDestinationAvailability(state,source.navigation)}:source);
-  const actionableUses=usedIn.map(recipe=>({...recipe,availability:workingTowardDestinationAvailability(state,recipe.navigation)}));
+  const actionableUses=usedIn.map(recipe=>{
+    const definition=RECIPES.find(row=>row.id===recipe.recipeId)!;
+    // Recipes for another class remain informative, but cannot deep-link to a hidden crafting card.
+    const otherClass=!!definition.classId&&definition.classId!==state.character?.classId;
+    return {...recipe,availability:otherClass
+      ?{status:'locked' as const,label:'OTHER CLASS',detail:'This recipe belongs to a different class.',canNavigate:false}
+      :workingTowardDestinationAvailability(state,recipe.navigation)};
+  });
   const craftedInstances=item.type==='gear'?craftedInstancesForItem(state,itemId):[];
   return {item,rarityId,rarity,inventoryQuantity,bankQuantity,totalQuantity:inventoryQuantity+bankQuantity,craftedCopies:craftedInstances.length,craftedRarities:[...new Set(craftedInstances.map(row=>row.rarity))],effectLines,stats,upgrade,sockets,gearDecision,sources:actionableSources,usedIn:actionableUses};
 }

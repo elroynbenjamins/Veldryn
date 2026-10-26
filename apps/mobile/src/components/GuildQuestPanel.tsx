@@ -1,6 +1,6 @@
 import {useSocialText} from '../i18n/social';
 import {useCallback,useEffect,useMemo,useState} from 'react';
-import {Pressable,StyleSheet,Text,View} from 'react-native';
+import {AppState,Pressable,StyleSheet,Text,View} from 'react-native';
 import {Panel} from './Panel';
 import {QuestBoard} from './QuestBoard';
 import {QuestPosting} from './QuestPosting';
@@ -17,13 +17,23 @@ import {useGameTheme} from '../theme/ThemeContext';
 
 export function GuildQuestPanel(){
  const st=useSocialText();
- const [quests,setQuests]=useState<OnlineGuildQuest[]>([]),[loading,setLoading]=useState(true),[error,setError]=useState('');
- const refresh=useCallback(async()=>{setLoading(true);setError('');try{setQuests(await loadOnlineGuildQuests())}catch(e){setError(e instanceof Error?e.message:st('Could not load Guild Quests.'))}finally{setLoading(false)}},[]);
- useEffect(()=>{void refresh()},[]);
+ const [quests,setQuests]=useState<OnlineGuildQuest[]>([]),[loading,setLoading]=useState(true),[error,setError]=useState(''),[loaded,setLoaded]=useState(false);
+ const refresh=useCallback(async(force=false)=>{
+  setLoading(true);
+  try{setQuests(await loadOnlineGuildQuests(force));setError('');}
+  catch(e){setError(e instanceof Error?e.message:st('Could not load Guild Quests.'));}
+  finally{setLoaded(true);setLoading(false);}
+ },[]);
+ useEffect(()=>{
+  if(AppState.currentState!=='background')void refresh();
+  const listener=AppState.addEventListener('change',next=>{if(next==='active')void refresh()});
+  const timer=setInterval(()=>{if(AppState.currentState==='active')void refresh()},60_000);
+  return()=>{listener.remove();clearInterval(timer);};
+ },[refresh]);
  const C=useGameTheme();
- if(loading)return <LoadingState compact label={st('Loading this week’s objectives…')}/>;
- if(error)return <Panel><Text style={{color:C.bad}}>{error}</Text><GameButton title={st('TRY AGAIN')} tone="secondary" onPress={()=>refresh()}/></Panel>;
- return <GuildQuestBoard quests={quests}/>;
+ if(loading&&!loaded)return <LoadingState compact label={st('Loading this week’s objectives…')}/>;
+ if(error&&!loaded)return <Panel><Text style={{color:C.bad}}>{error}</Text><GameButton title={st('TRY AGAIN')} tone="secondary" onPress={()=>void refresh(true)}/></Panel>;
+ return <View style={{gap:8}}><GuildQuestBoard quests={quests}/>{error?<Text accessibilityRole="alert" style={{color:C.bad}}>{error}</Text>:null}<GameButton compact title={loading?st('Refreshing…'):st('Refresh')} tone="secondary" loading={loading} disabled={loading} onPress={()=>void refresh(true)}/></View>;
 }
 
 /** Shared projection renderer for production and memory-only visual fixtures. */

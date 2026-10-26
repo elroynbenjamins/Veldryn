@@ -19,13 +19,13 @@ interface HallNavigation{activeSection?:HallSection;onSectionChange?:(section:Ha
 export function OnlineGuildHallPanel(navigation:HallNavigation){
  const st=useSocialText(),C=useGameTheme(),s=useMemo(()=>makeStyles(C),[C]);
  const [projection,setProjection]=useState<Projection>(null),[loading,setLoading]=useState(true),[error,setError]=useState('');
- const load=async()=>{setLoading(true);setError('');try{setProjection(await loadOnlineGuildHallV44())}catch(reason){setError(reason instanceof Error?reason.message:st('Unable to load Guild Hall.'))}finally{setLoading(false)}};
+ const load=async(force=false)=>{setLoading(true);setError('');try{setProjection(await loadOnlineGuildHallV44(force))}catch(reason){setError(reason instanceof Error?reason.message:st('Unable to load Guild Hall.'))}finally{setLoading(false)}};
  useEffect(()=>{void load()},[]);
  const navigationTabs=navigation.onSectionChange?<BoardTabs compact label="Guild Hall sections" items={(['Facilities','Skills','Trophies','Shop'] as const).map(id=>({id,label:id}))} value={navigation.activeSection??'Facilities'} onChange={navigation.onSectionChange}/>:null;
  if(loading&&!projection)return <View style={s.root}>{navigationTabs}<Panel><Text style={s.title}>{st('Guild Hall')}</Text><ActivityIndicator color={C.accent}/></Panel></View>;
- if(error&&!projection)return <View style={s.root}>{navigationTabs}<Panel><Text style={s.title}>{st('Guild Hall')}</Text><Text style={s.error}>{error}</Text><GameButton title={st('Retry')} tone="secondary" onPress={()=>load()}/></Panel></View>;
+ if(error&&!projection)return <View style={s.root}>{navigationTabs}<Panel><Text style={s.title}>{st('Guild Hall')}</Text><Text style={s.error}>{error}</Text><GameButton title={st('Retry')} tone="secondary" onPress={()=>void load(true)}/></Panel></View>;
  if(!projection)return <View style={s.root}>{navigationTabs}<Panel><Text style={s.title}>{st('Guild Hall')}</Text><Text style={s.sub}>{st('Join a Guild to unlock long-term Guild Hall progression.')}</Text></Panel></View>;
- return <GuildHallView {...navigation} projection={projection} loading={loading} error={error} onRefresh={()=>load()}/>;
+ return <GuildHallView {...navigation} projection={projection} loading={loading} error={error} onRefresh={()=>void load(true)}/>;
 }
 export function GuildHallView({projection,loading=false,error='',onRefresh,activeSection,onSectionChange}:{projection:NonNullable<Projection>;loading?:boolean;error?:string;onRefresh?:()=>void}&HallNavigation){
  const st=useSocialText(),C=useGameTheme(),s=useMemo(()=>makeStyles(C),[C]),[localSection,setSection]=useState<HallSection>('Facilities');

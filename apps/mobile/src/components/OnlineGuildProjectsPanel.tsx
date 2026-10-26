@@ -1,5 +1,6 @@
 import {useSocialText} from '../i18n/social';
-import {useEffect,useMemo,useState} from 'react';
+import {useEffect,useMemo,useRef,useState} from 'react';
+import {AppState} from 'react-native';
 import {Pressable,StyleSheet,Text,View} from 'react-native';
 import {GameButton} from './GameButton';
 import {Panel} from './Panel';
@@ -27,11 +28,36 @@ export function OnlineGuildProjectsPanel({onRewardsChanged}:{onRewardsChanged?:(
  const st=useSocialText();
  const C=useGameTheme(),s=useMemo(()=>makeStyles(C),[C]);
  const [snapshot,setSnapshot]=useState<OnlineGuildProjectsSnapshot|null>(null),[loading,setLoading]=useState(true),[error,setError]=useState(''),[expanded,setExpanded]=useState<string|null>(null),[busy,setBusy]=useState('');
- const load=async()=>{setLoading(true);setError('');try{setSnapshot(await loadOnlineGuildProjectsV18())}catch(reason){setError(reason instanceof Error?reason.message:st("Unable to load Guild Projects."))}finally{setLoading(false)}};
- const act=async(kind:'vote'|'start'|'claim',candidateId:string)=>{const key=kind+':'+candidateId;setBusy(key);setError('');try{if(kind==='vote')await voteOnlineGuildProjectCandidate(candidateId);else if(kind==='start')await startOnlineGuildProjectCandidate(candidateId);else {await claimOnlineGuildProjectReward(candidateId);await onRewardsChanged?.();}await load()}catch(reason){setError(reason instanceof Error?reason.message:st("Guild Project action failed."))}finally{setBusy('')}};
- useEffect(()=>{void load()},[]);
+ const mounted=useRef(true),readFlight=useRef<Promise<void>|null>(null);
+ const load=(force=false):Promise<void>=>{
+  if(!mounted.current)return Promise.resolve();
+  // Never discard a post-claim forced refresh just because an older periodic
+  // read is still in flight. Wait for that read and then revalidate.
+  if(readFlight.current)return force?readFlight.current.then(()=>load(true)):readFlight.current;
+  const request=(async()=>{
+   setLoading(true);
+   try{
+    const next=await loadOnlineGuildProjectsV18(force);
+    if(mounted.current){setSnapshot(next);setError('');}
+   }catch(reason){if(mounted.current)setError(reason instanceof Error?reason.message:st("Unable to load Guild Projects."))}
+   finally{if(mounted.current)setLoading(false);}
+  })();
+  readFlight.current=request;
+  void request.finally(()=>{if(readFlight.current===request)readFlight.current=null;});
+  return request;
+ };
+ const act=async(kind:'vote'|'start'|'claim',candidateId:string)=>{const key=kind+':'+candidateId;setBusy(key);setError('');try{if(kind==='vote')await voteOnlineGuildProjectCandidate(candidateId);else if(kind==='start')await startOnlineGuildProjectCandidate(candidateId);else {await claimOnlineGuildProjectReward(candidateId);await onRewardsChanged?.();}await load(true)}catch(reason){setError(reason instanceof Error?reason.message:st("Guild Project action failed."))}finally{setBusy('')}};
+ useEffect(()=>{
+  mounted.current=true;
+  if(AppState.currentState!=='background')void load();
+  const listener=AppState.addEventListener('change',next=>{if(next==='active')void load()});
+  // A visible board can change through other members' contributions. A short
+  // cache prevents duplicate multi-query reads across navigation and resume.
+  const timer=setInterval(()=>{if(AppState.currentState==='active')void load()},60_000);
+  return()=>{mounted.current=false;listener.remove();clearInterval(timer);};
+ },[]);
  if(loading&&!snapshot)return <LoadingState label={st("Loading Guild Projects…")} detail={st("Syncing shared Project progress and recent Guild activity.")}/>;
- if(error&&!snapshot)return <Panel><Text style={s.title}>{st("Guild Projects")}</Text><Text style={s.error}>{error}</Text><GameButton compact title={st("Retry")} tone="secondary" onPress={()=>load()}/></Panel>;
+ if(error&&!snapshot)return <Panel><Text style={s.title}>{st("Guild Projects")}</Text><Text style={s.error}>{error}</Text><GameButton compact title={st("Retry")} tone="secondary" onPress={()=>void load(true)}/></Panel>;
  if(!snapshot)return <Panel><Text style={s.title}>{st("Guild Projects")}</Text><Text style={s.copy}>{st("Join a Guild to view shared Projects and recent Guild activity.")}</Text></Panel>;
 
  const active=snapshot.projects.filter(row=>row.status==='active'),completed=snapshot.projects.filter(row=>row.status==='completed').slice(0,4);
@@ -47,7 +73,7 @@ export function OnlineGuildProjectsPanel({onRewardsChanged}:{onRewardsChanged?:(
    <View style={s.sectionHead}><Text style={s.title}>{st("Guild Activity")}</Text><Text style={s.sectionMeta}>{snapshot.activity.length} recent</Text></View>
    <GuildActivityFeedPanel entries={snapshot.activity}/>
   </Panel>
-  <GameButton compact title={loading?st("Refreshing…"):st("Refresh Projects")} tone="secondary" disabled={loading} onPress={()=>load()}/>
+  <GameButton compact title={loading?st("Refreshing…"):st("Refresh Projects")} tone="secondary" disabled={loading} onPress={()=>void load(true)}/>
   <Text style={s.safety}>Earn 20 effort per active minute, up to 2,400 per earned UTC day. In guilds with two or more members, one member can supply at most half the goal. Contribute 300 effort to qualify for 500 Gold. Claim within seven days after the week ends.</Text>
   {!!error&&<Text style={s.error}>{error}</Text>}
  </View>;

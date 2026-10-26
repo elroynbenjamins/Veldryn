@@ -3,6 +3,7 @@
   "tests/app-version-gate.cjs",
   "tests/online-loading-interactions.cjs",
   ".core-build/apps/mobile/tests/player-identity-cache-policy.js",
+  ".core-build/apps/mobile/tests/short-lived-read-cache.js",
   "../../tools/validate-edge-function-auth-contract.cjs",
   "../../tools/validate-online-staging-smoke.mjs",
   ".core-build/apps/mobile/tests/released-event-connections.js",

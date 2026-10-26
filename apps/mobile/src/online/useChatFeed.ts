@@ -5,7 +5,7 @@ import {ChatFeedCache} from '../core/chat-feed-cache';
 import {useAuthSession} from './AuthSessionProvider';
 import {supabase} from './supabase';
 
-type FeedOptions<T>={key:string;read:()=>Promise<T>;initial:T;active?:boolean;channelType?:'world'|'party';channelId?:string;};
+type FeedOptions<T>={key:string;read:()=>Promise<T>;initial:T;active?:boolean;channelType?:'world'|'party'|'guild';channelId?:string;channelIdFromValue?:(value:T)=>string|undefined;};
 type FeedEntry<T>={accountId:string;cache:ChatFeedCache<T>;consumers:number;start:()=>()=>void;stop:(()=>void)|null;};
 const feeds=new Map<string,FeedEntry<unknown>>();
 const CHAT_FALLBACK_MS=15000,CHAT_WATCHDOG_MS=60000,CHAT_CHANGE_BATCH_MS=350;
@@ -13,7 +13,7 @@ let channelSequence=0;
 
 /** Only active, foreground conversations hold a socket or run a fallback timer. */
 function watchFeed<T>(entry:FeedEntry<T>,options:FeedOptions<T>){
- let closed=false,foreground=false,subscribed=false,connection=0;
+ let closed=false,foreground=false,subscribed=false,connection=0,subscribedChannelId:string|undefined;
  let channel:RealtimeChannel|undefined,timer:ReturnType<typeof setTimeout>|undefined,changed:ReturnType<typeof setTimeout>|undefined;
  const clearTimers=()=>{if(timer)clearTimeout(timer);if(changed)clearTimeout(changed);timer=undefined;changed=undefined;};
  const schedule=()=>{
@@ -26,35 +26,45 @@ function watchFeed<T>(entry:FeedEntry<T>,options:FeedOptions<T>){
   timer=setTimeout(()=>{timer=undefined;void entry.cache.refresh(false,interval).finally(schedule);},entry.cache.nextRefreshIn(interval));
  };
  const disconnect=()=>{
-  foreground=false;subscribed=false;connection++;clearTimers();
+  foreground=false;subscribed=false;connection++;subscribedChannelId=undefined;clearTimers();
   if(channel){const previous=channel;channel=undefined;void supabase?.removeChannel(previous);}
  };
+ // Guild IDs arrive inside the first protected history response. Subscribe
+ // only after that Guild has been confirmed, and rebind on a membership change.
+ // One shared feed owns the socket even if dock and Guild screen are mounted.
+ const syncChannel=()=>{
+  if(closed||!foreground||!supabase||!options.channelType)return;
+  const nextId=options.channelId??options.channelIdFromValue?.(entry.cache.getSnapshot().value);
+  if(nextId===subscribedChannelId)return;
+  if(channel){const old=channel;channel=undefined;void supabase.removeChannel(old);}
+  subscribed=false;subscribedChannelId=nextId;
+  const current=++connection;
+  if(!nextId){schedule();return;}
+  channel=supabase.channel(`chat:${entry.accountId}:${options.key}:${++channelSequence}`)
+   .on('postgres_changes',{event:'INSERT',schema:'public',table:'chat_messages',filter:`channel_id=eq.${nextId}`},payload=>{
+    if(closed||!foreground||current!==connection||payload.new.channel_type!==options.channelType)return;
+    // Re-read through the authoritative RPC. Never expose raw event payloads.
+    if(!changed)changed=setTimeout(()=>{changed=undefined;void entry.cache.refresh(true);},CHAT_CHANGE_BATCH_MS);
+   })
+   .subscribe(status=>{
+    if(closed||!foreground||current!==connection)return;
+    subscribed=status==='SUBSCRIBED';
+    if(subscribed)void entry.cache.refresh(true);
+    schedule();
+   });
+  schedule();
+ };
+ const unsubscribe=entry.cache.subscribe(syncChannel);
  const connect=()=>{
   if(closed||foreground)return;
-  foreground=true;const current=++connection;
+  foreground=true;
+  syncChannel();
   void entry.cache.refresh().finally(schedule);
-  if(supabase&&options.channelType&&options.channelId){
-   channel=supabase.channel(`chat:${entry.accountId}:${options.key}:${++channelSequence}`)
-    .on('postgres_changes',{event:'INSERT',schema:'public',table:'chat_messages',filter:`channel_id=eq.${options.channelId}`},payload=>{
-     if(closed||!foreground||current!==connection||payload.new.channel_type!==options.channelType)return;
-     // Re-read through RLS instead of displaying a raw payload. This keeps
-     // blocks, moderation and identity presentation authoritative.
-     if(!changed)changed=setTimeout(()=>{changed=undefined;void entry.cache.refresh(true);},CHAT_CHANGE_BATCH_MS);
-    })
-    .subscribe(status=>{
-     if(closed||!foreground||current!==connection)return;
-     subscribed=status==='SUBSCRIBED';
-     // A subscription can reconnect after missed inserts. It can also become
-     // ready after the initial HTTP read; both cases need a catch-up read.
-     if(subscribed)void entry.cache.refresh(true);
-     schedule();
-    });
-  }
   schedule();
  };
  const appState=AppState.addEventListener('change',next=>{if(next==='active')connect();else disconnect();});
  if(AppState.currentState==='active'||AppState.currentState===null)connect();
- return()=>{closed=true;appState.remove();disconnect();};
+ return()=>{closed=true;appState.remove();unsubscribe();disconnect();};
 }
 
 function getFeed<T>(accountId:string,options:FeedOptions<T>):FeedEntry<T>{

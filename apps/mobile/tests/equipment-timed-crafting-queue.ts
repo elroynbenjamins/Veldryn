@@ -1,4 +1,7 @@
-import {V33_EQUIPMENT_RECIPES} from '../src/content/equipment-recipes-v33';
+import {EQUIPMENT_CRAFT_GOLD_MULTIPLIER,V33_EQUIPMENT_RECIPES} from '../src/content/equipment-recipes-v33';
+import {NOVICE_RECIPES} from '../src/content/novice-sets';
+import {itemDef} from '../src/content/items';
+import {equipmentCraftingPath} from '../src/core/equipment-crafting-path';
 import {createCharacter,newGame} from '../src/core/game';
 import {executeGameCommand,validateGameCommand} from '../src/core/game-commands';
 import {equipmentCraftAvailability,equipmentCraftQueueModel,equipmentCraftSlotBreakdown,equipmentCraftingQueue,MAX_WAITING_EQUIPMENT_CRAFTS,startEquipmentCraft,claimEquipmentCraft} from '../src/core/equipment-crafting-queue';
@@ -9,6 +12,13 @@ import type {GameState} from '../src/core/types';
 function ok(value:unknown,message:string){if(!value)throw new Error(message)}
 const recipe=V33_EQUIPMENT_RECIPES.find(row=>row.v33SetId==='T1_001'&&row.output.itemId==='T1P_001')!;
 const tailoringRecipe=V33_EQUIPMENT_RECIPES.find(row=>row.v33EquipmentTier==='T1'&&row.skillId==='tailoring'&&row.classId==='WAYFINDER')!;
+ok(EQUIPMENT_CRAFT_GOLD_MULTIPLIER===3,'Standard forged equipment Gold costs must use the 3x balancing multiplier');
+for(const sample of [{tier:'T1',slot:'helmet',gold:306},{tier:'T1',slot:'weapon',gold:486},{tier:'T9',slot:'weapon',gold:202500}]){
+ const crafted=V33_EQUIPMENT_RECIPES.find(row=>row.v33EquipmentTier===sample.tier&&itemDef(row.output.itemId).slot===sample.slot);
+ ok(crafted?.gold===sample.gold,`${sample.tier} ${sample.slot} Gold cost must equal 3x its original rounded forge cost`);
+}
+ok(V33_EQUIPMENT_RECIPES.length===1620&&V33_EQUIPMENT_RECIPES.every(row=>row.gold>0&&row.gold%3===0),'All 1,620 tiered equipment recipes must have the increased Gold costs');
+ok(NOVICE_RECIPES.filter(row=>row.output.itemId.endsWith('_WEAPON')).every(row=>row.gold===40),'Starter tutorial equipment must retain its existing affordable Gold pricing');
 
 function prepared(){
  let state=createCharacter(newGame(0),'IRONWARDEN','Queue Tester','male');
@@ -18,6 +28,12 @@ function prepared(){
 
 let state=prepared();
 ok(equipmentCraftAvailability(state,recipe.id,999).ready,'Forge availability must recognize a valid timed equipment recipe before queueing');
+ok(equipmentCraftingPath(state,recipe.output.itemId)?.gold===recipe.gold,'Displayed equipment crafting path must use the authoritative tripled Gold cost');
+const almostEnough={...state,character:{...state.character!,gold:recipe.gold-1}};
+const priceBlock=equipmentCraftAvailability(almostEnough,recipe.id,999);
+ok(!priceBlock.ready&&priceBlock.reason===`Need ${recipe.gold} gold`,'Forge affordability must use the tripled price, with clear feedback');
+let rejectedUnderfunded=false;try{startEquipmentCraft(almostEnough,recipe.id,999)}catch(error){rejectedUnderfunded=error instanceof Error&&error.message===`Need ${recipe.gold} gold`}
+ok(rejectedUnderfunded,'Authoritative forge command must reject Gold balances below the tripled equipment price');
 let slots=equipmentCraftSlotBreakdown(state);
 ok(slots.capacity===3&&slots.base===3&&slots.max===7,'Fresh account must start with 3 equipment crafting slots and cap at 7');
 
@@ -33,7 +49,10 @@ ok(slots.capacity===5,'Unlocking character slot #4 must reach the hard cap throu
 slots=equipmentCraftSlotBreakdown({...state,account:{...state.account,unlockedCharacterSlots:4,entitlements:{supporter:true,vip_plus:true}}});
 ok(slots.capacity===7&&slots.raw===7,'Progression + VIP+ + Supporter should stack to seven active Forge slots');
 
-const started1=startEquipmentCraft(state,recipe.id,1000);state=started1.state;
+const startingGold=state.character!.gold;
+const started1=startEquipmentCraft(state,recipe.id,1000);
+ok(started1.job.reservedGold===recipe.gold&&started1.state.character!.gold===startingGold-recipe.gold,'Forge start must deduct and reserve exactly the new 3x Gold cost');
+state=started1.state;
 const started2=startEquipmentCraft(state,recipe.id,1001);state=started2.state;
 const started3=startEquipmentCraft(state,recipe.id,1002);state=started3.state;
 const baseActiveState=state;

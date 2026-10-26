@@ -95,6 +95,24 @@ const claimed=claimEquipmentCraft(baseActiveState,equipmentCraftingQueue(baseAct
 ok(claimed.state.inventory.stacks.some(row=>row.itemId===recipe.output.itemId),'Claiming a finished craft must grant the equipment');
 ok(claimed.state.skills.find(row=>row.skillId==='smithing')!.xp===smithBefore+Math.floor(recipe.xp*1.05+1e-9),'Ironwarden Smithing XP, including its 5% affinity, must be awarded on completion, not on reservation');
 
+// Regression: the online bulk command must actually settle multiple ready jobs,
+// award every result exactly once, and leave no duplicate claimable rewards.
+const bulkClaim=executeGameCommand(baseActiveState,{type:'craft_claim_all'},doneAt,{randomRoll:.5});
+ok(bulkClaim.forgeResults?.length===3,'Claim All must return each of three finished equipment results');
+ok(equipmentCraftingQueue(bulkClaim.state).length===0,'Claim All must remove only claimed ready jobs');
+ok(bulkClaim.contributions.filter(row=>row.kind==='crafting').length===3,'Bulk claim must credit each verified craft');
+const bulkRepeat=executeGameCommand(bulkClaim.state,{type:'craft_claim_all'},doneAt,{randomRoll:.5});
+ok(bulkRepeat.forgeResults?.length===0&&bulkRepeat.message==='No finished forge jobs','Repeating Claim All must not duplicate rewards');
+
+// A full bank must not cause an entire batch to fail and roll back earlier rewards.
+const constrained:GameState={...baseActiveState,inventory:{...baseActiveState.inventory,capacity:0},bank:{...baseActiveState.bank,capacity:1}};
+const partial=executeGameCommand(constrained,{type:'craft_claim_all'},doneAt,{randomRoll:.5});
+ok(partial.forgeResults?.length===1,'Bulk claim should keep the first storable equipment result');
+ok(equipmentCraftingQueue(partial.state).length===2,'Blocked jobs must remain in the queue');
+ok(partial.message?.includes('2 still waiting')===true,'Partial claims must explain how many jobs were blocked');
+const recovered=executeGameCommand({...partial.state,bank:{...partial.state.bank,capacity:8}},{type:'craft_claim_all'},doneAt+1,{randomRoll:.5});
+ok(recovered.forgeResults?.length===2&&equipmentCraftingQueue(recovered.state).length===0,'Blocked jobs must be claimable after storage is freed');
+
 ok(validateGameCommand({type:'craft_claim',args:{id:'job'}}).type==='craft_claim','Online command validator must accept equipment craft claims');
 ok(validateGameCommand({type:'craft_claim_all'}).type==='craft_claim_all','Online command validator must accept claim-all');
 let online=prepared();

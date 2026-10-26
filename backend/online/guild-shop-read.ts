@@ -28,19 +28,33 @@ export function guildShopReadHandler(services: GuildShopReadServices) {
   try {
    const guildLevel = await services.guildLevelForAccount(accountId);
    if (guildLevel === null) return json({error:"guild_membership_required"},403);
-   const [snapshot,construction,eventBonuses,constructionEnabled,weeklyRewards] = await Promise.all([
+   // Wallet, owned rewards and balances are required; optional projections
+   // should not take down the entire shop if a guild feature is temporarily
+   // unavailable. Claims/purchases still use separate authoritative RPCs.
+   const [base,constructionResult,eventResult,enabledResult,weeklyResult]=await Promise.allSettled([
     services.rpc<GuildShopSnapshot>("guild_shop_snapshot_server_v1",{p_account_id:accountId}),
-    services.rpc<Array<{templateId:string;completed:boolean;resources:Record<string,number>}>>(
-      "guild_construction_snapshot_server_v1",{p_account_id:accountId}),
-    services.rpc<Array<{eventId:string;milestonePercent:number;tokens:number;claimed:boolean}>>(
-      "guild_shop_event_community_rewards_server_v1",{p_account_id:accountId}),
+    services.rpc<Array<{templateId:string;completed:boolean;resources:Record<string,number>}>>("guild_construction_snapshot_server_v1",{p_account_id:accountId}),
+    services.rpc<Array<{eventId:string;milestonePercent:number;tokens:number;claimed:boolean}>>("guild_shop_event_community_rewards_server_v1",{p_account_id:accountId}),
     services.rpc<string[]>("guild_construction_enabled_server_v1",{p_account_id:accountId}),
     services.rpc<Array<{kind:string;tokens:number;eligible:boolean;claimed:boolean}>>("guild_shop_weekly_rewards_server_v1",{p_account_id:accountId}),
    ]);
-   if (!snapshot || !Number.isSafeInteger(snapshot.balance) || !Array.isArray(snapshot.ownedItemIds) || !Array.isArray(construction) || !Array.isArray(eventBonuses) || !Array.isArray(constructionEnabled) || !Array.isArray(weeklyRewards))
+   if(base.status!=="fulfilled")throw new Error("guild_shop_wallet_snapshot_unavailable");
+   const snapshot=base.value;
+   if(!snapshot||!Number.isSafeInteger(snapshot.balance)||!Array.isArray(snapshot.ownedItemIds))
     return json({error:"invalid_shop_snapshot"},503);
+   const construction=constructionResult.status==="fulfilled"&&Array.isArray(constructionResult.value)?constructionResult.value:[];
+   const eventBonuses=eventResult.status==="fulfilled"&&Array.isArray(eventResult.value)?eventResult.value:[];
+   const constructionEnabled=enabledResult.status==="fulfilled"&&Array.isArray(enabledResult.value)?enabledResult.value:[];
+   const weeklyRewards=weeklyResult.status==="fulfilled"&&Array.isArray(weeklyResult.value)?weeklyResult.value:[];
+   const unavailableSections=[
+    ...(constructionResult.status==="fulfilled"&&Array.isArray(constructionResult.value)?[]:["construction"]),
+    ...(eventResult.status==="fulfilled"&&Array.isArray(eventResult.value)?[]:["eventBonuses"]),
+    ...(enabledResult.status==="fulfilled"&&Array.isArray(enabledResult.value)?[]:["constructionUnlocks"]),
+    ...(weeklyResult.status==="fulfilled"&&Array.isArray(weeklyResult.value)?[]:["weeklyRewards"]),
+   ];
    return json({
     guildLevel,
+    unavailableSections,
     balance:snapshot.balance,
     earnedThisWeek:snapshot.earnedThisWeek,
     claimedDailyKinds:Array.isArray(snapshot.claimedDailyKinds)?snapshot.claimedDailyKinds:[],

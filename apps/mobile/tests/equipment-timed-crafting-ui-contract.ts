@@ -31,6 +31,9 @@ ok(skills.includes('EquipmentCraftQueuePanel'),'Crafting mode must display the t
 ok(commands.includes("case 'craft_claim'")&&commands.includes("case 'craft_claim_all'"),'Online-authoritative gameplay needs claim commands');
 ok(commands.includes('startEquipmentCraft(state,id,now)'),'Authoritative craft command must start timed equipment jobs');
 ok(app.includes("type:'craft_claim'")&&app.includes("type:'craft_claim_all'"),'Mobile app must route claims through online commands when enabled');
+ok(app.includes('forgeClaimAllInFlight.current')&&app.includes('for(const job of finished)'),'Claim All must prevent double-taps and retry rejected bulk calls as independent authoritative claims');
+ok(app.includes("perform({type:'craft_claim_all'},true,false,true)")&&app.includes("perform({type:'craft_claim',args:{id:job.id}},false,false,true)"),'Rejected bulk claims must fall back to signed, server-persisted single claims without spamming error alerts');
+ok(queue.includes('blocked.push({jobId:job.id,reason})')&&commands.includes('result.blocked.length'),'Bulk claims must retain unclaimable jobs and report the blocked count');
 ok(app.includes('startEquipmentCraft(state,id,Date.now())'),'Offline/local equipment crafting must use the same timed domain path');
 ok(save.includes('normalizeEquipmentCraftingQueue'),'Timed queue must persist safely through save normalization');
 ok(save.includes('entitlements:booleanRecord'),'Supporter/VIP+ flags must survive save normalization');

@@ -42,13 +42,15 @@ function AccountChatOverlay({state,visible,onOpen,onClose,onEmoteTrayChange,guil
   const {party,accountId,refresh}=usePartySocial();
   useEffect(()=>{if(!party&&channel==='party')setChannel('world');},[party,channel]);
   useEffect(()=>{if(visible)void refresh();},[visible,refresh]);
-  useEffect(()=>{guildCheckedAt.current=0;},[state.account.guildMember]);
+  // Opening chat must immediately reconcile Guild membership, including after
+   // accepting an invitation while the app stayed foregrounded.
+   useEffect(()=>{guildCheckedAt.current=0;},[visible,state.account.guildMember]);
   useEffect(()=>{
     if(!onlineConfigured){setOnlineGuildAvailable(state.account.guildMember);return;}
     if(!visible)return;
     let active=true;
     const load=async()=>{
-      if(!active||AppState.currentState!=='active'||guildLoading.current||Date.now()-guildCheckedAt.current<30000)return;
+      if(!active||(AppState.currentState!=='active'&&AppState.currentState!==null)||guildLoading.current||Date.now()-guildCheckedAt.current<30000)return;
       guildLoading.current=true;
       try{const guild=await myGuild();if(mounted.current){setOnlineGuildAvailable(!!guild);guildCheckedAt.current=Date.now();}}
       catch{/* Keep the last confirmed membership during a temporary connection failure. */}

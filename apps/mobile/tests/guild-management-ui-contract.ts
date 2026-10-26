@@ -9,6 +9,7 @@ const management=read('src/components/OnlineGuildManagement.tsx');
 const customization=read('src/components/OnlineGuildCustomizationPanel.tsx');
 const identity=read('src/components/GuildIdentitySummary.tsx');
 const hall=read('src/components/OnlineGuildHallPanel.tsx');
+const discovery=read('src/components/GuildDiscoveryFlow.tsx');
 const pve=read('src/components/OnlineGuildPve.tsx')+read('src/components/GuildRaidEncounter.tsx');
 
 for(const [name,source] of [['GuildScreen',screen],['OnlineGuildManagement',management],['OnlineGuildCustomizationPanel',customization],['GuildIdentitySummary',identity],['OnlineGuildHallPanel',hall],['OnlineGuildPve',pve]] as const){
@@ -26,8 +27,15 @@ for(const label of ['Home','PvE','Roster','Activities','Hall','Chat','Manage'])o
 ok(screen.includes("onlineSection==='Roster'?onlineManagement:null"),'Roster tab must render authoritative Guild management');
 ok(screen.includes("onlineSection==='Hall'?<View")&&screen.includes("hallSection==='Facilities'?onlineHall:<OnlineGuildTokenShopPanel")&&screen.includes("(['Facilities','Shop'] as const)"),'Hall must retain its facilities and nest the Guild Shop without adding an eighth destination');
 ok(screen.includes('<OnlineGuildMusterPanel/>')&&screen.includes("onlineSection==='PvE'?onlinePve:null"),"Guild navigation must preserve Muster and a dedicated PvE destination");
-ok(screen.includes("onlineSection==='Manage'?<View")&&screen.includes('{onlineDirectory}')&&screen.includes('{onlineCustomize}'),'Manage must preserve Guild directory/creation and appearance customization');
-ok(screen.includes('title={st("Guild Appearance")}')&&screen.includes('title={st("Directory & Creation")}'),'Manage must keep clear localized recruitment and identity hierarchy');
+ok(screen.includes("onlineSection==='Manage'?<View")&&screen.includes('{onlineCustomize}'),'Manage must preserve member Guild appearance customization');
+ok(!screen.includes('{onlineDirectory}')&&!screen.includes('Directory & Creation'),'Joined members must not be offered guild creation inside Guild management');
+ok(screen.includes('title={st("Guild Appearance")}'),'Manage must keep a clear identity hierarchy');
+ok(screen.includes("guildMembership==='none'")&&screen.includes('<GuildDiscoveryFlow onJoined={reloadGuildMembership}/>'),'Nonmembers must only see the dedicated recruitment flow');
+ok(screen.includes('myGuild()')&&screen.includes("guildMembership==='loading'"),'Guild membership must be checked before mounting member-only screens');
+ok(discovery.includes("searchOnlineGuilds(search,filter)")&&discovery.includes('Search Guild name or TAG'),'Discovery must search server-side by name or TAG');
+ok(discovery.includes('Create Guild')&&discovery.includes('guildTagAvailability')&&discovery.includes('requestGuildMembership'),'Discovery must support live guild creation and recruitment');
+ok(discovery.includes('respondGuildInvitation')&&discovery.includes('Application sent'),'Invitations and pending applications must have clear states');
+ok(screen.includes("(['Home','PvE','Activities','Hall','Chat'] as const)"),'Member navigation should show five primary destinations');
 ok(screen.includes("root:{padding:spacing.md,gap:10"),'Online Guild shell must remain compact');
 
 ok(customization.includes('appearanceDirty='),'Guild customization must track unsaved appearance changes');

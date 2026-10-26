@@ -18,7 +18,7 @@ for(const sample of [{tier:'T1',slot:'helmet',gold:306},{tier:'T1',slot:'weapon'
  ok(crafted?.gold===sample.gold,`${sample.tier} ${sample.slot} Gold cost must equal 3x its original rounded forge cost`);
 }
 ok(V33_EQUIPMENT_RECIPES.length===1620&&V33_EQUIPMENT_RECIPES.every(row=>row.gold>0&&row.gold%3===0),'All 1,620 tiered equipment recipes must have the increased Gold costs');
-ok(NOVICE_RECIPES.filter(row=>row.output.itemId.endsWith('_WEAPON')).every(row=>row.gold===40),'Starter tutorial equipment must retain its existing affordable Gold pricing');
+ok(NOVICE_RECIPES.filter(row=>row.output.itemId.endsWith('_WEAPON')).every(row=>row.gold===120),'Starter tutorial weapons must use the shared 3x equipment Gold multiplier');
 
 function prepared(){
  let state=createCharacter(newGame(0),'IRONWARDEN','Queue Tester','male');
@@ -34,6 +34,16 @@ const priceBlock=equipmentCraftAvailability(almostEnough,recipe.id,999);
 ok(!priceBlock.ready&&priceBlock.reason===`Need ${recipe.gold} gold`,'Forge affordability must use the tripled price, with clear feedback');
 let rejectedUnderfunded=false;try{startEquipmentCraft(almostEnough,recipe.id,999)}catch(error){rejectedUnderfunded=error instanceof Error&&error.message===`Need ${recipe.gold} gold`}
 ok(rejectedUnderfunded,'Authoritative forge command must reject Gold balances below the tripled equipment price');
+const notEnoughGold={...state,character:{...state.character!,gold:recipe.gold-1}};
+const insufficient=equipmentCraftAvailability(notEnoughGold,recipe.id,999);
+ok(!insufficient.ready&&insufficient.reason.includes(String(recipe.gold)),'Forge must reject one gold short of the increased recipe cost');
+let insufficientCommandError='';
+try{executeGameCommand(notEnoughGold,{type:'craft',args:{id:recipe.id}},999)}catch(error){insufficientCommandError=error instanceof Error?error.message:'';}
+ok(insufficientCommandError.includes(String(recipe.gold)),'Authoritative equipment crafting must reject insufficient gold using the increased price');
+const exactBudget={...state,character:{...state.character!,gold:recipe.gold}};
+ok(equipmentCraftAvailability(exactBudget,recipe.id,999).ready,'Forge must accept exactly the increased gold price');
+const exactStart=startEquipmentCraft(exactBudget,recipe.id,999);
+ok(exactStart.state.character!.gold===0&&equipmentCraftingQueue(exactStart.state)[0].reservedGold===recipe.gold,'Forge must deduct and snapshot precisely the higher gold cost');
 let slots=equipmentCraftSlotBreakdown(state);
 ok(slots.capacity===3&&slots.base===3&&slots.max===7,'Fresh account must start with 3 equipment crafting slots and cap at 7');
 
@@ -90,6 +100,7 @@ ok(validateGameCommand({type:'craft_claim_all'}).type==='craft_claim_all','Onlin
 let online=prepared();
 const commandStart=executeGameCommand(online,{type:'craft',args:{id:recipe.id}},3000);
 online=commandStart.state;
+ok(online.character!.gold===500000-recipe.gold,'Authoritative craft command must charge the same increased gold as the UI');
 ok(equipmentCraftingQueue(online).length===1&&!online.inventory.stacks.some(row=>row.itemId===recipe.output.itemId),'Authoritative craft command must reserve equipment instead of granting it instantly');
 const commandJob=equipmentCraftingQueue(online)[0];
 const commandClaim=executeGameCommand(online,{type:'craft_claim',args:{id:commandJob.id}},commandJob.completesAtMs,{randomRoll:.5});

@@ -1,6 +1,8 @@
 import {skillAffinityModifiers} from '../src/core/class-skill-affinities';
-import {EQUIPMENT_CRAFT_SKILL_BY_CLASS,TIER_CHARACTER_LEVEL_FLOOR,TIER_CRAFTING_LEVEL_FLOOR,V33_EQUIPMENT_RECIPES,v33EquipmentRecipeForItem} from '../src/content/equipment-recipes-v33';
+import {EQUIPMENT_FORGE_GOLD_MULTIPLIER,EQUIPMENT_CRAFT_SKILL_BY_CLASS,TIER_CHARACTER_LEVEL_FLOOR,TIER_CRAFTING_LEVEL_FLOOR,V33_EQUIPMENT_RECIPES,v33EquipmentRecipeForItem} from '../src/content/equipment-recipes-v33';
 import {GATHERING,RECIPES} from '../src/content/skills';
+import {NOVICE_RECIPES,NOVICE_STAGE} from '../src/content/novice-sets';
+import {recipeAvailability} from '../src/core/playability';
 import {itemDef} from '../src/content/items';
 import {createCharacter,craftRecipe,newGame} from '../src/core/game';
 import {equipmentCraftingPath} from '../src/core/equipment-crafting-path';
@@ -15,6 +17,28 @@ import {ALCHEMY_EQUIPMENT_INFUSIONS} from '../src/content/alchemy';
 function ok(value:unknown,message:string){if(!value)throw new Error(message)}
 
 ok(V33_EQUIPMENT_RECIPES.length===1620,'All 1,620 V33 equipment pieces need a recipe');
+ok(EQUIPMENT_FORGE_GOLD_MULTIPLIER===3,'The equipment forge gold multiplier must be exactly 3×');
+const originalTierGold:Record<string,number>={T1:120,T2:420,T3:900,T4:1800,T5:3500,T6:10000,T7:18000,T8:30000,T9:50000};
+const originalSlotGold:Record<string,number>={helmet:.85,chest:1.2,gloves:.7,legs:1,boots:.75,weapon:1.35,offhand:1.15,cape:.85,amulet:.65,ring:.55};
+for(const recipe of V33_EQUIPMENT_RECIPES){
+  const slot=itemDef(recipe.output.itemId).slot!;
+  const previousPrice=Math.max(1,Math.round(originalTierGold[recipe.v33EquipmentTier]*originalSlotGold[slot]));
+  ok(recipe.gold===previousPrice*3,recipe.id+' must cost exactly 3× its previous gold price');
+  ok(RECIPES.find(row=>row.id===recipe.id)?.gold===recipe.gold,recipe.id+' registered recipe price must match the forge');
+}
+for(const recipe of NOVICE_RECIPES){
+  const slot=itemDef(recipe.output.itemId).slot!,stage=NOVICE_STAGE[slot]??4;
+  const previousPrice=(slot==='weapon'||slot==='amulet'||slot==='ring'?20:stage===4?15:10)*2;
+  ok(recipe.gold===previousPrice*3,recipe.id+' novice equipment must also cost exactly 3×');
+  ok(RECIPES.find(row=>row.id===recipe.id)?.gold===recipe.gold,recipe.id+' novice recipe price must match the shared catalog');
+}
+const firstNovice=NOVICE_RECIPES.find(row=>row.classId==='IRONWARDEN'&&row.output.itemId.endsWith('_CHEST'))!;
+let noviceBudget=createCharacter(newGame(0),'IRONWARDEN','Novice Gold Budget','male');
+noviceBudget={...noviceBudget,character:{...noviceBudget.character!,gold:firstNovice.gold-1},inventory:{...noviceBudget.inventory,capacity:60,stacks:firstNovice.inputs.map(input=>({...input}))}};
+ok(!recipeAvailability(noviceBudget,firstNovice.id).ready,'Novice equipment availability must reject one gold short');
+const exactNovice={...noviceBudget,character:{...noviceBudget.character!,gold:firstNovice.gold}};
+ok(recipeAvailability(exactNovice,firstNovice.id).ready,'Novice equipment availability must accept the exact increased gold price');
+ok(craftRecipe(exactNovice,firstNovice.id,1000).character!.gold===0,'Novice equipment crafting must deduct the increased gold price');
 ok(new Set(V33_EQUIPMENT_RECIPES.map(row=>row.id)).size===1620,'V33 recipe IDs must be unique');
 ok(new Set(V33_EQUIPMENT_RECIPES.map(row=>row.output.itemId)).size===1620,'Every V33 piece should have exactly one generated output recipe');
 ok(V33_EQUIPMENT_RECIPES.every(row=>RECIPES.some(recipe=>recipe.id===row.id&&recipe.output.itemId===row.output.itemId)),'All generated V33 recipes must be registered in RECIPES');
@@ -140,4 +164,4 @@ ok(readyPath.canCraftNow&&readyPath.blockers.length===0,'Recipe planner should b
 const crafted=craftRecipe(state,t1.id,1000);
 ok(crafted.inventory.stacks.some(row=>row.itemId==='T1P_001'&&row.quantity===1),'Authoritative craft path must actually create the V33 equipment piece');
 
-console.log('PASS: all V33 equipment pieces have paced, sourceable, actionable recipes and craft through the shared authoritative operation');
+console.log('PASS: all V33 and novice equipment recipes charge triple gold, with paced, sourceable, actionable V33 crafting');

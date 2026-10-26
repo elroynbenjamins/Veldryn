@@ -34,8 +34,9 @@ const timerRange:Record<string,{base:number;min:number;max:number}>={
   T4:{base:660,min:480,max:900},T5:{base:900,min:720,max:1200},T6:{base:1200,min:900,max:1500},
   T7:{base:1500,min:1200,max:1800},T8:{base:1950,min:1500,max:2400},T9:{base:2250,min:1800,max:2700},
 };
-/** Gold-only balancing for all T1–T9 equipment, excluding novice tutorial crafts. */
-export const EQUIPMENT_CRAFT_GOLD_MULTIPLIER=3;
+/** Equipment-only gold sink: recipe gold is authoritative for the UI, queue reservation and server validation. */
+export const EQUIPMENT_FORGE_GOLD_MULTIPLIER=3;
+export const EQUIPMENT_CRAFT_GOLD_MULTIPLIER=EQUIPMENT_FORGE_GOLD_MULTIPLIER;
 const tierGold:Record<string,number>={T1:120,T2:420,T3:900,T4:1800,T5:3500,T6:10000,T7:18000,T8:30000,T9:50000};
 const tierXp:Record<string,number>={T1:120,T2:250,T3:450,T4:700,T5:1100,T6:1600,T7:2200,T8:2900,T9:3800};
 const infusionByTier:Record<string,{itemId:string;quantity:number}>={
@@ -135,7 +136,7 @@ export const V33_EQUIPMENT_RECIPES:V33EquipmentRecipeDef[]=(catalog.pieces as Ar
     skillId,
     level,
     xp:q(tierXp[tier]??120,multiplier),
-    gold:q(tierGold[tier]??120,multiplier)*EQUIPMENT_CRAFT_GOLD_MULTIPLIER,
+    gold:q(tierGold[tier]??120,multiplier)*EQUIPMENT_FORGE_GOLD_MULTIPLIER,
     seconds:clamp(Math.round(range.base*multiplier),range.min,range.max),
     inputs:mergeInputs([...ingredients(tier,String(piece.Path),multiplier,skillId),infusionByTier[tier]]),
     output:{itemId:String(piece['Piece ID']),quantity:1},

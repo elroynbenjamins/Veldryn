@@ -72,7 +72,8 @@
     "test:gems": "tsc -p tsconfig.gems.json && node dist-gems/server/equipment/gems/gem-v1.test.js && node dist-gems/server/equipment/gems/regional-gem-settlement-v1.test.js && node dist-gems/server/combat/__tests__/gem-effects-v1.js && node dist-gems/server/combat/__tests__/regional-combat-runtime-v1.js && node dist-gems/server/combat/__tests__/pve-encounter-identity.js && node dist-gems/server/combat/__tests__/pve-simulation-telemetry.js && node dist-gems/server/combat/__tests__/pve-balance-batch.js",
     "test:pve-telemetry": "tsc -p tsconfig.gems.json && node dist-gems/server/combat/__tests__/pve-simulation-telemetry.js",
     "test:pve-balance": "tsc -p tsconfig.gems.json && node dist-gems/server/combat/__tests__/pve-balance-batch.js",
-    "pve-balance": "tsc -p tsconfig.gems.json && node dist-gems/server/combat/pve-balance-cli.js"
+    "pve-balance": "tsc -p tsconfig.gems.json && node dist-gems/server/combat/pve-balance-cli.js",
+    "test:release-economy": "tsc && node dist/server/__tests__/release-economy.js"
   },
   "devDependencies": {
     "@electric-sql/pglite": "0.5.8",

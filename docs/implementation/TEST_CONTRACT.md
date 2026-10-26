@@ -3,7 +3,7 @@
 Core regression tests must cover:
 1. Save creation, serialization, loading and migration.
 2. Rejecting unsupported future save versions.
-3. Offline elapsed-time cap uses the save's AFK Reserve: 24 hours at baseline and no more than 36 hours after milestone upgrades.
+3. Offline elapsed-time cap uses the save's effective AFK Reserve from `apps/mobile/src/core/game.ts` (currently 8h base / 24h free progression / 30h total maximum). Test over-cap catch-up, repeated claims at the same timestamp, and a later claim earning only newly elapsed time; discarded excess must not become a claimable backlog.
 4. XP/level boundaries including level 25.
 5. Deterministic combat rewards for a fixed seed/time interval.
 6. Inventory stacking/capacity behavior.

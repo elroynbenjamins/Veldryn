@@ -11,6 +11,8 @@ This folder contains active contracts and current system notes. Superseded phase
 
 ## Current systems
 
+- `RELEASE_1_HARDENING.md` — current-source release review, retired market boundary, economy helper regressions and remaining release gates.
+
 - `HOME_ONLINE_REVIEW_20261013.md` — Home modernization, reward-popup restrictions, asset/online checks, implemented fixes and remaining regression failures.
 - `PARTIES_CONTRACTS_GUILD_SEEKERS_V1.md` — persistent Parties, Contracts, Recruitment, Guild seekers and server authority.
 - `V16_IMPLEMENTATION_REPORT.md` — exact v16 merge inventory, applied migrations, verification results and remaining limits.

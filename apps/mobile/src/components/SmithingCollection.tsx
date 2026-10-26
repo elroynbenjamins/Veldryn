@@ -36,9 +36,9 @@ export function SmithingCollection(props:Props){
  const preferred=recipes.find(r=>r.id===preferredRecipeId);
  const [tab,setTab]=useState<'equipment'|'materials'|'tools'>(preferred&&!preferred.v33SetId?(itemDef(preferred.output.itemId).type==='tool'?'tools':'materials'):'equipment');
  const sets=useMemo(()=>EQUIPMENT_SETS.filter(set=>recipes.some(r=>r.v33SetId===set.id)),[recipes]);
- const [setId,setSetId]=useState<string|undefined>(preferred?.v33SetId??sets[0]?.id),[itemId,setItemId]=useState(preferred?.output.itemId),[tiersOpen,setTiersOpen]=useState(false),[bonusesOpen,setBonusesOpen]=useState(false),[detailsOpen,setDetailsOpen]=useState(false),[queueOpen,setQueueOpen]=useState(false),[width,setWidth]=useState(400),[now,setNow]=useState(Date.now()),[error,setError]=useState('');
+ const [setId,setSetId]=useState<string|undefined>(preferred?.v33SetId??sets[0]?.id),[itemId,setItemId]=useState(preferred?.output.itemId),[tiersOpen,setTiersOpen]=useState(false),[bonusesOpen,setBonusesOpen]=useState(false),[detailsOpen,setDetailsOpen]=useState(!!preferred?.v33SetId),[queueOpen,setQueueOpen]=useState(false),[width,setWidth]=useState(400),[now,setNow]=useState(Date.now()),[error,setError]=useState('');
  useEffect(()=>{const timer=setInterval(()=>setNow(Date.now()),1000);return()=>clearInterval(timer)},[]);
- useEffect(()=>{if(!preferred)return;setTab(preferred.v33SetId?'equipment':itemDef(preferred.output.itemId).type==='tool'?'tools':'materials');setSetId(preferred.v33SetId);setItemId(preferred.output.itemId);setDetailsOpen(false)},[preferredRecipeId]);
+ useEffect(()=>{if(!preferred)return;setTab(preferred.v33SetId?'equipment':itemDef(preferred.output.itemId).type==='tool'?'tools':'materials');setSetId(preferred.v33SetId);setItemId(preferred.output.itemId);setDetailsOpen(!!preferred.v33SetId)},[preferredRecipeId]);
  const set=sets.find(row=>row.id===setId)??sets[0],tierSets=sets.filter(row=>row.tier===set?.tier),setIndex=tierSets.findIndex(row=>row.id===set?.id);
  const pieces=set?[...set.itemIds].sort((a,b)=>slots.indexOf(itemDef(a).slot??'')-slots.indexOf(itemDef(b).slot??'')):[];
  const selected=pieces.includes(itemId??'')?itemId!:pieces[0],recipe=recipes.find(row=>row.output.itemId===selected),item=selected?itemDef(selected):undefined;

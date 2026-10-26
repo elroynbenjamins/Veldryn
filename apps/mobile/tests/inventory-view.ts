@@ -52,6 +52,8 @@ let favoriteSalvageBlocked=false;try{salvageItem(favoriteProtected,'basic_sword'
 ok(favoriteSalvageBlocked,'Favorite items cannot be salvaged through core logic');
 const bulkBase={...state,inventory:{...state.inventory,stacks:[{itemId:'TRAVEL_RATION',quantity:20},{itemId:'COPPER_ORE',quantity:4},{itemId:'basic_sword',quantity:1},{itemId:'HOLY_WATER',quantity:2}]},bank:{stacks:[],capacity:10}};
 const bulkIds=['TRAVEL_RATION','COPPER_ORE','basic_sword','HOLY_WATER'];
+const emptyBulk=bulkSelectionSummary(bulkBase,[],'inventory');
+ok(emptyBulk.selectedStackCount===0&&emptyBulk.transferableIds.length===0&&emptyBulk.sellableIds.length===0&&emptyBulk.sellGold===0,'Empty selection stays inert without recipe-protection processing');
 const bulkSummary=bulkSelectionSummary(bulkBase,bulkIds,'inventory');
 ok(bulkSummary.selectedStackCount===4&&bulkSummary.transferableStackCount===3&&bulkSummary.transferProtectedCount===1,'Bulk transfer keeps selected auto-eat food safe');
 ok(bulkSummary.sellableStackCount===2&&bulkSummary.sellGold===30,'Bulk sell includes only eligible stack value');

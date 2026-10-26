@@ -18,7 +18,16 @@ function protectedFromDisposal(state:GameState,itemId:string,goalProtectedIds:Se
 }
 
 export function bulkSelectionSummary(state:GameState,itemIds:readonly string[],location:BulkStorageLocation){
-  const stacks=selectedStacks(state,itemIds,location),autoEatId=state.character?.equippedFoodId,goalProtection=workingTowardInventoryProtectionMap(state),goalProtectedIds=new Set(goalProtection.keys());
+  const stacks=selectedStacks(state,itemIds,location);
+  // Empty selection is the default while browsing. Avoid the expensive
+  // Working Toward/recipe protection walk until the player selects an item.
+  if(!stacks.length)return {
+    selectedStackCount:0,selectedUnitCount:0,goalProtectedCount:0,
+    transferableIds:[] as string[],transferableStackCount:0,transferableUnitCount:0,transferProtectedCount:0,
+    sellableIds:[] as string[],sellableStackCount:0,sellableUnitCount:0,sellGold:0,sellProtectedCount:0,
+    salvageableIds:[] as string[],salvageableStackCount:0,salvageableUnitCount:0,salvageProtectedCount:0,
+  };
+  const autoEatId=state.character?.equippedFoodId,goalProtection=workingTowardInventoryProtectionMap(state),goalProtectedIds=new Set(goalProtection.keys());
   const goalProtected=stacks.filter(stack=>goalProtectedIds.has(stack.itemId));
   const transferable=stacks.filter(stack=>location==='bank'||stack.itemId!==autoEatId);
   const sellable=location==='inventory'?stacks.filter(stack=>{

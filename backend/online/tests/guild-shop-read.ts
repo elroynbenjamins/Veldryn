@@ -29,6 +29,21 @@ async function run() {
  assert(body.cards.find(x=>x.id==="guild_companion_01")?.status==="guild_level_locked","guild level lock");
  assert(calls.length===5 && calls[0].name==="guild_shop_snapshot_server_v1" && calls[1].name==="guild_construction_snapshot_server_v1" && calls[2].name==="guild_shop_event_community_rewards_server_v1" && calls[3].name==="guild_construction_enabled_server_v1" && calls[4].name==="guild_shop_weekly_rewards_server_v1","all authenticated read-only RPCs called");
  assert(calls[0].args.p_account_id==="11111111-1111-4111-8111-111111111111","verified identity forwarded");
+ const optionalFailure=guildShopReadHandler({...services,rpc:async<T>(name:string,args:Record<string,unknown>)=>{
+  if(name==='guild_construction_snapshot_server_v1'||name==='guild_shop_event_community_rewards_server_v1')throw new Error('unavailable_optional_projection');
+  return services.rpc<T>(name,args);
+ }});
+ const degraded=await optionalFailure(new Request('https://example.test/guild/shop',{headers:{authorization:'Bearer valid'}}));
+ assert(degraded.status===200,'optional read failures must not make the Guild Shop unavailable');
+ const degradedData=await degraded.json() as {balance:number;construction:unknown[];eventBonuses:unknown[];unavailableSections:string[]};
+ assert(degradedData.balance===3000&&degradedData.construction.length===0&&degradedData.eventBonuses.length===0,'wallet must remain authoritative with optional sections safely empty');
+ assert(degradedData.unavailableSections.includes('construction')&&degradedData.unavailableSections.includes('eventBonuses'),'unavailable projections are explicitly reported');
+ const walletFailure=guildShopReadHandler({...services,rpc:async<T>(name:string,args:Record<string,unknown>)=>{
+  if(name==='guild_shop_snapshot_server_v1')throw new Error('wallet_failure');
+  return services.rpc<T>(name,args);
+ }});
+ const denied=await walletFailure(new Request('https://example.test/guild/shop',{headers:{authorization:'Bearer valid'}}));
+ assert(denied.status===503,'wallet failures must not return fake zero balance');
  const noGuild = guildShopReadHandler({...services,guildLevelForAccount:async()=>null});
  const blocked = await noGuild(new Request("https://example.test/guild/shop",{headers:{authorization:"Bearer valid"}}));
  assert(blocked.status===403,"nonmembers blocked");

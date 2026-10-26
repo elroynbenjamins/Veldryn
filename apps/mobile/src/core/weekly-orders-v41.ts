@@ -16,8 +16,8 @@ export interface WeeklyOrderProgressResult{eventId:string;updated:Array<{orderId
 
 const DAY_MS=86_400_000;
 export const DEFAULT_WEEKLY_ORDER_POLICY:WeeklyOrderPolicy={
- enabled:true,huntSlots:2,professionSlots:2,regionalSlots:1,huntTargetMinutes:35,professionTargetMinutes:45,regionalTargetMinutes:55,
- minimumHuntTarget:10,minimumProfessionTarget:20,minimumRegionalTarget:20,
+ enabled:true,huntSlots:2,professionSlots:2,regionalSlots:1,huntTargetMinutes:70,professionTargetMinutes:90,regionalTargetMinutes:110,
+ minimumHuntTarget:20,minimumProfessionTarget:40,minimumRegionalTarget:40,
  defaultHuntReward:{rewardRef:'weekly_order_hunt_standard',label:'Hunt Order reward'},
  defaultProfessionReward:{rewardRef:'weekly_order_profession_standard',label:'Work Order reward'},
 defaultRegionalReward:{rewardRef:'weekly_order_regional_standard',label:'Regional Problem reward'},

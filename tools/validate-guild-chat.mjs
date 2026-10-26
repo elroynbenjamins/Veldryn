@@ -6,6 +6,8 @@ const migration=fs.readFileSync(path.join(root,'backend/supabase/migrations/2026
 const client=fs.readFileSync(path.join(root,'apps/mobile/src/online/social.ts'),'utf8');
 const component=fs.readFileSync(path.join(root,'apps/mobile/src/components/GuildChat.tsx'),'utf8');
 const overlay=fs.readFileSync(path.join(root,'apps/mobile/src/components/ChatOverlay.tsx'),'utf8');
+const chatFeed=fs.readFileSync(path.join(root,'apps/mobile/src/online/useChatFeed.ts'),'utf8');
+const realtimeRls=fs.readFileSync(path.join(root,'backend/supabase/migrations/20261103000004_guild_chat_realtime_member_read.sql'),'utf8');
 
 function need(haystack,needle,label){if(!haystack.includes(needle))throw new Error('Guild Chat contract missing '+label+': '+needle);}
 function reject(haystack,needle,label){if(haystack.includes(needle))throw new Error('Guild Chat contract still contains '+label+': '+needle);}
@@ -40,5 +42,26 @@ reject(component,'Brann','hard-coded preview player');
 reject(component,"chat.preview",'preview copy');
 need(overlay,"myGuild","live Guild membership lookup");
 need(overlay,"onlineGuildAvailable","live Guild tab state");
+
+
+for(const [needle,label] of [
+ ["channelType:'guild'",'Guild channel realtime activation'],
+ ["channelIdFromValue:value=>value?.guild?.id",'Guild socket must use authenticated Guild identity'],
+])need(component,needle,label);
+for(const [needle,label] of [
+ ["options.channelIdFromValue?.(entry.cache.getSnapshot().value)",'subscribe only after a protected membership projection'],
+ ["const unsubscribe=entry.cache.subscribe(syncChannel)",'socket rebind when authenticated Guild scope changes'],
+ ["if(nextId===subscribedChannelId)return",'one socket per Guild/channel'],
+ ["if(closed||!foreground||current!==connection",'ignore stale subscriptions'],
+ ["entry.cache.refresh(true)",'server-authoritative realtime refresh'],
+])need(chatFeed,needle,label);
+for(const [needle,label] of [
+ ["for select to authenticated",'no anonymous Guild message reads'],
+ ["gm.guild_id::text=chat_messages.channel_id",'membership-scoped Guild channel'],
+ ["gm.account_id=(select auth.uid())",'current user membership required'],
+ ["not public.party_social_blocked_v16(account_id)",'both directions of blocked player filtering'],
+])need(realtimeRls,needle,label);
+reject(realtimeRls,'for insert','Guild Chat post remains server-authoritative');
+need(overlay,'[visible,state.account.guildMember]','recheck Guild membership on chat opening');
 
 console.log('PASS: authoritative online Guild Chat contract');

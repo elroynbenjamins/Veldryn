@@ -407,14 +407,14 @@ function VeldrynApp(){
       void addProfileAttentionKeys(scope,keys);
     }
   }
-  async function perform(command?:GameCommand,presentRewards=true,welcomeBack=false){if(welcomeBack)setOfflineSettling(true);try{
+  async function perform(command?:GameCommand,presentRewards=true,welcomeBack=false,silentFailure=false){if(welcomeBack)setOfflineSettling(true);try{
     const before=stateRef.current,result=await online.execute(command);
     queuePreparationNotices(before,result.state);stateRef.current=result.state;setState(result.state);queueCustomizationUnlocks(before,result.state);
     if(result.executedCommand.type==='quest')queueFeatureUnlockMoments(before,result.state);
     const feedback=commandProgressFeedback(result.executedCommand,before,result);
     if(presentRewards){if(feedback.collected)setCollected({...feedback.collected,welcomeBack,...(welcomeBack&&before?{welcomeReport:buildWelcomeBackFromStates(before,result.state,feedback.collected.reward,feedback.collected.activity)}:{})});else if(feedback.masteryNotices.length)setMasteryNotices(feedback.masteryNotices);}
     return result;
-  }catch(error){const message=error instanceof Error?error.message:'Please retry.';if(command&&['withdraw','deposit','sell','bulk_transfer','bulk_sell'].includes(command.type)&&/gameplay action is already being saved/i.test(message))return null;setOnlineActionError(playerFacingGameplayError(message));return null;}finally{if(welcomeBack)setOfflineSettling(false);}}
+  }catch(error){const message=error instanceof Error?error.message:'Please retry.';if(command&&['withdraw','deposit','sell','bulk_transfer','bulk_sell'].includes(command.type)&&/gameplay action is already being saved/i.test(message))return null;if(!silentFailure)setOnlineActionError(playerFacingGameplayError(message));return null;}finally{if(welcomeBack)setOfflineSettling(false);}}
   async function inventoryCommand(command:GameCommand,local:()=>GameState){
     if(serverGameplayEnabled){const result=await perform(command);if(!result)throw new Error('Inventory action was not confirmed. Please retry.');return;}
     await commit(local());

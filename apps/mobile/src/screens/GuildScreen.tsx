@@ -5,7 +5,9 @@ import {socialLabel} from '../i18n/social';
 import {IdentityArtwork} from '../components/SocialIdentity';
 import {GuildIdentitySummary} from '../components/GuildIdentitySummary';
 import {useEffect,useState,type ReactNode,useMemo} from 'react';
-import {Modal,Pressable,ScrollView,StyleSheet,Text,View} from 'react-native';
+import {ActivityIndicator,Modal,Pressable,ScrollView,StyleSheet,Text,View} from 'react-native';
+import {myGuild} from '../online/social';
+import {GuildDiscoveryFlow} from '../components/GuildDiscoveryFlow';
 import {GameButton} from '../components/GameButton';
 import {Panel} from '../components/Panel';
 import {GuildBoardHero} from '../components/GuildBoardHero';
@@ -36,16 +38,33 @@ const GUILD_TREE_BUFFS:Record<string,{label:string;perTier:number}>={professions
 const GUILD_BANK_DAILY_CAP=1000;
 const GUILD_BANK_RESOURCES=[{itemId:'MOSS_FIBER',label:'Moss Fiber'},{itemId:'GREENWOOD_LOG',label:'Greenwood Log'},{itemId:'IRONWOOD_LOG',label:'Ironwood Log'},{itemId:'ASTER_IRON_INGOT',label:'Aster-Iron Ingot'},{itemId:'OATHGLASS_SHARD',label:'Oathglass Shard'},{itemId:'OATHSTONE_INGOT',label:'Oathstone Ingot'}] as const;
 const GUILD_PROJECT_COST={MOSS_FIBER:200,GREENWOOD_LOG:120,IRONWOOD_LOG:60,ASTER_IRON_INGOT:20};
-export function GuildScreen({state,onChange,onlineDirectory,onlineManagement,onlineBoard,onlineProjects,onlinePve,onlineHall,onlineChat,onlineCustomize,onlineChatUnread=0,onlineChatMentions=0,online=false,onTokenRewardsChanged,initialPve=false,onInitialPveHandled}:{onTokenRewardsChanged?:()=>void|Promise<unknown>;online?:boolean;state:GameState;onChange:(next:GameState)=>void;onlineDirectory?:ReactNode;onlineManagement?:ReactNode;onlineBoard?:ReactNode;onlineProjects?:ReactNode;onlinePve?:ReactNode;onlineHall?:ReactNode;onlineChat?:ReactNode;onlineCustomize?:ReactNode;onlineChatUnread?:number;onlineChatMentions?:number;initialPve?:boolean;onInitialPveHandled?:()=>void}){
+export function GuildScreen({state,onChange,onlineManagement,onlineBoard,onlineProjects,onlinePve,onlineHall,onlineChat,onlineCustomize,onlineChatUnread=0,onlineChatMentions=0,online=false,onTokenRewardsChanged,initialPve=false,onInitialPveHandled}:{onTokenRewardsChanged?:()=>void|Promise<unknown>;online?:boolean;state:GameState;onChange:(next:GameState)=>void;onlineManagement?:ReactNode;onlineBoard?:ReactNode;onlineProjects?:ReactNode;onlinePve?:ReactNode;onlineHall?:ReactNode;onlineChat?:ReactNode;onlineCustomize?:ReactNode;onlineChatUnread?:number;onlineChatMentions?:number;initialPve?:boolean;onInitialPveHandled?:()=>void}){
  const st=useSocialText();
   const language=useGameLanguage();
  const C=useGameTheme(),s=useMemo(()=>makeStyles(C),[C]);
   const [activityView,setActivityView]=useState<'Quests'|'Muster'|'Projects'>('Quests');
   const [section,setSection]=useState<GuildSection>(initialPve?'PvE':'Home'),[onlineSection,setOnlineSection]=useState<OnlineGuildSection>(initialPve?'PvE':'Home'),[hallSection,setHallSection]=useState<'Facilities'|'Shop'>('Facilities');
   useEffect(()=>{if(initialPve)onInitialPveHandled?.()},[]);
+  const [guildMembership,setGuildMembership]=useState<'loading'|'member'|'none'|'error'>(online?'loading':'member');
+  const [guildLoadError,setGuildLoadError]=useState('');
+  const reloadGuildMembership=()=>{
+   setGuildMembership('loading');setGuildLoadError('');
+   void myGuild().then(membership=>setGuildMembership(membership?'member':'none'))
+    .catch(reason=>{setGuildLoadError(reason instanceof Error?reason.message:'Unable to check Guild membership.');setGuildMembership('error')});
+  };
+  useEffect(()=>{
+   if(!online)return;
+   let mounted=true;
+   void myGuild().then(membership=>{if(mounted)setGuildMembership(membership?'member':'none')})
+    .catch(reason=>{if(mounted){setGuildLoadError(reason instanceof Error?reason.message:'Unable to check Guild membership.');setGuildMembership('error')}});
+   return()=>{mounted=false};
+  },[online]);
+  if(online&&guildMembership==='loading')return <Panel><Text style={s.title}>Guild</Text><ActivityIndicator color={C.accent}/></Panel>;
+  if(online&&guildMembership==='error')return <Panel><Text style={s.title}>Unable to open Guilds</Text><Text style={s.sub}>{guildLoadError}</Text><GameButton title="Retry" onPress={reloadGuildMembership}/></Panel>;
+  if(online&&guildMembership==='none')return <GuildDiscoveryFlow onJoined={reloadGuildMembership}/>;
   if(online)return <ScrollView contentContainerStyle={s.root} keyboardShouldPersistTaps="handled" keyboardDismissMode="on-drag" showsVerticalScrollIndicator={false} showsHorizontalScrollIndicator={false}>
     {onlineSection==='Activities'||onlineSection==='Hall'?<GuildBoardHero compact={onlineSection==='Activities'} title={onlineSection==='Activities'?'Guild Activity Board':'Guild Hall'} subtitle={onlineSection==='Activities'?'Shared objectives, daily participation and weekly Projects.':'Facilities, permanent skill paths and Guild accomplishments.'}/>:<View style={s.onlineHero}><View style={s.heroIcon}><ThemedIcon name="guild" size={34}/></View><View style={s.flex}><Text style={s.kicker}>{st("GUILD NETWORK")}</Text><Text accessibilityRole="header" style={s.h}>Guild Home</Text><Text style={s.sub}>Membership, shared progress, chat and Guild identity in one place.</Text></View><View style={s.onlinePill}><View style={s.onlineDot}/><Text style={s.onlinePillText}>ONLINE</Text></View></View>}
-    <ScrollView horizontal keyboardShouldPersistTaps="handled" showsHorizontalScrollIndicator={false} contentContainerStyle={s.onlineTabs} showsVerticalScrollIndicator={false}>{(['Home','PvE','Roster','Activities','Hall','Chat','Manage'] as const).map(value=><TabChip key={value} label={socialLabel(language,value)} badge={value==='Chat'?Math.max(onlineChatUnread,onlineChatMentions):0} warningBadge={value==='Chat'&&onlineChatMentions>0} selected={onlineSection===value} onPress={()=>setOnlineSection(value)}/>)}</ScrollView>
+    <ScrollView horizontal keyboardShouldPersistTaps="handled" showsHorizontalScrollIndicator={false} contentContainerStyle={s.onlineTabs} showsVerticalScrollIndicator={false}>{(['Home','PvE','Activities','Hall','Chat'] as const).map(value=><TabChip key={value} label={socialLabel(language,value)} badge={value==='Chat'?Math.max(onlineChatUnread,onlineChatMentions):0} warningBadge={value==='Chat'&&onlineChatMentions>0} selected={onlineSection===value} onPress={()=>setOnlineSection(value)}/>)}</ScrollView>
     {onlineSection==='Home'?<GuildOnlineHome onNavigate={setOnlineSection} board={onlineBoard} chatUnread={onlineChatUnread}/>:null}
     {onlineSection==='Roster'?onlineManagement:null}
     {onlineSection==='Activities'?<View style={s.sectionStack}>
@@ -62,7 +81,7 @@ export function GuildScreen({state,onChange,onlineDirectory,onlineManagement,onl
      {hallSection==='Facilities'?onlineHall:<OnlineGuildTokenShopPanel onRewardsChanged={onTokenRewardsChanged}/>}
     </View>:null}
     {onlineSection==='Chat'?onlineChat:null}
-    {onlineSection==='Manage'?<View style={s.sectionStack}><GuildSectionHeader label={st("RECRUITMENT")} title={st("Directory & Creation")} copy={st("Find another Guild when eligible, or create and configure a new Guild identity.")}/>{onlineDirectory}<GuildSectionHeader label={st("IDENTITY")} title={st("Guild Appearance")} copy={st("Manage the Guild tag, banner, border, colors, nameplate and motto with role-based permissions.")}/>{onlineCustomize}<GameButton compact title="Roadmap & future content" tone="secondary" onPress={()=>setOnlineSection('Future')}/></View>:null}
+    {onlineSection==='Manage'?<View style={s.sectionStack}><GuildSectionHeader label={st("IDENTITY")} title={st("Guild Appearance")} copy={st("Manage the Guild banner, border, colors, nameplate and motto with role-based permissions.")}/>{onlineCustomize}<GameButton compact title="Roadmap & future content" tone="secondary" onPress={()=>setOnlineSection('Future')}/></View>:null}
     {onlineSection==='Future'?<GuildFutureContent/>:null}
   </ScrollView>;
   const joined=state.account.guildMember,contribution=state.account.guildContribution??0,project=Math.max(state.account.guildProjectProgress??0,Math.min(1000,contribution)),bossHp=state.account.guildBossHp??100000;
@@ -206,7 +225,7 @@ function GuildOnlineHome({onNavigate,board,chatUnread=0}:{onNavigate:(section:On
  const destinations=[
   ['PvE','guild','WEEKLY & EVENT BOSSES','Fight together through everyday combat.'],
   ['Activities','quests','Muster & Rally','Daily Muster, quests and shared progress.'],
-  ['Roster','friends','ROSTER · APPLICATIONS','Members, roles, applications, invitations and leadership safety.'],
+  ['Roster','friends','MEMBERS & APPLICATIONS','Members, roles, invitations and leadership safety.'],
   ['Hall','settings','FACILITIES & TROPHIES','Facilities and long-term progression.'],
   ['Chat','chat','GUILD CHAT',chatUnread?`${chatUnread} unread messages`:'Stay in touch with your guild.'],
  ] as const;

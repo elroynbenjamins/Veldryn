@@ -6,7 +6,7 @@ import {itemRarity,type ItemRarity} from './item-rarity';
 export const MAX_CRAFTED_GEAR_INSTANCES=500;
 
 /** Per-instance stat variance window applied on top of the rarity multiplier. */
-export const CRAFTED_STAT_VARIANCE=0.05;
+export const CRAFTED_STAT_VARIANCE=0.15;
 
 const emptyEnhancement=():GearEnhancementState=>({rank:0,failures:0,gemIds:[]});
 

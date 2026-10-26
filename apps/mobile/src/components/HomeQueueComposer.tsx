@@ -5,6 +5,8 @@ import {MONSTERS} from '../content/monsters';
 import {GATHERING} from '../content/skills';
 import {HERB_NODES} from '../content/herbalism';
 import {ALCHEMY_RECIPES} from '../content/alchemy';
+import {EXPLORATION_ROUTES} from '../content/exploration';
+import {FAITH_TIERS,HOLY_WATER_ID} from '../content/faith';
 import {WORLD_ZONES} from '../content/world-map';
 import {activityQueueAvailableRegions,activityQueueCrossRegionAllowed,activityQueueCapacity,activityQueueGoalCurrentValue,activityQueueGoalIssue,activityQueueHandoffStatus,currentActivityHandoffGoalIssue,enqueueActivity,normalizeActivityQueue,queuedActivityPlanningReadiness,queuedActivityReadiness} from '../core/activity-queue';
 import {GameModalHeader,GameModalSurface} from './GameModalSurface';
@@ -14,8 +16,8 @@ import {MonsterPortraitFrame} from './MonsterPortraitFrame';
 import {useGameTheme} from '../theme/ThemeContext';
 import type {ThemeColors} from '../theme/theme';
 
-type Category='combat'|'gathering'|'crafting';
-type Preset='kills250'|'kills500'|'kills1000'|'time2h'|'time4h'|'time6h'|'items100'|'items250'|'nextLevel'|'open';
+type Category='combat'|'gathering'|'exploration'|'faith'|'crafting';
+type Preset='kills250'|'kills500'|'kills1000'|'time2h'|'time4h'|'time6h'|'items100'|'items250'|'nextLevel'|'open'|'practice10'|'practice50'|'practice100'|'practice500';
 type Candidate={id:string;name:string;subtitle:string;activity:QueuedActivity;level?:number};
 type CurrentHandoffChoice='2h'|'4h'|'6h'|'next_level'|'keep_running';
 type CurrentHandoffPlan={targetId:string;goal?:ActivityQueueGoal;keepCurrentRunning?:true};
@@ -34,18 +36,25 @@ export function HomeQueueComposer({visible,state,onClose,onAdd,onOpenSkills}:Pro
  const region=WORLD_ZONES.find(row=>row.id===selectedRegionId);
  useEffect(()=>{if(visible){setRegionId(state.currentRegionId);setSelectedId('');setHandoffChoice('4h');}},[visible,state.currentRegionId]);
  const alchemyLevel=state.skills.find(row=>row.skillId==='alchemy')?.level??1;
+ const explorationLevel=state.skills.find(row=>row.skillId==='exploration')?.level??1;
+ const faithLevel=state.skills.find(row=>row.skillId==='faith')?.level??1;
  const combat:Candidate[]=MONSTERS.filter(row=>!row.boss&&row.zone===region?.name&&state.unlockedMonsterIds.includes(row.id)).map(row=>({id:row.id,name:row.name,subtitle:'Level '+row.level+' · '+region?.name,activity:{kind:'combat',targetId:row.id}}));
  const gathering:Candidate[]=[...GATHERING,...HERB_NODES].filter(row=>row.zoneId===selectedRegionId&&(state.skills.find(skill=>skill.skillId===row.skillId)?.level??1)>=row.unlockLevel).map(row=>({id:row.id,name:row.name,subtitle:row.skillId+' · Level '+row.unlockLevel,activity:{kind:'gathering',targetId:row.id},level:state.skills.find(skill=>skill.skillId===row.skillId)?.level??1}));
+ const exploration:Candidate[]=EXPLORATION_ROUTES.filter(row=>row.zoneId===selectedRegionId&&explorationLevel>=row.requiredExplorationLevel&&(state.character?.level??1)>=row.requiredLevel).map(row=>({id:row.id,name:row.name,subtitle:'Exploration · Level '+row.requiredExplorationLevel,activity:{kind:'exploration',targetId:row.id},level:explorationLevel}));
+ const faith:Candidate[]=FAITH_TIERS.filter(row=>faithLevel>=row.level).map(row=>({id:row.id,name:row.name,subtitle:'Faith · Level '+row.level+' · '+row.water+' Holy Water each',activity:{kind:'faith',targetId:row.id,faithPracticeCount:50},level:faithLevel}));
  const crafting:Candidate[]=ALCHEMY_RECIPES.filter(row=>row.level<=alchemyLevel).map(row=>({id:row.id,name:row.name,subtitle:'Alchemy · Level '+row.level,activity:{kind:'alchemy',targetId:row.id}}));
- const candidates=category==='combat'?combat:category==='gathering'?gathering:crafting;
+ const candidates=category==='combat'?combat:category==='gathering'?gathering:category==='exploration'?exploration:category==='faith'?faith:crafting;
  const selected=candidates.find(row=>row.id===selectedId)??candidates[0];
  const capacity=activityQueueCapacity(state),queue=normalizeActivityQueue(state.character?.activityQueue,capacity),full=queue.length>=capacity;
  const stored=selected?activityQueueGoalCurrentValue(state,{...selected.activity,goal:{kind:'item_quantity',value:1}})??0:0;
  const options:{id:Preset;label:string}[]=category==='combat'?[{id:'kills250',label:'250 defeats'},{id:'kills500',label:'500 defeats'},{id:'kills1000',label:'1,000 defeats'},{id:'time2h',label:'2 hours'},{id:'time4h',label:'4 hours'},{id:'time6h',label:'6 hours'},{id:'open',label:'No auto-stop'}]:
- category==='gathering'?[{id:'items100',label:'+100 in storage'},{id:'items250',label:'+250 in storage'},{id:'time2h',label:'2 hours'},{id:'time4h',label:'4 hours'},{id:'time6h',label:'6 hours'},...(selected&&selected.level!==undefined&&selected.level<100?[{id:'nextLevel' as const,label:'Next skill level'}]:[]),{id:'open',label:'No auto-stop'}]:[];
- const chosen=options.some(row=>row.id===preset)?preset:category==='combat'?'kills500':'time4h';
+ category==='gathering'?[{id:'items100',label:'+100 in storage'},{id:'items250',label:'+250 in storage'},{id:'time2h',label:'2 hours'},{id:'time4h',label:'4 hours'},{id:'time6h',label:'6 hours'},...(selected&&selected.level!==undefined&&selected.level<100?[{id:'nextLevel' as const,label:'Next skill level'}]:[]),{id:'open',label:'No auto-stop'}]:
+ category==='exploration'?[{id:'time2h',label:'2 hours'},{id:'time4h',label:'4 hours'},{id:'time6h',label:'6 hours'},{id:'open',label:'No auto-stop'}]:
+ category==='faith'?[{id:'practice10',label:'10 practices'},{id:'practice50',label:'50 practices'},{id:'practice100',label:'100 practices'},{id:'practice500',label:'500 practices'}]:[];
+ const chosen=options.some(row=>row.id===preset)?preset:category==='combat'?'kills500':category==='faith'?'practice50':'time4h';
+ const faithPracticeCount=chosen==='practice10'?10:chosen==='practice500'?500:chosen==='practice100'?100:50;
  const goal:ActivityQueueGoal|undefined=chosen==='kills250'?{kind:'session_kills',value:250}:chosen==='kills500'?{kind:'session_kills',value:500}:chosen==='kills1000'?{kind:'session_kills',value:1000}:chosen==='items100'?{kind:'item_quantity',value:Math.min(1000000,stored+100)}:chosen==='items250'?{kind:'item_quantity',value:Math.min(1000000,stored+250)}:chosen==='time2h'?{kind:'duration_seconds',value:7200}:chosen==='time4h'?{kind:'duration_seconds',value:14400}:chosen==='time6h'?{kind:'duration_seconds',value:21600}:chosen==='nextLevel'&&selected?.level!==undefined?{kind:'skill_level',value:Math.min(100,selected.level+1)}:undefined;
- const entry:QueuedActivity|undefined=selected?{...selected.activity,...(category!=='crafting'&&goal?{goal}:{})}:undefined;
+ const entry:QueuedActivity|undefined=selected?category==='faith'?{...selected.activity,faithPracticeCount}:{...selected.activity,...(category!=='crafting'&&goal?{goal}:{})}:undefined;
  const runtime=queuedActivityReadiness(state,entry),planning=queuedActivityPlanningReadiness(state,entry);
  const goalIssue=entry?activityQueueGoalIssue(state,entry):undefined;
  // Missing Alchemy ingredients may be planned, but execution waits for materials.
@@ -68,7 +77,7 @@ export function HomeQueueComposer({visible,state,onClose,onAdd,onOpenSkills}:Pro
  const handoffIssue=needsHandoff&&!explicitKeep&&currentActivity
   ?handoffGoal?currentActivityHandoffGoalIssue(state,currentActivity.targetId,handoffGoal):'Choose a valid handoff option.':undefined;
  const canAdd=!!entry&&!full&&planning.ready&&!goalIssue&&!busy&&(!needsHandoff||explicitKeep||!!handoffGoal)&&!handoffIssue;
- const selectCategory=(next:Category)=>{setCategory(next);setSelectedId('');setPreset(next==='combat'?'kills500':next==='gathering'?'time4h':'open');};
+ const selectCategory=(next:Category)=>{setCategory(next);setSelectedId('');setPreset(next==='combat'?'kills500':next==='gathering'?'time4h':next==='exploration'?'time4h':next==='faith'?'practice50':'open');};
  const add=async()=>{if(!entry||!canAdd)return;setBusy(true);try{
   const handoff=needsHandoff&&currentActivity
    ?{targetId:currentActivity.targetId,...(explicitKeep?{keepCurrentRunning:true as const}:{goal:handoffGoal})}:undefined;
@@ -78,16 +87,16 @@ export function HomeQueueComposer({visible,state,onClose,onAdd,onOpenSkills}:Pro
    <GameModalHeader eyebrow="HOME · COMMAND DECK" title="Add to activity queue" onClose={onClose} closeDisabled={busy}/>
    <View style={s.headline}><Text style={s.muted}>Choose a job for the next free queue slot.</Text><Text style={s.count}>{queue.length}/{capacity} queued</Text></View>
    <View style={s.tabs}>
-    {([['combat','Combat'],['gathering','Gathering'],['crafting','Crafting']] as const).map(([id,label])=><Pressable key={id} accessibilityRole="tab" accessibilityState={{selected:category===id}} onPress={()=>selectCategory(id)} style={[s.tab,category===id&&s.activeTab]}><Text style={[s.tabLabel,category===id&&s.activeTabLabel]}>{label}</Text></Pressable>)}
+    {([['combat','Combat'],['gathering','Gathering'],['exploration','Explore'],['faith','Faith'],['crafting','Crafting']] as const).map(([id,label])=><Pressable key={id} accessibilityRole="tab" accessibilityState={{selected:category===id}} onPress={()=>selectCategory(id)} style={[s.tab,category===id&&s.activeTab]}><Text style={[s.tabLabel,category===id&&s.activeTabLabel]}>{label}</Text></Pressable>)}
    </View>
    <ScrollView style={s.scroll} contentContainerStyle={s.content} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false} showsHorizontalScrollIndicator={false}>
     {category==='crafting'?<View style={s.note}><Text style={s.infoStrong}>Alchemy reservations</Text><Text style={s.muted}>Alchemy is supported in the activity queue. Equipment Forge and Cooking have independent crafting flows; no automatic multi-step crafting is implied.</Text><GameButton compact title="Open Skills / Forge" tone="secondary" onPress={()=>{onClose();onOpenSkills();}}/></View>:null}
     {category!=='crafting'&&premium?<View style={s.note}><Text style={s.section}>UNLOCKED QUEUE REGIONS</Text><View style={s.goalGrid}>{regions.map(zone=><Pressable key={zone.id} accessibilityRole="radio" accessibilityState={{checked:zone.id===selectedRegionId}} disabled={busy} onPress={()=>{setRegionId(zone.id);setSelectedId('');}} style={[s.chip,zone.id===selectedRegionId&&s.chipSelected]}><Text style={[s.chipText,zone.id===selectedRegionId&&s.chipTextSelected]}>{zone.id===selectedRegionId?'✓ ':''}{zone.name}</Text></Pressable>)}</View>{selectedRegionId!==state.currentRegionId?<Text style={s.muted}>{state.settings.autoTravelQueuedActivities?'Auto-travel will switch to this unlocked region at a normal queue handoff.':'Auto-travel is disabled. You can plan this activity now, but must enable Auto-travel in Gameplay Settings or travel manually before it starts.'}</Text>:null}</View>:null}
-    {category!=='crafting'?<Text style={s.section}>AVAILABLE IN {region?.name?.toUpperCase()??'THIS REGION'}</Text>:<Text style={s.section}>UNLOCKED ALCHEMY RECIPES</Text>} 
+    {category==='crafting'?<Text style={s.section}>UNLOCKED ALCHEMY RECIPES</Text>:category==='faith'?<Text style={s.section}>UNLOCKED FAITH TIERS</Text>:<Text style={s.section}>AVAILABLE IN {region?.name?.toUpperCase()??'THIS REGION'}</Text>}
     {candidates.length===0?<View style={s.note}><Text style={s.name}>No activities unlocked here yet</Text><Text style={s.muted}>Visit the appropriate Combat or Skills screen to unlock more options, or travel to another region.</Text></View>:candidates.map(row=>{
       const ready=queuedActivityReadiness(state,row.activity),plan=queuedActivityPlanningReadiness(state,row.activity);
       return <Pressable key={row.id} accessibilityRole="radio" accessibilityState={{checked:selected?.id===row.id,disabled:!plan.ready}} disabled={!plan.ready||busy} onPress={()=>setSelectedId(row.id)} style={[s.option,selected?.id===row.id&&s.optionSelected,!plan.ready&&s.unavailable]}>
-       <View style={[s.radio,selected?.id===row.id&&s.radioSelected]}/><View style={s.artwork}>{row.activity.kind==='combat'?<MonsterPortraitFrame monster={MONSTERS.find(monster=>monster.id===row.id)!} size={34} framed={false} reduceMotion={state.settings.reduceMotion}/>:<ActivityArtwork id={row.activity.kind==='alchemy'?'alchemy':([...GATHERING,...HERB_NODES].find(node=>node.id===row.id)?.skillId??'mining')} size={32}/>}</View>
+       <View style={[s.radio,selected?.id===row.id&&s.radioSelected]}/><View style={s.artwork}>{row.activity.kind==='combat'?<MonsterPortraitFrame monster={MONSTERS.find(monster=>monster.id===row.id)!} size={34} framed={false} reduceMotion={state.settings.reduceMotion}/>:<ActivityArtwork id={row.activity.kind==='alchemy'?'alchemy':row.activity.kind==='exploration'?'exploration':row.activity.kind==='faith'?'faith':([...GATHERING,...HERB_NODES].find(node=>node.id===row.id)?.skillId??'mining')} size={32}/>}</View>
        <View style={s.optionCopy}><Text style={s.name}>{row.name}</Text><Text style={s.muted}>{row.subtitle}</Text>{!ready.ready?<Text style={s.warning}>{ready.blocker??'Not ready'}</Text>:null}</View>
        <Text style={[s.ready,ready.ready?s.good:!plan.ready?s.warning:s.info]}>{ready.ready?'READY':plan.ready?'PLANNED':'LOCKED'}</Text>
       </Pressable>;

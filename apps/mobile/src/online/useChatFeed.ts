@@ -59,7 +59,9 @@ function watchFeed<T>(entry:FeedEntry<T>,options:FeedOptions<T>){
   if(closed||foreground)return;
   foreground=true;
   syncChannel();
-  void entry.cache.refresh().finally(schedule);
+  // Opening a private Guild channel must revalidate membership immediately;
+  // a just-cached history can belong to a Guild the player has now left.
+  void entry.cache.refresh(options.channelType==='guild').finally(schedule);
   schedule();
  };
  const appState=AppState.addEventListener('change',next=>{if(next==='active')connect();else disconnect();});

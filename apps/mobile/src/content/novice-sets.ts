@@ -1,7 +1,7 @@
 import type {ClassId,GearSlot} from '../core/types';
 import type {ItemDef} from './items';
 import type {Recipe} from './skills';
-import {EQUIPMENT_CRAFT_SKILL_BY_CLASS} from './equipment-recipes-v33';
+import {EQUIPMENT_CRAFT_SKILL_BY_CLASS,EQUIPMENT_FORGE_GOLD_MULTIPLIER} from './equipment-recipes-v33';
 
 export interface NoviceSetDef {id:string;classId:ClassId;name:string;appearanceId:string;weaponName:string;weaponAttack:number;offhandName?:string;slots:GearSlot[];setBonus:{name:string;attack:number;defense:number;hp:number;description:string};theme:{accent:string;identity:string;material:string};}
 // Runtime v1 names, design v5 class mappings; budgets below are provisional prototype values.
@@ -38,10 +38,9 @@ export const NOVICE_RECIPES:Recipe[]=NOVICE_SETS.flatMap(set=>set.slots.map(slot
   const item=NOVICE_ITEMS.find(item=>item.id===noviceItemId(set.classId,slot))!;
   return {id:noviceRecipeId(set.classId,slot),name:item.name,skillId:EQUIPMENT_CRAFT_SKILL_BY_CLASS[set.classId],level:1,characterLevel:stage,classId:set.classId,noviceSetId:set.id,
     requiresCraftedItemId:prerequisite[slot]?noviceItemId(set.classId,prerequisite[slot]!):undefined,
-    // Full loadouts include relic slots now. Keep their investment aligned with
-    // the 2× progression economy rather than letting a 24-hour AFK session
-    // fund several complete crafted sets.
-    xp:stage*40,gold:(slot==='weapon'||slot==='amulet'||slot==='ring'?20:stage===4?15:10)*2,seconds:0,
+    // Keep the existing novice-set baseline and apply the same equipment-only
+    // forge gold increase used by the regional T1–T9 equipment recipes.
+    xp:stage*40,gold:(slot==='weapon'||slot==='amulet'||slot==='ring'?20:stage===4?15:10)*2*EQUIPMENT_FORGE_GOLD_MULTIPLIER,seconds:0,
     inputs:[{itemId:'COPPER_ORE',quantity:(stage>=4?16:slot==='chest'||slot==='weapon'?16:8)*2},{itemId:'GREENWOOD_LOG',quantity:(stage>=4?16:slot==='chest'||slot==='weapon'?16:8)*2},{itemId:'MOSS_FIBER',quantity:(stage>=5?8:4)*2}],
     output:{itemId:item.id,quantity:1}};
 }));

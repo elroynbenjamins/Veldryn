@@ -1,4 +1,5 @@
 import {claimActivity,createCharacter,newGame,previewActivityReward,refreshQuests,startCombat,startExploration} from '../src/core/game';
+// previewActivityReward and startExploration are used in the partial-progress assertion below.
 import {EXPLORATION_ROUTES} from '../src/content/exploration';
 import {skillLevelPace} from '../src/core/balance-projection';
 import {totalXpAtLevel} from '../src/core/progression';
@@ -43,5 +44,17 @@ ok(combatClaim.state.skills.find(row=>row.skillId==='exploration')!.xp===explora
 
 const frostRoute=EXPLORATION_ROUTES.find(row=>row.id==='SCOUT_FROSTMARCH')!,ashRoute=EXPLORATION_ROUTES.find(row=>row.id==='SCOUT_ASHLANDS')!;
 ok(frostRoute.seconds===240&&ashRoute.seconds===288,'Exploration routes should stay 20% faster so later-region discovery does not become an unnecessary wait');
+
+// Partial progress between claims must bank, so a sub-cycle claim does not reset the progress bar.
+const scoutRoute=EXPLORATION_ROUTES.find(row=>row.id==='SCOUT_GREENFIELDS')!;
+let partial=createCharacter(newGame(0),'IRONWARDEN','Partial Scout','female');
+partial={...partial,character:{...partial.character!,level:scoutRoute.requiredLevel}};
+partial=startExploration(partial,scoutRoute.id,1_000);
+const halfCycleMs=1_000+Math.floor(scoutRoute.seconds*1000/2);
+const halfPreview=previewActivityReward(partial,halfCycleMs);
+if(halfPreview.kills!==0)throw new Error('No full cycle should have completed within the first half of the route');
+const claimed=claimActivity(partial,halfCycleMs).state;
+if(!claimed.activity||claimed.activity.kind!=='exploration')throw new Error('Exploration activity should remain active after a partial-cycle claim');
+if(!claimed.activity.progressFraction||claimed.activity.progressFraction<0.45||claimed.activity.progressFraction>0.55)throw new Error('Partial exploration progress must bank into progressFraction instead of being discarded');
 
 console.log('PASS: Exploration combines active scouting, passive combat familiarity, encounter discovery and later-region route gates');

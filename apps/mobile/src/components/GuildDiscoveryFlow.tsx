@@ -1,4 +1,4 @@
-import {useEffect,useMemo,useState} from 'react';
+import {useEffect,useMemo,useRef,useState} from 'react';
 import {ActivityIndicator,Pressable,ScrollView,StyleSheet,Text,View} from 'react-native';
 import {useGameTheme} from '../theme/ThemeContext';
 import {spacing,typography,touchTargetMin,type ThemeColors} from '../theme/theme';
@@ -28,6 +28,7 @@ const guildPolicy=(guild:OnlineGuild)=>guild.join_policy==='open'?'OPEN':guild.j
 /** The Guild destination for accounts with no membership. No Guild Hall or member actions mount here. */
 export function GuildDiscoveryFlow({onJoined}:{onJoined:()=>void}){
  const C=useGameTheme(),s=useMemo(()=>styles(C),[C]);
+ const scrollRef=useRef<ScrollView>(null);
  const [page,setPage]=useState<Page>('welcome');
  const [search,setSearch]=useState(''),[filter,setFilter]=useState<DirectoryFilter>('recruiting');
  const [guilds,setGuilds]=useState<OnlineGuild[]>([]),[selected,setSelected]=useState<OnlineGuild|null>(null);
@@ -58,11 +59,12 @@ export function GuildDiscoveryFlow({onJoined}:{onJoined:()=>void}){
   const timer=setTimeout(()=>{
    void searchOnlineGuilds(search,filter)
     .then(rows=>{if(active){setGuilds(rows);setLoaded(true)}})
-    .catch(reason=>{if(active)setError(failureText(reason))})
+    .catch(reason=>{if(active){setGuilds([]);setError(failureText(reason))}})
     .finally(()=>{if(active)setLoading(false)});
   },search?300:0);
   return()=>{active=false;clearTimeout(timer)};
  },[page,search,filter,reloadIndex]);
+ useEffect(()=>{scrollRef.current?.scrollTo({y:0,animated:false})},[page]);
 
  const navigate=(next:Page)=>{
   if(busy)return;
@@ -116,7 +118,7 @@ export function GuildDiscoveryFlow({onJoined}:{onJoined:()=>void}){
   finally{setBusy(false)}
  };
 
- return <ScrollView contentContainerStyle={s.root} keyboardShouldPersistTaps="handled" keyboardDismissMode="on-drag" showsVerticalScrollIndicator={false} showsHorizontalScrollIndicator={false}>
+ return <ScrollView ref={scrollRef} contentContainerStyle={s.root} keyboardShouldPersistTaps="handled" keyboardDismissMode="on-drag" showsVerticalScrollIndicator={false} showsHorizontalScrollIndicator={false}>
   {page==='welcome'?<>
    <GuildBoardHero title="Find your people" subtitle="Forge alliances, take on Guild challenges, and grow together."/>
    <Panel style={s.entryPanel}>

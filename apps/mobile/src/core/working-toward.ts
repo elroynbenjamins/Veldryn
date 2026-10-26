@@ -13,7 +13,7 @@ import {regionTravelAvailability,regionTravelLockReason} from './world-navigatio
 
 export type WorkingTowardDestination=
  |{kind:'combat';monsterId:string;zoneName:string;regionId?:string;button:string;detail:string}
- |{kind:'skills';skillId?:SkillId;mode?:'gathering'|'crafting'|'faith';actionId?:string;recipeId?:string;regionId?:string;button:string;detail:string}
+ |{kind:'skills';skillId?:SkillId;mode?:'gathering'|'crafting'|'novice'|'faith';actionId?:string;recipeId?:string;regionId?:string;button:string;detail:string}
  |{kind:'contracts';button:string;detail:string}
  |{kind:'inventory';button:string;detail:string}
  |{kind:'world';regionId:string;button:string;detail:string}

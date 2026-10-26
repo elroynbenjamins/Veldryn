@@ -29,9 +29,7 @@ try{
     on conflict do nothing;
     return query select 0,0,100;
    end $fn$;
-  create trigger muster_activity after insert or update on public.guild_muster_daily
-  for each row execute function public.guild_activity_from_muster_v1();
- `.replace(/create trigger muster_activity[\s\S]*$/, ''));
+`);
  await db.exec(migration);
  await db.exec(`
   create trigger muster_activity after insert or update on public.guild_muster_daily
@@ -46,7 +44,7 @@ try{
  // Below the participation threshold yields no Activity. Crossing it credits
  // once, with the halved/rounded amount, even if participation later increases.
  await db.query(`insert into public.guild_muster_daily values($1,$2,current_date,24,now())`,[guild,one]);
- assert.equal((await db.query("select count(*) n from public.awards")).rows[0].n,0);
+ assert.equal(Number((await db.query("select count(*) n from public.awards")).rows[0].n),0);
  await db.query(`update public.guild_muster_daily set contribution_points=25 where account_id=$1`,[one]);
  await db.query(`update public.guild_muster_daily set contribution_points=100 where account_id=$1`,[one]);
  await db.query(`insert into public.guild_muster_daily values($1,$2,current_date,28,now())`,[guild,two]);
@@ -60,7 +58,7 @@ try{
   const earned=(await db.query("select units from public.awards where source_kind='guild_project' and source_id=$1",[projectId])).rows[0]?.units;
   assert.equal(earned,Math.ceil(old/10)*5,kind+' project award must be half rounded up to 5');
  }
- assert.equal((await db.query('select count(*) n from public.awards')).rows[0].n,5,
+ assert.equal(Number((await db.query('select count(*) n from public.awards')).rows[0].n),5,
   'all qualifying actions must award exactly once, with no duplicate receipts');
  console.log('PASS: Guild Activity half-rate / up-to-5 rarity, Muster and Guild Project SQL triggers');
 }finally{await db.close();}

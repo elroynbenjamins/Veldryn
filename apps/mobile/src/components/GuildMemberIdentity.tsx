@@ -6,6 +6,7 @@ import {myGuild,guildDetails,ownGuildMemberCount,type OnlineGuild} from '../onli
 import {GuildCrest} from './SocialIdentity';
 import {StatusPill} from './StatusPill';
 import {Panel} from './Panel';
+import {GameButton} from './GameButton';
 
 /** Compact, real guild identity card. Never invents player counts, activity or officers. */
 export function GuildMemberIdentity(){
@@ -13,7 +14,7 @@ export function GuildMemberIdentity(){
  const [guild,setGuild]=useState<OnlineGuild|null>(null);
  const [role,setRole]=useState<'leader'|'officer'|'member'|null>(null);
  const [members,setMembers]=useState<number|null>(null);
- const [failure,setFailure]=useState(false);
+ const [failure,setFailure]=useState(false),[retry,setRetry]=useState(0);
  useEffect(()=>{
   let active=true;
   void (async()=>{
@@ -28,8 +29,8 @@ export function GuildMemberIdentity(){
    }catch{if(active)setFailure(true)}
   })();
   return()=>{active=false};
- },[]);
- if(!guild)return <Panel><View style={s.loading}><View style={s.flex}><Text style={s.kicker}>YOUR GUILD</Text><Text style={s.title}>{failure?'Guild details unavailable':'Loading your Guild…'}</Text></View>{!failure?<ActivityIndicator color={C.accent}/>:null}</View></Panel>;
+ },[retry]);
+ if(!guild)return <Panel><View style={s.loading}><View style={s.flex}><Text style={s.kicker}>YOUR GUILD</Text><Text style={s.title}>{failure?'Guild details unavailable':'Loading your Guild…'}</Text></View>{!failure?<ActivityIndicator color={C.accent}/>:null}</View>{failure?<GameButton compact tone="secondary" title="Retry Guild details" onPress={()=>{setFailure(false);setRetry(n=>n+1)}}/>:null}</Panel>;
  return <Panel accentColor={C.lineStrong} accentSurface={C.panelRaised} style={s.card}>
   <Text style={s.kicker}>YOUR GUILD</Text>
   <View style={s.identity}><GuildCrest size={73} bannerId={guild.banner_id} frameId={guild.profile_frame_id}/>

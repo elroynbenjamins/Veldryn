@@ -32,7 +32,7 @@ export function GuildQuestPanel(){
  },[refresh]);
  const C=useGameTheme();
  if(loading&&!loaded)return <LoadingState compact label={st('Loading this week’s objectives…')}/>;
- if(error&&!loaded)return <Panel><Text style={{color:C.bad}}>{error}</Text><GameButton title={st('TRY AGAIN')} tone="secondary" onPress={()=>void refresh(true)}/></Panel>;
+ if(error&&!loaded)return <Panel><Text style={{color:C.bad}}>{error}</Text><GameButton title={st('TRY AGAIN')} tone="secondary" loading={loading} disabled={loading} onPress={()=>void refresh(true)}/></Panel>;
  return <View style={{gap:8}}><GuildQuestBoard quests={quests}/>{error?<Text accessibilityRole="alert" style={{color:C.bad}}>{error}</Text>:null}<GameButton compact title={loading?st('Refreshing…'):st('Refresh')} tone="secondary" loading={loading} disabled={loading} onPress={()=>void refresh(true)}/></View>;
 }
 

@@ -16,7 +16,7 @@ const activityCore=read('src/core/guild-activity.ts');
 ok(screen.includes("'Activities'"),'Consolidated online Guild sections must include Activities');
 ok(screen.includes("onlineSection==='Activities'?<View")&&screen.includes('<OnlineGuildMusterPanel/>'),'Guild Muster must remain reachable inside the Activities destination');
 ok(screen.includes('title={st("Muster & Rally")}')&&screen.includes('copy={st("Daily participation rolls into the shared weekly Rally without adding another currency.")}'),'Activities must explain Muster and Rally with localized copy after consolidation');
-ok(screen.includes('<GuildHomeHeader board={onlineBoard}/>'),'Guild Home must keep the member Notice Board at the top');
+ok(screen.includes('<GuildMemberIdentity/>')&&screen.includes('board={onlineBoard}'),'Guild Home must keep member identity and the Notice Board together');
 
 ok(panel.includes('GUILD MUSTER'),'Muster must have a clear player-facing identity');
 ok(panel.includes('not a consecutive login streak'),'Muster must explicitly avoid punitive consecutive streaks');

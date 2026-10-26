@@ -139,7 +139,7 @@ export function GuildDiscoveryFlow({onJoined}:{onJoined:()=>void}){
     <View style={s.sectionRow}><Text style={s.section}>INVITATIONS</Text><StatusPill label={String(invites.length)+' PENDING'} tone="info"/></View>
     {invites.map(invite=><View key={invite.id} style={s.invite}>
      <View style={s.flex}><Text style={s.guildName}>{invite.guildName}{invite.guildTag?' ['+invite.guildTag+']':''}</Text><Text style={s.muted}>Invited by {invite.inviterName} · {invite.memberCount}/{invite.memberCap} members</Text></View>
-     <View style={s.inviteActions}><GameButton compact title="Accept" disabled={busy} onPress={()=>void respondInvite(invite.id,true)}/><GameButton compact tone="secondary" title="Decline" disabled={busy} onPress={()=>void respondInvite(invite.id,false)}/></View>
+     <View style={s.inviteActions}><GameButton compact title="Accept" loading={busy} disabled={busy} onPress={()=>void respondInvite(invite.id,true)}/><GameButton compact tone="secondary" title="Decline" loading={busy} disabled={busy} onPress={()=>void respondInvite(invite.id,false)}/></View>
     </View>)}
    </Panel>:null}
    {pending.length?<Panel>

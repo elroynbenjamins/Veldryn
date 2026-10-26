@@ -63,9 +63,9 @@ ok(screen.includes("homeCard:{flexGrow:1,flexBasis:'46%',minWidth:142,minHeight:
 
 ok(discovery.includes("guildPolicy(selected)==='FULL'")&&discovery.includes('selected.member_count'), 'Full Guilds must be labeled correctly and cannot accept new joins');
 ok(onlineSocial.includes("guild_directory_v1")&&onlineSocial.includes("PGRST202"),'Guild directory must use the private-roster-safe projection and retain rollout fallback');
-ok(management.includes('Search Guild members')&&management.includes('visibleMembers.map')&&management.includes('memberSearch:{minHeight:44'),
- 'Guild roster search must be theme-aware and maintain usable touch/input size');
-ok(management.includes('const warningLeadership=leadership&&Number(leadership.inactiveDays??0)>=14?leadership:null')&&management.includes('{warningLeadership?<View'),'Succession safety should interrupt members only when its warning threshold is reached');
+ok(management.includes('Search Guild members')&&management.includes('members.filter(member=>')&&management.includes('<GameTextInput'),
+ 'Guild roster search must use the shared theme-aware input and filter the authoritative roster');
+ok(management.includes("view==='Safety'&&leadership")&&management.includes("Number(leadership.inactiveDays??0)>=14"),'Succession safety must stay in the explicit Membership view and emphasize only threshold warnings');
 
 ok(customization.includes('appearanceDirty='),'Guild customization must track unsaved appearance changes');
 ok(customization.includes('appearanceDirty?st("UNSAVED"):st("SAVED")'),'Guild customization must surface localized saved/unsaved state');

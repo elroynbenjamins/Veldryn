@@ -90,7 +90,7 @@ export function QuestScreen({state,mode,onModeChange,focusedWeeklyOrderId,onClai
     }
   },[state.quests,state.account.seasonalContractClaimIds,state.character?.id]);
   const entries=journalEntries(state,filter,query);
-  const daily=seasonalQuestBoard(state,'daily'),weekly=seasonalQuestBoard(state,'weekly'),monthly=seasonalQuestBoard(state,'monthly'),contractBoard=weeklyOrderBoardForState(state);
+  const daily=seasonalQuestBoard(state,'daily'),weekly=seasonalQuestBoard(state,'weekly'),monthly=seasonalQuestBoard(state,'monthly'),contractBoard=weeklyOrderBoardForState(state),pendingBoardRewards=(state.account.weeklyOrderPendingRewards??[]).filter(row=>row.weekKey===contractBoard.weekKey);
   const fallenKnightWeekly=state.defeatedBossIds.includes('FALLEN_KNIGHT')?fallenKnightWeeklyStatus(state,Date.now()):undefined;
   const claimed=QUESTS.filter(def=>state.quests.some(q=>q.questId===def.id&&q.status==='claimed')).length;
   const ready=state.quests.filter(q=>q.status==='complete').length;
@@ -115,7 +115,7 @@ export function QuestScreen({state,mode,onModeChange,focusedWeeklyOrderId,onClai
   }
   return <ScrollView contentContainerStyle={s.root} keyboardShouldPersistTaps="handled" keyboardDismissMode="on-drag" showsVerticalScrollIndicator={false} showsHorizontalScrollIndicator={false}>
     <View style={s.scenicHeader}><ZoneSceneArtwork regionId={mode==='contracts'?'KINGS_ROAD':mode==='challenges'?'IRONWOOD':currentAct.act===1?'GREENFIELDS':currentAct.act===2?'IRONWOOD':'KINGS_ROAD'}/><View style={s.scenicShade}/><View style={s.scenicCopy}><Text style={s.scenicEyebrow}>{t("QUESTS & OBJECTIVES")}</Text><Text accessibilityRole="header" style={s.scenicTitle}>{modeTitle}</Text><Text style={s.scenicSubtitle}>{modeSubtitle}</Text></View></View>
-    <QuestModeSwitch mode={mode} onChange={onModeChange} storyMeta={ready?t("{count} ready",{count:ready}):t("{current}/{total} claimed",{current:claimed,total:QUESTS.length})} contractMeta={t("{current}/{total} complete",{current:boardComplete,total:contractBoard.orders.length})} challengeMeta={challengeReadyCount?t("{count} ready",{count:challengeReadyCount}):t("{current}/{total} claimed",{current:challengeClaimedCount,total:allChallenges.length})} storyAttention={ready} contractAttention={0} challengeAttention={challengeReadyCount}/>
+    <QuestModeSwitch mode={mode} onChange={onModeChange} storyMeta={ready?t("{count} ready",{count:ready}):t("{current}/{total} claimed",{current:claimed,total:QUESTS.length})} contractMeta={t("{current}/{total} complete",{current:boardComplete,total:contractBoard.orders.length})} challengeMeta={challengeReadyCount?t("{count} ready",{count:challengeReadyCount}):t("{current}/{total} claimed",{current:challengeClaimedCount,total:allChallenges.length})} storyAttention={ready} contractAttention={pendingBoardRewards.length} challengeAttention={challengeReadyCount}/>
     {claimMoment&&<ClaimMomentCard moment={claimMoment} reduceMotion={state.settings.reduceMotion}/>} {!!notice&&<ActionFeedback message={notice} compact reduceMotion={state.settings.reduceMotion}/>} {!!error&&<ActionFeedback message={error} tone="error" compact reduceMotion={state.settings.reduceMotion}/>}
     <View style={s.board}>
     {mode==='story'?<>

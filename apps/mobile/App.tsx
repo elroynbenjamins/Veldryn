@@ -190,6 +190,7 @@ function VeldrynApp(){
   const [customizationUnlocks,setCustomizationUnlocks]=useState<CustomizationUnlockEntry[]>([]);
   const [featureUnlockMoments,setFeatureUnlockMoments]=useState<EarlyFeatureUnlockMoment[]>([]);
   const [forgeResults,setForgeResults]=useState<ForgeCraftResult[]|null>(null);
+  const forgeClaimAllInFlight=useRef(false);
   const [storyBossBattle,setStoryBossBattle]=useState<{battle:FallenKnightBattleResult;message:string}|null>(null);
   const [masteryNotices,setMasteryNotices]=useState<RewardProgressionMoment[]>([]);
   const [preparationNotices,setPreparationNotices]=useState<RecipePreparationTransitionNotice[]>([]);
@@ -414,7 +415,35 @@ function VeldrynApp(){
     const feedback=commandProgressFeedback(result.executedCommand,before,result);
     if(presentRewards){if(feedback.collected)setCollected({...feedback.collected,welcomeBack,...(welcomeBack&&before?{welcomeReport:buildWelcomeBackFromStates(before,result.state,feedback.collected.reward,feedback.collected.activity)}:{})});else if(feedback.masteryNotices.length)setMasteryNotices(feedback.masteryNotices);}
     return result;
-  }catch(error){const message=error instanceof Error?error.message:'Please retry.';if(command&&['withdraw','deposit','sell','bulk_transfer','bulk_sell'].includes(command.type)&&/gameplay action is already being saved/i.test(message))return null;if(!silentFailure)setOnlineActionError(playerFacingGameplayError(message));return null;}finally{if(welcomeBack)setOfflineSettling(false);}}
+  }catch(error){
+    const message=error instanceof Error?error.message:'Please retry.';
+    if(command&&['withdraw','deposit','sell','bulk_transfer','bulk_sell'].includes(command.type)&&/gameplay action is already being saved/i.test(message))return null;
+    if(command?.type==='craft_claim_all'&&!forgeClaimAllInFlight.current){
+      forgeClaimAllInFlight.current=true;
+      try{
+        const current=stateRef.current;
+        if(!current)return null;
+        const finished=equipmentCraftQueueModel(current,Date.now()).jobs.filter(job=>job.ready);
+        let count=0;
+        const results:ForgeCraftResult[]=[];
+        // The bulk entry is equivalent to perform({type:'craft_claim_all'},true,false,true);
+        // If an older deployed backend rejects it, retry signed claims one job at a time.
+        for(const job of finished){
+          const claim=await perform({type:'craft_claim',args:{id:job.id}},false,false,true);
+          if(!claim)break;
+          count++;
+          if(claim.forgeResults?.length)results.push(...claim.forgeResults);
+        }
+        if(results.length)setForgeResults(results);
+        if(!count)setOnlineActionError('The bulk Forge claim failed and individual claims could not complete. Your finished jobs remain safe in the queue.');
+        else if(count<finished.length)setOnlineActionError(`${count} of ${finished.length} finished Forge jobs were claimed. The remaining jobs are safe in the queue.`);
+        else if(!results.length)showAlert('Forge complete',count+' finished jobs claimed.');
+        return null;
+      }finally{forgeClaimAllInFlight.current=false;}
+    }
+    if(!silentFailure)setOnlineActionError(playerFacingGameplayError(message));
+    return null;
+  }finally{if(welcomeBack)setOfflineSettling(false);}}
   async function inventoryCommand(command:GameCommand,local:()=>GameState){
     if(serverGameplayEnabled){const result=await perform(command);if(!result)throw new Error('Inventory action was not confirmed. Please retry.');return;}
     await commit(local());

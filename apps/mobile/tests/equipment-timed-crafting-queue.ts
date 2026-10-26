@@ -18,6 +18,16 @@ function prepared(){
 
 let state=prepared();
 ok(equipmentCraftAvailability(state,recipe.id,999).ready,'Forge availability must recognize a valid timed equipment recipe before queueing');
+const notEnoughGold={...state,character:{...state.character!,gold:recipe.gold-1}};
+const insufficient=equipmentCraftAvailability(notEnoughGold,recipe.id,999);
+ok(!insufficient.ready&&insufficient.reason.includes(String(recipe.gold)),'Forge must reject one gold short of the increased recipe cost');
+let insufficientCommandError='';
+try{executeGameCommand(notEnoughGold,{type:'craft',args:{id:recipe.id}},999)}catch(error){insufficientCommandError=error instanceof Error?error.message:'';}
+ok(insufficientCommandError.includes(String(recipe.gold)),'Authoritative equipment crafting must reject insufficient gold using the increased price');
+const exactBudget={...state,character:{...state.character!,gold:recipe.gold}};
+ok(equipmentCraftAvailability(exactBudget,recipe.id,999).ready,'Forge must accept exactly the increased gold price');
+const exactStart=startEquipmentCraft(exactBudget,recipe.id,999);
+ok(exactStart.state.character!.gold===0&&equipmentCraftingQueue(exactStart.state)[0].reservedGold===recipe.gold,'Forge must deduct and snapshot precisely the higher gold cost');
 let slots=equipmentCraftSlotBreakdown(state);
 ok(slots.capacity===3&&slots.base===3&&slots.max===7,'Fresh account must start with 3 equipment crafting slots and cap at 7');
 
@@ -33,7 +43,9 @@ ok(slots.capacity===5,'Unlocking character slot #4 must reach the hard cap throu
 slots=equipmentCraftSlotBreakdown({...state,account:{...state.account,unlockedCharacterSlots:4,entitlements:{supporter:true,vip_plus:true}}});
 ok(slots.capacity===7&&slots.raw===7,'Progression + VIP+ + Supporter should stack to seven active Forge slots');
 
+const startGold=state.character!.gold;
 const started1=startEquipmentCraft(state,recipe.id,1000);state=started1.state;
+ok(state.character!.gold===startGold-recipe.gold,'Forge queue must deduct the increased recipe gold once per job');
 const started2=startEquipmentCraft(state,recipe.id,1001);state=started2.state;
 const started3=startEquipmentCraft(state,recipe.id,1002);state=started3.state;
 const baseActiveState=state;
@@ -71,6 +83,7 @@ ok(validateGameCommand({type:'craft_claim_all'}).type==='craft_claim_all','Onlin
 let online=prepared();
 const commandStart=executeGameCommand(online,{type:'craft',args:{id:recipe.id}},3000);
 online=commandStart.state;
+ok(online.character!.gold===500000-recipe.gold,'Authoritative craft command must charge the same increased gold as the UI');
 ok(equipmentCraftingQueue(online).length===1&&!online.inventory.stacks.some(row=>row.itemId===recipe.output.itemId),'Authoritative craft command must reserve equipment instead of granting it instantly');
 const commandJob=equipmentCraftingQueue(online)[0];
 const commandClaim=executeGameCommand(online,{type:'craft_claim',args:{id:commandJob.id}},commandJob.completesAtMs,{randomRoll:.5});

@@ -45,6 +45,13 @@ ok(cancelledWaiting.waiting&&cancelledWaiting.feeGold===0&&cancelledWaiting.refu
 ok(cancelledWaiting.state.character!.gold===ownerGoldBefore+reservedGold,'Waiting cancellation must restore all reserved Gold');
 for(const input of cancelledWaiting.refundedInputs)ok(qty(cancelledWaiting.state,input.itemId)===materialBefore[input.itemId]+input.quantity,'Waiting cancellation must restore all reserved '+input.itemId);
 
+// Crafts queued before the Gold rebalance retain their original reserved value.
+const legacyJob=equipmentCraftingQueue(state).find(job=>job.startedAtMs<=1020)!;
+const oldGold=Math.floor(legacyJob.reservedGold!/3);
+const legacyState={...state,account:{...state.account,equipmentCraftingQueue:equipmentCraftingQueue(state).map(job=>job.id===legacyJob.id?{...job,reservedGold:oldGold}:job)}};
+const legacyCancelled=cancelEquipmentCraft(legacyState,legacyJob.id,1020);
+ok(legacyCancelled.refundGold===Math.floor(oldGold*.9)&&legacyCancelled.feeGold===oldGold-Math.floor(oldGold*.9),'Canceling a legacy active forge job must refund its original reserved Gold, not the tripled current recipe price');
+
 let full=cancelledWaiting.state;
 while(equipmentCraftQueueModel(full,1020).waiting<MAX_WAITING_EQUIPMENT_CRAFTS){
   const pick=recipes[equipmentCraftingQueue(full).length%recipes.length];

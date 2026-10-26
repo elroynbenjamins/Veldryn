@@ -10,6 +10,7 @@ const customization=read('src/components/OnlineGuildCustomizationPanel.tsx');
 const identity=read('src/components/GuildIdentitySummary.tsx');
 const hall=read('src/components/OnlineGuildHallPanel.tsx');
 const discovery=read('src/components/GuildDiscoveryFlow.tsx');
+const memberIdentity=read('src/components/GuildMemberIdentity.tsx');
 const pve=read('src/components/OnlineGuildPve.tsx')+read('src/components/GuildRaidEncounter.tsx');
 
 for(const [name,source] of [['GuildScreen',screen],['OnlineGuildManagement',management],['OnlineGuildCustomizationPanel',customization],['GuildIdentitySummary',identity],['OnlineGuildHallPanel',hall],['OnlineGuildPve',pve]] as const){
@@ -37,6 +38,27 @@ ok(discovery.includes('Create Guild')&&discovery.includes('guildTagAvailability'
 ok(discovery.includes('respondGuildInvitation')&&discovery.includes('Application sent'),'Invitations and pending applications must have clear states');
 ok(screen.includes("(['Home','PvE','Activities','Hall','Chat'] as const)"),'Member navigation should show five primary destinations');
 ok(screen.includes("root:{padding:spacing.md,gap:10"),'Online Guild shell must remain compact');
+ok(discovery.includes('<GuildBoardHero title="Find your people"')&&discovery.includes('<GuildBoardHero title="Found a new Guild"')&&discovery.includes('<GuildBoardHero title={selected.name}'),
+ 'Guild onboarding, previews and creation must use the existing Guild Plaza artwork rather than unrelated placeholder images');
+ok(discovery.includes("pendingGuildApplications()")&&discovery.includes("guildDetails(row.guild_id)"),'Guild applicants must see their real pending Guild names when re-opening the screen');
+ok(discovery.includes("setRequested(rows.map(row=>row.guild_id))")&&discovery.includes('Application pending'),
+ 'Pending Guild applications must survive screen remounts and prevent accidental duplicate applications');
+ok(discovery.includes('accessibilityLabel="Search Guild name or TAG"')&&discovery.includes("const filters:readonly")&&discovery.includes("setTimeout("),
+ 'Guild discovery must be searchable, filterable, and debounced');
+ok(discovery.includes('GuildCrest size={56}')&&discovery.includes('GuildCrest size={70}')&&discovery.includes('GuildCrest size={68}'),
+ 'Directory, details and Guild creation must have appropriately sized real banners');
+ok(discovery.includes('StatusPill')&&discovery.includes('C.selectionLine')&&discovery.includes('C.inputBg'),
+ 'Guild discovery statuses, selection and input surfaces must use semantic theme colors');
+ok(!/#[0-9a-fA-F]{3,8}/.test(discovery),'Guild discovery must not hardcode dark-only or light-only colors');
+ok(memberIdentity.includes('myGuild,guildDetails,ownGuildMemberCount')&&memberIdentity.includes('GuildCrest size={73}'),
+ 'Member home must show real Guild identity, membership count and crest');
+ok(memberIdentity.includes('useGameTheme')&&memberIdentity.includes('C.panelRaised')&&memberIdentity.includes('C.accentSurface')===false,
+ 'Member identity must use shared theme surfaces and color tokens');
+ok(screen.includes('<GuildMemberIdentity/>')&&screen.includes("['Hall','guild'")&&screen.includes("['Roster','friends'"),
+ 'Member dashboard must prioritize real Guild identity, Hall and Members');
+ok(screen.includes("homeCard:{flexGrow:1,flexBasis:'46%',minWidth:142,minHeight:140"),
+ 'Guild dashboard cards must preserve readable two-column mobile geometry');
+
 
 ok(customization.includes('appearanceDirty='),'Guild customization must track unsaved appearance changes');
 ok(customization.includes('appearanceDirty?st("UNSAVED"):st("SAVED")'),'Guild customization must surface localized saved/unsaved state');

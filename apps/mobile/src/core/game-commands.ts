@@ -265,9 +265,13 @@ export function executeGameCommand(previous:GameState,value:unknown,now:number,o
    if(options.randomRoll===undefined)throw new Error('trusted_random_required');const result=claimAllReadyEquipmentCrafts(state,now,options.randomRoll);state=result.state;forgeResults=result.results;
    for(const id of result.claimed){if(!beforeIds.has(id))continue;const job=previous.account.equipmentCraftingQueue?.find(row=>row.id===id);if(job)contributions.push({kind:'crafting',contentId:job.recipeId,units:1});}
    const equipmentCount=result.claimed.length-result.gemClaims,procCount=result.results.filter(row=>row.qualityProc).length;
+   const blockedCount=result.blocked.length;
+   const blockedReason=result.blocked.some(row=>row.reason==='Crafting recipe is no longer available')
+    ?'Some jobs use retired recipes; please contact support.'
+    :'Free Inventory or Bank space, then claim the remaining jobs.';
    message=result.claimed.length
-    ?`${result.claimed.length} forge job${result.claimed.length===1?'':'s'} claimed · ${equipmentCount} equipment · ${result.gemClaims} gem combine${result.gemClaims===1?'':'s'} · ${procCount} quality proc${procCount===1?'':'s'}`
-    :'No finished forge jobs';
+    ?`${result.claimed.length} forge job${result.claimed.length===1?'':'s'} claimed · ${equipmentCount} equipment · ${result.gemClaims} gem combine${result.gemClaims===1?'':'s'} · ${procCount} quality proc${procCount===1?'':'s'}${blockedCount?` · ${blockedCount} still waiting. ${blockedReason}`:''}`
+    :blockedCount?`${blockedCount} finished forge job${blockedCount===1?' is':'s are'} still waiting. ${blockedReason}`:'No finished forge jobs';
    break;
   }
   case 'craft_cancel':{

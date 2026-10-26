@@ -117,7 +117,7 @@ import {fetchAppVersionGate,openStoreListing,type VersionGateResult} from './src
 import {GameButton} from './src/components/GameButton';
 import type {GameCommand} from './src/core/game-commands';
 import {actionableClaimNotifications,buildNavigationBadges,buildQuickNavigationBadges,type NavigationNotification} from './src/core/navigation-notifications';
-import {eventReadyClaimCount} from './src/core/live-events';
+import {canAnnounceLiveEventStart,eventReadyClaimCount} from './src/core/live-events';
 import {companionAttentionSummary} from './src/core/companion-attention';
 import {earlyFeatureLockReason,earlyFeatureUnlocked,newlyUnlockedEarlyFeatures,playerFacingGameplayError,type EarlyFeatureUnlockMoment} from './src/core/feature-unlocks';
 import type {WorkingTowardDestination} from './src/core/working-toward';
@@ -368,7 +368,7 @@ function VeldrynApp(){
   useEffect(()=>{if(tab!=='ProfileCustomize'||!profileAttentionKeys.length)return;setProfileAttentionKeys([]);void clearProfileAttentionKeys(profileAttentionScope);},[tab,profileAttentionScope,profileAttentionKeys.length]);
   const syncLiveEventRuntime=useCallback(async()=>{if(!EVENTS_RELEASED||!onlineConfigured)return;try{const runtime=await fetchActiveEventRuntime();const current=stateRef.current;if(!current)return;const before=current.account.liveEvent??null,nextRuntime=runtime??null;if(JSON.stringify(before)!==JSON.stringify(nextRuntime)){const next={...current,account:{...current.account,liveEvent:runtime}};stateRef.current=next;setState(next);}
     const announcedAt=Date.now(),announcementScope=auth.session?.user.id??current.character?.id??'device';
-    if(runtime&&await eventAnnouncementStore.claim(announcementScope,runtime,announcedAt))setEventStartPopup(runtime);
+    if(runtime&&canAnnounceLiveEventStart(current.character?.level)&&await eventAnnouncementStore.claim(announcementScope,runtime,announcedAt))setEventStartPopup(runtime);
   }catch{/* Event registry sync is best-effort; gameplay refresh remains authoritative. */}},[auth.session?.user.id]);
   // Event configuration is server-authoritative, but it changes on a live-ops cadence, not a frame cadence.
   // Foregrounding still refreshes immediately so a returning player never waits for the next scheduled check.
@@ -635,7 +635,7 @@ const next=normalizeProfileIcon(candidate);queuePreparationNotices(current,next)
     {tab==='Profile'&&<ProfileScreen state={state} onNavigate={destination=>{if(destination==='Customize'){setProfileCustomizeSection('Appearance');setTab('ProfileCustomize');return;}setTab(destination)}}/>}
     {tab==='ProfileCustomize'&&<ProfileCustomizeScreen key={profileAttentionScope} state={state} initialSection={profileCustomizeSection} onChange={commit} onSaveNameStyle={saveNameStyle} onNavigateSource={destination=>setTab(destination)} onDirtyChange={setProfileCustomizeDirty}/>}
   </View>
-  <EventStartPopup runtime={creationWelcome?null:eventStartPopup} reduceMotion={state.settings.reduceMotion} onOpen={()=>{setEventStartPopup(null);setTab('Events')}} onClose={()=>setEventStartPopup(null)}/>
+  <EventStartPopup runtime={creationWelcome||!canAnnounceLiveEventStart(state.character?.level)?null:eventStartPopup} reduceMotion={state.settings.reduceMotion} onOpen={()=>{setEventStartPopup(null);setTab('Events')}} onClose={()=>setEventStartPopup(null)}/>
   <ChatOverlay state={state} visible={showChatOverlay} onOpen={()=>setShowChatOverlay(true)} onClose={()=>setShowChatOverlay(false)} onEmoteTrayChange={ids=>commit({...state,settings:{...state.settings,chatEmoteTrayIds:ids}})} guildUnread={notificationCounts.guildChatUnread} guildMentions={notificationCounts.guildChatMentions} guildFirstUnreadMessageId={notificationCounts.guildFirstUnreadMessageId} partyUnread={notificationCounts.partyChatUnread} partyMentions={notificationCounts.partyChatMentions} partyFirstUnreadMessageId={notificationCounts.partyFirstUnreadMessageId} onChatRead={()=>void refreshSocialNotifications()}/>
   {!collected&&!forgeResults?.some(row=>row.qualityProc)&&preparationNotices.length?<View style={s.masteryNotice}><ActionFeedback message={preparationNotices[0].message} tone={preparationNotices[0].tone} reduceMotion={state.settings.reduceMotion} compact actionLabel={preparationNotices[0].actionLabel} onAction={()=>openPreparationNotice(preparationNotices[0])}/></View>:!collected&&!forgeResults?.some(row=>row.qualityProc)&&masteryNotices.length?<View style={s.masteryNotice}><ActionFeedback message={masteryRankNoticeMessage(masteryNotices)} tone={masteryNotices.some(moment=>moment.mastered)?'success':'info'} reduceMotion={state.settings.reduceMotion} compact/></View>:null}
     <PrimaryNavigation destinations={primaryTabs} active={activePrimary} labelFor={item=>tabLabel(state.settings.language,item)} onNavigate={setTab} badges={primaryBadges} guidedDestination={(mainScreenTour?.highlightPrimary??visibleTutorialStep?.highlightPrimary) as PrimaryTab|undefined}/>

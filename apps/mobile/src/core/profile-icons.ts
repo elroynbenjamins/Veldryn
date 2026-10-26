@@ -52,5 +52,6 @@ export function normalizeProfileIcon(state:GameState):GameState{
 export function newlyUnlockedProfileIcons(before:GameState|null,after:GameState){
  if(!before)return [];
  const owned=new Set(profileIconCollection(before).filter(row=>row.unlocked).map(row=>row.id));
- return profileIconCollection(after).filter(row=>row.unlocked&&!owned.has(row.id));
+ // Class portraits are available by default, never an earned-icon announcement.
+ return profileIconCollection(after).filter(row=>row.unlocked&&row.group!=='Class'&&!owned.has(row.id));
 }

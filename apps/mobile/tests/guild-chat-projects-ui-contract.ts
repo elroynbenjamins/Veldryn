@@ -34,7 +34,8 @@ for(const label of ['Home','PvE','Roster','Activities','Hall','Chat','Manage'])o
 ok(guildScreen.includes('{onlineProjects}')&&guildScreen.includes("onlineSection==='PvE'?onlinePve:null"),"Guild navigation must expose live Projects and dedicated PvE");
 ok(guildScreen.includes('title={st("Guild Projects")}')&&guildScreen.includes("onlineSection==='PvE'?onlinePve:null"),"Activities must label Projects and keep PvE in its dedicated destination");
 ok(guildScreen.includes("onlineSection==='Chat'?onlineChat:null"),'Chat tab must render Guild Chat');
-ok(guildScreen.includes("onlineSection==='Manage'?<View")&&guildScreen.includes('{onlineDirectory}')&&guildScreen.includes('{onlineCustomize}'),'Manage must preserve Directory and Customize capabilities');
+ok(guildScreen.includes("onlineSection==='Manage'?<View")&&guildScreen.includes('{onlineCustomize}')&&!guildScreen.includes('{onlineDirectory}'),'Member management must preserve Customize without displaying guild creation');
+ok(guildScreen.includes('<GuildDiscoveryFlow onJoined={reloadGuildMembership}/>'),'Nonmembers must use dedicated Guild discovery');
 ok(guildScreen.includes('<GuildOnlineHome onNavigate={setOnlineSection} board={onlineBoard} chatUnread={onlineChatUnread}/>'),'Guild Home must preserve the member Notice Board');
 ok(guildScreen.includes("badge={value==='Chat'?Math.max(onlineChatUnread,onlineChatMentions):0}"),'Guild Chat tab must surface unread/mention attention');
 ok(guildScreen.includes('tabBadgeWarning:{backgroundColor:C.warning}'),'Guild Chat mentions must have warning emphasis');

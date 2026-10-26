@@ -3,6 +3,23 @@ import {createTranslator} from './translator';
 
 // English source copy is the key. Proper names and player-authored text are never keys.
 export const progressionTranslationRows = {
+  "DAILY": ["TÄGLICH","DIARIO","DAGELIJKS","GIORNALIERO","QUOTIDIEN"],
+  "JOBS COMPLETE": ["AUFTRÄGE ERLEDIGT","TRABAJOS COMPLETADOS","OPDRACHTEN VOLTOOID","INCARICHI COMPLETATI","CONTRATS TERMINÉS"],
+  "Board cleared": ["Alle Aufträge erledigt","Tablón completado","Alle opdrachten voltooid","Bacheca completata","Tableau terminé"],
+  "Your weekly assignments": ["Deine Wochenaufträge","Tus tareas semanales","Jouw weekopdrachten","I tuoi incarichi settimanali","Vos missions hebdomadaires"],
+  "still active": ["noch offen","todavía activos","nog actief","ancora attivi","encore actifs"],
+  "Weekly completion": ["Wochenfortschritt","Progreso semanal","Wekelijkse voortgang","Avanzamento settimanale","Progression hebdomadaire"],
+  "Weekly board details": ["Details der Wochenaufträge","Detalles del tablón semanal","Details van weekopdrachten","Dettagli incarichi settimanali","Détails des contrats hebdomadaires"],
+  "Progress counts verified actions this UTC week. Hunt monsters, gather resources, and help regions. Use Queue or Stop at done to plan safely.": ["Der Fortschritt zählt bestätigte Aktionen dieser UTC-Woche. Jage Monster, sammle Rohstoffe und hilf Regionen. Nutze Warteschlange oder Stopp bei Abschluss.","El progreso cuenta acciones verificadas esta semana UTC. Caza monstruos, reúne recursos y ayuda a las regiones. Usa la cola o Detener al completar.","Voortgang telt geverifieerde acties van deze UTC-week. Versla monsters, verzamel grondstoffen en help regio's. Gebruik Wachtrij of Stop bij voltooiing.","Il progresso conta le azioni verificate durante questa settimana UTC. Caccia mostri, raccogli risorse e aiuta le regioni. Usa la coda o Ferma al completamento.","La progression compte les actions vérifiées de cette semaine UTC. Chassez des monstres, récoltez des ressources et aidez les régions. Utilisez la file ou Arrêt à l'objectif."],
+  "Challenges completed": ["Abgeschlossene Herausforderungen","Desafíos completados","Voltooide uitdagingen","Sfide completate","Défis terminés"],
+  "Class-aligned challenges refresh daily, weekly and monthly, with progressively stronger rarity caches.": ["Klassenspezifische Herausforderungen werden täglich, wöchentlich und monatlich erneuert und bieten wertvollere Belohnungstruhen.","Los desafíos de clase se renuevan a diario, semanalmente y mensualmente con recompensas cada vez más raras.","Klassegebonden uitdagingen vernieuwen dagelijks, wekelijks en maandelijks, met steeds zeldzamere beloningen.","Le sfide di classe si rinnovano ogni giorno, settimana e mese, con ricompense sempre più rare.","Les défis de classe se renouvellent chaque jour, semaine et mois, avec des récompenses de rareté croissante."],
+  "WEEKLY TARGET": ["WOCHENZIEL","OBJETIVO SEMANAL","WEEKDOEL","OBIETTIVO SETTIMANALE","OBJECTIF HEBDOMADAIRE"],
+  "CHALLENGE PROGRESS": ["HERAUSFORDERUNGSFORTSCHRITT","PROGRESO DEL DESAFÍO","VOORTGANG UITDAGING","PROGRESSO SFIDA","PROGRESSION DU DÉFI"],
+  "left": ["übrig","restantes","resterend","rimanenti","restants"],
+  "REWARD": ["BELOHNUNG","RECOMPENSA","BELONING","RICOMPENSA","RÉCOMPENSE"],
+  "ready": ["bereit","listos","gereed","pronti","prêts"],
+  "objectives": ["Ziele","objetivos","doelen","obiettivi","objectifs"],
+  "✓ Complete · reward processing": ["✓ Erledigt · Belohnung wird verarbeitet","✓ Completado · procesando recompensa","✓ Voltooid · beloning wordt verwerkt","✓ Completato · elaborazione ricompensa","✓ Terminé · récompense en traitement"],
   "PLAYER TITLE": ["SPIELERTITEL","TÍTULO DE JUGADOR","SPELERTITEL","TITOLO GIOCATORE","TITRE DE JOUEUR"],
   "Close preview": ["Vorschau schließen","Cerrar vista previa","Voorbeeld sluiten","Chiudi anteprima","Fermer l’aperçu"],
   "Not collected": ["Nicht gesammelt","Sin conseguir","Nog niet verzameld","Non ottenuto","Non obtenu"],

@@ -1,7 +1,7 @@
 import {createCharacter,newGame} from '../src/core/game';
 import {weeklyOrderCandidatesFromCurrentContent} from '../src/core/launch-readiness-v47';
 import {applyTrustedLongTermProgression,reconcileWeeklyOrderRollover,weeklyOrderBoardForState} from '../src/core/long-term-progression-runtime';
-import {applyWeeklyOrderProgress,generateWeeklyOrders} from '../src/core/weekly-orders-v41';
+import {applyWeeklyOrderProgress,generateWeeklyOrders,DEFAULT_WEEKLY_ORDER_POLICY,WEEKLY_CONTRACT_TARGET_MULTIPLIER} from '../src/core/weekly-orders-v41';
 import {weeklyOrderDestination,weeklyOrderGoal,weeklyOrderIdleRule,weeklyOrderQueueActivity} from '../src/core/weekly-order-integrations-v41';
 import {contractBoardRegionFocus,contractBoardSummary} from '../src/core/contract-board-summary';
 import {systemNotifications} from '../src/core/system-notifications';
@@ -22,6 +22,20 @@ ok(regionalCandidates.length>=2&&regionalCandidates.every(row=>row.brief&&row.br
 ok(new Set(regionalCandidates.map(row=>row.title)).size===regionalCandidates.length,'Regional Problem scenario titles must remain distinct');
 
 const generated=generateWeeklyOrders(accountId,now,candidates);
+ok(WEEKLY_CONTRACT_TARGET_MULTIPLIER===2,'Weekly contracts must cost exactly twice the previous action volume');
+ok(!candidates.some(row=>row.kind==='profession'&&row.source.kind==='recipe'),'Work Orders must not offer 2,700+ amulet crafts or any other recipe-grind objectives');
+ok(candidates.filter(row=>row.kind==='profession').every(row=>row.professionKind==='gathering'),'Work Orders must be repeatable woodcutting, mining, fishing or herbalism activities');
+ok(generated.orders.every(row=>row.kind!=='profession'||row.professionKind==='gathering'),'New weekly boards must only select sustainable gathering work');
+function priorFriendlyTarget(value:number){if(value<=10)return Math.max(1,Math.round(value));if(value<100)return Math.max(5,Math.round(value/5)*5);if(value<500)return Math.max(10,Math.round(value/10)*10);return Math.max(50,Math.round(value/50)*50);}
+for(const order of generated.orders){
+ const candidate=candidates.find(row=>row.kind===order.kind&&((row.kind==='hunt'?row.monsterId:row.kind==='regional'?row.regionId:row.actionId)===order.targetId));
+ ok(!!candidate,'Every generated order must retain an authored source');
+ const minutes=order.kind==='hunt'?DEFAULT_WEEKLY_ORDER_POLICY.huntTargetMinutes:order.kind==='regional'?DEFAULT_WEEKLY_ORDER_POLICY.regionalTargetMinutes:DEFAULT_WEEKLY_ORDER_POLICY.professionTargetMinutes;
+ const floor=order.kind==='hunt'?DEFAULT_WEEKLY_ORDER_POLICY.minimumHuntTarget:order.kind==='regional'?DEFAULT_WEEKLY_ORDER_POLICY.minimumRegionalTarget:DEFAULT_WEEKLY_ORDER_POLICY.minimumProfessionTarget;
+ const formerTarget=Math.max(floor,priorFriendlyTarget(candidate!.estimatedPerHour*minutes/60));
+ ok(order.target===(candidate!.kind==='hunt'&&candidate!.boss?1:formerTarget*2),'Contract target must exactly double its previous rounded value, except the one-boss bounty');
+}
+
 const bossBoard=generateWeeklyOrders(accountId+'-boss',now,postStoryCandidates),bossOrder=bossBoard.orders.find(row=>row.kind==='hunt'&&row.targetId==='FALLEN_KNIGHT');
 ok(!!bossOrder&&bossOrder.target===1,'Fallen Knight Contract Board bounty should require exactly one rewarded weekly victory');
 ok(weeklyOrderQueueActivity(bossOrder!)===undefined,'Boss bounty must remain a manual boss action rather than entering the idle hunt queue');
@@ -79,4 +93,9 @@ const storyOnly=applyTrustedLongTermProgression(bossProgressState,[{kind:'boss',
 ok(storyOnly.account.weeklyOrders!.orders.find(row=>row.targetId==='FALLEN_KNIGHT')!.progress===0,'One-time story clear must not complete the weekly boss bounty');
 bossProgressState=applyTrustedLongTermProgression(storyOnly,[{kind:'boss',contentId:'FALLEN_KNIGHT',units:1}],undefined,now,{accountId:accountId+'-boss',eventId:'weekly-boss'}).state;
 ok(bossProgressState.account.weeklyOrders!.orders.find(row=>row.targetId==='FALLEN_KNIGHT')!.progress===1,'Verified rewarded weekly boss clear must complete the Oathglass Bounty');
-console.log('PASS: Contract Board Hunt Orders, Work Orders and Regional Problems validate');
+const fs=require('fs') as {readFileSync:(path:string,encoding:string)=>string};
+const questUi=fs.readFileSync('src/screens/QuestScreen.tsx','utf8');
+ok(questUi.includes('<ContractProgress label={t("Weekly completion")}')||questUi.includes('<ContractProgress label={p("Weekly completion")}'),'Weekly Contract Board should show clear completion progress');
+ok(questUi.includes('s.objectivePanel')&&questUi.includes('s.contractRewardStrip')&&questUi.includes('Stop at done'),'Contract cards must retain objective, reward and safe queue/stop actions');
+ok(questUi.includes('<ContractProgress label={quest.tag.toUpperCase()}')&&questUi.includes('s.cadenceRail'),'Challenges need a progress-first card and cadence header');
+console.log('PASS: doubled sustainable Contract Board targets and redesigned weekly/class challenge surfaces');

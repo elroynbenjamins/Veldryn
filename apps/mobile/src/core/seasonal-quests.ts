@@ -41,12 +41,12 @@ export const QUEST_RARITIES:Record<QuestRarity,{label:string;color:string;multip
 export interface SeasonalQuest{ id:string;period:SeasonalPeriod;name:string;description:string;required:number;progress:number;rewardGold:number;rewardXp:number;rewardItemId:string;rewardItemQty:number;className:string;tag:ContractTag;rarity:QuestRarity;}
 type Template=[string,string,number,ContractTag];
 const roleTemplates:Record<'Tank'|'Support'|'Damage',Template[]>={
- Tank:[['Hold the Line','Defeat {n} monsters while staying battle-ready.',24,'combat'],['Iron Ration','Build toward {n} total skill levels for the next expedition.',12,'gathering'],['Arm the Bastion','Equip {n} pieces of gear.',6,'equipment'],['Roadwarden Survey','Unlock {n} monster encounters.',5,'exploration']],
+ Tank:[['Hold the Line','Defeat {n} monsters while staying battle-ready.',24,'combat'],['Iron Ration','Build toward {n} total skill levels for the next expedition.',12,'gathering'],['Marching Vigil','Defeat {n} monsters on patrol.',28,'combat'],['Roadwarden Survey','Unlock {n} monster encounters.',5,'exploration']],
  Support:[['Light the Way','Build toward {n} total skill levels through gathering.',30,'gathering'],['Mercy in Motion','Craft or equip {n} meaningful upgrades.',12,'crafting'],['Dawn Patrol','Earn progress from {n} combat milestones.',20,'combat'],['Safe Passage','Unlock {n} monster encounters.',5,'exploration']],
  Damage:[['Predator’s Circuit','Earn progress from {n} combat milestones.',18,'combat'],['Edge of Mastery','Craft or equip {n} meaningful upgrades.',14,'crafting'],['The Long Hunt','Earn progress from {n} combat milestones.',30,'combat'],['Forward Scout','Unlock {n} monster encounters.',5,'exploration']],
 };
 const classTemplates:Record<string,Template>={
- IRONWARDEN:['Steel Discipline','Equip {n} pieces of gear to reinforce the line.',6,'equipment'],BASTION:['Unbroken Wall','Earn progress from {n} combat milestones.',30,'combat'],DREADGUARD:['Chain of Command','Earn progress from {n} combat milestones.',28,'combat'],DAWNKEEPER:['Sunlamp Offering','Craft or equip {n} meaningful upgrades.',15,'crafting'],WAYFINDER:['Cartographer’s Eye','Unlock {n} additional monster encounters.',5,'exploration'],RAVAGER:['Break Their Line','Earn progress from {n} combat milestones.',40,'combat'],HEXWEAVER:['Runic Survey','Build toward {n} total skill levels through gathering.',22,'gathering'],KNIFE_DANCER:['Steps Unseen','Unlock {n} monster encounters.',6,'exploration'],STONECALLER:['Stone and Storm','Build toward {n} total skill levels through gathering.',24,'gathering'],
+ IRONWARDEN:['Steel Discipline','Defeat {n} monsters to reinforce the line.',26,'combat'],BASTION:['Unbroken Wall','Earn progress from {n} combat milestones.',30,'combat'],DREADGUARD:['Chain of Command','Earn progress from {n} combat milestones.',28,'combat'],DAWNKEEPER:['Sunlamp Offering','Craft or equip {n} meaningful upgrades.',15,'crafting'],WAYFINDER:['Cartographer’s Eye','Unlock {n} additional monster encounters.',5,'exploration'],RAVAGER:['Break Their Line','Earn progress from {n} combat milestones.',40,'combat'],HEXWEAVER:['Runic Survey','Build toward {n} total skill levels through gathering.',22,'gathering'],KNIFE_DANCER:['Steps Unseen','Unlock {n} monster encounters.',6,'exploration'],STONECALLER:['Stone and Storm','Build toward {n} total skill levels through gathering.',24,'gathering'],
 };
 function periodKey(period:SeasonalPeriod,date=new Date()){
  const utc=new Date(Date.UTC(date.getUTCFullYear(),date.getUTCMonth(),date.getUTCDate()));
@@ -71,10 +71,12 @@ export function seasonalQuestBoard(state:GameState,period:SeasonalPeriod,date=ne
  const character=state.character;if(!character)return [];
  const classDef=CLASSES.find(item=>item.id===character.classId)!;const key=periodKey(period,date),count=period==='daily'?2:period==='weekly'?3:4;
  const role=roleTemplates[classDef.role],specific=classTemplates[character.classId];const rows=[specific,...Array.from({length:count},(_,index)=>pick(role,key,index))].slice(0,count);
- const volume=period==='daily'?.45:period==='weekly'?1:2;
+ // Scale actual repeatable action targets: 2× daily, 3× weekly, 4× monthly.
+ // No slot-limited equipment objective may appear; equipping is not a repeatable task.
+ const volume=period==='daily'?.9:period==='weekly'?3:8;
  return rows.map((row,index)=>{const [name,templateDescription,base,tag]=row,rarity=rarityFor(period,key,index,character.classId),meta=QUEST_RARITIES[rarity],required=Math.min(tag==='equipment'?10:Infinity,Math.max(1,Math.round(base*volume))),progress=Math.min(required,contractProgress(state,tag,period,key)),[rewardItemId,baseQty]=cacheFor(rarity);
    const description=tag==='combat'?'Defeat {n} monsters this period.':tag==='gathering'?'Complete {n} gathering actions this period.':tag==='crafting'?'Complete {n} crafts this period.':tag==='exploration'?'Complete {n} exploration route actions this period.':templateDescription;
    const baseGold=period==='daily'?Math.max(20,base*2):period==='weekly'?base*8:Math.max(300,base*20),baseXp=period==='daily'?Math.max(40,base*4):period==='weekly'?base*15:Math.max(600,base*40);
-   return {id:`${period.toUpperCase()}_${key}_${index}`,period,name:name.replace('{n}',String(required)),description:description.replace('{n}',String(required)),required,progress,rewardGold:Math.round(baseGold*meta.multiplier),rewardXp:Math.round(baseXp*meta.multiplier),rewardItemId,rewardItemQty:Math.max(1,Math.round(baseQty*meta.multiplier)),className:classDef.name,tag,rarity};
+   return {id:`${period.toUpperCase()}_${key}_${index}`,period,name:name.replace('{n}',String(required)),description:description.replace('{n}',String(required)),required,progress,rewardGold:Math.round(baseGold*meta.multiplier*1.1),rewardXp:Math.round(baseXp*meta.multiplier*1.1),rewardItemId,rewardItemQty:Math.max(1,Math.round(baseQty*meta.multiplier)),className:classDef.name,tag,rarity};
  });
 }

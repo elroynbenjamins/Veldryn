@@ -3,6 +3,7 @@ import {useSocialText} from '../i18n/social';
 import {useEffect,useMemo,useState} from 'react';
 import {Pressable,StyleSheet,Text,View} from 'react-native';
 import {GameButton} from './GameButton';
+import {GameTextInput} from './GameTextInput';
 import {Panel} from './Panel';
 import {ChatPlayerSheet,type ChatPlayerIdentity} from './ChatPlayerSheet';
 import {CompactPlayerIdentity} from './CompactPlayerIdentity';
@@ -27,7 +28,7 @@ export function OnlineGuildManagement({onApplicationsChanged}:{onApplicationsCha
  const st=useSocialText();
  const C=useGameTheme(),s=useMemo(()=>makeStyles(C),[C]);
  const [members,setMembers]=useState<GuildMember[]>([]),[applications,setApplications]=useState<GuildApplication[]>([]),[invitations,setInvitations]=useState<GuildInvitationView[]>([]),[outgoingInvitations,setOutgoingInvitations]=useState<OutgoingInvitationView[]>([]),[guild,setGuild]=useState<OnlineGuild|null>(null),[leadership,setLeadership]=useState<GuildLeadershipStatus|null>(null);
- const [selected,setSelected]=useState<ChatPlayerIdentity|null>(null),[role,setRole]=useState<'leader'|'officer'|'member'|null>(null),[ownAccountId,setOwnAccountId]=useState(''),[busy,setBusy]=useState(false),[loaded,setLoaded]=useState(false);
+ const [selected,setSelected]=useState<ChatPlayerIdentity|null>(null),[memberSearch,setMemberSearch]=useState(''),[role,setRole]=useState<'leader'|'officer'|'member'|null>(null),[ownAccountId,setOwnAccountId]=useState(''),[busy,setBusy]=useState(false),[loaded,setLoaded]=useState(false);
  const load=async()=>{
   if(!onlineConfigured)return;
   setBusy(true);
@@ -77,7 +78,7 @@ export function OnlineGuildManagement({onApplicationsChanged}:{onApplicationsCha
  ]);
  const openMember=(member:GuildMember)=>setSelected({account_id:member.account_id,sender_name:member.display_name,guild_tag:member.guild_tag,guild_tag_color_id:member.guild_tag_color_id,player_badges:member.player_badges});
  return <View style={s.stack}>{invitePanel}<Panel>
-  <GuildIdentitySummary name={guild.name} tag={guild.tag} tagColorId={guild.tag_color_id} level={guild.level} memberCount={members.length} memberCap={guild.member_cap} backgroundId={guild.background_id} bannerId={guild.banner_id} frameId={guild.profile_frame_id} nameColorId={guild.name_color_id} nameplateId={guild.nameplate_id} motto={guild.motto}/><View style={s.managementHead}><View style={s.flex}><Text style={s.section}>{st("GUILD MANAGEMENT")}</Text><Text style={s.subCompact}>{st("Member controls and succession safety")}</Text></View><View style={[s.rolePill,role==='leader'?s.roleLeader:role==='officer'?s.roleOfficer:s.roleMember]}><Text style={[s.roleText,role==='leader'?s.roleTextLeader:role==='officer'?s.roleTextOfficer:s.roleTextMember]}>{role.toUpperCase()}</Text></View></View>
+  <GuildIdentitySummary name={guild.name} tag={guild.tag} tagColorId={guild.tag_color_id} level={guild.level} memberCount={members.length} memberCap={guild.member_cap} backgroundId={guild.background_id} bannerId={guild.banner_id} frameId={guild.profile_frame_id} nameColorId={guild.name_color_id} nameplateId={guild.nameplate_id} motto={guild.motto} compact/><View style={s.managementHead}><View style={s.flex}><Text style={s.section}>{st("GUILD MANAGEMENT")}</Text><Text style={s.subCompact}>{st("Member controls and succession safety")}</Text></View><View style={[s.rolePill,role==='leader'?s.roleLeader:role==='officer'?s.roleOfficer:s.roleMember]}><Text style={[s.roleText,role==='leader'?s.roleTextLeader:role==='officer'?s.roleTextOfficer:s.roleTextMember]}>{role.toUpperCase()}</Text></View></View>
   {leadership?<View style={[s.leadership,Number(leadership.inactiveDays??0)>=14&&s.leadershipWarn]}><View style={s.copy}><View style={s.leadershipHead}><Text style={s.section}>LEADERSHIP SAFETY · {leadership.thresholdDays} DAYS</Text><View style={[s.safetyPill,Number(leadership.inactiveDays??0)>=14&&s.safetyPillWarn]}><Text style={[s.safetyText,Number(leadership.inactiveDays??0)>=14&&s.safetyTextWarn]}>{Number(leadership.inactiveDays??0)>=14?st("WATCH"):st("ACTIVE")}</Text></View></View>
    <Text style={s.subCompact}>{leadership.leaderName??'Guild Leader'} · {Number(leadership.inactiveDays??0)>0?'inactive '+leadership.inactiveDays+'d':'active recently'}</Text>
    {Number(leadership.inactiveDays??0)>=14&&leadership.successorName?<Text style={s.warningText}>If inactivity reaches {leadership.thresholdDays} days, leadership passes to {leadership.successorName} ({leadership.successorRole}).</Text>:Number(leadership.inactiveDays??0)>=14?<Text style={s.warningText}>No active successor is currently eligible. Leadership stays in place until an Officer or Member has been active within the last {leadership.thresholdDays} days.</Text>:null}

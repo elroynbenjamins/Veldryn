@@ -87,7 +87,7 @@ export async function searchOnlineGuilds(search='',filter:'recruiting'|'open'|'a
  let result=await build(guildFields+',background_id');
  if(result.error&&['42703','PGRST204'].includes(result.error.code)&&result.error.message.includes('background_id'))result=await build(guildFields);
  if(result.error)throw result.error;
- return (result.data??[]) as OnlineGuild[];
+ return (result.data??[]) as unknown as OnlineGuild[];
 }
 
 export async function requestGuildMembership(guildId:string){const client=requireClient();const {data,error}=await client.rpc('request_guild_membership',{p_guild_id:guildId});if(error)throw error;return data as 'joined'|'applied';}

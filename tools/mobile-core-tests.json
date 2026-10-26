@@ -33,6 +33,8 @@
   ".core-build/apps/mobile/tests/gem-progression-v1.js",
   ".core-build/apps/mobile/tests/equipment-decision.js",
   ".core-build/apps/mobile/tests/idle-activity-insights.js",
+  ".core-build/apps/mobile/tests/item-crafting-use-navigation.js",
+  ".core-build/apps/mobile/tests/item-crafting-use-ui-contract.js",
   ".core-build/apps/mobile/tests/item-source-display.js",
   ".core-build/apps/mobile/tests/equipment-decision-ui-contract.js",
   ".core-build/apps/mobile/tests/equipment-set-runtime.js",

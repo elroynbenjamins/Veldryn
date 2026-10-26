@@ -287,16 +287,27 @@ export function claimEquipmentCraft(state:GameState,jobId:string,nowMs:number,ra
   return result;
 }
 
+/** Settle independently claimable jobs without losing successful claims to one blocked job.
+ * Unexpected errors still abort the command so the authoritative transaction rolls back. */
 export function claimAllReadyEquipmentCrafts(state:GameState,nowMs:number,trustedRoll=Math.random()){
   let next=withProjectedQueue(state,nowMs),claimed:string[]=[],results:ReturnType<typeof craftedInstanceResult>[]=[],gemClaims=0;
+  const blocked:{jobId:string;reason:string}[]=[];
   for(const job of equipmentCraftingQueue(next).filter(row=>isReady(row,nowMs))){
     try{
       const result=claimForgeJob(next,job.id,nowMs,craftClaimSubRoll(trustedRoll,job.id));next=result.state;claimed.push(job.id);
       if(result.kind==='equipment')results.push(result.result);else gemClaims++;
+    }catch(error){
+      const reason=error instanceof Error?error.message:'';
+      // Keep unclaimable jobs in the queue. They can be claimed after storage is freed
+      // or after an obsolete recipe is repaired; never silently delete their rewards.
+      if(reason==='Inventory and Bank are full'||reason.startsWith('Bank is full')||reason==='Crafting recipe is no longer available'){
+        blocked.push({jobId:job.id,reason});
+        continue;
+      }
+      throw error;
     }
-    catch(error){if(error instanceof Error&&(error.message==='Inventory and Bank are full'||error.message.startsWith('Bank is full')))break;throw error;}
   }
-  return {state:next,claimed,results,gemClaims};
+  return {state:next,claimed,results,gemClaims,blocked};
 }
 
 export const EQUIPMENT_CRAFT_CANCEL_GOLD_REFUND=.90;

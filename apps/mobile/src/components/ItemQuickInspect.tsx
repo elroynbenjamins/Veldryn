@@ -73,21 +73,24 @@ export function ItemQuickInspect({state,itemId,onClose,onNavigate,actions}:{stat
           <Section title={gt("HOW TO GET")+(sources.length?' · '+sources.length:'')}>{primarySource?<><SourceRow source={primarySource} primary onNavigate={onNavigate}/>{otherSources.length?<><Pressable accessibilityRole="button" accessibilityState={{expanded:otherSourcesOpen}} accessibilityLabel={it(otherSourcesOpen?'Hide other sources for {item}':'Show other sources for {item}',{item:item.name})} onPress={()=>setSourceDisclosure(value=>({...value,[itemId]:!value[itemId]}))} style={({pressed})=>[s.sourceDisclosure,pressed&&s.pressed]}><Text style={s.sourceDisclosureText}>{it('Other sources · {count}',{count:otherSources.length})}</Text><Text style={s.sourceDisclosureMark}>{otherSourcesOpen?'−':'+'}</Text></Pressable>{otherSourcesOpen?<View style={s.otherSourceList}>{otherSources.map((source,index)=><SourceRow key={source.kind+':'+source.title+':'+index} source={source} onNavigate={onNavigate}/>)}</View>:null}</>:null}</>:<Text style={s.note}>{gt("No repeatable source is catalogued for this item yet. It may come from a quest, event, one-time reward, or future content.")}</Text>}</Section>
 
           <Section title={gt("USED IN CRAFTING")+(model.usedIn.length?' · '+model.usedIn.length:'')}>
-            {useRows.length?useRows.map(recipe=><View key={recipe.recipeId} style={[s.recipeRow,s.craftingUseRow]}>
-              <ItemArtwork itemId={recipe.outputItemId} size={42}/>
-              <View style={s.flex}>
-                <Text style={s.bodyStrong}>{recipe.outputName}</Text>
-                <Text style={s.note}>{recipe.name}</Text>
-                <Text style={s.note}>{it('{skill} Lv {level} · needs {quantity}',{skill:gl(recipe.skill),level:recipe.level,quantity:recipe.quantity})}</Text>
-                {recipe.availability.status!=='ready'&&<Text style={s.availabilityDetail}>{contentText(recipe.availability.detail)}</Text>}
+            {useRows.length?useRows.map((recipe,index)=>recipe.isRecipeUnlock
+              ?<View key={recipe.recipeId} style={[s.recipeRow,s.craftingUseRow]}>
+                <ItemArtwork itemId={recipe.outputItemId} size={42}/>
+                <View style={s.flex}>
+                  <Text style={s.bodyStrong}>{recipe.outputName}</Text>
+                  <Text style={s.note}>{it('{skill} Lv {level} · needs {quantity}',{skill:gl(recipe.skill),level:recipe.level,quantity:1}).replace(/ · needs 1$/, '')}</Text>
+                  {recipe.availability.status!=='ready'&&<Text style={s.availabilityDetail}>{contentText(recipe.availability.detail)}</Text>}
+                </View>
+                <View style={s.actionMeta}>
+                  <AvailabilityPill status={recipe.availability.status} label={recipe.availability.label}/>
+                  {onNavigate&&recipe.availability.canNavigate
+                    ?<Pressable accessibilityRole="button" accessibilityLabel={it('Open {name}',{name:recipe.outputName})} accessibilityHint={contentText(recipe.navigation.detail)} onPress={()=>onNavigate(recipe.navigation)} style={({pressed})=>[s.craftingUseButton,pressed&&s.pressed]}><Text style={s.craftingUseButtonText}>{gt("View recipe ›")}</Text></Pressable>
+                    :null}
+                </View>
               </View>
-              <View style={s.actionMeta}>
-                <AvailabilityPill status={recipe.availability.status} label={recipe.availability.label}/>
-                {onNavigate&&recipe.availability.canNavigate
-                  ?<Pressable accessibilityRole="button" accessibilityLabel={it('Open {name}',{name:recipe.outputName})} accessibilityHint={contentText(recipe.navigation.detail)} onPress={()=>onNavigate(recipe.navigation)} style={({pressed})=>[s.craftingUseButton,pressed&&s.pressed]}><Text style={s.craftingUseButtonText}>{gt("View recipe ›")}</Text></Pressable>
-                  :null}
-              </View>
-            </View>):<Text style={s.note}>{gt("Not currently used as a crafting ingredient.")}</Text>}
+              :onNavigate?<Pressable key={recipe.recipeId+':'+index} accessibilityRole="button" accessibilityLabel={it('Open {name}',{name:recipe.name})} accessibilityHint={contentText(recipe.navigation.detail)} onPress={()=>onNavigate(recipe.navigation)} style={({pressed})=>[s.recipeRow,s.actionRow,pressed&&s.pressed]}><View style={s.flex}><Text style={s.bodyStrong}>{recipe.name}</Text><Text style={s.note}>{it('{skill} Lv {level} · needs {quantity}',{skill:gl(recipe.skill),level:recipe.level,quantity:recipe.quantity})}</Text>{recipe.availability.status!=='ready'&&<Text style={s.availabilityDetail}>{contentText(recipe.availability.detail)}</Text>}</View><View style={s.actionMeta}><AvailabilityPill status={recipe.availability.status} label={recipe.availability.label}/><Text style={s.openMark}>{gt("Open ›").toLocaleUpperCase(language)}</Text></View></Pressable>
+              :<View key={recipe.recipeId+':'+index} style={s.recipeRow}><View style={s.flex}><Text style={s.bodyStrong}>{recipe.name}</Text><Text style={s.note}>{it('{skill} Lv {level} · needs {quantity}',{skill:gl(recipe.skill),level:recipe.level,quantity:recipe.quantity})}</Text></View></View>)
+              :<Text style={s.note}>{gt("Not currently used as a crafting ingredient.")}</Text>}
             {uses.length>0?<Text style={s.note}>{readyUses>0?gt('{count} available recipes',{count:readyUses}):gt('Check recipe requirements below.')}</Text>:null}
           {uses.length>4?<Pressable accessibilityRole="button"
            accessibilityLabel={useLimit>=uses.length?gt('Show fewer crafting uses'):gt('Show more crafting uses')}

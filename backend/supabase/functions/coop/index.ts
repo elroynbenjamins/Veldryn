@@ -42218,6 +42218,7 @@ var timerRange = {
   T8: { base: 1950, min: 1500, max: 2400 },
   T9: { base: 2250, min: 1800, max: 2700 }
 };
+var EQUIPMENT_FORGE_GOLD_MULTIPLIER = 3;
 var tierGold = { T1: 120, T2: 420, T3: 900, T4: 1800, T5: 3500, T6: 1e4, T7: 18e3, T8: 3e4, T9: 5e4 };
 var tierXp = { T1: 120, T2: 250, T3: 450, T4: 700, T5: 1100, T6: 1600, T7: 2200, T8: 2900, T9: 3800 };
 var infusionByTier = {
@@ -42333,7 +42334,7 @@ var V33_EQUIPMENT_RECIPES = equipment_catalog_t1_t9_v33_default.pieces.map((piec
     skillId,
     level,
     xp: q(tierXp[tier] ?? 120, multiplier),
-    gold: q(tierGold[tier] ?? 120, multiplier),
+    gold: q(tierGold[tier] ?? 120, multiplier) * EQUIPMENT_FORGE_GOLD_MULTIPLIER,
     seconds: clamp(Math.round(range.base * multiplier), range.min, range.max),
     inputs: mergeInputs([...ingredients(tier, String(piece.Path), multiplier, skillId), infusionByTier[tier]]),
     output: { itemId: String(piece["Piece ID"]), quantity: 1 },
@@ -42396,11 +42397,10 @@ var NOVICE_RECIPES = NOVICE_SETS.flatMap((set) => set.slots.map((slot) => {
     classId: set.classId,
     noviceSetId: set.id,
     requiresCraftedItemId: prerequisite[slot] ? noviceItemId(set.classId, prerequisite[slot]) : void 0,
-    // Full loadouts include relic slots now. Keep their investment aligned with
-    // the 2× progression economy rather than letting a 24-hour AFK session
-    // fund several complete crafted sets.
+    // Keep the existing novice-set baseline and apply the same equipment-only
+    // forge gold increase used by the regional T1–T9 equipment recipes.
     xp: stage * 40,
-    gold: (slot === "weapon" || slot === "amulet" || slot === "ring" ? 20 : stage === 4 ? 15 : 10) * 2,
+    gold: (slot === "weapon" || slot === "amulet" || slot === "ring" ? 20 : stage === 4 ? 15 : 10) * 2 * EQUIPMENT_FORGE_GOLD_MULTIPLIER,
     seconds: 0,
     inputs: [{ itemId: "COPPER_ORE", quantity: (stage >= 4 ? 16 : slot === "chest" || slot === "weapon" ? 16 : 8) * 2 }, { itemId: "GREENWOOD_LOG", quantity: (stage >= 4 ? 16 : slot === "chest" || slot === "weapon" ? 16 : 8) * 2 }, { itemId: "MOSS_FIBER", quantity: (stage >= 5 ? 8 : 4) * 2 }],
     output: { itemId: item.id, quantity: 1 }
@@ -43142,9 +43142,9 @@ var SUNSCAR = origin("REG_SUNSCAR", "Sunscar");
 var FROST = origin("REG_FROSTMARCH", "Frostmarch");
 var ASH = origin("REG_ASHLANDS", "Ashlands");
 var ASTERFALL_COMPANIONS = [
-  { id: "UNIT_001", name: "Ironwood Hound", description: "Fast finisher for farming.", archetype: "Striker", role: "damage", rarity: "standard", origin: ASTER, unlockRequirements: [req("quest", "Complete Ironwood introduction", "QST_005", 1)], baseStats: { hp: 180, power: 22, defense: 12, attackSpeed: 2 }, activeAbility: ability("UABL_001", "Hamstring Pounce", "Damage + 8% slow", 14, "Lowest-HP enemy", "damage", 1, 6e-3, { secondaryValue: 0.08, durationSeconds: 4 }), passiveAbility: passive("execute", 0.04, "Pack Instinct: +4% damage against enemies below 35% HP.", "target_hp_below_35"), bondTrait: trait("BOND_001", "Relentless Chase", "cooldown_reduction", 0.08, "Hamstring Pounce recharges 8% faster after defeating a weakened target.", "target_defeated_below_35"), ascensionMaterialId: "IRONWOOD_FANG" },
-  { id: "UNIT_002", name: "Runebound Sentry", description: "Smooths solo and boss damage spikes.", archetype: "Guardian", role: "tank", rarity: "standard", origin: ASTER, unlockRequirements: [req("achievement", "Defeat 250 Old Mines enemies", "OLD_MINES_KILLS", 250)], baseStats: { hp: 260, power: 14, defense: 24, attackSpeed: 2.6 }, activeAbility: ability("UABL_002", "Rune Brace", "6% damage reduction to next 2 hits", 18, "Owner", "damage_reduction", 0.06, 1e-3, { secondaryValue: 2, durationSeconds: 5 }), passiveAbility: passive("damage_reduction", 0.06, "Runic Guard: every 12s, owner takes 6% less damage from the next hit.", "every_12_seconds"), bondTrait: trait("BOND_002", "Carved Shelter", "shield", 0.025, "Rune Brace also grants a small follow-up shield after its second protected hit.", "rune_brace_consumed"), ascensionMaterialId: "RUNEBOUND_CORE" },
-  { id: "UNIT_003", name: "Silverbrook Sprite", description: "Small restorative and tempo support.", archetype: "Support", role: "support", rarity: "standard", origin: ASTER, unlockRequirements: [req("skill_level", "Reach Fishing 16", "fishing", 16), req("collection", "Discover all Silverbrook nodes", "SILVERBROOK_NODES")], baseStats: { hp: 150, power: 12, defense: 10, attackSpeed: 2.2 }, activeAbility: ability("UABL_003", "Silver Current", "Restore 4% max HP + 3% Haste", 20, "Owner", "heal", 0.04, 1e-3, { secondaryValue: 0.03, durationSeconds: 5 }), passiveAbility: passive("cooldown_reduction", 0.05, "Flowing Current: owner's first ability after combat starts has 5% shorter cooldown.", "first_owner_ability"), bondTrait: trait("BOND_003", "Deep Current", "haste", 0.025, "Silver Current grants an additional short Haste pulse after restoring class resource.", "silver_current_used"), ascensionMaterialId: "WISP_DUST" },
+  { id: "UNIT_001", name: "Ironwood Hound", description: "Fast finisher for farming.", archetype: "Striker", role: "damage", rarity: "standard", origin: ASTER, unlockRequirements: [req("meta", "Choose Ironwood Hound as your starter companion", "STARTER_COMPANION:UNIT_001", 1)], baseStats: { hp: 180, power: 22, defense: 12, attackSpeed: 2 }, activeAbility: ability("UABL_001", "Hamstring Pounce", "Damage + 8% slow", 14, "Lowest-HP enemy", "damage", 1, 6e-3, { secondaryValue: 0.08, durationSeconds: 4 }), passiveAbility: passive("execute", 0.04, "Pack Instinct: +4% damage against enemies below 35% HP.", "target_hp_below_35"), bondTrait: trait("BOND_001", "Relentless Chase", "cooldown_reduction", 0.08, "Hamstring Pounce recharges 8% faster after defeating a weakened target.", "target_defeated_below_35"), ascensionMaterialId: "IRONWOOD_FANG" },
+  { id: "UNIT_002", name: "Runebound Sentry", description: "Smooths solo and boss damage spikes.", archetype: "Guardian", role: "tank", rarity: "standard", origin: ASTER, unlockRequirements: [req("achievement", "Defeat 250 Old Mines enemies", "OLD_MINES_KILLS", 250), req("meta", "Old Mines milestone rewards this companion when it is still missing", "STARTER_THIRD:UNIT_002", 1)], baseStats: { hp: 260, power: 14, defense: 24, attackSpeed: 2.6 }, activeAbility: ability("UABL_002", "Rune Brace", "6% damage reduction to next 2 hits", 18, "Owner", "damage_reduction", 0.06, 1e-3, { secondaryValue: 2, durationSeconds: 5 }), passiveAbility: passive("damage_reduction", 0.06, "Runic Guard: every 12s, owner takes 6% less damage from the next hit.", "every_12_seconds"), bondTrait: trait("BOND_002", "Carved Shelter", "shield", 0.025, "Rune Brace also grants a small follow-up shield after its second protected hit.", "rune_brace_consumed"), ascensionMaterialId: "RUNEBOUND_CORE" },
+  { id: "UNIT_003", name: "Silverbrook Sprite", description: "Small restorative and tempo support.", archetype: "Support", role: "support", rarity: "standard", origin: ASTER, unlockRequirements: [req("skill_level", "Reach Fishing 16", "fishing", 16), req("collection", "Discover all Silverbrook nodes", "SILVERBROOK_NODES"), req("meta", "Silverbrook milestone rewards this companion when role-compatible", "STARTER_FOLLOWUP:UNIT_003", 1)], baseStats: { hp: 150, power: 12, defense: 10, attackSpeed: 2.2 }, activeAbility: ability("UABL_003", "Silver Current", "Restore 4% max HP + 3% Haste", 20, "Owner", "heal", 0.04, 1e-3, { secondaryValue: 0.03, durationSeconds: 5 }), passiveAbility: passive("cooldown_reduction", 0.05, "Flowing Current: owner's first ability after combat starts has 5% shorter cooldown.", "first_owner_ability"), bondTrait: trait("BOND_003", "Deep Current", "haste", 0.025, "Silver Current grants an additional short Haste pulse after restoring class resource.", "silver_current_used"), ascensionMaterialId: "WISP_DUST" },
   { id: "UNIT_004", name: "Briarhorn Cub", description: "Durable-target pressure through mild defense shred.", archetype: "Bruiser", role: "damage", rarity: "rare", origin: ASTER, unlockRequirements: [req("monster_mastery", "Reach Forest Troll Mastery 20", "FOREST_TROLL", 20)], baseStats: { hp: 230, power: 25, defense: 18, attackSpeed: 2.4 }, activeAbility: ability("UABL_004", "Briar Charge", "Damage + -5% Defence", 16, "Highest-Defence enemy", "damage", 1.2, 6e-3, { secondaryValue: 0.05, durationSeconds: 5 }), passiveAbility: passive("defense_shred", 0.03, "Barkbreaker: attacks have a 12% chance to apply -3% Defence for 5s; non-stacking.", "12_percent_proc"), bondTrait: trait("BOND_004", "Rootbreaker", "damage", 0.06, "Deals 6% more companion damage to targets currently affected by defense reduction.", "target_defense_reduced"), ascensionMaterialId: "THORN_SAP" },
   { id: "UNIT_005", name: "Lantern Wisp", description: "Interrupt-focused co-op helper.", archetype: "Disruptor", role: "support", rarity: "rare", origin: ASTER, unlockRequirements: [req("monster_mastery", "Reach Lantern Wretch Mastery 20", "LANTERN_WRETCH", 20)], baseStats: { hp: 145, power: 18, defense: 11, attackSpeed: 2 }, activeAbility: ability("UABL_005", "Lantern Snuff", "Damage + interrupt", 22, "Casting enemy", "interrupt", 0.55, 4e-3), passiveAbility: passive("accuracy", 0.08, "Flicker Sense: +8% unit accuracy against enemies currently casting.", "enemy_casting"), bondTrait: trait("BOND_005", "Afterglow", "cooldown_reduction", 0.1, "A successful interrupt shortens the next Lantern Snuff cooldown by 10%.", "successful_interrupt"), ascensionMaterialId: "LANTERNSTEEL_SHARD" },
   { id: "UNIT_006", name: "Oathbound Page", description: "Boss-progression defensive companion.", archetype: "Guardian", role: "tank", rarity: "rare", origin: ASTER, unlockRequirements: [req("boss_kills", "Defeat The Fallen Knight once", "FALLEN_KNIGHT", 1)], baseStats: { hp: 290, power: 16, defense: 25, attackSpeed: 2.8 }, activeAbility: ability("UABL_006", "Page's Vow", "Shield for 5% owner max HP", 24, "Owner", "shield", 0.05, 1e-3), passiveAbility: passive("damage_reduction", 0.08, "Oathkeeper: once per encounter, intercepts 8% of one hit dealt to owner.", "once_per_encounter"), bondTrait: trait("BOND_006", "Renewed Vow", "damage_reduction", 0.025, "After the shield breaks, the owner gains brief mitigation.", "shield_broken"), ascensionMaterialId: "OATHGLASS_SHARD" },
@@ -43336,6 +43336,7 @@ var CLASS_COMPANION_ROLE = {
 var classCompanionRole = (classId) => CLASS_COMPANION_ROLE[classId];
 var canUseCharacterCombatCompanion = (characterRole, companionRole, _mode) => characterRole !== companionRole;
 var canEquipCompanion = (characterRole, companionRole) => canUseCharacterCombatCompanion(characterRole, companionRole, "normal_combat");
+var STARTER_COMBAT_COMPANION_IDS = ["UNIT_001", "UNIT_002", "UNIT_003"];
 var defaultCompanionSanctuary = () => ({ trainingGroundLevel: 0, essenceBasinLevel: 0, bondHallLevel: 0, expeditionPensLevel: 0, masteryChamberLevel: 0 });
 var legacyOwnedCompanionProgress = () => ({ level: 10, xp: 0, ascensionTier: 0, bondLevel: 2, bondXp: 0, bondTraitUnlocked: false });
 var int = (value, min = 0, max = Number.MAX_SAFE_INTEGER) => Math.max(min, Math.min(max, Math.floor(Number(value) || 0)));
@@ -43400,7 +43401,17 @@ function migrateLegacyCombatCompanionAccount(input) {
     const def = combatCompanionDef(id);
     progress[id] = normalizeProgress(def, merged[id], legacyOwnedCompanionProgress());
   }
+  const savedStarter = STARTER_COMBAT_COMPANION_IDS.includes(account.starterCombatCompanionId) ? account.starterCombatCompanionId : void 0;
+  const legacyStarterWasImplicit = !savedStarter && legacyOwned.includes("UNIT_001");
+  const starterCombatCompanionId = savedStarter ?? (legacyStarterWasImplicit ? "UNIT_001" : void 0);
+  const savedFollowup = STARTER_COMBAT_COMPANION_IDS.includes(account.starterFollowupCombatCompanionId) ? account.starterFollowupCombatCompanionId : void 0;
+  const starterFollowupCombatCompanionId = savedFollowup ?? (legacyStarterWasImplicit ? STARTER_COMBAT_COMPANION_IDS.find((id) => id !== "UNIT_001" && legacyOwned.includes(id)) : void 0);
+  const savedThird = STARTER_COMBAT_COMPANION_IDS.includes(account.starterThirdCombatCompanionId) ? account.starterThirdCombatCompanionId : void 0;
+  const starterThirdCombatCompanionId = savedThird ?? (legacyStarterWasImplicit && starterFollowupCombatCompanionId ? STARTER_COMBAT_COMPANION_IDS.find((id) => id !== starterCombatCompanionId && id !== starterFollowupCombatCompanionId && legacyOwned.includes(id)) : void 0);
   return {
+    starterCombatCompanionId,
+    starterFollowupCombatCompanionId,
+    starterThirdCombatCompanionId,
     unlockedCombatCompanionIds: legacyOwned,
     combatCompanionProgress: progress,
     companionUnlockProgress: Object.fromEntries(Object.entries(account.companionUnlockProgress ?? {}).filter(([, value]) => Number.isFinite(Number(value)) && Number(value) >= 0).map(([key, value]) => [key, Number(value)])),

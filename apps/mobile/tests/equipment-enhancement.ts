@@ -55,6 +55,12 @@ const storedEnhanced={...upgraded,inventory:{...upgraded.inventory,stacks:[...up
 let soldEnhanced=false,salvagedEnhanced=false;try{sellItem(storedEnhanced,ringId)}catch{soldEnhanced=true}try{salvageItem(storedEnhanced,ringId)}catch{salvagedEnhanced=true}
 ok(soldEnhanced&&salvagedEnhanced,'Enhanced gear must be protected from disposal in the domain layer');
 
+// But a crafted duplicate copy of an enhanced item can be sold: the enhancement travels with the retained copy.
+const duplicateEnhanced={...fourth,inventory:{...fourth.inventory,stacks:[...fourth.inventory.stacks.filter(s=>s.itemId!==ringId),{itemId:ringId,quantity:2}]}};
+const soldDuplicate=sellItem(duplicateEnhanced,ringId,1);
+ok((soldDuplicate.inventory.stacks.find(s=>s.itemId===ringId)?.quantity??0)===1,'Selling one of two enhanced copies must leave one behind');
+ok(gearEnhancement(soldDuplicate,ringId).rank===4,'Remaining enhanced copy must retain its upgrade rank after a duplicate sell');
+
 // Behavioral Effect Gems must change trusted combat simulation rather than being display-only.
 const combatBase=createCharacter(newGame(1),'IRONWARDEN','Effect Test','male');
 const started=startCombat(combatBase,'MOSS_RAT',1000);

@@ -1,4 +1,5 @@
 import {combatTimeline} from './combat-timing';
+import {characterCombatXpScale} from './combat-progression-pacing';
 import {eventCandyWindow} from './live-events';
 import {professionActionPace} from './profession-action-pace';
 import {captureSkillAffinity,activeSkillAffinity,affinityXpRemainderKey,settleAffinitySkillXp} from './class-skill-affinities';
@@ -33,6 +34,7 @@ import {currentRegionId} from './combat-region';
 import {regionTravelAvailability,regionTravelLockReason} from './world-navigation';
 import {WORLD_ZONES,worldZoneInDevelopment} from '../content/world-map';
 import {enhancedGearStats,equippedEffectGemBonuses,equippedGemBonuses,hasEnhancement} from './equipment-enhancement';
+import {pruneCraftedInstancesForSale} from './crafted-gear-instances';
 import {activeEquipmentSetRuntime,equipmentSetCombatModifiers} from './equipment-set-runtime';
 import {companionCombatContribution,reconcileCombatCompanionUnlocks,grantCompanionEssence,grantBondstones} from './combat-companions';
 import {awardCompanionRematchBondstone,companionRematchBondstoneStatus,recordCompanionActivity} from './companion-runtime';
@@ -89,10 +91,10 @@ export const REGIONAL_COMBAT_PRESSURE:Readonly<Record<string,number>>={Greenfiel
 export const REGIONAL_HUNT_DAMAGE_TUNING:Readonly<Record<string,number>>={Greenfields:.36,Silverbrook:.25,'Ironwood Forest':.40,'Old Mines':.55,"King's Road":.42,Ashlands:.40};
 export type RegionalMonsterPressureBand='entry'|'standard'|'hard';
 export const REGIONAL_MONSTER_PRESSURE_MULTIPLIER:Readonly<Record<RegionalMonsterPressureBand,number>>={entry:.92,standard:1,hard:1.10};
-export const REGIONAL_FOOD_SUSTAIN_TARGETS:Readonly<Record<string,{foodPerHourMin:number;foodPerHourMax:number}>>={Greenfields:{foodPerHourMin:2,foodPerHourMax:4},Silverbrook:{foodPerHourMin:3,foodPerHourMax:5},'Ironwood Forest':{foodPerHourMin:2,foodPerHourMax:4},'Old Mines':{foodPerHourMin:2,foodPerHourMax:5},"King's Road":{foodPerHourMin:2,foodPerHourMax:5},Sunscar:{foodPerHourMin:2,foodPerHourMax:5},Frostmarch:{foodPerHourMin:1.75,foodPerHourMax:5},Ashlands:{foodPerHourMin:1.75,foodPerHourMax:4}};
+export const REGIONAL_FOOD_SUSTAIN_TARGETS:Readonly<Record<string,{foodPerHourMin:number;foodPerHourMax:number}>>={Greenfields:{foodPerHourMin:3,foodPerHourMax:5},Silverbrook:{foodPerHourMin:4,foodPerHourMax:7},'Ironwood Forest':{foodPerHourMin:4,foodPerHourMax:7},'Old Mines':{foodPerHourMin:2,foodPerHourMax:5},"King's Road":{foodPerHourMin:2,foodPerHourMax:5},Sunscar:{foodPerHourMin:2,foodPerHourMax:5},Frostmarch:{foodPerHourMin:1.75,foodPerHourMax:5},Ashlands:{foodPerHourMin:1.75,foodPerHourMax:4}};
 /** Minimum incoming pressure is applied before healing. Even overgeared hunts
  * drain unhealed players; a sufficiently strong healer can sustain easy enemies. */
-export const REGIONAL_MIN_ATTRITION_HP_PER_HOUR:Readonly<Record<string,number>>={Greenfields:60,Silverbrook:80,'Ironwood Forest':115,'Old Mines':180,"King's Road":230,Sunscar:330,Frostmarch:520,Ashlands:620};
+export const REGIONAL_MIN_ATTRITION_HP_PER_HOUR:Readonly<Record<string,number>>={Greenfields:80,Silverbrook:120,'Ironwood Forest':180,'Old Mines':180,"King's Road":230,Sunscar:330,Frostmarch:520,Ashlands:620};
 export const MIN_UNHEALED_HP_FRACTION_PER_HOUR=.08;
 /** Slow recovery between activities keeps food valuable while preventing a defeated run from becoming a hard lockout. */
 export const OUT_OF_COMBAT_REGEN_FRACTION_PER_MINUTE=.05;
@@ -406,7 +408,7 @@ export function activeCombatRuntimeProjection(state:GameState){
   const runtime=combatRuntimeDetails(state,state.activity.targetId);
   const effect=runtime.environment;
   const killsPerHour=3600/Math.max(.1,runtime.killCycleSeconds);
-  const xpPerKill=runtime.m.xp*(effect?.xpMultiplier??1)*runtime.modifiers.characterXpMultiplier;
+  const xpPerKill=runtime.m.xp*characterCombatXpScale(runtime.m.level,runtime.m.boss)*(effect?.xpMultiplier??1)*runtime.modifiers.characterXpMultiplier;
   const goldPerKill=runtime.m.gold*(effect?.goldMultiplier??1)*runtime.modifiers.goldMultiplier;
   return {
     killCycleSeconds:runtime.killCycleSeconds,
@@ -494,13 +496,14 @@ function previewStandardActivityRewardRaw(state:GameState,effectiveNowMs:number)
   const classGain=awardCombatClassXp(state.character,sim.kills,m.xp*effect.xpMultiplier*multipliers.skillXpMultiplier*combatCandy,state.activity.classFocus);
   const mastery=monsterMastery(state,m.id),materialRemainders={...state.character.masteryMaterialRemainders};
   if(mastery.materialBonus)for(const item of items){if(itemDef(item.itemId).type!=='material')continue;const extra=item.quantity*mastery.materialBonus+(materialRemainders[item.itemId]??0),whole=Math.floor(extra+1e-9);item.quantity+=whole;materialRemainders[item.itemId]=Math.max(0,extra-whole);}
-  const rewardItems=items,champion=championBonus(Math.floor(m.xp*effect.xpMultiplier*multipliers.characterXpMultiplier),Math.floor(m.gold*effect.goldMultiplier*multipliers.goldMultiplier),sim.championKills);
-  const baseXpPerKill=m.xp*effect.xpMultiplier*multipliers.characterXpMultiplier*combatCandy,baseGoldPerKill=m.gold*effect.goldMultiplier*multipliers.goldMultiplier,sessionKills=state.activity.sessionKills??0;
+  const combatXpScale=characterCombatXpScale(m.level,m.boss);
+  const rewardItems=items,champion=championBonus(Math.floor(m.xp*combatXpScale*effect.xpMultiplier*multipliers.characterXpMultiplier),Math.floor(m.gold*effect.goldMultiplier*multipliers.goldMultiplier),sim.championKills);
+  const baseXpPerKill=m.xp*combatXpScale*effect.xpMultiplier*multipliers.characterXpMultiplier*combatCandy,baseGoldPerKill=m.gold*effect.goldMultiplier*multipliers.goldMultiplier,sessionKills=state.activity.sessionKills??0;
   const explorationSkill=state.skills.find(skill=>skill.skillId==='exploration');
   const explorationRaw=sim.kills*Math.max(1,Math.ceil(m.level/12));
   const explorationXp=Math.min(Math.max(0,totalXpAtLevel(100)-(explorationSkill?.xp??0)),explorationRaw);
   let momentumXp=0;
-  for(let start=0;start<sim.completed.length;){let end=start+1;while(end<sim.completed.length&&sim.completed[end].candy===sim.completed[start].candy)end++;momentumXp+=huntMomentumBonus(m.xp*effect.xpMultiplier*multipliers.characterXpMultiplier*(sim.completed[start].candy?1.1:1),sessionKills+start,end-start);start=end;}
+  for(let start=0;start<sim.completed.length;){let end=start+1;while(end<sim.completed.length&&sim.completed[end].candy===sim.completed[start].candy)end++;momentumXp+=huntMomentumBonus(m.xp*combatXpScale*effect.xpMultiplier*multipliers.characterXpMultiplier*(sim.completed[start].candy?1.1:1),sessionKills+start,end-start);start=end;}
   const momentumGold=huntMomentumBonus(baseGoldPerKill,sessionKills,sim.kills);
   const reward:RewardBundle={combatEffort:{startsAtMs:state.activity.lastClaimAtMs,endsAtMs:state.activity.lastClaimAtMs+sim.qualifyingActivitySeconds*1000},classSkillXp:classGain.awards,explorationXp,xp:Math.floor(sim.kills*baseXpPerKill)+momentumXp+champion.xp,gold:Math.floor(sim.kills*baseGoldPerKill)+momentumGold+champion.gold,items:rewardItems,kills:sim.kills,elapsedSeconds:elapsed,qualifyingActivitySeconds:sim.qualifyingActivitySeconds,preparationEncounters:sim.preparationEncounters,foodConsumed:sim.foodConsumed,endHp:sim.endHp,stoppedReason:sim.stoppedReason,nextProgressFraction:sim.nextProgressFraction,...(sim.championKills>0?{championEncounters:{count:sim.championKills,bonusXp:champion.xp,bonusGold:champion.gold}}:{})};
   return {...reward,masteryMaterialRemainders:materialRemainders,...timedEventRewards(state,'combat',sim.completed.map(row=>row.atMs))};
@@ -826,8 +829,32 @@ export function eatFood(state:GameState,itemId?:string):GameState{if(!state.char
 export function usePotion(state:GameState,itemId:string):GameState{if(!state.character)throw new Error('Create a character first.');const potion=potionDef(itemId);if(!potion)throw new Error('Unknown potion.');if(state.activity?.kind==='combat')throw new Error('Potions cannot be used during a hunt.');const stacks=consume(state.inventory.stacks,itemId,1);if(potion.effect.kind==='healing'){const max=effectiveStats(state).hp,healing=characterPermanentMultipliers(state).healingEffectivenessMultiplier;return {...state,inventory:{...state.inventory,stacks},character:{...state.character,currentHp:Math.min(max,state.character.currentHp+Math.ceil(max*potion.effect.maxHpFraction*healing))}};}return {...state,inventory:{...state.inventory,stacks},character:{...state.character,preparation:{itemId,remainingEncounters:potion.effect.encounters}}};}
 export function discardPreparation(state:GameState):GameState{return state.character?.preparation?{...state,character:{...state.character,preparation:undefined}}:state;}
 export function unequipItem(state:GameState,slot:GearSlot):GameState{if(!state.character)return state;const old=state.character.equipment[slot];if(!old)return state;const eq={...state.character.equipment};delete eq[slot];const next={...state,inventory:{...state.inventory,stacks:stackItems(state.inventory.stacks,[{itemId:old,quantity:1}])},character:{...state.character,equipment:eq}} as GameState;next.character!.currentHp=Math.min(effectiveStats(next).hp,next.character!.currentHp);return next}
-export function sellItem(state:GameState,itemId:string,quantity=1):GameState{if(!state.character||quantity<=0)return state;if(itemId===HOLY_WATER_ID)throw new Error('Holy Water cannot be sold.');if(state.settings.favoriteItemIds?.includes(itemId))throw new Error('Favorite item is protected. Remove it from Favorites before selling.');const discovered=state,d=itemDef(itemId);if(d.knowledgeUnlockId)throw new Error('Blueprints cannot be sold. Learn the recipe by crafting its tool.');if(d.type==='gear'&&hasEnhancement(discovered,itemId))throw new Error('Enhanced equipment is protected. Extract its gems before disposal; upgraded ranks cannot be recovered.');return {...discovered,inventory:{...discovered.inventory,stacks:consume(discovered.inventory.stacks,itemId,quantity)},character:{...discovered.character!,gold:discovered.character!.gold+d.value*quantity}}}
-export function salvageItem(state:GameState,itemId:string):GameState{if(state.settings.favoriteItemIds?.includes(itemId))throw new Error('Favorite item is protected. Remove it from Favorites before salvaging.');const discovered=state,d=itemDef(itemId);if(d.type!=='gear'||!d.salvage)throw new Error('Cannot salvage');if(hasEnhancement(discovered,itemId))throw new Error('Enhanced equipment is protected. Extract its gems before disposal; upgraded ranks cannot be recovered.');return {...discovered,inventory:{...discovered.inventory,stacks:stackItems(consume(discovered.inventory.stacks,itemId,1),[d.salvage])}}}
+export function sellItem(state:GameState,itemId:string,quantity=1):GameState{
+  if(!state.character||quantity<=0)return state;
+  if(itemId===HOLY_WATER_ID)throw new Error('Holy Water cannot be sold.');
+  if(state.settings.favoriteItemIds?.includes(itemId))throw new Error('Favorite item is protected. Remove it from Favorites before selling.');
+  const d=itemDef(itemId);
+  if(d.knowledgeUnlockId)throw new Error('Blueprints cannot be sold. Learn the recipe by crafting its tool.');
+  if(d.type==='gear'&&hasEnhancement(state,itemId)){
+    // Allow selling duplicates: enhancement travels with the remaining copy. Only block the last one.
+    const invQty=stackQty(state.inventory.stacks,itemId);
+    if(invQty-quantity<1)throw new Error('Enhanced equipment is protected. Extract its gems before disposal; upgraded ranks cannot be recovered.');
+  }
+  let next:GameState={...state,inventory:{...state.inventory,stacks:consume(state.inventory.stacks,itemId,quantity)},character:{...state.character!,gold:state.character!.gold+d.value*quantity}};
+  if(d.type==='gear')next=pruneCraftedInstancesForSale(next,itemId,quantity);
+  return next;
+}
+export function salvageItem(state:GameState,itemId:string):GameState{
+  if(state.settings.favoriteItemIds?.includes(itemId))throw new Error('Favorite item is protected. Remove it from Favorites before salvaging.');
+  const d=itemDef(itemId);if(d.type!=='gear'||!d.salvage)throw new Error('Cannot salvage');
+  if(hasEnhancement(state,itemId)){
+    const invQty=stackQty(state.inventory.stacks,itemId);
+    if(invQty-1<1)throw new Error('Enhanced equipment is protected. Extract its gems before disposal; upgraded ranks cannot be recovered.');
+  }
+  let next:GameState={...state,inventory:{...state.inventory,stacks:stackItems(consume(state.inventory.stacks,itemId,1),[d.salvage])}};
+  next=pruneCraftedInstancesForSale(next,itemId,1);
+  return next;
+}
 
 function validBankGoldAmount(amount:number):void{
   if(!Number.isSafeInteger(amount)||amount<=0)throw new Error('Enter a valid positive Gold amount.');

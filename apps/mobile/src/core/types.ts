@@ -86,6 +86,8 @@ export interface CraftedGearInstance{
   sourceReceiptKey:string;
   createdAtMs:number;
   enhancement:GearEnhancementState;
+  /** Per-instance stat variance in [0,1); maps to roughly ±5% multiplier. 0.5 is "average". */
+  statRoll?:number;
 }
 export interface ItemStack { itemId:string; quantity:number; }
 export interface InventoryState { stacks:ItemStack[]; capacity:number; }

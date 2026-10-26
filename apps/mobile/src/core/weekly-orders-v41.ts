@@ -16,8 +16,8 @@ export interface WeeklyOrderProgressResult{eventId:string;updated:Array<{orderId
 
 const DAY_MS=86_400_000;
 export const DEFAULT_WEEKLY_ORDER_POLICY:WeeklyOrderPolicy={
- enabled:true,huntSlots:2,professionSlots:2,regionalSlots:1,huntTargetMinutes:70,professionTargetMinutes:90,regionalTargetMinutes:110,
- minimumHuntTarget:20,minimumProfessionTarget:40,minimumRegionalTarget:40,
+ enabled:true,huntSlots:2,professionSlots:2,regionalSlots:1,huntTargetMinutes:35,professionTargetMinutes:45,regionalTargetMinutes:55,
+ minimumHuntTarget:10,minimumProfessionTarget:20,minimumRegionalTarget:20,
  defaultHuntReward:{rewardRef:'weekly_order_hunt_standard',label:'Hunt Order reward'},
  defaultProfessionReward:{rewardRef:'weekly_order_profession_standard',label:'Work Order reward'},
 defaultRegionalReward:{rewardRef:'weekly_order_regional_standard',label:'Regional Problem reward'},
@@ -33,7 +33,8 @@ export function weeklyOrderWindow(nowMs:number){
 }
 function hash32(input:string){let h=2166136261>>>0;for(let i=0;i<input.length;i++){h^=input.charCodeAt(i);h=Math.imul(h,16777619)>>>0;}return h>>>0}
 function roundFriendly(value:number){if(value<=10)return Math.max(1,Math.round(value));if(value<100)return Math.max(5,Math.round(value/5)*5);if(value<500)return Math.max(10,Math.round(value/10)*10);return Math.max(50,Math.round(value/50)*50)}
-function targetFor(candidate:WeeklyOrderCandidate,policy:WeeklyOrderPolicy){const minutes=candidate.kind==='hunt'?policy.huntTargetMinutes:candidate.kind==='regional'?policy.regionalTargetMinutes:policy.professionTargetMinutes,floor=candidate.kind==='hunt'?(candidate.boss?1:policy.minimumHuntTarget):candidate.kind==='regional'?policy.minimumRegionalTarget:policy.minimumProfessionTarget;return Math.max(floor,roundFriendly(candidate.estimatedPerHour*minutes/60))}
+export const WEEKLY_CONTRACT_TARGET_MULTIPLIER=2;
+function targetFor(candidate:WeeklyOrderCandidate,policy:WeeklyOrderPolicy){const minutes=candidate.kind==='hunt'?policy.huntTargetMinutes:candidate.kind==='regional'?policy.regionalTargetMinutes:policy.professionTargetMinutes,floor=candidate.kind==='hunt'?(candidate.boss?1:policy.minimumHuntTarget):candidate.kind==='regional'?policy.minimumRegionalTarget:policy.minimumProfessionTarget;const baseline=Math.max(floor,roundFriendly(candidate.estimatedPerHour*minutes/60));return candidate.kind==='hunt'&&candidate.boss?1:baseline*WEEKLY_CONTRACT_TARGET_MULTIPLIER}
 function score(accountId:string,weekKey:string,c:WeeklyOrderCandidate){return Math.max(0,c.priority??50)+(hash32(`${accountId}|${weekKey}|${c.kind}|${c.id}`)/0xffffffff)*25}
 function select(accountId:string,weekKey:string,candidates:WeeklyOrderCandidate[],kind:WeeklyOrderKind,slots:number){return candidates.filter(c=>c.kind===kind&&c.available&&c.source.available&&Number.isFinite(c.estimatedPerHour)&&c.estimatedPerHour>0).sort((a,b)=>score(accountId,weekKey,a)-score(accountId,weekKey,b)||a.id.localeCompare(b.id)).slice(0,Math.max(0,slots))}
 export function generateWeeklyOrders(accountId:string,nowMs:number,candidates:WeeklyOrderCandidate[],policy:WeeklyOrderPolicy=DEFAULT_WEEKLY_ORDER_POLICY):WeeklyOrdersState{

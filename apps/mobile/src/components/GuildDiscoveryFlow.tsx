@@ -23,7 +23,7 @@ const filters:readonly {id:DirectoryFilter;label:string}[]=[
  {id:'recruiting',label:'Recruiting'},{id:'open',label:'Open'},{id:'apply',label:'Applications'},{id:'all',label:'All'},
 ];
 const failureText=(reason:unknown)=>reason instanceof Error?reason.message:'Guild service unavailable. Please retry.';
-const guildPolicy=(guild:OnlineGuild)=>guild.join_policy==='open'?'OPEN':guild.join_policy==='apply'?'APPLICATION':'INVITE ONLY';
+const guildPolicy=(guild:OnlineGuild)=>typeof guild.member_count==='number'&&guild.member_count>=guild.member_cap?'FULL':guild.join_policy==='open'?'OPEN':guild.join_policy==='apply'?'APPLICATION':'INVITE ONLY';
 
 /** The Guild destination for accounts with no membership. No Guild Hall or member actions mount here. */
 export function GuildDiscoveryFlow({onJoined}:{onJoined:()=>void}){
@@ -74,7 +74,7 @@ export function GuildDiscoveryFlow({onJoined}:{onJoined:()=>void}){
  const back=()=>navigate(page==='details'?'find':'welcome');
  const openDetails=(guild:OnlineGuild)=>{setSelected(guild);navigate('details')};
  const apply=async(guild:OnlineGuild)=>{
-  if(busy||requested.includes(guild.id)||guild.join_policy==='invite')return;
+  if(busy||requested.includes(guild.id)||guild.join_policy==='invite'||(typeof guild.member_count==='number'&&guild.member_count>=guild.member_cap))return;
   setBusy(true);setError('');
   try{
    const outcome=await requestGuildMembership(guild.id);
@@ -166,7 +166,7 @@ export function GuildDiscoveryFlow({onJoined}:{onJoined:()=>void}){
     <GuildCrest size={56} bannerId={guild.banner_id} frameId={guild.profile_frame_id}/>
     <View style={s.flex}>
      <Text numberOfLines={1} style={s.guildName}>{guild.name} {guild.tag?'['+guild.tag+']':''}</Text>
-     <View style={s.metaRow}><StatusPill label={guildPolicy(guild)} tone={guild.join_policy==='open'?'good':guild.join_policy==='apply'?'info':'muted'}/><Text style={s.stat}>LV. {guild.level}</Text><Text style={s.stat}>MAX {guild.member_cap}</Text></View>
+     <View style={s.metaRow}><StatusPill label={guildPolicy(guild)} tone={guildPolicy(guild)==='FULL'?'warning':guild.join_policy==='open'?'good':guild.join_policy==='apply'?'info':'muted'}/><Text style={s.stat}>LV. {guild.level}</Text><Text style={s.stat}>{typeof guild.member_count==='number'?guild.member_count+'/'+guild.member_cap+' MEMBERS':'MAX '+guild.member_cap}</Text></View>
      {guild.motto?<Text numberOfLines={2} style={s.motto}>{guild.motto}</Text>:<Text style={s.muted}>Minimum player level {guild.minimum_level}</Text>}
     </View>
     <Text style={s.chevron}>›</Text>
@@ -179,15 +179,15 @@ export function GuildDiscoveryFlow({onJoined}:{onJoined:()=>void}){
    <Panel>
     <View style={s.detailHeader}>
      <GuildCrest size={70} bannerId={selected.banner_id} frameId={selected.profile_frame_id}/>
-     <View style={s.flex}><Text style={s.guildTitle}>{selected.name}</Text><Text style={s.muted}>{selected.tag?'['+selected.tag+'] · ':''}Guild Level {selected.level}</Text><StatusPill label={guildPolicy(selected)} tone={selected.join_policy==='open'?'good':selected.join_policy==='apply'?'info':'muted'}/></View>
+     <View style={s.flex}><Text style={s.guildTitle}>{selected.name}</Text><Text style={s.muted}>{selected.tag?'['+selected.tag+'] · ':''}Guild Level {selected.level}</Text><StatusPill label={guildPolicy(selected)} tone={guildPolicy(selected)==='FULL'?'warning':selected.join_policy==='open'?'good':selected.join_policy==='apply'?'info':'muted'}/></View>
     </View>
-    <View style={s.statRow}><InfoStat title={'LV. '+selected.level} label="Guild Level" C={C}/><InfoStat title={String(selected.member_cap)} label="Member Cap" C={C}/><InfoStat title={'LV. '+selected.minimum_level} label="To Join" C={C}/></View>
+    <View style={s.statRow}><InfoStat title={'LV. '+selected.level} label="Guild Level" C={C}/><InfoStat title={typeof selected.member_count==='number'?selected.member_count+'/'+selected.member_cap:String(selected.member_cap)} label="Members" C={C}/><InfoStat title={'LV. '+selected.minimum_level} label="To Join" C={C}/></View>
     <Text style={s.section}>ABOUT THIS GUILD</Text>
     <Text style={s.description}>{selected.motto||'This Guild has not written a motto yet.'}</Text>
-    <View style={s.detailNote}><Text style={s.muted}>{selected.join_policy==='open'?'Open recruitment: eligible players can join immediately.':selected.join_policy==='apply'?'Applications: a Guild officer decides whether to accept you.':'This Guild currently accepts invitations only.'}</Text></View>
+    <View style={s.detailNote}><Text style={s.muted}>{guildPolicy(selected)==='FULL'?'This Guild is currently full. You can browse other recruiting Guilds.':selected.join_policy==='open'?'Open recruitment: eligible players can join immediately.':selected.join_policy==='apply'?'Applications: a Guild officer decides whether to accept you.':'This Guild currently accepts invitations only.'}</Text></View>
    </Panel>
    {requested.includes(selected.id)?<Panel accentColor={C.info} accentSurface={C.infoSurface}><Text style={s.guildName}>Application sent</Text><Text style={s.muted}>Your request is waiting for Guild officer review. You can keep browsing other Guilds.</Text></Panel>:null}
-   <GameButton title={requested.includes(selected.id)?'Application pending':selected.join_policy==='open'?'Join Guild':selected.join_policy==='apply'?'Apply to Join':'Invite only'} loading={busy} disabled={busy||selected.join_policy==='invite'||requested.includes(selected.id)} onPress={()=>void apply(selected)}/>
+   <GameButton title={requested.includes(selected.id)?'Application pending':guildPolicy(selected)==='FULL'?'Guild Full':selected.join_policy==='open'?'Join Guild':selected.join_policy==='apply'?'Apply to Join':'Invite only'} loading={busy} disabled={busy||selected.join_policy==='invite'||requested.includes(selected.id)||guildPolicy(selected)==='FULL'} onPress={()=>void apply(selected)}/>
    <GameButton title="Back to Guilds" tone="secondary" onPress={()=>navigate('find')}/>
   </>:null}
 

@@ -78,7 +78,7 @@ export function ItemQuickInspect({state,itemId,onClose,onNavigate,actions}:{stat
                 <ItemArtwork itemId={recipe.outputItemId} size={42}/>
                 <View style={s.flex}>
                   <Text style={s.bodyStrong}>{recipe.outputName}</Text>
-                  <Text style={s.note}>{it('{skill} Lv {level} · needs {quantity}',{skill:gl(recipe.skill),level:recipe.level,quantity:1}).replace(/ · needs 1$/, '')}</Text>
+                  <Text style={s.note}>{gl(recipe.skill)+' · '+gt('Level {value}',{value:recipe.level})}</Text>
                   {recipe.availability.status!=='ready'&&<Text style={s.availabilityDetail}>{contentText(recipe.availability.detail)}</Text>}
                 </View>
                 <View style={s.actionMeta}>

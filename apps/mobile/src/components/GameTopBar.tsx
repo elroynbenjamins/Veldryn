@@ -2,6 +2,7 @@ import {ThemedNavigationIcon} from './ThemedNavigationIcon';
 import {useEffect,useMemo,useState} from 'react';
 import {Pressable,ScrollView,StyleSheet,Text,View} from 'react-native';
 import {effectiveStats,previewActivityReward} from '../core/game';
+import {displayStat} from '../core/stat-display';
 import {formatGameNumber} from '../core/number-format';
 import {normalizeQuickNavDestinations,QUICK_NAV_DESTINATIONS,QuickNavDestination} from '../core/quick-navigation';
 import type {GameState,RewardBundle} from '../core/types';
@@ -76,8 +77,8 @@ export function GameTopBar({state,nowMs,reward,labelForDestination,onNavigate,on
       <Pressable accessibilityRole="button" accessibilityState={{expanded:environmentOpen}} accessibilityLabel={`${progressionEnvironmentText(state.settings.language,environment.seasonName)}, ${progressionEnvironmentText(state.settings.language,environment.weatherName)}`} accessibilityHint={tr("Shows season, weather, and activity effects")} onPress={()=>setEnvironmentOpen(true)} style={({pressed})=>[styles.environmentButton,{borderColor:environment.weatherColor},pressed&&styles.pressed]}>
         <EnvironmentArtwork type="season" id={environment.seasonId} size={24}/><View style={styles.environmentDivider}/><EnvironmentArtwork type="weather" id={environment.weatherId} size={24}/><View style={[styles.seasonStrip,{backgroundColor:environment.seasonColor}]}/>{activity&&<View style={styles.lockedDot}/>} 
       </Pressable>
-      <Pressable accessibilityRole="button" disabled={!onFoodCommand} onPress={openFood} style={({pressed})=>[styles.hpBlock,{borderColor:hpColor},pressed&&styles.pressed]} accessibilityHint={gt('Food & recovery')} accessibilityLabel={tr('{current} of {max} health',{current:Math.floor(currentHp),max:Math.floor(maxHp)})+', auto-eat '+state.settings.autoEatThresholdPct+'%'}>
-        <View style={styles.hpHeading}><Text style={[styles.hpLabel,{color:hpColor}]}>{tr("HP")}</Text><View style={styles.hpHeadingRight}><Text style={styles.hpAuto}>AUTO {state.settings.autoEatThresholdPct}%</Text><Text style={styles.hpValue}>{Math.floor(currentHp)}/{Math.floor(maxHp)}</Text></View></View>
+      <Pressable accessibilityRole="button" disabled={!onFoodCommand} onPress={openFood} style={({pressed})=>[styles.hpBlock,{borderColor:hpColor},pressed&&styles.pressed]} accessibilityHint={gt('Food & recovery')} accessibilityLabel={tr('{current} of {max} health',{current:displayStat(Math.floor(currentHp)),max:displayStat(Math.floor(maxHp))})+', auto-eat '+state.settings.autoEatThresholdPct+'%'}>
+        <View style={styles.hpHeading}><Text style={[styles.hpLabel,{color:hpColor}]}>{tr("HP")}</Text><View style={styles.hpHeadingRight}><Text style={styles.hpAuto}>AUTO {state.settings.autoEatThresholdPct}%</Text><Text style={styles.hpValue}>{displayStat(Math.floor(currentHp))}/{displayStat(Math.floor(maxHp))}</Text></View></View>
         <View style={styles.hpTrack}><View style={[styles.hpFill,{width:hpPercent,backgroundColor:hpColor}]}/></View>
       </Pressable>
       <View accessible accessibilityRole="text" accessibilityLabel={(online?tr('Online')+' · ':'')+tr('{amount} gold',{amount:formatGameNumber(state.character?.gold??0,state.settings.numberMode,state.settings.language)})} style={styles.goldBlock}><Text style={styles.goldLabel}>{tr("GOLD")}</Text><View style={styles.goldValueRow}>{online?<View accessible={false} style={styles.onlineDot}/>:null}<Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={.78} style={styles.goldValue}>{formatGameNumber(state.character?.gold??0,state.settings.numberMode,state.settings.language)}</Text></View></View>

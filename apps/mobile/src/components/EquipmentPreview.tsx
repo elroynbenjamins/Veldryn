@@ -4,6 +4,7 @@ import {ScrollView,StyleSheet,Text,View,useWindowDimensions} from 'react-native'
 import {itemDef} from '../content/items';
 import {equipmentSetDef,equippedSetPieceCount} from '../content/equipment-sets';
 import {effectiveStats} from '../core/game';
+import {displayStat} from '../core/stat-display';
 import {gearEnhancement,gemSocketCapacity,gemSocketState} from '../core/equipment-enhancement';
 import {previewEquipment} from '../core/equipment-preview';
 import {equipmentTradeOff} from '../core/equipment-trade-off';
@@ -15,7 +16,7 @@ import {EquipmentArtwork,hasEquipmentArtwork} from './EquipmentArtwork';
 import {GameButton} from './GameButton';
 import {GameModalHeader,GameModalSurface} from './GameModalSurface';
 
-function CompareRow({label,before,after}:{label:string;before:number;after:number}){const C=useGameTheme(),s=useMemo(()=>makeStyles(C),[C]),change=after-before;return <View style={s.statRow}><Text style={s.statLabel}>{label}</Text><Text style={s.old}>{before}</Text><Text style={s.arrow}>→</Text><Text style={s.next}>{after}</Text><Text style={[s.delta,change>0?s.better:change<0?s.worse:s.same]}>{change===0?'—':`${change>0?'+':''}${change}`}</Text></View>}
+function CompareRow({label,before,after}:{label:string;before:number;after:number}){const C=useGameTheme(),s=useMemo(()=>makeStyles(C),[C]),beforeDisplay=displayStat(before),afterDisplay=displayStat(after),change=afterDisplay-beforeDisplay;return <View style={s.statRow}><Text style={s.statLabel}>{label}</Text><Text style={s.old}>{beforeDisplay}</Text><Text style={s.arrow}>→</Text><Text style={s.next}>{afterDisplay}</Text><Text style={[s.delta,change>0?s.better:change<0?s.worse:s.same]}>{change===0?'—':`${change>0?'+':''}${change}`}</Text></View>}
 
 export function EquipmentPreview({state,itemId,onClose,onEquip,onInspect,onFavorite,onDeposit}:{state:GameState;itemId:string|null;onClose:()=>void;onEquip?:()=>void;onInspect?:()=>void;onFavorite?:()=>void;onDeposit?:()=>void}){
  const {gt,gl,language}=useGameplayText();
@@ -30,7 +31,7 @@ export function EquipmentPreview({state,itemId,onClose,onEquip,onInspect,onFavor
     candidateSet?{id:candidateSet.id,name:candidateSet.name,tier:candidateSet.tier,before:equippedSetPieceCount(state.character!.equipment,candidateSet),after:equippedSetPieceCount(projected.character!.equipment,candidateSet)}:null,
     oldSet?{id:oldSet.id,name:oldSet.name,tier:oldSet.tier,before:equippedSetPieceCount(state.character!.equipment,oldSet),after:equippedSetPieceCount(projected.character!.equipment,oldSet)}:null,
   ].filter(Boolean) as Array<{id:string;name:string;tier:string;before:number;after:number}>;
-  const powerDelta=after.power-before.power,tradeOff=equipmentTradeOff(before,after);
+  const powerDelta=displayStat(after.power-before.power),tradeOff=equipmentTradeOff(before,after);
   const leading=hasEquipmentArtwork(item)?<EquipmentArtwork item={item} compact framed={false}/>:undefined;
   return <GameModalSurface visible reduceMotion={state.settings.reduceMotion} onClose={onClose} backdropLabel={gt("Close equipment comparison")} surfaceStyle={[s.surface,{height:Math.min(height*.88,900)}]}>
     <GameModalHeader eyebrow={gl('EQUIPMENT PREVIEW')} title={gl('Compare equipment')} onClose={onClose}/>

@@ -4,6 +4,7 @@ import type {GameState,GearSlot} from '../core/types';
 import {availableEquipmentForSlot} from '../core/equipment-slot-picker';
 import {EQUIPMENT_SLOT_LABELS} from '../core/equipment-screen';
 import {enhancedGearStats,gearEnhancement} from '../core/equipment-enhancement';
+import {displayStatPrecise} from '../core/stat-display';
 import {profileError,profileText} from '../i18n/profile';
 import {useGameLanguage} from '../i18n/GameLanguageProvider';
 import {useGameplayText} from '../i18n/gameplay';
@@ -30,7 +31,7 @@ export function EquipmentSlotPicker({state,slot,onEquip,onClose}:{state:GameStat
    {items.length?items.map(item=>{const stats=enhancedGearStats(state,item.id),rank=gearEnhancement(state,item.id).rank;return <View key={item.id} style={s.item}>
     <View style={s.details}><EquipmentArtwork item={item} size={48} framed={false}/><View style={s.copy}>
      <Text style={s.name}>{item.name}{rank?` +${rank}`:''}</Text>
-     <Text style={s.stats}>{profileText(language,'Attack')} {Number.isInteger(stats.attack)?stats.attack:stats.attack.toFixed(1)} · {profileText(language,'Defense')} {Number.isInteger(stats.defense)?stats.defense:stats.defense.toFixed(1)} · {profileText(language,'HP')} {Number.isInteger(stats.hp)?stats.hp:stats.hp.toFixed(1)}</Text>
+     <Text style={s.stats}>{profileText(language,'Attack')} {displayStatPrecise(stats.attack)} · {profileText(language,'Defense')} {displayStatPrecise(stats.defense)} · {profileText(language,'HP')} {displayStatPrecise(stats.hp)}</Text>
     </View></View>
     <GameButton compact title={gt('Equip')} loading={busy===item.id} disabled={!!busy} onPress={()=>equip(item.id)}/>
    </View>}):<Text style={s.empty}>{profileText(language,'None available in Inventory.')}</Text>}

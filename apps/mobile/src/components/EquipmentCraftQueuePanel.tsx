@@ -10,6 +10,9 @@ import {GameButton} from './GameButton';
 import {ForgeClaimBanner} from './ForgeResultFeedback';
 import {ItemArtwork} from './ItemArtwork';
 import {forgeAnticipation} from '../core/progress-anticipation';
+import {itemDef} from '../content/items';
+import {effectiveOwnedGearRarity} from '../core/crafted-gear-instances';
+import {itemRarity,rarityMeta} from '../core/item-rarity';
 
 const NOOP=()=>{};
 
@@ -31,7 +34,11 @@ export function EquipmentCraftQueuePanel({state,onClaim,onClaimAll,onCancel,onMo
     <View style={s.head}><View style={s.flex}><Text style={s.eyebrow}>{gt("EQUIPMENT FORGE")}</Text><Text style={s.title}>{gt("Crafting Queue")}</Text><Text style={s.meta}>{model.active}/{model.slotInfo.capacity} active · {model.waiting}/{model.waitingCapacity} waiting · {model.ready} finished</Text></View><View style={[s.slotBadge,{borderColor:model.freeSlots?C.good:C.warning}]}><Text style={[s.slotValue,{color:model.freeSlots?C.good:C.warning}]}>{model.slotInfo.capacity}</Text><Text style={s.slotLabel}>{gt("ACTIVE")}</Text></View></View>
     {!!forgeResults?.length&&<ForgeClaimBanner results={forgeResults} reduceMotion={state.settings.reduceMotion} onDismiss={onDismissForgeResults??NOOP}/>}
 
-    {readyJobs.length>0&&<View style={s.group}><Text style={s.groupLabel}>{gt("FINISHED")}</Text>{readyJobs.map(job=><View key={job.id} style={[s.job,s.jobReady]}>{job.outputItemId?<ItemArtwork itemId={job.outputItemId} size={44}/>:null}<View style={s.flex}><Text style={s.jobName}>{job.name}</Text><Text style={s.meta}>{gt("Finished · ready to claim")}</Text></View><GameButton compact title={gt("Claim")} onPress={()=>onClaim(job.id)}/></View>)}</View>}
+    {readyJobs.length>0&&<View style={s.group}><Text style={s.groupLabel}>{gt("FINISHED")}</Text>{readyJobs.map(job=>{
+      const rarity=job.outputItemId?(job.forgeKind==='equipment'?effectiveOwnedGearRarity(state,job.outputItemId):itemRarity(itemDef(job.outputItemId))):'common';
+      const meta=rarityMeta(rarity);
+      return <View key={job.id} style={[s.job,s.jobReady,{borderColor:meta.color,borderWidth:meta.borderWidth,backgroundColor:meta.surface}]}>{job.outputItemId?<ItemArtwork itemId={job.outputItemId} size={44}/>:null}<View style={s.flex}><Text style={[s.jobName,{color:meta.color}]}>{meta.symbol} {job.name}</Text><Text style={s.meta}>{gt("Finished · ready to claim")}{rarity==='common'?'':' · '+meta.label.toUpperCase()}</Text></View><GameButton compact title={gt("Claim")} onPress={()=>onClaim(job.id)}/></View>;
+    })}</View>}
 
     {activeJobs.length>0&&<View style={s.group}><Text style={s.groupLabel}>{gt("CRAFTING NOW")}</Text>{activeJobs.map(job=>{const progress=Math.max(2,Math.min(100,100-(job.remainingSeconds/job.durationSeconds)*100)),anticipation=forgeAnticipation(job.remainingSeconds,job.durationSeconds),near=anticipation.band!=='none';return <View key={job.id} style={[s.job,near&&s.jobNear]}>{job.outputItemId?<ItemArtwork itemId={job.outputItemId} size={44}/>:null}<View style={s.flex}><Text style={s.jobName}>{job.name}</Text><Text style={[s.meta,near&&s.nearText]}>{near?(anticipation.band==='urgent'?gt("ALMOST DONE ·"):gt("FINISHING SOON ·")):''}{duration(job.remainingSeconds)} remaining · {duration(job.durationSeconds)} craft</Text><View style={s.track}><View style={[s.fill,near&&s.fillNear,{width:(progress+'%') as `${number}%`}]}/></View></View><View style={s.jobActions}><Text style={[s.running,near&&s.runningNear]}>{near?gt("SOON"):gt("Crafting").toLocaleUpperCase(language)}</Text><GameButton compact title={gt("Cancel")} tone="secondary" onPress={()=>onCancel(job.id)}/></View></View>})}</View>}
 

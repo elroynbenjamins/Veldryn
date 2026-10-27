@@ -1,0 +1,42 @@
+name: Q-Mode NPC bundle verification
+
+on:
+  push:
+    branches:
+      - feature/qmode-npc-fallback-echo-clarity
+
+permissions:
+  contents: write
+
+jobs:
+  verify-and-bundle:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: true
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: pnpm
+          cache-dependency-path: backend/pnpm-lock.yaml
+      - name: Install backend
+        run: pnpm --dir backend install --frozen-lockfile
+      - name: Test Q-Mode composition
+        run: pnpm --dir backend test:coop-composition
+      - name: Test online backend
+        run: pnpm --dir backend test:online
+      - name: Generate bundled online Edge Functions
+        run: pnpm --dir backend build:online
+      - name: Commit generated co-op Edge Function only
+        run: |
+          git add -f backend/supabase/functions/coop/index.ts
+          if ! git diff --cached --quiet; then
+            git config user.name "github-actions[bot]"
+            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+            git commit -m "Bundle validated Q-Mode NPC fallback for co-op Edge Function"
+            git push origin HEAD:feature/qmode-npc-fallback-echo-clarity
+          fi

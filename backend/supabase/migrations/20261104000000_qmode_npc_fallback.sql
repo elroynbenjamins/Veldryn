@@ -46,7 +46,7 @@ begin
       or s#>>'{normalized,snapshot,characterId}' is distinct from s->>'characterId'
       or s#>>'{normalized,snapshot,classId}' is distinct from s->>'classId'
       or s#>>'{normalized,snapshot,role}' is distinct from s#>>'{readiness,role}'
-      or s#>>'{readiness,role}' is distinct from case when s->>'classId' in ('IRONWARDEN','BASTION','DREADGUARD') then 'tank' when s->>'classId' in ('DAWNKEEPER','STONECALLER') then 'support' else 'damage' end
+      or s#>>'{readiness,role}' is distinct from (case when s->>'classId' in ('IRONWARDEN','BASTION','DREADGUARD') then 'tank' when s->>'classId' in ('DAWNKEEPER','STONECALLER') then 'support' else 'damage' end)
       or (s#>>'{normalized,effectiveLevel}')::integer not between 1 and 100
    then raise exception 'invalid_npc_member';end if;
   else

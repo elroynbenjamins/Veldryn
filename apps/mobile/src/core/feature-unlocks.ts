@@ -1,6 +1,7 @@
 import type {GameState} from './types';
 
 export type EarlyFeatureId='dailySupplies'|'events'|'pets'|'accountBonuses'|'friends'|'companions'|'social'|'contracts'|'masteryHall'|'guild'|'rankings';
+export const GUILD_UNLOCK_LEVEL=7;
 export const EARLY_FEATURE_DESTINATION_ORDER=['DailySupplies','Events','AccountBonuses','Friends','Companions','Social','MasteryHall','Guild','Rankings'] as const;
 
 export const EARLY_FEATURE_UNLOCKS={
@@ -13,7 +14,7 @@ export const EARLY_FEATURE_UNLOCKS={
  social:{questId:'QST_005',title:'Social & Parties',requirement:'Complete Into Ironwood',description:'Party recruitment and cooperative social systems unlock after the core solo loop is understood.'},
  contracts:{questId:'QST_005',title:'Contract Board',requirement:'Complete Into Ironwood',description:'Weekly and cooperative contract planning unlocks with deeper regional progression.'},
  masteryHall:{questId:'QST_005',title:'Mastery Hall',requirement:'Complete Into Ironwood',description:'Long-term profession mastery records appear once the player has enough skill actions to make the system meaningful.'},
- guild:{questId:'QST_005',title:'Guilds',requirement:'Reach Level 10 and complete Into Ironwood',description:'Guilds unlock at Level 10, once the core solo loop is established and social progression becomes useful.'},
+ guild:{questId:'QST_005',title:'Guilds',requirement:`Reach Level ${GUILD_UNLOCK_LEVEL}`,description:`Guilds unlock at Level ${GUILD_UNLOCK_LEVEL}, so you can find a group before deeper regional progression.`},
  rankings:{questId:'QST_011',title:'Rankings',requirement:'Reach Level 20 and complete Place Among Guilds',description:'Prestige rankings unlock later at Level 20, after the player has had time to establish their character and social identity.'},
 } as const;
 
@@ -22,10 +23,18 @@ export function playerFacingGameplayError(message:string){
  return message==='events_locked'?'Events are temporarily unavailable. Please try again.':message==='contract_board_locked'?EARLY_FEATURE_UNLOCKS.contracts.requirement+' and claim its quest reward to unlock the Contract Board.':message;
 }
 
-export interface FeatureUnlockHost{quests?:readonly {questId:string;status:string}[];otherCharacters?:readonly {quests:readonly {questId:string;status:string}[]}[];account:{guildMember?:boolean};}
+export interface FeatureUnlockHost{character?:{level?:number}|null;quests?:readonly {questId:string;status:string}[];otherCharacters?:readonly {level?:number;quests:readonly {questId:string;status:string}[]}[];account:{guildMember?:boolean};}
 export function accountQuestClaimed(state:FeatureUnlockHost,questId:string){
  if(state.quests?.some(row=>row.questId===questId&&row.status==='claimed'))return true;
  return (state.otherCharacters??[]).some(entry=>entry.quests.some(row=>row.questId===questId&&row.status==='claimed'));
+}
+function accountReachedLevel(state:FeatureUnlockHost,level:number){
+ if((state.character?.level??0)>=level)return true;
+ return (state.otherCharacters??[]).some(entry=>{
+  const anyEntry=entry as any;
+  const otherLevel=(typeof anyEntry.level==='number'?anyEntry.level:anyEntry.character?.level)??0;
+  return otherLevel>=level;
+ });
 }
 export function earlyFeatureUnlocked(state:FeatureUnlockHost,id:EarlyFeatureId){
  // Live Events and their general rewards are available to every character from level 1.
@@ -35,7 +44,13 @@ export function earlyFeatureUnlocked(state:FeatureUnlockHost,id:EarlyFeatureId){
  // Onboarding is learned once per account. New characters should not re-hide
  // Daily Supplies, social systems, Pets/Companions or Guilds after the player
  // has already reached the relevant milestone on another character.
- if(id==='guild'&&state.account.guildMember)return true;
+ if(id==='guild'){
+  if(state.account.guildMember)return true;
+  if(accountReachedLevel(state,GUILD_UNLOCK_LEVEL))return true;
+  // Legacy accounts whose quest ladder claimed QST_005 before this threshold change
+  // keep the unlock they already had.
+  return accountQuestClaimed(state,rule.questId);
+ }
  return accountQuestClaimed(state,rule.questId);
 }
 export function earlyFeatureUnlockProgress(state:GameState,id:EarlyFeatureId){

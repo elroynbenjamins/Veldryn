@@ -52,6 +52,13 @@ state=claimQuest(state,'QST_003',6);
 for(const id of ['pets','accountBonuses','friends'] as const)assert.equal(earlyFeatureUnlocked(state,id),true,id+' should unlock at QST_003');
 assert.equal(earlyFeatureUnlocked(state,'companions'),false);
 
+// Guild unlocks at character level 7 directly, independent of QST_005.
+const guildEarly={...state,character:{...state.character!,level:7}};
+assert.equal(earlyFeatureUnlocked(guildEarly,'guild'),true,'Guild should unlock at character level 7');
+assert.equal(earlyFeatureLockReason(guildEarly,'Guild'),'');
+const guildLowLevel={...state,character:{...state.character!,level:6}};
+assert.equal(earlyFeatureUnlocked(guildLowLevel,'guild'),false,'Guild should remain locked under character level 7');
+
 state=claimQuest(state,'QST_005',10);
 for(const id of ['companions','social','contracts','masteryHall','guild'] as const)assert.equal(earlyFeatureUnlocked(state,id),true,id+' should unlock at QST_005');
 assert.equal(earlyFeatureLockReason(state,'Guild'),'');

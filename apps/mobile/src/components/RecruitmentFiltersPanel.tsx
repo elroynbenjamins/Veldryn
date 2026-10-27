@@ -15,9 +15,11 @@ export function RecruitmentFiltersPanel({value,onChange,hidePostType=false}:{val
  const st=useSocialText();
  const C=useGameTheme(),s=useMemo(()=>makeStyles(C),[C]);
  const [expanded,setExpanded]=useState(false);
+ const [showAdvanced,setShowAdvanced]=useState(false);
  const count=Object.entries(value).filter(([key,v])=>key!=='query'&&(Array.isArray(v)?v.length>0:!!v)).length;
  const update=(patch:Partial<RecruitmentClientFilters>)=>onChange({...value,...patch});
  const toggle=<T,>(items:T[],item:T)=>items.includes(item)?items.filter(x=>x!==item):[...items,item];
+ const advancedCount=((value.activityTags?.length??0)+(value.playstyleTags?.length??0)+(value.availabilityTags?.length??0)+(value.guildInterestTags?.length??0))+(value.language?1:0)+(value.region?1:0)+(value.maxMinCombatLevel?1:0)+(value.maxMinTotalLevel?1:0)+(value.requireOpenPartySpot?1:0);
  return <View style={s.root}>
   <View style={s.searchRow}><View style={s.search}><SearchField accessibilityLabel={st("Search recruitment")} placeholder={st("Search adverts")} placeholderTextColor={C.muted} value={value.query} onChangeText={query=>update({query})}/></View><Pressable accessibilityRole="button" accessibilityState={{expanded}} onPress={()=>setExpanded(v=>!v)} style={({pressed})=>[s.filterToggle,expanded&&s.filterToggleActive,pressed&&s.pressed]}><Text style={s.filterToggleText}>{expanded?st("Hide filters"):st("Filters")}</Text>{count>0?<View style={s.countBadge}><Text style={s.count}>{count}</Text></View>:null}</Pressable></View>
   {expanded?<View style={s.filterBody}>
@@ -29,10 +31,13 @@ export function RecruitmentFiltersPanel({value,onChange,hidePostType=false}:{val
    <FilterGroup label={st("FOCUS")}>{(['combat','skilling','mixed'] as const).map(focus=><FilterChip key={focus} label={focus} selected={value.focuses.includes(focus)} onPress={()=>update({focuses:toggle(value.focuses,focus)})}/>)}</FilterGroup>
    <FilterGroup label={st("ROLE")}>{(['tank','damage','support'] as const).map(role=><FilterChip key={role} label={role} selected={value.roles.includes(role)} onPress={()=>update({roles:toggle(value.roles,role)})}/>)}</FilterGroup>
    <FilterGroup label={st("PACE")}>{(['casual','regular','active','hardcore'] as RecruitmentActivityLevel[]).map(level=><FilterChip key={level} label={level} selected={value.activityLevels?.includes(level)??false} onPress={()=>update({activityLevels:toggle(value.activityLevels??[],level)})}/>)}</FilterGroup>
-   {(['activityTags','playstyleTags','availabilityTags','guildInterestTags'] as const).map(key=><TextInput key={key} accessibilityLabel={tagFieldLabel[key]} placeholder={tagFieldLabel[key]+' · comma separated'} placeholderTextColor={C.muted} style={s.input} defaultValue={value[key]?.join(', ')} onEndEditing={event=>update({[key]:recruitmentTags(event.nativeEvent.text)})}/>)}
-   <View style={s.row}>{(['language','region'] as const).map(key=><TextInput key={key} accessibilityLabel={key} placeholder={key==='language'?st("Language"):st("Region")} placeholderTextColor={C.muted} style={[s.input,s.grow]} value={value[key]??''} maxLength={40} onChangeText={text=>update({[key]:text})}/>)}</View>
-   <View style={s.row}>{(['maxMinCombatLevel','maxMinTotalLevel'] as const).map(key=><TextInput key={key} accessibilityLabel={key} placeholder={key==='maxMinCombatLevel'?st("My Combat level"):st("My Total level")} placeholderTextColor={C.muted} style={[s.input,s.grow]} keyboardType="number-pad" value={value[key]?.toString()??''} onChangeText={text=>update({[key]:text?Math.max(0,parseInt(text,10)||0):undefined})}/>)}</View>
-   <View style={s.switchRow}><View style={s.switchCopy}><Text style={s.switchTitle}>{st("Open Party spots only")}</Text><Text style={s.switchHint}>{st("Hide full LFM posts.")}</Text></View><Switch accessibilityLabel={st("Only Parties with open spots")} value={value.requireOpenPartySpot??false} trackColor={{false:C.line,true:C.selectionLine}} thumbColor={value.requireOpenPartySpot?C.accent:C.muted} onValueChange={requireOpenPartySpot=>update({requireOpenPartySpot})}/></View>
+   <Pressable accessibilityRole="button" accessibilityState={{expanded:showAdvanced}} onPress={()=>setShowAdvanced(v=>!v)} style={({pressed})=>[s.advancedToggle,pressed&&s.pressed]}><Text style={s.advancedLabel}>{showAdvanced?'Hide advanced filters':'Advanced filters'}{advancedCount>0?' · '+advancedCount:''}</Text><Text style={s.chevron}>{showAdvanced?'−':'+'}</Text></Pressable>
+   {showAdvanced?<>
+    {(['activityTags','playstyleTags','availabilityTags','guildInterestTags'] as const).map(key=><TextInput key={key} accessibilityLabel={tagFieldLabel[key]} placeholder={tagFieldLabel[key]+' · comma separated'} placeholderTextColor={C.muted} style={s.input} defaultValue={value[key]?.join(', ')} onEndEditing={event=>update({[key]:recruitmentTags(event.nativeEvent.text)})}/>)}
+    <View style={s.row}>{(['language','region'] as const).map(key=><TextInput key={key} accessibilityLabel={key} placeholder={key==='language'?st("Language"):st("Region")} placeholderTextColor={C.muted} style={[s.input,s.grow]} value={value[key]??''} maxLength={40} onChangeText={text=>update({[key]:text})}/>)}</View>
+    <View style={s.row}>{(['maxMinCombatLevel','maxMinTotalLevel'] as const).map(key=><TextInput key={key} accessibilityLabel={key} placeholder={key==='maxMinCombatLevel'?st("My Combat level"):st("My Total level")} placeholderTextColor={C.muted} style={[s.input,s.grow]} keyboardType="number-pad" value={value[key]?.toString()??''} onChangeText={text=>update({[key]:text?Math.max(0,parseInt(text,10)||0):undefined})}/>)}</View>
+    <View style={s.switchRow}><View style={s.switchCopy}><Text style={s.switchTitle}>{st("Open Party spots only")}</Text><Text style={s.switchHint}>{st("Hide full LFM posts.")}</Text></View><Switch accessibilityLabel={st("Only Parties with open spots")} value={value.requireOpenPartySpot??false} trackColor={{false:C.line,true:C.selectionLine}} thumbColor={value.requireOpenPartySpot?C.accent:C.muted} onValueChange={requireOpenPartySpot=>update({requireOpenPartySpot})}/></View>
+   </>:null}
   </View>:null}
  </View>;
 }
@@ -51,12 +56,15 @@ function makeStyles(C:ThemeColors){return StyleSheet.create({
  filterBody:{gap:8,padding:9,borderWidth:1,borderColor:C.line,borderRadius:radii.md,backgroundColor:C.panel},
  filterHead:{flexDirection:'row',alignItems:'center',justifyContent:'space-between',gap:8},
  filterTitle:{...typography.caption,color:C.accent,fontWeight:'900',letterSpacing:.8},
- clear:{minHeight:44,justifyContent:'center',paddingHorizontal:4},clearText:{fontSize:9,color:C.info,fontWeight:'900'},
- group:{gap:5},groupLabel:{fontSize:8.5,color:C.accentSoft,fontWeight:'900',letterSpacing:.75},
+ clear:{minHeight:44,justifyContent:'center',paddingHorizontal:4},clearText:{fontSize:11,color:C.info,fontWeight:'900'},
+ group:{gap:6},groupLabel:{fontSize:10,color:C.accentSoft,fontWeight:'900',letterSpacing:1},
  row:{flexDirection:'row',flexWrap:'wrap',gap:5,alignItems:'center'},
  chip:{minHeight:44,paddingHorizontal:10,justifyContent:'center',borderWidth:1,borderColor:C.line,borderRadius:99,backgroundColor:C.panel2},
  chipSelected:{borderColor:C.selectionLine,backgroundColor:C.selection},
- chipText:{fontSize:10.5,color:C.muted,fontWeight:'800',textTransform:'capitalize'},chipTextSelected:{color:C.text},
+ chipText:{fontSize:12,color:C.muted,fontWeight:'800',textTransform:'capitalize'},chipTextSelected:{color:C.text},
+ advancedToggle:{minHeight:40,paddingHorizontal:12,flexDirection:'row',alignItems:'center',gap:8,borderWidth:1,borderColor:C.line,borderRadius:8,backgroundColor:C.panel2},
+ advancedLabel:{flex:1,fontSize:11,lineHeight:15,color:C.muted,fontWeight:'800'},
+ chevron:{fontSize:16,color:C.muted,fontWeight:'900'},
  grow:{flex:1,minWidth:110},
  input:{minHeight:touchTargetMin,borderWidth:1,borderColor:C.line,borderRadius:radii.sm,paddingHorizontal:spacing.sm,color:C.text,backgroundColor:C.inputBg},
  switchRow:{minHeight:48,flexDirection:'row',alignItems:'center',gap:8,paddingVertical:4,borderTopWidth:StyleSheet.hairlineWidth,borderTopColor:C.line},

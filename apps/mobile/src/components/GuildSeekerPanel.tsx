@@ -21,8 +21,8 @@ export function GuildSeekerPanel({seekers,nowMs,onOpen,onPostMyAd}:{seekers:Recr
 function makeStyles(C:ThemeColors){return StyleSheet.create({
  content:{gap:spacing.sm},
  header:{minHeight:54,flexDirection:'row',gap:9,alignItems:'center'},
- copy:{flex:1,minWidth:0},title:{...typography.title,color:C.text},sub:{fontSize:10,lineHeight:14,color:C.muted},
+ copy:{flex:1,minWidth:0},title:{...typography.title,color:C.text},sub:{fontSize:12,lineHeight:17,color:C.muted},
  action:{width:96},
- emptyCard:{minHeight:72,alignItems:'center',justifyContent:'center',gap:3,padding:10,borderWidth:1,borderStyle:'dashed',borderColor:C.line,borderRadius:10,backgroundColor:C.panel},
- emptyTitle:{...typography.bodyStrong,color:C.text},empty:{fontSize:9,lineHeight:13,color:C.muted,textAlign:'center'},
+ emptyCard:{minHeight:96,alignItems:'center',justifyContent:'center',gap:6,padding:14,borderWidth:1,borderColor:C.line,borderRadius:10,backgroundColor:C.panel2},
+ emptyTitle:{...typography.bodyStrong,color:C.text},empty:{fontSize:12,lineHeight:17,color:C.muted,textAlign:'center'},
 });}

@@ -38,6 +38,8 @@ jobs:
         run: npx -y expo-doctor
       - name: Install backend dependencies used by reconciliation tests
         run: pnpm --dir ../../backend install --frozen-lockfile
+      - name: Validate Q-Mode NPC composition, level and real Echo priority
+        run: pnpm --dir ../../backend test:coop-composition
       - name: Validate recent Supabase migration versions
         run: node ../../tools/validate-recent-migration-versions.mjs
       - name: Test chat retry receipts and read cursors in PostgreSQL

@@ -12,6 +12,7 @@ import {explorationRoute} from '../content/exploration';
 import {FAITH_TIERS} from '../content/faith';
 import {Panel} from '../components/Panel';
 import {GameButton} from '../components/GameButton';
+import {TutorialBeacon} from '../components/TutorialBeacon';
 import {ActivityCard} from '../components/ActivityCard';
 import {StatBar} from '../components/StatBar';
 import {characterProgressWithinLevel} from '../core/progression';
@@ -71,7 +72,7 @@ export function HomeScreen({state,preview,nowMs,onClaim,onStop,onQueueRemove,onQ
  const guidePanel=(<View style={[s.guide,guide.priority==='urgent'&&s.urgent]}><View style={s.guideTop}><Text style={[s.guideKicker,guide.priority==='urgent'&&s.guideKickerUrgent]}>{guide.priority==='urgent'?a("ATTENTION"):a("NEXT STEP")}</Text><Text style={[s.guideState,guide.priority==='urgent'&&s.guideStateUrgent]}>{guide.priority==='urgent'?a("NOW"):a("RECOMMENDED")}</Text></View><Text style={s.title}>{a(guide.title)}</Text><Text style={s.small}>{a(guide.detail)}</Text><GameButton compact title={a(guide.button)} tone={guide.priority==='urgent'?'primary':'secondary'} onPress={()=>onNavigate(guide.destination,guide.zoneId)}/></View>);
  return <><ScrollView contentContainerStyle={s.root} showsVerticalScrollIndicator={false} showsHorizontalScrollIndicator={false}>
   <HomeAdventureHeader state={state}/>
-  {state.activity&&activityName?<ActivityCard title={activityName} kind={state.activity.kind} activity={state.activity} cycleSeconds={cycle} capHours={afk.hours} preview={preview} rates={rate} resourceRate={resourceRate} maxHp={combatMaxHp} levelPace={levelPace} reduceMotion={state.settings.reduceMotion} numberMode={state.settings.numberMode} onClaim={onClaim} onStop={onStop}/>:<Panel><Text style={s.title}>{a("Your next adventure")}</Text><Text style={s.small}>{a("Choose a hunt or gathering activity to start earning.")}</Text><GameButton title={a("Explore activities")} onPress={onOpenCombat}/></Panel>}
+  <TutorialBeacon id="home-primary" reduceMotion={state.settings.reduceMotion}>{state.activity&&activityName?<ActivityCard title={activityName} kind={state.activity.kind} activity={state.activity} cycleSeconds={cycle} capHours={afk.hours} preview={preview} rates={rate} resourceRate={resourceRate} maxHp={combatMaxHp} levelPace={levelPace} reduceMotion={state.settings.reduceMotion} numberMode={state.settings.numberMode} onClaim={onClaim} onStop={onStop}/>:<Panel><Text style={s.title}>{a("Your next adventure")}</Text><Text style={s.small}>{a("Choose a hunt or gathering activity to start earning.")}</Text><GameButton title={a("Explore activities")} onPress={onOpenCombat}/></Panel>}</TutorialBeacon>
   {guide.priority==='urgent'?guidePanel:null}
   <ActionQueuePanel state={state} onRemove={onQueueRemove} onMove={onQueueMove} onClear={onQueueClear} onStartNext={onQueueStart} onAdd={()=>setQueueSheetOpen(true)} onSetCurrentHandoff={onSetCurrentHandoff} onResolve={destination=>destination==='Skills'?onOpenSkill('alchemy'):onNavigate(destination)}/>
   <HomeCommandDeck state={state} onGuild={()=>onNavigate('Guild')} onDungeons={()=>onNavigate('Coop')} onContracts={onOpenContracts} onForge={()=>onOpenSkill('smithing')} onQueue={()=>setQueueSheetOpen(true)}/>

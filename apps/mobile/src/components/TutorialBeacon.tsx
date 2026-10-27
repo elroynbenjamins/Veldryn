@@ -17,9 +17,16 @@ type Ctx={activeId:string|null;setActive:(id:string|null)=>void};
 const noopCtx:Ctx={activeId:null,setActive:()=>{}};
 const TutorialCtx=createContext<Ctx>(noopCtx);
 
-export function TutorialHighlightProvider({initial=null,children}:{initial?:string|null;children:ReactNode}){
- const [activeId,setActiveId]=useState<string|null>(initial);
- const setActive=useCallback((id:string|null)=>setActiveId(id),[]);
+/**
+ * Mounts the global tutorial highlight context. If `active` is supplied the
+ * provider becomes a pass-through driven by that prop (useful when a tour step
+ * in parent state should also drive the beacon). Otherwise it owns the active
+ * id locally via setActive() for ad-hoc coach marks.
+ */
+export function TutorialHighlightProvider({active=null,initial=null,children}:{active?:string|null;initial?:string|null;children:ReactNode}){
+ const [localId,setLocalId]=useState<string|null>(initial);
+ const activeId=active!==null?active:localId;
+ const setActive=useCallback((id:string|null)=>setLocalId(id),[]);
  const value=useMemo(()=>({activeId,setActive}),[activeId,setActive]);
  return <TutorialCtx.Provider value={value}>{children}</TutorialCtx.Provider>;
 }

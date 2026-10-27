@@ -11,6 +11,8 @@ export interface FirstSessionTutorialStep{
  destination:FirstSessionTutorialDestination;
  // Do not highlight Account when the real target is Home or the Quests shortcut.
  highlightPrimary?:'World'|'Skills'|'Inventory'|'More';
+ /** Optional in-screen beacon id activated while this step is visible. */
+ highlightBeacon?:string;
 }
 const STEPS:readonly FirstSessionTutorialStep[]=[
  {id:'first_hunt',questId:'QST_001',eyebrow:'FIRST HUNT',title:'Make the road safer',body:'Start with 5 Moss Rats. Your character handles the fight once you start the hunt.',hint:'Open Combat, choose Moss Rat in Greenfields, then start the hunt.',actionLabel:'Show Combat',destination:'Combat'},

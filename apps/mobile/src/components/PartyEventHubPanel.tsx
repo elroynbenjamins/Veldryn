@@ -2,6 +2,8 @@ import {useSocialText} from '../i18n/social';
 import React, { useMemo, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { milestoneProgressPercent, nextUnreachedMilestone, type PartyEventView } from '../core/party-social';
+import {equipmentTheme,radii,spacing,typography,type ThemeColors} from '../theme/theme';
+import {useGameTheme} from '../theme/ThemeContext';
 
 type Tab='overview'|'milestones'|'party';
 export interface PartyEventHubPanelProps {
@@ -14,10 +16,11 @@ export interface PartyEventHubPanelProps {
   onFindParty?: ()=>void;
 }
 
-function ProgressBar({percent}:{percent:number}){return <View style={styles.track}><View style={[styles.fill,{width:`${percent}%`}]} /></View>;}
+function ProgressBar({percent}:{percent:number}){const C=useGameTheme(),styles=useMemo(()=>makeStyles(C),[C]);return <View style={styles.track}><View style={[styles.fill,{width:`${percent}%`}]} /></View>;}
 
 export function PartyEventHubPanel(props:PartyEventHubPanelProps){
  const st=useSocialText();
+  const C=useGameTheme(),styles=useMemo(()=>makeStyles(C),[C]);
   const [tab,setTab]=useState<Tab>('overview');
   const event=props.event;
   const nextPersonal=useMemo(()=>event?nextUnreachedMilestone(event.personalPoints,event.personalMilestones):undefined,[event]);
@@ -45,7 +48,49 @@ export function PartyEventHubPanel(props:PartyEventHubPanelProps){
   </View>;
 }
 
-const styles=StyleSheet.create({
-  panel:{backgroundColor:'#0f1822',borderWidth:1,borderColor:'#394d5f',borderRadius:12,padding:13,gap:9},header:{flexDirection:'row',gap:10},flex:{flex:1},eyebrow:{color:'#88a8bd',fontSize:10,fontWeight:'900',letterSpacing:1},title:{color:'#f1dfa8',fontSize:21,fontWeight:'900'},copy:{color:'#b9c6cf',fontSize:12,lineHeight:17},rankBadge:{minWidth:58,alignItems:'center',justifyContent:'center',backgroundColor:'#27241b',borderColor:'#9d7e3f',borderWidth:1,borderRadius:8,padding:6},rankSmall:{color:'#9e8b5b',fontSize:9,fontWeight:'900'},rankValue:{color:'#f0d58d',fontSize:19,fontWeight:'900'},
-  tags:{flexDirection:'row',flexWrap:'wrap',gap:5},tag:{color:'#d1c089',borderColor:'#675a37',borderWidth:1,borderRadius:99,paddingHorizontal:8,paddingVertical:3,fontSize:9,textTransform:'capitalize'},tabs:{flexDirection:'row',gap:6},tab:{flex:1,alignItems:'center',paddingVertical:8,backgroundColor:'#0b1018',borderColor:'#304656',borderWidth:1,borderRadius:99},tabActive:{backgroundColor:'#123e61',borderColor:'#43bdf2'},tabText:{color:'#aebdca',fontSize:10,fontWeight:'900',textTransform:'capitalize'},section:{gap:8},statRow:{flexDirection:'row',justifyContent:'space-between',backgroundColor:'#15232e',padding:10,borderRadius:8},statLabel:{color:'#8398a7',fontSize:9,fontWeight:'900'},statValue:{color:'#edf2f4',fontSize:20,fontWeight:'900'},label:{color:'#b7c6d0',fontSize:11,fontWeight:'800'},track:{height:8,backgroundColor:'#22313d',borderRadius:4,overflow:'hidden',borderWidth:1,borderColor:'#344b5b'},fill:{height:'100%',backgroundColor:'#43bdf2'},cap:{color:'#8799a6',fontSize:10},actions:{flexDirection:'row',gap:7},primary:{backgroundColor:'#8f6d2d',borderColor:'#cfab55',borderWidth:1,borderRadius:8,paddingVertical:9,paddingHorizontal:10,alignItems:'center'},primaryText:{color:'#fff1c3',fontWeight:'900',fontSize:12},secondary:{flex:1,backgroundColor:'#1b3446',borderColor:'#4f7993',borderWidth:1,borderRadius:8, paddingVertical:8,alignItems:'center'},secondaryText:{color:'#d8edf8',fontWeight:'900',fontSize:11},warningCard:{gap:3,padding:9,borderWidth:1,borderColor:'#8a6a3e',borderRadius:8,backgroundColor:'#302719'},warningLabel:{color:'#efd895',fontSize:9,fontWeight:'900',letterSpacing:1},warning:{color:'#d8b77e',fontSize:10,lineHeight:14},scroll:{maxHeight:440},sectionTitle:{color:'#c9b574',fontSize:12,fontWeight:'900',marginTop:4},milestone:{flexDirection:'row',alignItems:'center',gap:8,paddingVertical:8,borderBottomWidth:1,borderBottomColor:'#253743'},milestoneTitle:{color:'#e4eaee',fontWeight:'900'},milestoneState:{color:'#8396a3',fontSize:10},readyState:{color:'#8dd3a5',fontWeight:'900'},claimedState:{color:'#efd895',fontWeight:'900'},claim:{backgroundColor:'#294331',borderColor:'#57805f',borderWidth:1,borderRadius:6,paddingHorizontal:10,paddingVertical:6},claimText:{color:'#d8efdc',fontWeight:'900',fontSize:10},member:{flexDirection:'row',alignItems:'center',gap:8,paddingVertical:7,borderBottomWidth:1,borderBottomColor:'#243440'},memberName:{color:'#e6edf0',fontWeight:'900'},memberMeta:{color:'#8498a6',fontSize:10},memberPoints:{color:'#ead79d',fontWeight:'900'},hint:{color:'#8194a2',fontSize:10,lineHeight:14},
-});
+function makeStyles(C:ThemeColors){const E=equipmentTheme(C);return StyleSheet.create({
+  panel:{backgroundColor:C.panel,borderWidth:1,borderColor:C.line,borderRadius:radii.lg,padding:spacing.md,gap:10},
+  header:{flexDirection:'row',gap:10},flex:{flex:1,minWidth:0},
+  eyebrow:{...typography.caption,color:C.accentSoft,fontWeight:'900',letterSpacing:1},
+  title:{...typography.hero,color:E.goldSoft},
+  copy:{...typography.body,color:C.muted,lineHeight:19},
+  rankBadge:{minWidth:62,alignItems:'center',justifyContent:'center',backgroundColor:C.panel2,borderColor:E.goldSoft,borderWidth:1,borderRadius:8,padding:7},
+  rankSmall:{...typography.caption,color:C.muted,fontWeight:'900'},
+  rankValue:{fontSize:20,lineHeight:24,color:E.goldSoft,fontWeight:'900'},
+  tags:{flexDirection:'row',flexWrap:'wrap',gap:6},
+  tag:{color:C.muted,borderColor:C.line,borderWidth:1,borderRadius:99,paddingHorizontal:10,paddingVertical:4,fontSize:11,textTransform:'capitalize',fontWeight:'700',backgroundColor:C.panel2},
+  tabs:{flexDirection:'row',gap:6},
+  tab:{flex:1,alignItems:'center',paddingVertical:10,backgroundColor:C.panel2,borderColor:C.line,borderWidth:1,borderRadius:99},
+  tabActive:{backgroundColor:C.selection,borderColor:C.selectionLine},
+  tabText:{...typography.caption,color:C.muted,fontWeight:'900',textTransform:'capitalize'},
+  section:{gap:10},
+  statRow:{flexDirection:'row',justifyContent:'space-between',backgroundColor:C.panel2,padding:12,borderRadius:8,gap:12},
+  statLabel:{...typography.caption,color:C.muted,fontWeight:'900',letterSpacing:.8},
+  statValue:{fontSize:20,lineHeight:24,color:C.text,fontWeight:'900'},
+  label:{fontSize:12,lineHeight:17,color:C.text,fontWeight:'800'},
+  track:{height:8,backgroundColor:C.bg,borderRadius:4,overflow:'hidden',borderWidth:1,borderColor:C.line},
+  fill:{height:'100%',backgroundColor:C.accent},
+  cap:{fontSize:11,lineHeight:15,color:C.muted},
+  actions:{flexDirection:'row',gap:8},
+  primary:{backgroundColor:C.primaryButton,borderColor:C.primaryButton,borderWidth:1,borderRadius:8,paddingVertical:10,paddingHorizontal:12,alignItems:'center'},
+  primaryText:{color:C.primaryButtonText,fontWeight:'900',fontSize:12},
+  secondary:{flex:1,backgroundColor:C.panel2,borderColor:C.line,borderWidth:1,borderRadius:8,paddingVertical:10,alignItems:'center'},
+  secondaryText:{color:C.text,fontWeight:'900',fontSize:12},
+  warningCard:{gap:4,padding:10,borderWidth:1,borderColor:C.warning,borderRadius:8,backgroundColor:C.warningSurface},
+  warningLabel:{...typography.caption,color:C.warning,fontWeight:'900',letterSpacing:1},
+  warning:{fontSize:12,lineHeight:17,color:C.text},
+  scroll:{maxHeight:440},
+  sectionTitle:{...typography.title,color:C.text,marginTop:4},
+  milestone:{flexDirection:'row',alignItems:'center',gap:8,paddingVertical:10,borderBottomWidth:1,borderBottomColor:C.line},
+  milestoneTitle:{...typography.bodyStrong,color:C.text,fontWeight:'900'},
+  milestoneState:{fontSize:11,color:C.muted,fontWeight:'800'},
+  readyState:{color:C.good,fontWeight:'900'},
+  claimedState:{color:C.accent,fontWeight:'900'},
+  claim:{backgroundColor:C.goodSurface,borderColor:C.good,borderWidth:1,borderRadius:6,paddingHorizontal:12,paddingVertical:7},
+  claimText:{color:C.good,fontWeight:'900',fontSize:11},
+  member:{flexDirection:'row',alignItems:'center',gap:8,paddingVertical:8,borderBottomWidth:1,borderBottomColor:C.line},
+  memberName:{...typography.bodyStrong,color:C.text,fontWeight:'900'},
+  memberMeta:{fontSize:11,color:C.muted},
+  memberPoints:{color:E.goldSoft,fontWeight:'900',fontSize:14},
+  hint:{fontSize:11,lineHeight:16,color:C.muted},
+});}

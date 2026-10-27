@@ -21,11 +21,11 @@ export function GuildProjectsPanel({guild,onVote,onStart,onOpenProject,onClaim}:
 function makeStyles(C:ThemeColors){return StyleSheet.create({
  panel:{gap:8,padding:10,borderWidth:1,borderColor:C.line,borderRadius:radii.md,backgroundColor:C.panel},
  sectionHead:{flexDirection:'row',alignItems:'center',justifyContent:'space-between',gap:8,marginTop:2},
- title:{...typography.caption,color:C.accent,fontWeight:'900',letterSpacing:.75},sectionMeta:{fontSize:8.5,color:C.muted,fontWeight:'800'},
- copy:{fontSize:9.5,lineHeight:13,color:C.muted},
+ title:{...typography.caption,color:C.accent,fontWeight:'900',letterSpacing:.9},sectionMeta:{fontSize:11,lineHeight:15,color:C.muted,fontWeight:'800'},
+ copy:{fontSize:12,lineHeight:17,color:C.muted},
  project:{padding:8,gap:5,borderWidth:1,borderColor:C.line,borderRadius:radii.sm,backgroundColor:C.panel2},projectDone:{borderColor:C.good,backgroundColor:C.goodSurface},candidate:{padding:8,gap:6,borderWidth:1,borderColor:C.line,borderRadius:radii.sm,backgroundColor:C.panel2},
- row:{flexDirection:'row',alignItems:'center',gap:8},flex:{flex:1,minWidth:0},projectTitle:{color:C.text,fontWeight:'900',fontSize:10.5},meta:{color:C.muted,fontSize:8.5},percent:{color:C.accent,fontWeight:'900',fontSize:10},
- votePill:{paddingHorizontal:6,paddingVertical:3,borderWidth:1,borderColor:C.line,borderRadius:99,backgroundColor:C.panel},votes:{color:C.accent,fontWeight:'900',fontSize:8},
+ row:{flexDirection:'row',alignItems:'center',gap:8},flex:{flex:1,minWidth:0},projectTitle:{color:C.text,fontWeight:'900',fontSize:13,lineHeight:17},meta:{color:C.muted,fontSize:11,lineHeight:15},percent:{color:C.accent,fontWeight:'900',fontSize:13,lineHeight:17},
+ votePill:{paddingHorizontal:8,paddingVertical:4,borderWidth:1,borderColor:C.line,borderRadius:99,backgroundColor:C.panel},votes:{color:C.accent,fontWeight:'900',fontSize:11,lineHeight:14},
  track:{height:7,backgroundColor:C.panel,borderRadius:4,overflow:'hidden'},fill:{height:'100%',backgroundColor:C.accent},actions:{flexDirection:'row',gap:6},pressed:{opacity:.72},
  empty:{minHeight:64,alignItems:'center',justifyContent:'center',gap:2,padding:9,borderWidth:1,borderStyle:'dashed',borderColor:C.line,borderRadius:radii.sm,backgroundColor:C.panel2},emptyTitle:{fontSize:10,color:C.text,fontWeight:'900'},
 });}

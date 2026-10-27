@@ -21,7 +21,7 @@ function makeStyles(C:ThemeColors){return StyleSheet.create({
  panel:{borderWidth:1,borderColor:C.line,borderRadius:radii.md,padding:9,backgroundColor:C.panel},
  row:{minHeight:60,flexDirection:'row',alignItems:'center',gap:8,paddingVertical:6,borderBottomWidth:1,borderBottomColor:C.line},
  identity:{flex:1,minWidth:0},pressed:{opacity:.72},
- meta:{fontSize:8.5,lineHeight:11,color:C.muted,marginTop:2,marginLeft:50},
+ meta:{fontSize:11,lineHeight:15,color:C.muted,marginTop:3,marginLeft:50},
  manage:{minHeight:40,justifyContent:'center',borderWidth:1,borderColor:C.line,borderRadius:radii.sm,paddingHorizontal:8,backgroundColor:C.panel2},
- manageText:{color:C.text,fontWeight:'900',fontSize:9},
+ manageText:{color:C.text,fontWeight:'900',fontSize:12,lineHeight:16},
 });}

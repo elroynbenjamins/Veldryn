@@ -3,6 +3,7 @@ import {useEffect,useMemo,useState} from 'react';
 import {Pressable,ScrollView,StyleSheet,Text,View} from 'react-native';
 import {effectiveStats,previewActivityReward} from '../core/game';
 import {displayStat} from '../core/stat-display';
+import {bucketedMs} from '../core/use-delayed-busy';
 import {formatGameNumber} from '../core/number-format';
 import {normalizeQuickNavDestinations,QUICK_NAV_DESTINATIONS,QuickNavDestination} from '../core/quick-navigation';
 import type {GameState,RewardBundle} from '../core/types';
@@ -44,7 +45,9 @@ type Props={
 export function GameTopBar({state,nowMs,reward,labelForDestination,onNavigate,onChangeDestinations,onOpenActivity,onRecoverCombat,onFoodCommand,attention={},online=onlineConfigured}:Props){
   const {gt}=useGameplayText();
   const [foodOpen,setFoodOpen]=useState(false),[recoveryHunt,setRecoveryHunt]=useState<ActiveActivity|null>(null);
-  const combatReward=useMemo(()=>reward??(state.activity?.kind==='combat'?previewActivityReward(state,nowMs):undefined),[reward,state,nowMs]);
+  // Expensive offline-combat sim runs on bucketed time to keep per-second ticks cheap.
+  const combatPreviewMs=bucketedMs(nowMs,5_000);
+  const combatReward=useMemo(()=>reward??(state.activity?.kind==='combat'?previewActivityReward(state,combatPreviewMs):undefined),[reward,state,combatPreviewMs]);
   const healthState=useMemo(()=>liveHealthState(state,nowMs,combatReward),[state,nowMs,combatReward]);
   function openFood(){if(state.activity)setRecoveryHunt(state.activity.kind==='combat'?state.activity:null);setFoodOpen(true);}
   const tr=(text:string,params?:Record<string,string|number>)=>navigationText(state.settings.language,text,params);

@@ -3,6 +3,7 @@ import {useMemo} from 'react';
 import {Image,Pressable,StyleSheet,Text,View,useWindowDimensions} from 'react-native';
 import type {GameState} from '../core/types';
 import {homeSessionSummary,type HomeReadyKind} from '../core/dashboard';
+import {bucketedMs} from '../core/use-delayed-busy';
 import {earlyFeatureUnlocked} from '../core/feature-unlocks';
 import {GameButton} from './GameButton';
 import {radii,spacing,typography,type ThemeColors} from '../theme/theme';
@@ -14,7 +15,12 @@ export function HomeSessionOverview({state,nowMs,onQuests,onDaily,onEvents,onWee
  const language=state.settings.language;
  const a=(text:string,params?:Record<string,string|number>)=>accountText(language,text,params);
 
- const C=useGameTheme(),s=useMemo(()=>makeStyles(C),[C]),summary=homeSessionSummary(state,nowMs),{width,fontScale}=useWindowDimensions(),stackCells=width<350||fontScale>=1.25,weeklyUnlocked=earlyFeatureUnlocked(state,'contracts');
+ const C=useGameTheme(),s=useMemo(()=>makeStyles(C),[C]);
+ // homeSessionSummary aggregates quests, dailies, events, forge, companions —
+ // bucketing nowMs cuts the aggregation to one recompute per 10s.
+ const summaryMs=bucketedMs(nowMs,10_000);
+ const summary=useMemo(()=>homeSessionSummary(state,summaryMs),[state,summaryMs]);
+ const {width,fontScale}=useWindowDimensions(),stackCells=width<350||fontScale>=1.25,weeklyUnlocked=earlyFeatureUnlocked(state,'contracts');
  const openReady=(kind:HomeReadyKind)=>{if(kind==='quests')onQuests();else if(kind==='daily')onDaily();else if(kind==='events')onEvents();else if(kind==='weekly')onWeekly();else if(kind==='forge')onForge();else if(kind==='companions')onCompanions();};
  const parts:string[]=[];
  if(summary.storyRewards)parts.push(a('{count} story',{count:summary.storyRewards}));

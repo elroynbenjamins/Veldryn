@@ -1,6 +1,18 @@
 import {useCallback,useEffect,useRef,useState} from 'react';
 
 /**
+ * Buckets a rapidly-changing numeric input into coarser steps so dependent
+ * useMemo/useEffect only re-run when the bucket crosses a boundary. For
+ * example, bucketing `nowMs` to 5000 keeps time-dependent memoization stable
+ * for 5s at a time, which is enough resolution for stat/preview displays
+ * while cutting a per-second recompute of expensive projections 5x.
+ */
+export function bucketedMs(value:number,bucketMs:number):number{
+ if(!(bucketMs>0)||!Number.isFinite(value))return value;
+ return Math.floor(value/bucketMs)*bucketMs;
+}
+
+/**
  * Defers synchronous-heavy work to the frame AFTER the current render/paint,
  * so a button's pressed state animates and the modal's dismiss transitions
  * before the JS thread engages a long compute (e.g. claimActivity simulating

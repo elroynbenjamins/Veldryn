@@ -11,6 +11,7 @@ import {ActivityArtwork} from './ActivityArtwork';
 import {MonsterPortraitFrame} from './MonsterPortraitFrame';
 import {activeGatheringRuntimeProjection,activityProgressFeedback} from '../core/balance-projection';
 import {activeCombatRuntimeProjection,previewActivityReward} from '../core/game';
+import {bucketedMs} from '../core/use-delayed-busy';
 import {activityStopPresentation} from '../core/activity-stop-presentation';
 import {explorationRoute} from '../content/exploration';
 
@@ -20,7 +21,9 @@ function elapsed(startedAtMs:number,nowMs:number){const total=Math.max(0,Math.fl
 type ActiveActivityBarProps={state:GameState;nowMs:number;reward?:RewardBundle;onOpen:()=>void;onRecoverCombat?:()=>void};
 export function ActiveActivityBar(props:ActiveActivityBarProps){
  const {gt,gl}=useGameplayText(),C=useGameTheme(),s=useMemo(()=>makeStyles(C),[C]);
- const reward=useMemo(()=>props.reward??(props.state.activity?.kind==='combat'?previewActivityReward(props.state,props.nowMs):undefined),[props.reward,props.state,props.nowMs]);
+ // Bucket time to cut the expensive offline-combat sim down to one recompute per 5s window.
+ const previewMs=bucketedMs(props.nowMs,5_000);
+ const reward=useMemo(()=>props.reward??(props.state.activity?.kind==='combat'?previewActivityReward(props.state,previewMs):undefined),[props.reward,props.state,previewMs]);
  if(reward?.stoppedReason){
   const stop=activityStopPresentation(reward.stoppedReason);
   const monster=MONSTERS.find(entry=>entry.id===props.state.activity?.targetId);

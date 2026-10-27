@@ -47,7 +47,9 @@ function RunningActivityBar({state,nowMs,onOpen,combatKills}:ActiveActivityBarPr
  const monster=combat?MONSTERS.find(entry=>entry.id===activity.targetId):undefined;
  const gathering=!combat?[...GATHERING,...HERB_NODES].find(entry=>entry.id===activity.targetId):undefined,crafting=activity.kind==='processing'||activity.kind==='alchemy'?RECIPES.find(entry=>entry.id===activity.targetId):undefined;
  const route=activity.kind==='exploration'?explorationRoute(activity.targetId):undefined;
- const combatRuntime=combat?activeCombatRuntimeProjection(state):undefined,gatherRuntime=!combat?activeGatheringRuntimeProjection(state):undefined;
+ // Runtime projections are cycle-time derivations, not time-dependent — only recompute when state changes.
+ const combatRuntime=useMemo(()=>combat?activeCombatRuntimeProjection(state):undefined,[combat,state]);
+ const gatherRuntime=useMemo(()=>!combat?activeGatheringRuntimeProjection(state):undefined,[combat,state]);
  const name=monster?monster.name:route?.name??crafting?.name??gathering?.name??activity.targetId;
  const cycleSeconds=Math.max(1,combatRuntime?.killCycleSeconds??route?.seconds??gatherRuntime?.cycleSeconds??activity.processing?.cycleSeconds??activity.brew?.cycleSeconds??gathering?.seconds??crafting?.seconds??1);
  const cycleElapsedSeconds=Math.max(0,(displayNowMs-activity.lastClaimAtMs)/1000),cycleProgressSeconds=(activity.progressFraction??0)*cycleSeconds+cycleElapsedSeconds;

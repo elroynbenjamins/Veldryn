@@ -59,7 +59,8 @@ export function GameTopBar({state,nowMs,reward,labelForDestination,onNavigate,on
   const [saving,setSaving]=useState(false);
   const [draft,setDraft]=useState<QuickNavDestination[]>(active);
   useEffect(()=>{if(!open)setDraft(active)},[open,state.settings.quickNavDestinations]);
-  const maxHp=Math.max(1,effectiveStats(state).hp),currentHp=Math.max(0,Math.min(maxHp,healthState.character?.currentHp??0)),hpRatio=currentHp/maxHp,hpPercent=`${Math.round(hpRatio*100)}%` as `${number}%`,hpColor=hpRatio<=.25?C.bad:hpRatio<=.5?C.warning:C.good;
+  const maxHp=useMemo(()=>Math.max(1,effectiveStats(state).hp),[state]);
+  const currentHp=Math.max(0,Math.min(maxHp,healthState.character?.currentHp??0)),hpRatio=currentHp/maxHp,hpPercent=`${Math.round(hpRatio*100)}%` as `${number}%`,hpColor=hpRatio<=.25?C.bad:hpRatio<=.5?C.warning:C.good;
   const activity=state.activity;
   const environment=activity?environmentForActivity(activity):environmentForZone(currentRegionId(state),nowMs);
   const selected=new Set(draft);

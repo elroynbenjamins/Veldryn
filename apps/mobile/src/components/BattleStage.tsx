@@ -1,4 +1,4 @@
-import {useEffect,useRef} from 'react';
+import {useEffect,useMemo,useRef} from 'react';
 import {Animated,Easing,StyleSheet,Text,View} from 'react-native';
 import {MonsterDef} from '../content/monsters';
 import {WORLD_ZONES} from '../content/world-map';
@@ -16,7 +16,10 @@ import {battleText} from '../i18n/battle';
 
 export function BattleStage({state,monster,elapsedSeconds,cycleSeconds}:{state:GameState;monster:MonsterDef;elapsedSeconds:number;cycleSeconds:number}){
  const tr=(text:string,params?:Record<string,string|number>)=>battleText(state.settings.language,text,params);
- const view=combatPresentation(state,monster,elapsedSeconds,cycleSeconds),stats=effectiveStats(state);
+ // combatPresentation runs stat/tactic math each tick — memoize so re-renders without
+ // meaningful inputs skip the recompute.
+ const view=useMemo(()=>combatPresentation(state,monster,elapsedSeconds,cycleSeconds),[state,monster,elapsedSeconds,cycleSeconds]);
+ const stats=useMemo(()=>effectiveStats(state),[state]);
  const region=WORLD_ZONES.find(zone=>zone.name===monster.zone),motion=combatMotionProfile(cycleSeconds,state.settings.reduceMotion);
  const playerLunge=useRef(new Animated.Value(0)).current,enemyLunge=useRef(new Animated.Value(0)).current;
  const enemyImpact=useRef(new Animated.Value(0)).current,playerImpact=useRef(new Animated.Value(0)).current;

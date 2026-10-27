@@ -7,7 +7,7 @@ import {supabase} from './supabase';
 export interface CoopQModeSource {start:(intent:CoopLoadoutIntent,requestId:string)=>Promise<{run:CoopRunView;team:CoopQModeTeamView}>;resume:(runId:string,requestId:string)=>Promise<{run:CoopRunView;team:CoopQModeTeamView}>;}
 function teamFromRun(run:CoopRunView,requestId:string):CoopQModeTeamView{
   if(run.mode!=='qmode')throw new Error('not_qmode_run');
-  const members:CoopQModeMemberView[]=run.roleSlots.map((slot,index)=>({memberId:`${run.runId}:seat:${index}`,displayName:slot.name,role:slot.role,kind:slot.echo?'echo':'controller',effectiveLevel:run.syncedLevel,status:slot.ready===false?'loading':'ready'}));
+  const members:CoopQModeMemberView[]=run.roleSlots.map((slot,index)=>({memberId:`${run.runId}:seat:${index}`,displayName:slot.name,role:slot.role,kind:slot.echo?'echo':slot.npc?'npc':'controller',effectiveLevel:run.syncedLevel,status:slot.ready===false?'loading':'ready'}));
   const team:CoopQModeTeamView={runId:run.runId,requestId,status:'ready',members};validateCoopQModeTeam(team);return team;
 }
 function isPublicProjection(value:CoopRunView|CoopQModeServerProjection|{ticketId:string;status:string}):value is CoopQModeServerProjection{return 'mode' in value&&value.mode==='qmode'&&'team' in value;}

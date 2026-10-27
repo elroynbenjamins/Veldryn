@@ -9,7 +9,7 @@ var __esm = (fn, res, err) => function __init() {
   }
 };
 
-// apps/mobile/src/core/progression.ts
+// ../apps/mobile/src/core/progression.ts
 function baseXpForNextLevel(level) {
   return Math.floor(90 * Math.pow(level, 1.42) + level * 35);
 }
@@ -39,16 +39,16 @@ function totalXpAtLevel(level) {
 }
 var SKILL_XP_SCALE;
 var init_progression = __esm({
-  "apps/mobile/src/core/progression.ts"() {
+  "../apps/mobile/src/core/progression.ts"() {
     "use strict";
     SKILL_XP_SCALE = 1.6;
   }
 });
 
-// apps/mobile/src/content/faith.ts
+// ../apps/mobile/src/content/faith.ts
 var HOLY_WATER_ID, FAITH_TIERS, FAITH_BLESSINGS, HOLY_WATER_SOURCES, faithBlessingDef;
 var init_faith = __esm({
-  "apps/mobile/src/content/faith.ts"() {
+  "../apps/mobile/src/content/faith.ts"() {
     "use strict";
     HOLY_WATER_ID = "HOLY_WATER";
     FAITH_TIERS = [
@@ -82,7 +82,7 @@ var init_faith = __esm({
   }
 });
 
-// apps/mobile/src/core/faith.ts
+// ../apps/mobile/src/core/faith.ts
 function normalizeFaith(raw2) {
   const xp = typeof raw2?.xp === "number" && Number.isFinite(raw2.xp) ? Math.max(0, Math.min(MAX_XP, Math.floor(raw2.xp))) : 0;
   const selected2 = faithBlessingDef(raw2?.selectedBlessingId), p = raw2?.practice, tier = FAITH_TIERS.find((t) => t.id === p?.tierId);
@@ -91,7 +91,7 @@ function normalizeFaith(raw2) {
 }
 var MAX_XP, faithLevel, selectedFaithBlessing;
 var init_faith2 = __esm({
-  "apps/mobile/src/core/faith.ts"() {
+  "../apps/mobile/src/core/faith.ts"() {
     "use strict";
     init_faith();
     init_progression();
@@ -104,7 +104,7 @@ var init_faith2 = __esm({
   }
 });
 
-// apps/mobile/src/content/classes.ts
+// ../apps/mobile/src/content/classes.ts
 var CLASSES = [
   { id: "IRONWARDEN", name: "Ironwarden", role: "Tank", description: "Runic defender built around guard, threat and counterplay.", hp: 155, attack: 15, defense: 19, roleRatings: { tank: 5, damage: 2, support: 1 }, starterEquipment: { weapon: "basic_sword" } },
   { id: "BASTION", name: "Bastion", role: "Tank", description: "Fortress tank using layered barriers and heavy protection.", hp: 164, attack: 14, defense: 20, roleRatings: { tank: 5, damage: 1, support: 2 }, starterEquipment: { weapon: "basic_tower_shield" } },
@@ -117,7 +117,7 @@ var CLASSES = [
   { id: "STONECALLER", name: "Stonecaller", role: "Support", description: "Earth-and-storm support caster using resonance, geomancy and totems.", hp: 120, attack: 20, defense: 12, roleRatings: { tank: 2, damage: 2, support: 5 }, starterEquipment: { weapon: "basic_staff" } }
 ];
 
-// backend/src/server/expeditions/content/launch-content.ts
+// src/server/expeditions/content/launch-content.ts
 var EXPEDITIONS = {
   EXP_001: { id: "EXP_001", name: "Rootbound Vault", region: "Asterfall", minLevel: 15, recommendedLevel: 25, baseMarks: 74, minNodes: 8, maxNodes: 10, bossId: "BOSS_EXP_ROOT", coopImplemented: true, nodeWeights: { battle: 30, elite: 10, event: 18, camp: 9, treasure: 8, echo: 8, forge: 5, merchant: 4, risk: 5, secret: 3 } },
   EXP_002: { id: "EXP_002", name: "Lanternwatch Descent", region: "Asterfall", minLevel: 18, recommendedLevel: 25, baseMarks: 76, minNodes: 8, maxNodes: 10, bossId: "BOSS_EXP_BELL", coopImplemented: true, nodeWeights: { battle: 28, elite: 11, event: 17, camp: 8, treasure: 8, echo: 12, forge: 5, merchant: 4, risk: 5, secret: 2 } },
@@ -130,7 +130,7 @@ var EXPEDITIONS = {
 };
 var LAUNCH_BOON_IDS = Array.from({ length: 126 }, (_, i) => `BOON_${String(i + 1).padStart(3, "0")}`);
 
-// backend/src/shared/companion-affinity-catalog.ts
+// src/shared/companion-affinity-catalog.ts
 var COMPANION_AFFINITY_BY_ID = {
   UNIT_001: "wild",
   UNIT_002: "construct",
@@ -175,7 +175,7 @@ function companionAffinityById(id) {
   return COMPANION_AFFINITY_BY_ID[id] ?? "wild";
 }
 
-// backend/src/server/companions/content.ts
+// src/server/companions/content.ts
 var raw = [
   ["UNIT_001", "Ironwood Hound", "damage", "standard", "REG_001", 180, 22, 12, 2, "damage", 1],
   ["UNIT_002", "Runebound Sentry", "tank", "standard", "REG_001", 260, 14, 24, 2.6, "shield", 0.06],
@@ -411,7 +411,7 @@ var COMPANION_MISSIONS = [
   { id: "MISSION_PRESTIGE_VIGIL_12H", name: "Sanctuary Prestige Vigil", durationMs: 12 * 36e5, missionVersion: 1, minCompanions: 3, maxCompanions: 3, minimumPenLevel: 3, minimumLevel: 20, recommendedPower: 4250, requirements: [{ type: "min_rarity", rarity: "elite", count: 2 }, { type: "min_ascension", tier: 2, count: 3 }, { type: "min_bond", value: 7, count: 3 }], bonusRequirements: [{ type: "min_rarity", rarity: "prestige", count: 1 }, { type: "affinity_diversity", count: 3 }], specialtyBonus: { label: "Prestige mentorship: +20% Companion XP and +10% Essence when a Prestige companion joins.", companionXpMultiplier: 1.2, essenceMultiplier: 1.1 }, costs: { gold: 1750, materials: { SUPPLIES: 4 } }, baseRewards: { companionEssence: 18, gold: 1450, companionXp: 420, bondXp: 48, materials: { TRIAL_SANCTUARY_MATERIAL: 1 } }, bonusRewards: { companionEssence: 12, materials: { TRIAL_SANCTUARY_MATERIAL: 1 } }, bonusRewardChanceByGrade: { A: 0.05, S: 0.12 }, bondstoneEligible: true }
 ];
 
-// backend/src/server/coop/dungeon-power.ts
+// src/server/coop/dungeon-power.ts
 function dungeonPowerIndex(input) {
   const stats6 = input.normalized.snapshot;
   const player2 = Math.max(1, Math.round(
@@ -429,7 +429,7 @@ function recommendedDungeonPower(minLevel) {
   return Math.round(700 + minLevel * 520);
 }
 
-// backend/src/server/expeditions/content/event-expeditions.ts
+// src/server/expeditions/content/event-expeditions.ts
 var special = (depth, choice, kind, contentId, title2, rewardTag, mechanicDelta, risk, objectiveDelta = 0) => ({ depth, choice, kind, contentId, title: title2, rewardTag, mechanicDelta, risk, objectiveDelta });
 var EVENT_EXPEDITIONS = Object.freeze([
   {
@@ -617,7 +617,7 @@ function eventExpeditionPreviews(nowMs) {
   return EVENT_EXPEDITIONS.map((definition) => ({ ...definition, status: "preview", scheduled: active(definition, nowMs) }));
 }
 
-// backend/src/server/coop/config.ts
+// src/server/coop/config.ts
 var COOP_ROGUELITE_CONFIG = Object.freeze({
   featureFlag: "coopRogueliteV1",
   enabledByDefault: false,
@@ -658,10 +658,10 @@ var ROOTBOUND_COOP_BALANCE_V2 = Object.freeze({
   lateDepthAttackMultiplier: 1
 });
 
-// backend/online/coop-loadout.ts
+// online/coop-loadout.ts
 import { createHash } from "node:crypto";
 
-// apps/mobile/src/content/equipment_catalog_t1_t9_v33.json
+// ../apps/mobile/src/content/equipment_catalog_t1_t9_v33.json
 var equipment_catalog_t1_t9_v33_default = {
   schemaVersion: "equipment-2.0-v33-10slot-fresh-start",
   source: "v23 catalog expanded by v33 GitHub integration",
@@ -42171,7 +42171,7 @@ var equipment_catalog_t1_t9_v33_default = {
   ]
 };
 
-// apps/mobile/src/content/equipment-recipes-v33.ts
+// ../apps/mobile/src/content/equipment-recipes-v33.ts
 var classIdByName = {
   Ironwarden: "IRONWARDEN",
   Bastion: "BASTION",
@@ -42347,7 +42347,7 @@ var V33_EQUIPMENT_RECIPES = equipment_catalog_t1_t9_v33_default.pieces.map((piec
   };
 });
 
-// apps/mobile/src/content/novice-sets.ts
+// ../apps/mobile/src/content/novice-sets.ts
 var definitions = [
   { id: "ironwarden_recruit", classId: "IRONWARDEN", name: "Ironwarden Recruit", appearanceId: "beginner-ironwarden-recruit", weaponName: "Recruit Sword", weaponAttack: 6, offhandName: "Recruit Shield", setBonus: { name: "Runic Formation", attack: 3, defense: 8, hp: 28, description: "+8 DEF and +28 HP while the full set is equipped." }, theme: { accent: "#83a9c8", identity: "Disciplined steel frontline", material: "Steel, blue cloth and field leather" } },
   { id: "wallkeeper_initiate", classId: "BASTION", name: "Wallkeeper Initiate", appearanceId: "beginner-wallkeeper-initiate", weaponName: "Initiate Tower Shield", weaponAttack: 5, offhandName: "Initiate Guard Bell", setBonus: { name: "Unbroken Wall", attack: 1, defense: 12, hp: 42, description: "+12 DEF and +42 HP while the full set is equipped." }, theme: { accent: "#bc8045", identity: "Maximum defense and immovable presence", material: "Dark plate, copper trim and tower shield" } },
@@ -42407,7 +42407,7 @@ var NOVICE_RECIPES = NOVICE_SETS.flatMap((set) => set.slots.map((slot) => {
   };
 }));
 
-// apps/mobile/src/content/gathering-tools.ts
+// ../apps/mobile/src/content/gathering-tools.ts
 var tool = (definition) => definition;
 var blueprint = (itemId, knowledgeId, sourceMonsterId, dropChance) => ({ itemId, knowledgeId, sourceMonsterId, dropChance });
 var GATHERING_TOOLS = [
@@ -42452,7 +42452,7 @@ var TOOL_RECIPES = GATHERING_TOOLS.map((entry2) => ({
   knowledgeItemId: entry2.blueprint?.itemId
 }));
 
-// apps/mobile/src/content/herbalism.ts
+// ../apps/mobile/src/content/herbalism.ts
 var HERB_NODES = [
   { id: "DEWLEAF_PATCH", name: "Dewleaf Patch", itemId: "DEWLEAF", zoneId: "GREENFIELDS", unlockLevel: 1, seconds: 30, xp: 9 },
   { id: "RIVER_MINT_BED", name: "River Mint Bed", itemId: "RIVER_MINT", zoneId: "SILVERBROOK", unlockLevel: 8, seconds: 40, xp: 20 },
@@ -42482,7 +42482,7 @@ var HERB_ITEMS = [
   { id: "ASHLANDS_BOTANICAL_ESSENCE", name: "Ashlands Botanical Essence", type: "material", value: 300, rarity: "epic", passive: "A rare concentrated botanical reagent from Ashlands harvesting." }
 ];
 
-// apps/mobile/src/content/alchemy.ts
+// ../apps/mobile/src/content/alchemy.ts
 var POTIONS = [
   { id: "DEWLEAF_DRAUGHT", name: "Dewleaf Draught", effect: { kind: "healing", maxHpFraction: 0.25 }, description: "Restore 25% of maximum HP outside a hunt. No effect at full health." },
   { id: "RIVERHEART_DRAUGHT", name: "Riverheart Draught", effect: { kind: "healing", maxHpFraction: 0.45 }, description: "Restore 45% of maximum HP outside a hunt. No effect at full health." },
@@ -42542,7 +42542,7 @@ var POTION_ITEMS = POTIONS.map((potion) => ({
 var ALCHEMY_EQUIPMENT_INFUSION_ITEMS = ALCHEMY_EQUIPMENT_INFUSIONS.map((infusion) => ({ id: infusion.id, name: infusion.name, type: "material", value: infusion.value, rarity: infusion.rarity, passive: infusion.description }));
 var potionDef = (id) => POTIONS.find((p) => p.id === id);
 
-// apps/mobile/src/content/equipment-items-v33.ts
+// ../apps/mobile/src/content/equipment-items-v33.ts
 var classIdByName2 = { Ironwarden: "IRONWARDEN", Bastion: "BASTION", Dreadguard: "DREADGUARD", Dawnkeeper: "DAWNKEEPER", Wayfinder: "WAYFINDER", Ravager: "RAVAGER", Hexweaver: "HEXWEAVER", "Knife Dancer": "KNIFE_DANCER", Stonecaller: "STONECALLER" };
 var slotByName2 = { Helmet: "helmet", Chest: "chest", Gloves: "gloves", Legs: "legs", Boots: "boots", Weapon: "weapon", "Off-hand": "offhand", Cape: "cape", Amulet: "amulet", Ring: "ring" };
 var rarityByTier = { T1: "common", T2: "uncommon", T3: "rare", T4: "rare", T5: "epic", T6: "epic", T7: "legendary", T8: "legendary", T9: "mythic" };
@@ -42578,7 +42578,7 @@ var EQUIPMENT_ITEMS_V33 = equipment_catalog_t1_t9_v33_default.pieces.map((piece)
   };
 });
 
-// apps/mobile/src/content/gems-v1.ts
+// ../apps/mobile/src/content/gems-v1.ts
 var GEM_GRADE_LABEL_V1 = { 1: "Cut", 2: "Polished", 3: "Refined", 4: "Flawless", 5: "Radiant" };
 var GEM_GRADE_RARITY_V1 = { 1: "common", 2: "uncommon", 3: "rare", 4: "epic", 5: "mythic" };
 var vals = (a, b, c, d, e) => ({ 1: a, 2: b, 3: c, 4: d, 5: e });
@@ -42646,7 +42646,7 @@ function mobileRawGemItemIdV1(familyId, grade) {
   return `raw_gem:${familyId}:g${grade}`;
 }
 
-// apps/mobile/src/content/items.ts
+// ../apps/mobile/src/content/items.ts
 var BASE_ITEMS = [
   ...NOVICE_ITEMS,
   { id: "HOLY_WATER", name: "Holy Water", type: "material", value: 0, rarity: "uncommon" },
@@ -42777,7 +42777,7 @@ function itemDef(id) {
   return x;
 }
 
-// apps/mobile/src/content/event-companions-v2.ts
+// ../apps/mobile/src/content/event-companions-v2.ts
 var eventNames = { turning_of_the_age: "Turning of the Age", heartbond_festival: "Heartbond Festival", bloomwake: "Bloomwake", suncrest_games: "Suncrest Games", starfall_nights: "Starfall Nights", harvestwake: "Harvestwake", veilbreak: "The Veilbreak", frostfall_festival: "Frostfall Festival", merchant_guild_festival: "Merchant / Guild Festival" };
 var seeds = [
   { id: "EVT_UNIT_001", name: "Keeper of First Dawn", rarity: "elite", role: "support", event: "turning_of_the_age", description: "Fast support pulses improve tempo and recovery for pressured allies." },
@@ -42813,7 +42813,7 @@ var EVENT_COMPANIONS = seeds.map((seed) => {
   return { id: seed.id, name: seed.name, description: seed.description, archetype: `Event ${seed.role}`, role: seed.role, rarity: seed.rarity, origin: { id: `EVENT_${seed.event.toUpperCase()}`, name: eventNames[seed.event] ?? seed.event.replaceAll("_", " "), type: "event" }, unlockRequirements: [{ type: "event_challenge", target: seed.event, description: `Earn ${seed.name} from ${eventNames[seed.event] ?? seed.event.replaceAll("_", " ")}.` }], baseStats: baseStats(seed.role, seed.rarity), activeAbility: { id: `${seed.id}_ACTIVE`, name: copy?.activeName ?? `${seed.name} Signature`, description: copy?.activeDescription ?? seed.description, cooldownSeconds: seed.rarity === "prestige" ? 24 : 20, target: seed.role === "support" ? "Lowest-HP ally" : seed.role === "tank" ? "Owner" : "Priority target", effect: { kind: copy?.activeKind ?? effect2, value: amount, description: copy?.activeDescription ?? seed.description, durationSeconds: 5 }, scaling: { baseValue: amount, perLevel: (copy?.activeKind ?? effect2) === "damage" ? 4e-3 : 1e-3, maxValue: (copy?.activeKind ?? effect2) === "damage" ? 1.35 : void 0 } }, passiveAbility: { kind: copy?.passiveKind ?? effect2, value: copy?.passiveValue ?? (effect2 === "damage" ? 0.035 : 0.025), description: copy?.passiveDescription ?? `${seed.name} reinforces its event identity.` }, bondTrait: { id: `${seed.id}_BOND`, name: copy?.bondName ?? `${seed.name} Bond`, description: copy?.bondDescription ?? `Bond mastery strengthens the ${seed.name} signature interaction.`, effect: { kind: copy?.bondKind ?? effect2, value: copy?.bondValue ?? (effect2 === "damage" ? 0.05 : 0.03), description: copy?.bondDescription ?? `Bond mastery strengthens ${seed.name}.` } }, ascensionMaterialId: "EVENT_BONDBLOOM", ascensionMaterialCosts: eventAscensionMaterials(seed.rarity), availability: { eventSource: eventNames[seed.event] ?? seed.event, originalReleaseYear: 2026, recurringAvailability: "annual", veteranCosmeticEligibility: true }, visual: { portraitId: seed.id, pixelSize: "96x96", accessibilityLabel: seed.name } };
 });
 
-// apps/mobile/src/content/veilbreak-event.ts
+// ../apps/mobile/src/content/veilbreak-event.ts
 function veilbreakCompanionMilestones(_classId) {
   return ["EVT_UNIT_008", "EVT_UNIT_007"].map((id) => EVENT_COMPANIONS.find((companion) => companion.id === id)).map((companion, index) => ({ points: index === 0 ? 16e3 : 2e4, reward: { kind: "companion", id: companion.id, name: companion.name, rarity: "epic" } }));
 }
@@ -42992,7 +42992,7 @@ var FROSTFALL_EVENT = {
   ]
 };
 
-// apps/mobile/src/content/guild-companions-v1.ts
+// ../apps/mobile/src/content/guild-companions-v1.ts
 var seeds2 = [
   {
     id: "GUILD_UNIT_001",
@@ -43089,14 +43089,14 @@ var GUILD_COMBAT_COMPANIONS = seeds2.map((seed) => {
   };
 });
 
-// apps/mobile/src/content/event-companions-active.ts
+// ../apps/mobile/src/content/event-companions-active.ts
 var RELEASED_EVENT_COMPANION_IDS = /* @__PURE__ */ new Set(["EVT_UNIT_007", "EVT_UNIT_008", "EVT_UNIT_011"]);
 var RELEASED_EVENT_COMPANIONS = EVENT_COMPANIONS.filter((companion) => RELEASED_EVENT_COMPANION_IDS.has(companion.id));
 
-// apps/mobile/src/core/release-flags.ts
+// ../apps/mobile/src/core/release-flags.ts
 var EVENTS_RELEASED = true;
 
-// apps/mobile/src/content/combat-companions.ts
+// ../apps/mobile/src/content/combat-companions.ts
 var COMPANION_RARITY_CONFIG = {
   standard: { maxLevel: 20, targetPowerMultiplier: 1, levelCostMultiplier: 1, xpRequiredMultiplier: 1, label: "Standard" },
   rare: { maxLevel: 25, targetPowerMultiplier: 1.09, levelCostMultiplier: 1.18, xpRequiredMultiplier: 1.08, label: "Rare" },
@@ -43142,9 +43142,9 @@ var SUNSCAR = origin("REG_SUNSCAR", "Sunscar");
 var FROST = origin("REG_FROSTMARCH", "Frostmarch");
 var ASH = origin("REG_ASHLANDS", "Ashlands");
 var ASTERFALL_COMPANIONS = [
-  { id: "UNIT_001", name: "Ironwood Hound", description: "Fast finisher for farming.", archetype: "Striker", role: "damage", rarity: "standard", origin: ASTER, unlockRequirements: [req("meta", "Choose Ironwood Hound as your starter companion", "STARTER_COMPANION:UNIT_001", 1)], baseStats: { hp: 180, power: 22, defense: 12, attackSpeed: 2 }, activeAbility: ability("UABL_001", "Hamstring Pounce", "Damage + 8% slow", 14, "Lowest-HP enemy", "damage", 1, 6e-3, { secondaryValue: 0.08, durationSeconds: 4 }), passiveAbility: passive("execute", 0.04, "Pack Instinct: +4% damage against enemies below 35% HP.", "target_hp_below_35"), bondTrait: trait("BOND_001", "Relentless Chase", "cooldown_reduction", 0.08, "Hamstring Pounce recharges 8% faster after defeating a weakened target.", "target_defeated_below_35"), ascensionMaterialId: "IRONWOOD_FANG" },
-  { id: "UNIT_002", name: "Runebound Sentry", description: "Smooths solo and boss damage spikes.", archetype: "Guardian", role: "tank", rarity: "standard", origin: ASTER, unlockRequirements: [req("achievement", "Defeat 250 Old Mines enemies", "OLD_MINES_KILLS", 250), req("meta", "Old Mines milestone rewards this companion when it is still missing", "STARTER_THIRD:UNIT_002", 1)], baseStats: { hp: 260, power: 14, defense: 24, attackSpeed: 2.6 }, activeAbility: ability("UABL_002", "Rune Brace", "6% damage reduction to next 2 hits", 18, "Owner", "damage_reduction", 0.06, 1e-3, { secondaryValue: 2, durationSeconds: 5 }), passiveAbility: passive("damage_reduction", 0.06, "Runic Guard: every 12s, owner takes 6% less damage from the next hit.", "every_12_seconds"), bondTrait: trait("BOND_002", "Carved Shelter", "shield", 0.025, "Rune Brace also grants a small follow-up shield after its second protected hit.", "rune_brace_consumed"), ascensionMaterialId: "RUNEBOUND_CORE" },
-  { id: "UNIT_003", name: "Silverbrook Sprite", description: "Small restorative and tempo support.", archetype: "Support", role: "support", rarity: "standard", origin: ASTER, unlockRequirements: [req("skill_level", "Reach Fishing 16", "fishing", 16), req("collection", "Discover all Silverbrook nodes", "SILVERBROOK_NODES"), req("meta", "Silverbrook milestone rewards this companion when role-compatible", "STARTER_FOLLOWUP:UNIT_003", 1)], baseStats: { hp: 150, power: 12, defense: 10, attackSpeed: 2.2 }, activeAbility: ability("UABL_003", "Silver Current", "Restore 4% max HP + 3% Haste", 20, "Owner", "heal", 0.04, 1e-3, { secondaryValue: 0.03, durationSeconds: 5 }), passiveAbility: passive("cooldown_reduction", 0.05, "Flowing Current: owner's first ability after combat starts has 5% shorter cooldown.", "first_owner_ability"), bondTrait: trait("BOND_003", "Deep Current", "haste", 0.025, "Silver Current grants an additional short Haste pulse after restoring class resource.", "silver_current_used"), ascensionMaterialId: "WISP_DUST" },
+  { id: "UNIT_001", name: "Ironwood Hound", description: "Fast finisher for farming.", archetype: "Striker", role: "damage", rarity: "standard", origin: ASTER, unlockRequirements: [req("quest", "Complete Ironwood introduction", "QST_005", 1)], baseStats: { hp: 180, power: 22, defense: 12, attackSpeed: 2 }, activeAbility: ability("UABL_001", "Hamstring Pounce", "Damage + 8% slow", 14, "Lowest-HP enemy", "damage", 1, 6e-3, { secondaryValue: 0.08, durationSeconds: 4 }), passiveAbility: passive("execute", 0.04, "Pack Instinct: +4% damage against enemies below 35% HP.", "target_hp_below_35"), bondTrait: trait("BOND_001", "Relentless Chase", "cooldown_reduction", 0.08, "Hamstring Pounce recharges 8% faster after defeating a weakened target.", "target_defeated_below_35"), ascensionMaterialId: "IRONWOOD_FANG" },
+  { id: "UNIT_002", name: "Runebound Sentry", description: "Smooths solo and boss damage spikes.", archetype: "Guardian", role: "tank", rarity: "standard", origin: ASTER, unlockRequirements: [req("achievement", "Defeat 250 Old Mines enemies", "OLD_MINES_KILLS", 250)], baseStats: { hp: 260, power: 14, defense: 24, attackSpeed: 2.6 }, activeAbility: ability("UABL_002", "Rune Brace", "6% damage reduction to next 2 hits", 18, "Owner", "damage_reduction", 0.06, 1e-3, { secondaryValue: 2, durationSeconds: 5 }), passiveAbility: passive("damage_reduction", 0.06, "Runic Guard: every 12s, owner takes 6% less damage from the next hit.", "every_12_seconds"), bondTrait: trait("BOND_002", "Carved Shelter", "shield", 0.025, "Rune Brace also grants a small follow-up shield after its second protected hit.", "rune_brace_consumed"), ascensionMaterialId: "RUNEBOUND_CORE" },
+  { id: "UNIT_003", name: "Silverbrook Sprite", description: "Small restorative and tempo support.", archetype: "Support", role: "support", rarity: "standard", origin: ASTER, unlockRequirements: [req("skill_level", "Reach Fishing 16", "fishing", 16), req("collection", "Discover all Silverbrook nodes", "SILVERBROOK_NODES")], baseStats: { hp: 150, power: 12, defense: 10, attackSpeed: 2.2 }, activeAbility: ability("UABL_003", "Silver Current", "Restore 4% max HP + 3% Haste", 20, "Owner", "heal", 0.04, 1e-3, { secondaryValue: 0.03, durationSeconds: 5 }), passiveAbility: passive("cooldown_reduction", 0.05, "Flowing Current: owner's first ability after combat starts has 5% shorter cooldown.", "first_owner_ability"), bondTrait: trait("BOND_003", "Deep Current", "haste", 0.025, "Silver Current grants an additional short Haste pulse after restoring class resource.", "silver_current_used"), ascensionMaterialId: "WISP_DUST" },
   { id: "UNIT_004", name: "Briarhorn Cub", description: "Durable-target pressure through mild defense shred.", archetype: "Bruiser", role: "damage", rarity: "rare", origin: ASTER, unlockRequirements: [req("monster_mastery", "Reach Forest Troll Mastery 20", "FOREST_TROLL", 20)], baseStats: { hp: 230, power: 25, defense: 18, attackSpeed: 2.4 }, activeAbility: ability("UABL_004", "Briar Charge", "Damage + -5% Defence", 16, "Highest-Defence enemy", "damage", 1.2, 6e-3, { secondaryValue: 0.05, durationSeconds: 5 }), passiveAbility: passive("defense_shred", 0.03, "Barkbreaker: attacks have a 12% chance to apply -3% Defence for 5s; non-stacking.", "12_percent_proc"), bondTrait: trait("BOND_004", "Rootbreaker", "damage", 0.06, "Deals 6% more companion damage to targets currently affected by defense reduction.", "target_defense_reduced"), ascensionMaterialId: "THORN_SAP" },
   { id: "UNIT_005", name: "Lantern Wisp", description: "Interrupt-focused co-op helper.", archetype: "Disruptor", role: "support", rarity: "rare", origin: ASTER, unlockRequirements: [req("monster_mastery", "Reach Lantern Wretch Mastery 20", "LANTERN_WRETCH", 20)], baseStats: { hp: 145, power: 18, defense: 11, attackSpeed: 2 }, activeAbility: ability("UABL_005", "Lantern Snuff", "Damage + interrupt", 22, "Casting enemy", "interrupt", 0.55, 4e-3), passiveAbility: passive("accuracy", 0.08, "Flicker Sense: +8% unit accuracy against enemies currently casting.", "enemy_casting"), bondTrait: trait("BOND_005", "Afterglow", "cooldown_reduction", 0.1, "A successful interrupt shortens the next Lantern Snuff cooldown by 10%.", "successful_interrupt"), ascensionMaterialId: "LANTERNSTEEL_SHARD" },
   { id: "UNIT_006", name: "Oathbound Page", description: "Boss-progression defensive companion.", archetype: "Guardian", role: "tank", rarity: "rare", origin: ASTER, unlockRequirements: [req("boss_kills", "Defeat The Fallen Knight once", "FALLEN_KNIGHT", 1)], baseStats: { hp: 290, power: 16, defense: 25, attackSpeed: 2.8 }, activeAbility: ability("UABL_006", "Page's Vow", "Shield for 5% owner max HP", 24, "Owner", "shield", 0.05, 1e-3), passiveAbility: passive("damage_reduction", 0.08, "Oathkeeper: once per encounter, intercepts 8% of one hit dealt to owner.", "once_per_encounter"), bondTrait: trait("BOND_006", "Renewed Vow", "damage_reduction", 0.025, "After the shield breaks, the owner gains brief mitigation.", "shield_broken"), ascensionMaterialId: "OATHGLASS_SHARD" },
@@ -43221,7 +43221,7 @@ var ALL_COMBAT_COMPANIONS = [...ASTERFALL_COMPANIONS, ...REGIONAL_COMPANIONS, ..
 var COMBAT_COMPANIONS = EVENTS_RELEASED ? [...ASTERFALL_COMPANIONS, ...REGIONAL_COMPANIONS, ...GUILD_COMBAT_COMPANIONS, ...RELEASED_EVENT_COMPANIONS] : [...ASTERFALL_COMPANIONS, ...REGIONAL_COMPANIONS, ...GUILD_COMBAT_COMPANIONS];
 var combatCompanionDef = (id) => ALL_COMBAT_COMPANIONS.find((entry2) => entry2.id === id);
 
-// apps/mobile/src/content/class-skills.ts
+// ../apps/mobile/src/content/class-skills.ts
 var skill = (id, name, theme) => ({ id, name, theme });
 var guard = skill("guardcraft", "Guardcraft", "Physical protection");
 var ward = skill("warding", "Warding", "Magical protection");
@@ -43238,7 +43238,7 @@ var CLASS_SKILLS = {
 };
 var classSkillsFor = (id) => CLASS_SKILLS[id];
 
-// apps/mobile/src/core/class-skills.ts
+// ../apps/mobile/src/core/class-skills.ts
 init_progression();
 var MAX_CLASS_SKILL_XP = totalXpAtLevel(100);
 function normalizeClassSkills(id, raw2) {
@@ -43256,7 +43256,7 @@ function characterClassEffects(c) {
   return tank ? { attack: 1, hp: 1 + 0.12 * a, defense: 1 + 0.1 * b } : support ? { attack: 1 + 0.1 * a, hp: 1 + 0.1 * b, defense: 1 } : { attack: 1 + 0.07 * a + 0.03 * b, hp: 1, defense: 1 + 0.06 * b };
 }
 
-// apps/mobile/src/content/monsters.ts
+// ../apps/mobile/src/content/monsters.ts
 init_faith();
 var MONSTERS_RAW = [
   { id: "MOSS_RAT", name: "Moss Rat", level: 1, hp: 28, attack: 5, defense: 2, xp: 14, gold: 1, secondsPerKill: 7, unlockLevel: 1, zone: "Greenfields", drops: [{ itemId: "MOSS_FIBER", chance: 0.55, min: 1, max: 2 }] },
@@ -43321,7 +43321,7 @@ var MONSTERS = MONSTERS_RAW.map((monster) => {
   };
 });
 
-// apps/mobile/src/core/combat-companions.ts
+// ../apps/mobile/src/core/combat-companions.ts
 var CLASS_COMPANION_ROLE = {
   IRONWARDEN: "tank",
   BASTION: "tank",
@@ -43336,7 +43336,6 @@ var CLASS_COMPANION_ROLE = {
 var classCompanionRole = (classId) => CLASS_COMPANION_ROLE[classId];
 var canUseCharacterCombatCompanion = (characterRole, companionRole, _mode) => characterRole !== companionRole;
 var canEquipCompanion = (characterRole, companionRole) => canUseCharacterCombatCompanion(characterRole, companionRole, "normal_combat");
-var STARTER_COMBAT_COMPANION_IDS = ["UNIT_001", "UNIT_002", "UNIT_003"];
 var defaultCompanionSanctuary = () => ({ trainingGroundLevel: 0, essenceBasinLevel: 0, bondHallLevel: 0, expeditionPensLevel: 0, masteryChamberLevel: 0 });
 var legacyOwnedCompanionProgress = () => ({ level: 10, xp: 0, ascensionTier: 0, bondLevel: 2, bondXp: 0, bondTraitUnlocked: false });
 var int = (value, min = 0, max = Number.MAX_SAFE_INTEGER) => Math.max(min, Math.min(max, Math.floor(Number(value) || 0)));
@@ -43401,17 +43400,7 @@ function migrateLegacyCombatCompanionAccount(input) {
     const def = combatCompanionDef(id);
     progress[id] = normalizeProgress(def, merged[id], legacyOwnedCompanionProgress());
   }
-  const savedStarter = STARTER_COMBAT_COMPANION_IDS.includes(account.starterCombatCompanionId) ? account.starterCombatCompanionId : void 0;
-  const legacyStarterWasImplicit = !savedStarter && legacyOwned.includes("UNIT_001");
-  const starterCombatCompanionId = savedStarter ?? (legacyStarterWasImplicit ? "UNIT_001" : void 0);
-  const savedFollowup = STARTER_COMBAT_COMPANION_IDS.includes(account.starterFollowupCombatCompanionId) ? account.starterFollowupCombatCompanionId : void 0;
-  const starterFollowupCombatCompanionId = savedFollowup ?? (legacyStarterWasImplicit ? STARTER_COMBAT_COMPANION_IDS.find((id) => id !== "UNIT_001" && legacyOwned.includes(id)) : void 0);
-  const savedThird = STARTER_COMBAT_COMPANION_IDS.includes(account.starterThirdCombatCompanionId) ? account.starterThirdCombatCompanionId : void 0;
-  const starterThirdCombatCompanionId = savedThird ?? (legacyStarterWasImplicit && starterFollowupCombatCompanionId ? STARTER_COMBAT_COMPANION_IDS.find((id) => id !== starterCombatCompanionId && id !== starterFollowupCombatCompanionId && legacyOwned.includes(id)) : void 0);
   return {
-    starterCombatCompanionId,
-    starterFollowupCombatCompanionId,
-    starterThirdCombatCompanionId,
     unlockedCombatCompanionIds: legacyOwned,
     combatCompanionProgress: progress,
     companionUnlockProgress: Object.fromEntries(Object.entries(account.companionUnlockProgress ?? {}).filter(([, value]) => Number.isFinite(Number(value)) && Number(value) >= 0).map(([key, value]) => [key, Number(value)])),
@@ -43480,7 +43469,7 @@ function companionCombatContribution(state) {
 }
 var COMBAT_COMPANION_IDS = COMBAT_COMPANIONS.map((entry2) => entry2.id);
 
-// apps/mobile/src/content/world-map.ts
+// ../apps/mobile/src/content/world-map.ts
 var WORLD_ZONES = [
   { availability: "released", id: "GREENFIELDS", name: "Greenfields", subtitle: "First hunts and a level-20 return encounter", minLevel: 1, maxLevel: 20, x: 0.18, y: 0.76, accent: "#79b88a", symbol: "\u2726" },
   { availability: "released", id: "SILVERBROOK", name: "Silverbrook", subtitle: "River paths and drowned secrets", minLevel: 5, maxLevel: 22, x: 0.56, y: 0.7, accent: "#6aaed6", symbol: "\u2248" },
@@ -43493,7 +43482,7 @@ var WORLD_ZONES = [
   { availability: "inDevelopment", id: "VEILLANDS", name: "The Veillands", subtitle: "A reality-thin frontier beyond the known road", minLevel: 91, maxLevel: 110, x: 0.82, y: 0.08, accent: "#8a6bc9", symbol: "\u25C8", developmentNote: "The Veillands is a future high-level region. Its travel preview is visible now, while enemies, gathering routes and progression rewards remain in development.", plannedActivities: ["High-level combat", "Regional gathering", "Elite encounters", "Region progression"] }
 ];
 
-// apps/mobile/src/content/skills.ts
+// ../apps/mobile/src/content/skills.ts
 var GATHERING = [
   { id: "COPPER_VEIN", skillId: "mining", name: "Copper Vein", unlockLevel: 1, seconds: 15, xp: 9, itemId: "COPPER_ORE", min: 1, max: 2, zoneId: "OLD_MINES" },
   { id: "ASTER_IRON_VEIN", skillId: "mining", name: "Aster-Iron Vein", unlockLevel: 8, seconds: 24, xp: 18, itemId: "ASTER_IRON_ORE", min: 1, max: 2, zoneId: "OLD_MINES" },
@@ -43563,7 +43552,7 @@ var RECIPES = [
 var recipesById = new Map(RECIPES.map((recipe2) => [recipe2.id, recipe2]));
 if (recipesById.size !== RECIPES.length) throw new Error("Duplicate recipe IDs in the recipe catalog");
 
-// backend/src/server/expeditions/constants.ts
+// src/server/expeditions/constants.ts
 var EXPEDITION = {
   difficultyIndex: { 1: 1, 2: 1.06, 3: 1.11, 4: 1.19, 5: 1.29 },
   marksMultiplier: { 1: 1, 2: 1.1, 3: 1.25, 4: 1.45, 5: 1.7 },
@@ -43603,7 +43592,7 @@ var COMBAT_LIMITS = {
   unitContributionRaidMax: 0.05
 };
 
-// backend/src/server/combat/calculations.ts
+// src/server/combat/calculations.ts
 var clamp2 = (v, min, max) => Math.max(min, Math.min(max, v));
 function defenseMitigation(defense, mitigationConstant) {
   const raw2 = defense / Math.max(1, defense + mitigationConstant);
@@ -43618,7 +43607,7 @@ function damageAfterMitigation(attackPowerValue, abilityCoeff, mitigation, varia
   return crit ? normal * critMultiplier : normal;
 }
 
-// backend/node_modules/.pnpm/@noble+hashes@1.8.0/node_modules/@noble/hashes/esm/utils.js
+// node_modules/.pnpm/@noble+hashes@1.8.0/node_modules/@noble/hashes/esm/utils.js
 function isBytes(a) {
   return a instanceof Uint8Array || ArrayBuffer.isView(a) && a.constructor.name === "Uint8Array";
 }
@@ -43699,7 +43688,7 @@ function createHasher(hashCons) {
   return hashC;
 }
 
-// backend/node_modules/.pnpm/@noble+hashes@1.8.0/node_modules/@noble/hashes/esm/hmac.js
+// node_modules/.pnpm/@noble+hashes@1.8.0/node_modules/@noble/hashes/esm/hmac.js
 var HMAC = class extends Hash {
   constructor(hash, _key) {
     super();
@@ -43767,7 +43756,7 @@ var HMAC = class extends Hash {
 var hmac = (hash, key, message) => new HMAC(hash, key).update(message).digest();
 hmac.create = (hash, key) => new HMAC(hash, key);
 
-// backend/node_modules/.pnpm/@noble+hashes@1.8.0/node_modules/@noble/hashes/esm/_md.js
+// node_modules/.pnpm/@noble+hashes@1.8.0/node_modules/@noble/hashes/esm/_md.js
 function setBigUint64(view, byteOffset, value, isLE) {
   if (typeof view.setBigUint64 === "function")
     return view.setBigUint64(byteOffset, value, isLE);
@@ -43887,7 +43876,7 @@ var SHA256_IV = /* @__PURE__ */ Uint32Array.from([
   1541459225
 ]);
 
-// backend/node_modules/.pnpm/@noble+hashes@1.8.0/node_modules/@noble/hashes/esm/sha2.js
+// node_modules/.pnpm/@noble+hashes@1.8.0/node_modules/@noble/hashes/esm/sha2.js
 var SHA256_K = /* @__PURE__ */ Uint32Array.from([
   1116352408,
   1899447441,
@@ -44027,10 +44016,10 @@ var SHA256 = class extends HashMD {
 };
 var sha256 = /* @__PURE__ */ createHasher(() => new SHA256());
 
-// backend/node_modules/.pnpm/@noble+hashes@1.8.0/node_modules/@noble/hashes/esm/sha256.js
+// node_modules/.pnpm/@noble+hashes@1.8.0/node_modules/@noble/hashes/esm/sha256.js
 var sha2562 = sha256;
 
-// backend/src/server/combat/deterministic-rng.ts
+// src/server/combat/deterministic-rng.ts
 function utf8(value) {
   const bytes = [];
   for (const character of value) {
@@ -44060,7 +44049,7 @@ var CombatRng = class {
   }
 };
 
-// backend/src/server/combat/gem-effects-v1.ts
+// src/server/combat/gem-effects-v1.ts
 var FOREVER = 9e15;
 var directAllowed = (abilityId) => !abilityId.startsWith("COMPANION_") && abilityId !== "COMPANION_REFLECT";
 function gem(state, familyId) {
@@ -44333,7 +44322,7 @@ function gemOnBossPhaseV1(now, players) {
   }
 }
 
-// backend/src/server/combat/engine.ts
+// src/server/combat/engine.ts
 function init(def, carried) {
   const hp = Math.max(0, Math.min(def.stats.maxHp, carried?.hp ?? def.stats.maxHp));
   const downed = carried?.downed ?? false;
@@ -44707,7 +44696,7 @@ function persistentPlayerState(result) {
   }]));
 }
 
-// backend/src/server/companions/combat-adapter.ts
+// src/server/companions/combat-adapter.ts
 var COMMON_MAX_INVESTMENT_MULTIPLIER = 1.5;
 var clamp3 = (value, min, max) => Math.max(min, Math.min(max, value));
 var ROLE_ANCHORS = {
@@ -44789,7 +44778,7 @@ function buildOwnedCompanionCombatant(progress, context) {
   return buildCompanionCombatant(def, progress, context);
 }
 
-// backend/src/server/companions/policy.ts
+// src/server/companions/policy.ts
 var CLASS_ROLE = { IRONWARDEN: "tank", BASTION: "tank", DREADGUARD: "tank", DAWNKEEPER: "support", STONECALLER: "support", WAYFINDER: "damage", RAVAGER: "damage", HEXWEAVER: "damage", KNIFE_DANCER: "damage" };
 var COMPANION_ROLE = Object.fromEntries(COMPANION_SERVER_DEFINITIONS.map((x) => [x.id, x.role]));
 var COMPANION_RARITY = Object.fromEntries(COMPANION_SERVER_DEFINITIONS.map((x) => [x.id, x.rarity]));
@@ -44820,7 +44809,25 @@ function validateProgressionSnapshot(companionId, input) {
   return { level: Math.max(1, Math.min(cap, RARITY_MAX_LEVEL[rarity], Math.floor(input.level))), xp: Math.max(0, Math.floor(input.xp)), ascensionTier, bondLevel: Math.max(1, Math.min(10, Math.floor(input.bondLevel))), bondXp: Math.max(0, Math.floor(input.bondXp)), selectedTechniqueId: input.selectedTechniqueId };
 }
 
-// apps/mobile/src/core/companion-runtime.ts
+// ../apps/mobile/src/core/feature-unlocks.ts
+var GUILD_UNLOCK_LEVEL = 7;
+var PARTY_UNLOCK_LEVEL = 20;
+var EARLY_FEATURE_UNLOCKS = {
+  dailySupplies: { questId: "QST_002", title: "Daily Supplies", requirement: "Complete First Blood, First Skill", description: "The daily reward track appears after the player understands basic skilling." },
+  events: { questId: "", title: "Events", requirement: "Available from the start", description: "All players can enter live events and earn their general rewards from level 1. Individual event activities may have their own requirements." },
+  pets: { questId: "QST_003", title: "Pets", requirement: "Complete A Hound's Trail", description: "Pets unlock after you have learned the basics of combat, gathering and early regional progression." },
+  accountBonuses: { questId: "QST_003", title: "Account Bonuses", requirement: "Complete A Hound's Trail", description: "Account-wide bonus summaries appear alongside the first collectible system." },
+  friends: { questId: "QST_003", title: "Friends", requirement: "Complete A Hound's Trail", description: "Friends unlock once the first regional combat loop has been completed." },
+  companions: { questId: "QST_005", title: "Companions", requirement: "Complete Into Ironwood", description: "The Companion Sanctuary unlocks after reaching Level 10 and entering deeper Ironwood progression." },
+  social: { questId: "QST_005", title: "Social & Parties", requirement: "Complete Into Ironwood", description: "Party recruitment and cooperative social systems unlock after the core solo loop is understood." },
+  contracts: { questId: "QST_005", title: "Contract Board", requirement: "Complete Into Ironwood", description: "Weekly and cooperative contract planning unlocks with deeper regional progression." },
+  masteryHall: { questId: "QST_005", title: "Mastery Hall", requirement: "Complete Into Ironwood", description: "Long-term profession mastery records appear once the player has enough skill actions to make the system meaningful." },
+  guild: { questId: "QST_005", title: "Guilds", requirement: `Reach Level ${GUILD_UNLOCK_LEVEL}`, description: `Guilds unlock at Level ${GUILD_UNLOCK_LEVEL}, so you can find a group before deeper regional progression.` },
+  party: { questId: "QST_011", title: "Parties", requirement: `Reach Level ${PARTY_UNLOCK_LEVEL}`, description: `Persistent parties unlock at Level ${PARTY_UNLOCK_LEVEL}, after the player has had time to learn the solo loop and pick a role.` },
+  rankings: { questId: "QST_011", title: "Rankings", requirement: "Reach Level 20 and complete Place Among Guilds", description: "Prestige rankings unlock later at Level 20, after the player has had time to establish their character and social identity." }
+};
+
+// ../apps/mobile/src/core/companion-runtime.ts
 function companionOwned(state) {
   return Object.fromEntries((state.account.unlockedCombatCompanionIds ?? []).flatMap((id) => {
     const p = state.account.combatCompanionProgress?.[id];
@@ -44831,7 +44838,7 @@ function assertCompanionIdle(state, id) {
   if ((state.account.companionAssignments ?? []).some((a) => a.status !== "claimed" && a.status !== "cancelled" && a.companionIds.includes(id)) || state.account.companionTrialProgress?.season.activeRun?.teamCompanionIds.includes(id)) throw new Error("Companion is busy. Finish or abandon its activity first.");
 }
 
-// apps/mobile/src/content/event-currency-promotion.ts
+// ../apps/mobile/src/content/event-currency-promotion.ts
 var VEILBREAK_CURRENCY_PROMOTION = {
   eventId: "EVT_ANNUAL_010_2026",
   startsAtMs: Date.parse("2026-10-19T05:48:31Z"),
@@ -44846,13 +44853,13 @@ function promotedEventCurrency(eventId, quantity, earnedAtMs) {
   return Math.floor(Math.max(0, quantity) * (1e4 + eventCurrencyPromotionBps(eventId, earnedAtMs)) / 1e4);
 }
 
-// apps/mobile/src/content/event-collectible-content-active.ts
+// ../apps/mobile/src/content/event-collectible-content-active.ts
 var EVENT_PET_COLLECTIBLES = [
   { id: "EVT_PET_013", kind: "pet", name: "Gloomkin", bonusFamilyId: "EVT_PET_013", target: "dropChance", ownedBps: 50, activeBps: 300, collectionGroup: "event", source: "The Veilbreak \xB7 October", event: "veilbreak", rarity: "Rare", buff: "+3% relative Combat Drop Chance", description: "A playful void kitten carrying a small spectral lantern." },
   { id: "EVT_PET_014", kind: "pet", name: "Lantern Mimic", bonusFamilyId: "EVT_PET_014", target: "dungeonReward", ownedBps: 50, activeBps: 400, collectionGroup: "event", source: "The Veilbreak \xB7 October", event: "veilbreak", rarity: "Epic", buff: "+4% Dungeon Reward Quantity Chance", description: "A compact mimic filled with ghost-fire and lantern light." }
 ];
 
-// apps/mobile/src/content/core-pets.ts
+// ../apps/mobile/src/content/core-pets.ts
 var pet = (id, name, region, target2, nativeSize, activeBps = 200, source) => ({
   id,
   kind: "pet",
@@ -44915,7 +44922,7 @@ function validateCorePetCatalog(catalog2 = CORE_PET_COLLECTIBLES) {
 }
 validateCorePetCatalog();
 
-// apps/mobile/src/content/guild-pets-v1.ts
+// ../apps/mobile/src/content/guild-pets-v1.ts
 var GUILD_PET_COLLECTIBLES = [
   {
     id: "GUILD_PET_001",
@@ -44949,7 +44956,7 @@ var GUILD_PET_COLLECTIBLES = [
   }
 ];
 
-// apps/mobile/src/content/collectibles.ts
+// ../apps/mobile/src/content/collectibles.ts
 var entry = (id, kind, name, target2, source, activeBps = 200, requiredCharacterLevel, collectionGroup = "profile") => ({ id, kind, name, bonusFamilyId: id, target: target2, ownedBps: 50, activeBps, source, requiredCharacterLevel, collectionGroup });
 var PROFILE_COLLECTIBLES = [
   entry("ironwood-dawn", "background", "Ironwood Dawn", "skillXp", "Reach character level 10", 200, 10, "profile"),
@@ -44984,7 +44991,7 @@ function validateCollectibleCatalog(catalog2 = COLLECTIBLES) {
 }
 validateCollectibleCatalog();
 
-// apps/mobile/src/content/permanent-boosts.ts
+// ../apps/mobile/src/content/permanent-boosts.ts
 var petBoostFor = (pet2) => {
   const amount = 1 + pet2.activeBps / 1e4;
   const base = { id: pet2.id, name: pet2.name };
@@ -45084,10 +45091,10 @@ var PERMANENT_BOOSTS_BASE = {
   ...BUYABLE_PERMANENT_BOOSTS
 };
 
-// apps/mobile/src/core/permanent-boosts.ts
+// ../apps/mobile/src/core/permanent-boosts.ts
 init_faith2();
 
-// apps/mobile/src/core/account-entitlements.ts
+// ../apps/mobile/src/core/account-entitlements.ts
 function has2(state, ...keys) {
   const entitlements = state.account.entitlements ?? {};
   return keys.some((key) => entitlements[key] === true);
@@ -45116,7 +45123,7 @@ function accountEntitlementBenefits(state) {
   };
 }
 
-// apps/mobile/src/core/collectibles.ts
+// ../apps/mobile/src/core/collectibles.ts
 var ids = (state, kind) => kind === "pet" ? state.account.unlockedCosmeticPetIds ?? [] : kind === "background" ? state.account.unlockedProfileBackgroundIds ?? [] : state.account.unlockedProfileBorderIds ?? [];
 var selected = (state, kind) => kind === "pet" ? state.character?.selectedCosmeticPetId : kind === "background" ? state.character?.profileBackgroundId : state.character?.profileBorderId;
 function collectionBonusBreakdown(state, catalog2 = COLLECTIBLES) {
@@ -45142,7 +45149,7 @@ function collectionBonusBreakdown(state, catalog2 = COLLECTIBLES) {
   });
 }
 
-// apps/mobile/src/core/permanent-boosts.ts
+// ../apps/mobile/src/core/permanent-boosts.ts
 var BASE = {
   attackMultiplier: 1,
   combatSpeedMultiplier: 1,
@@ -45304,7 +45311,7 @@ function characterPermanentMultipliers(state) {
   return result;
 }
 
-// apps/mobile/src/core/class-skill-affinities.ts
+// ../apps/mobile/src/core/class-skill-affinities.ts
 var CLASS_SKILL_AFFINITIES = Object.freeze({
   IRONWARDEN: "smithing",
   BASTION: "smithing",
@@ -45321,7 +45328,7 @@ var CLASS_AFFINITY_SPEED_MULTIPLIER = 1.03;
 var NEUTRAL = Object.freeze({ xpMultiplier: 1, speedMultiplier: 1 });
 var MATCHED = Object.freeze({ xpMultiplier: CLASS_AFFINITY_XP_MULTIPLIER, speedMultiplier: CLASS_AFFINITY_SPEED_MULTIPLIER });
 
-// apps/mobile/src/content/quests.ts
+// ../apps/mobile/src/content/quests.ts
 var QUESTS = [
   { id: "QST_001", name: "A Name in the Ledger", description: "Defeat 5 Moss Rats.", kind: "kills", targetId: "MOSS_RAT", required: 5, rewardGold: 40, rewardItemId: "MOSS_FIBER", rewardItemQty: 5, act: 1, location: "Greenfields", story: "The local ledger has more missing names than living ones. A simple rat cull is hardly heroic, but it is the first chance to prove you can return from the road." },
   { id: "QST_002", name: "First Blood, First Skill", description: "Reach level 2 in any guided gathering skill.", kind: "skillLevel", required: 2, rewardGold: 60, rewardItemId: "COPPER_ORE", rewardItemQty: 4, act: 1, location: "Greenfields Camp", story: "Steel alone will not carry you through Asterfall. The camp quartermaster sends you to learn the land, gather what it gives, and stop depending on supplies brought from safer places." },
@@ -45340,24 +45347,24 @@ var QUESTS = [
   { id: "QST_015", name: "Beyond the Green", description: "Claim victory over the Fallen Knight and reach level 25.", kind: "level", required: 25, rewardGold: 1250, rewardItemId: "OATHGLASS_CAPE", rewardItemQty: 1, act: 3, location: "Eastern Oathgate", story: "With the Knight defeated, the sealed routes beyond Asterfall begin to open. The victory ends one chapter, but the echoes carried on the wind make it clear the broken oath was never confined to the green lands." }
 ];
 
-// apps/mobile/src/core/activity-queue.ts
+// ../apps/mobile/src/core/activity-queue.ts
 init_faith();
 init_faith2();
 
-// apps/mobile/src/core/alchemy.ts
+// ../apps/mobile/src/core/alchemy.ts
 init_progression();
 function preparationEffects(preparation) {
   const def = preparation && preparation.remainingEncounters > 0 ? potionDef(preparation.itemId) : void 0;
   return def?.effect.kind === "preparation" ? { attack: 1 + def.effect.attackFraction, damage: 1 - def.effect.damageReductionFraction, itemId: def.id } : { attack: 1, damage: 1, itemId: void 0 };
 }
 
-// apps/mobile/src/core/processing.ts
+// ../apps/mobile/src/core/processing.ts
 init_progression();
 
-// apps/mobile/src/core/game.ts
+// ../apps/mobile/src/core/game.ts
 init_progression();
 
-// apps/mobile/src/core/identity-names.ts
+// ../apps/mobile/src/core/identity-names.ts
 var LATIN_WORD = String.raw`\p{Script=Latin}[\p{Script=Latin}\p{M}]*`;
 var SAFE_IDENTITY_NAME = new RegExp(`^${LATIN_WORD}(?:[ '-]${LATIN_WORD})*$`, "u");
 var RESERVED_NAME_TOKENS = /* @__PURE__ */ new Set(["admin", "administrator", "moderator", "mod", "developer", "dev", "staff", "support", "system", "official", "owner", "gamemaster", "game master", "gm", "bot", "null", "undefined", "deleted", "veldryn"]);
@@ -45382,7 +45389,7 @@ function characterNameError(value) {
   return identityNameError(value, 2, 20, "character names");
 }
 
-// apps/mobile/src/core/quick-navigation.ts
+// ../apps/mobile/src/core/quick-navigation.ts
 var QUICK_NAV_DESTINATIONS = [
   "Home",
   "Character",
@@ -45403,10 +45410,10 @@ var QUICK_NAV_DESTINATIONS = [
 var DEFAULT_QUICK_NAV_DESTINATIONS = ["Quests", "Dungeon", "Companions", "Guild", "Settings"];
 var allowed = new Set(QUICK_NAV_DESTINATIONS);
 
-// apps/mobile/src/core/account-roster.ts
+// ../apps/mobile/src/core/account-roster.ts
 init_progression();
 
-// apps/mobile/src/core/item-rarity.ts
+// ../apps/mobile/src/core/item-rarity.ts
 var GEAR_RARITIES = [
   { id: "common", label: "Common", chance: 0.89, color: "#9aa4b2", lightTextColor: "#52606D", surface: "rgba(154,164,178,.08)", statMultiplier: 1, borderWidth: 1, glowOpacity: 0, symbol: "\u25C6" },
   { id: "uncommon", label: "Uncommon", chance: 0.07, color: "#49c873", lightTextColor: "#1F7A46", surface: "rgba(73,200,115,.10)", statMultiplier: 1.12, borderWidth: 1, glowOpacity: 0.08, symbol: "\u25C6" },
@@ -45427,15 +45434,20 @@ function itemRarity(item) {
 }
 var rarityMeta = (rarity) => GEAR_RARITIES.find((entry2) => entry2.id === rarity);
 
-// apps/mobile/src/core/crafted-gear-rarity.ts
+// ../apps/mobile/src/core/crafted-gear-rarity.ts
 function craftedRarityStatMultiplier(itemId, rarity) {
   const base = itemRarity(itemDef(itemId));
   const baseMultiplier = rarityMeta(base).statMultiplier || 1;
   return Math.max(1, rarityMeta(rarity).statMultiplier / baseMultiplier);
 }
 
-// apps/mobile/src/core/crafted-gear-instances.ts
+// ../apps/mobile/src/core/crafted-gear-instances.ts
 var MAX_CRAFTED_GEAR_INSTANCES = 500;
+function clampStatRoll(raw2) {
+  if (typeof raw2 !== "number" || !Number.isFinite(raw2)) return void 0;
+  if (raw2 < 0 || raw2 >= 1) return void 0;
+  return raw2;
+}
 function normalizeCraftedGearInstances(raw2) {
   if (!Array.isArray(raw2)) return [];
   return raw2.filter((row) => row && typeof row === "object" && typeof row.id === "string" && typeof row.itemId === "string" && typeof row.ownerCharacterId === "string").flatMap((row) => {
@@ -45452,7 +45464,8 @@ function normalizeCraftedGearInstances(raw2) {
         acquireSource: "craft",
         sourceReceiptKey: String(row.sourceReceiptKey ?? row.id).slice(0, 200),
         createdAtMs: Math.max(0, Math.floor(Number(row.createdAtMs) || 0)),
-        enhancement: { rank: Math.max(0, Math.min(4, Math.floor(Number(enhancement.rank) || 0))), failures: Math.max(0, Math.floor(Number(enhancement.failures) || 0)), statGemId: typeof enhancement.statGemId === "string" ? enhancement.statGemId : void 0, effectGemId: typeof enhancement.effectGemId === "string" ? enhancement.effectGemId : void 0, gemIds: Array.isArray(enhancement.gemIds) ? enhancement.gemIds.filter((x) => typeof x === "string").slice(0, 2) : [] }
+        enhancement: { rank: Math.max(0, Math.min(4, Math.floor(Number(enhancement.rank) || 0))), failures: Math.max(0, Math.floor(Number(enhancement.failures) || 0)), statGemId: typeof enhancement.statGemId === "string" ? enhancement.statGemId : void 0, effectGemId: typeof enhancement.effectGemId === "string" ? enhancement.effectGemId : void 0, gemIds: Array.isArray(enhancement.gemIds) ? enhancement.gemIds.filter((x) => typeof x === "string").slice(0, 2) : [] },
+        statRoll: clampStatRoll(row.statRoll)
       }];
     } catch {
       return [];
@@ -45472,7 +45485,7 @@ function effectiveOwnedGearRarity(state, itemId, ownerCharacterId = state.charac
   return bestCraftedInstanceForItem(state, itemId, ownerCharacterId)?.rarity ?? itemRarity(itemDef(itemId));
 }
 
-// apps/mobile/src/core/gem-progression-v1.ts
+// ../apps/mobile/src/core/gem-progression-v1.ts
 init_progression();
 var GEM_COMBINE_COSTS_V1 = {
   1: { to: 2, copies: 3, dust: 0, gold: 1500, seconds: 5 * 60, level: 8, xp: 140 },
@@ -45481,7 +45494,7 @@ var GEM_COMBINE_COSTS_V1 = {
   4: { to: 5, copies: 3, dust: 40, gold: 6e4, seconds: 2 * 60 * 60, level: 60, xp: 3200, catalystId: "RADIANT_CATALYST" }
 };
 
-// apps/mobile/src/core/equipment-enhancement.ts
+// ../apps/mobile/src/core/equipment-enhancement.ts
 var MAX_UPGRADE_RANK = 4;
 var UPGRADE_STAT_PER_RANK = 0.04;
 function safeGem(id) {
@@ -45539,7 +45552,7 @@ function equippedGemBonuses(state) {
   return result;
 }
 
-// apps/mobile/src/content/class-icon-colors.ts
+// ../apps/mobile/src/content/class-icon-colors.ts
 var CLASS_ICON_ACCENT = {
   IRONWARDEN: "#70BDFA",
   BASTION: "#C98342",
@@ -45552,7 +45565,7 @@ var CLASS_ICON_ACCENT = {
   STONECALLER: "#54C8BE"
 };
 
-// apps/mobile/src/content/equipment-sets.ts
+// ../apps/mobile/src/content/equipment-sets.ts
 var classIdByCatalogName = {
   Ironwarden: "IRONWARDEN",
   Bastion: "BASTION",
@@ -45612,7 +45625,7 @@ function equippedSetPieceCount(equipment, set) {
   return Object.values(equipment).filter((itemId) => itemId && set.itemIds.includes(itemId)).length;
 }
 
-// apps/mobile/src/core/equipment-set-runtime.ts
+// ../apps/mobile/src/core/equipment-set-runtime.ts
 var EMPTY_STATS = {
   maxHp: 0,
   armor: 0,
@@ -45694,11 +45707,11 @@ function activeEquipmentSetRuntime(state) {
   return { stats: total, activeSets: activeSets.sort((a, b) => b.pieces - a.pieces || a.setId.localeCompare(b.setId)) };
 }
 
-// apps/mobile/src/core/game.ts
+// ../apps/mobile/src/core/game.ts
 init_faith2();
 init_faith();
 
-// apps/mobile/src/core/collection-sets-v45.ts
+// ../apps/mobile/src/core/collection-sets-v45.ts
 var COLLECTION_SETS_V45 = [
   {
     id: "asterfall_cuisine_runtime",
@@ -45725,13 +45738,13 @@ var COLLECTION_SETS_V45 = [
   }
 ];
 
-// apps/mobile/src/core/launch-readiness-v47.ts
+// ../apps/mobile/src/core/launch-readiness-v47.ts
 var CURRENT_SKILL_IDS = ["mining", "woodcutting", "fishing", "smithing", "cooking", "herbalism", "alchemy", "exploration", "tailoring", "enchanting", "faith"];
 var itemIds = new Set(ITEMS.map((row) => row.id));
 var zoneIds = new Set(WORLD_ZONES.map((row) => row.id));
 var skillIds = new Set(CURRENT_SKILL_IDS);
 
-// apps/mobile/src/core/adventurers-journal-v42.ts
+// ../apps/mobile/src/core/adventurers-journal-v42.ts
 var TIERS = ["novice", "adventurer", "veteran", "master", "grandmaster"];
 var ladder = (category, key, name, metricKey, targets, descriptions, title2) => targets.map((target2, index) => ({ id: `${key}_${TIERS[index]}`, category, tier: TIERS[index], title: `${name} \u2014 ${TIERS[index][0].toUpperCase()}${TIERS[index].slice(1)}`, description: descriptions[index], metricKey, target: target2, ...index === 4 && title2 ? { rewardTitleId: title2.id } : {} }));
 var JOURNAL_TITLES_V42 = [
@@ -45758,10 +45771,10 @@ var JOURNAL_ACHIEVEMENTS_V42 = [
   ...ladder("account", "orderbound", "Orderbound", "weekly_orders.completed", [4, 20, 100, 300, 750], ["Complete four Weekly Orders.", "Complete 20 Weekly Orders.", "Complete 100 Weekly Orders.", "Complete 300 Weekly Orders.", "Complete 750 Weekly Orders."], title("orderbound"))
 ];
 
-// apps/mobile/src/core/daily-supplies.ts
+// ../apps/mobile/src/core/daily-supplies.ts
 var DAILY_SUPPLY_CHARGE_SECONDS = 2 * 60 * 60;
 
-// apps/mobile/src/core/game.ts
+// ../apps/mobile/src/core/game.ts
 var BASE_OFFLINE_CAP_HOURS = 8;
 var OFFLINE_CAP_SECONDS = BASE_OFFLINE_CAP_HOURS * 60 * 60;
 function newGame(nowMs) {
@@ -45856,7 +45869,7 @@ function effectiveStats(state) {
   };
 }
 
-// backend/src/server/combat/content/launch-combat.ts
+// src/server/combat/content/launch-combat.ts
 var stats2 = (maxHp, attackPower, healingPower, defense, accuracy, evasion, critChance = 0.08, haste = 0.05) => ({ maxHp, attackPower, healingPower, defense, accuracy, evasion, critChance, critMultiplier: 1.5, haste });
 var dmg = (id, name, coeff, cooldownMs, priority, extra = {}) => ({ id, name, cooldownMs, castTimeMs: 0, target: "current_target", priority, effects: [{ kind: "damage", coeff, damageType: "physical" }], ...extra });
 function launchPlayer(classId, level = 25) {
@@ -45930,7 +45943,7 @@ function bellWardenBoss(level = 25) {
   ] };
 }
 
-// backend/src/server/coop/role-readiness.ts
+// src/server/coop/role-readiness.ts
 var CLASS_ROLES = Object.freeze({
   IRONWARDEN: "tank",
   BASTION: "tank",
@@ -45958,7 +45971,7 @@ function evaluateRoleReadiness(classId, normalizedScore, capabilities, floor = 0
   return { ready: failures.length === 0, role: role2, normalizedScore, failures };
 }
 
-// backend/src/server/coop/normalization.ts
+// src/server/coop/normalization.ts
 var COOP_NORMALIZATION_V1 = Object.freeze({
   version: "coop-normalization-v1",
   softThreshold: 1.15,
@@ -46033,7 +46046,7 @@ function normalizeCombatInput(source, abilities, syncLevel, reference, config = 
   };
 }
 
-// backend/online/coop-loadout.ts
+// online/coop-loadout.ts
 var ONLINE_COOP_BALANCE_VERSION = "online-coop-loadout-v1";
 function referenceStats(classId) {
   const reference = createCharacter(newGame(0), classId, "Calibration");
@@ -46106,22 +46119,22 @@ function assessOnlineCoopLoadout(record, syncLevel = 25) {
   return { normalized, readiness };
 }
 
-// apps/mobile/src/core/game-commands.ts
+// ../apps/mobile/src/core/game-commands.ts
 init_faith2();
 
-// apps/mobile/src/core/equipment-crafting-queue.ts
+// ../apps/mobile/src/core/equipment-crafting-queue.ts
 init_progression();
 
-// apps/mobile/src/core/inventory-bulk.ts
+// ../apps/mobile/src/core/inventory-bulk.ts
 init_faith();
 
-// apps/mobile/src/core/balance-projection.ts
+// ../apps/mobile/src/core/balance-projection.ts
 init_progression();
 
-// apps/mobile/src/core/working-toward.ts
+// ../apps/mobile/src/core/working-toward.ts
 var gatherDefs = [...GATHERING, ...HERB_NODES];
 
-// apps/mobile/src/features/chat-pilot/data/emotes.json
+// ../apps/mobile/src/features/chat-pilot/data/emotes.json
 var emotes_default = [
   {
     id: "male_01",
@@ -46992,21 +47005,21 @@ var emotes_default = [
   }
 ];
 
-// apps/mobile/src/core/chat-emotes.ts
+// ../apps/mobile/src/core/chat-emotes.ts
 var rows = emotes_default;
 var catalog = new Map(rows.map((row) => [row.id, row]));
 var known = new Set(catalog.keys());
 
-// apps/mobile/src/dev/debug-tools.ts
+// ../apps/mobile/src/dev/debug-tools.ts
 init_progression();
 
-// apps/mobile/src/core/skill-progression-navigation.ts
+// ../apps/mobile/src/core/skill-progression-navigation.ts
 var gatheringDefs = [...GATHERING, ...HERB_NODES];
 
-// apps/mobile/src/core/working-toward-execution.ts
+// ../apps/mobile/src/core/working-toward-execution.ts
 var gatherDefs2 = [...GATHERING, ...HERB_NODES];
 
-// backend/online/gameplay.ts
+// online/gameplay.ts
 var GameplayError = class extends Error {
   constructor(message, status = 400) {
     super(message);
@@ -47015,7 +47028,7 @@ var GameplayError = class extends Error {
   status;
 };
 
-// backend/online/coop-entry.ts
+// online/coop-entry.ts
 var headers = { "Content-Type": "application/json", "Cache-Control": "no-store", "Access-Control-Allow-Origin": "*", "Access-Control-Allow-Headers": "authorization,apikey,content-type,x-client-info", "Access-Control-Allow-Methods": "GET,POST,OPTIONS" };
 var json = (value, status = 200) => new Response(JSON.stringify(value), { status, headers });
 var tiers = [1, 2, 3, 4, 5];
@@ -47082,10 +47095,10 @@ function coopEntryHandler(services) {
   };
 }
 
-// backend/online/qmode-runtime.ts
+// online/qmode-runtime.ts
 import { createHash as createHash4 } from "node:crypto";
 
-// backend/src/server/companions/character-assist.ts
+// src/server/companions/character-assist.ts
 function applyCharacterCompanionAssist(owner, progress) {
   if (!progress) return owner;
   const policy = validateCompanionLoadout({ classId: owner.classId, companionId: progress.companionId, ownedCompanionIds: [progress.companionId] });
@@ -47102,7 +47115,7 @@ function applyCharacterCompanionAssist(owner, progress) {
   return { ...owner, abilities: [...owner.abilities, ability3], tags: [...owner.tags ?? [], `companion:${def.id}`] };
 }
 
-// backend/src/server/combat/snapshot-adapter.ts
+// src/server/combat/snapshot-adapter.ts
 function combatantFromVerifiedSnapshot(s2, abilities) {
   if (!Number.isInteger(s2.level) || s2.level < 1 || s2.level > 100) throw new Error("invalid_snapshot_level");
   if ([s2.maxHp, s2.attackPower, s2.healingPower, s2.defense, s2.accuracy, s2.evasion, s2.critChance, s2.haste].some((value) => !Number.isFinite(value)) || s2.maxHp <= 0 || [s2.attackPower, s2.healingPower, s2.defense, s2.accuracy, s2.evasion].some((value) => value < 0)) throw new Error("invalid_snapshot_stats");
@@ -47122,7 +47135,7 @@ function combatantFromVerifiedSnapshot(s2, abilities) {
   }, s2.combatCompanion);
 }
 
-// backend/src/server/expeditions/rng.ts
+// src/server/expeditions/rng.ts
 import { createHmac } from "node:crypto";
 function deterministicDigest(secret, ...parts) {
   return createHmac("sha256", secret).update(parts.join("|")).digest();
@@ -47140,10 +47153,10 @@ function deterministicShuffle(secret, values, ...parts) {
   return values.map((value, index) => ({ value, key: deterministicDigest(secret, ...parts, index).toString("hex") })).sort((a, b) => a.key.localeCompare(b.key)).map((x) => x.value);
 }
 
-// backend/src/server/combat/expedition-combat-service.ts
+// src/server/combat/expedition-combat-service.ts
 import { createHash as createHash2 } from "node:crypto";
 
-// backend/src/server/combat/pve-encounter-identity.ts
+// src/server/combat/pve-encounter-identity.ts
 var ARCHETYPE_LABEL = Object.freeze({
   bruiser: "Bruiser",
   assassin: "Assassin",
@@ -47235,7 +47248,7 @@ function pveBossTelegraph(definitions2) {
   };
 }
 
-// backend/src/server/combat/content/asterfall-encounters.ts
+// src/server/combat/content/asterfall-encounters.ts
 var s = (maxHp, attackPower, defense, accuracy = 650, evasion = 120) => ({ maxHp, attackPower, healingPower: 0, defense, accuracy, evasion, critChance: 0.04, critMultiplier: 1.5, haste: 0 });
 var enemy = (id, name, hp, ap, def, abilityCoeff = 1) => withPveIdentity({
   id,
@@ -47294,7 +47307,7 @@ ASTERFALL_ENCOUNTERS.LANTERN_ELITE_02 = () => [bellSentinel("LANTERN_KNIGHT", "F
 ASTERFALL_ENCOUNTERS.LANTERN_ELITE_03 = () => [bellSentinel()];
 ASTERFALL_ENCOUNTERS.BOSS_EXP_BELL = () => [bellBoss()];
 
-// backend/src/server/combat/content/sunscar-encounters.ts
+// src/server/combat/content/sunscar-encounters.ts
 var stats3 = (maxHp, attackPower, defense, accuracy = 910, evasion = 220) => ({ maxHp, attackPower, healingPower: 0, defense, accuracy, evasion, critChance: 0.06, critMultiplier: 1.5, haste: 0.03 });
 var strike = (id, name, coeff, damageType, target2 = "current_target", castTimeMs = 650) => ({ id, name, cooldownMs: target2 === "all_enemies" ? 9500 : 6800, castTimeMs, target: target2, priority: target2 === "all_enemies" ? 90 : 70, interruptible: castTimeMs > 900, effects: [{ kind: "damage", coeff, damageType }] });
 var enemy2 = (id, name, hp, ap, def, ability3, archetype = "bruiser", mechanics = ["heavy_hit"]) => withPveIdentity({ id, name, team: "enemies", role: "enemy", level: 45, stats: stats3(hp, ap, def), basicAttackMs: 2800, basicAttackCoeff: 0.72, abilities: [ability3] }, archetype, mechanics);
@@ -47344,7 +47357,7 @@ function boss(id, name, type, attackPower = 3900) {
 SUNSCAR_ENCOUNTERS.BOSS_EXP_SOLAR = () => boss("BOSS_EXP_SOLAR", "The Buried Heliarch", "fire", 4e3);
 SUNSCAR_ENCOUNTERS.BOSS_EXP_SPHINX = () => boss("BOSS_EXP_SPHINX", "The Veiled Sphinx", "arcane", 3635);
 
-// backend/src/server/combat/content/regional-encounters.ts
+// src/server/combat/content/regional-encounters.ts
 var stats4 = (maxHp, attackPower, defense, level) => ({ maxHp, attackPower, healingPower: 0, defense, accuracy: 930, evasion: 190, critChance: 0.06, critMultiplier: 1.5, haste: 0.03 });
 function normalIdentity(name) {
   if (["Glacier Stalker", "Icefang Hound", "Glassbone Hound"].includes(name)) return { archetype: "assassin", mechanics: ["focus", "execute"] };
@@ -47483,7 +47496,7 @@ for (const [index, name] of ["Fen Pyrecaller", "Blackglass Devourer", "Crucible 
 ASHLANDS_ENCOUNTERS.BOSS_EXP_FEN = () => boss2("BOSS_EXP_FEN", "The Blackglass Fen Prime", 94, "fire", 125e3, 8200, 2900);
 ASHLANDS_ENCOUNTERS.BOSS_EXP_PRIME = () => boss2("BOSS_EXP_PRIME", "The Crucible Prime", 94, "fire", 132e3, 8400, 2950);
 
-// backend/src/server/combat/content/event-encounters.ts
+// src/server/combat/content/event-encounters.ts
 var stats5 = (maxHp, attackPower, defense, level) => ({ maxHp, attackPower, healingPower: 0, defense, accuracy: 930, evasion: 190, critChance: 0.06, critMultiplier: 1.5, haste: 0.03 });
 function archetypeFor(name) {
   const exact = {
@@ -47626,10 +47639,10 @@ var EVENT_ENCOUNTERS = {
   EVENT_FROSTFALL_BOSS: () => boss3("EVENT_FROSTFALL_BOSS", "The Rimebell Colossus", 35, 1.07, "ice", "Rimebell Hammer", "Aurora Shatter")
 };
 
-// backend/src/server/combat/content/expedition-encounters.ts
+// src/server/combat/content/expedition-encounters.ts
 var EXPEDITION_ENCOUNTERS = Object.freeze({ ...ASTERFALL_ENCOUNTERS, ...SUNSCAR_ENCOUNTERS, ...FROSTMARCH_ENCOUNTERS, ...ASHLANDS_ENCOUNTERS, ...EVENT_ENCOUNTERS });
 
-// backend/src/server/combat/pve-simulation-telemetry.ts
+// src/server/combat/pve-simulation-telemetry.ts
 var rounded = (value, digits = 4) => Number(value.toFixed(digits));
 function add(record, key, value) {
   if (!key) return;
@@ -47752,7 +47765,7 @@ function buildPveSimulationTelemetry(result, encounterId) {
   };
 }
 
-// backend/src/server/combat/expedition-combat-service.ts
+// src/server/combat/expedition-combat-service.ts
 function expeditionEncounterPreview(encounterId) {
   const factory = EXPEDITION_ENCOUNTERS[encounterId];
   return factory ? pveEncounterPreview(factory()) : void 0;
@@ -47910,7 +47923,7 @@ function resolveExpeditionCombat(input, includeDebugTrace = false) {
   return { success: result.victory, resultJson: { reason: result.reason, durationMs: result.durationMs, downs: result.players.filter((p) => p.downed).map((p) => p.definition.id), playerHp: rec(result.players, (x) => x.hp), enemyHp: rec(result.enemies, (x) => x.hp), damage: rec(result.players, (x) => x.damageDone), healing: rec(result.players, (x) => x.healingDone), damageTaken: rec(result.players, (x) => x.damageTaken), interrupts: rec(result.players, (x) => x.interrupts), eventDigest, eventCount: result.events.length, bossPhaseIds, bossCastAbilityIds, ...safetyAiIds.size ? { safetyAiPlayerIds: [...safetyAiIds], safetyAiPolicy: { outputMultiplier: 0.7, allowedActions: ["basic_attack", "basic_defensive"] } } : {}, ...encounterIdentity2 ? { encounterIdentity: encounterIdentity2 } : {}, pveTelemetry, replayCombatants: replay.combatants, replayStatuses: replay.statuses, replayGemStates: replay.gemStates, replayCues: replay.cues }, endingPlayerState: persistentPlayerState(result), ...includeDebugTrace ? { debugEvents: result.events } : {} };
 }
 
-// backend/src/server/expeditions/node-resolution.ts
+// src/server/expeditions/node-resolution.ts
 var COMBAT_KINDS = /* @__PURE__ */ new Set(["battle", "elite", "boss"]);
 var IMPLEMENTED_NONCOMBAT = /* @__PURE__ */ new Set(["event", "camp", "shrine", "treasure", "forge", "merchant", "echo", "risk", "secret"]);
 function initialPersistentRunState(players) {
@@ -48007,14 +48020,14 @@ function resolveCoopNode(input) {
   return { success: true, state, summary: { kind: input.node.kind, roll, ...input.node.kind === "merchant" ? { offers: merchantOffers(input.node.contentId) } : {} } };
 }
 
-// backend/src/shared/coop-types.ts
+// src/shared/coop-types.ts
 var COOP_ROLE_REQUIREMENT = Object.freeze({
   tank: 1,
   damage: 2,
   support: 1
 });
 
-// backend/src/server/coop/invariants.ts
+// src/server/coop/invariants.ts
 function roleCounts(roles) {
   const counts = { tank: 0, damage: 0, support: 0 };
   for (const role2 of roles) counts[role2] += 1;
@@ -48044,7 +48057,7 @@ function validatePreBossNodeCount(count) {
   }
 }
 
-// backend/src/server/expeditions/content/coop-route-content.ts
+// src/server/expeditions/content/coop-route-content.ts
 var ROOTBOUND = {
   battle: ["ROOT_SCOUTS", "ROOT_GUARDIANS", "ROOT_VINES", "ROOT_STALKERS", "ROOT_SENTINELS"],
   elite: ["ROOT_ELITE_BRAMBLE", "ROOT_ELITE_WARDEN", "ROOT_ELITE_MYCELIUM"],
@@ -48078,7 +48091,7 @@ function coopContentPool(expeditionId, kind) {
   return pool;
 }
 
-// backend/src/server/expeditions/route-generation.ts
+// src/server/expeditions/route-generation.ts
 var MODIFIERS = ["steady", "thorned", "volatile", "warded", "swift", "attrition"];
 function coopKind(secret, expeditionId, runId, contentVersion, balanceVersion, depth, choice) {
   if (depth <= 2) return "battle";
@@ -48170,7 +48183,7 @@ function coopRouteClientProjection(graph2, revealedNodeIds = [graph2.entryNodeId
   return { ...structuredClone(graph2), nodes: graph2.nodes.filter((node) => visible.has(node.nodeId)).map((node) => structuredClone(node)) };
 }
 
-// backend/src/server/expeditions/rewards.ts
+// src/server/expeditions/rewards.ts
 function failureRewardFraction(state) {
   if (state.cleared) return FAILURE_REWARD.clear;
   if (state.reachedFinalBoss && (state.finalBossHpFraction ?? 1) <= 0.25) return FAILURE_REWARD.bossLow;
@@ -48202,7 +48215,7 @@ function marksForRun(mapBaseMarks, tier, state, objectiveMultiplier = 1, enhance
   return enhancedEligible ? preCap : Math.round(preCap * EXPEDITION.postCapMarksCoefficient);
 }
 
-// backend/src/server/coop/echo-recruitment.ts
+// src/server/coop/echo-recruitment.ts
 function missingRoles(controllerRole) {
   const roles = ["tank", "damage", "damage", "support"];
   const index = roles.indexOf(controllerRole);
@@ -48229,8 +48242,41 @@ function recruitEligibleEchoes(input) {
   }
   return Object.freeze(selected2.map((profile) => Object.freeze(structuredClone(profile))));
 }
+function recruitQModeAllies(input) {
+  const eligible = input.profiles.filter((echo) => echo.optedIn && echo.sourceAccountId !== input.controllerAccountId && echo.contentVersion === input.contentVersion && echo.publishedAtMs + COOP_ROGUELITE_CONFIG.echoFreshnessMs > input.nowMs && !echo.blockedAccountIds.includes(input.controllerAccountId) && echo.snapshot.readiness.ready);
+  const team = [], accounts = /* @__PURE__ */ new Set([input.controllerAccountId]), characters = /* @__PURE__ */ new Set();
+  const usedDamage = new Set(input.controllerRole === "damage" ? [input.controllerClassId.trim().toUpperCase()] : []);
+  for (const role2 of missingRoles(input.controllerRole)) {
+    const legal = (snapshot) => snapshot.readiness.ready && snapshot.readiness.role === role2 && !accounts.has(snapshot.accountId) && !characters.has(snapshot.characterId) && (role2 !== "damage" || !usedDamage.has(snapshot.classId.trim().toUpperCase()));
+    const echo = deterministicShuffle(
+      input.serverSecret,
+      eligible.filter((row) => legal(row.snapshot)),
+      "echo-recruit-v2",
+      input.requestId,
+      input.contentVersion,
+      role2,
+      team.length
+    )[0];
+    const npc = echo ? void 0 : deterministicShuffle(
+      input.serverSecret,
+      input.npcSnapshots.filter(legal),
+      "npc-recruit-v1",
+      input.requestId,
+      input.contentVersion,
+      role2,
+      team.length
+    )[0];
+    if (!echo && !npc) throw new Error(`echo_pool_unavailable:${role2}`);
+    const member = echo ? { kind: "echo", snapshot: echo.snapshot, echo } : { kind: "npc", snapshot: npc };
+    team.push(member);
+    accounts.add(member.snapshot.accountId);
+    characters.add(member.snapshot.characterId);
+    if (role2 === "damage") usedDamage.add(member.snapshot.classId.trim().toUpperCase());
+  }
+  return Object.freeze(team.map((row) => Object.freeze(structuredClone(row))));
+}
 
-// backend/src/server/coop/qmode.ts
+// src/server/coop/qmode.ts
 var MemoryQModeRunRepository = class {
   runs = /* @__PURE__ */ new Map();
   requests = /* @__PURE__ */ new Map();
@@ -48263,13 +48309,13 @@ var QModeService = class {
     const definition = EXPEDITIONS[input.expeditionId];
     if (!definition) throw new Error("unknown_expedition");
     if (!definition.coopImplemented) throw new Error("expedition_not_implemented");
-    const echoes = recruitEligibleEchoes({ serverSecret: this.serverSecret, requestId: input.requestId, controllerAccountId: input.controllerAccountId, controllerRole: input.controllerSnapshot.readiness.role, controllerClassId: input.controllerSnapshot.classId, contentVersion: input.contentVersion, nowMs: input.nowMs, profiles: input.profiles });
+    const allies = recruitQModeAllies({ serverSecret: this.serverSecret, requestId: input.requestId, controllerAccountId: input.controllerAccountId, controllerRole: input.controllerSnapshot.readiness.role, controllerClassId: input.controllerSnapshot.classId, contentVersion: input.contentVersion, nowMs: input.nowMs, profiles: input.profiles, npcSnapshots: input.npcSnapshots ?? [] });
     const requiredLevel = coopRequiredLevel(definition.minLevel, input.tier);
-    for (const snapshot of [input.controllerSnapshot, ...echoes.map((echo) => echo.snapshot)]) if (snapshot.normalized.before.level < requiredLevel) throw new Error(`character_below_tier_level:${snapshot.characterId}`);
-    validateCoopRoster([{ accountId: input.controllerAccountId, characterId: input.controllerSnapshot.characterId, role: input.controllerSnapshot.readiness.role }, ...echoes.map((echo) => ({ accountId: echo.sourceAccountId, characterId: echo.snapshot.characterId, role: echo.snapshot.readiness.role }))]);
-    validateUniqueDamageClasses([input.controllerSnapshot, ...echoes.map((echo) => echo.snapshot)].map((snapshot) => ({ role: snapshot.readiness.role, classId: snapshot.classId })));
-    const players = [combatant(input.controllerSnapshot), ...echoes.map((echo) => combatant(echo.snapshot))];
-    return this.createRun({ requestId: input.requestId, runId: input.runId, controllerAccountId: input.controllerAccountId, expeditionId: input.expeditionId, tier: input.tier, contentVersion: input.contentVersion, balanceVersion: input.balanceVersion, players, echoSourceAccountIds: echoes.map((echo) => echo.sourceAccountId) });
+    for (const snapshot of [input.controllerSnapshot, ...allies.map((ally) => ally.snapshot)]) if (snapshot.normalized.before.level < requiredLevel) throw new Error(`character_below_tier_level:${snapshot.characterId}`);
+    validateCoopRoster([{ accountId: input.controllerAccountId, characterId: input.controllerSnapshot.characterId, role: input.controllerSnapshot.readiness.role }, ...allies.map((ally) => ({ accountId: ally.snapshot.accountId, characterId: ally.snapshot.characterId, role: ally.snapshot.readiness.role }))]);
+    validateUniqueDamageClasses([input.controllerSnapshot, ...allies.map((ally) => ally.snapshot)].map((snapshot) => ({ role: snapshot.readiness.role, classId: snapshot.classId })));
+    const players = [combatant(input.controllerSnapshot), ...allies.map((ally) => combatant(ally.snapshot))];
+    return this.createRun({ requestId: input.requestId, runId: input.runId, controllerAccountId: input.controllerAccountId, expeditionId: input.expeditionId, tier: input.tier, contentVersion: input.contentVersion, balanceVersion: input.balanceVersion, players, echoSourceAccountIds: allies.filter((ally) => ally.kind === "echo").map((ally) => ally.snapshot.accountId), npcCharacterIds: allies.filter((ally) => ally.kind === "npc").map((ally) => ally.snapshot.characterId) });
   }
   createLive(input) {
     const definition = EXPEDITIONS[input.expeditionId];
@@ -48321,13 +48367,13 @@ var QModeService = class {
   }
   createRun(input) {
     const graph2 = generateCoopRouteGraph(this.serverSecret, input.expeditionId, input.runId, input.contentVersion, input.balanceVersion);
-    const run = { id: input.runId, requestId: input.requestId, controllerAccountId: input.controllerAccountId, expeditionId: input.expeditionId, tier: input.tier, graph: graph2, currentNodeId: graph2.entryNodeId, phase: "awaiting_choice", players: input.players, persistentState: initialPersistentRunState(input.players), echoSourceAccountIds: input.echoSourceAccountIds };
+    const run = { id: input.runId, requestId: input.requestId, controllerAccountId: input.controllerAccountId, expeditionId: input.expeditionId, tier: input.tier, graph: graph2, currentNodeId: graph2.entryNodeId, phase: "awaiting_choice", players: input.players, persistentState: initialPersistentRunState(input.players), echoSourceAccountIds: input.echoSourceAccountIds, npcCharacterIds: input.npcCharacterIds ?? [] };
     this.repository.save(run);
     return structuredClone(run);
   }
 };
 
-// backend/src/server/coop/combat-replay-projection.ts
+// src/server/coop/combat-replay-projection.ts
 var TYPES = /* @__PURE__ */ new Set(["action", "phase", "cast", "interrupt", "down", "assist", "victory", "wipe", "timeout"]);
 var REASONS = /* @__PURE__ */ new Set(["victory", "wipe", "timeout"]);
 var VISIBLE_GEM_TAGS = /* @__PURE__ */ new Set([
@@ -48420,7 +48466,7 @@ function projectCombatReplay(lastResolution) {
   return { nodeId: lastResolution.nodeId, reason, durationMs: Math.round(duration), combatants, statuses, gemStates, contributions, cues };
 }
 
-// backend/src/server/coop/qmode-public-projection.ts
+// src/server/coop/qmode-public-projection.ts
 function projectQModeRun(run, mode = "qmode") {
   const current = run.graph.nodes.find((node) => node.nodeId === run.currentNodeId);
   if (!current) throw new Error("invalid_qmode_current_node");
@@ -48433,12 +48479,12 @@ function projectQModeRun(run, mode = "qmode") {
     const state = run.persistentState.actors[player2.id];
     if (!state) throw new Error("missing_qmode_actor_state");
     const companionId = (player2.tags ?? []).find((tag) => tag.startsWith("companion:"))?.slice("companion:".length), bodyTag = (player2.tags ?? []).find((tag) => tag.startsWith("body:"))?.slice("body:".length), bodyPresentation = bodyTag === "female" ? "female" : bodyTag === "male" ? "male" : void 0;
-    return { memberId: player2.id, displayName: player2.name, role: player2.role, classId: player2.classId ?? "", bodyPresentation, companionId, kind: index === 0 ? "controller" : "echo", effectiveLevel: player2.level, currentHp: state.hp, maximumHp: player2.stats.maxHp, downed: state.downed };
+    return { memberId: player2.id, displayName: player2.name, role: player2.role, classId: player2.classId ?? "", bodyPresentation, companionId, kind: index === 0 ? "controller" : run.npcCharacterIds?.includes(player2.id) ? "npc" : "echo", effectiveLevel: player2.level, currentHp: state.hp, maximumHp: player2.stats.maxHp, downed: state.downed };
   });
   return { runId: run.id, mode, phase: run.phase, tier: run.tier, expeditionId: run.expeditionId, controller: true, team: mode === "live" ? team.map((member) => ({ ...member, kind: "controller" })) : team, graph: graph2, currentNodeId: run.currentNodeId, options, visitedNodeIds: [...run.persistentState.visitedNodeIds], resources: run.persistentState.resources, boons: [...run.persistentState.boons], artifacts: [...run.persistentState.artifacts], curses: [...run.persistentState.curses], personalEffects: run.persistentState.personalEffects, ...bossTelegraph ? { bossMechanic: { label: "Dungeon boss mechanics", summary: "Read the cast telegraphs and interrupt dangerous abilities before the final phase.", tone: "mixed", telegraph: bossTelegraph } } : {}, lastCombat: projectCombatReplay(run.lastResolution), settlement: { status: run.phase === "completed" || run.phase === "failed" ? "pending_entitlement" : "not_ready" } };
 }
 
-// backend/src/server/coop/loadout-snapshots.ts
+// src/server/coop/loadout-snapshots.ts
 import { createHash as createHash3 } from "node:crypto";
 function canonical(value) {
   if (Array.isArray(value)) return `[${value.map(canonical).join(",")}]`;
@@ -48486,7 +48532,66 @@ function freezeCoopRosterAtCommit(input) {
   return structuredClone(frozen);
 }
 
-// backend/online/qmode-runtime.ts
+// src/server/coop/qmode-npc-allies.ts
+var CLASSES2 = [
+  { id: "IRONWARDEN", className: "Ironwarden", name: "NPC \xB7 Iron Sentinel" },
+  { id: "BASTION", className: "Bastion", name: "NPC \xB7 Shieldbearer" },
+  { id: "DREADGUARD", className: "Dreadguard", name: "NPC \xB7 Dread Guardian" },
+  { id: "WAYFINDER", className: "Wayfinder", name: "NPC \xB7 Trail Ranger" },
+  { id: "RAVAGER", className: "Ravager", name: "NPC \xB7 Riftblade" },
+  { id: "HEXWEAVER", className: "Hexweaver", name: "NPC \xB7 Rune Adept" },
+  { id: "KNIFE_DANCER", className: "Knife Dancer", name: "NPC \xB7 Shadow Dancer" },
+  { id: "DAWNKEEPER", className: "Dawnkeeper", name: "NPC \xB7 Dawn Medic" },
+  { id: "STONECALLER", className: "Stonecaller", name: "NPC \xB7 Stone Sage" }
+];
+function createQModeNpcAllies({ minimumLevel, syncLevel, controllerLevel }) {
+  if (![minimumLevel, syncLevel, controllerLevel].every((n) => Number.isInteger(n) && n >= 1 && n <= 100)) throw new Error("invalid_npc_level");
+  if (controllerLevel < minimumLevel) throw new Error("character_below_tier_level");
+  const level = Math.max(minimumLevel, Math.min(syncLevel, controllerLevel));
+  return CLASSES2.map(({ id, className, name }) => {
+    const role2 = deriveRole(id), ref = ROOTBOUND_ROLE_REFERENCES[role2], kit = launchPlayer(className, level);
+    const scale = level / ref.level * 0.9, accountId = `npc:qmode:${id}`, characterId = accountId;
+    const capabilities = role2 === "tank" ? ["threat", "defense"] : role2 === "support" ? ["restore", "mitigate", "utility"] : ["damage"];
+    const record = {
+      accountId,
+      characterId,
+      classId: id,
+      loadoutId: "npc-kit",
+      revision: 1,
+      characterLevel: level,
+      dungeonUnlocked: true,
+      legalEquipment: true,
+      capabilities,
+      abilities: structuredClone(kit.abilities),
+      stats: {
+        characterId,
+        classId: id,
+        displayName: name,
+        bodyPresentation: "male",
+        level,
+        maxHp: ref.maxHp * scale,
+        attackPower: ref.attackPower * scale,
+        healingPower: ref.healingPower * scale,
+        defense: ref.defense * scale,
+        accuracy: ref.accuracy * scale,
+        evasion: ref.evasion * scale,
+        critChance: kit.stats.critChance,
+        haste: kit.stats.haste
+      }
+    };
+    return resolveAndFreezeLoadout({
+      accountId,
+      characterId,
+      loadoutId: record.loadoutId,
+      expectedRevision: 1,
+      minLevel: minimumLevel,
+      syncLevel,
+      repository: { getOwnedLoadout: () => record }
+    });
+  });
+}
+
+// online/qmode-runtime.ts
 var digest = (value) => createHash4("sha256").update(JSON.stringify(value)).digest("hex");
 var content = ONLINE_COOP_BALANCE_VERSION;
 var projection = (run, version) => ({ ...projectQModeRun(run), stateVersion: version, decisionId: run.currentNodeId, decisionRevision: version });
@@ -48535,13 +48640,19 @@ var OnlineQModeRuntime = class {
         continue;
       }
     }
+    const npcSnapshots = createQModeNpcAllies({ minimumLevel: minimum, syncLevel: sync, controllerLevel: controller.normalized.before.level });
     const seed = this.services.randomId() + this.services.randomId(), id = this.services.randomId();
     const domain = new QModeService(new MemoryQModeRunRepository(), seed);
-    const run = domain.create({ requestId: request.requestId, runId: id, controllerAccountId: accountId, controllerSnapshot: controller, expeditionId: definition.id, tier: request.tier, contentVersion: content, balanceVersion: content, nowMs: game.serverNow, profiles });
-    const members = [{ snapshot: controller, sourceHash: onlineCoopLoadoutHash(record), profileId: null }, ...run.echoSourceAccountIds.map((owner, index) => {
-      const selected2 = profiles.find((row) => row.sourceAccountId === owner && row.snapshot.characterId === run.players[index + 1].id);
-      const source = raw2.find((row) => row.profileId === selected2.profileId);
-      return { snapshot: selected2.snapshot, sourceHash: onlineCoopLoadoutHash(source.record), profileId: selected2.profileId };
+    const run = domain.create({ requestId: request.requestId, runId: id, controllerAccountId: accountId, controllerSnapshot: controller, expeditionId: definition.id, tier: request.tier, contentVersion: content, balanceVersion: content, nowMs: game.serverNow, profiles, npcSnapshots });
+    const members = [{ memberKind: "human", snapshot: controller, sourceHash: onlineCoopLoadoutHash(record), profileId: null }, ...run.players.slice(1).map((player2) => {
+      const selected2 = profiles.find((row) => row.snapshot.characterId === player2.id && run.echoSourceAccountIds.includes(row.sourceAccountId));
+      if (selected2) {
+        const source = raw2.find((row) => row.profileId === selected2.profileId);
+        return { memberKind: "echo", snapshot: selected2.snapshot, sourceHash: onlineCoopLoadoutHash(source.record), profileId: selected2.profileId };
+      }
+      const npc = npcSnapshots.find((row) => row.characterId === player2.id && run.npcCharacterIds?.includes(row.characterId));
+      if (!npc) throw new Error("qmode_npc_missing");
+      return { memberKind: "npc", snapshot: npc, sourceHash: npc.snapshotHash, profileId: null };
     })];
     return this.services.rpc("start_online_qmode_server_v1", { p_account_id: accountId, p_game_version: game.version, p_request_id: request.requestId, p_request_hash: hash, p_run_id: id, p_private_state: { run, seed }, p_client_projection: projection(run, 1), p_members: members, p_seed_hash: digest(seed) });
   }
@@ -48576,10 +48687,10 @@ var OnlineQModeRuntime = class {
   }
 };
 
-// backend/online/live-queue.ts
+// online/live-queue.ts
 import { createHash as createHash5 } from "node:crypto";
 
-// backend/src/server/coop/queue-service.ts
+// src/server/coop/queue-service.ts
 function queuePartition(ticket) {
   return `${ticket.expeditionId}|${ticket.contentVersion}|${ticket.balanceVersion}`;
 }
@@ -48636,7 +48747,7 @@ function chooseBoundedCoopMatch(tickets, nowMs, maxPerRole = 8, requiredTicketId
   return best;
 }
 
-// backend/online/live-ready.ts
+// online/live-ready.ts
 var OnlineLiveReady = class {
   constructor(services) {
     this.services = services;
@@ -48687,7 +48798,7 @@ var OnlineLiveReady = class {
   }
 };
 
-// backend/online/live-queue.ts
+// online/live-queue.ts
 var OnlineLiveQueue = class {
   constructor(services) {
     this.services = services;
@@ -48778,7 +48889,7 @@ var OnlineLiveQueue = class {
   }
 };
 
-// backend/online/live-runtime.ts
+// online/live-runtime.ts
 import { createHash as createHash6 } from "node:crypto";
 var digest2 = (value) => createHash6("sha256").update(JSON.stringify(value)).digest("hex");
 var projection2 = (run, version) => ({ ...projectQModeRun(run, "live"), stateVersion: version, decisionId: run.currentNodeId, decisionRevision: version });
@@ -48906,7 +49017,7 @@ var OnlineLiveRuntime = class {
   }
 };
 
-// backend/online/coop-lfg.ts
+// online/coop-lfg.ts
 import { createHash as createHash7 } from "node:crypto";
 var OnlineCoopLfg = class {
   constructor(services) {
@@ -48938,7 +49049,7 @@ var OnlineCoopLfg = class {
   }
 };
 
-// apps/mobile/src/core/combat-power.ts
+// ../apps/mobile/src/core/combat-power.ts
 var statScore = (stats6, level) => Math.max(0, Math.round(
   stats6.attack * 18 + stats6.defense * 11 + stats6.hp * 0.7 + (stats6.power ?? 0) * 4 + level * 12 + (stats6.critChance ?? 0) * 220 + (stats6.critMultiplier ?? 1.5) * 18 + (stats6.accuracy ?? 0.84) * 45 + (stats6.evasion ?? 0.04) * 50 + (stats6.haste ?? 0.05) * 150
 ));
@@ -48962,7 +49073,7 @@ function combatPowerRating(state) {
   return { total: player2 + companion, player: player2, companion, rows: rows2 };
 }
 
-// backend/online/public-profile-power.ts
+// online/public-profile-power.ts
 async function publicProfileCombatPower(services, viewerAccountId, targetAccountId) {
   const source = await services.rpc("online_public_profile_state_server_v1", { p_viewer_account_id: viewerAccountId, p_target_account_id: targetAccountId });
   if (!source.state?.character) return null;
@@ -48979,10 +49090,10 @@ async function publicProfileCombatPower(services, viewerAccountId, targetAccount
   return { combatPower: combatPowerRating(state).total };
 }
 
-// backend/online/event-expedition-runtime.ts
+// online/event-expedition-runtime.ts
 import { createHash as createHash8 } from "node:crypto";
 
-// backend/src/server/expeditions/event-boss-mechanics.ts
+// src/server/expeditions/event-boss-mechanics.ts
 var clamp4 = (value, min, max) => Math.max(min, Math.min(max, value));
 var phase = (id, hpPct2, name, damageType, damageCoeff, debuffTag, debuffValue) => ({
   id: `${id}_${name.replace(/[^A-Z0-9]+/gi, "_").toUpperCase()}`,
@@ -49058,7 +49169,7 @@ function eventBossMechanicProfile(input) {
   }
 }
 
-// backend/src/server/expeditions/event-service.ts
+// src/server/expeditions/event-service.ts
 var MemoryEventRunRepository = class {
   runs = /* @__PURE__ */ new Map();
   requests = /* @__PURE__ */ new Map();
@@ -49376,7 +49487,7 @@ var EventExpeditionService = class {
   }
 };
 
-// backend/online/event-expedition-runtime.ts
+// online/event-expedition-runtime.ts
 var digest3 = (value) => createHash8("sha256").update(JSON.stringify(value)).digest("hex");
 var player = (snapshot) => combatantFromVerifiedSnapshot(snapshot.normalized.snapshot, snapshot.normalized.abilities);
 function role(value) {
@@ -49514,7 +49625,7 @@ var OnlineEventExpeditionRuntime = class {
   }
 };
 
-// backend/src/server/coop/api-contracts.ts
+// src/server/coop/api-contracts.ts
 function object(value) {
   if (!value || typeof value !== "object" || Array.isArray(value)) throw new Error("invalid_request_body");
   return value;
@@ -49549,7 +49660,7 @@ function parseCoopReadyCommand(value) {
   return { requestId: text2(row, "requestId", 8), rosterRevision: integer(row, "rosterRevision", 1, Number.MAX_SAFE_INTEGER), accept: row.accept };
 }
 
-// backend/online/coop.ts
+// online/coop.ts
 var headers2 = { "Content-Type": "application/json", "Cache-Control": "no-store", "Access-Control-Allow-Origin": "*", "Access-Control-Allow-Headers": "authorization,apikey,content-type,x-client-info", "Access-Control-Allow-Methods": "GET,POST,OPTIONS" };
 var json2 = (value, status = 200) => new Response(JSON.stringify(value), { status, headers: headers2 });
 var uuid = "[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}";
@@ -49715,7 +49826,7 @@ function coopHandler(services) {
   };
 }
 
-// apps/mobile/src/core/app-release-policy.ts
+// ../apps/mobile/src/core/app-release-policy.ts
 function compareVersions(a, b) {
   const parts = (s2) => s2.trim().split(".").map((part) => Number.parseInt(part.replace(/\D.*$/, ""), 10) || 0);
   const left = parts(a), right = parts(b);
@@ -49735,7 +49846,7 @@ function appPolicyFromRow(data) {
   return { latestVersion: String(data.latest_version), minimumVersion: String(data.minimum_version), forceAfterMs, title: String(data.title ?? data.update_title ?? "VELDRYN has been updated"), message: String(data.message ?? data.update_message ?? "This version is no longer supported. Update to continue your adventure."), maintenanceMode: data.maintenance_mode === true, maintenanceMessage: String(data.maintenance_message ?? "VELDRYN is temporarily unavailable while maintenance is completed.") };
 }
 
-// backend/online/release-gate.ts
+// online/release-gate.ts
 var cors = { "Access-Control-Allow-Origin": "*", "Access-Control-Allow-Headers": "authorization,apikey,content-type,x-client-info,x-app-version,x-app-platform", "Access-Control-Allow-Methods": "GET,POST,OPTIONS", "Cache-Control": "no-store" };
 var json3 = (body, status) => new Response(JSON.stringify(body), { status, headers: { ...cors, "Content-Type": "application/json" } });
 function withReleaseGate(handler, loadPolicies, now = Date.now) {
@@ -49776,7 +49887,7 @@ function releasePolicyLoader(url2, publicKey) {
   };
 }
 
-// backend/online/coop-edge.ts
+// online/coop-edge.ts
 var url = Deno.env.get("SUPABASE_URL");
 var serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
 var anonKey = Deno.env.get("SUPABASE_ANON_KEY");

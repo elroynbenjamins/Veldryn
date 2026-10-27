@@ -6,14 +6,14 @@ import { initialPersistentRunState, purchaseMerchantOffer, resolveCoopNode, type
 import { generateCoopRouteGraph } from '../expeditions/route-generation';
 import { marksForRun } from '../expeditions/rewards';
 import type { FrozenLoadoutSnapshot } from './loadout-snapshots';
-import { recruitEligibleEchoes, type PublishedEcho } from './echo-recruitment';
+import { recruitQModeAllies, type PublishedEcho } from './echo-recruitment';
 import { validateCoopRoster, validateUniqueDamageClasses } from './invariants';
 import {coopRequiredLevel} from './config';
 
 export interface QModeRun {
  id:string; requestId:string; controllerAccountId:string; expeditionId:string; tier:1|2|3|4|5;
  graph:CoopRouteGraph; currentNodeId:string; phase:'awaiting_choice'|'completed'|'failed';
- players:CombatantDefinition[]; persistentState:PersistentRunState; echoSourceAccountIds:string[]; rewardMarks?:number;
+ players:CombatantDefinition[]; persistentState:PersistentRunState; echoSourceAccountIds:string[]; npcCharacterIds?:string[]; rewardMarks?:number;
  lastResolution?:{nodeId:string;result:NodeResolutionResult};
 }
 export interface QModeRunRepository {get(runId:string):QModeRun|undefined; getByRequest(accountId:string,requestId:string):QModeRun|undefined; save(run:QModeRun):void;}
@@ -28,15 +28,15 @@ function combatant(snapshot:FrozenLoadoutSnapshot):CombatantDefinition{return co
 
 export class QModeService{
  constructor(private repository:QModeRunRepository,private serverSecret:string){}
- create(input:{requestId:string;runId:string;controllerAccountId:string;controllerSnapshot:FrozenLoadoutSnapshot;expeditionId:string;tier:1|2|3|4|5;contentVersion:string;balanceVersion:string;nowMs:number;profiles:PublishedEcho[]}):QModeRun{
+ create(input:{requestId:string;runId:string;controllerAccountId:string;controllerSnapshot:FrozenLoadoutSnapshot;expeditionId:string;tier:1|2|3|4|5;contentVersion:string;balanceVersion:string;nowMs:number;profiles:PublishedEcho[];npcSnapshots?:readonly FrozenLoadoutSnapshot[]}):QModeRun{
   const prior=this.repository.getByRequest(input.controllerAccountId,input.requestId);if(prior)return prior;
   const definition=EXPEDITIONS[input.expeditionId];if(!definition)throw new Error('unknown_expedition');if(!definition.coopImplemented)throw new Error('expedition_not_implemented');
-  const echoes=recruitEligibleEchoes({serverSecret:this.serverSecret,requestId:input.requestId,controllerAccountId:input.controllerAccountId,controllerRole:input.controllerSnapshot.readiness.role,controllerClassId:input.controllerSnapshot.classId,contentVersion:input.contentVersion,nowMs:input.nowMs,profiles:input.profiles});
-  const requiredLevel=coopRequiredLevel(definition.minLevel,input.tier);for(const snapshot of [input.controllerSnapshot,...echoes.map(echo=>echo.snapshot)])if(snapshot.normalized.before.level<requiredLevel)throw new Error(`character_below_tier_level:${snapshot.characterId}`);
-  validateCoopRoster([{accountId:input.controllerAccountId,characterId:input.controllerSnapshot.characterId,role:input.controllerSnapshot.readiness.role},...echoes.map(echo=>({accountId:echo.sourceAccountId,characterId:echo.snapshot.characterId,role:echo.snapshot.readiness.role}))]);
-  validateUniqueDamageClasses([input.controllerSnapshot,...echoes.map(echo=>echo.snapshot)].map(snapshot=>({role:snapshot.readiness.role,classId:snapshot.classId})));
-  const players=[combatant(input.controllerSnapshot),...echoes.map(echo=>combatant(echo.snapshot))];
-  return this.createRun({requestId:input.requestId,runId:input.runId,controllerAccountId:input.controllerAccountId,expeditionId:input.expeditionId,tier:input.tier,contentVersion:input.contentVersion,balanceVersion:input.balanceVersion,players,echoSourceAccountIds:echoes.map(echo=>echo.sourceAccountId)});
+  const allies=recruitQModeAllies({serverSecret:this.serverSecret,requestId:input.requestId,controllerAccountId:input.controllerAccountId,controllerRole:input.controllerSnapshot.readiness.role,controllerClassId:input.controllerSnapshot.classId,contentVersion:input.contentVersion,nowMs:input.nowMs,profiles:input.profiles,npcSnapshots:input.npcSnapshots??[]});
+  const requiredLevel=coopRequiredLevel(definition.minLevel,input.tier);for(const snapshot of [input.controllerSnapshot,...allies.map(ally=>ally.snapshot)])if(snapshot.normalized.before.level<requiredLevel)throw new Error(`character_below_tier_level:${snapshot.characterId}`);
+  validateCoopRoster([{accountId:input.controllerAccountId,characterId:input.controllerSnapshot.characterId,role:input.controllerSnapshot.readiness.role},...allies.map(ally=>({accountId:ally.snapshot.accountId,characterId:ally.snapshot.characterId,role:ally.snapshot.readiness.role}))]);
+  validateUniqueDamageClasses([input.controllerSnapshot,...allies.map(ally=>ally.snapshot)].map(snapshot=>({role:snapshot.readiness.role,classId:snapshot.classId})));
+  const players=[combatant(input.controllerSnapshot),...allies.map(ally=>combatant(ally.snapshot))];
+  return this.createRun({requestId:input.requestId,runId:input.runId,controllerAccountId:input.controllerAccountId,expeditionId:input.expeditionId,tier:input.tier,contentVersion:input.contentVersion,balanceVersion:input.balanceVersion,players,echoSourceAccountIds:allies.filter(ally=>ally.kind==='echo').map(ally=>ally.snapshot.accountId),npcCharacterIds:allies.filter(ally=>ally.kind==='npc').map(ally=>ally.snapshot.characterId)});
  }
  createLive(input:{requestId:string;runId:string;controllerAccountId:string;expeditionId:string;tier:1|2|3|4|5;contentVersion:string;balanceVersion:string;snapshots:readonly FrozenLoadoutSnapshot[]}):QModeRun{
   const definition=EXPEDITIONS[input.expeditionId];if(!definition)throw new Error('unknown_expedition');if(!definition.coopImplemented)throw new Error('expedition_not_implemented');
@@ -67,9 +67,9 @@ export class QModeService{
   const result=purchaseMerchantOffer({runId:run.id,node,actorId:input.actorId,offerId:input.offerId,state:run.persistentState,players:run.players});
   run.lastResolution={nodeId:node.nodeId,result:structuredClone(result)};run.persistentState=result.state;this.repository.save(run);return structuredClone(run);
  }
- private createRun(input:{requestId:string;runId:string;controllerAccountId:string;expeditionId:string;tier:1|2|3|4|5;contentVersion:string;balanceVersion:string;players:CombatantDefinition[];echoSourceAccountIds:string[]}):QModeRun{
+ private createRun(input:{requestId:string;runId:string;controllerAccountId:string;expeditionId:string;tier:1|2|3|4|5;contentVersion:string;balanceVersion:string;players:CombatantDefinition[];echoSourceAccountIds:string[];npcCharacterIds?:string[]}):QModeRun{
   const graph=generateCoopRouteGraph(this.serverSecret,input.expeditionId,input.runId,input.contentVersion,input.balanceVersion);
-  const run:QModeRun={id:input.runId,requestId:input.requestId,controllerAccountId:input.controllerAccountId,expeditionId:input.expeditionId,tier:input.tier,graph,currentNodeId:graph.entryNodeId,phase:'awaiting_choice',players:input.players,persistentState:initialPersistentRunState(input.players),echoSourceAccountIds:input.echoSourceAccountIds};
+  const run:QModeRun={id:input.runId,requestId:input.requestId,controllerAccountId:input.controllerAccountId,expeditionId:input.expeditionId,tier:input.tier,graph,currentNodeId:graph.entryNodeId,phase:'awaiting_choice',players:input.players,persistentState:initialPersistentRunState(input.players),echoSourceAccountIds:input.echoSourceAccountIds,npcCharacterIds:input.npcCharacterIds??[]};
   this.repository.save(run);return structuredClone(run);
  }
 }

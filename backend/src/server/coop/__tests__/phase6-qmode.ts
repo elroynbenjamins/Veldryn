@@ -24,3 +24,26 @@ for(let depth=1;depth<=run.graph.preBossNodeCount;depth++){
 run=resumedService.choose({runId:run.id,controllerAccountId:'controller',optionNodeId:'boss'});assert.equal(run.phase,'completed');assert.ok((run.rewardMarks??0)>0);
 assert.equal(run.persistentState.visitedNodeIds.length,run.graph.preBossNodeCount+1);
 console.log('coop phase6 qmode OK',JSON.stringify({echoes:run.echoSourceAccountIds.length,preBoss:run.graph.preBossNodeCount,rewardMarks:run.rewardMarks}));
+
+// Production NPC fallback: preserve roles, unique DPS and real Echo preference.
+import {createQModeNpcAllies} from '../qmode-npc-allies';
+import {projectQModeRun} from '../qmode-public-projection';
+const npcKits=createQModeNpcAllies({minimumLevel:15,syncLevel:25,controllerLevel:25});
+assert.equal(npcKits.length,9);
+assert.ok(npcKits.every(npc=>npc.readiness.ready));
+const npcOnly=new QModeService(new MemoryQModeRunRepository(),'npc-test').create({
+ requestId:'npc-test-request',runId:'npc-run',controllerAccountId:'controller',
+ controllerSnapshot:frozen('controller','Dawnkeeper','controller-char'),expeditionId:'EXP_001',tier:1,
+ contentVersion:'v1',balanceVersion:'b1',nowMs:10_000,profiles:[],npcSnapshots:npcKits});
+assert.equal(npcOnly.npcCharacterIds?.length,3);
+assert.equal(npcOnly.echoSourceAccountIds.length,0);
+assert.deepEqual(projectQModeRun(npcOnly).team.map(member=>member.kind),['controller','npc','npc','npc']);
+assert.equal(new Set(npcOnly.players.filter(player=>player.role==='damage').map(player=>player.classId)).size,2);
+const mixed=new QModeService(new MemoryQModeRunRepository(),'npc-test').create({
+ requestId:'mixed-test-request',runId:'mixed-run',controllerAccountId:'controller',
+ controllerSnapshot:frozen('controller','Dawnkeeper','controller-char'),expeditionId:'EXP_001',tier:1,
+ contentVersion:'v1',balanceVersion:'b1',nowMs:10_000,profiles:[profiles[0]],npcSnapshots:npcKits});
+assert.equal(mixed.echoSourceAccountIds.length,1);
+assert.equal(mixed.npcCharacterIds?.length,2);
+assert.deepEqual(projectQModeRun(mixed).team.map(member=>member.kind),['controller','echo','npc','npc']);
+console.log('Q-Mode NPC fallback passed');

@@ -35,13 +35,15 @@ export function CoopExpeditionScreen({onClose,language,state,entrySource=realCoo
   const [run,setRun]=useState<CoopRunView>();
   const [eventRun,setEventRun]=useState<CoopEventRunServerProjection>();
   const [showLive,setShowLive]=useState(false);
-  const [showEchoSharing,setShowEchoSharing]=useState(false);
+  const [showEchoSharing,setShowEchoSharing]=useState(true);
   const [loading,setLoading]=useState(true);
   const [error,setError]=useState('');
   const [notice,setNotice]=useState('');
   const [showLoadouts,setShowLoadouts]=useState(false);
   const [busy,setBusy]=useState(false),[pending,setPending]=useState(false);
   const displayRun=useMemo(()=>eventRun?presentEventExpeditionRun(eventRun):run,[eventRun,run]);
+  const echoLoadout=entry?.loadouts.find(loadout=>loadout.id==='current');
+  const echoReady=Boolean(echoLoadout?.ready&&(state.character?.level??0)>=15);
   const runIcons=useCoopProfileIcons('run',displayRun?[displayRun.runId]:[],entrySource.kind==='real',displayRun?.roleSlots.map(slot=>slot.memberId??'').sort().join(','));
   const runWithIcons=useMemo(()=>displayRun&&entrySource.kind==='real'?{...displayRun,roleSlots:displayRun.roleSlots.map(slot=>({...slot,...(runIcons.get(slot.memberId??'')??noCoopProfileIcon)}))}:displayRun,[displayRun,entrySource.kind,runIcons]);
   const showRecruitment=coopLiveReadyEnabled&&entrySource.kind==='real'&&!showLive&&!showLoadouts&&!selected&&!selectedEvent&&!run&&!eventRun;
@@ -145,10 +147,18 @@ export function CoopExpeditionScreen({onClose,language,state,entrySource=realCoo
     {retry}
     {entrySource.kind==='real'&&entry?.gameVersion&&<View style={{paddingHorizontal:16,paddingTop:8}}>
       <Pressable accessibilityRole="button" accessibilityState={{expanded:showEchoSharing}} accessibilityLabel={st("Echo sharing")} accessibilityHint={st("Sharing an Echo lets other players recruit a snapshot of your character for 24 hours.")} onPress={()=>setShowEchoSharing(value=>!value)} style={{paddingVertical:8,flexDirection:'row',alignItems:'center',justifyContent:'space-between'}}>
-        <View style={{flex:1}}><Text style={{color:C.text,fontWeight:'700'}}>{st("Echo sharing")}</Text><Text numberOfLines={2} style={{color:C.muted}}>{st("Sharing an Echo lets other players recruit a snapshot of your character for 24 hours.")}</Text></View>
+        <View style={{flex:1}}><Text style={{color:C.text,fontWeight:'700'}}>{st("My Echo · Current equipment")}</Text><Text numberOfLines={2} style={{color:C.muted}}>{entry.echoSharing?st("Your character Echo is shared with other adventurers."):st("Prepare a snapshot of your current dungeon loadout for other players.")}</Text></View>
         <Text style={{color:C.muted,marginLeft:8}}>{showEchoSharing?'−':'+'}</Text>
       </Pressable>
-      {showEchoSharing&&<GameButton title={entry.echoSharing?st("Stop sharing my Echo"):st("Share my Echo")} disabled={busy} onPress={()=>action(async()=>{await coopClient.shareEcho(entry.gameVersion!,!entry.echoSharing);await load();})}/>}
+      {showEchoSharing&&<View style={{gap:8,padding:12,borderWidth:1,borderColor:C.line,borderRadius:12,backgroundColor:C.panel2}}>
+        <Text style={{color:C.text,fontWeight:'700'}}>{echoLoadout?st('{name} · Level {level}',{name:echoLoadout.className,level:echoLoadout.level}):st("Current character")}</Text>
+        <Text style={{color:C.muted,fontSize:12}}>{echoLoadout?st("Role: {role} · {count} equipped items",{role:echoLoadout.role,count:echoLoadout.equipment.length}):st("No loadout verified yet.")}</Text>
+        <Text style={{color:echoReady?C.good:C.warning,fontSize:12,fontWeight:'700'}}>{entry.echoSharing?st("SHARED"):echoReady?st("READY TO SHARE"):st("NOT READY")}</Text>
+        {!echoReady&&<Text style={{color:C.muted,fontSize:12}}>{state.character&&state.character.level<15?st("Echo sharing unlocks at character level 15."):st("Your current co-op equipment must pass the readiness check.")}</Text>}
+        <Text style={{color:C.muted,fontSize:12,lineHeight:17}}>{st("Your Echo is a frozen copy of your current class, equipment and combat abilities. It remains available for up to 24 hours. Changing your gear does not automatically update an existing Echo.")}</Text>
+        <GameButton title={entry.echoSharing?st("Update Echo from current gear"):st("Share my current Echo")} disabled={busy||!echoReady} onPress={()=>action(async()=>{await coopClient.shareEcho(entry.gameVersion!,true);await load();setNotice(st("Your Echo has been published from your current equipment."));})}/>
+        {entry.echoSharing&&<GameButton title={st("Stop sharing my Echo")} tone="secondary" disabled={busy} onPress={()=>action(async()=>{await coopClient.shareEcho(entry.gameVersion!,false);await load();setNotice(st("Your Echo is no longer shared."));})}/>}
+      </View>}
       {!!notice&&<Text accessibilityRole="alert" style={{color:C.warning}}>{notice}</Text>}
     </View>}
     <CoopDungeonList language={language} dungeons={dungeons} eventExpeditions={activeEventExpeditions} loading={loading} error={error} activeRun={entry?.activeRun} liveTools={liveTools} onBack={onClose} onRetry={()=>load()} onSelect={chooseDungeon} onSelectEvent={chooseEvent} onResume={()=>{if(entry?.activeEventRunProjection){setRun(undefined);setEventRun(entry.activeEventRunProjection);return;}resumeActiveRun()}}/>

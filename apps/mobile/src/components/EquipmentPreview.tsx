@@ -18,7 +18,7 @@ import {GameModalHeader,GameModalSurface} from './GameModalSurface';
 
 function CompareRow({label,before,after}:{label:string;before:number;after:number}){const C=useGameTheme(),s=useMemo(()=>makeStyles(C),[C]),beforeDisplay=displayStat(before),afterDisplay=displayStat(after),change=afterDisplay-beforeDisplay;return <View style={s.statRow}><Text style={s.statLabel}>{label}</Text><Text style={s.old}>{beforeDisplay}</Text><Text style={s.arrow}>→</Text><Text style={s.next}>{afterDisplay}</Text><Text style={[s.delta,change>0?s.better:change<0?s.worse:s.same]}>{change===0?'—':`${change>0?'+':''}${change}`}</Text></View>}
 
-export function EquipmentPreview({state,itemId,onClose,onEquip,onInspect,onFavorite,onDeposit}:{state:GameState;itemId:string|null;onClose:()=>void;onEquip?:()=>void;onInspect?:()=>void;onFavorite?:()=>void;onDeposit?:()=>void}){
+export function EquipmentPreview({state,itemId,onClose,onEquip,onInspect,onFavorite,onDeposit,onSell,onSalvage}:{state:GameState;itemId:string|null;onClose:()=>void;onEquip?:()=>void;onInspect?:()=>void;onFavorite?:()=>void;onDeposit?:()=>void;onSell?:()=>void;onSalvage?:()=>void}){
  const {gt,gl,language}=useGameplayText();
  const {height}=useWindowDimensions();
   const C=useGameTheme(),equipmentColors=equipmentTheme(C),s=useMemo(()=>makeStyles(C),[C]);
@@ -48,7 +48,7 @@ export function EquipmentPreview({state,itemId,onClose,onEquip,onInspect,onFavor
       <Text style={s.note}>{gl("Includes upgrades, socketed gems and set bonuses. Equip to apply.")}</Text>
       {onInspect?<GameButton title={gl('Sources & crafting uses')} tone="secondary" onPress={onInspect}/>:null}
       {onEquip?<GameButton title={oldId===itemId?gl('Currently equipped'):gt('Equip {slot}',{slot:gl(item.slot)})} disabled={oldId===itemId} onPress={onEquip}/>:null}
-      <View style={s.actions}>{onFavorite?<View style={s.flex}><GameButton compact title={state.settings.favoriteItemIds?.includes(itemId)?gt('Remove favorite'):gt('Favorite')} tone="secondary" onPress={onFavorite}/></View>:null}{onDeposit?<View style={s.flex}><GameButton compact title={gt('Deposit')} tone="secondary" onPress={onDeposit}/></View>:null}{onInspect?<View style={s.flex}><GameButton compact title={gl('More')} tone="secondary" onPress={onInspect}/></View>:null}</View>
+      <View style={s.actions}>{onFavorite?<View style={s.flex}><GameButton compact title={state.settings.favoriteItemIds?.includes(itemId)?gt('Remove favorite'):gt('Favorite')} tone="secondary" onPress={onFavorite}/></View>:null}{onDeposit?<View style={s.flex}><GameButton compact title={gt('Deposit')} tone="secondary" onPress={onDeposit}/></View>:null}{onSell?<View style={s.flex}><GameButton compact title={gt('Sell 1 · {gold}g',{gold:item.value})} tone="secondary" onPress={onSell}/></View>:null}{onSalvage?<View style={s.flex}><GameButton compact title={gt('Salvage')} tone="danger" onPress={onSalvage}/></View>:null}{onInspect?<View style={s.flex}><GameButton compact title={gl('More')} tone="secondary" onPress={onInspect}/></View>:null}</View>
       <GameButton title={gt("Back to Inventory")} tone="secondary" onPress={onClose}/>
     </ScrollView>
   </GameModalSurface>;

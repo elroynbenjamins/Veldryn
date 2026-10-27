@@ -18,7 +18,7 @@ function updatedLabel(value?:string|null){
  return Number.isFinite(date.getTime())?'Updated '+date.toLocaleString():'Updated recently';
 }
 
-export function OnlineGuildNoticeBoardPanel(){
+export function OnlineGuildNoticeBoardPanel({compact=false}:{compact?:boolean}={}){
  const st=useSocialText();
  const C=useGameTheme(),s=useMemo(()=>makeStyles(C),[C]);
  const [board,setBoard]=useState<GuildNoticeBoardState|null>(null),[draft,setDraft]=useState(''),[editing,setEditing]=useState(false),[loading,setLoading]=useState(true),[busy,setBusy]=useState(false),[error,setError]=useState('');
@@ -30,22 +30,23 @@ export function OnlineGuildNoticeBoardPanel(){
  if(loading&&!board)return <LoadingState label={st("Loading Guild Notice Board…")} detail={st("Syncing the private member bulletin.")} compact/>;
  if(!board)return <Panel><Text style={s.title}>{st("Guild Notice Board")}</Text><Text style={s.copy}>{error||'Join a Guild to view its member-only Notice Board.'}</Text><GameButton compact title={st("Retry")} tone="secondary" onPress={()=>load()}/></Panel>;
 
- return <Panel>
-  <View style={s.head}><View style={s.flex}><Text style={s.kicker}>{st("MEMBER NOTICE BOARD")}</Text><Text style={s.title}>{st("Guild Notice Board")}</Text><Text style={s.meta}>{updatedLabel(board.updatedAt)}</Text></View><StatusPill label={st("MEMBERS ONLY")} tone="good"/></View>
-  {!editing?<View style={[s.notice,!board.body&&s.noticeEmpty]}>{board.body?<Text style={s.noticeText}>{board.body}</Text>:<><Text style={s.emptyTitle}>{st("No notice posted")}</Text><Text style={s.copy}>{st("Guild leadership can post a short member-only notice here.")}</Text></>}</View>:<View style={s.editor}>
+ return <Panel style={compact&&!editing?s.compactPanel:undefined}>
+  <View style={s.head}><View style={s.flex}><Text style={s.kicker}>{st("MEMBER NOTICE BOARD")}</Text>{!compact?<><Text style={s.title}>{st("Guild Notice Board")}</Text><Text style={s.meta}>{updatedLabel(board.updatedAt)}</Text></>:null}</View>{!compact?<StatusPill label={st("MEMBERS ONLY")} tone="good"/>:null}</View>
+  {!editing?<View style={[s.notice,!board.body&&s.noticeEmpty,compact&&s.compactNotice]}>{board.body?<Text style={s.noticeText}>{board.body}</Text>:<><Text style={s.emptyTitle}>{st("No notice posted")}</Text>{!compact?<Text style={s.copy}>{st("Guild leadership can post a short member-only notice here.")}</Text>:null}</>}</View>:<View style={s.editor}>
    <GameTextInput accessibilityLabel={st("Guild Notice Board text")} multiline value={draft} onChangeText={value=>setDraft(value.slice(0,280))} maxLength={280} placeholder={st("Raid notes, weekly priorities, Guild reminders…")} placeholderTextColor={C.muted} style={s.input}/>
    <View style={s.editorMeta}><Text style={s.hint}>{st("Visible to Guild members only · blank text clears the notice.")}</Text><Text style={[s.counter,draft.length>=260&&s.counterWarn]}>{draft.length}/280</Text></View>
    <View style={s.actions}><View style={s.flex}><GameButton compact title={busy?st("Saving…"):dirty?st("Save Notice"):st("No Changes")} disabled={busy||!dirty} onPress={()=>save()}/></View><View style={s.cancel}><GameButton compact title={st("Cancel")} tone="secondary" disabled={busy} onPress={()=>{setDraft(board.body);setEditing(false)}}/></View></View>
   </View>}
   {board.canEdit&&!editing?<GameButton compact title={board.body?st("Edit Notice"):st("Post Notice")} tone="secondary" onPress={()=>setEditing(true)}/>:null}
-  {!board.canEdit?<Text style={s.readOnly}>{st("Read-only · Your Guild role cannot edit the Notice Board.")}</Text>:null}
+  {!compact&&!board.canEdit?<Text style={s.readOnly}>{st("Read-only · Your Guild role cannot edit the Notice Board.")}</Text>:null}
   {!!error&&<View accessibilityRole="alert" style={s.errorCard}><Text style={s.error}>{error}</Text></View>}
  </Panel>;
 }
 
 function makeStyles(C:ThemeColors){return StyleSheet.create({
- head:{flexDirection:'row',alignItems:'flex-start',gap:8},flex:{flex:1,minWidth:0},kicker:{...typography.caption,color:C.accent,fontWeight:'900',letterSpacing:.8},title:{...typography.title,color:C.text},meta:{fontSize:8.5,color:C.muted,marginTop:2},
- notice:{minHeight:86,justifyContent:'center',padding:10,borderWidth:1,borderColor:C.line,borderRadius:radii.md,backgroundColor:C.panel2},noticeEmpty:{borderStyle:'dashed',alignItems:'center'},noticeText:{fontSize:11,lineHeight:17,color:C.text},emptyTitle:{fontSize:10.5,color:C.text,fontWeight:'900'},copy:{fontSize:9.5,lineHeight:13,color:C.muted,textAlign:'center'},
- editor:{gap:7},input:{minHeight:104,textAlignVertical:'top',paddingTop:10,borderWidth:1,borderColor:C.line,borderRadius:radii.md,backgroundColor:C.inputBg,color:C.text},editorMeta:{flexDirection:'row',alignItems:'flex-start',justifyContent:'space-between',gap:8},hint:{flex:1,fontSize:8.5,lineHeight:12,color:C.muted},counter:{fontSize:8.5,color:C.muted,fontWeight:'800'},counterWarn:{color:C.warning},
- actions:{flexDirection:'row',gap:6},cancel:{width:92},readOnly:{fontSize:8.5,lineHeight:12,color:C.muted,fontStyle:'italic'},errorCard:{padding:7,borderWidth:1,borderColor:C.bad,borderRadius:radii.sm,backgroundColor:C.badSurface},error:{fontSize:9,color:C.bad,fontWeight:'800'},
+ compactPanel:{padding:10,gap:5},compactNotice:{minHeight:0,padding:0,borderWidth:0,borderRadius:0,backgroundColor:'transparent'},
+ head:{flexDirection:'row',alignItems:'flex-start',gap:8},flex:{flex:1,minWidth:0},kicker:{...typography.caption,color:C.accent,fontWeight:'900',letterSpacing:.8},title:{...typography.title,color:C.text},meta:{fontSize:11,lineHeight:15,color:C.muted,marginTop:2},
+ notice:{minHeight:96,justifyContent:'center',padding:12,borderWidth:1,borderColor:C.line,borderRadius:radii.md,backgroundColor:C.panel2},noticeEmpty:{alignItems:'center',gap:6},noticeText:{fontSize:13,lineHeight:19,color:C.text},emptyTitle:{...typography.bodyStrong,color:C.text},copy:{fontSize:12,lineHeight:17,color:C.muted,textAlign:'center'},
+ editor:{gap:7},input:{minHeight:104,textAlignVertical:'top',paddingTop:10,borderWidth:1,borderColor:C.line,borderRadius:radii.md,backgroundColor:C.inputBg,color:C.text},editorMeta:{flexDirection:'row',alignItems:'flex-start',justifyContent:'space-between',gap:8},hint:{flex:1,fontSize:11,lineHeight:15,color:C.muted},counter:{fontSize:11,lineHeight:15,color:C.muted,fontWeight:'800'},counterWarn:{color:C.warning},
+ actions:{flexDirection:'row',gap:6},cancel:{width:92},readOnly:{fontSize:11,lineHeight:15,color:C.muted,fontStyle:'italic'},errorCard:{padding:9,borderWidth:1,borderColor:C.bad,borderRadius:radii.sm,backgroundColor:C.badSurface},error:{fontSize:12,lineHeight:17,color:C.bad,fontWeight:'800'},
 });}

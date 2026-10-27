@@ -16,10 +16,10 @@ export function GuildDecreePanel({decrees,onVote}:{decrees:GuildDecreeView[];onV
  </View>;
 }
 function makeStyles(C:ThemeColors){return StyleSheet.create({
- panel:{gap:7,padding:10,borderWidth:1,borderColor:C.line,borderRadius:radii.md,backgroundColor:C.panel},copy:{color:C.muted,fontSize:9.5,lineHeight:13},
+ panel:{gap:8,padding:12,borderWidth:1,borderColor:C.line,borderRadius:radii.md,backgroundColor:C.panel},copy:{color:C.muted,fontSize:12,lineHeight:17},
  card:{padding:8,gap:5,borderWidth:1,borderColor:C.line,borderRadius:radii.sm,backgroundColor:C.panel2},active:{borderColor:C.lineStrong,backgroundColor:C.warningSurface},
- row:{flexDirection:'row',gap:8},flex:{flex:1,minWidth:0},title:{color:C.text,fontWeight:'900',fontSize:10.5},desc:{color:C.muted,fontSize:9,lineHeight:12},
- votePill:{minWidth:28,height:24,alignItems:'center',justifyContent:'center',borderWidth:1,borderColor:C.line,borderRadius:99,backgroundColor:C.panel},votes:{color:C.accent,fontWeight:'900',fontSize:8.5},
- liveBadge:{alignSelf:'flex-start',paddingHorizontal:6,paddingVertical:3,borderWidth:1,borderColor:C.lineStrong,borderRadius:99,backgroundColor:C.warningSurface},live:{color:C.accent,fontSize:8,fontWeight:'900'},
+ row:{flexDirection:'row',gap:8},flex:{flex:1,minWidth:0},title:{color:C.text,fontWeight:'900',fontSize:13,lineHeight:17},desc:{color:C.muted,fontSize:12,lineHeight:17},
+ votePill:{minWidth:34,height:28,alignItems:'center',justifyContent:'center',borderWidth:1,borderColor:C.line,borderRadius:99,backgroundColor:C.panel},votes:{color:C.accent,fontWeight:'900',fontSize:12,lineHeight:16},
+ liveBadge:{alignSelf:'flex-start',paddingHorizontal:8,paddingVertical:4,borderWidth:1,borderColor:C.lineStrong,borderRadius:99,backgroundColor:C.warningSurface},live:{color:C.accent,fontSize:11,lineHeight:14,fontWeight:'900'},
  empty:{minHeight:62,alignItems:'center',justifyContent:'center',gap:2,padding:8,borderWidth:1,borderStyle:'dashed',borderColor:C.line,borderRadius:radii.sm,backgroundColor:C.panel2},emptyTitle:{fontSize:10,color:C.text,fontWeight:'900'},
 });}

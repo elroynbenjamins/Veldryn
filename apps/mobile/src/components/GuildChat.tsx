@@ -1,4 +1,5 @@
 import {gameAlert} from '../core/game-alerts';
+import {useChatViewportStyle} from './ChatViewport';
 import {useSocialText} from '../i18n/social';
 import {useEffect,useMemo,useRef,useState} from 'react';
 import {AppState,StyleSheet,Text,View} from 'react-native';
@@ -17,13 +18,14 @@ import {useChatFeed} from '../online/useChatFeed';
 import {CHAT_MAX_EMOTES_PER_MESSAGE,chatEmoteCount,chatUnavailableEmoteIds} from '../core/chat-emotes';
 import {guildChatCommandKey,guildChatState,guildRoster,markSocialChatRead,sendGuildChat,type GuildChatMessage,type GuildChatState} from '../online/social';
 
-export function GuildChat({language,currentPlayerName,unlockedEmoteIds=[],trayIds=[],bodyPresentation='male',onTrayChange,firstUnreadMessageId,onRead,reduceMotion=false,active=true}:{language:Language;currentPlayerName?:string;unlockedEmoteIds?:readonly string[];trayIds?:readonly string[];bodyPresentation?:'male'|'female';onTrayChange?:(ids:string[])=>void|Promise<void>;firstUnreadMessageId?:string;onRead?:()=>void;reduceMotion?:boolean;active?:boolean}){
- const st=useSocialText();
+export function GuildChat({language,currentPlayerName,unlockedEmoteIds=[],trayIds=[],bodyPresentation='male',onTrayChange,firstUnreadMessageId,onRead,reduceMotion=false,active=true,embedded=false,onTitleChange}:{language:Language;currentPlayerName?:string;unlockedEmoteIds?:readonly string[];trayIds?:readonly string[];bodyPresentation?:'male'|'female';onTrayChange?:(ids:string[])=>void|Promise<void>;firstUnreadMessageId?:string;onRead?:()=>void;reduceMotion?:boolean;active?:boolean;embedded?:boolean;onTitleChange?:(title:string)=>void}){
+ const st=useSocialText(),viewportStyle=useChatViewportStyle();
  const C=useGameTheme(),s=useMemo(()=>makeStyles(C),[C]);
  const {value:snapshot,error:loadError,accountId,refresh:load,setValue:setSnapshot}=useChatFeed<GuildChatState|null>({key:'guild:current',read:()=>guildChatState(),initial:null,active,channelType:'guild',channelIdFromValue:value=>value?.guild?.id});
  const [selected,setSelected]=useState<GuildChatMessage|null>(null),[body,setBody]=useState(''),[mentionNames,setMentionNames]=useState<string[]>([]),[busy,setBusy]=useState(false),[sendError,setError]=useState('');
  const pending=useRef<{body:string;key:string}|null>(null),sending=useRef(false),activeRef=useRef(active),onReadRef=useRef(onRead);activeRef.current=active;onReadRef.current=onRead;
  const guild=snapshot?.guild??null,messages=snapshot?.messages??[],error=sendError||loadError,scope=`${accountId}:${guild?.id??''}`,currentScope=useRef(scope);currentScope.current=scope;
+ useEffect(()=>{onTitleChange?.(guild?`${guild.tag?'['+guild.tag+'] ':''}${guild.name}`:'');},[guild?.name,guild?.tag,onTitleChange]);
  useEffect(()=>{setSelected(null);setBody('');setError('');pending.current=null;},[scope]);
  useEffect(()=>{const guildId=guild?.id;if(!guildId){setMentionNames([]);return;}if(!active)return;let alive=true;const loadRoster=()=>{if(AppState.currentState==='active'||AppState.currentState===null)void guildRoster(guildId).then(rows=>{if(alive)setMentionNames(rows.map(row=>row.display_name))}).catch(()=>{});};loadRoster();const timer=setInterval(loadRoster,60000);return()=>{alive=false;clearInterval(timer)};},[guild?.id,accountId,active]);
 
@@ -42,20 +44,20 @@ export function GuildChat({language,currentPlayerName,unlockedEmoteIds=[],trayId
  if(snapshot&&!guild)return <View style={s.unavailable}><Text style={s.title}>{ot(language,'chat.guild')}</Text><Text style={s.note}>{st("Join an online Guild to use Guild Chat.")}</Text></View>;
 
  const caughtUp=async(messageId:string)=>{if(!activeRef.current||currentScope.current!==scope||!guild)throw new Error('Chat scope changed.');await markSocialChatRead('guild',guild.id,messageId);if(activeRef.current&&currentScope.current===scope)onReadRef.current?.();};
- return <><GuildChatView active={active} channelKey={scope} language={language} currentPlayerName={currentPlayerName} unlockedEmoteIds={unlockedEmoteIds} trayIds={trayIds} bodyPresentation={bodyPresentation} onTrayChange={onTrayChange} firstUnreadMessageId={firstUnreadMessageId} reduceMotion={reduceMotion} guild={guild} messages={messages} body={body} onBodyChange={setBody} mentionNames={mentionNames} busy={busy} error={error} onSend={()=>send()} onRetry={()=>{setError('');return load();}} onSelectMessage={setSelected} onCaughtUp={caughtUp}/>
+ return <><GuildChatView embedded={embedded} active={active} channelKey={scope} language={language} currentPlayerName={currentPlayerName} unlockedEmoteIds={unlockedEmoteIds} trayIds={trayIds} bodyPresentation={bodyPresentation} onTrayChange={onTrayChange} firstUnreadMessageId={firstUnreadMessageId} reduceMotion={reduceMotion} guild={guild} messages={messages} body={body} onBodyChange={setBody} mentionNames={mentionNames} busy={busy} error={error} onSend={()=>send()} onRetry={()=>{setError('');return load();}} onSelectMessage={setSelected} onCaughtUp={caughtUp}/>
   <ChatPlayerSheet reduceMotion={reduceMotion} message={selected?{...selected,message_id:selected.id}:null} onClose={()=>setSelected(null)} onBlocked={blockedId=>setSnapshot(current=>current?{...current,messages:current.messages.filter(message=>message.account_id!==blockedId)}:current)}/>
  </>;
 }
 
 /** Shared presentation only: the live wrapper above owns network and account actions. */
-export function GuildChatView({active=true,channelKey,language,currentPlayerName,unlockedEmoteIds=[],trayIds=[],bodyPresentation='male',onTrayChange,firstUnreadMessageId,reduceMotion=false,guild,messages,body,onBodyChange,mentionNames=[],busy=false,error='',onSend,onRetry=()=>{},onSelectMessage,onCaughtUp}:{
- active?:boolean;channelKey?:string;language:Language;currentPlayerName?:string;unlockedEmoteIds?:readonly string[];trayIds?:readonly string[];bodyPresentation?:'male'|'female';onTrayChange?:(ids:string[])=>void|Promise<void>;firstUnreadMessageId?:string;reduceMotion?:boolean;
+export function GuildChatView({embedded=false,active=true,channelKey,language,currentPlayerName,unlockedEmoteIds=[],trayIds=[],bodyPresentation='male',onTrayChange,firstUnreadMessageId,reduceMotion=false,guild,messages,body,onBodyChange,mentionNames=[],busy=false,error='',onSend,onRetry=()=>{},onSelectMessage,onCaughtUp}:{
+ embedded?:boolean;active?:boolean;channelKey?:string;language:Language;currentPlayerName?:string;unlockedEmoteIds?:readonly string[];trayIds?:readonly string[];bodyPresentation?:'male'|'female';onTrayChange?:(ids:string[])=>void|Promise<void>;firstUnreadMessageId?:string;reduceMotion?:boolean;
  guild:GuildChatState['guild'];messages:readonly GuildChatMessage[];body:string;onBodyChange:(value:string)=>void;mentionNames?:string[];busy?:boolean;error?:string;onSend:()=>void;onRetry?:()=>void;onSelectMessage?:(message:GuildChatMessage)=>void;onCaughtUp?:(messageId:string)=>void|Promise<void>;
 }){
- const st=useSocialText();
+ const st=useSocialText(),viewportStyle=useChatViewportStyle();
  const C=useGameTheme(),s=useMemo(()=>makeStyles(C),[C]);
- return <View style={s.root}>
-  <View style={s.header}><View style={s.grow}><Text style={s.eyebrow}>{st("GUILD CHANNEL")}</Text>{guild?<GuildTaggedPlayerName name={guild.name} guildTag={guild.tag} tagColorId={guild.tagColorId} style={s.title}/>:<Text numberOfLines={1} style={s.title}>{ot(language,'chat.guild')}</Text>}</View><View style={s.securePill}><Text style={s.secure}>{st("MEMBERS ONLY")}</Text></View></View>
+ return <View style={[s.root,viewportStyle]}>
+  {!embedded&&<View style={s.header}><View style={s.grow}><Text style={s.eyebrow}>{st("GUILD CHANNEL")}</Text>{guild?<GuildTaggedPlayerName name={guild.name} guildTag={guild.tag} tagColorId={guild.tagColorId} style={s.title}/>:<Text numberOfLines={1} style={s.title}>{ot(language,'chat.guild')}</Text>}</View><View style={s.securePill}><Text style={s.secure}>{st("MEMBERS ONLY")}</Text></View></View>}
   <ChatLog active={active} channelKey={channelKey??guild?.id??'guild:none'} items={messages} firstUnreadMessageId={firstUnreadMessageId} emptyText={st("No Guild messages yet. Start the conversation.")} onCaughtUp={onCaughtUp} renderItem={message=><ChatMessageRow accountId={message.account_id} name={message.sender_name} body={message.body} createdAt={message.created_at} guildTag={message.guild_tag} tagColorId={message.guild_tag_color_id} nameStyle={message.player_name_style} badges={message.player_badges} role={message.guild_role} mentionName={currentPlayerName} onPress={()=>onSelectMessage?.(message)} reduceMotion={reduceMotion}/>} />
   {!!error&&<View accessibilityRole="alert" style={s.errorCard}><Text style={s.errorLabel}>{st("GUILD CHAT UNAVAILABLE")}</Text><Text style={s.error}>{error}</Text><GameButton compact title={st("Retry")} tone="secondary" disabled={busy} onPress={onRetry}/></View>}
   <ChatMentionSuggestions value={body} names={mentionNames} currentName={currentPlayerName} onChange={onBodyChange}/>
@@ -64,8 +66,8 @@ export function GuildChatView({active=true,channelKey,language,currentPlayerName
 }
 
 function makeStyles(C:ThemeColors){return StyleSheet.create({
- root:{gap:spacing.sm},unavailable:{gap:4,padding:spacing.md,borderWidth:1,borderColor:C.line,borderRadius:radii.md,backgroundColor:C.panel2},
- header:{minHeight:40,flexDirection:'row',alignItems:'center',gap:8},grow:{flex:1,minWidth:0},eyebrow:{...typography.caption,color:C.accent,fontWeight:'900',letterSpacing:.8},title:{...typography.title,color:C.text},securePill:{paddingHorizontal:6,paddingVertical:3,borderWidth:1,borderColor:C.good,borderRadius:99,backgroundColor:C.goodSurface},secure:{fontSize:7,color:C.good,fontWeight:'900',letterSpacing:.6},
+ root:{gap:spacing.sm,flexShrink:1,minHeight:0},unavailable:{gap:4,padding:spacing.md,borderWidth:1,borderColor:C.line,borderRadius:radii.md,backgroundColor:C.panel2},
+ header:{minHeight:40,flexDirection:'row',alignItems:'center',gap:8},grow:{flex:1,minWidth:0},eyebrow:{...typography.caption,color:C.accent,fontWeight:'900',letterSpacing:.8},title:{...typography.title,color:C.text},securePill:{paddingHorizontal:8,paddingVertical:4,borderWidth:1,borderColor:C.good,borderRadius:99,backgroundColor:C.goodSurface},secure:{fontSize:10,lineHeight:14,color:C.good,fontWeight:'900',letterSpacing:.8},
  note:{...typography.body,color:C.muted,lineHeight:18},
 errorCard:{gap:5,padding:spacing.sm,borderWidth:1,borderColor:C.bad,borderRadius:radii.md,backgroundColor:C.badSurface},errorLabel:{...typography.caption,color:C.bad,fontWeight:'900',letterSpacing:1},error:{...typography.caption,color:C.text},
 });}

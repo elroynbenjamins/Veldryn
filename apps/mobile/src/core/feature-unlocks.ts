@@ -1,7 +1,8 @@
 import type {GameState} from './types';
 
-export type EarlyFeatureId='dailySupplies'|'events'|'pets'|'accountBonuses'|'friends'|'companions'|'social'|'contracts'|'masteryHall'|'guild'|'rankings';
+export type EarlyFeatureId='dailySupplies'|'events'|'pets'|'accountBonuses'|'friends'|'companions'|'social'|'contracts'|'masteryHall'|'guild'|'party'|'rankings';
 export const GUILD_UNLOCK_LEVEL=7;
+export const PARTY_UNLOCK_LEVEL=20;
 export const EARLY_FEATURE_DESTINATION_ORDER=['DailySupplies','Events','AccountBonuses','Friends','Companions','Social','MasteryHall','Guild','Rankings'] as const;
 
 export const EARLY_FEATURE_UNLOCKS={
@@ -15,6 +16,7 @@ export const EARLY_FEATURE_UNLOCKS={
  contracts:{questId:'QST_005',title:'Contract Board',requirement:'Complete Into Ironwood',description:'Weekly and cooperative contract planning unlocks with deeper regional progression.'},
  masteryHall:{questId:'QST_005',title:'Mastery Hall',requirement:'Complete Into Ironwood',description:'Long-term profession mastery records appear once the player has enough skill actions to make the system meaningful.'},
  guild:{questId:'QST_005',title:'Guilds',requirement:`Reach Level ${GUILD_UNLOCK_LEVEL}`,description:`Guilds unlock at Level ${GUILD_UNLOCK_LEVEL}, so you can find a group before deeper regional progression.`},
+ party:{questId:'QST_011',title:'Parties',requirement:`Reach Level ${PARTY_UNLOCK_LEVEL}`,description:`Persistent parties unlock at Level ${PARTY_UNLOCK_LEVEL}, after the player has had time to learn the solo loop and pick a role.`},
  rankings:{questId:'QST_011',title:'Rankings',requirement:'Reach Level 20 and complete Place Among Guilds',description:'Prestige rankings unlock later at Level 20, after the player has had time to establish their character and social identity.'},
 } as const;
 
@@ -50,6 +52,9 @@ export function earlyFeatureUnlocked(state:FeatureUnlockHost,id:EarlyFeatureId){
   // Legacy accounts whose quest ladder claimed QST_005 before this threshold change
   // keep the unlock they already had.
   return accountQuestClaimed(state,rule.questId);
+ }
+ if(id==='party'){
+  return accountReachedLevel(state,PARTY_UNLOCK_LEVEL);
  }
  return accountQuestClaimed(state,rule.questId);
 }

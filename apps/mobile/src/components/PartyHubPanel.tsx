@@ -43,6 +43,8 @@ export interface PartyHubPanelProps {
   onFiltersChange?: (filters:RecruitmentClientFilters)=>void;
   onClaimReward?: (id:string)=>void;
   recruitmentMode?: 'looking_for_party'|'party_recruiting';
+  partyUnlocked?: boolean;
+  partyUnlockLevel?: number;
 }
 
 export function PartyHubPanel(props: PartyHubPanelProps) {
@@ -90,9 +92,14 @@ export function PartyHubPanel(props: PartyHubPanelProps) {
     </View>}
 
     {!inParty?<View style={styles.panel}>
-      <Text style={styles.sectionTitle}>Start a party of your own</Text>
-      <Text style={styles.muted}>Create a persistent party and share weekly Contract progress with up to three others.</Text>
-      <PixelButton label={st("Create Party")} onPress={props.onCreateParty} />
+      {props.partyUnlocked===false?<>
+        <Text style={styles.sectionTitle}>Parties unlock at Level {props.partyUnlockLevel??20}</Text>
+        <Text style={styles.muted}>Persistent parties pair you with up to three other adventurers who share weekly Contract progress. Reach the unlock level first — your current adventures still count toward it.</Text>
+      </>:<>
+        <Text style={styles.sectionTitle}>Start a party of your own</Text>
+        <Text style={styles.muted}>Create a persistent party and share weekly Contract progress with up to three others.</Text>
+        <PixelButton label={st("Create Party")} onPress={props.onCreateParty} />
+      </>}
     </View>:null}
 
     {(section==='find'||!inParty)&&<View style={styles.panel}>

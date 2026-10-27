@@ -25,6 +25,8 @@ jobs:
           cache-dependency-path: backend/pnpm-lock.yaml
       - name: Install backend
         run: pnpm --dir backend install --frozen-lockfile
+      - name: Install mobile dependencies referenced by shared backend types
+        run: pnpm --dir apps/mobile install --frozen-lockfile
       - name: Test Q-Mode composition
         run: pnpm --dir backend test:coop-composition
       - name: Test online backend

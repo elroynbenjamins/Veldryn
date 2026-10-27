@@ -59,52 +59,53 @@ export function PartyHubPanel(props: PartyHubPanelProps) {
   const cards = React.useMemo(() => filterRecruitmentCards(props.recruitment, {...filters,postTypes:[browseMode==='parties'?'party_recruiting':'looking_for_party']},props.nowMs), [props.recruitment, filters,props.nowMs,browseMode]);
   const canManageParty=!!props.party?.members.some(member=>member.accountId===props.accountId&&member.isLeader);
 
+  const inParty=!!props.party;
+  // When the user is in a party, offer the segmented switch; otherwise jump directly to Find.
   return <View style={styles.content}>
-    <View style={styles.browseTabs}><BrowseChip label="My party" selected={section==='party'} onPress={()=>setSection('party')}/><BrowseChip label="Find a party" selected={section==='find'} onPress={()=>setSection('find')}/></View>
-    <View style={styles.heroPanel}>
-      <Text style={styles.eyebrow}>{section==='find'?'FIND PEOPLE':'ADVENTURE TOGETHER'}</Text>
-      <Text style={styles.title}>{section==='find'?'Find a party':props.party?'Your party':st("Adventure Together")}</Text>
-      <Text style={styles.muted}>{section==='find'?'A group that fits your pace.':props.party?`${props.party.members.length} / 4 members · ${props.party.focus} focus`:'Create a persistent party and share weekly progress.'}</Text>
-      <View style={styles.rowWrap}>
-        {!props.party && <PixelButton label={st("Create Party")} onPress={props.onCreateParty} />}
-        {props.party && section==='party' && <PixelButton label={st("Party Chat")} onPress={props.onOpenPartyChat} />}
-        {props.party && showSettings && <PixelButton label={st("Leave")} secondary onPress={props.onLeaveParty} />}
-        {props.party&&showSettings&&canManageParty&&props.party.members.length>1?<PixelButton label={st("Disband")} secondary onPress={props.onDisbandParty}/>:null}
-        {props.party&&section==='party'?<PixelButton label="Party settings" secondary onPress={()=>setShowSettings(!showSettings)}/>:null}
-      </View>
-    </View>
+    {inParty?<View style={styles.browseTabs}><BrowseChip label="My party" selected={section==='party'} onPress={()=>setSection('party')}/><BrowseChip label="Find more" selected={section==='find'} onPress={()=>setSection('find')}/></View>:null}
 
-    {props.party && section==='party' && <View style={styles.panel}>
-      <Text style={styles.sectionTitle}>{st("PARTY MEMBERS")}</Text>
-      {props.party.members.map(member => <View key={member.accountId} style={styles.memberRow}>
+    {inParty && section==='party' && <View style={styles.panel}>
+      <View style={styles.between}><Text style={styles.sectionTitle}>{st("PARTY MEMBERS")}</Text><Text style={styles.small}>{props.party!.members.length}/4</Text></View>
+      {props.party!.members.map(member => <View key={member.accountId} style={styles.memberRow}>
         <Pressable accessibilityRole="button" accessibilityLabel={`Open ${member.characterName}'s profile`} disabled={!props.onOpenMemberProfile} onPress={()=>props.onOpenMemberProfile?.(member)} style={({pressed})=>[styles.memberIdentity,pressed&&styles.memberPressed]}>
           <CompactPlayerIdentity accountId={member.accountId} badges={member.playerBadges} name={member.characterName} className={member.className} status={member.isLeader?'PARTY LEADER':member.role.toUpperCase()} statusTone={member.isLeader?'accent':'info'} hint={props.onOpenMemberProfile?st("VIEW PROFILE ›"):undefined}/>
         </Pressable>
         {(()=>{const permissions=partyMemberManagement(canManageParty,props.accountId,member.accountId);return permissions.canTransfer||permissions.canRemove?<View style={styles.memberActions}><GameButton compact title="•••" tone="secondary" onPress={()=>gameAlert.alert(member.characterName,'Manage party member',[...(permissions.canTransfer?[{text:st('Lead'),onPress:()=>props.onTransferLeadership?.(member)}]:[]),...(permissions.canRemove?[{text:st('Kick'),onPress:()=>props.onRemoveMember?.(member)}]:[]),{text:'Cancel',style:'cancel'}])}/></View>:null})()}
       </View>)}
-    </View>}
-
-    {props.party && section==='party' && <View style={styles.panel}>
-      <Text style={styles.sectionTitle}>{st("PARTY CONTRACTS")}</Text>
-      <Text style={styles.muted}>{st("Shared weekly progress. Personal minimums prevent zero-contribution rewards.")}</Text>
-      {props.contracts.map(contract => <View key={contract.id}>{contract.tiers?.length?<PartyWeeklyLadder contract={contract} nowMs={props.nowMs} onClaimReward={props.onClaimReward}/>:<ContractCard contract={contract} nowMs={props.nowMs} />}{contract.tiers?.length?null:contract.rewards?.map(reward=><PixelButton key={reward.id} label={reward.claimed?st("Reward claimed"):`Claim ${reward.reward.gold} Gold`} onPress={!reward.claimed&&props.onClaimReward?()=>props.onClaimReward!(reward.id):undefined}/>)}</View>)}
-      {!props.contracts.length && <Text style={styles.empty}>{st("No active Contract right now.")}</Text>}
-    </View>}
-
-    {section==='party'&&props.party?<GameButton title="Find members" tone="secondary" onPress={()=>setSection('find')}/>:null}
-    {section==='find'&&<View style={styles.panel}>
-      <Text style={styles.sectionTitle}>Recruitment</Text>
-      <Text style={styles.muted}>Browse persistent Parties, player LFG posts, or use Live LFG from the expedition screen when you want a group right now.</Text>
-      <View style={styles.browseTabs}><BrowseChip label="Parties with open spots" selected={browseMode==='parties'} onPress={()=>setBrowseMode('parties')}/><BrowseChip label="Players LFG" selected={browseMode==='players'} onPress={()=>setBrowseMode('players')}/></View>
-      <GameButton compact title={showFilters?'Hide filters':'Filter by focus, role & play style'} tone="secondary" onPress={()=>setShowFilters(!showFilters)}/>
-      {showFilters?<RecruitmentFiltersPanel value={filters} onChange={setFilters} hidePostType/>:null}
-      <View style={styles.quickActions}>
-        {browseMode==='players'?<PixelButton label={st("Post my LFG")} secondary onPress={() => props.onCreateRecruitmentPost?.('looking_for_party')} />:props.party?<PixelButton label={st("Post Party LFM")} secondary onPress={() => props.onCreateRecruitmentPost?.('party_recruiting')} />:null}
+      <View style={styles.rowWrap}>
+        <PixelButton label={st("Party Chat")} onPress={props.onOpenPartyChat} />
+        <PixelButton label="Settings" secondary onPress={()=>setShowSettings(!showSettings)}/>
       </View>
-      {cards.map(card => <RecruitmentListing key={card.id} card={card} nowMs={props.nowMs} onPress={() => props.onOpenRecruitmentPost?.(card.id)} />)}
-      {!cards.length && <Text style={styles.empty}>{st("No fresh posts match these filters.")}</Text>}
+      {showSettings?<View style={styles.rowWrap}>
+        <PixelButton label={st("Leave")} secondary onPress={props.onLeaveParty} />
+        {canManageParty&&props.party!.members.length>1?<PixelButton label={st("Disband")} secondary onPress={props.onDisbandParty}/>:null}
+      </View>:null}
     </View>}
-    {section==='party'&&props.party?<GameButton title="Post recruitment advert" tone="secondary" onPress={()=>props.onCreateRecruitmentPost?.('party_recruiting')}/>:null}
+
+    {inParty && section==='party' && <View style={styles.panel}>
+      <Text style={styles.sectionTitle}>{st("PARTY CONTRACTS")}</Text>
+      {props.contracts.length>0?<Text style={styles.muted}>{st("Shared weekly progress. Personal minimums prevent zero-contribution rewards.")}</Text>:null}
+      {props.contracts.map(contract => <View key={contract.id}>{contract.tiers?.length?<PartyWeeklyLadder contract={contract} nowMs={props.nowMs} onClaimReward={props.onClaimReward}/>:<ContractCard contract={contract} nowMs={props.nowMs} />}{contract.tiers?.length?null:contract.rewards?.map(reward=><PixelButton key={reward.id} label={reward.claimed?st("Reward claimed"):`Claim ${reward.reward.gold} Gold`} onPress={!reward.claimed&&props.onClaimReward?()=>props.onClaimReward!(reward.id):undefined}/>)}</View>)}
+      {!props.contracts.length && <View style={styles.emptyPanel}><Text style={styles.emptyTitle}>No active contract this week</Text><Text style={styles.muted}>Weekly Contracts are posted automatically. Keep adventuring and the next one will appear here.</Text></View>}
+    </View>}
+
+    {!inParty?<View style={styles.panel}>
+      <Text style={styles.sectionTitle}>Start a party of your own</Text>
+      <Text style={styles.muted}>Create a persistent party and share weekly Contract progress with up to three others.</Text>
+      <PixelButton label={st("Create Party")} onPress={props.onCreateParty} />
+    </View>:null}
+
+    {(section==='find'||!inParty)&&<View style={styles.panel}>
+      <Text style={styles.sectionTitle}>Recruitment board</Text>
+      <View style={styles.browseTabs}><BrowseChip label="Parties recruiting" selected={browseMode==='parties'} onPress={()=>setBrowseMode('parties')}/><BrowseChip label="Players seeking" selected={browseMode==='players'} onPress={()=>setBrowseMode('players')}/></View>
+      <View style={styles.rowWrap}>
+       <GameButton compact title={showFilters?'Hide filters':'Filters'} tone="secondary" onPress={()=>setShowFilters(!showFilters)}/>
+       {browseMode==='players'?<GameButton compact title={st("Post my LFG")} tone="secondary" onPress={() => props.onCreateRecruitmentPost?.('looking_for_party')} />:inParty?<GameButton compact title={st("Post Party LFM")} tone="secondary" onPress={() => props.onCreateRecruitmentPost?.('party_recruiting')} />:null}
+      </View>
+      {showFilters?<RecruitmentFiltersPanel value={filters} onChange={setFilters} hidePostType/>:null}
+      {cards.map(card => <RecruitmentListing key={card.id} card={card} nowMs={props.nowMs} onPress={() => props.onOpenRecruitmentPost?.(card.id)} />)}
+      {!cards.length && <View style={styles.emptyPanel}><Text style={styles.emptyTitle}>{browseMode==='parties'?'No parties recruiting right now':'No players looking for party'}</Text><Text style={styles.muted}>Try the other tab, loosen your filters, or {inParty?'post an advert for your party':'post your own LFG'} so others can find you.</Text></View>}
+    </View>}
   </View>;
 }
 
@@ -147,6 +148,8 @@ function makeStyles(C:ThemeColors){const equipmentColors=equipmentTheme(C);retur
   contractCard: { borderRadius:radii.md,borderWidth: 1, borderColor: C.line, backgroundColor: equipmentColors.panel, padding: 10, gap: 6 }, badge: { color: equipmentColors.selectedLine, fontWeight: '900', fontSize: 10 },
   progressTrack: { height: 8,borderRadius:4,overflow:'hidden', borderWidth: 1, borderColor: C.line, backgroundColor: C.bg }, progressFill: { height: '100%', backgroundColor: equipmentColors.selectedLine },
   good: { color: C.good, fontSize: 11, fontWeight: '700' }, warning: { color: C.warning, fontSize: 11, fontWeight: '700' }, objective: { color: C.text, fontSize: 11 },
+  emptyPanel: { padding: 14, gap: 6, borderWidth: 1, borderColor: C.line, borderRadius: 10, backgroundColor: C.panel2 },
+  emptyTitle: { ...typography.bodyStrong, color: C.text },
   search: { minHeight: 46, color: C.text, backgroundColor: C.bg, borderWidth: 1, borderColor: C.line, paddingHorizontal: 12 },
   chip: { minHeight: 44, justifyContent: 'center', borderWidth: 1, borderColor: C.line, backgroundColor: C.panel, paddingHorizontal: 11 }, chipSelected: { borderColor: equipmentColors.selectedLine, backgroundColor: equipmentColors.selected },
   chipText: { color: C.muted, fontWeight: '700', textTransform: 'capitalize' }, chipTextSelected: { color: C.text, fontWeight: '900', textTransform: 'capitalize' },

@@ -8,10 +8,15 @@ export type SocialHubTab='party'|'events'|'guild'|'chat'|'rankings';
 
 const tabLabel:Record<SocialHubTab,import('../i18n/social').SocialMessageKey>={party:'Party',events:'Events',guild:'Guild',chat:'Chat',rankings:'Rankings'};
 
+/** Simplified navigation surfaces the three primary destinations. Events and Rankings
+ * remain reachable through inline links inside the Party tab so the ribbon is not
+ * crowded. */
+const VISIBLE_TABS:SocialHubTab[]=['party','guild','chat'];
+
 export function SocialHubPanel({active,onChange,children,badges}:{active:SocialHubTab;onChange:(tab:SocialHubTab)=>void;children:React.ReactNode;badges?:Partial<Record<SocialHubTab,number>>}){
  const st=useSocialText();
  const C=useGameTheme(),s=React.useMemo(()=>makeStyles(C),[C]);
- const tabs:SocialHubTab[]=['party','events','guild','chat','rankings'];
+ const tabs:SocialHubTab[]=VISIBLE_TABS;
  return <View style={s.root}>
   <View accessibilityRole="tablist" style={s.tabs}>{tabs.map(tab=><Pressable accessibilityRole="tab" accessibilityState={{selected:active===tab}} key={tab} onPress={()=>onChange(tab)} style={({pressed})=>[s.tab,active===tab&&s.active,pressed&&s.pressed]}><View style={s.tabLabel}><Text numberOfLines={1} style={[s.text,active===tab&&s.activeText]}>{st(tabLabel[tab])}</Text>{(badges?.[tab]??0)>0?<View style={s.badge}><Text style={s.badgeText}>{Math.min(99,badges?.[tab]??0)}</Text></View>:null}</View>{active===tab?<View style={s.indicator}/>:null}</Pressable>)}</View>
   <View style={s.body}>{children}</View>

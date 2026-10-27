@@ -59,7 +59,13 @@ export function HomeScreen({state,preview,nowMs,onClaim,onStop,onQueueRemove,onQ
  },[state,gatherPace]);
  const resourceRate=gatherPace?{name:itemDef(gatherPace.definition.itemId).name,itemsPerHour:gatherPace.itemsPerHour}:undefined;
  const combatMaxHp=useMemo(()=>state.activity?.kind==='combat'?effectiveStats(state).hp:undefined,[state]);
- const cycle=activityCycleSeconds(state),guide=dashboardRecommendation(state),campaign=campaignProgressSummary(state),levelPace=activeActivityLevelPace(state,rate.xpPerHour),afk=offlineCapBreakdown(state);
+ // Dashboard aggregates are state-derived, not time-dependent — memoize so re-renders
+ // without state changes skip the recompute (quest/campaign scans + afk projection).
+ const cycle=useMemo(()=>activityCycleSeconds(state),[state]);
+ const guide=useMemo(()=>dashboardRecommendation(state),[state]);
+ const campaign=useMemo(()=>campaignProgressSummary(state),[state]);
+ const levelPace=useMemo(()=>activeActivityLevelPace(state,rate.xpPerHour),[state,rate.xpPerHour]);
+ const afk=useMemo(()=>offlineCapBreakdown(state),[state]);
  const completed=state.quests.filter(q=>q.status==='complete').length,monster=state.activity?.kind==='combat'?MONSTERS.find(x=>x.id===state.activity?.targetId):undefined;
  const contractsUnlocked=earlyFeatureUnlocked(state,'contracts'),dailyUnlocked=earlyFeatureUnlocked(state,'dailySupplies');
  const guidePanel=(<View style={[s.guide,guide.priority==='urgent'&&s.urgent]}><View style={s.guideTop}><Text style={[s.guideKicker,guide.priority==='urgent'&&s.guideKickerUrgent]}>{guide.priority==='urgent'?a("ATTENTION"):a("NEXT STEP")}</Text><Text style={[s.guideState,guide.priority==='urgent'&&s.guideStateUrgent]}>{guide.priority==='urgent'?a("NOW"):a("RECOMMENDED")}</Text></View><Text style={s.title}>{a(guide.title)}</Text><Text style={s.small}>{a(guide.detail)}</Text><GameButton compact title={a(guide.button)} tone={guide.priority==='urgent'?'primary':'secondary'} onPress={()=>onNavigate(guide.destination,guide.zoneId)}/></View>);

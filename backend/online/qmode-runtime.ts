@@ -6,6 +6,7 @@ import {MemoryQModeRunRepository,QModeService,type QModeRun} from '../src/server
 import {projectQModeRun} from '../src/server/coop/qmode-public-projection';
 import {resolveAndFreezeLoadout,type AuthoritativeLoadoutRecord} from '../src/server/coop/loadout-snapshots';
 import type {PublishedEcho} from '../src/server/coop/echo-recruitment';
+import {createQModeNpcAllies} from '../src/server/coop/qmode-npc-allies';
 import type {CoopRunRequest,CoopDecisionCommand} from '../src/shared/coop-types';
 import {marksForRun} from '../src/server/expeditions/rewards';
 import {deriveOnlineCoopLoadout,onlineCoopLoadoutHash,ONLINE_COOP_BALANCE_VERSION} from './coop-loadout';
@@ -55,13 +56,16 @@ export class OnlineQModeRuntime{
    if(echo.record.accountId!==echo.sourceAccountId)continue;
    try{profiles.push({profileId:echo.profileId,sourceAccountId:echo.sourceAccountId,publishedAtMs:echo.publishedAtMs,optedIn:true,contentVersion:content,blockedAccountIds:[],snapshot:freeze(echo.record)});}catch{continue;}
   }
+  const npcSnapshots=createQModeNpcAllies({minimumLevel:minimum,syncLevel:sync,controllerLevel:controller.normalized.before.level});
   const seed=this.services.randomId()+this.services.randomId(),id=this.services.randomId();
   const domain=new QModeService(new MemoryQModeRunRepository(),seed);
-  const run=domain.create({requestId:request.requestId,runId:id,controllerAccountId:accountId,controllerSnapshot:controller,expeditionId:definition.id,tier:request.tier,contentVersion:content,balanceVersion:content,nowMs:game.serverNow,profiles});
-  const members=[{snapshot:controller,sourceHash:onlineCoopLoadoutHash(record),profileId:null},...run.echoSourceAccountIds.map((owner,index)=>{
-   const selected=profiles.find(row=>row.sourceAccountId===owner&&row.snapshot.characterId===run.players[index+1].id)!;
-   const source=raw.find(row=>row.profileId===selected.profileId)!;
-   return {snapshot:selected.snapshot,sourceHash:onlineCoopLoadoutHash(source.record),profileId:selected.profileId};
+  const run=domain.create({requestId:request.requestId,runId:id,controllerAccountId:accountId,controllerSnapshot:controller,expeditionId:definition.id,tier:request.tier,contentVersion:content,balanceVersion:content,nowMs:game.serverNow,profiles,npcSnapshots});
+  const members=[{memberKind:'human',snapshot:controller,sourceHash:onlineCoopLoadoutHash(record),profileId:null},...run.players.slice(1).map(player=>{
+   const selected=profiles.find(row=>row.snapshot.characterId===player.id&&run.echoSourceAccountIds.includes(row.sourceAccountId));
+   if(selected){const source=raw.find(row=>row.profileId===selected.profileId)!;return {memberKind:'echo',snapshot:selected.snapshot,sourceHash:onlineCoopLoadoutHash(source.record),profileId:selected.profileId};}
+   const npc=npcSnapshots.find(row=>row.characterId===player.id&&run.npcCharacterIds?.includes(row.characterId));
+   if(!npc)throw new Error('qmode_npc_missing');
+   return {memberKind:'npc',snapshot:npc,sourceHash:npc.snapshotHash,profileId:null};
   })];
   return this.services.rpc('start_online_qmode_server_v1',{p_account_id:accountId,p_game_version:game.version,p_request_id:request.requestId,p_request_hash:hash,p_run_id:id,p_private_state:{run,seed},p_client_projection:projection(run,1),p_members:members,p_seed_hash:digest(seed)});
  }

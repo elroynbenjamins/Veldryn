@@ -41,3 +41,27 @@ export function recruitEligibleEchoes(input:{
  }
  return Object.freeze(selected.map(profile=>Object.freeze(structuredClone(profile))));
 }
+
+/** Prefer eligible real Echoes; fill only missing roles with server-generated NPC kits. */
+export interface QModeAlly {kind:'echo'|'npc';snapshot:FrozenLoadoutSnapshot;echo?:PublishedEcho}
+export function recruitQModeAllies(input:Parameters<typeof recruitEligibleEchoes>[0]&{npcSnapshots:readonly FrozenLoadoutSnapshot[]}):ReadonlyArray<QModeAlly>{
+ const eligible=input.profiles.filter(echo=>echo.optedIn&&echo.sourceAccountId!==input.controllerAccountId
+  &&echo.contentVersion===input.contentVersion&&echo.publishedAtMs+COOP_ROGUELITE_CONFIG.echoFreshnessMs>input.nowMs
+  &&!echo.blockedAccountIds.includes(input.controllerAccountId)&&echo.snapshot.readiness.ready);
+ const team:QModeAlly[]=[],accounts=new Set([input.controllerAccountId]),characters=new Set<string>();
+ const usedDamage=new Set(input.controllerRole==='damage'?[input.controllerClassId.trim().toUpperCase()]:[]);
+ for(const role of missingRoles(input.controllerRole)){
+  const legal=(snapshot:FrozenLoadoutSnapshot)=>snapshot.readiness.ready&&snapshot.readiness.role===role
+   &&!accounts.has(snapshot.accountId)&&!characters.has(snapshot.characterId)
+   &&(role!=='damage'||!usedDamage.has(snapshot.classId.trim().toUpperCase()));
+  const echo=deterministicShuffle(input.serverSecret,eligible.filter(row=>legal(row.snapshot)),
+   'echo-recruit-v2',input.requestId,input.contentVersion,role,team.length)[0];
+  const npc=echo?undefined:deterministicShuffle(input.serverSecret,input.npcSnapshots.filter(legal),
+   'npc-recruit-v1',input.requestId,input.contentVersion,role,team.length)[0];
+  if(!echo&&!npc)throw new Error(`echo_pool_unavailable:${role}`);
+  const member:QModeAlly=echo?{kind:'echo',snapshot:echo.snapshot,echo}:{kind:'npc',snapshot:npc!};
+  team.push(member);accounts.add(member.snapshot.accountId);characters.add(member.snapshot.characterId);
+  if(role==='damage')usedDamage.add(member.snapshot.classId.trim().toUpperCase());
+ }
+ return Object.freeze(team.map(row=>Object.freeze(structuredClone(row))));
+}

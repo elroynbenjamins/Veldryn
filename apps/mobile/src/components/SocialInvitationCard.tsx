@@ -19,11 +19,11 @@ export function SocialInvitationCard({
 }
 
 function makeStyles(C:ThemeColors){return StyleSheet.create({
- card:{gap:6,paddingVertical:8,borderTopWidth:1,borderTopColor:C.line},
+ card:{gap:8,paddingVertical:10,borderTopWidth:1,borderTopColor:C.line},
  detailRow:{flexDirection:'row',alignItems:'flex-start',gap:8,paddingLeft:48},
- detail:{flex:1,minWidth:0,fontSize:9.5,lineHeight:13,color:C.muted},
- expiry:{fontSize:8.5,lineHeight:12,color:C.muted,fontWeight:'800'},
- warning:{marginLeft:48,paddingHorizontal:7,paddingVertical:5,borderWidth:1,borderColor:C.warning,borderRadius:radii.sm,backgroundColor:C.warningSurface},
- warningText:{fontSize:8.5,lineHeight:12,color:C.warning,fontWeight:'800'},
+ detail:{flex:1,minWidth:0,fontSize:12,lineHeight:17,color:C.muted},
+ expiry:{fontSize:11,lineHeight:15,color:C.muted,fontWeight:'800'},
+ warning:{marginLeft:48,paddingHorizontal:10,paddingVertical:7,borderWidth:1,borderColor:C.warning,borderRadius:radii.sm,backgroundColor:C.warningSurface},
+ warningText:{fontSize:11,lineHeight:15,color:C.warning,fontWeight:'800'},
  actions:{marginLeft:48,flexDirection:'row',flexWrap:'wrap',gap:6},
 });}

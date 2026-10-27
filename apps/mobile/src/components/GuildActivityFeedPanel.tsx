@@ -20,7 +20,7 @@ function makeStyles(C:ThemeColors){return StyleSheet.create({
  kind:{maxWidth:150,paddingHorizontal:5,paddingVertical:2,borderWidth:1,borderRadius:99},
  kindGood:{borderColor:C.good,backgroundColor:C.goodSurface},kindWarning:{borderColor:C.warning,backgroundColor:C.warningSurface},kindInfo:{borderColor:C.info,backgroundColor:C.infoSurface},kindMuted:{borderColor:C.line,backgroundColor:C.panel2},
  kindText:{fontSize:6.5,fontWeight:'900',letterSpacing:.35},kindTextGood:{color:C.good},kindTextWarning:{color:C.warning},kindTextInfo:{color:C.info},kindTextMuted:{color:C.muted},
- title:{color:C.text,fontWeight:'900',fontSize:10.5},body:{color:C.muted,fontSize:9.5,lineHeight:13,marginTop:2},time:{color:C.muted,fontSize:8},
+ title:{color:C.text,fontWeight:'900',fontSize:13,lineHeight:17},body:{color:C.muted,fontSize:12,lineHeight:17,marginTop:3},time:{color:C.muted,fontSize:11,lineHeight:15},
  emptyCard:{minHeight:68,alignItems:'center',justifyContent:'center',gap:2,padding:10,borderWidth:1,borderStyle:'dashed',borderColor:C.line,borderRadius:radii.md,backgroundColor:C.panel2},
- emptyTitle:{color:C.text,fontWeight:'900',fontSize:10},empty:{color:C.muted,fontSize:9,lineHeight:13,textAlign:'center'},
+ emptyTitle:{color:C.text,fontWeight:'900',fontSize:13,lineHeight:17},empty:{color:C.muted,fontSize:12,lineHeight:17,textAlign:'center'},
 });}

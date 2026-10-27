@@ -49,7 +49,7 @@ function makeStyles(C:ThemeColors){const equipmentColors=equipmentTheme(C);retur
  profileName:{fontSize:16,lineHeight:20},
  metaRow:{flexDirection:'row',flexWrap:'wrap',alignItems:'center',gap:6,marginTop:5},
  levelPill:{paddingHorizontal:6,paddingVertical:2,borderWidth:1,borderColor:C.lineStrong,borderRadius:99,backgroundColor:C.warningSurface},
- levelText:{fontSize:7,color:equipmentColors.goldSoft,fontWeight:'900',letterSpacing:.55},
- meta:{fontSize:8,color:C.muted,fontWeight:'900',letterSpacing:.45},
- motto:{fontSize:9.5,lineHeight:13,color:C.muted,fontStyle:'italic',marginTop:3},
+ levelText:{fontSize:10,lineHeight:14,color:equipmentColors.goldSoft,fontWeight:'900',letterSpacing:.8},
+ meta:{fontSize:11,lineHeight:15,color:C.muted,fontWeight:'900',letterSpacing:.6},
+ motto:{fontSize:12,lineHeight:17,color:C.muted,fontStyle:'italic',marginTop:3},
 });}

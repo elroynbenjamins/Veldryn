@@ -120,21 +120,7 @@ export function GuildDiscoveryFlow({onJoined}:{onJoined:()=>void}){
 
  return <ScrollView ref={scrollRef} contentContainerStyle={s.root} keyboardShouldPersistTaps="handled" keyboardDismissMode="on-drag" showsVerticalScrollIndicator={false} showsHorizontalScrollIndicator={false}>
   {page==='welcome'?<>
-   <GuildBoardHero title="Find your people" subtitle="Forge alliances, take on Guild challenges, and grow together."/>
-   <Panel style={s.entryPanel}>
-    <View style={s.center}>
-     <Text style={s.eyebrow}>WELCOME TO GUILDS</Text>
-     <Text accessibilityRole="header" style={s.title}>Your next adventure starts here</Text>
-     <Text style={s.centerText}>Discover a Guild that fits your playstyle, or build your own.</Text>
-    </View>
-    <GameButton title="Find a Guild" onPress={()=>navigate('find')}/>
-    <GameButton title="Create a Guild" tone="secondary" onPress={()=>navigate('create')}/>
-    <View style={s.benefits}>
-     <Benefit icon="friends" label="Play alongside other adventurers" C={C}/>
-     <Benefit icon="quests" label="Work toward shared Guild rewards" C={C}/>
-     <Benefit icon="guild" label="Build a lasting Guild identity" C={C}/>
-    </View>
-   </Panel>
+   <GuildDiscoveryWelcome onFind={()=>navigate('find')} onCreate={()=>navigate('create')}/>
    {invites.length?<Panel>
     <View style={s.sectionRow}><Text style={s.section}>INVITATIONS</Text><StatusPill label={String(invites.length)+' PENDING'} tone="info"/></View>
     {invites.map(invite=><View key={invite.id} style={s.invite}>
@@ -225,13 +211,13 @@ function Benefit({icon,label,C}:{icon:'friends'|'quests'|'guild';label:string;C:
 function InfoStat({title,label,C}:{title:string;label:string;C:ThemeColors}){
  return <View style={{flex:1,minWidth:0,alignItems:'center',paddingVertical:9,borderRadius:9,backgroundColor:C.panel2}}>
   <Text style={{color:C.text,fontSize:15,fontWeight:'800'}}>{title}</Text>
-  <Text style={{color:C.muted,fontSize:10,lineHeight:15}}>{label}</Text>
+  <Text style={{color:C.muted,fontSize:12,lineHeight:17}}>{label}</Text>
  </View>;
 }
 function styles(C:ThemeColors){return StyleSheet.create({
- root:{padding:spacing.md,gap:12,paddingBottom:92},flex:{flex:1,minWidth:0},entryPanel:{gap:10},center:{alignItems:'center',gap:7,paddingVertical:13,paddingHorizontal:8},centerText:{color:C.muted,textAlign:'center',fontSize:13,lineHeight:19},
- eyebrow:{fontSize:10,lineHeight:14,fontWeight:'900',letterSpacing:1.1,color:C.accent},title:{...typography.title,color:C.text,fontSize:21,lineHeight:27,textAlign:'center'},pageTitle:{...typography.title,color:C.text},section:{color:C.accent,fontSize:10,fontWeight:'900',letterSpacing:1},
- benefits:{borderTopWidth:1,borderColor:C.line,paddingTop:12,marginTop:5,gap:6},sectionRow:{flexDirection:'row',flexWrap:'wrap',alignItems:'center',justifyContent:'space-between',gap:7},muted:{color:C.muted,fontSize:12,lineHeight:17},mutedCenter:{color:C.muted,fontSize:12,textAlign:'center'},stat:{color:C.muted,fontSize:10,fontWeight:'700'},count:{color:C.muted,fontSize:11,fontWeight:'700'},
+ root:{padding:spacing.md,gap:10,paddingBottom:20},flex:{flex:1,minWidth:0},entryPanel:{gap:8,padding:10},center:{alignItems:'flex-start',gap:5,paddingVertical:2,paddingHorizontal:0},centerText:{color:C.muted,fontSize:12,lineHeight:18},
+ eyebrow:{fontSize:11,lineHeight:15,fontWeight:'900',letterSpacing:1.1,color:C.accent},title:{...typography.title,color:C.text,fontSize:21,lineHeight:27,textAlign:'center'},pageTitle:{...typography.title,color:C.text},section:{color:C.accent,fontSize:11,fontWeight:'900',letterSpacing:1},
+ benefits:{borderTopWidth:1,borderColor:C.line,paddingTop:12,marginTop:5,gap:6},sectionRow:{flexDirection:'row',flexWrap:'wrap',alignItems:'center',justifyContent:'space-between',gap:7},muted:{color:C.muted,fontSize:12,lineHeight:17},mutedCenter:{color:C.muted,fontSize:12,textAlign:'center'},stat:{color:C.muted,fontSize:11,fontWeight:'700'},count:{color:C.muted,fontSize:12,fontWeight:'700'},
  guildName:{color:C.text,fontSize:14,lineHeight:19,fontWeight:'800'},guildTitle:{color:C.text,fontSize:20,lineHeight:26,fontWeight:'800'},guildCard:{minHeight:102,flexDirection:'row',alignItems:'center',gap:10,borderRadius:12,padding:12,backgroundColor:C.panel,borderColor:C.line,borderWidth:1},pressed:{opacity:.76},
  metaRow:{flexDirection:'row',alignItems:'center',flexWrap:'wrap',gap:6,marginTop:5},motto:{color:C.muted,fontSize:11,lineHeight:16,fontStyle:'italic',marginTop:5},chevron:{color:C.accent,fontSize:25,lineHeight:30},
  invite:{gap:8,paddingTop:10,borderTopWidth:1,borderColor:C.line},inviteActions:{flexDirection:'row',flexWrap:'wrap',gap:8},pendingLine:{paddingVertical:6,gap:3},
@@ -245,3 +231,23 @@ function styles(C:ThemeColors){return StyleSheet.create({
  tagRow:{flexDirection:'row',alignItems:'center',gap:8},tagInput:{flex:1,minWidth:0,letterSpacing:3,fontWeight:'800'},check:{minWidth:112,marginTop:6},
  policyList:{gap:8,marginTop:5},policyCard:{minHeight:64,flexDirection:'row',alignItems:'center',gap:12,padding:11,borderWidth:1,borderColor:C.line,borderRadius:10,backgroundColor:C.panel2},policySelected:{borderColor:C.selectionLine,backgroundColor:C.selection},radio:{width:18,height:18,borderRadius:9,borderWidth:2,borderColor:C.muted},radioSelected:{borderColor:C.accent,backgroundColor:C.accentSurface},
  });}
+
+/** Shared welcome presentation; this component does not read account data. */
+export function GuildDiscoveryWelcome({onFind,onCreate}:{onFind:()=>void;onCreate:()=>void}){
+ const C=useGameTheme(),s=useMemo(()=>styles(C),[C]);
+ return <>
+   <GuildBoardHero title="Find your people" subtitle="Forge alliances, take on Guild challenges, and grow together." compact/>
+   <Panel style={s.entryPanel}>
+    <View style={s.center}>
+     <Text style={s.centerText}>Discover a Guild that fits your playstyle, or build your own.</Text>
+    </View>
+    <GameButton compact title="Find a Guild" onPress={onFind}/>
+    <GameButton compact title="Create a Guild" tone="secondary" onPress={onCreate}/>
+    <View style={s.benefits}>
+     <Benefit icon="friends" label="Play alongside other adventurers" C={C}/>
+     <Benefit icon="quests" label="Work toward shared Guild rewards" C={C}/>
+     <Benefit icon="guild" label="Build a lasting Guild identity" C={C}/>
+    </View>
+   </Panel>
+ </>;
+}

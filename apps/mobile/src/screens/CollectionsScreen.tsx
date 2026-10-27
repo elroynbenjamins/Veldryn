@@ -16,27 +16,27 @@ import {profileIconCollection,selectProfileIcon} from '../core/profile-icons';
 import type {ClassId,GameState} from '../core/types';
 import {profileBackgroundPreviewById} from '../theme/profile-background-assets';
 import {profileBorderSourceById} from '../theme/profile-border-assets';
+import {petArtSource} from '../theme/pet-art';
 import {useGameTheme} from '../theme/ThemeContext';
 import {radii,typography,type ThemeColors} from '../theme/theme';
 
-type Category='profile_icon'|Exclude<CollectibleKind,'pet'>;
+type Category='profile_icon'|CollectibleKind;
 type Entry={id:string;kind:Category;name:string;source:string;group:string;owned:boolean;selected:boolean;description?:string;bonus?:string;art?:ImageSourcePropType};
-const categories:ReadonlyArray<{id:Category;label:string}>=[{id:'profile_icon',label:'Icons'},{id:'background',label:'Backgrounds'},{id:'border',label:'Borders'}];
+const categories:ReadonlyArray<{id:Category;label:string}>=[{id:'profile_icon',label:'Icons'},{id:'pet',label:'Pets'},{id:'background',label:'Backgrounds'},{id:'border',label:'Borders'}];
 const pct=(bps:number)=>(bps/100).toFixed(2)+'%';
 const entryKey=(row:Entry)=>row.id;
 
 export function CollectionsScreen({state,onChange,initialCategory='profile_icon'}:{state:GameState;onChange:(next:GameState)=>void;initialCategory?:Category|'pet'}){
  const language=useGameLanguage(),C=useGameTheme(),s=useMemo(()=>styles(C),[C]);
  const text=useCallback((value:string)=>companionContent(language,value),[language]);
- // Old links to the retired pet gallery land safely on the icon journal.
- const [category,setCategory]=useState<Category>(initialCategory==='pet'?'profile_icon':initialCategory);
+ const [category,setCategory]=useState<Category>(initialCategory);
  const [filter,setFilter]=useState<'all'|'owned'|'locked'>('all'),[query,setQuery]=useState(''),[source,setSource]=useState('All sources');
  const [detailId,setDetailId]=useState<string|null>(null),[width,setWidth]=useState(360),[showBonuses,setShowBonuses]=useState(false),[showSearch,setShowSearch]=useState(false),[showSources,setShowSources]=useState(false);
  const {fontScale}=useWindowDimensions();
  const classId=state.character?.classId??'IRONWARDEN';
  const rows:Entry[]=useMemo(()=>category==='profile_icon'?profileIconCollection(state).map(row=>({...row,kind:'profile_icon',owned:row.unlocked})):collectibleJournal(state).filter(row=>row.kind===category).map(row=>({
   ...row,kind:category,group:row.collectionGroup??'Collection',bonus:text(COLLECTIBLE_TARGET_LABELS[row.target])+' · '+pct(row.ownedBps)+' '+text('passive')+' / '+pct(row.activeBps)+' '+text('active'),
-  art:row.kind==='background'?profileBackgroundPreviewById.get(row.id)?.source:profileBorderSourceById.get(row.id),
+  art:row.kind==='background'?profileBackgroundPreviewById.get(row.id)?.source:row.kind==='border'?profileBorderSourceById.get(row.id):row.kind==='pet'?petArtSource(row.id):undefined,
  })),[category,state,text]);
  const owned=rows.filter(row=>row.owned).length,progress=rows.length?owned/rows.length:0;
  const groups=['All sources',...new Set(rows.map(row=>row.group))];
@@ -91,6 +91,7 @@ function JournalArtwork({row,classId,profileIconId,large=false,styles:s}:{row:En
  const background=BASE_PROFILE_BACKGROUNDS.find(bg=>bg.id===row.id);
  if(row.kind==='profile_icon')return <ProfileIcon id={row.id} classId={classId} size={large?180:54}/>;
  if(row.kind==='background'&&background)return <View style={large?s.largeImage:s.cardImage}><RegionArtwork regionId={background.region}/></View>;
+ if(row.kind==='pet'&&row.art)return <Image accessibilityLabel={row.name} source={row.art} resizeMode="contain" style={large?s.largeImage:s.cardImage}/>;
  if(row.art)return row.kind==='border'?<View style={large?s.frameLarge:s.frameSmall}><ProfileIcon id={profileIconId} classId={classId} size={large?120:38}/><ProfileFrameOverlay source={row.art}/></View>:<Image accessibilityLabel={row.name} source={row.art} resizeMode="cover" style={large?s.largeImage:s.cardImage}/>;
  return <View style={s.fallback}><Text style={s.fallbackMark}>◇</Text></View>;
 }

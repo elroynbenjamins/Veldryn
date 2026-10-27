@@ -32,6 +32,7 @@ const modules={
  '../core/collectibles':{collectibleJournal:()=>collectibles,collectionBonusBreakdown:()=>[],selectCollectible:(state,kind,id)=>({...state,character:{...state.character,[kind==='background'?'profileBackgroundId':'profileBorderId']:id}})},
  '../core/profile-icons':{profileIconCollection:profiles,selectProfileIcon:(state,id)=>({...state,character:{...state.character,profileIconId:id}})},
  '../theme/profile-background-assets':{profileBackgroundPreviewById:new Map()},'../theme/profile-border-assets':{profileBorderSourceById:new Map()},
+ '../theme/pet-art':{petArtSource:()=>undefined},
  '../core/live-events':{activeLiveEvent:state=>state.activeEvent?{definition:{visualKey:state.activeEvent}}:undefined},
  '../theme/ThemeContext':{useGameTheme:()=>colors},'../theme/theme':{radii:{md:10,lg:14},typography:{hero:{},title:{},caption:{},body:{},bodyStrong:{}}},
 };
@@ -51,7 +52,7 @@ const tap=async label=>{const target=press(label);assert.ok(target,label);await 
  await act(()=>{renderer=create(React.createElement(CollectionsScreen,{state,onChange:next=>{changed=next;state=next;update();}}));});
  assert.equal(list().props.numColumns,2);
  assert.deepEqual(list().props.data.map(row=>row.id),['class:IRONWARDEN','ranger','knight']);
- assert.ok(!press('Pets'));
+ assert.ok(press('Pets'),'Pets tab must be reachable from the Collections header');
  const originalList=list();
  await tap('Hooded Ranger, Owned');
  assert.equal(renderer.root.findByType('GameModalSurface').props.presentation,'sheet');
@@ -87,7 +88,7 @@ const tap=async label=>{const target=press(label);assert.ok(target,label);await 
  fontScale=1;state={...state,settings:{...state.settings,textScale:1.3}};await act(update);assert.equal(list().props.numColumns,1);
  await act(()=>renderer.unmount());
  await act(()=>{renderer=create(React.createElement(CollectionsScreen,{state,onChange:()=>{},initialCategory:'pet'}));});
- assert.equal(list().props.data[0].kind,'profile_icon','legacy pet route lands on icons');
+ assert.equal(list().props.data[0].kind,'pet','Pet category is a first-class tab');
  await act(()=>renderer.unmount());
  console.log('PASS: Collector journal filters, sheet lifecycle, equip guards, event visibility and responsive columns');
 })().catch(error=>{console.error(error);process.exitCode=1;});

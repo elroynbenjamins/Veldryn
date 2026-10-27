@@ -29,10 +29,15 @@ jobs:
         run: pnpm --dir apps/mobile install --frozen-lockfile
       - name: Test Q-Mode composition
         run: pnpm --dir backend test:coop-composition
-      - name: Test online backend
-        run: pnpm --dir backend test:online
+      - name: Typecheck online backend
+        run: pnpm --dir backend typecheck:online
       - name: Generate bundled online Edge Functions
         run: pnpm --dir backend build:online
+      - name: Test Q-Mode runtime and loadout integration
+        run: |
+          node backend/dist/online/backend/online/tests/qmode-runtime.js
+          node backend/dist/online/backend/online/tests/coop-entry.js
+          node backend/dist/online/backend/online/tests/coop-loadout.js
       - name: Commit generated co-op Edge Function only
         run: |
           git add -f backend/supabase/functions/coop/index.ts

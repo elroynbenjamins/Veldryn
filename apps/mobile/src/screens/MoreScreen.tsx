@@ -1,7 +1,9 @@
 import {RANKINGS_RELEASED} from '../core/release-flags';
+import {RateAppCard} from '../components/RateAppCard';
 import {accountText} from '../i18n/account';
 import {useMemo} from 'react';
 import {UiIcon} from '../components/UiIcon';
+import {TutorialBeacon} from '../components/TutorialBeacon';
 import {ThemedNavigationIcon} from '../components/ThemedNavigationIcon';
 import {Pressable,ScrollView,StyleSheet,Text,View,useWindowDimensions} from 'react-native';
 import {radii,spacing,typography,type ThemeColors} from '../theme/theme';
@@ -88,7 +90,7 @@ export function MoreScreen({language,onNavigate,onOpenAdminQa,onOpenUpdates,newR
   const attentionDestinations=attentionPriority.filter(id=>!!attentionLabel(id));
   const attentionTotal=(lockedReason('Quests')?0:storyRewardCount)+(lockedReason('Events')?0:eventRewardCount)+(lockedReason('Social')?0:socialAttentionCount)+(lockedReason('Friends')?0:friendRequestCount)+(lockedReason('Guild')?0:guildAttentionCount)+Number(!lockedReason('Companions')&&companionAttention)+Number(!lockedReason('DailySupplies')&&dailySuppliesAttention)+Number(profileAttention);
   return <ScrollView contentContainerStyle={s.root} showsVerticalScrollIndicator={false} showsHorizontalScrollIndicator={false}>
-    <View style={s.header}><View style={s.flex}><Text style={s.kicker}>{a("ACCOUNT HUB")}</Text><Text accessibilityRole="header" style={s.heading}>{a("Account")}</Text><Text style={s.sub}>{t(language,'more.intro')}</Text></View>{attentionTotal>0?<View style={s.headerAttention}><Text style={s.headerAttentionValue}>{attentionTotal>99?'99+':attentionTotal}</Text><Text style={s.headerAttentionLabel}>{a("NEEDS ATTENTION")}</Text></View>:<View style={s.headerClear}><Text style={s.headerClearText}>{a("CAUGHT UP")}</Text></View>}</View>
+    <TutorialBeacon id="more-shortcuts"><View style={s.header}><View style={s.flex}><Text style={s.kicker}>{a("ACCOUNT HUB")}</Text><Text accessibilityRole="header" style={s.heading}>{a("Account")}</Text><Text style={s.sub}>{t(language,'more.intro')}</Text></View>{attentionTotal>0?<View style={s.headerAttention}><Text style={s.headerAttentionValue}>{attentionTotal>99?'99+':attentionTotal}</Text><Text style={s.headerAttentionLabel}>{a("NEEDS ATTENTION")}</Text></View>:<View style={s.headerClear}><Text style={s.headerClearText}>{a("CAUGHT UP")}</Text></View>}</View></TutorialBeacon>
     {onOpenUpdates?<Pressable accessibilityRole="button" accessibilityLabel={a("What's New & Updates")} onPress={onOpenUpdates} style={({pressed})=>[s.releaseRow,pressed&&s.pressed]}>
       <UiIcon name="events" size={24}/><View style={s.flex}><Text style={s.title}>{a("What's New & Updates")}</Text><Text style={s.description}>{newReleaseAvailable?a("New release information available"):a("Release notes and app versions")}</Text></View>{newReleaseAvailable?<AttentionDot label={a("New update available")}/>:null}<UiIcon name="next" size={18}/>
     </Pressable>:null}
@@ -103,6 +105,7 @@ export function MoreScreen({language,onNavigate,onOpenAdminQa,onOpenUpdates,newR
     </View>)}
     {upcomingLocked.length?<View style={s.unlockAhead}><View style={s.unlockAheadHead}><View style={s.flex}><Text style={s.sectionLabel}>{a("UNLOCKS AHEAD")}</Text><Text style={s.unlockAheadMeta}>{a("More systems appear as the campaign teaches their prerequisites.")}</Text></View><View style={s.lockCount}><Text style={s.lockCountText}>{lockedItems.length}</Text></View></View>{upcomingLocked.map(id=>{const meta=itemMeta(language,id),reason=lockedReason(id);return <View key={id} style={s.unlockRow}><View style={s.unlockIcon}><ThemedNavigationIcon destination={iconForDestination(id)} size={25} muted/></View><View style={s.flex}><Text style={s.unlockTitle}>{meta.title}</Text><Text style={s.unlockReason}>{reason}</Text></View><Text style={s.unlockMark}>◆</Text></View>})}{lockedItems.length>upcomingLocked.length?<Text style={s.unlockMore}>{a('+{count} later systems stay hidden for now',{count:lockedItems.length-upcomingLocked.length})}</Text>:null}</View>:null}
     {onOpenAdminQa?<View style={s.section}><Text style={s.sectionLabel}>{a("DEVELOPER")}</Text><Pressable accessibilityRole="button" accessibilityLabel={a("Open Admin QA Console")} onPress={onOpenAdminQa} style={({pressed})=>[s.devCard,pressed&&s.pressed]}><ThemedNavigationIcon destination="Character" size={32}/><View style={s.devCopy}><Text style={s.title}>{a("Admin QA Console")}</Text><Text style={s.description}>{a("Full-content, crafting and dungeon test profile")}</Text></View><UiIcon name="next" size={18}/></Pressable></View>:null}
+    <RateAppCard language={language}/>
   </ScrollView>;
 }
 

@@ -7,13 +7,13 @@ import {navigationText} from '../i18n/navigation';
 
 export type FeedbackTone='success'|'info'|'warning'|'error';
 
-export function ActionFeedback({message,tone='success',reduceMotion=true,compact=false,actionLabel,onAction}:{message:string;tone?:FeedbackTone;reduceMotion?:boolean;compact?:boolean;actionLabel?:string;onAction?:()=>void}){
+export function ActionFeedback({message,tone='success',reduceMotion=true,compact=false,actionLabel,onAction,accentColor,accentSurface}:{message:string;tone?:FeedbackTone;reduceMotion?:boolean;compact?:boolean;actionLabel?:string;onAction?:()=>void;accentColor?:string;accentSurface?:string}){
  const language=useGameLanguage(),tr=(text:string)=>navigationText(language,text);
  const C=useGameTheme(),s=useMemo(()=>makeStyles(C),[C]),{width,fontScale}=useWindowDimensions(),stackAction=!!actionLabel&&!!onAction&&(width<360||fontScale>=1.25);
  const enter=useRef(new Animated.Value(1)).current;
  useEffect(()=>{enter.stopAnimation();if(reduceMotion){enter.setValue(1);return;}enter.setValue(0);const animation=Animated.spring(enter,{toValue:1,damping:18,stiffness:220,mass:.7,useNativeDriver:true});animation.start();return()=>animation.stop();},[message,tone,reduceMotion,enter]);
- const color=tone==='error'?C.bad:tone==='warning'?C.warning:tone==='info'?C.info:C.good;
- const surface=tone==='error'?C.badSurface:tone==='warning'?C.warningSurface:tone==='info'?C.infoSurface:C.goodSurface;
+ const color=accentColor??(tone==='error'?C.bad:tone==='warning'?C.warning:tone==='info'?C.info:C.good);
+ const surface=accentSurface??(tone==='error'?C.badSurface:tone==='warning'?C.warningSurface:tone==='info'?C.infoSurface:C.goodSurface);
  const mark=tone==='error'?'!':tone==='warning'?'!':tone==='info'?'i':'✓';
  return <Animated.View accessibilityLiveRegion={tone==='error'?'assertive':'polite'} style={[s.root,compact&&s.compact,stackAction&&s.rootStack,{borderColor:color,backgroundColor:surface,opacity:enter,transform:[{translateY:enter.interpolate({inputRange:[0,1],outputRange:[5,0]})},{scale:enter.interpolate({inputRange:[0,1],outputRange:[.985,1]})}]}]}>
    <View style={s.copyRow}><View style={[s.mark,{borderColor:color}]}><Text style={[s.markText,{color}]}>{mark}</Text></View><Text accessibilityRole={tone==='error'?'alert':undefined} style={[s.text,{color:tone==='error'?C.text:color}]}>{message}</Text></View>

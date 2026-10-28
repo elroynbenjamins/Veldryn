@@ -32,12 +32,17 @@ const modal=fs.readFileSync('src/components/EquipmentEnhancementModal.tsx','utf8
 ok(modal.includes('GEM SOCKETED')&&modal.includes('GEM REPLACED')&&modal.includes('GEM EXTRACTED'),'gem actions need distinct committed result moments');
 ok(modal.includes('Returned safely to Inventory.'),'extraction result must tell the player where the gem went');
 ok(modal.includes('Previous gem returned safely.'),'replacement result must explain that the old gem was preserved');
-ok(modal.includes('CONFIRM GEM REPLACEMENT')&&modal.includes('CONFIRM SAFE EXTRACTION'),'paid/destructive gem changes must require a confirmation step');
-ok(modal.includes('Cost ·')&&modal.includes('Gem Dust'),'gem confirmation must show the exact extraction/replacement cost currencies');
+ok(modal.includes('gt("Replace gem?")')&&modal.includes('gt("Extract gem?")')&&modal.includes('pendingGemAction'),'gem replacement/extraction must require a clear confirmation step');
+ok(modal.includes('gemUnsocketCostForStateV1')&&modal.includes('fee.gold')&&modal.includes('fee.dust')&&modal.includes('Gem Dust'),'gem confirmation must show the precise extraction/replacement cost');
+ok(modal.includes('canAffordFee')&&modal.includes('disabled={!canAffordFee}'),'unaffordable gem extraction/replacement must not be submitted');
+ok(modal.includes('setPendingGemAction(null)})'),'successful gem replacement/extraction should dismiss its confirmation');
 ok(modal.includes('gemResultDetail(state,current.id)} → {gemResultDetail(state,next.id)'),'replacement confirmation must compare current and new effects before spending');
 ok(modal.includes("setPendingGemAction({kind:'replace'"),'replacement buttons must stage confirmation instead of spending immediately');
 ok(modal.includes("setPendingGemAction({kind:'extract'"),'extraction buttons must stage confirmation instead of spending immediately');
 ok(modal.includes(":void run(()=>onSocket(gem.id))"),'socketing into an empty slot should remain a fast one-tap action');
+ok(modal.includes('style={s.socketSelect}')&&modal.includes('socketSelectionMark'),'socket selection must use a distinct selectable surface from the extract button');
+ok(modal.includes('socketState.statGemId===gem.id')&&modal.includes('socketState.effectGemId===gem.id'),'already equipped gem variants should not create redundant replacements');
+ok(modal.includes('showAllCandidates'),'players must be able to expand the owned gem shortlist');
 ok(modal.includes('reduceMotion'),'gem result motion must respect Reduce Motion');
 
 console.log('PASS gem socket UX distinguishes committed changes and confirms paid replacement/extraction');

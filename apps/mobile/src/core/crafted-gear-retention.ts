@@ -1,5 +1,5 @@
 import type {CraftedGearInstance} from './types';
-import {TARGET_CRAFTED_GEAR_COPIES_PER_ITEM} from './crafted-gear-instances';
+import {TARGET_CRAFTED_GEAR_COPIES_PER_ITEM,craftedGearQualityMultiplier} from './crafted-gear-instances';
 import {rarityMeta} from './item-rarity';
 
 /**
@@ -35,8 +35,7 @@ export type CraftedGearRetentionDecision=
 /** Base rarity and quality both matter; a higher tier dominates the <=10% quality spread. */
 export function craftedGearRetentionPower(instance:CraftedGearInstance){
   if(instance.quality===undefined||!Number.isInteger(instance.quality)||instance.quality<1||instance.quality>100)throw new Error('Unrolled crafted quality');
-  const quality=.95+(instance.quality-1)/99*.1;
-  return rarityMeta(instance.rarity).statMultiplier*quality;
+  return rarityMeta(instance.rarity).statMultiplier*craftedGearQualityMultiplier(instance.quality);
 }
 
 export function compareCraftedGearRetentionPower(a:CraftedGearInstance,b:CraftedGearInstance){

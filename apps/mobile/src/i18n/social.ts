@@ -6,6 +6,7 @@ import {createTranslator,type TranslationParams} from './translator';
 
 // Columns are German, Spanish, Dutch, Italian and French; keys are the English catalog.
 export const socialTranslationRows = {
+ "LIVE COMBAT": ["LIVE-KAMPF","COMBATE EN VIVO","LIVE GEVECHT","COMBATTIMENTO LIVE","COMBAT EN DIRECT"],
  "Watch": ["Ansehen","Ver","Bekijken","Guarda","Voir"],
  "GUILD RAID": ["GILDENRAID","ASALTO DEL GREMIO","GILDERAID","INCURSIONE DI GILDA","RAID DE GUILDE"],
  "Three-minute server-authoritative raid": ["Dreiminütiger Raid mit Serverberechnung","Incursión de tres minutos resuelta por el servidor","Raid van drie minuten, berekend door de server","Incursione di tre minuti gestita dal server","Raid de trois minutes résolu par le serveur"],

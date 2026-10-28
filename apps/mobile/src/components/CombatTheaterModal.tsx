@@ -47,7 +47,7 @@ export function CombatTheaterModal({visible,onClose,title,eyebrow,subtitle,reduc
 
 function styles(C:ThemeColors){return StyleSheet.create({
  root:{flex:1,backgroundColor:C.bg},
- ambient:{...StyleSheet.absoluteFillObject,overflow:'hidden',alignItems:'center',justifyContent:'center'},
+ ambient:{...StyleSheet.absoluteFill,overflow:'hidden',alignItems:'center',justifyContent:'center'},
  halo:{width:310,height:310,borderRadius:160,borderWidth:56,borderColor:C.accent,backgroundColor:C.infoSurface},
  header:{flexDirection:'row',alignItems:'center',gap:10,paddingHorizontal:16,paddingBottom:12,borderBottomWidth:1,borderColor:C.line,backgroundColor:C.panel},
  heading:{flex:1,minWidth:0,gap:3},eyebrow:{fontSize:10,lineHeight:14,letterSpacing:1.2,fontWeight:'900',color:C.accent},

@@ -28,6 +28,10 @@ Show the next usable action, current result/reward/cost and any blocking require
 | Sanctuary facilities | Keep compact expandable cards; details/cost/action stay one tap away | Players can scan upgrades without full descriptions on every card |
 | Mission selector chevron | Replace Unicode arrows with two native border strokes and rotation | Reliable rendering in Android themes/fonts |
 
+## Companion onboarding consistency
+
+The six existing tutorial step identities and persisted progress format remain unchanged (no forced replay, no reset/migration). The read-only preview now follows the step: Roster, optional owned-companion Training detail, Sanctuary, Trials, Expeditions and secondary Codex, rather than always showing the Roster. Personalized status and advanced hints are inside the existing **More detail** disclosure; the repeated preview instructions are removed. A starter without owned companions sees Roster instead of a nonfunctional Training action.
+
 ## Unchanged invariants
 
 Authoritative `onCommand` calls for level/ascend/equip/Trial start/floor/replay/Expedition send/claim/upgrade, server eligibility and resources are not modified. No new currencies, tabs, backend migrations, account save changes or auto-spending. Existing localizations are reused.
@@ -35,7 +39,7 @@ Authoritative `onCommand` calls for level/ascend/equip/Trial start/floor/replay/
 ## Validation
 
 - Direct source review: **12/12** focused invariants pass against this branch.
-- Added **19** CJS source-contract assertions in `apps/mobile/tests/companion-simplicity-ui-contract.cjs` and registered them in `tools/mobile-core-tests.json`. Their execution via normal GitHub CI may be blocked by the pre-existing `starter-companion-choice.ts` mismatch; do not claim success without a completed run.
+- Added **24** CJS source-contract assertions in `apps/mobile/tests/companion-simplicity-ui-contract.cjs` and registered them in `tools/mobile-core-tests.json`. Their execution via normal GitHub CI may be blocked by the pre-existing `starter-companion-choice.ts` mismatch; do not claim success without a completed run.
 - CI mobile TypeScript and Android native UX are release gates, not assumed. Test 320dp and enlarged font, accessibility focus, Guild/Party unlock edge cases, mission costs, Trial monthly rollover, loading and server errors.
 - PR remains **draft** and stacked on #619. No merge/deployment.
 

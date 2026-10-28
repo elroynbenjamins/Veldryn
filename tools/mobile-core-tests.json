@@ -178,6 +178,8 @@
   ".core-build/apps/mobile/tests/guild-tags-v53.js",
   ".core-build/apps/mobile/tests/navigation-notifications-v51.js",
   ".core-build/apps/mobile/tests/actionable-claims-modal-ui-contract.js",
+  ".core-build/apps/mobile/tests/guild-chat-message-safety.js",
+  "../../tools/validate-guild-chat-error-boundary.cjs",
   ".core-build/apps/mobile/tests/chat-mentions.js",
   ".core-build/apps/mobile/tests/identity-names.js",
   ".core-build/apps/mobile/tests/profile-theme-ui-contract.js",

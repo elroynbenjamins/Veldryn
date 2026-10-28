@@ -1,5 +1,5 @@
 import type {CraftedGearInstance} from './types';
-import {TARGET_CRAFTED_GEAR_COPIES_PER_ITEM,craftedGearQualityMultiplier} from './crafted-gear-instances';
+import {TARGET_CRAFTED_GEAR_COPIES_PER_ITEM,craftedGearQualityMultiplier,isValidCraftedGearQuality} from './crafted-gear-instances';
 import {rarityMeta} from './item-rarity';
 
 /**
@@ -32,9 +32,9 @@ export type CraftedGearRetentionDecision=
   |{action:'sell_existing';reason:'replace_weaker_unprotected';instanceId:string}
   |{action:'manual_review';reason:'disabled'|'over_limit'|'inconsistent_instances'|'legacy_unknown_quality'|'incoming_protected'|'no_eligible_copy'};
 
-/** Base rarity and quality both matter; a higher tier dominates the <=10% quality spread. */
+/** Compare actual rarity-adjusted stat power; the full ±25% quality spread can outweigh some rarity differences. */
 export function craftedGearRetentionPower(instance:CraftedGearInstance){
-  if(instance.quality===undefined||!Number.isInteger(instance.quality)||instance.quality<1||instance.quality>100)throw new Error('Unrolled crafted quality');
+  if(!isValidCraftedGearQuality(instance.quality))throw new Error('Unrolled crafted quality');
   return rarityMeta(instance.rarity).statMultiplier*craftedGearQualityMultiplier(instance.quality);
 }
 
@@ -74,7 +74,7 @@ export function planCraftedGearRetention(
   // a quality ranking before the item reaches its seven-copy pool limit.
   if(existing.length<TARGET_CRAFTED_GEAR_COPIES_PER_ITEM)return {action:'keep',reason:'under_limit'};
   if(mode==='off')return {action:'manual_review',reason:'disabled'};
-  const validQuality=(quality:number|undefined)=>quality!==undefined&&Number.isInteger(quality)&&quality>=1&&quality<=100;
+  const validQuality=isValidCraftedGearQuality;
   if(existing.some(row=>!validQuality(row.instance.quality))||!validQuality(incoming.quality))
     return {action:'manual_review',reason:'legacy_unknown_quality'};
   // Newly minted gear has not entered any storage location; inspect its actual

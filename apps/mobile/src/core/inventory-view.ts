@@ -12,6 +12,12 @@ export function toggleInventoryFavorite(state:GameState,itemId:string):GameState
   if(favorites.has(itemId))favorites.delete(itemId);else favorites.add(itemId);
   return {...state,settings:{...state.settings,favoriteItemIds:[...favorites].slice(-100)}};
 }
+export function inventoryLockedIds(state:GameState){return state.settings.lockedItemIds??[]}
+export function toggleInventoryLock(state:GameState,itemId:string):GameState{
+  const locks=new Set(inventoryLockedIds(state));
+  if(locks.has(itemId))locks.delete(itemId);else locks.add(itemId);
+  return {...state,settings:{...state.settings,lockedItemIds:[...locks].slice(-100)}};
+}
 export function inventorySeenItemIds(state:GameState){return state.settings.seenItemIds??[]}
 export function inventoryNewItemIds(state:GameState){
   const seen=new Set(inventorySeenItemIds(state)),ids=[...state.inventory.stacks,...state.bank.stacks].filter(stack=>stack.quantity>0).map(stack=>stack.itemId);

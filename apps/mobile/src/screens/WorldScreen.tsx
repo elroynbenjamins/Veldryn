@@ -65,6 +65,16 @@ export function WorldScreen({state,onTravel,onOpenCombat,onOpenSkills,onCoop,dun
   ] as const;
   const frostmarchCards=frostmarchCardsV21(level),frostmarchZones=frostmarchCards.zones,frostmarchDungeons=frostmarchCards.dungeons;
   const frostmarchProgress=serverFrostmarchProgress??frostmarchProgressFromState(state);
+  // Dungeons have their own scrolling and heading; don't nest them in Regions.
+  if(topTab==='dungeon'&&dungeonContent)return <View style={{flex:1,backgroundColor:C.bg}}>
+    <View style={{paddingHorizontal:spacing.lg,paddingTop:spacing.sm,paddingBottom:spacing.xs}}>
+      <View accessibilityRole="tablist" style={s.topTabs}>
+        <Pressable accessibilityRole="tab" accessibilityState={{selected:false}} style={s.topTab} onPress={()=>setTopTab('region')}><Text style={s.topTabText}>{t("Current Region")}</Text></Pressable>
+        <Pressable accessibilityRole="tab" accessibilityState={{selected:true}} style={[s.topTab,s.topTabActive]} onPress={()=>setTopTab('dungeon')}><Text style={[s.topTabText,s.topTabTextActive]}>{t("Dungeon")}</Text></Pressable>
+      </View>
+    </View>
+    <View style={{flex:1,minHeight:0}}>{dungeonContent}</View>
+  </View>;
   return <ScrollView contentContainerStyle={s.root} showsVerticalScrollIndicator={false} showsHorizontalScrollIndicator={false}>
     <Text style={s.kicker}>{t("TRAVEL")}</Text>
     <Text accessibilityRole="header" style={s.h}>{t("World Regions")}</Text>

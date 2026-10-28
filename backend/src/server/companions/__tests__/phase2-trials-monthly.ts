@@ -3,6 +3,9 @@ import {applyCompanionTrialModifiers,applyCompanionTrialStageMatchups,buildCompa
 import {companionTrialResetInfo,companionTrialSeasonKey,createCompanionTrialProgress,rolloverCompanionTrialSeason} from '../trial-season';
 import {projectCompanionTrial} from '../projection';
 import {buildOwnedCompanionCombatant} from '../combat-adapter';
+import {companionTrialMonthlyHazard} from '../../../shared/companion-trial-monthly-hazards';
+import {simulateCombat} from '../../combat/engine';
+import type {CombatantDefinition} from '../../combat/types';
 import {companionTrialStageTeamMatchup,companionTrialStageMatchup,COMPANION_TRIAL_STAGE_OFFENSE_MULTIPLIER,COMPANION_TRIAL_STAGE_GUARD_MULTIPLIER} from '../../../shared/companion-trial-stage-matchups';
 import type {CompanionCombatExecutor,CompanionTrialProgress,OwnedCompanionSnapshot} from '../domain';
 const ok=(v:unknown,m:string)=>{if(!v)throw new Error(m)};const eq=(a:unknown,b:unknown,m:string)=>{if(a!==b)throw new Error(`${m}: expected ${String(b)}, got ${String(a)}`)};const throws=(f:()=>unknown,m:string)=>{let did=false;try{f()}catch{did=true}if(!did)throw new Error(m)};
@@ -92,6 +95,37 @@ const matchedResult=startCompanionTrial({owned,busyCompanionIds:busy,trialsUnloc
 resolveCompanionTrialFloor({progress:matchedResult.progress,owned,busyCompanionIds:busy,trialsUnlocked:true,serverNowMs:sep},matchedResult.run.runId,{
  simulate(input){ok(input.players.some(p=>p.tags?.includes('trial_matchup:offense'))&&input.players.some(p=>p.tags?.includes('trial_matchup:guard')),'Real trial executor did not receive matchup stats');return {victory:true,durationMs:30000,reason:'victory',players:input.players.map(p=>({definition:{id:p.id},alive:true}))};}
 });
+
+// Monthly hazards rotate by UTC season, while the permanent regional affinity
+// counterpick remains stable across all three months.
+eq(companionTrialMonthlyHazard('2026-10').id,'venom_bloom','October poison hazard');
+eq(companionTrialMonthlyHazard('2026-11').id,'shatterstorm','November shield pressure');
+eq(companionTrialMonthlyHazard('2026-12').id,'ritual_surge','December interruptible ritual');
+eq(companionTrialMonthlyHazard('2027-01').id,'venom_bloom','Year rollover should not break monthly rotation');
+eq(companionTrialStageMatchup(1).attackAffinity,'wild','Monthly hazard must not replace regional matchup');
+ok(buildCompanionTrialEncounter(1,'2026-10').some(e=>e.abilities.some(a=>a.id==='TRIAL_VENOM_BLOOM'&&a.interruptible&&a.effects.some(f=>f.kind==='dot'&&f.damageType==='true'))),'October must schedule a castable, shield-piercing poison');
+ok(companionTrialFloorDefinition(1,'2026-11').modifiers.includes('shatterstorm'),'November should actually weaken shields');
+ok(buildCompanionTrialEncounter(5,'2026-12')[0].abilities.some(a=>a.id==='TRIAL_RITUAL_SURGE'&&a.interruptible),'December boss must channel an interruptible ritual');
+const dawn=buildOwnedCompanionCombatant(owned.UNIT_008,{mode:'companion_trial'}),wisp=buildOwnedCompanionCombatant({...p('UNIT_005'),companionId:'UNIT_005'},{mode:'companion_trial'});
+ok(dawn.abilities[0].effects.some(f=>f.kind==='cleanse'),'Dawnwing must have a real poison removal effect in Trials');
+eq(dawn.abilities[0].aiCondition,'ally_below_50_or_dot','Dawnwing should react to poison before half HP');
+eq(wisp.abilities[0].target,'interruptible_casting_enemy','Lantern Wisp must target active casts');
+eq(wisp.abilities[0].aiCondition,'target_casting','Lantern Wisp should save its interrupt for actual cast windows');
+
+// Combat engine integration: poison ticks directly remove HP even while a
+// substantial shield remains; a real cleanse removes pending future ticks.
+const stats={maxHp:300,attackPower:0,healingPower:80,defense:30,accuracy:1000,evasion:0,critChance:0,critMultiplier:1.5,haste:0};
+const barrier:CombatantDefinition={id:'TRIAL_BARRIER',name:'Barrier',team:'players',role:'tank',level:1,stats,basicAttackMs:999999,basicAttackCoeff:0,abilities:[{id:'BARRIER',name:'Barrier',cooldownMs:999999,castTimeMs:0,target:'self',effects:[{kind:'shield',flat:500}],priority:100}]};
+const toxin:CombatantDefinition={id:'TRIAL_TOXIN',name:'Toxin',team:'enemies',role:'enemy',level:1,stats:{...stats,attackPower:30,healingPower:0},basicAttackMs:999999,basicAttackCoeff:0,abilities:[{id:'TRIAL_VENOM_BLOOM',name:'Venom Bloom',cooldownMs:999999,castTimeMs:0,target:'all_enemies',effects:[{kind:'dot',coeff:.25,durationMs:8000,tickMs:1000,damageType:'true',tag:'poison'}],priority:100}]};
+const poisoned=simulateCombat({seed:'VENOM_BYPASS',players:[barrier],enemies:[toxin],tickMs:100,maxDurationMs:4500,mitigationConstant:100});
+ok(poisoned.events.some(e=>e.type==='dot_tick'&&(e.amount??0)>0),'Poison must actually tick');
+ok(poisoned.players[0].hp<300,'Poison must reduce HP despite shields');
+eq(poisoned.players[0].shield,500,'True poison ticks must not consume the protective shield');
+const cleanser:CombatantDefinition={...barrier,id:'TRIAL_CLEANSER',name:'Cleanser',role:'support',abilities:[{id:'CLEANSE',name:'Cleanse',cooldownMs:999999,castTimeMs:0,target:'all_allies',effects:[{kind:'cleanse'}],priority:100,aiCondition:'ally_below_50_or_dot'}]};
+const cured=simulateCombat({seed:'VENOM_BYPASS',players:[barrier,cleanser],enemies:[toxin],tickMs:100,maxDurationMs:4500,mitigationConstant:100});
+ok(cured.events.some(e=>e.type==='status_remove'&&e.statusTag==='poison'),'Cleanse must remove an actual poison status');
+eq(cured.events.filter(e=>e.type==='dot_tick').length,0,'Cleanse before the first tick must prevent subsequent poison damage');
+eq(cured.players[0].hp,300,'Cleansed ally must retain HP');
 
 // Optional rarity restrictions preserve lower-rarity relevance and reject an invalid Prestige lineup.
 startCompanionTrial({owned,busyCompanionIds:busy,trialsUnlocked:true,serverNowMs:sep},['UNIT_001','UNIT_002','UNIT_003'],'LOW_RARITY',[{type:'max_rarity',rarities:['standard','rare']}]);throws(()=>startCompanionTrial({owned,busyCompanionIds:busy,trialsUnlocked:true,serverNowMs:sep},['UNIT_001','UNIT_002','UNIT_012'],'PRESTIGE_BLOCK',[{type:'prohibit_rarity',rarity:'prestige'}]),'No-Prestige restriction accepted Prestige companion');

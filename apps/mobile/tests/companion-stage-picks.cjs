@@ -1,0 +1,25 @@
+const fs=require('node:fs');
+const assert=require('node:assert/strict');
+const read=path=>fs.readFileSync(path,'utf8');
+const shared=read('../../backend/src/shared/companion-trial-stage-matchups.ts');
+const server=read('../../backend/src/server/companions/trials.ts');
+const runtime=read('src/core/companion-runtime.ts');
+const trials=read('src/components/CombatCompanionPanel.tsx');
+const expedition=read('src/components/CompanionExpeditionsV50Panel.tsx');
+const assignments=read('../../backend/src/server/companions/assignments.ts');
+
+for(const stage of ['asterfall','sunscar','frostmarch','ashlands','rift','apex'])assert.ok(shared.includes("id:'"+stage+"'"),'Missing matchup for '+stage);
+assert.ok(shared.includes("Math.floor((Math.max(1,safe)-1)/5)"),'Matchups must rotate on five-floor boundaries');
+assert.ok(shared.includes("COMPANION_TRIAL_STAGE_OFFENSE_MULTIPLIER=1.065")&&shared.includes("COMPANION_TRIAL_STAGE_GUARD_MULTIPLIER=1.06"),'Stat bonuses must stay bounded');
+assert.ok(shared.includes("COMPANION_TRIAL_STAGE_PAIR_HASTE_BONUS=.02"),'Dual-affinity synergy must stay modest');
+assert.ok(server.includes('applyCompanionTrialStageMatchups(modified.players,run.currentFloor)'), 'Server executor must apply matchup after season modifiers');
+assert.ok(server.includes('players:matchedPlayers,enemies:modified.enemies'), 'Real simulation must receive stat-adjusted players, unchanged enemies');
+assert.ok(server.includes("trial_matchup:pair"),'Combatant should be tagged when it benefits from pair');
+assert.ok(!shared.includes('companionEssence')&&!shared.includes('reward'), 'Stage synergy must not affect reward calculation');
+assert.ok(runtime.includes('recommendedCompanionTrialStageTeam')&&runtime.includes('validateCompanionTrialTeam({companionIds:ids,owned})'), 'Stage team recommendation must preserve legal roles and ownership');
+assert.ok(runtime.includes('check.power*multiplier'), 'Stage advice must account for baseline power rather than just affinity');
+assert.ok(trials.includes('companionTrialStageTeamMatchup(')&&trials.includes('Use stage-fit team'), 'UI should show and apply stage-fit formations');
+assert.ok(trials.includes('trialSuggestion.targetChallenge'), 'Monthly challenge team suggestion must stay present');
+assert.ok(expedition.includes('Projected grade {value0}')&&expedition.includes('check.bonusRequirementMet'), 'Expedition team grade and mission-specific bonus must be visible before dispatch');
+assert.ok(assignments.includes('predictedCompanionMissionGrade')&&assignments.includes('missionBonusSatisfied'), 'Expedition forecast must use actual server rules');
+console.log('PASS stage matchups affect the server simulation and expedition bonuses are explained before team selection');

@@ -97,19 +97,16 @@ export function SettingsScreen({state,onLanguage,onReset,onChange,onRefreshComme
     {!phone&&<ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={s.tabs} showsVerticalScrollIndicator={false}>{sections.map(value=><SettingChip key={value} label={sectionLabel(value)} selected={section===value} onPress={()=>setSection(value)}/>)}</ScrollView>}
     {section&&<Text style={[s.sectionHint,{color:theme.info}]}>{sectionDescription(section)}</Text>}
 
-    {section==='appearance'&&<><Panel><Text style={[s.title,{color:theme.text}]}>{a("Interface theme")}</Text><Text style={[s.sub,{color:theme.muted}]}>{a("Switch the full interface while keeping progression, danger, success, rarity and event colors semantically consistent.")}</Text><View style={s.themeList}>{(['obsidian','ember','ivory'] as const).map(id=><ThemeChoice language={language} key={id} id={id} selected={(state.settings.uiTheme??'obsidian')===id} onPress={()=>update({uiTheme:id})}/>)}</View></Panel><Panel><Text style={[s.title,{color:theme.text}]}>{a("Color roles")}</Text><Text style={[s.sub,{color:theme.muted}]}>{a("Accent colors mark actions and selection. Green means success, amber caution, red danger, and violet special or premium content.")}</Text></Panel></>}
+    {section==='appearance'&&<Panel><Text style={[s.title,{color:theme.text}]}>{a("Interface theme")}</Text><View style={s.themeList}>{(['obsidian','ember','ivory'] as const).map(id=><ThemeChoice language={language} key={id} id={id} selected={(state.settings.uiTheme??'obsidian')===id} onPress={()=>update({uiTheme:id})}/>)}</View></Panel>}
     {section==='guide'&&<GameGuidePanel state={state} onStartTour={onStartMainScreenTour} onOpen={id=>{onChange(acknowledgeGameGuide(state,id,true));setGuideId(id)}}/>}
     {section==='account'&&<><Panel>
-      <Text style={[s.title,{color:theme.text}]}>{t(state.settings.language,'settings.account')}</Text>
       <Text style={[s.sub,{color:theme.muted}]}>{a('Character: {name} · {save}',{name:state.character?.name??a('Not created yet'),save:a(online?'Online save':'Local save')})}</Text>
       <Text style={[s.muted,{color:theme.muted}]}>{online?a("Your progress is saved after every successful action."):a("Local progress is kept separately from online characters.")}</Text>
     </Panel>
     <OnlineAccountPanel state={state}/></>}
-    {section==='store'&&<><Panel><Text style={[s.title,{color:theme.text}]}>{a('Store')}</Text><Text style={[s.sub,{color:theme.muted}]}>{a('Manage account-wide purchases and restore Google Play entitlements.')}</Text></Panel><GooglePlayCommercePanel state={state} online={online} onChange={onChange} onRefreshCommerce={onRefreshCommerce}/><RedeemCodePanel language={language} onRedeemCode={onRedeemCode}/></>}
+    {section==='store'&&<><GooglePlayCommercePanel state={state} online={online} onChange={onChange} onRefreshCommerce={onRefreshCommerce}/><RedeemCodePanel language={language} onRedeemCode={onRedeemCode}/></>}
     {section==='gameplay'&&<><Panel>
-      <Text style={[s.title,{color:theme.text}]}>{t(state.settings.language,'settings.gameplay')}</Text>
-      <Text style={[s.sub,{color:theme.muted}]}>{a("Activities continue while closed up to your current AFK reserve.")}</Text>
-      <View style={s.afkBox}><View style={s.afkHead}><Text style={[s.settingLabel,{color:theme.text,marginTop:0}]}>{a("AFK reserve")}</Text><Text style={[s.afkValue,{color:theme.good}]}>{accountDuration(language,afk.hours*3600)}</Text></View><Text style={[s.muted,{color:theme.muted}]}>{a('{base}h base · up to {free}h through progression · {max}h maximum',{base:afk.baseHours,free:afk.freeMaxHours,max:afk.maxHours})}</Text><Text style={[s.muted,{color:theme.muted}]}>{a("Earned milestones include class, quest, boss, guild and character-slot progression through slot #5.")}</Text><Text style={[s.afkPaid,{color:theme.info}]}>{a("Final +6h: VIP +2h · VIP+ +2h extra · Supporter +2h")}</Text></View>
+      <View style={s.afkBox}><View style={s.afkHead}><Text style={[s.settingLabel,{color:theme.text,marginTop:0}]}>{a("AFK reserve")}</Text><Text style={[s.afkValue,{color:theme.good}]}>{accountDuration(language,afk.hours*3600)}</Text></View><Pressable accessibilityRole="button" accessibilityState={{expanded:showAfkDetails}} onPress={()=>setShowAfkDetails(value=>!value)} style={({pressed})=>[s.disclosure,pressed&&s.pressed]}><Text style={s.disclosureLabel}>{a("AFK details")}</Text><View style={showAfkDetails?s.disclosureArrowOpen:undefined}><UiIcon name="next" size={18} muted/></View></Pressable>{showAfkDetails?<View style={s.detailStack}><Text style={[s.muted,{color:theme.muted}]}>{a('{base}h base · up to {free}h through progression · {max}h maximum',{base:afk.baseHours,free:afk.freeMaxHours,max:afk.maxHours})}</Text><Text style={[s.muted,{color:theme.muted}]}>{a("Earned milestones include class, quest, boss, guild and character-slot progression through slot #5.")}</Text><Text style={[s.afkPaid,{color:theme.info}]}>{a("Final +6h: VIP +2h · VIP+ +2h extra · Supporter +2h")}</Text></View>:null}</View>
       <Text style={[s.settingLabel,{color:theme.text}]}>{a("Number display")}</Text><View style={s.choices}>{(['abbreviated','exact'] as const).map(mode=><SettingChip key={mode} label={mode==='abbreviated'?a("Abbreviated · 1.2K"):a("Exact · 1,200")} selected={state.settings.numberMode===mode} onPress={()=>update({numberMode:mode})}/>)}</View>
       <Text style={[s.settingLabel,{color:theme.text}]}>{a("Auto-eat threshold")}</Text><Text style={[s.sub,{color:theme.muted}]}>{a("Eat equipped food when HP falls below the selected level.")}</Text><View style={s.choices}>{([20,40,60,80] as const).map(threshold=><SettingChip key={threshold} label={a('{percent}% HP',{percent:threshold})} selected={state.settings.autoEatThresholdPct===threshold} onPress={()=>update({autoEatThresholdPct:threshold})}/>)}</View>
       <SettingToggle language={language} label={a("Stop combat when out of food")} value={state.settings.stopCombatWhenOutOfFood} onValueChange={value=>update({stopCombatWhenOutOfFood:value})}/>
@@ -133,12 +130,7 @@ export function SettingsScreen({state,onLanguage,onReset,onChange,onRefreshComme
       </Pressable>
       {showEmotes?<View style={s.detailStack}><ChatEmotePicker settingsMode unlockedIds={state.account.unlockedEmoteIds} trayIds={state.settings.chatEmoteTrayIds} bodyPresentation={state.character?.bodyPresentation} onPick={()=>{}} onTrayChange={chatEmoteTrayIds=>update({chatEmoteTrayIds})}/></View>:null}
     </Panel></>}
-    {section==='accessibility'&&<><Panel>
-      <Text style={[s.title,{color:theme.text}]}>{t(state.settings.language,'settings.notifications')}</Text>
-      <Text style={[s.sub,{color:theme.muted}]}>{a("Completion, inventory-full and quest-reset reminders.")}</Text>
-      <Text style={[s.muted,{color:theme.muted}]}>{a("Push notifications are not connected in this offline build.")}</Text>
-      <GameButton title={a("Notification preferences (coming soon)")} tone="secondary" onPress={()=>{}} disabled/>
-    </Panel>
+    {section==='accessibility'&&<>
     <Panel>
       <Text style={[s.title,{color:theme.text}]}>{t(state.settings.language,'settings.accessibility')}</Text>
       <Text style={[s.sub,{color:theme.muted}]}>{a("Text scaling follows your device accessibility setting. Reduced motion disables repeating combat and progress effects.")}</Text>
@@ -161,12 +153,12 @@ export function SettingsScreen({state,onLanguage,onReset,onChange,onRefreshComme
       {!online&&<GameButton title={a("Delete local save")} tone="danger" onPress={onReset}/>}
     </Panel></>}
     {section==='developer'&&__DEV__&&!online&&<DeveloperTools state={state} onChange={onChange} onOpenCoopUiGallery={onOpenCoopUiGallery}/>}
-    <View style={s.footerLinks}>{onOpenUpdates?<GameButton compact title={a("What's New & Updates")} tone="secondary" onPress={onOpenUpdates}/>:null}<GameButton compact title={a("Privacy Policy")} tone="secondary" onPress={()=>openExternal(PRIVACY_POLICY_URL)}/></View>
-    <View>
+    {(!section||section==='account'||section==='data')?<View style={s.footerLinks}>{onOpenUpdates?<GameButton compact title={a("What's New & Updates")} tone="secondary" onPress={onOpenUpdates}/>:null}<GameButton compact title={a("Privacy Policy")} tone="secondary" onPress={()=>openExternal(PRIVACY_POLICY_URL)}/></View>:null}
+    {(section==='account'||!section)?<View>
       <Text selectable style={s.sub}>{appBuildText(language,'version',{version:APP_BUILD_INFO.version})}{APP_BUILD_INFO.buildNumber?` · ${appBuildText(language,'build',{build:APP_BUILD_INFO.buildNumber})}`:''}</Text>
       <Text selectable style={s.sub}>{appBuildText(language,'channel',{channel:APP_BUILD_INFO.releaseChannel})}</Text>
       {APP_BUILD_INFO.sourceCommit?<Text selectable style={s.sub}>{appBuildText(language,'source',{source:APP_BUILD_INFO.sourceCommit})}</Text>:null}
-    </View>
+    </View>:null}
   </ScrollView><GuideTopicModal onOpen={onNavigateGuide?destination=>{setGuideId(undefined);onNavigateGuide(destination)}:undefined} language={language} definition={guideId?guideDefinition(guideId):undefined} visible={!!guideId} onClose={()=>setGuideId(undefined)}/></View>;
 }
 
@@ -174,7 +166,7 @@ function makeNavigationStyles(C:ThemeColors){return StyleSheet.create({
   screen:{flex:1,minHeight:0,backgroundColor:C.bg},
   back:{minHeight:48,flexDirection:'row',alignItems:'center',gap:8,paddingHorizontal:14,paddingVertical:10,borderBottomWidth:StyleSheet.hairlineWidth,borderBottomColor:C.line},
   backText:{...typography.bodyStrong,color:C.text,flexShrink:1},
-  category:{minHeight:68,flexDirection:'row',alignItems:'center',gap:12,paddingVertical:12,borderBottomWidth:StyleSheet.hairlineWidth,borderBottomColor:C.line},
+  category:{minHeight:60,flexDirection:'row',alignItems:'center',gap:12,paddingVertical:12,borderBottomWidth:StyleSheet.hairlineWidth,borderBottomColor:C.line},
   categoryCopy:{flex:1,minWidth:0,gap:2},categoryText:{...typography.bodyStrong,color:C.text},categoryDescription:{...typography.caption,color:C.muted,lineHeight:15},
   categoryPressed:{backgroundColor:C.panel2},
   communityStack:{flexDirection:'column',alignItems:'stretch'},

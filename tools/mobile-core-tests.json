@@ -105,6 +105,7 @@
   ".core-build/apps/mobile/tests/localization.js",
   ".core-build/apps/mobile/tests/live-events.js",
   ".core-build/apps/mobile/tests/event-claim-count.js",
+  ".core-build/apps/mobile/tests/event-community-paused.js",
   ".core-build/apps/mobile/tests/event-claim-surface-ui-contract.js",
   ".core-build/apps/mobile/tests/event-currency-promotion.js",
   ".core-build/apps/mobile/tests/event-reward-trail.js",

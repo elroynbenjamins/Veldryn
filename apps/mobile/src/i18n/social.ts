@@ -7,7 +7,6 @@ import {createTranslator,type TranslationParams} from './translator';
 // Columns are German, Spanish, Dutch, Italian and French; keys are the English catalog.
 export const socialTranslationRows = {
  "Watch": ["Ansehen","Ver","Bekijken","Guarda","Voir"],
- "EVENT BOSS": ["EVENT-BOSS","JEFE DEL EVENTO","EVENEMENTBAAS","BOSS EVENTO","BOSS D’ÉVÉNEMENT"],
  "GUILD RAID": ["GILDENRAID","ASALTO DEL GREMIO","GILDERAID","INCURSIONE DI GILDA","RAID DE GUILDE"],
  "Three-minute server-authoritative raid": ["Dreiminütiger Raid mit Serverberechnung","Incursión de tres minutos resuelta por el servidor","Raid van drie minuten, berekend door de server","Incursione di tre minuti gestita dal server","Raid de trois minutes résolu par le serveur"],
  "Your guild raid is running on the server. Damage will appear after the attempt resolves.": ["Dein Gildenraid läuft auf dem Server. Der Schaden wird nach dem Abschluss angezeigt.","La incursión del gremio está en curso en el servidor. El daño aparecerá al terminar.","Je gilderaid wordt op de server uitgevoerd. De schade verschijnt zodra de poging is afgerond.","L'incursione di gilda è in corso sul server. I danni appariranno al termine.","Votre raid de guilde se déroule sur le serveur. Les dégâts s'afficheront à la fin."],

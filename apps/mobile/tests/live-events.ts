@@ -1,9 +1,11 @@
 import {createCharacter,newGame,previewActivityReward,startCombat} from '../src/core/game';
 import {liveEventDef} from '../src/content/live-events';
+import {COMBAT_COMPANIONS} from '../src/content/combat-companions';
+import {unlockCombatCompanion} from '../src/core/combat-companions';
 import {canUseProfileCosmetic,profileCosmeticReleased} from '../src/core/profile-cosmetics';
 import {profileRewardSource} from '../src/core/profile-customization';
 import {executeGameCommand} from '../src/core/game-commands';
-import {canAnnounceLiveEventStart,acceptEventContract,activeLiveEvent,applyEventDiscoveries,applyEventDrops,chooseEventProject,claimAllEventMilestones,claimEventDailyGift,claimEventDiscovery,claimEventReward,consumeEventCandy,eventCandyStatus,eventCollectionJournal,eventContractBoard,eventDailyGift,eventEffectiveDropRate,eventLifecycle,eventPrestigeBalance,eventProgress,eventRewardClaimed,eventShopOffers,purchaseEventOffer,setLocalEventEnabled} from '../src/core/live-events';
+import {canAnnounceLiveEventStart,acceptEventContract,activeLiveEvent,applyEventDiscoveries,applyEventDrops,chooseEventProject,claimAllEventMilestones,claimEventDailyGift,claimEventDiscovery,claimEventReward,consumeEventCandy,availableEventRepeatCaches,eventCandyStatus,eventCollectionJournal,eventContractBoard,eventDailyGift,eventEffectiveDropRate,eventLifecycle,eventPrestigeBalance,eventProgress,eventRewardClaimed,eventShopOffers,purchaseEventOffer,setLocalEventEnabled} from '../src/core/live-events';
 
 function ok(condition:boolean,message:string){if(!condition)throw new Error(message);}
 
@@ -39,6 +41,13 @@ ok(eventProgress(state,eventId)===progressBeforeGift+gift.gift.rewardCurrency,'D
 ok(eventCandyStatus(state,t0).candy?.name==='Gloam Candy','Veilbreak should use its own event candy');
 state=executeGameCommand(state,{type:'event_candy',args:{kind:'skill'}},t0).state;
 ok(state.account.eventCandyChargesById?.[`${eventId}:candy:skill`]===0,'Using Gloam Candy should consume its charge');
+const candyCompanionId=COMBAT_COMPANIONS[0].id;
+state=unlockCombatCompanion(state,candyCompanionId,t0);
+state={...state,character:{...state.character!,equippedCombatCompanionId:undefined}};
+state=executeGameCommand(state,{type:'event_candy',args:{kind:'companion',companionId:candyCompanionId}},t0).state;
+ok(state.account.eventCandyChargesById?.[`${eventId}:candy:companion`]===0,'Candy can be used on an owned but unequipped companion');
+let unownedRejected=false;try{executeGameCommand({...state,account:{...state.account,eventCandyChargesById:{...state.account.eventCandyChargesById,[`${eventId}:candy:companion`]:1}}},{type:'event_candy',args:{kind:'companion',companionId:'NOT_OWNED'}},t0)}catch{unownedRejected=true}
+ok(unownedRejected,'Candy must reject unowned companion targets');
 
 state=applyEventDiscoveries(state,[{eventId,discoveryId:'gloam_cinder',name:'Gloam Cinder',quantity:5}]);
 state=claimEventDiscovery(state,'gloam_cinder',t0);
@@ -83,6 +92,15 @@ ok(duplicateBackgroundRejected,'A background cannot be purchased twice');
 state=executeGameCommand(state,{type:'profile',args:{profileBackgroundId:'bg_veilbreak'}},t0+2).state;
 ok(state.character?.profileBackgroundId==='bg_veilbreak','Purchased background must equip on the personal profile card');
 
+const cap=liveEventDef(eventId)!.maxProgress;
+state={...state,account:{...state.account,eventProgressById:{...state.account.eventProgressById,[eventId]:cap+3_450}}};
+const prestigeBefore=eventPrestigeBalance(state,eventId);
+ok(availableEventRepeatCaches(state,eventId)===3,'Post-cap reputation should produce three claimable caches');
+state=executeGameCommand(state,{type:'event_cache'},t0+2).state;
+ok(eventPrestigeBalance(state,eventId)===prestigeBefore+3,'Claim all should award prestige currency for every ready cache');
+ok(availableEventRepeatCaches(state,eventId)===0&&state.account.eventRepeatCacheClaimsById?.[eventId]===3,'Claim all should record all caches once');
+let secondClaimRejected=false;try{executeGameCommand(state,{type:'event_cache'},t0+3)}catch{secondClaimRejected=true}
+ok(secondClaimRejected,'Post-cap caches cannot be claimed twice');
 const eventEnd=state.account.liveEvent!.endsAtMs;
 const graceTime=eventEnd+60_000;
 ok(eventLifecycle(state,graceTime)?.phase==='claiming','Ended Veilbreak should enter its claim grace period');

@@ -73,13 +73,19 @@ export function startProcessingBatch(state:GameState,recipeId:string,batches:num
     activity:{kind:'processing',targetId:recipe.id,startedAtMs:nowMs,lastClaimAtMs:nowMs,progressFraction:0,bonusSnapshot:bonuses,skillAffinity:captureSkillAffinity(state,recipe.skillId),processing}};
 }
 
+/** Uses the same material, Gold and AFK-time limits for UI previews and actual reservations. */
+export function processingRunCapacity(state:GameState,recipeId:string,afkCapSeconds:number,allowActivityReplacement=false){
+ const status=processingAvailability(state,recipeId,1,allowActivityReplacement);
+ const cycleSeconds=status.ready&&status.recipe?professionActionPace(state,status.recipe,'batch').cycleSeconds:0;
+ const timeBatches=cycleSeconds>0&&Number.isFinite(afkCapSeconds)?Math.max(0,Math.floor(Math.max(0,afkCapSeconds)/cycleSeconds)):0;
+ return {...status,timeBatches,availableBatches:status.ready?Math.min(status.maxBatches,timeBatches):0};
+}
+
 /** Starts as many cycles as the available materials, Gold and the current AFK allowance permit. */
 export function startProcessingUntilLimited(state:GameState,recipeId:string,nowMs:number,afkCapSeconds:number):GameState{
- const status=processingAvailability(state,recipeId,1);
+ const status=processingRunCapacity(state,recipeId,afkCapSeconds);
  if(!status.ready)throw new Error(status.reason);
- const pace=professionActionPace(state,status.recipe!,'batch');
- const timeBatches=Math.floor(afkCapSeconds/pace.cycleSeconds);
- const batches=Math.min(status.maxBatches,timeBatches,MAX_PROCESSING_BATCHES);
+ const batches=status.availableBatches;
  if(batches<1)throw new Error('Not enough AFK time for one processing cycle.');
  return startProcessingBatch(state,recipeId,batches,nowMs);
 }

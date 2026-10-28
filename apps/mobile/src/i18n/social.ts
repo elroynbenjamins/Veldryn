@@ -6,6 +6,13 @@ import {createTranslator,type TranslationParams} from './translator';
 
 // Columns are German, Spanish, Dutch, Italian and French; keys are the English catalog.
 export const socialTranslationRows = {
+"Change chat channel":["Chatkanal wechseln","Cambiar canal de chat","Chatkanaal wijzigen","Cambia canale chat","Changer de canal de discussion"],
+"Chat channels":["Chatkanäle","Canales de chat","Chatkanalen","Canali chat","Canaux de discussion"],
+"Global chat":["Globaler Chat","Chat global","Wereldwijde chat","Chat globale","Discussion mondiale"],
+"Guild members":["Gildenmitglieder","Miembros del gremio","Gildeleden","Membri della gilda","Membres de la guilde"],
+"Join a Guild to chat":["Tritt einer Gilde bei, um zu chatten","Únete a un gremio para chatear","Sluit je aan bij een gilde om te chatten","Unisciti a una gilda per chattare","Rejoins une guilde pour discuter"],
+"Your party":["Deine Gruppe","Tu grupo","Je groep","Il tuo gruppo","Ton groupe"],
+"Game notifications":["Spielmeldungen","Avisos del juego","Spelmeldingen","Notifiche di gioco","Notifications du jeu"],
 "Guild Level {level}":["Gildenstufe {level}","Nivel de gremio {level}","Gildeniveau {level}","Livello gilda {level}","Niveau de guilde {level}"],
 "Raid":["Raid","Incursión","Raid","Incursione","Raid"],
 "Identity & appearance":["Identität & Erscheinungsbild","Identidad y apariencia","Identiteit en uiterlijk","Identità e aspetto","Identité et apparence"],

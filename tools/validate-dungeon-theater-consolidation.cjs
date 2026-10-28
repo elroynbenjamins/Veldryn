@@ -1,0 +1,13 @@
+const assert=require('node:assert/strict'),fs=require('node:fs'),path=require('node:path');
+const root=path.resolve(__dirname,'../apps/mobile/src');
+const read=p=>fs.readFileSync(path.join(root,p),'utf8');
+const run=read('components/coop/CoopRunOverview.tsx'),stage=read('components/coop/DungeonCombatStage.tsx'),guild=read('components/GuildRaidEncounter.tsx'),options=read('components/coop/DungeonRouteChoices.tsx');
+assert(run.includes('<DungeonRouteChoices options={run.options}')&&!run.includes('run.options.map(option=><FantasyPanel'),'Visual room choices reused');
+assert(run.includes('<CombatTheaterModal visible')&&run.includes('<DungeonCombatStage run={run} seasonal={seasonal}'),'Combat stage in full-screen theater');
+assert.equal((run.match(/<DungeonCombatStage run=\{run\}/g)||[]).length,1,'No duplicate inline combat arena');
+assert(run.includes("run.lastCombat?.reason==='victory'")&&run.includes('Watch battle'),'Minimized combat retains recap and reopen');
+assert(stage.includes('DUNGEON_PLAYBACK_SPEEDS.map')&&stage.includes('st("SPEED")'),'Combat uses speed-only playback');
+assert(!stage.includes('setPaused(')&&!stage.includes('setShowLog('),'No pause or manual step state');
+assert(guild.includes('<CombatTheaterModal visible')&&!guild.includes('DUNGEON_PLAYBACK_SPEEDS'),'Guild raid has no speed controls');
+assert(options.includes('onPress={()=>onChoose?.(option.nodeId)}'),'Existing authoritative vote callback preserved');
+console.log('PASS: compact minimized fight, full-screen theater, speed-only playback, guild PvE and visual node decisions');

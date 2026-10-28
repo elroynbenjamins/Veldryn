@@ -48,7 +48,7 @@ export function CoopExpeditionScreen({onClose,language,state,entrySource=realCoo
   const echoReady=Boolean(echoLoadout?.ready&&(state.character?.level??0)>=15);
   const runIcons=useCoopProfileIcons('run',displayRun?[displayRun.runId]:[],entrySource.kind==='real',displayRun?.roleSlots.map(slot=>slot.memberId??'').sort().join(','));
   const runWithIcons=useMemo(()=>displayRun&&entrySource.kind==='real'?{...displayRun,roleSlots:displayRun.roleSlots.map(slot=>({...slot,...(runIcons.get(slot.memberId??'')??noCoopProfileIcon)}))}:displayRun,[displayRun,entrySource.kind,runIcons]);
-  const showRecruitment=coopLiveReadyEnabled&&entrySource.kind==='real'&&!showLive&&!showLoadouts&&!selected&&!selectedEvent&&!run&&!eventRun;
+  const showRecruitment=mode==='live'&&coopLiveReadyEnabled&&entrySource.kind==='real'&&!showLive&&!showLoadouts&&!selected&&!selectedEvent&&!run&&!eventRun;
   const recruitmentIcons=useCoopProfileIcons('lfg',(entry?.liveRecruitment??[]).map(post=>post.id),showRecruitment);
   const recruitmentWithIcons=(entry?.liveRecruitment??[]).map(post=>({...post,...(recruitmentIcons.get(post.id)??noCoopProfileIcon)}));
   const activeRunId=useRef<string|undefined>(undefined);activeRunId.current=run?.runId;
@@ -86,11 +86,11 @@ export function CoopExpeditionScreen({onClose,language,state,entrySource=realCoo
   useEffect(()=>{let cancelled=false;if(coopLiveReadyEnabled&&entrySource.kind==='real')void coopClient.liveQueue().then(value=>{if(!cancelled&&value.ticket&&['queued','reserved'].includes(value.ticket.status))setShowLive(true);}).catch(()=>{});return()=>{cancelled=true;};},[entrySource]);
   useEffect(()=>{if(entrySource.kind==='real')void coopClient.hasPending().then(setPending).catch(()=>{});},[entrySource]);
   useEffect(()=>{
-    if(!coopLiveReadyEnabled||entrySource.kind!=='real'||showLive||showLoadouts||selected||selectedEvent||run||eventRun)return;
+    if(mode!=='live'||!coopLiveReadyEnabled||entrySource.kind!=='real'||showLive||showLoadouts||selected||selectedEvent||run||eventRun)return;
     let stopped=false,inFlight=false;
     const refreshBoard=async()=>{if(stopped||inFlight)return;inFlight=true;try{const posts=await coopClient.liveRecruitment();if(!stopped)setEntry(current=>current?{...current,liveRecruitment:posts}:current);}catch{}finally{inFlight=false;}};
-    const timer=setInterval(()=>void refreshBoard(),15_000);return()=>{stopped=true;clearInterval(timer);};
-  },[entrySource.kind,showLive,showLoadouts,selected,selectedEvent,run,eventRun]);
+    void refreshBoard();const timer=setInterval(()=>void refreshBoard(),15_000);return()=>{stopped=true;clearInterval(timer);};
+  },[entrySource.kind,mode,showLive,showLoadouts,selected,selectedEvent,run,eventRun]);
   useEffect(()=>{
     const id=run?.runId;if(!id||entrySource.kind!=='real')return;
     let stopped=false,inFlight=false;
@@ -158,7 +158,7 @@ export function CoopExpeditionScreen({onClose,language,state,entrySource=realCoo
     setSelectedEvent(undefined);acceptEventRun(started);
   })}/>;
   if(selected&&showLoadouts&&tier&&state.character)return <View style={{flex:1}}>{retry}<CoopLoadoutSelection state={state} language={language} dungeonId={selected.id} dungeonName={selected.name} tier={tier} mode={mode} loadouts={entry?.loadouts??[]} notice={notice} refreshing={loading||busy} onBack={()=>{setShowLoadouts(false);setNotice('')}} onRefresh={()=>load()} onIntent={startWithLoadout}/></View>;
-  if(selected)return <CoopDungeonDetails language={language} dungeon={selected} currentLevel={state.character?.level??0} currentPower={combatPowerRating(state).total} mode={mode} tier={tier} readyToStart={entrySource.kind==='real'&&selectableLoadouts.length===1} busy={busy} liveFellowshipRemaining={entry?.liveFellowshipRemaining} notice={notice} onBack={()=>{setSelected(undefined);setNotice('')}} onTier={next=>{setTier(next);setNotice('')}} onContinue={continueDungeon}/>;
+  if(selected)return <CoopDungeonDetails language={language} dungeon={selected} currentLevel={state.character?.level??0} currentPower={combatPowerRating(state).total} mode={mode} tier={tier} readyToStart={entrySource.kind==='real'&&selectableLoadouts.length===1} busy={busy||pending} liveFellowshipRemaining={entry?.liveFellowshipRemaining} notice={notice} onBack={()=>{setSelected(undefined);setNotice('')}} onTier={next=>{setTier(next);setNotice('')}} onContinue={continueDungeon}/>;
   return <View style={{flex:1}}>
     {retry}
     {entrySource.kind==='real'&&entry?.gameVersion&&<View style={{paddingHorizontal:16,paddingTop:8}}>
@@ -177,6 +177,6 @@ export function CoopExpeditionScreen({onClose,language,state,entrySource=realCoo
       </View>}
       {!!notice&&<Text accessibilityRole="alert" style={{color:C.warning}}>{notice}</Text>}
     </View>}
-    <CoopDungeonList language={language} mode={mode} onMode={next=>{setMode(next);setNotice('')}} dungeons={dungeons} eventExpeditions={activeEventExpeditions} loading={loading} error={error} activeRun={entry?.activeRun} liveTools={liveTools} onBack={onClose} onRetry={()=>load()} onSelect={chooseDungeon} onSelectEvent={chooseEvent} onResume={()=>{if(entry?.activeEventRunProjection){setRun(undefined);setEventRun(entry.activeEventRunProjection);return;}resumeActiveRun()}}/>
+    <CoopDungeonList language={language} mode={mode} liveAvailable={entrySource.kind!=='real'||coopLiveReadyEnabled} onMode={next=>{setMode(next);setNotice('')}} dungeons={dungeons} eventExpeditions={activeEventExpeditions} loading={loading} error={error} activeRun={entry?.activeRun} liveTools={liveTools} onBack={onClose} onRetry={()=>load()} onSelect={chooseDungeon} onSelectEvent={chooseEvent} onResume={()=>{if(entry?.activeEventRunProjection){setRun(undefined);setEventRun(entry.activeEventRunProjection);return;}resumeActiveRun()}}/>
   </View>;
 }

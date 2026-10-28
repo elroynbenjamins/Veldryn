@@ -25,4 +25,8 @@ assert.ok(chat.includes('s.popoverDismiss'), 'outside tap dismisses the menu');
 assert.ok(chat.includes('!visible')&&chat.includes("initialChannel==='guild'"), 'existing chat-open rules preserved');
 for(const key of ['Change chat channel','Chat channels','Global chat','Guild members','Join a Guild to chat','Your party','Game notifications'])
   assert.ok(social.includes(JSON.stringify(key)+':'), 'new label translated: '+key);
+assert.ok(chat.includes("channelTrigger:{minHeight:44")&&chat.includes("languageButton:{minHeight:44"), 'both header pickers have 44dp touch targets');
+assert.ok(chat.includes("accessibilityElementsHidden={channelMenuOpen||languageMenuOpen}"), 'chat feed hidden from screen reader while menu is open');
+assert.ok(chat.includes("onRequestClose={()=>{if(channelMenuOpen)setChannelMenuOpen(false);"), 'Android back dismisses the popover before the chat');
+assert.ok(chat.includes("popoverDismiss:{position:'absolute',top:50"), 'popover scrim preserves header close and language actions');
 console.log('PASS: compact chat channel selector and popover contract');

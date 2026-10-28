@@ -37,7 +37,7 @@ type ImageSlotSize='hero'|'room'|'thumbnail'|'node'|'boon'|'skill';
 export function CoopImageSlot({assetId,size='node',fallbackLabel='ART',accessibilityLabel}: {assetId?:CoopUiAssetId;size?:ImageSlotSize;fallbackLabel?:string;accessibilityLabel?:string}){
  const {styles:s}=useCoopStyles(makeStyles);
   const source=assetId?coopUiAssets[assetId]:undefined;
-  return <View accessibilityLabel={accessibilityLabel} style={[s.imageSlot,s[`image_${size}`]]}>{source?<Image source={source} resizeMode={size==='hero'||size==='room'?'cover':'contain'} style={s.image}/>:<View style={s.imageFallback}><Text style={s.fallbackMark}>◇</Text><Text style={s.fallbackText}>{fallbackLabel}</Text></View>}</View>;
+  return <View accessibilityLabel={accessibilityLabel} style={[s.imageSlot,s[`image_${size}`]]}>{source?<Image source={source} resizeMode={size==='hero'||size==='room'||size==='thumbnail'?'cover':'contain'} style={s.image}/>:<View style={s.imageFallback}><Text style={s.fallbackMark}>◇</Text><Text style={s.fallbackText}>{fallbackLabel}</Text></View>}</View>;
 }
 
 type ShellProps=PropsWithChildren<{eyebrow:string;title:string;compactHeader?:boolean;titleInHero?:boolean;onBack?:()=>void;backLabel?:string;banner?:React.ReactNode;stickyAction?:React.ReactNode;testID?:string}>;

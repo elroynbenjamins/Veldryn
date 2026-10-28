@@ -117,16 +117,25 @@ export function InventoryScreen({state,viewMemory,foodRequest=0,onEquip,onFood,o
   const beginBulk=(kind:BulkAction)=>{const ids=kind==='transfer'?selectionSummary.transferableIds:kind==='sell'?selectionSummary.sellableIds:selectionSummary.salvageableIds;if(ids.length)setBulkPending({kind,ids})};
   const closeInspect=()=>{if(inspectId&&newItemSet.has(inspectId))run(()=>onAcknowledgeItem(inspectId));setInspectId(null)};
   const renderStack=(stack:ItemStack)=>{
-    const item=itemDef(stack.itemId),favorite=favoriteSet.has(item.id),newItem=newItemSet.has(item.id),selected=selectedSet.has(item.id),autoEat=state.character?.equippedFoodId===item.id,rarity=rarityMeta(item.type==='gear'?effectiveOwnedGearRarity(state,item.id):itemRarity(item)),goalProtected=goalProtection.has(item.id);
-    const label=[gt('{name}, {count} owned',{name:item.name,count:formatGameNumber(stack.quantity,state.settings.numberMode,state.settings.language)}),favorite?gt('favorite'):'',newItem?gt('New'):'',goalProtected?gt('needed for Working Toward'):''].filter(Boolean).join(', ');
-    return <Pressable key={`${location}:${item.id}`} accessibilityRole={selectMode?'checkbox':'button'} accessibilityLabel={selectMode?gt(selected?'Deselect {label}':'Select {label}',{label}):label} accessibilityHint={selectMode?gt("Select this stack for bulk management"):gt("Open item details, sources and crafting uses")} accessibilityState={selectMode?{checked:selected}:undefined} onPress={()=>selectMode?toggleSelection(item.id):item.type==='gear'&&location==='inventory'?setPreviewId(item.id):setInspectId(item.id)} style={({pressed})=>[s.itemTile,{width:tileSize,height:tileSize,borderColor:selected?C.selectionLine:goalProtected||autoEat?C.good:rarity.color,backgroundColor:selected?C.selection:C.panel},pressed&&s.pressed]}>
-      <ItemArtwork itemId={item.id} size={iconSize}/>
-      <Text accessible={false} style={[s.itemQuantity,{color:rarity.color}]}>×{formatGameNumber(stack.quantity,state.settings.numberMode,state.settings.language)}</Text>
-      {newItem?<View accessible={false} style={s.itemNew}><Text style={s.itemNewText}>{gt("New").toLocaleUpperCase(language)}</Text></View>:null}
-      {favorite?<Text accessible={false} style={s.itemFavorite}>★</Text>:null}
-      {autoEat&&!selectMode?<Text accessible={false} style={s.itemAuto}>{gt("EAT")}</Text>:null}
-      {selectMode?<View accessible={false} style={[s.itemSelected,selected&&s.itemSelectedOn]}><Text style={s.itemSelectedText}>{selected?'✓':'○'}</Text></View>:null}
-    </Pressable>;
+    const item=itemDef(stack.itemId),favorite=favoriteSet.has(item.id),locked=lockedSet.has(item.id),newItem=newItemSet.has(item.id),selected=selectedSet.has(item.id),autoEat=state.character?.equippedFoodId===item.id,rarity=rarityMeta(item.type==='gear'?effectiveOwnedGearRarity(state,item.id):itemRarity(item)),goalProtected=goalProtection.has(item.id);
+    const label=[gt('{name}, {count} owned',{name:item.name,count:formatGameNumber(stack.quantity,state.settings.numberMode,state.settings.language)}),favorite?gt('favorite'):'',locked?gt('Locked'):'',newItem?gt('New'):'',goalProtected?gt('needed for Working Toward'):''].filter(Boolean).join(', ');
+    return <View key={`${location}:${item.id}`} style={[s.itemTile,{width:tileSize,height:tileSize,borderColor:selected?C.selectionLine:goalProtected||autoEat?C.good:rarity.color,backgroundColor:selected?C.selection:C.panel}]}>
+      <Pressable accessibilityRole={selectMode?'checkbox':'button'} accessibilityLabel={selectMode?gt(selected?'Deselect {label}':'Select {label}',{label}):label} accessibilityHint={selectMode?gt("Select this stack for bulk management"):gt("Open item details, sources and crafting uses")} accessibilityState={selectMode?{checked:selected}:undefined} onPress={()=>selectMode?toggleSelection(item.id):item.type==='gear'&&location==='inventory'?setPreviewId(item.id):setInspectId(item.id)} style={({pressed})=>[s.itemOpen,pressed&&s.pressed]}>
+        <ItemArtwork itemId={item.id} size={iconSize}/>
+        <Text accessible={false} style={[s.itemQuantity,{color:rarity.color}]}>×{formatGameNumber(stack.quantity,state.settings.numberMode,state.settings.language)}</Text>
+        {newItem?<View accessible={false} style={[s.itemNew,selectMode&&s.itemNewTop]}><Text style={s.itemNewText}>{gt("New").toLocaleUpperCase(language)}</Text></View>:null}
+        {autoEat&&!selectMode?<Text accessible={false} style={s.itemAuto}>{gt("EAT")}</Text>:null}
+        {selectMode?<View accessible={false} style={[s.itemSelected,selected&&s.itemSelectedOn]}><Text style={s.itemSelectedText}>{selected?'✓':'○'}</Text></View>:null}
+      </Pressable>
+      {!selectMode&&<>
+        <Pressable accessibilityRole="button" accessibilityLabel={locked?gt('Unlock {name}',{name:item.name}):gt('Lock {name}',{name:item.name})} accessibilityState={{selected:locked}} hitSlop={2} onPress={()=>{void onToggleLock(item.id)}} style={({pressed})=>[s.itemCorner,s.itemLockCorner,locked&&s.itemCornerActive,pressed&&s.pressed]}>
+          <InventoryLockGlyph locked={locked} color={locked?C.warning:C.muted}/>
+        </Pressable>
+        <Pressable accessibilityRole="button" accessibilityLabel={favorite?gt('Remove {name} from favorites',{name:item.name}):gt('Favorite {name}',{name:item.name})} accessibilityState={{selected:favorite}} hitSlop={2} onPress={()=>{void onToggleFavorite(item.id)}} style={({pressed})=>[s.itemCorner,s.itemFavoriteCorner,favorite&&s.itemCornerActive,pressed&&s.pressed]}>
+          <Text accessible={false} style={[s.itemStar,favorite&&s.itemStarOn]}>{favorite?'★':'☆'}</Text>
+        </Pressable>
+      </>}
+    </View>;
   };
   const foodWarning=pending?.item.id===state.character?.equippedFoodId?gt("This is your selected auto-eat food. Only food carried in Inventory can be consumed in combat."):'';
   const goalWarning=pending&&pending.kind!=='deposit'?goalProtection.get(pending.item.id):undefined;
@@ -197,6 +206,13 @@ export function InventoryScreen({state,viewMemory,foodRequest=0,onEquip,onFood,o
         <View style={s.sheetActions}><View style={s.flex}><GameButton title={gt("Reset")} tone="secondary" onPress={()=>setFilter("all")}/></View><View style={s.flex}><GameButton title={gt("Done")} onPress={()=>setFilterOpen(false)}/></View></View>
   </GameModalSurface>
   <ConfirmModal visible={pending!==null} title={gt('{action} {name}?',{action:gt(pending?.kind==='deposit'?'Deposit':pending?.kind==='sell'?'Sell':'Salvage'),name:pending?.item.name??''})} message={message} confirmLabel={pending?.kind==='deposit'?gt("Deposit"):pending?.kind==='sell'?gt("Sell {count}",{count:pending.quantity}):gt("Salvage 1")} danger={pending?.kind!=='deposit'} reduceMotion={state.settings.reduceMotion} onConfirm={confirm} onCancel={()=>setPending(null)}/><ConfirmModal visible={bulkPending!==null} title={bulkPending?.kind==='transfer'?gt('{action} selected stacks?',{action:gt(location==='inventory'?'Deposit':'Withdraw')}):bulkPending?.kind==='sell'?gt("Sell selected items?"):gt("Salvage selected equipment?")} message={bulkMessage} confirmLabel={bulkPending?.kind==='transfer'?(location==='inventory'?gt("Deposit selected"):gt("Withdraw selected")):bulkPending?.kind==='sell'?gt("Sell eligible"):gt("Salvage eligible")} danger={bulkPending?.kind!=='transfer'} reduceMotion={state.settings.reduceMotion} onConfirm={confirmBulk} onCancel={()=>setBulkPending(null)}/><Modal transparent visible={inventoryBusyLabel!==null} animationType={state.settings.reduceMotion?'none':'fade'} onRequestClose={()=>{}}><View style={s.transactionBackdrop}><View accessibilityRole="progressbar" accessibilityLabel={inventoryBusyLabel??gt("Updating inventory")} accessibilityState={{busy:true}} style={s.transactionCard}><ActivityIndicator size="large" color={C.accent}/><Text style={s.transactionTitle}>{inventoryBusyLabel}</Text><Text style={s.transactionCopy}>{gt("Please wait while your inventory is updated.")}</Text></View></View></Modal></>;
+}
+/** Tiny linework lock stays sharp inside the smallest inventory slots. */
+function InventoryLockGlyph({locked,color}:{locked:boolean;color:string}){
+  return <View accessible={false} style={{width:16,height:17}}>
+    <View style={{position:'absolute',left:locked?4:8,top:0,width:8,height:10,borderWidth:1.6,borderColor:color,borderBottomWidth:0,borderTopLeftRadius:6,borderTopRightRadius:6,transform:locked?[]:[{rotate:'-27deg'}]}}/>
+    <View style={{position:'absolute',left:2,top:7,width:12,height:9,borderWidth:1.6,borderColor:color,borderRadius:2,backgroundColor:locked?color:'transparent'}}/>
+  </View>;
 }
 function UtilityChip({label,accessibilityLabel,selected=false,onPress}:{label:string;accessibilityLabel:string;selected?:boolean;onPress:()=>void}){const C=useGameTheme(),s=useMemo(()=>makeStyles(C),[C]);return <Pressable accessibilityRole="button" accessibilityLabel={accessibilityLabel} accessibilityState={{selected}} onPress={onPress} style={({pressed})=>[s.utilityChip,selected&&s.utilityChipActive,pressed&&s.pressed]}><Text numberOfLines={1} style={[s.utilityChipText,selected&&s.utilityChipTextActive]}>{label}</Text></Pressable>}
 function StorageChip({label,selected,status,onPress}:{label:string;selected:boolean;status:ReturnType<typeof storageCapacityStatus>;onPress:()=>void}){const {gt}=useGameplayText();const C=useGameTheme(),s=useMemo(()=>makeStyles(C),[C]),equipmentColors=equipmentTheme(C),tone=status.level==='full'?C.bad:status.level==='near'?C.warning:selected?equipmentColors.selectedLine:C.line,width=`${status.percent}%` as `${number}%`;return <Pressable accessibilityRole="button" accessibilityLabel={gt('{label} storage, {used} of {capacity} slots used, {free} free',{label,used:status.used,capacity:status.capacity,free:status.free})} accessibilityState={{selected}} onPress={onPress} style={({pressed})=>[s.storageChip,selected&&s.storageChipSelected,status.level==='full'&&s.storageChipFull,pressed&&s.pressed]}><View style={s.storageChipTop}><Text style={[s.storageChipLabel,selected&&s.storageChipLabelSelected]}>{selected?'✓ ':''}{label}</Text><Text style={[s.storageChipCount,{color:tone}]}>{status.used}/{status.capacity}</Text></View><View style={s.capacityTrack}><View style={[s.capacityFill,{width,backgroundColor:tone}]}/></View></Pressable>}
@@ -285,9 +301,12 @@ function makeStyles(C:ThemeColors){const equipmentColors=equipmentTheme(C);retur
   gridHead:{flexDirection:'row',alignItems:'center',justifyContent:'space-between',gap:8,paddingTop:2},gridLabel:{...typography.caption,color:C.accent,fontWeight:'900',letterSpacing:.8},gridMeta:{...typography.caption,color:C.muted},
   itemGrid:{flexDirection:'row',gap:10},
   itemTile:{position:'relative',alignItems:'center',justifyContent:'center',borderWidth:1,borderRadius:10},
+  itemOpen:{width:'100%',height:'100%',alignItems:'center',justifyContent:'center'},
+  itemCorner:{position:'absolute',top:2,width:26,height:26,alignItems:'center',justifyContent:'center',borderWidth:1,borderRadius:7,borderColor:C.line,backgroundColor:C.panel},
+  itemCornerActive:{borderColor:C.warning},itemLockCorner:{left:2},itemFavoriteCorner:{right:2},
+  itemStar:{fontSize:18,lineHeight:22,fontWeight:'900',color:C.muted},itemStarOn:{color:C.warning},
   itemQuantity:{position:'absolute',right:3,bottom:3,paddingHorizontal:4,borderRadius:7,overflow:'hidden',fontSize:9,lineHeight:14,fontWeight:'900',backgroundColor:C.panel},
-  itemNew:{position:'absolute',left:3,top:3,paddingHorizontal:3,paddingVertical:1,borderRadius:3,backgroundColor:C.info},itemNewText:{fontSize:9,color:C.panel,fontWeight:'900',letterSpacing:.3},
-  itemFavorite:{position:'absolute',right:4,top:1,fontSize:12,color:C.accent},
+  itemNew:{position:'absolute',left:3,bottom:16,paddingHorizontal:3,paddingVertical:1,borderRadius:3,backgroundColor:C.info},itemNewTop:{bottom:undefined,top:3},itemNewText:{fontSize:9,color:C.panel,fontWeight:'900',letterSpacing:.3},
   itemAuto:{position:'absolute',left:3,bottom:3,paddingHorizontal:3,paddingVertical:1,borderRadius:3,overflow:'hidden',fontSize:6,lineHeight:8,color:C.panel,fontWeight:'900',letterSpacing:.35,backgroundColor:C.good},
   itemSelected:{position:'absolute',left:3,bottom:3,width:17,height:17,alignItems:'center',justifyContent:'center',borderWidth:1,borderColor:C.line,borderRadius:9,backgroundColor:C.panel},itemSelectedOn:{borderColor:C.selectionLine,backgroundColor:C.selection},itemSelectedText:{fontSize:10,color:C.text,fontWeight:'900'},
   quickFilters:{gap:8},quickFilter:{minHeight:44,paddingHorizontal:16,justifyContent:'center',borderRadius:10,borderWidth:1,borderColor:C.line,backgroundColor:C.panel},inspectActions:{gap:spacing.xs},

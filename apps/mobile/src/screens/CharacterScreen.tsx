@@ -10,17 +10,14 @@ import {equipmentFocusModel,equipmentScreenModel} from '../core/equipment-screen
 import {displayStat} from '../core/stat-display';
 import {TutorialBeacon} from '../components/TutorialBeacon';
 import {noviceSetProgress} from '../core/character-appearance';
-import {classIconArtwork as classArtwork} from '../theme/character-assets';
 import {Panel} from '../components/Panel';
 import {GameButton} from '../components/GameButton';
-import {EquipmentCharacterPortrait} from '../components/CharacterVisual';
 import {EquipmentArtwork} from '../components/EquipmentArtwork';
 import {equipmentSetDef,equippedSetPieceCount} from '../content/equipment-sets';
 import {companionArtSource} from '../theme/companion-art';
 import {COMBAT_COMPANIONS} from '../content/combat-companions';
 import {StatRow} from '../components/StatRow';
 import {StatIcon} from '../components/StatIcon';
-import {EquipmentSectionHeader} from '../components/EquipmentSectionHeader';
 import {ConfirmModal} from '../components/ConfirmModal';
 import {EquipmentEnhancementModal} from '../components/EquipmentEnhancementModal';
 import {GemCodexModal} from '../components/GemCodexModal';
@@ -31,7 +28,6 @@ import {radii,spacing,typography,equipmentTheme,type ThemeColors} from '../theme
 import {useGameTheme} from '../theme/ThemeContext';
 import {creationText} from '../i18n/creation';
 import {EQUIPMENT_SLOT_LABELS,EQUIPMENT_SLOT_ORDER} from '../core/equipment-screen';
-import {ot} from '../i18n';
 import {EquipmentSlotPicker} from '../components/EquipmentSlotPicker';
 import {combatPowerRating} from '../core/combat-power';
 import {CharacterIdentityHero} from '../components/CharacterIdentityHero';

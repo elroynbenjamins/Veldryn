@@ -5,14 +5,6 @@ import {createTranslator} from './translator';
 // English source keys also let owned views translate core-generated presentation text.
 export const accountTranslationRows = {
 "Chat":["Chat","Chat","Chat","Chat","Chat","Discussion"],
-"Gameplay":["Gameplay","Spielablauf","Jugabilidad","Spelverloop","Gioco","Jouabilité"],
-"Appearance":["Appearance","Darstellung","Apariencia","Uiterlijk","Aspetto","Apparence"],
-"Accessibility":["Accessibility","Barrierefreiheit","Accesibilidad","Toegankelijkheid","Accessibilità","Accessibilité"],
-"Account":["Account","Konto","Cuenta","Account","Account","Compte"],
-"Data":["Data","Daten","Datos","Gegevens","Dati","Données"],
-"Store":["Store","Shop","Tienda","Winkel","Negozio","Boutique"],
-"Developer":["Developer","Entwickler","Desarrollador","Ontwikkelaar","Sviluppatore","Développeur"],
-"Help & Guide":["Help & Guide","Hilfe & Anleitung","Ayuda y guía","Hulp en uitleg","Aiuto e guida","Aide et guide"],
 "Combat, activities and number display.":["Combat, activities and number display.","Kampf, Aktivitäten und Zahlenanzeige.","Combate, actividades y formato numérico.","Gevechten, activiteiten en getallen.","Combattimento, attività e numeri.","Combat, activités et affichage des nombres."],
 "Chat bar, language channel and emotes.":["Chat bar, language channel and emotes.","Chatleiste, Sprachkanal und Emotes.","Barra de chat, canal de idioma y emoticonos.","Chatbalk, taalkanaal en emotes.","Barra chat, canale lingua ed emote.","Barre de discussion, canal de langue et émotes."],
 "AFK details":["AFK details","AFK-Details","Detalles de AFK","AFK-details","Dettagli AFK","Détails AFK"],

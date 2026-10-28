@@ -306,16 +306,33 @@ export function travelToRegion(state:GameState,regionId:string,nowMs:number){
   return {state:travelled.character?{...travelled,character:{...travelled.character,activityQueuePausedReason:pause}}:travelled,reward:settled.reward};
 }
 
-export function stackItems(existing:ItemStack[],incoming:ItemStack[]):ItemStack[]{const m=new Map<string,number>();for(const s of existing)m.set(s.itemId,(m.get(s.itemId)||0)+s.quantity);for(const s of incoming)m.set(s.itemId,(m.get(s.itemId)||0)+s.quantity);return [...m.entries()].filter(([,q])=>q>0).map(([itemId,quantity])=>({itemId,quantity}));}
+export function stackItems(existing:ItemStack[],incoming:ItemStack[]):ItemStack[]{
+  const quantities=new Map<string,number>(),individual:ItemStack[]=[],seen=new Set<string>();
+  for(const row of [...existing,...incoming]){
+    if(row.instanceId!==undefined){
+      if(typeof row.instanceId!=='string'||!row.instanceId||row.quantity!==1||seen.has(row.instanceId))
+        throw new Error('Duplicate or invalid unique equipment copy');
+      seen.add(row.instanceId);individual.push({...row});
+    }else quantities.set(row.itemId,(quantities.get(row.itemId)??0)+row.quantity);
+  }
+  return [...quantities.entries()].filter(([,q])=>q>0).map(([itemId,quantity])=>({itemId,quantity})).concat(individual);
+}
 
 export function usedSlots(stacks:ItemStack[]){return stacks.filter(s=>s.quantity>0).length;}
 function itemStackCap(itemId:string){const d=itemDef(itemId);return d.type==='gear'||d.type==='tool'?1:9999;}
 function addBounded(stacks:ItemStack[],capacity:number,incoming:ItemStack[]){
   let next=stacks.map(s=>({...s}));const overflow:ItemStack[]=[];
   for(const inc of incoming){
+    if(inc.instanceId!==undefined){
+      if(inc.quantity!==1||!inc.instanceId||next.some(s=>s.instanceId===inc.instanceId))
+        throw new Error('Duplicate or invalid unique equipment copy');
+      if(usedSlots(next)<capacity)next.push({...inc});
+      else overflow.push({...inc});
+      continue;
+    }
     let remaining=inc.quantity;
     const cap=itemStackCap(inc.itemId);
-    let existing=next.find(s=>s.itemId===inc.itemId);
+    let existing=next.find(s=>s.itemId===inc.itemId&&s.instanceId===undefined);
     if(existing){
       const room=Math.max(0,cap-existing.quantity);const add=Math.min(room,remaining);existing.quantity+=add;remaining-=add;
     }
@@ -339,8 +356,22 @@ function routeRewards(state:GameState,incoming:ItemStack[],nowMs:number){
   };
 }
 
-function consume(stacks:ItemStack[],itemId:string,quantity:number){const f=stacks.find(s=>s.itemId===itemId);if(!f||f.quantity<quantity)throw new Error('Not enough items');return stacks.map(s=>s.itemId===itemId?{...s,quantity:s.quantity-quantity}:s).filter(s=>s.quantity>0)}
-function stackQty(stacks:ItemStack[],itemId?:string){if(!itemId)return 0;return stacks.find(s=>s.itemId===itemId)?.quantity||0;}
+function consume(stacks:ItemStack[],itemId:string,quantity:number){
+  if(!Number.isSafeInteger(quantity)||quantity<=0)throw new Error('Invalid item quantity');
+  let remaining=quantity;
+  const next=stacks.map(row=>{
+    if(row.itemId!==itemId||row.instanceId!==undefined||remaining<=0)return row;
+    const taken=Math.min(remaining,row.quantity);remaining-=taken;
+    return {...row,quantity:row.quantity-taken};
+  }).filter(row=>row.quantity>0);
+  if(remaining>0){
+    if(stacks.some(row=>row.itemId===itemId&&row.instanceId!==undefined))
+      throw new Error('Choose an individual equipment copy; unique equipment cannot be consumed by item type');
+    throw new Error('Not enough items');
+  }
+  return next;
+}
+function stackQty(stacks:ItemStack[],itemId?:string){if(!itemId)return 0;return stacks.filter(s=>s.itemId===itemId).reduce((n,s)=>n+s.quantity,0);}
 
 export function regionalMonsterPressureBand(monsterId:string):RegionalMonsterPressureBand{
  const m=MONSTERS.find(row=>row.id===monsterId);if(!m||m.boss)return 'hard';
@@ -823,6 +854,7 @@ export function equipItem(state:GameState,itemId:string):GameState{
   if(!state.character)throw new Error('No character');const d=itemDef(itemId);if(d.type!=='gear'||!d.slot)throw new Error('Not gear');
   if(d.classRestriction&&d.classRestriction!==state.character.classId)throw new Error('This gear belongs to another class');
   if(state.character.level<(d.requiredLevel??1))throw new Error(`Requires character level ${d.requiredLevel}`);
+  if(state.character.equipmentInstanceIds?.[d.slot])throw new Error('Select the exact equipped copy before replacing uniquely identified gear');
   let stacks=consume(state.inventory.stacks,itemId,1);const old=state.character.equipment[d.slot];if(old)stacks=stackItems(stacks,[{itemId:old,quantity:1}]);
   const temp={...state,inventory:{...state.inventory,stacks},character:{...state.character,equipment:{...state.character.equipment,[d.slot]:itemId}}} as GameState;
   const maxHp=effectiveStats(temp).hp;temp.character!.currentHp=Math.min(maxHp,temp.character!.currentHp+(d.hp||0));

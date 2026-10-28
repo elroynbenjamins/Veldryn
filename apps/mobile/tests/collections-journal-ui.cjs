@@ -20,6 +20,7 @@ const collectibles=[
  {id:'earned-event',name:'Earned event art',kind:'background',owned:true,selected:false,event:'past'},
  {id:'future-event',name:'Future event art',kind:'background',owned:false,selected:false,event:'veilbreak'},
  {id:'pet',name:'Hidden pet',kind:'pet',owned:true,selected:false},
+ {id:'GUILD_PET_001',name:'Stormwatch Fox',kind:'pet',owned:true,selected:false},
  {id:'EVT_PET_013',name:'Gloomkin',kind:'pet',owned:false,selected:false},
 ].map(row=>({...row,target:'attack',source:'Reward',ownedBps:5,activeBps:10}));
 const modules={
@@ -33,7 +34,7 @@ const modules={
  '../core/collectibles':{collectibleJournal:()=>collectibles,collectionBonusBreakdown:()=>[],selectCollectible:(state,kind,id)=>({...state,character:{...state.character,[kind==='background'?'profileBackgroundId':'profileBorderId']:id}})},
  '../core/profile-icons':{profileIconCollection:profiles,selectProfileIcon:(state,id)=>({...state,character:{...state.character,profileIconId:id}})},
  '../theme/profile-background-assets':{profileBackgroundPreviewById:new Map()},'../theme/profile-border-assets':{profileBorderSourceById:new Map()},
- '../theme/pet-art':{petArtSource:()=> 'pet-sample-art'},
+ '../theme/pet-art':{petArtSource:()=> 'pet-sample-art',petDetailArtSource:id=>id==='GUILD_PET_001'||id==='EVT_PET_013'?'pet-portrait-art':undefined},
  '../core/live-events':{activeLiveEvent:state=>state.activeEvent?{definition:{visualKey:state.activeEvent}}:undefined},
  '../theme/ThemeContext':{useGameTheme:()=>colors},'../theme/theme':{radii:{md:10,lg:14},typography:{hero:{},title:{},caption:{},body:{},bodyStrong:{}}},
 };
@@ -91,10 +92,13 @@ const tap=async label=>{const target=press(label);assert.ok(target,label);await 
  await act(()=>{renderer=create(React.createElement(CollectionsScreen,{state,onChange:()=>{},initialCategory:'pet'}));});
  assert.equal(list().props.data[0].kind,'pet','Pet category is a first-class tab');
  await tap('Hidden pet, Owned');
- assert.ok(renderer.root.findAllByType('Image').some(node=>node.props.accessibilityLabel==='Hidden pet'&&node.props.style.width===112),'permanent pet detail uses a compact native-friendly preview rather than the 200-point full-stage stretch');
+ assert.ok(renderer.root.findAllByType('Image').some(node=>node.props.accessibilityLabel==='Hidden pet'&&node.props.style.width===96),'permanent pet detail uses a compact native-friendly preview rather than the 200-point full-stage stretch');
+ await act(()=>renderer.root.findByType('GameModalSurface').props.onClose());
+ await tap('Stormwatch Fox, Owned');
+ assert.ok(renderer.root.findAllByType('Image').some(node=>node.props.accessibilityLabel==='Stormwatch Fox'&&node.props.source==='pet-portrait-art'&&node.props.style.width==='100%'),'Guild pet detail uses the existing full-resolution source rather than a 96px runtime sprite');
  await act(()=>renderer.root.findByType('GameModalSurface').props.onClose());
  await tap('Gloomkin, Locked');
- assert.ok(renderer.root.findAllByType('Image').some(node=>node.props.accessibilityLabel==='Gloomkin'&&node.props.style.width==='100%'),'high-resolution event pet retains the original full-size portrait');
+ assert.ok(renderer.root.findAllByType('Image').some(node=>node.props.accessibilityLabel==='Gloomkin'&&node.props.source==='pet-portrait-art'&&node.props.style.width==='100%'),'high-resolution event pet retains the original full-size portrait');
  await act(()=>renderer.root.findByType('GameModalSurface').props.onClose());
  await act(()=>renderer.unmount());
  console.log('PASS: Collector journal filters, sheet lifecycle, equip guards, event visibility and responsive columns');

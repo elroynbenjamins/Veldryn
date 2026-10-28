@@ -1,6 +1,6 @@
 import {profileT,profileText,profileUpgradeSummary,profileError,profileSourceText} from '../i18n/profile';
 import {useGameLanguage} from '../i18n/GameLanguageProvider';
-import React,{useMemo,useState} from 'react';
+import React,{useEffect,useMemo,useState} from 'react';
 import {Image,Pressable,ScrollView,StyleSheet,Text,useWindowDimensions,View} from 'react-native';
 import type {GameState,GearSlot} from '../core/types';
 import {CLASSES} from '../content/classes';
@@ -55,6 +55,20 @@ export function CharacterScreen({state,onEquip,onUnequip,onEquipSet,onCrafting,o
   const [showLoadouts,setShowLoadouts]=useState(false);
   const [enhancing,setEnhancing]=useState(false),[enhancingItemId,setEnhancingItemId]=useState<string|null>(null);
   const [confirming,setConfirming]=useState(false),[busy,setBusy]=useState<Busy>(null),[message,setMessage]=useState('');
+  useEffect(()=>{
+    // Character changes must not leave a socket or upgrade sheet pointed at another character's gear.
+    const equipped=state.character?.equipment;
+    setSelectedSlot(equipped?.weapon?'weapon':EQUIPMENT_SLOT_ORDER.find(slot=>Boolean(equipped?.[slot]))??'weapon');
+    setPickerSlot(null);
+    setEnhancing(false);
+    setEnhancingItemId(null);
+    setGemCodexOpen(false);
+    setConfirming(false);
+    setShowMore(false);
+    setEquipmentTool('enhance');
+    setExpandedSet(null);
+    setShowAllSets(false);
+  },[state.character?.id]);
   const character=state.character!,classDef=CLASSES.find(item=>item.id===character.classId)!;
   const model=equipmentScreenModel(state),focus=equipmentFocusModel(state,selectedSlot),progress=noviceSetProgress(state);
   const selected=model.slots.find(entry=>entry.slot===selectedSlot)??model.slots[0],selectedEnhancement=selected.item?gearEnhancement(state,selected.item.id):null;

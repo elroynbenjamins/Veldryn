@@ -161,7 +161,7 @@ export const MERCHANT_GUILD_FESTIVAL_EVENT:LiveEventDef={
   maxProgress:10000,
   claimGraceDays:7,
   visualKey:'merchant_guild',
-  signature:{kind:'trade',label:'SIGNATURE · CARAVAN NETWORK',title:'Escort the Gilded Road and keep the guild fair moving',description:'Merchant & Guild Festival is the economy-and-social annual event. Earn Guild Scrip through regular activities, choose a trade focus, escort a caravan through a short level-scaled combat route, and contribute part of your wallet toward the shared Guild Pavilion.',highlights:['Caravan Escort with three level-scaled routes','Shared Guild Pavilion milestones','Gilded Road seasonal expedition']},
+  signature:{kind:'trade',label:'SIGNATURE · CARAVAN NETWORK',title:'Escort the Gilded Road and keep the guild fair moving',description:'Merchant & Guild Festival focuses on trade routes and guild-themed personal progression. Earn Guild Scrip through regular activities, choose a trade focus, and prepare for caravan challenges and the Gilded Road expedition.',highlights:['Trade-focused daily and weekly activities','Caravan-themed collectibles','Gilded Road seasonal expedition']},
   ui:{
     prepareTitle:'Prepare the guild fair',
     dailyGiftTitle:'Today’s Guild Gift',

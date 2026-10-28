@@ -161,6 +161,6 @@ export function CoopExpeditionScreen({onClose,language,state,entrySource=realCoo
       </View>}
       {!!notice&&<Text accessibilityRole="alert" style={{color:C.warning}}>{notice}</Text>}
     </View>}
-    <CoopDungeonList language={language} dungeons={dungeons} eventExpeditions={activeEventExpeditions} loading={loading} error={error} activeRun={entry?.activeRun} liveTools={liveTools} onBack={onClose} onRetry={()=>load()} onSelect={chooseDungeon} onSelectEvent={chooseEvent} onResume={()=>{if(entry?.activeEventRunProjection){setRun(undefined);setEventRun(entry.activeEventRunProjection);return;}resumeActiveRun()}}/>
+    <CoopDungeonList language={language} mode={mode} onMode={next=>{setMode(next);setNotice('')}} dungeons={dungeons} eventExpeditions={activeEventExpeditions} loading={loading} error={error} activeRun={entry?.activeRun} liveTools={liveTools} onBack={onClose} onRetry={()=>load()} onSelect={chooseDungeon} onSelectEvent={chooseEvent} onResume={()=>{if(entry?.activeEventRunProjection){setRun(undefined);setEventRun(entry.activeEventRunProjection);return;}resumeActiveRun()}}/>
   </View>;
 }

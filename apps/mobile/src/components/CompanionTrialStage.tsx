@@ -55,23 +55,26 @@ function eventText(playback:CompanionBattlePlaybackSnapshot,event:CompanionBattl
  return t('Combat event');
 }
 
-export function CompanionTrialStage({state,now,floor,teamIds}:{state:GameState;now:number;floor:number;teamIds:string[]}){
+export function CompanionTrialStage({state,now,floor,teamIds,mode='trial',expectedBattleId}:{state:GameState;now:number;floor:number;teamIds:string[];mode?:'trial'|'special';expectedBattleId?:string|null}){
  const language=useGameLanguage(),t=companionTranslator(language),label=(value:string)=>companionLabel(language,value);
 
  const C=useGameTheme(),equipmentColors=equipmentTheme(C),s=useMemo(()=>makeStyles(C),[C]);
  const view=companionView(state,now),team=teamIds.filter(id=>!!view.owned[id]),power=companionTeamPower(team,view.owned);
  const recommended=companionTrialRecommendedPower(floor),theme=companionTrialEncounterTheme(floor),boss=floor%COMPANION_TRIAL_BOSS_INTERVAL===0,preview=boss?companionTrialBossPreview(floor):undefined;
- const last=state.account.companionLastBattle,playback=last?.playback;
- const fresh=!!last&&!!playback&&now-last.atMs>=0&&now-last.atMs<90_000;
+ const last=state.account.companionLastBattle;
+ const matchingMode=!!last&&(last.mode===mode||!last.mode&&(mode==='trial'?last.title.startsWith('Trial Floor '):last.title==='Special Companion Challenge'));
+ const matchingBattle=matchingMode&&(!expectedBattleId||last?.battleId===expectedBattleId);
+ const playback=matchingBattle?last?.playback:undefined;
+ const fresh=!!playback;
  const playbackRealMs=playback?Math.min(20_000,Math.max(8_000,playback.durationMs*.38)):0;
  const simPerRealMs=playback&&playbackRealMs?playback.durationMs/playbackRealMs:1;
- const [playhead,setPlayhead]=useState(()=>fresh?0:playback?.durationMs??0),startRef=useRef(Date.now()),impact=useRef(new Animated.Value(0)).current;
+ const [playhead,setPlayhead]=useState(0),startRef=useRef(Date.now()),impact=useRef(new Animated.Value(0)).current;
  useEffect(()=>{
-  if(!playback||!fresh){setPlayhead(playback?.durationMs??0);return;}
+  if(!playback){setPlayhead(0);return;}
   startRef.current=Date.now();setPlayhead(0);
   const id=setInterval(()=>setPlayhead(Math.min(playback.durationMs,(Date.now()-startRef.current)*simPerRealMs)),80);
   return()=>clearInterval(id);
- },[fresh,last?.atMs,playback?.durationMs,simPerRealMs]);
+ },[last?.battleId,last?.atMs,expectedBattleId,playback?.durationMs,simPerRealMs]);
  const playbackView=useMemo(()=>playback?playbackState(playback,playhead):undefined,[playback,playhead]);
  const current=playbackView?.visible[playbackView.visible.length-1],finished=!!playback&&playhead>=playback.durationMs;
  useEffect(()=>{
@@ -102,6 +105,7 @@ export function CompanionTrialStage({state,now,floor,teamIds}:{state:GameState;n
   </Animated.View>;
  }
 
+ if(expectedBattleId&&!matchingBattle)return <View style={s.stage}><Text style={s.title}>{t('Preparing battle replay…')}</Text><Text style={s.combatHintText}>{t('Waiting for the resolved combat record. You can close this view and replay the last battle later.')}</Text></View>;
  return <View style={s.stage}>
   <View style={s.stageHeader}><View style={s.flex}><Text style={s.kicker}>{t("TOWER OF COMPANIONS · FLOOR {value0}", {value0: floor})}</Text><Text style={s.title}>{companionContent(language,theme.label)}</Text></View><View style={[s.powerBadge,power>=recommended?s.powerReady:s.powerLow]}><Text style={s.powerText}>{power.toLocaleString()}</Text><Text style={s.powerSub}>{t("/ {value0} POWER", {value0: recommended.toLocaleString()})}</Text></View></View>
   <View style={s.powerTrack}><View style={[s.powerFill,{width:(Math.max(3,powerPct)+'%') as any}]}/></View>

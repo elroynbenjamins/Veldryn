@@ -4,6 +4,12 @@ export interface GuildPveEncounter {
  rosterSize:number;personalCap:number;dailyCap:number;dailyUsed:number;eligible:boolean;attemptCap?:number;attemptsUsed?:number;pendingAttempts?:number;nextAttemptResolvesAt?:string;lastAttemptDamage?:number;lastAttemptCharacterDamage?:number;lastAttemptCompanionDamage?:number;lastAttemptCompanionId?:string;guildLevel?:number;requiredGuildLevel?:number;
 }
 
+export type GuildBossTab=GuildPveEncounter['kind'];
+/** A raid tab displays only its own encounter, never the other boss type. */
+export function guildRaidEncountersForTab(rows:readonly GuildPveEncounter[],tab:GuildBossTab):GuildPveEncounter[]{
+ return rows.filter(row=>row.kind===tab);
+}
+
 export type GuildPveActivity='combat'|'gathering'|'crafting';
 export interface GuildPvePresentation{
  bossName:string;bossTitle:string;summary:string;mechanicName?:string;mechanicSummary?:string;activities:readonly GuildPveActivity[];visualKey:'treant'|'fallen_knight'|'forest_troll'|'veilbreak'|'harvestwake'|'merchant_guild'|'default_event';

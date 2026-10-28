@@ -1,0 +1,13 @@
+const assert=require('node:assert/strict');
+const fs=require('node:fs');
+const path=require('node:path');
+const root=path.resolve(__dirname,'..');
+const view=fs.readFileSync(path.join(root,'src/components/OnlineGuildPve.tsx'),'utf8');
+const app=fs.readFileSync(path.join(root,'App.tsx'),'utf8');
+assert(view.includes("guildRaidEncountersForTab(rows,encounterKind)"),'Only rows belonging to the selected raid tab are projected');
+assert(view.includes("{visibleEncounters.map(row=><GuildPveEncounterCard"),'Boss cards render only from the selected projection');
+assert(!view.includes("{rows.map(row=><GuildPveEncounterCard"),'Unfiltered bosses must never render');
+assert(view.includes("setEncounterKind(kind)"),'Weekly/Event tabs remain switchable');
+assert(view.includes("useState<GuildBossTab>(initialEncounterKind)"),'Initial raid tab selection is respected');
+assert(app.includes("initialEncounterKind={guildInitialPve?'event':'weekly'}"),'Event Boss deep-link selects the Event tab');
+console.log('PASS guild raid tab isolation, weekly/event switching and event deep-link');

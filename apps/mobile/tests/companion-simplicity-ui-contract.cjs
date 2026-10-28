@@ -5,6 +5,7 @@ const file=p=>fs.readFileSync(path.join(__dirname,'../src',p),'utf8');
 const screen=file('screens/CompanionsScreen.tsx');
 const panel=file('components/CombatCompanionPanel.tsx');
 const expeditions=file('components/CompanionExpeditionsV50Panel.tsx');
+const tour=file('components/CompanionTutorial.tsx');
 assert.ok(panel.includes("const sections=['Collection','Trials','Expeditions','Sanctuary']"),'four meaningful destinations retained');
 assert.ok(!panel.includes("section==='Training'"),'no separate Training tab');
 assert.ok(screen.includes('labels[0]')&&screen.includes("labels.join(' · ')"),'one compact attention preview retains full accessibility detail');
@@ -24,4 +25,9 @@ assert.ok(!expeditions.includes('<Text style={s.heading}>{t("Sanctuary Missions"
 assert.ok(expeditions.includes("borderRightWidth:2,borderBottomWidth:2"),'mission dropdown uses crisp chevron instead of text glyph');
 assert.ok(expeditions.includes('GameModalSurface visible={teamPickerOpen}'), 'eligible companion editor retained');
 assert.ok(expeditions.includes("'companion_assignment_start'")&&expeditions.includes("'companion_assignment_claim'"), 'send and claim commands preserved');
+assert.ok(panel.includes("initialSection='Collection'")&&panel.includes('initialTrainingDetail=false'),'tutorial-only entry props do not alter normal companion start');
+assert.ok(tour.includes("initialSection={current.section==='Training'?'Collection':current.section}"),'tour previews the correct four primary destinations');
+assert.ok(tour.includes("initialTrainingDetail={current.section==='Training'"),'Training guide opens an owned companion detail rather than obsolete tab');
+assert.ok(tour.includes("showMore&&<View style={{gap:6}}"),'personalized tutorial hints only appear on request');
+assert.ok(!tour.includes("Scroll to look around. Buttons are disabled during the guide."),'do not repeat instructional preview copy');
 console.log('PASS: companion progressive disclosure and decision-first layout');

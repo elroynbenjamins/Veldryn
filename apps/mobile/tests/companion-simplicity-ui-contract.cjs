@@ -10,7 +10,7 @@ assert.ok(panel.includes("const sections=['Collection','Trials','Expeditions','S
 assert.ok(!panel.includes("section==='Training'"),'no separate Training tab');
 assert.ok(screen.includes('labels[0]')&&screen.includes("labels.join(' · ')"),'one compact attention preview retains full accessibility detail');
 assert.ok(!screen.includes('Account roster, exploration, class skills and monster mastery remain available below without crowding'),'no repeated tutorial paragraph in secondary section');
-assert.ok(screen.includes('showOtherProgression?'), 'account and mastery features remain available on demand');
+assert.ok(!screen.includes('showOtherProgression')&&!screen.includes('OTHER CHARACTER PROGRESSION'), 'other character progression is absent from the companion screen');
 assert.ok(panel.includes('ownedIds.length>=8?<View style={s.filterWrap}>'),'advanced roster filtering appears only when the roster needs it');
 assert.ok(panel.includes("current==='Owned'?'All':'Owned'"),'small rosters can still discover locked companions without extra filter dropdown');
 assert.ok(panel.includes('title={t("Companion Codex")}'),'unowned discovery still accessible for small rosters');

@@ -31,6 +31,8 @@ jobs:
         run: node tests/inventory-storage-management-ui.cjs
       - name: Verify Guild raid boss tabs
         run: node tests/guild-raid-tabs-ui.cjs
+      - name: Validate Settings screen simplicity
+        run: node tests/settings-simplicity-ui.cjs
       - name: Typecheck core
         run: pnpm typecheck:core
       - name: Run mobile core tests

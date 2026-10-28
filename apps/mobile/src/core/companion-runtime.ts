@@ -210,7 +210,9 @@ export function recommendedCompanionTrialStageTeam(state:GameState,floor:number,
   const matchup=companionTrialStageTeamMatchup(floor,check.members.map(m=>m.affinity));
   // A full complementary pair improves overall performance, but the modest
   // ceiling avoids rewarding a very underleveled companion just for affinity.
-  const counterValue=hazard.id==='venom_bloom'?(ids.includes('UNIT_008')?.047:0)+(ids.includes('UNIT_005')?.024:0)+(ids.includes('UNIT_003')?.018:0):hazard.id==='ritual_surge'?(ids.includes('UNIT_005')?.05:0)+(ids.includes('UNIT_008')?.012:0):(ids.includes('UNIT_003')?.026:0);
+  const kits=ids.map(id=>companionServerDefinition(id)?.active.effectKind);
+  const healing=kits.includes('heal'),interrupt=kits.includes('interrupt'),mitigation=kits.includes('mitigation'),cleanse=ids.includes('UNIT_008');
+  const counterValue=hazard.id==='venom_bloom'?(cleanse?.047:0)+(interrupt?.024:0)+(healing?.018:0):hazard.id==='ritual_surge'?(interrupt?.05:0)+(mitigation?.016:0):(healing?.026:0)+(mitigation?.026:0);
   const multiplier=1+(matchup.offense?.018:0)+(matchup.guard?.018:0)+(matchup.pair?.02:0)+Math.min(.08,counterValue);
   const score=check.power*multiplier;
   if(!best||score>best.score){best={ids,power:check.power,score,offense:matchup.offense,guard:matchup.guard,pair:matchup.pair};}

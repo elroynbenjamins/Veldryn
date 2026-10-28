@@ -63,7 +63,6 @@ export function PartyHubPanel(props: PartyHubPanelProps) {
   const [localFilters, setLocalFilters] = React.useState<RecruitmentClientFilters>(EMPTY_RECRUITMENT_FILTERS);
   const [section,setSection]=React.useState<'party'|'find'>(props.party?'party':'find');
   React.useEffect(()=>{setSection(props.party?'party':'find');setShowSettings(false);},[props.party?.id]);
-  const [showFilters,setShowFilters]=React.useState(false);
   const [showSettings,setShowSettings]=React.useState(false);
   const [expandedContracts,setExpandedContracts]=React.useState<string[]>([]);
   const [browseMode,setBrowseMode]=React.useState<'parties'|'players'>(props.recruitmentMode==='looking_for_party'?'players':'parties');
@@ -112,10 +111,9 @@ export function PartyHubPanel(props: PartyHubPanelProps) {
       {inParty?props.recruitmentPreferences:null}
       <View style={styles.browseTabs}><BrowseChip label="Parties recruiting" selected={browseMode==='parties'} onPress={()=>setBrowseMode('parties')}/><BrowseChip label="Players seeking" selected={browseMode==='players'} onPress={()=>setBrowseMode('players')}/></View>
       <View style={styles.rowWrap}>
-       <GameButton compact title={showFilters?'Hide filters':'Filters'} tone="secondary" onPress={()=>setShowFilters(!showFilters)}/>
        {browseMode==='players'&&!inParty?<GameButton compact title={st("Post my LFG")} tone="secondary" onPress={() => props.onCreateRecruitmentPost?.('looking_for_party')} />:browseMode==='parties'&&canManageParty?<GameButton compact title={st("Post Party LFM")} tone="secondary" onPress={() => props.onCreateRecruitmentPost?.('party_recruiting')} />:null}
       </View>
-      {showFilters?<RecruitmentFiltersPanel value={filters} onChange={setFilters} hidePostType/>:null}
+      <RecruitmentFiltersPanel value={filters} onChange={setFilters} hidePostType/>
       {cards.map(card => <RecruitmentListing key={card.id} card={card} nowMs={props.nowMs} onPress={() => props.onOpenRecruitmentPost?.(card.id)} />)}
       {!cards.length && <Text style={styles.muted}>No matching adverts.</Text>}
       {props.ownedAdverts}

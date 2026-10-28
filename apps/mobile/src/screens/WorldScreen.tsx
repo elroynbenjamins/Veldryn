@@ -66,9 +66,7 @@ export function WorldScreen({state,onTravel,onOpenCombat,onOpenSkills,onCoop,dun
   const frostmarchCards=frostmarchCardsV21(level),frostmarchZones=frostmarchCards.zones,frostmarchDungeons=frostmarchCards.dungeons;
   const frostmarchProgress=serverFrostmarchProgress??frostmarchProgressFromState(state);
   return <ScrollView contentContainerStyle={s.root} showsVerticalScrollIndicator={false} showsHorizontalScrollIndicator={false}>
-    <Text style={s.kicker}>{t("TRAVEL")}</Text>
     <Text accessibilityRole="header" style={s.h}>{t("World Regions")}</Text>
-    <Text style={s.sub}>{t("Your location controls which enemies and gathering activities are available.")}</Text>
 
     <View accessibilityRole="tablist" style={s.topTabs}>
       <Pressable accessibilityRole="tab" accessibilityState={{selected:topTab==='region'}} style={[s.topTab,topTab==='region'&&s.topTabActive]} onPress={()=>setTopTab('region')}><Text style={[s.topTabText,topTab==='region'&&s.topTabTextActive]}>{t("Current Region")}</Text></Pressable>
@@ -87,7 +85,7 @@ export function WorldScreen({state,onTravel,onOpenCombat,onOpenSkills,onCoop,dun
     <View style={s.currentActions}><View style={s.currentAction}><GameButton title={t("Combat")} onPress={()=>onOpenCombat()}/></View><View style={s.currentAction}><GameButton title={p("Gathering")} tone="secondary" onPress={onOpenSkills}/></View></View>
     <Text style={s.currentAvailability}>{t("Hunts {ready}/{total} · Gather {gatherReady}/{gatherTotal}",{ready:currentSummary.combatReady,total:currentSummary.combatTotal,gatherReady:currentSummary.gatheringReady,gatherTotal:currentSummary.gatheringTotal})}</Text>
 
-    {goalRegionId&&goalRegionId!==current.id?<View style={s.goalRoute}><Text style={s.goalRouteLabel}>{t("OBJECTIVE ROUTE")}</Text><Text style={s.sub}>{t("Your current objective continues in {region}. That region is promoted to the top of Travel Elsewhere below.",{region:WORLD_ZONES.find(zone=>zone.id===goalRegionId)?.name??goalRegionId})}</Text></View>:null}
+    {goalRegionId&&goalRegionId!==current.id?<View style={s.goalRoute}><Text style={s.goalRouteLabel}>{t("OBJECTIVE ROUTE")} · {WORLD_ZONES.find(zone=>zone.id===goalRegionId)?.name??goalRegionId}</Text></View>:null}
 
     {storyRegion&&<RegionalStoryLeadsPanel state={state} regionId={storyRegion} onOpenCombat={()=>onOpenCombat()}/>}
     {sunscar&&<><SunscarRegionPanel zones={sunscarZones}/>{onRegionalRewardsChanged?<RegionalCombatPanel state={state} onRewardsChanged={onRegionalRewardsChanged}/>:null}</>}

@@ -86,7 +86,7 @@ export function PartyHubPanel(props: PartyHubPanelProps) {
 
     {inParty && section==='party' && <View style={styles.panel}>
       <Text style={styles.sectionTitle}>{st("PARTY CONTRACTS")}</Text>
-      {props.contracts.length>0?<Text style={styles.muted}>{st("Shared weekly progress. Personal minimums prevent zero-contribution rewards.")}</Text>:null}
+      
       {props.contracts.map(contract => <View key={contract.id}>{contract.tiers?.length?<PartyWeeklyLadder contract={contract} nowMs={props.nowMs} onClaimReward={props.onClaimReward}/>:<ContractCard contract={contract} nowMs={props.nowMs} />}{contract.tiers?.length?null:contract.rewards?.map(reward=><PixelButton key={reward.id} label={reward.claimed?st("Reward claimed"):`Claim ${reward.reward.gold} Gold`} onPress={!reward.claimed&&props.onClaimReward?()=>props.onClaimReward!(reward.id):undefined}/>)}</View>)}
       {!props.contracts.length && <View style={styles.emptyPanel}><Text style={styles.emptyTitle}>No active contract this week</Text><Text style={styles.muted}>Weekly Contracts are posted automatically. Keep adventuring and the next one will appear here.</Text></View>}
     </View>}

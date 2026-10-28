@@ -3,6 +3,8 @@ import {useEffect,useState} from 'react';
 import {Pressable,StyleSheet,Text,View} from 'react-native';
 import {createSectionGuideStore} from '../core/section-guidance';
 import {useGameTheme} from '../theme/ThemeContext';
+import {useGameLanguage} from '../i18n/GameLanguageProvider';
+import {accountText} from '../i18n/account';
 import {spacing,typography} from '../theme/theme';
 
 const store=createSectionGuideStore(AsyncStorage);
@@ -10,7 +12,8 @@ type GuideText={title:string;body:string;detail?:string};
 type Props={scope:string;area:string;section:string;guide:GuideText;translate?:(value:string)=>string};
 /** One unobtrusive tip on first entry to each tab. Tabs and actions remain usable. */
 export function SectionGuide({scope,area,section,guide,translate}:Props){
- const C=useGameTheme(),t=translate??((value:string)=>value);
+ const C=useGameTheme(),language=useGameLanguage();
+ const t=(value:string)=>{const mapped=translate?.(value)??value;return mapped===value?accountText(language,value):mapped;};
  const identity=area+':'+scope;
  const [saved,setSaved]=useState<{identity:string;seen:string[]}|null>(null);
  const [open,setOpen]=useState<{identity:string;section:string}|null>(null);

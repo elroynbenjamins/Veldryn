@@ -46,6 +46,8 @@ export interface PartyHubPanelProps {
   ownedAdverts?: React.ReactNode;
   recruitmentDetails?: React.ReactNode;
   partyExtras?: React.ReactNode;
+  partyInvitations?: React.ReactNode;
+  invitationCount?: number;
   partyUnlocked?: boolean;
   partyUnlockLevel?: number;
 }
@@ -88,12 +90,12 @@ export function PartyHubPanel(props: PartyHubPanelProps) {
         {(()=>{const permissions=partyMemberManagement(canManageParty,props.accountId,member.accountId);return permissions.canTransfer||permissions.canRemove?<View style={styles.memberActions}><GameButton compact title="•••" tone="secondary" onPress={()=>gameAlert.alert(member.characterName,'Manage party member',[...(permissions.canTransfer?[{text:st('Lead'),onPress:()=>props.onTransferLeadership?.(member)}]:[]),...(permissions.canRemove?[{text:st('Kick'),onPress:()=>props.onRemoveMember?.(member)}]:[]),{text:'Cancel',style:'cancel'}])}/></View>:null})()}
       </View>)}
       <View style={styles.rowWrap}>
-        <PixelButton label="Party options" secondary onPress={()=>setShowSettings(!showSettings)}/>
+        <PixelButton label={props.invitationCount?'Party options · '+props.invitationCount:'Party options'} secondary onPress={()=>setShowSettings(!showSettings)}/>
       </View>
-      {showSettings?<View style={styles.rowWrap}>
+      {showSettings?<><View style={styles.rowWrap}>
         <PixelButton label={st("Leave")} secondary onPress={props.onLeaveParty} />
         {canManageParty&&props.party!.members.length>1?<PixelButton label={st("Disband")} secondary onPress={props.onDisbandParty}/>:null}
-      </View>:null}
+      </View>{props.partyInvitations}</>:null}
     </View>}
 
     {inParty && section==='party' && <View style={styles.panel}>

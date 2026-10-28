@@ -368,6 +368,7 @@ export const companionTranslationRows={
  "BOSS ENCOUNTER": ["BOSSBEGEGNUNG","ENCUENTRO CON JEFE","BAASGEVECHT","INCONTRO BOSS","RENCONTRE DE BOSS"],
  "TRIAL FORMATION": ["PRÜFUNGSFORMATION","FORMACIÓN DE PRUEBA","BEPROEVINGSFORMATIE","FORMAZIONE PROVA","FORMATION D'ÉPREUVE"],
  "COMBAT FEED": ["KAMPFPROTOKOLL","REGISTRO DE COMBATE","GEVECHTSVERSLAG","REGISTRO COMBATTIMENTO","JOURNAL DE COMBAT"],
+ "Battle progress": ["Kampffortschritt","Progreso del combate","Gevechtsvoortgang","Avanzamento del combattimento","Progression du combat"],
  "{value0} authoritative events": ["{value0} bestätigte Ereignisse","{value0} eventos confirmados","{value0} bevestigde gebeurtenissen","{value0} eventi confermati","{value0} événements confirmés"],
  "The formation enters the Trial…": ["Die Formation betritt die Prüfung…","La formación entra en la prueba…","De formatie betreedt de beproeving…","La formazione entra nella prova…","La formation entre dans l'épreuve…"],
  "Compressed playback of the already-resolved server simulation.": ["Beschleunigte Wiedergabe der bereits ausgewerteten Serversimulation.","Repetición acelerada de la simulación ya resuelta en el servidor.","Versnelde herhaling van de al afgehandelde serversimulatie.","Replay accelerato della simulazione già risolta dal server.","Relecture accélérée de la simulation déjà résolue par le serveur."],

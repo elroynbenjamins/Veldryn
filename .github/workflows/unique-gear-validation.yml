@@ -3,6 +3,7 @@ on:
   pull_request:
     paths:
       - 'apps/mobile/src/core/**'
+      - 'backend/online/tests/gameplay.ts'
       - 'apps/mobile/src/screens/InventoryScreen.tsx'
       - 'apps/mobile/src/components/EquipmentCraftQueuePanel.tsx'
       - 'apps/mobile/tests/equipment-crafted-instance-results.ts'
@@ -32,3 +33,7 @@ jobs:
         run: node node_modules/typescript/lib/tsc.js -p tsconfig.unique-gear.json --outDir .unique-gear-build
       - name: Run exact-copy crafting and retention regressions
         run: NODE_PATH=../../backend/node_modules node .unique-gear-build/apps/mobile/tests/equipment-crafted-instance-results.js
+      - name: Compile authoritative online gameplay
+        run: pnpm --dir ../../backend exec tsc -p tsconfig.online.json
+      - name: Verify concurrent copy writes, replay and Gold integrity
+        run: node ../../backend/dist/online/backend/online/tests/gameplay.js

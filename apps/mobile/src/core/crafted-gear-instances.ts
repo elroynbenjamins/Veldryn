@@ -88,8 +88,9 @@ export function pruneCraftedInstancesForSale(state:GameState,itemId:string,count
 export function craftedInstanceResult(state:GameState,instance:CraftedGearInstance){
   const copies=craftedInstancesForItem(state,instance.itemId,instance.ownerCharacterId),baseRarity=itemRarity(itemDef(instance.itemId));
   return {
-    instanceId:instance.id,itemId:instance.itemId,rarity:instance.rarity,baseRarity,
+    instanceId:instance.id,itemId:instance.itemId,rarity:instance.rarity,quality:instance.quality,baseRarity,
     qualityProc:instance.rarity!==baseRarity,duplicateCount:Math.max(0,copies.length-1),
-    statMultiplier:craftedRarityStatMultiplier(instance.itemId,instance.rarity),
+    statMultiplier:craftedRarityStatMultiplier(instance.itemId,instance.rarity)*(instance.quality===undefined?1:craftedGearQualityMultiplier(instance.quality)),
+    autoSold:undefined as 'incoming'|'existing'|undefined,saleGold:0,
   };
 }

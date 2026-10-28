@@ -670,3 +670,326 @@ Each ticket is scored on **Impact (I), Frequency (F), Reliability/security (R), 
 - **Tests:** privacy/public projections, revoked cosmetics, inherited account ownership, empty codex, old profile cache.
 - **Regression watch:** pay-for-status pressure, data expansion and profile rendering latency.
 
+
+## 7. Release planning and cut lines
+
+**These are capability categories, not release dates or a commitment to launch every idea.** Each required item can close as “existing behavior verified” without modifying code. Only essential defects are fixes; otherwise no accidental scope expansion.
+
+### 7.1 REQUIRED before version 1.0 — no-go if not accepted
+
+**Release/platform gate:** A01 (green mobile CI), A02 (safe staging/prod ledger and target compatibility), A03 (no untriaged critical authorization exposure), A04 (claim/transaction integrity), A05 (signed upgradeable Android artifact), A06 (truthful launch content, gates, entitlements and AFK policy), A07 (single capped offline/queue accounting, if repro), A08 (auditable release checklist). **D01** and **D04** require only **measured baseline and delivery-footprint evidence** here; the optimization projects can follow 1.0 unless thresholds reveal a release-blocking fault.
+
+**Player-functional gate:** B04 (chat/social continuity) and B05 (real Live/QMode co-op) **if promoted as 1.0 features in A06**; B06 (accessible resource totals, safe destructive actions; optional auto-sell expansion can be deferred if risky), B07 (events accurately gate and settle if released), B08 (guest/Google recovery and real paid entitlements), B09 (new player loop), B10 (all catalog/art/recipe dependencies in the *advertised launch tier*). **C03 minimum accessibility and reachability** is a release gate; wider design-system overhaul is not.
+
+**Scope-switch option:** If a complex peripheral online mode **cannot pass** its required acceptance despite reasonable focused repair, the project owner can explicitly disable it for 1.0 via launch manifest/flags/UI and remove it from marketing, provided it cannot strand purchased content or existing player entitlements. Do not silently leave a dead-end button.
+
+**Go/no-go decision sheet must contain:**
+- Artifact: immutable Git SHA, production AAB versionCode, native Android package, signing fingerprint/build ID, installed upgrade path and current Play supported-device diff.
+- Backend: Supabase target, schema ledger hash, Edge deployment versions/commit, external Play service config status, RLS/EXECUTE review, latest migration dry-run.
+- CI: current Expo Doctor, **both** mobile TS checks, focused and wider core tests, backend typecheck/economy/co-op/security SQL smoke and clean deployment checks; record every failed/skipped step.
+- Journeys: create guest, claim progress after max AFK, cook split stacks, bank/overflow, equip, craft, queue, link Google/email, send/receive chat between accounts, start/finish/claim Live and QMode if advertised, redeem event rewards, purchase/restore/refund in Play testing.
+- Native UX: at least one representative recent phone and a lower-memory/small-window Android, TalkBack and large text, keyboard open/close chat, dark/light, multi-hour background/resume and saved draft.
+- Owner approval: unresolved risks, excluded features, rollback, version increment and store wording. A red gate blocks launch; signed exclusions require specific reason and mitigation.
+
+### 7.2 Recommended for version 1.0 if stabilization capacity permits
+
+**B01** pinned formation/start, **B02** battle playback clarity, **B03** owned-first training, **C01** predictable navigation, **C02** quiet reward notifications, **C04** consistent launch-scope art, **C05** explicit recipe actions, **C06** individual loading/error states, **C07** native Guild screen density and **C08** short contextual guides.
+
+**Order within the companion cluster:** B03 owned-first roster → B01 start/formation shell → B02 authoritative replay fidelity → E07 advanced formation hints (later). B01 and B02 can be built separately but release integration should check them together.
+
+**Keep 1.0 surgical:** avoid adding new species/skills/events to compensate for unclear UI. If B01/B02/C polish cannot be finished, preserve currently functioning Trials, verify their claims, label battle presentation as a follow-up and ensure no unreachable UI.
+
+### 7.3 Version 1.1 — focused improvements, conditional on metrics
+
+E01 recommended bounded queue planning, E02 claim-all, E03 owned companion candy targeting, E04 guild discovery; C09 ordinary combat art/feedback, D02 large-list virtualization **only if profiling proves needed**, D03 catalog indexing **only if worthwhile**, D05 top DB bottlenecks **only after authorization review**, D07 redacted operational telemetry. Continue work on cosmetic completeness and per-screen QA.
+
+**Do not automatically ship every “1.1” ticket**: prioritize proven high-usage pain from release analytics and support. B06 auto-sell beyond current mass-craft safeguards belongs here if its live migration/race risk is high. E05 scaling enters 1.1 only if actual guild effort inequity is confirmed.
+
+### 7.4 Medium-term product evolution
+
+E05 contribution fairness if measured, E06 useful Home goal card, E07 smarter formation advice, D06 small internal source organization and production-like load testing. Update remaining tier sprite inventory as actual progression opens, not as a single oversized art requirement. Release cadence should follow content/test capacity rather than a declared calendar.
+
+### 7.5 Long-term experimental / explicitly deferred
+
+F01 living work scenes, F02 voluntary social presence, F03 deeper narrative event arcs, F04 desktop/web client, F05 additional cosmetic companion showcase. These need measured demand, battery/asset/hosting budget and privacy review.
+
+**Explicitly postpone/reject:** unplanned MMO open player market; freely tradeable equipment; mass simultaneous offscreen character farms; paid power/gacha; forced daily chores/PvP/leaderboard ladder; GPS/3D realm; giant event-exclusive progression currency ecosystem; auto-travel activity queue; global always-on avatar polling; second duplicated inventory/companion authoritative database; separate battle RNG engine; sweeping DB index removal; replacing the entire app navigation during release hardening. Arena and Rankings remain release-flagged off until independently scoped/reviewed.
+
+### 7.6 Incremental engineering work packages
+
+| Package | Independently verifiable unit | Dependencies | Expected outcome |
+| --- | --- | --- | --- |
+| R0 | A01 starter contract and green CI rerun | Current `main` | Known build gate cleared or accurately scoped |
+| R1 | A02 schema/version export and additive staging parity plan | Supabase access | Safe target for hosted acceptance |
+| R2 | A03 auth-grant audit + A04 replay/race probes | R1, test identities | Security/accounting decisions based on evidence |
+| R3 | A05/A08 signed device matrix | R0–R2 | Upgradeable and auditable AAB |
+| R4 | B06/A07 split-stacks, offline cap and queue handoff fixtures | R0, R2 | No silent idle resource/reward loss |
+| R5 | B04/B05 multi-account chat/co-op and Echo flows | R1–R3 | Multiplayer accepted or explicitly gated off |
+| R6 | B07/B08 commerce/event date and payment QA | R1–R3 | Correct entitlements, event milestones |
+| R7 | B09/B10 first-session and content reachability proof | R0, R4 | Honest core product |
+| R8 | B03→B01→B02 companion usability | R0, R2, R7 | Owned roster, easy start, visible battle |
+| R9 | C01–C08 targeted interaction/visual cleanup | R3, relevant R4–R8 | Polished mobile navigation, chat and rewards |
+| R10 | D01/D04 baseline and resulting measured optimization | R3 | Proven performance outcomes, not assumptions |
+| R11 | E-series experimental user-value tickets | 1.0 shipped, feedback | Focused, validated 1.1 improvements |
+
+Parallelize only independent PRs. Never update production migrations and simultaneous paid-claim UI/handlers without coordination. Use feature flags and staged deployments where behavior/authority changes.
+
+---
+
+## 8. Dependency graph, verification gates and team ownership
+
+### 8.1 Critical path (read as prerequisite -> dependent)
+
+```text
+Current source SHA + code inventory
+  ├─ A01 failing starter type contract -> all broad mobile tests -> A05 AAB
+  ├─ A02 staging / migration ledger -> A03 SQL auth -> A04 receipt integrity
+  │                                   ├─ B04/B05 real multiplayer
+  │                                   └─ B07/B08 event + commerce
+  ├─ A06 release policy / AFK / flags -> A07/B10 launch-content truth
+  └─ A08 repeatable QA manifest <- A05 / A02 / A03 / A04
+
+A07 queue/resource truth + B06 storage correctness -> E01 queue suggestions
+B03 owned roster + B01 pinned Trials + B02 real battle event playback -> E07 hints
+B04/C07 guild membership truth + A03 privacy -> E04 discovery -> E05 fair quests
+D01 on-device trace + D04 bundle trace -> optional D02/D03/D05 optimizations
+Stable v1.0 + measured interest -> F01–F05 innovation experiments
+```
+
+### 8.2 Responsible specialties (roles, not assigned individuals)
+
+| Discipline | Accountable deliverables |
+| --- | --- |
+| Release engineer | A01/A05/A08, manifest, Play test-track results and signed rollback |
+| Backend/database owner | A02/A03/A04, server migration/receipt matrices, D05 |
+| Gameplay systems | A07/B06/B07/B10, source-of-truth balances, catalog progression |
+| Mobile/UX owner | B01/B02/B03/C01–C09, Android screenshots, input and TalkBack |
+| Multiplayer/social owner | B04/B05/C07, two-account chats, rosters and private Echo boundaries |
+| Commerce/identity owner | B08, secure linking, purchases/restores/RTDN |
+| Art/localization/QA | C03/C04/B09, asset inventory and end-to-end first sessions |
+| Product owner | A06 release scopes, monetization truth, what to defer, accept-risk signoffs |
+
+### 8.3 Required test layers and scope
+
+1. **Fast source checks:** TypeScript core/full mobile; Expo Doctor; backend typecheck/build; content/asset integrity and translations.
+2. **Deterministic state tests:** offline clock/cap, queue, finance/production inventory, equipment stat seeds, Trial playback and reward fixture parity.
+3. **Server/SQL access:** under anon/auth/service/test-account roles test claims, rejection of untrusted client values, guild/party membership, database idempotency and fresh migration chain.
+4. **Hosted integration:** production-like separate staging accounts; cold/warm/reconnect, simultaneous claims, matchmaking/ready/votes and purchase verification with Google test accounts.
+5. **Native acceptance:** signed Android AAB on target API/density/support devices; 320px/large font/TalkBack/keyboard, startup, motion reduction, image clipping.
+6. **Performance:** opt-in QA capture and production-safe aggregate metrics, representative state sizes and before/after evidence; not synthetic “improved 30%” claims.
+7. **Store/update:** old-version to new-version app data retained, credentials/manifest correct, Play supported-device warnings explained.
+
+**Stop-the-line classes:** lost player progress, double-spend/claim, privilege escalation, account mixup, broken paid restore or false VIP entitlement, invalid upgrade path, missing critical assets preventing launch UI, release build CI failure, and visibly blocked required core action. Other issues can be triaged by severity and advertised scope rather than postponing release indefinitely.
+
+---
+
+## 9. Prioritization scorecard (planning scores, not observed usage statistics)
+
+**Inputs 1–5 each:** I = user impact; F = frequency for affected player; R = reliability/data/security importance; C = competitive relevance; Q = evidence strength; E = implementation effort (1 localized, 5 major); G = regression probability/blast radius (1 narrow, 5 large). **Score = `3I + 2F + 3R + C + Q - 2E - G`.** Thus broad integrity risks can rank high even when ordinary users seldom trigger them. Values are expert estimates based on inspected source and qualitative market research, **not measured population data**. P0 release gates override numeric order. The Evidence H/M/L label is judgment of verification quality, not statistical confidence.
+
+### Overall high-value tickets by calculated priority (excluding experiments)
+
+1. **A01** — score **40**, 1.0 Required; priority P0 stability.
+2. **A08** — score **40**, 1.0 Required; priority P0 stability.
+3. **A05** — score **39**, 1.0 Required; priority P0 stability.
+4. **A07** — score **39**, 1.0 Required; priority P0 stability.
+5. **B04** — score **39**, 1.0 Required; priority Core experience.
+6. **C06** — score **39**, 1.0 Recommended; priority Polish.
+7. **A06** — score **38**, 1.0 Required; priority P0 stability.
+8. **D01** — score **38**, 1.0 Required baseline; priority Optimization.
+9. **B07** — score **37**, 1.0 Required; priority Core experience.
+10. **B06** — score **36**, 1.0 Required; priority Core experience.
+11. **C03** — score **36**, 1.0 Required safety; priority Polish.
+12. **A04** — score **35**, 1.0 Required; priority P0 stability.
+13. **B08** — score **35**, 1.0 Required; priority Core experience.
+14. **A02** — score **34**, 1.0 Required; priority P0 stability.
+
+**Quick wins:** A01 contract resolution once behavior is decided; B03 owned-first filter; C02 event acknowledgment/false reward trigger elimination; C05 explicit button labels; C06 remaining promise-aware action states; B01 top-level Trial Start UI. “Quick” means bounded code scope, **not guaranteed low test risk**.
+
+**High-value investments:** A02–A05 environment/authority/Android acceptance, B05/QMode real-player journey, B06 resource safety, B02 true Trial playback, B10 launch-catalog reachability, D01 device measurement. These improve players' trust and VELDRYN's credibility more than new systems.
+
+**Poor cost/benefit pre-1.0:** F02 large-scale presence/streaming, F04 web/PC parity, simultaneous character auto-farms, new 3D world renderer, open market/PvP economy and a wholesale React Native navigation rewrite. These multiply surface area before baseline reliability is known.
+
+### Phase A — scorecard
+
+| Ticket | I | F | R | C | Q | E | G | Score | Release | Evidence |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | --- | --- |
+| A01 | 5 | 4 | 5 | 3 | 5 | 2 | 2 | **40** | 1.0 Required | H |
+| A08 | 5 | 4 | 5 | 3 | 5 | 2 | 2 | **40** | 1.0 Required | H |
+| A05 | 5 | 5 | 5 | 4 | 5 | 3 | 4 | **39** | 1.0 Required | H |
+| A07 | 5 | 5 | 5 | 5 | 4 | 3 | 4 | **39** | 1.0 Required | M |
+| A06 | 5 | 4 | 4 | 4 | 5 | 2 | 2 | **38** | 1.0 Required | H |
+| A04 | 5 | 5 | 5 | 4 | 4 | 4 | 5 | **35** | 1.0 Required | M |
+| A02 | 5 | 4 | 5 | 4 | 5 | 4 | 5 | **34** | 1.0 Required | H |
+| A03 | 5 | 3 | 5 | 4 | 5 | 4 | 5 | **32** | 1.0 Required | H |
+
+### Phase B — scorecard
+
+| Ticket | I | F | R | C | Q | E | G | Score | Release | Evidence |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | --- | --- |
+| B04 | 5 | 5 | 5 | 5 | 4 | 3 | 4 | **39** | 1.0 Required | H |
+| B07 | 5 | 4 | 5 | 5 | 4 | 3 | 4 | **37** | 1.0 Required | M |
+| B06 | 5 | 5 | 5 | 5 | 4 | 4 | 5 | **36** | 1.0 Required | M |
+| B08 | 5 | 4 | 5 | 5 | 5 | 4 | 5 | **35** | 1.0 Required | H |
+| B05 | 5 | 4 | 5 | 5 | 4 | 4 | 5 | **34** | 1.0 Required | M |
+| B01 | 5 | 4 | 2 | 5 | 5 | 2 | 2 | **33** | 1.0 Recommended | H |
+| B09 | 4 | 5 | 3 | 4 | 4 | 2 | 2 | **33** | 1.0 Required | M |
+| B02 | 5 | 3 | 3 | 5 | 4 | 3 | 3 | **30** | 1.0 Recommended | H |
+| B03 | 4 | 4 | 2 | 4 | 5 | 2 | 1 | **30** | 1.0 Recommended | H |
+| B10 | 5 | 3 | 4 | 4 | 4 | 4 | 4 | **29** | 1.0 Required scope | M |
+
+### Phase C — scorecard
+
+| Ticket | I | F | R | C | Q | E | G | Score | Release | Evidence |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | --- | --- |
+| C06 | 5 | 5 | 4 | 4 | 5 | 2 | 3 | **39** | 1.0 Recommended | H |
+| C03 | 5 | 5 | 4 | 4 | 4 | 3 | 3 | **36** | 1.0 Required safety | M |
+| C05 | 4 | 5 | 3 | 5 | 4 | 2 | 2 | **34** | 1.0 Recommended | H |
+| C02 | 4 | 5 | 3 | 4 | 4 | 2 | 3 | **32** | 1.0 Recommended | M |
+| C07 | 4 | 4 | 3 | 3 | 5 | 2 | 2 | **31** | 1.0 Recommended | H |
+| C01 | 4 | 5 | 2 | 4 | 4 | 2 | 2 | **30** | 1.0 Recommended | H |
+| C08 | 4 | 4 | 2 | 4 | 4 | 2 | 2 | **28** | 1.0 Recommended | M |
+| C04 | 5 | 4 | 2 | 5 | 3 | 4 | 3 | **26** | 1.0 Recommended scope | M |
+| C09 | 4 | 4 | 2 | 5 | 3 | 3 | 3 | **25** | 1.1 Recommended | M |
+
+### Phase D — scorecard
+
+| Ticket | I | F | R | C | Q | E | G | Score | Release | Evidence |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | --- | --- |
+| D01 | 5 | 4 | 4 | 4 | 5 | 2 | 2 | **38** | 1.0 Required baseline | H |
+| D04 | 4 | 4 | 4 | 4 | 5 | 3 | 4 | **31** | 1.0 Required baseline | H |
+| D05 | 4 | 3 | 5 | 4 | 5 | 4 | 5 | **29** | 1.1 conditional | H |
+| D07 | 4 | 3 | 4 | 3 | 4 | 3 | 4 | **27** | 1.1 | M |
+| D02 | 4 | 4 | 2 | 3 | 4 | 2 | 3 | **26** | 1.1 Conditional | M |
+| D03 | 4 | 4 | 2 | 3 | 3 | 2 | 3 | **25** | 1.1 Conditional | M |
+| D06 | 3 | 3 | 3 | 3 | 5 | 4 | 5 | **19** | Medium-term | H |
+
+### Phase E — scorecard
+
+| Ticket | I | F | R | C | Q | E | G | Score | Release | Evidence |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | --- | --- |
+| E02 | 4 | 4 | 4 | 4 | 4 | 2 | 4 | **32** | 1.1 | M |
+| E01 | 5 | 5 | 3 | 5 | 4 | 4 | 5 | **30** | 1.1 | M |
+| E03 | 4 | 3 | 3 | 3 | 4 | 2 | 3 | **27** | 1.1 | M |
+| E04 | 4 | 4 | 2 | 5 | 4 | 3 | 3 | **26** | 1.1 | M |
+| E05 | 4 | 3 | 4 | 4 | 3 | 4 | 5 | **24** | Medium-term conditional | M |
+| E06 | 4 | 4 | 2 | 4 | 3 | 3 | 3 | **24** | Medium-term | M |
+| E07 | 3 | 3 | 2 | 4 | 3 | 2 | 2 | **22** | Medium-term | M |
+
+### Phase F — scorecard
+
+| Ticket | I | F | R | C | Q | E | G | Score | Release | Evidence |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | --- | --- |
+| F01 | 4 | 4 | 2 | 5 | 3 | 5 | 4 | **20** | Long-term experiment | M |
+| F02 | 3 | 3 | 4 | 4 | 2 | 4 | 5 | **20** | Long-term experiment | L |
+| F03 | 4 | 3 | 2 | 5 | 3 | 4 | 4 | **20** | Long-term experiment | M |
+| F04 | 3 | 3 | 4 | 3 | 2 | 5 | 5 | **17** | Long-term experiment | L |
+| F05 | 3 | 2 | 2 | 4 | 2 | 4 | 4 | **13** | Long-term experiment | L |
+
+
+### 9.1 Evidence/score update rules
+
+- A confirmed failing CI gate has high evidence; a historical report of a bug **that current source already changed** loses confidence and becomes a **verification task**, not an automatic fix.
+- When native analytics show a journey seldom used, lower F unless it is a required safety/security case; use crash/claims support incidents to raise R rather than fabricate retention rates.
+- If a ticket includes an optional big feature along with core verification, **split it**: e.g. B06 core stack correctness is 1.0-required, advanced auto-sell expansion can be 1.1.
+- Re-score after scope and dependencies are broken into small PRs. Do not use this relative number as a mandated release-date forecast.
+
+---
+
+## 10. Canonical decision history and supersession register
+
+| Previous reference / assertion | Current reconciliation | Keep, defer or supersede |
+| --- | --- | --- |
+| `MVP_SCOPE.md`, `PROTOTYPE_ROADMAP.md` | Smaller **offline Fallen Knight prototype** than current production online RPG | **SUPERSEDED for launch completeness**; keep as historical milestone |
+| `docs/V40_V51_RECONCILIATION.md` five-tab nav | `App.tsx` current six-tab Home/Character/Skills/World/Inventory/More | **SUPERSEDED** as current layout, keep migration record |
+| V40–V51 24h-base/36h-max AFK claim | Oct21 release hardening and current README state 8h initial/24h free/30h max | **SUPERSEDED pending runtime test A06/A07**; don't choose hours from memory |
+| `screen-code-audit-2026-10-17.md` T9 110/104 unreachable | Current equipment source reads 100/97, skill caps 100 | **SUPERSEDED as exact defect**; B10 prove all ingredients reachable |
+| Oct17 fixed-height Event popup/no scroll | Current component contains `ScrollView` and generic CTA | **SUPERSEDED**; C02/C03/B07 confirm real native behavior |
+| Oct17/older general loading/busy issues | Oct19 app-wide promise-aware loading work exists | **PARTIALLY RESOLVED**; C06 only confirmed holes |
+| Oct22 queue reached-goal/wrong-region issues | Shared queue validation implemented and documented | **IMPLEMENTED, VERIFY REGRESSION**; A07 specifically tests late claims/time |
+| “Missing GuildChat `./ChatViewport` causes broken build” | Actual `ChatViewport.tsx` present on audited main | **FALSE FOR AUDITED BASELINE**; verify actual chat at B04 |
+| V52 “Guild board still concepts” | Oct26 Guild daily board/roles/chat changes live in source | **SUPERSEDED**; C07 Android acceptance, not full redesign |
+| Older co-op concepts/non-NPC QMode assumptions | Production coop v18 with live rosters and NPC fallback/Echo logic | **SOURCE-PRESENT**; B05 needs devices and hosted concurrency |
+| “Arena and Rankings are ready for public release” inferred from screen files | Both flags currently false | **DEFERRED**; not counted as launch features |
+| “Pay only for cosmetics” simplification | VIP/VIP+/Supporter have rate/convenience entitlements per billing docs/README | **CORRECT MARKETING**; no false claim, no ad/gacha power additions |
+| “Production RLS-off table is publicly accessible” inferred from one RLS-off | Auditor found no anon/auth SELECT privilege for this public table | **UNPROVEN** exposure; A03 checks full effective privileges |
+| Supabase 57 unused indexes = 57 safe drops | Usage/advisor is insufficient for concurrent, maintenance, disaster queries | **REJECT mass dropping**; D05 per-index measured review |
+| Tracked repo historical output = same size as AAB | `.easignore` excludes many; actual AAB bytes unmeasured | **REJECT equivalence**; D04 measure bundled size |
+| Visual Trial battle missing completely | `CompanionTrialStage.tsx` has authoritative event playback | **SUPERSEDED**; B01 entry and B02 quality finish |
+| Legacy Market and alternate companion schema from attached archive | Current source has server-owned social and account companion state, Market removed | **RETIRED**, keep migration history, never reimport archive tables |
+
+**No historical document is deleted by this plan.** Any future status revision may add `Superseded by MASTER_DEVELOPMENT_ROADMAP.md at SHA ...` to older docs after approval; do not rewrite old release evidence as if it had always said the new truth.
+
+---
+
+## 11. Risk register, release guardrails and measurement
+
+| ID | Risk | Severity | Detection | Mitigation / owner |
+| --- | --- | --- | --- | --- |
+| R-01 | CI compilation missing starter companion exports | **Blocking known** | Run Mobile core validation | A01 mobile/core |
+| R-02 | Staging is not representative of production | **High known** | Migration/version/Edge hashes | A02 backend/release |
+| R-03 | Incorrect RLS or definer function grant | **High potential, not proven breach** | SQL impersonation and production grant audit | A03 DB/security |
+| R-04 | Lost/duplicate currency, XP or claims | **Critical potential** | Two-client duplicate/idempotency matrix | A04 gameplay/backend |
+| R-05 | Invalid Play upgrade/identity/purchase recovery | **Critical potential** | Licensed tester, prior-build upgrades | A05/B08 release/commerce |
+| R-06 | AFK/queue finite handoff discards eligible time | **High historical repro; current status unknown** | Late claim and split-stack fixtures | A07 gameplay |
+| R-07 | Live/QMode appears present but fails on real clients | **High unverified** | Multi-device 1T/2D/1S, reconnect, Echo QA | B05 multiplayer |
+| R-08 | Native keyboard/accessibility clips controls | **High UX potential** | 320px + 200% text + TalkBack QA | C03/C07 mobile QA |
+| R-09 | Large assets/network requests create lag/compat regression | **Medium unmeasured** | Signed AAB size and request baseline | D01/D04 performance |
+| R-10 | Monetization message contradicts entitlements | **High trust** | Play product ID/benefit truth table | A06/B08 product/commerce |
+| R-11 | Future “clever” queue causes more work than it saves | **Medium product** | Steps/taps, cancel and opt-out telemetry | E01 UX/product |
+| R-12 | More features push test/document migration drift | **High maintainability** | Release manifest and PR closure pack | A08/D06 engineering |
+
+**Proposed UX measurement targets (agree after baseline):** first valid Trial from tab ≤2 taps without mandatory scroll; first easy craft and reward in a guided first session; no redundant reward popup after non-reward settings/chat actions; correct last 25 chat messages; one confirmation for all safe post-cap event claims. Hard numeric latency, frame-rate and crash-free percentage targets must be set from real baseline **before** evaluating optimizations; never assert targets have been achieved because of source review.
+
+**Monetization integrity rule:** The user's product direction favors a friendly non-P2W environment, but the *existing effective* VIP and VIP+ advantages must be described accurately. Changing those is a product/economy migration requiring separate approval, backward compatibility and purchaser rights.
+
+---
+
+## 12. Sources, audit boundaries and durable handoff
+
+### 12.1 Primary evidence (latest, then specific historical)
+
+- [**Current repo / main**](https://github.com/elroynbenjamins/Veldryn) — inspect branch and SHA every session.
+- [**CODEBASE_INVENTORY.md**](CODEBASE_INVENTORY.md) — comprehensive structural/read-only repository, production/staging and CI audit **28 Oct 2026**; source SHA `eb70bb3`.
+- [**COMPETITOR_RESEARCH.md**](COMPETITOR_RESEARCH.md) — 14 competitor profiles, sample-limited dated reviews, feature matrix and 20 research opportunities **28 Oct 2026**. Its source register contains direct official, review and community links.
+- [**README.md**](../README.md) — current technical/product/Android build description as of **Oct 2026**; self-described features need acceptance verification.
+- [**QUEUE_RELIABILITY_AUDIT_2026_10_22.md**](QUEUE_RELIABILITY_AUDIT_2026_10_22.md) and [**QUEUE_CURRENT_HANDOFF_V1.md**](QUEUE_CURRENT_HANDOFF_V1.md) — repaired reached goals/region rules, 30-minute handoff.
+- [**HOME_COMMAND_DECK_V1.md**](HOME_COMMAND_DECK_V1.md) — Home shortcuts/composer behavior and deliberate queue exclusions.
+- [**NETWORK_REQUEST_QA_BASELINE.md**](NETWORK_REQUEST_QA_BASELINE.md) — defined but **unmeasured** Android scenario baseline.
+- [**COMPANIONS_CURRENT_STATUS.md**](implementation/COMPANIONS_CURRENT_STATUS.md), [**COOP_CURRENT_STATUS.md**](implementation/COOP_CURRENT_STATUS.md), [**ONLINE_GAMEPLAY_STATUS.md**](implementation/ONLINE_GAMEPLAY_STATUS.md) — implementation/deployment boundaries and incomplete device validation.
+- [**RELEASE_1_HARDENING.md**](implementation/RELEASE_1_HARDENING.md) — Oct21 backend claim validation, offline cap correction, remaining device/payment work.
+- [**GOOGLE_PLAY_BILLING_V1.md**](implementation/GOOGLE_PLAY_BILLING_V1.md) — authoritative commerce product IDs, verification, refund/RTDN rules.
+- [**guild-screen-review-2026-10-26.md**](implementation/guild-screen-review-2026-10-26.md) — current guild layout/role/chat refinements and lack of native QA.
+- [**online-loading-feedback-2026-10-19.md**](implementation/online-loading-feedback-2026-10-19.md) — promise-aware busy feedback already built.
+- [**screen-code-audit-2026-10-17.md**](implementation/screen-code-audit-2026-10-17.md) — historical verified defects, some now superseded by current code.
+- [**V40_V51_RECONCILIATION.md**](V40_V51_RECONCILIATION.md) — retained historical branch milestones; old offline cap and navigation are not authoritative today.
+- [**Mobile failed CI run**](https://github.com/elroynbenjamins/Veldryn/actions/runs/40591520567) and [**backend economy passed run**](https://github.com/elroynbenjamins/Veldryn/actions/runs/40591520391), both associated with app source baseline, checked **28 Oct 2026**.
+- Direct competitor/source evidence is maintained in the source register of [**COMPETITOR_RESEARCH.md**](COMPETITOR_RESEARCH.md); its public research is sampled, not in-app usage proof.
+
+### 12.2 Status ledger template for future agents
+
+For **every** ticket, append or maintain a closeout entry in this file or linked release-tracking doc:
+
+```text
+Ticket: A01
+Status: PLANNED | IN_PROGRESS | VERIFIED | BLOCKED | SUPERSEDED | DEFERRED
+Start SHA / end SHA:
+Owner (role):
+App/backend schema/Edge/AAB versions:
+Exact current-state repro:
+Code changed (or no change required):
+Unit/integration/SQL/device test commands + results:
+User acceptance evidence (screen capture, transaction receipt, linked CI):
+Open bugs / accepted risks / feature flag:
+Documentation and migration compatibility updated:
+Next dependent ticket:
+```
+
+**Start every coding session** by reading Sections 0–3 and then the relevant ticket. Fetch **today's actual files**; establish a failing test/reproduction; verify environment and dependencies; implement **only** that ticket's least invasive change; test; update ticket status/evidence; then choose the next unblocked dependency. If behavior is already correct, record a no-change `VERIFIED` result and move on. Do not assume any roadmap item has been implemented merely because this document was committed.
+
+### 12.3 Research/deployment limitations
+
+This roadmap is based on current GitHub source and documentation, the read-only codebase audit of production and staging, reviewed CI outcome and dated public competitor research. **No new application tests, Android builds, Supabase writes, production claims or paid purchases were executed for this roadmap.** Some previous tests and deployment claims are narrower than full functional sign-off. All effort/risk/impact scoring is relative engineering judgment. On-device, user and load findings must be measured before treating performance or conversion hypotheses as proven.
+
+**Roadmap definition of success:** A stable, upgradeable and secure Android idle MMORPG whose normal activities, guild/co-op, companions, event rewards and purchase recovery are understandable and trustworthy—with mature pixel-art feedback and clear progression—rather than the largest quantity of partially finished systems.
+

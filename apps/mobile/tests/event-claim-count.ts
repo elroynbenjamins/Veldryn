@@ -1,4 +1,6 @@
 import {createCharacter,newGame} from '../src/core/game';
+import {LIVE_EVENT_CATALOG} from '../src/content/live-events';
+import {FROSTFALL_EVENT} from '../src/content/annual-events-v2';
 import {applyEventDiscoveries,claimEventDiscovery,eventCommunityMilestones,eventContractBoard,eventReadyClaimCount,setLocalEventEnabled} from '../src/core/live-events';
 
 function equal(actual:number,expected:number,message:string){if(actual!==expected)throw new Error(`${message}: expected ${expected}, received ${actual}`);}
@@ -24,13 +26,16 @@ const week=activity.id.slice(eventId.length+1,activity.id.length-activity.object
 const withActivity={...state,account:{...state.account,eventPeriodActivityById:{...(state.account.eventPeriodActivityById??{}),[`${eventId}:week:${week}`]:{[activity.objective.source]:activity.objective.required}}}};
 equal(eventReadyClaimCount(withActivity,now),eventReadyClaimCount(state,now)+1,'A weekly activity reward must not be counted twice');
 
+// The future event is authored but must never activate its shared rewards while paused.
+LIVE_EVENT_CATALOG.push(FROSTFALL_EVENT);
 const communityEventId='EVT_ANNUAL_012_2026';
 const communityState={...createCharacter(newGame(now),'IRONWARDEN','CommunityCounter'),account:{...newGame(now).account,liveEvent:{eventId:communityEventId,enabled:true,startsAtMs:now-60_000,endsAtMs:now+86_400_000},eventCommunityProgressById:{[communityEventId]:100},eventContributionById:{[communityEventId]:0}}};
 const communityRows=eventCommunityMilestones(communityState,now);
 const ineligibleCount=eventReadyClaimCount(communityState,now);
+equal(communityRows.length,0,'Community rewards are hidden while the feature is paused');
 const unreachedState={...communityState,account:{...communityState.account,eventCommunityProgressById:{[communityEventId]:0}}};
 equal(ineligibleCount,eventReadyClaimCount(unreachedState,now),'Reached community stages should not notify an ineligible player');
 const eligibleState={...communityState,account:{...communityState.account,eventContributionById:{[communityEventId]:100}}};
-equal(eventReadyClaimCount(eligibleState,now),ineligibleCount+communityRows.length,'Eligible community rewards should contribute visible claims');
+equal(eventReadyClaimCount(eligibleState,now),ineligibleCount,'Even fully eligible community rewards must not contribute claims while paused');
 
-console.log('PASS event claim count: discoveries are visible, activities count once, and community eligibility is respected');
+console.log('PASS event claim count: discoveries and activities show normally; paused community rewards never show claims');

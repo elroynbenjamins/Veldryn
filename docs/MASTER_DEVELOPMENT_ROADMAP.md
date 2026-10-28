@@ -312,3 +312,206 @@ Each ticket is scored on **Impact (I), Frequency (F), Reliability/security (R), 
 - **Tests:** catalog graph traversal, XP cap and all T1–T9 threshold assertions, alchemy supply chains, asset file resolver, character role/region and Play build asset inclusion.
 - **Regression watch:** equipment economy inflation, monster drop weight, appearance clipping, recipe generated source conflicts.
 
+
+# Phase C — Refinement, UX and presentation
+
+**Objective:** professional clarity, consistent interaction hierarchy, responsive/accessible pixel art, and pleasant return sessions. These changes are **recommended 1.0 polish** where tagged, not automatic release blockers unless they impede the critical journey. Always verify native behavior before replacing components already refined in October.
+
+### C01 · Normalize navigation, shortcuts and intent preservation (**P1 · M · H**)
+- **Objective:** players get directly from a notification/item/source to their intended destination without losing state.
+- **Current:** live route is Home / Character / Skills / World / Inventory / More with top-right shortcuts and Command Deck; older V52 “Account” naming lingers in docs. `App.tsx` still centrally dispatches many intents.
+- **Desired:** consistent back stack, shortcut targets, deep-link context and preserved search filters; no unexpected modal dismiss/trigger.
+- **User:** repeated taps and confusing return destinations.
+- **Code:** `apps/mobile/App.tsx`, `src/components/PrimaryNavigation.tsx`, `src/screens/MoreScreen.tsx`, `src/core/navigation-notifications.ts`.
+- **Approach:** inventory all tab/modal return flows; retain six-tab contract; standardize route destination payload and quick-bar defaults, ensuring shortcuts aren't accidentally tied to false “Account” route.
+- **Dependencies:** B01/B04/B09, no broad navigation redesign.
+- **Acceptance:** 20 common routes preserve intended target and correct back behavior; shortcut reset remains available; Home command sheet never silently starts an activity.
+- **Tests:** UI navigation matrix, Android hardware back and swipe, multitap, keyboard open, deep-link dungeon invite.
+- **Regression watch:** in-flight command navigation, chat dock placement and event-return flow.
+
+### C02 · Quiet, accurate return and notification hierarchy (**P1 · M · H/M**)
+- **Objective:** surface important rewards while eliminating false/repeated celebration.
+- **Current:** Welcome Back, reward notification infrastructure and event-start popup exist; unwanted reward popups were previously reported after changing chat channel/profile customization.
+- **Desired:** routine reward summary, rare/first-ever celebrations and actionable errors are distinct; per-account per-event acknowledgment and minimal intrusive notifications.
+- **User:** repeated interruptions undermine trust in rewards.
+- **Code:** `src/core/navigation-notifications.ts`, `src/components/EventStartPopup.tsx`, Welcome Back/claim components, online result dispatch in `App.tsx`.
+- **Approach:** trace notification origin to authoritative reward event IDs, not arbitrary state diff; persist event acknowledgment and suppression preferences; never suppress actual claim history.
+- **Dependencies:** A04/B07.
+- **Acceptance:** chat channel/profile edits cause no reward celebration; event intro shown once per event version/date; earned rare finds remain visible in log.
+- **Tests:** exact event IDs, multiple navigation cycles, pending retry receipts, reconnect, time rollover, reduced motion.
+- **Regression watch:** first-time unlocks, bulk claims, ephemeral snackbar states and silent loss of valuable notice.
+
+### C03 · Accessibility, typography and translations as first-class QA (**P1 · M–L · M**)
+- **Objective:** every major path remains operable on small Android phones and with assistive settings.
+- **Current:** themes and labels exist; older audit found 7–8px secondary text and Oct26 localization noted a missing Settings “What's New & Updates” string; native TalkBack/text scaling not fully verified.
+- **Desired:** legible minimum-size hierarchy, semantic labels/headings, status announcements, color-independent rarity cues, reachable controls and non-truncated localized text.
+- **User:** unreadable stats or unreachable battle/claim button.
+- **Code:** `src/theme/theme.ts`, `src/components/GameModalSurface.tsx`, `src/screens/BestiaryScreen.tsx`, `SettingsScreen.tsx`, i18n translation catalogs and common buttons.
+- **Approach:** audit touch targets/focus order, use theme tokens not one-off tiny labels, define min widths and empty/long-text states; complete five-language message catalogs before claiming localization completeness.
+- **Dependencies:** B/C screen stabilization first.
+- **Acceptance:** primary actions reachable under 200% font scale, TalkBack announces controls/health/rewards, themes pass contrast inspection; no known catalog placeholders.
+- **Tests:** Android TalkBack, bold/large font, 320px and short-height windows, three themes, five locales, dynamic content and emoji.
+- **Regression watch:** compact density, art crops, modal scroll traps and accessibility focus on battle animation.
+
+### C04 · Audit and normalize art quality, sizing and icon clipping (**P1 · L (art-dependent) · M**)
+- **Objective:** consistent polished sprite identity across actual launch-visible items/classes.
+- **Current:** active equipment art registry resolves many sets; Oct17 count had 82 missing sets (not assumed current), asset downscale work and three class-icon remasters discussed since; native image quality unverified.
+- **Desired:** canonical sprite ledger by current item/icon/rarity/zoom, consistent target sizes, runtime borders only, crisp 256×256 icons and skins without huge empty margins.
+- **User:** blurry or clipped high-value gear undermines earned progression.
+- **Code:** `src/theme/equipment-assets.ts`, `src/components/ItemArtwork.tsx`, class icon/skin mappings under `apps/mobile/assets/`, asset optimization reports.
+- **Approach:** generate manifest of active catalog IDs versus registered runtime art; inspect source and multiple Android densities; replace **only** missing/low-quality visible art; do not reuse review exports as app source.
+- **Dependencies:** B10 asset/reachability audit and A05 AAB size checks.
+- **Acceptance:** all launch-visible critical class/profile/T1–Tlaunch icons consistent and unclipped; fallback usage documented and explicitly accepted.
+- **Tests:** asset resolver and dimensions/integrity, screenshot grids per rarity, small/large density visual QA, Metro export/no missing require.
+- **Regression watch:** extra bundle bytes, atlas aliasing, right-aligned bow strings, item grip orientation, theme-colored borders.
+
+### C05 · Bank/recipe/source presentation and safe action affordances (**P1 · M · H**)
+- **Objective:** turn deep item systems into straightforward decisions.
+- **Current:** bank, crafting list, source chain, dropdown filters, item previews and favorites exist; some old “Ready to brew” status labels disguised an immediate spend action.
+- **Desired:** explicit **Craft / Brew / Sell / Protect** verbs, source/requirements breakdown and batch maximum preview; preserve search/filter when opening item modal.
+- **User:** fear of tapping ambiguous actions and not knowing missing prerequisites.
+- **Code:** `src/screens/InventoryScreen.tsx`, recipe browser/cards, `src/components/RecipeCard.tsx`, `src/core/inventory-screen-state.ts`.
+- **Approach:** align action labels with real side effects, use reusable source/ownership panels and confirmations only for destructive or high-stakes actions; don't add full-screen steps for routine tasks.
+- **Dependencies:** B06 and B10 content source truth.
+- **Acceptance:** each button describes transaction before spending; blocked recipe names exact missing amount/source; selection preserved after successful transfer.
+- **Tests:** components with ready/blocked/reserved ingredients, long names, partial bank loads, rapid taps, asynchronous failures.
+- **Regression watch:** unintended extra confirmations and duplicated state/hidden recipe list.
+
+### C06 · Unified loading, error and empty states; no whole-screen lock (**P1 · M · H**)
+- **Objective:** show honest confirmation of each async action and a retry path.
+- **Current:** `online-loading-feedback-2026-10-19.md` records widespread promise-aware busy buttons and removal of full-screen blocking overlay; individual screens may still have detached loading flags.
+- **Desired:** every network action has a distinct Pending / Confirmed / Recoverable failure state and prevents same-tick duplicates; offline activities remain responsive.
+- **User:** uncertain whether a sell/claim/bank transfer succeeded.
+- **Code:** `src/components/GameButton.tsx`, `SocialActionButton.tsx`, `src/screens/InventoryScreen.tsx`, `src/online/`, error boundary and common modal.
+- **Approach:** trace remaining void-discarding callbacks; explicitly await server receipt in local surface; distinguish optimistic spinner from authoritative confirmation; preserve idle/scroll during a save.
+- **Dependencies:** A04, B06/B08.
+- **Acceptance:** all critical actions complete or recover without lost UI; error message gives next safe action; unrelated state rerender never clears an unfinished operation.
+- **Tests:** deferred Promise rejection/resolution, double-taps, account switch while loading, timeout/retry, event notification races.
+- **Regression watch:** retry duplication, stale component unmount, disabled actions and old test timing.
+
+### C07 · Guild daily board and recruitment screen native refinement (**P1 · M · H**)
+- **Objective:** guild users see today’s objective, identity, raid, Hall and chat without scroll fatigue.
+- **Current:** Oct26 `guild-screen-review` reports a working Home/Raid/Activities/Hall/Chat hub, role-gated controls, player count and shorter chat viewport; browser captures passed, native validation unresolved.
+- **Desired:** layout hierarchy works for non-member/member/officer/leader and at Android keyboard heights; accurate contribution/cooldown progress in one glance.
+- **User:** complex guild board and chat obstruct frequent social tasks.
+- **Code:** `src/components/OnlineGuildManagement.tsx`, Guild Hall/PvE/Shop/UI components, `src/components/GuildChat.tsx`, social/role screens.
+- **Approach:** native QA of real components under each role, refine only confirmed density/hitbox gaps; no duplicate guild dashboard.
+- **Dependencies:** B04/B05 and A03 role boundary.
+- **Acceptance:** key role actions are findable and only authorized; member never sees leader controls; keyboard doesn't cover message composer.
+- **Tests:** multi-role screenshots, 320/390 phone layouts and large fonts, guild leave/rejoin, failure to load own membership, browser vs native comparison.
+- **Regression watch:** privacy/authorization, chat unread state, Hall progress and low-bandwidth load.
+
+### C08 · Replayable contextual onboarding and next-step hints (**P1 · M · M**)
+- **Objective:** teach functionality in the moment rather than dumping large tours or mandatory text.
+- **Current:** per-tab tutorial modules and guest-first first-run exist; skill/party/companion unlock messages are dense and differ by progression.
+- **Desired:** optional micro-guides with correct buttons and one immediate example, visible “Guide” replay, consistent first-party tooltips and no forced companion lesson before unlock.
+- **User:** a deep mobile idle RPG feels overwhelming in early sessions.
+- **Code:** `src/core/feature-unlocks.ts`, onboarding components, `HomeScreen.tsx`, `CompanionsScreen.tsx`, `SettingsScreen.tsx`.
+- **Approach:** build small reusable guided overlays using real target IDs and dismissal persistence, validate after every navigation redesign.
+- **Dependencies:** B09 and B01/B03.
+- **Acceptance:** player can dismiss/reopen each guide, skip every optional tour, and never see a prompt for inaccessible systems.
+- **Tests:** fresh/legacy accounts, role variations, event-level exceptions, restored guest, large text, guide target missing fallback.
+- **Regression watch:** tutorial pointer overlays blocking controls, time-based events, save schema and locale.
+
+### C09 · Main combat readability, art and action feedback (**P1 · M–L · M**)
+- **Objective:** improve moment-to-moment ordinary hunting appearance without misleading a server-side idle simulation.
+- **Current:** equipment, target/monster portraits, health, tactics, activity and loot screens exist; combat visuals vary by screen and class.
+- **Desired:** consistent ally/enemy sides, visible HP/food/status/damage cues where actual combat telemetry exists, distinctive class and monster portraits, short boss entry/reward moments.
+- **User:** combat feels more like forms and numbers than an RPG.
+- **Code:** `src/screens/CombatScreen.tsx` if present (verify current screen route), `src/components/ActivityCard.tsx`, monster art resolver, `src/core/combat-*.ts`, combat backend.
+- **Approach:** first inventory actual combat route/components and authoritative event availability; add client illustration tied to server state, not speculative hit roll; complement rather than replace Trial stage.
+- **Dependencies:** B02 replay architecture, A05 asset budget.
+- **Acceptance:** readable battle state and role identity in a common hunt and boss encounter, with reduced-motion alternative; XP/rewards unaffected.
+- **Tests:** combat event fixtures, class/monster combinations, low HP/food, forced foreground/background, pixel resolution QA.
+- **Regression watch:** UI ticking too frequently, battery, race against authoritative health and claim animations.
+
+---
+
+# Phase D — Performance, architecture, security optimization
+
+**Objective:** measured improvements in responsiveness and hosting efficiency, without premature refactors or destructive database “lint cleanups.” Critical performance faults discovered by profiling can move to Phase A; otherwise these are **recommended 1.0 / post-launch 1.1**.
+
+### D01 · Instrument and establish actual Android network baseline (**P1 · M · H**)
+- **Objective:** quantify repeated loads, latency, errors and unneeded requests.
+- **Current:** `docs/NETWORK_REQUEST_QA_BASELINE.md` defines four scenarios but records “Not measured”; shared chat cache and timer tuning are implemented without measured before/after.
+- **Desired:** device-measured cold launch, tab switch, Guild/chat channel, profile icon customization, open/close dungeon and bank flows, with request/bytes/latency counts from comparable APKs.
+- **User:** laggy tap navigation, slow avatars, unnecessary data consumption.
+- **Code:** `src/online/`, `src/online/useChatFeed.ts`, `src/core/chat-feed-cache.ts`, `App.tsx`, QA instrumentation document.
+- **Approach:** opt-in QA-only request capture with personal/sensitive payload redaction; pin network profile and state. Diagnose top requests before adding caching/batching.
+- **Dependencies:** A05 test AAB; A08 reproducible scenarios.
+- **Acceptance:** measured baseline in repo with device/backend/build IDs, p50/p95 navigation times and network totals; no invented optimization percentages.
+- **Tests:** scenarios A–D repeated, offline reconnect, expired auth, background/foreground, same-vs-new account.
+- **Regression watch:** logging tokens/chat content, extra instrumentation traffic and stale cached roles.
+
+### D02 · Profile and virtualize high-cardinality inventory surfaces (**P2 · M · M**)
+- **Objective:** maintain smooth storage browsing for mature accounts.
+- **Current:** `InventoryScreen.tsx` already imports `FlatList` and `ScrollView`; Oct17 audit claimed all-tile `ScrollView` rendering, which may have changed. **Do not assume virtualization absent.**
+- **Desired:** visible-only card rendering, stable keys/layout, cheap filter/sort/pagination and retained scroll after modal close.
+- **User:** bank tabs stutter as stored gear grows.
+- **Code:** `src/screens/InventoryScreen.tsx`, `src/core/inventory-view.ts`, item artwork renderer.
+- **Approach:** inspect the actual render branch and profile 50/500/2,000 instances on Android; if needed virtualize only nonvirtual branches or memoize stable card props.
+- **Dependencies:** D01 profiling and B06 source-count consistency.
+- **Acceptance:** no visually lost items and agreed smooth scroll/device memory at large test inventory; search updates remain correct.
+- **Tests:** list key/reference identity, large sorted/filtered bank, platform layout and return position, favorite/autosell.
+- **Regression watch:** nested scrollviews, modal snap/keyboard, inventory selection state.
+
+### D03 · Index immutable catalogs and cache only safe derivations (**P2 · M · M**)
+- **Objective:** cut repeated `O(n)` catalog scans and expensive readiness recalculations without stale resources.
+- **Current:** Oct17 source audit measured `itemDef` as linear scan of 2,185 items and `CraftingRecipeBrowser` readiness for all matching recipes; current implementation needs checking.
+- **Desired:** immutable id→definition maps for items/recipes/monsters, memoized static filter lists and state-version-scoped inventory readiness.
+- **User:** laggy recipe search and equipment preview.
+- **Code:** `src/content/items.ts`, `src/components/CraftingRecipeBrowser.tsx`, item/recipe query helpers, `src/core/inventory-view.ts`.
+- **Approach:** microbenchmark lookup hot paths and dependency invalidation; introduce one canonical map per content source; avoid memoizing mutable economy totals across command revisions.
+- **Dependencies:** D01; B10 canonical content IDs.
+- **Acceptance:** lookup invariants exactly match pre-change behavior and measured reduced lookup/render cost.
+- **Tests:** all catalog IDs, duplicate definitions, hot-reload content changes, inventory quantity updates and comparative microbench.
+- **Regression watch:** cached stale recipe affordability, generated catalog duplicates and memory cost.
+
+### D04 · Release bundle/asset size and Android startup pass (**P1 · M–L · H**)
+- **Objective:** faster cold boot and smaller compatible distribution, preserving art quality.
+- **Current:** `apps/mobile/assets` tracked runtime assets ~489MB and historical art-review/exports much larger; `.easignore` already excludes many. No evidence that Git checkout size equals actual AAB.
+- **Desired:** record real AAB/APK split delivery bytes, source asset usage and cold-start p50/p95, optimize only actual packaged critical path.
+- **User:** long splash, storage cost, startup hangs and device support loss.
+- **Code:** `apps/mobile/assets/`, `apps/mobile/.easignore`, `.easignore`, `app.json`, startup/theme asset resolver.
+- **Approach:** inspect bundle graph and Play bundle explorer, catalog unused imports, tune sprite WebP/PNG transparencies and progressive resource loading without cropping art.
+- **Dependencies:** A05; D01; C04 art manifest.
+- **Acceptance:** reproducible build-byte and cold-start baselines plus verified improvement vs prior signed AAB, no loss of supported devices without approval.
+- **Tests:** Android small/older device, Expo asset resolver and visual checksum, offline startup, theme switch, resume memory.
+- **Regression watch:** image aliasing, opaque icon backgrounds, missing dynamic requires, Google Play compatibility and build IDs.
+
+### D05 · Database query plans, RLS cost and indexes by measured need (**P2 · L · H**)
+- **Objective:** remove excessive server work and contention without weakening authorization.
+- **Current:** prod advisors list 130 FKs without matching indexes, 117 RLS `auth_rls_initplan`, 57 unused indexes and chat multiple-permissive policies.
+- **Desired:** query inventory with actual `EXPLAIN (ANALYZE, BUFFERS)` from safe representative data and top slow commands, additive index/policy improvements based on observed workload.
+- **User:** slow queue, bank, social and claim operations at scale.
+- **Code:** `backend/supabase/migrations/`, `backend/supabase/tests/`, gameplay/chat/guild query paths and Supabase advisor ledger.
+- **Approach:** prioritize critical FKs and `auth.uid()` wrapping where correct, review duplicate policies individually, retain essential indexes until safe workload analysis. Never drop 57 “unused” indexes from advisor count alone.
+- **Dependencies:** A02/A03; D01 command trace.
+- **Acceptance:** each migration includes before/after plan, RLS semantics unchanged, cost/latency improvement under controlled concurrency.
+- **Tests:** auth role RLS parity, rollback, live query timeout, 2–100 concurrent command synthetic loads and migration replay.
+- **Regression watch:** transaction locks, index write amplification, function SECURITY DEFINER invocation and storage cost.
+
+### D06 · Contain orchestration and generated backend without broad rewrite (**P2 · L · H**)
+- **Objective:** lower regressions caused by centralized UI/domain switch logic and duplicated version snapshots.
+- **Current:** `App.tsx` ~699 lines, `src/core/game.ts` >100KB and generated Edge bundles are MB-scale; tracked historical snapshots/older equipment variants and exports complicate contributor context.
+- **Desired:** boundaries for navigation/commands/async results, canonical source-to-generated mapping and a documented retain/archive/delete inventory (no runtime behavior changed).
+- **User:** slower safe iterations cause more bugs and lost work.
+- **Code:** `apps/mobile/App.tsx`, `src/core/game.ts`, `backend/online/{edge,coop-edge}.ts`, `tools/build-online.mjs`, `output/` and historical exported folders.
+- **Approach:** use import/reachability scan, snapshot tests and minimal extract-module passes; keep generated Edge output deterministic; never remove Git history/migrations or unreferenced art without signed manifest.
+- **Dependencies:** A08 CI contract, D01 profiling; avoid large simultaneous refactor.
+- **Acceptance:** new modules have stable pure API contracts and equal runtime snapshots; generated bundles reproducible and archived files classified.
+- **Tests:** mobile/core, backend full build, bundle hash determinism, all imports valid and AAB asset checks.
+- **Regression watch:** circular imports, server/client shared-domain drift, breaking class command dispatch or accidental loss of assets.
+
+### D07 · Trustworthy operational telemetry and failure response (**P2 · M–L · M**)
+- **Objective:** diagnose player-facing failures without excessive logs, privacy risk or performance overhead.
+- **Current:** server logging and QA capture exist; older user concerns about database volume and popup/log spam have not been measured.
+- **Desired:** sampled error codes, request ID, latency, command/receipt outcome and environment/build provenance with retention policy; no chat bodies, secrets or private Echo IDs in logs.
+- **User:** invisible errors and delayed fixes.
+- **Code:** `backend/online/`, Edge logging wrappers, mobile online error surfaces, `docs/ADMIN_QA_TESTING.md`.
+- **Approach:** define redacted observability schema, rates/budgets, alert thresholds for billing/claim/chat failures, compare log volume pre/post; explicitly guard log payloads.
+- **Dependencies:** D01, A03/A04.
+- **Acceptance:** one simulated failed command is traceable across client/server without personal data; no explosion in log writes; alert owner and response runbook clear.
+- **Tests:** redaction snapshot, load/rate-limit simulation, retried claim ID correlation, failure in unauthenticated context.
+- **Regression watch:** request latency, leaked PII, accidental vendor spend and false positives.
+

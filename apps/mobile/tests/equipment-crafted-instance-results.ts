@@ -143,6 +143,21 @@ const oldStats=enhancedGearStats(oldQ50Equipped,recipe.output.itemId),q50Stats=e
 ok(oldStats.hp===q50Stats.hp&&oldStats.attack===q50Stats.attack&&oldStats.defense===q50Stats.defense,
   'Legacy Q50 must give the exact same effective equipment stats as a new Q50 Forge roll');
 ok(auditCraftedGearOwnership(oldQ50Equipped).consistent,'Equipping a legacy quality receipt must not alter physical ownership');
+const equippedStatsAtQuality=(quality:number)=>{
+  const adjusted={...taggedState,account:{...taggedState.account,craftedGearInstances:craftedGearInstances(taggedState).map((row,i)=>i===0?{...row,quality}:row)}};
+  const equipped=executeGameCommand(adjusted,{type:'gear_equip',args:{instanceId:ownedIds[0]}},1199).state;
+  return enhancedGearStats(equipped,recipe.output.itemId);
+};
+const q0Stats=equippedStatsAtQuality(0),q100Stats=equippedStatsAtQuality(100);
+ok((['hp','attack','defense'] as const).some(stat=>q50Stats[stat]>0),
+  'Equipment fixture must have meaningful base stats for quality scaling tests');
+for(const stat of ['hp','attack','defense'] as const){
+  if(q50Stats[stat]===0)continue;
+  ok(Math.abs(q0Stats[stat]/q50Stats[stat]-.75)<1e-9,
+    'Equipped Q0 must grant exactly 75% of the Q50 stat value for '+stat);
+  ok(Math.abs(q100Stats[stat]/q50Stats[stat]-1.25)<1e-9,
+    'Equipped Q100 must grant exactly 125% of the Q50 stat value for '+stat);
+}
 const equippedByCommand=executeGameCommand(taggedState,{type:'gear_equip',args:{instanceId:ownedIds[0]}},1200);
 ok(equippedByCommand.state.character?.equipmentInstanceIds?.[itemDef(recipe.output.itemId).slot!]===ownedIds[0],'Validated game command must equip the selected exact-copy receipt');
 ok(auditCraftedGearOwnership(equippedByCommand.state).consistent,'Equipped exact-copy command must preserve ownership audit consistency');

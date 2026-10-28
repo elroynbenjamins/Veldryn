@@ -15,6 +15,14 @@
 - Saving/applying a loadout preserves the selected instance ID. Applying a mixed legacy/unique loadout is all-or-nothing: missing, inaccessible or ambiguous required copies abort without committing a partial state.
 - **Legacy item-type** sell/transfer/bulk/equip operations cannot silently consume or erase an individually tagged copy. Legacy copies without a tag still use existing functionality where safe.
 
+## Existing player equipment: neutral Q50 compatibility (draft PR #640)
+
+- **Existing Forge receipts without a saved quality roll display Q50/100 (Legacy baseline)**. This means **neutral/100% of their original base stats**, **not half their stats**. Q50 now evaluates to exactly 1.0×, with Q1 at 0.95× and Q100 at 1.05×.
+- This is a **read-only compatibility baseline**, not a randomized or fabricated historical Forge receipt. Existing `quality: undefined` remains absent in persistence. Preserved data include original rarity, `statRoll`, upgrade ranks, gems, locks, source receipts, saved loadouts and character ownership.
+- Legacy receipt records remain ineligible for Keep Best 7 automatic disposal and ranking at the seven-copy limit. Do not silently promote them to normal rolled gear by persisting `quality: 50`. A player may manually review an item after safe identity reconciliation.
+- Existing **untagged physical copies** may be forged, dropped or awarded. When no recorded Forge receipt can be linked safely, do **not** assign a unique copy ID, Forge rarity or Q50 roll based on item type alone. Their base stats and physical inventories remain untouched.
+- Existing ownership reconciliation is still user-selected and guarded; no DB migration, backend deploy, minimum version change or AAB is performed by this compatibility adjustment.
+
 ## Implementation
 
 - `apps/mobile/src/core/crafted-gear-instances.ts`: deterministic 1–100 rolls, optional quality/lock for older saves, seven-copy projection, globally bounded instance creation with **no silent eviction**.

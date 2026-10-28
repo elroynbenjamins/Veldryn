@@ -282,6 +282,11 @@ export async function updateOnlinePlayerNameStyle(style:PlayerNameStylePreferenc
   },
  });
 }
+export async function guildPveAttemptTimeline(encounterId:string){
+ const {data,error}=await requireClient().rpc('guild_pve_attempt_timeline_v1',{p_encounter:encounterId});
+ if(error)throw error;
+ return (data??null) as import('../core/guild-pve-attempt-timeline').GuildPveAttemptTimeline|null;
+}
 export async function guildPveBoard(){const {data,error}=await requireClient().rpc('guild_pve_board_v1');if(error)throw error;return (data??[]) as import('../core/guild-pve-encounters').GuildPveEncounter[];}
 export async function claimGuildPve(encounterId:string,milestone:number){const {data,error}=await requireClient().rpc('claim_guild_pve_v1',{p_encounter:encounterId,p_milestone:milestone});if(error)throw error;return data as {alreadyClaimed:boolean;gold?:number};}
 export function guildPveAttemptKey(){return `guild-boss-${Date.now()}-${Math.random().toString(36).slice(2,14)}`;}

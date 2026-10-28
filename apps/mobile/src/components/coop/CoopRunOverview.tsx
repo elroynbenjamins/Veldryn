@@ -1,6 +1,6 @@
 import {useCoopStyles} from '../../theme/useCoopStyles';
 import {useSocialText} from '../../i18n/social';
-import {useEffect,useRef} from 'react';
+import {useEffect,useRef,useState} from 'react';
 import {Animated,StyleSheet,Text,View} from 'react-native';
 import type {CoopRunView} from '../../core/coop-presentation';
 import {validateCoopRunView} from '../../core/coop-presentation';
@@ -13,6 +13,7 @@ import {IdentityArtwork} from '../SocialIdentity';
 import {SeasonalBossTelegraphPanel} from './SeasonalBossTelegraphPanel';
 import {dungeonCombatAvatar} from '../../core/dungeon-combat-avatars';
 import {DungeonCombatStage} from './DungeonCombatStage';
+import {CombatTheaterModal} from '../CombatTheaterModal';
 import {CoopPartyChat} from './CoopPartyChat';
 import type {CoopChatMessage} from '../../online/coop-client';
 
@@ -32,16 +33,30 @@ function TerminalRunMoment({phase,rewardsReady,rewardsSecured,reduceMotion}:{pha
   </Animated.View>;
 }
 
-export function CoopRunOverview({language,run,onBack,onChoose,onRefresh,onClaim,busy=false,notice,rewards=[],terminalAction,reduceMotion=false,chatMessages=[],onChatSend}:{language:Language;run:CoopRunView;onBack:()=>void;onChoose?:(nodeId:string)=>void;onRefresh?:()=>void;onClaim?:(id:string)=>void;busy?:boolean;notice?:string;rewards?:Array<{id:string;claimed_at:string|null;reward_json:{marks?:number}}>;terminalAction?:{label:string;claimed?:boolean;completeText?:string;onPress:()=>void};reduceMotion?:boolean;chatMessages?:CoopChatMessage[];onChatSend?:(text:string)=>Promise<void>}){
+export function CoopRunOverview({language,run,onBack,onChoose,onRefresh,onClaim,busy=false,notice,rewards=[],terminalAction,reduceMotion=false,seasonal=false,eventName,chatMessages=[],onChatSend}:{language:Language;run:CoopRunView;onBack:()=>void;onChoose?:(nodeId:string)=>void;onRefresh?:()=>void;onClaim?:(id:string)=>void;busy?:boolean;notice?:string;rewards?:Array<{id:string;claimed_at:string|null;reward_json:{marks?:number}}>;terminalAction?:{label:string;claimed?:boolean;completeText?:string;onPress:()=>void};reduceMotion?:boolean;seasonal?:boolean;eventName?:string;chatMessages?:CoopChatMessage[];onChatSend?:(text:string)=>Promise<void>}){
  const {styles:s}=useCoopStyles(makeStyles);
  const st=useSocialText();
   validateCoopRunView(run);
   const modeLabel=run.modeLabel??(run.mode==='qmode'?ct(language,'details.qmode'):ct(language,'details.live')),bossNext=run.options.some(option=>option.kind==='boss');
   const terminal=run.phase==='completed'||run.phase==='failed',unclaimedRewards=rewards.filter(reward=>!reward.claimed_at),rewardSurfaceReady=rewards.length>0||Boolean(terminalAction),rewardsSecured=terminal&&rewardSurfaceReady&&!unclaimedRewards.length&&(!terminalAction||terminalAction.claimed===true);
   const inCombat=run.phase==='resolving_node'||bossNext||Boolean(run.lastCombat);
+  const replayCues=run.lastCombat?.cues??[];
+  const replayKey=`${run.runId}:${run.lastCombat?.nodeId??'pending'}:${run.lastCombat?.durationMs??0}:${replayCues.length}:${replayCues[replayCues.length-1]?.atMs??0}`;
+  const lastReplay=useRef(replayKey),wasResolving=useRef(run.phase==='resolving_node');
+  const [theaterOpen,setTheaterOpen]=useState(run.phase==='resolving_node');
+  useEffect(()=>{
+   const resolving=run.phase==='resolving_node';
+   // Only automatically open for a new encounter or authoritative replay;
+   // returning to the dungeon screen must not repeatedly force open an old one.
+   if((resolving&&!wasResolving.current)||(run.lastCombat&&lastReplay.current!==replayKey))setTheaterOpen(true);
+   lastReplay.current=replayKey;wasResolving.current=resolving;
+  },[run.phase,run.lastCombat,replayKey]);
   const combatName=run.bossMechanic?.telegraph?.bossName??run.lastCombat?.combatants?.find(member=>member.boss)?.name??st('DUNGEON COMBAT');
-  return <ExpeditionScreenShell compactHeader={inCombat} eyebrow={ct(language,'browse.resumeTitle')} title={inCombat?combatName:ct(language,'browse.resume')} onBack={onBack} backLabel={ct(language,'details.backList')} banner={inCombat?undefined:<View style={s.banner}><StateChip label={modeLabel} tone="selected"/><Text style={s.phase}>{run.phase.replaceAll('_',' ')}</Text></View>}>
-    {(run.phase==='resolving_node'||bossNext||Boolean(run.lastCombat))?<DungeonCombatStage run={run} boss={bossNext||run.lastCombat?.nodeId==='boss'} enemyLabel={(bossNext||run.lastCombat?.nodeId==='boss')?run.bossMechanic?.telegraph?.bossName:undefined}/>:null}
+  return <><ExpeditionScreenShell compactHeader={inCombat} eyebrow={ct(language,'browse.resumeTitle')} title={inCombat?combatName:ct(language,'browse.resume')} onBack={onBack} backLabel={ct(language,'details.backList')} banner={inCombat?undefined:<View style={s.banner}><StateChip label={modeLabel} tone="selected"/><Text style={s.phase}>{run.phase.replaceAll('_',' ')}</Text></View>}>
+    {inCombat?<View style={{gap:8}}>
+     <GameButton title={st('Watch battle full screen')} onPress={()=>setTheaterOpen(true)}/>
+     {!theaterOpen?<DungeonCombatStage run={run} seasonal={seasonal} eventName={eventName} reduceMotionSetting={reduceMotion} boss={bossNext||run.lastCombat?.nodeId==='boss'} enemyLabel={(bossNext||run.lastCombat?.nodeId==='boss')?run.bossMechanic?.telegraph?.bossName:undefined}/>:null}
+    </View>:null}
     {!(run.phase==='resolving_node'||bossNext||run.lastCombat)?<>
     <FantasyPanel variant="selected"><View style={s.summary}><View style={s.grow}><Text style={s.title}>{ct(language,'details.party')}</Text><Text style={s.copy}>{ct(language,'details.partyValue')}</Text></View><StateChip label={`Lv. ${run.syncedLevel}`} tone="success"/></View></FantasyPanel>
     <Text style={s.section}>{ct(language,'details.party')}</Text>
@@ -63,7 +78,11 @@ export function CoopRunOverview({language,run,onBack,onChoose,onRefresh,onClaim,
     {terminalAction?<FantasyPanel variant="success">{terminalAction.claimed?<View style={s.claimedReward}><StateChip label={st("SECURED")} tone="success"/><Text style={s.copy}>{terminalAction.completeText??'Seasonal expedition reward collected.'}</Text></View>:<GameButton title={terminalAction.label} disabled={busy} onPress={terminalAction.onPress}/>}</FantasyPanel>:null}
     {run.rewardText?<FantasyPanel variant="success"><Text style={s.title}>{ct(language,'details.reward')}</Text><Text style={s.copy}>{run.rewardText}</Text></FantasyPanel>:null}
     {terminal?<GameButton title={rewardsSecured?st("Return to dungeon list"):st("Leave expedition")} tone="secondary" disabled={busy} onPress={onBack}/>:null}
-  </ExpeditionScreenShell>;
+  </ExpeditionScreenShell>
+   {inCombat&&theaterOpen?<CombatTheaterModal visible tone={seasonal?'event':'dungeon'} onClose={()=>setTheaterOpen(false)} title={combatName} eyebrow={st('DUNGEON COMBAT')} subtitle={modeLabel} reduceMotion={reduceMotion}>
+    <DungeonCombatStage run={run} seasonal={seasonal} eventName={eventName} reduceMotionSetting={reduceMotion} boss={bossNext||run.lastCombat?.nodeId==='boss'} enemyLabel={(bossNext||run.lastCombat?.nodeId==='boss')?run.bossMechanic?.telegraph?.bossName:undefined}/>
+   </CombatTheaterModal>:null}
+  </>;
 }
 
 const makeStyles=(coopColors:CoopColors)=>StyleSheet.create({terminal:{gap:coopSpacing.sm,padding:coopSpacing.md,borderWidth:1,borderColor:coopColors.gold,backgroundColor:coopColors.surfaceRaised},terminalHead:{flexDirection:'row',alignItems:'center',gap:coopSpacing.sm},terminalEyebrow:{...coopTypography.meta,fontWeight:'900',letterSpacing:.8},terminalSuccess:{color:coopColors.success},terminalDanger:{color:coopColors.danger},terminalTitle:{...coopTypography.section,color:coopColors.text,fontWeight:'900'},claimedReward:{flexDirection:'row',alignItems:'center',gap:coopSpacing.sm},banner:{flexDirection:'row',alignItems:'center',gap:coopSpacing.sm},phase:{...coopTypography.meta,color:coopColors.textSecondary,textTransform:'capitalize',flex:1},summary:{flexDirection:'row',alignItems:'center',gap:coopSpacing.sm},grow:{flex:1,minWidth:0},section:{...coopTypography.section,color:coopColors.gold,marginTop:coopSpacing.xs},title:{...coopTypography.section,color:coopColors.text},copy:{...coopTypography.body,color:coopColors.textSecondary},party:{flexDirection:'row',flexWrap:'wrap',gap:coopSpacing.sm},member:{width:'48%',flexGrow:1},name:{...coopTypography.body,color:coopColors.text,fontWeight:'800'},className:{...coopTypography.meta,color:coopColors.cyan},memberMeta:{flexDirection:'row',flexWrap:'wrap',gap:coopSpacing.xs},option:{minHeight:64,flexDirection:'row',alignItems:'center',gap:coopSpacing.md},encounterIntel:{marginTop:3,flexDirection:'row',alignItems:'center',gap:5},encounterIntelLabel:{fontSize:7,lineHeight:9,color:coopColors.cyan,fontWeight:'900',letterSpacing:.45},encounterIntelCopy:{flex:1,fontSize:8,lineHeight:10,color:coopColors.textMuted,fontWeight:'800'},mechanicHead:{flexDirection:'row',alignItems:'flex-start',gap:coopSpacing.sm},meterTrack:{height:6,borderRadius:999,overflow:'hidden',backgroundColor:coopColors.surfaceRaised},meterFill:{height:'100%',borderRadius:999,backgroundColor:coopColors.cyan}});

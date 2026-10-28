@@ -2,7 +2,7 @@ export type CombatTeam = 'players' | 'enemies';
 export type CombatRole = 'tank' | 'damage' | 'support' | 'enemy';
 export type DamageType = 'physical' | 'fire' | 'ice' | 'shadow' | 'arcane' | 'nature' | 'true';
 export type TargetRule = 'self' | 'current_target' | 'lowest_hp_ally' | 'all_allies' | 'all_enemies' | 'random_enemy' | 'interruptible_casting_enemy' | 'threatened_ally';
-export type EffectKind = 'damage' | 'heal' | 'shield' | 'dot' | 'hot' | 'interrupt' | 'taunt' | 'buff' | 'debuff';
+export type EffectKind = 'damage' | 'heal' | 'shield' | 'dot' | 'hot' | 'interrupt' | 'taunt' | 'buff' | 'debuff' | 'cleanse';
 
 export interface CombatStats {
   maxHp: number;
@@ -42,7 +42,7 @@ export interface AbilityDefinition {
   priority: number;
   interruptible?: boolean;
   interruptPower?: number;
-  aiCondition?: 'always' | 'self_below_50' | 'ally_below_50' | 'ally_below_80' | 'ally_below_80_or_targeted' | 'target_casting' | 'multiple_enemies';
+  aiCondition?: 'always' | 'self_below_50' | 'ally_below_50' | 'ally_below_50_or_dot' | 'ally_below_80' | 'ally_below_80_or_targeted' | 'target_casting' | 'multiple_enemies';
   tags?: string[];
 }
 
@@ -90,6 +90,7 @@ export interface ActivePeriodicEffect {
   coeff: number;
   flat: number;
   damageType?: DamageType;
+  tag?:string;
   nextTickAt: number;
   expiresAt: number;
   tickMs: number;
@@ -126,7 +127,7 @@ export interface CombatantState {
 
 export interface CombatGemStateSnapshot{ targetId:string; tag:string; expiriesAtMs:number[]; }
 
-export type CombatEventType = 'combat_start' | 'phase' | 'cast_start' | 'cast_complete' | 'damage' | 'miss' | 'heal' | 'shield' | 'dot_tick' | 'hot_tick' | 'status_apply' | 'gem_state' | 'interrupt' | 'down' | 'death' | 'combat_end';
+export type CombatEventType = 'combat_start' | 'phase' | 'cast_start' | 'cast_complete' | 'damage' | 'miss' | 'heal' | 'shield' | 'dot_tick' | 'hot_tick' | 'status_apply' | 'status_remove' | 'gem_state' | 'interrupt' | 'down' | 'death' | 'combat_end';
 export interface CombatEvent {
   atMs: number;
   type: CombatEventType;

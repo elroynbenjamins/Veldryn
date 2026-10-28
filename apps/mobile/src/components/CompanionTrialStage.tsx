@@ -13,6 +13,9 @@ import {COMPANION_AFFINITIES,companionAffinity} from '../core/companion-affiniti
 import {equipmentTheme,radii,spacing,typography,type ThemeColors} from '../theme/theme';
 import {useGameTheme} from '../theme/ThemeContext';
 import {companionRarityBorder} from './CompanionPresentation';
+import {CombatImpactBurst,type CombatImpactKind} from './CombatImpactBurst';
+import {CombatOutcomeMoment} from './CombatOutcomeMoment';
+import {CombatAttackSprite} from './CombatAttackSprite';
 import {companionArtSource} from '../theme/companion-art';
 
 const roleGlyph={damage:'⚔',tank:'◆',support:'✦'} as const;
@@ -20,7 +23,7 @@ const clamp=(n:number,min:number,max:number)=>Math.max(min,Math.min(max,n));
 const pct=(current:number,max:number)=>clamp(max>0?current/max*100:0,0,100);
 const time=(ms:number)=>`${(Math.max(0,ms)/1000).toFixed(1)}s`;
 
-type PlaybackUnit={id:string;name:string;team:'players'|'enemies';role:string;maxHp:number;boss:boolean;hp:number;shield:number;alive:boolean;casting?:string};
+type PlaybackUnit={id:string;name:string;team:'players'|'enemies';role:string;maxHp:number;boss:boolean;hp:number;shield:number;alive:boolean;casting?:string;poisonUntil?:number};
 function playbackState(playback:CompanionBattlePlaybackSnapshot,playhead:number){
  const units=new Map<string,PlaybackUnit>(playback.units.map(unit=>[unit.id,{...unit,hp:unit.maxHp,shield:0,alive:true}]));
  const visible=playback.events.filter(event=>event.atMs<=playhead);
@@ -29,11 +32,14 @@ function playbackState(playback:CompanionBattlePlaybackSnapshot,playhead:number)
   if((event.type==='damage'||event.type==='dot_tick')&&target){target.shield=Math.max(0,target.shield-(event.absorbed??0));target.hp=Math.max(0,target.hp-(event.amount??0));}
   if((event.type==='heal'||event.type==='hot_tick')&&target)target.hp=Math.min(target.maxHp,target.hp+(event.amount??0));
   if(event.type==='shield'&&target)target.shield+=event.amount??0;
+   if(event.type==='status_apply'&&target&&event.statusKind==='dot'&&event.statusTag==='poison')target.poisonUntil=event.expiresAtMs??playhead+8000;
+   if(event.type==='status_remove'&&target&&event.statusKind==='dot'&&event.statusTag==='poison')target.poisonUntil=undefined;
   if((event.type==='down'||event.type==='death')&&target){target.hp=0;target.alive=false;}
   if(event.type==='cast_start'&&actor)actor.casting=playback.abilityNames[event.abilityId??'']??event.abilityId;
   if(event.type==='cast_complete'&&actor)actor.casting=undefined;
   if(event.type==='interrupt'&&target)target.casting=undefined;
  }
+ for(const unit of units.values())if(unit.poisonUntil!==undefined&&unit.poisonUntil<=playhead)unit.poisonUntil=undefined;
  return {units:[...units.values()],visible};
 }
 function eventText(playback:CompanionBattlePlaybackSnapshot,event:CompanionBattlePlaybackSnapshot['events'][number],language:import('../i18n/languages').Language){
@@ -41,7 +47,9 @@ function eventText(playback:CompanionBattlePlaybackSnapshot,event:CompanionBattl
  const actor=event.actorId?names.get(event.actorId):undefined,target=event.targetId?names.get(event.targetId):undefined;
  const ability=playback.abilityNames[event.abilityId??'']??t('Ability'),amount=Math.round(event.amount??0);
  if(event.type==='damage')return (actor??t('Attack'))+' · '+ability+' → '+(target??t('Target'))+' −'+amount+(event.critical?t(' CRIT'):'');
- if(event.type==='dot_tick')return t('{target} suffers {amount} periodic damage',{target:target??t('Target'),amount});
+ if(event.type==='dot_tick')return event.abilityId==='TRIAL_VENOM_BLOOM'?t('{target} suffers {amount} poison damage through shields',{target:target??t('Target'),amount}):t('{target} suffers {amount} periodic damage',{target:target??t('Target'),amount});
+ if(event.type==='status_apply'&&event.statusKind==='dot')return t('{target} is poisoned',{target:target??t('Target')});
+ if(event.type==='status_remove'&&event.statusKind==='dot')return t('{actor} cleanses poison from {target}',{actor:actor??t('Support'),target:target??t('Ally')});
  if(event.type==='heal'||event.type==='hot_tick')return t('{actor} restores {amount} HP to {target}',{actor:actor??t('Support'),amount,target:target??t('Ally')});
  if(event.type==='shield')return t('{actor} shields {target} for {amount}',{actor:actor??t('Support'),target:target??t('Ally'),amount});
  if(event.type==='cast_start')return t('{actor} begins {ability}',{actor:actor??t('Enemy'),ability});
@@ -68,13 +76,22 @@ export function CompanionTrialStage({state,now,floor,teamIds,mode='trial',expect
  const fresh=!!playback;
  const playbackRealMs=playback?Math.min(20_000,Math.max(8_000,playback.durationMs*.38)):0;
  const simPerRealMs=playback&&playbackRealMs?playback.durationMs/playbackRealMs:1;
- const [playhead,setPlayhead]=useState(0),startRef=useRef(Date.now()),impact=useRef(new Animated.Value(0)).current;
+ const [playhead,setPlayhead]=useState(()=>fresh?0:playback?.durationMs??0),[speed,setSpeed]=useState<1|2|4>(1);
+ const startRef=useRef(Date.now()),basePlayheadRef=useRef(0),impact=useRef(new Animated.Value(0)).current;
  useEffect(()=>{
-  if(!playback){setPlayhead(0);return;}
-  startRef.current=Date.now();setPlayhead(0);
-  const id=setInterval(()=>setPlayhead(Math.min(playback.durationMs,(Date.now()-startRef.current)*simPerRealMs)),80);
+  if(!playback||!fresh){setPlayhead(playback?.durationMs??0);return;}
+  startRef.current=Date.now();basePlayheadRef.current=0;setPlayhead(0);setSpeed(1);
+ },[fresh,last?.atMs,playback?.durationMs]);
+ useEffect(()=>{
+  if(!playback||!fresh||playhead>=playback.durationMs)return;
+  const id=setInterval(()=>{
+   const next=Math.min(playback.durationMs,basePlayheadRef.current+(Date.now()-startRef.current)*simPerRealMs*speed);
+   setPlayhead(next);
+   if(next>=playback.durationMs)clearInterval(id);
+  },80);
   return()=>clearInterval(id);
- },[last?.battleId,last?.atMs,expectedBattleId,playback?.durationMs,simPerRealMs]);
+ },[fresh,last?.atMs,playback?.durationMs,simPerRealMs,speed,playback&&playhead>=playback.durationMs]);
+ const changeSpeed=(next:1|2|4)=>{basePlayheadRef.current=playhead;startRef.current=Date.now();setSpeed(next);};
  const playbackView=useMemo(()=>playback?playbackState(playback,playhead):undefined,[playback,playhead]);
  const current=playbackView?.visible[playbackView.visible.length-1],finished=!!playback&&playhead>=playback.durationMs;
  useEffect(()=>{
@@ -83,26 +100,40 @@ export function CompanionTrialStage({state,now,floor,teamIds,mode='trial',expect
   impact.setValue(0);Animated.sequence([Animated.timing(impact,{toValue:1,duration:90,useNativeDriver:true}),Animated.timing(impact,{toValue:0,duration:260,useNativeDriver:true})]).start();
  },[current?.atMs,current?.type,impact,state.settings.reduceMotion]);
  const scale=impact.interpolate({inputRange:[0,1],outputRange:[1,1.012]});
+ const hitMotion=state.settings.reduceMotion?undefined:{
+  opacity:impact.interpolate({inputRange:[0,.2,1],outputRange:[.9,1,1]}),
+  transform:[{translateY:impact.interpolate({inputRange:[0,1],outputRange:[4,-12]})},{scale:impact.interpolate({inputRange:[0,1],outputRange:[1,1.22]})}],
+ };
  const powerPct=Math.min(100,Math.round(power/Math.max(1,recommended)*100));
+ const arenaAccent=theme.id==='sunscar'?C.warning:theme.id==='frostmarch'?C.info:theme.id==='ashlands'?C.bad:theme.id==='rift'||theme.id==='apex'?C.special:C.accent;
 
  if(playback&&fresh){
   const players=playbackView!.units.filter(unit=>unit.team==='players'),enemies=playbackView!.units.filter(unit=>unit.team==='enemies'),playbackTitle=enemies.find(unit=>unit.boss)?.name??last!.title;
-  const feed=playbackView!.visible.filter(event=>!['combat_start','cast_complete'].includes(event.type)).slice(-5).reverse();
+  const activeCue=!finished&&current&&!['combat_start','cast_complete'].includes(current.type)?eventText(playback,current,language):undefined;
   const unitCard=(unit:PlaybackUnit)=>{
    const def=COMBAT_COMPANIONS.find(row=>row.id===unit.id),affinity=def?COMPANION_AFFINITIES[companionAffinity(def)]:undefined,art=def?companionArtSource(unit.id):undefined;
+   const targeted=current?.targetId===unit.id,acting=current?.actorId===unit.id;
+   const burstKind:CombatImpactKind|undefined=targeted?(current?.type==='damage'||current?.type==='dot_tick'?(current.critical?'critical':'damage'):current?.type==='heal'||current?.type==='hot_tick'||current?.type==='status_remove'?'heal':current?.type==='shield'?'shield':current?.type==='interrupt'?'interrupt':current?.type==='down'||current?.type==='death'?'down':undefined):acting&&current?.type==='cast_start'?'cast':unit.boss&&current?.type==='phase'?'phase':undefined;
+   const attacks=acting&&(current?.type==='damage'||current?.type==='heal'||current?.type==='shield'||current?.type==='cast_start'||current?.type==='status_remove');
+   const attackMotion=current?.type==='cast_start'?'cast':current?.type==='heal'||current?.type==='status_remove'?'pulse':current?.type==='shield'?'brace':def?.role==='damage'?'dash':def?.role==='support'?'projectile':unit.boss?'smash':'lunge';
+   const attackAccent=unit.team==='enemies'?'danger' as const:def?.role==='support'?'success' as const:def?.role==='tank'?'gold' as const:'cyan' as const;
    const impactLabel=current?.targetId===unit.id?(current.type==='damage'||current.type==='dot_tick'?'-'+Math.round(current.amount??0):current.type==='heal'||current.type==='hot_tick'?t('+HP {amount}',{amount:Math.round(current.amount??0)}):current.type==='shield'?t('+SHIELD {amount}',{amount:Math.round(current.amount??0)}):undefined):undefined;
-   return <View key={unit.id} style={[s.liveUnit,!unit.alive&&s.downedUnit,current?.targetId===unit.id&&s.targetUnit,def&&{borderColor:companionRarityBorder(def.rarity,C.dark)}]}><View style={s.liveUnitRow}><View style={s.unitIcon}>{art?<Image source={art} resizeMode="contain" style={s.unitArt}/>:<Text style={s.unitGlyph}>{unit.boss ? '♛' : def ? roleGlyph[def.role] : '◇'}</Text>}</View><View style={s.liveUnitBody}>
+   return <View key={unit.id} style={[s.liveUnit,unit.boss&&s.bossLiveUnit,!unit.alive&&s.downedUnit,current?.targetId===unit.id&&s.targetUnit,def&&{borderColor:companionRarityBorder(def.rarity,C.dark)}]}><View style={s.liveUnitRow}><View style={[s.unitIcon,unit.boss&&s.bossUnitIcon]}>{art?<Image source={art} resizeMode="contain" style={s.unitArt}/>:<Text style={s.unitGlyph}>{unit.boss ? '♛' : def ? roleGlyph[def.role] : '◇'}</Text>}{burstKind?<CombatImpactBurst eventId={`${last!.atMs}:${playbackView!.visible.length}:${unit.id}`} kind={burstKind} reduceMotion={state.settings.reduceMotion} size={54}/>:null}{attacks?<CombatAttackSprite eventId={`${last!.atMs}:${playbackView!.visible.length}:attack:${unit.id}`} motion={attackMotion} accent={attackAccent} actionKind={current?.type==='heal'||current?.type==='status_remove'?'heal':current?.type==='shield'?'shield':'damage'} enemy={unit.team==='enemies'} reduceMotion={state.settings.reduceMotion}/>:null}</View><View style={s.liveUnitBody}>
     <View style={s.unitHead}><Text numberOfLines={1} style={s.unitName}>{unit.name}</Text><Text style={s.hpText}>{Math.round(unit.hp).toLocaleString()}/ {Math.round(unit.maxHp).toLocaleString()}</Text></View>
     <View style={s.hpTrack}><View style={[s.hpFill,{width:(pct(unit.hp,unit.maxHp)+'%') as any}]}/>{unit.shield>0?<View style={[s.shieldFill,{width:(Math.min(100,unit.shield/unit.maxHp*100)+'%') as any}]}/>:null}</View>
     <Text style={s.unitMeta}>{def ? t("{value0} · {value1} {value2}", {value0: label(def.role).toLocaleUpperCase(language), value1: affinity?.glyph ?? '', value2: companionContent(language,affinity?.label??'')}) : (unit.boss?t('Boss').toLocaleUpperCase(language):t('Trial Echo').toLocaleUpperCase(language))}{unit.shield>0 ? t(" · {value0} shield", {value0: Math.round(unit.shield)}) : ''}</Text>
-    {unit.casting?<Text style={s.castText}>{t("CASTING · {value0}", {value0: unit.casting})}</Text>:null}</View>{impactLabel?<Text style={[s.impactNumber,(current?.type==='heal'||current?.type==='hot_tick'||current?.type==='shield')&&s.impactPositive]}>{impactLabel}</Text>:null}</View></View>;
+    {unit.poisonUntil!==undefined?<Text style={[s.castText,{color:C.bad}]}>☠ {t("POISON")} · {t("HP bypass")}</Text>:null}
+    {unit.casting?<Text style={s.castText}>{t("CASTING · {value0}", {value0: unit.casting})}</Text>:null}</View>{impactLabel?<Animated.Text style={[s.impactNumber,(current?.type==='heal'||current?.type==='hot_tick'||current?.type==='shield')&&s.impactPositive,current?.critical&&s.impactCritical,current?.type==='dot_tick'&&current.abilityId==='TRIAL_VENOM_BLOOM'&&{color:C.special},hitMotion]}>{impactLabel}</Animated.Text>:null}</View></View>;
   };
   return <Animated.View style={[s.stage,{transform:[{scale}]}]}>
-   <View style={s.stageHeader}><View style={s.flex}><Text style={s.kicker}>{t("LIVE TRIAL PLAYBACK · {value0}", {value0: last!.title.toUpperCase()})}</Text><Text style={s.title}>{playbackTitle}</Text></View><View style={s.timerBadge}><Text style={s.timerText}>{time(Math.min(playhead,playback.durationMs))}</Text><Text style={s.powerSub}>/ {time(playback.durationMs)}</Text></View></View>
-   <View accessible accessibilityRole="progressbar" accessibilityLabel={t("Battle progress")} accessibilityValue={{min:0,max:100,now:Math.round(Math.min(100,playhead/Math.max(1,playback.durationMs)*100))}} style={s.playbackTrack}><View style={[s.playbackFill,{width:(Math.min(100,playhead/Math.max(1,playback.durationMs)*100)+'%') as any}]}/></View>
-   <View style={s.liveArena}><View style={s.liveColumn}><Text style={s.sideLabel}>{t("YOUR FORMATION")}</Text>{players.map(unitCard)}</View><View style={s.vs}><Text style={s.vsText}>{t("VS")}</Text></View><View style={s.liveColumn}><Text style={s.sideLabel}>{enemies.some(unit=>unit.boss) ? t("BOSS ENCOUNTER") : t("TRIAL FORMATION")}</Text>{enemies.map(unitCard)}</View></View>
-   <View style={s.feed}><View style={s.feedHead}><Text style={s.feedTitle}>{t("COMBAT FEED")}</Text><Text style={s.feedMeta}>{t("{value0} authoritative events", {value0: playback.events.length})}</Text></View>{feed.length?feed.map((event,index)=><View key={event.atMs+':'+event.type+':'+index} style={s.feedRow}><Text style={s.feedTime}>{time(event.atMs)}</Text><Text numberOfLines={1} style={[s.feedText,event.type==='phase'&&s.phaseText,event.type==='interrupt'&&s.interruptText,event.critical&&s.critText]}>{eventText(playback,event,language)}</Text></View>):<Text style={s.enemyMeta}>{t("The formation enters the Trial…")}</Text>}</View>
-   {!finished?<View style={s.playbackFooter}><Text style={s.combatHintText}>{t("Compressed playback of the already-resolved server simulation.")}</Text><Pressable accessibilityRole="button" onPress={()=>{startRef.current=Date.now()-playbackRealMs;setPlayhead(playback.durationMs)}} style={s.skip}><Text style={s.skipText}>{t("SKIP →")}</Text></Pressable></View>:<View style={[s.result,last!.won?s.resultWin:s.resultLoss]}><Text style={s.resultTitle}>{last!.won ? t("VICTORY") : t("DEFEAT")}· {last!.title}</Text><Text style={s.resultText}>{t("{value0}s simulated · +{value1} Essence · +{value2} Gold{value3}", {value0: (last!.durationMs/1000).toFixed(1), value1: last!.essence, value2: last!.gold, value3: last!.bondstones ? t(" · +{value0} Bondstones", {value0: last!.bondstones}) : ''})}</Text></View>}
+   <View style={s.stageHeader}><View style={s.flex}><Text style={s.kicker}>{t("LIVE COMBAT")}</Text><Text style={s.title}>{playbackTitle}</Text></View><View style={s.timerBadge}><Text style={s.timerText}>{time(Math.min(playhead,playback.durationMs))}</Text><Text style={s.powerSub}>/ {time(playback.durationMs)}</Text></View></View>
+   {!finished?<View style={s.liveSpeedRow}><Text style={s.liveSpeedLabel}>{t("SPEED")}</Text>{([1,2,4] as const).map(value=><Pressable key={value} accessibilityRole="button" accessibilityLabel={t("Change playback speed")+" "+value+"×"} accessibilityState={{selected:speed===value}} onPress={()=>changeSpeed(value)} style={[s.liveSpeedOption,speed===value&&s.liveSpeedSelected]}><Text style={[s.liveSpeedText,speed===value&&s.liveSpeedSelectedText]}>{value}×</Text></Pressable>)}</View>:null}
+   <View style={[s.liveArena,{borderColor:arenaAccent}]}>
+    <View pointerEvents="none" style={s.trialAmbient}><View style={[s.trialHalo,{borderColor:arenaAccent}]}/><View style={[s.trialInnerHalo,{borderColor:arenaAccent}]}/><View style={[s.trialFloorLine,{backgroundColor:arenaAccent}]}/></View>
+    <View style={s.liveColumn}><Text style={s.sideLabel}>{t("YOUR FORMATION")}</Text>{players.map(unitCard)}</View><View style={s.vs}><Text style={s.vsText}>{t("VS")}</Text></View><View style={s.liveColumn}><Text style={s.sideLabel}>{enemies.some(unit=>unit.boss) ? t("BOSS ENCOUNTER") : t("TRIAL FORMATION")}</Text>{enemies.map(unitCard)}</View></View>
+   {activeCue?<Text numberOfLines={1} accessibilityLiveRegion="polite" style={s.liveCue}>{activeCue}</Text>:null}
+   {!finished?<View style={s.playbackTrack}><View style={[s.playbackFill,{width:`${Math.round(100*playhead/Math.max(1,playback.durationMs))}%` as `${number}%`}]} /></View>:null}
+   {finished?<CombatOutcomeMoment outcome={last!.won?'victory':'defeat'} title={last!.won?t('VICTORY'):t('DEFEAT')} detail={t("{value0}s simulated · +{value1} Essence · +{value2} Gold{value3}", {value0:(last!.durationMs/1000).toFixed(1),value1:last!.essence,value2:last!.gold,value3:last!.bondstones?t(" · +{value0} Bondstones",{value0:last!.bondstones}):''})} reduceMotion={state.settings.reduceMotion}/>:null}
   </Animated.View>;
  }
 
@@ -126,7 +157,13 @@ function makeStyles(C:ThemeColors){const equipmentColors=equipmentTheme(C);retur
  powerTrack:{height:7,borderRadius:4,overflow:'hidden',backgroundColor:C.bg},powerFill:{height:'100%',backgroundColor:C.good},playbackTrack:{height:6,overflow:'hidden',borderRadius:5,backgroundColor:C.panel2},playbackFill:{height:'100%',backgroundColor:C.accent},
  arena:{minHeight:210,flexDirection:'row',alignItems:'stretch',gap:6,paddingVertical:6},teamColumn:{flex:1.18,gap:6},enemyColumn:{flex:.82,alignItems:'center',justifyContent:'center',gap:5,padding:8,borderWidth:1,borderColor:C.line,borderRadius:radii.md,backgroundColor:C.panel2},sideLabel:{fontSize:8,color:C.muted,fontWeight:'900',letterSpacing:.8},unit:{minHeight:52,flexDirection:'row',alignItems:'center',gap:7,padding:6,borderWidth:1,borderColor:C.line,borderRadius:radii.sm,backgroundColor:C.panel},unitCopy:{flex:1,minWidth:0},unitName:{fontSize:10,color:C.text,fontWeight:'900'},unitMeta:{fontSize:7,color:C.info,fontWeight:'800'},ability:{fontSize:8,color:C.muted,marginTop:2},vs:{width:22,alignItems:'center',justifyContent:'center'},vsText:{fontSize:10,color:C.accent,fontWeight:'900'},enemySigil:{width:64,height:64,borderRadius:32,alignItems:'center',justifyContent:'center',borderWidth:1,borderColor:C.info,backgroundColor:C.panel2},bossSigil:{borderColor:C.accent,backgroundColor:C.accentSurface},enemyGlyph:{fontSize:30,color:C.accent},enemyName:{...typography.bodyStrong,color:C.text,textAlign:'center'},enemyMeta:{fontSize:9,color:C.muted,textAlign:'center'},enemyAbility:{fontSize:8,color:C.warning,textAlign:'center'},empty:{flex:1,alignItems:'center',justifyContent:'center',padding:12,borderWidth:1,borderStyle:'dashed',borderColor:C.line,borderRadius:radii.md},emptyText:{...typography.caption,color:C.muted,textAlign:'center'},
  combatHint:{padding:8,borderLeftWidth:3,borderLeftColor:C.info,backgroundColor:C.panel2},combatHintLabel:{fontSize:8,color:C.info,fontWeight:'900',letterSpacing:.8},combatHintText:{...typography.caption,color:C.muted},
- liveArena:{minHeight:210,flexDirection:'row',alignItems:'stretch',gap:5},liveColumn:{flex:1,gap:5},liveUnit:{gap:3,padding:6,borderWidth:1,borderColor:C.line,borderRadius:radii.sm,backgroundColor:C.panel},liveUnitRow:{flexDirection:'row',alignItems:'center',gap:5},liveUnitBody:{flex:1,minWidth:0},unitIcon:{width:34,height:34,alignItems:'center',justifyContent:'center',borderRadius:10,backgroundColor:C.stage},unitArt:{width:32,height:32},unitGlyph:{fontSize:17,color:C.accent,fontWeight:'900'},impactNumber:{fontSize:10,color:C.bad,fontWeight:'900'},impactPositive:{color:C.good},previewIcon:{width:38,height:38,alignItems:'center',justifyContent:'center'},previewArt:{width:36,height:36},targetUnit:{borderColor:C.warning},downedUnit:{opacity:.55},unitHead:{flexDirection:'row',alignItems:'center',justifyContent:'space-between',gap:5},hpText:{fontSize:7,color:C.muted,fontVariant:['tabular-nums']},hpTrack:{height:7,borderRadius:99,overflow:'hidden',backgroundColor:C.badSurface,position:'relative'},hpFill:{height:'100%',backgroundColor:C.good},shieldFill:{position:'absolute',right:0,top:0,bottom:0,backgroundColor:C.info},castText:{fontSize:7,color:C.warning,fontWeight:'900',letterSpacing:.5},
- feed:{gap:4,padding:8,borderWidth:1,borderColor:C.line,borderRadius:radii.sm,backgroundColor:C.panel2},feedHead:{flexDirection:'row',alignItems:'center',justifyContent:'space-between',gap:6},feedTitle:{fontSize:8,color:C.accent,fontWeight:'900',letterSpacing:.7},feedMeta:{fontSize:7,color:C.muted},feedRow:{flexDirection:'row',gap:6},feedTime:{width:31,fontSize:8,color:C.muted,fontVariant:['tabular-nums']},feedText:{flex:1,fontSize:8,color:C.text,fontWeight:'700'},phaseText:{color:C.info,fontWeight:'900'},interruptText:{color:C.good,fontWeight:'900'},critText:{color:C.warning,fontWeight:'900'},
- playbackFooter:{minHeight:30,flexDirection:'row',alignItems:'center',justifyContent:'space-between',gap:8},skip:{paddingHorizontal:8,paddingVertical:5,borderWidth:1,borderColor:C.line,borderRadius:radii.sm},skipText:{fontSize:8,color:C.accent,fontWeight:'900'},result:{padding:9,borderWidth:1,borderRadius:radii.sm},resultWin:{borderColor:C.good,backgroundColor:C.goodSurface},resultLoss:{borderColor:C.bad,backgroundColor:C.badSurface},resultTitle:{...typography.bodyStrong,color:C.text},resultText:{...typography.caption,color:C.muted},
+ liveArena:{minHeight:260,flexDirection:'row',alignItems:'stretch',gap:5,padding:8,borderWidth:1,borderRadius:16,backgroundColor:C.stage,overflow:'hidden'},trialAmbient:{...StyleSheet.absoluteFill,alignItems:'center',justifyContent:'center',opacity:.25},trialHalo:{width:210,height:210,borderWidth:2,borderRadius:110,transform:[{scaleY:.62}]},trialInnerHalo:{position:'absolute',width:130,height:130,borderWidth:1,borderRadius:70,transform:[{scaleY:.62}]},trialFloorLine:{position:'absolute',left:0,right:0,bottom:36,height:2,opacity:.65},liveColumn:{flex:1,gap:5},liveUnit:{gap:4,minHeight:62,padding:7,borderWidth:1,borderColor:C.line,borderRadius:radii.sm,backgroundColor:C.panel},bossLiveUnit:{borderColor:C.warning,backgroundColor:C.warningSurface},liveUnitRow:{flexDirection:'row',alignItems:'center',gap:5},liveUnitBody:{flex:1,minWidth:0},unitIcon:{width:40,height:40,position:'relative',overflow:'visible',alignItems:'center',justifyContent:'center',borderRadius:10,backgroundColor:C.stage},bossUnitIcon:{borderWidth:1,borderColor:C.warning},unitArt:{width:38,height:38},unitGlyph:{fontSize:17,color:C.accent,fontWeight:'900'},impactNumber:{fontSize:10,color:C.bad,fontWeight:'900'},impactPositive:{color:C.good},impactCritical:{color:C.warning,fontWeight:'900'},previewIcon:{width:38,height:38,alignItems:'center',justifyContent:'center'},previewArt:{width:36,height:36},targetUnit:{borderColor:C.warning},downedUnit:{opacity:.55},unitHead:{flexDirection:'row',alignItems:'center',justifyContent:'space-between',gap:5},hpText:{fontSize:7,color:C.muted,fontVariant:['tabular-nums']},hpTrack:{height:7,borderRadius:99,overflow:'hidden',backgroundColor:C.badSurface,position:'relative'},hpFill:{height:'100%',backgroundColor:C.good},shieldFill:{position:'absolute',right:0,top:0,bottom:0,backgroundColor:C.info},castText:{fontSize:7,color:C.warning,fontWeight:'900',letterSpacing:.5},
+ liveCue:{paddingHorizontal:6,paddingVertical:5,minHeight:22,...typography.caption,color:C.text,fontWeight:'700'},
+ liveSpeedRow:{flexDirection:'row',justifyContent:'flex-end',alignItems:'center',gap:6},
+ liveSpeedLabel:{fontSize:9,color:C.muted,fontWeight:'800',marginRight:4},
+ liveSpeedOption:{minWidth:44,minHeight:40,paddingHorizontal:9,alignItems:'center',justifyContent:'center',borderWidth:1,borderColor:C.line,borderRadius:radii.sm,backgroundColor:C.panel2},
+ liveSpeedSelected:{borderColor:C.info,backgroundColor:C.infoSurface},
+ liveSpeedText:{fontSize:12,color:C.muted,fontWeight:'800'},liveSpeedSelectedText:{color:C.info},
+ playbackTrack:{height:5,borderRadius:99,overflow:'hidden',backgroundColor:C.line},playbackFill:{height:'100%',backgroundColor:C.info},
+
 });}

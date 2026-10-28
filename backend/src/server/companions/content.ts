@@ -220,6 +220,7 @@ export const COMPANION_TRIAL_MODIFIERS:Record<string,CompanionTrialModifierConfi
  unstable_magic:{id:'unstable_magic',description:'Companion cooldowns recover slightly faster, but enemy magic pressure rises.',playerHasteBonus:.04,enemyAttackMultiplier:1.05},
  thick_hide:{id:'thick_hide',description:'Enemies resist basic pressure.',enemyDefenseMultiplier:1.06,enemyHpMultiplier:1.03},
  frailty:{id:'frailty',description:'Companion shields are modestly weaker.',playerShieldMultiplier:.90},
+ shatterstorm:{id:'shatterstorm',description:'Enemy impacts weaken shielding this month.',playerShieldMultiplier:.82,enemyAttackMultiplier:1.04},
  relentless:{id:'relentless',description:'Enemies fight with increasing tempo.',enemyHasteBonus:.07},
 };
 export const COMPANION_TRIAL_FLOOR_COUNT=30;

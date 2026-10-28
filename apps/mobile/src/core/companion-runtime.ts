@@ -15,6 +15,8 @@ import {projectCompanionCodex,projectCompanionTrial,projectCompanionProvingGroun
 import {claimCompanionProvingGroundChallenge,recordCompanionProvingGroundEvent,activeCompanionProvingGroundChallenges,provingGroundEventMatches} from '../../../../backend/src/server/companions/proving-grounds';
 import {companionTrialWeekKey} from '../../../../backend/src/server/companions/trial-season';
 import {companionTeamPower,validateCompanionTrialTeam} from '../../../../backend/src/server/companions/team';
+import {companionTrialStageTeamMatchup} from '../../../../backend/src/shared/companion-trial-stage-matchups';
+import {companionTrialMonthlyHazard} from '../../../../backend/src/shared/companion-trial-monthly-hazards';
 import {COMPANION_SPECIAL_CHALLENGES,COMPANION_WEEKLY_CHALLENGES,companionMission,companionTrialRecommendedPower,companionServerDefinition,companionTrialSeasonDefinition} from '../../../../backend/src/server/companions/content';
 import {resolveSpecialCompanionChallenge} from '../../../../backend/src/server/companions/special-challenges';
 import {companionExpeditionStaminaCost,companionFoodStamina} from './companion-provisions';
@@ -35,15 +37,15 @@ function spendExpeditionFood(state:GameState,food:{itemId:string;quantity:number
 }
 
 /** Additive account schema; game schema 6 and the existing atomic online store remain compatible. */
-export type CompanionBattlePlaybackEvent=Pick<CombatEvent,'atMs'|'type'|'actorId'|'targetId'|'abilityId'|'interruptedAbilityId'|'amount'|'critical'|'absorbed'|'detail'>;
+export type CompanionBattlePlaybackEvent=Pick<CombatEvent,'atMs'|'type'|'actorId'|'targetId'|'abilityId'|'interruptedAbilityId'|'amount'|'critical'|'absorbed'|'detail'|'statusKind'|'statusTag'|'expiresAtMs'>;
 export interface CompanionBattlePlaybackUnit{id:string;name:string;team:'players'|'enemies';role:string;maxHp:number;boss:boolean;}
 export interface CompanionBattlePlaybackSnapshot{durationMs:number;units:CompanionBattlePlaybackUnit[];abilityNames:Record<string,string>;events:CompanionBattlePlaybackEvent[];}
-const PLAYBACK_EVENT_TYPES=new Set<CombatEvent['type']>(['combat_start','phase','cast_start','cast_complete','damage','miss','heal','shield','dot_tick','hot_tick','interrupt','down','death','combat_end']);
+const PLAYBACK_EVENT_TYPES=new Set<CombatEvent['type']>(['combat_start','phase','cast_start','cast_complete','damage','miss','heal','shield','dot_tick','hot_tick','status_apply','status_remove','interrupt','down','death','combat_end']);
 export function companionBattlePlayback(result:CompanionCombatResult|CombatResult):CompanionBattlePlaybackSnapshot{
  if(!('events' in result))return {durationMs:result.durationMs,units:[],abilityNames:{BASIC:'Basic attack'},events:[]};
  const states=[...result.players,...result.enemies],abilityNames:Record<string,string>={BASIC:'Basic attack'};
  for(const state of states){for(const ability of state.definition.abilities)abilityNames[ability.id]=ability.name;for(const phase of state.definition.phases??[])abilityNames[phase.id]=phase.name??phase.id.replace(/_/g,' ');}
- const events=result.events.filter(event=>PLAYBACK_EVENT_TYPES.has(event.type)).map(event=>({atMs:event.atMs,type:event.type,actorId:event.actorId,targetId:event.targetId,abilityId:event.abilityId,interruptedAbilityId:event.interruptedAbilityId,amount:event.amount,critical:event.critical,absorbed:event.absorbed,detail:event.detail}));
+ const events=result.events.filter(event=>PLAYBACK_EVENT_TYPES.has(event.type)).map(event=>({atMs:event.atMs,type:event.type,actorId:event.actorId,targetId:event.targetId,abilityId:event.abilityId,interruptedAbilityId:event.interruptedAbilityId,amount:event.amount,critical:event.critical,absorbed:event.absorbed,statusKind:event.statusKind,statusTag:event.statusTag,expiresAtMs:event.expiresAtMs,detail:event.detail}));
  return {durationMs:result.durationMs,units:states.map(state=>({id:state.definition.id,name:state.definition.name,team:state.definition.team,role:state.definition.role,maxHp:state.definition.stats.maxHp,boss:state.definition.boss===true})),abilityNames,events};
 }
 
@@ -195,6 +197,31 @@ export function recommendedCompanionTrialTeam(state:GameState,now=Date.now()){
   const affinityCounts=new Map<string,number>();for(const id of candidates){const affinity=companionServerDefinition(id)?.affinity;if(affinity)affinityCounts.set(affinity,(affinityCounts.get(affinity)??0)+1);}
   const missingAffinities=targetChallenge?.restrictions.flatMap(r=>r.type==='require_affinity'&&(affinityCounts.get(r.affinity)??0)<r.count?[r.affinity]:[])??[];
   return {...fallback,ready:fallback.ids.length===3,missingRoles:[] as CombatCompanionRole[],targetChallenge:targetChallenge?{id:targetChallenge.id,name:targetChallenge.name,description:targetChallenge.description}:undefined,targetMet:!targetChallenge,missingAffinities,reason:targetChallenge?'No available Tank / Damage / Support trio currently meets the monthly Affinity rule.':undefined};
+}
+/** Suggest a legal available trio for the NEXT Trial region.
+ * We optimize approximate combat value rather than simply collecting bonuses:
+ * a weak matching companion should not displace a substantially stronger one.
+ * Monthly challenge recommendations are still available separately. */
+export function recommendedCompanionTrialStageTeam(state:GameState,floor:number,now=Date.now()){
+ const hazard=companionTrialMonthlyHazard(projectCompanionTrial(state.account.companionTrialProgress,now).progress.season.seasonKey);
+ const owned=companionOwned(state),roles:CombatCompanionRole[]=['tank','damage','support'];
+ const eligible=Object.keys(owned).filter(id=>{const status=companionAvailability(state,id).status;return status==='available'||status==='equipped';});
+ const choices=roles.map(role=>eligible.filter(id=>companionServerDefinition(id)?.role===role));
+ let best:{ids:string[];power:number;score:number;offense:boolean;guard:boolean;pair:boolean}|undefined;
+ for(const tank of choices[0])for(const damage of choices[1])for(const support of choices[2]){
+  const ids=[tank,damage,support],check=validateCompanionTrialTeam({companionIds:ids,owned});
+  if(!check.ok)continue;
+  const matchup=companionTrialStageTeamMatchup(floor,check.members.map(m=>m.affinity));
+  // A full complementary pair improves overall performance, but the modest
+  // ceiling avoids rewarding a very underleveled companion just for affinity.
+  const kits=ids.map(id=>companionServerDefinition(id)?.active.effectKind);
+  const healing=kits.includes('heal'),interrupt=kits.includes('interrupt'),mitigation=kits.includes('mitigation'),cleanse=ids.includes('UNIT_008');
+  const counterValue=hazard.id==='venom_bloom'?(cleanse?.047:0)+(interrupt?.024:0)+(healing?.018:0):hazard.id==='ritual_surge'?(interrupt?.05:0)+(mitigation?.016:0):(healing?.026:0)+(mitigation?.026:0);
+  const multiplier=1+(matchup.offense?.018:0)+(matchup.guard?.018:0)+(matchup.pair?.02:0)+Math.min(.08,counterValue);
+  const score=check.power*multiplier;
+  if(!best||score>best.score){best={ids,power:check.power,score,offense:matchup.offense,guard:matchup.guard,pair:matchup.pair};}
+ }
+ return best?{...best,ready:true}:{ids:[] as string[],power:0,score:0,offense:false,guard:false,pair:false,ready:false};
 }
 export function recommendedCompanionMissionTeam(state:GameState,missionId:string,now:number){
   const mission=companionMission(missionId),owned=companionOwned(state);

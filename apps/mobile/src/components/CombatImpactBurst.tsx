@@ -30,7 +30,6 @@ export function CombatImpactBurst({eventId,kind,reduceMotion=false,size=66}:{
  const ringScale=progress.interpolate({inputRange:[0,1],outputRange:[.38,1.75]});
  const streakOpacity=progress.interpolate({inputRange:[0,.15,.62,1],outputRange:[0,1,.8,0]});
  const glyphOpacity=progress.interpolate({inputRange:[0,.16,.66,1],outputRange:[0,1,1,0]});
- const centered={width:size,height:size,marginLeft:-size/2,marginTop:-size/2};
  return <View pointerEvents="none" accessible={false} style={[styles.anchor,{width:size,height:size,left:'50%',top:'50%',marginLeft:-size/2,marginTop:-size/2}]}>
   <Animated.View style={[styles.ring,{width:size*.74,height:size*.74,borderRadius:size*.37,marginLeft:-size*.37,marginTop:-size*.37,borderColor:color,opacity:ringOpacity,transform:[{scale:ringScale}]}]}/>
   {strokeAngle.map((deg,index)=>{

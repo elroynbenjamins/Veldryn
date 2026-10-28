@@ -3,6 +3,7 @@ import {createTranslator} from './translator';
 
 // Each row supplies German, Spanish, Dutch, Italian and French; its key is English.
 export const companionTranslationRows={
+ "Floor map & details": ["Etagenkarte & Details","Mapa de pisos y detalles","Verdiepingen en details","Mappa dei piani e dettagli","Plan des étages et détails"],
  "Companion Power {value0}": ["Begleiterstärke {value0}","Poder del compañero {value0}","Metgezelkracht {value0}","Potenza compagno {value0}","Puissance du compagnon {value0}"],
  "Level {value0}": ["Stufe {value0}","Nivel {value0}","Level {value0}","Livello {value0}","Niveau {value0}"],
  "Now": ["Jetzt","Ahora","Nu","Ora","Maintenant"],

@@ -3,7 +3,7 @@ import {Pressable,StyleSheet,Text,View,useWindowDimensions} from 'react-native';
 import {itemDef} from '../content/items';
 import {craftedGearRarityOutcomes} from '../core/crafted-gear-rarity';
 import {CRAFTED_GEAR_QUALITY_MIN,CRAFTED_GEAR_QUALITY_MAX,LEGACY_CRAFTED_GEAR_QUALITY,craftedGearQualityMultiplier} from '../core/crafted-gear-instances';
-import {rarityMeta,rarityNameColor} from '../core/item-rarity';
+import {rarityMeta} from '../core/item-rarity';
 import {useGameplayText} from '../i18n/gameplay';
 import {useGameTheme} from '../theme/ThemeContext';
 
@@ -40,21 +40,26 @@ export function ForgeOddsGuide({itemId}:{itemId:string}){
         <Text style={[s.sectionTitle,{color:C.text}]}>{gt('Rarity')}</Text>
         <Text style={[s.sectionItem,{color:C.muted}]} numberOfLines={1}>{item.name}</Text>
       </View>
-      <View style={s.tableHead}>
+      {!compact?<View style={s.tableHead}>
         <Text style={[s.colName,s.colLabel,{color:C.muted}]}>{gt('Result')}</Text>
         <Text style={[s.colChance,s.colLabel,{color:C.muted}]}>{gt('Chance')}</Text>
         <Text style={[s.colStats,s.colLabel,{color:C.muted}]}>{gt('Stats')}</Text>
-      </View>
+      </View>:null}
       {outcomes.map(outcome=>{
         const meta=rarityMeta(outcome.rarity);
         return <View key={outcome.rarity} style={[s.oddsRow,compact&&s.oddsRowCompact,{borderBottomColor:C.line}]}
           accessibilityLabel={`${meta.label}: ${chanceLabel(outcome.chance)} chance, ${statEffect(outcome.statMultiplier)} stats`}>
-          <View style={[s.nameWrap,compact&&s.nameCompact]}>
+          <View style={s.nameWrap}>
             <View accessible={false} style={[s.rarityDot,{backgroundColor:meta.color}]}/>
-            <Text numberOfLines={compact?2:1} style={[s.rarity,{color:rarityNameColor(outcome.rarity,C.dark,C.text)}]}>{meta.label}</Text>
+            <Text style={[s.rarity,{color:C.dark?meta.color:meta.lightTextColor}]}>{meta.label}</Text>
           </View>
-          <Text style={[s.colChance,s.value,{color:C.text}]}>{chanceLabel(outcome.chance)}</Text>
-          <Text style={[s.colStats,s.statValue,{color:outcome.statMultiplier>1?C.good:C.muted}]}>{statEffect(outcome.statMultiplier)}</Text>
+          {compact?<View style={s.compactMeta}>
+            <Text style={[s.value,{color:C.text}]}>{chanceLabel(outcome.chance)} {gt('chance')}</Text>
+            <Text style={[s.statValue,{color:outcome.statMultiplier>1?C.good:C.muted}]}>{statEffect(outcome.statMultiplier)} {gt('stats')}</Text>
+          </View>:<>
+            <Text style={[s.colChance,s.value,{color:C.text}]}>{chanceLabel(outcome.chance)}</Text>
+            <Text style={[s.colStats,s.statValue,{color:outcome.statMultiplier>1?C.good:C.muted}]}>{statEffect(outcome.statMultiplier)}</Text>
+          </>}
         </View>;
       })}
       <Text style={[s.explain,{color:C.muted}]}>{gt('Stats are compared with this item’s normal stats.')}</Text>
@@ -83,9 +88,9 @@ const s=StyleSheet.create({
   colName:{flex:1,minWidth:0},colChance:{width:66,textAlign:'right'},colStats:{width:58,textAlign:'right'},
   colLabel:{fontSize:10,lineHeight:14,fontWeight:'700'},
   oddsRow:{minHeight:38,flexDirection:'row',alignItems:'center',gap:7,borderBottomWidth:1,paddingVertical:6},
-  oddsRowCompact:{minHeight:45},
+  oddsRowCompact:{minHeight:52,flexDirection:'column',alignItems:'stretch',gap:2},
   nameWrap:{flex:1,minWidth:0,flexDirection:'row',alignItems:'center',gap:6},
-  nameCompact:{alignItems:'center'},rarityDot:{width:8,height:8,borderRadius:2,flexShrink:0},
+  compactMeta:{flexDirection:'row',alignItems:'center',justifyContent:'space-between',gap:10,paddingLeft:14},rarityDot:{width:8,height:8,borderRadius:2,flexShrink:0},
   rarity:{fontSize:13,lineHeight:17,fontWeight:'800',flexShrink:1},value:{fontSize:12,lineHeight:17,fontWeight:'700'},
   statValue:{fontSize:12,lineHeight:17,fontWeight:'800'},
   explain:{fontSize:11,lineHeight:16},

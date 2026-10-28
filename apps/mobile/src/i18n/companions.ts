@@ -10,6 +10,8 @@ export const companionTranslationRows={
  "Training Grounds": ["Trainingsplatz","Campo de entrenamiento","Trainingsveld","Campo di addestramento","Terrain d’entraînement"],
  "Spend Gold and Essence to instantly level up a companion.": ["Gib Gold und Essenz aus, um einen Begleiter sofort aufzuleveln.","Gasta oro y esencia para subir al instante el nivel de un compañero.","Geef goud en essentie uit om een metgezel direct een level te verhogen.","Spendi oro ed essenza per aumentare subito il livello di un compagno.","Dépensez de l’or et de l’essence pour augmenter immédiatement le niveau d’un compagnon."],
  "Change companion": ["Begleiter wechseln","Cambiar compañero","Andere metgezel","Cambia compagno","Changer de compagnon"],
+ "Back to roster": ["Zurück zur Liste","Volver a la lista","Terug naar overzicht","Torna all'elenco","Retour à la liste"],
+ "Edit": ["Bearbeiten","Editar","Bewerken","Modifica","Modifier"],
  "Ready to train": ["Bereit zum Training","Listo para entrenar","Klaar om te trainen","Pronto per l’addestramento","Prêt à s’entraîner"],
  "Companion unavailable": ["Begleiter nicht verfügbar","Compañero no disponible","Metgezel niet beschikbaar","Compagno non disponibile","Compagnon indisponible"],
  "Train to Level {value0}": ["Auf Stufe {value0} trainieren","Entrenar al nivel {value0}","Train naar level {value0}","Addestra al livello {value0}","Entraîner au niveau {value0}"],

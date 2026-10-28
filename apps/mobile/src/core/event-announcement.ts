@@ -1,6 +1,6 @@
 import type {LiveEventRuntime} from './types';
 
-export const LIVE_EVENT_ANNOUNCEMENT_INTERVAL_MS=3*24*60*60*1000;
+/** Announcement is shown only once per event edition. */
 export interface LiveEventAnnouncementReceipt{eventId:string;startsAtMs:number;shownAtMs:number;}
 interface AnnouncementStorage{getItem(key:string):Promise<string|null>;setItem(key:string,value:string):Promise<void>;}
 const storagePrefix='veldryn.live-event-announcement.v1.';
@@ -15,7 +15,7 @@ export function normalizeLiveEventAnnouncementReceipt(value:unknown):LiveEventAn
 export function shouldShowLiveEventAnnouncement(runtime:LiveEventRuntime,receipt:LiveEventAnnouncementReceipt|undefined,nowMs=Date.now()){
  if(!runtime.enabled||nowMs<runtime.startsAtMs||nowMs>=runtime.endsAtMs)return false;
  if(!receipt||receipt.eventId!==runtime.eventId||receipt.startsAtMs!==runtime.startsAtMs)return true;
- return nowMs-receipt.shownAtMs>=LIVE_EVENT_ANNOUNCEMENT_INTERVAL_MS;
+ return false;
 }
 
 export function createEventAnnouncementStore(storage:AnnouncementStorage){
@@ -34,6 +34,17 @@ export function createEventAnnouncementStore(storage:AnnouncementStorage){
    memory.set(storageKey,next);
    try{await storage.setItem(storageKey,JSON.stringify(next));}catch{/* The in-memory receipt still prevents repeated prompts during this session. */}
    return true;
+  });
+  queues.set(storageKey,task);
+  void task.finally(()=>{if(queues.get(storageKey)===task)queues.delete(storageKey)});
+  return task;
+ },markSeen(scope:string,runtime:LiveEventRuntime,nowMs=Date.now()):Promise<void>{
+  const storageKey=key(scope),previous=queues.get(storageKey)??Promise.resolve();
+  const task=previous.catch(()=>undefined).then(async()=>{
+   if(!runtime.enabled||nowMs<runtime.startsAtMs||nowMs>=runtime.endsAtMs)return;
+   const receipt:LiveEventAnnouncementReceipt={eventId:runtime.eventId,startsAtMs:runtime.startsAtMs,shownAtMs:nowMs};
+   memory.set(storageKey,receipt);
+   try{await storage.setItem(storageKey,JSON.stringify(receipt));}catch{/* In-session viewing still suppresses the reminder. */}
   });
   queues.set(storageKey,task);
   void task.finally(()=>{if(queues.get(storageKey)===task)queues.delete(storageKey)});

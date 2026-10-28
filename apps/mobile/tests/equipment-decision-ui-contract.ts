@@ -9,14 +9,26 @@ const decision=read('src/core/equipment-decision.ts');
 
 ok(character.includes('equipmentDecisionModel'),'Character equipment detail must use the shared decision model');
 ok(character.includes('equipmentFocusModel'),'Character screen must derive its next action from the shared loadout focus model');
-ok(character.includes('LOADOUT FOCUS'),'Character screen must expose one compact contextual equipment priority');
+ok(character.includes("equipmentTool==='guide'")&&character.includes('focusCopy.title'),'Build Guide tool must surface a contextual equipment priority without a separate dashboard');
 ok(character.includes('focus.upgradesReady')&&character.includes('focus.openSockets'),'Loadout focus must summarize ready upgrades and open sockets without requiring the player to inspect every slot');
-ok(character.includes('title={focusCopy.button}')&&character.includes('onPress={followFocus}')&&character.includes("focus.next.action==='enhance'"),'Loadout focus must expose an actionable CTA rather than passive status only');
+ok(character.includes('title={focusCopy.button}')&&character.includes('onPress={followFocus}')&&character.includes("focus.next.action==='enhance'"),'Build Guide priority must expose an actionable CTA instead of passive status');
 ok(character.includes('rarityNameColor'),'Selected equipped item names must follow rarity color');
+ok(character.includes('rarityMeta(effectiveOwnedGearRarity(state,entry.item.id))'),'Character slots must use authoritative best-owned crafted quality, not the catalog default');
+ok(character.includes('meta&&{borderColor:meta.color,borderWidth:meta.borderWidth,backgroundColor:meta.surface}'),'Every equipped slot must display its rarity-colored border');
+ok(character.includes('s.gearSelectedMarker')&&character.includes('gearTileSelected:{backgroundColor:equipmentColors.selected}'),'Selection must be distinct and must not override the rarity border');
 ok(character.includes('equippedSetPieceCount(character.equipment,set!)'),'Selected set gear must show equipped set-piece context');
-ok(character.includes('profileUpgradeSummary(language,selectedDecision)'),'Selected gear must expose next enhancement readiness');
-ok(character.includes("Enhance · "),'Equipment primary action must expose the next enhancement chance');
+ok(character.includes('selectedDecision.upgrade.canAfford')&&character.includes('selectedDecision.upgrade.materials'),'Enhance tool must show exact current readiness and regional material count');
+ok(character.includes('selectedDecision.upgrade.successChance')&&character.includes('selectedDecision.upgrade.targetRank'),'Enhance tool must show the next rank and live success chance');
+ok(character.includes('equipmentTool===\'enhance\'')&&character.includes('equipmentTool===\'gems\'')&&character.includes('equipmentTool===\'sets\'')&&character.includes('equipmentTool===\'guide\''),'Character must expose four exclusive equipment tools');
+ok(character.includes('EQUIPMENT_SLOT_ORDER.find')&&character.includes('onEquip?setPickerSlot(selected.slot):onInventory()'),'Character must show equipped gear first and keep swapping available');
+ok(!character.includes('showGuidance'),'Old stacked build guidance must be consolidated into the Build Guide tool');
 ok(character.includes('fontScale>1.2')&&character.includes('setGearWidth(event.nativeEvent.layout.width)'),'Equipment detail must have a narrow/large-text layout fallback');
+ok(character.includes("openEnhancement(focus.next.kind==='socket-open'?'gems':'upgrade',focus.next.itemId)")&&character.includes('itemId={enhancingItemId}')&&character.includes('onUpgrade={()=>onUpgrade(enhancingItemId)}'),'Build Guide must target the recommended item, not the previously selected gear');
+ok(character.includes("equipmentTool==='enhance'||equipmentTool==='gems'")&&character.includes('s.selectedGearStack'),'Selected gear detail should only appear where needed and should stack on narrow devices');
+ok(character.includes("const visibleSets=showAllSets?equippedSets:equippedSets.slice(0,2)")&&character.includes('Next bonus at {count} pieces'),'Sets should prioritize visible progress and progressively reveal additional sets');
+ok(character.includes('state.character?.id')&&character.includes('setEnhancingItemId(null)'),'Character switching must clear pending equipment modal context');
+ok(character.includes('wrapToolTabs=width<360||fontScale>=1.2'),'Equipment tools must wrap before text becomes too cramped on small phones');
+
 
 ok(preview.includes('useGameTheme'),'Equipment comparison must use the active theme');
 ok(preview.includes('GameModalSurface'),'Equipment comparison must use the shared modal surface');

@@ -36,6 +36,11 @@ ok(commands.includes('quality proc'),'Authoritative claim messaging must surface
 ok(app.includes('setForgeResults(result.forgeResults)')&&app.includes('ForgeRarityRevealModal'),'Mobile online claims must present authoritative structured Forge rarity results');
 ok(app.includes('setForgeResults([claimed.result])'),'Mobile offline claims must use the same structured Forge rarity result path');
 ok(forgeFeedback.includes('EXCEPTIONAL FORGE RESULT')&&forgeFeedback.includes('qualityProc'),'Quality procs must use the dedicated rarity-aware Forge reveal');
+const forgeQueueUi=read('src/components/EquipmentCraftQueuePanel.tsx');
+const feedback=read('src/components/ActionFeedback.tsx');
+ok(forgeQueueUi.includes('Rarity revealed on claim')&&!forgeQueueUi.includes('effectiveOwnedGearRarity(state,job.outputItemId)'),'Unclaimed Forge results must not borrow rarity from previously owned gear');
+ok(forgeFeedback.includes('rarityMeta(highest(results).rarity)')&&forgeFeedback.includes('accentColor={meta.color}'),'Claimed Forge results must use their authoritative rarity color');
+ok(feedback.includes('accentColor?:string')&&feedback.includes('accentSurface?:string'),'Compact Forge feedback must support rarity accents while preserving other feedback tones');
 ok(save.includes('normalizeCraftedGearInstances'),'Crafted instances must persist through save normalization');
 
 console.log('PASS: crafted-instance result/economy UI and authority wiring are protected');

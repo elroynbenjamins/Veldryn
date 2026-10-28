@@ -588,6 +588,7 @@ const crafting={
 "ACTIVE":["ACTIVE","AKTIV","ACTIVO","ACTIEF","ATTIVO","ACTIF"],
 "FINISHED":["FINISHED","FERTIG","TERMINADO","VOLTOOID","TERMINATO","TERMINÉ"],
 "Finished · ready to claim":["Finished · ready to claim","Fertig · abholbereit","Terminado · listo para recoger","Voltooid · klaar om op te halen","Terminato · pronto da ritirare","Terminé · prêt à récupérer"],
+"Rarity revealed on claim":["Rarity revealed on claim","Seltenheit beim Abholen sichtbar","Rareza revelada al recoger","Zeldzaamheid zichtbaar bij ophalen","Rarità rivelata al ritiro","Rareté révélée à la récupération"],
 "Claim":["Claim","Abholen","Recoger","Ophalen","Ritira","Récupérer"],
 "CRAFTING NOW":["CRAFTING NOW","WIRD HERGESTELLT","FABRICANDO","WORDT GEMAAKT","IN CREAZIONE","FABRICATION EN COURS"],
 "ALMOST DONE ·":["ALMOST DONE ·","FAST FERTIG ·","CASI LISTO ·","BIJNA KLAAR ·","QUASI FATTO ·","PRESQUE TERMINÉ ·"],

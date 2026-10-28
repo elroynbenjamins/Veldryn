@@ -56,7 +56,7 @@ ok(social.includes('setTimeout(()=>setShowUpdating(true),1200)'),'Fast backgroun
 ok(!social.includes('LoadingState')&&social.includes('guildMembership===undefined?<><GameButton'),'Guild entry must remain actionable during its first lookup');
 ok(social.includes('backgroundError||social.error||showUpdating')&&social.includes('st("Retry")'),'Transient data failures should have one compact retry action');
 
-ok(social.includes("tab==='party'&&social.loading&&!social.party?<Text"),'Do not offer Create Party while the initial membership snapshot is still loading');
+ok(social.includes("tab==='party'&&!!social.accountId&&social.loading&&!social.party?<Text"),'Do not offer Create Party while the initial membership snapshot is still loading');
 ok(social.includes("social.loading?<View style={s.chatContent}"),'Initial Party Chat links should show a small loading label, not bounce away');
 
 ok(social.includes('accountIdRef.current!==accountId'),'Account switches must discard results from old background requests');

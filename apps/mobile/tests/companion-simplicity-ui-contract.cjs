@@ -11,6 +11,7 @@ assert.ok(screen.includes('labels[0]')&&screen.includes("labels.join(' · ')"),'
 assert.ok(!screen.includes('Account roster, exploration, class skills and monster mastery remain available below without crowding'),'no repeated tutorial paragraph in secondary section');
 assert.ok(screen.includes('showOtherProgression?'), 'account and mastery features remain available on demand');
 assert.ok(panel.includes('ownedIds.length>=8?<View style={s.filterWrap}>'),'advanced roster filtering appears only when the roster needs it');
+assert.ok(panel.includes("current==='Owned'?'All':'Owned'"),'small rosters can still discover locked companions without extra filter dropdown');
 assert.ok(panel.includes('title={t("Companion Codex")}'),'unowned discovery still accessible for small rosters');
 assert.ok(panel.includes("section==='Sanctuary'||section==='Collection'&&trainingDetail"),'progress currencies are contextual');
 assert.ok(panel.includes('equipped===def.id?t("EQUIPPED"):owned&&!idle(def.id)?'), 'roster suppresses duplicate available/selected labels');

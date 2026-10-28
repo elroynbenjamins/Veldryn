@@ -10,7 +10,7 @@ import {CombatCompanionPanel} from '../components/CombatCompanionPanel';
 import {MonsterMasteryPanel} from '../components/MonsterMasteryPanel';
 import {ExplorationPanel} from '../components/ExplorationPanel';
 import {AccountRosterPanel} from '../components/AccountRosterPanel';
-import {spacing,typography,equipmentTheme,type ThemeColors} from '../theme/theme';
+import {spacing,typography,type ThemeColors} from '../theme/theme';
 import {useGameTheme} from '../theme/ThemeContext';
 import type {Language} from '../i18n';
 import {earlyFeatureUnlockProgress} from '../core/feature-unlocks';

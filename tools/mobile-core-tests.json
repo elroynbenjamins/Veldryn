@@ -6,6 +6,7 @@
   ".core-build/apps/mobile/tests/short-lived-read-cache.js",
   ".core-build/apps/mobile/tests/inventory-social-efficiency-ui-contract.js",
   ".core-build/apps/mobile/tests/social-list-projection.js",
+  ".core-build/apps/mobile/tests/guild-social-permissions.js",
   ".core-build/apps/mobile/tests/request-singleflight.js",
   ".core-build/apps/mobile/tests/network-request-metrics.js",
   ".core-build/apps/mobile/tests/primary-tab-routing.js",

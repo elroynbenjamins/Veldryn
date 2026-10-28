@@ -2,6 +2,8 @@ import {COMPANION_MONTHLY_COMPLETION_REWARD,COMPANION_TRIAL_BOSS_INTERVAL,COMPAN
 import {buildOwnedCompanionCombatant} from './combat-adapter';
 import {companionEssenceRewardMultiplier,companionTeamPower,totalCompanionHasteBonus,totalCompanionSynergyMultiplier,validateCompanionTrialTeam,restrictionSatisfied} from './team';
 import {companionTrialResetInfo,rolloverCompanionTrialSeason} from './trial-season';
+import {companionAffinityById} from '../../shared/companion-affinity-catalog';
+import {companionTrialStageTeamMatchup,COMPANION_TRIAL_STAGE_OFFENSE_MULTIPLIER,COMPANION_TRIAL_STAGE_GUARD_MULTIPLIER,COMPANION_TRIAL_STAGE_PAIR_HASTE_BONUS} from '../../shared/companion-trial-stage-matchups';
 import type {CompanionCombatExecutor,CompanionCombatantDefinition,CompanionTrialProgress,CompanionTrialRestriction,OwnedCompanionSnapshot} from './domain';
 
 export interface CompanionTrialRuntimeInput{
@@ -39,6 +41,26 @@ export function applyCompanionTrialModifiers(players:CompanionCombatantDefinitio
  const nextEnemies=enemies.map(e=>({...e,stats:{...e.stats,maxHp:Math.round(e.stats.maxHp*enemyHp),attackPower:Number((e.stats.attackPower*enemyAttack).toFixed(4)),defense:Number((e.stats.defense*enemyDefense).toFixed(4)),haste:Math.min(.60,e.stats.haste+enemyHaste),accuracy:Math.min(.99,e.stats.accuracy+enemyAccuracy)},tags:tagged(e.tags)}));
  return {players:nextPlayers,enemies:nextEnemies};
 }
+/** Region-specific counterplay applied to the real server combat snapshot.
+ * Each chosen affinity benefits its own unit; using both creates a small
+ * shared haste synergy. These effects never alter permanent stats or drops. */
+export function applyCompanionTrialStageMatchups(players:CompanionCombatantDefinition[],floor:number):CompanionCombatantDefinition[]{
+ const {matchup,pair}=companionTrialStageTeamMatchup(floor,players.map(p=>companionAffinityById(p.id)));
+ return players.map(player=>{
+  const affinity=companionAffinityById(player.id);
+  const offense=affinity===matchup.attackAffinity,guard=affinity===matchup.guardAffinity;
+  const stats=player.stats;
+  return {...player,stats:{
+   ...stats,
+   attackPower:offense?Number((stats.attackPower*COMPANION_TRIAL_STAGE_OFFENSE_MULTIPLIER).toFixed(4)):stats.attackPower,
+   maxHp:guard?Math.round(stats.maxHp*COMPANION_TRIAL_STAGE_GUARD_MULTIPLIER):stats.maxHp,
+   defense:guard?Number((stats.defense*COMPANION_TRIAL_STAGE_GUARD_MULTIPLIER).toFixed(4)):stats.defense,
+   healingPower:guard?Number((stats.healingPower*COMPANION_TRIAL_STAGE_GUARD_MULTIPLIER).toFixed(4)):stats.healingPower,
+   haste:Math.min(.60,stats.haste+(pair?COMPANION_TRIAL_STAGE_PAIR_HASTE_BONUS:0)),
+  },tags:[...(player.tags??[]),...(offense?['trial_matchup:offense']:[]),...(guard?['trial_matchup:guard']:[]),...(pair?['trial_matchup:pair']:[])]};
+ });
+}
+
 function normalTrialProfiles(theme:CompanionTrialEncounterTheme):TrialEnemyProfile[]{
  const prefix:Record<CompanionTrialEncounterThemeId,[string,string,string]>={
   asterfall:['Runebound Bulwark','Gloamblade Raider','Silverbrook Adept'],
@@ -137,7 +159,8 @@ export function resolveCompanionTrialFloor(input:CompanionTrialRuntimeInput,runI
  const floorDef=companionTrialFloorDefinition(run.currentFloor,progress.season.seasonKey),synergies=teamCheck.synergies,synergyMultiplier=totalCompanionSynergyMultiplier(synergies),hasteBonus=totalCompanionHasteBonus(synergies);
  const basePlayers=run.teamCompanionIds.map(id=>buildOwnedCompanionCombatant(input.owned[id],{mode:'companion_trial',teamSynergyMultiplier:synergyMultiplier,teamHasteBonus:hasteBonus}));
  const modified=applyCompanionTrialModifiers(basePlayers,rawCompanionTrialEncounter(run.currentFloor),floorDef.modifiers);
- const result=executor.simulate({seed:`${run.seed}:${progress.season.seasonKey}:${run.currentFloor}`,players:modified.players,enemies:modified.enemies,mitigationConstant:COMPANION_TRIAL_MITIGATION_CONSTANT});
+ const matchedPlayers=applyCompanionTrialStageMatchups(modified.players,run.currentFloor);
+ const result=executor.simulate({seed:`${run.seed}:${progress.season.seasonKey}:${run.currentFloor}`,players:matchedPlayers,enemies:modified.enemies,mitigationConstant:COMPANION_TRIAL_MITIGATION_CONSTANT});
  if(!result.victory){return {progress:{...progress,season:{...progress.season,activeRun:undefined,currentFloor:progress.season.checkpointFloor}},result,reward:{companionEssence:0,gold:0,bondstones:0,materials:{}},firstClear:false,monthlyCompleted:false,weeklyCompleted:false};}
  const floor=run.currentFloor,boss=floorDef.boss,firstClear=!progress.season.firstClearFloors.includes(floor),base=companionTrialReward(floor,firstClear,boss),seasonDef=companionTrialSeasonDefinition(progress.season.seasonKey);
  const featured=!!seasonDef.featuredOrigin&&teamCheck.members.some(x=>x.originId===seasonDef.featuredOrigin),essenceMult=companionEssenceRewardMultiplier(synergies)*(featured?1.05:1);

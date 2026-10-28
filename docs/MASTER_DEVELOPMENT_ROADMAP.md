@@ -993,3 +993,10 @@ This roadmap is based on current GitHub source and documentation, the read-only 
 
 **Roadmap definition of success:** A stable, upgradeable and secure Android idle MMORPG whose normal activities, guild/co-op, companions, event rewards and purchase recovery are understandable and trustworthy—with mature pixel-art feedback and clear progression—rather than the largest quantity of partially finished systems.
 
+
+### Mobile Guild/Chat compiler restoration — 2026-10-28 (review branch)
+
+- **IMPLEMENTED IN DRAFT PR #621; VERIFICATION PENDING:** restored `ChatOverlay.initialChannel` (including Guild membership loading handoff), Guild role/recruitment context helpers, management-link permission prop, dev-only preview wrapper, and ten social translation keys. New typed Guild social regression test registered. **No merge, deployment, SQL or gameplay changes.**
+- **Evidence:** First CI of PR #621 eliminated the original 16 Guild/Chat TypeScript errors, exposing only a duplicated `GuildManagementRole` alias in the fix. The duplicate was corrected in commit `72426519`; subsequent latest-SHA compilation must be read before marking successful. Backend/SQL integrity passed in run `40675228729`. See [MOBILE_GUILD_CHAT_TYPECHECK_2026_10_28.md](implementation/MOBILE_GUILD_CHAT_TYPECHECK_2026_10_28.md).
+- **Still blocked (A01):** Eleven TS errors in `starter-companion-choice.ts` reference absent core APIs/account fields. Do not treat that future-choice specification as shipped or suppress failures. Design/implement an approved, migration-safe role-aware starter behavior **or explicitly reconcile the test with canonical gameplay through separate reviewed work** before claiming core validation is green.
+- **Branch relationships:** Guild/Chat fix #621 is independent of Companion UI #619. Do not merge overlapping branches by manual file overwrite or report #619 as buildable until it includes an approved compatible fix and CI runs on the combined head.

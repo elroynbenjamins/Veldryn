@@ -16,6 +16,7 @@ import {claimCompanionProvingGroundChallenge,recordCompanionProvingGroundEvent,a
 import {companionTrialWeekKey} from '../../../../backend/src/server/companions/trial-season';
 import {companionTeamPower,validateCompanionTrialTeam} from '../../../../backend/src/server/companions/team';
 import {companionTrialStageTeamMatchup} from '../../../../backend/src/shared/companion-trial-stage-matchups';
+import {companionTrialMonthlyHazard} from '../../../../backend/src/shared/companion-trial-monthly-hazards';
 import {COMPANION_SPECIAL_CHALLENGES,COMPANION_WEEKLY_CHALLENGES,companionMission,companionTrialRecommendedPower,companionServerDefinition,companionTrialSeasonDefinition} from '../../../../backend/src/server/companions/content';
 import {resolveSpecialCompanionChallenge} from '../../../../backend/src/server/companions/special-challenges';
 import {companionExpeditionStaminaCost,companionFoodStamina} from './companion-provisions';
@@ -197,7 +198,8 @@ export function recommendedCompanionTrialTeam(state:GameState,now=Date.now()){
  * We optimize approximate combat value rather than simply collecting bonuses:
  * a weak matching companion should not displace a substantially stronger one.
  * Monthly challenge recommendations are still available separately. */
-export function recommendedCompanionTrialStageTeam(state:GameState,floor:number){
+export function recommendedCompanionTrialStageTeam(state:GameState,floor:number,now=Date.now()){
+ const hazard=companionTrialMonthlyHazard(projectCompanionTrial(state.account.companionTrialProgress,now).progress.season.seasonKey);
  const owned=companionOwned(state),roles:CombatCompanionRole[]=['tank','damage','support'];
  const eligible=Object.keys(owned).filter(id=>{const status=companionAvailability(state,id).status;return status==='available'||status==='equipped';});
  const choices=roles.map(role=>eligible.filter(id=>companionServerDefinition(id)?.role===role));
@@ -208,7 +210,8 @@ export function recommendedCompanionTrialStageTeam(state:GameState,floor:number)
   const matchup=companionTrialStageTeamMatchup(floor,check.members.map(m=>m.affinity));
   // A full complementary pair improves overall performance, but the modest
   // ceiling avoids rewarding a very underleveled companion just for affinity.
-  const multiplier=1+(matchup.offense?.018:0)+(matchup.guard?.018:0)+(matchup.pair?.02:0);
+  const counterValue=hazard.id==='venom_bloom'?(ids.includes('UNIT_008')?.047:0)+(ids.includes('UNIT_005')?.024:0)+(ids.includes('UNIT_003')?.018:0):hazard.id==='ritual_surge'?(ids.includes('UNIT_005')?.05:0)+(ids.includes('UNIT_008')?.012:0):(ids.includes('UNIT_003')?.026:0);
+  const multiplier=1+(matchup.offense?.018:0)+(matchup.guard?.018:0)+(matchup.pair?.02:0)+Math.min(.08,counterValue);
   const score=check.power*multiplier;
   if(!best||score>best.score){best={ids,power:check.power,score,offense:matchup.offense,guard:matchup.guard,pair:matchup.pair};}
  }

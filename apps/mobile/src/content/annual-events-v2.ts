@@ -101,7 +101,7 @@ export const FROSTFALL_EVENT:LiveEventDef={
   maxProgress:10000,
   claimGraceDays:7,
   visualKey:'frostfall',
-  signature:{kind:'community',label:'SIGNATURE · WINTER HEARTH',title:'Build the winter celebration together',description:'Frostfall combines a personal gift-and-collection chase with winter-themed activities. Earn Frostbell Tokens for your own collection and explore the Aurora Hollow expedition.',highlights:['Personal winter festival milestones','Gift-and-aurora collectible chase','Aurora Hollow seasonal expedition']},
+  signature:{kind:'community',label:'SIGNATURE · WINTER HEARTH',title:'Prepare a winter celebration across Asterfall',description:'Frostfall combines a personal gift-and-collection chase with winter-themed activities. Earn Frostbell Tokens for your own collection and explore the Aurora Hollow expedition.',highlights:['Personal winter festival milestones','Gift-and-aurora collectible chase','Aurora Hollow seasonal expedition']},
   ui:{
     prepareTitle:'Prepare for Frostfall',
     dailyGiftTitle:'Today’s Frostfall Gift',

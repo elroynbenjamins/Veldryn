@@ -31,8 +31,9 @@ function AccountChatOverlay({state,initialChannel='world',visible,onOpen,onClose
  const st=useSocialText();
   const C=useGameTheme(),s=useMemo(()=>makeStyles(C),[C]),insets=useSafeAreaInsets(),{width,fontScale}=useWindowDimensions(),expandWindow=width<360||fontScale>=1.25,bottomOffset=72+(Platform.OS==='android'?Math.max(insets.bottom,8):Math.max(insets.bottom,4));
   const [channel,setChannel]=useState<Channel>('world');
+  const pendingGuildChannel=useRef(false);
   const [visitedChannels,setVisitedChannels]=useState<Channel[]>(['world']);
-  const selectChannel=(next:Channel)=>{setChannel(next);setVisitedChannels(current=>current.includes(next)?current:[...current,next]);};
+  const selectChannel=(next:Channel)=>{pendingGuildChannel.current=false;setChannel(next);setVisitedChannels(current=>current.includes(next)?current:[...current,next]);};
   const [worldChannel,setWorldChannel]=useState(Math.max(0,Math.min(WORLD_CHANNELS.length-1,(state.settings.defaultWorldChat??1)-1)));
   const [languageMenuOpen,setLanguageMenuOpen]=useState(false);
   useEffect(()=>{setLanguageMenuOpen(false);},[visible,channel]);
@@ -66,12 +67,14 @@ function AccountChatOverlay({state,initialChannel='world',visible,onOpen,onClose
   useEffect(()=>{if(!chatEnabled&&visible)onClose();},[chatEnabled,visible,onClose]);
   useEffect(()=>{
     if(visible&&!wasVisible.current){
-      selectChannel(initialChannel);
+      selectChannel(initialChannel==='guild'&&guildAvailable?'guild':'world');
+      pendingGuildChannel.current=initialChannel==='guild'&&!guildAvailable;
       setWorldChannel(Math.max(0,Math.min(WORLD_CHANNELS.length-1,(state.settings.defaultWorldChat??1)-1)));
     }
     wasVisible.current=visible;
-  },[visible,initialChannel,state.settings.defaultWorldChat]);
-  const closeChat=()=>{onChatRead?.();onClose();};
+  },[visible,initialChannel,state.settings.defaultWorldChat,guildAvailable]);
+  useEffect(()=>{if(visible&&guildAvailable&&pendingGuildChannel.current)selectChannel('guild');},[visible,guildAvailable]);
+  const closeChat=()=>{pendingGuildChannel.current=false;onChatRead?.();onClose();};
   return <>
     {!visible&&chatEnabled&&<ChatDock enabled={onlineConfigured} onOpen={onOpen} lines={state.settings.chatDockLines??1} selectedChannel={state.settings.defaultWorldChat??1} unreadCount={guildUnread+partyUnread} mentionCount={guildMentions+partyMentions}/>}
     <Modal visible={visible&&chatEnabled} transparent statusBarTranslucent animationType={state.settings.reduceMotion?'none':'fade'} onRequestClose={closeChat}>

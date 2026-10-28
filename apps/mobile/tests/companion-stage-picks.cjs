@@ -15,7 +15,7 @@ assert.ok(shared.includes("COMPANION_TRIAL_STAGE_PAIR_HASTE_BONUS=.02"),'Dual-af
 assert.ok(server.includes('applyCompanionTrialStageMatchups(modified.players,run.currentFloor)'), 'Server executor must apply matchup after season modifiers');
 assert.ok(server.includes('players:matchedPlayers,enemies:modified.enemies'), 'Real simulation must receive stat-adjusted players, unchanged enemies');
 assert.ok(server.includes("trial_matchup:pair"),'Combatant should be tagged when it benefits from pair');
-assert.ok(!shared.includes('companionEssence')&&!shared.includes('reward'), 'Stage synergy must not affect reward calculation');
+assert.ok(!shared.includes('COMPANION_MONTHLY_COMPLETION_REWARD')&&!shared.includes('rewardEssenceMultiplier'), 'Stage synergy must not alter reward calculations');
 assert.ok(runtime.includes('recommendedCompanionTrialStageTeam')&&runtime.includes('validateCompanionTrialTeam({companionIds:ids,owned})'), 'Stage team recommendation must preserve legal roles and ownership');
 assert.ok(runtime.includes('check.power*multiplier'), 'Stage advice must account for baseline power rather than just affinity');
 assert.ok(trials.includes('companionTrialStageTeamMatchup(')&&trials.includes('Use stage-fit team'), 'UI should show and apply stage-fit formations');

@@ -84,6 +84,10 @@ export interface CraftedGearInstance{
   itemId:string;
   ownerCharacterId:string;
   rarity:import('./item-rarity').ItemRarity;
+  /** Forge quality roll (1–100); missing for legacy equipment. */
+  quality?:number;
+  /** Individual per-copy disposal protection. */
+  locked?:boolean;
   acquireSource:'craft';
   sourceReceiptKey:string;
   createdAtMs:number;
@@ -91,7 +95,7 @@ export interface CraftedGearInstance{
   /** Per-instance stat variance in [0,1); maps to roughly ±5% multiplier. 0.5 is "average". */
   statRoll?:number;
 }
-export interface ItemStack { itemId:string; quantity:number; }
+export interface ItemStack { itemId:string; quantity:number; /** Unique physical gear receipt; missing for legacy stacks. */ instanceId?:string; }
 export interface InventoryState { stacks:ItemStack[]; capacity:number; }
 export interface BankState { stacks:ItemStack[]; capacity:number; gold?:number; }
 export interface OverflowState { stacks:ItemStack[]; expiresAtMs:number|null; }

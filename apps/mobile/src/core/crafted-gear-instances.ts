@@ -4,24 +4,29 @@ import {itemDef} from '../content/items';
 import {itemRarity,type ItemRarity} from './item-rarity';
 
 export const MAX_CRAFTED_GEAR_INSTANCES=500;
+/** Proposed account-wide, per-base-item copy limit. Do not enforce until per-copy disposal is available. */
+export const TARGET_CRAFTED_GEAR_COPIES_PER_ITEM=7;
 
-/** Per-instance stat variance window applied on top of the rarity multiplier. */
+/** Quality is persisted on each instance, never synthesized from a mutable client clock. */
+export function craftedGearQualityRoll(trustedRoll:number,jobId:string){
+  if(!Number.isFinite(trustedRoll)||trustedRoll<0||trustedRoll>=1)throw new Error('Invalid crafted quality roll');
+  return 1+Math.floor(deterministicCraftRarityRoll(`quality:${trustedRoll.toFixed(12)}:${jobId}`)*100);
+}
+export function craftedGearQualityMultiplier(quality:number){
+  const normalized=Math.max(1,Math.min(100,Math.floor(quality)));
+  return .95+(normalized-1)/99*.10;
+}
+
+/** Retain already-persisted stat variance from the previous forge system. */
 export const CRAFTED_STAT_VARIANCE=0.15;
+function clampStatRoll(raw:unknown):number|undefined{
+ return typeof raw==='number'&&Number.isFinite(raw)&&raw>=0&&raw<1?raw:undefined;
+}
+export function craftedInstanceStatVarianceMultiplier(instance:Pick<CraftedGearInstance,'statRoll'>|undefined):number{
+ return typeof instance?.statRoll==='number'?1-CRAFTED_STAT_VARIANCE+instance.statRoll*CRAFTED_STAT_VARIANCE*2:1;
+}
 
 const emptyEnhancement=():GearEnhancementState=>({rank:0,failures:0,gemIds:[]});
-
-function clampStatRoll(raw:unknown):number|undefined{
-  if(typeof raw!=='number'||!Number.isFinite(raw))return undefined;
-  if(raw<0||raw>=1)return undefined;
-  return raw;
-}
-
-/** Maps a 0..1 stat roll to a 0.95..1.05 multiplier. Missing roll (legacy) returns 1.0. */
-export function craftedInstanceStatVarianceMultiplier(instance:Pick<CraftedGearInstance,'statRoll'>|undefined):number{
-  const roll=instance?.statRoll;
-  if(typeof roll!=='number')return 1;
-  return 1-CRAFTED_STAT_VARIANCE+roll*(CRAFTED_STAT_VARIANCE*2);
-}
 
 export function normalizeCraftedGearInstances(raw:unknown):CraftedGearInstance[]{
   if(!Array.isArray(raw))return [];
@@ -33,56 +38,87 @@ export function normalizeCraftedGearInstances(raw:unknown):CraftedGearInstance[]
         const enhancement=row.enhancement&&typeof row.enhancement==='object'?row.enhancement:{};
         return [{
           id:String(row.id).slice(0,180),itemId:item.id,ownerCharacterId:String(row.ownerCharacterId).slice(0,120),rarity,
+          quality:Number.isInteger(row.quality)&&row.quality>=1&&row.quality<=100?row.quality:undefined,
+          locked:row.locked===true,
+          statRoll:clampStatRoll(row.statRoll),
           acquireSource:'craft' as const,sourceReceiptKey:String(row.sourceReceiptKey??row.id).slice(0,200),
           createdAtMs:Math.max(0,Math.floor(Number(row.createdAtMs)||0)),
           enhancement:{rank:Math.max(0,Math.min(4,Math.floor(Number(enhancement.rank)||0))),failures:Math.max(0,Math.floor(Number(enhancement.failures)||0)),statGemId:typeof enhancement.statGemId==='string'?enhancement.statGemId:undefined,effectGemId:typeof enhancement.effectGemId==='string'?enhancement.effectGemId:undefined,gemIds:Array.isArray(enhancement.gemIds)?enhancement.gemIds.filter((x:any)=>typeof x==='string').slice(0,2):[]},
-          statRoll:clampStatRoll(row.statRoll),
         }];
       }catch{return []}
-    }).slice(-MAX_CRAFTED_GEAR_INSTANCES);
+    }); // Never silently discard existing equipment while loading an older or oversized save.
 }
 
 export function craftedGearInstances(state:GameState){return normalizeCraftedGearInstances(state.account.craftedGearInstances);}
 export function craftedInstancesForItem(state:GameState,itemId:string,ownerCharacterId=state.character?.id){return craftedGearInstances(state).filter(row=>row.itemId===itemId&&(!ownerCharacterId||row.ownerCharacterId===ownerCharacterId));}
+/** Read-only capacity projection until inventory/bank/equipped items select instance IDs for safe disposal. */
+export function craftedGearCopyCapacity(state:GameState,itemId:string){
+  // Existing equipment may predate unique Forge instances or originate from
+  // non-Forge rewards. Never undercount those physical copies while projecting
+  // the eventual seven-copy account-wide cap.
+  const audit=craftedGearLegacyOwnershipAudit(state,itemId);
+  const count=Math.max(audit.physicalCopies,audit.recordedCraftedCopies);
+  return {count,limit:TARGET_CRAFTED_GEAR_COPIES_PER_ITEM,remaining:Math.max(0,TARGET_CRAFTED_GEAR_COPIES_PER_ITEM-count),verified:false as const};
+}
+/** Account-wide legacy ownership audit before any item-ID -> instance-ID migration.
+ * Counts every physical location without guessing which identical copy it holds.
+ * A balanced count is NOT proof of ownership, locks, socketing or loadout safety.
+ */
+export function craftedGearLegacyOwnershipAudit(state:GameState,itemId:string){
+  const count=(stacks:readonly {itemId:string;quantity:number}[]|undefined)=>
+    (stacks??[]).reduce((sum,stack)=>sum+(stack.itemId===itemId&&Number.isSafeInteger(stack.quantity)&&stack.quantity>0?stack.quantity:0),0);
+  const equipped=(equipment:object|undefined)=>
+    Object.values(equipment??{}).filter(id=>id===itemId).length;
+  const characterInventory=count(state.inventory.stacks)
+    +(state.otherCharacters??[]).reduce((sum,entry)=>sum+count(entry.inventory.stacks),0);
+  const characterOverflow=count(state.overflow.stacks)
+    +(state.otherCharacters??[]).reduce((sum,entry)=>sum+count(entry.overflow.stacks),0);
+  const equippedCopies=equipped(state.character?.equipment)
+    +(state.otherCharacters??[]).reduce((sum,entry)=>sum+equipped(entry.character.equipment),0);
+  const bankCopies=count(state.bank.stacks);
+  const physicalCount=characterInventory+characterOverflow+equippedCopies+bankCopies;
+  const instances=craftedGearInstances(state).filter(row=>row.itemId===itemId);
+  return {
+    itemId,
+    recordedCraftedCopies:instances.length,
+    physicalCopies:physicalCount,
+    inventoryCopies:characterInventory,
+    bankCopies,
+    overflowCopies:characterOverflow,
+    equippedCopies,
+    /** Physical stacks may also contain uncrafted gear, hence this is only a lower-bound warning. */
+    minimumUnlocatedInstanceCount:Math.max(0,instances.length-physicalCount),
+    possibleUntrackedCopies:Math.max(0,physicalCount-instances.length),
+    /** No copy-specific ownership evidence exists in legacy itemId-only slots. */
+    verifiedForAutoSell:false as const,
+  };
+}
+
 export function bestCraftedInstanceForItem(state:GameState,itemId:string,ownerCharacterId=state.character?.id){
-  return craftedInstancesForItem(state,itemId,ownerCharacterId).slice().sort((a,b)=>craftedRarityStatMultiplier(itemId,b.rarity)-craftedRarityStatMultiplier(itemId,a.rarity)||b.enhancement.rank-a.enhancement.rank||b.createdAtMs-a.createdAtMs)[0];
+  return craftedInstancesForItem(state,itemId,ownerCharacterId).slice().sort((a,b)=>craftedRarityStatMultiplier(itemId,b.rarity)-craftedRarityStatMultiplier(itemId,a.rarity)||b.enhancement.rank-a.enhancement.rank||(b.quality??0)-(a.quality??0)||b.createdAtMs-a.createdAtMs)[0];
 }
 export function effectiveOwnedGearRarity(state:GameState,itemId:string,ownerCharacterId=state.character?.id):ItemRarity{
   return bestCraftedInstanceForItem(state,itemId,ownerCharacterId)?.rarity??itemRarity(itemDef(itemId));
 }
 
-export function createCraftedGearInstance(state:GameState,args:{itemId:string;ownerCharacterId:string;jobId:string;createdAtMs:number;roll:number;statRoll?:number}){
-  const rarity=craftedGearRarity(args.itemId,args.roll);
-  const statRoll=typeof args.statRoll==='number'&&args.statRoll>=0&&args.statRoll<1
-    ?args.statRoll
-    :deterministicCraftRarityRoll(`stat:${args.jobId}:${args.ownerCharacterId}`);
-  const instance:CraftedGearInstance={
-    id:`gear:${args.ownerCharacterId}:${args.jobId}`,itemId:args.itemId,ownerCharacterId:args.ownerCharacterId,rarity,
-    acquireSource:'craft',sourceReceiptKey:args.jobId,createdAtMs:args.createdAtMs,enhancement:emptyEnhancement(),statRoll,
+export function draftCraftedGearInstance(args:{itemId:string;ownerCharacterId:string;jobId:string;createdAtMs:number;roll:number}):CraftedGearInstance{
+  return {
+    id:`gear:${args.ownerCharacterId}:${args.jobId}`,itemId:args.itemId,ownerCharacterId:args.ownerCharacterId,
+    rarity:craftedGearRarity(args.itemId,args.roll),quality:craftedGearQualityRoll(args.roll,args.jobId),
+    locked:false,statRoll:deterministicCraftRarityRoll(`stat:${args.jobId}:${args.ownerCharacterId}`),acquireSource:'craft',sourceReceiptKey:args.jobId,createdAtMs:args.createdAtMs,enhancement:emptyEnhancement(),
   };
-  const existing=craftedGearInstances(state).filter(row=>row.sourceReceiptKey!==args.jobId);
-  return {state:{...state,account:{...state.account,craftedGearInstances:[...existing,instance].slice(-MAX_CRAFTED_GEAR_INSTANCES)}},instance};
+}
+export function createCraftedGearInstance(state:GameState,args:{itemId:string;ownerCharacterId:string;jobId:string;createdAtMs:number;roll:number}){
+  const previous=craftedGearInstances(state);
+  if(previous.some(row=>row.sourceReceiptKey===args.jobId))throw new Error('Crafting receipt has already been claimed');
+  if(previous.length>=MAX_CRAFTED_GEAR_INSTANCES)throw new Error('Crafted equipment storage is full; existing equipment was not removed');
+  const instance=draftCraftedGearInstance(args);
+  return {state:{...state,account:{...state.account,craftedGearInstances:[...previous,instance]}},instance};
 }
 
 export function craftClaimSubRoll(trustedRoll:number,jobId:string){
   if(trustedRoll<0||trustedRoll>=1)throw new Error('Invalid crafted rarity roll');
   return deterministicCraftRarityRoll(`${trustedRoll.toFixed(12)}:${jobId}`);
-}
-
-/** Removes up to `count` crafted instances of `itemId`, preferring the lowest-roll copies so the player keeps the best one. */
-export function pruneCraftedInstancesForSale(state:GameState,itemId:string,count:number,ownerCharacterId=state.character?.id):GameState{
-  if(count<=0)return state;
-  const all=craftedGearInstances(state);
-  const matches=all.filter(row=>row.itemId===itemId&&(!ownerCharacterId||row.ownerCharacterId===ownerCharacterId))
-    .slice()
-    .sort((a,b)=>craftedRarityStatMultiplier(itemId,a.rarity)*craftedInstanceStatVarianceMultiplier(a)
-      -craftedRarityStatMultiplier(itemId,b.rarity)*craftedInstanceStatVarianceMultiplier(b)
-      ||a.enhancement.rank-b.enhancement.rank
-      ||a.createdAtMs-b.createdAtMs);
-  const removeIds=new Set(matches.slice(0,count).map(row=>row.id));
-  if(removeIds.size===0)return state;
-  const kept=all.filter(row=>!removeIds.has(row.id));
-  return {...state,account:{...state.account,craftedGearInstances:kept}};
 }
 
 export function craftedInstanceResult(state:GameState,instance:CraftedGearInstance){

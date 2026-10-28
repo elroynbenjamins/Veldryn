@@ -40,7 +40,7 @@ export function CoopRunOverview({language,run,onBack,onChoose,onRefresh,onClaim,
   const modeLabel=run.modeLabel??(run.mode==='qmode'?ct(language,'details.qmode'):ct(language,'details.live')),bossNext=run.options.some(option=>option.kind==='boss');
   const terminal=run.phase==='completed'||run.phase==='failed',unclaimedRewards=rewards.filter(reward=>!reward.claimed_at),rewardSurfaceReady=rewards.length>0||Boolean(terminalAction),rewardsSecured=terminal&&rewardSurfaceReady&&!unclaimedRewards.length&&(!terminalAction||terminalAction.claimed===true);
   const inCombat=run.phase==='resolving_node'||bossNext||Boolean(run.lastCombat);
-  const replayKey=`${run.runId}:${run.lastCombat?.nodeId??'pending'}:${run.lastCombat?.durationMs??0}:${run.lastCombat?.cues.length??0}:${run.stateVersion??0}`;
+  const replayKey=`${run.runId}:${run.lastCombat?.nodeId??'pending'}:${run.lastCombat?.durationMs??0}:${run.lastCombat?.cues.length??0}:${run.lastCombat?.cues[run.lastCombat.cues.length-1]?.atMs??0}`;
   const lastReplay=useRef(replayKey),wasResolving=useRef(run.phase==='resolving_node');
   const [theaterOpen,setTheaterOpen]=useState(run.phase==='resolving_node');
   useEffect(()=>{

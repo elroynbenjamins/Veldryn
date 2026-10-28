@@ -22,7 +22,7 @@ export function guildRecruitmentVisible(
   : card.postType==='looking_for_party'||card.postType==='party_recruiting';
 }
 
-export type GuildManagementRole='leader'|'officer'|'member';
+
 
 export function partyMemberManagement(actorIsLeader:boolean,actorAccountId:string,targetAccountId:string){
  const other=!!actorAccountId&&!!targetAccountId&&actorAccountId!==targetAccountId;

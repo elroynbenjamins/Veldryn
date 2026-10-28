@@ -3,9 +3,9 @@ import type {CompanionAffinity} from '../../shared/companion-affinity-catalog';
 
 export type CompanionCombatContext='character_assist'|'companion_trial'|'companion_roguelite'|'companion_arena';
 export type CompanionOriginId='REG_001'|'REG_SUNSCAR'|'REG_FROSTMARCH'|'REG_ASHLANDS'|string;
-export type CompanionTargetRule='owner'|'self'|'lowest_hp_ally'|'current_target'|'all_allies'|'all_enemies'|'random_enemy';
+export type CompanionTargetRule='owner'|'self'|'lowest_hp_ally'|'current_target'|'all_allies'|'all_enemies'|'random_enemy'|'interruptible_casting_enemy';
 export type EngineTargetRule='self'|'current_target'|'lowest_hp_ally'|'all_allies'|'all_enemies'|'random_enemy';
-export type EngineEffectKind='damage'|'heal'|'shield'|'dot'|'hot'|'interrupt'|'taunt'|'buff'|'debuff';
+export type EngineEffectKind='damage'|'heal'|'shield'|'dot'|'hot'|'interrupt'|'taunt'|'buff'|'debuff'|'cleanse';
 export type CompanionAvailabilityStatus='available'|'equipped'|'expedition'|'active_trial'|'locked'|'unavailable';
 
 export interface CompanionContextTargeting{assistTarget:CompanionTargetRule;standaloneTarget:CompanionTargetRule;}
@@ -45,8 +45,8 @@ export interface CompanionCodexProfileState{
   favoriteCompanionId?:string;showcaseCompanionIds:string[];discoveredCompanionIds?:string[];claimedCodexMilestoneIds?:string[];codexRewardIds?:string[];showcaseSlotsUnlocked?:number;
 }
 
-export interface EngineAbilityEffect{kind:EngineEffectKind;coeff?:number;flat?:number;durationMs?:number;value?:number;tag?:string;executeBelowHpPct?:number;executeBonus?:number;shieldReflectPct?:number;}
-export interface EngineAbilityDefinition{id:string;name:string;cooldownMs:number;castTimeMs:number;interruptible?:boolean;target:EngineTargetRule;exactTargetId?:string;effects:EngineAbilityEffect[];priority:number;aiCondition?:'always'|'self_below_50'|'ally_below_50'|'target_casting'|'multiple_enemies';tags?:string[];}
+export interface EngineAbilityEffect{kind:EngineEffectKind;coeff?:number;flat?:number;durationMs?:number;value?:number;tag?:string;executeBelowHpPct?:number;executeBonus?:number;shieldReflectPct?:number;damageType?:'physical'|'fire'|'ice'|'shadow'|'arcane'|'nature'|'true';tickMs?:number;}
+export interface EngineAbilityDefinition{id:string;name:string;cooldownMs:number;castTimeMs:number;interruptible?:boolean;target:EngineTargetRule;exactTargetId?:string;effects:EngineAbilityEffect[];priority:number;aiCondition?:'always'|'self_below_50'|'ally_below_50'|'ally_below_50_or_dot'|'target_casting'|'multiple_enemies';tags?:string[];}
 export interface EngineBossPhaseDefinition{id:string;name?:string;hpPct:number;target:EngineTargetRule;effects:EngineAbilityEffect[];}
 export interface CompanionCombatantDefinition{
   id:string;name:string;team:'players'|'enemies';role:'tank'|'damage'|'support'|'enemy';level:number;

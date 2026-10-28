@@ -78,14 +78,14 @@ export function SocialScreen({initialTab='party',characterLevel=0,onGuild,onAcco
     setMatchAlerts(membership!==null?alerts.filter(alert=>visible.some(card=>card.id===alert.id)):alerts);
     setBackgroundError('');
    }else{
-    setBackgroundError(st('Could not refresh Social. Tap to retry.'));
+    setBackgroundError('refresh_failed');
    }
    setRankings(board);
    setPartyInvites(invites.party);
    setOutgoingPartyInvites(outgoing.party);
   }catch(e){
    if(generation===requestGeneration.current)
-    setBackgroundError(st('Could not refresh Social. Tap to retry.'));
+    setBackgroundError('refresh_failed');
    // A failed background request must never erase the last good snapshot.
   }finally{
    if(generation===requestGeneration.current)setUpdating(false);
@@ -170,8 +170,8 @@ export function SocialScreen({initialTab='party',characterLevel=0,onGuild,onAcco
  {tab==='chat'?(canUsePartyChat?<View style={s.chatContent}><OnlinePartyChat expanded/></View>:null):
  <ScrollView contentContainerStyle={s.content} keyboardShouldPersistTaps="handled" keyboardDismissMode="on-drag" showsVerticalScrollIndicator={false} showsHorizontalScrollIndicator={false}>
   {tab==='party'&&partyLocked?<PartyLockedNotice level={PARTY_UNLOCK_LEVEL}/>:<>
-  {(backgroundError||showUpdating)?<View style={s.syncRow}>{backgroundError?<><Text style={s.syncError}>{backgroundError}</Text><GameButton compact title={st("Retry")} tone="secondary" onPress={()=>void load()}/></>:<><ActivityIndicator color={C.muted} size="small"/><Text style={s.syncText}>{st("Updating…")}</Text></>}</View>:null}
-  {!!(error||social.error)&&<View accessibilityRole="alert" style={s.errorCard}><Text style={s.errorLabel}>{st("SOCIAL UNAVAILABLE")}</Text><Text style={s.error}>{error||social.error}</Text></View>}
+  {(backgroundError||social.error||showUpdating)?<View style={s.syncRow}>{backgroundError||social.error?<><Text style={s.syncError}>{st("Could not update Social.")}</Text><GameButton compact title={st("Retry")} tone="secondary" onPress={()=>{void social.refresh();void load();}}/></>:<><ActivityIndicator color={C.muted} size="small"/><Text style={s.syncText}>{st("Updating…")}</Text></>}</View>:null}
+  {!!error&&<View accessibilityRole="alert" style={s.errorCard}><Text style={s.errorLabel}>{st("SOCIAL UNAVAILABLE")}</Text><Text style={s.error}>{error}</Text></View>}
   {!social.accountId?<Panel>{social.loading?<Text style={s.syncText}>{st("Connecting…")}</Text>:<Text style={s.text}>{st("Sign in and sync a character to use Parties and Recruitment.")}</Text>}<GameButton title={st("Account settings")} onPress={onAccount}/></Panel>:<>
    {tab==='guild'?recruitmentDetails:null}
    {tab==='party'&&!social.party?partyInvitations:null}

@@ -19,7 +19,7 @@ import {useSafeAreaInsets} from 'react-native-safe-area-context';
 import {useAuthSession} from '../online/AuthSessionProvider';
 
 type Channel='world'|'guild'|'party'|'system';
-type ChatOverlayProps={state:GameState;visible:boolean;onOpen:()=>void;onClose:()=>void;onEmoteTrayChange?:(ids:string[])=>void|Promise<void>;guildUnread?:number;guildMentions?:number;guildFirstUnreadMessageId?:string;partyUnread?:number;partyMentions?:number;partyFirstUnreadMessageId?:string;onChatRead?:()=>void};
+type ChatOverlayProps={state:GameState;initialChannel?:'world'|'guild';visible:boolean;onOpen:()=>void;onClose:()=>void;onEmoteTrayChange?:(ids:string[])=>void|Promise<void>;guildUnread?:number;guildMentions?:number;guildFirstUnreadMessageId?:string;partyUnread?:number;partyMentions?:number;partyFirstUnreadMessageId?:string;onChatRead?:()=>void};
 
 export function ChatOverlay(props:ChatOverlayProps){
  const {session}=useAuthSession();
@@ -27,7 +27,7 @@ export function ChatOverlay(props:ChatOverlayProps){
  return <AccountChatOverlay key={session?.user.id??`local:${props.state.createdAtMs}`} {...props}/>;
 }
 
-function AccountChatOverlay({state,visible,onOpen,onClose,onEmoteTrayChange,guildUnread=0,guildMentions=0,guildFirstUnreadMessageId,partyUnread=0,partyMentions=0,partyFirstUnreadMessageId,onChatRead}:ChatOverlayProps){
+function AccountChatOverlay({state,initialChannel='world',visible,onOpen,onClose,onEmoteTrayChange,guildUnread=0,guildMentions=0,guildFirstUnreadMessageId,partyUnread=0,partyMentions=0,partyFirstUnreadMessageId,onChatRead}:ChatOverlayProps){
  const st=useSocialText();
   const C=useGameTheme(),s=useMemo(()=>makeStyles(C),[C]),insets=useSafeAreaInsets(),{width,fontScale}=useWindowDimensions(),expandWindow=width<360||fontScale>=1.25,bottomOffset=72+(Platform.OS==='android'?Math.max(insets.bottom,8):Math.max(insets.bottom,4));
   const [channel,setChannel]=useState<Channel>('world');
@@ -66,11 +66,11 @@ function AccountChatOverlay({state,visible,onOpen,onClose,onEmoteTrayChange,guil
   useEffect(()=>{if(!chatEnabled&&visible)onClose();},[chatEnabled,visible,onClose]);
   useEffect(()=>{
     if(visible&&!wasVisible.current){
-      selectChannel('world');
+      selectChannel(initialChannel);
       setWorldChannel(Math.max(0,Math.min(WORLD_CHANNELS.length-1,(state.settings.defaultWorldChat??1)-1)));
     }
     wasVisible.current=visible;
-  },[visible,state.settings.defaultWorldChat]);
+  },[visible,initialChannel,state.settings.defaultWorldChat]);
   const closeChat=()=>{onChatRead?.();onClose();};
   return <>
     {!visible&&chatEnabled&&<ChatDock enabled={onlineConfigured} onOpen={onOpen} lines={state.settings.chatDockLines??1} selectedChannel={state.settings.defaultWorldChat??1} unreadCount={guildUnread+partyUnread} mentionCount={guildMentions+partyMentions}/>}

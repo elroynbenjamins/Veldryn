@@ -11,12 +11,12 @@ const tabLabel:Record<SocialHubTab,import('../i18n/social').SocialMessageKey>={p
 /** Simplified navigation surfaces the three primary destinations. Events and Rankings
  * remain reachable through inline links inside the Party tab so the ribbon is not
  * crowded. */
-const VISIBLE_TABS:SocialHubTab[]=['party','guild','chat'];
+const VISIBLE_TABS:SocialHubTab[]=['party','guild'];
 
-export function SocialHubPanel({active,onChange,children,badges}:{active:SocialHubTab;onChange:(tab:SocialHubTab)=>void;children:React.ReactNode;badges?:Partial<Record<SocialHubTab,number>>}){
+export function SocialHubPanel({active,onChange,children,badges,hasParty=false}:{active:SocialHubTab;onChange:(tab:SocialHubTab)=>void;children:React.ReactNode;badges?:Partial<Record<SocialHubTab,number>>;hasParty?:boolean}){
  const st=useSocialText();
  const C=useGameTheme(),s=React.useMemo(()=>makeStyles(C),[C]);
- const tabs:SocialHubTab[]=VISIBLE_TABS;
+ const tabs:SocialHubTab[]=hasParty?[...VISIBLE_TABS,'chat']:VISIBLE_TABS;
  return <View style={s.root}>
   <View accessibilityRole="tablist" style={s.tabs}>{tabs.map(tab=><Pressable accessibilityRole="tab" accessibilityState={{selected:active===tab}} key={tab} onPress={()=>onChange(tab)} style={({pressed})=>[s.tab,active===tab&&s.active,pressed&&s.pressed]}><View style={s.tabLabel}><Text numberOfLines={1} style={[s.text,active===tab&&s.activeText]}>{st(tabLabel[tab])}</Text>{(badges?.[tab]??0)>0?<View style={s.badge}><Text style={s.badgeText}>{Math.min(99,badges?.[tab]??0)}</Text></View>:null}</View>{active===tab?<View style={s.indicator}/>:null}</Pressable>)}</View>
   <View style={s.body}>{children}</View>
@@ -27,7 +27,7 @@ function makeStyles(C:ThemeColors){return StyleSheet.create({
  root:{flex:1,backgroundColor:C.bg},
  tabs:{flexDirection:'row',gap:4,paddingHorizontal:6,paddingTop:4,paddingBottom:3,borderBottomWidth:1,borderBottomColor:C.line,backgroundColor:C.bg},
  tab:{position:'relative',flex:1,minWidth:0,minHeight:48,alignItems:'center',justifyContent:'center',paddingHorizontal:4,borderRadius:radii.sm},
- active:{backgroundColor:C.bg},
+ active:{backgroundColor:C.selection},
  pressed:{opacity:.7},
  tabLabel:{flexDirection:'row',alignItems:'center',justifyContent:'center',gap:4,maxWidth:'100%'},
  text:{fontSize:12,color:C.muted,fontWeight:'800'},

@@ -1,5 +1,6 @@
 import {gameAlert} from '../core/game-alerts';
 import {useSocialText} from '../i18n/social';
+import {SectionGuide} from './SectionGuide';
 import {CompactPlayerIdentity} from './CompactPlayerIdentity';
 import {RecruitmentListing} from './RecruitmentListing';
 import {GameButton} from './GameButton';
@@ -33,7 +34,6 @@ export interface PartyHubPanelProps {
   onCreateParty?: () => void;
   onLeaveParty?: () => void;
   onDisbandParty?: () => void;
-  onOpenPartyChat?: () => void;
   onOpenMemberProfile?: (member:PersistentPartySummary['members'][number]) => void;
   onTransferLeadership?: (member:PersistentPartySummary['members'][number]) => void;
   onRemoveMember?: (member:PersistentPartySummary['members'][number]) => void;
@@ -43,8 +43,23 @@ export interface PartyHubPanelProps {
   onFiltersChange?: (filters:RecruitmentClientFilters)=>void;
   onClaimReward?: (id:string)=>void;
   recruitmentMode?: 'looking_for_party'|'party_recruiting';
+  recruitmentPreferences?: React.ReactNode;
+  ownedAdverts?: React.ReactNode;
+  recruitmentDetails?: React.ReactNode;
+  partyExtras?: React.ReactNode;
+  partyInvitations?: React.ReactNode;
+  invitationCount?: number;
   partyUnlocked?: boolean;
   partyUnlockLevel?: number;
+}
+
+/** A locked Party shows one explanation, never the recruitment board beneath it. */
+export function PartyLockedNotice({level=20}:{level?:number}){
+ const C=useGameTheme(),styles=React.useMemo(()=>makeStyles(C),[C]);
+ return <View style={styles.panel}>
+  <Text style={styles.sectionTitle}>Parties unlock at Level {level}</Text>
+  <Text style={styles.muted}>Reach Level {level} to create or join a Party.</Text>
+ </View>;
 }
 
 export function PartyHubPanel(props: PartyHubPanelProps) {
@@ -53,8 +68,8 @@ export function PartyHubPanel(props: PartyHubPanelProps) {
   const [localFilters, setLocalFilters] = React.useState<RecruitmentClientFilters>(EMPTY_RECRUITMENT_FILTERS);
   const [section,setSection]=React.useState<'party'|'find'>(props.party?'party':'find');
   React.useEffect(()=>{setSection(props.party?'party':'find');setShowSettings(false);},[props.party?.id]);
-  const [showFilters,setShowFilters]=React.useState(false);
   const [showSettings,setShowSettings]=React.useState(false);
+  const [expandedContracts,setExpandedContracts]=React.useState<string[]>([]);
   const [browseMode,setBrowseMode]=React.useState<'parties'|'players'>(props.recruitmentMode==='looking_for_party'?'players':'parties');
   const filters=props.filters??localFilters;
   const setFilters=(next:React.SetStateAction<RecruitmentClientFilters>)=>{const result=typeof next==='function'?next(filters):next;setLocalFilters(result);props.onFiltersChange?.(result);};
@@ -62,9 +77,15 @@ export function PartyHubPanel(props: PartyHubPanelProps) {
   const canManageParty=!!props.party?.members.some(member=>member.accountId===props.accountId&&member.isLeader);
 
   const inParty=!!props.party;
+  if(!inParty&&props.partyUnlocked===false)return <View style={styles.content}><PartyLockedNotice level={props.partyUnlockLevel}/></View>;
   // When the user is in a party, offer the segmented switch; otherwise jump directly to Find.
   return <View style={styles.content}>
-    {inParty?<View style={styles.browseTabs}><BrowseChip label="My party" selected={section==='party'} onPress={()=>setSection('party')}/><BrowseChip label="Find more" selected={section==='find'} onPress={()=>setSection('find')}/></View>:null}
+    {inParty?<View style={styles.browseTabs}><BrowseChip label="My party" selected={section==='party'} onPress={()=>setSection('party')}/><BrowseChip label="Recruitment" selected={section==='find'} onPress={()=>setSection('find')}/></View>:null}
+    <SectionGuide scope={props.accountId} area="social-party" section={inParty?section:'solo'} translate={st} guide={inParty&&section==='party'?
+      {title:'My Party',body:'Your members and weekly rewards are here. Claim ready rewards without opening extra menus.',detail:'Use Party options for invitations or to leave. Open Recruitment to find new members.'}:
+      inParty?{title:'Recruitment',body:'Find players or publish an advert for your Party here.',detail:'Search and filters narrow the list. Your adverts and matching players appear below.'}:
+      {title:'Find or create a Party',body:'Create a Party or browse recruiting groups here.',detail:'Choose your role before creating a Party. You can also post that you are looking for one.'}}/>
+
 
     {inParty && section==='party' && <View style={styles.panel}>
       <View style={styles.between}><Text style={styles.sectionTitle}>{st("PARTY MEMBERS")}</Text><Text style={styles.small}>{props.party!.members.length}/4</Text></View>
@@ -75,43 +96,39 @@ export function PartyHubPanel(props: PartyHubPanelProps) {
         {(()=>{const permissions=partyMemberManagement(canManageParty,props.accountId,member.accountId);return permissions.canTransfer||permissions.canRemove?<View style={styles.memberActions}><GameButton compact title="•••" tone="secondary" onPress={()=>gameAlert.alert(member.characterName,'Manage party member',[...(permissions.canTransfer?[{text:st('Lead'),onPress:()=>props.onTransferLeadership?.(member)}]:[]),...(permissions.canRemove?[{text:st('Kick'),onPress:()=>props.onRemoveMember?.(member)}]:[]),{text:'Cancel',style:'cancel'}])}/></View>:null})()}
       </View>)}
       <View style={styles.rowWrap}>
-        <PixelButton label={st("Party Chat")} onPress={props.onOpenPartyChat} />
-        <PixelButton label="Settings" secondary onPress={()=>setShowSettings(!showSettings)}/>
+        <PixelButton label={props.invitationCount?'Party options · '+props.invitationCount:'Party options'} secondary onPress={()=>setShowSettings(!showSettings)}/>
       </View>
-      {showSettings?<View style={styles.rowWrap}>
+      {showSettings?<><View style={styles.rowWrap}>
         <PixelButton label={st("Leave")} secondary onPress={props.onLeaveParty} />
         {canManageParty&&props.party!.members.length>1?<PixelButton label={st("Disband")} secondary onPress={props.onDisbandParty}/>:null}
-      </View>:null}
+      </View>{props.partyInvitations}</>:null}
     </View>}
 
     {inParty && section==='party' && <View style={styles.panel}>
       <Text style={styles.sectionTitle}>{st("PARTY CONTRACTS")}</Text>
-      {props.contracts.length>0?<Text style={styles.muted}>{st("Shared weekly progress. Personal minimums prevent zero-contribution rewards.")}</Text>:null}
-      {props.contracts.map(contract => <View key={contract.id}>{contract.tiers?.length?<PartyWeeklyLadder contract={contract} nowMs={props.nowMs} onClaimReward={props.onClaimReward}/>:<ContractCard contract={contract} nowMs={props.nowMs} />}{contract.tiers?.length?null:contract.rewards?.map(reward=><PixelButton key={reward.id} label={reward.claimed?st("Reward claimed"):`Claim ${reward.reward.gold} Gold`} onPress={!reward.claimed&&props.onClaimReward?()=>props.onClaimReward!(reward.id):undefined}/>)}</View>)}
-      {!props.contracts.length && <View style={styles.emptyPanel}><Text style={styles.emptyTitle}>No active contract this week</Text><Text style={styles.muted}>Weekly Contracts are posted automatically. Keep adventuring and the next one will appear here.</Text></View>}
+      {props.contracts.map(contract => <View key={contract.id} style={styles.contractOverview}>{contract.tiers?.length?<><PartyWeeklyLadder compact={!expandedContracts.includes(contract.id)} contract={contract} nowMs={props.nowMs} onClaimReward={props.onClaimReward}/><GameButton compact tone="secondary" title={expandedContracts.includes(contract.id)?'Hide reward details':'View reward details'} onPress={()=>setExpandedContracts(items=>items.includes(contract.id)?items.filter(id=>id!==contract.id):[...items,contract.id])}/></>:<ContractCard contract={contract} nowMs={props.nowMs} />}{contract.tiers?.length?null:contract.rewards?.map(reward=><PixelButton key={reward.id} label={reward.claimed?st("Reward claimed"):`Claim ${reward.reward.gold} Gold`} onPress={!reward.claimed&&props.onClaimReward?()=>props.onClaimReward!(reward.id):undefined}/>)}</View>)}
+      {!props.contracts.length && <Text style={styles.muted}>No active weekly contract.</Text>}
     </View>}
+    {inParty&&section==='party'?props.partyExtras:null}
 
     {!inParty?<View style={styles.panel}>
-      {props.partyUnlocked===false?<>
-        <Text style={styles.sectionTitle}>Parties unlock at Level {props.partyUnlockLevel??20}</Text>
-        <Text style={styles.muted}>Persistent parties pair you with up to three other adventurers who share weekly Contract progress. Reach the unlock level first — your current adventures still count toward it.</Text>
-      </>:<>
-        <Text style={styles.sectionTitle}>Start a party of your own</Text>
-        <Text style={styles.muted}>Create a persistent party and share weekly Contract progress with up to three others.</Text>
-        <PixelButton label={st("Create Party")} onPress={props.onCreateParty} />
-      </>}
+      <Text style={styles.sectionTitle}>Create a Party</Text>
+      {props.recruitmentPreferences}
+      <PixelButton label={st("Create Party")} onPress={props.onCreateParty} />
     </View>:null}
 
     {(section==='find'||!inParty)&&<View style={styles.panel}>
-      <Text style={styles.sectionTitle}>Recruitment board</Text>
+      <Text style={styles.sectionTitle}>Recruitment</Text>
+      {inParty?props.recruitmentPreferences:null}
+      {props.recruitmentDetails}
       <View style={styles.browseTabs}><BrowseChip label="Parties recruiting" selected={browseMode==='parties'} onPress={()=>setBrowseMode('parties')}/><BrowseChip label="Players seeking" selected={browseMode==='players'} onPress={()=>setBrowseMode('players')}/></View>
       <View style={styles.rowWrap}>
-       <GameButton compact title={showFilters?'Hide filters':'Filters'} tone="secondary" onPress={()=>setShowFilters(!showFilters)}/>
-       {browseMode==='players'?<GameButton compact title={st("Post my LFG")} tone="secondary" onPress={() => props.onCreateRecruitmentPost?.('looking_for_party')} />:inParty?<GameButton compact title={st("Post Party LFM")} tone="secondary" onPress={() => props.onCreateRecruitmentPost?.('party_recruiting')} />:null}
+       {browseMode==='players'&&!inParty?<GameButton compact title={st("Post my LFG")} tone="secondary" onPress={() => props.onCreateRecruitmentPost?.('looking_for_party')} />:browseMode==='parties'&&canManageParty?<GameButton compact title={st("Post Party LFM")} tone="secondary" onPress={() => props.onCreateRecruitmentPost?.('party_recruiting')} />:null}
       </View>
-      {showFilters?<RecruitmentFiltersPanel value={filters} onChange={setFilters} hidePostType/>:null}
+      <RecruitmentFiltersPanel value={filters} onChange={setFilters} hidePostType/>
       {cards.map(card => <RecruitmentListing key={card.id} card={card} nowMs={props.nowMs} onPress={() => props.onOpenRecruitmentPost?.(card.id)} />)}
-      {!cards.length && <View style={styles.emptyPanel}><Text style={styles.emptyTitle}>{browseMode==='parties'?'No parties recruiting right now':'No players looking for party'}</Text><Text style={styles.muted}>Try the other tab, loosen your filters, or {inParty?'post an advert for your party':'post your own LFG'} so others can find you.</Text></View>}
+      {!cards.length && <Text style={styles.muted}>No matching adverts.</Text>}
+      {props.ownedAdverts}
     </View>}
   </View>;
 }
@@ -146,6 +163,7 @@ function makeStyles(C:ThemeColors){const equipmentColors=equipmentTheme(C);retur
   eyebrow: { color: equipmentColors.selectedLine, fontSize: 11, fontWeight: '800', letterSpacing: 2 }, title: { ...typography.hero,color: equipmentColors.goldSoft },
   sectionTitle: { ...typography.title,color: C.text }, bodyStrong: { color: C.text, fontWeight: '800', fontSize: 14 },
   body: { color: C.text, fontSize: 13, lineHeight: 18 }, muted: { color: C.muted, fontSize: 12, lineHeight: 17 }, small: { color: C.muted, fontSize: 11 },
+  contractOverview:{gap:8},
   rowWrap: { flexDirection: 'row', flexWrap: 'wrap', gap: 7 }, between: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', gap: 8 }, grow: { flex: 1,minWidth:0 },
   button: { minHeight: 46, justifyContent: 'center', paddingHorizontal: 14, borderWidth: 2, borderColor: equipmentColors.lineStrong, backgroundColor: equipmentColors.selected },
   buttonSecondary: { backgroundColor: C.panel2, borderColor: C.line }, buttonText: { color: C.text, fontWeight: '900', fontSize: 12, textTransform: 'uppercase' },

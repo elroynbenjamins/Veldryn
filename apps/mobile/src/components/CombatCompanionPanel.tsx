@@ -1,4 +1,8 @@
 import {useGameLanguage} from '../i18n/GameLanguageProvider';
+import {useAuthSession} from '../online/AuthSessionProvider';
+import {COMPANION_TOUR_STEPS} from '../core/companion-tutorial';
+import {companionTutorialText} from '../i18n/companion-tutorial';
+import {SectionGuide} from './SectionGuide';
 import {companionContent,companionMessage,companionTranslator,companionLabel,companionError} from '../i18n/companions';
 import React,{useMemo,useRef,useState} from 'react';
 import {Image,Pressable,ScrollView,StyleSheet,Text,View,useWindowDimensions} from 'react-native';
@@ -82,11 +86,14 @@ export function CombatCompanionPanel({state,now,onCommand,onNavigateSource}:{sta
  const amount=(value:number)=>value.toLocaleString(language);
 
   const C=useGameTheme(),equipmentColors=equipmentTheme(C),s=useMemo(()=>makeStyles(C),[C]);
+   const {session}=useAuthSession();
+   const guideScope=session?.user.id??state.character?.id??'';
   const [detailOpen,setDetailOpen]=useState(false);
   const {height:windowHeight}=useWindowDimensions();
   const [trialSheet,setTrialSheet]=useState<null|'team'|'boss'|'season'|'challenges'|'battle'>(null),[bossFloor,setBossFloor]=useState(5),[showTrialDetails,setShowTrialDetails]=useState(false);
   const [section,setSection]=useState<typeof sections[number]|'Codex'>('Collection'),[selection,setSelection]=useState(state.character?.equippedCombatCompanionId??'UNIT_001'),[collectionFilter,setCollectionFilter]=useState<CollectionFilter>(state.account.unlockedCombatCompanionIds?.length?'Owned':'All'),[filterOpen,setFilterOpen]=useState(false),[team,setTeam]=useState<string[]>(()=>{const suggested=recommendedCompanionTrialTeam(state,now);return suggested.ready?suggested.ids:[];}),[mission,setMission]=useState(COMPANION_MISSIONS[0].id),[missionFilter,setMissionFilter]=useState<ExpeditionFilter>('All'),[missionFilterOpen,setMissionFilterOpen]=useState(false),[busy,setBusy]=useState(false),[message,setMessage]=useState('');
-  const lock=useRef(false),view=companionView(state,now),model=combatCompanionUiModel(state,selection),e=companionEconomy(state),progress=model?.progress;
+  const sectionGuide=COMPANION_TOUR_STEPS.find(step=>step.section===section)!;
+   const lock=useRef(false),view=companionView(state,now),model=combatCompanionUiModel(state,selection),e=companionEconomy(state),progress=model?.progress;
   const equipped=state.character?.equippedCombatCompanionId,contribution=companionCombatContribution(state),run=view.trial.progress.season.activeRun;
   const recovery=companionRecoverySeconds(state,now),season=companionTrialSeasonDefinition(view.trial.progress.season.seasonKey),rotationPreview=companionTrialRotationPreview(now),specialFacts=companionUnlockFacts(state),trialSuggestion=recommendedCompanionTrialTeam(state,now),expeditionSuggestion=recommendedCompanionMissionTeam(state,mission,now);
   const safeTeam=team.filter(id=>!!view.owned[id]);
@@ -128,6 +135,7 @@ const selectedIndex=Math.max(0,COMBAT_COMPANIONS.findIndex(def=>def.id===selecti
   return <View style={s.root}>
     <View style={s.resourceBar}><Text style={s.resources}>{amount(e.companionEssence)} {t("Essence")}</Text><Text style={s.body}>{amount(e.bondstones)} {t("Bondstones")} · {amount(e.gold)} {t("Gold")}</Text></View>
     <View accessibilityRole="tablist" style={s.navigation}>{sections.map(tab=><Pressable key={tab} accessibilityRole="tab" accessibilityLabel={tab==='Collection'?t("Roster"):label(tab)} accessibilityState={{selected:section===tab}} onPress={()=>setSection(tab)} style={({pressed})=>[s.navigationTab,section===tab&&s.navigationSelected,pressed&&s.pressed]}><UiIcon name={sectionIcons[tab]} size={20} muted={section!==tab}/><Text style={[s.navigationText,section===tab&&s.navigationTextSelected]}>{tab==='Collection'?t("Roster"):label(tab)}</Text></Pressable>)}</View>
+    <SectionGuide scope={guideScope} area="companions" section={section} guide={{title:sectionGuide.title,body:sectionGuide.body,detail:sectionGuide.hint}} translate={text=>companionTutorialText(language,text)}/>
     {message?(isCompanionProgressMoment(message)?<CompanionProgressMoment message={message} reduceMotion={state.settings.reduceMotion}/>:<View accessibilityLiveRegion="polite" style={s.messageCard}><Text style={s.messageLabel}>{t("COMPANION UPDATE")}</Text><Text style={s.message}>{companionMessage(language,message)}</Text></View>):null}
     {section==='Training'&&<CompanionTrainingV50Panel key={selection} initialSelection={selection} onSelectionChange={setSelection} state={state} now={now} onCommand={onCommand} onNavigateSource={source=>source.kind==='companion'?setSection(source.section):onNavigateSource?.(source)}/>}
     {section==='Sanctuary'?<View style={s.group}><CompanionHero title={t("Sanctuary")} eyebrow={t("COMPANION SANCTUARY")} id={equipped??ownedIds[0]}>

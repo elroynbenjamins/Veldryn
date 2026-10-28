@@ -6,7 +6,7 @@ import {createTranslator,type TranslationParams} from './translator';
 
 // Columns are German, Spanish, Dutch, Italian and French; keys are the English catalog.
 export const socialTranslationRows = {
- "Boss HP updates after server confirmation.": ["Boss-TP werden nach Serverbestätigung aktualisiert.","La vida del jefe se actualiza tras la confirmación del servidor.","De HP van de baas worden bijgewerkt na serverbevestiging.","I PV del boss si aggiornano dopo la conferma del server.","Les PV du boss se mettent à jour après confirmation du serveur."],
+ "Hit effects follow your server-calculated attempt. Guild boss HP updates after settlement.": ["Treffereffekte folgen deinem serverberechneten Versuch. Gildenboss-TP werden nach der Abrechnung aktualisiert.","Los efectos de impacto siguen el intento calculado por el servidor. La vida del jefe se actualiza al resolverlo.","Treffereffecten volgen je door de server berekende poging. De HP van de gildebaas worden na afhandeling bijgewerkt.","Gli effetti dei colpi seguono il tentativo calcolato dal server. I PV del boss si aggiornano al termine.","Les effets des coups suivent votre tentative calculée par le serveur. Les PV du boss se mettent à jour à la résolution."],
  "LIVE COMBAT": ["LIVE-KAMPF","COMBATE EN VIVO","LIVE GEVECHT","COMBATTIMENTO LIVE","COMBAT EN DIRECT"],
  "Watch": ["Ansehen","Ver","Bekijken","Guarda","Voir"],
  "GUILD RAID": ["GILDENRAID","ASALTO DEL GREMIO","GILDERAID","INCURSIONE DI GILDA","RAID DE GUILDE"],

@@ -23,7 +23,8 @@ export function ForgeClaimBanner({results,reduceMotion,onDismiss}:{results:reado
   const dismissRef=useRef(onDismiss);dismissRef.current=onDismiss;
   useEffect(()=>{if(!results.length||results.some(row=>row.qualityProc))return;const timer=setTimeout(()=>dismissRef.current(),4500);return()=>clearTimeout(timer)},[results]);
   if(!results.length||results.some(row=>row.qualityProc))return null;
-  return <ActionFeedback message={forgeClaimBannerMessage(results)} tone="success" reduceMotion={reduceMotion} compact/>;
+  const meta=rarityMeta(highest(results).rarity);
+  return <ActionFeedback message={forgeClaimBannerMessage(results)} tone="success" reduceMotion={reduceMotion} compact accentColor={meta.color} accentSurface={meta.surface}/>;
 }
 
 export function ForgeRarityRevealModal({results,reduceMotion,onClose,onInventory}:{results:readonly ForgeCraftResult[];reduceMotion:boolean;onClose:()=>void;onInventory:()=>void}){

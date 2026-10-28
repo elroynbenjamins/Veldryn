@@ -8,11 +8,12 @@ import {type ThemeColors} from '../theme/theme';
  * An immersive presentation for authoritative combat replays and raid status.
  * This surface never starts a fight or computes damage/rewards.
  */
-export function CombatTheaterModal({visible,onClose,title,eyebrow,subtitle,reduceMotion=false,children}:PropsWithChildren<{
- visible:boolean;onClose:()=>void;title:string;eyebrow:string;subtitle?:string;reduceMotion?:boolean;
+export function CombatTheaterModal({visible,onClose,title,eyebrow,subtitle,tone='dungeon',reduceMotion=false,children}:PropsWithChildren<{
+ visible:boolean;onClose:()=>void;title:string;eyebrow:string;subtitle?:string;tone?:'dungeon'|'event'|'guild'|'companion';reduceMotion?:boolean;
 }>){
  const C=useGameTheme(),s=useMemo(()=>styles(C),[C]),insets=useSafeAreaInsets();
  const pulse=useRef(new Animated.Value(0)).current;
+ const accent=tone==='event'?C.special:tone==='guild'?C.warning:tone==='companion'?C.info:C.accent;
  useEffect(()=>{
   pulse.stopAnimation();pulse.setValue(0);
   if(!visible||reduceMotion)return;
@@ -26,11 +27,11 @@ export function CombatTheaterModal({visible,onClose,title,eyebrow,subtitle,reduc
  return <Modal visible={visible} animationType={reduceMotion?'none':'fade'} onRequestClose={onClose} statusBarTranslucent hardwareAccelerated>
   <View style={s.root}>
    <View pointerEvents="none" style={s.ambient}>
-    <Animated.View style={[s.halo,{opacity:pulse.interpolate({inputRange:[0,1],outputRange:[.14,.35]}),transform:[{scale:pulse.interpolate({inputRange:[0,1],outputRange:[.9,1.2]})}]}]}/>
+    <Animated.View style={[s.halo,{borderColor:accent,opacity:pulse.interpolate({inputRange:[0,1],outputRange:[.14,.35]}),transform:[{scale:pulse.interpolate({inputRange:[0,1],outputRange:[.9,1.2]})}]}]}/>
    </View>
    <View style={[s.header,{paddingTop:Math.max(insets.top,12)}]}>
     <View style={s.heading}>
-     <Text style={s.eyebrow}>{eyebrow}</Text>
+     <Text style={[s.eyebrow,{color:accent}]}>{eyebrow}</Text>
      <Text accessibilityRole="header" numberOfLines={2} style={s.title}>{title}</Text>
      {subtitle?<Text style={s.subtitle}>{subtitle}</Text>:null}
     </View>

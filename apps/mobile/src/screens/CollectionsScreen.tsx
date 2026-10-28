@@ -16,7 +16,7 @@ import {profileIconCollection,selectProfileIcon} from '../core/profile-icons';
 import type {ClassId,GameState} from '../core/types';
 import {profileBackgroundPreviewById} from '../theme/profile-background-assets';
 import {profileBorderSourceById} from '../theme/profile-border-assets';
-import {petArtSource} from '../theme/pet-art';
+import {petArtSource,petDetailArtSource} from '../theme/pet-art';
 import {useGameTheme} from '../theme/ThemeContext';
 import {radii,typography,type ThemeColors} from '../theme/theme';
 
@@ -92,12 +92,13 @@ function JournalArtwork({row,classId,profileIconId,large=false,styles:s}:{row:En
  if(row.kind==='profile_icon')return <ProfileIcon id={row.id} classId={classId} size={large?180:54}/>;
  if(row.kind==='background'&&background)return <View style={large?s.largeImage:s.cardImage}><RegionArtwork regionId={background.region}/></View>;
  if(row.kind==='pet'&&row.art){
-  // Permanent/guild pets ship as compact runtime icons; scaling them to the
-  // full 200-point event portrait stage exposes the source pixels. Keep those
-  // icons within a framed, modest preview until portrait-grade art exists.
-  const portraitArt=row.id.startsWith('EVT_PET_');
-  if(large&&!portraitArt)return <View style={s.petPreviewFrame}><Image accessibilityLabel={row.name} source={row.art} resizeMode="contain" resizeMethod="scale" style={s.petPreviewImage}/></View>;
-  return <Image accessibilityLabel={row.name} source={row.art} resizeMode="contain" style={large?s.largeImage:s.cardImage}/>;
+  // Event and Guild pets have portrait-grade source art. The 33 permanent
+  // roster pets only have 96px runtime sprites: avoid enlarging their small
+  // icons into a full-screen portrait until authored master art is available.
+  const portraitArt=large?petDetailArtSource(row.id):undefined;
+  if(portraitArt)return <Image accessibilityLabel={row.name} source={portraitArt} resizeMode="contain" style={s.largeImage}/>;
+  if(large)return <View style={s.petPreviewFrame}><Image accessibilityLabel={row.name} source={row.art} resizeMode="contain" style={s.petPreviewImage}/></View>;
+  return <Image accessibilityLabel={row.name} source={row.art} resizeMode="contain" style={s.cardImage}/>;
  }
  if(row.art)return row.kind==='border'?<View style={large?s.frameLarge:s.frameSmall}><ProfileIcon id={profileIconId} classId={classId} size={large?120:38}/><ProfileFrameOverlay source={row.art}/></View>:<Image accessibilityLabel={row.name} source={row.art} resizeMode="cover" style={large?s.largeImage:s.cardImage}/>;
  return <View style={s.fallback}><Text style={s.fallbackMark}>◇</Text></View>;
@@ -117,5 +118,5 @@ function styles(C:ThemeColors){return StyleSheet.create({
  // Thumbnail-only pet art has far fewer source pixels than event portraits.
  // A centered inset avoids stretching it across the full modal hero.
  petPreviewFrame:{width:152,height:152,borderRadius:radii.lg,backgroundColor:C.panel,borderWidth:1,borderColor:C.line,alignItems:'center',justifyContent:'center'},
- petPreviewImage:{width:112,height:112},frameSmall:{width:54,height:54,alignItems:'center',justifyContent:'center'},frameLarge:{width:200,height:200,alignItems:'center',justifyContent:'center'},fallback:{alignItems:'center',justifyContent:'center'},fallbackMark:{fontSize:32,color:C.accent},
+ petPreviewImage:{width:96,height:96},frameSmall:{width:54,height:54,alignItems:'center',justifyContent:'center'},frameLarge:{width:200,height:200,alignItems:'center',justifyContent:'center'},fallback:{alignItems:'center',justifyContent:'center'},fallbackMark:{fontSize:32,color:C.accent},
 });}

@@ -3,6 +3,7 @@ import {TURNING_OF_THE_AGE_EVENT,HEARTBOND_EVENT,BLOOMWAKE_EVENT} from './annual
 import {SUNCREST_GAMES_EVENT,STARFALL_NIGHTS_EVENT,MERCHANT_GUILD_FESTIVAL_EVENT} from './annual-events-v4';
 import {annualEventSeriesId,LIVE_EVENT_CATALOG,type LiveEventDef} from './live-events';
 import {eventRewardOwned} from '../core/live-events';
+import {EVENT_COMMUNITY_ENABLED} from '../core/release-flags';
 import type {ClassId,GameState} from '../core/types';
 
 export interface AnnualEventCalendarEntry{
@@ -25,12 +26,12 @@ const WINDOWS:Record<string,{windowLabel:string;order:number}>={
   EVT_ANNUAL_006_2026:{windowLabel:'June / July',order:6},
   EVT_ANNUAL_008_2026:{windowLabel:'August',order:8},
   EVT_ANNUAL_010_2026:{windowLabel:'Oct 10 – Nov 2',order:10},
-  EVT_ANNUAL_011_2026:{windowLabel:'Nov 6 – Nov 29',order:11},
-  EVT_ANNUAL_012_2026:{windowLabel:'Dec 1 – Dec 29',order:12},
+  EVT_ANNUAL_011_2026:{windowLabel:'Nov 6 – Nov 26',order:11},
+  EVT_ANNUAL_012_2026:{windowLabel:'Dec 3 – Dec 29',order:12},
 };
 
 function rewards(definition:LiveEventDef,classId:ClassId){
-  const community=definition.communityEnabled===true
+  const community=EVENT_COMMUNITY_ENABLED&&definition.communityEnabled===true
     ?definition.communityMilestones.flatMap(entry=>entry.reward?[entry.reward]:[])
     :[];
   const all=[

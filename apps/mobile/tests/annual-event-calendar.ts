@@ -14,8 +14,8 @@ equal(rows[0]?.windowLabel,'Dec 29 – Jan 4','Turning window label');
 equal(rows[1]?.eventId,'EVT_ANNUAL_002_2026','Heartbond follows Turning');
 equal(rows.at(-1)?.eventId,'EVT_ANNUAL_012_2026','Frostfall closes the annual calendar');
 equal(rows.find(row=>row.eventId==='EVT_ANNUAL_010_2026')?.windowLabel,'Oct 10 – Nov 2','Veilbreak publishes its exact window');
-equal(rows.find(row=>row.eventId==='EVT_ANNUAL_011_2026')?.windowLabel,'Nov 6 – Nov 29','Merchant & Guild publishes its exact window');
-equal(rows.find(row=>row.eventId==='EVT_ANNUAL_012_2026')?.windowLabel,'Dec 1 – Dec 29','Frostfall publishes its exact window');
+equal(rows.find(row=>row.eventId==='EVT_ANNUAL_011_2026')?.windowLabel,'Nov 6 – Nov 26','Merchant & Guild publishes its exact window');
+equal(rows.find(row=>row.eventId==='EVT_ANNUAL_012_2026')?.windowLabel,'Dec 3 – Dec 29','Frostfall publishes its exact window');
 ok(rows.every(row=>row.collectionTotal>0),'every production event exposes collection rewards');
 ok(rows.every(row=>row.collectionOwned===0),'fresh account starts with no annual event collection ownership');
 

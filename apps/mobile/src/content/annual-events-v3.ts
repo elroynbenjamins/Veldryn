@@ -161,7 +161,7 @@ export const BLOOMWAKE_EVENT:LiveEventDef={
   maxProgress:10000,
   claimGraceDays:7,
   visualKey:'bloomwake',
-  signature:{kind:'community',label:'SIGNATURE · VERDANT GROVE',title:'Restore the spring grove as a shared festival project',description:'Bloomwake turns normal gathering, crafting, combat, and boss activity into a restoration effort. Keep Bloom Tokens for personal rewards or contribute them to grow the shared Verdant Grove.',highlights:['Shared Grove restoration milestones','Spring-restoration project choice','Thornheart Grove seasonal expedition']},
+  signature:{kind:'community',label:'SIGNATURE · VERDANT GROVE',title:'Restore the spring grove through your own adventures',description:'Bloomwake turns normal gathering, crafting, combat, and boss activity into a personal spring-restoration journey. Collect Bloom Tokens for your own rewards and explore Thornheart Grove.',highlights:['Personal grove-restoration milestones','Spring-restoration activity focus','Thornheart Grove seasonal expedition']},
   ui:{
     prepareTitle:'Prepare for Bloomwake',
     dailyGiftTitle:'Today’s Bloomwake Gift',

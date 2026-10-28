@@ -15,6 +15,7 @@ When a player opens a screen, the top viewport should answer: **Where am I? What
 | World | “Travel” kicker and explanatory paragraph stating that region determines activities; long instructional objective-route sentence | Current region art/name, Combat/Gathering buttons, route target, next-unlock requirements, travel destinations and Dungeon tab | Strong visual hierarchy and concise progress instead of repeated guidance |
 | Guild | A section introduction above online Activities/Hall/Roster/Manage that repeated the tab and nested content labels | Guild navigation, roster and permissions, activities, Hall shop/facilities and Manage actions | Prevent stacking a main tab title, section title and subtab title before reaching content |
 | Party | Passive weekly-contract explanation above contracts that already display personal minimum and contribution | Member controls, Party Chat, Contracts, weekly rewards, Find More and recruitment filters | Actual contract values tell players more than an explanatory paragraph |
+| Equipment set progress | Internal `V33` version heading and incomplete implementation notes | Set name, piece count, milestone thresholds and achieved/locked states | Player-facing set progress should never expose internal implementation details |
 
 ## Why we did NOT eliminate more navigation
 
@@ -29,6 +30,6 @@ When a player opens a screen, the top viewport should answer: **Where am I? What
 ## Verification & release gates
 
 - **10/10** direct source-level checks of the changed live components passed.
-- New `apps/mobile/tests/core-screen-simplicity-ui-contract.cjs` (16 source assertions including one `assert.equal`) registered in `tools/mobile-core-tests.json`. A passed source check is not a passed mobile or Android end-to-end test.
+- New `apps/mobile/tests/core-screen-simplicity-ui-contract.cjs` (18 source assertions including one `assert.equal`) registered in `tools/mobile-core-tests.json`. A passed source check is not a passed mobile or Android end-to-end test.
 - Existing baseline Guild/Chat mobile TS issues on `main` and core `starter-companion-choice.ts` mismatch may block full GitHub Actions on this branch. The separate Guild/Chat compatibility fix is in [#621](https://github.com/elroynbenjamins/Veldryn/pull/621). **Do not bypass tests to make this appear release-ready.**
 - **Native QA pending:** narrow screens (320dp), fontScale 1.5–2.0, TalkBack, opening/closing event detail on status change, eligible/ineligible recipes, Guild leader vs member roles, online/local navigation, seasonal rollovers. No game-rule changes, database writes, Android build, merge or deployment performed.

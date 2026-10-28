@@ -6,8 +6,8 @@ assert(run.includes('<DungeonRouteChoices options={run.options}')&&!run.includes
 assert(run.includes('<CombatTheaterModal visible')&&run.includes('<DungeonCombatStage run={run} seasonal={seasonal}'),'Combat stage in full-screen theater');
 assert.equal((run.match(/<DungeonCombatStage run=\{run\}/g)||[]).length,1,'No duplicate inline combat arena');
 assert(run.includes("run.lastCombat?.reason==='victory'")&&run.includes('Watch battle'),'Minimized combat retains recap and reopen');
-assert(stage.includes('DUNGEON_PLAYBACK_SPEEDS.map')&&stage.includes('st("SPEED")'),'Combat uses speed-only playback');
+assert(!stage.includes('DUNGEON_PLAYBACK_SPEEDS')&&!stage.includes('playbackSpeed')&&stage.includes('playbackAdvanceDelayMs(current,next,1)')&&stage.includes('playbackCastDisplayMs(currentBossCast,1)'),'Dungeon combat plays automatically at one fixed normal rate');
 assert(!stage.includes('setPaused(')&&!stage.includes('setShowLog('),'No pause or manual step state');
 assert(guild.includes('<CombatTheaterModal visible')&&!guild.includes('DUNGEON_PLAYBACK_SPEEDS'),'Guild raid has no speed controls');
 assert(options.includes('onPress={()=>onChoose?.(option.nodeId)}'),'Existing authoritative vote callback preserved');
-console.log('PASS: compact minimized fight, full-screen theater, speed-only playback, guild PvE and visual node decisions');
+console.log('PASS: compact minimized fight, full-screen theater, fixed 1x playback, guild PvE and visual node decisions');

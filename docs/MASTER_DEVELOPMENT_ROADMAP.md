@@ -993,3 +993,9 @@ This roadmap is based on current GitHub source and documentation, the read-only 
 
 **Roadmap definition of success:** A stable, upgradeable and secure Android idle MMORPG whose normal activities, guild/co-op, companions, event rewards and purchase recovery are understandable and trustworthy—with mature pixel-art feedback and clear progression—rather than the largest quantity of partially finished systems.
 
+
+### Companion layout design proposal — 2026-10-28 (not implemented)
+
+- **PROPOSED, pending product review:** [COMPANION_UX_REDESIGN.md](COMPANION_UX_REDESIGN.md) proposes four direct player-intent tabs **Roster / Trials / Expeditions / Sanctuary**, moves Training/Bond/Ascension/Techniques and personal Quarters into a selected companion detail, keeps Codex one tap from Roster, puts the Trials formation and Start action above the tower/reward text, consolidates Expedition team/food/setup and uses compact Sanctuary facility tiles.
+- The proposal updates the **implementation sequencing** of B01/B02/B03/C05/C07 but **does not change their verified status or claim any code has been implemented**. Consult the UX spec *before* merging draft [PR #617](https://github.com/elroynbenjamins/Veldryn/pull/617), whose legacy Training-tab UI would otherwise become a competing layout. Reuse its pure roster selector/tests where useful.
+- **Do not implement as a single rewrite.** Capture Android baseline; extract one screen at a time preserving all server-owned commands, roles, economy, month/event gates and local navigation. A01 CI and production/staging integrity remain release priorities.

@@ -4,6 +4,10 @@ import {createTranslator} from './translator';
 // Each row contains English, German, Spanish, Dutch, Italian and French.
 // English source keys also let owned views translate core-generated presentation text.
 export const accountTranslationRows = {
+"Data & Privacy":["Data & Privacy","Daten & Datenschutz","Datos y privacidad","Gegevens en privacy","Dati e privacy","Données et confidentialité"],
+"Backups, save information and privacy.":["Backups, save information and privacy.","Backups, Speicherinformationen und Datenschutz.","Copias de seguridad, guardado y privacidad.","Back-ups, opslaginformatie en privacy.","Backup, dati salvati e privacy.","Sauvegardes, données de jeu et confidentialité."],
+"Deleting your local save removes progress stored on this device.":["Deleting your local save removes progress stored on this device.","Das Löschen des lokalen Spielstands entfernt den Fortschritt auf diesem Gerät.","Eliminar la partida local borra el progreso de este dispositivo.","Je lokale opslag verwijderen wist de voortgang op dit apparaat.","Eliminare il salvataggio locale cancella i progressi su questo dispositivo.","Supprimer la sauvegarde locale efface la progression sur cet appareil."],
+"Current activity":["Current activity","Aktuelle Aktivität","Actividad actual","Huidige activiteit","Attività corrente","Activité en cours"],
 "Chat":["Chat","Chat","Chat","Chat","Chat","Discussion"],
 "Combat, activities and number display.":["Combat, activities and number display.","Kampf, Aktivitäten und Zahlenanzeige.","Combate, actividades y formato numérico.","Gevechten, activiteiten en getallen.","Combattimento, attività e numeri.","Combat, activités et affichage des nombres."],
 "Chat bar, language channel and emotes.":["Chat bar, language channel and emotes.","Chatleiste, Sprachkanal und Emotes.","Barra de chat, canal de idioma y emoticonos.","Chatbalk, taalkanaal en emotes.","Barra chat, canale lingua ed emote.","Barre de discussion, canal de langue et émotes."],

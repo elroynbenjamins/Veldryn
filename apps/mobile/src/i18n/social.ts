@@ -6,6 +6,13 @@ import {createTranslator,type TranslationParams} from './translator';
 
 // Columns are German, Spanish, Dutch, Italian and French; keys are the English catalog.
 export const socialTranslationRows = {
+ "Battle in progress": ["Kampf läuft","Combate en curso","Gevecht bezig","Combattimento in corso","Combat en cours"],
+ "Encounter replay": ["Kampfwiedergabe","Repetición del combate","Gevecht opnieuw bekijken","Replay dello scontro","Relecture du combat"],
+ "Watch battle": ["Kampf ansehen","Ver combate","Gevecht bekijken","Guarda la battaglia","Voir le combat"],
+ "Choose room": ["Raum wählen","Elegir sala","Kies kamer","Scegli stanza","Choisir une salle"],
+ "Unavailable": ["Nicht verfügbar","No disponible","Niet beschikbaar","Non disponibile","Indisponible"],
+ "votes": ["Stimmen","votos","stemmen","voti","votes"],
+ "Awaiting choice": ["Warte auf Auswahl","Esperando elección","Wachten op keuze","In attesa della scelta","En attente du choix"],
 "My Echo · Current equipment":["Mein Echo · Aktuelle Ausrüstung","Mi Eco · Equipo actual","Mijn Echo · Huidige uitrusting","Il mio Eco · Equipaggiamento attuale","Mon Écho · Équipement actuel"],
 "Your character Echo is shared with other adventurers.":["Dein Charakter-Echo wird mit anderen Abenteurern geteilt.","Tu Eco de personaje está compartido con otros aventureros.","Je personage-Echo wordt gedeeld met andere avonturiers.","Il tuo Eco è condiviso con altri avventurieri.","Votre Écho est partagé avec d’autres aventuriers."],
 "Prepare a snapshot of your current dungeon loadout for other players.":["Teile eine Momentaufnahme deiner aktuellen Dungeon-Ausrüstung.","Prepara una copia de tu equipo de mazmorra para otros jugadores.","Maak een momentopname van je huidige dungeonuitrusting voor andere spelers.","Prepara una copia del tuo equipaggiamento da dungeon per altri giocatori.","Préparez une copie de votre équipement de donjon pour les autres joueurs."],

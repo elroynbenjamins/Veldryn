@@ -33,6 +33,8 @@ jobs:
         run: node tests/guild-raid-tabs-ui.cjs
       - name: Validate Settings screen simplicity
         run: node tests/settings-simplicity-ui.cjs
+      - name: Validate integrated dungeon theater
+        run: node ../../tools/validate-integrated-dungeon-theater.cjs
       - name: Typecheck core
         run: pnpm typecheck:core
       - name: Run mobile core tests

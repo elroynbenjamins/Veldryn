@@ -4,7 +4,7 @@ import {useSocialText} from '../i18n/social';
 import {useGameLanguage} from '../i18n/GameLanguageProvider';
 import {socialLabel,socialExpiry} from '../i18n/social';
 import {useCallback,useEffect,useRef,useState,useMemo} from 'react';
-import {Pressable,ScrollView,StyleSheet,Text,View} from 'react-native';
+import {ActivityIndicator,Pressable,ScrollView,StyleSheet,Text,View} from 'react-native';
 import {PartyHubPanel,PartyLockedNotice} from '../components/PartyHubPanel';
 import {PartyEventHubPanel} from '../components/PartyEventHubPanel';
 import {SocialHubPanel,type SocialHubTab} from '../components/SocialHubPanel';
@@ -15,7 +15,6 @@ import {RecruitmentListing} from '../components/RecruitmentListing';
 import {SocialInvitationCard} from '../components/SocialInvitationCard';
 import {OnlinePartyChat} from '../components/OnlinePartyChat';
 import {GameButton} from '../components/GameButton';
-import {LoadingState} from '../components/LoadingState';
 import {Panel} from '../components/Panel';
 import {ChatPlayerSheet,type ChatPlayerIdentity} from '../components/ChatPlayerSheet';
 import {usePartySocial} from '../online/PartySocialProvider';
@@ -25,6 +24,8 @@ import {EMPTY_RECRUITMENT_FILTERS,shouldShowPartyChat,recruitmentPostTypePresent
 import {spacing,typography,type ThemeColors} from '../theme/theme';
 import {useGameTheme} from '../theme/ThemeContext';
 import {PARTY_UNLOCK_LEVEL} from '../core/feature-unlocks';
+type SocialBoard={cards:RecruitmentCardView[];own:RecruitmentCardView[]};
+const EMPTY_BOARD:SocialBoard={cards:[],own:[]};
 export function SocialScreen({initialTab='party',characterLevel=0,onGuild,onAccount,onInvitationsChanged,partyUnlocked}:{initialTab?:SocialHubTab;characterLevel?:number;partyUnlocked?:boolean;onGuild:()=>void;onAccount:()=>void;onInvitationsChanged?:()=>void}){
  const st=useSocialText();
   const language=useGameLanguage();
@@ -34,15 +35,74 @@ export function SocialScreen({initialTab='party',characterLevel=0,onGuild,onAcco
  const [guildContext,setGuildContext]=useState<{accountId:string;membership:Awaited<ReturnType<typeof myGuild>>|undefined}|null>(null);
  const guildMembership=guildContext?.accountId===social.accountId?guildContext.membership:undefined;
  const canRecruit=canManageGuild(guildMembership?.role);
- const [cards,setCards]=useState<RecruitmentCardView[]>([]),[own,setOwn]=useState<RecruitmentCardView[]>([]),[rankings,setRankings]=useState<PartyRanking[]>([]),[partyInvites,setPartyInvites]=useState<PartyInvitationView[]>([]),[outgoingPartyInvites,setOutgoingPartyInvites]=useState<OutgoingInvitationView[]>([]),[liveEvent,setLiveEvent]=useState<import('../core/party-social').PartyEventView|null>(null);
+ const [boardCache,setBoardCache]=useState<{accountId:string;party:SocialBoard;guild:SocialBoard}>({accountId:'',party:EMPTY_BOARD,guild:EMPTY_BOARD});
+ const activeBoard=boardCache.accountId===social.accountId?(tab==='guild'?boardCache.guild:boardCache.party):EMPTY_BOARD;
+ const {cards,own}=activeBoard;
+ const [rankings,setRankings]=useState<PartyRanking[]>([]),[partyInvites,setPartyInvites]=useState<PartyInvitationView[]>([]),[outgoingPartyInvites,setOutgoingPartyInvites]=useState<OutgoingInvitationView[]>([]),[liveEvent,setLiveEvent]=useState<import('../core/party-social').PartyEventView|null>(null);
  const [draft,setDraft]=useState<PublishRecruitmentInput|null>(null),[selected,setSelected]=useState<RecruitmentCardView|null>(null),[selectedProfile,setSelectedProfile]=useState<ChatPlayerIdentity|null>(null),[busy,setBusy]=useState(false),[error,setError]=useState(''),[matchAlerts,setMatchAlerts]=useState<RecruitmentMatchAlert[]>([]);
  const [focus,setFocus]=useState<PartyFocus>('mixed'),[role,setRole]=useState<PartyRole>('damage'),[now,setNow]=useState(Date.now()),[showPrefs,setShowPrefs]=useState(false),[showMatches,setShowMatches]=useState(false),[showPartyEvents,setShowPartyEvents]=useState(false);
  const requestGeneration=useRef(0);const command=useRef<{signature:string;key:string}|null>(null);
+ const [updating,setUpdating]=useState(false),[showUpdating,setShowUpdating]=useState(false),[backgroundError,setBackgroundError]=useState('');
  const key=(signature:string)=>{if(command.current?.signature!==signature)command.current={signature,key:partyCommandKey()};return command.current.key;};
- const load=useCallback(async()=>{const generation=++requestGeneration.current;if(!social.accountId){setCards([]);setOwn([]);setRankings([]);setPartyInvites([]);setOutgoingPartyInvites([]);return;}
-  try{const membership=await myGuild().catch(()=>undefined);const context=tab==='guild'?'guild':'party';const browse={...filters,postTypes:(tab==='guild'?['looking_for_guild']:['looking_for_party','party_recruiting']) as RecruitmentPostType[]};const [next,mine,board,invites,outgoing,alerts]=await Promise.all([tab==='guild'&&(membership===undefined||(membership&&!canManageGuild(membership.role)))?Promise.resolve([] as RecruitmentCardView[]):repository.browseRecruitment(browse),ownRecruitmentPosts(),partyRankings(),socialInvitations().catch(()=>({party:[],guild:[],serverTime:''})),socialOutgoingInvitations().catch(()=>({party:[],guild:[],serverTime:''})),recruitmentMatchAlerts().catch(()=>[])]);if(generation===requestGeneration.current){const visible=next.filter(card=>guildRecruitmentVisible(card,membership,context));setGuildContext({accountId:social.accountId,membership});setCards(visible);setOwn(mine.filter(card=>guildRecruitmentVisible(card,membership,context)));setRankings(board);setPartyInvites(invites.party);setOutgoingPartyInvites(outgoing.party);setMatchAlerts(membership!==null?alerts.filter(alert=>visible.some(card=>card.id===alert.id)):alerts);setError(tab==='guild'&&membership===undefined?st('Unable to load your online guild.'):'');}}
-  catch(e){if(generation===requestGeneration.current){setCards([]);setError(e instanceof Error?e.message:st("Social service unavailable."));}}
+ const load=useCallback(async()=>{
+  const generation=++requestGeneration.current;
+  if(!social.accountId||tab==='chat'){setUpdating(false);return;}
+  const accountId=social.accountId;
+  const context: 'party'|'guild'=tab==='guild'?'guild':'party';
+  const browse={...filters,postTypes:(context==='guild'?['looking_for_guild']:['looking_for_party','party_recruiting']) as RecruitmentPostType[]};
+  setUpdating(true);
+  try{
+   // Run independent requests in parallel. Guild browsing still waits for the
+   // player's membership so that its existing access restrictions are respected.
+   const membershipRequest=myGuild().catch(()=>undefined);
+   const browseRequest=context==='guild'
+     ?membershipRequest.then(membership=>membership===undefined||(membership&&!canManageGuild(membership.role))?[] as RecruitmentCardView[]:repository.browseRecruitment(browse))
+     :repository.browseRecruitment(browse);
+   const [membership,next,mine,board,invites,outgoing,alerts]=await Promise.all([
+    membershipRequest,browseRequest,ownRecruitmentPosts(),partyRankings(),
+    socialInvitations().catch(()=>({party:[],guild:[],serverTime:''})),
+    socialOutgoingInvitations().catch(()=>({party:[],guild:[],serverTime:''})),
+    recruitmentMatchAlerts().catch(()=>[])
+   ]);
+   if(generation!==requestGeneration.current)return;
+   // If the guild status request failed, keep the last confirmed membership
+   // and existing recruitment cards rather than blanking the entire screen.
+   if(membership!==undefined){
+    const visible=next.filter(card=>guildRecruitmentVisible(card,membership,context));
+    const owned=mine.filter(card=>guildRecruitmentVisible(card,membership,context));
+    setGuildContext({accountId,membership});
+    setBoardCache(previous=>{
+     const base=previous.accountId===accountId?previous:{accountId,party:EMPTY_BOARD,guild:EMPTY_BOARD};
+     return {...base,[context]:{cards:visible,own:owned}};
+    });
+    setMatchAlerts(membership!==null?alerts.filter(alert=>visible.some(card=>card.id===alert.id)):alerts);
+    setBackgroundError('');
+   }else{
+    setBackgroundError(st('Could not refresh Social. Tap to retry.'));
+   }
+   setRankings(board);
+   setPartyInvites(invites.party);
+   setOutgoingPartyInvites(outgoing.party);
+  }catch(e){
+   if(generation===requestGeneration.current)
+    setBackgroundError(st('Could not refresh Social. Tap to retry.'));
+   // A failed background request must never erase the last good snapshot.
+  }finally{
+   if(generation===requestGeneration.current)setUpdating(false);
+  }
  },[filters,tab,social.accountId]);
+ useEffect(()=>{
+  requestGeneration.current++;
+  setBoardCache({accountId:social.accountId,party:EMPTY_BOARD,guild:EMPTY_BOARD});
+  setGuildContext(null);
+  setRankings([]);setPartyInvites([]);setOutgoingPartyInvites([]);setMatchAlerts([]);
+  setLiveEvent(null);setUpdating(false);setBackgroundError('');
+ },[social.accountId]);
+ useEffect(()=>{
+  if(!updating){setShowUpdating(false);return;}
+  const timer=setTimeout(()=>setShowUpdating(true),1200);
+  return()=>clearTimeout(timer);
+ },[updating]);
  useEffect(()=>{setSelected(null);setDraft(null)},[guildMembership?.guild_id,guildMembership?.role]);
  useEffect(()=>{if(tab==='chat')return;const timer=setTimeout(()=>void load(),250);return()=>{clearTimeout(timer);requestGeneration.current++;};},[load,tab,social.party?.id]);
  useEffect(()=>{const timer=setInterval(()=>{setNow(Date.now());if(tab!=='chat')void load();},30000);return()=>clearInterval(timer);},[load,tab]);

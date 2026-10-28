@@ -17,9 +17,9 @@ export function InventoryCraftingPanel({state,onCraft}:{state:GameState;onCraft:
  const active=(profession==='all'?0:1)+(craftableOnly?1:0);
  const recipes=useMemo(()=>RECIPES.map(recipe=>({recipe,status:recipeAvailability(state,recipe.id)})).filter(({recipe,status})=>(profession==='all'||recipe.skillId===profession)&&(!craftableOnly||status.ready)&&(!query.trim()||(recipe.name+' '+recipe.output.itemId).toLowerCase().includes(query.trim().toLowerCase()))).sort((a,b)=>sort==='name'?a.recipe.name.localeCompare(b.recipe.name):a.recipe.level-b.recipe.level||a.recipe.name.localeCompare(b.recipe.name)),[state,profession,craftableOnly,query,sort]);
  return <View style={s.root}>
-  <Text style={s.title}>{gt("Crafting")}</Text><Text style={s.sub}>{gt("Uses the same authoritative recipes and materials as skill crafting. Materials are taken from Inventory first, then Bank.")}</Text>
+  <Text style={s.title}>{gt("Crafting")}</Text>
   <SearchField value={query} onChangeText={value=>{setQuery(value);setLimit(20)}} placeholder={gt("Search recipes…")} placeholderTextColor={C.muted}/>
-  <View style={s.toolbar}><View style={s.flex}><GameButton title={`Filters${active?` · ${active}`:''} ▾`} tone={active?'primary':'secondary'} onPress={()=>setFiltersOpen(true)}/></View><View style={s.flex}><GameButton title={`Sort: ${sort==='level'?gt("Level"):gt("Name")} ▾`} tone="secondary" onPress={()=>setFiltersOpen(true)}/></View></View>
+  <View style={s.toolbar}><View style={s.flex}><GameButton title={`${gt("Crafting Filters")}${active?` · ${active}`:''} · ${sort==='level'?gt("Level"):gt("Name")}`} tone={active?'primary':'secondary'} onPress={()=>setFiltersOpen(true)}/></View></View>
   <Text style={s.count}>{recipes.length} recipes shown</Text>
   {recipes.slice(0,limit).map(({recipe,status})=><RecipeCard key={recipe.id} state={state} recipe={recipe} status={status} onCraft={onCraft}/>)}
   {recipes.length>limit?<GameButton title={`Show more recipes (${recipes.length-limit} remaining)`} tone="secondary" onPress={()=>setLimit(value=>value+20)}/>:null}

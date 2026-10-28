@@ -184,6 +184,7 @@ function VeldrynApp(){
   useEffect(()=>setNetworkMetricsRoute(tab),[tab]);
   const [settingsSection,setSettingsSection]=useState<SettingsSection|undefined>();
   const [tabHistory,setTabHistory]=useState<ScreenHistoryEntry<Tab,NavigationContext>[]>([]);
+  const [skillsOpenedAsLink,setSkillsOpenedAsLink]=useState(false);
   const [questMode,setQuestMode]=useState<QuestMode>('story');
   const [questFocusOrderId,setQuestFocusOrderId]=useState<string|undefined>();
   const [skillsMode,setSkillsMode]=useState<'gathering'|'crafting'|'novice'|'faith'>('gathering');
@@ -352,7 +353,7 @@ function VeldrynApp(){
     if(showCoopUiGallery){setShowCoopUiGallery(false);return true;}
     // On phones, a Settings category is a nested page. Return to the category list first.
     if(tab==='Settings'&&viewportWidth<768&&settingsSection){setSettingsSection(undefined);return true;}
-    if(tab==='Skills'&&selectedSkill){setSelectedSkill(undefined);setGoalActionId(undefined);setGoalRecipeId(undefined);return true;}
+    if(tab==='Skills'&&selectedSkill&&!skillsOpenedAsLink){setSelectedSkill(undefined);setGoalActionId(undefined);setGoalRecipeId(undefined);return true;}
     confirmProfileCustomizeExit(()=>{
       setProfileCustomizeDirty(false);
       const {previous,remaining}=returnToPreviousScreen(tabHistory,tab,destination=>{
@@ -382,7 +383,7 @@ function VeldrynApp(){
       setCurrentTab(previous.route);
     });
     return true;
-  },[showChatOverlay,showAdminQa,showCoopUiGallery,tab,tabHistory,selectedSkill,settingsSection,viewportWidth,confirmProfileCustomizeExit]);
+  },[showChatOverlay,showAdminQa,showCoopUiGallery,tab,tabHistory,selectedSkill,skillsOpenedAsLink,settingsSection,viewportWidth,confirmProfileCustomizeExit]);
   const backSwipe=useMemo(()=>PanResponder.create({
     onMoveShouldSetPanResponder:(_event,gesture)=>gesture.x0<=32&&gesture.dx>12&&Math.abs(gesture.dx)>Math.abs(gesture.dy)*1.25,
     onPanResponderRelease:(_event,gesture)=>{if(gesture.dx>=72&&gesture.vx>=0)goBack();},
@@ -426,6 +427,9 @@ function VeldrynApp(){
   useEffect(()=>{if(!preparationNotices.length||collected||forgeResults)return;const timer=setTimeout(()=>setPreparationNotices(current=>current.slice(1)),4500);return()=>clearTimeout(timer)},[preparationNotices,collected,forgeResults]);
   useEffect(()=>{if(!masteryNotices.length||preparationNotices.length||collected||forgeResults)return;const timer=setTimeout(()=>setMasteryNotices([]),4500);return()=>clearTimeout(timer)},[masteryNotices,preparationNotices.length,collected,forgeResults]);
   useEffect(()=>{if(tab!=='Skills'){setSelectedSkill(undefined);setGoalActionId(undefined);setGoalRecipeId(undefined)}},[tab]);
+  // If a source link opened a specific skill, Back returns to that source; if the player
+  // chose a skill within Skills, Back first returns to the skill hub.
+  useEffect(()=>{setSkillsOpenedAsLink(tab==='Skills'&&Boolean(selectedSkill));},[tab]);
   // Do not return into another character's detail history after a roster switch.
   useEffect(()=>{setTabHistory([]);},[state?.character?.id]);
   useEffect(()=>{if(tab!=='Combat')setGoalMonsterId(undefined)},[tab]);

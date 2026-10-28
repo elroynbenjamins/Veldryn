@@ -52,7 +52,7 @@ export function CompanionExpeditionsV50Panel({state,now,onCommand}:{state:GameSt
  const staminaRequired=mission?companionExpeditionStaminaCost(mission.durationMs/3600000):100,staminaOptions=companionStaminaFoodOptions(state),staminaTotal=companionStaminaSelectionTotal(foodSelection),staminaReady=staminaTotal>=staminaRequired;
  const power=companionTeamPower(safeTeam,view.owned),powerPct=mission?Math.min(120,Math.round(power/Math.max(1,mission.recommendedPower)*100)):0;
  const runCommand=async(command:GameCommand)=>{if(busy)return;setBusy(true);setMessage('');try{await onCommand(command);setMessage('Saved.');setFoodSelection([]);}catch(error){setMessage(error instanceof Error?error.message:'Unable to complete action.');}finally{setBusy(false)}};
- const toggle=(id:string)=>{if(!isIdle(id))return;setTeam(current=>current.includes(id)?current.filter(value=>value!==id):mission&&current.length>=mission.maxCompanions?[...current.slice(1),id]:[...current,id])};
+ const toggle=(id:string)=>setTeam(current=>current.includes(id)?current.filter(value=>value!==id):!isIdle(id)?current:mission&&current.length>=mission.maxCompanions?[...current.slice(1),id]:[...current,id]);
  const roleNeeds=useMemo(()=>mission?.requirements?.filter((row:any)=>row.type==='role_count')??[],[mission?.id]);
  return <View style={s.root}>
   <View><Text style={s.heading}>{t("Sanctuary Missions")}</Text></View>
@@ -69,7 +69,7 @@ export function CompanionExpeditionsV50Panel({state,now,onCommand}:{state:GameSt
         {[...ownedIds].sort((a,b)=>Number(safeTeam.includes(b))-Number(safeTeam.includes(a))||Number(isIdle(b))-Number(isIdle(a))).map(id=>{
           const def=COMBAT_COMPANIONS.find(row=>row.id===id),selected=safeTeam.includes(id),available=isIdle(id);
           if(!def)return null;
-          return <Pressable key={id} accessibilityRole="checkbox" accessibilityLabel={def.name+' · '+label(def.role)} accessibilityState={{checked:selected,disabled:!available}} disabled={!available||busy} onPress={()=>toggle(id)} style={[s.companionRow,selected&&s.selected,!available&&s.unavailable]}>
+          return <Pressable key={id} accessibilityRole="checkbox" accessibilityLabel={def.name+' · '+label(def.role)} accessibilityState={{checked:selected,disabled:busy||(!available&&!selected)}} disabled={busy||(!available&&!selected)} onPress={()=>toggle(id)} style={[s.companionRow,selected&&s.selected,!available&&s.unavailable]}>
             <Image source={companionArtSource(id)} resizeMode="contain" style={[s.teamPortrait,{borderColor:companionRarityBorder(def.rarity,C.dark)}]}/>
             <View style={s.flex}><Text style={s.companionName}>{def.name}</Text><Text style={s.meta}>{label(def.role)} · {t("Lv {value0}",{value0:view.owned[id].level})}{!available?' · '+(id===equipped?t("Equipped"):t("Busy")):''}</Text></View>
             <Text style={selected?s.check:s.plus}>{selected?'✓':'+'}</Text>

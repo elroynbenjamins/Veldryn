@@ -2,7 +2,7 @@ import {legacyCraftingReservation} from './legacy-crafting-fixture';
 import {transitionActivity} from '../src/core/playability';
 import {claimActivity,createCharacter,newGame,offlineCapSeconds,previewActivityReward,startClassTraining,startCombat,stopActivity} from '../src/core/game';
 import {executeGameCommand} from '../src/core/game-commands';
-import {processingAvailability,processingRecipeDef} from '../src/core/processing';
+import {processingAvailability,processingRecipeDef,processingRunCapacity} from '../src/core/processing';
 import {recipeTrainingReady} from '../src/core/skill-progression-navigation';
 import {RECIPES} from '../src/content/skills';
 import {V33_EQUIPMENT_RECIPES} from '../src/content/equipment-recipes-v33';
@@ -32,6 +32,25 @@ equal(qty(cooking,'GREENWOOD_LOG'),0,'Cooking reserves its wood fuel');
 const cooked=claimActivity(cooking,now+36_000);
 equal(qty(cooked.state,'COOKED_SILVERFIN'),5,'completed Cooking batch produces edible fish');
 equal(cooked.state.skills.find(row=>row.skillId==='cooking')?.xp,100,'non-affinity Cooking retains base XP');
+
+let stackedFish=createCharacter(newGame(now),'IRONWARDEN','Stacked Fish');
+stackedFish={...stackedFish,character:{...stackedFish.character!,gold:10000},
+  inventory:{...stackedFish.inventory,stacks:[{itemId:'SILVERFIN',quantity:6},{itemId:'GREENWOOD_LOG',quantity:1}]},
+  bank:{...stackedFish.bank,stacks:[{itemId:'SILVERFIN',quantity:100},{itemId:'SILVERFIN',quantity:100},{itemId:'GREENWOOD_LOG',quantity:40}]}};
+const fishCapacity=processingRunCapacity(stackedFish,'COOK_SILVERFIN',offlineCapSeconds(stackedFish),true);
+equal(fishCapacity.inputs.find(row=>row.itemId==='SILVERFIN')?.inventory,6,'recipe capacity sees the six fish in Inventory');
+equal(fishCapacity.inputs.find(row=>row.itemId==='SILVERFIN')?.bank,200,'recipe capacity totals multiple full Bank stacks');
+equal(fishCapacity.maxBatches,41,'206 Silverfin and 41 logs fund 41 five-fish cooking batches');
+equal(fishCapacity.availableBatches,41,'preview reports exactly the batches automatic cooking will reserve');
+equal(processingRunCapacity(stackedFish,'COOK_SILVERFIN',70,true).availableBatches,1,'shorter AFK window limits displayed available batches');
+const goldLimited={...stackedFish,character:{...stackedFish.character!,gold:100}};
+equal(processingRunCapacity(goldLimited,'COOK_SILVERFIN',offlineCapSeconds(goldLimited),true).availableBatches,2,'displayed batches obey Gold limits');
+const startedFish=executeGameCommand(stackedFish,{type:'processing_start',args:{id:'COOK_SILVERFIN'}},now).state;
+equal(startedFish.activity?.processing?.totalBatches,41,'server reserves exactly the displayed 41 batches');
+equal(qty(startedFish,'SILVERFIN'),1,'only one raw fish remains after the reservation');
+equal(qty(startedFish,'GREENWOOD_LOG'),0,'all 41 required fuel logs are reserved');
+equal(processingRunCapacity(startedFish,'COOK_SILVERFIN',offlineCapSeconds(startedFish),true).availableBatches,0,'reserved fish are no longer counted as available for a second run');
+equal(startedFish.activity?.processing?.remainingBatches,41,'existing reserved batches remain visible to the recipe card');
 
 let state=fresh();
 const availability=processingAvailability(state,'SMELT_COPPER_INGOT',1);

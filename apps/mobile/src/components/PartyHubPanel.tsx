@@ -47,6 +47,15 @@ export interface PartyHubPanelProps {
   partyUnlockLevel?: number;
 }
 
+/** A locked Party shows one explanation, never the recruitment board beneath it. */
+export function PartyLockedNotice({level=20}:{level?:number}){
+ const C=useGameTheme(),styles=React.useMemo(()=>makeStyles(C),[C]);
+ return <View style={styles.panel}>
+  <Text style={styles.sectionTitle}>Parties unlock at Level {level}</Text>
+  <Text style={styles.muted}>Persistent parties pair you with up to three other adventurers who share weekly Contract progress. Reach the unlock level first — your current adventures still count toward it.</Text>
+ </View>;
+}
+
 export function PartyHubPanel(props: PartyHubPanelProps) {
  const st=useSocialText();
   const C=useGameTheme(),styles=React.useMemo(()=>makeStyles(C),[C]);
@@ -62,6 +71,7 @@ export function PartyHubPanel(props: PartyHubPanelProps) {
   const canManageParty=!!props.party?.members.some(member=>member.accountId===props.accountId&&member.isLeader);
 
   const inParty=!!props.party;
+  if(!inParty&&props.partyUnlocked===false)return <View style={styles.content}><PartyLockedNotice level={props.partyUnlockLevel}/></View>;
   // When the user is in a party, offer the segmented switch; otherwise jump directly to Find.
   return <View style={styles.content}>
     {inParty?<View style={styles.browseTabs}><BrowseChip label="My party" selected={section==='party'} onPress={()=>setSection('party')}/><BrowseChip label="Find more" selected={section==='find'} onPress={()=>setSection('find')}/></View>:null}
@@ -92,14 +102,9 @@ export function PartyHubPanel(props: PartyHubPanelProps) {
     </View>}
 
     {!inParty?<View style={styles.panel}>
-      {props.partyUnlocked===false?<>
-        <Text style={styles.sectionTitle}>Parties unlock at Level {props.partyUnlockLevel??20}</Text>
-        <Text style={styles.muted}>Persistent parties pair you with up to three other adventurers who share weekly Contract progress. Reach the unlock level first — your current adventures still count toward it.</Text>
-      </>:<>
-        <Text style={styles.sectionTitle}>Start a party of your own</Text>
-        <Text style={styles.muted}>Create a persistent party and share weekly Contract progress with up to three others.</Text>
-        <PixelButton label={st("Create Party")} onPress={props.onCreateParty} />
-      </>}
+      <Text style={styles.sectionTitle}>Start a party of your own</Text>
+      <Text style={styles.muted}>Create a persistent party and share weekly Contract progress with up to three others.</Text>
+      <PixelButton label={st("Create Party")} onPress={props.onCreateParty} />
     </View>:null}
 
     {(section==='find'||!inParty)&&<View style={styles.panel}>

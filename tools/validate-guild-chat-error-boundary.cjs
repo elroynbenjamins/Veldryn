@@ -13,6 +13,7 @@ const mocks=new Map([
  ['react',React],
  ['react-native',{Text:'Text',View:'View'}],
  [path.join(app,'src/theme/ThemeContext'),{useGameTheme:()=>({line:'#555',panel2:'#222',info:'#9cf',text:'#fff'})}],
+ [path.join(app,'src/core/account-entitlements'),{accountEntitlementBenefits:()=>({})}],
 ]);
 const loaded=new Map();
 function load(filename){
@@ -26,6 +27,8 @@ function load(filename){
  new Function('require','module','exports',compiled)(localRequire,mod,mod.exports);
  return mod.exports;
 }
+// Execute the real data-projection tests without waiting on unrelated core type errors.
+load(path.join(app,'tests/guild-chat-message-safety'));
 const {ChatRowErrorBoundary}=load(path.join(app,'src/components/ChatRowErrorBoundary'));
 function BrokenBadge(){throw new Error('Simulated malformed badge render');}
 async function main(){

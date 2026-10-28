@@ -17,8 +17,8 @@ import type {CoopUiAssetId} from '../../core/coop-ui-contract';
 import {type CoopColors,coopSpacing,coopTypography} from '../../theme/coop-ui-theme';
 import {CoopImageSlot,ExpeditionScreenShell,FantasyPanel,PrimaryAction,StateChip} from './CoopVisualKit';
 
-type BrowseProps={language:Language;dungeons:CoopDungeonView[];eventExpeditions:CoopEventExpeditionPreview[];mode:CoopMode;onMode:(mode:CoopMode)=>void;loading:boolean;error:string;activeRun?:CoopRunView;liveTools?:ReactNode;onBack:()=>void;onRetry:()=>void;onSelect:(dungeon:CoopDungeonView)=>void;onSelectEvent:(event:CoopEventExpeditionPreview)=>void;onResume:()=>void};
-export function CoopDungeonList({language,dungeons,eventExpeditions,mode,onMode,loading,error,activeRun,liveTools,onRetry,onSelect,onSelectEvent,onResume}:BrowseProps){
+type BrowseProps={language:Language;dungeons:CoopDungeonView[];eventExpeditions:CoopEventExpeditionPreview[];mode:CoopMode;liveAvailable?:boolean;onMode:(mode:CoopMode)=>void;loading:boolean;error:string;activeRun?:CoopRunView;liveTools?:ReactNode;onBack:()=>void;onRetry:()=>void;onSelect:(dungeon:CoopDungeonView)=>void;onSelectEvent:(event:CoopEventExpeditionPreview)=>void;onResume:()=>void};
+export function CoopDungeonList({language,dungeons,eventExpeditions,mode,liveAvailable=true,onMode,loading,error,activeRun,liveTools,onRetry,onSelect,onSelectEvent,onResume}:BrowseProps){
  const {colors:coopColors,styles:s}=useCoopStyles(makeStyles);
  const st=useSocialText(),a=(value:string)=>accountText(language,value);
  const [showLocked,setShowLocked]=useState(false),[showLiveTools,setShowLiveTools]=useState(false);
@@ -27,7 +27,7 @@ export function CoopDungeonList({language,dungeons,eventExpeditions,mode,onMode,
    {activeRun?<FantasyPanel variant="selected"><View style={s.modeHead}><Text style={[s.cardTitle,s.flex]}>{ct(language,'browse.resumeTitle')}</Text><PrimaryAction label={ct(language,'browse.resume')} onPress={onResume}/></View></FantasyPanel>:null}
    {!loading&&!error?<><View style={s.filters}>
      <View style={s.flex}><PrimaryAction label={a("Solo")} tone="secondary" selected={mode==='qmode'} onPress={()=>onMode('qmode')}/></View>
-     <View style={s.flex}><PrimaryAction label={a("Live")} tone="secondary" selected={mode==='live'} onPress={()=>onMode('live')}/></View>
+     <View style={s.flex}><PrimaryAction label={a("Live")} tone="secondary" selected={mode==='live'} disabled={!liveAvailable} onPress={()=>onMode('live')}/></View>
    </View>
    <Text style={s.modeHint}>{mode==='live'?a("Play with three other players"):a("Play with three Echo allies")}</Text>
    {mode==='live'&&liveTools?<><Pressable accessibilityRole="button" accessibilityState={{expanded:showLiveTools}} onPress={()=>setShowLiveTools(value=>!value)} style={({pressed})=>[s.liveToggle,pressed&&s.pressed]}><Text style={s.liveTitle}>{st("Find players")}</Text><View style={s.flex}/><Text style={s.liveMark}>{showLiveTools?'−':'+'}</Text></Pressable>{showLiveTools?liveTools:null}</>:null}

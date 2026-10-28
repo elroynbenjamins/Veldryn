@@ -28,5 +28,8 @@ assert.ok(facility.includes('description}</Text>{children}'), 'expanded facility
 assert.ok(training.includes('costText(model.nextLevelCost)'), 'exact level-up resource costs stay visible');
 assert.ok(training.includes('!affordable(model.nextLevelCost)?costBreakdown(model.nextLevelCost):null'), 'resource shortfall keeps full required/owned breakdown');
 assert.ok(training.includes('s.growthGrid')&&training.includes('s.growthTile'), 'growth links are compact direct actions');
+assert.ok(training.includes('s.growthTileWide'),'Ascension tile spans compact mobile row');
+assert.ok(training.includes('companionAvailability(state,selection).label'),'unavailable state names an actual companion status');
+assert.ok(facility.includes('borderTopColor:C.line'),'expanded Sanctuary details use the active UI theme');
 assert.ok(training.includes("setTab(key)"), 'Bond, Techniques and Ascension sheets remain reachable');
 console.log('PASS: Companion simple-flow source/layout invariants');

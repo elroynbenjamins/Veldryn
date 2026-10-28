@@ -20,11 +20,12 @@ export function forgeClaimBannerMessage(results:readonly ForgeCraftResult[]){
 }
 
 export function ForgeClaimBanner({results,reduceMotion,onDismiss}:{results:readonly ForgeCraftResult[];reduceMotion:boolean;onDismiss:()=>void}){
+  const C=useGameTheme();
   const dismissRef=useRef(onDismiss);dismissRef.current=onDismiss;
   useEffect(()=>{if(!results.length||results.some(row=>row.qualityProc))return;const timer=setTimeout(()=>dismissRef.current(),4500);return()=>clearTimeout(timer)},[results]);
   if(!results.length||results.some(row=>row.qualityProc))return null;
   const meta=rarityMeta(highest(results).rarity);
-  return <ActionFeedback message={forgeClaimBannerMessage(results)} tone="success" reduceMotion={reduceMotion} compact accentColor={meta.color} accentSurface={meta.surface}/>;
+  return <ActionFeedback message={forgeClaimBannerMessage(results)} tone="success" reduceMotion={reduceMotion} compact accentColor={meta.color} accentSurface={meta.surface} accentTextColor={rarityNameColor(highest(results).rarity,C.dark,C.text)}/>
 }
 
 export function ForgeRarityRevealModal({results,reduceMotion,onClose,onInventory}:{results:readonly ForgeCraftResult[];reduceMotion:boolean;onClose:()=>void;onInventory:()=>void}){

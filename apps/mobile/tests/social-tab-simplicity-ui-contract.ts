@@ -45,4 +45,15 @@ ok(chat.includes('expanded={expanded}')&&chatLog.includes('expanded&&s.expandedL
 ok(social.includes("if(tab!=='chat')void load()"),'Chat must not trigger unrelated social board polling');
 ok(party.includes('No active weekly contract.</Text>}'),'Missing contract state must use valid JSX');
 
+ok(social.includes('const [boardCache,setBoardCache]'),'Party and Guild must keep separately cached recruitment lists');
+ok(social.includes("previous.accountId===accountId?previous:{accountId,party:EMPTY_BOARD,guild:EMPTY_BOARD}"),'Never show recruitment data from a different account');
+ok(social.includes('const generation=++requestGeneration.current')&&social.includes('if(generation!==requestGeneration.current)return'),'Stale background results must never overwrite a newer screen');
+ok(social.includes('const [membership,next,mine,board,invites,outgoing,alerts]=await Promise.all'),'Independent Social requests must load concurrently');
+ok(social.includes("if(membership!==undefined){"),'A membership lookup failure must preserve the cached Party or Guild view');
+ok(social.includes('setBackgroundError(\'refresh_failed\')')&&!social.includes('setCards([])'),'Failed refreshes must show a retry instead of clearing listings');
+ok(social.includes("await social.refresh();")&&social.includes('void load();')&&!social.includes('await load();'),'Mutations must not wait for an unrelated recruitment refresh');
+ok(social.includes('setTimeout(()=>setShowUpdating(true),1200)'),'Fast background refreshes should not flash a spinner');
+ok(!social.includes('LoadingState')&&social.includes('guildMembership===undefined?<><GameButton'),'Guild entry must remain actionable during its first lookup');
+ok(social.includes('backgroundError||social.error||showUpdating')&&social.includes('st("Retry")'),'Transient data failures should have one compact retry action');
+
 console.log('PASS: Social navigation, Party lock, Guild independence, and party-only Chat UI contracts');

@@ -5,6 +5,8 @@ const read=p=>fs.readFileSync(path.join(__dirname,'../src/components',p),'utf8')
 const panel=read('CombatCompanionPanel.tsx');
 const training=read('CompanionTrainingV50Panel.tsx');
 const expeditions=read('CompanionExpeditionsV50Panel.tsx');
+const battle=read('CompanionTrialStage.tsx');
+const modal=read('GameModalSurface.tsx');
 const facility=read('CompanionUpgradePresentation.tsx');
 // UI structure contract; this is NOT a substitute for native rendering or game command tests.
 assert.ok(panel.includes("const sections=['Collection','Trials','Expeditions','Sanctuary'] as const"),'four primary destinations');
@@ -32,4 +34,15 @@ assert.ok(training.includes('s.growthTileWide'),'Ascension tile spans compact mo
 assert.ok(training.includes('companionAvailability(state,selection).label'),'unavailable state names an actual companion status');
 assert.ok(facility.includes('borderTopColor:C.line'),'expanded Sanctuary details use the active UI theme');
 assert.ok(training.includes("setTab(key)"), 'Bond, Techniques and Ascension sheets remain reachable');
+assert.ok(expeditions.includes('GameModalSurface visible={teamPickerOpen}'), 'Expedition team picker uses a single focused modal');
+assert.ok(expeditions.includes('accessibilityRole="checkbox"'), 'Expedition roster has accessible selected states');
+assert.ok(expeditions.includes('!available&&!selected'), 'busy companions are blocked but can be removed from a stale team');
+assert.ok(expeditions.includes('current.includes(id)?current.filter'), 'selected companions may always be removed');
+assert.ok(panel.includes('presentation="fullscreen"'), 'Trial battle opens full screen');
+assert.ok(panel.includes("visible={trialSheet!==null&&trialSheet!=='battle'}"), 'battle no longer shares the nested info sheet');
+assert.ok(panel.includes("{trialSheet==='battle'?<CompanionTrialStage"), 'unopened replay does not run background timers');
+assert.ok(modal.includes("type Presentation='sheet'|'dialog'|'fullscreen'"), 'full-screen modal is a reusable presentation');
+assert.ok(modal.includes('paddingTop:Math.max(spacing.sm,insets.top)'), 'full-screen modal respects top safe area');
+assert.ok(battle.includes('accessibilityRole="progressbar"'), 'event playback exposes readable progress');
+assert.ok(battle.includes('!playback||!fresh||state.settings.reduceMotion'), 'reduced motion skips timed animation, not rewards');
 console.log('PASS: Companion simple-flow source/layout invariants');

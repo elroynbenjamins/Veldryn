@@ -1,8 +1,9 @@
 import {COMPANION_TRIAL_FLOOR_COUNT,COMPANION_WEEKLY_CHALLENGES,companionTrialReward,companionTrialSeasonDefinition} from '../content';
-import {applyCompanionTrialModifiers,buildCompanionTrialEncounter,companionTrialBossPreview,companionTrialEncounterTheme,companionTrialFloorDefinition,resolveCompanionTrialFloor,startCompanionTrial} from '../trials';
+import {applyCompanionTrialModifiers,applyCompanionTrialStageMatchups,buildCompanionTrialEncounter,companionTrialBossPreview,companionTrialEncounterTheme,companionTrialFloorDefinition,resolveCompanionTrialFloor,startCompanionTrial} from '../trials';
 import {companionTrialResetInfo,companionTrialSeasonKey,createCompanionTrialProgress,rolloverCompanionTrialSeason} from '../trial-season';
 import {projectCompanionTrial} from '../projection';
 import {buildOwnedCompanionCombatant} from '../combat-adapter';
+import {companionTrialStageTeamMatchup,companionTrialStageMatchup,COMPANION_TRIAL_STAGE_OFFENSE_MULTIPLIER,COMPANION_TRIAL_STAGE_GUARD_MULTIPLIER} from '../../../shared/companion-trial-stage-matchups';
 import type {CompanionCombatExecutor,CompanionTrialProgress,OwnedCompanionSnapshot} from '../domain';
 const ok=(v:unknown,m:string)=>{if(!v)throw new Error(m)};const eq=(a:unknown,b:unknown,m:string)=>{if(a!==b)throw new Error(`${m}: expected ${String(b)}, got ${String(a)}`)};const throws=(f:()=>unknown,m:string)=>{let did=false;try{f()}catch{did=true}if(!did)throw new Error(m)};
 const p=(id:string,level=20):OwnedCompanionSnapshot=>({companionId:id,level,xp:0,ascensionTier:3,bondLevel:8,bondXp:0,bondTraitUnlocked:false});
@@ -61,6 +62,37 @@ eq(companionTrialBossPreview(14),undefined,'Non-boss floor should not expose bos
 
 // Modifiers alter the authoritative combat snapshot, not only labels.
 const unseasoned=buildCompanionTrialEncounter(1,'2000-01')[0],september=buildCompanionTrialEncounter(1,'2026-09')[0];ok(september.stats.defense>unseasoned.stats.defense,'Armored monthly modifier did not affect enemy defense');ok(september.tags?.includes('trial_modifier:unstable_magic'),'Unstable Magic monthly modifier was not attached to the encounter');const playerBefore=buildOwnedCompanionCombatant(owned.UNIT_001,{mode:'companion_trial'}),playerAfter=applyCompanionTrialModifiers([playerBefore],[],['unstable_magic']).players[0];ok(playerAfter.stats.haste>playerBefore.stats.haste,'Unstable Magic did not improve companion Haste');
+// Server-side regional companion matchup: meaningful picks with strict upper bounds.
+const basicTrio=['UNIT_001','UNIT_002','UNIT_003'].map(id=>buildOwnedCompanionCombatant(owned[id as keyof typeof owned],{mode:'companion_trial'}));
+const firstStage=applyCompanionTrialStageMatchups(basicTrio,1);
+ok(firstStage[0].stats.attackPower>basicTrio[0].stats.attackPower,'Wild DPS should benefit from Asterfall weak points');
+eq(firstStage[0].stats.attackPower,Number((basicTrio[0].stats.attackPower*COMPANION_TRIAL_STAGE_OFFENSE_MULTIPLIER).toFixed(4)),'Offense bonus must remain bounded');
+ok(firstStage[1].stats.maxHp>basicTrio[1].stats.maxHp&&firstStage[1].stats.defense>basicTrio[1].stats.defense,'Construct tank should withstand Asterfall opening pressure');
+eq(firstStage[1].stats.maxHp,Math.round(basicTrio[1].stats.maxHp*COMPANION_TRIAL_STAGE_GUARD_MULTIPLIER),'Guard bonus must remain bounded');
+ok(firstStage.every((p,i)=>p.stats.haste>basicTrio[i].stats.haste),'Matching both affinities should reward complementary picks with team Haste');
+ok(firstStage[1].tags?.includes('trial_matchup:pair'),'Active pair must be identifiable on server combatants');
+const secondStage=applyCompanionTrialStageMatchups(basicTrio,6);
+eq(secondStage[0].stats.attackPower,basicTrio[0].stats.attackPower,'Wild attack pick should not remain boosted on Sunscar');
+ok(secondStage[2].stats.maxHp>basicTrio[2].stats.maxHp,'Arcane ward should protect Sunscar support');
+eq(secondStage[0].stats.haste,basicTrio[0].stats.haste,'Unmatched team should not get a free pair bonus');
+const sunscarTrio=['UNIT_004','UNIT_002','UNIT_003'].map(id=>buildOwnedCompanionCombatant(owned[id as keyof typeof owned],{mode:'companion_trial'}));
+const sunscar=applyCompanionTrialStageMatchups(sunscarTrio,6);
+ok(sunscar[0].stats.attackPower>sunscarTrio[0].stats.attackPower&&sunscar[2].stats.healingPower>sunscarTrio[2].stats.healingPower,'Primal + Arcane duo must create a real Sunscar advantage');
+ok(sunscar.every((p,i)=>p.stats.haste>sunscarTrio[i].stats.haste),'Sunscar combo should increase team tempo');
+eq(companionTrialStageTeamMatchup(6,['wild','construct','arcane']).pair,false,'Asterfall pair must not count in Sunscar');
+for(const [floor,offense,guard] of [[1,'wild','construct'],[6,'primal','arcane'],[11,'arcane','radiant'],[16,'construct','primal'],[21,'umbral','construct'],[26,'radiant','umbral']] as const){
+ const match=companionTrialStageMatchup(floor);
+ eq(match.attackAffinity,offense,'Stage offense identity '+floor);
+ eq(match.guardAffinity,guard,'Stage protective identity '+floor);
+ eq(companionTrialStageTeamMatchup(floor,[offense,guard]).pair,true,'Stage pair should be possible '+floor);
+}
+ok(companionTrialStageMatchup(5).id!==companionTrialStageMatchup(6).id,'Stage advantages must rotate at region boundaries');
+ok(companionTrialStageMatchup(25).id!==companionTrialStageMatchup(26).id,'Apex must introduce a new combination');
+const matchedResult=startCompanionTrial({owned,busyCompanionIds:busy,trialsUnlocked:true,serverNowMs:sep},['UNIT_001','UNIT_002','UNIT_003'],'MATCHUP_PROBE');
+resolveCompanionTrialFloor({progress:matchedResult.progress,owned,busyCompanionIds:busy,trialsUnlocked:true,serverNowMs:sep},matchedResult.run.runId,{
+ simulate(input){ok(input.players.some(p=>p.tags?.includes('trial_matchup:offense'))&&input.players.some(p=>p.tags?.includes('trial_matchup:guard')),'Real trial executor did not receive matchup stats');return {victory:true,durationMs:30000,reason:'victory',players:input.players.map(p=>({definition:{id:p.id},alive:true}))};}
+});
+
 // Optional rarity restrictions preserve lower-rarity relevance and reject an invalid Prestige lineup.
 startCompanionTrial({owned,busyCompanionIds:busy,trialsUnlocked:true,serverNowMs:sep},['UNIT_001','UNIT_002','UNIT_003'],'LOW_RARITY',[{type:'max_rarity',rarities:['standard','rare']}]);throws(()=>startCompanionTrial({owned,busyCompanionIds:busy,trialsUnlocked:true,serverNowMs:sep},['UNIT_001','UNIT_002','UNIT_012'],'PRESTIGE_BLOCK',[{type:'prohibit_rarity',rarity:'prestige'}]),'No-Prestige restriction accepted Prestige companion');
 let started=startCompanionTrial({owned,busyCompanionIds:busy,trialsUnlocked:true,serverNowMs:sep},['UNIT_001','UNIT_002','UNIT_003'],'SEED');let progress:CompanionTrialProgress=started.progress;let runId=started.run.runId;let floor5Reward=0;

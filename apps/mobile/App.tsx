@@ -29,7 +29,7 @@ import {HomeScreen} from './src/screens/HomeScreen';
 import {WorldScreen} from './src/screens/WorldScreen';
 import {InventoryScreen} from './src/screens/InventoryScreen';
 import {CharacterScreen} from './src/screens/CharacterScreen';
-import {CombatCompanionPanel} from './src/components/CombatCompanionPanel';
+import {CombatCompanionPanel,type CompanionNavigationState} from './src/components/CombatCompanionPanel';
 import {executeGameCommand,type ForgeCraftResult} from './src/core/game-commands';
 import {QuestScreen,type QuestMode} from './src/screens/QuestScreen';
 import {SkillsScreen} from './src/screens/SkillsScreen';
@@ -195,6 +195,7 @@ function VeldrynApp(){
   const [goalDungeonId,setGoalDungeonId]=useState<string|undefined>();
   const [pendingGoalDestination,setPendingGoalDestination]=useState<WorkingTowardDestination|undefined>();
   const inventoryViews=useRef<Record<string,InventoryScreenState>>({});
+  const companionNavigationMemory=useRef<{characterId:string;context:CompanionNavigationState}|null>(null);
   const [inventoryFoodRequest,setInventoryFoodRequest]=useState(0);
   const [inventoryFoodScope,setInventoryFoodScope]=useState('');
   const [now,setNow]=useState(Date.now());
@@ -691,7 +692,7 @@ const next=normalizeProfileIcon(candidate);queuePreparationNotices(current,next)
     {tab==='RewardsInbox'&&<RewardsInboxScreen state={state} online={serverGameplayEnabled} onRefresh={async()=>online.refresh()} onEventClaim={async id=>{if(serverGameplayEnabled){if(!await perform({type:'event_reward',args:{id}},false))throw new Error('Event reward was not confirmed.');return;}const result=executeGameCommand(state,{type:'event_reward',args:{id}},Date.now());await commit(result.state)}}/>}
     {tab==='AccountBonuses'&&<AccountBonusesScreen state={state}/>}
     {tab==='MasteryHall'&&<MasteryHallScreen state={state} onOpenSkill={skillId=>{setSelectedSkill(skillId);setSkillsMode(['mining','woodcutting','fishing','herbalism'].includes(skillId)?'gathering':'crafting');setTab('Skills')}} onNavigate={openWorkingTowardDestination} onProfile={()=>{setProfileCustomizeSection('Identity');setTab('ProfileCustomize')}}/>}
-    {tab==='Companions'&&<CompanionsScreen state={state} language={state.settings.language} now={now} onCommand={runCompanionCommand} onCreate={()=>setCreatingRoster(true)} onNavigateSource={source=>{
+    {tab==='Companions'&&<CompanionsScreen state={state} language={state.settings.language} now={now} onCommand={runCompanionCommand} onCreate={()=>setCreatingRoster(true)} initialNavigation={companionNavigationMemory.current?.characterId===state.character.id?companionNavigationMemory.current.context:undefined} onNavigationChange={context=>{companionNavigationMemory.current={characterId:state.character.id,context};}} onNavigateSource={source=>{
       if(source.kind==='combat'){const currentZone=WORLD_ZONES.find(zone=>zone.id===state.currentRegionId)?.name;setTab(currentZone===source.zoneName?'Combat':'World');return;}
       if(source.kind==='crafting'){setSelectedSkill(source.skillId as SkillId);setSkillsMode('crafting');setTab('Skills');return;}
       if(source.kind==='gathering'){setSelectedSkill(source.skillId as SkillId);setSkillsMode('gathering');setTab('Skills');return;}

@@ -5,7 +5,13 @@ import {itemRarity,type ItemRarity} from './item-rarity';
 
 export const MAX_CRAFTED_GEAR_INSTANCES=500;
 /** Existing Forge records have no quality roll. Show them at the neutral midpoint without rewriting their receipts or treating them as safe auto-sale candidates. */
+export const CRAFTED_GEAR_QUALITY_MIN=0;
+export const CRAFTED_GEAR_QUALITY_MAX=100;
 export const LEGACY_CRAFTED_GEAR_QUALITY=50;
+export function isValidCraftedGearQuality(quality:unknown):quality is number{
+  return Number.isInteger(quality)&&typeof quality==='number'
+    &&quality>=CRAFTED_GEAR_QUALITY_MIN&&quality<=CRAFTED_GEAR_QUALITY_MAX;
+}
 export function craftedGearDisplayQuality(instance:Pick<CraftedGearInstance,'quality'>):number{
   return instance.quality??LEGACY_CRAFTED_GEAR_QUALITY;
 }
@@ -15,14 +21,12 @@ export const TARGET_CRAFTED_GEAR_COPIES_PER_ITEM=7;
 /** Quality is persisted on each instance, never synthesized from a mutable client clock. */
 export function craftedGearQualityRoll(trustedRoll:number,jobId:string){
   if(!Number.isFinite(trustedRoll)||trustedRoll<0||trustedRoll>=1)throw new Error('Invalid crafted quality roll');
-  return 1+Math.floor(deterministicCraftRarityRoll(`quality:${trustedRoll.toFixed(12)}:${jobId}`)*100);
+  return Math.floor(deterministicCraftRarityRoll(`quality:${trustedRoll.toFixed(12)}:${jobId}`)*(CRAFTED_GEAR_QUALITY_MAX+1));
 }
+/** Forge quality modifies base equipment stats from 75% (Q0) to 125% (Q100). */
 export function craftedGearQualityMultiplier(quality:number){
-  const normalized=Math.max(1,Math.min(100,Math.floor(quality)));
-  // Exact neutral Q50 baseline; endpoint rolls remain -5% at Q1 and +5% at Q100.
-  return normalized<=LEGACY_CRAFTED_GEAR_QUALITY
-    ?0.95+(normalized-1)/49*0.05
-    :1+(normalized-LEGACY_CRAFTED_GEAR_QUALITY)/50*0.05;
+  if(!isValidCraftedGearQuality(quality))throw new Error('Invalid crafted quality');
+  return 0.75+quality*0.005;
 }
 
 /** Retain already-persisted stat variance from the previous forge system. */
@@ -47,7 +51,7 @@ export function normalizeCraftedGearInstances(raw:unknown):CraftedGearInstance[]
         return [{
           id:String(row.id).slice(0,180),itemId:item.id,ownerCharacterId:String(row.ownerCharacterId).slice(0,120),rarity,
           // Preserve absence as a legacy marker. In particular, do not invent an authoritative Forge roll.
-          quality:Number.isInteger(row.quality)&&row.quality>=1&&row.quality<=100?row.quality:undefined,
+          quality:isValidCraftedGearQuality(row.quality)?row.quality:undefined,
           locked:row.locked===true,
           statRoll:clampStatRoll(row.statRoll),
           acquireSource:'craft' as const,sourceReceiptKey:String(row.sourceReceiptKey??row.id).slice(0,200),
@@ -104,7 +108,7 @@ export function craftedGearLegacyOwnershipAudit(state:GameState,itemId:string){
 }
 
 export function bestCraftedInstanceForItem(state:GameState,itemId:string,ownerCharacterId=state.character?.id){
-  return craftedInstancesForItem(state,itemId,ownerCharacterId).slice().sort((a,b)=>craftedRarityStatMultiplier(itemId,b.rarity)-craftedRarityStatMultiplier(itemId,a.rarity)||b.enhancement.rank-a.enhancement.rank||(b.quality??0)-(a.quality??0)||b.createdAtMs-a.createdAtMs)[0];
+  return craftedInstancesForItem(state,itemId,ownerCharacterId).slice().sort((a,b)=>craftedRarityStatMultiplier(itemId,b.rarity)-craftedRarityStatMultiplier(itemId,a.rarity)||b.enhancement.rank-a.enhancement.rank||craftedGearDisplayQuality(b)-craftedGearDisplayQuality(a)||b.createdAtMs-a.createdAtMs)[0];
 }
 export function effectiveOwnedGearRarity(state:GameState,itemId:string,ownerCharacterId=state.character?.id):ItemRarity{
   return bestCraftedInstanceForItem(state,itemId,ownerCharacterId)?.rarity??itemRarity(itemDef(itemId));

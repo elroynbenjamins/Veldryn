@@ -515,3 +515,158 @@ Each ticket is scored on **Impact (I), Frequency (F), Reliability/security (R), 
 - **Tests:** redaction snapshot, load/rate-limit simulation, retried claim ID correlation, failure in unauthenticated context.
 - **Regression watch:** request latency, leaked PII, accidental vendor spend and false positives.
 
+
+# Phase E — High-value competitive improvements
+
+**Objective:** take high-ROI ideas from [COMPETITOR_RESEARCH.md](COMPETITOR_RESEARCH.md), especially Idle Clans' Oct20 queue and IdleMMO's Oct5 visual/UX direction, without copying systems or worsening VELDRYN's idle simplicity. **Default launch placement: v1.1**, except an improvement that resolves a certified 1.0 blocker.
+
+### E01 · Queue “plan my next goal” and optional backup activity (**P2 · M–L · M**)
+- **Objective:** make idle planning powerful without forcing players into more micromanagement.
+- **Current:** `HomeQueueComposer` supports combat/gathering/Alchemy, 30-minute handoff and guarded queues; Faith/Exploration supported in Skills; forge/cooking intentionally excluded. Idle Clans introduced a queue/Train mode/backup on 20 Oct, with mixed player reaction.
+- **Desired:** a single suggested next-unlock plan with clear material/time estimate, user-confirmed steps, optional capped backup activity and explicit paused reason.
+- **User:** too many choices for straightforward progression, idle sessions stall unexpectedly.
+- **Code:** `src/components/HomeQueueComposer.tsx`, `ActionQueuePanel.tsx`, `src/core/activity-queue.ts`, `src/core/working-toward*.ts` if present.
+- **Approach:** reuse canonical `queue_add`/`queue_set_goal`; show preview and blockers, default to current region, no automatic teleport, no mandatory queue reset and no purchased slot pressure.
+- **Dependencies:** A07 and D01 baseline, C05 recipe source truth.
+- **Acceptance:** one-tap proposal + explicit confirm, never destroys previous queue, never starts invalid/out-of-region work, backup opt-in only.
+- **Tests:** 0/full queue, materials gained during earlier step, stale goal, 30h cap, no food, account switch and retry.
+- **Regression watch:** Idle Clans-style added busywork, AFK double credit and silent player intent overrides.
+
+### E02 · Safe Claim All for routine event and milestone rewards (**P2 · M · H/M**)
+- **Objective:** remove repetitive low-value reward collection.
+- **Current:** EventAdditionalRewards, achievement/inbox and event milestone claim paths exist; no universal atomic Claim All certified.
+- **Desired:** one action for all **currently claimable, choice-free** rewards, with item/currency summary and clear exclusions needing a decision.
+- **User:** many taps for a simple return session.
+- **Code:** `src/components/EventAdditionalRewards.tsx`, event reward/inbox components, gameplay/receipt RPC functions.
+- **Approach:** query authoritative claim readiness, preview list, submit stable batch request or independently idempotent claims, exclude choice-dependent/expired/capped entries.
+- **Dependencies:** A04 and B07.
+- **Acceptance:** 10 ready safe rewards result in 10 unique receipts and exact totals with one confirmation; failures leave unresolved rewards claimable.
+- **Tests:** concurrent requests, partial success/retry, expired event boundary, zero ready, post-cap bonus, multiple characters.
+- **Regression watch:** claim choices, inventory overflow, server time, reward animation overload.
+
+### E03 · Spend companion event consumables on any eligible owned companion (**P2 · S–M · M**)
+- **Objective:** stop unnecessary equip switching to apply a companion-focused candy/boost.
+- **Current:** `EventCandyPanel.tsx` exposes `onUse(kind)` without a target parameter at UI boundary; actual backend target policy must be inspected before changing it.
+- **Desired:** a selection sheet showing owned/eligible companions, Bond/level progress and cap; equipped preselected, not required.
+- **User:** event collection progress is tedious and can disrupt active companion use.
+- **Code:** `src/components/EventCandyPanel.tsx`, companion inventory/state, event candy command and SQL RPC.
+- **Approach:** trace current command payload, add server-validated target ID only if missing; no client-written Bond or duplicate consumption.
+- **Dependencies:** B03 roster list and A04 replay protection.
+- **Acceptance:** eligible unequipped companion receives effect exactly once; invalid/expedition-locked target displays reason; equipment unchanged.
+- **Tests:** bound/unbound, all companion roles, cap, consume once, account switch, stale selection.
+- **Regression watch:** legacy command compatibility and event-time restrictions.
+
+### E04 · Social recruitment filters that help casual guilds (**P2 · M · M**)
+- **Objective:** help players find compatible real communities rather than the most populated guild.
+- **Current:** `OnlineGuildManagement`, Guild recruitment, LFG and 26 Oct role-aware screens exist; Idle Clans 20 Oct introduced language/region/activity filters.
+- **Desired:** filter by language, time zone, level band, activity expectation, open slot and newcomer-friendly, with fair mixed-size discovery.
+- **User:** hard to find a guild where players are online at similar hours.
+- **Code:** `src/components/OnlineGuildManagement.tsx`, social recruitment panels, guild metadata/RLS queries.
+- **Approach:** allow optional validated guild declarations and filter persistence; use privacy-safe activity bands (not individual member schedules); ensure no “fake online” states.
+- **Dependencies:** B04/C07 and A03 privacy review.
+- **Acceptance:** a no-guild user can find/apply to a compatible small guild in a short journey; joined member does not see irrelevant join prompts.
+- **Tests:** empty filter, permission/leader/officer role, language/region strings, absent metadata, 12→20 guild cap transitions.
+- **Regression watch:** exclusion bias, data scraping, misleading member activity and cold-start guild visibility.
+
+### E05 · Normalize guild weekly contribution difficulty fairly (**P2 · L · M**)
+- **Objective:** avoid punishing small friendly guilds while keeping large guild progression meaningful.
+- **Current:** Guild quest/Shop/Hall progression exists; specific current fairness across active 2-person and full 20-member guilds needs testing. Idle Clans users criticized small-clan quest burden.
+- **Desired:** goals scaled to an accountable recent active-contributor snapshot, bounded minimum, overfill cap and no join/leave reset exploit.
+- **User:** small groups abandon weekly tasks or feel forced to recruit.
+- **Code:** `backend/src/server/guild*` (discover actual modules), guild SQL functions/migrations, Guild board presentation.
+- **Approach:** run Monte Carlo or deterministic effort model using legitimate contribution rates, simulate 2/4/12/20-member guilds and exploit cases; implement only if disparity confirmed.
+- **Dependencies:** A03/A04 and C07, agreement on weekly reward economy.
+- **Acceptance:** documented target-effort bands compare fairly across guild sizes with no reset manipulation; current legitimate progress survives season change.
+- **Tests:** active-membership snapshots, date rollovers, contribution overfill, leader transfer, churn and multiple same-activity reward submissions.
+- **Regression watch:** guild-shop currency inflation and runaway level progression.
+
+### E06 · Home “Working Toward” smart next-action card (**P2 · M · M**)
+- **Objective:** give a useful immediate choice without adding another main tab.
+- **Current:** Working Toward, class mastery, journal, rare discoveries, weekly orders and milestone cards are implemented, but scattered.
+- **Desired:** optional Home compact panel offering one current target, one nearest unlock and one time-limited eligible social/event action, each with a source/navigate link.
+- **User:** deep MMORPG progression hides next meaningful action.
+- **Code:** `src/screens/HomeScreen.tsx`, `src/core/feature-unlocks.ts`, Working Toward/Journal modules and Command Deck.
+- **Approach:** derive suggestions only from authoritative state and verified content graph, cache by revision, allow pin/dismiss and clearly mark optional; avoid duplicating queue.
+- **Dependencies:** B10, C01/C05, D03 readiness cache.
+- **Acceptance:** no stale locked suggestion; card fits on 320px and can be hidden; routing preserves intended goal.
+- **Tests:** new/endgame character, fully complete region, new UTC week, locked event, multiple languages.
+- **Regression watch:** noisy recommendations, server calls on every render and false promise of guaranteed rare rewards.
+
+### E07 · Contextual formation advice and battle-preview identity (**P2 · M · M**)
+- **Objective:** help new Trial players select an eligible Tank/Damage/Support team.
+- **Current:** existing companion trial role/affinity and team-power helpers, boss preview and formation sheets; recommendations not verified as prominent at battle entry.
+- **Desired:** preflight formation with role coverage and descriptive “why suggested” hints, enemy silhouette/affinity, rewards and difficulty cues.
+- **User:** poor team selection can feel arbitrary, especially during first Trial.
+- **Code:** `src/components/CombatCompanionPanel.tsx`, `CompanionTrialStage.tsx`, `src/core/companion*.ts`, server trial season models.
+- **Approach:** heuristic recommendations from **owned** eligible companions, not a guaranteed victory simulator; server still validates battle and owns outcomes.
+- **Dependencies:** B01/B02/B03.
+- **Acceptance:** recommendations always satisfy role and availability rules where possible, and gracefully explain when impossible; no fake battle probability.
+- **Tests:** missing Tank or Support, all roles, affinities, busy/training companions, seasonal boss cycle, new account.
+- **Regression watch:** spoiler content, promise of success, unintended companion auto-switching.
+
+---
+
+# Phase F — Future innovation and longer-term differentiation
+
+**Objective:** optional experiments that strengthen identity only after v1.0 baseline and v1.1 usability prove healthy. **None required for 1.0.**
+
+### F01 · Living profession scenes with event-aligned pixel animation (**P3 · L/XL · M**)
+- **Objective:** make AFK work visibly alive, aligned to IdleMMO's announced Oct 2026 direction.
+- **Current:** static/activity imagery, timers and item rewards; visual coverage varies; no verified complete animated profession-stage system.
+- **Desired:** compact fishing, woodcutting, mining, smithing, cooking and alchemy stages with class-aware interaction and paused/reduced-motion fallback.
+- **User:** idle progression feels like a series of static forms.
+- **Code:** `src/components/ActivityArtwork.tsx`, `ActivityCard.tsx`, theme/asset registry, `src/core/game.ts` read-only view models.
+- **Approach:** build a 2-profession prototype, reuse sprite atlas/idle frames; animate client-only on true activity state, no fake gathered quantity and no new server request per frame.
+- **Dependencies:** D01/D04 and C04 art guidelines.
+- **Acceptance:** pilot scenes improve usability feedback without exceeding agreed startup, frame or memory budget; reduced motion loses no status.
+- **Tests:** 30/60fps profiling, inactive background behavior, image density screenshots, energy use and resume under app throttling.
+- **Regression watch:** massive art workload and animation over server progress claims.
+
+### F02 · Lightweight privacy-first presence in regions and guilds (**P3 · L · L/M**)
+- **Objective:** make an idle world feel shared without full real-time movement.
+- **Current:** social identity, party rosters, world feeds and chat already supply some connection; no guaranteed visible “people working here” stage.
+- **Desired:** optional low-rate avatar cards of consenting party/guild players within a shared activity context, with cached daily profile icon and clear “last seen” semantics.
+- **User:** MMO world feels lonely between co-op sessions.
+- **Code:** social profile projection and cache, `src/screens/WorldScreen.tsx`, region activity UI, guild privacy controls and Edge.
+- **Approach:** prototype with only consenting guild/party users; no real location or surveillance; fetch bounded snapshots, no live position tracking.
+- **Dependencies:** A03 privacy, D01 budget, E04 community discoverability.
+- **Acceptance:** no nonconsenting profile exposed and no “online now” claim inferred from stale data; smooth offline/solo fallback.
+- **Tests:** consent revocation, guild leave, account switch, stale cache, 0/100 nearby entries, network privacy.
+- **Regression watch:** stalking risk, moderation and extra traffic.
+
+### F03 · Narrative event and boss identity expansion (**P3 · L · M**)
+- **Objective:** give VELDRYN distinctive seasonal stories, bosses and earned cosmetics without growing permanent systems.
+- **Current:** authored events, milestone companions, live event shops and age/weather visuals exist.
+- **Desired:** bounded event mini-arc with three meaningful checkpoints, short boss intro/encounter, lore/cosmetic consequences and no mandatory competitive leaderboard.
+- **User:** event rewards can feel disconnected from a living world.
+- **Code:** `src/content/live-events.ts`, `EventStartPopup.tsx`, event milestone UI, co-op/companion event claim and art assets.
+- **Approach:** pilot one event on existing generic event framework and verified calendar windows; no new currency unless approved and no repeated popup loop.
+- **Dependencies:** B07 and C02/B02; event analytics.
+- **Acceptance:** event can be previewed, enjoyed, completed and expired cleanly without affecting core progress claims.
+- **Tests:** dates, alternate locales, relaunch mid-event, milestone companions, purchase restriction and disabled events.
+- **Regression watch:** content localization burden, overlapping dates, large sprite downloads.
+
+### F04 · Optional PC/web companion client only after strong mobile retention (**P3 · XL · L**)
+- **Objective:** eventually let users check progress across devices without compromising authoritative ownership.
+- **Current:** React Native Android primary, some platform-agnostic gameplay domain; no verified production web/PC client parity.
+- **Desired:** low-friction account dashboard/planner with view, claim and allowed scheduling using same server commands; not a second local source of rewards.
+- **User:** long idle sessions are easier to plan on desktop for part of the audience.
+- **Code:** `apps/mobile`, shared TypeScript core, `backend/online/`, auth/access control and future client package.
+- **Approach:** validate demand first; build limited authenticated read model and server-owned actions instead of porting entire UI simultaneously.
+- **Dependencies:** stable A/B, D06 boundaries and support capacity.
+- **Acceptance:** no cross-device duplicate claims, logout/account isolation and consistent queue state; clear platform support policy.
+- **Tests:** cross-device session/race, browser auth, reconnect and secure token storage, compatibility, screen reader.
+- **Regression watch:** multi-platform maintenance overhead and more auth surface.
+
+### F05 · Future companion showcase and optional cooperative collections (**P3 · L · L/M**)
+- **Objective:** deepen cosmetics and player-to-player identity without gacha or power creep.
+- **Current:** companion Codex, showcase slots, profile styling, guild cosmetics and collection milestones exist; expanded optional sharing is not certified.
+- **Desired:** earned companion portrait/showcase sets, themed guild collection goals and optional profile comparisons with transparent privacy.
+- **User:** rare unlocks deserve social visibility beyond small inventory entries.
+- **Code:** `src/components/CombatCompanionPanel.tsx`, Collections/Profile screens, social projection and Guild Shop authority.
+- **Approach:** discover which showcase features already exist, run consent/privacy review, design cosmetic-only short loops.
+- **Dependencies:** C04/E04 and A03.
+- **Acceptance:** only owned cosmetics displayed, no combat advantages, disabled sharing fully respected, profile loads cheaply.
+- **Tests:** privacy/public projections, revoked cosmetics, inherited account ownership, empty codex, old profile cache.
+- **Regression watch:** pay-for-status pressure, data expansion and profile rendering latency.
+

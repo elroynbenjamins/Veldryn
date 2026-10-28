@@ -2,6 +2,8 @@ import assert from 'node:assert/strict';
 import {gameplayHandler,GameplayError,type GameplayServices} from '../gameplay';
 import {totalXpAtLevel} from '../../../apps/mobile/src/core/progression';
 import type {GameState} from '../../../apps/mobile/src/core/types';
+import {createCraftedGearInstance} from '../../../apps/mobile/src/core/crafted-gear-instances';
+import {itemDef} from '../../../apps/mobile/src/content/items';
 async function main(){
  let state:GameState|null=null,version=0,commits=0,clock=1700000000000,transportFailure=false,generatedIds=0,blockedDeleteCharacterId:string|null=null,deletedCommitCharacterId:string|null=null;
  const commandMetrics:Record<string,unknown>[]=[];
@@ -97,6 +99,35 @@ async function main(){
  assert.ok(commandMetrics.some(metric=>metric.p_outcome==='conflict'),'stale or conflicting commands emit aggregate conflict telemetry');
  assert.ok(commandMetrics.some(metric=>metric.p_outcome==='retryable_failure'&&metric.p_command_type==='claim'),'lost responses emit retryable telemetry');
  assert.ok(commandMetrics.every(metric=>Object.keys(metric).every(key=>['p_outcome','p_command_type','p_latency_ms'].includes(key))),'command telemetry never carries player or request identifiers');
+ // Exact-copy commands use the same database commit fencing and request receipts.
+ const fixtureItemId='T1P_001',fixtureJobId='online-unique-gear-test';
+ const crafted=createCraftedGearInstance(state!,{itemId:fixtureItemId,ownerCharacterId:state!.character!.id,jobId:fixtureJobId,createdAtMs:clock,roll:.5});
+ const exact=crafted.instance;
+ state={...crafted.state,inventory:{...crafted.state.inventory,stacks:[...crafted.state.inventory.stacks,{itemId:fixtureItemId,quantity:1,instanceId:exact.id}]}};
+ const firstVersion=version,beforeUniqueCommits=commits;
+ const [lock,preference]=await Promise.all([
+  request({type:'gear_lock',args:{instanceId:exact.id,locked:true}},'gear-lock-race-1',firstVersion),
+  request({type:'gear_autosell',args:{enabled:true}},'gear-pref-race-1',firstVersion),
+ ]);
+ assert.deepEqual([lock.status,preference.status].sort((a,b)=>a-b),[200,409],'two-device equipment writes must fence the stale revision');
+ assert.equal(commits,beforeUniqueCommits+1,'only one concurrent equipment write commits');
+ const chosen=lock.status===200?{type:'gear_lock',args:{instanceId:exact.id,locked:true}}:{type:'gear_autosell',args:{enabled:true}};
+ const chosenKey=lock.status===200?'gear-lock-race-1':'gear-pref-race-1';
+ const commitsAfterRace=commits;
+ assert.equal((await request(chosen,chosenKey,firstVersion)).status,200,'same equipment receipt replays successfully');
+ assert.equal(commits,commitsAfterRace,'replay cannot apply equipment mutation twice');
+ if(state!.account.craftedGearInstances!.find(row=>row.id===exact.id)?.locked){
+  assert.equal((await request({type:'gear_lock',args:{instanceId:exact.id,locked:false}},'gear-lock-clear-1',version)).status,200);
+ }
+ const initialGold=state!.character!.gold;
+ const saleVersion=version,saleCommits=commits;
+ assert.equal((await request({type:'gear_sell',args:{instanceId:exact.id}},'gear-sale-exact-1',saleVersion)).status,200,'sell is exact-instance-authoritative');
+ assert.equal(state!.character!.gold,initialGold+itemDef(fixtureItemId).value,'exact sale grants vendor Gold once');
+ assert.equal((state!.account.craftedGearInstances??[]).some(row=>row.id===exact.id),false,'sold unique copy record removed');
+ assert.equal(state!.inventory.stacks.some(row=>row.instanceId===exact.id),false,'sold physical receipt removed');
+ assert.equal((await request({type:'gear_sell',args:{instanceId:exact.id}},'gear-sale-exact-1',saleVersion)).status,200,'sale receipt replays');
+ assert.equal(commits,saleCommits+1,'sale retry cannot produce another credit');
+ assert.equal(state!.character!.gold,initialGold+itemDef(fixtureItemId).value,'sale retry credits Gold only once');
  console.log('PASS authenticated gameplay HTTP, input authority, Admin QA authorization, canonical replay, stale version, lost-response recovery and aggregate command telemetry');
 }
 void main().catch(error=>{console.error(error);process.exitCode=1;});

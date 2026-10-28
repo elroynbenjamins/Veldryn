@@ -4,7 +4,7 @@ import type {CompanionAffinity} from '../../shared/companion-affinity-catalog';
 export type CompanionCombatContext='character_assist'|'companion_trial'|'companion_roguelite'|'companion_arena';
 export type CompanionOriginId='REG_001'|'REG_SUNSCAR'|'REG_FROSTMARCH'|'REG_ASHLANDS'|string;
 export type CompanionTargetRule='owner'|'self'|'lowest_hp_ally'|'current_target'|'all_allies'|'all_enemies'|'random_enemy'|'interruptible_casting_enemy';
-export type EngineTargetRule='self'|'current_target'|'lowest_hp_ally'|'all_allies'|'all_enemies'|'random_enemy';
+export type EngineTargetRule='self'|'current_target'|'lowest_hp_ally'|'all_allies'|'all_enemies'|'random_enemy'|'interruptible_casting_enemy';
 export type EngineEffectKind='damage'|'heal'|'shield'|'dot'|'hot'|'interrupt'|'taunt'|'buff'|'debuff'|'cleanse';
 export type CompanionAvailabilityStatus='available'|'equipped'|'expedition'|'active_trial'|'locked'|'unavailable';
 

@@ -13,7 +13,7 @@ Show the next usable action, current result/reward/cost and any blocking require
 | Companion entry | Remove duplicated Sanctuary kicker and retain a single Companions title | The tab/navigation already identifies the feature |
 | Ready-action banner | Keep one short notification line; put all attention labels into its accessibility text | Alerts stay visible without a multi-line checklist repeating tabs |
 | Other character progression | Keep accessible by expandable link; remove the paragraph explaining that it exists | Account roster, exploration and monster mastery are secondary to this screen |
-| Roster filters | Show only at 8+ owned companions; earlier rosters default to Owned with separate Codex discovery | A menu with six filter options is unnecessary for a handful of owned companions |
+| Roster filters | Advanced dropdown appears only at 8+ owned; smaller rosters get a direct Owned/All toggle and Codex discovery | A menu with six filter options is unnecessary for a handful of owned companions |
 | Roster cards | Keep artwork/name/rarity/role/level/equipped or busy; remove passive “Selected” and repeated available status | Players want to choose who to train, not audit statuses on every card |
 | Resource totals | Show only in Training detail or Sanctuary, rather than above every Companion destination | Essence/Bondstones/Gold do not affect the next Trial/Expedition decision |
 | Individual companion detail | Keep Train, Bond, Abilities, Ascension and an optional progression roadmap | Each represents a distinct upgrade decision or necessary unlock rule |
@@ -35,7 +35,7 @@ Authoritative `onCommand` calls for level/ascend/equip/Trial start/floor/replay/
 ## Validation
 
 - Direct source review: **12/12** focused invariants pass against this branch.
-- Added **18** CJS source-contract assertions in `apps/mobile/tests/companion-simplicity-ui-contract.cjs` and registered them in `tools/mobile-core-tests.json`. Their execution via normal GitHub CI may be blocked by the pre-existing `starter-companion-choice.ts` mismatch; do not claim success without a completed run.
+- Added **19** CJS source-contract assertions in `apps/mobile/tests/companion-simplicity-ui-contract.cjs` and registered them in `tools/mobile-core-tests.json`. Their execution via normal GitHub CI may be blocked by the pre-existing `starter-companion-choice.ts` mismatch; do not claim success without a completed run.
 - CI mobile TypeScript and Android native UX are release gates, not assumed. Test 320dp and enlarged font, accessibility focus, Guild/Party unlock edge cases, mission costs, Trial monthly rollover, loading and server errors.
 - PR remains **draft** and stacked on #619. No merge/deployment.
 

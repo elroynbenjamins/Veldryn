@@ -20,6 +20,12 @@ ok(character.includes('equipmentTool===\'enhance\'')&&character.includes('equipm
 ok(character.includes('EQUIPMENT_SLOT_ORDER.find')&&character.includes('onEquip?setPickerSlot(selected.slot):onInventory()'),'Character must show equipped gear first and keep swapping available');
 ok(!character.includes('showGuidance'),'Old stacked build guidance must be consolidated into the Build Guide tool');
 ok(character.includes('fontScale>1.2')&&character.includes('setGearWidth(event.nativeEvent.layout.width)'),'Equipment detail must have a narrow/large-text layout fallback');
+ok(character.includes("openEnhancement(focus.next.kind==='socket-open'?'gems':'upgrade',focus.next.itemId)")&&character.includes('itemId={enhancingItemId}')&&character.includes('onUpgrade={()=>onUpgrade(enhancingItemId)}'),'Build Guide must target the recommended item, not the previously selected gear');
+ok(character.includes("equipmentTool==='enhance'||equipmentTool==='gems'")&&character.includes('s.selectedGearStack'),'Selected gear detail should only appear where needed and should stack on narrow devices');
+ok(character.includes("const visibleSets=showAllSets?equippedSets:equippedSets.slice(0,2)")&&character.includes('Next bonus at {count} pieces'),'Sets should prioritize visible progress and progressively reveal additional sets');
+ok(character.includes('state.character?.id')&&character.includes('setEnhancingItemId(null)'),'Character switching must clear pending equipment modal context');
+ok(character.includes('wrapToolTabs=width<360||fontScale>=1.2'),'Equipment tools must wrap before text becomes too cramped on small phones');
+
 
 ok(preview.includes('useGameTheme'),'Equipment comparison must use the active theme');
 ok(preview.includes('GameModalSurface'),'Equipment comparison must use the shared modal surface');

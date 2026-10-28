@@ -12,7 +12,6 @@ import {GuildActivityMeter} from '../components/GuildActivitySummaryPanel';
 import {GuildNavigation} from '../components/GuildNavigation';
 import {GuildChatView} from '../components/GuildChat';
 import {ChatViewport} from '../components/ChatViewport';
-import {ChatWindow} from '../components/ChatOverlay';
 import {GameButton} from '../components/GameButton';
 import {GameTopBar} from '../components/GameTopBar';
 import {PrimaryNavigation} from '../components/PrimaryNavigation';
@@ -31,7 +30,7 @@ export default function GuildLayoutReview(){
  const officer=query.get('role')==='officer';
  const [notice,setNotice]=useState('');
  return <SafeAreaProvider><GameThemeProvider themeId={theme}><GameLanguageProvider language="en"><View style={{flex:1,minHeight:0,backgroundColor:C.bg}}>
- {screen==='Chat'?<View style={{flex:1,minHeight:0,padding:8,justifyContent:'flex-end'}}><ChatWindow expanded={query.has('typing')}><View style={{flex:1,minHeight:0,padding:10}}><ChatViewport><GuildChatView language="en" guild={{id:guild.id,name:guild.name,tag:guild.tag,tagColorId:guild.tag_color_id}} messages={feed} body={body} onBodyChange={setBody} onSend={()=>{if(body.trim()){setFeed(old=>[...old,{id:'sent-'+old.length,account_id:'',sender_name:'You',body,created_at:new Date().toISOString()}]);setBody('')}}} onSelectMessage={()=>{}}/></ChatViewport></View></ChatWindow></View>:<>
+ {screen==='Chat'?<View style={{flex:1,minHeight:0,padding:8,justifyContent:'flex-end'}}><View style={{flex:1,maxHeight:query.has('typing')?'96%':'88%',minHeight:0,borderRadius:14,backgroundColor:C.panel,borderWidth:1,borderColor:C.line,overflow:'hidden'}}><View style={{flex:1,minHeight:0,padding:10}}><ChatViewport><GuildChatView language="en" guild={{id:guild.id,name:guild.name,tag:guild.tag,tagColorId:guild.tag_color_id}} messages={feed} body={body} onBodyChange={setBody} onSend={()=>{if(body.trim()){setFeed(old=>[...old,{id:'sent-'+old.length,account_id:'',sender_name:'You',body,created_at:new Date().toISOString()}]);setBody('')}}} onSelectMessage={()=>{}}/></ChatViewport></View></View></View>:<>
  <GameTopBar state={state} nowMs={Date.now()} labelForDestination={id=>id} onNavigate={noop} onChangeDestinations={noop} onOpenActivity={noop} online={false}/>
  {screen!=='Guildless'?<GuildNavigation value={screen} onChange={setScreen}/>:null}
  <ScrollView style={{flex:1,minHeight:0}} contentContainerStyle={{padding:12,gap:12}}>

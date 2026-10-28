@@ -3,6 +3,8 @@
   "tests/app-version-gate.cjs",
   "tests/chat-channel-dropdown-ui-contract.cjs",
   "tests/core-screen-simplicity-ui-contract.cjs",
+  "tests/companion-simple-flow-contract.cjs",
+  "tests/companion-simplicity-ui-contract.cjs",
   "tests/online-loading-interactions.cjs",
   ".core-build/apps/mobile/tests/player-identity-cache-policy.js",
   ".core-build/apps/mobile/tests/short-lived-read-cache.js",

@@ -27,7 +27,7 @@ export function CompanionTutorial({state,now,step,onAdvance,onFinish}:{state:Gam
   setReviewStep(null);onAdvance();if(!next)onFinish();
  };
  const context=companionTutorialContext(state,current?.section??'Collection');
- const action=next?t('Next: {area}').replace('{area}',companionContent(language,next.section)):t('Finish guide');
+ const action=next?t('Next: {area}').replace('{area}',next.section==='Training'?companionContent(language,'Roster')+' · '+companionContent(language,'Training'):companionContent(language,next.section)):t('Finish guide');
  useEffect(()=>{
   pulse.setValue(0);
   if(state.settings.reduceMotion)return;
@@ -52,13 +52,12 @@ export function CompanionTutorial({state,now,step,onAdvance,onFinish}:{state:Gam
     <View accessibilityLiveRegion="polite" style={{padding:14,borderRadius:18,backgroundColor:C.infoSurface,borderWidth:1,borderColor:C.info,gap:8}}>
      <View style={{flexDirection:'row',alignItems:'center',gap:10}}><UiIcon name={icons[index]} size={26}/><Text accessibilityRole="header" style={{fontSize:18,fontWeight:'600',color:C.text,flex:1}}>{t(current.title)}</Text></View>
      <Text style={{fontSize:14,lineHeight:20,color:C.text}}>{t(current.body)}</Text>
-     <Text style={{fontSize:13,lineHeight:19,color:C.info}}>{t(context.text).replace('{name}',context.name??'')}</Text>
      <Pressable accessibilityRole="button" accessibilityState={{expanded:showMore}} onPress={()=>setShowMore(value=>!value)} style={{minHeight:44,justifyContent:'center'}}><Text style={{fontSize:12,fontWeight:'600',color:C.accent}}>{t(showMore?'Less detail':'More detail')}</Text></Pressable>
-     {showMore&&<Text style={{fontSize:13,lineHeight:19,color:C.info}}>{t(current.hint)}</Text>}
+     {showMore&&<View style={{gap:6}}><Text style={{fontSize:13,lineHeight:19,color:C.info}}>{t(context.text).replace('{name}',context.name??'')}</Text><Text style={{fontSize:13,lineHeight:19,color:C.muted}}>{t(current.hint)}</Text></View>}
     </View>
-    <View style={{gap:3}}><Text style={{fontSize:11,fontWeight:'600',letterSpacing:1,color:C.accent}}>{t('SCREEN PREVIEW')}</Text><Text style={{fontSize:12,color:C.muted}}>{t('Scroll to look around. Buttons are disabled during the guide.')}</Text></View>
+    <Text style={{fontSize:11,fontWeight:'600',letterSpacing:1,color:C.accent}}>{t('SCREEN PREVIEW')}</Text>
     <View pointerEvents="none" aria-hidden={true} accessibilityElementsHidden importantForAccessibility="no-hide-descendants" {...(Platform.OS==='web'?{inert:true}:{})}>
-     <CombatCompanionPanel key={current.section} state={state} now={now} onCommand={noCommand}/>
+     <CombatCompanionPanel key={current.section} state={state} now={now} onCommand={noCommand} initialSection={current.section==='Training'?'Collection':current.section} initialTrainingDetail={current.section==='Training'&&Boolean(state.account.unlockedCombatCompanionIds?.length)}/>
     </View>
    </ScrollView>
    <View style={{padding:16,gap:8,borderTopWidth:1,borderColor:C.line,backgroundColor:C.panel}}>

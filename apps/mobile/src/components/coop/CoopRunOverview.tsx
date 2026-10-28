@@ -55,7 +55,7 @@ export function CoopRunOverview({language,run,onBack,onChoose,onRefresh,onClaim,
   return <><ExpeditionScreenShell compactHeader={inCombat} eyebrow={ct(language,'browse.resumeTitle')} title={inCombat?combatName:ct(language,'browse.resume')} onBack={onBack} backLabel={ct(language,'details.backList')} banner={inCombat?undefined:<View style={s.banner}><StateChip label={modeLabel} tone="selected"/><Text style={s.phase}>{run.phase.replaceAll('_',' ')}</Text></View>}>
     {inCombat?<View style={{gap:8}}>
      <GameButton title={st('Watch battle full screen')} onPress={()=>setTheaterOpen(true)}/>
-     {!theaterOpen?<DungeonCombatStage run={run} boss={bossNext||run.lastCombat?.nodeId==='boss'} enemyLabel={(bossNext||run.lastCombat?.nodeId==='boss')?run.bossMechanic?.telegraph?.bossName:undefined}/>:null}
+     {!theaterOpen?<DungeonCombatStage run={run} reduceMotionSetting={reduceMotion} boss={bossNext||run.lastCombat?.nodeId==='boss'} enemyLabel={(bossNext||run.lastCombat?.nodeId==='boss')?run.bossMechanic?.telegraph?.bossName:undefined}/>:null}
     </View>:null}
     {!(run.phase==='resolving_node'||bossNext||run.lastCombat)?<>
     <FantasyPanel variant="selected"><View style={s.summary}><View style={s.grow}><Text style={s.title}>{ct(language,'details.party')}</Text><Text style={s.copy}>{ct(language,'details.partyValue')}</Text></View><StateChip label={`Lv. ${run.syncedLevel}`} tone="success"/></View></FantasyPanel>
@@ -80,7 +80,7 @@ export function CoopRunOverview({language,run,onBack,onChoose,onRefresh,onClaim,
     {terminal?<GameButton title={rewardsSecured?st("Return to dungeon list"):st("Leave expedition")} tone="secondary" disabled={busy} onPress={onBack}/>:null}
   </ExpeditionScreenShell>
    {inCombat&&theaterOpen?<CombatTheaterModal visible onClose={()=>setTheaterOpen(false)} title={combatName} eyebrow={st('DUNGEON COMBAT')} subtitle={modeLabel} reduceMotion={reduceMotion}>
-    <DungeonCombatStage run={run} boss={bossNext||run.lastCombat?.nodeId==='boss'} enemyLabel={(bossNext||run.lastCombat?.nodeId==='boss')?run.bossMechanic?.telegraph?.bossName:undefined}/>
+    <DungeonCombatStage run={run} reduceMotionSetting={reduceMotion} boss={bossNext||run.lastCombat?.nodeId==='boss'} enemyLabel={(bossNext||run.lastCombat?.nodeId==='boss')?run.bossMechanic?.telegraph?.bossName:undefined}/>
    </CombatTheaterModal>:null}
   </>;
 }

@@ -9,6 +9,12 @@ const chat=fs.readFileSync('src/components/OnlinePartyChat.tsx','utf8');
 const chatLog=fs.readFileSync('src/components/ChatLog.tsx','utf8');
 const partyEvents=fs.readFileSync('src/components/PartyEventHubPanel.tsx','utf8');
 const app=fs.readFileSync('App.tsx','utf8');
+const gameGuide=fs.readFileSync('src/core/onboarding.ts','utf8');
+const gameGuidePanel=fs.readFileSync('src/components/GameGuidePanel.tsx','utf8');
+const guildTutorial=fs.readFileSync('src/core/guild-tutorial.ts','utf8');
+const guildTutorialPanel=fs.readFileSync('src/components/GuildTutorialGuide.tsx','utf8');
+const accountLanguage=fs.readFileSync('src/i18n/account.ts','utf8');
+const guildLanguage=fs.readFileSync('src/i18n/guild-tutorial.ts','utf8');
 
 ok(app.includes("tab!=='Guild'&&tab!=='Social'&&tab!=='Party'"),'Social must not render the redundant global back/title bar');
 ok(app.includes("partyUnlocked={earlyFeatureUnlocked(state,'party')}"),'Party gate must honor account-wide unlocks, including earlier characters');
@@ -61,4 +67,17 @@ ok(social.includes("social.loading?<View style={s.chatContent}"),'Initial Party 
 
 ok(social.includes('accountIdRef.current!==accountId'),'Account switches must discard results from old background requests');
 ok(social.includes("setBackgroundError('');}}"),'Switching tabs should clear unrelated transient retry messages');
+ok(gameGuide.includes("id:'parties'")&&gameGuide.includes("earlyFeatureUnlocked(s,'party')"),'Party help must unlock only when the account can actually create or join a Party');
+ok(gameGuide.includes("unlockHint:`Reach Level ${PARTY_UNLOCK_LEVEL}`"),'Party Game Guide must give the real unlock level');
+ok(gameGuide.includes("unlockHint:`Reach Level ${GUILD_UNLOCK_LEVEL}`"),'Guild Game Guide must not suggest the obsolete Level 10 gate');
+ok(gameGuide.includes('Party Chat appears only when you join a Party.'),'Game Guide must describe conditional Chat visibility');
+ok(gameGuide.includes('Dungeon matchmaking team')||gameGuide.includes('dungeon matchmaking team'),'Dungeon guidance must distinguish matchmaking from persistent Parties');
+ok(gameGuidePanel.includes('const ready=GAME_GUIDE.filter')&&gameGuidePanel.includes('showLocked?locked.map'),'Available Game Guides must appear first; locked topics should remain collapsed until requested');
+ok(guildTutorial.includes('Guild Home → Members')&&!guildTutorial.includes('More → Roster'),'Guild tour must navigate via the current Guild Home shortcut');
+ok(guildTutorial.includes('Hall → Shop')&&!guildTutorial.includes('More → Shop'),'Guild shop guidance must point to Hall, not the old More menu');
+ok(guildTutorial.includes('Activities → Muster')&&guildTutorial.includes('Activities → Quests')&&guildTutorial.includes('Activities → Projects'),'Guild guide must describe the current Activities sections');
+ok(guildTutorialPanel.includes('details?<><Text')&&!guildTutorialPanel.includes('Look around below. No message'),'Secondary Guild guide explanations must be opt-in, not shown over each screen');
+ok(accountLanguage.includes('"Parties & weekly rewards"')&&accountLanguage.includes('"Show locked topics"'),'The updated Game Guide must retain translated titles and controls');
+ok(guildLanguage.includes('Gilde Home → Leden')&&guildLanguage.includes('Hall → Boutique'),'Guild guidance must translate the new destinations');
+
 console.log('PASS: Social navigation, Party lock, Guild independence, and party-only Chat UI contracts');

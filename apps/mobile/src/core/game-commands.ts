@@ -41,7 +41,7 @@ const fields:Record<string,readonly string[]>={
  class_training:[],class_focus:['focus'],herbalism_method:['method'],faith_practice:['tierId','count'],faith_blessing:['id'],faith_favorite:['id','enabled'],faith_hide:['enabled'],alchemy_start:['id','batches'],processing_start:['id','batches'],
  companion_monthly:['id'],companion_supplies:[],companion_bond_reward:['id','level'],companion_boss_rematch:[],
  companion_equip:['id'],companion_unequip:[],companion_housing_upgrade:['id'],companion_level:['id'],companion_ascend:['id'],companion_master:['id'],companion_upgrade:['id'],companion_training:[],companion_essence:[],
- companion_trial_start:['ids','floor'],companion_trial_floor:['id','floor'],companion_trial_abandon:['id'],companion_assignment_start:['id','ids','food'],companion_assignment_claim:['id'],companion_technique:['id','technique'],companion_codex:['id'],companion_showcase:['id','ids'],companion_weekly:['id'],companion_special:['id','ids'],
+ companion_trial_formation:['ids'],companion_trial_fight:['ids','requestId'],companion_trial_start:['ids','floor'],companion_trial_floor:['id','floor'],companion_trial_abandon:['id'],companion_assignment_start:['id','ids','food'],companion_assignment_claim:['id'],companion_technique:['id','technique'],companion_codex:['id'],companion_showcase:['id','ids'],companion_weekly:['id'],companion_special:['id','ids'],
  create:['classId','name','body'],claim:[],start:['kind','id','tacticId','goalId'],queue_add:['kind','id','tacticId','goalId','goal','count','handoffGoal','handoffTargetId','keepCurrentRunning'],queue_set_goal:['id','goal'],queue_remove:['index'],queue_move:['index','direction'],queue_clear:[],queue_start:[],explore:['id'],stop:[],travel:['id'],boss:[],craft:['id'],craft_claim:['id'],craft_claim_all:[],craft_cancel:['id'],craft_move:['id','direction'],craft_prerequisites:['id'],use_potion:['id'],discard_preparation:[],
  roster_create:['classId','name','body'],roster_switch:['id'],roster_delete:['id','confirmation'],
  equip:['id'],unequip:['slot'],food:['id'],eat:['id'],sell:['id','quantity'],salvage:['id'],
@@ -194,7 +194,7 @@ export function executeGameCommand(previous:GameState,value:unknown,now:number,o
   }
   case 'companion_training':state=claimCompanionTraining(state,now);break;
   case 'companion_essence':state=companions.claimSanctuaryEssence(state,now);break;
-  case 'companion_trial_start':case 'companion_trial_floor':case 'companion_trial_abandon':case 'companion_assignment_start':case 'companion_assignment_claim':case 'companion_technique':case 'companion_codex':case 'companion_showcase':case 'companion_weekly':case 'companion_special':state=executeCompanionActivity(state,command.type,a,now);break;
+  case 'companion_trial_formation':case 'companion_trial_fight':case 'companion_trial_start':case 'companion_trial_floor':case 'companion_trial_abandon':case 'companion_assignment_start':case 'companion_assignment_claim':case 'companion_technique':case 'companion_codex':case 'companion_showcase':case 'companion_weekly':case 'companion_special':state=executeCompanionActivity(state,command.type,a,now);break;
   case 'create':state=game.createCharacter(state,text(a,'classId') as ClassId,text(a,'name',20),oneOf(a.body??'male',['male','female']) as BodyPresentation);if(options.characterId)state.character!.id=options.characterId;break;
   case 'roster_create':{
    state=createAccountCharacter(state,text(a,'classId') as ClassId,text(a,'name',20),oneOf(a.body??'male',['male','female']) as BodyPresentation,now);

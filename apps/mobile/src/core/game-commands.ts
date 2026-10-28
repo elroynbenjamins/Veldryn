@@ -271,7 +271,9 @@ export function executeGameCommand(previous:GameState,value:unknown,now:number,o
    const blockedCount=result.blocked.length;
    const blockedReason=result.blocked.some(row=>row.reason==='Crafting recipe is no longer available')
     ?'Some jobs use retired recipes; please contact support.'
-    :'Free Inventory or Bank space, then claim the remaining jobs.';
+    :result.blocked.some(row=>row.reason.startsWith('Equipment copy')||row.reason.startsWith('Equipment requires')||row.reason.startsWith('Crafted equipment'))
+      ?`Check your equipment copies. ${result.blocked[0].reason}`
+      :'Free Inventory or Bank space, then claim the remaining jobs.';
    message=result.claimed.length
     ?`${result.claimed.length} forge job${result.claimed.length===1?'':'s'} claimed · ${equipmentCount} equipment · ${result.gemClaims} gem combine${result.gemClaims===1?'':'s'} · ${procCount} quality proc${procCount===1?'':'s'}${blockedCount?` · ${blockedCount} still waiting. ${blockedReason}`:''}`
     :blockedCount?`${blockedCount} finished forge job${blockedCount===1?' is':'s are'} still waiting. ${blockedReason}`:'No finished forge jobs';

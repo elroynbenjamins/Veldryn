@@ -6,6 +6,16 @@ import {createTranslator,type TranslationParams} from './translator';
 
 // Columns are German, Spanish, Dutch, Italian and French; keys are the English catalog.
 export const socialTranslationRows = {
+"Guild Level {level}":["Gildenstufe {level}","Nivel de gremio {level}","Gildeniveau {level}","Livello gilda {level}","Niveau de guilde {level}"],
+"Raid":["Raid","Incursión","Raid","Incursione","Raid"],
+"Identity & appearance":["Identität & Erscheinungsbild","Identidad y apariencia","Identiteit en uiterlijk","Identità e aspetto","Identité et apparence"],
+"Recruitment & members":["Rekrutierung & Mitglieder","Reclutamiento y miembros","Werving en leden","Reclutamento e membri","Recrutement et membres"],
+"Guild recruitment":["Gildenrekrutierung","Reclutamiento de gremio","Gildewerving","Reclutamento della gilda","Recrutement de guilde"],
+"You are already in a Guild.":["Du bist bereits in einer Gilde.","Ya perteneces a un gremio.","Je zit al in een gilde.","Fai già parte di una gilda.","Tu fais déjà partie d'une guilde."],
+"Guild recruiting requires Leader or Officer access.":["Für die Gildenrekrutierung brauchst du Anführer- oder Offiziersrechte.","Para reclutar para el gremio necesitas ser líder u oficial.","Je moet leider of officier zijn om voor het gilde te werven.","Per reclutare per la gilda devi essere leader o ufficiale.","Le recrutement de guilde est réservé au chef et aux officiers."],
+"My Guild":["Meine Gilde","Mi gremio","Mijn gilde","La mia gilda","Ma guilde"],
+"Your Guild’s members, activities and chat are available in the Guild hub.":["Mitglieder, Aktivitäten und Chat deiner Gilde findest du in der Gildenübersicht.","Los miembros, actividades y el chat de tu gremio están en la sección Gremio.","De leden, activiteiten en chat van je gilde vind je in het gildeoverzicht.","Membri, attività e chat della tua gilda sono disponibili nella sezione Gilda.","Les membres, activités et discussions de ta guilde sont dans l'espace Guilde."],
+"Open my Guild":["Meine Gilde öffnen","Abrir mi gremio","Open mijn gilde","Apri la mia gilda","Ouvrir ma guilde"],
 "My Echo · Current equipment":["Mein Echo · Aktuelle Ausrüstung","Mi Eco · Equipo actual","Mijn Echo · Huidige uitrusting","Il mio Eco · Equipaggiamento attuale","Mon Écho · Équipement actuel"],
 "Your character Echo is shared with other adventurers.":["Dein Charakter-Echo wird mit anderen Abenteurern geteilt.","Tu Eco de personaje está compartido con otros aventureros.","Je personage-Echo wordt gedeeld met andere avonturiers.","Il tuo Eco è condiviso con altri avventurieri.","Votre Écho est partagé avec d’autres aventuriers."],
 "Prepare a snapshot of your current dungeon loadout for other players.":["Teile eine Momentaufnahme deiner aktuellen Dungeon-Ausrüstung.","Prepara una copia de tu equipo de mazmorra para otros jugadores.","Maak een momentopname van je huidige dungeonuitrusting voor andere spelers.","Prepara una copia del tuo equipaggiamento da dungeon per altri giocatori.","Préparez une copie de votre équipement de donjon pour les autres joueurs."],

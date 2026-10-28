@@ -14,7 +14,7 @@ import type {UiIconName} from '../theme/ui-icons';
 const icons:UiIconName[]=['companions','training','sanctuary','trials','world','quests'];
 const noCommand=async()=>{};
 
-/** Required, read-only tour of live screens. No resources or team prerequisites are needed. */
+/** Legacy, non-production screen preview retained for QA compatibility. Live Companion guidance now appears separately on each visited tab through SectionGuide; do not mount this as a required tour. */
 export function CompanionTutorial({state,now,step,onAdvance,onFinish}:{state:GameState;now:number;step:number;onAdvance:()=>void;onFinish:()=>void}){
  const C=useGameTheme(),language=useGameLanguage(),t=(source:string)=>companionTutorialText(language,source);
  const pulse=useRef(new Animated.Value(0)).current;

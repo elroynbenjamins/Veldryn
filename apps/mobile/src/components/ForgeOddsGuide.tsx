@@ -21,9 +21,9 @@ export function ForgeOddsGuide({itemId}:{itemId:string}){
   if(item.type!=='gear')return null;
   const outcomes=craftedGearRarityOutcomes(item.id);
   const qualityPoints=[
-    {value:CRAFTED_GEAR_QUALITY_MIN,label:gt('Low'),color:C.bad,surface:C.badSurface},
-    {value:LEGACY_CRAFTED_GEAR_QUALITY,label:gt('Normal'),color:C.muted,surface:C.panel2},
-    {value:CRAFTED_GEAR_QUALITY_MAX,label:gt('High'),color:C.good,surface:C.goodSurface},
+    {value:CRAFTED_GEAR_QUALITY_MIN,color:C.bad,surface:C.badSurface},
+    {value:LEGACY_CRAFTED_GEAR_QUALITY,color:C.muted,surface:C.panel2},
+    {value:CRAFTED_GEAR_QUALITY_MAX,color:C.good,surface:C.goodSurface},
   ] as const;
   return <View style={[s.card,{borderColor:C.line,backgroundColor:C.panel}]}>
     <Pressable accessibilityRole="button" accessibilityLabel={gt('Rarity chances and quality effects')}
@@ -62,7 +62,7 @@ export function ForgeOddsGuide({itemId}:{itemId:string}){
       <Text style={[s.sectionTitle,{color:C.text}]}>{gt('Quality')}</Text>
       <View style={s.qualityRow}>{qualityPoints.map(point=><View key={point.value} style={[s.qualityCell,{backgroundColor:point.surface,borderColor:point.value===50?C.lineStrong:C.line}]}>
         <Text style={[s.qualityNumber,{color:C.text}]}>Q{point.value}</Text>
-        <Text style={[s.qualityEffect,{color:point.color}]}>{statEffect(craftedGearQualityMultiplier(point.value))}</Text>
+        <Text style={[s.qualityEffect,{color:point.color}]}>{point.value===LEGACY_CRAFTED_GEAR_QUALITY?gt('Normal'):statEffect(craftedGearQualityMultiplier(point.value))}</Text>
       </View>)}</View>
       <Text style={[s.explain,{color:C.muted}]}>{gt('Lower quality means weaker stats; higher quality means stronger stats. Rarity and quality combine.')}</Text>
       <Text style={[s.legacy,{color:C.muted}]}>{gt('Older Forge gear without a quality roll counts as Q50.')}</Text>

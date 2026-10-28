@@ -3,6 +3,8 @@ import {createTranslator} from './translator';
 
 // Each row supplies German, Spanish, Dutch, Italian and French; its key is English.
 export const companionTranslationRows={
+ "POISON": ["GIFT","VENENO","GIF","VELENO","POISON"],
+ "HP bypass": ["Ignoriert Schilde","Atraviesa escudos","Gaat door schilden","Ignora gli scudi","Traverse les boucliers"],
  "MONTHLY HAZARD": ["MONATSGEFAHR","PELIGRO MENSUAL","MAANDELIJKS GEVAAR","PERICOLO MENSILE","DANGER MENSUEL"],
  "COUNTER PICKS": ["GEGENMITTEL","CONTRAMEDIDAS","TEGENKEUZES","CONTROMISURE","CONTRE-MESURES"],
  "Venom Bloom": ["Giftblüte","Flor venenosa","Gifbloei","Fioritura velenosa","Floraison toxique"],

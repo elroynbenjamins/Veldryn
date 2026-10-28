@@ -55,7 +55,7 @@ function itemMeta(language:GameState['settings']['language'],id:MoreDestination)
   }
 }
 
-export function MoreScreen({language,onNavigate,onOpenAdminQa,onOpenUpdates,newReleaseAvailable=false,companionAttention=false,companionUnlocked=true,lockedDestinations={},dailySuppliesAttention=false,friendRequestCount=0,guildAttentionCount=0,socialAttentionCount=0,profileAttention=false,storyRewardCount=0,eventRewardCount=0}:{language:GameState['settings']['language'];onNavigate:(destination:MoreDestination)=>void;onOpenAdminQa?:()=>void;onOpenUpdates?:()=>void;newReleaseAvailable?:boolean;companionAttention?:boolean;companionUnlocked?:boolean;lockedDestinations?:Partial<Record<MoreDestination,string>>;dailySuppliesAttention?:boolean;friendRequestCount?:number;guildAttentionCount?:number;socialAttentionCount?:number;profileAttention?:boolean;storyRewardCount?:number;eventRewardCount?:number}){
+export function MoreScreen({language,onNavigate,onOpenAdminQa,onOpenUpdates,newReleaseAvailable=false,companionAttention=false,companionUnlocked=true,lockedDestinations={},dailySuppliesAttention=false,friendRequestCount=0,guildAttentionCount=0,socialAttentionCount=0,profileAttention=false,storyRewardCount=0}:{language:GameState['settings']['language'];onNavigate:(destination:MoreDestination)=>void;onOpenAdminQa?:()=>void;onOpenUpdates?:()=>void;newReleaseAvailable?:boolean;companionAttention?:boolean;companionUnlocked?:boolean;lockedDestinations?:Partial<Record<MoreDestination,string>>;dailySuppliesAttention?:boolean;friendRequestCount?:number;guildAttentionCount?:number;socialAttentionCount?:number;profileAttention?:boolean;storyRewardCount?:number}){
  const a=(text:string,params?:Record<string,string|number>)=>accountText(language,text,params);
 
   const C=useGameTheme(),s=useMemo(()=>makeStyles(C),[C]),{width,fontScale}=useWindowDimensions(),singleColumn=width<350||fontScale>=1.25;
@@ -63,7 +63,6 @@ export function MoreScreen({language,onNavigate,onOpenAdminQa,onOpenUpdates,newR
   const attentionLabel=(id:MoreDestination)=>{
     if(lockedReason(id))return '';
     if(id==='Quests'&&storyRewardCount>0)return a('{count} story rewards ready',{count:storyRewardCount});
-    if(id==='Events'&&eventRewardCount>0)return a('{count} event rewards ready',{count:eventRewardCount});
     if(id==='Social'&&socialAttentionCount>0)return a('{count} social updates',{count:socialAttentionCount});
     if(id==='Friends'&&friendRequestCount>0)return a('{count} incoming friend requests',{count:friendRequestCount});
     if(id==='Guild'&&guildAttentionCount>0)return a('{count} guild updates',{count:guildAttentionCount});
@@ -75,7 +74,6 @@ export function MoreScreen({language,onNavigate,onOpenAdminQa,onOpenUpdates,newR
   const attention=(id:MoreDestination)=>{
     if(lockedReason(id))return null;
     if(id==='Quests'&&storyRewardCount>0)return <AttentionCount count={storyRewardCount} label={a('{count} story rewards ready',{count:storyRewardCount})}/>;
-    if(id==='Events'&&eventRewardCount>0)return <AttentionCount count={eventRewardCount} label={a('{count} event rewards ready',{count:eventRewardCount})}/>;
     if(id==='Social'&&socialAttentionCount>0)return <AttentionCount count={socialAttentionCount} label={a("Social updates")}/>;
     if(id==='Friends'&&friendRequestCount>0)return <AttentionCount count={friendRequestCount} label={a("Incoming friend requests")}/>;
     if(id==='Guild'&&guildAttentionCount>0)return <AttentionCount count={guildAttentionCount} label={a("Guild updates")}/>;
@@ -84,11 +82,11 @@ export function MoreScreen({language,onNavigate,onOpenAdminQa,onOpenUpdates,newR
     if(id==='Profile'&&profileAttention)return <AttentionDot label={a("New profile customization available")}/>;
     return null;
   };
-  const attentionPriority:MoreDestination[]=['Quests','Events','DailySupplies','Companions','Social','Friends','Guild','Profile'];
+  const attentionPriority:MoreDestination[]=['Quests','DailySupplies','Companions','Social','Friends','Guild','Profile'];
   const lockedItems=EARLY_FEATURE_DESTINATION_ORDER.filter(id=>(id!=='Rankings'||RANKINGS_RELEASED)&&!!lockedReason(id)) as MoreDestination[];
   const upcomingLocked=lockedItems.slice(0,4);
   const attentionDestinations=attentionPriority.filter(id=>!!attentionLabel(id));
-  const attentionTotal=(lockedReason('Quests')?0:storyRewardCount)+(lockedReason('Events')?0:eventRewardCount)+(lockedReason('Social')?0:socialAttentionCount)+(lockedReason('Friends')?0:friendRequestCount)+(lockedReason('Guild')?0:guildAttentionCount)+Number(!lockedReason('Companions')&&companionAttention)+Number(!lockedReason('DailySupplies')&&dailySuppliesAttention)+Number(profileAttention);
+  const attentionTotal=(lockedReason('Quests')?0:storyRewardCount)+(lockedReason('Social')?0:socialAttentionCount)+(lockedReason('Friends')?0:friendRequestCount)+(lockedReason('Guild')?0:guildAttentionCount)+Number(!lockedReason('Companions')&&companionAttention)+Number(!lockedReason('DailySupplies')&&dailySuppliesAttention)+Number(profileAttention);
   return <ScrollView contentContainerStyle={s.root} showsVerticalScrollIndicator={false} showsHorizontalScrollIndicator={false}>
     <TutorialBeacon id="more-shortcuts"><View style={s.header}><View style={s.flex}><Text style={s.kicker}>{a("ACCOUNT HUB")}</Text><Text accessibilityRole="header" style={s.heading}>{a("Account")}</Text><Text style={s.sub}>{t(language,'more.intro')}</Text></View>{attentionTotal>0?<View style={s.headerAttention}><Text style={s.headerAttentionValue}>{attentionTotal>99?'99+':attentionTotal}</Text><Text style={s.headerAttentionLabel}>{a("NEEDS ATTENTION")}</Text></View>:<View style={s.headerClear}><Text style={s.headerClearText}>{a("CAUGHT UP")}</Text></View>}</View></TutorialBeacon>
     {onOpenUpdates?<Pressable accessibilityRole="button" accessibilityLabel={a("What's New & Updates")} onPress={onOpenUpdates} style={({pressed})=>[s.releaseRow,pressed&&s.pressed]}>

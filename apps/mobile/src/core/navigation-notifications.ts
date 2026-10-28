@@ -30,7 +30,7 @@ export function badgeDisplay(count:number){return count>99?'99+':count>0?String(
 export function buildNavigationBadges(rows:NavigationNotification[]):NavigationBadgeMap{
  const out:NavigationBadgeMap={character:empty(),skills:empty(),world:empty(),inventory:empty(),account:empty()},seen=new Set<string>();
  for(const row of rows){
-  if(!row.unread||seen.has(row.key))continue;
+  if(!row.unread||row.kind==='event_reward_ready'||seen.has(row.key))continue;
   seen.add(row.key);
   const destination=NOTIFICATION_DESTINATIONS[row.kind],badge=out[destination.primary];
   if(destination.mode==='count')badge.count+=Math.max(1,Math.floor(row.count??1));else badge.dot=true;
@@ -45,7 +45,7 @@ export type SubrouteBadgeMap=Record<string,NavigationBadge>;
 export function buildSubrouteBadges(rows:NavigationNotification[]):SubrouteBadgeMap{
  const out:SubrouteBadgeMap={},seen=new Set<string>();
  for(const row of rows){
-  if(!row.unread||seen.has(row.key))continue;
+  if(!row.unread||row.kind==='event_reward_ready'||seen.has(row.key))continue;
   seen.add(row.key);
   const destination=NOTIFICATION_DESTINATIONS[row.kind],badge=out[destination.subroute]??{count:0,dot:false};
   if(destination.mode==='count')badge.count+=Math.max(1,Math.floor(row.count??1));else badge.dot=true;
@@ -84,7 +84,7 @@ export type QuickNavigationBadgeMap=Partial<Record<QuickNavDestination,Navigatio
 export function buildQuickNavigationBadges(rows:NavigationNotification[]):QuickNavigationBadgeMap{
  const out:QuickNavigationBadgeMap={},seen=new Set<string>();
  for(const row of rows){
-  if(!row.unread||seen.has(row.key))continue;
+  if(!row.unread||row.kind==='event_reward_ready'||seen.has(row.key))continue;
   seen.add(row.key);
   const destination=QUICK_NOTIFICATION_DESTINATIONS[row.kind],badge=out[destination]??{count:0,dot:false};
   const primaryMode=NOTIFICATION_DESTINATIONS[row.kind].mode;
@@ -96,16 +96,16 @@ export function buildQuickNavigationBadges(rows:NavigationNotification[]):QuickN
 
 /** Local-only claim indicators. Always derived from actually completed state,
  * not dismissed/seen flags: a badge clears when its claim is fulfilled.
+ * Event rewards remain claimable in the Event Hub without navigation alerts.
  * There are no extra timers, network reads, popups, or new destinations.
  */
 export function actionableClaimNotifications(input:{
- storyRewards:number;eventClaims:number;overflowStacks:number;
+ storyRewards:number;overflowStacks:number;
 }):NavigationNotification[]{
  const count=(n:number)=>Number.isFinite(n)?Math.max(0,Math.floor(n)):0;
- const story=count(input.storyRewards),events=count(input.eventClaims),overflow=count(input.overflowStacks);
+ const story=count(input.storyRewards),overflow=count(input.overflowStacks);
  return [
   {key:'story-rewards-claimable',kind:'story_reward_ready',count:story,unread:story>0},
-  {key:'event-rewards-claimable',kind:'event_reward_ready',count:events,unread:events>0},
   {key:'overflow-items-waiting',kind:'inventory_overflow',unread:overflow>0},
  ];
 }

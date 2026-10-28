@@ -8,6 +8,10 @@ import {GuildIdentitySummary} from '../components/GuildIdentitySummary';
 import {cloneElement,isValidElement,useEffect,useState,type ReactNode,useMemo} from 'react';
 import {ActivityIndicator,Modal,Pressable,ScrollView,StyleSheet,Text,View} from 'react-native';
 import {GuildDiscoveryFlow} from '../components/GuildDiscoveryFlow';
+import {SectionGuide} from '../components/SectionGuide';
+import {GUILD_TUTORIAL_STEPS} from '../core/guild-tutorial';
+import {guildTutorialText} from '../i18n/guild-tutorial';
+import {useAuthSession} from '../online/AuthSessionProvider';
 import {GameButton} from '../components/GameButton';
 import {Panel} from '../components/Panel';
 import {GuildBoardHero} from '../components/GuildBoardHero';
@@ -58,6 +62,7 @@ export function GuildScreen({state,onChange,onlineManagement,onlineBoard,onlineP
  const st=useSocialText();
   const language=useGameLanguage();
  const C=useGameTheme(),s=useMemo(()=>makeStyles(C),[C]);
+ const {session}=useAuthSession();
   const [activityView,setActivityView]=useState<'Quests'|'Muster'|'Projects'>('Quests');
   const [rosterSection,setRosterSection]=useState<'Members'|'Requests'|'Safety'>('Members');
   const [section,setSection]=useState<GuildSection>(initialPve?'PvE':'Home'),[onlineSection,setOnlineSection]=useState<OnlineGuildSection>(initialPve?'PvE':'Home'),[hallSection,setHallSection]=useState<'Facilities'|'Skills'|'Trophies'|'Shop'>('Facilities');
@@ -66,6 +71,10 @@ export function GuildScreen({state,onChange,onlineManagement,onlineBoard,onlineP
   const [guildRole,setGuildRole]=useState<GuildManagementRole|null>(null);
   const canCustomize=canManageGuild(guildRole);
   const [guildLoadError,setGuildLoadError]=useState('');
+  const guideIndex=onlineSection==='Activities'?(activityView==='Muster'?2:activityView==='Projects'?4:3):onlineSection==='PvE'?5:onlineSection==='Hall'?6:onlineSection==='Chat'?1:0;
+  const guideStep=GUILD_TUTORIAL_STEPS[guideIndex];
+  const guideSection=onlineSection==='Activities'?`Activities/${activityView}`:onlineSection;
+  const guildGuide=onlineSection==='Roster'?{title:'Your Guild roster',body:'Open a member to see their role and activity. Leaders can manage members from the roster.',detail:'Use Home → Members to return here.'}:onlineSection==='Manage'?{title:'Manage your Guild',body:'Recruitment and Guild settings are available to leaders and officers.',detail:'Open Requests to review applications or Guild Appearance for cosmetics.'}:onlineSection==='Appearance'?{title:'Guild appearance',body:'Choose your Guild tag, banner and profile details here.',detail:'Changes are saved separately; review your choices before applying them.'}:{title:guideStep.title,body:guideStep.body,detail:guideStep.tip};
   const reloadGuildMembership=()=>{
    setGuildMembership('loading');setGuildLoadError('');
    void myGuild().then(membership=>{setGuildRole(membership?.role??null);setGuildMembership(membership?'member':'none')})
@@ -85,6 +94,7 @@ export function GuildScreen({state,onChange,onlineManagement,onlineBoard,onlineP
   if(online&&guildMembership==='none')return <GuildDiscoveryFlow onJoined={reloadGuildMembership}/>;
   if(online)return <View style={{flex:1,minHeight:0}}><GuildNavigation value={onlineSection} unread={onlineChatUnread} mentions={onlineChatMentions} onChange={next=>{if(next==='Chat'&&onOpenChat)onOpenChat();else setOnlineSection(next)}}/><ScrollView contentContainerStyle={s.root} keyboardShouldPersistTaps="handled" keyboardDismissMode="on-drag" showsVerticalScrollIndicator={false} showsHorizontalScrollIndicator={false}>
     {(['Activities','Hall','Roster','Manage'] as const).some(section=>section===onlineSection)?<GuildSectionHeader label={st('Guild')} title={socialLabel(language,onlineSection==='Activities'?'Guild Activity Board':onlineSection==='Hall'?(hallSection==='Shop'?'Guild Token Shop':'Guild Hall'):onlineSection==='Roster'?'Guild Roster':'Manage Guild')} copy={socialLabel(language,onlineSection==='Activities'?'Shared objectives, daily participation and weekly Projects.':onlineSection==='Roster'?'Roster, activity and your membership.':onlineSection==='Manage'?'Guild identity and recruitment.':'')}/>:null}
+    {onlineSection!=='Future'?<SectionGuide scope={session?.user.id??''} area="guild" section={guideSection} guide={guildGuide} translate={value=>guildTutorialText(language,value)}/>:null}
 
     {onlineSection==='Home'?<GuildOnlineHome onNavigateMuster={()=>{setActivityView('Muster');setOnlineSection('Activities')}} onNavigateShop={()=>{setHallSection('Shop');setOnlineSection('Hall')}} canCustomize={canCustomize} onNavigate={next=>{if(next==='Chat'&&onOpenChat){onOpenChat();return;}if((next!=='Manage'&&next!=='Appearance')||canCustomize)setOnlineSection(next)}} board={onlineBoard} chatUnread={onlineChatUnread}/>:null}
     {onlineSection==='Roster'?(isValidElement<{initialView?:'Members'|'Requests'|'Safety'}>(onlineManagement)?cloneElement(onlineManagement,{initialView:rosterSection}):onlineManagement):null}

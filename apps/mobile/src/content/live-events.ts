@@ -32,7 +32,7 @@ export function eventCandies(definition:Pick<LiveEventDef,'id'|'name'|'visualKey
   return [
     {kind:'skill',id:`${definition.id}:candy:skill`,name:base,description:'Grants +10% gathering speed and +10% non-combat skill XP.',visualKey:definition.visualKey,bonusBps:1000,secondsPerUse:2*60*60,maxSeconds:10*60*60},
     {kind:'combat',id:`${definition.id}:candy:combat`,name:`${base} · Battle`,description:'Grants +10% combat XP and +10% damage against ordinary regional PvE enemies only. No PvP, guild, dungeon, or expedition effect.',visualKey:definition.visualKey,bonusBps:1000,secondsPerUse:2*60*60,maxSeconds:10*60*60},
-    {kind:'companion',id:`${definition.id}:candy:companion`,name:`${base} · Bond`,description:'Awards 75 Companion XP to your equipped combat companion. It does not increase combat power directly.',visualKey:definition.visualKey,bonusBps:0,secondsPerUse:1,maxSeconds:1},
+    {kind:'companion',id:`${definition.id}:candy:companion`,name:`${base} · Bond`,description:'Awards 75 Companion XP to your selected owned combat companion, equipped or not. It does not increase combat power directly.',visualKey:definition.visualKey,bonusBps:0,secondsPerUse:1,maxSeconds:1},
   ];
 }
 export function eventCandy(definition:Pick<LiveEventDef,'id'|'name'|'visualKey'>){return eventCandies(definition)[0];}

@@ -13,7 +13,7 @@ import {UiIcon} from './UiIcon';
 
 const rewardKindLabels:Partial<Record<EventRewardKind,EventRewardMessage>>={profile_icon:'Profile icon',pet:'Cosmetic pet',companion:'Combat companion',background:'Profile background',border:'Profile frame',emote:'Emote',title:'Profile title',candy:'Consumable',gold:'Gold',companion_essence:'Companion Essence'};
 
-export function EventRewardTrail({state,now,busy=false,pendingRewardId,onClaim}:{state:GameState;now:number;busy?:boolean;pendingRewardId?:string|null;onClaim:(id:string)=>unknown}){
+export function EventRewardTrail({state,now,busy=false,pendingRewardId,onClaim,onClaimAll}:{state:GameState;now:number;busy?:boolean;pendingRewardId?:string|null;onClaim:(id:string)=>unknown;onClaimAll?:()=>unknown}){
  const C=useGameTheme(),language=useGameLanguage(),{width,fontScale}=useWindowDimensions();
  const trail=useMemo(()=>eventRewardTrail(state,now),[state,now]);
  const t=(key:EventRewardMessage,params?:TranslationParams)=>eventRewardText(language,key,params),n=(value:number)=>formatLocalizedNumber(language,value);
@@ -23,6 +23,7 @@ export function EventRewardTrail({state,now,busy=false,pendingRewardId,onClaim}:
  return <View style={s.root}>
   <View style={s.headingRow}><View style={s.grow}><Text accessibilityRole="header" style={[s.title,{color:C.text}]}>{t('Reward trail')}</Text><Text style={[s.meta,{color:C.muted}]}>{t('Festival reputation')}</Text></View><View style={[s.edition,{borderColor:C.line,backgroundColor:C.panel}]}><Text style={[s.meta,{color:C.muted}]}>{t('{year} edition',{year:trail.edition})}</Text></View></View>
   <View style={s.progressCopy}><Text style={[s.progress,{color:C.text}]}>{n(trail.progress)}<Text style={[s.progressTarget,{color:C.muted}]}> / {n(trail.target)}</Text></Text><Text style={[s.meta,{color:trail.readyCount?C.accent:C.muted}]}>{trail.readyCount?(trail.readyCount===1?t('1 reward ready'):t('{count} rewards ready',{count:n(trail.readyCount)})):t('{claimed} / {total} claimed',{claimed:n(trail.claimedCount),total:n(trail.rows.length)})}</Text></View>
+  {trail.readyCount>1&&onClaimAll?<GameButton compact title={pendingRewardId==='milestones'?t('Claiming…'):`Claim all (${n(trail.readyCount)})`} loading={pendingRewardId==='milestones'} disabled={busy} onPress={onClaimAll}/>:null}
   <View accessibilityRole="progressbar" accessibilityLabel={t('Festival reputation')} accessibilityValue={{min:0,max:Math.max(1,trail.target),now:Math.min(trail.progress,Math.max(1,trail.target)),text:`${n(trail.progress)} / ${n(trail.target)}`}} style={[s.track,{backgroundColor:C.panel2}]}><View style={{height:'100%',width:`${trail.percent}%`,backgroundColor:C.special}}/></View>
   <Text style={[s.meta,{color:C.muted}]}>{trail.allClaimed?t('Your collection is complete'):trail.allUnlocked?t('All personal rewards unlocked'):claiming?t('Reputation earning has ended.'):t('{points} reputation to {reward}',{points:n(trail.remaining),reward:trail.next!.reward.name})}</Text>
   {claiming?<View style={[s.claimWindow,{backgroundColor:C.infoSurface}]}><Text style={[s.meta,{color:C.info}]}>{t('Claim available rewards before {date}.',{date:formatLocalizedDate(language,trail.event.claimEndsAtMs,{day:'numeric',month:'short'})})}</Text></View>:null}

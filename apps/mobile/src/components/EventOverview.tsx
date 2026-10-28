@@ -27,7 +27,7 @@ function chanceLabel(chance:number){return `${Number((chance*100).toFixed(chance
 export function EventOverview({state,now,guildBoss,guildBossLoading=false,guildBossError=false,guildBossChecked=false,onClaimDaily,dailyClaimed=false,dailyPending=false,dailyDay,dailyReward,candyPendingKind,onUseCandy,onOpenActivity,onOpenActivities,onOpenRewards,onOpenSeasonalExpedition,onOpenGuildEventBoss}:{
  state:GameState;now:number;guildBoss?:GuildPveEncounter|null;guildBossLoading?:boolean;guildBossError?:boolean;guildBossChecked?:boolean;
  onClaimDaily?:()=>unknown;dailyClaimed?:boolean;dailyPending?:boolean;dailyDay?:number;dailyReward?:number;
- candyPendingKind?:EventCandyKind;onUseCandy:(kind:EventCandyKind)=>unknown;
+ candyPendingKind?:EventCandyKind;onUseCandy:(kind:EventCandyKind,companionId?:string)=>unknown;
  onOpenActivity?:(source:Exclude<EventActivitySource,'boss'>)=>void;onOpenActivities:()=>void;onOpenRewards:()=>void;onOpenSeasonalExpedition?:(eventId:string)=>void;onOpenGuildEventBoss?:()=>void;
 }){
  const C=useGameTheme(),view=eventOverview(state,now);

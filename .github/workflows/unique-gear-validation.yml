@@ -6,6 +6,8 @@ on:
       - 'backend/online/tests/gameplay.ts'
       - 'apps/mobile/src/screens/InventoryScreen.tsx'
       - 'apps/mobile/src/components/EquipmentCraftQueuePanel.tsx'
+      - 'apps/mobile/src/components/ForgeOddsGuide.tsx'
+      - 'apps/mobile/src/components/SmithingCollection.tsx'
       - 'apps/mobile/tests/equipment-crafted-instance-results.ts'
       - 'apps/mobile/tsconfig.unique-gear.json'
       - '.github/workflows/unique-gear-validation.yml'

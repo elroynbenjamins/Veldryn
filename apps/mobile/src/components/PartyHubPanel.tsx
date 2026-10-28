@@ -44,6 +44,8 @@ export interface PartyHubPanelProps {
   recruitmentMode?: 'looking_for_party'|'party_recruiting';
   recruitmentPreferences?: React.ReactNode;
   ownedAdverts?: React.ReactNode;
+  recruitmentDetails?: React.ReactNode;
+  partyExtras?: React.ReactNode;
   partyUnlocked?: boolean;
   partyUnlockLevel?: number;
 }
@@ -53,7 +55,7 @@ export function PartyLockedNotice({level=20}:{level?:number}){
  const C=useGameTheme(),styles=React.useMemo(()=>makeStyles(C),[C]);
  return <View style={styles.panel}>
   <Text style={styles.sectionTitle}>Parties unlock at Level {level}</Text>
-  <Text style={styles.muted}>Persistent parties pair you with up to three other adventurers who share weekly Contract progress. Reach the unlock level first — your current adventures still count toward it.</Text>
+  <Text style={styles.muted}>Reach Level {level} to create or join a Party.</Text>
  </View>;
 }
 
@@ -97,8 +99,9 @@ export function PartyHubPanel(props: PartyHubPanelProps) {
     {inParty && section==='party' && <View style={styles.panel}>
       <Text style={styles.sectionTitle}>{st("PARTY CONTRACTS")}</Text>
       {props.contracts.map(contract => <View key={contract.id} style={styles.contractOverview}>{contract.tiers?.length?<><PartyWeeklyLadder compact={!expandedContracts.includes(contract.id)} contract={contract} nowMs={props.nowMs} onClaimReward={props.onClaimReward}/><GameButton compact tone="secondary" title={expandedContracts.includes(contract.id)?'Hide reward details':'View reward details'} onPress={()=>setExpandedContracts(items=>items.includes(contract.id)?items.filter(id=>id!==contract.id):[...items,contract.id])}/></>:<ContractCard contract={contract} nowMs={props.nowMs} />}{contract.tiers?.length?null:contract.rewards?.map(reward=><PixelButton key={reward.id} label={reward.claimed?st("Reward claimed"):`Claim ${reward.reward.gold} Gold`} onPress={!reward.claimed&&props.onClaimReward?()=>props.onClaimReward!(reward.id):undefined}/>)}</View>)}
-      {!props.contracts.length && <Text style={styles.muted}>No active weekly contract.</Text>
+      {!props.contracts.length && <Text style={styles.muted}>No active weekly contract.</Text>}
     </View>}
+    {inParty&&section==='party'?props.partyExtras:null}
 
     {!inParty?<View style={styles.panel}>
       <Text style={styles.sectionTitle}>Create a Party</Text>
@@ -109,6 +112,7 @@ export function PartyHubPanel(props: PartyHubPanelProps) {
     {(section==='find'||!inParty)&&<View style={styles.panel}>
       <Text style={styles.sectionTitle}>Recruitment</Text>
       {inParty?props.recruitmentPreferences:null}
+      {props.recruitmentDetails}
       <View style={styles.browseTabs}><BrowseChip label="Parties recruiting" selected={browseMode==='parties'} onPress={()=>setBrowseMode('parties')}/><BrowseChip label="Players seeking" selected={browseMode==='players'} onPress={()=>setBrowseMode('players')}/></View>
       <View style={styles.rowWrap}>
        {browseMode==='players'&&!inParty?<GameButton compact title={st("Post my LFG")} tone="secondary" onPress={() => props.onCreateRecruitmentPost?.('looking_for_party')} />:browseMode==='parties'&&canManageParty?<GameButton compact title={st("Post Party LFM")} tone="secondary" onPress={() => props.onCreateRecruitmentPost?.('party_recruiting')} />:null}

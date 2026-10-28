@@ -13,7 +13,7 @@ import {UiIcon} from './UiIcon';
 
 const rewardKindLabels:Partial<Record<EventRewardKind,EventRewardMessage>>={profile_icon:'Profile icon',pet:'Cosmetic pet',companion:'Combat companion',background:'Profile background',border:'Profile frame',emote:'Emote',title:'Profile title',candy:'Consumable',gold:'Gold',companion_essence:'Companion Essence'};
 
-export function EventRewardTrail({state,now,busy=false,pendingRewardId,onClaim}:{state:GameState;now:number;busy?:boolean;pendingRewardId?:string|null;onClaim:(id:string)=>unknown;onClaimAll?:()=>unknown}){
+export function EventRewardTrail({state,now,busy=false,pendingRewardId,onClaim,onClaimAll}:{state:GameState;now:number;busy?:boolean;pendingRewardId?:string|null;onClaim:(id:string)=>unknown;onClaimAll?:()=>unknown}){
  const C=useGameTheme(),language=useGameLanguage(),{width,fontScale}=useWindowDimensions();
  const trail=useMemo(()=>eventRewardTrail(state,now),[state,now]);
  const t=(key:EventRewardMessage,params?:TranslationParams)=>eventRewardText(language,key,params),n=(value:number)=>formatLocalizedNumber(language,value);

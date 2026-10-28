@@ -5,7 +5,7 @@ import {AccessibilityInfo,Animated,Easing,Pressable,StyleSheet,Text,useWindowDim
 import type {CoopRunView} from '../../core/coop-presentation';
 import {dungeonCombatCueFx,type DungeonCombatCueFx} from '../../core/dungeon-combat-fx';
 import {dungeonCombatLayout} from '../../core/dungeon-combat-layout';
-import {DUNGEON_PLAYBACK_SPEEDS,playbackAdvanceDelayMs,playbackBossCombatant,playbackCastDisplayMs,playbackCombatant,playbackCombatantState,playbackCombatantStatuses,playbackEnemyCombatants,playbackCueLabel,playbackCueTone,playbackProgress,playbackRecentCues,playbackVisualDurationMs,type DungeonPlaybackSpeed} from '../../core/dungeon-combat-playback';
+import {playbackAdvanceDelayMs,playbackBossCombatant,playbackCastDisplayMs,playbackCombatant,playbackCombatantState,playbackCombatantStatuses,playbackEnemyCombatants,playbackCueLabel,playbackCueTone,playbackProgress,playbackRecentCues,playbackVisualDurationMs} from '../../core/dungeon-combat-playback';
 import {type CoopColors} from '../../theme/coop-ui-theme';
 import {StateChip} from './CoopVisualKit';
 import {radii,spacing,touchTargetMin,typography} from '../../theme/theme';
@@ -47,15 +47,15 @@ export function DungeonCombatStage({run,enemyLabel,boss=false}:{run:CoopRunView;
  const tank=run.roleSlots.find(slot=>slot.role==='tank'),damage=run.roleSlots.filter(slot=>slot.role==='damage'),support=run.roleSlots.find(slot=>slot.role==='support');
  const ordered=[tank,damage[0],damage[1],support].filter((slot):slot is Slot=>Boolean(slot)),assists=ordered.filter(slot=>slot.companionId).length;
  const replay=run.lastCombat,cues=replay?.cues??[],replayKey=`${run.runId}:${replay?.nodeId??'preview'}:${replay?.durationMs??0}:${cues.length}`;
- const [cueIndex,setCueIndex]=useState(0),[reduceMotion,setReduceMotion]=useState(false),[playbackSpeed,setPlaybackSpeed]=useState<DungeonPlaybackSpeed>(1),[paused,setPaused]=useState(false),[showLog,setShowLog]=useState(false),[inspectKey,setInspectKey]=useState<string>();
+ const [cueIndex,setCueIndex]=useState(0),[reduceMotion,setReduceMotion]=useState(false),[paused,setPaused]=useState(false),[showLog,setShowLog]=useState(false),[inspectKey,setInspectKey]=useState<string>();
  const actorAnim=useRef(new Animated.Value(0)).current,targetAnim=useRef(new Animated.Value(0)).current,fxAnim=useRef(new Animated.Value(0)).current,feedbackAnim=useRef(new Animated.Value(0)).current,castAnim=useRef(new Animated.Value(0)).current;
  useEffect(()=>{let mounted=true;void AccessibilityInfo.isReduceMotionEnabled().then(value=>{if(mounted)setReduceMotion(value);}).catch(()=>{});return()=>{mounted=false;};},[]);
  useEffect(()=>{setCueIndex(reduceMotion&&cues.length?cues.length-1:0);setPaused(false);setShowLog(false);setInspectKey(undefined);},[replayKey,reduceMotion,cues.length]);
  useEffect(()=>{
   if(!replay||reduceMotion||paused||cueIndex>=cues.length-1)return;
-  const current=cues[cueIndex],next=cues[cueIndex+1],timer=setTimeout(()=>setCueIndex(value=>Math.min(value+1,cues.length-1)),playbackAdvanceDelayMs(current,next,playbackSpeed));
+  const current=cues[cueIndex],next=cues[cueIndex+1],timer=setTimeout(()=>setCueIndex(value=>Math.min(value+1,cues.length-1)),playbackAdvanceDelayMs(current,next,1));
   return()=>clearTimeout(timer);
- },[replay,replayKey,reduceMotion,paused,cueIndex,cues,playbackSpeed]);
+ },[replay,replayKey,reduceMotion,paused,cueIndex,cues]);
  const currentCue=cues.length?cues[Math.min(cueIndex,cues.length-1)]:undefined,recent=replay?playbackRecentCues(replay,cueIndex):[];
  const currentBossCast=currentCue?.type==='cast'?currentCue:undefined;
  const bossCastDef=currentBossCast?run.bossMechanic?.telegraph?.castAbilities.find(ability=>ability.id===currentBossCast.abilityId||ability.label===currentBossCast.abilityName):undefined;
@@ -63,7 +63,7 @@ export function DungeonCombatStage({run,enemyLabel,boss=false}:{run:CoopRunView;
  const actorSlot=ordered.find(slot=>slot.memberId===currentCue?.actorId);
  const actorIsParty=currentCue?.actorId?partyIds.has(currentCue.actorId):undefined,targetIsParty=currentCue?.targetId?partyIds.has(currentCue.targetId):undefined;
  const fx=useMemo(()=>dungeonCombatCueFx(currentCue,actorSlot?.classId),[currentCue?.atMs,currentCue?.type,currentCue?.actionKind,currentCue?.abilityId,actorSlot?.classId]);
- const fxDuration=fx?playbackVisualDurationMs(fx.durationMs,playbackSpeed):0,feedbackDuration=fx?playbackVisualDurationMs(Math.max(260,Math.min(700,fx.durationMs+180)),playbackSpeed,120):0;
+ const fxDuration=fx?playbackVisualDurationMs(fx.durationMs,1):0,feedbackDuration=fx?playbackVisualDurationMs(Math.max(260,Math.min(700,fx.durationMs+180)),1,120):0;
  useEffect(()=>{
   actorAnim.stopAnimation();targetAnim.stopAnimation();fxAnim.stopAnimation();feedbackAnim.stopAnimation();
   actorAnim.setValue(0);targetAnim.setValue(0);fxAnim.setValue(reduceMotion&&fx?1:0);feedbackAnim.setValue(reduceMotion&&currentCue?.type==='action'?1:0);
@@ -78,15 +78,15 @@ export function DungeonCombatStage({run,enemyLabel,boss=false}:{run:CoopRunView;
    ]),
   ]).start();
   return()=>{actorAnim.stopAnimation();targetAnim.stopAnimation();fxAnim.stopAnimation();feedbackAnim.stopAnimation();};
- },[cueIndex,replayKey,reduceMotion,playbackSpeed,fx?.durationMs,fx?.actorMotion,fx?.targetMotion,currentCue?.type]);
+ },[cueIndex,replayKey,reduceMotion,fx?.durationMs,fx?.actorMotion,fx?.targetMotion,currentCue?.type]);
  useEffect(()=>{
   castAnim.stopAnimation();castAnim.setValue(0);
-  const displayMs=playbackCastDisplayMs(currentBossCast,playbackSpeed);
+  const displayMs=playbackCastDisplayMs(currentBossCast,1);
   if(!currentBossCast||displayMs<=0)return;
   if(reduceMotion){castAnim.setValue(1);return;}
   Animated.timing(castAnim,{toValue:1,duration:displayMs,useNativeDriver:false,easing:Easing.linear}).start();
   return()=>castAnim.stopAnimation();
- },[cueIndex,replayKey,reduceMotion,playbackSpeed,currentBossCast?.durationMs,currentBossCast?.abilityId]);
+ },[cueIndex,replayKey,reduceMotion,currentBossCast?.durationMs,currentBossCast?.abilityId]);
  const bossPhaseLabel=useMemo(()=>{for(let index=Math.min(cueIndex,cues.length-1);index>=0;index--){const cue=cues[index];if(cue.type==='phase'&&cue.abilityName)return cue.abilityName;}return undefined;},[cues,cueIndex]);
  const replayEnemy=useMemo(()=>{for(const cue of cues){if(cue.actorId&&!partyIds.has(cue.actorId)&&cue.actorName)return cue.actorName;if(cue.targetId&&!partyIds.has(cue.targetId)&&cue.targetName)return cue.targetName;}return undefined;},[cues,partyIds]);
  const replayEnemies=useMemo(()=>playbackEnemyCombatants(replay),[replay]),bossEnemy=boss?playbackBossCombatant(replay,enemyLabel??replayEnemy):undefined;
@@ -110,7 +110,7 @@ export function DungeonCombatStage({run,enemyLabel,boss=false}:{run:CoopRunView;
  ]}:undefined;
  const feedbackStyle=currentCue?.type==='action'&&!reduceMotion?{opacity:feedbackAnim.interpolate({inputRange:[0,.12,.72,1],outputRange:[0,1,1,0]}),transform:[{translateY:feedbackAnim.interpolate({inputRange:[0,1],outputRange:[6,-12]})},{scale:feedbackAnim.interpolate({inputRange:[0,.18,1],outputRange:[.9,1.08,1]})}]}:undefined;
  const bossCast=currentBossCast?{label:currentBossCast.abilityName??'Boss ability',durationMs:currentBossCast.durationMs??0,interruptible:bossCastDef?.interruptible??false,targetLabel:currentBossCast.targetName?.trim(),progressStyle:{width:reduceMotion?'100%' as const:castAnim.interpolate({inputRange:[0,1],outputRange:['0%','100%']})}}:undefined;
- const toggleInspect=(key:string)=>{setInspectKey(current=>current===key?undefined:key);if(!reduceMotion&&cues.length>1)setPaused(true);};
+ const toggleInspect=(key:string)=>{setInspectKey(current=>current===key?undefined:key);if(run.mode!=='live'&&!reduceMotion&&cues.length>1)setPaused(true);};
  const stepReplay=(delta:-1|1)=>{if(!cues.length)return;setPaused(true);setCueIndex(value=>Math.max(0,Math.min(cues.length-1,value+delta)));};
  const inspectedSlot=inspectKey?.startsWith('party:')?ordered.find(slot=>slotInspectKey(slot)===inspectKey):undefined;
  const inspectedEnemy=inspectKey?.startsWith('enemy:')?visibleEnemies.find(enemy=>enemyInspectKey(enemy.id)===inspectKey):undefined;
@@ -128,7 +128,7 @@ export function DungeonCombatStage({run,enemyLabel,boss=false}:{run:CoopRunView;
   {inspectTarget?<CombatantInspectPanel target={inspectTarget} onClose={()=>setInspectKey(undefined)}/>:null}
   {replay?<View style={s.replayPanel}>
    <View style={s.replayHead}><View style={s.grow}><Text style={s.replayKicker}>{complete?st("ENCOUNTER RECAP"):paused?st("PAUSED"):st("NOW PLAYING")}</Text><Text accessibilityLiveRegion="polite" style={s.replayCurrent}>{currentCue?playbackCueLabel(currentCue):replay.reason==='victory'?st("Encounter cleared"):replay.reason==='wipe'?st("Party defeated"):st("Encounter timed out")}</Text></View><StateChip label={currentCue?.type.toUpperCase()??replay.reason.toUpperCase()} tone={currentCue?playbackCueTone(currentCue):replay.reason==='victory'?'success':replay.reason==='wipe'?'danger':'warning'}/></View>
-   {(!complete||paused)&&!reduceMotion&&cues.length>1?<View style={[s.playbackControls,layout.controlsWrap&&s.playbackControlsWrap]}><View style={s.speedGroup}>{DUNGEON_PLAYBACK_SPEEDS.map(speed=><Pressable key={speed} accessibilityRole="button" accessibilityLabel={st("Combat replay speed {speed} times",{speed})} accessibilityState={{selected:playbackSpeed===speed}} onPress={()=>setPlaybackSpeed(speed)} style={({pressed})=>[s.speedButton,playbackSpeed===speed&&s.speedButtonActive,pressed&&s.controlPressed]}><Text style={[s.speedButtonText,playbackSpeed===speed&&s.speedButtonTextActive]}>{playbackSpeed===speed?'✓ ':''}{speed}×</Text></Pressable>)}</View><View style={[s.controlActions,layout.controlsWrap&&s.controlActionsWrap]}>{paused?<Pressable accessibilityRole="button" accessibilityLabel={st("Previous combat event")} accessibilityState={{disabled:cueIndex<=0}} disabled={cueIndex<=0} onPress={()=>stepReplay(-1)} style={({pressed})=>[s.stepButton,cueIndex<=0&&s.stepButtonDisabled,pressed&&cueIndex>0&&s.controlPressed]}><Text style={s.stepButtonText}>‹</Text></Pressable>:null}<Pressable accessibilityRole="button" accessibilityLabel={paused?st("Resume combat replay"):st("Pause combat replay")} accessibilityState={{selected:paused}} onPress={()=>setPaused(value=>!value)} style={({pressed})=>[s.pauseButton,paused&&s.pauseButtonActive,pressed&&s.controlPressed]}><Text style={[s.pauseButtonText,paused&&s.pauseButtonTextActive]}>{paused?st("▶ Resume"):st("Ⅱ Pause")}</Text></Pressable>{paused?<Pressable accessibilityRole="button" accessibilityLabel={st("Next combat event")} accessibilityState={{disabled:cueIndex>=cues.length-1}} disabled={cueIndex>=cues.length-1} onPress={()=>stepReplay(1)} style={({pressed})=>[s.stepButton,cueIndex>=cues.length-1&&s.stepButtonDisabled,pressed&&cueIndex<cues.length-1&&s.controlPressed]}><Text style={s.stepButtonText}>›</Text></Pressable>:null}<Pressable accessibilityRole="button" accessibilityLabel={st("Skip combat replay to result")} onPress={()=>{setPaused(false);setShowLog(false);setCueIndex(Math.max(0,cues.length-1));}} style={({pressed})=>[s.skipButton,pressed&&s.controlPressed]}><Text style={s.skipButtonText}>{st("Skip →")}</Text></Pressable></View></View>:null}
+   {run.mode!=='live'&&(!complete||paused)&&!reduceMotion&&cues.length>1?<View style={[s.playbackControls,layout.controlsWrap&&s.playbackControlsWrap]}><View style={[s.controlActions,layout.controlsWrap&&s.controlActionsWrap]}>{paused?<Pressable accessibilityRole="button" accessibilityLabel={st("Previous combat event")} accessibilityState={{disabled:cueIndex<=0}} disabled={cueIndex<=0} onPress={()=>stepReplay(-1)} style={({pressed})=>[s.stepButton,cueIndex<=0&&s.stepButtonDisabled,pressed&&cueIndex>0&&s.controlPressed]}><Text style={s.stepButtonText}>‹</Text></Pressable>:null}<Pressable accessibilityRole="button" accessibilityLabel={paused?st("Resume combat replay"):st("Pause combat replay")} accessibilityState={{selected:paused}} onPress={()=>setPaused(value=>!value)} style={({pressed})=>[s.pauseButton,paused&&s.pauseButtonActive,pressed&&s.controlPressed]}><Text style={[s.pauseButtonText,paused&&s.pauseButtonTextActive]}>{paused?st("▶ Resume"):st("Ⅱ Pause")}</Text></Pressable>{paused?<Pressable accessibilityRole="button" accessibilityLabel={st("Next combat event")} accessibilityState={{disabled:cueIndex>=cues.length-1}} disabled={cueIndex>=cues.length-1} onPress={()=>stepReplay(1)} style={({pressed})=>[s.stepButton,cueIndex>=cues.length-1&&s.stepButtonDisabled,pressed&&cueIndex<cues.length-1&&s.controlPressed]}><Text style={s.stepButtonText}>›</Text></Pressable>:null}<Pressable accessibilityRole="button" accessibilityLabel={st("Skip combat replay to result")} onPress={()=>{setPaused(false);setShowLog(false);setCueIndex(Math.max(0,cues.length-1));}} style={({pressed})=>[s.skipButton,pressed&&s.controlPressed]}><Text style={s.skipButtonText}>{st("Skip →")}</Text></Pressable></View></View>:null}
    <View style={s.replayMeta}><Text style={s.replayTime}>{currentCue?seconds(currentCue.atMs):'0.0s'} / {seconds(replay.durationMs)}</Text><Text style={s.replayTime}>{cueIndex+1}/{Math.max(1,cues.length)} cues</Text></View>
    <View style={s.replayTrack}><View style={[s.replayFill,{width:`${Math.round(progress*100)}%` as `${number}%`}]} /></View>
    {contributionRows.length?<View style={s.contributionPanel}><View style={s.contributionHead}><Text style={s.contributionKicker}>{st("PARTY CONTRIBUTION")}</Text><Text style={s.contributionHint}>{st("Encounter totals")}</Text></View>{contributionRows.map(({slot,value})=><View key={slot.memberId??slot.name} style={s.contributionRow}><View style={[s.contributionIdentity,{width:`${layout.contributionIdentityWidthPct}%` as `${number}%`,minWidth:layout.contributionIdentityMinWidth}]}><Text style={s.contributionRole}>{roleShort(slot.role)}</Text><Text numberOfLines={1} style={s.contributionName}>{slot.name}</Text></View><Text style={s.contributionStats}>{contributionSummary(slot.role,value)}</Text></View>)}</View>:null}
@@ -146,8 +146,7 @@ const makeStyles=(C:CoopColors)=>StyleSheet.create({
  replayPanel:{padding:spacing.md,gap:spacing.sm,borderWidth:1,borderColor:C.line,borderRadius:radii.lg,backgroundColor:C.surface},
  replayHead:{flexDirection:'row',alignItems:'flex-start',gap:spacing.sm},replayKicker:{...typography.caption,color:C.cyan,fontWeight:'800',letterSpacing:.6},replayCurrent:{...typography.caption,color:C.text,fontWeight:'700'},
  playbackControls:{flexDirection:'row',alignItems:'center',justifyContent:'space-between',gap:spacing.sm},playbackControlsWrap:{flexWrap:'wrap',rowGap:spacing.sm},
- speedGroup:{flexDirection:'row',alignItems:'center',gap:spacing.xs},controlActions:{flexDirection:'row',flexWrap:'wrap',alignItems:'center',gap:spacing.xs,flexShrink:1},controlActionsWrap:{width:'100%'},
- speedButton:{minWidth:touchTargetMin,minHeight:touchTargetMin,alignItems:'center',justifyContent:'center',paddingHorizontal:spacing.md,borderWidth:1,borderColor:C.line,borderRadius:radii.md,backgroundColor:C.surfaceRaised},speedButtonActive:{borderColor:C.cyan},speedButtonText:{...typography.caption,color:C.textMuted,fontWeight:'700'},speedButtonTextActive:{color:C.cyan},
+ controlActions:{flexDirection:'row',flexWrap:'wrap',alignItems:'center',gap:spacing.xs,flexShrink:1},controlActionsWrap:{width:'100%'},
  pauseButton:{minHeight:touchTargetMin,alignItems:'center',justifyContent:'center',paddingHorizontal:spacing.md,borderWidth:1,borderColor:C.line,borderRadius:radii.md,backgroundColor:C.surfaceRaised},pauseButtonActive:{borderColor:C.cyan},pauseButtonText:{...typography.caption,color:C.textSecondary,fontWeight:'700'},pauseButtonTextActive:{color:C.cyan},
  stepButton:{minWidth:touchTargetMin,minHeight:touchTargetMin,alignItems:'center',justifyContent:'center',borderWidth:1,borderColor:C.line,borderRadius:radii.md,backgroundColor:C.surfaceRaised},stepButtonDisabled:{opacity:.35},stepButtonText:{...typography.title,color:C.cyan,fontWeight:'700'},
  skipButton:{minHeight:touchTargetMin,alignItems:'center',justifyContent:'center',paddingHorizontal:spacing.md,borderWidth:1,borderColor:C.goldDim,borderRadius:radii.md,backgroundColor:C.surfaceRaised},skipButtonText:{...typography.caption,color:C.gold,fontWeight:'700'},controlPressed:{opacity:.65},

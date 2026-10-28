@@ -63,3 +63,25 @@
 **Preview assets:** Conversation artifact `veldryn_companion_flow_v2_preview.html`, plus `veldryn_companion_v2_detail.png` and `veldryn_companion_v2_sanctuary.png` (browser-rendered illustrative demo). They are not checked into the repository and do not represent device screenshots.
 
 **Recommended next gate:** resolve A01 and other preexisting mobile CI errors separately, run the registered test, compare the three main Veldryn themes on a narrow Android screen, verify the exact full-cost breakdown and success/retry behavior against real account data. Keep PR #619 draft until QA confirms.
+
+## Refinement pass 3 — Expedition team picker and full-screen Trial event viewer (28 October 2026)
+
+**Implemented in the same DRAFT PR #619, not released or merged:**
+
+- `CompanionExpeditionsV50Panel.tsx`: replace the nested `Choose Team` disclosure with a `GameModalSurface` opened by a single obvious button. Show owned companions, their actual pixel-art portrait, role and level, current selection, and unavailable status; selected members sort first, then eligible. Keep authoritative `validateCompanionMissionTeam`, mission requirements, resource/food amounts, suggested-team action, and `companion_assignment_start` command unchanged. Correctly let users **remove** a selected member who subsequently becomes busy (previously the disabled checkbox trapped them).
+- `GameModalSurface.tsx`: add optional `presentation="fullscreen"` with safe-area insets, status-bar handling, full-height theme surface; existing sheet/dialog presentations remain default/unchanged for other callers.
+- `CombatCompanionPanel.tsx`: Trial `battle` mode opens **only** the new dedicated full-screen modal. Team, boss, season and challenges remain in normal sheets. Conditionally mount `CompanionTrialStage` only while viewing, avoiding idle playback timers.
+- `CompanionTrialStage.tsx`: add an accessible 0–100% replay progress indicator and bypass the real-time replay animation when `reduceMotion` is enabled; retain underlying authoritative hit/heal/shield event transcript, HP units, result and Skip.
+- `i18n/companions.ts`: translated `Battle progress` for DE/ES/NL/IT/FR.
+- `apps/mobile/tests/companion-simple-flow-contract.cjs`: 35 source-layout assertions now cover the team modal, busy-member deselection, full-screen presentation and reduced motion.
+
+**Evidence:**
+
+- **16/16 manually inspected source-level structural invariants passed** against the actual GitHub branch: four tabs, progression actions, Expedition picker/availability/Send, full-screen Trial separation and replay progress. This is a source check, *not* native functional coverage.
+- **Interactive v3 HTML smoke passed** via headless Chromium/Playwright loading the real browser preview contents. Exercise: Expeditions → Choose Team → reject equipped unit → toggle a companion → Done; Trials → Start → full-screen Fight playback → Skip → Replay → Continue; Sanctuary expansion; Roster Training. **Zero JavaScript exceptions**. A browser-designed sample fixture does not execute real React Native or Supabase commands.
+- Latest observed pre-documentation GitHub run at commit `d8df0362`: [Guild Shop validation #40673524863](https://github.com/elroynbenjamins/Veldryn/actions/runs/40673524863) **backend/SQL integrity success**, mobile TypeScript **failed** on the same 16 Guild/Chat/App errors as baseline; none in modified companion/UI components. [Mobile UX #40673524960](https://github.com/elroynbenjamins/Veldryn/actions/runs/40673524960) **failed** on 11 preexisting starter-companion choice test/API errors before running the registered CJS tests.
+- Further checks from latest code commits may still be in progress/queued. Do not imply those have passed until verified. **No Android AAB build, signed release, or native playback QA performed.**
+
+**Generated preview files in the conversation:** `veldryn_companion_flow_v3_preview.html`, `veldryn_companions_expedition_picker_v3.png`, `veldryn_companions_trial_fullscreen_v3.png`. They use real code-derived action flow and selected in-game names but **mock account state and stylized original placeholder combat visuals**. They are not native screenshots.
+
+**Remaining gates:** resolve existing A01 starter-companion test mismatch and Guild/Chat mobile type errors in separate, reviewed work; let full CI execute; on-device 320dp/large font/TalkBack, real server battles, fresh vs stale last battle, background/foreground timer, offline retry, and safe-area/modal stacking require verification. Keep PR #619 DRAFT. No production changes authorized.

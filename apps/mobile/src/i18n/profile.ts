@@ -7,6 +7,10 @@ import {createTranslator} from './translator';
 // English source keys are limited to authored UI copy, never player-authored text.
 // Each row contains de, es, nl, it and fr, in SUPPORTED_LANGUAGES order after en.
 export const profileTranslationRows = {
+  "Next bonus at {count} pieces": ["Nächster Bonus bei {count} Teilen","Próximo bonus con {count} piezas","Volgende bonus bij {count} stukken","Prossimo bonus a {count} pezzi","Prochain bonus à {count} pièces"],
+  "All set milestones reached": ["Alle Set-Meilensteine erreicht","Todos los hitos del conjunto alcanzados","Alle setmijlpalen bereikt","Tutti i traguardi del set raggiunti","Tous les paliers d'ensemble atteints"],
+  "Show fewer sets": ["Weniger Sets anzeigen","Mostrar menos conjuntos","Minder sets tonen","Mostra meno set","Afficher moins d'ensembles"],
+  "Show all sets": ["Alle Sets anzeigen","Mostrar todos los conjuntos","Alle sets tonen","Mostra tutti i set","Afficher tous les ensembles"],
   "Swap gear": ["Ausrüstung wechseln","Cambiar equipo","Uitrusting wisselen","Cambia equipaggiamento","Changer d'équipement"],
   "Manage gems": ["Edelsteine verwalten","Gestionar gemas","Edelstenen beheren","Gestisci gemme","Gérer les gemmes"],
   "Set bonuses": ["Set-Boni","Bonificaciones de conjunto","Setbonussen","Bonus set","Bonus d'ensemble"],

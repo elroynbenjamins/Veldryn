@@ -90,20 +90,18 @@ export function MoreScreen({language,onNavigate,onOpenAdminQa,onOpenUpdates,newR
   const attentionDestinations=attentionPriority.filter(id=>!!attentionLabel(id));
   const attentionTotal=(lockedReason('Quests')?0:storyRewardCount)+(lockedReason('Events')?0:eventRewardCount)+(lockedReason('Social')?0:socialAttentionCount)+(lockedReason('Friends')?0:friendRequestCount)+(lockedReason('Guild')?0:guildAttentionCount)+Number(!lockedReason('Companions')&&companionAttention)+Number(!lockedReason('DailySupplies')&&dailySuppliesAttention)+Number(profileAttention);
   return <ScrollView contentContainerStyle={s.root} showsVerticalScrollIndicator={false} showsHorizontalScrollIndicator={false}>
-    <TutorialBeacon id="more-shortcuts"><View style={s.header}><View style={s.flex}><Text style={s.kicker}>{a("ACCOUNT HUB")}</Text><Text accessibilityRole="header" style={s.heading}>{a("Account")}</Text><Text style={s.sub}>{t(language,'more.intro')}</Text></View>{attentionTotal>0?<View style={s.headerAttention}><Text style={s.headerAttentionValue}>{attentionTotal>99?'99+':attentionTotal}</Text><Text style={s.headerAttentionLabel}>{a("NEEDS ATTENTION")}</Text></View>:<View style={s.headerClear}><Text style={s.headerClearText}>{a("CAUGHT UP")}</Text></View>}</View></TutorialBeacon>
-    {onOpenUpdates?<Pressable accessibilityRole="button" accessibilityLabel={a("What's New & Updates")} onPress={onOpenUpdates} style={({pressed})=>[s.releaseRow,pressed&&s.pressed]}>
-      <UiIcon name="events" size={24}/><View style={s.flex}><Text style={s.title}>{a("What's New & Updates")}</Text><Text style={s.description}>{newReleaseAvailable?a("New release information available"):a("Release notes and app versions")}</Text></View>{newReleaseAvailable?<AttentionDot label={a("New update available")}/>:null}<UiIcon name="next" size={18}/>
+    <TutorialBeacon id="more-shortcuts"><View style={s.header}><Text accessibilityRole="header" style={s.heading}>{a("Account")}</Text>{attentionTotal>0?<View accessible accessibilityLabel={`${attentionTotal} ${a("NEEDS ATTENTION")}`} style={s.headerAttention}><Text style={s.headerAttentionValue}>{attentionTotal>99?'99+':attentionTotal}</Text></View>:null}</View></TutorialBeacon>
+    {onOpenUpdates?<Pressable accessibilityRole="button" accessibilityLabel={a("What's New & Updates")} accessibilityHint={newReleaseAvailable?a("New release information available"):a("Release notes and app versions")} onPress={onOpenUpdates} style={({pressed})=>[s.releaseRow,pressed&&s.pressed]}>
+      <UiIcon name="events" size={22}/><Text style={s.releaseTitle}>{a("What's New & Updates")}</Text>{newReleaseAvailable?<AttentionDot label={a("New update available")}/>:null}<UiIcon name="next" size={18}/>
     </Pressable>:null}
-    {attentionDestinations.length?<View style={s.attentionRail}><View style={s.attentionRailHead}><Text style={s.sectionLabel}>{a("NEEDS ATTENTION")}</Text><Text style={s.attentionRailMeta}>{a('{count} destinations',{count:attentionDestinations.length})}</Text></View><View style={s.attentionQuickRow}>{attentionDestinations.slice(0,3).map(id=>{const meta=itemMeta(language,id),alert=attentionLabel(id);return <Pressable key={id} accessibilityRole="button" accessibilityLabel={meta.title+', '+alert} onPress={()=>onNavigate(id)} style={({pressed})=>[s.attentionQuick,singleColumn&&s.attentionQuickWide,pressed&&s.pressed]}><View style={s.quickIconFrame}><ThemedNavigationIcon destination={iconForDestination(id)} size={25}/></View><View style={s.quickCopy}><Text numberOfLines={1} style={s.quickTitle}>{meta.title}</Text><Text numberOfLines={1} style={s.quickDetail}>{alert}</Text></View><UiIcon name="next" size={16}/></Pressable>})}</View>{attentionDestinations.length>3?<Text style={s.attentionMore}>{a('+{count} more highlighted below',{count:attentionDestinations.length-3})}</Text>:null}</View>:null}
+    {attentionDestinations.length?<View style={s.attentionRail}><Text style={s.sectionLabel}>{a("NEEDS ATTENTION")}</Text><View style={s.attentionQuickRow}>{attentionDestinations.slice(0,3).map(id=>{const meta=itemMeta(language,id),alert=attentionLabel(id);return <Pressable key={id} accessibilityRole="button" accessibilityLabel={meta.title+', '+alert} onPress={()=>onNavigate(id)} style={({pressed})=>[s.attentionQuick,singleColumn&&s.attentionQuickWide,pressed&&s.pressed]}><ThemedNavigationIcon destination={iconForDestination(id)} size={23}/><Text numberOfLines={1} style={s.quickTitle}>{meta.title}</Text>{attention(id)}</Pressable>})}</View></View>:null}
     {sections.map(section=><View key={a(section.label)} style={s.section}>
       <Text style={s.sectionLabel}>{a(section.label)}</Text>
       <View style={s.grid}>{section.items.filter(id=>(id!=='Rankings'||RANKINGS_RELEASED)&&!lockedReason(id)).map(id=>{const meta=itemMeta(language,id),alert=attentionLabel(id),reason=lockedReason(id),locked=!!reason,inDevelopment=id==='Arena';return <Pressable key={id} accessibilityRole="button" accessibilityState={{disabled:inDevelopment||locked}} accessibilityLabel={inDevelopment?a('{title}, In Development',{title:meta.title}):locked?a('{title}, Locked',{title:meta.title}):alert?`${meta.title}, ${alert}`:meta.title} accessibilityHint={locked?reason:meta.description} disabled={inDevelopment||locked} onPress={()=>onNavigate(id)} style={({pressed})=>[s.tile,alert&&s.tileAttention,(inDevelopment||locked)&&s.tileDisabled,singleColumn&&s.tileWide,pressed&&!inDevelopment&&!locked&&s.pressed]}>
-        <View style={s.tileTop}><View style={[s.iconFrame,alert&&s.iconFrameAttention]}><ThemedNavigationIcon destination={iconForDestination(id)} size={32}/></View><View style={s.attentionSlot}>{attention(id)}</View><UiIcon name="next" size={18}/></View>
-        <View style={s.titleRow}><Text numberOfLines={singleColumn?2:1} style={s.title}>{meta.title}</Text>{locked?<View style={s.lockPill}><Text style={s.lockPillText}>{a("LOCKED")}</Text></View>:inDevelopment?<View style={s.developmentPill}><Text style={s.developmentPillText}>{a("IN DEVELOPMENT")}</Text></View>:null}</View>
-        <Text numberOfLines={singleColumn?2:1} style={s.description}>{locked?reason:meta.description}</Text>
+        <View style={s.tileTop}><View style={[s.iconFrame,alert&&s.iconFrameAttention]}><ThemedNavigationIcon destination={iconForDestination(id)} size={29}/></View><View style={s.titleRow}><Text numberOfLines={2} style={s.title}>{meta.title}</Text>{locked?<View style={s.lockPill}><Text style={s.lockPillText}>{a("LOCKED")}</Text></View>:inDevelopment?<View style={s.developmentPill}><Text style={s.developmentPillText}>{a("IN DEVELOPMENT")}</Text></View>:null}</View><View style={s.attentionSlot}>{attention(id)}</View></View>
       </Pressable>})}</View>
     </View>)}
-    {upcomingLocked.length?<View style={s.unlockAhead}><View style={s.unlockAheadHead}><View style={s.flex}><Text style={s.sectionLabel}>{a("UNLOCKS AHEAD")}</Text><Text style={s.unlockAheadMeta}>{a("More systems appear as the campaign teaches their prerequisites.")}</Text></View><View style={s.lockCount}><Text style={s.lockCountText}>{lockedItems.length}</Text></View></View>{upcomingLocked.map(id=>{const meta=itemMeta(language,id),reason=lockedReason(id);return <View key={id} style={s.unlockRow}><View style={s.unlockIcon}><ThemedNavigationIcon destination={iconForDestination(id)} size={25} muted/></View><View style={s.flex}><Text style={s.unlockTitle}>{meta.title}</Text><Text style={s.unlockReason}>{reason}</Text></View><Text style={s.unlockMark}>◆</Text></View>})}{lockedItems.length>upcomingLocked.length?<Text style={s.unlockMore}>{a('+{count} later systems stay hidden for now',{count:lockedItems.length-upcomingLocked.length})}</Text>:null}</View>:null}
+    {upcomingLocked.length?<View style={s.unlockAhead}><View style={s.unlockAheadHead}><Text style={s.sectionLabel}>{a("UNLOCKS AHEAD")}</Text><Text style={s.lockCountText}>{lockedItems.length}</Text></View>{upcomingLocked.map(id=>{const meta=itemMeta(language,id),reason=lockedReason(id);return <View key={id} style={s.unlockRow}><View style={s.unlockIcon}><ThemedNavigationIcon destination={iconForDestination(id)} size={23} muted/></View><View style={s.flex}><Text style={s.unlockTitle}>{meta.title}</Text><Text numberOfLines={2} style={s.unlockReason}>{reason}</Text></View></View>})}</View>:null}
     {onOpenAdminQa?<View style={s.section}><Text style={s.sectionLabel}>{a("DEVELOPER")}</Text><Pressable accessibilityRole="button" accessibilityLabel={a("Open Admin QA Console")} onPress={onOpenAdminQa} style={({pressed})=>[s.devCard,pressed&&s.pressed]}><ThemedNavigationIcon destination="Character" size={32}/><View style={s.devCopy}><Text style={s.title}>{a("Admin QA Console")}</Text><Text style={s.description}>{a("Full-content, crafting and dungeon test profile")}</Text></View><UiIcon name="next" size={18}/></Pressable></View>:null}
     <RateAppCard language={language}/>
   </ScrollView>;
@@ -112,37 +110,48 @@ export function MoreScreen({language,onNavigate,onOpenAdminQa,onOpenUpdates,newR
 function AttentionDot({label}:{label:string}){const C=useGameTheme(),s=useMemo(()=>makeStyles(C),[C]);return <View accessible={false} accessibilityLabel={label} style={s.attentionDot}/>}
 function AttentionCount({count,label}:{count:number;label:string}){const C=useGameTheme(),s=useMemo(()=>makeStyles(C),[C]);return <View accessible={false} accessibilityLabel={`${count} ${label}`} style={s.attentionCount}><Text style={s.attentionCountText}>{count>99?'99+':count}</Text></View>}
 function makeStyles(C:ThemeColors){return StyleSheet.create({
-  root:{padding:spacing.md,gap:8,paddingBottom:spacing.xl},releaseRow:{minHeight:58,flexDirection:'row',alignItems:'center',gap:10,padding:10,borderRadius:radii.md,borderWidth:1,borderColor:C.info,backgroundColor:C.panel},
-  header:{minHeight:86,flexDirection:'row',alignItems:'center',gap:10,padding:10,borderWidth:StyleSheet.hairlineWidth,borderColor:C.line,borderRadius:radii.lg,backgroundColor:C.panelRaised},
-  flex:{flex:1,minWidth:0},kicker:{...typography.caption,color:C.accent,fontWeight:'900',letterSpacing:1},
+  root:{padding:spacing.md,gap:10,paddingBottom:spacing.xl},
+  flex:{flex:1,minWidth:0},
+  header:{minHeight:52,flexDirection:'row',alignItems:'center',justifyContent:'space-between',gap:10,paddingHorizontal:3},
   heading:{...typography.hero,color:C.text},
-  sub:{...typography.body,color:C.muted},
-  headerAttention:{minWidth:58,alignItems:'center',justifyContent:'center',paddingHorizontal:7,paddingVertical:6,borderWidth:1,borderColor:C.notification,borderRadius:10,backgroundColor:C.badSurface},
-  headerAttentionValue:{...typography.title,color:C.notification,fontWeight:'900'},headerAttentionLabel:{fontSize:7,color:C.muted,fontWeight:'900',letterSpacing:.45,textAlign:'center'},
-  headerClear:{paddingHorizontal:8,paddingVertical:5,borderWidth:1,borderColor:C.good,borderRadius:99,backgroundColor:C.goodSurface},headerClearText:{fontSize:8,color:C.good,fontWeight:'900',letterSpacing:.55},
-  attentionRail:{gap:6,padding:8,borderWidth:1,borderColor:C.info,borderRadius:radii.md,backgroundColor:C.infoSurface},
-  attentionRailHead:{flexDirection:'row',alignItems:'center',justifyContent:'space-between',gap:8},attentionRailMeta:{fontSize:9,color:C.info,fontWeight:'900'},
-  attentionQuickRow:{flexDirection:'row',flexWrap:'wrap',gap:6},attentionQuick:{flex:1,minWidth:132,minHeight:48,flexDirection:'row',alignItems:'center',gap:6,padding:7,borderWidth:StyleSheet.hairlineWidth,borderColor:C.line,borderRadius:10,backgroundColor:C.panel},attentionQuickWide:{flexBasis:'100%'},quickIconFrame:{width:28,height:28,alignItems:'center',justifyContent:'center',borderRadius:8,backgroundColor:C.panel2},quickIcon:{width:20,height:20},quickCopy:{flex:1,minWidth:0},quickTitle:{fontSize:11,color:C.text,fontWeight:'900'},quickDetail:{fontSize:8.5,color:C.info,fontWeight:'800'},attentionMore:{fontSize:9,color:C.muted,fontWeight:'700'},
-  section:{gap:5,marginTop:4},unlockAhead:{gap:6,marginTop:6,padding:9,borderWidth:1,borderColor:C.line,borderRadius:radii.md,backgroundColor:C.panel},unlockAheadHead:{flexDirection:'row',alignItems:'center',gap:8},unlockAheadMeta:{fontSize:9,color:C.muted,lineHeight:13,marginTop:1},lockCount:{minWidth:26,height:26,borderRadius:13,alignItems:'center',justifyContent:'center',borderWidth:1,borderColor:C.line,backgroundColor:C.panel2},lockCountText:{fontSize:9,color:C.muted,fontWeight:'900'},unlockRow:{minHeight:42,flexDirection:'row',alignItems:'center',gap:8,paddingTop:5,borderTopWidth:StyleSheet.hairlineWidth,borderTopColor:C.line},unlockIcon:{width:28,height:28,alignItems:'center',justifyContent:'center',borderRadius:8,backgroundColor:C.panel2,opacity:.72},unlockTitle:{fontSize:11,color:C.text,fontWeight:'900'},unlockReason:{fontSize:9,color:C.muted,lineHeight:12},unlockMark:{fontSize:10,color:C.disabled},unlockMore:{fontSize:9,color:C.muted,fontStyle:'italic',textAlign:'center',paddingTop:2},
-  sectionLabel:{...typography.caption,color:C.accentSoft,fontWeight:'900',letterSpacing:1},
+  headerAttention:{minWidth:28,height:28,alignItems:'center',justifyContent:'center',paddingHorizontal:7,borderWidth:1,borderColor:C.notification,borderRadius:14,backgroundColor:C.badSurface},
+  headerAttentionValue:{fontSize:12,color:C.notification,fontWeight:'900'},
+  releaseRow:{minHeight:48,flexDirection:'row',alignItems:'center',gap:10,paddingHorizontal:10,borderRadius:radii.md,borderWidth:StyleSheet.hairlineWidth,borderColor:C.line,backgroundColor:C.panel},
+  releaseTitle:{...typography.bodyStrong,color:C.text,flex:1},
+  section:{gap:6,marginTop:4},
+  sectionLabel:{...typography.caption,color:C.accentSoft,fontWeight:'900',letterSpacing:.7},
+  attentionRail:{gap:8,padding:9,borderWidth:1,borderColor:C.info,borderRadius:radii.md,backgroundColor:C.infoSurface},
+  attentionQuickRow:{flexDirection:'row',flexWrap:'wrap',gap:6},
+  attentionQuick:{flex:1,minWidth:132,minHeight:42,flexDirection:'row',alignItems:'center',gap:7,padding:8,borderWidth:StyleSheet.hairlineWidth,borderColor:C.line,borderRadius:10,backgroundColor:C.panel},
+  attentionQuickWide:{flexBasis:'100%'},
+  quickTitle:{flex:1,minWidth:0,fontSize:11,color:C.text,fontWeight:'800'},
   grid:{flexDirection:'row',flexWrap:'wrap',gap:7},
-  tile:{flexGrow:1,flexBasis:'47%',minWidth:138,minHeight:86,gap:3,padding:8,borderWidth:StyleSheet.hairlineWidth,borderColor:C.line,borderRadius:radii.md,backgroundColor:C.panel},
+  tile:{flexGrow:1,flexBasis:'47%',minWidth:138,minHeight:62,paddingHorizontal:9,paddingVertical:8,borderWidth:StyleSheet.hairlineWidth,borderColor:C.line,borderRadius:radii.md,backgroundColor:C.panel},
   tileAttention:{borderWidth:1,borderColor:C.selectionLine,backgroundColor:C.panelRaised},
-  tileDisabled:{opacity:.62,borderStyle:'dashed'},lockPill:{paddingHorizontal:5,paddingVertical:2,borderWidth:1,borderColor:C.muted,borderRadius:99},lockPillText:{fontSize:7,color:C.muted,fontWeight:'900',letterSpacing:.5},
-  tileWide:{flexBasis:'100%',minWidth:0},tileTop:{minHeight:30,flexDirection:'row',alignItems:'center',gap:6},
-  iconFrame:{width:30,height:30,alignItems:'center',justifyContent:'center',borderWidth:StyleSheet.hairlineWidth,borderColor:C.line,borderRadius:10,backgroundColor:C.panel2},
+  tileDisabled:{opacity:.62,borderStyle:'dashed'},
+  tileWide:{flexBasis:'100%',minWidth:0},
+  tileTop:{flex:1,flexDirection:'row',alignItems:'center',gap:7},
+  iconFrame:{width:32,height:32,alignItems:'center',justifyContent:'center',borderWidth:StyleSheet.hairlineWidth,borderColor:C.line,borderRadius:10,backgroundColor:C.panel2},
   iconFrameAttention:{borderColor:C.selectionLine,backgroundColor:C.selection},
-  icon:{width:24,height:24},
-  attentionSlot:{flex:1,alignItems:'flex-start'},
-  titleRow:{flexDirection:'row',alignItems:'center',flexWrap:'wrap',gap:5},
-  title:{...typography.bodyStrong,color:C.text,fontSize:13},
-  developmentPill:{paddingHorizontal:5,paddingVertical:2,borderWidth:1,borderColor:C.line,borderRadius:99,backgroundColor:C.panel2},
+  titleRow:{flex:1,minWidth:0,gap:3,justifyContent:'center'},
+  title:{...typography.bodyStrong,color:C.text,fontSize:12.5},
+  attentionSlot:{alignItems:'center',justifyContent:'center'},
+  lockPill:{alignSelf:'flex-start',paddingHorizontal:5,paddingVertical:2,borderWidth:1,borderColor:C.muted,borderRadius:99},
+  lockPillText:{fontSize:7,color:C.muted,fontWeight:'900',letterSpacing:.5},
+  developmentPill:{alignSelf:'flex-start',paddingHorizontal:5,paddingVertical:2,borderWidth:1,borderColor:C.line,borderRadius:99,backgroundColor:C.panel2},
   developmentPillText:{fontSize:6.5,color:C.muted,fontWeight:'900',letterSpacing:.45},
-  description:{...typography.caption,color:C.muted,fontSize:10,lineHeight:13},
+  unlockAhead:{gap:5,marginTop:5,padding:9,borderWidth:1,borderColor:C.line,borderRadius:radii.md,backgroundColor:C.panel},
+  unlockAheadHead:{flexDirection:'row',alignItems:'center',justifyContent:'space-between',gap:8},
+  lockCountText:{fontSize:10,color:C.muted,fontWeight:'900'},
+  unlockRow:{minHeight:40,flexDirection:'row',alignItems:'center',gap:8,paddingTop:5,borderTopWidth:StyleSheet.hairlineWidth,borderTopColor:C.line},
+  unlockIcon:{width:27,height:27,alignItems:'center',justifyContent:'center',borderRadius:8,backgroundColor:C.panel2,opacity:.72},
+  unlockTitle:{fontSize:11,color:C.text,fontWeight:'800'},
+  unlockReason:{fontSize:9,color:C.muted,lineHeight:12},
   pressed:{opacity:.72,transform:[{translateY:1}]},
   attentionDot:{width:10,height:10,borderRadius:5,backgroundColor:C.notification,borderWidth:1,borderColor:C.notificationText},
   attentionCount:{minWidth:22,height:22,paddingHorizontal:5,borderRadius:11,backgroundColor:C.notification,alignItems:'center',justifyContent:'center'},
   attentionCountText:{fontSize:9,lineHeight:11,color:C.notificationText,fontWeight:'900'},
-  devCard:{minHeight:58,flexDirection:'row',alignItems:'center',gap:10,padding:10,borderWidth:StyleSheet.hairlineWidth,borderStyle:'dashed',borderColor:C.line,borderRadius:radii.md,backgroundColor:C.panel},
+  devCard:{minHeight:52,flexDirection:'row',alignItems:'center',gap:10,padding:10,borderWidth:StyleSheet.hairlineWidth,borderStyle:'dashed',borderColor:C.line,borderRadius:radii.md,backgroundColor:C.panel},
   devCopy:{flex:1,minWidth:0,gap:2},
+  description:{...typography.caption,color:C.muted,fontSize:10,lineHeight:13},
 });}

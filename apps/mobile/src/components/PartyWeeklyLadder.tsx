@@ -13,9 +13,9 @@ export function PartyWeeklyLadder({contract,nowMs,compact=false,onClaimReward}:{
   const target=summary.next??summary.earned;
   const hoursLeft=Math.max(0,Math.ceil(((contract.endsAtMs??nowMs)-nowMs)/3600000));
   const number=(n:number)=>n.toLocaleString();
-  return <View style={{gap:16,...(!compact?{backgroundColor:C.panel,borderColor:C.line,borderWidth:1,borderRadius:16,padding:16}:{})}}>
+  return <View style={{gap:compact?10:16,...(!compact?{backgroundColor:C.panel,borderColor:C.line,borderWidth:1,borderRadius:16,padding:16}:{})}}>
     <View style={{flexDirection:'row',alignItems:'center',justifyContent:'space-between',flexWrap:'wrap',gap:8}}>
-      <Text style={{fontSize:11,letterSpacing:1.3,fontWeight:'600',color:C.muted}}>{st('WEEKLY PARTY')}</Text>
+      {!compact?<Text style={{fontSize:11,letterSpacing:1.3,fontWeight:'600',color:C.muted}}>{st('WEEKLY PARTY')}</Text>:null}
       <Text style={{fontSize:12,color:C.muted}}>{expired?st('Week ended'):st('{count}h left',{count:hoursLeft})}</Text>
     </View>
     <View style={{gap:5}}>
@@ -24,7 +24,6 @@ export function PartyWeeklyLadder({contract,nowMs,compact=false,onClaimReward}:{
     </View>
     {target&&<ContractProgress tone="good" label={st('Party progress · {tier}',{tier:st(weeklyTierLabel(target.tier))})} current={contract.totalPoints} total={target.targetPoints}/>}
     {compact?<>
-      <View style={{flexDirection:'row',flexWrap:'wrap',gap:6}}>{tiers.map(t=><View key={t.tier} style={{paddingHorizontal:9,paddingVertical:6,borderRadius:7,backgroundColor:t.reached?C.goodSurface:C.panel2}}><Text style={{fontSize:11,color:t.reached?C.good:C.muted}}>{t.reached?'✓ ':''}{st(weeklyTierLabel(t.tier))}</Text></View>)}</View>
       {summary.claimable.map(t=><SocialActionButton key={t.tier} primary label={st('Claim {gold} gold',{gold:number(t.gold)})} disabled={!onClaimReward||!t.rewardId} onPress={()=>{if(t.rewardId)onClaimReward?.(t.rewardId)}}/>)}
     </>:<>
       <Text style={{fontSize:13,lineHeight:20,color:C.muted}}>{st('Combat and gathering count equally. 1 hour = 1,000 points. Resets Monday, 00:00 UTC.')}</Text>

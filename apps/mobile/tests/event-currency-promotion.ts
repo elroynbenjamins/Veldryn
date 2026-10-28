@@ -62,7 +62,7 @@ assert.equal(promotedEventCurrency(guildId,100,guildNow),75);
 assert.equal(promotedEventCurrency(guildId,101,guildNow),75,'Rounding never creates fractional common currency');
 assert.equal(eventEffectiveDropRate(guildState,guildId,'combat',guildNow),MERCHANT_GUILD_FESTIVAL_EVENT.dropRates.combat*.75);
 assert.equal(eventDailyGift(guildState,guildNow)?.gift.rewardCurrency,75,'Future daily gift reflects reduction');
-let guildRewarded=claimEventDailyGift(guildState,guildNow);
+let guildRewarded:GameState=claimEventDailyGift(guildState,guildNow);
 assert.equal(eventCurrencyBalance(guildRewarded,guildId),75,'Future daily claim awards exactly the displayed reduced amount');
 assert.equal(eventPrestigeBalance(guildRewarded,guildId),0,'Future prestige is not reduced');
 assert.equal(eventOverview(guildState,guildNow)?.expedition?.rewardMarks,75,'Future expedition preview reflects adjustment');

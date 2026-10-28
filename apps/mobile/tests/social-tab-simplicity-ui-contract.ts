@@ -57,7 +57,7 @@ ok(party.includes('No active weekly contract.</Text>}'),'Missing contract state 
 
 ok(social.includes('const [boardCache,setBoardCache]'),'Party and Guild must keep separately cached recruitment lists');
 ok(social.includes("previous.accountId===accountId?previous:{accountId,party:EMPTY_BOARD,guild:EMPTY_BOARD}"),'Never show recruitment data from a different account');
-ok(social.includes('const generation=++requestGeneration.current')&&social.includes('if(generation!==requestGeneration.current)return'),'Stale background results must never overwrite a newer screen');
+ok(social.includes('const generation=++requestGeneration.current')&&social.includes('if(generation!==requestGeneration.current||accountIdRef.current!==accountId)return'),'Stale background results must never overwrite a newer screen');
 ok(social.includes('const [membership,next,mine,board,invites,outgoing,alerts]=await Promise.all'),'Independent Social requests must load concurrently');
 ok(social.includes("if(membership!==undefined){"),'A membership lookup failure must preserve the cached Party or Guild view');
 ok(social.includes('setBackgroundError(\'refresh_failed\')')&&!social.includes('setCards([])'),'Failed refreshes must show a retry instead of clearing listings');

@@ -17,6 +17,7 @@ import {GameModalHeader,GameModalSurface} from '../components/GameModalSurface';
 import {EmptyState} from '../components/EmptyState';
 import {ActionFeedback} from '../components/ActionFeedback';
 import {GameButton} from '../components/GameButton';
+import {UiIcon} from '../components/UiIcon';
 import {Panel} from '../components/Panel';
 import {spacing,typography,equipmentTheme,type ThemeColors} from '../theme/theme';
 import {useGameTheme} from '../theme/ThemeContext';
@@ -56,7 +57,8 @@ export function InventoryScreen({state,viewMemory,foodRequest=0,onEquip,onFood,o
  const {gt,gl,language}=useGameplayText();
   const C=useGameTheme(),equipmentColors=equipmentTheme(C),s=useMemo(()=>makeStyles(C),[C]);
   const healthState=liveHealthState(state,Date.now());
-  const {width}=useWindowDimensions();
+  const {width,fontScale}=useWindowDimensions();
+  const stackStorageActions=width<380||fontScale>=1.25;
   const [gridWidth,setGridWidth]=useState(Math.max(280,Math.min(960,width)-32));
   const gridColumns=gridWidth>=720?6:gridWidth>=480?5:gridWidth<300?3:4,tileSize=Math.floor((gridWidth-(gridColumns-1)*10)/gridColumns),iconSize=Math.min(88,tileSize-14);
   const memory=useRef(viewMemory??newInventoryScreenState()).current;
@@ -192,9 +194,30 @@ export function InventoryScreen({state,viewMemory,foodRequest=0,onEquip,onFood,o
     {selectMode&&<Panel><View style={s.selectionHead}><View style={s.resultSummary}><Text style={s.selectionTitle}>{gt('BULK MANAGEMENT · {count} SELECTED',{count:selectedIds.length})}</Text><Text style={s.sub}>{gt("Whole stacks only · up to 100 stacks per action")}</Text></View><View style={s.selectionQuick}><Pressable accessibilityRole="button" onPress={selectShown} style={({pressed})=>[s.selectionQuickButton,pressed&&s.pressed]}><Text style={s.selectionQuickText}>{gt("Select shown")}</Text></Pressable><Pressable accessibilityRole="button" disabled={!selectedIds.length} onPress={()=>setSelectedIds([])} style={({pressed})=>[s.selectionQuickButton,!selectedIds.length&&s.selectionQuickDisabled,pressed&&selectedIds.length>0&&s.pressed]}><Text style={s.selectionQuickText}>{gt("Clear")}</Text></Pressable></View></View><Text style={s.sub}>{location==='inventory'?gt("Working Toward items, favorites, locked items and enhanced gear are automatically excluded from bulk disposal. Your selected auto-eat food also stays in Inventory."):gt("Withdraw selected moves complete Bank stacks back to this character.")}</Text><View style={s.bulkActions}><GameButton compact title={`${location==='inventory'?gt("Deposit"):gt("Withdraw")} · ${selectionSummary.transferableStackCount}`} disabled={!selectionSummary.transferableStackCount} tone="secondary" onPress={()=>beginBulk('transfer')}/>{location==='inventory'&&<GameButton compact title={`${gt("Sell")} · ${selectionSummary.sellableStackCount} · ${formatGameNumber(selectionSummary.sellGold,state.settings.numberMode,state.settings.language)}g`} disabled={!selectionSummary.sellableStackCount} tone="secondary" onPress={()=>beginBulk("sell")}/>} {location==='inventory'&&<GameButton compact title={`${gt("Salvage")} · ${selectionSummary.salvageableStackCount}`} disabled={!selectionSummary.salvageableStackCount} tone="danger" onPress={()=>beginBulk("salvage")}/>}</View>{selectedIds.length>0&&location==='inventory'&&(selectionSummary.sellProtectedCount>0||selectionSummary.transferProtectedCount>0||selectionSummary.goalProtectedCount>0)&&<Text style={s.selectionNote}>{[gt('{count} selected stacks are excluded by protection or sell rules.',{count:selectionSummary.sellProtectedCount}),selectionSummary.goalProtectedCount?gt('{count} Working Toward stacks remain protected.',{count:selectionSummary.goalProtectedCount}):'',selectionSummary.transferProtectedCount?gt('{count} auto-eat stacks stay in Inventory.',{count:selectionSummary.transferProtectedCount}):''].filter(Boolean).join(' ')}</Text>}</Panel>}
     </View>} ListEmptyComponent={<View style={s.listSection}><EmptyState title={gt("No items to show")} message={gt("Try another storage tab or clear the search and category filter.")}/><GameButton title={gt("Clear filters")} tone="secondary" onPress={()=>{setQuery('');setFilter("all")}}/></View>} ListFooterComponent={<View style={s.listSection}>
 <Text style={s.inspectHint}>{gl('Goal items, favorites, locked items and enhanced gear are protected from bulk disposal.')}</Text>
-    {location==='inventory'&&!selectMode?<GameButton title={gt("Deposit all materials")} tone="secondary" disabled={!state.inventory.stacks.some(entry=>itemDef(entry.itemId).type==='material')} onPress={()=>beginInventorySubmission(gt("Moving materials to Bank…"),onDepositMaterials)}/>:null}
-    <Pressable accessibilityRole="button" accessibilityState={{expanded:showStorage}} onPress={()=>setShowStorage(value=>!value)} style={s.disclosure}><View style={s.flex}><Text style={s.disclosureTitle}>{gt("STORAGE MANAGEMENT")}</Text><Text style={s.sub}>{gt("Bulk deposit and capacity upgrades")}</Text></View><Text style={s.disclosureMark}>{showStorage?'−':'+'}</Text></Pressable>
-    {showStorage&&<Panel><Text style={s.sub}>{gt("Inventory travels with this character. Bank storage is shared by every character on the account.")}</Text>{location==='inventory'&&<GameButton title={gt("Deposit all materials")} tone="secondary" disabled={!state.inventory.stacks.some(entry=>itemDef(entry.itemId).type==='material')} onPress={()=>beginInventorySubmission(gt("Moving materials to Bank…"),onDepositMaterials)}/>}<View style={s.row}><View style={s.flex}><Text style={s.upgradeLabel}>{gt('{location} · {count} slots',{location:gt('Inventory'),count:effectiveInventoryCapacity})}{effectiveInventoryCapacity>state.inventory.capacity?' · '+gt('{count} base',{count:state.inventory.capacity}):''}</Text>{inventoryUpgrade&&<Text style={s.sub}>Level {inventoryUpgrade.level}</Text>}<GameButton title={inventoryUpgrade?gt('Upgrade to {capacity} · {gold}g',{capacity:inventoryUpgrade.capacity,gold:formatGameNumber(inventoryUpgrade.cost,state.settings.numberMode,state.settings.language)}):gt("Inventory maxed")} disabled={!inventoryUpgrade||(state.character?.level??0)<inventoryUpgrade.level||(state.character?.gold??0)<inventoryUpgrade.cost} tone="secondary" onPress={()=>beginInventorySubmission(gt("Upgrading Inventory…"),()=>onUpgradeStorage("inventory"))}/></View><View style={s.flex}><Text style={s.upgradeLabel}>{gt('{location} · {count} slots',{location:gt('Bank'),count:effectiveBankCapacity})}{effectiveBankCapacity>state.bank.capacity?' · '+gt('{count} base',{count:state.bank.capacity}):''}</Text>{bankUpgrade&&<Text style={s.sub}>Level {bankUpgrade.level}</Text>}<GameButton title={bankUpgrade?gt('Upgrade to {capacity} · {gold}g',{capacity:bankUpgrade.capacity,gold:formatGameNumber(bankUpgrade.cost,state.settings.numberMode,state.settings.language)}):gt("Bank maxed")} disabled={!bankUpgrade||(state.character?.level??0)<bankUpgrade.level||(state.character?.gold??0)<bankUpgrade.cost} tone="secondary" onPress={()=>beginInventorySubmission(gt("Upgrading Bank…"),()=>onUpgradeStorage("bank"))}/></View></View></Panel>}
+    <View style={s.storageManagement}>
+      <Pressable accessibilityRole="button" accessibilityLabel={gt("Storage management")} accessibilityState={{expanded:showStorage}} onPress={()=>setShowStorage(value=>!value)} style={({pressed})=>[s.disclosure,showStorage&&s.disclosureExpanded,pressed&&s.pressed]}>
+        <View style={s.flex}><Text style={s.disclosureTitle}>{gt("STORAGE MANAGEMENT")}</Text><Text style={s.disclosureSubtitle}>{gt("Bulk deposit and capacity upgrades")}</Text></View>
+        <View style={[s.disclosureArrow,showStorage&&s.disclosureArrowOpen]}><UiIcon name="next" size={18} muted/></View>
+      </Pressable>
+      {showStorage&&<View style={s.storageManagementContent}>
+        <Text style={s.storageExplanation}>{gt("Inventory travels with this character. Bank storage is shared by every character on the account.")}</Text>
+        {location==='inventory'&&!selectMode&&<GameButton compact style={s.depositMaterialsButton} title={gt("Deposit all materials")} tone="secondary" disabled={inventoryBusyLabel!==null||!state.inventory.stacks.some(entry=>itemDef(entry.itemId).type==='material')} onPress={()=>beginInventorySubmission(gt("Moving materials to Bank…"),onDepositMaterials)}/>}
+        <View style={s.storageUpgradeList}>
+          {([
+            {id:'inventory' as const,label:gt("Inventory"),capacity:effectiveInventoryCapacity,base:state.inventory.capacity,upgrade:inventoryUpgrade},
+            {id:'bank' as const,label:gt("Bank"),capacity:effectiveBankCapacity,base:state.bank.capacity,upgrade:bankUpgrade},
+          ]).map(row=><View key={row.id} style={[s.storageUpgradeRow,stackStorageActions&&s.storageUpgradeRowStacked]}>
+            <View style={[s.storageUpgradeDetails,stackStorageActions&&s.storageUpgradeDetailsStacked]}>
+              <Text style={s.storageUpgradeTitle}>{gt('{location} · {count} slots',{location:row.label,count:row.capacity})}{row.capacity>row.base?' · '+gt('{count} base',{count:row.base}):''}</Text>
+              <Text style={s.storageUpgradeMeta}>{row.upgrade?`${gt("Level")} ${row.upgrade.level} · ${formatGameNumber(row.upgrade.cost,state.settings.numberMode,state.settings.language)}g`:gt("Maximum storage capacity reached")}</Text>
+            </View>
+            <View style={[s.storageUpgradeAction,stackStorageActions&&s.storageUpgradeActionStacked]}>
+              <GameButton compact style={s.storageUpgradeButton} title={row.upgrade?gt('Upgrade to {capacity}',{capacity:row.upgrade.capacity}):gt("Maxed")} tone="secondary" disabled={inventoryBusyLabel!==null||!row.upgrade||(state.character?.level??0)<row.upgrade.level||(state.character?.gold??0)<row.upgrade.cost} onPress={()=>beginInventorySubmission(gt(row.id==='inventory'?"Upgrading Inventory…":"Upgrading Bank…"),()=>onUpgradeStorage(row.id))}/>
+            </View>
+          </View>)}
+        </View>
+      </View>}
+    </View>
     {overflowCount>0&&<Panel><Text style={s.title}>{ot(state.settings.language,'overflow.title')} · {overflowCount}</Text><Text style={s.warning}>{ot(state.settings.language,'overflow.body')}</Text>{state.overflow.stacks.map((stack,index)=><Text key={`${stack.itemId}:${index}`} style={s.sub}>{stack.quantity}× {itemDef(stack.itemId).name}</Text>)}{state.overflow.expiresAtMs!==null&&<Text style={s.warning}>{gt('Recorded expiry: {date}',{date:new Date(state.overflow.expiresAtMs).toLocaleString(language)})}</Text>}<GameButton title={ot(state.settings.language,'overflow.move',{count:overflowCount-remaining})} disabled={remaining===overflowCount} onPress={()=>beginInventorySubmission(gt("Moving Overflow items…"),onOverflow)}/>{remaining>0&&<Text style={s.sub}>{ot(state.settings.language,'overflow.remain',{count:remaining})}</Text>}</Panel>}
   </View>}/>
   <GameModalSurface visible={filterOpen} reduceMotion={state.settings.reduceMotion} onClose={()=>setFilterOpen(false)} backdropLabel={gt("Close inventory filters")} surfaceStyle={s.filterSheet}>
@@ -238,11 +261,26 @@ function makeStyles(C:ThemeColors){const equipmentColors=equipmentTheme(C);retur
   capacityFull:{...typography.bodyStrong,color:C.bad},
   errorText:{...typography.body,color:C.bad,padding:spacing.sm,borderWidth:1,borderColor:C.bad,borderRadius:8,backgroundColor:C.badSurface},
   label:{...typography.caption,color:C.accent,fontWeight:'700'},
-  upgradeLabel:{...typography.caption,color:C.muted,fontWeight:'700',marginBottom:spacing.xs},
-  disclosure:{minHeight:50,flexDirection:'row',alignItems:'center',gap:spacing.sm,paddingHorizontal:spacing.md,borderWidth:1,borderColor:C.line,borderRadius:10,backgroundColor:C.panel},
-  disclosureTitle:{...typography.caption,color:C.accent,fontWeight:'700',letterSpacing:.8},
-  disclosureMark:{width:28,color:C.accent,fontSize:25,textAlign:'center'},
-  row:{flexDirection:'row',flexWrap:'wrap',gap:spacing.sm},
+  storageManagement:{borderWidth:1,borderColor:C.line,borderRadius:14,backgroundColor:C.panel,overflow:'hidden'},
+  disclosure:{minHeight:60,flexDirection:'row',alignItems:'center',gap:spacing.sm,paddingHorizontal:spacing.md,paddingVertical:10},
+  disclosureExpanded:{borderBottomWidth:1,borderBottomColor:C.line},
+  disclosureTitle:{...typography.caption,color:C.text,fontWeight:'900',letterSpacing:.7},
+  disclosureSubtitle:{...typography.caption,color:C.muted,marginTop:2},
+  disclosureArrow:{width:32,height:32,alignItems:'center',justifyContent:'center',borderRadius:9,backgroundColor:C.panel2,transform:[{rotate:'90deg'}]},
+  disclosureArrowOpen:{transform:[{rotate:'-90deg'}]},
+  storageManagementContent:{gap:10,padding:12},
+  storageExplanation:{...typography.caption,color:C.muted,lineHeight:19},
+  depositMaterialsButton:{width:'100%',minHeight:46},
+  storageUpgradeList:{gap:8},
+  storageUpgradeRow:{minHeight:76,flexDirection:'row',alignItems:'center',gap:12,paddingHorizontal:12,paddingVertical:10,borderWidth:1,borderColor:C.line,borderRadius:11,backgroundColor:C.panel2},
+  storageUpgradeRowStacked:{alignItems:'stretch',flexDirection:'column',gap:8},
+  storageUpgradeDetails:{flex:1,minWidth:0,gap:4},
+  storageUpgradeDetailsStacked:{flex:0,width:'100%'},
+  storageUpgradeTitle:{...typography.bodyStrong,color:C.text},
+  storageUpgradeMeta:{...typography.caption,color:C.muted},
+  storageUpgradeAction:{width:144,flexShrink:0},
+  storageUpgradeActionStacked:{width:'100%'},
+  storageUpgradeButton:{width:'100%',minHeight:44},
   chipRow:{flexDirection:'row',flexWrap:'wrap',gap:6},
   storageRow:{flexDirection:'row',gap:8},
   storageChip:{flex:1,minWidth:0,minHeight:48,gap:7,justifyContent:'center',paddingHorizontal:12,paddingVertical:8,borderWidth:1,borderColor:C.line,borderRadius:12,backgroundColor:C.panel},

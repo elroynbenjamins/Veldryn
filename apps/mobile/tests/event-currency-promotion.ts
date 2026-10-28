@@ -1,7 +1,10 @@
 const assert=require('node:assert/strict') as {equal:(actual:unknown,expected:unknown,message?:string)=>void;deepEqual:(actual:unknown,expected:unknown,message?:string)=>void;throws:(operation:()=>unknown,pattern:RegExp)=>void};
 import type {GameState} from '../src/core/types';
 import {createCharacter,newGame} from '../src/core/game';
-import {VEILBREAK_CURRENCY_PROMOTION as promotion,eventCurrencyPromotionBps,promotedEventCurrency} from '../src/content/event-currency-promotion';
+import {FUTURE_EVENT_CURRENCY_ADJUSTMENT_BPS,VEILBREAK_CURRENCY_PROMOTION as promotion,eventCurrencyPromotionBps,promotedEventCurrency} from '../src/content/event-currency-promotion';
+import {LIVE_EVENT_CATALOG} from '../src/content/live-events';
+import {MERCHANT_GUILD_FESTIVAL_EVENT} from '../src/content/annual-events-v4';
+import {FROSTFALL_EVENT} from '../src/content/annual-events-v2';
 import {eventCurrencyBonusBps,eventEffectiveDropRate,timedEventRewards,eventDailyGift,claimEventDailyGift,eventWeeklyBoard,claimEventWeeklyObjective,eventCurrencyBalance,eventPrestigeBalance,eventShopOffers} from '../src/core/live-events';
 import {eventOverview} from '../src/core/event-overview';
 
@@ -41,4 +44,33 @@ rewarded=claimEventWeeklyObjective(ready,challenge.objective.id,now);
 assert.equal(eventCurrencyBalance(rewarded,id),1575,'Weekly reward is multiplied exactly once');
 assert.throws(()=>claimEventWeeklyObjective(rewarded,challenge.objective.id,now),/already claimed/);
 assert.equal(eventShopOffers(state,now).find(offer=>offer.id==='veilbreak_background')?.cost,1800,'Promotion does not inflate prices');
-console.log('PASS: +50% Veil Shards, fixed rewards, stacking, same-day offline boundaries, no duplicate claims, expiry and annual isolation');
+// Future annual festivals use 75% of authored common-currency rewards, not
+// 75% of the temporary Veilbreak +50% rate. Register draft content only in this test.
+LIVE_EVENT_CATALOG.push(MERCHANT_GUILD_FESTIVAL_EVENT,FROSTFALL_EVENT);
+const guildId=MERCHANT_GUILD_FESTIVAL_EVENT.id;
+const guildStart=Date.UTC(2026,10,6),guildNow=guildStart+60_000;
+const guildState=createCharacter(newGame(guildStart),'IRONWARDEN','Festival Balance Test');
+guildState.account.liveEvent={eventId:guildId,enabled:true,startsAtMs:guildStart,endsAtMs:Date.UTC(2026,10,29)};
+assert.equal(FUTURE_EVENT_CURRENCY_ADJUSTMENT_BPS,-2500);
+assert.equal(eventCurrencyBonusBps(guildState,guildId,guildNow),-2500);
+assert.equal(eventCurrencyBonusBps(guildState,guildId,guildStart-1),0);
+assert.equal(eventCurrencyBonusBps(guildState,guildId,Date.UTC(2026,10,29)),0);
+assert.equal(eventCurrencyPromotionBps(FROSTFALL_EVENT.id,Date.UTC(2026,11,2)),-2500);
+assert.equal(eventCurrencyPromotionBps('EVT_ANNUAL_010_2027',Date.UTC(2027,9,20)),-2500,'Recurring Veilbreak uses the new baseline');
+assert.equal(eventCurrencyPromotionBps('EVT_ANNUAL_006_2026',Date.UTC(2026,5,20)),0,'Already elapsed 2026 festivals remain unchanged');
+assert.equal(promotedEventCurrency(guildId,100,guildNow),75);
+assert.equal(promotedEventCurrency(guildId,101,guildNow),75,'Rounding never creates fractional common currency');
+assert.equal(eventEffectiveDropRate(guildState,guildId,'combat',guildNow),MERCHANT_GUILD_FESTIVAL_EVENT.dropRates.combat*.75);
+assert.equal(eventDailyGift(guildState,guildNow)?.gift.rewardCurrency,75,'Future daily gift reflects reduction');
+let guildRewarded=claimEventDailyGift(guildState,guildNow);
+assert.equal(eventCurrencyBalance(guildRewarded,guildId),75,'Future daily claim awards exactly the displayed reduced amount');
+assert.equal(eventPrestigeBalance(guildRewarded,guildId),0,'Future prestige is not reduced');
+assert.equal(eventOverview(guildState,guildNow)?.expedition?.rewardMarks,75,'Future expedition preview reflects adjustment');
+const guildWeek='2026-11-02';
+const guildReady={...guildState,account:{...guildState.account,eventPeriodActivityById:{[`${guildId}:week:${guildWeek}`]:{combat:99999,gathering:99999,crafting:99999}}}};
+const guildChallenge=eventWeeklyBoard(guildReady,guildNow)[0];
+assert.equal(guildChallenge.objective.rewardCurrency,712,'Future weekly rewards are floored after reduction');
+guildRewarded=claimEventWeeklyObjective(guildReady,guildChallenge.objective.id,guildNow);
+assert.equal(eventCurrencyBalance(guildRewarded,guildId),712);
+assert.equal(eventShopOffers(guildState,guildNow).find(offer=>offer.id==='master_merchant')?.cost,1800,'Future shop prices stay unchanged');
+console.log('PASS: current Veilbreak +50% preserved; November, December and 2027+ annual festivals earn 25% less common currency without changing prestige or shop costs');

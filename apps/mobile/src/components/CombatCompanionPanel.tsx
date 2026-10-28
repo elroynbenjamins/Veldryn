@@ -76,16 +76,16 @@ const missionErrorText=(reason:string)=>{
  if(reason.startsWith('mission_requirement_'))return 'The selected team does not meet every assignment requirement.';
  return reason.replace(/_/g,' ');
 };
-export function CombatCompanionPanel({state,now,onCommand,onNavigateSource}:{state:GameState;now:number;onCommand:(command:GameCommand)=>Promise<void>;onNavigateSource?:(source:CompanionMaterialSourceTarget)=>void}){
+export function CombatCompanionPanel({state,now,onCommand,onNavigateSource,initialSection='Collection',initialTrainingDetail=false}:{state:GameState;now:number;onCommand:(command:GameCommand)=>Promise<void>;onNavigateSource?:(source:CompanionMaterialSourceTarget)=>void;initialSection?:typeof sections[number]|'Codex';initialTrainingDetail?:boolean}){
  const affinityRuleLabel=(r:any)=>r.type==='require_affinity'?r.count+'× '+label(COMPANION_AFFINITIES[r.affinity as keyof typeof COMPANION_AFFINITIES].label):r.type==='prohibit_affinity'?t('No {affinity}',{affinity:label(COMPANION_AFFINITIES[r.affinity as keyof typeof COMPANION_AFFINITIES].label)}):r.type==='affinity_diversity'?t('{count}+ different Affinities',{count:r.count}):r.type==='affinity_unique'?t('All Affinities unique'):label(String(r.type));
  const language=useGameLanguage(),t=companionTranslator(language),label=(value:string)=>companionLabel(language,value),facilityLabel=(value:string)=>label(value).replace(/^./,char=>char.toUpperCase());
  const amount=(value:number)=>value.toLocaleString(language);
 
   const C=useGameTheme(),equipmentColors=equipmentTheme(C),s=useMemo(()=>makeStyles(C),[C]);
-  const [detailOpen,setDetailOpen]=useState(false),[trainingDetail,setTrainingDetail]=useState(false);
+  const [detailOpen,setDetailOpen]=useState(false),[trainingDetail,setTrainingDetail]=useState(initialTrainingDetail);
   const {height:windowHeight}=useWindowDimensions();
   const [trialSheet,setTrialSheet]=useState<null|'team'|'boss'|'season'|'challenges'|'battle'>(null),[bossFloor,setBossFloor]=useState(5);
-  const [section,setSection]=useState<typeof sections[number]|'Codex'>('Collection'),[selection,setSelection]=useState(state.character?.equippedCombatCompanionId??state.account.unlockedCombatCompanionIds?.[0]??'UNIT_001'),[collectionFilter,setCollectionFilter]=useState<CollectionFilter>('Owned'),[filterOpen,setFilterOpen]=useState(false),[team,setTeam]=useState<string[]>([]),[mission,setMission]=useState(COMPANION_MISSIONS[0].id),[missionFilter,setMissionFilter]=useState<ExpeditionFilter>('All'),[missionFilterOpen,setMissionFilterOpen]=useState(false),[busy,setBusy]=useState(false),[message,setMessage]=useState('');
+  const [section,setSection]=useState<typeof sections[number]|'Codex'>(initialSection),[selection,setSelection]=useState(state.character?.equippedCombatCompanionId??state.account.unlockedCombatCompanionIds?.[0]??'UNIT_001'),[collectionFilter,setCollectionFilter]=useState<CollectionFilter>('Owned'),[filterOpen,setFilterOpen]=useState(false),[team,setTeam]=useState<string[]>([]),[mission,setMission]=useState(COMPANION_MISSIONS[0].id),[missionFilter,setMissionFilter]=useState<ExpeditionFilter>('All'),[missionFilterOpen,setMissionFilterOpen]=useState(false),[busy,setBusy]=useState(false),[message,setMessage]=useState('');
   const lock=useRef(false),view=companionView(state,now),model=combatCompanionUiModel(state,selection),e=companionEconomy(state),progress=model?.progress;
   const equipped=state.character?.equippedCombatCompanionId,contribution=companionCombatContribution(state),run=view.trial.progress.season.activeRun;
   const recovery=companionRecoverySeconds(state,now),season=companionTrialSeasonDefinition(view.trial.progress.season.seasonKey),rotationPreview=companionTrialRotationPreview(now),specialFacts=companionUnlockFacts(state),trialSuggestion=recommendedCompanionTrialTeam(state,now),expeditionSuggestion=recommendedCompanionMissionTeam(state,mission,now);

@@ -4,6 +4,11 @@ import {itemDef} from '../content/items';
 import {itemRarity,type ItemRarity} from './item-rarity';
 
 export const MAX_CRAFTED_GEAR_INSTANCES=500;
+/** Existing Forge records have no quality roll. Show them at the neutral midpoint without rewriting their receipts or treating them as safe auto-sale candidates. */
+export const LEGACY_CRAFTED_GEAR_QUALITY=50;
+export function craftedGearDisplayQuality(instance:Pick<CraftedGearInstance,'quality'>):number{
+  return instance.quality??LEGACY_CRAFTED_GEAR_QUALITY;
+}
 /** Proposed account-wide, per-base-item copy limit. Do not enforce until per-copy disposal is available. */
 export const TARGET_CRAFTED_GEAR_COPIES_PER_ITEM=7;
 
@@ -14,7 +19,10 @@ export function craftedGearQualityRoll(trustedRoll:number,jobId:string){
 }
 export function craftedGearQualityMultiplier(quality:number){
   const normalized=Math.max(1,Math.min(100,Math.floor(quality)));
-  return .95+(normalized-1)/99*.10;
+  // Exact neutral Q50 baseline; endpoint rolls remain -5% at Q1 and +5% at Q100.
+  return normalized<=LEGACY_CRAFTED_GEAR_QUALITY
+    ?.95+(normalized-1)/49*.05
+    :1+(normalized-LEGACY_CRAFTED_GEAR_QUALITY)/50*.05;
 }
 
 /** Retain already-persisted stat variance from the previous forge system. */
@@ -38,6 +46,7 @@ export function normalizeCraftedGearInstances(raw:unknown):CraftedGearInstance[]
         const enhancement=row.enhancement&&typeof row.enhancement==='object'?row.enhancement:{};
         return [{
           id:String(row.id).slice(0,180),itemId:item.id,ownerCharacterId:String(row.ownerCharacterId).slice(0,120),rarity,
+          // Preserve absence as a legacy marker. In particular, do not invent an authoritative Forge roll.
           quality:Number.isInteger(row.quality)&&row.quality>=1&&row.quality<=100?row.quality:undefined,
           locked:row.locked===true,
           statRoll:clampStatRoll(row.statRoll),

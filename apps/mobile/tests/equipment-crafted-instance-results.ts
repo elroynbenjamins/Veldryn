@@ -1,7 +1,7 @@
 import {V33_EQUIPMENT_RECIPES} from '../src/content/equipment-recipes-v33';
 import {claimOverflowToBank,createCharacter,depositToBank,equipItem,newGame,sellItem,stackItems,unequipItem} from '../src/core/game';
 import {claimAllReadyEquipmentCrafts,claimEquipmentCraft,equipmentCraftingQueue,startEquipmentCraft} from '../src/core/equipment-crafting-queue';
-import {CRAFTED_EPIC_CHANCE,CRAFTED_MYTHIC_CHANCE,craftedGearRarity,craftedRarityStatMultiplier} from '../src/core/crafted-gear-rarity';
+import {CRAFTED_EPIC_CHANCE,CRAFTED_MYTHIC_CHANCE,craftedGearRarity,craftedGearRarityOutcomes,craftedRarityStatMultiplier} from '../src/core/crafted-gear-rarity';
 import {MAX_CRAFTED_GEAR_INSTANCES,TARGET_CRAFTED_GEAR_COPIES_PER_ITEM,bestCraftedInstanceForItem,craftedGearCopyCapacity,craftedGearInstances,craftedGearQualityRoll,craftedGearDisplayQuality,craftedGearQualityMultiplier,craftClaimSubRoll,effectiveOwnedGearRarity,normalizeCraftedGearInstances,createCraftedGearInstance,craftedGearLegacyOwnershipAudit} from '../src/core/crafted-gear-instances';
 import {enhancedGearStats,upgradeQuote} from '../src/core/equipment-enhancement';
 import {itemDef} from '../src/content/items';
@@ -26,11 +26,33 @@ ok(craftedGearRarity(recipe.output.itemId,.000999)==='mythic','Mythic range shou
 ok(craftedGearRarity(recipe.output.itemId,.001)==='epic','Epic range must begin at 0.001');
 ok(craftedGearRarity(recipe.output.itemId,.006999)==='epic','Epic range should extend through the combined 0.70% quality-proc window');
 ok(craftedGearRarity(recipe.output.itemId,.007)==='common','Non-proc T1 craft should preserve authored Common rarity');
+const commonOutcomes=craftedGearRarityOutcomes(recipe.output.itemId);
+ok(commonOutcomes.length===3&&commonOutcomes[0].rarity==='common'&&commonOutcomes[1].rarity==='epic'&&commonOutcomes[2].rarity==='mythic',
+  'The odds guide must report actual final Common, Epic and Mythic outcomes for low-tier equipment');
+ok(Math.abs(commonOutcomes.reduce((sum,row)=>sum+row.chance,0)-1)<1e-12,
+  'Final Forge rarity outcomes must add to 100%');
+ok(Math.abs(commonOutcomes[0].chance-.993)<1e-12&&Math.abs(commonOutcomes[1].chance-.006)<1e-12&&Math.abs(commonOutcomes[2].chance-.001)<1e-12,
+  'Low-tier Forge odds must show 99.30% base, 0.60% Epic and 0.10% Mythic');
+ok(commonOutcomes[0].statMultiplier===1&&commonOutcomes[1].statMultiplier===1.5&&commonOutcomes[2].statMultiplier===2.2,
+  'Rarity guide stat multipliers must reflect the same rarity scaling used by combat');
+
 
 const t9=V33_EQUIPMENT_RECIPES.find(row=>row.v33EquipmentTier==='T9')!;
 ok(itemRarity(itemDef(t9.output.itemId))==='mythic','T9 authored rarity should be Mythic');
 ok(craftedGearRarity(t9.output.itemId,.5)==='mythic','Missed quality roll must never downgrade an authored Mythic item');
 ok(craftedGearRarity(t9.output.itemId,.002)==='mythic','Epic proc must not downgrade authored Mythic');
+const mythicOutcomes=craftedGearRarityOutcomes(t9.output.itemId);
+ok(mythicOutcomes.length===1&&mythicOutcomes[0].rarity==='mythic'&&mythicOutcomes[0].chance===1&&mythicOutcomes[0].statMultiplier===1,
+  'Mythic-base Forge recipes must show 100% Mythic at 1.00× their own baseline, not misleading Epic roll odds');
+const epicBaseRecipe=V33_EQUIPMENT_RECIPES.find(row=>itemRarity(itemDef(row.output.itemId))==='epic');
+if(epicBaseRecipe){
+  const epicOutcomes=craftedGearRarityOutcomes(epicBaseRecipe.output.itemId);
+  ok(epicOutcomes.length===2&&epicOutcomes[0].rarity==='epic'&&epicOutcomes[1].rarity==='mythic',
+    'Epic-base recipes must group the normal and Epic-proc chances into a single final Epic outcome');
+  ok(Math.abs(epicOutcomes[0].chance-.999)<1e-12&&Math.abs(epicOutcomes[1].chance-.001)<1e-12,
+    'Epic-base recipes must show 99.90% Epic and 0.10% Mythic');
+}
+
 
 let state=createCharacter(newGame(0),recipe.classId,'Instance Crafter','male');
 state={...state,character:{...state.character!,level:recipe.characterLevel,gold:500000},skills:state.skills.map(row=>row.skillId==='smithing'?{...row,level:Math.max(10,recipe.level),xp:50000}:row),inventory:{...state.inventory,capacity:80,stacks:recipe.inputs.map(input=>({itemId:input.itemId,quantity:input.quantity*4}))},bank:{...state.bank,capacity:200,stacks:[]}};

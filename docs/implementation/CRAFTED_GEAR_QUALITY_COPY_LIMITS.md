@@ -27,12 +27,14 @@
 
 ## Smithing / Tailoring: collapsed Forge chances guide
 
-- Both skills use `SmithingCollection` and show the same collapsed **Rarity chances & quality** disclosure at the bottom, after the Forge queue; it does not obstruct recipe actions.
+- Both skills use `SmithingCollection` and show the same collapsed **Rarity & quality** disclosure at the bottom of the **Equipment** tab, after the Forge queue; Materials and Tools do not show unrelated Forge odds. It does not obstruct recipe actions.
 - On the Equipment tab, odds apply to the currently selected crafted item and are computed from the same authoritative `CRAFTED_EPIC_CHANCE`, `CRAFTED_MYTHIC_CHANCE`, base rarity and stat multiplier rules as Forge claims.
 - For Common-base gear the actual result distribution is **99.30% Common / 0.60% Epic / 0.10% Mythic**, with relative rarity stat multipliers **1.00× / 1.50× / 2.20×** before quality.
 - High-base-rarity recipes correctly combine non-upgrade proc probability into their guaranteed original tier (e.g. base Mythic remains **100% Mythic**; no separate downgrade chance).
 - The quality section shows **Q0 −25%, Q25 −12.5%, Q50 normal, Q75 +12.5%, Q100 +25%** and explains that Attack, Defense and HP are modified on top of rarity/upgrades. No probabilities or gameplay rules are duplicated in UI state.
-- In the Materials and Tools subtabs, the disclosure keeps the generic Forge proc rates and explains that selecting Equipment is required for exact final rarity effects.
+- The guide is deliberately hidden on Materials and Tools; selecting Equipment shows the odds for the chosen piece.
+- Rarity rows use each rarity's official theme-aware name color and matching marker (Common grey, Epic purple, Mythic pink, etc.), with **Chance** and **Stats** columns. On narrow screens or large text settings they stack into two compact lines instead of clipping.
+- Three uncluttered quality examples explain Q0 −25% (red), Q50 normal (neutral), and Q100 +25% (green). Intermediate values scale between them. The disclosure is closed by default, with concise wording and no additional navigation or modal.
 - Regression checks cover the selected-equipment odds calculation for Common, Epic and Mythic baselines and ensure probabilities sum to 100%.
 
 ## Implementation

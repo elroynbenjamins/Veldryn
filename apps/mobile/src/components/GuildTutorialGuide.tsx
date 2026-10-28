@@ -38,9 +38,8 @@ export function GuildTutorialGuide({progress,role,home,reduceMotion=false,destin
   <Text accessibilityRole="header" accessibilityLiveRegion="polite" style={[s.title,{color:C.text,fontSize:exploring?15:18}]}>{t(step.title)}</Text>
   {!exploring?<>
    <Text style={[s.body,{color:C.text}]}>{t(step.body)}</Text>
-   <Text style={[s.tip,{color:C.info}]}>{t(guildTutorialContext(step.destination,role))}</Text>
-   {details&&<Text style={[s.tip,{color:C.muted}]}>{t(step.tip)}</Text>}
-  </>:!atTarget?<Text style={[s.tip,{color:C.info}]}>{t('Return to this section before continuing the guide.')}</Text>:<Text style={[s.tip,{color:C.muted}]}>{t('Look around below. No message, contribution or purchase is required.')}</Text>}
+   {details?<><Text style={[s.tip,{color:C.info}]}>{t(guildTutorialContext(step.destination,role))}</Text><Text style={[s.tip,{color:C.muted}]}>{t(step.tip)}</Text></>:null}
+  </>:!atTarget?<Text style={[s.tip,{color:C.info}]}>{t('Return to this section before continuing the guide.')}</Text>:null}
   <View style={{marginTop:4}}>
    <Animated.View pointerEvents="none" style={{position:'absolute',inset:-3,borderRadius:12,borderWidth:2,borderColor:C.accent,opacity:reduceMotion?1:pulse.interpolate({inputRange:[0,1],outputRange:[.2,.85]})}}/>
    <GameButton compact title={action} onPress={exploring&&atTarget?next:open}/>

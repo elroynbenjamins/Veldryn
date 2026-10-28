@@ -4,6 +4,18 @@ import {createTranslator} from './translator';
 // Each row contains English, German, Spanish, Dutch, Italian and French.
 // English source keys also let owned views translate core-generated presentation text.
 export const accountTranslationRows = {
+"Chat":["Chat","Chat","Chat","Chat","Chat","Discussion"],
+"Gameplay":["Gameplay","Spielablauf","Jugabilidad","Spelverloop","Gioco","Jouabilité"],
+"Appearance":["Appearance","Darstellung","Apariencia","Uiterlijk","Aspetto","Apparence"],
+"Accessibility":["Accessibility","Barrierefreiheit","Accesibilidad","Toegankelijkheid","Accessibilità","Accessibilité"],
+"Account":["Account","Konto","Cuenta","Account","Account","Compte"],
+"Data":["Data","Daten","Datos","Gegevens","Dati","Données"],
+"Store":["Store","Shop","Tienda","Winkel","Negozio","Boutique"],
+"Developer":["Developer","Entwickler","Desarrollador","Ontwikkelaar","Sviluppatore","Développeur"],
+"Help & Guide":["Help & Guide","Hilfe & Anleitung","Ayuda y guía","Hulp en uitleg","Aiuto e guida","Aide et guide"],
+"Combat, activities and number display.":["Combat, activities and number display.","Kampf, Aktivitäten und Zahlenanzeige.","Combate, actividades y formato numérico.","Gevechten, activiteiten en getallen.","Combattimento, attività e numeri.","Combat, activités et affichage des nombres."],
+"Chat bar, language channel and emotes.":["Chat bar, language channel and emotes.","Chatleiste, Sprachkanal und Emotes.","Barra de chat, canal de idioma y emoticonos.","Chatbalk, taalkanaal en emotes.","Barra chat, canale lingua ed emote.","Barre de discussion, canal de langue et émotes."],
+"AFK details":["AFK details","AFK-Details","Detalles de AFK","AFK-details","Dettagli AFK","Détails AFK"],
 "Auto-travel between queued activities":["Auto-travel between queued activities","Automatisch zwischen Warteschlangenaktivitäten reisen","Viajar automáticamente entre actividades en cola","Automatisch reizen tussen wachtrijactiviteiten","Viaggio automatico tra attività in coda","Voyage automatique entre les activités en file"],
 "Automatically switch between already-unlocked regions only after a safe queue handoff. Does not reset the AFK limit.":["Automatically switch between already-unlocked regions only after a safe queue handoff. Does not reset the AFK limit.","Automatisch nur nach sicherem Übergang in bereits freigeschaltete Regionen reisen. Das AFK-Limit wird nicht zurückgesetzt.","Cambia automáticamente entre regiones ya desbloqueadas solo tras una transición segura. No reinicia el límite AFK.","Wissel automatisch tussen al vrijgespeelde regio's na een veilige overdracht. De AFK-limiet wordt niet opnieuw gestart.","Cambia automaticamente tra regioni già sbloccate solo dopo un passaggio sicuro. Il limite AFK non si azzera.","Changez automatiquement de région débloquée après une transition sûre. La limite AFK n'est pas réinitialisée."],
 "Available with VIP, VIP+ or Supporter. Free players can still queue activities in their current region.":["Available with VIP, VIP+ or Supporter. Free players can still queue activities in their current region.","Verfügbar mit VIP, VIP+ oder Supporter. Kostenlose Spieler können weiterhin lokale Aktivitäten planen.","Disponible con VIP, VIP+ o Supporter. Los jugadores gratuitos pueden añadir actividades de su región.","Beschikbaar met VIP, VIP+ of Supporter. Gratis spelers kunnen activiteiten in hun huidige regio blijven plannen.","Disponibile con VIP, VIP+ o Supporter. I giocatori gratuiti possono mettere in coda le attività della regione corrente.","Disponible avec VIP, VIP+ ou Supporter. Les joueurs gratuits peuvent toujours planifier des activités dans leur région."],

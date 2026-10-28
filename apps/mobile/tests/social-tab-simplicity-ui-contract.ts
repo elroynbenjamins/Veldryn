@@ -4,6 +4,8 @@ function ok(condition:boolean,message:string){if(!condition)throw new Error(mess
 const social=fs.readFileSync('src/screens/SocialScreen.tsx','utf8');
 const hub=fs.readFileSync('src/components/SocialHubPanel.tsx','utf8');
 const party=fs.readFileSync('src/components/PartyHubPanel.tsx','utf8');
+const weekly=fs.readFileSync('src/components/PartyWeeklyLadder.tsx','utf8');
+const partyEvents=fs.readFileSync('src/components/PartyEventHubPanel.tsx','utf8');
 const app=fs.readFileSync('App.tsx','utf8');
 
 ok(app.includes("tab!=='Guild'&&tab!=='Social'&&tab!=='Party'"),'Social must not render the redundant global back/title bar');
@@ -19,5 +21,15 @@ ok(!social.includes('onFriends')&&!social.includes('heroStatus'),'Generic Friend
 ok(social.includes("<ChatPlayerSheet message={selectedProfile}"),'Player profile interactions must remain available');
 ok(social.includes('respondPartyInvitation(invite.id,true,character())'),'Party invite handling must remain available when unlocked');
 ok(social.includes("tab==='guild'&&(guildMembership===undefined"),'Guild membership and recruitment view must remain independent of Party lock');
+
+ok(!party.includes('onOpenPartyChat'),'Active Party should not repeat the Chat tab as a button');
+ok(party.includes("compact={!expandedContracts.includes(contract.id)}"),'Weekly Party rewards should start in compact mode');
+ok(weekly.includes('summary.claimable.map(t=><SocialActionButton'),'Compact Party rewards must remain directly claimable');
+ok(party.includes('{props.recruitmentPreferences}')&&party.includes('{props.ownedAdverts}'),'Party recruitment preferences and adverts must remain inside recruitment view');
+ok(!party.includes('showFilters'),'Recruitment must not have duplicate Filters toggles');
+ok(social.includes('showPartyEvents?<>'),'Party event details must start collapsed');
+ok(social.includes('showMatches?<Panel>'),'Recruitment matches must start collapsed');
+ok(partyEvents.includes('props.onOpenLeaderboard?<Pressable')&&partyEvents.includes('props.onClaimPersonalMilestone&&'),'Party event buttons must only appear when their callbacks are wired');
+ok(!social.includes('onFindParty={()=>setTab'),'Party Event must not show an inert Find Party action');
 
 console.log('PASS: Social navigation, Party lock, Guild independence, and party-only Chat UI contracts');

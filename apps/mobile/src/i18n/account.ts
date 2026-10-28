@@ -4,6 +4,8 @@ import {createTranslator} from './translator';
 // Each row contains English, German, Spanish, Dutch, Italian and French.
 // English source keys also let owned views translate core-generated presentation text.
 export const accountTranslationRows = {
+"Show locked topics":["Show locked topics","Gesperrte Themen anzeigen","Mostrar temas bloqueados","Vergrendelde onderwerpen tonen","Mostra argomenti bloccati","Afficher les sujets verrouillés"],
+"Hide locked topics":["Hide locked topics","Gesperrte Themen ausblenden","Ocultar temas bloqueados","Vergrendelde onderwerpen verbergen","Nascondi argomenti bloccati","Masquer les sujets verrouillés"],
 "Social & player profiles":["Social & player profiles","Soziales & Spielerprofile","Social y perfiles","Sociaal en spelersprofielen","Social e profili","Social et profils"],
 "Party and Guild have separate sections. Party Chat appears only while you belong to a Party.":["Party and Guild have separate sections. Party Chat appears only while you belong to a Party.","Gruppe und Gilde sind getrennt. Gruppenchat erscheint nur in einer Gruppe.","Grupo y gremio son independientes. El chat de grupo solo aparece al unirte.","Party en Gilde zijn apart. Partychat verschijnt alleen als je in een Party zit.","Gruppo e Gilda sono separati. La chat del gruppo appare solo quando ne fai parte.","Groupe et Guilde sont séparés. Le chat de groupe apparaît seulement après adhésion."],
 "Parties & weekly rewards":["Parties & weekly rewards","Gruppen & Wochenbelohnungen","Grupos y recompensas semanales","Parties en weekbeloningen","Gruppi e ricompense settimanali","Groupes et récompenses hebdomadaires"],

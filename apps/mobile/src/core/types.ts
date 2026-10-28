@@ -6,7 +6,7 @@ import type {ClassSkillState,ClassDrills,TrainingFocus} from './class-skills';
 export type ClassId = 'IRONWARDEN' | 'BASTION' | 'DREADGUARD' | 'DAWNKEEPER' | 'WAYFINDER' | 'RAVAGER' | 'HEXWEAVER' | 'KNIFE_DANCER' | 'STONECALLER';
 export type BodyPresentation = 'male' | 'female';
 export type GearSlot = 'weapon' | 'offhand' | 'helmet' | 'chest' | 'legs' | 'boots' | 'gloves' | 'cape' | 'amulet' | 'ring';
-export interface CharacterLoadoutPreset{id:string;slotIndex:number;name:string;classId:ClassId;equipment:Partial<Record<GearSlot,string>>;foodId?:string;companionId?:string;createdAtMs:number;updatedAtMs:number;}
+export interface CharacterLoadoutPreset{id:string;slotIndex:number;name:string;classId:ClassId;equipment:Partial<Record<GearSlot,string>>;equipmentInstanceIds?:Partial<Record<GearSlot,string>>;foodId?:string;companionId?:string;createdAtMs:number;updatedAtMs:number;}
 export type GemStat = 'attack'|'defense'|'hp';
 export type GemSocketKind='stat'|'effect';
 export type GemEffectId='combat_speed'|'boss_power'|'damage_reduction'|'recovery';
@@ -36,6 +36,8 @@ export interface CharacterState {
   id:string; name:string; classId:ClassId; level:number; xp:number; gold:number;
   hp:number; currentHp:number; attack:number; defense:number;
   equipment:Partial<Record<GearSlot,string>>;
+  /** Future instance-bound equipment slots; missing slots are legacy/unverified. */
+  equipmentInstanceIds?:Partial<Record<GearSlot,string>>;
   /** Local prototype key is the gear definition ID. Online persistence maps this shape to owned item instances. */
   gearEnhancements?:Record<string,GearEnhancementState>;
   /** One character-bound gathering tool per skill. Equipped tools are removed from Inventory. */
@@ -110,7 +112,7 @@ export interface GameState {
   /** Optional server/read-model projection for versioned regional journals. */
   regionalProgressById?:Record<string,RegionalProgressState>;
   quests:QuestState[]; unlockedMonsterIds:string[]; exploredRouteIds?:string[]; defeatedBossIds:string[]; skills:SkillState[];
-  account:CompanionAccountState & {longTermAccountScopeId?:string;entitlements?:Record<string,boolean>;playerNameStyle?:import('./player-name-style').PlayerNameStylePreference;vipPlusNameColor?:string;equipmentCraftingQueue?:EquipmentCraftJob[];craftedGearInstances?:CraftedGearInstance[];unlockedCharacterSlots?:number;premiumCurrencyBalance?:number;ownedBoostIds?:string[];eventCommunityProgressById?:Record<string,number>;createdCharacterCount:number;guildMember:boolean;patronTier:'none'|'bloom'|'crown';guildBackgroundId?:import('./guild-customization').GuildBackgroundId;guildBannerId?:import('./guild-customization').GuildBannerId;guildProfileFrameId?:import('./guild-customization').GuildFrameId;guildNameplateId?:import('./guild-customization').GuildNameplateId;guildMotto?:string;
+  account:CompanionAccountState & {longTermAccountScopeId?:string;entitlements?:Record<string,boolean>;playerNameStyle?:import('./player-name-style').PlayerNameStylePreference;vipPlusNameColor?:string;equipmentCraftingQueue?:EquipmentCraftJob[];craftedGearInstances?:CraftedGearInstance[];craftedGearAutoSellMode?:import('./crafted-gear-retention').CraftedGearAutoSellMode;unlockedCharacterSlots?:number;premiumCurrencyBalance?:number;ownedBoostIds?:string[];eventCommunityProgressById?:Record<string,number>;createdCharacterCount:number;guildMember:boolean;patronTier:'none'|'bloom'|'crown';guildBackgroundId?:import('./guild-customization').GuildBackgroundId;guildBannerId?:import('./guild-customization').GuildBannerId;guildProfileFrameId?:import('./guild-customization').GuildFrameId;guildNameplateId?:import('./guild-customization').GuildNameplateId;guildMotto?:string;
   unlockedGuildCosmeticIds?:string[];
   professionMasteryByAction?:Record<string,import('./profession-mastery-v40').ProfessionMasteryRecord>;
   weeklyOrders?:import('./weekly-orders-v41').WeeklyOrdersState;

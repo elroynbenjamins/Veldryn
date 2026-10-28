@@ -95,12 +95,12 @@ export function CoopEventExpeditionDetails({language,event,currentLevel,loadoutR
   </ExpeditionScreenShell>;
 }
 
-type DetailsProps={language:Language;dungeon:CoopDungeonView;currentLevel:number;currentPower?:number;mode:CoopMode;tier?:CoopTier;liveFellowshipRemaining?:number;notice?:string;onBack:()=>void;onTier:(tier:CoopTier)=>void;onContinue:(tier:CoopTier)=>void};
-export function CoopDungeonDetails({language,dungeon,currentLevel,currentPower=0,mode,tier,liveFellowshipRemaining=3,notice,onBack,onTier,onContinue}:DetailsProps){
+type DetailsProps={language:Language;dungeon:CoopDungeonView;currentLevel:number;currentPower?:number;mode:CoopMode;tier?:CoopTier;readyToStart?:boolean;busy?:boolean;liveFellowshipRemaining?:number;notice?:string;onBack:()=>void;onTier:(tier:CoopTier)=>void;onContinue:(tier:CoopTier)=>void};
+export function CoopDungeonDetails({language,dungeon,currentLevel,currentPower=0,mode,tier,readyToStart=false,busy=false,liveFellowshipRemaining=3,notice,onBack,onTier,onContinue}:DetailsProps){
  const {styles:s}=useCoopStyles(makeStyles),a=(text:string)=>accountText(language,text);
  const autoTier=highestEligibleCoopTier(dungeon,currentLevel),effectiveTier=mode==='live'?autoTier:tier,eligibility=effectiveTier?coopTierEligibility(dungeon,effectiveTier,currentLevel):undefined,requiredLevel=eligibility?.requiredLevel??dungeon.minLevel,canContinue=dungeon.available&&!!eligibility?.eligible;
  const roomCount=dungeon.preBossRoomMin===dungeon.preBossRoomMax?String(dungeon.preBossRoomMin):dungeon.preBossRoomMin+'–'+dungeon.preBossRoomMax;
- return <ExpeditionScreenShell compactHeader titleInHero eyebrow={ct(language,'details.kicker')} title={dungeon.name} onBack={onBack} backLabel={ct(language,'details.backList')} stickyAction={<View style={s.stickyStack}>{notice?<Text accessibilityRole="alert" style={s.notice}>{notice}</Text>:null}<PrimaryAction label={a('Continue')} disabled={!canContinue} onPress={()=>effectiveTier&&canContinue&&onContinue(effectiveTier)}/></View>}>
+ return <ExpeditionScreenShell compactHeader titleInHero eyebrow={ct(language,'details.kicker')} title={dungeon.name} onBack={onBack} backLabel={ct(language,'details.backList')} stickyAction={<View style={s.stickyStack}>{notice?<Text accessibilityRole="alert" style={s.notice}>{notice}</Text>:null}<PrimaryAction label={readyToStart?(mode==='live'?a('Find Party'):a('Start Dungeon')):a('Prepare Loadout')} disabled={!canContinue||busy} loading={busy} onPress={()=>effectiveTier&&canContinue&&onContinue(effectiveTier)}/></View>}>
   <DungeonHero title={dungeon.name} source={dungeon.heroArtId?coopUiAssets[dungeon.heroArtId]:undefined} label={dungeon.region??ct(language,'details.kicker')} description=""/>
   <View style={s.quickFacts}><StateChip label={ct(language,'browse.requiresLevel',{level:requiredLevel})}/><StateChip label={dungeon.estimatedMinutes.min+'–'+dungeon.estimatedMinutes.max+' '+a('min')}/><StateChip label={mode==='live'?a('Live'):a('Solo')} tone="selected"/></View>
   {!dungeon.available?<Text accessibilityRole="alert" style={s.lock}>{dungeon.lockedReason??ct(language,'browse.locked')}</Text>:null}

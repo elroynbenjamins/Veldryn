@@ -2,7 +2,7 @@ import {V33_EQUIPMENT_RECIPES} from '../src/content/equipment-recipes-v33';
 import {claimOverflowToBank,createCharacter,depositToBank,equipItem,newGame,sellItem,stackItems,unequipItem} from '../src/core/game';
 import {claimAllReadyEquipmentCrafts,claimEquipmentCraft,equipmentCraftingQueue,startEquipmentCraft} from '../src/core/equipment-crafting-queue';
 import {CRAFTED_EPIC_CHANCE,CRAFTED_MYTHIC_CHANCE,craftedGearRarity,craftedRarityStatMultiplier} from '../src/core/crafted-gear-rarity';
-import {MAX_CRAFTED_GEAR_INSTANCES,TARGET_CRAFTED_GEAR_COPIES_PER_ITEM,bestCraftedInstanceForItem,craftedGearCopyCapacity,craftedGearInstances,craftedGearQualityRoll,craftClaimSubRoll,effectiveOwnedGearRarity,normalizeCraftedGearInstances,createCraftedGearInstance,craftedGearLegacyOwnershipAudit} from '../src/core/crafted-gear-instances';
+import {MAX_CRAFTED_GEAR_INSTANCES,TARGET_CRAFTED_GEAR_COPIES_PER_ITEM,bestCraftedInstanceForItem,craftedGearCopyCapacity,craftedGearInstances,craftedGearQualityRoll,craftedGearDisplayQuality,craftedGearQualityMultiplier,craftClaimSubRoll,effectiveOwnedGearRarity,normalizeCraftedGearInstances,createCraftedGearInstance,craftedGearLegacyOwnershipAudit} from '../src/core/crafted-gear-instances';
 import {enhancedGearStats,upgradeQuote} from '../src/core/equipment-enhancement';
 import {itemDef} from '../src/content/items';
 import {itemRarity} from '../src/core/item-rarity';
@@ -133,6 +133,14 @@ const taggedState={...state,inventory:{...state.inventory,stacks:state.inventory
   row.itemId===recipe.output.itemId?{...row,instanceId:ownedIds[taggedIndex++]}:row)}};
 const linkedAudit=auditCraftedGearOwnership(taggedState);
 ok(linkedAudit.consistent&&linkedAudit.linked.length===2,'Explicit instance markers should verify exactly two physical Forge copies');
+const legacyQ50State={...taggedState,account:{...taggedState.account,craftedGearInstances:craftedGearInstances(taggedState).map((row,i)=>i===0?{...row,quality:undefined}:row)}};
+const explicitQ50State={...taggedState,account:{...taggedState.account,craftedGearInstances:craftedGearInstances(taggedState).map((row,i)=>i===0?{...row,quality:50}:row)}};
+const oldQ50Equipped=executeGameCommand(legacyQ50State,{type:'gear_equip',args:{instanceId:ownedIds[0]}},1199).state;
+const newQ50Equipped=executeGameCommand(explicitQ50State,{type:'gear_equip',args:{instanceId:ownedIds[0]}},1199).state;
+const oldStats=enhancedGearStats(oldQ50Equipped,recipe.output.itemId),q50Stats=enhancedGearStats(newQ50Equipped,recipe.output.itemId);
+ok(oldStats.hp===q50Stats.hp&&oldStats.attack===q50Stats.attack&&oldStats.defense===q50Stats.defense,
+  'Legacy Q50 must give the exact same effective equipment stats as a new Q50 Forge roll');
+ok(auditCraftedGearOwnership(oldQ50Equipped).consistent,'Equipping a legacy quality receipt must not alter physical ownership');
 const equippedByCommand=executeGameCommand(taggedState,{type:'gear_equip',args:{instanceId:ownedIds[0]}},1200);
 ok(equippedByCommand.state.character?.equipmentInstanceIds?.[itemDef(recipe.output.itemId).slot!]===ownedIds[0],'Validated game command must equip the selected exact-copy receipt');
 ok(auditCraftedGearOwnership(equippedByCommand.state).consistent,'Equipped exact-copy command must preserve ownership audit consistency');
@@ -242,6 +250,18 @@ const normalized=normalizeSave({...state,version:6} as any);
 ok(normalized.account.craftedGearInstances?.length===2,'Save normalization must preserve crafted gear instances');
 ok(normalized.account.craftedGearInstances?.some(row=>row.rarity==='epic'),'Save normalization must preserve crafted instance rarity');
 ok(normalized.account.craftedGearInstances?.every(row=>row.quality!==undefined),'Save normalization must preserve deterministic crafted quality');
+ok(craftedGearQualityMultiplier(1)===.95&&craftedGearQualityMultiplier(50)===1&&craftedGearQualityMultiplier(100)===1.05,
+  'Q50 must be an exact neutral stat midpoint, with -5% and +5% endpoints');
+const oldForgeRecord={...craftedGearInstances(state)[0],quality:undefined,locked:true,enhancement:{...craftedGearInstances(state)[0].enhancement,rank:2}};
+const normalizedOldForge=normalizeSave({...state,account:{...state.account,craftedGearInstances:[oldForgeRecord,...craftedGearInstances(state).slice(1)]}} as any);
+const restoredOldForge=craftedGearInstances(normalizedOldForge)[0];
+ok(restoredOldForge.quality===undefined&&craftedGearDisplayQuality(restoredOldForge)===50,
+  'Older Forge receipts must display Q50 without forging a historical quality roll');
+ok(restoredOldForge.id===oldForgeRecord.id&&restoredOldForge.statRoll===oldForgeRecord.statRoll&&restoredOldForge.locked===true&&restoredOldForge.enhancement.rank===2,
+  'Legacy Q50 compatibility must preserve the original receipt, stat variance, lock and upgrade data');
+ok(auditCraftedGearOwnership(normalizedOldForge).consistent===auditCraftedGearOwnership(state).consistent,
+  'Displaying legacy Q50 must never create or change physical equipment ownership');
+
 const oversized=Array.from({length:MAX_CRAFTED_GEAR_INSTANCES+1},(_,i)=>({...craftedGearInstances(state)[0],id:`oversized:${i}`,sourceReceiptKey:`oversized:${i}`}));
 ok(normalizeCraftedGearInstances(oversized).length===oversized.length,'Legacy over-cap saves must never silently lose crafted instances during normalization');
 let capacityError=false;

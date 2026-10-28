@@ -173,7 +173,7 @@ const selectedIndex=Math.max(0,COMBAT_COMPANIONS.findIndex(def=>def.id===selecti
       </View>
       <Pressable accessibilityRole="button" accessibilityLabel={t("Choose Team")} onPress={()=>setTrialSheet('team')} style={[s.trialTeam,trialTeamValid&&s.trialTeamReady]}>
         <View style={s.trialMiniTeam}>{trialPreviewTeam.map(id=>{const def=COMBAT_COMPANIONS.find(row=>row.id===id),art=companionArtSource(id);return <View key={id} style={s.trialMiniSlot}>{art?<Image source={art} resizeMode="contain" style={s.trialMiniArt}/>:<UiIcon name="companions" size={24}/>}<Text style={s.trialMiniRole}>{def?roleGlyph[def.role]:'?'}</Text></View>})}{Array.from({length:Math.max(0,3-trialPreviewTeam.length)},(_,index)=><View key={'empty:'+index} style={s.trialMiniSlot}><UiIcon name="companions" size={22}/></View>)}</View>
-        <View style={s.flex}><Text style={s.name} numberOfLines={1}>{run?t("Team locked during a run"):trialTeamValid?t("Team Power {value0}",{value0:amount(companionTeamPower(safeTeam,view.owned))}):t("Choose Team")}</Text><Text style={s.body} numberOfLines={1}>{run?run.teamCompanionIds.map(named).join(' · '):trialTeamValid?'Tank · Damage · Support':t("Trial team incomplete")}</Text></View>
+        <View style={s.flex}><Text style={s.name} numberOfLines={1}>{run?t("Team locked during a run"):trialTeamValid?t("Team Power {value0}",{value0:amount(companionTeamPower(safeTeam,view.owned))}):t("Choose Team")}</Text><Text style={s.body} numberOfLines={1}>{run?run.teamCompanionIds.map(named).join(' · '):trialTeamValid?`${label('tank')} · ${label('damage')} · ${label('support')}`:t("Trial team incomplete")}</Text></View>
         <Text style={s.trialArrow}>›</Text>
       </Pressable>
       <View style={s.trialNext}>
@@ -184,10 +184,11 @@ const selectedIndex=Math.max(0,COMBAT_COMPANIONS.findIndex(def=>def.id===selecti
       {run?btn(t("Fight next floor"),'companion_trial_floor',{id:run.runId,floor:run.currentFloor},recovery>0):trialTeamValid?btn(t("Start at checkpoint {value0}",{value0:view.trial.projection.checkpointFloor}),'companion_trial_start',{ids:safeTeam}):<GameButton title={trialSuggestion.ready?t("Use suggested team"):t("Choose Team")} disabled={busy} onPress={()=>{if(trialSuggestion.ready){setTeam(trialSuggestion.ids)}else setTrialSheet('team')}}/>}
       <GameButton compact tone="secondary" title={t("Challenges & Rewards")+(claimableCount?" · "+claimableCount:"")} onPress={()=>setTrialSheet("challenges")}/>
       <Pressable accessibilityRole="button" accessibilityState={{expanded:showTrialDetails}} style={s.trialMore} onPress={()=>setShowTrialDetails(value=>!value)}>
-        <Text style={s.trialMoreText}>{t("Encounter details")} · {t("Monthly best {value0}/30 · Lifetime best {value1}/30",{value0:view.trial.projection.currentSeasonHighestFloor,value1:view.trial.projection.lifetimeHighestFloor})}</Text>
+        <Text style={s.trialMoreText}>{t("Floor map & details")}</Text>
         <Text style={s.trialArrow}>{showTrialDetails?'−':'+'}</Text>
       </Pressable>
       {showTrialDetails?<View style={s.trialExpanded}>
+        <Text style={s.body}>{t("Monthly best {value0}/30 · Lifetime best {value1}/30",{value0:view.trial.projection.currentSeasonHighestFloor,value1:view.trial.projection.lifetimeHighestFloor})}</Text>
         <CompanionTower onBossPress={floor=>{setBossFloor(floor);setTrialSheet("boss")}} currentFloor={trialPreviewFloor} completed={!run&&view.trial.projection.currentSeasonHighestFloor>=COMPANION_TRIAL_FLOOR_COUNT} highestFloor={view.trial.projection.currentSeasonHighestFloor}/>
         <GameButton compact tone="secondary" title={t("Encounter details")} onPress={()=>setTrialSheet("battle")}/>
         {!run&&view.trial.projection.checkpointFloor>1&&<GameButton compact tone="secondary" title={t("Replay from Floor 1")} disabled={busy||!trialTeamValid} onPress={()=>act('companion_trial_start',{ids:safeTeam,floor:1})}/>}

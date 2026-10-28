@@ -42,6 +42,11 @@ export function createEventAnnouncementStore(storage:AnnouncementStorage){
   const storageKey=key(scope),previous=queues.get(storageKey)??Promise.resolve();
   const task=previous.catch(()=>undefined).then(async()=>{
    if(!runtime.enabled||nowMs<runtime.startsAtMs||nowMs>=runtime.endsAtMs)return;
+   let previousReceipt=memory.get(storageKey);
+   if(!memory.has(storageKey)){
+    try{const raw=await storage.getItem(storageKey);previousReceipt=normalizeLiveEventAnnouncementReceipt(raw?JSON.parse(raw):undefined);}catch{previousReceipt=undefined;}
+   }
+   if(previousReceipt?.eventId===runtime.eventId&&previousReceipt.startsAtMs===runtime.startsAtMs){memory.set(storageKey,previousReceipt);return;}
    const receipt:LiveEventAnnouncementReceipt={eventId:runtime.eventId,startsAtMs:runtime.startsAtMs,shownAtMs:nowMs};
    memory.set(storageKey,receipt);
    try{await storage.setItem(storageKey,JSON.stringify(receipt));}catch{/* In-session viewing still suppresses the reminder. */}

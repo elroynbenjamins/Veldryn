@@ -13,8 +13,8 @@ export function CharacterIdentityHero({state,onProfile,compact=false}:{state:Gam
   hero:{borderWidth:1,borderColor:C.line,borderRadius:14,overflow:'hidden',backgroundColor:C.panel},
   shade:{...StyleSheet.absoluteFill,backgroundColor:C.dark?'rgba(0,0,0,.55)':'rgba(255,255,255,.86)'},
   body:{padding:16,flexDirection:'row',alignItems:'center',gap:12},compactBody:{padding:10,gap:8},copy:{flex:1,minWidth:0,gap:7},compactCopy:{gap:2},headingRow:{flexDirection:'row',alignItems:'center',justifyContent:'space-between',gap:8},
-  title:{fontSize:27,lineHeight:34,fontWeight:'800',color:C.text},compactTitle:{fontSize:20,lineHeight:25},name:{fontSize:19,lineHeight:25,fontWeight:'700',color:C.text},compactName:{fontSize:15,lineHeight:20},
-  meta:{fontSize:12,lineHeight:18,color:C.muted},edit:{minHeight:44,alignSelf:'flex-start',justifyContent:'center',paddingHorizontal:12,borderWidth:1,borderColor:C.lineStrong,borderRadius:8,backgroundColor:C.panel},editText:{fontSize:13,fontWeight:'600',color:C.text},compactEdit:{minHeight:44,paddingHorizontal:8,justifyContent:'center',borderWidth:1,borderColor:C.lineStrong,borderRadius:8,backgroundColor:C.panel},compactEditText:{fontSize:11,fontWeight:'700',color:C.text},
+  title:{fontSize:27,lineHeight:34,fontWeight:'800',color:C.text},compactTitle:{fontSize:20,lineHeight:25,flexShrink:1},name:{fontSize:19,lineHeight:25,fontWeight:'700',color:C.text},compactName:{fontSize:15,lineHeight:20},
+  meta:{fontSize:12,lineHeight:18,color:C.muted},edit:{minHeight:44,alignSelf:'flex-start',justifyContent:'center',paddingHorizontal:12,borderWidth:1,borderColor:C.lineStrong,borderRadius:8,backgroundColor:C.panel},editText:{fontSize:13,fontWeight:'600',color:C.text},compactEdit:{minHeight:44,maxWidth:132,paddingHorizontal:8,justifyContent:'center',borderWidth:1,borderColor:C.lineStrong,borderRadius:8,backgroundColor:C.panel},compactEditText:{fontSize:11,fontWeight:'700',color:C.text},
   portrait:{width:112,height:112},compactPortrait:{width:76,height:76},toolkitPortrait:{width:60,height:60},
  }),[C]);
  if(!state.character)return null;

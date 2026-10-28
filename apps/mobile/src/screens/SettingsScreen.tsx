@@ -69,13 +69,13 @@ export function SettingsScreen({state,onLanguage,onReset,onChange,onRefreshComme
   const theme=useGameTheme(),s=useMemo(()=>makeStyles(theme),[theme]);
   const [selectedSection,setSection]=useState<SettingsSection|null>(initialSection??null);
   const [guideId,setGuideId]=useState<GameGuideId>();
-   const [showAfkDetails,setShowAfkDetails]=useState(false),[showEmotes,setShowEmotes]=useState(false);
+   const [showAfkDetails,setShowAfkDetails]=useState(false),[showEmotes,setShowEmotes]=useState(false),[showActivityControls,setShowActivityControls]=useState(false),[showDeleteControls,setShowDeleteControls]=useState(false);
   const {width}=useWindowDimensions(),phone=width<768;
   const section=phone?selectedSection:selectedSection??'gameplay';
   const navigationStyles=useMemo(()=>makeNavigationStyles(theme),[theme]);
   const sections:SettingsSection[]=['gameplay','chat','appearance','accessibility','account','data','store','guide',...(__DEV__&&!online?['developer' as const]:[])];
-  const sectionLabel=(value:SettingsSection)=>value==='guide'?a('Help & Guide'):value==='store'?a('Store'):a(value.charAt(0).toUpperCase()+value.slice(1));
-  const sectionDescription=(value:SettingsSection)=>value==='gameplay'?a("Combat, activities and number display."):value==='chat'?a("Chat bar, language channel and emotes."):value==='appearance'?a("Choose a complete UI theme. Gameplay colors keep the same meaning in every theme."):value==='accessibility'?a("Make text, motion, and language fit your play style."):value==='account'?a("Manage your connected account and profile preferences."):value==='store'?a("Manage VIP, VIP+, Supporter and restore Google Play purchases."):value==='data'?a("Export, import, or recover your local progress."):value==='guide'?a("Browse the interactive VELDRYN help guide."):a("Development tools and visual QA controls.");
+  const sectionLabel=(value:SettingsSection)=>value==='guide'?a('Help & Guide'):value==='data'?a('Data & Privacy'):value==='store'?a('Store'):a(value.charAt(0).toUpperCase()+value.slice(1));
+  const sectionDescription=(value:SettingsSection)=>value==='gameplay'?a("Combat, activities and number display."):value==='chat'?a("Chat bar, language channel and emotes."):value==='appearance'?a("Choose a complete UI theme. Gameplay colors keep the same meaning in every theme."):value==='accessibility'?a("Make text, motion, and language fit your play style."):value==='account'?a("Manage your connected account and profile preferences."):value==='store'?a("Manage VIP, VIP+, Supporter and restore Google Play purchases."):value==='data'?a("Backups, save information and privacy."):value==='guide'?a("Browse the interactive VELDRYN help guide."):a("Development tools and visual QA controls.");
   const scrollRef=useRef<ScrollView>(null),scrollPositions=useRef<Record<string,number>>({}),restoredPage=useRef<string|undefined>(undefined);
   const pageKey=(phone?'phone:':'wide:')+(section??'index');
   const restoreScroll=()=>{if(restoredPage.current===pageKey)return;scrollRef.current?.scrollTo({y:scrollPositions.current[pageKey]??0,animated:false});restoredPage.current=pageKey;};
@@ -114,6 +114,16 @@ export function SettingsScreen({state,onLanguage,onReset,onChange,onRefreshComme
         value={premiumRegionQueue&&state.settings.autoTravelQueuedActivities===true} disabled={!premiumRegionQueue} onValueChange={value=>update({autoTravelQueuedActivities:value})}/>
       <GameButton compact title={a("Restore gameplay defaults")} tone="secondary" onPress={restoreDefaults}/>
     </Panel>
+    {state.activity?<Panel>
+      <Pressable accessibilityRole="button" accessibilityState={{expanded:showActivityControls}} onPress={()=>setShowActivityControls(value=>!value)} style={({pressed})=>[s.disclosure,pressed&&s.pressed]}>
+        <View style={s.flex}>
+          <Text style={[s.title,{color:theme.text}]}>{a("Current activity")}</Text>
+          <Text numberOfLines={1} style={[s.muted,{color:theme.muted}]}>{a('Active: {target} ({kind})',{target:state.activity.targetId,kind:a(state.activity.kind.charAt(0).toUpperCase()+state.activity.kind.slice(1))})}</Text>
+        </View>
+        <View style={showActivityControls?s.disclosureArrowOpen:undefined}><UiIcon name="next" size={18} muted/></View>
+      </Pressable>
+      {showActivityControls?<View style={s.detailStack}><GameButton title={a("Stop current activity")} tone="danger" onPress={()=>onChange({...state,activity:null})}/></View>:null}
+    </Panel>:null}
     </>}
     {section==='chat'&&<><Panel>
       <SettingToggle language={language} label={a("Show chat")} description={a("Show the chat dock above navigation. Turn it off to keep chat hidden while you play.")} value={state.settings.autoJoinWorldChat!==false} onValueChange={autoJoinWorldChat=>update({autoJoinWorldChat})}/>
@@ -141,19 +151,30 @@ export function SettingsScreen({state,onLanguage,onReset,onChange,onRefreshComme
       <Text style={[s.sub,{color:theme.muted}]}>{t(state.settings.language,'settings.languageStatus')}</Text>
       <View style={s.languageGrid}>{SUPPORTED_LANGUAGES.map(id=><SettingChip key={id} label={LANGUAGE_NAMES[id]} selected={state.settings.language===id} onPress={()=>onLanguage(id)}/>)}</View>
     </Panel></>}
-    {section==='data'&&<><Panel>
-      <Text style={[s.title,{color:theme.text}]}>{t(state.settings.language,'settings.session')}</Text>
-      <Text style={[s.sub,{color:theme.muted}]}>{state.activity?a('Active: {target} ({kind})',{target:state.activity.targetId,kind:a(state.activity.kind.charAt(0).toUpperCase()+state.activity.kind.slice(1))}):a("No activity running")}</Text>
-      <GameButton title={a("Stop current activity")} tone="danger" disabled={!state.activity} onPress={()=>onChange({...state,activity:null})}/>
-    </Panel>
-    <>{online?<GameButton title={a("Export a copy of my online save")} tone="secondary" onPress={()=>onExport()}/>:<SaveTransferPanel language={language} onExport={onExport} onImport={onImport} reduceMotion={state.settings.reduceMotion}/>}</>
-    <Panel>
-      <Text style={[s.title,{color:theme.text}]}>{t(state.settings.language,'settings.privacy')}</Text>
-      <Text style={[s.sub,{color:theme.muted}]}>{online?a("Your account and gameplay progress are stored on VELDRYN servers. Your older local save stays on this device."):a("Offline progress remains on this device. Local progress cannot be uploaded as online rewards.")}</Text>
-      {!online&&<GameButton title={a("Delete local save")} tone="danger" onPress={onReset}/>}
-    </Panel></>}
+    {section==='data'&&<>
+      {online?<Panel>
+        <Text style={[s.title,{color:theme.text}]}>{a("Save backup")}</Text>
+        <Text style={[s.muted,{color:theme.muted}]}>{a("Your progress is saved after every successful action.")}</Text>
+        <GameButton title={a("Export a copy of my online save")} tone="secondary" onPress={()=>onExport()}/>
+      </Panel>:<SaveTransferPanel language={language} onExport={onExport} onImport={onImport} reduceMotion={state.settings.reduceMotion}/>}
+      <Panel>
+        <Text style={[s.title,{color:theme.text}]}>{t(state.settings.language,'settings.privacy')}</Text>
+        <Text style={[s.sub,{color:theme.muted}]}>{online?a("Your account and gameplay progress are stored on VELDRYN servers. Your older local save stays on this device."):a("Offline progress remains on this device. Local progress cannot be uploaded as online rewards.")}</Text>
+        <GameButton title={a("Privacy Policy")} tone="secondary" onPress={()=>openExternal(PRIVACY_POLICY_URL)}/>
+      </Panel>
+      {!online?<Panel>
+        <Pressable accessibilityRole="button" accessibilityState={{expanded:showDeleteControls}} onPress={()=>setShowDeleteControls(value=>!value)} style={({pressed})=>[s.disclosure,pressed&&s.pressed]}>
+          <Text style={[s.disclosureLabel,{color:theme.bad}]}>{a("Delete local save")}</Text>
+          <View style={showDeleteControls?s.disclosureArrowOpen:undefined}><UiIcon name="next" size={18} muted/></View>
+        </Pressable>
+        {showDeleteControls?<View style={s.detailStack}>
+          <Text style={[s.sub,{color:theme.muted}]}>{a("Deleting your local save removes progress stored on this device.")}</Text>
+          <GameButton title={a("Delete local save")} tone="danger" onPress={onReset}/>
+        </View>:null}
+      </Panel>:null}
+    </>}
     {section==='developer'&&__DEV__&&!online&&<DeveloperTools state={state} onChange={onChange} onOpenCoopUiGallery={onOpenCoopUiGallery}/>}
-    {(!section||section==='account'||section==='data')?<View style={s.footerLinks}>{onOpenUpdates?<GameButton compact title={a("What's New & Updates")} tone="secondary" onPress={onOpenUpdates}/>:null}<GameButton compact title={a("Privacy Policy")} tone="secondary" onPress={()=>openExternal(PRIVACY_POLICY_URL)}/></View>:null}
+    {(!section||section==='account')?<View style={s.footerLinks}>{onOpenUpdates?<GameButton compact title={a("What's New & Updates")} tone="secondary" onPress={onOpenUpdates}/>:null}<GameButton compact title={a("Privacy Policy")} tone="secondary" onPress={()=>openExternal(PRIVACY_POLICY_URL)}/></View>:null}
     {(section==='account'||!section)?<View>
       <Text selectable style={s.sub}>{appBuildText(language,'version',{version:APP_BUILD_INFO.version})}{APP_BUILD_INFO.buildNumber?` · ${appBuildText(language,'build',{build:APP_BUILD_INFO.buildNumber})}`:''}</Text>
       <Text selectable style={s.sub}>{appBuildText(language,'channel',{channel:APP_BUILD_INFO.releaseChannel})}</Text>

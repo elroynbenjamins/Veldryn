@@ -7,6 +7,7 @@ const crafting=read('components/InventoryCraftingPanel.tsx');
 const world=read('screens/WorldScreen.tsx');
 const guild=read('screens/GuildScreen.tsx');
 const party=read('components/PartyHubPanel.tsx');
+const equipment=read('components/EquipmentSetProgressPanel.tsx');
 assert.ok(events.includes('[showRates,setShowRates]=useState(false)'), 'event drop-rate detail starts collapsed');
 assert.ok(events.includes('accessibilityState={{expanded:showRates}}'), 'event earning disclosure state is accessible');
 assert.ok(events.includes('showRates?<Panel>'), 'exact earning rates and discovery odds remain opt-in');
@@ -23,4 +24,6 @@ assert.ok(!guild.includes("{(['Activities','Hall','Roster','Manage'] as const).s
 assert.ok(guild.includes('<GuildNavigation value={onlineSection}')&&guild.includes('activityView==='), 'Guild section navigation intact');
 assert.ok(!party.includes('Shared weekly progress. Personal minimums prevent zero-contribution rewards.'), 'hide passive Party explanation');
 assert.ok(party.includes('<PartyWeeklyLadder')&&party.includes('<RecruitmentFiltersPanel'), 'contract and recruitment controls intact');
-console.log('PASS: event, crafting, world, guild and party simplicity invariants');
+assert.ok(!equipment.includes('SET COLLECTION · V33')&&!equipment.includes('authored trigger hook'), 'set progress hides internal version and implementation terms');
+assert.ok(equipment.includes('progress.thresholds.map(')&&equipment.includes('progress.crafted'), 'set milestones and piece counts remain visible');
+console.log('PASS: event, crafting, world, guild, party and equipment simplicity invariants');

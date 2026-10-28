@@ -2,12 +2,13 @@ import {useEffect,useMemo,useRef} from 'react';
 import {Animated,Easing,StyleSheet,Text,View} from 'react-native';
 import {dungeonCombatClassFx} from '../core/dungeon-combat-fx';
 import type {ClassId} from '../core/types';
+import type {GuildPveAttemptHit} from '../core/guild-pve-attempt-timeline';
 import {useGameTheme} from '../theme/ThemeContext';
 
 /**
- * The Guild PvE endpoint exposes aggregate HP, an attempt countdown and final
- * damage totals, but not per-hit events. These are repeating, illustrative
- * class/companion battle motions. They NEVER calculate or decrement HP.
+ * The Guild PvE endpoint exposes aggregate HP and server-committed damage.
+ * Each animated cue is a timed partition of that committed attempt total,
+ * not a separately simulated hit. These effects NEVER decrement boss HP.
  */
 export function guildRaidAttackPresentation(classId:ClassId|undefined){
  const classFx=dungeonCombatClassFx(classId);
@@ -16,36 +17,28 @@ export function guildRaidAttackPresentation(classId:ClassId|undefined){
  return {kind,glyph:classFx?.damageGlyph??'╱',accent:classFx?.damageAccent??'gold'};
 }
 
-export function useGuildRaidCombatMotion(active:boolean,reduceMotion:boolean){
+export function useGuildRaidCombatMotion(active:boolean,reduceMotion:boolean,hit?:GuildPveAttemptHit){
  const strike=useRef(new Animated.Value(0)).current;
  const assist=useRef(new Animated.Value(0)).current;
  useEffect(()=>{
-  strike.stopAnimation();assist.stopAnimation();strike.setValue(0);assist.setValue(0);
-  if(!active||reduceMotion)return;
-  // Native-driver-only visual cycles, deliberately independent of server damage.
-  const strikes=Animated.loop(Animated.sequence([
-   Animated.delay(450),
-   Animated.timing(strike,{toValue:1,duration:680,useNativeDriver:true,easing:Easing.out(Easing.cubic)}),
-   Animated.timing(strike,{toValue:0,duration:150,useNativeDriver:true}),
-   Animated.delay(1150),
-  ]));
-  const assists=Animated.loop(Animated.sequence([
-   Animated.delay(1250),
-   Animated.timing(assist,{toValue:1,duration:800,useNativeDriver:true,easing:Easing.out(Easing.cubic)}),
-   Animated.timing(assist,{toValue:0,duration:150,useNativeDriver:true}),
-   Animated.delay(1500),
-  ]));
-  strikes.start();assists.start();
-  return()=>{strikes.stop();assists.stop();strike.stopAnimation();assist.stopAnimation();};
- },[active,reduceMotion,strike,assist]);
+  strike.stopAnimation();assist.stopAnimation();
+  strike.setValue(0);assist.setValue(0);
+  if(!active||reduceMotion||!hit)return;
+  const target=hit.actor==='companion'?assist:strike;
+  Animated.sequence([
+   Animated.timing(target,{toValue:1,duration:420,useNativeDriver:true,easing:Easing.out(Easing.cubic)}),
+   Animated.timing(target,{toValue:0,duration:480,useNativeDriver:true,easing:Easing.out(Easing.quad)}),
+  ]).start();
+  return()=>{strike.stopAnimation();assist.stopAnimation();};
+ },[active,reduceMotion,hit?.id,hit?.actor,strike,assist]);
  return {strike,assist};
 }
 
 const attackOpacity=(v:Animated.Value)=>v.interpolate({inputRange:[0,.09,.48,.85,1],outputRange:[0,1,.9,.2,0]});
 const fly=(v:Animated.Value,from:number,to:number)=>v.interpolate({inputRange:[0,1],outputRange:[from,to]});
 
-export function GuildRaidCombatOverlay({classId,companionEquipped,strike,assist,active,reduceMotion=false}:{
- classId?:ClassId;companionEquipped:boolean;strike:Animated.Value;assist:Animated.Value;active:boolean;reduceMotion?:boolean;
+export function GuildRaidCombatOverlay({classId,companionEquipped,strike,assist,active,reduceMotion=false,hitLabel,hitActor}:{
+ classId?:ClassId;companionEquipped:boolean;strike:Animated.Value;assist:Animated.Value;active:boolean;reduceMotion?:boolean;hitLabel?:string;hitActor?:'character'|'companion';
 }){
  const C=useGameTheme(),s=useMemo(()=>styles(),[]),attack=guildRaidAttackPresentation(classId);
  if(!active||reduceMotion)return null;
@@ -61,6 +54,7 @@ export function GuildRaidCombatOverlay({classId,companionEquipped,strike,assist,
    {magic?<View style={[s.magicRing,{borderColor:attackColor}]}/>:null}
   </Animated.View>
   <Animated.View style={[s.impactRing,{borderColor:attackColor,opacity:strike.interpolate({inputRange:[0,.32,.55,1],outputRange:[0,0,.65,0]}),transform:[{scale:impactScale}]}]}/>
+  {hitLabel&&hitActor?<Animated.View style={[s.hitNumber,{opacity:attackOpacity(hitActor==='companion'?assist:strike),transform:[{translateY:(hitActor==='companion'?assist:strike).interpolate({inputRange:[0,1],outputRange:[6,-34]})}]}]}><Text style={[s.hitNumberText,{color:hitActor==='companion'?C.special:attackColor}]}>{hitLabel}</Text></Animated.View>:null}
   {companionEquipped?<Animated.View style={[s.companionStrike,{opacity:attackOpacity(assist),transform:[{translateX:fly(assist,98,-28)},{translateY:fly(assist,42,-34)},{scale:assist.interpolate({inputRange:[0,.5,1],outputRange:[.65,1.6,1]})}]}]}><Text style={[s.companionGlyph,{color:C.special}]}>✧</Text></Animated.View>:null}
  </View>;
 }
@@ -69,8 +63,8 @@ export function GuildRaidCombatOverlay({classId,companionEquipped,strike,assist,
  * Always shows server-confirmed shared guild HP. Repeating hits illuminate the
  * frame, never its fill width. Only a new server damage total animates the fill.
  */
-export function GuildRaidBossHpMeter({maxHp,damage,strike,active,reduceMotion=false,numberText,accent,label}:{
- maxHp:number;damage:number;strike:Animated.Value;active:boolean;reduceMotion?:boolean;numberText:string;accent:string;label:string;
+export function GuildRaidBossHpMeter({maxHp,damage,strike,assist,active,reduceMotion=false,numberText,accent,label}:{
+ maxHp:number;damage:number;strike:Animated.Value;assist?:Animated.Value;active:boolean;reduceMotion?:boolean;numberText:string;accent:string;label:string;
 }){
  const C=useGameTheme(),s=useMemo(()=>styles(),[]),safeMax=Math.max(1,maxHp);
  const pct=Math.max(0,Math.min(100,(1-Math.max(0,damage)/safeMax)*100));
@@ -95,12 +89,15 @@ export function GuildRaidBossHpMeter({maxHp,damage,strike,active,reduceMotion=fa
   <View accessible accessibilityRole="progressbar" accessibilityLabel={label} accessibilityValue={{min:0,max:100,now:Math.round(pct)}} style={[s.hpTrack,{backgroundColor:C.panel2}]}>
    <Animated.View style={[s.hpFill,{backgroundColor:accent,width:fill.interpolate({inputRange:[0,100],outputRange:['0%','100%']})}]}/>
    <Animated.View pointerEvents="none" style={[StyleSheet.absoluteFill,{backgroundColor:accent,opacity:shimmer}]}/>
+   {assist&&active&&!reduceMotion?<Animated.View pointerEvents="none" style={[StyleSheet.absoluteFill,{backgroundColor:C.special,opacity:assist.interpolate({inputRange:[0,.24,.58,.9,1],outputRange:[0,.06,.4,.06,0]})}]}/>:null}
    <Animated.View pointerEvents="none" style={[StyleSheet.absoluteFill,{backgroundColor:C.warning,opacity:confirmation}]}/>
   </View>
  </View>;
 }
 
 function styles(){return StyleSheet.create({
+ hitNumber:{position:'absolute',left:'47%',top:'19%',zIndex:5,alignItems:'center',justifyContent:'center'},
+ hitNumberText:{fontSize:22,fontWeight:'900',textShadowColor:'rgba(0,0,0,.95)',textShadowRadius:8,textShadowOffset:{width:0,height:2}},
  strike:{position:'absolute',left:'46%',top:'35%',width:75,height:75,alignItems:'center',justifyContent:'center',zIndex:3},
  strikeGlyph:{fontWeight:'900',textShadowColor:'rgba(0,0,0,.95)',textShadowRadius:11,textShadowOffset:{width:0,height:2}},
  blade:{position:'absolute',height:5,width:75,borderRadius:4,transform:[{rotate:'-35deg'}]},

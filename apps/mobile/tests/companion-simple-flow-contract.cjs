@@ -5,6 +5,7 @@ const read=p=>fs.readFileSync(path.join(__dirname,'../src/components',p),'utf8')
 const panel=read('CombatCompanionPanel.tsx');
 const training=read('CompanionTrainingV50Panel.tsx');
 const expeditions=read('CompanionExpeditionsV50Panel.tsx');
+const facility=read('CompanionUpgradePresentation.tsx');
 // UI structure contract; this is NOT a substitute for native rendering or game command tests.
 assert.ok(panel.includes("const sections=['Collection','Trials','Expeditions','Sanctuary'] as const"),'four primary destinations');
 assert.ok(!panel.includes("section==='Training'"),'Training is not a standalone destination');
@@ -20,4 +21,12 @@ assert.ok(trials.includes('companion_trial_start')&&trials.includes('companion_t
 assert.ok(training.includes('showPicker=true')&&training.includes('{showPicker?<GameButton'),'optional roster picker stays backward compatible');
 assert.ok(expeditions.indexOf('<View style={s.teamCard}>')<expeditions.indexOf('<CompanionDisclosure title={t("Mission Details")}'),'send and team before detailed reference text');
 assert.ok(expeditions.includes("'companion_assignment_start'"),'expedition authority unchanged');
+assert.ok(panel.includes('<CompanionFacility key={id} compact'), 'Sanctuary selects compact facilities');
+assert.ok(facility.includes('compact=false'), 'facility defaults remain compatible for other screens');
+assert.ok(facility.includes('accessibilityState={{expanded}}'), 'facility summary exposes disclosure state');
+assert.ok(facility.includes('description}</Text>{children}'), 'expanded facility retains benefits and upgrade controls');
+assert.ok(training.includes('costText(model.nextLevelCost)'), 'exact level-up resource costs stay visible');
+assert.ok(training.includes('!affordable(model.nextLevelCost)?costBreakdown(model.nextLevelCost):null'), 'resource shortfall keeps full required/owned breakdown');
+assert.ok(training.includes('s.growthGrid')&&training.includes('s.growthTile'), 'growth links are compact direct actions');
+assert.ok(training.includes("setTab(key)"), 'Bond, Techniques and Ascension sheets remain reachable');
 console.log('PASS: Companion simple-flow source/layout invariants');

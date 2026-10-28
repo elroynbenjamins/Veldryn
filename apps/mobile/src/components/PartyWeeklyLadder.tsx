@@ -25,7 +25,7 @@ export function PartyWeeklyLadder({contract,nowMs,compact=false,onClaimReward}:{
     {target&&<ContractProgress tone="good" label={st('Party progress · {tier}',{tier:st(weeklyTierLabel(target.tier))})} current={contract.totalPoints} total={target.targetPoints}/>}
     {compact?<>
       <View style={{flexDirection:'row',flexWrap:'wrap',gap:6}}>{tiers.map(t=><View key={t.tier} style={{paddingHorizontal:9,paddingVertical:6,borderRadius:7,backgroundColor:t.reached?C.goodSurface:C.panel2}}><Text style={{fontSize:11,color:t.reached?C.good:C.muted}}>{t.reached?'✓ ':''}{st(weeklyTierLabel(t.tier))}</Text></View>)}</View>
-      {summary.claimable.length>0&&<Text style={{fontSize:13,color:C.good}}>{st('{gold} gold ready to claim',{gold:number(summary.claimable.reduce((sum,t)=>sum+t.gold,0))})}</Text>}
+      {summary.claimable.map(t=><SocialActionButton key={t.tier} primary label={st('Claim {gold} gold',{gold:number(t.gold)})} disabled={!onClaimReward||!t.rewardId} onPress={()=>{if(t.rewardId)onClaimReward?.(t.rewardId)}}/>)}
     </>:<>
       <Text style={{fontSize:13,lineHeight:20,color:C.muted}}>{st('Combat and gathering count equally. 1 hour = 1,000 points. Resets Monday, 00:00 UTC.')}</Text>
       <View style={{padding:12,gap:8,borderRadius:10,backgroundColor:C.panel2}}>

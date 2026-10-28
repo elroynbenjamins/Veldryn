@@ -52,6 +52,7 @@ let favoriteSalvageBlocked=false;try{salvageItem(favoriteProtected,'basic_sword'
 ok(favoriteSalvageBlocked,'Favorite items cannot be salvaged through core logic');
 let lockedState=toggleInventoryLock(state,'basic_sword');
 ok(inventoryLockedIds(lockedState).includes('basic_sword'),'Item can be locked in persistent settings');
+ok(normalizeSave(lockedState).settings.lockedItemIds?.includes('basic_sword')===true,'Save normalization preserves locks across restarts');
 ok(!inventoryFavoriteIds(lockedState).includes('basic_sword'),'Lock and favorite are independent');
 let lockedSellState={...lockedState,inventory:{...lockedState.inventory,stacks:[{itemId:'basic_sword',quantity:1}]}};
 let lockedSellBlocked=false;try{sellItem(lockedSellState,'basic_sword')}catch(error){lockedSellBlocked=error instanceof Error&&error.message.includes('Locked item')}

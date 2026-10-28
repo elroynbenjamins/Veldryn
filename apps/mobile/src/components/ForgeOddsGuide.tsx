@@ -47,9 +47,9 @@ export function ForgeOddsGuide({itemId}:{itemId:string}){
       </View>:null}
       {outcomes.map(outcome=>{
         const meta=rarityMeta(outcome.rarity);
-        return <View key={outcome.rarity} style={[s.oddsRow,compact&&s.oddsRowCompact,{borderBottomColor:C.line}]}
+        return <View key={outcome.rarity} accessible style={[s.oddsRow,compact&&s.oddsRowCompact,{borderBottomColor:C.line}]}
           accessibilityLabel={`${meta.label}: ${chanceLabel(outcome.chance)} chance, ${statEffect(outcome.statMultiplier)} stats`}>
-          <View style={s.nameWrap}>
+          <View style={[s.nameWrap,compact&&s.nameCompact]}>
             <View accessible={false} style={[s.rarityDot,{backgroundColor:meta.color}]}/>
             <Text style={[s.rarity,{color:C.dark?meta.color:meta.lightTextColor}]}>{meta.label}</Text>
           </View>
@@ -90,6 +90,7 @@ const s=StyleSheet.create({
   oddsRow:{minHeight:38,flexDirection:'row',alignItems:'center',gap:7,borderBottomWidth:1,paddingVertical:6},
   oddsRowCompact:{minHeight:52,flexDirection:'column',alignItems:'stretch',gap:2},
   nameWrap:{flex:1,minWidth:0,flexDirection:'row',alignItems:'center',gap:6},
+  nameCompact:{flex:0},
   compactMeta:{flexDirection:'row',alignItems:'center',justifyContent:'space-between',gap:10,paddingLeft:14},rarityDot:{width:8,height:8,borderRadius:2,flexShrink:0},
   rarity:{fontSize:13,lineHeight:17,fontWeight:'800',flexShrink:1},value:{fontSize:12,lineHeight:17,fontWeight:'700'},
   statValue:{fontSize:12,lineHeight:17,fontWeight:'800'},

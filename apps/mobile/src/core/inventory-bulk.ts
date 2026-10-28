@@ -10,7 +10,8 @@ export type BulkStorageLocation='inventory'|'bank';
 function uniqueIds(itemIds:readonly string[]){return [...new Set(itemIds.filter(Boolean))].slice(0,100)}
 function selectedStacks(state:GameState,itemIds:readonly string[],location:BulkStorageLocation){
   const ids=new Set(uniqueIds(itemIds));
-  return state[location].stacks.filter(stack=>stack.quantity>0&&ids.has(stack.itemId));
+  // Unique crafted equipment is managed by exact instance ID, never by a bulk item-type selection.
+  return state[location].stacks.filter(stack=>stack.quantity>0&&stack.instanceId===undefined&&ids.has(stack.itemId));
 }
 function protectedFromDisposal(state:GameState,itemId:string,goalProtectedIds:Set<string>){
   const item=itemDef(itemId);

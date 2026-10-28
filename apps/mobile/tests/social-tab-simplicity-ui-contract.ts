@@ -16,8 +16,8 @@ ok(hub.includes("hasParty?[...VISIBLE_TABS,'chat']:VISIBLE_TABS"),'Chat tab must
 ok(hub.includes("const VISIBLE_TABS:SocialHubTab[]=['party','guild']"),'Guild remains visible regardless of Party status');
 ok(social.includes("tab==='party'&&partyLocked?<PartyLockedNotice"),'Locked Party view must show only the locked notice');
 ok(party.includes("if(!inParty&&props.partyUnlocked===false)return"),'Locked Party hub must not render recruitment or other Party controls');
-ok(social.includes("tab==='chat'?(canUsePartyChat?<View style={s.chatContent}><OnlinePartyChat expanded/></View>:null)"),'Chat must be a dedicated full-height screen, not an embedded recruitment panel');
-ok(social.includes("if(tab==='chat'&&!canUsePartyChat){setTab('party')"),'Party disband or revoked membership must exit Chat safely');
+ok(social.includes("tab==='chat'?(canUsePartyChat?<View style={s.chatContent}><OnlinePartyChat expanded/></View>:social.loading?"),'Chat must have its own full-height screen and a nonblocking initial loading state');
+ok(social.includes("if(tab==='chat'&&!canUsePartyChat&&!social.loading){setTab('party')"),'Party disband exits Chat safely without disrupting a pending Chat deep link');
 ok(!social.includes('PARTY_SOCIAL_TUTORIAL_STEPS')&&!social.includes('setHelp('),'Duplicate Social help controls must be removed');
 ok(!social.includes('onFriends')&&!social.includes('heroStatus'),'Generic Friends toolbar and redundant hero must be removed');
 ok(social.includes("<ChatPlayerSheet message={selectedProfile}"),'Player profile interactions must remain available');
@@ -55,5 +55,8 @@ ok(social.includes("await social.refresh();")&&social.includes('void load();')&&
 ok(social.includes('setTimeout(()=>setShowUpdating(true),1200)'),'Fast background refreshes should not flash a spinner');
 ok(!social.includes('LoadingState')&&social.includes('guildMembership===undefined?<><GameButton'),'Guild entry must remain actionable during its first lookup');
 ok(social.includes('backgroundError||social.error||showUpdating')&&social.includes('st("Retry")'),'Transient data failures should have one compact retry action');
+
+ok(social.includes("tab==='party'&&social.loading&&!social.party?<Text"),'Do not offer Create Party while the initial membership snapshot is still loading');
+ok(social.includes("social.loading?<View style={s.chatContent}"),'Initial Party Chat links should show a small loading label, not bounce away');
 
 console.log('PASS: Social navigation, Party lock, Guild independence, and party-only Chat UI contracts');

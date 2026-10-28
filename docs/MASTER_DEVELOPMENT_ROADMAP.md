@@ -993,3 +993,9 @@ This roadmap is based on current GitHub source and documentation, the read-only 
 
 **Roadmap definition of success:** A stable, upgradeable and secure Android idle MMORPG whose normal activities, guild/co-op, companions, event rewards and purchase recovery are understandable and trustworthy—with mature pixel-art feedback and clear progression—rather than the largest quantity of partially finished systems.
 
+
+### 2026-10-28 implementation ledger — bounded companion roster pass
+
+- **B03 — IMPLEMENTED IN UNMERGED REVIEW BRANCH; NOT VERIFIED AS RELEASED.** Branch `refine/companion-training-roster-20261028`: added read-only owned-first/Discover Training roster, role/rarity chips and translations with focused regression tests. See [COMPANION_TRAINING_ROSTER_REFINEMENT_2026_10_28.md](implementation/COMPANION_TRAINING_ROSTER_REFINEMENT_2026_10_28.md). Isolated strict TypeScript 5.8.3 and Node selector test passed; full Expo/typecheck, native UI and CI remain unverified. **Do not mark B03 complete until acceptance evidence exists.**
+- **A01 — STILL BLOCKED/UNRESOLVED.** Analysis proves existing `starter-companion-choice.ts` test expects a not-implemented choice system while the active runtime continues automatic Ironwood Hound at `QST_005`; no runtime change was made. Requires explicit behavioral decision plus compatible state/command/onboarding migration rather than silencing the test.
+- **All other tickets — unchanged PLANNED/ACCEPTANCE-PENDING.** No application merge or production deploy was performed.

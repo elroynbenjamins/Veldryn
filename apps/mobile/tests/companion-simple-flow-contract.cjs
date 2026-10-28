@@ -1,0 +1,23 @@
+const assert=require('node:assert/strict');
+const fs=require('node:fs');
+const path=require('node:path');
+const read=p=>fs.readFileSync(path.join(__dirname,'../src/components',p),'utf8');
+const panel=read('CombatCompanionPanel.tsx');
+const training=read('CompanionTrainingV50Panel.tsx');
+const expeditions=read('CompanionExpeditionsV50Panel.tsx');
+// UI structure contract; this is NOT a substitute for native rendering or game command tests.
+assert.ok(panel.includes("const sections=['Collection','Trials','Expeditions','Sanctuary'] as const"),'four primary destinations');
+assert.ok(!panel.includes("section==='Training'"),'Training is not a standalone destination');
+assert.ok(panel.includes('showPicker={false}'),'Training lives in the selected companion route');
+assert.ok(panel.includes('setTrainingDetail(false)'),'return to roster stays available');
+assert.ok(panel.includes("if(owned)setTrainingDetail(true);else setDetailOpen(true)"),'owned and undiscovered detail routes remain distinct');
+const trials=panel.slice(panel.indexOf("section==='Trials'&&<View"),panel.indexOf("<GameModalSurface visible={trialSheet!==null}"));
+assert.ok(trials.includes('trialStartTeam'),'selected or suggested formation used for new run');
+assert.ok(trials.indexOf('Fight next floor')<trials.indexOf('title={t("Trial Tower")}'),'fight before secondary tower');
+assert.ok(trials.indexOf('Start at checkpoint')<trials.indexOf('title={t("Trial Tower")}'),'start before secondary tower');
+assert.ok(trials.includes("onPress={()=>setTrialSheet('team')}"),'formation editor preserved');
+assert.ok(trials.includes('companion_trial_start')&&trials.includes('companion_trial_floor'),'authoritative command names preserved');
+assert.ok(training.includes('showPicker=true')&&training.includes('{showPicker?<GameButton'),'optional roster picker stays backward compatible');
+assert.ok(expeditions.indexOf('<View style={s.teamCard}>')<expeditions.indexOf('<CompanionDisclosure title={t("Mission Details")}'),'send and team before detailed reference text');
+assert.ok(expeditions.includes("'companion_assignment_start'"),'expedition authority unchanged');
+console.log('PASS: Companion simple-flow source/layout invariants');

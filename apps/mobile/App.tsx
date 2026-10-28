@@ -9,7 +9,7 @@ import {fetchReleaseNotes} from './src/online/release-notes';
 import {shouldAutoShowReleaseNotes,type ReleaseNote} from './src/core/release-notes';
 import {WhatsNewModal} from './src/components/WhatsNewModal';
 import {buildWelcomeBackFromStates,type WelcomeBackProgressReport} from './src/core/welcome-back-v46';
-import {ActivityIndicator,Animated,ScrollView,AppState,BackHandler,Image,PanResponder,Pressable,Share,StyleSheet,Text,TextInput,View} from 'react-native';
+import {ActivityIndicator,Animated,ScrollView,AppState,BackHandler,Image,PanResponder,Pressable,Share,StyleSheet,Text,TextInput,View,useWindowDimensions} from 'react-native';
 import {StatusBar} from 'expo-status-bar';
 import {SafeAreaProvider,SafeAreaView} from 'react-native-safe-area-context';
 import {AccountWelcomeScreen} from './src/components/AccountWelcomeScreen';
@@ -35,7 +35,8 @@ import {QuestScreen,type QuestMode} from './src/screens/QuestScreen';
 import {SkillsScreen} from './src/screens/SkillsScreen';
 import {CompanionsScreen} from './src/screens/CompanionsScreen';
 import {SectionGuide} from './src/components/SectionGuide';
-import {SettingsScreen} from './src/screens/SettingsScreen';
+import {SettingsScreen,type SettingsSection} from './src/screens/SettingsScreen';
+import {rememberScreen,returnToPreviousScreen,type ScreenHistoryEntry} from './src/core/screen-navigation-history';
 import {redeemCode} from './src/online/redeem-code';
 import {MoreScreen,type MoreDestination} from './src/screens/MoreScreen';
 import {AdminQaScreen} from './src/screens/AdminQaScreen';
@@ -141,6 +142,7 @@ import {eventAnnouncementStore} from './src/storage/event-announcement';
 
 type Tab=QuickNavDestination|'Activity'|'DailySupplies'|'AccountBonuses'|'RewardsInbox'|'MasteryHall'|'Arena'|'Rankings'|'Collections'|'Profile'|'ProfileCustomize'|'Combat'|'Coop';
 type PrimaryTab='Home'|'Skills'|'World'|'Character'|'Inventory'|'More';
+type NavigationContext={skillsMode:'gathering'|'crafting'|'novice'|'faith';selectedSkill?:string;goalActionId?:string;goalRecipeId?:string;questMode:QuestMode;questFocusOrderId?:string;settingsSection?:SettingsSection;socialInitialTab:'party'|'guild';profileCustomizeSection:'Appearance'|'Identity';goalMonsterId?:string;goalRegionId?:string;goalDungeonId?:string};
 const primaryTabs:PrimaryTab[]=['Home','Character','Skills','World','Inventory','More'];
 function tabLabel(language:Language,tab:Tab):string{
   switch(tab){
@@ -168,6 +170,7 @@ const MAIN_TAB_GUIDANCE:Record<string,{title:string;body:string;detail:string}>=
 export default function App(){return <SafeAreaProvider><AuthSessionProvider><PlayerBadgeProvider><PartySocialProvider><VeldrynApp/></PartySocialProvider></PlayerBadgeProvider></AuthSessionProvider><GameAlertHost/></SafeAreaProvider>;}
 function VeldrynApp(){
   const auth=useAuthSession(),online=useOnlineGame();
+  const {width:viewportWidth}=useWindowDimensions();
   const adminQa=auth.session?.user.app_metadata?.admin_qa===true||(Array.isArray(auth.session?.user.app_metadata?.roles)&&auth.session!.user.app_metadata.roles.includes('admin_qa'));
   const {counts:notificationCounts,refresh:refreshSocialNotifications}=useSocialNotificationCounts();
   const [state,setState]=useState<GameState|null>(null);
@@ -179,8 +182,8 @@ function VeldrynApp(){
   const [tab,setCurrentTab]=useState<Tab>('Home');
   const tabRef=useRef(tab);tabRef.current=tab;
   useEffect(()=>setNetworkMetricsRoute(tab),[tab]);
-  const [settingsSection,setSettingsSection]=useState<'guide'|'store'|undefined>();
-  const [tabHistory,setTabHistory]=useState<Tab[]>([]);
+  const [settingsSection,setSettingsSection]=useState<SettingsSection|undefined>();
+  const [tabHistory,setTabHistory]=useState<ScreenHistoryEntry<Tab,NavigationContext>[]>([]);
   const [questMode,setQuestMode]=useState<QuestMode>('story');
   const [questFocusOrderId,setQuestFocusOrderId]=useState<string|undefined>();
   const [skillsMode,setSkillsMode]=useState<'gathering'|'crafting'|'novice'|'faith'>('gathering');
@@ -326,33 +329,59 @@ function VeldrynApp(){
     if(tab!=='ProfileCustomize'||!profileCustomizeDirty){action();return;}
     setProfileDiscardAction(()=>action);
   },[tab,profileCustomizeDirty]);
+  // History remembers the subpage and selection that produced a navigation.
+  const navigationContext=useMemo<NavigationContext>(()=>({
+    skillsMode,selectedSkill,goalActionId,goalRecipeId,questMode,questFocusOrderId,
+    settingsSection,socialInitialTab,profileCustomizeSection,goalMonsterId,goalRegionId,goalDungeonId,
+  }),[skillsMode,selectedSkill,goalActionId,goalRecipeId,questMode,questFocusOrderId,settingsSection,socialInitialTab,profileCustomizeSection,goalMonsterId,goalRegionId]);
   const setTab=useCallback((destination:Tab)=>{
     if(destination===tab||destination==='Rankings'&&!RANKINGS_RELEASED)return;
     const current=stateRef.current,lockReason=current?earlyFeatureLockReason(current,destination):'';
     if(lockReason){showAlert('Locked for now',lockReason);return;}
     confirmProfileCustomizeExit(()=>{
       setProfileCustomizeDirty(false);
-      setTabHistory(history=>[...history,tab].slice(-24));
+      setTabHistory(history=>rememberScreen(history,{route:tab,context:navigationContext},destination));
       setSettingsSection(undefined);
       setCurrentTab(destination);
     });
-  },[tab,confirmProfileCustomizeExit]);
+  },[tab,navigationContext,confirmProfileCustomizeExit]);
   const goBack=useCallback(()=>{
     if(showChatOverlay){setShowChatOverlay(false);return true;}
     if(showAdminQa){setShowAdminQa(false);return true;}
     if(showCoopUiGallery){setShowCoopUiGallery(false);return true;}
+    // On phones, a Settings category is a nested page. Return to the category list first.
+    if(tab==='Settings'&&viewportWidth<768&&settingsSection){setSettingsSection(undefined);return true;}
     if(tab==='Skills'&&selectedSkill){setSelectedSkill(undefined);setGoalActionId(undefined);setGoalRecipeId(undefined);return true;}
     confirmProfileCustomizeExit(()=>{
       setProfileCustomizeDirty(false);
-      if(tabHistory.length){
-        setCurrentTab(tabHistory[tabHistory.length-1]);
-        setTabHistory(tabHistory.slice(0,-1));
+      const {previous,remaining}=returnToPreviousScreen(tabHistory,tab,destination=>{
+        const current=stateRef.current;
+        return !(destination==='Rankings'&&!RANKINGS_RELEASED)&&(!current||!earlyFeatureLockReason(current,destination));
+      });
+      setTabHistory(remaining);
+      if(!previous){
+        setSettingsSection(undefined);
+        if(tab!=='Home')setCurrentTab('Home');
         return;
       }
-      if(tab!=='Home')setCurrentTab('Home');
+      const {context}=previous;
+      setSettingsSection(previous.route==='Settings'?context.settingsSection:undefined);
+      if(previous.route==='Skills'){
+        setSkillsMode(context.skillsMode);
+        setSelectedSkill(context.selectedSkill);
+        setGoalActionId(context.goalActionId);
+        setGoalRecipeId(context.goalRecipeId);
+      }
+      if(previous.route==='Quests'){setQuestMode(context.questMode);setQuestFocusOrderId(context.questFocusOrderId);}
+      if(previous.route==='Social'||previous.route==='Party')setSocialInitialTab(context.socialInitialTab);
+      if(previous.route==='ProfileCustomize')setProfileCustomizeSection(context.profileCustomizeSection);
+      if(previous.route==='Combat')setGoalMonsterId(context.goalMonsterId);
+      if(previous.route==='World')setGoalRegionId(context.goalRegionId);
+      if(previous.route==='Coop')setGoalDungeonId(context.goalDungeonId);
+      setCurrentTab(previous.route);
     });
     return true;
-  },[showChatOverlay,showAdminQa,showCoopUiGallery,tab,tabHistory,selectedSkill,confirmProfileCustomizeExit]);
+  },[showChatOverlay,showAdminQa,showCoopUiGallery,tab,tabHistory,selectedSkill,settingsSection,viewportWidth,confirmProfileCustomizeExit]);
   const backSwipe=useMemo(()=>PanResponder.create({
     onMoveShouldSetPanResponder:(_event,gesture)=>gesture.x0<=32&&gesture.dx>12&&Math.abs(gesture.dx)>Math.abs(gesture.dy)*1.25,
     onPanResponderRelease:(_event,gesture)=>{if(gesture.dx>=72&&gesture.vx>=0)goBack();},
@@ -396,6 +425,8 @@ function VeldrynApp(){
   useEffect(()=>{if(!preparationNotices.length||collected||forgeResults)return;const timer=setTimeout(()=>setPreparationNotices(current=>current.slice(1)),4500);return()=>clearTimeout(timer)},[preparationNotices,collected,forgeResults]);
   useEffect(()=>{if(!masteryNotices.length||preparationNotices.length||collected||forgeResults)return;const timer=setTimeout(()=>setMasteryNotices([]),4500);return()=>clearTimeout(timer)},[masteryNotices,preparationNotices.length,collected,forgeResults]);
   useEffect(()=>{if(tab!=='Skills'){setSelectedSkill(undefined);setGoalActionId(undefined);setGoalRecipeId(undefined)}},[tab]);
+  // Do not return into another character's detail history after a roster switch.
+  useEffect(()=>{setTabHistory([]);},[state?.character?.id]);
   useEffect(()=>{if(tab!=='Combat')setGoalMonsterId(undefined)},[tab]);
   useEffect(()=>{const subscription=BackHandler.addEventListener('hardwareBackPress',goBack);return()=>subscription.remove()},[goBack]);
   useEffect(()=>{const subscription=AppState.addEventListener('change',nextStatus=>{const wasAway=appStateRef.current==='background'||appStateRef.current==='inactive';appStateRef.current=nextStatus;if(!wasAway||nextStatus!=='active'||settlingRef.current)return;const current=stateRef.current;if(!current?.character)return;if(serverGameplayEnabled){if(current.activity||current.character.classTraining){onlineForegroundSettlementRef.current=true;setOfflineSettling(true);}return;}settlingRef.current=true;setOfflineSettling(true);setTimeout(()=>{const settled=settleStartupActivity(current,Date.now());const changed=settled.state!==current;if(changed){stateRef.current=settled.state;setState(settled.state);void repo.save(settled.state).catch(()=>showAlert('Save pending','Your returned progress is safe in memory, but could not be saved yet.'));}if(settled.reward){queuePreparationNotices(current,settled.state);setCollected({reward:settled.reward,activity:settled.activity,welcomeBack:true,progressionMoments:rewardProgressionMoments(current,settled.state),welcomeReport:buildWelcomeBackFromStates(current,settled.state,settled.reward,settled.activity)});}setOfflineSettling(false);settlingRef.current=false},0)});return()=>subscription.remove()},[]);
@@ -672,7 +703,7 @@ const next=normalizeProfileIcon(candidate);queuePreparationNotices(current,next)
     {(tab==='Social'||tab==='Party')&&<SocialScreen initialTab={socialInitialTab} characterLevel={state.character?.level??0} partyUnlocked={earlyFeatureUnlocked(state,'party')} onGuild={()=>setTab('Guild')} onAccount={()=>setTab('Settings')} onInvitationsChanged={()=>void refreshSocialNotifications()}/>}
     {tab==='Events'&&<EventScreen state={state} onChange={commit} onCommand={serverGameplayEnabled?command=>perform(command,false).then(Boolean):undefined} authoritativeGuildPve={serverGameplayEnabled} onOpenEventActivity={source=>{if(source==='combat'){setTab('Combat');return;}setSelectedSkill(undefined);setSkillsMode(source==='gathering'?'gathering':'crafting');setTab('Skills')}} onOpenGuildEventBoss={()=>{setGuildInitialPve(true);setTab('Guild')}} onOpenSeasonalExpedition={coopOnlineConfigured?liveEventId=>{setPendingEventLiveId(liveEventId);setTab('Coop')}:undefined}/>}
     {tab==='Guild'&&<GuildScreen onOpenChat={()=>{setChatInitialChannel('guild');setShowChatOverlay(true)}} onRecruitment={()=>{setSocialInitialTab('guild');setTab('Social')}} online={serverGameplayEnabled} membershipRevision={guildMembershipRevision} state={state} onChange={commit} initialPve={guildInitialPve} onInitialPveHandled={()=>setGuildInitialPve(false)} onlineManagement={<OnlineGuildManagement onApplicationsChanged={()=>{void refreshSocialNotifications();setGuildMembershipRevision(value=>value+1)}}/>} onlineBoard={<OnlineGuildNoticeBoardPanel/>} onlineProjects={<OnlineGuildProjectsPanel onRewardsChanged={()=>online.refresh()}/>} onTokenRewardsChanged={()=>online.refresh()} onlinePve={<OnlineGuildPve initialEncounterKind={guildInitialPve?'event':'weekly'} state={state} onCombat={()=>setTab('Combat')} onRewardsChanged={()=>online.refresh()} authoritative={serverGameplayEnabled} numberMode={state.settings.numberMode}/>} onlineChat={<GuildChat language={state.settings.language} currentPlayerName={state.character?.name} unlockedEmoteIds={state.account.unlockedEmoteIds} trayIds={state.settings.chatEmoteTrayIds} bodyPresentation={state.character?.bodyPresentation} onTrayChange={ids=>commit({...state,settings:{...state.settings,chatEmoteTrayIds:ids}})} firstUnreadMessageId={notificationCounts.guildFirstUnreadMessageId} onRead={()=>void refreshSocialNotifications()}/>} onlineChatUnread={notificationCounts.guildChatUnread} onlineChatMentions={notificationCounts.guildChatMentions} onlineHall={<OnlineGuildHallPanel/>} onlineCustomize={<OnlineGuildCustomizationPanel/>}/>}
-    {tab==='Settings'&&<SettingsScreen onOpenUpdates={()=>setShowWhatsNew(true)} initialSection={settingsSection} onStartMainScreenTour={()=>{setSettingsSection(undefined);setMainScreenTourIndex(0);setTab('Home')}} onNavigateGuide={destination=>{if(destination==='Skills')setSelectedSkill(undefined);setTab(destination)}} online={serverGameplayEnabled} state={state} onChange={commit} onRefreshCommerce={serverGameplayEnabled?online.refreshCommerce:undefined} onRedeemCode={serverGameplayEnabled?async code=>{const message=await redeemCode(code);await online.refresh();return message}:undefined} onExport={exportSave} onImport={importSave} onOpenCoopUiGallery={__DEV__?()=>setShowCoopUiGallery(true):undefined} onLanguage={language=>commit({...state,settings:{...state.settings,language}})} onReset={()=>serverGameplayEnabled?showAlert('Online save','Your online character is saved on the server.'):showAlert('Reset local save?','This deletes prototype progress only.',[{text:'Cancel'},{text:'Reset',style:'destructive',onPress:async()=>{await repo.reset();setState(newGame(Date.now()));setCurrentTab('Home');setTabHistory([])}}])}/>}
+    {tab==='Settings'&&<SettingsScreen onOpenUpdates={()=>setShowWhatsNew(true)} initialSection={settingsSection} onSectionChange={setSettingsSection} onStartMainScreenTour={()=>{setSettingsSection(undefined);setMainScreenTourIndex(0);setTab('Home')}} onNavigateGuide={destination=>{if(destination==='Skills')setSelectedSkill(undefined);setTab(destination)}} online={serverGameplayEnabled} state={state} onChange={commit} onRefreshCommerce={serverGameplayEnabled?online.refreshCommerce:undefined} onRedeemCode={serverGameplayEnabled?async code=>{const message=await redeemCode(code);await online.refresh();return message}:undefined} onExport={exportSave} onImport={importSave} onOpenCoopUiGallery={__DEV__?()=>setShowCoopUiGallery(true):undefined} onLanguage={language=>commit({...state,settings:{...state.settings,language}})} onReset={()=>serverGameplayEnabled?showAlert('Online save','Your online character is saved on the server.'):showAlert('Reset local save?','This deletes prototype progress only.',[{text:'Cancel'},{text:'Reset',style:'destructive',onPress:async()=>{await repo.reset();setState(newGame(Date.now()));setCurrentTab('Home');setTabHistory([])}}])}/>}
     {tab==='More'&&<MoreScreen onOpenUpdates={()=>setShowWhatsNew(true)} newReleaseAvailable={hasUnseenUpdate} language={state.settings.language} onNavigate={destination=>{if(destination==='Quests'){openQuestMode('story');return;}if(destination==='Store'){setTab('Settings');setSettingsSection('store');return;}setTab(destination)}} lockedDestinations={lockedAccountDestinations} companionUnlocked={companionsUnlocked} companionAttention={earlyFeatureUnlocked(state,'companions')&&companionAttention.hasAttention} dailySuppliesAttention={dailySuppliesReady} storyRewardCount={storyClaimCount} friendRequestCount={notificationCounts.friendRequests} guildAttentionCount={notificationCounts.guild} socialAttentionCount={notificationCounts.partyInvites+notificationCounts.chatUnread} profileAttention={profileAttentionKeys.length>0} onOpenAdminQa={adminQa||(__DEV__&&!serverGameplayEnabled)?()=>setShowAdminQa(true):undefined}/>}
     {tab==='Arena'&&<ArenaScreen state={state} onChange={candidate=>void commit(candidate)} onCommand={serverGameplayEnabled?command=>void perform(command):undefined}/>}
     {RANKINGS_RELEASED&&tab==='Rankings'&&<RankingsScreen/>}

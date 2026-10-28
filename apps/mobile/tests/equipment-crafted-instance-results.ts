@@ -43,9 +43,11 @@ state=epicClaim.state;
 ok(epicClaim.result.rarity==='epic'&&epicClaim.result.qualityProc,'Trusted .002 claim roll should produce an Epic quality proc');
 ok(craftedGearInstances(state).length===1,'Claimed Forge gear must create a persisted instance');
 ok(craftedGearInstances(state)[0].id.includes(job.id),'Crafted instance identity must derive from its authoritative Forge receipt');
-ok(epicClaim.result.quality!==undefined&&epicClaim.result.quality>=1&&epicClaim.result.quality<=100,'Crafted equipment must persist a bounded 1–100 quality roll');
+ok(epicClaim.result.quality!==undefined&&epicClaim.result.quality>=0&&epicClaim.result.quality<=100,'Crafted equipment must persist a bounded 0–100 quality roll');
 ok(epicClaim.result.quality===craftedGearQualityRoll(.002,job.id),'Quality must be deterministic from the trusted roll and job ID');
 ok(craftedGearQualityRoll(.123456,'job-a')===craftedGearQualityRoll(.123456,'job-a'),'Retry must retain the same quality');
+ok(craftedGearQualityRoll(.5,'quality-edge-12')===0,'New Forge quality rolls must be able to reach Q0');
+ok(craftedGearQualityRoll(.5,'quality-edge-9')===100,'New Forge quality rolls must be able to reach Q100');
 ok(craftedGearInstances(state)[0].enhancement.rank===0&&craftedGearInstances(state)[0].enhancement.gemIds.length===0,'Fresh crafted instance must start unenhanced and unsocketed');
 ok(effectiveOwnedGearRarity(state,recipe.output.itemId)==='epic','Best owned crafted copy should become effective rarity');
 ok(craftedRarityStatMultiplier(recipe.output.itemId,'epic')>1,'Epic T1 proc must provide a real stat multiplier');
@@ -85,7 +87,7 @@ ok(craftedGearCopyCapacity(autoWeak.state,recipe.output.itemId).count===7&&
 ok(!equipmentCraftingQueue(autoWeak.state).some(row=>row.id===cappedJob.id),'Auto-vendored Forge jobs must complete and not claim twice');
 let autoReplayRejected=false;try{claimEquipmentCraft(autoWeak.state,cappedJob.id,cappedJob.completesAtMs,.5)}catch{autoReplayRejected=true}
 ok(autoReplayRejected,'Replaying auto-sale must never grant Gold twice');
-const replaceCopies=copiesAtCap.map(row=>({...row,rarity:'common' as const,quality:1}));
+const replaceCopies=copiesAtCap.map(row=>({...row,rarity:'common' as const,quality:0}));
 const upgradeSeed={...cappedSeed,account:{...cappedSeed.account,craftedGearInstances:replaceCopies,craftedGearAutoSellMode:'keep_best_seven' as const}};
 const upgradeStarted=startEquipmentCraft(upgradeSeed,recipe.id,job.completesAtMs+12000).state;
 const upgradeJob=equipmentCraftingQueue(upgradeStarted)[0];
@@ -250,8 +252,12 @@ const normalized=normalizeSave({...state,version:6} as any);
 ok(normalized.account.craftedGearInstances?.length===2,'Save normalization must preserve crafted gear instances');
 ok(normalized.account.craftedGearInstances?.some(row=>row.rarity==='epic'),'Save normalization must preserve crafted instance rarity');
 ok(normalized.account.craftedGearInstances?.every(row=>row.quality!==undefined),'Save normalization must preserve deterministic crafted quality');
-ok(craftedGearQualityMultiplier(1)===.95&&craftedGearQualityMultiplier(50)===1&&craftedGearQualityMultiplier(100)===1.05,
-  'Q50 must be an exact neutral stat midpoint, with -5% and +5% endpoints');
+ok(craftedGearQualityMultiplier(0)===0.75&&craftedGearQualityMultiplier(25)===0.875&&
+  craftedGearQualityMultiplier(50)===1&&craftedGearQualityMultiplier(75)===1.125&&craftedGearQualityMultiplier(100)===1.25,
+  'Forge Q0 to Q100 must scale 75–125% with an exact neutral Q50 midpoint');
+const normalizedZeroQuality=normalizeCraftedGearInstances([{...craftedGearInstances(state)[0],quality:0}]);
+ok(normalizedZeroQuality.length===1&&normalizedZeroQuality[0].quality===0,
+  'Q0 must survive save normalization as a real Forge roll rather than becoming legacy/undefined');
 const oldForgeRecord={...craftedGearInstances(state)[0],quality:undefined,locked:true,enhancement:{...craftedGearInstances(state)[0].enhancement,rank:2}};
 const normalizedOldForge=normalizeSave({...state,account:{...state.account,craftedGearInstances:[oldForgeRecord,...craftedGearInstances(state).slice(1)]}} as any);
 const restoredOldForge=craftedGearInstances(normalizedOldForge)[0];
@@ -281,7 +287,7 @@ const sevenCopies=Array.from({length:7},(_,i)=>({
   instance:{...copyTemplate,id:`quality-${i}`,sourceReceiptKey:`quality-${i}`,rarity:'common' as const,quality:10+i*10},
   location:'inventory' as const,holderCharacterId:state.character!.id,ownershipVerified:true,protectionsVerified:true,locked:false,favorite:false,savedLoadout:false,
 }));
-const incomingLow={...copyTemplate,id:'new-low',quality:1,rarity:'common' as const};
+const incomingLow={...copyTemplate,id:'new-low',quality:0,rarity:'common' as const};
 const incomingHigh={...copyTemplate,id:'new-high',quality:90,rarity:'epic' as const};
 ok(planCraftedGearRetention(sevenCopies.slice(0,6),incomingHigh,'off').action==='keep','Copy limit should not affect crafts below seven, even when auto-sell is disabled');
 ok(planCraftedGearRetention(sevenCopies.slice(0,6).map((entry,i)=>i===0?{...entry,instance:{...entry.instance,quality:undefined}}:entry),incomingHigh,'keep_best_seven').action==='keep','Legacy unrolled equipment must remain claimable while still below the copy limit');
@@ -290,7 +296,9 @@ const lowDecision=planCraftedGearRetention(sevenCopies,incomingLow,'keep_best_se
 ok(lowDecision.action==='sell_incoming'&&lowDecision.instanceId==='new-low','A weaker new roll should sell itself and preserve all seven originals');
 const highDecision=planCraftedGearRetention(sevenCopies,incomingHigh,'keep_best_seven');
 ok(highDecision.action==='sell_existing'&&highDecision.instanceId==='quality-0','A better new roll should replace the weakest unprotected copy');
-ok(compareCraftedGearRetentionPower(incomingHigh,sevenCopies[6].instance)>0,'Tier and quality comparator must prefer Epic over Common even when Common has higher quality');
+ok(compareCraftedGearRetentionPower(incomingHigh,sevenCopies[6].instance)>0,'High-quality Epic should beat mid-quality Common on actual stat multiplier');
+ok(compareCraftedGearRetentionPower({...incomingLow,quality:100,rarity:'common'}, {...incomingLow,id:'low-uncommon',quality:0,rarity:'uncommon'})>0,
+  'Expanded quality range can outweigh a minor rarity upgrade; auto-retention must compare actual stats');
 const tieDecision=planCraftedGearRetention(sevenCopies,{...sevenCopies[0].instance,id:'equal-new'},'keep_best_seven');
 ok(tieDecision.action==='sell_incoming','Equal-strength rolls must keep the older existing equipment');
 const partlyProtected=sevenCopies.map((entry,i)=>({...entry,locked:i===0}));

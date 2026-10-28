@@ -3,6 +3,9 @@ import {createTranslator} from './translator';
 
 // Each row supplies German, Spanish, Dutch, Italian and French; its key is English.
 export const companionTranslationRows={
+ "TRIAL COMBAT": ["PRÜFUNGSKAMPF","COMBATE DE PRUEBA","BEPROEVINGSGEVECHT","COMBATTIMENTO DELLA PROVA","COMBAT D’ÉPREUVE"],
+ "Tower of Companions": ["Turm der Gefährten","Torre de compañeros","Toren der metgezellen","Torre dei compagni","Tour des compagnons"],
+ "Server-resolved combat replay": ["Wiedergabe des serverseitig berechneten Kampfes","Repetición del combate resuelto por el servidor","Herhaling van het door de server berekende gevecht","Replay dello scontro risolto dal server","Relecture du combat résolu par le serveur"],
  "Companion Power {value0}": ["Begleiterstärke {value0}","Poder del compañero {value0}","Metgezelkracht {value0}","Potenza compagno {value0}","Puissance du compagnon {value0}"],
  "Level {value0}": ["Stufe {value0}","Nivel {value0}","Level {value0}","Livello {value0}","Niveau {value0}"],
  "Now": ["Jetzt","Ahora","Nu","Ora","Maintenant"],

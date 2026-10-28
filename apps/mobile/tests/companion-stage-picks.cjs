@@ -31,7 +31,7 @@ assert.ok(server.includes("applyCompanionTrialMonthlyHazard(modified.enemies,pro
 assert.ok(engine.includes("eventType==='dot_tick'&&effect.damageType==='true'"),'Poison must be able to bypass shields');
 assert.ok(engine.includes("if(effect.kind==='cleanse')"),'Cleansing needs a real harmful-status removal action');
 assert.ok(adapter.includes("def.id==='UNIT_008'")&&adapter.includes("kind:'cleanse'"),'Dawnwing must cleanse in Trials');
-assert.ok(adapter.includes("def.id==='UNIT_005'")&&adapter.includes("'interruptible_casting_enemy'"),'Lantern Wisp must target interruptible casts');
+assert.ok(adapter.includes("def.active.effectKind==='interrupt'")&&adapter.includes("'interruptible_casting_enemy'"),'Interrupt-focused companions must target interruptible casts');
 assert.ok(runtime.includes("companionTrialMonthlyHazard(")&&runtime.includes("counterValue="),'Team suggestions must consider monthly counter abilities');
 assert.ok(trials.includes('trialHazard.counter')&&trials.includes('MONTHLY HAZARD'),'Trials screen must show status counters before team lock');
 assert.ok(playback.includes("'status_remove'"),'Combat playback must preserve status removal events');

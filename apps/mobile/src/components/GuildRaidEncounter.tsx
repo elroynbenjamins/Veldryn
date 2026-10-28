@@ -8,6 +8,8 @@ import {companionArtSource} from '../theme/companion-art';
 import {GameButton} from './GameButton';
 import {CombatTheaterModal} from './CombatTheaterModal';
 import {GuildRaidBossHpMeter,GuildRaidCombatOverlay,useGuildRaidCombatMotion} from './GuildRaidCombatFx';
+import {currentGuildPveAttemptHit,type GuildPveAttemptTimeline} from '../core/guild-pve-attempt-timeline';
+import {guildPveAttemptTimeline} from '../online/social';
 import {UiIcon} from './UiIcon';
 import {guildPveActivitySummary,guildPvePresentation,guildPveView,type GuildPveEncounter} from '../core/guild-pve-encounters';
 import {formatGameNumber} from '../core/number-format';
@@ -25,7 +27,7 @@ const caravanStage=require('../../assets/card-backgrounds/guild_plaza_wide_v2.we
 
 export function GuildPveEncounterCard({row,state,guildRewards=[],numberMode='abbreviated',busy=false,onClaim,onAttempt,onCombat,onRefresh}:{row:GuildPveEncounter;state?:GameState;guildRewards?:EventReward[];numberMode?:'abbreviated'|'exact';busy?:boolean;onClaim:(percent:number)=>unknown;onAttempt?:()=>unknown;onCombat?:()=>unknown;onRefresh?:()=>unknown}){
  const st=useSocialText(),language=useGameLanguage(),C=useGameTheme(),{width,fontScale}=useWindowDimensions();
- const [now,setNow]=useState(Date.now()),[summaryOpen,setSummaryOpen]=useState(false),[detailsOpen,setDetailsOpen]=useState(false),[startedAttemptCount,setStartedAttemptCount]=useState<number|null>(null);
+ const [now,setNow]=useState(Date.now()),[summaryOpen,setSummaryOpen]=useState(false),[detailsOpen,setDetailsOpen]=useState(false),[startedAttemptCount,setStartedAttemptCount]=useState<number|null>(null),[attemptTimeline,setAttemptTimeline]=useState<GuildPveAttemptTimeline|null>(null);
  const bossPulse=useRef(new Animated.Value(0)).current;
  useEffect(()=>{
   bossPulse.stopAnimation();bossPulse.setValue(0);
@@ -47,8 +49,17 @@ export function GuildPveEncounterCard({row,state,guildRewards=[],numberMode='abb
  const remainingSeconds=row.nextAttemptResolvesAt?Math.max(0,Math.ceil((Date.parse(row.nextAttemptResolvesAt)-now)/1000)):0;
  const countdown=`${Math.floor(remainingSeconds/60)}:${String(remainingSeconds%60).padStart(2,'0')}`;
  const pending=view.pendingAttempts>0,locked=view.guildLevel<view.requiredGuildLevel;
- const raidActive=summaryOpen&&(pending||(busy&&startedAttemptCount!==null));
- const raidMotion=useGuildRaidCombatMotion(raidActive,Boolean(state?.settings.reduceMotion));
+ const timelineCurrent=Boolean(pending&&attemptTimeline?.encounterId===row.id&&attemptTimeline?.attemptNumber===(row.attemptsUsed??0));
+ const raidActive=summaryOpen&&timelineCurrent;
+ const currentHit=raidActive?currentGuildPveAttemptHit(attemptTimeline??undefined,now):undefined;
+ const raidMotion=useGuildRaidCombatMotion(raidActive,Boolean(state?.settings.reduceMotion),currentHit);
+ useEffect(()=>{
+  if(!summaryOpen||!pending){setAttemptTimeline(null);return;}
+  let cancelled=false;
+  // One authenticated snapshot per attempt. Rendering a hit never polls the server.
+  void guildPveAttemptTimeline(row.id).then(timeline=>{if(!cancelled)setAttemptTimeline(timeline);}).catch(()=>{if(!cancelled)setAttemptTimeline(null);});
+  return()=>{cancelled=true;};
+ },[summaryOpen,pending,row.id,row.attemptsUsed]);
  const refreshRef=useRef(onRefresh);refreshRef.current=onRefresh;
  const needsResolutionRefresh=pending&&remainingSeconds===0;
  useEffect(()=>{
@@ -95,11 +106,11 @@ export function GuildPveEncounterCard({row,state,guildRewards=[],numberMode='abb
      <Animated.View pointerEvents="none" style={[s.raidAura,{borderColor:accent,opacity:bossPulse.interpolate({inputRange:[0,1],outputRange:[.16,.58]}),transform:[{scale:bossPulse.interpolate({inputRange:[0,1],outputRange:[.88,1.18]})}]}]}/>
      <Animated.View pointerEvents="none" style={[s.raidAuraInner,{borderColor:accent,opacity:bossPulse.interpolate({inputRange:[0,1],outputRange:[.55,.13]}),transform:[{scale:bossPulse.interpolate({inputRange:[0,1],outputRange:[1.05,.82]})}]}]}/>
      <Animated.Image accessible={false} source={bossArt[presentation.visualKey]} resizeMode="contain" style={[s.theaterBoss,{transform:[{translateX:raidActive&&!state?.settings.reduceMotion?raidMotion.strike.interpolate({inputRange:[0,.45,.6,1],outputRange:[0,0,4,0]}):0},{scale:bossPulse.interpolate({inputRange:[0,1],outputRange:[1,1.045]})}]}]}/>
-     <GuildRaidCombatOverlay classId={state?.character?.classId} companionEquipped={Boolean(companionArt)} strike={raidMotion.strike} assist={raidMotion.assist} active={raidActive} reduceMotion={state?.settings.reduceMotion}/>
+     <GuildRaidCombatOverlay classId={state?.character?.classId} companionEquipped={Boolean(companionArt)} strike={raidMotion.strike} assist={raidMotion.assist} active={raidActive} hitLabel={currentHit?`−${n(currentHit.amount)}`:undefined} hitActor={currentHit?.actor} reduceMotion={state?.settings.reduceMotion}/>
      <Text style={s.theaterBossName}>{presentation.bossName}</Text>
      {presentation.mechanicName?<Text style={s.theaterMechanic}>{presentation.mechanicName}</Text>:null}
     </ImageBackground>
-    <GuildRaidBossHpMeter maxHp={row.maxHp} damage={row.damage} strike={raidMotion.strike} active={raidActive} reduceMotion={state?.settings.reduceMotion} numberText={`${n(view.remaining)} / ${n(row.maxHp)} HP`} accent={accent} label={st('Boss health')}/>
+    <GuildRaidBossHpMeter maxHp={row.maxHp} damage={row.damage} strike={raidMotion.strike} assist={raidMotion.assist} active={raidActive} reduceMotion={state?.settings.reduceMotion} numberText={`${n(view.remaining)} / ${n(row.maxHp)} HP`} accent={accent} label={st('Boss health')}/>
     <View style={[s.theaterParty,{borderColor:C.line,backgroundColor:C.panel}]}>
      <View style={[s.portrait,{borderColor:C.line,backgroundColor:C.panel2}]}>{state?.character?<Image source={classIconArtwork[state.character.classId]} style={s.portraitArt}/>:<UiIcon name="character" size={34}/>}</View>
      <View style={[s.portrait,{borderColor:C.line,backgroundColor:C.panel2}]}>{companionArt?<Image source={companionArt} resizeMode="contain" style={s.portraitArt}/>:<UiIcon name="companions" size={30} muted/>}</View>
@@ -108,7 +119,7 @@ export function GuildPveEncounterCard({row,state,guildRewards=[],numberMode='abb
     {pending||busy?<View style={[s.theaterStatus,{backgroundColor:C.panel,borderColor:C.line}]}>
      <ActivityIndicator color={accent} size="large"/>
      <Text accessibilityLiveRegion="polite" style={[s.summaryTotal,{color:C.text}]}>{pending&&remainingSeconds>0?countdown:st('Resolving attempt…')}</Text>
-     <Text style={[s.detail,{color:C.muted,textAlign:'center'}]}>{st('Boss HP updates after server confirmation.')}</Text>
+     <Text style={[s.detail,{color:C.muted,textAlign:'center'}]}>{st('Hit effects follow your server-calculated attempt. Guild boss HP updates after settlement.')}</Text>
      {onRefresh?<GameButton title={st('Refresh raid status')} tone="secondary" disabled={busy} onPress={()=>onRefresh()}/>:null}
     </View>:resultReady?<View style={[s.theaterStatus,{backgroundColor:C.panel,borderColor:C.line}]}>
      <Text accessibilityLiveRegion="polite" style={[s.summaryTotal,{color:accent}]}>{n(row.lastAttemptDamage??0)} {st('Damage')}</Text>

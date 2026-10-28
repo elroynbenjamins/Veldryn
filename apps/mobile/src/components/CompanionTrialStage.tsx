@@ -44,7 +44,9 @@ function eventText(playback:CompanionBattlePlaybackSnapshot,event:CompanionBattl
  const actor=event.actorId?names.get(event.actorId):undefined,target=event.targetId?names.get(event.targetId):undefined;
  const ability=playback.abilityNames[event.abilityId??'']??t('Ability'),amount=Math.round(event.amount??0);
  if(event.type==='damage')return (actor??t('Attack'))+' · '+ability+' → '+(target??t('Target'))+' −'+amount+(event.critical?t(' CRIT'):'');
- if(event.type==='dot_tick')return t('{target} suffers {amount} periodic damage',{target:target??t('Target'),amount});
+ if(event.type==='dot_tick')return event.abilityId==='TRIAL_VENOM_BLOOM'?t('{target} suffers {amount} poison damage through shields',{target:target??t('Target'),amount}):t('{target} suffers {amount} periodic damage',{target:target??t('Target'),amount});
+ if(event.type==='status_apply'&&event.statusKind==='dot')return t('{target} is poisoned',{target:target??t('Target')});
+ if(event.type==='status_remove'&&event.statusKind==='dot')return t('{actor} cleanses poison from {target}',{actor:actor??t('Support'),target:target??t('Ally')});
  if(event.type==='heal'||event.type==='hot_tick')return t('{actor} restores {amount} HP to {target}',{actor:actor??t('Support'),amount,target:target??t('Ally')});
  if(event.type==='shield')return t('{actor} shields {target} for {amount}',{actor:actor??t('Support'),target:target??t('Ally'),amount});
  if(event.type==='cast_start')return t('{actor} begins {ability}',{actor:actor??t('Enemy'),ability});

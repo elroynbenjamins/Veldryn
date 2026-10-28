@@ -21,8 +21,8 @@ export function craftedGearQualityMultiplier(quality:number){
   const normalized=Math.max(1,Math.min(100,Math.floor(quality)));
   // Exact neutral Q50 baseline; endpoint rolls remain -5% at Q1 and +5% at Q100.
   return normalized<=LEGACY_CRAFTED_GEAR_QUALITY
-    ?.95+(normalized-1)/49*.05
-    :1+(normalized-LEGACY_CRAFTED_GEAR_QUALITY)/50*.05;
+    ?0.95+(normalized-1)/49*0.05
+    :1+(normalized-LEGACY_CRAFTED_GEAR_QUALITY)/50*0.05;
 }
 
 /** Retain already-persisted stat variance from the previous forge system. */

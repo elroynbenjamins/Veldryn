@@ -3,10 +3,9 @@ import {createTranslator} from './translator';
 
 // Each row supplies German, Spanish, Dutch, Italian and French; its key is English.
 export const companionTranslationRows={
- "Pause playback": ["Wiedergabe pausieren","Pausar reproducción","Afspelen pauzeren","Metti in pausa","Mettre en pause"],
- "Resume playback": ["Wiedergabe fortsetzen","Reanudar reproducción","Afspelen hervatten","Riprendi riproduzione","Reprendre la lecture"],
+ "LIVE COMBAT": ["LIVE-KAMPF","COMBATE EN VIVO","LIVE GEVECHT","COMBATTIMENTO LIVE","COMBAT EN DIRECT"],
+ "SPEED": ["TEMPO","VELOCIDAD","SNELHEID","VELOCITÀ","VITESSE"],
  "Change playback speed": ["Wiedergabegeschwindigkeit ändern","Cambiar velocidad de reproducción","Afspeelsnelheid wijzigen","Cambia velocità di riproduzione","Modifier la vitesse de lecture"],
- "Replay trial combat": ["Prüfungskampf erneut ansehen","Repetir combate de prueba","Beproevingsgevecht opnieuw bekijken","Rivedi il combattimento della prova","Revoir le combat d'épreuve"],
  "TRIAL COMBAT": ["PRÜFUNGSKAMPF","COMBATE DE PRUEBA","BEPROEVINGSGEVECHT","COMBATTIMENTO DELLA PROVA","COMBAT D’ÉPREUVE"],
  "Tower of Companions": ["Turm der Gefährten","Torre de compañeros","Toren der metgezellen","Torre dei compagni","Tour des compagnons"],
  "Server-resolved combat replay": ["Wiedergabe des serverseitig berechneten Kampfes","Repetición del combate resuelto por el servidor","Herhaling van het door de server berekende gevecht","Replay dello scontro risolto dal server","Relecture du combat résolu par le serveur"],

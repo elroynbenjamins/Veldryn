@@ -23,7 +23,7 @@ const clamp=(n:number,min:number,max:number)=>Math.max(min,Math.min(max,n));
 const pct=(current:number,max:number)=>clamp(max>0?current/max*100:0,0,100);
 const time=(ms:number)=>`${(Math.max(0,ms)/1000).toFixed(1)}s`;
 
-type PlaybackUnit={id:string;name:string;team:'players'|'enemies';role:string;maxHp:number;boss:boolean;hp:number;shield:number;alive:boolean;casting?:string};
+type PlaybackUnit={id:string;name:string;team:'players'|'enemies';role:string;maxHp:number;boss:boolean;hp:number;shield:number;alive:boolean;casting?:string;poisonUntil?:number};
 function playbackState(playback:CompanionBattlePlaybackSnapshot,playhead:number){
  const units=new Map<string,PlaybackUnit>(playback.units.map(unit=>[unit.id,{...unit,hp:unit.maxHp,shield:0,alive:true}]));
  const visible=playback.events.filter(event=>event.atMs<=playhead);
@@ -32,11 +32,14 @@ function playbackState(playback:CompanionBattlePlaybackSnapshot,playhead:number)
   if((event.type==='damage'||event.type==='dot_tick')&&target){target.shield=Math.max(0,target.shield-(event.absorbed??0));target.hp=Math.max(0,target.hp-(event.amount??0));}
   if((event.type==='heal'||event.type==='hot_tick')&&target)target.hp=Math.min(target.maxHp,target.hp+(event.amount??0));
   if(event.type==='shield'&&target)target.shield+=event.amount??0;
+   if(event.type==='status_apply'&&target&&event.statusKind==='dot'&&event.statusTag==='poison')target.poisonUntil=event.expiresAtMs??playhead+8000;
+   if(event.type==='status_remove'&&target&&event.statusKind==='dot'&&event.statusTag==='poison')target.poisonUntil=undefined;
   if((event.type==='down'||event.type==='death')&&target){target.hp=0;target.alive=false;}
   if(event.type==='cast_start'&&actor)actor.casting=playback.abilityNames[event.abilityId??'']??event.abilityId;
   if(event.type==='cast_complete'&&actor)actor.casting=undefined;
   if(event.type==='interrupt'&&target)target.casting=undefined;
  }
+ for(const unit of units.values())if(unit.poisonUntil!==undefined&&unit.poisonUntil<=playhead)unit.poisonUntil=undefined;
  return {units:[...units.values()],visible};
 }
 function eventText(playback:CompanionBattlePlaybackSnapshot,event:CompanionBattlePlaybackSnapshot['events'][number],language:import('../i18n/languages').Language){
@@ -116,7 +119,8 @@ export function CompanionTrialStage({state,now,floor,teamIds}:{state:GameState;n
     <View style={s.unitHead}><Text numberOfLines={1} style={s.unitName}>{unit.name}</Text><Text style={s.hpText}>{Math.round(unit.hp).toLocaleString()}/ {Math.round(unit.maxHp).toLocaleString()}</Text></View>
     <View style={s.hpTrack}><View style={[s.hpFill,{width:(pct(unit.hp,unit.maxHp)+'%') as any}]}/>{unit.shield>0?<View style={[s.shieldFill,{width:(Math.min(100,unit.shield/unit.maxHp*100)+'%') as any}]}/>:null}</View>
     <Text style={s.unitMeta}>{def ? t("{value0} · {value1} {value2}", {value0: label(def.role).toLocaleUpperCase(language), value1: affinity?.glyph ?? '', value2: companionContent(language,affinity?.label??'')}) : (unit.boss?t('Boss').toLocaleUpperCase(language):t('Trial Echo').toLocaleUpperCase(language))}{unit.shield>0 ? t(" · {value0} shield", {value0: Math.round(unit.shield)}) : ''}</Text>
-    {unit.casting?<Text style={s.castText}>{t("CASTING · {value0}", {value0: unit.casting})}</Text>:null}</View>{impactLabel?<Animated.Text style={[s.impactNumber,(current?.type==='heal'||current?.type==='hot_tick'||current?.type==='shield')&&s.impactPositive,current?.critical&&s.impactCritical,hitMotion]}>{impactLabel}</Animated.Text>:null}</View></View>;
+    {unit.poisonUntil!==undefined?<Text style={[s.castText,{color:C.bad}]}>{t("POISON")} · {t("HP bypass")}</Text>:null}
+    {unit.casting?<Text style={s.castText}>{t("CASTING · {value0}", {value0: unit.casting})}</Text>:null}</View>{impactLabel?<Animated.Text style={[s.impactNumber,(current?.type==='heal'||current?.type==='hot_tick'||current?.type==='shield')&&s.impactPositive,current?.critical&&s.impactCritical,current?.type==='dot_tick'&&current.abilityId==='TRIAL_VENOM_BLOOM'&&{color:C.special},hitMotion]}>{impactLabel}</Animated.Text>:null}</View></View>;
   };
   return <Animated.View style={[s.stage,{transform:[{scale}]}]}>
    <View style={s.stageHeader}><View style={s.flex}><Text style={s.kicker}>{t("LIVE COMBAT")}</Text><Text style={s.title}>{playbackTitle}</Text></View><View style={s.timerBadge}><Text style={s.timerText}>{time(Math.min(playhead,playback.durationMs))}</Text><Text style={s.powerSub}>/ {time(playback.durationMs)}</Text></View></View>

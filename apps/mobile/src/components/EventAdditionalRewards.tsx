@@ -31,7 +31,7 @@ export function EventAdditionalRewards({state,now,busy=false,pendingId,onClaimDi
   </View>:null}
   {showCaches?<View style={s.section}>
    <Text style={[s.kicker,{color:C.accent}]}>BONUS CACHE</Text>
-   <View style={[s.rewardRow,{borderColor:caches?C.accent:C.line,backgroundColor:caches?C.accentSurface:C.panel2}]}><View style={s.cacheIcon}><Text style={[s.cacheMark,{color:C.special}]}>✦</Text></View><View style={s.copy}><Text style={[s.rewardName,{color:C.text}]}>Post-cap event cache</Text><Text style={[s.body,{color:C.muted}]}>{caches?`${caches} ready · awards 1 ${definition.prestigeCurrencyName}`:`Earn 1,000 more reputation after the final milestone.`}</Text></View><View style={s.action}><GameButton compact title={caches?`Claim (${caches})`:'Locked'} loading={pendingId==='cache'} disabled={busy||!caches} tone={caches?'primary':'secondary'} onPress={onClaimCache}/></View></View>
+   <View style={[s.rewardRow,{borderColor:caches?C.accent:C.line,backgroundColor:caches?C.accentSurface:C.panel2}]}><View style={s.cacheIcon}><Text style={[s.cacheMark,{color:C.special}]}>✦</Text></View><View style={s.copy}><Text style={[s.rewardName,{color:C.text}]}>Post-cap event cache</Text><Text style={[s.body,{color:C.muted}]}>{caches?`${caches} ready · ${caches} ${definition.prestigeCurrencyName} total (1 per 1,000 extra reputation)`:`Earn 1,000 more reputation after the final milestone.`}</Text></View><View style={s.action}><GameButton compact title={caches?`Claim all (${caches})`:'Locked'} loading={pendingId==='cache'} disabled={busy||!caches} tone={caches?'primary':'secondary'} onPress={onClaimCache}/></View></View>
   </View>:null}
  </Panel>;
 }

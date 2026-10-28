@@ -39,17 +39,17 @@ export function eventCandyStatus(state:GameState,nowMs=Date.now(),kind:EventCand
  return {active:remaining>0,remainingSeconds:remaining,candy};
 }
 export function eventCandyUtilityMultiplier(state:GameState,nowMs=Date.now(),kind:EventCandyKind='skill'){return eventCandyStatus(state,nowMs,kind).active?1.1:1;}
-export function consumeEventCandy(state:GameState,nowMs=Date.now(),kind:EventCandyKind='skill'):GameState{
+export function consumeEventCandy(state:GameState,nowMs=Date.now(),kind:EventCandyKind='skill',companionId?:string):GameState{
   const active=activeLiveEvent(state,nowMs);if(!active||!state.character)throw new Error('This event is not active.');
   const candy=eventCandies(active.definition).find(entry=>entry.kind===kind);if(!candy)throw new Error('Unknown event candy.');
   const charges=state.account.eventCandyChargesById?.[candy.id]??0;if(charges<1)throw new Error('Earn candy from festival gifts or the event guild boss first.');
   state={...state,account:{...state.account,eventCandyChargesById:{...(state.account.eventCandyChargesById??{}),[candy.id]:charges-1}}};
   if(!state.character)throw new Error('Character required.');
   if(kind==='companion'){
-    const equipped=state.character.equippedCombatCompanionId;if(!equipped)throw new Error('Equip a combat companion first.');
+    const targetId=companionId??state.character.equippedCombatCompanionId;if(!targetId||(state.account.unlockedCombatCompanionIds??[]).includes(targetId)===false)throw new Error('Select a companion you own.');
     const materialKey=`${active.definition.id}:candy:companion_material`,materialUses=state.account.eventShopPurchaseCounts?.[materialKey]??0;
     if(materialUses>=5)throw new Error('This event candy has reached its five-material cap. Companion XP remains available from normal companion activities.');
-    const awarded=awardCompanionCandyXp(state,equipped,75,nowMs),materials={...(awarded.account.companionMaterials??{})};materials.EVENT_BONDBLOOM=(materials.EVENT_BONDBLOOM??0)+1;
+    const awarded=awardCompanionCandyXp(state,targetId,75,nowMs),materials={...(awarded.account.companionMaterials??{})};materials.EVENT_BONDBLOOM=(materials.EVENT_BONDBLOOM??0)+1;
     return {...awarded,account:{...awarded.account,companionMaterials:materials,eventShopPurchaseCounts:{...(awarded.account.eventShopPurchaseCounts??{}),[materialKey]:materialUses+1}}};
   }
   const current=eventCandyStatus(state,nowMs,kind);if(current.active&&current.remainingSeconds>=candy.maxSeconds)throw new Error('Event candy duration is already full.');
@@ -157,7 +157,7 @@ export function claimEventReward(state:GameState,rewardId:string,nowMs=Date.now(
 export function claimAllEventMilestones(state:GameState,nowMs=Date.now()):GameState{const event=claimableLiveEvent(state,nowMs);if(!event||!state.character)throw new Error('Event rewards are no longer available.');const available=event.definition.milestones(state.character.classId).filter(entry=>entry.points<=eventProgress(state,event.definition.id)&&!eventRewardClaimed(state,event.definition.id,entry.reward.id));if(!available.length)throw new Error('No milestone rewards are ready.');return available.reduce((next,entry)=>claimEventReward(next,entry.reward.id,nowMs),state);}
 
 export function availableEventRepeatCaches(state:GameState,eventId:string){const event=liveEventDef(eventId);if(!event)return 0;const earned=Math.floor(Math.max(0,eventProgress(state,eventId)-event.maxProgress)/1000),claimed=state.account.eventRepeatCacheClaimsById?.[eventId]??0;return Math.max(0,earned-claimed);}
-export function claimEventRepeatCache(state:GameState,nowMs=Date.now()):GameState{const event=claimableLiveEvent(state,nowMs);if(!event)throw new Error('Event rewards are no longer available.');if(!availableEventRepeatCaches(state,event.definition.id))throw new Error('Earn 1,000 reputation beyond the final milestone first.');const id=event.definition.id;return {...state,account:{...state.account,eventPrestigeBalanceById:{...(state.account.eventPrestigeBalanceById??{}),[id]:eventPrestigeBalance(state,id)+1},eventRepeatCacheClaimsById:{...(state.account.eventRepeatCacheClaimsById??{}),[id]:(state.account.eventRepeatCacheClaimsById?.[id]??0)+1}}};}
+export function claimEventRepeatCache(state:GameState,nowMs=Date.now()):GameState{const event=claimableLiveEvent(state,nowMs);if(!event)throw new Error('Event rewards are no longer available.');const id=event.definition.id,available=availableEventRepeatCaches(state,id);if(!available)throw new Error('Earn 1,000 reputation beyond the final milestone first.');return {...state,account:{...state.account,eventPrestigeBalanceById:{...(state.account.eventPrestigeBalanceById??{}),[id]:eventPrestigeBalance(state,id)+available},eventRepeatCacheClaimsById:{...(state.account.eventRepeatCacheClaimsById??{}),[id]:(state.account.eventRepeatCacheClaimsById?.[id]??0)+available}}};}
 
 function utcDayKey(nowMs:number){return new Date(nowMs).toISOString().slice(0,10);}
 function utcWeekKey(nowMs:number){const date=new Date(nowMs),daysSinceMonday=(date.getUTCDay()+6)%7;date.setUTCDate(date.getUTCDate()-daysSinceMonday);return date.toISOString().slice(0,10);}

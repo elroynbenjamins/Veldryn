@@ -1,4 +1,4 @@
-import {createEventAnnouncementStore,LIVE_EVENT_ANNOUNCEMENT_INTERVAL_MS,normalizeLiveEventAnnouncementReceipt,shouldShowLiveEventAnnouncement} from '../src/core/event-announcement';
+import {createEventAnnouncementStore,normalizeLiveEventAnnouncementReceipt,shouldShowLiveEventAnnouncement} from '../src/core/event-announcement';
 import type {LiveEventRuntime} from '../src/core/types';
 
 function equal(actual:unknown,expected:unknown,message='Unexpected value'){if(actual!==expected)throw new Error(`${message}: expected ${String(expected)}, received ${String(actual)}`)}
@@ -6,10 +6,9 @@ function deepEqual(actual:unknown,expected:unknown,message='Unexpected value'){i
 
 const DAY=24*60*60*1000,now=Date.parse('2026-10-24T12:00:00Z');
 const runtime:LiveEventRuntime={enabled:true,eventId:'EVT_ANNUAL_010_2026',startsAtMs:now-DAY,endsAtMs:now+7*DAY};
-equal(LIVE_EVENT_ANNOUNCEMENT_INTERVAL_MS,3*DAY);
 equal(shouldShowLiveEventAnnouncement(runtime,undefined,now),true,'a live event announces on first sight');
 equal(shouldShowLiveEventAnnouncement(runtime,{eventId:runtime.eventId,startsAtMs:runtime.startsAtMs,shownAtMs:now-DAY},now),false,'the same event stays quiet inside three days');
-equal(shouldShowLiveEventAnnouncement(runtime,{eventId:runtime.eventId,startsAtMs:runtime.startsAtMs,shownAtMs:now-3*DAY},now),true,'the same live event may announce again after three days');
+equal(shouldShowLiveEventAnnouncement(runtime,{eventId:runtime.eventId,startsAtMs:runtime.startsAtMs,shownAtMs:now-3*DAY},now),false,'the same event edition never repeats after the first announcement');
 equal(shouldShowLiveEventAnnouncement({...runtime,startsAtMs:now+1},undefined,now),false,'upcoming events do not announce');
 equal(shouldShowLiveEventAnnouncement({...runtime,endsAtMs:now},undefined,now),false,'ended events do not announce');
 equal(shouldShowLiveEventAnnouncement({...runtime,eventId:'NEW_EVENT',startsAtMs:now-DAY/2},{eventId:runtime.eventId,startsAtMs:runtime.startsAtMs,shownAtMs:now},now),true,'a new event announces immediately');
@@ -23,10 +22,13 @@ async function run(){
  equal(await store.claim('account-a',runtime,now),true);
  equal(await store.claim('account-a',runtime,now+DAY),false);
  equal(await store.claim('account-b',runtime,now+DAY),true,'accounts keep independent announcement receipts');
- equal(await store.claim('account-a',runtime,now+3*DAY),true);
+ equal(await store.claim('account-a',runtime,now+3*DAY),false);
+ await store.markSeen('account-c',runtime,now);
+ equal(await store.claim('account-c',runtime,now+DAY),false,'visiting Events suppresses the announcement even if no popup appeared');
+ equal(await store.claim('account-c',{...runtime,eventId:'NEW_EVENT',startsAtMs:now-DAY/2},now+DAY),true,'a new event edition can announce');
  const simultaneous=createEventAnnouncementStore({getItem:async()=>null,setItem:async()=>undefined});
  const results=await Promise.all([simultaneous.claim('same-account',runtime,now),simultaneous.claim('same-account',runtime,now)]);
  deepEqual(results,[true,false],'overlapping runtime refreshes show only one popup');
- console.log('PASS live-event announcements persist per account and repeat at most once every three days');
+ console.log('PASS event announcements are once per edition and visits suppress further prompts');
 }
 void run();

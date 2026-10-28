@@ -168,6 +168,7 @@ function VeldrynApp(){
   const [recoveryLanguage,setRecoveryLanguage]=useState<Language>('en');
   useEffect(()=>{gameAlerts.configure({themeId:state?.settings.uiTheme,language:state?.settings.language??recoveryLanguage,reduceMotion:state?.settings.reduceMotion??false});},[state?.settings.uiTheme,state?.settings.language,state?.settings.reduceMotion,recoveryLanguage]);
   const [tab,setCurrentTab]=useState<Tab>('Home');
+  const tabRef=useRef(tab);tabRef.current=tab;
   useEffect(()=>setNetworkMetricsRoute(tab),[tab]);
   const [settingsSection,setSettingsSection]=useState<'guide'|'store'|undefined>();
   const [tabHistory,setTabHistory]=useState<Tab[]>([]);
@@ -372,11 +373,13 @@ function VeldrynApp(){
   useEffect(()=>{if(tab!=='ProfileCustomize'||!profileAttentionKeys.length)return;setProfileAttentionKeys([]);void clearProfileAttentionKeys(profileAttentionScope);},[tab,profileAttentionScope,profileAttentionKeys.length]);
   const syncLiveEventRuntime=useCallback(async()=>{if(!EVENTS_RELEASED||!onlineConfigured)return;try{const runtime=await fetchActiveEventRuntime();const current=stateRef.current;if(!current)return;const before=current.account.liveEvent??null,nextRuntime=runtime??null;if(JSON.stringify(before)!==JSON.stringify(nextRuntime)){const next={...current,account:{...current.account,liveEvent:runtime}};stateRef.current=next;setState(next);}
     const announcedAt=Date.now(),announcementScope=auth.session?.user.id??current.character?.id??'device';
-    if(runtime&&canAnnounceLiveEventStart(current.character?.level)&&await eventAnnouncementStore.claim(announcementScope,runtime,announcedAt))setEventStartPopup(runtime);
+    if(runtime&&tabRef.current==='Events'){void eventAnnouncementStore.markSeen(announcementScope,runtime,announcedAt);setEventStartPopup(null);}
+     else if(runtime&&canAnnounceLiveEventStart(current.character?.level)&&await eventAnnouncementStore.claim(announcementScope,runtime,announcedAt)&&tabRef.current!=='Events')setEventStartPopup(runtime);
   }catch{/* Event registry sync is best-effort; gameplay refresh remains authoritative. */}},[auth.session?.user.id]);
   // Event configuration is server-authoritative, but it changes on a live-ops cadence, not a frame cadence.
   // Foregrounding still refreshes immediately so a returning player never waits for the next scheduled check.
   useEffect(()=>{if(!onlineConfigured)return;void syncLiveEventRuntime();const id=setInterval(()=>void syncLiveEventRuntime(),60_000);const sub=AppState.addEventListener('change',status=>{if(status==='active')void syncLiveEventRuntime();});return()=>{clearInterval(id);sub.remove();}},[syncLiveEventRuntime]);
+   useEffect(()=>{if(tab!=='Events')return;setEventStartPopup(null);const runtime=state?.account.liveEvent;if(!runtime)return;void eventAnnouncementStore.markSeen(auth.session?.user.id??state?.character?.id??'device',runtime);},[tab,auth.session?.user.id,state?.account.liveEvent?.eventId,state?.account.liveEvent?.startsAtMs,state?.character?.id]);
   const needsLiveClock=!!state?.activity||!!state?.character?.classTraining;
   const needsFastClock=needsLiveClock&&(tab==='Home'||tab==='Combat');
   // This is presentation-only. Server authority and reward settlement do not poll on this clock.

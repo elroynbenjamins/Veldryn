@@ -186,7 +186,7 @@ const selectedIndex=Math.max(0,COMBAT_COMPANIONS.findIndex(def=>def.id===selecti
           {trialSheet==='challenges'&&<><GameButton compact tone="secondary" title={t('Choose Team')} onPress={()=>setTrialSheet('team')}/>{challengeCards.map(card=><View key={card.id} style={{gap:6}}><Text style={s.rotationKicker}>{t(card.claimed?'Completed':card.ready?'Ready to claim':'In progress')}</Text>{card.node}</View>)}</>}
         </ScrollView>
       </GameModalSurface>
-      {trialSheet==='battle'?<CombatTheaterModal visible onClose={()=>setTrialSheet(null)} eyebrow={t('TRIAL COMBAT')} title={t('Tower of Companions')} subtitle={t('Server-resolved combat replay')} reduceMotion={state.settings.reduceMotion}>
+      {trialSheet==='battle'?<CombatTheaterModal visible tone="companion" onClose={()=>setTrialSheet(null)} eyebrow={t('TRIAL COMBAT')} title={t('Tower of Companions')} subtitle={t('Server-resolved combat replay')} reduceMotion={state.settings.reduceMotion}>
        <CompanionTrialStage state={state} now={now} floor={trialPreviewFloor} teamIds={trialPreviewTeam}/>
       </CombatTheaterModal>:null}
     </View>}

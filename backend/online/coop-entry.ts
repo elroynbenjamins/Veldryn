@@ -67,6 +67,7 @@ export function coopEntryHandler(services:Services){return async(request:Request
   const message=error instanceof Error?error.message:'server_error';
   const conflict=/^(stale_game_version|idempotency_key_conflict)$/.test(message);
   const status=conflict?409:error instanceof GameplayError?error.status:503;
-  return json({error:status===503?'Server temporarily unavailable. Retry the pending action.':message},status);
+  if(status===503)console.error('coop_entry_unexpected_error',message);
+  return json({error:status===503?(request.method==='GET'?'Dungeons are temporarily unavailable. Try again.':'Could not confirm the co-op action. Retry it.'):message},status);
  }
 };}

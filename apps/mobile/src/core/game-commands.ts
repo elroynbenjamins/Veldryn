@@ -50,7 +50,7 @@ const fields:Record<string,readonly string[]>={
  loadout_save:['index','name'],loadout_apply:['id'],loadout_delete:['id'],arena_slot:['index','characterId'],goals_set:['goals'],idle_rules_set:['rules','activeId'],daily_supplies_claim:['characterId'],daily_supplies_activate:['type'],
  quest:['id'],seasonal:['period','id'],settings:['settings'],profile:['profileIconId','profileTitle','profileBackgroundId','profileBorderId','selectedCosmeticPetId'],
  event_daily:[],event_cache:[],event_milestones:[],event_discovery:['id'],event_reward:['id'],event_accept:['id'],
- event_objective:['id'],event_weekly:['id'],event_project:['id'],event_contribute:['quantity'],event_community:['percent'],event_purchase:['id'],event_candy:['kind'],
+ event_objective:['id'],event_weekly:['id'],event_project:['id'],event_contribute:['quantity'],event_community:['percent'],event_purchase:['id'],event_candy:['kind','companionId'],
  qa_prepare:['classId'],qa_refill:[],qa_switch_class:['classId'],
 };
 export function validateGameCommand(value:unknown):GameCommand{
@@ -133,7 +133,7 @@ export function executeGameCommand(previous:GameState,value:unknown,now:number,o
  if(command.type.startsWith('event_')&&!earlyFeatureUnlocked(state,'events'))throw new Error('events_locked');
  const companionMetricBefore=command.type.startsWith('companion_')?companionCommandEconomySnapshot(state):undefined;
  if(['companion_equip','companion_level','companion_ascend','companion_master'].includes(command.type))assertCompanionIdle(state,text(a,'id'));
- if(command.type==='event_candy')oneOf(a.kind,['skill','combat','companion']);
+ if(command.type==='event_candy'){const kind=oneOf(a.kind,['skill','combat','companion']);if(a.companionId!==undefined){if(kind!=='companion')throw new Error('invalid_companion_target');text(a,'companionId',80);}}
  switch(command.type){
   case 'qa_prepare':case 'qa_switch_class':{
    if(!options.adminQa)throw new Error('admin_qa_required');
@@ -378,7 +378,7 @@ export function executeGameCommand(previous:GameState,value:unknown,now:number,o
   case 'event_contribute':state=events.contributeEventCurrency(state,integer(a,'quantity'),now);break;
   case 'event_community':state=events.claimEventCommunityMilestone(state,integer(a,'percent',1,100),now);break;
   case 'event_purchase':state=events.purchaseEventOffer(state,text(a,'id'),now);break;
-  case 'event_candy':state=events.consumeEventCandy(state,now,oneOf(a.kind,['skill','combat','companion']) as import('../content/live-events').EventCandyKind);break;
+  case 'event_candy':state=events.consumeEventCandy(state,now,oneOf(a.kind,['skill','combat','companion']) as import('../content/live-events').EventCandyKind,a.companionId===undefined?undefined:text(a,'companionId',80));break;
   default:throw new Error('invalid_command');
  }
  if(companionMetricBefore)state=recordCompanionCommandMetrics(state,command.type,companionMetricBefore);

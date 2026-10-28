@@ -3,6 +3,8 @@ import {createTranslator} from './translator';
 
 // Each row supplies German, Spanish, Dutch, Italian and French; its key is English.
 export const companionTranslationRows={
+ "Stage-fit team · Power {value0}": ["Stufenteam · Stärke {value0}","Equipo para la etapa · Poder {value0}","Etappeteam · Kracht {value0}","Squadra adatta · Potenza {value0}","Équipe adaptée · Puissance {value0}"],
+ "Use stage-fit team": ["Stufenteam verwenden","Usar equipo para la etapa","Gebruik etappeteam","Usa squadra adatta","Utiliser l'équipe adaptée"],
  "STAGE MATCHUPS": ["STUFEN-KONTER","VENTAJAS DE ETAPA","ETAPEMATCHUPS","VANTAGGI DI TAPPA","AVANTAGES D'ÉTAPE"],
  "Offense: {value0} · Guard: {value1}": ["Angriff: {value0} · Schutz: {value1}","Ataque: {value0} · Defensa: {value1}","Aanval: {value0} · Verdediging: {value1}","Attacco: {value0} · Difesa: {value1}","Attaque : {value0} · Défense : {value1}"],
  "✓ Stage combo active: +2% team Haste": ["✓ Stufenkombination aktiv: +2 % Teamtempo","✓ Combo de etapa activo: +2 % de celeridad del equipo","✓ Etappecombinatie actief: +2% teamhaast","✓ Combo tappa attiva: +2% rapidità squadra","✓ Combo d'étape actif : +2 % de hâte d'équipe"],

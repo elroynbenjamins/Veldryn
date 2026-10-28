@@ -23,7 +23,7 @@ function duration(seconds:number){
   return m<60?m+'m':Math.floor(m/60)+'h '+(m%60)+'m';
 }
 
-export function EquipmentCraftQueuePanel({state,onClaim,onClaimAll,onCancel,onMoveWaiting,forgeResults,onDismissForgeResults}:{state:GameState;onClaim:(jobId:string)=>void;onClaimAll:()=>void;onCancel:(jobId:string)=>void;onMoveWaiting:(jobId:string,direction:'up'|'down')=>void;forgeResults?:readonly ForgeCraftResult[]|null;onDismissForgeResults?:()=>void}){
+export function EquipmentCraftQueuePanel({state,onClaim,onClaimAll,onCancel,onMoveWaiting,forgeResults,onDismissForgeResults,onSetAutoSell}:{state:GameState;onClaim:(jobId:string)=>void;onClaimAll:()=>void;onSetAutoSell?:(enabled:boolean)=>void|Promise<unknown>;onCancel:(jobId:string)=>void;onMoveWaiting:(jobId:string,direction:'up'|'down')=>void;forgeResults?:readonly ForgeCraftResult[]|null;onDismissForgeResults?:()=>void}){
  const {gt,gl,language}=useGameplayText();
   const C=useGameTheme(),E=equipmentTheme(C),s=useMemo(()=>makeStyles(C),[C]);
   const [now,setNow]=useState(Date.now()),[showUnlocks,setShowUnlocks]=useState(false);

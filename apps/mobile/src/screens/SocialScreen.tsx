@@ -41,12 +41,13 @@ export function SocialScreen({initialTab='party',characterLevel=0,onGuild,onAcco
  const [rankings,setRankings]=useState<PartyRanking[]>([]),[partyInvites,setPartyInvites]=useState<PartyInvitationView[]>([]),[outgoingPartyInvites,setOutgoingPartyInvites]=useState<OutgoingInvitationView[]>([]),[liveEvent,setLiveEvent]=useState<import('../core/party-social').PartyEventView|null>(null);
  const [draft,setDraft]=useState<PublishRecruitmentInput|null>(null),[selected,setSelected]=useState<RecruitmentCardView|null>(null),[selectedProfile,setSelectedProfile]=useState<ChatPlayerIdentity|null>(null),[busy,setBusy]=useState(false),[error,setError]=useState(''),[matchAlerts,setMatchAlerts]=useState<RecruitmentMatchAlert[]>([]);
  const [focus,setFocus]=useState<PartyFocus>('mixed'),[role,setRole]=useState<PartyRole>('damage'),[now,setNow]=useState(Date.now()),[showPrefs,setShowPrefs]=useState(false),[showMatches,setShowMatches]=useState(false),[showPartyEvents,setShowPartyEvents]=useState(false);
- const requestGeneration=useRef(0);const command=useRef<{signature:string;key:string}|null>(null);
+ const requestGeneration=useRef(0);const accountIdRef=useRef(social.accountId);accountIdRef.current=social.accountId;
+ const command=useRef<{signature:string;key:string}|null>(null);
  const [updating,setUpdating]=useState(false),[showUpdating,setShowUpdating]=useState(false),[backgroundError,setBackgroundError]=useState('');
  const key=(signature:string)=>{if(command.current?.signature!==signature)command.current={signature,key:partyCommandKey()};return command.current.key;};
  const load=useCallback(async()=>{
   const generation=++requestGeneration.current;
-  if(!social.accountId||tab==='chat'){setUpdating(false);return;}
+  if(!social.accountId||tab==='chat'||accountIdRef.current!==social.accountId){setUpdating(false);return;}
   const accountId=social.accountId;
   const context: 'party'|'guild'=tab==='guild'?'guild':'party';
   const browse={...filters,postTypes:(context==='guild'?['looking_for_guild']:['looking_for_party','party_recruiting']) as RecruitmentPostType[]};
@@ -64,7 +65,7 @@ export function SocialScreen({initialTab='party',characterLevel=0,onGuild,onAcco
     socialOutgoingInvitations().catch(()=>({party:[],guild:[],serverTime:''})),
     recruitmentMatchAlerts().catch(()=>[])
    ]);
-   if(generation!==requestGeneration.current)return;
+   if(generation!==requestGeneration.current||accountIdRef.current!==accountId)return;
    // If the guild status request failed, keep the last confirmed membership
    // and existing recruitment cards rather than blanking the entire screen.
    if(membership!==undefined){
@@ -84,11 +85,11 @@ export function SocialScreen({initialTab='party',characterLevel=0,onGuild,onAcco
    setPartyInvites(invites.party);
    setOutgoingPartyInvites(outgoing.party);
   }catch(e){
-   if(generation===requestGeneration.current)
+   if(generation===requestGeneration.current&&accountIdRef.current===accountId)
     setBackgroundError('refresh_failed');
    // A failed background request must never erase the last good snapshot.
   }finally{
-   if(generation===requestGeneration.current)setUpdating(false);
+   if(generation===requestGeneration.current&&accountIdRef.current===accountId)setUpdating(false);
   }
  },[filters,tab,social.accountId]);
  useEffect(()=>{
@@ -166,7 +167,7 @@ export function SocialScreen({initialTab='party',characterLevel=0,onGuild,onAcco
     </>:null}
    </>:null}
  </>:null;
- return <SocialHubPanel active={tab} hasParty={canUsePartyChat} badges={{party:partyInvites.length}} onChange={next=>{setTab(next);setSelected(null);setDraft(null);setError('');}}>
+ return <SocialHubPanel active={tab} hasParty={canUsePartyChat} badges={{party:partyInvites.length}} onChange={next=>{setTab(next);setSelected(null);setDraft(null);setError('');setBackgroundError('');}}>
  {tab==='chat'?(canUsePartyChat?<View style={s.chatContent}><OnlinePartyChat expanded/></View>:social.loading?<View style={s.chatContent}><Text style={s.syncText}>{st("Opening Party Chat…")}</Text></View>:null):
  <ScrollView contentContainerStyle={s.content} keyboardShouldPersistTaps="handled" keyboardDismissMode="on-drag" showsVerticalScrollIndicator={false} showsHorizontalScrollIndicator={false}>
   {tab==='party'&&partyLocked?<PartyLockedNotice level={PARTY_UNLOCK_LEVEL}/>:<>

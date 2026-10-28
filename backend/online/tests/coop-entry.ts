@@ -42,6 +42,15 @@ async function main(){
  publicationError='idempotency_key_conflict';assert.equal((await handler(request('echo',{requestId:'echo-test-01',expectedVersion:7,share:true}))).status,409);
  publicationError='loadout_not_ready';assert.equal((await handler(request('echo',{requestId:'echo-test-03',expectedVersion:7,share:true}))).status,400);
  assert.equal((await handler(request('queue',{}))).status,404);
+ // A stale/invalid companion must disable dungeon entry, not the whole catalog.
+ const previousCompanion=state.character!.equippedCombatCompanionId;
+ state.character!.equippedCombatCompanionId='missing-companion';
+ const browsing=await handler(request('entry'));
+ assert.equal(browsing.status,200);
+ const browsingProjection=await browsing.json();
+ assert.ok(browsingProjection.dungeons.length>0);
+ assert.deepEqual(browsingProjection.loadouts,[]);
+ state.character!.equippedCombatCompanionId=previousCompanion;
  console.log('PASS co-op entry authentication, authoritative projection, consent validation and transactional replay boundary');
 }
 main().catch(error=>{console.error(error);process.exitCode=1;});

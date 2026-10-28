@@ -1,6 +1,18 @@
 import {accountText} from './account';
 import type {Language} from './languages';
 const rows:Record<string,readonly string[]>={
+ 'Solo':["Solo","Solo","Solo","Solo","Solo"],
+ 'Live':["Live","En vivo","Live","Live","En direct"],
+ 'Play with three other players':["Spiele mit drei anderen Spielern","Juega con otros tres jugadores","Speel met drie andere spelers","Gioca con altri tre giocatori","Jouez avec trois autres joueurs"],
+ 'Play with three Echo allies':["Spiele mit drei Echo-Verbündeten","Juega con tres aliados Eco","Speel met drie Echo-bondgenoten","Gioca con tre alleati Eco","Jouez avec trois alliés Écho"],
+ 'Locked dungeons':["Gesperrte Dungeons","Mazmorras bloqueadas","Vergrendelde kerkers","Dungeon bloccati","Donjons verrouillés"],
+ 'Hide locked dungeons':["Gesperrte Dungeons ausblenden","Ocultar mazmorras bloqueadas","Vergrendelde kerkers verbergen","Nascondi dungeon bloccati","Masquer les donjons verrouillés"],
+ 'Find Party':["Gruppe suchen","Buscar grupo","Groep zoeken","Trova gruppo","Trouver un groupe"],
+ 'Start Dungeon':["Dungeon starten","Iniciar mazmorra","Kerkertocht starten","Avvia dungeon","Commencer le donjon"],
+ 'Prepare Loadout':["Ausrüstung vorbereiten","Preparar equipo","Uitrusting voorbereiden","Prepara equipaggiamento","Préparer l'équipement"],
+ 'More information':["Weitere Informationen","Más información","Meer informatie","Altre informazioni","Plus d'informations"],
+ 'Recommended power':["Empfohlene Stärke","Poder recomendado","Aanbevolen kracht","Potenza consigliata","Puissance recommandée"],
+ 'rooms before the boss':["Räume vor dem Boss","salas antes del jefe","kamers voor de baas","stanze prima del boss","salles avant le boss"],
  'Prepare expedition':['Expedition vorbereiten','Preparar expedición','Expeditie voorbereiden','Prepara spedizione','Préparer l’expédition'],
  'View expedition':['Expedition ansehen','Ver expedición','Expeditie bekijken','Vedi spedizione','Voir l’expédition'],
  'Base completion reward':['Grundbelohnung für den Abschluss','Recompensa base al completar','Basisbeloning voor voltooiing','Ricompensa base al completamento','Récompense de base à la réussite'],

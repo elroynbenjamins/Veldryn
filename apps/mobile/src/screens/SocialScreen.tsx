@@ -127,7 +127,7 @@ export function SocialScreen({initialTab='party',characterLevel=0,onGuild,onAcco
  const partyLocked=!partyAvailable&&!social.party;
  const canUsePartyChat=shouldShowPartyChat(social.party,social.accountId);
  // If the party is disbanded while Chat is selected, return to the Party tab.
- useEffect(()=>{if(tab==='chat'&&!canUsePartyChat){setTab('party');setSelected(null);setDraft(null);}},[tab,canUsePartyChat]);
+ useEffect(()=>{if(tab==='chat'&&!canUsePartyChat&&!social.loading){setTab('party');setSelected(null);setDraft(null);}},[tab,canUsePartyChat,social.loading]);
 
  const recruitmentPreferences=<>
 <Pressable accessibilityRole="button" accessibilityState={{expanded:showPrefs}} onPress={()=>setShowPrefs(v=>!v)} style={s.prefsHeader}><Text style={s.prefsHeaderLabel}>{'Role & focus · '}{socialLabel(language,role)}{!social.party?' / '+socialLabel(language,focus):''}</Text><Text style={s.chevron}>{showPrefs?'−':'+'}</Text></Pressable>
@@ -167,15 +167,16 @@ export function SocialScreen({initialTab='party',characterLevel=0,onGuild,onAcco
    </>:null}
  </>:null;
  return <SocialHubPanel active={tab} hasParty={canUsePartyChat} badges={{party:partyInvites.length}} onChange={next=>{setTab(next);setSelected(null);setDraft(null);setError('');}}>
- {tab==='chat'?(canUsePartyChat?<View style={s.chatContent}><OnlinePartyChat expanded/></View>:null):
+ {tab==='chat'?(canUsePartyChat?<View style={s.chatContent}><OnlinePartyChat expanded/></View>:social.loading?<View style={s.chatContent}><Text style={s.syncText}>{st("Opening Party Chat…")}</Text></View>:null):
  <ScrollView contentContainerStyle={s.content} keyboardShouldPersistTaps="handled" keyboardDismissMode="on-drag" showsVerticalScrollIndicator={false} showsHorizontalScrollIndicator={false}>
   {tab==='party'&&partyLocked?<PartyLockedNotice level={PARTY_UNLOCK_LEVEL}/>:<>
-  {(backgroundError||social.error||showUpdating)?<View style={s.syncRow}>{backgroundError||social.error?<><Text style={s.syncError}>{st("Could not update Social.")}</Text><GameButton compact title={st("Retry")} tone="secondary" onPress={()=>{void social.refresh();void load();}}/></>:<><ActivityIndicator color={C.muted} size="small"/><Text style={s.syncText}>{st("Updating…")}</Text></>}</View>:null}
+  {((social.accountId&&(backgroundError||social.error||showUpdating))?<View style={s.syncRow}>{backgroundError||social.error?<><Text style={s.syncError}>{st("Could not update Social.")}</Text><GameButton compact title={st("Retry")} tone="secondary" onPress={()=>{void social.refresh();void load();}}/></>:<><ActivityIndicator color={C.muted} size="small"/><Text style={s.syncText}>{st("Updating…")}</Text></>}</View>:null}
   {!!error&&<View accessibilityRole="alert" style={s.errorCard}><Text style={s.errorLabel}>{st("SOCIAL UNAVAILABLE")}</Text><Text style={s.error}>{error}</Text></View>}
   {!social.accountId?<Panel>{social.loading?<Text style={s.syncText}>{st("Connecting…")}</Text>:<Text style={s.text}>{st("Sign in and sync a character to use Parties and Recruitment.")}</Text>}<GameButton title={st("Account settings")} onPress={onAccount}/></Panel>:<>
    {tab==='guild'?recruitmentDetails:null}
    {tab==='party'&&!social.party?partyInvitations:null}
-   {tab==='party'&&<PartyHubPanel accountId={social.accountId} party={social.party} contracts={social.contracts} recruitment={cards} nowMs={at} filters={filters} onFiltersChange={setFilters} partyUnlocked={partyAvailable} partyUnlockLevel={PARTY_UNLOCK_LEVEL}
+   {tab==='party'&&social.loading&&!social.party?<Text style={s.syncText}>{st("Checking your Party…")}</Text>:null}
+   {tab==='party'&&(!social.loading||!!social.party)&&<PartyHubPanel accountId={social.accountId} party={social.party} contracts={social.contracts} recruitment={cards} nowMs={at} filters={filters} onFiltersChange={setFilters} partyUnlocked={partyAvailable} partyUnlockLevel={PARTY_UNLOCK_LEVEL}
     onCreateParty={busy||!partyAvailable?undefined:()=>void run(()=>repository.createParty({characterId:character(),role,focus,idempotencyKey:key(`create:${focus}:${role}`)}))}
     onLeaveParty={busy?undefined:()=>{const party=social.party!;const self=party.members.find(member=>member.accountId===social.accountId),successor=party.members.find(member=>member.accountId!==social.accountId);gameAlert.alert(self?.isLeader?(successor?st("Leave Party and hand over leadership?"):st("Leave and disband Party?")):st("Leave Party?"),self?.isLeader?(successor?st('Leadership will pass to {name}, the oldest remaining Party member.',{name:successor.characterName}):st("You are the only Party member, so leaving will disband it.")):st("You will leave this persistent Party."),[{text:st("Cancel"),style:'cancel'},{text:st("Leave"),style:'destructive',onPress:()=>void run(async()=>{await repository.leaveParty({partyId:party.id,idempotencyKey:key(`leave:${party.id}`)});await social.refresh();})}])}}
     onDisbandParty={busy?undefined:()=>{const party=social.party!;gameAlert.alert(st("Disband Party?"),st("This removes every member and cancels all pending Party invitations."),[{text:st("Cancel"),style:'cancel'},{text:st("Disband"),style:'destructive',onPress:()=>void run(()=>disbandParty(party.id))}])}}

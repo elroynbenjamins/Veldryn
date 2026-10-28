@@ -9,9 +9,9 @@ import {spacing,typography} from '../theme/theme';
 
 const store=createSectionGuideStore(AsyncStorage);
 type GuideText={title:string;body:string;detail?:string};
-type Props={scope:string;area:string;section:string;guide:GuideText;translate?:(value:string)=>string};
+type Props={scope:string;area:string;section:string;guide:GuideText;translate?:(value:string)=>string;showReplay?:boolean};
 /** One unobtrusive tip on first entry to each tab. Tabs and actions remain usable. */
-export function SectionGuide({scope,area,section,guide,translate}:Props){
+export function SectionGuide({scope,area,section,guide,translate,showReplay=true}:Props){
  const C=useGameTheme(),language=useGameLanguage();
  const t=(value:string)=>{const mapped=translate?.(value)??value;return mapped===value?accountText(language,value):mapped;};
  const identity=area+':'+scope;
@@ -36,6 +36,7 @@ export function SectionGuide({scope,area,section,guide,translate}:Props){
    void store.complete(scope,area,section);
   }
  };
+ if(!expanded&&!showReplay)return null;
  if(!expanded)return <View style={styles.reopenRow}>
   <Pressable accessibilityRole="button" accessibilityLabel={t('Show guide for this tab')} onPress={()=>{setOpen({identity,section});setMore(false)}} style={[styles.reopen,{borderColor:C.line,backgroundColor:C.panel}]}>
    <Text style={[styles.question,{color:C.muted}]}>?</Text>

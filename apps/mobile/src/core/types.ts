@@ -84,7 +84,7 @@ export interface CraftedGearInstance{
   itemId:string;
   ownerCharacterId:string;
   rarity:import('./item-rarity').ItemRarity;
-  /** Forge quality roll (1–100); missing for legacy equipment. */
+  /** Forge quality roll (0–100), scaling gear stats from 75% to 125%; missing on legacy Forge receipts (neutral Q50). */
   quality?:number;
   /** Individual per-copy disposal protection. */
   locked?:boolean;

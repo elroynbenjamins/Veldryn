@@ -33,7 +33,7 @@ function TerminalRunMoment({phase,rewardsReady,rewardsSecured,reduceMotion}:{pha
   </Animated.View>;
 }
 
-export function CoopRunOverview({language,run,onBack,onChoose,onRefresh,onClaim,busy=false,notice,rewards=[],terminalAction,reduceMotion=false,chatMessages=[],onChatSend}:{language:Language;run:CoopRunView;onBack:()=>void;onChoose?:(nodeId:string)=>void;onRefresh?:()=>void;onClaim?:(id:string)=>void;busy?:boolean;notice?:string;rewards?:Array<{id:string;claimed_at:string|null;reward_json:{marks?:number}}>;terminalAction?:{label:string;claimed?:boolean;completeText?:string;onPress:()=>void};reduceMotion?:boolean;chatMessages?:CoopChatMessage[];onChatSend?:(text:string)=>Promise<void>}){
+export function CoopRunOverview({language,run,onBack,onChoose,onRefresh,onClaim,busy=false,notice,rewards=[],terminalAction,reduceMotion=false,seasonal=false,chatMessages=[],onChatSend}:{language:Language;run:CoopRunView;onBack:()=>void;onChoose?:(nodeId:string)=>void;onRefresh?:()=>void;onClaim?:(id:string)=>void;busy?:boolean;notice?:string;rewards?:Array<{id:string;claimed_at:string|null;reward_json:{marks?:number}}>;terminalAction?:{label:string;claimed?:boolean;completeText?:string;onPress:()=>void};reduceMotion?:boolean;seasonal?:boolean;chatMessages?:CoopChatMessage[];onChatSend?:(text:string)=>Promise<void>}){
  const {styles:s}=useCoopStyles(makeStyles);
  const st=useSocialText();
   validateCoopRunView(run);
@@ -79,7 +79,7 @@ export function CoopRunOverview({language,run,onBack,onChoose,onRefresh,onClaim,
     {run.rewardText?<FantasyPanel variant="success"><Text style={s.title}>{ct(language,'details.reward')}</Text><Text style={s.copy}>{run.rewardText}</Text></FantasyPanel>:null}
     {terminal?<GameButton title={rewardsSecured?st("Return to dungeon list"):st("Leave expedition")} tone="secondary" disabled={busy} onPress={onBack}/>:null}
   </ExpeditionScreenShell>
-   {inCombat&&theaterOpen?<CombatTheaterModal visible onClose={()=>setTheaterOpen(false)} title={combatName} eyebrow={st('DUNGEON COMBAT')} subtitle={modeLabel} reduceMotion={reduceMotion}>
+   {inCombat&&theaterOpen?<CombatTheaterModal visible tone={seasonal?'event':'dungeon'} onClose={()=>setTheaterOpen(false)} title={combatName} eyebrow={st('DUNGEON COMBAT')} subtitle={modeLabel} reduceMotion={reduceMotion}>
     <DungeonCombatStage run={run} reduceMotionSetting={reduceMotion} boss={bossNext||run.lastCombat?.nodeId==='boss'} enemyLabel={(bossNext||run.lastCombat?.nodeId==='boss')?run.bossMechanic?.telegraph?.bossName:undefined}/>
    </CombatTheaterModal>:null}
   </>;

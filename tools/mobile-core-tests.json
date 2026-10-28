@@ -168,6 +168,8 @@
   ".core-build/apps/mobile/tests/social-player-card-ui-contract.js",
   ".core-build/apps/mobile/tests/social-recruitment-ui-contract.js",
   ".core-build/apps/mobile/tests/social-invitation-ui-contract.js",
+  ".core-build/apps/mobile/tests/social-tab-simplicity-ui-contract.js",
+  ".core-build/apps/mobile/tests/section-guidance.js",
   ".core-build/apps/mobile/tests/guild-management-ui-contract.js",
   ".core-build/apps/mobile/tests/guild-chat-projects-ui-contract.js",
   ".core-build/apps/mobile/tests/guild-notice-board-ui-contract.js",

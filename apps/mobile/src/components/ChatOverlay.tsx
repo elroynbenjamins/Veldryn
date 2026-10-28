@@ -77,10 +77,10 @@ function AccountChatOverlay({state,initialChannel='world',visible,onOpen,onClose
   const closeChat=()=>{pendingGuildChannel.current=false;setChannelMenuOpen(false);setLanguageMenuOpen(false);onChatRead?.();onClose();};
   return <>
     {!visible&&chatEnabled&&<ChatDock enabled={onlineConfigured} onOpen={onOpen} lines={state.settings.chatDockLines??1} selectedChannel={state.settings.defaultWorldChat??1} unreadCount={guildUnread+partyUnread} mentionCount={guildMentions+partyMentions}/>}
-    <Modal visible={visible&&chatEnabled} transparent statusBarTranslucent animationType={state.settings.reduceMotion?'none':'fade'} onRequestClose={closeChat}>
+    <Modal visible={visible&&chatEnabled} transparent statusBarTranslucent animationType={state.settings.reduceMotion?'none':'fade'} onRequestClose={()=>{if(channelMenuOpen)setChannelMenuOpen(false);else if(languageMenuOpen)setLanguageMenuOpen(false);else closeChat();}}>
       <View style={[s.modalRoot,{paddingTop:Math.max(insets.top,8),paddingBottom:bottomOffset}]}>
         <Pressable accessible={false} accessibilityElementsHidden importantForAccessibility="no-hide-descendants" onPress={closeChat} style={StyleSheet.absoluteFill}/>
-        <KeyboardAvoidingView behavior={Platform.OS==='ios'?'padding':'height'} keyboardVerticalOffset={insets.top} style={s.keyboard}><View accessibilityViewIsModal onAccessibilityEscape={closeChat} style={[s.window,expandWindow&&s.windowExpanded]}>
+        <KeyboardAvoidingView behavior={Platform.OS==='ios'?'padding':'height'} keyboardVerticalOffset={insets.top} style={s.keyboard}><View accessibilityViewIsModal onAccessibilityEscape={()=>{if(channelMenuOpen)setChannelMenuOpen(false);else if(languageMenuOpen)setLanguageMenuOpen(false);else closeChat();}} style={[s.window,expandWindow&&s.windowExpanded]}>
           <View style={s.chatLayout}>
             <View style={s.conversation}>
               <View style={s.header}>
@@ -97,7 +97,7 @@ function AccountChatOverlay({state,initialChannel='world',visible,onOpen,onClose
                 </Pressable>}
                 <Pressable accessibilityRole="button" accessibilityLabel={st("Close chat")} onPress={closeChat} style={({pressed})=>[s.close,pressed&&s.pressed]}><Text style={s.closeText}>×</Text></Pressable>
               </View>
-          <View style={s.content}>
+          <View style={s.content} accessibilityElementsHidden={channelMenuOpen||languageMenuOpen} importantForAccessibility={channelMenuOpen||languageMenuOpen?'no-hide-descendants':'auto'}>
             <View style={channel!=='world'?s.hiddenPanel:undefined} accessibilityElementsHidden={channel!=='world'} importantForAccessibility={channel==='world'?'auto':'no-hide-descendants'}>
               {onlineConfigured?<OnlineWorldChat active={visible&&channel==='world'} selectedChannel={worldChannel} reduceMotion={state.settings.reduceMotion} playerName={state.character?.name??''} language={state.settings.language} unlockedEmoteIds={state.account.unlockedEmoteIds} trayIds={state.settings.chatEmoteTrayIds} bodyPresentation={state.character?.bodyPresentation} onTrayChange={onEmoteTrayChange} embedded/>:__DEV__?<WorldChat selectedChannel={worldChannel} language={state.settings.language} unlockedEmoteIds={state.account.unlockedEmoteIds} trayIds={state.settings.chatEmoteTrayIds} bodyPresentation={state.character?.bodyPresentation} onTrayChange={onEmoteTrayChange} embedded/>:<View style={s.chatUnavailable}><Text style={s.chatUnavailableTitle}>{socialLabel(state.settings.language,"Online chat unavailable")}</Text><Text style={s.chatUnavailableText}>{socialLabel(state.settings.language,"This release is missing its online service configuration. Update or reinstall the production build rather than using temporary demo chat.")}</Text></View>}
             </View>
@@ -154,13 +154,13 @@ function makeStyles(C:ThemeColors){return StyleSheet.create({
  conversation:{flex:1,minWidth:0,minHeight:0,flexShrink:1,position:'relative'},
  header:{minHeight:50,flexDirection:'row',alignItems:'center',paddingLeft:9,paddingRight:2,gap:6,borderBottomWidth:StyleSheet.hairlineWidth,borderBottomColor:C.line},
  headerSpacer:{flex:1,minWidth:0},
- channelTrigger:{minHeight:40,minWidth:100,maxWidth:162,flexShrink:1,flexDirection:'row',alignItems:'center',gap:7,paddingHorizontal:8,borderWidth:1,borderRadius:10},
+ channelTrigger:{minHeight:44,minWidth:100,maxWidth:162,flexShrink:1,flexDirection:'row',alignItems:'center',gap:7,paddingHorizontal:8,borderWidth:1,borderRadius:10},
  channelTriggerText:{fontSize:13,fontWeight:'800',color:C.text,flexShrink:1},
  onlinePill:{flexDirection:'row',alignItems:'center',gap:4,paddingHorizontal:6,paddingVertical:3,borderWidth:1,borderColor:C.good,borderRadius:99,backgroundColor:C.goodSurface},onlineDot:{width:6,height:6,borderRadius:3,backgroundColor:C.good},onlineText:{fontSize:7,color:C.good,fontWeight:'900',letterSpacing:.6},
- languageButton:{minHeight:40,flexDirection:'row',alignItems:'center',justifyContent:'center',gap:6,paddingHorizontal:8,maxWidth:110,flexShrink:1,borderWidth:1,borderColor:C.line,borderRadius:9,backgroundColor:C.panelRaised},
+ languageButton:{minHeight:44,flexDirection:'row',alignItems:'center',justifyContent:'center',gap:6,paddingHorizontal:8,maxWidth:110,flexShrink:1,borderWidth:1,borderColor:C.line,borderRadius:9,backgroundColor:C.panelRaised},
  languageText:{fontSize:12,color:C.text,fontWeight:'700',flexShrink:1},
  close:{width:40,height:44,alignItems:'center',justifyContent:'center'},closeText:{fontSize:25,color:C.muted,fontWeight:'400'},
- popoverDismiss:{position:'absolute',top:0,right:0,bottom:0,left:0,zIndex:18,backgroundColor:'transparent'},
+ popoverDismiss:{position:'absolute',top:50,right:0,bottom:0,left:0,zIndex:18,backgroundColor:'transparent'},
  channelPopover:{position:'absolute',zIndex:30,elevation:18,top:54,left:8,width:278,maxWidth:'94%',padding:7,borderWidth:1,borderColor:C.selectionLine,borderRadius:12,backgroundColor:C.panel2,shadowColor:'#000',shadowOpacity:.28,shadowRadius:14,shadowOffset:{width:0,height:6}},
  channelPopoverNotch:{position:'absolute',top:-6,left:29,width:11,height:11,transform:[{rotate:'45deg'}],backgroundColor:C.panel2,borderTopWidth:1,borderLeftWidth:1,borderColor:C.selectionLine},
  channelPopoverHeading:{fontSize:10,fontWeight:'800',letterSpacing:.6,color:C.muted,paddingHorizontal:10,paddingVertical:6},

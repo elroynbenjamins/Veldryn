@@ -6,6 +6,7 @@ import {createTranslator,type TranslationParams} from './translator';
 
 // Columns are German, Spanish, Dutch, Italian and French; keys are the English catalog.
 export const socialTranslationRows = {
+ "Boss HP updates after server confirmation.": ["Boss-TP werden nach Serverbestätigung aktualisiert.","La vida del jefe se actualiza tras la confirmación del servidor.","De HP van de baas worden bijgewerkt na serverbevestiging.","I PV del boss si aggiornano dopo la conferma del server.","Les PV du boss se mettent à jour après confirmation du serveur."],
  "LIVE COMBAT": ["LIVE-KAMPF","COMBATE EN VIVO","LIVE GEVECHT","COMBATTIMENTO LIVE","COMBAT EN DIRECT"],
  "Watch": ["Ansehen","Ver","Bekijken","Guarda","Voir"],
  "GUILD RAID": ["GILDENRAID","ASALTO DEL GREMIO","GILDERAID","INCURSIONE DI GILDA","RAID DE GUILDE"],

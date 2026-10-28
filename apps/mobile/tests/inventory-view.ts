@@ -71,7 +71,8 @@ lockedState=toggleInventoryLock(lockedState,'basic_sword');
 ok(!inventoryLockedIds(lockedState).includes('basic_sword'),'Item unlocks without changing favorites');
 const validatedLocks=validateGameSettings({...state.settings,lockedItemIds:['basic_sword','basic_sword']});
 ok(validatedLocks.lockedItemIds?.length===1,'Settings validator deduplicates locks');
-ok(validateGameSettings({...state.settings,lockedItemIds:undefined}).lockedItemIds?.length===0,'Legacy settings without locks get empty list');
+const legacySettings:any={...state.settings};delete legacySettings.lockedItemIds;
+ok(validateGameSettings(legacySettings).lockedItemIds?.length===0,'Legacy settings without locks get empty list');
 let badLocksRejected=false;try{validateGameSettings({...state.settings,lockedItemIds:['']})}catch{badLocksRejected=true}
 ok(badLocksRejected,'Invalid locked item IDs are rejected');
 

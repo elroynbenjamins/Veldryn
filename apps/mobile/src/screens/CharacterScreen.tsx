@@ -29,7 +29,7 @@ import {rarityMeta,rarityNameColor} from '../core/item-rarity';
 import {radii,spacing,typography,equipmentTheme,type ThemeColors} from '../theme/theme';
 import {useGameTheme} from '../theme/ThemeContext';
 import {creationText} from '../i18n/creation';
-import {EQUIPMENT_SLOT_LABELS} from '../core/equipment-screen';
+import {EQUIPMENT_SLOT_LABELS,EQUIPMENT_SLOT_ORDER} from '../core/equipment-screen';
 import {ot} from '../i18n';
 import {EquipmentSlotPicker} from '../components/EquipmentSlotPicker';
 import {combatPowerRating} from '../core/combat-power';
@@ -42,7 +42,7 @@ export function CharacterScreen({state,onEquip,onUnequip,onEquipSet,onCrafting,o
   const language=useGameLanguage();
  const C=useGameTheme(),equipmentColors=equipmentTheme(C),s=useMemo(()=>makeStyles(C),[C]);
   const {width,fontScale}=useWindowDimensions();
-  const [selectedSlot,setSelectedSlot]=useState<GearSlot>('weapon'),[pickerSlot,setPickerSlot]=useState<GearSlot|null>(null);
+  const [selectedSlot,setSelectedSlot]=useState<GearSlot>(()=>state.character?.equipment.weapon?'weapon':EQUIPMENT_SLOT_ORDER.find(slot=>Boolean(state.character?.equipment[slot]))??'weapon'),[pickerSlot,setPickerSlot]=useState<GearSlot|null>(null);
   const [gemCodexOpen,setGemCodexOpen]=useState(false);
   const [showMore,setShowMore]=useState(false);
   const [equipmentTool,setEquipmentTool]=useState<'enhance'|'gems'|'sets'|'guide'>('enhance');
@@ -107,7 +107,7 @@ export function CharacterScreen({state,onEquip,onUnequip,onEquipSet,onCrafting,o
           {id:'gems',label:profileT(language,'Gems'),icon:'power'},
           {id:'sets',label:profileT(language,'Sets'),icon:'slots'},
           {id:'guide',label:profileT(language,'Build Guide'),icon:'readiness'},
-        ] as const).map(tool=><Pressable key={tool.id} accessibilityRole="tab" accessibilityState={{selected:equipmentTool===tool.id}} onPress={()=>{setEquipmentTool(tool.id);setMessage('')}} style={[s.toolTab,equipmentTool===tool.id&&s.toolTabActive]}>
+        ] as const).map(tool=><Pressable key={tool.id} accessibilityRole="tab" accessibilityState={{selected:equipmentTool===tool.id}} onPress={()=>{setEquipmentTool(tool.id);setShowMore(false);setMessage('')}} style={[s.toolTab,equipmentTool===tool.id&&s.toolTabActive]}>
           <StatIcon kind={tool.icon} size={21} muted={equipmentTool!==tool.id}/>
           <Text numberOfLines={2} style={[s.toolTabLabel,equipmentTool===tool.id&&s.toolTabLabelActive]}>{tool.label}</Text>
         </Pressable>)}
@@ -120,7 +120,7 @@ export function CharacterScreen({state,onEquip,onUnequip,onEquipSet,onCrafting,o
             <Text numberOfLines={1} style={s.detailStats}>{profileText(language,selected.label)}{selectedRarity?' · '+profileText(language,selectedRarity.label):''}</Text>
             {selectedDecision?<Text numberOfLines={2} style={s.detailStats}>{[selectedDecision.stats.attack?'ATK '+displayStat(selectedDecision.stats.attack):'',selectedDecision.stats.defense?'DEF '+displayStat(selectedDecision.stats.defense):'',selectedDecision.stats.hp?'HP '+displayStat(selectedDecision.stats.hp):''].filter(Boolean).join(' · ')} · {profileT(language,'Gems')} {selectedDecision.sockets.filled}/{selectedDecision.sockets.capacity}</Text>:null}
           </View>
-          <Pressable accessibilityRole="button" accessibilityLabel={selected.item?profileText(language,'Swap gear'):profileT(language,'Find gear')} disabled={busy!==null||!onEquip} onPress={()=>setPickerSlot(selected.slot)} style={[s.selectedSwap,(busy!==null||!onEquip)&&s.toolDisabled]}>
+          <Pressable accessibilityRole="button" accessibilityLabel={selected.item?profileText(language,'Swap gear'):profileT(language,'Find gear')} disabled={busy!==null} onPress={()=>onEquip?setPickerSlot(selected.slot):onInventory()} style={[s.selectedSwap,busy!==null&&s.toolDisabled]}>
             <Text style={s.selectedSwapText}>{selected.item?profileText(language,'Swap gear'):profileT(language,'Equip')}</Text>
           </Pressable>
           {selected.item?<Pressable accessibilityRole="button" accessibilityLabel={profileText(language,'More equipment actions')} accessibilityState={{expanded:showMore}} disabled={busy!==null} onPress={()=>setShowMore(value=>!value)} style={s.selectedOverflow}><Text style={s.moreText}>•••</Text></Pressable>:null}

@@ -34,7 +34,6 @@ import {currentRegionId} from './combat-region';
 import {regionTravelAvailability,regionTravelLockReason} from './world-navigation';
 import {WORLD_ZONES,worldZoneInDevelopment} from '../content/world-map';
 import {enhancedGearStats,equippedEffectGemBonuses,equippedGemBonuses,hasEnhancement} from './equipment-enhancement';
-import {pruneCraftedInstancesForSale} from './crafted-gear-instances';
 import {activeEquipmentSetRuntime,equipmentSetCombatModifiers} from './equipment-set-runtime';
 import {companionCombatContribution,reconcileCombatCompanionUnlocks,grantCompanionEssence,grantBondstones} from './combat-companions';
 import {awardCompanionRematchBondstone,companionRematchBondstoneStatus,recordCompanionActivity} from './companion-runtime';
@@ -874,11 +873,10 @@ export function sellItem(state:GameState,itemId:string,quantity=1):GameState{
   if(d.knowledgeUnlockId)throw new Error('Blueprints cannot be sold. Learn the recipe by crafting its tool.');
   if(d.type==='gear'&&hasEnhancement(state,itemId)){
     // Allow selling duplicates: enhancement travels with the remaining copy. Only block the last one.
-    const invQty=stackQty(state.inventory.stacks,itemId);
+    const invQty=state.inventory.stacks.filter(row=>row.itemId===itemId&&row.instanceId===undefined).reduce((sum,row)=>sum+row.quantity,0);
     if(invQty-quantity<1)throw new Error('Enhanced equipment is protected. Extract its gems before disposal; upgraded ranks cannot be recovered.');
   }
   let next:GameState={...state,inventory:{...state.inventory,stacks:consume(state.inventory.stacks,itemId,quantity)},character:{...state.character!,gold:state.character!.gold+d.value*quantity}};
-  if(d.type==='gear')next=pruneCraftedInstancesForSale(next,itemId,quantity);
   return next;
 }
 export function salvageItem(state:GameState,itemId:string):GameState{
@@ -890,7 +888,6 @@ export function salvageItem(state:GameState,itemId:string):GameState{
     if(invQty-1<1)throw new Error('Enhanced equipment is protected. Extract its gems before disposal; upgraded ranks cannot be recovered.');
   }
   let next:GameState={...state,inventory:{...state.inventory,stacks:stackItems(consume(state.inventory.stacks,itemId,1),[d.salvage])}};
-  next=pruneCraftedInstancesForSale(next,itemId,1);
   return next;
 }
 

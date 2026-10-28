@@ -103,6 +103,23 @@ let quest=createCharacter(newGame(now),'IRONWARDEN','Quest Hero');quest.quests=q
 const killState=recordCompanionActivity(createCharacter(newGame(now),'WAYFINDER','Mine Hero'),'combat','CAVE_SKITTER',250,now);ok(killState.account.unlockedCombatCompanionIds?.includes('UNIT_002'),'mine kills unlock sentry');
 let hunt=command(fixture(),'companion_equip',{id:'UNIT_001'});hunt=startCombat(hunt,'MOSS_RAT',now);const oldXp=hunt.account.combatCompanionProgress!.UNIT_001.xp;const claimed=claimActivity(hunt,now+60000);ok(claimed.reward.kills>0&&claimed.state.account.combatCompanionProgress!.UNIT_001.bondXp>0,'real hunting awards progression');ok((claimed.state.account.longTermMetrics?.['companions.usage.UNIT_001.combat_units']??0)>0,'Equipped companion combat usage telemetry recorded');
 const solo=structuredClone(hunt);solo.character!.equippedCombatCompanionId=undefined;ok(previewActivityReward(hunt,now+600000).kills>=previewActivityReward(solo,now+600000).kills,'companion helps hunt');ok(!!oldXp||claimed.state.account.combatCompanionProgress!.UNIT_001.xp!==oldXp,'XP changes');
+let quickTrial=fixture();
+for(const id of ids)quickTrial.account.combatCompanionProgress![id]={...quickTrial.account.combatCompanionProgress![id],level:20,ascensionTier:2,bondLevel:10,bondXp:2520,bondTraitUnlocked:true};
+rejects(()=>command(quickTrial,'companion_trial_formation',{ids:['UNIT_001','UNIT_001','UNIT_003']}),'formation cannot contain duplicate companions');
+rejects(()=>validateGameCommand({type:'companion_trial_fight',args:{requestId:'trial-test-1',gold:999}}),'one-tap fight rejects forged reward fields');
+quickTrial=command(quickTrial,'companion_trial_formation',{ids});
+ok(quickTrial.account.companionTrialFormationIds?.join(',')===ids.join(','),'preferred formation stored on account');
+quickTrial=parseSaveBackup(createSaveBackup(quickTrial));
+ok(quickTrial.account.companionTrialFormationIds?.join(',')===ids.join(','),'preferred formation survives save backup and reload');
+quickTrial=command(quickTrial,'companion_trial_fight',{requestId:'one-tap-trial-test'},now);
+ok(quickTrial.account.companionLastBattle?.mode==='trial'&&quickTrial.account.companionLastBattle.battleId==='one-tap-trial-test','one tap resolves a correctly identified Trial battle');
+ok(!!quickTrial.account.companionLastBattle?.playback?.events.length,'one tap persists authoritative combat events');
+ok(quickTrial.account.longTermMetrics?.['companions.trial.floor.1.attempts']===1,'one tap starts a new run and fights the first floor once');
+const oneTapEssence=quickTrial.account.companionEssence;
+quickTrial=command(quickTrial,'companion_trial_fight',{requestId:'one-tap-trial-test'},now);
+ok(quickTrial.account.longTermMetrics?.['companions.trial.floor.1.attempts']===1&&quickTrial.account.companionEssence===oneTapEssence,'replayed request ID never double awards or resolves a floor twice');
+ok(quickTrial.account.companionTrialFormationIds?.join(',')===ids.join(','),'formation remains saved after battle');
+
 let trial=fixture();for(const id of ids)trial.account.combatCompanionProgress![id]={...trial.account.combatCompanionProgress![id],level:20,ascensionTier:2,bondLevel:10,bondXp:2520,bondTraitUnlocked:true};
 trial=command(trial,'companion_trial_start',{ids});const run=trial.account.companionTrialProgress!.season.activeRun!;
 rejects(()=>command(trial,'companion_level',{id:ids[0]}),'active team cannot level');rejects(()=>command(trial,'companion_trial_start',{ids}),'only one active trial');

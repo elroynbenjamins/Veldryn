@@ -60,6 +60,10 @@ export interface CompanionAccountState {
   companionSanctuary?:CompanionSanctuaryState;
   companionAssignments?:CompanionAssignment[];
   companionTrialProgress?:CompanionTrialProgress;
+  /** Preferred Tank, Damage, Support trio for new Trial runs. */
+  companionTrialFormationIds?:string[];
+  /** Last accepted one-tap Trial request; prevents a replayed request from granting rewards twice. */
+  companionTrialLastFightRequestId?:string;
   companionProvingGround?:CompanionProvingGroundState;
   companionOverflow?:CompanionOverflowState;
   companionPhase2Profile?:CompanionPhase2ProfileState;
@@ -76,7 +80,7 @@ export interface CompanionAccountState {
   companionBattleReadyAtMs?:number;
   companionHousingTiers?:import('./companion-housing').CompanionHousingTiers;
   companionBossRematchReadyAtMs?:number;
-  companionLastBattle?:{title:string;won:boolean;durationMs:number;gold:number;essence:number;bondstones:number;atMs:number;playback?:CompanionBattlePlaybackSnapshot};
+  companionLastBattle?:{title:string;won:boolean;durationMs:number;gold:number;essence:number;bondstones:number;atMs:number;playback?:CompanionBattlePlaybackSnapshot;battleId?:string;mode?:'trial'|'special';runId?:string;floor?:number};
 }
 export const COMPANION_REMATCH_WEEKLY_BONDSTONE_CAP=1;
 export function companionRematchBondstoneStatus(state:GameState,nowMs:number){
@@ -229,6 +233,36 @@ export function executeCompanionActivity(input:GameState,type:string,a:Record<st
   const sequence=(state.account.companionActionSequence??0)+1,seed=`${state.character.id}:${sequence}:${now}`;
   const trialInput={progress:state.account.companionTrialProgress,owned,busyCompanionIds:busy,trialsUnlocked:['tank','damage','support'].every(role=>Object.keys(owned).some(id=>companionServerDefinition(id)?.role===role)),serverNowMs:now};
   switch(type){
+    case 'companion_trial_formation':{
+      const ids=idsArg(a);
+      const check=validateCompanionTrialTeam({companionIds:ids,owned});
+      if(!check.ok)throw new Error(check.reason);
+      state.account.companionTrialFormationIds=[...ids];
+      break;
+    }
+    case 'companion_trial_fight':{
+      const requestId=stringArg(a,'requestId');
+      if(state.account.companionTrialLastFightRequestId===requestId)return state;
+      if(now<(state.account.companionBattleReadyAtMs??0))throw new Error('Companions are recovering from battle.');
+      let current=state;
+      if(!current.account.companionTrialProgress?.season.activeRun){
+        const ids=a.ids===undefined?current.account.companionTrialFormationIds:idsArg(a);
+        if(!ids)throw new Error('Choose a Trial formation first.');
+        current=executeCompanionActivity(current,'companion_trial_start',{ids},now);
+        current.account.companionTrialFormationIds=[...ids];
+      }
+      const run=current.account.companionTrialProgress?.season.activeRun;
+      if(!run)throw new Error('Unable to start a Trial run.');
+      const result=executeCompanionActivity(current,'companion_trial_floor',{id:run.runId,floor:run.currentFloor},now);
+      if(result.account.companionLastBattle){
+        result.account.companionLastBattle.battleId=requestId;
+        result.account.companionLastBattle.mode='trial';
+        result.account.companionLastBattle.runId=run.runId;
+        result.account.companionLastBattle.floor=run.currentFloor;
+      }
+      result.account.companionTrialLastFightRequestId=requestId;
+      return result;
+    }
     case 'companion_monthly':{const r=claimMonthlyCompanionChallenge(state.account.companionTrialProgress!,stringArg(a,'id'),now);state=reward(state,r.reward);state.account.companionTrialProgress=r.progress;break;}
     case 'companion_supplies':{
       if(!(state.account.companionSanctuary?.expeditionPensLevel))throw new Error('Build Expedition Pens first.');
@@ -267,7 +301,7 @@ export function executeCompanionActivity(input:GameState,type:string,a:Record<st
       if(floor%5===0)state=companionMetric(state,`companions.trial.boss.${floor}.${r.result.victory?'wins':'losses'}`);
       if(r.result.victory){state=awardUse(state,run.teamCompanionIds,12+run.currentFloor*2,8+(run.currentFloor%5===0?18:0),now);state.account.companionProvingGround=recordCompanionProvingGroundEvent({state:state.account.companionProvingGround,serverNowMs:now,owned,event:{eventId:`${run.runId}:${run.currentFloor}`,type:run.currentFloor%5===0?'trial_boss_clear':'trial_floor_clear',companionIds:run.teamCompanionIds,trialFloor:run.currentFloor,teamPower:companionTeamPower(run.teamCompanionIds,owned),recommendedPower:companionTrialRecommendedPower(run.currentFloor),noDefeats:r.result.players?.every(p=>p.alive)}}).state;}
       state.account.companionBattleReadyAtMs=now+Math.max(1000,r.result.durationMs);
-      state.account.companionLastBattle={title:`Trial Floor ${run.currentFloor}`,won:r.result.victory,durationMs:r.result.durationMs,gold:r.reward.gold,essence:r.reward.companionEssence,bondstones:r.reward.bondstones,atMs:now,playback:companionBattlePlayback(r.result)};break;
+      state.account.companionLastBattle={title:`Trial Floor ${run.currentFloor}`,won:r.result.victory,durationMs:r.result.durationMs,gold:r.reward.gold,essence:r.reward.companionEssence,bondstones:r.reward.bondstones,atMs:now,mode:'trial',battleId:`trial:${sequence}:${now}`,runId:run.runId,floor,playback:companionBattlePlayback(r.result)};break;
     }
     case 'companion_assignment_start':{
       const missionDef=companionMission(stringArg(a,'id'));if(!missionDef)throw new Error('unknown_companion_mission');const food=expeditionFoodArg(a.food),requiredStamina=companionExpeditionStaminaCost(missionDef.durationMs/3600000);
@@ -304,7 +338,7 @@ export function executeCompanionActivity(input:GameState,type:string,a:Record<st
       state=companionMetricMany(state,{[`companions.special.${id}.attempts`]:1,[`companions.special.${id}.${r.result.victory?'wins':'losses'}`]:1,[`companions.special.${id}.duration_ms_total`]:r.result.durationMs});
       if(r.unlockedCompanionId){const granted=grantCombatCompanionOrConvertDuplicate({companionId:r.unlockedCompanionId,owned,companionEssence:state.account.companionEssence??0});state=setOwned(state,granted.owned);state.account.companionEssence=granted.companionEssence;state.account.companionSpecialClears=[...(state.account.companionSpecialClears??[]),id];}
       state.account.companionBattleReadyAtMs=now+Math.max(1000,r.result.durationMs);
-      state.account.companionLastBattle={title:'Special Companion Challenge',won:r.result.victory,durationMs:r.result.durationMs,gold:0,essence:0,bondstones:0,atMs:now,playback:companionBattlePlayback(r.result)};break;
+      state.account.companionLastBattle={title:'Special Companion Challenge',won:r.result.victory,durationMs:r.result.durationMs,gold:0,essence:0,bondstones:0,atMs:now,mode:'special',battleId:`special:${sequence}:${now}`,playback:companionBattlePlayback(r.result)};break;
     }
     default:throw new Error('Unknown companion activity.');
   }

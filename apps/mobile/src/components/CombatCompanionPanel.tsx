@@ -197,7 +197,7 @@ const selectedIndex=Math.max(0,COMBAT_COMPANIONS.findIndex(def=>def.id===selecti
       <GameModalSurface visible={trialSheet==='battle'} presentation="fullscreen" onClose={()=>setTrialSheet(null)} reduceMotion={state.settings.reduceMotion} dismissOnBackdrop={false}>
         <GameModalHeader title={t("Encounter details")} onClose={()=>setTrialSheet(null)}/>
         <ScrollView style={{flex:1}} showsVerticalScrollIndicator={false} contentContainerStyle={{paddingVertical:12,paddingBottom:40}}>
-          <CompanionTrialStage state={state} now={now} floor={trialPreviewFloor} teamIds={trialPreviewTeam}/>
+          {trialSheet==='battle'?<CompanionTrialStage state={state} now={now} floor={trialPreviewFloor} teamIds={trialPreviewTeam}/>:null}
         </ScrollView>
       </GameModalSurface>
     </View>}

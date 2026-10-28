@@ -59,4 +59,6 @@ ok(social.includes('backgroundError||social.error||showUpdating')&&social.includ
 ok(social.includes("tab==='party'&&social.loading&&!social.party?<Text"),'Do not offer Create Party while the initial membership snapshot is still loading');
 ok(social.includes("social.loading?<View style={s.chatContent}"),'Initial Party Chat links should show a small loading label, not bounce away');
 
+ok(social.includes('accountIdRef.current!==accountId'),'Account switches must discard results from old background requests');
+ok(social.includes("setBackgroundError('');}}"),'Switching tabs should clear unrelated transient retry messages');
 console.log('PASS: Social navigation, Party lock, Guild independence, and party-only Chat UI contracts');

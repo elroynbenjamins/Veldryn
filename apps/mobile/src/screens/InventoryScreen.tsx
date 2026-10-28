@@ -27,7 +27,7 @@ import {previewEquipment} from '../core/equipment-preview';
 import {formatGameNumber} from '../core/number-format';
 import {ot} from '../i18n';
 import {itemRarity,rarityMeta} from '../core/item-rarity';
-import {effectiveOwnedGearRarity,craftedGearInstances} from '../core/crafted-gear-instances';
+import {effectiveOwnedGearRarity,craftedGearInstances,craftedGearDisplayQuality} from '../core/crafted-gear-instances';
 import {auditCraftedGearOwnership,craftedGearCopiesAt} from '../core/crafted-gear-ownership';
 import type {GameCommand} from '../core/game-commands';
 import {bulkSelectionSummary,type BulkStorageLocation} from '../core/inventory-bulk';
@@ -126,7 +126,7 @@ export function InventoryScreen({state,viewMemory,foodRequest=0,onEquip,onFood,o
     return <View key={`${location}:${item.id}:${stack.instanceId??'legacy'}`} style={[s.itemTile,{width:tileSize,height:tileSize,borderColor:selected?C.selectionLine:goalProtected||autoEat?C.good:rarity.color,backgroundColor:selected?C.selection:C.panel}]}>
       <Pressable accessibilityRole={selectMode?'checkbox':'button'} accessibilityLabel={selectMode?gt(selected?'Deselect {label}':'Select {label}',{label}):label} accessibilityHint={selectMode?gt("Select this stack for bulk management"):gt("Open item details, sources and crafting uses")} accessibilityState={selectMode?{checked:selected}:undefined} onPress={()=>{if(selectMode){toggleSelection(item.id);return;}if(!stack.instanceId&&item.type==='gear'&&location==='inventory'){setPreviewId(item.id);return;}setSelectedInstanceId(stack.instanceId??null);setInspectId(item.id)}} style={({pressed})=>[s.itemOpen,pressed&&s.pressed]}>
         <ItemArtwork itemId={item.id} size={iconSize}/>
-        <Text accessible={false} style={[s.itemQuantity,{color:rarity.color}]}>{exactRecord?.quality?`Q${exactRecord.quality}`:`×${formatGameNumber(stack.quantity,state.settings.numberMode,state.settings.language)}`}</Text>
+        <Text accessible={false} style={[s.itemQuantity,{color:rarity.color}]}>{exactRecord?`Q${craftedGearDisplayQuality(exactRecord)}`:`×${formatGameNumber(stack.quantity,state.settings.numberMode,state.settings.language)}`}</Text>
         {newItem?<View accessible={false} style={[s.itemNew,selectMode&&s.itemNewTop]}><Text style={s.itemNewText}>{gt("New").toLocaleUpperCase(language)}</Text></View>:null}
         {autoEat&&!selectMode?<Text accessible={false} style={s.itemAuto}>{gt("EAT")}</Text>:null}
         {selectMode?<View accessible={false} style={[s.itemSelected,selected&&s.itemSelectedOn]}><Text style={s.itemSelectedText}>{selected?'✓':'○'}</Text></View>:null}
@@ -179,18 +179,18 @@ export function InventoryScreen({state,viewMemory,foodRequest=0,onEquip,onFood,o
       <Text style={s.quantityTitle}>LINK OLDER FORGE EQUIPMENT</Text>
       <Text style={s.sub}>Older forged copies were saved without a physical ID. Select which original roll belongs to an untagged copy. No new item is created.</Text>
       {unlinkedForgeCopies.map(record=><View key={record.id} style={s.row}>
-        <Text style={[s.sub,s.flex]}>{rarityMeta(record.rarity).label} · Quality {record.quality??'unknown'}/100</Text>
+        <Text style={[s.sub,s.flex]}>{rarityMeta(record.rarity).label} · Q{craftedGearDisplayQuality(record)}{record.quality===undefined?' · Legacy baseline':''}</Text>
         <GameButton compact tone="secondary" title="Link copy" disabled={!onCommand||inventoryBusyLabel!==null} onPress={()=>void beginInventorySubmission('Linking original Forge copy…',async()=>{await onCommand!({type:'gear_link_legacy',args:{instanceId:record.id,from:location,stackIndex:legacyStackIndex}});closeInspect()})}/>
       </View>)}
     </View>:null}
     {exactCopies.length>0?<View style={s.quantityPanel}>
       <Text style={s.quantityTitle}>UNIQUE EQUIPMENT · {exactCopies.length} {exactCopies.length===1?'COPY':'COPIES'}</Text>
       {exactCopies.map(copy=><Pressable key={copy.id} accessibilityRole="button" accessibilityState={{selected:selectedCopy?.id===copy.id}} onPress={()=>setSelectedInstanceId(copy.id)} style={[s.row,{padding:10,borderWidth:1,borderColor:selectedCopy?.id===copy.id?C.accent:C.line,borderRadius:10}]}>
-        <Text style={[s.sub,s.flex]}>{rarityMeta(copy.rarity).label} · Quality {copy.quality??'legacy'}/100 {copy.locked?' · Locked':''} {copy.enhancement.rank>0?' · +'+copy.enhancement.rank:''}</Text>
+        <Text style={[s.sub,s.flex]}>{rarityMeta(copy.rarity).label} · Q{craftedGearDisplayQuality(copy)}{copy.quality===undefined?' · Legacy baseline':''} {copy.locked?' · Locked':''} {copy.enhancement.rank>0?' · +'+copy.enhancement.rank:''}</Text>
         <Text style={s.quantityTitle}>{selectedCopy?.id===copy.id?'✓':'›'}</Text>
       </Pressable>)}
       {selectedCopy?<View style={s.quantityPanel}>
-        <Text style={s.title}>{rarityMeta(selectedCopy.rarity).label} · Q{selectedCopy.quality??'?'}</Text>
+        <Text style={s.title}>{rarityMeta(selectedCopy.rarity).label} · Q{craftedGearDisplayQuality(selectedCopy)}{selectedCopy.quality===undefined?' · Legacy':''}</Text>
         <View style={s.row}>
           <GameButton compact title={selectedCopy.locked?'Unlock':'Lock'} tone="secondary" disabled={!onCommand||inventoryBusyLabel!==null} onPress={()=>void beginInventorySubmission('Updating equipment lock…',()=>onCommand!({type:'gear_lock',args:{instanceId:selectedCopy.id,locked:!selectedCopy.locked}}))}/>
           {carried?<GameButton compact title="Equip" disabled={!onCommand||inventoryBusyLabel!==null} onPress={()=>void beginInventorySubmission('Equipping unique equipment…',async()=>{await onCommand!({type:'gear_equip',args:{instanceId:selectedCopy.id}});closeInspect()})}/>:null}

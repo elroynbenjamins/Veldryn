@@ -132,7 +132,7 @@ export function InventoryScreen({state,viewMemory,foodRequest=0,onEquip,onFood,o
         {selectMode?<View accessible={false} style={[s.itemSelected,selected&&s.itemSelectedOn]}><Text style={s.itemSelectedText}>{selected?'✓':'○'}</Text></View>:null}
       </Pressable>
       {!selectMode&&<>
-        <Pressable accessibilityRole="button" accessibilityLabel={locked?gt('Unlock {name}',{name:item.name}):gt('Lock {name}',{name:item.name})} accessibilityState={{selected:locked}} hitSlop={2} onPress={()=>{void onToggleLock(item.id)}} style={({pressed})=>[s.itemCorner,s.itemLockCorner,locked&&s.itemCornerActive,pressed&&s.pressed]}>
+        <Pressable accessibilityRole="button" accessibilityLabel={locked?gt('Unlock {name}',{name:item.name}):gt('Lock {name}',{name:item.name})} accessibilityState={{selected:locked}} hitSlop={2} onPress={()=>{if(lockedSet.has(item.id)){void onToggleLock(item.id);return;}if(stack.instanceId&&exactRecord&&onCommand){void beginInventorySubmission('Updating equipment lock…',()=>onCommand({type:'gear_lock',args:{instanceId:stack.instanceId!,locked:!exactRecord.locked}}));return;}void onToggleLock(item.id)}} style={({pressed})=>[s.itemCorner,s.itemLockCorner,locked&&s.itemCornerActive,pressed&&s.pressed]}>
           <InventoryLockGlyph locked={locked} color={locked?C.warning:C.muted}/>
         </Pressable>
         <Pressable accessibilityRole="button" accessibilityLabel={favorite?gt('Remove {name} from favorites',{name:item.name}):gt('Favorite {name}',{name:item.name})} accessibilityState={{selected:favorite}} hitSlop={2} onPress={()=>{void onToggleFavorite(item.id)}} style={({pressed})=>[s.itemCorner,s.itemFavoriteCorner,favorite&&s.itemCornerActive,pressed&&s.pressed]}>

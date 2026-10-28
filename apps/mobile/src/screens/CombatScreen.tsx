@@ -18,6 +18,7 @@ import {RegionEncounterList} from '../components/RegionEncounterList';
 import {StatBar} from '../components/StatBar';
 import {ActionQueuePanel} from '../components/ActionQueuePanel';
 import {CombatXpSplit} from '../components/CombatXpSplit';
+import {MonsterMasteryPanel} from '../components/MonsterMasteryPanel';
 import {progressionT} from '../i18n/progression';
 
 export function CombatScreen({state,onCommand,onChangeRegion,onStart,onQueue,onQueueRemove,onQueueMove,onQueueClear,onQueueStart,onBoss,initialMonsterId}:{state:GameState;onCommand:(command:GameCommand)=>Promise<void>;onChangeRegion:()=>void;onStart:(id:string,tacticId?:CombatTacticId,goalId?:HuntGoalId)=>void;onQueue:(id:string,tacticId?:CombatTacticId,goalId?:HuntGoalId)=>void;onQueueRemove:(index:number)=>void;onQueueMove:(index:number,direction:'up'|'down')=>void;onQueueClear:()=>void;onQueueStart:()=>void;onBoss:()=>void;initialMonsterId?:string}){
@@ -47,6 +48,7 @@ export function CombatScreen({state,onCommand,onChangeRegion,onStart,onQueue,onQ
       <Pressable accessibilityRole="button" accessibilityState={{expanded:showTraining}} onPress={()=>setShowTraining(value=>!value)} style={s.trainingToggle}><LineworkIcon name="skills" size={23}/><View style={s.flex}><Text style={s.dockTitle}>{gt("Training XP")}</Text></View><Text style={s.trainingMark}>{showTraining?'⌃':'⌄'}</Text></Pressable>
       {showTraining?<CombatXpSplit state={state} onCommand={onCommand}/>:null}
     </View>
+    <MonsterMasteryPanel state={state}/>
   </ScrollView></View>;
 }
 

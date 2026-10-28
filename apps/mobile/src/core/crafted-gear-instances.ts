@@ -9,7 +9,7 @@ export const CRAFTED_GEAR_QUALITY_MIN=0;
 export const CRAFTED_GEAR_QUALITY_MAX=100;
 export const LEGACY_CRAFTED_GEAR_QUALITY=50;
 export function isValidCraftedGearQuality(quality:unknown):quality is number{
-  return Number.isInteger(quality)&&typeof quality==='number'
+  return typeof quality==='number'&&Number.isInteger(quality)
     &&quality>=CRAFTED_GEAR_QUALITY_MIN&&quality<=CRAFTED_GEAR_QUALITY_MAX;
 }
 export function craftedGearDisplayQuality(instance:Pick<CraftedGearInstance,'quality'>):number{

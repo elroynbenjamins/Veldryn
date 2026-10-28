@@ -37,7 +37,7 @@ function spendExpeditionFood(state:GameState,food:{itemId:string;quantity:number
 }
 
 /** Additive account schema; game schema 6 and the existing atomic online store remain compatible. */
-export type CompanionBattlePlaybackEvent=Pick<CombatEvent,'atMs'|'type'|'actorId'|'targetId'|'abilityId'|'interruptedAbilityId'|'amount'|'critical'|'absorbed'|'detail'|'statusKind'|'statusTag'>;
+export type CompanionBattlePlaybackEvent=Pick<CombatEvent,'atMs'|'type'|'actorId'|'targetId'|'abilityId'|'interruptedAbilityId'|'amount'|'critical'|'absorbed'|'detail'|'statusKind'|'statusTag'|'expiresAtMs'>;
 export interface CompanionBattlePlaybackUnit{id:string;name:string;team:'players'|'enemies';role:string;maxHp:number;boss:boolean;}
 export interface CompanionBattlePlaybackSnapshot{durationMs:number;units:CompanionBattlePlaybackUnit[];abilityNames:Record<string,string>;events:CompanionBattlePlaybackEvent[];}
 const PLAYBACK_EVENT_TYPES=new Set<CombatEvent['type']>(['combat_start','phase','cast_start','cast_complete','damage','miss','heal','shield','dot_tick','hot_tick','status_apply','status_remove','interrupt','down','death','combat_end']);
@@ -45,7 +45,7 @@ export function companionBattlePlayback(result:CompanionCombatResult|CombatResul
  if(!('events' in result))return {durationMs:result.durationMs,units:[],abilityNames:{BASIC:'Basic attack'},events:[]};
  const states=[...result.players,...result.enemies],abilityNames:Record<string,string>={BASIC:'Basic attack'};
  for(const state of states){for(const ability of state.definition.abilities)abilityNames[ability.id]=ability.name;for(const phase of state.definition.phases??[])abilityNames[phase.id]=phase.name??phase.id.replace(/_/g,' ');}
- const events=result.events.filter(event=>PLAYBACK_EVENT_TYPES.has(event.type)).map(event=>({atMs:event.atMs,type:event.type,actorId:event.actorId,targetId:event.targetId,abilityId:event.abilityId,interruptedAbilityId:event.interruptedAbilityId,amount:event.amount,critical:event.critical,absorbed:event.absorbed,statusKind:event.statusKind,statusTag:event.statusTag,detail:event.detail}));
+ const events=result.events.filter(event=>PLAYBACK_EVENT_TYPES.has(event.type)).map(event=>({atMs:event.atMs,type:event.type,actorId:event.actorId,targetId:event.targetId,abilityId:event.abilityId,interruptedAbilityId:event.interruptedAbilityId,amount:event.amount,critical:event.critical,absorbed:event.absorbed,statusKind:event.statusKind,statusTag:event.statusTag,expiresAtMs:event.expiresAtMs,detail:event.detail}));
  return {durationMs:result.durationMs,units:states.map(state=>({id:state.definition.id,name:state.definition.name,team:state.definition.team,role:state.definition.role,maxHp:state.definition.stats.maxHp,boss:state.definition.boss===true})),abilityNames,events};
 }
 

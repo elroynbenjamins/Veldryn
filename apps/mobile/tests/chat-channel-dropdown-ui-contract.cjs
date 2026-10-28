@@ -1,0 +1,28 @@
+const assert=require('node:assert/strict');
+const fs=require('node:fs');
+const path=require('node:path');
+const read=p=>fs.readFileSync(path.join(__dirname,'../src',p),'utf8');
+const chat=read('components/ChatOverlay.tsx');
+const social=read('i18n/social.ts');
+assert.ok(chat.includes('<Pressable accessibilityRole="button" accessibilityLabel={st("Change chat channel")'), 'channel selector is one accessible header control');
+assert.ok(chat.includes('accessibilityState={{expanded:channelMenuOpen}}'), 'header selector announces open/closed state');
+assert.ok(chat.includes('s.channelTrigger'), 'selected channel is a styled compact trigger');
+assert.ok(chat.includes('function DropdownChevron(')&&chat.includes("rotate:open?'225deg':'45deg'"), 'two-stroke chevron, not a text arrow');
+assert.ok(chat.includes('borderRightWidth:2,borderBottomWidth:2'), 'chevron uses stable borders');
+assert.ok(!chat.includes('<View accessibilityRole="tablist" style={s.rail}>'), 'no duplicate channel sidebar');
+assert.ok(!chat.includes('function RailTab('), 'legacy channel rail removed');
+assert.ok(chat.includes('style={s.channelPopover}'), 'channel menu is a boxed popover');
+assert.ok(chat.includes('style={s.channelPopoverNotch}'), 'trigger and panel linked by a subtle notch');
+for(const ch of ['world','guild','party','system'])assert.ok(chat.includes('<ChannelChoice channel="'+ch+'"'), ch+' channel retained');
+assert.ok(chat.includes('disabled={!guildAvailable}'), 'Guild access gate preserved');
+assert.ok(chat.includes('<PartyChatGate party={party} accountId={accountId}>'), 'Party access gate preserved');
+assert.ok(chat.includes('mentions={guildMentions}')&&chat.includes('unread={guildUnread}'), 'Guild unread and mentions preserved');
+assert.ok(chat.includes('mentions={partyMentions}')&&chat.includes('unread={partyUnread}'), 'Party unread and mentions preserved');
+assert.ok(chat.includes('visitedChannels.includes('), 'existing chat history mounting policy preserved');
+assert.ok(chat.includes('onPress={()=>{setWorldChannel(index);setLanguageMenuOpen(false);}}'), 'language selection unchanged');
+assert.ok(chat.includes('setChannelMenuOpen(false);setLanguageMenuOpen(false);'), 'both menus dismiss on channel select');
+assert.ok(chat.includes('s.popoverDismiss'), 'outside tap dismisses the menu');
+assert.ok(chat.includes('!visible')&&chat.includes("initialChannel==='guild'"), 'existing chat-open rules preserved');
+for(const key of ['Change chat channel','Chat channels','Global chat','Guild members','Join a Guild to chat','Your party','Game notifications'])
+  assert.ok(social.includes(JSON.stringify(key)+':'), 'new label translated: '+key);
+console.log('PASS: compact chat channel selector and popover contract');

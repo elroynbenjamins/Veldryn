@@ -1,7 +1,7 @@
 import {useCoopStyles} from '../../theme/useCoopStyles';
 import {useSocialText} from '../../i18n/social';
 import {useEffect,useMemo,useRef,useState} from 'react';
-import {AccessibilityInfo,Animated,Easing,Pressable,StyleSheet,Text,useWindowDimensions,View} from 'react-native';
+import {AccessibilityInfo,Animated,Easing,Image,Pressable,StyleSheet,Text,useWindowDimensions,View} from 'react-native';
 import type {CoopRunView} from '../../core/coop-presentation';
 import {dungeonCombatCueFx,type DungeonCombatCueFx} from '../../core/dungeon-combat-fx';
 import {dungeonCombatLayout} from '../../core/dungeon-combat-layout';
@@ -35,6 +35,31 @@ function roleShort(role:Slot['role']){return role==='tank'?'TANK':role==='suppor
 function slotInspectKey(slot:Slot){return `party:${slot.memberId??slot.name}`;}
 function enemyInspectKey(id:string){return `enemy:${id}`;}
 
+const dungeonScene=require('../../../assets/combat-scenes/hollow-courtyard-v1.jpg');
+const combatSceneArt={
+ frostfall:require('../../../assets/card-backgrounds/frostfall_wide_v2.webp'),
+ veilbreak:require('../../../assets/card-backgrounds/veilbreak_wide_v2.webp'),
+ harvestwake:require('../../../assets/card-backgrounds/harvestwake_wide_v2.webp'),
+ starfall:require('../../../assets/card-backgrounds/starfall_wide_v2.webp'),
+ bloomwake:require('../../../assets/card-backgrounds/bloomwake_wide_v2.webp'),
+ heartbond:require('../../../assets/card-backgrounds/heartbond_wide_v2.webp'),
+ suncrest:require('../../../assets/card-backgrounds/aurora_citadel_wide_v2.webp'),
+ guild:require('../../../assets/card-backgrounds/guild_plaza_wide_v2.webp'),
+} as const;
+function combatBackdrop(seasonal:boolean,eventName?:string){
+ if(!seasonal)return dungeonScene;
+ const name=(eventName??'').toLowerCase();
+ if(name.includes('frost'))return combatSceneArt.frostfall;
+ if(name.includes('veil'))return combatSceneArt.veilbreak;
+ if(name.includes('harvest'))return combatSceneArt.harvestwake;
+ if(name.includes('star'))return combatSceneArt.starfall;
+ if(name.includes('bloom'))return combatSceneArt.bloomwake;
+ if(name.includes('heart'))return combatSceneArt.heartbond;
+ if(name.includes('sun'))return combatSceneArt.suncrest;
+ if(name.includes('merchant')||name.includes('guild'))return combatSceneArt.guild;
+ return dungeonScene;
+}
+
 function motionScale(fx:DungeonCombatCueFx|undefined){
  if(!fx)return 1;
  if(fx.actorMotion==='pulse'||fx.actorMotion==='cast')return 1.06;
@@ -43,8 +68,9 @@ function motionScale(fx:DungeonCombatCueFx|undefined){
  if(fx.actorMotion==='dash')return 1.025;
  return 1.015;
 }
-export function DungeonCombatStage({run,enemyLabel,boss=false,reduceMotionSetting=false}:{run:CoopRunView;enemyLabel?:string;boss?:boolean;reduceMotionSetting?:boolean}){
+export function DungeonCombatStage({run,enemyLabel,boss=false,seasonal=false,eventName,reduceMotionSetting=false}:{run:CoopRunView;enemyLabel?:string;boss?:boolean;seasonal?:boolean;eventName?:string;reduceMotionSetting?:boolean}){
  const {styles:s}=useCoopStyles(makeStyles);
+ const backdrop=combatBackdrop(seasonal,eventName);
  const st=useSocialText();
  const {width:windowWidth}=useWindowDimensions(),layout=useMemo(()=>dungeonCombatLayout(windowWidth),[windowWidth]);
  const tank=run.roleSlots.find(slot=>slot.role==='tank'),damage=run.roleSlots.filter(slot=>slot.role==='damage'),support=run.roleSlots.find(slot=>slot.role==='support');
@@ -129,6 +155,8 @@ export function DungeonCombatStage({run,enemyLabel,boss=false,reduceMotionSettin
  return <View style={{gap:10}}>
   <View style={s.header}><Text style={s.kicker}>{st("PARTY FORMATION")}</Text>{assists?<StateChip label={st("{count} companion assists",{count:assists})} tone="success"/>:null}</View>
   <View style={[s.arena,{padding:layout.arenaPadding}]}>
+   <Image pointerEvents="none" accessibilityIgnoresInvertColors source={backdrop} resizeMode="cover" style={s.arenaBackdrop}/>
+   <View pointerEvents="none" style={s.arenaShade}/>
    {visibleEnemies.length?<View style={boss?[s.enemyField,{width:`${layout.bossWidthPctFinal}%` as `${number}%`}]:[s.enemyGroup,{gap:layout.partyGap}]}>{visibleEnemies.map(enemy=>{const state=playbackCombatantState(replay,cueIndex,enemy.id),statuses=playbackCombatantStatuses(replay,cueIndex,enemy.id),active=currentCue?.actorId===enemy.id,targeted=!active&&currentCue?.targetId===enemy.id,key=enemyInspectKey(enemy.id);return <View key={enemy.id} style={boss?undefined:s.enemySlot}><EnemyCombatProfileCard name={enemy.name} combatantId={enemy.id} boss={enemy.boss} compact={!boss&&visibleEnemies.length>1} active={active} targeted={targeted} currentCue={currentCue} bossPhaseLabel={enemy.boss?bossPhaseLabel:undefined} bossPhases={enemy.boss?run.bossMechanic?.telegraph?.phases:undefined} bossCast={enemy.boss?bossCast:undefined} currentHp={state?.hp} maximumHp={state?.maxHp} combatShield={state?.shield??0} statuses={statuses} statusLimit={layout.statusLimit} animateHealth={!reduceMotion} onPress={()=>toggleInspect(key)} selectedForInspect={inspectKey===key} feedbackStyle={feedbackStyle} motionStyle={active?actorStyle:targeted?targetStyle:undefined}/>{active&&fx&&(currentCue?.type==='action'||currentCue?.type==='cast')?<CombatAttackSprite eventId={`${replayKey}:${cueIndex}:attack:${enemy.id}`} motion={fx.actorMotion} accent={fx.accent} actionKind={currentCue?.actionKind} enemy reduceMotion={reduceMotion}/>:null}{((currentCue?.targetId===enemy.id&&actionImpact)||(active&&enemyCastImpact))?<CombatImpactBurst eventId={`${replayKey}:${cueIndex}:enemy:${enemy.id}`} kind={(currentCue?.targetId===enemy.id&&actionImpact)||enemyCastImpact!} size={68} reduceMotion={reduceMotion}/>:null}</View>;})}</View>:<View style={[s.enemyField,{width:`${boss?layout.bossWidthPctFinal:layout.bossWidthPct}%` as `${number}%`}]}><EnemyCombatProfileCard name={fallbackEnemyName} combatantId={fallbackEnemyCombatant?.id} boss={boss} active={Boolean(currentCue?.actorId&&!partyIds.has(currentCue.actorId))} targeted={Boolean(currentCue?.targetId&&!partyIds.has(currentCue.targetId)&&currentCue.actorId!==currentCue.targetId)} currentCue={currentCue} bossPhaseLabel={boss?bossPhaseLabel:undefined} bossPhases={boss?run.bossMechanic?.telegraph?.phases:undefined} bossCast={boss?bossCast:undefined} currentHp={fallbackEnemyState?.hp} maximumHp={fallbackEnemyState?.maxHp} combatShield={fallbackEnemyState?.shield??0} statuses={fallbackEnemyStatuses} statusLimit={layout.statusLimit} animateHealth={!reduceMotion} onPress={()=>toggleInspect('enemy:fallback')} selectedForInspect={inspectKey==='enemy:fallback'} feedbackStyle={feedbackStyle} motionStyle={currentCue?.actorId&&!partyIds.has(currentCue.actorId)?actorStyle:currentCue?.targetId&&!partyIds.has(currentCue.targetId)?targetStyle:undefined}/>{fx&&currentCue?.actorId&&!partyIds.has(currentCue.actorId)&&(currentCue.type==='action'||currentCue.type==='cast')?<CombatAttackSprite eventId={`${replayKey}:${cueIndex}:attack:fallback`} motion={fx.actorMotion} accent={fx.accent} actionKind={currentCue.actionKind} enemy reduceMotion={reduceMotion}/>:null}{((currentCue?.targetId&&!partyIds.has(currentCue.targetId)&&actionImpact)||(currentCue?.actorId&&!partyIds.has(currentCue.actorId)&&enemyCastImpact))?<CombatImpactBurst eventId={`${replayKey}:${cueIndex}:enemy:fallback`} kind={(currentCue?.targetId&&!partyIds.has(currentCue.targetId)&&actionImpact)||enemyCastImpact!} size={68} reduceMotion={reduceMotion}/>:null}</View>}
    <View style={[s.partyField,{gap:layout.partyGap}]}>{ordered.map((slot,index)=>{const active=Boolean(currentCue?.actorId&&slot.memberId===currentCue.actorId),isTarget=Boolean(currentCue?.targetId&&slot.memberId===currentCue.targetId),targeted=!active&&isTarget,assistProc=active&&currentCue?.type==='assist',combatant=playbackCombatant(replay,slot.memberId??slot.name),state=playbackCombatantState(replay,cueIndex,combatant?.id),statuses=playbackCombatantStatuses(replay,cueIndex,combatant?.id),displaySlot=state?{...slot,currentHp:state.hp,maximumHp:state.maxHp,ready:state.hp>0}:slot,gemProcActive=Boolean(currentCue?.gemProc&&currentCue.actorId===combatant?.id);return <View key={slot.memberId??`${slot.name}-${index}`} style={s.formationSlot}><CombatantProfileCard level={run.syncedLevel} slot={displaySlot} active={active} targeted={targeted} assistProc={assistProc} currentCue={currentCue} combatShield={state?.shield??0} statuses={statuses} gemProcActive={gemProcActive} animateHealth={!reduceMotion} layout={layout} onPress={()=>toggleInspect(slotInspectKey(slot))} selectedForInspect={inspectKey===slotInspectKey(slot)} feedbackStyle={feedbackStyle} motionStyle={active?actorStyle:isTarget?targetStyle:undefined}/>{active&&fx&&(currentCue?.type==='action'||currentCue?.type==='cast')?<CombatAttackSprite eventId={`${replayKey}:${cueIndex}:attack:${slot.memberId??index}`} motion={fx.actorMotion} accent={fx.accent} actionKind={currentCue?.actionKind} reduceMotion={reduceMotion}/>:null}{isTarget&&actionImpact?<CombatImpactBurst eventId={`${replayKey}:${cueIndex}:party:${slot.memberId??index}`} kind={actionImpact} size={52} reduceMotion={reduceMotion}/>:null}</View>;})}</View>
 
@@ -150,7 +178,7 @@ export function DungeonCombatStage({run,enemyLabel,boss=false,reduceMotionSettin
 const makeStyles=(C:CoopColors)=>StyleSheet.create({
  header:{flexDirection:'row',flexWrap:'wrap',alignItems:'center',justifyContent:'space-between',gap:spacing.sm},grow:{flex:1,minWidth:0},
  kicker:{...typography.caption,color:C.textMuted,fontWeight:'800',letterSpacing:.8},title:{...typography.title,color:C.text,fontWeight:'900'},
- arena:{gap:10,overflow:'hidden'},enemyField:{alignSelf:'center'},enemyGroup:{flexDirection:'row',flexWrap:'wrap'},enemySlot:{flexGrow:1,flexBasis:'48%',maxWidth:'50%',minWidth:0},
+ arena:{gap:10,overflow:'hidden',position:'relative',borderRadius:16,backgroundColor:C.background},arenaBackdrop:{...StyleSheet.absoluteFill,width:'100%',height:'100%',opacity:.34},arenaShade:{...StyleSheet.absoluteFill,backgroundColor:'rgba(5,9,18,.24)'},enemyField:{alignSelf:'center'},enemyGroup:{flexDirection:'row',flexWrap:'wrap'},enemySlot:{flexGrow:1,flexBasis:'48%',maxWidth:'50%',minWidth:0},
  partyField:{width:'100%',flexDirection:'row',flexWrap:'wrap',alignItems:'stretch',justifyContent:'space-between'},formationSlot:{width:'48%',flexGrow:1,minWidth:0},
  replayPanel:{padding:spacing.md,gap:spacing.sm,borderWidth:1,borderColor:C.line,borderRadius:radii.lg,backgroundColor:C.surface},
  replayHead:{flexDirection:'row',alignItems:'flex-start',gap:spacing.sm},replayKicker:{...typography.caption,color:C.cyan,fontWeight:'800',letterSpacing:.6},replayCurrent:{...typography.caption,color:C.text,fontWeight:'700'},

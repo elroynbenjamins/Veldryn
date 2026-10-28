@@ -42,3 +42,28 @@ In *Sanctuary Expeditions*, selected formation now displays **projected grade** 
 PR #620 remains unmerged. Existing unrelated Guild/chat and starter-companion TypeScript failures in the baseline must be resolved separately before production release; run current CI and Android trials across all six stage bands.
 
 Guild PvE is still a **one-equipped-companion**, three-minute attempt, and its existing assist damage formula uses character damage and companion investment rather than the full companion stats/abilities. This change does not silently retune Guild PvE balance or milestones. A distinct server-balancing pass would be needed for boss-specific companion skills and defenses in Guild PvE; do not conflate Sanctuary mission and Trial simulation with Raid damage.
+
+## Rotating tactical hazards and status counters
+
+The shared catalogue `backend/src/shared/companion-trial-monthly-hazards.ts` chooses one global hazard by the authoritative UTC monthly season key; every player faces the same rotation and cannot pass a hazard ID to combat. Permanent five-floor affinity matchups still apply in parallel.
+
+| UTC rotation | Tactical hazard | Meaningful counter |
+| --- | --- | --- |
+| October 2026, then every third month | **Venom Bloom** | Castable poison deals damage over time **directly to HP**, bypassing shields. Dawnwing's Trial-mode shield ability now cleanses a harmful DoT on its target. Silverbrook Sprite heals lost HP. Lantern Wisp reserves its interrupt for real enemy casts. |
+| November 2026, then every third month | **Shatterstorm** | Decreases shielding effectiveness and slightly increases enemy impact damage. Durable tanks, defense and direct heals become more valuable. |
+| December 2026, then every third month | **Ritual Surge** | Adds an interruptible enemy area-damage spell to one caster or boss. Lantern Wisp can prevent its completion. |
+
+The server appends one monthly hazard move to the encounter (on the backline adept or boss), never to every enemy at once. `COMPANION_TRIAL_MODIFIERS.shatterstorm` applies its shield-pressure coefficients via the preexisting authoritative stat pipeline. No changes to Trial loot, ranking formulas, monthly checkpoint resets or companion unlocks.
+
+The generic combat engine now recognizes `cleanse`, emits `status_remove` and handles **true-damage DoT** ticks specially: poison bypasses active shields without consuming them. Legacy *direct* true damage still interacts with shields as before. Cleansing only removes harmful periodic DoTs; it does **not** erase beneficial HoTs, buffs, shields, or boss phase mechanics. Trial playback preserves the poison/cleanse cues.
+
+Dawnwing's existing ability description already mentioned cleanse, but the combat engine did not execute it. The effect now works in companion-only Trials; other combat contexts are deliberately left unchanged pending wider gameplay audit. Lantern Wisp's interrupt now requires an actual interruptible cast, improving tactical timing. No companion is required to clear any floor.
+
+The stage-fit recommendation continues to consider baseline Team Power and role legality, but modestly favors counters during their relevant month (especially Dawnwing and Lantern Wisp for Venom Bloom). Counter guidance and the next month's hazard are visible on the Trials and Season views in six languages.
+
+### Verification
+
+- `backend/src/server/companions/__tests__/phase2-trials-monthly.ts`: October/November/December hazard rotations, January rollover, actual poison direct HP bypass in the combat engine, real poison cleansing, interruptible ritual abilities, and companion AI targeting.
+- `apps/mobile/tests/companion-stage-picks.cjs`: source-level wiring between real server hazards, effect engine, counter-aware team recommendations, and player-facing warnings.
+
+These mechanics are **Companion Trial-only** and do not modify asynchronous Sanctuary Expedition reward math or Guild PvE damage caps.

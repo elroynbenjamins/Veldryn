@@ -7,6 +7,14 @@ import {createTranslator} from './translator';
 // English source keys are limited to authored UI copy, never player-authored text.
 // Each row contains de, es, nl, it and fr, in SUPPORTED_LANGUAGES order after en.
 export const profileTranslationRows = {
+  "Swap gear": ["Ausrüstung wechseln","Cambiar equipo","Uitrusting wisselen","Cambia equipaggiamento","Changer d'équipement"],
+  "Manage gems": ["Edelsteine verwalten","Gestionar gemas","Edelstenen beheren","Gestisci gemme","Gérer les gemmes"],
+  "Set bonuses": ["Set-Boni","Bonificaciones de conjunto","Setbonussen","Bonus set","Bonus d'ensemble"],
+  "Build guidance": ["Build-Empfehlungen","Consejos de equipo","Buildadvies","Consigli build","Conseils d'équipement"],
+  "Equipped": ["Ausgerüstet","Equipado","Uitgerust","Equipaggiato","Équipé"],
+  "Equipment": ["Ausrüstung","Equipo","Uitrusting","Equipaggiamento","Équipement"],
+  "More equipment actions": ["Weitere Ausrüstungsaktionen","Más acciones de equipo","Meer uitrustingsacties","Altre azioni equipaggiamento","Plus d'actions d'équipement"],
+  "Saved loadouts": ["Gespeicherte Sets","Configuraciones guardadas","Opgeslagen uitrustingen","Configurazioni salvate","Équipements enregistrés"],
   "Enhance": ["Verbessern","Mejorar","Verbeteren","Potenzia","Améliorer"],
   "Gems": ["Edelsteine","Gemas","Edelstenen","Gemme","Gemmes"],
   "Sets": ["Sets","Conjuntos","Sets","Set","Ensembles"],

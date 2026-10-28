@@ -29,6 +29,8 @@ jobs:
         run: pnpm --dir ../../backend install --frozen-lockfile
       - name: Validate Inventory storage controls
         run: node tests/inventory-storage-management-ui.cjs
+      - name: Validate pet collection artwork scaling
+        run: node tests/collections-journal-ui.cjs
       - name: Verify Guild raid boss tabs
         run: node tests/guild-raid-tabs-ui.cjs
       - name: Validate Settings screen simplicity

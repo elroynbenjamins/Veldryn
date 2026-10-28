@@ -13,6 +13,9 @@ ok(character.includes("equipmentTool==='guide'")&&character.includes('focusCopy.
 ok(character.includes('focus.upgradesReady')&&character.includes('focus.openSockets'),'Loadout focus must summarize ready upgrades and open sockets without requiring the player to inspect every slot');
 ok(character.includes('title={focusCopy.button}')&&character.includes('onPress={followFocus}')&&character.includes("focus.next.action==='enhance'"),'Build Guide priority must expose an actionable CTA instead of passive status');
 ok(character.includes('rarityNameColor'),'Selected equipped item names must follow rarity color');
+ok(character.includes('rarityMeta(effectiveOwnedGearRarity(state,entry.item.id))'),'Character slots must use authoritative best-owned crafted quality, not the catalog default');
+ok(character.includes('meta&&{borderColor:meta.color,borderWidth:meta.borderWidth,backgroundColor:meta.surface}'),'Every equipped slot must display its rarity-colored border');
+ok(character.includes('s.gearSelectedMarker')&&character.includes('gearTileSelected:{backgroundColor:equipmentColors.selected}'),'Selection must be distinct and must not override the rarity border');
 ok(character.includes('equippedSetPieceCount(character.equipment,set!)'),'Selected set gear must show equipped set-piece context');
 ok(character.includes('selectedDecision.upgrade.canAfford')&&character.includes('selectedDecision.upgrade.materials'),'Enhance tool must show exact current readiness and regional material count');
 ok(character.includes('selectedDecision.upgrade.successChance')&&character.includes('selectedDecision.upgrade.targetRank'),'Enhance tool must show the next rank and live success chance');

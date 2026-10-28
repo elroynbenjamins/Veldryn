@@ -4,10 +4,10 @@ import {useEffect,useRef} from 'react';
 import {Animated,StyleSheet,Text,View} from 'react-native';
 import type {CoopRunView} from '../../core/coop-presentation';
 import {validateCoopRunView} from '../../core/coop-presentation';
-import type {CoopUiAssetId} from '../../core/coop-ui-contract';
 import {ct,t,type Language} from '../../i18n';
 import {type CoopColors,coopSpacing,coopTypography} from '../../theme/coop-ui-theme';
-import {CoopImageSlot,ExpeditionScreenShell,FantasyPanel,RoleBadge,StateChip} from './CoopVisualKit';
+import {ExpeditionScreenShell,FantasyPanel,RoleBadge,StateChip} from './CoopVisualKit';
+import {DungeonRouteChoices} from './DungeonRouteChoices';
 import {GameButton} from '../GameButton';
 import {IdentityArtwork} from '../SocialIdentity';
 import {SeasonalBossTelegraphPanel} from './SeasonalBossTelegraphPanel';
@@ -15,8 +15,6 @@ import {dungeonCombatAvatar} from '../../core/dungeon-combat-avatars';
 import {DungeonCombatStage} from './DungeonCombatStage';
 import {CoopPartyChat} from './CoopPartyChat';
 import type {CoopChatMessage} from '../../online/coop-client';
-
-const roomAssets:Record<string,CoopUiAssetId>={battle:'node_battle',elite:'node_elite',event:'node_event',forge:'node_event',shrine:'node_shrine',camp:'node_camp',treasure:'node_treasure',merchant:'node_merchant',echo:'node_echo',risk:'node_risk',secret:'node_treasure',boss:'node_boss'};
 
 function TerminalRunMoment({phase,rewardsReady,rewardsSecured,reduceMotion}:{phase:CoopRunView['phase'];rewardsReady:boolean;rewardsSecured:boolean;reduceMotion:boolean}){
  const {styles:s}=useCoopStyles(makeStyles);
@@ -57,7 +55,7 @@ export function CoopRunOverview({language,run,onBack,onChoose,onRefresh,onClaim,
     <Text style={s.section}>{ct(language,'details.rooms')}</Text>
     {!!notice&&<Text accessibilityRole="alert" style={s.copy}>{notice}</Text>}
     {run.phase==='resolving_node'&&<FantasyPanel><Text style={s.copy}>{st("Your party is resolving this room. Progress is saved online.")}</Text></FantasyPanel>}
-    {run.options.length?run.options.map(option=><FantasyPanel key={option.nodeId}><View style={s.option}><CoopImageSlot assetId={roomAssets[option.kind]} size="node" accessibilityLabel={option.title}/><View style={s.grow}><Text style={s.title}>{option.title}</Text><Text style={s.copy}>{option.risk} · {option.reward}</Text>{option.encounterPreview?<View style={s.encounterIntel}><Text style={s.encounterIntelLabel}>{st("PVE INTEL")}</Text><Text numberOfLines={1} style={s.encounterIntelCopy}>{option.encounterPreview.summary}</Text></View>:null}</View>{option.votes!==undefined?<StateChip label={`${option.votes}`} tone="selected"/>:null}</View>{onChoose&&<GameButton title={run.mode==='qmode'?st("Choose this room"):st("Vote for this room")} disabled={busy||run.phase!=='awaiting_choice'} onPress={()=>onChoose(option.nodeId)}/>}</FantasyPanel>):run.phase!=='resolving_node'?<FantasyPanel><Text style={s.copy}>{ct(language,'browse.resumeBody')}</Text></FantasyPanel>:null}
+    {run.options.length?<DungeonRouteChoices options={run.options} mode={run.mode} phase={run.phase} busy={busy} onChoose={onChoose}/>:run.phase!=='resolving_node'?<FantasyPanel><Text style={s.copy}>{ct(language,'browse.resumeBody')}</Text></FantasyPanel>:null}
     {onRefresh&&<GameButton title={st("Refresh saved progress")} tone="secondary" disabled={busy} onPress={onRefresh}/>}
     {rewards.map(reward=><FantasyPanel key={reward.id} variant="success">{reward.claimed_at?<Text style={s.copy}>{reward.reward_json.marks??0} {st("Expedition Marks collected.")}</Text>:<GameButton title={st("Collect expedition reward")} disabled={busy} onPress={()=>onClaim?.(reward.id)}/>}</FantasyPanel>)}
     {terminalAction?<FantasyPanel variant="success">{terminalAction.claimed?<View style={s.claimedReward}><StateChip label={st("SECURED")} tone="success"/><Text style={s.copy}>{terminalAction.completeText??'Seasonal expedition reward collected.'}</Text></View>:<GameButton title={terminalAction.label} disabled={busy} onPress={terminalAction.onPress}/>}</FantasyPanel>:null}

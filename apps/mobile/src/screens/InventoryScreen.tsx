@@ -27,7 +27,7 @@ import {previewEquipment} from '../core/equipment-preview';
 import {formatGameNumber} from '../core/number-format';
 import {ot} from '../i18n';
 import {itemRarity,rarityMeta} from '../core/item-rarity';
-import {craftedGearStackRarity,craftedGearInstances,craftedGearDisplayQuality} from '../core/crafted-gear-instances';
+import {craftedGearInstances,craftedGearDisplayQuality} from '../core/crafted-gear-instances';
 import {auditCraftedGearOwnership,craftedGearCopiesAt} from '../core/crafted-gear-ownership';
 import type {GameCommand} from '../core/game-commands';
 import {bulkSelectionSummary,type BulkStorageLocation} from '../core/inventory-bulk';
@@ -121,7 +121,7 @@ export function InventoryScreen({state,viewMemory,foodRequest=0,onEquip,onFood,o
   const beginBulk=(kind:BulkAction)=>{const ids=kind==='transfer'?selectionSummary.transferableIds:kind==='sell'?selectionSummary.sellableIds:selectionSummary.salvageableIds;if(ids.length)setBulkPending({kind,ids})};
   const closeInspect=()=>{if(inspectId&&newItemSet.has(inspectId))run(()=>onAcknowledgeItem(inspectId));setInspectId(null);setSelectedInstanceId(null)};
   const renderStack=(stack:ItemStack)=>{
-    const item=itemDef(stack.itemId),exactRecord=stack.instanceId?craftedGearInstances(state).find(row=>row.id===stack.instanceId):undefined,favorite=favoriteSet.has(item.id),locked=lockedSet.has(item.id)||exactRecord?.locked===true,newItem=newItemSet.has(item.id),selected=selectedSet.has(item.id),autoEat=state.character?.equippedFoodId===item.id,rarity=rarityMeta(item.type==='gear'?craftedGearStackRarity(state,stack):itemRarity(item)),goalProtected=goalProtection.has(item.id);
+    const item=itemDef(stack.itemId),exactRecord=stack.instanceId?craftedGearInstances(state).find(row=>row.id===stack.instanceId):undefined,favorite=favoriteSet.has(item.id),locked=lockedSet.has(item.id)||exactRecord?.locked===true,newItem=newItemSet.has(item.id),selected=selectedSet.has(item.id),autoEat=state.character?.equippedFoodId===item.id,rarity=rarityMeta(exactRecord?.rarity??itemRarity(item)),goalProtected=goalProtection.has(item.id);
     const label=[gt('{name}, {count} owned',{name:item.name,count:formatGameNumber(stack.quantity,state.settings.numberMode,state.settings.language)}),favorite?gt('favorite'):'',locked?gt('Locked'):'',exactRecord?rarity.label:'',newItem?gt('New'):'',goalProtected?gt('needed for Working Toward'):''].filter(Boolean).join(', ');
     return <View key={`${location}:${item.id}:${stack.instanceId??'legacy'}`} style={[s.itemTile,{width:tileSize,height:tileSize,borderColor:rarity.color,borderWidth:rarity.borderWidth,backgroundColor:selected?C.selection:C.panel}]}>
       <Pressable accessibilityRole={selectMode?'checkbox':'button'} accessibilityLabel={selectMode?gt(selected?'Deselect {label}':'Select {label}',{label}):label} accessibilityHint={selectMode?gt("Select this stack for bulk management"):gt("Open item details, sources and crafting uses")} accessibilityState={selectMode?{checked:selected}:undefined} onPress={()=>{if(selectMode){toggleSelection(item.id);return;}if(!stack.instanceId&&item.type==='gear'&&location==='inventory'){setPreviewId(item.id);return;}setSelectedInstanceId(stack.instanceId??null);setInspectId(item.id)}} style={({pressed})=>[s.itemOpen,pressed&&s.pressed]}>

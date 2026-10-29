@@ -3,6 +3,13 @@ import {createTranslator} from './translator';
 
 // Each row supplies German, Spanish, Dutch, Italian and French; its key is English.
 export const companionTranslationRows={
+ "Progress": ["Fortschritt","Progreso","Voortgang","Progressi","Progression"],
+ "Showcase": ["Schaukasten","Exhibición","Uitstalling","Vetrina","Vitrine"],
+ "Rewards": ["Belohnungen","Recompensas","Beloningen","Ricompense","Récompenses"],
+ "Abilities & Traits": ["Fähigkeiten & Eigenschaften","Habilidades y rasgos","Vaardigheden en eigenschappen","Abilità e tratti","Capacités et traits"],
+ "Passive ability": ["Passive Fähigkeit","Habilidad pasiva","Passieve vaardigheid","Abilità passiva","Capacité passive"],
+ "Bond trait": ["Bindungsmerkmal","Rasgo de vínculo","Band-eigenschap","Tratto del legame","Trait de lien"],
+
  "Floor map & details": ["Etagenkarte & Details","Mapa de pisos y detalles","Verdiepingen en details","Mappa dei piani e dettagli","Plan des étages et détails"],
  "Companion Power {value0}": ["Begleiterstärke {value0}","Poder del compañero {value0}","Metgezelkracht {value0}","Potenza compagno {value0}","Puissance du compagnon {value0}"],
  "Level {value0}": ["Stufe {value0}","Nivel {value0}","Level {value0}","Livello {value0}","Niveau {value0}"],

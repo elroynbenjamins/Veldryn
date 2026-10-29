@@ -63,7 +63,7 @@ ok(refinement?.ready,'Grade I raw Vitality Gem should be a valid starter Enchant
 const xpBefore=enchantingState.skills.find(row=>row.skillId==='enchanting')!.xp;
 const started=startGemRefinement(enchantingState,refineId,1000);
 const claimed=claimForgeJob(started.state,started.job.id,started.job.completesAtMs);
-ok(claimed.state.inventory.stacks.some(row=>row.itemId==='gem:stat_vitality:g1'),'Enchanting refinement must create the socketable gem');
+ok(claimed.state.account.gemPouch?.stacks.some(row=>row.itemId==='gem:stat_vitality:g1'),'Enchanting refinement must create the socketable gem in the Gem Pouch');
 ok(!claimed.state.inventory.stacks.some(row=>row.itemId==='raw_gem:stat_vitality:g1'),'Enchanting refinement must consume the raw gem');
 ok(claimed.state.skills.find(row=>row.skillId==='enchanting')!.xp>xpBefore,'Enchanting refinement must award Enchanting XP');
 

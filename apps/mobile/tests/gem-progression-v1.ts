@@ -7,6 +7,7 @@ import {itemDef} from '../src/content/items';
 import {totalXpAtLevel} from '../src/core/progression';
 import {RECIPES} from '../src/content/skills';
 import {MONSTERS} from '../src/content/monsters';
+import {gemPouch,gemStorageQuantity} from '../src/core/gem-pouch';
 
 function ok(value:unknown,message:string){if(!value)throw new Error(message)}
 const t1Ironwarden=V33_EQUIPMENT_RECIPES.filter(row=>row.classId==='IRONWARDEN'&&row.v33EquipmentTier==='T1');
@@ -33,11 +34,11 @@ ok(resonanceForFamilyV1(state,'effect_bulwark').resonance===3,'Three matching Ef
 let capBlocked=false;try{socketGem(state,chestId,'gem:effect_bulwark:g1')}catch{capBlocked=true}
 ok(capBlocked,'A fourth matching Effect Gem must be rejected across equipped gear');
 
-const oldBulwarkCount=state.inventory.stacks.filter(row=>row.itemId==='gem:effect_bulwark:g1').reduce((sum,row)=>sum+row.quantity,0);
+const oldBulwarkCount=gemStorageQuantity(state,'gem:effect_bulwark:g1');
 state=replaceGem(state,'basic_sword','gem:effect_retaliation:g1');
 ok(gearEnhancement(state,'basic_sword').effectGemId==='gem:effect_retaliation:g1','Replace should atomically swap the Effect Gem');
-const returnedBulwark=state.inventory.stacks.filter(row=>row.itemId==='gem:effect_bulwark:g1').reduce((sum,row)=>sum+row.quantity,0);
-ok(returnedBulwark===oldBulwarkCount+1,'Replace should return the removed gem to Inventory');
+const returnedBulwark=gemStorageQuantity(state,'gem:effect_bulwark:g1');
+ok(returnedBulwark===oldBulwarkCount+1,'Replace should return the removed gem to storage');
 ok(resonanceForFamilyV1(state,'effect_bulwark').resonance===2,'Replacing one copy should reduce Resonance');
 
 const recs=recommendedEffectFamiliesV1(state,'IRONWARDEN');
@@ -53,7 +54,7 @@ const enchantingBeforeRefine=state.skills.find(row=>row.skillId==='enchanting')!
 const refineStarted=startGemRefinement(state,gemRefineRecipeIdV1('stat_vitality',1),500);
 const refineClaimed=claimForgeJob(refineStarted.state,refineStarted.job.id,refineStarted.job.completesAtMs);
 state=refineClaimed.state;
-ok(state.inventory.stacks.some(row=>row.itemId==='gem:stat_vitality:g1'),'Refinement should create the socketable gem of the same family and grade');
+ok(gemPouch(state).stacks.some(row=>row.itemId==='gem:stat_vitality:g1'),'Refinement should create the socketable gem of the same family and grade');
 ok(!state.inventory.stacks.some(row=>row.itemId==='raw_gem:stat_vitality:g1'),'Refinement should consume the unrefined gem');
 ok(state.skills.find(row=>row.skillId==='enchanting')!.xp===enchantingBeforeRefine+90,'Gem refinement should award Enchanting XP on completion');
 const dustBefore=state.inventory.stacks.filter(row=>row.itemId==='GEM_DUST').reduce((sum,row)=>sum+row.quantity,0);
@@ -90,7 +91,7 @@ const started=startGemCombine(state,recipeId,1000);
 ok(started.seconds===300,'Cut to Polished base combine should take five minutes without speed modifiers');
 ok(equipmentCraftQueueModel(started.state,1000).jobs.some(job=>job.id===started.job.id),'Gem combine must occupy the shared equipment forge queue');
 const claimed=claimForgeJob(started.state,started.job.id,started.job.completesAtMs);
-ok(claimed.state.inventory.stacks.some(row=>row.itemId==='gem:stat_might:g2'),'Claiming a gem forge job should award the upgraded gem');
+ok(gemPouch(claimed.state).stacks.some(row=>row.itemId==='gem:stat_might:g2'),'Claiming a gem forge job should award the upgraded gem');
 ok(claimed.state.skills.find(row=>row.skillId==='enchanting')!.xp===enchantingBeforeCombine+140,'Gem combining should award Enchanting XP');
 
 const cacheNow=Date.UTC(2026,8,21,12),cacheWeek='2026-09-21';
@@ -98,7 +99,7 @@ const cacheReadyState={...claimed.state,account:{...claimed.state.account,resona
 ok(resonanceCacheStatusV1(cacheReadyState,cacheNow).ready,'Three Live clears with server-authored choices should make the weekly cache ready');
 const cacheDustBefore=cacheReadyState.inventory.stacks.filter(row=>row.itemId==='GEM_DUST').reduce((sum,row)=>sum+row.quantity,0)+cacheReadyState.bank.stacks.filter(row=>row.itemId==='GEM_DUST').reduce((sum,row)=>sum+row.quantity,0);
 const cacheState=claimResonanceCacheV1(cacheReadyState,'effect_bulwark',cacheNow);
-ok(cacheState.inventory.stacks.some(row=>row.itemId==='raw_gem:effect_bulwark:g3')||cacheState.bank.stacks.some(row=>row.itemId==='raw_gem:effect_bulwark:g3'),'Resonance Cache choice should settle an unrefined Grade III Effect Gem');
+ok(gemPouch(cacheState).stacks.some(row=>row.itemId==='raw_gem:effect_bulwark:g3'),'Resonance Cache choice should settle an unrefined Grade III Effect Gem');
 const cacheDustAfter=cacheState.inventory.stacks.filter(row=>row.itemId==='GEM_DUST').reduce((sum,row)=>sum+row.quantity,0)+cacheState.bank.stacks.filter(row=>row.itemId==='GEM_DUST').reduce((sum,row)=>sum+row.quantity,0);
 ok(cacheDustAfter===cacheDustBefore+31,'Resonance Cache should settle its pre-rolled Gem Dust');
 let doubleClaimBlocked=false;try{claimResonanceCacheV1(cacheState,'effect_mercy',cacheNow)}catch{doubleClaimBlocked=true}ok(doubleClaimBlocked,'Resonance Cache must be single-claim per UTC week');

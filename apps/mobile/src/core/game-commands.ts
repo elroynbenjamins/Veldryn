@@ -23,6 +23,7 @@ import {activateDailySupplyBoost,claimDailySupplies,DAILY_SUPPLY_BOOST_TYPES,dai
 import {bulkSalvageSelected,bulkSellSelected,bulkTransferSelected} from './inventory-bulk';
 import {normalizeChatEmoteTrayIds,CHAT_EMOTE_TRAY_SIZE} from './chat-emotes';
 import {cancelEquipmentCraft,claimAllReadyEquipmentCrafts,claimEquipmentCraft,claimForgeJob,moveWaitingEquipmentCraft,startEquipmentCraft,startGemCombine,startGemRefinement,timedEquipmentRecipe} from './equipment-crafting-queue';
+import {migrateGemPouch,sellPouchGem,upgradeGemPouch} from './gem-pouch';
 import {claimResonanceCacheV1,dismantleGemV1,gemCombineRecipeIdV1,gemRefineRecipeIdV1,researchEffectGemV1} from './gem-progression-v1';
 import {craftEquipmentPrerequisites} from './equipment-crafting-prerequisites';
 import {equipCraftedGearInstance,unequipCraftedGearInstance,moveCraftedGearInstance,setCraftedGearInstanceLock,disposeCraftedGearInstance,linkLegacyCraftedGearInstance} from './crafted-gear-ownership';
@@ -46,7 +47,7 @@ const fields:Record<string,readonly string[]>={
  create:['classId','name','body'],claim:[],start:['kind','id','tacticId','goalId'],queue_add:['kind','id','tacticId','goalId','goal','count','handoffGoal','handoffTargetId','keepCurrentRunning'],queue_set_goal:['id','goal'],queue_remove:['index'],queue_move:['index','direction'],queue_clear:[],queue_start:[],explore:['id'],stop:[],travel:['id'],boss:[],craft:['id'],craft_claim:['id'],craft_claim_all:[],craft_cancel:['id'],craft_move:['id','direction'],craft_prerequisites:['id'],use_potion:['id'],discard_preparation:[],
  roster_create:['classId','name','body'],roster_switch:['id'],roster_delete:['id','confirmation'],
  equip:['id'],unequip:['slot'],gear_equip:['instanceId'],gear_unequip:['instanceId'],gear_move:['instanceId','to'],gear_lock:['instanceId','locked'],gear_sell:['instanceId'],gear_salvage:['instanceId'],gear_autosell:['enabled'],gear_link_legacy:['instanceId','from','stackIndex'],food:['id'],eat:['id'],sell:['id','quantity'],salvage:['id'],
- bank_sell:['id','quantity'],bank_gold_deposit:['amount'],bank_gold_withdraw:['amount'],deposit:['id','quantity'],withdraw:['id','quantity'],deposit_materials:[],bulk_transfer:['location','ids'],bulk_sell:['ids'],bulk_salvage:['ids'],storage:['location'],overflow:[],
+ bank_sell:['id','quantity'],bank_gold_deposit:['amount'],bank_gold_withdraw:['amount'],deposit:['id','quantity'],withdraw:['id','quantity'],deposit_materials:[],bulk_transfer:['location','ids'],bulk_sell:['ids'],bulk_salvage:['ids'],storage:['location'],gem_pouch_upgrade:[],gem_pouch_sell:['itemId','quantity'],overflow:[],
  equip_tool:['id'],equip_set:[],upgrade:['id'],socket:['id','gemId'],replace_socket:['id','gemId'],unsocket:['id','index'],gem_combine:['familyId','grade'],gem_refine:['familyId','grade'],gem_research:['familyId'],gem_dismantle:['gemId','quantity'],resonance_cache_claim:['familyId'],profile_icon:['id'],
  loadout_save:['index','name'],loadout_apply:['id'],loadout_delete:['id'],arena_slot:['index','characterId'],goals_set:['goals'],idle_rules_set:['rules','activeId'],daily_supplies_claim:['characterId'],daily_supplies_activate:['type'],
  quest:['id'],seasonal:['period','id'],settings:['settings'],profile:['profileIconId','profileTitle','profileBackgroundId','profileBorderId','selectedCosmeticPetId'],
@@ -260,7 +261,7 @@ export function executeGameCommand(previous:GameState,value:unknown,now:number,o
    const result=claimForgeJob(state,text(a,'id',160),now,options.randomRoll);state=result.state;if(result.kind==='equipment')forgeResults=[result.result];contributions.push({kind:'crafting',contentId:result.recipe.id,units:1});
    message=result.kind==='equipment'
     ?`${result.result.rarity.toUpperCase()} ${result.recipe.name}${result.result.qualityProc?' · rarity upgrade':''}${result.result.duplicateCount?` · duplicate ${result.result.duplicateCount+1}`:''}`
-    :`${result.recipe.name} combined`;
+    :`${result.gemAction==='refine'?'Refined':'Combined'} ${result.recipe.name} · Gem Pouch`;
    break;
   }
   case 'craft_claim_all':{
@@ -273,9 +274,9 @@ export function executeGameCommand(previous:GameState,value:unknown,now:number,o
     ?'Some jobs use retired recipes; please contact support.'
     :result.blocked.some(row=>row.reason.startsWith('Equipment copy')||row.reason.startsWith('Equipment requires')||row.reason.startsWith('Crafted equipment'))
       ?`Check your equipment copies. ${result.blocked[0].reason}`
-      :'Free Inventory or Bank space, then claim the remaining jobs.';
+      :'Free Gem Pouch, Inventory or Bank space, then claim the remaining jobs.';
    message=result.claimed.length
-    ?`${result.claimed.length} forge job${result.claimed.length===1?'':'s'} claimed · ${equipmentCount} equipment · ${result.gemClaims} gem combine${result.gemClaims===1?'':'s'} · ${procCount} rarity upgrade${procCount===1?'':'s'}${blockedCount?` · ${blockedCount} still waiting. ${blockedReason}`:''}`
+    ?`${result.claimed.length} forge job${result.claimed.length===1?'':'s'} claimed · ${equipmentCount} equipment · ${result.gemClaims} gem claim${result.gemClaims===1?'':'s'} · ${procCount} rarity upgrade${procCount===1?'':'s'}${blockedCount?` · ${blockedCount} still waiting. ${blockedReason}`:''}`
     :blockedCount?`${blockedCount} finished forge job${blockedCount===1?' is':'s are'} still waiting. ${blockedReason}`:'No finished forge jobs';
    break;
   }
@@ -314,6 +315,8 @@ export function executeGameCommand(previous:GameState,value:unknown,now:number,o
   case 'bulk_sell':state=bulkSellSelected(state,stringArray(a,'ids'));break;
   case 'bulk_salvage':state=bulkSalvageSelected(state,stringArray(a,'ids'));break;
   case 'storage':state=game.upgradeStorage(state,oneOf(a.location,['inventory','bank']));break;
+  case 'gem_pouch_upgrade':state=upgradeGemPouch(state);message='Gem Pouch capacity upgraded';break;
+  case 'gem_pouch_sell':{const itemId=text(a,'itemId'),quantity=integer(a,'quantity');state=sellPouchGem(state,itemId,quantity);message='Gems sold from Gem Pouch';break;}
   case 'overflow':state=game.claimOverflowToBank(state);break;
   case 'equip_tool':state=game.equipGatheringTool(state,text(a,'id'),now);break;
   case 'equip_set':state=game.equipNoviceSet(state);break;
@@ -395,6 +398,8 @@ export function executeGameCommand(previous:GameState,value:unknown,now:number,o
   default:throw new Error('invalid_command');
  }
  if(companionMetricBefore)state=recordCompanionCommandMetrics(state,command.type,companionMetricBefore);
+ // Includes loot added by combat, quests, co-op and old save actions.
+ state=migrateGemPouch(state);
  if(state.character&&(!Number.isSafeInteger(state.character.gold)||state.character.gold<0))throw new Error('invalid_wallet');
  return {state,reward,activity,message,won,storyBossBattle,upgrade,forgeResults,contributions};
 }

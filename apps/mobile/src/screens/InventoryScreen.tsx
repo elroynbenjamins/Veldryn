@@ -12,6 +12,7 @@ import {InventoryFilter,InventorySort,inventoryFavoriteIds,inventoryLockedIds,in
 import {entitlementStorageCapacity} from '../core/account-entitlements';
 import {claimOverflowToBank,StorageLocation,storageUpgradePreview} from '../core/game';
 import {ItemArtwork} from '../components/ItemArtwork';
+import {GemPouchPanel} from '../components/GemPouchPanel';
 import {ConfirmModal} from '../components/ConfirmModal';
 import {GameModalHeader,GameModalSurface} from '../components/GameModalSurface';
 import {EmptyState} from '../components/EmptyState';
@@ -207,6 +208,7 @@ export function InventoryScreen({state,viewMemory,foodRequest=0,onEquip,onFood,o
     <Text accessibilityRole="header" style={s.h}>{gt("Inventory")}</Text>
     <Text style={s.sub}>{gl("Everything for your next adventure.")}</Text>
     <View style={s.storageRow}>{(["inventory","bank"] as const).map(value=><StorageChip key={value} label={value==='inventory'?gt("Inventory"):gt("Bank")} selected={location===value} status={value==='inventory'?inventoryCapacity:bankCapacity} onPress={()=>changeLocation(value)}/>)}</View>
+    <GemPouchPanel state={state} busy={inventoryBusyLabel!==null} onUpgrade={onCommand?()=>beginInventorySubmission('Upgrading Gem Pouch…',()=>onCommand({type:'gem_pouch_upgrade'})):undefined} onAction={onCommand?command=>beginInventorySubmission('Updating Gem Pouch…',()=>onCommand(command)):undefined}/>
     {location==='bank'&&<View style={s.goldStorage}>
       <View style={s.goldStorageHead}><View><Text style={s.goldStorageTitle}>Gold Storage</Text><Text style={s.goldStorageBalance}>Carried: {formatGameNumber(carriedGold,state.settings.numberMode,state.settings.language)}g · Bank: {formatGameNumber(bankGold,state.settings.numberMode,state.settings.language)}g</Text></View></View>
       <View style={s.goldAllActions}><View style={s.goldAction}><GameButton compact title={gt('Deposit all {amount}g',{amount:formatGameNumber(carriedGold,state.settings.numberMode,state.settings.language)})} disabled={inventoryBusyLabel!==null||carriedGold<1} onPress={()=>transferGold('deposit',carriedGold)}/></View><View style={s.goldAction}><GameButton compact title={gt('Withdraw all {amount}g',{amount:formatGameNumber(bankGold,state.settings.numberMode,state.settings.language)})} tone="secondary" disabled={inventoryBusyLabel!==null||bankGold<1} onPress={()=>transferGold('withdraw',bankGold)}/></View></View>

@@ -1,6 +1,6 @@
 # Unique forged gear, quality rolls and Keep Best 7
 
-**Status:** implemented on draft PR #640, **not merged or deployed** (2026-10-28). This document describes draft behavior, not a production release.
+**Status:** the unique-instance foundation is already on `main`; the recovered six-rarity/quality UI and per-copy border refinements are in **draft PR #650**, not yet merged or deployed (2026-10-29). Earlier work originated in closed PR #640.
 
 ## Player-facing contract
 
@@ -15,7 +15,7 @@
 - Saving/applying a loadout preserves the selected instance ID. Applying a mixed legacy/unique loadout is all-or-nothing: missing, inaccessible or ambiguous required copies abort without committing a partial state.
 - **Legacy item-type** sell/transfer/bulk/equip operations cannot silently consume or erase an individually tagged copy. Legacy copies without a tag still use existing functionality where safe.
 
-## Existing player equipment: neutral Q50 compatibility (draft PR #640)
+## Existing player equipment: neutral Q50 compatibility
 
 - **Existing Forge receipts without a saved quality roll display Q50/100 (Legacy baseline)**. This means **neutral/100% of their original base stats**, **not half their stats**. Q50 evaluates to exactly 1.0×, with Q0 at 0.75× and Q100 at 1.25×.
 - **Q0 is a genuine possible roll**, not missing data. A saved `quality: 0` stays Q0 through normalization, UI and Keep Best 7; only absent/invalid historical rolls use the neutral legacy Q50 display baseline.
@@ -39,6 +39,15 @@
 - Regression checks cover all six roll bands, each boundary, displayed chances and multipliers, authored-gear rarity floors (including Epic and Mythic), and ensure final probabilities sum to 100%.
 
 **Mythic balance:** Mythic's shared rarity stat multiplier is now **2.00×** rather than 2.20×. This affects Mythic rarity calculations wherever the shared rarity metadata is used; it does not reroll existing items, alter unique IDs, gems, locks or quality. Validate downstream combat/balance implications before release.
+
+## Recovered per-copy colored rarity borders (draft PR #650)
+
+- Inventory and Bank use the **exact physical `instanceId`** to resolve rarity. Two copies of the same item can have distinct border colors and widths. The selected tile retains its rarity border while using selection background/marker separately.
+- The Character equipment grid resolves the actual equipped `equipmentInstanceIds[slot]` and never borrows the rarity of a better copy in the Bank. Enhancement/gear comparison rarity matches the equipped receipt.
+- Legacy untagged equipment retains its original authored rarity until safely reconciled, rather than guessing which Forge record belongs to it.
+- Equipment artwork accepts an explicit rarity for displays with a known instance; Forge reveal cards use the actual rolled rarity.
+- The shared Forge odds guide uses all six official rarity name colors with final odds per authored recipe, quality −25% to +25%, and labels translated in English, German, Spanish, Dutch, Italian, and French.
+- Added regressions for matching inventory and equipped exact-copy rarities and comparisons, in addition to no-loss settlement and Gold replay tests. Do not treat a green focused suite as a substitute for full mobile typecheck and Android release gates.
 
 ## Implementation
 

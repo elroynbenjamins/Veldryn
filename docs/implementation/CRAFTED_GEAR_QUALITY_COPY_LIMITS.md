@@ -32,6 +32,7 @@
 - For Common-base gear, actual results are **89.10% Common / 7% Uncommon / 3% Rare / 0.60% Epic / 0.20% Legendary / 0.10% Mythic**, at rarity multipliers **1.00× / 1.12× / 1.28× / 1.50× / 1.80× / 2.00×** before quality. This uses the game's full rarity palette, not a truncated three-rarity Forge.
 - High-base-rarity recipes correctly combine non-upgrade proc probability into their guaranteed original tier (e.g. base Mythic remains **100% Mythic**; no separate downgrade chance).
 - The quality section shows **Q0 −25%, Q25 −12.5%, Q50 normal, Q75 +12.5%, Q100 +25%** and explains that Attack, Defense and HP are modified on top of rarity/upgrades. No probabilities or gameplay rules are duplicated in UI state.
+- New equipment quality remains a separate deterministic Q0–Q100 roll but is now **gently weighted toward lower grades** with `floor(101 × U^1.25)`. Approximate outcomes: **Q75+ 21.2%** (previously 25.7%), **Q90+ 8.8%** (previously 10.9%), **Q100 0.8%** (previously 1.0%). Rarity chance bands are unchanged. Quality stat effects remain −25% to +25%; older already-rolled items and missing-quality legacy items never reroll. The collapsed guide displays a single approximate Q90+ chance line.
 - The guide is deliberately hidden on Materials and Tools; selecting Equipment shows the odds for the chosen piece.
 - Rarity rows use each rarity's official theme-aware name color and matching marker (Common grey, Uncommon green, Rare blue, Epic purple, Legendary orange, Mythic pink), with **Chance** and **Stats** columns; rarity strength displays simple **×** multipliers (Mythic 2× for Common-base gear). On narrow screens or large text settings they stack into two compact lines instead of clipping.
 - Three uncluttered quality examples explain Q0 −25% (red), Q50 normal (neutral), and Q100 +25% (green). Intermediate values scale between them. The disclosure is closed by default, with concise wording and no additional navigation or modal.
@@ -51,7 +52,7 @@
 
 ## Implementation
 
-- `apps/mobile/src/core/crafted-gear-instances.ts`: deterministic 0–100 rolls, optional quality/lock for older saves, seven-copy projection, globally bounded instance creation with **no silent eviction**.
+- `apps/mobile/src/core/crafted-gear-instances.ts`: deterministic, gently weighted 0–100 quality rolls with a single shared approximate probability helper; optional quality/lock for older saves; seven-copy projection; globally bounded instance creation with **no silent eviction**.
 - `apps/mobile/src/core/crafted-gear-ownership.ts`: cross-character physical ownership audit, precise Inventory ↔ Bank moves, per-copy lock, equip/unequip, manual sell/salvage with exact physical removal and one vendor Gold credit. Unknown/duplicate instance markers fail closed.
 - `apps/mobile/src/core/crafted-gear-retention.ts` and `crafted-gear-settlement.ts`: eligibility filtering, protected-item checks, deterministic rarity/quality comparison and settlement proposals with receipt replay protection.
 - `apps/mobile/src/core/equipment-crafting-queue.ts`: Forge claim issues physical instance markers; enforces the 7-copy limit; performs optional exact-copy replacement and reward grant together in the immutable game command state; blocked claims remain ready; Claim All continues other eligible jobs.

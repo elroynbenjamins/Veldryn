@@ -34,8 +34,8 @@ export function CoopDungeonList({language,dungeons,eventExpeditions,mode,liveAva
    <Text style={s.modeHint}>{mode==='live'?a("Play with three other players"):a("Play with three Echo allies")}</Text>
    {mode==='live'&&liveTools?<><Pressable accessibilityRole="button" accessibilityState={{expanded:showLiveTools}} onPress={()=>setShowLiveTools(value=>!value)} style={({pressed})=>[s.liveToggle,pressed&&s.pressed]}><Text style={s.liveTitle}>{st("Find players")}</Text><View style={s.flex}/><Text style={s.liveMark}>{showLiveTools?'−':'+'}</Text></Pressable>{showLiveTools?liveTools:null}</>:null}
    </>:null}
-   {loading?<View accessibilityLiveRegion="polite" style={s.loading}><ActivityIndicator color={coopColors.cyan}/><Text style={s.copy}>{hasUsableSnapshot?'Refreshing dungeon availability…':ct(language,'browse.loading')}</Text></View>:null}
-   {error?<FantasyPanel variant="danger"><Text accessibilityRole="alert" style={s.error}>{hasUsableSnapshot?'Could not refresh. Showing previously loaded dungeons. '+error:error}</Text><PrimaryAction label={ct(language,'browse.retry')} tone="secondary" onPress={onRetry}/></FantasyPanel>:null}
+   {loading?<View accessibilityLiveRegion="polite" style={s.loading}><ActivityIndicator color={coopColors.cyan}/><Text style={s.copy}>{hasUsableSnapshot?a('Refreshing dungeon availability…'):ct(language,'browse.loading')}</Text></View>:null}
+   {error?<FantasyPanel variant="danger"><Text accessibilityRole="alert" style={s.error}>{hasUsableSnapshot?a('Could not refresh. Showing previously loaded dungeons.')+' '+error:error}</Text><PrimaryAction label={ct(language,'browse.retry')} tone="secondary" onPress={onRetry}/></FantasyPanel>:null}
    {showCatalog&&available.length===0&&locked.length===0&&eventExpeditions.length===0?<Text style={s.copy}>{ct(language,'browse.empty')}</Text>:null}
    {showCatalog&&available.length>0?<Text style={s.section}>{ct(language,'browse.available')} · {available.length}</Text>:null}
    {showCatalog&&available.map(dungeon=><DungeonCard key={dungeon.id} language={language} dungeon={dungeon} onPress={()=>onSelect(dungeon)}/>)}

@@ -30,7 +30,7 @@ export function mergeUnlockInbox(existing:readonly UnlockInboxEntry[],incoming:r
  const map=new Map(normalizeUnlockInbox(existing).map(row=>[row.key,row]));
  for(const entry of normalizeUnlockInbox(incoming)){
   const previous=map.get(entry.key);
-  if(previous){map.set(entry.key,{...previous,seen:previous.seen&&entry.seen});continue;}
+  if(previous){map.set(entry.key,{...previous,seen:previous.seen||entry.seen});continue;}
   map.set(entry.key,entry);
  }
  return normalizeUnlockInbox([...map.values()]);

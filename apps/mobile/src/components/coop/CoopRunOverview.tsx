@@ -71,7 +71,7 @@ export function CoopRunOverview({language,run,onBack,onChoose,onRefresh,onClaim,
     {!!notice&&<Text accessibilityRole="alert" style={s.copy}>{notice}</Text>}
     {run.phase==='resolving_node'&&<FantasyPanel><Text style={s.copy}>{st("Your party is resolving this room. Progress is saved online.")}</Text></FantasyPanel>}
     {run.options.length?<DungeonRouteChoices options={run.options} mode={run.mode} phase={run.phase} busy={busy} onChoose={onChoose}/>:run.phase!=='resolving_node'?<FantasyPanel><Text style={s.copy}>{ct(language,'browse.resumeBody')}</Text></FantasyPanel>:null}
-    {onRefresh&&<GameButton title={st("Refresh saved progress")} tone="secondary" disabled={busy} onPress={onRefresh}/>}
+     {onRefresh&&<GameButton title={st("Refresh saved progress")} tone="secondary" disabled={busy} onPress={onRefresh}/>}
     {rewards.map(reward=><FantasyPanel key={reward.id} variant="success">{reward.claimed_at?<Text style={s.copy}>{reward.reward_json.marks??0} {st("Expedition Marks collected.")}</Text>:<GameButton title={st("Collect expedition reward")} disabled={busy} onPress={()=>onClaim?.(reward.id)}/>}</FantasyPanel>)}
     {terminalAction?<FantasyPanel variant="success">{terminalAction.claimed?<View style={s.claimedReward}><StateChip label={st("SECURED")} tone="success"/><Text style={s.copy}>{terminalAction.completeText??'Seasonal expedition reward collected.'}</Text></View>:<GameButton title={terminalAction.label} disabled={busy} onPress={terminalAction.onPress}/>}</FantasyPanel>:null}
     {run.rewardText?<FantasyPanel variant="success"><Text style={s.title}>{ct(language,'details.reward')}</Text><Text style={s.copy}>{run.rewardText}</Text></FantasyPanel>:null}

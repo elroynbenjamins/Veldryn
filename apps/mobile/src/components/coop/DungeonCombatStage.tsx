@@ -1,14 +1,14 @@
 import {useCoopStyles} from '../../theme/useCoopStyles';
 import {useSocialText} from '../../i18n/social';
 import {useEffect,useMemo,useRef,useState} from 'react';
-import {AccessibilityInfo,Animated,Easing,Image,Pressable,StyleSheet,Text,useWindowDimensions,View} from 'react-native';
+import {AccessibilityInfo,Animated,Easing,Image,StyleSheet,Text,useWindowDimensions,View} from 'react-native';
 import type {CoopRunView} from '../../core/coop-presentation';
 import {dungeonCombatCueFx,type DungeonCombatCueFx} from '../../core/dungeon-combat-fx';
 import {dungeonCombatLayout} from '../../core/dungeon-combat-layout';
-import {playbackAdvanceDelayMs,playbackBossCombatant,playbackCastDisplayMs,playbackCombatant,playbackCombatantState,playbackCombatantStatuses,playbackEnemyCombatants,playbackCueLabel,playbackCueTone,playbackProgress,playbackRecentCues,playbackVisualDurationMs} from '../../core/dungeon-combat-playback';
+import {playbackAdvanceDelayMs,playbackBossCombatant,playbackCastDisplayMs,playbackCombatant,playbackCombatantState,playbackCombatantStatuses,playbackEnemyCombatants,playbackCueLabel,playbackCueTone,playbackProgress,playbackVisualDurationMs} from '../../core/dungeon-combat-playback';
 import {type CoopColors} from '../../theme/coop-ui-theme';
 import {StateChip} from './CoopVisualKit';
-import {radii,spacing,touchTargetMin,typography} from '../../theme/theme';
+import {radii,spacing,typography} from '../../theme/theme';
 import {CombatantProfileCard,EnemyCombatProfileCard} from './CombatantProfileCard';
 import {CombatantInspectPanel,type CombatantInspectTarget} from './CombatantInspectPanel';
 import {CombatAttackSprite} from '../CombatAttackSprite';
@@ -76,16 +76,17 @@ export function DungeonCombatStage({run,enemyLabel,boss=false,seasonal=false,eve
  const tank=run.roleSlots.find(slot=>slot.role==='tank'),damage=run.roleSlots.filter(slot=>slot.role==='damage'),support=run.roleSlots.find(slot=>slot.role==='support');
  const ordered=[tank,damage[0],damage[1],support].filter((slot):slot is Slot=>Boolean(slot)),assists=ordered.filter(slot=>slot.companionId).length;
  const replay=run.lastCombat,cues=replay?.cues??[],replayKey=`${run.runId}:${replay?.nodeId??'preview'}:${replay?.durationMs??0}:${cues.length}`;
- const [cueIndex,setCueIndex]=useState(0),[reduceMotion,setReduceMotion]=useState(false),[paused,setPaused]=useState(false),[showLog,setShowLog]=useState(false),[inspectKey,setInspectKey]=useState<string>();
+ const [cueIndex,setCueIndex]=useState(0),[systemReduceMotion,setReduceMotion]=useState(false);
+ const reduceMotion=reduceMotionSetting||systemReduceMotion;
  const actorAnim=useRef(new Animated.Value(0)).current,targetAnim=useRef(new Animated.Value(0)).current,fxAnim=useRef(new Animated.Value(0)).current,feedbackAnim=useRef(new Animated.Value(0)).current,castAnim=useRef(new Animated.Value(0)).current;
  useEffect(()=>{let mounted=true;void AccessibilityInfo.isReduceMotionEnabled().then(value=>{if(mounted)setReduceMotion(value);}).catch(()=>{});return()=>{mounted=false;};},[]);
- useEffect(()=>{setCueIndex(reduceMotion&&cues.length?cues.length-1:0);setPaused(false);setShowLog(false);setInspectKey(undefined);},[replayKey,reduceMotion,cues.length]);
+ useEffect(()=>{setCueIndex(reduceMotion&&cues.length?cues.length-1:0);},[replayKey,reduceMotion,cues.length]);
  useEffect(()=>{
-  if(!replay||reduceMotion||paused||cueIndex>=cues.length-1)return;
+  if(!replay||reduceMotion||cueIndex>=cues.length-1)return;
   const current=cues[cueIndex],next=cues[cueIndex+1],timer=setTimeout(()=>setCueIndex(value=>Math.min(value+1,cues.length-1)),playbackAdvanceDelayMs(current,next,1));
   return()=>clearTimeout(timer);
- },[replay,replayKey,reduceMotion,paused,cueIndex,cues]);
- const currentCue=cues.length?cues[Math.min(cueIndex,cues.length-1)]:undefined,recent=replay?playbackRecentCues(replay,cueIndex):[];
+ },[replay,replayKey,reduceMotion,cueIndex,cues]);
+ const currentCue=cues.length?cues[Math.min(cueIndex,cues.length-1)]:undefined;
  const actionImpact:CombatImpactKind|undefined=currentCue?.type==='action'&&currentCue.outcome!=='miss'
   ?currentCue.actionKind==='heal'?'heal':currentCue.actionKind==='shield'?'shield':currentCue.outcome==='critical'?'critical':'damage'
   :currentCue?.type==='interrupt'?'interrupt':currentCue?.type==='down'?'down':undefined;
@@ -163,9 +164,8 @@ export function DungeonCombatStage({run,enemyLabel,boss=false,seasonal=false,eve
   {inspectTarget?<CombatantInspectPanel target={inspectTarget} onClose={()=>setInspectKey(undefined)}/>:null}
   {replay?<View style={s.replayPanel}>
    {complete?<CombatOutcomeMoment outcome={replay.reason==='victory'?'victory':replay.reason==='wipe'?'defeat':'timeout'} title={replay.reason==='victory'?st('Encounter cleared'):replay.reason==='wipe'?st('Party defeated'):st('Encounter timed out')} detail={`${seconds(replay.durationMs)} · ${replay.cues.length} cues`} reduceMotion={reduceMotion}/>:null}
-   <View style={s.replayHead}><View style={s.grow}><Text style={s.replayKicker}>{complete?st("ENCOUNTER RECAP"):paused?st("PAUSED"):st("NOW PLAYING")}</Text><Text accessibilityLiveRegion="polite" style={s.replayCurrent}>{currentCue?playbackCueLabel(currentCue):replay.reason==='victory'?st("Encounter cleared"):replay.reason==='wipe'?st("Party defeated"):st("Encounter timed out")}</Text></View><StateChip label={currentCue?.type.toUpperCase()??replay.reason.toUpperCase()} tone={currentCue?playbackCueTone(currentCue):replay.reason==='victory'?'success':replay.reason==='wipe'?'danger':'warning'}/></View>
-   {run.mode!=='live'&&(!complete||paused)&&!reduceMotion&&cues.length>1?<View style={[s.playbackControls,layout.controlsWrap&&s.playbackControlsWrap]}><View style={[s.controlActions,layout.controlsWrap&&s.controlActionsWrap]}>{paused?<Pressable accessibilityRole="button" accessibilityLabel={st("Previous combat event")} accessibilityState={{disabled:cueIndex<=0}} disabled={cueIndex<=0} onPress={()=>stepReplay(-1)} style={({pressed})=>[s.stepButton,cueIndex<=0&&s.stepButtonDisabled,pressed&&cueIndex>0&&s.controlPressed]}><Text style={s.stepButtonText}>‹</Text></Pressable>:null}<Pressable accessibilityRole="button" accessibilityLabel={paused?st("Resume combat replay"):st("Pause combat replay")} accessibilityState={{selected:paused}} onPress={()=>setPaused(value=>!value)} style={({pressed})=>[s.pauseButton,paused&&s.pauseButtonActive,pressed&&s.controlPressed]}><Text style={[s.pauseButtonText,paused&&s.pauseButtonTextActive]}>{paused?st("▶ Resume"):st("Ⅱ Pause")}</Text></Pressable>{paused?<Pressable accessibilityRole="button" accessibilityLabel={st("Next combat event")} accessibilityState={{disabled:cueIndex>=cues.length-1}} disabled={cueIndex>=cues.length-1} onPress={()=>stepReplay(1)} style={({pressed})=>[s.stepButton,cueIndex>=cues.length-1&&s.stepButtonDisabled,pressed&&cueIndex<cues.length-1&&s.controlPressed]}><Text style={s.stepButtonText}>›</Text></Pressable>:null}<Pressable accessibilityRole="button" accessibilityLabel={st("Skip combat replay to result")} onPress={()=>{setPaused(false);setShowLog(false);setCueIndex(Math.max(0,cues.length-1));}} style={({pressed})=>[s.skipButton,pressed&&s.controlPressed]}><Text style={s.skipButtonText}>{st("Skip →")}</Text></Pressable></View></View>:null}
-   <View style={s.replayMeta}><Text style={s.replayTime}>{currentCue?seconds(currentCue.atMs):'0.0s'} / {seconds(replay.durationMs)}</Text><Text style={s.replayTime}>{cueIndex+1}/{Math.max(1,cues.length)} cues</Text></View>
+   <View style={s.replayHead}><View style={s.grow}><Text style={s.replayKicker}>{complete?st("ENCOUNTER RECAP"):st("LIVE COMBAT")}</Text><Text accessibilityLiveRegion="polite" style={s.replayCurrent}>{currentCue?playbackCueLabel(currentCue):replay.reason==='victory'?st("Encounter cleared"):replay.reason==='wipe'?st("Party defeated"):st("Encounter timed out")}</Text></View><StateChip label={currentCue?.type.toUpperCase()??replay.reason.toUpperCase()} tone={currentCue?playbackCueTone(currentCue):replay.reason==='victory'?'success':replay.reason==='wipe'?'danger':'warning'}/></View>
+   <View style={s.replayMeta}><Text style={s.replayTime}>{currentCue?seconds(currentCue.atMs):'0.0s'} / {seconds(replay.durationMs)}</Text></View>
    <View style={s.replayTrack}><View style={[s.replayFill,{width:`${Math.round(progress*100)}%` as `${number}%`}]} /></View>
    {contributionRows.length?<View style={s.contributionPanel}><View style={s.contributionHead}><Text style={s.contributionKicker}>{st("PARTY CONTRIBUTION")}</Text><Text style={s.contributionHint}>{st("Encounter totals")}</Text></View>{contributionRows.map(({slot,value})=><View key={slot.memberId??slot.name} style={s.contributionRow}><View style={[s.contributionIdentity,{width:`${layout.contributionIdentityWidthPct}%` as `${number}%`,minWidth:layout.contributionIdentityMinWidth}]}><Text style={s.contributionRole}>{roleShort(slot.role)}</Text><Text numberOfLines={1} style={s.contributionName}>{slot.name}</Text></View><Text style={s.contributionStats}>{contributionSummary(slot.role,value)}</Text></View>)}</View>:null}
    {complete&&recent.length?<Pressable accessibilityRole="button" accessibilityLabel={showLog?st("Hide combat battle log"):st("Show combat battle log")} accessibilityState={{expanded:showLog}} onPress={()=>setShowLog(value=>!value)} style={({pressed})=>[s.logToggle,pressed&&s.controlPressed]}><Text style={s.logToggleText}>{showLog?st("Hide battle log"):st("Battle log")}</Text><Text style={s.logToggleMeta}>{showLog?'▲':`${recent.length} recent ▼`}</Text></Pressable>:null}
@@ -181,11 +181,6 @@ const makeStyles=(C:CoopColors)=>StyleSheet.create({
  partyField:{width:'100%',flexDirection:'row',flexWrap:'wrap',alignItems:'stretch',justifyContent:'space-between'},formationSlot:{width:'48%',flexGrow:1,minWidth:0},
  replayPanel:{padding:spacing.md,gap:spacing.sm,borderWidth:1,borderColor:C.line,borderRadius:radii.lg,backgroundColor:C.surface},
  replayHead:{flexDirection:'row',alignItems:'flex-start',gap:spacing.sm},replayKicker:{...typography.caption,color:C.cyan,fontWeight:'800',letterSpacing:.6},replayCurrent:{...typography.caption,color:C.text,fontWeight:'700'},
- playbackControls:{flexDirection:'row',alignItems:'center',justifyContent:'space-between',gap:spacing.sm},playbackControlsWrap:{flexWrap:'wrap',rowGap:spacing.sm},
- controlActions:{flexDirection:'row',flexWrap:'wrap',alignItems:'center',gap:spacing.xs,flexShrink:1},controlActionsWrap:{width:'100%'},
- pauseButton:{minHeight:touchTargetMin,alignItems:'center',justifyContent:'center',paddingHorizontal:spacing.md,borderWidth:1,borderColor:C.line,borderRadius:radii.md,backgroundColor:C.surfaceRaised},pauseButtonActive:{borderColor:C.cyan},pauseButtonText:{...typography.caption,color:C.textSecondary,fontWeight:'700'},pauseButtonTextActive:{color:C.cyan},
- stepButton:{minWidth:touchTargetMin,minHeight:touchTargetMin,alignItems:'center',justifyContent:'center',borderWidth:1,borderColor:C.line,borderRadius:radii.md,backgroundColor:C.surfaceRaised},stepButtonDisabled:{opacity:.35},stepButtonText:{...typography.title,color:C.cyan,fontWeight:'700'},
- skipButton:{minHeight:touchTargetMin,alignItems:'center',justifyContent:'center',paddingHorizontal:spacing.md,borderWidth:1,borderColor:C.goldDim,borderRadius:radii.md,backgroundColor:C.surfaceRaised},skipButtonText:{...typography.caption,color:C.gold,fontWeight:'700'},controlPressed:{opacity:.65},
  replayMeta:{flexDirection:'row',flexWrap:'wrap',justifyContent:'space-between',gap:spacing.sm},replayTime:{...typography.caption,color:C.textMuted},replayTrack:{height:5,borderRadius:99,overflow:'hidden',backgroundColor:C.line},replayFill:{height:'100%',backgroundColor:C.cyan},
  contributionPanel:{gap:spacing.xs},contributionHead:{flexDirection:'row',flexWrap:'wrap',justifyContent:'space-between',gap:spacing.xs},contributionKicker:{...typography.caption,color:C.textMuted,fontWeight:'800',letterSpacing:.6},contributionHint:{...typography.caption,color:C.textMuted},
  contributionRow:{flexDirection:'row',alignItems:'flex-start',gap:spacing.sm,paddingVertical:spacing.xs,borderTopWidth:StyleSheet.hairlineWidth,borderTopColor:C.line},contributionIdentity:{gap:2},contributionRole:{...typography.caption,color:C.cyan,fontWeight:'700'},contributionName:{...typography.caption,color:C.text,fontWeight:'700'},contributionStats:{flex:1,...typography.caption,color:C.textSecondary,textAlign:'right'},

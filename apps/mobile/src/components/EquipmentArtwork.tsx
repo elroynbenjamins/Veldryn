@@ -3,7 +3,7 @@ import {visualText} from '../i18n/visuals';
 import {Image,StyleSheet,Text,View,type ImageSourcePropType} from 'react-native';
 import {ItemDef} from '../content/items';
 import {C,radii} from '../theme/theme';
-import {itemRarity,rarityMeta} from '../core/item-rarity';
+import {itemRarity,rarityMeta,type ItemRarity} from '../core/item-rarity';
 import {equipmentArtworkSetByItemId,equipmentSheetBySet} from '../theme/equipment-assets';
 import {hasStarterWeaponArtwork,StarterWeaponArtwork} from './StarterWeaponArtwork';
 
@@ -23,9 +23,9 @@ export function hasEquipmentArtwork(item:ItemDef){
   return hasStarterWeaponArtwork(item.id)||Boolean(setId&&equipmentSheetBySet[setId]&&item.slot&&slots.includes(item.slot as typeof slots[number]));
 }
 
-export function EquipmentArtwork({item,compact=false,framed=true,size:requestedSize}:{item:ItemDef;compact?:boolean;framed?:boolean;size?:number}){
+export function EquipmentArtwork({item,rarity,compact=false,framed=true,size:requestedSize}:{item:ItemDef;rarity?:ItemRarity;compact?:boolean;framed?:boolean;size?:number}){
  const language=useGameLanguage(),tr=(source:string,params?:Record<string,string|number>)=>visualText(language,source,params);
-  const meta=rarityMeta(itemRarity(item)),size=requestedSize??(compact?48:64);
+  const meta=rarityMeta(rarity??itemRarity(item)),size=requestedSize??(compact?48:64);
   const setId=equipmentArtworkSetByItemId[item.id],sheet=setId?equipmentSheetBySet[setId]:undefined;
   const slotIndex=item.slot?slots.indexOf(item.slot as typeof slots[number]):-1;
   const frameStyle={width:size,height:size,borderColor:meta.color,borderWidth:framed?meta.borderWidth:0,backgroundColor:framed?meta.surface:'transparent'};

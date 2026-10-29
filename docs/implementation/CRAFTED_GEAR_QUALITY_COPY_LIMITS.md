@@ -4,7 +4,7 @@
 
 ## Player-facing contract
 
-- Each new timed non-novice Forge equipment result is issued as **one physically tagged copy** with a unique `instanceId`, rarity and deterministic quality roll **0–100**. Tier procs are unchanged (0.60% Epic; 0.10% Mythic). Quality affects equipped stat calculations by **−25% to +25%** (Q0 = 75%, Q50 = 100%, Q100 = 125%); upgrades and two socket types remain separate.
+- Each new timed non-novice Forge equipment result is issued as **one physically tagged copy** with a unique `instanceId`, rarity and deterministic quality roll **0–100**. Forge rarity rolls now cover all six rarity tiers: Common 89.10%, Uncommon 7%, Rare 3%, Epic 0.60%, Legendary 0.20%, Mythic 0.10% for Common-base items. Existing Epic/Mythic chance bands retain their original sizes. Quality affects equipped stat calculations by **−25% to +25%** (Q0 = 75%, Q50 = 100%, Q100 = 125%); upgrades and two socket types remain separate.
 - Each account can have up to **seven physical copies of each exact equipment item ID**, across five characters, equipped items, inventories, Bank and overflow. Conservative copy projections count untagged legacy equipment too. Old over-cap saves are not truncated.
 - **Keep Best 7** opt-in toggle on the Forge screen, default **OFF**, persisted account-wide by a validated `gear_autosell` command.
 - With OFF, an eighth finished Forge craft **stays ready** until the player makes room.
@@ -28,14 +28,16 @@
 ## Smithing / Tailoring: collapsed Forge chances guide
 
 - Both skills use `SmithingCollection` and show the same collapsed **Rarity & quality** disclosure at the bottom of the **Equipment** tab, after the Forge queue; Materials and Tools do not show unrelated Forge odds. It does not obstruct recipe actions.
-- On the Equipment tab, odds apply to the currently selected crafted item and are computed from the same authoritative `CRAFTED_EPIC_CHANCE`, `CRAFTED_MYTHIC_CHANCE`, base rarity and stat multiplier rules as Forge claims.
-- For Common-base gear the actual result distribution is **99.30% Common / 0.60% Epic / 0.10% Mythic**, with relative rarity stat multipliers **1.00× / 1.50× / 2.20×** before quality.
+- On the Equipment tab, odds apply to the currently selected crafted item and are computed from the same authoritative six-tier Forge roll table, base rarity and stat multiplier rules as Forge claims.
+- For Common-base gear, actual results are **89.10% Common / 7% Uncommon / 3% Rare / 0.60% Epic / 0.20% Legendary / 0.10% Mythic**, at rarity multipliers **1.00× / 1.12× / 1.28× / 1.50× / 1.80× / 2.00×** before quality. This uses the game's full rarity palette, not a truncated three-rarity Forge.
 - High-base-rarity recipes correctly combine non-upgrade proc probability into their guaranteed original tier (e.g. base Mythic remains **100% Mythic**; no separate downgrade chance).
 - The quality section shows **Q0 −25%, Q25 −12.5%, Q50 normal, Q75 +12.5%, Q100 +25%** and explains that Attack, Defense and HP are modified on top of rarity/upgrades. No probabilities or gameplay rules are duplicated in UI state.
 - The guide is deliberately hidden on Materials and Tools; selecting Equipment shows the odds for the chosen piece.
-- Rarity rows use each rarity's official theme-aware name color and matching marker (Common grey, Epic purple, Mythic pink, etc.), with **Chance** and **Stats** columns. On narrow screens or large text settings they stack into two compact lines instead of clipping.
+- Rarity rows use each rarity's official theme-aware name color and matching marker (Common grey, Uncommon green, Rare blue, Epic purple, Legendary orange, Mythic pink), with **Chance** and **Stats** columns; rarity strength displays simple **×** multipliers (Mythic 2× for Common-base gear). On narrow screens or large text settings they stack into two compact lines instead of clipping.
 - Three uncluttered quality examples explain Q0 −25% (red), Q50 normal (neutral), and Q100 +25% (green). Intermediate values scale between them. The disclosure is closed by default, with concise wording and no additional navigation or modal.
-- Regression checks cover the selected-equipment odds calculation for Common, Epic and Mythic baselines and ensure probabilities sum to 100%.
+- Regression checks cover all six roll bands, each boundary, displayed chances and multipliers, authored-gear rarity floors (including Epic and Mythic), and ensure final probabilities sum to 100%.
+
+**Mythic balance:** Mythic's shared rarity stat multiplier is now **2.00×** rather than 2.20×. This affects Mythic rarity calculations wherever the shared rarity metadata is used; it does not reroll existing items, alter unique IDs, gems, locks or quality. Validate downstream combat/balance implications before release.
 
 ## Implementation
 

@@ -17,6 +17,7 @@ assert(inventory.includes('<GemPouchPanel standalone state={state}'),'Standalone
 assert((inventory.match(/<StorageChip label=\{accountText\(language,'Gems'\)\}/g)||[]).length===2,'All storage views must show a Gems tab');
 assert(!inventory.includes('<GemPouchPanel state={state} busy='),'The old nested expandable pouch is removed from normal Inventory/Bank');
 assert(inventory.includes('setPouchOpen(false);setQuery(\'\');setFilter(\'food\')'),'Food deep links must always return to character Inventory');
+assert(inventory.includes('restored.current=null;setPouchOpen(true)'),'Inventory list restores its prior scroll after switching back from Gems');
 assert(memory.includes('pouchOpen:false')&&memory.includes('foodRequest:request,pouchOpen:false'),'Storage choice is remembered without breaking quick food access');
 assert(pouch.includes('standalone||drawerOpen'),'Standalone mode never collapses the dedicated pouch');
 assert(pouch.includes('accessible={!standalone}')&&pouch.includes("accessibilityRole={standalone?'header':undefined}"),'Standalone Pouch heading is accessible without a disabled disclosure');

@@ -2,8 +2,9 @@ import {V33_EQUIPMENT_RECIPES} from '../src/content/equipment-recipes-v33';
 import {claimOverflowToBank,createCharacter,depositToBank,equipItem,newGame,sellItem,stackItems,unequipItem} from '../src/core/game';
 import {claimAllReadyEquipmentCrafts,claimEquipmentCraft,equipmentCraftingQueue,startEquipmentCraft} from '../src/core/equipment-crafting-queue';
 import {CRAFTED_COMMON_CHANCE,CRAFTED_UNCOMMON_CHANCE,CRAFTED_RARE_CHANCE,CRAFTED_EPIC_CHANCE,CRAFTED_LEGENDARY_CHANCE,CRAFTED_MYTHIC_CHANCE,craftedGearRarity,craftedGearRarityOutcomes,craftedRarityStatMultiplier} from '../src/core/crafted-gear-rarity';
-import {MAX_CRAFTED_GEAR_INSTANCES,TARGET_CRAFTED_GEAR_COPIES_PER_ITEM,bestCraftedInstanceForItem,craftedGearCopyCapacity,craftedGearInstances,craftedGearQualityRoll,craftedGearDisplayQuality,craftedGearQualityMultiplier,craftClaimSubRoll,effectiveOwnedGearRarity,normalizeCraftedGearInstances,createCraftedGearInstance,craftedGearLegacyOwnershipAudit} from '../src/core/crafted-gear-instances';
+import {MAX_CRAFTED_GEAR_INSTANCES,TARGET_CRAFTED_GEAR_COPIES_PER_ITEM,bestCraftedInstanceForItem,craftedGearCopyCapacity,craftedGearInstances,craftedGearStackRarity,equippedCraftedGearRarity,craftedGearQualityRoll,craftedGearDisplayQuality,craftedGearQualityMultiplier,craftClaimSubRoll,effectiveOwnedGearRarity,normalizeCraftedGearInstances,createCraftedGearInstance,craftedGearLegacyOwnershipAudit} from '../src/core/crafted-gear-instances';
 import {enhancedGearStats,upgradeQuote} from '../src/core/equipment-enhancement';
+import {equipmentDecisionModel} from '../src/core/equipment-decision';
 import {itemDef} from '../src/content/items';
 import {itemRarity} from '../src/core/item-rarity';
 import {executeGameCommand} from '../src/core/game-commands';
@@ -227,6 +228,17 @@ ok(auditCraftedGearOwnership(extraLegacyCopy).unmarkedPhysicalCopies===1&&!audit
 ok(craftedGearCopiesAt(taggedState,recipe.output.itemId,'inventory').length===2,'Copy selection must use exact inventory instance markers');
 const commonEquippedById=executeGameCommand(taggedState,{type:'gear_equip',args:{instanceId:ownedIds[1]}},1198).state;
 const epicEquippedById=executeGameCommand(taggedState,{type:'gear_equip',args:{instanceId:ownedIds[0]}},1199).state;
+const gearSlot=itemDef(recipe.output.itemId).slot!;
+ok(craftedGearStackRarity(taggedState,{itemId:recipe.output.itemId,instanceId:ownedIds[0]})==='epic',
+  'Epic inventory copy must retain a purple rarity border');
+ok(craftedGearStackRarity(taggedState,{itemId:recipe.output.itemId,instanceId:ownedIds[1]})==='common',
+  'Common copy of the same item must keep its own grey border, not borrow the Epic rarity');
+ok(craftedGearStackRarity(legacyState,{itemId:recipe.output.itemId})==='common',
+  'Untracked legacy equipment must show base rarity without guessing a Forge receipt');
+ok(equippedCraftedGearRarity(commonEquippedById,gearSlot)==='common'&&equippedCraftedGearRarity(epicEquippedById,gearSlot)==='epic',
+  'Character slots must display the exact equipped copy rarity when switching between copies');
+ok(equipmentDecisionModel(commonEquippedById,recipe.output.itemId).rarity==='common'&&equipmentDecisionModel(epicEquippedById,recipe.output.itemId).rarity==='epic',
+  'Character comparison and enhancement summaries must match the physically equipped copy');
 const commonActualStats=enhancedGearStats(commonEquippedById,recipe.output.itemId);
 const epicActualStats=enhancedGearStats(epicEquippedById,recipe.output.itemId);
 ok(epicActualStats.hp>commonActualStats.hp||epicActualStats.attack>commonActualStats.attack||epicActualStats.defense>commonActualStats.defense,'Equipped combat stats must reflect the selected unique rarity/quality roll, not the strongest item in Bank');

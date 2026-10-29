@@ -25,6 +25,8 @@ assert(!detail.includes("model.equipped?btn(t(\"Unequip\")"),'Unequip is not hid
 assert(!detail.includes(":model&&<View style={s.group}><View style={s.detailHero}>"),'Existing portraits are not repeated inside the roadmap');
 
 // Codex: smaller purposeful views without removing progression, profile or rewards.
+assert(panel.includes("setTimeout(()=>setMessage(''),4500)")&&panel.includes("if(!message||messageError)return"),'Routine Companion success notices should expire, while failures remain visible');
+assert(panel.includes("setMessageError(true)")&&panel.includes("messageError?'assertive':'polite'"),'Failures must remain highlighted and announced accessibly');
 assert(panel.includes("useState<'progress'|'showcase'|'rewards'>('progress')"),'Codex defaults to Progress');
 for(const name of ['progress','showcase','rewards'])assert(section.includes("codexView==='"+name+"'"),'Missing '+name+' view');
 assert(section.includes('accessibilityRole="tablist"')&&section.includes('accessibilityRole="tab"'),'Codex segmented navigation is accessible');
@@ -32,7 +34,7 @@ assert(section.includes("unlockTargets.map(")&&section.includes("masteryTargets.
 assert(section.includes("ownedIds.map(")&&section.includes("companion_showcase"),'Showcase management is retained');
 assert(section.includes('codexRewards.slice(-6)')&&section.includes('view.codex.milestones.map'),'Collection reward and milestone claims are retained');
 assert(section.includes("setSection('Collection');setDetailOpen(true)"),'Progression targets open the companion details directly');
-for(const key of ['Progress','Showcase','Rewards','Abilities & Traits','Passive ability','Bond trait','Open Sanctuary']){
+for(const key of ['Progress','Showcase','Rewards','Abilities & Traits','Passive ability','Bond trait','Open Sanctuary','Action failed']){
  assert(translations.includes(JSON.stringify(key)+':'),'Missing localized Companion label '+key);
 }
 console.log('PASS Companion Collection and Codex progressive disclosure UX');

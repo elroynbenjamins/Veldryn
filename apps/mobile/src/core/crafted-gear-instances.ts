@@ -8,6 +8,8 @@ export const MAX_CRAFTED_GEAR_INSTANCES=500;
 export const CRAFTED_GEAR_QUALITY_MIN=0;
 export const CRAFTED_GEAR_QUALITY_MAX=100;
 export const LEGACY_CRAFTED_GEAR_QUALITY=50;
+/** Gentle high-roll scarcity: Q90+ drops from about 10.9% to 8.8%; Q0–Q100 stay reachable. */
+export const CRAFTED_GEAR_QUALITY_POWER=1.25;
 export function isValidCraftedGearQuality(quality:unknown):quality is number{
   return typeof quality==='number'&&Number.isInteger(quality)
     &&quality>=CRAFTED_GEAR_QUALITY_MIN&&quality<=CRAFTED_GEAR_QUALITY_MAX;
@@ -18,10 +20,19 @@ export function craftedGearDisplayQuality(instance:Pick<CraftedGearInstance,'qua
 /** Proposed account-wide, per-base-item copy limit. Do not enforce until per-copy disposal is available. */
 export const TARGET_CRAFTED_GEAR_COPIES_PER_ITEM=7;
 
-/** Quality is persisted on each instance, never synthesized from a mutable client clock. */
+/** Quality is persisted on each instance; new rolls gently favor lower grades. */
+export function craftedGearQualityFromUnitRoll(roll:number){
+  if(!Number.isFinite(roll)||roll<0||roll>=1)throw new Error('Invalid crafted quality roll');
+  return Math.min(CRAFTED_GEAR_QUALITY_MAX,Math.floor(Math.pow(roll,CRAFTED_GEAR_QUALITY_POWER)*(CRAFTED_GEAR_QUALITY_MAX+1)));
+}
+/** Approximate probability for the player-facing odds guide (the seeded RNG has 1,000,000 discrete values). */
+export function craftedGearQualityChanceAtLeast(quality:number){
+  if(!isValidCraftedGearQuality(quality))throw new Error('Invalid quality threshold');
+  return 1-Math.pow(quality/(CRAFTED_GEAR_QUALITY_MAX+1),1/CRAFTED_GEAR_QUALITY_POWER);
+}
 export function craftedGearQualityRoll(trustedRoll:number,jobId:string){
   if(!Number.isFinite(trustedRoll)||trustedRoll<0||trustedRoll>=1)throw new Error('Invalid crafted quality roll');
-  return Math.floor(deterministicCraftRarityRoll(`quality:${trustedRoll.toFixed(12)}:${jobId}`)*(CRAFTED_GEAR_QUALITY_MAX+1));
+  return craftedGearQualityFromUnitRoll(deterministicCraftRarityRoll(`quality:${trustedRoll.toFixed(12)}:${jobId}`));
 }
 /** Forge quality modifies base equipment stats from 75% (Q0) to 125% (Q100). */
 export function craftedGearQualityMultiplier(quality:number){

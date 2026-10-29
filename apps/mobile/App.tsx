@@ -9,7 +9,7 @@ import {fetchReleaseNotes} from './src/online/release-notes';
 import {shouldAutoShowReleaseNotes,type ReleaseNote} from './src/core/release-notes';
 import {WhatsNewModal} from './src/components/WhatsNewModal';
 import {buildWelcomeBackFromStates,type WelcomeBackProgressReport} from './src/core/welcome-back-v46';
-import {ActivityIndicator,Animated,ScrollView,AppState,BackHandler,Image,PanResponder,Pressable,Share,StyleSheet,Text,TextInput,View} from 'react-native';
+import {ActivityIndicator,Animated,ScrollView,AppState,BackHandler,Image,PanResponder,Pressable,Share,StyleSheet,Text,TextInput,View,useWindowDimensions} from 'react-native';
 import {StatusBar} from 'expo-status-bar';
 import {SafeAreaProvider,SafeAreaView} from 'react-native-safe-area-context';
 import {AccountWelcomeScreen} from './src/components/AccountWelcomeScreen';
@@ -29,13 +29,15 @@ import {HomeScreen} from './src/screens/HomeScreen';
 import {WorldScreen} from './src/screens/WorldScreen';
 import {InventoryScreen} from './src/screens/InventoryScreen';
 import {CharacterScreen} from './src/screens/CharacterScreen';
-import {CombatCompanionPanel} from './src/components/CombatCompanionPanel';
+import {CombatCompanionPanel,type CompanionNavigationState} from './src/components/CombatCompanionPanel';
 import {executeGameCommand,type ForgeCraftResult} from './src/core/game-commands';
 import {QuestScreen,type QuestMode} from './src/screens/QuestScreen';
 import {SkillsScreen} from './src/screens/SkillsScreen';
 import {CompanionsScreen} from './src/screens/CompanionsScreen';
 import {SectionGuide} from './src/components/SectionGuide';
-import {SettingsScreen} from './src/screens/SettingsScreen';
+import {SettingsScreen,type SettingsSection} from './src/screens/SettingsScreen';
+import type {SocialHubTab} from './src/components/SocialHubPanel';
+import {rememberScreen,returnToPreviousScreen,type ScreenHistoryEntry} from './src/core/screen-navigation-history';
 import {redeemCode} from './src/online/redeem-code';
 import {MoreScreen,type MoreDestination} from './src/screens/MoreScreen';
 import {AdminQaScreen} from './src/screens/AdminQaScreen';
@@ -141,6 +143,7 @@ import {eventAnnouncementStore} from './src/storage/event-announcement';
 
 type Tab=QuickNavDestination|'Activity'|'DailySupplies'|'AccountBonuses'|'RewardsInbox'|'MasteryHall'|'Arena'|'Rankings'|'Collections'|'Profile'|'ProfileCustomize'|'Combat'|'Coop';
 type PrimaryTab='Home'|'Skills'|'World'|'Character'|'Inventory'|'More';
+type NavigationContext={skillsMode:'gathering'|'crafting'|'novice'|'faith';selectedSkill?:string;goalActionId?:string;goalRecipeId?:string;questMode:QuestMode;questFocusOrderId?:string;settingsSection?:SettingsSection;socialInitialTab:SocialHubTab;profileCustomizeSection:'Appearance'|'Identity';goalMonsterId?:string;goalRegionId?:string;goalDungeonId?:string};
 const primaryTabs:PrimaryTab[]=['Home','Character','Skills','World','Inventory','More'];
 function tabLabel(language:Language,tab:Tab):string{
   switch(tab){
@@ -168,6 +171,7 @@ const MAIN_TAB_GUIDANCE:Record<string,{title:string;body:string;detail:string}>=
 export default function App(){return <SafeAreaProvider><AuthSessionProvider><PlayerBadgeProvider><PartySocialProvider><VeldrynApp/></PartySocialProvider></PlayerBadgeProvider></AuthSessionProvider><GameAlertHost/></SafeAreaProvider>;}
 function VeldrynApp(){
   const auth=useAuthSession(),online=useOnlineGame();
+  const {width:viewportWidth}=useWindowDimensions();
   const adminQa=auth.session?.user.app_metadata?.admin_qa===true||(Array.isArray(auth.session?.user.app_metadata?.roles)&&auth.session!.user.app_metadata.roles.includes('admin_qa'));
   const {counts:notificationCounts,refresh:refreshSocialNotifications}=useSocialNotificationCounts();
   const [state,setState]=useState<GameState|null>(null);
@@ -179,8 +183,9 @@ function VeldrynApp(){
   const [tab,setCurrentTab]=useState<Tab>('Home');
   const tabRef=useRef(tab);tabRef.current=tab;
   useEffect(()=>setNetworkMetricsRoute(tab),[tab]);
-  const [settingsSection,setSettingsSection]=useState<'guide'|'store'|undefined>();
-  const [tabHistory,setTabHistory]=useState<Tab[]>([]);
+  const [settingsSection,setSettingsSection]=useState<SettingsSection|undefined>();
+  const [tabHistory,setTabHistory]=useState<ScreenHistoryEntry<Tab,NavigationContext>[]>([]);
+  const [skillsOpenedAsLink,setSkillsOpenedAsLink]=useState(false);
   const [questMode,setQuestMode]=useState<QuestMode>('story');
   const [questFocusOrderId,setQuestFocusOrderId]=useState<string|undefined>();
   const [skillsMode,setSkillsMode]=useState<'gathering'|'crafting'|'novice'|'faith'>('gathering');
@@ -192,6 +197,7 @@ function VeldrynApp(){
   const [goalDungeonId,setGoalDungeonId]=useState<string|undefined>();
   const [pendingGoalDestination,setPendingGoalDestination]=useState<WorkingTowardDestination|undefined>();
   const inventoryViews=useRef<Record<string,InventoryScreenState>>({});
+  const companionNavigationMemory=useRef<{characterId:string;context:CompanionNavigationState}|null>(null);
   const [inventoryFoodRequest,setInventoryFoodRequest]=useState(0);
   const [inventoryFoodScope,setInventoryFoodScope]=useState('');
   const [now,setNow]=useState(Date.now());
@@ -253,7 +259,7 @@ function VeldrynApp(){
   };
   const [showChatOverlay,setShowChatOverlay]=useState(false);
   const [chatInitialChannel,setChatInitialChannel]=useState<'world'|'guild'>('world');
-  const [socialInitialTab,setSocialInitialTab]=useState<'party'|'guild'>('party');
+  const [socialInitialTab,setSocialInitialTab]=useState<SocialHubTab>('party');
   const [showCoopUiGallery,setShowCoopUiGallery]=useState(false);
   const [pendingEventLiveId,setPendingEventLiveId]=useState<string|undefined>();
   const [guildInitialPve,setGuildInitialPve]=useState(false);
@@ -326,33 +332,59 @@ function VeldrynApp(){
     if(tab!=='ProfileCustomize'||!profileCustomizeDirty){action();return;}
     setProfileDiscardAction(()=>action);
   },[tab,profileCustomizeDirty]);
+  // History remembers the subpage and selection that produced a navigation.
+  const navigationContext=useMemo<NavigationContext>(()=>({
+    skillsMode,selectedSkill,goalActionId,goalRecipeId,questMode,questFocusOrderId,
+    settingsSection,socialInitialTab,profileCustomizeSection,goalMonsterId,goalRegionId,goalDungeonId,
+  }),[skillsMode,selectedSkill,goalActionId,goalRecipeId,questMode,questFocusOrderId,settingsSection,socialInitialTab,profileCustomizeSection,goalMonsterId,goalRegionId]);
   const setTab=useCallback((destination:Tab)=>{
     if(destination===tab||destination==='Rankings'&&!RANKINGS_RELEASED)return;
     const current=stateRef.current,lockReason=current?earlyFeatureLockReason(current,destination):'';
     if(lockReason){showAlert('Locked for now',lockReason);return;}
     confirmProfileCustomizeExit(()=>{
       setProfileCustomizeDirty(false);
-      setTabHistory(history=>[...history,tab].slice(-24));
+      setTabHistory(history=>rememberScreen(history,{route:tab,context:navigationContext},destination));
       setSettingsSection(undefined);
       setCurrentTab(destination);
     });
-  },[tab,confirmProfileCustomizeExit]);
+  },[tab,navigationContext,confirmProfileCustomizeExit]);
   const goBack=useCallback(()=>{
     if(showChatOverlay){setShowChatOverlay(false);return true;}
     if(showAdminQa){setShowAdminQa(false);return true;}
     if(showCoopUiGallery){setShowCoopUiGallery(false);return true;}
-    if(tab==='Skills'&&selectedSkill){setSelectedSkill(undefined);setGoalActionId(undefined);setGoalRecipeId(undefined);return true;}
+    // On phones, a Settings category is a nested page. Return to the category list first.
+    if(tab==='Settings'&&viewportWidth<768&&settingsSection){setSettingsSection(undefined);return true;}
+    if(tab==='Skills'&&selectedSkill&&!skillsOpenedAsLink){setSelectedSkill(undefined);setGoalActionId(undefined);setGoalRecipeId(undefined);return true;}
     confirmProfileCustomizeExit(()=>{
       setProfileCustomizeDirty(false);
-      if(tabHistory.length){
-        setCurrentTab(tabHistory[tabHistory.length-1]);
-        setTabHistory(tabHistory.slice(0,-1));
+      const {previous,remaining}=returnToPreviousScreen(tabHistory,tab,destination=>{
+        const current=stateRef.current;
+        return !(destination==='Rankings'&&!RANKINGS_RELEASED)&&(!current||!earlyFeatureLockReason(current,destination));
+      });
+      setTabHistory(remaining);
+      if(!previous){
+        setSettingsSection(undefined);
+        if(tab!=='Home')setCurrentTab('Home');
         return;
       }
-      if(tab!=='Home')setCurrentTab('Home');
+      const {context}=previous;
+      setSettingsSection(previous.route==='Settings'?context.settingsSection:undefined);
+      if(previous.route==='Skills'){
+        setSkillsMode(context.skillsMode);
+        setSelectedSkill(context.selectedSkill);
+        setGoalActionId(context.goalActionId);
+        setGoalRecipeId(context.goalRecipeId);
+      }
+      if(previous.route==='Quests'){setQuestMode(context.questMode);setQuestFocusOrderId(context.questFocusOrderId);}
+      if(previous.route==='Social'||previous.route==='Party')setSocialInitialTab(context.socialInitialTab);
+      if(previous.route==='ProfileCustomize')setProfileCustomizeSection(context.profileCustomizeSection);
+      if(previous.route==='Combat')setGoalMonsterId(context.goalMonsterId);
+      if(previous.route==='World')setGoalRegionId(context.goalRegionId);
+      if(previous.route==='Coop')setGoalDungeonId(context.goalDungeonId);
+      setCurrentTab(previous.route);
     });
     return true;
-  },[showChatOverlay,showAdminQa,showCoopUiGallery,tab,tabHistory,selectedSkill,confirmProfileCustomizeExit]);
+  },[showChatOverlay,showAdminQa,showCoopUiGallery,tab,tabHistory,selectedSkill,skillsOpenedAsLink,settingsSection,viewportWidth,confirmProfileCustomizeExit]);
   const backSwipe=useMemo(()=>PanResponder.create({
     onMoveShouldSetPanResponder:(_event,gesture)=>gesture.x0<=32&&gesture.dx>12&&Math.abs(gesture.dx)>Math.abs(gesture.dy)*1.25,
     onPanResponderRelease:(_event,gesture)=>{if(gesture.dx>=72&&gesture.vx>=0)goBack();},
@@ -396,6 +428,11 @@ function VeldrynApp(){
   useEffect(()=>{if(!preparationNotices.length||collected||forgeResults)return;const timer=setTimeout(()=>setPreparationNotices(current=>current.slice(1)),4500);return()=>clearTimeout(timer)},[preparationNotices,collected,forgeResults]);
   useEffect(()=>{if(!masteryNotices.length||preparationNotices.length||collected||forgeResults)return;const timer=setTimeout(()=>setMasteryNotices([]),4500);return()=>clearTimeout(timer)},[masteryNotices,preparationNotices.length,collected,forgeResults]);
   useEffect(()=>{if(tab!=='Skills'){setSelectedSkill(undefined);setGoalActionId(undefined);setGoalRecipeId(undefined)}},[tab]);
+  // If a source link opened a specific skill, Back returns to that source; if the player
+  // chose a skill within Skills, Back first returns to the skill hub.
+  useEffect(()=>{setSkillsOpenedAsLink(tab==='Skills'&&Boolean(selectedSkill));},[tab]);
+  // Do not return into another character's detail history after a roster switch.
+  useEffect(()=>{setTabHistory([]);},[state?.character?.id]);
   useEffect(()=>{if(tab!=='Combat')setGoalMonsterId(undefined)},[tab]);
   useEffect(()=>{const subscription=BackHandler.addEventListener('hardwareBackPress',goBack);return()=>subscription.remove()},[goBack]);
   useEffect(()=>{const subscription=AppState.addEventListener('change',nextStatus=>{const wasAway=appStateRef.current==='background'||appStateRef.current==='inactive';appStateRef.current=nextStatus;if(!wasAway||nextStatus!=='active'||settlingRef.current)return;const current=stateRef.current;if(!current?.character)return;if(serverGameplayEnabled){if(current.activity||current.character.classTraining){onlineForegroundSettlementRef.current=true;setOfflineSettling(true);}return;}settlingRef.current=true;setOfflineSettling(true);setTimeout(()=>{const settled=settleStartupActivity(current,Date.now());const changed=settled.state!==current;if(changed){stateRef.current=settled.state;setState(settled.state);void repo.save(settled.state).catch(()=>showAlert('Save pending','Your returned progress is safe in memory, but could not be saved yet.'));}if(settled.reward){queuePreparationNotices(current,settled.state);setCollected({reward:settled.reward,activity:settled.activity,welcomeBack:true,progressionMoments:rewardProgressionMoments(current,settled.state),welcomeReport:buildWelcomeBackFromStates(current,settled.state,settled.reward,settled.activity)});}setOfflineSettling(false);settlingRef.current=false},0)});return()=>subscription.remove()},[]);
@@ -647,7 +684,7 @@ const next=normalizeProfileIcon(candidate);queuePreparationNotices(current,next)
   const activePrimary:PrimaryTab=primaryNavForRoute(tab);
   const secondary=!primaryTabs.includes(tab as PrimaryTab);
   const mainTabGuide=MAIN_TAB_GUIDANCE[tab];
-  return <GameThemeProvider themeId={state.settings.uiTheme}><TutorialHighlightProvider active={(mainScreenTour?.highlightBeacon??visibleTutorialStep?.highlightBeacon)??null}><SafeAreaView edges={['top','left','right']} style={[s.safe,{backgroundColor:theme.bg}]}><StatusBar style={theme.dark?'light':'dark'}/><GameTopBar key={`${state.createdAtMs}:${state.character.id}`} state={state} nowMs={now} reward={preview} online={serverGameplayEnabled&&!online.error} attention={quickNavigationBadges} labelForDestination={destination=>tabLabel(state.settings.language,destination)} onNavigate={destination=>{if(destination==='Dungeon'){setTab('Coop');return;}if(destination==='Quests'){openQuestMode('story');return;}setTab(destination)}} onChangeDestinations={destinations=>commit({...state,settings:{...state.settings,quickNavDestinations:destinations}})} onOpenActivity={()=>{if(preview.stoppedReason){setTab('Home');return;}openActiveActivity()}} onRecoverCombat={recoverStoppedCombat} onFoodCommand={quickFoodCommand}/>{serverGameplayEnabled&&online.busy?<View pointerEvents="none" style={{position:'absolute',top:52,right:12,zIndex:30,flexDirection:'row',alignItems:'center',gap:6,paddingVertical:6,paddingHorizontal:10,borderWidth:1,borderColor:theme.info,borderRadius:12,backgroundColor:theme.panelRaised}}><ActivityIndicator color={theme.info} size="small"/><Text style={{color:theme.text,fontSize:11,fontWeight:'800'}}>{appText(state.settings.language,'Saving…')}</Text></View>:null}{secondary&&tab!=='Coop'&&tab!=='Combat'&&tab!=='Guild'&&tab!=='Social'&&tab!=='Party'&&<View style={[s.backBar,{backgroundColor:theme.panel,borderColor:theme.line}]}><Pressable accessibilityRole="button" accessibilityLabel={t(state.settings.language,'common.back')} onPress={goBack} hitSlop={8} style={({pressed})=>[s.backButton,pressed&&s.backPressed]}><ThemedIcon name="back" size={24}/><Text style={[s.backText,{color:theme.accent}]}>{t(state.settings.language,'common.back')}</Text></Pressable><Text numberOfLines={1} style={[s.backTitle,{color:theme.text}]}>{tabLabel(state.settings.language,tab)}</Text><View style={s.backSpacer}/></View>}{serverGameplayEnabled&&online.pending?<View style={{paddingHorizontal:12}}><GameButton title={appText(languageRef.current,"Retry pending action")} disabled={online.busy} onPress={()=>perform()}/></View>:null}{onlineActionError?<View style={{paddingHorizontal:12,paddingVertical:6}}><ActionFeedback tone="error" message={onlineActionError} compact actionLabel={appText(state.settings.language,'Close')} onAction={()=>setOnlineActionError('')}/></View>:null}<View style={s.body} {...backSwipe.panHandlers}>
+  return <GameThemeProvider themeId={state.settings.uiTheme}><TutorialHighlightProvider active={(mainScreenTour?.highlightBeacon??visibleTutorialStep?.highlightBeacon)??null}><SafeAreaView edges={['top','left','right']} style={[s.safe,{backgroundColor:theme.bg}]}><StatusBar style={theme.dark?'light':'dark'}/><GameTopBar key={`${state.createdAtMs}:${state.character.id}`} state={state} nowMs={now} reward={preview} online={serverGameplayEnabled&&!online.error} attention={quickNavigationBadges} labelForDestination={destination=>tabLabel(state.settings.language,destination)} onNavigate={destination=>{if(destination==='Dungeon'){setTab('Coop');return;}if(destination==='Quests'){openQuestMode('story');return;}setTab(destination)}} onChangeDestinations={destinations=>commit({...state,settings:{...state.settings,quickNavDestinations:destinations}})} onOpenActivity={()=>{if(preview.stoppedReason){setTab('Home');return;}openActiveActivity()}} onRecoverCombat={recoverStoppedCombat} onFoodCommand={quickFoodCommand}/>{serverGameplayEnabled&&online.busy?<View pointerEvents="none" style={{position:'absolute',top:52,right:12,zIndex:30,flexDirection:'row',alignItems:'center',gap:6,paddingVertical:6,paddingHorizontal:10,borderWidth:1,borderColor:theme.info,borderRadius:12,backgroundColor:theme.panelRaised}}><ActivityIndicator color={theme.info} size="small"/><Text style={{color:theme.text,fontSize:11,fontWeight:'800'}}>{appText(state.settings.language,'Saving…')}</Text></View>:null}{secondary&&tab!=='Coop'&&tab!=='Combat'&&tab!=='Guild'&&tab!=='Social'&&tab!=='Party'&&!(tab==='Settings'&&viewportWidth<768&&settingsSection)&&<View style={[s.backBar,{backgroundColor:theme.panel,borderColor:theme.line}]}><Pressable accessibilityRole="button" accessibilityLabel={t(state.settings.language,'common.back')} onPress={goBack} hitSlop={8} style={({pressed})=>[s.backButton,pressed&&s.backPressed]}><ThemedIcon name="back" size={24}/><Text style={[s.backText,{color:theme.accent}]}>{t(state.settings.language,'common.back')}</Text></Pressable><Text numberOfLines={1} style={[s.backTitle,{color:theme.text}]}>{tabLabel(state.settings.language,tab)}</Text><View style={s.backSpacer}/></View>}{serverGameplayEnabled&&online.pending?<View style={{paddingHorizontal:12}}><GameButton title={appText(languageRef.current,"Retry pending action")} disabled={online.busy} onPress={()=>perform()}/></View>:null}{onlineActionError?<View style={{paddingHorizontal:12,paddingVertical:6}}><ActionFeedback tone="error" message={onlineActionError} compact actionLabel={appText(state.settings.language,'Close')} onAction={()=>setOnlineActionError('')}/></View>:null}<View style={s.body} {...backSwipe.panHandlers}>
     {mainTabGuide&&!mainScreenTour&&!visibleTutorialStep?<SectionGuide scope={auth.session?.user.id??state.character.id} area="main" section={tab} guide={mainTabGuide} showReplay={false}/>:null}
     {tab==='Home'&&<HomeScreen onOpenGuide={()=>{setTab('Settings');setSettingsSection('guide')}} state={state} preview={preview} nowMs={now} onOpenContracts={()=>openQuestMode('contracts')} onNavigateGoal={openWorkingTowardDestination} onOpenCombat={()=>setTab('Combat')} onOpenSkill={skillId=>{setSelectedSkill(skillId);setSkillsMode(skillId==='faith'?'faith':['mining','woodcutting','fishing','herbalism','exploration'].includes(skillId)?'gathering':'crafting');setTab('Skills')}} onNavigate={destination=>{if(destination==='Skills')setSelectedSkill(undefined);if(destination==='Quests'){openQuestMode('story');return;}setTab(destination)}} onQueueRemove={index=>mutateActionQueue({type:'queue_remove',args:{index}})} onQueueMove={(index,direction)=>mutateActionQueue({type:'queue_move',args:{index,direction}})} onQueueClear={()=>mutateActionQueue({type:'queue_clear'})} onQueueStart={()=>mutateActionQueue({type:'queue_start'},true)} onSetCurrentHandoff={()=>{const id=stateRef.current?.activity?.targetId;if(id)void submitHomeQueueCommand({type:'queue_set_goal',args:{id,goal:{kind:'duration_seconds',value:14400}}});}} onQueueAdd={(entry,handoff)=>submitHomeQueueCommand({type:'queue_add',args:{kind:entry.kind,id:entry.targetId,...(entry.combatTacticId?{tacticId:entry.combatTacticId}:{}),...(entry.huntGoalId?{goalId:entry.huntGoalId}:{}),...(entry.faithPracticeCount?{count:entry.faithPracticeCount}:{}),...(entry.goal?{goal:entry.goal}:{}),...(handoff?.goal?{handoffGoal:handoff.goal,handoffTargetId:handoff.targetId}:{}),...(handoff?.keepCurrentRunning?{keepCurrentRunning:true}:{})}})} onClaim={()=>{if(serverGameplayEnabled){void perform({type:'claim'});return;}const result=claimActivity(state,Date.now());commit(result.state);presentCollected(result.reward,state.activity,state,result.state)}} onStop={()=>changeActivity()}/>}
     {tab==='Combat'&&<CombatScreen state={state} onCommand={runCompanionCommand} initialMonsterId={goalMonsterId} onChangeRegion={()=>setTab('World')} onStart={(id,tacticId,goalId)=>changeActivity({kind:'combat',id,...(tacticId?{tacticId}: {}),...(goalId?{goalId}: {})})} onQueue={(id,tacticId,goalId)=>queueActivity({kind:'combat',targetId:id,...(tacticId?{combatTacticId:tacticId}:{}),...(goalId?{huntGoalId:goalId}:{})})} onQueueRemove={index=>mutateActionQueue({type:'queue_remove',args:{index}})} onQueueMove={(index,direction)=>mutateActionQueue({type:'queue_move',args:{index,direction}})} onQueueClear={()=>mutateActionQueue({type:'queue_clear'})} onQueueStart={()=>mutateActionQueue({type:'queue_start'},true)} onBoss={()=>{const now=Date.now();if(serverGameplayEnabled){void perform({type:'boss'}).then(result=>{if(!result)return;if(result.storyBossBattle){setStoryBossBattle({battle:result.storyBossBattle,message:result.message??(result.won?'Victory':'Defeat')});return;}showAlert(result.won?'Victory':'Not ready',result.message)});return;}const settled=claimActivity(state,now);const result=challengeFallenKnight(settled.state,now);void commit(result.state);if(result.battle){setStoryBossBattle({battle:result.battle,message:result.message});return;}showAlert(ot(state.settings.language,result.won?'combat.victory':'combat.notReady'),result.message)}}/>}
@@ -660,7 +697,7 @@ const next=normalizeProfileIcon(candidate);queuePreparationNotices(current,next)
     {tab==='RewardsInbox'&&<RewardsInboxScreen state={state} online={serverGameplayEnabled} onRefresh={async()=>online.refresh()} onEventClaim={async id=>{if(serverGameplayEnabled){if(!await perform({type:'event_reward',args:{id}},false))throw new Error('Event reward was not confirmed.');return;}const result=executeGameCommand(state,{type:'event_reward',args:{id}},Date.now());await commit(result.state)}}/>}
     {tab==='AccountBonuses'&&<AccountBonusesScreen state={state}/>}
     {tab==='MasteryHall'&&<MasteryHallScreen state={state} onOpenSkill={skillId=>{setSelectedSkill(skillId);setSkillsMode(['mining','woodcutting','fishing','herbalism'].includes(skillId)?'gathering':'crafting');setTab('Skills')}} onNavigate={openWorkingTowardDestination} onProfile={()=>{setProfileCustomizeSection('Identity');setTab('ProfileCustomize')}}/>}
-    {tab==='Companions'&&<CompanionsScreen state={state} language={state.settings.language} now={now} onCommand={runCompanionCommand} onCreate={()=>setCreatingRoster(true)} onNavigateSource={source=>{
+    {tab==='Companions'&&<CompanionsScreen state={state} language={state.settings.language} now={now} onCommand={runCompanionCommand} onCreate={()=>setCreatingRoster(true)} initialNavigation={companionNavigationMemory.current?.characterId===state.character.id?companionNavigationMemory.current.context:undefined} onNavigationChange={context=>{companionNavigationMemory.current={characterId:state.character?.id??'',context};}} onNavigateSource={source=>{
       if(source.kind==='combat'){const currentZone=WORLD_ZONES.find(zone=>zone.id===state.currentRegionId)?.name;setTab(currentZone===source.zoneName?'Combat':'World');return;}
       if(source.kind==='crafting'){setSelectedSkill(source.skillId as SkillId);setSkillsMode('crafting');setTab('Skills');return;}
       if(source.kind==='gathering'){setSelectedSkill(source.skillId as SkillId);setSkillsMode('gathering');setTab('Skills');return;}
@@ -669,10 +706,10 @@ const next=normalizeProfileIcon(candidate);queuePreparationNotices(current,next)
     {tab==='Activity'&&<ActivityOverviewScreen state={state} now={now} onSwitch={id=>{if(serverGameplayEnabled){void perform({type:'roster_switch',args:{id}});return;}void runCompanionCommand({type:'roster_switch',args:{id}})}} onCreate={()=>setCreatingRoster(true)} onDelete={async(id,confirmation)=>{if(serverGameplayEnabled){if(!await perform({type:'roster_delete',args:{id,confirmation}}))throw new Error('Character deletion was not confirmed.');return;}const current=stateRef.current;if(!current)throw new Error('Load your character first.');const result=executeGameCommand(current,{type:'roster_delete',args:{id,confirmation}},Date.now());await commit(result.state)}}/>}
     {tab==='Character'&&<CharacterScreen state={state} onEquip={async itemId=>{if(serverGameplayEnabled){await perform({type:'equip',args:{id:itemId}});return;}await commit(equipItem(state,itemId))}} onProfile={()=>{setProfileCustomizeSection('Appearance');setTab('ProfileCustomize')}} onCompanions={()=>setTab('Companions')} loadouts={<SavedLoadoutsPanel state={state} onChange={commit} onCommand={runCompanionCommand}/>} onUpgrade={async itemId=>{if(serverGameplayEnabled){await perform({type:'upgrade',args:{id:itemId}});return;}try{const attempt=attemptEquipmentUpgrade(state,itemId);await commit(attempt.state);}catch(error){showAlert('Cannot upgrade',error instanceof Error?error.message:'Please try again.')}}} onSocket={async (itemId,gemId)=>{if(serverGameplayEnabled){await perform({type:'socket',args:{id:itemId,gemId}});return;}try{await commit(socketGem(state,itemId,gemId))}catch(error){showAlert('Cannot socket gem',error instanceof Error?error.message:'Please try again.')}}} onReplaceGem={async (itemId,gemId)=>{if(serverGameplayEnabled){await perform({type:'replace_socket',args:{id:itemId,gemId}});return;}try{await commit(replaceGem(state,itemId,gemId))}catch(error){showAlert('Cannot replace gem',error instanceof Error?error.message:'Please try again.')}}} onUnsocket={async (itemId,index)=>{if(serverGameplayEnabled){await perform({type:'unsocket',args:{id:itemId,index}});return;}try{await commit(unsocketGem(state,itemId,index))}catch(error){showAlert('Cannot extract gem',error instanceof Error?error.message:'Please try again.')}}} onGemRefine={async (familyId,grade)=>{if(serverGameplayEnabled){await perform({type:'gem_refine',args:{familyId,grade}});return;}try{await commit(startGemRefinement(state,gemRefineRecipeIdV1(familyId,grade),Date.now()).state)}catch(error){showAlert('Cannot refine gem',error instanceof Error?error.message:'Please try again.')}}} onGemCombine={async (familyId,grade)=>{if(serverGameplayEnabled){await perform({type:'gem_combine',args:{familyId,grade}});return;}try{await commit(startGemCombine(state,gemCombineRecipeIdV1(familyId,grade),Date.now()).state)}catch(error){showAlert('Cannot combine gems',error instanceof Error?error.message:'Please try again.')}}} onGemDismantle={async (gemId,quantity)=>{if(serverGameplayEnabled){await perform({type:'gem_dismantle',args:{gemId,quantity}});return;}try{await commit(dismantleGemV1(state,gemId,quantity))}catch(error){showAlert('Cannot dismantle gem',error instanceof Error?error.message:'Please try again.')}}} onGemCacheClaim={async familyId=>{if(serverGameplayEnabled){await perform({type:'resonance_cache_claim',args:{familyId}});return;}try{await commit(claimResonanceCacheV1(state,familyId,Date.now()))}catch(error){showAlert('Cannot claim Resonance Cache',error instanceof Error?error.message:'Please try again.')}}} onInventory={()=>setTab('Inventory')} onSave={()=>serverGameplayEnabled?online.refresh():repo.save(state)} onUnequip={async slot=>{if(serverGameplayEnabled){if(!await perform({type:'unequip',args:{slot}}))throw new Error('Equipment change was not confirmed.');}else await commit(unequipItem(state,slot));}} onCrafting={()=>{setSkillsMode('novice');setTab('Skills')}} onEquipSet={async()=>{if(serverGameplayEnabled){if(!await perform({type:'equip_set'}))throw new Error('Set equip was not confirmed.');return;}const settled=claimActivity(state,Date.now());const next=equipNoviceSet(settled.state);await commit(next);}}><ProfileEditor key={profileAttentionScope} state={state} onChange={commit} onCommand={runCompanionCommand} onSaveNameStyle={saveNameStyle}/></CharacterScreen>}
     {tab==='Friends'&&<FriendsScreen onNotificationsChanged={()=>void refreshSocialNotifications()}/>}
-    {(tab==='Social'||tab==='Party')&&<SocialScreen initialTab={socialInitialTab} characterLevel={state.character?.level??0} partyUnlocked={earlyFeatureUnlocked(state,'party')} onGuild={()=>setTab('Guild')} onAccount={()=>setTab('Settings')} onInvitationsChanged={()=>void refreshSocialNotifications()}/>}
+    {(tab==='Social'||tab==='Party')&&<SocialScreen initialTab={socialInitialTab} onTabChange={setSocialInitialTab} characterLevel={state.character?.level??0} partyUnlocked={earlyFeatureUnlocked(state,'party')} onGuild={()=>setTab('Guild')} onAccount={()=>setTab('Settings')} onInvitationsChanged={()=>void refreshSocialNotifications()}/>}
     {tab==='Events'&&<EventScreen state={state} onChange={commit} onCommand={serverGameplayEnabled?command=>perform(command,false).then(Boolean):undefined} authoritativeGuildPve={serverGameplayEnabled} onOpenEventActivity={source=>{if(source==='combat'){setTab('Combat');return;}setSelectedSkill(undefined);setSkillsMode(source==='gathering'?'gathering':'crafting');setTab('Skills')}} onOpenGuildEventBoss={()=>{setGuildInitialPve(true);setTab('Guild')}} onOpenSeasonalExpedition={coopOnlineConfigured?liveEventId=>{setPendingEventLiveId(liveEventId);setTab('Coop')}:undefined}/>}
     {tab==='Guild'&&<GuildScreen onOpenChat={()=>{setChatInitialChannel('guild');setShowChatOverlay(true)}} onRecruitment={()=>{setSocialInitialTab('guild');setTab('Social')}} online={serverGameplayEnabled} membershipRevision={guildMembershipRevision} state={state} onChange={commit} initialPve={guildInitialPve} onInitialPveHandled={()=>setGuildInitialPve(false)} onlineManagement={<OnlineGuildManagement onApplicationsChanged={()=>{void refreshSocialNotifications();setGuildMembershipRevision(value=>value+1)}}/>} onlineBoard={<OnlineGuildNoticeBoardPanel/>} onlineProjects={<OnlineGuildProjectsPanel onRewardsChanged={()=>online.refresh()}/>} onTokenRewardsChanged={()=>online.refresh()} onlinePve={<OnlineGuildPve initialEncounterKind={guildInitialPve?'event':'weekly'} state={state} onCombat={()=>setTab('Combat')} onRewardsChanged={()=>online.refresh()} authoritative={serverGameplayEnabled} numberMode={state.settings.numberMode}/>} onlineChat={<GuildChat language={state.settings.language} currentPlayerName={state.character?.name} unlockedEmoteIds={state.account.unlockedEmoteIds} trayIds={state.settings.chatEmoteTrayIds} bodyPresentation={state.character?.bodyPresentation} onTrayChange={ids=>commit({...state,settings:{...state.settings,chatEmoteTrayIds:ids}})} firstUnreadMessageId={notificationCounts.guildFirstUnreadMessageId} onRead={()=>void refreshSocialNotifications()}/>} onlineChatUnread={notificationCounts.guildChatUnread} onlineChatMentions={notificationCounts.guildChatMentions} onlineHall={<OnlineGuildHallPanel/>} onlineCustomize={<OnlineGuildCustomizationPanel/>}/>}
-    {tab==='Settings'&&<SettingsScreen onOpenUpdates={()=>setShowWhatsNew(true)} initialSection={settingsSection} onStartMainScreenTour={()=>{setSettingsSection(undefined);setMainScreenTourIndex(0);setTab('Home')}} onNavigateGuide={destination=>{if(destination==='Skills')setSelectedSkill(undefined);setTab(destination)}} online={serverGameplayEnabled} state={state} onChange={commit} onRefreshCommerce={serverGameplayEnabled?online.refreshCommerce:undefined} onRedeemCode={serverGameplayEnabled?async code=>{const message=await redeemCode(code);await online.refresh();return message}:undefined} onExport={exportSave} onImport={importSave} onOpenCoopUiGallery={__DEV__?()=>setShowCoopUiGallery(true):undefined} onLanguage={language=>commit({...state,settings:{...state.settings,language}})} onReset={()=>serverGameplayEnabled?showAlert('Online save','Your online character is saved on the server.'):showAlert('Reset local save?','This deletes prototype progress only.',[{text:'Cancel'},{text:'Reset',style:'destructive',onPress:async()=>{await repo.reset();setState(newGame(Date.now()));setCurrentTab('Home');setTabHistory([])}}])}/>}
+    {tab==='Settings'&&<SettingsScreen onOpenUpdates={()=>setShowWhatsNew(true)} initialSection={settingsSection} onSectionChange={setSettingsSection} onStartMainScreenTour={()=>{setSettingsSection(undefined);setMainScreenTourIndex(0);setTab('Home')}} onNavigateGuide={destination=>{if(destination==='Skills')setSelectedSkill(undefined);setTab(destination)}} online={serverGameplayEnabled} state={state} onChange={commit} onRefreshCommerce={serverGameplayEnabled?online.refreshCommerce:undefined} onRedeemCode={serverGameplayEnabled?async code=>{const message=await redeemCode(code);await online.refresh();return message}:undefined} onExport={exportSave} onImport={importSave} onOpenCoopUiGallery={__DEV__?()=>setShowCoopUiGallery(true):undefined} onLanguage={language=>commit({...state,settings:{...state.settings,language}})} onReset={()=>serverGameplayEnabled?showAlert('Online save','Your online character is saved on the server.'):showAlert('Reset local save?','This deletes prototype progress only.',[{text:'Cancel'},{text:'Reset',style:'destructive',onPress:async()=>{await repo.reset();setState(newGame(Date.now()));setCurrentTab('Home');setTabHistory([])}}])}/>}
     {tab==='More'&&<MoreScreen onOpenUpdates={()=>setShowWhatsNew(true)} newReleaseAvailable={hasUnseenUpdate} language={state.settings.language} onNavigate={destination=>{if(destination==='Quests'){openQuestMode('story');return;}if(destination==='Store'){setTab('Settings');setSettingsSection('store');return;}setTab(destination)}} lockedDestinations={lockedAccountDestinations} companionUnlocked={companionsUnlocked} companionAttention={earlyFeatureUnlocked(state,'companions')&&companionAttention.hasAttention} dailySuppliesAttention={dailySuppliesReady} storyRewardCount={storyClaimCount} friendRequestCount={notificationCounts.friendRequests} guildAttentionCount={notificationCounts.guild} socialAttentionCount={notificationCounts.partyInvites+notificationCounts.chatUnread} profileAttention={profileAttentionKeys.length>0} onOpenAdminQa={adminQa||(__DEV__&&!serverGameplayEnabled)?()=>setShowAdminQa(true):undefined}/>}
     {tab==='Arena'&&<ArenaScreen state={state} onChange={candidate=>void commit(candidate)} onCommand={serverGameplayEnabled?command=>void perform(command):undefined}/>}
     {RANKINGS_RELEASED&&tab==='Rankings'&&<RankingsScreen/>}

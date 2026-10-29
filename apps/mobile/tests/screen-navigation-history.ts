@@ -1,0 +1,22 @@
+import {rememberScreen,returnToPreviousScreen,type ScreenHistoryEntry} from '../src/core/screen-navigation-history';
+type Screen='Home'|'Skills'|'Settings'|'Companions'|'World';
+type Context={skill?:string;section?:string};
+const entry=(route:Screen,context:Context={}):ScreenHistoryEntry<Screen,Context>=>({route,context});
+function ok(value:unknown,message:string){if(!value)throw new Error(message);}
+let history:ScreenHistoryEntry<Screen,Context>[]=[];
+history=rememberScreen(history,entry('Home'),'Skills');
+history=rememberScreen(history,entry('Skills',{skill:'smithing'}),'Settings');
+history=rememberScreen(history,entry('Settings',{section:'guide'}),'World');
+const one=returnToPreviousScreen(history,'World');
+ok(one.previous?.route==='Settings'&&one.previous.context.section==='guide','Back restores the selected Settings section');
+const two=returnToPreviousScreen(one.remaining,'Settings');
+ok(two.previous?.route==='Skills'&&two.previous.context.skill==='smithing','Back restores the chosen skill');
+ok(returnToPreviousScreen(two.remaining,'Skills').previous?.route==='Home','Back returns to Home');
+ok(returnToPreviousScreen([],'Home').previous===undefined,'Empty history leaves Home unchanged');
+ok(rememberScreen(history,entry('World'),'World').length===history.length,'Re-selecting a tab cannot add a redundant entry');
+const skip=returnToPreviousScreen(history,'World',route=>route!=='Settings');
+ok(skip.previous?.route==='Skills'&&skip.remaining.length===1,'Locked routes are skipped without corrupting history');
+let bounded:ScreenHistoryEntry<Screen,Context>[]=[];
+for(let i=0;i<42;i++)bounded=rememberScreen(bounded,entry(i%2?'Home':'World'),i%2?'World':'Home');
+ok(bounded.length===24,'History remains bounded at 24 entries');
+console.log('PASS navigation history retains local context, skips inaccessible routes, and remains bounded');

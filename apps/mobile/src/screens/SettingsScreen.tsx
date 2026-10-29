@@ -27,6 +27,7 @@ import type {GameGuideId,GameGuideDestination} from '../core/onboarding';
 
 type Props={
   initialSection?:SettingsSection;
+  onSectionChange?:(section:SettingsSection|undefined)=>void;
   onNavigateGuide?:(destination:GameGuideDestination)=>void;
   onStartMainScreenTour?:()=>void;
   onOpenUpdates?:()=>void;
@@ -41,7 +42,7 @@ type Props={
   onRedeemCode?:(code:string)=>Promise<string|void>|string|void;
   onOpenCoopUiGallery?:()=>void;
 };
-type SettingsSection='gameplay'|'chat'|'appearance'|'accessibility'|'account'|'store'|'data'|'guide'|'developer';
+export type SettingsSection='gameplay'|'chat'|'appearance'|'accessibility'|'account'|'store'|'data'|'guide'|'developer';
 const DISCORD_INVITE_URL='https://discord.gg/Db83APvP5y';
 const PRIVACY_POLICY_URL='https://elroynbenjamins.github.io/veldryn/privacy/';
 const openExternal=(url:string)=>{void Linking.openURL(url)};
@@ -62,12 +63,15 @@ function RedeemCodePanel({language,onRedeemCode}:{language:Language;onRedeemCode
  return <Panel><Text style={[s.title,{color:C.text}]}>{a('Redeem code')}</Text><Text style={[s.sub,{color:C.muted}]}>{a('Enter a promotional code from an official VELDRYN announcement or event.')}</Text><View style={s.redeemRow}><TextInput accessibilityLabel={a('Redeem code')} autoCapitalize="characters" autoCorrect={false} value={code} onChangeText={value=>{setCode(value.replace(/\s/g,''));setStatus('')}} placeholder={a('ENTER CODE')} placeholderTextColor={C.muted} style={[s.codeInput,{color:C.text,borderColor:C.line,backgroundColor:C.inputBg}]}/><GameButton compact title={busy?a('Checking…'):a('Redeem')} disabled={!code.trim()||busy} onPress={()=>redeem()}/></View>{status?<Text accessibilityLiveRegion="polite" style={[s.redeemStatus,{color:onRedeemCode?C.info:C.muted}]}>{status}</Text>:null}</Panel>;
 }
 
-export function SettingsScreen({state,onLanguage,onReset,onChange,onRefreshCommerce,onExport,onImport,onRedeemCode,onOpenCoopUiGallery,onOpenUpdates,initialSection,onNavigateGuide,onStartMainScreenTour,online=false}:Props){
+export function SettingsScreen({state,onLanguage,onReset,onChange,onRefreshCommerce,onExport,onImport,onRedeemCode,onOpenCoopUiGallery,onOpenUpdates,initialSection,onSectionChange,onNavigateGuide,onStartMainScreenTour,online=false}:Props){
  const language=state.settings.language;
  const a=(text:string,params?:Record<string,string|number>)=>accountText(language,text,params);
 
   const theme=useGameTheme(),s=useMemo(()=>makeStyles(theme),[theme]);
-  const [selectedSection,setSection]=useState<SettingsSection|null>(initialSection??null);
+  const [selectedSection,setSelectedSection]=useState<SettingsSection|null>(initialSection??null);
+  const setSection=(section:SettingsSection|null)=>{setSelectedSection(section);onSectionChange?.(section??undefined);};
+  // Restore a category when returning from a linked page; also honor Android Back from the app shell.
+  useEffect(()=>{setSelectedSection(initialSection??null);},[initialSection]);
   const [guideId,setGuideId]=useState<GameGuideId>();
    const [showAfkDetails,setShowAfkDetails]=useState(false),[showEmotes,setShowEmotes]=useState(false),[showActivityControls,setShowActivityControls]=useState(false),[showDeleteControls,setShowDeleteControls]=useState(false);
   const {width}=useWindowDimensions(),phone=width<768;

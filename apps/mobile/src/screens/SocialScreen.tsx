@@ -27,12 +27,13 @@ import {useGameTheme} from '../theme/ThemeContext';
 import {PARTY_UNLOCK_LEVEL} from '../core/feature-unlocks';
 type SocialBoard={cards:RecruitmentCardView[];own:RecruitmentCardView[]};
 const EMPTY_BOARD:SocialBoard={cards:[],own:[]};
-export function SocialScreen({initialTab='party',characterLevel=0,onGuild,onAccount,onInvitationsChanged,partyUnlocked}:{initialTab?:SocialHubTab;characterLevel?:number;partyUnlocked?:boolean;onGuild:()=>void;onAccount:()=>void;onInvitationsChanged?:()=>void}){
+export function SocialScreen({initialTab='party',characterLevel=0,onGuild,onAccount,onInvitationsChanged,partyUnlocked,onTabChange}:{initialTab?:SocialHubTab;characterLevel?:number;partyUnlocked?:boolean;onGuild:()=>void;onAccount:()=>void;onInvitationsChanged?:()=>void;onTabChange?:(tab:SocialHubTab)=>void}){
  const st=useSocialText();
   const language=useGameLanguage();
   const C=useGameTheme(),s=useMemo(()=>makeStyles(C),[C]);
- const social=usePartySocial();const [tab,setTab]=useState<SocialHubTab>(initialTab==='guild'||initialTab==='chat'?initialTab:'party');const [filters,setFilters]=useState({...EMPTY_RECRUITMENT_FILTERS});
- useEffect(()=>{setTab(initialTab==='guild'||initialTab==='chat'?initialTab:'party');setSelected(null);setDraft(null)},[initialTab]);
+ const social=usePartySocial();const [tab,setTab]=useState<SocialHubTab>(initialTab);const [filters,setFilters]=useState({...EMPTY_RECRUITMENT_FILTERS});
+ useEffect(()=>{setTab(initialTab);setSelected(null);setDraft(null)},[initialTab]);
+  useEffect(()=>{onTabChange?.(tab)},[tab,onTabChange]);
  const [guildContext,setGuildContext]=useState<{accountId:string;membership:Awaited<ReturnType<typeof myGuild>>|undefined}|null>(null);
  const guildMembership=guildContext?.accountId===social.accountId?guildContext.membership:undefined;
  const canRecruit=canManageGuild(guildMembership?.role);

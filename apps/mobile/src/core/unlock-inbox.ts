@@ -47,7 +47,7 @@ export function newUnlockInboxEntries(entries:readonly CosmeticUnlockNotice[],at
 export function legacyUnreadUnlockEntries(keys:readonly string[],state:GameState,atMs:number):UnlockInboxEntry[]{
  const icons=new Map(profileIconCollection(state).filter(row=>row.unlocked).map(row=>[row.id,row]));
  const titles=new Map([...PROFILE_TITLES,...JOURNAL_TITLES_V42].map(row=>[row.id,row.name]));
- return normalizeUnlockInbox(keys.flatMap(key=>{
+ return normalizeUnlockInbox(keys.flatMap<UnlockInboxEntry>(key=>{
   const sep=key.indexOf(':');if(sep<1)return [];
   const kind=key.slice(0,sep),id=key.slice(sep+1);
   if(!kinds.has(kind)||!id)return [];

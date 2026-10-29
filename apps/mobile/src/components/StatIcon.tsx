@@ -1,7 +1,7 @@
 import {StyleSheet,View} from 'react-native';
 import {useGameTheme} from '../theme/ThemeContext';
 
-export type StatIconKind='health'|'currentHealth'|'defense'|'attack'|'power'|'critChance'|'critDamage'|'accuracy'|'evasion'|'haste'|'armor'|'ward'|'tenacity'|'potency'|'penetration'|'readiness'|'slots';
+export type StatIconKind='health'|'currentHealth'|'defense'|'attack'|'power'|'critChance'|'critDamage'|'accuracy'|'evasion'|'haste'|'armor'|'ward'|'tenacity'|'potency'|'penetration'|'readiness'|'slots'|'enhance'|'gems'|'sets'|'guide';
 
 export function StatIcon({kind,size=22,muted=false}:{kind:StatIconKind;size?:number;muted?:boolean}){
  const C=useGameTheme(),color=muted?C.muted:C.accent;
@@ -16,6 +16,10 @@ export function StatIcon({kind,size=22,muted=false}:{kind:StatIconKind;size?:num
  if(kind==='evasion'||kind==='haste')return <View accessible={false} style={[s.icon,box]}><View style={[s.chevron,{width:size*.42,height:size*.42,left:size*.12,top:size*.29,borderTopWidth:line,borderRightWidth:line,borderColor:color,transform:[{rotate:'45deg'}]}]}/><View style={[s.chevron,{width:size*.42,height:size*.42,right:size*.12,top:size*.29,borderTopWidth:line,borderRightWidth:line,borderColor:color,transform:[{rotate:'45deg'}]}]}/></View>;
  if(kind==='ward')return <View accessible={false} style={[s.icon,box]}><View style={[s.diamond,stroke,{width:size*.58,height:size*.58,left:size*.21,top:size*.21,borderWidth:line,transform:[{rotate:'45deg'}]}]}/><View style={[s.centerDot,{width:size*.13,height:size*.13,left:size*.435,top:size*.435,borderRadius:size*.065,backgroundColor:color}]}/></View>;
  if(kind==='penetration')return <View accessible={false} style={[s.icon,box]}><View style={[s.arrowShaft,{width:size*.68,height:line,backgroundColor:color,left:size*.12,top:size*.5-line/2}]}/><View style={[s.arrowHead,{width:size*.3,height:size*.3,right:size*.1,top:size*.35,borderTopWidth:line,borderRightWidth:line,borderColor:color,transform:[{rotate:'45deg'}]}]}/></View>;
+ if(kind==='enhance')return <View accessible={false} style={[s.icon,box]}><View style={[s.anvilTop,{width:size*.66,height:line*1.35,backgroundColor:color,left:size*.17,top:size*.61}]}/><View style={[s.anvilBody,{width:size*.42,height:size*.18,backgroundColor:color,left:size*.29,top:size*.7}]}/><View style={[s.hammerHandle,{width:line*1.15,height:size*.66,backgroundColor:color,left:size*.47,top:size*.06,transform:[{rotate:'-42deg'}]}]}/><View style={[s.hammerHead,{width:size*.42,height:line*1.7,backgroundColor:color,left:size*.13,top:size*.14,transform:[{rotate:'-42deg'}]}]}/></View>;
+ if(kind==='gems')return <View accessible={false} style={[s.icon,box]}><View style={[s.gemShape,stroke,{width:size*.5,height:size*.5,left:size*.08,top:size*.24,borderWidth:line,transform:[{rotate:'45deg'}]}]}/><View style={[s.gemShape,stroke,{width:size*.38,height:size*.38,right:size*.08,top:size*.12,borderWidth:line,transform:[{rotate:'45deg'}]}]}/><View style={[s.gemFacet,{width:line,height:size*.27,backgroundColor:color,left:size*.32,top:size*.35,transform:[{rotate:'45deg'}]}]}/></View>;
+ if(kind==='sets')return <View accessible={false} style={[s.icon,box]}><View style={[s.setTile,stroke,{width:size*.42,height:size*.42,left:size*.12,top:size*.12,borderWidth:line}]}/><View style={[s.setTile,stroke,{width:size*.42,height:size*.42,right:size*.12,bottom:size*.12,borderWidth:line}]}/><View style={[s.setLink,{width:size*.3,height:line,backgroundColor:color,left:size*.35,top:size*.5-line/2,transform:[{rotate:'45deg'}]}]}/></View>;
+ if(kind==='guide')return <View accessible={false} style={[s.icon,box]}><View style={[s.bookPage,stroke,{width:size*.58,height:size*.68,left:size*.17,top:size*.15,borderWidth:line,borderTopLeftRadius:size*.05,borderBottomLeftRadius:size*.05}]}/><View style={[s.bookSpine,{width:line,height:size*.6,backgroundColor:color,left:size*.5-line/2,top:size*.19}]}/><View style={[s.bookLine,{width:size*.16,height:line,backgroundColor:color,left:size*.27,top:size*.39}]}/><View style={[s.bookLine,{width:size*.16,height:line,backgroundColor:color,right:size*.27,top:size*.55}]}/></View>;
  return <View accessible={false} style={[s.icon,box]}><View style={[s.gridCell,stroke,{left:size*.12,top:size*.12,width:size*.31,height:size*.31,borderWidth:line}]}/><View style={[s.gridCell,stroke,{right:size*.12,top:size*.12,width:size*.31,height:size*.31,borderWidth:line}]}/><View style={[s.gridCell,stroke,{left:size*.12,bottom:size*.12,width:size*.31,height:size*.31,borderWidth:line}]}/><View style={[s.gridCell,stroke,{right:size*.12,bottom:size*.12,width:size*.31,height:size*.31,borderWidth:line}]}/></View>;
 }
 
@@ -28,5 +32,9 @@ const s=StyleSheet.create({
  targetOuter:{position:'absolute'},targetInner:{position:'absolute'},
  chevron:{position:'absolute'},diamond:{position:'absolute'},
  arrowShaft:{position:'absolute',borderRadius:99},arrowHead:{position:'absolute'},
+ anvilTop:{position:'absolute',borderRadius:99},anvilBody:{position:'absolute',borderRadius:2},hammerHandle:{position:'absolute',borderRadius:99},hammerHead:{position:'absolute',borderRadius:2},
+ gemShape:{position:'absolute'},gemFacet:{position:'absolute',borderRadius:99},
+ setTile:{position:'absolute',borderRadius:3},setLink:{position:'absolute',borderRadius:99},
+ bookPage:{position:'absolute'},bookSpine:{position:'absolute',borderRadius:99},bookLine:{position:'absolute',borderRadius:99},
  gridCell:{position:'absolute',borderRadius:2},
 });

@@ -57,7 +57,7 @@ import {ProfileEditor} from './src/components/ProfileEditor';
 import {RewardPopup} from './src/components/RewardPopup';
 import type {CustomizationUnlockEntry} from './src/components/CustomizationUnlockPopup';
 import {NewUnlocksScreen} from './src/screens/NewUnlocksScreen';
-import {legacyUnreadUnlockEntries,markUnlockInboxSeen,mergeUnlockInbox,newUnlockInboxEntries,type UnlockInboxEntry} from './src/core/unlock-inbox';
+import {legacyUnreadUnlockEntries,markUnlockInboxSeen,mergeUnlockInbox,newUnlockInboxEntries,unreadUnlockCount,type UnlockInboxEntry} from './src/core/unlock-inbox';
 import {addUnlockInboxEntries,loadUnlockInbox,markUnlockInboxRead} from './src/storage/unlock-inbox';
 import {FeatureUnlockPopup} from './src/components/FeatureUnlockPopup';
 import {FirstSessionTutorialPopup} from './src/components/FirstSessionTutorialPopup';
@@ -137,8 +137,7 @@ import {fetchActiveEventRuntime} from './src/online/live-events';
 import {EVENTS_RELEASED,RANKINGS_RELEASED} from './src/core/release-flags';
 import {onlineConfigured} from './src/online/supabase';
 import {newlyUnlockedProfileRewards} from './src/core/profile-customization';
-import {mergeProfileAttentionKeys} from './src/core/profile-attention';
-import {addProfileAttentionKeys,clearProfileAttentionKeys,loadProfileAttentionKeys} from './src/storage/profile-attention';
+import {clearProfileAttentionKeys,loadProfileAttentionKeys} from './src/storage/profile-attention';
 import {firstSessionTutorialStep,type FirstSessionTutorialId} from './src/core/first-session-tutorial';
 import {MAIN_SCREEN_TOUR,mainScreenTourStep} from './src/core/main-screen-tour';
 import {TutorialHighlightProvider} from './src/components/TutorialBeacon';
@@ -216,7 +215,6 @@ function VeldrynApp(){
   const [storyBossBattle,setStoryBossBattle]=useState<{battle:FallenKnightBattleResult;message:string}|null>(null);
   const [masteryNotices,setMasteryNotices]=useState<RewardProgressionMoment[]>([]);
   const [preparationNotices,setPreparationNotices]=useState<RecipePreparationTransitionNotice[]>([]);
-  const [profileAttentionKeys,setProfileAttentionKeys]=useState<string[]>([]);
   const [profileCustomizeDirty,setProfileCustomizeDirty]=useState(false);
   const [profileDiscardAction,setProfileDiscardAction]=useState<(()=>void)|null>(null);
   const [profileCustomizeSection,setProfileCustomizeSection]=useState<'Appearance'|'Identity'>('Appearance');
@@ -442,20 +440,18 @@ function VeldrynApp(){
   const tutorialStep=useMemo(()=>state?.character?firstSessionTutorialStep(state,tutorialCompleted):undefined,[state,tutorialCompleted]);
   const visibleTutorialStep=tutorialStep?.id===tutorialDismissedId?undefined:tutorialStep;
   const mainScreenTour=mainScreenTourIndex===undefined?undefined:mainScreenTourStep(mainScreenTourIndex);
-  useEffect(()=>{if(!state)return;let active=true;setUnlockInboxLoaded(false);setUnlockInbox([]);setProfileAttentionKeys([]);
-    void Promise.all([loadProfileAttentionKeys(profileAttentionScope),loadUnlockInbox(profileAttentionScope)]).then(([keys,stored])=>{
-      if(!active)return;
-      setProfileAttentionKeys(current=>mergeProfileAttentionKeys(keys,current));
+  useEffect(()=>{if(!state)return;let active=true;setUnlockInboxLoaded(false);setUnlockInbox([]);
+    void (async()=>{
+      const [keys,stored]=await Promise.all([loadProfileAttentionKeys(profileAttentionScope),loadUnlockInbox(profileAttentionScope)]);
       const legacy=legacyUnreadUnlockEntries(keys,state,Date.now());
-      setUnlockInbox(current=>mergeUnlockInbox(mergeUnlockInbox(stored,legacy),current));
-      if(legacy.length)void addUnlockInboxEntries(profileAttentionScope,legacy).catch(()=>{});
-    }).catch(()=>{}).finally(()=>{if(active)setUnlockInboxLoaded(true)});
+      // Migrate older local unread markers only after the inbox write succeeds.
+      if(legacy.length){try{await addUnlockInboxEntries(profileAttentionScope,legacy);await clearProfileAttentionKeys(profileAttentionScope)}catch{/* Retain old markers for a future migration attempt. */}}
+      if(active)setUnlockInbox(current=>mergeUnlockInbox(mergeUnlockInbox(stored,legacy),current));
+    })().catch(()=>{}).finally(()=>{if(active)setUnlockInboxLoaded(true)});
     return()=>{active=false};
   },[profileAttentionScope,!!state]);
   useEffect(()=>{if(tab!=='NewUnlocks'||!unlockInboxLoaded)return;
-    setProfileAttentionKeys([]);
     setUnlockInbox(current=>markUnlockInboxSeen(current));
-    void clearProfileAttentionKeys(profileAttentionScope).catch(()=>{});
     void markUnlockInboxRead(profileAttentionScope).catch(()=>{});
   },[tab,profileAttentionScope,unlockInboxLoaded]);
   const syncLiveEventRuntime=useCallback(async()=>{if(!EVENTS_RELEASED||!onlineConfigured)return;try{const runtime=await fetchActiveEventRuntime();const current=stateRef.current;if(!current)return;const before=current.account.liveEvent??null,nextRuntime=runtime??null;if(JSON.stringify(before)!==JSON.stringify(nextRuntime)){const next={...current,account:{...current.account,liveEvent:runtime}};stateRef.current=next;setState(next);}
@@ -518,10 +514,7 @@ function VeldrynApp(){
     const entries=newUnlockInboxEntries([...profile,...icons],Date.now()).map(row=>viewing?{...row,seen:true}:row);
     setUnlockInbox(current=>mergeUnlockInbox(current,entries));
     void addUnlockInboxEntries(scope,entries).catch(()=>{});
-    if(!viewing){const keys=entries.map(row=>row.key);
-      setProfileAttentionKeys(current=>mergeProfileAttentionKeys(current,keys));
-      void addProfileAttentionKeys(scope,keys).catch(()=>{});
-    }
+
   }
   async function perform(command?:GameCommand,presentRewards=true,welcomeBack=false,silentFailure=false){if(welcomeBack)setOfflineSettling(true);try{
     const before=stateRef.current,result=await online.execute(command);
@@ -727,7 +720,7 @@ const next=normalizeProfileIcon(migrateGemPouch(candidate));queuePreparationNoti
     {key:'daily-supplies-ready',kind:'account_action',unread:dailySuppliesReady},
     {key:'equipment-crafts-ready',kind:'equipment_craft_ready',count:equipmentForge.ready,unread:equipmentForge.ready>0},
     {key:'incoming-friend-requests',kind:'friend_request',count:friendsUnlocked?notificationCounts.friendRequests:0,unread:friendsUnlocked&&notificationCounts.friendRequests>0},
-    {key:'profile-customization-review',kind:'profile_customization',unread:profileAttentionKeys.length>0},
+    {key:'profile-customization-review',kind:'profile_customization',unread:unreadUnlockCount(unlockInbox)>0},
     {key:'unread-social-chat',kind:'chat_unread',count:socialUnlocked?notificationCounts.chatUnread:0,unread:socialUnlocked&&notificationCounts.chatUnread>0},
     {key:'pending-guild-applications',kind:'guild_application',count:guildUnlocked?notificationCounts.guildApplications:0,unread:guildUnlocked&&notificationCounts.guildApplications>0},
     {key:'pending-guild-invites',kind:'guild_invite',count:guildUnlocked?notificationCounts.guildInvites:0,unread:guildUnlocked&&notificationCounts.guildInvites>0},
@@ -774,7 +767,7 @@ const next=normalizeProfileIcon(migrateGemPouch(candidate));queuePreparationNoti
     {tab==='Guild'&&<GuildScreen onOpenChat={()=>{setChatInitialChannel('guild');setShowChatOverlay(true)}} onRecruitment={()=>{setSocialInitialTab('guild');setTab('Social')}} online={serverGameplayEnabled} membershipRevision={guildMembershipRevision} state={state} onChange={commit} initialPve={guildInitialPve} onInitialPveHandled={()=>setGuildInitialPve(false)} onlineManagement={<OnlineGuildManagement onApplicationsChanged={()=>{void refreshSocialNotifications();setGuildMembershipRevision(value=>value+1)}}/>} onlineBoard={<OnlineGuildNoticeBoardPanel/>} onlineProjects={<OnlineGuildProjectsPanel onRewardsChanged={()=>online.refresh()}/>} onTokenRewardsChanged={()=>online.refresh()} onlinePve={<OnlineGuildPve state={state} onCombat={()=>setTab('Combat')} onRewardsChanged={()=>online.refresh()} authoritative={serverGameplayEnabled} numberMode={state.settings.numberMode}/>} onlineChat={<GuildChat language={state.settings.language} currentPlayerName={state.character?.name} unlockedEmoteIds={state.account.unlockedEmoteIds} trayIds={state.settings.chatEmoteTrayIds} bodyPresentation={state.character?.bodyPresentation} onTrayChange={ids=>commit({...state,settings:{...state.settings,chatEmoteTrayIds:ids}})} firstUnreadMessageId={notificationCounts.guildFirstUnreadMessageId} onRead={()=>void refreshSocialNotifications()}/>} onlineChatUnread={notificationCounts.guildChatUnread} onlineChatMentions={notificationCounts.guildChatMentions} onlineHall={<OnlineGuildHallPanel/>} onlineCustomize={<OnlineGuildCustomizationPanel/>}/>}
     {tab==='Settings'&&<SettingsScreen onOpenUpdates={()=>setShowWhatsNew(true)} initialSection={settingsSection} onStartMainScreenTour={()=>{setSettingsSection(undefined);setMainScreenTourIndex(0);setTab('Home')}} onNavigateGuide={destination=>{if(destination==='Skills')setSelectedSkill(undefined);setTab(destination)}} online={serverGameplayEnabled} state={state} onChange={commit} onRefreshCommerce={serverGameplayEnabled?online.refreshCommerce:undefined} onRedeemCode={serverGameplayEnabled?async code=>{const message=await redeemCode(code);await online.refresh();return message}:undefined} onExport={exportSave} onImport={importSave} onOpenCoopUiGallery={__DEV__?()=>setShowCoopUiGallery(true):undefined} onLanguage={language=>commit({...state,settings:{...state.settings,language}})} onReset={()=>serverGameplayEnabled?showAlert('Online save','Your online character is saved on the server.'):showAlert('Reset local save?','This deletes prototype progress only.',[{text:'Cancel'},{text:'Reset',style:'destructive',onPress:async()=>{await repo.reset();setState(newGame(Date.now()));setCurrentTab('Home');setTabHistory([])}}])}/>}
     {tab==='NewUnlocks'&&<NewUnlocksScreen language={state.settings.language} entries={unlockInbox} onBack={()=>setTab('More')} onCustomize={()=>{setProfileCustomizeSection('Identity');setTab('ProfileCustomize')}}/>}
-    {tab==='More'&&<MoreScreen onOpenUpdates={()=>setShowWhatsNew(true)} newReleaseAvailable={hasUnseenUpdate} language={state.settings.language} onNavigate={destination=>{if(destination==='Quests'){openQuestMode('story');return;}if(destination==='Store'){setTab('Settings');setSettingsSection('store');return;}setTab(destination)}} lockedDestinations={lockedAccountDestinations} companionUnlocked={companionsUnlocked} companionAttention={earlyFeatureUnlocked(state,'companions')&&companionAttention.hasAttention} dailySuppliesAttention={dailySuppliesReady} storyRewardCount={storyClaimCount} friendRequestCount={notificationCounts.friendRequests} guildAttentionCount={notificationCounts.guild} socialAttentionCount={notificationCounts.partyInvites+notificationCounts.chatUnread} newUnlockCount={profileAttentionKeys.length} onOpenAdminQa={adminQa||(__DEV__&&!serverGameplayEnabled)?()=>setShowAdminQa(true):undefined}/>}
+    {tab==='More'&&<MoreScreen onOpenUpdates={()=>setShowWhatsNew(true)} newReleaseAvailable={hasUnseenUpdate} language={state.settings.language} onNavigate={destination=>{if(destination==='Quests'){openQuestMode('story');return;}if(destination==='Store'){setTab('Settings');setSettingsSection('store');return;}setTab(destination)}} lockedDestinations={lockedAccountDestinations} companionUnlocked={companionsUnlocked} companionAttention={earlyFeatureUnlocked(state,'companions')&&companionAttention.hasAttention} dailySuppliesAttention={dailySuppliesReady} storyRewardCount={storyClaimCount} friendRequestCount={notificationCounts.friendRequests} guildAttentionCount={notificationCounts.guild} socialAttentionCount={notificationCounts.partyInvites+notificationCounts.chatUnread} newUnlockCount={unreadUnlockCount(unlockInbox)} onOpenAdminQa={adminQa||(__DEV__&&!serverGameplayEnabled)?()=>setShowAdminQa(true):undefined}/>}
     {tab==='Arena'&&<ArenaScreen state={state} onChange={candidate=>void commit(candidate)} onCommand={serverGameplayEnabled?command=>void perform(command):undefined}/>}
     {RANKINGS_RELEASED&&tab==='Rankings'&&<RankingsScreen/>}
     {tab==='Collections'&&<CollectionsScreen state={state} onChange={candidate=>void commit(candidate)}/>}

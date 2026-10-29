@@ -20,8 +20,8 @@ assert(settings.includes("<ConfirmModal visible={confirmStop} busy={stopping}"),
   'Stopping an activity requires a busy-safe confirmation');
 assert(!settings.includes("onPress={()=>onChange({...state,activity:null})}"),
   'The old unsafe direct activity nulling must never return');
-assert(app.includes("onStopActivity={()=>runCompanionCommand({type:'stop'})}"),
-  'Settings must use the online/offline gameplay command for cancellation');
+assert(app.includes("onStopActivity={async()=>{if(serverGameplayEnabled){const result=await perform({type:'stop'},false,false,true)")&&app.includes("await runCompanionCommand({type:'stop'})"),
+  'Settings must settle both online and offline Stop via gameplay commands');
 assert(confirm.includes("dismissOnBackdrop={!busy}")&&confirm.includes("closeDisabled={busy}"),
   'Busy confirmation dialogs must not permit duplicate submissions or dismissal');
 assert(app.includes('selectGlobalPopup({...popupCandidates,blocked:popupBlocked})'),

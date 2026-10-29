@@ -77,13 +77,14 @@ export function SettingsScreen({state,onLanguage,onReset,onChange,onStopActivity
   useEffect(()=>{setSelectedSection(initialSection??null);},[initialSection]);
   const [guideId,setGuideId]=useState<GameGuideId>();
    const [showAfkDetails,setShowAfkDetails]=useState(false),[showEmotes,setShowEmotes]=useState(false),[showActivityControls,setShowActivityControls]=useState(false),[showDeleteControls,setShowDeleteControls]=useState(false);
-  const [confirmStop,setConfirmStop]=useState(false),[stopping,setStopping]=useState(false),[stopError,setStopError]=useState('');
+  const [confirmStop,setConfirmStop]=useState(false),[stopping,setStopping]=useState(false),[stopError,setStopError]=useState(''),[stopFeedback,setStopFeedback]=useState('');
   const stopInFlight=useRef(false);
+  useEffect(()=>{if(!stopFeedback)return;const timeout=setTimeout(()=>setStopFeedback(''),5000);return()=>clearTimeout(timeout)},[stopFeedback]);
   const stopCurrentActivity=async()=>{
     if(stopInFlight.current)return;
     stopInFlight.current=true;setStopping(true);setStopError('');
-    try{await onStopActivity();setConfirmStop(false);setShowActivityControls(false);}
-    catch(error){setConfirmStop(false);setStopError(error instanceof Error?error.message:a('Could not stop activity. Try again.'));}
+    try{await onStopActivity();setConfirmStop(false);setShowActivityControls(false);setStopFeedback(a('Activity stopped. Earned progress has been settled.'));}
+    catch(error){setConfirmStop(false);setStopFeedback('');setStopError(error instanceof Error?error.message:a('Could not stop activity. Try again.'));}
     finally{stopInFlight.current=false;setStopping(false);}
   };
   const {width}=useWindowDimensions(),phone=width<768;
@@ -121,6 +122,7 @@ export function SettingsScreen({state,onLanguage,onReset,onChange,onStopActivity
     </Panel>
     <OnlineAccountPanel state={state}/></>}
     {section==='store'&&<><GooglePlayCommercePanel state={state} online={online} onChange={onChange} onRefreshCommerce={onRefreshCommerce}/><RedeemCodePanel language={language} onRedeemCode={onRedeemCode}/></>}
+    {section==='gameplay'&&stopFeedback?<Text accessibilityLiveRegion="polite" style={[s.sub,{color:theme.good}]}>{stopFeedback}</Text>:null}
     {section==='gameplay'&&<><Panel>
       <View style={s.afkBox}><View style={s.afkHead}><Text style={[s.settingLabel,{color:theme.text,marginTop:0}]}>{a("AFK reserve")}</Text><Text style={[s.afkValue,{color:theme.good}]}>{accountDuration(language,afk.hours*3600)}</Text></View><Pressable accessibilityRole="button" accessibilityState={{expanded:showAfkDetails}} onPress={()=>setShowAfkDetails(value=>!value)} style={({pressed})=>[s.disclosure,pressed&&s.pressed]}><Text style={s.disclosureLabel}>{a("AFK details")}</Text><View style={showAfkDetails?s.disclosureArrowOpen:undefined}><UiIcon name="next" size={18} muted/></View></Pressable>{showAfkDetails?<View style={s.detailStack}><Text style={[s.muted,{color:theme.muted}]}>{a('{base}h base · up to {free}h through progression · {max}h maximum',{base:afk.baseHours,free:afk.freeMaxHours,max:afk.maxHours})}</Text><Text style={[s.muted,{color:theme.muted}]}>{a("Earned milestones include class, quest, boss, guild and character-slot progression through slot #5.")}</Text><Text style={[s.afkPaid,{color:theme.info}]}>{a("Final +6h: VIP +2h · VIP+ +2h extra · Supporter +2h")}</Text></View>:null}</View>
       <Text style={[s.settingLabel,{color:theme.text}]}>{a("Number display")}</Text><View style={s.choices}>{(['abbreviated','exact'] as const).map(mode=><SettingChip key={mode} label={mode==='abbreviated'?a("Abbreviated · 1.2K"):a("Exact · 1,200")} selected={state.settings.numberMode===mode} onPress={()=>update({numberMode:mode})}/>)}</View>

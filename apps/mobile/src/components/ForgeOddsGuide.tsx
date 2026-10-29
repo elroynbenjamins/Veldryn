@@ -8,6 +8,7 @@ import {useGameplayText} from '../i18n/gameplay';
 import {useGameTheme} from '../theme/ThemeContext';
 
 const chanceLabel=(chance:number)=>(chance*100).toFixed(2)+'%';
+const rarityPower=(multiplier:number)=>(Number.isInteger(multiplier)?multiplier.toFixed(0):multiplier.toFixed(2))+'×';
 function statEffect(multiplier:number){
   const percent=Math.round((multiplier-1)*1000)/10;
   return percent===0?'Base':(percent>0?'+':'')+percent+'%';
@@ -48,17 +49,17 @@ export function ForgeOddsGuide({itemId}:{itemId:string}){
       {outcomes.map(outcome=>{
         const meta=rarityMeta(outcome.rarity);
         return <View key={outcome.rarity} accessible style={[s.oddsRow,compact&&s.oddsRowCompact,{borderBottomColor:C.line}]}
-          accessibilityLabel={`${meta.label}: ${chanceLabel(outcome.chance)} chance, ${statEffect(outcome.statMultiplier)} stats`}>
+          accessibilityLabel={`${meta.label}: ${chanceLabel(outcome.chance)} chance, ${rarityPower(outcome.statMultiplier)} stats`}>
           <View style={[s.nameWrap,compact&&s.nameCompact]}>
             <View accessible={false} style={[s.rarityDot,{backgroundColor:meta.color}]}/>
             <Text style={[s.rarity,{color:C.dark?meta.color:meta.lightTextColor}]}>{meta.label}</Text>
           </View>
           {compact?<View style={s.compactMeta}>
             <Text style={[s.value,{color:C.text}]}>{chanceLabel(outcome.chance)} {gt('chance')}</Text>
-            <Text style={[s.statValue,{color:outcome.statMultiplier>1?C.good:C.muted}]}>{statEffect(outcome.statMultiplier)} {gt('stats')}</Text>
+            <Text style={[s.statValue,{color:outcome.statMultiplier>1?C.good:C.muted}]}>{rarityPower(outcome.statMultiplier)} {gt('stats')}</Text>
           </View>:<>
             <Text style={[s.colChance,s.value,{color:C.text}]}>{chanceLabel(outcome.chance)}</Text>
-            <Text style={[s.colStats,s.statValue,{color:outcome.statMultiplier>1?C.good:C.muted}]}>{statEffect(outcome.statMultiplier)}</Text>
+            <Text style={[s.colStats,s.statValue,{color:outcome.statMultiplier>1?C.good:C.muted}]}>{rarityPower(outcome.statMultiplier)}</Text>
           </>}
         </View>;
       })}

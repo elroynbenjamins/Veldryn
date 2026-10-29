@@ -7,6 +7,7 @@ import {BackHandler,Linking,Pressable,ScrollView,StyleSheet,Text,TextInput,View,
 import {UiIcon} from '../components/UiIcon';
 import {DiscordButton} from '../components/DiscordButton';
 import {GameButton} from '../components/GameButton';
+import {ConfirmModal} from '../components/ConfirmModal';
 import {SettingToggle} from '../components/SettingToggle';
 import {Panel} from '../components/Panel';
 import {DeveloperTools} from '../components/DeveloperTools';
@@ -36,6 +37,8 @@ type Props={
   onLanguage:(language:GameState['settings']['language'])=>void;
   onReset:()=>void;
   onChange:(next:GameState)=>void;
+  /** Settles unclaimed progress and refunds reserved resources through the gameplay command. */
+  onStopActivity:()=>Promise<void>;
   onRefreshCommerce?:(expectedAccountId:string)=>Promise<void>;
   onExport:()=>Promise<void>;
   onImport:(raw:string)=>Promise<void>;
@@ -63,7 +66,7 @@ function RedeemCodePanel({language,onRedeemCode}:{language:Language;onRedeemCode
  return <Panel><Text style={[s.title,{color:C.text}]}>{a('Redeem code')}</Text><Text style={[s.sub,{color:C.muted}]}>{a('Enter a promotional code from an official VELDRYN announcement or event.')}</Text><View style={s.redeemRow}><TextInput accessibilityLabel={a('Redeem code')} autoCapitalize="characters" autoCorrect={false} value={code} onChangeText={value=>{setCode(value.replace(/\s/g,''));setStatus('')}} placeholder={a('ENTER CODE')} placeholderTextColor={C.muted} style={[s.codeInput,{color:C.text,borderColor:C.line,backgroundColor:C.inputBg}]}/><GameButton compact title={busy?a('Checking…'):a('Redeem')} disabled={!code.trim()||busy} onPress={()=>redeem()}/></View>{status?<Text accessibilityLiveRegion="polite" style={[s.redeemStatus,{color:onRedeemCode?C.info:C.muted}]}>{status}</Text>:null}</Panel>;
 }
 
-export function SettingsScreen({state,onLanguage,onReset,onChange,onRefreshCommerce,onExport,onImport,onRedeemCode,onOpenCoopUiGallery,onOpenUpdates,initialSection,onSectionChange,onNavigateGuide,onStartMainScreenTour,online=false}:Props){
+export function SettingsScreen({state,onLanguage,onReset,onChange,onStopActivity,onRefreshCommerce,onExport,onImport,onRedeemCode,onOpenCoopUiGallery,onOpenUpdates,initialSection,onSectionChange,onNavigateGuide,onStartMainScreenTour,online=false}:Props){
  const language=state.settings.language;
  const a=(text:string,params?:Record<string,string|number>)=>accountText(language,text,params);
 
@@ -74,6 +77,15 @@ export function SettingsScreen({state,onLanguage,onReset,onChange,onRefreshComme
   useEffect(()=>{setSelectedSection(initialSection??null);},[initialSection]);
   const [guideId,setGuideId]=useState<GameGuideId>();
    const [showAfkDetails,setShowAfkDetails]=useState(false),[showEmotes,setShowEmotes]=useState(false),[showActivityControls,setShowActivityControls]=useState(false),[showDeleteControls,setShowDeleteControls]=useState(false);
+  const [confirmStop,setConfirmStop]=useState(false),[stopping,setStopping]=useState(false),[stopError,setStopError]=useState('');
+  const stopInFlight=useRef(false);
+  const stopCurrentActivity=async()=>{
+    if(stopInFlight.current)return;
+    stopInFlight.current=true;setStopping(true);setStopError('');
+    try{await onStopActivity();setConfirmStop(false);setShowActivityControls(false);}
+    catch(error){setConfirmStop(false);setStopError(error instanceof Error?error.message:a('Could not stop activity. Try again.'));}
+    finally{stopInFlight.current=false;setStopping(false);}
+  };
   const {width}=useWindowDimensions(),phone=width<768;
   const section=phone?selectedSection:selectedSection??'gameplay';
   const navigationStyles=useMemo(()=>makeNavigationStyles(theme),[theme]);
@@ -126,7 +138,7 @@ export function SettingsScreen({state,onLanguage,onReset,onChange,onRefreshComme
         </View>
         <View style={showActivityControls?s.disclosureArrowOpen:undefined}><UiIcon name="next" size={18} muted/></View>
       </Pressable>
-      {showActivityControls?<View style={s.detailStack}><GameButton title={a("Stop current activity")} tone="danger" onPress={()=>onChange({...state,activity:null})}/></View>:null}
+      {showActivityControls?<View style={s.detailStack}>{stopError?<Text accessibilityRole="alert" style={[s.sub,{color:theme.bad}]}>{stopError}</Text>:null}<GameButton title={a("Stop current activity")} tone="danger" disabled={stopping} onPress={()=>{setStopError('');setConfirmStop(true)}}/></View>:null}
     </Panel>:null}
     </>}
     {section==='chat'&&<><Panel>
@@ -184,7 +196,7 @@ export function SettingsScreen({state,onLanguage,onReset,onChange,onRefreshComme
       <Text selectable style={s.sub}>{appBuildText(language,'channel',{channel:APP_BUILD_INFO.releaseChannel})}</Text>
       {APP_BUILD_INFO.sourceCommit?<Text selectable style={s.sub}>{appBuildText(language,'source',{source:APP_BUILD_INFO.sourceCommit})}</Text>:null}
     </View>:null}
-  </ScrollView><GuideTopicModal onOpen={onNavigateGuide?destination=>{setGuideId(undefined);onNavigateGuide(destination)}:undefined} language={language} definition={guideId?guideDefinition(guideId):undefined} visible={!!guideId} onClose={()=>setGuideId(undefined)}/></View>;
+  </ScrollView><GuideTopicModal onOpen={onNavigateGuide?destination=>{setGuideId(undefined);onNavigateGuide(destination)}:undefined} language={language} definition={guideId?guideDefinition(guideId):undefined} visible={!!guideId} onClose={()=>setGuideId(undefined)}/><ConfirmModal visible={confirmStop} busy={stopping} title={a('Stop current activity?')} message={a('Earned progress will be collected first. Any reserved resources are handled by the activity cancellation rules.')} confirmLabel={a('Stop activity')} danger reduceMotion={state.settings.reduceMotion} onConfirm={()=>void stopCurrentActivity()} onCancel={()=>setConfirmStop(false)}/></View>;
 }
 
 function makeNavigationStyles(C:ThemeColors){return StyleSheet.create({

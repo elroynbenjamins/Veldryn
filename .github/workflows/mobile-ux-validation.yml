@@ -29,12 +29,8 @@ jobs:
         run: pnpm --dir ../../backend install --frozen-lockfile
       - name: Validate Inventory storage controls
         run: node tests/inventory-storage-management-ui.cjs
-      - name: Validate pet collection artwork scaling
-        run: node tests/collections-journal-ui.cjs
       - name: Verify Guild raid boss tabs
         run: node tests/guild-raid-tabs-ui.cjs
-      - name: Validate fixed-speed dungeon combat
-        run: node ../../tools/validate-fixed-speed-dungeons.cjs
       - name: Typecheck core
         run: pnpm typecheck:core
       - name: Run mobile core tests

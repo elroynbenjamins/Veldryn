@@ -23,22 +23,24 @@ export function CoopDungeonList({language,dungeons,eventExpeditions,mode,liveAva
  const st=useSocialText(),a=(value:string)=>accountText(language,value);
  const [showLocked,setShowLocked]=useState(false),[showLiveTools,setShowLiveTools]=useState(false);
  const available=dungeons.filter(dungeon=>dungeon.available),locked=dungeons.filter(dungeon=>!dungeon.available);
+ const hasUsableSnapshot=dungeons.length>0||eventExpeditions.length>0||!!activeRun;
+ const showCatalog=(!loading&&!error)||hasUsableSnapshot;
  return <ExpeditionScreenShell compactHeader eyebrow="" title={st("Dungeons")}>
    {activeRun?<FantasyPanel variant="selected"><View style={s.modeHead}><Text style={[s.cardTitle,s.flex]}>{ct(language,'browse.resumeTitle')}</Text><PrimaryAction label={ct(language,'browse.resume')} onPress={onResume}/></View></FantasyPanel>:null}
-   {!loading&&!error?<><View style={s.filters}>
+   {showCatalog?<><View style={s.filters}>
      <View style={s.flex}><PrimaryAction label={a("Solo")} tone="secondary" selected={mode==='qmode'} onPress={()=>onMode('qmode')}/></View>
      <View style={s.flex}><PrimaryAction label={a("Live")} tone="secondary" selected={mode==='live'} disabled={!liveAvailable} onPress={()=>onMode('live')}/></View>
    </View>
    <Text style={s.modeHint}>{mode==='live'?a("Play with three other players"):a("Play with three Echo allies")}</Text>
    {mode==='live'&&liveTools?<><Pressable accessibilityRole="button" accessibilityState={{expanded:showLiveTools}} onPress={()=>setShowLiveTools(value=>!value)} style={({pressed})=>[s.liveToggle,pressed&&s.pressed]}><Text style={s.liveTitle}>{st("Find players")}</Text><View style={s.flex}/><Text style={s.liveMark}>{showLiveTools?'−':'+'}</Text></Pressable>{showLiveTools?liveTools:null}</>:null}
    </>:null}
-   {loading?<View style={s.loading}><ActivityIndicator color={coopColors.cyan}/><Text style={s.copy}>{ct(language,'browse.loading')}</Text></View>:null}
-   {error?<FantasyPanel variant="danger"><Text accessibilityRole="alert" style={s.error}>{error}</Text><PrimaryAction label={ct(language,'browse.retry')} tone="secondary" onPress={onRetry}/></FantasyPanel>:null}
-   {!loading&&!error&&available.length===0&&locked.length===0&&eventExpeditions.length===0?<Text style={s.copy}>{ct(language,'browse.empty')}</Text>:null}
-   {!loading&&!error&&available.length>0?<Text style={s.section}>{ct(language,'browse.available')} · {available.length}</Text>:null}
-   {!loading&&!error&&available.map(dungeon=><DungeonCard key={dungeon.id} language={language} dungeon={dungeon} onPress={()=>onSelect(dungeon)}/>)}
-   {!loading&&!error&&eventExpeditions.length>0?<View style={s.eventSection}><Text style={s.section}>{ct(language,'event.section')}</Text>{eventExpeditions.map(event=><EventExpeditionCard key={event.id} language={language} event={event} onPress={()=>onSelectEvent(event)}/>)}</View>:null}
-   {!loading&&!error&&locked.length>0?<><Pressable accessibilityRole="button" accessibilityState={{expanded:showLocked}} onPress={()=>setShowLocked(value=>!value)} style={({pressed})=>[s.liveToggle,pressed&&s.pressed]}><Text style={s.liveTitle}>{showLocked?a("Hide locked dungeons"):a("Locked dungeons")+' ('+locked.length+')'}</Text><View style={s.flex}/><Text style={s.liveMark}>{showLocked?'−':'+'}</Text></Pressable>{showLocked?locked.map(dungeon=><DungeonCard key={dungeon.id} language={language} dungeon={dungeon} onPress={()=>onSelect(dungeon)}/>):null}</>:null}
+   {loading?<View accessibilityLiveRegion="polite" style={s.loading}><ActivityIndicator color={coopColors.cyan}/><Text style={s.copy}>{hasUsableSnapshot?'Refreshing dungeon availability…':ct(language,'browse.loading')}</Text></View>:null}
+   {error?<FantasyPanel variant="danger"><Text accessibilityRole="alert" style={s.error}>{hasUsableSnapshot?'Could not refresh. Showing previously loaded dungeons. '+error:error}</Text><PrimaryAction label={ct(language,'browse.retry')} tone="secondary" onPress={onRetry}/></FantasyPanel>:null}
+   {showCatalog&&available.length===0&&locked.length===0&&eventExpeditions.length===0?<Text style={s.copy}>{ct(language,'browse.empty')}</Text>:null}
+   {showCatalog&&available.length>0?<Text style={s.section}>{ct(language,'browse.available')} · {available.length}</Text>:null}
+   {showCatalog&&available.map(dungeon=><DungeonCard key={dungeon.id} language={language} dungeon={dungeon} onPress={()=>onSelect(dungeon)}/>)}
+   {showCatalog&&eventExpeditions.length>0?<View style={s.eventSection}><Text style={s.section}>{ct(language,'event.section')}</Text>{eventExpeditions.map(event=><EventExpeditionCard key={event.id} language={language} event={event} onPress={()=>onSelectEvent(event)}/>)}</View>:null}
+   {showCatalog&&locked.length>0?<><Pressable accessibilityRole="button" accessibilityState={{expanded:showLocked}} onPress={()=>setShowLocked(value=>!value)} style={({pressed})=>[s.liveToggle,pressed&&s.pressed]}><Text style={s.liveTitle}>{showLocked?a("Hide locked dungeons"):a("Locked dungeons")+' ('+locked.length+')'}</Text><View style={s.flex}/><Text style={s.liveMark}>{showLocked?'−':'+'}</Text></Pressable>{showLocked?locked.map(dungeon=><DungeonCard key={dungeon.id} language={language} dungeon={dungeon} onPress={()=>onSelect(dungeon)}/>):null}</>:null}
  </ExpeditionScreenShell>;
 }
 

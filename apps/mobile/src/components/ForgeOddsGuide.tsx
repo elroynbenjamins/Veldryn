@@ -2,7 +2,7 @@ import {useState} from 'react';
 import {Pressable,StyleSheet,Text,View,useWindowDimensions} from 'react-native';
 import {itemDef} from '../content/items';
 import {craftedGearRarityOutcomes} from '../core/crafted-gear-rarity';
-import {CRAFTED_GEAR_QUALITY_MIN,CRAFTED_GEAR_QUALITY_MAX,LEGACY_CRAFTED_GEAR_QUALITY,craftedGearQualityMultiplier} from '../core/crafted-gear-instances';
+import {CRAFTED_GEAR_QUALITY_MIN,CRAFTED_GEAR_QUALITY_MAX,LEGACY_CRAFTED_GEAR_QUALITY,craftedGearQualityMultiplier,craftedGearQualityChanceAtLeast} from '../core/crafted-gear-instances';
 import {rarityMeta} from '../core/item-rarity';
 import {useGameplayText} from '../i18n/gameplay';
 import {useGameTheme} from '../theme/ThemeContext';
@@ -71,6 +71,7 @@ export function ForgeOddsGuide({itemId}:{itemId:string}){
         <Text style={[s.qualityEffect,{color:point.color}]}>{point.value===LEGACY_CRAFTED_GEAR_QUALITY?gt('Normal'):statEffect(craftedGearQualityMultiplier(point.value))}</Text>
       </View>)}</View>
       <Text style={[s.explain,{color:C.muted}]}>{gt('Lower quality means weaker stats; higher quality means stronger stats. Rarity and quality combine.')}</Text>
+      <Text style={[s.explain,{color:C.muted}]}>{gt('High quality (Q90+) is rarer: about {chance}% chance.',{chance:Math.round(craftedGearQualityChanceAtLeast(90)*100)})}</Text>
       <Text style={[s.legacy,{color:C.muted}]}>{gt('Older Forge gear without a quality roll counts as Q50.')}</Text>
     </View>:null}
   </View>;

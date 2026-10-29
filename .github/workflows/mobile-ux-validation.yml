@@ -27,8 +27,8 @@ jobs:
       - run: pnpm install --frozen-lockfile
       - name: Install backend dependencies for mobile checks
         run: pnpm --dir ../../backend install --frozen-lockfile
-      - name: Validate Event reward notification quieting
-        run: node ../../tools/validate-event-notification-quiet.cjs
+      - name: Validate Inventory storage controls
+        run: node tests/inventory-storage-management-ui.cjs
       - name: Typecheck core
         run: pnpm typecheck:core
       - name: Run mobile core tests

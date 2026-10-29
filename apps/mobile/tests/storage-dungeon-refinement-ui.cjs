@@ -19,6 +19,7 @@ assert(!inventory.includes('<GemPouchPanel state={state} busy='),'The old nested
 assert(inventory.includes('setPouchOpen(false);setQuery(\'\');setFilter(\'food\')'),'Food deep links must always return to character Inventory');
 assert(memory.includes('pouchOpen:false')&&memory.includes('foodRequest:request,pouchOpen:false'),'Storage choice is remembered without breaking quick food access');
 assert(pouch.includes('standalone||drawerOpen'),'Standalone mode never collapses the dedicated pouch');
+assert(pouch.includes('const columns=gridWidth>=600?8:gridWidth>=440?6:gridWidth>=345?5:4')&&pouch.includes('{width:slotWidth,minHeight:Math.max(slotWidth,62)}'),'Gem grid responds to available width without fixed percentage overflow');
 assert(pouch.includes('onFavorite?')&&pouch.includes('onLock?'),'Gem favorites and locks remain actionable');
 assert(pouch.includes('||protectedGem} onPress={()=>setPendingDismantle'),'Protected gems cannot be dismantled accidentally');
 assert(pouch.includes('Gem Pouch,')===false,'Pouch UI is not implementing gameplay inventory logic itself');
@@ -32,6 +33,7 @@ assert(browser.includes('hasUsableSnapshot'),'Previously loaded dungeons remain 
 assert(browser.includes('showCatalog&&available.map('),'Dungeon cards remain visible if a refresh fails');
 assert(browser.includes('Showing previously loaded dungeons'),'Users know when they are viewing cached server data');
 assert(run.includes('{!!syncError&&<FantasyPanel variant="danger">'),'Connection recovery is shown only after a sync failure');
+assert(run.indexOf('{!!syncError&&<FantasyPanel variant="danger">')<run.indexOf("{!(run.phase==='resolving_node'"),'Reconnect warning remains visible even while combat is resolving');
 assert(!run.includes('Refresh saved progress'),'Routine manual Refresh does not clutter the run view');
 assert(run.includes('onPress={onRefresh}'),'A failed sync has a manual retry path');
 console.log('PASS Inventory Gems tab and dungeon cached-state/retry UX contracts');

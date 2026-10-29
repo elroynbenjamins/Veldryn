@@ -10,5 +10,6 @@ if(rarityMeta('mythic').statMultiplier<=rarityMeta('legendary').statMultiplier)t
 if(rarityNameColor('common',false,'#17202A')!=='#17202A')throw new Error('Common names should use theme text');
 if(rarityNameColor('rare',true,'#17202A')!==rarityMeta('rare').color)throw new Error('Dark themes should use canonical rarity color');
 if(rarityNameColor('rare',false,'#17202A')!==rarityMeta('rare').lightTextColor)throw new Error('Light theme rarity name color missing');
+if(rarityMeta('rare').color!=='#62B8FF'||rarityMeta('rare').lightTextColor!=='#1766A5')throw new Error('Rare must use recognizable light-blue borders and contrast-safe text');
 if(!['common','uncommon','rare','epic','legendary','mythic'].includes(rollGearRarity('stable-seed')))throw new Error('Rarity roll invalid');
 console.log('PASS: rarity odds, V33 tiers, accessible name colors, stat multipliers and deterministic roll API');

@@ -1,34 +1,50 @@
 import {itemDef} from '../content/items';
 import {itemRarity,type ItemRarity,rarityMeta} from './item-rarity';
 
+/** Rates for new timed Forge equipment only. Preserve the Epic/Mythic 0.60%/0.10% chances. */
 export const CRAFTED_MYTHIC_CHANCE=.001;
+export const CRAFTED_LEGENDARY_CHANCE=.002;
 export const CRAFTED_EPIC_CHANCE=.006;
+export const CRAFTED_RARE_CHANCE=.03;
+export const CRAFTED_UNCOMMON_CHANCE=.07;
+export const CRAFTED_COMMON_CHANCE=1-(CRAFTED_MYTHIC_CHANCE+CRAFTED_LEGENDARY_CHANCE+CRAFTED_EPIC_CHANCE+CRAFTED_RARE_CHANCE+CRAFTED_UNCOMMON_CHANCE);
 
+/** A single authoritative roll table drives both Forge outcomes and the player-facing odds guide. */
+const forgeRarityRolls:ReadonlyArray<{rarity:ItemRarity;chance:number}>=[
+  {rarity:'mythic',chance:CRAFTED_MYTHIC_CHANCE},
+  {rarity:'legendary',chance:CRAFTED_LEGENDARY_CHANCE},
+  {rarity:'epic',chance:CRAFTED_EPIC_CHANCE},
+  {rarity:'rare',chance:CRAFTED_RARE_CHANCE},
+  {rarity:'uncommon',chance:CRAFTED_UNCOMMON_CHANCE},
+  {rarity:'common',chance:CRAFTED_COMMON_CHANCE},
+];
 const order:ItemRarity[]=['common','uncommon','rare','epic','legendary','mythic'];
 export function higherRarity(a:ItemRarity,b:ItemRarity){return order.indexOf(a)>=order.indexOf(b)?a:b;}
 
-/** Forge quality is an upward proc: a miss preserves the authored/base rarity. */
+/** Rolls may upgrade, but never downgrade, the recipe's authored base rarity. */
 export function craftedGearRarity(itemId:string,roll:number):ItemRarity{
-  if(roll<0||roll>=1)throw new Error('Invalid crafted rarity roll');
+  if(!Number.isFinite(roll)||roll<0||roll>=1)throw new Error('Invalid crafted rarity roll');
   const item=itemDef(itemId);if(item.type!=='gear')throw new Error('Crafted rarity only applies to equipment');
   const base=itemRarity(item);
-  if(roll<CRAFTED_MYTHIC_CHANCE)return higherRarity(base,'mythic');
-  if(roll<CRAFTED_MYTHIC_CHANCE+CRAFTED_EPIC_CHANCE)return higherRarity(base,'epic');
-  return base;
+  // Integer buckets avoid floating-point drift at exact rarity cutoffs (e.g. 0.009).
+  const sample=Math.floor(roll*1_000_000);
+  let cutoff=0;
+  for(const outcome of forgeRarityRolls){
+    cutoff+=Math.round(outcome.chance*1_000_000);
+    if(sample<cutoff)return higherRarity(base,outcome.rarity);
+  }
+  return base; // Floating point rounding fallback at the upper endpoint.
 }
 
-/** Actual final rarity outcomes for the selected Forge recipe.
- * Upgrade procs never downgrade high-base-rarity equipment, so probability
- * mass from a lower proc is folded into its authored minimum rarity.
- */
+/** Final rarity odds for a specific Forge recipe, folding lower rolls into its base rarity. */
 export function craftedGearRarityOutcomes(itemId:string):Array<{rarity:ItemRarity;chance:number;statMultiplier:number}>{
   const item=itemDef(itemId);
   if(item.type!=='gear')throw new Error('Forge rarity odds require equipment');
   const base=itemRarity(item),chances=new Map<ItemRarity,number>();
-  const record=(rarity:ItemRarity,chance:number)=>chances.set(rarity,(chances.get(rarity)??0)+chance);
-  record(base,1-CRAFTED_EPIC_CHANCE-CRAFTED_MYTHIC_CHANCE);
-  record(higherRarity(base,'epic'),CRAFTED_EPIC_CHANCE);
-  record(higherRarity(base,'mythic'),CRAFTED_MYTHIC_CHANCE);
+  for(const outcome of forgeRarityRolls){
+    const rarity=higherRarity(base,outcome.rarity);
+    chances.set(rarity,(chances.get(rarity)??0)+outcome.chance);
+  }
   return order.filter(rarity=>(chances.get(rarity)??0)>0).map(rarity=>({
     rarity,chance:chances.get(rarity)!,statMultiplier:craftedRarityStatMultiplier(itemId,rarity),
   }));

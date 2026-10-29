@@ -27,7 +27,7 @@ import {previewEquipment} from '../core/equipment-preview';
 import {formatGameNumber} from '../core/number-format';
 import {ot} from '../i18n';
 import {itemRarity,rarityMeta} from '../core/item-rarity';
-import {effectiveOwnedGearRarity,craftedGearInstances,craftedGearDisplayQuality} from '../core/crafted-gear-instances';
+import {craftedGearInstances,craftedGearDisplayQuality} from '../core/crafted-gear-instances';
 import {auditCraftedGearOwnership,craftedGearCopiesAt} from '../core/crafted-gear-ownership';
 import type {GameCommand} from '../core/game-commands';
 import {bulkSelectionSummary,type BulkStorageLocation} from '../core/inventory-bulk';
@@ -121,9 +121,9 @@ export function InventoryScreen({state,viewMemory,foodRequest=0,onEquip,onFood,o
   const beginBulk=(kind:BulkAction)=>{const ids=kind==='transfer'?selectionSummary.transferableIds:kind==='sell'?selectionSummary.sellableIds:selectionSummary.salvageableIds;if(ids.length)setBulkPending({kind,ids})};
   const closeInspect=()=>{if(inspectId&&newItemSet.has(inspectId))run(()=>onAcknowledgeItem(inspectId));setInspectId(null);setSelectedInstanceId(null)};
   const renderStack=(stack:ItemStack)=>{
-    const item=itemDef(stack.itemId),exactRecord=stack.instanceId?craftedGearInstances(state).find(row=>row.id===stack.instanceId):undefined,favorite=favoriteSet.has(item.id),locked=lockedSet.has(item.id)||exactRecord?.locked===true,newItem=newItemSet.has(item.id),selected=selectedSet.has(item.id),autoEat=state.character?.equippedFoodId===item.id,rarity=rarityMeta(exactRecord?.rarity??(item.type==='gear'?effectiveOwnedGearRarity(state,item.id):itemRarity(item))),goalProtected=goalProtection.has(item.id);
-    const label=[gt('{name}, {count} owned',{name:item.name,count:formatGameNumber(stack.quantity,state.settings.numberMode,state.settings.language)}),favorite?gt('favorite'):'',locked?gt('Locked'):'',newItem?gt('New'):'',goalProtected?gt('needed for Working Toward'):''].filter(Boolean).join(', ');
-    return <View key={`${location}:${item.id}:${stack.instanceId??'legacy'}`} style={[s.itemTile,{width:tileSize,height:tileSize,borderColor:selected?C.selectionLine:goalProtected||autoEat?C.good:rarity.color,backgroundColor:selected?C.selection:C.panel}]}>
+    const item=itemDef(stack.itemId),exactRecord=stack.instanceId?craftedGearInstances(state).find(row=>row.id===stack.instanceId):undefined,favorite=favoriteSet.has(item.id),locked=lockedSet.has(item.id)||exactRecord?.locked===true,newItem=newItemSet.has(item.id),selected=selectedSet.has(item.id),autoEat=state.character?.equippedFoodId===item.id,rarity=rarityMeta(exactRecord?.rarity??itemRarity(item)),goalProtected=goalProtection.has(item.id);
+    const label=[gt('{name}, {count} owned',{name:item.name,count:formatGameNumber(stack.quantity,state.settings.numberMode,state.settings.language)}),favorite?gt('favorite'):'',locked?gt('Locked'):'',exactRecord?rarity.label:'',newItem?gt('New'):'',goalProtected?gt('needed for Working Toward'):''].filter(Boolean).join(', ');
+    return <View key={`${location}:${item.id}:${stack.instanceId??'legacy'}`} style={[s.itemTile,{width:tileSize,height:tileSize,borderColor:rarity.color,borderWidth:rarity.borderWidth,backgroundColor:selected?C.selection:C.panel}]}>
       <Pressable accessibilityRole={selectMode?'checkbox':'button'} accessibilityLabel={selectMode?gt(selected?'Deselect {label}':'Select {label}',{label}):label} accessibilityHint={selectMode?gt("Select this stack for bulk management"):gt("Open item details, sources and crafting uses")} accessibilityState={selectMode?{checked:selected}:undefined} onPress={()=>{if(selectMode){toggleSelection(item.id);return;}if(!stack.instanceId&&item.type==='gear'&&location==='inventory'){setPreviewId(item.id);return;}setSelectedInstanceId(stack.instanceId??null);setInspectId(item.id)}} style={({pressed})=>[s.itemOpen,pressed&&s.pressed]}>
         <ItemArtwork itemId={item.id} size={iconSize}/>
         <Text accessible={false} style={[s.itemQuantity,{color:rarity.color}]}>{exactRecord?`Q${craftedGearDisplayQuality(exactRecord)}`:`×${formatGameNumber(stack.quantity,state.settings.numberMode,state.settings.language)}`}</Text>
@@ -185,12 +185,12 @@ export function InventoryScreen({state,viewMemory,foodRequest=0,onEquip,onFood,o
     </View>:null}
     {exactCopies.length>0?<View style={s.quantityPanel}>
       <Text style={s.quantityTitle}>UNIQUE EQUIPMENT · {exactCopies.length} {exactCopies.length===1?'COPY':'COPIES'}</Text>
-      {exactCopies.map(copy=><Pressable key={copy.id} accessibilityRole="button" accessibilityState={{selected:selectedCopy?.id===copy.id}} onPress={()=>setSelectedInstanceId(copy.id)} style={[s.row,{padding:10,borderWidth:1,borderColor:selectedCopy?.id===copy.id?C.accent:C.line,borderRadius:10}]}>
-        <Text style={[s.sub,s.flex]}>{rarityMeta(copy.rarity).label} · Q{craftedGearDisplayQuality(copy)}{copy.quality===undefined?' · Legacy baseline':''} {copy.locked?' · Locked':''} {copy.enhancement.rank>0?' · +'+copy.enhancement.rank:''}</Text>
+      {exactCopies.map(copy=><Pressable key={copy.id} accessibilityRole="button" accessibilityState={{selected:selectedCopy?.id===copy.id}} onPress={()=>setSelectedInstanceId(copy.id)} style={[s.row,{padding:10,borderColor:rarityMeta(copy.rarity).color,borderWidth:rarityMeta(copy.rarity).borderWidth,borderRadius:10,backgroundColor:selectedCopy?.id===copy.id?C.selection:C.panel2}]}>
+        <Text style={[s.sub,s.flex,{color:rarityMeta(copy.rarity).color,fontWeight:'800'}]}>{rarityMeta(copy.rarity).label} · Q{craftedGearDisplayQuality(copy)}{copy.quality===undefined?' · Legacy baseline':''} {copy.locked?' · Locked':''} {copy.enhancement.rank>0?' · +'+copy.enhancement.rank:''}</Text>
         <Text style={s.quantityTitle}>{selectedCopy?.id===copy.id?'✓':'›'}</Text>
       </Pressable>)}
       {selectedCopy?<View style={s.quantityPanel}>
-        <Text style={s.title}>{rarityMeta(selectedCopy.rarity).label} · Q{craftedGearDisplayQuality(selectedCopy)}{selectedCopy.quality===undefined?' · Legacy':''}</Text>
+        <Text style={[s.title,{color:rarityMeta(selectedCopy.rarity).color}]}>{rarityMeta(selectedCopy.rarity).label} · Q{craftedGearDisplayQuality(selectedCopy)}{selectedCopy.quality===undefined?' · Legacy':''}</Text>
         <View style={s.row}>
           <GameButton compact title={selectedCopy.locked?'Unlock':'Lock'} tone="secondary" disabled={!onCommand||inventoryBusyLabel!==null} onPress={()=>void beginInventorySubmission('Updating equipment lock…',()=>onCommand!({type:'gear_lock',args:{instanceId:selectedCopy.id,locked:!selectedCopy.locked}}))}/>
           {carried?<GameButton compact title="Equip" disabled={!onCommand||inventoryBusyLabel!==null} onPress={()=>void beginInventorySubmission('Equipping unique equipment…',async()=>{await onCommand!({type:'gear_equip',args:{instanceId:selectedCopy.id}});closeInspect()})}/>:null}

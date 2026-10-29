@@ -1,10 +1,10 @@
 # Unique forged gear, quality rolls and Keep Best 7
 
-**Status:** implemented on draft PR #640, **not merged or deployed** (2026-10-28). This document describes draft behavior, not a production release.
+**Status:** the unique-instance foundation is already on `main`; the recovered six-rarity/quality UI and per-copy border refinements are in **draft PR #650**, not yet merged or deployed (2026-10-29). Earlier work originated in closed PR #640.
 
 ## Player-facing contract
 
-- Each new timed non-novice Forge equipment result is issued as **one physically tagged copy** with a unique `instanceId`, rarity and deterministic quality roll **0–100**. Tier procs are unchanged (0.60% Epic; 0.10% Mythic). Quality affects equipped stat calculations by **−25% to +25%** (Q0 = 75%, Q50 = 100%, Q100 = 125%); upgrades and two socket types remain separate.
+- Each new timed non-novice Forge equipment result is issued as **one physically tagged copy** with a unique `instanceId`, rarity and deterministic quality roll **0–100**. Forge rarity rolls now cover all six rarity tiers: Common 89.10%, Uncommon 7%, Rare 3%, Epic 0.60%, Legendary 0.20%, Mythic 0.10% for Common-base items. Existing Epic/Mythic chance bands retain their original sizes. Quality affects equipped stat calculations by **−25% to +25%** (Q0 = 75%, Q50 = 100%, Q100 = 125%); upgrades and two socket types remain separate.
 - Each account can have up to **seven physical copies of each exact equipment item ID**, across five characters, equipped items, inventories, Bank and overflow. Conservative copy projections count untagged legacy equipment too. Old over-cap saves are not truncated.
 - **Keep Best 7** opt-in toggle on the Forge screen, default **OFF**, persisted account-wide by a validated `gear_autosell` command.
 - With OFF, an eighth finished Forge craft **stays ready** until the player makes room.
@@ -15,7 +15,7 @@
 - Saving/applying a loadout preserves the selected instance ID. Applying a mixed legacy/unique loadout is all-or-nothing: missing, inaccessible or ambiguous required copies abort without committing a partial state.
 - **Legacy item-type** sell/transfer/bulk/equip operations cannot silently consume or erase an individually tagged copy. Legacy copies without a tag still use existing functionality where safe.
 
-## Existing player equipment: neutral Q50 compatibility (draft PR #640)
+## Existing player equipment: neutral Q50 compatibility
 
 - **Existing Forge receipts without a saved quality roll display Q50/100 (Legacy baseline)**. This means **neutral/100% of their original base stats**, **not half their stats**. Q50 evaluates to exactly 1.0×, with Q0 at 0.75× and Q100 at 1.25×.
 - **Q0 is a genuine possible roll**, not missing data. A saved `quality: 0` stays Q0 through normalization, UI and Keep Best 7; only absent/invalid historical rolls use the neutral legacy Q50 display baseline.
@@ -28,18 +28,31 @@
 ## Smithing / Tailoring: collapsed Forge chances guide
 
 - Both skills use `SmithingCollection` and show the same collapsed **Rarity & quality** disclosure at the bottom of the **Equipment** tab, after the Forge queue; Materials and Tools do not show unrelated Forge odds. It does not obstruct recipe actions.
-- On the Equipment tab, odds apply to the currently selected crafted item and are computed from the same authoritative `CRAFTED_EPIC_CHANCE`, `CRAFTED_MYTHIC_CHANCE`, base rarity and stat multiplier rules as Forge claims.
-- For Common-base gear the actual result distribution is **99.30% Common / 0.60% Epic / 0.10% Mythic**, with relative rarity stat multipliers **1.00× / 1.50× / 2.20×** before quality.
+- On the Equipment tab, odds apply to the currently selected crafted item and are computed from the same authoritative six-tier Forge roll table, base rarity and stat multiplier rules as Forge claims.
+- For Common-base gear, actual results are **89.10% Common / 7% Uncommon / 3% Rare / 0.60% Epic / 0.20% Legendary / 0.10% Mythic**, at rarity multipliers **1.00× / 1.12× / 1.28× / 1.50× / 1.80× / 2.00×** before quality. This uses the game's full rarity palette, not a truncated three-rarity Forge.
 - High-base-rarity recipes correctly combine non-upgrade proc probability into their guaranteed original tier (e.g. base Mythic remains **100% Mythic**; no separate downgrade chance).
 - The quality section shows **Q0 −25%, Q25 −12.5%, Q50 normal, Q75 +12.5%, Q100 +25%** and explains that Attack, Defense and HP are modified on top of rarity/upgrades. No probabilities or gameplay rules are duplicated in UI state.
+- New equipment quality remains a separate deterministic Q0–Q100 roll but is now **gently weighted toward lower grades** with `floor(101 × U^1.25)`. Approximate outcomes: **Q75+ 21.2%** (previously 25.7%), **Q90+ 8.8%** (previously 10.9%), **Q100 0.8%** (previously 1.0%). Rarity chance bands are unchanged. Quality stat effects remain −25% to +25%; older already-rolled items and missing-quality legacy items never reroll. The collapsed guide displays a single approximate Q90+ chance line.
 - The guide is deliberately hidden on Materials and Tools; selecting Equipment shows the odds for the chosen piece.
-- Rarity rows use each rarity's official theme-aware name color and matching marker (Common grey, Epic purple, Mythic pink, etc.), with **Chance** and **Stats** columns. On narrow screens or large text settings they stack into two compact lines instead of clipping.
+- Rarity rows use each rarity's official theme-aware name color and matching marker (Common grey, Uncommon green, Rare blue, Epic purple, Legendary orange, Mythic pink), with **Chance** and **Stats** columns; rarity strength displays simple **×** multipliers (Mythic 2× for Common-base gear). On narrow screens or large text settings they stack into two compact lines instead of clipping.
 - Three uncluttered quality examples explain Q0 −25% (red), Q50 normal (neutral), and Q100 +25% (green). Intermediate values scale between them. The disclosure is closed by default, with concise wording and no additional navigation or modal.
-- Regression checks cover the selected-equipment odds calculation for Common, Epic and Mythic baselines and ensure probabilities sum to 100%.
+- For simple feedback, Uncommon and Rare upgrades produce the ordinary transient Forge banner; only Epic, Legendary or Mythic upgrades open the full rarity reveal. Messages use **rarity upgrade** rather than the misleading **quality proc** label.
+- Regression checks cover all six roll bands, each boundary, displayed chances and multipliers, authored-gear rarity floors (including Epic and Mythic), and ensure final probabilities sum to 100%.
+
+**Mythic balance:** Mythic's shared rarity stat multiplier is now **2.00×** rather than 2.20×. This affects Mythic rarity calculations wherever the shared rarity metadata is used; it does not reroll existing items, alter unique IDs, gems, locks or quality. Validate downstream combat/balance implications before release.
+
+## Recovered per-copy colored rarity borders (draft PR #650)
+
+- Inventory and Bank use the **exact physical `instanceId`** to resolve rarity. Two copies of the same item can have distinct border colors and widths. The selected tile retains its rarity border while using selection background/marker separately.
+- The Character equipment grid resolves the actual equipped `equipmentInstanceIds[slot]` and never borrows the rarity of a better copy in the Bank. Enhancement/gear comparison rarity matches the equipped receipt.
+- Legacy untagged equipment retains its original authored rarity until safely reconciled, rather than guessing which Forge record belongs to it.
+- Equipment artwork accepts an explicit rarity for displays with a known instance; Forge reveal cards use the actual rolled rarity.
+- The shared Forge odds guide uses all six official rarity name colors with final odds per authored recipe, quality −25% to +25%, and labels translated in English, German, Spanish, Dutch, Italian, and French.
+- Added regressions for matching inventory and equipped exact-copy rarities and comparisons, in addition to no-loss settlement and Gold replay tests. Do not treat a green focused suite as a substitute for full mobile typecheck and Android release gates.
 
 ## Implementation
 
-- `apps/mobile/src/core/crafted-gear-instances.ts`: deterministic 0–100 rolls, optional quality/lock for older saves, seven-copy projection, globally bounded instance creation with **no silent eviction**.
+- `apps/mobile/src/core/crafted-gear-instances.ts`: deterministic, gently weighted 0–100 quality rolls with a single shared approximate probability helper; optional quality/lock for older saves; seven-copy projection; globally bounded instance creation with **no silent eviction**.
 - `apps/mobile/src/core/crafted-gear-ownership.ts`: cross-character physical ownership audit, precise Inventory ↔ Bank moves, per-copy lock, equip/unequip, manual sell/salvage with exact physical removal and one vendor Gold credit. Unknown/duplicate instance markers fail closed.
 - `apps/mobile/src/core/crafted-gear-retention.ts` and `crafted-gear-settlement.ts`: eligibility filtering, protected-item checks, deterministic rarity/quality comparison and settlement proposals with receipt replay protection.
 - `apps/mobile/src/core/equipment-crafting-queue.ts`: Forge claim issues physical instance markers; enforces the 7-copy limit; performs optional exact-copy replacement and reward grant together in the immutable game command state; blocked claims remain ready; Claim All continues other eligible jobs.

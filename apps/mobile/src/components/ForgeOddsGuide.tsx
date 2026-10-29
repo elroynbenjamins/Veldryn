@@ -2,12 +2,13 @@ import {useState} from 'react';
 import {Pressable,StyleSheet,Text,View,useWindowDimensions} from 'react-native';
 import {itemDef} from '../content/items';
 import {craftedGearRarityOutcomes} from '../core/crafted-gear-rarity';
-import {CRAFTED_GEAR_QUALITY_MIN,CRAFTED_GEAR_QUALITY_MAX,LEGACY_CRAFTED_GEAR_QUALITY,craftedGearQualityMultiplier} from '../core/crafted-gear-instances';
+import {CRAFTED_GEAR_QUALITY_MIN,CRAFTED_GEAR_QUALITY_MAX,LEGACY_CRAFTED_GEAR_QUALITY,craftedGearQualityMultiplier,craftedGearQualityChanceAtLeast} from '../core/crafted-gear-instances';
 import {rarityMeta} from '../core/item-rarity';
 import {useGameplayText} from '../i18n/gameplay';
 import {useGameTheme} from '../theme/ThemeContext';
 
 const chanceLabel=(chance:number)=>(chance*100).toFixed(2)+'%';
+const rarityPower=(multiplier:number)=>(Number.isInteger(multiplier)?multiplier.toFixed(0):multiplier.toFixed(2))+'×';
 function statEffect(multiplier:number){
   const percent=Math.round((multiplier-1)*1000)/10;
   return percent===0?'Base':(percent>0?'+':'')+percent+'%';
@@ -48,17 +49,17 @@ export function ForgeOddsGuide({itemId}:{itemId:string}){
       {outcomes.map(outcome=>{
         const meta=rarityMeta(outcome.rarity);
         return <View key={outcome.rarity} accessible style={[s.oddsRow,compact&&s.oddsRowCompact,{borderBottomColor:C.line}]}
-          accessibilityLabel={`${meta.label}: ${chanceLabel(outcome.chance)} chance, ${statEffect(outcome.statMultiplier)} stats`}>
+          accessibilityLabel={`${meta.label}: ${chanceLabel(outcome.chance)} chance, ${rarityPower(outcome.statMultiplier)} stats`}>
           <View style={[s.nameWrap,compact&&s.nameCompact]}>
             <View accessible={false} style={[s.rarityDot,{backgroundColor:meta.color}]}/>
             <Text style={[s.rarity,{color:C.dark?meta.color:meta.lightTextColor}]}>{meta.label}</Text>
           </View>
           {compact?<View style={s.compactMeta}>
             <Text style={[s.value,{color:C.text}]}>{chanceLabel(outcome.chance)} {gt('chance')}</Text>
-            <Text style={[s.statValue,{color:outcome.statMultiplier>1?C.good:C.muted}]}>{statEffect(outcome.statMultiplier)} {gt('stats')}</Text>
+            <Text style={[s.statValue,{color:outcome.statMultiplier>1?C.good:C.muted}]}>{rarityPower(outcome.statMultiplier)} {gt('stats')}</Text>
           </View>:<>
             <Text style={[s.colChance,s.value,{color:C.text}]}>{chanceLabel(outcome.chance)}</Text>
-            <Text style={[s.colStats,s.statValue,{color:outcome.statMultiplier>1?C.good:C.muted}]}>{statEffect(outcome.statMultiplier)}</Text>
+            <Text style={[s.colStats,s.statValue,{color:outcome.statMultiplier>1?C.good:C.muted}]}>{rarityPower(outcome.statMultiplier)}</Text>
           </>}
         </View>;
       })}
@@ -70,6 +71,7 @@ export function ForgeOddsGuide({itemId}:{itemId:string}){
         <Text style={[s.qualityEffect,{color:point.color}]}>{point.value===LEGACY_CRAFTED_GEAR_QUALITY?gt('Normal'):statEffect(craftedGearQualityMultiplier(point.value))}</Text>
       </View>)}</View>
       <Text style={[s.explain,{color:C.muted}]}>{gt('Lower quality means weaker stats; higher quality means stronger stats. Rarity and quality combine.')}</Text>
+      <Text style={[s.explain,{color:C.muted}]}>{gt('High quality (Q90+) is rarer: about {chance}% chance.',{chance:Math.round(craftedGearQualityChanceAtLeast(90)*100)})}</Text>
       <Text style={[s.legacy,{color:C.muted}]}>{gt('Older Forge gear without a quality roll counts as Q50.')}</Text>
     </View>:null}
   </View>;

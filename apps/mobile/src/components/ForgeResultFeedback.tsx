@@ -12,6 +12,8 @@ import {GameButton} from './GameButton';
 import {GameModalHeader,GameModalSurface} from './GameModalSurface';
 
 const RARITY_ORDER:ItemRarity[]=['common','uncommon','rare','epic','legendary','mythic'];
+/** Only Epic+ upgrades interrupt play with a reveal; Common-to-Uncommon/Rare uses the normal compact feedback. */
+export function isExceptionalForgeResult(result:ForgeCraftResult){return result.qualityProc&&(result.rarity==='epic'||result.rarity==='legendary'||result.rarity==='mythic');}
 function highest(results:readonly ForgeCraftResult[]){return results.slice().sort((a,b)=>RARITY_ORDER.indexOf(b.rarity)-RARITY_ORDER.indexOf(a.rarity))[0];}
 export function forgeClaimBannerMessage(results:readonly ForgeCraftResult[]){
   if(!results.length)return '';
@@ -20,28 +22,26 @@ export function forgeClaimBannerMessage(results:readonly ForgeCraftResult[]){
 }
 
 export function ForgeClaimBanner({results,reduceMotion,onDismiss}:{results:readonly ForgeCraftResult[];reduceMotion:boolean;onDismiss:()=>void}){
-  const C=useGameTheme();
   const dismissRef=useRef(onDismiss);dismissRef.current=onDismiss;
-  useEffect(()=>{if(!results.length||results.some(row=>row.qualityProc))return;const timer=setTimeout(()=>dismissRef.current(),4500);return()=>clearTimeout(timer)},[results]);
-  if(!results.length||results.some(row=>row.qualityProc))return null;
-  const meta=rarityMeta(highest(results).rarity);
-  return <ActionFeedback message={forgeClaimBannerMessage(results)} tone="success" reduceMotion={reduceMotion} compact accentColor={meta.color} accentSurface={meta.surface} accentTextColor={rarityNameColor(highest(results).rarity,C.dark,C.text)}/>
+  useEffect(()=>{if(!results.length||results.some(isExceptionalForgeResult))return;const timer=setTimeout(()=>dismissRef.current(),4500);return()=>clearTimeout(timer)},[results]);
+  if(!results.length||results.some(isExceptionalForgeResult))return null;
+  return <ActionFeedback message={forgeClaimBannerMessage(results)} tone="success" reduceMotion={reduceMotion} compact/>;
 }
 
 export function ForgeRarityRevealModal({results,reduceMotion,onClose,onInventory}:{results:readonly ForgeCraftResult[];reduceMotion:boolean;onClose:()=>void;onInventory:()=>void}){
  const {gt,gl,language}=useGameplayText();
   const C=useGameTheme(),s=useMemo(()=>makeStyles(C),[C]),{width,fontScale}=useWindowDimensions(),stackActions=width<360||fontScale>=1.25,scale=useRef(new Animated.Value(1)).current;
-  const procs=results.filter(row=>row.qualityProc),best=procs.length?highest(procs):undefined,bestMeta=best?rarityMeta(best.rarity):undefined;
+  const procs=results.filter(isExceptionalForgeResult),best=procs.length?highest(procs):undefined,bestMeta=best?rarityMeta(best.rarity):undefined;
   useEffect(()=>{scale.stopAnimation();scale.setValue(1);if(!procs.length||reduceMotion)return;Animated.sequence([Animated.spring(scale,{toValue:1.035,damping:8,stiffness:210,mass:.65,useNativeDriver:true}),Animated.spring(scale,{toValue:1,damping:15,stiffness:190,mass:.8,useNativeDriver:true})]).start();return()=>scale.stopAnimation()},[best?.instanceId,procs.length,reduceMotion,scale]);
   if(!procs.length)return null;
   return <GameModalSurface visible presentation="dialog" reduceMotion={reduceMotion} onClose={onClose} backdropLabel={gt("Close Forge result")} surfaceStyle={[s.dialog,bestMeta&&{borderColor:bestMeta.color}]}>
-    <GameModalHeader eyebrow={gt("EXCEPTIONAL FORGE RESULT")} title={procs.length===1?`${bestMeta!.label} quality proc`:`${procs.length} quality procs`} onClose={onClose}/>
+    <GameModalHeader eyebrow={gt("EXCEPTIONAL FORGE RESULT")} title={procs.length===1?`${bestMeta!.label} rarity upgrade`:`${procs.length} rarity upgrades`} onClose={onClose}/>
     <Animated.View style={[s.reveal,{transform:[{scale}]}]}>
       <Text style={[s.revealMark,{color:bestMeta?.color}]}>{bestMeta?.symbol} {bestMeta?.label.toUpperCase()} {bestMeta?.symbol}</Text>
       <Text style={s.revealCopy}>{procs.length===1?gt("The Forge produced a rarer crafted copy."):gt("Multiple finished crafts produced rarer copies.")}</Text>
     </Animated.View>
     <View style={s.results}>{procs.map(result=>{const item=itemDef(result.itemId),meta=rarityMeta(result.rarity),base=rarityMeta(result.baseRarity),bonus=Math.round((result.statMultiplier-1)*100);return <View key={result.instanceId} style={[s.result,{borderColor:meta.color,backgroundColor:meta.surface}]}>
-      <View style={[s.artFrame,{borderColor:meta.color}]}><EquipmentArtwork item={item} compact framed={false}/></View>
+      <View style={[s.artFrame,{borderColor:meta.color}]}><EquipmentArtwork item={item} rarity={result.rarity} compact framed={false}/></View>
       <View style={s.flex}><Text style={[s.itemName,{color:rarityNameColor(result.rarity,C.dark,C.text)}]}>{item.name}</Text><Text style={s.meta}>{base.label} base → {meta.label} crafted copy{result.quality!==undefined?` · Q${result.quality}/100`:''}</Text><Text style={[s.bonus,{color:meta.color}]}>{bonus>0?'+':''}{bonus}% equipment stats vs base gear</Text>{result.autoSold?<Text style={s.copy}>{result.autoSold==='incoming'?'New roll auto-sold; existing copies kept':'Weaker prior copy sold; improved roll retained'} · +{result.saleGold} Gold</Text>:result.duplicateCount>0?<Text style={s.copy}>Crafted copy #{result.duplicateCount+1} owned</Text>:<Text style={s.copy}>{gt("First crafted copy owned")}</Text>}</View>
       <View style={[s.rarityBadge,{borderColor:meta.color}]}><Text style={[s.rarityText,{color:meta.color}]}>{meta.label.toUpperCase()}</Text></View>
     </View>})}</View>

@@ -210,6 +210,7 @@ function VeldrynApp(){
   const [customizationUnlocks,setCustomizationUnlocks]=useState<CustomizationUnlockEntry[]>([]);
   const [featureUnlockMoments,setFeatureUnlockMoments]=useState<EarlyFeatureUnlockMoment[]>([]);
   const [forgeResults,setForgeResults]=useState<ForgeCraftResult[]|null>(null);
+  const [forgeClaimFeedback,setForgeClaimFeedback]=useState('');
   const forgeClaimAllInFlight=useRef(false);
   const [storyBossBattle,setStoryBossBattle]=useState<{battle:FallenKnightBattleResult;message:string}|null>(null);
   const [masteryNotices,setMasteryNotices]=useState<RewardProgressionMoment[]>([]);
@@ -457,6 +458,7 @@ function VeldrynApp(){
   useEffect(()=>{setNow(Date.now());const interval=needsFastClock?2_000:needsLiveClock?15_000:60_000;const id=setInterval(()=>setNow(Date.now()),interval);return()=>clearInterval(id)},[needsFastClock,needsLiveClock]);
   useEffect(()=>{if(!preparationNotices.length||collected||forgeResults)return;const timer=setTimeout(()=>setPreparationNotices(current=>current.slice(1)),4500);return()=>clearTimeout(timer)},[preparationNotices,collected,forgeResults]);
   useEffect(()=>{if(!masteryNotices.length||preparationNotices.length||collected||forgeResults)return;const timer=setTimeout(()=>setMasteryNotices([]),4500);return()=>clearTimeout(timer)},[masteryNotices,preparationNotices.length,collected,forgeResults]);
+  useEffect(()=>{if(!forgeClaimFeedback)return;const timer=setTimeout(()=>setForgeClaimFeedback(''),4500);return()=>clearTimeout(timer)},[forgeClaimFeedback]);
   useEffect(()=>{if(tab!=='Skills'){setSelectedSkill(undefined);setGoalActionId(undefined);setGoalRecipeId(undefined)}},[tab]);
   // Global announcements share one presentation slot; foreground user dialogs win.
   const popupBlocked=!!profileDiscardAction||creatingRoster||showChatOverlay||showAdminQa||showCoopUiGallery
@@ -546,7 +548,7 @@ function VeldrynApp(){
         if(results.length)setForgeResults(results);
         if(!count)setOnlineActionError('The bulk Forge claim failed and individual claims could not complete. Your finished jobs remain safe in the queue.');
         else if(count<finished.length)setOnlineActionError(`${count} of ${finished.length} finished Forge jobs were claimed. The remaining jobs are safe in the queue.`);
-        else if(!results.length)showAlert('Forge complete',count+' finished jobs claimed.');
+        else if(!results.length)setForgeClaimFeedback(count+' finished Forge jobs claimed.');
         return null;
       }finally{forgeClaimAllInFlight.current=false;}
     }
@@ -776,7 +778,7 @@ const next=normalizeProfileIcon(migrateGemPouch(candidate));queuePreparationNoti
   </View>
   <EventStartPopup runtime={activeGlobalPopup==='event-start'?eventStartPopup:null} reduceMotion={state.settings.reduceMotion} onOpen={()=>{setEventStartPopup(null);setTab('Events')}} onClose={()=>setEventStartPopup(null)}/>
   <ChatOverlay initialChannel={chatInitialChannel} state={state} visible={showChatOverlay} onOpen={()=>{setChatInitialChannel('world');setShowChatOverlay(true)}} onClose={()=>setShowChatOverlay(false)} onEmoteTrayChange={ids=>commit({...state,settings:{...state.settings,chatEmoteTrayIds:ids}})} guildUnread={notificationCounts.guildChatUnread} guildMentions={notificationCounts.guildChatMentions} guildFirstUnreadMessageId={notificationCounts.guildFirstUnreadMessageId} partyUnread={notificationCounts.partyChatUnread} partyMentions={notificationCounts.partyChatMentions} partyFirstUnreadMessageId={notificationCounts.partyFirstUnreadMessageId} onChatRead={()=>void refreshSocialNotifications()}/>
-  {!collected&&!forgeResults?.some(isExceptionalForgeResult)&&preparationNotices.length?<View style={s.masteryNotice}><ActionFeedback message={preparationNotices[0].message} tone={preparationNotices[0].tone} reduceMotion={state.settings.reduceMotion} compact actionLabel={preparationNotices[0].actionLabel} onAction={()=>openPreparationNotice(preparationNotices[0])}/></View>:!collected&&!forgeResults?.some(isExceptionalForgeResult)&&masteryNotices.length?<View style={s.masteryNotice}><ActionFeedback message={masteryRankNoticeMessage(masteryNotices)} tone={masteryNotices.some(moment=>moment.mastered)?'success':'info'} reduceMotion={state.settings.reduceMotion} compact/></View>:null}
+  {!collected&&!forgeResults?.some(isExceptionalForgeResult)&&forgeClaimFeedback?<View style={s.masteryNotice}><ActionFeedback message={forgeClaimFeedback} tone="success" reduceMotion={state.settings.reduceMotion} compact/></View>:!collected&&!forgeResults?.some(isExceptionalForgeResult)&&preparationNotices.length?<View style={s.masteryNotice}><ActionFeedback message={preparationNotices[0].message} tone={preparationNotices[0].tone} reduceMotion={state.settings.reduceMotion} compact actionLabel={preparationNotices[0].actionLabel} onAction={()=>openPreparationNotice(preparationNotices[0])}/></View>:!collected&&!forgeResults?.some(isExceptionalForgeResult)&&masteryNotices.length?<View style={s.masteryNotice}><ActionFeedback message={masteryRankNoticeMessage(masteryNotices)} tone={masteryNotices.some(moment=>moment.mastered)?'success':'info'} reduceMotion={state.settings.reduceMotion} compact/></View>:null}
     <PrimaryNavigation destinations={primaryTabs} active={activePrimary} labelFor={item=>tabLabel(state.settings.language,item)} onNavigate={setTab} badges={primaryBadges} guidedDestination={(mainScreenTour?.highlightPrimary??visibleTutorialStep?.highlightPrimary) as PrimaryTab|undefined} reduceMotion={state.settings.reduceMotion}/>
   {activeGlobalPopup==='character-welcome'&&creationWelcome&&<AsterfallWelcomeModal visible name={creationWelcome.name} classId={creationWelcome.classId} onContinue={()=>{const characterId=state.character?.id;if(characterId)void completeFirstSessionTutorialStep(characterId,'first_hunt').then(ids=>setTutorialCompleted(ids));setGoalMonsterId('MOSS_RAT');setCreationWelcome(null);setCurrentTab('Combat')}}/>}
   <WhatsNewModal visible={activeGlobalPopup==='whats-new'}

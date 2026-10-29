@@ -28,3 +28,25 @@ export function parseReleaseNoteRow(value:Record<string,unknown>):ReleaseNote|nu
 export function shouldAutoShowReleaseNotes(notes:readonly ReleaseNote[],installedVersion:string,seen:boolean):boolean{
  return !seen&&notes.some(note=>compareReleaseVersions(note.version,installedVersion)===0);
 }
+
+/** Keep a first-install baseline. Pre-existing saves without one are migrated as returning players. */
+export function firstInstalledReleaseVersion(stored:string|null,hadCharacterAtLaunch:boolean,currentVersion:string):string{
+ if(stored&&/^\d+\.\d+\.\d+$/.test(stored))return stored;
+ return hadCharacterAtLaunch?'0.0.0':currentVersion;
+}
+
+/** Automatic announcements require an existing installation and an idle startup flow. */
+export function shouldAutoAnnounceReleaseNotes({
+ firstInstalledVersion,installedVersion,notes,seen,optionalUpdateAvailable,optionalUpdateSeen,startupReady
+}:{
+ firstInstalledVersion:string|null;
+ installedVersion:string;
+ notes:readonly ReleaseNote[];
+ seen:boolean;
+ optionalUpdateAvailable:boolean;
+ optionalUpdateSeen:boolean;
+ startupReady:boolean;
+}):boolean{
+ return !!firstInstalledVersion&&compareReleaseVersions(installedVersion,firstInstalledVersion)>0
+  &&startupReady&&(shouldAutoShowReleaseNotes(notes,installedVersion,seen)||(optionalUpdateAvailable&&!optionalUpdateSeen));
+}

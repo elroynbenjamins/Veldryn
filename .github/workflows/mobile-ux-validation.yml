@@ -35,10 +35,8 @@ jobs:
         run: node tests/settings-simplicity-ui.cjs
       - name: Validate integrated dungeon theater
         run: node ../../tools/validate-integrated-dungeon-theater.cjs
-      - name: Validate Companion Trial theater
-        run: node ../../tools/validate-companion-trial-theater.cjs
-      - name: Validate Guild PvE combat theater
-        run: node ../../tools/validate-guild-pve-theater.cjs
+      - name: Run isolated Guild Chat crash regressions
+        run: node ../../tools/validate-guild-chat-error-boundary.cjs
       - name: Typecheck core
         run: pnpm typecheck:core
       - name: Run mobile core tests

@@ -1,0 +1,9 @@
+{
+  "extends": "./tsconfig.json",
+  "include": [
+    "src/core/unlock-inbox.ts",
+    "src/storage/unlock-inbox.ts",
+    "src/screens/NewUnlocksScreen.tsx",
+    "src/screens/MoreScreen.tsx"
+  ]
+}

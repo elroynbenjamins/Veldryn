@@ -12,6 +12,9 @@ const notifications=read('src/core/navigation-notifications.ts');
 assert(!app.includes('<CustomizationUnlockPopup'),'Cosmetic rewards must never trigger an interrupting unlock popup');
 assert(!app.includes('customizationUnlocks.length'),'Cosmetic rewards should not hold tutorial or Whats New priority');
 assert(app.includes("newlyUnlockedProfileRewards(before,next)")&&app.includes("newlyUnlockedProfileIcons(before,next)"),'Existing title/background/border/icon detection remains intact');
+assert(app.includes('newlyUnlockedOtherCosmetics(before,next)'),'Pets, emotes and guild cosmetics are saved to the same inbox');
+assert(app.includes('if(saved)queueCustomizationUnlocks(restored,next)'),'Offline settlement rewards are captured');
+assert(app.includes('before.createdAtMs===next.createdAtMs)queueCustomizationUnlocks(before,next)'),'Server refreshes detect newly earned rewards without cross-account noise');
 assert(app.includes('queueCustomizationUnlocks(before,result.state)')&&app.includes('queueCustomizationUnlocks(current,next)'),'Online and offline gameplay changes continue recording unlocks');
 assert(app.includes("tab==='NewUnlocks'&&<NewUnlocksScreen"),'The Account unlock inbox is reachable as a real route');
 assert(app.includes("loadProfileAttentionKeys(profileAttentionScope)")&&app.includes('legacyUnreadUnlockEntries(keys,state,Date.now())'),'Previously unread unlock keys migrate without being dropped');
@@ -24,6 +27,7 @@ assert(more.includes('newUnlockCount={')===false&&more.includes("id==='NewUnlock
 assert(app.includes('newUnlockCount={unreadUnlockCount(unlockInbox)}'),'The badge count uses saved inbox entries');
 assert(screen.includes('entries.slice(0,20)')&&screen.includes('Show older unlocks'),'History stays compact by default');
 assert(screen.includes("onCustomize"),'Unlock list links to existing profile customization');
+assert(screen.includes("pet:'COSMETIC PET'")&&screen.includes("emote:'EMOTE'")&&screen.includes("guild_cosmetic:'GUILD COSMETIC'"),'More cosmetic kinds have readable labels');
 assert(core.includes("UNLOCK_INBOX_LIMIT=100")&&storage.includes("PREFIX='veldryn.unlock-inbox.v1:'"),'Inbox is capped and account scoped');
 assert(storage.includes('queues=new Map<string,Promise<void>>()'),'Concurrent writes must be serialized by scope');
 assert(notifications.includes("subroute:'account.new-unlocks'"),'Global notification route points to the new inbox');

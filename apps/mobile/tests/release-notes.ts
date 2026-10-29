@@ -11,7 +11,7 @@ assert(parseReleaseNoteRow({version:'0.9.5',title:'Update',highlights:[]})===nul
 assert(shouldAutoShowReleaseNotes(note?[note]:[],'0.9.5',false),'Installed release should be announced once');
 assert(!shouldAutoShowReleaseNotes(note?[note]:[],'0.9.5',true),'Seen release must not reopen');
 assert(!shouldAutoShowReleaseNotes(note?[note]:[],'0.9.4',false),'An update not yet installed is optional, never an auto announcement');
-console.log('PASS: release note parsing, version targeting and seen-state rules');
+
 
 const freshInstall=firstInstalledReleaseVersion(null,false,'1.0.3');
 const existingInstall=firstInstalledReleaseVersion(null,true,'1.0.3');
@@ -35,3 +35,4 @@ assert(!shouldAutoAnnounceReleaseNotes({
  firstInstalledVersion:'1.0.2',installedVersion:'1.0.3',notes:[],seen:true,
  optionalUpdateAvailable:true,optionalUpdateSeen:true,startupReady:true
 }),'Dismissed optional updates must not auto-show again');
+console.log('PASS: release note parsing, player eligibility and popup priority');

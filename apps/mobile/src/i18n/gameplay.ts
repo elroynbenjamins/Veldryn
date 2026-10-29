@@ -7,9 +7,6 @@ import {useMemo} from 'react';
 // Every row is complete, in en/de/es/nl/it/fr order. English phrases are typed keys.
 type TranslationRow=readonly [string,string,string,string,string,string];
 const common={
-  'Owned: {count} {item} (Inventory + Bank)':['Owned: {count} {item} (Inventory + Bank)','Bestand: {count} {item} (Inventar + Bank)','En posesión: {count} {item} (Inventario + Banco)','In bezit: {count} {item} (Inventaris + Bank)','Posseduti: {count} {item} (Inventario + Banca)','En stock : {count} {item} (Inventaire + Banque)'],
-  'Batches available: {count}':['Batches available: {count}','Verfügbare Chargen: {count}','Lotes disponibles: {count}','Beschikbare batches: {count}','Lotti disponibili: {count}','Lots disponibles : {count}'],
-  'Batches reserved: {count}':['Batches reserved: {count}','Reservierte Chargen: {count}','Lotes reservados: {count}','Gereserveerde batches: {count}','Lotti prenotati: {count}','Lots réservés : {count}'],
   "Storage management":["Storage management","Lagerverwaltung","Gestión de almacén","Opslagbeheer","Gestione deposito","Gestion du stockage"],
   "Maximum storage capacity reached":["Maximum storage capacity reached","Maximale Lagerkapazität erreicht","Capacidad máxima de almacenamiento alcanzada","Maximale opslagcapaciteit bereikt","Capacità massima raggiunta","Capacité de stockage maximale atteinte"],
   "Upgrade to {capacity}":["Upgrade to {capacity}","Auf {capacity} erweitern","Ampliar a {capacity}","Uitbreiden naar {capacity}","Espandi a {capacity}","Augmenter à {capacity}"],

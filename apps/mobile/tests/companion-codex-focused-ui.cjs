@@ -15,6 +15,7 @@ assert(panel.includes('<SectionGuide scope={guideScope} area="companions" sectio
 assert(detail.includes("<GameModalHeader title={t(\"Companions\")}"),'Companion detail sheet and close control stay available');
 assert(detail.includes("title={t(\"Open Training & Bond\")}"),'Training route is a first-class action');
 assert(detail.includes("title={t(\"Unequip\")} disabled={busy}"),'Unequip must not be hidden inside the roadmap');
+assert(detail.includes("onPress={()=>act('companion_unequip')}"),'Unequip returns its action promise so loading and duplicate-tap safety work');
 assert(detail.includes("title={t('Abilities & Traits')}"),'Abilities have their own collapsed disclosure');
 assert(detail.includes("key={'abilities:'+selection}"),'Switching companions must reset the abilities disclosure');
 assert(detail.includes("model.def.activeAbility.name")&&detail.includes("model.def.passiveAbility.description")&&detail.includes("model.def.bondTrait.description"),'Active, passive, and Bond trait details are preserved');

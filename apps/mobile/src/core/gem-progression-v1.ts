@@ -3,6 +3,7 @@ import {itemDef} from '../content/items';
 import {GEM_GRADE_LABEL_V1,MOBILE_GEM_FAMILIES_V1,mobileGemFamilyV1,mobileGemItemIdV1,mobileRawGemItemIdV1,type MobileGemGradeV1} from '../content/gems-v1';
 import type {ClassId,GameState,ItemStack} from './types';
 import {levelFromXp,totalXpAtLevel} from './progression';
+import {consumeGemFromStorage,gemStorageQuantity,isGemPouchItemId,storePouchGem} from './gem-pouch';
 
 export const GEM_EFFECT_RESONANCE_CAP_V1=3;
 export const GEM_COMBINE_COSTS_V1:Readonly<Record<1|2|3|4,{to:2|3|4|5;copies:3;dust:number;gold:number;seconds:number;level:number;xp:number;catalystId?:'REGIONAL_CATALYST'|'RADIANT_CATALYST'}>>={
@@ -52,16 +53,15 @@ export function dismantleGemV1(state:GameState,itemId:string,quantityToDismantle
  const meta=canonicalGemMetaV1(itemId);if(!meta)throw new Error('Only canonical gems can be dismantled');
  if(!Number.isSafeInteger(quantityToDismantle)||quantityToDismantle<1)throw new Error('Invalid dismantle quantity');
  if(combinedGemQuantityV1(state,itemId)<quantityToDismantle)throw new Error('You do not own enough of this gem');
- const dustPer=GEM_DISMANTLE_DUST_V1[meta.grade],inv=consumeStackV1(state.inventory.stacks,itemId,quantityToDismantle);
- const bank=consumeStackV1(state.bank.stacks,itemId,quantityToDismantle-inv.used),dust=dustPer*quantityToDismantle;
- let inventory=inv.stacks,bankStacks=bank.stacks;
+ const dustPer=GEM_DISMANTLE_DUST_V1[meta.grade],afterGem=consumeGemFromStorage(state,itemId,quantityToDismantle),dust=dustPer*quantityToDismantle;
+ let inventory=afterGem.inventory.stacks,bankStacks=afterGem.bank.stacks;
  try{inventory=addStackV1(inventory,state.inventory.capacity,'GEM_DUST',dust);}
  catch{bankStacks=addStackV1(bankStacks,state.bank.capacity,'GEM_DUST',dust);}
- return {...state,inventory:{...state.inventory,stacks:inventory},bank:{...state.bank,stacks:bankStacks}};
+ return {...afterGem,inventory:{...afterGem.inventory,stacks:inventory},bank:{...afterGem.bank,stacks:bankStacks}};
 }
 
 function quantity(stacks:readonly ItemStack[],itemId:string){return stacks.filter(row=>row.itemId===itemId).reduce((sum,row)=>sum+row.quantity,0);}
-export function combinedGemQuantityV1(state:GameState,itemId:string){return quantity(state.inventory.stacks,itemId)+quantity(state.bank.stacks,itemId);}
+export function combinedGemQuantityV1(state:GameState,itemId:string){return gemStorageQuantity(state,itemId);}
 export function equippedCanonicalGemIdsV1(state:GameState){
  if(!state.character)return [] as string[];
  const out:string[]=[];
@@ -158,12 +158,12 @@ export function gemResearchXpV1(state:GameState){return Math.floor(GEM_RESEARCH_
 export function researchEffectGemV1(state:GameState,familyId:string){
  const status=gemResearchStatusV1(state,familyId);if(!status.ready)throw new Error(status.reason);
  const chosen=[...status.raw].sort((a,b)=>a.grade-b.grade)[0],rawId=mobileRawGemItemIdV1(familyId,chosen.grade);
- const rawInv=consumeStackV1(state.inventory.stacks,rawId,1),rawBank=consumeStackV1(state.bank.stacks,rawId,1-rawInv.used);
- const dustInv=consumeStackV1(rawInv.stacks,'GEM_DUST',GEM_RESEARCH_V1.dust),dustBank=consumeStackV1(rawBank.stacks,'GEM_DUST',GEM_RESEARCH_V1.dust-dustInv.used);
+ const afterRaw=consumeGemFromStorage(state,rawId,1);
+ const dustInv=consumeStackV1(afterRaw.inventory.stacks,'GEM_DUST',GEM_RESEARCH_V1.dust),dustBank=consumeStackV1(afterRaw.bank.stacks,'GEM_DUST',GEM_RESEARCH_V1.dust-dustInv.used);
  const currentXp=state.skills.find(row=>row.skillId==='enchanting')?.xp??0,nextXp=Math.min(totalXpAtLevel(100),currentXp+gemResearchXpV1(state));
- return {...state,character:{...state.character!,gold:state.character!.gold-GEM_RESEARCH_V1.gold},inventory:{...state.inventory,stacks:dustInv.stacks},bank:{...state.bank,stacks:dustBank.stacks},
+ return {...afterRaw,character:{...afterRaw.character!,gold:afterRaw.character!.gold-GEM_RESEARCH_V1.gold},inventory:{...afterRaw.inventory,stacks:dustInv.stacks},bank:{...afterRaw.bank,stacks:dustBank.stacks},
    skills:state.skills.map(row=>row.skillId==='enchanting'?{...row,xp:nextXp,level:levelFromXp(nextXp)}:row),
-   account:{...state.account,unlockedKnowledgeIds:[...new Set([...(state.account.unlockedKnowledgeIds??[]),gemFamilyRecipeIdV1(familyId)])]}} as GameState;
+   account:{...afterRaw.account,unlockedKnowledgeIds:[...new Set([...(state.account.unlockedKnowledgeIds??[]),gemFamilyRecipeIdV1(familyId)])]}} as GameState;
 }
 
 export function gemCombineRecipeIdV1(familyId:string,fromGrade:1|2|3|4){return 'gem_combine:'+familyId+':g'+fromGrade;}
@@ -204,6 +204,14 @@ export function resonanceCacheStatusV1(state:GameState,nowMs:number){
 }
 function addCacheRewardV1(state:GameState,itemId:string,quantityToAdd:number,nowMs:number):GameState{
  if(quantityToAdd<=0)return state;
+ if(isGemPouchItemId(itemId)){
+   try{return storePouchGem(state,itemId,quantityToAdd);}catch(error){
+     if(!(error instanceof Error)||error.message!=='Gem Pouch, Inventory and Bank are full')throw error;
+     const prior=state.overflow.stacks.find(row=>row.itemId===itemId);
+     const stacks=prior?state.overflow.stacks.map(row=>row.itemId===itemId?{...row,quantity:row.quantity+quantityToAdd}:row):[...state.overflow.stacks,{itemId,quantity:quantityToAdd}];
+     return {...state,overflow:{stacks,expiresAtMs:Math.max(state.overflow.expiresAtMs??0,nowMs+72*60*60*1000)}};
+   }
+ }
  const add=(stacks:readonly ItemStack[])=>{const existing=stacks.find(row=>row.itemId===itemId);return existing?stacks.map(row=>row.itemId===itemId?{...row,quantity:row.quantity+quantityToAdd}:row):[...stacks,{itemId,quantity:quantityToAdd}];};
  const invExisting=state.inventory.stacks.some(row=>row.itemId===itemId);
  if(invExisting||state.inventory.stacks.length<state.inventory.capacity)return {...state,inventory:{...state.inventory,stacks:add(state.inventory.stacks)}};

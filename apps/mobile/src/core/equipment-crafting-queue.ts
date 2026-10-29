@@ -11,6 +11,7 @@ import {auditCraftedGearOwnership,disposeCraftedGearInstance} from './crafted-ge
 import {proposeCraftedGearSettlement} from './crafted-gear-settlement';
 import type {CraftedGearRetentionEntry} from './crafted-gear-retention';
 import {gemCombineRecipeV1,gemRefineRecipeV1,isGemFamilyRecipeUnlockedV1} from './gem-progression-v1';
+import {consumeGemFromStorage,gemStorageQuantity,isGemPouchItemId,storePouchGem} from './gem-pouch';
 import {professionMasteryMultipliers} from './profession-mastery-v40';
 import {applyTrustedLongTermProgression} from './long-term-progression-runtime';
 import {accountEntitlementBenefits} from './account-entitlements';
@@ -76,7 +77,7 @@ export function timedEquipmentRecipe(recipeId:string){
 }
 
 function quantity(stacks:ItemStack[],itemId:string){return stacks.filter(row=>row.itemId===itemId).reduce((sum,row)=>sum+row.quantity,0);}
-function combinedQuantity(state:GameState,itemId:string){return quantity(state.inventory.stacks,itemId)+quantity(state.bank.stacks,itemId);}
+function combinedQuantity(state:GameState,itemId:string){return gemStorageQuantity(state,itemId);}
 function consume(stacks:ItemStack[],itemId:string,amount:number){
   let left=amount;
   const next=stacks.map(row=>{
@@ -86,6 +87,7 @@ function consume(stacks:ItemStack[],itemId:string,amount:number){
   return {stacks:next,used:amount-left};
 }
 function consumeAcross(state:GameState,itemId:string,amount:number){
+  if(isGemPouchItemId(itemId))return consumeGemFromStorage(state,itemId,amount);
   if(combinedQuantity(state,itemId)<amount)throw new Error(`Need ${amount} ${itemDef(itemId).name}`);
   const inv=consume(state.inventory.stacks,itemId,amount);
   const bank=consume(state.bank.stacks,itemId,amount-inv.used);
@@ -238,6 +240,7 @@ function addOutput(stacks:ItemStack[],capacity:number,itemId:string,quantityToAd
 }
 
 function grantCraftOutput(state:GameState,recipe:{output:{itemId:string;quantity:number}},ownerCharacterId:string){
+  if(isGemPouchItemId(recipe.output.itemId))return storePouchGem(state,recipe.output.itemId,recipe.output.quantity);
   if(state.character?.id!==ownerCharacterId){
     const bank=addOutput(state.bank.stacks,state.bank.capacity,recipe.output.itemId,recipe.output.quantity);
     if(bank.remaining>0)throw new Error('Bank is full; free Bank space before claiming this character\'s equipment');
@@ -385,7 +388,7 @@ export function claimAllReadyEquipmentCrafts(state:GameState,nowMs:number,truste
       const reason=error instanceof Error?error.message:'';
       // Keep unclaimable jobs in the queue. They can be claimed after storage is freed
       // or after an obsolete recipe is repaired; never silently delete their rewards.
-      if(reason==='Inventory and Bank are full'||reason.startsWith('Bank is full')||reason==='Crafting recipe is no longer available'||reason.startsWith('Crafted equipment storage is full')||reason.startsWith('Equipment copy limit reached')||reason.startsWith('Equipment copy ownership requires manual review')||reason.startsWith('Equipment requires manual review')){
+      if(reason==='Gem Pouch, Inventory and Bank are full'||reason==='Inventory and Bank are full'||reason.startsWith('Bank is full')||reason==='Crafting recipe is no longer available'||reason.startsWith('Crafted equipment storage is full')||reason.startsWith('Equipment copy limit reached')||reason.startsWith('Equipment copy ownership requires manual review')||reason.startsWith('Equipment requires manual review')){
         blocked.push({jobId:job.id,reason});
         continue;
       }

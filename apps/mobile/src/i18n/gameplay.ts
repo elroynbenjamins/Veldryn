@@ -7,6 +7,20 @@ import {useMemo} from 'react';
 // Every row is complete, in en/de/es/nl/it/fr order. English phrases are typed keys.
 type TranslationRow=readonly [string,string,string,string,string,string];
 const common={
+  "Rarity chances and quality effects":["Rarity chances and quality effects","Seltenheitschancen und Qualitätseffekte","Probabilidades de rareza y efectos de calidad","Zeldzaamheidskansen en kwaliteitseffecten","Probabilità di rarità ed effetti della qualità","Chances de rareté et effets de qualité"],
+  "Rarity & quality":["Rarity & quality","Seltenheit & Qualität","Rareza y calidad","Zeldzaamheid & kwaliteit","Rarità e qualità","Rareté et qualité"],
+  "Crafting chances and stat effects":["Crafting chances and stat effects","Herstellungschancen und Werteboni","Probabilidades de fabricación y efectos","Maak-kansen en statbonussen","Probabilità di creazione e bonus","Chances de fabrication et bonus"],
+  "Rarity":["Rarity","Seltenheit","Rareza","Zeldzaamheid","Rarità","Rareté"],
+  "Result":["Result","Ergebnis","Resultado","Resultaat","Risultato","Résultat"],
+  "Chance":["Chance","Chance","Probabilidad","Kans","Probabilità","Chance"],
+  "Stats":["Stats","Werte","Atributos","Stats","Statistiche","Stats"],
+  "chance":["chance","Chance","probabilidad","kans","probabilità","chance"],
+  "stats":["stats","Werte","atributos","stats","statistiche","stats"],
+  "Stats are compared with this item’s normal stats.":["Stats are compared with this item’s normal stats.","Die Werte gelten im Vergleich zu den normalen Werten dieses Gegenstands.","Los atributos se comparan con los valores normales de este objeto.","Stats worden vergeleken met de normale stats van dit item.","Le statistiche sono confrontate con quelle normali dell'oggetto.","Les stats sont comparées à celles de base de cet objet."],
+  "Quality":["Quality","Qualität","Calidad","Kwaliteit","Qualità","Qualité"],
+  "Normal":["Normal","Normal","Normal","Normaal","Normale","Normal"],
+  "Lower quality means weaker stats; higher quality means stronger stats. Rarity and quality combine.":["Lower quality means weaker stats; higher quality means stronger stats. Rarity and quality combine.","Niedrigere Qualität schwächt die Werte; höhere Qualität verstärkt sie. Seltenheit und Qualität wirken zusammen.","Menor calidad significa atributos más bajos; mayor calidad, más altos. Rareza y calidad se combinan.","Lagere kwaliteit geeft zwakkere stats; hogere kwaliteit geeft sterkere stats. Zeldzaamheid en kwaliteit tellen samen.","Qualità bassa riduce le statistiche, qualità alta le aumenta. Rarità e qualità si combinano.","Une faible qualité réduit les stats ; une qualité élevée les augmente. Rareté et qualité se cumulent."],
+  "Older Forge gear without a quality roll counts as Q50.":["Older Forge gear without a quality roll counts as Q50.","Alte Schmiedeausrüstung ohne Qualitätswurf zählt als Q50.","El equipo antiguo de forja sin calidad registrada cuenta como Q50.","Oude gesmede uitrusting zonder kwaliteitsrol telt als Q50.","L'equipaggiamento forgiato precedente senza qualità salvata vale Q50.","L'ancien équipement forgé sans jet de qualité compte comme Q50."],
   "Storage management":["Storage management","Lagerverwaltung","Gestión de almacén","Opslagbeheer","Gestione deposito","Gestion du stockage"],
   "Maximum storage capacity reached":["Maximum storage capacity reached","Maximale Lagerkapazität erreicht","Capacidad máxima de almacenamiento alcanzada","Maximale opslagcapaciteit bereikt","Capacità massima raggiunta","Capacité de stockage maximale atteinte"],
   "Upgrade to {capacity}":["Upgrade to {capacity}","Auf {capacity} erweitern","Ampliar a {capacity}","Uitbreiden naar {capacity}","Espandi a {capacity}","Augmenter à {capacity}"],

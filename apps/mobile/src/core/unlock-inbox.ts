@@ -1,11 +1,12 @@
 import type {GameState} from './types';
-import type {CustomizationUnlockEntry} from '../components/CustomizationUnlockPopup';
+export type CosmeticUnlockKind='background'|'border'|'title'|'profile_icon';
+export interface CosmeticUnlockNotice{key:string;kind:CosmeticUnlockKind;name:string;detail?:string;}
 import {profileRewardSource} from './profile-customization';
 import {profileIconCollection} from './profile-icons';
 import {PROFILE_TITLES} from './profile-unlocks';
 import {JOURNAL_TITLES_V42} from './adventurers-journal-v42';
 
-export type UnlockInboxEntry=CustomizationUnlockEntry&{unlockedAtMs:number;seen:boolean};
+export type UnlockInboxEntry=CosmeticUnlockNotice&{unlockedAtMs:number;seen:boolean};
 export const UNLOCK_INBOX_LIMIT=100;
 const kinds=new Set(['title','background','border','profile_icon']);
 function valid(row:unknown):row is UnlockInboxEntry{
@@ -39,7 +40,7 @@ export function markUnlockInboxSeen(entries:readonly UnlockInboxEntry[]){
  return entries.map(entry=>entry.seen?entry:{...entry,seen:true});
 }
 export function unreadUnlockCount(entries:readonly UnlockInboxEntry[]){return entries.filter(entry=>!entry.seen).length;}
-export function newUnlockInboxEntries(entries:readonly CustomizationUnlockEntry[],atMs:number):UnlockInboxEntry[]{
+export function newUnlockInboxEntries(entries:readonly CosmeticUnlockNotice[],atMs:number):UnlockInboxEntry[]{
  return normalizeUnlockInbox(entries.map(entry=>({...entry,unlockedAtMs:atMs,seen:false})));
 }
 /** Migrate unread keys from older app versions without inventing gameplay rewards. */

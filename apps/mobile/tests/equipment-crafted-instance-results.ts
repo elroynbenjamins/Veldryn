@@ -1,7 +1,7 @@
 import {V33_EQUIPMENT_RECIPES} from '../src/content/equipment-recipes-v33';
 import {claimOverflowToBank,createCharacter,depositToBank,equipItem,newGame,sellItem,stackItems,unequipItem} from '../src/core/game';
 import {claimAllReadyEquipmentCrafts,claimEquipmentCraft,equipmentCraftingQueue,startEquipmentCraft} from '../src/core/equipment-crafting-queue';
-import {CRAFTED_EPIC_CHANCE,CRAFTED_MYTHIC_CHANCE,craftedGearRarity,craftedGearRarityOutcomes,craftedRarityStatMultiplier} from '../src/core/crafted-gear-rarity';
+import {CRAFTED_COMMON_CHANCE,CRAFTED_UNCOMMON_CHANCE,CRAFTED_RARE_CHANCE,CRAFTED_EPIC_CHANCE,CRAFTED_LEGENDARY_CHANCE,CRAFTED_MYTHIC_CHANCE,craftedGearRarity,craftedGearRarityOutcomes,craftedRarityStatMultiplier} from '../src/core/crafted-gear-rarity';
 import {MAX_CRAFTED_GEAR_INSTANCES,TARGET_CRAFTED_GEAR_COPIES_PER_ITEM,bestCraftedInstanceForItem,craftedGearCopyCapacity,craftedGearInstances,craftedGearQualityRoll,craftedGearDisplayQuality,craftedGearQualityMultiplier,craftClaimSubRoll,effectiveOwnedGearRarity,normalizeCraftedGearInstances,createCraftedGearInstance,craftedGearLegacyOwnershipAudit} from '../src/core/crafted-gear-instances';
 import {enhancedGearStats,upgradeQuote} from '../src/core/equipment-enhancement';
 import {itemDef} from '../src/content/items';
@@ -15,26 +15,39 @@ import {auditCraftedGearOwnership,craftedGearCopiesAt,moveCraftedGearInstance,se
 
 function ok(value:unknown,message:string){if(!value)throw new Error(message)}
 
-ok(CRAFTED_EPIC_CHANCE===.006,'Forge Epic quality proc must be exactly 0.60%');
-ok(CRAFTED_MYTHIC_CHANCE===.001,'Forge Mythic quality proc must be exactly 0.10%');
+ok(CRAFTED_COMMON_CHANCE===.891,'Common-base Forge result chance must be exactly 89.10%');
+ok(CRAFTED_UNCOMMON_CHANCE===.07,'Forge Uncommon result chance must be exactly 7%');
+ok(CRAFTED_RARE_CHANCE===.03,'Forge Rare result chance must be exactly 3%');
+ok(CRAFTED_EPIC_CHANCE===.006,'Forge Epic result chance must remain 0.60%');
+ok(CRAFTED_LEGENDARY_CHANCE===.002,'Forge Legendary result chance must be exactly 0.20%');
+ok(CRAFTED_MYTHIC_CHANCE===.001,'Forge Mythic result chance must remain 0.10%');
 
 const recipe=V33_EQUIPMENT_RECIPES.find(row=>row.output.itemId==='T1P_001')!;
 const base=itemRarity(itemDef(recipe.output.itemId));
 ok(base==='common','T1P_001 must remain a useful Common baseline fixture');
 ok(craftedGearRarity(recipe.output.itemId,0)==='mythic','Roll 0 should proc Mythic');
 ok(craftedGearRarity(recipe.output.itemId,.000999)==='mythic','Mythic range should cover [0,0.001)');
-ok(craftedGearRarity(recipe.output.itemId,.001)==='epic','Epic range must begin at 0.001');
-ok(craftedGearRarity(recipe.output.itemId,.006999)==='epic','Epic range should extend through the combined 0.70% quality-proc window');
-ok(craftedGearRarity(recipe.output.itemId,.007)==='common','Non-proc T1 craft should preserve authored Common rarity');
+ok(craftedGearRarity(recipe.output.itemId,.001)==='legendary','Legendary must start after Mythic');
+ok(craftedGearRarity(recipe.output.itemId,.002999)==='legendary','Legendary must cover its complete 0.20% band');
+ok(craftedGearRarity(recipe.output.itemId,.003)==='epic','Epic must begin after Mythic and Legendary');
+ok(craftedGearRarity(recipe.output.itemId,.008999)==='epic','Epic must retain its full 0.60% band');
+ok(craftedGearRarity(recipe.output.itemId,.009)==='rare','Rare must begin immediately after Epic');
+ok(craftedGearRarity(recipe.output.itemId,.038999)==='rare','Rare must cover its full 3% band');
+ok(craftedGearRarity(recipe.output.itemId,.039)==='uncommon','Uncommon must begin after Rare');
+ok(craftedGearRarity(recipe.output.itemId,.108999)==='uncommon','Uncommon must cover its 7% band');
+ok(craftedGearRarity(recipe.output.itemId,.109)==='common','The remaining Common range begins after all upgrade bands');
+ok(craftedGearRarity(recipe.output.itemId,.999999)==='common','The highest valid roll must retain base Common');
 const commonOutcomes=craftedGearRarityOutcomes(recipe.output.itemId);
-ok(commonOutcomes.length===3&&commonOutcomes[0].rarity==='common'&&commonOutcomes[1].rarity==='epic'&&commonOutcomes[2].rarity==='mythic',
-  'The odds guide must report actual final Common, Epic and Mythic outcomes for low-tier equipment');
+ok(commonOutcomes.map(row=>row.rarity).join(',')==='common,uncommon,rare,epic,legendary,mythic',
+  'The odds guide must show all six Forge rarities for Common-base equipment');
 ok(Math.abs(commonOutcomes.reduce((sum,row)=>sum+row.chance,0)-1)<1e-12,
   'Final Forge rarity outcomes must add to 100%');
-ok(Math.abs(commonOutcomes[0].chance-.993)<1e-12&&Math.abs(commonOutcomes[1].chance-.006)<1e-12&&Math.abs(commonOutcomes[2].chance-.001)<1e-12,
-  'Low-tier Forge odds must show 99.30% base, 0.60% Epic and 0.10% Mythic');
-ok(commonOutcomes[0].statMultiplier===1&&commonOutcomes[1].statMultiplier===1.5&&commonOutcomes[2].statMultiplier===2.2,
-  'Rarity guide stat multipliers must reflect the same rarity scaling used by combat');
+const expectedRarityChances=[.891,.07,.03,.006,.002,.001];
+const expectedRarityStats=[1,1.12,1.28,1.5,1.8,2];
+ok(commonOutcomes.every((row,index)=>Math.abs(row.chance-expectedRarityChances[index])<1e-12),
+  'Displayed Forge probabilities must exactly match the full six-tier roll table');
+ok(commonOutcomes.every((row,index)=>Math.abs(row.statMultiplier-expectedRarityStats[index])<1e-12),
+  'Displayed rarity effects must use the actual stat multipliers, including Mythic 2×');
 
 
 const t9=V33_EQUIPMENT_RECIPES.find(row=>row.v33EquipmentTier==='T9')!;
@@ -47,10 +60,10 @@ ok(mythicOutcomes.length===1&&mythicOutcomes[0].rarity==='mythic'&&mythicOutcome
 const epicBaseRecipe=V33_EQUIPMENT_RECIPES.find(row=>itemRarity(itemDef(row.output.itemId))==='epic');
 if(epicBaseRecipe){
   const epicOutcomes=craftedGearRarityOutcomes(epicBaseRecipe.output.itemId);
-  ok(epicOutcomes.length===2&&epicOutcomes[0].rarity==='epic'&&epicOutcomes[1].rarity==='mythic',
-    'Epic-base recipes must group the normal and Epic-proc chances into a single final Epic outcome');
-  ok(Math.abs(epicOutcomes[0].chance-.999)<1e-12&&Math.abs(epicOutcomes[1].chance-.001)<1e-12,
-    'Epic-base recipes must show 99.90% Epic and 0.10% Mythic');
+  ok(epicOutcomes.map(row=>row.rarity).join(',')==='epic,legendary,mythic',
+    'Epic-base recipes must include Legendary and Mythic, but never downgrade to Rare');
+  ok(Math.abs(epicOutcomes[0].chance-.997)<1e-12&&Math.abs(epicOutcomes[1].chance-.002)<1e-12&&Math.abs(epicOutcomes[2].chance-.001)<1e-12,
+    'Epic-base recipes must show 99.70% Epic, 0.20% Legendary and 0.10% Mythic');
 }
 
 
@@ -60,13 +73,13 @@ const beforeStats=enhancedGearStats(state,recipe.output.itemId),beforeQuote=upgr
 
 let started=startEquipmentCraft(state,recipe.id,1000);state=started.state;
 let job=equipmentCraftingQueue(state)[0];
-const epicClaim=claimEquipmentCraft(state,job.id,job.completesAtMs,.002);
+const epicClaim=claimEquipmentCraft(state,job.id,job.completesAtMs,.004);
 state=epicClaim.state;
-ok(epicClaim.result.rarity==='epic'&&epicClaim.result.qualityProc,'Trusted .002 claim roll should produce an Epic quality proc');
+ok(epicClaim.result.rarity==='epic'&&epicClaim.result.qualityProc,'Trusted .004 claim roll should produce an Epic rarity upgrade');
 ok(craftedGearInstances(state).length===1,'Claimed Forge gear must create a persisted instance');
 ok(craftedGearInstances(state)[0].id.includes(job.id),'Crafted instance identity must derive from its authoritative Forge receipt');
 ok(epicClaim.result.quality!==undefined&&epicClaim.result.quality>=0&&epicClaim.result.quality<=100,'Crafted equipment must persist a bounded 0–100 quality roll');
-ok(epicClaim.result.quality===craftedGearQualityRoll(.002,job.id),'Quality must be deterministic from the trusted roll and job ID');
+ok(epicClaim.result.quality===craftedGearQualityRoll(.004,job.id),'Quality must be deterministic from the trusted roll and job ID');
 ok(craftedGearQualityRoll(.123456,'job-a')===craftedGearQualityRoll(.123456,'job-a'),'Retry must retain the same quality');
 ok(craftedGearQualityRoll(.5,'quality-edge-12')===0,'New Forge quality rolls must be able to reach Q0');
 ok(craftedGearQualityRoll(.5,'quality-edge-9')===100,'New Forge quality rolls must be able to reach Q100');

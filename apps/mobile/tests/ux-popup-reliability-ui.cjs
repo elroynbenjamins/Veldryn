@@ -31,6 +31,8 @@ assert(app.includes('hasBlockingAlert=useSyncExternalStore(gameAlerts.subscribe,
 for(const marker of ["activeGlobalPopup==='activity-reward'","activeGlobalPopup==='first-session'","activeGlobalPopup==='feature-unlock'","activeGlobalPopup==='customization-unlock'","activeGlobalPopup==='exceptional-forge'","activeGlobalPopup==='story-boss'","activeGlobalPopup==='event-start'","activeGlobalPopup==='whats-new'"]){
  assert(app.includes(marker),'Global modal visibility must respect the selected presentation: '+marker);
 }
+assert(!app.includes("showAlert('Forge complete'"),'Routine Forge success must not open a blocking alert');
+assert(app.includes('setForgeClaimFeedback(count+'),'The Forge fallback must use nonblocking success feedback');
 assert(priority.includes("if(value.whatsNew)return 'whats-new'"),
   'Release notes remain lowest-priority announcements');
 console.log('PASS: Trial Theater exclusivity, safe Settings Stop, and shared popup visibility');

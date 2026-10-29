@@ -6,6 +6,8 @@ import {createTranslator,type TranslationParams} from './translator';
 
 // Columns are German, Spanish, Dutch, Italian and French; keys are the English catalog.
 export const socialTranslationRows = {
+"Watch":["Ansehen","Ver","Bekijken","Guarda","Voir"],
+"Visual effects only · server-calculated damage":["Nur visuelle Effekte · Schaden wird vom Server berechnet","Solo efectos visuales · daño calculado por el servidor","Alleen visuele effecten · schade berekend door server","Solo effetti visivi · danni calcolati dal server","Effets visuels uniquement · dégâts calculés par le serveur"],
  "Battle in progress": ["Kampf läuft","Combate en curso","Gevecht bezig","Combattimento in corso","Combat en cours"],
  "Encounter replay": ["Kampfwiedergabe","Repetición del combate","Gevecht opnieuw bekijken","Replay dello scontro","Relecture du combat"],
  "Watch battle": ["Kampf ansehen","Ver combate","Gevecht bekijken","Guarda la battaglia","Voir le combat"],

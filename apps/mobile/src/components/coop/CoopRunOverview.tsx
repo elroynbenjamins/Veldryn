@@ -5,6 +5,7 @@ import {Animated,StyleSheet,Text,View} from 'react-native';
 import type {CoopRunView} from '../../core/coop-presentation';
 import {validateCoopRunView} from '../../core/coop-presentation';
 import {ct,t,type Language} from '../../i18n';
+import {accountText} from '../../i18n/account';
 import {type CoopColors,coopSpacing,coopTypography} from '../../theme/coop-ui-theme';
 import {ExpeditionScreenShell,FantasyPanel,RoleBadge,StateChip} from './CoopVisualKit';
 import {DungeonRouteChoices} from './DungeonRouteChoices';
@@ -31,9 +32,9 @@ function TerminalRunMoment({phase,rewardsReady,rewardsSecured,reduceMotion}:{pha
   </Animated.View>;
 }
 
-export function CoopRunOverview({language,run,onBack,onChoose,onRefresh,onClaim,busy=false,notice,rewards=[],terminalAction,reduceMotion=false,seasonal=false,eventName,chatMessages=[],onChatSend}:{language:Language;run:CoopRunView;onBack:()=>void;onChoose?:(nodeId:string)=>void;onRefresh?:()=>void;onClaim?:(id:string)=>void;busy?:boolean;notice?:string;rewards?:Array<{id:string;claimed_at:string|null;reward_json:{marks?:number}}>;terminalAction?:{label:string;claimed?:boolean;completeText?:string;onPress:()=>void};reduceMotion?:boolean;seasonal?:boolean;eventName?:string;chatMessages?:CoopChatMessage[];onChatSend?:(text:string)=>Promise<void>}){
+export function CoopRunOverview({language,run,onBack,onChoose,onRefresh,onClaim,busy=false,notice,syncError,rewards=[],terminalAction,reduceMotion=false,seasonal=false,eventName,chatMessages=[],onChatSend}:{language:Language;run:CoopRunView;onBack:()=>void;onChoose?:(nodeId:string)=>void;onRefresh?:()=>void;onClaim?:(id:string)=>void;busy?:boolean;notice?:string;syncError?:string;rewards?:Array<{id:string;claimed_at:string|null;reward_json:{marks?:number}}>;terminalAction?:{label:string;claimed?:boolean;completeText?:string;onPress:()=>void};reduceMotion?:boolean;seasonal?:boolean;eventName?:string;chatMessages?:CoopChatMessage[];onChatSend?:(text:string)=>Promise<void>}){
  const {styles:s}=useCoopStyles(makeStyles);
- const st=useSocialText();
+ const st=useSocialText(),a=(value:string)=>accountText(language,value);
   validateCoopRunView(run);
   const modeLabel=run.modeLabel??(run.mode==='qmode'?ct(language,'details.qmode'):ct(language,'details.live')),bossNext=run.options.some(option=>option.kind==='boss');
   const terminal=run.phase==='completed'||run.phase==='failed',unclaimedRewards=rewards.filter(reward=>!reward.claimed_at),rewardSurfaceReady=rewards.length>0||Boolean(terminalAction),rewardsSecured=terminal&&rewardSurfaceReady&&!unclaimedRewards.length&&(!terminalAction||terminalAction.claimed===true);
@@ -55,6 +56,7 @@ export function CoopRunOverview({language,run,onBack,onChoose,onRefresh,onClaim,
       <View style={s.grow}><Text style={s.title}>{run.phase==='resolving_node'?st('Battle in progress'):run.lastCombat?.reason==='victory'?st('Encounter cleared'):run.lastCombat?.reason==='wipe'?st('Party defeated'):st('Encounter replay')}</Text><Text style={s.copy}>{combatName}</Text></View>
       <GameButton compact title={st('Watch battle')} onPress={()=>setTheaterOpen(true)}/>
      </View></FantasyPanel>:null}
+    {!!syncError&&<FantasyPanel variant="danger"><Text accessibilityRole="alert" style={s.title}>{a('Connection interrupted')}</Text><Text style={s.copy}>{a('Showing the last saved expedition progress. Reconnecting automatically.')}</Text><Text style={s.copy} numberOfLines={2}>{syncError}</Text>{onRefresh?<GameButton compact title={a('Retry connection')} tone="secondary" disabled={busy} onPress={onRefresh}/>:null}</FantasyPanel>}
     {!(run.phase==='resolving_node'||bossNext||run.lastCombat)?<>
     <FantasyPanel variant="selected"><View style={s.summary}><View style={s.grow}><Text style={s.title}>{ct(language,'details.party')}</Text><Text style={s.copy}>{ct(language,'details.partyValue')}</Text></View><StateChip label={`Lv. ${run.syncedLevel}`} tone="success"/></View></FantasyPanel>
     <Text style={s.section}>{ct(language,'details.party')}</Text>
@@ -71,7 +73,6 @@ export function CoopRunOverview({language,run,onBack,onChoose,onRefresh,onClaim,
     {!!notice&&<Text accessibilityRole="alert" style={s.copy}>{notice}</Text>}
     {run.phase==='resolving_node'&&<FantasyPanel><Text style={s.copy}>{st("Your party is resolving this room. Progress is saved online.")}</Text></FantasyPanel>}
     {run.options.length?<DungeonRouteChoices options={run.options} mode={run.mode} phase={run.phase} busy={busy} onChoose={onChoose}/>:run.phase!=='resolving_node'?<FantasyPanel><Text style={s.copy}>{ct(language,'browse.resumeBody')}</Text></FantasyPanel>:null}
-     {onRefresh&&<GameButton title={st("Refresh saved progress")} tone="secondary" disabled={busy} onPress={onRefresh}/>}
     {rewards.map(reward=><FantasyPanel key={reward.id} variant="success">{reward.claimed_at?<Text style={s.copy}>{reward.reward_json.marks??0} {st("Expedition Marks collected.")}</Text>:<GameButton title={st("Collect expedition reward")} disabled={busy} onPress={()=>onClaim?.(reward.id)}/>}</FantasyPanel>)}
     {terminalAction?<FantasyPanel variant="success">{terminalAction.claimed?<View style={s.claimedReward}><StateChip label={st("SECURED")} tone="success"/><Text style={s.copy}>{terminalAction.completeText??'Seasonal expedition reward collected.'}</Text></View>:<GameButton title={terminalAction.label} disabled={busy} onPress={terminalAction.onPress}/>}</FantasyPanel>:null}
     {run.rewardText?<FantasyPanel variant="success"><Text style={s.title}>{ct(language,'details.reward')}</Text><Text style={s.copy}>{run.rewardText}</Text></FantasyPanel>:null}

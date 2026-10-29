@@ -39,7 +39,9 @@ export function CoopExpeditionScreen({onClose,language,state,entrySource=realCoo
   const [showEchoSharing,setShowEchoSharing]=useState(false);
   const [loading,setLoading]=useState(true);
   const [error,setError]=useState('');
+  const [syncError,setSyncError]=useState('');
   const [notice,setNotice]=useState('');
+  const loadRequestId=useRef(0);
   const [showLoadouts,setShowLoadouts]=useState(false);
   const [busy,setBusy]=useState(false),[pending,setPending]=useState(false);
   const displayRun=useMemo(()=>eventRun?presentEventExpeditionRun(eventRun):run,[eventRun,run]);
@@ -72,10 +74,13 @@ export function CoopExpeditionScreen({onClose,language,state,entrySource=realCoo
   },[]);
   const action=async(work:()=>Promise<void>)=>{if(busy)return;setBusy(true);setNotice('');try{await work();}catch(reason){setNotice(reason instanceof Error?reason.message:String(reason));}finally{setBusy(false);if(entrySource.kind==='real')setPending(await coopClient.hasPending().catch(()=>false));}};
   const load=useCallback(async()=>{
+    const requestId=++loadRequestId.current;
     setLoading(true);setError('');
-    try{const next=await entrySource.load();next.dungeons.forEach(source=>validateCoopDungeonView(presentCoopDungeon(source)));next.eventExpeditions?.forEach(validateCoopEventExpeditionPreview);setEntry(next)}catch(reason){setEntry(undefined);setError(reason instanceof Error?reason.message:String(reason))}finally{setLoading(false)}
+    try{const next=await entrySource.load();next.dungeons.forEach(source=>validateCoopDungeonView(presentCoopDungeon(source)));next.eventExpeditions?.forEach(validateCoopEventExpeditionPreview);if(requestId===loadRequestId.current)setEntry(next)}
+    catch(reason){if(requestId===loadRequestId.current)setError(reason instanceof Error?reason.message:String(reason))}
+    finally{if(requestId===loadRequestId.current)setLoading(false)}
   },[entrySource]);
-  useEffect(()=>{void load()},[load]);
+  useEffect(()=>{void load();return()=>{loadRequestId.current++}},[load]);
   useEffect(()=>{
     if(initialEventHandled.current||!initialEventLiveId||!entry)return;
     initialEventHandled.current=true;onInitialEventHandled?.();
@@ -93,16 +98,18 @@ export function CoopExpeditionScreen({onClose,language,state,entrySource=realCoo
   },[entrySource.kind,mode,showLive,showLoadouts,selected,selectedEvent,run,eventRun]);
   useEffect(()=>{
     const id=run?.runId;if(!id||entrySource.kind!=='real')return;
+    setSyncError('');
     let stopped=false,inFlight=false;
-    const update=async()=>{if(stopped||inFlight)return;inFlight=true;try{await refreshRun(id);}catch(reason){if(!stopped)setNotice(reason instanceof Error?reason.message:String(reason));}finally{inFlight=false;}};
+    const update=async()=>{if(stopped||inFlight)return;inFlight=true;try{await refreshRun(id);if(!stopped)setSyncError('');}catch(reason){if(!stopped)setSyncError(reason instanceof Error?reason.message:String(reason));}finally{inFlight=false;}};
     void update();const timer=setInterval(()=>void update(),2500);
     const channel=supabase?.channel('coop-snapshot-'+id).on('postgres_changes',{event:'UPDATE',schema:'public',table:'coop_run_client_snapshots',filter:'run_id=eq.'+id},()=>void update()).subscribe();
     return()=>{stopped=true;clearInterval(timer);if(channel)void supabase?.removeChannel(channel);};
   },[run?.runId,entrySource.kind,refreshRun]);
   useEffect(()=>{
     const id=eventRun?.runId;if(!id||entrySource.kind!=='real')return;
+    setSyncError('');
     let stopped=false,inFlight=false;
-    const update=async()=>{if(stopped||inFlight)return;inFlight=true;try{await refreshEventRun(id);}catch(reason){if(!stopped)setNotice(reason instanceof Error?reason.message:String(reason));}finally{inFlight=false;}};
+    const update=async()=>{if(stopped||inFlight)return;inFlight=true;try{await refreshEventRun(id);if(!stopped)setSyncError('');}catch(reason){if(!stopped)setSyncError(reason instanceof Error?reason.message:String(reason));}finally{inFlight=false;}};
     void update();const timer=setInterval(()=>void update(),2500);
     const channel=supabase?.channel('event-coop-snapshot-'+id).on('postgres_changes',{event:'UPDATE',schema:'public',table:'coop_run_client_snapshots',filter:'run_id=eq.'+id},()=>void update()).subscribe();
     return()=>{stopped=true;clearInterval(timer);if(channel)void supabase?.removeChannel(channel);};
@@ -147,9 +154,9 @@ export function CoopExpeditionScreen({onClose,language,state,entrySource=realCoo
   if(showLive)return <CoopLiveLobby dungeons={dungeons} selfPortrait={state.character?profileIconSource(state.character.profileIconId,state.character.classId):undefined} onBack={()=>setShowLive(false)} onRunReady={runId=>{setShowLive(false);void action(async()=>{const projection=await coopClient.run(runId);if(!('team' in projection))throw new Error(st("Invalid Live run response."));acceptRun(projection);});}}/>;
   if(eventRun){
     const view=runWithIcons!,marks=eventRun.settlement.rewardMarks??0;
-    return <View style={{flex:1}}>{retry}<CoopRunOverview language={language} run={view} seasonal eventName={eventRun.eventName} notice={notice} busy={busy} reduceMotion={state.settings.reduceMotion} onBack={()=>{setEventRun(undefined);void load();}} onRefresh={()=>action(()=>refreshEventRun(eventRun.runId))} onChoose={nodeId=>void action(async()=>{if(!eventRun.decisionId||eventRun.decisionRevision===undefined)throw new Error(st("Refresh this run before choosing."));acceptEventRun(await coopClient.chooseEvent(eventRun.runId,{requestId:coopRequestId(),decisionId:eventRun.decisionId,decisionRevision:eventRun.decisionRevision,optionId:nodeId}));})} terminalAction={eventRun.phase==='completed'?{label:st('Collect {marks} event currency',{marks}),claimed:eventRun.settlement.status==='claimed',completeText:st('{marks} event currency collected.',{marks}),onPress:()=>void action(async()=>{acceptEventRun(await coopClient.claimEvent(eventRun.runId));setNotice(st('{marks} event currency and reputation collected.',{marks}));await onRewardsChanged?.();})}:undefined}/></View>;
+    return <View style={{flex:1}}>{retry}<CoopRunOverview language={language} run={view} seasonal eventName={eventRun.eventName} notice={notice} syncError={syncError} busy={busy} reduceMotion={state.settings.reduceMotion} onBack={()=>{setEventRun(undefined);void load();}} onRefresh={()=>action(async()=>{await refreshEventRun(eventRun.runId);setSyncError('')})} onChoose={nodeId=>void action(async()=>{if(!eventRun.decisionId||eventRun.decisionRevision===undefined)throw new Error(st("Refresh this run before choosing."));acceptEventRun(await coopClient.chooseEvent(eventRun.runId,{requestId:coopRequestId(),decisionId:eventRun.decisionId,decisionRevision:eventRun.decisionRevision,optionId:nodeId}));})} terminalAction={eventRun.phase==='completed'?{label:st('Collect {marks} event currency',{marks}),claimed:eventRun.settlement.status==='claimed',completeText:st('{marks} event currency collected.',{marks}),onPress:()=>void action(async()=>{acceptEventRun(await coopClient.claimEvent(eventRun.runId));setNotice(st('{marks} event currency and reputation collected.',{marks}));await onRewardsChanged?.();})}:undefined}/></View>;
   }
-  if(run)return <View style={{flex:1}}>{retry}<CoopRunOverview language={language} run={runWithIcons!} notice={notice} busy={busy} rewards={rewards} chatMessages={chatMessages} onChatSend={run.mode==='live'?async text=>{const response=await coopClient.chat(run.runId,text);setChatMessages(response.messages);}:undefined} reduceMotion={state.settings.reduceMotion} onBack={()=>{setRun(undefined);setChatMessages([]);setRewards([]);void load();}} onRefresh={()=>action(()=>refreshRun(run.runId))} onChoose={nodeId=>void action(async()=>{if(!run.decisionId||run.decisionRevision===undefined)throw new Error(st("Refresh this run before choosing."));const body={requestId:coopRequestId(),decisionId:run.decisionId,decisionRevision:run.decisionRevision,optionId:nodeId};acceptRun(run.mode==='live'&&run.options.length>1?await coopClient.vote(run.runId,body):await coopClient.choose(run.runId,body));})} onClaim={id=>action(async()=>{const reward=await coopClient.claim(id);setNotice(reward.live_fellowship_bonus?st('{marks} Expedition Marks collected. Includes +{bonus} Live Fellowship bonus.',{marks:reward.marks,bonus:reward.live_fellowship_bonus}):st('{marks} Expedition Marks collected.',{marks:reward.marks}));await onRewardsChanged?.();await refreshRun(run.runId);await load();})}/></View>;
+  if(run)return <View style={{flex:1}}>{retry}<CoopRunOverview language={language} run={runWithIcons!} notice={notice} syncError={syncError} busy={busy} rewards={rewards} chatMessages={chatMessages} onChatSend={run.mode==='live'?async text=>{const response=await coopClient.chat(run.runId,text);setChatMessages(response.messages);}:undefined} reduceMotion={state.settings.reduceMotion} onBack={()=>{setRun(undefined);setChatMessages([]);setRewards([]);void load();}} onRefresh={()=>action(async()=>{await refreshRun(run.runId);setSyncError('')})} onChoose={nodeId=>void action(async()=>{if(!run.decisionId||run.decisionRevision===undefined)throw new Error(st("Refresh this run before choosing."));const body={requestId:coopRequestId(),decisionId:run.decisionId,decisionRevision:run.decisionRevision,optionId:nodeId};acceptRun(run.mode==='live'&&run.options.length>1?await coopClient.vote(run.runId,body):await coopClient.choose(run.runId,body));})} onClaim={id=>action(async()=>{const reward=await coopClient.claim(id);setNotice(reward.live_fellowship_bonus?st('{marks} Expedition Marks collected. Includes +{bonus} Live Fellowship bonus.',{marks:reward.marks,bonus:reward.live_fellowship_bonus}):st('{marks} Expedition Marks collected.',{marks:reward.marks}));await onRewardsChanged?.();await refreshRun(run.runId);await load();})}/></View>;
   if(selectedEvent)return <CoopEventExpeditionDetails language={language} event={selectedEvent} notice={notice} busy={busy} onBack={()=>{setSelectedEvent(undefined);setNotice('')}} onLaunch={()=>void action(async()=>{
     if(entrySource.kind!=='real'){setNotice(clt(language,'intentOnly'));return;}
     const loadout=entry?.loadouts.find(item=>item.id==='current'&&item.status==='verified'&&item.ready)??entry?.loadouts.find(item=>item.status==='verified'&&item.ready);

@@ -37,6 +37,8 @@ jobs:
           node tests/settings-simplicity-ui.cjs
       - name: Typecheck app
         run: pnpm typecheck
+      - name: Validate Gems storage and dungeon recovery UX
+        run: node tests/storage-dungeon-refinement-ui.cjs
       - name: Typecheck core
         run: pnpm typecheck:core
       - name: Run mobile core tests

@@ -185,7 +185,7 @@ export function InventoryScreen({state,viewMemory,foodRequest=0,onEquip,onFood,o
     </View>:null}
     {exactCopies.length>0?<View style={s.quantityPanel}>
       <Text style={s.quantityTitle}>UNIQUE EQUIPMENT · {exactCopies.length} {exactCopies.length===1?'COPY':'COPIES'}</Text>
-      {exactCopies.map(copy=><Pressable key={copy.id} accessibilityRole="button" accessibilityState={{selected:selectedCopy?.id===copy.id}} onPress={()=>setSelectedInstanceId(copy.id)} style={[s.row,{padding:10,borderWidth:1,borderColor:rarityMeta(copy.rarity).color,borderWidth:rarityMeta(copy.rarity).borderWidth,borderRadius:10,backgroundColor:selectedCopy?.id===copy.id?C.selection:C.panel2}]}>
+      {exactCopies.map(copy=><Pressable key={copy.id} accessibilityRole="button" accessibilityState={{selected:selectedCopy?.id===copy.id}} onPress={()=>setSelectedInstanceId(copy.id)} style={[s.row,{padding:10,borderColor:rarityMeta(copy.rarity).color,borderWidth:rarityMeta(copy.rarity).borderWidth,borderRadius:10,backgroundColor:selectedCopy?.id===copy.id?C.selection:C.panel2}]}>
         <Text style={[s.sub,s.flex,{color:rarityMeta(copy.rarity).color,fontWeight:'800'}]}>{rarityMeta(copy.rarity).label} · Q{craftedGearDisplayQuality(copy)}{copy.quality===undefined?' · Legacy baseline':''} {copy.locked?' · Locked':''} {copy.enhancement.rank>0?' · +'+copy.enhancement.rank:''}</Text>
         <Text style={s.quantityTitle}>{selectedCopy?.id===copy.id?'✓':'›'}</Text>
       </Pressable>)}

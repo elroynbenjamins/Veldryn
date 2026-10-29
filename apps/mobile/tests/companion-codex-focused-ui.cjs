@@ -4,12 +4,16 @@ const path=require('node:path');
 const root=path.resolve(__dirname,'..');
 const panel=fs.readFileSync(path.join(root,'src/components/CombatCompanionPanel.tsx'),'utf8');
 const translations=fs.readFileSync(path.join(root,'src/i18n/companions.ts'),'utf8');
+const guide=fs.readFileSync(path.join(root,'src/core/companion-tutorial.ts'),'utf8');
+const guideTranslations=fs.readFileSync(path.join(root,'src/i18n/companion-tutorial.ts'),'utf8');
 const section=panel.slice(panel.indexOf("{section==='Codex'&&"),panel.indexOf("\n  </View>;",panel.indexOf("{section==='Codex'&&")));
 const detail=panel.slice(panel.indexOf("{section==='Collection'&&<>"),panel.indexOf("    {!starterTeam.ready",panel.indexOf("{section==='Collection'&&<>")));
 
 // Preserve the prior five Companion sections and contextual help; avoid a second redesign.
 assert(panel.includes("const sections=['Collection','Training','Sanctuary','Trials','Expeditions'] as const"),'Existing Companion navigation remains intact');
 assert(panel.includes('<SectionGuide scope={guideScope} area="companions" section={section}'),'Per-section Companion guidance stays visible on first entry');
+assert(guide.includes('Progress shows recruits and mastery targets.')&&guide.includes('Showcase manages your favorites; Rewards holds collection milestones.'),'Codex guidance matches the new focused views');
+for(const hint of ['Fortschritt zeigt','Progreso muestra','Voortgang toont','Progressi mostra','Progression présente'])assert(guideTranslations.includes(hint),'Missing localized Codex tutorial '+hint);
 
 // Collection details: focused hero, primary actions, accessible deep dives.
 assert(detail.includes("<GameModalHeader title={t(\"Companions\")}"),'Companion detail sheet and close control stay available');

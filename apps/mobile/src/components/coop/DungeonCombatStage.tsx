@@ -76,8 +76,7 @@ export function DungeonCombatStage({run,enemyLabel,boss=false,seasonal=false,eve
  const tank=run.roleSlots.find(slot=>slot.role==='tank'),damage=run.roleSlots.filter(slot=>slot.role==='damage'),support=run.roleSlots.find(slot=>slot.role==='support');
  const ordered=[tank,damage[0],damage[1],support].filter((slot):slot is Slot=>Boolean(slot)),assists=ordered.filter(slot=>slot.companionId).length;
  const replay=run.lastCombat,cues=replay?.cues??[],replayKey=`${run.runId}:${replay?.nodeId??'preview'}:${replay?.durationMs??0}:${cues.length}`;
- const [cueIndex,setCueIndex]=useState(0),[systemReduceMotion,setReduceMotion]=useState(false),[paused,setPaused]=useState(false),[showLog,setShowLog]=useState(false),[inspectKey,setInspectKey]=useState<string>();
- const reduceMotion=reduceMotionSetting||systemReduceMotion;
+ const [cueIndex,setCueIndex]=useState(0),[reduceMotion,setReduceMotion]=useState(false),[paused,setPaused]=useState(false),[showLog,setShowLog]=useState(false),[inspectKey,setInspectKey]=useState<string>();
  const actorAnim=useRef(new Animated.Value(0)).current,targetAnim=useRef(new Animated.Value(0)).current,fxAnim=useRef(new Animated.Value(0)).current,feedbackAnim=useRef(new Animated.Value(0)).current,castAnim=useRef(new Animated.Value(0)).current;
  useEffect(()=>{let mounted=true;void AccessibilityInfo.isReduceMotionEnabled().then(value=>{if(mounted)setReduceMotion(value);}).catch(()=>{});return()=>{mounted=false;};},[]);
  useEffect(()=>{setCueIndex(reduceMotion&&cues.length?cues.length-1:0);setPaused(false);setShowLog(false);setInspectKey(undefined);},[replayKey,reduceMotion,cues.length]);

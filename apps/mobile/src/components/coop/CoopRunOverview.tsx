@@ -55,6 +55,7 @@ export function CoopRunOverview({language,run,onBack,onChoose,onRefresh,onClaim,
       <View style={s.grow}><Text style={s.title}>{run.phase==='resolving_node'?st('Battle in progress'):run.lastCombat?.reason==='victory'?st('Encounter cleared'):run.lastCombat?.reason==='wipe'?st('Party defeated'):st('Encounter replay')}</Text><Text style={s.copy}>{combatName}</Text></View>
       <GameButton compact title={st('Watch battle')} onPress={()=>setTheaterOpen(true)}/>
      </View></FantasyPanel>:null}
+    {!!syncError&&<FantasyPanel variant="danger"><Text accessibilityRole="alert" style={s.title}>{'Connection interrupted'}</Text><Text style={s.copy}>Showing the last saved expedition progress. Reconnecting automatically.</Text><Text style={s.copy} numberOfLines={2}>{syncError}</Text>{onRefresh?<GameButton compact title={'Retry connection'} tone="secondary" disabled={busy} onPress={onRefresh}/>:null}</FantasyPanel>}
     {!(run.phase==='resolving_node'||bossNext||run.lastCombat)?<>
     <FantasyPanel variant="selected"><View style={s.summary}><View style={s.grow}><Text style={s.title}>{ct(language,'details.party')}</Text><Text style={s.copy}>{ct(language,'details.partyValue')}</Text></View><StateChip label={`Lv. ${run.syncedLevel}`} tone="success"/></View></FantasyPanel>
     <Text style={s.section}>{ct(language,'details.party')}</Text>
@@ -69,7 +70,6 @@ export function CoopRunOverview({language,run,onBack,onChoose,onRefresh,onClaim,
     {terminal?<TerminalRunMoment phase={run.phase} rewardsReady={rewardSurfaceReady} rewardsSecured={rewardsSecured} reduceMotion={reduceMotion}/>:null}
     <Text style={s.section}>{ct(language,'details.rooms')}</Text>
     {!!notice&&<Text accessibilityRole="alert" style={s.copy}>{notice}</Text>}
-    {!!syncError&&<FantasyPanel variant="danger"><Text accessibilityRole="alert" style={s.title}>{'Connection interrupted'}</Text><Text style={s.copy}>Showing the last saved expedition progress. Reconnecting automatically.</Text><Text style={s.copy} numberOfLines={2}>{syncError}</Text>{onRefresh?<GameButton compact title={'Retry connection'} tone="secondary" disabled={busy} onPress={onRefresh}/>:null}</FantasyPanel>}
     {run.phase==='resolving_node'&&<FantasyPanel><Text style={s.copy}>{st("Your party is resolving this room. Progress is saved online.")}</Text></FantasyPanel>}
     {run.options.length?<DungeonRouteChoices options={run.options} mode={run.mode} phase={run.phase} busy={busy} onChoose={onChoose}/>:run.phase!=='resolving_node'?<FantasyPanel><Text style={s.copy}>{ct(language,'browse.resumeBody')}</Text></FantasyPanel>:null}
     {rewards.map(reward=><FantasyPanel key={reward.id} variant="success">{reward.claimed_at?<Text style={s.copy}>{reward.reward_json.marks??0} {st("Expedition Marks collected.")}</Text>:<GameButton title={st("Collect expedition reward")} disabled={busy} onPress={()=>onClaim?.(reward.id)}/>}</FantasyPanel>)}

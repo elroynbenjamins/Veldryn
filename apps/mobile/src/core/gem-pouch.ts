@@ -71,6 +71,20 @@ export function storePouchGem(state:GameState,itemId:string,quantity=1):GameStat
   if(bank)return {...state,bank:{...state.bank,stacks:bank}};
   throw new Error('Gem Pouch, Inventory and Bank are full');
 }
+/** Sell only physically owned pouch gems, never gems socketed into equipment. */
+export function sellPouchGem(state:GameState,itemId:string,quantity:number):GameState{
+  if(!state.character)throw new Error('Create a character first');
+  if(!isGemPouchItemId(itemId)||!Number.isSafeInteger(quantity)||quantity<1)throw new Error('Invalid gem sale');
+  if(state.settings.favoriteItemIds?.includes(itemId))throw new Error('Favorite gems cannot be sold');
+  if(state.settings.lockedItemIds?.includes(itemId))throw new Error('Locked gems cannot be sold');
+  const pouch=gemPouch(state),owned=stackQty(pouch.stacks,itemId);
+  if(owned<quantity)throw new Error('Not enough gems in the pouch');
+  const proceeds=itemDef(itemId).value*quantity;
+  if(!Number.isSafeInteger(proceeds)||!Number.isSafeInteger(state.character.gold+proceeds))throw new Error('Gold amount exceeds supported limit');
+  const stacks=pouch.stacks.map(row=>row.itemId===itemId?{...row,quantity:row.quantity-quantity}:row).filter(row=>row.quantity>0);
+  return {...state,account:{...state.account,gemPouch:{...pouch,stacks}},
+    character:{...state.character,gold:state.character.gold+proceeds}};
+}
 /** Uses pouch first, but retains compatibility with unmigrated/overflowed legacy gems. */
 export function consumeGemFromStorage(state:GameState,itemId:string,quantity:number):GameState{
   if(!Number.isSafeInteger(quantity)||quantity<1||gemStorageQuantity(state,itemId)<quantity)

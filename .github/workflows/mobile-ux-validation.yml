@@ -29,9 +29,15 @@ jobs:
         run: pnpm --dir ../../backend install --frozen-lockfile
       - name: Validate Inventory storage controls
         run: node tests/inventory-storage-management-ui.cjs
+      - name: Validate UX popup and activity Stop reliability
+        run: |
+          pnpm exec tsc -p tsconfig.ux-popup.json --outDir .ux-popup-build
+          node .ux-popup-build/apps/mobile/tests/ux-popup-reliability.js
+          node tests/ux-popup-reliability-ui.cjs
+          node tests/settings-simplicity-ui.cjs
+      - name: Typecheck app
+        run: pnpm typecheck
       - name: Typecheck core
         run: pnpm typecheck:core
       - name: Run mobile core tests
         run: pnpm test:core
-      - name: Typecheck app
-        run: pnpm typecheck

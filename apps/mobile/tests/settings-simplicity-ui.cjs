@@ -24,7 +24,9 @@ assert(data.includes('accessibilityState={{expanded:showDeleteControls}}')&&data
 assert(data.includes('<GameButton title={a("Delete local save")} tone="danger" onPress={onReset}/>'),'Existing protected delete callback is preserved');
 assert(!data.includes('Stop current activity'),'Stop activity is not mixed into save management');
 assert(gameplay.includes('accessibilityState={{expanded:showActivityControls}}')&&gameplay.includes('showActivityControls?<View'),'Activity controls are available behind disclosure within Gameplay');
-assert(gameplay.includes('onPress={()=>onChange({...state,activity:null})}'),'Original stop-activity action remains available');
+assert(gameplay.includes('onPress={()=>{setStopError(\'\');setConfirmStop(true)}}'),'Stopping an activity opens confirmation instead of discarding progress');
+assert(src.includes('onStopActivity:()=>Promise<void>')&&src.includes('<ConfirmModal visible={confirmStop} busy={stopping}'),'Activity stop settles progress through the command handler');
+assert(!src.includes('onPress={()=>onChange({...state,activity:null})}'),'Unsafe direct activity deletion has been removed');
 assert(data.includes('onPress={()=>openExternal(PRIVACY_POLICY_URL)}'),'Privacy policy remains reachable');
 for(const key of ['Data & Privacy','Current activity','Deleting your local save removes progress stored on this device.']){
  assert(dictionary.includes(JSON.stringify(key)+':'),'Localized data and safety label '+key+' is present');

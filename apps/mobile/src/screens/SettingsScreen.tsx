@@ -7,6 +7,7 @@ import {BackHandler,Linking,Pressable,ScrollView,StyleSheet,Text,TextInput,View,
 import {UiIcon} from '../components/UiIcon';
 import {DiscordButton} from '../components/DiscordButton';
 import {GameButton} from '../components/GameButton';
+import {ConfirmModal} from '../components/ConfirmModal';
 import {SettingToggle} from '../components/SettingToggle';
 import {Panel} from '../components/Panel';
 import {DeveloperTools} from '../components/DeveloperTools';
@@ -36,6 +37,8 @@ type Props={
   onLanguage:(language:GameState['settings']['language'])=>void;
   onReset:()=>void;
   onChange:(next:GameState)=>void;
+  /** Settles unclaimed progress and refunds reserved resources through the gameplay command. */
+  onStopActivity:()=>Promise<void>;
   onRefreshCommerce?:(expectedAccountId:string)=>Promise<void>;
   onExport:()=>Promise<void>;
   onImport:(raw:string)=>Promise<void>;
@@ -63,7 +66,7 @@ function RedeemCodePanel({language,onRedeemCode}:{language:Language;onRedeemCode
  return <Panel><Text style={[s.title,{color:C.text}]}>{a('Redeem code')}</Text><Text style={[s.sub,{color:C.muted}]}>{a('Enter a promotional code from an official VELDRYN announcement or event.')}</Text><View style={s.redeemRow}><TextInput accessibilityLabel={a('Redeem code')} autoCapitalize="characters" autoCorrect={false} value={code} onChangeText={value=>{setCode(value.replace(/\s/g,''));setStatus('')}} placeholder={a('ENTER CODE')} placeholderTextColor={C.muted} style={[s.codeInput,{color:C.text,borderColor:C.line,backgroundColor:C.inputBg}]}/><GameButton compact title={busy?a('Checking…'):a('Redeem')} disabled={!code.trim()||busy} onPress={()=>redeem()}/></View>{status?<Text accessibilityLiveRegion="polite" style={[s.redeemStatus,{color:onRedeemCode?C.info:C.muted}]}>{status}</Text>:null}</Panel>;
 }
 
-export function SettingsScreen({state,onLanguage,onReset,onChange,onRefreshCommerce,onExport,onImport,onRedeemCode,onOpenCoopUiGallery,onOpenUpdates,initialSection,onSectionChange,onNavigateGuide,onStartMainScreenTour,online=false}:Props){
+export function SettingsScreen({state,onLanguage,onReset,onChange,onStopActivity,onRefreshCommerce,onExport,onImport,onRedeemCode,onOpenCoopUiGallery,onOpenUpdates,initialSection,onSectionChange,onNavigateGuide,onStartMainScreenTour,online=false}:Props){
  const language=state.settings.language;
  const a=(text:string,params?:Record<string,string|number>)=>accountText(language,text,params);
 
@@ -74,6 +77,16 @@ export function SettingsScreen({state,onLanguage,onReset,onChange,onRefreshComme
   useEffect(()=>{setSelectedSection(initialSection??null);},[initialSection]);
   const [guideId,setGuideId]=useState<GameGuideId>();
    const [showAfkDetails,setShowAfkDetails]=useState(false),[showEmotes,setShowEmotes]=useState(false),[showActivityControls,setShowActivityControls]=useState(false),[showDeleteControls,setShowDeleteControls]=useState(false);
+  const [confirmStop,setConfirmStop]=useState(false),[stopping,setStopping]=useState(false),[stopError,setStopError]=useState(''),[stopFeedback,setStopFeedback]=useState('');
+  const stopInFlight=useRef(false);
+  useEffect(()=>{if(!stopFeedback)return;const timeout=setTimeout(()=>setStopFeedback(''),5000);return()=>clearTimeout(timeout)},[stopFeedback]);
+  const stopCurrentActivity=async()=>{
+    if(stopInFlight.current)return;
+    stopInFlight.current=true;setStopping(true);setStopError('');
+    try{await onStopActivity();setConfirmStop(false);setShowActivityControls(false);setStopFeedback(a('Activity stopped. Earned progress has been settled.'));}
+    catch(error){setConfirmStop(false);setStopFeedback('');setStopError(error instanceof Error?error.message:a('Could not stop activity. Try again.'));}
+    finally{stopInFlight.current=false;setStopping(false);}
+  };
   const {width}=useWindowDimensions(),phone=width<768;
   const section=phone?selectedSection:selectedSection??'gameplay';
   const navigationStyles=useMemo(()=>makeNavigationStyles(theme),[theme]);
@@ -109,6 +122,7 @@ export function SettingsScreen({state,onLanguage,onReset,onChange,onRefreshComme
     </Panel>
     <OnlineAccountPanel state={state}/></>}
     {section==='store'&&<><GooglePlayCommercePanel state={state} online={online} onChange={onChange} onRefreshCommerce={onRefreshCommerce}/><RedeemCodePanel language={language} onRedeemCode={onRedeemCode}/></>}
+    {section==='gameplay'&&stopFeedback?<Text accessibilityLiveRegion="polite" style={[s.sub,{color:theme.good}]}>{stopFeedback}</Text>:null}
     {section==='gameplay'&&<><Panel>
       <View style={s.afkBox}><View style={s.afkHead}><Text style={[s.settingLabel,{color:theme.text,marginTop:0}]}>{a("AFK reserve")}</Text><Text style={[s.afkValue,{color:theme.good}]}>{accountDuration(language,afk.hours*3600)}</Text></View><Pressable accessibilityRole="button" accessibilityState={{expanded:showAfkDetails}} onPress={()=>setShowAfkDetails(value=>!value)} style={({pressed})=>[s.disclosure,pressed&&s.pressed]}><Text style={s.disclosureLabel}>{a("AFK details")}</Text><View style={showAfkDetails?s.disclosureArrowOpen:undefined}><UiIcon name="next" size={18} muted/></View></Pressable>{showAfkDetails?<View style={s.detailStack}><Text style={[s.muted,{color:theme.muted}]}>{a('{base}h base · up to {free}h through progression · {max}h maximum',{base:afk.baseHours,free:afk.freeMaxHours,max:afk.maxHours})}</Text><Text style={[s.muted,{color:theme.muted}]}>{a("Earned milestones include class, quest, boss, guild and character-slot progression through slot #5.")}</Text><Text style={[s.afkPaid,{color:theme.info}]}>{a("Final +6h: VIP +2h · VIP+ +2h extra · Supporter +2h")}</Text></View>:null}</View>
       <Text style={[s.settingLabel,{color:theme.text}]}>{a("Number display")}</Text><View style={s.choices}>{(['abbreviated','exact'] as const).map(mode=><SettingChip key={mode} label={mode==='abbreviated'?a("Abbreviated · 1.2K"):a("Exact · 1,200")} selected={state.settings.numberMode===mode} onPress={()=>update({numberMode:mode})}/>)}</View>
@@ -126,7 +140,7 @@ export function SettingsScreen({state,onLanguage,onReset,onChange,onRefreshComme
         </View>
         <View style={showActivityControls?s.disclosureArrowOpen:undefined}><UiIcon name="next" size={18} muted/></View>
       </Pressable>
-      {showActivityControls?<View style={s.detailStack}><GameButton title={a("Stop current activity")} tone="danger" onPress={()=>onChange({...state,activity:null})}/></View>:null}
+      {showActivityControls?<View style={s.detailStack}>{stopError?<Text accessibilityRole="alert" style={[s.sub,{color:theme.bad}]}>{stopError}</Text>:null}<GameButton title={a("Stop current activity")} tone="danger" disabled={stopping} onPress={()=>{setStopError('');setConfirmStop(true)}}/></View>:null}
     </Panel>:null}
     </>}
     {section==='chat'&&<><Panel>
@@ -184,7 +198,7 @@ export function SettingsScreen({state,onLanguage,onReset,onChange,onRefreshComme
       <Text selectable style={s.sub}>{appBuildText(language,'channel',{channel:APP_BUILD_INFO.releaseChannel})}</Text>
       {APP_BUILD_INFO.sourceCommit?<Text selectable style={s.sub}>{appBuildText(language,'source',{source:APP_BUILD_INFO.sourceCommit})}</Text>:null}
     </View>:null}
-  </ScrollView><GuideTopicModal onOpen={onNavigateGuide?destination=>{setGuideId(undefined);onNavigateGuide(destination)}:undefined} language={language} definition={guideId?guideDefinition(guideId):undefined} visible={!!guideId} onClose={()=>setGuideId(undefined)}/></View>;
+  </ScrollView><GuideTopicModal onOpen={onNavigateGuide?destination=>{setGuideId(undefined);onNavigateGuide(destination)}:undefined} language={language} definition={guideId?guideDefinition(guideId):undefined} visible={!!guideId} onClose={()=>setGuideId(undefined)}/><ConfirmModal visible={confirmStop} busy={stopping} title={a('Stop current activity?')} message={a('Earned progress will be collected first. Any reserved resources are handled by the activity cancellation rules.')} confirmLabel={a('Stop activity')} danger reduceMotion={state.settings.reduceMotion} onConfirm={()=>void stopCurrentActivity()} onCancel={()=>setConfirmStop(false)}/></View>;
 }
 
 function makeNavigationStyles(C:ThemeColors){return StyleSheet.create({

@@ -2,6 +2,7 @@ import {CharacterReview} from './CharacterReview';
 import {SafeAreaProvider} from 'react-native-safe-area-context';
 import {QuestScreen} from '../screens/QuestScreen';
 import {SettingsScreen} from '../screens/SettingsScreen';
+import {executeGameCommand} from '../core/game-commands';
 import {EventScreen} from '../screens/EventScreen';
 import {setLocalEventEnabled} from '../core/live-events';
 import {ProfileEditor} from '../components/ProfileEditor';
@@ -70,7 +71,7 @@ export default function NativeVisualReview(){
  {(section==='Journal'||section==='Contracts'||section==='Challenges')&&<QuestScreen state={state} mode={section==='Contracts'?'contracts':section==='Challenges'?'challenges':'story'} onModeChange={noop} onClaim={noop} onClaimContract={noop} onNavigate={noop} onOpenWeeklyBoss={noop} onOpenWeeklyOrder={noop} onQueueWeeklyOrder={noop} onStopWeeklyOrder={noop}/>} 
  {(section==='Events'||section==='EventsLive')&&<EventScreen state={state} onChange={setState}/>} 
  {section==='Profile'&&<ScrollView contentContainerStyle={s.content} showsVerticalScrollIndicator={false} showsHorizontalScrollIndicator={false}><ProfileEditor state={state} onChange={setState} showLoadouts={false}/></ScrollView>}
- {section==='Settings'&&<SettingsScreen state={state} onLanguage={language=>setState(s=>({...s,settings:{...s.settings,language}}))} onReset={noop} onChange={setState} onExport={async()=>{}} onImport={async()=>{}}/>}
+ {section==='Settings'&&<SettingsScreen state={state} onLanguage={language=>setState(s=>({...s,settings:{...s.settings,language}}))} onReset={noop} onChange={setState} onStopActivity={async()=>{setState(current=>executeGameCommand(current,{type:'stop'},Date.now()).state)}} onExport={async()=>{}} onImport={async()=>{}}/>}
  {section==='Ingredients'&&<ScrollView contentContainerStyle={s.content} showsVerticalScrollIndicator={false} showsHorizontalScrollIndicator={false}><Text style={{color:C.text,fontSize:22}}>Crafting ingredient artwork</Text><IngredientList inputs={Object.keys(ingredientIcons).map((itemId,index)=>({itemId,quantity:5,inventory:index%3===0?2:12,bank:1}))} showStorage/><Text style={{color:C.text,fontSize:22}}>Inventory card preview</Text><ItemCard item={itemDef('ASTRAL_SCRIPT')} quantity={12} onSell={noop}/></ScrollView>}
  {section==='Skills'&&<ScrollView contentContainerStyle={s.content} showsVerticalScrollIndicator={false} showsHorizontalScrollIndicator={false}><SkillDashboard state={state} onCombat={()=>setSection('Combat')} onSkill={noop}/></ScrollView>}
  {section==='Crafting'&&<SkillsScreen state={state} initialMode="crafting" onCraft={id=>setState(s=>craftRecipe(s,id,now))} onClaimCraft={noop} onClaimAllCrafts={noop} onCancelCraft={noop} onMoveCraftWaiting={noop} onCraftPrerequisites={noop} onGather={noop} onQueueGather={noop} onQueueRemove={noop} onQueueMove={noop} onQueueClear={noop} onQueueStart={noop} onEquipTool={noop} onCharacter={noop} onInventory={noop} onViewToolRecipes={noop}/>} 

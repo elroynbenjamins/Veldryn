@@ -41,7 +41,7 @@ export function ForgeRarityRevealModal({results,reduceMotion,onClose,onInventory
       <Text style={s.revealCopy}>{procs.length===1?gt("The Forge produced a rarer crafted copy."):gt("Multiple finished crafts produced rarer copies.")}</Text>
     </Animated.View>
     <View style={s.results}>{procs.map(result=>{const item=itemDef(result.itemId),meta=rarityMeta(result.rarity),base=rarityMeta(result.baseRarity),bonus=Math.round((result.statMultiplier-1)*100);return <View key={result.instanceId} style={[s.result,{borderColor:meta.color,backgroundColor:meta.surface}]}>
-      <View style={[s.artFrame,{borderColor:meta.color}]}><EquipmentArtwork item={item} compact framed={false}/></View>
+      <View style={[s.artFrame,{borderColor:meta.color}]}><EquipmentArtwork item={item} rarity={result.rarity} compact framed={false}/></View>
       <View style={s.flex}><Text style={[s.itemName,{color:rarityNameColor(result.rarity,C.dark,C.text)}]}>{item.name}</Text><Text style={s.meta}>{base.label} base → {meta.label} crafted copy{result.quality!==undefined?` · Q${result.quality}/100`:''}</Text><Text style={[s.bonus,{color:meta.color}]}>{bonus>0?'+':''}{bonus}% equipment stats vs base gear</Text>{result.autoSold?<Text style={s.copy}>{result.autoSold==='incoming'?'New roll auto-sold; existing copies kept':'Weaker prior copy sold; improved roll retained'} · +{result.saleGold} Gold</Text>:result.duplicateCount>0?<Text style={s.copy}>Crafted copy #{result.duplicateCount+1} owned</Text>:<Text style={s.copy}>{gt("First crafted copy owned")}</Text>}</View>
       <View style={[s.rarityBadge,{borderColor:meta.color}]}><Text style={[s.rarityText,{color:meta.color}]}>{meta.label.toUpperCase()}</Text></View>
     </View>})}</View>

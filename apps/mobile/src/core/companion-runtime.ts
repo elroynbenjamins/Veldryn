@@ -58,6 +58,11 @@ export interface CompanionAccountState {
   unlockedCombatCompanionIds?:string[];
   combatCompanionProgress?:Record<string,OwnedCompanionProgress>;
   companionUnlockProgress?:Record<string,number>;
+  /** The permanent role-aware choice made when the Companion Sanctuary unlocks. */
+  starterCombatCompanionId?:string;
+  /** The Silverbrook and Old Mines account progression rewards. */
+  starterFollowupCombatCompanionId?:string;
+  starterThirdCombatCompanionId?:string;
   companionEssence?:number;bondstones?:number;
   companionSanctuary?:CompanionSanctuaryState;
   companionAssignments?:CompanionAssignment[];

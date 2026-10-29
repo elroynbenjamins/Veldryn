@@ -14,7 +14,7 @@ const run=read('src/components/coop/CoopRunOverview.tsx');
 // inside Inventory and Bank's already-long list headers.
 assert(inventory.includes("if(pouchOpen)return <ScrollView"),'Gems must have an independent storage screen');
 assert(inventory.includes('<GemPouchPanel standalone state={state}'),'Standalone pouch must render inside the dedicated Gems view');
-assert((inventory.match(/<StorageChip label="Gems"/g)||[]).length===2,'All storage views must show a Gems tab');
+assert((inventory.match(/<StorageChip label=\{accountText\(language,'Gems'\)\}/g)||[]).length===2,'All storage views must show a Gems tab');
 assert(!inventory.includes('<GemPouchPanel state={state} busy='),'The old nested expandable pouch is removed from normal Inventory/Bank');
 assert(inventory.includes('setPouchOpen(false);setQuery(\'\');setFilter(\'food\')'),'Food deep links must always return to character Inventory');
 assert(memory.includes('pouchOpen:false')&&memory.includes('foodRequest:request,pouchOpen:false'),'Storage choice is remembered without breaking quick food access');
@@ -36,4 +36,6 @@ assert(run.includes('{!!syncError&&<FantasyPanel variant="danger">'),'Connection
 assert(run.indexOf('{!!syncError&&<FantasyPanel variant="danger">')<run.indexOf("{!(run.phase==='resolving_node'"),'Reconnect warning remains visible even while combat is resolving');
 assert(!run.includes('Refresh saved progress'),'Routine manual Refresh does not clutter the run view');
 assert(run.includes('onPress={onRefresh}'),'A failed sync has a manual retry path');
+assert(run.includes("accountText(language,value)"),'Dungeon reconnect text uses a localized string');
+assert(browser.includes("a('Refreshing dungeon availability…')"),'Catalog refresh text is localized');
 console.log('PASS Inventory Gems tab and dungeon cached-state/retry UX contracts');

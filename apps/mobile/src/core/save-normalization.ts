@@ -200,6 +200,7 @@ export function normalizeSave(input:any):GameState{
       chatEmoteTrayIds:normalizeChatEmoteTrayIds(input.settings?.chatEmoteTrayIds),
       quickNavDestinations:normalizeQuickNavDestinations(input.settings?.quickNavDestinations),
       favoriteItemIds:stringList(input.settings?.favoriteItemIds,100),
+       lockedItemIds:stringList(input.settings?.lockedItemIds,100),
       seenItemIds:legacySeenItemIds,
     }
   } as GameState;

@@ -28,7 +28,9 @@ ok(modal.includes('one Stat Gem and one Effect Gem'),'Enhancement UI must explai
 ok(modal.includes('Socket Stat'),'Stat candidates must have a dedicated action');
 ok(modal.includes('Socket Effect'),'Effect candidates must have a dedicated action');
 ok(slots.includes('statGemFilled')&&slots.includes('effectGemFilled'),'Equipment tiles must show separate Stat/Effect pips');
-ok(character.includes("S {stat} · FX {effect}")&&character.includes("stat:selectedDecision.sockets.statFilled?'◆':'◇'")&&character.includes("effect:selectedDecision.sockets.effectFilled?'◆':'◇'"),'Character detail must show named socket status');
+ok(character.includes('equipmentTool===\'gems\'')&&character.includes('selectedDecision?.sockets.statFilled')&&character.includes('selectedDecision?.sockets.effectFilled')&&character.includes("openEnhancement('gems')"),'Character Gems tool must show named socket status and preserve management access');
+ok(character.includes("accessibilityLabel={profileT(language,'Stat Gem')")&&character.includes("accessibilityLabel={profileT(language,'Effect Gem')")&&character.includes("onPress={()=>openEnhancement('gems')}"),'Named gem socket rows must be directly actionable without an extra management button');
+ok(!character.includes("<GameButton compact title={profileText(language,'Manage gems')}"),'Gem tool should not repeat a redundant Manage Gems action beneath clickable sockets');
 ok(inspect.includes("1 Stat + 1 Effect"),'Quick inspect must describe named socket structure');
 
 for(const id of ['SWIFT_SIGIL','BOSSBANE_SIGIL','BULWARK_SIGIL','RENEWAL_SIGIL'])ok(items.includes("id:'"+id+"'"),'Missing launch Effect Gem '+id);

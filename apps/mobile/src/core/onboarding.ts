@@ -1,6 +1,6 @@
-import {accountQuestClaimed,earlyFeatureUnlocked,type FeatureUnlockHost} from './feature-unlocks';
+import {accountQuestClaimed,earlyFeatureUnlocked,PARTY_UNLOCK_LEVEL,GUILD_UNLOCK_LEVEL,type FeatureUnlockHost} from './feature-unlocks';
 import {EVENTS_RELEASED} from './release-flags';
-export type GameGuideId='getting_started'|'seasons_weather'|'chat_social'|'gathering_crafting'|'faith_blessings'|'guilds'|'combat_companions'|'coop_dungeons'|'companion_trials'|'live_events'|'additional_characters';
+export type GameGuideId='getting_started'|'seasons_weather'|'chat_social'|'parties'|'gathering_crafting'|'faith_blessings'|'guilds'|'combat_companions'|'coop_dungeons'|'companion_trials'|'live_events'|'additional_characters';
 export type GameGuideDestination='Home'|'World'|'Skills'|'Inventory'|'Character'|'Guild'|'Coop'|'Companions'|'Social'|'More'|'Events'|'Settings';
 export interface OnboardingGuideState{seenGuideIds:GameGuideId[];acknowledgedGuideIds:GameGuideId[];}
 export interface GameGuideDefinition{id:GameGuideId;title:string;summary:string;unlockHint:string;destination:GameGuideDestination;unlock:(state:OnboardingGuideHost)=>boolean;}
@@ -9,10 +9,11 @@ const level=(state:OnboardingGuideHost)=>Math.max(0,Math.floor(Number(state.char
 export const GAME_GUIDE:readonly GameGuideDefinition[]=[
  {id:'getting_started',title:'Your first steps',summary:'Choose activities, collect progress, improve gear and follow your current goal.',unlockHint:'Create your first character.',destination:'Home',unlock:s=>!!s.character},
  {id:'seasons_weather',title:'Seasons & Weather',summary:'Check the weather in World before choosing your next activity.',unlockHint:'Reach character level 2.',destination:'World',unlock:s=>!!s.character&&level(s)>=2},
- {id:'chat_social',title:'Chat & player profiles',summary:'Use English, Spanish, Global 1 and Global 2 conversations plus social tools.',unlockHint:'Complete Into Ironwood',destination:'Social',unlock:s=>earlyFeatureUnlocked(s,'social')},
+ {id:'chat_social',title:'Social & player profiles',summary:'Party and Guild have separate sections. Party Chat appears only while you belong to a Party.',unlockHint:'Complete Into Ironwood',destination:'Social',unlock:s=>earlyFeatureUnlocked(s,'social')},
+ {id:'parties',title:'Parties & weekly rewards',summary:'Create or join a persistent Party, find players and claim shared weekly rewards.',unlockHint:`Reach Level ${PARTY_UNLOCK_LEVEL}`,destination:'Social',unlock:s=>earlyFeatureUnlocked(s,'party')},
  {id:'gathering_crafting',title:'Gathering & Crafting',summary:'Gather regional resources, process them and craft upgrades over time.',unlockHint:'Claim your first story reward.',destination:'Skills',unlock:s=>accountQuestClaimed(s,'QST_001')},
  {id:'faith_blessings',title:'Faith & Blessings',summary:'Recover Holy Water, train Faith and choose one active blessing.',unlockHint:'Reach character level 5.',destination:'Skills',unlock:s=>!!s.character&&level(s)>=5},
- {id:'guilds',title:'Guilds',summary:'Join a persistent social group for chat, projects and asynchronous PvE.',unlockHint:'Reach Level 10 and complete Into Ironwood',destination:'Guild',unlock:s=>earlyFeatureUnlocked(s,'guild')},
+ {id:'guilds',title:'Guilds',summary:'Find a Guild, use its Chat, and follow Quests and Projects under Activities.',unlockHint:`Reach Level ${GUILD_UNLOCK_LEVEL}`,destination:'Guild',unlock:s=>earlyFeatureUnlocked(s,'guild')},
  {id:'combat_companions',title:'Combat Companions',summary:'Equip an account-owned Companion that complements your character role.',unlockHint:'Complete Into Ironwood',destination:'Companions',unlock:s=>earlyFeatureUnlocked(s,'companions')},
  {id:'coop_dungeons',title:'Co-op Dungeons',summary:'Build a 1 Tank / 2 Damage / 1 Support party and make route choices.',unlockHint:'Complete Into Ironwood',destination:'Coop',unlock:s=>earlyFeatureUnlocked(s,'social')},
  {id:'companion_trials',title:'Companion Trials',summary:'Build a Companion-only Tank / Damage / Support trio for the monthly Tower.',unlockHint:'Complete Into Ironwood',destination:'Companions',unlock:s=>earlyFeatureUnlocked(s,'companions')},
@@ -22,12 +23,13 @@ export const GAME_GUIDE:readonly GameGuideDefinition[]=[
 export const GAME_GUIDE_STEPS:Record<GameGuideId,readonly string[]>={
  getting_started:['Start a hunt in Combat, then collect rewards on Home.','Claim completed story rewards in the Asterfall Journal to unlock your next objective.'],
  seasons_weather:['Open World and check the current weather.','Choose a region and review its available activities.'],
- chat_social:['Open Social to browse players and party recruitment.','Choose a player to view their profile before inviting them.'],
+ chat_social:['Open Social. Party and Guild are separate tabs; a locked Party shows only its unlock requirement.','Open the Guild tab to enter your Guild or browse recruiting guilds. Guild Chat is inside your Guild.','Party Chat appears only when you join a Party. Tap a player in a roster or advert to view their profile.'],
+ parties:['In Social → Party, create a Party or find one through Recruitment.','While in a Party, My Party shows members and weekly progress. Claim ready rewards here; open details only when needed.','Use Recruitment to find players, Party options to manage invitations, and Chat to message your Party. Chat is hidden when you are not in a Party.'],
  gathering_crafting:['Choose Mining, Woodcutting or Fishing in Skills.','Start gathering, then collect rewards on Home to gain skill XP.','Use the gathered materials in crafting recipes.'],
  faith_blessings:['Choose Faith in Skills and review the Holy Water cost.','Train Faith, then select one unlocked blessing.'],
- guilds:['Browse recruiting guilds and review their requirements.','After joining, open Projects to contribute and use guild chat to meet your guild.'],
+ guilds:['Open Guild to find or join a Guild. Your Guild remains available even if Parties are locked.','After joining, use Home for the overview, Activities for Quests, Muster and Projects, and Guild Chat for messages.','Use PvE for bosses and Hall for upgrades and the Guild shop.'],
  combat_companions:['Open your roster and select an owned companion to equip.','Review training, Bond and Housing before spending materials.'],
- coop_dungeons:['Choose a dungeon and review its requirements.','Form a party with 1 Tank, 2 Damage and 1 Support before starting.'],
+ coop_dungeons:['Choose a dungeon and review its requirements.','The dungeon matchmaking team uses 1 Tank, 2 Damage and 1 Support. It is separate from the persistent Party in Social.'],
  companion_trials:['Open Trials in the Companion Sanctuary.','Build a team with Tank, Damage and Support companions and review the monthly rules.'],
  live_events:['Overview shows your journey, daily gift and event progress.','Activities shows what to do; Rewards shows unlocks and collection progress.','Use Shop to spend event currency before the event ends.'],
  additional_characters:['Open Characters from Account.','Choose an available slot to create another character.'],

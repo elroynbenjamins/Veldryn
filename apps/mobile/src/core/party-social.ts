@@ -315,11 +315,9 @@ export function filterRecruitmentCards(cards: readonly RecruitmentCardView[], fi
 }
 
 export const PARTY_SOCIAL_TUTORIAL_STEPS = [
-  'Parties are persistent groups of 1–4 players. You can stay together while doing different activities.',
-  'Weekly Party Contracts combine verified Combat, Skilling, or Mixed progress. Harder and slower activities are worth more normalized contribution.',
-  'Everyone shares Contract progress, but each member must contribute a minimum amount to earn the completion reward.',
-  'Looking for Party and Looking for Members adverts last 1 day. Guild and Guild-Seeker adverts normally last 3 days, so old posts disappear automatically.',
-  'Use Search and Filters to find the activity focus, role, availability, playstyle, or guild style you want. Your current Contract is only context and never blocks discovery.',
-  'Party Chat appears only while you are currently in a Party.',
-  'Live Dungeons are separate: they still require exactly 1 Tank, 2 Damage, and 1 Support.',
+  'Open Social. Party and Guild have separate tabs; Guild stays available even when Party is locked.',
+  'At Level 20 you can create or join a persistent Party. Recruitment is available inside the Party view.',
+  'My Party shows members and weekly progress. Claim available rewards there and expand details only if needed.',
+  'Party options contain invitations and member management. Recruitment contains adverts, filters and player search.',
+  'Party Chat appears only while you are a current Party member. Dungeon matchmaking is a separate group system.',
 ] as const;

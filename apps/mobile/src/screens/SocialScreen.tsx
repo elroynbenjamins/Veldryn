@@ -4,8 +4,8 @@ import {useSocialText} from '../i18n/social';
 import {useGameLanguage} from '../i18n/GameLanguageProvider';
 import {socialLabel,socialExpiry} from '../i18n/social';
 import {useCallback,useEffect,useRef,useState,useMemo} from 'react';
-import {Pressable,ScrollView,StyleSheet,Text,View} from 'react-native';
-import {PartyHubPanel} from '../components/PartyHubPanel';
+import {ActivityIndicator,Pressable,ScrollView,StyleSheet,Text,View} from 'react-native';
+import {PartyHubPanel,PartyLockedNotice} from '../components/PartyHubPanel';
 import {PartyEventHubPanel} from '../components/PartyEventHubPanel';
 import {SocialHubPanel,type SocialHubTab} from '../components/SocialHubPanel';
 import {GuildSeekerPanel} from '../components/GuildSeekerPanel';
@@ -14,73 +14,137 @@ import {RecruitmentFiltersPanel} from '../components/RecruitmentFiltersPanel';
 import {RecruitmentListing} from '../components/RecruitmentListing';
 import {SocialInvitationCard} from '../components/SocialInvitationCard';
 import {OnlinePartyChat} from '../components/OnlinePartyChat';
+import {SectionGuide} from '../components/SectionGuide';
 import {GameButton} from '../components/GameButton';
-import {LoadingState} from '../components/LoadingState';
 import {Panel} from '../components/Panel';
 import {ChatPlayerSheet,type ChatPlayerIdentity} from '../components/ChatPlayerSheet';
 import {usePartySocial} from '../online/PartySocialProvider';
 import {partySocialRepository as repository,ownRecruitmentPosts,partyRankings,partyCommandKey,claimPartyContractReward,activePartyEvent,transferPartyLeadership,removePartyMember,cancelPartyInvitation,disbandParty,recruitmentMatchAlerts,ackRecruitmentMatchAlerts,type PublishRecruitmentInput,type PartyRanking,type RecruitmentMatchAlert} from '../online/party-social';
 import {myGuild,requestGuildMembership,respondPartyInvitation,sendPartyInvitation,socialInvitations,socialOutgoingInvitations,type OutgoingInvitationView,type PartyInvitationView} from '../online/social';
-import {EMPTY_RECRUITMENT_FILTERS,PARTY_SOCIAL_TUTORIAL_STEPS,recruitmentContextLabels,recruitmentPostTypePresentation,recruitmentTimeLabel,type PartyFocus,type PartyRole,type RecruitmentCardView,type RecruitmentPostType} from '../core/party-social';
-import {spacing,typography,equipmentTheme,type ThemeColors} from '../theme/theme';
+import {EMPTY_RECRUITMENT_FILTERS,shouldShowPartyChat,recruitmentPostTypePresentation,recruitmentTimeLabel,type PartyFocus,type PartyRole,type RecruitmentCardView,type RecruitmentPostType} from '../core/party-social';
+import {spacing,typography,type ThemeColors} from '../theme/theme';
 import {useGameTheme} from '../theme/ThemeContext';
 import {PARTY_UNLOCK_LEVEL} from '../core/feature-unlocks';
-export function SocialScreen({initialTab='party',characterLevel=0,onGuild,onFriends,onAccount,onInvitationsChanged}:{initialTab?:SocialHubTab;characterLevel?:number;onGuild:()=>void;onFriends:()=>void;onAccount:()=>void;onInvitationsChanged?:()=>void}){
+type SocialBoard={cards:RecruitmentCardView[];own:RecruitmentCardView[]};
+const EMPTY_BOARD:SocialBoard={cards:[],own:[]};
+export function SocialScreen({initialTab='party',characterLevel=0,onGuild,onAccount,onInvitationsChanged,partyUnlocked}:{initialTab?:SocialHubTab;characterLevel?:number;partyUnlocked?:boolean;onGuild:()=>void;onAccount:()=>void;onInvitationsChanged?:()=>void}){
  const st=useSocialText();
   const language=useGameLanguage();
-  const C=useGameTheme(),equipmentColors=equipmentTheme(C),s=useMemo(()=>makeStyles(C),[C]);
- const social=usePartySocial();const [tab,setTab]=useState<SocialHubTab>(initialTab);const [filters,setFilters]=useState({...EMPTY_RECRUITMENT_FILTERS});
- useEffect(()=>{setTab(initialTab);setSelected(null);setDraft(null)},[initialTab]);
+  const C=useGameTheme(),s=useMemo(()=>makeStyles(C),[C]);
+ const social=usePartySocial();const [tab,setTab]=useState<SocialHubTab>(initialTab==='guild'||initialTab==='chat'?initialTab:'party');const [filters,setFilters]=useState({...EMPTY_RECRUITMENT_FILTERS});
+ useEffect(()=>{setTab(initialTab==='guild'||initialTab==='chat'?initialTab:'party');setSelected(null);setDraft(null)},[initialTab]);
  const [guildContext,setGuildContext]=useState<{accountId:string;membership:Awaited<ReturnType<typeof myGuild>>|undefined}|null>(null);
  const guildMembership=guildContext?.accountId===social.accountId?guildContext.membership:undefined;
  const canRecruit=canManageGuild(guildMembership?.role);
- const [cards,setCards]=useState<RecruitmentCardView[]>([]),[own,setOwn]=useState<RecruitmentCardView[]>([]),[rankings,setRankings]=useState<PartyRanking[]>([]),[partyInvites,setPartyInvites]=useState<PartyInvitationView[]>([]),[outgoingPartyInvites,setOutgoingPartyInvites]=useState<OutgoingInvitationView[]>([]),[liveEvent,setLiveEvent]=useState<import('../core/party-social').PartyEventView|null>(null);
+ const [boardCache,setBoardCache]=useState<{accountId:string;party:SocialBoard;guild:SocialBoard}>({accountId:'',party:EMPTY_BOARD,guild:EMPTY_BOARD});
+ const activeBoard=boardCache.accountId===social.accountId?(tab==='guild'?boardCache.guild:boardCache.party):EMPTY_BOARD;
+ const {cards,own}=activeBoard;
+ const [rankings,setRankings]=useState<PartyRanking[]>([]),[partyInvites,setPartyInvites]=useState<PartyInvitationView[]>([]),[outgoingPartyInvites,setOutgoingPartyInvites]=useState<OutgoingInvitationView[]>([]),[liveEvent,setLiveEvent]=useState<import('../core/party-social').PartyEventView|null>(null);
  const [draft,setDraft]=useState<PublishRecruitmentInput|null>(null),[selected,setSelected]=useState<RecruitmentCardView|null>(null),[selectedProfile,setSelectedProfile]=useState<ChatPlayerIdentity|null>(null),[busy,setBusy]=useState(false),[error,setError]=useState(''),[matchAlerts,setMatchAlerts]=useState<RecruitmentMatchAlert[]>([]);
- const [focus,setFocus]=useState<PartyFocus>('mixed'),[role,setRole]=useState<PartyRole>('damage'),[help,setHelp]=useState(false),[now,setNow]=useState(Date.now()),[showPrefs,setShowPrefs]=useState(false);
- const requestGeneration=useRef(0);const command=useRef<{signature:string;key:string}|null>(null);
+ const [focus,setFocus]=useState<PartyFocus>('mixed'),[role,setRole]=useState<PartyRole>('damage'),[now,setNow]=useState(Date.now()),[showPrefs,setShowPrefs]=useState(false),[showMatches,setShowMatches]=useState(false),[showPartyEvents,setShowPartyEvents]=useState(false);
+ const requestGeneration=useRef(0);const accountIdRef=useRef(social.accountId);accountIdRef.current=social.accountId;
+ const command=useRef<{signature:string;key:string}|null>(null);
+ const [updating,setUpdating]=useState(false),[showUpdating,setShowUpdating]=useState(false),[backgroundError,setBackgroundError]=useState('');
  const key=(signature:string)=>{if(command.current?.signature!==signature)command.current={signature,key:partyCommandKey()};return command.current.key;};
- const load=useCallback(async()=>{const generation=++requestGeneration.current;if(!social.accountId){setCards([]);setOwn([]);setRankings([]);setPartyInvites([]);setOutgoingPartyInvites([]);return;}
-  try{const membership=await myGuild().catch(()=>undefined);const context=tab==='guild'?'guild':'party';const browse={...filters,postTypes:(tab==='guild'?['looking_for_guild']:['looking_for_party','party_recruiting']) as RecruitmentPostType[]};const [next,mine,board,invites,outgoing,alerts]=await Promise.all([tab==='guild'&&(membership===undefined||(membership&&!canManageGuild(membership.role)))?Promise.resolve([] as RecruitmentCardView[]):repository.browseRecruitment(browse),ownRecruitmentPosts(),partyRankings(),socialInvitations().catch(()=>({party:[],guild:[],serverTime:''})),socialOutgoingInvitations().catch(()=>({party:[],guild:[],serverTime:''})),recruitmentMatchAlerts().catch(()=>[])]);if(generation===requestGeneration.current){const visible=next.filter(card=>guildRecruitmentVisible(card,membership,context));setGuildContext({accountId:social.accountId,membership});setCards(visible);setOwn(mine.filter(card=>guildRecruitmentVisible(card,membership,context)));setRankings(board);setPartyInvites(invites.party);setOutgoingPartyInvites(outgoing.party);setMatchAlerts(membership!==null?alerts.filter(alert=>visible.some(card=>card.id===alert.id)):alerts);setError(membership===undefined?st('Unable to load your online guild.'):'');}}
-  catch(e){if(generation===requestGeneration.current){setCards([]);setError(e instanceof Error?e.message:st("Social service unavailable."));}}
+ const load=useCallback(async()=>{
+  const generation=++requestGeneration.current;
+  if(!social.accountId||tab==='chat'||accountIdRef.current!==social.accountId){setUpdating(false);return;}
+  const accountId=social.accountId;
+  const context: 'party'|'guild'=tab==='guild'?'guild':'party';
+  const browse={...filters,postTypes:(context==='guild'?['looking_for_guild']:['looking_for_party','party_recruiting']) as RecruitmentPostType[]};
+  setUpdating(true);
+  try{
+   // Run independent requests in parallel. Guild browsing still waits for the
+   // player's membership so that its existing access restrictions are respected.
+   const membershipRequest=myGuild().catch(()=>undefined);
+   const browseRequest=context==='guild'
+     ?membershipRequest.then(membership=>membership===undefined||(membership&&!canManageGuild(membership.role))?[] as RecruitmentCardView[]:repository.browseRecruitment(browse))
+     :repository.browseRecruitment(browse);
+   const [membership,next,mine,board,invites,outgoing,alerts]=await Promise.all([
+    membershipRequest,browseRequest,ownRecruitmentPosts(),partyRankings(),
+    socialInvitations().catch(()=>({party:[],guild:[],serverTime:''})),
+    socialOutgoingInvitations().catch(()=>({party:[],guild:[],serverTime:''})),
+    recruitmentMatchAlerts().catch(()=>[])
+   ]);
+   if(generation!==requestGeneration.current||accountIdRef.current!==accountId)return;
+   // If the guild status request failed, keep the last confirmed membership
+   // and existing recruitment cards rather than blanking the entire screen.
+   if(membership!==undefined){
+    const visible=next.filter(card=>guildRecruitmentVisible(card,membership,context));
+    const owned=mine.filter(card=>guildRecruitmentVisible(card,membership,context));
+    setGuildContext({accountId,membership});
+    setBoardCache(previous=>{
+     const base=previous.accountId===accountId?previous:{accountId,party:EMPTY_BOARD,guild:EMPTY_BOARD};
+     return {...base,[context]:{cards:visible,own:owned}};
+    });
+    setMatchAlerts(membership!==null?alerts.filter(alert=>visible.some(card=>card.id===alert.id)):alerts);
+    setBackgroundError('');
+   }else{
+    setBackgroundError('refresh_failed');
+   }
+   setRankings(board);
+   setPartyInvites(invites.party);
+   setOutgoingPartyInvites(outgoing.party);
+  }catch(e){
+   if(generation===requestGeneration.current&&accountIdRef.current===accountId)
+    setBackgroundError('refresh_failed');
+   // A failed background request must never erase the last good snapshot.
+  }finally{
+   if(generation===requestGeneration.current&&accountIdRef.current===accountId)setUpdating(false);
+  }
  },[filters,tab,social.accountId]);
+ useEffect(()=>{
+  requestGeneration.current++;
+  setBoardCache({accountId:social.accountId,party:EMPTY_BOARD,guild:EMPTY_BOARD});
+  setGuildContext(null);
+  setRankings([]);setPartyInvites([]);setOutgoingPartyInvites([]);setMatchAlerts([]);
+  setLiveEvent(null);setUpdating(false);setBackgroundError('');
+ },[social.accountId]);
+ useEffect(()=>{
+  if(!updating){setShowUpdating(false);return;}
+  const timer=setTimeout(()=>setShowUpdating(true),1200);
+  return()=>clearTimeout(timer);
+ },[updating]);
  useEffect(()=>{setSelected(null);setDraft(null)},[guildMembership?.guild_id,guildMembership?.role]);
- useEffect(()=>{const timer=setTimeout(()=>void load(),250);return()=>{clearTimeout(timer);requestGeneration.current++;};},[load,social.party?.id]);
- useEffect(()=>{const timer=setInterval(()=>{setNow(Date.now());void load();},30000);return()=>clearInterval(timer);},[load]);
- useEffect(()=>{if(tab!=='party'||!social.accountId)return;void activePartyEvent().then(setLiveEvent).catch(e=>setError(e instanceof Error?e.message:st("Live event unavailable.")));},[tab,social.accountId,social.party?.id]);
- const run=async(action:()=>Promise<unknown>)=>{if(busy)return;setBusy(true);setError('');try{await action();command.current=null;await social.refresh();await load();}catch(e){setError(e instanceof Error?e.message:st("Please try again."));await social.refresh();}finally{setBusy(false);}};
+ useEffect(()=>{if(tab==='chat'){setUpdating(false);return;}const timer=setTimeout(()=>void load(),250);return()=>{clearTimeout(timer);requestGeneration.current++;};},[load,tab,social.party?.id]);
+ useEffect(()=>{const timer=setInterval(()=>{setNow(Date.now());if(tab!=='chat')void load();},30000);return()=>clearInterval(timer);},[load,tab]);
+ useEffect(()=>{if(tab!=='party'||!social.accountId)return;let cancelled=false;void activePartyEvent().then(event=>{if(!cancelled)setLiveEvent(event);}).catch(()=>{if(!cancelled)setLiveEvent(null);});return()=>{cancelled=true;};},[tab,social.accountId,social.party?.id]);
+ const run=async(action:()=>Promise<unknown>)=>{if(busy)return;setBusy(true);setError('');try{
+  await action();command.current=null;
+  // Update the authoritative Party snapshot before re-enabling membership
+  // actions, but let the slower recruitment refresh finish independently.
+  await social.refresh();
+  void load();
+ }catch(e){
+  setError(e instanceof Error?e.message:st("Please try again."));
+  void social.refresh();
+ }finally{setBusy(false);}};
  const character=()=>{if(!social.characterId)throw new Error(st("Sync your character in Account settings first."));return social.characterId;};
  const post=(postType:RecruitmentPostType)=>void run(async()=>{const membership=postType.includes('guild')?await myGuild():null;if(postType==='looking_for_guild'&&membership)throw new Error(st('You are already in a Guild.'));if(postType==='guild_recruiting'&&!canManageGuild(membership?.role))throw new Error(st('Guild recruiting requires Leader or Officer access.'));const guild=postType==='guild_recruiting'?membership:null;setDraft({postType,title:'',body:'',focus,roles:[role],ownerCharacterId:character(),durationDays:postType.includes('guild')?3:1,...(postType==='party_recruiting'?{partyId:social.party?.id,openSpots:Math.max(0,4-(social.party?.members.length??0))}:{}),...(guild?{guildId:guild.guild_id}:{})});});
  // Local countdown advances between snapshots; expiry is also enforced by the database query.
  const clock=useRef({server:now,local:now});useEffect(()=>{if(social.serverTime)clock.current={server:Date.parse(social.serverTime),local:Date.now()};},[social.serverTime]);
  const at=clock.current.server+(now-clock.current.local);
- const heroStatus=(():{eyebrow:string;title:string;detail:string;cta?:{label:string;onPress:()=>void};}=>{
-  if(!social.accountId)return {eyebrow:'SOCIAL',title:'Sign in to find a party',detail:'Sync a character in Account settings to use Parties, Guild Recruitment and chat.',cta:{label:st("Account settings"),onPress:onAccount}};
-  if(social.party){
-   const members=social.party.members.length,open=Math.max(0,4-members);
-   const leader=social.party.members.find(m=>m.isLeader)?.characterName;
-   return {eyebrow:'YOUR PARTY',title:leader?`${leader}'s party`:'Active party',detail:open>0?`${members}/4 members · ${open} open seat(s)`:`${members}/4 members · full`,cta:{label:'Open Party chat',onPress:()=>setTab('chat')}};
-  }
-  if(partyInvites.length>0)return {eyebrow:'INCOMING',title:`${partyInvites.length} party invite${partyInvites.length===1?'':'s'} waiting`,detail:'Tap below to review and accept.',cta:{label:'Review invites',onPress:()=>setTab('party')}};
-  if(characterLevel<PARTY_UNLOCK_LEVEL)return {eyebrow:'LOCKED',title:`Parties unlock at Level ${PARTY_UNLOCK_LEVEL}`,detail:`You are Level ${characterLevel||1}. Keep hunting and gathering — persistent parties and recruitment open up once you have the basics down. Guild recruiting is still available now.`,cta:{label:'Open Guilds',onPress:onGuild}};
-  return {eyebrow:'SOCIAL',title:'You are adventuring solo',detail:'Jump into a party, post a looking-for-party advert, or browse recruiting guilds.',cta:{label:'Find a party',onPress:()=>setTab('party')}};
- })();
- return <SocialHubPanel active={tab} badges={{party:partyInvites.length}} onChange={next=>{setTab(next);setSelected(null);setDraft(null);}}><ScrollView contentContainerStyle={s.content} keyboardShouldPersistTaps="handled" keyboardDismissMode="on-drag" showsVerticalScrollIndicator={false} showsHorizontalScrollIndicator={false}>
-  <View style={s.hero}>
-   <Text style={s.heroEyebrow}>{heroStatus.eyebrow}</Text>
-   <Text style={s.heroTitle}>{heroStatus.title}</Text>
-   <Text style={s.heroDetail}>{heroStatus.detail}</Text>
-   {heroStatus.cta?<GameButton title={heroStatus.cta.label} onPress={heroStatus.cta.onPress}/>:null}
-  </View>
-  <View style={s.row}><GameButton title={st("Friends")} tone="secondary" onPress={onFriends}/><GameButton title={st("Social help")} tone="secondary" onPress={()=>setHelp(!help)}/><GameButton title={busy?st("Working…"):st("Refresh")} tone="secondary" disabled={busy} onPress={()=>run(async()=>{})}/></View>
-  {matchAlerts.length>0?<Panel><View style={s.sectionHead}><Text style={s.selectedLabel}>{st("MATCHES FOUND")}</Text><Text style={s.sectionMeta}>{matchAlerts.length}</Text></View>{matchAlerts.slice(0,5).map(alert=><Pressable key={alert.id} onPress={()=>{const card=cards.find(item=>item.id===alert.id);if(card)setSelected(card);}}><Text style={s.text}>{alert.title} · {alert.focus.toUpperCase()} · {alert.owner_name??st("Adventurer")}</Text></Pressable>)}<GameButton compact title={st("Dismiss matches")} tone="secondary" onPress={()=>run(async()=>{await ackRecruitmentMatchAlerts();setMatchAlerts([]);})}/></Panel>:null}
-  {help&&<Panel>{PARTY_SOCIAL_TUTORIAL_STEPS.map(step=><Text key={step} style={s.text}>{socialLabel(language,step)}</Text>)}</Panel>}
-  {!!(error||social.error)&&<View accessibilityRole="alert" style={s.errorCard}><Text style={s.errorLabel}>{st("SOCIAL UNAVAILABLE")}</Text><Text style={s.error}>{error||social.error}</Text></View>}
-  {!social.accountId?<Panel>{social.loading?<LoadingState compact label={st("Loading account…")}/>:<Text style={s.text}>{st("Sign in and sync a character to use Parties and Recruitment.")}</Text>}<GameButton title={st("Account settings")} onPress={onAccount}/></Panel>:<>
-   <Pressable accessibilityRole="button" accessibilityState={{expanded:showPrefs}} onPress={()=>setShowPrefs(v=>!v)} style={s.prefsHeader}><Text style={s.prefsHeaderLabel}>{'Role & focus · '}{socialLabel(language,role)}{!social.party?' / '+socialLabel(language,focus):''}</Text><Text style={s.chevron}>{showPrefs?'−':'+'}</Text></Pressable>
+ // A player can unlock Parties on one character and keep the unlock on another.
+ const partyAvailable=partyUnlocked??(characterLevel>=PARTY_UNLOCK_LEVEL);
+ const partyLocked=!partyAvailable&&!social.party;
+ const canUsePartyChat=shouldShowPartyChat(social.party,social.accountId);
+ // If the party is disbanded while Chat is selected, return to the Party tab.
+ useEffect(()=>{if(tab==='chat'&&!canUsePartyChat&&!social.loading){setTab('party');setSelected(null);setDraft(null);}},[tab,canUsePartyChat,social.loading]);
+
+ const recruitmentPreferences=<>
+<Pressable accessibilityRole="button" accessibilityState={{expanded:showPrefs}} onPress={()=>setShowPrefs(v=>!v)} style={s.prefsHeader}><Text style={s.prefsHeaderLabel}>{'Role & focus · '}{socialLabel(language,role)}{!social.party?' / '+socialLabel(language,focus):''}</Text><Text style={s.chevron}>{showPrefs?'−':'+'}</Text></Pressable>
    {showPrefs&&<>
     <View style={s.chipRow}><Text style={s.chipLabel}>{st("ROLE")}</Text>{(['damage','tank','support'] as const).map(value=><QuickChip key={value} label={socialLabel(language,value)} selected={role===value} onPress={()=>setRole(value)}/>)}</View>
     {!social.party&&<View style={s.chipRow}><Text style={s.chipLabel}>{st("FOCUS")}</Text>{(['combat','skilling','mixed'] as const).map(value=><QuickChip key={value} label={socialLabel(language,value)} selected={focus===value} onPress={()=>setFocus(value)}/>)}</View>}
    </>}
+ </>;
+ const ownedAdverts=own.length>0?(<Panel><View style={s.sectionHead}><Text style={s.title}>{st("Your adverts")}</Text><Text style={s.sectionMeta}>{st('{count} active / saved',{count:own.length})}</Text></View>{own.map(item=><View style={s.ad} key={item.id}><RecruitmentListing card={item} nowMs={at} onPress={()=>setSelected(item)}/>{item.status!=='closed'?<View style={s.adActions}><View style={s.flex}><GameButton compact title={st("Refresh")} tone="secondary" disabled={busy} onPress={()=>run(()=>repository.refreshRecruitment(item.id))}/></View><View style={s.flex}><GameButton compact title={st("Close advert")} tone="secondary" disabled={busy} onPress={()=>run(()=>repository.closeRecruitment(item.id))}/></View></View>:<Text style={s.closedLabel}>{st("CLOSED")}</Text>}</View>)}</Panel>):null;
+ const partyInvitations=<>
+   {partyInvites.length>0?<Panel><View style={s.sectionHead}><Text style={s.selectedLabel}>{st("PARTY INVITES")}</Text><Text style={s.sectionMeta}>{st('{count} pending',{count:partyInvites.length})}</Text></View>{partyInvites.map(invite=>{const expiry=socialExpiry(language,Date.parse(invite.expiresAt),at),warning=social.party?'Leave your current Party before accepting another invitation.':invite.openSpots<1?'This Party is currently full.':undefined;return <SocialInvitationCard key={invite.id} accountId={invite.inviterAccountId} name={invite.inviterName} status={st("PARTY INVITE")} statusTone="info" detail={st('{focus} Party · {members}/4 members · {open} open',{focus:socialLabel(language,invite.focus),members:invite.memberCount,open:invite.openSpots})} expiry={expiry.text} warning={warning} actions={<><GameButton compact title={st("Accept")} disabled={busy||!!social.party||invite.openSpots<1||!social.characterId} onPress={()=>run(async()=>{await respondPartyInvitation(invite.id,true,character());onInvitationsChanged?.()})}/><GameButton compact title={st("Decline")} tone="secondary" disabled={busy} onPress={()=>run(async()=>{await respondPartyInvitation(invite.id,false);onInvitationsChanged?.()})}/></>}/>} )}</Panel>:null}
+   {outgoingPartyInvites.length>0?<Panel><View style={s.sectionHead}><Text style={s.selectedLabel}>{st("OUTGOING PARTY INVITES")}</Text><Text style={s.sectionMeta}>{st('{count} pending',{count:outgoingPartyInvites.length})}</Text></View>{outgoingPartyInvites.map(invite=>{const expiry=socialExpiry(language,Date.parse(invite.expiresAt),at);return <SocialInvitationCard key={invite.id} accountId={invite.recipientAccountId} name={invite.recipientName} status={st("INVITE SENT")} statusTone="muted" detail={st("Waiting for this player to respond.")} expiry={expiry.text} actions={<GameButton compact title={st("Cancel invite")} tone="secondary" disabled={busy} onPress={()=>run(async()=>{await cancelPartyInvitation(invite.id);onInvitationsChanged?.()})}/>}/>})}</Panel>:null}
+ </>;
+ const recruitmentDetails=<>
+  {tab==='party'&&matchAlerts.length>0?<><Pressable accessibilityRole="button" accessibilityState={{expanded:showMatches}} onPress={()=>setShowMatches(value=>!value)} style={s.prefsHeader}><Text style={s.prefsHeaderLabel}>{st("MATCHES FOUND")} · {matchAlerts.length}</Text><Text style={s.chevron}>{showMatches?'−':'+'}</Text></Pressable>{showMatches?<Panel>{matchAlerts.slice(0,5).map(alert=><Pressable key={alert.id} onPress={()=>{const card=cards.find(item=>item.id===alert.id);if(card)setSelected(card);}}><Text style={s.text}>{alert.title} · {alert.focus.toUpperCase()} · {alert.owner_name??st("Adventurer")}</Text></Pressable>)}<GameButton compact title={st("Dismiss matches")} tone="secondary" onPress={()=>run(async()=>{await ackRecruitmentMatchAlerts();setMatchAlerts([]);})}/></Panel>:null}</>:null}
    {draft&&<RecruitmentComposer key={draft.postType} initial={draft} busy={busy} onCancel={()=>setDraft(null)} onPublish={input=>run(async()=>{await repository.publishRecruitment(input);setDraft(null);})}/>}
    {selected&&(()=>{const presentation=recruitmentPostTypePresentation(selected.postType),context=[...(selected.activityLevel?[socialLabel(language,selected.activityLevel.charAt(0).toUpperCase()+selected.activityLevel.slice(1))]:[]),...(selected.language?[selected.language]:[]),...(selected.region?[selected.region.toUpperCase()]:[]),...(selected.minCombatLevel!==undefined?[st('Combat {level}+',{level:Math.max(0,Math.floor(selected.minCombatLevel))})]:[]),...(selected.minTotalLevel!==undefined?[st('Total {level}+',{level:Math.max(0,Math.floor(selected.minTotalLevel))})]:[])],expiry=socialExpiry(language,selected.expiresAtMs,at);return <Panel accentColor={C.info} accentSurface={C.infoSurface}>
     <View style={s.selectedHead}><View style={s.flex}><Text style={s.selectedLabel}>{socialLabel(language,presentation.shortLabel)} · {socialLabel(language,selected.focus).toLocaleUpperCase()}</Text><Text style={s.title}>{selected.title}</Text></View><Text style={[s.expiry,expiry.urgency==='soon'&&s.expirySoon]}>{expiry.text}</Text></View>
@@ -94,32 +158,46 @@ export function SocialScreen({initialTab='party',characterLevel=0,onGuild,onFrie
     </View>
     <GameButton compact title={st("Close details")} tone="secondary" onPress={()=>setSelected(null)}/>
    </Panel>})()}
-   {tab==='party'&&partyInvites.length>0?<Panel><View style={s.sectionHead}><Text style={s.selectedLabel}>{st("PARTY INVITES")}</Text><Text style={s.sectionMeta}>{st('{count} pending',{count:partyInvites.length})}</Text></View>{partyInvites.map(invite=>{const expiry=socialExpiry(language,Date.parse(invite.expiresAt),at),warning=social.party?'Leave your current Party before accepting another invitation.':invite.openSpots<1?'This Party is currently full.':undefined;return <SocialInvitationCard key={invite.id} accountId={invite.inviterAccountId} name={invite.inviterName} status={st("PARTY INVITE")} statusTone="info" detail={st('{focus} Party · {members}/4 members · {open} open',{focus:socialLabel(language,invite.focus),members:invite.memberCount,open:invite.openSpots})} expiry={expiry.text} warning={warning} actions={<><GameButton compact title={st("Accept")} disabled={busy||!!social.party||invite.openSpots<1||!social.characterId} onPress={()=>run(async()=>{await respondPartyInvitation(invite.id,true,character());onInvitationsChanged?.()})}/><GameButton compact title={st("Decline")} tone="secondary" disabled={busy} onPress={()=>run(async()=>{await respondPartyInvitation(invite.id,false);onInvitationsChanged?.()})}/></>}/>} )}</Panel>:null}
-   {tab==='party'&&outgoingPartyInvites.length>0?<Panel><View style={s.sectionHead}><Text style={s.selectedLabel}>{st("OUTGOING PARTY INVITES")}</Text><Text style={s.sectionMeta}>{st('{count} pending',{count:outgoingPartyInvites.length})}</Text></View>{outgoingPartyInvites.map(invite=>{const expiry=socialExpiry(language,Date.parse(invite.expiresAt),at);return <SocialInvitationCard key={invite.id} accountId={invite.recipientAccountId} name={invite.recipientName} status={st("INVITE SENT")} statusTone="muted" detail={st("Waiting for this player to respond.")} expiry={expiry.text} actions={<GameButton compact title={st("Cancel invite")} tone="secondary" disabled={busy} onPress={()=>run(async()=>{await cancelPartyInvitation(invite.id);onInvitationsChanged?.()})}/>}/>})}</Panel>:null}
-   {tab==='party'&&<PartyHubPanel accountId={social.accountId} party={social.party} contracts={social.contracts} recruitment={cards} nowMs={at} filters={filters} onFiltersChange={setFilters} partyUnlocked={characterLevel>=PARTY_UNLOCK_LEVEL} partyUnlockLevel={PARTY_UNLOCK_LEVEL}
-    onCreateParty={busy||characterLevel<PARTY_UNLOCK_LEVEL?undefined:()=>void run(()=>repository.createParty({characterId:character(),role,focus,idempotencyKey:key(`create:${focus}:${role}`)}))}
+ </>;
+ const partyExtras=social.party?<>
+   {(liveEvent||rankings.length>0)?<>
+    <Pressable accessibilityRole="button" accessibilityState={{expanded:showPartyEvents}} onPress={()=>setShowPartyEvents(value=>!value)} style={s.prefsHeader}><Text style={s.prefsHeaderLabel}>Party events</Text><Text style={s.chevron}>{showPartyEvents?'−':'+'}</Text></Pressable>
+    {showPartyEvents?<>
+   {tab==='party'&&liveEvent?<PartyEventHubPanel event={liveEvent}/>:null}
+   {tab==='party'&&rankings.length>0?<Panel><View style={s.sectionHead}><Text style={s.title}>{st("Ranked Party events")}</Text><Text style={s.sectionMeta}>{Math.min(rankings.length,3)} {rankings.length===1?'entry':'entries'}</Text></View>{rankings.slice(0,3).map(row=><Text style={s.text} key={`${row.event_key}:${row.party_id}`}>#{row.rank} · {row.name} · {st('{count} pts',{count:row.normalized_points})}</Text>)}</Panel>:null}
+    </>:null}
+   </>:null}
+ </>:null;
+ return <SocialHubPanel active={tab} hasParty={canUsePartyChat} badges={{party:partyInvites.length}} onChange={next=>{setTab(next);setSelected(null);setDraft(null);setError('');setBackgroundError('');}}>
+ {tab==='chat'?(canUsePartyChat?<View style={s.chatContent}><SectionGuide scope={social.accountId} area="social" section="Chat" translate={st} guide={{title:'Party Chat',body:'Message your current Party here. Other social controls stay in their own tabs.',detail:'The Chat tab disappears when you leave or disband your Party.'}}/><OnlinePartyChat expanded/></View>:social.loading?<View style={s.chatContent}><Text style={s.syncText}>{st("Opening Party Chat…")}</Text></View>:null):
+ <ScrollView contentContainerStyle={s.content} keyboardShouldPersistTaps="handled" keyboardDismissMode="on-drag" showsVerticalScrollIndicator={false} showsHorizontalScrollIndicator={false}>
+  {tab==='party'&&partyLocked?<PartyLockedNotice level={PARTY_UNLOCK_LEVEL}/>:<>
+  {(social.accountId&&(backgroundError||social.error||showUpdating))?<View style={s.syncRow}>{backgroundError||social.error?<><Text style={s.syncError}>{st("Could not update Social.")}</Text><GameButton compact title={st("Retry")} tone="secondary" onPress={()=>{void social.refresh();void load();}}/></>:<><ActivityIndicator color={C.muted} size="small"/><Text style={s.syncText}>{st("Updating…")}</Text></>}</View>:null}
+  {!!error&&<View accessibilityRole="alert" style={s.errorCard}><Text style={s.errorLabel}>{st("SOCIAL UNAVAILABLE")}</Text><Text style={s.error}>{error}</Text></View>}
+  {!social.accountId?<Panel>{social.loading?<Text style={s.syncText}>{st("Connecting…")}</Text>:<Text style={s.text}>{st("Sign in and sync a character to use Parties and Recruitment.")}</Text>}<GameButton title={st("Account settings")} onPress={onAccount}/></Panel>:<>
+   {tab==='guild'?<SectionGuide scope={social.accountId} area="social" section="Guild" translate={st} guide={{title:'Guild',body:'Open your Guild here, or browse recruiting guilds before joining.',detail:'Guild Chat and activities are inside Guild and remain independent of Party unlocks.'}}/>:null}
+   {tab==='guild'?recruitmentDetails:null}
+   {tab==='party'&&!social.party?partyInvitations:null}
+   {tab==='party'&&!!social.accountId&&social.loading&&!social.party?<Text style={s.syncText}>{st("Checking your Party…")}</Text>:null}
+   {tab==='party'&&(!social.loading||!!social.party)&&<PartyHubPanel accountId={social.accountId} party={social.party} contracts={social.contracts} recruitment={cards} nowMs={at} filters={filters} onFiltersChange={setFilters} partyUnlocked={partyAvailable} partyUnlockLevel={PARTY_UNLOCK_LEVEL}
+    onCreateParty={busy||!partyAvailable?undefined:()=>void run(()=>repository.createParty({characterId:character(),role,focus,idempotencyKey:key(`create:${focus}:${role}`)}))}
     onLeaveParty={busy?undefined:()=>{const party=social.party!;const self=party.members.find(member=>member.accountId===social.accountId),successor=party.members.find(member=>member.accountId!==social.accountId);gameAlert.alert(self?.isLeader?(successor?st("Leave Party and hand over leadership?"):st("Leave and disband Party?")):st("Leave Party?"),self?.isLeader?(successor?st('Leadership will pass to {name}, the oldest remaining Party member.',{name:successor.characterName}):st("You are the only Party member, so leaving will disband it.")):st("You will leave this persistent Party."),[{text:st("Cancel"),style:'cancel'},{text:st("Leave"),style:'destructive',onPress:()=>void run(async()=>{await repository.leaveParty({partyId:party.id,idempotencyKey:key(`leave:${party.id}`)});await social.refresh();})}])}}
     onDisbandParty={busy?undefined:()=>{const party=social.party!;gameAlert.alert(st("Disband Party?"),st("This removes every member and cancels all pending Party invitations."),[{text:st("Cancel"),style:'cancel'},{text:st("Disband"),style:'destructive',onPress:()=>void run(()=>disbandParty(party.id))}])}}
-    onOpenPartyChat={()=>setTab('chat')} onOpenMemberProfile={member=>setSelectedProfile({account_id:member.accountId,sender_name:member.characterName})}
+    onOpenMemberProfile={member=>setSelectedProfile({account_id:member.accountId,sender_name:member.characterName})}
     onTransferLeadership={member=>gameAlert.alert(st("Transfer Party leadership?"),st('{name} will become Party leader.',{name:member.characterName}),[{text:st("Cancel"),style:'cancel'},{text:st("Transfer"),onPress:()=>void run(()=>transferPartyLeadership(social.party!.id,member.accountId))}])}
     onRemoveMember={member=>gameAlert.alert(st('Remove {name}?',{name:member.characterName}),st("They will leave the Party immediately."),[{text:st("Cancel"),style:'cancel'},{text:st("Remove"),style:'destructive',onPress:()=>void run(()=>removePartyMember(social.party!.id,member.accountId))}])}
     onOpenRecruitmentPost={id=>setSelected(cards.find(card=>card.id===id)??null)} onCreateRecruitmentPost={post}
-    onClaimReward={busy?undefined:id=>void run(()=>claimPartyContractReward(id,character()))}/>}
-   {tab==='party'&&liveEvent?<PartyEventHubPanel event={liveEvent} onFindParty={()=>setTab('party')} />:null}
-   {tab==='party'&&rankings.length>0?<Panel><View style={s.sectionHead}><Text style={s.title}>{st("Ranked Party events")}</Text><Text style={s.sectionMeta}>{Math.min(rankings.length,3)} {rankings.length===1?'entry':'entries'}</Text></View>{rankings.slice(0,3).map(row=><Text style={s.text} key={`${row.event_key}:${row.party_id}`}>#{row.rank} · {row.name} · {st('{count} pts',{count:row.normalized_points})}</Text>)}</Panel>:null}
-   {tab==='guild'&&(guildMembership===undefined?<LoadingState compact/>:guildMembership?<><Panel><Text style={s.title}>{st("My Guild")}</Text><Text style={s.text}>{st("Your Guild’s members, activities and chat are available in the Guild hub.")}</Text><GameButton title={st("Open my Guild")} onPress={onGuild}/></Panel>{canRecruit?<><GameButton title={st("Post Guild recruiting advert")} tone="secondary" disabled={busy} onPress={()=>post('guild_recruiting')}/><RecruitmentFiltersPanel value={filters} onChange={setFilters}/><GuildSeekerPanel seekers={cards} nowMs={at} onOpen={id=>setSelected(cards.find(card=>card.id===id)??null)}/></>:null}</>:<><GameButton title={st("Open Guild directory and management")} onPress={onGuild}/><RecruitmentFiltersPanel value={filters} onChange={setFilters}/><GuildSeekerPanel seekers={cards} nowMs={at} onOpen={id=>setSelected(cards.find(card=>card.id===id)??null)} onPostMyAd={()=>post('looking_for_guild')}/></>)}
-   {tab==='chat'&&(social.party?<OnlinePartyChat/>:<Text style={s.text}>{st("Join a Party to use Party Chat. World and Guild chat remain available in the chat overlay.")}</Text>)}
-   {(tab==='party'||(tab==='guild'&&(guildMembership===null||canRecruit)))&&<Panel><View style={s.sectionHead}><Text style={s.title}>{st("Your adverts")}</Text><Text style={s.sectionMeta}>{st('{count} active / saved',{count:own.length})}</Text></View>{own.map(item=><View style={s.ad} key={item.id}><RecruitmentListing card={item} nowMs={at} onPress={()=>setSelected(item)}/>{item.status!=='closed'?<View style={s.adActions}><View style={s.flex}><GameButton compact title={st("Refresh")} tone="secondary" disabled={busy} onPress={()=>run(()=>repository.refreshRecruitment(item.id))}/></View><View style={s.flex}><GameButton compact title={st("Close advert")} tone="secondary" disabled={busy} onPress={()=>run(()=>repository.closeRecruitment(item.id))}/></View></View>:<Text style={s.closedLabel}>{st("CLOSED")}</Text>}</View>)}{!own.length&&<Text style={s.text}>{st("No adverts published yet.")}</Text>}</Panel>}
+    onClaimReward={busy?undefined:id=>void run(()=>claimPartyContractReward(id,character()))} recruitmentPreferences={recruitmentPreferences} ownedAdverts={ownedAdverts} recruitmentDetails={recruitmentDetails} partyExtras={partyExtras} partyInvitations={partyInvitations} invitationCount={partyInvites.length+outgoingPartyInvites.length}/>}
+   {tab==='guild'&&(guildMembership===undefined?<><GameButton title={st("Open Guilds")} onPress={onGuild}/>{!backgroundError&&!showUpdating?<Text style={s.syncText}>{st("Checking Guild membership…")}</Text>:null}</>:guildMembership?<><GameButton title={st("Open my Guild")} onPress={onGuild}/>{canRecruit?<><GameButton title={st("Post Guild recruiting advert")} tone="secondary" disabled={busy} onPress={()=>post('guild_recruiting')}/><RecruitmentFiltersPanel value={filters} onChange={setFilters}/><GuildSeekerPanel seekers={cards} nowMs={at} onOpen={id=>setSelected(cards.find(card=>card.id===id)??null)}/></>:null}</>:<><GameButton title={st("Open Guild directory and management")} onPress={onGuild}/><RecruitmentFiltersPanel value={filters} onChange={setFilters}/><GuildSeekerPanel seekers={cards} nowMs={at} onOpen={id=>setSelected(cards.find(card=>card.id===id)??null)} onPostMyAd={()=>post('looking_for_guild')}/></>)}
+   {tab==='guild'&&(guildMembership===null||canRecruit)?ownedAdverts:null}
   </>}
-  <ChatPlayerSheet message={selectedProfile} onClose={()=>setSelectedProfile(null)} onBlocked={()=>setSelectedProfile(null)}/>
- </ScrollView></SocialHubPanel>;
+   {selectedProfile?<ChatPlayerSheet message={selectedProfile} onClose={()=>setSelectedProfile(null)} onBlocked={()=>setSelectedProfile(null)}/>:null}
+  </>}
+ </ScrollView>}
+ </SocialHubPanel>;
 }
 function QuickChip({label,selected,onPress}:{label:string;selected:boolean;onPress:()=>void}){const C=useGameTheme(),s=useMemo(()=>makeStyles(C),[C]);return <Pressable accessibilityRole="button" accessibilityState={{selected}} onPress={onPress} style={({pressed})=>[s.chip,selected&&s.chipSelected,pressed&&s.pressed]}><Text style={[s.chipText,selected&&s.chipTextSelected]}>{selected?'✓ ':''}{label}</Text></Pressable>}
-function makeStyles(C:ThemeColors){const equipmentColors=equipmentTheme(C);return StyleSheet.create({content:{padding:spacing.md,gap:spacing.md,paddingBottom:32},row:{flexDirection:'row',flexWrap:'wrap',gap:spacing.sm},
- hero:{gap:8,padding:spacing.lg,borderWidth:1,borderColor:C.selectionLine,borderRadius:14,backgroundColor:C.selection},
- heroEyebrow:{...typography.caption,color:C.accent,fontWeight:'900',letterSpacing:1.2},
- heroTitle:{fontSize:20,lineHeight:26,fontWeight:'800',color:C.text},
- heroDetail:{fontSize:13,lineHeight:19,color:C.muted},
+function makeStyles(C:ThemeColors){return StyleSheet.create({content:{padding:spacing.md,gap:spacing.md,paddingBottom:32},chatContent:{flex:1,minHeight:0,paddingHorizontal:spacing.md,paddingVertical:spacing.sm},
  prefsHeader:{flexDirection:'row',alignItems:'center',gap:8,minHeight:40,paddingHorizontal:12,paddingVertical:6,borderWidth:1,borderColor:C.line,borderRadius:8,backgroundColor:C.panel},
  prefsHeaderLabel:{flex:1,...typography.caption,color:C.muted,fontWeight:'800'},
- chevron:{fontSize:16,color:C.muted,fontWeight:'900'},flex:{flex:1,minWidth:0},chipRow:{flexDirection:'row',flexWrap:'wrap',alignItems:'center',gap:6},chipLabel:{fontSize:10,fontWeight:'900',letterSpacing:1,color:C.accentSoft,marginRight:2},chip:{minHeight:38,paddingHorizontal:12,justifyContent:'center',borderWidth:1,borderColor:C.line,borderRadius:99,backgroundColor:C.bg},chipSelected:{borderColor:C.selectionLine,backgroundColor:C.selection},chipText:{fontSize:12,color:C.muted,fontWeight:'800'},chipTextSelected:{color:C.text},pressed:{opacity:.76},title:{color:C.accent,fontSize:18,fontWeight:'800'},selectedLabel:{...typography.caption,color:C.info,fontWeight:'900',letterSpacing:1},selectedHead:{flexDirection:'row',alignItems:'flex-start',gap:8},expiry:{fontSize:9,color:C.muted,fontWeight:'800',paddingTop:2},expirySoon:{color:C.warning},detailMeta:{flexDirection:'row',flexWrap:'wrap',gap:5},detailPill:{maxWidth:130,paddingHorizontal:6,paddingVertical:3,borderWidth:1,borderColor:C.line,borderRadius:99,backgroundColor:C.panel2},detailPillText:{fontSize:8,color:C.muted,fontWeight:'800'},objectivePill:{maxWidth:'100%',borderColor:C.info,backgroundColor:C.infoSurface},objectivePillText:{fontSize:8,color:C.info,fontWeight:'800'},detailActions:{flexDirection:'row',flexWrap:'wrap',gap:6},text:{color:C.text,lineHeight:21},errorCard:{gap:4,padding:spacing.md,borderWidth:1,borderColor:C.bad,borderRadius:10,backgroundColor:C.badSurface},errorLabel:{...typography.caption,color:C.bad,fontWeight:'900',letterSpacing:1},error:{color:C.text,lineHeight:21},sectionHead:{flexDirection:'row',alignItems:'center',justifyContent:'space-between',gap:8},sectionMeta:{fontSize:9,color:C.muted,fontWeight:'800'},ad:{gap:6,paddingVertical:6},adActions:{flexDirection:'row',gap:6},closedLabel:{fontSize:8,color:C.muted,fontWeight:'900',letterSpacing:.7,textAlign:'right'}});}
+ chevron:{fontSize:16,color:C.muted,fontWeight:'900'},flex:{flex:1,minWidth:0},chipRow:{flexDirection:'row',flexWrap:'wrap',alignItems:'center',gap:6},chipLabel:{fontSize:10,fontWeight:'900',letterSpacing:1,color:C.accentSoft,marginRight:2},chip:{minHeight:38,paddingHorizontal:12,justifyContent:'center',borderWidth:1,borderColor:C.line,borderRadius:99,backgroundColor:C.bg},chipSelected:{borderColor:C.selectionLine,backgroundColor:C.selection},chipText:{fontSize:12,color:C.muted,fontWeight:'800'},chipTextSelected:{color:C.text},pressed:{opacity:.76},title:{color:C.accent,fontSize:18,fontWeight:'800'},selectedLabel:{...typography.caption,color:C.info,fontWeight:'900',letterSpacing:1},selectedHead:{flexDirection:'row',alignItems:'flex-start',gap:8},expiry:{fontSize:9,color:C.muted,fontWeight:'800',paddingTop:2},expirySoon:{color:C.warning},detailMeta:{flexDirection:'row',flexWrap:'wrap',gap:5},detailPill:{maxWidth:130,paddingHorizontal:6,paddingVertical:3,borderWidth:1,borderColor:C.line,borderRadius:99,backgroundColor:C.panel2},detailPillText:{fontSize:8,color:C.muted,fontWeight:'800'},objectivePill:{maxWidth:'100%',borderColor:C.info,backgroundColor:C.infoSurface},objectivePillText:{fontSize:8,color:C.info,fontWeight:'800'},detailActions:{flexDirection:'row',flexWrap:'wrap',gap:6},text:{color:C.text,lineHeight:21},errorCard:{gap:4,padding:spacing.md,borderWidth:1,borderColor:C.bad,borderRadius:10,backgroundColor:C.badSurface},errorLabel:{...typography.caption,color:C.bad,fontWeight:'900',letterSpacing:1},error:{color:C.text,lineHeight:21},syncRow:{flexDirection:'row',alignItems:'center',gap:spacing.sm,paddingVertical:3,minHeight:36},syncText:{...typography.caption,color:C.muted,flexShrink:1},syncError:{...typography.caption,color:C.warning,flex:1},sectionHead:{flexDirection:'row',alignItems:'center',justifyContent:'space-between',gap:8},sectionMeta:{fontSize:9,color:C.muted,fontWeight:'800'},ad:{gap:6,paddingVertical:6},adActions:{flexDirection:'row',gap:6},closedLabel:{fontSize:8,color:C.muted,fontWeight:'900',letterSpacing:.7,textAlign:'right'}});}

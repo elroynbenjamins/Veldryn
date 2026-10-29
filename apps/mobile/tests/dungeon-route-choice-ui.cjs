@@ -1,0 +1,18 @@
+const assert=require('node:assert/strict');
+const fs=require('node:fs');
+const path=require('node:path');
+const root=path.resolve(__dirname,'..');
+const read=p=>fs.readFileSync(path.join(root,p),'utf8');
+const overview=read('src/components/coop/CoopRunOverview.tsx');
+const choices=read('src/components/coop/DungeonRouteChoices.tsx');
+assert(overview.includes('<DungeonRouteChoices options={run.options} mode={run.mode} phase={run.phase} busy={busy} onChoose={onChoose}/>'),'Dungeon run renders shared actionable room choices');
+assert(!overview.includes('run.options.map(option=><FantasyPanel'),'Old per-room text panels are removed');
+assert(choices.includes('onPress={()=>onChoose?.(option.nodeId)}'),'Room tap uses the existing authoritative choose/vote callback');
+assert(choices.includes("phase==='awaiting_choice'&&!busy"),'Busy and non-choice phases cannot submit votes');
+assert(choices.includes("canChoose&&!option.hidden"),'Hidden rooms cannot be picked');
+assert(choices.includes("mode==='qmode'?st('Choose room'):st('Vote')"),'Solo and Live use the correct action');
+assert(choices.includes("option.votes!==undefined"),'Existing server vote counts remain visible');
+assert(choices.includes("option.encounterPreview?.summary"),'Existing encounter preview remains readable');
+assert(choices.includes("size=\"room\""),'Illustrated room cards use large authored room artwork');
+assert(!choices.includes('<GameButton'),'No duplicate Choose/Vote button is rendered under each room');
+console.log('PASS: dungeon room cards are image-led, one-tap, server-vote safe and readable');

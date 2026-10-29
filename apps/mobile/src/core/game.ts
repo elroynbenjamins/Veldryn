@@ -135,7 +135,7 @@ export function newGame(nowMs:number):GameState{return {
   unlockedMonsterIds:['MOSS_RAT'],exploredRouteIds:[],defeatedBossIds:[],
   skills:['mining','woodcutting','fishing','smithing','cooking','herbalism','alchemy','exploration','tailoring','enchanting','faith'].map(skillId=>({skillId:skillId as any,xp:0,level:1})),
   account:{createdCharacterCount:1,unlockedCharacterSlots:1,guildMember:false,patronTier:'none',guildBannerId:'world_tree_green',guildProfileFrameId:'classic',guildNameplateId:'classic',guildMotto:'Stronger together.',guildContribution:0,guildProjectProgress:0,guildBossHp:100000,guildProjectClaimed:false,guildJoinPolicy:'open',guildMinimumLevel:10,guildApplicationStatus:'none',seasonalContractClaimIds:[]},
-  settings:{language:'en',uiTheme:'obsidian',numberMode:'abbreviated',reduceMotion:false,textScale:1,autoEatThresholdPct:40,stopCombatWhenOutOfFood:true,autoTravelQueuedActivities:false,autoJoinWorldChat:true,defaultWorldChat:1,chatDockLines:1,chatEmoteTrayIds:[],quickNavDestinations:[...DEFAULT_QUICK_NAV_DESTINATIONS],favoriteItemIds:[],seenItemIds:[]}
+  settings:{language:'en',uiTheme:'obsidian',numberMode:'abbreviated',reduceMotion:false,textScale:1,autoEatThresholdPct:40,stopCombatWhenOutOfFood:true,autoTravelQueuedActivities:false,autoJoinWorldChat:true,defaultWorldChat:1,chatDockLines:1,chatEmoteTrayIds:[],quickNavDestinations:[...DEFAULT_QUICK_NAV_DESTINATIONS],favoriteItemIds:[],lockedItemIds:[],seenItemIds:[]}
 }}
 
 export function createCharacter(state:GameState,classId:ClassId,name='Adventurer',bodyPresentation:BodyPresentation='male'):GameState{
@@ -837,6 +837,7 @@ export function sellItem(state:GameState,itemId:string,quantity=1):GameState{
   if(!state.character||quantity<=0)return state;
   if(itemId===HOLY_WATER_ID)throw new Error('Holy Water cannot be sold.');
   if(state.settings.favoriteItemIds?.includes(itemId))throw new Error('Favorite item is protected. Remove it from Favorites before selling.');
+  if(state.settings.lockedItemIds?.includes(itemId))throw new Error('Locked item is protected. Unlock it before selling.');
   const d=itemDef(itemId);
   if(d.knowledgeUnlockId)throw new Error('Blueprints cannot be sold. Learn the recipe by crafting its tool.');
   if(d.type==='gear'&&hasEnhancement(state,itemId)){
@@ -850,6 +851,7 @@ export function sellItem(state:GameState,itemId:string,quantity=1):GameState{
 }
 export function salvageItem(state:GameState,itemId:string):GameState{
   if(state.settings.favoriteItemIds?.includes(itemId))throw new Error('Favorite item is protected. Remove it from Favorites before salvaging.');
+  if(state.settings.lockedItemIds?.includes(itemId))throw new Error('Locked item is protected. Unlock it before salvaging.');
   const d=itemDef(itemId);if(d.type!=='gear'||!d.salvage)throw new Error('Cannot salvage');
   if(hasEnhancement(state,itemId)){
     const invQty=stackQty(state.inventory.stacks,itemId);
@@ -878,6 +880,7 @@ export function sellBankItem(state:GameState,itemId:string,quantity=1):GameState
   if(!state.character)throw new Error('Character required.');
   if(itemId===HOLY_WATER_ID)throw new Error('Holy Water cannot be sold.');
   if(state.settings.favoriteItemIds?.includes(itemId))throw new Error('Favorite item is protected.');
+  if(state.settings.lockedItemIds?.includes(itemId))throw new Error('Locked item is protected.');
   const def=itemDef(itemId);
   if(def.knowledgeUnlockId)throw new Error('Blueprints cannot be sold.');
   if(def.type==='gear'&&hasEnhancement(state,itemId))throw new Error('Enhanced equipment is protected.');

@@ -14,7 +14,7 @@ function selectedStacks(state:GameState,itemIds:readonly string[],location:BulkS
 }
 function protectedFromDisposal(state:GameState,itemId:string,goalProtectedIds:Set<string>){
   const item=itemDef(itemId);
-  return goalProtectedIds.has(itemId)||!!state.settings.favoriteItemIds?.includes(itemId)||(item.type==='gear'&&hasEnhancement(state,itemId));
+  return goalProtectedIds.has(itemId)||!!state.settings.favoriteItemIds?.includes(itemId)||!!state.settings.lockedItemIds?.includes(itemId)||(item.type==='gear'&&hasEnhancement(state,itemId));
 }
 
 export function bulkSelectionSummary(state:GameState,itemIds:readonly string[],location:BulkStorageLocation){
@@ -73,7 +73,7 @@ export function bulkTransferSelected(state:GameState,itemIds:readonly string[],f
 
 export function bulkSellSelected(state:GameState,itemIds:readonly string[]):GameState{
   const summary=bulkSelectionSummary(state,itemIds,'inventory');
-  if(!summary.sellableIds.length)throw new Error('No selected items can be sold. Working Toward items, favorites, enhanced gear, auto-eat food, Holy Water and zero-value items stay protected.');
+  if(!summary.sellableIds.length)throw new Error('No selected items can be sold. Working Toward items, favorites, locked items, enhanced gear, auto-eat food, Holy Water and zero-value items stay protected.');
   let next=state;
   for(const itemId of summary.sellableIds){
     const quantity=next.inventory.stacks.find(stack=>stack.itemId===itemId)?.quantity??0;
@@ -84,7 +84,7 @@ export function bulkSellSelected(state:GameState,itemIds:readonly string[]):Game
 
 export function bulkSalvageSelected(state:GameState,itemIds:readonly string[]):GameState{
   const summary=bulkSelectionSummary(state,itemIds,'inventory');
-  if(!summary.salvageableIds.length)throw new Error('No selected equipment can be salvaged. Working Toward items, favorites and enhanced gear stay protected.');
+  if(!summary.salvageableIds.length)throw new Error('No selected equipment can be salvaged. Working Toward items, favorites, locked items and enhanced gear stay protected.');
   let next=state;
   for(const itemId of summary.salvageableIds){
     const quantity=next.inventory.stacks.find(stack=>stack.itemId===itemId)?.quantity??0;

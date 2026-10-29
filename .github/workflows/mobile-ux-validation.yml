@@ -27,6 +27,18 @@ jobs:
       - run: pnpm install --frozen-lockfile
       - name: Install backend dependencies for mobile checks
         run: pnpm --dir ../../backend install --frozen-lockfile
+      - name: Validate Inventory storage controls
+        run: node tests/inventory-storage-management-ui.cjs
+      - name: Verify Guild raid boss tabs
+        run: node tests/guild-raid-tabs-ui.cjs
+      - name: Validate Settings screen simplicity
+        run: node tests/settings-simplicity-ui.cjs
+      - name: Validate integrated dungeon theater
+        run: node ../../tools/validate-integrated-dungeon-theater.cjs
+      - name: Run isolated Guild Chat crash regressions
+        run: node ../../tools/validate-guild-chat-error-boundary.cjs
+      - name: Validate Event reward notification quieting
+        run: node ../../tools/validate-event-notification-quiet.cjs
       - name: Typecheck core
         run: pnpm typecheck:core
       - name: Run mobile core tests

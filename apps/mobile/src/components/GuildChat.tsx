@@ -6,6 +6,8 @@ import {AppState,StyleSheet,Text,View} from 'react-native';
 import {GameButton} from './GameButton';
 import {ChatComposer} from './ChatComposer';
 import {ChatMessageRow} from './ChatMessageRow';
+import {ChatRowErrorBoundary} from './ChatRowErrorBoundary';
+import {normalizeGuildChatMessages} from '../core/guild-chat-message-safety';
 import {ChatPlayerSheet} from './ChatPlayerSheet';
 import {GuildTaggedPlayerName} from './GuildTaggedPlayerName';
 import {ChatLog} from './ChatLog';
@@ -56,9 +58,10 @@ export function GuildChatView({embedded=false,active=true,channelKey,language,cu
 }){
  const st=useSocialText(),viewportStyle=useChatViewportStyle();
  const C=useGameTheme(),s=useMemo(()=>makeStyles(C),[C]);
+ const safeMessages=useMemo(()=>normalizeGuildChatMessages(messages),[messages]);
  return <View style={[s.root,viewportStyle]}>
   {!embedded&&<View style={s.header}><View style={s.grow}><Text style={s.eyebrow}>{st("GUILD CHANNEL")}</Text>{guild?<GuildTaggedPlayerName name={guild.name} guildTag={guild.tag} tagColorId={guild.tagColorId} style={s.title}/>:<Text numberOfLines={1} style={s.title}>{ot(language,'chat.guild')}</Text>}</View><View style={s.securePill}><Text style={s.secure}>{st("MEMBERS ONLY")}</Text></View></View>}
-  <ChatLog active={active} channelKey={channelKey??guild?.id??'guild:none'} items={messages} firstUnreadMessageId={firstUnreadMessageId} emptyText={st("No Guild messages yet. Start the conversation.")} onCaughtUp={onCaughtUp} renderItem={message=><ChatMessageRow accountId={message.account_id} name={message.sender_name} body={message.body} createdAt={message.created_at} guildTag={message.guild_tag} tagColorId={message.guild_tag_color_id} nameStyle={message.player_name_style} badges={message.player_badges} role={message.guild_role} mentionName={currentPlayerName} onPress={()=>onSelectMessage?.(message)} reduceMotion={reduceMotion}/>} />
+  <ChatLog active={active} channelKey={channelKey??guild?.id??'guild:none'} items={safeMessages} firstUnreadMessageId={firstUnreadMessageId} emptyText={st("No Guild messages yet. Start the conversation.")} onCaughtUp={onCaughtUp} renderItem={message=><ChatRowErrorBoundary name={message.sender_name} body={message.body}><ChatMessageRow accountId={message.account_id} name={message.sender_name} body={message.body} createdAt={message.created_at} guildTag={message.guild_tag} tagColorId={message.guild_tag_color_id} nameStyle={message.player_name_style} badges={message.player_badges} role={message.guild_role} mentionName={currentPlayerName} onPress={()=>onSelectMessage?.(message)} reduceMotion={reduceMotion}/></ChatRowErrorBoundary>} />
   {!!error&&<View accessibilityRole="alert" style={s.errorCard}><Text style={s.errorLabel}>{st("GUILD CHAT UNAVAILABLE")}</Text><Text style={s.error}>{error}</Text><GameButton compact title={st("Retry")} tone="secondary" disabled={busy} onPress={onRetry}/></View>}
   <ChatMentionSuggestions value={body} names={mentionNames} currentName={currentPlayerName} onChange={onBodyChange}/>
   <ChatComposer accessibilityLabel={st("Guild message")} value={body} onChangeText={onBodyChange} onSend={onSend} placeholder={st("Guild message")} busy={busy} disabled={!guild} emotes={{unlockedIds:unlockedEmoteIds,trayIds,bodyPresentation,onTrayChange,onPick:token=>onBodyChange((body+token).slice(0,300))}}/>

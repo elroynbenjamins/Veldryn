@@ -1,7 +1,7 @@
-import {createCharacter,newGame,effectiveStats,salvageItem,sellItem} from '../src/core/game';
-import {acknowledgeAllInventoryItems,acknowledgeInventoryItem,inventoryFavoriteIds,inventoryNewItemIds,recoveryAmount,storageCapacityStatus,toggleInventoryFavorite,transferAmount,transferError,visibleStacks} from '../src/core/inventory-view';
+import {createCharacter,newGame,effectiveStats,salvageItem,sellItem,sellBankItem} from '../src/core/game';
+import {acknowledgeAllInventoryItems,acknowledgeInventoryItem,inventoryFavoriteIds,inventoryLockedIds,inventoryNewItemIds,recoveryAmount,storageCapacityStatus,toggleInventoryFavorite,toggleInventoryLock,transferAmount,transferError,visibleStacks} from '../src/core/inventory-view';
 import {validateGameCommand,validateGameSettings} from '../src/core/game-commands';
-import {bulkSelectionSummary,bulkSellSelected,bulkTransferSelected} from '../src/core/inventory-bulk';
+import {bulkSelectionSummary,bulkSellSelected,bulkSalvageSelected,bulkTransferSelected} from '../src/core/inventory-bulk';
 import {itemInspectModel} from '../src/core/item-inspect';
 import {workingTowardDestinationAvailability} from '../src/core/working-toward';
 import {normalizeSave} from '../src/core/save-normalization';
@@ -50,6 +50,33 @@ let favoriteSellBlocked=false;try{sellItem(favoriteProtected,'basic_sword')}catc
 ok(favoriteSellBlocked,'Favorite items cannot be sold through core logic');
 let favoriteSalvageBlocked=false;try{salvageItem(favoriteProtected,'basic_sword')}catch(error){favoriteSalvageBlocked=error instanceof Error&&error.message.includes('Favorite item is protected')}
 ok(favoriteSalvageBlocked,'Favorite items cannot be salvaged through core logic');
+let lockedState=toggleInventoryLock(state,'basic_sword');
+ok(inventoryLockedIds(lockedState).includes('basic_sword'),'Item can be locked in persistent settings');
+ok(normalizeSave(lockedState).settings.lockedItemIds?.includes('basic_sword')===true,'Save normalization preserves locks across restarts');
+ok(!inventoryFavoriteIds(lockedState).includes('basic_sword'),'Lock and favorite are independent');
+let lockedSellState={...lockedState,inventory:{...lockedState.inventory,stacks:[{itemId:'basic_sword',quantity:1}]}};
+let lockedSellBlocked=false;try{sellItem(lockedSellState,'basic_sword')}catch(error){lockedSellBlocked=error instanceof Error&&error.message.includes('Locked item')}
+ok(lockedSellBlocked,'Single sale rejects a locked item');
+let lockedSalvageBlocked=false;try{salvageItem(lockedSellState,'basic_sword')}catch(error){lockedSalvageBlocked=error instanceof Error&&error.message.includes('Locked item')}
+ok(lockedSalvageBlocked,'Single salvage rejects a locked item');
+const lockedBulkSummary=bulkSelectionSummary(lockedSellState,['basic_sword'],'inventory');
+ok(lockedBulkSummary.sellableIds.length===0&&lockedBulkSummary.salvageableIds.length===0,'Bulk management excludes locked items');
+let lockedBulkSellBlocked=false;try{bulkSellSelected(lockedSellState,['basic_sword'])}catch{lockedBulkSellBlocked=true}
+ok(lockedBulkSellBlocked,'Bulk selling a protected-only selection is rejected');
+let lockedBulkSalvageBlocked=false;try{bulkSalvageSelected(lockedSellState,['basic_sword'])}catch{lockedBulkSalvageBlocked=true}
+ok(lockedBulkSalvageBlocked,'Bulk salvaging a protected-only selection is rejected');
+const lockedBankState={...lockedSellState,bank:{...lockedSellState.bank,stacks:[{itemId:'basic_sword',quantity:1}]}};
+let bankLockedBlocked=false;try{sellBankItem(lockedBankState,'basic_sword')}catch(error){bankLockedBlocked=error instanceof Error&&error.message.includes('Locked item')}
+ok(bankLockedBlocked,'Bank selling rejects locked items');
+lockedState=toggleInventoryLock(lockedState,'basic_sword');
+ok(!inventoryLockedIds(lockedState).includes('basic_sword'),'Item unlocks without changing favorites');
+const validatedLocks=validateGameSettings({...state.settings,lockedItemIds:['basic_sword','basic_sword']});
+ok(validatedLocks.lockedItemIds?.length===1,'Settings validator deduplicates locks');
+const legacySettings:any={...state.settings};delete legacySettings.lockedItemIds;
+ok(validateGameSettings(legacySettings).lockedItemIds?.length===0,'Legacy settings without locks get empty list');
+let badLocksRejected=false;try{validateGameSettings({...state.settings,lockedItemIds:['']})}catch{badLocksRejected=true}
+ok(badLocksRejected,'Invalid locked item IDs are rejected');
+
 const bulkBase={...state,inventory:{...state.inventory,stacks:[{itemId:'TRAVEL_RATION',quantity:20},{itemId:'COPPER_ORE',quantity:4},{itemId:'basic_sword',quantity:1},{itemId:'HOLY_WATER',quantity:2}]},bank:{stacks:[],capacity:10}};
 const bulkIds=['TRAVEL_RATION','COPPER_ORE','basic_sword','HOLY_WATER'];
 const emptyBulk=bulkSelectionSummary(bulkBase,[],'inventory');

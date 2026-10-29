@@ -1,5 +1,5 @@
 const assert={equal:(a:unknown,b:unknown)=>{if(a!==b)throw Error(`${a} !== ${b}`)},deepEqual:(a:unknown,b:unknown)=>{if(JSON.stringify(a)!==JSON.stringify(b))throw Error('Deep equality failed')}};
-import {guildPveActivitySummary,guildPvePresentation,guildPveView,type GuildPveEncounter} from '../src/core/guild-pve-encounters';
+import {guildPveActivitySummary,guildPvePresentation,guildPveView,guildRaidEncountersForTab,type GuildPveEncounter} from '../src/core/guild-pve-encounters';
 const row:GuildPveEncounter={rosterSize:12,personalCap:30000,dailyCap:6000,dailyUsed:1000,eligible:true,id:'test',kind:'weekly',name:'Boss',startsAt:'2026-10-01T00:00:00Z',endsAt:'2026-10-08T00:00:00Z',claimEndsAt:'2026-10-15T00:00:00Z',maxHp:500000,damage:250000,personalDamage:1000,allowanceUsed:1000,contributors:5,claimed:[]};
 const live=Date.parse('2026-10-04T00:00:00Z');
 assert.deepEqual(guildPveView(row,live).milestones.map(x=>x.ready),[true,true,false]);
@@ -25,4 +25,9 @@ const veilPresentation=guildPvePresentation({...row,kind:'event',name:'The Veilb
 assert.equal(veilPresentation.bossName,'Gloam Riftwarden');
 assert.deepEqual(veilPresentation.activities,['combat']);
 assert.equal(guildPveActivitySummary('event').includes('three attempts per seven days'),true);
+const mixedBosses:GuildPveEncounter[]=[row,{...row,id:'festival-boss',kind:'event',name:'Festival Guardian'}];
+assert.deepEqual(guildRaidEncountersForTab(mixedBosses,'weekly').map(boss=>boss.id),['test']);
+assert.deepEqual(guildRaidEncountersForTab(mixedBosses,'event').map(boss=>boss.id),['festival-boss']);
+assert.deepEqual(guildRaidEncountersForTab([row],'event'),[]);
+assert.deepEqual(guildRaidEncountersForTab([],'weekly'),[]);
 console.log('PASS Guild PvE thresholds, eligibility, claims, allowance, lifecycle boundaries');

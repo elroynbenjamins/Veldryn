@@ -33,10 +33,21 @@ async function request<T>(path:string,method='GET',body?:unknown,expectedAccount
  if(expectedAccount&&session.user.id!==expectedAccount)throw new Error('Please sign in again.');
  const controller=new AbortController(),timeout=setTimeout(()=>controller.abort(),25000);
  try{
-  const response=await fetch(`${apiBase}${path}`,{method,signal:controller.signal,headers:{Authorization:`Bearer ${session.access_token}`,apikey:process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY??'','Content-Type':'application/json'},body:body===undefined?undefined:JSON.stringify(body)});
-  const payload=await response.json();
+  let response:Response;
+  try{
+   response=await fetch(`${apiBase}${path}`,{method,signal:controller.signal,headers:{Authorization:`Bearer ${session.access_token}`,apikey:process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY??'','Content-Type':'application/json'},body:body===undefined?undefined:JSON.stringify(body)});
+  }catch(error){
+   if(error instanceof Error&&error.name==='AbortError')throw new CoopRequestError('Dungeon request timed out. Try again.');
+   throw new CoopRequestError('Could not reach dungeons. Check your connection and try again.');
+  }
+  const payload=await response.json().catch(()=>null);
   if((await supabase.auth.getSession()).data.session?.user.id!==session.user.id)throw new Error('Account changed.');
-  if(!response.ok)throw new CoopRequestError(payload?.error??payload?.message??payload?.code??'Co-op request failed.',response.status>=400&&response.status<500&&![408,426,429].includes(response.status));return payload as T;
+  if(!response.ok){
+   const message=response.status===503?(method==='GET'?'Dungeons are temporarily unavailable. Try again.':'Could not confirm the co-op action. Retry it.'):response.status===401?'Session expired. Sign in again.':payload?.error??payload?.message??payload?.code??'Co-op request failed.';
+   throw new CoopRequestError(message,response.status>=400&&response.status<500&&![408,426,429].includes(response.status));
+  }
+  if(payload===null)throw new CoopRequestError('Invalid dungeon server response. Try again.');
+  return payload as T;
  }finally{clearTimeout(timeout);}
 }
 const journals=new Map<string,CoopCommandJournal>();

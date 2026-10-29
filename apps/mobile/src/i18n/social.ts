@@ -6,15 +6,13 @@ import {createTranslator,type TranslationParams} from './translator';
 
 // Columns are German, Spanish, Dutch, Italian and French; keys are the English catalog.
 export const socialTranslationRows = {
- "Hit effects follow your server-calculated attempt. Guild boss HP updates after settlement.": ["Treffereffekte folgen deinem serverberechneten Versuch. Gildenboss-TP werden nach der Abrechnung aktualisiert.","Los efectos de impacto siguen el intento calculado por el servidor. La vida del jefe se actualiza al resolverlo.","Treffereffecten volgen je door de server berekende poging. De HP van de gildebaas worden na afhandeling bijgewerkt.","Gli effetti dei colpi seguono il tentativo calcolato dal server. I PV del boss si aggiornano al termine.","Les effets des coups suivent votre tentative calculée par le serveur. Les PV du boss se mettent à jour à la résolution."],
- "LIVE COMBAT": ["LIVE-KAMPF","COMBATE EN VIVO","LIVE GEVECHT","COMBATTIMENTO LIVE","COMBAT EN DIRECT"],
- "Watch": ["Ansehen","Ver","Bekijken","Guarda","Voir"],
- "GUILD RAID": ["GILDENRAID","ASALTO DEL GREMIO","GILDERAID","INCURSIONE DI GILDA","RAID DE GUILDE"],
- "Three-minute server-authoritative raid": ["Dreiminütiger Raid mit Serverberechnung","Incursión de tres minutos resuelta por el servidor","Raid van drie minuten, berekend door de server","Incursione di tre minuti gestita dal server","Raid de trois minutes résolu par le serveur"],
- "Your guild raid is running on the server. Damage will appear after the attempt resolves.": ["Dein Gildenraid läuft auf dem Server. Der Schaden wird nach dem Abschluss angezeigt.","La incursión del gremio está en curso en el servidor. El daño aparecerá al terminar.","Je gilderaid wordt op de server uitgevoerd. De schade verschijnt zodra de poging is afgerond.","L'incursione di gilda è in corso sul server. I danni appariranno al termine.","Votre raid de guilde se déroule sur le serveur. Les dégâts s'afficheront à la fin."],
- "Refresh raid status": ["Raidstatus aktualisieren","Actualizar estado de la incursión","Raidstatus vernieuwen","Aggiorna stato incursione","Actualiser le statut du raid"],
- "No newly resolved raid result is available yet.": ["Noch kein neues abgeschlossenes Raidergebnis verfügbar.","Todavía no hay un resultado nuevo de incursión.","Er is nog geen nieuw afgerond raidresultaat beschikbaar.","Nessun nuovo risultato dell'incursione disponibile.","Aucun nouveau résultat de raid n'est encore disponible."],
- "Watch battle full screen": ["Kampf im Vollbild ansehen","Ver combate a pantalla completa","Gevecht op volledig scherm bekijken","Guarda la battaglia a schermo intero","Voir le combat en plein écran"],
+ "Battle in progress": ["Kampf läuft","Combate en curso","Gevecht bezig","Combattimento in corso","Combat en cours"],
+ "Encounter replay": ["Kampfwiedergabe","Repetición del combate","Gevecht opnieuw bekijken","Replay dello scontro","Relecture du combat"],
+ "Watch battle": ["Kampf ansehen","Ver combate","Gevecht bekijken","Guarda la battaglia","Voir le combat"],
+ "Choose room": ["Raum wählen","Elegir sala","Kies kamer","Scegli stanza","Choisir une salle"],
+ "Unavailable": ["Nicht verfügbar","No disponible","Niet beschikbaar","Non disponibile","Indisponible"],
+ "votes": ["Stimmen","votos","stemmen","voti","votes"],
+ "Awaiting choice": ["Warte auf Auswahl","Esperando elección","Wachten op keuze","In attesa della scelta","En attente du choix"],
 "My Echo · Current equipment":["Mein Echo · Aktuelle Ausrüstung","Mi Eco · Equipo actual","Mijn Echo · Huidige uitrusting","Il mio Eco · Equipaggiamento attuale","Mon Écho · Équipement actuel"],
 "Your character Echo is shared with other adventurers.":["Dein Charakter-Echo wird mit anderen Abenteurern geteilt.","Tu Eco de personaje está compartido con otros aventureros.","Je personage-Echo wordt gedeeld met andere avonturiers.","Il tuo Eco è condiviso con altri avventurieri.","Votre Écho est partagé avec d’autres aventuriers."],
 "Prepare a snapshot of your current dungeon loadout for other players.":["Teile eine Momentaufnahme deiner aktuellen Dungeon-Ausrüstung.","Prepara una copia de tu equipo de mazmorra para otros jugadores.","Maak een momentopname van je huidige dungeonuitrusting voor andere spelers.","Prepara una copia del tuo equipaggiamento da dungeon per altri giocatori.","Préparez une copie de votre équipement de donjon pour les autres joueurs."],

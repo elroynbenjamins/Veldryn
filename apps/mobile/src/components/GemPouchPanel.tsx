@@ -32,8 +32,8 @@ export function GemPouchPanel({state,busy=false,standalone=false,onUpgrade,onAct
   const protectedGem=favorite||locked;
   const canUpgrade=!!upgrade&&(state.character?.level??0)>=upgrade.level&&(state.character?.gold??0)>=upgrade.cost&&!busy;
   return <View style={s.container}>
-    <Pressable accessibilityRole="button" accessibilityLabel="Gem Pouch details" accessibilityState={{expanded}} disabled={standalone} onPress={()=>setDrawerOpen(value=>!value)} style={s.heading}>
-      <View style={s.flex}><Text style={s.title}>Gem Pouch</Text><Text style={s.meta}>{used}/{pouch.capacity} slots · Shared across characters</Text></View>
+    <Pressable accessible={!standalone} accessibilityRole={standalone?undefined:'button'} accessibilityLabel={standalone?undefined:(expanded?'Collapse Gem Pouch':'Expand Gem Pouch')} accessibilityState={standalone?undefined:{expanded}} disabled={standalone} onPress={()=>setDrawerOpen(value=>!value)} style={s.heading}>
+      <View style={s.flex}><Text accessibilityRole={standalone?'header':undefined} style={s.title}>Gem Pouch</Text><Text style={s.meta}>{used}/{pouch.capacity} slots · Shared across characters</Text></View>
       {!standalone?<Text style={s.chevron}>{expanded?'−':'+'}</Text>:null}
     </Pressable>
     {expanded?<View style={s.body}>

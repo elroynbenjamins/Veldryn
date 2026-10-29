@@ -35,11 +35,13 @@ assert(panel.includes("setMessageError(true)")&&panel.includes("messageError?'as
 assert(panel.includes("useState<'progress'|'showcase'|'rewards'>('progress')"),'Codex defaults to Progress');
 for(const name of ['progress','showcase','rewards'])assert(section.includes("codexView==='"+name+"'"),'Missing '+name+' view');
 assert(section.includes('accessibilityRole="tablist"')&&section.includes('accessibilityRole="tab"'),'Codex segmented navigation is accessible');
+assert(section.includes("title={t('Back to Roster')}")&&panel.includes("section==='Codex'&&tab==='Collection'"),'Codex has clear Roster navigation and visible parent state');
+assert(section.includes('view.codex.milestones.filter(m=>m.complete&&!m.claimed).length'),'Ready rewards have a visible count');
 assert(section.includes("unlockTargets.map(")&&section.includes("masteryTargets.map("),'Progress view still lists unlocks and mastery');
 assert(section.includes("ownedIds.map(")&&section.includes("companion_showcase"),'Showcase management is retained');
 assert(section.includes('codexRewards.slice(-6)')&&section.includes('view.codex.milestones.map'),'Collection reward and milestone claims are retained');
 assert(section.includes("setSection('Collection');setDetailOpen(true)"),'Progression targets open the companion details directly');
-for(const key of ['Progress','Showcase','Rewards','Abilities & Traits','Passive ability','Bond trait','Open Sanctuary','Action failed']){
+for(const key of ['Progress','Showcase','Rewards','Abilities & Traits','Passive ability','Bond trait','Open Sanctuary','Action failed','Back to Roster']){
  assert(translations.includes(JSON.stringify(key)+':'),'Missing localized Companion label '+key);
 }
 console.log('PASS Companion Collection and Codex progressive disclosure UX');

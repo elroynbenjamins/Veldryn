@@ -15,8 +15,8 @@ const RARITY_ORDER:ItemRarity[]=['common','uncommon','rare','epic','legendary','
 function highest(results:readonly ForgeCraftResult[]){return results.slice().sort((a,b)=>RARITY_ORDER.indexOf(b.rarity)-RARITY_ORDER.indexOf(a.rarity))[0];}
 export function forgeClaimBannerMessage(results:readonly ForgeCraftResult[]){
   if(!results.length)return '';
-  if(results.length===1){const result=results[0],item=itemDef(result.itemId);return `Forged ${item.name} · ${rarityMeta(result.rarity).label}${result.duplicateCount?` · copy ${result.duplicateCount+1}`:''}.`;}
-  const best=highest(results);return `${results.length} equipment pieces claimed · best result ${rarityMeta(best.rarity).label}.`;
+  if(results.length===1){const result=results[0],item=itemDef(result.itemId);return `Forged ${item.name} · ${rarityMeta(result.rarity).label}${result.quality!==undefined?` · Q${result.quality}/100`:''}${result.autoSold==='incoming'?` · auto-sold new copy for ${result.saleGold} Gold`:result.autoSold==='existing'?` · sold a weaker existing copy for ${result.saleGold} Gold`:result.duplicateCount?` · copy ${result.duplicateCount+1}`:''}.`;}
+  const best=highest(results),sold=results.filter(row=>row.autoSold),gold=sold.reduce((sum,row)=>sum+row.saleGold,0);return `${results.length} Forge jobs settled · ${sold.length?`${sold.length} auto-sold for ${gold} Gold · `:''}best roll ${rarityMeta(best.rarity).label}.`;
 }
 
 export function ForgeClaimBanner({results,reduceMotion,onDismiss}:{results:readonly ForgeCraftResult[];reduceMotion:boolean;onDismiss:()=>void}){
@@ -40,9 +40,9 @@ export function ForgeRarityRevealModal({results,reduceMotion,onClose,onInventory
       <Text style={[s.revealMark,{color:bestMeta?.color}]}>{bestMeta?.symbol} {bestMeta?.label.toUpperCase()} {bestMeta?.symbol}</Text>
       <Text style={s.revealCopy}>{procs.length===1?gt("The Forge produced a rarer crafted copy."):gt("Multiple finished crafts produced rarer copies.")}</Text>
     </Animated.View>
-    <View style={s.results}>{procs.map(result=>{const item=itemDef(result.itemId),meta=rarityMeta(result.rarity),base=rarityMeta(result.baseRarity),bonus=Math.max(0,Math.round((result.statMultiplier-1)*100));return <View key={result.instanceId} style={[s.result,{borderColor:meta.color,backgroundColor:meta.surface}]}>
+    <View style={s.results}>{procs.map(result=>{const item=itemDef(result.itemId),meta=rarityMeta(result.rarity),base=rarityMeta(result.baseRarity),bonus=Math.round((result.statMultiplier-1)*100);return <View key={result.instanceId} style={[s.result,{borderColor:meta.color,backgroundColor:meta.surface}]}>
       <View style={[s.artFrame,{borderColor:meta.color}]}><EquipmentArtwork item={item} compact framed={false}/></View>
-      <View style={s.flex}><Text style={[s.itemName,{color:rarityNameColor(result.rarity,C.dark,C.text)}]}>{item.name}</Text><Text style={s.meta}>{base.label} base → {meta.label} crafted copy</Text><Text style={[s.bonus,{color:meta.color}]}>+{bonus}% equipment stats vs this item's base rarity</Text>{result.duplicateCount>0?<Text style={s.copy}>Crafted copy #{result.duplicateCount+1} owned</Text>:<Text style={s.copy}>{gt("First crafted copy owned")}</Text>}</View>
+      <View style={s.flex}><Text style={[s.itemName,{color:rarityNameColor(result.rarity,C.dark,C.text)}]}>{item.name}</Text><Text style={s.meta}>{base.label} base → {meta.label} crafted copy{result.quality!==undefined?` · Q${result.quality}/100`:''}</Text><Text style={[s.bonus,{color:meta.color}]}>{bonus>0?'+':''}{bonus}% equipment stats vs base gear</Text>{result.autoSold?<Text style={s.copy}>{result.autoSold==='incoming'?'New roll auto-sold; existing copies kept':'Weaker prior copy sold; improved roll retained'} · +{result.saleGold} Gold</Text>:result.duplicateCount>0?<Text style={s.copy}>Crafted copy #{result.duplicateCount+1} owned</Text>:<Text style={s.copy}>{gt("First crafted copy owned")}</Text>}</View>
       <View style={[s.rarityBadge,{borderColor:meta.color}]}><Text style={[s.rarityText,{color:meta.color}]}>{meta.label.toUpperCase()}</Text></View>
     </View>})}</View>
     {results.length>procs.length?<Text style={s.normal}>{results.length-procs.length} additional normal craft{results.length-procs.length===1?'':'s'} claimed at the same time.</Text>:null}

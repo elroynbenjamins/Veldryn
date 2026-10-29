@@ -1,0 +1,11 @@
+{
+  "extends": "./tsconfig.core.json",
+  "include": [
+    "src/core/**/*.ts",
+    "src/content/**/*.ts",
+    "tests/equipment-crafted-instance-results.ts"
+  ],
+  "exclude": [
+    "tests/starter-companion-choice.ts"
+  ]
+}

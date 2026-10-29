@@ -1,0 +1,41 @@
+name: Unique forged equipment validation
+on:
+  pull_request:
+    paths:
+      - 'apps/mobile/src/core/**'
+      - 'backend/online/tests/gameplay.ts'
+      - 'apps/mobile/src/screens/InventoryScreen.tsx'
+      - 'apps/mobile/src/components/EquipmentCraftQueuePanel.tsx'
+      - 'apps/mobile/src/components/ForgeOddsGuide.tsx'
+      - 'apps/mobile/src/components/SmithingCollection.tsx'
+      - 'apps/mobile/tests/equipment-crafted-instance-results.ts'
+      - 'apps/mobile/tsconfig.unique-gear.json'
+      - '.github/workflows/unique-gear-validation.yml'
+  workflow_dispatch:
+jobs:
+  unique-equipment:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: apps/mobile
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+          cache-dependency-path: apps/mobile/pnpm-lock.yaml
+      - run: pnpm install --frozen-lockfile
+      - name: Install backend dependencies
+        run: pnpm --dir ../../backend install --frozen-lockfile
+      - name: Compile unique equipment gameplay and tests
+        run: node node_modules/typescript/lib/tsc.js -p tsconfig.unique-gear.json --outDir .unique-gear-build
+      - name: Run exact-copy crafting and retention regressions
+        run: NODE_PATH=../../backend/node_modules node .unique-gear-build/apps/mobile/tests/equipment-crafted-instance-results.js
+      - name: Compile authoritative online gameplay
+        run: pnpm --dir ../../backend exec tsc -p tsconfig.online.json
+      - name: Verify concurrent copy writes, replay and Gold integrity
+        run: node ../../backend/dist/online/backend/online/tests/gameplay.js

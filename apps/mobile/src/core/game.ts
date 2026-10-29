@@ -34,7 +34,6 @@ import {currentRegionId} from './combat-region';
 import {regionTravelAvailability,regionTravelLockReason} from './world-navigation';
 import {WORLD_ZONES,worldZoneInDevelopment} from '../content/world-map';
 import {enhancedGearStats,equippedEffectGemBonuses,equippedGemBonuses,hasEnhancement} from './equipment-enhancement';
-import {pruneCraftedInstancesForSale} from './crafted-gear-instances';
 import {activeEquipmentSetRuntime,equipmentSetCombatModifiers} from './equipment-set-runtime';
 import {companionCombatContribution,reconcileCombatCompanionUnlocks,grantCompanionEssence,grantBondstones} from './combat-companions';
 import {awardCompanionRematchBondstone,companionRematchBondstoneStatus,recordCompanionActivity} from './companion-runtime';
@@ -306,16 +305,33 @@ export function travelToRegion(state:GameState,regionId:string,nowMs:number){
   return {state:travelled.character?{...travelled,character:{...travelled.character,activityQueuePausedReason:pause}}:travelled,reward:settled.reward};
 }
 
-export function stackItems(existing:ItemStack[],incoming:ItemStack[]):ItemStack[]{const m=new Map<string,number>();for(const s of existing)m.set(s.itemId,(m.get(s.itemId)||0)+s.quantity);for(const s of incoming)m.set(s.itemId,(m.get(s.itemId)||0)+s.quantity);return [...m.entries()].filter(([,q])=>q>0).map(([itemId,quantity])=>({itemId,quantity}));}
+export function stackItems(existing:ItemStack[],incoming:ItemStack[]):ItemStack[]{
+  const quantities=new Map<string,number>(),individual:ItemStack[]=[],seen=new Set<string>();
+  for(const row of [...existing,...incoming]){
+    if(row.instanceId!==undefined){
+      if(typeof row.instanceId!=='string'||!row.instanceId||row.quantity!==1||seen.has(row.instanceId))
+        throw new Error('Duplicate or invalid unique equipment copy');
+      seen.add(row.instanceId);individual.push({...row});
+    }else quantities.set(row.itemId,(quantities.get(row.itemId)??0)+row.quantity);
+  }
+  return [...quantities.entries()].filter(([,q])=>q>0).map(([itemId,quantity])=>({itemId,quantity})).concat(individual);
+}
 
 export function usedSlots(stacks:ItemStack[]){return stacks.filter(s=>s.quantity>0).length;}
 function itemStackCap(itemId:string){const d=itemDef(itemId);return d.type==='gear'||d.type==='tool'?1:9999;}
 function addBounded(stacks:ItemStack[],capacity:number,incoming:ItemStack[]){
   let next=stacks.map(s=>({...s}));const overflow:ItemStack[]=[];
   for(const inc of incoming){
+    if(inc.instanceId!==undefined){
+      if(inc.quantity!==1||!inc.instanceId||next.some(s=>s.instanceId===inc.instanceId))
+        throw new Error('Duplicate or invalid unique equipment copy');
+      if(usedSlots(next)<capacity)next.push({...inc});
+      else overflow.push({...inc});
+      continue;
+    }
     let remaining=inc.quantity;
     const cap=itemStackCap(inc.itemId);
-    let existing=next.find(s=>s.itemId===inc.itemId);
+    let existing=next.find(s=>s.itemId===inc.itemId&&s.instanceId===undefined);
     if(existing){
       const room=Math.max(0,cap-existing.quantity);const add=Math.min(room,remaining);existing.quantity+=add;remaining-=add;
     }
@@ -339,8 +355,22 @@ function routeRewards(state:GameState,incoming:ItemStack[],nowMs:number){
   };
 }
 
-function consume(stacks:ItemStack[],itemId:string,quantity:number){const f=stacks.find(s=>s.itemId===itemId);if(!f||f.quantity<quantity)throw new Error('Not enough items');return stacks.map(s=>s.itemId===itemId?{...s,quantity:s.quantity-quantity}:s).filter(s=>s.quantity>0)}
-function stackQty(stacks:ItemStack[],itemId?:string){if(!itemId)return 0;return stacks.find(s=>s.itemId===itemId)?.quantity||0;}
+function consume(stacks:ItemStack[],itemId:string,quantity:number){
+  if(!Number.isSafeInteger(quantity)||quantity<=0)throw new Error('Invalid item quantity');
+  let remaining=quantity;
+  const next=stacks.map(row=>{
+    if(row.itemId!==itemId||row.instanceId!==undefined||remaining<=0)return row;
+    const taken=Math.min(remaining,row.quantity);remaining-=taken;
+    return {...row,quantity:row.quantity-taken};
+  }).filter(row=>row.quantity>0);
+  if(remaining>0){
+    if(stacks.some(row=>row.itemId===itemId&&row.instanceId!==undefined))
+      throw new Error('Choose an individual equipment copy; unique equipment cannot be consumed by item type');
+    throw new Error('Not enough items');
+  }
+  return next;
+}
+function stackQty(stacks:ItemStack[],itemId?:string){if(!itemId)return 0;return stacks.filter(s=>s.itemId===itemId).reduce((n,s)=>n+s.quantity,0);}
 
 export function regionalMonsterPressureBand(monsterId:string):RegionalMonsterPressureBand{
  const m=MONSTERS.find(row=>row.id===monsterId);if(!m||m.boss)return 'hard';
@@ -823,6 +853,7 @@ export function equipItem(state:GameState,itemId:string):GameState{
   if(!state.character)throw new Error('No character');const d=itemDef(itemId);if(d.type!=='gear'||!d.slot)throw new Error('Not gear');
   if(d.classRestriction&&d.classRestriction!==state.character.classId)throw new Error('This gear belongs to another class');
   if(state.character.level<(d.requiredLevel??1))throw new Error(`Requires character level ${d.requiredLevel}`);
+  if(state.character.equipmentInstanceIds?.[d.slot])throw new Error('Select the exact equipped copy before replacing uniquely identified gear');
   let stacks=consume(state.inventory.stacks,itemId,1);const old=state.character.equipment[d.slot];if(old)stacks=stackItems(stacks,[{itemId:old,quantity:1}]);
   const temp={...state,inventory:{...state.inventory,stacks},character:{...state.character,equipment:{...state.character.equipment,[d.slot]:itemId}}} as GameState;
   const maxHp=effectiveStats(temp).hp;temp.character!.currentHp=Math.min(maxHp,temp.character!.currentHp+(d.hp||0));
@@ -832,7 +863,7 @@ export function equipFood(state:GameState,itemId:string):GameState{if(!state.cha
 export function eatFood(state:GameState,itemId?:string):GameState{if(!state.character)return state;const id=itemId||state.character.equippedFoodId;if(!id)return state;const d=itemDef(id);if(d.type!=='food'||!d.heal)throw new Error('Not food');const maxHp=effectiveStats(state).hp,heal=Math.max(1,Math.ceil(d.heal*characterPermanentMultipliers(state).healingEffectivenessMultiplier));return {...state,inventory:{...state.inventory,stacks:consume(state.inventory.stacks,id,1)},character:{...state.character,currentHp:Math.min(maxHp,state.character.currentHp+heal)}}}
 export function usePotion(state:GameState,itemId:string):GameState{if(!state.character)throw new Error('Create a character first.');const potion=potionDef(itemId);if(!potion)throw new Error('Unknown potion.');if(state.activity?.kind==='combat')throw new Error('Potions cannot be used during a hunt.');const stacks=consume(state.inventory.stacks,itemId,1);if(potion.effect.kind==='healing'){const max=effectiveStats(state).hp,healing=characterPermanentMultipliers(state).healingEffectivenessMultiplier;return {...state,inventory:{...state.inventory,stacks},character:{...state.character,currentHp:Math.min(max,state.character.currentHp+Math.ceil(max*potion.effect.maxHpFraction*healing))}};}return {...state,inventory:{...state.inventory,stacks},character:{...state.character,preparation:{itemId,remainingEncounters:potion.effect.encounters}}};}
 export function discardPreparation(state:GameState):GameState{return state.character?.preparation?{...state,character:{...state.character,preparation:undefined}}:state;}
-export function unequipItem(state:GameState,slot:GearSlot):GameState{if(!state.character)return state;const old=state.character.equipment[slot];if(!old)return state;const eq={...state.character.equipment};delete eq[slot];const next={...state,inventory:{...state.inventory,stacks:stackItems(state.inventory.stacks,[{itemId:old,quantity:1}])},character:{...state.character,equipment:eq}} as GameState;next.character!.currentHp=Math.min(effectiveStats(next).hp,next.character!.currentHp);return next}
+export function unequipItem(state:GameState,slot:GearSlot):GameState{if(!state.character)return state;const old=state.character.equipment[slot];if(!old)return state;if(state.character.equipmentInstanceIds?.[slot])throw new Error('Choose the exact equipped copy before unequipping uniquely identified gear');const eq={...state.character.equipment};delete eq[slot];const next={...state,inventory:{...state.inventory,stacks:stackItems(state.inventory.stacks,[{itemId:old,quantity:1}])},character:{...state.character,equipment:eq}} as GameState;next.character!.currentHp=Math.min(effectiveStats(next).hp,next.character!.currentHp);return next}
 export function sellItem(state:GameState,itemId:string,quantity=1):GameState{
   if(!state.character||quantity<=0)return state;
   if(itemId===HOLY_WATER_ID)throw new Error('Holy Water cannot be sold.');
@@ -842,11 +873,10 @@ export function sellItem(state:GameState,itemId:string,quantity=1):GameState{
   if(d.knowledgeUnlockId)throw new Error('Blueprints cannot be sold. Learn the recipe by crafting its tool.');
   if(d.type==='gear'&&hasEnhancement(state,itemId)){
     // Allow selling duplicates: enhancement travels with the remaining copy. Only block the last one.
-    const invQty=stackQty(state.inventory.stacks,itemId);
+    const invQty=state.inventory.stacks.filter(row=>row.itemId===itemId&&row.instanceId===undefined).reduce((sum,row)=>sum+row.quantity,0);
     if(invQty-quantity<1)throw new Error('Enhanced equipment is protected. Extract its gems before disposal; upgraded ranks cannot be recovered.');
   }
   let next:GameState={...state,inventory:{...state.inventory,stacks:consume(state.inventory.stacks,itemId,quantity)},character:{...state.character!,gold:state.character!.gold+d.value*quantity}};
-  if(d.type==='gear')next=pruneCraftedInstancesForSale(next,itemId,quantity);
   return next;
 }
 export function salvageItem(state:GameState,itemId:string):GameState{
@@ -858,7 +888,6 @@ export function salvageItem(state:GameState,itemId:string):GameState{
     if(invQty-1<1)throw new Error('Enhanced equipment is protected. Extract its gems before disposal; upgraded ranks cannot be recovered.');
   }
   let next:GameState={...state,inventory:{...state.inventory,stacks:stackItems(consume(state.inventory.stacks,itemId,1),[d.salvage])}};
-  next=pruneCraftedInstancesForSale(next,itemId,1);
   return next;
 }
 

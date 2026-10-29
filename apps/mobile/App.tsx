@@ -56,7 +56,7 @@ import {OnlineGuildNoticeBoardPanel} from './src/components/OnlineGuildNoticeBoa
 import {ProfileEditor} from './src/components/ProfileEditor';
 import {RewardPopup} from './src/components/RewardPopup';
 import {NewUnlocksScreen} from './src/screens/NewUnlocksScreen';
-import {legacyUnreadUnlockEntries,markUnlockInboxSeen,mergeUnlockInbox,newUnlockInboxEntries,unreadUnlockCount,type CosmeticUnlockNotice,type UnlockInboxEntry} from './src/core/unlock-inbox';
+import {legacyUnreadUnlockEntries,markUnlockInboxSeen,mergeUnlockInbox,newUnlockInboxEntries,newlyUnlockedOtherCosmetics,unreadUnlockCount,type CosmeticUnlockNotice,type UnlockInboxEntry} from './src/core/unlock-inbox';
 import {addUnlockInboxEntries,loadUnlockInbox,markUnlockInboxRead} from './src/storage/unlock-inbox';
 import {FeatureUnlockPopup} from './src/components/FeatureUnlockPopup';
 import {FirstSessionTutorialPopup} from './src/components/FirstSessionTutorialPopup';
@@ -507,10 +507,11 @@ function VeldrynApp(){
     if(!before)return;
     const profile=newlyUnlockedProfileRewards(before,next).map(row=>({key:row.kind+':'+row.id,kind:row.kind,name:row.name,detail:row.source?row.source.label+' · '+row.source.detail:undefined} satisfies CosmeticUnlockNotice));
     const icons=newlyUnlockedProfileIcons(before,next).map(row=>({key:'profile-icon:'+row.id,kind:'profile_icon' as const,name:row.name,detail:'Profile icon'}));
-    if(!profile.length&&!icons.length)return;
+    const other=newlyUnlockedOtherCosmetics(before,next);
+    if(!profile.length&&!icons.length&&!other.length)return;
     const scope=auth.session?.user.id?`account:${auth.session.user.id}`:`local:${next.createdAtMs}`;
     const viewing=tabRef.current==='NewUnlocks';
-    const entries=newUnlockInboxEntries([...profile,...icons],Date.now()).map(row=>viewing?{...row,seen:true}:row);
+    const entries=newUnlockInboxEntries([...profile,...icons,...other],Date.now()).map(row=>viewing?{...row,seen:true}:row);
     setUnlockInbox(current=>mergeUnlockInbox(current,entries));
     void addUnlockInboxEntries(scope,entries).catch(()=>{});
 

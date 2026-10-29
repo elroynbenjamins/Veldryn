@@ -6,6 +6,7 @@ export const companionTranslationRows={
  "Progress": ["Fortschritt","Progreso","Voortgang","Progressi","Progression"],
  "Showcase": ["Schaukasten","Exhibición","Uitstalling","Vetrina","Vitrine"],
  "Rewards": ["Belohnungen","Recompensas","Beloningen","Ricompense","Récompenses"],
+ "Action failed": ["Aktion fehlgeschlagen","Acción fallida","Actie mislukt","Operazione non riuscita","Action échouée"],
  "Open Sanctuary": ["Heiligtum öffnen","Abrir santuario","Open heiligdom","Apri santuario","Ouvrir le sanctuaire"],
  "Abilities & Traits": ["Fähigkeiten & Eigenschaften","Habilidades y rasgos","Vaardigheden en eigenschappen","Abilità e tratti","Capacités et traits"],
  "Passive ability": ["Passive Fähigkeit","Habilidad pasiva","Passieve vaardigheid","Abilità passiva","Capacité passive"],

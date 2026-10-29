@@ -7,6 +7,7 @@ export const companionTranslationRows={
  "Showcase": ["Schaukasten","Exhibición","Uitstalling","Vetrina","Vitrine"],
  "Rewards": ["Belohnungen","Recompensas","Beloningen","Ricompense","Récompenses"],
  "Action failed": ["Aktion fehlgeschlagen","Acción fallida","Actie mislukt","Operazione non riuscita","Action échouée"],
+ "Back to Roster": ["Zurück zum Kader","Volver a plantilla","Terug naar team","Torna alla squadra","Retour à l’effectif"],
  "Open Sanctuary": ["Heiligtum öffnen","Abrir santuario","Open heiligdom","Apri santuario","Ouvrir le sanctuaire"],
  "Abilities & Traits": ["Fähigkeiten & Eigenschaften","Habilidades y rasgos","Vaardigheden en eigenschappen","Abilità e tratti","Capacités et traits"],
  "Passive ability": ["Passive Fähigkeit","Habilidad pasiva","Passieve vaardigheid","Abilità passiva","Capacité passive"],

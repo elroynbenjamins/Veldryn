@@ -29,6 +29,8 @@ jobs:
         run: pnpm --dir ../../backend install --frozen-lockfile
       - name: Validate Inventory storage controls
         run: node tests/inventory-storage-management-ui.cjs
+      - name: Validate Companion Collection and Codex UX
+        run: node tests/companion-codex-focused-ui.cjs
       - name: Typecheck core
         run: pnpm typecheck:core
       - name: Run mobile core tests

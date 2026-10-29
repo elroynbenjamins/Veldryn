@@ -1,0 +1,9 @@
+{
+  "extends": "./tsconfig.core.json",
+  "include": [
+    "src/core/**/*.ts",
+    "src/content/**/*.ts",
+    "src/dev/**/*.ts",
+    "tests/ux-popup-reliability.ts"
+  ]
+}

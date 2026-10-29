@@ -35,6 +35,7 @@
 - The guide is deliberately hidden on Materials and Tools; selecting Equipment shows the odds for the chosen piece.
 - Rarity rows use each rarity's official theme-aware name color and matching marker (Common grey, Uncommon green, Rare blue, Epic purple, Legendary orange, Mythic pink), with **Chance** and **Stats** columns; rarity strength displays simple **×** multipliers (Mythic 2× for Common-base gear). On narrow screens or large text settings they stack into two compact lines instead of clipping.
 - Three uncluttered quality examples explain Q0 −25% (red), Q50 normal (neutral), and Q100 +25% (green). Intermediate values scale between them. The disclosure is closed by default, with concise wording and no additional navigation or modal.
+- For simple feedback, Uncommon and Rare upgrades produce the ordinary transient Forge banner; only Epic, Legendary or Mythic upgrades open the full rarity reveal. Messages use **rarity upgrade** rather than the misleading **quality proc** label.
 - Regression checks cover all six roll bands, each boundary, displayed chances and multipliers, authored-gear rarity floors (including Epic and Mythic), and ensure final probabilities sum to 100%.
 
 **Mythic balance:** Mythic's shared rarity stat multiplier is now **2.00×** rather than 2.20×. This affects Mythic rarity calculations wherever the shared rarity metadata is used; it does not reroll existing items, alter unique IDs, gems, locks or quality. Validate downstream combat/balance implications before release.

@@ -26,10 +26,12 @@ export function craftedGearRarity(itemId:string,roll:number):ItemRarity{
   if(!Number.isFinite(roll)||roll<0||roll>=1)throw new Error('Invalid crafted rarity roll');
   const item=itemDef(itemId);if(item.type!=='gear')throw new Error('Crafted rarity only applies to equipment');
   const base=itemRarity(item);
+  // Integer buckets avoid floating-point drift at exact rarity cutoffs (e.g. 0.009).
+  const sample=Math.floor(roll*1_000_000);
   let cutoff=0;
   for(const outcome of forgeRarityRolls){
-    cutoff+=outcome.chance;
-    if(roll<cutoff)return higherRarity(base,outcome.rarity);
+    cutoff+=Math.round(outcome.chance*1_000_000);
+    if(sample<cutoff)return higherRarity(base,outcome.rarity);
   }
   return base; // Floating point rounding fallback at the upper endpoint.
 }

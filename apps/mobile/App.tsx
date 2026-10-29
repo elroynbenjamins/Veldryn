@@ -55,9 +55,8 @@ import {GuildChat} from './src/components/GuildChat';
 import {OnlineGuildNoticeBoardPanel} from './src/components/OnlineGuildNoticeBoardPanel';
 import {ProfileEditor} from './src/components/ProfileEditor';
 import {RewardPopup} from './src/components/RewardPopup';
-import type {CustomizationUnlockEntry} from './src/components/CustomizationUnlockPopup';
 import {NewUnlocksScreen} from './src/screens/NewUnlocksScreen';
-import {legacyUnreadUnlockEntries,markUnlockInboxSeen,mergeUnlockInbox,newUnlockInboxEntries,unreadUnlockCount,type UnlockInboxEntry} from './src/core/unlock-inbox';
+import {legacyUnreadUnlockEntries,markUnlockInboxSeen,mergeUnlockInbox,newUnlockInboxEntries,unreadUnlockCount,type CosmeticUnlockNotice,type UnlockInboxEntry} from './src/core/unlock-inbox';
 import {addUnlockInboxEntries,loadUnlockInbox,markUnlockInboxRead} from './src/storage/unlock-inbox';
 import {FeatureUnlockPopup} from './src/components/FeatureUnlockPopup';
 import {FirstSessionTutorialPopup} from './src/components/FirstSessionTutorialPopup';
@@ -506,7 +505,7 @@ function VeldrynApp(){
   }
   function queueCustomizationUnlocks(before:GameState|null,next:GameState){
     if(!before)return;
-    const profile=newlyUnlockedProfileRewards(before,next).map(row=>({key:row.kind+':'+row.id,kind:row.kind,name:row.name,detail:row.source?row.source.label+' · '+row.source.detail:undefined} satisfies CustomizationUnlockEntry));
+    const profile=newlyUnlockedProfileRewards(before,next).map(row=>({key:row.kind+':'+row.id,kind:row.kind,name:row.name,detail:row.source?row.source.label+' · '+row.source.detail:undefined} satisfies CosmeticUnlockNotice));
     const icons=newlyUnlockedProfileIcons(before,next).map(row=>({key:'profile-icon:'+row.id,kind:'profile_icon' as const,name:row.name,detail:'Profile icon'}));
     if(!profile.length&&!icons.length)return;
     const scope=auth.session?.user.id?`account:${auth.session.user.id}`:`local:${next.createdAtMs}`;

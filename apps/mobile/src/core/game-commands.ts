@@ -261,7 +261,7 @@ export function executeGameCommand(previous:GameState,value:unknown,now:number,o
    const result=claimForgeJob(state,text(a,'id',160),now,options.randomRoll);state=result.state;if(result.kind==='equipment')forgeResults=[result.result];contributions.push({kind:'crafting',contentId:result.recipe.id,units:1});
    message=result.kind==='equipment'
     ?`${result.result.rarity.toUpperCase()} ${result.recipe.name}${result.result.qualityProc?' · rarity upgrade':''}${result.result.duplicateCount?` · duplicate ${result.result.duplicateCount+1}`:''}`
-    :`${result.recipe.name} combined`;
+    :`${result.gemAction==='refine'?'Refined':'Combined'} ${result.recipe.name} · Gem Pouch`;
    break;
   }
   case 'craft_claim_all':{
@@ -274,9 +274,9 @@ export function executeGameCommand(previous:GameState,value:unknown,now:number,o
     ?'Some jobs use retired recipes; please contact support.'
     :result.blocked.some(row=>row.reason.startsWith('Equipment copy')||row.reason.startsWith('Equipment requires')||row.reason.startsWith('Crafted equipment'))
       ?`Check your equipment copies. ${result.blocked[0].reason}`
-      :'Free Inventory or Bank space, then claim the remaining jobs.';
+      :'Free Gem Pouch, Inventory or Bank space, then claim the remaining jobs.';
    message=result.claimed.length
-    ?`${result.claimed.length} forge job${result.claimed.length===1?'':'s'} claimed · ${equipmentCount} equipment · ${result.gemClaims} gem combine${result.gemClaims===1?'':'s'} · ${procCount} rarity upgrade${procCount===1?'':'s'}${blockedCount?` · ${blockedCount} still waiting. ${blockedReason}`:''}`
+    ?`${result.claimed.length} forge job${result.claimed.length===1?'':'s'} claimed · ${equipmentCount} equipment · ${result.gemClaims} gem claim${result.gemClaims===1?'':'s'} · ${procCount} rarity upgrade${procCount===1?'':'s'}${blockedCount?` · ${blockedCount} still waiting. ${blockedReason}`:''}`
     :blockedCount?`${blockedCount} finished forge job${blockedCount===1?' is':'s are'} still waiting. ${blockedReason}`:'No finished forge jobs';
    break;
   }

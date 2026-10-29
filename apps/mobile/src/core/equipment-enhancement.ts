@@ -6,6 +6,7 @@ import {GameState,GearEnhancementState,GemEffectId,GemSocketKind,GemStat,ItemSta
 import {mobileGemFamilyV1} from '../content/gems-v1';
 import {v33EquipmentRecipeForItem} from '../content/equipment-recipes-v33';
 import {assertEffectGemEquipAllowedV1,canonicalGemMetaV1,gemUnsocketCostForStateV1} from './gem-progression-v1';
+import {consumeGemFromStorage,gemStorageQuantity,isGemPouchItemId,storePouchGem} from './gem-pouch';
 
 /** Each regional kit has four optional improvements.  A full set gains 16%,
  * still below the base-stat jump to the next equipment tier. */
@@ -68,9 +69,9 @@ export function upgradeQuote(state:GameState,itemId:string){
   return {currentRank:current.rank,targetRank,successChance:Math.min(1,SUCCESS_BY_TARGET[targetRank]+pity),dust:DUST_BY_TARGET[targetRank],cores:CORE_BY_TARGET[targetRank],gold:Math.ceil(150*targetRank*targetRank*RARITY_COST[rarity]/10)*10,materials:upgradeMaterialCosts(itemId,targetRank),maxed:false};
 }
 function qty(stacks:ItemStack[],id:string){return stacks.find(s=>s.itemId===id)?.quantity??0;}
-export function combinedQuantity(state:GameState,id:string){return qty(state.inventory.stacks,id)+qty(state.bank.stacks,id);}
+export function combinedQuantity(state:GameState,id:string){return gemStorageQuantity(state,id);}
 function consume(stacks:ItemStack[],id:string,amount:number){let left=amount;return stacks.map(stack=>{if(stack.itemId!==id||left<=0)return stack;const used=Math.min(left,stack.quantity);left-=used;return {...stack,quantity:stack.quantity-used};}).filter(stack=>stack.quantity>0);}
-function consumeAcross(state:GameState,id:string,amount:number){if(combinedQuantity(state,id)<amount)throw new Error(`Need ${amount} ${itemDef(id).name}`);const inventory=consume(state.inventory.stacks,id,amount),used=qty(state.inventory.stacks,id)-qty(inventory,id);return {...state,inventory:{...state.inventory,stacks:inventory},bank:{...state.bank,stacks:consume(state.bank.stacks,id,amount-used)}};}
+function consumeAcross(state:GameState,id:string,amount:number){if(isGemPouchItemId(id))return consumeGemFromStorage(state,id,amount);if(combinedQuantity(state,id)<amount)throw new Error(`Need ${amount} ${itemDef(id).name}`);const inventory=consume(state.inventory.stacks,id,amount),used=qty(state.inventory.stacks,id)-qty(inventory,id);return {...state,inventory:{...state.inventory,stacks:inventory},bank:{...state.bank,stacks:consume(state.bank.stacks,id,amount-used)}};}
 function setEnhancement(state:GameState,itemId:string,value:GearEnhancementState){
   const slots=normalizeEnhancementGemSlots(value),instance=equippedCraftedInstance(state,itemId);
   if(instance)return {...state,account:{...state.account,craftedGearInstances:craftedGearInstances(state).map(row=>row.id===instance.id?{...row,enhancement:{...value,...slots}}:row)}};
@@ -101,7 +102,7 @@ export function socketGem(state:GameState,itemId:string,gemId:string){
   next=setEnhancement(next,itemId,{...enhancement,statGemId:kind==='stat'?gemId:enhancement.statGemId,effectGemId:kind==='effect'?gemId:enhancement.effectGemId,gemIds:[]});
   return next;
 }
-function addInventory(state:GameState,itemId:string){const existing=state.inventory.stacks.find(s=>s.itemId===itemId);if(!existing&&state.inventory.stacks.length>=state.inventory.capacity)throw new Error('Inventory is full');const stacks=existing?state.inventory.stacks.map(s=>s.itemId===itemId?{...s,quantity:s.quantity+1}:s):[...state.inventory.stacks,{itemId,quantity:1}];return {...state,inventory:{...state.inventory,stacks}};}
+function addInventory(state:GameState,itemId:string){if(isGemPouchItemId(itemId))return storePouchGem(state,itemId);const existing=state.inventory.stacks.find(s=>s.itemId===itemId);if(!existing&&state.inventory.stacks.length>=state.inventory.capacity)throw new Error('Inventory is full');const stacks=existing?state.inventory.stacks.map(s=>s.itemId===itemId?{...s,quantity:s.quantity+1}:s):[...state.inventory.stacks,{itemId,quantity:1}];return {...state,inventory:{...state.inventory,stacks}};}
 export function unsocketGem(state:GameState,itemId:string,index:number){
   requireEquipped(state,itemId);if(index!==0&&index!==1)throw new Error('Unknown gem socket');
   const enhancement=gearEnhancement(state,itemId),gemId=index===0?enhancement.statGemId:enhancement.effectGemId;

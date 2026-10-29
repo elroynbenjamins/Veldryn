@@ -19,6 +19,8 @@ assert(!inventory.includes('<GemPouchPanel state={state} busy='),'The old nested
 assert(inventory.includes('setPouchOpen(false);setQuery(\'\');setFilter(\'food\')'),'Food deep links must always return to character Inventory');
 assert(memory.includes('pouchOpen:false')&&memory.includes('foodRequest:request,pouchOpen:false'),'Storage choice is remembered without breaking quick food access');
 assert(pouch.includes('standalone||drawerOpen'),'Standalone mode never collapses the dedicated pouch');
+assert(pouch.includes('accessible={!standalone}')&&pouch.includes("accessibilityRole={standalone?'header':undefined}"),'Standalone Pouch heading is accessible without a disabled disclosure');
+assert(inventory.includes('storageChipTopCompact'),'All three storage tabs fit narrow devices and large text');
 assert(pouch.includes('const columns=gridWidth>=600?8:gridWidth>=440?6:gridWidth>=345?5:4')&&pouch.includes('{width:slotWidth,minHeight:Math.max(slotWidth,62)}'),'Gem grid responds to available width without fixed percentage overflow');
 assert(pouch.includes('onFavorite?')&&pouch.includes('onLock?'),'Gem favorites and locks remain actionable');
 assert(pouch.includes('||protectedGem} onPress={()=>setPendingDismantle'),'Protected gems cannot be dismantled accidentally');

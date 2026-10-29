@@ -13,15 +13,15 @@ import {GameState} from '../core/types';
 import {EARLY_FEATURE_DESTINATION_ORDER} from '../core/feature-unlocks';
 import type {QuickNavDestination} from '../core/quick-navigation';
 
-export type MoreDestination='Home'|'Social'|'Activity'|'DailySupplies'|'AccountBonuses'|'RewardsInbox'|'Quests'|'Companions'|'Skills'|'Events'|'Friends'|'Guild'|'Settings'|'Arena'|'Rankings'|'Collections'|'Profile'|'MasteryHall'|'Store';
+export type MoreDestination='Home'|'Social'|'Activity'|'DailySupplies'|'AccountBonuses'|'RewardsInbox'|'NewUnlocks'|'Quests'|'Companions'|'Skills'|'Events'|'Friends'|'Guild'|'Settings'|'Arena'|'Rankings'|'Collections'|'Profile'|'MasteryHall'|'Store';
 const sections:Array<{label:string;items:MoreDestination[]}>= [
   {label:'PLAY & PROGRESSION',items:['Home','Quests','Companions','DailySupplies','RewardsInbox','Events','AccountBonuses']},
   {label:'SOCIAL & COMPETITION',items:['Social','Friends','Guild','Arena','Rankings']},
-  {label:'IDENTITY & ACCOUNT',items:['Activity','Profile','MasteryHall','Collections','Store','Settings']},
+  {label:'IDENTITY & ACCOUNT',items:['Activity','Profile','NewUnlocks','MasteryHall','Collections','Store','Settings']},
 ];
 
 function iconForDestination(id:MoreDestination):QuickNavDestination{
-  if(id==='Activity'||id==='Profile'||id==='AccountBonuses')return 'Character';
+  if(id==='Activity'||id==='Profile'||id==='NewUnlocks'||id==='AccountBonuses')return 'Character';
   if(id==='DailySupplies'||id==='RewardsInbox'||id==='Rankings')return 'Events';
   if(id==='Arena')return 'Party';
   if(id==='Collections')return 'Inventory';
@@ -51,11 +51,12 @@ function itemMeta(language:GameState['settings']['language'],id:MoreDestination)
     case 'Rankings':return {title:a("Rankings"),description:a("Server-calculated prestige boards")};
     case 'Collections':return {title:a("Collections"),description:a("Collectibles and account bonuses")};
     case 'Profile':return {title:a("Profile"),description:a("Identity, showcase and customization")};
+    case 'NewUnlocks':return {title:a('New Unlocks'),description:a('Titles, profile icons, backgrounds and borders you earned.')};
     case 'MasteryHall':return {title:a("Mastery Hall"),description:a("Account-wide R50 profession records and prestige")};
   }
 }
 
-export function MoreScreen({language,onNavigate,onOpenAdminQa,onOpenUpdates,newReleaseAvailable=false,companionAttention=false,companionUnlocked=true,lockedDestinations={},dailySuppliesAttention=false,friendRequestCount=0,guildAttentionCount=0,socialAttentionCount=0,profileAttention=false,storyRewardCount=0}:{language:GameState['settings']['language'];onNavigate:(destination:MoreDestination)=>void;onOpenAdminQa?:()=>void;onOpenUpdates?:()=>void;newReleaseAvailable?:boolean;companionAttention?:boolean;companionUnlocked?:boolean;lockedDestinations?:Partial<Record<MoreDestination,string>>;dailySuppliesAttention?:boolean;friendRequestCount?:number;guildAttentionCount?:number;socialAttentionCount?:number;profileAttention?:boolean;storyRewardCount?:number}){
+export function MoreScreen({language,onNavigate,onOpenAdminQa,onOpenUpdates,newReleaseAvailable=false,companionAttention=false,companionUnlocked=true,lockedDestinations={},dailySuppliesAttention=false,friendRequestCount=0,guildAttentionCount=0,socialAttentionCount=0,newUnlockCount=0,storyRewardCount=0}:{language:GameState['settings']['language'];onNavigate:(destination:MoreDestination)=>void;onOpenAdminQa?:()=>void;onOpenUpdates?:()=>void;newReleaseAvailable?:boolean;companionAttention?:boolean;companionUnlocked?:boolean;lockedDestinations?:Partial<Record<MoreDestination,string>>;dailySuppliesAttention?:boolean;friendRequestCount?:number;guildAttentionCount?:number;socialAttentionCount?:number;newUnlockCount?:number;storyRewardCount?:number}){
  const a=(text:string,params?:Record<string,string|number>)=>accountText(language,text,params);
 
   const C=useGameTheme(),s=useMemo(()=>makeStyles(C),[C]),{width,fontScale}=useWindowDimensions(),singleColumn=width<350||fontScale>=1.25;
@@ -68,7 +69,7 @@ export function MoreScreen({language,onNavigate,onOpenAdminQa,onOpenUpdates,newR
     if(id==='Guild'&&guildAttentionCount>0)return a('{count} guild updates',{count:guildAttentionCount});
     if(id==='Companions'&&companionUnlocked&&companionAttention)return a("companion actions ready");
     if(id==='DailySupplies'&&dailySuppliesAttention)return a("Daily Supplies ready");
-    if(id==='Profile'&&profileAttention)return a("new profile customization available");
+    if(id==='NewUnlocks'&&newUnlockCount>0)return a('{count} new unlocks',{count:newUnlockCount});
     return '';
   };
   const attention=(id:MoreDestination)=>{
@@ -79,14 +80,14 @@ export function MoreScreen({language,onNavigate,onOpenAdminQa,onOpenUpdates,newR
     if(id==='Guild'&&guildAttentionCount>0)return <AttentionCount count={guildAttentionCount} label={a("Guild updates")}/>;
     if(id==='Companions'&&companionUnlocked&&companionAttention)return <AttentionDot label={a("Companion actions ready")}/>;
     if(id==='DailySupplies'&&dailySuppliesAttention)return <AttentionDot label={a("Daily Supplies ready")}/>;
-    if(id==='Profile'&&profileAttention)return <AttentionDot label={a("New profile customization available")}/>;
+    if(id==='NewUnlocks'&&newUnlockCount>0)return <AttentionCount count={newUnlockCount} label={a('New Unlocks')}/>;
     return null;
   };
-  const attentionPriority:MoreDestination[]=['Quests','DailySupplies','Companions','Social','Friends','Guild','Profile'];
+  const attentionPriority:MoreDestination[]=['NewUnlocks','Quests','DailySupplies','Companions','Social','Friends','Guild'];
   const lockedItems=EARLY_FEATURE_DESTINATION_ORDER.filter(id=>(id!=='Rankings'||RANKINGS_RELEASED)&&!!lockedReason(id)) as MoreDestination[];
   const upcomingLocked=lockedItems.slice(0,4);
   const attentionDestinations=attentionPriority.filter(id=>!!attentionLabel(id));
-  const attentionTotal=(lockedReason('Quests')?0:storyRewardCount)+(lockedReason('Social')?0:socialAttentionCount)+(lockedReason('Friends')?0:friendRequestCount)+(lockedReason('Guild')?0:guildAttentionCount)+Number(!lockedReason('Companions')&&companionAttention)+Number(!lockedReason('DailySupplies')&&dailySuppliesAttention)+Number(profileAttention);
+  const attentionTotal=(lockedReason('Quests')?0:storyRewardCount)+(lockedReason('Social')?0:socialAttentionCount)+(lockedReason('Friends')?0:friendRequestCount)+(lockedReason('Guild')?0:guildAttentionCount)+Number(!lockedReason('Companions')&&companionAttention)+Number(!lockedReason('DailySupplies')&&dailySuppliesAttention)+newUnlockCount;
   return <ScrollView contentContainerStyle={s.root} showsVerticalScrollIndicator={false} showsHorizontalScrollIndicator={false}>
     <TutorialBeacon id="more-shortcuts"><View style={s.header}><Text accessibilityRole="header" style={s.heading}>{a("Account")}</Text>{attentionTotal>0?<View accessible accessibilityLabel={`${attentionTotal} ${a("NEEDS ATTENTION")}`} style={s.headerAttention}><Text style={s.headerAttentionValue}>{attentionTotal>99?'99+':attentionTotal}</Text></View>:null}</View></TutorialBeacon>
     {onOpenUpdates?<Pressable accessibilityRole="button" accessibilityLabel={a("What's New & Updates")} accessibilityHint={newReleaseAvailable?a("New release information available"):a("Release notes and app versions")} onPress={onOpenUpdates} style={({pressed})=>[s.releaseRow,pressed&&s.pressed]}>

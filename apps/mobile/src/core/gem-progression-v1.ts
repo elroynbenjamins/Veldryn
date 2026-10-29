@@ -60,7 +60,6 @@ export function dismantleGemV1(state:GameState,itemId:string,quantityToDismantle
  return {...afterGem,inventory:{...afterGem.inventory,stacks:inventory},bank:{...afterGem.bank,stacks:bankStacks}};
 }
 
-function quantity(stacks:readonly ItemStack[],itemId:string){return stacks.filter(row=>row.itemId===itemId).reduce((sum,row)=>sum+row.quantity,0);}
 export function combinedGemQuantityV1(state:GameState,itemId:string){return gemStorageQuantity(state,itemId);}
 export function equippedCanonicalGemIdsV1(state:GameState){
  if(!state.character)return [] as string[];

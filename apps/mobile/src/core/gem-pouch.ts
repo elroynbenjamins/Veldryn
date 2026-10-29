@@ -17,7 +17,7 @@ export function isGemPouchItemId(itemId:string):boolean{
   try{return itemDef(itemId).type==='gem'}catch{return false}
 }
 export function normalizeGemPouch(raw:unknown):InventoryState{
-  const value=raw&&typeof raw==='object'&&!Array.isArray(raw)?raw as Partial<InventoryState>:{};
+  const value:Partial<InventoryState>=raw&&typeof raw==='object'&&!Array.isArray(raw)?raw as Partial<InventoryState>:{};
   const capacity=[GEM_POUCH_BASE_CAPACITY,...GEM_POUCH_UPGRADES.map(t=>t.capacity)].includes(Number(value.capacity))
     ?Number(value.capacity):GEM_POUCH_BASE_CAPACITY;
   const grouped=new Map<string,number>();
@@ -98,6 +98,7 @@ export function migrateGemPouch(state:GameState):GameState{
     return false;
   });
   const inventory=move(state.inventory.stacks),bank=move(state.bank.stacks);
-  return {...state,account:{...state.account,gemPouch:pouch},
+  const otherCharacters=state.otherCharacters?.map(entry=>({...entry,inventory:{...entry.inventory,stacks:move(entry.inventory.stacks)}}));
+  return {...state,account:{...state.account,gemPouch:pouch},otherCharacters,
     inventory:{...state.inventory,stacks:inventory},bank:{...state.bank,stacks:bank}};
 }

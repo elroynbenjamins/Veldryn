@@ -1,7 +1,7 @@
 import {createCharacter,newGame} from '../src/core/game';
 import {socketGem,unsocketGem} from '../src/core/equipment-enhancement';
 import {claimAllReadyEquipmentCrafts,claimForgeJob,startGemRefinement} from '../src/core/equipment-crafting-queue';
-import {gemPouch,gemPouchUpgradePreview,gemStorageQuantity,migrateGemPouch,storePouchGem,upgradeGemPouch} from '../src/core/gem-pouch';
+import {gemPouch,gemPouchUpgradePreview,gemStorageQuantity,migrateGemPouch,sellPouchGem,storePouchGem,upgradeGemPouch} from '../src/core/gem-pouch';
 import {gemRefineRecipeIdV1} from '../src/core/gem-progression-v1';
 import {MOBILE_GEM_FAMILIES_V1} from '../src/content/gems-v1';
 import {normalizeSave} from '../src/core/save-normalization';
@@ -50,6 +50,16 @@ ok(gemPouch(recovered.state).stacks.some(stack=>stack.itemId===gemId&&stack.quan
 ok(!recovered.state.account.equipmentCraftingQueue?.length,'Recovered claim must settle once');
 
 const stackedPouch=storePouchGem(storePouchGem(start,gemId,3),gemId,2);
+const saleBase={...stackedPouch,character:{...stackedPouch.character!,gold:100}};
+const sold=executeGameCommand(saleBase,{type:'gem_pouch_sell',args:{itemId:gemId,quantity:2}},1000);
+ok(gemStorageQuantity(sold.state,gemId)===3,'Selling gems must remove only the requested pouch units');
+ok(sold.state.character!.gold===100+2*120,'Selling Cut gems credits the canonical per-gem Gold value');
+let favoriteBlocked=false;try{sellPouchGem({...saleBase,settings:{...saleBase.settings,favoriteItemIds:[gemId]}},gemId,1)}catch{favoriteBlocked=true}
+ok(favoriteBlocked,'Favorite gems must remain protected from pouch selling');
+let lockedBlocked=false;try{sellPouchGem({...saleBase,settings:{...saleBase.settings,lockedItemIds:[gemId]}},gemId,1)}catch{lockedBlocked=true}
+ok(lockedBlocked,'Locked gems must remain protected from pouch selling');
+let oversellBlocked=false;try{sellPouchGem(saleBase,gemId,6)}catch{oversellBlocked=true}
+ok(oversellBlocked,'Pouch selling cannot mint Gold from nonexistent gems');
 ok(gemPouch(stackedPouch).stacks.length===1&&gemStorageQuantity(stackedPouch,gemId)===5,'Matching gems must occupy a single pouch slot');
 
 const oldSave={...start,account:{...start.account,gemPouch:undefined},inventory:{...start.inventory,stacks:[{itemId:gemId,quantity:3},{itemId:'WISP_DUST',quantity:1}]},bank:{...start.bank,stacks:[{itemId:gemId,quantity:2},{itemId:rawId,quantity:1}]}};

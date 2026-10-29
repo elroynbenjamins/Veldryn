@@ -1,4 +1,4 @@
-import type {CraftedGearInstance,GameState,GearEnhancementState} from './types';
+import type {CraftedGearInstance,GameState,GearEnhancementState,GearSlot,ItemStack} from './types';
 import {craftedGearRarity,craftedRarityStatMultiplier,deterministicCraftRarityRoll} from './crafted-gear-rarity';
 import {itemDef} from '../content/items';
 import {itemRarity,type ItemRarity} from './item-rarity';
@@ -110,6 +110,21 @@ export function craftedGearLegacyOwnershipAudit(state:GameState,itemId:string){
 export function bestCraftedInstanceForItem(state:GameState,itemId:string,ownerCharacterId=state.character?.id){
   return craftedInstancesForItem(state,itemId,ownerCharacterId).slice().sort((a,b)=>craftedRarityStatMultiplier(itemId,b.rarity)-craftedRarityStatMultiplier(itemId,a.rarity)||b.enhancement.rank-a.enhancement.rank||craftedGearDisplayQuality(b)-craftedGearDisplayQuality(a)||b.createdAtMs-a.createdAtMs)[0];
 }
+/** A visual rarity must belong to the exact physical copy, not the strongest copy elsewhere. */
+export function craftedGearStackRarity(state:GameState,stack:Pick<ItemStack,'itemId'|'instanceId'>):ItemRarity{
+  const base=itemRarity(itemDef(stack.itemId));
+  if(!stack.instanceId)return base;
+  const instance=craftedGearInstances(state).find(row=>row.id===stack.instanceId&&row.itemId===stack.itemId);
+  return instance?.rarity??base;
+}
+
+/** The current character's equipped slot has its own unique receipt. */
+export function equippedCraftedGearRarity(state:GameState,slot:GearSlot):ItemRarity|undefined{
+  const itemId=state.character?.equipment?.[slot];
+  if(!itemId)return undefined;
+  return craftedGearStackRarity(state,{itemId,instanceId:state.character?.equipmentInstanceIds?.[slot]});
+}
+
 export function effectiveOwnedGearRarity(state:GameState,itemId:string,ownerCharacterId=state.character?.id):ItemRarity{
   return bestCraftedInstanceForItem(state,itemId,ownerCharacterId)?.rarity??itemRarity(itemDef(itemId));
 }

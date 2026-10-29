@@ -39,6 +39,8 @@ jobs:
         run: pnpm typecheck
       - name: Validate Gems storage and dungeon recovery UX
         run: node tests/storage-dungeon-refinement-ui.cjs
+      - name: Validate Companion Collection and Codex UX
+        run: node tests/companion-codex-focused-ui.cjs
       - name: Typecheck core
         run: pnpm typecheck:core
       - name: Run mobile core tests

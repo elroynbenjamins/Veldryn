@@ -28,7 +28,7 @@ assert(app.includes('selectGlobalPopup({...popupCandidates,blocked:popupBlocked}
   'A shared popup coordinator must drive global modal visibility');
 assert(app.includes('hasBlockingAlert=useSyncExternalStore(gameAlerts.subscribe,gameAlerts.getSnapshot,gameAlerts.getSnapshot)'),
   'Open alert dialogs must defer automatic global popups');
-for(const marker of ["activeGlobalPopup==='activity-reward'","activeGlobalPopup==='first-session'","activeGlobalPopup==='feature-unlock'","activeGlobalPopup==='customization-unlock'","activeGlobalPopup==='exceptional-forge'","activeGlobalPopup==='story-boss'","activeGlobalPopup==='event-start'","activeGlobalPopup==='whats-new'"]){
+for(const marker of ["activeGlobalPopup==='activity-reward'","activeGlobalPopup==='first-session'","activeGlobalPopup==='feature-unlock'","activeGlobalPopup==='exceptional-forge'","activeGlobalPopup==='story-boss'","activeGlobalPopup==='event-start'","activeGlobalPopup==='whats-new'"]){
  assert(app.includes(marker),'Global modal visibility must respect the selected presentation: '+marker);
 }
 assert(!app.includes("showAlert('Forge complete'"),'Routine Forge success must not open a blocking alert');

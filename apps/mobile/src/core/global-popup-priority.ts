@@ -4,7 +4,7 @@
  */
 export type GlobalPopupKind=
   'character-welcome'|'activity-reward'|'story-boss'|'exceptional-forge'
-  |'main-tour'|'feature-unlock'|'customization-unlock'|'first-session'
+  |'main-tour'|'feature-unlock'|'first-session'
   |'event-start'|'whats-new';
 
 export interface GlobalPopupCandidates{
@@ -15,7 +15,6 @@ export interface GlobalPopupCandidates{
   exceptionalForge?:boolean;
   mainTour?:boolean;
   featureUnlock?:boolean;
-  customizationUnlock?:boolean;
   firstSession?:boolean;
   eventStart?:boolean;
   whatsNew?:boolean;
@@ -30,7 +29,6 @@ export function selectGlobalPopup(value:GlobalPopupCandidates):GlobalPopupKind|n
   if(value.exceptionalForge)return 'exceptional-forge';
   if(value.mainTour)return 'main-tour';
   if(value.featureUnlock)return 'feature-unlock';
-  if(value.customizationUnlock)return 'customization-unlock';
   if(value.firstSession)return 'first-session';
   if(value.eventStart)return 'event-start';
   if(value.whatsNew)return 'whats-new';

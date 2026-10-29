@@ -7,12 +7,12 @@ function ok(value:unknown,message:string){if(!value)throw new Error(message)}
 // Higher-priority arrivals defer but do not discard lower-priority announcements.
 const pending:GlobalPopupCandidates={
   characterWelcome:true,activityReward:true,storyBoss:true,exceptionalForge:true,
-  mainTour:true,featureUnlock:true,customizationUnlock:true,firstSession:true,eventStart:true,whatsNew:true,
+  mainTour:true,featureUnlock:true,firstSession:true,eventStart:true,whatsNew:true,
 };
 const order=[
   ['characterWelcome','character-welcome'],['activityReward','activity-reward'],['storyBoss','story-boss'],
   ['exceptionalForge','exceptional-forge'],['mainTour','main-tour'],['featureUnlock','feature-unlock'],
-  ['customizationUnlock','customization-unlock'],['firstSession','first-session'],
+  ['firstSession','first-session'],
   ['eventStart','event-start'],['whatsNew','whats-new'],
 ] as const;
 for(const [property,kind] of order){

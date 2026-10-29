@@ -259,7 +259,7 @@ export function executeGameCommand(previous:GameState,value:unknown,now:number,o
    if(options.randomRoll===undefined)throw new Error('trusted_random_required');
    const result=claimForgeJob(state,text(a,'id',160),now,options.randomRoll);state=result.state;if(result.kind==='equipment')forgeResults=[result.result];contributions.push({kind:'crafting',contentId:result.recipe.id,units:1});
    message=result.kind==='equipment'
-    ?`${result.result.rarity.toUpperCase()} ${result.recipe.name}${result.result.qualityProc?' · quality proc':''}${result.result.duplicateCount?` · duplicate ${result.result.duplicateCount+1}`:''}`
+    ?`${result.result.rarity.toUpperCase()} ${result.recipe.name}${result.result.qualityProc?' · rarity upgrade':''}${result.result.duplicateCount?` · duplicate ${result.result.duplicateCount+1}`:''}`
     :`${result.recipe.name} combined`;
    break;
   }
@@ -275,7 +275,7 @@ export function executeGameCommand(previous:GameState,value:unknown,now:number,o
       ?`Check your equipment copies. ${result.blocked[0].reason}`
       :'Free Inventory or Bank space, then claim the remaining jobs.';
    message=result.claimed.length
-    ?`${result.claimed.length} forge job${result.claimed.length===1?'':'s'} claimed · ${equipmentCount} equipment · ${result.gemClaims} gem combine${result.gemClaims===1?'':'s'} · ${procCount} quality proc${procCount===1?'':'s'}${blockedCount?` · ${blockedCount} still waiting. ${blockedReason}`:''}`
+    ?`${result.claimed.length} forge job${result.claimed.length===1?'':'s'} claimed · ${equipmentCount} equipment · ${result.gemClaims} gem combine${result.gemClaims===1?'':'s'} · ${procCount} rarity upgrade${procCount===1?'':'s'}${blockedCount?` · ${blockedCount} still waiting. ${blockedReason}`:''}`
     :blockedCount?`${blockedCount} finished forge job${blockedCount===1?' is':'s are'} still waiting. ${blockedReason}`:'No finished forge jobs';
    break;
   }

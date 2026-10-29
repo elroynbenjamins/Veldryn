@@ -4,6 +4,11 @@ import {createTranslator} from './translator';
 // Each row contains English, German, Spanish, Dutch, Italian and French.
 // English source keys also let owned views translate core-generated presentation text.
 export const accountTranslationRows = {
+"Titles, pets, emotes and profile cosmetics you earned.":["Titles, pets, emotes and profile cosmetics you earned.","Deine verdienten Titel, Haustiere, Emotes und Profilkosmetik.","Títulos, mascotas, emoticonos y cosméticos de perfil obtenidos.","Je verdiende titels, huisdieren, emotes en profielcosmetica.","Titoli, animali, emote e cosmetici del profilo ottenuti.","Titres, familiers, émotes et cosmétiques de profil obtenus."],
+"New cosmetic rewards will appear here automatically as you earn them.":["New cosmetic rewards will appear here automatically as you earn them.","Neue kosmetische Belohnungen erscheinen hier automatisch, sobald du sie verdienst.","Las nuevas recompensas cosméticas aparecerán aquí al conseguirlas.","Nieuwe cosmetische beloningen verschijnen hier vanzelf zodra je ze verdient.","Le nuove ricompense estetiche appariranno qui automaticamente quando le ottieni.","Les nouvelles récompenses cosmétiques apparaîtront ici dès leur obtention."],
+"COSMETIC PET":["COSMETIC PET","KOSMETISCHES HAUSTIER","MASCOTA COSMÉTICA","COSMETISCH HUISDIER","ANIMALE ESTETICO","FAMILIER COSMÉTIQUE"],
+"EMOTE":["EMOTE","EMOTE","EMOTE","EMOTE","EMOTE","ÉMOTE"],
+"GUILD COSMETIC":["GUILD COSMETIC","GILDENKOSMETIK","COSMÉTICO DE GREMIO","GILDECOSMETICA","COSMETICO GILDA","COSMÉTIQUE DE GUILDE"],
 "New Unlocks":["New Unlocks","Neue Freischaltungen","Nuevos desbloqueos","Nieuwe ontgrendelingen","Nuovi sblocchi","Nouveaux déblocages"],
 "Titles, profile icons, backgrounds and borders you earned.":["Titles, profile icons, backgrounds and borders you earned.","Deine verdienten Titel, Profilsymbole, Hintergründe und Rahmen.","Títulos, iconos, fondos y marcos de perfil que has conseguido.","Je verdiende titels, profieliconen, achtergronden en randen.","Titoli, icone, sfondi e bordi del profilo che hai ottenuto.","Titres, icônes, fonds et bordures de profil obtenus."],
 "Recently unlocked":["Recently unlocked","Kürzlich freigeschaltet","Desbloqueados recientemente","Onlangs ontgrendeld","Sbloccati di recente","Débloqués récemment"],

@@ -35,9 +35,9 @@ jobs:
           node .ux-popup-build/apps/mobile/tests/ux-popup-reliability.js
           node tests/ux-popup-reliability-ui.cjs
           node tests/settings-simplicity-ui.cjs
+      - name: Typecheck app
+        run: pnpm typecheck
       - name: Typecheck core
         run: pnpm typecheck:core
       - name: Run mobile core tests
         run: pnpm test:core
-      - name: Typecheck app
-        run: pnpm typecheck

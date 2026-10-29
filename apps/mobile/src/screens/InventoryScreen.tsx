@@ -119,7 +119,7 @@ export function InventoryScreen({state,viewMemory,foodRequest=0,onEquip,onFood,o
    const selectionSummary=useMemo(()=>bulkSelectionSummary(state,selectedIds,location),[state,selectedIds,location]);
   const exitSelection=()=>{setSelectMode(false);setSelectedIds([]);setBulkPending(null)};
   const changeLocation=(value:BulkStorageLocation)=>{if(value===location&&!pouchOpen)return;exitSelection();setPouchOpen(false);setLocation(value);setError('')};
-  const openPouch=()=>{exitSelection();setPouchOpen(true);setPreviewId(null);setInspectId(null);setSortOpen(false);setError('')};
+  const openPouch=()=>{exitSelection();restored.current=null;setPouchOpen(true);setPreviewId(null);setInspectId(null);setSortOpen(false);setError('')};
   const toggleSelection=(itemId:string)=>{setSelectedIds(current=>{if(current.includes(itemId))return current.filter(id=>id!==itemId);if(current.length>=100){setError(gt("Select up to 100 item stacks at once."));return current;}setError('');return [...current,itemId]})};
   const selectShown=()=>{const ids=[...new Set(stacks.map(stack=>stack.itemId))].slice(0,100);setSelectedIds(ids);setError(stacks.length>100?gt("Selected the first 100 matching stacks."):'')};
   const beginSelection=()=>{setSelectMode(true);setSelectedIds([]);setPreviewId(null);setInspectId(null);setError('')};

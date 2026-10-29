@@ -2,7 +2,7 @@ import {V33_EQUIPMENT_RECIPES} from '../src/content/equipment-recipes-v33';
 import {claimOverflowToBank,createCharacter,depositToBank,equipItem,newGame,sellItem,stackItems,unequipItem} from '../src/core/game';
 import {claimAllReadyEquipmentCrafts,claimEquipmentCraft,equipmentCraftingQueue,startEquipmentCraft} from '../src/core/equipment-crafting-queue';
 import {CRAFTED_COMMON_CHANCE,CRAFTED_UNCOMMON_CHANCE,CRAFTED_RARE_CHANCE,CRAFTED_EPIC_CHANCE,CRAFTED_LEGENDARY_CHANCE,CRAFTED_MYTHIC_CHANCE,craftedGearRarity,craftedGearRarityOutcomes,craftedRarityStatMultiplier} from '../src/core/crafted-gear-rarity';
-import {MAX_CRAFTED_GEAR_INSTANCES,TARGET_CRAFTED_GEAR_COPIES_PER_ITEM,bestCraftedInstanceForItem,craftedGearCopyCapacity,craftedGearInstances,craftedGearStackRarity,equippedCraftedGearRarity,craftedGearQualityRoll,craftedGearDisplayQuality,craftedGearQualityMultiplier,craftClaimSubRoll,effectiveOwnedGearRarity,normalizeCraftedGearInstances,createCraftedGearInstance,craftedGearLegacyOwnershipAudit} from '../src/core/crafted-gear-instances';
+import {MAX_CRAFTED_GEAR_INSTANCES,TARGET_CRAFTED_GEAR_COPIES_PER_ITEM,bestCraftedInstanceForItem,craftedGearCopyCapacity,craftedGearInstances,craftedGearStackRarity,equippedCraftedGearRarity,craftedGearQualityRoll,craftedGearQualityFromUnitRoll,craftedGearQualityChanceAtLeast,CRAFTED_GEAR_QUALITY_POWER,craftedGearDisplayQuality,craftedGearQualityMultiplier,craftClaimSubRoll,effectiveOwnedGearRarity,normalizeCraftedGearInstances,createCraftedGearInstance,craftedGearLegacyOwnershipAudit} from '../src/core/crafted-gear-instances';
 import {enhancedGearStats,upgradeQuote} from '../src/core/equipment-enhancement';
 import {equipmentDecisionModel} from '../src/core/equipment-decision';
 import {itemDef} from '../src/content/items';
@@ -84,6 +84,27 @@ ok(epicClaim.result.quality===craftedGearQualityRoll(.004,job.id),'Quality must 
 ok(craftedGearQualityRoll(.123456,'job-a')===craftedGearQualityRoll(.123456,'job-a'),'Retry must retain the same quality');
 ok(craftedGearQualityRoll(.5,'quality-edge-12')===0,'New Forge quality rolls must be able to reach Q0');
 ok(craftedGearQualityRoll(.5,'quality-edge-9')===100,'New Forge quality rolls must be able to reach Q100');
+
+ok(CRAFTED_GEAR_QUALITY_POWER===1.25,'Forge quality bias must be deliberately gentle');
+ok(craftedGearQualityFromUnitRoll(0)===0&&craftedGearQualityFromUnitRoll(.999999)===100,
+  'Weighted quality still permits both endpoints, Q0 and Q100');
+ok(craftedGearQualityFromUnitRoll(.5)<50,'Weighted quality should modestly favor lower results');
+ok(craftedGearQualityFromUnitRoll(.9)<90,'An upper-decile random draw should not automatically give Q90+');
+ok(craftedGearQualityChanceAtLeast(90)<.09&&craftedGearQualityChanceAtLeast(90)>.08,
+  'Q90+ should occur about 8.8% of the time, down from uniform 10.9%');
+ok(craftedGearQualityChanceAtLeast(75)<.22&&craftedGearQualityChanceAtLeast(75)>.20,
+  'Q75+ should occur about 21% of the time');
+ok(craftedGearQualityChanceAtLeast(100)>0&&craftedGearQualityChanceAtLeast(100)<.01,
+  'Perfect Q100 items must remain obtainable but uncommon');
+for(const sample of [0,.001,.12,.25,.5,.75,.95,.999999]){
+  const result=craftedGearQualityFromUnitRoll(sample);
+  ok(Number.isInteger(result)&&result>=0&&result<=100,'All weighted Forge quality outcomes stay in Q0–Q100');
+}
+for(const invalid of [-1,1,NaN,Infinity]){
+  let rejected=false;try{craftedGearQualityFromUnitRoll(invalid)}catch{rejected=true}
+  ok(rejected,'Invalid quality RNG input must fail closed');
+}
+
 ok(craftedGearInstances(state)[0].enhancement.rank===0&&craftedGearInstances(state)[0].enhancement.gemIds.length===0,'Fresh crafted instance must start unenhanced and unsocketed');
 ok(effectiveOwnedGearRarity(state,recipe.output.itemId)==='epic','Best owned crafted copy should become effective rarity');
 ok(craftedRarityStatMultiplier(recipe.output.itemId,'epic')>1,'Epic T1 proc must provide a real stat multiplier');

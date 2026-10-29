@@ -51,7 +51,7 @@ function itemMeta(language:GameState['settings']['language'],id:MoreDestination)
     case 'Rankings':return {title:a("Rankings"),description:a("Server-calculated prestige boards")};
     case 'Collections':return {title:a("Collections"),description:a("Collectibles and account bonuses")};
     case 'Profile':return {title:a("Profile"),description:a("Identity, showcase and customization")};
-    case 'NewUnlocks':return {title:a('New Unlocks'),description:a('Titles, profile icons, backgrounds and borders you earned.')};
+    case 'NewUnlocks':return {title:a('New Unlocks'),description:a('Titles, pets, emotes and profile cosmetics you earned.')};
     case 'MasteryHall':return {title:a("Mastery Hall"),description:a("Account-wide R50 profession records and prestige")};
   }
 }

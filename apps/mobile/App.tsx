@@ -2,12 +2,13 @@ import {newInventoryScreenState,type InventoryScreenState} from './src/core/inve
 import {GameAlertHost} from './src/components/GameAlertHost';
 import {gameAlert,gameAlerts} from './src/core/game-alerts';
 import {SavedLoadoutsPanel} from './src/components/SavedLoadoutsPanel';
-import {useCallback,useEffect,useMemo,useRef,useState} from 'react';
+import {useCallback,useEffect,useMemo,useRef,useState,useSyncExternalStore} from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import {APP_BUILD_INFO} from './src/app-build';
 import {fetchReleaseNotes} from './src/online/release-notes';
 import {firstInstalledReleaseVersion,shouldAutoAnnounceReleaseNotes,shouldAutoShowReleaseNotes,type ReleaseNote} from './src/core/release-notes';
 import {WhatsNewModal} from './src/components/WhatsNewModal';
+import {selectGlobalPopup} from './src/core/global-popup-priority';
 import {buildWelcomeBackFromStates,type WelcomeBackProgressReport} from './src/core/welcome-back-v46';
 import {ActivityIndicator,Animated,ScrollView,AppState,BackHandler,Image,PanResponder,Pressable,Share,StyleSheet,Text,TextInput,View,useWindowDimensions} from 'react-native';
 import {StatusBar} from 'expo-status-bar';
@@ -172,6 +173,7 @@ const MAIN_TAB_GUIDANCE:Record<string,{title:string;body:string;detail:string}>=
 export default function App(){return <SafeAreaProvider><AuthSessionProvider><PlayerBadgeProvider><PartySocialProvider><VeldrynApp/></PartySocialProvider></PlayerBadgeProvider></AuthSessionProvider><GameAlertHost/></SafeAreaProvider>;}
 function VeldrynApp(){
   const auth=useAuthSession(),online=useOnlineGame();
+  const hasBlockingAlert=useSyncExternalStore(gameAlerts.subscribe,gameAlerts.getSnapshot,gameAlerts.getSnapshot).queue.length>0;
   const {width:viewportWidth}=useWindowDimensions();
   const adminQa=auth.session?.user.app_metadata?.admin_qa===true||(Array.isArray(auth.session?.user.app_metadata?.roles)&&auth.session!.user.app_metadata.roles.includes('admin_qa'));
   const {counts:notificationCounts,refresh:refreshSocialNotifications}=useSocialNotificationCounts();
@@ -456,9 +458,18 @@ function VeldrynApp(){
   useEffect(()=>{if(!preparationNotices.length||collected||forgeResults)return;const timer=setTimeout(()=>setPreparationNotices(current=>current.slice(1)),4500);return()=>clearTimeout(timer)},[preparationNotices,collected,forgeResults]);
   useEffect(()=>{if(!masteryNotices.length||preparationNotices.length||collected||forgeResults)return;const timer=setTimeout(()=>setMasteryNotices([]),4500);return()=>clearTimeout(timer)},[masteryNotices,preparationNotices.length,collected,forgeResults]);
   useEffect(()=>{if(tab!=='Skills'){setSelectedSkill(undefined);setGoalActionId(undefined);setGoalRecipeId(undefined)}},[tab]);
-  const popupBeforeWhatsNew=!!collected||!!creationWelcome||!!visibleTutorialStep||mainScreenTourIndex!==undefined
-    ||featureUnlockMoments.length>0||customizationUnlocks.length>0||!!eventStartPopup||!!forgeResults?.length
-    ||!!storyBossBattle||!!profileDiscardAction||creatingRoster||showChatOverlay||showAdminQa||showCoopUiGallery;
+  // Global announcements share one presentation slot; foreground user dialogs win.
+  const popupBlocked=!!profileDiscardAction||creatingRoster||showChatOverlay||showAdminQa||showCoopUiGallery
+    ||startupBlocking||startupOverlayVisible||offlineSettling||hasBlockingAlert;
+  const popupCandidates={
+    characterWelcome:!!creationWelcome,activityReward:!!collected,storyBoss:!!storyBossBattle,
+    exceptionalForge:!!forgeResults?.some(isExceptionalForgeResult),mainTour:mainScreenTourIndex!==undefined,
+    featureUnlock:featureUnlockMoments.length>0,customizationUnlock:customizationUnlocks.length>0,
+    firstSession:!!visibleTutorialStep,eventStart:!!eventStartPopup&&canAnnounceLiveEventStart(state?.character?.level),
+    whatsNew:showWhatsNew,
+  };
+  const activeGlobalPopup=selectGlobalPopup({...popupCandidates,blocked:popupBlocked});
+  const popupBeforeWhatsNew=popupBlocked||!!forgeResults?.length||selectGlobalPopup({...popupCandidates,whatsNew:false})!==null;
   const onlineStartupArrivalKey=online.snapshot?`${online.snapshot.accountId}:${online.foregroundRevision}`:undefined;
   const readyForWhatsNew=ready&&!!state?.character&&versionGateChecked&&!versionGate?.updateRequired&&!versionGate?.maintenanceMode
     &&!startupBlocking&&!startupOverlayVisible&&!offlineSettling&&!popupBeforeWhatsNew
@@ -763,24 +774,24 @@ const next=normalizeProfileIcon(migrateGemPouch(candidate));queuePreparationNoti
     {tab==='Profile'&&<ProfileScreen state={state} onNavigate={destination=>{if(destination==='Customize'){setProfileCustomizeSection('Appearance');setTab('ProfileCustomize');return;}setTab(destination)}}/>}
     {tab==='ProfileCustomize'&&<ProfileCustomizeScreen key={profileAttentionScope} state={state} initialSection={profileCustomizeSection} onChange={commit} onSaveNameStyle={saveNameStyle} onNavigateSource={destination=>setTab(destination)} onDirtyChange={setProfileCustomizeDirty}/>}
   </View>
-  <EventStartPopup runtime={creationWelcome||!canAnnounceLiveEventStart(state.character?.level)?null:eventStartPopup} reduceMotion={state.settings.reduceMotion} onOpen={()=>{setEventStartPopup(null);setTab('Events')}} onClose={()=>setEventStartPopup(null)}/>
+  <EventStartPopup runtime={activeGlobalPopup==='event-start'?eventStartPopup:null} reduceMotion={state.settings.reduceMotion} onOpen={()=>{setEventStartPopup(null);setTab('Events')}} onClose={()=>setEventStartPopup(null)}/>
   <ChatOverlay initialChannel={chatInitialChannel} state={state} visible={showChatOverlay} onOpen={()=>{setChatInitialChannel('world');setShowChatOverlay(true)}} onClose={()=>setShowChatOverlay(false)} onEmoteTrayChange={ids=>commit({...state,settings:{...state.settings,chatEmoteTrayIds:ids}})} guildUnread={notificationCounts.guildChatUnread} guildMentions={notificationCounts.guildChatMentions} guildFirstUnreadMessageId={notificationCounts.guildFirstUnreadMessageId} partyUnread={notificationCounts.partyChatUnread} partyMentions={notificationCounts.partyChatMentions} partyFirstUnreadMessageId={notificationCounts.partyFirstUnreadMessageId} onChatRead={()=>void refreshSocialNotifications()}/>
   {!collected&&!forgeResults?.some(isExceptionalForgeResult)&&preparationNotices.length?<View style={s.masteryNotice}><ActionFeedback message={preparationNotices[0].message} tone={preparationNotices[0].tone} reduceMotion={state.settings.reduceMotion} compact actionLabel={preparationNotices[0].actionLabel} onAction={()=>openPreparationNotice(preparationNotices[0])}/></View>:!collected&&!forgeResults?.some(isExceptionalForgeResult)&&masteryNotices.length?<View style={s.masteryNotice}><ActionFeedback message={masteryRankNoticeMessage(masteryNotices)} tone={masteryNotices.some(moment=>moment.mastered)?'success':'info'} reduceMotion={state.settings.reduceMotion} compact/></View>:null}
     <PrimaryNavigation destinations={primaryTabs} active={activePrimary} labelFor={item=>tabLabel(state.settings.language,item)} onNavigate={setTab} badges={primaryBadges} guidedDestination={(mainScreenTour?.highlightPrimary??visibleTutorialStep?.highlightPrimary) as PrimaryTab|undefined} reduceMotion={state.settings.reduceMotion}/>
-  {creationWelcome&&<AsterfallWelcomeModal visible name={creationWelcome.name} classId={creationWelcome.classId} onContinue={()=>{const characterId=state.character?.id;if(characterId)void completeFirstSessionTutorialStep(characterId,'first_hunt').then(ids=>setTutorialCompleted(ids));setGoalMonsterId('MOSS_RAT');setCreationWelcome(null);setCurrentTab('Combat')}}/>}
-  <WhatsNewModal visible={showWhatsNew&&!popupBeforeWhatsNew&&!offlineSettling&&!startupOverlayVisible}
+  {activeGlobalPopup==='character-welcome'&&creationWelcome&&<AsterfallWelcomeModal visible name={creationWelcome.name} classId={creationWelcome.classId} onContinue={()=>{const characterId=state.character?.id;if(characterId)void completeFirstSessionTutorialStep(characterId,'first_hunt').then(ids=>setTutorialCompleted(ids));setGoalMonsterId('MOSS_RAT');setCreationWelcome(null);setCurrentTab('Combat')}}/>}
+  <WhatsNewModal visible={activeGlobalPopup==='whats-new'}
     currentVersion={APP_BUILD_INFO.version} notes={releaseNotes} latestVersion={versionGate?.policy?.latestVersion}
     updateAvailable={!!versionGate?.updateAvailable} reduceMotion={state.settings.reduceMotion}
     onUpdate={openStoreListing} onClose={closeWhatsNew}/>
-  <RewardPopup reward={collected?.reward??null} activity={collected?.activity??null} classId={state.character?.classId} welcomeBack={!!collected?.welcomeBack} welcomeReport={collected?.welcomeReport} progressionMoments={collected?.progressionMoments??[]} reduceMotion={state.settings.reduceMotion} numberMode={state.settings.numberMode} onClose={()=>setCollected(null)} onInventory={()=>setTab('Inventory')} onCollections={()=>setTab('Collections')} onCompanions={()=>setTab('Companions')} onSkill={id=>{const skillId=id as SkillId;setSelectedSkill(skillId);setSkillsMode(id==='faith'?'faith':['mining','woodcutting','fishing','herbalism'].includes(id)?'gathering':'crafting');setTab('Skills')}}/>
-  <FirstSessionTutorialPopup step={mainScreenTourIndex===undefined&&!creationWelcome&&!collected&&!customizationUnlocks.length&&!featureUnlockMoments.length?visibleTutorialStep:undefined} onLater={()=>{if(visibleTutorialStep)setTutorialDismissedId(visibleTutorialStep.id)}} onOpen={()=>{const step=visibleTutorialStep;if(!step||!state.character)return;if(step.id==='first_hunt')setGoalMonsterId('MOSS_RAT');void completeFirstSessionTutorialStep(state.character.id,step.id).then(ids=>setTutorialCompleted(ids));setTutorialDismissedId(undefined);if(step.destination==='Skills')setSelectedSkill(undefined);if(step.destination==='Quests'){openQuestMode('story');return;}setTab(step.destination)}}/>
-  <MainScreenTourPopup step={mainScreenTour} index={mainScreenTourIndex??0} total={MAIN_SCREEN_TOUR.length} onSkip={()=>{setMainScreenTourIndex(undefined);setSettingsSection('guide');setTab('Settings')}} onBack={()=>{if(mainScreenTourIndex===undefined)return;const next=Math.max(0,mainScreenTourIndex-1);setMainScreenTourIndex(next);const target=mainScreenTourStep(next);if(target)setTab(target.destination)}} onNext={()=>{if(mainScreenTourIndex===undefined)return;const next=mainScreenTourIndex+1;if(next>=MAIN_SCREEN_TOUR.length){setMainScreenTourIndex(undefined);setSettingsSection('guide');setTab('Settings');return;}setMainScreenTourIndex(next);const target=mainScreenTourStep(next);if(target)setTab(target.destination)}}/>
-  <FeatureUnlockPopup moment={mainScreenTourIndex===undefined&&!collected&&!customizationUnlocks.length?featureUnlockMoments[0]:undefined} reduceMotion={state.settings.reduceMotion} onLater={()=>setFeatureUnlockMoments(current=>current.slice(1))} onOpen={()=>{const moment=featureUnlockMoments[0];setFeatureUnlockMoments(current=>current.slice(1));if(moment)setTab(moment.destination);}}/>
-  <CustomizationUnlockPopup entries={mainScreenTourIndex===undefined&&!collected?customizationUnlocks:[]} reduceMotion={state.settings.reduceMotion} onClose={()=>setCustomizationUnlocks([])} onProfile={()=>{setCustomizationUnlocks([]);setTab('ProfileCustomize')}} onCharacter={()=>{setCustomizationUnlocks([]);setTab('Character')}}/>
+  <RewardPopup reward={activeGlobalPopup==='activity-reward'?collected?.reward??null:null} activity={collected?.activity??null} classId={state.character?.classId} welcomeBack={!!collected?.welcomeBack} welcomeReport={collected?.welcomeReport} progressionMoments={collected?.progressionMoments??[]} reduceMotion={state.settings.reduceMotion} numberMode={state.settings.numberMode} onClose={()=>setCollected(null)} onInventory={()=>setTab('Inventory')} onCollections={()=>setTab('Collections')} onCompanions={()=>setTab('Companions')} onSkill={id=>{const skillId=id as SkillId;setSelectedSkill(skillId);setSkillsMode(id==='faith'?'faith':['mining','woodcutting','fishing','herbalism'].includes(id)?'gathering':'crafting');setTab('Skills')}}/>
+  <FirstSessionTutorialPopup step={activeGlobalPopup==='first-session'?visibleTutorialStep:undefined} onLater={()=>{if(visibleTutorialStep)setTutorialDismissedId(visibleTutorialStep.id)}} onOpen={()=>{const step=visibleTutorialStep;if(!step||!state.character)return;if(step.id==='first_hunt')setGoalMonsterId('MOSS_RAT');void completeFirstSessionTutorialStep(state.character.id,step.id).then(ids=>setTutorialCompleted(ids));setTutorialDismissedId(undefined);if(step.destination==='Skills')setSelectedSkill(undefined);if(step.destination==='Quests'){openQuestMode('story');return;}setTab(step.destination)}}/>
+  <MainScreenTourPopup step={activeGlobalPopup==='main-tour'?mainScreenTour:undefined} index={mainScreenTourIndex??0} total={MAIN_SCREEN_TOUR.length} onSkip={()=>{setMainScreenTourIndex(undefined);setSettingsSection('guide');setTab('Settings')}} onBack={()=>{if(mainScreenTourIndex===undefined)return;const next=Math.max(0,mainScreenTourIndex-1);setMainScreenTourIndex(next);const target=mainScreenTourStep(next);if(target)setTab(target.destination)}} onNext={()=>{if(mainScreenTourIndex===undefined)return;const next=mainScreenTourIndex+1;if(next>=MAIN_SCREEN_TOUR.length){setMainScreenTourIndex(undefined);setSettingsSection('guide');setTab('Settings');return;}setMainScreenTourIndex(next);const target=mainScreenTourStep(next);if(target)setTab(target.destination)}}/>
+  <FeatureUnlockPopup moment={activeGlobalPopup==='feature-unlock'?featureUnlockMoments[0]:undefined} reduceMotion={state.settings.reduceMotion} onLater={()=>setFeatureUnlockMoments(current=>current.slice(1))} onOpen={()=>{const moment=featureUnlockMoments[0];setFeatureUnlockMoments(current=>current.slice(1));if(moment)setTab(moment.destination);}}/>
+  <CustomizationUnlockPopup entries={activeGlobalPopup==='customization-unlock'?customizationUnlocks:[]} reduceMotion={state.settings.reduceMotion} onClose={()=>setCustomizationUnlocks([])} onProfile={()=>{setCustomizationUnlocks([]);setTab('ProfileCustomize')}} onCharacter={()=>{setCustomizationUnlocks([]);setTab('Character')}}/>
   <ProfileDiscardChangesModal visible={!!profileDiscardAction} reduceMotion={state.settings.reduceMotion} onKeepEditing={()=>setProfileDiscardAction(null)} onDiscard={()=>{const action=profileDiscardAction;setProfileDiscardAction(null);setProfileCustomizeDirty(false);action?.();}}/>
   {offlineSettling&&<View style={s.offlineLoadingOverlay}><LoadingState label={appText(state.settings.language,'Calculating offline rewards…')} detail={appText(state.settings.language,'Calculating rewards from your time away.')}/></View>}
-  <ForgeRarityRevealModal results={forgeResults??[]} reduceMotion={state.settings.reduceMotion} onClose={()=>setForgeResults(null)} onInventory={()=>{setForgeResults(null);setTab('Inventory')}}/>
-  {storyBossBattle&&<StoryBossBattleModal state={state} battle={storyBossBattle.battle} message={storyBossBattle.message} onClose={()=>setStoryBossBattle(null)}/>}
+  <ForgeRarityRevealModal results={activeGlobalPopup==='exceptional-forge'?forgeResults??[]:[]} reduceMotion={state.settings.reduceMotion} onClose={()=>setForgeResults(null)} onInventory={()=>{setForgeResults(null);setTab('Inventory')}}/>
+  {activeGlobalPopup==='story-boss'&&storyBossBattle&&<StoryBossBattleModal state={state} battle={storyBossBattle.battle} message={storyBossBattle.message} onClose={()=>setStoryBossBattle(null)}/>}
   </SafeAreaView></TutorialHighlightProvider></GameThemeProvider>;
   };
   const renderedApp=renderApp();

@@ -3,6 +3,7 @@ import {Pressable,StyleSheet,Text,View} from 'react-native';
 import type {GameState} from '../core/types';
 import {gemPouch,gemPouchUpgradePreview} from '../core/gem-pouch';
 import {canonicalGemMetaV1} from '../core/gem-progression-v1';
+import {GEM_GRADE_LABEL_V1,GEM_GRADE_RARITY_V1} from '../content/gems-v1';
 import {itemRarity,rarityMeta} from '../core/item-rarity';
 import type {GameCommand} from '../core/game-commands';
 import {itemDef} from '../content/items';
@@ -26,6 +27,7 @@ export function GemPouchPanel({state,busy=false,standalone=false,onUpgrade,onAct
   const pages=Math.ceil(pouch.capacity/PAGE_SIZE),shownPage=Math.min(page,pages-1),start=shownPage*PAGE_SIZE;
   const entries=Array.from({length:Math.min(PAGE_SIZE,pouch.capacity-start)},(_,index)=>pouch.stacks[start+index]);
   const selectedStack=pouch.stacks.find(stack=>stack.itemId===selected);
+  const selectedMeta=selectedStack?canonicalGemMetaV1(selectedStack.itemId):undefined;
   const favorite=!!selectedStack&&!!state.settings.favoriteItemIds?.includes(selectedStack.itemId),locked=!!selectedStack&&!!state.settings.lockedItemIds?.includes(selectedStack.itemId);
   const protectedGem=favorite||locked;
   const canUpgrade=!!upgrade&&(state.character?.level??0)>=upgrade.level&&(state.character?.gold??0)>=upgrade.cost&&!busy;
@@ -36,10 +38,10 @@ export function GemPouchPanel({state,busy=false,standalone=false,onUpgrade,onAct
     </Pressable>
     {expanded?<View style={s.body}>
       <Text style={s.hint}>Account-wide gem storage · gems are used automatically when socketing and Enchanting.</Text>
-      <View style={s.grid} onLayout={event=>{const width=Math.floor(event.nativeEvent.layout.width);setGridWidth(previous=>previous===width?previous:width)}}>{entries.map((stack,index)=><Pressable key={stack?.itemId??'empty-'+(start+index)} accessibilityRole="button" accessibilityLabel={stack?itemDef(stack.itemId).name+', '+stack.quantity+' owned':'Empty Gem Pouch slot'} disabled={!stack} onPress={()=>setSelected(current=>current===stack?.itemId?null:stack?.itemId??null)} style={[s.slot,{width:slotWidth,minHeight:Math.max(slotWidth,62)},stack&&s.filled,stack?.itemId===selected&&s.selected,stack&&{borderColor:rarityMeta(itemRarity(itemDef(stack.itemId))).color}]}>
+      <View style={s.grid} onLayout={event=>{const width=Math.floor(event.nativeEvent.layout.width);setGridWidth(previous=>previous===width?previous:width)}}>{entries.map((stack,index)=><Pressable key={stack?.itemId??'empty-'+(start+index)} accessibilityRole="button" accessibilityLabel={stack?itemDef(stack.itemId).name+', '+stack.quantity+' owned':'Empty Gem Pouch slot'} disabled={!stack} onPress={()=>setSelected(current=>current===stack?.itemId?null:stack?.itemId??null)} style={[s.slot,{width:slotWidth,minHeight:Math.max(slotWidth,62)},stack&&s.filled,stack?.itemId===selected&&s.selected,stack&&{borderColor:rarityMeta(canonicalGemMetaV1(stack.itemId)?.grade?GEM_GRADE_RARITY_V1[canonicalGemMetaV1(stack.itemId)!.grade]:itemRarity(itemDef(stack.itemId))).color}]}>
         {stack?<><ItemArtwork itemId={stack.itemId} size={Math.min(42,slotWidth-12)}/><Text numberOfLines={1} style={s.quantity}>×{stack.quantity}</Text></>:<Text style={s.emptyMark}>·</Text>}
       </Pressable>)}</View>
-      {selectedStack?<View style={s.info}><Text style={s.itemName}>{itemDef(selectedStack.itemId).name}</Text><Text style={s.meta}>{selectedStack.quantity} owned · {canonicalGemMetaV1(selectedStack.itemId)?'Socketable':'Unrefined'} gem{protectedGem?' · Protected from selling':''}</Text>
+      {selectedStack?<View style={s.info}><Text style={s.itemName}>{itemDef(selectedStack.itemId).name}</Text><Text style={s.meta}>{selectedStack.quantity} owned · {selectedMeta?GEM_GRADE_LABEL_V1[selectedMeta.grade]+' · '+(selectedMeta.kind==='stat'?'Stat':'Effect'):'Unrefined'} gem{protectedGem?' · Protected from selling':''}</Text>
         <View style={s.actions}>
           <GameButton compact tone="secondary" title={favorite?'★ Favorited':'☆ Favorite'} disabled={!onFavorite||busy} onPress={()=>void onFavorite?.(selectedStack.itemId)}/>
           <GameButton compact tone="secondary" title={locked?'Unlock':'Lock'} disabled={!onLock||busy} onPress={()=>void onLock?.(selectedStack.itemId)}/>

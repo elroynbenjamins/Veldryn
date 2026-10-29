@@ -6,6 +6,7 @@ export const companionTranslationRows={
  "Progress": ["Fortschritt","Progreso","Voortgang","Progressi","Progression"],
  "Showcase": ["Schaukasten","Exhibición","Uitstalling","Vetrina","Vitrine"],
  "Rewards": ["Belohnungen","Recompensas","Beloningen","Ricompense","Récompenses"],
+ "Open Sanctuary": ["Heiligtum öffnen","Abrir santuario","Open heiligdom","Apri santuario","Ouvrir le sanctuaire"],
  "Abilities & Traits": ["Fähigkeiten & Eigenschaften","Habilidades y rasgos","Vaardigheden en eigenschappen","Abilità e tratti","Capacités et traits"],
  "Passive ability": ["Passive Fähigkeit","Habilidad pasiva","Passieve vaardigheid","Abilità passiva","Capacité passive"],
  "Bond trait": ["Bindungsmerkmal","Rasgo de vínculo","Band-eigenschap","Tratto del legame","Trait de lien"],

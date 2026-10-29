@@ -23,7 +23,7 @@ import {activateDailySupplyBoost,claimDailySupplies,DAILY_SUPPLY_BOOST_TYPES,dai
 import {bulkSalvageSelected,bulkSellSelected,bulkTransferSelected} from './inventory-bulk';
 import {normalizeChatEmoteTrayIds,CHAT_EMOTE_TRAY_SIZE} from './chat-emotes';
 import {cancelEquipmentCraft,claimAllReadyEquipmentCrafts,claimEquipmentCraft,claimForgeJob,moveWaitingEquipmentCraft,startEquipmentCraft,startGemCombine,startGemRefinement,timedEquipmentRecipe} from './equipment-crafting-queue';
-import {upgradeGemPouch} from './gem-pouch';
+import {migrateGemPouch,upgradeGemPouch} from './gem-pouch';
 import {claimResonanceCacheV1,dismantleGemV1,gemCombineRecipeIdV1,gemRefineRecipeIdV1,researchEffectGemV1} from './gem-progression-v1';
 import {craftEquipmentPrerequisites} from './equipment-crafting-prerequisites';
 import {equipCraftedGearInstance,unequipCraftedGearInstance,moveCraftedGearInstance,setCraftedGearInstanceLock,disposeCraftedGearInstance,linkLegacyCraftedGearInstance} from './crafted-gear-ownership';
@@ -397,6 +397,8 @@ export function executeGameCommand(previous:GameState,value:unknown,now:number,o
   default:throw new Error('invalid_command');
  }
  if(companionMetricBefore)state=recordCompanionCommandMetrics(state,command.type,companionMetricBefore);
+ // Includes loot added by combat, quests, co-op and old save actions.
+ state=migrateGemPouch(state);
  if(state.character&&(!Number.isSafeInteger(state.character.gold)||state.character.gold<0))throw new Error('invalid_wallet');
  return {state,reward,activity,message,won,storyBossBattle,upgrade,forgeResults,contributions};
 }

@@ -17,7 +17,7 @@ export const NOTIFICATION_DESTINATIONS:Record<NotificationKind,NotificationDesti
  inventory_overflow:{primary:'inventory',subroute:'inventory.overflow',mode:'dot'},
  reward_ready:{primary:'character',subroute:'character.rewards',mode:'dot'},
  collection_unlock:{primary:'account',subroute:'collections',mode:'dot'},
- profile_customization:{primary:'account',subroute:'profile.customize',mode:'dot'},
+ profile_customization:{primary:'account',subroute:'account.new-unlocks',mode:'dot'},
  event_reward_ready:{primary:'account',subroute:'events.rewards',mode:'count'},
  account_action:{primary:'account',subroute:'account',mode:'dot'},
  companion_attention:{primary:'account',subroute:'companions',mode:'dot'},

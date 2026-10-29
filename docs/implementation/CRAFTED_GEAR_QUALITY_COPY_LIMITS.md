@@ -1,6 +1,6 @@
 # Unique forged gear, quality rolls and Keep Best 7
 
-**Status:** the unique-instance foundation is already on `main`; the recovered six-rarity/quality UI and per-copy border refinements are in **draft PR #650**, not yet merged or deployed (2026-10-29). Earlier work originated in closed PR #640.
+**Status:** the unique-instance foundation, six-rarity Forge outcomes, gentle high-quality weighting, and exact-copy rarity borders are **merged into `main` via PR #650** (2026-10-29). This is source integration only: no gameplay backend deployment, AAB, or existing-player migration is implied. Earlier work originated in closed PR #640.
 
 ## Player-facing contract
 
@@ -34,14 +34,14 @@
 - The quality section shows **Q0 −25%, Q25 −12.5%, Q50 normal, Q75 +12.5%, Q100 +25%** and explains that Attack, Defense and HP are modified on top of rarity/upgrades. No probabilities or gameplay rules are duplicated in UI state.
 - New equipment quality remains a separate deterministic Q0–Q100 roll but is now **gently weighted toward lower grades** with `floor(101 × U^1.25)`. Approximate outcomes: **Q75+ 21.2%** (previously 25.7%), **Q90+ 8.8%** (previously 10.9%), **Q100 0.8%** (previously 1.0%). Rarity chance bands are unchanged. Quality stat effects remain −25% to +25%; older already-rolled items and missing-quality legacy items never reroll. The collapsed guide displays a single approximate Q90+ chance line.
 - The guide is deliberately hidden on Materials and Tools; selecting Equipment shows the odds for the chosen piece.
-- Rarity rows use each rarity's official theme-aware name color and matching marker (Common grey, Uncommon green, Rare blue, Epic purple, Legendary orange, Mythic pink), with **Chance** and **Stats** columns; rarity strength displays simple **×** multipliers (Mythic 2× for Common-base gear). On narrow screens or large text settings they stack into two compact lines instead of clipping.
+- Rarity rows use each rarity's official theme-aware name color and matching marker (Common grey, Uncommon green, Rare light blue (`#62B8FF`), Epic purple, Legendary orange, Mythic pink), with **Chance** and **Stats** columns; rarity strength displays simple **×** multipliers (Mythic 2× for Common-base gear). On narrow screens or large text settings they stack into two compact lines instead of clipping.
 - Three uncluttered quality examples explain Q0 −25% (red), Q50 normal (neutral), and Q100 +25% (green). Intermediate values scale between them. The disclosure is closed by default, with concise wording and no additional navigation or modal.
 - For simple feedback, Uncommon and Rare upgrades produce the ordinary transient Forge banner; only Epic, Legendary or Mythic upgrades open the full rarity reveal. Messages use **rarity upgrade** rather than the misleading **quality proc** label.
 - Regression checks cover all six roll bands, each boundary, displayed chances and multipliers, authored-gear rarity floors (including Epic and Mythic), and ensure final probabilities sum to 100%.
 
 **Mythic balance:** Mythic's shared rarity stat multiplier is now **2.00×** rather than 2.20×. This affects Mythic rarity calculations wherever the shared rarity metadata is used; it does not reroll existing items, alter unique IDs, gems, locks or quality. Validate downstream combat/balance implications before release.
 
-## Recovered per-copy colored rarity borders (draft PR #650)
+## Exact-copy colored rarity borders (merged PR #650)
 
 - Inventory and Bank use the **exact physical `instanceId`** to resolve rarity. Two copies of the same item can have distinct border colors and widths. The selected tile retains its rarity border while using selection background/marker separately.
 - The Character equipment grid resolves the actual equipped `equipmentInstanceIds[slot]` and never borrows the rarity of a better copy in the Bank. Enhancement/gear comparison rarity matches the equipped receipt.
@@ -63,14 +63,14 @@
 - `InventoryScreen`, `EquipmentCraftQueuePanel`, `SkillsScreen` and `App.tsx`: functional per-copy actions and the optional auto-sale switch.
 - `apps/mobile/tests/equipment-crafted-instance-results.ts`: tagged claims, account-wide count, seven-copy overflow, weak incoming vendor sale, stronger exact-copy replacement, locked items, no double Gold on replay, exact equip/unequip/transfer/sell/lock/salvage, saved loadout references, legacy fallback and no-loss state normalization.
 
-## Known release blockers before merge
+## Known release blockers before deploying to players
 
 1. **Legacy migration and review workflow.** Existing crafted records in old saves may be unlocated because their physical Inventory/Bank stacks had only `itemId`. The implementation never guesses which roll belongs to which untagged physical copy. Such accounts can remain blocked from Keep Best 7 until an explicit, auditable ownership reconciliation tool is implemented and tested. Legacy type-based enhancements and unbound saved loadouts also remain protected.
 2. **Server concurrency.** The code updates the command's immutable GameState in one operation, but an actual two-device concurrency and replay test against the production-style server persistence transaction has **not** been performed. Validate account revision fencing, duplicate command delivery, claim-vs-equip-vs-sale, overlapping claim-all, cash balance integrity and rollback.
 3. **Old clients / online deployment.** Older mobile clients know only `itemId` and might mishandle new instance-tagged gear. Ensure backend minimum-version gating and compatible migration before serving tagged Forge rewards to users on old builds.
 4. **UI and migration QA.** Exercise mixed legacy/unique inventories, all five characters, saved loadouts, Bank and Overflow, storage cap, socketed/locked/favorite equipment, exact-copy sorting/selection and screen-reader labels on Android devices.
 5. **Global storage cap.** The existing 500 unique-instance safety ceiling still applies; it must show a comprehensible management path without evicting gear and allow existing over-cap legacy saves to load.
-6. **CI and baseline.** The latest completed TypeScript, Forge regression, and SQL jobs passed on inspected commits. The overall Mobile UX suite still fails on the unrelated Home navigation contract and Mobile core's Expo patch expectation (~57.0.31 vs installed 57.0.29). A fully green final SHA and Android build are required.
+6. **CI and baseline.** The focused unique Forge equipment regression and backend/SQL integrity checks passed on the quality-weighting commit. The broader mobile TypeScript and core/UX suites remain red with existing companion, dungeon, chat, localization and starter-companion issues also present on consolidated `main`. Do not label the merged source release-ready until full TypeScript, core validation and a production Android build pass on a release candidate.
 7. **Economy/balance.** Revalidate ±25% quality across upgrades, gems, equipment tiers, combat and dungeon snapshot calculation. Audit sold-item Gold destination and absence of duplicate rewards in a database-backed transaction.
 
-**Release policy:** Keep PR #640 **draft and unmerged**. Do not deploy until blockers, particularly legacy reconciliation, old-client compatibility and concurrent server settlement, are independently verified.
+**Release policy:** PR #650 was merged as code consolidation; do not deploy the gameplay backend or release an AAB with the unique Forge rollout until blockers, particularly legacy reconciliation, old-client compatibility and concurrent server settlement, are independently verified.

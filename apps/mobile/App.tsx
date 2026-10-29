@@ -6,7 +6,7 @@ import {useCallback,useEffect,useMemo,useRef,useState} from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import {APP_BUILD_INFO} from './src/app-build';
 import {fetchReleaseNotes} from './src/online/release-notes';
-import {shouldAutoShowReleaseNotes,type ReleaseNote} from './src/core/release-notes';
+import {firstInstalledReleaseVersion,shouldAutoAnnounceReleaseNotes,shouldAutoShowReleaseNotes,type ReleaseNote} from './src/core/release-notes';
 import {WhatsNewModal} from './src/components/WhatsNewModal';
 import {buildWelcomeBackFromStates,type WelcomeBackProgressReport} from './src/core/welcome-back-v46';
 import {ActivityIndicator,Animated,ScrollView,AppState,BackHandler,Image,PanResponder,Pressable,Share,StyleSheet,Text,TextInput,View,useWindowDimensions} from 'react-native';
@@ -229,6 +229,8 @@ function VeldrynApp(){
   const settlingRef=useRef(false);
   const onlineForegroundSettlementRef=useRef(false);
   const onlineStartupSettlementAccountRef=useRef<string|undefined>(undefined);
+  const initialCharacterAtLaunchRef=useRef<boolean|undefined>(undefined);
+  const [onlineStartupRewardsReadyKey,setOnlineStartupRewardsReadyKey]=useState<string|undefined>();
   const [showAdminQa,setShowAdminQa]=useState(false);
   const [creatingRoster,setCreatingRoster]=useState(false);
   const [creationWelcome,setCreationWelcome]=useState<{name:string;classId:ClassId}|null>(null);
@@ -238,10 +240,13 @@ function VeldrynApp(){
   const [releaseNotes,setReleaseNotes]=useState<ReleaseNote[]>([]);
   const [releaseSeen,setReleaseSeen]=useState(false);
   const [releaseSeenLoaded,setReleaseSeenLoaded]=useState(false);
+  const [firstInstalledRelease,setFirstInstalledRelease]=useState<string|null>(null);
+  const [firstInstalledReleaseLoaded,setFirstInstalledReleaseLoaded]=useState(false);
   const [optionalUpdateSeen,setOptionalUpdateSeen]=useState(false);
   const [optionalUpdateSeenLoaded,setOptionalUpdateSeenLoaded]=useState(false);
   const [showWhatsNew,setShowWhatsNew]=useState(false);
   const releaseSeenKey='veldryn.release.seen.'+APP_BUILD_INFO.version;
+  const firstInstalledReleaseKey='veldryn.release.first-installed-version';
   const availableUpdateVersion=versionGate?.updateAvailable?versionGate.policy?.latestVersion:undefined;
   const optionalUpdateSeenKey=availableUpdateVersion?'veldryn.optional-update.seen.'+availableUpdateVersion:undefined;
   const guestBootstrapRef=useRef(false);
@@ -317,9 +322,24 @@ function VeldrynApp(){
     return()=>{active=false;listener.remove()};
   },[]);
   useEffect(()=>{
-    if(!releaseSeenLoaded||!optionalUpdateSeenLoaded||showWhatsNew||!ready||!state?.character||!versionGateChecked||versionGate?.updateRequired||versionGate?.maintenanceMode||collected||creationWelcome)return;
-    if(shouldAutoShowReleaseNotes(releaseNotes,APP_BUILD_INFO.version,releaseSeen)||!!availableUpdateVersion&&!optionalUpdateSeen)setShowWhatsNew(true);
-  },[releaseNotes,releaseSeenLoaded,releaseSeen,optionalUpdateSeenLoaded,optionalUpdateSeen,availableUpdateVersion,showWhatsNew,ready,state?.character?.id,versionGateChecked,versionGate?.updateRequired,versionGate?.maintenanceMode,collected,creationWelcome]);
+    // New installs are quiet, even after the first character is created.
+    // Legacy saves from earlier builds retain their returning-player eligibility.
+    if(!ready||!state||initialCharacterAtLaunchRef.current===undefined||firstInstalledReleaseLoaded)return;
+    let active=true;
+    void (async()=>{
+      let baseline=APP_BUILD_INFO.version;
+      try{
+        const stored=await AsyncStorage.getItem(firstInstalledReleaseKey);
+        baseline=firstInstalledReleaseVersion(stored,initialCharacterAtLaunchRef.current===true,APP_BUILD_INFO.version);
+        if(stored!==baseline)await AsyncStorage.setItem(firstInstalledReleaseKey,baseline);
+      }catch{
+        // Failed storage reads must not classify a fresh install as returning.
+        baseline=APP_BUILD_INFO.version;
+      }
+      if(active){setFirstInstalledRelease(baseline);setFirstInstalledReleaseLoaded(true);}
+    })();
+    return()=>{active=false};
+  },[ready,!!state,firstInstalledReleaseLoaded]);
   useEffect(()=>{
     if(!serverGameplayEnabled||auth.loading||auth.recovering)return;
     if(auth.session){setGuestBooting(false);return;}
@@ -390,19 +410,26 @@ function VeldrynApp(){
     onPanResponderRelease:(_event,gesture)=>{if(gesture.dx>=72&&gesture.vx>=0)goBack();},
     onPanResponderTerminate:()=>{},
   }),[goBack]);
-  const loadGame=useCallback(async()=>{setReady(false);setLoadError('');try{setRecoveryLanguage(await repo.loadLanguage());const saved=await repo.load();const restored=retireGoalPlanner(normalizeProfileIcon(saved??newGame(Date.now())));const startup=saved?settleStartupActivity(restored,Date.now()):{state:restored,reward:null,activity:null};const next=startup.state;stateRef.current=next;setState(next);setRecoveryLanguage(next.settings.language);if(startup.reward)setCollected({reward:startup.reward,activity:startup.activity,welcomeBack:true,welcomeReport:buildWelcomeBackFromStates(restored,next,startup.reward,startup.activity),progressionMoments:rewardProgressionMoments(restored,next)});if(saved){try{await repo.save(next)}catch{showAlert('Save upgrade pending','Your progress loaded, but the upgraded save could not be written yet. Keep the app open and try another saved action.')}}}catch(error){stateRef.current=null;setState(null);setLoadError(error instanceof Error?error.message:'The local save could not be read.')}finally{setReady(true)}},[]);
+  const loadGame=useCallback(async()=>{setReady(false);setLoadError('');try{setRecoveryLanguage(await repo.loadLanguage());const saved=await repo.load();if(initialCharacterAtLaunchRef.current===undefined)initialCharacterAtLaunchRef.current=!!saved?.character;const restored=retireGoalPlanner(normalizeProfileIcon(saved??newGame(Date.now())));const startup=saved?settleStartupActivity(restored,Date.now()):{state:restored,reward:null,activity:null};const next=startup.state;stateRef.current=next;setState(next);setRecoveryLanguage(next.settings.language);if(startup.reward)setCollected({reward:startup.reward,activity:startup.activity,welcomeBack:true,welcomeReport:buildWelcomeBackFromStates(restored,next,startup.reward,startup.activity),progressionMoments:rewardProgressionMoments(restored,next)});if(saved){try{await repo.save(next)}catch{showAlert('Save upgrade pending','Your progress loaded, but the upgraded save could not be written yet. Keep the app open and try another saved action.')}}}catch(error){stateRef.current=null;setState(null);setLoadError(error instanceof Error?error.message:'The local save could not be read.')}finally{setReady(true)}},[]);
   useEffect(()=>{if(!serverGameplayEnabled)void loadGame()},[loadGame]);
-  useEffect(()=>{if(!serverGameplayEnabled)return;const snapshot=online.snapshot,next=snapshot?.state?retireGoalPlanner(snapshot.state):null,before=stateRef.current;queuePreparationNotices(before,next);if(!before&&next&&snapshot?.reward&&rewardHasProgress(snapshot.reward)){setCollected({reward:snapshot.reward,activity:snapshot.activity??null,welcomeBack:true,progressionMoments:[]});}stateRef.current=next;setState(next);setReady(!online.loading);setLoadError('');},[online.snapshot,online.loading]);
+  useEffect(()=>{if(!serverGameplayEnabled)return;const snapshot=online.snapshot,next=snapshot?.state?retireGoalPlanner(snapshot.state):null,before=stateRef.current;queuePreparationNotices(before,next);if(!before&&next&&initialCharacterAtLaunchRef.current===undefined)initialCharacterAtLaunchRef.current=!!next.character;if(!before&&next&&snapshot?.reward&&rewardHasProgress(snapshot.reward)){setCollected({reward:snapshot.reward,activity:snapshot.activity??null,welcomeBack:true,progressionMoments:[]});}stateRef.current=next;setState(next);setReady(!online.loading);setLoadError('');},[online.snapshot,online.loading]);
   useEffect(()=>{
     const snapshot=online.snapshot;
     if(!auth.session?.user.id){onlineStartupSettlementAccountRef.current=undefined;return;}
     const arrivalKey=snapshot?`${snapshot.accountId}:${online.foregroundRevision}`:undefined;
-    if(!serverGameplayEnabled||!snapshot?.state?.character||online.loading||online.busy||online.pending||onlineStartupSettlementAccountRef.current===arrivalKey)return;
-    // The initial read only restores server state. Settle once through the
-    // authoritative command path so elapsed rewards are committed and shown.
+    if(!serverGameplayEnabled||!snapshot?.state||online.loading||online.busy||online.pending||onlineStartupSettlementAccountRef.current===arrivalKey)return;
+    // The initial snapshot may have unclaimed offline rewards; complete settlement
+    // before scheduling a release announcement.
     onlineStartupSettlementAccountRef.current=arrivalKey;
-    if(snapshot.state.activity||snapshot.state.character.classTraining)void perform({type:'claim'},true,true).finally(()=>{onlineForegroundSettlementRef.current=false;});
-    else if(onlineForegroundSettlementRef.current){onlineForegroundSettlementRef.current=false;setOfflineSettling(false);}
+    if(snapshot.state.character&&(snapshot.state.activity||snapshot.state.character.classTraining)){
+      void perform({type:'claim'},true,true).finally(()=>{
+        onlineForegroundSettlementRef.current=false;
+        setOnlineStartupRewardsReadyKey(arrivalKey);
+      });
+    }else{
+      setOnlineStartupRewardsReadyKey(arrivalKey);
+      if(onlineForegroundSettlementRef.current){onlineForegroundSettlementRef.current=false;setOfflineSettling(false);}
+    }
   },[online.snapshot,online.foregroundRevision,online.loading,online.busy,online.pending,auth.session?.user.id]);
   useEffect(()=>{if(online.error&&onlineForegroundSettlementRef.current){onlineForegroundSettlementRef.current=false;setOfflineSettling(false);}},[online.error]);
   useEffect(()=>{stateRef.current=state},[state]);
@@ -428,6 +455,24 @@ function VeldrynApp(){
   useEffect(()=>{if(!preparationNotices.length||collected||forgeResults)return;const timer=setTimeout(()=>setPreparationNotices(current=>current.slice(1)),4500);return()=>clearTimeout(timer)},[preparationNotices,collected,forgeResults]);
   useEffect(()=>{if(!masteryNotices.length||preparationNotices.length||collected||forgeResults)return;const timer=setTimeout(()=>setMasteryNotices([]),4500);return()=>clearTimeout(timer)},[masteryNotices,preparationNotices.length,collected,forgeResults]);
   useEffect(()=>{if(tab!=='Skills'){setSelectedSkill(undefined);setGoalActionId(undefined);setGoalRecipeId(undefined)}},[tab]);
+  const popupBeforeWhatsNew=!!collected||!!creationWelcome||!!visibleTutorialStep||mainScreenTourIndex!==undefined
+    ||featureUnlockMoments.length>0||customizationUnlocks.length>0||!!eventStartPopup||!!forgeResults?.length
+    ||!!storyBossBattle||!!profileDiscardAction||creatingRoster||showChatOverlay||showAdminQa||showCoopUiGallery;
+  const onlineStartupArrivalKey=online.snapshot?`${online.snapshot.accountId}:${online.foregroundRevision}`:undefined;
+  const readyForWhatsNew=ready&&!!state?.character&&versionGateChecked&&!versionGate?.updateRequired&&!versionGate?.maintenanceMode
+    &&!startupBlocking&&!startupOverlayVisible&&!offlineSettling&&!popupBeforeWhatsNew
+    &&(!serverGameplayEnabled||(!!onlineStartupArrivalKey&&onlineStartupRewardsReadyKey===onlineStartupArrivalKey&&!online.loading&&!online.busy&&!online.pending));
+  const autoWhatsNewDue=firstInstalledReleaseLoaded&&releaseSeenLoaded&&optionalUpdateSeenLoaded
+    &&shouldAutoAnnounceReleaseNotes({
+      firstInstalledVersion:firstInstalledRelease,installedVersion:APP_BUILD_INFO.version,notes:releaseNotes,seen:releaseSeen,
+      optionalUpdateAvailable:!!availableUpdateVersion,optionalUpdateSeen,startupReady:readyForWhatsNew,
+    });
+  useEffect(()=>{
+    if(!autoWhatsNewDue||showWhatsNew)return;
+    // Allow asynchronous reward and startup announcements to enter their queues first.
+    const timer=setTimeout(()=>setShowWhatsNew(true),850);
+    return()=>clearTimeout(timer);
+  },[autoWhatsNewDue,showWhatsNew]);
   // If a source link opened a specific skill, Back returns to that source; if the player
   // chose a skill within Skills, Back first returns to the skill hub.
   useEffect(()=>{setSkillsOpenedAsLink(tab==='Skills'&&Boolean(selectedSkill));},[tab]);
@@ -722,7 +767,7 @@ const next=normalizeProfileIcon(candidate);queuePreparationNotices(current,next)
   {!collected&&!forgeResults?.some(isExceptionalForgeResult)&&preparationNotices.length?<View style={s.masteryNotice}><ActionFeedback message={preparationNotices[0].message} tone={preparationNotices[0].tone} reduceMotion={state.settings.reduceMotion} compact actionLabel={preparationNotices[0].actionLabel} onAction={()=>openPreparationNotice(preparationNotices[0])}/></View>:!collected&&!forgeResults?.some(isExceptionalForgeResult)&&masteryNotices.length?<View style={s.masteryNotice}><ActionFeedback message={masteryRankNoticeMessage(masteryNotices)} tone={masteryNotices.some(moment=>moment.mastered)?'success':'info'} reduceMotion={state.settings.reduceMotion} compact/></View>:null}
     <PrimaryNavigation destinations={primaryTabs} active={activePrimary} labelFor={item=>tabLabel(state.settings.language,item)} onNavigate={setTab} badges={primaryBadges} guidedDestination={(mainScreenTour?.highlightPrimary??visibleTutorialStep?.highlightPrimary) as PrimaryTab|undefined} reduceMotion={state.settings.reduceMotion}/>
   {creationWelcome&&<AsterfallWelcomeModal visible name={creationWelcome.name} classId={creationWelcome.classId} onContinue={()=>{const characterId=state.character?.id;if(characterId)void completeFirstSessionTutorialStep(characterId,'first_hunt').then(ids=>setTutorialCompleted(ids));setGoalMonsterId('MOSS_RAT');setCreationWelcome(null);setCurrentTab('Combat')}}/>}
-  <WhatsNewModal visible={showWhatsNew&&!collected&&!creationWelcome&&!visibleTutorialStep&&mainScreenTourIndex===undefined&&!featureUnlockMoments.length&&!customizationUnlocks.length}
+  <WhatsNewModal visible={showWhatsNew&&!popupBeforeWhatsNew&&!offlineSettling&&!startupOverlayVisible}
     currentVersion={APP_BUILD_INFO.version} notes={releaseNotes} latestVersion={versionGate?.policy?.latestVersion}
     updateAvailable={!!versionGate?.updateAvailable} reduceMotion={state.settings.reduceMotion}
     onUpdate={openStoreListing} onClose={closeWhatsNew}/>

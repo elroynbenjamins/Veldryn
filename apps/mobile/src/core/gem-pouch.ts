@@ -13,8 +13,7 @@ export const GEM_POUCH_UPGRADES=[
 ] as const;
 
 export function isGemPouchItemId(itemId:string):boolean{
-  if(itemId.startsWith('raw_gem:')||itemId.startsWith('gem:'))return true;
-  try{return itemDef(itemId).type==='gem'}catch{return false}
+  try{const item=itemDef(itemId);return item.type==='gem'||!!item.rawGemFamilyId;}catch{return false}
 }
 export function normalizeGemPouch(raw:unknown):InventoryState{
   const value:Partial<InventoryState>=raw&&typeof raw==='object'&&!Array.isArray(raw)?raw as Partial<InventoryState>:{};
@@ -91,14 +90,14 @@ export function consumeGemFromStorage(state:GameState,itemId:string,quantity:num
 export function migrateGemPouch(state:GameState):GameState{
   let pouch=gemPouch(state);
   const move=(stacks:readonly ItemStack[])=>stacks.filter(row=>{
-    if(row.instanceId!==undefined||!isGemPouchItemId(row.itemId)||row.quantity<=0)return true;
+    if(!row||typeof row.itemId!=='string'||row.instanceId!==undefined||!isGemPouchItemId(row.itemId)||!Number.isSafeInteger(row.quantity)||row.quantity<=0)return true;
     const placed=addStack(pouch.stacks,pouch.capacity,row.itemId,row.quantity);
     if(!placed)return true;
     pouch={...pouch,stacks:placed};
     return false;
   });
   const inventory=move(state.inventory.stacks),bank=move(state.bank.stacks);
-  const otherCharacters=state.otherCharacters?.map(entry=>({...entry,inventory:{...entry.inventory,stacks:move(entry.inventory.stacks)}}));
+  const otherCharacters=state.otherCharacters?.map(entry=>({...entry,inventory:{...entry.inventory,stacks:move(Array.isArray(entry.inventory?.stacks)?entry.inventory.stacks:[])}}));
   return {...state,account:{...state.account,gemPouch:pouch},otherCharacters,
     inventory:{...state.inventory,stacks:inventory},bank:{...state.bank,stacks:bank}};
 }

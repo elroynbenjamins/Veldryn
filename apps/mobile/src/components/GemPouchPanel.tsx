@@ -17,7 +17,10 @@ const PAGE_SIZE=30;
 export function GemPouchPanel({state,busy=false,standalone=false,onUpgrade,onAction,onFavorite,onLock}:{state:GameState;busy?:boolean;standalone?:boolean;onUpgrade?:()=>void|Promise<unknown>;onAction?:(command:GameCommand)=>void|Promise<unknown>;onFavorite?:(itemId:string)=>void|Promise<unknown>;onLock?:(itemId:string)=>void|Promise<unknown>}){
   const C=useGameTheme(),s=useMemo(()=>styles(C),[C]);
   const [drawerOpen,setDrawerOpen]=useState(false),[page,setPage]=useState(0),[selected,setSelected]=useState<string|null>(null);
+  const [gridWidth,setGridWidth]=useState(300);
   const expanded=standalone||drawerOpen;
+  const columns=gridWidth>=600?8:gridWidth>=440?6:gridWidth>=345?5:4;
+  const slotWidth=Math.max(54,Math.floor((gridWidth-(columns-1)*5)/columns));
   const [pendingSell,setPendingSell]=useState<{itemId:string;quantity:number}|null>(null),[pendingDismantle,setPendingDismantle]=useState<string|null>(null);
   const pouch=gemPouch(state),used=pouch.stacks.length,upgrade=gemPouchUpgradePreview(state);
   const pages=Math.ceil(pouch.capacity/PAGE_SIZE),shownPage=Math.min(page,pages-1),start=shownPage*PAGE_SIZE;
@@ -33,8 +36,8 @@ export function GemPouchPanel({state,busy=false,standalone=false,onUpgrade,onAct
     </Pressable>
     {expanded?<View style={s.body}>
       <Text style={s.hint}>Account-wide gem storage · gems are used automatically when socketing and Enchanting.</Text>
-      <View style={s.grid}>{entries.map((stack,index)=><Pressable key={stack?.itemId??'empty-'+(start+index)} accessibilityRole="button" accessibilityLabel={stack?itemDef(stack.itemId).name+', '+stack.quantity+' owned':'Empty Gem Pouch slot'} disabled={!stack} onPress={()=>setSelected(current=>current===stack?.itemId?null:stack?.itemId??null)} style={[s.slot,stack&&s.filled,stack?.itemId===selected&&s.selected,stack&&{borderColor:rarityMeta(itemRarity(itemDef(stack.itemId))).color}]}>
-        {stack?<><ItemArtwork itemId={stack.itemId} size={42}/><Text numberOfLines={1} style={s.quantity}>×{stack.quantity}</Text></>:<Text style={s.emptyMark}>·</Text>}
+      <View style={s.grid} onLayout={event=>{const width=Math.floor(event.nativeEvent.layout.width);setGridWidth(previous=>previous===width?previous:width)}}>{entries.map((stack,index)=><Pressable key={stack?.itemId??'empty-'+(start+index)} accessibilityRole="button" accessibilityLabel={stack?itemDef(stack.itemId).name+', '+stack.quantity+' owned':'Empty Gem Pouch slot'} disabled={!stack} onPress={()=>setSelected(current=>current===stack?.itemId?null:stack?.itemId??null)} style={[s.slot,{width:slotWidth,minHeight:Math.max(slotWidth,62)},stack&&s.filled,stack?.itemId===selected&&s.selected,stack&&{borderColor:rarityMeta(itemRarity(itemDef(stack.itemId))).color}]}>
+        {stack?<><ItemArtwork itemId={stack.itemId} size={Math.min(42,slotWidth-12)}/><Text numberOfLines={1} style={s.quantity}>×{stack.quantity}</Text></>:<Text style={s.emptyMark}>·</Text>}
       </Pressable>)}</View>
       {selectedStack?<View style={s.info}><Text style={s.itemName}>{itemDef(selectedStack.itemId).name}</Text><Text style={s.meta}>{selectedStack.quantity} owned · {canonicalGemMetaV1(selectedStack.itemId)?'Socketable':'Unrefined'} gem{protectedGem?' · Protected from selling':''}</Text>
         <View style={s.actions}>
@@ -62,7 +65,7 @@ function styles(C:ThemeColors){return StyleSheet.create({
  body:{gap:spacing.sm,padding:spacing.sm,borderTopWidth:1,borderTopColor:C.line},
  hint:{...typography.caption,color:C.muted,paddingHorizontal:4},
  grid:{flexDirection:'row',flexWrap:'wrap',gap:5,justifyContent:'flex-start'},
- slot:{width:'18.9%',minHeight:66,alignItems:'center',justifyContent:'center',borderWidth:1,borderColor:C.line,borderRadius:8,backgroundColor:C.bg,padding:2},
+ slot:{minHeight:66,alignItems:'center',justifyContent:'center',borderWidth:1,borderColor:C.line,borderRadius:8,backgroundColor:C.bg,padding:2},
  filled:{borderColor:C.lineStrong,backgroundColor:C.panel2},selected:{borderColor:C.accent},
  quantity:{...typography.caption,color:C.text,fontWeight:'800'},emptyMark:{fontSize:16,color:C.muted,opacity:.45},
  info:{padding:spacing.sm,backgroundColor:C.panel2,borderRadius:8,gap:6},actions:{flexDirection:'row',flexWrap:'wrap',gap:6},itemName:{...typography.bodyStrong,color:C.text},

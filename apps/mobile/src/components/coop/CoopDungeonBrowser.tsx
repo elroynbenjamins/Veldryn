@@ -120,7 +120,7 @@ export function CoopDungeonDetails({language,dungeon,currentLevel,currentPower=0
   {currentPower<tierPower?<Text style={s.notice}>{a('Recommended power')}: {tierPower.toLocaleString()}</Text>:null}
   {mode==='qmode'?<FantasyPanel><Text style={s.cardTitle}>{ct(language,'details.difficulty')}</Text><View style={[s.tiers,{flexWrap:'wrap'}]}>{dungeon.difficulties.map(value=><TierChoice key={value} value={value} levelLabel={clt(language,'level')} difficultyLabel={ct(language,'details.difficulty')} requiredLevel={dungeon.tierMinLevels[value]} currentLevel={currentLevel} selected={tier===value} onPress={()=>onTier(value)}/>)}</View>{!dungeon.difficulties.length?<Text style={s.lock}>{ct(language,'details.noDifficulty')}</Text>:null}</FantasyPanel>:<Text style={s.levels}>{ct(language,'details.liveAutoSelected',{tier:autoTier??'—'})}</Text>}
   <FantasyPanel>
-   <DungeonReward title={estimatedMarks!==undefined?`${estimatedMarks+liveBonus} ${a('Expedition Marks')}`:a('Expedition Marks')} detail={fullMarks!==undefined?st('Estimated clear reward · Tier {tier}',{tier:effectiveTier}):undefined}/>
+   <DungeonReward title={estimatedMarks!==undefined?`${estimatedMarks+liveBonus} ${a('Expedition Marks')}`:a('Expedition Marks')} detail={fullMarks!==undefined?st('Estimated clear reward · Tier {tier}',{tier:effectiveTier??1}):undefined}/>
    {rewardBudget?<View style={s.modeHead}>
     <StateChip label={`${rewardBudget.charges}/${rewardBudget.chargeCapacity} ${st('charges')}`} tone={enhanced?'success':'neutral'}/>
     <StateChip label={`${rewardBudget.weeklyRemaining}/${rewardBudget.weeklyCapacity} ${st('weekly rewards')}`} tone={rewardBudget.weeklyRemaining>0?'selected':'neutral'}/>

@@ -73,11 +73,33 @@ export function resourceCodexQuantity(state:GameState,entry:ResourceCodexEntry){
  const inventory=[...state.inventory.stacks,...state.bank.stacks].reduce((count,stack)=>count+(stack.itemId===entry.id?stack.quantity:0),0);
  return inventory+(state.account.companionMaterials?.[entry.id]??0);
 }
+/** Source-of-truth companion uses, computed once alongside the Codex catalog. */
+const companionUses=new Map<string,Set<string>>();
+const recordUse=(id:string,description:string)=>{
+ const uses=companionUses.get(id)??new Set<string>();
+ uses.add(description);
+ companionUses.set(id,uses);
+};
+for(const companion of COMBAT_COMPANIONS){
+ if(companion.ascensionMaterialId)recordUse(companion.ascensionMaterialId,companion.name+' ascensions');
+ for(const cost of companion.ascensionMaterialCosts??[])
+  recordUse(cost.itemId,companion.name+(cost.tier==='mastery'?' Mastery':' Ascension '+cost.tier));
+}
+for(const [upgrade,config] of Object.entries(COMPANION_SANCTUARY_CONFIG)){
+ if(config.materialId)recordUse(config.materialId,titleFromId(upgrade.replace(/([a-z])([A-Z])/g,'$1_$2'))+' upgrade');
+}
+for(const mission of COMPANION_MISSIONS){
+ for(const id of Object.keys(mission.costs?.materials??{}))
+  recordUse(id,'Sanctuary Expedition provisions');
+}
 export function resourceCodexUse(entry:ResourceCodexEntry){
  if(entry.id==='essence')return 'Companion training, ascension, techniques and Sanctuary upgrades.';
  if(entry.id==='bondstones')return 'Companion ascensions and Prestige Mastery.';
  if(entry.id==='TRIAL_SANCTUARY_MATERIAL')return 'Higher-tier companion ascensions and Sanctuary progression.';
- if(entry.companionRelated)return 'Companion ascensions, Sanctuary upgrades or expedition provisions. Check the relevant companion upgrade for exact costs.';
+ if(entry.companionRelated){
+  const uses=[...(companionUses.get(entry.id)??[])];
+  return uses.length?uses.slice(0,5).join(' · ')+(uses.length>5?` · +${uses.length-5} more`:''):'Companion ascensions, Sanctuary upgrades or expedition provisions. Check the companion screen for exact costs.';
+ }
  if(entry.category==='Gems')return 'Equipment gem sockets and gem progression.';
  return 'Crafting, equipment upgrades, recipes or other progression.';
 }

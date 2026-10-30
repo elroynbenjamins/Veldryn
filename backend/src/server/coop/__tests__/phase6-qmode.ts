@@ -3,6 +3,8 @@ import { launchPlayer } from '../../combat/content/launch-combat';
 import type { FrozenLoadoutSnapshot } from '../loadout-snapshots';
 import type { PublishedEcho } from '../echo-recruitment';
 import { MemoryQModeRunRepository, QModeService } from '../qmode';
+import {COOP_ROGUELITE_CONFIG} from '../config';
+assert.equal(COOP_ROGUELITE_CONFIG.echoFreshnessMs,7*24*60*60*1000,'Published Echo snapshots remain eligible for seven days');
 
 function frozen(accountId:string,classId:string,characterId:string):FrozenLoadoutSnapshot{
  const player=launchPlayer(classId,25); const role=player.role as 'tank'|'damage'|'support';

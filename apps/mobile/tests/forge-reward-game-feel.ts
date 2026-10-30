@@ -24,7 +24,7 @@ ok(app.includes('setForgeResults([claimed.result])'),'offline single claims must
 ok(!app.includes("Alert.alert('Equipment forged'"),'successful Forge claims must not regress to generic alert dialogs');
 
 ok(feedback.includes('EXCEPTIONAL FORGE RESULT'),'quality procs need a dedicated reward moment');
-ok(feedback.includes("results.filter(row=>row.qualityProc)"),'large reveal must be reserved for true quality procs');
+ok(feedback.includes('result.qualityProc&&(result.rarity===\'epic\'||result.rarity===\'legendary\'||result.rarity===\'mythic\')')&&feedback.includes('results.filter(isExceptionalForgeResult)'),'large reveal must be reserved for genuine Epic+ rarity procs');
 ok(feedback.includes('equipment stats vs this item'),'quality reveal must explain the actual stat benefit');
 ok(feedback.includes('Animated.sequence'),'exceptional Forge results need a brief celebration motion');
 ok(feedback.includes('reduceMotion'),'Forge celebration must respect reduced motion');

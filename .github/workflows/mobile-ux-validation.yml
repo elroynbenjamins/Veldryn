@@ -36,7 +36,7 @@ jobs:
           node tests/ux-popup-reliability-ui.cjs
           node tests/settings-simplicity-ui.cjs
       - name: Verify simplified Dungeon flow and Live vote UI
-        run: node tests/dungeon-flow-simplicity-ui.cjs && node tests/dungeon-route-choice-ui.cjs
+        run: node tests/dungeon-flow-simplicity-ui.cjs && node tests/dungeon-route-choice-ui.cjs && node tests/dungeon-live-pacing-ui.cjs
       - name: Typecheck app
         run: pnpm typecheck
       - name: Validate Gems storage and dungeon recovery UX

@@ -3,12 +3,13 @@ import type {GameState} from '../../apps/mobile/src/core/types';
 import {EXPEDITIONS} from '../src/server/expeditions/content/launch-content';
 import {QModeService,type QModeRun} from '../src/server/coop/qmode';
 import {projectQModeRun} from '../src/server/coop/qmode-public-projection';
+import {liveNodeWaitMs,livePendingCombat} from './live-pacing';
 import type {FrozenLoadoutSnapshot} from '../src/server/coop/loadout-snapshots';
 import {deriveOnlineCoopLoadout,onlineCoopLoadoutHash,ONLINE_COOP_BALANCE_VERSION} from './coop-loadout';
 import {GameplayError,type GameplayServices} from './gameplay';
 import type {CoopDecisionCommand} from '../src/shared/coop-types';
 interface ReadySource {checkId:string;runId:string|null;dungeonId:string;tier:1|2|3|4|5;roster:Array<Record<string,unknown>>;frozenRoster:FrozenLoadoutSnapshot[]|null;}
-interface Loaded {stateVersion:number;eventCursor:number;privateState:{run:QModeRun;seed:string;pending?:{run:QModeRun;resolvesAtMs:number;startStateHash:string}};clientProjection:unknown;serverNow:number;}
+interface Loaded {stateVersion:number;eventCursor:number;privateState:{run:QModeRun;seed:string;pending?:{run:QModeRun;resolvesAtMs:number;startStateHash:string;pacingMs?:number}};clientProjection:unknown;serverNow:number;}
 interface LivePresence {serverNow:number;connectedCount:number;safetyAiCount:number;activeCount:number;safetyAiCharacterIds:string[];}
 interface DecisionState {decisionId:string;revision:number;status:'open'|'resolved';closesAtMs:number;selectedOptionId?:string|null;votes:Record<string,number>;}
 type Services=Pick<GameplayServices,'rpc'|'randomId'>;
@@ -36,14 +37,16 @@ export class OnlineLiveRuntime{
  }
  private withPresence(value:unknown,presence:LivePresence){
   if(!value||typeof value!=='object')return value;
-  return {...value as Record<string,unknown>,presenceSummary:{connectedCount:presence.connectedCount,safetyAiCount:presence.safetyAiCount,activeCount:presence.activeCount,safetyAiCharacterIds:presence.safetyAiCharacterIds}};
+  return {...value as Record<string,unknown>,serverNow:presence.serverNow,presenceSummary:{connectedCount:presence.connectedCount,safetyAiCount:presence.safetyAiCount,activeCount:presence.activeCount,safetyAiCharacterIds:presence.safetyAiCharacterIds}};
  }
  private async queueSelected(accountId:string,runId:string,request:CoopDecisionCommand,loaded:Loaded,selectedOptionId:string,requestHash:string,safetyAiPlayerIds:readonly string[]){
   const repository=new (class{private run:QModeRun;constructor(run:QModeRun){this.run=structuredClone(run)}get(id:string){return this.run.id===id?structuredClone(this.run):undefined}getByRequest(){return undefined}save(run:QModeRun){this.run=structuredClone(run)}})(loaded.privateState.run);
   const run=new QModeService(repository,loaded.privateState.seed).choose({runId,controllerAccountId:loaded.privateState.run.controllerAccountId,optionNodeId:selectedOptionId,safetyAiPlayerIds});
-  const duration=Math.max(0,Number(run.lastResolution?.result.summary.durationMs??0)),resolvesAtMs=loaded.serverNow+duration;
-  const client={...projection(loaded.privateState.run,loaded.stateVersion+1),phase:'resolving_node',options:[],selectedNodeId:selectedOptionId,resolvesAtMs};
-  return this.services.rpc('queue_online_live_node_server_v1',{p_account_id:accountId,p_run_id:runId,p_expected_version:loaded.stateVersion,p_request_id:request.requestId,p_request_hash:requestHash,p_private_state:{run:loaded.privateState.run,seed:loaded.privateState.seed,pending:{run,resolvesAtMs,startStateHash:digest(loaded.privateState.run.persistentState),settlement:{projection:projection(run,loaded.stateVersion+1),enhancedMarks:run.phase==='completed'||run.phase==='failed'?Math.max(0,Math.round((EXPEDITIONS[run.expeditionId]?.baseMarks??0)*.8)):0,assistanceMarks:0}}},p_client_projection:client});
+  const node=run.graph.nodes.find(item=>item.nodeId===selectedOptionId);
+  if(!node)throw new GameplayError('invalid_option',409);
+  const duration=liveNodeWaitMs(node.kind,Number(run.lastResolution?.result.summary.durationMs??0)),resolvesAtMs=loaded.serverNow+duration;
+  const client={...projection(loaded.privateState.run,loaded.stateVersion+1),phase:'resolving_node',options:[],selectedNodeId:selectedOptionId,resolvesAtMs,lastCombat:undefined};
+  return this.services.rpc('queue_online_live_node_server_v1',{p_account_id:accountId,p_run_id:runId,p_expected_version:loaded.stateVersion,p_request_id:request.requestId,p_request_hash:requestHash,p_private_state:{run:loaded.privateState.run,seed:loaded.privateState.seed,pending:{run,resolvesAtMs,pacingMs:duration,startStateHash:digest(loaded.privateState.run.persistentState),settlement:{projection:projection(run,loaded.stateVersion+1),enhancedMarks:run.phase==='completed'||run.phase==='failed'?Math.max(0,Math.round((EXPEDITIONS[run.expeditionId]?.baseMarks??0)*.8)):0,assistanceMarks:0}}},p_client_projection:client});
  }
  async startFromReady(accountId:string,checkId:string){
   const source=await this.services.rpc<ReadySource>('online_live_committed_sources_server_v1',{p_account_id:accountId,p_check_id:checkId});
@@ -57,12 +60,34 @@ export class OnlineLiveRuntime{
   const result=await this.services.rpc<{runId:string}>('start_online_live_server_v1',{p_account_id:accountId,p_check_id:checkId,p_run_id:id,p_seed_hash:digest(seed),p_private_state:{run,seed},p_client_projection:projection(run,1),p_members:members});
   return result.runId;
  }
- async load(accountId:string,runId:string){
+ async load(accountId:string,runId:string):Promise<unknown>{
   const loaded=await this.services.rpc<Loaded>('load_coop_runtime_server_v1',{p_run_id:runId,p_actor_account_id:accountId});
   if((loaded.clientProjection as {mode?:string})?.mode!=='live')throw new GameplayError('not_live_run',404);
   const presence=await this.touch(accountId,runId,loaded);
   const pending=loaded.privateState.pending,decision=await this.ensureDecision(accountId,loaded),client=this.withPresence(this.decorate(loaded.clientProjection,decision),presence);
-  if(!pending||loaded.serverNow<pending.resolvesAtMs)return client;
+  // SQL resolves expired votes but does not advance the node itself. The next
+  // participant poll now performs the same idempotent server-owned selection.
+  if(!pending&&decision?.status==='resolved'&&loaded.privateState.run.phase==='awaiting_choice'){
+   const selected=decision.selectedOptionId;
+   if(!selected)throw new GameplayError('decision_missing_selection',409);
+   const request:CoopDecisionCommand={requestId:`vote-deadline-${decision.decisionId}`,decisionId:decision.decisionId,decisionRevision:decision.revision,optionId:selected};
+   try{return await this.queueSelected(accountId,runId,request,loaded,selected,hashRequest(request),presence.safetyAiCharacterIds);}
+   catch(error){
+    // Another participant may have queued this decision simultaneously.
+    const message=String(error);
+    if(/stale|version|node_resolving|conflict/i.test(message)){
+     const current=await this.services.rpc<Loaded>('load_coop_runtime_server_v1',{p_run_id:runId,p_actor_account_id:accountId});
+     if(current.privateState.pending||current.stateVersion>loaded.stateVersion)return this.load(accountId,runId);
+    }
+    throw error;
+   }
+  }
+  if(!pending)return client;
+  if(loaded.serverNow<pending.resolvesAtMs){
+   const pacingMs=pending.pacingMs??Math.max(0,Number(pending.run.lastResolution?.result.summary.durationMs??0));
+   const elapsed=Math.max(0,loaded.serverNow-(pending.resolvesAtMs-pacingMs));
+   return {...client as Record<string,unknown>,pendingCombat:livePendingCombat(pending.run,elapsed,pacingMs)};
+  }
   const run=pending.run,last=run.lastResolution!;
   const completed=run.phase==='completed'||run.phase==='failed';
   return this.services.rpc('finalize_online_live_node_server_v1',{p_account_id:accountId,p_run_id:runId,p_expected_version:loaded.stateVersion,p_private_state:{run,seed:loaded.privateState.seed},p_client_projection:projection(run,loaded.stateVersion+1),p_node_id:last.nodeId,p_result:last.result,p_start_state_hash:pending.startStateHash,p_enhanced_marks:completed?Math.max(0,Math.round((EXPEDITIONS[run.expeditionId]?.baseMarks??0)*.8)):0,p_assistance_marks:0});

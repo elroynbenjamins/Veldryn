@@ -46,7 +46,8 @@ export interface CoopCombatReplayView{
  contributions?:CoopCombatReplayContributionView[];
  cues:CoopCombatReplayCueView[];
 }
-export interface CoopRunView {runId:string;mode:CoopMode;modeLabel?:string;phase:string;syncedLevel:number;roleSlots:Array<{memberId?:string;role:'tank'|'damage'|'support';name:string;echo:boolean;npc?:boolean;classId?:string;profileIconId?:string|null;iconClassId?:string|null;bodyPresentation?:'male'|'female';companionId?:string;currentHp?:number;maximumHp?:number;ready?:boolean}>;options:CoopRouteOptionView[];presenceSummary?:{connectedCount:number;safetyAiCount:number;activeCount:number;safetyAiCharacterIds:string[]};mechanic?:CoopRunMechanicView;objective?:CoopRunObjectiveView;bossMechanic?:CoopRunBossMechanicView;bossRecap?:CoopRunBossRecapView;lastCombat?:CoopCombatReplayView;rewardText?:string;stateVersion?:number;decisionId?:string;decisionRevision?:number;resolvesAtMs?:number;}
+export type CoopPendingCombatView=Omit<CoopCombatReplayView,'reason'|'contributions'>&{elapsedMs:number;wallDurationMs:number};
+export interface CoopRunView {runId:string;mode:CoopMode;modeLabel?:string;phase:string;syncedLevel:number;roleSlots:Array<{memberId?:string;role:'tank'|'damage'|'support';name:string;echo:boolean;npc?:boolean;classId?:string;profileIconId?:string|null;iconClassId?:string|null;bodyPresentation?:'male'|'female';companionId?:string;currentHp?:number;maximumHp?:number;ready?:boolean}>;options:CoopRouteOptionView[];presenceSummary?:{connectedCount:number;safetyAiCount:number;activeCount:number;safetyAiCharacterIds:string[]};mechanic?:CoopRunMechanicView;objective?:CoopRunObjectiveView;bossMechanic?:CoopRunBossMechanicView;bossRecap?:CoopRunBossRecapView;lastCombat?:CoopCombatReplayView;pendingCombat?:CoopPendingCombatView;serverNow?:number;rewardText?:string;stateVersion?:number;decisionId?:string;decisionRevision?:number;resolvesAtMs?:number;}
 export function parseCoopEncounterPreview(value:unknown):CoopEncounterPreviewView|undefined{
  if(value===undefined||value===null)return undefined;
  if(!value||typeof value!=='object')throw new Error('invalid_encounter_preview');
@@ -83,6 +84,11 @@ export function validateCoopRunView(view:CoopRunView):void{
   if(!t.bossName.trim()||t.phases.some(phase=>!phase.id.trim()||!phase.label.trim()||!Number.isFinite(phase.hpPct)||phase.hpPct<=0||phase.hpPct>=100)||t.castAbilities.some(ability=>!ability.id.trim()||!ability.label.trim()||!Number.isFinite(ability.castMs)||ability.castMs<0||!Number.isFinite(ability.cooldownMs)||ability.cooldownMs<0)||t.suppressedAbilities.some(ability=>!ability.id.trim()||!ability.label.trim()))throw new Error('invalid_boss_telegraph');
  }
  if(view.bossRecap&&(!Number.isFinite(view.bossRecap.durationMs)||view.bossRecap.durationMs<0||!Number.isInteger(view.bossRecap.downs)||view.bossRecap.downs<0||view.bossRecap.phasesTriggered.some(item=>!item.trim())||view.bossRecap.abilitiesCast.some(item=>!item.trim())))throw new Error('invalid_boss_recap');
+ if(view.pendingCombat){
+  if(view.mode!=='live'||view.phase!=='resolving_node'||view.lastCombat||!Number.isFinite(view.pendingCombat.elapsedMs)||view.pendingCombat.elapsedMs<0||!Number.isFinite(view.pendingCombat.wallDurationMs)||view.pendingCombat.wallDurationMs<=0||view.pendingCombat.elapsedMs>view.pendingCombat.wallDurationMs||view.pendingCombat.cues.some(cue=>['victory','wipe','timeout'].includes(cue.type)))throw new Error('invalid_pending_combat');
+  validateCoopRunView({...view,pendingCombat:undefined,lastCombat:{...view.pendingCombat,reason:'victory'}});
+ }
+ if(view.serverNow!==undefined&&(!Number.isFinite(view.serverNow)||view.serverNow<0))throw new Error('invalid_run_clock');
  if(view.lastCombat){
   const replay=view.lastCombat,types=new Set<CoopCombatReplayCueType>(['action','phase','cast','interrupt','down','assist','victory','wipe','timeout']);
   if(!replay.nodeId.trim()||!['victory','wipe','timeout'].includes(replay.reason)||!Number.isFinite(replay.durationMs)||replay.durationMs<0||replay.cues.length>48)throw new Error('invalid_combat_replay');

@@ -42,6 +42,8 @@ jobs:
         run: pnpm --dir ../../backend test:coop-composition
       - name: Typecheck backend online Q-Mode runtime
         run: pnpm --dir ../../backend typecheck:online
+      - name: Verify Live room pacing and progressive battle simulation
+        run: pnpm --dir ../../backend test:live-pacing
       - name: Validate recent Supabase migration versions
         run: node ../../tools/validate-recent-migration-versions.mjs
       - name: Test chat retry receipts and read cursors in PostgreSQL

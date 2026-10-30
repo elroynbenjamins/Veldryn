@@ -31,12 +31,13 @@ export function guildShopReadHandler(services: GuildShopReadServices) {
    // Wallet, owned rewards and balances are required; optional projections
    // should not take down the entire shop if a guild feature is temporarily
    // unavailable. Claims/purchases still use separate authoritative RPCs.
-   const [base,constructionResult,eventResult,enabledResult,weeklyResult]=await Promise.allSettled([
+   const [base,constructionResult,eventResult,enabledResult,weeklyResult,bankResult]=await Promise.allSettled([
     services.rpc<GuildShopSnapshot>("guild_shop_snapshot_server_v1",{p_account_id:accountId}),
     services.rpc<Array<{templateId:string;completed:boolean;resources:Record<string,number>}>>("guild_construction_snapshot_server_v1",{p_account_id:accountId}),
     services.rpc<Array<{eventId:string;milestonePercent:number;tokens:number;claimed:boolean}>>("guild_shop_event_community_rewards_server_v1",{p_account_id:accountId}),
     services.rpc<string[]>("guild_construction_enabled_server_v1",{p_account_id:accountId}),
     services.rpc<Array<{kind:string;tokens:number;eligible:boolean;claimed:boolean}>>("guild_shop_weekly_rewards_server_v1",{p_account_id:accountId}),
+    services.rpc<{balances:Array<{resourceId:string;amount:number}>;activity:Array<{kind:string;resourceId:string;amount:number;templateId?:string;mine:boolean;createdAt:string}>}>("guild_bank_snapshot_server_v1",{p_account_id:accountId}),
    ]);
    if(base.status!=="fulfilled")throw new Error("guild_shop_wallet_snapshot_unavailable");
    const snapshot=base.value;
@@ -51,6 +52,7 @@ export function guildShopReadHandler(services: GuildShopReadServices) {
     ...(eventResult.status==="fulfilled"&&Array.isArray(eventResult.value)?[]:["eventBonuses"]),
     ...(enabledResult.status==="fulfilled"&&Array.isArray(enabledResult.value)?[]:["constructionUnlocks"]),
     ...(weeklyResult.status==="fulfilled"&&Array.isArray(weeklyResult.value)?[]:["weeklyRewards"]),
+    ...(bankResult.status==="fulfilled"&&bankResult.value&&Array.isArray(bankResult.value.balances)?[]:["bank"]),
    ];
    return json({
     guildLevel,
@@ -64,6 +66,7 @@ export function guildShopReadHandler(services: GuildShopReadServices) {
       ...template,enabled:constructionEnabled.includes(template.id),
     })),
     construction,
+    bank:bankResult.status==="fulfilled"&&bankResult.value&&Array.isArray(bankResult.value.balances)?bankResult.value:null,
     eventBonuses,
     weeklyRewards,
     cards:buildGuildShopCards({guildLevel,tokenBalance:snapshot.balance,ownedItemIds:snapshot.ownedItemIds}).map(card=>({
@@ -199,7 +202,7 @@ export function guildConstructionDonationHandler(services:GuildShopReadServices)
    return json({error:"invalid_construction_resource"},400);
   try{
    const result=await services.rpc<{alreadyProcessed:boolean;completed:boolean}>(
-    "guild_construction_donate_server_v2",{
+    "guild_bank_allocate_server_v1",{
      p_account_id:accountId,p_template_id:body.templateId,p_resource_id:body.resourceId,
      p_amount:body.amount,p_request_key:body.requestKey,
    });
@@ -216,8 +219,9 @@ export function guildConstructionDonationHandler(services:GuildShopReadServices)
     'construction_resource_target_exceeded','construction_already_completed',
     'construction_donations_not_released','guild_level_locked',
     'guild_membership_required','guild_construction_request_conflict',
+    'insufficient_guild_bank_balance',
    ].includes(code))return json({error:code},code==='insufficient_gold'
-    ||code==='insufficient_construction_materials'?422:409);
+    ||code==='insufficient_construction_materials'||code==='insufficient_guild_bank_balance'?422:409);
    return json({error:"guild_construction_donation_unavailable"},503);
   }
  };
@@ -247,5 +251,44 @@ export function guildShopWeeklyClaimHandler(services:GuildShopReadServices){
     return json({error:"invalid_claim_result"},503);
    return json({credited});
   }catch{return json({error:"weekly_guild_reward_not_earned_or_unavailable"},503);}
+ };
+}
+
+/** Exactly-once personal deposit -> guild-owned bank stock. A verified account
+ * is obtained from the bearer token, never from request body fields. */
+export function guildBankDepositHandler(services:GuildShopReadServices){
+ return async(request:Request):Promise<Response>=>{
+  if(request.method!=="POST")return json({error:"method_not_allowed"},405);
+  const token=request.headers.get("authorization")?.match(/^Bearer (\S+)$/i)?.[1];
+  if(!token)return json({error:"auth_required"},401);
+  const accountId=await services.authenticate(token);
+  if(!accountId)return json({error:"invalid_session"},401);
+  const raw=await request.text();
+  if(raw.length>1024)return json({error:"request_too_large"},413);
+  let input:unknown;
+  try{input=JSON.parse(raw);}catch{return json({error:"invalid_json"},400);}
+  if(!input||typeof input!=="object"||Array.isArray(input))return json({error:"invalid_request"},400);
+  const body=input as Record<string,unknown>;
+  if(Object.keys(body).length!==3||typeof body.resourceId!=="string"||
+   !GUILD_CONSTRUCTION_TEMPLATES.some(t=>(['gold',...t.materials.map(m=>m.materialKey)]).includes(body.resourceId as string))||
+   !Number.isSafeInteger(body.amount)||Number(body.amount)<1||Number(body.amount)>1000000||
+   typeof body.requestKey!=="string"||!/^[A-Za-z0-9_-]{8,128}$/.test(body.requestKey))
+   return json({error:"invalid_guild_bank_deposit"},400);
+  try{
+   const result=await services.rpc<{alreadyProcessed:boolean;amount:number;resourceId:string}>('guild_bank_deposit_server_v1',{
+    p_account_id:accountId,p_resource_id:body.resourceId,p_amount:body.amount,p_request_key:body.requestKey,
+   });
+   if(!result||typeof result.alreadyProcessed!=="boolean"||
+    result.amount!==body.amount||result.resourceId!==body.resourceId)
+    return json({error:"invalid_bank_receipt"},503);
+   return json(result);
+  }catch(reason){
+   const code=reason instanceof Error?reason.message:'';
+   if(['guild_membership_required','guild_bank_resource_unavailable','guild_bank_item_locked',
+     'insufficient_gold','insufficient_construction_materials','guild_bank_capacity_reached',
+     'guild_bank_request_conflict','character_required'].includes(code))
+    return json({error:code},code.startsWith('insufficient_')?422:409);
+   return json({error:"guild_bank_deposit_unavailable"},503);
+  }
  };
 }

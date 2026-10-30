@@ -25,7 +25,7 @@ ok(!app.includes("Alert.alert('Equipment forged'"),'successful Forge claims must
 
 ok(feedback.includes('EXCEPTIONAL FORGE RESULT'),'quality procs need a dedicated reward moment');
 ok(feedback.includes('result.qualityProc&&(result.rarity===\'epic\'||result.rarity===\'legendary\'||result.rarity===\'mythic\')')&&feedback.includes('results.filter(isExceptionalForgeResult)'),'large reveal must be reserved for genuine Epic+ rarity procs');
-ok(feedback.includes('equipment stats vs this item'),'quality reveal must explain the actual stat benefit');
+ok(feedback.includes('equipment stats vs base gear')&&feedback.includes('result.statMultiplier-1'),'rarity reveal must explain the actual crafted stat multiplier against base gear');
 ok(feedback.includes('Animated.sequence'),'exceptional Forge results need a brief celebration motion');
 ok(feedback.includes('reduceMotion'),'Forge celebration must respect reduced motion');
 ok(feedback.includes('4500'),'ordinary Forge feedback should dismiss automatically instead of blocking play');

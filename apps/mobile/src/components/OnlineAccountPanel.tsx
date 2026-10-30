@@ -28,9 +28,12 @@ export function OnlineAccountPanel({state}:{state:GameState}){
  const auth=useAuthSession();const [email,setEmail]=useState(''),[password,setPassword]=useState(''),[username,setUsername]=useState(state.character?.name??''),[creating,setCreating]=useState(false),[showHelp,setShowHelp]=useState(false),[busy,setBusy]=useState(false),[notice,setNotice]=useState(''),[noticeTone,setNoticeTone]=useState<'error'|'success'|'info'>('error'),[editingLink,setEditingLink]=useState(false);
  const [passwordVisible,setPasswordVisible]=useState(false),[changingPassword,setChangingPassword]=useState(false),[verificationPrompt,setVerificationPrompt]=useState<VerificationPrompt|null>(null),[verificationFeedback,setVerificationFeedback]=useState<{message:string;error:boolean}|null>(null);
  const accountId=auth.session?.user.id??'',linkStep=auth.session?accountLinkStep(auth.session.user):null;
- const [googleConnection,setGoogleConnection]=useState<GoogleAccountConnection|{status:'checking'}>({status:'checking'});
+ const [googleConnectionRecord,setGoogleConnectionRecord]=useState<{accountId:string;data:GoogleAccountConnection|{status:'checking'}}>({accountId:'',data:{status:'checking'}});
+ // Ignore a previous VELDRYN account's link state immediately on account switches.
+ const googleConnection:GoogleAccountConnection|{status:'checking'}=googleConnectionRecord.accountId===accountId?googleConnectionRecord.data:{status:'checking'};
+ const setGoogleConnection=(data:GoogleAccountConnection|{status:'checking'})=>setGoogleConnectionRecord({accountId,data});
  const [playGamesConnection,setPlayGamesConnection]=useState<PlayGamesConnection|{status:'checking'}>({status:'checking'});
- const googleLinked=googleConnection.status==='linked'||(googleConnection.status==='checking'&&Boolean(auth.session?.user.identities?.some(identity=>identity.provider==='google')));
+ const googleLinked=googleConnection.status==='linked';
  const active=useRef(true),currentAccount=useRef(accountId),accountGeneration=useRef(0),running=useRef<object|null>(null),currentRecovery=useRef(auth.clearRecovery);
  if(currentAccount.current!==accountId){currentAccount.current=accountId;accountGeneration.current++;running.current=null;}
  const recoveryGeneration=useRef(0);

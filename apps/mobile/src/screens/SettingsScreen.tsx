@@ -54,7 +54,7 @@ const openExternal=(url:string)=>{void Linking.openURL(url)};
 function SettingChip({label,selected,onPress}:{label:string;selected:boolean;onPress:()=>void}){const C=useGameTheme(),s=useMemo(()=>makeStyles(C),[C]);return <Pressable accessibilityRole="button" accessibilityState={{selected}} onPress={onPress} style={({pressed})=>[s.chip,selected&&s.chipSelected,pressed&&s.pressed]}><Text style={[s.chipText,selected&&s.chipTextSelected]}>{selected?'✓ ':''}{label}</Text></Pressable>}
 function ThemeChoice({id,selected,onPress,language}:{language:Language;id:UiThemeId;selected:boolean;onPress:()=>void}){
  const a=(text:string,params?:Record<string,string|number>)=>accountText(language,text,params);
-const C=useGameTheme(),s=useMemo(()=>makeStyles(C),[C]),p=UI_THEMES[id];return <Pressable accessibilityRole="button" accessibilityState={{selected}} onPress={onPress} style={({pressed})=>[s.themeChoice,{backgroundColor:p.panel,borderColor:selected?p.selectionLine:p.line},pressed&&s.pressed]}><View style={s.themeChoiceHead}><View style={s.flex}><Text style={[s.themeChoiceName,{color:p.text}]}>{p.name}</Text><Text style={[s.themeChoiceSub,{color:p.muted}]}>{id==='obsidian'?a("Near-black · neutral hairlines"):id==='ember'?a("Near-black · ember accents"):a("Soft mint · cool teal accents")}</Text></View>{selected?<Text style={[s.themeCheck,{color:p.selectionLine}]}>✓</Text>:null}</View><View style={s.swatches}>{[p.bg,p.panelRaised,p.accent,p.selectionLine,p.good,p.bad].map((color,index)=><View key={index} style={[s.swatch,{backgroundColor:color,borderColor:p.line}]}/>)}</View></Pressable>}
+const C=useGameTheme(),s=useMemo(()=>makeStyles(C),[C]),p=UI_THEMES[id];return <Pressable accessibilityRole="button" accessibilityLabel={p.name} accessibilityState={{selected}} onPress={onPress} style={({pressed})=>[s.themeChoice,{backgroundColor:p.panel,borderColor:selected?p.selectionLine:p.line},pressed&&s.pressed]}><View style={s.themeChoiceHead}><View style={s.flex}><Text style={[s.themeChoiceName,{color:p.text}]}>{p.name}</Text></View>{selected?<Text style={[s.themeCheck,{color:p.selectionLine}]}>✓</Text>:null}</View><View style={s.swatches}>{[p.bg,p.panelRaised,p.accent,p.selectionLine,p.good,p.bad].map((color,index)=><View key={index} style={[s.swatch,{backgroundColor:color,borderColor:p.line}]}/>)}</View></Pressable>}
 
 function RedeemCodePanel({language,onRedeemCode}:{language:Language;onRedeemCode?:Props['onRedeemCode']}){
  const a=(text:string,params?:Record<string,string|number>)=>accountText(language,text,params),C=useGameTheme(),s=useMemo(()=>makeStyles(C),[C]);
@@ -68,7 +68,7 @@ function RedeemCodePanel({language,onRedeemCode}:{language:Language;onRedeemCode
  return <Panel><Text style={[s.title,{color:C.text}]}>{a('Redeem code')}</Text><Text style={[s.sub,{color:C.muted}]}>{a('Enter a promotional code from an official VELDRYN announcement or event.')}</Text><View style={s.redeemRow}><TextInput accessibilityLabel={a('Redeem code')} autoCapitalize="characters" autoCorrect={false} value={code} onChangeText={value=>{setCode(value.replace(/\s/g,''));setStatus('')}} placeholder={a('ENTER CODE')} placeholderTextColor={C.muted} style={[s.codeInput,{color:C.text,borderColor:C.line,backgroundColor:C.inputBg}]}/><GameButton compact title={busy?a('Checking…'):a('Redeem')} disabled={!code.trim()||busy} onPress={()=>redeem()}/></View>{status?<Text accessibilityLiveRegion="polite" style={[s.redeemStatus,{color:onRedeemCode?C.info:C.muted}]}>{status}</Text>:null}</Panel>;
 }
 
-export function SettingsScreen({state,onLanguage,onReset,onChange,onStopActivity,onRefreshCommerce,onExport,onImport,onRedeemCode,onOpenCoopUiGallery,onOpenUpdates,initialSection,onSectionChange,onNavigateGuide,onStartMainScreenTour,online=false}:Props){
+export function SettingsScreen({state,onLanguage,onReset,onChange,onRefreshCommerce,onExport,onImport,onRedeemCode,onOpenCoopUiGallery,onOpenUpdates,initialSection,onSectionChange,onNavigateGuide,onStartMainScreenTour,online=false}:Props){
  const language=state.settings.language;
  const a=(text:string,params?:Record<string,string|number>)=>accountText(language,text,params);
 
@@ -78,17 +78,8 @@ export function SettingsScreen({state,onLanguage,onReset,onChange,onStopActivity
   // Respect deep links from the Account hub (notably the dedicated Store button).
   useEffect(()=>{setSelectedSection(normalizeSettingsSection(initialSection));},[initialSection]);
   const [guideId,setGuideId]=useState<GameGuideId>();
-   const [showAfkDetails,setShowAfkDetails]=useState(false),[showEmotes,setShowEmotes]=useState(false),[showActivityControls,setShowActivityControls]=useState(false),[showDeleteControls,setShowDeleteControls]=useState(false);
-  const [confirmStop,setConfirmStop]=useState(false),[stopping,setStopping]=useState(false),[stopError,setStopError]=useState(''),[stopFeedback,setStopFeedback]=useState('');
-  const stopInFlight=useRef(false);
-  useEffect(()=>{if(!stopFeedback)return;const timeout=setTimeout(()=>setStopFeedback(''),5000);return()=>clearTimeout(timeout)},[stopFeedback]);
-  const stopCurrentActivity=async()=>{
-    if(stopInFlight.current)return;
-    stopInFlight.current=true;setStopping(true);setStopError('');
-    try{await onStopActivity();setConfirmStop(false);setShowActivityControls(false);setStopFeedback(a('Activity stopped. Earned progress has been settled.'));}
-    catch(error){setConfirmStop(false);setStopFeedback('');setStopError(error instanceof Error?error.message:a('Could not stop activity. Try again.'));}
-    finally{stopInFlight.current=false;setStopping(false);}
-  };
+  const [showAfkDetails,setShowAfkDetails]=useState(false),[showEmotes,setShowEmotes]=useState(false),[showDeleteControls,setShowDeleteControls]=useState(false);
+  const [confirmDefaults,setConfirmDefaults]=useState(false),[confirmDelete,setConfirmDelete]=useState(false),[showPromoCode,setShowPromoCode]=useState(false);
   const {width}=useWindowDimensions(),phone=width<768;
   const section=selectedSection;
   const navigationStyles=useMemo(()=>makeNavigationStyles(theme),[theme]);
@@ -124,33 +115,24 @@ export function SettingsScreen({state,onLanguage,onReset,onChange,onStopActivity
     {section==='guide'&&<GameGuidePanel state={state} onStartTour={onStartMainScreenTour} onOpen={id=>{onChange(acknowledgeGameGuide(state,id,true));setGuideId(id)}}/>}
     {section==='account'&&<><Panel>
       <Text style={[s.sub,{color:theme.muted}]}>{a('Character: {name} · {save}',{name:state.character?.name??a('Not created yet'),save:a(online?'Online save':'Local save')})}</Text>
-      <Text style={[s.muted,{color:theme.muted}]}>{online?a("Your progress is saved after every successful action."):a("Local progress is kept separately from online characters.")}</Text>
+      
     </Panel>
     <OnlineAccountPanel state={state}/></>}
-    {section==='store'&&<><GooglePlayCommercePanel state={state} online={online} onChange={onChange} onRefreshCommerce={onRefreshCommerce}/><RedeemCodePanel language={language} onRedeemCode={onRedeemCode}/></>}
-    {section==='gameplay'&&stopFeedback?<Text accessibilityLiveRegion="polite" style={[s.sub,{color:theme.good}]}>{stopFeedback}</Text>:null}
+    {section==='store'&&<><GooglePlayCommercePanel state={state} online={online} onChange={onChange} onRefreshCommerce={onRefreshCommerce}/>
+      <Panel><Pressable accessibilityRole="button" accessibilityState={{expanded:showPromoCode}} onPress={()=>setShowPromoCode(value=>!value)} style={({pressed})=>[s.disclosure,pressed&&s.pressed]}><Text style={[s.settingLabel,{color:theme.text,marginTop:0}]}>{a('Redeem code')}</Text><View style={showPromoCode?s.disclosureArrowOpen:undefined}><UiIcon name="next" size={18} muted/></View></Pressable></Panel>
+      {showPromoCode?<RedeemCodePanel language={language} onRedeemCode={onRedeemCode}/>:null}
+    </>
     {section==='gameplay'&&<><Panel>
       <View style={s.afkBox}><View style={s.afkHead}><Text style={[s.settingLabel,{color:theme.text,marginTop:0}]}>{a("AFK reserve")}</Text><Text style={[s.afkValue,{color:theme.good}]}>{accountDuration(language,afk.hours*3600)}</Text></View><Pressable accessibilityRole="button" accessibilityState={{expanded:showAfkDetails}} onPress={()=>setShowAfkDetails(value=>!value)} style={({pressed})=>[s.disclosure,pressed&&s.pressed]}><Text style={s.disclosureLabel}>{a("AFK details")}</Text><View style={showAfkDetails?s.disclosureArrowOpen:undefined}><UiIcon name="next" size={18} muted/></View></Pressable>{showAfkDetails?<View style={s.detailStack}><Text style={[s.muted,{color:theme.muted}]}>{a('{base}h base · up to {free}h through progression · {max}h maximum',{base:afk.baseHours,free:afk.freeMaxHours,max:afk.maxHours})}</Text><Text style={[s.muted,{color:theme.muted}]}>{a("Earned milestones include class, quest, boss, guild and character-slot progression through slot #5.")}</Text><Text style={[s.afkPaid,{color:theme.info}]}>{a("Final +6h: VIP +2h · VIP+ +2h extra · Supporter +2h")}</Text></View>:null}</View>
-      <Text style={[s.settingLabel,{color:theme.text}]}>{a("Number display")}</Text><View style={s.choices}>{(['abbreviated','exact'] as const).map(mode=><SettingChip key={mode} label={mode==='abbreviated'?a("Abbreviated · 1.2K"):a("Exact · 1,200")} selected={state.settings.numberMode===mode} onPress={()=>update({numberMode:mode})}/>)}</View>
-      <Text style={[s.settingLabel,{color:theme.text}]}>{a("Auto-eat threshold")}</Text><Text style={[s.sub,{color:theme.muted}]}>{a("Eat equipped food when HP falls below the selected level.")}</Text><View style={s.choices}>{([20,40,60,80] as const).map(threshold=><SettingChip key={threshold} label={a('{percent}% HP',{percent:threshold})} selected={state.settings.autoEatThresholdPct===threshold} onPress={()=>update({autoEatThresholdPct:threshold})}/>)}</View>
+      <Text style={[s.settingLabel,{color:theme.text}]}>{a("Auto-eat threshold")}</Text><View style={s.choices}>{([20,40,60,80] as const).map(threshold=><SettingChip key={threshold} label={a('{percent}% HP',{percent:threshold})} selected={state.settings.autoEatThresholdPct===threshold} onPress={()=>update({autoEatThresholdPct:threshold})}/>)}</View>
       <SettingToggle language={language} label={a("Stop combat when out of food")} value={state.settings.stopCombatWhenOutOfFood} onValueChange={value=>update({stopCombatWhenOutOfFood:value})}/>
-      <SettingToggle language={language} label={a("Auto-travel between queued activities")} description={premiumRegionQueue?a("Automatically switch between already-unlocked regions only after a safe queue handoff. Does not reset the AFK limit."):a("Available with VIP, VIP+ or Supporter. Free players can still queue activities in their current region.")}
+      <SettingToggle language={language} label={a("Auto-travel between queued activities")} description={premiumRegionQueue?a("Switch to already-unlocked regions after a safe queue handoff."):a("Requires VIP, VIP+ or Supporter.")}
         value={premiumRegionQueue&&state.settings.autoTravelQueuedActivities===true} disabled={!premiumRegionQueue} onValueChange={value=>update({autoTravelQueuedActivities:value})}/>
-      <GameButton compact title={a("Restore gameplay defaults")} tone="secondary" onPress={restoreDefaults}/>
+      <GameButton compact title={a("Restore gameplay defaults")} tone="secondary" onPress={()=>setConfirmDefaults(true)}/>
     </Panel>
-    {state.activity?<Panel>
-      <Pressable accessibilityRole="button" accessibilityState={{expanded:showActivityControls}} onPress={()=>setShowActivityControls(value=>!value)} style={({pressed})=>[s.disclosure,pressed&&s.pressed]}>
-        <View style={s.flex}>
-          <Text style={[s.title,{color:theme.text}]}>{a("Current activity")}</Text>
-          <Text numberOfLines={1} style={[s.muted,{color:theme.muted}]}>{a('Active: {target} ({kind})',{target:state.activity.targetId,kind:a(state.activity.kind.charAt(0).toUpperCase()+state.activity.kind.slice(1))})}</Text>
-        </View>
-        <View style={showActivityControls?s.disclosureArrowOpen:undefined}><UiIcon name="next" size={18} muted/></View>
-      </Pressable>
-      {showActivityControls?<View style={s.detailStack}>{stopError?<Text accessibilityRole="alert" style={[s.sub,{color:theme.bad}]}>{stopError}</Text>:null}<GameButton title={a("Stop current activity")} tone="danger" disabled={stopping} onPress={()=>{setStopError('');setConfirmStop(true)}}/></View>:null}
-    </Panel>:null}
     </>}
     {section==='chat'&&<><Panel>
-      <SettingToggle language={language} label={a("Show chat")} description={a("Show the chat dock above navigation. Turn it off to keep chat hidden while you play.")} value={state.settings.autoJoinWorldChat!==false} onValueChange={autoJoinWorldChat=>update({autoJoinWorldChat})}/>
+      <SettingToggle language={language} label={a("Show chat")} description={a("Show the chat dock while playing.")} value={state.settings.autoJoinWorldChat!==false} onValueChange={autoJoinWorldChat=>update({autoJoinWorldChat})}/>
       {state.settings.autoJoinWorldChat!==false?<View style={s.chatSettings}>
         <Text style={[s.settingLabel,{color:theme.text}]}>{a("Collapsed chat preview")}</Text>
         <View style={s.choices}>{([1,2,3] as const).map(lines=><SettingChip key={lines} label={lines===1?a("1 line · compact"):a('{count} lines',{count:lines})} selected={(state.settings.chatDockLines??1)===lines} onPress={()=>update({chatDockLines:lines})}/>)}</View>
@@ -166,13 +148,15 @@ export function SettingsScreen({state,onLanguage,onReset,onChange,onStopActivity
     </Panel></>}
     {section==='display'&&<>
     <Panel>
+      <Text style={[s.settingLabel,{color:theme.text}]}>{a("Number display")}</Text><View style={s.choices}>{(['abbreviated','exact'] as const).map(mode=><SettingChip key={mode} label={mode==='abbreviated'?a("Abbreviated · 1.2K"):a("Exact · 1,200")} selected={state.settings.numberMode===mode} onPress={()=>update({numberMode:mode})}/>)}</View>
+
       <Text style={[s.title,{color:theme.text}]}>{t(state.settings.language,'settings.accessibility')}</Text>
-      <Text style={[s.sub,{color:theme.muted}]}>{a("Text scaling follows your device accessibility setting. Reduced motion disables repeating combat and progress effects.")}</Text>
-      <SettingToggle language={language} label={a("Reduced motion")} description={a("Turn off repeating combat and progress effects.")} value={state.settings.reduceMotion} onValueChange={value=>update({reduceMotion:value})}/>
+      <Text style={[s.muted,{color:theme.muted}]}>{a("Text size follows your device settings.")}</Text>
+      <SettingToggle language={language} label={a("Reduced motion")} description={a("Disable repeating combat and progress effects.")} value={state.settings.reduceMotion} onValueChange={value=>update({reduceMotion:value})}/>
     </Panel>
     <Panel>
       <Text style={[s.title,{color:theme.text}]}>{t(state.settings.language,'settings.language')}</Text>
-      <Text style={[s.sub,{color:theme.muted}]}>{t(state.settings.language,'settings.languageStatus')}</Text>
+      
       <View style={s.languageGrid}>{SUPPORTED_LANGUAGES.map(id=><SettingChip key={id} label={LANGUAGE_NAMES[id]} selected={state.settings.language===id} onPress={()=>onLanguage(id)}/>)}</View>
     </Panel></>}
     {section==='data'&&<>
@@ -193,7 +177,7 @@ export function SettingsScreen({state,onLanguage,onReset,onChange,onStopActivity
         </Pressable>
         {showDeleteControls?<View style={s.detailStack}>
           <Text style={[s.sub,{color:theme.muted}]}>{a("Deleting your local save removes progress stored on this device.")}</Text>
-          <GameButton title={a("Delete local save")} tone="danger" onPress={onReset}/>
+          <GameButton title={a("Delete local save")} tone="danger" onPress={()=>setConfirmDelete(true)}/>
         </View>:null}
       </Panel>:null}
     </>}
@@ -204,7 +188,7 @@ export function SettingsScreen({state,onLanguage,onReset,onChange,onStopActivity
       <Text selectable style={s.sub}>{appBuildText(language,'channel',{channel:APP_BUILD_INFO.releaseChannel})}</Text>
       {APP_BUILD_INFO.sourceCommit?<Text selectable style={s.sub}>{appBuildText(language,'source',{source:APP_BUILD_INFO.sourceCommit})}</Text>:null}
     </View>:null}
-  </ScrollView><GuideTopicModal onOpen={onNavigateGuide?destination=>{setGuideId(undefined);onNavigateGuide(destination)}:undefined} language={language} definition={guideId?guideDefinition(guideId):undefined} visible={!!guideId} onClose={()=>setGuideId(undefined)}/><ConfirmModal visible={confirmStop} busy={stopping} title={a('Stop current activity?')} message={a('Earned progress will be collected first. Any reserved resources are handled by the activity cancellation rules.')} confirmLabel={a('Stop activity')} danger reduceMotion={state.settings.reduceMotion} onConfirm={()=>void stopCurrentActivity()} onCancel={()=>setConfirmStop(false)}/></View>;
+  </ScrollView><GuideTopicModal onOpen={onNavigateGuide?destination=>{setGuideId(undefined);onNavigateGuide(destination)}:undefined} language={language} definition={guideId?guideDefinition(guideId):undefined} visible={!!guideId} onClose={()=>setGuideId(undefined)}/><ConfirmModal visible={confirmDefaults} title={a('Restore gameplay defaults?')} message={a('Combat safety and activity queue preferences will return to their defaults.')} confirmLabel={a('Restore defaults')} reduceMotion={state.settings.reduceMotion} onConfirm={()=>{setConfirmDefaults(false);restoreDefaults();}} onCancel={()=>setConfirmDefaults(false)}/><ConfirmModal visible={confirmDelete} title={a('Delete local save?')} message={a('This permanently removes local progress from this device. Online characters are not affected.')} confirmLabel={a('Delete local save')} danger reduceMotion={state.settings.reduceMotion} onConfirm={()=>{setConfirmDelete(false);onReset();}} onCancel={()=>setConfirmDelete(false)}/></View>;
 }
 
 function makeNavigationStyles(C:ThemeColors){return StyleSheet.create({
@@ -220,4 +204,4 @@ function makeNavigationStyles(C:ThemeColors){return StyleSheet.create({
   shortcutText:{...typography.caption,fontWeight:'800',color:C.text,flexShrink:1},
 });}
 
-function makeStyles(C:ThemeColors){const equipmentColors=equipmentTheme(C);return StyleSheet.create({root:{padding:14,gap:10},h:{...typography.hero,color:C.text},title:{...typography.title,color:C.text,marginBottom:5},sub:{color:C.muted,lineHeight:20,marginBottom:8},muted:{color:C.muted,lineHeight:19,opacity:.8},tabs:{gap:6,paddingRight:16},sectionHint:{...typography.caption,color:C.info,lineHeight:18},chip:{minHeight:44,paddingHorizontal:13,justifyContent:'center',borderWidth:1,borderColor:C.line,borderRadius:99,backgroundColor:C.bg},chipSelected:{borderColor:equipmentColors.selectedLine,backgroundColor:equipmentColors.selected},chipText:{fontSize:12,color:C.muted,fontWeight:'700'},chipTextSelected:{color:C.text},pressed:{opacity:.76},settingLabel:{...typography.bodyStrong,color:C.text,marginTop:8},choices:{flexDirection:'row',flexWrap:'wrap',gap:8},choice:{flexGrow:1,flexBasis:120,minWidth:120},largeChoice:{flexBasis:'100%' as const},languageGrid:{flexDirection:'row',flexWrap:'wrap',gap:8},languageChoice:{minWidth:96,flexGrow:1},flex:{flex:1},communityRow:{flexDirection:'row',alignItems:'center',gap:10},communityLabel:{...typography.caption,fontWeight:'900',letterSpacing:.8},communityText:{...typography.caption,lineHeight:17},chatSettings:{gap:10,paddingTop:8},disclosure:{minHeight:44,flexDirection:'row',alignItems:'center',gap:8,justifyContent:'space-between'},disclosureLabel:{...typography.caption,color:C.info,fontWeight:'700'},disclosureArrowOpen:{transform:[{rotate:'90deg'}]},detailStack:{gap:8,paddingTop:8,borderTopWidth:StyleSheet.hairlineWidth,borderTopColor:C.line},afkBox:{gap:4,padding:10,borderWidth:1,borderColor:C.line,borderRadius:10,backgroundColor:C.panel2},afkHead:{flexDirection:'row',alignItems:'center',justifyContent:'space-between',gap:8},afkValue:{...typography.title,fontWeight:'900'},afkPaid:{...typography.caption,fontWeight:'800',lineHeight:17},redeemRow:{flexDirection:'row',alignItems:'center',gap:8},codeInput:{flex:1,minHeight:44,borderWidth:1,borderRadius:10,paddingHorizontal:12,fontSize:15,fontWeight:'700',letterSpacing:1},redeemStatus:{...typography.caption,lineHeight:17,marginTop:6},footerLinks:{paddingTop:4,paddingBottom:10},themeList:{gap:8},themeChoice:{minHeight:82,borderWidth:2,borderRadius:12,padding:10,gap:8},themeChoiceHead:{flexDirection:'row',alignItems:'center',gap:8},themeChoiceName:{...typography.bodyStrong},themeChoiceSub:{...typography.caption},themeCheck:{fontSize:20,fontWeight:'900'},swatches:{flexDirection:'row',gap:6},swatch:{flex:1,height:16,borderWidth:1,borderRadius:5}});}
+function makeStyles(C:ThemeColors){const equipmentColors=equipmentTheme(C);return StyleSheet.create({root:{padding:14,gap:10},h:{...typography.hero,color:C.text},title:{...typography.title,color:C.text,marginBottom:5},sub:{color:C.muted,lineHeight:20,marginBottom:8},muted:{color:C.muted,lineHeight:19,opacity:.8},tabs:{gap:6,paddingRight:16},sectionHint:{...typography.caption,color:C.info,lineHeight:18},chip:{minHeight:44,paddingHorizontal:13,justifyContent:'center',borderWidth:1,borderColor:C.line,borderRadius:99,backgroundColor:C.bg},chipSelected:{borderColor:equipmentColors.selectedLine,backgroundColor:equipmentColors.selected},chipText:{fontSize:12,color:C.muted,fontWeight:'700'},chipTextSelected:{color:C.text},pressed:{opacity:.76},settingLabel:{...typography.bodyStrong,color:C.text,marginTop:8},choices:{flexDirection:'row',flexWrap:'wrap',gap:8},choice:{flexGrow:1,flexBasis:120,minWidth:120},largeChoice:{flexBasis:'100%' as const},languageGrid:{flexDirection:'row',flexWrap:'wrap',gap:8},languageChoice:{minWidth:96,flexGrow:1},flex:{flex:1},communityRow:{flexDirection:'row',alignItems:'center',gap:10},communityLabel:{...typography.caption,fontWeight:'900',letterSpacing:.8},communityText:{...typography.caption,lineHeight:17},chatSettings:{gap:10,paddingTop:8},disclosure:{minHeight:44,flexDirection:'row',alignItems:'center',gap:8,justifyContent:'space-between'},disclosureLabel:{...typography.caption,color:C.info,fontWeight:'700'},disclosureArrowOpen:{transform:[{rotate:'90deg'}]},detailStack:{gap:8,paddingTop:8,borderTopWidth:StyleSheet.hairlineWidth,borderTopColor:C.line},afkBox:{gap:4,padding:10,borderWidth:1,borderColor:C.line,borderRadius:10,backgroundColor:C.panel2},afkHead:{flexDirection:'row',alignItems:'center',justifyContent:'space-between',gap:8},afkValue:{...typography.title,fontWeight:'900'},afkPaid:{...typography.caption,fontWeight:'800',lineHeight:17},redeemRow:{flexDirection:'row',alignItems:'center',gap:8},codeInput:{flex:1,minHeight:44,borderWidth:1,borderRadius:10,paddingHorizontal:12,fontSize:15,fontWeight:'700',letterSpacing:1},redeemStatus:{...typography.caption,lineHeight:17,marginTop:6},footerLinks:{paddingTop:4,paddingBottom:10},themeList:{flexDirection:'row',gap:8},themeChoice:{flex:1,minWidth:0,minHeight:78,borderWidth:2,borderRadius:12,padding:8,gap:8},themeChoiceHead:{flexDirection:'row',alignItems:'center',gap:8},themeChoiceName:{...typography.caption,fontWeight:'800'},themeChoiceSub:{...typography.caption},themeCheck:{fontSize:20,fontWeight:'900'},swatches:{flexDirection:'row',gap:6},swatch:{flex:1,height:16,borderWidth:1,borderRadius:5}});}

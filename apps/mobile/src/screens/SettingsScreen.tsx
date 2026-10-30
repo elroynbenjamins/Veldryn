@@ -37,8 +37,6 @@ type Props={
   onLanguage:(language:GameState['settings']['language'])=>void;
   onReset:()=>void;
   onChange:(next:GameState)=>void;
-  /** Settles unclaimed progress and refunds reserved resources through the gameplay command. */
-  onStopActivity:()=>Promise<void>;
   onRefreshCommerce?:(expectedAccountId:string)=>Promise<void>;
   onExport:()=>Promise<void>;
   onImport:(raw:string)=>Promise<void>;

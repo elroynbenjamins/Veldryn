@@ -17,6 +17,7 @@ assert(runtime.includes('pendingCombat:livePendingCombat'),'Only elapsed cues ar
 assert(domain.includes('invalid_pending_combat'),'Unsettled results and terminal cues are rejected by the UI contract');
 assert(run.includes("Vote ends in {seconds}s")&&run.includes("Battle resolves in {seconds}s"),'Both voting and combat visibly count down');
 assert(stage.includes('const pending=run.pendingCombat'),'Live stage consumes progressive combat cues');
+assert(stage.includes('pending.elapsedMs/pending.wallDurationMs')&&stage.includes('seconds(pending.wallDurationMs)'),'Combat stage must show actual Live wall time, not simulated duration');
 assert(stage.includes('const complete=Boolean(replay&&!pending'),'Only settled combat can show victory or defeat');
 assert(stage.includes('pending?Math.max(180,Math.min(380'),'Live must animate every newly authorized combat cue without skipping to the newest');
 console.log('PASS Live dungeon: vote expiry, 8s/10s windows, pacing, progressive animations and settlement boundary');

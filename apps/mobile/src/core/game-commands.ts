@@ -118,7 +118,7 @@ export function settingsForOnlineCommand(value:GameState['settings']):GameState[
  const defaults=game.newGame(0).settings;
  const source=value as unknown as Record<string,unknown>;
  const projected=Object.fromEntries(Object.entries(defaults).map(([key,fallback])=>[key,source[key]??fallback])) as GameState['settings'];
- if(!SUPPORTED_LANGUAGES.includes(projected.language))projected.language=defaults.language;
+ if(!SUPPORTED_LANGUAGES.some(language=>language===projected.language))projected.language=defaults.language;
  if(!(['abbreviated','exact'] as const).includes(projected.numberMode))projected.numberMode=defaults.numberMode;
  if(!(['obsidian','ember','ivory'] as const).includes(projected.uiTheme??'obsidian'))projected.uiTheme=defaults.uiTheme;
  if(![1,1.15,1.3,1.5].includes(projected.textScale))projected.textScale=defaults.textScale;
@@ -126,7 +126,7 @@ export function settingsForOnlineCommand(value:GameState['settings']):GameState[
  for(const key of ['reduceMotion','stopCombatWhenOutOfFood','autoTravelQueuedActivities','autoJoinWorldChat'] as const)if(typeof projected[key]!=='boolean')projected[key]=defaults[key];
  if(![1,2,3,4].includes(projected.defaultWorldChat??0))projected.defaultWorldChat=defaults.defaultWorldChat;
  if(![1,2,3].includes(projected.chatDockLines??0))projected.chatDockLines=defaults.chatDockLines;
- if(!Array.isArray(projected.quickNavDestinations)||projected.quickNavDestinations.length>8||projected.quickNavDestinations.some(id=>!QUICK_NAV_DESTINATIONS.includes(id)))projected.quickNavDestinations=[...defaults.quickNavDestinations];
+ if(!Array.isArray(projected.quickNavDestinations)||projected.quickNavDestinations.length>8||projected.quickNavDestinations.some(id=>!QUICK_NAV_DESTINATIONS.some(destination=>destination===id)))projected.quickNavDestinations=[...defaults.quickNavDestinations];
  const cleanIds=(ids:unknown,max:number)=>Array.isArray(ids)?[...new Set(ids.filter((id):id is string=>typeof id==='string'&&id.length>0&&id.length<=120))].slice(-max):[];
  projected.favoriteItemIds=cleanIds(projected.favoriteItemIds,100);
  projected.lockedItemIds=cleanIds(projected.lockedItemIds,100);

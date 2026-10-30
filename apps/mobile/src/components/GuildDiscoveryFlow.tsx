@@ -11,7 +11,7 @@ import {ThemedIcon} from './ThemedNavigationIcon';
 import {StatusPill} from './StatusPill';
 import {GUILD_NAME_MAX_LENGTH,guildNameError,normalizeGuildName} from '../core/identity-names';
 import {guildTagAvailabilityMessage,normalizeGuildTag,type GuildTagAvailability} from '../core/guild-tags';
-import {GUILD_JOIN_LEVEL,GUILD_UNLOCK_LEVEL} from '../core/feature-unlocks';
+import {GUILD_JOIN_LEVEL} from '../core/feature-unlocks';
 import {guildAccessError,guildJoinRequirementText,guildLevelsRemaining,requiredGuildJoinLevel} from '../core/guild-join-eligibility';
 import {
  createOnlineGuild,guildDetails,guildTagAvailability,highestGuildCharacterLevel,pendingGuildApplications,requestGuildMembership,respondGuildInvitation,
@@ -153,7 +153,7 @@ export function GuildDiscoveryFlow({onJoined}:{onJoined:()=>void}){
   </View>:null}
 
   {(page==='welcome'||page==='find'||page==='create')&&(levelLoading||playerLevel===null||levelLocked())?<Panel style={s.unlockPanel}>
-   <Text style={s.unlockTitle}>Browse at Level {GUILD_UNLOCK_LEVEL} · Join at Level {GUILD_JOIN_LEVEL}</Text>
+   <Text style={s.unlockTitle}>Guilds unlock at Level {GUILD_JOIN_LEVEL}</Text>
    <Text style={s.muted}>{levelLoading?'Checking your character level…':playerLevel===null?'Guilds can be browsed now. Your level could not be checked, so the server will verify it when you join.':guildJoinRequirementText(playerLevel)}</Text>
   </Panel>:null}
 

@@ -10,7 +10,7 @@ const decision=read('src/core/equipment-decision.ts');
 ok(character.includes('equipmentDecisionModel'),'Character equipment detail must use the shared decision model');
 ok(character.includes('equipmentFocusModel'),'Character screen must derive its next action from the shared loadout focus model');
 ok(character.includes("equipmentTool==='enhance'")&&character.includes("equipmentTool==='gems'")&&character.includes("equipmentTool==='sets'")&&character.includes("equipmentTool==='compare'"),'Character must present four focused equipment tools without a separate dashboard');
-ok(character.includes('selectedDecision.upgrade.canAfford')&&character.includes('selectedDecision.sockets.statFilled')&&character.includes('selectedDecision.sockets.effectFilled'),'Equipment tools must surface upgrade readiness and both socket states');
+ok(character.includes('selectedDecision.upgrade.canAfford')&&character.includes('selectedDecision?.sockets.statFilled')&&character.includes('selectedDecision?.sockets.effectFilled'),'Equipment tools must surface upgrade readiness and both socket states');
 ok(character.includes("onPress={()=>openEnhancement('upgrade')}")&&character.includes("onPress={()=>openEnhancement('gems')}")&&character.includes('setPickerSlot(selected.slot)'),'Equipment tools must offer actionable enhancement, socketing and gear swap controls');
 ok(character.includes('rarityNameColor'),'Selected equipped item names must follow rarity color');
 ok(character.includes('rarityMeta(equippedCraftedGearRarity(state,entry.slot)!)'),'Equipped slot borders must use the selected crafted instance rarity');

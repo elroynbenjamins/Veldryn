@@ -75,7 +75,12 @@ export function gameplayHandler(services:GameplayServices){return async(request:
   // Private simulation intervals travel through the service-only commit; QA never contributes.
   const guildPveEffort=adminQa?[]:(result.reward?.activityResults?.map(segment=>segment.reward)??[result.reward]).flatMap(earned=>earned?.combatEffort?[{kind:'combat',combatEffort:earned.combatEffort}]:[]);
   const projectSegments=result.reward?.activityResults??(result.reward&&state.activity?[{activity:state.activity,reward:result.reward}]:[]);
-  const guildProjectEffort=adminQa?[]:projectSegments.flatMap(({activity,reward:earned})=>earned.combatEffort?[{kind:'combat',...earned.combatEffort}]:['mining','woodcutting','fishing','herbalism'].includes(activity.kind)&&earned.elapsedSeconds>0?[{kind:'skilling',startsAtMs:activity.lastClaimAtMs,endsAtMs:activity.lastClaimAtMs+earned.elapsedSeconds*1000}]:[]);
+  // Every verified weekly path contributes to the SAME 20-effort/minute pool and daily cap.
+  // Crafting is counted only from server-verified contribution events, never client-provided units.
+  const guildProjectEffort=adminQa?[]:[
+   ...projectSegments.flatMap(({activity,reward:earned})=>earned.combatEffort?[{kind:'combat',...earned.combatEffort}]:['mining','woodcutting','fishing','herbalism'].includes(activity.kind)&&earned.elapsedSeconds>0?[{kind:'skilling',activity:'gathering',startsAtMs:activity.lastClaimAtMs,endsAtMs:activity.lastClaimAtMs+earned.elapsedSeconds*1000}]:[]),
+   ...contributions.filter(event=>event.kind==='crafting'&&event.units>0).map(event=>({kind:'crafting',units:Math.min(100,event.units)})),
+  ];
   const response={guildProjectEffort,guildPveEffort,state:result.state,version:loaded.version+1,serverNow:loaded.serverNow,accountId,reward:result.reward,activity:result.activity,message:result.message,won:result.won,storyBossBattle:result.storyBossBattle,upgrade:result.upgrade,forgeResults:result.forgeResults};
   const commitRpc='commit_online_game_guild_pve_v1';
   const committed=await services.rpc(commitRpc,{p_account_id:accountId,p_expected_version:loaded.version,p_expected_gold:loaded.walletGold,p_request_id:body.requestId,p_request_hash:requestHash,p_response:response,p_contributions:contributions,...(command.type==='roster_delete'?{p_deleted_character_id:(command.args as {id:string}).id}: {})});

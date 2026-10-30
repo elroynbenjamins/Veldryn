@@ -22,6 +22,7 @@ export const LIVE_DUNGEON_POLICY={
   requiredRoles:{tank:1,damage:2,support:1} as const,
   readyCheckSeconds:20,
   routeVoteSeconds:8,
+  eventRouteVoteSeconds:10,
   routeVoteMinSeconds:5,
   routeVoteMaxSeconds:10,
   disconnectGraceSeconds:30,

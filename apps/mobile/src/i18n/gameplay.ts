@@ -7,6 +7,38 @@ import {useMemo} from 'react';
 // Every row is complete, in en/de/es/nl/it/fr order. English phrases are typed keys.
 type TranslationRow=readonly [string,string,string,string,string,string];
 const common={
+ // Gem codex, crafting capacity and inventory controls.
+ "Could not combine gems.":["Could not combine gems.","Edelsteine konnten nicht kombiniert werden.","No se pudieron combinar las gemas.","Edelstenen combineren mislukt.","Impossibile combinare le gemme.","Impossible de combiner les gemmes."],
+ "Could not refine gem.":["Could not refine gem.","Edelstein konnte nicht veredelt werden.","No se pudo refinar la gema.","Edelsteen verfijnen mislukt.","Impossibile raffinare la gemma.","Impossible de raffiner la gemme."],
+ "Could not dismantle gem.":["Could not dismantle gem.","Edelstein konnte nicht zerlegt werden.","No se pudo desmontar la gema.","Edelsteen ontmantelen mislukt.","Impossibile smantellare la gemma.","Impossible de démanteler la gemme."],
+ "Could not claim reward.":["Could not claim reward.","Belohnung konnte nicht abgeholt werden.","No se pudo reclamar la recompensa.","Beloning claimen mislukt.","Impossibile riscattare la ricompensa.","Impossible de récupérer la récompense."],
+ "Gem collection":["Gem collection","Edelsteinsammlung","Colección de gemas","Edelsteenverzameling","Collezione di gemme","Collection de gemmes"],
+ "Families collected":["Families collected","Gesammelte Familien","Familias coleccionadas","Verzamelde families","Famiglie raccolte","Familles collectées"],
+ "My Gems":["My Gems","Meine Edelsteine","Mis gemas","Mijn edelstenen","Le mie gemme","Mes gemmes"],
+ "Forge":["Forge","Schmiede","Forja","Smederij","Forgia","Forge"],
+ "ready":["ready","bereit","listo","gereed","pronto","prêt"],
+ "Effects":["Effects","Effekte","Efectos","Effecten","Effetti","Effets"],
+ "Owned only":["Owned only","Nur eigene","Solo propias","Alleen in bezit","Solo possedute","Possédées uniquement"],
+ "Weekly rewards & drop protection":["Weekly rewards & drop protection","Wöchentliche Belohnungen & Beuteschutz","Recompensas semanales y protección de botín","Wekelijkse beloningen en dropbescherming","Ricompense settimanali e protezione bottino","Récompenses hebdomadaires et protection des butins"],
+ "Reward ready":["Reward ready","Belohnung bereit","Recompensa lista","Beloning gereed","Ricompensa pronta","Récompense disponible"],
+ "Claimed":["Claimed","Abgeholt","Reclamado","Geclaimd","Riscattato","Récupéré"],
+ "co-op clears":["co-op clears","Koop-Abschlüsse","finalizaciones cooperativas","co-opvoltooiingen","completamenti cooperativi","réussites coopératives"],
+ "tracked":["tracked","erfasst","registrado","bijgehouden","registrato","suivi"],
+ "No gems of this type yet. Choose Show all 32 to explore them.":["No gems of this type yet. Choose Show all 32 to explore them.","Noch keine Edelsteine dieses Typs. Wähle „Alle 32 anzeigen“, um sie zu entdecken.","Aún no hay gemas de este tipo. Elige «Mostrar las 32» para explorarlas.","Nog geen edelstenen van dit type. Kies 'Alle 32 tonen' om ze te bekijken.","Nessuna gemma di questo tipo. Scegli «Mostra tutte e 32» per esplorarle.","Aucune gemme de ce type. Choisissez « Afficher les 32 » pour les découvrir."],
+ "Refine raw gems or combine grades.":["Refine raw gems or combine grades.","Veredle rohe Edelsteine oder kombiniere Qualitätsstufen.","Refina gemas en bruto o combina grados.","Verfijn ruwe edelstenen of combineer graden.","Raffina gemme grezze o combina i gradi.","Raffinez les gemmes brutes ou combinez les grades."],
+ "Ready only":["Ready only","Nur bereite","Solo disponibles","Alleen beschikbaar","Solo pronte","Prêtes uniquement"],
+ "Show locked":["Show locked","Gesperrte anzeigen","Mostrar bloqueadas","Vergrendelde tonen","Mostra bloccate","Afficher les verrouillées"],
+ "No recipes ready. Show locked to see requirements.":["No recipes ready. Show locked to see requirements.","Keine Rezepte bereit. Zeige gesperrte an, um die Voraussetzungen zu sehen.","No hay recetas listas. Muestra las bloqueadas para ver sus requisitos.","Geen recepten beschikbaar. Toon vergrendelde om de vereisten te bekijken.","Nessuna ricetta pronta. Mostra quelle bloccate per vedere i requisiti.","Aucune recette prête. Affichez les recettes verrouillées pour voir les conditions."],
+ "COMBINE GEMS":["COMBINE GEMS","EDELSTEINE KOMBINIEREN","COMBINAR GEMAS","EDELSTENEN COMBINEREN","COMBINA GEMME","COMBINER DES GEMMES"],
+ "Owned: {count} {item} (Inventory + Bank)":["Owned: {count} {item} (Inventory + Bank)","Im Besitz: {count} {item} (Inventar + Bank)","En posesión: {count} {item} (Inventario + Banco)","In bezit: {count} {item} (Inventaris + Bank)","Posseduti: {count} {item} (Inventario + Banca)","Possédés : {count} {item} (Inventaire + Banque)"],
+ "Batches available: {count}":["Batches available: {count}","Verfügbare Chargen: {count}","Lotes disponibles: {count}","Beschikbare batches: {count}","Lotti disponibili: {count}","Lots disponibles : {count}"],
+ "Batches reserved: {count}":["Batches reserved: {count}","Reservierte Chargen: {count}","Lotes reservados: {count}","Gereserveerde batches: {count}","Lotti riservati: {count}","Lots réservés : {count}"],
+ "Locked":["Locked","Gesperrt","Bloqueado","Vergrendeld","Bloccato","Verrouillé"],
+ "Unlock {name}":["Unlock {name}","{name} entsperren","Desbloquear {name}","{name} ontgrendelen","Sblocca {name}","Déverrouiller {name}"],
+ "Lock {name}":["Lock {name}","{name} sperren","Bloquear {name}","{name} vergrendelen","Blocca {name}","Verrouiller {name}"],
+ "Unlock item":["Unlock item","Gegenstand entsperren","Desbloquear objeto","Item ontgrendelen","Sblocca oggetto","Déverrouiller l’objet"],
+ "Lock item":["Lock item","Gegenstand sperren","Bloquear objeto","Item vergrendelen","Blocca oggetto","Verrouiller l’objet"],
+
  // Equipment enhancement and socketing strings used by the redesigned UI.
  "Rank protected":["Rank protected","Rang geschützt","Rango protegido","Rang beschermd","Grado protetto","Rang protégé"],
  "next attempt":["next attempt","nächster Versuch","siguiente intento","volgende poging","prossimo tentativo","prochaine tentative"],

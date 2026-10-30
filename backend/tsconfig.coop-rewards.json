@@ -4,6 +4,8 @@
     "outDir": "dist-coop-rewards"
   },
   "include": [
-    "src/server/coop/__tests__/phase11-rewards.ts"
+    "src/server/coop/__tests__/phase11-rewards.ts",
+    "src/server/coop/__tests__/tier-reward-balance.ts",
+    "src/server/coop/__tests__/tier-full-matrix.ts"
   ]
 }

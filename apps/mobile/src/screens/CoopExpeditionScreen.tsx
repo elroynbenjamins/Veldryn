@@ -5,7 +5,7 @@ import {BackHandler,Pressable,View,Text} from 'react-native';
 import {CoopDungeonDetails,CoopDungeonList,CoopEventExpeditionDetails} from '../components/coop/CoopDungeonBrowser';
 import {CoopLoadoutSelection} from '../components/coop/CoopLoadoutSelection';
 import {buildCoopLoadoutIntent,presentCoopLoadout,type CoopLoadoutIntent} from '../core/coop-loadout-presentation';
-import {CoopRunOverview} from '../components/coop/CoopRunOverview';
+import {CoopRunOverview,type CoopRewardDisplay} from '../components/coop/CoopRunOverview';
 import {CoopLiveLobby} from '../components/coop/CoopLiveLobby';
 import {CoopLiveRecruitmentBoard} from '../components/coop/CoopLiveRecruitmentBoard';
 import {presentCoopDungeon,validateCoopDungeonView,type CoopDungeonView,type CoopTier} from '../core/coop-dungeon-browsing';
@@ -58,7 +58,7 @@ export function CoopExpeditionScreen({onClose,language,state,entrySource=realCoo
   const activeEventRunId=useRef<string|undefined>(undefined);activeEventRunId.current=eventRun?.runId;
   const initialDungeonHandled=useRef(false);
   const initialEventHandled=useRef(false);
-  const [rewards,setRewards]=useState<Array<{id:string;claimed_at:string|null;reward_json:{marks?:number}}>>([]);
+  const [rewards,setRewards]=useState<CoopRewardDisplay[]>([]);
   const [chatMessages,setChatMessages]=useState<CoopChatMessage[]>([]);
   const acceptRun=useCallback((projection:CoopQModeServerProjection)=>{const next=presentQModeRun(projection);setRun(current=>current&&current.runId===next.runId&&(current.stateVersion??0)>(next.stateVersion??0)?current:next);},[]);
   const acceptEventRun=useCallback((projection:CoopEventRunServerProjection)=>{setEventRun(current=>current&&current.runId===projection.runId&&current.stateVersion>projection.stateVersion?current:projection);},[]);
@@ -167,7 +167,7 @@ export function CoopExpeditionScreen({onClose,language,state,entrySource=realCoo
     setSelectedEvent(undefined);acceptEventRun(started);
   })}/>;
   if(selected&&showLoadouts&&tier&&state.character)return <View style={{flex:1}}>{retry}<CoopLoadoutSelection state={state} language={language} dungeonId={selected.id} dungeonName={selected.name} tier={tier} mode={mode} loadouts={entry?.loadouts??[]} notice={notice} refreshing={loading||busy} onBack={()=>{setShowLoadouts(false);setNotice('')}} onRefresh={()=>load()} onIntent={startWithLoadout}/></View>;
-  if(selected)return <CoopDungeonDetails language={language} dungeon={selected} currentLevel={state.character?.level??0} currentPower={combatPowerRating(state).total} mode={mode} tier={tier} readyToStart={entrySource.kind==='real'&&selectableLoadouts.length===1} busy={busy||pending} liveFellowshipRemaining={entry?.liveFellowshipRemaining} notice={notice} onBack={()=>{setSelected(undefined);setNotice('')}} onTier={next=>{setTier(next);setNotice('')}} onContinue={continueDungeon}/>;
+  if(selected)return <CoopDungeonDetails language={language} dungeon={selected} currentLevel={state.character?.level??0} currentPower={combatPowerRating(state).total} mode={mode} tier={tier} readyToStart={entrySource.kind==='real'&&selectableLoadouts.length===1} busy={busy||pending} liveFellowshipRemaining={entry?.liveFellowshipRemaining} rewardBudget={entry?.rewardBudget} notice={notice} onBack={()=>{setSelected(undefined);setNotice('')}} onTier={next=>{setTier(next);setNotice('')}} onContinue={continueDungeon}/>;
   const echoTools=entrySource.kind==='real'&&entry?.gameVersion?(<View style={{paddingHorizontal:16,paddingTop:8}}>
       <Pressable accessibilityRole="button" accessibilityState={{expanded:showEchoSharing}} accessibilityLabel={st("Echo sharing")} accessibilityHint={st("Sharing an Echo lets other players recruit a snapshot of your character for 24 hours.")} onPress={()=>setShowEchoSharing(value=>!value)} style={{paddingVertical:8,flexDirection:'row',alignItems:'center',justifyContent:'space-between'}}>
         <View style={{flex:1}}><Text style={{color:C.text,fontWeight:'700'}}>{st("My Echo · Current equipment")}</Text><Text numberOfLines={2} style={{color:C.muted}}>{entry.echoSharing?st("Your character Echo is shared with other adventurers."):st("Prepare a snapshot of your current dungeon loadout for other players.")}</Text></View>

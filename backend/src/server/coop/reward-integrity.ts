@@ -7,6 +7,7 @@ export interface CoopRewardEntitlement {id:string;runId:string;mode:CoopMode;rec
 export class MemoryRewardIntegrityRepository{
  entitlements=new Map<string,CoopRewardEntitlement>();wallets=new Map<string,number>();daily=new Map<string,{enhanced:number;echo:number}>();weekly=new Map<string,{enhanced:number;echo:number;liveFellowship:number}>();receipts=new Map<string,{entitlementId:string;marks:number;liveFellowshipBonus:number}>();purchases=new Map<string,{accountId:string;cost:number}>();
  enhancedCharges=new Map<string,EnhancedRewardChargeState>();
+ failedWeekly=new Map<string,number>();
 }
 export class CoopRewardService{
  constructor(private repository:MemoryRewardIntegrityRepository){}
@@ -17,7 +18,14 @@ export class CoopRewardService{
   if(entitlement.claimed){const marks=entitlement.rewardMarks??0,liveFellowshipBonus=entitlement.liveFellowshipBonus??0;this.repository.receipts.set(receiptKey,{entitlementId,marks,liveFellowshipBonus});return{marks,idempotentReplay:true,liveFellowshipBonus};}
   const dailyKey=`${accountId}:${entitlement.periodDateKey}`,weeklyKey=`${accountId}:${entitlement.periodWeekKey}`;const daily=this.repository.daily.get(dailyKey)??{enhanced:0,echo:0},weekly=this.repository.weekly.get(weeklyKey)??{enhanced:0,echo:0,liveFellowship:0};let marks=0,liveFellowshipBonus=0;
   if(entitlement.kind==='participant'){
-   const charge=consumeEnhancedRewardCharge(this.repository.enhancedCharges.get(accountId),entitlement.earnedAtMs,entitlement.periodWeekKey);this.repository.enhancedCharges.set(accountId,charge.state);marks=marksForRun(entitlement.mapBaseMarks,entitlement.tier,entitlement.state,1,charge.enhanced);if(charge.enhanced){daily.enhanced++;weekly.enhanced++;}
+   if(!entitlement.state.cleared){
+    const failureKey=`${accountId}:${entitlement.periodWeekKey}`,used=this.repository.failedWeekly.get(failureKey)??0;
+    const progressMarks=marksForRun(entitlement.mapBaseMarks,entitlement.tier,entitlement.state);
+    marks=used<12&&progressMarks>0?Math.min(12,Math.max(1,Math.round(progressMarks*.20))):0;
+    if(marks>0)this.repository.failedWeekly.set(failureKey,used+1);
+   }else{
+    const charge=consumeEnhancedRewardCharge(this.repository.enhancedCharges.get(accountId),entitlement.earnedAtMs,entitlement.periodWeekKey);this.repository.enhancedCharges.set(accountId,charge.state);marks=marksForRun(entitlement.mapBaseMarks,entitlement.tier,entitlement.state,1,charge.enhanced);if(charge.enhanced){daily.enhanced++;weekly.enhanced++;}
+   }
    if(entitlement.mode==='live'&&entitlement.state.cleared&&weekly.liveFellowship<3){const fullMarks=marksForRun(entitlement.mapBaseMarks,entitlement.tier,entitlement.state,1,true);liveFellowshipBonus=Math.max(1,Math.round(fullMarks*.25));marks+=liveFellowshipBonus;weekly.liveFellowship++;}
   }else{
    const eligible=echoOwnerFullRewardEligible(daily.echo,weekly.echo);marks=eligible?Math.max(1,Math.round(entitlement.mapBaseMarks*.10)):0;if(eligible){daily.echo++;weekly.echo++;}

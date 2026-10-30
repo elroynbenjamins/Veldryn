@@ -20,6 +20,9 @@ export interface CoopDungeonProjection{
   preBossRoomMin?:number;
   preBossRoomMax?:number;
   rewardBudgetState?:string;
+  expectedMarksByTier?:Partial<Record<CoopTier,number>>;
+  /** Server-owned verified gear recommendation for automatic Live tier. */
+  recommendedLiveTier?:CoopTier;
   estimatedMinutes?:{min:number;max:number};
   tierMinLevels?:Partial<Record<CoopTier,number>>;
 }

@@ -33,7 +33,8 @@ function TerminalRunMoment({phase,rewardsReady,rewardsSecured,reduceMotion}:{pha
   </Animated.View>;
 }
 
-export function CoopRunOverview({language,run,myVotedNodeId,selfVoter,onBack,onChoose,onRefresh,onClaim,busy=false,notice,syncError,rewards=[],terminalAction,reduceMotion=false,seasonal=false,eventName,chatMessages=[],onChatSend}:{language:Language;run:CoopRunView;myVotedNodeId?:string;selfVoter?:{name:string;profileIconId?:string|null;className?:string|null};onBack:()=>void;onChoose?:(nodeId:string)=>void;onRefresh?:()=>void;onClaim?:(id:string)=>void;busy?:boolean;notice?:string;syncError?:string;rewards?:Array<{id:string;claimed_at:string|null;reward_json:{marks?:number}}>;terminalAction?:{label:string;claimed?:boolean;completeText?:string;onPress:()=>void};reduceMotion?:boolean;seasonal?:boolean;eventName?:string;chatMessages?:CoopChatMessage[];onChatSend?:(text:string)=>Promise<void>}){
+export interface CoopRewardDisplay {id:string;claimed_at:string|null;reward_json:{marks?:number;enhanced_reward?:boolean;live_fellowship_bonus?:number;reward_charges_remaining?:number;weekly_enhanced_remaining?:number;failure_consolation_remaining?:number;failure_consolation_applied?:boolean};}
+export function CoopRunOverview({language,run,myVotedNodeId,selfVoter,onBack,onChoose,onRefresh,onClaim,busy=false,notice,syncError,rewards=[],terminalAction,reduceMotion=false,seasonal=false,eventName,chatMessages=[],onChatSend}:{language:Language;run:CoopRunView;myVotedNodeId?:string;selfVoter?:{name:string;profileIconId?:string|null;className?:string|null};onBack:()=>void;onChoose?:(nodeId:string)=>void;onRefresh?:()=>void;onClaim?:(id:string)=>void;busy?:boolean;notice?:string;syncError?:string;rewards?:CoopRewardDisplay[];terminalAction?:{label:string;claimed?:boolean;completeText?:string;onPress:()=>void};reduceMotion?:boolean;seasonal?:boolean;eventName?:string;chatMessages?:CoopChatMessage[];onChatSend?:(text:string)=>Promise<void>}){
  const {styles:s}=useCoopStyles(makeStyles);
  const st=useSocialText(),a=(value:string)=>accountText(language,value);
   validateCoopRunView(run);
@@ -89,7 +90,12 @@ export function CoopRunOverview({language,run,myVotedNodeId,selfVoter,onBack,onC
     {!!notice&&<Text accessibilityRole="alert" style={s.copy}>{notice}</Text>}
     {run.phase==='resolving_node'&&<FantasyPanel><Text style={s.copy}>{secondsRemaining!==undefined?st('Battle resolves in {seconds}s',{seconds:secondsRemaining}):st("Your party is resolving this room. Progress is saved online.")}</Text></FantasyPanel>}
 
-    {rewards.map(reward=><FantasyPanel key={reward.id} variant="success">{reward.claimed_at?<Text style={s.copy}>{reward.reward_json.marks??0} {st("Expedition Marks collected.")}</Text>:<GameButton title={st("Collect expedition reward")} disabled={busy} onPress={()=>onClaim?.(reward.id)}/>}</FantasyPanel>)}
+    {rewards.map(reward=><FantasyPanel key={reward.id} variant="success">{reward.claimed_at?<View style={s.actionArea}>
+ <Text style={s.title}>{reward.reward_json.marks??0} {st("Expedition Marks collected.")}</Text>
+ {reward.reward_json.live_fellowship_bonus?<Text style={s.copy}>{st("Live Fellowship bonus: +{marks} Marks",{marks:reward.reward_json.live_fellowship_bonus})}</Text>:null}
+ {reward.reward_json.failure_consolation_applied?<Text style={s.copy}>{st("Consolation reward · No enhanced charge spent.")}</Text>:null}
+ {reward.reward_json.reward_charges_remaining!==undefined&&reward.reward_json.weekly_enhanced_remaining!==undefined?<Text style={s.copy}>{st("Enhanced: {charges} charges · {weekly} weekly rewards left",{charges:reward.reward_json.reward_charges_remaining,weekly:reward.reward_json.weekly_enhanced_remaining})}</Text>:null}
+ </View>:<GameButton title={st("Collect expedition reward")} disabled={busy} onPress={()=>onClaim?.(reward.id)}/>}</FantasyPanel>)}
     {terminalAction?<FantasyPanel variant="success">{terminalAction.claimed?<View style={s.claimedReward}><StateChip label={st("SECURED")} tone="success"/><Text style={s.copy}>{terminalAction.completeText??'Seasonal expedition reward collected.'}</Text></View>:<GameButton title={terminalAction.label} disabled={busy} onPress={terminalAction.onPress}/>}</FantasyPanel>:null}
     {run.rewardText?<FantasyPanel variant="success"><Text style={s.title}>{ct(language,'details.reward')}</Text><Text style={s.copy}>{run.rewardText}</Text></FantasyPanel>:null}
     {terminal?<GameButton title={rewardsSecured?st("Return to dungeon list"):st("Leave expedition")} tone="secondary" disabled={busy} onPress={onBack}/>:null}

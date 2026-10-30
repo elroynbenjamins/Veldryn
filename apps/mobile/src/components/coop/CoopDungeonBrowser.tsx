@@ -102,21 +102,36 @@ export function CoopEventExpeditionDetails({language,event,currentLevel,loadoutR
   </ExpeditionScreenShell>;
 }
 
-type DetailsProps={language:Language;dungeon:CoopDungeonView;onMode?:(mode:CoopMode)=>void;currentLevel:number;currentPower?:number;mode:CoopMode;tier?:CoopTier;readyToStart?:boolean;busy?:boolean;liveFellowshipRemaining?:number;notice?:string;onBack:()=>void;onTier:(tier:CoopTier)=>void;onContinue:(tier:CoopTier)=>void};
-export function CoopDungeonDetails({language,dungeon,currentLevel,currentPower=0,mode,tier,readyToStart=false,busy=false,liveFellowshipRemaining=3,notice,onBack,onTier,onContinue}:DetailsProps){
+type DetailsProps={language:Language;dungeon:CoopDungeonView;onMode?:(mode:CoopMode)=>void;currentLevel:number;currentPower?:number;mode:CoopMode;tier?:CoopTier;readyToStart?:boolean;busy?:boolean;liveFellowshipRemaining?:number;rewardBudget?:{charges:number;chargeCapacity:number;weeklyRemaining:number;weeklyCapacity:number;nextChargeAtMs?:number|null;failureConsolationRemaining?:number;failureConsolationCapacity?:number};notice?:string;onBack:()=>void;onTier:(tier:CoopTier)=>void;onContinue:(tier:CoopTier)=>void};
+export function CoopDungeonDetails({language,dungeon,currentLevel,currentPower=0,mode,tier,readyToStart=false,busy=false,liveFellowshipRemaining=3,rewardBudget,notice,onBack,onTier,onContinue}:DetailsProps){
+ const st=useSocialText();
  const {styles:s}=useCoopStyles(makeStyles),a=(text:string)=>accountText(language,text);
- const autoTier=highestEligibleCoopTier(dungeon,currentLevel),effectiveTier=mode==='live'?autoTier:tier,eligibility=effectiveTier?coopTierEligibility(dungeon,effectiveTier,currentLevel):undefined,requiredLevel=eligibility?.requiredLevel??dungeon.minLevel,canContinue=dungeon.available&&!!eligibility?.eligible;
+ const autoTier=mode==='live'?(dungeon.recommendedLiveTier??highestEligibleCoopTier(dungeon,currentLevel)):highestEligibleCoopTier(dungeon,currentLevel),effectiveTier=mode==='live'?autoTier:tier,eligibility=effectiveTier?coopTierEligibility(dungeon,effectiveTier,currentLevel):undefined,requiredLevel=eligibility?.requiredLevel??dungeon.minLevel,canContinue=dungeon.available&&!!eligibility?.eligible;
+ const fullMarks=effectiveTier?dungeon.expectedMarksByTier?.[effectiveTier]:undefined;
+ const enhanced=rewardBudget?rewardBudget.charges>0&&rewardBudget.weeklyRemaining>0:undefined;
+ const estimatedMarks=fullMarks===undefined?undefined:enhanced===false?Math.round(fullMarks*.2):fullMarks;
+ const liveBonus=fullMarks!==undefined&&mode==='live'&&liveFellowshipRemaining>0?Math.max(1,Math.round(fullMarks*.25)):0;
+ const tierPower=effectiveTier?Math.round(dungeon.recommendedPower*({1:1,2:1.06,3:1.11,4:1.19,5:1.29} as const)[effectiveTier]):dungeon.recommendedPower;
  const roomCount=dungeon.preBossRoomMin===dungeon.preBossRoomMax?String(dungeon.preBossRoomMin):dungeon.preBossRoomMin+'–'+dungeon.preBossRoomMax;
  return <ExpeditionScreenShell compactHeader titleInHero eyebrow={ct(language,'details.kicker')} title={dungeon.name} onBack={onBack} backLabel={ct(language,'details.backList')} stickyAction={<View style={s.stickyStack}>{notice?<Text accessibilityRole="alert" style={s.notice}>{notice}</Text>:null}<PrimaryAction label={readyToStart?(mode==='live'?a('Find Party'):a('Start Dungeon')):a('Prepare Loadout')} disabled={!canContinue||busy} loading={busy} onPress={()=>effectiveTier&&canContinue&&onContinue(effectiveTier)}/></View>}>
   <DungeonHero title={dungeon.name} source={dungeon.heroArtId?coopUiAssets[dungeon.heroArtId]:undefined} label={dungeon.region??ct(language,'details.kicker')} description=""/>
-  <View style={s.quickFacts}><StateChip label={ct(language,'browse.requiresLevel',{level:requiredLevel})}/><StateChip label={dungeon.estimatedMinutes.min+'–'+dungeon.estimatedMinutes.max+' '+a('min')}/><StateChip label={mode==='live'?a('Live'):a('Solo')} tone="selected"/></View>
+  <View style={s.quickFacts}><StateChip label={ct(language,'browse.requiresLevel',{level:requiredLevel})}/><StateChip label={(mode==='live'?'3–5':dungeon.estimatedMinutes.min+'–'+dungeon.estimatedMinutes.max)+' '+a('min')}/><StateChip label={mode==='live'?a('Live'):a('Solo')} tone="selected"/></View>
   {!dungeon.available?<Text accessibilityRole="alert" style={s.lock}>{dungeon.lockedReason??ct(language,'browse.locked')}</Text>:null}
-  {currentPower<dungeon.recommendedPower?<Text style={s.notice}>{a('Recommended power')}: {dungeon.recommendedPower.toLocaleString()}</Text>:null}
+  {currentPower<tierPower?<Text style={s.notice}>{a('Recommended power')}: {tierPower.toLocaleString()}</Text>:null}
   {mode==='qmode'?<FantasyPanel><Text style={s.cardTitle}>{ct(language,'details.difficulty')}</Text><View style={[s.tiers,{flexWrap:'wrap'}]}>{dungeon.difficulties.map(value=><TierChoice key={value} value={value} levelLabel={clt(language,'level')} difficultyLabel={ct(language,'details.difficulty')} requiredLevel={dungeon.tierMinLevels[value]} currentLevel={currentLevel} selected={tier===value} onPress={()=>onTier(value)}/>)}</View>{!dungeon.difficulties.length?<Text style={s.lock}>{ct(language,'details.noDifficulty')}</Text>:null}</FantasyPanel>:<Text style={s.levels}>{ct(language,'details.liveAutoSelected',{tier:autoTier??'—'})}</Text>}
-  <FantasyPanel><DungeonReward title={a('Expedition Marks')}/>{mode==='live'?<View style={s.modeHead}><Text style={s.copy}>{coopPolicyText(language,'fellowshipLabel')}</Text><StateChip label={Math.max(0,Math.min(3,liveFellowshipRemaining))+'/3'} tone={liveFellowshipRemaining>0?'success':'neutral'}/></View>:null}</FantasyPanel>
+  <FantasyPanel>
+   <DungeonReward title={estimatedMarks!==undefined?`${estimatedMarks+liveBonus} ${a('Expedition Marks')}`:a('Expedition Marks')} detail={fullMarks!==undefined?st('Estimated clear reward · Tier {tier}',{tier:effectiveTier??1}):undefined}/>
+   {rewardBudget?<View style={s.modeHead}>
+    <StateChip label={`${rewardBudget.charges}/${rewardBudget.chargeCapacity} ${st('charges')}`} tone={enhanced?'success':'neutral'}/>
+    <StateChip label={`${rewardBudget.weeklyRemaining}/${rewardBudget.weeklyCapacity} ${st('weekly rewards')}`} tone={rewardBudget.weeklyRemaining>0?'selected':'neutral'}/>
+   </View>:null}
+   {rewardBudget&&enhanced===false?<Text style={s.copy}>{st('After enhanced rewards: 20% Marks. Unlimited entries.')}</Text>:null}
+   {rewardBudget&&enhanced&&rewardBudget.charges<rewardBudget.chargeCapacity?<Text style={s.copy}>{st('One reward charge replenishes every 8 hours.')}</Text>:null}
+   {mode==='live'?<View style={s.modeHead}><Text style={s.copy}>{coopPolicyText(language,'fellowshipLabel')}{liveBonus>0?` (+${liveBonus})`:''}</Text><StateChip label={Math.max(0,Math.min(3,liveFellowshipRemaining))+'/3'} tone={liveFellowshipRemaining>0?'success':'neutral'}/></View>:null}
+  </FantasyPanel>
   <DungeonDisclosure title={ct(language,'details.party')}><DungeonPartyRoles language={language}/></DungeonDisclosure>
   {dungeon.id==='EXP_001'?<DungeonBossPreview name="Rootbound Heart" label={ct(language,'event.finalBoss')}/>:null}
-  <DungeonDisclosure title={a('More information')}><Text style={s.copy}>{roomCount} {a('rooms before the boss')}</Text><Text style={s.copy}>{dungeon.rewardBudgetState??coopPolicyText(language,'rewardCadence')}</Text>{dungeon.enabledRoomTypes.length?<View style={s.roomGrid}>{dungeon.enabledRoomTypes.map(room=><RoomTile key={room} language={language} room={room}/>)}</View>:null}</DungeonDisclosure>
+  <DungeonDisclosure title={a('More information')}><Text style={s.copy}>{roomCount} {a('rooms before the boss')}</Text><Text style={s.copy}>{dungeon.rewardBudgetState??coopPolicyText(language,'rewardCadence')}</Text>{rewardBudget?.failureConsolationRemaining!==undefined?<Text style={s.copy}>{st('Failed runs do not spend charges. {remaining} of 12 weekly consolation rewards left.',{remaining:rewardBudget.failureConsolationRemaining})}</Text>:null}{dungeon.enabledRoomTypes.length?<View style={s.roomGrid}>{dungeon.enabledRoomTypes.map(room=><RoomTile key={room} language={language} room={room}/>)}</View>:null}</DungeonDisclosure>
  </ExpeditionScreenShell>;
 }
 

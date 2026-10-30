@@ -47,6 +47,8 @@
     "coop-phase10": "node dist/server/coop/__tests__/phase10-chat.js",
     "coop-phase11": "node dist/server/coop/__tests__/phase11-rewards.js",
     "test:coop-rewards": "tsc -p tsconfig.coop-rewards.json && node dist-coop-rewards/server/coop/__tests__/phase11-rewards.js",
+    "test:dungeon-tier-balance": "tsc -p tsconfig.coop-rewards.json && node dist-coop-rewards/server/coop/__tests__/tier-reward-balance.js",
+    "test:dungeon-full-matrix": "tsc -p tsconfig.coop-rewards.json && node dist-coop-rewards/server/coop/__tests__/tier-full-matrix.js",
     "coop-phase12": "node dist/server/coop/__tests__/phase12-balance.js",
     "coop-phase13": "node dist/server/coop/__tests__/phase13-regional-content.js",
     "event-expeditions": "node dist/server/expeditions/content/__tests__/event-expeditions.js && node dist/server/expeditions/content/__tests__/event-expeditions-entry-contract.js && node dist/server/expeditions/__tests__/event-service.js",

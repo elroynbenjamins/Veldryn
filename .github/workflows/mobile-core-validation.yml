@@ -44,6 +44,8 @@ jobs:
         run: pnpm --dir ../../backend typecheck:online
       - name: Verify Live room pacing and progressive battle simulation
         run: pnpm --dir ../../backend test:live-pacing
+      - name: Verify dungeon tier difficulty and reward parity
+        run: pnpm --dir ../../backend test:dungeon-tier-balance
       - name: Validate recent Supabase migration versions
         run: node ../../tools/validate-recent-migration-versions.mjs
       - name: Test chat retry receipts and read cursors in PostgreSQL

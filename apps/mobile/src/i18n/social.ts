@@ -6,6 +6,15 @@ import {createTranslator,type TranslationParams} from './translator';
 
 // Columns are German, Spanish, Dutch, Italian and French; keys are the English catalog.
 export const socialTranslationRows = {
+ "Failed runs do not spend charges. {remaining} of 12 weekly consolation rewards left.":["Niederlagen kosten keine Ladungen. Noch {remaining} von 12 Trostbelohnungen pro Woche.","Los fracasos no gastan cargas. Quedan {remaining} de 12 recompensas de consuelo semanales.","Mislukte runs kosten geen ladingen. Nog {remaining} van 12 troostbeloningen deze week.","Le sconfitte non consumano cariche. Restano {remaining} di 12 ricompense di consolazione settimanali.","Les échecs ne coûtent pas de charges. Il reste {remaining} récompenses de consolation sur 12."],
+ "Live Fellowship bonus: +{marks} Marks":["Live-Gruppenbonus: +{marks} Marken","Bono de equipo en vivo: +{marks} marcas","Live-groepsbonus: +{marks} Marken","Bonus gruppo Live: +{marks} marchi","Bonus d'équipe en direct : +{marks} marques"],
+ "Consolation reward · No enhanced charge spent.":["Trostbelohnung · Keine Ladung verbraucht.","Premio de consuelo · No se gastó ninguna carga.","Troostbeloning · Geen lading verbruikt.","Premio di consolazione · Nessuna carica consumata.","Consolation · Aucune charge consommée."],
+ "Enhanced: {charges} charges · {weekly} weekly rewards left":["Verstärkt: {charges} Ladungen · {weekly} Wochenbelohnungen übrig","Mejorado: {charges} cargas · {weekly} recompensas semanales restantes","Versterkt: {charges} ladingen · {weekly} weekbeloningen over","Potenziato: {charges} cariche · {weekly} ricompense settimanali rimaste","Amélioré : {charges} charges · {weekly} récompenses hebdomadaires restantes"],
+ "Estimated clear reward · Tier {tier}":["Geschätzte Beute · Stufe {tier}","Recompensa estimada · Nivel {tier}","Geschatte beloning · Niveau {tier}","Ricompensa stimata · Livello {tier}","Récompense estimée · Palier {tier}"],
+ "charges":["Ladungen","cargas","ladingen","cariche","charges"],
+ "weekly rewards":["Wochenbelohnungen","recompensas semanales","wekelijkse beloningen","ricompense settimanali","récompenses hebdomadaires"],
+ "After enhanced rewards: 20% Marks. Unlimited entries.":["Danach: 20 % Marken. Unbegrenzte Eintritte.","Después: 20 % de marcas. Entradas ilimitadas.","Daarna: 20% Marken. Onbeperkt spelen.","Dopo: 20% Marchi. Ingressi illimitati.","Ensuite : 20 % de marques. Entrées illimitées."],
+ "One reward charge replenishes every 8 hours.":["Eine Ladung regeneriert alle 8 Stunden.","Una carga se recupera cada 8 horas.","Elke 8 uur wordt één lading hersteld.","Una carica si ripristina ogni 8 ore.","Une charge revient toutes les 8 heures."],
  "Vote ends in {seconds}s":["Abstimmung endet in {seconds} s","La votación termina en {seconds} s","Stemmen sluit over {seconds} s","La votazione termina tra {seconds} s","Fin du vote dans {seconds} s"],
  "Battle resolves in {seconds}s":["Kampf endet in {seconds} s","El combate termina en {seconds} s","Gevecht eindigt over {seconds} s","Il combattimento termina tra {seconds} s","Fin du combat dans {seconds} s"],
  // Dungeon route voting and simplified run details.

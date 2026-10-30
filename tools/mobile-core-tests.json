@@ -8,6 +8,7 @@
   "tests/online-loading-interactions.cjs",
   ".core-build/apps/mobile/tests/player-identity-cache-policy.js",
   "tests/settings-simplicity-ui.cjs",
+  "tests/account-auth-refinement-ui.cjs",
   "tests/ux-popup-reliability-ui.cjs",
   ".core-build/apps/mobile/tests/ux-popup-reliability.js",
   ".core-build/apps/mobile/tests/short-lived-read-cache.js",

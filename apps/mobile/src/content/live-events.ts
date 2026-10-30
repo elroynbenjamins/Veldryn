@@ -3,7 +3,7 @@ import type {ClassId} from '../core/types';
 import type {LiveEventUiCopy} from './live-event-ui';
 import type {LiveEventVisualKey} from './live-event-visual-keys';
 
-export type EventRewardKind='profile_icon'|'pet'|'companion'|'background'|'border'|'emote'|'title'|'candy'|'guild_name_color'|'guild_frame'|'guild_banner'|'gold'|'companion_essence';
+export type EventRewardKind='profile_icon'|'pet'|'companion'|'background'|'border'|'emote'|'title'|'candy'|'guild_name_color'|'guild_frame'|'guild_banner'|'gold'|'companion_essence'|'bondstones';
 export type EventActivitySource='combat'|'gathering'|'crafting'|'boss';
 export type EventRewardRarity='common'|'uncommon'|'rare'|'epic'|'mythic'|'legendary';
 export interface EventReward{kind:EventRewardKind;id:string;name:string;rarity:EventRewardRarity;quantity?:number;}
@@ -36,6 +36,19 @@ export function eventCandies(definition:Pick<LiveEventDef,'id'|'name'|'visualKey
   ];
 }
 export function eventCandy(definition:Pick<LiveEventDef,'id'|'name'|'visualKey'>){return eventCandies(definition)[0];}
+
+/** Optional prestige-currency supplies. Capped per event run and not a paid currency.
+ * Candy uses the same festival consumables as regular event rewards. */
+export function eventPrestigeSupplyOffers(definition:LiveEventDef):EventShopOffer[]{
+ const skill=eventCandies(definition).find(candy=>candy.kind==='skill');
+ const combat=eventCandies(definition).find(candy=>candy.kind==='combat');
+ return [
+  {id:'prestige_bondstone',reward:{kind:'bondstones',id:'prestige_bondstone',name:'Bondstone',rarity:'rare',quantity:1},currency:'prestige',cost:2,limit:3},
+  {id:'prestige_companion_essence',reward:{kind:'companion_essence',id:'prestige_essence_125',name:'Companion Essence · 125',rarity:'uncommon',quantity:125},currency:'prestige',cost:1,limit:4},
+  ...(skill?[{id:'prestige_candy_skill',reward:{kind:'candy' as const,id:skill.id,name:skill.name,rarity:'common' as const,quantity:1},currency:'prestige' as const,cost:1,limit:5}]:[]),
+  ...(combat?[{id:'prestige_candy_combat',reward:{kind:'candy' as const,id:combat.id,name:combat.name,rarity:'common' as const,quantity:1},currency:'prestige' as const,cost:1,limit:5}]:[]),
+ ];
+}
 
 /** Automatic, optional daily focus. It changes with the UTC event day and never requires a task or streak. */
 export function eventDailyFestivalBlessing(definition:Pick<LiveEventDef,'name'>,eventDay:number):EventBlessingDef{

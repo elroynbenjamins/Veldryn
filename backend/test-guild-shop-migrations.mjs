@@ -112,6 +112,13 @@ try{
   try{await db.exec(readFileSync(path.join(migrations,file),'utf8'));}
   catch(error){throw new Error(`Guild migration ${file} failed: ${String(error)}`);}
  }
+ // Guild Bank is a separately gated migration. Test its functions in the
+ // disposable PGlite database; no live player resources can be affected.
+ await db.exec(readFileSync(path.join(migrations,'20261104000016_guild_bank_construction_v1.sql'),'utf8'));
+ assert.equal((await single(`select has_function_privilege('authenticated',
+  'public.guild_bank_deposit_server_v1(uuid,text,integer,text)','EXECUTE') as permitted`)).permitted,false);
+ assert.equal((await single(`select has_function_privilege('authenticated',
+  'public.guild_bank_allocate_server_v1(uuid,text,text,integer,text)','EXECUTE') as permitted`)).permitted,false);
  try{
   await db.exec(readFileSync(path.join(here,'supabase','tests','guild_shop_security.sql'),'utf8'));
  }catch(error){throw new Error(`Guild Shop role grants or RLS gate failed: ${String(error)}`);}
@@ -141,6 +148,31 @@ try{
    unlockedProfileIconIds:[],unlockedProfileBorderIds:[],combatCompanionProgress:{}}
  })]);
  await db.query('insert into public.character_wallets(character_id,gold) values ($1,1000)',[character]);
+ // A bank deposit is denied until a project has been explicitly released.
+ await fail(`select public.guild_bank_deposit_server_v1($1,'GREENWOOD_LOG',25,'bank-test-001')`,[account]);
+ assert.equal((await single('select count(*)::int as n from public.guild_bank_deposits')).n,0);
+ await db.query("update public.guild_construction_templates set enabled=true where template_id='stormwatch_banner'");
+ const deposit=await single(`select public.guild_bank_deposit_server_v1($1,'GREENWOOD_LOG',25,'bank-test-001') as receipt`,[account]);
+ assert.equal(deposit.receipt.alreadyProcessed,false);
+ assert.equal((await single(`select public.guild_bank_deposit_server_v1($1,'GREENWOOD_LOG',25,'bank-test-001') as receipt`,[account])).receipt.alreadyProcessed,true);
+ assert.equal((await single(`select amount from public.guild_bank_balances where guild_id=$1 and resource_id='GREENWOOD_LOG'`,[guild])).amount,25);
+ const stateAfter=await single('select state from public.online_game_states where account_id=$1',[account]);
+ assert.equal(stateAfter.state.inventory.stacks.find(x=>x.itemId==='GREENWOOD_LOG').quantity,55);
+ await fail(`select public.guild_bank_deposit_server_v1($1,'GREENWOOD_LOG',30,'bank-test-001')`,[account]);
+ await fail(`select public.guild_bank_deposit_server_v1($1,'GREENWOOD_LOG',100,'bank-test-002')`,[account]);
+ const bankGold=await single(`select public.guild_bank_deposit_server_v1($1,'gold',100,'bank-gold-01') as receipt`,[account]);
+ assert.equal(bankGold.receipt.alreadyProcessed,false);
+ assert.equal((await single('select gold from public.character_wallets where character_id=$1',[character])).gold,900);
+ assert.equal((await single("select state#>>'{character,gold}' as gold from public.online_game_states where account_id=$1",[account])).gold,'900');
+ const allocated=await single(`select public.guild_bank_allocate_server_v1($1,'stormwatch_banner','GREENWOOD_LOG',10,'bank-alloc-01') as receipt`,[account]);
+ assert.equal(allocated.receipt.alreadyProcessed,false);
+ assert.equal((await single(`select public.guild_bank_allocate_server_v1($1,'stormwatch_banner','GREENWOOD_LOG',10,'bank-alloc-01') as receipt`,[account])).receipt.alreadyProcessed,true);
+ assert.equal((await single(`select amount from public.guild_bank_balances where guild_id=$1 and resource_id='GREENWOOD_LOG'`,[guild])).amount,15);
+ await fail(`select public.guild_bank_allocate_server_v1($1,'stormwatch_banner','GREENWOOD_LOG',16,'bank-alloc-02')`,[account]);
+ assert.equal((await single(`select amount from public.guild_bank_balances where guild_id=$1 and resource_id='GREENWOOD_LOG'`,[guild])).amount,15);
+ assert.equal((await single(`select count(*)::int as n from public.guild_bank_ledger where guild_id=$1`,[guild])).n,3);
+ assert.equal((await single(`select count(*)::int as n from public.guild_construction_unlocks where guild_id=$1`,[guild])).n,0);
+
  // Server accepts starter art, but never premium Guild emotes before unlock.
  await db.query('insert into public.chat_messages(account_id,body) values ($1,$2)',[account,'Hello :male_01:']);
  await fail('insert into public.chat_messages(account_id,body) values ($1,$2)',[account,'Hello :pet_set_a_01:']);

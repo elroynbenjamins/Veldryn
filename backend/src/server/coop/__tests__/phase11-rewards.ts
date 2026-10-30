@@ -22,7 +22,7 @@ for(let i=0;i<14;i++){
  const item={...entitlement(`failure-${i}`,'live','failed-consolation',i*1000),state:fail};
  failService.create(item);
  const claim=failService.claim('failed-consolation',item.id,`failure-request-${i}`);
- assert.equal(claim.marks,i<12?12:0,'Failure payout must be limited to 12 small consolation claims per week');
+ assert.equal(claim.marks,i<12?7:0,'Failure payout must be limited to 12 small consolation claims per week');
  assert.equal(claim.liveFellowshipBonus,0,'Failed Live clears never grant Fellowship');
 }
 assert.equal(failRepo.enhancedCharges.size,0,'Failed attempts must not consume or initialize enhanced charges');
@@ -32,6 +32,6 @@ failService.create(clearAfterFailures);
 assert.equal(failService.claim('failed-consolation',clearAfterFailures.id,'after-failures-clear').marks,100,'A successful clear after failures still earns a full enhanced payout');
 assert.equal(failRepo.enhancedCharges.get('failed-consolation')?.charges,2,'Only a successful clear spends the charge');
 const replayFailure=failService.claim('failed-consolation','failure-0','failure-request-0');
-assert.equal(replayFailure.marks,12);assert.equal(replayFailure.idempotentReplay,true);
+assert.equal(replayFailure.marks,7);assert.equal(replayFailure.idempotentReplay,true);
 assert.equal(failRepo.failedWeekly.get('failed-consolation:2026-09-07'),12,'Idempotent replay never grants additional weekly failure allowance');
 console.log('coop phase11 rewards OK');

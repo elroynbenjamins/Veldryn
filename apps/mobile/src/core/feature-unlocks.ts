@@ -2,6 +2,8 @@ import type {GameState} from './types';
 
 export type EarlyFeatureId='dailySupplies'|'events'|'pets'|'accountBonuses'|'friends'|'companions'|'social'|'contracts'|'masteryHall'|'guild'|'party'|'rankings';
 export const GUILD_UNLOCK_LEVEL=7;
+/** Guild browsing unlocks at Level 7; the production database requires Level 10 to join or found one. */
+export const GUILD_JOIN_LEVEL=10;
 export const PARTY_UNLOCK_LEVEL=20;
 export const EARLY_FEATURE_DESTINATION_ORDER=['DailySupplies','Events','AccountBonuses','Friends','Companions','Social','MasteryHall','Guild','Rankings'] as const;
 

@@ -7,6 +7,7 @@ const panel=read('CombatCompanionPanel.tsx');
 const training=read('CompanionTrainingV50Panel.tsx');
 const expedition=read('CompanionExpeditionsV50Panel.tsx');
 const upgrade=read('CompanionUpgradePresentation.tsx');
+const resource=read('ResourceIcon.tsx');
 
 // The everyday roster starts with owned companions; discovery remains available.
 assert(panel.includes("useState<CollectionFilter>('Owned')"),'Roster must default to owned companions');
@@ -20,6 +21,7 @@ assert(panel.includes("resourceId:cost.materialId"),'Facility-specific material 
 assert(panel.includes("owned:e.materials[cost.materialId]??0"),'Facility requirements must show actual owned materials');
 assert(panel.includes("companionMaterialSourceTargets(cost.materialId)"),'Missing materials must link to sources');
 assert(upgrade.includes('<ResourceIcon resourceId={row.resourceId'), 'Cost rows must show actual resource icons');
+assert(resource.includes("resourceId==='SUPPLIES'"),'Companion Supplies must have a safe icon fallback');
 assert(upgrade.includes("row.owned>=row.required"),'Enough/missing resource state must reflect balances');
 
 // Claims should not appear claimable before the underlying reward timer is due.

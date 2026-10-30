@@ -5,6 +5,7 @@ const read=(path:string)=>fs.readFileSync(path,'utf8');
 
 const app=read('App.tsx');
 const guildScreen=read('src/screens/GuildScreen.tsx');
+const navigation=read('src/components/GuildNavigation.tsx');
 const chat=read('src/components/GuildChat.tsx');
 const composer=read('src/components/ChatComposer.tsx');
 const onlineProjects=read('src/components/OnlineGuildProjectsPanel.tsx');
@@ -35,10 +36,10 @@ ok(guildScreen.includes('{onlineProjects}')&&guildScreen.includes("onlineSection
 ok(guildScreen.includes('title={st("Guild Projects")}')&&guildScreen.includes("onlineSection==='PvE'?onlinePve:null"),"Activities must label Projects and keep PvE in its dedicated destination");
 ok(guildScreen.includes("onlineSection==='Chat'?onlineChat:null"),'Chat tab must render Guild Chat');
 ok(guildScreen.includes("onlineSection==='Manage'?<View")&&!guildScreen.includes('{onlineDirectory}')&&guildScreen.includes('{onlineCustomize}'),'Joined-member management must preserve Customize without offering duplicate Guild creation');
-ok(guildScreen.includes('<GuildMemberIdentity/>')&&guildScreen.includes('board={onlineBoard}'),'Guild Home must preserve member identity and the Notice Board');
+ok(guildScreen.includes('<GuildMemberIdentity onRoster=')&&guildScreen.includes('<GuildHomeActions board=')&&guildScreen.includes('board={onlineBoard}'),'Guild Home must preserve member identity and the private Notice Board');
 ok(guildScreen.includes('<GuildDiscoveryFlow onJoined={reloadGuildMembership}/>'),'Nonmembers must use the dedicated Guild discovery and creation flow');
-ok(guildScreen.includes("badge={value==='Chat'?Math.max(onlineChatUnread,onlineChatMentions):0}"),'Guild Chat tab must surface unread/mention attention');
-ok(guildScreen.includes('tabBadgeWarning:{backgroundColor:C.warning}'),'Guild Chat mentions must have warning emphasis');
+ok(guildScreen.includes('unread={onlineChatUnread} mentions={onlineChatMentions}')&&navigation.includes("item.id==='Chat'&&(unread>0||mentions>0)"),'Guild Chat tab must surface unread/mention attention');
+ok(navigation.includes('backgroundColor:mentions?C.warning:C.notification'),'Guild Chat mentions must have warning emphasis');
 
 ok(projectClient.includes("from('guild_project_instances')"),'Guild Project client must read authoritative Project instances');
 ok(projectClient.includes("from('guild_project_member_progress')"),'Guild Project client must read personal authoritative contribution');

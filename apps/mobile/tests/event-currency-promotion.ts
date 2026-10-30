@@ -49,7 +49,7 @@ assert.equal(eventShopOffers(state,now).find(offer=>offer.id==='veilbreak_backgr
 LIVE_EVENT_CATALOG.push(MERCHANT_GUILD_FESTIVAL_EVENT,FROSTFALL_EVENT);
 const guildId=MERCHANT_GUILD_FESTIVAL_EVENT.id;
 const guildStart=Date.UTC(2026,10,6),guildNow=guildStart+60_000;
-const guildState=createCharacter(newGame(guildStart),'IRONWARDEN','Festival Balance Test');
+const guildState=createCharacter(newGame(guildStart),'IRONWARDEN','FestivalTester');
 guildState.account.liveEvent={eventId:guildId,enabled:true,startsAtMs:guildStart,endsAtMs:Date.UTC(2026,10,29)};
 assert.equal(FUTURE_EVENT_CURRENCY_ADJUSTMENT_BPS,-2500);
 assert.equal(eventCurrencyBonusBps(guildState,guildId,guildNow),-2500);

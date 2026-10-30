@@ -147,7 +147,7 @@ export function CoopExpeditionScreen({onClose,language,state,entrySource=realCoo
   function chooseEvent(expedition:CoopEventExpeditionPreview){setSelected(undefined);setShowLoadouts(false);setRun(undefined);setSelectedEvent(expedition);setNotice('')}
   const retry=pending?<GameButton title={st("Retry pending co-op action")} disabled={busy} onPress={()=>action(async()=>{const value=await coopClient.retryPending();if(value&&typeof value==='object'&&'eventExpeditionId' in value)acceptEventRun(value as CoopEventRunServerProjection);else if(value&&typeof value==='object'&&'team' in value)acceptRun(value as CoopQModeServerProjection);await load();})}/>:null;
   const quickLiveMatch=()=>void action(async()=>{const loadout=verifiedLoadout();if(!loadout)throw new Error(st("No verified Live-ready loadout is available. Refresh your co-op loadout first."));await coopClient.quickLive({requestId:coopRequestId(),characterId:loadout.characterId,loadoutId:loadout.id,loadoutRevision:loadout.revision});setShowLive(true);});
-  const liveTools=coopLiveReadyEnabled&&entrySource.kind==='real'?<CoopLiveRecruitmentBoard posts={recruitmentWithIcons} dungeons={dungeons} nowMs={entry?.serverNow??Date.now()} busy={busy} notice={notice}
+  const liveTools=coopLiveReadyEnabled&&entrySource.kind==='real'?<CoopLiveRecruitmentBoard showQuickMatch={false} posts={recruitmentWithIcons} dungeons={dungeons} nowMs={entry?.serverNow??Date.now()} busy={busy} notice={notice}
     onQuickMatch={quickLiveMatch}
     onJoin={joinRecruitmentSearch}
     onPublish={(dungeonId,note)=>action(async()=>{await coopClient.publishLiveRecruitment({requestId:coopRequestId(),dungeonId,note});await refreshLiveRecruitment();setNotice(st("Live LFG posted for 30 minutes."));})}

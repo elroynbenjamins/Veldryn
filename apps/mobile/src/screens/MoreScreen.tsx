@@ -50,7 +50,7 @@ function itemMeta(language:GameState['settings']['language'],id:MoreDestination)
     case 'Arena':return {title:a("Arena"),description:a("Three-character squad mode · In Development")};
     case 'Rankings':return {title:a("Rankings"),description:a("Server-calculated prestige boards")};
     case 'Collections':return {title:a("Collections"),description:a("Collectibles and account bonuses")};
-    case 'ResourceCodex':return {title:a('Resource Codex'),description:a('Find resources, companion materials and their sources')};
+    case 'ResourceCodex':return {title:a('Codex'),description:a('Browse resources, companion materials and crafting recipes')};
     case 'Profile':return {title:a("Profile"),description:a("Identity, showcase and customization")};
     case 'NewUnlocks':return {title:a('New Unlocks'),description:a('Titles, pets, emotes and profile cosmetics you earned.')};
     case 'MasteryHall':return {title:a("Mastery Hall"),description:a("Account-wide R50 profession records and prestige")};

@@ -1,11 +1,14 @@
 import {RANKINGS_RELEASED} from '../core/release-flags';
 import {RateAppCard} from '../components/RateAppCard';
+import {DiscordButton} from '../components/DiscordButton';
+import {LineworkIcon} from '../components/LineworkIcon';
+import {navigationLinework} from '../components/NavigationLinework';
 import {accountText} from '../i18n/account';
 import {useMemo} from 'react';
 import {UiIcon} from '../components/UiIcon';
 import {TutorialBeacon} from '../components/TutorialBeacon';
 import {ThemedNavigationIcon} from '../components/ThemedNavigationIcon';
-import {Pressable,ScrollView,StyleSheet,Text,View,useWindowDimensions} from 'react-native';
+import {Linking,Pressable,ScrollView,StyleSheet,Text,View,useWindowDimensions} from 'react-native';
 import {radii,spacing,typography,type ThemeColors} from '../theme/theme';
 import {useGameTheme} from '../theme/ThemeContext';
 import {t} from '../i18n';
@@ -28,6 +31,10 @@ function iconForDestination(id:MoreDestination):QuickNavDestination{
   if(id==='Store')return 'Inventory';
   if(id==='MasteryHall')return 'Skills';
   return id;
+}
+const customAccountIcons:Partial<Record<MoreDestination,keyof typeof navigationLinework>>={Activity:'roster',Profile:'identity',NewUnlocks:'unlocks',AccountBonuses:'bonuses',DailySupplies:'supplies',RewardsInbox:'inbox',Rankings:'trophy',Arena:'arena',Collections:'collection',ResourceCodex:'codex',MasteryHall:'mastery',Store:'store'};
+function MoreIcon({id,size=28,muted=false}:{id:MoreDestination;size?:number;muted?:boolean}){
+ const custom=customAccountIcons[id];return custom?<LineworkIcon name={custom} size={size} muted={muted}/>:<ThemedNavigationIcon destination={iconForDestination(id)} size={size} muted={muted}/>;
 }
 function itemMeta(language:GameState['settings']['language'],id:MoreDestination){
  const a=(text:string,params?:Record<string,string|number>)=>accountText(language,text,params);
@@ -94,15 +101,16 @@ export function MoreScreen({language,onNavigate,onOpenAdminQa,onOpenUpdates,newR
     {onOpenUpdates?<Pressable accessibilityRole="button" accessibilityLabel={a("What's New & Updates")} accessibilityHint={newReleaseAvailable?a("New release information available"):a("Release notes and app versions")} onPress={onOpenUpdates} style={({pressed})=>[s.releaseRow,pressed&&s.pressed]}>
       <UiIcon name="events" size={22}/><Text style={s.releaseTitle}>{a("What's New & Updates")}</Text>{newReleaseAvailable?<AttentionDot label={a("New update available")}/>:null}<UiIcon name="next" size={18}/>
     </Pressable>:null}
-    {attentionDestinations.length?<View style={s.attentionRail}><Text style={s.sectionLabel}>{a("NEEDS ATTENTION")}</Text><View style={s.attentionQuickRow}>{attentionDestinations.slice(0,3).map(id=>{const meta=itemMeta(language,id),alert=attentionLabel(id);return <Pressable key={id} accessibilityRole="button" accessibilityLabel={meta.title+', '+alert} onPress={()=>onNavigate(id)} style={({pressed})=>[s.attentionQuick,singleColumn&&s.attentionQuickWide,pressed&&s.pressed]}><ThemedNavigationIcon destination={iconForDestination(id)} size={23}/><Text numberOfLines={1} style={s.quickTitle}>{meta.title}</Text>{attention(id)}</Pressable>})}</View></View>:null}
+    {attentionDestinations.length?<View style={s.attentionRail}><Text style={s.sectionLabel}>{a("NEEDS ATTENTION")}</Text><View style={s.attentionQuickRow}>{attentionDestinations.slice(0,3).map(id=>{const meta=itemMeta(language,id),alert=attentionLabel(id);return <Pressable key={id} accessibilityRole="button" accessibilityLabel={meta.title+', '+alert} onPress={()=>onNavigate(id)} style={({pressed})=>[s.attentionQuick,singleColumn&&s.attentionQuickWide,pressed&&s.pressed]}><MoreIcon id={id} size={23}/><Text numberOfLines={1} style={s.quickTitle}>{meta.title}</Text>{attention(id)}</Pressable>})}</View></View>:null}
     {sections.map(section=><View key={a(section.label)} style={s.section}>
       <Text style={s.sectionLabel}>{a(section.label)}</Text>
       <View style={s.grid}>{section.items.filter(id=>(id!=='Rankings'||RANKINGS_RELEASED)&&!lockedReason(id)).map(id=>{const meta=itemMeta(language,id),alert=attentionLabel(id),reason=lockedReason(id),locked=!!reason,inDevelopment=id==='Arena';return <Pressable key={id} accessibilityRole="button" accessibilityState={{disabled:inDevelopment||locked}} accessibilityLabel={inDevelopment?a('{title}, In Development',{title:meta.title}):locked?a('{title}, Locked',{title:meta.title}):alert?`${meta.title}, ${alert}`:meta.title} accessibilityHint={locked?reason:meta.description} disabled={inDevelopment||locked} onPress={()=>onNavigate(id)} style={({pressed})=>[s.tile,alert&&s.tileAttention,(inDevelopment||locked)&&s.tileDisabled,singleColumn&&s.tileWide,pressed&&!inDevelopment&&!locked&&s.pressed]}>
-        <View style={s.tileTop}><View style={[s.iconFrame,alert&&s.iconFrameAttention]}><ThemedNavigationIcon destination={iconForDestination(id)} size={29}/></View><View style={s.titleRow}><Text numberOfLines={2} style={s.title}>{meta.title}</Text>{locked?<View style={s.lockPill}><Text style={s.lockPillText}>{a("LOCKED")}</Text></View>:inDevelopment?<View style={s.developmentPill}><Text style={s.developmentPillText}>{a("IN DEVELOPMENT")}</Text></View>:null}</View><View style={s.attentionSlot}>{attention(id)}</View></View>
+        <View style={s.tileTop}><View style={[s.iconFrame,alert&&s.iconFrameAttention]}><MoreIcon id={id} size={29}/></View><View style={s.titleRow}><Text numberOfLines={2} style={s.title}>{meta.title}</Text>{locked?<View style={s.lockPill}><Text style={s.lockPillText}>{a("LOCKED")}</Text></View>:inDevelopment?<View style={s.developmentPill}><Text style={s.developmentPillText}>{a("IN DEVELOPMENT")}</Text></View>:null}</View><View style={s.attentionSlot}>{attention(id)}</View></View>
       </Pressable>})}</View>
     </View>)}
-    {upcomingLocked.length?<View style={s.unlockAhead}><View style={s.unlockAheadHead}><Text style={s.sectionLabel}>{a("UNLOCKS AHEAD")}</Text><Text style={s.lockCountText}>{lockedItems.length}</Text></View>{upcomingLocked.map(id=>{const meta=itemMeta(language,id),reason=lockedReason(id);return <View key={id} style={s.unlockRow}><View style={s.unlockIcon}><ThemedNavigationIcon destination={iconForDestination(id)} size={23} muted/></View><View style={s.flex}><Text style={s.unlockTitle}>{meta.title}</Text><Text numberOfLines={2} style={s.unlockReason}>{reason}</Text></View></View>})}</View>:null}
+    {upcomingLocked.length?<View style={s.unlockAhead}><View style={s.unlockAheadHead}><Text style={s.sectionLabel}>{a("UNLOCKS AHEAD")}</Text><Text style={s.lockCountText}>{lockedItems.length}</Text></View>{upcomingLocked.map(id=>{const meta=itemMeta(language,id),reason=lockedReason(id);return <View key={id} style={s.unlockRow}><View style={s.unlockIcon}><MoreIcon id={id} size={23} muted/></View><View style={s.flex}><Text style={s.unlockTitle}>{meta.title}</Text><Text numberOfLines={2} style={s.unlockReason}>{reason}</Text></View></View>})}</View>:null}
     {onOpenAdminQa?<View style={s.section}><Text style={s.sectionLabel}>{a("DEVELOPER")}</Text><Pressable accessibilityRole="button" accessibilityLabel={a("Open Admin QA Console")} onPress={onOpenAdminQa} style={({pressed})=>[s.devCard,pressed&&s.pressed]}><ThemedNavigationIcon destination="Character" size={32}/><View style={s.devCopy}><Text style={s.title}>{a("Admin QA Console")}</Text><Text style={s.description}>{a("Full-content, crafting and dungeon test profile")}</Text></View><UiIcon name="next" size={18}/></Pressable></View>:null}
+    <DiscordButton label={a('Join Discord')} onPress={()=>void Linking.openURL('https://discord.gg/Db83APvP5y')}/>
     <RateAppCard language={language}/>
   </ScrollView>;
 }

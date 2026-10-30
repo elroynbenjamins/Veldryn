@@ -54,22 +54,27 @@ export function OnlineGuildBankPanel({snapshot,onReload}:{snapshot:GuildTokenSho
     <GameButton compact title="Discard local retry" tone="secondary" disabled={busy} onPress={discard}/></View>
   </View>:null}
   {!resources.length?<Text style={s.help}>Bank deposits become available with a released construction project at the required Guild Level.</Text>:null}
-  {resources.map(id=><View key={id} style={s.resource}>
-   <View style={s.row}>
-    {id==='gold'?<View style={s.goldIcon}><Text style={s.goldGlyph}>G</Text></View>:<ResourceArtwork itemId={id} size={36} framed/>}
-    <View style={s.flex}><Text style={s.name}>{title(id)}</Text><Text style={s.meta}>In bank · {balance(id).toLocaleString()}</Text></View>
-    <GameButton compact tone="secondary" title={selected===id?'Close':'Deposit'} disabled={busy||!!pending||snapshot.bank===null} onPress={()=>{setSelection(selected===id?null:id);setQuantity(id==='gold'?'1000':'100')}}/>
-   </View>
-   {selected===id&&!pending&&snapshot.bank!==null?<View style={s.entry}>
-    <Text style={s.meta}>Transfer from your own inventory or Gold balance</Text>
-    <View style={s.row}><TextInput value={quantity} onChangeText={setQuantity} accessibilityLabel={'Deposit '+title(id)}
-     keyboardType="number-pad" selectTextOnFocus maxLength={7} style={s.input}/>
-     <GameButton compact title={busy?'Depositing…':'Confirm deposit'} disabled={busy||!valid} loading={busy}
-      onPress={()=>deposit({resourceId:id,amount})}/></View>
-    <View style={s.row}>{[10,100,1000].map(n=><Pressable key={n} accessibilityRole="button"
-     onPress={()=>setQuantity(String(n))} style={s.preset}><Text style={s.meta}>{n.toLocaleString()}</Text></Pressable>)}</View>
-   </View>:null}
-  </View>)}
+  <View style={s.bankGrid}>
+   {resources.map(id=><Pressable key={id} accessibilityRole="button" accessibilityLabel={title(id)+', '+balance(id).toLocaleString()+' in Guild Bank. Deposit resource.'}
+    accessibilityState={{selected:selected===id,disabled:busy||!!pending||snapshot.bank===null}}
+    disabled={busy||!!pending||snapshot.bank===null}
+    onPress={()=>{setSelection(selected===id?null:id);setQuantity(id==='gold'?'1000':'100')}}
+    style={[s.bankSlot,selected===id&&s.bankSlotSelected]}>
+    <Text numberOfLines={1} style={s.slotName}>{title(id)}</Text>
+    {id==='gold'?<View style={s.goldIcon}><Text style={s.goldGlyph}>G</Text></View>:<ResourceArtwork itemId={id} size={40} framed/>}
+    <Text numberOfLines={1} style={s.slotAmount}>{balance(id).toLocaleString()}</Text>
+   </Pressable>)}
+  </View>
+  {selected&&!pending&&snapshot.bank!==null?<View style={s.entry}>
+   <Text style={s.name}>Deposit {title(selected)}</Text>
+   <Text style={s.meta}>Transfer from your own inventory or Gold balance. This deposit is permanent.</Text>
+   <View style={s.row}><TextInput value={quantity} onChangeText={setQuantity} accessibilityLabel={'Deposit '+title(selected)}
+    keyboardType="number-pad" selectTextOnFocus maxLength={7} style={s.input}/>
+    <GameButton compact title={busy?'Depositing…':'Confirm deposit'} disabled={busy||!valid} loading={busy}
+     onPress={()=>deposit({resourceId:selected,amount})}/></View>
+   <View style={s.row}>{[10,100,1000].map(n=><Pressable key={n} accessibilityRole="button"
+    onPress={()=>setQuantity(String(n))} style={s.preset}><Text style={s.meta}>{n.toLocaleString()}</Text></Pressable>)}</View>
+  </View>:null}
   {snapshot.bank&&snapshot.bank.activity.length>0?<View style={s.history}>
    <Text style={s.name}>Recent bank activity</Text>
    {snapshot.bank.activity.slice(0,5).map((item,index)=><View key={index} style={s.historyRow}>
@@ -86,12 +91,12 @@ function styles(C:ThemeColors){return StyleSheet.create({
  warning:{color:C.warning,fontSize:12,marginTop:9},
  error:{color:C.bad,fontSize:12,marginTop:9},
  success:{color:C.good,fontSize:12,marginTop:9},
- resource:{marginTop:10,borderWidth:1,borderColor:C.line,borderRadius:10,padding:9,backgroundColor:C.panel2,gap:7},
+ bankGrid:{flexDirection:'row',flexWrap:'wrap',gap:7,marginTop:12},bankSlot:{width:'23%',minWidth:69,flexGrow:1,alignItems:'center',justifyContent:'space-between',minHeight:91,paddingVertical:7,paddingHorizontal:3,borderWidth:1,borderColor:C.line,borderRadius:9,backgroundColor:C.panel2,gap:4},bankSlotSelected:{borderColor:C.accent,backgroundColor:C.selection},slotName:{fontSize:10,fontWeight:'800',textAlign:'center',color:C.text},slotAmount:{fontSize:11,fontWeight:'900',color:C.info},
  row:{flexDirection:'row',alignItems:'center',flexWrap:'wrap',gap:8},
  flex:{flex:1,minWidth:100},
  name:{fontSize:13,fontWeight:'800',color:C.text},
  meta:{fontSize:11,color:C.muted},
- entry:{padding:9,backgroundColor:C.panel,borderRadius:9,gap:8},
+ entry:{marginTop:10,padding:9,backgroundColor:C.panel2,borderRadius:9,gap:8},
  input:{minWidth:85,flex:1,minHeight:42,paddingHorizontal:10,borderRadius:8,borderWidth:1,borderColor:C.lineStrong,color:C.text,backgroundColor:C.inputBg},
  preset:{paddingHorizontal:12,paddingVertical:9,borderWidth:1,borderColor:C.line,borderRadius:8},
  goldIcon:{width:36,height:36,borderRadius:8,alignItems:'center',justifyContent:'center',backgroundColor:C.accentSurface},

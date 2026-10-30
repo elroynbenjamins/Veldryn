@@ -2,6 +2,7 @@ import {createHash} from 'node:crypto';
 import type {GameState} from '../../apps/mobile/src/core/types';
 import {EXPEDITIONS} from '../src/server/expeditions/content/launch-content';
 import {QModeService,type QModeRun} from '../src/server/coop/qmode';
+import {enhancedDungeonMarks} from '../src/server/coop/dungeon-reward-balance';
 import {projectQModeRun} from '../src/server/coop/qmode-public-projection';
 import {liveNodeWaitMs,livePendingCombat} from './live-pacing';
 import type {FrozenLoadoutSnapshot} from '../src/server/coop/loadout-snapshots';
@@ -46,7 +47,7 @@ export class OnlineLiveRuntime{
   if(!node)throw new GameplayError('invalid_option',409);
   const duration=liveNodeWaitMs(node.kind,Number(run.lastResolution?.result.summary.durationMs??0)),resolvesAtMs=loaded.serverNow+duration;
   const client={...projection(loaded.privateState.run,loaded.stateVersion+1),phase:'resolving_node',options:[],selectedNodeId:selectedOptionId,resolvesAtMs,lastCombat:undefined};
-  return this.services.rpc('queue_online_live_node_server_v1',{p_account_id:accountId,p_run_id:runId,p_expected_version:loaded.stateVersion,p_request_id:request.requestId,p_request_hash:requestHash,p_private_state:{run:loaded.privateState.run,seed:loaded.privateState.seed,pending:{run,resolvesAtMs,pacingMs:duration,startStateHash:digest(loaded.privateState.run.persistentState),settlement:{projection:projection(run,loaded.stateVersion+1),enhancedMarks:run.phase==='completed'||run.phase==='failed'?Math.max(0,Math.round((EXPEDITIONS[run.expeditionId]?.baseMarks??0)*.8)):0,assistanceMarks:0}}},p_client_projection:client});
+  return this.services.rpc('queue_online_live_node_server_v1',{p_account_id:accountId,p_run_id:runId,p_expected_version:loaded.stateVersion,p_request_id:request.requestId,p_request_hash:requestHash,p_private_state:{run:loaded.privateState.run,seed:loaded.privateState.seed,pending:{run,resolvesAtMs,pacingMs:duration,startStateHash:digest(loaded.privateState.run.persistentState),settlement:{projection:projection(run,loaded.stateVersion+1),enhancedMarks:run.phase==='completed'||run.phase==='failed'?enhancedDungeonMarks(run):0,assistanceMarks:0}}},p_client_projection:client});
  }
  async startFromReady(accountId:string,checkId:string){
   const source=await this.services.rpc<ReadySource>('online_live_committed_sources_server_v1',{p_account_id:accountId,p_check_id:checkId});
@@ -90,7 +91,7 @@ export class OnlineLiveRuntime{
   }
   const run=pending.run,last=run.lastResolution!;
   const completed=run.phase==='completed'||run.phase==='failed';
-  return this.services.rpc('finalize_online_live_node_server_v1',{p_account_id:accountId,p_run_id:runId,p_expected_version:loaded.stateVersion,p_private_state:{run,seed:loaded.privateState.seed},p_client_projection:projection(run,loaded.stateVersion+1),p_node_id:last.nodeId,p_result:last.result,p_start_state_hash:pending.startStateHash,p_enhanced_marks:completed?Math.max(0,Math.round((EXPEDITIONS[run.expeditionId]?.baseMarks??0)*.8)):0,p_assistance_marks:0});
+  return this.services.rpc('finalize_online_live_node_server_v1',{p_account_id:accountId,p_run_id:runId,p_expected_version:loaded.stateVersion,p_private_state:{run,seed:loaded.privateState.seed},p_client_projection:projection(run,loaded.stateVersion+1),p_node_id:last.nodeId,p_result:last.result,p_start_state_hash:pending.startStateHash,p_enhanced_marks:completed?enhancedDungeonMarks(run):0,p_assistance_marks:0});
  }
  async choose(accountId:string,runId:string,request:CoopDecisionCommand){
   const hash=hashRequest(request);const prior=await this.services.rpc<{requestHash:string;response:unknown}|null>('read_online_coop_receipt_server_v1',{p_account_id:accountId,p_operation:'live_choose_v1',p_resource_id:runId,p_request_id:request.requestId});

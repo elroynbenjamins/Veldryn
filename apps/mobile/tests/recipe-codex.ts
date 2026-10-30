@@ -25,7 +25,8 @@ const material=recipeCodexIngredients(state,silverfin).find(row=>row.itemId==='S
 check(material?.needed===5,'Recipe ingredient quantities must use real recipes.');
 const stocked={...state,inventory:{...state.inventory,stacks:[{itemId:'SILVERFIN',quantity:3}]},bank:{...state.bank,stacks:[{itemId:'SILVERFIN',quantity:2}]}};
 check(recipeCodexIngredients(stocked,silverfin).find(row=>row.itemId==='SILVERFIN')?.sufficient===true,'Ingredient counts must combine Inventory and Bank.');
-check(recipeCodexDestination(silverfin).recipeId===silverfin.id,'Recipe route must target the exact recipe.');
+const route=recipeCodexDestination(silverfin);
+check(route.kind==='skills'&&route.recipeId===silverfin.id,'Recipe route must target the exact recipe.');
 check(recipeCodexDestination(silverfin).kind==='skills','Recipes must navigate to Skills.');
 const locked=recipeCodexEntryById('ENCHANT_RADIANT_CATALYST');
 check(locked,'Missing high-level released catalyst recipe.');

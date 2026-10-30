@@ -3,6 +3,7 @@ import {EXPEDITIONS} from '../../expeditions/content/launch-content';
 import {EXPEDITION} from '../../expeditions/constants';
 import {marksForRun} from '../../expeditions/rewards';
 import {coopTierEnemyMultipliers} from '../../expeditions/tier-balance';
+import {readinessEligibleCoopTier} from '../config';
 import {dungeonRewardState,enhancedDungeonMarks} from '../dungeon-reward-balance';
 import type {QModeRun} from '../qmode';
 import {launchPlayer} from '../../combat/content/launch-combat';
@@ -20,6 +21,10 @@ tiers.forEach((tier,i)=>{
  lastAttack=scale.attack;lastHp=scale.hp;lastDefense=scale.defense;
 });
 assert.deepEqual(coopTierEnemyMultipliers(1),{attack:1,hp:1,defense:1});
+assert.equal(readinessEligibleCoopTier(15,25,.8),1,'Minimal gear must not be auto-queued at the highest unlocked tier');
+assert.equal(readinessEligibleCoopTier(15,25,1.032),5,'Strong verified gear may enter higher auto tiers');
+assert.equal(readinessEligibleCoopTier(15,20,1.5),2,'Character level remains an upper bound');
+assert.equal(readinessEligibleCoopTier(15,25,.79),undefined,'Invalid role readiness cannot auto-queue');
 const roster=['Ironwarden','Wayfinder','Ravager','Dawnkeeper'].map(className=>launchPlayer(className,25));
 const graph=generateCoopRouteGraph('balance-audit','EXP_001','test-run','v2','v2');
 const first=graph.nodes.find(node=>node.nodeId==='d1-c0')!;

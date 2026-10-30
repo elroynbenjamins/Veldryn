@@ -8,7 +8,7 @@ function rejects(action:()=>unknown,message:string){let failed=false;try{action(
 
 const now=Date.UTC(2026,9,30),eventId='EVT_ANNUAL_010_2026';
 let state=setLocalEventEnabled(createCharacter(newGame(now),'IRONWARDEN','PrestigeShop'),true,now,eventId);
-state={...state,account:{...state.account,
+state={...state,character:{...state.character!,level:10},account:{...state.account,
  eventPrestigeBalanceById:{...state.account.eventPrestigeBalanceById,[eventId]:40},
  eventCurrencyBalanceById:{...state.account.eventCurrencyBalanceById,[eventId]:5000},
 }};

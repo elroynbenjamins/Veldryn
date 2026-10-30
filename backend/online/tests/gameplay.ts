@@ -40,7 +40,7 @@ async function main(){
  assert.equal((await request({type:'alchemy_start',args:{id:'BREW_DEWLEAF_DRAUGHT',batches:1}},'brew-start-01',6)).status,200,'Alchemy reservation persists online');
  clock+=60000;
  const brewClaim=await request({type:'claim'},'brew-claim-01',7);assert.equal(brewClaim.status,200,'Alchemy settlement persists online');
- const persisted=await brewClaim.json();assert.equal(persisted.state.activity,null,'Completed alchemy batch is cleared');
+ const persisted=await brewClaim.json();assert.equal(persisted.state.activity,null,'Completed alchemy batch is cleared');assert.ok(persisted.guildProjectEffort.some((part:{kind:string;units?:number})=>part.kind==='crafting'&&(part.units??0)>0),'Verified crafted items contribute to weekly guild activity');
  state={...state!,character:{...state!.character!,level:30,xp:totalXpAtLevel(30)},skills:state!.skills.map(skill=>skill.skillId==='herbalism'?{...skill,xp:totalXpAtLevel(26),level:26}:skill.skillId==='alchemy'?{...skill,xp:totalXpAtLevel(35),level:35}:skill.skillId==='exploration'?{...skill,xp:totalXpAtLevel(6),level:6}:skill),inventory:{...state!.inventory,stacks:[...state!.inventory.stacks,{itemId:'SUNSCALE',quantity:2},{itemId:'RIVER_MINT',quantity:2}]}};
  // This later-region fixture must satisfy the same scouting gates as a real character.
  const beforeLockedTravel=commits;

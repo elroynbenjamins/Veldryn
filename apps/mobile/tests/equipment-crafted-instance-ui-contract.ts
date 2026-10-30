@@ -28,7 +28,7 @@ ok(enhancement.includes('effectiveOwnedGearRarity(state,itemId)'),'Upgrade prici
 ok(enhancement.includes('craftedRarityStatMultiplier'),'Forged rarity must affect live equipment stats');
 ok(decisions.includes('effectiveOwnedGearRarity(state,itemId)'),'Character equipment decisions must show forged rarity');
 ok(inspect.includes('craftedCopies')&&inspect.includes('craftedRarities'),'Quick Inspect must expose duplicate crafted-copy context');
-ok(inventory.includes('effectiveOwnedGearRarity(state,item.id)'),'Inventory cards must display the best owned forged rarity');
+ok(inventory.includes('craftedGearInstances(state)')&&inventory.includes('rarityMeta(exactRecord?.rarity??itemRarity(item))')&&inventory.includes('craftedGearDisplayQuality(exactRecord)'),'Inventory tiles must show each unique crafted copy’s own rarity and quality, not another copy’s best roll');
 ok(card.includes('rarityOverride'),'ItemCard must support instance-derived rarity styling');
 
 ok(commands.includes("if(options.randomRoll===undefined)throw new Error('trusted_random_required')"),'Online Forge settlement must require trusted randomness');

@@ -42,13 +42,13 @@ const run={id:'test-run',expeditionId:'EXP_001',tier:5,phase:'completed',tierSca
 assert.equal(enhancedDungeonMarks(run),126);
 const legacy={...run,tierScalingVersion:undefined} as QModeRun;
 assert.equal(enhancedDungeonMarks(legacy),Math.round(EXPEDITIONS.EXP_001.baseMarks*.8),'Legacy live in-progress payouts are preserved');
-const failedEarly={...run,phase:'failed',persistentState:{...seedState,visitedNodeIds:[first.nodeId]},lastResolution:{nodeId:first.nodeId,result:{summary:{kind:'combat'}}}} as QModeRun;
+const failedEarly={...run,phase:'failed',persistentState:{...seedState,visitedNodeIds:[first.nodeId]},lastResolution:{nodeId:first.nodeId,result:{summary:{kind:'combat'}}}} as unknown as QModeRun;
 assert.equal(enhancedDungeonMarks(failedEarly),6,'Early failures earn a small progress payment');
 const boss=graph.nodes.find(node=>node.kind==='boss')!;
-const failedBoss={...run,phase:'failed',persistentState:{...seedState,visitedNodeIds:graph.nodes.filter(node=>node.nodeId.startsWith('d')&&node.nodeId.endsWith('-c0')).map(node=>node.nodeId)},lastResolution:{nodeId:boss.nodeId,result:{summary:{kind:'combat',enemyHp:{chief:20},replayCombatants:[{id:'chief',boss:true,maxHp:100}]}}}} as QModeRun;
+const failedBoss={...run,phase:'failed',persistentState:{...seedState,visitedNodeIds:graph.nodes.filter(node=>node.nodeId.startsWith('d')&&node.nodeId.endsWith('-c0')).map(node=>node.nodeId)},lastResolution:{nodeId:boss.nodeId,result:{summary:{kind:'combat',enemyHp:{chief:20},replayCombatants:[{id:'chief',boss:true,maxHp:100}]}}}} as unknown as QModeRun;
 assert.equal(dungeonRewardState(failedBoss).finalBossHpFraction,.2);
 assert.equal(enhancedDungeonMarks(failedBoss),63,'Near-boss defeat earns half of tier-correct full Marks');
-assert.equal(enhancedDungeonMarks({...failedBoss,lastResolution:{nodeId:boss.nodeId,result:{summary:{kind:'combat',enemyHp:{chief:80},replayCombatants:[{id:'chief',boss:true,maxHp:100}]}}}} as QModeRun),44,'Other boss defeats earn 35%');
+assert.equal(enhancedDungeonMarks({...failedBoss,lastResolution:{nodeId:boss.nodeId,result:{summary:{kind:'combat',enemyHp:{chief:80},replayCombatants:[{id:'chief',boss:true,maxHp:100}]}}}} as unknown as QModeRun),44,'Other boss defeats earn 35%');
 assert.equal(enhancedDungeonMarks({...run,phase:'awaiting_choice'} as QModeRun),0,'No reward before terminal settlement');
 // Lightweight deterministic audit. These figures are diagnostics, not claims
 // about production clear rates; larger calibrated trials gate the rollout.

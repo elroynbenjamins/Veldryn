@@ -41,6 +41,15 @@ export function CoopRunOverview({language,run,myVotedNodeId,selfVoter,onBack,onC
   const terminal=run.phase==='completed'||run.phase==='failed',unclaimedRewards=rewards.filter(reward=>!reward.claimed_at),rewardSurfaceReady=rewards.length>0||Boolean(terminalAction),rewardsSecured=terminal&&rewardSurfaceReady&&!unclaimedRewards.length&&(!terminalAction||terminalAction.claimed===true);
   const inCombat=run.phase==='resolving_node'||bossNext||Boolean(run.lastCombat);
   const replayCues=run.lastCombat?.cues??[];
+  const [clockTick,setClockTick]=useState(Date.now());
+  const clockAnchor=useRef({serverNow:run.serverNow??0,localAt:Date.now()});
+  if(run.serverNow!==undefined&&clockAnchor.current.serverNow!==run.serverNow)clockAnchor.current={serverNow:run.serverNow,localAt:Date.now()};
+  useEffect(()=>{
+   if(run.mode!=='live'||!run.resolvesAtMs)return;
+   const timer=setInterval(()=>setClockTick(Date.now()),500);return()=>clearInterval(timer);
+  },[run.mode,run.resolvesAtMs]);
+  const liveServerNow=run.serverNow===undefined?undefined:clockAnchor.current.serverNow+Math.max(0,clockTick-clockAnchor.current.localAt);
+  const secondsRemaining=run.resolvesAtMs!==undefined&&liveServerNow!==undefined?Math.max(0,Math.ceil((run.resolvesAtMs-liveServerNow)/1000)):undefined;
   const replayKey=`${run.runId}:${run.lastCombat?.nodeId??'pending'}:${run.lastCombat?.durationMs??0}:${replayCues.length}:${replayCues[replayCues.length-1]?.atMs??0}`;
   const lastReplay=useRef(replayKey),wasResolving=useRef(run.phase==='resolving_node');
   const [theaterOpen,setTheaterOpen]=useState(run.phase==='resolving_node');
@@ -51,7 +60,7 @@ export function CoopRunOverview({language,run,myVotedNodeId,selfVoter,onBack,onC
    if((resolving&&!wasResolving.current)||(run.lastCombat&&lastReplay.current!==replayKey))setTheaterOpen(true);
    lastReplay.current=replayKey;wasResolving.current=resolving;
   },[run.phase,run.lastCombat,replayKey]);
-  const combatName=run.bossMechanic?.telegraph?.bossName??run.lastCombat?.combatants?.find(member=>member.boss)?.name??st('DUNGEON COMBAT');
+  const combatName=run.bossMechanic?.telegraph?.bossName??(run.pendingCombat??run.lastCombat)?.combatants?.find(member=>member.boss)?.name??st('DUNGEON COMBAT');
   return <><ExpeditionScreenShell compactHeader={inCombat} eyebrow={ct(language,'browse.resumeTitle')} title={inCombat?combatName:ct(language,'browse.resume')} onBack={onBack} backLabel={ct(language,'details.backList')} banner={inCombat?undefined:<View style={s.banner}><StateChip label={modeLabel} tone="selected"/><Text style={s.phase}>{run.phase.replaceAll('_',' ')}</Text></View>}>
     {inCombat?<FantasyPanel variant="selected"><View style={s.summary}>
       <View style={s.grow}><Text style={s.title}>{run.phase==='resolving_node'?st('Battle in progress'):run.lastCombat?.reason==='victory'?st('Encounter cleared'):run.lastCombat?.reason==='wipe'?st('Party defeated'):st('Encounter replay')}</Text><Text style={s.copy}>{combatName}</Text></View>
@@ -60,7 +69,7 @@ export function CoopRunOverview({language,run,myVotedNodeId,selfVoter,onBack,onC
     {!!syncError&&<FantasyPanel variant="danger"><Text accessibilityRole="alert" style={s.title}>{a('Connection interrupted')}</Text><Text style={s.copy}>{a('Showing the last saved expedition progress. Reconnecting automatically.')}</Text><Text style={s.copy} numberOfLines={2}>{syncError}</Text>{onRefresh?<GameButton compact title={a('Retry connection')} tone="secondary" disabled={busy} onPress={onRefresh}/>:null}</FantasyPanel>}
     {run.options.length?<View style={s.actionArea}>
       <Text style={s.section}>{run.mode==='live'?st('Vote for the next path'):st('Choose the next room')}</Text>
-      {run.mode==='live'?<Text style={s.copy}>{st('The route with the most votes will be selected.')}</Text>:null}
+      {run.mode==='live'?<Text style={s.copy}>{st('The route with the most votes will be selected.')}{secondsRemaining!==undefined?` · ${st('Vote ends in {seconds}s',{seconds:secondsRemaining})}`:''}</Text>:null}
       <DungeonRouteChoices options={run.options} mode={run.mode} phase={run.phase} busy={busy} onChoose={onChoose} myVotedNodeId={myVotedNodeId} selfVoter={selfVoter}/>
      </View>:run.phase!=='resolving_node'&&!terminal?<FantasyPanel><Text style={s.copy}>{ct(language,'browse.resumeBody')}</Text></FantasyPanel>:null}
     {!(run.phase==='resolving_node'||bossNext||run.lastCombat)?<DungeonDisclosure title={st('Party & formation')}>
@@ -78,7 +87,7 @@ export function CoopRunOverview({language,run,myVotedNodeId,selfVoter,onBack,onC
     {run.mode==='live'&&onChatSend?<DungeonDisclosure title={st('Party Chat')}><CoopPartyChat messages={chatMessages} busy={busy} onSend={onChatSend}/></DungeonDisclosure>:null}
     {terminal?<TerminalRunMoment phase={run.phase} rewardsReady={rewardSurfaceReady} rewardsSecured={rewardsSecured} reduceMotion={reduceMotion}/>:null}
     {!!notice&&<Text accessibilityRole="alert" style={s.copy}>{notice}</Text>}
-    {run.phase==='resolving_node'&&<FantasyPanel><Text style={s.copy}>{st("Your party is resolving this room. Progress is saved online.")}</Text></FantasyPanel>}
+    {run.phase==='resolving_node'&&<FantasyPanel><Text style={s.copy}>{secondsRemaining!==undefined?st('Battle resolves in {seconds}s',{seconds:secondsRemaining}):st("Your party is resolving this room. Progress is saved online.")}</Text></FantasyPanel>}
 
     {rewards.map(reward=><FantasyPanel key={reward.id} variant="success">{reward.claimed_at?<Text style={s.copy}>{reward.reward_json.marks??0} {st("Expedition Marks collected.")}</Text>:<GameButton title={st("Collect expedition reward")} disabled={busy} onPress={()=>onClaim?.(reward.id)}/>}</FantasyPanel>)}
     {terminalAction?<FantasyPanel variant="success">{terminalAction.claimed?<View style={s.claimedReward}><StateChip label={st("SECURED")} tone="success"/><Text style={s.copy}>{terminalAction.completeText??'Seasonal expedition reward collected.'}</Text></View>:<GameButton title={terminalAction.label} disabled={busy} onPress={terminalAction.onPress}/>}</FantasyPanel>:null}

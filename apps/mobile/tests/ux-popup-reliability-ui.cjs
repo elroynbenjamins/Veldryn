@@ -14,14 +14,12 @@ assert(trials.includes("trialSheet==='battle'?<CombatTheaterModal"),
   'The Theater remains available when selecting a Trial encounter');
 assert(!trials.includes("{trialSheet==='battle'&&<CompanionTrialStage"),
   'The Trial stage must not also mount inside an invisible sheet');
-assert(settings.includes("onStopActivity:()=>Promise<void>"),
-  'Settings requires a settled activity-stop handler');
-assert(settings.includes("<ConfirmModal visible={confirmStop} busy={stopping}"),
-  'Stopping an activity requires a busy-safe confirmation');
+assert(!settings.includes("Stop current activity")&&!settings.includes("confirmStop"),
+  'Activity Stop is no longer duplicated inside Settings');
 assert(!settings.includes("onPress={()=>onChange({...state,activity:null})}"),
-  'The old unsafe direct activity nulling must never return');
-assert(app.includes("onStopActivity={async()=>{if(serverGameplayEnabled){const result=await perform({type:'stop'},false,false,true)")&&app.includes("await runCompanionCommand({type:'stop'})"),
-  'Settings must settle both online and offline Stop via gameplay commands');
+  'Settings must never directly discard active progress');
+assert(app.includes("onStop={()=>changeActivity()}"),
+  'Gameplay retains the activity Stop action outside Settings');
 assert(confirm.includes("dismissOnBackdrop={!busy}")&&confirm.includes("closeDisabled={busy}"),
   'Busy confirmation dialogs must not permit duplicate submissions or dismissal');
 assert(app.includes('selectGlobalPopup({...popupCandidates,blocked:popupBlocked})'),
@@ -36,4 +34,4 @@ assert(app.includes('setForgeClaimFeedback({message:count+'),'The Forge fallback
 assert(!app.includes("showAlert('Gem claimed'")&&!app.includes("showAlert('Gems claimed'"),'Routine gem claims must use inline feedback instead of modal alerts');
 assert(priority.includes("if(value.whatsNew)return 'whats-new'"),
   'Release notes remain lowest-priority announcements');
-console.log('PASS: Trial Theater exclusivity, safe Settings Stop, and shared popup visibility');
+console.log('PASS: Trial Theater exclusivity, activity Stop navigation, and shared popup visibility');

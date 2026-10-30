@@ -9,7 +9,7 @@ function instance({platform='android',projectId='1011264688445',native=null}={})
   getStatus:async()=>{calls.status++;return native.getStatus();},
   signIn:async()=>{calls.signIn++;return native.signIn();},
  };
- const ctx={exports:{},process:{env:{EXPO_PUBLIC_GOOGLE_PLAY_GAMES_PROJECT_ID:projectId}},
+ const ctx={exports:{},Error,process:{env:{EXPO_PUBLIC_GOOGLE_PLAY_GAMES_PROJECT_ID:projectId}},
   require:name=>{
    if(name==='expo')return {requireOptionalNativeModule:()=>wrapped};
    if(name==='react-native')return {Platform:{OS:platform}};

@@ -32,7 +32,7 @@ ok(inventory.includes('craftedGearInstances(state)')&&inventory.includes('rarity
 ok(card.includes('rarityOverride'),'ItemCard must support instance-derived rarity styling');
 
 ok(commands.includes("if(options.randomRoll===undefined)throw new Error('trusted_random_required')"),'Online Forge settlement must require trusted randomness');
-ok(commands.includes('quality proc'),'Authoritative claim messaging must surface quality procs');
+ok(commands.includes('rarity upgrade')&&commands.includes('result.result.qualityProc'),'Authoritative claim messaging must surface real rarity upgrades');
 ok(app.includes('setForgeResults(result.forgeResults)')&&app.includes('ForgeRarityRevealModal'),'Mobile online claims must present authoritative structured Forge rarity results');
 ok(app.includes('setForgeResults([claimed.result])'),'Mobile offline claims must use the same structured Forge rarity result path');
 ok(forgeFeedback.includes('EXCEPTIONAL FORGE RESULT')&&forgeFeedback.includes('qualityProc'),'Quality procs must use the dedicated rarity-aware Forge reveal');

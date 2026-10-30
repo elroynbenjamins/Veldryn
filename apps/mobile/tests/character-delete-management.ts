@@ -2,11 +2,12 @@ import {characterDeleteBlockReason,characterDeleteConfirmation} from '../src/cor
 import {accountCharacters,unlockedCharacterSlots} from '../src/core/account-roster';
 import {executeGameCommand} from '../src/core/game-commands';
 import {newGame} from '../src/core/game';
+import {gemPouch,isGemPouchItemId} from '../src/core/gem-pouch';
 
 function ok(value:unknown,message:string){if(!value)throw new Error(message)}
 function equal(actual:unknown,expected:unknown,message:string){if(actual!==expected)throw new Error(`${message}: ${String(actual)} !== ${String(expected)}`)}
 function throws(action:()=>unknown,message:string){let failed=false;try{action()}catch{failed=true}if(!failed)throw new Error(message)}
-function storedQty(state:ReturnType<typeof newGame>,id:string){return state.bank.stacks.filter(row=>row.itemId===id).reduce((sum,row)=>sum+row.quantity,0)+state.overflow.stacks.filter(row=>row.itemId===id).reduce((sum,row)=>sum+row.quantity,0)}
+function storedQty(state:ReturnType<typeof newGame>,id:string){return state.bank.stacks.filter(row=>row.itemId===id).reduce((sum,row)=>sum+row.quantity,0)+state.overflow.stacks.filter(row=>row.itemId===id).reduce((sum,row)=>sum+row.quantity,0)+(isGemPouchItemId(id)?gemPouch(state).stacks.filter(row=>row.itemId===id).reduce((sum,row)=>sum+row.quantity,0):0)}
 
 const firstId='11111111-1111-4111-8111-111111111111';
 const secondId='22222222-2222-4222-8222-222222222222';

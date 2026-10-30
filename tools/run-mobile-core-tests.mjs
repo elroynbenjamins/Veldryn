@@ -14,11 +14,23 @@ function run(args) {
   if (result.status !== 0) process.exit(result.status ?? 1);
 }
 
-// Separate processes avoid Windows' shell command-length limit while preserving
-// the existing test order, clean compilation, and fail-fast behavior.
+// Isolated test processes avoid Windows' shell command-length limit.
+// Compile fail-fast; after compilation, collect *all* test failures so release
+// validation reports every regression instead of one at a time.
 rmSync(build, {recursive: true, force: true});
-// Use TypeScript's JS entrypoint so this runner works without relying on a
-// shell to execute the extensionless bin/tsc launcher on Windows.
+// Use TypeScript's JS entrypoint so this runner works on Windows.
 run([path.join(app, 'node_modules/typescript/lib/tsc.js'), '-p', 'tsconfig.core.json', '--outDir', build]);
-for (const test of tests) run([path.resolve(app, test)]);
-console.log(`PASS: all ${tests.length} mobile core checks`);
+const failed = [];
+for (const test of tests) {
+  const result = spawnSync(process.execPath, [path.resolve(app, test)], {cwd: app, stdio: 'inherit', windowsHide: true});
+  if (result.error || result.status !== 0) {
+    failed.push(test);
+    console.error(`FAIL: ${test} (exit ${result.status ?? 'unknown'})`);
+  }
+}
+if (failed.length) {
+  console.error(`FAILED: ${failed.length}/${tests.length} mobile core checks:\n${failed.join('\n')}`);
+  process.exitCode = 1;
+} else {
+  console.log(`PASS: all ${tests.length} mobile core checks`);
+}

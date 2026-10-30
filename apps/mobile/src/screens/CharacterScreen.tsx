@@ -6,7 +6,7 @@ import type {GameState,GearSlot} from '../core/types';
 import {CLASSES} from '../content/classes';
 import {itemDef} from '../content/items';
 import {equipNoviceSet} from '../core/game';
-import {equipmentFocusModel,equipmentScreenModel} from '../core/equipment-screen';
+import {equipmentScreenModel} from '../core/equipment-screen';
 import {displayStat} from '../core/stat-display';
 import {TutorialBeacon} from '../components/TutorialBeacon';
 import {noviceSetProgress} from '../core/character-appearance';
@@ -45,7 +45,7 @@ export function CharacterScreen({state,onEquip,onUnequip,onEquipSet,onCrafting,o
   const [showMore,setShowMore]=useState(false);
   const [equipmentTool,setEquipmentTool]=useState<'enhance'|'gems'|'sets'|'compare'>('enhance');
   const [expandedSet,setExpandedSet]=useState<string|null>(null),[showAllSets,setShowAllSets]=useState(false);
-  const [showSaved,setShowSaved]=useState(false),[showNovice,setShowNovice]=useState(false),[showFocus,setShowFocus]=useState(false);
+  const [showSaved,setShowSaved]=useState(false),[showNovice,setShowNovice]=useState(false);
   const [enhancementTab,setEnhancementTab]=useState<'upgrade'|'gems'>('upgrade');
   const [gearWidth,setGearWidth]=useState(Math.max(260,width-64));
   const columns=fontScale>1.2||gearWidth<280?4:5,slotSize=Math.floor((gearWidth-(columns-1)*8)/columns);
@@ -71,7 +71,7 @@ export function CharacterScreen({state,onEquip,onUnequip,onEquipSet,onCrafting,o
     setShowAllSets(false);
   },[state.character?.id]);
   const character=state.character!,classDef=CLASSES.find(item=>item.id===character.classId)!;
-  const model=equipmentScreenModel(state),focus=equipmentFocusModel(state,selectedSlot),progress=noviceSetProgress(state);
+  const model=equipmentScreenModel(state),progress=noviceSetProgress(state);
   const selected=model.slots.find(entry=>entry.slot===selectedSlot)??model.slots[0],selectedEnhancement=selected.item?gearEnhancement(state,selected.item.id):null;
   const selectedDecision=selected.item?equipmentDecisionModel(state,selected.item.id):null,selectedRarity=selectedDecision?rarityMeta(selectedDecision.rarity):null;
   const activeLoadoutId=selectedLoadout??model.loadouts[0]?.id;

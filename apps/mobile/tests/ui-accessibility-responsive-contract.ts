@@ -56,8 +56,8 @@ const travelModal=read('src/components/TravelRegionModal.tsx');
 ok(travelModal.includes('useWindowDimensions')&&travelModal.includes('actionsStack'),'Travel actions must remain reachable on narrow or large-text layouts');
 
 const gemCodex=read('src/components/GemCodexModal.tsx');
-ok(gemCodex.includes("filter:{minHeight:44"),'Gem Codex type filter must retain the 44px touch minimum');
-ok(gemCodex.includes('accessibilityHint={gt("Cycles between all, Stat and Effect Gems")}'),'Gem Codex filter must explain its cycling behavior in the selected language');
+ok(gemCodex.includes("filterChip:{minHeight:44"),'Gem Codex type filter chips must retain a 44px touch minimum');
+ok(gemCodex.includes('accessibilityState={{selected:filter===option.id}}')&&gemCodex.includes('label:gt("Stats")')&&gemCodex.includes('label:gt("Effects")'),'Gem Codex must offer explicitly labeled localized Stat and Effect filter choices');
 
 const nav=read('src/components/PrimaryNavigation.tsx');
 ok(nav.includes("badgeLabel=badge==='dot'?navigationText(language,'new activity')"),'Primary navigation must announce localized dot badges');
@@ -89,9 +89,10 @@ ok(account.includes("inDevelopment=id==='Arena'")&&account.includes('disabled={i
 ok(account.includes('IN DEVELOPMENT'),'Account hub must label disabled future destinations');
 
 const guildFuture=read('src/screens/GuildScreen.tsx');
+const guildNavigation=read('src/components/GuildNavigation.tsx');
 ok(guildFuture.includes("'Guild vs Guild'")&&guildFuture.includes("'Guild Raids'")&&guildFuture.includes("'Guild Trials'")&&guildFuture.includes("'Guild Expeditions'")&&guildFuture.includes("'Guild Legacy'"),'Guild must expose the approved future-content previews');
 ok(guildFuture.includes("onlineSection==='Future'?<GuildFutureContent/>"),'Guild future content must have a dedicated destination');
-ok(guildFuture.includes("(['Home','PvE','Activities','Hall','Chat'] as const)"),'Online Guild navigation must prioritize five primary destinations');
+ok(guildFuture.includes('<GuildNavigation value={onlineSection}')&&guildNavigation.includes("GuildPrimarySection='Home'|'PvE'|'Activities'|'Hall'|'Chat'"),'Online Guild navigation must prioritize five primary destinations');
 ok(guildFuture.includes("onlineSection==='Home'?<GuildOnlineHome"),'Online Guild must expose a dedicated overview home');
 ok(guildFuture.includes('<OnlineGuildMusterPanel/>')&&guildFuture.includes('{onlineProjects}')&&guildFuture.includes("onlineSection==='PvE'?onlinePve:null"),"Guild navigation must keep Muster and Projects in Activities and PvE separate");
 ok(guildFuture.includes("onlineSection==='Manage'?<View style={s.sectionStack}")&&guildFuture.includes('{onlineCustomize}')&&!guildFuture.includes('{onlineDirectory}'),'Member-only management must keep customization without displaying guild creation');

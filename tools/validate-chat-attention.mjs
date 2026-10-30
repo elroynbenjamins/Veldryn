@@ -46,11 +46,15 @@ for(const [needle,label] of [
 ])need(hook,needle,label);
 
 for(const [needle,label] of [
- ['RailTab','per-channel tab attention'],
+ ['channelMenuOpen','accessible chat channel menu'],
+ ['<ChannelChoice channel="guild"','Guild channel option'],
+ ['<ChannelChoice channel="party"','Party channel option'],
  ['guildUnread','Guild tab unread'],
  ['partyUnread','Party tab unread'],
  ['guildMentions','Guild tab mentions'],
  ['partyMentions','Party tab mentions'],
+ ['unread={guildUnread} mentions={guildMentions}','Guild unread/mention menu badges'],
+ ['unread={partyUnread} mentions={partyMentions}','Party unread/mention menu badges'],
 ])need(overlay,needle,label);
 reject(overlay,'visibleGuildUnread','eager Guild unread suppression before catch-up');
 reject(overlay,'visiblePartyUnread','eager Party unread suppression before catch-up');

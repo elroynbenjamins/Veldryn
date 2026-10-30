@@ -1,7 +1,7 @@
 import {createCharacter,newGame} from '../src/core/game';
 import {combatCompanionDef} from '../src/content/combat-companions';
 import {companionRequirementProgress,companionStarterTeamProgress,companionUnlockGuidance} from '../src/core/companion-presentation';
-import {companionUnlockRequirementMet,reconcileCombatCompanionUnlocks} from '../src/core/combat-companions';
+import {companionUnlockRequirementMet,reconcileCombatCompanionUnlocks,unlockCombatCompanion} from '../src/core/combat-companions';
 
 function fail(message:string):never{throw new Error(message)}
 function ok(value:unknown,message:string){if(!value)fail(message)}
@@ -21,13 +21,14 @@ equal(sprite.unlockRequirements[0]?.target,'fishing','Silverbrook Sprite skill t
 equal(sprite.unlockRequirements[0]?.amount,16,'Silverbrook Sprite Fishing target is paced to final Silverbrook node');
 equal(sprite.unlockRequirements[1]?.target,'SILVERBROOK_NODES','Silverbrook Sprite still requires Silverbrook exploration');
 
-let spriteState=createCharacter(newGame(1),'IRONWARDEN','Silverbrook Guide');
+let spriteState=unlockCombatCompanion(createCharacter(newGame(1),'IRONWARDEN','Silverbrook Guide'),'UNIT_001',99);
+spriteState={...spriteState,account:{...spriteState.account,starterCombatCompanionId:'UNIT_001'}};
 spriteState={...spriteState,skills:spriteState.skills.map(row=>row.skillId==='fishing'?{...row,level:15}:row),account:{...spriteState.account,companionUnlockProgress:{'node:SILVERBROOK_SHOAL':1,'node:RIVER_EEL_POOL':1,'node:OATHSCALE_POOL':1,SILVERBROOK_NODES:1}}};
 spriteState=reconcileCombatCompanionUnlocks(spriteState,100);
 ok(!spriteState.account.unlockedCombatCompanionIds?.includes('UNIT_003'),'Fishing 15 must remain below Silverbrook Sprite threshold');
 spriteState={...spriteState,skills:spriteState.skills.map(row=>row.skillId==='fishing'?{...row,level:16}:row)};
 spriteState=reconcileCombatCompanionUnlocks(spriteState,101);
-ok(spriteState.account.unlockedCombatCompanionIds?.includes('UNIT_003'),'Fishing 16 plus all Silverbrook nodes unlocks Silverbrook Sprite');
+ok(spriteState.account.unlockedCombatCompanionIds?.includes('UNIT_003')&&spriteState.account.starterFollowupCombatCompanionId==='UNIT_003','Fishing 16 plus Silverbrook nodes recruits the support follow-up after the player chooses a starting companion');
 
 const fresh=createCharacter(newGame(1),'IRONWARDEN','Companion Guide');
 const starter=companionStarterTeamProgress(fresh);

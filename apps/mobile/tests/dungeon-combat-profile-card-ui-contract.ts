@@ -49,7 +49,7 @@ ok(card.includes('GEM_STATUS_CODES')&&card.includes("'gem:momentum':'MOM'")&&car
 ok(card.includes("'gem:retaliation_ready':'RETAL'")&&card.includes("'gem:benediction_charge':'BENE'")&&card.includes("'gem:opportunist_ready':'OPP'"),'Ready, charge and harmful Effect Gem states need distinct compact codes');
 ok(card.includes("status.source==='gem'")&&card.includes('styles.statusGem'),'Persistent beneficial Effect Gem states must use the gem visual treatment while harmful marks remain harmful');
 ok(!stage.includes('playbackSpeed')&&!stage.includes('DUNGEON_PLAYBACK_SPEEDS'),'Dungeon playback must not have speed controls');
-ok(stage.includes("run.mode!=='live'&&(!complete||paused)")&&stage.includes('Skip combat replay to result'),'Skip is Solo-only; Live has no transport controls');
+ok(!stage.includes('Skip combat replay to result')&&!stage.includes('Pause combat replay'),'Dungeon theater must advance automatically without Live or Solo transport controls');
 ok(stage.includes('playbackAdvanceDelayMs(current,next,1)')&&stage.includes('playbackCastDisplayMs(currentBossCast,1)'),'Dungeon combat cues and casts run at fixed normal speed');
 ok(stage.includes('playbackVisualDurationMs(fx.durationMs,1)'),'Combat effects use the same fixed normal speed');
 ok(card.includes('FOCUS →')&&card.includes('bossCast.targetLabel'),'Boss cast card must show the authoritative focus target when available');
@@ -57,10 +57,10 @@ ok(stage.includes('targetLabel:currentBossCast.targetName?.trim()'),'Battlefield
 ok(stage.includes('PARTY CONTRIBUTION')&&stage.includes('Encounter totals')&&stage.includes('replay.contributions??[]'),'Completed combat replay must show factual contribution totals from its authoritative replay');
 ok(stage.includes("role==='tank'")&&stage.includes('TAKEN')&&stage.includes("role==='support'")&&stage.includes('HEAL'),'Contribution recap must emphasize role-relevant factual metrics');
 ok(stage.includes('DMG')&&stage.includes('INT')&&!stage.includes('MVP'),'Contribution recap must show damage and interrupts without ranking players');
-ok(stage.includes("run.mode!=='live'&&(!complete||paused)")&&stage.includes('Pause combat replay'),'Only Solo replay can pause');
-ok(stage.includes('complete?st("ENCOUNTER RECAP"):paused?st("PAUSED"):st("NOW PLAYING")')&&stage.includes('paused?st("▶ Resume"):st("Ⅱ Pause")'),'Paused replay state must be visibly explicit and localized');
+ok(!stage.includes('setPaused(true)')&&!stage.includes('paused||cueIndex'),'Combat inspection must never strand Solo or Live replay in an unresumable pause');
+ok(stage.includes('complete?st("ENCOUNTER RECAP"):st("LIVE COMBAT")'),'Automatic playback must show a clear in-progress vs completed label');
 ok(stage.includes('accessibilityLabel={showLog?st("Hide combat battle log"):st("Show combat battle log")}')&&stage.includes("recent.length&&(!complete||showLog)"),'Completed replay must collapse the detailed battle log by default');
-ok(stage.includes('setPaused(false);setShowLog(false);setCueIndex(0)'),'Replay encounter must reset pause and collapsed-log state');
+ok(stage.includes('setShowLog(false);setCueIndex(0)'),'Replay encounter must reset its cursor and collapsed-log state');
 ok(!stage.includes('member:{minHeight:126')&&!stage.includes('avatarFrame:{height:44')&&!stage.includes('castWarning:{minHeight:34'),'Dungeon stage must not retain obsolete pre-profile-card combat styles');
 ok(!card.includes('No companion assist')&&!card.includes('noAssist:'),'Party cards must not spend vertical space on empty companion placeholders');
 ok(card.includes('card:{flex:1,minHeight:116')&&card.includes('combatInfo:{padding:10,paddingTop:0,gap:4')&&card.includes('layout&&{minHeight:layout.cardMinHeight}'),'Party combat cards must keep the modern compact density while honoring narrower-phone sizes');
@@ -77,18 +77,18 @@ ok(stage.includes('combatantId={enemy.id}')&&stage.includes('selectedForInspect=
 ok(stage.includes('layout={layout}')&&card.includes('layout?:DungeonCombatLayout'),'Party combat cards must receive the responsive density contract');
 ok(card.includes('layout.cardMinHeight')&&/layout\??\.sceneHeight/.test(card)&&card.includes('layout.portraitWidth'),'Responsive combat cards must adapt height, portrait window and scene height without changing formation');
 ok(card.includes('limit={layout?.statusLimit??3}'),'Narrow phones must reduce visible status-pill count rather than widen cards');
-ok(stage.includes('layout.controlsWrap&&s.playbackControlsWrap'),'Solo replay controls still fit small screens');
-for(const control of ['pauseButton','stepButton','skipButton','replayButton']){
+ok(stage.includes('layout.contributionIdentityMinWidth')&&stage.includes('layout.contributionIdentityWidthPct'),'Narrow displays must adapt contribution recap width');
+for(const control of ['replayButton']){
  const style=stage.match(new RegExp(control+':\\{([^}]+)\\}'))?.[1]??'';
  ok(/minHeight:touchTargetMin/.test(style),'Replay control '+control+' must use the minimum touch-target token');
 }
 ok(read('src/theme/theme.ts').includes('touchTargetMin=44'),'The shared minimum touch target must stay at least 44px');
-ok(stage.includes("controlActions:{flexDirection:'row',flexWrap:'wrap'")&&stage.includes('layout.controlsWrap&&s.controlActionsWrap'),'Replay action buttons must reflow within their row on small phones');
+ok(stage.includes('replayButton:{minHeight:touchTargetMin'),'Replay action keeps the minimum 44px touch target');
 ok(stage.includes('layout.contributionIdentityMinWidth')&&stage.includes('layout.contributionIdentityWidthPct'),'Contribution recap identity width must adapt on narrow phones');
 ok(card.includes('selectedForInspect')&&card.includes('Inspect ${slot.name} combat details'),'Party combat cards must expose tap-to-inspect interaction without adding a permanent button row');
 ok(card.includes('Inspect ${name} combat details')&&card.includes('inspectSelected'),'Boss/enemy combat cards must support the same inspect interaction and selected state');
 ok(stage.includes('inspectKey')&&stage.includes('enemyInspectKey(enemy.id)')&&stage.includes('slotInspectKey(slot)'),'Battlefield must track inspection by authoritative id for every enemy and all four party cards');
-ok(stage.includes("run.mode!=='live'&&!reduceMotion&&cues.length>1"),'Live combatant inspection must not pause playback');
+ok(stage.includes('const toggleInspect=(key:string)=>setInspectKey('),'Combatant inspection must never pause automatic combat playback');
 ok(stage.includes('<CombatantInspectPanel')&&stage.includes('onClose={()=>setInspectKey(undefined)}'),'Selected combatant must render a closable compact inspection panel');
 ok(inspect.includes('COMBAT INSPECT')&&inspect.includes('ACTIVE EFFECTS'),'Inspection panel must clearly separate combat identity and effect details');
 ok(inspect.includes('close:{minWidth:touchTargetMin,minHeight:touchTargetMin'),'Combat inspection must have a full-size close touch target');
@@ -96,12 +96,12 @@ ok(inspect.includes('status.label')&&inspect.includes('status.stacks>1')&&inspec
 ok(inspect.includes("status.source==='gem'")&&inspect.includes("return 'Effect Gem'")&&inspect.includes("return 'Damage over time'")&&inspect.includes("return 'Healing over time'"),'Inspection panel must explain Effect Gem and timed-effect sources in player-facing terms');
 ok(inspect.includes('BARRIER')&&inspect.includes('COMPANION')&&inspect.includes('PHASE'),'Inspection panel must surface combat barrier, companion and boss phase context when available');
 ok(inspect.includes('INTERRUPTIBLE CAST')&&inspect.includes('Focus →'),'Boss inspection must retain cast interruptibility and authoritative focus target context');
-// Paused inspection stepping stays bounded to the authoritative replay cue list.
-ok(stage.includes('stepReplay=(delta:-1|1)')&&stage.includes('setCueIndex(value=>Math.max(0,Math.min(cues.length-1,value+delta)))'),'Paused combat inspection must step safely between authoritative replay cues');
-ok(stage.includes('accessibilityLabel={st("Previous combat event")}')&&stage.includes('accessibilityLabel={st("Next combat event")}'),'Paused replay must expose localized accessible previous/next event controls');
-ok(stage.includes('disabled={cueIndex<=0}')&&stage.includes('disabled={cueIndex>=cues.length-1}'),'Event-step controls must clamp at replay boundaries');
-ok(stage.includes("run.mode!=='live'&&(!complete||paused)"),'Solo replay controls remain available; Live has none');
-ok(stage.includes("run.mode!=='live'&&!reduceMotion&&cues.length>1"),'Only Solo inspection pauses replay');
+// Automatic combat inspection remains read-only and never changes the server cue timeline.
+ok(stage.includes('playbackAdvanceDelayMs(current,next,1)')&&stage.includes('setCueIndex(value=>Math.min(value+1,cues.length-1))'),'Combat replay must advance automatically and clamp at the final authoritative cue');
+ok(!stage.includes('Previous combat event')&&!stage.includes('Next combat event'),'Automatic replay must not expose inactive step controls');
+ok(stage.includes('cueIndex>=cues.length-1')&&stage.includes('setCueIndex(value=>Math.min(value+1,cues.length-1))'),'Automatic replay must clamp at cue boundaries');
+ok(!stage.includes('setPaused('),'All replay modes must remain automatic without hidden pause state');
+ok(stage.includes('onClose={()=>setInspectKey(undefined)}'),'Inspection close must remain available without playback controls');
 for(const enemy of ['The Hollow Regent','The Coinbound Captain','The Rimebell Colossus','Veilshade Stalker','Ledger Hexer','Bellfrost Spirit'])ok(enemyArt.toLowerCase().includes(enemy.toLowerCase()),enemy+' must have registered encounter artwork');
 ok(enemyArt.includes("require('../../assets/dungeon-enemies-v1/"),'Enemy artwork must be bundled as static Metro assets');
 

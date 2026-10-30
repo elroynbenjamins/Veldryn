@@ -23,7 +23,7 @@ ok(account.includes("if(id==='Quests'&&storyRewardCount>0)")&&!account.includes(
  'Account hub highlights story claims but never event claims');
 ok(quickNav.includes("([...QUICK_NAV_DESTINATIONS,'Events'] as QuickNavDestination[])"),
  'Event remains reachable in quick navigation without a claim-notification badge');
-ok(!account.includes("const attentionPriority:MoreDestination[]=['Quests','Events'")&&account.includes("const attentionPriority:MoreDestination[]=['Quests','DailySupplies'"),
+ok(!account.includes("const attentionPriority:MoreDestination[]=['Quests','Events'")&&account.includes("const attentionPriority:MoreDestination[]=['NewUnlocks','Quests','DailySupplies'")&&account.includes("attentionDestinations.slice(0,3)"),
  'Event rewards no longer enter the Account attention rail');
 
 ok(eventHub.includes('Rewards (${readyClaims})')&&eventHub.includes('<EventRewardTrail'),

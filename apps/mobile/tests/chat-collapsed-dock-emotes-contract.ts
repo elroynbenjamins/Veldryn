@@ -49,9 +49,9 @@ ok(!overlay.includes("paddingBottom:Platform.OS==='android'?76:88"),'Expanded ch
 ok(overlay.includes('useWindowDimensions')&&overlay.includes("expandWindow=width<360||fontScale>=1.25"),'Expanded chat must adapt its available height on narrow phones and large text');
 ok(overlay.includes('keyboard:{width:\'100%\',maxWidth:480,flex:1,justifyContent:\'flex-end\'}'),'Expanded chat must stay anchored above the keyboard while it resizes');
 ok(overlay.includes('windowExpanded')&&overlay.includes("maxHeight:'94%'"),'Expanded chat must expose more vertical space when constrained');
-ok(overlay.includes('<RailTab channel="world"')&&overlay.includes('<RailTab channel="system"'),'Expanded chat must expose channels in the compact icon rail');
+ok(overlay.includes('accessibilityLabel={st("Change chat channel")')&&overlay.includes('accessibilityState={{expanded:channelMenuOpen}}')&&overlay.includes('selectChannel('),'Expanded chat must expose an accessible channel selector with explicit channel choices');
 ok(overlay.includes('languageMenuOpen')&&overlay.includes('languagePopover'),'World languages must be available from the compact header');
-ok(!overlay.includes('choosingChannel')&&!overlay.includes('channelMenu'),'Expanded chat must not hide channel selection behind a filter dropdown');
+ok(!overlay.includes('choosingChannel')&&overlay.includes('channelMenuOpen')&&overlay.includes('setChannelMenuOpen'),'Expanded chat must use the dedicated channel selector rather than unrelated filters');
 ok(overlay.includes("<SystemNoticeLog state={state} active={visible&&channel==='system'}/>"),'The System channel must render live notices instead of a placeholder');
 ok(!overlay.includes('System notices are not available yet.'),'The System channel must not regress to the unavailable placeholder');
 

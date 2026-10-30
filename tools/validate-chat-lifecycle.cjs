@@ -674,7 +674,13 @@ async function overlayLifecycle() {
     await act(async()=>{tree=create(React.createElement(ChatOverlay,props));});
     assert.equal(mounts.world,1);assert.equal(mounts.guild??0,0);assert.equal(mounts.party??0,0);assert.equal(mounts.system??0,0);
     const worldInstance=latest.world.instance;
-    async function tab(name){await act(async()=>{tree.root.findAllByType('Pressable').find(x=>x.props.accessibilityRole==='tab'&&x.props.accessibilityLabel===name).props.onPress();});}
+    async function tab(name){
+      const picker=()=>tree.root.findAllByType('Pressable').find(x=>String(x.props.accessibilityLabel).startsWith('Change chat channel'));
+      await act(async()=>{picker().props.onPress();});
+      const option=tree.root.findAllByType('Pressable').find(x=>x.props.accessibilityRole==='button'&&String(x.props.accessibilityLabel).startsWith(name+' · '));
+      assert.ok(option,`missing accessible ${name} chat channel choice`);
+      await act(async()=>{option.props.onPress();});
+    }
     for(const name of ['Guild','Party','System','World','Party','Guild','System','World'])await tab(name);
     assert.equal(mounts.world,1);assert.equal(mounts.guild,1);assert.equal(mounts.party,1);assert.equal(mounts.system,1);
     assert.deepEqual(unmounts,{},'channel switches preserve all visited component instances');

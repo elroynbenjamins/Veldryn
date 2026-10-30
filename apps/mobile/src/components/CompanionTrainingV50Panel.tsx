@@ -100,19 +100,19 @@ export function CompanionTrainingV50Panel({state,now,onCommand,onNavigateSource,
     {tab==='Roster'?<>
       <View style={s.filterGroup}>
         <Text style={s.filterCaption}>{t('Ownership')}</Text>
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={s.filterLine}>
+        <ScrollView horizontal showsVerticalScrollIndicator={false} showsHorizontalScrollIndicator={false} contentContainerStyle={s.filterLine}>
           {(['Owned','All','Locked'] as const).map(value=><Pressable key={value} accessibilityRole="button" accessibilityState={{selected:rosterOwnership===value}} onPress={()=>setRosterOwnership(value)} style={[s.filterChip,rosterOwnership===value&&s.filterActive]}><Text style={s.filterLabel}>{t(value)}</Text></Pressable>)}
         </ScrollView>
         <Text style={s.filterCaption}>{t('Rarity')}</Text>
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={s.filterLine}>
+        <ScrollView horizontal showsVerticalScrollIndicator={false} showsHorizontalScrollIndicator={false} contentContainerStyle={s.filterLine}>
           {(['All','standard','rare','elite','prestige'] as const).map(value=><Pressable key={value} accessibilityRole="button" accessibilityState={{selected:rosterRarity===value}} onPress={()=>setRosterRarity(value)} style={[s.filterChip,rosterRarity===value&&s.filterActive]}><Text style={s.filterLabel}>{value==='All'?t('All'):companionContent(language,COMPANION_RARITY_CONFIG[value].label)}</Text></Pressable>)}
         </ScrollView>
         <Text style={s.filterCaption}>{t('Role')}</Text>
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={s.filterLine}>
+        <ScrollView horizontal showsVerticalScrollIndicator={false} showsHorizontalScrollIndicator={false} contentContainerStyle={s.filterLine}>
           {(['All','tank','damage','support'] as const).map(value=><Pressable key={value} accessibilityRole="button" accessibilityState={{selected:rosterRole===value}} onPress={()=>setRosterRole(value)} style={[s.filterChip,rosterRole===value&&s.filterActive]}><Text style={s.filterLabel}>{value==='All'?t('All'):label(value)}</Text></Pressable>)}
         </ScrollView>
       </View>
-      <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={s.roster}>
+      <ScrollView horizontal showsVerticalScrollIndicator={false} showsHorizontalScrollIndicator={false} contentContainerStyle={s.roster}>
         {rosterCompanions.map(def=>{const owned=!!view.owned[def.id],selected=selection===def.id,originalIndex=COMBAT_COMPANIONS.findIndex(row=>row.id===def.id),portrait=MONSTERS.find(monster=>monster.id===portraitIds[originalIndex%portraitIds.length]),art=companionArtSource(def.id);return <Pressable key={def.id} accessibilityRole="button" accessibilityState={{selected}} onPress={()=>setSelection(def.id)} style={[s.companionCard,{borderColor:companionRarityBorder(def.rarity,C.dark)},selected&&s.selected,!owned&&s.locked]}>{art?<Image source={art} resizeMode="contain" style={s.rosterArt}/>:portrait?<MonsterPortraitFrame monster={portrait} size={54} framed={false}/>:<Text style={s.glyph}>{roleGlyph[def.role]}</Text>}<Text numberOfLines={1} style={s.cardName}>{def.name}</Text><Text style={s.cardMeta}>{owned?t("Lv {value0}",{value0:view.owned[def.id].level}):t('Locked')} · {label(def.role)}</Text></Pressable>})}
         {!rosterCompanions.length?<Text style={s.help}>{t('No companions match these filters.')}</Text>:null}
       </ScrollView>

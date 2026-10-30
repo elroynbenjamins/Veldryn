@@ -51,7 +51,7 @@ export default function BrowserReview(){
   <View style={s.header}>
    <Text style={s.title}>VELDRYN · Browser Review</Text>
    <Text style={s.note}>Interactive sample data · No account, matchmaking, or live rewards</Text>
-   {groups.map(group=><View key={group} style={s.group}><Text style={s.groupName}>{group}</Text><ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={s.links}>{routes.filter(item=>item.group===group).map(item=><Pressable key={item.id} accessibilityRole="button" accessibilityState={{selected:item.id===route.id}} onPress={()=>open(item)} style={[s.link,item.id===route.id&&s.linkActive]}><Text style={[s.linkText,item.id===route.id&&s.linkTextActive]}>{item.label}</Text></Pressable>)}</ScrollView></View>)}
+   {groups.map(group=><View key={group} style={s.group}><Text style={s.groupName}>{group}</Text><ScrollView horizontal showsVerticalScrollIndicator={false} showsHorizontalScrollIndicator={false} contentContainerStyle={s.links}>{routes.filter(item=>item.group===group).map(item=><Pressable key={item.id} accessibilityRole="button" accessibilityState={{selected:item.id===route.id}} onPress={()=>open(item)} style={[s.link,item.id===route.id&&s.linkActive]}><Text style={[s.linkText,item.id===route.id&&s.linkTextActive]}>{item.label}</Text></Pressable>)}</ScrollView></View>)}
   </View>
   <View key={route.id} style={s.content}>{content}</View>
  </View>;

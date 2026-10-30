@@ -15,7 +15,7 @@ export function NewUnlocksScreen({language,entries,onBack,onCustomize}:{language
  const [showAll,setShowAll]=useState(false);
  const shown=showAll?entries:entries.slice(0,20);
  const t=(key:string)=>accountText(language,key);
- return <ScrollView contentContainerStyle={s.root} showsVerticalScrollIndicator={false}>
+ return <ScrollView contentContainerStyle={s.root} showsVerticalScrollIndicator={false} showsHorizontalScrollIndicator={false}>
    <Pressable accessibilityRole="button" accessibilityLabel={t('Back to Account')} onPress={onBack} style={s.back}><UiIcon name="back" size={18}/><Text style={s.backText}>{t('Account')}</Text></Pressable>
    <View style={s.header}><View style={s.flex}><Text accessibilityRole="header" style={s.heading}>{t('New Unlocks')}</Text><Text style={s.caption}>{t('Titles, pets, emotes and profile cosmetics you earned.')}</Text></View></View>
    {entries.length?<>

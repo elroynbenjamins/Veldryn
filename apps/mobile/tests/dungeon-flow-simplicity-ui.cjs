@@ -11,6 +11,7 @@ const stage=read('components/coop/DungeonCombatStage.tsx');
 const board=read('components/coop/CoopLiveRecruitmentBoard.tsx');
 const live=fs.readFileSync(path.join(root,'../../backend/online/live-runtime.ts'),'utf8');
 assert(browser.includes('onBack={onBack} backLabel={a("Back")}'),'Dungeon browser must offer a real close/back action');
+assert(browser.includes('notice?<FantasyPanel variant="danger"')&&screen.includes('notice={notice} activeRun={entry?.activeRun}'),'Quick Match errors must appear on the main Dungeon screen without opening group finder');
 assert(browser.includes('onQuickMatch?<FantasyPanel variant="selected"'),'Live Quick Match should be the primary option');
 assert(browser.includes("mode==='live'&&liveTools?"),'Advanced group search remains accessible');
 assert(browser.includes("mode==='qmode'&&echoTools?"),'Echo sharing must not crowd primary browsing');

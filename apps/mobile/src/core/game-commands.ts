@@ -111,6 +111,31 @@ export function validateGameSettings(value:unknown):GameState['settings']{
  return result;
 }
 
+/** Projects older saved settings onto the current strict online command schema.
+ * Inventory stars/locks change preferences only; they must not fail because
+ * an unrelated, retired or malformed preference survived an older build. */
+export function settingsForOnlineCommand(value:GameState['settings']):GameState['settings']{
+ const defaults=game.newGame(0).settings;
+ const source=value as unknown as Record<string,unknown>;
+ const projected=Object.fromEntries(Object.entries(defaults).map(([key,fallback])=>[key,source[key]??fallback])) as GameState['settings'];
+ if(!SUPPORTED_LANGUAGES.includes(projected.language))projected.language=defaults.language;
+ if(!(['abbreviated','exact'] as const).includes(projected.numberMode))projected.numberMode=defaults.numberMode;
+ if(!(['obsidian','ember','ivory'] as const).includes(projected.uiTheme??'obsidian'))projected.uiTheme=defaults.uiTheme;
+ if(![1,1.15,1.3,1.5].includes(projected.textScale))projected.textScale=defaults.textScale;
+ if(!Number.isFinite(projected.autoEatThresholdPct)||projected.autoEatThresholdPct<0||projected.autoEatThresholdPct>100)projected.autoEatThresholdPct=defaults.autoEatThresholdPct;
+ for(const key of ['reduceMotion','stopCombatWhenOutOfFood','autoTravelQueuedActivities','autoJoinWorldChat'] as const)if(typeof projected[key]!=='boolean')projected[key]=defaults[key];
+ if(![1,2,3,4].includes(projected.defaultWorldChat??0))projected.defaultWorldChat=defaults.defaultWorldChat;
+ if(![1,2,3].includes(projected.chatDockLines??0))projected.chatDockLines=defaults.chatDockLines;
+ if(!Array.isArray(projected.quickNavDestinations)||projected.quickNavDestinations.length>8||projected.quickNavDestinations.some(id=>!QUICK_NAV_DESTINATIONS.includes(id)))projected.quickNavDestinations=[...defaults.quickNavDestinations];
+ const cleanIds=(ids:unknown,max:number)=>Array.isArray(ids)?[...new Set(ids.filter((id):id is string=>typeof id==='string'&&id.length>0&&id.length<=120))].slice(-max):[];
+ projected.favoriteItemIds=cleanIds(projected.favoriteItemIds,100);
+ projected.lockedItemIds=cleanIds(projected.lockedItemIds,100);
+ projected.seenItemIds=cleanIds(projected.seenItemIds,1000);
+ const emotes=Array.isArray(projected.chatEmoteTrayIds)?projected.chatEmoteTrayIds:[];
+ projected.chatEmoteTrayIds=(emotes.length===CHAT_EMOTE_TRAY_SIZE&&normalizeChatEmoteTrayIds(emotes).length===emotes.length)?normalizeChatEmoteTrayIds(emotes):[];
+ return validateGameSettings(projected);
+}
+
 /** The caller provides a trusted clock, character ID and random roll on the server. */
 export function executeGameCommand(previous:GameState,value:unknown,now:number,options:{characterId?:string;randomRoll?:number;accountId?:string;eventId?:string;adminQa?:boolean}={}):GameCommandResult{
  const command=validateGameCommand(value),a=command.args??{},activity=previous.activity,contributions:VerifiedActivity[]=[];

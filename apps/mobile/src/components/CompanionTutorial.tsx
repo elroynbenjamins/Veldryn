@@ -57,7 +57,7 @@ export function CompanionTutorial({state,now,step,onAdvance,onFinish}:{state:Gam
     </View>
     <Text style={{fontSize:11,fontWeight:'600',letterSpacing:1,color:C.accent}}>{t('SCREEN PREVIEW')}</Text>
     <View pointerEvents="none" aria-hidden={true} accessibilityElementsHidden importantForAccessibility="no-hide-descendants" {...(Platform.OS==='web'?{inert:true}:{})}>
-     <CombatCompanionPanel key={current.section} state={state} now={now} onCommand={noCommand} initialSection={current.section==='Training'?'Collection':current.section} initialTrainingDetail={current.section==='Training'&&Boolean(state.account.unlockedCombatCompanionIds?.length)}/>
+     <CombatCompanionPanel key={current.section} state={state} now={now} onCommand={noCommand} initialNavigation={{section:current.section,selection:state.character?.equippedCombatCompanionId??'UNIT_001'}}/>
     </View>
    </ScrollView>
    <View style={{padding:16,gap:8,borderTopWidth:1,borderColor:C.line,backgroundColor:C.panel}}>

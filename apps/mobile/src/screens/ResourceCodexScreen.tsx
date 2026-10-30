@@ -60,7 +60,7 @@ export function ResourceCodexScreen({state,onNavigateSource,onOpenCompanions}:{s
  const details=selected?resourceCodexUse(selected):'';
  return <View style={s.screen}>
   <View accessibilityRole="tablist" style={s.codexTabs}>
-   {(['Resources','Recipes'] as const).map(view=><Pressable key={view} accessibilityRole="tab" accessibilityState={{selected:activeView===view}} onPress={()=>setActiveView(view)} style={[s.codexTab,activeView===view&&s.codexTabActive]}><Text style={[s.codexTabLabel,activeView===view&&s.codexTabLabelActive]}>{a(view)}</Text></Pressable>)}
+   {(['Resources','Recipes'] as const).map(view=><Pressable key={view} accessibilityRole="tab" accessibilityState={{selected:activeView===view}} onPress={()=>{if(view==='Recipes')setIngredientFilterId(undefined);setActiveView(view);}} style={[s.codexTab,activeView===view&&s.codexTabActive]}><Text style={[s.codexTabLabel,activeView===view&&s.codexTabLabelActive]}>{a(view)}</Text></Pressable>)}
   </View>
   {activeView==='Recipes'?<RecipeCodexPanel state={state} onNavigateSource={onNavigateSource} onOpenResource={id=>{if(!byId.has(id))return;setSelectedId(id);setActiveView('Resources');}} ingredientFilterId={ingredientFilterId} onClearIngredientFilter={()=>setIngredientFilterId(undefined)}/>:<FlatList key={columns} data={filtered} numColumns={columns} keyExtractor={keyOf} renderItem={renderItem} keyboardShouldPersistTaps="handled" columnWrapperStyle={s.row} initialNumToRender={16} maxToRenderPerBatch={12} updateCellsBatchingPeriod={40} windowSize={5} showsVerticalScrollIndicator={false}
    contentContainerStyle={s.content}

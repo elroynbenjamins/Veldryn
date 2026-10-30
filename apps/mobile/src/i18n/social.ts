@@ -6,6 +6,8 @@ import {createTranslator,type TranslationParams} from './translator';
 
 // Columns are German, Spanish, Dutch, Italian and French; keys are the English catalog.
 export const socialTranslationRows = {
+ "Vote ends in {seconds}s":["Abstimmung endet in {seconds} s","La votación termina en {seconds} s","Stemmen sluit over {seconds} s","La votazione termina tra {seconds} s","Fin du vote dans {seconds} s"],
+ "Battle resolves in {seconds}s":["Kampf endet in {seconds} s","El combate termina en {seconds} s","Gevecht eindigt over {seconds} s","Il combattimento termina tra {seconds} s","Fin du combat dans {seconds} s"],
  // Dungeon route voting and simplified run details.
  "Vote for the next path":["Für den nächsten Weg abstimmen","Votar por la siguiente ruta","Stem op de volgende route","Vota per il prossimo percorso","Voter pour le prochain chemin"],
  "Choose the next room":["Nächsten Raum wählen","Elegir la siguiente sala","Kies de volgende kamer","Scegli la prossima stanza","Choisir la prochaine salle"],

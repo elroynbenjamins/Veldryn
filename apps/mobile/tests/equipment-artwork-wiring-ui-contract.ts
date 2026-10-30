@@ -28,7 +28,7 @@ const inventoryArtwork=fs.readFileSync('src/components/ItemArtwork.tsx','utf8');
 const equipmentPreview=fs.readFileSync('src/components/EquipmentPreview.tsx','utf8');
 ok(starterWeapon.includes('starterWeaponArtworkLayout(itemId,size)'),'Starter sprite must use the safe shared crop geometry');
 ok(starterWeapon.includes("frame:{overflow:'hidden'}"),'Atlas crops must stay clipped to their preview frame');
-ok(classCreation.includes('<StarterWeaponArtwork itemId={starter.id} size={52}/>'),'Class creation shares the fitted starter weapon rendering');
+ok(classCreation.includes('classEmblemArtwork[selected.id]')&&!classCreation.includes('StarterWeaponArtwork'),'Creation uses class emblems without displaying starting equipment');
 ok(equipment.includes('<StarterWeaponArtwork itemId={item.id} size={size}/>'),'Equipped items use the same fitted starter weapon rendering');
 ok(inventoryArtwork.includes('<EquipmentArtwork item={item} compact framed={false}/>'),'Inventory thumbnails reuse the shared starter weapon artwork');
 ok(equipmentPreview.includes('<EquipmentArtwork item={item} size={112} framed={false}/>'),'Large equipment previews reuse the same safe crop');

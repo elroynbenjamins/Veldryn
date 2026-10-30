@@ -116,6 +116,7 @@
   ".core-build/apps/mobile/tests/localization.js",
   ".core-build/apps/mobile/tests/live-events.js",
   ".core-build/apps/mobile/tests/event-prestige-supplies.js",
+  ".core-build/apps/mobile/tests/event-pet-luck.js",
   ".core-build/apps/mobile/tests/navigation-back-cleanup-ui-contract.js",
   ".core-build/apps/mobile/tests/event-claim-count.js",
   ".core-build/apps/mobile/tests/event-community-paused.js",

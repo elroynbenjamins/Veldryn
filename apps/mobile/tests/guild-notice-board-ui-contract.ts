@@ -14,9 +14,9 @@ ok(app.includes("import {OnlineGuildNoticeBoardPanel}"),'App must import the onl
 ok(app.includes('onlineBoard={<OnlineGuildNoticeBoardPanel/>}'),'App must wire the Notice Board into the Guild screen');
 
 ok(screen.includes("'Home'"),'Consolidated online Guild sections must include Home');
-ok(screen.includes('<GuildMemberIdentity/>')&&screen.includes('board={onlineBoard}'),'Guild Home must place the private notice with its authoritative member identity');
-ok(screen.indexOf('<GuildMemberIdentity/>')<screen.indexOf('{board?<View'),'Guild identity and navigation must precede the private Notice Board');
-ok(screen.includes('CURRENT PRIORITY')&&screen.includes('<GuildActivitySummaryPanel compact/>'),'Guild Home must provide clear Notice Board and daily-participation context');
+ok(screen.includes('<GuildMemberIdentity onRoster=')&&screen.includes('<GuildHomeActions board=')&&screen.includes('board={onlineBoard}'),'Guild Home must place the private notice with authoritative member identity');
+ok(screen.indexOf('<GuildMemberIdentity onRoster=')<screen.indexOf('<GuildHomeActions board='),'Guild identity must precede the private Notice Board');
+ok(screen.includes('<GuildHomeActions board=')&&screen.includes('<GuildActivitySummaryPanel compact/>'),'Guild Home must provide Notice Board and daily-participation context');
 
 ok(board.includes('MEMBER NOTICE BOARD'),'Notice Board must have clear Guild-member context');
 ok(board.includes('<StatusPill label={st("MEMBERS ONLY")} tone="good"/>'),'Notice Board must clearly communicate its private audience with localized text');

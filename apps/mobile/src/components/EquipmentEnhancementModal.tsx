@@ -139,7 +139,7 @@ export function EquipmentEnhancementModal({visible,state,itemId,onClose,onUpgrad
             {next?<><Text style={s.gemCompareArrow}>→</Text><GemArtwork itemId={next.id} size={44} framed={false}/></>:null}
             <View style={s.flex}>
               <Text numberOfLines={2} style={s.gemConfirmText}>{next?current.name+' → '+next.name:current.name}</Text>
-              <Text style={s.rule}>{gt("Original gem returns to Inventory.")}</Text>
+              <Text style={s.rule}>{gt("Old gem returns to Gem Pouch or available storage.")}</Text>
             </View>
           </View>
           {next?<Text numberOfLines={2} style={s.gemConfirmCompare}>{gemResultDetail(state,current.id)} → {gemResultDetail(state,next.id)}</Text>:null}
@@ -173,7 +173,7 @@ export function EquipmentEnhancementModal({visible,state,itemId,onClose,onUpgrad
 
       {((activeSocketKind==='stat'?statGems.length:effectGems.length)>4)?<Pressable accessibilityRole="button" accessibilityState={{expanded:showAllCandidates}} onPress={()=>setShowAllCandidates(value=>!value)} style={s.detailToggle}><Text style={s.detailToggleText}>{showAllCandidates?gt("Show fewer gems"):gt("See all owned gems")}</Text><Text style={s.detailToggleMark}>{showAllCandidates?'−':'+'}</Text></Pressable>:null}
       <Pressable accessibilityRole="button" accessibilityState={{expanded:showGemHelp}} onPress={()=>setShowGemHelp(value=>!value)} style={s.detailToggle}><Text style={s.detailToggleText}>{showGemHelp?gt("Hide gem rules"):gt("How gems work")}</Text><Text style={s.detailToggleMark}>{showGemHelp?'−':'+'}</Text></Pressable>
-      {showGemHelp?<Text style={s.rule}>{gt("Each piece holds one Stat Gem and one Effect Gem. Replacing or extracting a gem returns the old gem to Inventory. Extraction can cost Gold and Gem Dust. Effect Gems may benefit from Resonance.")}</Text>:null}
+      {showGemHelp?<Text style={s.rule}>{gt("Each piece holds one Stat Gem and one Effect Gem. Replacing or extracting a gem returns the old gem to Gem Pouch, or Inventory/Bank if the pouch is full. Extraction can cost Gold and Gem Dust. Effect Gems may benefit from Resonance.")}</Text>:null}
     </>}</ScrollView>
     {tab==='upgrade'&&!quote.maxed?<View style={s.actionFooter}>
       <GameButton title={confirmRisk?gt("Confirm attempt"):feedback?.kind==='upgrade_failure'?gt("Try again · ")+totalChancePct+'%':gt("Enhance to")+' +'+quote.targetRank+' · '+totalChancePct+'%'} loading={busy} disabled={!canUpgrade} onPress={attempt}/>

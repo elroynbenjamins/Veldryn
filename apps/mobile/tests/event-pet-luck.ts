@@ -15,7 +15,7 @@ ok(window.startsAtMs===now&&window.endsAtMs===now+2*3600000,'Pet Luck window is 
 const boosted:PetDropBoostWindow={startsAtMs:window.startsAtMs,endsAtMs:window.endsAtMs,settlementStartsAtMs:now,settlementEndsAtMs:now+3600000};
 const expired:PetDropBoostWindow={...boosted,settlementStartsAtMs:now+7200000,settlementEndsAtMs:now+10800000};
 const partlyBoosted:PetDropBoostWindow={...boosted,settlementEndsAtMs:now+4*3600000};
-const unowned={...state,account:{...state.account,unlockedCosmeticPetIds:[]}};
+const unowned={...state,quests:state.quests.map(row=>row.questId==='QST_003'?{...row,status:'claimed' as const}:row),account:{...state.account,unlockedCosmeticPetIds:[]}};
 ok(resolveCorePetCombatDrops(unowned,'IRONWOOD_WOLF',1,'wolf',()=>0.0015,boosted).includes('PET_004'),'Base 0.10% combat pet chance must double to 0.20%');
 ok(resolveCorePetCombatDrops(unowned,'IRONWOOD_WOLF',1,'wolf',()=>0.0015,expired).length===0,'Pet luck must not work after expiry');
 ok(resolveCorePetCombatDrops(unowned,'OATHGLASS_REVENANT',1,'oath',()=>0.00075,boosted).includes('PET_018'),'0.05% signature chance doubles to 0.10%');

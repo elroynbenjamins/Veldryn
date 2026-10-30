@@ -175,6 +175,16 @@ try{
  assert.equal((await single(`select count(*)::int as n from public.guild_construction_unlocks where guild_id=$1`,[guild])).n,0);
  // Restore the default-off gate before the existing legacy-release regression suite.
  await db.query("update public.guild_construction_templates set enabled=false where template_id='stormwatch_banner'");
+ // Isolate this fixture from the pre-existing Guild Shop economy tests below.
+ await db.query("delete from public.guild_construction_donations where donation_key='bank-alloc-01'");
+ await db.query("delete from public.guild_construction_projects where guild_id=$1 and template_id='stormwatch_banner'",[guild]);
+ await db.query('update public.character_wallets set gold=1000 where character_id=$1',[character]);
+ await db.query(`update public.online_game_states set revision=1,
+  state=jsonb_set(jsonb_set(state,'{character,gold}','1000'::jsonb),
+   '{inventory,stacks}',$2::jsonb) where account_id=$1`,[
+   account,JSON.stringify([{itemId:'GREENWOOD_LOG',quantity:80},{itemId:'ASTER_IRON_INGOT',quantity:2},{itemId:'MOSS_FIBER',quantity:2}]),
+ ]);
+
 
  // Server accepts starter art, but never premium Guild emotes before unlock.
  await db.query('insert into public.chat_messages(account_id,body) values ($1,$2)',[account,'Hello :male_01:']);

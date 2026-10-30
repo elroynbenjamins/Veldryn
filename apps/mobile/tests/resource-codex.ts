@@ -1,5 +1,5 @@
 import {createCharacter,newGame} from '../src/core/game';
-import {resourceCodexEntries,resourceCodexCategoryEntries,resourceCodexMatchesCategory,resourceCodexQuantity,resourceCodexSources,RESOURCE_CATEGORIES} from '../src/core/resource-codex';
+import {resourceCodexEntries,resourceCodexCategoryEntries,resourceCodexMatchesCategory,resourceCodexQuantity,resourceCodexSources,resourceCodexUse,RESOURCE_CATEGORIES} from '../src/core/resource-codex';
 import {COMPANION_MISSIONS} from '../../../backend/src/server/companions/content';
 import {COMBAT_COMPANIONS} from '../src/content/combat-companions';
 
@@ -38,4 +38,6 @@ assert(oreSources.every(source=>!source.availabilityDetail||source.status!=='rea
 const updatedState={...state,account:{...state.account,bondstones:5}};
 assert(resourceCodexQuantity(updatedState,bondstones)===5,'Live wallet balances must not be cached across state updates');
 assert(resourceCodexCategoryEntries('Companions').includes(bondstones),'Bondstones must appear under companion filter');
+assert(resourceCodexUse(byId('RUNEBOUND_CORE')!).includes('Expedition Pens'),'Sanctuary upgrade material should show its exact use');
+assert(resourceCodexUse(byId('AMBERGLASS')!).includes('Ascension'),'Regional ascension materials should show relevant companion uses');
 console.log('PASS: Account Resource Codex cached catalog, companion categories, responsive sources and live balances');

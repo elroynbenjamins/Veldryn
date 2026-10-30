@@ -173,6 +173,8 @@ try{
  assert.equal((await single(`select amount from public.guild_bank_balances where guild_id=$1 and resource_id='GREENWOOD_LOG'`,[guild])).amount,15);
  assert.equal((await single(`select count(*)::int as n from public.guild_bank_ledger where guild_id=$1`,[guild])).n,3);
  assert.equal((await single(`select count(*)::int as n from public.guild_construction_unlocks where guild_id=$1`,[guild])).n,0);
+ // Restore the default-off gate before the existing legacy-release regression suite.
+ await db.query("update public.guild_construction_templates set enabled=false where template_id='stormwatch_banner'");
 
  // Server accepts starter art, but never premium Guild emotes before unlock.
  await db.query('insert into public.chat_messages(account_id,body) values ($1,$2)',[account,'Hello :male_01:']);

@@ -3,6 +3,31 @@ import {createTranslator} from './translator';
 
 // Each row supplies German, Spanish, Dutch, Italian and French; its key is English.
 export const companionTranslationRows={
+ // Companion clarity and Sanctuary upgrade labels.
+ "Start timer to begin earning":["Timer starten, um Belohnungen zu sammeln","Inicia el temporizador para obtener recompensas","Start de timer om beloningen te verdienen","Avvia il timer per ottenere ricompense","Lancez le minuteur pour gagner des récompenses"],
+ "Collect rewards and upgrade your facilities.":["Sammle Belohnungen und verbessere deine Gebäude.","Recoge recompensas y mejora tus instalaciones.","Verzamel beloningen en verbeter je voorzieningen.","Raccogli le ricompense e potenzia le strutture.","Récupérez des récompenses et améliorez vos installations."],
+ "Daily Training":["Tägliches Training","Entrenamiento diario","Dagelijkse training","Allenamento giornaliero","Entraînement quotidien"],
+ "Build Training Grounds first":["Baue zuerst den Trainingsplatz","Construye primero el campo de entrenamiento","Bouw eerst het trainingsveld","Costruisci prima il campo di addestramento","Construisez d'abord le terrain d'entraînement"],
+ "Start the first reward timer":["Starte den ersten Belohnungstimer","Inicia el primer temporizador de recompensas","Start de eerste beloningstimer","Avvia il primo timer delle ricompense","Lancez le premier minuteur de récompenses"],
+ "Not built":["Nicht gebaut","Sin construir","Niet gebouwd","Non costruito","Non construit"],
+ "Start timer":["Timer starten","Iniciar temporizador","Timer starten","Avvia timer","Démarrer le minuteur"],
+ "Claim XP":["EP abholen","Reclamar EXP","XP claimen","Riscatta PE","Récupérer l'XP"],
+ "Not ready":["Nicht bereit","No disponible","Nog niet klaar","Non pronto","Pas prêt"],
+ "Weekly Essence":["Wöchentliche Essenz","Esencia semanal","Wekelijkse essentie","Essenza settimanale","Essence hebdomadaire"],
+ "Build Essence Basin first":["Baue zuerst das Essenzbecken","Construye primero la fuente de esencia","Bouw eerst het essentiebekken","Costruisci prima la vasca d'essenza","Construisez d'abord le bassin d'essence"],
+ "Claim Essence":["Essenz abholen","Reclamar esencia","Essentie claimen","Riscatta essenza","Récupérer l'essence"],
+ "Expedition supplies":["Expeditionsvorräte","Suministros de expedición","Expeditievoorraden","Scorte per spedizioni","Provisions d'expédition"],
+ "Train equipped companion":["Ausgerüsteten Begleiter trainieren","Entrenar al compañero equipado","Ingezette metgezel trainen","Allena il compagno equipaggiato","Entraîner le compagnon équipé"],
+ "EQUIPPED COMPANION":["AUSGERÜSTETER BEGLEITER","COMPAÑERO EQUIPADO","INGEZETTE METGEZEL","COMPAGNO EQUIPAGGIATO","COMPAGNON ÉQUIPÉ"],
+ "Lv. {value0}":["St. {value0}","Niv. {value0}","Lvl. {value0}","Liv. {value0}","Niv. {value0}"],
+ "Train":["Trainieren","Entrenar","Trainen","Allena","Entraîner"],
+ "No companions match this filter.":["Keine Begleiter entsprechen diesem Filter.","Ningún compañero coincide con este filtro.","Geen metgezellen voldoen aan dit filter.","Nessun compagno corrisponde a questo filtro.","Aucun compagnon ne correspond à ce filtre."],
+ "Check your companion unlock progress in the Codex.":["Prüfe deinen Freischaltfortschritt im Kodex.","Consulta el progreso de desbloqueo en el códice.","Bekijk je ontgrendelvoortgang in de codex.","Controlla i progressi di sblocco nel codice.","Consultez les déblocages dans le codex."],
+ "Open Companion Codex":["Begleiterkodex öffnen","Abrir códice de compañeros","Metgezellencodex openen","Apri il codice dei compagni","Ouvrir le codex des compagnons"],
+ "Facilities":["Gebäude","Instalaciones","Voorzieningen","Strutture","Installations"],
+ "Where to get materials":["Materialquellen","Dónde obtener materiales","Waar materialen te vinden","Dove trovare materiali","Où trouver des matériaux"],
+ "Go":["Los","Ir","Ga","Vai","Aller"],
+ "Upgrade facility":["Gebäude verbessern","Mejorar instalación","Voorziening verbeteren","Potenzia struttura","Améliorer l'installation"],
  // Additional training, trials and expedition labels.
  "TRIAL COMBAT":["PRÜFUNGSKAMPF","COMBATE DE PRUEBA","PROEFGEVECHT","COMBATTIMENTO DI PROVA","COMBAT D’ÉPREUVE"],
  "Tower of Companions":["Turm der Gefährten","Torre de compañeros","Metgezellentoren","Torre dei compagni","Tour des compagnons"],

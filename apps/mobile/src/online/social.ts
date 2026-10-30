@@ -161,6 +161,16 @@ export async function ownGuildMemberCount(guildId:string){
  return count??0;
 }
 
+export async function highestGuildCharacterLevel():Promise<number>{
+ const client=requireClient();
+ const {data:{session},error:sessionError}=await client.auth.getSession();
+ if(sessionError)throw sessionError;
+ if(!session)throw new Error('Sign in to access Guilds.');
+ // The Guild membership RPC uses the highest character level on this account, not the active character.
+ const {data,error}=await client.from('characters').select('level').eq('account_id',session.user.id).order('level',{ascending:false}).limit(1);
+ if(error)throw error;
+ return Math.max(0,Math.floor(Number(data?.[0]?.level)||0));
+}
 export async function requestGuildMembership(guildId:string){const client=requireClient();const {data,error}=await client.rpc('request_guild_membership',{p_guild_id:guildId});if(error)throw error;return data as 'joined'|'applied';}
 export async function guildTagAvailability(tag:string){const client=requireClient();const {data,error}=await client.rpc('guild_tag_availability',{p_tag:tag});if(error)throw error;const row=data?.[0];return {input:tag,normalizedTag:row?.normalized_tag??undefined,valid:row?.reason!=='invalid_format',available:row?.available===true,reason:row?.reason??undefined} as GuildTagAvailability;}
 export async function createOnlineGuild(name:string,tag:string,joinPolicy:'open'|'apply'|'invite',minimumLevel:number){const client=requireClient(),normalizedName=normalizeGuildName(name),nameError=guildNameError(normalizedName);if(nameError)throw new Error(nameError);const {data,error}=await client.rpc('create_guild',{p_name:normalizedName,p_tag:tag.trim(),p_join_policy:joinPolicy,p_minimum_level:minimumLevel});if(error)throw error;return data as string;}

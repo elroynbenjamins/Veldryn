@@ -1,3 +1,5 @@
+import {GUILD_UNLOCK_LEVEL,GUILD_JOIN_LEVEL} from '../src/core/feature-unlocks';
+import {guildAccessError,guildJoinRequirementText,guildLevelsRemaining,requiredGuildJoinLevel} from '../src/core/guild-join-eligibility';
 export {};
 const fs=require('fs') as {readFileSync:(path:string,encoding:string)=>string};
 function ok(value:boolean,message:string){if(!value)throw new Error(message)}
@@ -11,6 +13,19 @@ const identity=read('src/components/GuildIdentitySummary.tsx');
 const hall=read('src/components/OnlineGuildHallPanel.tsx');
 const discovery=read('src/components/GuildDiscoveryFlow.tsx');
 const onlineSocial=read('src/online/social.ts');
+ok(GUILD_UNLOCK_LEVEL===7&&GUILD_JOIN_LEVEL===10,'Guild browsing and membership are intentionally separate milestones');
+ok(requiredGuildJoinLevel(1)===10&&requiredGuildJoinLevel(15)===15,'Guild-specific minimum may exceed Level 10, but not lower it');
+ok(guildLevelsRemaining(9,1)===1&&guildLevelsRemaining(10,1)===0,'A Level 9 account must see exactly one remaining level');
+ok(guildLevelsRemaining(10,15)===5&&guildLevelsRemaining(null,1)===null,'Guild-specific and unknown-level states must remain distinct');
+ok(guildJoinRequirementText(9).includes('1 level to go'),'Level 9 should receive a clear progress explanation');
+ok(guildAccessError(new Error('GUILD_LEVEL_10_REQUIRED')).includes('Reach Level 10'),'Backend level rejection must be human readable');
+ok(guildAccessError(new Error('MINIMUM_LEVEL_15')).includes('Level 15'),'Per-Guild minimum level rejection must be human readable');
+ok(guildAccessError(new Error('guild_full')).includes('full'),'Other Guild rejection types must stay actionable');
+ok(onlineSocial.includes("from('characters').select('level').eq('account_id',session.user.id)"),'Membership eligibility must use the highest level among this account\'s characters');
+ok(discovery.includes("disabled={busy||levelLoading||levelLocked(selected.minimum_level)"),'Join/apply buttons must be disabled before invalid level requests');
+ok(discovery.includes("disabled={busy||levelLoading||levelLocked()"),'Guild creation must block Level 9 clients before sending requests');
+ok(discovery.includes("levelLocked(invite.minimumLevel)"),'Guild invitation acceptance must respect global and Guild-specific requirements');
+
 const memberIdentity=read('src/components/GuildMemberIdentity.tsx');
 const pve=read('src/components/OnlineGuildPve.tsx')+read('src/components/GuildRaidEncounter.tsx');
 

@@ -4,8 +4,6 @@ import {APP_BUILD_INFO} from '../app-build';
 import type {Language} from '../i18n/languages';
 import {useEffect,useMemo,useRef,useState} from 'react';
 import {Linking,Pressable,ScrollView,StyleSheet,Text,TextInput,View,useWindowDimensions} from 'react-native';
-import {UiIcon} from '../components/UiIcon';
-import {DiscordButton} from '../components/DiscordButton';
 import {GameButton} from '../components/GameButton';
 import {ConfirmModal} from '../components/ConfirmModal';
 import {SettingToggle} from '../components/SettingToggle';
@@ -47,8 +45,7 @@ type Props={
 };
 // Legacy section IDs remain accepted for existing deep links; they share the Display screen.
 export type SettingsSection='gameplay'|'chat'|'display'|'appearance'|'accessibility'|'account'|'store'|'data'|'guide'|'developer';
-const normalizeSettingsSection=(value?:SettingsSection):SettingsSection=>value==='appearance'||value==='accessibility'?'display':value??'gameplay';
-const DISCORD_INVITE_URL='https://discord.gg/Db83APvP5y';
+const normalizeSettingsSection=(value?:SettingsSection):SettingsSection=>value==='appearance'||value==='accessibility'?'display':value??'account';
 const PRIVACY_POLICY_URL='https://elroynbenjamins.github.io/veldryn/privacy/';
 const openExternal=(url:string)=>{void Linking.openURL(url)};
 function SettingChip({label,selected,onPress}:{label:string;selected:boolean;onPress:()=>void}){const C=useGameTheme(),s=useMemo(()=>makeStyles(C),[C]);return <Pressable accessibilityRole="button" accessibilityState={{selected}} onPress={onPress} style={({pressed})=>[s.chip,selected&&s.chipSelected,pressed&&s.pressed]}><Text style={[s.chipText,selected&&s.chipTextSelected]}>{selected?'✓ ':''}{label}</Text></Pressable>}
@@ -82,8 +79,7 @@ export function SettingsScreen({state,onLanguage,onReset,onChange,onRefreshComme
   const {width}=useWindowDimensions(),phone=width<768;
   const section=selectedSection;
   const navigationStyles=useMemo(()=>makeNavigationStyles(theme),[theme]);
-  const sections:SettingsSection[]=['gameplay','chat','display','account','data'];
-  const sectionIcons={gameplay:'skills',chat:'chat',display:'settings',account:'account',data:'ward'} as const;
+  const sections:SettingsSection[]=['account','gameplay','chat','display','data'];
   const sectionLabel=(value:SettingsSection)=>value==='guide'?a('Help & Guide'):value==='data'?a('Data & Privacy'):value==='display'?a('Display'):value==='store'?a('Store'):a(value.charAt(0).toUpperCase()+value.slice(1));
   const sectionDescription=(value:SettingsSection)=>value==='gameplay'?a('Combat and activity queue.'):value==='chat'?a('Chat dock, channels and emotes.'):value==='display'?a('Themes, numbers, motion and language.'):value==='account'?a('Account and sign-in.'):value==='store'?a('VIP, VIP+, Supporter and purchase restore.'):value==='data'?a('Backups and privacy.'):value==='guide'?a('Interactive game guides and tutorials.'):a('Development tools.');
   const scrollRef=useRef<ScrollView>(null),scrollPositions=useRef<Record<string,number>>({}),restoredPage=useRef<string|undefined>(undefined);
@@ -97,27 +93,26 @@ export function SettingsScreen({state,onLanguage,onReset,onChange,onRefreshComme
     <Text accessibilityRole="header" style={[s.h,{color:theme.text}]}>{t(language,'settings.title')}</Text>
     <View style={navigationStyles.categoryGrid}>
       {sections.map(value=><Pressable key={value} accessibilityRole="button" accessibilityLabel={sectionLabel(value)} accessibilityHint={sectionDescription(value)} accessibilityState={{selected:section===value}} onPress={()=>setSection(value)} style={({pressed})=>[navigationStyles.categoryTile,section===value&&navigationStyles.categorySelected,pressed&&s.pressed]}>
-        <UiIcon name={sectionIcons[value as keyof typeof sectionIcons]} size={phone?23:25} muted={section!==value}/>
         <Text numberOfLines={1} style={[navigationStyles.categoryTileText,section===value&&navigationStyles.categorySelectedText]}>{sectionLabel(value)}</Text>
       </Pressable>)}
     </View>
     <View style={navigationStyles.shortcutRow}>
       <Pressable accessibilityRole="button" accessibilityLabel={a('Store')} accessibilityHint={sectionDescription('store')} accessibilityState={{selected:section==='store'}} onPress={()=>setSection('store')} style={({pressed})=>[navigationStyles.shortcut,section==='store'&&navigationStyles.shortcutSelected,pressed&&s.pressed]}>
-        <UiIcon name="inventory" size={23} muted={section!=='store'}/><Text style={navigationStyles.shortcutText}>{a('Store')}</Text><UiIcon name="next" size={18} muted/>
+        <Text style={navigationStyles.shortcutText}>{a('Store')}</Text>
       </Pressable>
       <Pressable accessibilityRole="button" accessibilityLabel={a('Help & Guide')} accessibilityState={{selected:section==='guide'}} onPress={()=>setSection('guide')} style={({pressed})=>[navigationStyles.shortcut,section==='guide'&&navigationStyles.shortcutSelected,pressed&&s.pressed]}>
-        <UiIcon name="quests" size={23} muted={section!=='guide'}/><Text style={navigationStyles.shortcutText}>{a('Help & Guide')}</Text><UiIcon name="next" size={18} muted/>
+        <Text style={navigationStyles.shortcutText}>{a('Help & Guide')}</Text>
       </Pressable>
     </View>
     {section==='display'&&<Panel><Text style={[s.title,{color:theme.text}]}>{a("Interface theme")}</Text><View style={s.themeList}>{(['obsidian','ember','ivory'] as const).map(id=><ThemeChoice key={id} id={id} selected={(state.settings.uiTheme??'obsidian')===id} onPress={()=>update({uiTheme:id})}/>)}</View></Panel>}
-    {section==='guide'&&<><GameGuidePanel state={state} onStartTour={onStartMainScreenTour} onOpen={id=>{onChange(acknowledgeGameGuide(state,id,true));setGuideId(id)}}/><Panel><View style={s.communityRow}><View style={s.flex}><Text style={[s.communityLabel,{color:theme.accent}]}>{a('COMMUNITY')}</Text><Text style={[s.communityText,{color:theme.muted}]}>{a('Meet other VELDRYN players.')}</Text></View><DiscordButton label={a('Join Discord')} onPress={()=>openExternal(DISCORD_INVITE_URL)}/></View></Panel></>}
+    {section==='guide'&&<GameGuidePanel state={state} onStartTour={onStartMainScreenTour} onOpen={id=>{onChange(acknowledgeGameGuide(state,id,true));setGuideId(id)}}/>}
     {section==='account'&&<><Panel>
       <Text style={[s.sub,{color:theme.muted}]}>{a('Character: {name} · {save}',{name:state.character?.name??a('Not created yet'),save:a(online?'Online save':'Local save')})}</Text>
 
     </Panel>
     <OnlineAccountPanel state={state}/></>}
     {section==='store'&&<><GooglePlayCommercePanel state={state} online={online} onChange={onChange} onRefreshCommerce={onRefreshCommerce}/>
-      <Panel><Pressable accessibilityRole="button" accessibilityState={{expanded:showPromoCode}} onPress={()=>setShowPromoCode(value=>!value)} style={({pressed})=>[s.disclosure,pressed&&s.pressed]}><Text style={[s.settingLabel,{color:theme.text,marginTop:0}]}>{a('Redeem code')}</Text><View style={showPromoCode?s.disclosureArrowOpen:undefined}><UiIcon name="next" size={18} muted/></View></Pressable></Panel>
+      <Panel><Pressable accessibilityRole="button" accessibilityState={{expanded:showPromoCode}} onPress={()=>setShowPromoCode(value=>!value)} style={({pressed})=>[s.disclosure,pressed&&s.pressed]}><Text style={[s.settingLabel,{color:theme.text,marginTop:0}]}>{a('Redeem code')}</Text></Pressable></Panel>
       {showPromoCode?<RedeemCodePanel language={language} onRedeemCode={onRedeemCode}/>:null}
     </>}
     {section==='gameplay'&&<><Panel>
@@ -140,7 +135,7 @@ export function SettingsScreen({state,onLanguage,onReset,onChange,onRefreshComme
     </Panel>
     <Panel><Pressable accessibilityRole="button" accessibilityState={{expanded:showEmotes}} onPress={()=>setShowEmotes(value=>!value)} style={({pressed})=>[s.disclosure,pressed&&s.pressed]}>
         <View style={s.flex}><Text style={[s.title,{color:theme.text}]}>{a("Chat emotes")}</Text><Text style={[s.muted,{color:theme.muted}]}>{a("Choose the eight emotes available from the chat composer.")}</Text></View>
-        <View style={showEmotes?s.disclosureArrowOpen:undefined}><UiIcon name="next" size={18} muted/></View>
+        
       </Pressable>
       {showEmotes?<View style={s.detailStack}><ChatEmotePicker settingsMode unlockedIds={state.account.unlockedEmoteIds} trayIds={state.settings.chatEmoteTrayIds} bodyPresentation={state.character?.bodyPresentation} onPick={()=>{}} onTrayChange={chatEmoteTrayIds=>update({chatEmoteTrayIds})}/></View>:null}
     </Panel></>}
@@ -171,7 +166,7 @@ export function SettingsScreen({state,onLanguage,onReset,onChange,onRefreshComme
       {!online?<Panel>
         <Pressable accessibilityRole="button" accessibilityState={{expanded:showDeleteControls}} onPress={()=>setShowDeleteControls(value=>!value)} style={({pressed})=>[s.disclosure,pressed&&s.pressed]}>
           <Text style={[s.disclosureLabel,{color:theme.bad}]}>{a("Delete local save")}</Text>
-          <View style={showDeleteControls?s.disclosureArrowOpen:undefined}><UiIcon name="next" size={18} muted/></View>
+          
         </Pressable>
         {showDeleteControls?<View style={s.detailStack}>
           <Text style={[s.sub,{color:theme.muted}]}>{a("Deleting your local save removes progress stored on this device.")}</Text>
@@ -193,7 +188,7 @@ export function SettingsScreen({state,onLanguage,onReset,onChange,onRefreshComme
 function makeNavigationStyles(C:ThemeColors){return StyleSheet.create({
   screen:{flex:1,minHeight:0,backgroundColor:C.bg},
   categoryGrid:{flexDirection:'row',flexWrap:'wrap',gap:7},
-  categoryTile:{flexGrow:1,flexBasis:'30%' as const,minWidth:0,minHeight:68,paddingHorizontal:5,paddingVertical:8,alignItems:'center',justifyContent:'center',gap:4,borderWidth:1,borderColor:C.line,borderRadius:10,backgroundColor:C.panel},
+  categoryTile:{flexGrow:1,flexBasis:'30%' as const,minWidth:0,minHeight:48,paddingHorizontal:7,paddingVertical:10,alignItems:'center',justifyContent:'center',gap:4,borderWidth:1,borderColor:C.line,borderRadius:10,backgroundColor:C.panel},
   categorySelected:{backgroundColor:C.selection,borderColor:C.selectionLine},
   categoryTileText:{...typography.caption,fontWeight:'700',color:C.muted,textAlign:'center'},
   categorySelectedText:{color:C.text},

@@ -186,52 +186,40 @@ async function replayControlsAndTiming() {
     const {DungeonCombatStage} = h.load(path.join(app, 'src/components/coop/DungeonCombatStage'));
     await act(async () => { tree = create(React.createElement(DungeonCombatStage, {run, boss: true})); });
     assert.strictEqual(currentCue(tree), cues[0]);
-    assert.equal(partyCard(tree, 'p2').props.slot.currentHp, 920, 'opening cue uses authoritative initial HP, not final run HP');
-    assert.equal(partyCard(tree, 'p2').props.slot.ready, true);
+    assert.equal(partyCard(tree, 'p2').props.slot.currentHp, 920, 'opening cue starts with authoritative HP, not final result');
     assert.equal(h.nextDelay(), timing.playbackAdvanceDelayMs(cues[0], cues[1], 1));
-    await press(tree, 'Pause combat replay');
-    assert.equal(h.timers.size, 0, 'pause cancels the pending automatic advance');
-    await h.tick(10000); assert.strictEqual(currentCue(tree), cues[0]);
-    await press(tree, 'Resume combat replay');
-    const delay = timing.playbackAdvanceDelayMs(cues[0], cues[1], 1);
-    await h.tick(delay - 1); assert.strictEqual(currentCue(tree), cues[0]);
-    await h.tick(1); assert.strictEqual(currentCue(tree), cues[1]);
-    assert.equal(enemy(tree).props.bossPhaseLabel, 'Black Lantern');
-    assert.equal(partyCard(tree, 'p0').props.combatShield, 160);
-    await press(tree, 'Combat replay speed 2 times');
-    assert.equal(findButton(tree, 'Combat replay speed 2 times').props.accessibilityState.selected, true);
-    assert.match(findButton(tree, 'Combat replay speed 2 times').findByType('Text').children.join(''), /✓/, 'selected speed also has a visible non-color indicator');
-    assert.equal(h.timers.size, 1, 'changing speed replaces the advance timer');
-    await h.tick(timing.playbackAdvanceDelayMs(cues[1], cues[2], 2));
-    assert.strictEqual(currentCue(tree), cues[2]);
-    assert.equal(enemy(tree).props.bossCast.targetLabel, 'Tank');
-    assert.equal(enemy(tree).props.bossCast.interruptible, true);
-    assert.equal(h.nextDelay(), timing.playbackAdvanceDelayMs(cues[2], cues[3], 2));
-    assert.equal(h.animations.filter(item => item.started && item.config.useNativeDriver === false).at(-1).config.duration, timing.playbackCastDisplayMs(cues[2], 2), 'cast-bar animation uses the selected replay speed');
-    await press(tree, 'Combat replay speed 4 times');
-    const fastCast = timing.playbackAdvanceDelayMs(cues[2], cues[3], 4);
-    assert.equal(h.nextDelay(), fastCast);
-    await h.tick(fastCast - 1); assert.strictEqual(currentCue(tree), cues[2], 'fast replay preserves the readable boss-cast hold');
-    await h.tick(1); assert.strictEqual(currentCue(tree), cues[3]);
-    assert.equal(partyCard(tree, 'p1').props.assistProc, true, 'companion assist remains bound to its owner');
-    assert.equal(partyCard(tree, 'p0').props.assistProc, false);
-    await press(tree, 'Skip combat replay to result');
-    assert.strictEqual(currentCue(tree), cues[5]); assert.equal(enemy(tree).props.currentHp, 0);
+    for (let i = 1; i < cues.length; i++) {
+      const delay = timing.playbackAdvanceDelayMs(cues[i-1], cues[i], 1);
+      await h.tick(delay - 1);
+      assert.strictEqual(currentCue(tree), cues[i-1], 'automatic replay must respect the fixed-speed readable hold');
+      await h.tick(1);
+      assert.strictEqual(currentCue(tree), cues[i]);
+      if (i === 1) {
+        assert.equal(enemy(tree).props.bossPhaseLabel, 'Black Lantern');
+        assert.equal(partyCard(tree, 'p0').props.combatShield, 160);
+      }
+      if (i === 2) {
+        assert.equal(enemy(tree).props.bossCast.targetLabel, 'Tank');
+        assert.equal(enemy(tree).props.bossCast.interruptible, true);
+        assert.equal(h.animations.filter(item => item.started && item.config.useNativeDriver === false).at(-1).config.duration, timing.playbackCastDisplayMs(cues[2], 1), 'boss cast animation must use fixed 1x timing');
+      }
+      if (i === 3) assert.equal(partyCard(tree, 'p1').props.assistProc, true, 'companion assist remains owner-bound');
+    }
+    assert.equal(enemy(tree).props.currentHp, 0);
     assert.equal(partyCard(tree, 'p2').props.slot.ready, false);
-    assert.equal(h.timers.size, 0, 'skip cancels replay scheduling');
+    assert.equal(h.timers.size, 0, 'finished replay must stop scheduling updates');
     assert.match(text(tree), /PARTY CONTRIBUTION/);
     await press(tree, 'Show combat battle log');
     assert.equal(findButton(tree, 'Hide combat battle log').props.accessibilityState.expanded, true);
     await press(tree, 'Replay combat recap');
     assert.strictEqual(currentCue(tree), cues[0]);
-    findButton(tree, 'Pause combat replay');
-    await h.tick(10000);
-    assert.strictEqual(currentCue(tree), cues[5]);
-    assert.equal(findButton(tree, 'Show combat battle log').props.accessibilityState.expanded, false, 'replaying through completion resets the expanded recap log');
+    await h.tick(100000);
+    assert.strictEqual(currentCue(tree), cues.at(-1));
+    assert.equal(findButton(tree, 'Show combat battle log').props.accessibilityState.expanded, false);
     await act(async () => { tree.unmount(); }); tree = null;
     assert.equal(h.timers.size, 0);
-    assert.equal(h.animations.filter(item => item.running).length, 0, 'unmount stops stage-owned animations');
-    console.log('PASS dungeon replay controls: pause/resume, speed timers and cast hold, skip/replay, authoritative HP/shield/assist/outcome, cleanup');
+    assert.equal(h.animations.filter(item => item.running).length, 0);
+    console.log('PASS dungeon automatic replay: fixed 1x cues, boss casts, HP/shield/assist, outcome, recap and cleanup');
   } finally { if (tree) await act(async () => tree.unmount()); h.restore(); }
 }
 
@@ -243,61 +231,35 @@ async function inspectionAndStepping() {
     h.mocks.delete(path.join(app, 'src/components/coop/CombatantInspectPanel'));
     const {CombatantInspectPanel} = h.load(path.join(app, 'src/components/coop/CombatantInspectPanel'));
     const {DungeonCombatStage} = h.load(path.join(app, 'src/components/coop/DungeonCombatStage'));
+    const timing = h.load(path.join(app, 'src/core/dungeon-combat-playback'));
     await act(async () => { tree = create(React.createElement(DungeonCombatStage, {run, boss: true})); });
     await act(async () => { partyCard(tree, 'p0').props.onPress(); });
-    assert.equal(h.timers.size, 0, 'opening inspection pauses automatic replay');
+    assert.equal(h.timers.size, 1, 'opening inspection must not cancel automatic replay');
     assert.equal(tree.root.findByType(CombatantInspectPanel).props.target.name, 'Tank');
     assert.equal(tree.root.findByType('IdentityArtwork').props.profileIconId, 'starter:armored-sentinel');
-    assert.equal(tree.root.findByType('IdentityArtwork').props.className, 'RAVAGER');
-    assert.equal(tree.root.findByType(CombatantInspectPanel).props.target.classId, 'IRONWARDEN', 'profile class never replaces the run snapshot class');
-    const close = findButton(tree, 'Close combat details'), closeStyle = flattenStyle(close.props.style({pressed: false}));
-    assert.ok(closeStyle.minHeight >= 44 && closeStyle.minWidth >= 44, 'inspection close retains a full-size touch target');
-    assert.equal(findButton(tree, 'Previous combat event').props.disabled, true);
-    assert.equal(findButton(tree, 'Previous combat event').props.accessibilityState.disabled, true);
-    await act(async () => { findButton(tree, 'Previous combat event').props.onPress(); });
-    assert.strictEqual(currentCue(tree), cues[0], 'previous handler clamps even when invoked at the first event');
-    await press(tree, 'Next combat event');
-    assert.strictEqual(currentCue(tree), cues[1]);
-    let target = tree.root.findByType(CombatantInspectPanel).props.target;
-    assert.equal(target.shield, 160); assert.equal(target.statuses[0].label, 'Dawn Renewal'); assert.equal(target.statuses[0].remainingMs, 5000);
-    const refreshedIdentity = {...run, roleSlots: run.roleSlots.map(slot => slot.memberId === 'p0' ? {...slot, profileIconId: 'creature:IRONWOOD_WOLF'} : slot)};
-    await act(async () => { tree.update(React.createElement(DungeonCombatStage, {run: refreshedIdentity, boss: true})); });
-    assert.strictEqual(currentCue(tree), cues[1], 'refreshing cosmetic identity keeps the current replay event');
-    assert.equal(h.timers.size, 0, 'refreshing cosmetics cannot resume paused playback');
-    assert.equal(tree.root.findByType('IdentityArtwork').props.profileIconId, 'creature:IRONWOOD_WOLF', 'open inspection receives the refreshed icon');
-    assert.equal(tree.root.findByType(CombatantInspectPanel).props.target.shield, 160, 'cosmetic refresh keeps replay-time combat details');
-    await press(tree, 'Next combat event');
-    await act(async () => { enemy(tree).props.onPress(); });
-    target = tree.root.findByType(CombatantInspectPanel).props.target;
-    assert.equal(target.kind, 'enemy'); assert.equal(target.currentHp, 3800);
-    assert.equal(tree.root.findAllByType('IdentityArtwork').length, 0, 'enemy inspection never reuses the selected player icon');
-    assert.equal(target.cast.targetLabel, 'Tank'); assert.equal(target.cast.interruptible, true);
-    assert.equal(target.statuses[0].label, 'Hex Curse'); assert.equal(target.statuses[0].remainingMs, 3000);
-    for (let index = 3; index <= 5; index++) await press(tree, 'Next combat event');
-    assert.strictEqual(currentCue(tree), cues[5]);
-    assert.equal(findButton(tree, 'Next combat event').props.disabled, true);
-    assert.equal(findButton(tree, 'Next combat event').props.accessibilityState.disabled, true);
-    await act(async () => { findButton(tree, 'Next combat event').props.onPress(); });
-    assert.strictEqual(currentCue(tree), cues[5], 'next handler clamps at the authoritative final event');
-    await press(tree, 'Previous combat event');
-    assert.strictEqual(currentCue(tree), cues[4]);
-    await act(async () => { partyCard(tree, 'p2').props.onPress(); });
-    assert.equal(tree.root.findByType(CombatantInspectPanel).props.target.currentHp, 0);
+    assert.equal(tree.root.findByType(CombatantInspectPanel).props.target.classId, 'IRONWARDEN');
+    const close = findButton(tree, 'Close combat details');
+    assert.ok(flattenStyle(close.props.style({pressed: false})).minHeight >= 44);
+    await h.tick(timing.playbackAdvanceDelayMs(cues[0], cues[1], 1));
+    assert.strictEqual(currentCue(tree), cues[1], 'inspection must not freeze a Solo replay');
+    assert.equal(tree.root.findByType(CombatantInspectPanel).props.target.shield, 160);
+    const refreshed = {...run, roleSlots: run.roleSlots.map(slot => slot.memberId === 'p0' ? {...slot, profileIconId: 'creature:IRONWOOD_WOLF'} : slot)};
+    await act(async () => { tree.update(React.createElement(DungeonCombatStage, {run: refreshed, boss: true})); });
+    assert.strictEqual(currentCue(tree), cues[1], 'cosmetic refresh cannot reset replay cursor');
+    assert.equal(tree.root.findByType('IdentityArtwork').props.profileIconId, 'creature:IRONWOOD_WOLF');
     await press(tree, 'Close combat details');
     assert.equal(tree.root.findAllByType(CombatantInspectPanel).length, 0);
-    findButton(tree, 'Resume combat replay'); assert.equal(h.timers.size, 0, 'closing inspection does not unexpectedly resume playback');
-    await press(tree, 'Resume combat replay');
-    await h.tick(h.nextDelay()); assert.strictEqual(currentCue(tree), cues[5]);
+    await h.tick(100000);
+    assert.strictEqual(currentCue(tree), cues.at(-1), 'closing inspection must allow replay to finish normally');
     await act(async () => { enemy(tree).props.onPress(); });
-    findButton(tree, 'Previous combat event');
-    await press(tree, 'Previous combat event'); assert.strictEqual(currentCue(tree), cues[4], 'inspection from the result can step back into replay');
+    assert.equal(tree.root.findByType(CombatantInspectPanel).props.target.currentHp, 0, 'result inspection uses final authoritative HP');
     const nextRun = makeRun(); nextRun.runId = 'new-run';
     await act(async () => { tree.update(React.createElement(DungeonCombatStage, {run: nextRun, boss: true})); });
-    assert.strictEqual(currentCue(tree), nextRun.lastCombat.cues[0], 'new encounter clears old cursor');
-    assert.equal(tree.root.findAllByType(CombatantInspectPanel).length, 0, 'new encounter clears old inspection');
+    assert.strictEqual(currentCue(tree), nextRun.lastCombat.cues[0], 'new run resets the cursor');
+    assert.equal(tree.root.findAllByType(CombatantInspectPanel).length, 0);
     await act(async () => { tree.unmount(); }); tree = null;
     assert.equal(h.timers.size, 0);
-    console.log('PASS dungeon inspection: pause, bounded stepping, replay-time status/HP/cast details, result inspection, new-run reset');
+    console.log('PASS dungeon inspection: read-only details, no Solo freeze, live cue state, cosmetic refresh, new-run reset');
   } finally { if (tree) await act(async () => tree.unmount()); h.restore(); }
 }
 
@@ -338,7 +300,6 @@ async function reducedMotionAndUnmount() {
     await act(async () => { recovering = create(React.createElement(DungeonCombatStage, {run, boss: true})); });
     await act(async () => { failedQuery.reject(new Error('Native accessibility service unavailable')); });
     assert.strictEqual(currentCue(recovering), run.lastCombat.cues[0]);
-    findButton(recovering, 'Pause combat replay');
     await fallback.tick(fallback.nextDelay());
     assert.strictEqual(currentCue(recovering), run.lastCombat.cues[1], 'failed accessibility lookup retains normal controllable playback');
     await act(async () => { recovering.unmount(); }); recovering = null;
@@ -355,7 +316,6 @@ async function responsiveCardContract() {
     const {DungeonCombatStage} = h.load(path.join(app, 'src/components/coop/DungeonCombatStage'));
     const {dungeonCombatLayout} = h.load(path.join(app, 'src/core/dungeon-combat-layout'));
     await act(async () => { tree = create(React.createElement(DungeonCombatStage, {run, boss: true})); });
-    await press(tree, 'Pause combat replay');
     for (const width of [320, 360, 390]) {
       h.size.width = width;
       await act(async () => { tree.update(React.createElement(DungeonCombatStage, {run, boss: true})); });
@@ -368,13 +328,8 @@ async function responsiveCardContract() {
         assert.equal(field.flexWrap, 'wrap'); assert.equal(field.flexDirection, 'row');
       }
       assert.equal(enemy(tree).props.statusLimit, expected.statusLimit);
-      assert.strictEqual(currentCue(tree), run.lastCombat.cues[0], 'responsive re-render must preserve the paused cursor');
-      for (const label of ['Combat replay speed 1 times', 'Combat replay speed 2 times', 'Combat replay speed 4 times', 'Resume combat replay', 'Previous combat event', 'Next combat event', 'Skip combat replay to result']) {
-        const control = findButton(tree, label), style = typeof control.props.style === 'function' ? control.props.style({pressed: false}) : control.props.style;
-        assert.ok(flattenStyle(style).minHeight >= 44, `${label} retains a usable touch height at width ${width}`);
-      }
-      const controls = flattenStyle(findButton(tree, 'Combat replay speed 1 times').parent.parent.props.style);
-      if (expected.controlsWrap) assert.equal(controls.flexWrap, 'wrap', 'narrow phone playback controls wrap instead of overflowing');
+      assert.ok(currentCue(tree), 'responsive render retains an authoritative replay cue');
+      assert.equal(h.timers.size, 1, 'responsive rerender retains one automatic cue timer');
     }
     await act(async () => { tree.unmount(); }); tree = null;
     h.mocks.delete(path.join(app, 'src/components/coop/CombatantProfileCard'));

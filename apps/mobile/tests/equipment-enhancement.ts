@@ -2,6 +2,7 @@ import {createCharacter,effectiveStats,newGame,previewActivityReward,salvageItem
 import {attemptEquipmentUpgrade,equippedEffectGemBonuses,gearEnhancement,gearStatsAtRank,gemSocketCapacity,normalizeEnhancementGemSlots,socketGem,unsocketGem,upgradeQuote} from '../src/core/equipment-enhancement';
 import {V33_EQUIPMENT_RECIPES} from '../src/content/equipment-recipes-v33';
 import {itemDef} from '../src/content/items';
+import {gemPouch,gemStorageQuantity} from '../src/core/gem-pouch';
 function ok(condition:unknown,message:string){if(!condition)throw new Error(message)}
 
 const ringRecipe=V33_EQUIPMENT_RECIPES.find(row=>row.classId==='IRONWARDEN'&&row.v33EquipmentTier==='T1'&&itemDef(row.output.itemId).slot==='ring')!;
@@ -36,7 +37,7 @@ const goldBeforeStatExtract=effectExtracted.character!.gold;
 const extracted=unsocketGem(effectExtracted,ringId,0);
 ok(!gearEnhancement(extracted,ringId).statGemId,'Stat extraction should clear the Stat socket');
 ok(extracted.character!.gold===goldBeforeStatExtract-500,'Stat extraction should consume gold');
-ok((extracted.inventory.stacks.find(stack=>stack.itemId==='WARD_SHARD')?.quantity??0)>=2,'Extraction should return the Stat Gem');
+ok(gemStorageQuantity(extracted,'WARD_SHARD')===2&&(gemPouch(extracted).stacks.find(stack=>stack.itemId==='WARD_SHARD')?.quantity??0)===1,'Extraction should safely return the Stat Gem to the account Gem Pouch without losing legacy Inventory copies');
 
 const legacy=normalizeEnhancementGemSlots({rank:0,failures:0,gemIds:['WARD_SHARD','EMBER_SHARD','SWIFT_SIGIL']});
 ok(legacy.statGemId==='WARD_SHARD'&&legacy.effectGemId==='SWIFT_SIGIL','Legacy arrays should normalize into the first valid Stat and Effect Gem');

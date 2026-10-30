@@ -37,7 +37,7 @@ export class OnlineLiveRuntime{
  }
  private withPresence(value:unknown,presence:LivePresence){
   if(!value||typeof value!=='object')return value;
-  return {...value as Record<string,unknown>,presenceSummary:{connectedCount:presence.connectedCount,safetyAiCount:presence.safetyAiCount,activeCount:presence.activeCount,safetyAiCharacterIds:presence.safetyAiCharacterIds}};
+  return {...value as Record<string,unknown>,serverNow:presence.serverNow,presenceSummary:{connectedCount:presence.connectedCount,safetyAiCount:presence.safetyAiCount,activeCount:presence.activeCount,safetyAiCharacterIds:presence.safetyAiCharacterIds}};
  }
  private async queueSelected(accountId:string,runId:string,request:CoopDecisionCommand,loaded:Loaded,selectedOptionId:string,requestHash:string,safetyAiPlayerIds:readonly string[]){
   const repository=new (class{private run:QModeRun;constructor(run:QModeRun){this.run=structuredClone(run)}get(id:string){return this.run.id===id?structuredClone(this.run):undefined}getByRequest(){return undefined}save(run:QModeRun){this.run=structuredClone(run)}})(loaded.privateState.run);

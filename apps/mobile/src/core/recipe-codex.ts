@@ -38,7 +38,7 @@ for(const entry of CATALOG)for(const input of entry.recipe.inputs){
  using.push(entry);BY_INGREDIENT.set(input.itemId,using);
 }
 export function recipeCodexEntries(){return CATALOG;}
-export function recipeCodexAvailableForClass(entry:RecipeCodexEntry,classId?:string){return !entry.recipe.classId||entry.recipe.classId===classId;}
+export function recipeCodexAvailableForClass(entry:RecipeCodexEntry,classId?:string){return !classId||!entry.recipe.classId||entry.recipe.classId===classId;}
 export function recipeCodexEntriesForClass(classId?:string){return CATALOG.filter(entry=>recipeCodexAvailableForClass(entry,classId));}
 export function recipeCodexEntryById(id:string){return BY_ID.get(id);}
 export function recipeCodexSkillEntries(skill:RecipeCodexSkill):readonly RecipeCodexEntry[]{return BY_SKILL.get(skill)??CATALOG;}

@@ -5,6 +5,7 @@ import {GameTextInput} from '../components/GameTextInput';
 import {ItemArtwork} from '../components/ItemArtwork';
 import {UiIcon} from '../components/UiIcon';
 import {accountText} from '../i18n/account';
+import {resourceCodexEntries} from '../core/resource-codex';
 import {recipeCodexEntryById,recipeCodexEntries,recipeCodexFilter,recipeCodexIngredients,recipeCodexRequirements,recipeCodexUsesIngredient,RECIPE_CODEX_SKILLS,type RecipeCodexEntry,type RecipeCodexSkill} from '../core/recipe-codex';
 import {rarityMeta,rarityNameColor} from '../core/item-rarity';
 import type {GameState} from '../core/types';
@@ -13,6 +14,7 @@ import {useGameTheme} from '../theme/ThemeContext';
 import {radii,spacing,typography,type ThemeColors} from '../theme/theme';
 
 const allRecipes=recipeCodexEntries();
+const resourceIds=new Set(resourceCodexEntries().map(entry=>entry.id));
 const keyOf=(entry:RecipeCodexEntry)=>entry.id;
 const label=(name:string)=>name.slice(0,1).toUpperCase()+name.slice(1);
 const RecipeTile=memo(function RecipeTile({entry,width,artSize,C,s,onOpen}:{entry:RecipeCodexEntry;width:number;artSize:number;C:ThemeColors;s:ReturnType<typeof makeStyles>;onOpen:(id:string)=>void}){
@@ -47,7 +49,7 @@ export function RecipeCodexPanel({state,onNavigateSource,onOpenResource,ingredie
  const selected=selectedId?recipeCodexEntryById(selectedId):undefined;
  const requirements=useMemo(()=>selected?recipeCodexRequirements(state,selected):undefined,[selected,state]);
  const ingredients=useMemo(()=>selected?recipeCodexIngredients(state,selected):[],[selected,state.inventory.stacks,state.bank.stacks]);
- const knownResourceIds=useMemo(()=>new Set(allRecipes.flatMap(row=>row.recipe.inputs.map(input=>input.itemId))),[]);
+
  return <View style={s.root}>
   <FlatList key={columns} data={filtered} numColumns={columns} keyExtractor={keyOf} renderItem={renderItem} columnWrapperStyle={s.row} keyboardShouldPersistTaps="handled" initialNumToRender={16} maxToRenderPerBatch={12} windowSize={5} updateCellsBatchingPeriod={40} showsVerticalScrollIndicator={false} contentContainerStyle={s.content}
    ListHeaderComponent={<View style={s.header}>
@@ -67,10 +69,10 @@ export function RecipeCodexPanel({state,onNavigateSource,onOpenResource,ingredie
     {selected.recipe.characterLevel?<Text style={s.hint}>{a('Character level')} {selected.recipe.characterLevel} {a('required')}</Text>:null}
     {selected.recipe.v33EquipmentTier?<Text style={s.hint}>{selected.recipe.v33EquipmentTier} {selected.recipe.v33Region?' · '+selected.recipe.v33Region:''}</Text>:null}
     <Text style={s.sectionTitle}>{a('Ingredients')}</Text>
-    {ingredients.length?ingredients.map(row=><Pressable key={row.itemId} accessibilityRole="button" accessibilityLabel={row.name+', '+row.owned+' of '+row.needed+' owned'} onPress={()=>{closeRecipe();onOpenResource(row.itemId);}} style={s.ingredient}>
-      <ItemArtwork itemId={row.itemId} size={31}/>
+    {ingredients.length?ingredients.map(row=><Pressable key={row.itemId} accessibilityRole="button" accessibilityState={{disabled:!resourceIds.has(row.itemId)}} disabled={!resourceIds.has(row.itemId)} accessibilityLabel={row.name+', '+row.owned+' of '+row.needed+' owned'} onPress={()=>{closeRecipe();onOpenResource(row.itemId);}} style={s.ingredient}>
+      {row.knownItem?<ItemArtwork itemId={row.itemId} size={31}/>:<UiIcon name="inventory" size={31}/>}
       <View style={s.flex}><Text style={s.ingredientName}>{row.name}</Text><Text style={s.hint}>{a('Inventory + Bank')}</Text></View>
-      <Text style={[s.ingredientAmount,{color:row.sufficient?C.good:C.warning}]}>{row.owned.toLocaleString(language)} / {row.needed.toLocaleString(language)}</Text><UiIcon name="next" size={16}/>
+      <Text style={[s.ingredientAmount,{color:row.sufficient?C.good:C.warning}]}>{row.owned.toLocaleString(language)} / {row.needed.toLocaleString(language)}</Text>{resourceIds.has(row.itemId)?<UiIcon name="next" size={16}/>:null}
      </Pressable>):<Text style={s.body}>{a('No materials required.')}</Text>}
     <Text style={s.sectionTitle}>{a('Requirements')}</Text>
     <Text style={[s.body,{color:requirements.status==='locked'?C.warning:C.text}]}>{requirements.status==='locked'?requirements.detail:a('Skill requirements met. Check ingredients and Gold before crafting.')}</Text>

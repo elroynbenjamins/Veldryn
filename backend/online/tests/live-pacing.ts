@@ -26,7 +26,7 @@ const run={
    {atMs:5_000,type:'action',actorId:'enemy',actorName:'Enemy',targetId:'ally',targetName:'Ally',actionKind:'damage',amount:5,states:[{id:'ally',hp:95,shield:0}]},
    {atMs:10_000,type:'victory'},
   ],
- }}}}
+ }}}
 } as unknown as QModeRun;
 
 const beginning=livePendingCombat(run,0,20_000);

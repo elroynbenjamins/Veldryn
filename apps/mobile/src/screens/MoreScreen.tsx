@@ -123,7 +123,7 @@ export function MoreScreen({language,character,accountStatus='local',onNavigate,
     {attentionDestinations.length?<View style={s.attentionRail}><Text style={s.sectionLabel}>{a("NEEDS ATTENTION")}</Text><View style={s.attentionQuickRow}>{attentionDestinations.slice(0,3).map(id=>{const meta=itemMeta(language,id),alert=attentionLabel(id);return <Pressable key={id} accessibilityRole="button" accessibilityLabel={meta.title+', '+alert} onPress={()=>onNavigate(id)} style={({pressed})=>[s.attentionQuick,singleColumn&&s.attentionQuickWide,pressed&&s.pressed]}><MoreIcon id={id} size={23}/><Text numberOfLines={1} style={s.quickTitle}>{meta.title}</Text>{attention(id)}</Pressable>})}</View></View>:null}
 
     <View style={s.quickSection}><Text style={s.sectionLabel}>{a('QUICK ACCESS')}</Text>
-      <View style={s.quickAccessRow}>{quickAccess.map(id=><Pressable key={id} accessibilityRole="button" accessibilityLabel={itemMeta(language,id).title} onPress={()=>onNavigate(id)} style={({pressed})=>[s.quickAccessItem,pressed&&s.pressed]}>
+      <View style={[s.quickAccessRow,singleColumn&&s.quickAccessWrapped]}>{quickAccess.map(id=><Pressable key={id} accessibilityRole="button" accessibilityLabel={itemMeta(language,id).title} onPress={()=>onNavigate(id)} style={({pressed})=>[s.quickAccessItem,singleColumn&&s.quickAccessWide,pressed&&s.pressed]}>
         <MoreIcon id={id} size={24}/><Text numberOfLines={2} style={s.quickAccessLabel}>{itemMeta(language,id).title}</Text>
       </Pressable>)}</View>
     </View>
@@ -154,7 +154,7 @@ function makeStyles(C:ThemeColors){return StyleSheet.create({
   securityCard:{minHeight:68,flexDirection:'row',alignItems:'center',gap:10,padding:10,borderWidth:1,borderColor:C.warning,borderRadius:10,backgroundColor:C.warningSurface},
   securityIcon:{width:37,height:37,alignItems:'center',justifyContent:'center',borderRadius:9,borderWidth:1,borderColor:C.warning},
   securityIconText:{fontSize:23,color:C.warning},securityTitle:{fontSize:12,fontWeight:'800',color:C.text},securityDescription:{fontSize:10,lineHeight:15,color:C.muted,marginTop:3},securityArrow:{fontSize:23,color:C.warning},
-  quickSection:{gap:8,paddingTop:7},quickAccessRow:{flexDirection:'row',gap:6},quickAccessItem:{flex:1,minWidth:0,minHeight:69,alignItems:'center',justifyContent:'center',gap:6,borderWidth:1,borderColor:C.line,borderRadius:9,backgroundColor:C.panel,paddingHorizontal:3,paddingVertical:8},quickAccessLabel:{fontSize:9,color:C.text,fontWeight:'800',textAlign:'center'},
+  quickSection:{gap:8,paddingTop:7},quickAccessRow:{flexDirection:'row',gap:6},quickAccessWrapped:{flexWrap:'wrap'},quickAccessWide:{flexBasis:'47%'},quickAccessItem:{flex:1,minWidth:0,minHeight:69,alignItems:'center',justifyContent:'center',gap:6,borderWidth:1,borderColor:C.line,borderRadius:9,backgroundColor:C.panel,paddingHorizontal:3,paddingVertical:8},quickAccessLabel:{fontSize:9,color:C.text,fontWeight:'800',textAlign:'center'},
   sectionToggle:{minHeight:44,flexDirection:'row',alignItems:'center',gap:9,backgroundColor:C.panel2,borderWidth:1,borderColor:C.line,borderRadius:9,paddingHorizontal:11,paddingVertical:8},
   sectionCount:{color:C.muted,fontSize:10,fontWeight:'700'},sectionChevron:{color:C.accent,fontSize:20,fontWeight:'800',marginLeft:'auto'}, 
 

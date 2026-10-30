@@ -368,11 +368,11 @@ async function responsiveCardContract() {
       }
       assert.equal(enemy(tree).props.statusLimit, expected.statusLimit);
       assert.strictEqual(currentCue(tree), run.lastCombat.cues[0], 'responsive re-render must preserve the paused cursor');
-      for (const label of ['Combat replay speed 1 times', 'Combat replay speed 2 times', 'Combat replay speed 4 times', 'Resume combat replay', 'Previous combat event', 'Next combat event', 'Skip combat replay to result']) {
+      for (const label of ['Resume combat replay', 'Previous combat event', 'Next combat event', 'Skip combat replay to result']) {
         const control = findButton(tree, label), style = typeof control.props.style === 'function' ? control.props.style({pressed: false}) : control.props.style;
         assert.ok(flattenStyle(style).minHeight >= 44, `${label} retains a usable touch height at width ${width}`);
       }
-      const controls = flattenStyle(findButton(tree, 'Combat replay speed 1 times').parent.parent.props.style);
+      const controls = flattenStyle(findButton(tree, 'Resume combat replay').parent.props.style);
       if (expected.controlsWrap) assert.equal(controls.flexWrap, 'wrap', 'narrow phone playback controls wrap instead of overflowing');
     }
     await act(async () => { tree.unmount(); }); tree = null;

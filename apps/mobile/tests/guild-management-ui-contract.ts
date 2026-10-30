@@ -5,6 +5,7 @@ const read=(path:string)=>fs.readFileSync(path,'utf8');
 
 const app=read('App.tsx');
 const screen=read('src/screens/GuildScreen.tsx');
+const navigation=read('src/components/GuildNavigation.tsx');
 const management=read('src/components/OnlineGuildManagement.tsx');
 const customization=read('src/components/OnlineGuildCustomizationPanel.tsx');
 const identity=read('src/components/GuildIdentitySummary.tsx');
@@ -37,7 +38,7 @@ ok(screen.includes('myGuild()')&&screen.includes("guildMembership==='loading'"),
 ok(discovery.includes("searchOnlineGuilds(search,filter)")&&discovery.includes('Search Guild name or TAG'),'Discovery must search server-side by name or TAG');
 ok(discovery.includes('Create Guild')&&discovery.includes('guildTagAvailability')&&discovery.includes('requestGuildMembership'),'Discovery must support live guild creation and recruitment');
 ok(discovery.includes('respondGuildInvitation')&&discovery.includes('Application sent'),'Invitations and pending applications must have clear states');
-ok(screen.includes("(['Home','PvE','Activities','Hall','Chat'] as const)"),'Member navigation should show five primary destinations');
+ok(screen.includes('<GuildNavigation value={onlineSection}')&&navigation.includes("GuildPrimarySection='Home'|'PvE'|'Activities'|'Hall'|'Chat'")&&navigation.includes('destinations.map(item=>'),'Member navigation must expose five focused destinations in GuildNavigation');
 ok(screen.includes("root:{padding:spacing.md,gap:10"),'Online Guild shell must remain compact');
 ok(discovery.includes('<GuildBoardHero title="Find your people"')&&discovery.includes('<GuildBoardHero title="Found a new Guild"')&&discovery.includes('<GuildBoardHero title={selected.name}'),
  'Guild onboarding, previews and creation must use the existing Guild Plaza artwork rather than unrelated placeholder images');
@@ -55,7 +56,7 @@ ok(memberIdentity.includes('myGuild,guildDetails,ownGuildMemberCount')&&memberId
  'Member home must show real Guild identity, membership count and crest');
 ok(memberIdentity.includes('useGameTheme')&&memberIdentity.includes('C.panelRaised')&&memberIdentity.includes('C.accentSurface')===false,
  'Member identity must use shared theme surfaces and color tokens');
-ok(screen.includes('<GuildMemberIdentity/>')&&screen.includes("['Hall','guild'")&&screen.includes("['Roster','friends'"),
+ok(screen.includes('<GuildMemberIdentity onRoster=')&&screen.includes("['Hall','guild'")&&screen.includes("['Roster','friends'"),
  'Member dashboard must prioritize real Guild identity, Hall and Members');
 ok(screen.includes("homeCard:{flexGrow:1,flexBasis:'46%',minWidth:142,minHeight:140"),
  'Guild dashboard cards must preserve readable two-column mobile geometry');

@@ -110,9 +110,9 @@ export function ClassSelectScreen({language:languageProp,onLanguage,themeId,onTh
       <View pointerEvents="none" style={s.haloLarge}/>
       <View pointerEvents="none" style={s.haloSmall}/>
       <View style={s.welcomeEmblems}>
-       <Image source={classEmblemArtwork.DAWNKEEPER} resizeMode="contain" style={[s.welcomeSideArt,compact&&s.welcomeSideCompact]}/>
-       <Image source={classEmblemArtwork.IRONWARDEN} resizeMode="contain" style={s.welcomeCenterArt}/>
-       <Image source={classEmblemArtwork.WAYFINDER} resizeMode="contain" style={[s.welcomeSideArt,compact&&s.welcomeSideCompact]}/>
+       <Image accessible={false} source={classEmblemArtwork.DAWNKEEPER} resizeMode="contain" style={[s.welcomeSideArt,compact&&s.welcomeSideCompact]}/>
+       <Image accessible={false} source={classEmblemArtwork.IRONWARDEN} resizeMode="contain" style={s.welcomeCenterArt}/>
+       <Image accessible={false} source={classEmblemArtwork.WAYFINDER} resizeMode="contain" style={[s.welcomeSideArt,compact&&s.welcomeSideCompact]}/>
       </View>
       <Text style={s.stageTitle}>{ct(language,'Enter Asterfall')}</Text>
      </View>
@@ -134,7 +134,7 @@ export function ClassSelectScreen({language:languageProp,onLanguage,themeId,onTh
      <Text style={s.description}>{ct(language,'Select one of nine classes to see its strengths.')}</Text>
      <View style={s.hero}>
       <View style={s.heroRow}>
-       <View style={s.heroArtFrame}><Image source={classEmblemArtwork[selected.id]} resizeMode="contain" style={s.heroArt}/></View>
+       <View style={s.heroArtFrame}><Image accessible={false} source={classEmblemArtwork[selected.id]} resizeMode="contain" style={s.heroArt}/></View>
        <View style={s.flex}>
         <Text style={[s.roleTag,{color:roleColor}]}>{ct(language,selected.role).toUpperCase()}</Text>
         <Text style={s.heroTitle} numberOfLines={2}>{selected.name}</Text>
@@ -152,7 +152,7 @@ export function ClassSelectScreen({language:languageProp,onLanguage,themeId,onTh
      <Text style={s.label}>{ct(language,'AVAILABLE CLASSES')} · {CLASSES.length}</Text>
      <View style={s.classGrid}>{CLASSES.map((item,i)=><Pressable key={item.id} accessibilityRole="button" accessibilityLabel={ct(language,'Select {name}',{name:item.name})} accessibilityState={{selected:item.id===selected.id,disabled:saving}} disabled={saving} onPress={()=>selectClass(i)} style={({pressed})=>[s.classCard,{width:classWidth},item.id===selected.id&&s.classCardSelected,pressed&&s.pressed]}>
       {item.id===selected.id&&<Text style={s.classSelectedMark}>✓</Text>}
-      <Image source={classEmblemIconArtwork[item.id]} style={s.classIcon} resizeMode="contain"/>
+      <Image accessible={false} source={classEmblemIconArtwork[item.id]} style={s.classIcon} resizeMode="contain"/>
       <Text style={s.className} adjustsFontSizeToFit minimumFontScale={0.8} numberOfLines={2}>{item.name}</Text>
       <Text style={s.classRole}>{ct(language,item.role)}</Text>
      </Pressable>)}</View>
@@ -163,7 +163,7 @@ export function ClassSelectScreen({language:languageProp,onLanguage,themeId,onTh
      {detailsOpen&&<View style={s.detailsPanel}>
       <Text style={s.traits}>{creationText(language,CLASS_COMBAT_TRAITS[selected.id])}</Text>
       {details.abilities.map(ability=><View key={ability.id} style={s.abilityRow}>
-       <Image source={classSkillIcon(ability.icon)} resizeMode="contain" style={s.abilityIcon}/>
+       <Image accessible={false} source={classSkillIcon(ability.icon)} resizeMode="contain" style={s.abilityIcon}/>
        <View style={s.flex}><Text style={s.abilityName}>{ability.name}</Text><Text style={s.abilityDescription}>{creationText(language,ability.summary)}</Text></View>
       </View>)}
       <View style={s.idlePanel}>
@@ -177,10 +177,10 @@ export function ClassSelectScreen({language:languageProp,onLanguage,themeId,onTh
     {step==='identity'&&<>
      <Text style={s.eyebrow}>{ct(language,'CREATE A CHARACTER')} · 2 / 3</Text>
      <Text accessibilityRole="header" style={s.heading}>{ct(language,'Name your adventurer')}</Text>
-     <Text style={s.description}>{ct(language,'Choose your character name and interface theme.')}</Text>
+     <Text style={s.description}>{onTheme?ct(language,'Choose your character name and interface theme.'):ct(language,'Choose your character name.')}</Text>
      <View style={s.identityStage}>
       <View style={s.identityHalo}/>
-      <Image source={classEmblemArtwork[selected.id]} resizeMode="contain" style={s.identityArt}/>
+      <Image accessible={false} source={classEmblemArtwork[selected.id]} resizeMode="contain" style={s.identityArt}/>
       <Text style={s.identityClass}>{selected.name}</Text>
       <Text style={[s.identityRole,{color:roleColor}]}>{ct(language,selected.role)}</Text>
      </View>
@@ -212,7 +212,7 @@ export function ClassSelectScreen({language:languageProp,onLanguage,themeId,onTh
      <Text style={s.description}>{ct(language,'Review your choices before entering Asterfall.')}</Text>
      <View style={s.reviewHero}>
       <View style={s.reviewHalo}/>
-      <Image source={classEmblemArtwork[selected.id]} resizeMode="contain" style={s.reviewArt}/>
+      <Image accessible={false} source={classEmblemArtwork[selected.id]} resizeMode="contain" style={s.reviewArt}/>
       <Text style={s.reviewName}>{safeName}</Text>
       <Text style={s.reviewClass}>{selected.name} · {ct(language,selected.role)}</Text>
       <Text style={s.reviewLevel}>{ct(language,'Lv. {level}',{level:1})}</Text>
@@ -220,7 +220,7 @@ export function ClassSelectScreen({language:languageProp,onLanguage,themeId,onTh
      <View style={s.summary}>
       <View style={s.summaryRow}><Text style={s.summaryLabel}>{t(language,'onboarding.characterName')}</Text><Text style={s.summaryValue}>{safeName}</Text></View>
       <View style={s.summaryRow}><Text style={s.summaryLabel}>{t(language,'onboarding.stepClass')}</Text><Text style={s.summaryValue}>{selected.name}</Text></View>
-      <View style={s.summaryRow}><Text style={s.summaryLabel}>{ct(language,'PLAY STYLE')}</Text><Text style={[s.summaryValue,{color:roleColor}]}>{ct(language,selected.role)}</Text></View>
+      <View style={s.summaryRow}><Text style={s.summaryLabel}>{ct(language,'ROLE')}</Text><Text style={[s.summaryValue,{color:roleColor}]}>{ct(language,selected.role)}</Text></View>
       {!!onTheme&&<View style={s.summaryRow}><Text style={s.summaryLabel}>{ct(language,'INTERFACE THEME')}</Text><Text style={s.summaryValue}>{activeTheme.name}</Text></View>}
      </View>
      <View style={s.reviewNote}><Text style={s.reviewNoteText}>{ct(language,'Your class cannot be changed after creating this character.')}</Text></View>

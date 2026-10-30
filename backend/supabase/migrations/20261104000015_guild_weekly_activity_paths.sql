@@ -50,8 +50,8 @@ begin
    v_source:='crafting';
    t:=least(p_now,p.ends_at);
    s:=greatest(t-interval '15 seconds'*least(100,greatest(0,(a->>'units')::numeric)),p.started_at,m.joined_at_snapshot,j);
- elsif a->>'kind' in ('combat','skilling') and jsonb_typeof(a->'startsAtMs')='number' and jsonb_typeof(a->'endsAtMs')='number' then
-   v_source:=case when a->>'kind'='combat' then 'combat' else 'gathering' end;
+ elsif a->>'kind' in ('combat','skilling','crafting') and jsonb_typeof(a->'startsAtMs')='number' and jsonb_typeof(a->'endsAtMs')='number' then
+   v_source:=case when a->>'kind'='combat' then 'combat' when a->>'kind'='crafting' then 'crafting' else 'gathering' end;
    s:=greatest(to_timestamp((a->>'startsAtMs')::numeric/1000),p.started_at,m.joined_at_snapshot,j);
    t:=least(to_timestamp((a->>'endsAtMs')::numeric/1000),p.ends_at,p_now);
  else continue;end if;

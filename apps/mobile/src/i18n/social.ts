@@ -69,7 +69,7 @@ export const socialTranslationRows = {
 "NOT READY":["NICHT BEREIT","NO LISTO","NIET KLAAR","NON PRONTO","NON PRÊT"],
 "Echo sharing unlocks at character level 15.":["Echo-Teilen wird auf Charakterstufe 15 freigeschaltet.","Compartir tu Eco se desbloquea en el nivel 15.","Echo delen wordt ontgrendeld op personagelevel 15.","La condivisione dell’Eco si sblocca al livello 15.","Le partage d’Écho se débloque au niveau 15."],
 "Your current co-op equipment must pass the readiness check.":["Deine aktuelle Koop-Ausrüstung muss die Bereitschaftsprüfung bestehen.","Tu equipo cooperativo actual debe superar la comprobación de preparación.","Je huidige coöpuitrusting moet de gereedheidscontrole doorstaan.","Il tuo equipaggiamento cooperativo deve superare il controllo di preparazione.","Votre équipement coopératif doit réussir la vérification de préparation."],
-"Your Echo is a frozen copy of your current class, equipment and combat abilities. It remains available for up to 24 hours. Changing your gear does not automatically update an existing Echo.":["Dein Echo ist eine Kopie deiner aktuellen Klasse, Ausrüstung und Kampffähigkeiten. Es bleibt bis zu 24 Stunden verfügbar. Ausrüstungswechsel aktualisieren dein Echo nicht automatisch.","Tu Eco conserva una copia de tu clase, equipo y habilidades actuales durante un máximo de 24 horas. Cambiar de equipo no actualiza automáticamente tu Eco.","Je Echo is een kopie van je huidige klasse, uitrusting en gevechtsvaardigheden. Hij blijft tot 24 uur beschikbaar. Andere uitrusting werkt je Echo niet automatisch bij.","Il tuo Eco è una copia della classe, dell’equipaggiamento e delle abilità attuali, disponibile fino a 24 ore. Cambiare equipaggiamento non aggiorna automaticamente l’Eco.","Votre Écho est une copie de votre classe, équipement et compétences de combat actuels, disponible jusqu’à 24 heures. Changer d’équipement ne met pas automatiquement l’Écho à jour."],
+"Your Echo is a frozen copy of your current class, equipment and combat abilities. It remains available for up to 7 days. Changing your gear does not automatically update an existing Echo.":["Dein Echo ist eine Kopie deiner aktuellen Klasse, Ausrüstung und Kampffähigkeiten. Es bleibt bis zu 7 Tage verfügbar. Ausrüstungswechsel aktualisieren dein Echo nicht automatisch.","Tu Eco conserva una copia de tu clase, equipo y habilidades actuales durante un máximo de 7 días. Cambiar de equipo no actualiza automáticamente tu Eco.","Je Echo is een kopie van je huidige klasse, uitrusting en gevechtsvaardigheden. Hij blijft tot 7 dagen beschikbaar. Andere uitrusting werkt je Echo niet automatisch bij.","Il tuo Eco è una copia della classe, dell’equipaggiamento e delle abilità attuali, disponibile fino a 7 giorni. Cambiare equipaggiamento non aggiorna automaticamente l’Eco.","Votre Écho est une copie de votre classe, équipement et compétences de combat actuels, disponible jusqu’à 7 jours. Changer d’équipement ne met pas automatiquement l’Écho à jour."],
 "Update Echo from current gear":["Echo mit aktueller Ausrüstung aktualisieren","Actualizar Eco con el equipo actual","Echo bijwerken met huidige uitrusting","Aggiorna Eco con equipaggiamento attuale","Actualiser l’Écho avec l’équipement actuel"],
 "Share my current Echo":["Aktuelles Echo teilen","Compartir mi Eco actual","Mijn huidige Echo delen","Condividi il mio Eco attuale","Partager mon Écho actuel"],
 "Your Echo has been published from your current equipment.":["Dein Echo wurde mit deiner aktuellen Ausrüstung veröffentlicht.","Tu Eco se ha publicado con tu equipo actual.","Je Echo is gepubliceerd met je huidige uitrusting.","Il tuo Eco è stato pubblicato con l’equipaggiamento attuale.","Votre Écho a été publié avec votre équipement actuel."],
@@ -2266,12 +2266,12 @@ export const socialTranslationRows = {
     "Condivisione Echo",
     "Partage d’Echo"
   ],
-  "Sharing an Echo lets other players recruit a snapshot of your character for 24 hours.": [
-    "Wenn du ein Echo teilst, können andere Spieler 24 Stunden lang ein Abbild deines Charakters rekrutieren.",
-    "Compartir un Echo permite a otros jugadores reclutar una instantánea de tu personaje durante 24 horas.",
-    "Door een Echo te delen kunnen andere spelers 24 uur lang een momentopname van je personage rekruteren.",
-    "Condividere un Echo permette ad altri giocatori di reclutare un’istantanea del personaggio per 24 ore.",
-    "Partager un Echo permet aux autres joueurs de recruter un instantané de votre personnage pendant 24 heures."
+  "Sharing an Echo lets other players recruit a snapshot of your character for 7 days.": [
+    "Wenn du ein Echo teilst, können andere Spieler 7 Tage lang ein Abbild deines Charakters rekrutieren.",
+    "Compartir un Echo permite a otros jugadores reclutar una instantánea de tu personaje durante 7 días.",
+    "Door een Echo te delen kunnen andere spelers 7 dagen lang een momentopname van je personage rekruteren.",
+    "Condividere un Echo permette ad altri giocatori di reclutare un’istantanea del personaggio per 7 giorni.",
+    "Partager un Echo permet aux autres joueurs de recruter un instantané de votre personnage pendant 7 jours."
   ],
   "Stop sharing my Echo": [
     "Mein Echo nicht mehr teilen",

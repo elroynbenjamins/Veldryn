@@ -1,6 +1,6 @@
 import {createCharacter,newGame,effectiveStats,salvageItem,sellItem,sellBankItem} from '../src/core/game';
 import {acknowledgeAllInventoryItems,acknowledgeInventoryItem,inventoryFavoriteIds,inventoryLockedIds,inventoryNewItemIds,recoveryAmount,storageCapacityStatus,toggleInventoryFavorite,toggleInventoryLock,transferAmount,transferError,visibleStacks} from '../src/core/inventory-view';
-import {validateGameCommand,validateGameSettings} from '../src/core/game-commands';
+import {validateGameCommand,validateGameSettings,settingsForOnlineCommand} from '../src/core/game-commands';
 import {bulkSelectionSummary,bulkSellSelected,bulkSalvageSelected,bulkTransferSelected} from '../src/core/inventory-bulk';
 import {itemInspectModel} from '../src/core/item-inspect';
 import {workingTowardDestinationAvailability} from '../src/core/working-toward';
@@ -53,6 +53,11 @@ ok(favoriteSalvageBlocked,'Favorite items cannot be salvaged through core logic'
 let lockedState=toggleInventoryLock(state,'basic_sword');
 ok(inventoryLockedIds(lockedState).includes('basic_sword'),'Item can be locked in persistent settings');
 ok(normalizeSave(lockedState).settings.lockedItemIds?.includes('basic_sword')===true,'Save normalization preserves locks across restarts');
+const legacyLockPreferences={...lockedState.settings,retiredChatSetting:true,unknownFuturePreference:42,chatEmoteTrayIds:['invalid_emote']} as unknown as typeof lockedState.settings;
+const safeLockPreferences=settingsForOnlineCommand(legacyLockPreferences);
+ok(safeLockPreferences.lockedItemIds?.includes('basic_sword')===true,'Online settings projection retains locked resources from legacy saves');
+ok(!('unknownFuturePreference' in safeLockPreferences)&&!('retiredChatSetting' in safeLockPreferences),'Online settings projection removes unknown/retired legacy fields');
+ok(validateGameSettings(safeLockPreferences).lockedItemIds?.includes('basic_sword')===true,'Online lock command passes strict settings validation');
 ok(!inventoryFavoriteIds(lockedState).includes('basic_sword'),'Lock and favorite are independent');
 let lockedSellState={...lockedState,inventory:{...lockedState.inventory,stacks:[{itemId:'basic_sword',quantity:1}]}};
 let lockedSellBlocked=false;try{sellItem(lockedSellState,'basic_sword')}catch(error){lockedSellBlocked=error instanceof Error&&error.message.includes('Locked item')}

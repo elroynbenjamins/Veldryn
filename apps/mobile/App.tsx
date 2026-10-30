@@ -32,7 +32,7 @@ import {WorldScreen} from './src/screens/WorldScreen';
 import {InventoryScreen} from './src/screens/InventoryScreen';
 import {CharacterScreen} from './src/screens/CharacterScreen';
 import {CombatCompanionPanel,type CompanionNavigationState} from './src/components/CombatCompanionPanel';
-import {executeGameCommand,type ForgeCraftResult} from './src/core/game-commands';
+import {executeGameCommand,settingsForOnlineCommand,type ForgeCraftResult} from './src/core/game-commands';
 import {QuestScreen,type QuestMode} from './src/screens/QuestScreen';
 import {SkillsScreen} from './src/screens/SkillsScreen';
 import {CompanionsScreen} from './src/screens/CompanionsScreen';
@@ -603,7 +603,7 @@ function VeldrynApp(){
       if(!current)return;
       // Ignore already-applied appearances before classifying settings or profile commands.
       if(JSON.stringify(candidate)===JSON.stringify(current))return;
-      if(JSON.stringify(candidate)===JSON.stringify({...current,settings:candidate.settings})){await perform({type:'settings',args:{settings:candidate.settings}});return;}
+      if(JSON.stringify(candidate)===JSON.stringify({...current,settings:candidate.settings})){await perform({type:'settings',args:{settings:settingsForOnlineCommand(candidate.settings)}});return;}
       if(candidate.activity===null&&JSON.stringify(candidate)===JSON.stringify({...current,activity:null})){await perform({type:'stop'});return;}
       const profileKeys=['profileIconId','profileTitle','profileBackgroundId','profileBorderId','selectedCosmeticPetId'] as const;
       if(current.character&&candidate.character){const patch=Object.fromEntries(profileKeys.map(key=>[key,candidate.character![key]]));

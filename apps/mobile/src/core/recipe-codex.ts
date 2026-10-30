@@ -38,12 +38,14 @@ for(const entry of CATALOG)for(const input of entry.recipe.inputs){
  using.push(entry);BY_INGREDIENT.set(input.itemId,using);
 }
 export function recipeCodexEntries(){return CATALOG;}
+export function recipeCodexAvailableForClass(entry:RecipeCodexEntry,classId?:string){return !classId||!entry.recipe.classId||entry.recipe.classId===classId;}
+export function recipeCodexEntriesForClass(classId?:string){return CATALOG.filter(entry=>recipeCodexAvailableForClass(entry,classId));}
 export function recipeCodexEntryById(id:string){return BY_ID.get(id);}
 export function recipeCodexSkillEntries(skill:RecipeCodexSkill):readonly RecipeCodexEntry[]{return BY_SKILL.get(skill)??CATALOG;}
-export function recipeCodexUsesIngredient(itemId:string):readonly RecipeCodexEntry[]{return BY_INGREDIENT.get(itemId)??[];}
-export function recipeCodexFilter(skill:RecipeCodexSkill,search:string):readonly RecipeCodexEntry[]{
+export function recipeCodexUsesIngredient(itemId:string,classId?:string):readonly RecipeCodexEntry[]{return (BY_INGREDIENT.get(itemId)??[]).filter(entry=>recipeCodexAvailableForClass(entry,classId));}
+export function recipeCodexFilter(skill:RecipeCodexSkill,search:string,classId?:string):readonly RecipeCodexEntry[]{
  const list=recipeCodexSkillEntries(skill),q=search.trim().toLocaleLowerCase();
- return q?list.filter(entry=>entry.searchText.includes(q)):list;
+ return list.filter(entry=>recipeCodexAvailableForClass(entry,classId)&&(!q||entry.searchText.includes(q)));
 }
 export function recipeCodexDestination(entry:RecipeCodexEntry):WorkingTowardDestination{
  return {kind:'skills',skillId:entry.skillId,mode:'crafting',recipeId:entry.id,

@@ -185,11 +185,11 @@ export function eventWeeklyBoard(state:GameState,nowMs=Date.now()){return eventC
 export function claimEventWeeklyObjective(state:GameState,objectiveId:string,nowMs=Date.now()):GameState{const event=claimableLiveEvent(state,nowMs);if(!event)throw new Error('Event rewards are no longer available.');const challenge=eventWeeklyBoard(state,nowMs).find(entry=>entry.objective.id===objectiveId);if(!challenge)throw new Error('Unknown weekly challenge.');if(challenge.claimed)throw new Error('This weekly challenge was already claimed.');if(challenge.progress<challenge.objective.required)throw new Error('Complete the weekly challenge first.');const id=event.definition.id,progress={...(state.account.eventProgressById??{})},currency={...(state.account.eventCurrencyBalanceById??{})},prestige={...(state.account.eventPrestigeBalanceById??{})};progress[id]=(progress[id]??0)+challenge.objective.rewardCurrency;currency[id]=(currency[id]??0)+challenge.objective.rewardCurrency;prestige[id]=(prestige[id]??0)+challenge.objective.rewardPrestige;return {...state,account:{...state.account,eventProgressById:progress,eventCurrencyBalanceById:currency,eventPrestigeBalanceById:prestige,eventWeeklyClaimIds:[...(state.account.eventWeeklyClaimIds??[]),challenge.id].slice(-160)}};}
 
 function eventOfferOwnPurchaseCount(state:GameState,eventId:string,offerId:string){return Math.max(0,Math.floor(state.account.eventShopPurchaseCounts?.[`${eventId}:${offerId}`]??0));}
-/** Candy bought with either festival currency shares one five-purchase cap. */
+/** Five purchases per candy and per currency type; both currencies have independent stock. */
 export function eventOfferPurchaseCount(state:GameState,eventId:string,offerId:string){
  const definition=liveEventDef(eventId),offers=definition?[...definition.shop,...eventPrestigeSupplyOffers(definition)]:[];
  const offer=offers.find(row=>row.id===offerId);
- if(offer?.reward.kind==='candy')return offers.filter(row=>row.reward.kind==='candy'&&row.reward.id===offer.reward.id).reduce((total,row)=>total+eventOfferOwnPurchaseCount(state,eventId,row.id),0);
+ if(offer?.reward.kind==='candy')return offers.filter(row=>row.currency===offer.currency&&row.reward.kind==='candy'&&row.reward.id===offer.reward.id).reduce((total,row)=>total+eventOfferOwnPurchaseCount(state,eventId,row.id),0);
  return eventOfferOwnPurchaseCount(state,eventId,offerId);
 }
 export function eventShopOffers(state:GameState,nowMs=Date.now()){const event=claimableLiveEvent(state,nowMs);return event?[...event.definition.shop,...eventPrestigeSupplyOffers(event.definition)]:[];}

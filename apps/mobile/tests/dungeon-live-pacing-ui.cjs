@@ -5,7 +5,7 @@ const root=path.resolve(__dirname,'../../..');
 const read=p=>fs.readFileSync(path.join(root,p),'utf8');
 const runtime=read('backend/online/live-runtime.ts');
 const policy=read('backend/online/live-pacing.ts');
-const vote=read('backend/supabase/migrations/20261103000000_online_live_event_vote_windows_v1.sql');
+const vote=read('backend/supabase/migrations/20261104000010_online_live_event_vote_windows_v1.sql');
 const run=read('apps/mobile/src/components/coop/CoopRunOverview.tsx');
 const stage=read('apps/mobile/src/components/coop/DungeonCombatStage.tsx');
 const domain=read('apps/mobile/src/core/coop-presentation.ts');

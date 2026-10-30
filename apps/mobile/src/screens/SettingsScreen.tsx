@@ -37,6 +37,8 @@ type Props={
   onLanguage:(language:GameState['settings']['language'])=>void;
   onReset:()=>void;
   onChange:(next:GameState)=>void;
+  /** Legacy caller compatibility; activity Stop is available on the activity bar instead. */
+  onStopActivity?:()=>Promise<void>;
   onRefreshCommerce?:(expectedAccountId:string)=>Promise<void>;
   onExport:()=>Promise<void>;
   onImport:(raw:string)=>Promise<void>;

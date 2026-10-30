@@ -20,7 +20,7 @@ ok(world.includes('<ZoneSceneArtwork regionId={zone.id} muted={!unlocked}/>'),'T
 const regionalGathering=skills.split("if(mode==='gathering'&&initialSkill==='regional-gathering'){")[1]?.split("if(mode==='crafting'")[0]??'';
 ok(!regionalGathering.includes('<DetailBack'), 'Current-region gathering should not show a redundant All skills back button');
 ok(regionalGathering.includes('<ZoneSceneArtwork regionId={region.id}/>'), 'Current-region gathering header must display the region panorama');
-ok((skills.match(/<ZoneSceneArtwork regionId=\\{region.id\\}\\/>/g)||[]).length===2, 'Both regional and individual gathering pages must show the region panorama');
+ok(skills.split('<ZoneSceneArtwork regionId={region.id}/>').length===3, 'Both regional and individual gathering pages must show the region panorama');
 ok(skills.includes('style={s.regionShade}'), 'Region panorama needs a legible text overlay');
 ok(upgraded.includes("IRONWOOD:require('../../assets/world/regions-v2/ironwood-forest-pixel-v1.jpg')"), 'Ironwood Forest scene must resolve to bundled artwork');
 ok(ids.every(id=>worldMap.includes("id:'"+id+"'")),'Scenic atlas must cover every current travel-region id');

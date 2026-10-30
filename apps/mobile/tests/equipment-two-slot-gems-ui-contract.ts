@@ -25,8 +25,8 @@ ok(enhancement.includes('result.boss_power=Math.min(.15'),'Boss Effect Gem stack
 ok(enhancement.includes('result.damage_reduction=Math.min(.10'),'Damage-reduction Effect Gem stacking must be capped');
 
 ok(modal.includes('one Stat Gem and one Effect Gem'),'Enhancement UI must explain the two named slots');
-ok(modal.includes('Socket Stat'),'Stat candidates must have a dedicated action');
-ok(modal.includes('Socket Effect'),'Effect candidates must have a dedicated action');
+ok(modal.includes("activeSocketKind==='stat'")&&modal.includes('statGems.slice(0,4)')&&modal.includes('onSocket(gem.id)'),'Stat candidates must have a dedicated selectable socket and action');
+ok(modal.includes("activeSocketKind==='effect'")&&modal.includes('effectGems.slice(0,4)')&&modal.includes('onSocket(gem.id)'),'Effect candidates must have a dedicated selectable socket and action');
 ok(slots.includes('statGemFilled')&&slots.includes('effectGemFilled'),'Equipment tiles must show separate Stat/Effect pips');
 ok(character.includes('equipmentTool===\'gems\'')&&character.includes('selectedDecision?.sockets.statFilled')&&character.includes('selectedDecision?.sockets.effectFilled')&&character.includes("openEnhancement('gems')"),'Character Gems tool must show named socket status and preserve management access');
 ok(character.includes("accessibilityLabel={profileT(language,'Stat Gem')")&&character.includes("accessibilityLabel={profileT(language,'Effect Gem')")&&character.includes("onPress={()=>openEnhancement('gems')}"),'Named gem socket rows must be directly actionable without an extra management button');

@@ -3,6 +3,20 @@ import {createTranslator} from './translator';
 
 // Each row supplies German, Spanish, Dutch, Italian and French; its key is English.
 export const companionTranslationRows={
+ // Additional training, trials and expedition labels.
+ "TRIAL COMBAT":["PRÜFUNGSKAMPF","COMBATE DE PRUEBA","PROEFGEVECHT","COMBATTIMENTO DI PROVA","COMBAT D’ÉPREUVE"],
+ "Tower of Companions":["Turm der Gefährten","Torre de compañeros","Metgezellentoren","Torre dei compagni","Tour des compagnons"],
+ "EXPEDITION TEAM FIT":["EXPEDITIONS-TEAM-EIGNUNG","ADECUACIÓN DEL EQUIPO","GESCHIKTHEID EXPEDITIETEAM","IDONEITÀ DELLA SQUADRA","ADÉQUATION DE L’ÉQUIPE"],
+ "Projected grade {value0}":["Voraussichtlicher Rang {value0}","Rango previsto {value0}","Verwachte beoordeling {value0}","Grado previsto {value0}","Rang prévu {value0}"],
+ "Meet the requirements to preview your grade":["Erfülle die Voraussetzungen, um deinen Rang anzuzeigen","Cumple los requisitos para ver el rango previsto","Voldoe aan de voorwaarden om je beoordeling te zien","Soddisfa i requisiti per vedere il grado previsto","Remplissez les conditions pour voir votre rang prévu"],
+ "✓ Bonus active":["✓ Bonus aktiv","✓ Bonificación activa","✓ Bonus actief","✓ Bonus attivo","✓ Bonus actif"],
+ "○ Bonus not active":["○ Bonus nicht aktiv","○ Bonificación inactiva","○ Bonus niet actief","○ Bonus non attivo","○ Bonus inactif"],
+ "Mission bonuses: {value0}":["Missionsboni: {value0}","Bonificaciones de misión: {value0}","Missiebonussen: {value0}","Bonus missione: {value0}","Bonus de mission : {value0}"],
+ "Ownership":["Besitz","Propiedad","Bezit","Proprietà","Possession"],
+ "Rarity":["Seltenheit","Rareza","Zeldzaamheid","Rarità","Rareté"],
+ "Role":["Rolle","Rol","Rol","Ruolo","Rôle"],
+ "No companions match these filters.":["Keine Gefährten entsprechen diesen Filtern.","Ningún compañero coincide con estos filtros.","Geen metgezellen voldoen aan deze filters.","Nessun compagno corrisponde a questi filtri.","Aucun compagnon ne correspond à ces filtres."],
+
  "SPEED": ["TEMPO","VELOCIDAD","SNELHEID","VELOCITÀ","VITESSE"],
  "Change playback speed": ["Wiedergabetempo ändern","Cambiar velocidad","Afspeelsnelheid wijzigen","Cambia velocità","Changer la vitesse"],
  "{target} suffers {amount} poison damage through shields": ["{target} erleidet {amount} Giftschaden durch Schilde","{target} sufre {amount} de veneno a través de escudos","{target} krijgt {amount} gifschade door schilden","{target} subisce {amount} danni da veleno attraverso gli scudi","{target} subit {amount} dégâts de poison à travers les boucliers"],

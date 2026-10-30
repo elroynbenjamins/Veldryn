@@ -195,7 +195,7 @@ export function ClassSelectScreen({language:languageProp,onLanguage,themeId,onTh
       <Text style={s.label}>{ct(language,'INTERFACE THEME')}</Text>
       <View style={s.themeGrid}>{THEME_IDS.map(id=>{
        const theme=UI_THEMES[id],isSelected=id===activeThemeId;
-       return <Pressable key={id} accessibilityRole="button" accessibilityLabel={creationText(language,'{name} interface theme',{name:theme.name})} accessibilityState={{selected:isSelected,disabled:saving}} disabled={saving} onPress={()=>void onTheme(id)} style={({pressed})=>[s.themeCard,isSelected&&s.themeSelected,pressed&&s.pressed]}>
+       return <Pressable key={id} accessibilityRole="button" accessibilityLabel={creationText(language,'{name} interface theme',{name:theme.name})} accessibilityState={{selected:isSelected,disabled:saving}} disabled={saving} onPress={()=>void onTheme?.(id)} style={({pressed})=>[s.themeCard,isSelected&&s.themeSelected,pressed&&s.pressed]}>
         <View style={[s.themePreview,{backgroundColor:theme.bg,borderColor:theme.line}]}>
          <View style={[s.themePreviewPanel,{backgroundColor:theme.panelRaised}]}/>
          <View style={[s.themePreviewAccent,{backgroundColor:theme.accent}]}/>
@@ -275,7 +275,7 @@ function makeStyles(C:ThemeColors){
  welcomeCardTitle:{fontSize:14,lineHeight:19,color:C.text,fontWeight:'800'},
  welcomeCardCopy:{fontSize:12,lineHeight:18,color:C.muted},
  signIn:{minHeight:44,borderWidth:1,borderColor:C.lineStrong,borderRadius:10,backgroundColor:C.panel2,paddingHorizontal:12,paddingVertical:11,alignItems:'center',justifyContent:'center',marginTop:6},
- signInText:{fontSize:12,lineHeight:18,fontWeight:'750',color:C.accentSoft,textAlign:'center'},
+ signInText:{fontSize:12,lineHeight:18,fontWeight:'700',color:C.accentSoft,textAlign:'center'},
  hero:{backgroundColor:C.panel,borderColor:C.lineStrong,borderWidth:1,borderRadius:13,padding:13,gap:12},
  heroRow:{flexDirection:'row',alignItems:'center',gap:12},
  heroArtFrame:{width:100,height:107,backgroundColor:C.stage,borderColor:C.line,borderWidth:1,borderRadius:11,alignItems:'center',justifyContent:'center'},

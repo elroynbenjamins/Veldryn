@@ -143,6 +143,7 @@ try{
   values($1,'veilbreak',100)`,[account]);
  await db.query(`insert into public.online_game_states(account_id,character_id,state)
   values($1,$2,$3::jsonb)`,[account,character,JSON.stringify({
+  character:{gold:1000},
   inventory:{stacks:[{itemId:'GREENWOOD_LOG',quantity:80},{itemId:'ASTER_IRON_INGOT',quantity:2},{itemId:'MOSS_FIBER',quantity:2}]},
   account:{unlockedCosmeticPetIds:[],unlockedCombatCompanionIds:[],
    unlockedProfileIconIds:[],unlockedProfileBorderIds:[],combatCompanionProgress:{}}

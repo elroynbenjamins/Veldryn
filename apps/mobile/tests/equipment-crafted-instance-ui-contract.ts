@@ -28,18 +28,18 @@ ok(enhancement.includes('effectiveOwnedGearRarity(state,itemId)'),'Upgrade prici
 ok(enhancement.includes('craftedRarityStatMultiplier'),'Forged rarity must affect live equipment stats');
 ok(decisions.includes('effectiveOwnedGearRarity(state,itemId)'),'Character equipment decisions must show forged rarity');
 ok(inspect.includes('craftedCopies')&&inspect.includes('craftedRarities'),'Quick Inspect must expose duplicate crafted-copy context');
-ok(inventory.includes('effectiveOwnedGearRarity(state,item.id)'),'Inventory cards must display the best owned forged rarity');
+ok(inventory.includes('exactRecord?.rarity??itemRarity(item)')&&inventory.includes('craftedGearDisplayQuality(exactRecord)'),'Inventory cards must display each exact crafted copy rarity and quality, not an unrelated best owned copy');
 ok(card.includes('rarityOverride'),'ItemCard must support instance-derived rarity styling');
 
 ok(commands.includes("if(options.randomRoll===undefined)throw new Error('trusted_random_required')"),'Online Forge settlement must require trusted randomness');
-ok(commands.includes('quality proc'),'Authoritative claim messaging must surface quality procs');
+ok(commands.includes("result.result.qualityProc?' · rarity upgrade'")&&commands.includes('result.results.filter(row=>row.qualityProc)'),'Authoritative claim messages must surface rarity upgrades and count quality procs');
 ok(app.includes('setForgeResults(result.forgeResults)')&&app.includes('ForgeRarityRevealModal'),'Mobile online claims must present authoritative structured Forge rarity results');
 ok(app.includes('setForgeResults([claimed.result])'),'Mobile offline claims must use the same structured Forge rarity result path');
 ok(forgeFeedback.includes('EXCEPTIONAL FORGE RESULT')&&forgeFeedback.includes('qualityProc'),'Quality procs must use the dedicated rarity-aware Forge reveal');
 const forgeQueueUi=read('src/components/EquipmentCraftQueuePanel.tsx');
 const feedback=read('src/components/ActionFeedback.tsx');
 ok(forgeQueueUi.includes('Rarity revealed on claim')&&!forgeQueueUi.includes('effectiveOwnedGearRarity(state,job.outputItemId)'),'Unclaimed Forge results must not borrow rarity from previously owned gear');
-ok(forgeFeedback.includes('rarityMeta(highest(results).rarity)')&&forgeFeedback.includes('accentColor={meta.color}'),'Claimed Forge results must use their authoritative rarity color');
+ok(forgeFeedback.includes('rarityMeta(result.rarity)')&&forgeFeedback.includes('borderColor:meta.color')&&forgeFeedback.includes('rarityNameColor(result.rarity'),'Claimed Forge results must use their actual rolled rarity colors and matching item names');
 ok(feedback.includes('accentColor?:string')&&feedback.includes('accentSurface?:string'),'Compact Forge feedback must support rarity accents while preserving other feedback tones');
 ok(save.includes('normalizeCraftedGearInstances'),'Crafted instances must persist through save normalization');
 

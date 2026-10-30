@@ -36,6 +36,6 @@ ok(character.includes('label={profileT(language,"Armor")}')&&character.includes(
 
 ok(inspect.includes("row.runtime==='live'?gt(\"LIVE\"):it('HOOK')"),'Item inspect must distinguish live thresholds from conditional hooks');
 ok(inspect.includes('2/4/8/10 always-on V33 bonuses are live'),'Item inspect must accurately explain runtime coverage');
-ok(setPanel.includes('2/4/8/10 always-on bonuses are live'),'Set progress copy must not claim the 6pc condition is simulated');
+ok(setPanel.includes('progress.thresholds.map')&&setPanel.includes('t.active?gt("REACHED"):gt("LOCKED")')&&!setPanel.includes('6pc simulated'),'Set progress must render actual reached/locked status without claiming a simulated 6pc effect');
 
 console.log('PASS: V33 set runtime is wired through stats/combat and UI accurately distinguishes live bonuses from 6pc hooks');

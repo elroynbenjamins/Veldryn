@@ -31,7 +31,7 @@ ok(!sub['events.rewards'],'Event rewards never create a navigation subroute badg
 equal(destinationForNotification('companion_attention').subroute,'companions','Companion attention routes to the Companion hub');
 equal(destinationForNotification('equipment_craft_ready').subroute,'skills.smithing.forge','Finished equipment routes to the Smithing forge');
 ok(sub['companions'].dot,'Companion subroute receives one consolidated dot');
-ok(sub['profile.customize'].dot,'Profile customization attention routes to Customize Profile as a dot');
+ok(sub['account.new-unlocks'].dot,'Profile customization attention routes to the consolidated Account new-unlocks inbox as a dot');
 const quick=buildQuickNavigationBadges(notifications);
 ok(quick['Quests']?.dot,'Weekly Contract Board attention should route to Quests in quick navigation');
 ok(!quick['Events'],'Legacy Event rewards do not create top-bar shortcut attention');

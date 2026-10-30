@@ -103,6 +103,7 @@ import {SocialScreen} from './src/screens/SocialScreen';
 import {ArenaScreen} from './src/screens/ArenaScreen';
 import {RankingsScreen} from './src/screens/RankingsScreen';
 import {CollectionsScreen} from './src/screens/CollectionsScreen';
+import {ResourceCodexScreen} from './src/screens/ResourceCodexScreen';
 import {ProfileScreen} from './src/screens/ProfileScreen';
 import {ProfileCustomizeScreen} from './src/screens/ProfileCustomizeScreen';
 import {ProfileDiscardChangesModal} from './src/components/ProfileDiscardChangesModal';
@@ -144,7 +145,7 @@ import {TutorialHighlightProvider} from './src/components/TutorialBeacon';
 import {completeFirstSessionTutorialStep,loadFirstSessionTutorialCompleted} from './src/storage/first-session-tutorial';
 import {eventAnnouncementStore} from './src/storage/event-announcement';
 
-type Tab=QuickNavDestination|'NewUnlocks'|'Activity'|'DailySupplies'|'AccountBonuses'|'RewardsInbox'|'MasteryHall'|'Arena'|'Rankings'|'Collections'|'Profile'|'ProfileCustomize'|'Combat'|'Coop';
+type Tab=QuickNavDestination|'NewUnlocks'|'Activity'|'DailySupplies'|'AccountBonuses'|'RewardsInbox'|'MasteryHall'|'Arena'|'Rankings'|'Collections'|'ResourceCodex'|'Profile'|'ProfileCustomize'|'Combat'|'Coop';
 type PrimaryTab='Home'|'Skills'|'World'|'Character'|'Inventory'|'More';
 type NavigationContext={skillsMode:'gathering'|'crafting'|'novice'|'faith';selectedSkill?:string;goalActionId?:string;goalRecipeId?:string;questMode:QuestMode;questFocusOrderId?:string;settingsSection?:SettingsSection;socialInitialTab:SocialHubTab;profileCustomizeSection:'Appearance'|'Identity';goalMonsterId?:string;goalRegionId?:string;goalDungeonId?:string};
 const primaryTabs:PrimaryTab[]=['Home','Character','Skills','World','Inventory','More'];
@@ -157,6 +158,7 @@ function tabLabel(language:Language,tab:Tab):string{
     case 'Arena':return appText(language,'Arena');
     case 'Rankings':return appText(language,'Rankings');
     case 'Collections':return appText(language,'Collections');
+     case 'ResourceCodex':return appText(language,'Resource Codex');
     case 'Profile':return appText(language,'Profile');
     case 'ProfileCustomize':return appText(language,'Customize Profile');case 'NewUnlocks':return appText(language,'New Unlocks');
   }
@@ -784,6 +786,7 @@ const next=normalizeProfileIcon(migrateGemPouch(candidate));queuePreparationNoti
     {tab==='Arena'&&<ArenaScreen state={state} onChange={candidate=>void commit(candidate)} onCommand={serverGameplayEnabled?command=>void perform(command):undefined}/>}
     {RANKINGS_RELEASED&&tab==='Rankings'&&<RankingsScreen/>}
     {tab==='Collections'&&<CollectionsScreen state={state} onChange={candidate=>void commit(candidate)}/>}
+     {tab==='ResourceCodex'&&<ResourceCodexScreen state={state} onNavigateSource={openWorkingTowardDestination} onOpenCompanions={()=>setTab('Companions')}/>}
     {tab==='Profile'&&<ProfileScreen state={state} onNavigate={destination=>{if(destination==='Customize'){setProfileCustomizeSection('Appearance');setTab('ProfileCustomize');return;}setTab(destination)}}/>}
     {tab==='ProfileCustomize'&&<ProfileCustomizeScreen key={profileAttentionScope} state={state} initialSection={profileCustomizeSection} onChange={commit} onSaveNameStyle={saveNameStyle} onNavigateSource={destination=>setTab(destination)} onDirtyChange={setProfileCustomizeDirty}/>}
   </View>

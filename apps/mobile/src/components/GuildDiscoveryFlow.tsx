@@ -125,7 +125,7 @@ export function GuildDiscoveryFlow({onJoined}:{onJoined:()=>void}){
    const checked=tagMatches?tagStatus:await guildTagAvailability(tag);
    setTagStatus(checked??null);
    if(!checked?.available)throw new Error(checked?guildTagAvailabilityMessage(checked):'Check the Guild TAG first.');
-   await createOnlineGuild(normalizeGuildName(name),checked.normalizedTag!,policy,1);
+   await createOnlineGuild(normalizeGuildName(name),checked.normalizedTag!,policy,GUILD_JOIN_LEVEL);
    onJoined();
   }catch(reason){setError(failureText(reason))}
   finally{setBusy(false)}
@@ -209,7 +209,7 @@ export function GuildDiscoveryFlow({onJoined}:{onJoined:()=>void}){
     <Text style={[s.helper,tagMatches&&tagStatus?.available&&s.available,tagMatches&&tagStatus&&!tagStatus.available&&s.invalid]}>{tagMatches&&tagStatus?guildTagAvailabilityMessage(tagStatus):'Three letters. TAGs are permanently reserved and cannot be reused.'}</Text>
     <Text style={s.label}>How will players join?</Text>
     <View style={s.policyList}>{([['open','Open Guild','Players join immediately when eligible.'],['apply','Applications','Guild officers approve each request.']] as const).map(([id,title,detail])=><Pressable key={id} accessibilityRole="radio" accessibilityState={{checked:policy===id}} onPress={()=>setPolicy(id)} style={[s.policyCard,policy===id&&s.policySelected]}><View style={[s.radio,policy===id&&s.radioSelected]}/><View style={s.flex}><Text style={s.guildName}>{title}</Text><Text style={s.muted}>{detail}</Text></View></Pressable>)}</View>
-    <Text style={s.helper}>Minimum level starts at 1. Guild leaders can manage recruitment settings later.</Text>
+    <Text style={s.helper}>Guild members can join from Level 7. Leaders can set a higher minimum later.</Text>
    </Panel>
    <GameButton title={levelLocked()?`Unlock at Level ${GUILD_JOIN_LEVEL}`:"Create Guild"} loading={busy} disabled={busy||levelLoading||levelLocked()||!!nameIssue||normalizeGuildName(name).length<3||tag.length!==3||!tagMatches||!tagStatus?.available} onPress={()=>void create()}/>
   </>:null}

@@ -10,7 +10,7 @@ import {liveEventVisuals} from '../ui/live-event-visuals-active';
 import {GameButton} from './GameButton';
 import {Panel} from './Panel';
 
-const kindLabels:Record<EventCandyKind,string>={skill:'SKILL',combat:'BATTLE',companion:'BOND'};
+const kindLabels:Record<EventCandyKind,string>={skill:'SKILL',combat:'BATTLE',companion:'BOND',pet:'PET LUCK'};
 function durationLabel(seconds:number){
  const total=Math.max(0,Math.ceil(seconds)),hours=Math.floor(total/3600),minutes=Math.floor(total%3600/60),remainder=total%60;
  return hours?`${hours}h ${minutes}m ${remainder}s`:minutes?`${minutes}m ${remainder}s`:`${remainder}s`;

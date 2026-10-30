@@ -15,12 +15,11 @@ import {useAuthSession} from '../online/AuthSessionProvider';
 import {serverGameplayEnabled} from '../online/gameplay';
 import {passwordRequirements} from '../core/auth-callback';
 import {accountLinkStep,pendingAccountEmail} from '../core/auth-account-link';
-import {equipmentTheme,spacing,touchTargetMin,typography,type ThemeColors} from '../theme/theme';
+import {spacing,touchTargetMin,typography,type ThemeColors} from '../theme/theme';
 import {useGameTheme} from '../theme/ThemeContext';
 declare const process:{env:Record<string,string|undefined>};
 const playGamesConfigured=Platform.OS==='android'&&Boolean(process.env.EXPO_PUBLIC_GOOGLE_PLAY_GAMES_PROJECT_ID?.trim());
 type VerificationPrompt={email:string;kind:'signup'|'guest';accountId:string};
-function AuthModeChip({label,selected,disabled,onPress}:{label:string;selected:boolean;disabled:boolean;onPress:()=>void}){const C=useGameTheme(),equipmentColors=equipmentTheme(C);return <Pressable accessibilityRole="button" accessibilityState={{selected,disabled}} disabled={disabled} onPress={onPress} style={({pressed})=>[{minHeight:40,alignSelf:'center',paddingHorizontal:14,justifyContent:'center',borderWidth:1,borderColor:C.line,borderRadius:99,backgroundColor:C.bg},selected&&{borderColor:equipmentColors.selectedLine,backgroundColor:equipmentColors.selected},disabled&&{opacity:.45},pressed&&{opacity:.76}]}><Text style={[{fontSize:12,color:C.muted,fontWeight:'700'},selected&&{color:C.primaryButtonText}]}>{selected?'✓ ':''}{label}</Text></Pressable>}
 export function OnlineAccountPanel({state}:{state:GameState}){
  const C=useGameTheme(),s=useMemo(()=>makeStyles(C),[C]);
  const language=state.settings.language;

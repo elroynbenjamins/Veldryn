@@ -5,7 +5,7 @@ import {BackHandler,Pressable,View,Text} from 'react-native';
 import {CoopDungeonDetails,CoopDungeonList,CoopEventExpeditionDetails} from '../components/coop/CoopDungeonBrowser';
 import {CoopLoadoutSelection} from '../components/coop/CoopLoadoutSelection';
 import {buildCoopLoadoutIntent,presentCoopLoadout,type CoopLoadoutIntent} from '../core/coop-loadout-presentation';
-import {CoopRunOverview} from '../components/coop/CoopRunOverview';
+import {CoopRunOverview,type CoopRewardDisplay} from '../components/coop/CoopRunOverview';
 import {CoopLiveLobby} from '../components/coop/CoopLiveLobby';
 import {CoopLiveRecruitmentBoard} from '../components/coop/CoopLiveRecruitmentBoard';
 import {presentCoopDungeon,validateCoopDungeonView,type CoopDungeonView,type CoopTier} from '../core/coop-dungeon-browsing';
@@ -58,7 +58,7 @@ export function CoopExpeditionScreen({onClose,language,state,entrySource=realCoo
   const activeEventRunId=useRef<string|undefined>(undefined);activeEventRunId.current=eventRun?.runId;
   const initialDungeonHandled=useRef(false);
   const initialEventHandled=useRef(false);
-  const [rewards,setRewards]=useState<Array<{id:string;claimed_at:string|null;reward_json:{marks?:number}}>>([]);
+  const [rewards,setRewards]=useState<CoopRewardDisplay[]>([]);
   const [chatMessages,setChatMessages]=useState<CoopChatMessage[]>([]);
   const acceptRun=useCallback((projection:CoopQModeServerProjection)=>{const next=presentQModeRun(projection);setRun(current=>current&&current.runId===next.runId&&(current.stateVersion??0)>(next.stateVersion??0)?current:next);},[]);
   const acceptEventRun=useCallback((projection:CoopEventRunServerProjection)=>{setEventRun(current=>current&&current.runId===projection.runId&&current.stateVersion>projection.stateVersion?current:projection);},[]);

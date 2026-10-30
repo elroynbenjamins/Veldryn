@@ -18,5 +18,5 @@ assert(domain.includes('tierScalingVersion:2')&&resolver.includes('coopTierEnemy
 assert(server.includes('enhancedDungeonMarks(run)'),'Live rewards must share tier and failure formulas, not flat percentage');
 assert(details.includes('dungeon.expectedMarksByTier?.[effectiveTier]')&&details.includes('rewardBudget.weeklyRemaining'),'Preparation must show selected-tier Marks and weekly remaining');
 assert(screen.includes('rewardBudget={entry?.rewardBudget}'),'Screen must receive server-owned reward budget');
-assert(browse.includes('estimatedMinutes??{min:3,max:5}'),'Dungeon timing must reflect the newer 3–5 minute target');
+assert(browse.includes('estimatedMinutes??{min:6,max:8}')&&details.includes("mode==='live'?'3–5'"),'Live shows shorter wall pacing without misrepresenting Solo estimated time');
 console.log('PASS dungeon reward previews, weekly charge safety, versioned difficulty and Live parity UI');

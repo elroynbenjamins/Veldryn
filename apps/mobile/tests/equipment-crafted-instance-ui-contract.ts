@@ -39,7 +39,7 @@ ok(forgeFeedback.includes('EXCEPTIONAL FORGE RESULT')&&forgeFeedback.includes('q
 const forgeQueueUi=read('src/components/EquipmentCraftQueuePanel.tsx');
 const feedback=read('src/components/ActionFeedback.tsx');
 ok(forgeQueueUi.includes('Rarity revealed on claim')&&!forgeQueueUi.includes('effectiveOwnedGearRarity(state,job.outputItemId)'),'Unclaimed Forge results must not borrow rarity from previously owned gear');
-ok(forgeFeedback.includes('rarityMeta(highest(results).rarity)')&&forgeFeedback.includes('accentColor={meta.color}'),'Claimed Forge results must use their authoritative rarity color');
+ok(forgeFeedback.includes('rarityMeta(result.rarity)')&&forgeFeedback.includes('borderColor:meta.color')&&forgeFeedback.includes('rarityNameColor(result.rarity'),'Claimed Forge results must use their actual rolled rarity colors and matching item names');
 ok(feedback.includes('accentColor?:string')&&feedback.includes('accentSurface?:string'),'Compact Forge feedback must support rarity accents while preserving other feedback tones');
 ok(save.includes('normalizeCraftedGearInstances'),'Crafted instances must persist through save normalization');
 

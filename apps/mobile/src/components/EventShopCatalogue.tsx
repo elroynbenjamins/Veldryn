@@ -13,15 +13,16 @@ import {ProfileScenePreview} from './ProfileScenePreview';
 
 const FILTERS=[{id:'all',label:'All'},{id:'collectibles',label:'Collectibles'},{id:'supplies',label:'Supplies'}] as const;
 type Filter=typeof FILTERS[number]['id'];
-const supply=(reward:EventReward)=>['candy','gold','companion_essence'].includes(reward.kind);
+const supply=(reward:EventReward)=>['candy','gold','companion_essence','bondstones'].includes(reward.kind);
 function kindLabel(reward:EventReward){
- const names:Record<EventReward['kind'],string>={pet:'Pet',companion:'Companion',emote:'Emote',title:'Title',candy:'Consumable',gold:'Gold',companion_essence:'Companion Essence',profile_icon:'Profile icon',background:'Personal profile background',border:'Border',guild_name_color:'Guild name color',guild_frame:'Guild frame',guild_banner:'Guild banner'};
+ const names:Record<EventReward['kind'],string>={pet:'Pet',companion:'Companion',emote:'Emote',title:'Title',candy:'Consumable',gold:'Gold',companion_essence:'Companion Essence',bondstones:'Bondstone',profile_icon:'Profile icon',background:'Personal profile background',border:'Border',guild_name_color:'Guild name color',guild_frame:'Guild frame',guild_banner:'Guild banner'};
  return names[reward.kind];
 }
 function description(reward:EventReward,definition:LiveEventDef){
  if(reward.kind==='candy')return eventCandies(definition).find(row=>row.id===reward.id)?.description??'Event consumable.';
  if(reward.kind==='gold')return `Adds ${(reward.quantity??0).toLocaleString()} Gold to this character.`;
  if(reward.kind==='companion_essence')return `Adds ${(reward.quantity??0).toLocaleString()} Companion Essence to your account.`;
+ if(reward.kind==='bondstones')return `Adds ${(reward.quantity??0).toLocaleString()} Bondstone to your account.`;
  if(reward.kind==='background')return 'Permanent background for your personal profile card. Equip it from Character → Customize → Backgrounds after unlocking.';
  return `Permanent ${kindLabel(reward).toLowerCase()} · Account unlock`;
 }

@@ -241,5 +241,6 @@
   "../../tools/validate-chat-lifecycle.cjs",
   "../../tools/validate-coop-profile-icons.cjs",
   "../../tools/validate-account-entry.cjs",
-  "../../tools/validate-app-build.mjs"
+  "../../tools/validate-app-build.mjs",
+  ".core-build/apps/mobile/tests/resource-codex.js"
 ]

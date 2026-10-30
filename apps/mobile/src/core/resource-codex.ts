@@ -4,7 +4,7 @@ import {HERB_NODES} from '../content/herbalism';
 import {MONSTERS} from '../content/monsters';
 import {COMBAT_COMPANIONS,COMPANION_SANCTUARY_CONFIG} from '../content/combat-companions';
 import {COMPANION_MISSIONS,COMPANION_WEEKLY_CHALLENGES,COMPANION_MONTHLY_COMPLETION_REWARD} from '../../../../backend/src/server/companions/content';
-import {itemInspectModel} from './item-inspect';
+import {workingTowardItemSourceEntries} from './working-toward';
 import {itemRarity,type ItemRarity} from './item-rarity';
 import type {GameState} from './types';
 import type {WorkingTowardDestination} from './working-toward';
@@ -12,7 +12,7 @@ import type {WorkingTowardDestination} from './working-toward';
 export type ResourceCategory='All'|'Companions'|'Mining'|'Woodcutting'|'Fishing'|'Herbalism'|'Hunting'|'Gems'|'Combat'|'Crafting'|'Other';
 export const RESOURCE_CATEGORIES:ResourceCategory[]=['All','Companions','Mining','Woodcutting','Fishing','Herbalism','Hunting','Gems','Combat','Crafting','Other'];
 export type ResourceCodexEntry={id:string;name:string;category:Exclude<ResourceCategory,'All'>;rarity:ItemRarity;virtual:boolean;companionRelated:boolean};
-export type ResourceCodexSource={title:string;detail:string;kind:'item'|'companion';destination?:WorkingTowardDestination;available?:boolean};
+export type ResourceCodexSource={title:string;detail:string;kind:'item'|'companion';destination?:WorkingTowardDestination;available?:boolean;status?:'ready'|'travel'|'locked'|'info';availabilityDetail?:string};
 const SPECIAL_RESOURCES:ResourceCodexEntry[]=[
  {id:'essence',name:'Companion Essence',category:'Companions',rarity:'rare',virtual:true,companionRelated:true},
  {id:'bondstones',name:'Bondstones',category:'Companions',rarity:'epic',virtual:true,companionRelated:true},
@@ -41,7 +41,6 @@ for(const node of [...GATHERING,...HERB_NODES])if(!gatheringSkill.has(node.itemI
 const monsterItems=new Set(MONSTERS.flatMap(monster=>monster.drops.map(drop=>drop.itemId)));
 const craftItems=new Set(RECIPES.map(recipe=>recipe.output.itemId));
 function categoryFor(id:string,type:string):ResourceCodexEntry['category']{
- if(companionMaterialIds.has(id))return 'Companions';
  if(type==='gem')return 'Gems';
  const skill=gatheringSkill.get(id);
  if(skill==='mining'||skill==='woodcutting'||skill==='fishing'||skill==='herbalism'||skill==='hunting')return skill[0].toUpperCase()+skill.slice(1) as ResourceCodexEntry['category'];
@@ -50,8 +49,8 @@ function categoryFor(id:string,type:string):ResourceCodexEntry['category']{
  return 'Other';
 }
 const titleFromId=(id:string)=>id.toLowerCase().split('_').map(part=>part?part[0].toUpperCase()+part.slice(1):part).join(' ');
-/** Single catalog for Inventory materials, gems, and companion-only currencies. No extra inventory slots. */
-export function resourceCodexEntries():ResourceCodexEntry[]{
+/** Build the immutable catalog once. Gameplay updates never need to rebuild its names or categories. */
+const CATALOG:readonly ResourceCodexEntry[]=(()=>{
  const entries:ResourceCodexEntry[]=ITEMS.filter(item=>item.type==='material'||item.type==='gem').map(item=>({
   id:item.id,name:item.name,category:categoryFor(item.id,item.type),rarity:itemRarity(item),virtual:false,companionRelated:companionMaterialIds.has(item.id),
  }));
@@ -59,8 +58,15 @@ export function resourceCodexEntries():ResourceCodexEntry[]{
  // Backend companion reward materials may not yet be regular Inventory items.
  for(const id of companionMaterialIds)if(!knownIds.has(id)&&!SPECIAL_RESOURCES.some(row=>row.id===id))
   entries.push({id,name:titleFromId(id),category:'Companions',rarity:'common',virtual:true,companionRelated:true});
- return entries.sort((a,b)=>a.name.localeCompare(b.name));
+ return Object.freeze(entries.sort((a,b)=>a.name.localeCompare(b.name)).map(entry=>Object.freeze(entry)));
+})();
+export function resourceCodexEntries():readonly ResourceCodexEntry[]{return CATALOG;}
+/** Companion materials stay discoverable in their natural type and the companion filter. */
+export function resourceCodexMatchesCategory(entry:ResourceCodexEntry,category:ResourceCategory){
+ return category==='All'||category==='Companions'&&entry.companionRelated||entry.category===category;
 }
+const ENTRIES_BY_CATEGORY=new Map<ResourceCategory,readonly ResourceCodexEntry[]>(RESOURCE_CATEGORIES.map(category=>[category,Object.freeze(CATALOG.filter(entry=>resourceCodexMatchesCategory(entry,category)))]));
+export function resourceCodexCategoryEntries(category:ResourceCategory):readonly ResourceCodexEntry[]{return ENTRIES_BY_CATEGORY.get(category)??CATALOG;}
 export function resourceCodexQuantity(state:GameState,entry:ResourceCodexEntry){
  if(entry.id==='essence')return state.account.companionEssence??0;
  if(entry.id==='bondstones')return state.account.bondstones??0;
@@ -75,7 +81,7 @@ export function resourceCodexUse(entry:ResourceCodexEntry){
  if(entry.category==='Gems')return 'Equipment gem sockets and gem progression.';
  return 'Crafting, equipment upgrades, recipes or other progression.';
 }
-function companionSourcesFor(id:string):ResourceCodexSource[]{
+function computeCompanionSources(id:string):ResourceCodexSource[]{
  const sources:ResourceCodexSource[]=[];
  const add=(title:string,detail:string)=>{if(!sources.some(row=>row.title===title))sources.push({title,detail,kind:'companion'});};
  if(id==='essence'){
@@ -107,13 +113,28 @@ function companionSourcesFor(id:string):ResourceCodexSource[]{
  }
  return sources;
 }
+const companionSourcesCache=new Map<string,readonly ResourceCodexSource[]>();
+/** Cache static reward metadata only, never player-dependent unlocks or balances. */
+function companionSourcesFor(id:string):readonly ResourceCodexSource[]{
+ const cached=companionSourcesCache.get(id);
+ if(cached)return cached;
+ const entries=Object.freeze(computeCompanionSources(id).map(source=>Object.freeze(source)));
+ companionSourcesCache.set(id,entries);
+ return entries;
+}
+const SOURCE_ORDER={ready:0,travel:1,locked:2,info:3} as const;
+/** Source availability is recomputed for the selected resource from the latest state.
+ * Unlike full Inventory inspection this does not run costly acquisition projections. */
 export function resourceCodexSources(state:GameState,entry:ResourceCodexEntry):ResourceCodexSource[]{
  const sources:ResourceCodexSource[]=[];
  if(!entry.virtual){
-  for(const source of itemInspectModel(state,entry.id).sources){
-   sources.push({title:source.title,detail:source.detail,kind:'item',destination:source.navigation,available:source.availability?.canNavigate!==false&&source.availability?.status!=='info'});
+  for(const source of workingTowardItemSourceEntries(state,entry.id)){
+   sources.push({title:source.title,detail:source.destination.detail,kind:'item',destination:source.destination,
+    available:source.availability.canNavigate,status:source.availability.status,availabilityDetail:source.availability.status==='ready'?undefined:source.availability.detail});
   }
  }
  sources.push(...companionSourcesFor(entry.id));
- return sources.filter((source,index)=>sources.findIndex(other=>other.title===source.title&&other.detail===source.detail)===index);
+ const seen=new Set<string>();
+ return sources.filter(source=>{const key=source.kind+':'+source.title+':'+source.detail;if(seen.has(key))return false;seen.add(key);return true;})
+  .sort((a,b)=>SOURCE_ORDER[a.status??'ready']-SOURCE_ORDER[b.status??'ready']);
 }

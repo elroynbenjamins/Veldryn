@@ -1,3 +1,4 @@
+import {migrateSave} from '../src/core/save-migrations';
 import {claimActivity,createCharacter,craftRecipe,newGame,offlineCapBreakdown,previewActivityReward,startCombat,startGathering} from '../src/core/game';
 import {executeGameCommand} from '../src/core/game-commands';
 import {activateDailySupplyBoost,applyDailySupplyCraft,claimDailySupplies,DAILY_SUPPLY_CHARGE_SECONDS,dailySuppliesStatus,dailySupplyBank} from '../src/core/daily-supplies';
@@ -53,6 +54,9 @@ equal(activation.character?.dailySupplyBoostBank?.gathering_yield,undefined,'Act
 activation=activateDailySupplyBoost({...activation,character:{...activation.character!,dailySupplyBoostBank:{combat_xp:1}}},'combat_xp');
 equal(activation.character?.activeDailySupplyBoosts?.gathering_yield?.remainingSeconds,7200,'Gathering Yield stays active after Combat XP activates');
 equal(activation.character?.activeDailySupplyBoosts?.combat_xp?.remainingSeconds,7200,'Different Daily Supplies bonuses can run simultaneously');
+const restored=migrateSave(activation);
+equal(restored.character?.activeDailySupplyBoosts?.gathering_yield?.remainingSeconds,7200,'Reload preserves first active login boost');
+equal(restored.character?.activeDailySupplyBoosts?.combat_xp?.remainingSeconds,7200,'Reload preserves second active login boost');
 rejects(()=>activateDailySupplyBoost({...activation,character:{...activation.character!,dailySupplyBoostBank:{combat_xp:1}}},'combat_xp'),'One type cannot be activated twice concurrently');
 
 let baseGather=createCharacter(newGame(t0),'WAYFINDER','Base Gather');

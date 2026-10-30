@@ -60,7 +60,7 @@ export class OnlineLiveRuntime{
   const result=await this.services.rpc<{runId:string}>('start_online_live_server_v1',{p_account_id:accountId,p_check_id:checkId,p_run_id:id,p_seed_hash:digest(seed),p_private_state:{run,seed},p_client_projection:projection(run,1),p_members:members});
   return result.runId;
  }
- async load(accountId:string,runId:string){
+ async load(accountId:string,runId:string):Promise<unknown>{
   const loaded=await this.services.rpc<Loaded>('load_coop_runtime_server_v1',{p_run_id:runId,p_actor_account_id:accountId});
   if((loaded.clientProjection as {mode?:string})?.mode!=='live')throw new GameplayError('not_live_run',404);
   const presence=await this.touch(accountId,runId,loaded);

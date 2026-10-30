@@ -135,7 +135,7 @@ export function DungeonCombatStage({run,enemyLabel,boss=false,seasonal=false,eve
  const fallbackEnemyCombatant=!visibleEnemies.length?playbackCombatant(replay,fallbackEnemyName):undefined;
  const fallbackEnemyState=playbackCombatantState(replay,cueIndex,fallbackEnemyCombatant?.id),fallbackEnemyStatuses=playbackCombatantStatuses(replay,cueIndex,fallbackEnemyCombatant?.id);
  const complete=Boolean(replay&&!pending&&(!cues.length||cueIndex>=cues.length-1));
- const progress=replay?playbackProgress(replay,cueIndex):0;
+ const progress=pending?Math.max(0,Math.min(1,pending.elapsedMs/pending.wallDurationMs)):replay?playbackProgress(replay,cueIndex):0;
  const recent=cues.slice(Math.max(0,cueIndex-5),cueIndex+1);
  const contributionRows=complete&&replay?(ordered.map(slot=>{const combatant=playbackCombatant(replay,slot.memberId??slot.name),value=(replay.contributions??[]).find(row=>row.id===combatant?.id);return value?{slot,value}:undefined;}).filter((row):row is {slot:Slot;value:Contribution}=>Boolean(row))):[];
  const actorDirection=actorIsParty===false?1:-1,targetDirection=targetIsParty===false?-1:1;
@@ -170,9 +170,9 @@ export function DungeonCombatStage({run,enemyLabel,boss=false,seasonal=false,eve
   </View>
   {inspectTarget?<CombatantInspectPanel target={inspectTarget} onClose={()=>setInspectKey(undefined)}/>:null}
   {replay?<View style={s.replayPanel}>
-   {complete?<CombatOutcomeMoment outcome={replay.reason==='victory'?'victory':replay.reason==='wipe'?'defeat':'timeout'} title={replay.reason==='victory'?st('Encounter cleared'):replay.reason==='wipe'?st('Party defeated'):st('Encounter timed out')} detail={`${seconds(replay.durationMs)} · ${replay.cues.length} cues`} reduceMotion={reduceMotion}/>:null}
+   {complete?<CombatOutcomeMoment outcome={replay.reason==='victory'?'victory':replay.reason==='wipe'?'defeat':'timeout'} title={replay.reason==='victory'?st('Encounter cleared'):replay.reason==='wipe'?st('Party defeated'):st('Encounter timed out')} detail={run.mode==='live'?`${replay.cues.length} combat events`:`${seconds(replay.durationMs)} · ${replay.cues.length} cues`} reduceMotion={reduceMotion}/>:null}
    <View style={s.replayHead}><View style={s.grow}><Text style={s.replayKicker}>{complete?st("ENCOUNTER RECAP"):paused?st("PAUSED"):st("NOW PLAYING")}</Text><Text accessibilityLiveRegion="polite" style={s.replayCurrent}>{currentCue?playbackCueLabel(currentCue):pending?st("Battle in progress"):replay.reason==='victory'?st("Encounter cleared"):replay.reason==='wipe'?st("Party defeated"):st("Encounter timed out")}</Text></View><StateChip label={currentCue?.type.toUpperCase()??(pending?'LIVE':replay.reason.toUpperCase())} tone={currentCue?playbackCueTone(currentCue):pending?'selected':replay.reason==='victory'?'success':replay.reason==='wipe'?'danger':'warning'}/></View>
-   <View style={s.replayMeta}><Text style={s.replayTime}>{currentCue?seconds(currentCue.atMs):'0.0s'} / {seconds(replay.durationMs)}</Text></View>
+   <View style={s.replayMeta}><Text style={s.replayTime}>{pending?`${seconds(pending.elapsedMs)} / ${seconds(pending.wallDurationMs)}`:`${currentCue?seconds(currentCue.atMs):'0.0s'} / ${seconds(replay.durationMs)}`}</Text></View>
    <View style={s.replayTrack}><View style={[s.replayFill,{width:`${Math.round(progress*100)}%` as `${number}%`}]} /></View>
    {run.mode!=='live'&&(!complete||paused)?<View style={[s.playbackControls,layout.controlsWrap&&s.playbackControlsWrap]}>
       <View style={[s.controlActions,layout.controlsWrap&&s.controlActionsWrap]}>

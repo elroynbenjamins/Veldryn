@@ -62,6 +62,18 @@ let boostedGather={...baseGather,character:{...baseGather.character!,activeDaily
 const boostedGatherPreview=previewActivityReward(boostedGather,t0+3600_000);
 equal(boostedGatherPreview.xp,baseGatherPreview.xp,'Gathering Yield must not increase Skill XP');
 equal(boostedGatherPreview.items[0].quantity,baseGatherPreview.items[0].quantity+Math.floor(baseGatherPreview.items[0].quantity*.10),'Gathering Yield should add exactly 10% stackable output with integer carry');
+const mixedGather={...baseGather,character:{...baseGather.character!,activeDailySupplyBoosts:{
+ gathering_yield:{type:'gathering_yield' as const,remainingSeconds:7200},
+ skill_xp:{type:'skill_xp' as const,remainingSeconds:7200},
+ combat_xp:{type:'combat_xp' as const,remainingSeconds:7200},
+}}};
+const mixedPreview=previewActivityReward(mixedGather,t0+3600_000);
+equal(mixedPreview.items[0].quantity,boostedGatherPreview.items[0].quantity,'Concurrent gathering yield still grants exact +10% items');
+equal(mixedPreview.xp,baseGatherPreview.xp+Math.floor(baseGatherPreview.xp*.10),'Concurrent skill XP grants its own +10%');
+const mixedClaim=claimActivity(mixedGather,t0+3600_000);
+equal(mixedClaim.state.character?.activeDailySupplyBoosts?.gathering_yield?.remainingSeconds,3600,'Gathering Yield consumes its own qualifying hour');
+equal(mixedClaim.state.character?.activeDailySupplyBoosts?.skill_xp?.remainingSeconds,3600,'Skill XP independently consumes the same qualifying hour');
+equal(mixedClaim.state.character?.activeDailySupplyBoosts?.combat_xp?.remainingSeconds,7200,'Combat XP retains time during non-combat gathering');
 const gathered=claimActivity(boostedGather,t0+3600_000);
 equal(gathered.state.character?.activeDailySupplyBoost?.remainingSeconds,3600,'One hour of qualifying gathering should consume one hour of boost time');
 

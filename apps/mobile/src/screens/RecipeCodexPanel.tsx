@@ -64,7 +64,7 @@ export function RecipeCodexPanel({state,onNavigateSource,onOpenResource,ingredie
   />
   {selected&&requirements?<GameModalSurface visible presentation="sheet" reduceMotion={state.settings.reduceMotion} onClose={closeRecipe}>
    <GameModalHeader eyebrow={(label(selected.skillId)+' · Lv '+selected.level).toLocaleUpperCase(language)} title={selected.name} onClose={closeRecipe}/>
-   <ScrollView showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled" contentContainerStyle={s.detail}>
+   <ScrollView showsHorizontalScrollIndicator={false} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled" contentContainerStyle={s.detail}>
     <View style={s.hero}><View style={[s.heroArt,{borderColor:rarityMeta(selected.rarity).color}]}><ItemArtwork itemId={selected.outputId} size={64}/></View><View style={s.heroCopy}><Text style={s.outputName}>{selected.outputName}</Text><Text style={s.body}>{a('Makes')} ×{selected.quantity}</Text><Text style={[s.rarityText,{color:rarityNameColor(selected.rarity,C.dark,C.text)}]}>{rarityMeta(selected.rarity).label}</Text></View></View>
     <View style={s.metaRow}><Text style={s.meta}>{label(selected.skillId)} Lv {selected.level}</Text><Text style={s.meta}>{selected.recipe.gold.toLocaleString(language)} {a('Gold')}</Text><Text style={s.meta}>+{selected.recipe.xp.toLocaleString(language)} XP</Text></View>
     {selected.recipe.characterLevel?<Text style={s.hint}>{a('Character level')} {selected.recipe.characterLevel} {a('required')}</Text>:null}

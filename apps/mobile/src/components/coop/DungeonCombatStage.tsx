@@ -169,13 +169,19 @@ export function DungeonCombatStage({run,enemyLabel,boss=false,seasonal=false,eve
    <View style={s.replayHead}><View style={s.grow}><Text style={s.replayKicker}>{complete?st("ENCOUNTER RECAP"):paused?st("PAUSED"):st("NOW PLAYING")}</Text><Text accessibilityLiveRegion="polite" style={s.replayCurrent}>{currentCue?playbackCueLabel(currentCue):replay.reason==='victory'?st("Encounter cleared"):replay.reason==='wipe'?st("Party defeated"):st("Encounter timed out")}</Text></View><StateChip label={currentCue?.type.toUpperCase()??replay.reason.toUpperCase()} tone={currentCue?playbackCueTone(currentCue):replay.reason==='victory'?'success':replay.reason==='wipe'?'danger':'warning'}/></View>
    <View style={s.replayMeta}><Text style={s.replayTime}>{currentCue?seconds(currentCue.atMs):'0.0s'} / {seconds(replay.durationMs)}</Text></View>
    <View style={s.replayTrack}><View style={[s.replayFill,{width:`${Math.round(progress*100)}%` as `${number}%`}]} /></View>
-   {run.mode!=='live'&&(!complete||paused)?<View style={s.replayControls}>
-      <Pressable accessibilityRole="button" accessibilityLabel={st("Pause combat replay")} onPress={()=>setPaused(value=>!value)} style={({pressed})=>[s.replayControl,pressed&&s.controlPressed]}>
-       <Text style={s.replayControlText}>{paused?st("▶ Resume"):st("Ⅱ Pause")}</Text>
-      </Pressable>
-      <Pressable accessibilityRole="button" accessibilityLabel={st("Skip combat replay to result")} onPress={()=>{setPaused(false);setCueIndex(Math.max(0,cues.length-1));}} style={({pressed})=>[s.replayControl,pressed&&s.controlPressed]}>
-       <Text style={s.replayControlText}>{st("Skip combat replay to result")}</Text>
-      </Pressable>
+   {run.mode!=='live'&&(!complete||paused)?<View style={[s.playbackControls,layout.controlsWrap&&s.playbackControlsWrap]}>
+      <View style={[s.controlActions,layout.controlsWrap&&s.controlActionsWrap]}>
+       <Pressable accessibilityRole="button" accessibilityLabel={st("Pause combat replay")} onPress={()=>setPaused(value=>!value)} style={({pressed})=>[s.pauseButton,pressed&&s.controlPressed]}>
+        <Text style={s.replayControlText}>{paused?st("▶ Resume"):st("Ⅱ Pause")}</Text>
+       </Pressable>
+       <Pressable accessibilityRole="button" accessibilityLabel={st("Skip combat replay to result")} onPress={()=>{setPaused(false);setCueIndex(Math.max(0,cues.length-1));}} style={({pressed})=>[s.skipButton,pressed&&s.controlPressed]}>
+        <Text style={s.replayControlText}>{st("Skip combat replay to result")}</Text>
+       </Pressable>
+      </View>
+      {paused?<View style={[s.controlActions,layout.controlsWrap&&s.controlActionsWrap]}>
+       <Pressable accessibilityRole="button" accessibilityLabel={st("Previous combat event")} disabled={cueIndex<=0} onPress={()=>stepReplay(-1)} style={({pressed})=>[s.stepButton,cueIndex<=0&&s.controlDisabled,pressed&&s.controlPressed]}><Text style={s.replayControlText}>‹</Text></Pressable>
+       <Pressable accessibilityRole="button" accessibilityLabel={st("Next combat event")} disabled={cueIndex>=cues.length-1} onPress={()=>stepReplay(1)} style={({pressed})=>[s.stepButton,cueIndex>=cues.length-1&&s.controlDisabled,pressed&&s.controlPressed]}><Text style={s.replayControlText}>›</Text></Pressable>
+      </View>:null}
      </View>:null}
    {contributionRows.length?<View style={s.contributionPanel}><View style={s.contributionHead}><Text style={s.contributionKicker}>{st("PARTY CONTRIBUTION")}</Text><Text style={s.contributionHint}>{st("Encounter totals")}</Text></View>{contributionRows.map(({slot,value})=><View key={slot.memberId??slot.name} style={s.contributionRow}><View style={[s.contributionIdentity,{width:`${layout.contributionIdentityWidthPct}%` as `${number}%`,minWidth:layout.contributionIdentityMinWidth}]}><Text style={s.contributionRole}>{roleShort(slot.role)}</Text><Text numberOfLines={1} style={s.contributionName}>{slot.name}</Text></View><Text style={s.contributionStats}>{contributionSummary(slot.role,value)}</Text></View>)}</View>:null}
    {complete&&recent.length?<Pressable accessibilityRole="button" accessibilityLabel={showLog?st("Hide combat battle log"):st("Show combat battle log")} accessibilityState={{expanded:showLog}} onPress={()=>setShowLog(value=>!value)} style={({pressed})=>[s.logToggle,pressed&&s.controlPressed]}><Text style={s.logToggleText}>{showLog?st("Hide battle log"):st("Battle log")}</Text><Text style={s.logToggleMeta}>{showLog?'▲':`${recent.length} recent ▼`}</Text></Pressable>:null}
@@ -197,6 +203,6 @@ const makeStyles=(C:CoopColors)=>StyleSheet.create({
  copy:{...typography.caption,color:C.text,fontWeight:'700'},note:{...typography.caption,color:C.textMuted},
  log:{gap:spacing.xs},logRow:{flexDirection:'row',gap:spacing.sm,paddingVertical:spacing.xs},logTime:{minWidth:36,...typography.caption,color:C.textMuted},logCopy:{flex:1,...typography.caption,color:C.textSecondary},
  logToggle:{minHeight:touchTargetMin,flexDirection:'row',alignItems:'center',justifyContent:'space-between',gap:spacing.sm,borderTopWidth:1,borderTopColor:C.line},controlPressed:{opacity:.7},logToggleText:{...typography.caption,color:C.text,fontWeight:'700'},logToggleMeta:{...typography.caption,color:C.textMuted},
- replayControls:{flexDirection:'row',flexWrap:'wrap',gap:spacing.sm},replayControl:{flex:1,minWidth:110,minHeight:touchTargetMin,alignItems:'center',justifyContent:'center',paddingHorizontal:spacing.sm,borderWidth:1,borderColor:C.line,borderRadius:radii.md,backgroundColor:C.surfaceRaised},replayControlText:{...typography.caption,color:C.text,fontWeight:'700',textAlign:'center'},
+ playbackControls:{gap:spacing.sm},playbackControlsWrap:{flexWrap:'wrap'},controlActions:{flexDirection:'row',flexWrap:'wrap',gap:spacing.sm},controlActionsWrap:{justifyContent:'space-between'},pauseButton:{flex:1,minWidth:110,minHeight:touchTargetMin,justifyContent:'center',alignItems:'center',paddingHorizontal:spacing.sm,borderWidth:1,borderColor:C.line,borderRadius:radii.md,backgroundColor:C.surfaceRaised},stepButton:{flex:1,minWidth:72,minHeight:touchTargetMin,justifyContent:'center',alignItems:'center',borderWidth:1,borderColor:C.line,borderRadius:radii.md,backgroundColor:C.surfaceRaised},skipButton:{flex:1,minWidth:130,minHeight:touchTargetMin,justifyContent:'center',alignItems:'center',paddingHorizontal:spacing.sm,borderWidth:1,borderColor:C.line,borderRadius:radii.md,backgroundColor:C.surfaceRaised},controlDisabled:{opacity:.4},replayControlText:{...typography.caption,color:C.text,fontWeight:'700',textAlign:'center'},
  replayButton:{minHeight:touchTargetMin,alignItems:'center',justifyContent:'center',paddingHorizontal:spacing.md,borderWidth:1,borderColor:C.goldDim,borderRadius:radii.md,backgroundColor:C.surfaceRaised},replayButtonPressed:{opacity:.65},replayButtonText:{...typography.caption,color:C.gold,fontWeight:'700'},
 });

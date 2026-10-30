@@ -104,6 +104,7 @@ export function CoopEventExpeditionDetails({language,event,currentLevel,loadoutR
 
 type DetailsProps={language:Language;dungeon:CoopDungeonView;onMode?:(mode:CoopMode)=>void;currentLevel:number;currentPower?:number;mode:CoopMode;tier?:CoopTier;readyToStart?:boolean;busy?:boolean;liveFellowshipRemaining?:number;rewardBudget?:{charges:number;chargeCapacity:number;weeklyRemaining:number;weeklyCapacity:number;nextChargeAtMs?:number|null};notice?:string;onBack:()=>void;onTier:(tier:CoopTier)=>void;onContinue:(tier:CoopTier)=>void};
 export function CoopDungeonDetails({language,dungeon,currentLevel,currentPower=0,mode,tier,readyToStart=false,busy=false,liveFellowshipRemaining=3,rewardBudget,notice,onBack,onTier,onContinue}:DetailsProps){
+ const st=useSocialText();
  const {styles:s}=useCoopStyles(makeStyles),a=(text:string)=>accountText(language,text);
  const autoTier=highestEligibleCoopTier(dungeon,currentLevel),effectiveTier=mode==='live'?autoTier:tier,eligibility=effectiveTier?coopTierEligibility(dungeon,effectiveTier,currentLevel):undefined,requiredLevel=eligibility?.requiredLevel??dungeon.minLevel,canContinue=dungeon.available&&!!eligibility?.eligible;
  const fullMarks=effectiveTier?dungeon.expectedMarksByTier?.[effectiveTier]:undefined;
@@ -119,13 +120,13 @@ export function CoopDungeonDetails({language,dungeon,currentLevel,currentPower=0
   {currentPower<tierPower?<Text style={s.notice}>{a('Recommended power')}: {tierPower.toLocaleString()}</Text>:null}
   {mode==='qmode'?<FantasyPanel><Text style={s.cardTitle}>{ct(language,'details.difficulty')}</Text><View style={[s.tiers,{flexWrap:'wrap'}]}>{dungeon.difficulties.map(value=><TierChoice key={value} value={value} levelLabel={clt(language,'level')} difficultyLabel={ct(language,'details.difficulty')} requiredLevel={dungeon.tierMinLevels[value]} currentLevel={currentLevel} selected={tier===value} onPress={()=>onTier(value)}/>)}</View>{!dungeon.difficulties.length?<Text style={s.lock}>{ct(language,'details.noDifficulty')}</Text>:null}</FantasyPanel>:<Text style={s.levels}>{ct(language,'details.liveAutoSelected',{tier:autoTier??'—'})}</Text>}
   <FantasyPanel>
-   <DungeonReward title={estimatedMarks!==undefined?`${estimatedMarks+liveBonus} ${a('Expedition Marks')}`:a('Expedition Marks')} detail={fullMarks!==undefined?a('Estimated clear reward · Tier {tier}',{tier:effectiveTier}):undefined}/>
+   <DungeonReward title={estimatedMarks!==undefined?`${estimatedMarks+liveBonus} ${a('Expedition Marks')}`:a('Expedition Marks')} detail={fullMarks!==undefined?st('Estimated clear reward · Tier {tier}',{tier:effectiveTier}):undefined}/>
    {rewardBudget?<View style={s.modeHead}>
-    <StateChip label={`${rewardBudget.charges}/${rewardBudget.chargeCapacity} ${a('charges')}`} tone={enhanced?'success':'neutral'}/>
-    <StateChip label={`${rewardBudget.weeklyRemaining}/${rewardBudget.weeklyCapacity} ${a('weekly rewards')}`} tone={rewardBudget.weeklyRemaining>0?'selected':'neutral'}/>
+    <StateChip label={`${rewardBudget.charges}/${rewardBudget.chargeCapacity} ${st('charges')}`} tone={enhanced?'success':'neutral'}/>
+    <StateChip label={`${rewardBudget.weeklyRemaining}/${rewardBudget.weeklyCapacity} ${st('weekly rewards')}`} tone={rewardBudget.weeklyRemaining>0?'selected':'neutral'}/>
    </View>:null}
-   {rewardBudget&&enhanced===false?<Text style={s.copy}>{a('After enhanced rewards: 20% Marks. Unlimited entries.')}</Text>:null}
-   {rewardBudget&&enhanced&&rewardBudget.charges<rewardBudget.chargeCapacity?<Text style={s.copy}>{a('One reward charge replenishes every 8 hours.')}</Text>:null}
+   {rewardBudget&&enhanced===false?<Text style={s.copy}>{st('After enhanced rewards: 20% Marks. Unlimited entries.')}</Text>:null}
+   {rewardBudget&&enhanced&&rewardBudget.charges<rewardBudget.chargeCapacity?<Text style={s.copy}>{st('One reward charge replenishes every 8 hours.')}</Text>:null}
    {mode==='live'?<View style={s.modeHead}><Text style={s.copy}>{coopPolicyText(language,'fellowshipLabel')}{liveBonus>0?` (+${liveBonus})`:''}</Text><StateChip label={Math.max(0,Math.min(3,liveFellowshipRemaining))+'/3'} tone={liveFellowshipRemaining>0?'success':'neutral'}/></View>:null}
   </FantasyPanel>
   <DungeonDisclosure title={ct(language,'details.party')}><DungeonPartyRoles language={language}/></DungeonDisclosure>

@@ -18,5 +18,5 @@ assert(domain.includes('invalid_pending_combat'),'Unsettled results and terminal
 assert(run.includes("Vote ends in {seconds}s")&&run.includes("Battle resolves in {seconds}s"),'Both voting and combat visibly count down');
 assert(stage.includes('const pending=run.pendingCombat'),'Live stage consumes progressive combat cues');
 assert(stage.includes('const complete=Boolean(replay&&!pending'),'Only settled combat can show victory or defeat');
-assert(stage.includes('if(pending&&cues.length>0)setCueIndex(cues.length-1)'),'Polling must not reset animated combat');
+assert(stage.includes('pending?Math.max(180,Math.min(380'),'Live must animate every newly authorized combat cue without skipping to the newest');
 console.log('PASS Live dungeon: vote expiry, 8s/10s windows, pacing, progressive animations and settlement boundary');

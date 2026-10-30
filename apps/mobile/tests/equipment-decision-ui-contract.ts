@@ -38,7 +38,7 @@ ok(preview.includes('equippedSetPieceCount'),'Equipment comparison must compute 
 ok(preview.includes('previewEquipment'),'Comparison copy must not imply unimplemented V33 set effects are active');
 
 ok(setPanel.includes('useGameTheme'),'V33 set-progress presentation must be theme-aware');
-ok(setPanel.includes('2/4/8/10 always-on bonuses are live')&&setPanel.includes('6pc conditional remains an authored trigger hook'),'Set collection UI must accurately distinguish live static bonuses from the pending conditional hook');
+ok(setPanel.includes('progress.thresholds.map')&&setPanel.includes('t.active?gt("REACHED"):gt("LOCKED")')&&setPanel.includes('thresholdReached'),'Set collection UI must accurately distinguish reached from locked piece thresholds');
 ok(decision.includes('upgradeQuote'),'Decision model must reuse authoritative enhancement quote rules');
 ok(decision.includes('equipmentSetDef'),'Decision model must reuse the V33 set catalog');
 

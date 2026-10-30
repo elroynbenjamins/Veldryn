@@ -14,7 +14,7 @@ state.account.liveEvent={eventId:id,enabled:true,startsAtMs:Date.UTC(2026,9,10),
 assert.equal(eventCurrencyBonusBps(state,id,start-1),0);
 assert.equal(eventCurrencyBonusBps(state,id,start),5000);
 assert.equal(eventCurrencyBonusBps(state,id,promotion.endsAtMs),0);
-assert.equal(eventCurrencyPromotionBps('EVT_ANNUAL_010_2027',now),0);
+assert.equal(eventCurrencyPromotionBps('EVT_ANNUAL_010_2027',now),FUTURE_EVENT_CURRENCY_ADJUSTMENT_BPS,'2027 editions use the reduced baseline, independent of the 2026 promotion');
 assert.equal(eventCurrencyBonusBps({...state,account:{...state.account,liveEvent:undefined}},id,now),0);
 assert.equal(eventCurrencyBonusBps({...state,account:{...state.account,liveEvent:{...state.account.liveEvent,endsAtMs:start}}},id,now),0);
 assert.equal(promotedEventCurrency(id,102,now),153);

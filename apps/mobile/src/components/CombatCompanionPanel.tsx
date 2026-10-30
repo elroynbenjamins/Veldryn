@@ -219,8 +219,31 @@ const selectedIndex=Math.max(0,COMBAT_COMPANIONS.findIndex(def=>def.id===selecti
      </Pressable>})}</View>
      <GameButton title={t("Companion Codex")} tone="secondary" onPress={()=>setSection('Codex')}/>
     </>}
-    {section==='Sanctuary'&&<View style={s.group}>{model?.owned?<CompanionDisclosure title={t("Upgrade Quarters")} summary={model.def.name} icon="home">{housingView}</CompanionDisclosure>:null}{(Object.entries(COMPANION_SANCTUARY_CONFIG) as [CompanionSanctuaryUpgrade,typeof COMPANION_SANCTUARY_CONFIG[CompanionSanctuaryUpgrade]][]).map(([id,cfg])=>{const cost=companionSanctuaryUpgradeCost(state,id),level=state.account.companionSanctuary?.[`${id}Level`]??0;return <CompanionFacility key={id} title={facilityLabel(id.replace(/([A-Z])/g,' $1'))} description={companionContent(language,cfg.description)} level={level} maxLevel={cfg.maxLevel} ready={!!cost&&affordability(cost)} icon={id==='trainingGround'?'training':id==='essenceBasin'?'sanctuary':id==='bondHall'?'companions':id==='expeditionPens'?'expedition' as UiIconName:'trials'}>{cost?<Text style={s.body}>{costText(cost)}</Text>:null}{btn(cost?t("Upgrade"):t("Maximum level"),'companion_upgrade',{id},!cost||!affordability(cost))}</CompanionFacility>})}</View>}
-    {section==='Trials'&&<View style={s.group}>
+    {section==='Sanctuary'&&<View style={s.group}>
+      {model?.owned?<CompanionDisclosure title={t('Upgrade Quarters')} summary={model.def.name} icon="home">{housingView}</CompanionDisclosure>:null}
+      <Text style={s.name}>{t('Facilities')}</Text>
+      {(Object.entries(COMPANION_SANCTUARY_CONFIG) as [CompanionSanctuaryUpgrade,typeof COMPANION_SANCTUARY_CONFIG[CompanionSanctuaryUpgrade]][]).map(([id,cfg])=>{
+       const cost=companionSanctuaryUpgradeCost(state,id),level=state.account.companionSanctuary?.[`${id}Level`]??0;
+       const shortMaterial=!!cost?.materialId&&(e.materials[cost.materialId]??0)<(cost.materialQuantity??0);
+       return <CompanionFacility key={id} compact title={facilityLabel(id.replace(/([A-Z])/g,' $1'))}
+        description={companionContent(language,cfg.description)} level={level} maxLevel={cfg.maxLevel}
+        ready={!!cost&&affordability(cost)} icon={id==='trainingGround'?'training':id==='essenceBasin'?'sanctuary':id==='bondHall'?'companions':id==='expeditionPens'?'expedition' as UiIconName:'trials'}>
+        {cost?<CompanionCostBreakdown rows={[
+         {resourceId:'gold',label:t('Gold'),owned:e.gold,required:cost.gold},
+         {resourceId:'essence',label:t('Essence'),owned:e.companionEssence,required:cost.companionEssence},
+         ...(cost.materialId?[{resourceId:cost.materialId,label:named(cost.materialId),owned:e.materials[cost.materialId]??0,required:cost.materialQuantity??0}]:[])
+        ]}/>:null}
+        {shortMaterial&&cost?.materialId?<CompanionDisclosure title={t('Where to get materials')} summary={named(cost.materialId)} icon="search">
+         {companionMaterialSourceTargets(cost.materialId).slice(0,3).map(source=><View key={source.id} style={s.supplyLine}>
+          <View style={s.flex}><Text style={s.name}>{companionContent(language,source.label)}</Text><Text style={s.body}>{companionContent(language,source.detail)}</Text></View>
+          {source.kind!=='info'?<GameButton compact title={t('Go')} tone="secondary" onPress={()=>openMaterialSource(source)}/>:null}
+         </View>)}
+        </CompanionDisclosure>:null}
+        {btn(cost?t('Upgrade facility'):t('Maximum level'),'companion_upgrade',{id},!cost||!affordability(cost))}
+       </CompanionFacility>;
+      })}
+     </View>}
+     {section==='Trials'&&<View style={s.group}>
       <View style={s.trialHeader}>
         <View style={s.flex}><Text style={s.heading}>{view.trial.projection.title}</Text><Text style={s.body} numberOfLines={1}>{season.rotationName}</Text></View>
         <Pressable accessibilityRole="button" accessibilityLabel={t("Season info")} onPress={()=>setTrialSheet('season')} style={s.trialIconAction}><UiIcon name="calendar" size={20}/></Pressable>

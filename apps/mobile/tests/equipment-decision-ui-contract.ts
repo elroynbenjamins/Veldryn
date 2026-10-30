@@ -10,7 +10,7 @@ const decision=read('src/core/equipment-decision.ts');
 ok(character.includes('equipmentDecisionModel'),'Character equipment detail must use the shared decision model');
 ok(character.includes('equipmentScreenModel'),'Character screen must use the shared slot and loadout view model');
 ok(character.includes("equipmentTool==='enhance'")&&character.includes("equipmentTool==='gems'")&&character.includes("equipmentTool==='sets'")&&character.includes("equipmentTool==='compare'"),'Equipment must present four focused tabs: Enhance, Gems, Sets and Compare & Swap');
-ok(character.includes('selectedDecision.upgrade.canAfford')&&character.includes('selectedDecision.sockets.statFilled')&&character.includes('selectedDecision.sockets.effectFilled'),'Selected gear must expose enhancement readiness and both named socket statuses');
+ok(character.includes('selectedDecision.upgrade.canAfford')&&character.includes('selectedDecision?.sockets.statFilled')&&character.includes('selectedDecision?.sockets.effectFilled'),'Selected gear must expose enhancement readiness and both named socket statuses');
 ok(character.includes("onPress={()=>openEnhancement('upgrade')}")&&character.includes("onPress={()=>openEnhancement('gems')}")&&character.includes("onEquip?setPickerSlot(selected.slot):onInventory()"),'Enhance, Gems and Compare tabs must retain actionable next steps');
 ok(character.includes('rarityNameColor'),'Selected equipped item names must follow rarity color');
 ok(character.includes('rarityMeta(equippedCraftedGearRarity(state,entry.slot)!)'),'Character slots must use the rarity of the actually equipped unique item, not best-owned gear or a catalog default');

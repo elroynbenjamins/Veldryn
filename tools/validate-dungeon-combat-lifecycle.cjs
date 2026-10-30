@@ -419,6 +419,7 @@ async function dungeonRosterIdentityRendering() {
     h.mocks.set(path.join(app, 'src/theme/coop-ui-theme'), {...h.mocks.get(path.join(app, 'src/theme/coop-ui-theme')), coopSpacing: {xs: 4, sm: 8, md: 12, lg: 16}, coopTypography: {meta: {}, section: {}, body: {}}});
     h.mocks.set(path.join(app, 'src/theme/coop-ui-assets'), {coopUiAssets: {role_tank: {kind: 'role', role: 'tank'}, role_damage: {kind: 'role', role: 'damage'}, role_support: {kind: 'role', role: 'support'}}});
     h.mocks.set(path.join(app, 'src/components/coop/CoopVisualKit'), {FantasyPanel: 'FantasyPanel', StateChip: 'StateChip', PrimaryAction: 'PrimaryAction', RoleBadge: 'RoleBadge', ExpeditionScreenShell: 'ExpeditionScreenShell', CoopImageSlot: 'CoopImageSlot'});
+    h.mocks.set(path.join(app, 'src/components/coop/DungeonPreparation'), {DungeonDisclosure: 'DungeonDisclosure'});
     h.mocks.set(path.join(app, 'src/i18n'), {ct: (_language, key) => key, t: (_language, key) => key});
     for (const name of ['GameButton', 'GameTextInput']) h.mocks.set(path.join(app, 'src/components', name), {[name]: name});
     for (const name of ['CoopPartyChat', 'SeasonalBossTelegraphPanel', 'DungeonCombatStage']) h.mocks.set(path.join(app, 'src/components/coop', name), {[name]: name});

@@ -1,22 +1,20 @@
 import {useMemo,useState} from 'react';
-import {Pressable,ScrollView,StyleSheet,Text,View} from 'react-native';
+import {ScrollView,StyleSheet,Text,View} from 'react-native';
 import type {Language} from '../i18n/languages';
 import {accountText} from '../i18n/account';
 import {profileText,profileSourceText} from '../i18n/profile';
 import {useGameTheme} from '../theme/ThemeContext';
 import {spacing,typography,type ThemeColors} from '../theme/theme';
 import {GameButton} from '../components/GameButton';
-import {UiIcon} from '../components/UiIcon';
 import type {UnlockInboxEntry} from '../core/unlock-inbox';
 
 const labels={title:'TITLE',background:'PROFILE BACKGROUND',border:'PROFILE BORDER',profile_icon:'PROFILE ICON',pet:'COSMETIC PET',emote:'EMOTE',guild_cosmetic:'GUILD COSMETIC'} as const;
-export function NewUnlocksScreen({language,entries,onBack,onCustomize}:{language:Language;entries:readonly UnlockInboxEntry[];onBack:()=>void;onCustomize:()=>void}){
+export function NewUnlocksScreen({language,entries,onCustomize}:{language:Language;entries:readonly UnlockInboxEntry[];onBack:()=>void;onCustomize:()=>void}){
  const C=useGameTheme(),s=useMemo(()=>makeStyles(C),[C]);
  const [showAll,setShowAll]=useState(false);
  const shown=showAll?entries:entries.slice(0,20);
  const t=(key:string)=>accountText(language,key);
  return <ScrollView contentContainerStyle={s.root} showsVerticalScrollIndicator={false}>
-   <Pressable accessibilityRole="button" accessibilityLabel={t('Back to Account')} onPress={onBack} style={s.back}><UiIcon name="back" size={18}/><Text style={s.backText}>{t('Account')}</Text></Pressable>
    <View style={s.header}><View style={s.flex}><Text accessibilityRole="header" style={s.heading}>{t('New Unlocks')}</Text><Text style={s.caption}>{t('Titles, pets, emotes and profile cosmetics you earned.')}</Text></View></View>
    {entries.length?<>
      <View style={s.summary}><Text style={s.summaryText}>{t('Your cosmetic unlocks are saved automatically. No need to claim them here.')}</Text><GameButton compact title={t('Customize Profile')} onPress={onCustomize}/></View>
@@ -34,7 +32,6 @@ export function NewUnlocksScreen({language,entries,onBack,onCustomize}:{language
 }
 function makeStyles(C:ThemeColors){return StyleSheet.create({
  root:{padding:spacing.md,paddingBottom:spacing.xl,gap:spacing.md,maxWidth:850,width:'100%',alignSelf:'center'},
- back:{minHeight:40,alignSelf:'flex-start',flexDirection:'row',alignItems:'center',gap:6,paddingRight:12},backText:{...typography.body,color:C.accent},
  header:{flexDirection:'row',alignItems:'center',gap:10},flex:{flex:1,minWidth:0},
  heading:{...typography.hero,color:C.text},caption:{...typography.body,color:C.muted},
  summary:{gap:10,padding:spacing.md,borderWidth:1,borderColor:C.line,borderRadius:12,backgroundColor:C.panel2},

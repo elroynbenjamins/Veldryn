@@ -38,7 +38,7 @@ export function eventCandyStatus(state:GameState,nowMs=Date.now(),kind:EventCand
  const active=activeLiveEvent(state,nowMs),candy=window?.candy??(active?eventCandies(active.definition).find(row=>row.kind===kind):undefined);
  return {active:remaining>0,remainingSeconds:remaining,candy};
 }
-export function eventCandyUtilityMultiplier(state:GameState,nowMs=Date.now(),kind:EventCandyKind='skill'){return eventCandyStatus(state,nowMs,kind).active?1.1:1;}
+export function eventCandyUtilityMultiplier(state:GameState,nowMs=Date.now(),kind:EventCandyKind='skill'){return eventCandyStatus(state,nowMs,kind).active?(kind==='pet'?2:1.1):1;}
 export function consumeEventCandy(state:GameState,nowMs=Date.now(),kind:EventCandyKind='skill',companionId?:string):GameState{
   const active=activeLiveEvent(state,nowMs);if(!active||!state.character)throw new Error('This event is not active.');
   const candy=eventCandies(active.definition).find(entry=>entry.kind===kind);if(!candy)throw new Error('Unknown event candy.');

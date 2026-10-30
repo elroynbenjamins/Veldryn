@@ -56,8 +56,8 @@ const travelModal=read('src/components/TravelRegionModal.tsx');
 ok(travelModal.includes('useWindowDimensions')&&travelModal.includes('actionsStack'),'Travel actions must remain reachable on narrow or large-text layouts');
 
 const gemCodex=read('src/components/GemCodexModal.tsx');
-ok(gemCodex.includes("filter:{minHeight:44"),'Gem Codex type filter must retain the 44px touch minimum');
-ok(gemCodex.includes('accessibilityHint={gt("Cycles between all, Stat and Effect Gems")}'),'Gem Codex filter must explain its cycling behavior in the selected language');
+ok(gemCodex.includes("filterChip:{minHeight:44"),'Gem Codex type filter chips must retain a 44px touch minimum');
+ok(gemCodex.includes('accessibilityState={{selected:filter===option.id}}')&&gemCodex.includes('label:gt("Stats")')&&gemCodex.includes('label:gt("Effects")'),'Gem Codex must offer explicitly labeled localized Stat and Effect filter choices');
 
 const nav=read('src/components/PrimaryNavigation.tsx');
 ok(nav.includes("badgeLabel=badge==='dot'?navigationText(language,'new activity')"),'Primary navigation must announce localized dot badges');

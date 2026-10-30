@@ -10,13 +10,14 @@ type ProjectRow={
 type ProgressRow={project_instance_id:string;raw_points:number|string;completion_points:number|string;combat_points:number|string;skilling_points:number|string};
 type ResourceRow={project_instance_id:string;resource_kind:'gold'|'item';resource_id:string;target_amount:number|string;contributed_amount:number|string};
 type ActivityRow={id:string;kind:string;title:string;body?:string|null;created_at:string};
+type EffortSourceRow={project_id:string;source:'combat'|'gathering'|'crafting';points:number|string};
 type CandidateRow={candidate_id:string;cycle_key:string;template_id:string;name:string;description:string;focus:'combat'|'skilling'|'mixed';expires_at:string;vote_count:number;my_vote:boolean;can_start:boolean};
 
 export interface OnlineGuildProjectResourceGoal{resourceKind:'gold'|'item';resourceId:string;label:string;target:number;current:number}
 export interface OnlineGuildProjectSummary{
  id:string;templateId:string;name:string;description:string;kind:GuildProjectKind;focus:GuildProjectFocus;slotIndex:number;status:'active'|'completed'|'expired'|'cancelled';
  targetPoints:number;completionPoints:number;combatPoints:number;skillingPoints:number;meaningfulContributors:number;minimumMeaningfulContributors:number;
- completionRewardClaimed?:boolean;launchWeekly?:boolean;personalPoints:number;personalRewardThreshold:number;endsAt?:string;startedAt:string;resourceGoals:OnlineGuildProjectResourceGoal[];
+ completionRewardClaimed?:boolean;launchWeekly?:boolean;activityTotals:Record<'combat'|'gathering'|'crafting',number>;personalPoints:number;personalRewardThreshold:number;endsAt?:string;startedAt:string;resourceGoals:OnlineGuildProjectResourceGoal[];
 }
 export interface OnlineGuildProjectCandidate{id:string;cycleKey:string;templateId:string;name:string;description:string;focus:'combat'|'skilling'|'mixed';expiresAt:string;voteCount:number;myVote:boolean;canStart:boolean}
 export interface OnlineGuildProjectsSnapshot{guildId:string;projects:OnlineGuildProjectSummary[];candidates:OnlineGuildProjectCandidate[];activity:GuildActivityView[]}
@@ -52,13 +53,16 @@ async function readGuildProjects(membership:NonNullable<Awaited<ReturnType<typeo
  if(projectResult.error)throw projectResult.error;if(candidateResult.error)throw candidateResult.error;
  const projectData=projectResult.data,candidateData=candidateResult.data;
  const rows=(projectData??[]) as ProjectRow[],ids=rows.map(row=>row.id);
- let progress:ProgressRow[]=[],resources:ResourceRow[]=[];
+ let progress:ProgressRow[]=[],resources:ResourceRow[]=[],activitySources:EffortSourceRow[]=[];
  if(ids.length){
-  const [progressResult,resourceResult]=await Promise.all([
+  const [progressResult,resourceResult,sourceResult]=await Promise.all([
    db.from('guild_project_member_progress').select('project_instance_id,raw_points,completion_points,combat_points,skilling_points').in('project_instance_id',ids).eq('account_id',membership.account_id),
    db.from('guild_project_resource_progress').select('project_instance_id,resource_kind,resource_id,target_amount,contributed_amount').in('project_instance_id',ids),
+   db.from('guild_project_effort_sources_v1').select('project_id,source,points').in('project_id',ids),
   ]);
   if(progressResult.error)throw progressResult.error;if(resourceResult.error)throw resourceResult.error;
+  if(sourceResult.error)throw sourceResult.error;
+  activitySources=(sourceResult.data??[]) as EffortSourceRow[];
   progress=(progressResult.data??[]) as ProgressRow[];resources=(resourceResult.data??[]) as ResourceRow[];
  }
  const {data:activityData,error:activityError}=await db.from('guild_activity_feed').select('id,kind,title,body,created_at').eq('guild_id',membership.guild_id).order('created_at',{ascending:false}).limit(30);
@@ -67,10 +71,12 @@ async function readGuildProjects(membership:NonNullable<Awaited<ReturnType<typeo
  const claimed=new Set((claims.data??[]).map(row=>row.project_instance_id));
  const progressByProject=new Map(progress.map(row=>[row.project_instance_id,row]));
  const projects=rows.map(row=>{
+  const activityTotals={combat:0,gathering:0,crafting:0};
+  for(const source of activitySources.filter(e=>e.project_id===row.id))activityTotals[source.source]+=num(source.points);
   const snapshot=row.definition_snapshot??{},personal=progressByProject.get(row.id);
   return {
    id:row.id,templateId:row.template_id,launchWeekly:row.template_id==='guild_weekly_shared_effort',completionRewardClaimed:claimed.has(row.id),
-   name:definitionText(snapshot,'name',humanize(row.template_id)),
+   name:definitionText(snapshot,'name',humanize(row.template_id)),activityTotals,
    description:definitionText(snapshot,'description','Shared Guild project.'),
    kind:row.kind,focus:row.focus,slotIndex:row.slot_index,status:row.status,
    targetPoints:num(row.target_points),completionPoints:num(row.completion_points),combatPoints:num(row.combat_points),skillingPoints:num(row.skilling_points),

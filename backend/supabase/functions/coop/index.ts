@@ -47065,12 +47065,21 @@ function coopEntryHandler(services) {
       }
       const loaded = await services.rpc("load_online_game_server_v1", { p_account_id: accountId });
       if (!loaded.state?.character) throw new GameplayError("character_required");
-      const record = deriveOnlineCoopLoadout(accountId, loaded.state, loaded.version), { normalized, readiness } = assessOnlineCoopLoadout(record);
+      let prepared;
+      try {
+        const record = deriveOnlineCoopLoadout(accountId, loaded.state, loaded.version);
+        prepared = { record, assessment: assessOnlineCoopLoadout(record) };
+      } catch (error) {
+        console.error("coop_entry_loadout_invalid", error instanceof Error ? error.message : "unknown");
+      }
       if (body) {
+        if (!prepared) throw new GameplayError("loadout_not_ready");
+        const { record } = prepared, { readiness } = prepared.assessment;
         const result = await services.rpc("publish_online_coop_loadout_server_v1", { p_account_id: accountId, p_game_version: body.expectedVersion, p_record: record, p_snapshot_hash: onlineCoopLoadoutHash(record), p_readiness: readiness, p_share_echo: body.share, p_request_id: body.requestId });
         return json(result);
       }
       const character = loaded.state.character;
+      const record = prepared?.record, normalized = prepared?.assessment.normalized, readiness = prepared?.assessment.readiness;
       const participation = await services.rpc("online_coop_entry_state_server_v1", { p_account_id: accountId });
       const liveRecruitment = await services.rpc("browse_online_coop_lfg_server_v1", { p_account_id: accountId });
       const runtime = loaded.liveEvent, activeLiveEventId = runtime?.enabled && loaded.serverNow >= runtime.startsAtMs && loaded.serverNow < runtime.endsAtMs ? runtime.eventId : void 0;
@@ -47081,16 +47090,17 @@ function coopEntryHandler(services) {
         liveRecruitment,
         dungeons: Object.values(EXPEDITIONS).map((def) => ({ id: def.id, name: def.name, region: def.region, minLevel: def.minLevel, recommendedLevel: def.recommendedLevel, recommendedPower: recommendedDungeonPower(def.minLevel), syncLevel: def.recommendedLevel, available: def.coopImplemented && character.level >= def.minLevel, lockedReason: !def.coopImplemented ? "Not yet available" : character.level < def.minLevel ? `Requires level ${def.minLevel}` : void 0, difficulties: tiers, tierMinLevels: Object.fromEntries(tiers.map((tier) => [tier, coopRequiredLevel(def.minLevel, tier)])), preBossRoomMin: 5, preBossRoomMax: 5, estimatedMinutes: { min: 6, max: 8 } })),
         eventExpeditions: eventExpeditionPreviews(loaded.serverNow).map((def) => {
-          const matches = Boolean(activeLiveEventId && activeLiveEventId.startsWith(`${def.liveEventSeriesId}_`)), levelReady = character.level >= def.minLevel, available = matches && levelReady && readiness.ready;
+          const matches = Boolean(activeLiveEventId && activeLiveEventId.startsWith(`${def.liveEventSeriesId}_`)), levelReady = character.level >= def.minLevel, available = matches && levelReady && prepared?.assessment.readiness.ready === true;
           return { ...def, status: available ? "available" : "preview", liveEventId: matches ? activeLiveEventId : void 0, lockedReason: available ? void 0 : !matches ? `Available only while ${def.eventName} is active.` : !levelReady ? `Requires level ${def.minLevel}` : "Current co-op loadout is not expedition-ready." };
         }),
-        loadouts: [{ id: "current", characterId: character.id, revision: loaded.version, verifiedRevision: loaded.version, name: "Current equipment", characterName: character.name, className: CLASSES.find((row) => row.id === character.classId).name, role: readiness.role, status: readiness.ready ? "verified" : "ineligible", ready: readiness.ready, failures: readiness.failures, level: character.level, effectiveLevel: normalized.effectiveLevel, beforeStats: normalized.before, effectiveStats: normalized.snapshot, normalizationVersion: normalized.normalizationVersion, verifiedAt: new Date(loaded.serverNow).toISOString(), skills: record.abilities.map((row) => row.name), equipment: Object.values(character.equipment).filter(Boolean) }]
+        loadouts: prepared ? [{ id: "current", characterId: character.id, revision: loaded.version, verifiedRevision: loaded.version, name: "Current equipment", characterName: character.name, className: CLASSES.find((row) => row.id === character.classId).name, role: readiness.role, status: readiness.ready ? "verified" : "ineligible", ready: readiness.ready, failures: readiness.failures, level: character.level, effectiveLevel: normalized.effectiveLevel, beforeStats: normalized.before, effectiveStats: normalized.snapshot, normalizationVersion: normalized.normalizationVersion, verifiedAt: new Date(loaded.serverNow).toISOString(), skills: record.abilities.map((row) => row.name), equipment: Object.values(character.equipment).filter(Boolean) }] : []
       });
     } catch (error) {
       const message = error instanceof Error ? error.message : "server_error";
       const conflict = /^(stale_game_version|idempotency_key_conflict)$/.test(message);
       const status = conflict ? 409 : error instanceof GameplayError ? error.status : 503;
-      return json({ error: status === 503 ? "Server temporarily unavailable. Retry the pending action." : message }, status);
+      if (status === 503) console.error("coop_entry_unexpected_error", message);
+      return json({ error: status === 503 ? request.method === "GET" ? "Dungeons are temporarily unavailable. Try again." : "Could not confirm the co-op action. Retry it." : message }, status);
     }
   };
 }

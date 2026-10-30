@@ -6,6 +6,8 @@ import {ItemArtwork} from '../components/ItemArtwork';
 import {ResourceIcon} from '../components/ResourceIcon';
 import {UiIcon} from '../components/UiIcon';
 import {accountText} from '../i18n/account';
+import {RecipeCodexPanel} from './RecipeCodexPanel';
+import {recipeCodexUsesIngredient} from '../core/recipe-codex';
 import {resourceCodexCategoryEntries,resourceCodexEntries,resourceCodexQuantity,resourceCodexSources,resourceCodexUse,RESOURCE_CATEGORIES,type ResourceCategory,type ResourceCodexEntry} from '../core/resource-codex';
 import {rarityNameColor,rarityMeta} from '../core/item-rarity';
 import type {GameState} from '../core/types';
@@ -36,6 +38,8 @@ export function ResourceCodexScreen({state,onNavigateSource,onOpenCompanions}:{s
  const language=state.settings.language;
  const a=useCallback((value:string)=>accountText(language,value),[language]);
  const [query,setQuery]=useState(''),[showSearch,setShowSearch]=useState(false),[category,setCategory]=useState<ResourceCategory>('All'),[selectedId,setSelectedId]=useState<string|null>(null);
+ const [activeView,setActiveView]=useState<'Resources'|'Recipes'>('Resources');
+ const [ingredientFilterId,setIngredientFilterId]=useState<string|undefined>();
  // Four columns for normal mobile layouts, with measured fallbacks for compact devices and larger text.
  const columns=fontScale>=1.5||state.settings.textScale>=1.5?2:width<300||fontScale>=1.2||state.settings.textScale>=1.2?3:4;
  const screenWidth=Math.min(width,960),cardWidth=Math.max(0,(screenWidth-spacing.md*2-6*(columns-1))/columns);
@@ -55,7 +59,10 @@ export function ResourceCodexScreen({state,onNavigateSource,onOpenCompanions}:{s
  const quantity=useMemo(()=>selected?resourceCodexQuantity(state,selected):0,[selected,state.inventory.stacks,state.bank.stacks,state.account.companionMaterials,state.account.companionEssence,state.account.bondstones]);
  const details=selected?resourceCodexUse(selected):'';
  return <View style={s.screen}>
-  <FlatList key={columns} data={filtered} numColumns={columns} keyExtractor={keyOf} renderItem={renderItem} keyboardShouldPersistTaps="handled" columnWrapperStyle={s.row} initialNumToRender={16} maxToRenderPerBatch={12} updateCellsBatchingPeriod={40} windowSize={5} showsVerticalScrollIndicator={false}
+  <View accessibilityRole="tablist" style={s.codexTabs}>
+   {(['Resources','Recipes'] as const).map(view=><Pressable key={view} accessibilityRole="tab" accessibilityState={{selected:activeView===view}} onPress={()=>setActiveView(view)} style={[s.codexTab,activeView===view&&s.codexTabActive]}><Text style={[s.codexTabLabel,activeView===view&&s.codexTabLabelActive]}>{a(view)}</Text></Pressable>)}
+  </View>
+  {activeView==='Recipes'?<RecipeCodexPanel state={state} onNavigateSource={onNavigateSource} onOpenResource={id=>{if(!byId.has(id))return;setSelectedId(id);setActiveView('Resources');}} ingredientFilterId={ingredientFilterId} onClearIngredientFilter={()=>setIngredientFilterId(undefined)}/>:<FlatList key={columns} data={filtered} numColumns={columns} keyExtractor={keyOf} renderItem={renderItem} keyboardShouldPersistTaps="handled" columnWrapperStyle={s.row} initialNumToRender={16} maxToRenderPerBatch={12} updateCellsBatchingPeriod={40} windowSize={5} showsVerticalScrollIndicator={false}
    contentContainerStyle={s.content}
    ListHeaderComponent={<View style={s.header}>
     <View style={s.headingRow}>
@@ -67,8 +74,8 @@ export function ResourceCodexScreen({state,onNavigateSource,onOpenCompanions}:{s
     <View style={s.summaryRow}><Text style={s.summary}>{filtered.length} {a('resources')}</Text><Text style={s.summary}>{a('Tap for sources')}</Text></View>
    </View>}
    ListEmptyComponent={<View style={s.empty}><Text style={s.body}>{a('No resources match your search.')}</Text><Pressable onPress={()=>{setQuery('');setCategory('All');}} accessibilityRole="button" style={s.secondaryAction}><Text style={s.secondaryText}>{a('Clear filters')}</Text></Pressable></View>}
-  />
-  {selected?<GameModalSurface visible presentation="sheet" reduceMotion={state.settings.reduceMotion} onClose={onClose}>
+  />}
+  {activeView==='Resources'&&selected?<GameModalSurface visible presentation="sheet" reduceMotion={state.settings.reduceMotion} onClose={onClose}>
    <GameModalHeader eyebrow={a(selected.companionRelated?'Companions':selected.category).toLocaleUpperCase(language)} title={selected.name} onClose={onClose}/>
    <ScrollView keyboardShouldPersistTaps="handled" contentContainerStyle={s.detail} showsVerticalScrollIndicator={false}>
     <View style={s.hero}>
@@ -83,6 +90,7 @@ export function ResourceCodexScreen({state,onNavigateSource,onOpenCompanions}:{s
      </Pressable>}):<View style={s.source}><Text style={s.sourceDetail}>{a('No confirmed source is currently listed for this resource.')}</Text></View>}
     <Text style={s.sectionTitle}>{a('Used for')}</Text>
     <Text style={s.body}>{details}</Text>
+    {recipeCodexUsesIngredient(selected.id).length>0?<Pressable accessibilityRole="button" accessibilityLabel={a('View recipes using this resource')} onPress={()=>{onClose();setIngredientFilterId(selected.id);setActiveView('Recipes');}} style={s.secondaryAction}><UiIcon name="skills" size={20}/><Text style={s.secondaryText}>{a('Recipes using this')} · {recipeCodexUsesIngredient(selected.id).length}</Text><UiIcon name="next" size={17}/></Pressable>:null}
     {selected.companionRelated?<Pressable accessibilityRole="button" onPress={()=>{onClose();onOpenCompanions();}} style={s.secondaryAction}><UiIcon name="companions" size={22}/><Text style={s.secondaryText}>{a('Open Companions')}</Text></Pressable>:null}
    </ScrollView>
   </GameModalSurface>:null}
@@ -90,6 +98,10 @@ export function ResourceCodexScreen({state,onNavigateSource,onOpenCompanions}:{s
 }
 function makeStyles(C:ThemeColors){return StyleSheet.create({
  screen:{flex:1,backgroundColor:C.bg},
+ codexTabs:{flexDirection:'row',gap:6,paddingHorizontal:spacing.md,paddingTop:spacing.sm,paddingBottom:5},
+ codexTab:{flex:1,minHeight:43,alignItems:'center',justifyContent:'center',borderWidth:1,borderColor:C.line,borderRadius:radii.md,backgroundColor:C.panel},
+ codexTabActive:{backgroundColor:C.selection,borderColor:C.selectionLine},
+ codexTabLabel:{fontSize:13,color:C.muted,fontWeight:'700'},codexTabLabelActive:{color:C.text},
  content:{padding:spacing.md,paddingBottom:spacing.xl,gap:6},
  header:{gap:11,marginBottom:8},headingRow:{flexDirection:'row',alignItems:'center',gap:10},
  headingText:{flex:1,gap:3},title:{...typography.title,color:C.text},hint:{...typography.caption,color:C.muted},

@@ -20,6 +20,7 @@ export interface CoopDungeonProjection{
   preBossRoomMin?:number;
   preBossRoomMax?:number;
   rewardBudgetState?:string;
+  expectedMarksByTier?:Partial<Record<CoopTier,number>>;
   estimatedMinutes?:{min:number;max:number};
   tierMinLevels?:Partial<Record<CoopTier,number>>;
 }

@@ -26,7 +26,7 @@ function progressPercent(project:OnlineGuildProjectSummary){
  return Math.max(0,Math.min(125,Math.round(project.completionPoints/project.targetPoints*100)));
 }
 
-export function OnlineGuildProjectsPanel({onRewardsChanged}:{onRewardsChanged?:()=>void|Promise<unknown>}){
+export function OnlineGuildProjectsPanel({onRewardsChanged,onNavigateActivity}:{onRewardsChanged?:()=>void|Promise<unknown>;onNavigateActivity?:(activity:'combat'|'gathering'|'crafting')=>void}){
  const st=useSocialText();
  const C=useGameTheme(),s=useMemo(()=>makeStyles(C),[C]);
  const [snapshot,setSnapshot]=useState<OnlineGuildProjectsSnapshot|null>(null),[loading,setLoading]=useState(true),[error,setError]=useState(''),[expanded,setExpanded]=useState<string|null>(null),[busy,setBusy]=useState('');
@@ -68,7 +68,7 @@ export function OnlineGuildProjectsPanel({onRewardsChanged}:{onRewardsChanged?:(
    <View style={s.sectionHead}><View style={s.flex}><Text style={s.kicker}>{st("GUILD PROJECTS")}</Text><Text style={s.title}>{st("Shared Progress")}</Text></View><StatusPill label={st("LIVE")} tone="good"/></View>
    <Text style={s.copy}>One shared weekly goal · Combat, Gathering and Crafting activities all contribute. Earn the same weekly Guild rewards. Resets Monday at 00:00 UTC.</Text>
    {snapshot.candidates.length?<View style={s.board}><View style={s.sectionHead}><Text style={s.boardTitle}>{st("NEXT WEEKLY PROJECT")}</Text><Text style={s.sectionMeta}>{st("1 vote per member")}</Text></View>{snapshot.candidates.map(candidate=><CandidateCard key={candidate.id} candidate={candidate} busy={busy} onVote={()=>act('vote',candidate.id)} onStart={()=>act('start',candidate.id)}/>)}</View>:null}
-   {active.length?active.map(project=><GuildProjectPosting key={project.id} project={project} onClaim={()=>act('claim',project.id)} busy={!!busy} expanded={expanded===project.id} onToggle={()=>setExpanded(id=>id===project.id?null:project.id)}/>):<View style={s.empty}><Text style={s.emptyTitle}>{st("No active Guild Project")}</Text><Text style={s.emptyText}>Your next weekly project will appear here automatically.</Text></View>}
+   {active.length?active.map(project=><GuildProjectPosting key={project.id} project={project} onClaim={()=>act('claim',project.id)} onNavigateActivity={onNavigateActivity} busy={!!busy} expanded={expanded===project.id} onToggle={()=>setExpanded(id=>id===project.id?null:project.id)}/>):<View style={s.empty}><Text style={s.emptyTitle}>{st("No active Guild Project")}</Text><Text style={s.emptyText}>Your next weekly project will appear here automatically.</Text></View>}
   </QuestBoard>
   {completed.length?<Panel><View style={s.sectionHead}><Text style={s.title}>{st("Recent completions")}</Text><Text style={s.sectionMeta}>{completed.length} shown</Text></View>{completed.map(project=><GuildProjectPosting key={project.id} project={project} onClaim={()=>act('claim',project.id)} busy={!!busy} compact expanded={expanded===project.id} onToggle={()=>setExpanded(id=>id===project.id?null:project.id)}/>)}</Panel>:null}
   <Panel>
@@ -92,7 +92,7 @@ function CandidateCard({candidate,busy,onVote,onStart}:{candidate:OnlineGuildPro
  </QuestPosting>;
 }
 
-export function GuildProjectPosting({project,expanded,compact=false,onToggle,onClaim,busy}:{onClaim:()=>void;busy:boolean;project:OnlineGuildProjectSummary;expanded:boolean;compact?:boolean;onToggle:()=>void}){
+export function GuildProjectPosting({project,expanded,compact=false,onToggle,onClaim,onNavigateActivity,busy}:{onClaim:()=>void;onNavigateActivity?:(activity:'combat'|'gathering'|'crafting')=>void;busy:boolean;project:OnlineGuildProjectSummary;expanded:boolean;compact?:boolean;onToggle:()=>void}){
  const st=useSocialText();
  const C=useGameTheme(),s=useMemo(()=>makeStyles(C),[C]),pct=progressPercent(project);
  const thresholdMet=project.personalRewardThreshold>0&&project.personalPoints>=project.personalRewardThreshold;
@@ -112,6 +112,7 @@ export function GuildProjectPosting({project,expanded,compact=false,onToggle,onC
     <ActivityArtwork id={activity.art} size={38}/>
     <View style={s.flex}><Text style={s.activityTitle}>{activity.title}</Text><Text style={s.activityCopy}>{activity.desc}</Text></View>
     <View style={s.activityScore}><Text style={s.activityPoints}>{project.activityTotals[activity.source].toLocaleString()}</Text><Text style={s.activitySmall}>effort</Text></View>
+    {onNavigateActivity?<GameButton compact title={activity.source==='combat'?'Hunt':activity.source==='gathering'?'Gather':'Craft'} tone="secondary" onPress={()=>onNavigateActivity(activity.source)}/>:null}
    </View>)}
    <Text style={s.activityFoot}>All three activities fill the one Guild progress bar above. You can focus on any combination; the daily limit and completion rewards are unchanged.</Text>
   </View>:null}

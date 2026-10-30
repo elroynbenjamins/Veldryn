@@ -14,7 +14,7 @@ export const COOP_ROGUELITE_CONFIG = Object.freeze({
   eventLiveVoteMs: 10_000,
   personalChoiceMs: 15_000,
   reconnectGraceMs: 60_000,
-  echoFreshnessMs: 24 * 60 * 60 * 1_000,
+  echoFreshnessMs: 7 * 24 * 60 * 60 * 1_000,
   normalizedReadinessFloor: 0.8,
   enhancedRewardChargeCapacity: 3,
   enhancedRewardRechargeMs: 8 * 60 * 60 * 1_000,

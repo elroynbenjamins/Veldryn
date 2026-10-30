@@ -171,7 +171,7 @@ export function DungeonCombatStage({run,enemyLabel,boss=false,seasonal=false,eve
    <View style={s.replayTrack}><View style={[s.replayFill,{width:`${Math.round(progress*100)}%` as `${number}%`}]} /></View>
    {run.mode!=='live'&&(!complete||paused)?<View style={[s.playbackControls,layout.controlsWrap&&s.playbackControlsWrap]}>
       <View style={[s.controlActions,layout.controlsWrap&&s.controlActionsWrap]}>
-       <Pressable accessibilityRole="button" accessibilityLabel={st("Pause combat replay")} onPress={()=>setPaused(value=>!value)} style={({pressed})=>[s.pauseButton,pressed&&s.controlPressed]}>
+       <Pressable accessibilityRole="button" accessibilityLabel={paused?st("Resume combat replay"):st("Pause combat replay")} onPress={()=>setPaused(value=>!value)} style={({pressed})=>[s.pauseButton,pressed&&s.controlPressed]}>
         <Text style={s.replayControlText}>{paused?st("▶ Resume"):st("Ⅱ Pause")}</Text>
        </Pressable>
        <Pressable accessibilityRole="button" accessibilityLabel={st("Skip combat replay to result")} onPress={()=>{setPaused(false);setCueIndex(Math.max(0,cues.length-1));}} style={({pressed})=>[s.skipButton,pressed&&s.controlPressed]}>

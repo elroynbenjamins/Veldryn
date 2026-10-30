@@ -74,7 +74,7 @@ export function gameplayHandler(services:GameplayServices){return async(request:
   });
   // Private simulation intervals travel through the service-only commit; QA never contributes.
   const guildPveEffort=adminQa?[]:(result.reward?.activityResults?.map(segment=>segment.reward)??[result.reward]).flatMap(earned=>earned?.combatEffort?[{kind:'combat',combatEffort:earned.combatEffort}]:[]);
-  const projectSegments=result.reward?.activityResults??(result.reward&&state.activity?[{activity:state.activity,reward:result.reward}]:[]);
+  const projectSegments=result.reward?.activityResults?.length?result.reward.activityResults:(result.reward&&state.activity?[{activity:state.activity,reward:result.reward}]:[]);
   // Every verified weekly path contributes to the SAME 20-effort/minute pool and daily cap.
   // Crafting is counted only from server-verified contribution events, never client-provided units.
   const guildProjectEffort=adminQa?[]:[

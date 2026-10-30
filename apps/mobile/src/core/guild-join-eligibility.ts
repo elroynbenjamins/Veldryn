@@ -1,6 +1,6 @@
 import {GUILD_JOIN_LEVEL} from './feature-unlocks';
 
-/** The database checks both the global Level 10 rule and each Guild's own minimum. */
+/** The database checks the global Level 7 rule and each Guild's own minimum. */
 export function requiredGuildJoinLevel(guildMinimumLevel=1):number{
  const local=Number.isFinite(guildMinimumLevel)?Math.floor(guildMinimumLevel):1;
  return Math.max(GUILD_JOIN_LEVEL,local);
@@ -12,7 +12,7 @@ export function guildLevelsRemaining(accountLevel:number|null,guildMinimumLevel=
 export function guildJoinRequirementText(accountLevel:number|null,guildMinimumLevel=1):string{
  const required=requiredGuildJoinLevel(guildMinimumLevel);
  const remaining=guildLevelsRemaining(accountLevel,guildMinimumLevel);
- if(remaining===null)return `Level ${required} is required to join or create Guilds.`;
+ if(remaining===null)return `Reach Level ${required} to join${required===GUILD_JOIN_LEVEL?' or create a Guild':' this Guild'}.`;
  if(remaining===0)return `Your account meets the Level ${required} requirement.`;
  return `Highest character: Level ${Math.max(0,Math.floor(accountLevel!))} · ${remaining} level${remaining===1?'':'s'} to go before you can ${required>GUILD_JOIN_LEVEL?'join this Guild':'join or create a Guild'}.`;
 }

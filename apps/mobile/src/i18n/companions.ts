@@ -4,6 +4,16 @@ import {createTranslator} from './translator';
 // Each row supplies German, Spanish, Dutch, Italian and French; its key is English.
 export const companionTranslationRows={
  // Companion clarity and Sanctuary upgrade labels.
+ "Choose Mission":["Mission wählen","Elegir misión","Kies missie","Scegli missione","Choisir une mission"],
+ "Choose a mission for your spare companions.":["Wähle eine Mission für deine freien Begleiter.","Elige una misión para tus compañeros disponibles.","Kies een missie voor je beschikbare metgezellen.","Scegli una missione per i compagni disponibili.","Choisissez une mission pour vos compagnons disponibles."],
+ "Supplies":["Vorräte","Suministros","Voorraden","Scorte","Provisions"],
+ "Prepare Team":["Team vorbereiten","Preparar equipo","Team voorbereiden","Prepara squadra","Préparer l'équipe"],
+ "Select available companions or use a suggested team.":["Wähle verfügbare Begleiter oder nutze ein vorgeschlagenes Team.","Selecciona compañeros disponibles o usa un equipo sugerido.","Selecteer beschikbare metgezellen of gebruik een voorgesteld team.","Seleziona compagni disponibili o usa una squadra suggerita.","Sélectionnez des compagnons disponibles ou utilisez l'équipe suggérée."],
+ "Team ready":["Team bereit","Equipo listo","Team klaar","Squadra pronta","Équipe prête"],
+ "Expedition Supplies":["Expeditionsvorräte","Suministros de expedición","Expeditievoorraden","Scorte per spedizioni","Provisions d'expédition"],
+ "Prepare food for companion stamina.":["Bereite Nahrung für die Ausdauer deiner Begleiter vor.","Prepara comida para la resistencia de tus compañeros.","Bereid voedsel voor het uithoudingsvermogen van je metgezellen.","Prepara cibo per la resistenza dei compagni.","Préparez de la nourriture pour l'endurance des compagnons."],
+ "Auto Select Food":["Nahrung automatisch wählen","Seleccionar comida automáticamente","Voedsel automatisch kiezen","Seleziona cibo automaticamente","Sélection automatique de nourriture"],
+ "Add enough food to start the Expedition. Manual food selection is available in Mission Details.":["Füge genügend Nahrung hinzu, um die Expedition zu starten. Die manuelle Auswahl findest du in den Missionsdetails.","Añade suficiente comida para iniciar la expedición. Puedes elegirla manualmente en los detalles de la misión.","Voeg genoeg voedsel toe om de expeditie te starten. Handmatig kiezen kan bij Missiedetails.","Aggiungi abbastanza cibo per avviare la spedizione. La selezione manuale è nei dettagli missione.","Ajoutez assez de nourriture pour commencer l'expédition. Le choix manuel est dans les détails de la mission."],
  "Start timer to begin earning":["Timer starten, um Belohnungen zu sammeln","Inicia el temporizador para obtener recompensas","Start de timer om beloningen te verdienen","Avvia il timer per ottenere ricompense","Lancez le minuteur pour gagner des récompenses"],
  "Collect rewards and upgrade your facilities.":["Sammle Belohnungen und verbessere deine Gebäude.","Recoge recompensas y mejora tus instalaciones.","Verzamel beloningen en verbeter je voorzieningen.","Raccogli le ricompense e potenzia le strutture.","Récupérez des récompenses et améliorez vos installations."],
  "Daily Training":["Tägliches Training","Entrenamiento diario","Dagelijkse training","Allenamento giornaliero","Entraînement quotidien"],

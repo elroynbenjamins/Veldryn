@@ -75,18 +75,21 @@ export function DungeonCombatStage({run,enemyLabel,boss=false,seasonal=false,eve
  const {width:windowWidth}=useWindowDimensions(),layout=useMemo(()=>dungeonCombatLayout(windowWidth),[windowWidth]);
  const tank=run.roleSlots.find(slot=>slot.role==='tank'),damage=run.roleSlots.filter(slot=>slot.role==='damage'),support=run.roleSlots.find(slot=>slot.role==='support');
  const ordered=[tank,damage[0],damage[1],support].filter((slot):slot is Slot=>Boolean(slot)),assists=ordered.filter(slot=>slot.companionId).length;
- const replay=run.lastCombat,cues=replay?.cues??[],replayKey=`${run.runId}:${replay?.nodeId??'preview'}:${replay?.durationMs??0}:${cues.length}`;
+ const pending=run.pendingCombat,replay=pending?{...pending,reason:'victory' as const}:run.lastCombat,cues=replay?.cues??[],replayKey=`${run.runId}:${replay?.nodeId??'preview'}:${replay?.durationMs??0}`;
  const [cueIndex,setCueIndex]=useState(0),[systemReduceMotion,setReduceMotion]=useState(false);
  const [inspectKey,setInspectKey]=useState<string|undefined>(undefined),[paused,setPaused]=useState(false),[showLog,setShowLog]=useState(false);
  const reduceMotion=reduceMotionSetting||systemReduceMotion;
  const actorAnim=useRef(new Animated.Value(0)).current,targetAnim=useRef(new Animated.Value(0)).current,fxAnim=useRef(new Animated.Value(0)).current,feedbackAnim=useRef(new Animated.Value(0)).current,castAnim=useRef(new Animated.Value(0)).current;
  useEffect(()=>{let mounted=true;void AccessibilityInfo.isReduceMotionEnabled().then(value=>{if(mounted)setReduceMotion(value);}).catch(()=>{});return()=>{mounted=false;};},[]);
- useEffect(()=>{setCueIndex(reduceMotion&&cues.length?cues.length-1:0);setPaused(false);setShowLog(false);setInspectKey(undefined);},[replayKey,reduceMotion,cues.length]);
+ useEffect(()=>{setCueIndex(reduceMotion&&cues.length?cues.length-1:0);setPaused(false);setShowLog(false);setInspectKey(undefined);},[replayKey,reduceMotion]);
+ // Live receives only elapsed cues. Jump to the latest newly authorized cue;
+ // don't reset the stage for every 2.5-second poll.
+ useEffect(()=>{if(pending&&cues.length>0)setCueIndex(cues.length-1);},[pending?.nodeId,cues.length]);
  useEffect(()=>{
-  if(!replay||reduceMotion||paused||cueIndex>=cues.length-1)return;
+  if(!replay||pending||reduceMotion||paused||cueIndex>=cues.length-1)return;
   const current=cues[cueIndex],next=cues[cueIndex+1],timer=setTimeout(()=>setCueIndex(value=>Math.min(value+1,cues.length-1)),playbackAdvanceDelayMs(current,next,1));
   return()=>clearTimeout(timer);
- },[replay,replayKey,reduceMotion,paused,cueIndex,cues]);
+ },[replay,replayKey,pending,reduceMotion,paused,cueIndex,cues]);
  const currentCue=cues.length?cues[Math.min(cueIndex,cues.length-1)]:undefined;
  const actionImpact:CombatImpactKind|undefined=currentCue?.type==='action'&&currentCue.outcome!=='miss'
   ?currentCue.actionKind==='heal'?'heal':currentCue.actionKind==='shield'?'shield':currentCue.outcome==='critical'?'critical':'damage'
@@ -129,7 +132,7 @@ export function DungeonCombatStage({run,enemyLabel,boss=false,seasonal=false,eve
  const fallbackEnemyName=enemyLabel??replayEnemy??(boss?'Final Boss':'Dungeon Enemy');
  const fallbackEnemyCombatant=!visibleEnemies.length?playbackCombatant(replay,fallbackEnemyName):undefined;
  const fallbackEnemyState=playbackCombatantState(replay,cueIndex,fallbackEnemyCombatant?.id),fallbackEnemyStatuses=playbackCombatantStatuses(replay,cueIndex,fallbackEnemyCombatant?.id);
- const complete=Boolean(replay&&(!cues.length||cueIndex>=cues.length-1));
+ const complete=Boolean(replay&&!pending&&(!cues.length||cueIndex>=cues.length-1));
  const progress=replay?playbackProgress(replay,cueIndex):0;
  const recent=cues.slice(Math.max(0,cueIndex-5),cueIndex+1);
  const contributionRows=complete&&replay?(ordered.map(slot=>{const combatant=playbackCombatant(replay,slot.memberId??slot.name),value=(replay.contributions??[]).find(row=>row.id===combatant?.id);return value?{slot,value}:undefined;}).filter((row):row is {slot:Slot;value:Contribution}=>Boolean(row))):[];
@@ -166,7 +169,7 @@ export function DungeonCombatStage({run,enemyLabel,boss=false,seasonal=false,eve
   {inspectTarget?<CombatantInspectPanel target={inspectTarget} onClose={()=>setInspectKey(undefined)}/>:null}
   {replay?<View style={s.replayPanel}>
    {complete?<CombatOutcomeMoment outcome={replay.reason==='victory'?'victory':replay.reason==='wipe'?'defeat':'timeout'} title={replay.reason==='victory'?st('Encounter cleared'):replay.reason==='wipe'?st('Party defeated'):st('Encounter timed out')} detail={`${seconds(replay.durationMs)} · ${replay.cues.length} cues`} reduceMotion={reduceMotion}/>:null}
-   <View style={s.replayHead}><View style={s.grow}><Text style={s.replayKicker}>{complete?st("ENCOUNTER RECAP"):paused?st("PAUSED"):st("NOW PLAYING")}</Text><Text accessibilityLiveRegion="polite" style={s.replayCurrent}>{currentCue?playbackCueLabel(currentCue):replay.reason==='victory'?st("Encounter cleared"):replay.reason==='wipe'?st("Party defeated"):st("Encounter timed out")}</Text></View><StateChip label={currentCue?.type.toUpperCase()??replay.reason.toUpperCase()} tone={currentCue?playbackCueTone(currentCue):replay.reason==='victory'?'success':replay.reason==='wipe'?'danger':'warning'}/></View>
+   <View style={s.replayHead}><View style={s.grow}><Text style={s.replayKicker}>{complete?st("ENCOUNTER RECAP"):paused?st("PAUSED"):st("NOW PLAYING")}</Text><Text accessibilityLiveRegion="polite" style={s.replayCurrent}>{currentCue?playbackCueLabel(currentCue):pending?st("Battle in progress"):replay.reason==='victory'?st("Encounter cleared"):replay.reason==='wipe'?st("Party defeated"):st("Encounter timed out")}</Text></View><StateChip label={currentCue?.type.toUpperCase()??(pending?'LIVE':replay.reason.toUpperCase())} tone={currentCue?playbackCueTone(currentCue):pending?'selected':replay.reason==='victory'?'success':replay.reason==='wipe'?'danger':'warning'}/></View>
    <View style={s.replayMeta}><Text style={s.replayTime}>{currentCue?seconds(currentCue.atMs):'0.0s'} / {seconds(replay.durationMs)}</Text></View>
    <View style={s.replayTrack}><View style={[s.replayFill,{width:`${Math.round(progress*100)}%` as `${number}%`}]} /></View>
    {run.mode!=='live'&&(!complete||paused)?<View style={[s.playbackControls,layout.controlsWrap&&s.playbackControlsWrap]}>
@@ -185,7 +188,7 @@ export function DungeonCombatStage({run,enemyLabel,boss=false,seasonal=false,eve
      </View>:null}
    {contributionRows.length?<View style={s.contributionPanel}><View style={s.contributionHead}><Text style={s.contributionKicker}>{st("PARTY CONTRIBUTION")}</Text><Text style={s.contributionHint}>{st("Encounter totals")}</Text></View>{contributionRows.map(({slot,value})=><View key={slot.memberId??slot.name} style={s.contributionRow}><View style={[s.contributionIdentity,{width:`${layout.contributionIdentityWidthPct}%` as `${number}%`,minWidth:layout.contributionIdentityMinWidth}]}><Text style={s.contributionRole}>{roleShort(slot.role)}</Text><Text numberOfLines={1} style={s.contributionName}>{slot.name}</Text></View><Text style={s.contributionStats}>{contributionSummary(slot.role,value)}</Text></View>)}</View>:null}
    {complete&&recent.length?<Pressable accessibilityRole="button" accessibilityLabel={showLog?st("Hide combat battle log"):st("Show combat battle log")} accessibilityState={{expanded:showLog}} onPress={()=>setShowLog(value=>!value)} style={({pressed})=>[s.logToggle,pressed&&s.controlPressed]}><Text style={s.logToggleText}>{showLog?st("Hide battle log"):st("Battle log")}</Text><Text style={s.logToggleMeta}>{showLog?'▲':`${recent.length} recent ▼`}</Text></Pressable>:null}
-   {recent.length&&(!complete||showLog)?<View style={s.log}>{recent.map((cue,index)=><View key={`${cue.atMs}-${cue.type}-${index}`} style={s.logRow}><Text style={s.logTime}>{seconds(cue.atMs)}</Text><Text numberOfLines={2} style={s.logCopy}>{playbackCueLabel(cue)}</Text></View>)}</View>:!recent.length?<Text style={s.note}>{st("No event details were saved for this encounter.")}</Text>:null}
+   {recent.length&&(!complete||showLog)?<View style={s.log}>{recent.map((cue,index)=><View key={`${cue.atMs}-${cue.type}-${index}`} style={s.logRow}><Text style={s.logTime}>{seconds(cue.atMs)}</Text><Text numberOfLines={2} style={s.logCopy}>{playbackCueLabel(cue)}</Text></View>)}</View>:!recent.length?<Text style={s.note}>{pending?st("Battle in progress"):st("No event details were saved for this encounter.")}</Text>:null}
    {complete&&!reduceMotion&&cues.length>1?<Pressable accessibilityRole="button" accessibilityLabel={st("Replay combat recap")} onPress={()=>{setPaused(false);setShowLog(false);setCueIndex(0);setInspectKey(undefined);}} style={({pressed})=>[s.replayButton,pressed&&s.replayButtonPressed]}><Text style={s.replayButtonText}>{st("↻ Replay encounter")}</Text></Pressable>:null}
   </View>:<Text style={s.note}>{st("Your party is resolving this room. Progress is saved online.")}</Text>}
  </View>;

@@ -82,7 +82,7 @@ export function SkillsScreen({state,now=Date.now(),onGather,onQueueGather,onQueu
   if(initialSkill==='exploration')return <ScrollView contentContainerStyle={s.root} showsVerticalScrollIndicator={false} showsHorizontalScrollIndicator={false}><SkillHero state={state} skillId="exploration" kind={gt("Discovery skill")}/><ExplorationPanel state={state} onCommand={onCommand}/></ScrollView>;
   const detailKind=initialSkill==='faith'?gt("Devotion skill"):(["mining","woodcutting","fishing","herbalism"] as string[]).includes(initialSkill)?gt("Gathering skill"):gt("Crafting skill");
   return <ScrollView contentContainerStyle={s.root} keyboardShouldPersistTaps="handled" keyboardDismissMode="on-drag" showsVerticalScrollIndicator={false} showsHorizontalScrollIndicator={false}>
-    
+
     <SkillHero state={state} skillId={initialSkill} kind={detailKind}/>
 
 

@@ -2,23 +2,22 @@ import {gameAlert} from '../core/game-alerts';
 import {accountText,accountError} from '../i18n/account';
 import {GameTextInput as TextInput} from './GameTextInput';
 import {useEffect,useMemo,useRef,useState} from 'react';
-import {AppState,Keyboard,Platform,Pressable,ScrollView,StyleSheet,Text,View} from 'react-native';
+import {AppState,Keyboard,Pressable,ScrollView,StyleSheet,Text,View} from 'react-native';
 import {GameButton} from './GameButton';
 import {GoogleBrandButton} from './GoogleBrandButton';
 import {GameModalHeader,GameModalSurface} from './GameModalSurface';
 import {Panel} from './Panel';
 import type {GameState} from '../core/types';
-import {createOnlineAccount,finishGuestAccount,requestPasswordRecovery,resendAccountConfirmation,resendGuestAccountConfirmation,sendMagicLink,signInAsGuest,signInOrLinkGoogle,signInWithPassword,signOut,updateAccountPassword,upgradeGuestAccount} from '../online/account';
+import {createOnlineAccount,finishGuestAccount,requestPasswordRecovery,resendAccountConfirmation,resendGuestAccountConfirmation,sendMagicLink,signInAsGuest,signInOrLinkGoogle,signInWithPassword,signOut,updateAccountPassword,upgradeGuestAccount,inspectGoogleAccountConnection,type GoogleAccountConnection} from '../online/account';
 import {onlineConfigured} from '../online/supabase';
 import {googleSignInConfigured} from '../online/google-signin';
+import {inspectPlayGamesConnection,signInPlayGames,type PlayGamesConnection} from '../online/play-games';
 import {useAuthSession} from '../online/AuthSessionProvider';
 import {serverGameplayEnabled} from '../online/gameplay';
 import {passwordRequirements} from '../core/auth-callback';
 import {accountLinkStep,pendingAccountEmail} from '../core/auth-account-link';
 import {equipmentTheme,spacing,touchTargetMin,typography,type ThemeColors} from '../theme/theme';
 import {useGameTheme} from '../theme/ThemeContext';
-declare const process:{env:Record<string,string|undefined>};
-const playGamesConfigured=Platform.OS==='android'&&Boolean(process.env.EXPO_PUBLIC_GOOGLE_PLAY_GAMES_PROJECT_ID?.trim());
 type VerificationPrompt={email:string;kind:'signup'|'guest';accountId:string};
 function AuthModeChip({label,selected,disabled,onPress}:{label:string;selected:boolean;disabled:boolean;onPress:()=>void}){const C=useGameTheme(),equipmentColors=equipmentTheme(C);return <Pressable accessibilityRole="button" accessibilityState={{selected,disabled}} disabled={disabled} onPress={onPress} style={({pressed})=>[{minHeight:40,alignSelf:'center',paddingHorizontal:14,justifyContent:'center',borderWidth:1,borderColor:C.line,borderRadius:99,backgroundColor:C.bg},selected&&{borderColor:equipmentColors.selectedLine,backgroundColor:equipmentColors.selected},disabled&&{opacity:.45},pressed&&{opacity:.76}]}><Text style={[{fontSize:12,color:C.muted,fontWeight:'700'},selected&&{color:C.primaryButtonText}]}>{selected?'✓ ':''}{label}</Text></Pressable>}
 export function OnlineAccountPanel({state}:{state:GameState}){
@@ -29,7 +28,9 @@ export function OnlineAccountPanel({state}:{state:GameState}){
  const auth=useAuthSession();const [email,setEmail]=useState(''),[password,setPassword]=useState(''),[username,setUsername]=useState(state.character?.name??''),[creating,setCreating]=useState(false),[showHelp,setShowHelp]=useState(false),[busy,setBusy]=useState(false),[notice,setNotice]=useState(''),[noticeTone,setNoticeTone]=useState<'error'|'success'|'info'>('error'),[editingLink,setEditingLink]=useState(false);
  const [passwordVisible,setPasswordVisible]=useState(false),[changingPassword,setChangingPassword]=useState(false),[verificationPrompt,setVerificationPrompt]=useState<VerificationPrompt|null>(null),[verificationFeedback,setVerificationFeedback]=useState<{message:string;error:boolean}|null>(null);
  const accountId=auth.session?.user.id??'',linkStep=auth.session?accountLinkStep(auth.session.user):null;
- const googleLinked=Boolean(auth.session?.user.identities?.some(identity=>identity.provider==='google'));
+ const [googleConnection,setGoogleConnection]=useState<GoogleAccountConnection|{status:'checking'}>({status:'checking'});
+ const [playGamesConnection,setPlayGamesConnection]=useState<PlayGamesConnection|{status:'checking'}>({status:'checking'});
+ const googleLinked=googleConnection.status==='linked'||(googleConnection.status==='checking'&&Boolean(auth.session?.user.identities?.some(identity=>identity.provider==='google')));
  const active=useRef(true),currentAccount=useRef(accountId),accountGeneration=useRef(0),running=useRef<object|null>(null),currentRecovery=useRef(auth.clearRecovery);
  if(currentAccount.current!==accountId){currentAccount.current=accountId;accountGeneration.current++;running.current=null;}
  const recoveryGeneration=useRef(0);
@@ -41,6 +42,26 @@ export function OnlineAccountPanel({state}:{state:GameState}){
  const displayedNotice=auth.error||notice,displayedTone=auth.error?'error':noticeTone;
  useEffect(()=>{active.current=true;const subscription=AppState.addEventListener('change',next=>{if(next!=='active')setPasswordVisible(false);});return()=>{active.current=false;subscription.remove();};},[]);
  useEffect(()=>{setPassword('');setPasswordVisible(false);setChangingPassword(false);setBusy(false);setNotice('');setEditingLink(false);setVerificationPrompt(null);setVerificationFeedback(null);setEmail(auth.session?pendingAccountEmail(auth.session.user):'');},[accountId]);
+ // These checks do not open a Google picker. Refresh when the Account screen
+ // mounts or returns to the foreground; discard late responses after switching users.
+ useEffect(()=>{
+  let alive=true,revision=0;
+  const check=()=>{
+   const request=++revision;
+   if(!accountId){setGoogleConnection({status:'checking'});setPlayGamesConnection({status:'checking'});return;}
+   void Promise.all([inspectGoogleAccountConnection(accountId),inspectPlayGamesConnection()]).then(([google,games])=>{
+    if(!alive||request!==revision)return;
+    setGoogleConnection(google);setPlayGamesConnection(games);
+   }).catch(()=>{if(alive&&request===revision){
+    setGoogleConnection({status:'error',message:'Could not check Google account linking.'});
+    setPlayGamesConnection({status:'error',message:'Could not check Google Play Games.'});
+   }});
+  };
+  check();
+  const subscription=AppState.addEventListener('change',next=>{if(next==='active')check();});
+  return()=>{alive=false;revision++;subscription.remove();};
+ },[accountId]);
+
  useEffect(()=>{setPasswordVisible(false);},[creating,editingPassword,linkStep]);
  useEffect(()=>{if(auth.recovering){setChangingPassword(false);setPassword('');setPasswordVisible(false);setNotice('');}},[auth.recovering,auth.clearRecovery]);
  useEffect(()=>{if(linkStep==='set_password'){setNotice('');setEditingLink(false);}},[linkStep]);
@@ -60,7 +81,7 @@ export function OnlineAccountPanel({state}:{state:GameState}){
   return <Panel key={`${generation}:${recoveryGeneration.current}`}><Text accessibilityRole="header" style={s.title}>{auth.recovering?a("Reset your password"):changingPassword?a("Change password"):auth.session?a("Your account"):creating?a("Create your VELDRYN account"):a("Welcome to VELDRYN")}</Text>
   {!!displayedNotice&&<View accessibilityRole="alert" style={[s.noticeCard,displayedTone==='success'&&s.noticeSuccessCard,displayedTone==='info'&&s.noticeInfoCard]}><Text style={displayedTone==='success'?s.noticeLabelSuccess:displayedTone==='info'?s.noticeLabelInfo:s.noticeLabel}>{displayedTone==='success'?a("ACCOUNT UPDATED"):displayedTone==='info'?a("ACCOUNT STATUS"):a("ACCOUNT NOTICE")}</Text><Text style={s.notice}>{displayedTone==='error'?accountError(language,displayedNotice):a(displayedNotice)}</Text></View>}
   {editingPassword?<>{passwordInput}<GameButton title={a("Save new password")} disabled={busy} onPress={()=>run(savePassword)}/><GameButton title={a("Cancel")} tone="secondary" disabled={busy} onPress={cancelPassword}/></>:!auth.session?<>
-   {!creating&&googleSignInConfigured&&<><GoogleBrandButton title={busy?a("Connecting…"):a("Continue with Google")} loading={busy} onPress={()=>void run(async()=>{await signInOrLinkGoogle();success('Signed in with Google.');})}/><Text style={s.googleHint}>{a("Use the Google account on this Android device. No password is required.")}</Text></>}
+   {!creating&&<><GoogleBrandButton title={busy?a("Connecting…"):a("Continue with Google")} disabled={!googleSignInConfigured} loading={busy} onPress={()=>void run(async()=>{await signInOrLinkGoogle();success('Signed in with Google.');})}/><Text style={s.googleHint}>{googleSignInConfigured?a("Use the Google account on this Android device. No password is required."):a("Google sign-in is unavailable in this Android build. Update VELDRYN to use it.")}</Text></>}
    {creating&&<><Text style={s.label}>{a("Username")}</Text><TextInput accessibilityLabel={a("Username")} value={username} onChangeText={setUsername} maxLength={20} placeholder={a("Username")} placeholderTextColor={C.muted} style={s.input}/></>}
    {emailInput}{passwordInput}
    <GameButton title={busy?a("Connecting…"):creating?a("Create account"):a("Sign in")} disabled={busy} onPress={()=>run(async()=>{if(creating){const result=await createOnlineAccount(email,password,username);if(!result.confirmed){success('Confirmation email sent. Check your inbox before signing in.');showVerification(email,'signup');}}else await signInWithPassword(email,password);})}/>
@@ -90,9 +111,27 @@ export function OnlineAccountPanel({state}:{state:GameState}){
     <GameButton title={a("Save account password")} disabled={busy||auth.refreshing} onPress={()=>run(async()=>{await finishGuestAccount(password,accountId);success('Account linked. Your characters and progress are kept.');})}/>
    </>}
    {linkStep==='linked'&&<GameButton title={a("Change password")} tone="secondary" disabled={busy||auth.refreshing} onPress={()=>{if(running.current||!ownsView())return;setPassword('');setPasswordVisible(false);setNotice('');setChangingPassword(true);}}/>}
-   {googleSignInConfigured&&!googleLinked&&<GoogleBrandButton title={busy?a("Connecting…"):a("Link Google account")} loading={busy||auth.refreshing} onPress={()=>void run(async()=>{await signInOrLinkGoogle();success('Google account linked. Your characters and progress are kept.');})}/>}
-   {googleLinked&&<Text style={s.googleLinked}>✓ {a("Google account linked")}</Text>}
-   {playGamesConfigured&&<><GoogleBrandButton title={busy?a("Connecting…"):a("Connect Google Play Games")} loading={busy||auth.refreshing} onPress={()=>void run(async()=>{const {signInPlayGames}=await import('../online/play-games');const result=await signInPlayGames();if(!result.authenticated)throw new Error('Google Play Games sign-in was not completed.');success(result.displayName?`Google Play Games connected as ${result.displayName}.`:'Google Play Games connected.');})}/><Text style={s.googleHint}>{a("Play Games is separate from your VELDRYN account and is used for Google Play game services.")}</Text></>}
+   {googleLinked?<Text style={s.googleLinked}>✓ {a("Google account linked")}</Text>:<GoogleBrandButton title={busy?a("Connecting…"):a("Link Google account")} disabled={!googleSignInConfigured||googleConnection.status==='checking'} loading={busy||auth.refreshing} onPress={()=>void run(async()=>{
+     await signInOrLinkGoogle();
+     if(!ownsView())return;
+     const status=await inspectGoogleAccountConnection(accountId);
+     setGoogleConnection(status);
+     if(status.status!=='linked')throw new Error(status.status==='error'?status.message:'Could not verify the Google account link. Please check again before signing out.');
+     success('Google account linked. Your characters and progress are kept.');
+   })}/>}
+   {!googleSignInConfigured&&<Text style={s.googleHint}>{a("Google account linking is unavailable in this Android build. Update VELDRYN to use it.")}</Text>}
+   {googleConnection.status==='error'&&<Text style={s.googleHint}>{a(googleConnection.message)}</Text>}
+   {playGamesConnection.status==='connected'
+    ?<Text style={s.googleLinked}>✓ {a("Google Play Games connected")}{playGamesConnection.displayName?` · ${playGamesConnection.displayName}`:''}</Text>
+    :<GoogleBrandButton title={busy?a("Connecting…"):a("Connect Google Play Games")} disabled={playGamesConnection.status!=='disconnected'} loading={busy||auth.refreshing||playGamesConnection.status==='checking'} onPress={()=>void run(async()=>{
+      const result=await signInPlayGames();
+      if(!result.authenticated)throw new Error('Google Play Games sign-in was not completed.');
+      if(!ownsView())return;
+      setPlayGamesConnection({status:'connected',playerId:result.playerId,displayName:result.displayName});
+      success(result.displayName?`Google Play Games connected as ${result.displayName}.`:'Google Play Games connected.');
+    })}/>}
+   {(playGamesConnection.status==='unavailable'||playGamesConnection.status==='error')&&<Text style={s.googleHint}>{a(playGamesConnection.message)}</Text>}
+   <Text style={s.googleHint}>{a("Google Play Games is separate from your VELDRYN account and does not recover your VELDRYN progress.")}</Text>
    <Text style={s.text}>{serverGameplayEnabled?a("Every successful gameplay action is saved online. Sign in on another device to continue."):a("Local save uploads do not grant online progression.")}</Text>
    <GameButton title={a("Sign out")} tone="secondary" loading={busy} disabled={busy} onPress={()=>{if(auth.session?.user.is_anonymous)gameAlert.alert(a("Sign out of guest account?"),a("Add an email first so you can recover this account."),[{text:a("Stay signed in")},{text:a("Sign out"),style:'destructive',onPress:()=>void run(signOut)}]);else return run(signOut);}}/>
   </>}

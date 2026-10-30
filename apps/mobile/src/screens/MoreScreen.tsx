@@ -13,18 +13,18 @@ import {GameState} from '../core/types';
 import {EARLY_FEATURE_DESTINATION_ORDER} from '../core/feature-unlocks';
 import type {QuickNavDestination} from '../core/quick-navigation';
 
-export type MoreDestination='Home'|'Social'|'Activity'|'DailySupplies'|'AccountBonuses'|'RewardsInbox'|'NewUnlocks'|'Quests'|'Companions'|'Skills'|'Events'|'Friends'|'Guild'|'Settings'|'Arena'|'Rankings'|'Collections'|'Profile'|'MasteryHall'|'Store';
+export type MoreDestination='Home'|'Social'|'Activity'|'DailySupplies'|'AccountBonuses'|'RewardsInbox'|'NewUnlocks'|'Quests'|'Companions'|'Skills'|'Events'|'Friends'|'Guild'|'Settings'|'Arena'|'Rankings'|'Collections'|'ResourceCodex'|'Profile'|'MasteryHall'|'Store';
 const sections:Array<{label:string;items:MoreDestination[]}>= [
   {label:'PLAY & PROGRESSION',items:['Home','Quests','Companions','DailySupplies','RewardsInbox','Events','AccountBonuses']},
   {label:'SOCIAL & COMPETITION',items:['Social','Friends','Guild','Arena','Rankings']},
-  {label:'IDENTITY & ACCOUNT',items:['Activity','Profile','NewUnlocks','MasteryHall','Collections','Store','Settings']},
+  {label:'IDENTITY & ACCOUNT',items:['Activity','Profile','NewUnlocks','MasteryHall','Collections','ResourceCodex','Store','Settings']},
 ];
 
 function iconForDestination(id:MoreDestination):QuickNavDestination{
   if(id==='Activity'||id==='Profile'||id==='NewUnlocks'||id==='AccountBonuses')return 'Character';
   if(id==='DailySupplies'||id==='RewardsInbox'||id==='Rankings')return 'Events';
   if(id==='Arena')return 'Party';
-  if(id==='Collections')return 'Inventory';
+  if(id==='Collections'||id==='ResourceCodex')return 'Inventory';
   if(id==='Store')return 'Inventory';
   if(id==='MasteryHall')return 'Skills';
   return id;
@@ -50,6 +50,7 @@ function itemMeta(language:GameState['settings']['language'],id:MoreDestination)
     case 'Arena':return {title:a("Arena"),description:a("Three-character squad mode · In Development")};
     case 'Rankings':return {title:a("Rankings"),description:a("Server-calculated prestige boards")};
     case 'Collections':return {title:a("Collections"),description:a("Collectibles and account bonuses")};
+    case 'ResourceCodex':return {title:a('Codex'),description:a('Browse resources, companion materials and crafting recipes')};
     case 'Profile':return {title:a("Profile"),description:a("Identity, showcase and customization")};
     case 'NewUnlocks':return {title:a('New Unlocks'),description:a('Titles, pets, emotes and profile cosmetics you earned.')};
     case 'MasteryHall':return {title:a("Mastery Hall"),description:a("Account-wide R50 profession records and prestige")};

@@ -1,6 +1,8 @@
 [
   "tests/profile-pet-art-assets.cjs",
   "tests/app-version-gate.cjs",
+  ".core-build/apps/mobile/tests/resource-codex.js",
+  ".core-build/apps/mobile/tests/recipe-codex.js",
   ".core-build/apps/mobile/tests/unlock-inbox.js",
   ".core-build/apps/mobile/tests/companion-training-roster.js",
   "tests/online-loading-interactions.cjs",

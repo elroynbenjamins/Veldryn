@@ -137,7 +137,7 @@ export function executeGameCommand(previous:GameState,value:unknown,now:number,o
  if(command.type.startsWith('event_')&&!earlyFeatureUnlocked(state,'events'))throw new Error('events_locked');
  const companionMetricBefore=command.type.startsWith('companion_')?companionCommandEconomySnapshot(state):undefined;
  if(['companion_equip','companion_level','companion_ascend','companion_master'].includes(command.type))assertCompanionIdle(state,text(a,'id'));
- if(command.type==='event_candy'){const kind=oneOf(a.kind,['skill','combat','companion']);if(a.companionId!==undefined){if(kind!=='companion')throw new Error('invalid_companion_target');text(a,'companionId',80);}}
+ if(command.type==='event_candy'){const kind=oneOf(a.kind,['skill','combat','companion','pet']);if(a.companionId!==undefined){if(kind!=='companion')throw new Error('invalid_companion_target');text(a,'companionId',80);}}
  switch(command.type){
   case 'qa_prepare':case 'qa_switch_class':{
    if(!options.adminQa)throw new Error('admin_qa_required');
@@ -395,7 +395,7 @@ export function executeGameCommand(previous:GameState,value:unknown,now:number,o
   case 'event_contribute':state=events.contributeEventCurrency(state,integer(a,'quantity'),now);break;
   case 'event_community':state=events.claimEventCommunityMilestone(state,integer(a,'percent',1,100),now);break;
   case 'event_purchase':state=events.purchaseEventOffer(state,text(a,'id'),now);break;
-  case 'event_candy':state=events.consumeEventCandy(state,now,oneOf(a.kind,['skill','combat','companion']) as import('../content/live-events').EventCandyKind,a.companionId===undefined?undefined:text(a,'companionId',80));break;
+  case 'event_candy':state=events.consumeEventCandy(state,now,oneOf(a.kind,['skill','combat','companion','pet']) as import('../content/live-events').EventCandyKind,a.companionId===undefined?undefined:text(a,'companionId',80));break;
   default:throw new Error('invalid_command');
  }
  if(companionMetricBefore)state=recordCompanionCommandMetrics(state,command.type,companionMetricBefore);

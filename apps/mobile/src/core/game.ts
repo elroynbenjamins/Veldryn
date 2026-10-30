@@ -777,7 +777,7 @@ function claimActivitySegment(state:GameState,nowMs:number){
     const progression=applyTrustedLongTermProgression(next,[{kind:'gathering',contentId:state.activity.targetId,units:reward.kills,startedAtMs:state.activity.lastClaimAtMs}],reward,settledAtMs,{accountId:longTermAccountScope(state),eventId:`activity:${state.character.id}:${state.activity.targetId}:${state.activity.lastClaimAtMs}:${settledAtMs}`}).state;
     const eventApplied=refreshQuests(applyEventDiscoveries(applyEventDrops(progression,reward.eventDrops??[]),reward.eventDiscoveries??[]));
     const petSourceType=state.activity.kind==='exploration'?'exploration':'gathering';
-    const petResult=applyCorePetActivityDrops(eventApplied,petSourceType,state.activity.targetId,reward.kills,`${state.character.id}:${state.activity.lastClaimAtMs}:${settledAtMs}`);
+    const petResult=applyCorePetActivityDrops(eventApplied,petSourceType,state.activity.targetId,reward.kills,`${state.character.id}:${state.activity.lastClaimAtMs}:${settledAtMs}`,undefined,(()=>{const candy=eventCandyWindow(state,'pet');return candy?{startsAtMs:candy.startsAtMs,endsAtMs:candy.endsAtMs,settlementStartsAtMs:state.activity.lastClaimAtMs,settlementEndsAtMs:settledAtMs}:undefined;})());
     const petReward:RewardBundle=petResult.drops.length?{...reward,petDrops:[...(reward.petDrops??[]),...petResult.drops]}:reward;
     const finalState=recordCompanionActivity(petResult.state,'gathering',state.activity.targetId,reward.kills,settledAtMs);
     const queuedState=idleWindow.shouldStop&&!idleWindow.safety?autoAdvanceActivityQueue(finalState,settledAtMs,state.activity,reward):idleWindow.shouldStop?pauseActivityQueue(finalState,reward.stoppedReason??idleStopReason??'Safety stop reached.'):finalState;
@@ -805,7 +805,7 @@ function claimActivitySegment(state:GameState,nowMs:number){
   if(next.activity&&reward.kills>0)next.activity.classFocus=normalizeTrainingFocus(next.character.trainingFocus);
   let progressed=recordMonsterMastery(refreshQuests(applyEventDiscoveries(applyEventDrops(next,reward.eventDrops??[]),reward.eventDiscoveries??[]),state.activity.targetId,reward.kills),state.activity.targetId,reward.kills);
   progressed=applyTrustedLongTermProgression(progressed,[{kind:'combat',contentId:state.activity.targetId,units:reward.kills,startedAtMs:state.activity.lastClaimAtMs}],reward,settledAtMs,{accountId:longTermAccountScope(state),eventId:`combat:${state.character.id}:${state.activity.targetId}:${state.activity.lastClaimAtMs}:${settledAtMs}`}).state;
-  const petResult=applyCorePetCombatDrops(progressed,state.activity.targetId,reward.kills,`${state.character.id}:${state.activity.lastClaimAtMs}:${settledAtMs}`);
+  const petResult=applyCorePetCombatDrops(progressed,state.activity.targetId,reward.kills,`${state.character.id}:${state.activity.lastClaimAtMs}:${settledAtMs}`,undefined,(()=>{const candy=eventCandyWindow(state,'pet');return candy?{startsAtMs:candy.startsAtMs,endsAtMs:candy.endsAtMs,settlementStartsAtMs:state.activity.lastClaimAtMs,settlementEndsAtMs:settledAtMs}:undefined;})());
   progressed=petResult.state;
   const petReward:RewardBundle=petResult.drops.length?{...reward,petDrops:petResult.drops}:reward;
   const finalState=recordCompanionActivity(progressed,'combat',state.activity.targetId,reward.kills,settledAtMs);

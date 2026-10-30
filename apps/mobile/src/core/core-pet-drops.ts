@@ -71,6 +71,8 @@ export const CORE_PET_ACTIVITY_DROPS:readonly CorePetActivityDrop[]=[
 ];
 
 export type CorePetDropRoll=(seed:string,index:number)=>number;
+/** Exact event-candy window and settlement interval. Outside the window, regular odds apply. */
+export interface PetDropBoostWindow{startsAtMs:number;endsAtMs:number;settlementStartsAtMs:number;settlementEndsAtMs:number;}
 
 export function corePetSignatureDropForMonster(monsterId:string){
   return CORE_PET_SIGNATURE_DROPS.find(row=>row.monsterId===monsterId);
@@ -93,6 +95,7 @@ function resolveRules(
   attempts:number,
   seedBase:string,
   roll:CorePetDropRoll,
+  boostWindow?:PetDropBoostWindow,
 ){
   if(!earlyFeatureUnlocked(state,'pets')||attempts<=0||!rules.length)return [] as string[];
   const owned=ownedPetIds(state),found:string[]=[];
@@ -101,7 +104,9 @@ function resolveRules(
     if(owned.has(rule.petId)||found.includes(rule.petId))continue;
     const seed=`${seedBase}:core-pet:${rule.petId}`;
     for(let index=0;index<tries;index++){
-      if(roll(seed,index)<rule.chance){found.push(rule.petId);break;}
+      const at=boostWindow?boostWindow.settlementStartsAtMs+(index+0.5)/tries*(boostWindow.settlementEndsAtMs-boostWindow.settlementStartsAtMs):NaN;
+      const boosted=boostWindow&&at>=boostWindow.startsAtMs&&at<boostWindow.endsAtMs;
+      if(roll(seed,index)<Math.min(1,rule.chance*(boosted?2:1))){found.push(rule.petId);break;}
     }
   }
   return found;
@@ -114,8 +119,9 @@ export function resolveCorePetActivityDrops(
   attempts:number,
   seedBase:string,
   roll:CorePetDropRoll=random01,
+  boostWindow?:PetDropBoostWindow,
 ){
-  return resolveRules(state,corePetActivityDropsForSource(sourceType,sourceId),attempts,`${seedBase}:${sourceType}:${sourceId}`,roll);
+  return resolveRules(state,corePetActivityDropsForSource(sourceType,sourceId),attempts,`${seedBase}:${sourceType}:${sourceId}`,roll,boostWindow);
 }
 
 export function resolveCorePetCombatDrops(
@@ -124,10 +130,11 @@ export function resolveCorePetCombatDrops(
   kills:number,
   seedBase:string,
   roll:CorePetDropRoll=random01,
+  boostWindow?:PetDropBoostWindow,
 ):string[]{
   const regular=corePetActivityDropsForSource('combat',monsterId);
   const signature=CORE_PET_SIGNATURE_DROPS.filter(row=>row.monsterId===monsterId);
-  return resolveRules(state,[...regular,...signature],kills,`${seedBase}:combat:${monsterId}`,roll);
+  return resolveRules(state,[...regular,...signature],kills,`${seedBase}:combat:${monsterId}`,roll,boostWindow);
 }
 
 function applyPetIds(state:GameState,ids:readonly string[],sourceId:string){
@@ -152,8 +159,9 @@ export function applyCorePetActivityDrops(
   attempts:number,
   seedBase:string,
   roll?:CorePetDropRoll,
+  boostWindow?:PetDropBoostWindow,
 ){
-  const ids=resolveCorePetActivityDrops(state,sourceType,sourceId,attempts,seedBase,roll);
+  const ids=resolveCorePetActivityDrops(state,sourceType,sourceId,attempts,seedBase,roll,boostWindow);
   return applyPetIds(state,ids,sourceId);
 }
 
@@ -163,7 +171,8 @@ export function applyCorePetCombatDrops(
   kills:number,
   seedBase:string,
   roll?:CorePetDropRoll,
+  boostWindow?:PetDropBoostWindow,
 ){
-  const ids=resolveCorePetCombatDrops(state,monsterId,kills,seedBase,roll);
+  const ids=resolveCorePetCombatDrops(state,monsterId,kills,seedBase,roll,boostWindow);
   return applyPetIds(state,ids,monsterId);
 }

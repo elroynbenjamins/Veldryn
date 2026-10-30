@@ -27,6 +27,7 @@ export interface DailySupplyTimedResult{
  reward:RewardBundle;
  consumedSeconds:number;
  nextRemainders:Record<string,number>;
+ updates?:Partial<Record<DailySupplyBoostType,{consumedSeconds:number;nextRemainders:Record<string,number>}>>;
 }
 
 const BOOST_LABELS:Record<DailySupplyBoostType,string>={
@@ -65,8 +66,22 @@ export function normalizeActiveDailySupplyBoost(value:unknown):ActiveDailySupply
  const remainders=numericRemainders(row.remainders);
  return {type,remainingSeconds:Math.min(DAILY_SUPPLY_CHARGE_SECONDS,Math.max(1,Math.floor(seconds))),...(remainders?{remainders}:{})};
 }
+export function activeDailySupplyBoosts(character:CharacterState|null|undefined):Partial<Record<DailySupplyBoostType,ActiveDailySupplyBoost>>{
+ if(!character)return {};
+ const mapped=character.activeDailySupplyBoosts,valid:Partial<Record<DailySupplyBoostType,ActiveDailySupplyBoost>>={};
+ if(mapped&&typeof mapped==='object'&&!Array.isArray(mapped)){
+  for(const type of DAILY_SUPPLY_BOOST_TYPES){const entry=normalizeActiveDailySupplyBoost(mapped[type]);if(entry&&entry.type===type)valid[type]=entry;}
+ }
+ if(!Object.keys(valid).length){const legacy=normalizeActiveDailySupplyBoost(character.activeDailySupplyBoost);if(legacy)valid[legacy.type]=legacy;}
+ return valid;
+}
+function withActiveDailySupplyBoosts(character:CharacterState,boosts:Partial<Record<DailySupplyBoostType,ActiveDailySupplyBoost>>):CharacterState{
+ const first=DAILY_SUPPLY_BOOST_TYPES.map(type=>boosts[type]).find(Boolean);
+ return {...character,activeDailySupplyBoosts:boosts,activeDailySupplyBoost:first};
+}
 export function normalizeCharacterDailySupplies(character:CharacterState):CharacterState{
- return {...character,dailySupplyBoostBank:normalizeDailySupplyBank(character.dailySupplyBoostBank),activeDailySupplyBoost:normalizeActiveDailySupplyBoost(character.activeDailySupplyBoost)};
+ const normalized={...character,dailySupplyBoostBank:normalizeDailySupplyBank(character.dailySupplyBoostBank)};
+ return withActiveDailySupplyBoosts(normalized,activeDailySupplyBoosts(character));
 }
 function track(state:GameState):DailySuppliesTrack{return normalizeDailySuppliesTrack(state.account.dailySupplies)??{schemaVersion:1,totalClaims:0}}
 function normalClaimIndex(totalClaims:number){
@@ -105,12 +120,12 @@ export function claimDailySupplies(state:GameState,characterId:string,nowMs:numb
 export function activateDailySupplyBoost(state:GameState,type:DailySupplyBoostType){
  if(!state.character)throw new Error('Create a character first.');
  if(!DAILY_SUPPLY_BOOST_TYPES.includes(type))throw new Error('Unknown Daily Supplies boost.');
- const active=normalizeActiveDailySupplyBoost(state.character.activeDailySupplyBoost);
- if(active)throw new Error('Finish the active Daily Supplies boost before starting another.');
+ const active=activeDailySupplyBoosts(state.character);
+ if(active[type])throw new Error('This Daily Supplies boost is already active.');
  const bank={...(normalizeDailySupplyBank(state.character.dailySupplyBoostBank)??{})},charges=bank[type]??0;
  if(charges<1)throw new Error('No banked charge is available for this boost.');
  if(charges===1)delete bank[type];else bank[type]=charges-1;
- return {...state,character:{...state.character,dailySupplyBoostBank:bank,activeDailySupplyBoost:{type,remainingSeconds:DAILY_SUPPLY_CHARGE_SECONDS}}};
+ return {...state,character:withActiveDailySupplyBoosts({...state.character,dailySupplyBoostBank:bank},{...active,[type]:{type,remainingSeconds:DAILY_SUPPLY_CHARGE_SECONDS}})};
 }
 function activityModeEligible(type:DailySupplyBoostType,mode:'combat'|'gathering'|'skill'|'crafting'|'training'){
  if(type==='combat_xp')return mode==='combat';
@@ -124,45 +139,55 @@ function bonusInteger(base:number,key:string,fraction:number,remainders:Record<s
  return extra;
 }
 export function previewDailySupplyTimedReward(state:GameState,reward:RewardBundle,mode:'combat'|'gathering'|'skill'|'crafting'|'training'):DailySupplyTimedResult{
- const active=normalizeActiveDailySupplyBoost(state.character?.activeDailySupplyBoost);
- if(!active||!activityModeEligible(active.type,mode)||reward.elapsedSeconds<=0)return {reward,consumedSeconds:0,nextRemainders:{...(active?.remainders??{})}};
- const hasQualifyingReward=active.type==='combat_xp'?reward.xp>0:active.type==='skill_xp'?reward.xp>0||(reward.faithXp??0)>0||(reward.classSkillXp??[]).some(row=>row.xp>0):reward.items.some(item=>item.quantity>0);
- if(!hasQualifyingReward)return {reward,consumedSeconds:0,nextRemainders:{...(active.remainders??{})}};
- const qualifyingSeconds=Math.min(Math.max(0,reward.elapsedSeconds),Math.max(0,reward.qualifyingActivitySeconds??reward.elapsedSeconds));if(qualifyingSeconds<=0)return {reward,consumedSeconds:0,nextRemainders:{...(active.remainders??{})}};
- const consumedSeconds=Math.min(active.remainingSeconds,qualifyingSeconds),fraction=consumedSeconds/Math.max(1,qualifyingSeconds),nextRemainders={...(active.remainders??{})};
+ const boosts=activeDailySupplyBoosts(state.character),updates:NonNullable<DailySupplyTimedResult['updates']>={};
  let next={...reward,items:reward.items.map(item=>({...item}))};
- if(active.type==='combat_xp'){
-  next.xp+=bonusInteger(reward.xp,'xp:combat',fraction,nextRemainders);
- }else if(active.type==='skill_xp'){
-  if(reward.classSkillXp?.length){
-   next.classSkillXp=reward.classSkillXp.map(row=>({...row,xp:row.xp+bonusInteger(row.xp,`class:${row.skillId}`,fraction,nextRemainders)}));
-  }else{
-   const extra=bonusInteger(reward.xp,'xp:skill',fraction,nextRemainders);next.xp+=extra;
-   if(reward.faithXp!==undefined)next.faithXp=(reward.faithXp??0)+extra;
-  }
- }else if(active.type==='gathering_yield'||active.type==='crafting_output'){
-  next.items=next.items.map(item=>({...item,quantity:item.quantity+bonusInteger(item.quantity,`item:${item.itemId}`,fraction,nextRemainders)}));
+ for(const type of DAILY_SUPPLY_BOOST_TYPES){
+  const active=boosts[type];if(!active||!activityModeEligible(type,mode)||reward.elapsedSeconds<=0)continue;
+  const hasReward=type==='combat_xp'?reward.xp>0:type==='skill_xp'?reward.xp>0||(reward.faithXp??0)>0||(reward.classSkillXp??[]).some(row=>row.xp>0):reward.items.some(item=>item.quantity>0);
+  if(!hasReward)continue;
+  const qualifyingSeconds=Math.min(Math.max(0,reward.elapsedSeconds),Math.max(0,reward.qualifyingActivitySeconds??reward.elapsedSeconds));if(qualifyingSeconds<=0)continue;
+  const consumedSeconds=Math.min(active.remainingSeconds,qualifyingSeconds),fraction=consumedSeconds/Math.max(1,qualifyingSeconds),remainders={...(active.remainders??{})};
+  if(type==='combat_xp')next.xp+=bonusInteger(reward.xp,'xp:combat',fraction,remainders);
+  else if(type==='skill_xp'){
+   if(reward.classSkillXp?.length)next.classSkillXp=reward.classSkillXp.map(row=>({...row,xp:row.xp+bonusInteger(row.xp,`class:${row.skillId}`,fraction,remainders)}));
+   else{const extra=bonusInteger(reward.xp,'xp:skill',fraction,remainders);next.xp+=extra;if(reward.faithXp!==undefined)next.faithXp=(reward.faithXp??0)+extra;}
+  }else next.items=next.items.map(item=>({...item,quantity:item.quantity+bonusInteger(item.quantity,`item:${item.itemId}`,fraction,remainders)}));
+  updates[type]={consumedSeconds,nextRemainders:remainders};
  }
- return {reward:next,consumedSeconds,nextRemainders};
+ const first=DAILY_SUPPLY_BOOST_TYPES.map(type=>updates[type]).find(Boolean);
+ return {reward:next,consumedSeconds:first?.consumedSeconds??0,nextRemainders:first?.nextRemainders??{},updates};
 }
-export function commitDailySupplyTimedBoost(state:GameState,result:Pick<DailySupplyTimedResult,'consumedSeconds'|'nextRemainders'>){
- if(!state.character||result.consumedSeconds<=0)return state;
- const active=normalizeActiveDailySupplyBoost(state.character.activeDailySupplyBoost);if(!active)return state;
- const remainingSeconds=Math.max(0,active.remainingSeconds-result.consumedSeconds);
- return {...state,character:{...state.character,activeDailySupplyBoost:remainingSeconds?{...active,remainingSeconds,remainders:result.nextRemainders}:undefined}};
+export function commitDailySupplyTimedBoost(state:GameState,result:Pick<DailySupplyTimedResult,'consumedSeconds'|'nextRemainders'|'updates'>){
+ if(!state.character)return state;
+ const active=activeDailySupplyBoosts(state.character);
+ const updates:NonNullable<DailySupplyTimedResult['updates']>=result.updates??(state.character.activeDailySupplyBoost?{[state.character.activeDailySupplyBoost.type]:result}:{});
+ const next={...active};let changed=false;
+ for(const type of DAILY_SUPPLY_BOOST_TYPES){
+  const current=active[type],spent=updates[type];if(!current||!spent||spent.consumedSeconds<=0)continue;
+  changed=true;
+  const remainingSeconds=Math.max(0,current.remainingSeconds-spent.consumedSeconds);
+  if(remainingSeconds>0)next[type]={...current,remainingSeconds,remainders:spent.nextRemainders};else delete next[type];
+ }
+ return changed?{...state,character:withActiveDailySupplyBoosts(state.character,next)}:state;
 }
 export function applyDailySupplyCraft(state:GameState,input:{seconds:number;outputQuantity:number;xp:number;outputEligible:boolean}){
- if(!state.character)return {state,outputQuantity:input.outputQuantity,xp:input.xp,bonusQuantity:0,bonusXp:0};
- const active=normalizeActiveDailySupplyBoost(state.character.activeDailySupplyBoost);
- if(!active||!['crafting_output','skill_xp'].includes(active.type)||input.seconds<=0||active.type==='crafting_output'&&!input.outputEligible)return {state,outputQuantity:input.outputQuantity,xp:input.xp,bonusQuantity:0,bonusXp:0};
- const consumedSeconds=Math.min(active.remainingSeconds,input.seconds),fraction=consumedSeconds/input.seconds,remainders={...(active.remainders??{})};
- const bonusQuantity=active.type==='crafting_output'?bonusInteger(input.outputQuantity,'craft:output',fraction,remainders):0;
- const bonusXp=active.type==='skill_xp'?bonusInteger(input.xp,'craft:xp',fraction,remainders):0;
- return {state:commitDailySupplyTimedBoost(state,{consumedSeconds,nextRemainders:remainders}),outputQuantity:input.outputQuantity+bonusQuantity,xp:input.xp+bonusXp,bonusQuantity,bonusXp};
+ if(!state.character||input.seconds<=0)return {state,outputQuantity:input.outputQuantity,xp:input.xp,bonusQuantity:0,bonusXp:0};
+ const active=activeDailySupplyBoosts(state.character),updates:NonNullable<DailySupplyTimedResult['updates']>={};
+ let bonusQuantity=0,bonusXp=0;
+ for(const type of ['crafting_output','skill_xp'] as const){
+  const boost=active[type];if(!boost||type==='crafting_output'&&!input.outputEligible)continue;
+  const consumedSeconds=Math.min(boost.remainingSeconds,input.seconds),fraction=consumedSeconds/input.seconds,remainders={...(boost.remainders??{})};
+  if(type==='crafting_output')bonusQuantity=bonusInteger(input.outputQuantity,'craft:output',fraction,remainders);
+  else bonusXp=bonusInteger(input.xp,'craft:xp',fraction,remainders);
+  updates[type]={consumedSeconds,nextRemainders:remainders};
+ }
+ return {state:commitDailySupplyTimedBoost(state,{consumedSeconds:0,nextRemainders:{},updates}),outputQuantity:input.outputQuantity+bonusQuantity,xp:input.xp+bonusXp,bonusQuantity,bonusXp};
 }
-export function dailySupplyActiveLabel(character:CharacterState|null|undefined){
- const active=normalizeActiveDailySupplyBoost(character?.activeDailySupplyBoost);return active?{...active,label:dailySupplyBoostLabel(active.type),hours:active.remainingSeconds/3600}:undefined;
+export function dailySupplyActiveLabels(character:CharacterState|null|undefined){
+ const boosts=activeDailySupplyBoosts(character);
+ return DAILY_SUPPLY_BOOST_TYPES.flatMap(type=>{const active=boosts[type];return active?[{...active,label:dailySupplyBoostLabel(type),hours:active.remainingSeconds/3600}]:[];});
 }
+export function dailySupplyActiveLabel(character:CharacterState|null|undefined){return dailySupplyActiveLabels(character)[0]}
 export function dailySupplyBank(character:CharacterState|null|undefined){return normalizeDailySupplyBank(character?.dailySupplyBoostBank)??{}}
 export function dailySupplyActivityMode(activity:ActiveActivity|null|undefined):'combat'|'gathering'|'skill'|'crafting'|undefined{
  if(!activity)return undefined;if(activity.kind==='combat')return 'combat';if(['mining','woodcutting','fishing','herbalism'].includes(activity.kind))return 'gathering';if(activity.kind==='alchemy'||activity.kind==='processing')return 'crafting';return 'skill';

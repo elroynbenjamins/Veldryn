@@ -1,3 +1,4 @@
+import {migrateSave} from '../src/core/save-migrations';
 import {claimActivity,createCharacter,craftRecipe,newGame,offlineCapBreakdown,previewActivityReward,startCombat,startGathering} from '../src/core/game';
 import {executeGameCommand} from '../src/core/game-commands';
 import {activateDailySupplyBoost,applyDailySupplyCraft,claimDailySupplies,DAILY_SUPPLY_CHARGE_SECONDS,dailySuppliesStatus,dailySupplyBank} from '../src/core/daily-supplies';
@@ -50,7 +51,13 @@ home=dailySuppliesHomeSummary(activation,t0);
 ok(home.visible&&home.activeLabel?.includes('Gathering Yield')&&home.activeRemainingSeconds===DAILY_SUPPLY_CHARGE_SECONDS,'Home should surface the active Daily Supplies boost and remaining qualifying time even if today\'s claim is also ready');
 equal(activation.character?.activeDailySupplyBoost?.remainingSeconds,DAILY_SUPPLY_CHARGE_SECONDS,'Activated charge should contain exactly two hours of qualifying time');
 equal(activation.character?.dailySupplyBoostBank?.gathering_yield,undefined,'Activation should consume one banked charge');
-rejects(()=>activateDailySupplyBoost({...activation,character:{...activation.character!,dailySupplyBoostBank:{combat_xp:1}}},'combat_xp'),'Daily Supplies boosts must not stack percentage-wise');
+activation=activateDailySupplyBoost({...activation,character:{...activation.character!,dailySupplyBoostBank:{combat_xp:1}}},'combat_xp');
+equal(activation.character?.activeDailySupplyBoosts?.gathering_yield?.remainingSeconds,7200,'Gathering Yield stays active after Combat XP activates');
+equal(activation.character?.activeDailySupplyBoosts?.combat_xp?.remainingSeconds,7200,'Different Daily Supplies bonuses can run simultaneously');
+const restored=migrateSave(activation);
+equal(restored.character?.activeDailySupplyBoosts?.gathering_yield?.remainingSeconds,7200,'Reload preserves first active login boost');
+equal(restored.character?.activeDailySupplyBoosts?.combat_xp?.remainingSeconds,7200,'Reload preserves second active login boost');
+rejects(()=>activateDailySupplyBoost({...activation,character:{...activation.character!,dailySupplyBoostBank:{combat_xp:1}}},'combat_xp'),'One type cannot be activated twice concurrently');
 
 let baseGather=createCharacter(newGame(t0),'WAYFINDER','Base Gather');
 baseGather=startGathering(baseGather,'GREENWOOD_TREE',t0);
@@ -59,6 +66,18 @@ let boostedGather={...baseGather,character:{...baseGather.character!,activeDaily
 const boostedGatherPreview=previewActivityReward(boostedGather,t0+3600_000);
 equal(boostedGatherPreview.xp,baseGatherPreview.xp,'Gathering Yield must not increase Skill XP');
 equal(boostedGatherPreview.items[0].quantity,baseGatherPreview.items[0].quantity+Math.floor(baseGatherPreview.items[0].quantity*.10),'Gathering Yield should add exactly 10% stackable output with integer carry');
+const mixedGather={...baseGather,character:{...baseGather.character!,activeDailySupplyBoosts:{
+ gathering_yield:{type:'gathering_yield' as const,remainingSeconds:7200},
+ skill_xp:{type:'skill_xp' as const,remainingSeconds:7200},
+ combat_xp:{type:'combat_xp' as const,remainingSeconds:7200},
+}}};
+const mixedPreview=previewActivityReward(mixedGather,t0+3600_000);
+equal(mixedPreview.items[0].quantity,boostedGatherPreview.items[0].quantity,'Concurrent gathering yield still grants exact +10% items');
+equal(mixedPreview.xp,baseGatherPreview.xp+Math.floor(baseGatherPreview.xp*.10),'Concurrent skill XP grants its own +10%');
+const mixedClaim=claimActivity(mixedGather,t0+3600_000);
+equal(mixedClaim.state.character?.activeDailySupplyBoosts?.gathering_yield?.remainingSeconds,3600,'Gathering Yield consumes its own qualifying hour');
+equal(mixedClaim.state.character?.activeDailySupplyBoosts?.skill_xp?.remainingSeconds,3600,'Skill XP independently consumes the same qualifying hour');
+equal(mixedClaim.state.character?.activeDailySupplyBoosts?.combat_xp?.remainingSeconds,7200,'Combat XP retains time during non-combat gathering');
 const gathered=claimActivity(boostedGather,t0+3600_000);
 equal(gathered.state.character?.activeDailySupplyBoost?.remainingSeconds,3600,'One hour of qualifying gathering should consume one hour of boost time');
 

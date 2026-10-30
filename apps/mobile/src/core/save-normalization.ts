@@ -22,7 +22,7 @@ import {normalizeIdleRuleSets,validateActiveIdleRuleId} from './idle-rules-v40';
 import {normalizeGuildBackgroundId,normalizeGuildBannerId,normalizeGuildFrameId,normalizeGuildMotto,normalizeGuildNameplateId} from './guild-customization';
 import {normalizeOwnedPetIds,normalizeSelectedPetId} from './pet-collection';
 import {activityQueueCapacity,normalizeActivityQueue,normalizeActivityQueueGoal,normalizeQueueCombatRecovery} from './activity-queue';
-import {normalizeActiveDailySupplyBoost,normalizeDailySuppliesTrack,normalizeDailySupplyBank} from './daily-supplies';
+import {normalizeActiveDailySupplyBoost,activeDailySupplyBoosts,normalizeDailySuppliesTrack,normalizeDailySupplyBank} from './daily-supplies';
 import {normalizeChatEmoteTrayIds} from './chat-emotes';
 import {normalizeEquipmentCraftingQueue} from './equipment-crafting-queue';
 import {normalizeEnhancementGemSlots} from './equipment-enhancement';
@@ -118,6 +118,7 @@ export function normalizeSave(input:any):GameState{
     ,activityQueueCombatRecovery:normalizeQueueCombatRecovery(input.character.activityQueueCombatRecovery)
     ,dailySupplyBoostBank:normalizeDailySupplyBank(input.character.dailySupplyBoostBank)
     ,activeDailySupplyBoost:normalizeActiveDailySupplyBoost(input.character.activeDailySupplyBoost)
+    ,activeDailySupplyBoosts:activeDailySupplyBoosts(input.character)
     ,activeEventCandy:(input.character.activeEventCandy&&typeof input.character.activeEventCandy==='object'&&typeof input.character.activeEventCandy.eventId==='string'&&typeof input.character.activeEventCandy.itemId==='string'&&Number.isFinite(Number(input.character.activeEventCandy.remainingSeconds))&&Number(input.character.activeEventCandy.remainingSeconds)>0?{eventId:input.character.activeEventCandy.eventId,itemId:input.character.activeEventCandy.itemId,remainingSeconds:Math.min(36000,Math.max(1,Math.floor(Number(input.character.activeEventCandy.remainingSeconds)))),lastUpdatedAtMs:Math.max(0,Math.floor(Number(input.character.activeEventCandy.lastUpdatedAtMs??0)))}:undefined)
     ,activeEventCandies:input.character.activeEventCandies
   };})():null;
@@ -218,7 +219,7 @@ export function normalizeSave(input:any):GameState{
   if(input.otherCharacters!==undefined&&!Array.isArray(input.otherCharacters))throw new Error('Invalid account roster.');
   if(Array.isArray(input.otherCharacters)&&input.otherCharacters.length>4)throw new Error('Account roster exceeds the five-character limit.');
   const rosterIds=new Set<string>();
-  const roster=Array.isArray(input.otherCharacters)?input.otherCharacters.filter((entry:any)=>entry?.character?.id).map((entry:any)=>{const id=String(entry.character.id);if(rosterIds.has(id))throw new Error('Duplicate account character.');rosterIds.add(id);const candy=entry.character.activeEventCandy;return {...entry,character:{...entry.character,gearEnhancements:normalizeGearEnhancements(entry.character.gearEnhancements),dailySupplyBoostBank:normalizeDailySupplyBank(entry.character.dailySupplyBoostBank),activeDailySupplyBoost:normalizeActiveDailySupplyBoost(entry.character.activeDailySupplyBoost),activeEventCandy:candy&&typeof candy.eventId==='string'&&typeof candy.itemId==='string'&&Number.isFinite(Number(candy.remainingSeconds))&&Number(candy.remainingSeconds)>0?{eventId:candy.eventId,itemId:candy.itemId,remainingSeconds:Math.min(36000,Math.max(1,Math.floor(Number(candy.remainingSeconds)))),lastUpdatedAtMs:Math.max(0,Math.floor(Number(candy.lastUpdatedAtMs??0)))}:undefined,activeEventCandies:entry.character.activeEventCandies}};}):[];
+  const roster=Array.isArray(input.otherCharacters)?input.otherCharacters.filter((entry:any)=>entry?.character?.id).map((entry:any)=>{const id=String(entry.character.id);if(rosterIds.has(id))throw new Error('Duplicate account character.');rosterIds.add(id);const candy=entry.character.activeEventCandy;return {...entry,character:{...entry.character,gearEnhancements:normalizeGearEnhancements(entry.character.gearEnhancements),dailySupplyBoostBank:normalizeDailySupplyBank(entry.character.dailySupplyBoostBank),activeDailySupplyBoost:normalizeActiveDailySupplyBoost(entry.character.activeDailySupplyBoost),activeDailySupplyBoosts:activeDailySupplyBoosts(entry.character),activeEventCandy:candy&&typeof candy.eventId==='string'&&typeof candy.itemId==='string'&&Number.isFinite(Number(candy.remainingSeconds))&&Number(candy.remainingSeconds)>0?{eventId:candy.eventId,itemId:candy.itemId,remainingSeconds:Math.min(36000,Math.max(1,Math.floor(Number(candy.remainingSeconds)))),lastUpdatedAtMs:Math.max(0,Math.floor(Number(candy.lastUpdatedAtMs??0)))}:undefined,activeEventCandies:entry.character.activeEventCandies}};}):[];
   if(character?.id&&rosterIds.has(character.id))throw new Error('Duplicate active account character.');
   normalized.otherCharacters=roster as GameState['otherCharacters'];
   normalized.account.unlockedCharacterSlots=Math.max(1,Math.min(5,Number(input.account?.unlockedCharacterSlots??1)));

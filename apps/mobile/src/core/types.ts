@@ -59,9 +59,11 @@ export interface CharacterState {
   activityQueue?:QueuedActivity[];
   activityQueuePausedReason?:string;
   activityQueueCombatRecovery?:{needsHealing:boolean;minimumFood:number};
-  /** Character-bound banked Daily Supplies charges and one active +10% boost. */
+  /** Character-bound banked Daily Supplies charges; all four boost types can run independently. */
   dailySupplyBoostBank?:Partial<Record<import('./daily-supplies').DailySupplyBoostType,number>>;
   activeDailySupplyBoost?:import('./daily-supplies').ActiveDailySupplyBoost;
+  /** New-format independent active timers; the singular field remains a compatibility mirror. */
+  activeDailySupplyBoosts?:Partial<Record<import('./daily-supplies').DailySupplyBoostType,import('./daily-supplies').ActiveDailySupplyBoost>>;
   /** Event candy utility timer; never modifies combat power. */
   activeEventCandy?:{eventId:string;itemId:string;remainingSeconds:number;lastUpdatedAtMs:number};
   activeEventCandies?:Partial<Record<import('../content/live-events').EventCandyKind,{eventId:string;itemId:string;remainingSeconds:number;lastUpdatedAtMs:number}>>;

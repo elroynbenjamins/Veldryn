@@ -78,7 +78,7 @@ export function ResourceCodexScreen({state,onNavigateSource,onOpenCompanions}:{s
   />}
   {activeView==='Resources'&&selected?<GameModalSurface visible presentation="sheet" reduceMotion={state.settings.reduceMotion} onClose={onClose}>
    <GameModalHeader eyebrow={a(selected.companionRelated?'Companions':selected.category).toLocaleUpperCase(language)} title={selected.name} onClose={onClose}/>
-   <ScrollView keyboardShouldPersistTaps="handled" contentContainerStyle={s.detail} showsVerticalScrollIndicator={false}>
+   <ScrollView showsHorizontalScrollIndicator={false} keyboardShouldPersistTaps="handled" contentContainerStyle={s.detail} showsVerticalScrollIndicator={false}>
     <View style={s.hero}>
      <View style={[s.heroArt,{borderColor:rarityMeta(selected.rarity).color}]}><ResourceArt entry={selected} size={64}/></View>
      <View style={s.heroCopy}><Text style={[s.detailRarity,{color:rarityNameColor(selected.rarity,C.dark,C.text)}]}>{rarityMeta(selected.rarity).label}</Text><Text style={s.owned}>{a('Owned')}: {quantity.toLocaleString(language)}</Text><Text style={s.muted}>{a('Includes Inventory, Bank and companion storage')}</Text></View>

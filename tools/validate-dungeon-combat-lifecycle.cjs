@@ -67,7 +67,7 @@ function makeHarness({width = 390, reducedMotion = false, motionQuery} = {}) {
       addEventListener: (_name, callback) => { accessibilityListeners.add(callback); return {remove: () => accessibilityListeners.delete(callback)}; }
     },
     Animated: {Value: AnimatedValue, timing, parallel: group, sequence: group, View: 'Animated.View', Text: 'Animated.Text'},
-    Easing: {out: value => value, in: value => value, cubic: value => value, quad: value => value, linear: value => value},
+    Easing: {out: value => value, in: value => value, cubic: value => value, quad: value => value, back: () => value => value, linear: value => value},
     Pressable: 'Pressable', Text: 'Text', View: 'View', Image: 'Image',
     Platform: {OS: 'android', select: options => options.android ?? options.default},
     StyleSheet: {create: value => value, flatten: flattenStyle, absoluteFill: {}, absoluteFillObject: {}, hairlineWidth: 1},

@@ -6,6 +6,31 @@ import {createTranslator,type TranslationParams} from './translator';
 
 // Columns are German, Spanish, Dutch, Italian and French; keys are the English catalog.
 export const socialTranslationRows = {
+ // UI labels introduced by the dungeon, chat and social redesigns.
+ "Change chat channel":["Chatkanal wechseln","Cambiar canal de chat","Chatkanaal wijzigen","Cambia canale chat","Changer de canal de discussion"],
+ "Chat channels":["Chatkanäle","Canales de chat","Chatkanalen","Canali chat","Canaux de discussion"],
+ "Global chat":["Globaler Chat","Chat global","Wereldchat","Chat globale","Discussion globale"],
+ "Guild members":["Gildenmitglieder","Miembros del gremio","Gildeleden","Membri della gilda","Membres de la guilde"],
+ "Join a Guild to chat":["Tritt einer Gilde bei, um zu chatten","Únete a un gremio para chatear","Word lid van een gilde om te chatten","Unisciti a una gilda per chattare","Rejoignez une guilde pour discuter"],
+ "Your party":["Deine Gruppe","Tu grupo","Je groep","Il tuo gruppo","Votre groupe"],
+ "Game notifications":["Spielbenachrichtigungen","Notificaciones del juego","Spelmeldingen","Notifiche di gioco","Notifications du jeu"],
+ "Guild Level {level}":["Gildenstufe {level}","Nivel de gremio {level}","Gildeniveau {level}","Livello gilda {level}","Niveau de guilde {level}"],
+ "Raid":["Schlachtzug","Incursión","Raid","Incursione","Raid"],
+ "Identity & appearance":["Identität & Aussehen","Identidad y apariencia","Identiteit en uiterlijk","Identità e aspetto","Identité et apparence"],
+ "Recruitment & members":["Rekrutierung & Mitglieder","Reclutamiento y miembros","Werving en leden","Reclutamento e membri","Recrutement et membres"],
+ "Guild recruitment":["Gildenrekrutierung","Reclutamiento de gremio","Gildewerving","Reclutamento della gilda","Recrutement de guilde"],
+ "LIVE COMBAT":["LIVE-KAMPF","COMBATE EN DIRECTO","LIVE GEVECHT","COMBATTIMENTO IN DIRETTA","COMBAT EN DIRECT"],
+ "You are already in a Guild.":["Du bist bereits in einer Gilde.","Ya perteneces a un gremio.","Je bent al lid van een gilde.","Fai già parte di una gilda.","Vous faites déjà partie d’une guilde."],
+ "Guild recruiting requires Leader or Officer access.":["Für die Gildenrekrutierung sind Anführer- oder Offiziersrechte nötig.","Para reclutar se requieren permisos de líder u oficial.","Voor gildewerving heb je leiders- of officiersrechten nodig.","Per reclutare servono i permessi di capo o ufficiale.","Le recrutement exige les droits de chef ou d’officier."],
+ "Opening Party Chat…":["Gruppenchat wird geöffnet…","Abriendo chat del grupo…","Groepschat openen…","Apertura chat del gruppo…","Ouverture de la discussion du groupe…"],
+ "Could not update Social.":["Soziales konnte nicht aktualisiert werden.","No se pudo actualizar la sección social.","Sociaal kon niet worden bijgewerkt.","Impossibile aggiornare la sezione social.","Impossible d’actualiser la section sociale."],
+ "Updating…":["Wird aktualisiert…","Actualizando…","Bijwerken…","Aggiornamento…","Mise à jour…"],
+ "Connecting…":["Verbindung wird hergestellt…","Conectando…","Verbinden…","Connessione…","Connexion…"],
+ "Checking your Party…":["Deine Gruppe wird geprüft…","Comprobando tu grupo…","Je groep controleren…","Verifica del gruppo…","Vérification de votre groupe…"],
+ "Open Guilds":["Gilden öffnen","Abrir gremios","Gilden openen","Apri le gilde","Ouvrir les guildes"],
+ "Checking Guild membership…":["Gildenmitgliedschaft wird geprüft…","Comprobando pertenencia al gremio…","Gildelidmaatschap controleren…","Verifica dell’appartenenza alla gilda…","Vérification de l’appartenance à la guilde…"],
+ "Open my Guild":["Meine Gilde öffnen","Abrir mi gremio","Mijn gilde openen","Apri la mia gilda","Ouvrir ma guilde"],
+
 "Watch":["Ansehen","Ver","Bekijken","Guarda","Voir"],
 "Visual effects only · server-calculated damage":["Nur visuelle Effekte · Schaden wird vom Server berechnet","Solo efectos visuales · daño calculado por el servidor","Alleen visuele effecten · schade berekend door server","Solo effetti visivi · danni calcolati dal server","Effets visuels uniquement · dégâts calculés par le serveur"],
  "Battle in progress": ["Kampf läuft","Combate en curso","Gevecht bezig","Combattimento in corso","Combat en cours"],

@@ -1,7 +1,7 @@
 import {createCharacter,newGame} from '../src/core/game';
 import {combatCompanionDef} from '../src/content/combat-companions';
 import {companionRequirementProgress,companionStarterTeamProgress,companionUnlockGuidance} from '../src/core/companion-presentation';
-import {companionUnlockRequirementMet,reconcileCombatCompanionUnlocks} from '../src/core/combat-companions';
+import {chooseStarterCombatCompanion,companionUnlockRequirementMet,reconcileCombatCompanionUnlocks} from '../src/core/combat-companions';
 
 function fail(message:string):never{throw new Error(message)}
 function ok(value:unknown,message:string){if(!value)fail(message)}
@@ -22,6 +22,7 @@ equal(sprite.unlockRequirements[0]?.amount,16,'Silverbrook Sprite Fishing target
 equal(sprite.unlockRequirements[1]?.target,'SILVERBROOK_NODES','Silverbrook Sprite still requires Silverbrook exploration');
 
 let spriteState=createCharacter(newGame(1),'IRONWARDEN','Silverbrook Guide');
+spriteState=chooseStarterCombatCompanion({...spriteState,quests:spriteState.quests.map(row=>row.questId==='QST_005'?{...row,status:'claimed' as const}:row)},'UNIT_001',2);
 spriteState={...spriteState,skills:spriteState.skills.map(row=>row.skillId==='fishing'?{...row,level:15}:row),account:{...spriteState.account,companionUnlockProgress:{'node:SILVERBROOK_SHOAL':1,'node:RIVER_EEL_POOL':1,'node:OATHSCALE_POOL':1,SILVERBROOK_NODES:1}}};
 spriteState=reconcileCombatCompanionUnlocks(spriteState,100);
 ok(!spriteState.account.unlockedCombatCompanionIds?.includes('UNIT_003'),'Fishing 15 must remain below Silverbrook Sprite threshold');

@@ -16,4 +16,22 @@ const capped={...entitlement('cadence-capped','qmode','cadence-player',12*eightH
 const reset={...entitlement('cadence-reset','live','cadence-player',13*eightHours),periodWeekKey:'week-b'};cadenceService.create(reset);assert.equal(cadenceService.claim('cadence-player',reset.id,'cadence-request-reset').marks,125,'new week restores both enhanced eligibility and the 3-clear Live Fellowship allowance');
 const noBonusRepository=new MemoryRewardIntegrityRepository(),noBonusService=new CoopRewardService(noBonusRepository),failed={...state,cleared:false};const failedLive={...entitlement('failed-live','live','failed-player'),state:failed};noBonusService.create(failedLive);assert.equal(noBonusService.claim('failed-player',failedLive.id,'failed-live-request').liveFellowshipBonus,0,'failed Live runs do not consume Fellowship');assert.equal(noBonusRepository.weekly.get('failed-player:2026-09-07')?.liveFellowship??0,0);
 for(let i=0;i<4;i++){const item=entitlement(`fellowship-${i}`,'live','fellowship-player');noBonusService.create(item);const result=noBonusService.claim('fellowship-player',item.id,`fellowship-request-${i}`);assert.equal(result.liveFellowshipBonus,i<3?25:0);}assert.equal(noBonusRepository.weekly.get('fellowship-player:2026-09-07')?.liveFellowship,3,'Fellowship is limited to three successful Live clears per account week');
+const failRepo=new MemoryRewardIntegrityRepository(),failService=new CoopRewardService(failRepo);
+const fail={...state,cleared:false,routeProgress:1,reachedFinalBoss:true};
+for(let i=0;i<14;i++){
+ const item={...entitlement(`failure-${i}`,'live','failed-consolation',i*1000),state:fail};
+ failService.create(item);
+ const claim=failService.claim('failed-consolation',item.id,`failure-request-${i}`);
+ assert.equal(claim.marks,i<12?12:0,'Failure payout must be limited to 12 small consolation claims per week');
+ assert.equal(claim.liveFellowshipBonus,0,'Failed Live clears never grant Fellowship');
+}
+assert.equal(failRepo.enhancedCharges.size,0,'Failed attempts must not consume or initialize enhanced charges');
+assert.equal(failRepo.weekly.get('failed-consolation:2026-09-07')?.enhanced,0,'Failed attempts cannot consume weekly enhanced reward allowance');
+const clearAfterFailures=entitlement('after-failures','qmode','failed-consolation',20_000);
+failService.create(clearAfterFailures);
+assert.equal(failService.claim('failed-consolation',clearAfterFailures.id,'after-failures-clear').marks,100,'A successful clear after failures still earns a full enhanced payout');
+assert.equal(failRepo.enhancedCharges.get('failed-consolation')?.charges,2,'Only a successful clear spends the charge');
+const replayFailure=failService.claim('failed-consolation','failure-0','failure-request-0');
+assert.equal(replayFailure.marks,12);assert.equal(replayFailure.idempotentReplay,true);
+assert.equal(failRepo.failedWeekly.get('failed-consolation:2026-09-07'),12,'Idempotent replay never grants additional weekly failure allowance');
 console.log('coop phase11 rewards OK');

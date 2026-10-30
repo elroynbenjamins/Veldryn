@@ -4,6 +4,8 @@ import {createTranslator,interpolateTranslation,type TranslationParams} from './
 // English source keys are limited to authored UI copy, never player-authored text.
 // Each row contains de, es, nl, it and fr, in SUPPORTED_LANGUAGES order after en.
 export const creationTranslationRows = {
+  "ROLE": ["ROLLE","ROL","ROL","RUOLO","RÔLE"],
+  "Choose your character name.": ["Wähle deinen Charakternamen.","Elige el nombre de tu personaje.","Kies de naam van je personage.","Scegli il nome del personaggio.","Choisissez le nom de votre personnage."],
   "Your adventure begins here.": ["Dein Abenteuer beginnt hier.","Tu aventura comienza aquí.","Je avontuur begint hier.","La tua avventura inizia qui.","Votre aventure commence ici."],
   "Choose your class, name your character, and begin your journey through Asterfall.": ["Wähle deine Klasse, benenne deinen Charakter und beginne deine Reise durch Asterfall.","Elige tu clase, pon nombre a tu personaje y comienza tu viaje por Asterfall.","Kies je klasse, geef je personage een naam en begin je reis door Asterfall.","Scegli la classe, dai un nome al personaggio e inizia il viaggio ad Asterfall.","Choisissez votre classe, nommez votre personnage et commencez votre voyage à Asterfall."],
   "Nine unique classes with different combat styles.": ["Neun einzigartige Klassen mit verschiedenen Kampfstilen.","Nueve clases únicas con estilos de combate distintos.","Negen unieke klassen met verschillende vechtstijlen.","Nove classi uniche con diversi stili di combattimento.","Neuf classes uniques aux styles de combat différents."],

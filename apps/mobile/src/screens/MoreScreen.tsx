@@ -66,7 +66,7 @@ function itemMeta(language:GameState['settings']['language'],id:MoreDestination)
   }
 }
 
-export function MoreScreen({language,character,accountStatus='local',onNavigate,onOpenAdminQa,onOpenUpdates,newReleaseAvailable=false,companionAttention=false,companionUnlocked=true,lockedDestinations={},dailySuppliesAttention=false,friendRequestCount=0,guildAttentionCount=0,socialAttentionCount=0,newUnlockCount=0,storyRewardCount=0}:{language:GameState['settings']['language'];character?:GameState['character'];accountStatus?:'guest'|'linked'|'local';onNavigate:(destination:MoreDestination)=>void;onOpenAdminQa?:()=>void;onOpenUpdates?:()=>void;newReleaseAvailable?:boolean;companionAttention?:boolean;companionUnlocked?:boolean;lockedDestinations?:Partial<Record<MoreDestination,string>>;dailySuppliesAttention?:boolean;friendRequestCount?:number;guildAttentionCount?:number;socialAttentionCount?:number;newUnlockCount?:number;storyRewardCount?:number}){
+export function MoreScreen({language,character,accountStatus='local',onNavigate,onOpenAdminQa,onOpenUpdates,newReleaseAvailable=false,companionAttention=false,companionUnlocked=true,lockedDestinations={},dailySuppliesAttention=false,friendRequestCount=0,guildAttentionCount=0,socialAttentionCount=0,newUnlockCount=0,storyRewardCount=0}:{language:GameState['settings']['language'];character?:GameState['character'];accountStatus?:'guest'|'pending'|'linked'|'local';onNavigate:(destination:MoreDestination)=>void;onOpenAdminQa?:()=>void;onOpenUpdates?:()=>void;newReleaseAvailable?:boolean;companionAttention?:boolean;companionUnlocked?:boolean;lockedDestinations?:Partial<Record<MoreDestination,string>>;dailySuppliesAttention?:boolean;friendRequestCount?:number;guildAttentionCount?:number;socialAttentionCount?:number;newUnlockCount?:number;storyRewardCount?:number}){
  const a=(text:string,params?:Record<string,string|number>)=>accountText(language,text,params);
 
   const C=useGameTheme(),s=useMemo(()=>makeStyles(C),[C]),{width,fontScale}=useWindowDimensions(),singleColumn=width<350||fontScale>=1.25;
@@ -108,13 +108,13 @@ export function MoreScreen({language,character,accountStatus='local',onNavigate,
     {character&&<View style={s.profileCard}>
       <View style={s.profileAvatar}><Image accessible={false} source={classEmblemIconArtwork[character.classId]} resizeMode="contain" style={s.avatarArt}/></View>
       <View style={s.profileCopy}><Text numberOfLines={1} style={s.profileName}>{character.name}</Text><Text numberOfLines={2} style={s.profileMeta}>{className} · {a('Level')} {character.level}</Text>
-        <Text style={[s.profileStatus,accountStatus==='linked'&&s.profileLinked]}>{accountStatus==='guest'?a('Guest account'):accountStatus==='linked'?a('Linked account'):a('Local character')}</Text>
+        <Text style={[s.profileStatus,accountStatus==='linked'&&s.profileLinked]}>{accountStatus==='guest'?a('Guest account'):accountStatus==='pending'?a('Account setup pending'):accountStatus==='linked'?a('Linked account'):a('Local character')}</Text>
       </View>
       <Pressable accessibilityRole="button" accessibilityLabel={a('Profile')} onPress={()=>onNavigate('Profile')} style={({pressed})=>[s.profileAction,pressed&&s.pressed]}><Text style={s.profileActionText}>{a('Profile')}</Text></Pressable>
     </View>}
-    {accountStatus==='guest'?<Pressable accessibilityRole="button" accessibilityLabel={a('Secure guest account')} accessibilityHint={a('Open Account settings to add an email and protect your progress.')} onPress={()=>onNavigate('Settings')} style={({pressed})=>[s.securityCard,pressed&&s.pressed]}>
+    {(accountStatus==='guest'||accountStatus==='pending')?<Pressable accessibilityRole="button" accessibilityLabel={a('Secure guest account')} accessibilityHint={a('Open Account settings to add an email and protect your progress.')} onPress={()=>onNavigate('Settings')} style={({pressed})=>[s.securityCard,pressed&&s.pressed]}>
      <View style={s.securityIcon}><Text style={s.securityIconText}>◇</Text></View>
-     <View style={s.flex}><Text style={s.securityTitle}>{a('Secure your progress')}</Text><Text style={s.securityDescription}>{a('Link an email to protect access to this guest account.')}</Text></View>
+     <View style={s.flex}><Text style={s.securityTitle}>{a('Secure your progress')}</Text><Text style={s.securityDescription}>{a(accountStatus==='pending'?'Complete email verification or password setup in Account settings.':'Link an email to protect access to this guest account.')}</Text></View>
      <Text style={s.securityArrow}>›</Text>
     </Pressable>:null}
     {onOpenUpdates?<Pressable accessibilityRole="button" accessibilityLabel={a("What's New & Updates")} accessibilityHint={newReleaseAvailable?a("New release information available"):a("Release notes and app versions")} onPress={onOpenUpdates} style={({pressed})=>[s.releaseRow,pressed&&s.pressed]}>

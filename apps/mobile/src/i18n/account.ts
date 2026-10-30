@@ -4,6 +4,8 @@ import {createTranslator} from './translator';
 // Each row contains English, German, Spanish, Dutch, Italian and French.
 // English source keys also let owned views translate core-generated presentation text.
 export const accountTranslationRows = {
+  "Account setup pending":["Account setup pending","Kontoeinrichtung ausstehend","Configuración de cuenta pendiente","Accountinstelling nog niet voltooid","Configurazione account in sospeso","Configuration du compte en attente"],
+  "Complete email verification or password setup in Account settings.":["Complete email verification or password setup in Account settings.","Schließe die E-Mail-Bestätigung oder Passworteinrichtung in den Kontoeinstellungen ab.","Completa la verificación del correo o configura la contraseña en Ajustes de cuenta.","Rond je e-mailverificatie of wachtwoordinstelling af bij Accountinstellingen.","Completa la verifica email o la configurazione della password nelle impostazioni account.","Terminez la vérification e-mail ou la configuration du mot de passe dans les paramètres du compte."],
   "ACCOUNT RECOVERY":["ACCOUNT RECOVERY","KONTOWIEDERHERSTELLUNG","RECUPERACIÓN DE CUENTA","ACCOUNTHERSTEL","RECUPERO ACCOUNT","RÉCUPÉRATION DU COMPTE"],
   "NEW ACCOUNT":["NEW ACCOUNT","NEUES KONTO","CUENTA NUEVA","NIEUW ACCOUNT","NUOVO ACCOUNT","NOUVEAU COMPTE"],
   "Recover your account":["Recover your account","Konto wiederherstellen","Recupera tu cuenta","Herstel je account","Recupera il tuo account","Récupérez votre compte"],

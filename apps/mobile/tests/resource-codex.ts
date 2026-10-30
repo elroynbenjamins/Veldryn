@@ -3,7 +3,7 @@ import {resourceCodexEntries,resourceCodexQuantity,resourceCodexSources,RESOURCE
 import {COMPANION_MISSIONS} from '../../../backend/src/server/companions/content';
 import {COMBAT_COMPANIONS} from '../src/content/combat-companions';
 
-const assert=(condition:unknown,message:string):asserts condition=>{if(!condition)throw new Error(message)};
+function assert(condition:unknown,message:string):asserts condition{if(!condition)throw new Error(message)}
 const entries=resourceCodexEntries();
 assert(entries.length>40,'Codex should include the full materials catalog');
 assert(entries.every(row=>Boolean(row.id)&&Boolean(row.name)),'Codex entries must have IDs and names');

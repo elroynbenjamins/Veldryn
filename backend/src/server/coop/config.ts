@@ -1,3 +1,4 @@
+import {EXPEDITION} from '../expeditions/constants';
 export const COOP_ROGUELITE_CONFIG = Object.freeze({
   featureFlag: 'coopRogueliteV1',
   enabledByDefault: false,
@@ -31,6 +32,19 @@ export function highestEligibleCoopTier(baseMinimumLevel:number,characterLevel:n
   if(!Number.isInteger(characterLevel)||characterLevel<1)throw new Error('invalid_character_level');
   for(const tier of [5,4,3,2,1] as CoopTier[])if(characterLevel>=coopRequiredLevel(baseMinimumLevel,tier))return tier;
   return undefined;
+}
+
+/** Automatic matchmaking is conservative for under-geared characters, but
+ * never removes a manually selectable level-unlocked tier. The server alone
+ * computes normalizedScore from the verified and frozen loadout. */
+export function readinessEligibleCoopTier(baseMinimumLevel:number,characterLevel:number,normalizedScore:number):CoopTier|undefined{
+ if(!Number.isFinite(normalizedScore)||normalizedScore<COOP_ROGUELITE_CONFIG.normalizedReadinessFloor)return undefined;
+ const eligible=highestEligibleCoopTier(baseMinimumLevel,characterLevel);
+ if(!eligible)return undefined;
+ for(const tier of [5,4,3,2,1] as CoopTier[]){
+  if(tier<=eligible&&normalizedScore>=COOP_ROGUELITE_CONFIG.normalizedReadinessFloor*EXPEDITION.difficultyIndex[tier])return tier;
+ }
+ return 1;
 }
 
 export interface RootboundCoopBalance {

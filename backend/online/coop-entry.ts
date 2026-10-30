@@ -1,6 +1,7 @@
 import type {GameState} from '../../apps/mobile/src/core/types';
 import {CLASSES} from '../../apps/mobile/src/content/classes';
 import {EXPEDITIONS} from '../src/server/expeditions/content/launch-content';
+import {baseMarks} from '../src/server/expeditions/rewards';
 import {recommendedDungeonPower} from '../src/server/coop/dungeon-power';
 import {eventExpeditionPreviews} from '../src/server/expeditions/content/event-expeditions';
 import {coopRequiredLevel,type CoopTier} from '../src/server/coop/config';
@@ -56,10 +57,14 @@ export function coopEntryHandler(services:Services){return async(request:Request
   }
   const character=loaded.state.character;
   const participation=await services.rpc<Record<string,unknown>>('online_coop_entry_state_server_v1',{p_account_id:accountId});
+  // Optional until the read-only projection migration is released. Missing
+  // budget data never prevents browsing or fabricates remaining charges.
+  let rewardBudget:unknown;
+  try{rewardBudget=await services.rpc('online_coop_reward_budget_server_v1',{p_account_id:accountId});}catch{/* Old server schema: hide counts until migrated. */}
   const liveRecruitment=await services.rpc<unknown[]>('browse_online_coop_lfg_server_v1',{p_account_id:accountId});
   const runtime=loaded.liveEvent,activeLiveEventId=runtime?.enabled&&loaded.serverNow>=runtime.startsAtMs&&loaded.serverNow<runtime.endsAtMs?runtime.eventId:undefined;
-  return json({...participation,serverNow:loaded.serverNow,gameVersion:loaded.version,liveRecruitment,
-   dungeons:Object.values(EXPEDITIONS).map(def=>({id:def.id,name:def.name,region:def.region,minLevel:def.minLevel,recommendedLevel:def.recommendedLevel,recommendedPower:recommendedDungeonPower(def.minLevel),syncLevel:def.recommendedLevel,available:def.coopImplemented&&character.level>=def.minLevel,lockedReason:!def.coopImplemented?'Not yet available':character.level<def.minLevel?`Requires level ${def.minLevel}`:undefined,difficulties:tiers,tierMinLevels:Object.fromEntries(tiers.map(tier=>[tier,coopRequiredLevel(def.minLevel,tier)])),preBossRoomMin:5,preBossRoomMax:5,estimatedMinutes:{min:6,max:8}})),
+  return json({...participation,serverNow:loaded.serverNow,gameVersion:loaded.version,liveRecruitment,...(rewardBudget?{rewardBudget}:{}),
+   dungeons:Object.values(EXPEDITIONS).map(def=>({id:def.id,name:def.name,region:def.region,baseMarks:def.baseMarks,expectedMarksByTier:Object.fromEntries(tiers.map(tier=>[tier,baseMarks(def.baseMarks,tier)])),minLevel:def.minLevel,recommendedLevel:def.recommendedLevel,recommendedPower:recommendedDungeonPower(def.minLevel),syncLevel:def.recommendedLevel,available:def.coopImplemented&&character.level>=def.minLevel,lockedReason:!def.coopImplemented?'Not yet available':character.level<def.minLevel?`Requires level ${def.minLevel}`:undefined,difficulties:tiers,tierMinLevels:Object.fromEntries(tiers.map(tier=>[tier,coopRequiredLevel(def.minLevel,tier)])),preBossRoomMin:5,preBossRoomMax:5,estimatedMinutes:{min:6,max:8}})),
    eventExpeditions:eventExpeditionPreviews(loaded.serverNow).map(def=>{const matches=Boolean(activeLiveEventId&&activeLiveEventId.startsWith(`${def.liveEventSeriesId}_`)),levelReady=character.level>=def.minLevel,available=matches&&levelReady&&prepared?.assessment.readiness.ready===true;return {...def,status:available?'available' as const:'preview' as const,liveEventId:matches?activeLiveEventId:undefined,lockedReason:available?undefined:!matches?`Available only while ${def.eventName} is active.`:!levelReady?`Requires level ${def.minLevel}`:'Current co-op loadout is not expedition-ready.'};}),
    loadouts:prepared?[{id:'current',characterId:character.id,revision:loaded.version,verifiedRevision:loaded.version,name:'Current equipment',characterName:character.name,className:CLASSES.find(row=>row.id===character.classId)!.name,role:prepared.assessment.readiness.role,status:prepared.assessment.readiness.ready?'verified':'ineligible',ready:prepared.assessment.readiness.ready,failures:prepared.assessment.readiness.failures,level:character.level,effectiveLevel:prepared.assessment.normalized.effectiveLevel,beforeStats:prepared.assessment.normalized.before,effectiveStats:prepared.assessment.normalized.snapshot,normalizationVersion:prepared.assessment.normalized.normalizationVersion,verifiedAt:new Date(loaded.serverNow).toISOString(),skills:prepared.record.abilities.map(row=>row.name),equipment:Object.values(character.equipment).filter(Boolean)}]:[],
   });

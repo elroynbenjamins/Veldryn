@@ -23,7 +23,7 @@ export function guildAccessError(reason:unknown):string{
  const higher=normalized.match(/^minimum_level_(\d+)$/);
  if(higher)return `This Guild requires a Level ${higher[1]} character.`;
  if(normalized==='minimum_level_not_met')return 'You do not meet this Guild’s minimum character level.';
- if(normalized==='guild_level_10_required')return `Reach Level ${GUILD_JOIN_LEVEL} on a character before joining or creating a Guild.`;
+ if(normalized==='guild_level_7_required'||normalized==='guild_level_10_required')return `Reach Level ${GUILD_JOIN_LEVEL} on a character before joining or creating a Guild.`;
  if(normalized==='guild_full')return 'This Guild is full. Try another Guild.';
  if(normalized==='invite_only')return 'This Guild accepts invitations only.';
  if(normalized==='already_in_guild')return 'You are already in a Guild.';

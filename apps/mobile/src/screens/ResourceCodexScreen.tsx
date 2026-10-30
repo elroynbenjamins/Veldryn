@@ -37,7 +37,7 @@ export function ResourceCodexScreen({state,onNavigateSource,onOpenCompanions}:{s
  const C=useGameTheme(),s=useMemo(()=>makeStyles(C),[C]),{width,fontScale}=useWindowDimensions();
  const language=state.settings.language;
  const a=useCallback((value:string)=>accountText(language,value),[language]);
- const [query,setQuery]=useState(''),[showSearch,setShowSearch]=useState(false),[category,setCategory]=useState<ResourceCategory>('All'),[selectedId,setSelectedId]=useState<string|null>(null);
+ const [query,setQuery]=useState(''),[showSearch,setShowSearch]=useState(false),[showFilters,setShowFilters]=useState(false),[category,setCategory]=useState<ResourceCategory>('All'),[selectedId,setSelectedId]=useState<string|null>(null);
  const [activeView,setActiveView]=useState<'Resources'|'Recipes'>('Resources');
  const [ingredientFilterId,setIngredientFilterId]=useState<string|undefined>();
  // Four columns for normal mobile layouts, with measured fallbacks for compact devices and larger text.
@@ -67,10 +67,11 @@ export function ResourceCodexScreen({state,onNavigateSource,onOpenCompanions}:{s
    ListHeaderComponent={<View style={s.header}>
     <View style={s.headingRow}>
      <View style={s.headingText}><Text accessibilityRole="header" style={s.title}>{a('Resource Codex')}</Text><Text style={s.hint}>{a('Discover materials and where to obtain them.')}</Text></View>
+     <Pressable accessibilityRole="button" accessibilityLabel={a('Filter resources')} accessibilityState={{expanded:showFilters}} onPress={()=>setShowFilters(value=>!value)} style={s.filterButton}><UiIcon name="filter" size={19}/><Text numberOfLines={1} style={s.filterButtonText}>{a(category)}</Text></Pressable>
      <Pressable accessibilityRole="button" accessibilityLabel={a('Search resources')} accessibilityState={{expanded:showSearch}} onPress={()=>{setShowSearch(value=>!value);setQuery('');}} style={s.iconButton}><UiIcon name="search" size={24}/></Pressable>
     </View>
     {showSearch?<GameTextInput autoFocus autoCorrect={false} value={query} onChangeText={setQuery} placeholder={a('Search resources…')} accessibilityLabel={a('Search resources')}/>:null}
-    <ScrollView horizontal showsHorizontalScrollIndicator={false} keyboardShouldPersistTaps="handled" contentContainerStyle={s.filters}>{RESOURCE_CATEGORIES.map(label=><Pressable key={label} accessibilityRole="button" accessibilityState={{selected:category===label}} onPress={()=>setCategory(label)} style={[s.chip,category===label&&s.chipActive]}><Text style={[s.chipText,category===label&&s.chipTextActive]}>{a(label)}</Text></Pressable>)}</ScrollView>
+    {showFilters?<View style={s.filterMenu}>{RESOURCE_CATEGORIES.map(label=><Pressable key={label} accessibilityRole="button" accessibilityState={{selected:category===label}} onPress={()=>{setCategory(label);setShowFilters(false);}} style={[s.filterOption,category===label&&s.chipActive]}><Text style={[s.chipText,category===label&&s.chipTextActive]}>{a(label)}</Text></Pressable>)}</View>:null}
     <View style={s.summaryRow}><Text style={s.summary}>{filtered.length} {a('resources')}</Text><Text style={s.summary}>{a('Tap for sources')}</Text></View>
    </View>}
    ListEmptyComponent={<View style={s.empty}><Text style={s.body}>{a('No resources match your search.')}</Text><Pressable onPress={()=>{setQuery('');setCategory('All');}} accessibilityRole="button" style={s.secondaryAction}><Text style={s.secondaryText}>{a('Clear filters')}</Text></Pressable></View>}
@@ -90,7 +91,7 @@ export function ResourceCodexScreen({state,onNavigateSource,onOpenCompanions}:{s
      </Pressable>}):<View style={s.source}><Text style={s.sourceDetail}>{a('No confirmed source is currently listed for this resource.')}</Text></View>}
     <Text style={s.sectionTitle}>{a('Used for')}</Text>
     <Text style={s.body}>{details}</Text>
-    {recipeCodexUsesIngredient(selected.id).length>0?<Pressable accessibilityRole="button" accessibilityLabel={a('View recipes using this resource')} onPress={()=>{onClose();setIngredientFilterId(selected.id);setActiveView('Recipes');}} style={s.secondaryAction}><UiIcon name="skills" size={20}/><Text style={s.secondaryText}>{a('Recipes using this')} · {recipeCodexUsesIngredient(selected.id).length}</Text><UiIcon name="next" size={17}/></Pressable>:null}
+    {recipeCodexUsesIngredient(selected.id,state.character?.classId).length>0?<Pressable accessibilityRole="button" accessibilityLabel={a('View recipes using this resource')} onPress={()=>{onClose();setIngredientFilterId(selected.id);setActiveView('Recipes');}} style={s.secondaryAction}><UiIcon name="skills" size={20}/><Text style={s.secondaryText}>{a('Recipes using this')} · {recipeCodexUsesIngredient(selected.id,state.character?.classId).length}</Text><UiIcon name="next" size={17}/></Pressable>:null}
     {selected.companionRelated?<Pressable accessibilityRole="button" onPress={()=>{onClose();onOpenCompanions();}} style={s.secondaryAction}><UiIcon name="companions" size={22}/><Text style={s.secondaryText}>{a('Open Companions')}</Text></Pressable>:null}
    </ScrollView>
   </GameModalSurface>:null}

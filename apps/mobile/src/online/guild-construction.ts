@@ -9,6 +9,7 @@ type DonationResult={alreadyProcessed:boolean;completed:boolean};
 const knownDonationsRejections:Readonly<Record<string,string>>={
  insufficient_gold:'You do not have enough Gold to contribute that amount.',
  insufficient_construction_materials:'You do not have enough of that material in your inventory.',
+ insufficient_guild_bank_balance:'Not enough of this resource is available in the Guild Bank. Deposit more supplies first.',
  construction_resource_target_exceeded:'Another member completed this resource goal. Refresh and choose a smaller amount.',
  construction_already_completed:'Your guild has already finished this project.',
  construction_donations_not_released:'This construction project is not open for donations yet.',

@@ -70,7 +70,7 @@ for(const dungeon of Object.values(EXPEDITIONS)){
    });
    assert.equal(allies.length,3);
    assert.ok(allies.every(ally=>ally.kind==='npc'&&ally.snapshot.accountId.startsWith('npc:qmode:')));
-   assert.ok(allies.every(ally=>ally.snapshot.normalized.snapshot.displayName.startsWith('NPC · ')));
+   assert.ok(allies.every(ally=>ally.snapshot.normalized.snapshot.displayName?.startsWith('NPC · ')===true));
    const roles=[controllerRole,...allies.map(ally=>ally.snapshot.readiness.role)];
    assert.equal(roles.filter(role=>role==='tank').length,1);
    assert.equal(roles.filter(role=>role==='damage').length,2);

@@ -30,6 +30,8 @@ export function livePendingCombat(run:QModeRun,elapsedMs:number,waitMs:number){
  return {
   nodeId:replay.nodeId,
   durationMs:replay.durationMs,
+  elapsedMs:Math.max(0,Math.min(waitMs,elapsedMs)),
+  wallDurationMs:waitMs,
   combatants:replay.combatants,
   cues:replay.cues.filter(cue=>cue.atMs<=horizon&&!['victory','wipe','timeout'].includes(cue.type)),
   statuses:replay.statuses.filter(status=>status.startsAtMs<=horizon),

@@ -66,8 +66,8 @@ function makeHarness({width = 390, reducedMotion = false, motionQuery} = {}) {
       isReduceMotionEnabled: () => motionQuery ?? Promise.resolve(reducedMotion),
       addEventListener: (_name, callback) => { accessibilityListeners.add(callback); return {remove: () => accessibilityListeners.delete(callback)}; }
     },
-    Animated: {Value: AnimatedValue, timing, parallel: group, sequence: group, View: 'Animated.View', Text: 'Animated.Text'},
-    Easing: {out: value => value, in: value => value, cubic: value => value, quad: value => value, linear: value => value},
+    Animated: {Value: AnimatedValue, timing, parallel: group, sequence: group, View: 'Animated.View', Image: 'Animated.Image', Text: 'Animated.Text'},
+    Easing: {out: value => value, in: value => value, cubic: value => value, quad: value => value, back: () => value => value, linear: value => value},
     Pressable: 'Pressable', Text: 'Text', View: 'View', Image: 'Image',
     Platform: {OS: 'android', select: options => options.android ?? options.default},
     StyleSheet: {create: value => value, flatten: flattenStyle, absoluteFill: {}, absoluteFillObject: {}, hairlineWidth: 1},
@@ -198,21 +198,20 @@ async function replayControlsAndTiming() {
     await h.tick(1); assert.strictEqual(currentCue(tree), cues[1]);
     assert.equal(enemy(tree).props.bossPhaseLabel, 'Black Lantern');
     assert.equal(partyCard(tree, 'p0').props.combatShield, 160);
-    await press(tree, 'Combat replay speed 2 times');
-    assert.equal(findButton(tree, 'Combat replay speed 2 times').props.accessibilityState.selected, true);
-    assert.match(findButton(tree, 'Combat replay speed 2 times').findByType('Text').children.join(''), /✓/, 'selected speed also has a visible non-color indicator');
-    assert.equal(h.timers.size, 1, 'changing speed replaces the advance timer');
-    await h.tick(timing.playbackAdvanceDelayMs(cues[1], cues[2], 2));
+    // Current combat UX deliberately plays at one steady speed; keep all authoritative timing assertions.
+    assert.equal(h.nextDelay(), timing.playbackAdvanceDelayMs(cues[1], cues[2], 1));
+    await h.tick(timing.playbackAdvanceDelayMs(cues[1], cues[2], 1));
     assert.strictEqual(currentCue(tree), cues[2]);
     assert.equal(enemy(tree).props.bossCast.targetLabel, 'Tank');
     assert.equal(enemy(tree).props.bossCast.interruptible, true);
-    assert.equal(h.nextDelay(), timing.playbackAdvanceDelayMs(cues[2], cues[3], 2));
-    assert.equal(h.animations.filter(item => item.started && item.config.useNativeDriver === false).at(-1).config.duration, timing.playbackCastDisplayMs(cues[2], 2), 'cast-bar animation uses the selected replay speed');
-    await press(tree, 'Combat replay speed 4 times');
-    const fastCast = timing.playbackAdvanceDelayMs(cues[2], cues[3], 4);
-    assert.equal(h.nextDelay(), fastCast);
-    await h.tick(fastCast - 1); assert.strictEqual(currentCue(tree), cues[2], 'fast replay preserves the readable boss-cast hold');
-    await h.tick(1); assert.strictEqual(currentCue(tree), cues[3]);
+    assert.equal(h.nextDelay(), timing.playbackAdvanceDelayMs(cues[2], cues[3], 1));
+    assert.equal(h.animations.filter(item => item.started && item.config.useNativeDriver === false).at(-1).config.duration,
+      timing.playbackCastDisplayMs(cues[2], 1), 'boss cast-bar timing follows steady replay speed');
+    const castDelay = timing.playbackAdvanceDelayMs(cues[2], cues[3], 1);
+    await h.tick(castDelay - 1);
+    assert.strictEqual(currentCue(tree), cues[2], 'cast hold remains visible until the cue advances');
+    await h.tick(1);
+    assert.strictEqual(currentCue(tree), cues[3]);
     assert.equal(partyCard(tree, 'p1').props.assistProc, true, 'companion assist remains bound to its owner');
     assert.equal(partyCard(tree, 'p0').props.assistProc, false);
     await press(tree, 'Skip combat replay to result');
@@ -231,7 +230,7 @@ async function replayControlsAndTiming() {
     await act(async () => { tree.unmount(); }); tree = null;
     assert.equal(h.timers.size, 0);
     assert.equal(h.animations.filter(item => item.running).length, 0, 'unmount stops stage-owned animations');
-    console.log('PASS dungeon replay controls: pause/resume, speed timers and cast hold, skip/replay, authoritative HP/shield/assist/outcome, cleanup');
+    console.log('PASS dungeon replay controls: pause/resume, fixed-speed cast hold, skip/replay, authoritative HP/shield/assist/outcome, cleanup');
   } finally { if (tree) await act(async () => tree.unmount()); h.restore(); }
 }
 
@@ -369,11 +368,11 @@ async function responsiveCardContract() {
       }
       assert.equal(enemy(tree).props.statusLimit, expected.statusLimit);
       assert.strictEqual(currentCue(tree), run.lastCombat.cues[0], 'responsive re-render must preserve the paused cursor');
-      for (const label of ['Combat replay speed 1 times', 'Combat replay speed 2 times', 'Combat replay speed 4 times', 'Resume combat replay', 'Previous combat event', 'Next combat event', 'Skip combat replay to result']) {
+      for (const label of ['Resume combat replay', 'Previous combat event', 'Next combat event', 'Skip combat replay to result']) {
         const control = findButton(tree, label), style = typeof control.props.style === 'function' ? control.props.style({pressed: false}) : control.props.style;
         assert.ok(flattenStyle(style).minHeight >= 44, `${label} retains a usable touch height at width ${width}`);
       }
-      const controls = flattenStyle(findButton(tree, 'Combat replay speed 1 times').parent.parent.props.style);
+      const controls = flattenStyle(findButton(tree, 'Resume combat replay').parent.props.style);
       if (expected.controlsWrap) assert.equal(controls.flexWrap, 'wrap', 'narrow phone playback controls wrap instead of overflowing');
     }
     await act(async () => { tree.unmount(); }); tree = null;
@@ -383,7 +382,7 @@ async function responsiveCardContract() {
       h.size.width = width; h.size.fontScale = 1;
       const layout = dungeonCombatLayout(width);
       await act(async () => { tree = create(React.createElement(CombatantProfileCard, {slot: run.roleSlots[1], layout, animateHealth: false})); });
-      const cardRoot = tree.root.findAllByType('Animated.View')[0], portrait = tree.root.findAllByType('Image').find(node => node.props.source?.kind === 'portrait');
+      const cardRoot = tree.root.findAllByType('Animated.View')[0], portrait = [...tree.root.findAllByType('Image'), ...tree.root.findAllByType('Animated.Image')].find(node => node.props.source?.kind === 'portrait');
       assert.equal(flattenStyle(cardRoot.props.style).minHeight, layout.cardMinHeight, 'actual card uses responsive minimum height');
       assert.equal(flattenStyle(portrait.props.style).width, layout.portraitWidth, 'actual portrait uses responsive width');
       assert.equal(flattenStyle(portrait.props.style).height, layout.portraitHeight, 'actual portrait uses responsive height');
@@ -420,6 +419,8 @@ async function dungeonRosterIdentityRendering() {
     h.mocks.set(path.join(app, 'src/theme/coop-ui-theme'), {...h.mocks.get(path.join(app, 'src/theme/coop-ui-theme')), coopSpacing: {xs: 4, sm: 8, md: 12, lg: 16}, coopTypography: {meta: {}, section: {}, body: {}}});
     h.mocks.set(path.join(app, 'src/theme/coop-ui-assets'), {coopUiAssets: {role_tank: {kind: 'role', role: 'tank'}, role_damage: {kind: 'role', role: 'damage'}, role_support: {kind: 'role', role: 'support'}}});
     h.mocks.set(path.join(app, 'src/components/coop/CoopVisualKit'), {FantasyPanel: 'FantasyPanel', StateChip: 'StateChip', PrimaryAction: 'PrimaryAction', RoleBadge: 'RoleBadge', ExpeditionScreenShell: 'ExpeditionScreenShell', CoopImageSlot: 'CoopImageSlot'});
+    h.mocks.set(path.join(app, 'src/components/coop/DungeonPreparation'), {DungeonDisclosure: 'DungeonDisclosure'});
+    h.mocks.set(path.join(app, 'src/components/CombatTheaterModal'), {CombatTheaterModal: 'CombatTheaterModal'});
     h.mocks.set(path.join(app, 'src/i18n'), {ct: (_language, key) => key, t: (_language, key) => key});
     for (const name of ['GameButton', 'GameTextInput']) h.mocks.set(path.join(app, 'src/components', name), {[name]: name});
     for (const name of ['CoopPartyChat', 'SeasonalBossTelegraphPanel', 'DungeonCombatStage']) h.mocks.set(path.join(app, 'src/components/coop', name), {[name]: name});

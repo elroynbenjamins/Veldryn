@@ -10,8 +10,8 @@ import {FantasyPanel,PrimaryAction,StateChip} from './CoopVisualKit';
 import {IdentityArtwork} from '../SocialIdentity';
 
 export function CoopLiveRecruitmentBoard({
- posts,dungeons,nowMs,busy=false,notice,onQuickMatch,onJoin,onPublish,onCloseMine,onRefresh,
-}:{posts:CoopLiveRecruitmentPost[];dungeons:CoopDungeonView[];nowMs:number;busy?:boolean;notice?:string;onQuickMatch:()=>void;onJoin:(dungeonId:string)=>void;onPublish:(dungeonId:string,note:string)=>void;onCloseMine:()=>void;onRefresh:()=>void}){
+ posts,dungeons,nowMs,busy=false,notice,showQuickMatch=true,onQuickMatch,onJoin,onPublish,onCloseMine,onRefresh,
+}:{posts:CoopLiveRecruitmentPost[];dungeons:CoopDungeonView[];nowMs:number;busy?:boolean;notice?:string;showQuickMatch?:boolean;onQuickMatch:()=>void;onJoin:(dungeonId:string)=>void;onPublish:(dungeonId:string,note:string)=>void;onCloseMine:()=>void;onRefresh:()=>void}){
  const {colors:coopColors,styles:s}=useCoopStyles(makeStyles);
  const st=useSocialText();
  const [clock,setClock]=useState(nowMs);useEffect(()=>{setClock(nowMs);const started=Date.now(),timer=setInterval(()=>setClock(nowMs+(Date.now()-started)),15000);return()=>clearInterval(timer)},[nowMs]);
@@ -19,11 +19,11 @@ export function CoopLiveRecruitmentBoard({
  const [composer,setComposer]=useState(false),[dungeonId,setDungeonId]=useState(available[0]?.id??''),[note,setNote]=useState('');
  const names=useMemo(()=>new Map(dungeons.map(dungeon=>[dungeon.id,dungeon.name])),[dungeons]);
  return <View style={s.stack}>
-  <FantasyPanel variant="selected">
+  {showQuickMatch?<FantasyPanel variant="selected">
    <View style={s.head}><View style={s.flex}><Text style={s.kicker}>{st("LIVE QUICK MATCH")}</Text><Text style={s.title}>{st("Any eligible dungeon")}</Text></View><StateChip label={st("FASTEST POOL")} tone="success"/></View>
    <Text style={s.copy}>Uses your verified role and sends you to the eligible dungeon where your role helps matchmaking most. The matched party still uses Auto Tier.</Text>
    <PrimaryAction label={st("Quick Match")} disabled={busy} onPress={onQuickMatch}/>
-  </FantasyPanel>
+  </FantasyPanel>:null}
   <FantasyPanel>
    <View style={s.head}><View style={s.flex}><Text style={s.kicker}>{st("LIVE GROUP BOARD")}</Text><Text style={s.title}>{st("30-minute LFG posts")}</Text></View><StateChip label={visible.length+' LIVE'} tone={visible.length?'selected':'neutral'}/></View>
    <Text style={s.copy}>Short-lived dungeon adverts only. Posts disappear after 30 minutes and never create a second Party system.</Text>

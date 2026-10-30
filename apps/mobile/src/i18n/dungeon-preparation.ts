@@ -1,6 +1,10 @@
 import {accountText} from './account';
 import type {Language} from './languages';
 const rows:Record<string,readonly string[]>={
+ "NPC or Echo allies fill the missing roles":["NPCs oder Echos füllen fehlende Rollen.","Los PNJ o Ecos cubren los roles que faltan.","NPC's of Echo's vullen ontbrekende rollen.","PNG o Echi coprono i ruoli mancanti.","Des PNJ ou des Échos complètent les rôles manquants."],
+ "Find an eligible party automatically":["Automatisch eine passende Gruppe finden","Encuentra un grupo apto automáticamente","Vind automatisch een geschikte groep","Trova automaticamente un gruppo idoneo","Trouver automatiquement un groupe admissible"],
+ "Group finder & options":["Gruppensuche & Optionen","Buscador de grupos y opciones","Groepszoeker en opties","Ricerca gruppo e opzioni","Recherche de groupe et options"],
+ "My Echo & sharing":["Mein Echo & Freigabe","Mi Eco y compartir","Mijn Echo en delen","Il mio Eco e condivisione","Mon Écho et partage"],
  'Solo':["Solo","Solo","Solo","Solo","Solo"],
  'Live':["Live","En vivo","Live","Live","En direct"],
  'Play with three other players':["Spiele mit drei anderen Spielern","Juega con otros tres jugadores","Speel met drie andere spelers","Gioca con altri tre giocatori","Jouez avec trois autres joueurs"],

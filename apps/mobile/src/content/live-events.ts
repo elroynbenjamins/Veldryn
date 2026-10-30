@@ -13,7 +13,7 @@ export interface EventShopOffer{id:string;reward:EventReward;currency:'common'|'
 export interface EventChoice{id:string;name:string;description:string;bonusLabel:string;dropMultipliers?:Partial<Record<EventActivitySource,number>>;contributionMultiplier?:number;}
 export interface EventDailyGift{day:number;rewardCurrency:number;rewardPrestige:number;}
 export interface EventCommunityMilestone{percent:number;rewardCurrency:number;rewardPrestige:number;reward?:EventReward;}
-export type EventCandyKind='skill'|'combat'|'companion';
+export type EventCandyKind='skill'|'combat'|'companion'|'pet';
 export interface EventCandyDef{kind:EventCandyKind;id:string;name:string;description:string;visualKey:LiveEventVisualKey;bonusBps:number;secondsPerUse:number;maxSeconds:number;}
 export type EventBlessingSource=EventActivitySource;
 export interface EventBlessingDef{day:number;source:EventBlessingSource;name:string;description:string;bonusBps:number;}
@@ -33,6 +33,7 @@ export function eventCandies(definition:Pick<LiveEventDef,'id'|'name'|'visualKey
     {kind:'skill',id:`${definition.id}:candy:skill`,name:base,description:'Grants +10% gathering speed and +10% non-combat skill XP.',visualKey:definition.visualKey,bonusBps:1000,secondsPerUse:2*60*60,maxSeconds:10*60*60},
     {kind:'combat',id:`${definition.id}:candy:combat`,name:`${base} · Battle`,description:'Grants +10% combat XP and +10% damage against ordinary regional PvE enemies only. No PvP, guild, dungeon, or expedition effect.',visualKey:definition.visualKey,bonusBps:1000,secondsPerUse:2*60*60,maxSeconds:10*60*60},
     {kind:'companion',id:`${definition.id}:candy:companion`,name:`${base} · Bond`,description:'Awards 75 Companion XP to your selected owned combat companion, equipped or not. It does not increase combat power directly.',visualKey:definition.visualKey,bonusBps:0,secondsPerUse:1,maxSeconds:1},
+    {kind:'pet',id:`${definition.id}:candy:pet`,name:`${base} · Pet Luck`,description:'Doubles the base chance of eligible regional pet drops from combat, gathering and exploration for 2 hours. For example, 0.10% becomes 0.20%.',visualKey:definition.visualKey,bonusBps:10000,secondsPerUse:2*60*60,maxSeconds:10*60*60},
   ];
 }
 export function eventCandy(definition:Pick<LiveEventDef,'id'|'name'|'visualKey'>){return eventCandies(definition)[0];}
@@ -42,11 +43,13 @@ export function eventCandy(definition:Pick<LiveEventDef,'id'|'name'|'visualKey'>
 export function eventPrestigeSupplyOffers(definition:LiveEventDef):EventShopOffer[]{
  const skill=eventCandies(definition).find(candy=>candy.kind==='skill');
  const combat=eventCandies(definition).find(candy=>candy.kind==='combat');
+ const pet=eventCandies(definition).find(candy=>candy.kind==='pet');
  return [
   {id:'prestige_bondstone',reward:{kind:'bondstones',id:'prestige_bondstone',name:'Bondstone',rarity:'rare',quantity:1},currency:'prestige',cost:2,limit:3},
   {id:'prestige_companion_essence',reward:{kind:'companion_essence',id:'prestige_essence_125',name:'Companion Essence · 125',rarity:'uncommon',quantity:125},currency:'prestige',cost:1,limit:4},
   ...(skill?[{id:'prestige_candy_skill',reward:{kind:'candy' as const,id:skill.id,name:skill.name,rarity:'common' as const,quantity:1},currency:'prestige' as const,cost:1,limit:5}]:[]),
   ...(combat?[{id:'prestige_candy_combat',reward:{kind:'candy' as const,id:combat.id,name:combat.name,rarity:'common' as const,quantity:1},currency:'prestige' as const,cost:1,limit:5}]:[]),
+  ...(pet?[{id:'prestige_candy_pet',reward:{kind:'candy' as const,id:pet.id,name:pet.name,rarity:'rare' as const,quantity:1},currency:'prestige' as const,cost:2,limit:5}]:[]),
  ];
 }
 

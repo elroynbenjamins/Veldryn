@@ -1,6 +1,7 @@
 [
   "tests/profile-pet-art-assets.cjs",
   "tests/app-version-gate.cjs",
+  ".core-build/apps/mobile/tests/resource-codex.js",
   ".core-build/apps/mobile/tests/unlock-inbox.js",
   ".core-build/apps/mobile/tests/companion-training-roster.js",
   "tests/online-loading-interactions.cjs",
@@ -241,6 +242,5 @@
   "../../tools/validate-chat-lifecycle.cjs",
   "../../tools/validate-coop-profile-icons.cjs",
   "../../tools/validate-account-entry.cjs",
-  "../../tools/validate-app-build.mjs",
-  ".core-build/apps/mobile/tests/resource-codex.js"
+  "../../tools/validate-app-build.mjs"
 ]

@@ -6,20 +6,20 @@ import type {GameState} from '../core/types';
 import type {GameCommand} from '../core/game-commands';
 import type {CompanionMaterialSourceTarget} from '../core/companion-presentation';
 import {companionAttentionSummary} from '../core/companion-attention';
-import {CombatCompanionPanel} from '../components/CombatCompanionPanel';
+import {CombatCompanionPanel,type CompanionNavigationState} from '../components/CombatCompanionPanel';
 import {starterCombatCompanionChoicePending,starterCombatCompanionChoices} from '../core/combat-companions';
 import {spacing,typography,type ThemeColors} from '../theme/theme';
 import {useGameTheme} from '../theme/ThemeContext';
 import type {Language} from '../i18n';
 import {earlyFeatureUnlockProgress} from '../core/feature-unlocks';
 
-export function CompanionsScreen({state,language: _language,now,onCommand,onNavigateSource}:{state:GameState;language:Language;now:number;onCommand:(command:GameCommand)=>Promise<void>;onCreate:()=>void;onNavigateSource?:(source:CompanionMaterialSourceTarget)=>void}){
+export function CompanionsScreen({state,language: _language,now,onCommand,onNavigateSource,initialNavigation,onNavigationChange}:{state:GameState;language:Language;now:number;onCommand:(command:GameCommand)=>Promise<void>;onCreate:()=>void;onNavigateSource?:(source:CompanionMaterialSourceTarget)=>void;initialNavigation?:CompanionNavigationState;onNavigationChange?:(navigation:CompanionNavigationState)=>void}){
  const language=useGameLanguage(),t=companionTranslator(language);
 
   const C=useGameTheme(),s=useMemo(()=>makeStyles(C),[C]);
  const attention=companionAttentionSummary(state,now),labels=companionAttentionText(language,attention),unlock=earlyFeatureUnlockProgress(state,'companions');
  if(!unlock.unlocked)return <ScrollView contentContainerStyle={s.root} showsVerticalScrollIndicator={false} showsHorizontalScrollIndicator={false}><Text accessibilityRole="header" style={s.heading}>{t("Companions")}</Text><View style={s.locked}><Text style={s.lockIcon}>◆</Text><Text style={s.lockTitle}>{t("Sanctuary locked")}</Text><Text style={s.lockRequirement}>{t("UNLOCK · {value0}", {value0: companionUnlockRequirement(language,unlock.requirement)})}</Text><Text style={s.lockCopy}>{companionContent(language,unlock.description)}</Text></View></ScrollView>;
- return <ScrollView contentContainerStyle={s.root} showsVerticalScrollIndicator={false} showsHorizontalScrollIndicator={false}><Text accessibilityRole="header" style={s.heading}>{t("Companions")}</Text>{starterCombatCompanionChoicePending(state)?<StarterCompanionChoice state={state} onCommand={onCommand}/>:null}{attention.hasAttention&&labels.length?<View style={s.attention} accessibilityLabel={labels.join(' · ')}><Text numberOfLines={2} style={s.attentionText}>{labels[0]}{labels.length>1?t(" · +{value0} more",{value0:labels.length-1}):''}</Text></View>:null}<CombatCompanionPanel state={state} now={now} onCommand={onCommand} onNavigateSource={onNavigateSource}/></ScrollView>;
+ return <ScrollView contentContainerStyle={s.root} showsVerticalScrollIndicator={false} showsHorizontalScrollIndicator={false}><Text accessibilityRole="header" style={s.heading}>{t("Companions")}</Text>{starterCombatCompanionChoicePending(state)?<StarterCompanionChoice state={state} onCommand={onCommand}/>:null}{attention.hasAttention&&labels.length?<View style={s.attention} accessibilityLabel={labels.join(' · ')}><Text numberOfLines={2} style={s.attentionText}>{labels[0]}{labels.length>1?t(" · +{value0} more",{value0:labels.length-1}):''}</Text></View>:null}<CombatCompanionPanel state={state} now={now} onCommand={onCommand} onNavigateSource={onNavigateSource} initialNavigation={initialNavigation} onNavigationChange={onNavigationChange}/></ScrollView>;
 }
 function StarterCompanionChoice({state,onCommand}:{state:GameState;onCommand:(command:GameCommand)=>Promise<void>}){
  const C=useGameTheme(),s=useMemo(()=>makeStyles(C),[C]),[busy,setBusy]=useState(false),choices=starterCombatCompanionChoices(state);

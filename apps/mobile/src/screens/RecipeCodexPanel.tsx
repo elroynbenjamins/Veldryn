@@ -91,6 +91,7 @@ function makeStyles(C:ThemeColors){return StyleSheet.create({
  summaryRow:{flexDirection:'row',justifyContent:'space-between'},summary:{fontSize:11,color:C.muted},row:{gap:6,marginBottom:6},
  tile:{height:118,backgroundColor:C.panel,borderColor:C.line,borderWidth:1,borderRadius:radii.sm,padding:4,alignItems:'center',justifyContent:'space-between'},tileName:{fontSize:10.5,lineHeight:13.5,color:C.text,textAlign:'center',fontWeight:'600',minHeight:27},artFrame:{width:52,height:52,maxWidth:'100%',backgroundColor:C.panel2,borderRadius:radii.sm,borderWidth:1,alignItems:'center',justifyContent:'center'},tileMeta:{fontSize:10,lineHeight:13,color:C.muted,fontWeight:'700'},
  ingredientFilter:{minHeight:36,flexDirection:'row',alignItems:'center',justifyContent:'space-between',gap:10,paddingHorizontal:9,borderRadius:radii.sm,backgroundColor:C.selection},ingredientFilterLabel:{fontSize:12,color:C.text,flexShrink:1},clearText:{color:C.info,fontSize:12,fontWeight:'700'},
+ pressed:{opacity:.72},
  empty:{alignItems:'center',justifyContent:'center',padding:24,gap:12},detail:{padding:spacing.md,gap:11,paddingBottom:30},
  hero:{flexDirection:'row',alignItems:'center',gap:14,backgroundColor:C.panel,padding:12,borderWidth:1,borderColor:C.line,borderRadius:radii.md},
  heroArt:{width:74,height:74,backgroundColor:C.panel2,borderWidth:1,borderRadius:radii.md,alignItems:'center',justifyContent:'center'},heroCopy:{flex:1,gap:4},outputName:{fontSize:14,fontWeight:'700',color:C.text},rarityText:{fontSize:12,fontWeight:'700'},

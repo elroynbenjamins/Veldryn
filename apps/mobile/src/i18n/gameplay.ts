@@ -7,6 +7,17 @@ import {useMemo} from 'react';
 // Every row is complete, in en/de/es/nl/it/fr order. English phrases are typed keys.
 type TranslationRow=readonly [string,string,string,string,string,string];
 const common={
+ // Compact gathering drops disclosure; language order en/de/es/nl/it/fr.
+ "Drops":["Drops","Beute","Botín","Drops","Bottino","Butin"],
+ "Pet":["Pet","Begleiter","Mascota","Huisdier","Famiglio","Familier"],
+ "Owned":["Owned","Besessen","En posesión","In bezit","Posseduto","Possédé"],
+ "per action":["per action","pro Aktion","por acción","per actie","per azione","par action"],
+ "per event minute":["per event minute","pro Eventminute","por minuto del evento","per evenementminuut","per minuto evento","par minute d’événement"],
+ "base chance":["base chance","Grundchance","probabilidad base","basiskans","probabilità base","chance de base"],
+ "Event":["Event","Event","Evento","Evenement","Evento","Événement"],
+ "Pet drops unlock with the Pet collection.":["Pet drops unlock with the Pet collection.","Pet-Beute wird mit der Pet-Sammlung freigeschaltet.","Las mascotas se desbloquean con la colección de mascotas.","Petdrops worden ontgrendeld via de huisdiercollectie.","Le mascotte si sbloccano con la collezione.","Les familiers se débloquent avec la collection."],
+ "Pet chances are per completed gathering action.":["Pet chances are per completed gathering action.","Pet-Chancen gelten pro abgeschlossenem Sammelvorgang.","Las probabilidades son por acción de recolección completada.","Petkansen gelden per voltooide verzamelactie.","Le probabilità valgono per ogni raccolta completata.","Les chances valent pour chaque collecte terminée."],
+ "Essence chances are base rates; bonuses may change them.":["Essence chances are base rates; bonuses may change them.","Essenz-Chancen sind Basiswerte; Boni können sie verändern.","Las probabilidades de esencia son básicas y pueden variar con bonificaciones.","Essentiekansen zijn basiskansen; bonussen kunnen ze veranderen.","Le probabilità dell’essenza sono di base e i bonus possono modificarle.","Les chances d’essence sont de base et peuvent varier avec les bonus."],
  // Gem codex, crafting capacity and inventory controls.
  "Could not combine gems.":["Could not combine gems.","Edelsteine konnten nicht kombiniert werden.","No se pudieron combinar las gemas.","Edelstenen combineren mislukt.","Impossibile combinare le gemme.","Impossible de combiner les gemmes."],
  "Could not refine gem.":["Could not refine gem.","Edelstein konnte nicht veredelt werden.","No se pudo refinar la gema.","Edelsteen verfijnen mislukt.","Impossibile raffinare la gemma.","Impossible de raffiner la gemme."],

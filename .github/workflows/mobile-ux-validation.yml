@@ -55,5 +55,7 @@ jobs:
         run: pnpm exec tsc -p tsconfig.account-unlocks.json --noEmit
       - name: Typecheck core
         run: pnpm typecheck:core
+      - name: Verify compact gathering Drops UI and real drop odds
+        run: pnpm test:gathering-drops
       - name: Run mobile core tests
         run: pnpm test:core

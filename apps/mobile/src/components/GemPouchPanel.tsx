@@ -43,8 +43,8 @@ export function GemPouchPanel({state,busy=false,standalone=false,onUpgrade,onAct
       </Pressable>)}</View>
       {selectedStack?<View style={s.info}><Text style={s.itemName}>{itemDef(selectedStack.itemId).name}</Text><Text style={s.meta}>{selectedStack.quantity} owned · {selectedMeta?GEM_GRADE_LABEL_V1[selectedMeta.grade]+' · '+(selectedMeta.kind==='stat'?'Stat':'Effect'):'Unrefined'} gem{protectedGem?' · Protected from selling':''}</Text>
         <View style={s.actions}>
-          <GameButton compact tone="secondary" title={favorite?'★ Favorited':'☆ Favorite'} disabled={!onFavorite||busy} onPress={()=>void onFavorite?.(selectedStack.itemId)}/>
-          <GameButton compact tone="secondary" title={locked?'Unlock':'Lock'} disabled={!onLock||busy} onPress={()=>void onLock?.(selectedStack.itemId)}/>
+          <GameButton compact tone="secondary" title={favorite?'★ Favorited':'☆ Favorite'} disabled={!onFavorite||busy} onPress={()=>onFavorite?.(selectedStack.itemId)}/>
+          <GameButton compact tone="secondary" title={locked?'Unlock':'Lock'} disabled={!onLock||busy} onPress={()=>onLock?.(selectedStack.itemId)}/>
         </View>
         <View style={s.actions}>
           <GameButton compact tone="secondary" title="Sell 1" disabled={!onAction||busy||protectedGem} onPress={()=>setPendingSell({itemId:selectedStack.itemId,quantity:1})}/>
@@ -54,7 +54,7 @@ export function GemPouchPanel({state,busy=false,standalone=false,onUpgrade,onAct
       </View>:null}
       {pages>1?<View style={s.paging}><GameButton compact tone="secondary" title="Previous" disabled={shownPage===0} onPress={()=>{setSelected(null);setPage(p=>Math.max(0,p-1))}}/><Text style={s.meta}>{shownPage+1}/{pages}</Text><GameButton compact tone="secondary" title="Next" disabled={shownPage===pages-1} onPress={()=>{setSelected(null);setPage(p=>Math.min(pages-1,p+1))}}/></View>:null}
       <View style={s.upgrade}><View style={s.flex}><Text style={s.itemName}>{upgrade?'Next: '+upgrade.capacity+' slots':'Maximum capacity reached'}</Text>{upgrade?<Text style={s.meta}>Level {upgrade.level} · {upgrade.cost.toLocaleString()} Gold{!canUpgrade?' · Requires level and Gold':''}</Text>:null}</View>
-        <GameButton compact tone="secondary" title={upgrade?'Upgrade':'Maxed'} disabled={!canUpgrade||!onUpgrade} onPress={()=>void onUpgrade?.()}/></View>
+        <GameButton compact tone="secondary" title={upgrade?'Upgrade':'Maxed'} disabled={!canUpgrade||!onUpgrade} onPress={()=>onUpgrade?.()}/></View>
     </View>:null}
     <ConfirmModal visible={!!pendingSell} title="Sell gems from Gem Pouch?" message={pendingSell?`${pendingSell.quantity}× ${itemDef(pendingSell.itemId).name} · ${ (pendingSell.quantity*itemDef(pendingSell.itemId).value).toLocaleString() } Gold. This cannot be undone.`:''} confirmLabel="Sell gems" danger reduceMotion={state.settings.reduceMotion} onConfirm={()=>{const pending=pendingSell;setPendingSell(null);if(pending)void onAction?.({type:'gem_pouch_sell',args:pending})}} onCancel={()=>setPendingSell(null)}/>
     <ConfirmModal visible={!!pendingDismantle} title="Dismantle this gem?" message={pendingDismantle?`Convert 1× ${itemDef(pendingDismantle).name} into Gem Dust? This cannot be undone.`:''} confirmLabel="Dismantle" danger reduceMotion={state.settings.reduceMotion} onConfirm={()=>{const id=pendingDismantle;setPendingDismantle(null);if(id)void onAction?.({type:'gem_dismantle',args:{gemId:id,quantity:1}})}} onCancel={()=>setPendingDismantle(null)}/>

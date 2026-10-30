@@ -51,7 +51,7 @@ function fixture(){
  let state=debugSetLevel(debugPrepareDungeonLab(createCharacter(newGame(now),'IRONWARDEN','Aster','female')),28);
  state={...state,currentRegionId:'IRONWOOD',exploredRouteIds:['SCOUT_IRONWOOD','SCOUT_OLD_MINES','SCOUT_KINGS_ROAD'],settings:{...state.settings,language:'en',reduceMotion:true},
   character:{...state.character!,gold:6840,profileIconId:'starter:armored-sentinel',equippedToolIds:{mining:'OATHSTONE_PICKAXE'}},
-  inventory:{capacity:2000,stacks:ITEMS.filter(i=>i.type==='material').map((i,n)=>({itemId:i.id,quantity:48+n%70}))},
+  inventory:{capacity:2000,stacks:[...ITEMS.filter(i=>i.type==='material').map((i,n)=>({itemId:i.id,quantity:48+n%70})),{itemId:'T2P_195',quantity:1}]},
   skills:state.skills.map((s,n)=>({...s,level:24+n%9,xp:totalXpAtLevel(24+n%9)+6800})),
   quests:state.quests.map(q=>({...q,status:'claimed' as const,progress:1})),
  };
@@ -65,7 +65,8 @@ function fixture(){
  return state;
 }
 export default function StoreCaptureReview(){
- const [state]=useState(fixture);
+ const [state,setState]=useState(fixture);
+ const equipPreview=(id:string)=>setState(current=>{const slot=itemDef(id).slot;if(!slot||!current.character)return current;const previous=current.character.equipment[slot];return {...current,character:{...current.character,equipment:{...current.character.equipment,[slot]:id}},inventory:{...current.inventory,stacks:[...current.inventory.stacks.filter(stack=>stack.itemId!==id),...(previous?[{itemId:previous,quantity:1}]:[])]}}});
  const [previewDecision,setPreviewDecision]=useState<'accepted'|'declined'>();
  const lobbyState=typeof window==='undefined'?'open':new URLSearchParams(window.location.search).get('lobbyState');
  const fixtureStatus=lobbyState==='refilling'||lobbyState==='committed'||lobbyState==='expired'?lobbyState:'open';
@@ -85,7 +86,7 @@ export default function StoreCaptureReview(){
   {screen==='queue'&&<CoopLiveLobbyView dungeons={[captureDungeon]} selfPortrait={profileIconSource(state.character!.profileIconId,state.character!.classId)} queue={{ticket:{ticketId:'store-queue',dungeonId:'EXP_001',tier:2,maxTier:2,role:'tank',status:'queued',reservationId:null},serverNow:now}} onBack={noop} onRetry={noop} onRetryPending={noop} onCancel={noop} onAccept={()=>setPreviewDecision('accepted')} onDecline={()=>setPreviewDecision('declined')}/>}
   {screen==='matchmaking'&&<CoopLiveLobbyView dungeons={[captureDungeon]} selfPortrait={profileIconSource(state.character!.profileIconId,state.character!.classId)} ready={ready} onBack={noop} onRetry={noop} onRetryPending={noop} onCancel={noop} onAccept={()=>setPreviewDecision('accepted')} onDecline={()=>setPreviewDecision('declined')}/>}
   {screen==='dungeon'&&<CoopDungeonDetails language="en" dungeon={presentCoopDungeon({id:'EXP_001',name:'Rootbound Vault',region:'Asterfall',description:'Descend beneath the ancient forest. Choose your route, overcome elite encounters and confront the heart of the vault.',minLevel:15,recommendedLevel:25,syncLevel:25,available:true,difficulties:[1,2,3,4,5],tierMinLevels:{1:15,2:20,3:25,4:30,5:35},enabledRoomTypes:['battle','elite','camp','treasure','boss']})} currentLevel={28} mode="live" onBack={noop} onMode={noop} onTier={noop} onContinue={noop}/>}
-  {screen==='hero'&&<CharacterScreen state={state} onUnequip={noop} onEquipSet={noop} onCrafting={noop} onInventory={noop} onSave={noop} onUpgrade={noop} onSocket={noop} onReplaceGem={noop} onUnsocket={noop} onGemRefine={noop} onGemCombine={noop} onGemDismantle={noop} onGemCacheClaim={noop}/>}
+  {screen==='hero'&&<CharacterScreen state={state} onEquip={equipPreview} onUnequip={noop} onEquipSet={noop} onCrafting={noop} onInventory={noop} onSave={noop} onUpgrade={noop} onSocket={noop} onReplaceGem={noop} onUnsocket={noop} onGemRefine={noop} onGemCombine={noop} onGemDismantle={noop} onGemCacheClaim={noop}/>}
   {screen==='combat'&&<CombatScreen state={startCombat(state,'IRONWOOD_WOLF',now-7000)} onCommand={command} onChangeRegion={noop} onStart={noop} onQueue={noop} onQueueRemove={noop} onQueueMove={noop} onQueueClear={noop} onQueueStart={noop} onBoss={noop} initialMonsterId="IRONWOOD_WOLF"/>}
   {screen==='battle'&&<View style={{padding:12}}><BattleStage state={state} monster={MONSTERS.find(m=>m.id==='IRONWOOD_WOLF')!} elapsedSeconds={7} cycleSeconds={28}/></View>}
   {screen==='skills'&&<SkillsScreen {...sharedSkills} state={{...state,currentRegionId:'OLD_MINES'}} initialMode="gathering" initialSkill="mining"/>}

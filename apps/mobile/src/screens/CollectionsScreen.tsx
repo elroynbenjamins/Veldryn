@@ -92,9 +92,7 @@ function JournalArtwork({row,classId,profileIconId,large=false,styles:s}:{row:En
  if(row.kind==='profile_icon')return <ProfileIcon id={row.id} classId={classId} size={large?180:54}/>;
  if(row.kind==='background'&&background)return <View style={large?s.largeImage:s.cardImage}><RegionArtwork regionId={background.region}/></View>;
  if(row.kind==='pet'&&row.art){
-  // Event and Guild pets have portrait-grade source art. The 33 permanent
-  // roster pets only have 96px runtime sprites: avoid enlarging their small
-  // icons into a full-screen portrait until authored master art is available.
+  // Use portrait-grade art in the detail modal and compact exports in the grid.
   const portraitArt=large?petDetailArtSource(row.id):undefined;
   if(portraitArt)return <Image accessibilityLabel={row.name} source={portraitArt} resizeMode="contain" style={s.largeImage}/>;
   if(large)return <View style={s.petPreviewFrame}><Image accessibilityLabel={row.name} source={row.art} resizeMode="contain" style={s.petPreviewImage}/></View>;

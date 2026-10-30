@@ -13,6 +13,7 @@ import {MonsterPortraitFrame} from './MonsterPortraitFrame';
 import {RegionArtwork} from './RegionArtwork';
 import {StatBar} from './StatBar';
 import {battleText} from '../i18n/battle';
+import {CombatEffectShape} from './CombatAttackSprite';
 
 export function BattleStage({state,monster,elapsedSeconds,cycleSeconds}:{state:GameState;monster:MonsterDef;elapsedSeconds:number;cycleSeconds:number}){
  const tr=(text:string,params?:Record<string,string|number>)=>battleText(state.settings.language,text,params);
@@ -76,7 +77,7 @@ export function BattleStage({state,monster,elapsedSeconds,cycleSeconds}:{state:G
     </Animated.View>
     <View style={s.versus}><Text style={s.vs}>VS</Text><Text style={s.motionHint}>{motion.enabled?tr("LIVE FX"):tr("REDUCED")}</Text></View>
     <Animated.View style={[s.side,{transform:[{translateX:enemyLunge.interpolate({inputRange:[0,1],outputRange:[0,motion.enemyLungePx]})},{scale:enemyScale}]}]}>
-     <View style={s.portrait}><MonsterPortraitFrame monster={monster} size={112} active reduceMotion={state.settings.reduceMotion} framed={false}/><Animated.View pointerEvents="none" style={[s.impactFlash,{opacity:flash(enemyImpact)}]}/><Animated.View pointerEvents="none" style={[s.slash,s.slashBright,{opacity:slashOpacity,transform:[{rotate:'-34deg'},{scaleX:slashScale}]}]}/><Animated.View pointerEvents="none" style={[s.slash,s.slashSoft,{opacity:slashOpacity,transform:[{rotate:'31deg'},{scaleX:slashScale}]}]}/><Animated.View pointerEvents="none" style={[s.spark,{opacity:sparkOpacity,transform:[{translateX:sparkTravel},{translateY:Animated.multiply(sparkTravel,-.55)}]}]}/><Animated.View pointerEvents="none" style={[s.spark,s.sparkSmall,{opacity:sparkOpacity,transform:[{translateX:Animated.multiply(sparkTravel,-.9)},{translateY:Animated.multiply(sparkTravel,-.7)}]}]}/><Animated.View pointerEvents="none" style={[s.spark,s.sparkSmall,{opacity:sparkOpacity,transform:[{translateX:Animated.multiply(sparkTravel,.55)},{translateY:Animated.multiply(sparkTravel,.8)}]}]}/><Animated.View pointerEvents="none" style={[s.floatTextWrap,{opacity:enemyFloatOpacity,transform:[{translateY:floatY(enemyImpact)}]}]}><Text style={s.damageDealt}>−{displayStat(view.playerHit)}</Text></Animated.View></View>
+     <View style={s.portrait}><MonsterPortraitFrame monster={monster} size={112} active reduceMotion={state.settings.reduceMotion} framed={false}/><Animated.View pointerEvents="none" style={[s.impactFlash,{opacity:flash(enemyImpact)}]}/><Animated.View pointerEvents="none" style={{position:'absolute',left:28,top:30,opacity:slashOpacity,transform:[{scale:slashScale},{rotate:'-25deg'}]}}><CombatEffectShape kind="slash" color="#f4ce91"/></Animated.View><Animated.View pointerEvents="none" style={[s.floatTextWrap,{opacity:enemyFloatOpacity,transform:[{translateY:floatY(enemyImpact)}]}]}><Text style={s.damageDealt}>−{displayStat(view.playerHit)}</Text></Animated.View></View>
      <Text style={s.name}>{monster.name}</Text><Text style={s.hit}>{tr('≈ {amount} damage',{amount:displayStat(view.enemyHit)})}</Text>
     </Animated.View>
    </View>

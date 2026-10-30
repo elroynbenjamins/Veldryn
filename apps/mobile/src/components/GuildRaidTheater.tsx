@@ -1,5 +1,5 @@
 import {useEffect,useRef,useState} from 'react';
-import {ActivityIndicator,Image,ImageBackground,StyleSheet,Text,View,type ImageSourcePropType} from 'react-native';
+import {ActivityIndicator,Animated,Easing,Image,ImageBackground,StyleSheet,Text,View,type ImageSourcePropType} from 'react-native';
 import type {GuildPveEncounter} from '../core/guild-pve-encounters';
 import {guildPvePresentation,guildPveView} from '../core/guild-pve-encounters';
 import type {GameState} from '../core/types';
@@ -23,7 +23,7 @@ export function GuildRaidTheater({row,state,language,numberMode,stageArt,bossArt
  const st=useSocialText(),C=useGameTheme();
  const [now,setNow]=useState(Date.now()),[pulse,setPulse]=useState(0);
  const currentRefresh=useRef(onRefresh);currentRefresh.current=onRefresh;
- const pending=row.pendingAttempts>0;
+ const pending=(row.pendingAttempts??0)>0;
  useEffect(()=>{
   if(!pending)return;
   const interval=setInterval(()=>setNow(Date.now()),1000);
@@ -39,6 +39,16 @@ export function GuildRaidTheater({row,state,language,numberMode,stageArt,bossArt
   return()=>clearInterval(timer);
  },[overdue,row.id]);
  const reduceMotion=Boolean(state?.settings.reduceMotion);
+ const recoil=useRef(new Animated.Value(0)).current;
+ useEffect(()=>{
+  recoil.stopAnimation();recoil.setValue(0);
+  if(!pending||reduceMotion)return;
+  Animated.sequence([
+   Animated.timing(recoil,{toValue:1,duration:85,easing:Easing.out(Easing.quad),useNativeDriver:true}),
+   Animated.timing(recoil,{toValue:0,duration:230,easing:Easing.out(Easing.cubic),useNativeDriver:true}),
+  ]).start();
+  return()=>recoil.stopAnimation();
+ },[pulse,pending,reduceMotion,recoil]);
  useEffect(()=>{
   if(!pending||reduceMotion)return;
   const timer=setInterval(()=>setPulse(value=>value+1),2800);
@@ -55,7 +65,7 @@ export function GuildRaidTheater({row,state,language,numberMode,stageArt,bossArt
   <View style={s.content}>
    <ImageBackground source={stageArt} resizeMode="cover" style={s.arena} imageStyle={s.arenaArt}>
     <View style={s.shade}/>
-    <Image source={bossArt} resizeMode="contain" style={s.bossArt} accessible={false}/>
+    <Animated.Image source={bossArt} resizeMode="contain" style={[s.bossArt,{transform:[{translateX:recoil.interpolate({inputRange:[0,1],outputRange:[0,4]})},{scale:recoil.interpolate({inputRange:[0,1],outputRange:[1,.98]})}]}]} accessible={false}/>
     {pending&&!reduceMotion?<View pointerEvents="none" style={s.effects}>
      <CombatAttackSprite eventId={`${row.id}:${pulse}:attack`} motion={companionTurn?'projectile':fx?.damageMotion??'lunge'} accent={companionTurn?'violet':fx?.damageAccent??'gold'} actionKind="damage" reduceMotion={false}/>
      <CombatImpactBurst eventId={`${row.id}:${pulse}:impact`} kind="damage" size={68} reduceMotion={false}/>
@@ -76,7 +86,6 @@ export function GuildRaidTheater({row,state,language,numberMode,stageArt,bossArt
      <View style={[s.resultRow,{borderColor:C.line}]}><Text style={[s.meta,{color:C.muted}]}>{st('Character damage')}</Text><Text style={[s.name,{color:C.text}]}>{n(row.lastAttemptCharacterDamage??row.lastAttemptDamage)}</Text></View>
      <View style={[s.resultRow,{borderColor:C.line}]}><View style={s.flex}><Text style={[s.meta,{color:C.muted}]}>{st('Companion damage')}</Text><Text numberOfLines={1} style={[s.meta,{color:C.text}]}>{row.lastAttemptCompanionId?combatCompanionDef(row.lastAttemptCompanionId)?.name??row.lastAttemptCompanionId:st('No companion equipped')}</Text></View><Text style={[s.name,{color:C.text}]}>{n(row.lastAttemptCompanionDamage??0)}</Text></View>
     </View>:null}
-   <Text style={[s.note,{color:C.muted}]}>{st('Visual effects only · server-calculated damage')}</Text>
   </View>
  </CombatTheaterModal>;
 }

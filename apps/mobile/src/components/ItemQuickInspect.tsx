@@ -38,14 +38,14 @@ export function ItemQuickInspect({state,itemId,onClose,onNavigate,actions}:{stat
  const {gt,gl,language}=useGameplayText();
  const it=(key:keyof typeof itemDetailRows,params?:Record<string,string|number>)=>itemDetailText(language,key,params);
  const contentText=(value:string)=>itemDetailContent(language,value,gl);
-  const C=useGameTheme(),s=useMemo(()=>makeStyles(C),[C]),[sourceDisclosure,setSourceDisclosure]=useState<Record<string,boolean>>({}),[useLimits,setUseLimits]=useState<Record<string,number>>({});
+  const C=useGameTheme(),s=useMemo(()=>makeStyles(C),[C]),[sourceDisclosure,setSourceDisclosure]=useState<Record<string,boolean>>({}),[craftingDisclosure,setCraftingDisclosure]=useState<Record<string,boolean>>({}),[useLimits,setUseLimits]=useState<Record<string,number>>({});
   const model=useMemo(()=>itemId?itemInspectModel(state,itemId):undefined,[state,itemId]);
   const craftPath=useMemo(()=>itemId&&model?.item.type==='gear'?equipmentCraftingPath(state,itemId):undefined,[state,itemId,model?.item.type]);
   if(!itemId||!model)return null;
   const item=model.item,rarity=model.rarity,upgrade=model.upgrade,sockets=model.sockets,gearDecision=model.gearDecision,nameColor=rarityNameColor(model.rarityId,C.dark,C.text);
   const sources=prioritizeItemSources(model.sources),uses=prioritizeItemUses(model.usedIn);
   const primarySource=sources[0],otherSources=sources.slice(1),otherSourcesOpen=!!sourceDisclosure[itemId];
-  const useLimit=useLimits[itemId]??4,useRows=uses.slice(0,useLimit);
+  const craftingOpen=!!craftingDisclosure[itemId],useLimit=useLimits[itemId]??4,useRows=uses.slice(0,useLimit);
   const readyUses=uses.filter(row=>row.availability.status==='ready').length;
   const upgradeChance=upgrade?Math.round(upgrade.successChance*100):0;
   const upgradeColor=upgrade?.maxed?C.good:upgradeChance>=70?C.good:upgradeChance>=30?C.warning:C.bad;
@@ -74,7 +74,8 @@ export function ItemQuickInspect({state,itemId,onClose,onNavigate,actions}:{stat
           <Section title={gt("HOW TO GET")+(sources.length?' · '+sources.length:'')}>{primarySource?<><SourceRow source={primarySource} primary onNavigate={onNavigate}/>{otherSources.length?<><Pressable accessibilityRole="button" accessibilityState={{expanded:otherSourcesOpen}} accessibilityLabel={it(otherSourcesOpen?'Hide other sources for {item}':'Show other sources for {item}',{item:item.name})} onPress={()=>setSourceDisclosure(value=>({...value,[itemId]:!value[itemId]}))} style={({pressed})=>[s.sourceDisclosure,pressed&&s.pressed]}><Text style={s.sourceDisclosureText}>{it('Other sources · {count}',{count:otherSources.length})}</Text><Text style={s.sourceDisclosureMark}>{otherSourcesOpen?'−':'+'}</Text></Pressable>{otherSourcesOpen?<View style={s.otherSourceList}>{otherSources.map((source,index)=><SourceRow key={source.kind+':'+source.title+':'+index} source={source} onNavigate={onNavigate}/>)}</View>:null}</>:null}</>:<Text style={s.note}>{gt("No repeatable source is catalogued for this item yet. It may come from a quest, event, one-time reward, or future content.")}</Text>}</Section>
 
           <Section title={gt("USED IN CRAFTING")+(model.usedIn.length?' · '+model.usedIn.length:'')}>
-            {useRows.length?useRows.map((recipe,index)=>recipe.isRecipeUnlock
+            <Pressable accessibilityRole="button" accessibilityState={{expanded:craftingOpen}} accessibilityLabel={craftingOpen?gt('Hide crafting uses'):gt('Show crafting uses')} onPress={()=>setCraftingDisclosure(value=>({...value,[itemId]:!value[itemId]}))} style={({pressed})=>[s.sourceDisclosure,pressed&&s.pressed]}><Text style={s.sourceDisclosureText}>{model.usedIn.length?(craftingOpen?gt('Hide recipes'):readyUses>0?gt('{count} available recipes',{count:readyUses}):gt('Show recipes · {count}',{count:model.usedIn.length})):gt('Not currently used as a crafting ingredient.')}</Text><Text style={s.sourceDisclosureMark}>{craftingOpen?'−':'+'}</Text></Pressable>
+            {craftingOpen&&<>{useRows.length?useRows.map((recipe,index)=>recipe.isRecipeUnlock
               ?<View key={recipe.recipeId} style={[s.recipeRow,s.craftingUseRow]}>
                 <ItemArtwork itemId={recipe.outputItemId} size={42}/>
                 <View style={s.flex}>
@@ -100,7 +101,7 @@ export function ItemQuickInspect({state,itemId,onClose,onNavigate,actions}:{stat
            style={({pressed})=>[s.sourceDisclosure,pressed&&s.pressed]}>
             <Text style={s.sourceDisclosureText}>{useLimit>=uses.length?gt('Show fewer recipes'):gt('Show more recipes · {count}',{count:uses.length-useRows.length})}</Text>
             <Text style={s.sourceDisclosureMark}>{useLimit>=uses.length?'−':'+'}</Text>
-           </Pressable>:null}</Section>
+           </Pressable>:null}</>}</Section>
 
           {actions?<Section title={gt("ACTIONS")}>{actions}</Section>:null}
 

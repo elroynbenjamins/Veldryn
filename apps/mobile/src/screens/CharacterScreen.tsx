@@ -43,7 +43,7 @@ export function CharacterScreen({state,onEquip,onUnequip,onEquipSet,onCrafting,o
   const [selectedSlot,setSelectedSlot]=useState<GearSlot>(()=>state.character?.equipment.weapon?'weapon':EQUIPMENT_SLOT_ORDER.find(slot=>Boolean(state.character?.equipment[slot]))??'weapon'),[pickerSlot,setPickerSlot]=useState<GearSlot|null>(null);
   const [gemCodexOpen,setGemCodexOpen]=useState(false);
   const [showMore,setShowMore]=useState(false);
-  const [equipmentTool,setEquipmentTool]=useState<'enhance'|'gems'|'sets'|'guide'>('enhance');
+  const [equipmentTool,setEquipmentTool]=useState<'enhance'|'gems'|'sets'|'compare'>('enhance');
   const [expandedSet,setExpandedSet]=useState<string|null>(null),[showAllSets,setShowAllSets]=useState(false);
   const [showSaved,setShowSaved]=useState(false),[showNovice,setShowNovice]=useState(false),[showFocus,setShowFocus]=useState(false);
   const [enhancementTab,setEnhancementTab]=useState<'upgrade'|'gems'>('upgrade');
@@ -76,32 +76,8 @@ export function CharacterScreen({state,onEquip,onUnequip,onEquipSet,onCrafting,o
   const selectedDecision=selected.item?equipmentDecisionModel(state,selected.item.id):null,selectedRarity=selectedDecision?rarityMeta(selectedDecision.rarity):null;
   const activeLoadoutId=selectedLoadout??model.loadouts[0]?.id;
   const loadout=model.loadouts.find(entry=>entry.id===activeLoadoutId);
-  let equipError='';if(equipmentTool==='guide'&&showNovice)try{equipNoviceSet(state)}catch(e){equipError=profileError(language,e,'Cannot equip set')}
-  const focusSlot=focus.next.slot?profileText(language,EQUIPMENT_SLOT_LABELS[focus.next.slot]):'';
-  const focusDecision=focus.next.itemId?equipmentDecisionModel(state,focus.next.itemId):undefined;
-  const focusSummary=focusDecision?profileUpgradeSummary(language,focusDecision):'';
-  const focusSocket=model.slots.find(row=>row.slot===focus.next.slot);
-  const focusOpen=focusSocket?Math.max(0,focusSocket.socketCapacity-Number(focusSocket.statGemFilled)-Number(focusSocket.effectGemFilled)):0;
-  const focusCopy=focus.next.kind==='fill-slots'
-    ? {title:profileT(language,'Fill empty equipment slots: {count}',{count:focus.emptySlots}),detail:profileT(language,'{slot} is empty. Equip a useful piece first; complete coverage is the fastest way to improve baseline readiness.',{slot:focusSlot}),button:profileT(language,'Find gear')}
-    : focus.next.kind==='enhance-ready'
-    ? {title:profileT(language,focus.next.slot===selectedSlot?'Enhance {name}':'A {slot} upgrade is ready',{name:focusDecision?.name??'',slot:focusSlot}),detail:profileT(language,focus.next.slot===selectedSlot?'{summary}. Your selected item is ready now.':'{summary}. Spend prepared materials now instead of leaving power idle.',{summary:focusSummary}),button:profileT(language,'Enhance {name}',{name:focusSlot})}
-    : focus.next.kind==='socket-open'
-    ? {title:profileT(language,'Open sockets on {slot}',{slot:focusSlot}),detail:profileT(language,'{open} of {total} sockets remain open on this piece. Add a Stat or Effect Gem before chasing smaller upgrades.',{open:focusOpen,total:focusSocket?.socketCapacity??0}),button:profileT(language,'Manage sockets')}
-    : focus.next.kind==='prepare-upgrade'
-    ? {title:profileT(language,'Prepare the next {slot} enhancement',{slot:focusSlot}),detail:profileT(language,'{summary}. Prepare the missing enhancement resources, then return to this loadout.',{summary:focusSummary}),button:profileT(language,'Prepare materials')}
-    : {title:profileT(language,'Optimize a completed loadout'),detail:profileT(language,'All equipped pieces are fully enhanced and socketed. Compare new drops, improve rarity, or pursue set milestones rather than spending resources blindly.'),button:profileT(language,'Compare gear')};
-  const fullSet=progress.pieces.every(piece=>piece.equipped);
   const run=async(kind:Exclude<Busy,null>,action:()=>Promise<void>|void,success:string)=>{setBusy(kind);setMessage('');try{await action();setMessage(success)}catch(e){setMessage(profileError(language,e,'Action failed. Please try again.'))}finally{setBusy(null)}};
   const loadoutSlots=Array.from({length:3},(_,index)=>model.loadouts[index]);
-  const followFocus=()=>{
-    if(focus.next.slot)setSelectedSlot(focus.next.slot);
-    setMessage('');
-    if(focus.next.action==='inventory'){onInventory();return;}
-    if(focus.next.action==='crafting'){onCrafting();return;}
-    if(focus.next.action==='enhance'&&focus.next.itemId)openEnhancement(focus.next.kind==='socket-open'?'gems':'upgrade',focus.next.itemId);
-  };
-
   const equippedSets=[...new Set(model.slots.map(row=>row.item?.equipmentSetId).filter(Boolean))].map(id=>equipmentSetDef(id!)).filter(Boolean).sort((a,b)=>equippedSetPieceCount(character.equipment,b!)-equippedSetPieceCount(character.equipment,a!));
   const visibleSets=showAllSets?equippedSets:equippedSets.slice(0,2);
   const savedPresets=normalizeCharacterLoadouts(character.savedLoadouts,character.classId,characterLoadoutSlotCount(state));
@@ -119,7 +95,7 @@ export function CharacterScreen({state,onEquip,onUnequip,onEquipSet,onCrafting,o
           {id:'enhance',label:profileT(language,'Enhance'),icon:'enhance'},
           {id:'gems',label:profileT(language,'Gems'),icon:'gems'},
           {id:'sets',label:profileT(language,'Sets'),icon:'sets'},
-          {id:'guide',label:profileT(language,'Build Guide'),icon:'guide'},
+          {id:'compare',label:profileText(language,'Compare & Swap'),icon:'slots'},
         ] as const).map(tool=><Pressable key={tool.id} accessibilityRole="tab" accessibilityState={{selected:equipmentTool===tool.id}} onPress={()=>{setEquipmentTool(tool.id);setShowMore(false);setMessage('')}} style={[s.toolTab,wrapToolTabs&&s.toolTabWrapped,equipmentTool===tool.id&&s.toolTabActive]}>
           <StatIcon kind={tool.icon} size={21} muted={equipmentTool!==tool.id}/>
           <Text numberOfLines={2} style={[s.toolTabLabel,equipmentTool===tool.id&&s.toolTabLabelActive]}>{tool.label}</Text>
@@ -184,19 +160,7 @@ export function CharacterScreen({state,onEquip,onUnequip,onEquipSet,onCrafting,o
         </View>})}
         {equippedSets.length>2?<Pressable accessibilityRole="button" accessibilityState={{expanded:showAllSets}} onPress={()=>setShowAllSets(value=>!value)} style={s.toolSecondaryLink}><Text style={s.allStatsText}>{showAllSets?profileT(language,'Show fewer sets'):profileT(language,'Show all sets')} · {equippedSets.length} {showAllSets?'⌃':'›'}</Text></Pressable>:null}
       </View>}
-      {equipmentTool==='guide'&&<View style={s.toolContent}>
-        <View style={s.sectionHeading}><Text style={s.toolHeading}>{profileText(language,'Build guidance')}</Text><Text style={s.toolMuted}>{focus.equippedCount}/10 {profileT(language,'gear')}</Text></View>
-        <Text style={s.toolFocusTitle}>{focusCopy.title}</Text>
-        <View style={s.toolMetrics}><Text style={s.toolMuted}>{focus.upgradesReady} {profileT(language,'upgrades ready')}</Text><Text style={s.toolMuted}>{focus.openSockets}/{focus.totalSockets} {profileT(language,'open sockets')}</Text></View>
-        <GameButton compact title={focusCopy.button} disabled={busy!==null} onPress={followFocus}/>
-        <Pressable accessibilityRole="button" accessibilityState={{expanded:showFocus}} onPress={()=>setShowFocus(value=>!value)} style={s.toolSecondaryLink}><Text style={s.allStatsText}>{profileT(language,'Why this?')} {showFocus?'⌃':'›'}</Text></Pressable>
-        {showFocus?<Text style={s.toolMuted}>{focusCopy.detail}</Text>:null}
-        <Pressable accessibilityRole="button" accessibilityState={{expanded:showLoadouts}} onPress={()=>setShowLoadouts(value=>!value)} style={s.toolDisclosure}><Text style={s.detailName}>{profileT(language,'Recommended builds')} · {model.loadouts.length}</Text><Text style={s.allStatsText}>{showLoadouts?'−':'+'}</Text></Pressable>
-        {showLoadouts&&<View style={s.toolDisclosureBody}><Text style={s.toolMuted}>{profileT(language,'Guides do not change equipped gear.')}</Text><View style={s.loadouts}>{loadoutSlots.map((entry,index)=>entry?<Pressable key={entry.id} accessibilityRole="tab" accessibilityState={{selected:activeLoadoutId===entry.id}} onPress={()=>setSelectedLoadout(entry.id)} style={[s.loadout,activeLoadoutId===entry.id&&s.loadoutSelected]}><Text style={s.loadoutNumber}>{index+1}</Text><Text style={s.loadoutName}>{profileText(language,entry.name)}</Text></Pressable>:<View key={'empty-'+index} style={[s.loadout,s.loadoutDisabled]}><Text style={s.loadoutNumber}>{index+1}</Text><Text style={s.loadoutName}>{profileT(language,'Unavailable')}</Text></View>)}</View>{loadout&&<View style={s.loadoutInfo}><Text style={s.detailName}>{loadout.gearProfile} · {profileText(language,loadout.useCase)}</Text><Text style={s.detailStats}>{profileText(language,loadout.weaponProfile)} · {profileText(language,loadout.foodProfile)}</Text></View>}</View>}
-        {loadouts?<><Pressable accessibilityRole="button" accessibilityState={{expanded:showSaved}} onPress={()=>setShowSaved(value=>!value)} style={s.toolDisclosure}><Text style={s.detailName}>{profileText(language,'Saved loadouts')} · {savedPresets.length}</Text><Text style={s.allStatsText}>{showSaved?'−':'+'}</Text></Pressable>{showSaved&&<View style={s.toolDisclosureBody}>{loadouts}</View>}</>:null}
-        <Pressable accessibilityRole="button" accessibilityState={{expanded:showNovice}} onPress={()=>setShowNovice(value=>!value)} style={s.toolDisclosure}><Text numberOfLines={1} style={[s.detailName,s.detailCopy]}>{progress.set.name}</Text><Text style={s.allStatsText}>{showNovice?'−':'+'}</Text></Pressable>
-        {showNovice&&<View style={s.toolDisclosureBody}><Text style={s.toolMuted}>{profileT(language,'Crafted {crafted}/{total} · equipped {equipped}/{total}',{crafted:progress.crafted,total:progress.pieces.length,equipped:progress.equipped})}</Text><Text style={s.setBonus}>◆ {progress.set.setBonus.name} · {profileSourceText(language,progress.set.setBonus.description)}</Text><GameButton compact title={fullSet?profileT(language,'Full novice set equipped'):profileT(language,'Equip owned novice set')} disabled={!!equipError||fullSet||busy!==null} onPress={()=>setConfirming(true)}/>{equipError?<><Text style={s.assetNote}>{equipError}</Text><GameButton compact title={profileT(language,'Craft missing gear')} disabled={busy!==null} tone="secondary" onPress={onCrafting}/></>:null}</View>}
-      </View>}
+      {equipmentTool==='compare'&&<View style={s.toolContent}><Text style={s.toolHeading}>{profileText(language,'Compare & Swap')}</Text><Text style={s.toolMuted}>{profileText(language,'Choose an equipped slot to compare its rarity and stats with gear you own.')}</Text><GameButton compact title={profileText(language,'Compare & Swap')} disabled={busy!==null} onPress={()=>onEquip?setPickerSlot(selected.slot):onInventory()}/></View>}
 
     </Panel>
     {!!message&&<Text accessibilityLiveRegion="polite" style={s.message}>{message}</Text>}

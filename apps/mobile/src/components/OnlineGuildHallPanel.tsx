@@ -1,13 +1,13 @@
 import {useSocialText} from '../i18n/social';
 import {useEffect,useMemo,useState} from 'react';
-import {ActivityIndicator,StyleSheet,Text,View} from 'react-native';
+import {ActivityIndicator,Image,StyleSheet,Text,View} from 'react-native';
 import {GameButton} from './GameButton';
 import {Panel} from './Panel';
 import {BoardTabs} from './BoardTabs';
 import {QuestBoard} from './QuestBoard';
 import {GuildSpecializationPaths} from './GuildSpecializationPaths';
 import {StatBar} from './StatBar';
-import {ActivityArtwork} from './ActivityArtwork';
+import {guildFacilityArtwork} from '../theme/guild-remaster-art';
 import {GUILD_HALL_FACILITIES,DEFAULT_GUILD_HALL_POLICY} from '../core/guild-hall-v44';
 import {loadOnlineGuildHallV44} from '../online/guild-hall-v44';
 import {type ThemeColors} from '../theme/theme';
@@ -37,7 +37,7 @@ export function GuildHallView({projection,loading=false,error='',onRefresh,activ
   <Panel><View style={s.between}><View style={s.flex}><Text style={s.kicker}>GUILD HALL</Text><Text accessibilityRole="header" style={s.title}>{stage}</Text><Text style={s.sub}>{state.lifetimeProjectsCompleted} completed projects</Text></View><View style={s.levelBadge}><Text style={s.level}>Lv {level}</Text><Text style={s.levelMax}>/10</Text></View></View><StatBar rounded label="Hall Progress" current={level>=10?1:state.hallProgress-prev} max={level>=10?1:nextThreshold-prev}/><Text style={s.note}>{level<10?Math.max(0,nextThreshold-state.hallProgress).toLocaleString()+' Hall Progress to level '+(level+1):'Launch Hall level cap reached.'}</Text></Panel>
   {section==='Facilities'?<View style={s.root}><Text style={s.kicker}>{st('Automatic progression')}</Text><Text style={s.sub}>Facilities improve through authored Guild Projects. Hall Progress is never spent.</Text>
    {GUILD_HALL_FACILITIES.map(def=>{const facility=state.facilities[def.id],tier=facility.tier,threshold=DEFAULT_GUILD_HALL_POLICY.facilityProgressThresholds[tier],requiredLevel=def.tierHallLevels[tier];return <View key={def.id} style={s.facility}>
-    <View style={s.between}><ActivityArtwork id={def.id==='workshop'?'smithing':def.id==='training_room'?'training':'exploration'} size={48}/><View style={s.flex}><Text style={s.facilityName}>{def.name}</Text><Text style={s.note}>{tier>=5?'Max tier':`Tier ${tier} → ${tier+1}`}</Text></View><Text style={s.tierText}>T{tier}/5</Text></View><Text style={s.sub}>{def.description}</Text>
+    <View style={s.between}><Image source={guildFacilityArtwork(def.id)} resizeMode="contain" style={{width:56,height:56}}/><View style={s.flex}><Text style={s.facilityName}>{def.name}</Text><Text style={s.note}>{tier>=5?'Max tier':`Tier ${tier} → ${tier+1}`}</Text></View><Text style={s.tierText}>T{tier}/5</Text></View><Text style={s.sub}>{def.description}</Text>
     {tier<5?<><StatBar rounded label="Facility progress" current={Math.min(facility.progress,threshold)} max={threshold}/><Text style={[s.note,{color:level<requiredLevel?C.warning:C.muted}]}>{level<requiredLevel?`Hall Level ${requiredLevel} required · `:''}{Math.max(0,threshold-facility.progress).toLocaleString()} more facility progress from Projects</Text></>:null}
    </View>})}
   </View>:null}

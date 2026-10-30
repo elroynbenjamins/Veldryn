@@ -318,7 +318,7 @@ export function stackItems(existing:ItemStack[],incoming:ItemStack[]):ItemStack[
 }
 
 export function usedSlots(stacks:ItemStack[]){return stacks.filter(s=>s.quantity>0).length;}
-function itemStackCap(itemId:string){const d=itemDef(itemId);return d.type==='gear'||d.type==='tool'?1:9999;}
+function itemStackCap(itemId:string){const d=itemDef(itemId);return d.type==='gear'||d.type==='tool'?1:d.type==='material'?99999:9999;}
 function addBounded(stacks:ItemStack[],capacity:number,incoming:ItemStack[]){
   let next=stacks.map(s=>({...s}));const overflow:ItemStack[]=[];
   for(const inc of incoming){

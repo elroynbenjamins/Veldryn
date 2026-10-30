@@ -2,6 +2,7 @@ import {versionedFetch as fetch} from './versioned-fetch';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import {OnlineCommandError,OnlineGameRepository,type OnlineSnapshot,type PendingGameCommand} from '../core/online-game-repository';
 import {supabase} from './supabase';
+import {peekOnlineSnapshot} from '../core/online-snapshot-cache';
 declare const process:{env:Record<string,string|undefined>};
 export const serverGameplayEnabled=process.env.EXPO_PUBLIC_SERVER_GAMEPLAY==='true';
 const url=process.env.EXPO_PUBLIC_SUPABASE_URL;
@@ -17,5 +18,8 @@ export function createOnlineGameRepository(accountId:string){
    const payload=await response.json();if(!response.ok)throw new OnlineCommandError(payload.error??payload.message??'Online service unavailable.',response.status>=400&&response.status<500&&![408,426,429].includes(response.status));return payload as OnlineSnapshot;
   }finally{clearTimeout(timeout);}
  }
- return new OnlineGameRepository(accountId,{read:()=>request(),send:request},{read:async()=>{const raw=await AsyncStorage.getItem(pendingKey);return raw?JSON.parse(raw):null;},write:async value=>{if(value)await AsyncStorage.setItem(pendingKey,JSON.stringify(value));else await AsyncStorage.removeItem(pendingKey);}},()=>`game-${Date.now()}-${Math.random().toString(36).slice(2,12)}`);
+ const repository=new OnlineGameRepository(accountId,{read:()=>request(),send:request},{read:async()=>{const raw=await AsyncStorage.getItem(pendingKey);return raw?JSON.parse(raw):null;},write:async value=>{if(value)await AsyncStorage.setItem(pendingKey,JSON.stringify(value));else await AsyncStorage.removeItem(pendingKey);}},()=>`game-${Date.now()}-${Math.random().toString(36).slice(2,12)}`);
+ // Display-only state from this same account; the hook immediately revalidates it.
+ repository.snapshot=peekOnlineSnapshot(accountId);
+ return repository;
 }

@@ -17,12 +17,9 @@ import {CombatImpactBurst,type CombatImpactKind} from './CombatImpactBurst';
 import {CombatOutcomeMoment} from './CombatOutcomeMoment';
 import {CombatAttackSprite} from './CombatAttackSprite';
 import {companionArtSource} from '../theme/companion-art';
+import {trialEnemyPortrait,TRIAL_FORMATION_NAMES} from '../theme/trial-enemy-portraits';
 
 const roleGlyph={damage:'⚔',tank:'◆',support:'✦'} as const;
-const trialEchoArt=require('../../assets/trial-enemies/trial-echo-v1.png');
-const trialGuardArt=require('../../assets/trial-enemies/trial-guard-v2.png');
-const trialRaiderArt=require('../../assets/trial-enemies/trial-raider-v1.png');
-const trialEnemyArt=(id:string,boss:boolean)=>boss?trialEchoArt:id.endsWith('_A')?trialGuardArt:id.endsWith('_B')?trialRaiderArt:trialEchoArt;
 const clamp=(n:number,min:number,max:number)=>Math.max(min,Math.min(max,n));
 const pct=(current:number,max:number)=>clamp(max>0?current/max*100:0,0,100);
 
@@ -37,7 +34,6 @@ function playbackState(playback:CompanionBattlePlaybackSnapshot,playhead:number)
   if(event.type==='shield'&&target)target.shield+=event.amount??0;
    if(event.type==='status_apply'&&target&&event.statusKind==='dot'&&event.statusTag==='poison')target.poisonUntil=event.expiresAtMs??playhead+8000;
   if(event.type==='status_remove'&&target&&event.statusKind==='dot'&&event.statusTag==='poison')delete target.poisonUntil;
-   if(event.type==='status_remove'&&target&&event.statusKind==='dot'&&event.statusTag==='poison')target.poisonUntil=undefined;
   if((event.type==='down'||event.type==='death')&&target){target.hp=0;target.alive=false;}
   if(event.type==='cast_start'&&actor)actor.casting=playback.abilityNames[event.abilityId??'']??event.abilityId;
   if(event.type==='cast_complete'&&actor)actor.casting=undefined;
@@ -80,10 +76,10 @@ export function CompanionTrialStage({state,now,floor,teamIds,mode='trial',expect
  const fresh=!!playback;
  const playbackRealMs=playback?Math.min(20_000,Math.max(8_000,playback.durationMs*.38)):0;
  const simPerRealMs=playback&&playbackRealMs?playback.durationMs/playbackRealMs:1;
- const [playhead,setPlayhead]=useState(()=>fresh?0:playback?.durationMs??0),[speed,setSpeed]=useState<1|2|4>(1);
+ const [playhead,setPlayhead]=useState(0),[speed,setSpeed]=useState<1|2|4>(1);
  const startRef=useRef(Date.now()),basePlayheadRef=useRef(0),impact=useRef(new Animated.Value(0)).current;
  useEffect(()=>{
-  if(!playback||!fresh){setPlayhead(playback?.durationMs??0);return;}
+  if(!playback){setPlayhead(0);return;}
   startRef.current=Date.now();basePlayheadRef.current=0;setPlayhead(0);setSpeed(1);
  },[fresh,last?.atMs,playback?.durationMs]);
  useEffect(()=>{
@@ -122,7 +118,7 @@ export function CompanionTrialStage({state,now,floor,teamIds,mode='trial',expect
    const attackMotion=current?.type==='cast_start'?'cast':current?.type==='heal'||current?.type==='status_remove'?'pulse':current?.type==='shield'?'brace':def?.role==='damage'?'dash':def?.role==='support'?'projectile':unit.boss?'smash':'lunge';
    const attackAccent=unit.team==='enemies'?'danger' as const:def?.role==='support'?'success' as const:def?.role==='tank'?'gold' as const:'cyan' as const;
    const impactLabel=current?.targetId===unit.id?(current.type==='damage'||current.type==='dot_tick'?'-'+Math.round(current.amount??0):current.type==='heal'||current.type==='hot_tick'?t('+HP {amount}',{amount:Math.round(current.amount??0)}):current.type==='shield'?t('+SHIELD {amount}',{amount:Math.round(current.amount??0)}):undefined):undefined;
-   return <View key={unit.id} style={[s.liveUnit,unit.boss&&s.bossLiveUnit,!unit.alive&&s.downedUnit,current?.targetId===unit.id&&s.targetUnit,def&&{borderColor:companionRarityBorder(def.rarity,C.dark)}]}><View style={s.liveUnitRow}><View style={[s.unitIcon,unit.team==='enemies'&&s.enemyUnitIcon,unit.boss&&s.bossUnitIcon]}>{unit.team==='enemies'?<Image source={trialEnemyArt(unit.id,unit.boss)} resizeMode="contain" style={s.enemyArt}/>:art?<Image source={art} resizeMode="contain" style={s.unitArt}/>:<Text style={s.unitGlyph}>{roleGlyph[def?.role??'damage']}</Text>}{burstKind?<CombatImpactBurst eventId={`${last!.atMs}:${playbackView!.visible.length}:${unit.id}`} kind={burstKind} reduceMotion={state.settings.reduceMotion} size={54}/>:null}{attacks?<CombatAttackSprite eventId={`${last!.atMs}:${playbackView!.visible.length}:attack:${unit.id}`} motion={attackMotion} accent={attackAccent} actionKind={current?.type==='heal'||current?.type==='status_remove'?'heal':current?.type==='shield'?'shield':'damage'} enemy={unit.team==='enemies'} reduceMotion={state.settings.reduceMotion}/>:null}</View><View style={s.liveUnitBody}>
+   return <View key={unit.id} style={[s.liveUnit,unit.boss&&s.bossLiveUnit,!unit.alive&&s.downedUnit,current?.targetId===unit.id&&s.targetUnit,def&&{borderColor:companionRarityBorder(def.rarity,C.dark)}]}><View style={s.liveUnitRow}><View style={[s.unitIcon,unit.team==='enemies'&&s.enemyUnitIcon,unit.boss&&s.bossUnitIcon]}>{unit.team==='enemies'?<Image source={trialEnemyPortrait(unit.name)} resizeMode="contain" style={s.enemyArt}/>:art?<Image source={art} resizeMode="contain" style={s.unitArt}/>:<Text style={s.unitGlyph}>{roleGlyph[def?.role??'damage']}</Text>}{burstKind?<CombatImpactBurst eventId={`${last!.atMs}:${playbackView!.visible.length}:${unit.id}`} kind={burstKind} reduceMotion={state.settings.reduceMotion} size={54}/>:null}{attacks?<CombatAttackSprite eventId={`${last!.atMs}:${playbackView!.visible.length}:attack:${unit.id}`} motion={attackMotion} accent={attackAccent} actionKind={current?.type==='heal'||current?.type==='status_remove'?'heal':current?.type==='shield'?'shield':'damage'} enemy={unit.team==='enemies'} reduceMotion={state.settings.reduceMotion}/>:null}</View><View style={s.liveUnitBody}>
     <View style={s.unitHead}><Text numberOfLines={1} style={s.unitName}>{unit.name}</Text></View>
     <View style={[s.shieldTrack,unit.shield<=0&&s.shieldTrackEmpty]} accessibilityLabel={unit.shield>0?`${Math.round(unit.shield)} shield`:undefined}>{unit.shield>0?<><View style={[s.shieldFill,{width:(Math.min(100,unit.shield/unit.maxHp*100)+'%') as any}]}/><Text style={s.shieldBarText}>{Math.round(unit.shield).toLocaleString()}</Text></>:null}</View>
     <View style={s.hpTrack}><View style={[s.hpFill,unit.poisonUntil!==undefined&&unit.poisonUntil>playhead&&s.poisonHpFill,{width:(pct(unit.hp,unit.maxHp)+'%') as any}]}/><Text style={s.hpBarText}>{Math.round(unit.hp).toLocaleString()} / {Math.round(unit.maxHp).toLocaleString()}</Text></View>
@@ -147,9 +143,8 @@ export function CompanionTrialStage({state,now,floor,teamIds,mode='trial',expect
   <View style={s.arena}>
    <View style={s.teamColumn}><Text style={s.sideLabel}>{t("YOUR FORMATION")}</Text>{team.length?team.map(id=>{const def=COMBAT_COMPANIONS.find(row=>row.id===id),progress=view.owned[id];if(!def)return null;const affinity=COMPANION_AFFINITIES[companionAffinity(def)];const art=companionArtSource(id);return <View key={id} style={[s.unit,{borderColor:companionRarityBorder(def.rarity,C.dark)}]}><View style={s.previewIcon}>{art?<Image source={art} resizeMode="contain" style={s.previewArt}/>:<Text style={s.unitGlyph}>{roleGlyph[def.role]}</Text>}</View><View style={s.unitCopy}><Text numberOfLines={1} style={s.unitName}>{def.name}</Text><Text style={s.unitMeta}>{t("{value0} · {value1} {value2} · LV {value3} · B{value4}", {value0: label(def.role).toLocaleUpperCase(language), value1: affinity.glyph, value2: companionContent(language,affinity.label), value3: progress.level, value4: progress.bondLevel})}</Text><Text numberOfLines={1} style={s.ability}>{t("{value0} · {value1}s", {value0: def.activeAbility.name, value1: def.activeAbility.cooldownSeconds})}</Text></View></View>}):<View style={s.empty}><Text style={s.emptyText}>{t("Choose Tank · Damage · Support below to preview the formation.")}</Text></View>}</View>
    <View style={s.vs}><Text style={s.vsText}>{t("VS")}</Text></View>
-   <View style={s.enemyColumn}><Text style={s.sideLabel}>{boss ? t("BOSS ENCOUNTER") : t("TRIAL ENCOUNTER")}</Text><View style={[s.enemySigil,boss&&s.bossSigil]}><Text style={s.enemyGlyph}>{boss ? '♛' : '◇'}</Text></View><Text style={s.enemyName}>{boss ? theme.bossName : t("Trial Echoes")}</Text><Text style={s.enemyMeta}>{boss ? t("Checkpoint boss") : t("Three-enemy combat formation")}</Text>{preview?.abilities.slice(0,2).map(ability=><Text key={ability.name} numberOfLines={1} style={s.enemyAbility}>• {ability.name}{ability.interruptible ? t(" · interruptible") : ''}</Text>)}</View>
+   <View style={s.enemyColumn}><Text style={s.sideLabel}>{boss ? t("BOSS ENCOUNTER") : t("TRIAL ENCOUNTER")}</Text>{(boss?[theme.bossName]:TRIAL_FORMATION_NAMES.slice(Math.floor((floor-1)/5)*3,Math.floor((floor-1)/5)*3+3)).map(name=><View key={name} style={{alignItems:'center',gap:4}}><Image source={trialEnemyPortrait(name)} resizeMode="cover" style={{width:40,height:40,borderRadius:8}}/><Text style={s.enemyName}>{name}</Text></View>)}{preview?.abilities.slice(0,2).map(ability=><Text key={ability.name} numberOfLines={1} style={s.enemyAbility}>• {ability.name}{ability.interruptible ? t(" · interruptible") : ''}</Text>)}</View>
   </View>
-  <View style={s.combatHint}><Text style={s.combatHintLabel}>{t("COMBAT PRESENTATION")}</Text><Text style={s.combatHintText}>{t("Fight resolves server-side, then replays here from the authoritative event transcript.")}</Text></View>
  </View>;
 }
 
@@ -167,6 +162,5 @@ function makeStyles(C:ThemeColors){const equipmentColors=equipmentTheme(C);retur
  liveSpeedOption:{minWidth:44,minHeight:40,paddingHorizontal:9,alignItems:'center',justifyContent:'center',borderWidth:1,borderColor:C.line,borderRadius:radii.sm,backgroundColor:C.panel2},
  liveSpeedSelected:{borderColor:C.info,backgroundColor:C.infoSurface},
  liveSpeedText:{fontSize:12,color:C.muted,fontWeight:'800'},liveSpeedSelectedText:{color:C.info},
- playbackTrack:{height:5,borderRadius:99,overflow:'hidden',backgroundColor:C.line},playbackFill:{height:'100%',backgroundColor:C.info},
 
 });}

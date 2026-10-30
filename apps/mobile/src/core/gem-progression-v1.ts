@@ -235,5 +235,6 @@ export function claimResonanceCacheV1(state:GameState,familyId:string,nowMs:numb
 
 export function formatGemValueV1(familyId:string,grade:MobileGemGradeV1){
  const family=mobileGemFamilyV1(familyId);if(!family)return '';
- const value=family.values[grade]*100;return family.unit==='percentage_point'?'+'+value.toFixed(value<1?2:1)+' pp':family.kind==='stat'?'+'+value.toFixed(value<1?2:1)+'%':value.toFixed(value<1?2:1)+'% effect value';
+ const value=family.values[grade]*100,formatted=Number.isInteger(value)?String(value):value.toFixed(value<1?2:1),label=family.legacyStat==='attack'?'Attack':family.legacyStat==='defense'?'Armor':family.legacyStat==='hp'?'Max HP':family.description.replace(/^Increases\s+/i,'').replace(/\.$/,'');
+ return family.unit==='percentage_point'?'+'+formatted+' pp '+label:family.kind==='stat'?'+'+formatted+'% '+label:formatted+'% effect value';
 }

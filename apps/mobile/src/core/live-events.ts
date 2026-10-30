@@ -215,3 +215,12 @@ export function eventReadyClaimCount(state:GameState,nowMs=Date.now()){
  const readyCommunity=EVENT_COMMUNITY_ENABLED&&event.definition.communityEnabled===true?eventCommunityMilestones(state,nowMs).filter(row=>row.ready&&row.eligible&&!row.claimed).length:0;
  return readyDaily+readyActivities+readyDiscoveries+readyMilestones+readyCommunity+availableEventRepeatCaches(state,id);
 }
+
+/** Claims shown on the Rewards tab; daily gifts and activity claims live elsewhere. */
+export function eventRewardTabReadyClaimCount(state:GameState,nowMs=Date.now()){
+ const event=claimableLiveEvent(state,nowMs);if(!event)return 0;const id=event.definition.id;
+ return eventDiscoveryBoard(state,nowMs).filter(row=>row.ready&&!row.claimed).length
+  +eventMilestones(state,nowMs).filter(row=>row.points<=eventProgress(state,id)&&!eventRewardClaimed(state,id,row.reward.id)).length
+  +(EVENT_COMMUNITY_ENABLED&&event.definition.communityEnabled===true?eventCommunityMilestones(state,nowMs).filter(row=>row.ready&&row.eligible&&!row.claimed).length:0)
+  +availableEventRepeatCaches(state,id);
+}

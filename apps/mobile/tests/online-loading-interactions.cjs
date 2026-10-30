@@ -37,6 +37,7 @@ async function commandBusy(){
  const {useOnlineGame}=load('src/online/useOnlineGame.ts',{
   'react-native':native,'./AuthSessionProvider':{useAuthSession:()=>({session:{user:{id:'a'}}})},
   './gameplay':{serverGameplayEnabled:true,createOnlineGameRepository:()=>repo},'./supabase':{supabase:null},
+  '../core/online-snapshot-cache':{rememberOnlineSnapshot:()=>{}},
  });
  function Harness(){latest=useOnlineGame();return null;}
  let renderer;await act(async()=>{renderer=create(React.createElement(Harness))});

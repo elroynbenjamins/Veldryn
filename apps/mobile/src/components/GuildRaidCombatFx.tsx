@@ -4,6 +4,7 @@ import {dungeonCombatClassFx} from '../core/dungeon-combat-fx';
 import type {ClassId} from '../core/types';
 import type {GuildPveAttemptHit} from '../core/guild-pve-attempt-timeline';
 import {useGameTheme} from '../theme/ThemeContext';
+import {CombatEffectShape} from './CombatAttackSprite';
 
 /**
  * The Guild PvE endpoint exposes aggregate HP and server-committed damage.
@@ -49,13 +50,11 @@ export function GuildRaidCombatOverlay({classId,companionEquipped,strike,assist,
  const impactScale=strike.interpolate({inputRange:[0,.5,1],outputRange:[.55,1.35,1.85]});
  return <View pointerEvents="none" accessible={false} style={StyleSheet.absoluteFill}>
   <Animated.View style={[s.strike,{opacity:attackOpacity(strike),transform:[{translateX:moveX},{translateY:moveY},{rotate:magic?'0deg':heavy?'-22deg':'-42deg'},{scale:impactScale}]}]}>
-   <Text style={[s.strikeGlyph,{color:attackColor,fontSize:projectile?43:heavy?60:52}]}>{magic?'✦':projectile?'➤':heavy?'◆':attack.glyph}</Text>
-   {!magic&&!projectile?<View style={[s.blade,{backgroundColor:attackColor}]}/>:null}
-   {magic?<View style={[s.magicRing,{borderColor:attackColor}]}/>:null}
+   <CombatEffectShape kind={magic?'magic':projectile?'projectile':heavy?'heavy':'slash'} color={attackColor}/>
   </Animated.View>
   <Animated.View style={[s.impactRing,{borderColor:attackColor,opacity:strike.interpolate({inputRange:[0,.32,.55,1],outputRange:[0,0,.65,0]}),transform:[{scale:impactScale}]}]}/>
   {hitLabel&&hitActor?<Animated.View style={[s.hitNumber,{opacity:attackOpacity(hitActor==='companion'?assist:strike),transform:[{translateY:(hitActor==='companion'?assist:strike).interpolate({inputRange:[0,1],outputRange:[6,-34]})}]}]}><Text style={[s.hitNumberText,{color:hitActor==='companion'?C.special:attackColor}]}>{hitLabel}</Text></Animated.View>:null}
-  {companionEquipped?<Animated.View style={[s.companionStrike,{opacity:attackOpacity(assist),transform:[{translateX:fly(assist,98,-28)},{translateY:fly(assist,42,-34)},{scale:assist.interpolate({inputRange:[0,.5,1],outputRange:[.65,1.6,1]})}]}]}><Text style={[s.companionGlyph,{color:C.special}]}>✧</Text></Animated.View>:null}
+  {companionEquipped?<Animated.View style={[s.companionStrike,{opacity:attackOpacity(assist),transform:[{translateX:fly(assist,98,-28)},{translateY:fly(assist,42,-34)},{scale:assist.interpolate({inputRange:[0,.5,1],outputRange:[.65,1.2,.8]})}]}]}><CombatEffectShape kind="magic" color={C.special}/></Animated.View>:null}
  </View>;
 }
 

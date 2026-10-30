@@ -12,6 +12,7 @@ import {MonsterPortraitFrame} from './MonsterPortraitFrame';
 import {RegionArtwork} from './RegionArtwork';
 import {GameButton} from './GameButton';
 import {GameModalSurface} from './GameModalSurface';
+import {CombatEffectShape} from './CombatAttackSprite';
 
 function pct(current:number,max:number){return Math.max(0,Math.min(100,max>0?current/max*100:0));}
 function timeLabel(ms:number){return `${(Math.max(0,ms)/1000).toFixed(1)}s`;}
@@ -97,9 +98,7 @@ export function StoryBossBattleModal({state,battle,message,onClose}:{state:GameS
               <View style={s.portrait}>
                 <MonsterPortraitFrame monster={monster} size={118} active reduceMotion={reduceMotion} framed={false}/>
                 <Animated.View pointerEvents="none" style={[s.impactFlash,{opacity:flash(enemyImpact)}]}/>
-                <Animated.View pointerEvents="none" style={[s.slash,s.slashA,{opacity:slashOpacity,transform:[{rotate:'-34deg'},{scaleX:slashScale}]}]}/>
-                <Animated.View pointerEvents="none" style={[s.slash,s.slashB,{opacity:slashOpacity,transform:[{rotate:'31deg'},{scaleX:slashScale}]}]}/>
-                <Animated.View pointerEvents="none" style={[s.spark,{opacity:slashOpacity,transform:[{translateX:floatY(enemyImpact)}]}]}/>
+                <Animated.View pointerEvents="none" style={{position:'absolute',left:38,top:38,opacity:slashOpacity,transform:[{scale:slashScale},{rotate:'-25deg'}]}}><CombatEffectShape kind="slash" color="#f4ce91"/></Animated.View>
                 {damageEvent?.type==='player_hit'&&<Animated.View pointerEvents="none" style={[s.floatWrap,{opacity:enemyImpact,transform:[{translateY:floatY(enemyImpact)}]}]}><Text style={damageEvent.critical?s.critDamage:s.damageDealt}>{damageEvent.critical?'CRIT ':''}−{damageEvent.amount?.toLocaleString()}</Text></Animated.View>}
               </View>
               <Text style={s.name}>Fallen Knight</Text>

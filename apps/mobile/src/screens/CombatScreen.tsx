@@ -1,7 +1,6 @@
 import {LineworkIcon} from '../components/LineworkIcon';
 import {HuntingPreview} from '../components/HuntingPreview';
 import {encounterLockRequirement,encounterUnlocked,regionEncounters} from '../core/world-navigation';
-import {activityQueueCapacity} from '../core/activity-queue';
 import {useGameplayText} from '../i18n/gameplay';
 import {Platform,Pressable,ScrollView,StyleSheet,Text,View} from 'react-native';
 import {useEffect,useMemo,useState} from 'react';
@@ -30,7 +29,6 @@ export function CombatScreen({state,onCommand,onChangeRegion,onStart,onQueue,onQ
   const explorationLock=encounters.map(monster=>({monster,lock:encounterLockRequirement(state,monster)})).find(row=>row.lock?.kind==='exploration');
   const [showTraining,setShowTraining]=useState(false),[inspectedId,setInspectedId]=useState<string>();
   const detail=encounters.find(m=>m.id===inspectedId)??preview;
-  const detailUnlocked=!!detail&&encounterUnlocked(state,detail),detailActive=state.activity?.kind==='combat'&&state.activity.targetId===detail?.id,queueFull=(character.activityQueue?.length??0)>=activityQueueCapacity(state);
   useEffect(()=>{setInspectedId(undefined);},[zone.id]);
   return <View style={{flex:1,minHeight:0,backgroundColor:C.bg}}><ScrollView style={{flex:1,minHeight:0}} contentContainerStyle={s.root} showsVerticalScrollIndicator={false} showsHorizontalScrollIndicator={false}>
     <View style={s.header}>
@@ -44,7 +42,6 @@ export function CombatScreen({state,onCommand,onChangeRegion,onStart,onQueue,onQ
     <RegionEncounterList state={state} zone={zone} presentation="all" initialExpandedId={initialMonsterId} onInspect={id=>{setInspectedId(id);setShowTraining(false);}} onStart={(id,tactic,goal)=>{setInspectedId(id);onStart(id,tactic,goal);}} onBoss={onBoss}/>
     <ActionQueuePanel state={state} onRemove={onQueueRemove} onMove={onQueueMove} onClear={onQueueClear} onStartNext={onQueueStart}/>
     <View style={s.afterMonsters}>
-      {detail?<View style={s.huntingPanel}><Text style={s.huntingLabel}>{gt("Hunting")}</Text><Text numberOfLines={1} style={s.dockTitle}>{detail.name}</Text><View style={s.huntingActions}><View style={s.flex}><GameButton compact title={gt(detailActive?'HUNTING':detail.boss?'Challenge boss':'Hunt')} disabled={!detailUnlocked||detailActive} onPress={()=>detail.boss?onBoss():onStart(detail.id)}/></View>{!detail.boss?<View style={s.flex}><GameButton compact tone="secondary" title={gt(queueFull?'Queue full':'Queue hunt')} disabled={!detailUnlocked||queueFull} onPress={()=>onQueue(detail.id)}/></View>:null}</View></View>:null}
       <Pressable accessibilityRole="button" accessibilityState={{expanded:showTraining}} onPress={()=>setShowTraining(value=>!value)} style={s.trainingToggle}><LineworkIcon name="skills" size={23}/><View style={s.flex}><Text style={s.dockTitle}>{gt("Training XP")}</Text></View><Text style={s.trainingMark}>{showTraining?'⌃':'⌄'}</Text></Pressable>
       {showTraining?<CombatXpSplit state={state} onCommand={onCommand}/>:null}
     </View>

@@ -1,5 +1,5 @@
 import {useEffect,useMemo,useRef} from 'react';
-import {Animated,Easing,StyleSheet,Text,View} from 'react-native';
+import {Animated,Easing,StyleSheet,View} from 'react-native';
 import type {DungeonCombatActorMotion,DungeonCombatFxAccent} from '../core/dungeon-combat-fx';
 import {useGameTheme} from '../theme/ThemeContext';
 import type {ThemeColors} from '../theme/theme';
@@ -18,7 +18,6 @@ export function CombatAttackSprite({eventId,motion,accent,actionKind='damage',en
  const spell=actionKind==='heal'||actionKind==='shield'||motion==='cast'||motion==='pulse';
  const ranged=motion==='projectile';
  const heavy=motion==='smash'||motion==='brace';
- const symbol=actionKind==='heal'?'✚':actionKind==='shield'?'⬡':spell?'✦':ranged?'➤':heavy?'◆':'╱';
  useEffect(()=>{
   frame.stopAnimation();frame.setValue(0);
   if(reduceMotion||motion==='none')return;
@@ -33,12 +32,18 @@ export function CombatAttackSprite({eventId,motion,accent,actionKind='damage',en
  const rotation=frame.interpolate({inputRange:[0,1],outputRange:[spell?'0deg':heavy?'-30deg':'-55deg',spell?'0deg':heavy?'48deg':'48deg']});
  const wakeScale=frame.interpolate({inputRange:[0,1],outputRange:[.2,2.3]});
  return <View accessible={false} pointerEvents="none" style={s.anchor}>
-  <Animated.View style={[s.wake,{borderColor:tint,opacity:opacity,transform:[{scale:wakeScale}]}]}/>
+  {spell||heavy?<Animated.View style={[s.wake,{borderColor:tint,opacity:opacity,transform:[{scale:wakeScale}]}]}/>:null}
   <Animated.View style={[s.sprite,{opacity,transform:[{translateY},{translateX},{scale},{rotate:rotation}]}]}>
-   <Text style={[s.glyph,{color:tint,fontSize:ranged?22:spell?31:35}]}>{symbol}</Text>
-   {!spell?<View style={[s.blade,{backgroundColor:tint,width:ranged?30:heavy?36:43,transform:[{rotate:ranged?'0deg':'-45deg'}]}]}/>:<View style={[s.spark,{borderColor:tint}]}/>}
+   <CombatEffectShape kind={actionKind==='heal'?'heal':actionKind==='shield'?'shield':spell?'magic':ranged?'projectile':heavy?'heavy':'slash'} color={tint}/>
   </Animated.View>
  </View>;
+}
+
+/** Geometry stays crisp at small sizes and avoids font-dependent combat glyphs. */
+export function CombatEffectShape({kind,color}:{kind:'slash'|'heavy'|'projectile'|'magic'|'heal'|'shield';color:string}){
+ if(kind==='slash'||kind==='heavy')return <View style={{width:58,height:58,alignItems:'center',justifyContent:'center'}}><View style={{position:'absolute',width:58,height:46,borderRadius:30,borderTopWidth:kind==='heavy'?6:3,borderRightWidth:2,borderColor:color,transform:[{rotate:'-30deg'}]}}/><View style={{position:'absolute',width:48,height:36,borderRadius:25,borderTopWidth:1,borderColor:'#fff',transform:[{translateY:-3},{rotate:'-30deg'}]}}/><View style={{position:'absolute',width:44,height:34,borderRadius:24,borderTopWidth:2,borderColor:color,opacity:.3,transform:[{translateY:7},{rotate:'-30deg'}]}}/></View>;
+ if(kind==='projectile')return <View style={{width:52,height:20,justifyContent:'center'}}><View style={{width:42,height:3,borderRadius:3,backgroundColor:color,opacity:.45}}/><View style={{position:'absolute',right:0,width:18,height:5,borderRadius:4,backgroundColor:'#fff',borderWidth:1,borderColor:color}}/></View>;
+ return <View style={{width:48,height:48,alignItems:'center',justifyContent:'center'}}><View style={{position:'absolute',width:40,height:40,borderRadius:kind==='shield'?12:24,borderWidth:2,borderColor:color,transform:[{rotate:'45deg'}]}}/><View style={{width:24,height:24,borderRadius:14,backgroundColor:color,opacity:.2}}/>{kind==='heal'?<><View style={{position:'absolute',height:19,width:3,borderRadius:2,backgroundColor:'#fff'}}/><View style={{position:'absolute',height:3,width:19,borderRadius:2,backgroundColor:'#fff'}}/></>:<View style={{position:'absolute',width:9,height:9,backgroundColor:'#fff',borderRadius:kind==='shield'?2:6,transform:[{rotate:'45deg'}]}}/>}</View>;
 }
 
 function styles(_C:ThemeColors){return StyleSheet.create({

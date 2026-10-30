@@ -14,7 +14,7 @@ type CandidateRow={candidate_id:string;cycle_key:string;template_id:string;name:
 
 export interface OnlineGuildProjectResourceGoal{resourceKind:'gold'|'item';resourceId:string;label:string;target:number;current:number}
 export interface OnlineGuildProjectSummary{
- id:string;name:string;description:string;kind:GuildProjectKind;focus:GuildProjectFocus;slotIndex:number;status:'active'|'completed'|'expired'|'cancelled';
+ id:string;templateId:string;name:string;description:string;kind:GuildProjectKind;focus:GuildProjectFocus;slotIndex:number;status:'active'|'completed'|'expired'|'cancelled';
  targetPoints:number;completionPoints:number;combatPoints:number;skillingPoints:number;meaningfulContributors:number;minimumMeaningfulContributors:number;
  completionRewardClaimed?:boolean;launchWeekly?:boolean;personalPoints:number;personalRewardThreshold:number;endsAt?:string;startedAt:string;resourceGoals:OnlineGuildProjectResourceGoal[];
 }
@@ -69,7 +69,7 @@ async function readGuildProjects(membership:NonNullable<Awaited<ReturnType<typeo
  const projects=rows.map(row=>{
   const snapshot=row.definition_snapshot??{},personal=progressByProject.get(row.id);
   return {
-   id:row.id,launchWeekly:row.template_id==='guild_weekly_shared_effort',completionRewardClaimed:claimed.has(row.id),
+   id:row.id,templateId:row.template_id,launchWeekly:row.template_id==='guild_weekly_shared_effort',completionRewardClaimed:claimed.has(row.id),
    name:definitionText(snapshot,'name',humanize(row.template_id)),
    description:definitionText(snapshot,'description','Shared Guild project.'),
    kind:row.kind,focus:row.focus,slotIndex:row.slot_index,status:row.status,

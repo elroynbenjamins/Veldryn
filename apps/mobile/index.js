@@ -1,7 +1,11 @@
 import {registerRootComponent} from 'expo';
 // Explicit developer-only fixture entry; normal and release builds use App.
-const App=__DEV__&&process.env.EXPO_PUBLIC_VISUAL_QA==='1'
-  ?(process.env.EXPO_PUBLIC_VISUAL_QA_SCREEN==='boards'
+const App=process.env.EXPO_PUBLIC_BROWSER_REVIEW==='1'
+  ?require('./src/dev/BrowserReview').default
+  :__DEV__&&process.env.EXPO_PUBLIC_VISUAL_QA==='1'
+  ?(process.env.EXPO_PUBLIC_VISUAL_QA_SCREEN==='combat-art'
+    ?require('./src/dev/CombatArtReview').default
+    :process.env.EXPO_PUBLIC_VISUAL_QA_SCREEN==='boards'
     ?require('./src/dev/BoardExperienceReview').default
     :process.env.EXPO_PUBLIC_VISUAL_QA_SCREEN==='guild-pve'
     ?require('./src/dev/GuildPveReview').default

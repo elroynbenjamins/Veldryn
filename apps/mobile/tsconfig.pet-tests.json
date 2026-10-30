@@ -8,6 +8,7 @@
     "resolveJsonModule": true,
     "skipLibCheck": true,
     "outDir": ".pet-test-build",
+    "rootDir": "../..",
     "ignoreDeprecations": "6.0"
   },
   "include": [

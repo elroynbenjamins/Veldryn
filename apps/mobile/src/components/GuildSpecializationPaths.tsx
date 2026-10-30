@@ -1,5 +1,5 @@
 import {useState} from 'react';
-import {Pressable,StyleSheet,Text,View} from 'react-native';
+import {Image,Pressable,StyleSheet,Text,View} from 'react-native';
 import {GUILD_MAJOR_BRANCHES,GUILD_SKILL_NODES} from '../content/guild-skill-paths';
 import {itemDef} from '../content/items';
 import {useGameTheme} from '../theme/ThemeContext';
@@ -9,7 +9,7 @@ import {GameButton} from './GameButton';
 import {BoardTabs} from './BoardTabs';
 import {QuestBoard} from './QuestBoard';
 import {StatBar} from './StatBar';
-import {ActivityArtwork} from './ActivityArtwork';
+import {guildSkillArtwork} from '../theme/guild-remaster-art';
 
 /** Undefined allocations mean unavailable server data, never an invented zero rank. */
 export function GuildSpecializationPaths({guildLevel,skillPoints,metrics,canUpgrade=false,onSpend,onViewBank}:{guildLevel?:number;skillPoints?:number;metrics?:Record<string,number>;canUpgrade?:boolean;onSpend?:(id:string)=>void;onViewBank?:()=>void}){
@@ -28,7 +28,7 @@ export function GuildSpecializationPaths({guildLevel,skillPoints,metrics,canUpgr
   <View style={s.head}><View style={s.flex}><Text style={s.eyebrow}>GUILD SKILLS</Text><Text accessibilityRole="header" style={s.title}>{confirm?'Review upgrade':'Shape your guild'}</Text><Text style={s.copy}>{guildLevel===undefined?'Skill guide':`Guild Level ${guildLevel}`}{skillPoints===undefined?'':` · ${skillPoints} skill point${skillPoints===1?'':'s'}`}</Text></View></View>
   {!confirm&&active.length?<View style={s.panel}><Text style={s.eyebrow}>ACTIVE BONUSES</Text>{active.map(n=><Text key={n.id} style={s.copy}>{n.label} +{rank(n.id)*n.perTier}{n.id==='fellowship_membership'?' members':'%'}{n.major==='Vanguard'?' · Guild encounters only':''}</Text>)}</View>:null}
   {!confirm?<BoardTabs label="Guild skill branches" items={GUILD_MAJOR_BRANCHES.map(id=>({id,label:id}))} value={branch} onChange={value=>{setBranch(value);setConfirm(false)}}/>:null}
-  {!confirm?<View style={s.stack}>{nodes.map(n=><Pressable key={n.id} accessibilityRole="button" accessibilityLabel={`View ${n.name}`} aria-pressed={n.id===node.id} accessibilityState={{selected:n.id===node.id}} onPress={()=>{setSelected(n.id);setConfirm(false)}} style={({pressed})=>[s.node,{borderColor:n.id===node.id?C.selectionLine:C.line,backgroundColor:n.id===node.id?C.selection:C.panelRaised},pressed&&s.pressed]}><ActivityArtwork id={n.major==='Vanguard'?'combat':n.major==='Fellowship'?'exploration':n.id==='professions_crafting'?'smithing':n.id==='professions_mastery'?'training':'herbalism'} size={34}/><View style={s.flex}><Text style={s.nodeTitle}>{n.name}</Text><Text style={s.copy}>{known?`Rank ${rank(n.id)} / 3`:'3 ranks · Skill guide'}</Text></View><Text style={s.arrow}>›</Text></Pressable>)}</View>:null}
+  {!confirm?<View style={s.stack}>{nodes.map(n=><Pressable key={n.id} accessibilityRole="button" accessibilityLabel={`View ${n.name}`} aria-pressed={n.id===node.id} accessibilityState={{selected:n.id===node.id}} onPress={()=>{setSelected(n.id);setConfirm(false)}} style={({pressed})=>[s.node,{borderColor:n.id===node.id?C.selectionLine:C.line,backgroundColor:n.id===node.id?C.selection:C.panelRaised},pressed&&s.pressed]}><Image source={guildSkillArtwork(n.id)} resizeMode="contain" style={{width:42,height:42}}/><View style={s.flex}><Text style={s.nodeTitle}>{n.name}</Text><Text style={s.copy}>{known?`Rank ${rank(n.id)} / 3`:'3 ranks · Skill guide'}</Text></View><Text style={s.arrow}>›</Text></Pressable>)}</View>:null}
   <View style={s.panel}>
    <View style={s.head}><View style={s.flex}><Text style={s.eyebrow}>{confirm?'NEXT RANK':node.scope}</Text><Text accessibilityRole="header" style={s.title}>{confirm?`${node.name} · Rank ${level+1}`:node.name}</Text></View></View>
    <Text style={s.copy}>{node.label}{branch==='Vanguard'?' · Guild encounters only':''}</Text>

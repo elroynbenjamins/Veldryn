@@ -1,14 +1,14 @@
 import {useCoopStyles} from '../../theme/useCoopStyles';
 import {useSocialText} from '../../i18n/social';
 import {useEffect,useMemo,useRef,useState} from 'react';
-import {AccessibilityInfo,Animated,Easing,Image,StyleSheet,Text,useWindowDimensions,View} from 'react-native';
+import {AccessibilityInfo,Animated,Easing,Image,Pressable,StyleSheet,Text,useWindowDimensions,View} from 'react-native';
 import type {CoopRunView} from '../../core/coop-presentation';
 import {dungeonCombatCueFx,type DungeonCombatCueFx} from '../../core/dungeon-combat-fx';
 import {dungeonCombatLayout} from '../../core/dungeon-combat-layout';
 import {playbackAdvanceDelayMs,playbackBossCombatant,playbackCastDisplayMs,playbackCombatant,playbackCombatantState,playbackCombatantStatuses,playbackEnemyCombatants,playbackCueLabel,playbackCueTone,playbackProgress,playbackVisualDurationMs} from '../../core/dungeon-combat-playback';
 import {type CoopColors} from '../../theme/coop-ui-theme';
 import {StateChip} from './CoopVisualKit';
-import {radii,spacing,typography} from '../../theme/theme';
+import {radii,spacing,touchTargetMin,typography} from '../../theme/theme';
 import {CombatantProfileCard,EnemyCombatProfileCard} from './CombatantProfileCard';
 import {CombatantInspectPanel,type CombatantInspectTarget} from './CombatantInspectPanel';
 import {CombatAttackSprite} from '../CombatAttackSprite';
@@ -77,15 +77,16 @@ export function DungeonCombatStage({run,enemyLabel,boss=false,seasonal=false,eve
  const ordered=[tank,damage[0],damage[1],support].filter((slot):slot is Slot=>Boolean(slot)),assists=ordered.filter(slot=>slot.companionId).length;
  const replay=run.lastCombat,cues=replay?.cues??[],replayKey=`${run.runId}:${replay?.nodeId??'preview'}:${replay?.durationMs??0}:${cues.length}`;
  const [cueIndex,setCueIndex]=useState(0),[systemReduceMotion,setReduceMotion]=useState(false);
+ const [inspectKey,setInspectKey]=useState<string|undefined>(undefined),[paused,setPaused]=useState(false),[showLog,setShowLog]=useState(false);
  const reduceMotion=reduceMotionSetting||systemReduceMotion;
  const actorAnim=useRef(new Animated.Value(0)).current,targetAnim=useRef(new Animated.Value(0)).current,fxAnim=useRef(new Animated.Value(0)).current,feedbackAnim=useRef(new Animated.Value(0)).current,castAnim=useRef(new Animated.Value(0)).current;
  useEffect(()=>{let mounted=true;void AccessibilityInfo.isReduceMotionEnabled().then(value=>{if(mounted)setReduceMotion(value);}).catch(()=>{});return()=>{mounted=false;};},[]);
- useEffect(()=>{setCueIndex(reduceMotion&&cues.length?cues.length-1:0);},[replayKey,reduceMotion,cues.length]);
+ useEffect(()=>{setCueIndex(reduceMotion&&cues.length?cues.length-1:0);setPaused(false);setShowLog(false);setInspectKey(undefined);},[replayKey,reduceMotion,cues.length]);
  useEffect(()=>{
-  if(!replay||reduceMotion||cueIndex>=cues.length-1)return;
+  if(!replay||reduceMotion||paused||cueIndex>=cues.length-1)return;
   const current=cues[cueIndex],next=cues[cueIndex+1],timer=setTimeout(()=>setCueIndex(value=>Math.min(value+1,cues.length-1)),playbackAdvanceDelayMs(current,next,1));
   return()=>clearTimeout(timer);
- },[replay,replayKey,reduceMotion,cueIndex,cues]);
+ },[replay,replayKey,reduceMotion,paused,cueIndex,cues]);
  const currentCue=cues.length?cues[Math.min(cueIndex,cues.length-1)]:undefined;
  const actionImpact:CombatImpactKind|undefined=currentCue?.type==='action'&&currentCue.outcome!=='miss'
   ?currentCue.actionKind==='heal'?'heal':currentCue.actionKind==='shield'?'shield':currentCue.outcome==='critical'?'critical':'damage'
@@ -130,6 +131,7 @@ export function DungeonCombatStage({run,enemyLabel,boss=false,seasonal=false,eve
  const fallbackEnemyState=playbackCombatantState(replay,cueIndex,fallbackEnemyCombatant?.id),fallbackEnemyStatuses=playbackCombatantStatuses(replay,cueIndex,fallbackEnemyCombatant?.id);
  const complete=Boolean(replay&&(!cues.length||cueIndex>=cues.length-1));
  const progress=replay?playbackProgress(replay,cueIndex):0;
+ const recent=cues.slice(Math.max(0,cueIndex-5),cueIndex+1);
  const contributionRows=complete&&replay?(ordered.map(slot=>{const combatant=playbackCombatant(replay,slot.memberId??slot.name),value=(replay.contributions??[]).find(row=>row.id===combatant?.id);return value?{slot,value}:undefined;}).filter((row):row is {slot:Slot;value:Contribution}=>Boolean(row))):[];
  const actorDirection=actorIsParty===false?1:-1,targetDirection=targetIsParty===false?-1:1;
  const actorTravel=(fx?.actorMotion==='lunge'||fx?.actorMotion==='dash'||fx?.actorMotion==='smash'||fx?.actorMotion==='projectile')?(fx.actorTravelPx*actorDirection):0;

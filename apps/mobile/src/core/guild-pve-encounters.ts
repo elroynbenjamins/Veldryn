@@ -42,6 +42,18 @@ export const GUILD_PVE_DAILY_CAP=6000;
 export const GUILD_PVE_DAMAGE_PER_MINUTE=200;
 export const GUILD_PVE_MIN_CONTRIBUTION=1000;
 export const GUILD_PVE_MILESTONES=[{percent:25,gold:250},{percent:50,gold:500},{percent:100,gold:1000}] as const;
+export const GUILD_PVE_BANK_REWARDS={
+ weekly:{
+  25:{gold:2500,xp:100,materials:{MOSS_FIBER:50,GREENWOOD_LOG:25}},
+  50:{gold:5000,xp:200,materials:{IRONWOOD_LOG:40,ASTER_IRON_INGOT:10}},
+  100:{gold:10000,xp:400,materials:{IRONWOOD_LOG:100,ASTER_IRON_INGOT:25,OATHGLASS_SHARD:5}},
+ },
+ event:{
+  25:{gold:5000,xp:150,materials:{MOSS_FIBER:75,GREENWOOD_LOG:40}},
+  50:{gold:10000,xp:300,materials:{IRONWOOD_LOG:75,ASTER_IRON_INGOT:20}},
+  100:{gold:20000,xp:600,materials:{IRONWOOD_LOG:150,ASTER_IRON_INGOT:40,OATHGLASS_SHARD:10}},
+ },
+} as const;
 export function guildPveBalance(members:number,durationDays=7){
  const rosterSize=members<=5?5:members<=8?8:members<=12?12:members<=16?16:20;
  const weeks=Math.max(1,Math.min(4,durationDays/7));
@@ -55,5 +67,5 @@ export function guildPveView(row:GuildPveEncounter,now=Date.now()){
   attemptCap,attemptsUsed,attemptsRemaining,pendingAttempts,requiredGuildLevel,guildLevel,
   active:started&&!ended&&!defeated,open:started&&!ended,canContribute:row.eligible&&guildLevel>=requiredGuildLevel&&pendingAttempts===0&&started&&!ended&&(attemptCap>0?attemptsRemaining>0:dailyAllowance>0),
   status:(expired?'Expired':defeated?'Defeated':ended?'Claim rewards':!started?'Upcoming':'In progress') as 'Expired'|'Defeated'|'Claim rewards'|'Upcoming'|'In progress',
-  milestones:GUILD_PVE_MILESTONES.map(m=>({...m,eventCurrency:row.kind==='event'?(m.percent===25?100:m.percent===50?200:400):0,candy:row.kind==='event'?(m.percent===100?2:1):0,candyKind:m.percent===25?'Skill' as const:m.percent===50?'Battle' as const:'Bond' as const,claimed:row.claimed.includes(m.percent),ready:row.eligible&&started&&!expired&&row.damage*100>=row.maxHp*m.percent&&row.personalDamage>=GUILD_PVE_MIN_CONTRIBUTION&&!row.claimed.includes(m.percent)}))};
+  milestones:GUILD_PVE_MILESTONES.map(m=>({...m,gold:row.kind==='event'?m.gold:0,bank:GUILD_PVE_BANK_REWARDS[row.kind][m.percent],eventCurrency:row.kind==='event'?(m.percent===25?100:m.percent===50?200:400):0,candy:row.kind==='event'?(m.percent===100?2:1):0,candyKind:m.percent===25?'Skill' as const:m.percent===50?'Battle' as const:'Bond' as const,claimed:row.claimed.includes(m.percent),ready:row.eligible&&started&&!expired&&row.damage*100>=row.maxHp*m.percent&&row.personalDamage>=GUILD_PVE_MIN_CONTRIBUTION&&!row.claimed.includes(m.percent)}))};
 }

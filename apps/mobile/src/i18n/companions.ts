@@ -3,6 +3,14 @@ import {createTranslator} from './translator';
 
 // Each row supplies German, Spanish, Dutch, Italian and French; its key is English.
 export const companionTranslationRows={
+ "SPEED": ["TEMPO","VELOCIDAD","SNELHEID","VELOCITÀ","VITESSE"],
+ "Change playback speed": ["Wiedergabetempo ändern","Cambiar velocidad","Afspeelsnelheid wijzigen","Cambia velocità","Changer la vitesse"],
+ "{target} suffers {amount} poison damage through shields": ["{target} erleidet {amount} Giftschaden durch Schilde","{target} sufre {amount} de veneno a través de escudos","{target} krijgt {amount} gifschade door schilden","{target} subisce {amount} danni da veleno attraverso gli scudi","{target} subit {amount} dégâts de poison à travers les boucliers"],
+ "{target} is poisoned": ["{target} ist vergiftet","{target} está envenenado","{target} is vergiftigd","{target} è avvelenato","{target} est empoisonné"],
+ "{actor} cleanses poison from {target}": ["{actor} entfernt Gift von {target}","{actor} elimina el veneno de {target}","{actor} verwijdert gif van {target}","{actor} purifica {target} dal veleno","{actor} purifie le poison de {target}"],
+ "+{value1} Essence · +{value2} Gold{value3}": ["+{value1} Essenz · +{value2} Gold{value3}","+{value1} Esencia · +{value2} Oro{value3}","+{value1} Essentie · +{value2} Goud{value3}","+{value1} Essenza · +{value2} Oro{value3}","+{value1} Essence · +{value2} Or{value3}"],
+ "Preparing battle replay…": ["Kampfwiedergabe wird vorbereitet…","Preparando repetición…","Gevechtsherhaling voorbereiden…","Preparazione replay…","Préparation du replay…"],
+ "Waiting for the resolved combat record. You can close this view and replay the last battle later.": ["Warte auf das Kampfergebnis. Du kannst diese Ansicht schließen und den letzten Kampf später ansehen.","Esperando el resultado. Puedes cerrar esta vista y repetir la última batalla después.","Wachten op het gevechtsresultaat. Je kunt dit venster sluiten en het laatste gevecht later bekijken.","In attesa del risultato. Puoi chiudere questa vista e rivedere l’ultima battaglia più tardi.","En attente du résultat. Vous pouvez fermer cette vue et revoir le dernier combat plus tard."],
  "Progress": ["Fortschritt","Progreso","Voortgang","Progressi","Progression"],
  "Showcase": ["Schaukasten","Exhibición","Uitstalling","Vetrina","Vitrine"],
  "Rewards": ["Belohnungen","Recompensas","Beloningen","Ricompense","Récompenses"],

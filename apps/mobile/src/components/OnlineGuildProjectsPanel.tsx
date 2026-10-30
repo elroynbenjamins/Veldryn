@@ -1,7 +1,7 @@
 import {useSocialText} from '../i18n/social';
 import {useEffect,useMemo,useRef,useState} from 'react';
 import {AppState} from 'react-native';
-import {Pressable,StyleSheet,Text,View} from 'react-native';
+import {Image,Pressable,StyleSheet,Text,View} from 'react-native';
 import {GameButton} from './GameButton';
 import {Panel} from './Panel';
 import {QuestBoard} from './QuestBoard';
@@ -13,6 +13,7 @@ import {projectFocusLabel} from '../core/guild-projects-v18';
 import {claimOnlineGuildProjectReward,loadOnlineGuildProjectsV18,startOnlineGuildProjectCandidate,voteOnlineGuildProjectCandidate,type OnlineGuildProjectCandidate,type OnlineGuildProjectSummary,type OnlineGuildProjectsSnapshot} from '../online/guild-projects-v18';
 import {radii,spacing,typography,type ThemeColors} from '../theme/theme';
 import {useGameTheme} from '../theme/ThemeContext';
+import {guildProjectArtwork} from '../theme/guild-remaster-art';
 
 function progressPercent(project:OnlineGuildProjectSummary){
  if(project.kind==='development'){
@@ -83,7 +84,7 @@ function CandidateCard({candidate,busy,onVote,onStart}:{candidate:OnlineGuildPro
  const st=useSocialText();
  const C=useGameTheme(),s=useMemo(()=>makeStyles(C),[C]),voteBusy=busy==='vote:'+candidate.id,startBusy=busy==='start:'+candidate.id;
  return <QuestPosting style={candidate.myVote?s.candidateVoted:undefined}>
-  <View style={s.projectHead}><View style={s.flex}><Text style={s.projectTitle}>{candidate.name}</Text><Text style={s.meta}>{projectFocusLabel(candidate.focus)} · {candidate.voteCount} vote{candidate.voteCount===1?'':'s'}</Text></View>{candidate.myVote?<StatusPill label={st("YOUR VOTE")} tone="good"/>:null}</View>
+  <View style={s.projectHead}>{guildProjectArtwork(candidate.templateId)?<Image source={guildProjectArtwork(candidate.templateId)} resizeMode="contain" style={{width:44,height:44}}/>:null}<View style={s.flex}><Text style={s.projectTitle}>{candidate.name}</Text><Text style={s.meta}>{projectFocusLabel(candidate.focus)} · {candidate.voteCount} vote{candidate.voteCount===1?'':'s'}</Text></View>{candidate.myVote?<StatusPill label={st("YOUR VOTE")} tone="good"/>:null}</View>
   <Text style={s.description}>{candidate.description}</Text>
   <Text style={s.meta}>Board closes {new Date(candidate.expiresAt).toLocaleString()}</Text>
   <View style={s.actions}><GameButton compact title={voteBusy?st("Voting…"):candidate.myVote?st("Voted"):st("Vote")} tone="secondary" disabled={!!busy||candidate.myVote} onPress={onVote}/>{candidate.canStart?<GameButton compact title={startBusy?st("Starting…"):st("Start Project")} disabled={!!busy} onPress={onStart}/>:null}</View>
@@ -95,7 +96,7 @@ export function GuildProjectPosting({project,expanded,compact=false,onToggle,onC
  const C=useGameTheme(),s=useMemo(()=>makeStyles(C),[C]),pct=progressPercent(project);
  const thresholdMet=project.personalRewardThreshold>0&&project.personalPoints>=project.personalRewardThreshold;
  return <QuestPosting style={project.status==='completed'?s.projectDone:undefined}><Pressable accessibilityRole="button" accessibilityLabel={`Project details · ${project.name}`} aria-expanded={expanded} accessibilityState={{expanded}} onPress={onToggle} style={({pressed})=>[s.projectButton,pressed&&s.pressed]}>
-  <View style={s.projectHead}><View style={s.flex}><Text numberOfLines={1} style={s.projectTitle}>{project.name}</Text><Text style={s.meta}>{projectFocusLabel(project.focus)} · {project.kind==='weekly_campaign'?st("Weekly"):project.kind==='development'?st("Development"):st("Event")} · Slot {project.slotIndex}</Text></View><StatusPill label={project.status.toUpperCase()} tone={project.status==='completed'?'good':'info'}/></View>
+  <View style={s.projectHead}>{guildProjectArtwork(project.templateId)?<Image source={guildProjectArtwork(project.templateId)} resizeMode="contain" style={{width:44,height:44}}/>:null}<View style={s.flex}><Text numberOfLines={1} style={s.projectTitle}>{project.name}</Text><Text style={s.meta}>{projectFocusLabel(project.focus)} · {project.kind==='weekly_campaign'?st("Weekly"):project.kind==='development'?st("Development"):st("Event")} · Slot {project.slotIndex}</Text></View><StatusPill label={project.status.toUpperCase()} tone={project.status==='completed'?'good':'info'}/></View>
   <View style={s.progressRow}><Text style={s.percent}>{pct}%</Text><View style={s.track}><View style={[s.fill,{width:(Math.min(100,pct)+'%') as any}]}/></View></View>
   {project.kind!=='development'?<Text style={s.meta}>{project.completionPoints.toLocaleString()} / {project.targetPoints.toLocaleString()} effort · {project.meaningfulContributors}/{project.minimumMeaningfulContributors} meaningful contributors</Text>:<Text style={s.meta}>{project.resourceGoals.length} resource goal{project.resourceGoals.length===1?'':'s'}</Text>}
   {!compact?<View style={s.personal}><Text style={s.personalLabel}>{st("YOUR CONTRIBUTION")}</Text><Text style={[s.personalValue,thresholdMet&&s.personalMet]}>{project.personalPoints.toLocaleString()}{project.personalRewardThreshold>0?' / '+project.personalRewardThreshold.toLocaleString()+' threshold':''}</Text></View>:null}

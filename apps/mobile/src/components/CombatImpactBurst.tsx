@@ -1,5 +1,6 @@
 import {useEffect,useMemo,useRef} from 'react';
-import {Animated,Easing,StyleSheet,Text,View} from 'react-native';
+import {Animated,Easing,StyleSheet,View} from 'react-native';
+import {CombatEffectShape} from './CombatAttackSprite';
 import {useGameTheme} from '../theme/ThemeContext';
 import type {ThemeColors} from '../theme/theme';
 
@@ -17,7 +18,6 @@ export function CombatImpactBurst({eventId,kind,reduceMotion=false,size=66}:{
 }){
  const C=useGameTheme(),styles=useMemo(()=>makeStyles(C),[C]),progress=useRef(new Animated.Value(0)).current;
  const color=kind==='critical'?C.warning:kind==='damage'||kind==='down'?C.bad:kind==='heal'?C.good:kind==='shield'?C.info:kind==='interrupt'?C.accent:kind==='cast'?C.warning:C.special;
- const symbol=kind==='critical'?'✦':kind==='shield'?'◇':kind==='heal'?'+':kind==='interrupt'?'×':kind==='phase'?'✧':kind==='cast'?'!':kind==='down'?'↓':'';
  useEffect(()=>{
   progress.stopAnimation();
   progress.setValue(reduceMotion?1:0);
@@ -26,9 +26,9 @@ export function CombatImpactBurst({eventId,kind,reduceMotion=false,size=66}:{
   return()=>progress.stopAnimation();
  },[eventId,kind,reduceMotion,progress]);
  if(reduceMotion)return null;
- const ringOpacity=progress.interpolate({inputRange:[0,.12,.58,1],outputRange:[0,.95,.65,0]});
- const ringScale=progress.interpolate({inputRange:[0,1],outputRange:[.38,1.75]});
- const streakOpacity=progress.interpolate({inputRange:[0,.15,.62,1],outputRange:[0,1,.8,0]});
+ const ringOpacity=progress.interpolate({inputRange:[0,.12,.58,1],outputRange:[0,.6,.22,0]});
+ const ringScale=progress.interpolate({inputRange:[0,1],outputRange:[.38,1.3]});
+ const streakOpacity=progress.interpolate({inputRange:[0,.15,.62,1],outputRange:[0,.8,.35,0]});
  const glyphOpacity=progress.interpolate({inputRange:[0,.16,.66,1],outputRange:[0,1,1,0]});
  return <View pointerEvents="none" accessible={false} style={[styles.anchor,{width:size,height:size,left:'50%',top:'50%',marginLeft:-size/2,marginTop:-size/2}]}>
   <Animated.View style={[styles.ring,{width:size*.74,height:size*.74,borderRadius:size*.37,marginLeft:-size*.37,marginTop:-size*.37,borderColor:color,opacity:ringOpacity,transform:[{scale:ringScale}]}]}/>
@@ -38,9 +38,9 @@ export function CombatImpactBurst({eventId,kind,reduceMotion=false,size=66}:{
    const drift=progress.interpolate({inputRange:[0,1],outputRange:[0,distance*(index<2?-.55:.55)]});
    return <Animated.View key={deg} style={[styles.streak,{height:size*.31,width:index===1?3:2,marginLeft:-1.5,marginTop:-size*.155,backgroundColor:color,opacity:streakOpacity,transform:[{translateX:drift},{translateY:travel},{rotate:`${deg}deg`}]}]}/>;
   })}
-  {symbol?<Animated.View style={[styles.glyphWrap,{opacity:glyphOpacity,transform:[{translateY:progress.interpolate({inputRange:[0,1],outputRange:[3,-size*.23]})},{scale:progress.interpolate({inputRange:[0,.2,1],outputRange:[.6,1.15,.9]})}]}]}>
-   <Text style={[styles.glyph,{fontSize:kind==='critical'?size*.5:size*.4,color}]}>{symbol}</Text>
-  </Animated.View>:<Animated.View style={[styles.slash,{width:size*.55,height:3,backgroundColor:color,opacity:streakOpacity,transform:[{rotate:'-38deg'},{scaleX:progress.interpolate({inputRange:[0,.2,1],outputRange:[.1,1.45,.8]})}]}]}/>}
+  <Animated.View style={[styles.glyphWrap,{opacity:glyphOpacity,transform:[{scale:progress.interpolate({inputRange:[0,.2,1],outputRange:[.45,kind==='critical'?1.2:.9,.6]})}]}]}>
+   <CombatEffectShape kind={kind==='heal'?'heal':kind==='shield'?'shield':kind==='damage'||kind==='critical'||kind==='down'?'slash':'magic'} color={color}/>
+  </Animated.View>
  </View>;
 }
 

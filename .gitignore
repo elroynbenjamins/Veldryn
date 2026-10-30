@@ -83,3 +83,10 @@ apps/mobile/.release-readiness-*/
 apps/mobile/.release-bundle-*/
 apps/mobile/.release-*-exit*.txt
 backend/.online-build/
+
+# Local review exports and temporary media supplied to Codex.
+.codex-attachments/
+apps/mobile/.web-scratch/
+apps/mobile/art-review/
+review-screens/
+sites/

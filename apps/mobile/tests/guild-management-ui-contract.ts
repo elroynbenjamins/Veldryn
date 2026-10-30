@@ -52,7 +52,7 @@ ok(discovery.includes('GuildCrest size={56}')&&discovery.includes('GuildCrest si
 ok(discovery.includes('StatusPill')&&discovery.includes('C.selectionLine')&&discovery.includes('C.inputBg'),
  'Guild discovery statuses, selection and input surfaces must use semantic theme colors');
 ok(!/#[0-9a-fA-F]{3,8}/.test(discovery),'Guild discovery must not hardcode dark-only or light-only colors');
-ok(memberIdentity.includes('myGuild,guildDetails,ownGuildMemberCount')&&memberIdentity.includes('GuildCrest size={73}'),
+ok(memberIdentity.includes('myGuild,guildDetails,ownGuildMemberCount')&&memberIdentity.includes('GuildCrest size={52}'),
  'Member home must show real Guild identity, membership count and crest');
 ok(memberIdentity.includes('useGameTheme')&&memberIdentity.includes('C.panelRaised')&&memberIdentity.includes('C.accentSurface')===false,
  'Member identity must use shared theme surfaces and color tokens');

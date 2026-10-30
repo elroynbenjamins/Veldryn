@@ -7,6 +7,7 @@
     "test:app-version-gate": "node tests/app-version-gate.cjs",
     "test:online-loading": "node tests/online-loading-interactions.cjs",
     "test:event-currency-promotion": "node ../../tools/run-mobile-tests.mjs event-currency-promotion",
+    "test:gathering-drops": "node ../../tools/run-mobile-tests.mjs gathering-drop-preview gathering-drop-ui-contract",
     "eas-build-post-install": "node scripts/write-build-source.mjs",
     "start": "expo start",
     "android": "expo run:android",

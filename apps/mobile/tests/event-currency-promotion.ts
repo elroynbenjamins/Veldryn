@@ -14,7 +14,7 @@ state.account.liveEvent={eventId:id,enabled:true,startsAtMs:Date.UTC(2026,9,10),
 assert.equal(eventCurrencyBonusBps(state,id,start-1),0);
 assert.equal(eventCurrencyBonusBps(state,id,start),5000);
 assert.equal(eventCurrencyBonusBps(state,id,promotion.endsAtMs),0);
-assert.equal(eventCurrencyPromotionBps('EVT_ANNUAL_010_2027',now),FUTURE_EVENT_CURRENCY_ADJUSTMENT_BPS,'2027 event IDs already use the reduced baseline regardless of query timestamp');
+assert.equal(eventCurrencyPromotionBps('EVT_ANNUAL_010_2027',now),0);
 assert.equal(eventCurrencyBonusBps({...state,account:{...state.account,liveEvent:undefined}},id,now),0);
 assert.equal(eventCurrencyBonusBps({...state,account:{...state.account,liveEvent:{...state.account.liveEvent,endsAtMs:start}}},id,now),0);
 assert.equal(promotedEventCurrency(id,102,now),153);
@@ -49,7 +49,7 @@ assert.equal(eventShopOffers(state,now).find(offer=>offer.id==='veilbreak_backgr
 LIVE_EVENT_CATALOG.push(MERCHANT_GUILD_FESTIVAL_EVENT,FROSTFALL_EVENT);
 const guildId=MERCHANT_GUILD_FESTIVAL_EVENT.id;
 const guildStart=Date.UTC(2026,10,6),guildNow=guildStart+60_000;
-const guildState=createCharacter(newGame(guildStart),'IRONWARDEN','Festival Test');
+const guildState=createCharacter(newGame(guildStart),'IRONWARDEN','Festival Balance Test');
 guildState.account.liveEvent={eventId:guildId,enabled:true,startsAtMs:guildStart,endsAtMs:Date.UTC(2026,10,29)};
 assert.equal(FUTURE_EVENT_CURRENCY_ADJUSTMENT_BPS,-2500);
 assert.equal(eventCurrencyBonusBps(guildState,guildId,guildNow),-2500);

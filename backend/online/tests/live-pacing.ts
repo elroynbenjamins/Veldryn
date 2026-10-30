@@ -32,6 +32,9 @@ const run={
 const beginning=livePendingCombat(run,0,20_000);
 assert.equal(beginning?.cues.length,1,'first cue can animate immediately');
 assert.equal(beginning?.combatants.length,2,'public starting opponents are visible');
+assert.equal(beginning?.wallDurationMs,20_000);
+assert.equal(midpointCheck(),true);
+function midpointCheck(){const frame=livePendingCombat(run,10_000,20_000);return frame?.elapsedMs===10_000&&frame?.wallDurationMs===20_000;}
 assert.equal('reason' in (beginning??{}),false,'unsettled combat cannot expose victory');
 assert.equal('contributions' in (beginning??{}),false,'final contribution totals remain private');
 const midpoint=livePendingCombat(run,10_000,20_000);

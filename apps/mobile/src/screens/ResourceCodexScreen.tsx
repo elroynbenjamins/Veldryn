@@ -6,7 +6,7 @@ import {ItemArtwork} from '../components/ItemArtwork';
 import {ResourceIcon} from '../components/ResourceIcon';
 import {UiIcon} from '../components/UiIcon';
 import {accountText} from '../i18n/account';
-import {resourceCodexCategoryEntries,resourceCodexEntries,resourceCodexMatchesCategory,resourceCodexQuantity,resourceCodexSources,resourceCodexUse,RESOURCE_CATEGORIES,type ResourceCategory,type ResourceCodexEntry} from '../core/resource-codex';
+import {resourceCodexCategoryEntries,resourceCodexEntries,resourceCodexQuantity,resourceCodexSources,resourceCodexUse,RESOURCE_CATEGORIES,type ResourceCategory,type ResourceCodexEntry} from '../core/resource-codex';
 import {rarityNameColor,rarityMeta} from '../core/item-rarity';
 import type {GameState} from '../core/types';
 import type {WorkingTowardDestination} from '../core/working-toward';

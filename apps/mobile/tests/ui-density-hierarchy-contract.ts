@@ -35,7 +35,7 @@ ok(home.includes('utilityDisclosure:{minHeight:54')&&home.includes('utilityDiscl
 
 const account=read('src/screens/MoreScreen.tsx');
 ok(account.includes("tile:{flexGrow:1,flexBasis:'47%',minWidth:138,minHeight:62"),'Account hub tiles must use the compact two-column layout');
-ok(account.includes('<Text numberOfLines={singleColumn?2:1} style={s.description}>'),'Account tile descriptions must stay single-line by default and allow two lines only in narrow/large-text mode');
+ok(account.includes('accessibilityHint={locked?reason:meta.description}')&&account.includes('numberOfLines={2} style={s.title}'),'Account tiles must keep readable titles while putting detailed descriptions in accessible hints');
 ok(account.includes('header:{minHeight:52')&&account.includes('heading:{...typography.hero'),'Account hub must retain a compact header and clear title');
 ok(account.includes('attentionPriority')&&account.includes('attentionDestinations.slice(0,3)'),'Account must surface at most three immediate attention destinations before the full navigation grid');
 ok(account.includes('tileAttention:{borderWidth:1,borderColor:C.selectionLine')&&account.includes('iconFrameAttention:'),'Account destinations needing attention must gain restrained theme-semantic emphasis without changing layout');

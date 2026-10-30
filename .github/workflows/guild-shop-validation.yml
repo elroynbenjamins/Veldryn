@@ -8,6 +8,7 @@ on:
       - 'backend/test-guild-shop-migrations.mjs'
       - 'backend/test-guild-activity-balance.mjs'
       - 'backend/supabase/migrations/2026110300000*_guild*.sql'
+      - 'backend/supabase/migrations/2026110400001*_guild*.sql'
       - 'backend/package.json'
       - 'packages/guild-shop/**'
       - '.github/workflows/guild-shop-validation.yml'

@@ -382,7 +382,7 @@ async function responsiveCardContract() {
       h.size.width = width; h.size.fontScale = 1;
       const layout = dungeonCombatLayout(width);
       await act(async () => { tree = create(React.createElement(CombatantProfileCard, {slot: run.roleSlots[1], layout, animateHealth: false})); });
-      const cardRoot = tree.root.findAllByType('Animated.View')[0], portrait = tree.root.findAllByType('Image').find(node => node.props.source?.kind === 'portrait');
+      const cardRoot = tree.root.findAllByType('Animated.View')[0], portrait = [...tree.root.findAllByType('Image'), ...tree.root.findAllByType('Animated.Image')].find(node => node.props.source?.kind === 'portrait');
       assert.equal(flattenStyle(cardRoot.props.style).minHeight, layout.cardMinHeight, 'actual card uses responsive minimum height');
       assert.equal(flattenStyle(portrait.props.style).width, layout.portraitWidth, 'actual portrait uses responsive width');
       assert.equal(flattenStyle(portrait.props.style).height, layout.portraitHeight, 'actual portrait uses responsive height');

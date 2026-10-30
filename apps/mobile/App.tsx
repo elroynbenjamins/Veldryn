@@ -158,7 +158,7 @@ function tabLabel(language:Language,tab:Tab):string{
     case 'Arena':return appText(language,'Arena');
     case 'Rankings':return appText(language,'Rankings');
     case 'Collections':return appText(language,'Collections');
-     case 'ResourceCodex':return appText(language,'Resource Codex');
+     case 'ResourceCodex':return appText(language,'Codex');
     case 'Profile':return appText(language,'Profile');
     case 'ProfileCustomize':return appText(language,'Customize Profile');case 'NewUnlocks':return appText(language,'New Unlocks');
   }

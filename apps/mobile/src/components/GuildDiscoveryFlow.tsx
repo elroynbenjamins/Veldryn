@@ -11,8 +11,10 @@ import {ThemedIcon} from './ThemedNavigationIcon';
 import {StatusPill} from './StatusPill';
 import {GUILD_NAME_MAX_LENGTH,guildNameError,normalizeGuildName} from '../core/identity-names';
 import {guildTagAvailabilityMessage,normalizeGuildTag,type GuildTagAvailability} from '../core/guild-tags';
+import {GUILD_JOIN_LEVEL} from '../core/feature-unlocks';
+import {guildAccessError,guildJoinRequirementText,guildLevelsRemaining,requiredGuildJoinLevel} from '../core/guild-join-eligibility';
 import {
- createOnlineGuild,guildDetails,guildTagAvailability,pendingGuildApplications,requestGuildMembership,respondGuildInvitation,
+ createOnlineGuild,guildDetails,guildTagAvailability,highestGuildCharacterLevel,pendingGuildApplications,requestGuildMembership,respondGuildInvitation,
  searchOnlineGuilds,socialInvitations,type GuildInvitationView,type OnlineGuild,
 } from '../online/social';
 
@@ -22,7 +24,7 @@ type PendingApplication={guildId:string;name:string};
 const filters:readonly {id:DirectoryFilter;label:string}[]=[
  {id:'recruiting',label:'Recruiting'},{id:'open',label:'Open'},{id:'apply',label:'Applications'},{id:'all',label:'All'},
 ];
-const failureText=(reason:unknown)=>reason instanceof Error?reason.message:'Guild service unavailable. Please retry.';
+const failureText=guildAccessError;
 const guildPolicy=(guild:OnlineGuild)=>typeof guild.member_count==='number'&&guild.member_count>=guild.member_cap?'FULL':guild.join_policy==='open'?'OPEN':guild.join_policy==='apply'?'APPLICATION':'INVITE ONLY';
 
 /** The Guild destination for accounts with no membership. No Guild Hall or member actions mount here. */
@@ -39,6 +41,17 @@ export function GuildDiscoveryFlow({onJoined}:{onJoined:()=>void}){
  const [pending,setPending]=useState<PendingApplication[]>([]);
  const [name,setName]=useState(''),[tag,setTag]=useState(''),[tagStatus,setTagStatus]=useState<GuildTagAvailability|null>(null);
  const [policy,setPolicy]=useState<'open'|'apply'>('open');
+ const [playerLevel,setPlayerLevel]=useState<number|null>(null),[levelLoading,setLevelLoading]=useState(true);
+ const levelsToJoin=(minimumLevel=1)=>guildLevelsRemaining(playerLevel,minimumLevel);
+ const levelLocked=(minimumLevel=1)=>{const remaining=levelsToJoin(minimumLevel);return remaining!==null&&remaining>0;};
+ // Recheck on every step so a player who just leveled up need not restart the app.
+ useEffect(()=>{
+  let active=true;
+  setLevelLoading(true);
+  void highestGuildCharacterLevel().then(level=>{if(active)setPlayerLevel(level)}).catch(()=>{if(active)setPlayerLevel(null)})
+   .finally(()=>{if(active)setLevelLoading(false)});
+  return()=>{active=false};
+ },[page]);
 
  useEffect(()=>{
   let active=true;
@@ -74,7 +87,7 @@ export function GuildDiscoveryFlow({onJoined}:{onJoined:()=>void}){
  const back=()=>navigate(page==='details'?'find':'welcome');
  const openDetails=(guild:OnlineGuild)=>{setSelected(guild);navigate('details')};
  const apply=async(guild:OnlineGuild)=>{
-  if(busy||requested.includes(guild.id)||guild.join_policy==='invite'||(typeof guild.member_count==='number'&&guild.member_count>=guild.member_cap))return;
+  if(busy||levelLoading||levelLocked(guild.minimum_level)||requested.includes(guild.id)||guild.join_policy==='invite'||(typeof guild.member_count==='number'&&guild.member_count>=guild.member_cap))return;
   setBusy(true);setError('');
   try{
    const outcome=await requestGuildMembership(guild.id);
@@ -84,12 +97,12 @@ export function GuildDiscoveryFlow({onJoined}:{onJoined:()=>void}){
   }catch(reason){setError(failureText(reason))}
   finally{setBusy(false)}
  };
- const respondInvite=async(id:string,accept:boolean)=>{
-  if(busy)return;
+ const respondInvite=async(invite:GuildInvitationView,accept:boolean)=>{
+  if(busy||(accept&&(levelLoading||levelLocked(invite.minimumLevel))))return;
   setBusy(true);setError('');
   try{
-   await respondGuildInvitation(id,accept);
-   setInvites(current=>current.filter(row=>row.id!==id));
+   await respondGuildInvitation(invite.id,accept);
+   setInvites(current=>current.filter(row=>row.id!==invite.id));
    if(accept)onJoined();
   }catch(reason){setError(failureText(reason))}
   finally{setBusy(false)}
@@ -106,13 +119,13 @@ export function GuildDiscoveryFlow({onJoined}:{onJoined:()=>void}){
  };
  const nameIssue=name?guildNameError(name):'';
  const create=async()=>{
-  if(busy||nameIssue||normalizeGuildName(name).length<3||tag.length!==3)return;
+  if(busy||levelLoading||levelLocked()||nameIssue||normalizeGuildName(name).length<3||tag.length!==3)return;
   setBusy(true);setError('');
   try{
    const checked=tagMatches?tagStatus:await guildTagAvailability(tag);
    setTagStatus(checked??null);
    if(!checked?.available)throw new Error(checked?guildTagAvailabilityMessage(checked):'Check the Guild TAG first.');
-   await createOnlineGuild(normalizeGuildName(name),checked.normalizedTag!,policy,1);
+   await createOnlineGuild(normalizeGuildName(name),checked.normalizedTag!,policy,GUILD_JOIN_LEVEL);
    onJoined();
   }catch(reason){setError(failureText(reason))}
   finally{setBusy(false)}
@@ -120,12 +133,12 @@ export function GuildDiscoveryFlow({onJoined}:{onJoined:()=>void}){
 
  return <ScrollView ref={scrollRef} contentContainerStyle={s.root} keyboardShouldPersistTaps="handled" keyboardDismissMode="on-drag" showsVerticalScrollIndicator={false} showsHorizontalScrollIndicator={false}>
   {page==='welcome'?<>
-   <GuildDiscoveryWelcome onFind={()=>navigate('find')} onCreate={()=>navigate('create')}/>
+   <GuildDiscoveryWelcome onFind={()=>navigate('find')} onCreate={()=>navigate('create')} canCreate={!levelLoading&&!levelLocked()}/>
    {invites.length?<Panel>
     <View style={s.sectionRow}><Text style={s.section}>INVITATIONS</Text><StatusPill label={String(invites.length)+' PENDING'} tone="info"/></View>
     {invites.map(invite=><View key={invite.id} style={s.invite}>
-     <View style={s.flex}><Text style={s.guildName}>{invite.guildName}{invite.guildTag?' ['+invite.guildTag+']':''}</Text><Text style={s.muted}>Invited by {invite.inviterName} · {invite.memberCount}/{invite.memberCap} members</Text></View>
-     <View style={s.inviteActions}><GameButton compact title="Accept" loading={busy} disabled={busy} onPress={()=>void respondInvite(invite.id,true)}/><GameButton compact tone="secondary" title="Decline" loading={busy} disabled={busy} onPress={()=>void respondInvite(invite.id,false)}/></View>
+     <View style={s.flex}><Text style={s.guildName}>{invite.guildName}{invite.guildTag?' ['+invite.guildTag+']':''}</Text><Text style={s.muted}>Invited by {invite.inviterName} · {invite.memberCount}/{invite.memberCap} members · Join Lv. {requiredGuildJoinLevel(invite.minimumLevel)}</Text>{levelLocked(invite.minimumLevel)?<Text style={s.levelHint}>{guildJoinRequirementText(playerLevel,invite.minimumLevel)}</Text>:null}</View>
+     <View style={s.inviteActions}><GameButton compact title={levelLocked(invite.minimumLevel)?`Unlock Lv. ${requiredGuildJoinLevel(invite.minimumLevel)}`:"Accept"} loading={busy} disabled={busy||levelLoading||levelLocked(invite.minimumLevel)} onPress={()=>void respondInvite(invite,true)}/><GameButton compact tone="secondary" title="Decline" loading={busy} disabled={busy} onPress={()=>void respondInvite(invite,false)}/></View>
     </View>)}
    </Panel>:null}
    {pending.length?<Panel>
@@ -139,6 +152,11 @@ export function GuildDiscoveryFlow({onJoined}:{onJoined:()=>void}){
    <View style={s.flex}><Text style={s.eyebrow}>GUILD NETWORK</Text><Text accessibilityRole="header" style={s.pageTitle}>{page==='find'?'Find a Guild':page==='create'?'Create a Guild':'Guild Details'}</Text></View>
   </View>:null}
 
+  {(page==='welcome'||page==='find'||page==='create')&&(levelLoading||playerLevel===null||levelLocked())?<Panel style={s.unlockPanel}>
+   <Text style={s.unlockTitle}>Guilds unlock at Level {GUILD_JOIN_LEVEL}</Text>
+   <Text style={s.muted}>{levelLoading?'Checking your character level…':playerLevel===null?'Guilds can be browsed now. Your level could not be checked, so the server will verify it when you join.':guildJoinRequirementText(playerLevel)}</Text>
+  </Panel>:null}
+
   {page==='find'?<>
    <Panel>
     <Text style={s.label}>SEARCH GUILDS</Text>
@@ -147,17 +165,17 @@ export function GuildDiscoveryFlow({onJoined}:{onJoined:()=>void}){
    </Panel>
    <View style={s.sectionRow}><View style={s.flex}><Text style={s.section}>{filter==='recruiting'?'RECRUITING GUILDS':'GUILD DIRECTORY'}</Text><Text style={s.muted}>Browse a Guild's identity before joining.</Text></View><Text style={s.count}>{loading?'Searching…':String(guilds.length)+(guilds.length===50?'+':'')+' shown'}</Text></View>
    {loading?<Panel><ActivityIndicator color={C.accent}/><Text style={s.mutedCenter}>Finding Guilds…</Text></Panel>:null}
-   {!loading&&!error&&loaded&&!guilds.length?<Panel><Text style={s.emptyTitle}>No Guilds found</Text><Text style={s.centerText}>Try another name, TAG, or recruitment filter.</Text><GameButton title="Create a Guild" tone="secondary" onPress={()=>navigate('create')}/></Panel>:null}
+   {!loading&&!error&&loaded&&!guilds.length?<Panel><Text style={s.emptyTitle}>No Guilds found</Text><Text style={s.centerText}>Try another name, TAG, or recruitment filter.</Text><GameButton title={levelLocked()?`Create Guild · Lv. ${GUILD_JOIN_LEVEL}`:"Create a Guild"} tone="secondary" disabled={levelLoading||levelLocked()} onPress={()=>navigate('create')}/></Panel>:null}
    {!loading&&guilds.map(guild=><Pressable key={guild.id} accessibilityRole="button" accessibilityLabel={'View '+guild.name+' Guild details'} onPress={()=>openDetails(guild)} style={({pressed})=>[s.guildCard,pressed&&s.pressed]}>
     <GuildCrest size={56} bannerId={guild.banner_id} frameId={guild.profile_frame_id}/>
     <View style={s.flex}>
      <Text numberOfLines={1} style={s.guildName}>{guild.name} {guild.tag?'['+guild.tag+']':''}</Text>
-     <View style={s.metaRow}><StatusPill label={guildPolicy(guild)} tone={guildPolicy(guild)==='FULL'?'warning':guild.join_policy==='open'?'good':guild.join_policy==='apply'?'info':'muted'}/><Text style={s.stat}>LV. {guild.level}</Text><Text style={s.stat}>{typeof guild.member_count==='number'?guild.member_count+'/'+guild.member_cap+' MEMBERS':'MAX '+guild.member_cap}</Text></View>
-     {guild.motto?<Text numberOfLines={2} style={s.motto}>{guild.motto}</Text>:<Text style={s.muted}>Minimum player level {guild.minimum_level}</Text>}
+     <View style={s.metaRow}><StatusPill label={guildPolicy(guild)} tone={guildPolicy(guild)==='FULL'?'warning':guild.join_policy==='open'?'good':guild.join_policy==='apply'?'info':'muted'}/><Text style={s.stat}>GUILD LV. {guild.level}</Text><Text style={s.stat}>JOIN LV. {requiredGuildJoinLevel(guild.minimum_level)}</Text><Text style={s.stat}>{typeof guild.member_count==='number'?guild.member_count+'/'+guild.member_cap+' MEMBERS':'MAX '+guild.member_cap}</Text></View>
+     {guild.motto?<Text numberOfLines={2} style={s.motto}>{guild.motto}</Text>:<Text style={s.muted}>Join from character Level {requiredGuildJoinLevel(guild.minimum_level)}</Text>}
     </View>
     <Text style={s.chevron}>›</Text>
    </Pressable>)}
-   <GameButton title="Create your own Guild" tone="secondary" onPress={()=>navigate('create')}/>
+   <GameButton title={levelLocked()?`Create Guild · Lv. ${GUILD_JOIN_LEVEL}`:"Create your own Guild"} tone="secondary" disabled={levelLoading||levelLocked()} onPress={()=>navigate('create')}/>
   </>:null}
 
   {page==='details'&&selected?<>
@@ -167,13 +185,14 @@ export function GuildDiscoveryFlow({onJoined}:{onJoined:()=>void}){
      <GuildCrest size={70} bannerId={selected.banner_id} frameId={selected.profile_frame_id}/>
      <View style={s.flex}><Text style={s.guildTitle}>{selected.name}</Text><Text style={s.muted}>{selected.tag?'['+selected.tag+'] · ':''}Guild Level {selected.level}</Text><StatusPill label={guildPolicy(selected)} tone={guildPolicy(selected)==='FULL'?'warning':selected.join_policy==='open'?'good':selected.join_policy==='apply'?'info':'muted'}/></View>
     </View>
-    <View style={s.statRow}><InfoStat title={'LV. '+selected.level} label="Guild Level" C={C}/><InfoStat title={typeof selected.member_count==='number'?selected.member_count+'/'+selected.member_cap:String(selected.member_cap)} label="Members" C={C}/><InfoStat title={'LV. '+selected.minimum_level} label="To Join" C={C}/></View>
+    <View style={s.statRow}><InfoStat title={'LV. '+selected.level} label="Guild Level" C={C}/><InfoStat title={typeof selected.member_count==='number'?selected.member_count+'/'+selected.member_cap:String(selected.member_cap)} label="Members" C={C}/><InfoStat title={'LV. '+requiredGuildJoinLevel(selected.minimum_level)} label="To Join" C={C}/></View>
     <Text style={s.section}>ABOUT THIS GUILD</Text>
     <Text style={s.description}>{selected.motto||'This Guild has not written a motto yet.'}</Text>
     <View style={s.detailNote}><Text style={s.muted}>{guildPolicy(selected)==='FULL'?'This Guild is currently full. You can browse other recruiting Guilds.':selected.join_policy==='open'?'Open recruitment: eligible players can join immediately.':selected.join_policy==='apply'?'Applications: a Guild officer decides whether to accept you.':'This Guild currently accepts invitations only.'}</Text></View>
    </Panel>
-   {requested.includes(selected.id)?<Panel accentColor={C.info} accentSurface={C.infoSurface}><Text style={s.guildName}>Application sent</Text><Text style={s.muted}>Your request is waiting for Guild officer review. You can keep browsing other Guilds.</Text></Panel>:null}
-   <GameButton title={requested.includes(selected.id)?'Application pending':guildPolicy(selected)==='FULL'?'Guild Full':selected.join_policy==='open'?'Join Guild':selected.join_policy==='apply'?'Apply to Join':'Invite only'} loading={busy} disabled={busy||selected.join_policy==='invite'||requested.includes(selected.id)||guildPolicy(selected)==='FULL'} onPress={()=>void apply(selected)}/>
+   {levelLocked(selected.minimum_level)?<Panel style={s.unlockPanel}><Text style={s.unlockTitle}>Level {requiredGuildJoinLevel(selected.minimum_level)} required</Text><Text style={s.muted}>{guildJoinRequirementText(playerLevel,selected.minimum_level)}</Text></Panel>:null}
+    {requested.includes(selected.id)?<Panel accentColor={C.info} accentSurface={C.infoSurface}><Text style={s.guildName}>Application sent</Text><Text style={s.muted}>Your request is waiting for Guild officer review. You can keep browsing other Guilds.</Text></Panel>:null}
+   <GameButton title={requested.includes(selected.id)?'Application pending':guildPolicy(selected)==='FULL'?'Guild Full':selected.join_policy==='invite'?'Invite only':levelLocked(selected.minimum_level)?`Unlock at Level ${requiredGuildJoinLevel(selected.minimum_level)}`:selected.join_policy==='open'?'Join Guild':'Apply to Join'} loading={busy} disabled={busy||levelLoading||levelLocked(selected.minimum_level)||selected.join_policy==='invite'||requested.includes(selected.id)||guildPolicy(selected)==='FULL'} onPress={()=>void apply(selected)}/>
    <GameButton title="Back to Guilds" tone="secondary" onPress={()=>navigate('find')}/>
   </>:null}
 
@@ -190,9 +209,9 @@ export function GuildDiscoveryFlow({onJoined}:{onJoined:()=>void}){
     <Text style={[s.helper,tagMatches&&tagStatus?.available&&s.available,tagMatches&&tagStatus&&!tagStatus.available&&s.invalid]}>{tagMatches&&tagStatus?guildTagAvailabilityMessage(tagStatus):'Three letters. TAGs are permanently reserved and cannot be reused.'}</Text>
     <Text style={s.label}>How will players join?</Text>
     <View style={s.policyList}>{([['open','Open Guild','Players join immediately when eligible.'],['apply','Applications','Guild officers approve each request.']] as const).map(([id,title,detail])=><Pressable key={id} accessibilityRole="radio" accessibilityState={{checked:policy===id}} onPress={()=>setPolicy(id)} style={[s.policyCard,policy===id&&s.policySelected]}><View style={[s.radio,policy===id&&s.radioSelected]}/><View style={s.flex}><Text style={s.guildName}>{title}</Text><Text style={s.muted}>{detail}</Text></View></Pressable>)}</View>
-    <Text style={s.helper}>Minimum level starts at 1. Guild leaders can manage recruitment settings later.</Text>
+    <Text style={s.helper}>Guild members can join from Level 7. Leaders can set a higher minimum later.</Text>
    </Panel>
-   <GameButton title="Create Guild" loading={busy} disabled={busy||!!nameIssue||normalizeGuildName(name).length<3||tag.length!==3||!tagMatches||!tagStatus?.available} onPress={()=>void create()}/>
+   <GameButton title={levelLocked()?`Unlock at Level ${GUILD_JOIN_LEVEL}`:"Create Guild"} loading={busy} disabled={busy||levelLoading||levelLocked()||!!nameIssue||normalizeGuildName(name).length<3||tag.length!==3||!tagMatches||!tagStatus?.available} onPress={()=>void create()}/>
   </>:null}
 
   {error?<Panel accentColor={C.bad} accentSurface={C.badSurface}>
@@ -215,7 +234,7 @@ function InfoStat({title,label,C}:{title:string;label:string;C:ThemeColors}){
  </View>;
 }
 function styles(C:ThemeColors){return StyleSheet.create({
- root:{padding:spacing.md,gap:10,paddingBottom:20},flex:{flex:1,minWidth:0},entryPanel:{gap:8,padding:10},center:{alignItems:'flex-start',gap:5,paddingVertical:2,paddingHorizontal:0},centerText:{color:C.muted,fontSize:12,lineHeight:18},
+ root:{padding:spacing.md,gap:10,paddingBottom:20},unlockPanel:{gap:5},unlockTitle:{color:C.text,fontSize:13,fontWeight:'800'},levelHint:{color:C.muted,fontSize:12,lineHeight:17},flex:{flex:1,minWidth:0},entryPanel:{gap:8,padding:10},center:{alignItems:'flex-start',gap:5,paddingVertical:2,paddingHorizontal:0},centerText:{color:C.muted,fontSize:12,lineHeight:18},
  eyebrow:{fontSize:11,lineHeight:15,fontWeight:'900',letterSpacing:1.1,color:C.accent},title:{...typography.title,color:C.text,fontSize:21,lineHeight:27,textAlign:'center'},pageTitle:{...typography.title,color:C.text},section:{color:C.accent,fontSize:11,fontWeight:'900',letterSpacing:1},
  benefits:{borderTopWidth:1,borderColor:C.line,paddingTop:12,marginTop:5,gap:6},sectionRow:{flexDirection:'row',flexWrap:'wrap',alignItems:'center',justifyContent:'space-between',gap:7},muted:{color:C.muted,fontSize:12,lineHeight:17},mutedCenter:{color:C.muted,fontSize:12,textAlign:'center'},stat:{color:C.muted,fontSize:11,fontWeight:'700'},count:{color:C.muted,fontSize:12,fontWeight:'700'},
  guildName:{color:C.text,fontSize:14,lineHeight:19,fontWeight:'800'},guildTitle:{color:C.text,fontSize:20,lineHeight:26,fontWeight:'800'},guildCard:{minHeight:102,flexDirection:'row',alignItems:'center',gap:10,borderRadius:12,padding:12,backgroundColor:C.panel,borderColor:C.line,borderWidth:1},pressed:{opacity:.76},
@@ -233,7 +252,7 @@ function styles(C:ThemeColors){return StyleSheet.create({
  });}
 
 /** Shared welcome presentation; this component does not read account data. */
-export function GuildDiscoveryWelcome({onFind,onCreate}:{onFind:()=>void;onCreate:()=>void}){
+export function GuildDiscoveryWelcome({onFind,onCreate,canCreate=true}:{onFind:()=>void;onCreate:()=>void;canCreate?:boolean}){
  const C=useGameTheme(),s=useMemo(()=>styles(C),[C]);
  return <>
    <GuildBoardHero title="Find your people" subtitle="Forge alliances, take on Guild challenges, and grow together." compact/>
@@ -242,7 +261,7 @@ export function GuildDiscoveryWelcome({onFind,onCreate}:{onFind:()=>void;onCreat
      <Text style={s.centerText}>Discover a Guild that fits your playstyle, or build your own.</Text>
     </View>
     <GameButton compact title="Find a Guild" onPress={onFind}/>
-    <GameButton compact title="Create a Guild" tone="secondary" onPress={onCreate}/>
+    <GameButton compact title={canCreate?"Create a Guild":`Create Guild · Level ${GUILD_JOIN_LEVEL}`} tone="secondary" disabled={!canCreate} onPress={onCreate}/>
     <View style={s.benefits}>
      <Benefit icon="friends" label="Play alongside other adventurers" C={C}/>
      <Benefit icon="quests" label="Work toward shared Guild rewards" C={C}/>

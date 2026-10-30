@@ -107,7 +107,7 @@ function makeStyles(C:ThemeColors){return StyleSheet.create({
  header:{gap:11,marginBottom:8},headingRow:{flexDirection:'row',alignItems:'center',gap:10},
  headingText:{flex:1,gap:3},title:{...typography.title,color:C.text},hint:{...typography.caption,color:C.muted},
  iconButton:{width:45,height:45,alignItems:'center',justifyContent:'center',backgroundColor:C.panel,borderWidth:1,borderColor:C.line,borderRadius:radii.md},
- filters:{gap:6,paddingVertical:2},chip:{borderWidth:1,borderColor:C.line,paddingHorizontal:12,minHeight:38,justifyContent:'center',backgroundColor:C.panel,borderRadius:18},
+ filterButton:{minHeight:43,maxWidth:132,flexDirection:'row',alignItems:'center',gap:6,paddingHorizontal:9,backgroundColor:C.panel,borderWidth:1,borderColor:C.line,borderRadius:radii.md},filterButtonText:{fontSize:12,color:C.text,fontWeight:'700',flexShrink:1},filterMenu:{flexDirection:'row',flexWrap:'wrap',gap:6,padding:8,borderWidth:1,borderColor:C.line,borderRadius:radii.md,backgroundColor:C.panel2},filterOption:{width:'48%',flexGrow:1,borderWidth:1,borderColor:C.line,paddingHorizontal:10,minHeight:38,justifyContent:'center',backgroundColor:C.panel,borderRadius:9},
  chipActive:{backgroundColor:C.selection,borderColor:C.selectionLine},chipText:{color:C.muted,fontSize:12,fontWeight:'600'},chipTextActive:{color:C.text},
  summaryRow:{flexDirection:'row',justifyContent:'space-between',gap:8},summary:{fontSize:11,color:C.muted},
  row:{gap:6,marginBottom:6},

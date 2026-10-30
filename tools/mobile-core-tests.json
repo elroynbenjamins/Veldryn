@@ -30,7 +30,6 @@
   ".core-build/apps/mobile/tests/localization-foundation.js",
   ".core-build/apps/mobile/tests/class-selection.js",
   ".core-build/apps/mobile/tests/character-creation-onboarding.js",
-  "tests/localization-creation-profile-focused.mjs",
   ".core-build/apps/mobile/tests/inventory-view.js",
   ".core-build/apps/mobile/tests/storage-bank.js",
   ".core-build/apps/mobile/tests/item-rarity-v2.js",

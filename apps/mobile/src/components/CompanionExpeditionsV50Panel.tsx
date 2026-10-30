@@ -65,7 +65,7 @@ export function CompanionExpeditionsV50Panel({state,now,onCommand}:{state:GameSt
    <View style={s.teamCard}><View style={s.between}><Text style={s.meta}>{t("{value0}/{value1} selected · minimum {value2}", {value0: safeTeam.length, value1: mission.maxCompanions, value2: mission.minCompanions})}</Text><Text style={check.ok?s.ready:s.notReady}>{check.ok ? t("READY") : t("NOT READY")}</Text></View><GameButton compact tone="secondary" title={t("Choose Team")} disabled={busy} onPress={()=>setTeamPickerOpen(true)}/>
     <GameModalSurface visible={teamPickerOpen} onClose={()=>setTeamPickerOpen(false)} reduceMotion={state.settings.reduceMotion} surfaceStyle={{maxHeight:windowHeight*.90}}>
       <GameModalHeader title={t("Choose Team")} onClose={()=>setTeamPickerOpen(false)}/>
-      <ScrollView style={{flexShrink:1}} contentContainerStyle={{paddingBottom:24,gap:5}} showsVerticalScrollIndicator={false}>
+      <ScrollView style={{flexShrink:1}} contentContainerStyle={{paddingBottom:24,gap:5}} showsVerticalScrollIndicator={false} showsHorizontalScrollIndicator={false}>
         <Text style={s.meta}>{t("{value0}/{value1} selected · minimum {value2}",{value0:safeTeam.length,value1:mission.maxCompanions,value2:mission.minCompanions})}</Text>
         {[...ownedIds].sort((a,b)=>Number(safeTeam.includes(b))-Number(safeTeam.includes(a))||Number(isIdle(b))-Number(isIdle(a))).map(id=>{
           const def=COMBAT_COMPANIONS.find(row=>row.id===id),selected=safeTeam.includes(id),available=isIdle(id);

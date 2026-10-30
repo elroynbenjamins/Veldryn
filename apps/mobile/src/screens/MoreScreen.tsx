@@ -121,7 +121,7 @@ function makeStyles(C:ThemeColors){return StyleSheet.create({
   sectionLabel:{...typography.caption,color:C.accentSoft,fontWeight:'900',letterSpacing:.7},
   attentionRail:{gap:8,padding:9,borderWidth:1,borderColor:C.info,borderRadius:radii.md,backgroundColor:C.infoSurface},
   attentionQuickRow:{flexDirection:'row',flexWrap:'wrap',gap:6},
-  attentionQuick:{flex:1,minWidth:132,minHeight:42,flexDirection:'row',alignItems:'center',gap:7,padding:8,borderWidth:StyleSheet.hairlineWidth,borderColor:C.line,borderRadius:10,backgroundColor:C.panel},
+  attentionQuick:{flex:1,minWidth:132,minHeight:44,flexDirection:'row',alignItems:'center',gap:7,padding:8,borderWidth:StyleSheet.hairlineWidth,borderColor:C.line,borderRadius:10,backgroundColor:C.panel},
   attentionQuickWide:{flexBasis:'100%'},
   quickTitle:{flex:1,minWidth:0,fontSize:11,color:C.text,fontWeight:'800'},
   grid:{flexDirection:'row',flexWrap:'wrap',gap:7},

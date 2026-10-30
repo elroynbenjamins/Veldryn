@@ -57,5 +57,5 @@ export function gatheringDropPreview(activity:GatherDef,state:GameState,nowMs=Da
 }
 
 export function gatheringDropPercent(chance:number):string{
- return `${(Math.max(0,Math.min(1,chance))*100).toFixed(2).replace(/\\.?0+$/,'')}%`;
+ return `${(Math.max(0,Math.min(1,chance))*100).toFixed(2).replace(/\.?0+$/,'')}%`;
 }

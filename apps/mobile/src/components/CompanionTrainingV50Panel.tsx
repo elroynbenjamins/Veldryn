@@ -55,8 +55,7 @@ export function CompanionTrainingV50Panel({state,now,onCommand,onNavigateSource,
  const idle=(id:string)=>{try{assertCompanionIdle(state,id);return true}catch{return false}};
  const affordable=(cost:{gold:number;companionEssence:number;bondstones?:number;materialId?:string;materialQuantity?:number}|undefined)=>!!cost&&economy.gold>=cost.gold&&economy.companionEssence>=cost.companionEssence&&economy.bondstones>=(cost.bondstones??0)&&(!cost.materialId||(economy.materials[cost.materialId]??0)>=(cost.materialQuantity??0));
  const material=(id?:string)=>id?companionMaterialName(id):'None';
- const costText=(cost:{gold:number;companionEssence:number;bondstones?:number;materialId?:string;materialQuantity?:number})=>t('{gold} Gold · {essence} Essence{extra}',{gold:amount(cost.gold),essence:amount(cost.companionEssence),extra:(cost.bondstones?t(' · {count} Bondstones',{count:cost.bondstones}):'')+(cost.materialId?' · '+cost.materialQuantity+' '+companionMaterialName(cost.materialId):'')});
- const costBreakdown=(cost:{gold:number;companionEssence:number;bondstones?:number;materialId?:string;materialQuantity?:number})=>cost?<CompanionCostBreakdown rows={[{label:t("Gold"),owned:economy.gold,required:cost.gold},{label:t("Essence"),owned:economy.companionEssence,required:cost.companionEssence},{label:t("Bondstones"),owned:economy.bondstones,required:cost.bondstones??0},...(cost.materialId?[{label:material(cost.materialId),owned:economy.materials[cost.materialId]??0,required:cost.materialQuantity??0}]:[])]}/>:null;
+ const costBreakdown=(cost:{gold:number;companionEssence:number;bondstones?:number;materialId?:string;materialQuantity?:number})=>cost?<CompanionCostBreakdown rows={[{resourceId:"gold",label:t("Gold"),owned:economy.gold,required:cost.gold},{resourceId:"essence",label:t("Essence"),owned:economy.companionEssence,required:cost.companionEssence},{resourceId:"bondstones",label:t("Bondstones"),owned:economy.bondstones,required:cost.bondstones??0},...(cost.materialId?[{resourceId:cost.materialId,label:material(cost.materialId),owned:economy.materials[cost.materialId]??0,required:cost.materialQuantity??0}]:[])]}/>:null;
  const selectedDef=model?.def,rarity=selectedDef?COMPANION_RARITY_CONFIG[selectedDef.rarity]:undefined;
  const xpTarget=progress&&selectedDef&&progress.level<model!.maxLevel?companionXpToNextLevel(selectedDef.rarity,progress.level):0;
  const xpPct=progress&&xpTarget?Math.min(100,progress.xp/xpTarget*100):progress?100:0;
@@ -78,8 +77,7 @@ export function CompanionTrainingV50Panel({state,now,onCommand,onNavigateSource,
     {model.nextLevelCost?<><View style={s.upgradeCard}>
       <Text style={s.levelValue}>{t('Level {value0}',{value0:progress.level})} → {progress.level+1}</Text>
       <Text style={s.copy}>{t('Companion Power {value0}',{value0:amount(companionTeamPower([selection],view.owned))})} → {amount(companionTeamPower([selection],{...view.owned,[selection]:{...view.owned[selection],level:progress.level+1}}))}</Text>
-      <Text style={s.costText}>{costText(model.nextLevelCost)}</Text>
-      {!affordable(model.nextLevelCost)?costBreakdown(model.nextLevelCost):null}
+      {costBreakdown(model.nextLevelCost)}
     </View>
     <GameButton title={busy?t('Training…'):t('Train to Level {value0}',{value0:progress.level+1})} disabled={busy||!idle(selection)||!affordable(model.nextLevelCost)} onPress={()=>act('companion_level',{id:selection})}/></>:<View style={s.cost}><Text style={s.done}>{t('Current level cap reached.')}</Text><Text style={s.copy}>{roadmap?companionContent(language,roadmap.nextStep):''}</Text></View>}
     {model.equipped?<GameButton title={t("Unequip Companion")} disabled={busy} tone="secondary" onPress={()=>act('companion_unequip')}/>:<GameButton title={model.compatible ? t("Equip Companion") : t("Same role as your character")} disabled={busy||!model.compatible||!idle(selection)} onPress={()=>act('companion_equip',{id:selection})}/>}</View>

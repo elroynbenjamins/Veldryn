@@ -1,5 +1,5 @@
 import {createCharacter,newGame} from '../src/core/game';
-import {setLocalEventEnabled,consumeEventCandy,eventCandyWindow} from '../src/core/live-events';
+import {setLocalEventEnabled,consumeEventCandy,eventCandyWindow,eventCandyUtilityMultiplier} from '../src/core/live-events';
 import {resolveCorePetCombatDrops,resolveCorePetActivityDrops,type PetDropBoostWindow} from '../src/core/core-pet-drops';
 import {eventCandies} from '../src/content/live-events';
 
@@ -10,6 +10,7 @@ const pet=eventCandies({id,name:'The Veilbreak',visualKey:'veilbreak'}).find(c=>
 ok(pet.secondsPerUse===7200&&pet.maxSeconds===36000,'One pet candy grants two hours, with a ten-hour active cap');
 state={...state,account:{...state.account,eventCandyChargesById:{[pet.id]:1}}};
 state=consumeEventCandy(state,now,'pet');
+ok(eventCandyUtilityMultiplier(state,now,'pet')===2,'Pet Luck reports an exact x2 drop multiplier');
 const window=eventCandyWindow(state,'pet')!;
 ok(window.startsAtMs===now&&window.endsAtMs===now+2*3600000,'Pet Luck window is precisely two hours');
 const boosted:PetDropBoostWindow={startsAtMs:window.startsAtMs,endsAtMs:window.endsAtMs,settlementStartsAtMs:now,settlementEndsAtMs:now+3600000};

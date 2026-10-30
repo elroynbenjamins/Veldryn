@@ -1,5 +1,5 @@
 import type {GameState} from './types';
-import {DAILY_SUPPLY_BONUS,dailySuppliesStatus,dailySupplyActiveLabel,dailySupplyBank,dailySupplyBoostLabel} from './daily-supplies';
+import {DAILY_SUPPLY_BONUS,dailySuppliesStatus,dailySupplyActiveLabels,dailySupplyBank,dailySupplyBoostLabel} from './daily-supplies';
 
 export interface DailySuppliesHomeSummary{
   visible:boolean;
@@ -11,7 +11,7 @@ export interface DailySuppliesHomeSummary{
 }
 
 export function dailySuppliesHomeSummary(state:GameState,nowMs=Date.now()):DailySuppliesHomeSummary{
-  const status=dailySuppliesStatus(state,nowMs),active=dailySupplyActiveLabel(state.character),bank=dailySupplyBank(state.character);
+  const status=dailySuppliesStatus(state,nowMs),active=dailySupplyActiveLabels(state.character),bank=dailySupplyBank(state.character);
   const bankedCharges=Object.values(bank).reduce((sum,value)=>sum+(value??0),0);
   const claimLabel=status.canClaim
     ? status.reward.kind==='premium'
@@ -19,11 +19,11 @@ export function dailySuppliesHomeSummary(state:GameState,nowMs=Date.now()):Daily
       : `+2h · +${Math.round(DAILY_SUPPLY_BONUS*100)}% ${dailySupplyBoostLabel(status.reward.type)}`
     : undefined;
   return {
-    visible:status.canClaim||!!active||bankedCharges>0,
+    visible:status.canClaim||active.length>0||bankedCharges>0,
     canClaim:status.canClaim,
     claimLabel,
-    activeLabel:active?`+${Math.round(DAILY_SUPPLY_BONUS*100)}% ${active.label}`:undefined,
-    activeRemainingSeconds:active?.remainingSeconds,
+    activeLabel:active.length===1?`+${Math.round(DAILY_SUPPLY_BONUS*100)}% ${active[0].label}`:active.length?`${active.length} boosts active`:undefined,
+    activeRemainingSeconds:active.length?Math.max(...active.map(row=>row.remainingSeconds)):undefined,
     bankedCharges,
   };
 }

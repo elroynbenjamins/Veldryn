@@ -1,7 +1,7 @@
 export {};
 const fs=require('fs') as {readFileSync:(path:string,encoding:string)=>string};
 function ok(value:boolean,message:string){if(!value)throw new Error(message)}
-const choices=read('src/components/coop/DungeonRouteChoices.tsx');
+const choices=fs.readFileSync('src/components/coop/DungeonRouteChoices.tsx','utf8');
 const overview=fs.readFileSync('src/components/coop/CoopRunOverview.tsx','utf8');
 const presentation=fs.readFileSync('src/core/coop-presentation.ts','utf8');
 const qmode=fs.readFileSync('src/core/coop-qmode.ts','utf8');

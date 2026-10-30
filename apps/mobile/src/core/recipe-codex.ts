@@ -54,7 +54,7 @@ export function recipeCodexIngredients(state:GameState,entry:RecipeCodexEntry){
  for(const stack of state.inventory.stacks)owned.set(stack.itemId,(owned.get(stack.itemId)??0)+stack.quantity);
  for(const stack of state.bank.stacks)owned.set(stack.itemId,(owned.get(stack.itemId)??0)+stack.quantity);
  return entry.recipe.inputs.map(input=>({
-  itemId:input.itemId,name:itemsById.get(input.itemId)?.name??input.itemId,
+  itemId:input.itemId,name:itemsById.get(input.itemId)?.name??input.itemId,knownItem:itemsById.has(input.itemId),
   needed:input.quantity,owned:owned.get(input.itemId)??0,
   sufficient:(owned.get(input.itemId)??0)>=input.quantity,
  }));

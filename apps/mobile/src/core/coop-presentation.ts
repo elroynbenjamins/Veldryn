@@ -46,7 +46,7 @@ export interface CoopCombatReplayView{
  contributions?:CoopCombatReplayContributionView[];
  cues:CoopCombatReplayCueView[];
 }
-export type CoopPendingCombatView=Omit<CoopCombatReplayView,'reason'|'contributions'>;
+export type CoopPendingCombatView=Omit<CoopCombatReplayView,'reason'|'contributions'>&{elapsedMs:number;wallDurationMs:number};
 export interface CoopRunView {runId:string;mode:CoopMode;modeLabel?:string;phase:string;syncedLevel:number;roleSlots:Array<{memberId?:string;role:'tank'|'damage'|'support';name:string;echo:boolean;npc?:boolean;classId?:string;profileIconId?:string|null;iconClassId?:string|null;bodyPresentation?:'male'|'female';companionId?:string;currentHp?:number;maximumHp?:number;ready?:boolean}>;options:CoopRouteOptionView[];presenceSummary?:{connectedCount:number;safetyAiCount:number;activeCount:number;safetyAiCharacterIds:string[]};mechanic?:CoopRunMechanicView;objective?:CoopRunObjectiveView;bossMechanic?:CoopRunBossMechanicView;bossRecap?:CoopRunBossRecapView;lastCombat?:CoopCombatReplayView;pendingCombat?:CoopPendingCombatView;serverNow?:number;rewardText?:string;stateVersion?:number;decisionId?:string;decisionRevision?:number;resolvesAtMs?:number;}
 export function parseCoopEncounterPreview(value:unknown):CoopEncounterPreviewView|undefined{
  if(value===undefined||value===null)return undefined;
@@ -85,7 +85,7 @@ export function validateCoopRunView(view:CoopRunView):void{
  }
  if(view.bossRecap&&(!Number.isFinite(view.bossRecap.durationMs)||view.bossRecap.durationMs<0||!Number.isInteger(view.bossRecap.downs)||view.bossRecap.downs<0||view.bossRecap.phasesTriggered.some(item=>!item.trim())||view.bossRecap.abilitiesCast.some(item=>!item.trim())))throw new Error('invalid_boss_recap');
  if(view.pendingCombat){
-  if(view.mode!=='live'||view.phase!=='resolving_node'||view.lastCombat||view.pendingCombat.cues.some(cue=>['victory','wipe','timeout'].includes(cue.type)))throw new Error('invalid_pending_combat');
+  if(view.mode!=='live'||view.phase!=='resolving_node'||view.lastCombat||!Number.isFinite(view.pendingCombat.elapsedMs)||view.pendingCombat.elapsedMs<0||!Number.isFinite(view.pendingCombat.wallDurationMs)||view.pendingCombat.wallDurationMs<=0||view.pendingCombat.elapsedMs>view.pendingCombat.wallDurationMs||view.pendingCombat.cues.some(cue=>['victory','wipe','timeout'].includes(cue.type)))throw new Error('invalid_pending_combat');
   validateCoopRunView({...view,pendingCombat:undefined,lastCombat:{...view.pendingCombat,reason:'victory'}});
  }
  if(view.serverNow!==undefined&&(!Number.isFinite(view.serverNow)||view.serverNow<0))throw new Error('invalid_run_clock');

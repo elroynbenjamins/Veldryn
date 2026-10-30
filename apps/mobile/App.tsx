@@ -365,7 +365,13 @@ function VeldrynApp(){
     settingsSection,socialInitialTab,profileCustomizeSection,goalMonsterId,goalRegionId,goalDungeonId,
   }),[skillsMode,selectedSkill,goalActionId,goalRecipeId,questMode,questFocusOrderId,settingsSection,socialInitialTab,profileCustomizeSection,goalMonsterId,goalRegionId]);
   const setTab=useCallback((destination:Tab)=>{
-    if(destination===tab||destination==='Rankings'&&!RANKINGS_RELEASED)return;
+    // Re-selecting Skills opens its hub now that detail pages have no redundant back button.
+    if(destination===tab){
+      if(destination==='Skills'&&selectedSkill){setSelectedSkill(undefined);setGoalActionId(undefined);setGoalRecipeId(undefined);}
+      if(destination==='Settings'&&settingsSection)setSettingsSection(undefined);
+      return;
+    }
+    if(destination==='Rankings'&&!RANKINGS_RELEASED)return;
     const current=stateRef.current,lockReason=current?earlyFeatureLockReason(current,destination):'';
     if(lockReason){showAlert('Locked for now',lockReason);return;}
     confirmProfileCustomizeExit(()=>{
@@ -374,7 +380,7 @@ function VeldrynApp(){
       setSettingsSection(undefined);
       setCurrentTab(destination);
     });
-  },[tab,navigationContext,confirmProfileCustomizeExit]);
+  },[tab,selectedSkill,settingsSection,navigationContext,confirmProfileCustomizeExit]);
   const goBack=useCallback(()=>{
     if(showChatOverlay){setShowChatOverlay(false);return true;}
     if(showAdminQa){setShowAdminQa(false);return true;}

@@ -47,3 +47,38 @@ assert.equal(mixed.echoSourceAccountIds.length,1);
 assert.equal(mixed.npcCharacterIds?.length,2);
 assert.deepEqual(projectQModeRun(mixed).team.map(member=>member.kind),['controller','echo','npc','npc']);
 console.log('Q-Mode NPC fallback passed');
+
+import {EXPEDITIONS} from '../../expeditions/content/launch-content';
+import {coopRequiredLevel} from '../config';
+import {recruitQModeAllies} from '../echo-recruitment';
+
+// Every reachable dungeon/tier must have NPC kits for all four party compositions
+// without creating fake accounts, donor Echo profiles or duplicate Damage classes.
+let tierCombinations=0;
+for(const dungeon of Object.values(EXPEDITIONS)){
+ for(const tier of [1,2,3,4,5] as const){
+  const minimumLevel=coopRequiredLevel(dungeon.minLevel,tier);
+  if(minimumLevel>100)continue;
+  const tierKits=createQModeNpcAllies({minimumLevel,syncLevel:dungeon.recommendedLevel,controllerLevel:minimumLevel});
+  assert.equal(tierKits.length,9);
+  assert.ok(tierKits.every(npc=>npc.readiness.ready&&npc.normalized.before.level>=minimumLevel));
+  for(const [controllerRole,controllerClassId] of [['tank','IRONWARDEN'],['damage','WAYFINDER'],['support','DAWNKEEPER']] as const){
+   const allies=recruitQModeAllies({
+    serverSecret:'npc-tier-regression',requestId:`npc-${dungeon.id}-${tier}-${controllerRole}`,
+    controllerAccountId:'controller',controllerRole,controllerClassId,
+    contentVersion:'v1',nowMs:10_000,profiles:[],npcSnapshots:tierKits,
+   });
+   assert.equal(allies.length,3);
+   assert.ok(allies.every(ally=>ally.kind==='npc'&&ally.snapshot.accountId.startsWith('npc:qmode:')));
+   assert.ok(allies.every(ally=>ally.snapshot.normalized.snapshot.displayName.startsWith('NPC · ')));
+   const roles=[controllerRole,...allies.map(ally=>ally.snapshot.readiness.role)];
+   assert.equal(roles.filter(role=>role==='tank').length,1);
+   assert.equal(roles.filter(role=>role==='damage').length,2);
+   assert.equal(roles.filter(role=>role==='support').length,1);
+   const damageClasses=[...(controllerRole==='damage'?[controllerClassId]:[]),...allies.filter(ally=>ally.snapshot.readiness.role==='damage').map(ally=>ally.snapshot.classId)];
+   assert.equal(new Set(damageClasses).size,2);
+   tierCombinations++;
+  }
+ }
+}
+console.log('Q-Mode NPC tier coverage passed',tierCombinations);

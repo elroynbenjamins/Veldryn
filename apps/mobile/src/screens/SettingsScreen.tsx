@@ -113,7 +113,7 @@ export function SettingsScreen({state,onLanguage,onReset,onChange,onRefreshComme
     {section==='guide'&&<><GameGuidePanel state={state} onStartTour={onStartMainScreenTour} onOpen={id=>{onChange(acknowledgeGameGuide(state,id,true));setGuideId(id)}}/><Panel><View style={s.communityRow}><View style={s.flex}><Text style={[s.communityLabel,{color:theme.accent}]}>{a('COMMUNITY')}</Text><Text style={[s.communityText,{color:theme.muted}]}>{a('Meet other VELDRYN players.')}</Text></View><DiscordButton label={a('Join Discord')} onPress={()=>openExternal(DISCORD_INVITE_URL)}/></View></Panel></>}
     {section==='account'&&<><Panel>
       <Text style={[s.sub,{color:theme.muted}]}>{a('Character: {name} · {save}',{name:state.character?.name??a('Not created yet'),save:a(online?'Online save':'Local save')})}</Text>
-      
+
     </Panel>
     <OnlineAccountPanel state={state}/></>}
     {section==='store'&&<><GooglePlayCommercePanel state={state} online={online} onChange={onChange} onRefreshCommerce={onRefreshCommerce}/>

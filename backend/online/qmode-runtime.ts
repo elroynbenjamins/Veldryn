@@ -9,6 +9,7 @@ import type {PublishedEcho} from '../src/server/coop/echo-recruitment';
 import {createQModeNpcAllies} from '../src/server/coop/qmode-npc-allies';
 import type {CoopRunRequest,CoopDecisionCommand} from '../src/shared/coop-types';
 import {marksForRun} from '../src/server/expeditions/rewards';
+import {dungeonRewardState} from '../src/server/coop/dungeon-reward-balance';
 import {deriveOnlineCoopLoadout,onlineCoopLoadoutHash,ONLINE_COOP_BALANCE_VERSION} from './coop-loadout';
 import {GameplayError,type GameplayServices} from './gameplay';
 
@@ -25,7 +26,7 @@ function settlement(run:QModeRun,version:number){
  const node=run.graph.nodes.find(row=>row.nodeId===last.nodeId)!;
  const cleared=run.persistentState.visitedNodeIds.filter(id=>id!==run.graph.bossNodeId).length;
  const terminal=run.phase==='completed'||run.phase==='failed';
- return {projection:projection(run,version),enhancedMarks:terminal?marksForRun(definition.baseMarks,run.tier,{cleared:run.phase==='completed',routeProgress:cleared/run.graph.preBossNodeCount,reachedFinalBoss:node.kind==='boss'}):null,assistanceMarks:terminal?Math.max(1,Math.round(definition.baseMarks*.1)):null};
+ return {projection:projection(run,version),enhancedMarks:terminal?marksForRun(definition.baseMarks,run.tier,run.tierScalingVersion===2?dungeonRewardState(run):{cleared:run.phase==='completed',routeProgress:cleared/run.graph.preBossNodeCount,reachedFinalBoss:node.kind==='boss'}):null,assistanceMarks:terminal?Math.max(1,Math.round(definition.baseMarks*.1)):null};
 }
 
 /** Composes the existing Q-Mode domain with transactional persistence. Pending

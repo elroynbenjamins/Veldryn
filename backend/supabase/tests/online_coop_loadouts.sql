@@ -18,7 +18,13 @@ begin
  begin perform public.publish_online_coop_loadout_server_v1(a,1,r,repeat('a',64),ready,false,'publish-echo-one');raise exception 'changed share intent accepted';exception when raise_exception then if sqlerrm<>'idempotency_key_conflict' then raise;end if;end;
  pool:=public.eligible_online_coop_echoes_server_v1(b,15);
  if not exists(select 1 from jsonb_array_elements(pool) e where e->>'sourceAccountId'=a::text) then raise exception 'published Echo missing';end if;
- if exists(select 1 from jsonb_array_elements(public.eligible_online_coop_echoes_server_v1(a,15)) e where e->>'sourceAccountId'=a::text) then raise exception 'own Echo eligible';end if;
+ -- New Echo sharing is exactly seven days, including refreshed same-gear snapshots.
+ if not exists(select 1 from public.echo_profiles where character_id=c and opted_in and expires_at-published_at between interval '6 days 23 hours' and interval '7 days 1 minute') then raise exception 'Published Echo did not receive seven-day expiry';end if;
+ update public.echo_profiles set published_at=clock_timestamp()-interval '3 days',expires_at=clock_timestamp()+interval '4 days' where character_id=c;
+ if not exists(select 1 from jsonb_array_elements(public.eligible_online_coop_echoes_server_v1(b,15)) e where e->>'sourceAccountId'=a::text) then raise exception 'Three-day Echo not eligible';end if;
+ perform public.publish_online_coop_loadout_server_v1(a,1,r,repeat('a',64),ready,true,'refresh-seven-day-echo');
+ if not exists(select 1 from public.echo_profiles where character_id=c and opted_in and expires_at-published_at between interval '6 days 23 hours' and interval '7 days 1 minute') then raise exception 'Refresh did not renew Echo for seven days';end if;
+  if exists(select 1 from jsonb_array_elements(public.eligible_online_coop_echoes_server_v1(a,15)) e where e->>'sourceAccountId'=a::text) then raise exception 'own Echo eligible';end if;
  insert into public.player_blocks(blocker_id,blocked_id) values(b,a);
  if exists(select 1 from jsonb_array_elements(public.eligible_online_coop_echoes_server_v1(b,15)) e where e->>'sourceAccountId'=a::text) then raise exception 'blocked Echo eligible';end if;
  delete from public.player_blocks where blocker_id=b and blocked_id=a;

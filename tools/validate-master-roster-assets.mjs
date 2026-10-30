@@ -1,4 +1,4 @@
-import {readFileSync,readdirSync} from 'node:fs';
+import {readFileSync,readdirSync,existsSync} from 'node:fs';
 import {dirname,resolve} from 'node:path';
 import {fileURLToPath} from 'node:url';
 
@@ -7,6 +7,9 @@ const petDir=resolve(repoRoot,'apps/mobile/assets/master_roster/pets/runtime_96'
 const remasteredPetDir=resolve(repoRoot,'apps/mobile/assets/master_roster/pets/runtime_256');
 const petPortraitDir=resolve(repoRoot,'apps/mobile/assets/master_roster/pets/portraits_512');
 const petMasterDir=resolve(repoRoot,'apps/mobile/art-review/pet-remaster/masters');
+// High-resolution design masters are archived outside the production app checkout.
+// Runtime artwork and shipped portraits remain mandatory for release validation.
+const reviewMastersPresent=existsSync(petMasterDir);
 const companionDir=resolve(repoRoot,'apps/mobile/assets/master_roster/companions/runtime_96');
 const registryPath=resolve(repoRoot,'apps/mobile/src/theme/master-roster-assets.ts');
 const portraitRegistryPath=resolve(repoRoot,'apps/mobile/src/theme/pet-art.ts');
@@ -83,7 +86,7 @@ for(const file of pets){
   if(width!==256||height!==256)fail(`remastered pet runtime ${file} must be 256x256`);
   if(!registry.includes(`master_roster/pets/runtime_256/${file}`))fail(`asset registry does not reference remastered pet file ${file}`);
   const png=file.replace(/\.webp$/,'.png');
-  for(const [dir,size] of [[petPortraitDir,512],[petMasterDir,1254]]){
+  for(const [dir,size] of [[petPortraitDir,512],...(reviewMastersPresent?[[petMasterDir,1254]]:[])]){
     const info=pngInfo(resolve(dir,png));
     if(info.width!==size||info.height!==size||info.colorType!==6)fail(`pet portrait/master ${png} must be ${size}x${size} RGBA PNG`);
   }
@@ -93,4 +96,4 @@ for(const file of units){
   if(!registry.includes(`master_roster/companions/runtime_96/${file}`))fail(`asset registry does not reference companion file ${file}`);
 }
 
-console.log(`PASS: master roster assets validated (${pets.length} remastered pets with 256px runtime, 512px portraits and 1254px RGBA masters; ${units.length} companions)`);
+console.log(`PASS: master roster assets validated (${pets.length} remastered pets with 256px runtime, 512px portraits${reviewMastersPresent?', 1254px archived RGBA masters':' (design masters not bundled with app)'}; ${units.length} companions)`);

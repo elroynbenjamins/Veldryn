@@ -102,7 +102,7 @@ export function CoopEventExpeditionDetails({language,event,currentLevel,loadoutR
   </ExpeditionScreenShell>;
 }
 
-type DetailsProps={language:Language;dungeon:CoopDungeonView;onMode?:(mode:CoopMode)=>void;currentLevel:number;currentPower?:number;mode:CoopMode;tier?:CoopTier;readyToStart?:boolean;busy?:boolean;liveFellowshipRemaining?:number;rewardBudget?:{charges:number;chargeCapacity:number;weeklyRemaining:number;weeklyCapacity:number;nextChargeAtMs?:number|null};notice?:string;onBack:()=>void;onTier:(tier:CoopTier)=>void;onContinue:(tier:CoopTier)=>void};
+type DetailsProps={language:Language;dungeon:CoopDungeonView;onMode?:(mode:CoopMode)=>void;currentLevel:number;currentPower?:number;mode:CoopMode;tier?:CoopTier;readyToStart?:boolean;busy?:boolean;liveFellowshipRemaining?:number;rewardBudget?:{charges:number;chargeCapacity:number;weeklyRemaining:number;weeklyCapacity:number;nextChargeAtMs?:number|null;failureConsolationRemaining?:number;failureConsolationCapacity?:number};notice?:string;onBack:()=>void;onTier:(tier:CoopTier)=>void;onContinue:(tier:CoopTier)=>void};
 export function CoopDungeonDetails({language,dungeon,currentLevel,currentPower=0,mode,tier,readyToStart=false,busy=false,liveFellowshipRemaining=3,rewardBudget,notice,onBack,onTier,onContinue}:DetailsProps){
  const st=useSocialText();
  const {styles:s}=useCoopStyles(makeStyles),a=(text:string)=>accountText(language,text);

@@ -87,6 +87,7 @@ function companionSourcesFor(id:string):ResourceCodexSource[]{
  }
  if(id==='bondstones'){
   add('Companion Trial bosses','First clears of qualifying boss floors, beginning at Floor 10.');
+  add('Fallen Knight weekly rematch','A limited weekly Bondstone reward for eligible Fallen Knight rematch clears.');
   add('Monthly Trial completion','Finish the monthly trial track for its completion reward.');
   const challenges=COMPANION_WEEKLY_CHALLENGES.filter(row=>row.rewards.bondstones>0);
   if(challenges.length)add('Weekly Companion Challenges',challenges.map(row=>row.name).slice(0,4).join(' · ')+' (rotation-dependent).');

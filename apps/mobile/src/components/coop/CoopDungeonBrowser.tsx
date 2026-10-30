@@ -106,7 +106,7 @@ type DetailsProps={language:Language;dungeon:CoopDungeonView;onMode?:(mode:CoopM
 export function CoopDungeonDetails({language,dungeon,currentLevel,currentPower=0,mode,tier,readyToStart=false,busy=false,liveFellowshipRemaining=3,rewardBudget,notice,onBack,onTier,onContinue}:DetailsProps){
  const st=useSocialText();
  const {styles:s}=useCoopStyles(makeStyles),a=(text:string)=>accountText(language,text);
- const autoTier=mode==='live'?dungeon.recommendedLiveTier:highestEligibleCoopTier(dungeon,currentLevel),effectiveTier=mode==='live'?autoTier:tier,eligibility=effectiveTier?coopTierEligibility(dungeon,effectiveTier,currentLevel):undefined,requiredLevel=eligibility?.requiredLevel??dungeon.minLevel,canContinue=dungeon.available&&!!eligibility?.eligible;
+ const autoTier=mode==='live'?(dungeon.recommendedLiveTier??highestEligibleCoopTier(dungeon,currentLevel)):highestEligibleCoopTier(dungeon,currentLevel),effectiveTier=mode==='live'?autoTier:tier,eligibility=effectiveTier?coopTierEligibility(dungeon,effectiveTier,currentLevel):undefined,requiredLevel=eligibility?.requiredLevel??dungeon.minLevel,canContinue=dungeon.available&&!!eligibility?.eligible;
  const fullMarks=effectiveTier?dungeon.expectedMarksByTier?.[effectiveTier]:undefined;
  const enhanced=rewardBudget?rewardBudget.charges>0&&rewardBudget.weeklyRemaining>0:undefined;
  const estimatedMarks=fullMarks===undefined?undefined:enhanced===false?Math.round(fullMarks*.2):fullMarks;

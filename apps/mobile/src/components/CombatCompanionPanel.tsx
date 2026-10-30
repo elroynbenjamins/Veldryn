@@ -226,7 +226,7 @@ const selectedIndex=Math.max(0,COMBAT_COMPANIONS.findIndex(def=>def.id===selecti
      <GameButton title={t("Companion Codex")} tone="secondary" onPress={()=>setSection('Codex')}/>
     </>}
     {section==='Sanctuary'&&<View style={s.group}>
-      {model?.owned?<CompanionDisclosure title={t('Upgrade Quarters')} summary={model.def.name} icon="home">{housingView}</CompanionDisclosure>:null}
+      {model?.owned?<CompanionDisclosure title={t("Upgrade Quarters")} summary={model.def.name} icon="home">{housingView}</CompanionDisclosure>:null}
       <Text style={s.name}>{t('Facilities')}</Text>
       {(Object.entries(COMPANION_SANCTUARY_CONFIG) as [CompanionSanctuaryUpgrade,typeof COMPANION_SANCTUARY_CONFIG[CompanionSanctuaryUpgrade]][]).map(([id,cfg])=>{
        const cost=companionSanctuaryUpgradeCost(state,id),level=state.account.companionSanctuary?.[`${id}Level`]??0;

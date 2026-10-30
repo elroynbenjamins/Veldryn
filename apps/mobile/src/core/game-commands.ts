@@ -123,10 +123,10 @@ export function settingsForOnlineCommand(value:GameState['settings']):GameState[
  if(!(['obsidian','ember','ivory'] as const).includes(projected.uiTheme??'obsidian'))projected.uiTheme=defaults.uiTheme;
  if(![1,1.15,1.3,1.5].includes(projected.textScale))projected.textScale=defaults.textScale;
  if(!Number.isFinite(projected.autoEatThresholdPct)||projected.autoEatThresholdPct<0||projected.autoEatThresholdPct>100)projected.autoEatThresholdPct=defaults.autoEatThresholdPct;
- for(const key of ['reduceMotion','stopCombatWhenOutOfFood','autoTravelQueuedActivities','autoJoinWorldChat'] as const)if(typeof projected[key]!=='boolean')projected[key]=defaults[key];
+ for(const key of ['reduceMotion','stopCombatWhenOutOfFood','autoTravelQueuedActivities','autoJoinWorldChat'] as const)if(typeof projected[key]!=='boolean')projected[key]=defaults[key]??false;
  if(![1,2,3,4].includes(projected.defaultWorldChat??0))projected.defaultWorldChat=defaults.defaultWorldChat;
  if(![1,2,3].includes(projected.chatDockLines??0))projected.chatDockLines=defaults.chatDockLines;
- if(!Array.isArray(projected.quickNavDestinations)||projected.quickNavDestinations.length>8||projected.quickNavDestinations.some(id=>!QUICK_NAV_DESTINATIONS.some(destination=>destination===id)))projected.quickNavDestinations=[...defaults.quickNavDestinations];
+ if(!Array.isArray(projected.quickNavDestinations)||projected.quickNavDestinations.length>8||projected.quickNavDestinations.some(id=>!QUICK_NAV_DESTINATIONS.some(destination=>destination===id)))projected.quickNavDestinations=[...(defaults.quickNavDestinations??[])];
  const cleanIds=(ids:unknown,max:number)=>Array.isArray(ids)?[...new Set(ids.filter((id):id is string=>typeof id==='string'&&id.length>0&&id.length<=120))].slice(-max):[];
  projected.favoriteItemIds=cleanIds(projected.favoriteItemIds,100);
  projected.lockedItemIds=cleanIds(projected.lockedItemIds,100);

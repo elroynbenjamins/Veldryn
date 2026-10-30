@@ -82,14 +82,14 @@ export function SettingsScreen({state,onLanguage,onReset,onChange,onRefreshComme
   const sections:SettingsSection[]=['account','gameplay','chat','display','data'];
   const sectionLabel=(value:SettingsSection)=>value==='guide'?a('Help & Guide'):value==='data'?a('Data & Privacy'):value==='display'?a('Display'):value==='store'?a('Store'):a(value.charAt(0).toUpperCase()+value.slice(1));
   const sectionDescription=(value:SettingsSection)=>value==='gameplay'?a('Combat and activity queue.'):value==='chat'?a('Chat dock, channels and emotes.'):value==='display'?a('Themes, numbers, motion and language.'):value==='account'?a('Account and sign-in.'):value==='store'?a('VIP, VIP+, Supporter and purchase restore.'):value==='data'?a('Backups and privacy.'):value==='guide'?a('Interactive game guides and tutorials.'):a('Development tools.');
-  const scrollRef=useRef<ScrollView>(null),scrollPositions=useRef<Record<string,number>>({}),restoredPage=useRef<string|undefined>(undefined);
+  const scrollRef=useRef<ScrollView showsHorizontalScrollIndicator={false}>(null),scrollPositions=useRef<Record<string,number>>({}),restoredPage=useRef<string|undefined>(undefined);
   const pageKey=(phone?'phone:':'wide:')+(section??'index');
   const restoreScroll=()=>{if(restoredPage.current===pageKey)return;scrollRef.current?.scrollTo({y:scrollPositions.current[pageKey]??0,animated:false});restoredPage.current=pageKey;};
   const afk=offlineCapBreakdown(state),premiumRegionQueue=activityQueueCrossRegionAllowed(state);
   const update=(partial:Partial<GameState['settings']>)=>onChange({...state,settings:{...state.settings,...partial}});
   const restoreDefaults=()=>update({autoEatThresholdPct:40,stopCombatWhenOutOfFood:true,autoTravelQueuedActivities:false});
   return <View style={navigationStyles.screen}>
-    <ScrollView key={pageKey} ref={scrollRef} keyboardShouldPersistTaps="handled" keyboardDismissMode="on-drag" onContentSizeChange={restoreScroll} onScroll={event=>{if(restoredPage.current===pageKey)scrollPositions.current[pageKey]=event.nativeEvent.contentOffset.y;}} scrollEventThrottle={16} contentContainerStyle={[s.root,{backgroundColor:theme.bg}]} showsVerticalScrollIndicator={false}>
+    <ScrollView showsHorizontalScrollIndicator={false} key={pageKey} ref={scrollRef} keyboardShouldPersistTaps="handled" keyboardDismissMode="on-drag" onContentSizeChange={restoreScroll} onScroll={event=>{if(restoredPage.current===pageKey)scrollPositions.current[pageKey]=event.nativeEvent.contentOffset.y;}} scrollEventThrottle={16} contentContainerStyle={[s.root,{backgroundColor:theme.bg}]} showsVerticalScrollIndicator={false}>
     <Text accessibilityRole="header" style={[s.h,{color:theme.text}]}>{t(language,'settings.title')}</Text>
     <View style={navigationStyles.categoryGrid}>
       {sections.map(value=><Pressable key={value} accessibilityRole="button" accessibilityLabel={sectionLabel(value)} accessibilityHint={sectionDescription(value)} accessibilityState={{selected:section===value}} onPress={()=>setSection(value)} style={({pressed})=>[navigationStyles.categoryTile,section===value&&navigationStyles.categorySelected,pressed&&s.pressed]}>

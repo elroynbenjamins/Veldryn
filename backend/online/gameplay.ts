@@ -78,8 +78,9 @@ export function gameplayHandler(services:GameplayServices){return async(request:
   // Every verified weekly path contributes to the SAME 20-effort/minute pool and daily cap.
   // Crafting is counted only from server-verified contribution events, never client-provided units.
   const guildProjectEffort=adminQa?[]:[
-   ...projectSegments.flatMap(({activity,reward:earned})=>earned.combatEffort?[{kind:'combat',...earned.combatEffort}]:['mining','woodcutting','fishing','herbalism'].includes(activity.kind)&&earned.elapsedSeconds>0?[{kind:'skilling',activity:'gathering',startsAtMs:activity.lastClaimAtMs,endsAtMs:activity.lastClaimAtMs+earned.elapsedSeconds*1000}]:[]),
-   ...contributions.filter(event=>event.kind==='crafting'&&event.units>0).map(event=>({kind:'crafting',units:Math.min(100,event.units)})),
+   ...projectSegments.flatMap(({activity,reward:earned})=>earned.combatEffort?[{kind:'combat',...earned.combatEffort}]:['mining','woodcutting','fishing','herbalism'].includes(activity.kind)&&earned.elapsedSeconds>0?[{kind:'skilling',activity:'gathering',startsAtMs:activity.lastClaimAtMs,endsAtMs:activity.lastClaimAtMs+earned.elapsedSeconds*1000}]:['alchemy','processing'].includes(activity.kind)&&earned.elapsedSeconds>0?[{kind:'crafting',startsAtMs:activity.lastClaimAtMs,endsAtMs:activity.lastClaimAtMs+earned.elapsedSeconds*1000}]:[]),
+   // Count verified instant crafts only when no timed crafting lane was settled.
+   ...(projectSegments.some(({activity})=>activity.kind==='alchemy'||activity.kind==='processing')?[]:contributions.filter(event=>event.kind==='crafting'&&event.units>0).map(event=>({kind:'crafting',units:Math.min(100,event.units)}))),
   ];
   const response={guildProjectEffort,guildPveEffort,state:result.state,version:loaded.version+1,serverNow:loaded.serverNow,accountId,reward:result.reward,activity:result.activity,message:result.message,won:result.won,storyBossBattle:result.storyBossBattle,upgrade:result.upgrade,forgeResults:result.forgeResults};
   const commitRpc='commit_online_game_guild_pve_v1';

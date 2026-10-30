@@ -24,7 +24,7 @@ ok(ui.includes('Activity drop rates')&&ui.includes('Rare discoveries')&&ui.inclu
 ok(ui.includes('view.expedition.levelReady')&&ui.includes('bossLevelReady'),'Activity actions must expose character and Guild level gates');
 ok(ui.includes("dailyClaimed?'Claimed':'Claim daily gift'")&&ui.includes('disabled={dailyClaimed||dailyPending||!active}')&&!ui.includes('!eventsUnlocked'),'Festival gifts must be claimable by any level when the event is active and not already claimed');
 ok(ui.includes('<EventCandyPanel')&&screen.includes("type:'event_candy'")&&screen.includes('consumeEventCandy(state,now,kind,companionId)'),'Event Overview candy actions must preserve the optional Bond target in both local and authoritative online commands');
-ok(candyUi.includes('eventCandyChargesById')&&candyUi.includes('eventCandyStatus(state,now,candy.kind)')&&candyUi.includes('Equip a combat companion first'),'Event candy UI must show balances, live timers and the Bond target requirement');
+ok(candyUi.includes('eventCandyChargesById')&&candyUi.includes('eventCandyStatus(state,now,candy.kind)')&&candyUi.includes('Unlock a combat companion first'),'Event candy UI must show balances, live timers and the Bond target requirement');
 ok(screen.includes('playerFacingGameplayError(error instanceof Error?error.message'),'Event claim errors must translate internal server codes into player-facing feedback');
 ok(app.includes("onOpenGuildEventBoss={()=>{setGuildInitialPve(true);setTab('Guild')}")&&guild.includes("initialPve?'PvE':'Home'"),'Guild event boss actions must land directly on Guild PvE');
 ok(app.includes("source==='gathering'?'gathering':'crafting'")&&screen.includes('onOpenEventActivity'),'Normal event earning routes must navigate to their real screens');

@@ -6,6 +6,13 @@ import {createTranslator,type TranslationParams} from './translator';
 
 // Columns are German, Spanish, Dutch, Italian and French; keys are the English catalog.
 export const socialTranslationRows = {
+ // Dungeon route voting and simplified run details.
+ "Vote for the next path":["Für den nächsten Weg abstimmen","Votar por la siguiente ruta","Stem op de volgende route","Vota per il prossimo percorso","Voter pour le prochain chemin"],
+ "Choose the next room":["Nächsten Raum wählen","Elegir la siguiente sala","Kies de volgende kamer","Scegli la prossima stanza","Choisir la prochaine salle"],
+ "The route with the most votes will be selected.":["Der Weg mit den meisten Stimmen wird gewählt.","Se elegirá la ruta con más votos.","De route met de meeste stemmen wordt gekozen.","Verrà scelto il percorso con più voti.","Le chemin ayant le plus de votes sera choisi."],
+ "Party & formation":["Gruppe & Formation","Grupo y formación","Groep en opstelling","Gruppo e formazione","Groupe et formation"],
+ "Objectives & mechanics":["Ziele & Mechaniken","Objetivos y mecánicas","Doelen en spelmechanieken","Obiettivi e meccaniche","Objectifs et mécaniques"],
+ "Your vote":["Deine Stimme","Tu voto","Jouw stem","Il tuo voto","Votre vote"],
  // UI labels introduced by the dungeon, chat and social redesigns.
  "Change chat channel":["Chatkanal wechseln","Cambiar canal de chat","Chatkanaal wijzigen","Cambia canale chat","Changer de canal de discussion"],
  "Chat channels":["Chatkanäle","Canales de chat","Chatkanalen","Canali chat","Canaux de discussion"],

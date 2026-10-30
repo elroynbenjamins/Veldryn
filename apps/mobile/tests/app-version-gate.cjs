@@ -40,6 +40,7 @@ async function main(){
   './versioned-fetch':{versionedFetch:async()=>new Response(JSON.stringify({error:'app_update_required'}),{status:426})},
   './supabase':{supabase:{auth:{getSession:async()=>({data:{session}})}}},
   '@react-native-async-storage/async-storage':mocks['@react-native-async-storage/async-storage'],
+  '../core/online-snapshot-cache':{peekOnlineSnapshot:()=>null},
  };
  const gameplay=load('src/online/gameplay.ts',{...services,'../core/online-game-repository':{OnlineCommandError:CommandError,OnlineGameRepository:class{constructor(account,transport){this.transport=transport;}}}});
  await assert.rejects(gameplay.createOnlineGameRepository('account').transport.send({}),error=>error.definitive===false);

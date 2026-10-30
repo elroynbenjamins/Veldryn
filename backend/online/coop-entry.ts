@@ -4,7 +4,7 @@ import {EXPEDITIONS} from '../src/server/expeditions/content/launch-content';
 import {baseMarks} from '../src/server/expeditions/rewards';
 import {recommendedDungeonPower} from '../src/server/coop/dungeon-power';
 import {eventExpeditionPreviews} from '../src/server/expeditions/content/event-expeditions';
-import {coopRequiredLevel,type CoopTier} from '../src/server/coop/config';
+import {coopRequiredLevel,readinessEligibleCoopTier,type CoopTier} from '../src/server/coop/config';
 import {assessOnlineCoopLoadout,deriveOnlineCoopLoadout,onlineCoopLoadoutHash} from './coop-loadout';
 import {GameplayError,type GameplayServices} from './gameplay';
 

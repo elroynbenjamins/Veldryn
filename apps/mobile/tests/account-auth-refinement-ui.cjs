@@ -23,7 +23,7 @@ assert.ok(auth.includes('finishGuestAccount(password,accountId)')&&auth.includes
 assert.ok(auth.includes('presentation="fullscreen"')&&auth.includes('verificationPrompt.kind'),'Email verification is focused and differentiated for signup and guests');
 assert.ok(auth.includes('passwordRequirements(password)')&&auth.includes('currentAccount.current===accountId'),'Password validation and stale-account ownership checks remain intact');
 assert.ok(auth.includes("linkStep==='linked'")&&auth.includes('signInPlayGames()'),'Linked accounts keep separate Google Play Games connection');
-assert.ok(auth.includes("auth.session?.user.is_anonymous")&&auth.includes('signOut()'),'Anonymous sign-out still warns before losing a guest account');
+assert.ok(auth.includes("auth.session?.user.is_anonymous")&&auth.includes('run(signOut)'),'Anonymous sign-out still warns before losing a guest account');
 assert.ok(!auth.includes('AuthModeChip'),'Legacy pill-style auth control was removed');
 assert.ok(account.includes("classEmblemIconArtwork[character.classId]")&&account.includes("character.name")&&account.includes("character.level"),'Account hero shows actual character identity');
 assert.ok(account.includes("accountStatus==='pending'")&&account.includes("accountStatus==='guest'"),'Guest and incomplete secure-account states are distinguished');

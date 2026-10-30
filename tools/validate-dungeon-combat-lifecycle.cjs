@@ -198,21 +198,20 @@ async function replayControlsAndTiming() {
     await h.tick(1); assert.strictEqual(currentCue(tree), cues[1]);
     assert.equal(enemy(tree).props.bossPhaseLabel, 'Black Lantern');
     assert.equal(partyCard(tree, 'p0').props.combatShield, 160);
-    await press(tree, 'Combat replay speed 2 times');
-    assert.equal(findButton(tree, 'Combat replay speed 2 times').props.accessibilityState.selected, true);
-    assert.match(findButton(tree, 'Combat replay speed 2 times').findByType('Text').children.join(''), /✓/, 'selected speed also has a visible non-color indicator');
-    assert.equal(h.timers.size, 1, 'changing speed replaces the advance timer');
-    await h.tick(timing.playbackAdvanceDelayMs(cues[1], cues[2], 2));
+    // Current combat UX deliberately plays at one steady speed; keep all authoritative timing assertions.
+    assert.equal(h.nextDelay(), timing.playbackAdvanceDelayMs(cues[1], cues[2], 1));
+    await h.tick(timing.playbackAdvanceDelayMs(cues[1], cues[2], 1));
     assert.strictEqual(currentCue(tree), cues[2]);
     assert.equal(enemy(tree).props.bossCast.targetLabel, 'Tank');
     assert.equal(enemy(tree).props.bossCast.interruptible, true);
-    assert.equal(h.nextDelay(), timing.playbackAdvanceDelayMs(cues[2], cues[3], 2));
-    assert.equal(h.animations.filter(item => item.started && item.config.useNativeDriver === false).at(-1).config.duration, timing.playbackCastDisplayMs(cues[2], 2), 'cast-bar animation uses the selected replay speed');
-    await press(tree, 'Combat replay speed 4 times');
-    const fastCast = timing.playbackAdvanceDelayMs(cues[2], cues[3], 4);
-    assert.equal(h.nextDelay(), fastCast);
-    await h.tick(fastCast - 1); assert.strictEqual(currentCue(tree), cues[2], 'fast replay preserves the readable boss-cast hold');
-    await h.tick(1); assert.strictEqual(currentCue(tree), cues[3]);
+    assert.equal(h.nextDelay(), timing.playbackAdvanceDelayMs(cues[2], cues[3], 1));
+    assert.equal(h.animations.filter(item => item.started && item.config.useNativeDriver === false).at(-1).config.duration,
+      timing.playbackCastDisplayMs(cues[2], 1), 'boss cast-bar timing follows steady replay speed');
+    const castDelay = timing.playbackAdvanceDelayMs(cues[2], cues[3], 1);
+    await h.tick(castDelay - 1);
+    assert.strictEqual(currentCue(tree), cues[2], 'cast hold remains visible until the cue advances');
+    await h.tick(1);
+    assert.strictEqual(currentCue(tree), cues[3]);
     assert.equal(partyCard(tree, 'p1').props.assistProc, true, 'companion assist remains bound to its owner');
     assert.equal(partyCard(tree, 'p0').props.assistProc, false);
     await press(tree, 'Skip combat replay to result');
@@ -231,7 +230,7 @@ async function replayControlsAndTiming() {
     await act(async () => { tree.unmount(); }); tree = null;
     assert.equal(h.timers.size, 0);
     assert.equal(h.animations.filter(item => item.running).length, 0, 'unmount stops stage-owned animations');
-    console.log('PASS dungeon replay controls: pause/resume, speed timers and cast hold, skip/replay, authoritative HP/shield/assist/outcome, cleanup');
+    console.log('PASS dungeon replay controls: pause/resume, fixed-speed cast hold, skip/replay, authoritative HP/shield/assist/outcome, cleanup');
   } finally { if (tree) await act(async () => tree.unmount()); h.restore(); }
 }
 

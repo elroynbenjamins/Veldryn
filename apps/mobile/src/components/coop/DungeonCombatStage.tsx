@@ -82,12 +82,14 @@ export function DungeonCombatStage({run,enemyLabel,boss=false,seasonal=false,eve
  const actorAnim=useRef(new Animated.Value(0)).current,targetAnim=useRef(new Animated.Value(0)).current,fxAnim=useRef(new Animated.Value(0)).current,feedbackAnim=useRef(new Animated.Value(0)).current,castAnim=useRef(new Animated.Value(0)).current;
  useEffect(()=>{let mounted=true;void AccessibilityInfo.isReduceMotionEnabled().then(value=>{if(mounted)setReduceMotion(value);}).catch(()=>{});return()=>{mounted=false;};},[]);
  useEffect(()=>{setCueIndex(reduceMotion&&cues.length?cues.length-1:0);setPaused(false);setShowLog(false);setInspectKey(undefined);},[replayKey,reduceMotion]);
- // Live receives only elapsed cues. Jump to the latest newly authorized cue;
- // don't reset the stage for every 2.5-second poll.
- useEffect(()=>{if(pending&&cues.length>0)setCueIndex(cues.length-1);},[pending?.nodeId,cues.length]);
+ // Live receives only elapsed server-authorized cues. Play each new
+ // animation quickly enough to catch up with the next network poll.
+ // Never jump straight to the newest cue or reveal a future action.
  useEffect(()=>{
-  if(!replay||pending||reduceMotion||paused||cueIndex>=cues.length-1)return;
-  const current=cues[cueIndex],next=cues[cueIndex+1],timer=setTimeout(()=>setCueIndex(value=>Math.min(value+1,cues.length-1)),playbackAdvanceDelayMs(current,next,1));
+  if(!replay||reduceMotion||paused||cueIndex>=cues.length-1)return;
+  const current=cues[cueIndex],next=cues[cueIndex+1];
+  const delay=playbackAdvanceDelayMs(current,next,1);
+  const timer=setTimeout(()=>setCueIndex(value=>Math.min(value+1,cues.length-1)),pending?Math.max(180,Math.min(380,Math.round(delay*.55))):delay);
   return()=>clearTimeout(timer);
  },[replay,replayKey,pending,reduceMotion,paused,cueIndex,cues]);
  const currentCue=cues.length?cues[Math.min(cueIndex,cues.length-1)]:undefined;

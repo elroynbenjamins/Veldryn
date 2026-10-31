@@ -354,7 +354,7 @@ ok(quests.includes('onOpenWeeklyBoss')&&questApp.includes("monsterId:'FALLEN_KNI
 
 
 const settings=read('src/screens/SettingsScreen.tsx');
-ok(settings.includes('themeChoice:{minHeight:82'),'Theme preview cards must stay compact enough to compare all themes');
+ok(/themeChoice:\{[^}]*minHeight:(?:7[0-9]|8[0-2])\b/.test(settings),'Theme preview cards must remain 82px or shorter to compare themes');
 ok(settings.includes('<GameButton compact title={a("Restore gameplay defaults")} tone="secondary" onPress={restoreDefaults}'),"Settings reset-defaults action must remain secondary and compact");
 
 

@@ -1,4 +1,3 @@
-import {performance} from 'node:perf_hooks';
 import {createCharacter,newGame} from '../src/core/game';
 import {unlockCombatCompanion} from '../src/core/combat-companions';
 import {companionView,companionEconomy} from '../src/core/companion-runtime';
@@ -28,7 +27,7 @@ const fixtureJson=JSON.stringify({inventory:state.inventory.stacks,gear:state.ac
 const measure=(label:string,action:()=>unknown,iterations=4)=>{
  const results:number[]=[];let value:unknown;
  for(let i=0;i<iterations;i++){
-  const started=performance.now();value=action();results.push(performance.now()-started);
+  const started=Date.now();value=action();results.push(Date.now()-started);
  }
  results.sort((a,b)=>a-b);
  console.log('PROFILE synthetic mobile-core '+label+': '+JSON.stringify({

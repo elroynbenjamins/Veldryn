@@ -6,7 +6,7 @@
 export type CoopSyncMode='live'|'qmode'|'event';
 export type CoopSyncUrgency='decision'|'combat'|'idle';
 
-export const COOP_CHAT_REFRESH_MS=10_000;
+export const COOP_CHAT_REFRESH_MS=5_000;
 
 export function coopSyncIntervalMs(mode:CoopSyncMode,urgency:CoopSyncUrgency,realtimeConnected:boolean):number{
  if(urgency==='decision')return realtimeConnected?3_500:2_000;

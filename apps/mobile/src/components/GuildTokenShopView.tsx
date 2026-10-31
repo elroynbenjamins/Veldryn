@@ -7,9 +7,8 @@ import {GUILD_COMBAT_COMPANIONS} from '../content/guild-companions-v1';
 import {BoardTabs} from './BoardTabs';
 import {GameButton} from './GameButton';
 import {Panel} from './Panel';
-import {OnlineGuildConstructionPanel} from './OnlineGuildConstructionPanel';
 
-type Section='Browse'|'Earn'|'Projects';
+type Section='Browse'|'Earn';
 type Category='all'|'pet'|'companion'|'identity';
 const CATEGORIES=[{id:'all',label:'All'},{id:'pet',label:'Pets'},{id:'companion',label:'Companions'},{id:'identity',label:'Identity'}] as const;
 const DETAILS:Record<string,{name:string;description:string}>={
@@ -49,7 +48,7 @@ export function GuildTokenShopView({snapshot,loading,pending,error,notice,onRefr
    <View style={s.flex}><Text style={[s.walletAmount,text]}>{snapshot?snapshot.balance.toLocaleString():'—'} Guild Tokens</Text><Text style={[s.meta,muted]}>{snapshot?`${snapshot.earnedThisWeek} / ${snapshot.weeklyCap} earned this week`:'Permanent account rewards'}</Text><View style={[s.track,{backgroundColor:C.panel2}]}><View style={{height:4,width:`${snapshot?Math.min(100,snapshot.earnedThisWeek/Math.max(1,snapshot.weeklyCap)*100):0}%`,backgroundColor:C.good}}/></View></View>
    {loading?<ActivityIndicator color={C.accent}/>:<Pressable accessibilityRole="button" accessibilityLabel="Refresh Guild Token Shop" accessibilityState={{disabled:refreshBusy}} disabled={refreshBusy} onPress={()=>void onRefresh()} style={s.refresh}><Text style={[s.copy,{color:C.accent}]}>↻</Text></Pressable>}
   </View>
-  <BoardTabs compact label="Guild Token Shop sections" items={(['Browse','Earn','Projects'] as const).map(id=>({id,label:id}))} value={section} onChange={value=>{setSection(value);setSelected(null)}}/>
+  <BoardTabs compact label="Guild Token Shop sections" items={(['Browse','Earn'] as const).map(id=>({id,label:id}))} value={section} onChange={value=>{setSection(value);setSelected(null)}}/>
   {!!notice&&<Text accessibilityLiveRegion="polite" style={[s.feedback,{color:C.good,backgroundColor:C.goodSurface}]}>{notice}</Text>}
   {!!error&&<View style={[s.feedback,{backgroundColor:C.badSurface}]}><Text accessibilityRole="alert" style={[s.copy,{color:C.bad}]}>{error}</Text><GameButton compact tone="secondary" title="Retry refresh" disabled={refreshBusy} onPress={onRefresh}/></View>}
   {!snapshot&&!loading&&!error?<Panel><Text style={[s.title,text]}>Join a guild to browse its rewards</Text><Text style={[s.copy,muted]}>Your Guild Tokens and purchased rewards stay with your account when you change guilds.</Text></Panel>:null}
@@ -78,7 +77,6 @@ export function GuildTokenShopView({snapshot,loading,pending,error,notice,onRefr
    {!!snapshot.eventBonuses.length&&<Panel><Text style={[s.title,text]}>Event bonuses</Text><Text style={[s.copy,muted]}>Earned community milestones award extra tokens outside the normal weekly cap.</Text>{snapshot.eventBonuses.map(reward=><View key={`${reward.eventId}:${reward.milestonePercent}`} style={[s.earningRow,{borderTopColor:C.line}]}><View style={s.flex}><Text style={[s.title,text]}>{reward.eventId.replace(/[_-]/g,' ')} · {reward.milestonePercent}%</Text><Text style={[s.meta,muted]}>+{reward.tokens} Guild Tokens</Text></View><GameButton compact tone="secondary" title={reward.claimed?'Claimed':'Claim'} loading={pending===`event:${reward.eventId}:${reward.milestonePercent}`} disabled={busy||reward.claimed} onPress={()=>onEvent(reward.eventId,reward.milestonePercent)}/></View>)}</Panel>}
    <Text style={[s.copy,muted]}>Your balance remains yours when changing guilds. Guild Tokens are separate from the Quartermaster’s Guild Marks.</Text>
   </>:null}
-  {section==='Projects'&&snapshot?(constructionContent??<OnlineGuildConstructionPanel snapshot={snapshot} onRewardsChanged={onRewardsChanged} onReload={onRefresh}/>):null}
  </View>;
 }
 const s=StyleSheet.create({stack:{gap:10},wallet:{flexDirection:'row',alignItems:'center',gap:10,padding:12,borderRadius:10,borderWidth:1},token:{width:32,height:32},flex:{flex:1,minWidth:0,gap:3},walletAmount:{fontSize:16,lineHeight:22,fontWeight:'700'},meta:{fontSize:12,lineHeight:17},track:{height:4,overflow:'hidden',borderRadius:3,marginTop:5},refresh:{minHeight:44,minWidth:44,alignItems:'center',justifyContent:'center'},toolbar:{flexDirection:'row',alignItems:'center',justifyContent:'space-between',flexWrap:'wrap',gap:6},toggles:{flexDirection:'row',flexWrap:'wrap',gap:6},toggle:{minHeight:44,paddingHorizontal:9,borderRadius:8,borderWidth:1,justifyContent:'center'},offer:{borderWidth:1,borderRadius:10,overflow:'hidden'},rewardRow:{flexDirection:'row',alignItems:'center',gap:10,padding:12,minHeight:96},art:{width:58,height:58,borderWidth:1,borderRadius:8,alignItems:'center',justifyContent:'center'},rewardArt:{width:52,height:52},title:{fontSize:15,lineHeight:21,fontWeight:'700'},copy:{fontSize:13,lineHeight:19},price:{flexDirection:'row',alignItems:'center',gap:4},coin:{width:17,height:17},inspect:{fontSize:12,lineHeight:17,width:44,textAlign:'center'},availability:{fontSize:12,lineHeight:18,paddingHorizontal:12,paddingBottom:10},review:{padding:12,gap:12,borderTopWidth:1},preview:{flexDirection:'row',alignItems:'center',gap:10},previewArt:{width:72,height:72},numbers:{flexDirection:'row',gap:8,padding:10,borderRadius:8},amount:{fontSize:17,lineHeight:24,fontWeight:'600'},feedback:{padding:10,borderRadius:8,gap:8,fontSize:13,lineHeight:19},earningRow:{flexDirection:'row',alignItems:'center',gap:10,paddingVertical:12,borderTopWidth:1}});

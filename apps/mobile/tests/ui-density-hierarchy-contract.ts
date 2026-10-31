@@ -264,7 +264,7 @@ const character=read('src/screens/CharacterScreen.tsx');
 ok(character.includes('disclosure:{minHeight:54'),'Character secondary disclosures must remain compact');
 ok(character.includes('identityKicker')&&character.includes('characterName')&&character.includes('classMeta'),'Character must use one consolidated identity hero instead of separate page and class headers');
 ok(!character.includes('pageHeading')&&!character.includes('headingCopy'),'Character must not regress to the duplicate heading stack');
-ok(character.includes("'LOADOUT FOCUS'")&&character.includes('s.itemFocus'),"Character equipment preview must have a purpose-specific title");
+ok(character.includes("profileT(language,'NEXT ACTION')")&&character.includes('equipmentFocusModel(selectedDecision)')&&character.includes('s.itemFocus')&&character.includes('setEquipmentTool(equipmentFocus.kind)'),"Character equipment preview must have a purpose-specific title");
 ok(!character.includes('>Lv. {character.level}<')&&character.includes('selectedDecision.stats'),"Character preview must not repeat the character level beside readiness");
 ok(character.includes("keyStat:{flex:1,alignItems:'center',gap:2,paddingVertical:6")&&character.includes('backgroundColor:C.panel2'),'Character key stats must use compact HUD-style cells');
 ok(character.includes('primaryAction:{flexGrow:2,flexBasis:180}')&&character.includes('secondaryAction:{flexGrow:1,flexBasis:110'),'Character global actions must preserve one obvious primary equipment action');

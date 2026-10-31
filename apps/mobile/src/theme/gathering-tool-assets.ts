@@ -1,8 +1,12 @@
 import type {ImageSourcePropType} from 'react-native';
 
-export const GATHERING_TOOL_CELL=362;
-export const GATHERING_TOOL_SHEET_WIDTH=1448;
-export const GATHERING_TOOL_SHEET_HEIGHT=1086;
+// Keep the existing public constants while sharing the atlas grid with
+// the pure, regression-tested thumbnail layout helper.
+export {
+  GATHERING_TOOL_CELL,
+  GATHERING_TOOL_SHEET_WIDTH,
+  GATHERING_TOOL_SHEET_HEIGHT,
+} from '../core/gathering-tool-artwork-layout';
 export const gatheringToolAtlas:ImageSourcePropType=require('../../assets/tools/gathering-tools-v3.png');
 
 export interface GatheringToolCell{column:0|1|2|3;row:0|1|2}

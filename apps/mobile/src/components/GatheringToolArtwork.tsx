@@ -1,20 +1,30 @@
 import {Image,StyleSheet,View} from 'react-native';
-import {
-  GATHERING_TOOL_CELL,
-  GATHERING_TOOL_SHEET_HEIGHT,
-  GATHERING_TOOL_SHEET_WIDTH,
-  gatheringToolAtlas,
-  gatheringToolCells,
-} from '../theme/gathering-tool-assets';
+import {gatheringToolAtlas,gatheringToolCells} from '../theme/gathering-tool-assets';
+import {gatheringToolArtworkLayout} from '../core/gathering-tool-artwork-layout';
 import {C,radii} from '../theme/theme';
 
 export function GatheringToolArtwork({itemId,size=58,framed=true}:{itemId:string;size?:number;framed?:boolean}){
-  const cell=gatheringToolCells[itemId];if(!cell)return null;
- // Crop inside the source cell. Offsetting a scaled atlas leaves a sliver of
- // the preceding tool visible along a tile's top or left edge.
- const inset=.06,inner=1-inset*2,scale=size/(GATHERING_TOOL_CELL*inner);
-  const atlasWidth=GATHERING_TOOL_SHEET_WIDTH*scale;
-  const atlasHeight=GATHERING_TOOL_SHEET_HEIGHT*scale;
- return <View style={[s.crop,{width:size,height:size},framed&&s.frame]}><Image source={gatheringToolAtlas} resizeMode="stretch" style={{position:'absolute',width:atlasWidth,height:atlasHeight,left:-(cell.column+inset)*GATHERING_TOOL_CELL*scale,top:-(cell.row+inset)*GATHERING_TOOL_CELL*scale}}/></View>;
+  const cell=gatheringToolCells[itemId];
+  if(!cell)return null;
+  const layout=gatheringToolArtworkLayout(cell.column,cell.row,size);
+  if(!layout)return null;
+
+  // Isolate the source tile before scaling it into the icon frame. The inset
+  // guards against atlas filtering bleed; the outer margin leaves long tool
+  // handles and rod tips visible instead of cutting 6% off every tile edge.
+  return <View style={[s.crop,{width:size,height:size},framed&&s.frame]}>
+    <View style={{width:layout.viewportSize,height:layout.viewportSize,overflow:'hidden'}}>
+      <Image source={gatheringToolAtlas} resizeMode="stretch" fadeDuration={0} style={{
+        position:'absolute',
+        width:layout.atlasWidth,
+        height:layout.atlasHeight,
+        left:layout.left,
+        top:layout.top,
+      }}/>
+    </View>
+  </View>;
 }
-const s=StyleSheet.create({crop:{overflow:'hidden',alignItems:'center',justifyContent:'center'},frame:{borderWidth:1,borderColor:C.line,borderRadius:radii.sm,backgroundColor:'#09121a'}});
+const s=StyleSheet.create({
+  crop:{overflow:'hidden',alignItems:'center',justifyContent:'center'},
+  frame:{borderWidth:1,borderColor:C.line,borderRadius:radii.sm,backgroundColor:'#09121a'},
+});

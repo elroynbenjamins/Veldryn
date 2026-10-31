@@ -173,7 +173,7 @@ ok(appMastery.includes('preparationNotices[0].message')&&appMastery.includes('pr
 ok(appMastery.includes('actionLabel={preparationNotices[0].actionLabel}')&&appMastery.includes('openPreparationNotice(preparationNotices[0])'),'Preparation feedback must provide a one-tap action for the exact current next step');
 ok(appMastery.includes("notice.kind==='complete'||!notice.destination||notice.destination.kind==='info'")&&appMastery.includes('openWorkingTowardDestination(notice.destination)'),'Preparation notice actions must route completion to Working Toward and live steps through canonical deep-link navigation');
 ok(appMastery.includes('preparationNotices.length||collected||forgeResults'),'Mastery feedback must wait behind preparation feedback and higher-priority reward/reveal surfaces');
-ok(appMastery.includes("forgeResults?.some(row=>row.qualityProc)"),'Mastery feedback must defer only behind a real exceptional Forge reveal');
+ok(appMastery.includes("forgeResults?.some(isExceptionalForgeResult)")&&read('src/components/ForgeResultFeedback.tsx').includes("result.qualityProc&&(result.rarity==='epic'||result.rarity==='legendary'||result.rarity==='mythic')"),'Mastery feedback must defer only behind an exceptional Epic-or-higher Forge reveal');
 
 const snapshot=read('src/components/SkillDashboard.tsx');
 ok(snapshot.includes('.slice(0,5)'),'Home skill snapshot must show only the five strongest non-combat skills');

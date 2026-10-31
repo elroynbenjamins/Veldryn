@@ -132,11 +132,23 @@ export function CoopExpeditionScreen({onClose,language,state,entrySource=realCoo
   const terminalRunId=run&&['completed','failed'].includes(run.phase)?run.runId:undefined;
   useEffect(()=>{
     if(!terminalRunId||!foreground||entrySource.kind!=='real')return;
-    let stopped=false;
-    void coopClient.rewards(terminalRunId).then(items=>{
-      if(!stopped&&activeRunId.current===terminalRunId)setRewards(items);
-    }).catch(()=>{/* Manual refresh can retry if rewards are temporarily unavailable. */});
-    return()=>{stopped=true;};
+    let stopped=false,attempts=0;
+    let retryTimer:ReturnType<typeof setTimeout>|undefined;
+    const fetchRewards=async()=>{
+      attempts++;
+      let ready=false;
+      try{
+        const items=await coopClient.rewards(terminalRunId);
+        if(stopped||activeRunId.current!==terminalRunId)return;
+        setRewards(items);
+        ready=items.length>0;
+      }catch{/* A newly finished run may not have its reward projection ready yet. */}
+      finally{
+        if(!stopped&&!ready&&attempts<3)retryTimer=setTimeout(()=>void fetchRewards(),attempts===1?5_000:15_000);
+      }
+    };
+    void fetchRewards();
+    return()=>{stopped=true;if(retryTimer!==undefined)clearTimeout(retryTimer);};
   },[terminalRunId,foreground,entrySource.kind]);
   useEffect(()=>{if(!showLive&&!showLoadouts&&!selected&&!selectedEvent&&!run&&!eventRun)return;const subscription=BackHandler.addEventListener('hardwareBackPress',()=>{if(showLive){onClose();return true}if(eventRun){setEventRun(undefined);return true}if(run){setRun(undefined);return true}if(showLoadouts){setShowLoadouts(false);setNotice('');return true}if(selectedEvent){setSelectedEvent(undefined);setNotice('');return true}if(selected){setSelected(undefined);setNotice('');return true}return false});return()=>subscription.remove()},[showLive,showLoadouts,selected,selectedEvent,run,eventRun,onClose]);
   const dungeons=useMemo(()=>(entry?.dungeons??[]).map(presentCoopDungeon),[entry]);

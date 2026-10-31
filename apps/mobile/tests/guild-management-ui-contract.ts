@@ -112,7 +112,7 @@ ok(hall.includes("<Text style={s.levelMax}>/10</Text>")&&hall.includes('Launch H
 ok(hall.includes('backgroundColor:C.warningSurface'),'Guild Hall level badge must remain light-theme safe');
 ok(pve.includes("'EVENT BOSS':'WEEKLY BOSS'")&&pve.includes('MILESTONE REWARDS'),"Guild PvE must distinguish weekly and event bosses and milestone rewards");
 ok(pve.includes('accessibilityRole="alert" style={{color:C.bad}}')&&pve.includes('backgroundColor:C.panel2'),"Guild PvE must use semantic error and progress colors");
-ok(pve.includes("rows.filter(row=>row.kind===encounterKind)")&&pve.includes('selected={encounterKind===kind}'),'Raid Gate must present weekly and event encounters as selectable destinations');
+ok(pve.includes('guildRaidEncountersForTab(rows,encounterKind)')&&pve.includes('selected={encounterKind===kind}')&&pve.includes('onPress={()=>setEncounterKind(kind)}'),'Raid Gate must present weekly and event encounters as selectable destinations');
 ok(pve.includes('<ImageBackground')&&pve.includes("overflow:'hidden'},backdrop:{opacity:.7,width:'100%',height:'100%'}"),'Boss scenes must bound their artwork to the stage instead of overflowing over the action area');
 ok(pve.includes("accessibilityLabel={st('Boss health')}")&&pve.includes('now:Math.round(100-view.percent)')&&pve.includes('width:`${100-view.percent}%`'),'Boss HP label, accessible value and remaining-health fill must agree');
 ok(pve.includes('state?.character?.equippedCombatCompanionId')&&pve.includes('classIconArtwork[state.character.classId]')&&pve.includes('companionArtSource(companionId)'),'Raid party must show the actual current class and equipped companion artwork');

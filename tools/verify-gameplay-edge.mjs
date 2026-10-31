@@ -19,7 +19,12 @@ const built=await build({
  logLevel:'silent',write:false,
 });
 if(built.outputFiles.length!==1)throw Error('Unexpected gameplay bundle output count');
-if(readFileSync(output,'utf8')!==built.outputFiles[0].text){
+const checkedIn=readFileSync(output,'utf8'),rebuilt=built.outputFiles[0].text;
+if(checkedIn!==rebuilt){
+ let offset=0;while(offset<Math.min(checkedIn.length,rebuilt.length)&&checkedIn[offset]===rebuilt[offset])offset++;
+ console.error('Bundle difference:',{onDiskLength:checkedIn.length,rebuiltLength:rebuilt.length,offset});
+ console.error('Disk around difference:',JSON.stringify(checkedIn.slice(Math.max(0,offset-90),offset+170)));
+ console.error('Expected around difference:',JSON.stringify(rebuilt.slice(Math.max(0,offset-90),offset+170)));
  console.error('FAIL: generated gameplay Edge bundle is out of sync with the shared game engine.');
  console.error('Run pnpm --dir backend build:online, review gameplay/index.ts, and commit the generated artifact.');
  process.exitCode=1;

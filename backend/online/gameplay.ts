@@ -47,7 +47,12 @@ export function gameplayHandler(services:GameplayServices){return async(request:
   const loaded=await services.rpc<LoadedGame>('load_online_game_server_v1',{p_account_id:accountId});
   const state=loaded.state??newGame(loaded.serverNow);
   state.account.longTermAccountScopeId=accountId;
-  state.account.guildMember=loaded.guildMember;state.account.liveEvent=loaded.liveEvent;
+  state.account.guildMember=loaded.guildMember;
+  // Retain an already-ended event's server-issued timestamps for one-time
+  // post-grace settlements. Never retain an event still in progress if the
+  // authoritative schedule removed/disabled it early.
+  const previousEvent=state.account.liveEvent;
+  state.account.liveEvent=loaded.liveEvent??(previousEvent?.enabled&&loaded.serverNow>=previousEvent.endsAtMs?previousEvent:undefined);
   state.account.eventCommunityProgressById=loaded.communityProgress;
   if(state.character&&loaded.walletGold!==null)state.character.gold=loaded.walletGold;
   if(!body||!command)return json({state,version:loaded.version,serverNow:loaded.serverNow,accountId});

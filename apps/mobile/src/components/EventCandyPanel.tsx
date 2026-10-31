@@ -12,14 +12,14 @@ import {EventBondCandySelector} from './EventBondCandySelector';
 
 const kindLabels:Record<EventCandyKind,string>={skill:'SKILL',combat:'BATTLE',companion:'BOND',pet:'PET LUCK'};
 function durationLabel(seconds:number){
- const total=Math.max(0,Math.ceil(seconds)),hours=Math.floor(total/3600),minutes=Math.floor(total%3600/60),remainder=total%60;
- return hours?`${hours}h ${minutes}m ${remainder}s`:minutes?`${minutes}m ${remainder}s`:`${remainder}s`;
+ const minutesTotal=Math.max(0,Math.ceil(seconds/60)),hours=Math.floor(minutesTotal/60),minutes=minutesTotal%60;
+ return hours?`${hours}h${minutes?` ${minutes}m`:''}`:minutes?`${minutes}m`:'Less than 1m';
 }
 
 export function EventCandyPanel({state,definition,eventActive,busy=false,pendingKind,onUse}:{state:GameState;definition:LiveEventDef;eventActive:boolean;busy?:boolean;pendingKind?:EventCandyKind;onUse:(kind:EventCandyKind,companionId?:string)=>unknown}){
  const C=useGameTheme(),[now,setNow]=useState(()=>Date.now()),candies=eventCandies(definition),visuals=liveEventVisuals(definition.visualKey);
  const {width,fontScale}=useWindowDimensions(),twoColumns=width>=410&&fontScale<1.35;
- useEffect(()=>{const id=setInterval(()=>setNow(Date.now()),1_000);return()=>clearInterval(id);},[]);
+ useEffect(()=>{const id=setInterval(()=>setNow(Date.now()),30_000);return()=>clearInterval(id);},[]);
  return <Panel>
   <View style={s.heading}><View style={s.flex}><Text style={[s.kicker,{color:C.accent}]}>EVENT CANDY</Text><Text style={[s.title,{color:C.text}]}>Festival boosts</Text><Text style={[s.copy,{color:C.muted}]}>Candy is stored on your account. Timed boosts continue while you are away and end when this event closes.</Text></View>{visuals.candyIcon?<Image accessible={false} source={visuals.candyIcon} resizeMode="contain" style={s.heroCandy}/>:null}</View>
   <View style={[s.list,twoColumns&&s.listTwo]}>{candies.map(candy=>{

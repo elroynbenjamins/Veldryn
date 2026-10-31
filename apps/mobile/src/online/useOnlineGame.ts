@@ -35,8 +35,10 @@ export function useOnlineGame(){
  useEffect(()=>{
   const client=supabase;
   if(!serverGameplayEnabled||!accountId||!client)return;
-  let foreground=AppState.currentState==='active';
-  const heartbeat=()=>{if(!foreground)return;void client.rpc('record_player_presence_v1').then(()=>{},()=>{});};
+  let foreground=AppState.currentState==='active',lastPresenceAt=0;
+  // App switching can emit repeated foreground events. Coalesce their best-effort
+  // presence writes while preserving the existing 5-minute active heartbeat.
+  const heartbeat=()=>{if(!foreground)return;const now=Date.now();if(now-lastPresenceAt<60_000)return;lastPresenceAt=now;void client.rpc('record_player_presence_v1').then(()=>{},()=>{});};
   const timer=setInterval(heartbeat,5*60_000);
   const sub=AppState.addEventListener('change',next=>{foreground=next==='active';if(foreground)heartbeat();});
   return()=>{clearInterval(timer);sub.remove();};

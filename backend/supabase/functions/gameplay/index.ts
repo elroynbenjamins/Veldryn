@@ -46617,6 +46617,42 @@ function consumeEventCandy(state, nowMs = Date.now(), kind = "skill", companionI
   const timers = { ...state.character.activeEventCandies ?? {}, [kind]: { eventId: active2.definition.id, itemId: candy.id, remainingSeconds: next, lastUpdatedAtMs: nowMs } };
   return { ...state, character: { ...state.character, activeEventCandies: timers, ...kind === "skill" ? { activeEventCandy: timers.skill } : {} } };
 }
+var EXPIRED_EVENT_CANDY_ESSENCE = 10;
+function settleExpiredEventCandies(state, nowMs) {
+  const runtime = state.account.liveEvent;
+  if (!runtime?.enabled || nowMs < runtime.startsAtMs) return state;
+  const charges = state.account.eventCandyChargesById ?? {}, receipts = state.account.eventShopPurchaseCounts ?? {};
+  const grouped = /* @__PURE__ */ new Map();
+  for (const [key, amount] of Object.entries(charges)) {
+    if (!Number.isSafeInteger(amount) || amount <= 0) continue;
+    const boundary = key.lastIndexOf(":candy:");
+    if (boundary < 1) continue;
+    const id = key.slice(0, boundary), kind = key.slice(boundary + 7);
+    if (!["skill", "combat", "companion", "pet"].includes(kind) || !liveEventDef(id)) continue;
+    const ownEvent = id === runtime.eventId, definition = liveEventDef(id);
+    const claimEnd = runtime.graceEndsAtMs ?? runtime.endsAtMs + definition.claimGraceDays * 864e5;
+    if (ownEvent ? nowMs < claimEnd : nowMs < runtime.startsAtMs) continue;
+    const receiptKey = `${id}:candy:expired_to_essence_v1`;
+    if (receipts[receiptKey]) continue;
+    grouped.set(id, [...grouped.get(id) ?? [], key]);
+  }
+  if (!grouped.size) return state;
+  const nextCharges = { ...charges }, nextReceipts = { ...receipts };
+  let essence = 0;
+  for (const [id, keys] of grouped) {
+    const receiptKey = `${id}:candy:expired_to_essence_v1`;
+    let quantity2 = 0;
+    for (const key of keys) {
+      quantity2 += nextCharges[key];
+      nextCharges[key] = 0;
+    }
+    if (quantity2 <= 0) continue;
+    essence += quantity2 * EXPIRED_EVENT_CANDY_ESSENCE;
+    nextReceipts[receiptKey] = 1;
+  }
+  if (!essence) return state;
+  return { ...state, account: { ...state.account, eventCandyChargesById: nextCharges, eventShopPurchaseCounts: nextReceipts, companionEssence: (state.account.companionEssence ?? 0) + essence } };
+}
 function eventRewardClaimed(state, eventId, rewardId) {
   return (state.account.eventRewardClaimIds ?? []).includes(`${eventId}:${rewardId}`);
 }
@@ -55337,6 +55373,7 @@ function executeGameCommand(previous, value, now, options = {}) {
     else settle();
   }
   state = refreshCompanions(state, now);
+  state = settleExpiredEventCandies(state, now);
   if (command.type.startsWith("companion_") && !earlyFeatureUnlocked(state, "companions")) throw new Error("companion_system_locked");
   if ((command.type === "daily_supplies_claim" || command.type === "daily_supplies_activate") && !earlyFeatureUnlocked(state, "dailySupplies")) throw new Error("daily_supplies_locked");
   if (command.type === "goals_set") throw new Error("goals_retired");
@@ -55958,7 +55995,8 @@ function gameplayHandler(services2) {
       const state = loaded.state ?? newGame(loaded.serverNow);
       state.account.longTermAccountScopeId = accountId;
       state.account.guildMember = loaded.guildMember;
-      state.account.liveEvent = loaded.liveEvent;
+      const previousEvent = state.account.liveEvent;
+      state.account.liveEvent = loaded.liveEvent ?? (previousEvent?.enabled && loaded.serverNow >= previousEvent.endsAtMs ? previousEvent : void 0);
       state.account.eventCommunityProgressById = loaded.communityProgress;
       if (state.character && loaded.walletGold !== null) state.character.gold = loaded.walletGold;
       if (!body || !command) return json({ state, version: loaded.version, serverNow: loaded.serverNow, accountId });

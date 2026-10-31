@@ -153,6 +153,8 @@ export function executeGameCommand(previous:GameState,value:unknown,now:number,o
  const activityStartCommand=['start','explore','class_training','faith_practice','alchemy_start','processing_start'].includes(command.type);
  if(state.character&&command.type!=='create'&&!settlementFreeCommand){if(activityStartCommand)settleAndStop();else settle();}
  state=refreshCompanions(state,now);
+ // Expired event candy settlement is account-wide and shares this command's atomic receipt.
+ state=events.settleExpiredEventCandies(state,now);
  if(command.type.startsWith('companion_')&&!earlyFeatureUnlocked(state,'companions'))throw new Error('companion_system_locked');
  if((command.type==='daily_supplies_claim'||command.type==='daily_supplies_activate')&&!earlyFeatureUnlocked(state,'dailySupplies'))throw new Error('daily_supplies_locked');
  if(command.type==='goals_set')throw new Error('goals_retired');

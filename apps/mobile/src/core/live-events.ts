@@ -68,6 +68,43 @@ export function consumeEventCandy(state:GameState,nowMs=Date.now(),kind:EventCan
   const timers={...(state.character.activeEventCandies??{}),[kind]:{eventId:active.definition.id,itemId:candy.id,remainingSeconds:next,lastUpdatedAtMs:nowMs}};
   return {...state,character:{...state.character,activeEventCandies:timers,...(kind==='skill'?{activeEventCandy:timers.skill}: {})}};
 }
+/** Small one-time consolation after an event's claim window closes.
+ * Called by the canonical command engine: the receipt, charge removal and Essence
+ * reward commit atomically with the next successful gameplay action. */
+export const EXPIRED_EVENT_CANDY_ESSENCE=10;
+export function settleExpiredEventCandies(state:GameState,nowMs:number):GameState{
+ const runtime=state.account.liveEvent;
+ if(!runtime?.enabled||nowMs<runtime.startsAtMs)return state;
+ const charges=state.account.eventCandyChargesById??{},receipts=state.account.eventShopPurchaseCounts??{};
+ const grouped=new Map<string,string[]>();
+ for(const [key,amount] of Object.entries(charges)){
+  if(!Number.isSafeInteger(amount)||amount<=0)continue;
+  const boundary=key.lastIndexOf(':candy:');
+  if(boundary<1)continue;
+  const id=key.slice(0,boundary),kind=key.slice(boundary+7);
+  if(!['skill','combat','companion','pet'].includes(kind)||!liveEventDef(id))continue;
+  const ownEvent=id===runtime.eventId,definition=liveEventDef(id)!;
+  const claimEnd=runtime.graceEndsAtMs??runtime.endsAtMs+definition.claimGraceDays*86400_000;
+  // The single authoritative live-event row has advanced to a different event,
+  // or the current event's entire reward-claim window has elapsed.
+  if(ownEvent?nowMs<claimEnd:nowMs<runtime.startsAtMs)continue;
+  const receiptKey=`${id}:candy:expired_to_essence_v1`;
+  if(receipts[receiptKey])continue;
+  grouped.set(id,[...(grouped.get(id)??[]),key]);
+ }
+ if(!grouped.size)return state;
+ const nextCharges={...charges},nextReceipts={...receipts};let essence=0;
+ for(const [id,keys] of grouped){
+  const receiptKey=`${id}:candy:expired_to_essence_v1`;
+  let quantity=0;
+  for(const key of keys){quantity+=nextCharges[key];nextCharges[key]=0;}
+  if(quantity<=0)continue;
+  essence+=quantity*EXPIRED_EVENT_CANDY_ESSENCE;
+  nextReceipts[receiptKey]=1;
+ }
+ if(!essence)return state;
+ return {...state,account:{...state.account,eventCandyChargesById:nextCharges,eventShopPurchaseCounts:nextReceipts,companionEssence:(state.account.companionEssence??0)+essence}};
+}
 export function eventMilestones(state:GameState,nowMs=Date.now()):EventMilestone[]{const event=claimableLiveEvent(state,nowMs);return event&&state.character?event.definition.milestones(state.character.classId):[];}
 export function eventRewardClaimed(state:GameState,eventId:string,rewardId:string){return (state.account.eventRewardClaimIds??[]).includes(`${eventId}:${rewardId}`);}
 

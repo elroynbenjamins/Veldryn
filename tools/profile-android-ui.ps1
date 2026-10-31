@@ -12,7 +12,7 @@ param(
 $ErrorActionPreference = 'Stop'
 $adb = (Get-Command adb -ErrorAction Stop).Source
 $devices = @(& $adb devices)
-if ($LASTEXITCODE -ne 0 -or $devices.Count -lt 3 -or -not ($devices -match "\tdevice$")) {
+if ($LASTEXITCODE -ne 0 -or -not ($devices -match "\tdevice$")) {
     throw 'Connect and authorize an Android device. Run adb devices and enable USB debugging.'
 }
 if ($Phase -eq 'Start') {

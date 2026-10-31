@@ -10,6 +10,7 @@ import {ActivityIndicator,Image,Modal,Pressable,ScrollView,StyleSheet,Text,View}
 import {GuildDiscoveryFlow} from '../components/GuildDiscoveryFlow';
 import {SectionGuide} from '../components/SectionGuide';
 import {GUILD_TUTORIAL_STEPS} from '../core/guild-tutorial';
+import {guildHallSectionGuide} from '../core/guild-hall-guide';
 import {guildTutorialText} from '../i18n/guild-tutorial';
 import {useAuthSession} from '../online/AuthSessionProvider';
 import {GameButton} from '../components/GameButton';
@@ -41,6 +42,13 @@ import {guildSkillPointsForLevelV1,guildXpThresholdForLevelV1} from '../core/gui
 const ROSTER=[['Elowen','Dawnkeeper',28,'Leader'],['Brann','Ironwarden',24,'Officer'],['Mira','Wayfinder',21,'Member'],['Tovan','Ravager',19,'Member'],['Sera','Hexweaver',17,'Member']];
 type GuildSection='Home'|'PvE'|'Roster'|'Skills'|'Bank';
 export type OnlineGuildSection='Home'|'PvE'|'Roster'|'Activities'|'Hall'|'Chat'|'Manage'|'Appearance'|'Future';
+/** Only non-privileged destinations survive navigation away from Guild.
+ * Management permissions and live membership are rechecked on return. */
+export type GuildNavigationState={
+ section:'Home'|'PvE'|'Roster'|'Activities'|'Hall'|'Future';
+ activityView:'Quests'|'Muster'|'Projects';
+ hallSection:'Facilities'|'Skills'|'Trophies'|'Shop';
+};
 type LocalGuildMember={name:string;role:'Leader'|'Officer'|'Member';className:string;level:number;online:boolean;lastOnline:string;status:string};
 const LOCAL_ROSTER:LocalGuildMember[]=[{name:'Elowen',role:'Leader',className:'Dawnkeeper',level:28,online:true,lastOnline:'Online now',status:'Leading the guild'}, {name:'Brann',role:'Officer',className:'Ironwarden',level:24,online:true,lastOnline:'Online now',status:'Managing projects'}, {name:'Mira',role:'Member',className:'Wayfinder',level:21,online:false,lastOnline:'12 min ago',status:'Exploring Ironwood'}, {name:'Tovan',role:'Member',className:'Ravager',level:19,online:false,lastOnline:'Yesterday',status:'Last active in combat'}, {name:'Sera',role:'Member',className:'Hexweaver',level:17,online:false,lastOnline:'3 days ago',status:'Away'}];
 const GUILD_TREE_BUFFS:Record<string,{label:string;perTier:number}>={professions:{label:'Skill XP',perTier:2},fellowship:{label:'Guild Quest rewards',perTier:2},vanguard:{label:'Guild PvE contribution',perTier:2}};
@@ -59,23 +67,31 @@ const GUILD_BANK_RESOURCES=[
  {itemId:'TORN_OATHCLOTH',label:'Torn Oathcloth'},
 ] as const;
 const GUILD_PROJECT_COST={MOSS_FIBER:200,GREENWOOD_LOG:120,IRONWOOD_LOG:60,ASTER_IRON_INGOT:20};
-export function GuildScreen({state,onChange,onlineManagement,onlineBoard,onlineProjects,onlinePve,onlineHall,onlineChat,onlineCustomize,onlineChatUnread=0,onlineChatMentions=0,onOpenChat,onRecruitment,online=false,membershipRevision=0,onTokenRewardsChanged,initialPve=false,onInitialPveHandled}:{onOpenChat?:()=>void;onRecruitment?:()=>void;onTokenRewardsChanged?:()=>void|Promise<unknown>;online?:boolean;membershipRevision?:number;state:GameState;onChange:(next:GameState)=>void;onlineManagement?:ReactNode;onlineBoard?:ReactNode;onlineProjects?:ReactNode;onlinePve?:ReactNode;onlineHall?:ReactNode;onlineChat?:ReactNode;onlineCustomize?:ReactNode;onlineChatUnread?:number;onlineChatMentions?:number;initialPve?:boolean;onInitialPveHandled?:()=>void}){
+export function GuildScreen({state,onChange,onlineManagement,onlineBoard,onlineProjects,onlinePve,onlineHall,onlineChat,onlineCustomize,onlineChatUnread=0,onlineChatMentions=0,onOpenChat,onRecruitment,online=false,membershipRevision=0,onTokenRewardsChanged,initialPve=false,onInitialPveHandled,initialNavigation,onNavigationChange}:{initialNavigation?:GuildNavigationState;onNavigationChange?:(state:GuildNavigationState)=>void;onOpenChat?:()=>void;onRecruitment?:()=>void;onTokenRewardsChanged?:()=>void|Promise<unknown>;online?:boolean;membershipRevision?:number;state:GameState;onChange:(next:GameState)=>void;onlineManagement?:ReactNode;onlineBoard?:ReactNode;onlineProjects?:ReactNode;onlinePve?:ReactNode;onlineHall?:ReactNode;onlineChat?:ReactNode;onlineCustomize?:ReactNode;onlineChatUnread?:number;onlineChatMentions?:number;initialPve?:boolean;onInitialPveHandled?:()=>void}){
  const st=useSocialText();
   const language=useGameLanguage();
  const C=useGameTheme(),s=useMemo(()=>makeStyles(C),[C]);
  const {session}=useAuthSession();
-  const [activityView,setActivityView]=useState<'Quests'|'Muster'|'Projects'>('Quests');
+  const [activityView,setActivityView]=useState<'Quests'|'Muster'|'Projects'>(initialNavigation?.activityView??'Quests');
   const [rosterSection,setRosterSection]=useState<'Members'|'Requests'|'Safety'>('Members');
-  const [section,setSection]=useState<GuildSection>(initialPve?'PvE':'Home'),[onlineSection,setOnlineSection]=useState<OnlineGuildSection>(initialPve?'PvE':'Home'),[hallSection,setHallSection]=useState<'Facilities'|'Skills'|'Trophies'|'Shop'>('Facilities');
+  const [section,setSection]=useState<GuildSection>(initialPve?'PvE':'Home'),[onlineSection,setOnlineSection]=useState<OnlineGuildSection>(initialPve?'PvE':initialNavigation?.section??'Home'),[hallSection,setHallSection]=useState<'Facilities'|'Skills'|'Trophies'|'Shop'>(initialNavigation?.hallSection??'Facilities');
   useEffect(()=>{if(initialPve)onInitialPveHandled?.()},[]);
+  // Capture the visible Guild sub-route; never persist privileged Manage/Appearance
+  // or the Chat overlay as a back-history destination.
+  useEffect(()=>{
+   if(!online)return;
+   const safeSection:GuildNavigationState['section']=
+    onlineSection==='Manage'||onlineSection==='Appearance'||onlineSection==='Chat'?'Home':onlineSection;
+   onNavigationChange?.({section:safeSection,activityView,hallSection});
+  },[online,onlineSection,activityView,hallSection,onNavigationChange]);
   const [guildMembership,setGuildMembership]=useState<'loading'|'member'|'none'|'error'>(online?'loading':'member');
   const [guildRole,setGuildRole]=useState<GuildManagementRole|null>(null);
   const canCustomize=canManageGuild(guildRole);
   const [guildLoadError,setGuildLoadError]=useState('');
   const guideIndex=onlineSection==='Activities'?(activityView==='Muster'?2:activityView==='Projects'?4:3):onlineSection==='PvE'?5:onlineSection==='Hall'?6:onlineSection==='Chat'?1:0;
   const guideStep=GUILD_TUTORIAL_STEPS[guideIndex];
-  const guideSection=onlineSection==='Activities'?`Activities/${activityView}`:onlineSection;
-  const guildGuide=onlineSection==='Roster'?{title:'Your Guild roster',body:'Open a member to see their role and activity. Leaders can manage members from the roster.',detail:'Use Home → Members to return here.'}:onlineSection==='Manage'?{title:'Manage your Guild',body:'Recruitment and Guild settings are available to leaders and officers.',detail:'Open Requests to review applications or Guild Appearance for cosmetics.'}:onlineSection==='Appearance'?{title:'Guild appearance',body:'Choose your Guild tag, banner and profile details here.',detail:'Changes are saved separately; review your choices before applying them.'}:{title:guideStep.title,body:guideStep.body,detail:guideStep.tip};
+  const guideSection=onlineSection==='Activities'?`Activities/${activityView}`:onlineSection==='Hall'&&hallSection!=='Facilities'?`Hall/${hallSection}`:onlineSection;
+  const guildGuide=onlineSection==='Hall'?guildHallSectionGuide(language,hallSection):onlineSection==='Roster'?{title:'Your Guild roster',body:'Open a member to see their role and activity. Leaders can manage members from the roster.',detail:'Use Home → Members to return here.'}:onlineSection==='Manage'?{title:'Manage your Guild',body:'Recruitment and Guild settings are available to leaders and officers.',detail:'Open Requests to review applications or Guild Appearance for cosmetics.'}:onlineSection==='Appearance'?{title:'Guild appearance',body:'Choose your Guild tag, banner and profile details here.',detail:'Changes are saved separately; review your choices before applying them.'}:{title:guideStep.title,body:guideStep.body,detail:guideStep.tip};
   const reloadGuildMembership=()=>{
    setGuildMembership('loading');setGuildLoadError('');
    void myGuild().then(membership=>{setGuildRole(membership?.role??null);setGuildMembership(membership?'member':'none')})

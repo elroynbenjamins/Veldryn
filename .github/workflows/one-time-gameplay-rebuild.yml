@@ -35,3 +35,4 @@ jobs:
           git add backend/supabase/functions/gameplay/index.ts
           git commit -m "build: reconcile game-wide gameplay Edge bundle with shared engine"
           git push origin HEAD:feat/gamewide-protection-optimization-pass
+# Retry regeneration after enhanced parity diagnostics.

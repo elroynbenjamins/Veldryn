@@ -1,7 +1,8 @@
 import {useEffect,useMemo,useState} from 'react';
-import {Pressable,StyleSheet,Text,TextInput,View} from 'react-native';
+import {Image,Pressable,StyleSheet,Text,TextInput,View} from 'react-native';
 import {GameButton} from './GameButton';
 import {ResourceArtwork} from './ResourceArtwork';
+import {guildUpgradeComponentArtwork,guildUpgradeComponentName} from '../theme/guild-upgrade-component-art';
 import {Panel} from './Panel';
 import {gameAlert} from '../core/game-alerts';
 import {useGameTheme} from '../theme/ThemeContext';
@@ -12,7 +13,7 @@ import {discardPendingGuildConstructionDonation,donateOnlineGuildConstruction,
 
 function resourceName(key:string){
  if(key==='gold')return 'Gold';
- return key.toLowerCase().split('_').map(word=>word.charAt(0).toUpperCase()+word.slice(1)).join(' ');
+ return guildUpgradeComponentName(key)??key.toLowerCase().split('_').map(word=>word.charAt(0).toUpperCase()+word.slice(1)).join(' ');
 }
 
 /** Server-owned gold/items are deducted only inside the atomic donation RPC.
@@ -99,7 +100,7 @@ export function OnlineGuildConstructionPanel({
       onPress={()=>{setSelected({templateId:template.id,resourceId:res.key});setQuantity(res.key==='gold'?'1000':'100');}}
       style={[s.resource,active&&s.resourceSelected]}>
       <View style={s.head}>
-       {res.key==='gold'?<Text style={[s.resourceName,{color:C.accent}]}>◈</Text>:<ResourceArtwork itemId={res.key} size={28} framed/>}
+       {res.key==='gold'?<Text style={[s.resourceName,{color:C.accent}]}>◈</Text>:guildUpgradeComponentArtwork(res.key)?<Image source={guildUpgradeComponentArtwork(res.key)} style={s.materialIcon} resizeMode="contain" accessible={false}/>:<ResourceArtwork itemId={res.key} size={28} framed/>}
        <Text style={[s.resourceName,{flex:1}]}>{resourceName(res.key)}</Text>
        <Text style={s.resourceAmount}>{amount.toLocaleString()} / {res.required.toLocaleString()}</Text>
       </View>
@@ -136,7 +137,7 @@ function styles(C:ThemeColors){return StyleSheet.create({
  flex:{flex:1},projectName:{fontSize:14,lineHeight:19,color:C.text,fontWeight:'800'},projectMeta:{fontSize:12,lineHeight:17,color:C.info,marginTop:3},
  percent:{fontSize:18,lineHeight:22,color:C.accent,fontWeight:'900'},
  resource:{gap:5,padding:6,borderWidth:1,borderColor:'transparent',borderRadius:8},
- resourceSelected:{borderColor:C.accent},
+ materialIcon:{width:28,height:28},resourceSelected:{borderColor:C.accent},
  resourceName:{fontSize:12,lineHeight:16,color:C.text,fontWeight:'700'},
  resourceAmount:{fontSize:11,color:C.muted},track:{height:5,borderRadius:4,overflow:'hidden',backgroundColor:C.panel},
  fill:{height:'100%',backgroundColor:C.accent},unlock:{color:C.good,fontSize:12,fontWeight:'700'},

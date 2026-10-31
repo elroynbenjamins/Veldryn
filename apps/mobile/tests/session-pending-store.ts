@@ -27,7 +27,7 @@ async function main(){
  await cached.write(null);
  assert(await cached.read()===null&&durableValue===null,'clear is durable and cached');
  const recreated=new SessionPendingStore<string>({read:async()=>{reads++;return durableValue;},write:async value=>{durableValue=value;}});
- assert(await recreated.read()===null&&reads===2,'new account session rechecks durable storage');
+ assert(await recreated.read()===null&&Number(reads)===2,'new account session rechecks durable storage');
  const other=new SessionPendingStore<string>({read:async()=> 'other-account-pending',write:async()=>{}});
  assert(await other.read()==='other-account-pending','different accounts cannot see session cache');
 
@@ -102,7 +102,7 @@ async function main(){
  assert(transportWrites===1&&storageWrites===2,'request receipt stored and cleared durably exactly once');
  assert(!(await repository.hasPending())&&persisted===null&&storageReads===1,'receipt cleared without extra storage read');
  const reopened=new OnlineGameRepository('test-owner',transport,new SessionPendingStore(save),()=> 'reopened-key');
- assert(!(await reopened.hasPending())&&storageReads===2,'new session never uses previous session cache');
+ assert(!(await reopened.hasPending())&&Number(storageReads)===2,'new session never uses previous session cache');
 
  let retryPending:PendingGameCommand|null=null,attempts=0,ids=0;
  const retryStorage=new SessionPendingStore<PendingGameCommand>({
@@ -120,4 +120,4 @@ async function main(){
  assert(!await retryRepo.hasPending()&&attempts===2&&ids===1,'retry consumes original receipt without duplicate keys');
  console.log('PASS session pending receipt cache: singleflight, 40 refreshes with one storage read, persistence, failure recovery, account isolation, stale reads and lost ACK retry');
 }
-void main().catch(error=>{console.error(error);process.exitCode=1;});
+void main().catch(error=>{console.error(error);throw error;});

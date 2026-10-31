@@ -1,4 +1,4 @@
-import {useState} from 'react';
+import {useMemo,useState} from 'react';
 import {Image,Pressable,ScrollView,StyleSheet,Text,View,useWindowDimensions} from 'react-native';
 import {combatCompanionDef} from '../content/combat-companions';
 import {eventBondCandyMaterialUses,EVENT_BOND_CANDY_MATERIAL_CAP} from '../core/live-events';
@@ -21,7 +21,12 @@ export function EventBondCandySelector({
 }){
  const C=useGameTheme(),[open,setOpen]=useState(false),[selectedId,setSelectedId]=useState<string|undefined>();
  const {height}=useWindowDimensions();
- const ownedIds=(state.account.unlockedCombatCompanionIds??[]).filter(id=>!!combatCompanionDef(id));
+ const ownedIds=useMemo(()=>{
+  const ids=(state.account.unlockedCombatCompanionIds??[]).filter(id=>!!combatCompanionDef(id));
+  // Keep eligible Bondbloom bonuses visible before XP-only companions without
+  // changing the user's current selection or the relative order within groups.
+  return ids.sort((a,b)=>Number(eventBondCandyMaterialUses(state,eventId,a)>=EVENT_BOND_CANDY_MATERIAL_CAP)-Number(eventBondCandyMaterialUses(state,eventId,b)>=EVENT_BOND_CANDY_MATERIAL_CAP));
+ },[state.account.unlockedCombatCompanionIds,state.account.eventShopPurchaseCounts,eventId]);
  const equipped=state.character?.equippedCombatCompanionId;
  const targetId=selectedId&&ownedIds.includes(selectedId)?selectedId:equipped&&ownedIds.includes(equipped)?equipped:ownedIds[0];
  const target=targetId?combatCompanionDef(targetId):undefined;

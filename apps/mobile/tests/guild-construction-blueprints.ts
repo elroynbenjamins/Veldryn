@@ -1,4 +1,4 @@
-import {GUILD_COMMISSION_ITEMS,GUILD_COMMISSION_RECIPES} from '../src/content/guild-commissions';
+import {GUILD_COMMISSION_ITEMS,GUILD_COMMISSION_RECIPES,GUILD_COMMISSION_RECIPES_RELEASED} from '../src/content/guild-commissions';
 import {GUILD_CONSTRUCTION_BLUEPRINTS} from '../src/content/guild-construction-blueprints';
 import {itemDef} from '../src/content/items';
 import {recipeDef} from '../src/content/skills';
@@ -12,6 +12,7 @@ const original=[
 ];
 check(GUILD_COMMISSION_ITEMS.length===10,'Expected exactly 10 commission outputs');
 check(GUILD_COMMISSION_RECIPES.length===10,'Expected one timed recipe per output');
+check(!GUILD_COMMISSION_RECIPES_RELEASED,'Guild commission crafting must stay disabled until construction rewards are live');
 const ids=new Set(GUILD_COMMISSION_ITEMS.map(item=>item.id));
 check(ids.size===10,'Guild item IDs must be unique');
 for(const item of GUILD_COMMISSION_ITEMS){
@@ -19,7 +20,7 @@ for(const item of GUILD_COMMISSION_ITEMS){
  check(itemDef(item.id)===item,'Guild item must be registered in the shared catalog');
 }
 for(const recipe of GUILD_COMMISSION_RECIPES){
- check(recipeDef(recipe.id)===recipe,'Guild recipe must be included in the normal profession catalog');
+ check(recipeDef(recipe.id)===(GUILD_COMMISSION_RECIPES_RELEASED?recipe:undefined),'Guild recipe must obey the release gate');
  check(ids.has(recipe.output.itemId)&&recipe.output.quantity===1,'Output must be exactly one guild component');
  check(recipe.repeatableTraining&&(recipe.skillId==='smithing'||recipe.skillId==='tailoring'),'Must be a profession training recipe');
  check(recipe.inputs.length>0&&recipe.inputs.every(input=>input.quantity>0&&itemDef(input.itemId)),'Every ingredient must be an existing item');

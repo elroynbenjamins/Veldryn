@@ -1,5 +1,6 @@
 import type {ClassId} from '../core/types';
 import {NOVICE_RECIPES} from './novice-sets';
+import {GUILD_COMPONENT_RECIPES,GUILD_COMPONENT_CRAFTING_RELEASED} from './guild-components';
 import {TOOL_RECIPES} from './gathering-tools';
 import {ALCHEMY_RECIPES} from './alchemy';
 import {V33_EQUIPMENT_RECIPES} from './equipment-recipes-v33';
@@ -45,6 +46,7 @@ export const GATHERING:GatherDef[]=([
 
 export interface Recipe{id:string;name:string;skillId:'smithing'|'cooking'|'alchemy'|'tailoring'|'enchanting';level:number;xp:number;gold:number;seconds:number;repeatableTraining?:boolean;inputs:{itemId:string;quantity:number}[];output:{itemId:string;quantity:number};classId?:ClassId;noviceSetId?:string;characterLevel?:number;requiresCraftedItemId?:string;requiredKnowledgeId?:string;knowledgeItemId?:string;v33EquipmentTier?:string;v33Region?:string;v33SetId?:string;v33Path?:string;}
 export const RECIPES:Recipe[]=[
+...(GUILD_COMPONENT_CRAFTING_RELEASED?GUILD_COMPONENT_RECIPES:[]),
 ...ALCHEMY_RECIPES as Recipe[],
 ...NOVICE_RECIPES,
 // Keep the full catalog authoritative for crafting, progression, and save

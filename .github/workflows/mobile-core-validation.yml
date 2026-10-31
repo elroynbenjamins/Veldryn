@@ -87,3 +87,5 @@ jobs:
         run: pnpm test:coop-composition
       - name: Run online gameplay and seasonal expedition transport validation
         run: pnpm --dir ../../backend test:event-expedition-online && node ../../backend/dist/online/backend/online/tests/gameplay.js
+      - name: Profile synthetic multi-account contention and account isolation
+        run: node ../../backend/dist/online/backend/online/tests/gameplay-load.js

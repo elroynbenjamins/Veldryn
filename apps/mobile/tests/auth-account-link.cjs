@@ -11,7 +11,7 @@ const verified=()=>({...guest(),email:'aster@example.test',is_anonymous:false,em
 const token=user=>`header.${Buffer.from(JSON.stringify({is_anonymous:Boolean(user.is_anonymous),email:user.email||''})).toString('base64url')}.signature`;
 const sessionFor=user=>({access_token:token(user),refresh_token:'test-refresh',user:copy(user)});
 function fixture(initial=guest()){
- const f={server:copy(initial),session:sessionFor(initial),writes:[],refreshes:0,resends:0,signups:0,exchanges:0,googleLinks:0,readFailure:null,writeFailure:null,refreshFailure:null};
+ const f={server:copy(initial),session:sessionFor(initial),writes:[],refreshes:0,resends:0,signups:0,exchanges:0,googleLinks:0,googlePickerCalls:0,identityReads:0,identityFailure:null,linkFailure:null,onGoogleIdentity:null,readFailure:null,writeFailure:null,refreshFailure:null};
  const auth={
   getSession:async()=>({data:{session:f.session},error:null}),
   getUser:async()=>({data:{user:copy(f.server)},error:f.readFailure}),
@@ -23,15 +23,16 @@ function fixture(initial=guest()){
    f.session={...f.session,user:copy(f.server)};
    return {data:{user:copy(f.server)},error:null};
   },
-  refreshSession:async()=>{f.refreshes++;if(f.refreshFailure)return {data:{session:null},error:f.refreshFailure};f.session=sessionFor(f.server);return {data:{session:f.session},error:null};},
+  refreshSession:async()=>{f.refreshes++;if(f.refreshFailure)return {data:{session:null},error:f.refreshFailure};f.session=sessionFor(f.server);return {data:{session:f.session,user:copy(f.server)},error:null};},
   resend:async()=>{f.resends++;return {error:null};},
   signUp:async()=>{f.signups++;throw Error('Unexpected account creation');},
   exchangeCodeForSession:async()=>{f.exchanges++;return {error:null};},
-  linkIdentity:async credentials=>{f.googleLinks++;assert.equal(credentials.provider,'google');assert.ok(credentials.token);f.server={...f.server,is_anonymous:false,email:'google@example.test',email_confirmed_at:'2026-10-06T08:00:00Z',identities:[{provider:'google'}]};f.session=sessionFor(f.server);return {data:{user:copy(f.server)},error:null};},
+  getUserIdentities:async()=>{f.identityReads++;return {data:{identities:copy(f.server.identities??[])},error:f.identityFailure};},
+  linkIdentity:async credentials=>{f.googleLinks++;if(f.linkFailure)return {data:{user:null},error:f.linkFailure};assert.equal(credentials.provider,'google');assert.ok(credentials.token);f.server={...f.server,is_anonymous:false,email:'google@example.test',email_confirmed_at:'2026-10-06T08:00:00Z',identities:[{provider:'google'}]};f.session=sessionFor(f.server);return {data:{user:copy(f.server)},error:null};},
   signInWithIdToken:async()=>{throw Error('Existing guest must link rather than replace its identity');},
  };
  const client={auth,from:()=>{throw Error('Account linking must not depend on a profile write');}};
- f.api=load('online/account.ts',{'expo-linking':{createURL:()=> 'veldryn://auth'},'./supabase':{supabase:client},'./google-signin':{requestNativeGoogleIdentity:async()=>({idToken:'google-id-token',email:'google@example.test',displayName:'Google Aster'})},'../core/auth-callback':callback,'../core/auth-account-link':link});
+ f.api=load('online/account.ts',{'expo-linking':{createURL:()=> 'veldryn://auth'},'./supabase':{supabase:client},'./google-signin':{requestNativeGoogleIdentity:async()=>{f.googlePickerCalls++;if(f.onGoogleIdentity)await f.onGoogleIdentity();return {idToken:'google-id-token',email:'google@example.test',displayName:'Google Aster'};}},'../core/auth-callback':callback,'../core/auth-account-link':link});
  return f;
 }
 function deferred(){let resolve,reject;const promise=new Promise((yes,no)=>{resolve=yes;reject=no;});return {promise,resolve,reject};}
@@ -138,6 +139,29 @@ function deferred(){let resolve,reject;const promise=new Promise((yes,no)=>{reso
  assert.equal(googleUser.is_anonymous,false);assert.equal(googleUser.email,'google@example.test');
  assert.equal(googleGuest.refreshes,1,'Google linking refreshes the same VELDRYN session');
  assert.equal(googleGuest.session.user.id,'guest-a','Google linking preserves the guest UUID/progress owner');checks++;
+
+ assert.equal((await googleGuest.api.inspectGoogleAccountConnection('guest-a')).status,'linked','Google account connection uses fresh Supabase identities, not Play Games');checks++;
+
+ const existingGoogle=fixture({...verified(),identities:[{provider:'google'}]});
+ const already=await existingGoogle.api.signInOrLinkGoogle();
+ assert.equal(already.id,'guest-a');assert.equal(existingGoogle.googlePickerCalls,0,'already-linked Google account does not reopen the picker');
+ assert.equal(existingGoogle.googleLinks,0,'already-linked Google account does not issue a duplicate mutation');checks++;
+
+ const noGoogle=fixture();
+ assert.equal((await noGoogle.api.inspectGoogleAccountConnection('guest-a')).status,'not_linked');
+ assert.equal((await noGoogle.api.inspectGoogleAccountConnection('other-user')).status,'error','status never leaks across VELDRYN accounts');
+ noGoogle.identityFailure=Error('temporary network error');
+ assert.equal((await noGoogle.api.inspectGoogleAccountConnection('guest-a')).status,'error','unavailable status is not mistaken for unlinked');checks++;
+
+ const alreadyUsed=fixture();alreadyUsed.linkFailure=Object.assign(Error('identity already exists'),{code:'identity_already_exists'});
+ await assert.rejects(()=>alreadyUsed.api.signInOrLinkGoogle(),/another VELDRYN account/);
+ assert.equal(alreadyUsed.session.user.id,'guest-a','an identity conflict cannot replace existing progress');checks++;
+
+ const changedDuringPicker=fixture();changedDuringPicker.onGoogleIdentity=async()=>{
+  changedDuringPicker.session=sessionFor({...verified(),id:'different-user'});
+ };
+ await assert.rejects(()=>changedDuringPicker.api.signInOrLinkGoogle(),/account changed/);
+ assert.equal(changedDuringPicker.googleLinks,0,'account switch during Google picker must stop linking');checks++;
 
  const codeLess=fixture();codeLess.server=verified();
  await codeLess.api.completeMagicLink('veldryn://auth');assert.equal(codeLess.exchanges,0);

@@ -66,12 +66,14 @@ function makeHarness({user = null, recovering = false} = {}) {
     finishGuestAccount: async (...args) => {calls.password.push(args);},
     updateAccountPassword: async (...args) => {calls.password.push(args);if(behavior.passwordError)throw behavior.passwordError;if(behavior.passwordPending)await behavior.passwordPending;if(auth.session?.user.id===args[1])auth.session={...auth.session,user:{...auth.session.user,user_metadata:{...auth.session.user.user_metadata,[PASSWORD_PENDING]:false}}};},
     requestPasswordRecovery: async () => {}, sendMagicLink: async () => {},
+    inspectGoogleAccountConnection: async id => auth.session?.user.id===id ? {status:auth.session.user.identities?.some(identity=>identity.provider==='google')?'linked':'not_linked'} : {status:'error',message:'Account changed.'},
   };
   const mocks = new Map([
     ['react', React], ['react-native', native],
     ['react-native-safe-area-context', {useSafeAreaInsets: () => ({top: 0, right: 0, bottom: 0, left: 0})}],
     [path.join(app, 'src/online/AuthSessionProvider'), {useAuthSession: () => ({...auth})}],
     [path.join(app, 'src/online/account'), api],
+    [path.join(app, 'src/online/play-games'), {inspectPlayGamesConnection: async () => ({status:'unavailable',reason:'configuration',message:'Not configured in test build.'}),signInPlayGames: async () => ({authenticated:false}),playGamesConfigured:false}],
     [path.join(app, 'src/online/supabase'), {onlineConfigured: true}],
     [path.join(app, 'src/online/gameplay'), {serverGameplayEnabled: true}],
     [path.join(app, 'src/theme/ThemeContext'), {useGameTheme: () => theme}],

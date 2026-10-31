@@ -109,6 +109,30 @@ export async function signInWithPassword(email:string,password:string){
  });
 }
 
+export type GoogleAccountConnection=
+ |{status:'linked'}
+ |{status:'not_linked'}
+ |{status:'unavailable';message:string}
+ |{status:'error';message:string};
+
+/** Server-authoritative identity status, independent from Google Play Games.
+ * This is safe for the Account UI to read without opening any sign-in prompt. */
+export async function inspectGoogleAccountConnection(accountId:string):Promise<GoogleAccountConnection>{
+ if(!supabase)return {status:'unavailable',message:'Online accounts are not configured in this build.'};
+ if(!accountId)return {status:'unavailable',message:'Sign in to VELDRYN to link Google.'};
+ try{
+  const before=await currentSession();
+  if(!before||before.user.id!==accountId)return {status:'error',message:'Your signed-in account changed. Reopen Account and try again.'};
+  const {data,error}=await supabase.auth.getUserIdentities();
+  if(error)accountFailure(error);
+  const after=await currentSession();
+  if(!after||after.user.id!==accountId)return {status:'error',message:'Your signed-in account changed. Reopen Account and try again.'};
+  return {status:data.identities.some(item=>item.provider==='google')?'linked':'not_linked'};
+ }catch(error){
+  return {status:'error',message:error instanceof Error?error.message:'Unable to check the Google account link.'};
+ }
+}
+
 /**
  * Native Android Google sign-in. With no VELDRYN session this opens the Google
  * account. With an existing guest/email session it links Google to that exact
@@ -118,18 +142,30 @@ export async function signInOrLinkGoogle(){
  return mutateAccount(async()=>{
   const client=supabase;if(!client)throw new Error('Online services are not configured in this build.');
   const before=await currentSession();
+  if(before){
+   // A fresh server identity read avoids relying on an outdated session snapshot.
+   // Check *before* opening Google's picker when the identity is already linked.
+   const {data:existing,error:identityError}=await client.auth.getUserIdentities();
+   if(identityError)accountFailure(identityError);
+   const latest=await currentSession();
+   if(!latest||latest.user.id!==before.user.id)throw new Error('Your signed-in account changed. Reopen Account and try again.');
+   if(existing.identities.some(item=>item.provider==='google'))return latest.user;
+  }
   const {requestNativeGoogleIdentity}=await import('./google-signin');
   const identity=await requestNativeGoogleIdentity();
   if(before){
    const latest=await currentSession();
    if(!latest||latest.user.id!==before.user.id)throw new Error('Your signed-in account changed. Reopen Account and try again.');
-   const alreadyLinked=latest.user.identities?.some(item=>item.provider==='google');
-   if(alreadyLinked)return latest.user;
-   const {data,error}=await client.auth.linkIdentity({provider:'google',token:identity.idToken});
+   const {error}=await client.auth.linkIdentity({provider:'google',token:identity.idToken});
    if(error)accountFailure(error);
+   // The link writes to the existing Supabase UUID. Never sign in as another
+   // Google user, create a replacement account, or silently merge progress.
    const refreshed=await client.auth.refreshSession();
    if(refreshed.error)throw refreshed.error;
-   return refreshed.data.user??data.user;
+   const after=await currentSession();
+   if(!after||after.user.id!==before.user.id||refreshed.data.user?.id!==before.user.id)
+    throw new Error('Google link verification could not confirm your original VELDRYN account. Reopen Account and check the connection before signing out.');
+   return refreshed.data.user;
   }
   const {data,error}=await client.auth.signInWithIdToken({provider:'google',token:identity.idToken});
   if(error)accountFailure(error);

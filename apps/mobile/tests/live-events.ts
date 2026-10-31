@@ -5,7 +5,7 @@ import {unlockCombatCompanion} from '../src/core/combat-companions';
 import {canUseProfileCosmetic,profileCosmeticReleased} from '../src/core/profile-cosmetics';
 import {profileRewardSource} from '../src/core/profile-customization';
 import {executeGameCommand} from '../src/core/game-commands';
-import {canAnnounceLiveEventStart,acceptEventContract,activeLiveEvent,applyEventDiscoveries,applyEventDrops,chooseEventProject,claimAllEventMilestones,claimEventDailyGift,claimEventDiscovery,claimEventReward,consumeEventCandy,availableEventRepeatCaches,eventCandyStatus,eventCollectionJournal,eventContractBoard,eventDailyGift,eventEffectiveDropRate,eventLifecycle,eventPrestigeBalance,eventProgress,eventRewardClaimed,eventShopOffers,purchaseEventOffer,setLocalEventEnabled} from '../src/core/live-events';
+import {EVENT_BOND_CANDY_MATERIAL_CAP,eventBondCandyMaterialUses,canAnnounceLiveEventStart,acceptEventContract,activeLiveEvent,applyEventDiscoveries,applyEventDrops,chooseEventProject,claimAllEventMilestones,claimEventDailyGift,claimEventDiscovery,claimEventReward,consumeEventCandy,availableEventRepeatCaches,eventCandyStatus,eventCollectionJournal,eventContractBoard,eventDailyGift,eventEffectiveDropRate,eventLifecycle,eventPrestigeBalance,eventProgress,eventRewardClaimed,eventShopOffers,purchaseEventOffer,setLocalEventEnabled} from '../src/core/live-events';
 
 function ok(condition:boolean,message:string){if(!condition)throw new Error(message);}
 
@@ -48,6 +48,33 @@ state=executeGameCommand(state,{type:'event_candy',args:{kind:'companion',compan
 ok(state.account.eventCandyChargesById?.[`${eventId}:candy:companion`]===0,'Candy can be used on an owned but unequipped companion');
 let unownedRejected=false;try{executeGameCommand({...state,account:{...state.account,eventCandyChargesById:{...state.account.eventCandyChargesById,[`${eventId}:candy:companion`]:1}}},{type:'event_candy',args:{kind:'companion',companionId:'NOT_OWNED'}},t0)}catch{unownedRejected=true}
 ok(unownedRejected,'Candy must reject unowned companion targets');
+
+// Bond Candy awards five event materials PER owned companion; additional charges remain useful for XP.
+const secondCandyCompanionId=COMBAT_COMPANIONS[1].id;
+state=unlockCombatCompanion(state,secondCandyCompanionId,t0);
+const bondCandyId=eventId+':candy:companion';
+const bondMaterialKey=eventId+':candy:companion_material';
+state={...state,account:{...state.account,
+ eventShopPurchaseCounts:{...state.account.eventShopPurchaseCounts,[bondMaterialKey]:5},
+ eventCandyChargesById:{...state.account.eventCandyChargesById,[bondCandyId]:14},
+}};
+ok(EVENT_BOND_CANDY_MATERIAL_CAP===5,'Each owned companion has five bonus material claims per event');
+ok(eventBondCandyMaterialUses(state,eventId,candyCompanionId)===1,'Initial selected companion receives the first bonus material');
+const firstBonusBefore=state.account.companionMaterials?.EVENT_BONDBLOOM??0;
+for(let i=0;i<4;i++)state=consumeEventCandy(state,t0+i+1,'companion',candyCompanionId);
+ok(eventBondCandyMaterialUses(state,eventId,candyCompanionId)===5,'First companion reaches 5/5 bonus claims');
+ok((state.account.companionMaterials?.EVENT_BONDBLOOM??0)===firstBonusBefore+4,'Each of first five companion uses awards one bonus material');
+const xpOnlyChargesBefore=state.account.eventCandyChargesById?.[bondCandyId]??0;
+const xpOnlyMaterialsBefore=state.account.companionMaterials?.EVENT_BONDBLOOM??0;
+state=consumeEventCandy(state,t0+6,'companion',candyCompanionId);
+ok((state.account.eventCandyChargesById?.[bondCandyId]??0)===xpOnlyChargesBefore-1,'XP-only use must still consume exactly one candy');
+ok((state.account.companionMaterials?.EVENT_BONDBLOOM??0)===xpOnlyMaterialsBefore,'XP-only use cannot create extra Bondbloom after 5/5');
+ok(eventBondCandyMaterialUses(state,eventId,candyCompanionId)===5,'XP-only uses do not increase capped material counter');
+for(let i=0;i<5;i++)state=consumeEventCandy(state,t0+7+i,'companion',secondCandyCompanionId);
+ok(eventBondCandyMaterialUses(state,eventId,secondCandyCompanionId)===5,'Different owned companion has its own 5/5 material cap');
+ok((state.account.companionMaterials?.EVENT_BONDBLOOM??0)===xpOnlyMaterialsBefore+5,'Switching companions earns independent bonus materials');
+ok((state.account.eventShopPurchaseCounts?.[bondMaterialKey]??0)===5,'Legacy event-wide count remains intact without being reused as per-companion history');
+
 
 state=applyEventDiscoveries(state,[{eventId,discoveryId:'gloam_cinder',name:'Gloam Cinder',quantity:5}]);
 state=claimEventDiscovery(state,'gloam_cinder',t0);

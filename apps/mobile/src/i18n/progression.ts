@@ -3,6 +3,10 @@ import {createTranslator} from './translator';
 
 // English source copy is the key. Proper names and player-authored text are never keys.
 export const progressionTranslationRows = {
+  "All milestones":["Alle Meilensteine","Todos los hitos","Alle mijlpalen","Tutti i traguardi","Tous les jalons"],
+  "Milestone type":["Meilensteintyp","Tipo de hito","Type mijlpaal","Tipo di traguardo","Type de jalon"],
+  "No matching milestones":["Keine passenden Meilensteine","No hay hitos coincidentes","Geen passende mijlpalen","Nessun traguardo corrispondente","Aucun jalon correspondant"],
+
  // Compact Journal and Mastery Hall presentation.
  "categories":["Kategorien","categorías","categorieën","categorie","catégories"],
  "Personal Records":["Persönliche Rekorde","Récords personales","Persoonlijke records","Record personali","Records personnels"],

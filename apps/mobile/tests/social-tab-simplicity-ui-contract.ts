@@ -75,7 +75,7 @@ ok(gameGuide.includes("id:'parties'")&&gameGuide.includes("earlyFeatureUnlocked(
 ok(gameGuide.includes("unlockHint:`Reach Level ${PARTY_UNLOCK_LEVEL}`"),'Party Game Guide must give the real unlock level');
 ok(gameGuide.includes("unlockHint:`Reach Level ${GUILD_UNLOCK_LEVEL}`"),'Guild Game Guide must not suggest the obsolete Level 10 gate');
 ok(gameGuide.includes('Party Chat appears only when you join a Party.'),'Game Guide must describe conditional Chat visibility');
-ok(gameGuide.includes('Dungeon matchmaking team')||gameGuide.includes('dungeon matchmaking team'),'Dungeon guidance must distinguish matchmaking from persistent Parties');
+ok(gameGuide.includes('persistent Social Party')&&gameGuide.includes('1 Tank, 2 Damage and 1 Support'),'Dungeon guidance must distinguish Live matchmaking from persistent Social Parties');
 ok(gameGuidePanel.includes('const ready=GAME_GUIDE.filter')&&gameGuidePanel.includes('showLocked?locked.map'),'Available Game Guides must appear first; locked topics should remain collapsed until requested');
 ok(guildTutorial.includes('Guild Home → Members')&&!guildTutorial.includes('More → Roster'),'Guild tour must navigate via the current Guild Home shortcut');
 ok(guildTutorial.includes('Hall → Shop')&&!guildTutorial.includes('More → Shop'),'Guild shop guidance must point to Hall, not the old More menu');

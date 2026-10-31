@@ -43,7 +43,7 @@ import {rememberScreen,returnToPreviousScreen,type ScreenHistoryEntry} from './s
 import {redeemCode} from './src/online/redeem-code';
 import {MoreScreen,type MoreDestination} from './src/screens/MoreScreen';
 import {AdminQaScreen} from './src/screens/AdminQaScreen';
-import {GuildScreen} from './src/screens/GuildScreen';
+import {GuildScreen,type GuildNavigationState} from './src/screens/GuildScreen';
 import {FriendsScreen} from './src/screens/FriendsScreen';
 import {EventScreen} from './src/screens/EventScreen';
 import {EventStartPopup} from './src/components/EventStartPopup';
@@ -205,6 +205,10 @@ function VeldrynApp(){
   const [pendingGoalDestination,setPendingGoalDestination]=useState<WorkingTowardDestination|undefined>();
   const inventoryViews=useRef<Record<string,InventoryScreenState>>({});
   const companionNavigationMemory=useRef<{characterId:string;context:CompanionNavigationState}|null>(null);
+  const guildNavigationMemory=useRef<{scope:string;context:GuildNavigationState}|null>(null);
+  // Back history is session-only; never carry another character's routes and
+  // selections into a switched character or a newly signed-in account.
+  useEffect(()=>{setTabHistory([]);},[auth.session?.user.id,state?.character?.id]);
   const [inventoryFoodRequest,setInventoryFoodRequest]=useState(0);
   const [inventoryFoodScope,setInventoryFoodScope]=useState('');
   const [now,setNow]=useState(Date.now());
@@ -364,7 +368,7 @@ function VeldrynApp(){
   const navigationContext=useMemo<NavigationContext>(()=>({
     skillsMode,selectedSkill,goalActionId,goalRecipeId,questMode,questFocusOrderId,
     settingsSection,socialInitialTab,profileCustomizeSection,goalMonsterId,goalRegionId,goalDungeonId,
-  }),[skillsMode,selectedSkill,goalActionId,goalRecipeId,questMode,questFocusOrderId,settingsSection,socialInitialTab,profileCustomizeSection,goalMonsterId,goalRegionId]);
+  }),[skillsMode,selectedSkill,goalActionId,goalRecipeId,questMode,questFocusOrderId,settingsSection,socialInitialTab,profileCustomizeSection,goalMonsterId,goalRegionId,goalDungeonId]);
   const setTab=useCallback((destination:Tab)=>{
     // Re-selecting Skills opens its hub now that detail pages have no redundant back button.
     if(destination===tab){
@@ -784,7 +788,10 @@ const next=normalizeProfileIcon(migrateGemPouch(candidate));queuePreparationNoti
     {tab==='Friends'&&<FriendsScreen onNotificationsChanged={()=>void refreshSocialNotifications()}/>}
     {(tab==='Social'||tab==='Party')&&<SocialScreen initialTab={socialInitialTab} onTabChange={setSocialInitialTab} characterLevel={state.character?.level??0} partyUnlocked={earlyFeatureUnlocked(state,'party')} onGuild={()=>setTab('Guild')} onAccount={()=>setTab('Settings')} onInvitationsChanged={()=>void refreshSocialNotifications()}/>}
     {tab==='Events'&&<EventScreen state={state} onChange={commit} onCommand={serverGameplayEnabled?command=>perform(command,false).then(Boolean):undefined} authoritativeGuildPve={serverGameplayEnabled} onOpenEventActivity={source=>{if(source==='combat'){setTab('Combat');return;}setSelectedSkill(undefined);setSkillsMode(source==='gathering'?'gathering':'crafting');setTab('Skills')}} onOpenGuildEventBoss={()=>{setGuildInitialPve(true);setTab('Guild')}} onOpenSeasonalExpedition={coopOnlineConfigured?liveEventId=>{setPendingEventLiveId(liveEventId);setTab('Coop')}:undefined}/>}
-    {tab==='Guild'&&<GuildScreen onOpenChat={()=>{setChatInitialChannel('guild');setShowChatOverlay(true)}} onRecruitment={()=>{setSocialInitialTab('guild');setTab('Social')}} online={serverGameplayEnabled} membershipRevision={guildMembershipRevision} state={state} onChange={commit} initialPve={guildInitialPve} onInitialPveHandled={()=>setGuildInitialPve(false)} onlineManagement={<OnlineGuildManagement onApplicationsChanged={()=>{void refreshSocialNotifications();setGuildMembershipRevision(value=>value+1)}}/>} onlineBoard={<OnlineGuildNoticeBoardPanel/>} onlineProjects={<OnlineGuildProjectsPanel onRewardsChanged={()=>online.refresh()} onNavigateActivity={activity=>{
+    {tab==='Guild'&&<GuildScreen
+      initialNavigation={!guildInitialPve&&guildNavigationMemory.current?.scope===(auth.session?.user.id??state.character.id)+':'+guildMembershipRevision?guildNavigationMemory.current.context:undefined}
+      onNavigationChange={context=>{guildNavigationMemory.current={scope:(auth.session?.user.id??state.character?.id??'')+':'+guildMembershipRevision,context};}}
+      onOpenChat={()=>{setChatInitialChannel('guild');setShowChatOverlay(true)}} onRecruitment={()=>{setSocialInitialTab('guild');setTab('Social')}} online={serverGameplayEnabled} membershipRevision={guildMembershipRevision} state={state} onChange={commit} initialPve={guildInitialPve} onInitialPveHandled={()=>setGuildInitialPve(false)} onlineManagement={<OnlineGuildManagement onApplicationsChanged={()=>{void refreshSocialNotifications();setGuildMembershipRevision(value=>value+1)}}/>} onlineBoard={<OnlineGuildNoticeBoardPanel/>} onlineProjects={<OnlineGuildProjectsPanel onRewardsChanged={()=>online.refresh()} onNavigateActivity={activity=>{
   if(activity==='combat'){setTab('Combat');return;}
   setSelectedSkill(activity==='gathering'?'regional-gathering':undefined);
   setSkillsMode(activity==='gathering'?'gathering':'crafting');

@@ -1,5 +1,5 @@
-import {useCallback,useEffect,useRef,useState} from 'react';
-import {Image,Pressable,ScrollView,Text,View} from 'react-native';
+import {useCallback,useEffect,useMemo,useRef,useState} from 'react';
+import {Image,Pressable,ScrollView,StyleSheet,Text,View} from 'react-native';
 import type {GameState} from '../core/types';
 import {eventInboxRewards} from '../core/live-events';
 import {liveEventDef} from '../content/live-events';
@@ -10,9 +10,10 @@ import {SocialActionButton} from '../components/SocialActionButton';
 import {ResourceIcon} from '../components/ResourceIcon';
 import {UiIcon} from '../components/UiIcon';
 import {LoadingState} from '../components/LoadingState';
+import {radii,spacing,typography,type ThemeColors} from '../theme/theme';
 
 export function RewardsInboxScreen({state,online,onRefresh,onEventClaim,preview}:{state:GameState;online:boolean;onRefresh:()=>Promise<unknown>;onEventClaim:(id:string)=>Promise<unknown>;preview?:InboxSnapshot}){
- const C=useGameTheme(),[history,setHistory]=useState(false),[snapshot,setSnapshot]=useState<InboxSnapshot>(preview??{entries:[],pendingCount:0,total:0}),[loading,setLoading]=useState(false),[busy,setBusy]=useState(false),[error,setError]=useState(''),[notice,setNotice]=useState('');
+ const C=useGameTheme(),s=useMemo(()=>makeStyles(C),[C]),[expandedId,setExpandedId]=useState<string|null>(null),[history,setHistory]=useState(false),[snapshot,setSnapshot]=useState<InboxSnapshot>(preview??{entries:[],pendingCount:0,total:0}),[loading,setLoading]=useState(false),[busy,setBusy]=useState(false),[error,setError]=useState(''),[notice,setNotice]=useState('');
  const running=useRef(false),generation=useRef(0);
  const load=useCallback(async(append=false)=>{const token=++generation.current;if(preview)return;if(!online){setError('Sign in to receive rewards and gifts.');return;}setLoading(true);try{const next=await loadRewardInbox(history,append?snapshot.entries.length:0);if(token===generation.current){setSnapshot(previous=>({...next,entries:append?[...previous.entries,...next.entries]:next.entries}));setError('');}}catch(e){if(token===generation.current)setError(e instanceof Error?e.message:'Inbox unavailable.');}finally{if(token===generation.current)setLoading(false);}},[history,online,preview,snapshot.entries.length]);
  useEffect(()=>{void load();return()=>{generation.current++;};},[history,online,preview]);
@@ -30,21 +31,43 @@ export function RewardsInboxScreen({state,online,onRefresh,onEventClaim,preview}
   }
   await onRefresh();await load();
  }catch(e){const message=e instanceof Error?e.message:'Could not claim. Your rewards remain safe.';await load();setError(message);}finally{running.current=false;setBusy(false);}};
- return <ScrollView contentContainerStyle={{padding:18,gap:18,maxWidth:620,width:'100%',alignSelf:'center',paddingBottom:32}} showsVerticalScrollIndicator={false} showsHorizontalScrollIndicator={false}>
-  <View style={{gap:7}}><UiIcon name="rewards" size={32}/><Text style={{fontSize:11,letterSpacing:1.6,color:C.good}}>YOUR REWARDS</Text><Text accessibilityRole="header" style={{fontSize:30,lineHeight:36,fontWeight:'600',color:C.text}}>A little something for you.</Text><Text style={{fontSize:14,lineHeight:21,color:C.muted}}>Earned rewards and gifts, kept safe until you claim them.</Text></View>
-  <View style={{flexDirection:'row',gap:8}}>{[false,true].map(value=><Pressable key={String(value)} accessibilityRole="tab" accessibilityState={{selected:history===value,disabled:busy}} disabled={busy} onPress={()=>{if(!preview)setSnapshot({entries:[],pendingCount:snapshot.pendingCount,total:0});setHistory(value);setNotice('');}} style={{flex:1,minHeight:46,alignItems:'center',justifyContent:'center',borderRadius:10,backgroundColor:history===value?C.goodSurface:C.panel}}><Text style={{fontSize:14,color:history===value?C.good:C.muted}}>{value?'Claimed history':`Inbox${pending?' · '+pending:''}`}</Text></Pressable>)}</View>
-  {!history&&pending>0&&<SocialActionButton primary label="Claim all" busy={busy} disabled={!online&&!preview} onPress={()=>run()}/>}
-  {!!error&&<View accessibilityRole="alert" style={{gap:8}}><Text style={{color:C.warning,fontSize:13}}>{error}</Text><SocialActionButton label="Retry" disabled={busy} onPress={()=>load()}/></View>}
-  {!!notice&&<Text accessibilityRole="alert" style={{color:C.good,fontSize:13,lineHeight:20}}>{notice}</Text>}
-  {rows.map(row=><View key={row.id} style={{backgroundColor:C.panel,borderWidth:1,borderColor:C.line,borderRadius:16,padding:16,gap:13}}>
-   <View style={{flexDirection:'row',alignItems:'center',gap:10}}><UiIcon name={row.source==='gift'?'rewards':row.source==='guild'?'guild':'quests'} size={30}/><View style={{flex:1,gap:4}}><Text style={{fontSize:10,letterSpacing:1,color:C.good}}>{row.source==='gift'?'A GIFT FROM VELDRYN':row.source.toUpperCase()+' REWARD'}</Text><Text style={{fontSize:18,lineHeight:24,color:C.text,fontWeight:'600'}}>{row.title}</Text></View></View>
-   {!!row.body&&<Text style={{color:C.muted,fontSize:13,lineHeight:20}}>{row.body}</Text>}
-   <View style={{gap:8}}>{row.attachments.map(a=><View key={a.resourceId} style={{flexDirection:'row',alignItems:'center',gap:12,padding:11,borderRadius:10,backgroundColor:C.panel2}}><InboxArtwork attachment={a}/><Text style={{flex:1,color:C.text,fontSize:14}}>{a.name}</Text><Text style={{color:C.text,fontWeight:'600',fontSize:16}}>{a.quantity.toLocaleString()}</Text></View>)}</View>
-   {row.claimedAt?<Text style={{fontSize:12,color:C.good}}>✓ Claimed{row.claimedAt!=='claimed'?' · '+new Date(row.claimedAt).toLocaleDateString():''}</Text>:<SocialActionButton label="Claim reward" disabled={busy||(!online&&!preview)} onPress={()=>run(row.id)}/>}
-  </View>)}
-  {loading&&<LoadingState compact label="Loading rewards…"/>}
-  {!loading&&!rows.length&&!error&&<View style={{paddingVertical:36,alignItems:'center',gap:12}}><UiIcon name="rewards" size={48}/><Text style={{fontSize:20,color:C.text}}>{history?'Your claimed rewards will appear here.':'You’re all caught up.'}</Text><Text style={{color:C.muted,textAlign:'center',lineHeight:21}}>Only earned rewards appear here. No need to rush before a reset.</Text></View>}
-  {snapshot.entries.length<snapshot.total&&<SocialActionButton label="Load more" disabled={loading||busy} onPress={()=>load(true)}/>}
+
+ return <ScrollView contentContainerStyle={s.root} showsVerticalScrollIndicator={false} showsHorizontalScrollIndicator={false}>
+  <View style={s.header}>
+    <View style={s.headTitle}><UiIcon name="rewards" size={26}/><Text accessibilityRole="header" style={s.heading}>Rewards Inbox</Text></View>
+    <Text style={s.sub}>Earned rewards and gifts stay safe here until claimed.</Text>
+  </View>
+  <View accessibilityRole="tablist" style={s.tabs}>
+    {[false,true].map(value=><Pressable key={String(value)} accessibilityRole="tab" accessibilityState={{selected:history===value,disabled:busy}} disabled={busy} onPress={()=>{if(!preview)setSnapshot(previous=>({...previous,entries:[],total:0}));setHistory(value);setNotice('');setExpandedId(null);}} style={[s.tab,history===value&&s.tabActive]}>
+      <Text style={[s.tabText,history===value&&s.tabTextActive]}>{value?'Claimed history':`Inbox${pending?' · '+pending:''}`}</Text>
+    </Pressable>)}
+  </View>
+  {!history&&pending>0?<View style={s.bulkAction}><View style={s.flex}><Text style={s.bulkTitle}>{pending} reward{pending===1?'':'s'} waiting</Text><Text style={s.sub}>Claim everything that fits in your inventory.</Text></View><SocialActionButton primary label="Claim all" busy={busy} disabled={!online&&!preview} onPress={()=>run()}/></View>:null}
+  {!!error?<View accessibilityRole="alert" style={s.feedback}><Text style={s.warning}>{error}</Text><SocialActionButton label="Retry" disabled={busy} onPress={()=>load()}/></View>:null}
+  {!!notice?<Text accessibilityRole="alert" style={s.success}>{notice}</Text>:null}
+  <View style={s.list}>
+    {rows.map(row=>{
+      const expanded=expandedId===row.id,available=row.attachments.slice(0,3),remaining=row.attachments.length-available.length;
+      return <View key={row.id} style={[s.card,!row.claimedAt&&s.cardPending]}>
+        <Pressable accessibilityRole="button" accessibilityState={{expanded}} accessibilityLabel={row.title} onPress={()=>setExpandedId(previous=>previous===row.id?null:row.id)} style={({pressed})=>[s.cardHead,pressed&&s.pressed]}>
+          <View style={s.sourceIcon}><UiIcon name={row.source==='gift'?'rewards':row.source==='guild'?'guild':row.source==='event'?'events':'quests'} size={24}/></View>
+          <View style={s.flex}><Text style={s.source}>{row.source==='gift'?'GIFT FROM VELDRYN':row.source.toUpperCase()+' REWARD'}</Text><Text numberOfLines={2} style={s.cardTitle}>{row.title}</Text></View>
+          <View style={s.cardStatus}><Text style={[s.status,row.claimedAt?s.claimed:s.pending]}>{row.claimedAt?'CLAIMED':'READY'}</Text><Text style={s.chevron}>{expanded?'⌃':'⌄'}</Text></View>
+        </Pressable>
+        <View style={s.preview}>{available.map((a,index)=><View key={a.resourceId+':'+index} style={s.previewItem}><InboxArtwork attachment={a}/><Text style={s.previewQuantity}>×{a.quantity.toLocaleString()}</Text></View>)}{remaining>0?<Text style={s.moreCount}>+{remaining} more</Text>:null}{!row.attachments.length?<Text style={s.sub}>Reward details</Text>:null}</View>
+        {expanded?<View style={s.details}>
+          {!!row.body?<Text style={s.body}>{row.body}</Text>:null}
+          {row.attachments.map((a,index)=><View key={a.resourceId+':'+index} style={s.attachment}><InboxArtwork attachment={a}/><Text style={s.attachmentName}>{a.name}</Text><Text style={s.attachmentCount}>×{a.quantity.toLocaleString()}</Text></View>)}
+        </View>:null}
+        <View style={s.cardFooter}>
+          {row.claimedAt?<Text style={s.claimedLabel}>✓ Claimed{row.claimedAt!=='claimed'?' · '+new Date(row.claimedAt).toLocaleDateString():''}</Text>:<SocialActionButton label="Claim reward" disabled={busy||(!online&&!preview)} onPress={()=>run(row.id)}/>}
+        </View>
+      </View>;
+    })}
+  </View>
+  {loading?<LoadingState compact label="Loading rewards…"/>:null}
+  {!loading&&!rows.length&&!error?<View style={s.empty}><UiIcon name="rewards" size={42}/><Text style={s.emptyTitle}>{history?'No claimed rewards yet':'You’re all caught up'}</Text><Text style={s.sub}>{history?'Your reward history will appear here.':'New rewards will appear when earned.'}</Text></View>:null}
+  {snapshot.entries.length<snapshot.total?<SocialActionButton label="Load more" disabled={loading||busy} onPress={()=>load(true)}/>:null}
  </ScrollView>;
 }
 function InboxArtwork({attachment:a}:{attachment:InboxAttachment}){
@@ -54,3 +77,16 @@ function InboxArtwork({attachment:a}:{attachment:InboxAttachment}){
  if(a.kind==='gold'||a.kind==='item')return <ResourceIcon resourceId={a.resourceId} size={36}/>;
  return <UiIcon name="events" size={32}/>;
 }
+
+function makeStyles(C:ThemeColors){return StyleSheet.create({
+ root:{padding:spacing.md,gap:spacing.md,maxWidth:640,width:'100%',alignSelf:'center',paddingBottom:110},
+ header:{gap:5},headTitle:{flexDirection:'row',alignItems:'center',gap:10},heading:{...typography.hero,color:C.text},sub:{...typography.caption,color:C.muted,lineHeight:18},
+ tabs:{flexDirection:'row',gap:7},tab:{flex:1,minHeight:46,alignItems:'center',justifyContent:'center',borderRadius:10,borderWidth:1,borderColor:C.line,backgroundColor:C.panel,paddingHorizontal:6},tabActive:{borderColor:C.accent,backgroundColor:C.accentSurface},tabText:{...typography.bodyStrong,color:C.muted,textAlign:'center'},tabTextActive:{color:C.text},
+ flex:{flex:1,minWidth:0},bulkAction:{borderWidth:1,borderColor:C.good,borderRadius:radii.lg,padding:12,backgroundColor:C.goodSurface,gap:8},bulkTitle:{...typography.bodyStrong,color:C.text},
+ feedback:{gap:8},warning:{...typography.caption,color:C.warning},success:{...typography.caption,color:C.good},
+ list:{gap:9},card:{padding:12,gap:10,backgroundColor:C.panel,borderWidth:1,borderColor:C.line,borderRadius:radii.lg},cardPending:{borderLeftWidth:3,borderLeftColor:C.accent},
+ cardHead:{flexDirection:'row',alignItems:'center',gap:9,minHeight:47},sourceIcon:{width:40,height:40,backgroundColor:C.panel2,borderRadius:10,alignItems:'center',justifyContent:'center'},source:{fontSize:9,letterSpacing:.7,fontWeight:'900',color:C.accent},cardTitle:{...typography.bodyStrong,color:C.text,marginTop:3},cardStatus:{alignItems:'flex-end',gap:3},status:{fontSize:10,fontWeight:'900'},claimed:{color:C.good},pending:{color:C.accent},chevron:{fontSize:16,color:C.muted},
+ preview:{flexDirection:'row',alignItems:'center',flexWrap:'wrap',gap:7},previewItem:{flexDirection:'row',alignItems:'center',gap:3,backgroundColor:C.panel2,borderWidth:1,borderColor:C.line,borderRadius:8,padding:5},previewQuantity:{fontSize:11,color:C.text,fontWeight:'800'},moreCount:{fontSize:11,color:C.muted,fontWeight:'800'},
+ details:{gap:8,borderTopWidth:1,borderTopColor:C.line,paddingTop:10},body:{...typography.caption,color:C.muted,lineHeight:19},attachment:{flexDirection:'row',alignItems:'center',gap:9,backgroundColor:C.panel2,borderRadius:9,padding:8},attachmentName:{...typography.body,color:C.text,flex:1,minWidth:0},attachmentCount:{...typography.bodyStrong,color:C.text},
+ cardFooter:{alignSelf:'flex-end'},claimedLabel:{...typography.caption,color:C.good},empty:{alignItems:'center',gap:8,paddingVertical:38},emptyTitle:{...typography.title,color:C.text},pressed:{opacity:.75}
+});}

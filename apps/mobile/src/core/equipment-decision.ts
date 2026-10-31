@@ -87,3 +87,17 @@ export function equipmentUpgradeSummary(model:EquipmentDecisionModel){
     ? 'Next +'+model.upgrade.targetRank+' · '+chance+'% · Missing '+missing.join(', ')
     : 'Next +'+model.upgrade.targetRank+' · '+chance+'% · Materials ready';
 }
+
+// A single priority order drives Character's next useful equipment action.
+// Readiness is computed from the same server-synchronized equipment quote as
+// the enhancement sheet, so the focus hint never promises an unaffordable step.
+export function equipmentFocusModel(model:EquipmentDecisionModel|null){
+ if(!model)return {tool:'compare' as const,description:'Choose a piece of equipment to review your loadout.'};
+ if(!model.upgrade.maxed&&model.upgrade.canAfford)
+  return {tool:'enhance' as const,description:'Enhancement materials ready.'};
+ if(model.sockets.capacity>model.sockets.filled)
+  return {tool:'gems' as const,description:'A gem socket is available.'};
+ if(model.set&&model.set.equippedPieces<model.set.totalPieces)
+  return {tool:'sets' as const,description:'Your equipment set has more pieces to collect.'};
+ return {tool:'compare' as const,description:model.upgrade.maxed?'Compare equipment or improve your loadout.':'Gather materials or compare another item.'};
+}

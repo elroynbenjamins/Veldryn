@@ -32,6 +32,8 @@
   ".core-build/apps/mobile/tests/class-selection.js",
   ".core-build/apps/mobile/tests/character-creation-onboarding.js",
   ".core-build/apps/mobile/tests/inventory-view.js",
+  ".core-build/apps/mobile/tests/gamewide-performance-scenarios.js",
+  "../../tools/test-android-frame-summary.mjs",
   ".core-build/apps/mobile/tests/storage-bank.js",
   ".core-build/apps/mobile/tests/item-rarity-v2.js",
   ".core-build/apps/mobile/tests/inventory-storage-ui-contract.js",

@@ -15,13 +15,13 @@ import {useGameTheme} from '../theme/ThemeContext';
 
 type Projection=Awaited<ReturnType<typeof loadOnlineGuildHallV44>>;
 type HallSection='Facilities'|'Skills'|'Trophies';
-interface HallNavigation{activeSection?:HallSection;onSectionChange?:(section:HallSection|'Shop')=>void;}
+interface HallNavigation{activeSection?:HallSection;onSectionChange?:(section:HallSection|'Shop'|'Bank')=>void;}
 export function OnlineGuildHallPanel(navigation:HallNavigation){
  const st=useSocialText(),C=useGameTheme(),s=useMemo(()=>makeStyles(C),[C]);
  const [projection,setProjection]=useState<Projection>(null),[loading,setLoading]=useState(true),[error,setError]=useState('');
  const load=async(force=false)=>{setLoading(true);setError('');try{setProjection(await loadOnlineGuildHallV44(force))}catch(reason){setError(reason instanceof Error?reason.message:st('Unable to load Guild Hall.'))}finally{setLoading(false)}};
  useEffect(()=>{void load()},[]);
- const navigationTabs=navigation.onSectionChange?<BoardTabs compact label="Guild Hall sections" items={(['Facilities','Skills','Trophies','Shop'] as const).map(id=>({id,label:id}))} value={navigation.activeSection??'Facilities'} onChange={navigation.onSectionChange}/>:null;
+ const navigationTabs=navigation.onSectionChange?<BoardTabs compact label="Guild Hall sections" items={(['Facilities','Skills','Trophies','Shop','Bank'] as const).map(id=>({id,label:id}))} value={navigation.activeSection??'Facilities'} onChange={navigation.onSectionChange}/>:null;
  if(loading&&!projection)return <View style={s.root}>{navigationTabs}<Panel><Text style={s.title}>{st('Guild Hall')}</Text><ActivityIndicator color={C.accent}/></Panel></View>;
  if(error&&!projection)return <View style={s.root}>{navigationTabs}<Panel><Text style={s.title}>{st('Guild Hall')}</Text><Text style={s.error}>{error}</Text><GameButton title={st('Retry')} tone="secondary" loading={loading} disabled={loading} onPress={()=>void load(true)}/></Panel></View>;
  if(!projection)return <View style={s.root}>{navigationTabs}<Panel><Text style={s.title}>{st('Guild Hall')}</Text><Text style={s.sub}>{st('Join a Guild to unlock long-term Guild Hall progression.')}</Text></Panel></View>;
@@ -33,7 +33,7 @@ export function GuildHallView({projection,loading=false,error='',onRefresh,activ
  const {state,level,stage}=projection;
  const nextThreshold=DEFAULT_GUILD_HALL_POLICY.hallLevelThresholds[level]??DEFAULT_GUILD_HALL_POLICY.hallLevelThresholds[9],prev=DEFAULT_GUILD_HALL_POLICY.hallLevelThresholds[Math.max(0,level-1)]??0;
  return <View style={s.root}>
-  <BoardTabs compact label="Guild Hall sections" items={(onSectionChange?['Facilities','Skills','Trophies','Shop'] as const:['Facilities','Skills','Trophies'] as const).map(id=>({id,label:id}))} value={section} onChange={value=>{if(onSectionChange)onSectionChange(value);else if(value!=='Shop')setSection(value)}}/>
+  <BoardTabs compact label="Guild Hall sections" items={(onSectionChange?['Facilities','Skills','Trophies','Shop','Bank'] as const:['Facilities','Skills','Trophies'] as const).map(id=>({id,label:id}))} value={section} onChange={value=>{if(onSectionChange)onSectionChange(value);else if(value!=='Shop')setSection(value)}}/>
   <Panel><View style={s.between}><View style={s.flex}><Text style={s.kicker}>GUILD HALL</Text><Text accessibilityRole="header" style={s.title}>{stage}</Text><Text style={s.sub}>{state.lifetimeProjectsCompleted} completed projects</Text></View><View style={s.levelBadge}><Text style={s.level}>Lv {level}</Text><Text style={s.levelMax}>/10</Text></View></View><StatBar rounded label="Hall Progress" current={level>=10?1:state.hallProgress-prev} max={level>=10?1:nextThreshold-prev}/><Text style={s.note}>{level<10?Math.max(0,nextThreshold-state.hallProgress).toLocaleString()+' Hall Progress to level '+(level+1):'Launch Hall level cap reached.'}</Text></Panel>
   {section==='Facilities'?<View style={s.root}><Text style={s.kicker}>{st('Automatic progression')}</Text><Text style={s.sub}>Facilities improve through authored Guild Projects. Hall Progress is never spent.</Text>
    {GUILD_HALL_FACILITIES.map(def=>{const facility=state.facilities[def.id],tier=facility.tier,threshold=DEFAULT_GUILD_HALL_POLICY.facilityProgressThresholds[tier],requiredLevel=def.tierHallLevels[tier];return <View key={def.id} style={s.facility}>

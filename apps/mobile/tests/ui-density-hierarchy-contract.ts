@@ -364,7 +364,7 @@ ok(friends.includes('<GameButton compact title={st("Accept")}'),"Friend-request 
 ok(friends.includes('<GameButton compact title={st("Decline")} tone="secondary"'),"Friend-request decline must remain compact");
 
 const characterPolish=read('src/screens/CharacterScreen.tsx');
-ok(characterPolish.includes('<GameButton compact title={selectedDecision?.upgrade.maxed?')&&characterPolish.includes('selectedDecision?.upgrade.successChance')&&characterPolish.includes("openEnhancement('upgrade')"),"Selected equipment actions must remain compact even when the enhancement chance is surfaced");
+ok(characterPolish.includes('<GameButton compact title={selectedDecision.upgrade.canAfford?')&&characterPolish.includes('selectedDecision.upgrade.successChance')&&characterPolish.includes("openEnhancement('upgrade')"),"Selected equipment actions must remain compact even when the enhancement chance is surfaced");
 
 const worldPolish=read('src/screens/WorldScreen.tsx');
 ok(worldPolish.includes("backgroundColor:C.dark?'rgba(5,12,20,.64)':'rgba(255,255,255,.68)'"),'World artwork overlay must preserve text contrast in dark and light themes');

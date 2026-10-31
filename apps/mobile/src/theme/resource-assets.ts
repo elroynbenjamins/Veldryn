@@ -1,3 +1,4 @@
+import {guildUpgradeComponentArtwork} from './guild-upgrade-component-art';
 import {ingredientIcons} from './ingredient-assets';
 import {craftedItemIcons} from './crafted-item-assets';
 import type {ImageSourcePropType} from 'react-native';
@@ -71,5 +72,5 @@ export const resourceIconSourceById:Readonly<Partial<Record<string,ImageSourcePr
   SCORPION_VENOM:require('../../assets/ingredient-icons-v1/scorpion_venom.png'),
 };
 
-export function resourceIconSource(itemId:string){return resourceIconSourceById[itemId];}
+export function resourceIconSource(itemId:string){return resourceIconSourceById[itemId]??guildUpgradeComponentArtwork(itemId);}
 export function hasResourceArtwork(itemId:string){return hasConsumableArtwork(itemId)||hasMiscItemArtwork(itemId)||hasAsterfallIngredientArtwork(itemId)||hasAsterfallOreArtwork(itemId)||hasAsterfallGatheringArtwork(itemId)||hasArcaneMaterialArtwork(itemId)||hasRegionalResourceArtwork(itemId)||!!resourceIconSource(itemId);}

@@ -4,6 +4,13 @@ import {createTranslator} from './translator';
 // Each row contains English, German, Spanish, Dutch, Italian and French.
 // English source keys also let owned views translate core-generated presentation text.
 export const accountTranslationRows = {
+  "All unlocks":["All unlocks","Alle Freischaltungen","Todos los desbloqueos","Alle ontgrendelingen","Tutti gli sblocchi","Tous les déblocages"],
+  "Titles":["Titles","Titel","Títulos","Titels","Titoli","Titres"],
+  "Pets":["Pets","Begleiter-Tiere","Mascotas","Huisdieren","Animali","Familiers"],
+  "Other cosmetics":["Other cosmetics","Andere Kosmetik","Otros cosméticos","Overige cosmetica","Altri cosmetici","Autres cosmétiques"],
+  "Show fewer unlocks":["Show fewer unlocks","Weniger Freischaltungen","Mostrar menos desbloqueos","Minder ontgrendelingen","Mostra meno sblocchi","Afficher moins de déblocages"],
+  "No unlocks in this category":["No unlocks in this category","Keine Freischaltungen in dieser Kategorie","No hay desbloqueos en esta categoría","Geen ontgrendelingen in deze categorie","Nessuno sblocco in questa categoria","Aucun déblocage dans cette catégorie"],
+
   "Google Play Games is separate from your VELDRYN account and does not recover your VELDRYN progress.": ["Google Play Games is separate from your VELDRYN account and does not recover your VELDRYN progress.","Google Play Games ist unabhängig von deinem VELDRYN-Konto und stellt deinen Spielfortschritt nicht wieder her.","Google Play Games es independiente de tu cuenta de VELDRYN y no recupera tu progreso de VELDRYN.","Google Play Games staat los van je VELDRYN-account en herstelt je VELDRYN-voortgang niet.","Google Play Games è separato dal tuo account VELDRYN e non ripristina i tuoi progressi.","Google Play Games est distinct de votre compte VELDRYN et ne restaure pas votre progression."],
   "Google Play Games connected": ["Google Play Games connected","Google Play Games verbunden","Google Play Games conectado","Google Play Games verbonden","Google Play Games connesso","Google Play Games connecté"],
   "Google account linking is unavailable in this Android build. Update VELDRYN to use it.": ["Google account linking is unavailable in this Android build. Update VELDRYN to use it.","Das Verknüpfen mit Google ist in diesem Android-Build nicht verfügbar. Aktualisiere VELDRYN.","La vinculación de Google no está disponible en esta versión de Android. Actualiza VELDRYN.","Google-account koppelen is niet beschikbaar in deze Android-versie. Werk VELDRYN bij.","Il collegamento dell'account Google non è disponibile in questa versione Android. Aggiorna VELDRYN.","L'association du compte Google n'est pas disponible dans cette version Android. Mettez VELDRYN à jour."],

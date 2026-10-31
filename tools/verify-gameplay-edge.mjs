@@ -8,9 +8,12 @@ import path from 'node:path';
 import {fileURLToPath} from 'node:url';
 const root=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'..');
 const require=createRequire(path.join(root,'backend/package.json'));
+// Keep source labels deterministic regardless of where this tool was invoked.
+const backendRoot=path.join(root,'backend');
 const {build}=require('esbuild');
 const output=path.join(root,'backend/supabase/functions/gameplay/index.ts');
 const built=await build({
+ absWorkingDir:backendRoot,
  entryPoints:[path.join(root,'backend/online/edge.ts')],
  outfile:output,
  bundle:true,format:'esm',platform:'neutral',

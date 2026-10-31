@@ -21,6 +21,7 @@ jobs:
           cache: pnpm
           cache-dependency-path: backend/pnpm-lock.yaml
       - run: pnpm --dir backend install --frozen-lockfile
+      - run: pnpm --dir apps/mobile install --frozen-lockfile
       - name: Regenerate gameplay from canonical shared engine
         run: pnpm --dir backend build:online
       - name: Commit only generated gameplay bundle

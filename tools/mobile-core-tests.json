@@ -6,6 +6,8 @@
   ".core-build/apps/mobile/tests/unlock-inbox.js",
   ".core-build/apps/mobile/tests/companion-training-roster.js",
   "tests/online-loading-interactions.cjs",
+  ".core-build/apps/mobile/tests/coop-sync-policy.js",
+  "tests/coop-sync-runtime.cjs",
   ".core-build/apps/mobile/tests/player-identity-cache-policy.js",
   "tests/settings-simplicity-ui.cjs",
   "tests/account-auth-refinement-ui.cjs",

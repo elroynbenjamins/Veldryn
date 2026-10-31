@@ -322,9 +322,9 @@ async function reducedMotionAndUnmount() {
     await act(async () => { recovering = create(React.createElement(DungeonCombatStage, {run, boss: true})); });
     await act(async () => { failedQuery.reject(new Error('Native accessibility service unavailable')); });
     assert.strictEqual(currentCue(recovering), run.lastCombat.cues[0]);
-    findButton(recovering, 'Pause combat replay');
+    assert.equal(recovering.root.findAllByType('Pressable').filter(node=>node.props.accessibilityLabel==='Pause combat replay').length,0,'fallback playback does not add manual transport controls');
     await fallback.tick(fallback.nextDelay());
-    assert.strictEqual(currentCue(recovering), run.lastCombat.cues[1], 'failed accessibility lookup retains normal controllable playback');
+    assert.strictEqual(currentCue(recovering), run.lastCombat.cues[1], 'failed accessibility lookup retains normal automatic playback');
     await act(async () => { recovering.unmount(); }); recovering = null;
     assert.equal(fallback.timers.size, 0);
     console.log('PASS dungeon reduced motion: static outcome, inspection, cleanup, late response and native-query failure recovery');
@@ -339,7 +339,7 @@ async function responsiveCardContract() {
     const {DungeonCombatStage} = h.load(path.join(app, 'src/components/coop/DungeonCombatStage'));
     const {dungeonCombatLayout} = h.load(path.join(app, 'src/core/dungeon-combat-layout'));
     await act(async () => { tree = create(React.createElement(DungeonCombatStage, {run, boss: true})); });
-    await press(tree, 'Pause combat replay');
+    assert.strictEqual(currentCue(tree),run.lastCombat.cues[0],'responsive run starts at the first cue');
     for (const width of [320, 360, 390]) {
       h.size.width = width;
       await act(async () => { tree.update(React.createElement(DungeonCombatStage, {run, boss: true})); });
@@ -352,13 +352,10 @@ async function responsiveCardContract() {
         assert.equal(field.flexWrap, 'wrap'); assert.equal(field.flexDirection, 'row');
       }
       assert.equal(enemy(tree).props.statusLimit, expected.statusLimit);
-      assert.strictEqual(currentCue(tree), run.lastCombat.cues[0], 'responsive re-render must preserve the paused cursor');
-      for (const label of ['Resume combat replay', 'Previous combat event', 'Next combat event', 'Skip combat replay to result']) {
-        const control = findButton(tree, label), style = typeof control.props.style === 'function' ? control.props.style({pressed: false}) : control.props.style;
-        assert.ok(flattenStyle(style).minHeight >= 44, `${label} retains a usable touch height at width ${width}`);
-      }
-      const controls = flattenStyle(findButton(tree, 'Resume combat replay').parent.props.style);
-      if (expected.controlsWrap) assert.equal(controls.flexWrap, 'wrap', 'narrow phone playback controls wrap instead of overflowing');
+      assert.strictEqual(currentCue(tree), run.lastCombat.cues[0], 'responsive re-render must preserve the automatic replay cursor');
+      const transportLabels=new Set(['Pause combat replay','Resume combat replay','Previous combat event','Next combat event','Skip combat replay to result']);
+      assert.equal(tree.root.findAllByType('Pressable').filter(node=>transportLabels.has(node.props.accessibilityLabel)).length,0,
+        `viewport ${width} must not introduce transport controls in automatic replay`);
     }
     await act(async () => { tree.unmount(); }); tree = null;
     h.mocks.delete(path.join(app, 'src/components/coop/CombatantProfileCard'));

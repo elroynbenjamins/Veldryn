@@ -96,7 +96,7 @@ async function main(){
    assert.equal(state.version,round+1);
    assert.equal(state.commits,round+1,'one actual commit despite races and replays');
    assert.equal(state.state.character!.gold+(state.state.bank.gold??0),5500,'Gold conserved across all competing deposits');
-   assert.ok(state.state.character!.gold>=0&&state.state.bank.gold>=0,'no negative balances');
+   assert.ok(state.state.character!.gold>=0&&(state.state.bank.gold??0)>=0,'no negative balances');
    return [accountId,winner] as const;
   }));
   assert.equal(outcomes.length,accountCount);

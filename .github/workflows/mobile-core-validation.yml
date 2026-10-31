@@ -64,6 +64,10 @@ jobs:
         run: |
           node ../../tools/test-play-billing.mjs
           node ../../tools/test-play-billing-transport.mjs
+      - name: Validate Android performance reports and staging load safety
+        run: |
+          node ../../tools/test-android-perf-report.mjs
+          node ../../tools/test-staging-gameplay-profile.mjs
       - name: Run core tests
         run: pnpm test:core
       - name: Run onboarding lock tests

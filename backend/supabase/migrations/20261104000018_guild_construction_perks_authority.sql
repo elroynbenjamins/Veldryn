@@ -214,9 +214,9 @@ grant execute on function public.guild_construction_benefits_server_v1(uuid) to 
 create or replace function public.guild_construction_publish_cosmetic_v1()
 returns trigger language plpgsql security invoker set search_path='' as $$
 begin
- if exists(select 1 from public.guild_construction_cosmetic_releases release
-  where release.template_id=new.template_id
-    and release.unlock_id=new.unlock_id and release.released=true) then
+ if exists(select 1 from public.guild_construction_cosmetic_releases r
+  where r.template_id=new.template_id
+    and r.unlock_id=new.unlock_id and r.released=true) then
   insert into public.guild_cosmetic_unlocks(guild_id,unlock_id,source_kind,source_ref,unlocked_at)
   values(new.guild_id,new.unlock_id,'construction',new.template_id,new.unlocked_at)
   on conflict(guild_id,unlock_id) do nothing;

@@ -51,10 +51,10 @@ export const RECIPES:Recipe[]=[
 // compatibility. Presentation layers apply their release gate separately.
 ...(V33_EQUIPMENT_RECIPES as Recipe[]),
 ...(TOOL_RECIPES as Recipe[]),
-{id:'SMELT_COPPER_INGOT',name:'Smelt Copper Ingot',skillId:'smithing',level:1,xp:80,gold:30,seconds:36,repeatableTraining:true,inputs:[{itemId:'COPPER_ORE',quantity:10}],output:{itemId:'COPPER_INGOT',quantity:5}},
-{id:'SMELT_ASTER_IRON_INGOT',name:'Smelt Aster-Iron Ingot',skillId:'smithing',level:8,xp:140,gold:50,seconds:42,repeatableTraining:true,inputs:[{itemId:'ASTER_IRON_ORE',quantity:8}],output:{itemId:'ASTER_IRON_INGOT',quantity:4}},
+{id:'SMELT_COPPER_INGOT',name:'Smelt Copper Ingot',skillId:'smithing',level:1,xp:80,gold:30,seconds:36,repeatableTraining:true,inputs:[{itemId:'COPPER_ORE',quantity:10},{itemId:'GREENWOOD_LOG',quantity:2}],output:{itemId:'COPPER_INGOT',quantity:5}},
+{id:'SMELT_ASTER_IRON_INGOT',name:'Smelt Aster-Iron Ingot',skillId:'smithing',level:8,xp:140,gold:50,seconds:42,repeatableTraining:true,inputs:[{itemId:'ASTER_IRON_ORE',quantity:8},{itemId:'IRONWOOD_LOG',quantity:2}],output:{itemId:'ASTER_IRON_INGOT',quantity:4}},
 {id:'FORGE_REINFORCED_FITTING',name:'Forge Reinforced Fitting',skillId:'smithing',level:12,xp:180,gold:50,seconds:48,repeatableTraining:true,inputs:[{itemId:'ASTER_IRON_INGOT',quantity:2},{itemId:'IRONWOOD_LOG',quantity:2}],output:{itemId:'REINFORCED_FITTING',quantity:1}},
-{id:'SMELT_OATHSTONE_INGOT',name:'Smelt Oathstone Ingot',skillId:'smithing',level:16,xp:230,gold:80,seconds:54,repeatableTraining:true,inputs:[{itemId:'OATHSTONE_ORE',quantity:6}],output:{itemId:'OATHSTONE_INGOT',quantity:3}},
+{id:'SMELT_OATHSTONE_INGOT',name:'Smelt Oathstone Ingot',skillId:'smithing',level:16,xp:230,gold:80,seconds:54,repeatableTraining:true,inputs:[{itemId:'OATHSTONE_ORE',quantity:6},{itemId:'CROWNWOOD_LOG',quantity:3}],output:{itemId:'OATHSTONE_INGOT',quantity:3}},
 {id:'SMELT_SUNSTONE_INGOT',name:'Smelt Sunstone Ingot',skillId:'smithing',level:26,xp:520,gold:280,seconds:180,repeatableTraining:true,inputs:[{itemId:'SUNSTONE_ORE',quantity:6},{itemId:'DUNEWOOD',quantity:4}],output:{itemId:'SUNSTONE_INGOT',quantity:3}},
 {id:'SMELT_FROSTIRON_INGOT',name:'Smelt Frostiron Ingot',skillId:'smithing',level:46,xp:980,gold:720,seconds:420,repeatableTraining:true,inputs:[{itemId:'FROSTIRON',quantity:6},{itemId:'WHITEPINE_LOG',quantity:4}],output:{itemId:'FROSTIRON_INGOT',quantity:3}},
 {id:'SMELT_BLACKGLASS_INGOT',name:'Smelt Blackglass Ingot',skillId:'smithing',level:68,xp:1850,gold:1800,seconds:900,repeatableTraining:true,inputs:[{itemId:'BLACKGLASS_ORE',quantity:6},{itemId:'CINDERWOOD_LOG',quantity:4}],output:{itemId:'BLACKGLASS_INGOT',quantity:3}},

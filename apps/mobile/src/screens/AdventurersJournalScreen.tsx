@@ -6,6 +6,7 @@ import type {GameState} from '../core/types';
 import {JOURNAL_ACHIEVEMENTS_V42,JOURNAL_TITLES_V42} from '../core/adventurers-journal-v42';
 import {PERSONAL_RECORDS_V43} from '../core/personal-records-v43';
 import {bestiaryProjection} from '../core/bestiary-v40';
+import {journalMetrics} from '../core/long-term-progression-runtime';
 import {UiIcon} from '../components/UiIcon';
 import {spacing,typography,type ThemeColors} from '../theme/theme';
 import {useGameTheme} from '../theme/ThemeContext';
@@ -31,6 +32,8 @@ export function AdventurersJournalScreen({state,onNavigate}:{state:GameState;onN
  const currentLevels=state.skills.reduce((sum,skill)=>sum+skill.level,0);
  const reserveLevels=(state.otherCharacters??[]).reduce((sum,row)=>sum+row.skills.reduce((inner,skill)=>inner+skill.level,0),0);
  const categories=[...new Set(JOURNAL_ACHIEVEMENTS_V42.map(row=>row.category))];
+ const metrics=useMemo(()=>journalMetrics(state),[state]);
+ const nextAchievement=useMemo(()=>JOURNAL_ACHIEVEMENTS_V42.filter(row=>journal?.unlockedAchievements?.[row.id]===undefined).map(row=>({row,progress:Math.max(0,metrics[row.metricKey]??0)})).sort((a,b)=>b.progress/b.row.target-a.progress/a.row.target)[0],[journal,metrics]);
  const discoveryPercent=Math.max(0,Math.min(100,bestiary.completionPercent));
  return <ScrollView contentContainerStyle={s.root} showsVerticalScrollIndicator={false} showsHorizontalScrollIndicator={false}>
   <Text style={s.kicker}>{t("COLLECTIONS & PROGRESS")}</Text>
@@ -44,22 +47,28 @@ export function AdventurersJournalScreen({state,onNavigate}:{state:GameState;onN
   <View style={[s.accountTotal,stackTiles&&s.accountTotalStack]}><View style={s.flex}><Text style={s.overline}>{t("Account Progress")}</Text><Text style={s.accountLevels}>{(currentLevels+reserveLevels).toLocaleString(language)}</Text></View><Text style={[s.totalDescription,stackTiles&&s.totalDescriptionStack]}>{t("Combined account skill levels across your character roster.")}</Text></View>
   <View style={s.section}>
     <View style={s.sectionTitle}><Text style={s.title}>{t("Bestiary")}</Text><Text style={s.sectionValue}>{bestiary.discovered}/{bestiary.total}</Text></View>
-    <View style={s.track}><View style={[s.trackFill,{width:`${discoveryPercent}%`}]}/></View>
+    <View accessibilityRole="progressbar" accessibilityLabel={t("Bestiary")} accessibilityValue={{min:0,max:100,now:discoveryPercent}} style={s.track}><View style={[s.trackFill,{width:`${discoveryPercent}%`}]}/></View>
     <Text style={s.sub}>{t("{found}/{total} creatures discovered · {percent}% current discovery completion.",{found:bestiary.discovered,total:bestiary.total,percent:bestiary.completionPercent})}</Text>
     <View style={[s.destinations,stackTiles&&s.destinationsStack]}>
       <Pressable accessibilityRole="button" accessibilityLabel={t("Open Bestiary")} onPress={()=>onNavigate('Bestiary')} style={({pressed})=>[s.destination,pressed&&s.pressed]}><UiIcon name="world" size={25}/><Text style={s.destinationLabel}>{t("Open Bestiary")}</Text><UiIcon name="next" size={16}/></Pressable>
       <Pressable accessibilityRole="button" accessibilityLabel={t("Open Collections")} onPress={()=>onNavigate('Collections')} style={({pressed})=>[s.destination,pressed&&s.pressed]}><UiIcon name="inventory" size={25}/><Text style={s.destinationLabel}>{t("Open Collections")}</Text><UiIcon name="next" size={16}/></Pressable>
     </View>
   </View>
-  <Pressable accessibilityRole="button" accessibilityState={{expanded:showAchievementInfo}} onPress={()=>setShowAchievementInfo(value=>!value)} style={({pressed})=>[s.disclosure,pressed&&s.pressed]}>
+  <Pressable accessibilityRole="button" accessibilityState={{expanded:showAchievementInfo}} accessibilityLabel={t("Long-term Achievements")} onPress={()=>setShowAchievementInfo(value=>!value)} style={({pressed})=>[s.disclosure,pressed&&s.pressed]}>
     <View style={s.flex}><Text style={s.title}>{t("Long-term Achievements")}</Text><Text style={s.sub}>{earnedAchievements}/{JOURNAL_ACHIEVEMENTS_V42.length} · {categories.length} {t("categories")}</Text></View><Text style={s.chevron}>{showAchievementInfo?'−':'+'}</Text>
   </Pressable>
-  {showAchievementInfo?<View style={s.expanded}><Text style={s.sub}>{t("{count} categories · Novice → Adventurer → Veteran → Master → Grandmaster. Rewards are cosmetic titles rather than power.",{count:categories.length})}</Text></View>:null}
-  <Pressable accessibilityRole="button" accessibilityState={{expanded:showMastery}} onPress={()=>setShowMastery(value=>!value)} style={({pressed})=>[s.disclosure,pressed&&s.pressed]}>
+  {showAchievementInfo?<View style={s.expanded}>
+    {nextAchievement?<View style={s.nextAchievement}><Text style={s.nextTitle}>{t("Next milestone: {title}",{title:nextAchievement.row.title})}</Text>
+      <View style={s.sectionTitle}><Text style={s.sub}>{Math.floor(nextAchievement.progress).toLocaleString(language)} / {nextAchievement.row.target.toLocaleString(language)}</Text><Text style={s.sub}>{Math.min(100,Math.floor(nextAchievement.progress/nextAchievement.row.target*100))}%</Text></View>
+      <View accessibilityRole="progressbar" accessibilityLabel={nextAchievement.row.title} accessibilityValue={{min:0,max:nextAchievement.row.target,now:Math.min(nextAchievement.progress,nextAchievement.row.target)}} style={s.track}><View style={[s.trackFill,{width:`${Math.min(100,Math.max(0,nextAchievement.progress/nextAchievement.row.target*100))}%`}]}/></View>
+      <Text style={s.sub}>{t("Rewards are cosmetic titles rather than power.")}</Text>
+    </View>:<Text style={s.nextTitle}>{t("All long-term achievements earned")}</Text>}
+  </View>:null}
+  <Pressable accessibilityRole="button" accessibilityState={{expanded:showMastery}} accessibilityLabel={t("Mastery Hall")} onPress={()=>setShowMastery(value=>!value)} style={({pressed})=>[s.disclosure,pressed&&s.pressed]}>
     <View style={s.flex}><Text style={s.title}>{t("Mastery Hall")}</Text><Text style={s.sub}>{mastery.mastered} R50 · {mastery.trained} {t("TRAINED")}</Text></View><Text style={s.chevron}>{showMastery?'−':'+'}</Text>
   </Pressable>
   {showMastery?<MasteryHallPanel state={state}/>:null}
-  <Pressable accessibilityRole="button" accessibilityState={{expanded:showRecords}} onPress={()=>setShowRecords(value=>!value)} style={({pressed})=>[s.disclosure,pressed&&s.pressed]}>
+  <Pressable accessibilityRole="button" accessibilityState={{expanded:showRecords}} accessibilityLabel={t("Personal Records")} onPress={()=>setShowRecords(value=>!value)} style={({pressed})=>[s.disclosure,pressed&&s.pressed]}>
     <View style={s.flex}><Text style={s.title}>{t("Personal Records")}</Text><Text style={s.sub}>{earnedRecords}/{PERSONAL_RECORDS_V43.length} {t("RECORDS")}</Text></View><Text style={s.chevron}>{showRecords?'−':'+'}</Text>
   </Pressable>
   {showRecords?<PersonalRecordsPanel state={state}/>:null}
@@ -74,6 +83,6 @@ function makeStyles(C:ThemeColors){return StyleSheet.create({
  accountTotal:{flexDirection:'row',alignItems:'center',gap:12,padding:12,borderRadius:12,backgroundColor:C.panel,borderWidth:1,borderColor:C.line},accountTotalStack:{flexDirection:'column',alignItems:'flex-start'},accountLevels:{fontSize:25,fontWeight:'900',color:C.text},totalDescription:{...typography.caption,color:C.muted,maxWidth:165,lineHeight:17},totalDescriptionStack:{maxWidth:'100%'},
  section:{padding:12,gap:10,borderWidth:1,borderColor:C.line,borderRadius:12,backgroundColor:C.panel},sectionTitle:{flexDirection:'row',alignItems:'center',justifyContent:'space-between',gap:8},sectionValue:{...typography.bodyStrong,color:C.accent},track:{height:6,overflow:'hidden',borderRadius:6,backgroundColor:C.panel2},trackFill:{height:'100%',borderRadius:6,backgroundColor:C.good},
  destinations:{flexDirection:'row',gap:8},destinationsStack:{flexDirection:'column'},destination:{flex:1,minWidth:0,minHeight:52,paddingHorizontal:10,gap:7,flexDirection:'row',alignItems:'center',borderRadius:10,borderWidth:1,borderColor:C.line,backgroundColor:C.panel2},destinationLabel:{fontSize:12,color:C.text,fontWeight:'800',flex:1},
- disclosure:{minHeight:62,padding:12,flexDirection:'row',alignItems:'center',gap:10,borderWidth:1,borderColor:C.line,borderRadius:12,backgroundColor:C.panel},chevron:{fontSize:22,fontWeight:'800',color:C.accent},expanded:{paddingHorizontal:12,paddingBottom:8},
+ disclosure:{minHeight:62,padding:12,flexDirection:'row',alignItems:'center',gap:10,borderWidth:1,borderColor:C.line,borderRadius:12,backgroundColor:C.panel},chevron:{fontSize:22,fontWeight:'800',color:C.accent},expanded:{paddingHorizontal:12,paddingBottom:8},nextAchievement:{gap:8,padding:12,borderRadius:10,backgroundColor:C.panel,borderWidth:1,borderColor:C.line},nextTitle:{...typography.bodyStrong,color:C.text},
  profileAction:{minHeight:60,flexDirection:'row',alignItems:'center',gap:10,padding:12,borderWidth:1,borderColor:C.line,borderRadius:12,backgroundColor:C.panel},actionText:{fontSize:11,color:C.accent,fontWeight:'800',maxWidth:110},pressed:{opacity:.76}
 });}

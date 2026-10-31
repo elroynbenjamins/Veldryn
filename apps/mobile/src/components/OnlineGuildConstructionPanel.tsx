@@ -5,6 +5,7 @@ import {ResourceArtwork} from './ResourceArtwork';
 import {guildUpgradeComponentArtwork,guildUpgradeComponentName} from '../theme/guild-upgrade-component-art';
 import {Panel} from './Panel';
 import {gameAlert} from '../core/game-alerts';
+import {guildConstructionBlueprint} from '../content/guild-construction-blueprints';
 import {useGameTheme} from '../theme/ThemeContext';
 import type {ThemeColors} from '../theme/theme';
 import type {GuildTokenShopSnapshot} from '../online/guild-token-shop';
@@ -61,7 +62,7 @@ export function OnlineGuildConstructionPanel({
  return <Panel>
   <Text style={s.kicker}>GUILD CONSTRUCTION</Text>
   <Text style={s.title}>Build something together</Text>
-  <Text style={s.copy}>Use shared Guild Bank supplies to finish permanent Guild cosmetics. Construction never spends directly from personal inventory.</Text>
+  <Text style={s.copy}>Use Guild Bank supplies toward long-term upgrades and special projects. Construction grants guild benefits, never free cosmetic items.</Text>
   <Text style={s.note}>Only released projects accept funding. Deposit supplies into the Guild Bank above, then allocate them to a project here.</Text>
   {error?<Text accessibilityRole="alert" style={s.error}>{error}</Text>:null}
   {notice?<Text accessibilityLiveRegion="polite" style={s.notice}>{notice}</Text>:null}
@@ -73,9 +74,9 @@ export function OnlineGuildConstructionPanel({
     <GameButton compact title="Discard local retry" tone="secondary" disabled={busy} onPress={confirmDiscard}/>
    </View>
   </View>:null}
-  {snapshot.constructionTemplates.map(template=>{
+  {snapshot.constructionTemplates.filter(template=>!template.id.startsWith('construction_')||template.enabled||snapshot.construction.some(row=>row.templateId===template.id&&row.completed)).map(template=>{
    const row=snapshot.construction.find(p=>p.templateId===template.id);
-   const requirements=[{key:'gold',required:template.gold},...template.materials.map(material=>({key:material.materialKey,required:material.amount}))];
+   const requirements=[...(template.gold>0?[{key:'gold',required:template.gold}]:[]),...template.materials.map(material=>({key:material.materialKey,required:material.amount}))];
    const completion=requirements.length?requirements.reduce((sum,res)=>sum+Math.min(1,Math.max(0,(row?.resources[res.key]??0)/res.required)),0)/requirements.length:0;
    const unlocked=snapshot.guildLevel>=template.guildLevel;
    const canDonate=unlocked&&template.enabled&&!row?.completed&&!pending&&snapshot.bank!==null;
@@ -118,7 +119,7 @@ export function OnlineGuildConstructionPanel({
      <View style={s.actions}>{[10,100,1000].map(value=><Pressable key={value} onPress={()=>setQuantity(String(Math.min(value,remaining,1000000)))}
       accessibilityRole="button" style={s.preset}><Text style={s.presetText}>{value.toLocaleString()}</Text></Pressable>)}</View>
     </View>:null}
-    <Text style={s.unlock}>{row?.completed?'Guild reward unlocked':`Reward: ${resourceName(template.unlockId)}`}</Text>
+    <Text style={s.unlock}>{row?.completed?'Guild upgrade completed':`Reward: ${guildConstructionBlueprint(template.id)?.benefit??resourceName(template.unlockId)}`}</Text>
     {!template.enabled?<Text style={s.projectMeta}>Awaiting construction release</Text>:null}
    </View>;
   })}

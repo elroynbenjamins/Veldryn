@@ -8,6 +8,7 @@ const crafted=read('src/theme/crafted-item-assets.ts');
 const arcane=read('src/theme/arcane-material-assets.ts');
 const tools=read('src/theme/gathering-tool-assets.ts');
 const toolArtwork=read('src/components/GatheringToolArtwork.tsx');
+const toolLayout=read('src/core/gathering-tool-artwork-layout.ts');
 const resourceArtwork=read('src/components/ResourceArtwork.tsx');
 const resolver=read('src/theme/resource-assets.ts');
 
@@ -35,7 +36,8 @@ for(const needle of ['const asterfallGathering=asterfallGatheringCell(itemId)','
   ok(fallbackIndex>=0&&index>fallbackIndex,needle+' must remain available after the bundled image path');
 }
 
-ok(toolArtwork.includes('GATHERING_TOOL_SHEET_WIDTH')&&toolArtwork.includes('GATHERING_TOOL_SHEET_HEIGHT'),'Tool artwork must use explicit v2 atlas dimensions');
-ok(!toolArtwork.includes('ATLAS_ASPECT'),'Old gathering-tool atlas aspect workaround must be removed');
+ok(toolLayout.includes('GATHERING_TOOL_SHEET_WIDTH')&&toolLayout.includes('GATHERING_TOOL_SHEET_HEIGHT'),'Tool artwork layout must use explicit v2 atlas dimensions');
+ok(toolArtwork.includes('gatheringToolArtworkLayout'),'Tool artwork must consume the shared layout helper');
+ok(!toolArtwork.includes('ATLAS_ASPECT')&&!toolLayout.includes('ATLAS_ASPECT'),'Old gathering-tool atlas aspect workaround must be removed');
 
 console.log('PASS: Asterfall resources and arcane materials use atlases; crafted items use direct production image assets; gathering tools use unified artwork');

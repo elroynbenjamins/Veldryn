@@ -37,7 +37,7 @@ export function guildShopEligibility(entry: GuildShopEntry, guildLevel: number, 
   if (balance < entry.tokenCost) return "insufficient_tokens";
   return "eligible";
 }
-/** Project costs are provisional until mapped to canonical material IDs. */
+/** Construction requirements are mirrored in server SQL; all new upgrade templates are DISABLED until fully tested. */
 export const GUILD_CONSTRUCTION_TEMPLATES = [
   { id:"stormwatch_banner",guildLevel:5,gold:300000,materials:[
     { materialKey:"GREENWOOD_LOG",amount:10000 },{ materialKey:"ASTER_IRON_INGOT",amount:5000 },{ materialKey:"MOSS_FIBER",amount:2000 },
@@ -48,4 +48,21 @@ export const GUILD_CONSTRUCTION_TEMPLATES = [
   { id:"fellowship_statue",guildLevel:14,gold:900000,materials:[
     { materialKey:"IRONWOOD_LOG",amount:22000 },{ materialKey:"ASTER_IRON_INGOT",amount:12000 },{ materialKey:"OATHGLASS_SHARD",amount:4000 },
   ],unlockId:"guild_decoration_fellowship_statue" },
+  { id:"construction_hall_1",guildLevel:1,gold:0,materials:[{materialKey:"GUILD_REINFORCED_TIMBER",amount:120},{materialKey:"GUILD_BANNERWEAVE",amount:100}],unlockId:"guild_construction_hall_1" },
+  { id:"construction_forge_1",guildLevel:2,gold:0,materials:[{materialKey:"GUILD_REINFORCED_TIMBER",amount:180},{materialKey:"GUILD_BANNERWEAVE",amount:80}],unlockId:"guild_construction_forge_1" },
+  { id:"construction_library_1",guildLevel:2,gold:0,materials:[{materialKey:"GUILD_REINFORCED_TIMBER",amount:80},{materialKey:"GUILD_BANNERWEAVE",amount:200}],unlockId:"guild_construction_library_1" },
+  { id:"construction_treasury_1",guildLevel:3,gold:0,materials:[{materialKey:"GUILD_REINFORCED_TIMBER",amount:160},{materialKey:"GUILD_HERALDIC_DYE",amount:120}],unlockId:"guild_construction_treasury_1" },
+  { id:"construction_hall_2",guildLevel:3,gold:0,materials:[{materialKey:"GUILD_MASONS_KEYSTONE",amount:300},{materialKey:"GUILD_HERALDIC_DYE",amount:240}],unlockId:"guild_construction_hall_2" },
+  { id:"construction_war_room_1",guildLevel:3,gold:0,materials:[{materialKey:"GUILD_MASONS_KEYSTONE",amount:200},{materialKey:"GUILD_BANNERWEAVE",amount:180}],unlockId:"guild_construction_war_room_1" },
+  { id:"construction_expedition_1",guildLevel:4,gold:0,materials:[{materialKey:"GUILD_MASONS_KEYSTONE",amount:240},{materialKey:"GUILD_HERALDIC_DYE",amount:240}],unlockId:"guild_construction_expedition_1" },
+  { id:"construction_forge_2",guildLevel:5,gold:0,materials:[{materialKey:"GUILD_FORGED_RIVETS",amount:300},{materialKey:"GUILD_SEAL_WAX",amount:160}],unlockId:"guild_construction_forge_2" },
+  { id:"construction_library_2",guildLevel:5,gold:0,materials:[{materialKey:"GUILD_FORGED_RIVETS",amount:160},{materialKey:"GUILD_SEAL_WAX",amount:300}],unlockId:"guild_construction_library_2" },
+  { id:"construction_treasury_2",guildLevel:7,gold:0,materials:[{materialKey:"GUILD_FORGED_RIVETS",amount:240},{materialKey:"GUILD_SEAL_WAX",amount:200}],unlockId:"guild_construction_treasury_2" },
+  { id:"construction_hall_3",guildLevel:6,gold:0,materials:[{materialKey:"GUILD_FORGED_RIVETS",amount:400},{materialKey:"GUILD_SEAL_WAX",amount:320}],unlockId:"guild_construction_hall_3" },
+  { id:"construction_war_room_2",guildLevel:7,gold:0,materials:[{materialKey:"GUILD_FORGED_RIVETS",amount:300},{materialKey:"GUILD_SEAL_WAX",amount:250}],unlockId:"guild_construction_war_room_2" },
+  { id:"construction_expedition_2",guildLevel:8,gold:0,materials:[{materialKey:"GUILD_FORGED_RIVETS",amount:250},{materialKey:"GUILD_SEAL_WAX",amount:240}],unlockId:"guild_construction_expedition_2" },
+  { id:"construction_forge_3",guildLevel:10,gold:0,materials:[{materialKey:"GUILD_FORTIFICATION_HINGES",amount:300},{materialKey:"GUILD_BEACON_OIL",amount:240}],unlockId:"guild_construction_forge_3" },
+  { id:"construction_library_3",guildLevel:10,gold:0,materials:[{materialKey:"GUILD_FORTIFICATION_HINGES",amount:200},{materialKey:"GUILD_BEACON_OIL",amount:300}],unlockId:"guild_construction_library_3" },
+  { id:"construction_hall_4",guildLevel:10,gold:0,materials:[{materialKey:"GUILD_FORTIFICATION_HINGES",amount:400},{materialKey:"GUILD_BEACON_OIL",amount:350}],unlockId:"guild_construction_hall_4" },
+  { id:"construction_war_room_3",guildLevel:15,gold:0,materials:[{materialKey:"GUILD_FORTIFICATION_HINGES",amount:320},{materialKey:"GUILD_BEACON_OIL",amount:300}],unlockId:"guild_construction_war_room_3" },
 ] as const;

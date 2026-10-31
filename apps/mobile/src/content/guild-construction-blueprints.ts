@@ -1,0 +1,31 @@
+/** Draft material-funded Guild Construction upgrades.
+ * Material requirements stay 10x the original quantity proposal using the eight illustrated Guild-only components.
+ * They are separate from automatic Guild Hall v44 facility tiers.
+ * No entry becomes spendable until its SQL release flag is explicitly enabled
+ * AND its promised rewards are implemented and verified in staging.
+ */
+export interface GuildConstructionBlueprint {
+ id:string;name:string;requiredGuildLevel:number;
+ materials:ReadonlyArray<{itemId:string;amount:number}>;
+ benefit:string;description:string;rewardKind:'shop'|'utility'|'future';
+}
+export const GUILD_CONSTRUCTION_BLUEPRINTS:readonly GuildConstructionBlueprint[]=[
+ {id:"construction_hall_1",name:"Guild Hall I",requiredGuildLevel:1,materials:[{itemId:'GUILD_REINFORCED_TIMBER',amount:120},{itemId:'GUILD_BANNERWEAVE',amount:100}],benefit:"Unlock guild name and tag color editing",description:"Leader/officer can select only colors already unlocked by the Guild. No colors are granted.",rewardKind:'shop'},
+ {id:"construction_forge_1",name:"Guild Forge I",requiredGuildLevel:2,materials:[{itemId:'GUILD_REINFORCED_TIMBER',amount:180},{itemId:'GUILD_BANNERWEAVE',amount:80}],benefit:"+5% Smithing and Tailoring processing speed",description:"Guild-wide while a member; boosts do not stack with lower construction tiers.",rewardKind:'utility'},
+ {id:"construction_library_1",name:"Guild Library I",requiredGuildLevel:2,materials:[{itemId:'GUILD_REINFORCED_TIMBER',amount:80},{itemId:'GUILD_BANNERWEAVE',amount:200}],benefit:"+5% non-combat skill XP",description:"Guild-wide while a member; separate from existing Guild Skills.",rewardKind:'utility'},
+ {id:"construction_treasury_1",name:"Guild Treasury I",requiredGuildLevel:3,materials:[{itemId:'GUILD_REINFORCED_TIMBER',amount:160},{itemId:'GUILD_HERALDIC_DYE',amount:120}],benefit:"+10% Guild Token earnings; weekly cap 275",description:"Verified normal Guild Token claims only; event rewards remain exempt from the weekly cap.",rewardKind:'utility'},
+ {id:"construction_hall_2",name:"Guild Hall II",requiredGuildLevel:3,materials:[{itemId:'GUILD_MASONS_KEYSTONE',amount:300},{itemId:'GUILD_HERALDIC_DYE',amount:240}],benefit:"Unlock Rare Guild Shop offers",description:"Rare offers become purchasable for eligible members; Guild Tokens and item requirements still apply.",rewardKind:'shop'},
+ {id:"construction_war_room_1",name:"War Room I",requiredGuildLevel:3,materials:[{itemId:'GUILD_MASONS_KEYSTONE',amount:200},{itemId:'GUILD_BANNERWEAVE',amount:180}],benefit:"+3% damage against Guild Bosses",description:"Guild-only PvE boss combat. No effect on PvP or ordinary combat.",rewardKind:'utility'},
+ {id:"construction_expedition_1",name:"Expedition Lodge I",requiredGuildLevel:4,materials:[{itemId:'GUILD_MASONS_KEYSTONE',amount:240},{itemId:'GUILD_HERALDIC_DYE',amount:240}],benefit:"+5% Guild Quest Gold rewards",description:"Only verified Guild Quest Gold payouts; not ordinary quest or expedition rewards.",rewardKind:'utility'},
+ {id:"construction_forge_2",name:"Guild Forge II",requiredGuildLevel:5,materials:[{itemId:'GUILD_FORGED_RIVETS',amount:300},{itemId:'GUILD_SEAL_WAX',amount:160}],benefit:"+8% total Smithing and Tailoring processing speed",description:"Guild-wide, replaces the +5% construction tier.",rewardKind:'utility'},
+ {id:"construction_library_2",name:"Guild Library II",requiredGuildLevel:5,materials:[{itemId:'GUILD_FORGED_RIVETS',amount:160},{itemId:'GUILD_SEAL_WAX',amount:300}],benefit:"+8% total non-combat skill XP",description:"Guild-wide, replaces the +5% construction tier.",rewardKind:'utility'},
+ {id:"construction_treasury_2",name:"Guild Treasury II",requiredGuildLevel:7,materials:[{itemId:'GUILD_FORGED_RIVETS',amount:240},{itemId:'GUILD_SEAL_WAX',amount:200}],benefit:"+20% Guild Token earnings; weekly cap 300",description:"Verified normal Guild Token claims only; cap replaces the previous one.",rewardKind:'utility'},
+ {id:"construction_hall_3",name:"Guild Hall III",requiredGuildLevel:6,materials:[{itemId:'GUILD_FORGED_RIVETS',amount:400},{itemId:'GUILD_SEAL_WAX',amount:320}],benefit:"Unlock Epic Guild Shop offers",description:"Epic offers become purchasable for eligible members; no cosmetics are granted by construction.",rewardKind:'shop'},
+ {id:"construction_war_room_2",name:"War Room II",requiredGuildLevel:7,materials:[{itemId:'GUILD_FORGED_RIVETS',amount:300},{itemId:'GUILD_SEAL_WAX',amount:250}],benefit:"+6% total damage against Guild Bosses",description:"Replaces the lower construction tier; no stacking.",rewardKind:'utility'},
+ {id:"construction_expedition_2",name:"Expedition Lodge II",requiredGuildLevel:8,materials:[{itemId:'GUILD_FORGED_RIVETS',amount:250},{itemId:'GUILD_SEAL_WAX',amount:240}],benefit:"+10% total Guild Quest Gold rewards",description:"Replaces the +5% construction tier; not ordinary quest rewards.",rewardKind:'utility'},
+ {id:"construction_forge_3",name:"Guild Forge III",requiredGuildLevel:10,materials:[{itemId:'GUILD_FORTIFICATION_HINGES',amount:300},{itemId:'GUILD_BEACON_OIL',amount:240}],benefit:"+12% total Smithing and Tailoring processing speed",description:"Guild-wide, replaces the +8% construction tier.",rewardKind:'utility'},
+ {id:"construction_library_3",name:"Guild Library III",requiredGuildLevel:10,materials:[{itemId:'GUILD_FORTIFICATION_HINGES',amount:200},{itemId:'GUILD_BEACON_OIL',amount:300}],benefit:"+12% total non-combat skill XP",description:"Guild-wide, replaces the +8% construction tier.",rewardKind:'utility'},
+ {id:"construction_hall_4",name:"Guild Hall IV",requiredGuildLevel:10,materials:[{itemId:'GUILD_FORTIFICATION_HINGES',amount:400},{itemId:'GUILD_BEACON_OIL',amount:350}],benefit:"Unlock Prestige Guild Shop offers",description:"Prestige offers become purchasable; no cosmetic, pet or companion is awarded automatically.",rewardKind:'shop'},
+ {id:"construction_war_room_3",name:"War Room III",requiredGuildLevel:15,materials:[{itemId:'GUILD_FORTIFICATION_HINGES',amount:320},{itemId:'GUILD_BEACON_OIL',amount:300}],benefit:"+10% total damage against Guild Bosses",description:"Future guild-level expansion; no effect on PvP.",rewardKind:'future'},
+];
+export const guildConstructionBlueprint=(id:string)=>GUILD_CONSTRUCTION_BLUEPRINTS.find(row=>row.id===id);

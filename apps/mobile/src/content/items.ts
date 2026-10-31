@@ -1,13 +1,14 @@
 import { ClassId,GatheringSkillId,GearSlot,GemEffectId,GemSocketKind,GemStat } from '../core/types';
 import {ItemRarity} from '../core/item-rarity';
 import {NOVICE_ITEMS} from './novice-sets';
+import {GUILD_COMPONENT_ITEMS} from './guild-components';
 import {TOOL_BLUEPRINT_ITEMS,TOOL_ITEMS} from './gathering-tools';
 import {HERB_ITEMS} from './herbalism';
 import {ALCHEMY_EQUIPMENT_INFUSION_ITEMS,POTION_ITEMS} from './alchemy';
 import {EQUIPMENT_ITEMS_V33} from './equipment-items-v33';
 import {GEM_ITEMS_V1,RAW_GEM_ITEMS_V1,type MobileGemGradeV1} from './gems-v1';
 export interface ItemDef {
-  id:string; name:string; type:'material'|'gear'|'quest'|'food'|'tool'|'gem'|'potion'; slot?:GearSlot;
+  id:string; name:string; guildOnly?:boolean; type:'material'|'gear'|'quest'|'food'|'tool'|'gem'|'potion'; slot?:GearSlot;
   attack?:number; defense?:number; hp?:number; heal?:number; readiness?:number;
   toolSkillId?:GatheringSkillId;toolTier?:number;actionTimeMultiplier?:number;
   rarity?:ItemRarity; passive?:string; knowledgeUnlockId?:string;
@@ -147,7 +148,7 @@ const BASE_ITEMS:ItemDef[]=[
 {id:'FALLEN_KNIGHT_SIGIL',name:'Fallen Knight Sigil',type:'quest',value:0},
 
 ];
-export const ITEMS:ItemDef[]=[...BASE_ITEMS,...EQUIPMENT_ITEMS_V33];
+export const ITEMS:ItemDef[]=[...BASE_ITEMS,...GUILD_COMPONENT_ITEMS,...EQUIPMENT_ITEMS_V33];
 const itemsById=new Map(ITEMS.map(item=>[item.id,item]));
 if(itemsById.size!==ITEMS.length)throw new Error('Duplicate item IDs in the item catalog');
 export function itemDef(id:string){const x=itemsById.get(id); if(!x) throw new Error(`Unknown item ${id}`); return x;}

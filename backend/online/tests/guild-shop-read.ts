@@ -10,6 +10,7 @@ async function run() {
   rpc: async <T>(name:string,args:Record<string,unknown>) => {
    calls.push({name,args});
    if(name==="guild_bank_snapshot_server_v1")return {balances:[],activity:[]} as unknown as T;
+   if(name==="guild_construction_benefits_server_v1")return {guildTokenBonusBps:0,guildTokenWeeklyCap:250} as unknown as T;
    if(name==="guild_construction_snapshot_server_v1"||name==="guild_shop_event_community_rewards_server_v1"||name==="guild_construction_enabled_server_v1"||name==="guild_shop_weekly_rewards_server_v1")return [] as unknown as T;
    return {balance:3000,earnedThisWeek:125,claimedDailyKinds:[],enabledItemIds:[],ownedItemIds:["border_silver"]} as unknown as T;
   },
@@ -28,7 +29,7 @@ async function run() {
  assert(body.cards.find(x=>x.id==="border_silver")?.status==="owned","owned cosmetics");
  assert(body.cards.find(x=>x.id==="guild_pet_02")?.status==="insufficient_tokens","unaffordable pet");
  assert(body.cards.find(x=>x.id==="guild_companion_01")?.status==="guild_level_locked","guild level lock");
- assert(calls.length===6 && calls[0].name==="guild_shop_snapshot_server_v1" && calls[1].name==="guild_construction_snapshot_server_v1" && calls[2].name==="guild_shop_event_community_rewards_server_v1" && calls[3].name==="guild_construction_enabled_server_v1" && calls[4].name==="guild_shop_weekly_rewards_server_v1" && calls[5].name==="guild_bank_snapshot_server_v1","all authenticated read-only RPCs called");
+ assert(calls.length===7 && calls[0].name==="guild_shop_snapshot_server_v1" && calls[1].name==="guild_construction_snapshot_server_v1" && calls[2].name==="guild_shop_event_community_rewards_server_v1" && calls[3].name==="guild_construction_enabled_server_v1" && calls[4].name==="guild_shop_weekly_rewards_server_v1" && calls[5].name==="guild_bank_snapshot_server_v1" && calls[6].name==="guild_construction_benefits_server_v1","all authenticated read-only RPCs called");
  assert(calls[0].args.p_account_id==="11111111-1111-4111-8111-111111111111","verified identity forwarded");
  const optionalFailure=guildShopReadHandler({...services,rpc:async<T>(name:string,args:Record<string,unknown>)=>{
   if(name==='guild_construction_snapshot_server_v1'||name==='guild_shop_event_community_rewards_server_v1')throw new Error('unavailable_optional_projection');
@@ -67,6 +68,9 @@ async function run() {
  assert(claimCalls.length===1&&claimCalls[0].name==="guild_shop_claim_daily_server_v1","only verified claim RPC called");
  assert(claimCalls[0].args.p_kind==="contribution","reward kind forwarded");
  assert(claimCalls[0].args.p_account_id==="11111111-1111-4111-8111-111111111111","authenticated account forwarded");
+ const treasuryDaily=guildShopDailyClaimHandler({...services,rpc:async<T>()=>12 as unknown as T});
+ assert((await treasuryDaily(new Request(claimUri,{method:'POST',headers:{authorization:'Bearer valid'},body:'{"kind":"attendance"}'}))).status===200,
+  'Treasury II +20% daily verified claim accepted');
 
  const purchaseCalls: Array<{name:string;args:Record<string,unknown>}>=[];
  const purchase=guildShopPurchaseHandler({...services,rpc:async<T>(name:string,args:Record<string,unknown>)=>{
@@ -158,6 +162,9 @@ async function run() {
  assert(weeklyOk.status===200,'valid weekly reward forwarded');
  assert(weeklyCalls.length===1&&weeklyCalls[0].name==='guild_shop_claim_weekly_server_v1','weekly reward uses verified SQL');
  assert(weeklyCalls[0].args.p_account_id==='11111111-1111-4111-8111-111111111111','weekly claim account is authenticated');
+ const treasuryWeekly=guildShopWeeklyClaimHandler({...services,rpc:async<T>()=>60 as unknown as T});
+ assert((await treasuryWeekly(new Request(weeklyUri,{method:'POST',headers:{authorization:'Bearer valid'},body:'{"kind":"attendance"}'}))).status===200,
+  'Treasury II +20% weekly verified claim accepted');
  console.log("guild shop read handler tests passed");
 }
 void run();

@@ -139,7 +139,7 @@ async function main(){
   eventCandyChargesById:{...state.account.eventCandyChargesById,[candyId]:5},
   eventShopPurchaseCounts:{...state.account.eventShopPurchaseCounts,[candyEventId+':candy:companion_material']:5},
  }};
- const candyStartVersion=version,candyStartCommits=commits;
+ const candyStartVersion=version,candyStartCommits=commits,candyStartBloom=state.account.companionMaterials?.EVENT_BONDBLOOM??0;
  const [candyRaceA,candyRaceB]=await Promise.all([
   request({type:'event_candy',args:{kind:'companion',companionId:firstCompanion}},'candy-race-a-01',candyStartVersion),
   request({type:'event_candy',args:{kind:'companion',companionId:secondCompanion}},'candy-race-b-01',candyStartVersion),
@@ -147,7 +147,7 @@ async function main(){
  assert.deepEqual([candyRaceA.status,candyRaceB.status].sort((a,b)=>a-b),[200,409],'concurrent candy actions fence stale revisions');
  assert.equal(commits,candyStartCommits+1,'only one candy claim commits under simultaneous taps/devices');
  assert.equal(state!.account.eventCandyChargesById?.[candyId],4,'accepted action spends exactly one candy');
- assert.equal(state!.account.companionMaterials?.EVENT_BONDBLOOM,1,'only one Bondbloom material is credited');
+ assert.equal(state!.account.companionMaterials?.EVENT_BONDBLOOM,candyStartBloom+1,'only one Bondbloom material is credited');
  const wonId=candyRaceA.status===200?firstCompanion:secondCompanion,wonKey=candyRaceA.status===200?'candy-race-a-01':'candy-race-b-01';
  assert.equal(state!.account.eventShopPurchaseCounts?.[candyEventId+':candy:companion_material:'+wonId],1);
  const afterRace=commits;

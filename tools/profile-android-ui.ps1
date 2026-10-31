@@ -57,6 +57,7 @@ if ($LASTEXITCODE -ne 0) { throw 'Failed to collect app memory statistics.' }
 if ($LASTEXITCODE -ne 0) { throw 'Failed to collect CPU statistics.' }
 
 $reporter = Join-Path $PSScriptRoot 'android-perf-report.mjs'
+$mode = $LaunchMode.ToLowerInvariant()
 $summaryPath = "$prefix-summary.json"
 & node $reporter capture --frames "$prefix-frames.txt" --memory "$prefix-memory.txt" --scenario $Scenario --device-profile $DeviceProfile --build $BuildLabel --capture-mode $LaunchMode.ToLowerInvariant() --hz $RefreshHz --out $summaryPath
 if ($LASTEXITCODE -ne 0) { throw 'Android capture summary failed: inspect the raw diagnostics, then repeat with a longer sample.' }

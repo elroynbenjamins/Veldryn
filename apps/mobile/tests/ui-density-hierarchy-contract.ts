@@ -307,7 +307,7 @@ ok(petBonusOverview.includes('accessibilityState={{expanded:showBonusHelp}}')&&p
 
 const achievements=read('src/screens/AchievementsScreen.tsx');
 ok(achievements.includes('<GameButton compact title={t("Save showcase")}'),"Achievements showcase action must not dominate the screen");
-ok(achievements.includes('<GameButton compact title={entry.claimed?t("Claimed"):entry.completed?t("Claim"):t("Locked")}'),"Achievement row actions must remain compact");
+ok(achievements.includes('<GameButton compact title={t("Claim")}')&&achievements.includes('entryActions:{alignSelf:'),"Achievement claim and showcase row actions must remain compact");
 
 const activityOverview=read('src/screens/ActivityOverviewScreen.tsx');
 ok(activityOverview.includes('combatTone:{color:C.bad}'),'Character Activity combat emphasis must use the active theme');

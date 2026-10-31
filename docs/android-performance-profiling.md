@@ -38,3 +38,46 @@ Keep the same phone, build, refresh rate, login/test save, run duration and sequ
 ## Release safety
 
 No profiling tool writes to production. If staged load testing is introduced later, require a dedicated staging Supabase project, a bounded concurrency budget, a hard test timeout and test accounts before sending any traffic. Do not include auth tokens or private account identifiers in performance reports.
+
+## Repeatable frame + memory comparison (new)
+
+The Windows capture tool also saves a privacy-minimal `*-summary.json` with frame p50/p95/p99, jank percentage and Android app PSS, plus three labels you choose. It excludes raw package, device serial, user data and app logs. Use the **same** phone, selected display refresh rate, test save, UI scenario and interaction sequence on both builds.
+
+```powershell
+# From the repository root. Use a label instead of any real device ID.
+.\tools\profile-android-ui.ps1 -Phase Start -Scenario inventory -RefreshHz 120 -DeviceProfile phoneA -BuildLabel baseline
+# Exercise Inventory for 30-60 seconds.
+.\tools\profile-android-ui.ps1 -Phase Capture -Scenario inventory -RefreshHz 120 -DeviceProfile phoneA -BuildLabel baseline
+```
+
+Repeat each scenario **at least three times** on the baseline AAB and on the candidate AAB. Repeat the exact sequence for Companions, Guild, Dungeon and Home, both cold and warmed; keep cold/warm results in separate comparisons. Use `-Serial` when multiple ADB devices are connected.
+
+```powershell
+# Replace with your six actual summary paths (not the raw framestats files).
+node tools/android-perf-report.mjs compare --baseline old1-summary.json --baseline old2-summary.json --baseline old3-summary.json --candidate new1-summary.json --candidate new2-summary.json --candidate new3-summary.json
+```
+
+The comparison returns per-metric medians and review flags for p95 frame time over +15%, over-budget frames over +3 percentage points, or app PSS over +15%. These thresholds indicate **review candidates**, not release gates. At least 120 valid frames per summary are required. No synthetic CI output may be interpreted as device frame rate.
+
+## Staging database and concurrency measurement (new)
+
+Read-only staging observations on 2026-10-31 showed little or no populated gameplay data. The biggest recorded cumulative query-time consumers were `maintain_minute_tick_v18` (8,831 calls, 15.19 ms average) and `process_online_tick_server_v1` (17,650 calls, 7.60 ms average). These measurements are historical and do not demonstrate a problem for populated player accounts. Inspect query plans against representative test fixtures before changing cron schedules or adding indexes.
+
+`tools/profile-staging-gameplay.mjs` provides a **manual, bounded, write-enabled staging test** of the actual gameplay endpoint and PostgreSQL optimistic version fencing. It is never run by CI. It first authenticates two to four distinct test accounts and verifies all are idle; only then does it issue two competing, no-op `settings` commands per account, verify that exactly one wins and one receives `stale_state`, replay the winning receipt, and confirm unchanged Gold and bank balances. It reports sanitized p50/p95 request timings. The cap is two rounds, two contenders per account, and eight seconds per request.
+
+In a private terminal session, set these environment variables (do not commit credentials, console history or raw responses):
+
+```powershell
+$env:STAGING_PROFILE_CONFIRM = 'I_CONFIRM_ISOLATED_STAGING_LOAD_TEST'
+$env:STAGING_PROFILE_URL = 'https://YOUR_STAGING_REF.supabase.co'
+$env:STAGING_PROFILE_PROJECT_REF = 'YOUR_STAGING_REF'
+$env:STAGING_PROFILE_CONFIRM_REF = 'YOUR_STAGING_REF'
+$env:STAGING_PROFILE_PRODUCTION_REF = 'YOUR_PRODUCTION_REF'
+$env:STAGING_PROFILE_TEST_EMAIL_MARKER = '+perf'
+$env:STAGING_PROFILE_ANON_KEY = '<staging publishable / anon key>'
+$env:STAGING_PROFILE_ACCOUNTS_JSON = '[{"email":"qa+perf.one@example.net","password":"private"},{"email":"qa+perf.two@example.net","password":"private"}]'
+$env:STAGING_PROFILE_ROUNDS = '1'
+node tools/profile-staging-gameplay.mjs
+```
+
+The dedicated test accounts must already exist in **the isolated staging project**, with test characters and no active activities. This refuses unconfirmed environments, non-Supabase hosts, the known production project ref, duplicate owners, non-test-marked emails and more than four accounts. **Never point the profiler at production** or run it from a regular player account. A failed or timed-out write may still have committed server-side; the tool deliberately does not auto-retry unknown outcomes. It also does not test live Dungeon room behavior, which requires a dedicated staged party and a separate manual playthrough.

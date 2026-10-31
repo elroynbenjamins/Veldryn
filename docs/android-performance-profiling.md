@@ -50,7 +50,7 @@ The Windows capture tool also saves a privacy-minimal `*-summary.json` with fram
 .\tools\profile-android-ui.ps1 -Phase Capture -Scenario inventory -RefreshHz 120 -DeviceProfile phoneA -BuildLabel baseline
 ```
 
-Repeat each scenario **at least three times** on the baseline AAB and on the candidate AAB. Repeat the exact sequence for Companions, Guild, Dungeon and Home, both cold and warmed; keep cold/warm results in separate comparisons. Use `-Serial` when multiple ADB devices are connected.
+Repeat each scenario **at least three times** on the baseline AAB and on the candidate AAB. Repeat the exact sequence for Companions, Guild, Dungeon and Home. The default `-LaunchMode Cold` force-stops the app; use `-LaunchMode Warm` on both Start and Capture to profile an already-loaded app without force-stopping it. Cold and warm samples are labeled separately and cannot be mixed in comparisons. Use `-Serial` when multiple ADB devices are connected.
 
 ```powershell
 # Replace with your six actual summary paths (not the raw framestats files).

@@ -17,7 +17,7 @@ async function main(){
  let conflicts=0,committed=0,replayed=0;
  for(let index=0;index<accountCount;index++){
   const id='load-account-'+index;
-  const state=createCharacter(newGame(epoch),'IRONWARDEN','Load Character '+index);
+  const state=createCharacter(newGame(epoch),'IRONWARDEN','Load Character '+String.fromCharCode(65+index));
   state.character!.gold=5000;state.bank.gold=500;
   sessions.set(id,{state,version:0,commits:0});
  }

@@ -1,6 +1,6 @@
 import {accountText,accountError,accountDuration} from '../i18n/account';
 import {useMemo,useState} from 'react';
-import {ScrollView,StyleSheet,Text,View,useWindowDimensions} from 'react-native';
+import {Pressable,ScrollView,StyleSheet,Text,View,useWindowDimensions} from 'react-native';
 import {GameButton} from '../components/GameButton';
 import {GameTextInput} from '../components/GameTextInput';
 import {GameModalHeader,GameModalSurface} from '../components/GameModalSurface';
@@ -25,14 +25,14 @@ export function ActivityOverviewScreen({state,now,onSwitch,onCreate,onDelete}:{s
  const C=useGameTheme(),equipmentColors=equipmentTheme(C),s=useMemo(()=>makeStyles(C),[C]),{width,fontScale}=useWindowDimensions(),stackRows=width<380||fontScale>=1.2;
  const entries=accountCharacters(state).map(entry=>({character:entry.character,activity:entry.character.id===state.character?.id?state.activity:(state.otherCharacters??[]).find(other=>other.character.id===entry.character.id)?.activity??null})).sort((a,b)=>Number(Boolean(b.activity))-Number(Boolean(a.activity)));
  const slots=unlockedCharacterSlots(state),skillTotal=accountSkillLevel(state),nextThreshold=slots<5?CHARACTER_SLOT_THRESHOLDS[slots]:undefined;
- const [managingId,setManagingId]=useState<string>(),[confirmation,setConfirmation]=useState(''),[busy,setBusy]=useState(false),[error,setError]=useState('');
+ const [managingId,setManagingId]=useState<string>(),[confirmation,setConfirmation]=useState(''),[busy,setBusy]=useState(false),[error,setError]=useState(''),[showDeleteDetails,setShowDeleteDetails]=useState(false);
  const target=entries.find(entry=>entry.character.id===managingId);
  const required=target?characterDeleteConfirmation(target.character.name):'';
  const confirmed=!!target&&confirmation===required;
  const blockReason=target?characterDeleteBlockReason(state,target.character.id):undefined;
  const craftCount=target?equipmentCraftingQueue(state).filter(job=>job.ownerCharacterId===target.character.id).length:0;
- const close=()=>{if(busy)return;setManagingId(undefined);setConfirmation('');setError('')};
- const open=(id:string)=>{setManagingId(id);setConfirmation('');setError('')};
+ const close=()=>{if(busy)return;setManagingId(undefined);setConfirmation('');setError('');setShowDeleteDetails(false)};
+ const open=(id:string)=>{setManagingId(id);setConfirmation('');setError('');setShowDeleteDetails(false)};
  const remove=async(recreate:boolean)=>{
   if(!target||!onDelete||!confirmed||blockReason||busy)return;
   setBusy(true);setError('');
@@ -67,8 +67,12 @@ export function ActivityOverviewScreen({state,now,onSwitch,onCreate,onDelete}:{s
   <GameModalSurface visible={!!target} presentation="dialog" reduceMotion={state.settings.reduceMotion} onClose={close} backdropLabel={a("Close character management")}>
    <GameModalHeader eyebrow={a("CHARACTER MANAGEMENT")} title={target?.character.name??'Character'} onClose={close} closeDisabled={busy}/>
    {target?<ScrollView style={s.modalScroll} contentContainerStyle={s.modalBody} keyboardShouldPersistTaps="handled" keyboardDismissMode="on-drag" showsVerticalScrollIndicator={false} showsHorizontalScrollIndicator={false}>
-    <View style={s.warning}><Text style={s.warningTitle}>{a("Permanent character deletion")}</Text><Text style={s.warningText}>{a("Levels, XP, Gold, skills, quests, class progress, saved loadouts and character-bound appearance progress are removed. Equipment enhancement/temper ranks and pity progress are also removed; recovered gear returns as its base item. Inventory, overflow items, equipped gear, gathering tools and socketed gems are recovered to the shared Bank, then Overflow if needed.")}</Text></View>
-    <View style={s.preserved}><Text style={s.preservedTitle}>{a("ACCOUNT PROGRESS STAYS")}</Text><Text style={s.preservedText}>{a("Earned character slots, premium currency, companions, Guild membership and account collectibles are preserved.")}</Text></View>
+    <View style={s.warning}><Text style={s.warningTitle}>{a("What you lose")}</Text><Text style={s.warningText}>{a("Your character, levels, Gold, skills, quests, loadouts and equipment upgrades are permanently removed.")}</Text>
+      <Text style={s.warningText}>{a("Equipment and items return to the shared Bank or Overflow, with upgrades removed.")}</Text>
+      <Pressable accessibilityRole="button" accessibilityState={{expanded:showDeleteDetails}} style={s.detailsToggle} onPress={()=>setShowDeleteDetails(value=>!value)}><Text style={s.detailsToggleText}>{showDeleteDetails?a("Hide deletion details"):a("Read full deletion details")} {showDeleteDetails?'−':'+'}</Text></Pressable>
+      {showDeleteDetails?<Text style={s.warningText}>{a("Levels, XP, Gold, skills, quests, class progress, saved loadouts and character-bound appearance progress are removed. Equipment enhancement/temper ranks and pity progress are also removed; recovered gear returns as its base item. Inventory, overflow items, equipped gear, gathering tools and socketed gems are recovered to the shared Bank, then Overflow if needed.")}</Text>:null}
+    </View>
+    <View style={s.preserved}><Text style={s.preservedTitle}>{a("What you keep")}</Text><Text style={s.preservedText}>{a("Earned character slots, premium currency, companions, Guild membership and account collectibles are preserved.")}</Text></View>
     {blockReason?<View style={s.block}><Text accessibilityRole="alert" style={s.blockTitle}>{a("Finish before deleting")}</Text><Text style={s.blockText}>{a(blockReason)}</Text>{craftCount>0?<Text style={s.blockText}>{a('{count} equipment crafts are still linked to this character.',{count:craftCount})}</Text>:null}</View>:null}
     <Text style={s.confirmLabel}>{a('Type {confirmation} to unlock the delete actions.',{confirmation:required})}</Text>
     <GameTextInput accessibilityLabel={a("Character deletion confirmation")} autoCapitalize="characters" autoCorrect={false} editable={!busy&&!blockReason} value={confirmation} onChangeText={value=>{setConfirmation(value);setError('')}} placeholder={required}/>
@@ -88,7 +92,7 @@ function makeStyles(C:ThemeColors){const equipmentColors=equipmentTheme(C);retur
  rosterOverview:{padding:12,gap:10,backgroundColor:C.panel,borderWidth:1,borderColor:C.line,borderRadius:12},summary:{flexDirection:'row',gap:7},summaryCell:{flex:1,minWidth:0,padding:7,backgroundColor:C.panel2,borderRadius:8,alignItems:'center'},summaryLabel:{fontSize:9,color:equipmentColors.goldSoft,fontWeight:'900',letterSpacing:.6,textAlign:'center'},summaryValue:{...typography.title,color:C.text},slotHint:{...typography.caption,color:C.muted,flex:1},slotProgress:{gap:6},slotProgressHead:{flexDirection:'row',alignItems:'center',gap:6},slotCount:{fontSize:10,fontWeight:'900',color:C.info},track:{height:5,borderRadius:4,overflow:'hidden',backgroundColor:C.panel2},trackFill:{height:'100%',backgroundColor:C.info},characterCard:{padding:12,gap:8,borderWidth:1,borderColor:C.line,borderRadius:12,backgroundColor:C.panel},characterActive:{borderColor:equipmentColors.selectedLine,backgroundColor:C.selection},
  row:{flexDirection:'row',alignItems:'center',gap:spacing.sm},rowStack:{flexDirection:'column',alignItems:'stretch'},nameRow:{flexDirection:'row',alignItems:'center',flexWrap:'wrap',gap:spacing.sm},copy:{flex:1,minWidth:0},actions:{flexDirection:'row',alignItems:'center',justifyContent:'flex-end',gap:spacing.xs,flexWrap:'wrap'},actionsStack:{justifyContent:'flex-start'},name:{...typography.title,color:C.text},active:{...typography.caption,color:equipmentColors.selectedLine,fontWeight:'900',letterSpacing:.7},meta:{...typography.caption,color:C.muted,marginTop:2},
  activityRow:{flexDirection:'row',alignItems:'center',gap:spacing.sm,marginTop:3,paddingTop:9,borderTopWidth:1,borderColor:C.line},dot:{width:10,height:10,borderRadius:5},dotOn:{backgroundColor:C.good},dotIdle:{backgroundColor:C.disabled},activity:{...typography.bodyStrong,color:C.good},combatTone:{color:C.bad},gatheringTone:{color:equipmentColors.goldSoft},trainingTone:{color:C.info},faithTone:{color:C.special},idle:{...typography.bodyStrong,color:C.muted},target:{...typography.bodyStrong,color:equipmentColors.goldSoft,marginTop:2},
- modalScroll:{maxHeight:'78%'},modalBody:{gap:spacing.md,paddingBottom:spacing.sm},warning:{borderWidth:1,borderColor:C.bad,backgroundColor:C.warningSurface,padding:spacing.md,borderRadius:10,gap:4},warningTitle:{...typography.bodyStrong,color:C.bad},warningText:{...typography.caption,color:C.text,lineHeight:18},
+ modalScroll:{maxHeight:'78%'},modalBody:{gap:spacing.md,paddingBottom:spacing.sm},warning:{borderWidth:1,borderColor:C.bad,backgroundColor:C.warningSurface,padding:spacing.md,borderRadius:10,gap:4},warningTitle:{...typography.bodyStrong,color:C.bad},warningText:{...typography.caption,color:C.text,lineHeight:18},detailsToggle:{minHeight:44,justifyContent:'center',alignSelf:'flex-start'},detailsToggleText:{...typography.bodyStrong,color:C.accent},
  preserved:{borderWidth:1,borderColor:C.good,backgroundColor:C.goodSurface,padding:spacing.md,borderRadius:10,gap:4},preservedTitle:{...typography.caption,color:C.good,fontWeight:'900',letterSpacing:.7},preservedText:{...typography.caption,color:C.text,lineHeight:18},
  block:{borderWidth:1,borderColor:C.warning,backgroundColor:C.warningSurface,padding:spacing.md,borderRadius:10,gap:4},blockTitle:{...typography.bodyStrong,color:C.warning},blockText:{...typography.caption,color:C.text,lineHeight:18},
  confirmLabel:{...typography.body,color:C.text},confirmCode:{fontWeight:'900',color:C.bad},error:{...typography.caption,color:C.bad},footnote:{...typography.caption,color:C.muted,lineHeight:18}

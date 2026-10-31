@@ -52,7 +52,7 @@ export function GuildMemberIdentityCard({guild,role,members,onRoster,onManage}:{
 
 }
 function styles(C:ThemeColors){return StyleSheet.create({
- banner:{padding:12,minHeight:110,justifyContent:'center',borderWidth:1,borderColor:C.line,borderRadius:10,overflow:'hidden',backgroundColor:C.stage},bannerName:{fontSize:19,lineHeight:25,fontWeight:'700',color:'#E8ECEF'},bannerMeta:{fontSize:11,lineHeight:17,color:'#D3DCE8'},bannerActions:{maxWidth:78,gap:2,flexShrink:0},bannerAction:{minHeight:44,minWidth:44,justifyContent:'center',paddingHorizontal:4},bannerActionText:{fontSize:11,lineHeight:16,color:'#E8ECEF',fontWeight:'600'},
+ banner:{padding:12,minHeight:110,justifyContent:'center',borderWidth:1,borderColor:C.line,borderRadius:10,overflow:'hidden',backgroundColor:C.panelRaised},bannerName:{fontSize:19,lineHeight:25,fontWeight:'700',color:'#E8ECEF'},bannerMeta:{fontSize:11,lineHeight:17,color:'#D3DCE8'},bannerActions:{maxWidth:78,gap:2,flexShrink:0},bannerAction:{minHeight:44,minWidth:44,justifyContent:'center',paddingHorizontal:4},bannerActionText:{fontSize:11,lineHeight:16,color:'#E8ECEF',fontWeight:'600'},
  card:{gap:11},loading:{flexDirection:'row',alignItems:'center',gap:10},flex:{flex:1,minWidth:0},
  identity:{flexDirection:'row',alignItems:'center',gap:8},
  kicker:{color:C.accent,fontSize:11,lineHeight:15,fontWeight:'900',letterSpacing:1},

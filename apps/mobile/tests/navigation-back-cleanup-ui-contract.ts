@@ -11,7 +11,7 @@ ok(!skills.includes('<DetailBack')&&!skills.includes('function DetailBack'),'Ski
 ok(!forge.includes('‹  {gl(\'Skills\')}'),'Forge header must not show a redundant back button');
 ok(!unlocks.includes('Back to Account'),'New Unlocks must not display an in-page back button');
 ok(!settings.includes('Back to settings'),'Mobile Settings should navigate with a category strip, not a back arrow');
-ok(settings.includes("label={t(language,'settings.title')}")&&settings.includes('setSection(null)'),'Mobile Settings must retain a route to the category list');
+ok(settings.includes("t(language,'settings.title')")&&settings.includes("const sections:SettingsSection[]=['account','gameplay','chat','display','data']")&&settings.includes("onPress={()=>setSection(value)}")&&settings.includes("onPress={()=>setSection('store')}"),'Mobile Settings must open on Account and keep selectable category tabs plus a dedicated Store shortcut');
 ok(app.includes("if(destination==='Skills'&&selectedSkill)")&&app.includes('setSelectedSkill(undefined);setGoalActionId(undefined);setGoalRecipeId(undefined);'),'Re-selecting the Skills tab must restore the skill hub');
 ok(app.includes("if(tab==='Skills'&&selectedSkill&&!skillsOpenedAsLink)"),'Android back-navigation for Skills should remain available');
 console.log('PASS: back-button cleanup retains skill/settings navigation and Android Back.');

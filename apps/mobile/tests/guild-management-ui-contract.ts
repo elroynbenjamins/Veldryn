@@ -71,7 +71,7 @@ ok(memberIdentity.includes('myGuild,guildDetails,ownGuildMemberCount')&&memberId
  'Member home must show real Guild identity, membership count and crest');
 ok(memberIdentity.includes('useGameTheme')&&memberIdentity.includes('C.panelRaised')&&memberIdentity.includes('C.accentSurface')===false,
  'Member identity must use shared theme surfaces and color tokens');
-ok(screen.includes('<GuildMemberIdentity onRoster=')&&screen.includes("['Hall','guild'")&&screen.includes("['Roster','friends'"),
+ok(screen.includes('<GuildMemberIdentity onRoster=')&&screen.includes('<GuildHomeActions')&&screen.includes("onHall={()=>onNavigate('Hall')}")&&screen.includes("onRoster={()=>onNavigate('Roster')}"),
  'Member dashboard must prioritize real Guild identity, Hall and Members');
 ok(screen.includes("homeCard:{flexGrow:1,flexBasis:'46%',minWidth:142,minHeight:140"),
  'Guild dashboard cards must preserve readable two-column mobile geometry');

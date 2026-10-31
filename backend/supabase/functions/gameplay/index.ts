@@ -9,7 +9,7 @@ var __esm = (fn, res, err) => function __init() {
   }
 };
 
-// apps/mobile/src/core/progression.ts
+// ../apps/mobile/src/core/progression.ts
 function baseXpForNextLevel(level) {
   return Math.floor(90 * Math.pow(level, 1.42) + level * 35);
 }
@@ -52,17 +52,17 @@ function progressWithinLevel(totalXp, level) {
 }
 var SKILL_XP_SCALE, CHARACTER_XP_SCALE;
 var init_progression = __esm({
-  "apps/mobile/src/core/progression.ts"() {
+  "../apps/mobile/src/core/progression.ts"() {
     "use strict";
     SKILL_XP_SCALE = 1.6;
     CHARACTER_XP_SCALE = 8;
   }
 });
 
-// apps/mobile/src/content/faith.ts
+// ../apps/mobile/src/content/faith.ts
 var HOLY_WATER_ID, FAITH_TIERS, FAITH_BLESSINGS, HOLY_WATER_SOURCES, faithBlessingDef;
 var init_faith = __esm({
-  "apps/mobile/src/content/faith.ts"() {
+  "../apps/mobile/src/content/faith.ts"() {
     "use strict";
     HOLY_WATER_ID = "HOLY_WATER";
     FAITH_TIERS = [
@@ -96,7 +96,7 @@ var init_faith = __esm({
   }
 });
 
-// apps/mobile/src/core/faith.ts
+// ../apps/mobile/src/core/faith.ts
 function normalizeFaith(raw2) {
   const xp = typeof raw2?.xp === "number" && Number.isFinite(raw2.xp) ? Math.max(0, Math.min(MAX_XP, Math.floor(raw2.xp))) : 0;
   const selected2 = faithBlessingDef(raw2?.selectedBlessingId), p = raw2?.practice, tier = FAITH_TIERS.find((t) => t.id === p?.tierId);
@@ -117,8 +117,8 @@ function updateFaithPreference(state, kind, id, enabled) {
   }
   return { ...state, character: { ...state.character, faith } };
 }
-function removeWater(stacks, quantity4) {
-  let remaining = quantity4;
+function removeWater(stacks, quantity2) {
+  let remaining = quantity2;
   return stacks.map((s) => {
     if (s.itemId !== HOLY_WATER_ID) return s;
     const taken = Math.min(remaining, s.quantity);
@@ -139,16 +139,16 @@ function reserveFaithPractice(state, tierId, count, now) {
   return { ...state, inventory: { ...state.inventory, stacks: removeWater(state.inventory.stacks, inv) }, bank: { ...state.bank, stacks: removeWater(state.bank.stacks, cost - inv) }, activity: { kind: "faith", targetId: tierId, startedAtMs: now, lastClaimAtMs: now, faithPractice: { tierId, remainingPractices: count, lastClaimAtMs: now, progressFraction: 0 } }, character: { ...state.character, classTraining: void 0, faith } };
 }
 function settleFaithPractice(state, now, capSeconds) {
-  const empty = { xp: 0, gold: 0, kills: 0, items: [], elapsedSeconds: 0, faithActions: 0, faithXp: 0, holyWaterConsumed: 0 };
+  const empty2 = { xp: 0, gold: 0, kills: 0, items: [], elapsedSeconds: 0, faithActions: 0, faithXp: 0, holyWaterConsumed: 0 };
   const normalized = normalizeFaith(state.character?.faith), skillXp = state.skills.find((s) => s.skillId === "faith")?.xp ?? 0, faith = { ...normalized, xp: Math.max(normalized.xp, skillXp) }, reservation = state.activity?.faithPractice, p = faith.practice ?? (reservation ? { tierId: reservation.tierId, remaining: reservation.remainingPractices, lastClaimAtMs: reservation.lastClaimAtMs, progressMs: Math.floor(reservation.progressFraction * 6e4) } : void 0), tier = FAITH_TIERS.find((t) => t.id === p?.tierId);
-  if (!state.character || !p || !tier || now < p.lastClaimAtMs) return { state, reward: empty, refund: 0 };
+  if (!state.character || !p || !tier || now < p.lastClaimAtMs) return { state, reward: empty2, refund: 0 };
   const elapsed = Math.min(capSeconds * 1e3, now - p.lastClaimAtMs), total = p.progressMs + elapsed;
   const actions = Math.min(p.remaining, Math.floor(total / (tier.seconds * 1e3)), Math.ceil((MAX_XP - faith.xp) / tier.xp)), xp = Math.min(MAX_XP - faith.xp, actions * tier.xp);
   const remaining = p.remaining - actions, mastered = faith.xp + xp === MAX_XP, refund = mastered ? remaining * tier.water : 0;
   const nextPractice = remaining && !mastered ? { ...p, remaining, lastClaimAtMs: now, progressMs: total % (tier.seconds * 1e3) } : void 0;
   const nextActivity = nextPractice && state.activity ? { ...state.activity, lastClaimAtMs: now, faithPractice: { tierId: nextPractice.tierId, remainingPractices: nextPractice.remaining, lastClaimAtMs: now, progressFraction: nextPractice.progressMs / (tier.seconds * 1e3) } } : null;
   const qualifyingActivitySeconds = nextPractice ? Math.floor(elapsed / 1e3) : actions ? Math.max(0, Math.min(Math.floor(elapsed / 1e3), actions * tier.seconds - Math.floor(p.progressMs / 1e3))) : 0;
-  return { state: { ...state, activity: nextActivity, character: { ...state.character, faith: { ...faith, xp: faith.xp + xp, practice: nextPractice } } }, refund, reward: { ...empty, xp, elapsedSeconds: Math.floor(elapsed / 1e3), qualifyingActivitySeconds, faithActions: actions, faithXp: xp, holyWaterConsumed: actions * tier.water, faithWaterRefund: refund } };
+  return { state: { ...state, activity: nextActivity, character: { ...state.character, faith: { ...faith, xp: faith.xp + xp, practice: nextPractice } } }, refund, reward: { ...empty2, xp, elapsedSeconds: Math.floor(elapsed / 1e3), qualifyingActivitySeconds, faithActions: actions, faithXp: xp, holyWaterConsumed: actions * tier.water, faithWaterRefund: refund } };
 }
 function cancelFaithPractice(state) {
   const faith = normalizeFaith(state.character?.faith), reservation = state.activity?.faithPractice, p = faith.practice ?? (reservation ? { tierId: reservation.tierId, remaining: reservation.remainingPractices, lastClaimAtMs: reservation.lastClaimAtMs, progressMs: 0 } : void 0), tier = FAITH_TIERS.find((t) => t.id === p?.tierId);
@@ -157,7 +157,7 @@ function cancelFaithPractice(state) {
 }
 var MAX_XP, faithLevel, selectedFaithBlessing, holyWaterAvailable, faithPracticeAvailability;
 var init_faith2 = __esm({
-  "apps/mobile/src/core/faith.ts"() {
+  "../apps/mobile/src/core/faith.ts"() {
     "use strict";
     init_faith();
     init_progression();
@@ -177,7 +177,7 @@ var init_faith2 = __esm({
   }
 });
 
-// apps/mobile/src/core/combat-timing.ts
+// ../apps/mobile/src/core/combat-timing.ts
 function combatTimeline(input) {
   const end = input.startsAtMs + Math.max(0, input.elapsedSeconds) * 1e3;
   let at = input.startsAtMs, progress = Math.max(0, Math.min(0.999999999, input.progressFraction)), remaining = Math.max(0, Math.floor(input.preparationEncounters));
@@ -201,7 +201,7 @@ function combatTimeline(input) {
   return { encounters, nextProgressFraction: progress };
 }
 
-// apps/mobile/src/core/combat-progression-pacing.ts
+// ../apps/mobile/src/core/combat-progression-pacing.ts
 function characterCombatXpScale(enemyLevel, boss2 = false) {
   if (boss2) return 1;
   if (enemyLevel >= 10) return 0.6;
@@ -210,7 +210,7 @@ function characterCombatXpScale(enemyLevel, boss2 = false) {
   return 1;
 }
 
-// apps/mobile/src/content/event-companions-v2.ts
+// ../apps/mobile/src/content/event-companions-v2.ts
 var eventNames = { turning_of_the_age: "Turning of the Age", heartbond_festival: "Heartbond Festival", bloomwake: "Bloomwake", suncrest_games: "Suncrest Games", starfall_nights: "Starfall Nights", harvestwake: "Harvestwake", veilbreak: "The Veilbreak", frostfall_festival: "Frostfall Festival", merchant_guild_festival: "Merchant / Guild Festival" };
 var seeds = [
   { id: "EVT_UNIT_001", name: "Keeper of First Dawn", rarity: "elite", role: "support", event: "turning_of_the_age", description: "Fast support pulses improve tempo and recovery for pressured allies." },
@@ -246,7 +246,7 @@ var EVENT_COMPANIONS = seeds.map((seed) => {
   return { id: seed.id, name: seed.name, description: seed.description, archetype: `Event ${seed.role}`, role: seed.role, rarity: seed.rarity, origin: { id: `EVENT_${seed.event.toUpperCase()}`, name: eventNames[seed.event] ?? seed.event.replaceAll("_", " "), type: "event" }, unlockRequirements: [{ type: "event_challenge", target: seed.event, description: `Earn ${seed.name} from ${eventNames[seed.event] ?? seed.event.replaceAll("_", " ")}.` }], baseStats: baseStats(seed.role, seed.rarity), activeAbility: { id: `${seed.id}_ACTIVE`, name: copy?.activeName ?? `${seed.name} Signature`, description: copy?.activeDescription ?? seed.description, cooldownSeconds: seed.rarity === "prestige" ? 24 : 20, target: seed.role === "support" ? "Lowest-HP ally" : seed.role === "tank" ? "Owner" : "Priority target", effect: { kind: copy?.activeKind ?? effect2, value: amount, description: copy?.activeDescription ?? seed.description, durationSeconds: 5 }, scaling: { baseValue: amount, perLevel: (copy?.activeKind ?? effect2) === "damage" ? 4e-3 : 1e-3, maxValue: (copy?.activeKind ?? effect2) === "damage" ? 1.35 : void 0 } }, passiveAbility: { kind: copy?.passiveKind ?? effect2, value: copy?.passiveValue ?? (effect2 === "damage" ? 0.035 : 0.025), description: copy?.passiveDescription ?? `${seed.name} reinforces its event identity.` }, bondTrait: { id: `${seed.id}_BOND`, name: copy?.bondName ?? `${seed.name} Bond`, description: copy?.bondDescription ?? `Bond mastery strengthens the ${seed.name} signature interaction.`, effect: { kind: copy?.bondKind ?? effect2, value: copy?.bondValue ?? (effect2 === "damage" ? 0.05 : 0.03), description: copy?.bondDescription ?? `Bond mastery strengthens ${seed.name}.` } }, ascensionMaterialId: "EVENT_BONDBLOOM", ascensionMaterialCosts: eventAscensionMaterials(seed.rarity), availability: { eventSource: eventNames[seed.event] ?? seed.event, originalReleaseYear: 2026, recurringAvailability: "annual", veteranCosmeticEligibility: true }, visual: { portraitId: seed.id, pixelSize: "96x96", accessibilityLabel: seed.name } };
 });
 
-// apps/mobile/src/content/veilbreak-event.ts
+// ../apps/mobile/src/content/veilbreak-event.ts
 function veilbreakCompanionMilestones(_classId) {
   return ["EVT_UNIT_008", "EVT_UNIT_007"].map((id) => EVENT_COMPANIONS.find((companion) => companion.id === id)).map((companion, index) => ({ points: index === 0 ? 16e3 : 2e4, reward: { kind: "companion", id: companion.id, name: companion.name, rarity: "epic" } }));
 }
@@ -425,14 +425,27 @@ var FROSTFALL_EVENT = {
   ]
 };
 
-// apps/mobile/src/content/live-events.ts
+// ../apps/mobile/src/content/live-events.ts
 function eventCandies(definition) {
   const names = { harvestwake: "Harvest Taffy", veilbreak: "Gloam Candy", frostfall: "Frostmint", turning_of_the_age: "Chronicle Chew", heartbond: "Heartberry Drop", bloomwake: "Bloom Sugar", suncrest: "Sunflare Toffee", starfall: "Starshine Candy", merchant_guild: "Guild Caramel" };
   const base = names[definition.visualKey] ?? `${definition.name} Candy`;
   return [
     { kind: "skill", id: `${definition.id}:candy:skill`, name: base, description: "Grants +10% gathering speed and +10% non-combat skill XP.", visualKey: definition.visualKey, bonusBps: 1e3, secondsPerUse: 2 * 60 * 60, maxSeconds: 10 * 60 * 60 },
     { kind: "combat", id: `${definition.id}:candy:combat`, name: `${base} \xB7 Battle`, description: "Grants +10% combat XP and +10% damage against ordinary regional PvE enemies only. No PvP, guild, dungeon, or expedition effect.", visualKey: definition.visualKey, bonusBps: 1e3, secondsPerUse: 2 * 60 * 60, maxSeconds: 10 * 60 * 60 },
-    { kind: "companion", id: `${definition.id}:candy:companion`, name: `${base} \xB7 Bond`, description: "Awards 75 Companion XP to your equipped combat companion. It does not increase combat power directly.", visualKey: definition.visualKey, bonusBps: 0, secondsPerUse: 1, maxSeconds: 1 }
+    { kind: "companion", id: `${definition.id}:candy:companion`, name: `${base} \xB7 Bond`, description: "Awards 75 Companion XP to your selected owned combat companion, equipped or not. It does not increase combat power directly.", visualKey: definition.visualKey, bonusBps: 0, secondsPerUse: 1, maxSeconds: 1 },
+    { kind: "pet", id: `${definition.id}:candy:pet`, name: `${base} \xB7 Pet Luck`, description: "Doubles the base chance of eligible regional pet drops from combat, gathering and exploration for 2 hours. For example, 0.10% becomes 0.20%.", visualKey: definition.visualKey, bonusBps: 1e4, secondsPerUse: 2 * 60 * 60, maxSeconds: 10 * 60 * 60 }
+  ];
+}
+function eventPrestigeSupplyOffers(definition) {
+  const skill2 = eventCandies(definition).find((candy) => candy.kind === "skill");
+  const combat = eventCandies(definition).find((candy) => candy.kind === "combat");
+  const pet2 = eventCandies(definition).find((candy) => candy.kind === "pet");
+  return [
+    { id: "prestige_bondstone", reward: { kind: "bondstones", id: "prestige_bondstone", name: "Bondstone", rarity: "rare", quantity: 1 }, currency: "prestige", cost: 2, limit: 3 },
+    { id: "prestige_companion_essence", reward: { kind: "companion_essence", id: "prestige_essence_125", name: "Companion Essence \xB7 125", rarity: "uncommon", quantity: 125 }, currency: "prestige", cost: 1, limit: 4 },
+    ...skill2 ? [{ id: "prestige_candy_skill", reward: { kind: "candy", id: skill2.id, name: skill2.name, rarity: "common", quantity: 1 }, currency: "prestige", cost: 1, limit: 5 }] : [],
+    ...combat ? [{ id: "prestige_candy_combat", reward: { kind: "candy", id: combat.id, name: combat.name, rarity: "common", quantity: 1 }, currency: "prestige", cost: 1, limit: 5 }] : [],
+    ...pet2 ? [{ id: "prestige_candy_pet", reward: { kind: "candy", id: pet2.id, name: pet2.name, rarity: "rare", quantity: 1 }, currency: "prestige", cost: 2, limit: 5 }] : []
   ];
 }
 function eventDailyFestivalBlessing(definition, eventDay) {
@@ -455,7 +468,7 @@ function liveEventDef(id) {
   return template ? { ...template, id } : void 0;
 }
 
-// apps/mobile/src/core/rng.ts
+// ../apps/mobile/src/core/rng.ts
 function hash32(input) {
   let h = 2166136261;
   for (let i = 0; i < input.length; i++) {
@@ -472,7 +485,7 @@ function random01(seed, index) {
   return (x >>> 0) / 4294967296;
 }
 
-// apps/mobile/src/content/guild-companions-v1.ts
+// ../apps/mobile/src/content/guild-companions-v1.ts
 var seeds2 = [
   {
     id: "GUILD_UNIT_001",
@@ -569,14 +582,15 @@ var GUILD_COMBAT_COMPANIONS = seeds2.map((seed) => {
   };
 });
 
-// apps/mobile/src/content/event-companions-active.ts
+// ../apps/mobile/src/content/event-companions-active.ts
 var RELEASED_EVENT_COMPANION_IDS = /* @__PURE__ */ new Set(["EVT_UNIT_007", "EVT_UNIT_008", "EVT_UNIT_011"]);
 var RELEASED_EVENT_COMPANIONS = EVENT_COMPANIONS.filter((companion) => RELEASED_EVENT_COMPANION_IDS.has(companion.id));
 
-// apps/mobile/src/core/release-flags.ts
+// ../apps/mobile/src/core/release-flags.ts
 var EVENTS_RELEASED = true;
+var EVENT_COMMUNITY_ENABLED = false;
 
-// apps/mobile/src/content/combat-companions.ts
+// ../apps/mobile/src/content/combat-companions.ts
 var COMPANION_RARITY_CONFIG = {
   standard: { maxLevel: 20, targetPowerMultiplier: 1, levelCostMultiplier: 1, xpRequiredMultiplier: 1, label: "Standard" },
   rare: { maxLevel: 25, targetPowerMultiplier: 1.09, levelCostMultiplier: 1.18, xpRequiredMultiplier: 1.08, label: "Rare" },
@@ -630,9 +644,9 @@ var SUNSCAR = origin("REG_SUNSCAR", "Sunscar");
 var FROST = origin("REG_FROSTMARCH", "Frostmarch");
 var ASH = origin("REG_ASHLANDS", "Ashlands");
 var ASTERFALL_COMPANIONS = [
-  { id: "UNIT_001", name: "Ironwood Hound", description: "Fast finisher for farming.", archetype: "Striker", role: "damage", rarity: "standard", origin: ASTER, unlockRequirements: [req("meta", "Choose Ironwood Hound as your starter companion", "STARTER_COMPANION:UNIT_001", 1)], baseStats: { hp: 180, power: 22, defense: 12, attackSpeed: 2 }, activeAbility: ability("UABL_001", "Hamstring Pounce", "Damage + 8% slow", 14, "Lowest-HP enemy", "damage", 1, 6e-3, { secondaryValue: 0.08, durationSeconds: 4 }), passiveAbility: passive("execute", 0.04, "Pack Instinct: +4% damage against enemies below 35% HP.", "target_hp_below_35"), bondTrait: trait("BOND_001", "Relentless Chase", "cooldown_reduction", 0.08, "Hamstring Pounce recharges 8% faster after defeating a weakened target.", "target_defeated_below_35"), ascensionMaterialId: "IRONWOOD_FANG" },
-  { id: "UNIT_002", name: "Runebound Sentry", description: "Smooths solo and boss damage spikes.", archetype: "Guardian", role: "tank", rarity: "standard", origin: ASTER, unlockRequirements: [req("achievement", "Defeat 250 Old Mines enemies", "OLD_MINES_KILLS", 250), req("meta", "Old Mines milestone rewards this companion when it is still missing", "STARTER_THIRD:UNIT_002", 1)], baseStats: { hp: 260, power: 14, defense: 24, attackSpeed: 2.6 }, activeAbility: ability("UABL_002", "Rune Brace", "6% damage reduction to next 2 hits", 18, "Owner", "damage_reduction", 0.06, 1e-3, { secondaryValue: 2, durationSeconds: 5 }), passiveAbility: passive("damage_reduction", 0.06, "Runic Guard: every 12s, owner takes 6% less damage from the next hit.", "every_12_seconds"), bondTrait: trait("BOND_002", "Carved Shelter", "shield", 0.025, "Rune Brace also grants a small follow-up shield after its second protected hit.", "rune_brace_consumed"), ascensionMaterialId: "RUNEBOUND_CORE" },
-  { id: "UNIT_003", name: "Silverbrook Sprite", description: "Small restorative and tempo support.", archetype: "Support", role: "support", rarity: "standard", origin: ASTER, unlockRequirements: [req("skill_level", "Reach Fishing 16", "fishing", 16), req("collection", "Discover all Silverbrook nodes", "SILVERBROOK_NODES"), req("meta", "Silverbrook milestone rewards this companion when role-compatible", "STARTER_FOLLOWUP:UNIT_003", 1)], baseStats: { hp: 150, power: 12, defense: 10, attackSpeed: 2.2 }, activeAbility: ability("UABL_003", "Silver Current", "Restore 4% max HP + 3% Haste", 20, "Owner", "heal", 0.04, 1e-3, { secondaryValue: 0.03, durationSeconds: 5 }), passiveAbility: passive("cooldown_reduction", 0.05, "Flowing Current: owner's first ability after combat starts has 5% shorter cooldown.", "first_owner_ability"), bondTrait: trait("BOND_003", "Deep Current", "haste", 0.025, "Silver Current grants an additional short Haste pulse after restoring class resource.", "silver_current_used"), ascensionMaterialId: "WISP_DUST" },
+  { id: "UNIT_001", name: "Ironwood Hound", description: "Fast finisher for farming.", archetype: "Striker", role: "damage", rarity: "standard", origin: ASTER, unlockRequirements: [req("quest", "Complete Ironwood introduction", "QST_005", 1)], baseStats: { hp: 180, power: 22, defense: 12, attackSpeed: 2 }, activeAbility: ability("UABL_001", "Hamstring Pounce", "Damage + 8% slow", 14, "Lowest-HP enemy", "damage", 1, 6e-3, { secondaryValue: 0.08, durationSeconds: 4 }), passiveAbility: passive("execute", 0.04, "Pack Instinct: +4% damage against enemies below 35% HP.", "target_hp_below_35"), bondTrait: trait("BOND_001", "Relentless Chase", "cooldown_reduction", 0.08, "Hamstring Pounce recharges 8% faster after defeating a weakened target.", "target_defeated_below_35"), ascensionMaterialId: "IRONWOOD_FANG" },
+  { id: "UNIT_002", name: "Runebound Sentry", description: "Smooths solo and boss damage spikes.", archetype: "Guardian", role: "tank", rarity: "standard", origin: ASTER, unlockRequirements: [req("achievement", "Defeat 250 Old Mines enemies", "OLD_MINES_KILLS", 250)], baseStats: { hp: 260, power: 14, defense: 24, attackSpeed: 2.6 }, activeAbility: ability("UABL_002", "Rune Brace", "6% damage reduction to next 2 hits", 18, "Owner", "damage_reduction", 0.06, 1e-3, { secondaryValue: 2, durationSeconds: 5 }), passiveAbility: passive("damage_reduction", 0.06, "Runic Guard: every 12s, owner takes 6% less damage from the next hit.", "every_12_seconds"), bondTrait: trait("BOND_002", "Carved Shelter", "shield", 0.025, "Rune Brace also grants a small follow-up shield after its second protected hit.", "rune_brace_consumed"), ascensionMaterialId: "RUNEBOUND_CORE" },
+  { id: "UNIT_003", name: "Silverbrook Sprite", description: "Small restorative and tempo support.", archetype: "Support", role: "support", rarity: "standard", origin: ASTER, unlockRequirements: [req("skill_level", "Reach Fishing 16", "fishing", 16), req("collection", "Discover all Silverbrook nodes", "SILVERBROOK_NODES")], baseStats: { hp: 150, power: 12, defense: 10, attackSpeed: 2.2 }, activeAbility: ability("UABL_003", "Silver Current", "Restore 4% max HP + 3% Haste", 20, "Owner", "heal", 0.04, 1e-3, { secondaryValue: 0.03, durationSeconds: 5 }), passiveAbility: passive("cooldown_reduction", 0.05, "Flowing Current: owner's first ability after combat starts has 5% shorter cooldown.", "first_owner_ability"), bondTrait: trait("BOND_003", "Deep Current", "haste", 0.025, "Silver Current grants an additional short Haste pulse after restoring class resource.", "silver_current_used"), ascensionMaterialId: "WISP_DUST" },
   { id: "UNIT_004", name: "Briarhorn Cub", description: "Durable-target pressure through mild defense shred.", archetype: "Bruiser", role: "damage", rarity: "rare", origin: ASTER, unlockRequirements: [req("monster_mastery", "Reach Forest Troll Mastery 20", "FOREST_TROLL", 20)], baseStats: { hp: 230, power: 25, defense: 18, attackSpeed: 2.4 }, activeAbility: ability("UABL_004", "Briar Charge", "Damage + -5% Defence", 16, "Highest-Defence enemy", "damage", 1.2, 6e-3, { secondaryValue: 0.05, durationSeconds: 5 }), passiveAbility: passive("defense_shred", 0.03, "Barkbreaker: attacks have a 12% chance to apply -3% Defence for 5s; non-stacking.", "12_percent_proc"), bondTrait: trait("BOND_004", "Rootbreaker", "damage", 0.06, "Deals 6% more companion damage to targets currently affected by defense reduction.", "target_defense_reduced"), ascensionMaterialId: "THORN_SAP" },
   { id: "UNIT_005", name: "Lantern Wisp", description: "Interrupt-focused co-op helper.", archetype: "Disruptor", role: "support", rarity: "rare", origin: ASTER, unlockRequirements: [req("monster_mastery", "Reach Lantern Wretch Mastery 20", "LANTERN_WRETCH", 20)], baseStats: { hp: 145, power: 18, defense: 11, attackSpeed: 2 }, activeAbility: ability("UABL_005", "Lantern Snuff", "Damage + interrupt", 22, "Casting enemy", "interrupt", 0.55, 4e-3), passiveAbility: passive("accuracy", 0.08, "Flicker Sense: +8% unit accuracy against enemies currently casting.", "enemy_casting"), bondTrait: trait("BOND_005", "Afterglow", "cooldown_reduction", 0.1, "A successful interrupt shortens the next Lantern Snuff cooldown by 10%.", "successful_interrupt"), ascensionMaterialId: "LANTERNSTEEL_SHARD" },
   { id: "UNIT_006", name: "Oathbound Page", description: "Boss-progression defensive companion.", archetype: "Guardian", role: "tank", rarity: "rare", origin: ASTER, unlockRequirements: [req("boss_kills", "Defeat The Fallen Knight once", "FALLEN_KNIGHT", 1)], baseStats: { hp: 290, power: 16, defense: 25, attackSpeed: 2.8 }, activeAbility: ability("UABL_006", "Page's Vow", "Shield for 5% owner max HP", 24, "Owner", "shield", 0.05, 1e-3), passiveAbility: passive("damage_reduction", 0.08, "Oathkeeper: once per encounter, intercepts 8% of one hit dealt to owner.", "once_per_encounter"), bondTrait: trait("BOND_006", "Renewed Vow", "damage_reduction", 0.025, "After the shield breaks, the owner gains brief mitigation.", "shield_broken"), ascensionMaterialId: "OATHGLASS_SHARD" },
@@ -709,7 +723,7 @@ var ALL_COMBAT_COMPANIONS = [...ASTERFALL_COMPANIONS, ...REGIONAL_COMPANIONS, ..
 var COMBAT_COMPANIONS = EVENTS_RELEASED ? [...ASTERFALL_COMPANIONS, ...REGIONAL_COMPANIONS, ...GUILD_COMBAT_COMPANIONS, ...RELEASED_EVENT_COMPANIONS] : [...ASTERFALL_COMPANIONS, ...REGIONAL_COMPANIONS, ...GUILD_COMBAT_COMPANIONS];
 var combatCompanionDef = (id) => ALL_COMBAT_COMPANIONS.find((entry2) => entry2.id === id);
 
-// apps/mobile/src/content/class-skills.ts
+// ../apps/mobile/src/content/class-skills.ts
 var skill = (id, name, theme) => ({ id, name, theme });
 var guard = skill("guardcraft", "Guardcraft", "Physical protection");
 var ward = skill("warding", "Warding", "Magical protection");
@@ -726,7 +740,7 @@ var CLASS_SKILLS = {
 };
 var classSkillsFor = (id) => CLASS_SKILLS[id];
 
-// apps/mobile/src/core/class-skills.ts
+// ../apps/mobile/src/core/class-skills.ts
 init_progression();
 var MAX_CLASS_SKILL_XP = totalXpAtLevel(100);
 var CLASS_DRILL_BASE_XP = 24;
@@ -770,8 +784,8 @@ function characterClassEffects(c) {
 }
 function settleClassDrills(state, now, capSeconds) {
   const c = state.character, drill = normalizeClassDrills(c?.classTraining);
-  const empty = { xp: 0, gold: 0, kills: 0, items: [], elapsedSeconds: 0 };
-  if (!c || !drill || now <= drill.lastClaimAtMs) return { state, reward: empty };
+  const empty2 = { xp: 0, gold: 0, kills: 0, items: [], elapsedSeconds: 0 };
+  if (!c || !drill || now <= drill.lastClaimAtMs) return { state, reward: empty2 };
   const elapsed = Math.min(capSeconds * 1e3, now - drill.lastClaimAtMs), total = elapsed + drill.progressMs, actions = Math.floor(total / 6e4);
   let character = c;
   const awards = {};
@@ -791,13 +805,13 @@ function settleClassDrills(state, now, capSeconds) {
   completed += rest;
   const capped = characterClassSkills(character).every((s) => s.level === 100);
   character = { ...character, classTraining: capped ? void 0 : { ...drill, lastClaimAtMs: now, progressMs: total % 6e4, focus: actions ? normalizeTrainingFocus(c.trainingFocus) : drill.focus } };
-  return { state: { ...state, character }, reward: { ...empty, elapsedSeconds: Math.floor(elapsed / 1e3), trainingActions: completed, classSkillXp: Object.entries(awards).map(([skillId, xp]) => ({ skillId, xp })) } };
+  return { state: { ...state, character }, reward: { ...empty2, elapsedSeconds: Math.floor(elapsed / 1e3), trainingActions: completed, classSkillXp: Object.entries(awards).map(([skillId, xp]) => ({ skillId, xp })) } };
 }
 
-// apps/mobile/src/content/monsters.ts
+// ../apps/mobile/src/content/monsters.ts
 init_faith();
 
-// apps/mobile/src/content/gems-v1.ts
+// ../apps/mobile/src/content/gems-v1.ts
 var GEM_GRADE_LABEL_V1 = { 1: "Cut", 2: "Polished", 3: "Refined", 4: "Flawless", 5: "Radiant" };
 var GEM_GRADE_RARITY_V1 = { 1: "common", 2: "uncommon", 3: "rare", 4: "epic", 5: "mythic" };
 var vals = (a, b, c, d, e) => ({ 1: a, 2: b, 3: c, 4: d, 5: e });
@@ -871,7 +885,7 @@ function mobileRawGemItemIdV1(familyId, grade) {
   return `raw_gem:${familyId}:g${grade}`;
 }
 
-// apps/mobile/src/content/equipment_catalog_t1_t9_v33.json
+// ../apps/mobile/src/content/equipment_catalog_t1_t9_v33.json
 var equipment_catalog_t1_t9_v33_default = {
   schemaVersion: "equipment-2.0-v33-10slot-fresh-start",
   source: "v23 catalog expanded by v33 GitHub integration",
@@ -42381,7 +42395,7 @@ var equipment_catalog_t1_t9_v33_default = {
   ]
 };
 
-// apps/mobile/src/content/equipment-recipes-v33.ts
+// ../apps/mobile/src/content/equipment-recipes-v33.ts
 var classIdByName = {
   Ironwarden: "IRONWARDEN",
   Bastion: "BASTION",
@@ -42477,7 +42491,7 @@ function clamp(value, min, max) {
 function mergeInputs(inputs) {
   const totals = /* @__PURE__ */ new Map();
   for (const input of inputs) totals.set(input.itemId, (totals.get(input.itemId) ?? 0) + input.quantity);
-  return [...totals].map(([itemId, quantity4]) => ({ itemId, quantity: quantity4 }));
+  return [...totals].map(([itemId, quantity2]) => ({ itemId, quantity: quantity2 }));
 }
 function ingredients(tier, path, multiplier, skillId) {
   multiplier *= TIER_MATERIAL_MULTIPLIER[tier] ?? 1;
@@ -42560,7 +42574,7 @@ function v33EquipmentRecipeForItem(itemId) {
   return V33_EQUIPMENT_RECIPES.find((recipe2) => recipe2.output.itemId === itemId);
 }
 
-// apps/mobile/src/content/novice-sets.ts
+// ../apps/mobile/src/content/novice-sets.ts
 var definitions = [
   { id: "ironwarden_recruit", classId: "IRONWARDEN", name: "Ironwarden Recruit", appearanceId: "beginner-ironwarden-recruit", weaponName: "Recruit Sword", weaponAttack: 6, offhandName: "Recruit Shield", setBonus: { name: "Runic Formation", attack: 3, defense: 8, hp: 28, description: "+8 DEF and +28 HP while the full set is equipped." }, theme: { accent: "#83a9c8", identity: "Disciplined steel frontline", material: "Steel, blue cloth and field leather" } },
   { id: "wallkeeper_initiate", classId: "BASTION", name: "Wallkeeper Initiate", appearanceId: "beginner-wallkeeper-initiate", weaponName: "Initiate Tower Shield", weaponAttack: 5, offhandName: "Initiate Guard Bell", setBonus: { name: "Unbroken Wall", attack: 1, defense: 12, hp: 42, description: "+12 DEF and +42 HP while the full set is equipped." }, theme: { accent: "#bc8045", identity: "Maximum defense and immovable presence", material: "Dark plate, copper trim and tower shield" } },
@@ -42620,7 +42634,30 @@ var NOVICE_RECIPES = NOVICE_SETS.flatMap((set) => set.slots.map((slot) => {
   };
 }));
 
-// apps/mobile/src/content/gathering-tools.ts
+// ../apps/mobile/src/content/guild-components.ts
+var GUILD_COMPONENT_ITEMS = [
+  { id: "GUILD_REINFORCED_TIMBER", name: "Reinforced Timber Bundle", type: "material", rarity: "common", value: 0, guildOnly: true },
+  { id: "GUILD_MASONS_KEYSTONE", name: "Mason's Keystone", type: "material", rarity: "uncommon", value: 0, guildOnly: true },
+  { id: "GUILD_FORGED_RIVETS", name: "Forged Rivet Crate", type: "material", rarity: "rare", value: 0, guildOnly: true },
+  { id: "GUILD_FORTIFICATION_HINGES", name: "Fortification Hinge Set", type: "material", rarity: "epic", value: 0, guildOnly: true },
+  { id: "GUILD_BANNERWEAVE", name: "Bannerweave Cloth", type: "material", rarity: "common", value: 0, guildOnly: true },
+  { id: "GUILD_HERALDIC_DYE", name: "Heraldic Dye Flask", type: "material", rarity: "uncommon", value: 0, guildOnly: true },
+  { id: "GUILD_SEAL_WAX", name: "Guild Seal Wax", type: "material", rarity: "rare", value: 0, guildOnly: true },
+  { id: "GUILD_BEACON_OIL", name: "Beacon Oil Flask", type: "material", rarity: "epic", value: 0, guildOnly: true }
+];
+var GUILD_COMPONENT_CRAFTING_RELEASED = false;
+var GUILD_COMPONENT_RECIPES = [
+  { id: "GUILD_FORGE_TIMBER", name: "Prepare Reinforced Timber", skillId: "smithing", level: 5, xp: 110, gold: 30, seconds: 75, repeatableTraining: true, inputs: [{ itemId: "COPPER_INGOT", quantity: 3 }, { itemId: "GREENWOOD_LOG", quantity: 2 }], output: { itemId: "GUILD_REINFORCED_TIMBER", quantity: 1 } },
+  { id: "GUILD_FORGE_KEYSTONE", name: "Forge Mason's Keystone", skillId: "smithing", level: 18, xp: 280, gold: 95, seconds: 140, repeatableTraining: true, inputs: [{ itemId: "ASTER_IRON_INGOT", quantity: 2 }, { itemId: "IRONWOOD_LOG", quantity: 3 }], output: { itemId: "GUILD_MASONS_KEYSTONE", quantity: 1 } },
+  { id: "GUILD_FORGE_RIVETS", name: "Forge Rivet Crate", skillId: "smithing", level: 35, xp: 560, gold: 290, seconds: 260, repeatableTraining: true, inputs: [{ itemId: "OATHSTONE_INGOT", quantity: 2 }, { itemId: "OATHGLASS_SHARD", quantity: 1 }], output: { itemId: "GUILD_FORGED_RIVETS", quantity: 1 } },
+  { id: "GUILD_FORGE_HINGES", name: "Forge Fortification Hinges", skillId: "smithing", level: 60, xp: 1450, gold: 1e3, seconds: 570, repeatableTraining: true, inputs: [{ itemId: "FROSTIRON_INGOT", quantity: 2 }, { itemId: "WHITEPINE_LOG", quantity: 2 }], output: { itemId: "GUILD_FORTIFICATION_HINGES", quantity: 1 } },
+  { id: "GUILD_TAILOR_BANNERWEAVE", name: "Weave Bannerweave Cloth", skillId: "tailoring", level: 5, xp: 100, gold: 25, seconds: 75, repeatableTraining: true, inputs: [{ itemId: "MOSS_FIBER", quantity: 5 }, { itemId: "BOAR_HIDE", quantity: 2 }], output: { itemId: "GUILD_BANNERWEAVE", quantity: 1 } },
+  { id: "GUILD_TAILOR_DYE", name: "Prepare Heraldic Dye", skillId: "tailoring", level: 18, xp: 275, gold: 90, seconds: 140, repeatableTraining: true, inputs: [{ itemId: "WOLF_PELT", quantity: 3 }, { itemId: "THORN_SAP", quantity: 1 }], output: { itemId: "GUILD_HERALDIC_DYE", quantity: 1 } },
+  { id: "GUILD_TAILOR_WAX", name: "Prepare Guild Seal Wax", skillId: "tailoring", level: 35, xp: 565, gold: 300, seconds: 260, repeatableTraining: true, inputs: [{ itemId: "ECHO_TOUCHED_PELT", quantity: 1 }, { itemId: "TORN_OATHCLOTH", quantity: 2 }], output: { itemId: "GUILD_SEAL_WAX", quantity: 1 } },
+  { id: "GUILD_TAILOR_BEACON_OIL", name: "Prepare Beacon Oil", skillId: "tailoring", level: 60, xp: 1420, gold: 950, seconds: 570, repeatableTraining: true, inputs: [{ itemId: "ECHO_TOUCHED_PELT", quantity: 2 }, { itemId: "WINTERMINT", quantity: 2 }], output: { itemId: "GUILD_BEACON_OIL", quantity: 1 } }
+];
+
+// ../apps/mobile/src/content/gathering-tools.ts
 var tool = (definition) => definition;
 var blueprint = (itemId, knowledgeId, sourceMonsterId, dropChance) => ({ itemId, knowledgeId, sourceMonsterId, dropChance });
 var GATHERING_TOOLS = [
@@ -42667,7 +42704,7 @@ var TOOL_RECIPES = GATHERING_TOOLS.map((entry2) => ({
 var gatheringToolDef = (id) => id ? GATHERING_TOOLS.find((entry2) => entry2.id === id) : void 0;
 var gatheringToolsFor = (skillId) => GATHERING_TOOLS.filter((entry2) => entry2.skillId === skillId);
 
-// apps/mobile/src/content/herbalism.ts
+// ../apps/mobile/src/content/herbalism.ts
 var HERBALISM_METHODS = [
   { id: "balanced", name: "Balanced Picking", unlockLevel: 1, description: "Standard pace, yield, XP and rare-find chance.", actionTimeMultiplier: 1, yieldMultiplier: 1, xpMultiplier: 1, rareFindMultiplier: 1 },
   { id: "quick", name: "Quick Harvest", unlockLevel: 20, description: "Harvest faster, but sacrifice some normal yield and rare-find chance.", actionTimeMultiplier: 0.85, yieldMultiplier: 0.9, xpMultiplier: 0.95, rareFindMultiplier: 0.75 },
@@ -42720,7 +42757,7 @@ var HERB_ITEMS = [
   { id: "ASHLANDS_BOTANICAL_ESSENCE", name: "Ashlands Botanical Essence", type: "material", value: 300, rarity: "epic", passive: "A rare concentrated botanical reagent from Ashlands harvesting." }
 ];
 
-// apps/mobile/src/content/alchemy.ts
+// ../apps/mobile/src/content/alchemy.ts
 var MAX_ALCHEMY_BATCHES = 1e4;
 var POTIONS = [
   { id: "DEWLEAF_DRAUGHT", name: "Dewleaf Draught", effect: { kind: "healing", maxHpFraction: 0.25 }, description: "Restore 25% of maximum HP outside a hunt. No effect at full health." },
@@ -42782,7 +42819,7 @@ var ALCHEMY_EQUIPMENT_INFUSION_ITEMS = ALCHEMY_EQUIPMENT_INFUSIONS.map((infusion
 var potionDef = (id) => POTIONS.find((p) => p.id === id);
 var alchemyRecipeDef = (id) => ALCHEMY_RECIPES.find((recipe2) => recipe2.id === id);
 
-// apps/mobile/src/content/equipment-items-v33.ts
+// ../apps/mobile/src/content/equipment-items-v33.ts
 var classIdByName2 = { Ironwarden: "IRONWARDEN", Bastion: "BASTION", Dreadguard: "DREADGUARD", Dawnkeeper: "DAWNKEEPER", Wayfinder: "WAYFINDER", Ravager: "RAVAGER", Hexweaver: "HEXWEAVER", "Knife Dancer": "KNIFE_DANCER", Stonecaller: "STONECALLER" };
 var slotByName2 = { Helmet: "helmet", Chest: "chest", Gloves: "gloves", Legs: "legs", Boots: "boots", Weapon: "weapon", "Off-hand": "offhand", Cape: "cape", Amulet: "amulet", Ring: "ring" };
 var rarityByTier = { T1: "common", T2: "uncommon", T3: "rare", T4: "rare", T5: "epic", T6: "epic", T7: "legendary", T8: "legendary", T9: "mythic" };
@@ -42818,7 +42855,7 @@ var EQUIPMENT_ITEMS_V33 = equipment_catalog_t1_t9_v33_default.pieces.map((piece)
   };
 });
 
-// apps/mobile/src/content/items.ts
+// ../apps/mobile/src/content/items.ts
 var BASE_ITEMS = [
   ...NOVICE_ITEMS,
   { id: "HOLY_WATER", name: "Holy Water", type: "material", value: 0, rarity: "uncommon" },
@@ -42940,7 +42977,7 @@ var BASE_ITEMS = [
   { id: "ECHO_BAT_WING", name: "Echo Bat Wing", type: "material", value: 80 },
   { id: "FALLEN_KNIGHT_SIGIL", name: "Fallen Knight Sigil", type: "quest", value: 0 }
 ];
-var ITEMS = [...BASE_ITEMS, ...EQUIPMENT_ITEMS_V33];
+var ITEMS = [...BASE_ITEMS, ...GUILD_COMPONENT_ITEMS, ...EQUIPMENT_ITEMS_V33];
 var itemsById = new Map(ITEMS.map((item) => [item.id, item]));
 if (itemsById.size !== ITEMS.length) throw new Error("Duplicate item IDs in the item catalog");
 function itemDef(id) {
@@ -42949,7 +42986,7 @@ function itemDef(id) {
   return x;
 }
 
-// apps/mobile/src/content/monsters.ts
+// ../apps/mobile/src/content/monsters.ts
 var MONSTERS_RAW = [
   { id: "MOSS_RAT", name: "Moss Rat", level: 1, hp: 28, attack: 5, defense: 2, xp: 14, gold: 1, secondsPerKill: 7, unlockLevel: 1, zone: "Greenfields", drops: [{ itemId: "MOSS_FIBER", chance: 0.55, min: 1, max: 2 }] },
   { id: "FIELD_WISP", name: "Field Wisp", level: 2, hp: 36, attack: 6, defense: 2, xp: 18, gold: 1, secondsPerKill: 8, unlockLevel: 2, zone: "Greenfields", drops: [{ itemId: "WISP_DUST", chance: 0.36, min: 1, max: 1 }] },
@@ -43013,7 +43050,7 @@ var MONSTERS = MONSTERS_RAW.map((monster) => {
   };
 });
 
-// apps/mobile/src/core/monster-mastery.ts
+// ../apps/mobile/src/core/monster-mastery.ts
 var MASTERY_POINTS_PER_RANK = 25;
 function normalizeMonsterMastery(raw2) {
   const input = raw2 && typeof raw2 === "object" ? raw2 : {};
@@ -43039,7 +43076,7 @@ function recordMonsterMastery(state, id, kills) {
   return { ...next, account: { ...next.account, companionUnlockProgress: counters } };
 }
 
-// apps/mobile/src/core/combat-companions.ts
+// ../apps/mobile/src/core/combat-companions.ts
 var CLASS_COMPANION_ROLE = {
   IRONWARDEN: "tank",
   BASTION: "tank",
@@ -43054,7 +43091,10 @@ var CLASS_COMPANION_ROLE = {
 var classCompanionRole = (classId) => CLASS_COMPANION_ROLE[classId];
 var canUseCharacterCombatCompanion = (characterRole, companionRole, _mode) => characterRole !== companionRole;
 var canEquipCompanion = (characterRole, companionRole) => canUseCharacterCombatCompanion(characterRole, companionRole, "normal_combat");
-var STARTER_COMBAT_COMPANION_IDS = ["UNIT_001", "UNIT_002", "UNIT_003"];
+var STARTER_COMPANION_IDS = ["UNIT_001", "UNIT_002", "UNIT_003"];
+var starterCompanionIds = new Set(STARTER_COMPANION_IDS);
+var isStarterCompanionId = (id) => typeof id === "string" && starterCompanionIds.has(id);
+var claimedQuest = (state, id) => (state.quests ?? []).some((entry2) => entry2.questId === id && entry2.status === "claimed");
 var defaultCompanionSanctuary = () => ({ trainingGroundLevel: 0, essenceBasinLevel: 0, bondHallLevel: 0, expeditionPensLevel: 0, masteryChamberLevel: 0 });
 var defaultOwnedCompanionProgress = (nowMs = Date.now()) => ({ level: 1, xp: 0, ascensionTier: 0, bondLevel: 1, bondXp: 0, bondTraitUnlocked: false, obtainedAtMs: nowMs });
 var legacyOwnedCompanionProgress = () => ({ level: 10, xp: 0, ascensionTier: 0, bondLevel: 2, bondXp: 0, bondTraitUnlocked: false });
@@ -43142,20 +43182,18 @@ function migrateLegacyCombatCompanionAccount(input) {
     const def = combatCompanionDef(id);
     progress[id] = normalizeProgress(def, merged[id], legacyOwnedCompanionProgress());
   }
-  const savedStarter = STARTER_COMBAT_COMPANION_IDS.includes(account.starterCombatCompanionId) ? account.starterCombatCompanionId : void 0;
-  const legacyStarterWasImplicit = !savedStarter && legacyOwned.includes("UNIT_001");
-  const starterCombatCompanionId = savedStarter ?? (legacyStarterWasImplicit ? "UNIT_001" : void 0);
-  const savedFollowup = STARTER_COMBAT_COMPANION_IDS.includes(account.starterFollowupCombatCompanionId) ? account.starterFollowupCombatCompanionId : void 0;
-  const starterFollowupCombatCompanionId = savedFollowup ?? (legacyStarterWasImplicit ? STARTER_COMBAT_COMPANION_IDS.find((id) => id !== "UNIT_001" && legacyOwned.includes(id)) : void 0);
-  const savedThird = STARTER_COMBAT_COMPANION_IDS.includes(account.starterThirdCombatCompanionId) ? account.starterThirdCombatCompanionId : void 0;
-  const starterThirdCombatCompanionId = savedThird ?? (legacyStarterWasImplicit && starterFollowupCombatCompanionId ? STARTER_COMBAT_COMPANION_IDS.find((id) => id !== starterCombatCompanionId && id !== starterFollowupCombatCompanionId && legacyOwned.includes(id)) : void 0);
+  const characterRole = input?.character?.classId && CLASS_COMPANION_ROLE[input.character.classId];
+  const explicitStarter = isStarterCompanionId(account.starterCombatCompanionId) && legacyOwned.includes(account.starterCombatCompanionId) ? account.starterCombatCompanionId : void 0;
+  const legacyStarter = explicitStarter ?? legacyOwned.find((id) => isStarterCompanionId(id) && (!characterRole || combatCompanionDef(id)?.role !== characterRole));
+  const followup = isStarterCompanionId(account.starterFollowupCombatCompanionId) && legacyOwned.includes(account.starterFollowupCombatCompanionId) ? account.starterFollowupCombatCompanionId : void 0;
+  const third = isStarterCompanionId(account.starterThirdCombatCompanionId) && legacyOwned.includes(account.starterThirdCombatCompanionId) ? account.starterThirdCombatCompanionId : void 0;
   return {
-    starterCombatCompanionId,
-    starterFollowupCombatCompanionId,
-    starterThirdCombatCompanionId,
     unlockedCombatCompanionIds: legacyOwned,
     combatCompanionProgress: progress,
     companionUnlockProgress: Object.fromEntries(Object.entries(account.companionUnlockProgress ?? {}).filter(([, value]) => Number.isFinite(Number(value)) && Number(value) >= 0).map(([key, value]) => [key, Number(value)])),
+    starterCombatCompanionId: legacyStarter,
+    starterFollowupCombatCompanionId: followup,
+    starterThirdCombatCompanionId: third,
     companionEssence: int(account.companionEssence),
     bondstones: int(account.bondstones),
     companionSanctuary: normalizeSanctuary(account.companionSanctuary),
@@ -43203,9 +43241,6 @@ function companionUnlockRequirementMet(state, requirement) {
     const companionId = target2.slice("COMPANION_BOND:".length), progress = state.account.combatCompanionProgress?.[companionId];
     return (progress?.bondLevel ?? 0) >= amount;
   }
-  if (requirement.type === "meta" && target2.startsWith("STARTER_COMPANION:")) return state.account.starterCombatCompanionId === target2.slice("STARTER_COMPANION:".length);
-  if (requirement.type === "meta" && target2.startsWith("STARTER_FOLLOWUP:")) return state.account.starterFollowupCombatCompanionId === target2.slice("STARTER_FOLLOWUP:".length);
-  if (requirement.type === "meta" && target2.startsWith("STARTER_THIRD:")) return state.account.starterThirdCombatCompanionId === target2.slice("STARTER_THIRD:".length);
   if (requirement.type === "meta" && ["REG_SUNSCAR", "REG_FROSTMARCH", "REG_ASHLANDS"].includes(target2)) {
     const owned = new Set(state.account.unlockedCombatCompanionIds ?? []);
     const regionalNonPrestige = COMBAT_COMPANIONS.filter((def) => def.origin.id === target2 && def.rarity !== "prestige");
@@ -43217,30 +43252,46 @@ function companionUnlockRequirementMet(state, requirement) {
   if (requirement.type === "event_challenge" && target2.startsWith("CHALLENGE_")) return state.account.companionSpecialClears?.includes(target2) === true;
   return (state.account.companionUnlockProgress?.[target2] ?? 0) >= amount;
 }
+function starterCombatCompanionChoices(state) {
+  const clean2 = sanitizeCombatCompanionState(state);
+  if (!clean2.character) return [];
+  const role = classCompanionRole(clean2.character.classId);
+  return STARTER_COMPANION_IDS.map((id) => combatCompanionDef(id)).filter((def) => def.role !== role);
+}
+function chooseStarterCombatCompanion(state, id, nowMs = Date.now()) {
+  const clean2 = sanitizeCombatCompanionState(state);
+  if (!clean2.character) throw new Error("Create a character first.");
+  if (clean2.account.starterCombatCompanionId) throw new Error("A starter companion has already been chosen.");
+  if (!claimedQuest(clean2, "QST_005")) throw new Error("Complete Into Ironwood before choosing a companion.");
+  const choice = starterCombatCompanionChoices(clean2).find((def) => def.id === id);
+  if (!choice) throw new Error("Choose a companion with a different role.");
+  const unlocked = unlockCombatCompanion(clean2, choice.id, nowMs);
+  return { ...unlocked, character: { ...unlocked.character, equippedCombatCompanionId: choice.id }, account: { ...unlocked.account, starterCombatCompanionId: choice.id } };
+}
+function starterFollowupCandidate(state) {
+  const owned = new Set(state.account.unlockedCombatCompanionIds ?? []);
+  return starterCombatCompanionChoices(state).find((def) => !owned.has(def.id));
+}
 function reconcileCombatCompanionUnlocks(state, nowMs = Date.now()) {
   let next = sanitizeCombatCompanionState(state);
-  const starterId = next.account.starterCombatCompanionId;
-  if (starterId && STARTER_COMBAT_COMPANION_IDS.includes(starterId) && (next.quests ?? []).some((entry2) => entry2.questId === "QST_005" && entry2.status === "claimed") && !(next.account.unlockedCombatCompanionIds ?? []).includes(starterId)) next = unlockCombatCompanion(next, starterId, nowMs);
-  const sprite = combatCompanionDef("UNIT_003"), followupRequirements = sprite?.unlockRequirements.filter((requirement) => requirement.target !== "STARTER_FOLLOWUP:UNIT_003") ?? [];
-  if (starterId && !next.account.starterFollowupCombatCompanionId && followupRequirements.length && followupRequirements.every((requirement) => companionUnlockRequirementMet(next, requirement))) {
-    const choices = starterCombatCompanionChoices(next), owned = new Set(next.account.unlockedCombatCompanionIds ?? []);
-    const followup = choices.find((def) => def.id !== starterId && !owned.has(def.id)) ?? choices.find((def) => def.id !== starterId);
-    if (followup) {
-      next = { ...next, account: { ...next.account, starterFollowupCombatCompanionId: followup.id } };
-      if (!owned.has(followup.id)) next = unlockCombatCompanion(next, followup.id, nowMs);
-    }
-  }
-  const sentry = combatCompanionDef("UNIT_002"), thirdRequirements = sentry?.unlockRequirements.filter((requirement) => requirement.target !== "STARTER_THIRD:UNIT_002") ?? [];
-  if (starterId && next.account.starterFollowupCombatCompanionId && !next.account.starterThirdCombatCompanionId && thirdRequirements.length && thirdRequirements.every((requirement) => companionUnlockRequirementMet(next, requirement))) {
-    const owned = new Set(next.account.unlockedCombatCompanionIds ?? []), third = STARTER_COMBAT_COMPANION_IDS.map((id) => combatCompanionDef(id)).find((def) => !!def && !owned.has(def.id));
-    if (third) {
-      next = { ...next, account: { ...next.account, starterThirdCombatCompanionId: third.id } };
-      next = unlockCombatCompanion(next, third.id, nowMs);
-    }
-  }
   for (const def of COMBAT_COMPANIONS) {
-    if ((next.account.unlockedCombatCompanionIds ?? []).includes(def.id)) continue;
+    if (isStarterCompanionId(def.id) || (next.account.unlockedCombatCompanionIds ?? []).includes(def.id)) continue;
     if (def.unlockRequirements.length && def.unlockRequirements.every((requirement) => companionUnlockRequirementMet(next, requirement))) next = unlockCombatCompanion(next, def.id, nowMs);
+  }
+  const sprite = combatCompanionDef("UNIT_003"), sentry = combatCompanionDef("UNIT_002");
+  if (next.account.starterCombatCompanionId && !next.account.starterFollowupCombatCompanionId && sprite.unlockRequirements.every((requirement) => companionUnlockRequirementMet(next, requirement))) {
+    const candidate = starterFollowupCandidate(next);
+    if (candidate) {
+      next = unlockCombatCompanion(next, candidate.id, nowMs);
+      next = { ...next, account: { ...next.account, starterFollowupCombatCompanionId: candidate.id } };
+    }
+  }
+  if (next.account.starterFollowupCombatCompanionId && !next.account.starterThirdCombatCompanionId && sentry.unlockRequirements.every((requirement) => companionUnlockRequirementMet(next, requirement))) {
+    const owned = new Set(next.account.unlockedCombatCompanionIds ?? []), candidate = STARTER_COMPANION_IDS.map((id) => combatCompanionDef(id)).find((def) => !owned.has(def.id));
+    if (candidate) {
+      next = unlockCombatCompanion(next, candidate.id, nowMs);
+      next = { ...next, account: { ...next.account, starterThirdCombatCompanionId: candidate.id } };
+    }
   }
   return next;
 }
@@ -43250,22 +43301,6 @@ function unlockCombatCompanion(state, id, nowMs = Date.now()) {
   const clean2 = sanitizeCombatCompanionState(state), owned = clean2.account.unlockedCombatCompanionIds ?? [];
   if (owned.includes(id)) return clean2;
   return { ...clean2, account: { ...clean2.account, unlockedCombatCompanionIds: [...owned, id], combatCompanionProgress: { ...clean2.account.combatCompanionProgress ?? {}, [id]: { ...defaultOwnedCompanionProgress(nowMs), originalEventReleaseYear: def.availability?.originalReleaseYear, veteranCosmeticEligible: def.availability?.veteranCosmeticEligibility } } } };
-}
-function starterCombatCompanionChoices(state) {
-  if (!state.character) return [];
-  const role = classCompanionRole(state.character.classId);
-  return STARTER_COMBAT_COMPANION_IDS.map((id) => combatCompanionDef(id)).filter((def) => !!def && canEquipCompanion(role, def.role));
-}
-function chooseStarterCombatCompanion(state, id, nowMs = Date.now()) {
-  const clean2 = sanitizeCombatCompanionState(state);
-  if (!clean2.character) throw new Error("Create a character first.");
-  if (!(clean2.quests ?? []).some((entry2) => entry2.questId === "QST_005" && entry2.status === "claimed")) throw new Error("Complete Into Ironwood before choosing a starter companion.");
-  if (clean2.account.starterCombatCompanionId) throw new Error("Your starter companion has already been chosen.");
-  if (!STARTER_COMBAT_COMPANION_IDS.includes(id)) throw new Error("Choose one of the three starter companions.");
-  const def = combatCompanionDef(id);
-  if (!canEquipCompanion(classCompanionRole(clean2.character.classId), def.role)) throw new Error("Choose a companion with a different role from your character.");
-  const unlocked = unlockCombatCompanion(clean2, id, nowMs);
-  return { ...unlocked, character: { ...unlocked.character, equippedCombatCompanionId: id }, account: { ...unlocked.account, starterCombatCompanionId: id } };
 }
 function equipCombatCompanion(state, id) {
   const clean2 = sanitizeCombatCompanionState(state);
@@ -43424,7 +43459,7 @@ function grantBondstones(state, amount) {
   return { ...state, account: { ...state.account, bondstones: (state.account.bondstones ?? 0) + gain } };
 }
 
-// apps/mobile/src/content/world-map.ts
+// ../apps/mobile/src/content/world-map.ts
 function worldZoneInDevelopment(zone) {
   return zone.availability === "inDevelopment";
 }
@@ -43440,7 +43475,7 @@ var WORLD_ZONES = [
   { availability: "inDevelopment", id: "VEILLANDS", name: "The Veillands", subtitle: "A reality-thin frontier beyond the known road", minLevel: 91, maxLevel: 110, x: 0.82, y: 0.08, accent: "#8a6bc9", symbol: "\u25C8", developmentNote: "The Veillands is a future high-level region. Its travel preview is visible now, while enemies, gathering routes and progression rewards remain in development.", plannedActivities: ["High-level combat", "Regional gathering", "Elite encounters", "Region progression"] }
 ];
 
-// apps/mobile/src/content/skills.ts
+// ../apps/mobile/src/content/skills.ts
 var GATHERING = [
   { id: "COPPER_VEIN", skillId: "mining", name: "Copper Vein", unlockLevel: 1, seconds: 15, xp: 9, itemId: "COPPER_ORE", min: 1, max: 2, zoneId: "OLD_MINES" },
   { id: "ASTER_IRON_VEIN", skillId: "mining", name: "Aster-Iron Vein", unlockLevel: 8, seconds: 24, xp: 18, itemId: "ASTER_IRON_ORE", min: 1, max: 2, zoneId: "OLD_MINES" },
@@ -43478,16 +43513,17 @@ var GATHERING = [
   return { ...activity, seconds: Math.ceil(activity.seconds * 2), xp: Math.round(activity.xp * xpMultiplier), difficultyMultiplier, recommendedToolTier };
 });
 var RECIPES = [
+  ...GUILD_COMPONENT_CRAFTING_RELEASED ? GUILD_COMPONENT_RECIPES : [],
   ...ALCHEMY_RECIPES,
   ...NOVICE_RECIPES,
   // Keep the full catalog authoritative for crafting, progression, and save
   // compatibility. Presentation layers apply their release gate separately.
   ...V33_EQUIPMENT_RECIPES,
   ...TOOL_RECIPES,
-  { id: "SMELT_COPPER_INGOT", name: "Smelt Copper Ingot", skillId: "smithing", level: 1, xp: 80, gold: 30, seconds: 36, repeatableTraining: true, inputs: [{ itemId: "COPPER_ORE", quantity: 10 }], output: { itemId: "COPPER_INGOT", quantity: 5 } },
-  { id: "SMELT_ASTER_IRON_INGOT", name: "Smelt Aster-Iron Ingot", skillId: "smithing", level: 8, xp: 140, gold: 50, seconds: 42, repeatableTraining: true, inputs: [{ itemId: "ASTER_IRON_ORE", quantity: 8 }], output: { itemId: "ASTER_IRON_INGOT", quantity: 4 } },
+  { id: "SMELT_COPPER_INGOT", name: "Smelt Copper Ingot", skillId: "smithing", level: 1, xp: 80, gold: 30, seconds: 36, repeatableTraining: true, inputs: [{ itemId: "COPPER_ORE", quantity: 10 }, { itemId: "GREENWOOD_LOG", quantity: 2 }], output: { itemId: "COPPER_INGOT", quantity: 5 } },
+  { id: "SMELT_ASTER_IRON_INGOT", name: "Smelt Aster-Iron Ingot", skillId: "smithing", level: 8, xp: 140, gold: 50, seconds: 42, repeatableTraining: true, inputs: [{ itemId: "ASTER_IRON_ORE", quantity: 8 }, { itemId: "IRONWOOD_LOG", quantity: 2 }], output: { itemId: "ASTER_IRON_INGOT", quantity: 4 } },
   { id: "FORGE_REINFORCED_FITTING", name: "Forge Reinforced Fitting", skillId: "smithing", level: 12, xp: 180, gold: 50, seconds: 48, repeatableTraining: true, inputs: [{ itemId: "ASTER_IRON_INGOT", quantity: 2 }, { itemId: "IRONWOOD_LOG", quantity: 2 }], output: { itemId: "REINFORCED_FITTING", quantity: 1 } },
-  { id: "SMELT_OATHSTONE_INGOT", name: "Smelt Oathstone Ingot", skillId: "smithing", level: 16, xp: 230, gold: 80, seconds: 54, repeatableTraining: true, inputs: [{ itemId: "OATHSTONE_ORE", quantity: 6 }], output: { itemId: "OATHSTONE_INGOT", quantity: 3 } },
+  { id: "SMELT_OATHSTONE_INGOT", name: "Smelt Oathstone Ingot", skillId: "smithing", level: 16, xp: 230, gold: 80, seconds: 54, repeatableTraining: true, inputs: [{ itemId: "OATHSTONE_ORE", quantity: 6 }, { itemId: "CROWNWOOD_LOG", quantity: 3 }], output: { itemId: "OATHSTONE_INGOT", quantity: 3 } },
   { id: "SMELT_SUNSTONE_INGOT", name: "Smelt Sunstone Ingot", skillId: "smithing", level: 26, xp: 520, gold: 280, seconds: 180, repeatableTraining: true, inputs: [{ itemId: "SUNSTONE_ORE", quantity: 6 }, { itemId: "DUNEWOOD", quantity: 4 }], output: { itemId: "SUNSTONE_INGOT", quantity: 3 } },
   { id: "SMELT_FROSTIRON_INGOT", name: "Smelt Frostiron Ingot", skillId: "smithing", level: 46, xp: 980, gold: 720, seconds: 420, repeatableTraining: true, inputs: [{ itemId: "FROSTIRON", quantity: 6 }, { itemId: "WHITEPINE_LOG", quantity: 4 }], output: { itemId: "FROSTIRON_INGOT", quantity: 3 } },
   { id: "SMELT_BLACKGLASS_INGOT", name: "Smelt Blackglass Ingot", skillId: "smithing", level: 68, xp: 1850, gold: 1800, seconds: 900, repeatableTraining: true, inputs: [{ itemId: "BLACKGLASS_ORE", quantity: 6 }, { itemId: "CINDERWOOD_LOG", quantity: 4 }], output: { itemId: "BLACKGLASS_INGOT", quantity: 3 } },
@@ -43513,7 +43549,7 @@ function recipeDef(id) {
   return recipesById.get(id);
 }
 
-// backend/src/server/expeditions/constants.ts
+// src/server/expeditions/constants.ts
 var EXPEDITION = {
   difficultyIndex: { 1: 1, 2: 1.06, 3: 1.11, 4: 1.19, 5: 1.29 },
   marksMultiplier: { 1: 1, 2: 1.1, 3: 1.25, 4: 1.45, 5: 1.7 },
@@ -43545,7 +43581,7 @@ var COMBAT_LIMITS = {
   unitContributionRaidMax: 0.05
 };
 
-// backend/src/server/combat/calculations.ts
+// src/server/combat/calculations.ts
 var clamp2 = (v, min, max) => Math.max(min, Math.min(max, v));
 function defenseMitigation(defense, mitigationConstant) {
   const raw2 = defense / Math.max(1, defense + mitigationConstant);
@@ -43560,7 +43596,7 @@ function damageAfterMitigation(attackPowerValue, abilityCoeff, mitigation2, vari
   return crit ? normal * critMultiplier : normal;
 }
 
-// backend/node_modules/.pnpm/@noble+hashes@1.8.0/node_modules/@noble/hashes/esm/utils.js
+// node_modules/.pnpm/@noble+hashes@1.8.0/node_modules/@noble/hashes/esm/utils.js
 function isBytes(a) {
   return a instanceof Uint8Array || ArrayBuffer.isView(a) && a.constructor.name === "Uint8Array";
 }
@@ -43641,7 +43677,7 @@ function createHasher(hashCons) {
   return hashC;
 }
 
-// backend/node_modules/.pnpm/@noble+hashes@1.8.0/node_modules/@noble/hashes/esm/hmac.js
+// node_modules/.pnpm/@noble+hashes@1.8.0/node_modules/@noble/hashes/esm/hmac.js
 var HMAC = class extends Hash {
   constructor(hash3, _key) {
     super();
@@ -43709,7 +43745,7 @@ var HMAC = class extends Hash {
 var hmac = (hash3, key, message) => new HMAC(hash3, key).update(message).digest();
 hmac.create = (hash3, key) => new HMAC(hash3, key);
 
-// backend/node_modules/.pnpm/@noble+hashes@1.8.0/node_modules/@noble/hashes/esm/_md.js
+// node_modules/.pnpm/@noble+hashes@1.8.0/node_modules/@noble/hashes/esm/_md.js
 function setBigUint64(view, byteOffset, value, isLE) {
   if (typeof view.setBigUint64 === "function")
     return view.setBigUint64(byteOffset, value, isLE);
@@ -43829,7 +43865,7 @@ var SHA256_IV = /* @__PURE__ */ Uint32Array.from([
   1541459225
 ]);
 
-// backend/node_modules/.pnpm/@noble+hashes@1.8.0/node_modules/@noble/hashes/esm/sha2.js
+// node_modules/.pnpm/@noble+hashes@1.8.0/node_modules/@noble/hashes/esm/sha2.js
 var SHA256_K = /* @__PURE__ */ Uint32Array.from([
   1116352408,
   1899447441,
@@ -43969,10 +44005,10 @@ var SHA256 = class extends HashMD {
 };
 var sha256 = /* @__PURE__ */ createHasher(() => new SHA256());
 
-// backend/node_modules/.pnpm/@noble+hashes@1.8.0/node_modules/@noble/hashes/esm/sha256.js
+// node_modules/.pnpm/@noble+hashes@1.8.0/node_modules/@noble/hashes/esm/sha256.js
 var sha2562 = sha256;
 
-// backend/src/server/combat/deterministic-rng.ts
+// src/server/combat/deterministic-rng.ts
 function utf8(value) {
   const bytes = [];
   for (const character of value) {
@@ -44002,7 +44038,7 @@ var CombatRng = class {
   }
 };
 
-// backend/src/server/combat/gem-effects-v1.ts
+// src/server/combat/gem-effects-v1.ts
 var FOREVER = 9e15;
 var directAllowed = (abilityId) => !abilityId.startsWith("COMPANION_") && abilityId !== "COMPANION_REFLECT";
 function gem(state, familyId) {
@@ -44275,7 +44311,7 @@ function gemOnBossPhaseV1(now, players) {
   }
 }
 
-// backend/src/server/combat/engine.ts
+// src/server/combat/engine.ts
 function init(def, carried) {
   const hp = Math.max(0, Math.min(def.stats.maxHp, carried?.hp ?? def.stats.maxHp));
   const downed = carried?.downed ?? false;
@@ -44371,6 +44407,8 @@ function conditionOk(a, actor, allies, enemies) {
       return hpPct(actor) < 0.5;
     case "ally_below_50":
       return living(allies).some((x) => hpPct(x) < 0.5);
+    case "ally_below_50_or_dot":
+      return living(allies).some((x) => hpPct(x) < 0.5 || x.periodic.some((p) => p.kind === "dot"));
     case "ally_below_80":
       return living(allies).some((x) => hpPct(x) < 0.8);
     case "ally_below_80_or_targeted":
@@ -44431,7 +44469,8 @@ function simulateCombat(input) {
     raw2 *= Math.max(0.1, 1 + modifier(target2, "damage_taken", now));
     raw2 *= gemIncomingDamageMultiplierV1(target2, now);
     if (hpPct(target2) < clamp2(effect2.executeBelowHpPct ?? 0, 0, 1)) raw2 *= 1 + clamp2(effect2.executeBonus ?? 0, 0, 1);
-    const absorbed = Math.min(target2.shield, raw2);
+    const bypassShield = eventType === "dot_tick" && effect2.damageType === "true";
+    const absorbed = bypassShield ? 0 : Math.min(target2.shield, raw2);
     target2.shield -= absorbed;
     const dealt = Math.max(0, raw2 - absorbed);
     target2.hp = Math.max(0, target2.hp - dealt);
@@ -44522,8 +44561,14 @@ function simulateCombat(input) {
     }
     if (effect2.kind === "dot" || effect2.kind === "hot") {
       const expiresAt = now + (effect2.durationMs ?? 3e3);
-      target2.periodic.push({ sourceId: source.definition.id, effectId: abilityId, kind: effect2.kind, coeff: effect2.coeff ?? 0, flat: effect2.flat ?? 0, damageType: effect2.damageType, nextTickAt: now + (effect2.tickMs ?? 1e3), expiresAt, tickMs: effect2.tickMs ?? 1e3 });
+      target2.periodic.push({ sourceId: source.definition.id, effectId: abilityId, kind: effect2.kind, coeff: effect2.coeff ?? 0, flat: effect2.flat ?? 0, damageType: effect2.damageType, tag: effect2.tag ?? effect2.damageType ?? effect2.kind, nextTickAt: now + (effect2.tickMs ?? 1e3), expiresAt, tickMs: effect2.tickMs ?? 1e3 });
       events.push({ atMs: now, type: "status_apply", actorId: source.definition.id, targetId: target2.definition.id, abilityId, statusKind: effect2.kind, statusTag: effect2.tag ?? effect2.damageType ?? effect2.kind, expiresAtMs: expiresAt });
+      return;
+    }
+    if (effect2.kind === "cleanse") {
+      const removed = target2.periodic.filter((p) => p.kind === "dot");
+      target2.periodic = target2.periodic.filter((p) => p.kind !== "dot");
+      for (const p of removed) events.push({ atMs: now, type: "status_remove", actorId: source.definition.id, targetId: target2.definition.id, abilityId, statusKind: "dot", statusTag: p.tag ?? "dot" });
       return;
     }
     if (effect2.kind === "interrupt") {
@@ -44562,7 +44607,7 @@ function simulateCombat(input) {
         if (p.nextTickAt <= now && p.expiresAt >= now) {
           const src = all.find((x) => x.definition.id === p.sourceId);
           if (src?.alive) {
-            const fx = { kind: p.kind, coeff: p.coeff, flat: p.flat, damageType: p.damageType };
+            const fx = { kind: p.kind, coeff: p.coeff, flat: p.flat, damageType: p.damageType, tag: p.tag };
             p.kind === "dot" ? applyDamage(now, src, state, fx, p.effectId, "dot_tick") : applyHeal(now, src, state, fx, p.effectId, "hot_tick");
           }
           p.nextTickAt += p.tickMs;
@@ -44641,7 +44686,7 @@ function simulateCombat(input) {
   return { victory: false, durationMs: maxMs, reason: "timeout", events, players, enemies };
 }
 
-// backend/src/shared/companion-affinity-catalog.ts
+// src/shared/companion-affinity-catalog.ts
 var COMPANION_AFFINITY_BY_ID = {
   UNIT_001: "wild",
   UNIT_002: "construct",
@@ -44686,7 +44731,7 @@ function companionAffinityById(id) {
   return COMPANION_AFFINITY_BY_ID[id] ?? "wild";
 }
 
-// backend/src/server/companions/content.ts
+// src/server/companions/content.ts
 var raw = [
   ["UNIT_001", "Ironwood Hound", "damage", "standard", "REG_001", 180, 22, 12, 2, "damage", 1],
   ["UNIT_002", "Runebound Sentry", "tank", "standard", "REG_001", 260, 14, 24, 2.6, "shield", 0.06],
@@ -44923,6 +44968,7 @@ var COMPANION_TRIAL_MODIFIERS = {
   unstable_magic: { id: "unstable_magic", description: "Companion cooldowns recover slightly faster, but enemy magic pressure rises.", playerHasteBonus: 0.04, enemyAttackMultiplier: 1.05 },
   thick_hide: { id: "thick_hide", description: "Enemies resist basic pressure.", enemyDefenseMultiplier: 1.06, enemyHpMultiplier: 1.03 },
   frailty: { id: "frailty", description: "Companion shields are modestly weaker.", playerShieldMultiplier: 0.9 },
+  shatterstorm: { id: "shatterstorm", description: "Enemy impacts weaken shielding this month.", playerShieldMultiplier: 0.82, enemyAttackMultiplier: 1.04 },
   relentless: { id: "relentless", description: "Enemies fight with increasing tempo.", enemyHasteBonus: 0.07 }
 };
 var COMPANION_TRIAL_FLOOR_COUNT = 30;
@@ -45071,7 +45117,7 @@ function companionTrialSeasonDefinition(seasonKey) {
   return { seasonKey, ...bounds, rotationId: rotation.id, rotationName: rotation.name, floorSetId: rotation.floorSetId, modifiers: [...rotation.modifiers], rewardSetId: rotation.rewardSetId, specialChallenges: [...rotation.specialChallenges], featuredOrigin: "featuredOrigin" in rotation ? rotation.featuredOrigin : void 0, featuredCompanionIds: "featuredCompanionIds" in rotation ? [...rotation.featuredCompanionIds] : void 0 };
 }
 
-// backend/src/server/companions/combat-adapter.ts
+// src/server/companions/combat-adapter.ts
 var COMMON_MAX_INVESTMENT_MULTIPLIER = 1.5;
 var clamp3 = (value, min, max) => Math.max(min, Math.min(max, value));
 var ROLE_ANCHORS = {
@@ -45124,7 +45170,7 @@ function engineEffects(def, progress, context) {
     case "damage":
       return [{ kind: "damage", coeff: Math.max(0.05, levelCoeff * (1 + tDamage) * identity.activeDamageMultiplier), executeBelowHpPct: 0.3, executeBonus: Math.min(0.3, effectValue(progress, "execute") + identity.activeExecuteBonus), tag: "companion_active" }];
     case "shield":
-      return [{ kind: "shield", coeff: Math.max(0.01, levelCoeff * (1 + tShield) * identity.activeShieldMultiplier), shieldReflectPct: Math.min(0.3, effectValue(progress, "reflect") + identity.activeReflectPct), tag: "companion_active" }];
+      return [{ kind: "shield", coeff: Math.max(0.01, levelCoeff * (1 + tShield) * identity.activeShieldMultiplier), shieldReflectPct: Math.min(0.3, effectValue(progress, "reflect") + identity.activeReflectPct), tag: "companion_active" }, ...def.id === "UNIT_008" && context.mode === "companion_trial" ? [{ kind: "cleanse", tag: "poison_cleanse" }] : []];
     case "heal":
       return [{ kind: "heal", coeff: Math.max(0.02, levelCoeff * (1 + tHeal) * identity.activeHealMultiplier), tag: "companion_active" }];
     case "interrupt":
@@ -45144,7 +45190,7 @@ function buildCompanionCombatant(def, progress, context) {
   const maxHp = Math.round(base.hp * derived), attackPower = Number((base.power * derived).toFixed(2));
   const standalone = context.mode !== "character_assist";
   const healingPower = standalone ? def.role === "support" ? maxHp * 2.5 : def.role === "tank" ? maxHp * 2 : attackPower * 0.35 : base.power * (def.role === "support" ? 0.9 : 0.35) * derived;
-  const ability2 = { id: def.active.id, name: def.active.name, cooldownMs: Math.max(3e3, Math.round(def.active.cooldownMs * identity.activeCooldownMultiplier * (1 + cooldownChange))), castTimeMs: 0, target: target2.target, exactTargetId: target2.exactTargetId, effects: engineEffects(def, progress, context), priority: def.role === "support" ? 85 : def.role === "tank" ? 80 : 70, aiCondition: def.role === "support" ? "ally_below_50" : "always", tags: ["combat_companion", def.role, context.mode, ...techniqueEffects(progress).map((x) => `technique:${x.kind}:${x.value}`)] };
+  const ability2 = { id: def.active.id, name: def.active.name, cooldownMs: Math.max(3e3, Math.round(def.active.cooldownMs * identity.activeCooldownMultiplier * (1 + cooldownChange))), castTimeMs: 0, target: def.active.effectKind === "interrupt" && context.mode === "companion_trial" ? "interruptible_casting_enemy" : target2.target, exactTargetId: target2.exactTargetId, effects: engineEffects(def, progress, context), priority: def.role === "support" ? 85 : def.role === "tank" ? 80 : 70, aiCondition: context.mode === "companion_trial" && def.active.effectKind === "interrupt" ? "target_casting" : context.mode === "companion_trial" && def.id === "UNIT_008" ? "ally_below_50_or_dot" : def.role === "support" ? "ally_below_50" : "always", tags: ["combat_companion", def.role, context.mode, ...techniqueEffects(progress).map((x) => `technique:${x.kind}:${x.value}`)] };
   return { id: def.id, name: def.name, team: "players", role: def.role, level: progress.level, stats: { maxHp, attackPower, healingPower: Number(healingPower.toFixed(2)), defense: Number((base.defense * derived * identity.defenseMultiplier).toFixed(2)), accuracy: Math.min(0.98, 0.84 + progress.level * 2e-3), evasion: Math.min(0.22, 0.04 + (def.role === "damage" ? 0.03 : 0)), critChance: def.role === "damage" ? 0.1 : 0.05, critMultiplier: 1.5, haste: Math.min(0.45, 0.04 + hasteBonus + identity.hasteBonus + Math.max(0, 2.5 - base.attackSpeed) * 0.03) }, basicAttackMs: Math.max(850, Math.round(base.attackSpeed * 1e3)), basicAttackCoeff: (def.role === "damage" ? 0.72 : def.role === "tank" ? 0.46 : 0.4) * identity.basicDamageMultiplier, abilities: [ability2], tags: ["combat_companion", def.rarity, def.originId, context.mode] };
 }
 function buildOwnedCompanionCombatant(progress, context) {
@@ -45153,7 +45199,7 @@ function buildOwnedCompanionCombatant(progress, context) {
   return buildCompanionCombatant(def, progress, context);
 }
 
-// backend/src/server/companions/team.ts
+// src/server/companions/team.ts
 function individualCompanionPower(progress) {
   const def = companionServerDefinition(progress.companionId);
   if (!def) throw new Error("unknown_companion");
@@ -45238,7 +45284,7 @@ function validateCompanionTrialTeam(input) {
   return { ok: true, members: views, power, synergies: evaluateCompanionSynergies(views) };
 }
 
-// backend/src/server/companions/trial-season.ts
+// src/server/companions/trial-season.ts
 var COMPANION_TRIAL_TIMEZONE = "UTC";
 function companionTrialSeasonKey(nowMs) {
   const d = new Date(nowMs);
@@ -45275,7 +45321,44 @@ function companionTrialResetInfo(serverNowMs) {
   return { seasonKey, serverNow: new Date(serverNowMs).toISOString(), startsAt: def.startsAt, endsAt: def.endsAt, remainingMs, timezone: COMPANION_TRIAL_TIMEZONE, rotationId: def.rotationId, rotationName: def.rotationName, title: `Companion Trials \u2014 ${def.rotationName} \xB7 ${new Intl.DateTimeFormat("en", { month: "long", year: "numeric", timeZone: "UTC" }).format(new Date(serverNowMs))}`, notice: "One global Trial rotation for all players. Trial progress resets each month; Companion progression does not." };
 }
 
-// backend/src/server/companions/trials.ts
+// src/shared/companion-trial-monthly-hazards.ts
+var COMPANION_TRIAL_MONTHLY_HAZARDS = [
+  { id: "venom_bloom", name: "Venom Bloom", threat: "Poison ticks damage HP directly through shields.", counter: "Bring a cleanser such as Dawnwing, sustain with healing, or interrupt poison casts with Lantern Wisp." },
+  { id: "shatterstorm", name: "Shatterstorm", threat: "Enemy impact pressure weakens shields.", counter: "Prioritize sturdy Tanks, defense and direct healing rather than relying only on shields." },
+  { id: "ritual_surge", name: "Ritual Surge", threat: "Enemies channel an interruptible area attack.", counter: "An interrupt-focused companion such as Lantern Wisp can stop the cast; resilient formations can also survive it." }
+];
+function companionTrialMonthlyHazard(seasonKey) {
+  const match = /^(\d{4})-(0[1-9]|1[0-2])$/.exec(seasonKey);
+  if (!match) throw new Error("invalid_companion_trial_season_key");
+  const monthIndex = Number(match[1]) * 12 + Number(match[2]) - 1;
+  const october2026 = 2026 * 12 + 9;
+  const index = ((monthIndex - october2026) % COMPANION_TRIAL_MONTHLY_HAZARDS.length + COMPANION_TRIAL_MONTHLY_HAZARDS.length) % COMPANION_TRIAL_MONTHLY_HAZARDS.length;
+  return COMPANION_TRIAL_MONTHLY_HAZARDS[index];
+}
+
+// src/shared/companion-trial-stage-matchups.ts
+var COMPANION_TRIAL_STAGE_MATCHUPS = [
+  { id: "asterfall", attackAffinity: "wild", guardAffinity: "construct", threat: "Armored guardians and ambushes", attackReason: "Wild hunters exploit exposed weak points.", guardReason: "Constructs withstand heavy opening hits." },
+  { id: "sunscar", attackAffinity: "primal", guardAffinity: "arcane", threat: "Glass armor and mirage magic", attackReason: "Primal force fractures hardened glass.", guardReason: "Arcane wards blunt mirage pressure." },
+  { id: "frostmarch", attackAffinity: "arcane", guardAffinity: "radiant", threat: "Interruptible bell casts and frost pressure", attackReason: "Arcane precision disrupts bell-channeling foes.", guardReason: "Radiant protection sustains the formation." },
+  { id: "ashlands", attackAffinity: "construct", guardAffinity: "primal", threat: "Armored forge enemies and crushing blows", attackReason: "Construct weaponry breaks through forgeplate.", guardReason: "Primal endurance steadies the front line." },
+  { id: "rift", attackAffinity: "umbral", guardAffinity: "construct", threat: "Rift bursts and shifting weaknesses", attackReason: "Umbral attacks exploit unstable rift gaps.", guardReason: "Construct anchors resist disruptive surges." },
+  { id: "apex", attackAffinity: "radiant", guardAffinity: "umbral", threat: "Regent phases and high-pressure abilities", attackReason: "Radiant offense counters the echo crown.", guardReason: "Umbral wards absorb reflected pressure." }
+];
+var COMPANION_TRIAL_STAGE_OFFENSE_MULTIPLIER = 1.065;
+var COMPANION_TRIAL_STAGE_GUARD_MULTIPLIER = 1.06;
+var COMPANION_TRIAL_STAGE_PAIR_HASTE_BONUS = 0.02;
+function companionTrialStageMatchup(floor) {
+  const safe = Number.isFinite(floor) ? Math.floor(floor) : 1;
+  return COMPANION_TRIAL_STAGE_MATCHUPS[Math.max(0, Math.min(5, Math.floor((Math.max(1, safe) - 1) / 5)))];
+}
+function companionTrialStageTeamMatchup(floor, affinities) {
+  const matchup = companionTrialStageMatchup(floor), set = new Set(affinities);
+  const offense = set.has(matchup.attackAffinity), guard2 = set.has(matchup.guardAffinity);
+  return { matchup, offense, guard: guard2, pair: offense && guard2 };
+}
+
+// src/server/companions/trials.ts
 var TRIAL_THEMES = [
   { id: "asterfall", label: "Asterfall Proving Grounds", bossName: "Runebound Colossus" },
   { id: "sunscar", label: "Sunscar Glass Arena", bossName: "Echo of the Buried Tyrant" },
@@ -45290,8 +45373,8 @@ function companionTrialEncounterTheme(floor) {
 }
 function companionTrialFloorDefinition(floor, seasonKey) {
   if (floor < 1 || floor > COMPANION_TRIAL_FLOOR_COUNT || !Number.isInteger(floor)) throw new Error("invalid_companion_trial_floor");
-  const season = companionTrialSeasonDefinition(seasonKey), theme = companionTrialEncounterTheme(floor);
-  return { floor, recommendedPower: companionTrialRecommendedPower(floor), modifiers: [.../* @__PURE__ */ new Set([...season.modifiers, ...companionTrialFloorModifiers(floor)])], boss: floor % COMPANION_TRIAL_BOSS_INTERVAL === 0, encounterTheme: theme.id };
+  const season = companionTrialSeasonDefinition(seasonKey), theme = companionTrialEncounterTheme(floor), hazard = companionTrialMonthlyHazard(seasonKey);
+  return { floor, recommendedPower: companionTrialRecommendedPower(floor), modifiers: [.../* @__PURE__ */ new Set([...season.modifiers, ...companionTrialFloorModifiers(floor), ...hazard.id === "shatterstorm" ? ["shatterstorm"] : []])], boss: floor % COMPANION_TRIAL_BOSS_INTERVAL === 0, encounterTheme: theme.id };
 }
 function enemy(id, name, floor, boss2 = false, profile) {
   const scale = companionTrialEnemyScale(floor), baseHp = boss2 ? 520 : 180, baseAttack = boss2 ? 28 : 15, baseDefense = boss2 ? 24 : 12;
@@ -45315,6 +45398,22 @@ function applyCompanionTrialModifiers(players, enemies, modifierIds) {
   const nextPlayers = players.map((p) => ({ ...p, stats: { ...p.stats, healingPower: Number((p.stats.healingPower * playerHealing).toFixed(4)), haste: Math.min(0.6, p.stats.haste + playerHaste) }, abilities: p.abilities.map((a) => ({ ...a, effects: a.effects.map((e) => e.kind === "shield" && e.coeff !== void 0 ? { ...e, coeff: Number((e.coeff * playerShield).toFixed(4)) } : e) })), tags: tagged(p.tags) }));
   const nextEnemies = enemies.map((e) => ({ ...e, stats: { ...e.stats, maxHp: Math.round(e.stats.maxHp * enemyHp), attackPower: Number((e.stats.attackPower * enemyAttack).toFixed(4)), defense: Number((e.stats.defense * enemyDefense).toFixed(4)), haste: Math.min(0.6, e.stats.haste + enemyHaste), accuracy: Math.min(0.99, e.stats.accuracy + enemyAccuracy) }, tags: tagged(e.tags) }));
   return { players: nextPlayers, enemies: nextEnemies };
+}
+function applyCompanionTrialStageMatchups(players, floor) {
+  const { matchup, pair } = companionTrialStageTeamMatchup(floor, players.map((p) => companionAffinityById(p.id)));
+  return players.map((player) => {
+    const affinity = companionAffinityById(player.id);
+    const offense = affinity === matchup.attackAffinity, guard2 = affinity === matchup.guardAffinity;
+    const stats4 = player.stats;
+    return { ...player, stats: {
+      ...stats4,
+      attackPower: offense ? Number((stats4.attackPower * COMPANION_TRIAL_STAGE_OFFENSE_MULTIPLIER).toFixed(4)) : stats4.attackPower,
+      maxHp: guard2 ? Math.round(stats4.maxHp * COMPANION_TRIAL_STAGE_GUARD_MULTIPLIER) : stats4.maxHp,
+      defense: guard2 ? Number((stats4.defense * COMPANION_TRIAL_STAGE_GUARD_MULTIPLIER).toFixed(4)) : stats4.defense,
+      healingPower: guard2 ? Number((stats4.healingPower * COMPANION_TRIAL_STAGE_GUARD_MULTIPLIER).toFixed(4)) : stats4.healingPower,
+      haste: Math.min(0.6, stats4.haste + (pair ? COMPANION_TRIAL_STAGE_PAIR_HASTE_BONUS : 0))
+    }, tags: [...player.tags ?? [], ...offense ? ["trial_matchup:offense"] : [], ...guard2 ? ["trial_matchup:guard"] : [], ...pair ? ["trial_matchup:pair"] : []] };
+  });
 }
 function normalTrialProfiles(theme) {
   const prefix = {
@@ -45376,6 +45475,26 @@ function rawCompanionTrialEncounter(floor) {
   }
   return normalTrialProfiles(theme).map((profile, index) => enemy(`COMPANION_TRIAL_${floor}_${String.fromCharCode(65 + index)}`, profile.name, floor, false, profile));
 }
+function applyCompanionTrialMonthlyHazard(enemies, seasonKey) {
+  const hazard = companionTrialMonthlyHazard(seasonKey);
+  if (hazard.id === "shatterstorm") return enemies;
+  return enemies.map((foe, index) => {
+    if (!foe.boss && index !== enemies.length - 1) return foe;
+    const venom = hazard.id === "venom_bloom";
+    const skill2 = {
+      id: venom ? "TRIAL_VENOM_BLOOM" : "TRIAL_RITUAL_SURGE",
+      name: venom ? "Venom Bloom" : "Ritual Surge",
+      cooldownMs: venom ? 19e3 : 21e3,
+      castTimeMs: 1800,
+      interruptible: true,
+      target: "all_enemies",
+      priority: 93,
+      aiCondition: "always",
+      effects: venom ? [{ kind: "dot", coeff: 0.17, durationMs: 8e3, tickMs: 2e3, damageType: "true", tag: "poison" }] : [{ kind: "damage", coeff: 0.55, damageType: "arcane", tag: "ritual_surge" }]
+    };
+    return { ...foe, abilities: [...foe.abilities, skill2], tags: [...foe.tags ?? [], `trial_hazard:${hazard.id}`] };
+  });
+}
 function runId(seed, nowMs) {
   return `CTR_${nowMs.toString(36)}_${Math.abs([...seed].reduce((n, c) => n * 33 + c.charCodeAt(0) | 0, 5381)).toString(36)}`;
 }
@@ -45409,7 +45528,9 @@ function resolveCompanionTrialFloor(input, runIdValue, executor) {
   const floorDef = companionTrialFloorDefinition(run.currentFloor, progress.season.seasonKey), synergies = teamCheck.synergies, synergyMultiplier = totalCompanionSynergyMultiplier(synergies), hasteBonus = totalCompanionHasteBonus(synergies);
   const basePlayers = run.teamCompanionIds.map((id) => buildOwnedCompanionCombatant(input.owned[id], { mode: "companion_trial", teamSynergyMultiplier: synergyMultiplier, teamHasteBonus: hasteBonus }));
   const modified = applyCompanionTrialModifiers(basePlayers, rawCompanionTrialEncounter(run.currentFloor), floorDef.modifiers);
-  const result = executor.simulate({ seed: `${run.seed}:${progress.season.seasonKey}:${run.currentFloor}`, players: modified.players, enemies: modified.enemies, mitigationConstant: COMPANION_TRIAL_MITIGATION_CONSTANT });
+  const seasonEnemies = applyCompanionTrialMonthlyHazard(modified.enemies, progress.season.seasonKey);
+  const matchedPlayers = applyCompanionTrialStageMatchups(modified.players, run.currentFloor);
+  const result = executor.simulate({ seed: `${run.seed}:${progress.season.seasonKey}:${run.currentFloor}`, players: matchedPlayers, enemies: seasonEnemies, mitigationConstant: COMPANION_TRIAL_MITIGATION_CONSTANT });
   if (!result.victory) {
     return { progress: { ...progress, season: { ...progress.season, activeRun: void 0, currentFloor: progress.season.checkpointFloor } }, result, reward: { companionEssence: 0, gold: 0, bondstones: 0, materials: {} }, firstClear: false, monthlyCompleted: false, weeklyCompleted: false };
   }
@@ -45449,7 +45570,7 @@ function claimMonthlyCompanionChallenge(progress, challengeId, serverNowMs) {
   return { progress: { ...current, season: { ...current.season, monthlyChallengeClaims: [...claimed, challengeId] } }, reward: challenge.rewards };
 }
 
-// backend/src/server/companions/assignments.ts
+// src/server/companions/assignments.ts
 var companionExpeditionPenCapacity = (level) => level <= 0 ? 0 : Math.min(3, Math.max(1, Math.floor(level)));
 var COMPANION_EXPEDITION_WEEKLY_COUNT = 6;
 function rotationHash(text2) {
@@ -45626,7 +45747,7 @@ function claimCompanionAssignment(input) {
   return { assignment: { ...completed, status: "claimed", claimedAt: new Date(input.serverNowMs).toISOString(), performanceGrade: grade, rewardSnapshot: reward2 }, reward: reward2 };
 }
 
-// backend/src/server/companions/policy.ts
+// src/server/companions/policy.ts
 var CLASS_ROLE = { IRONWARDEN: "tank", BASTION: "tank", DREADGUARD: "tank", DAWNKEEPER: "support", STONECALLER: "support", WAYFINDER: "damage", RAVAGER: "damage", HEXWEAVER: "damage", KNIFE_DANCER: "damage" };
 var COMPANION_ROLE = Object.fromEntries(COMPANION_SERVER_DEFINITIONS.map((x) => [x.id, x.role]));
 var COMPANION_RARITY = Object.fromEntries(COMPANION_SERVER_DEFINITIONS.map((x) => [x.id, x.rarity]));
@@ -45657,7 +45778,7 @@ function validateProgressionSnapshot(companionId, input) {
   return { level: Math.max(1, Math.min(cap, RARITY_MAX_LEVEL[rarity], Math.floor(input.level))), xp: Math.max(0, Math.floor(input.xp)), ascensionTier, bondLevel: Math.max(1, Math.min(10, Math.floor(input.bondLevel))), bondXp: Math.max(0, Math.floor(input.bondXp)), selectedTechniqueId: input.selectedTechniqueId };
 }
 
-// backend/src/server/companions/progression-v2.ts
+// src/server/companions/progression-v2.ts
 var XP_MULT = { standard: 1, rare: 1.08, elite: 1.16, prestige: 1.25 };
 var BOND_THRESHOLDS = [0, 90, 210, 370, 580, 840, 1160, 1540, 1990, 2520];
 function companionXpToNextServer(companionId, level) {
@@ -45770,7 +45891,7 @@ function setCompanionShowcase(state, ownedIds, favoriteCompanionId, showcaseComp
   return { ...state, favoriteCompanionId, showcaseCompanionIds: unique2, showcaseSlotsUnlocked: slots2, discoveredCompanionIds: [.../* @__PURE__ */ new Set([...state.discoveredCompanionIds ?? [], ...ownedIds])] };
 }
 
-// backend/src/server/companions/codex.ts
+// src/server/companions/codex.ts
 function companionMasteryRequiredAscension(companionId) {
   const def = companionServerDefinition(companionId);
   if (!def) throw new Error("unknown_companion");
@@ -45833,7 +45954,7 @@ function claimCompanionCodexMilestone(input) {
   return { profile: { ...input.profile, claimedCodexMilestoneIds: [...claimed], codexRewardIds: rewardIds, showcaseSlotsUnlocked }, economy: { ...input.economy, companionEssence: input.economy.companionEssence + (def.reward.companionEssence ?? 0) }, reward: def.reward, summary };
 }
 
-// backend/src/server/companions/proving-grounds.ts
+// src/server/companions/proving-grounds.ts
 var RARITY_ORDER2 = { standard: 0, rare: 1, elite: 2, prestige: 3 };
 var COMPANION_PROVING_GROUND_WEEKLY_COUNT = 3;
 function activeCompanionProvingGroundChallenges(serverNowMs) {
@@ -45893,7 +46014,7 @@ function claimCompanionProvingGroundChallenge(input) {
   return { state: { ...rolled.state, claimedIds: [...rolled.state.claimedIds, definition.id] }, reward: definition.rewards, definition };
 }
 
-// backend/src/server/companions/projection.ts
+// src/server/companions/projection.ts
 function projectCompanionTrial(progress, serverNowMs, teamPower) {
   const rolled = rolloverCompanionTrialSeason(progress, serverNowMs), info = companionTrialResetInfo(serverNowMs), season = rolled.progress.season;
   return { progress: rolled.progress, expiredRunId: rolled.expiredRunId, projection: { seasonKey: season.seasonKey, title: info.title, serverNow: info.serverNow, startsAt: info.startsAt, endsAt: info.endsAt, timezone: "UTC", remainingMs: info.remainingMs, notice: info.notice, currentFloor: season.currentFloor, checkpointFloor: season.checkpointFloor, currentSeasonHighestFloor: season.currentSeasonHighestFloor, lifetimeHighestFloor: rolled.progress.lifetime.lifetimeHighestFloor, activeRunId: season.activeRun?.runId, teamPower } };
@@ -45903,7 +46024,7 @@ function projectCompanionProvingGrounds(state, serverNowMs) {
   return { state: rolled.state, projection: { weekKey: rolled.state.weekKey, serverNow: new Date(serverNowMs).toISOString(), challengeIds: active2.definitions.map((x) => x.id), progress: { ...rolled.state.progress }, completedIds: [...rolled.state.completedIds], claimedIds: [...rolled.state.claimedIds] } };
 }
 
-// backend/src/server/companions/special-challenges.ts
+// src/server/companions/special-challenges.ts
 var companionSpecialChallenge = (id) => COMPANION_SPECIAL_CHALLENGES.find((x) => x.id === id);
 function boss(id, power) {
   const scale = Math.max(0.85, Math.min(1.15, power / 4300));
@@ -45929,7 +46050,7 @@ function resolveSpecialCompanionChallenge(input, executor) {
   return { result, unlockedCompanionId: target2?.id, completionKey: checked.challenge.id };
 }
 
-// apps/mobile/src/core/companion-provisions.ts
+// ../apps/mobile/src/core/companion-provisions.ts
 var COMPANION_STAMINA_HP_PER_POINT = 10;
 function companionFoodStamina(itemId) {
   const item = itemDef(itemId);
@@ -45940,7 +46061,9 @@ function companionExpeditionStaminaCost(durationHours) {
   return Math.min(300, Math.max(50, Math.ceil(hours / 8) * 50));
 }
 
-// apps/mobile/src/core/feature-unlocks.ts
+// ../apps/mobile/src/core/feature-unlocks.ts
+var GUILD_UNLOCK_LEVEL = 7;
+var PARTY_UNLOCK_LEVEL = 20;
 var EARLY_FEATURE_UNLOCKS = {
   dailySupplies: { questId: "QST_002", title: "Daily Supplies", requirement: "Complete First Blood, First Skill", description: "The daily reward track appears after the player understands basic skilling." },
   events: { questId: "", title: "Events", requirement: "Available from the start", description: "All players can enter live events and earn their general rewards from level 1. Individual event activities may have their own requirements." },
@@ -45951,21 +46074,37 @@ var EARLY_FEATURE_UNLOCKS = {
   social: { questId: "QST_005", title: "Social & Parties", requirement: "Complete Into Ironwood", description: "Party recruitment and cooperative social systems unlock after the core solo loop is understood." },
   contracts: { questId: "QST_005", title: "Contract Board", requirement: "Complete Into Ironwood", description: "Weekly and cooperative contract planning unlocks with deeper regional progression." },
   masteryHall: { questId: "QST_005", title: "Mastery Hall", requirement: "Complete Into Ironwood", description: "Long-term profession mastery records appear once the player has enough skill actions to make the system meaningful." },
-  guild: { questId: "QST_005", title: "Guilds", requirement: "Reach Level 10 and complete Into Ironwood", description: "Guilds unlock at Level 10, once the core solo loop is established and social progression becomes useful." },
+  guild: { questId: "QST_005", title: "Guilds", requirement: `Reach Level ${GUILD_UNLOCK_LEVEL}`, description: `Guilds unlock at Level ${GUILD_UNLOCK_LEVEL}, so you can find, join or create a Guild before deeper regional progression.` },
+  party: { questId: "QST_011", title: "Parties", requirement: `Reach Level ${PARTY_UNLOCK_LEVEL}`, description: `Persistent parties unlock at Level ${PARTY_UNLOCK_LEVEL}, after the player has had time to learn the solo loop and pick a role.` },
   rankings: { questId: "QST_011", title: "Rankings", requirement: "Reach Level 20 and complete Place Among Guilds", description: "Prestige rankings unlock later at Level 20, after the player has had time to establish their character and social identity." }
 };
 function accountQuestClaimed(state, questId) {
   if (state.quests?.some((row) => row.questId === questId && row.status === "claimed")) return true;
   return (state.otherCharacters ?? []).some((entry2) => entry2.quests.some((row) => row.questId === questId && row.status === "claimed"));
 }
+function accountReachedLevel(state, level) {
+  if ((state.character?.level ?? 0) >= level) return true;
+  return (state.otherCharacters ?? []).some((entry2) => {
+    const anyEntry = entry2;
+    const otherLevel = (typeof anyEntry.level === "number" ? anyEntry.level : anyEntry.character?.level) ?? 0;
+    return otherLevel >= level;
+  });
+}
 function earlyFeatureUnlocked(state, id) {
   if (id === "events") return true;
   const rule = EARLY_FEATURE_UNLOCKS[id];
-  if (id === "guild" && state.account.guildMember) return true;
+  if (id === "guild") {
+    if (state.account.guildMember) return true;
+    if (accountReachedLevel(state, GUILD_UNLOCK_LEVEL)) return true;
+    return accountQuestClaimed(state, rule.questId);
+  }
+  if (id === "party") {
+    return accountReachedLevel(state, PARTY_UNLOCK_LEVEL);
+  }
   return accountQuestClaimed(state, rule.questId);
 }
 
-// apps/mobile/src/core/companion-runtime.ts
+// ../apps/mobile/src/core/companion-runtime.ts
 function expeditionFoodArg(value) {
   if (!Array.isArray(value) || value.length < 1 || value.length > 20) throw new Error("invalid_companion_food");
   return value.map((row) => {
@@ -45994,7 +46133,7 @@ function spendExpeditionFood(state, food, requiredStamina) {
   }
   return { ...state, inventory: { ...state.inventory, stacks: inventory }, bank: { ...state.bank, stacks: bank }, account: { ...state.account, longTermMetrics: { ...state.account.longTermMetrics ?? {}, "companions.expedition.stamina_supplied": (state.account.longTermMetrics?.["companions.expedition.stamina_supplied"] ?? 0) + Math.floor(supplied) } } };
 }
-var PLAYBACK_EVENT_TYPES = /* @__PURE__ */ new Set(["combat_start", "phase", "cast_start", "cast_complete", "damage", "miss", "heal", "shield", "dot_tick", "hot_tick", "interrupt", "down", "death", "combat_end"]);
+var PLAYBACK_EVENT_TYPES = /* @__PURE__ */ new Set(["combat_start", "phase", "cast_start", "cast_complete", "damage", "miss", "heal", "shield", "dot_tick", "hot_tick", "status_apply", "status_remove", "interrupt", "down", "death", "combat_end"]);
 function companionBattlePlayback(result) {
   if (!("events" in result)) return { durationMs: result.durationMs, units: [], abilityNames: { BASIC: "Basic attack" }, events: [] };
   const states = [...result.players, ...result.enemies], abilityNames = { BASIC: "Basic attack" };
@@ -46002,7 +46141,7 @@ function companionBattlePlayback(result) {
     for (const ability2 of state.definition.abilities) abilityNames[ability2.id] = ability2.name;
     for (const phase of state.definition.phases ?? []) abilityNames[phase.id] = phase.name ?? phase.id.replace(/_/g, " ");
   }
-  const events = result.events.filter((event) => PLAYBACK_EVENT_TYPES.has(event.type)).map((event) => ({ atMs: event.atMs, type: event.type, actorId: event.actorId, targetId: event.targetId, abilityId: event.abilityId, interruptedAbilityId: event.interruptedAbilityId, amount: event.amount, critical: event.critical, absorbed: event.absorbed, detail: event.detail }));
+  const events = result.events.filter((event) => PLAYBACK_EVENT_TYPES.has(event.type)).map((event) => ({ atMs: event.atMs, type: event.type, actorId: event.actorId, targetId: event.targetId, abilityId: event.abilityId, interruptedAbilityId: event.interruptedAbilityId, amount: event.amount, critical: event.critical, absorbed: event.absorbed, statusKind: event.statusKind, statusTag: event.statusTag, expiresAtMs: event.expiresAtMs, detail: event.detail }));
   return { durationMs: result.durationMs, units: states.map((state) => ({ id: state.definition.id, name: state.definition.name, team: state.definition.team, role: state.definition.role, maxHp: state.definition.stats.maxHp, boss: state.definition.boss === true })), abilityNames, events };
 }
 var COMPANION_REMATCH_WEEKLY_BONDSTONE_CAP = 1;
@@ -46147,6 +46286,36 @@ function executeCompanionActivity(input, type, a, now) {
   const sequence = (state.account.companionActionSequence ?? 0) + 1, seed = `${state.character.id}:${sequence}:${now}`;
   const trialInput = { progress: state.account.companionTrialProgress, owned, busyCompanionIds: busy, trialsUnlocked: ["tank", "damage", "support"].every((role) => Object.keys(owned).some((id) => companionServerDefinition(id)?.role === role)), serverNowMs: now };
   switch (type) {
+    case "companion_trial_formation": {
+      const ids2 = idsArg(a);
+      const check = validateCompanionTrialTeam({ companionIds: ids2, owned });
+      if (!check.ok) throw new Error(check.reason);
+      state.account.companionTrialFormationIds = [...ids2];
+      break;
+    }
+    case "companion_trial_fight": {
+      const requestId = stringArg(a, "requestId");
+      if (state.account.companionTrialLastFightRequestId === requestId) return state;
+      if (now < (state.account.companionBattleReadyAtMs ?? 0)) throw new Error("Companions are recovering from battle.");
+      let current = state;
+      if (!current.account.companionTrialProgress?.season.activeRun) {
+        const ids2 = a.ids === void 0 ? current.account.companionTrialFormationIds : idsArg(a);
+        if (!ids2) throw new Error("Choose a Trial formation first.");
+        current = executeCompanionActivity(current, "companion_trial_start", { ids: ids2 }, now);
+        current.account.companionTrialFormationIds = [...ids2];
+      }
+      const run = current.account.companionTrialProgress?.season.activeRun;
+      if (!run) throw new Error("Unable to start a Trial run.");
+      const result = executeCompanionActivity(current, "companion_trial_floor", { id: run.runId, floor: run.currentFloor }, now);
+      if (result.account.companionLastBattle) {
+        result.account.companionLastBattle.battleId = requestId;
+        result.account.companionLastBattle.mode = "trial";
+        result.account.companionLastBattle.runId = run.runId;
+        result.account.companionLastBattle.floor = run.currentFloor;
+      }
+      result.account.companionTrialLastFightRequestId = requestId;
+      return result;
+    }
     case "companion_monthly": {
       const r = claimMonthlyCompanionChallenge(state.account.companionTrialProgress, stringArg(a, "id"), now);
       state = reward(state, r.reward);
@@ -46206,7 +46375,7 @@ function executeCompanionActivity(input, type, a, now) {
         state.account.companionProvingGround = recordCompanionProvingGroundEvent({ state: state.account.companionProvingGround, serverNowMs: now, owned, event: { eventId: `${run.runId}:${run.currentFloor}`, type: run.currentFloor % 5 === 0 ? "trial_boss_clear" : "trial_floor_clear", companionIds: run.teamCompanionIds, trialFloor: run.currentFloor, teamPower: companionTeamPower(run.teamCompanionIds, owned), recommendedPower: companionTrialRecommendedPower(run.currentFloor), noDefeats: r.result.players?.every((p) => p.alive) } }).state;
       }
       state.account.companionBattleReadyAtMs = now + Math.max(1e3, r.result.durationMs);
-      state.account.companionLastBattle = { title: `Trial Floor ${run.currentFloor}`, won: r.result.victory, durationMs: r.result.durationMs, gold: r.reward.gold, essence: r.reward.companionEssence, bondstones: r.reward.bondstones, atMs: now, playback: companionBattlePlayback(r.result) };
+      state.account.companionLastBattle = { title: `Trial Floor ${run.currentFloor}`, won: r.result.victory, durationMs: r.result.durationMs, gold: r.reward.gold, essence: r.reward.companionEssence, bondstones: r.reward.bondstones, atMs: now, mode: "trial", battleId: `trial:${sequence}:${now}`, runId: run.runId, floor, playback: companionBattlePlayback(r.result) };
       break;
     }
     case "companion_assignment_start": {
@@ -46285,7 +46454,7 @@ function executeCompanionActivity(input, type, a, now) {
         state.account.companionSpecialClears = [...state.account.companionSpecialClears ?? [], id];
       }
       state.account.companionBattleReadyAtMs = now + Math.max(1e3, r.result.durationMs);
-      state.account.companionLastBattle = { title: "Special Companion Challenge", won: r.result.victory, durationMs: r.result.durationMs, gold: 0, essence: 0, bondstones: 0, atMs: now, playback: companionBattlePlayback(r.result) };
+      state.account.companionLastBattle = { title: "Special Companion Challenge", won: r.result.victory, durationMs: r.result.durationMs, gold: 0, essence: 0, bondstones: 0, atMs: now, mode: "special", battleId: `special:${sequence}:${now}`, playback: companionBattlePlayback(r.result) };
       break;
     }
     default:
@@ -46339,19 +46508,25 @@ function recordCompanionActivity(state, source, target2, units, now) {
   return reconcileCombatCompanionUnlocks(next, now);
 }
 
-// apps/mobile/src/content/event-currency-promotion.ts
+// ../apps/mobile/src/content/event-currency-promotion.ts
 var VEILBREAK_CURRENCY_PROMOTION = {
   eventId: "EVT_ANNUAL_010_2026",
   startsAtMs: Date.parse("2026-10-19T05:48:31Z"),
   endsAtMs: Date.parse("2026-11-03T00:00:00Z"),
   bonusBps: 5e3
 };
+var FUTURE_EVENT_CURRENCY_ADJUSTMENT_BPS = -2500;
+var FUTURE_2026_EVENT_IDS = /* @__PURE__ */ new Set(["EVT_ANNUAL_011_2026", "EVT_ANNUAL_012_2026"]);
+var FUTURE_ANNUAL_EVENT_ID = /^EVT_ANNUAL_\d{3}_(\d{4})$/;
 function eventCurrencyPromotionBps(eventId, earnedAtMs) {
   const promotion = VEILBREAK_CURRENCY_PROMOTION;
-  return eventId === promotion.eventId && earnedAtMs >= promotion.startsAtMs && earnedAtMs < promotion.endsAtMs ? promotion.bonusBps : 0;
+  if (eventId === promotion.eventId && earnedAtMs >= promotion.startsAtMs && earnedAtMs < promotion.endsAtMs) return promotion.bonusBps;
+  if (FUTURE_2026_EVENT_IDS.has(eventId)) return FUTURE_EVENT_CURRENCY_ADJUSTMENT_BPS;
+  const year = FUTURE_ANNUAL_EVENT_ID.exec(eventId)?.[1];
+  return year && Number(year) >= 2027 ? FUTURE_EVENT_CURRENCY_ADJUSTMENT_BPS : 0;
 }
 
-// apps/mobile/src/core/live-events.ts
+// ../apps/mobile/src/core/live-events.ts
 function eventLifecycle(state, nowMs = Date.now()) {
   const runtime = state.account.liveEvent;
   if (!runtime?.enabled) return null;
@@ -46388,8 +46563,8 @@ function eventCurrencyBonusBps(state, eventId, earnedAtMs = Date.now()) {
   const runtime = state.account.liveEvent;
   return runtime?.enabled && runtime.eventId === eventId && earnedAtMs >= runtime.startsAtMs && earnedAtMs < runtime.endsAtMs ? eventCurrencyPromotionBps(eventId, earnedAtMs) : 0;
 }
-function promotedCommonReward(state, eventId, quantity4, earnedAtMs) {
-  return Math.floor(quantity4 * (1e4 + eventCurrencyBonusBps(state, eventId, earnedAtMs)) / 1e4);
+function promotedCommonReward(state, eventId, quantity2, earnedAtMs) {
+  return Math.floor(quantity2 * (1e4 + eventCurrencyBonusBps(state, eventId, earnedAtMs)) / 1e4);
 }
 var EVENT_COMMUNITY_MIN_CONTRIBUTION = 100;
 function eventPrestigeReward(source, reward2) {
@@ -46409,9 +46584,15 @@ function eventCandyStatus(state, nowMs = Date.now(), kind = "skill") {
   return { active: remaining > 0, remainingSeconds: remaining, candy };
 }
 function eventCandyUtilityMultiplier(state, nowMs = Date.now(), kind = "skill") {
-  return eventCandyStatus(state, nowMs, kind).active ? 1.1 : 1;
+  return eventCandyStatus(state, nowMs, kind).active ? kind === "pet" ? 2 : 1.1 : 1;
 }
-function consumeEventCandy(state, nowMs = Date.now(), kind = "skill") {
+var EVENT_BOND_CANDY_MATERIAL_CAP = 5;
+function eventBondCandyMaterialUses(state, eventId, companionId) {
+  const key = `${eventId}:candy:companion_material:${companionId}`;
+  const count = state.account.eventShopPurchaseCounts?.[key] ?? 0;
+  return Number.isFinite(count) ? Math.max(0, Math.min(EVENT_BOND_CANDY_MATERIAL_CAP, Math.floor(count))) : 0;
+}
+function consumeEventCandy(state, nowMs = Date.now(), kind = "skill", companionId) {
   const active2 = activeLiveEvent(state, nowMs);
   if (!active2 || !state.character) throw new Error("This event is not active.");
   const candy = eventCandies(active2.definition).find((entry2) => entry2.kind === kind);
@@ -46421,11 +46602,12 @@ function consumeEventCandy(state, nowMs = Date.now(), kind = "skill") {
   state = { ...state, account: { ...state.account, eventCandyChargesById: { ...state.account.eventCandyChargesById ?? {}, [candy.id]: charges - 1 } } };
   if (!state.character) throw new Error("Character required.");
   if (kind === "companion") {
-    const equipped = state.character.equippedCombatCompanionId;
-    if (!equipped) throw new Error("Equip a combat companion first.");
-    const materialKey = `${active2.definition.id}:candy:companion_material`, materialUses = state.account.eventShopPurchaseCounts?.[materialKey] ?? 0;
-    if (materialUses >= 5) throw new Error("This event candy has reached its five-material cap. Companion XP remains available from normal companion activities.");
-    const awarded = awardCompanionCandyXp(state, equipped, 75, nowMs), materials = { ...awarded.account.companionMaterials ?? {} };
+    const targetId = companionId ?? state.character.equippedCombatCompanionId;
+    if (!targetId || (state.account.unlockedCombatCompanionIds ?? []).includes(targetId) === false) throw new Error("Select a companion you own.");
+    const materialKey = `${active2.definition.id}:candy:companion_material:${targetId}`, materialUses = eventBondCandyMaterialUses(state, active2.definition.id, targetId);
+    const awarded = awardCompanionCandyXp(state, targetId, 75, nowMs);
+    if (materialUses >= EVENT_BOND_CANDY_MATERIAL_CAP) return awarded;
+    const materials = { ...awarded.account.companionMaterials ?? {} };
     materials.EVENT_BONDBLOOM = (materials.EVENT_BONDBLOOM ?? 0) + 1;
     return { ...awarded, account: { ...awarded.account, companionMaterials: materials, eventShopPurchaseCounts: { ...awarded.account.eventShopPurchaseCounts ?? {}, [materialKey]: materialUses + 1 } } };
   }
@@ -46495,8 +46677,8 @@ function activityEventDiscoveries(state, source, units, nowMs) {
   const event = activeLiveEvent(state, nowMs);
   if (!event || units <= 0) return [];
   return event.definition.discoveries.filter((discovery) => discovery.source === source).map((discovery) => {
-    const expected = units * discovery.chance, whole = Math.floor(expected), fraction = expected - whole, quantity4 = whole + (random01(`${state.character?.id}:${event.definition.id}:discovery:${discovery.id}:${nowMs}`, 0) < fraction ? 1 : 0);
-    return { eventId: event.definition.id, discoveryId: discovery.id, name: discovery.name, quantity: quantity4 };
+    const expected = units * discovery.chance, whole = Math.floor(expected), fraction = expected - whole, quantity2 = whole + (random01(`${state.character?.id}:${event.definition.id}:discovery:${discovery.id}:${nowMs}`, 0) < fraction ? 1 : 0);
+    return { eventId: event.definition.id, discoveryId: discovery.id, name: discovery.name, quantity: quantity2 };
   }).filter((entry2) => entry2.quantity > 0);
 }
 function applyEventDrops(state, drops) {
@@ -46548,7 +46730,7 @@ function claimEventDiscovery(state, discoveryId, nowMs = Date.now()) {
 function grantEventActivity(state, source, nowMs = Date.now(), units = 1) {
   const event = activeLiveEvent(state, nowMs), count = Math.max(0, Math.floor(units));
   if (!event || count <= 0) return state;
-  const quantity4 = eventDropQuantity(state, source, count, nowMs), withDrops = applyEventDrops(state, [{ eventId: event.definition.id, currencyId: event.definition.currencyId, name: event.definition.currencyName, quantity: quantity4, source, units: count, recordedAtMs: nowMs }]);
+  const quantity2 = eventDropQuantity(state, source, count, nowMs), withDrops = applyEventDrops(state, [{ eventId: event.definition.id, currencyId: event.definition.currencyId, name: event.definition.currencyName, quantity: quantity2, source, units: count, recordedAtMs: nowMs }]);
   return applyEventDiscoveries(withDrops, activityEventDiscoveries(state, source, count, nowMs));
 }
 function addReward(state, reward2, nowMs = Date.now()) {
@@ -46571,6 +46753,7 @@ function addReward(state, reward2, nowMs = Date.now()) {
     if (!character) throw new Error("Character required.");
     character = { ...character, gold: character.gold + Math.max(1, Math.floor(reward2.quantity ?? 1)) };
   } else if (reward2.kind === "companion_essence") account.companionEssence = (account.companionEssence ?? 0) + Math.max(1, Math.floor(reward2.quantity ?? 1));
+  else if (reward2.kind === "bondstones") account.bondstones = (account.bondstones ?? 0) + Math.max(1, Math.floor(reward2.quantity ?? 1));
   else if (reward2.kind === "guild_name_color" || reward2.kind === "guild_frame" || reward2.kind === "guild_banner") {
     account.unlockedGuildCosmeticIds = [.../* @__PURE__ */ new Set([...account.unlockedGuildCosmeticIds ?? [], reward2.id])];
   } else if (reward2.kind === "profile_icon") account.unlockedProfileIconIds = [.../* @__PURE__ */ new Set([...account.unlockedProfileIconIds ?? [], reward2.id])];
@@ -46620,9 +46803,9 @@ function availableEventRepeatCaches(state, eventId) {
 function claimEventRepeatCache(state, nowMs = Date.now()) {
   const event = claimableLiveEvent(state, nowMs);
   if (!event) throw new Error("Event rewards are no longer available.");
-  if (!availableEventRepeatCaches(state, event.definition.id)) throw new Error("Earn 1,000 reputation beyond the final milestone first.");
-  const id = event.definition.id;
-  return { ...state, account: { ...state.account, eventPrestigeBalanceById: { ...state.account.eventPrestigeBalanceById ?? {}, [id]: eventPrestigeBalance(state, id) + 1 }, eventRepeatCacheClaimsById: { ...state.account.eventRepeatCacheClaimsById ?? {}, [id]: (state.account.eventRepeatCacheClaimsById?.[id] ?? 0) + 1 } } };
+  const id = event.definition.id, available = availableEventRepeatCaches(state, id);
+  if (!available) throw new Error("Earn 1,000 reputation beyond the final milestone first.");
+  return { ...state, account: { ...state.account, eventPrestigeBalanceById: { ...state.account.eventPrestigeBalanceById ?? {}, [id]: eventPrestigeBalance(state, id) + available }, eventRepeatCacheClaimsById: { ...state.account.eventRepeatCacheClaimsById ?? {}, [id]: (state.account.eventRepeatCacheClaimsById?.[id] ?? 0) + available } } };
 }
 function utcDayKey(nowMs) {
   return new Date(nowMs).toISOString().slice(0, 10);
@@ -46688,12 +46871,18 @@ function claimEventWeeklyObjective(state, objectiveId, nowMs = Date.now()) {
   prestige[id] = (prestige[id] ?? 0) + challenge.objective.rewardPrestige;
   return { ...state, account: { ...state.account, eventProgressById: progress, eventCurrencyBalanceById: currency, eventPrestigeBalanceById: prestige, eventWeeklyClaimIds: [...state.account.eventWeeklyClaimIds ?? [], challenge.id].slice(-160) } };
 }
-function eventOfferPurchaseCount(state, eventId, offerId) {
+function eventOfferOwnPurchaseCount(state, eventId, offerId) {
   return Math.max(0, Math.floor(state.account.eventShopPurchaseCounts?.[`${eventId}:${offerId}`] ?? 0));
+}
+function eventOfferPurchaseCount(state, eventId, offerId) {
+  const definition = liveEventDef(eventId), offers = definition ? [...definition.shop, ...eventPrestigeSupplyOffers(definition)] : [];
+  const offer = offers.find((row) => row.id === offerId);
+  if (offer?.reward.kind === "candy") return offers.filter((row) => row.currency === offer.currency && row.reward.kind === "candy" && row.reward.id === offer.reward.id).reduce((total, row) => total + eventOfferOwnPurchaseCount(state, eventId, row.id), 0);
+  return eventOfferOwnPurchaseCount(state, eventId, offerId);
 }
 function eventShopOffers(state, nowMs = Date.now()) {
   const event = claimableLiveEvent(state, nowMs);
-  return event ? [...event.definition.shop] : [];
+  return event ? [...event.definition.shop, ...eventPrestigeSupplyOffers(event.definition)] : [];
 }
 function purchaseEventOffer(state, offerId, nowMs = Date.now()) {
   const event = claimableLiveEvent(state, nowMs);
@@ -46708,7 +46897,7 @@ function purchaseEventOffer(state, offerId, nowMs = Date.now()) {
   if (offer.currency === "common") common[event.definition.id] = balance - offer.cost;
   else prestige[event.definition.id] = balance - offer.cost;
   const rewarded = addReward(state, offer.reward, nowMs), key = `${event.definition.id}:${offer.id}`;
-  return { ...rewarded, account: { ...rewarded.account, eventCurrencyBalanceById: common, eventPrestigeBalanceById: prestige, eventShopPurchaseCounts: { ...rewarded.account.eventShopPurchaseCounts ?? {}, [key]: count + 1 } } };
+  return { ...rewarded, account: { ...rewarded.account, eventCurrencyBalanceById: common, eventPrestigeBalanceById: prestige, eventShopPurchaseCounts: { ...rewarded.account.eventShopPurchaseCounts ?? {}, [key]: eventOfferOwnPurchaseCount(state, event.definition.id, offerId) + 1 } } };
 }
 function chooseEventProject(state, choiceId, nowMs = Date.now()) {
   const event = activeLiveEvent(state, nowMs);
@@ -46718,16 +46907,18 @@ function chooseEventProject(state, choiceId, nowMs = Date.now()) {
   if (existing && existing !== choiceId) throw new Error("Your event project is already locked for this event.");
   return { ...state, account: { ...state.account, eventChoiceById: { ...state.account.eventChoiceById ?? {}, [event.definition.id]: choiceId } } };
 }
-function contributeEventCurrency(state, quantity4, nowMs = Date.now()) {
+function contributeEventCurrency(state, quantity2, nowMs = Date.now()) {
+  if (!EVENT_COMMUNITY_ENABLED) throw new Error("Community event contributions are temporarily unavailable.");
   const event = activeLiveEvent(state, nowMs);
   if (!event) throw new Error("This event is not active.");
   if (event.definition.communityEnabled !== true) throw new Error("Community event contributions are not enabled.");
   if (!state.account.eventChoiceById?.[event.definition.id]) throw new Error("Choose an event project first.");
-  const amount = Math.max(0, Math.floor(quantity4)), credited = eventContributionValue(state, event.definition.id, amount), balance = eventCurrencyBalance(state, event.definition.id);
+  const amount = Math.max(0, Math.floor(quantity2)), credited = eventContributionValue(state, event.definition.id, amount), balance = eventCurrencyBalance(state, event.definition.id);
   if (!amount || balance < amount) throw new Error("Not enough event currency.");
   return { ...state, account: { ...state.account, eventCurrencyBalanceById: { ...state.account.eventCurrencyBalanceById ?? {}, [event.definition.id]: balance - amount }, eventContributionById: { ...state.account.eventContributionById ?? {}, [event.definition.id]: (state.account.eventContributionById?.[event.definition.id] ?? 0) + credited } } };
 }
 function eventCommunityStage(state, nowMs = Date.now()) {
+  if (!EVENT_COMMUNITY_ENABLED) return 0;
   const event = claimableLiveEvent(state, nowMs);
   if (!event || event.definition.communityEnabled !== true) return 0;
   if (state.account.eventCommunityProgressById) return Math.min(100, Math.max(0, state.account.eventCommunityProgressById[event.definition.id] ?? 0));
@@ -46735,12 +46926,14 @@ function eventCommunityStage(state, nowMs = Date.now()) {
   return Math.min(100, Math.floor(contribution * 100 / Math.max(1, event.definition.communityGoal)));
 }
 function eventCommunityMilestones(state, nowMs = Date.now()) {
+  if (!EVENT_COMMUNITY_ENABLED) return [];
   const event = claimableLiveEvent(state, nowMs);
   if (!event || event.definition.communityEnabled !== true) return [];
   const stage = eventCommunityStage(state, nowMs), contribution = Math.max(0, state.account.eventContributionById?.[event.definition.id] ?? 0), eligible = contribution >= EVENT_COMMUNITY_MIN_CONTRIBUTION;
   return event.definition.communityMilestones.map((milestone) => ({ milestone: { ...milestone, rewardCurrency: promotedCommonReward(state, event.definition.id, milestone.rewardCurrency, eventBoardTime(state, nowMs)) }, ready: stage >= milestone.percent, eligible, claimed: (state.account.eventCommunityClaimIds ?? []).includes(`${event.definition.id}:${milestone.percent}`) }));
 }
 function claimEventCommunityMilestone(state, percent, nowMs = Date.now()) {
+  if (!EVENT_COMMUNITY_ENABLED) throw new Error("Community event rewards are temporarily unavailable.");
   const event = claimableLiveEvent(state, nowMs);
   if (!event || event.definition.communityEnabled !== true) throw new Error("Community event rewards are not enabled.");
   const status = eventCommunityMilestones(state, nowMs).find((entry2) => entry2.milestone.percent === percent);
@@ -46753,13 +46946,13 @@ function claimEventCommunityMilestone(state, percent, nowMs = Date.now()) {
   return { ...rewarded, account: { ...rewarded.account, eventCommunityClaimIds: [...rewarded.account.eventCommunityClaimIds ?? [], `${event.definition.id}:${percent}`].slice(-80) } };
 }
 
-// apps/mobile/src/content/event-collectible-content-active.ts
+// ../apps/mobile/src/content/event-collectible-content-active.ts
 var EVENT_PET_COLLECTIBLES = [
   { id: "EVT_PET_013", kind: "pet", name: "Gloomkin", bonusFamilyId: "EVT_PET_013", target: "dropChance", ownedBps: 50, activeBps: 300, collectionGroup: "event", source: "The Veilbreak \xB7 October", event: "veilbreak", rarity: "Rare", buff: "+3% relative Combat Drop Chance", description: "A playful void kitten carrying a small spectral lantern." },
   { id: "EVT_PET_014", kind: "pet", name: "Lantern Mimic", bonusFamilyId: "EVT_PET_014", target: "dungeonReward", ownedBps: 50, activeBps: 400, collectionGroup: "event", source: "The Veilbreak \xB7 October", event: "veilbreak", rarity: "Epic", buff: "+4% Dungeon Reward Quantity Chance", description: "A compact mimic filled with ghost-fire and lantern light." }
 ];
 
-// apps/mobile/src/content/core-pets.ts
+// ../apps/mobile/src/content/core-pets.ts
 var pet = (id, name, region, target2, nativeSize, activeBps = 200, source) => ({
   id,
   kind: "pet",
@@ -46822,7 +47015,7 @@ function validateCorePetCatalog(catalog2 = CORE_PET_COLLECTIBLES) {
 }
 validateCorePetCatalog();
 
-// apps/mobile/src/content/guild-pets-v1.ts
+// ../apps/mobile/src/content/guild-pets-v1.ts
 var GUILD_PET_COLLECTIBLES = [
   {
     id: "GUILD_PET_001",
@@ -46856,7 +47049,7 @@ var GUILD_PET_COLLECTIBLES = [
   }
 ];
 
-// apps/mobile/src/content/collectibles.ts
+// ../apps/mobile/src/content/collectibles.ts
 var entry = (id, kind, name, target2, source, activeBps = 200, requiredCharacterLevel, collectionGroup = "profile") => ({ id, kind, name, bonusFamilyId: id, target: target2, ownedBps: 50, activeBps, source, requiredCharacterLevel, collectionGroup });
 var PROFILE_COLLECTIBLES = [
   entry("ironwood-dawn", "background", "Ironwood Dawn", "skillXp", "Reach character level 10", 200, 10, "profile"),
@@ -46891,7 +47084,7 @@ function validateCollectibleCatalog(catalog2 = COLLECTIBLES) {
 }
 validateCollectibleCatalog();
 
-// apps/mobile/src/content/permanent-boosts.ts
+// ../apps/mobile/src/content/permanent-boosts.ts
 var petBoostFor = (pet2) => {
   const amount = 1 + pet2.activeBps / 1e4;
   const base = { id: pet2.id, name: pet2.name };
@@ -46991,10 +47184,10 @@ var PERMANENT_BOOSTS_BASE = {
   ...BUYABLE_PERMANENT_BOOSTS
 };
 
-// apps/mobile/src/core/permanent-boosts.ts
+// ../apps/mobile/src/core/permanent-boosts.ts
 init_faith2();
 
-// apps/mobile/src/core/account-entitlements.ts
+// ../apps/mobile/src/core/account-entitlements.ts
 function has2(state, ...keys) {
   const entitlements = state.account.entitlements ?? {};
   return keys.some((key) => entitlements[key] === true);
@@ -47027,7 +47220,7 @@ function entitlementStorageCapacity(state, location) {
   return state[location].capacity + (location === "inventory" ? benefits.inventorySlots : benefits.bankSlots);
 }
 
-// apps/mobile/src/core/collectibles.ts
+// ../apps/mobile/src/core/collectibles.ts
 var ids = (state, kind) => kind === "pet" ? state.account.unlockedCosmeticPetIds ?? [] : kind === "background" ? state.account.unlockedProfileBackgroundIds ?? [] : state.account.unlockedProfileBorderIds ?? [];
 var selected = (state, kind) => kind === "pet" ? state.character?.selectedCosmeticPetId : kind === "background" ? state.character?.profileBackgroundId : state.character?.profileBorderId;
 function unlockCollectible(state, id) {
@@ -47060,7 +47253,7 @@ function collectionBonusBreakdown(state, catalog2 = COLLECTIBLES) {
   });
 }
 
-// apps/mobile/src/core/permanent-boosts.ts
+// ../apps/mobile/src/core/permanent-boosts.ts
 var BASE = {
   attackMultiplier: 1,
   combatSpeedMultiplier: 1,
@@ -47222,7 +47415,7 @@ function characterPermanentMultipliers(state) {
   return result;
 }
 
-// apps/mobile/src/core/profession-mastery-v40.ts
+// ../apps/mobile/src/core/profession-mastery-v40.ts
 var PROFESSION_MASTERY_MAX_RANK = 50;
 function masteryPointsForRank(rank) {
   const r = Math.max(0, Math.min(PROFESSION_MASTERY_MAX_RANK, Math.floor(rank)));
@@ -47266,7 +47459,7 @@ function professionMasteryRankProgress(actionId, record) {
   return { ...view, currentRankPoints: floor, pointsIntoRank: current, pointsForNextRank: need, progress: view.mastered ? 1 : Math.max(0, Math.min(1, current / Math.max(1, need))) };
 }
 
-// apps/mobile/src/core/class-skill-affinities.ts
+// ../apps/mobile/src/core/class-skill-affinities.ts
 var CLASS_SKILL_AFFINITIES = Object.freeze({
   IRONWARDEN: "smithing",
   BASTION: "smithing",
@@ -47315,7 +47508,7 @@ function settleAffinitySkillXp(rawXp, remainder = 0, remainingXp = Number.MAX_SA
   return { xp, remainder: xp >= room ? 0 : Math.max(0, Math.min(1 - Number.EPSILON, raw2 - whole)) };
 }
 
-// apps/mobile/src/core/profession-action-pace.ts
+// ../apps/mobile/src/core/profession-action-pace.ts
 function professionActionPace(state, recipe2, mode) {
   const permanent = characterPermanentMultipliers(state);
   const mastery = professionMasteryMultipliers(recipe2.id, state.account.professionMasteryByAction?.[recipe2.id]);
@@ -47327,7 +47520,7 @@ function professionActionPace(state, recipe2, mode) {
   return { cycleSeconds, xpPerAction, affinity, mastery, speed };
 }
 
-// apps/mobile/src/content/classes.ts
+// ../apps/mobile/src/content/classes.ts
 var CLASSES = [
   { id: "IRONWARDEN", name: "Ironwarden", role: "Tank", description: "Runic defender built around guard, threat and counterplay.", hp: 155, attack: 15, defense: 19, roleRatings: { tank: 5, damage: 2, support: 1 }, starterEquipment: { weapon: "basic_sword" } },
   { id: "BASTION", name: "Bastion", role: "Tank", description: "Fortress tank using layered barriers and heavy protection.", hp: 164, attack: 14, defense: 20, roleRatings: { tank: 5, damage: 1, support: 2 }, starterEquipment: { weapon: "basic_tower_shield" } },
@@ -47340,7 +47533,7 @@ var CLASSES = [
   { id: "STONECALLER", name: "Stonecaller", role: "Support", description: "Earth-and-storm support caster using resonance, geomancy and totems.", hp: 120, attack: 20, defense: 12, roleRatings: { tank: 2, damage: 2, support: 5 }, starterEquipment: { weapon: "basic_staff" } }
 ];
 
-// apps/mobile/src/content/exploration.ts
+// ../apps/mobile/src/content/exploration.ts
 var EXPLORATION_ROUTES = [
   { id: "SCOUT_GREENFIELDS", zoneId: "GREENFIELDS", name: "Scout the Greenfields", seconds: 48, xp: 24, unlockMonsterId: "FIELD_WISP", requiredLevel: 1, requiredExplorationLevel: 1 },
   { id: "SCOUT_SILVERBROOK", zoneId: "SILVERBROOK", name: "Map Silverbrook", seconds: 72, xp: 42, unlockMonsterId: "SILVERFIN_SWARM", requiredLevel: 5, requiredExplorationLevel: 1 },
@@ -47353,7 +47546,7 @@ var EXPLORATION_ROUTES = [
 ];
 var explorationRoute = (id) => EXPLORATION_ROUTES.find((route) => route.id === id);
 
-// apps/mobile/src/content/quests.ts
+// ../apps/mobile/src/content/quests.ts
 var QUESTS = [
   { id: "QST_001", name: "A Name in the Ledger", description: "Defeat 5 Moss Rats.", kind: "kills", targetId: "MOSS_RAT", required: 5, rewardGold: 40, rewardItemId: "MOSS_FIBER", rewardItemQty: 5, act: 1, location: "Greenfields", story: "The local ledger has more missing names than living ones. A simple rat cull is hardly heroic, but it is the first chance to prove you can return from the road." },
   { id: "QST_002", name: "First Blood, First Skill", description: "Reach level 2 in any guided gathering skill.", kind: "skillLevel", required: 2, rewardGold: 60, rewardItemId: "COPPER_ORE", rewardItemQty: 4, act: 1, location: "Greenfields Camp", story: "Steel alone will not carry you through Asterfall. The camp quartermaster sends you to learn the land, gather what it gives, and stop depending on supplies brought from safer places." },
@@ -47372,7 +47565,7 @@ var QUESTS = [
   { id: "QST_015", name: "Beyond the Green", description: "Claim victory over the Fallen Knight and reach level 25.", kind: "level", required: 25, rewardGold: 1250, rewardItemId: "OATHGLASS_CAPE", rewardItemQty: 1, act: 3, location: "Eastern Oathgate", story: "With the Knight defeated, the sealed routes beyond Asterfall begin to open. The victory ends one chapter, but the echoes carried on the wind make it clear the broken oath was never confined to the green lands." }
 ];
 
-// apps/mobile/src/core/combat-tactics.ts
+// ../apps/mobile/src/core/combat-tactics.ts
 var COMBAT_TACTIC_IDS = ["assault", "balanced", "guarded"];
 var COMBAT_TACTICS = {
   assault: { id: "assault", name: "Assault", summary: "+12% hunt speed \xB7 +12% damage taken \xB7 higher food pressure", speedMultiplier: 1.12, damageTakenMultiplier: 1.12, recoveryMultiplier: 1 },
@@ -47382,7 +47575,7 @@ var COMBAT_TACTICS = {
 var normalizeCombatTactic = (value) => value === "assault" || value === "guarded" ? value : "balanced";
 var combatTactic = (value) => COMBAT_TACTICS[normalizeCombatTactic(value)];
 
-// apps/mobile/src/core/hunt-goals.ts
+// ../apps/mobile/src/core/hunt-goals.ts
 var HUNT_GOAL_IDS = ["open", "kills_50", "kills_100", "champion_1", "duration_30m"];
 var HUNT_GOALS = {
   open: { id: "open", label: "Open", summary: "Run until you stop it, storage fills, or a safety rule triggers." },
@@ -47415,17 +47608,17 @@ function huntMomentumBonus(basePerKill, existingKills, newKills) {
   return Math.max(0, Math.floor(bonus + 1e-9));
 }
 
-// apps/mobile/src/core/activity-queue.ts
+// ../apps/mobile/src/core/activity-queue.ts
 init_faith();
 init_faith2();
 
-// apps/mobile/src/core/alchemy.ts
+// ../apps/mobile/src/core/alchemy.ts
 init_progression();
 function storedQuantity(stacks, itemId) {
   return stacks.filter((stack) => stack.itemId === itemId).reduce((total, stack) => total + stack.quantity, 0);
 }
-function take(stacks, itemId, quantity4) {
-  let remaining = quantity4;
+function take(stacks, itemId, quantity2) {
+  let remaining = quantity2;
   const next = stacks.map((stack) => {
     const amount = stack.itemId === itemId ? Math.min(remaining, stack.quantity) : 0;
     remaining -= amount;
@@ -47532,7 +47725,7 @@ function spendPreparationEncounter(preparation, itemId) {
   return preparation.remainingEncounters > 1 ? { ...preparation, remainingEncounters: preparation.remainingEncounters - 1 } : void 0;
 }
 
-// apps/mobile/src/core/world-navigation.ts
+// ../apps/mobile/src/core/world-navigation.ts
 var REGION_SCOUT_REQUIREMENTS = {
   OLD_MINES: "SCOUT_IRONWOOD",
   KINGS_ROAD: "SCOUT_OLD_MINES",
@@ -47556,14 +47749,14 @@ function regionTravelAvailability(state, zone) {
   return regionTravelLockReason(state, zone) ? "locked" : "available";
 }
 
-// apps/mobile/src/core/processing.ts
+// ../apps/mobile/src/core/processing.ts
 init_progression();
 var MAX_PROCESSING_BATCHES = 1e4;
 function storedQuantity2(stacks, itemId) {
   return stacks.filter((stack) => stack.itemId === itemId).reduce((total, stack) => total + stack.quantity, 0);
 }
-function take2(stacks, itemId, quantity4) {
-  let remaining = quantity4;
+function take2(stacks, itemId, quantity2) {
+  let remaining = quantity2;
   const next = stacks.map((stack) => {
     const amount = stack.itemId === itemId ? Math.min(remaining, stack.quantity) : 0;
     remaining -= amount;
@@ -47623,12 +47816,16 @@ function startProcessingBatch(state, recipeId, batches, nowMs) {
     activity: { kind: "processing", targetId: recipe2.id, startedAtMs: nowMs, lastClaimAtMs: nowMs, progressFraction: 0, bonusSnapshot: bonuses, skillAffinity: captureSkillAffinity(state, recipe2.skillId), processing }
   };
 }
+function processingRunCapacity(state, recipeId, afkCapSeconds, allowActivityReplacement = false) {
+  const status = processingAvailability(state, recipeId, 1, allowActivityReplacement);
+  const cycleSeconds = status.ready && status.recipe ? professionActionPace(state, status.recipe, "batch").cycleSeconds : 0;
+  const timeBatches = cycleSeconds > 0 && Number.isFinite(afkCapSeconds) ? Math.max(0, Math.floor(Math.max(0, afkCapSeconds) / cycleSeconds)) : 0;
+  return { ...status, timeBatches, availableBatches: status.ready ? Math.min(status.maxBatches, timeBatches) : 0 };
+}
 function startProcessingUntilLimited(state, recipeId, nowMs, afkCapSeconds) {
-  const status = processingAvailability(state, recipeId, 1);
+  const status = processingRunCapacity(state, recipeId, afkCapSeconds);
   if (!status.ready) throw new Error(status.reason);
-  const pace = professionActionPace(state, status.recipe, "batch");
-  const timeBatches = Math.floor(afkCapSeconds / pace.cycleSeconds);
-  const batches = Math.min(status.maxBatches, timeBatches, MAX_PROCESSING_BATCHES);
+  const batches = status.availableBatches;
   if (batches < 1) throw new Error("Not enough AFK time for one processing cycle.");
   return startProcessingBatch(state, recipeId, batches, nowMs);
 }
@@ -47662,7 +47859,7 @@ function processingRefund(processing) {
   return { items: processing.inputsPerBatch.map((input) => ({ itemId: input.itemId, quantity: input.quantity * processing.remainingBatches })), gold: processing.goldPerBatch * processing.remainingBatches };
 }
 
-// apps/mobile/src/core/activity-queue.ts
+// ../apps/mobile/src/core/activity-queue.ts
 var BASE_ACTIVITY_QUEUE = 2;
 var MAX_ACTIVITY_QUEUE = 3;
 function normalizeActivityQueueGoal(value) {
@@ -47936,7 +48133,7 @@ function activityQueueHandoffStatus(state) {
   return { armed: !!activity && !!next && !completed && (!!queueGoal || !!huntGoal || finiteReservation || nonSafetyApplicable), sourceLabel: sources.join(" + ") || void 0, nextLabel: next ? activityQueueLabel(next) : void 0, safetyEnabled, nextReady: readiness.ready, nextBlocker: readiness.blocker };
 }
 
-// apps/mobile/src/core/activity-rewards.ts
+// ../apps/mobile/src/core/activity-rewards.ts
 function sumRows(rows2, key, amount) {
   const merged = /* @__PURE__ */ new Map();
   for (const row of rows2) {
@@ -47968,10 +48165,10 @@ function combineActivityRewards(results) {
   };
 }
 
-// apps/mobile/src/core/game.ts
+// ../apps/mobile/src/core/game.ts
 init_progression();
 
-// apps/mobile/src/core/identity-names.ts
+// ../apps/mobile/src/core/identity-names.ts
 var LATIN_WORD = String.raw`\p{Script=Latin}[\p{Script=Latin}\p{M}]*`;
 var SAFE_IDENTITY_NAME = new RegExp(`^${LATIN_WORD}(?:[ '-]${LATIN_WORD})*$`, "u");
 var RESERVED_NAME_TOKENS = /* @__PURE__ */ new Set(["admin", "administrator", "moderator", "mod", "developer", "dev", "staff", "support", "system", "official", "owner", "gamemaster", "game master", "gm", "bot", "null", "undefined", "deleted", "veldryn"]);
@@ -47996,7 +48193,7 @@ function characterNameError(value) {
   return identityNameError(value, 2, 20, "character names");
 }
 
-// apps/mobile/src/core/class-combat.ts
+// ../apps/mobile/src/core/class-combat.ts
 var CLASS_COMBAT_STYLES = {
   IRONWARDEN: { name: "Runic Guard", description: "Reduces incoming damage by 12%.", speedMultiplier: 0.98, damageTakenMultiplier: 0.88, recoveryPct: 0.012 },
   BASTION: { name: "Hold the Line", description: "Reduces incoming damage by 16%, but attacks more slowly.", speedMultiplier: 0.94, damageTakenMultiplier: 0.84, recoveryPct: 0.014 },
@@ -48010,7 +48207,7 @@ var CLASS_COMBAT_STYLES = {
 };
 var classCombatStyle = (id) => CLASS_COMBAT_STYLES[id];
 
-// apps/mobile/src/core/world-weather.ts
+// ../apps/mobile/src/core/world-weather.ts
 var SEASON_DEFINITIONS = {
   spring: { name: "Bloomtide", symbol: "\u2740", color: "#8bcf9b", months: "March\u2013May", description: "Renewal increases yields from every gathering discipline.", weather: ["rain", "rain", "mist", "clear", "bloomwind"] },
   summer: { name: "Suncrest", symbol: "\u2600", color: "#e4b65b", months: "June\u2013August", description: "Long daylight shortens every gathering action.", weather: ["clear", "clear", "heatwave", "storm", "mist"] },
@@ -48187,7 +48384,7 @@ function environmentEffectForActivity(activity) {
   return { environment: env, effect: environmentEffect(activity.kind, env) };
 }
 
-// apps/mobile/src/core/seasonal-quests.ts
+// ../apps/mobile/src/core/seasonal-quests.ts
 var periods = ["daily", "weekly", "monthly"];
 var activityTags = ["combat", "gathering", "crafting", "exploration", "boss"];
 function normalizeSeasonalProgress(raw2) {
@@ -48282,7 +48479,7 @@ function seasonalQuestBoard(state, period, date = /* @__PURE__ */ new Date()) {
   });
 }
 
-// apps/mobile/src/core/quick-navigation.ts
+// ../apps/mobile/src/core/quick-navigation.ts
 var QUICK_NAV_DESTINATIONS = [
   "Home",
   "Character",
@@ -48303,7 +48500,7 @@ var QUICK_NAV_DESTINATIONS = [
 var DEFAULT_QUICK_NAV_DESTINATIONS = ["Quests", "Dungeon", "Companions", "Guild", "Settings"];
 var allowed = new Set(QUICK_NAV_DESTINATIONS);
 
-// apps/mobile/src/core/account-roster.ts
+// ../apps/mobile/src/core/account-roster.ts
 init_progression();
 var CHARACTER_SLOT_THRESHOLDS = [0, 250, 500, 950, 1600];
 var ENABLED_SKILLS = /* @__PURE__ */ new Set(["mining", "woodcutting", "fishing", "smithing", "cooking", "herbalism", "alchemy", "hunting", "exploration", "tailoring", "enchanting", "faith"]);
@@ -48337,7 +48534,7 @@ function accountCharacters(state) {
   return [{ character: state.character }, ...state.otherCharacters ?? []].filter((entry2) => entry2.character);
 }
 
-// apps/mobile/src/core/gathering-tools.ts
+// ../apps/mobile/src/core/gathering-tools.ts
 var NO_TOOL_TIME_MULTIPLIER = 1.15;
 function equippedGatheringTool(state, skillId) {
   const id = state.character?.equippedToolIds?.[skillId];
@@ -48355,7 +48552,7 @@ function gatheringPacing(state, activity) {
   return { tool: tool2, recommended, timeMultiplier, atRecommendedTier: (tool2?.tier ?? 0) >= activity.recommendedToolTier };
 }
 
-// apps/mobile/src/core/combat-region.ts
+// ../apps/mobile/src/core/combat-region.ts
 function currentRegionId(state) {
   const level = state.character?.level ?? 1;
   const usable = (id) => WORLD_ZONES.find((zone) => zone.id === id && !worldZoneInDevelopment(zone) && level >= zone.minLevel)?.id;
@@ -48366,14 +48563,14 @@ function currentRegionId(state) {
   return WORLD_ZONES[0].id;
 }
 
-// apps/mobile/src/core/item-rarity.ts
+// ../apps/mobile/src/core/item-rarity.ts
 var GEAR_RARITIES = [
   { id: "common", label: "Common", chance: 0.89, color: "#9aa4b2", lightTextColor: "#52606D", surface: "rgba(154,164,178,.08)", statMultiplier: 1, borderWidth: 1, glowOpacity: 0, symbol: "\u25C6" },
   { id: "uncommon", label: "Uncommon", chance: 0.07, color: "#49c873", lightTextColor: "#1F7A46", surface: "rgba(73,200,115,.10)", statMultiplier: 1.12, borderWidth: 1, glowOpacity: 0.08, symbol: "\u25C6" },
-  { id: "rare", label: "Rare", chance: 0.03, color: "#4b91ff", lightTextColor: "#2468C9", surface: "rgba(75,145,255,.11)", statMultiplier: 1.28, borderWidth: 2, glowOpacity: 0.12, symbol: "\u2726" },
+  { id: "rare", label: "Rare", chance: 0.03, color: "#62B8FF", lightTextColor: "#1766A5", surface: "rgba(98,184,255,.12)", statMultiplier: 1.28, borderWidth: 2, glowOpacity: 0.12, symbol: "\u2726" },
   { id: "epic", label: "Epic", chance: 0.01, color: "#ad72ff", lightTextColor: "#6F42C1", surface: "rgba(173,114,255,.12)", statMultiplier: 1.5, borderWidth: 2, glowOpacity: 0.18, symbol: "\u2726" },
   { id: "legendary", label: "Legendary", chance: 1e-3, color: "#ff9f35", lightTextColor: "#9A5200", surface: "rgba(255,159,53,.13)", statMultiplier: 1.8, borderWidth: 2, glowOpacity: 0.24, symbol: "\u2605" },
-  { id: "mythic", label: "Mythic", chance: 5e-4, color: "#f25591", lightTextColor: "#B02A60", surface: "rgba(242,85,145,.15)", statMultiplier: 2.2, borderWidth: 3, glowOpacity: 0.3, symbol: "\u2727" }
+  { id: "mythic", label: "Mythic", chance: 5e-4, color: "#f25591", lightTextColor: "#B02A60", surface: "rgba(242,85,145,.15)", statMultiplier: 2, borderWidth: 3, glowOpacity: 0.3, symbol: "\u2727" }
 ];
 function itemRarity(item) {
   if (item.rarity) return item.rarity;
@@ -48387,20 +48584,36 @@ function itemRarity(item) {
 }
 var rarityMeta = (rarity) => GEAR_RARITIES.find((entry2) => entry2.id === rarity);
 
-// apps/mobile/src/core/crafted-gear-rarity.ts
+// ../apps/mobile/src/core/crafted-gear-rarity.ts
 var CRAFTED_MYTHIC_CHANCE = 1e-3;
+var CRAFTED_LEGENDARY_CHANCE = 2e-3;
 var CRAFTED_EPIC_CHANCE = 6e-3;
+var CRAFTED_RARE_CHANCE = 0.03;
+var CRAFTED_UNCOMMON_CHANCE = 0.07;
+var CRAFTED_COMMON_CHANCE = 1 - (CRAFTED_MYTHIC_CHANCE + CRAFTED_LEGENDARY_CHANCE + CRAFTED_EPIC_CHANCE + CRAFTED_RARE_CHANCE + CRAFTED_UNCOMMON_CHANCE);
+var forgeRarityRolls = [
+  { rarity: "mythic", chance: CRAFTED_MYTHIC_CHANCE },
+  { rarity: "legendary", chance: CRAFTED_LEGENDARY_CHANCE },
+  { rarity: "epic", chance: CRAFTED_EPIC_CHANCE },
+  { rarity: "rare", chance: CRAFTED_RARE_CHANCE },
+  { rarity: "uncommon", chance: CRAFTED_UNCOMMON_CHANCE },
+  { rarity: "common", chance: CRAFTED_COMMON_CHANCE }
+];
 var order = ["common", "uncommon", "rare", "epic", "legendary", "mythic"];
 function higherRarity(a, b) {
   return order.indexOf(a) >= order.indexOf(b) ? a : b;
 }
 function craftedGearRarity(itemId, roll) {
-  if (roll < 0 || roll >= 1) throw new Error("Invalid crafted rarity roll");
+  if (!Number.isFinite(roll) || roll < 0 || roll >= 1) throw new Error("Invalid crafted rarity roll");
   const item = itemDef(itemId);
   if (item.type !== "gear") throw new Error("Crafted rarity only applies to equipment");
   const base = itemRarity(item);
-  if (roll < CRAFTED_MYTHIC_CHANCE) return higherRarity(base, "mythic");
-  if (roll < CRAFTED_MYTHIC_CHANCE + CRAFTED_EPIC_CHANCE) return higherRarity(base, "epic");
+  const sample = Math.floor(roll * 1e6);
+  let cutoff = 0;
+  for (const outcome of forgeRarityRolls) {
+    cutoff += Math.round(outcome.chance * 1e6);
+    if (sample < cutoff) return higherRarity(base, outcome.rarity);
+  }
   return base;
 }
 function craftedRarityStatMultiplier(itemId, rarity) {
@@ -48417,8 +48630,34 @@ function deterministicCraftRarityRoll(seed) {
   return hash3 % 1e6 / 1e6;
 }
 
-// apps/mobile/src/core/crafted-gear-instances.ts
+// ../apps/mobile/src/core/crafted-gear-instances.ts
 var MAX_CRAFTED_GEAR_INSTANCES = 500;
+var CRAFTED_GEAR_QUALITY_MIN = 0;
+var CRAFTED_GEAR_QUALITY_MAX = 100;
+var LEGACY_CRAFTED_GEAR_QUALITY = 50;
+var CRAFTED_GEAR_QUALITY_POWER = 1.25;
+function isValidCraftedGearQuality(quality) {
+  return typeof quality === "number" && Number.isInteger(quality) && quality >= CRAFTED_GEAR_QUALITY_MIN && quality <= CRAFTED_GEAR_QUALITY_MAX;
+}
+function craftedGearDisplayQuality(instance) {
+  return instance.quality ?? LEGACY_CRAFTED_GEAR_QUALITY;
+}
+var TARGET_CRAFTED_GEAR_COPIES_PER_ITEM = 7;
+function craftedGearQualityFromUnitRoll(roll) {
+  if (!Number.isFinite(roll) || roll < 0 || roll >= 1) throw new Error("Invalid crafted quality roll");
+  return Math.min(CRAFTED_GEAR_QUALITY_MAX, Math.floor(Math.pow(roll, CRAFTED_GEAR_QUALITY_POWER) * (CRAFTED_GEAR_QUALITY_MAX + 1)));
+}
+function craftedGearQualityRoll(trustedRoll, jobId) {
+  if (!Number.isFinite(trustedRoll) || trustedRoll < 0 || trustedRoll >= 1) throw new Error("Invalid crafted quality roll");
+  return craftedGearQualityFromUnitRoll(deterministicCraftRarityRoll(`quality:${trustedRoll.toFixed(12)}:${jobId}`));
+}
+function craftedGearQualityMultiplier(quality) {
+  if (!isValidCraftedGearQuality(quality)) throw new Error("Invalid crafted quality");
+  return 0.75 + quality * 5e-3;
+}
+function clampStatRoll(raw2) {
+  return typeof raw2 === "number" && Number.isFinite(raw2) && raw2 >= 0 && raw2 < 1 ? raw2 : void 0;
+}
 var emptyEnhancement = () => ({ rank: 0, failures: 0, gemIds: [] });
 function normalizeCraftedGearInstances(raw2) {
   if (!Array.isArray(raw2)) return [];
@@ -48433,6 +48672,10 @@ function normalizeCraftedGearInstances(raw2) {
         itemId: item.id,
         ownerCharacterId: String(row.ownerCharacterId).slice(0, 120),
         rarity,
+        // Preserve absence as a legacy marker. In particular, do not invent an authoritative Forge roll.
+        quality: isValidCraftedGearQuality(row.quality) ? row.quality : void 0,
+        locked: row.locked === true,
+        statRoll: clampStatRoll(row.statRoll),
         acquireSource: "craft",
         sourceReceiptKey: String(row.sourceReceiptKey ?? row.id).slice(0, 200),
         createdAtMs: Math.max(0, Math.floor(Number(row.createdAtMs) || 0)),
@@ -48441,7 +48684,7 @@ function normalizeCraftedGearInstances(raw2) {
     } catch {
       return [];
     }
-  }).slice(-MAX_CRAFTED_GEAR_INSTANCES);
+  });
 }
 function craftedGearInstances(state) {
   return normalizeCraftedGearInstances(state.account.craftedGearInstances);
@@ -48449,26 +48692,62 @@ function craftedGearInstances(state) {
 function craftedInstancesForItem(state, itemId, ownerCharacterId = state.character?.id) {
   return craftedGearInstances(state).filter((row) => row.itemId === itemId && (!ownerCharacterId || row.ownerCharacterId === ownerCharacterId));
 }
+function craftedGearCopyCapacity(state, itemId) {
+  const audit = craftedGearLegacyOwnershipAudit(state, itemId);
+  const count = Math.max(audit.physicalCopies, audit.recordedCraftedCopies);
+  return { count, limit: TARGET_CRAFTED_GEAR_COPIES_PER_ITEM, remaining: Math.max(0, TARGET_CRAFTED_GEAR_COPIES_PER_ITEM - count), verified: false };
+}
+function craftedGearLegacyOwnershipAudit(state, itemId) {
+  const count = (stacks) => (stacks ?? []).reduce((sum, stack) => sum + (stack.itemId === itemId && Number.isSafeInteger(stack.quantity) && stack.quantity > 0 ? stack.quantity : 0), 0);
+  const equipped = (equipment) => Object.values(equipment ?? {}).filter((id) => id === itemId).length;
+  const characterInventory = count(state.inventory.stacks) + (state.otherCharacters ?? []).reduce((sum, entry2) => sum + count(entry2.inventory.stacks), 0);
+  const characterOverflow = count(state.overflow.stacks) + (state.otherCharacters ?? []).reduce((sum, entry2) => sum + count(entry2.overflow.stacks), 0);
+  const equippedCopies = equipped(state.character?.equipment) + (state.otherCharacters ?? []).reduce((sum, entry2) => sum + equipped(entry2.character.equipment), 0);
+  const bankCopies = count(state.bank.stacks);
+  const physicalCount = characterInventory + characterOverflow + equippedCopies + bankCopies;
+  const instances = craftedGearInstances(state).filter((row) => row.itemId === itemId);
+  return {
+    itemId,
+    recordedCraftedCopies: instances.length,
+    physicalCopies: physicalCount,
+    inventoryCopies: characterInventory,
+    bankCopies,
+    overflowCopies: characterOverflow,
+    equippedCopies,
+    /** Physical stacks may also contain uncrafted gear, hence this is only a lower-bound warning. */
+    minimumUnlocatedInstanceCount: Math.max(0, instances.length - physicalCount),
+    possibleUntrackedCopies: Math.max(0, physicalCount - instances.length),
+    /** No copy-specific ownership evidence exists in legacy itemId-only slots. */
+    verifiedForAutoSell: false
+  };
+}
 function bestCraftedInstanceForItem(state, itemId, ownerCharacterId = state.character?.id) {
-  return craftedInstancesForItem(state, itemId, ownerCharacterId).slice().sort((a, b) => craftedRarityStatMultiplier(itemId, b.rarity) - craftedRarityStatMultiplier(itemId, a.rarity) || b.enhancement.rank - a.enhancement.rank || b.createdAtMs - a.createdAtMs)[0];
+  return craftedInstancesForItem(state, itemId, ownerCharacterId).slice().sort((a, b) => craftedRarityStatMultiplier(itemId, b.rarity) - craftedRarityStatMultiplier(itemId, a.rarity) || b.enhancement.rank - a.enhancement.rank || craftedGearDisplayQuality(b) - craftedGearDisplayQuality(a) || b.createdAtMs - a.createdAtMs)[0];
 }
 function effectiveOwnedGearRarity(state, itemId, ownerCharacterId = state.character?.id) {
   return bestCraftedInstanceForItem(state, itemId, ownerCharacterId)?.rarity ?? itemRarity(itemDef(itemId));
 }
-function createCraftedGearInstance(state, args) {
-  const rarity = craftedGearRarity(args.itemId, args.roll);
-  const instance = {
+function draftCraftedGearInstance(args) {
+  return {
     id: `gear:${args.ownerCharacterId}:${args.jobId}`,
     itemId: args.itemId,
     ownerCharacterId: args.ownerCharacterId,
-    rarity,
+    rarity: craftedGearRarity(args.itemId, args.roll),
+    quality: craftedGearQualityRoll(args.roll, args.jobId),
+    locked: false,
+    statRoll: deterministicCraftRarityRoll(`stat:${args.jobId}:${args.ownerCharacterId}`),
     acquireSource: "craft",
     sourceReceiptKey: args.jobId,
     createdAtMs: args.createdAtMs,
     enhancement: emptyEnhancement()
   };
-  const existing = craftedGearInstances(state).filter((row) => row.sourceReceiptKey !== args.jobId);
-  return { state: { ...state, account: { ...state.account, craftedGearInstances: [...existing, instance].slice(-MAX_CRAFTED_GEAR_INSTANCES) } }, instance };
+}
+function createCraftedGearInstance(state, args) {
+  const previous = craftedGearInstances(state);
+  if (previous.some((row) => row.sourceReceiptKey === args.jobId)) throw new Error("Crafting receipt has already been claimed");
+  if (previous.length >= MAX_CRAFTED_GEAR_INSTANCES) throw new Error("Crafted equipment storage is full; existing equipment was not removed");
+  const instance = draftCraftedGearInstance(args);
+  return { state: { ...state, account: { ...state.account, craftedGearInstances: [...previous, instance] } }, instance };
 }
 function craftClaimSubRoll(trustedRoll, jobId) {
   if (trustedRoll < 0 || trustedRoll >= 1) throw new Error("Invalid crafted rarity roll");
@@ -48480,15 +48759,149 @@ function craftedInstanceResult(state, instance) {
     instanceId: instance.id,
     itemId: instance.itemId,
     rarity: instance.rarity,
+    quality: instance.quality,
     baseRarity,
     qualityProc: instance.rarity !== baseRarity,
     duplicateCount: Math.max(0, copies.length - 1),
-    statMultiplier: craftedRarityStatMultiplier(instance.itemId, instance.rarity)
+    statMultiplier: craftedRarityStatMultiplier(instance.itemId, instance.rarity) * (instance.quality === void 0 ? 1 : craftedGearQualityMultiplier(instance.quality)),
+    autoSold: void 0,
+    saleGold: 0
   };
 }
 
-// apps/mobile/src/core/gem-progression-v1.ts
+// ../apps/mobile/src/core/gem-progression-v1.ts
 init_progression();
+
+// ../apps/mobile/src/core/gem-pouch.ts
+var GEM_POUCH_BASE_CAPACITY = 30;
+var GEM_POUCH_UPGRADES = [
+  { capacity: 40, cost: 5e3, level: 10 },
+  { capacity: 50, cost: 15e3, level: 20 },
+  { capacity: 60, cost: 4e4, level: 35 },
+  { capacity: 75, cost: 1e5, level: 50 },
+  { capacity: 100, cost: 25e4, level: 70 }
+];
+function isGemPouchItemId(itemId) {
+  try {
+    const item = itemDef(itemId);
+    return item.type === "gem" || !!item.rawGemFamilyId;
+  } catch {
+    return false;
+  }
+}
+function normalizeGemPouch(raw2) {
+  const value = raw2 && typeof raw2 === "object" && !Array.isArray(raw2) ? raw2 : {};
+  const capacity = [GEM_POUCH_BASE_CAPACITY, ...GEM_POUCH_UPGRADES.map((t) => t.capacity)].includes(Number(value.capacity)) ? Number(value.capacity) : GEM_POUCH_BASE_CAPACITY;
+  const grouped = /* @__PURE__ */ new Map();
+  for (const stack of Array.isArray(value.stacks) ? value.stacks : []) {
+    if (!stack || typeof stack.itemId !== "string" || !isGemPouchItemId(stack.itemId) || stack.instanceId !== void 0 || !Number.isSafeInteger(stack.quantity) || stack.quantity <= 0) continue;
+    const next = (grouped.get(stack.itemId) ?? 0) + stack.quantity;
+    if (Number.isSafeInteger(next)) grouped.set(stack.itemId, next);
+  }
+  return { capacity, stacks: [...grouped].map(([itemId, quantity2]) => ({ itemId, quantity: quantity2 })) };
+}
+function gemPouch(state) {
+  return normalizeGemPouch(state.account.gemPouch);
+}
+function gemPouchUpgradePreview(state) {
+  return GEM_POUCH_UPGRADES.find((tier) => tier.capacity > gemPouch(state).capacity) ?? null;
+}
+function upgradeGemPouch(state) {
+  if (!state.character) throw new Error("Create a character first");
+  const next = gemPouchUpgradePreview(state);
+  if (!next) throw new Error("Gem Pouch is already at maximum capacity");
+  if (state.character.level < next.level) throw new Error(`Requires Level ${next.level}`);
+  if (state.character.gold < next.cost) throw new Error(`Requires ${next.cost.toLocaleString()} Gold`);
+  return {
+    ...state,
+    character: { ...state.character, gold: state.character.gold - next.cost },
+    account: { ...state.account, gemPouch: { ...gemPouch(state), capacity: next.capacity } }
+  };
+}
+function stackQty(stacks, id) {
+  return stacks.reduce((total, row) => total + (row.itemId === id && row.instanceId === void 0 ? row.quantity : 0), 0);
+}
+function gemStorageQuantity(state, id) {
+  return stackQty(state.inventory.stacks, id) + stackQty(state.bank.stacks, id) + (isGemPouchItemId(id) ? stackQty(gemPouch(state).stacks, id) : 0);
+}
+function addStack2(stacks, capacity, itemId, quantity2) {
+  const index = stacks.findIndex((row) => row.itemId === itemId && row.instanceId === void 0);
+  if (index >= 0) {
+    const next = stacks.map((row) => ({ ...row }));
+    const amount = next[index].quantity + quantity2;
+    if (!Number.isSafeInteger(amount)) throw new Error("Gem stack quantity is too large");
+    next[index].quantity = amount;
+    return next;
+  }
+  if (stacks.filter((row) => row.quantity > 0).length >= capacity) return null;
+  return [...stacks, { itemId, quantity: quantity2 }];
+}
+function storePouchGem(state, itemId, quantity2 = 1) {
+  if (!isGemPouchItemId(itemId) || !Number.isSafeInteger(quantity2) || quantity2 < 1) throw new Error("Invalid gem reward");
+  const pouch = gemPouch(state), stored = addStack2(pouch.stacks, pouch.capacity, itemId, quantity2);
+  if (stored) return { ...state, account: { ...state.account, gemPouch: { ...pouch, stacks: stored } } };
+  const inv = addStack2(state.inventory.stacks, entitlementStorageCapacity(state, "inventory"), itemId, quantity2);
+  if (inv) return { ...state, inventory: { ...state.inventory, stacks: inv } };
+  const bank = addStack2(state.bank.stacks, entitlementStorageCapacity(state, "bank"), itemId, quantity2);
+  if (bank) return { ...state, bank: { ...state.bank, stacks: bank } };
+  throw new Error("Gem Pouch, Inventory and Bank are full");
+}
+function sellPouchGem(state, itemId, quantity2) {
+  if (!state.character) throw new Error("Create a character first");
+  if (!isGemPouchItemId(itemId) || !Number.isSafeInteger(quantity2) || quantity2 < 1) throw new Error("Invalid gem sale");
+  if (state.settings.favoriteItemIds?.includes(itemId)) throw new Error("Favorite gems cannot be sold");
+  if (state.settings.lockedItemIds?.includes(itemId)) throw new Error("Locked gems cannot be sold");
+  const pouch = gemPouch(state), owned = stackQty(pouch.stacks, itemId);
+  if (owned < quantity2) throw new Error("Not enough gems in the pouch");
+  const proceeds = itemDef(itemId).value * quantity2;
+  if (!Number.isSafeInteger(proceeds) || !Number.isSafeInteger(state.character.gold + proceeds)) throw new Error("Gold amount exceeds supported limit");
+  const stacks = pouch.stacks.map((row) => row.itemId === itemId ? { ...row, quantity: row.quantity - quantity2 } : row).filter((row) => row.quantity > 0);
+  return {
+    ...state,
+    account: { ...state.account, gemPouch: { ...pouch, stacks } },
+    character: { ...state.character, gold: state.character.gold + proceeds }
+  };
+}
+function consumeGemFromStorage(state, itemId, quantity2) {
+  if (!Number.isSafeInteger(quantity2) || quantity2 < 1 || gemStorageQuantity(state, itemId) < quantity2)
+    throw new Error(`Need ${quantity2} ${itemDef(itemId).name}`);
+  let left = quantity2;
+  const take4 = (stacks) => stacks.map((row) => {
+    if (row.itemId !== itemId || row.instanceId !== void 0 || left <= 0) return row;
+    const used = Math.min(left, row.quantity);
+    left -= used;
+    return { ...row, quantity: row.quantity - used };
+  }).filter((row) => row.quantity > 0);
+  const pouch = gemPouch(state), pouchStacks = isGemPouchItemId(itemId) ? take4(pouch.stacks) : pouch.stacks;
+  const inventory = take4(state.inventory.stacks), bank = take4(state.bank.stacks);
+  return {
+    ...state,
+    account: { ...state.account, gemPouch: { ...pouch, stacks: pouchStacks } },
+    inventory: { ...state.inventory, stacks: inventory },
+    bank: { ...state.bank, stacks: bank }
+  };
+}
+function migrateGemPouch(state) {
+  let pouch = gemPouch(state);
+  const move = (stacks) => stacks.filter((row) => {
+    if (!row || typeof row.itemId !== "string" || row.instanceId !== void 0 || !isGemPouchItemId(row.itemId) || !Number.isSafeInteger(row.quantity) || row.quantity <= 0) return true;
+    const placed = addStack2(pouch.stacks, pouch.capacity, row.itemId, row.quantity);
+    if (!placed) return true;
+    pouch = { ...pouch, stacks: placed };
+    return false;
+  });
+  const inventory = move(state.inventory.stacks), bank = move(state.bank.stacks);
+  const otherCharacters = state.otherCharacters?.map((entry2) => ({ ...entry2, inventory: { ...entry2.inventory, stacks: move(Array.isArray(entry2.inventory?.stacks) ? entry2.inventory.stacks : []) } }));
+  return {
+    ...state,
+    account: { ...state.account, gemPouch: pouch },
+    otherCharacters,
+    inventory: { ...state.inventory, stacks: inventory },
+    bank: { ...state.bank, stacks: bank }
+  };
+}
+
+// ../apps/mobile/src/core/gem-progression-v1.ts
 var GEM_EFFECT_RESONANCE_CAP_V1 = 3;
 var GEM_COMBINE_COSTS_V1 = {
   1: { to: 2, copies: 3, dust: 0, gold: 1500, seconds: 5 * 60, level: 8, xp: 140 },
@@ -48562,21 +48975,17 @@ function dismantleGemV1(state, itemId, quantityToDismantle = 1) {
   if (!meta) throw new Error("Only canonical gems can be dismantled");
   if (!Number.isSafeInteger(quantityToDismantle) || quantityToDismantle < 1) throw new Error("Invalid dismantle quantity");
   if (combinedGemQuantityV1(state, itemId) < quantityToDismantle) throw new Error("You do not own enough of this gem");
-  const dustPer = GEM_DISMANTLE_DUST_V1[meta.grade], inv = consumeStackV1(state.inventory.stacks, itemId, quantityToDismantle);
-  const bank = consumeStackV1(state.bank.stacks, itemId, quantityToDismantle - inv.used), dust = dustPer * quantityToDismantle;
-  let inventory = inv.stacks, bankStacks = bank.stacks;
+  const dustPer = GEM_DISMANTLE_DUST_V1[meta.grade], afterGem = consumeGemFromStorage(state, itemId, quantityToDismantle), dust = dustPer * quantityToDismantle;
+  let inventory = afterGem.inventory.stacks, bankStacks = afterGem.bank.stacks;
   try {
     inventory = addStackV1(inventory, state.inventory.capacity, "GEM_DUST", dust);
   } catch {
     bankStacks = addStackV1(bankStacks, state.bank.capacity, "GEM_DUST", dust);
   }
-  return { ...state, inventory: { ...state.inventory, stacks: inventory }, bank: { ...state.bank, stacks: bankStacks } };
-}
-function quantity(stacks, itemId) {
-  return stacks.filter((row) => row.itemId === itemId).reduce((sum, row) => sum + row.quantity, 0);
+  return { ...afterGem, inventory: { ...afterGem.inventory, stacks: inventory }, bank: { ...afterGem.bank, stacks: bankStacks } };
 }
 function combinedGemQuantityV1(state, itemId) {
-  return quantity(state.inventory.stacks, itemId) + quantity(state.bank.stacks, itemId);
+  return gemStorageQuantity(state, itemId);
 }
 function effectFamilyCopiesV1(state, familyId, excludeEquipmentItemId) {
   if (!state.character) return 0;
@@ -48645,16 +49054,16 @@ function researchEffectGemV1(state, familyId) {
   const status = gemResearchStatusV1(state, familyId);
   if (!status.ready) throw new Error(status.reason);
   const chosen = [...status.raw].sort((a, b) => a.grade - b.grade)[0], rawId = mobileRawGemItemIdV1(familyId, chosen.grade);
-  const rawInv = consumeStackV1(state.inventory.stacks, rawId, 1), rawBank = consumeStackV1(state.bank.stacks, rawId, 1 - rawInv.used);
-  const dustInv = consumeStackV1(rawInv.stacks, "GEM_DUST", GEM_RESEARCH_V1.dust), dustBank = consumeStackV1(rawBank.stacks, "GEM_DUST", GEM_RESEARCH_V1.dust - dustInv.used);
+  const afterRaw = consumeGemFromStorage(state, rawId, 1);
+  const dustInv = consumeStackV1(afterRaw.inventory.stacks, "GEM_DUST", GEM_RESEARCH_V1.dust), dustBank = consumeStackV1(afterRaw.bank.stacks, "GEM_DUST", GEM_RESEARCH_V1.dust - dustInv.used);
   const currentXp = state.skills.find((row) => row.skillId === "enchanting")?.xp ?? 0, nextXp = Math.min(totalXpAtLevel(100), currentXp + gemResearchXpV1(state));
   return {
-    ...state,
-    character: { ...state.character, gold: state.character.gold - GEM_RESEARCH_V1.gold },
-    inventory: { ...state.inventory, stacks: dustInv.stacks },
-    bank: { ...state.bank, stacks: dustBank.stacks },
+    ...afterRaw,
+    character: { ...afterRaw.character, gold: afterRaw.character.gold - GEM_RESEARCH_V1.gold },
+    inventory: { ...afterRaw.inventory, stacks: dustInv.stacks },
+    bank: { ...afterRaw.bank, stacks: dustBank.stacks },
     skills: state.skills.map((row) => row.skillId === "enchanting" ? { ...row, xp: nextXp, level: levelFromXp(nextXp) } : row),
-    account: { ...state.account, unlockedKnowledgeIds: [.../* @__PURE__ */ new Set([...state.account.unlockedKnowledgeIds ?? [], gemFamilyRecipeIdV1(familyId)])] }
+    account: { ...afterRaw.account, unlockedKnowledgeIds: [.../* @__PURE__ */ new Set([...state.account.unlockedKnowledgeIds ?? [], gemFamilyRecipeIdV1(familyId)])] }
   };
 }
 function gemCombineRecipeIdV1(familyId, fromGrade) {
@@ -48691,6 +49100,16 @@ function resonanceCacheStatusV1(state, nowMs) {
 }
 function addCacheRewardV1(state, itemId, quantityToAdd, nowMs) {
   if (quantityToAdd <= 0) return state;
+  if (isGemPouchItemId(itemId)) {
+    try {
+      return storePouchGem(state, itemId, quantityToAdd);
+    } catch (error) {
+      if (!(error instanceof Error) || error.message !== "Gem Pouch, Inventory and Bank are full") throw error;
+      const prior = state.overflow.stacks.find((row) => row.itemId === itemId);
+      const stacks = prior ? state.overflow.stacks.map((row) => row.itemId === itemId ? { ...row, quantity: row.quantity + quantityToAdd } : row) : [...state.overflow.stacks, { itemId, quantity: quantityToAdd }];
+      return { ...state, overflow: { stacks, expiresAtMs: Math.max(state.overflow.expiresAtMs ?? 0, nowMs + 72 * 60 * 60 * 1e3) } };
+    }
+  }
   const add = (stacks) => {
     const existing = stacks.find((row) => row.itemId === itemId);
     return existing ? stacks.map((row) => row.itemId === itemId ? { ...row, quantity: row.quantity + quantityToAdd } : row) : [...stacks, { itemId, quantity: quantityToAdd }];
@@ -48716,7 +49135,7 @@ function claimResonanceCacheV1(state, familyId, nowMs) {
   return { ...next, account: { ...next.account, resonanceCache: { ...raw2, claimed: true } } };
 }
 
-// apps/mobile/src/core/equipment-enhancement.ts
+// ../apps/mobile/src/core/equipment-enhancement.ts
 var MAX_UPGRADE_RANK = 4;
 var UPGRADE_STAT_PER_RANK = 0.04;
 var SUCCESS_BY_TARGET = [0, 0.95, 0.82, 0.67, 0.52];
@@ -48753,8 +49172,13 @@ function normalizeEnhancementGemSlots(raw2) {
   const gemIds = [statGemId, effectGemId].filter((id) => Boolean(id));
   return { statGemId, effectGemId, gemIds };
 }
+function equippedCraftedInstance(state, itemId) {
+  const slot = Object.entries(state.character?.equipment ?? {}).find(([, value]) => value === itemId)?.[0];
+  const instanceId = slot ? state.character?.equipmentInstanceIds?.[slot] : void 0;
+  return instanceId ? craftedGearInstances(state).find((row) => row.id === instanceId && row.itemId === itemId) : void 0;
+}
 function gearEnhancement(state, itemId) {
-  const raw2 = state.character?.gearEnhancements?.[itemId], slots2 = normalizeEnhancementGemSlots(raw2);
+  const raw2 = equippedCraftedInstance(state, itemId)?.enhancement ?? state.character?.gearEnhancements?.[itemId], slots2 = normalizeEnhancementGemSlots(raw2);
   return { rank: Math.max(0, Math.min(MAX_UPGRADE_RANK, Math.floor(raw2?.rank ?? 0))), failures: Math.max(0, Math.floor(raw2?.failures ?? 0)), ...slots2 };
 }
 function hasEnhancement(state, itemId) {
@@ -48772,14 +49196,14 @@ function upgradeQuote(state, itemId) {
   if (item.type !== "gear") throw new Error("Only equipment can be upgraded");
   const current = gearEnhancement(state, itemId), targetRank = current.rank + 1;
   if (targetRank > MAX_UPGRADE_RANK) return { currentRank: current.rank, targetRank, successChance: 0, dust: 0, cores: 0, gold: 0, materials: [], maxed: true };
-  const rarity = effectiveOwnedGearRarity(state, itemId), pity = Math.min(0.1, current.failures * 0.02);
+  const rarity = equippedCraftedInstance(state, itemId)?.rarity ?? effectiveOwnedGearRarity(state, itemId), pity = Math.min(0.1, current.failures * 0.02);
   return { currentRank: current.rank, targetRank, successChance: Math.min(1, SUCCESS_BY_TARGET[targetRank] + pity), dust: DUST_BY_TARGET[targetRank], cores: CORE_BY_TARGET[targetRank], gold: Math.ceil(150 * targetRank * targetRank * RARITY_COST[rarity] / 10) * 10, materials: upgradeMaterialCosts(itemId, targetRank), maxed: false };
 }
 function qty(stacks, id) {
   return stacks.find((s) => s.itemId === id)?.quantity ?? 0;
 }
 function combinedQuantity(state, id) {
-  return qty(state.inventory.stacks, id) + qty(state.bank.stacks, id);
+  return gemStorageQuantity(state, id);
 }
 function consume(stacks, id, amount) {
   let left = amount;
@@ -48791,12 +49215,14 @@ function consume(stacks, id, amount) {
   }).filter((stack) => stack.quantity > 0);
 }
 function consumeAcross(state, id, amount) {
+  if (isGemPouchItemId(id)) return consumeGemFromStorage(state, id, amount);
   if (combinedQuantity(state, id) < amount) throw new Error(`Need ${amount} ${itemDef(id).name}`);
   const inventory = consume(state.inventory.stacks, id, amount), used = qty(state.inventory.stacks, id) - qty(inventory, id);
   return { ...state, inventory: { ...state.inventory, stacks: inventory }, bank: { ...state.bank, stacks: consume(state.bank.stacks, id, amount - used) } };
 }
 function setEnhancement(state, itemId, value) {
-  const slots2 = normalizeEnhancementGemSlots(value);
+  const slots2 = normalizeEnhancementGemSlots(value), instance = equippedCraftedInstance(state, itemId);
+  if (instance) return { ...state, account: { ...state.account, craftedGearInstances: craftedGearInstances(state).map((row) => row.id === instance.id ? { ...row, enhancement: { ...value, ...slots2 } } : row) } };
   return { ...state, character: { ...state.character, gearEnhancements: { ...state.character.gearEnhancements ?? {}, [itemId]: { ...value, ...slots2 } } } };
 }
 function requireEquipped(state, itemId) {
@@ -48832,6 +49258,7 @@ function socketGem(state, itemId, gemId) {
   return next;
 }
 function addInventory(state, itemId) {
+  if (isGemPouchItemId(itemId)) return storePouchGem(state, itemId);
   const existing = state.inventory.stacks.find((s) => s.itemId === itemId);
   if (!existing && state.inventory.stacks.length >= state.inventory.capacity) throw new Error("Inventory is full");
   const stacks = existing ? state.inventory.stacks.map((s) => s.itemId === itemId ? { ...s, quantity: s.quantity + 1 } : s) : [...state.inventory.stacks, { itemId, quantity: 1 }];
@@ -48875,7 +49302,10 @@ function gearStatsAtRank(itemId, rank) {
   return { hp: scale(item.hp ?? 0), attack: scale(item.attack ?? 0), defense: scale(item.defense ?? 0) };
 }
 function enhancedGearStats(state, itemId) {
-  const stats4 = gearStatsAtRank(itemId, gearEnhancement(state, itemId).rank), rarity = effectiveOwnedGearRarity(state, itemId), m = craftedRarityStatMultiplier(itemId, rarity), scale = (value) => value * m;
+  const instance = equippedCraftedInstance(state, itemId), stats4 = gearStatsAtRank(itemId, gearEnhancement(state, itemId).rank);
+  const rarity = instance?.rarity ?? effectiveOwnedGearRarity(state, itemId);
+  const quality = instance?.quality === void 0 ? 1 : craftedGearQualityMultiplier(instance.quality);
+  const m = craftedRarityStatMultiplier(itemId, rarity) * quality, scale = (value) => value * m;
   return { hp: scale(stats4.hp), attack: scale(stats4.attack), defense: scale(stats4.defense) };
 }
 function equippedGemBonuses(state) {
@@ -48907,7 +49337,7 @@ function equippedEffectGemBonuses(state) {
   return result;
 }
 
-// apps/mobile/src/content/class-icon-colors.ts
+// ../apps/mobile/src/content/class-icon-colors.ts
 var CLASS_ICON_ACCENT = {
   IRONWARDEN: "#70BDFA",
   BASTION: "#C98342",
@@ -48920,7 +49350,7 @@ var CLASS_ICON_ACCENT = {
   STONECALLER: "#54C8BE"
 };
 
-// apps/mobile/src/content/equipment-sets.ts
+// ../apps/mobile/src/content/equipment-sets.ts
 var classIdByCatalogName = {
   Ironwarden: "IRONWARDEN",
   Bastion: "BASTION",
@@ -48980,7 +49410,7 @@ function equippedSetPieceCount(equipment, set) {
   return Object.values(equipment).filter((itemId) => itemId && set.itemIds.includes(itemId)).length;
 }
 
-// apps/mobile/src/core/equipment-set-runtime.ts
+// ../apps/mobile/src/core/equipment-set-runtime.ts
 var EMPTY_STATS = {
   maxHp: 0,
   armor: 0,
@@ -49082,11 +49512,11 @@ function equipmentSetCombatModifiers(state, baseCritChance = 0.05, baseAccuracy 
   };
 }
 
-// apps/mobile/src/core/game.ts
+// ../apps/mobile/src/core/game.ts
 init_faith2();
 init_faith();
 
-// apps/mobile/src/core/profile-icons.ts
+// ../apps/mobile/src/core/profile-icons.ts
 var EVENT_PROFILE_ICON_ARTWORK_IDS = /* @__PURE__ */ new Set([
   "event:veilbreak-2026-lantern-warden",
   "event:veilbreak-2026-pumpkin-moon"
@@ -49125,7 +49555,7 @@ function selectProfileIcon(state, id) {
   return { ...state, character: { ...state.character, profileIconId: id } };
 }
 
-// apps/mobile/src/core/weekly-orders-v41.ts
+// ../apps/mobile/src/core/weekly-orders-v41.ts
 var DAY_MS = 864e5;
 var DEFAULT_WEEKLY_ORDER_POLICY = {
   enabled: true,
@@ -49227,7 +49657,7 @@ function claimWeeklyCompletion(state, policy = DEFAULT_WEEKLY_ORDER_POLICY) {
   return { claimKey: `${state.weekKey}:completion`, reward: { ...policy.completionReward }, weekKey: state.weekKey };
 }
 
-// apps/mobile/src/core/bestiary-v40.ts
+// ../apps/mobile/src/core/bestiary-v40.ts
 function masteryTier(points) {
   return points >= 500 ? 5 : points >= 250 ? 4 : points >= 100 ? 3 : points >= 35 ? 2 : points >= 10 ? 1 : 0;
 }
@@ -49254,7 +49684,7 @@ function bestiaryProjection(state) {
   return { entries, zones, discovered, defeated, total, completionPercent: total ? Math.round(discovered / total * 100) : 100 };
 }
 
-// apps/mobile/src/core/collection-sets-v45.ts
+// ../apps/mobile/src/core/collection-sets-v45.ts
 var COLLECTION_SETS_V45 = [
   {
     id: "asterfall_cuisine_runtime",
@@ -49302,7 +49732,7 @@ function applyCollectionSetSnapshot(state, snapshot2, nowMs, catalog2 = COLLECTI
   return { newlyCompletedSetIds, grants };
 }
 
-// apps/mobile/src/core/cross-skill-discoveries-v45.ts
+// ../apps/mobile/src/core/cross-skill-discoveries-v45.ts
 var CROSS_SKILL_DISCOVERIES_V45 = [
   { id: "ore_and_flame", category: "production", name: "Ore & Flame", description: "Mining and Smithing knowledge combine into better heat and alloy control.", requirements: [{ skillId: "mining", skillName: "Mining", level: 30 }, { skillId: "smithing", skillName: "Smithing", level: 30 }], reward: { kind: "craft_option_unlock", ref: "CRAFTOPT_ALLOY_TEMPERING", label: "Alloy Tempering" } },
   { id: "river_to_table", category: "production", name: "River to Table", description: "Fishing and Cooking together improve difficult-catch preparation.", requirements: [{ skillId: "fishing", skillName: "Fishing", level: 30 }, { skillId: "cooking", skillName: "Cooking", level: 30 }], reward: { kind: "knowledge_unlock", ref: "KNOWLEDGE_RIVER_TO_TABLE", label: "River-to-Table technique" } },
@@ -49337,7 +49767,7 @@ function applyCrossSkillSnapshot(state, characterId, snapshot2, nowMs) {
   return { newlyUnlockedDiscoveryIds, grants };
 }
 
-// apps/mobile/src/core/rare-idle-discoveries-v46.ts
+// ../apps/mobile/src/core/rare-idle-discoveries-v46.ts
 var MAX_RECENT_RARE_DISCOVERIES = 50;
 var RARE_DISCOVERY_POOLS_V46 = [
   { id: "mining_geode_authoring", name: "Mining Geodes", enabled: false, sourceKind: "mining", opportunitySeconds: 1800, baseChanceBps: 20, pityStartsAfterMisses: 80, pityStepBps: 5, maxChanceBps: 200, candidates: [{ id: "ancient_geode", name: "Ancient Geode", description: "A sealed geode uncovered among ordinary ore.", rarity: "rare", weight: 100, unique: false, reward: { kind: "item_grant", ref: "PENDING_CANONICAL_GEODE", label: "Ancient Geode", quantity: 1 } }] }
@@ -49392,7 +49822,7 @@ function applyRareDiscoverySettlement(state, event, ownedRewardRefs, roll, pools
   return { eventId: event.eventId, finds, grants };
 }
 
-// apps/mobile/src/core/launch-readiness-v47.ts
+// ../apps/mobile/src/core/launch-readiness-v47.ts
 var CURRENT_SKILL_IDS = ["mining", "woodcutting", "fishing", "smithing", "cooking", "herbalism", "alchemy", "exploration", "tailoring", "enchanting", "faith"];
 var itemIds = new Set(ITEMS.map((row) => row.id));
 var zoneIds = new Set(WORLD_ZONES.map((row) => row.id));
@@ -49446,7 +49876,7 @@ function weeklyOrderCandidatesFromCurrentContent(state) {
   return [...bossHunts, ...hunts, ...gathering, ...regionalProblems];
 }
 
-// apps/mobile/src/core/adventurers-journal-v42.ts
+// ../apps/mobile/src/core/adventurers-journal-v42.ts
 var TIERS = ["novice", "adventurer", "veteran", "master", "grandmaster"];
 var ladder = (category, key, name, metricKey, targets, descriptions, title2) => targets.map((target2, index) => ({ id: `${key}_${TIERS[index]}`, category, tier: TIERS[index], title: `${name} \u2014 ${TIERS[index][0].toUpperCase()}${TIERS[index].slice(1)}`, description: descriptions[index], metricKey, target: target2, ...index === 4 && title2 ? { rewardTitleId: title2.id } : {} }));
 var JOURNAL_TITLES_V42 = [
@@ -49497,7 +49927,7 @@ function applyJournalSnapshot(state, snapshot2, nowMs) {
   return { newlyUnlockedAchievementIds, newlyUnlockedTitleIds };
 }
 
-// apps/mobile/src/core/personal-records-v43.ts
+// ../apps/mobile/src/core/personal-records-v43.ts
 var PERSONAL_RECORDS_V43 = [
   { id: "highest_single_hit", category: "combat", label: "Highest single hit", unit: "number", rule: "max", description: "Largest damage value from one trusted combat hit." },
   { id: "highest_critical_hit", category: "combat", label: "Highest critical hit", unit: "number", rule: "max", description: "Largest critical-hit damage value." },
@@ -49547,7 +49977,7 @@ function applyPersonalRecord(previous, event) {
   return { changed: true, entry: entry2 };
 }
 
-// apps/mobile/src/core/balance-telemetry.ts
+// ../apps/mobile/src/core/balance-telemetry.ts
 var BALANCE_METRIC_KEYS = {
   characterLevel: "balance.character_level",
   campaignClaimed: "balance.campaign_chapters_claimed",
@@ -49650,7 +50080,7 @@ function applyLocalBalanceSnapshot(state, nowMs = Date.now()) {
   return { ...state, account: { ...state.account, longTermMetrics: metrics } };
 }
 
-// apps/mobile/src/core/long-term-progression-runtime.ts
+// ../apps/mobile/src/core/long-term-progression-runtime.ts
 function integerUnits(value) {
   return Number.isFinite(value) ? Math.max(0, Math.floor(value)) : 0;
 }
@@ -49879,7 +50309,7 @@ function applyTrustedLongTermProgression(input, events, reward2, nowMs, options)
   return { state, weeklyOrderCompletions: weeklyCompleted, journalAchievements: journalResult.newlyUnlockedAchievementIds, journalTitles: journalResult.newlyUnlockedTitleIds, personalRecordUpdates: recordUpdates, crossSkillUnlocks: crossResult.newlyUnlockedDiscoveryIds, collectionSetCompletions: collectionResult.newlyCompletedSetIds, rareDiscoveryGrantRefs: rareGrantRefs };
 }
 
-// apps/mobile/src/core/core-pet-drops.ts
+// ../apps/mobile/src/core/core-pet-drops.ts
 var CORE_PET_SIGNATURE_DROPS = [
   { petId: "PET_018", monsterId: "OATHGLASS_REVENANT", region: "Asterfall", chance: 5e-4 },
   { petId: "PET_023", monsterId: "GLASSBOUND_SENTINEL", region: "Sunscar", chance: 5e-4 },
@@ -49926,7 +50356,7 @@ function ownedPetIds(state) {
     ...state.character?.ownedPetIds ?? []
   ]);
 }
-function resolveRules(state, rules, attempts, seedBase, roll) {
+function resolveRules(state, rules, attempts, seedBase, roll, boostWindow) {
   if (!earlyFeatureUnlocked(state, "pets") || attempts <= 0 || !rules.length) return [];
   const owned = ownedPetIds(state), found = [];
   const tries = Math.max(0, Math.floor(attempts));
@@ -49934,7 +50364,9 @@ function resolveRules(state, rules, attempts, seedBase, roll) {
     if (owned.has(rule.petId) || found.includes(rule.petId)) continue;
     const seed = `${seedBase}:core-pet:${rule.petId}`;
     for (let index = 0; index < tries; index++) {
-      if (roll(seed, index) < rule.chance) {
+      const at = boostWindow ? boostWindow.settlementStartsAtMs + (index + 0.5) / tries * (boostWindow.settlementEndsAtMs - boostWindow.settlementStartsAtMs) : NaN;
+      const boosted = boostWindow && at >= boostWindow.startsAtMs && at < boostWindow.endsAtMs;
+      if (roll(seed, index) < Math.min(1, rule.chance * (boosted ? 2 : 1))) {
         found.push(rule.petId);
         break;
       }
@@ -49942,13 +50374,13 @@ function resolveRules(state, rules, attempts, seedBase, roll) {
   }
   return found;
 }
-function resolveCorePetActivityDrops(state, sourceType, sourceId, attempts, seedBase, roll = random01) {
-  return resolveRules(state, corePetActivityDropsForSource(sourceType, sourceId), attempts, `${seedBase}:${sourceType}:${sourceId}`, roll);
+function resolveCorePetActivityDrops(state, sourceType, sourceId, attempts, seedBase, roll = random01, boostWindow) {
+  return resolveRules(state, corePetActivityDropsForSource(sourceType, sourceId), attempts, `${seedBase}:${sourceType}:${sourceId}`, roll, boostWindow);
 }
-function resolveCorePetCombatDrops(state, monsterId, kills, seedBase, roll = random01) {
+function resolveCorePetCombatDrops(state, monsterId, kills, seedBase, roll = random01, boostWindow) {
   const regular = corePetActivityDropsForSource("combat", monsterId);
   const signature = CORE_PET_SIGNATURE_DROPS.filter((row) => row.monsterId === monsterId);
-  return resolveRules(state, [...regular, ...signature], kills, `${seedBase}:combat:${monsterId}`, roll);
+  return resolveRules(state, [...regular, ...signature], kills, `${seedBase}:combat:${monsterId}`, roll, boostWindow);
 }
 function applyPetIds(state, ids2, sourceId) {
   let next = state;
@@ -49964,16 +50396,16 @@ function applyPetIds(state, ids2, sourceId) {
   }
   return { state: next, drops };
 }
-function applyCorePetActivityDrops(state, sourceType, sourceId, attempts, seedBase, roll) {
-  const ids2 = resolveCorePetActivityDrops(state, sourceType, sourceId, attempts, seedBase, roll);
+function applyCorePetActivityDrops(state, sourceType, sourceId, attempts, seedBase, roll, boostWindow) {
+  const ids2 = resolveCorePetActivityDrops(state, sourceType, sourceId, attempts, seedBase, roll, boostWindow);
   return applyPetIds(state, ids2, sourceId);
 }
-function applyCorePetCombatDrops(state, monsterId, kills, seedBase, roll) {
-  const ids2 = resolveCorePetCombatDrops(state, monsterId, kills, seedBase, roll);
+function applyCorePetCombatDrops(state, monsterId, kills, seedBase, roll, boostWindow) {
+  const ids2 = resolveCorePetCombatDrops(state, monsterId, kills, seedBase, roll, boostWindow);
   return applyPetIds(state, ids2, monsterId);
 }
 
-// apps/mobile/src/core/idle-rules-v40.ts
+// ../apps/mobile/src/core/idle-rules-v40.ts
 var MAX_IDLE_RULE_SETS = 5;
 function reached(c, ctx) {
   if (!c.enabled) return false;
@@ -50024,7 +50456,7 @@ function validateActiveIdleRuleId(rules, value) {
   return typeof value === "string" && rules.some((rule) => rule.id === value) ? value : void 0;
 }
 
-// apps/mobile/src/core/hunt-champions.ts
+// ../apps/mobile/src/core/hunt-champions.ts
 var CHAMPION_ENCOUNTER_CHANCE = 6e-3;
 var CHAMPION_DAMAGE_MULTIPLIER = 1.45;
 var CHAMPION_BONUS_XP_MULTIPLIER = 3;
@@ -50044,7 +50476,7 @@ function championBonus(baseXp, baseGold, count) {
   };
 }
 
-// apps/mobile/src/core/daily-supplies.ts
+// ../apps/mobile/src/core/daily-supplies.ts
 var DAILY_SUPPLY_BONUS = 0.1;
 var DAILY_SUPPLY_CHARGE_SECONDS = 2 * 60 * 60;
 var DAILY_SUPPLY_TRACK_LENGTH = 28;
@@ -50094,6 +50526,25 @@ function normalizeActiveDailySupplyBoost(value) {
   const remainders = numericRemainders(row.remainders);
   return { type, remainingSeconds: Math.min(DAILY_SUPPLY_CHARGE_SECONDS, Math.max(1, Math.floor(seconds))), ...remainders ? { remainders } : {} };
 }
+function activeDailySupplyBoosts(character) {
+  if (!character) return {};
+  const mapped = character.activeDailySupplyBoosts, valid = {};
+  if (mapped && typeof mapped === "object" && !Array.isArray(mapped)) {
+    for (const type of DAILY_SUPPLY_BOOST_TYPES) {
+      const entry2 = normalizeActiveDailySupplyBoost(mapped[type]);
+      if (entry2 && entry2.type === type) valid[type] = entry2;
+    }
+  }
+  if (!Object.keys(valid).length) {
+    const legacy = normalizeActiveDailySupplyBoost(character.activeDailySupplyBoost);
+    if (legacy) valid[legacy.type] = legacy;
+  }
+  return valid;
+}
+function withActiveDailySupplyBoosts(character, boosts) {
+  const first = DAILY_SUPPLY_BOOST_TYPES.map((type) => boosts[type]).find(Boolean);
+  return { ...character, activeDailySupplyBoosts: boosts, activeDailySupplyBoost: first };
+}
 function track(state) {
   return normalizeDailySuppliesTrack(state.account.dailySupplies) ?? { schemaVersion: 1, totalClaims: 0 };
 }
@@ -50133,13 +50584,13 @@ function claimDailySupplies(state, characterId, nowMs) {
 function activateDailySupplyBoost(state, type) {
   if (!state.character) throw new Error("Create a character first.");
   if (!DAILY_SUPPLY_BOOST_TYPES.includes(type)) throw new Error("Unknown Daily Supplies boost.");
-  const active2 = normalizeActiveDailySupplyBoost(state.character.activeDailySupplyBoost);
-  if (active2) throw new Error("Finish the active Daily Supplies boost before starting another.");
+  const active2 = activeDailySupplyBoosts(state.character);
+  if (active2[type]) throw new Error("This Daily Supplies boost is already active.");
   const bank = { ...normalizeDailySupplyBank(state.character.dailySupplyBoostBank) ?? {} }, charges = bank[type] ?? 0;
   if (charges < 1) throw new Error("No banked charge is available for this boost.");
   if (charges === 1) delete bank[type];
   else bank[type] = charges - 1;
-  return { ...state, character: { ...state.character, dailySupplyBoostBank: bank, activeDailySupplyBoost: { type, remainingSeconds: DAILY_SUPPLY_CHARGE_SECONDS } } };
+  return { ...state, character: withActiveDailySupplyBoosts({ ...state.character, dailySupplyBoostBank: bank }, { ...active2, [type]: { type, remainingSeconds: DAILY_SUPPLY_CHARGE_SECONDS } }) };
 }
 function activityModeEligible(type, mode) {
   if (type === "combat_xp") return mode === "combat";
@@ -50153,44 +50604,59 @@ function bonusInteger(base, key, fraction, remainders) {
   return extra;
 }
 function previewDailySupplyTimedReward(state, reward2, mode) {
-  const active2 = normalizeActiveDailySupplyBoost(state.character?.activeDailySupplyBoost);
-  if (!active2 || !activityModeEligible(active2.type, mode) || reward2.elapsedSeconds <= 0) return { reward: reward2, consumedSeconds: 0, nextRemainders: { ...active2?.remainders ?? {} } };
-  const hasQualifyingReward = active2.type === "combat_xp" ? reward2.xp > 0 : active2.type === "skill_xp" ? reward2.xp > 0 || (reward2.faithXp ?? 0) > 0 || (reward2.classSkillXp ?? []).some((row) => row.xp > 0) : reward2.items.some((item) => item.quantity > 0);
-  if (!hasQualifyingReward) return { reward: reward2, consumedSeconds: 0, nextRemainders: { ...active2.remainders ?? {} } };
-  const qualifyingSeconds = Math.min(Math.max(0, reward2.elapsedSeconds), Math.max(0, reward2.qualifyingActivitySeconds ?? reward2.elapsedSeconds));
-  if (qualifyingSeconds <= 0) return { reward: reward2, consumedSeconds: 0, nextRemainders: { ...active2.remainders ?? {} } };
-  const consumedSeconds = Math.min(active2.remainingSeconds, qualifyingSeconds), fraction = consumedSeconds / Math.max(1, qualifyingSeconds), nextRemainders = { ...active2.remainders ?? {} };
+  const boosts = activeDailySupplyBoosts(state.character), updates = {};
   let next = { ...reward2, items: reward2.items.map((item) => ({ ...item })) };
-  if (active2.type === "combat_xp") {
-    next.xp += bonusInteger(reward2.xp, "xp:combat", fraction, nextRemainders);
-  } else if (active2.type === "skill_xp") {
-    if (reward2.classSkillXp?.length) {
-      next.classSkillXp = reward2.classSkillXp.map((row) => ({ ...row, xp: row.xp + bonusInteger(row.xp, `class:${row.skillId}`, fraction, nextRemainders) }));
-    } else {
-      const extra = bonusInteger(reward2.xp, "xp:skill", fraction, nextRemainders);
-      next.xp += extra;
-      if (reward2.faithXp !== void 0) next.faithXp = (reward2.faithXp ?? 0) + extra;
-    }
-  } else if (active2.type === "gathering_yield" || active2.type === "crafting_output") {
-    next.items = next.items.map((item) => ({ ...item, quantity: item.quantity + bonusInteger(item.quantity, `item:${item.itemId}`, fraction, nextRemainders) }));
+  for (const type of DAILY_SUPPLY_BOOST_TYPES) {
+    const active2 = boosts[type];
+    if (!active2 || !activityModeEligible(type, mode) || reward2.elapsedSeconds <= 0) continue;
+    const hasReward = type === "combat_xp" ? reward2.xp > 0 : type === "skill_xp" ? reward2.xp > 0 || (reward2.faithXp ?? 0) > 0 || (reward2.classSkillXp ?? []).some((row) => row.xp > 0) : reward2.items.some((item) => item.quantity > 0);
+    if (!hasReward) continue;
+    const qualifyingSeconds = Math.min(Math.max(0, reward2.elapsedSeconds), Math.max(0, reward2.qualifyingActivitySeconds ?? reward2.elapsedSeconds));
+    if (qualifyingSeconds <= 0) continue;
+    const consumedSeconds = Math.min(active2.remainingSeconds, qualifyingSeconds), fraction = consumedSeconds / Math.max(1, qualifyingSeconds), remainders = { ...active2.remainders ?? {} };
+    if (type === "combat_xp") next.xp += bonusInteger(reward2.xp, "xp:combat", fraction, remainders);
+    else if (type === "skill_xp") {
+      if (reward2.classSkillXp?.length) next.classSkillXp = reward2.classSkillXp.map((row) => ({ ...row, xp: row.xp + bonusInteger(row.xp, `class:${row.skillId}`, fraction, remainders) }));
+      else {
+        const extra = bonusInteger(reward2.xp, "xp:skill", fraction, remainders);
+        next.xp += extra;
+        if (reward2.faithXp !== void 0) next.faithXp = (reward2.faithXp ?? 0) + extra;
+      }
+    } else next.items = next.items.map((item) => ({ ...item, quantity: item.quantity + bonusInteger(item.quantity, `item:${item.itemId}`, fraction, remainders) }));
+    updates[type] = { consumedSeconds, nextRemainders: remainders };
   }
-  return { reward: next, consumedSeconds, nextRemainders };
+  const first = DAILY_SUPPLY_BOOST_TYPES.map((type) => updates[type]).find(Boolean);
+  return { reward: next, consumedSeconds: first?.consumedSeconds ?? 0, nextRemainders: first?.nextRemainders ?? {}, updates };
 }
 function commitDailySupplyTimedBoost(state, result) {
-  if (!state.character || result.consumedSeconds <= 0) return state;
-  const active2 = normalizeActiveDailySupplyBoost(state.character.activeDailySupplyBoost);
-  if (!active2) return state;
-  const remainingSeconds = Math.max(0, active2.remainingSeconds - result.consumedSeconds);
-  return { ...state, character: { ...state.character, activeDailySupplyBoost: remainingSeconds ? { ...active2, remainingSeconds, remainders: result.nextRemainders } : void 0 } };
+  if (!state.character) return state;
+  const active2 = activeDailySupplyBoosts(state.character);
+  const updates = result.updates ?? (state.character.activeDailySupplyBoost ? { [state.character.activeDailySupplyBoost.type]: result } : {});
+  const next = { ...active2 };
+  let changed = false;
+  for (const type of DAILY_SUPPLY_BOOST_TYPES) {
+    const current = active2[type], spent = updates[type];
+    if (!current || !spent || spent.consumedSeconds <= 0) continue;
+    changed = true;
+    const remainingSeconds = Math.max(0, current.remainingSeconds - spent.consumedSeconds);
+    if (remainingSeconds > 0) next[type] = { ...current, remainingSeconds, remainders: spent.nextRemainders };
+    else delete next[type];
+  }
+  return changed ? { ...state, character: withActiveDailySupplyBoosts(state.character, next) } : state;
 }
 function applyDailySupplyCraft(state, input) {
-  if (!state.character) return { state, outputQuantity: input.outputQuantity, xp: input.xp, bonusQuantity: 0, bonusXp: 0 };
-  const active2 = normalizeActiveDailySupplyBoost(state.character.activeDailySupplyBoost);
-  if (!active2 || !["crafting_output", "skill_xp"].includes(active2.type) || input.seconds <= 0 || active2.type === "crafting_output" && !input.outputEligible) return { state, outputQuantity: input.outputQuantity, xp: input.xp, bonusQuantity: 0, bonusXp: 0 };
-  const consumedSeconds = Math.min(active2.remainingSeconds, input.seconds), fraction = consumedSeconds / input.seconds, remainders = { ...active2.remainders ?? {} };
-  const bonusQuantity = active2.type === "crafting_output" ? bonusInteger(input.outputQuantity, "craft:output", fraction, remainders) : 0;
-  const bonusXp = active2.type === "skill_xp" ? bonusInteger(input.xp, "craft:xp", fraction, remainders) : 0;
-  return { state: commitDailySupplyTimedBoost(state, { consumedSeconds, nextRemainders: remainders }), outputQuantity: input.outputQuantity + bonusQuantity, xp: input.xp + bonusXp, bonusQuantity, bonusXp };
+  if (!state.character || input.seconds <= 0) return { state, outputQuantity: input.outputQuantity, xp: input.xp, bonusQuantity: 0, bonusXp: 0 };
+  const active2 = activeDailySupplyBoosts(state.character), updates = {};
+  let bonusQuantity = 0, bonusXp = 0;
+  for (const type of ["crafting_output", "skill_xp"]) {
+    const boost = active2[type];
+    if (!boost || type === "crafting_output" && !input.outputEligible) continue;
+    const consumedSeconds = Math.min(boost.remainingSeconds, input.seconds), fraction = consumedSeconds / input.seconds, remainders = { ...boost.remainders ?? {} };
+    if (type === "crafting_output") bonusQuantity = bonusInteger(input.outputQuantity, "craft:output", fraction, remainders);
+    else bonusXp = bonusInteger(input.xp, "craft:xp", fraction, remainders);
+    updates[type] = { consumedSeconds, nextRemainders: remainders };
+  }
+  return { state: commitDailySupplyTimedBoost(state, { consumedSeconds: 0, nextRemainders: {}, updates }), outputQuantity: input.outputQuantity + bonusQuantity, xp: input.xp + bonusXp, bonusQuantity, bonusXp };
 }
 function dailySupplyActivityMode(activity) {
   if (!activity) return void 0;
@@ -50200,7 +50666,7 @@ function dailySupplyActivityMode(activity) {
   return "skill";
 }
 
-// apps/mobile/src/core/encounter-identity.ts
+// ../apps/mobile/src/core/encounter-identity.ts
 var PROFILES = {
   SWARM: { id: "SWARM", archetype: "Swarm", pressure: "attrition", summary: "Many small attacks create steady pressure instead of one heavy blow.", mechanics: ["Rapid pressure", "Low individual durability"], tactic: "Favor faster clears and reliable sustain; long fights give the swarm more chances to wear you down." },
   ARCANE_FLICKER: { id: "ARCANE_FLICKER", archetype: "Arcane Flicker", pressure: "tempo", summary: "Unstable magic alternates between quiet openings and sudden bursts.", mechanics: ["Burst windows", "Fragile caster"], tactic: "High damage and fast cycles punish the creature before its next magical surge." },
@@ -50259,7 +50725,7 @@ function encounterIdentity(monster) {
   return PROFILES[PROFILE_BY_MONSTER[monster.id]] ?? fallback(monster);
 }
 
-// apps/mobile/src/core/regional-enemy-stats.ts
+// ../apps/mobile/src/core/regional-enemy-stats.ts
 var NEUTRAL2 = { accuracy: 0.87, evasion: 0.04, critChance: 0.05, critMultiplier: 1.5, haste: 0 };
 var BY_PROFILE = {
   SWARM: { accuracy: 0.83, evasion: 0.05, critChance: 0.03, critMultiplier: 1.4, haste: 0.1 },
@@ -50302,7 +50768,7 @@ function regionalSecondaryExchange(player, monster, basePlayerCritChance = 0.05)
   };
 }
 
-// apps/mobile/src/core/story-boss.ts
+// ../apps/mobile/src/core/story-boss.ts
 var clamp6 = (value, min, max) => Math.max(min, Math.min(max, value));
 var FALLEN_KNIGHT_MAX_DURATION_MS = 1e5;
 function mitigation(defense) {
@@ -50433,7 +50899,7 @@ function simulateFallenKnightStoryBattle(player, seed, mode = "story") {
   };
 }
 
-// apps/mobile/src/core/weekly-boss.ts
+// ../apps/mobile/src/core/weekly-boss.ts
 var FALLEN_KNIGHT_WEEKLY_REWARD_CAP = 3;
 var FALLEN_KNIGHT_WEEKLY_BOUNTY_TARGET = 1;
 var FALLEN_KNIGHT_CLEAR_REWARD = {
@@ -50483,7 +50949,7 @@ function recordFallenKnightWeeklyVictory(state, nowMs) {
   };
 }
 
-// apps/mobile/src/core/game.ts
+// ../apps/mobile/src/core/game.ts
 function beginAlchemyBatch(state, recipeId, nowMs) {
   const ready = finishClassDrills(state, nowMs);
   return startAlchemyUntilLimited(ready, recipeId, nowMs, offlineCapSeconds(ready));
@@ -50567,8 +51033,8 @@ function newGame(nowMs) {
     exploredRouteIds: [],
     defeatedBossIds: [],
     skills: ["mining", "woodcutting", "fishing", "smithing", "cooking", "herbalism", "alchemy", "exploration", "tailoring", "enchanting", "faith"].map((skillId) => ({ skillId, xp: 0, level: 1 })),
-    account: { createdCharacterCount: 1, unlockedCharacterSlots: 1, guildMember: false, patronTier: "none", guildBannerId: "world_tree_green", guildProfileFrameId: "classic", guildNameplateId: "classic", guildMotto: "Stronger together.", guildContribution: 0, guildProjectProgress: 0, guildBossHp: 1e5, guildProjectClaimed: false, guildJoinPolicy: "open", guildMinimumLevel: 10, guildApplicationStatus: "none", seasonalContractClaimIds: [] },
-    settings: { language: "en", uiTheme: "obsidian", numberMode: "abbreviated", reduceMotion: false, textScale: 1, autoEatThresholdPct: 40, stopCombatWhenOutOfFood: true, autoTravelQueuedActivities: false, autoJoinWorldChat: true, defaultWorldChat: 1, chatDockLines: 1, chatEmoteTrayIds: [], quickNavDestinations: [...DEFAULT_QUICK_NAV_DESTINATIONS], favoriteItemIds: [], seenItemIds: [] }
+    account: { gemPouch: { stacks: [], capacity: 30 }, createdCharacterCount: 1, unlockedCharacterSlots: 1, guildMember: false, patronTier: "none", guildBannerId: "world_tree_green", guildProfileFrameId: "classic", guildNameplateId: "classic", guildMotto: "Stronger together.", guildContribution: 0, guildProjectProgress: 0, guildBossHp: 1e5, guildProjectClaimed: false, guildJoinPolicy: "open", guildMinimumLevel: 10, guildApplicationStatus: "none", seasonalContractClaimIds: [] },
+    settings: { language: "en", uiTheme: "obsidian", numberMode: "abbreviated", reduceMotion: false, textScale: 1, autoEatThresholdPct: 40, stopCombatWhenOutOfFood: true, autoTravelQueuedActivities: false, autoJoinWorldChat: true, defaultWorldChat: 1, chatDockLines: 1, chatEmoteTrayIds: [], quickNavDestinations: [...DEFAULT_QUICK_NAV_DESTINATIONS], favoriteItemIds: [], lockedItemIds: [], seenItemIds: [] }
   };
 }
 function createCharacter(state, classId, name = "Adventurer", bodyPresentation = "male") {
@@ -50749,25 +51215,38 @@ function travelToRegion(state, regionId, nowMs) {
   return { state: travelled.character ? { ...travelled, character: { ...travelled.character, activityQueuePausedReason: pause } } : travelled, reward: settled.reward };
 }
 function stackItems(existing, incoming) {
-  const m = /* @__PURE__ */ new Map();
-  for (const s of existing) m.set(s.itemId, (m.get(s.itemId) || 0) + s.quantity);
-  for (const s of incoming) m.set(s.itemId, (m.get(s.itemId) || 0) + s.quantity);
-  return [...m.entries()].filter(([, q2]) => q2 > 0).map(([itemId, quantity4]) => ({ itemId, quantity: quantity4 }));
+  const quantities2 = /* @__PURE__ */ new Map(), individual = [], seen = /* @__PURE__ */ new Set();
+  for (const row of [...existing, ...incoming]) {
+    if (row.instanceId !== void 0) {
+      if (typeof row.instanceId !== "string" || !row.instanceId || row.quantity !== 1 || seen.has(row.instanceId))
+        throw new Error("Duplicate or invalid unique equipment copy");
+      seen.add(row.instanceId);
+      individual.push({ ...row });
+    } else quantities2.set(row.itemId, (quantities2.get(row.itemId) ?? 0) + row.quantity);
+  }
+  return [...quantities2.entries()].filter(([, q2]) => q2 > 0).map(([itemId, quantity2]) => ({ itemId, quantity: quantity2 })).concat(individual);
 }
 function usedSlots(stacks) {
   return stacks.filter((s) => s.quantity > 0).length;
 }
 function itemStackCap(itemId) {
   const d = itemDef(itemId);
-  return d.type === "gear" || d.type === "tool" ? 1 : 9999;
+  return d.type === "gear" || d.type === "tool" ? 1 : d.type === "material" ? 99999 : 9999;
 }
 function addBounded(stacks, capacity, incoming) {
   let next = stacks.map((s) => ({ ...s }));
   const overflow = [];
   for (const inc of incoming) {
+    if (inc.instanceId !== void 0) {
+      if (inc.quantity !== 1 || !inc.instanceId || next.some((s) => s.instanceId === inc.instanceId))
+        throw new Error("Duplicate or invalid unique equipment copy");
+      if (usedSlots(next) < capacity) next.push({ ...inc });
+      else overflow.push({ ...inc });
+      continue;
+    }
     let remaining = inc.quantity;
     const cap = itemStackCap(inc.itemId);
-    let existing = next.find((s) => s.itemId === inc.itemId);
+    let existing = next.find((s) => s.itemId === inc.itemId && s.instanceId === void 0);
     if (existing) {
       const room = Math.max(0, cap - existing.quantity);
       const add = Math.min(room, remaining);
@@ -50794,14 +51273,25 @@ function routeRewards(state, incoming, nowMs) {
     overflow: { stacks: overflow, expiresAtMs: overflow.length ? Math.max(state.overflow.expiresAtMs || 0, nowMs + 72 * 60 * 60 * 1e3) : null }
   };
 }
-function consume2(stacks, itemId, quantity4) {
-  const f = stacks.find((s) => s.itemId === itemId);
-  if (!f || f.quantity < quantity4) throw new Error("Not enough items");
-  return stacks.map((s) => s.itemId === itemId ? { ...s, quantity: s.quantity - quantity4 } : s).filter((s) => s.quantity > 0);
+function consume2(stacks, itemId, quantity2) {
+  if (!Number.isSafeInteger(quantity2) || quantity2 <= 0) throw new Error("Invalid item quantity");
+  let remaining = quantity2;
+  const next = stacks.map((row) => {
+    if (row.itemId !== itemId || row.instanceId !== void 0 || remaining <= 0) return row;
+    const taken = Math.min(remaining, row.quantity);
+    remaining -= taken;
+    return { ...row, quantity: row.quantity - taken };
+  }).filter((row) => row.quantity > 0);
+  if (remaining > 0) {
+    if (stacks.some((row) => row.itemId === itemId && row.instanceId !== void 0))
+      throw new Error("Choose an individual equipment copy; unique equipment cannot be consumed by item type");
+    throw new Error("Not enough items");
+  }
+  return next;
 }
-function stackQty(stacks, itemId) {
+function stackQty2(stacks, itemId) {
   if (!itemId) return 0;
-  return stacks.find((s) => s.itemId === itemId)?.quantity || 0;
+  return stacks.filter((s) => s.itemId === itemId).reduce((n, s) => n + s.quantity, 0);
 }
 function regionalMonsterPressureBand(monsterId) {
   const m = MONSTERS.find((row) => row.id === monsterId);
@@ -50851,7 +51341,7 @@ function simulateCombat2(state, monsterId, elapsed, nowMs = Date.now()) {
   const startCandy = eventCandyUtilityMultiplier(state, startsAtMs, "combat");
   const timeline = combatTimeline({ startsAtMs, elapsedSeconds: elapsed, progressFraction: state.activity?.progressFraction ?? 0, preparationEncounters: c.preparation?.remainingEncounters ?? 0, cycleSeconds: plain.killCycleSeconds * startCandy, preparedCycleSeconds: prepared.killCycleSeconds * startCandy, candy: eventCandyWindow(state, "combat") });
   const food = c.equippedFoodId ? itemDef(c.equippedFoodId) : void 0, threshold = Math.max(10, Math.min(90, state.settings.autoEatThresholdPct)) / 100;
-  let foodLeft = stackQty(state.inventory.stacks, c.equippedFoodId), foodConsumed = 0, hp = Math.min(c.currentHp ?? prepared.stats.hp, prepared.stats.hp), championKills = 0, stoppedReason = "", preparationEncounters = 0, qualifyingActivitySeconds = elapsed;
+  let foodLeft = stackQty2(state.inventory.stacks, c.equippedFoodId), foodConsumed = 0, hp = Math.min(c.currentHp ?? prepared.stats.hp, prepared.stats.hp), championKills = 0, stoppedReason = "", preparationEncounters = 0, qualifyingActivitySeconds = elapsed;
   const completed = [];
   if (hp <= 1) return { kills: 0, completed, championKills: 0, foodConsumed: 0, endHp: 1, stoppedReason: "Too injured", qualifyingActivitySeconds: 0, nextProgressFraction: 0, preparationEncounters: 0 };
   for (const encounter of timeline.encounters) {
@@ -50883,13 +51373,17 @@ function previewStandardActivityRewardRaw(state, effectiveNowMs) {
     if (state.activity.kind === "exploration") {
       const route = explorationRoute(state.activity.targetId);
       if (!route) return { xp: 0, gold: 0, items: [], kills: 0, elapsedSeconds: elapsed };
-      const actions2 = Math.floor(elapsed / route.seconds), candy = eventCandyWindow(state, "skill");
+      const candy = eventCandyWindow(state, "skill");
+      const bankedSeconds = (state.activity.progressFraction ?? 0) * route.seconds;
+      const totalSeconds = bankedSeconds + elapsed;
+      const actions2 = Math.floor(totalSeconds / route.seconds);
+      const nextProgressFraction = actions2 > 0 ? totalSeconds % route.seconds / route.seconds : totalSeconds / route.seconds;
       let boostedActions = 0;
       for (let i = 1; i <= actions2; i++) {
-        const at = state.activity.lastClaimAtMs + i * route.seconds * 1e3;
+        const at = state.activity.lastClaimAtMs + (i * route.seconds - bankedSeconds) * 1e3;
         if (candy && at > candy.startsAtMs && at <= candy.endsAtMs) boostedActions++;
       }
-      return { xp: Math.floor((actions2 + 0.1 * boostedActions) * route.xp * characterPermanentMultipliers(state).skillXpMultiplier), gold: 0, items: [], kills: actions2, elapsedSeconds: elapsed, explorationDiscoveries: actions2 && route.unlockMonsterId ? [route.unlockMonsterId] : [] };
+      return { xp: Math.floor((actions2 + 0.1 * boostedActions) * route.xp * characterPermanentMultipliers(state).skillXpMultiplier), gold: 0, items: [], kills: actions2, elapsedSeconds: elapsed, nextProgressFraction, explorationDiscoveries: actions2 && route.unlockMonsterId ? [route.unlockMonsterId] : [] };
     }
     const g = [...GATHERING, ...HERB_NODES].find((x) => x.id === state.activity.targetId);
     if (!g) return { xp: 0, gold: 0, items: [], kills: 0, elapsedSeconds: elapsed };
@@ -50906,12 +51400,12 @@ function previewStandardActivityRewardRaw(state, effectiveNowMs) {
     let baseQuantity = 0;
     for (let i = 0; i < actions; i++) baseQuantity += g.min + Math.floor(random01(seed, i) * (g.max - g.min + 1));
     const quantityFloat = baseQuantity * effect3.itemMultiplier * (method?.yieldMultiplier ?? 1) * multipliers.gatheringYieldMultiplier * mastery2.yield + (state.rewardRemainders?.[g.itemId] ?? 0);
-    const quantity4 = Math.floor(quantityFloat);
+    const quantity2 = Math.floor(quantityFloat);
     const skill2 = state.skills.find((x) => x.skillId === g.skillId);
     const xpKey = affinityXpRemainderKey(state.character.id, g.skillId);
     const gain = settleAffinitySkillXp(actions * g.xp * effect3.xpMultiplier * (method?.xpMultiplier ?? 1) * multipliers.skillXpMultiplier * mastery2.xp * affinity.xpMultiplier * candyXpMultiplier, state.rewardRemainders?.[xpKey], totalXpAtLevel(100) - (skill2?.xp ?? 0));
     const xp = gain.xp;
-    const items2 = quantity4 ? [{ itemId: g.itemId, quantity: quantity4 }] : [];
+    const items2 = quantity2 ? [{ itemId: g.itemId, quantity: quantity2 }] : [];
     if (g.skillId === "herbalism") {
       const essence = HERBALISM_ESSENCE_BY_ZONE[g.zoneId];
       if (essence && actions > 0) {
@@ -50922,7 +51416,7 @@ function previewStandardActivityRewardRaw(state, effectiveNowMs) {
         if (rareQuantity) items2.push({ itemId: essence.itemId, quantity: rareQuantity });
       }
     }
-    const reward3 = { xp, gold: 0, items: items2, kills: actions, elapsedSeconds: elapsed, nextProgressFraction: timeline.nextProgressFraction, nextRewardRemainders: { ...state.rewardRemainders ?? {}, [xpKey]: gain.remainder, [g.itemId]: Math.max(0, quantityFloat - quantity4) } };
+    const reward3 = { xp, gold: 0, items: items2, kills: actions, elapsedSeconds: elapsed, nextProgressFraction: timeline.nextProgressFraction, nextRewardRemainders: { ...state.rewardRemainders ?? {}, [xpKey]: gain.remainder, [g.itemId]: Math.max(0, quantityFloat - quantity2) } };
     return { ...reward3, ...gatheringEventRewards(state, reward3.elapsedSeconds) };
   }
   const m = MONSTERS.find((x) => x.id === state.activity.targetId);
@@ -51014,7 +51508,7 @@ function projectedIdleContext(state, reward2, settleAtMs) {
     if (direct || regional2) progress = Math.min(order2.target, progress + reward2.kills);
     weeklyOrderProgress[order2.id] = progress;
   }
-  const foodRemaining = Math.max(0, stackQty(state.inventory.stacks, state.character?.equippedFoodId) - (reward2.foodConsumed ?? 0));
+  const foodRemaining = Math.max(0, stackQty2(state.inventory.stacks, state.character?.equippedFoodId) - (reward2.foodConsumed ?? 0));
   const routed = routeRewards(state, reward2.items, settleAtMs);
   const beforeOverflow = state.overflow.stacks.reduce((sum, row) => sum + row.quantity, 0), afterOverflow = routed.overflow.stacks.reduce((sum, row) => sum + row.quantity, 0);
   return {
@@ -51226,7 +51720,10 @@ function claimActivitySegment(state, nowMs) {
     const progression = applyTrustedLongTermProgression(next2, [{ kind: "gathering", contentId: state.activity.targetId, units: reward2.kills, startedAtMs: state.activity.lastClaimAtMs }], reward2, settledAtMs, { accountId: longTermAccountScope(state), eventId: `activity:${state.character.id}:${state.activity.targetId}:${state.activity.lastClaimAtMs}:${settledAtMs}` }).state;
     const eventApplied = refreshQuests(applyEventDiscoveries(applyEventDrops(progression, reward2.eventDrops ?? []), reward2.eventDiscoveries ?? []));
     const petSourceType = state.activity.kind === "exploration" ? "exploration" : "gathering";
-    const petResult2 = applyCorePetActivityDrops(eventApplied, petSourceType, state.activity.targetId, reward2.kills, `${state.character.id}:${state.activity.lastClaimAtMs}:${settledAtMs}`);
+    const petResult2 = applyCorePetActivityDrops(eventApplied, petSourceType, state.activity.targetId, reward2.kills, `${state.character.id}:${state.activity.lastClaimAtMs}:${settledAtMs}`, void 0, (() => {
+      const candy = eventCandyWindow(state, "pet");
+      return candy ? { startsAtMs: candy.startsAtMs, endsAtMs: candy.endsAtMs, settlementStartsAtMs: state.activity.lastClaimAtMs, settlementEndsAtMs: settledAtMs } : void 0;
+    })());
     const petReward2 = petResult2.drops.length ? { ...reward2, petDrops: [...reward2.petDrops ?? [], ...petResult2.drops] } : reward2;
     const finalState2 = recordCompanionActivity(petResult2.state, "gathering", state.activity.targetId, reward2.kills, settledAtMs);
     const queuedState2 = idleWindow.shouldStop && !idleWindow.safety ? autoAdvanceActivityQueue(finalState2, settledAtMs, state.activity, reward2) : idleWindow.shouldStop ? pauseActivityQueue(finalState2, reward2.stoppedReason ?? idleStopReason ?? "Safety stop reached.") : finalState2;
@@ -51258,7 +51755,10 @@ function claimActivitySegment(state, nowMs) {
   if (next.activity && reward2.kills > 0) next.activity.classFocus = normalizeTrainingFocus(next.character.trainingFocus);
   let progressed = recordMonsterMastery(refreshQuests(applyEventDiscoveries(applyEventDrops(next, reward2.eventDrops ?? []), reward2.eventDiscoveries ?? []), state.activity.targetId, reward2.kills), state.activity.targetId, reward2.kills);
   progressed = applyTrustedLongTermProgression(progressed, [{ kind: "combat", contentId: state.activity.targetId, units: reward2.kills, startedAtMs: state.activity.lastClaimAtMs }], reward2, settledAtMs, { accountId: longTermAccountScope(state), eventId: `combat:${state.character.id}:${state.activity.targetId}:${state.activity.lastClaimAtMs}:${settledAtMs}` }).state;
-  const petResult = applyCorePetCombatDrops(progressed, state.activity.targetId, reward2.kills, `${state.character.id}:${state.activity.lastClaimAtMs}:${settledAtMs}`);
+  const petResult = applyCorePetCombatDrops(progressed, state.activity.targetId, reward2.kills, `${state.character.id}:${state.activity.lastClaimAtMs}:${settledAtMs}`, void 0, (() => {
+    const candy = eventCandyWindow(state, "pet");
+    return candy ? { startsAtMs: candy.startsAtMs, endsAtMs: candy.endsAtMs, settlementStartsAtMs: state.activity.lastClaimAtMs, settlementEndsAtMs: settledAtMs } : void 0;
+  })());
   progressed = petResult.state;
   const petReward = petResult.drops.length ? { ...reward2, petDrops: petResult.drops } : reward2;
   const finalState = recordCompanionActivity(progressed, "combat", state.activity.targetId, reward2.kills, settledAtMs);
@@ -51306,6 +51806,7 @@ function equipItem(state, itemId) {
   if (d.type !== "gear" || !d.slot) throw new Error("Not gear");
   if (d.classRestriction && d.classRestriction !== state.character.classId) throw new Error("This gear belongs to another class");
   if (state.character.level < (d.requiredLevel ?? 1)) throw new Error(`Requires character level ${d.requiredLevel}`);
+  if (state.character.equipmentInstanceIds?.[d.slot]) throw new Error("Select the exact equipped copy before replacing uniquely identified gear");
   let stacks = consume2(state.inventory.stacks, itemId, 1);
   const old = state.character.equipment[d.slot];
   if (old) stacks = stackItems(stacks, [{ itemId: old, quantity: 1 }]);
@@ -51318,7 +51819,7 @@ function equipFood(state, itemId) {
   if (!state.character) throw new Error("No character");
   const d = itemDef(itemId);
   if (d.type !== "food") throw new Error("Not food");
-  if (stackQty(state.inventory.stacks, itemId) <= 0) throw new Error("No food available");
+  if (stackQty2(state.inventory.stacks, itemId) <= 0) throw new Error("No food available");
   return { ...state, character: { ...state.character, equippedFoodId: itemId } };
 }
 function eatFood(state, itemId) {
@@ -51349,27 +51850,39 @@ function unequipItem(state, slot) {
   if (!state.character) return state;
   const old = state.character.equipment[slot];
   if (!old) return state;
+  if (state.character.equipmentInstanceIds?.[slot]) throw new Error("Choose the exact equipped copy before unequipping uniquely identified gear");
   const eq = { ...state.character.equipment };
   delete eq[slot];
   const next = { ...state, inventory: { ...state.inventory, stacks: stackItems(state.inventory.stacks, [{ itemId: old, quantity: 1 }]) }, character: { ...state.character, equipment: eq } };
   next.character.currentHp = Math.min(effectiveStats(next).hp, next.character.currentHp);
   return next;
 }
-function sellItem(state, itemId, quantity4 = 1) {
-  if (!state.character || quantity4 <= 0) return state;
+function sellItem(state, itemId, quantity2 = 1) {
+  if (!state.character || quantity2 <= 0) return state;
   if (itemId === HOLY_WATER_ID) throw new Error("Holy Water cannot be sold.");
   if (state.settings.favoriteItemIds?.includes(itemId)) throw new Error("Favorite item is protected. Remove it from Favorites before selling.");
-  const discovered = state, d = itemDef(itemId);
+  if (state.settings.lockedItemIds?.includes(itemId)) throw new Error("Locked item is protected. Unlock it before selling.");
+  const d = itemDef(itemId);
+  if (d.guildOnly) throw new Error("Guild construction components cannot be sold.");
   if (d.knowledgeUnlockId) throw new Error("Blueprints cannot be sold. Learn the recipe by crafting its tool.");
-  if (d.type === "gear" && hasEnhancement(discovered, itemId)) throw new Error("Enhanced equipment is protected. Extract its gems before disposal; upgraded ranks cannot be recovered.");
-  return { ...discovered, inventory: { ...discovered.inventory, stacks: consume2(discovered.inventory.stacks, itemId, quantity4) }, character: { ...discovered.character, gold: discovered.character.gold + d.value * quantity4 } };
+  if (d.type === "gear" && hasEnhancement(state, itemId)) {
+    const invQty = state.inventory.stacks.filter((row) => row.itemId === itemId && row.instanceId === void 0).reduce((sum, row) => sum + row.quantity, 0);
+    if (invQty - quantity2 < 1) throw new Error("Enhanced equipment is protected. Extract its gems before disposal; upgraded ranks cannot be recovered.");
+  }
+  let next = { ...state, inventory: { ...state.inventory, stacks: consume2(state.inventory.stacks, itemId, quantity2) }, character: { ...state.character, gold: state.character.gold + d.value * quantity2 } };
+  return next;
 }
 function salvageItem(state, itemId) {
   if (state.settings.favoriteItemIds?.includes(itemId)) throw new Error("Favorite item is protected. Remove it from Favorites before salvaging.");
-  const discovered = state, d = itemDef(itemId);
+  if (state.settings.lockedItemIds?.includes(itemId)) throw new Error("Locked item is protected. Unlock it before salvaging.");
+  const d = itemDef(itemId);
   if (d.type !== "gear" || !d.salvage) throw new Error("Cannot salvage");
-  if (hasEnhancement(discovered, itemId)) throw new Error("Enhanced equipment is protected. Extract its gems before disposal; upgraded ranks cannot be recovered.");
-  return { ...discovered, inventory: { ...discovered.inventory, stacks: stackItems(consume2(discovered.inventory.stacks, itemId, 1), [d.salvage]) } };
+  if (hasEnhancement(state, itemId)) {
+    const invQty = stackQty2(state.inventory.stacks, itemId);
+    if (invQty - 1 < 1) throw new Error("Enhanced equipment is protected. Extract its gems before disposal; upgraded ranks cannot be recovered.");
+  }
+  let next = { ...state, inventory: { ...state.inventory, stacks: stackItems(consume2(state.inventory.stacks, itemId, 1), [d.salvage]) } };
+  return next;
 }
 function validBankGoldAmount(amount) {
   if (!Number.isSafeInteger(amount) || amount <= 0) throw new Error("Enter a valid positive Gold amount.");
@@ -51384,34 +51897,36 @@ function withdrawGoldFromBank(state, amount) {
   if (!state.character || (state.bank.gold ?? 0) < amount) throw new Error("Not enough Bank Gold.");
   return { ...state, character: { ...state.character, gold: state.character.gold + amount }, bank: { ...state.bank, gold: (state.bank.gold ?? 0) - amount } };
 }
-function sellBankItem(state, itemId, quantity4 = 1) {
-  validBankGoldAmount(quantity4);
+function sellBankItem(state, itemId, quantity2 = 1) {
+  validBankGoldAmount(quantity2);
   if (!state.character) throw new Error("Character required.");
   if (itemId === HOLY_WATER_ID) throw new Error("Holy Water cannot be sold.");
   if (state.settings.favoriteItemIds?.includes(itemId)) throw new Error("Favorite item is protected.");
+  if (state.settings.lockedItemIds?.includes(itemId)) throw new Error("Locked item is protected.");
   const def = itemDef(itemId);
+  if (def.guildOnly) throw new Error("Guild construction components cannot be sold.");
   if (def.knowledgeUnlockId) throw new Error("Blueprints cannot be sold.");
   if (def.type === "gear" && hasEnhancement(state, itemId)) throw new Error("Enhanced equipment is protected.");
-  const stacks = consume2(state.bank.stacks, itemId, quantity4);
-  const proceeds = def.value * quantity4;
+  const stacks = consume2(state.bank.stacks, itemId, quantity2);
+  const proceeds = def.value * quantity2;
   if (!Number.isSafeInteger(proceeds) || !Number.isSafeInteger((state.bank.gold ?? 0) + proceeds)) throw new Error("Gold amount exceeds supported limit.");
   return { ...state, bank: { ...state.bank, stacks, gold: (state.bank.gold ?? 0) + proceeds } };
 }
-function depositToBank(state, itemId, quantity4) {
-  if (quantity4 <= 0) return state;
-  const invQty = stackQty(state.inventory.stacks, itemId);
-  if (invQty < quantity4) throw new Error("Not enough items in inventory");
-  const removed = consume2(state.inventory.stacks, itemId, quantity4);
-  const added = addBounded(state.bank.stacks, entitlementStorageCapacity(state, "bank"), [{ itemId, quantity: quantity4 }]);
+function depositToBank(state, itemId, quantity2) {
+  if (quantity2 <= 0) return state;
+  const invQty = stackQty2(state.inventory.stacks, itemId);
+  if (invQty < quantity2) throw new Error("Not enough items in inventory");
+  const removed = consume2(state.inventory.stacks, itemId, quantity2);
+  const added = addBounded(state.bank.stacks, entitlementStorageCapacity(state, "bank"), [{ itemId, quantity: quantity2 }]);
   if (added.overflow.length) throw new Error("Bank is full");
   return { ...state, inventory: { ...state.inventory, stacks: removed }, bank: { ...state.bank, stacks: added.stacks } };
 }
-function withdrawFromBank(state, itemId, quantity4) {
-  if (quantity4 <= 0) return state;
-  const bankQty = stackQty(state.bank.stacks, itemId);
-  if (bankQty < quantity4) throw new Error("Not enough items in Bank");
-  const removed = consume2(state.bank.stacks, itemId, quantity4);
-  const added = addBounded(state.inventory.stacks, entitlementStorageCapacity(state, "inventory"), [{ itemId, quantity: quantity4 }]);
+function withdrawFromBank(state, itemId, quantity2) {
+  if (quantity2 <= 0) return state;
+  const bankQty = stackQty2(state.bank.stacks, itemId);
+  if (bankQty < quantity2) throw new Error("Not enough items in Bank");
+  const removed = consume2(state.bank.stacks, itemId, quantity2);
+  const added = addBounded(state.inventory.stacks, entitlementStorageCapacity(state, "inventory"), [{ itemId, quantity: quantity2 }]);
   if (added.overflow.length) throw new Error("Inventory is full");
   return { ...state, bank: { ...state.bank, stacks: removed }, inventory: { ...state.inventory, stacks: added.stacks } };
 }
@@ -51445,13 +51960,13 @@ function depositAllMaterials(state) {
   return next;
 }
 function combinedQty(state, itemId) {
-  return stackQty(state.inventory.stacks, itemId) + stackQty(state.bank.stacks, itemId);
+  return stackQty2(state.inventory.stacks, itemId) + stackQty2(state.bank.stacks, itemId);
 }
-function consumeInventoryThenBank(state, itemId, quantity4) {
-  if (combinedQty(state, itemId) < quantity4) throw new Error("Not enough items");
-  const fromInv = Math.min(stackQty(state.inventory.stacks, itemId), quantity4);
+function consumeInventoryThenBank(state, itemId, quantity2) {
+  if (combinedQty(state, itemId) < quantity2) throw new Error("Not enough items");
+  const fromInv = Math.min(stackQty2(state.inventory.stacks, itemId), quantity2);
   const inv = fromInv ? consume2(state.inventory.stacks, itemId, fromInv) : state.inventory.stacks;
-  const left = quantity4 - fromInv;
+  const left = quantity2 - fromInv;
   const bank = left ? consume2(state.bank.stacks, itemId, left) : state.bank.stacks;
   return { inventory: inv, bank };
 }
@@ -51597,7 +52112,7 @@ function fallenKnightPlayerSnapshot(state) {
   if (!character) throw new Error("No character");
   const stats4 = effectiveStats(state), multipliers = characterPermanentMultipliers(state), companion = companionCombatContribution(state), style = classCombatStyle(character.classId);
   const effectGems = equippedEffectGemBonuses(state), baseCritChance = CLASSES.find((def) => def.id === character.classId)?.role === "Damage" ? 0.1 : 0.05, setCombat = equipmentSetCombatModifiers(state, baseCritChance, 0.84);
-  const foodId = character.equippedFoodId, food = foodId ? itemDef(foodId) : void 0, foodQuantity = stackQty(state.inventory.stacks, foodId);
+  const foodId = character.equippedFoodId, food = foodId ? itemDef(foodId) : void 0, foodQuantity = stackQty2(state.inventory.stacks, foodId);
   const prep = character.preparation ? preparationEffects(character.preparation) : void 0;
   return {
     name: character.name,
@@ -51627,8 +52142,8 @@ function fallenKnightDropRoll(state, seed, includeStorySigil) {
   boss2.drops.forEach((drop, index) => {
     if (!includeStorySigil && drop.itemId === "FALLEN_KNIGHT_SIGIL") return;
     if (random01(seed, index * 2) >= Math.min(1, Math.max(0, drop.chance))) return;
-    const quantity4 = drop.min + Math.floor(random01(seed, index * 2 + 1) * (drop.max - drop.min + 1));
-    if (quantity4 > 0) items.push({ itemId: drop.itemId, quantity: quantity4 });
+    const quantity2 = drop.min + Math.floor(random01(seed, index * 2 + 1) * (drop.max - drop.min + 1));
+    if (quantity2 > 0) items.push({ itemId: drop.itemId, quantity: quantity2 });
   });
   return stackItems([], items);
 }
@@ -51703,7 +52218,7 @@ function challengeFallenKnight(state, nowMs = Date.now()) {
   return { state: next, won: true, battle, message: `Fallen Knight defeated in ${Math.max(1, Math.round(battle.durationMs / 1e3))}s. +900 Gold, +3,000 XP, +40 Companion Essence, +1 Bondstone. Boss drops: ${storyDropText}.` };
 }
 
-// apps/mobile/src/core/playability.ts
+// ../apps/mobile/src/core/playability.ts
 function transitionActivity(state, nowMs, next) {
   const claimed = claimActivity(state, nowMs);
   const stopped = stopActivity(claimed.state, nowMs);
@@ -51711,14 +52226,319 @@ function transitionActivity(state, nowMs, next) {
   return { state: updated, reward: claimed.reward };
 }
 
-// apps/mobile/src/i18n/languages.ts
+// ../apps/mobile/src/i18n/languages.ts
 var SUPPORTED_LANGUAGES = ["en", "de", "es", "nl", "it", "fr"];
 
-// apps/mobile/src/core/game-commands.ts
+// ../apps/mobile/src/core/game-commands.ts
 init_faith2();
 
-// apps/mobile/src/core/equipment-crafting-queue.ts
+// ../apps/mobile/src/core/equipment-crafting-queue.ts
 init_progression();
+
+// ../apps/mobile/src/core/crafted-gear-ownership.ts
+var empty = () => ({ linked: [], unlocatedInstanceIds: [], unmarkedPhysicalCopies: 0, problems: [], consistent: false });
+function auditCraftedGearOwnership(state) {
+  const audit = empty();
+  const definitions2 = craftedGearInstances(state), byId = /* @__PURE__ */ new Map();
+  for (const record of definitions2) {
+    if (byId.has(record.id)) audit.problems.push(`Duplicate crafted record: ${record.id}`);
+    else byId.set(record.id, record);
+  }
+  const observed = /* @__PURE__ */ new Map();
+  const trackedItemIds = new Set(definitions2.map((row) => row.itemId));
+  const register = (instanceId, itemId, place, holderCharacterId, slot) => {
+    const record = byId.get(instanceId);
+    if (!record) {
+      audit.problems.push(`Unrecognized crafted instance marker: ${instanceId}`);
+      return;
+    }
+    if (record.itemId !== itemId) {
+      audit.problems.push(`Item definition mismatch for ${instanceId}`);
+      return;
+    }
+    if (observed.has(instanceId)) {
+      audit.problems.push(`Duplicate physical copy marker: ${instanceId}`);
+      return;
+    }
+    const location = { instanceId, itemId, place, holderCharacterId, slot };
+    observed.set(instanceId, location);
+    audit.linked.push(location);
+  };
+  const scanStacks = (stacks, place, holderCharacterId) => {
+    for (const stack of stacks ?? []) {
+      if (stack.instanceId === void 0) {
+        if (trackedItemIds.has(stack.itemId) && Number.isSafeInteger(stack.quantity) && stack.quantity > 0)
+          audit.unmarkedPhysicalCopies += stack.quantity;
+        continue;
+      }
+      if (typeof stack.instanceId !== "string" || !stack.instanceId.trim() || stack.quantity !== 1) {
+        audit.problems.push(`Invalid tagged equipment stack: ${String(stack.instanceId)}`);
+        continue;
+      }
+      register(stack.instanceId, stack.itemId, place, holderCharacterId);
+    }
+  };
+  const scanCharacter = (character, inventory, overflow) => {
+    if (!character) return;
+    scanStacks(inventory.stacks, "inventory", character.id);
+    scanStacks(overflow.stacks, "overflow", character.id);
+    for (const [slot, itemId] of Object.entries(character.equipment)) {
+      if (itemId && trackedItemIds.has(itemId) && !character.equipmentInstanceIds?.[slot])
+        audit.unmarkedPhysicalCopies += 1;
+    }
+    for (const [slot, instanceId] of Object.entries(character.equipmentInstanceIds ?? {})) {
+      if (typeof instanceId !== "string" || !instanceId.trim()) {
+        audit.problems.push(`Invalid equipped copy marker: ${slot}`);
+        continue;
+      }
+      const itemId = character.equipment[slot];
+      if (!itemId) {
+        audit.problems.push(`Equipped copy marker lacks equipment: ${instanceId}`);
+        continue;
+      }
+      register(instanceId, itemId, "equipped", character.id, slot);
+    }
+  };
+  scanCharacter(state.character, state.inventory, state.overflow);
+  for (const entry2 of state.otherCharacters ?? []) scanCharacter(entry2.character, entry2.inventory, entry2.overflow);
+  scanStacks(state.bank.stacks, "bank");
+  audit.unlocatedInstanceIds = [...byId.keys()].filter((id) => !observed.has(id));
+  audit.consistent = audit.problems.length === 0 && audit.unlocatedInstanceIds.length === 0 && audit.unmarkedPhysicalCopies === 0;
+  return audit;
+}
+function resolveTracked(state, instanceId) {
+  const audit = auditCraftedGearOwnership(state);
+  if (audit.problems.length) throw new Error("Equipment identity conflict; do not modify items until resolved");
+  const record = craftedGearInstances(state).find((row) => row.id === instanceId);
+  if (!record) throw new Error("Unknown equipment instance");
+  const locations = audit.linked.filter((row) => row.instanceId === instanceId);
+  if (locations.length !== 1) throw new Error("Equipment location is not verified; inspect legacy ownership first");
+  return { record, location: locations[0] };
+}
+function withoutInstance(stacks, instanceId) {
+  const index = stacks.findIndex((row) => row.instanceId === instanceId);
+  if (index < 0 || stacks[index].quantity !== 1) throw new Error("Exact equipment copy is missing from storage");
+  return [...stacks.slice(0, index), ...stacks.slice(index + 1)];
+}
+function appendInstance(stacks, instance, capacity) {
+  if (stacks.some((row) => row.instanceId === instance.id)) throw new Error("Equipment copy already exists in destination");
+  if (stacks.filter((row) => row.quantity > 0).length >= capacity) throw new Error("Destination storage is full");
+  return [...stacks, { itemId: instance.itemId, quantity: 1, instanceId: instance.id }];
+}
+function moveCraftedGearInstance(state, instanceId, to) {
+  if (!state.character) throw new Error("Create a character before moving equipment");
+  const { record, location } = resolveTracked(state, instanceId);
+  const from = location.place;
+  if (from !== "inventory" && from !== "bank") throw new Error("Only stored equipment can be transferred");
+  if (from === to) return state;
+  if (from === "inventory" && location.holderCharacterId !== state.character.id) throw new Error("Another character is carrying this equipment");
+  if (to === "bank") {
+    const bankStacks = appendInstance(state.bank.stacks, record, entitlementStorageCapacity(state, "bank"));
+    return { ...state, inventory: { ...state.inventory, stacks: withoutInstance(state.inventory.stacks, instanceId) }, bank: { ...state.bank, stacks: bankStacks } };
+  }
+  const inventoryStacks = appendInstance(state.inventory.stacks, record, entitlementStorageCapacity(state, "inventory"));
+  return { ...state, bank: { ...state.bank, stacks: withoutInstance(state.bank.stacks, instanceId) }, inventory: { ...state.inventory, stacks: inventoryStacks } };
+}
+function setCraftedGearInstanceLock(state, instanceId, locked) {
+  if (typeof locked !== "boolean") throw new Error("Invalid equipment lock state");
+  if (!state.character) throw new Error("No character");
+  const { location } = resolveTracked(state, instanceId);
+  if (location.place !== "bank" && location.holderCharacterId !== state.character.id)
+    throw new Error("Cannot change another character's equipment protection");
+  const records = craftedGearInstances(state);
+  return { ...state, account: { ...state.account, craftedGearInstances: records.map((record) => record.id === instanceId ? { ...record, locked } : record) } };
+}
+function linkLegacyCraftedGearInstance(state, instanceId, from, stackIndex) {
+  if (!state.character) throw new Error("No active character");
+  if (!Number.isSafeInteger(stackIndex) || stackIndex < 0) throw new Error("Invalid physical equipment selection");
+  const audit = auditCraftedGearOwnership(state);
+  if (audit.problems.length) throw new Error("Existing equipment identity conflicts must be resolved before reconciliation");
+  const record = craftedGearInstances(state).find((row) => row.id === instanceId);
+  if (!record) throw new Error("Unknown Forge quality record");
+  if (!audit.unlocatedInstanceIds.includes(instanceId)) throw new Error("Forge quality record already linked to an equipment copy");
+  const physical = [state.inventory.stacks, state.bank.stacks, state.overflow.stacks, ...(state.otherCharacters ?? []).flatMap((row) => [row.inventory.stacks, row.overflow.stacks])].reduce((sum, stacks2) => sum + stacks2.reduce((n, row) => n + (row.itemId === record.itemId ? row.quantity : 0), 0), 0) + [state.character, ...(state.otherCharacters ?? []).map((row) => row.character)].reduce((n, character) => n + Object.values(character?.equipment ?? {}).filter((id) => id === record.itemId).length, 0);
+  const recorded = craftedGearInstances(state).filter((row) => row.itemId === record.itemId).length;
+  if (physical !== recorded) throw new Error("Legacy equipment count mismatch; inspect unmatched gear before associating Forge quality");
+  const container = state[from], source = container.stacks[stackIndex];
+  if (!source || source.itemId !== record.itemId || source.instanceId !== void 0 || !Number.isSafeInteger(source.quantity) || source.quantity < 1)
+    throw new Error("Select an unlinked physical copy of exactly the same equipment item");
+  const replacement = source.quantity === 1 ? [{ itemId: source.itemId, quantity: 1, instanceId: record.id }] : [{ itemId: source.itemId, quantity: source.quantity - 1 }, { itemId: source.itemId, quantity: 1, instanceId: record.id }];
+  if (source.quantity > 1 && container.stacks.length >= entitlementStorageCapacity(state, from))
+    throw new Error("Free one storage slot before separating a legacy equipment stack");
+  const stacks = [...container.stacks.slice(0, stackIndex), ...replacement, ...container.stacks.slice(stackIndex + 1)];
+  const next = { ...state, [from]: { ...container, stacks } };
+  if (auditCraftedGearOwnership(next).problems.length) throw new Error("Legacy equipment reconciliation would create duplicate copy identity");
+  return next;
+}
+function equipCraftedGearInstance(state, instanceId) {
+  if (!state.character) throw new Error("No active character");
+  if (state.activity?.kind === "combat") throw new Error("Stop combat before equipping");
+  const { record, location } = resolveTracked(state, instanceId);
+  if (location.place !== "inventory" || location.holderCharacterId !== state.character.id)
+    throw new Error("Move this exact equipment copy into your Inventory first");
+  const def = itemDef(record.itemId);
+  if (def.type !== "gear" || !def.slot) throw new Error("Not equipment");
+  if (def.classRestriction && def.classRestriction !== state.character.classId) throw new Error("This equipment belongs to another class");
+  if (state.character.level < (def.requiredLevel ?? 1)) throw new Error(`Requires level ${def.requiredLevel}`);
+  const oldId = state.character.equipment[def.slot], oldInstanceId = state.character.equipmentInstanceIds?.[def.slot];
+  const nextStacks = withoutInstance(state.inventory.stacks, instanceId);
+  const returned = oldId ? oldInstanceId ? [{ itemId: oldId, quantity: 1, instanceId: oldInstanceId }] : [{ itemId: oldId, quantity: 1 }] : [];
+  if (returned.length && nextStacks.filter((row) => row.quantity > 0).length >= entitlementStorageCapacity(state, "inventory"))
+    throw new Error("Inventory is full; make room before swapping equipment");
+  const equipment = { ...state.character.equipment, [def.slot]: record.itemId };
+  const equipmentInstanceIds = { ...state.character.equipmentInstanceIds ?? {}, [def.slot]: record.id };
+  return {
+    ...state,
+    inventory: { ...state.inventory, stacks: [...nextStacks, ...returned] },
+    character: { ...state.character, equipment, equipmentInstanceIds }
+  };
+}
+function unequipCraftedGearInstance(state, instanceId) {
+  if (!state.character) throw new Error("No active character");
+  if (state.activity?.kind === "combat") throw new Error("Stop combat before unequipping");
+  const { record, location } = resolveTracked(state, instanceId);
+  if (location.place !== "equipped" || location.holderCharacterId !== state.character.id || !location.slot)
+    throw new Error("This exact equipment copy is not equipped on the active character");
+  const stacks = appendInstance(state.inventory.stacks, record, entitlementStorageCapacity(state, "inventory"));
+  const equipment = { ...state.character.equipment }, equipmentInstanceIds = { ...state.character.equipmentInstanceIds ?? {} };
+  delete equipment[location.slot];
+  delete equipmentInstanceIds[location.slot];
+  return { ...state, inventory: { ...state.inventory, stacks }, character: { ...state.character, equipment, equipmentInstanceIds } };
+}
+function protectedGear(state, record) {
+  const enhancement = record.enhancement;
+  if (record.locked === true) throw new Error("This equipment copy is locked");
+  if (state.settings.favoriteItemIds?.includes(record.itemId)) throw new Error("Favorite equipment cannot be sold or salvaged");
+  if (enhancement.rank > 0 || enhancement.statGemId || enhancement.effectGemId || enhancement.gemIds.length > 0)
+    throw new Error("Enhanced or socketed equipment cannot be sold or salvaged");
+  const characters = [state.character, ...(state.otherCharacters ?? []).map((entry2) => entry2.character)].filter(Boolean);
+  if (characters.some((character) => character?.savedLoadouts?.some((preset) => Object.values(preset.equipmentInstanceIds ?? {}).includes(record.id) || Object.entries(preset.equipment).some(([slot, id]) => id === record.itemId && !preset.equipmentInstanceIds?.[slot]))))
+    throw new Error("A saved loadout protects this equipment copy");
+  if (characters.some((character) => {
+    const old = character?.gearEnhancements?.[record.itemId];
+    return !!old && (old.rank > 0 || !!old.statGemId || !!old.effectGemId || (old.gemIds?.length ?? 0) > 0);
+  }))
+    throw new Error("Legacy equipment enhancements require manual review before disposal");
+}
+function disposeCraftedGearInstance(state, instanceId, method) {
+  if (!state.character) throw new Error("No active character");
+  const { record, location } = resolveTracked(state, instanceId);
+  if (location.place !== "inventory" && location.place !== "bank") throw new Error("Unequip the exact equipment copy before disposal");
+  if (location.place === "inventory" && location.holderCharacterId !== state.character.id)
+    throw new Error("Cannot dispose equipment carried by another character");
+  protectedGear(state, record);
+  const def = itemDef(record.itemId);
+  if (def.type !== "gear" || def.knowledgeUnlockId) throw new Error("This equipment cannot be disposed");
+  if (method === "salvage" && !def.salvage) throw new Error("This equipment cannot be salvaged");
+  if (method === "sell" && (!Number.isSafeInteger(def.value) || def.value < 0)) throw new Error("Invalid equipment vendor value");
+  const source = location.place === "bank" ? state.bank.stacks : state.inventory.stacks;
+  const removed = withoutInstance(source, record.id);
+  let next = {
+    ...state,
+    account: { ...state.account, craftedGearInstances: craftedGearInstances(state).filter((row) => row.id !== record.id) },
+    [location.place]: { ...state[location.place], stacks: removed }
+  };
+  if (method === "sell") {
+    if (location.place === "bank") {
+      const gold = (next.bank.gold ?? 0) + def.value;
+      if (!Number.isSafeInteger(gold)) throw new Error("Bank Gold overflow");
+      next = { ...next, bank: { ...next.bank, gold } };
+    } else {
+      const gold = next.character.gold + def.value;
+      if (!Number.isSafeInteger(gold)) throw new Error("Character Gold overflow");
+      next = { ...next, character: { ...next.character, gold } };
+    }
+  } else {
+    if (!next.character) throw new Error("No active character");
+    const reward2 = def.salvage;
+    const stack = next.inventory.stacks.find((row) => row.itemId === reward2.itemId && row.instanceId === void 0);
+    if (!stack && next.inventory.stacks.filter((row) => row.quantity > 0).length >= entitlementStorageCapacity(next, "inventory"))
+      throw new Error("Inventory is full; make space for salvage");
+    next = { ...next, inventory: { ...next.inventory, stacks: stack ? next.inventory.stacks.map((row) => row === stack ? { ...row, quantity: row.quantity + reward2.quantity } : row) : [...next.inventory.stacks, { ...reward2 }] } };
+  }
+  return next;
+}
+
+// ../apps/mobile/src/core/crafted-gear-retention.ts
+function craftedGearRetentionPower(instance) {
+  if (!isValidCraftedGearQuality(instance.quality)) throw new Error("Unrolled crafted quality");
+  return rarityMeta(instance.rarity).statMultiplier * craftedGearQualityMultiplier(instance.quality);
+}
+function compareCraftedGearRetentionPower(a, b) {
+  const delta = craftedGearRetentionPower(a) - craftedGearRetentionPower(b);
+  return Math.abs(delta) < 1e-9 ? 0 : delta < 0 ? -1 : 1;
+}
+function craftedGearCanAutoSell(entry2) {
+  const gear = entry2.instance, enhancement = gear.enhancement;
+  return (entry2.location === "inventory" || entry2.location === "bank") && (entry2.location === "bank" || typeof entry2.holderCharacterId === "string" && entry2.holderCharacterId.length > 0) && entry2.ownershipVerified === true && entry2.protectionsVerified === true && entry2.locked === false && gear.locked !== true && entry2.favorite === false && entry2.savedLoadout === false && !!enhancement && enhancement.rank === 0 && !enhancement.statGemId && !enhancement.effectGemId && Array.isArray(enhancement.gemIds) && enhancement.gemIds.length === 0;
+}
+function planCraftedGearRetention(existing, incoming, mode) {
+  if (existing.length > TARGET_CRAFTED_GEAR_COPIES_PER_ITEM) return { action: "manual_review", reason: "over_limit" };
+  if (existing.some((row) => row.instance.itemId !== incoming.itemId) || (/* @__PURE__ */ new Set([...existing.map((row) => row.instance.id), incoming.id])).size !== existing.length + 1)
+    return { action: "manual_review", reason: "inconsistent_instances" };
+  if (existing.length < TARGET_CRAFTED_GEAR_COPIES_PER_ITEM) return { action: "keep", reason: "under_limit" };
+  if (mode === "off") return { action: "manual_review", reason: "disabled" };
+  const validQuality = isValidCraftedGearQuality;
+  if (existing.some((row) => !validQuality(row.instance.quality)) || !validQuality(incoming.quality))
+    return { action: "manual_review", reason: "legacy_unknown_quality" };
+  const enhancement = incoming.enhancement;
+  if (enhancement.rank !== 0 || enhancement.statGemId || enhancement.effectGemId || enhancement.gemIds.length > 0)
+    return { action: "manual_review", reason: "incoming_protected" };
+  const weakestOverall = existing.slice().sort((a, b) => compareCraftedGearRetentionPower(a.instance, b.instance) || a.instance.id.localeCompare(b.instance.id))[0];
+  if (compareCraftedGearRetentionPower(incoming, weakestOverall.instance) <= 0)
+    return { action: "sell_incoming", reason: "incoming_is_weakest", instanceId: incoming.id };
+  const eligible = existing.filter(craftedGearCanAutoSell).sort((a, b) => compareCraftedGearRetentionPower(a.instance, b.instance) || a.instance.id.localeCompare(b.instance.id));
+  if (!eligible.length) return { action: "manual_review", reason: "no_eligible_copy" };
+  const weakestEligible = eligible[0];
+  if (compareCraftedGearRetentionPower(incoming, weakestEligible.instance) <= 0)
+    return { action: "manual_review", reason: "no_eligible_copy" };
+  return { action: "sell_existing", reason: "replace_weaker_unprotected", instanceId: weakestEligible.instance.id };
+}
+
+// ../apps/mobile/src/core/crafted-gear-settlement.ts
+function proposeCraftedGearSettlement(args) {
+  const { existing, incoming, incomingStorage, mode, committedReceiptKeys } = args;
+  if (incomingStorage === "inventory" && (!args.incomingHolderCharacterId || !args.incomingHolderCharacterId.trim()))
+    throw new Error("Missing verified incoming inventory owner");
+  if (!incoming.id || !incoming.sourceReceiptKey || !incoming.ownerCharacterId)
+    throw new Error("Invalid Forge instance receipt");
+  if (committedReceiptKeys.includes(incoming.sourceReceiptKey) || existing.some((entry2) => entry2.instance.sourceReceiptKey === incoming.sourceReceiptKey))
+    throw new Error("Forge receipt already settled");
+  if (existing.some((entry2) => !entry2.instance.id || !entry2.instance.sourceReceiptKey) || new Set(existing.map((entry2) => entry2.instance.sourceReceiptKey)).size !== existing.length)
+    throw new Error("Duplicate or malformed owned Forge receipts");
+  if (existing.some((entry2) => entry2.instance.itemId !== incoming.itemId))
+    throw new Error("Cannot compare equipment from different item definitions");
+  if (!["inventory", "bank"].includes(incomingStorage))
+    throw new Error("Unknown incoming item delivery location");
+  const owned = existing.map((entry2) => entry2.instance);
+  const retention = planCraftedGearRetention(existing, incoming, mode);
+  if (retention.action === "manual_review") return { status: "blocked", instances: owned, retention };
+  if (retention.action === "keep")
+    return { status: "ready", instances: [...owned, incoming], retention, receipt: { receiptKey: incoming.sourceReceiptKey, incomingInstanceId: incoming.id, action: "keep" } };
+  const sold = retention.action === "sell_incoming" ? incoming : existing.find((entry2) => entry2.instance.id === retention.instanceId)?.instance;
+  if (!sold) throw new Error("Selected auto-sale copy is missing");
+  if (retention.action === "sell_existing") {
+    const candidate = existing.find((entry2) => entry2.instance.id === sold.id);
+    if (!candidate || !craftedGearCanAutoSell(candidate)) throw new Error("Selected auto-sale copy is not verified or protected");
+  }
+  const def = itemDef(sold.itemId);
+  if (def.type !== "gear" || !Number.isSafeInteger(def.value) || def.value < 0) throw new Error("Invalid vendor value");
+  const location = retention.action === "sell_incoming" ? incomingStorage : existing.find((entry2) => entry2.instance.id === sold.id).location;
+  const currentHolder = retention.action === "sell_incoming" ? args.incomingHolderCharacterId : existing.find((entry2) => entry2.instance.id === sold.id)?.holderCharacterId;
+  if (location === "inventory" && !currentHolder) throw new Error("Missing verified sale recipient");
+  const credit = location === "bank" ? { amount: def.value, destination: "bank" } : { amount: def.value, destination: "character", characterId: currentHolder };
+  const instances = retention.action === "sell_incoming" ? owned : [...owned.filter((row) => row.id !== sold.id), incoming];
+  if (instances.length > TARGET_CRAFTED_GEAR_COPIES_PER_ITEM) throw new Error("Retention proposal exceeds crafted equipment limit");
+  return { status: "ready", instances, retention, receipt: {
+    receiptKey: incoming.sourceReceiptKey,
+    incomingInstanceId: incoming.id,
+    action: retention.action,
+    soldInstanceId: sold.id,
+    credit
+  } };
+}
+
+// ../apps/mobile/src/core/equipment-crafting-queue.ts
 var BASE_EQUIPMENT_CRAFT_SLOTS = 3;
 var MAX_EQUIPMENT_CRAFT_SLOTS = 7;
 var MAX_WAITING_EQUIPMENT_CRAFTS = 5;
@@ -51760,16 +52580,13 @@ function timedEquipmentRecipe(recipeId) {
   const recipe2 = recipeDef(recipeId);
   return recipe2 && isTimedEquipmentRecipe(recipe2) ? recipe2 : void 0;
 }
-function quantity2(stacks, itemId) {
-  return stacks.filter((row) => row.itemId === itemId).reduce((sum, row) => sum + row.quantity, 0);
-}
 function combinedQuantity2(state, itemId) {
-  return quantity2(state.inventory.stacks, itemId) + quantity2(state.bank.stacks, itemId);
+  return gemStorageQuantity(state, itemId);
 }
 function consume3(stacks, itemId, amount) {
   let left = amount;
   const next = stacks.map((row) => {
-    if (row.itemId !== itemId || left <= 0) return row;
+    if (row.itemId !== itemId || left <= 0 || row.instanceId !== void 0) return row;
     const used = Math.min(left, row.quantity);
     left -= used;
     return { ...row, quantity: row.quantity - used };
@@ -51777,6 +52594,7 @@ function consume3(stacks, itemId, amount) {
   return { stacks: next, used: amount - left };
 }
 function consumeAcross2(state, itemId, amount) {
+  if (isGemPouchItemId(itemId)) return consumeGemFromStorage(state, itemId, amount);
   if (combinedQuantity2(state, itemId) < amount) throw new Error(`Need ${amount} ${itemDef(itemId).name}`);
   const inv = consume3(state.inventory.stacks, itemId, amount);
   const bank = consume3(state.bank.stacks, itemId, amount - inv.used);
@@ -51940,6 +52758,7 @@ function addOutput(stacks, capacity, itemId, quantityToAdd) {
   return { stacks: next, remaining };
 }
 function grantCraftOutput(state, recipe2, ownerCharacterId) {
+  if (isGemPouchItemId(recipe2.output.itemId)) return storePouchGem(state, recipe2.output.itemId, recipe2.output.quantity);
   if (state.character?.id !== ownerCharacterId) {
     const bank2 = addOutput(state.bank.stacks, state.bank.capacity, recipe2.output.itemId, recipe2.output.quantity);
     if (bank2.remaining > 0) throw new Error("Bank is full; free Bank space before claiming this character's equipment");
@@ -51949,6 +52768,59 @@ function grantCraftOutput(state, recipe2, ownerCharacterId) {
   const bank = addOutput(state.bank.stacks, state.bank.capacity, recipe2.output.itemId, inv.remaining);
   if (bank.remaining > 0) throw new Error("Inventory and Bank are full");
   return { ...state, inventory: { ...state.inventory, stacks: inv.stacks }, bank: { ...state.bank, stacks: bank.stacks } };
+}
+function forgeOwnedCopyLocations(state, itemId) {
+  const audit = auditCraftedGearOwnership(state);
+  const records = craftedGearInstances(state).filter((row) => row.itemId === itemId);
+  const physical = craftGearPhysicalCopies(state, itemId);
+  if (audit.problems.length || audit.unmarkedPhysicalCopies > 0 || records.length !== physical) return null;
+  const characters = [state.character, ...(state.otherCharacters ?? []).map((entry2) => entry2.character)].filter(Boolean);
+  const rows2 = records.map((instance) => {
+    const loc = audit.linked.find((row) => row.instanceId === instance.id);
+    if (!loc) return null;
+    const savedLoadout = characters.some((c) => c?.savedLoadouts?.some((p) => Object.values(p.equipmentInstanceIds ?? {}).includes(instance.id) || Object.entries(p.equipment).some(([slot, id]) => id === itemId && !p.equipmentInstanceIds?.[slot])));
+    const legacyEnhanced = characters.some((c) => {
+      const value = c?.gearEnhancements?.[itemId];
+      return !!value && (value.rank > 0 || !!value.statGemId || !!value.effectGemId || (value.gemIds?.length ?? 0) > 0);
+    });
+    const accessible = loc.place === "bank" || loc.place === "inventory" && loc.holderCharacterId === state.character?.id;
+    return {
+      instance,
+      location: loc.place === "overflow" ? "unknown" : loc.place,
+      holderCharacterId: loc.holderCharacterId,
+      ownershipVerified: true,
+      protectionsVerified: accessible && !legacyEnhanced,
+      locked: instance.locked === true,
+      favorite: state.settings.favoriteItemIds?.includes(itemId) === true,
+      savedLoadout
+    };
+  });
+  return rows2.every(Boolean) ? rows2 : null;
+}
+function craftGearPhysicalCopies(state, itemId) {
+  const count = (rows2) => rows2.reduce((n, row) => n + (row.itemId === itemId ? row.quantity : 0), 0);
+  const equipped = (equipment) => Object.values(equipment).filter((id) => id === itemId).length;
+  return count(state.inventory.stacks) + count(state.bank.stacks) + count(state.overflow.stacks) + equipped(state.character?.equipment ?? {}) + (state.otherCharacters ?? []).reduce((n, row) => n + count(row.inventory.stacks) + count(row.overflow.stacks) + equipped(row.character.equipment), 0);
+}
+function deliverExactForgeCopy(state, itemId, instanceId, ownerId) {
+  const stack = { itemId, quantity: 1, instanceId };
+  const invAllowed = state.character?.id === ownerId && state.inventory.stacks.length < state.inventory.capacity;
+  if (invAllowed) return { ...state, inventory: { ...state.inventory, stacks: [...state.inventory.stacks, stack] } };
+  if (state.bank.stacks.length < state.bank.capacity)
+    return { ...state, bank: { ...state.bank, stacks: [...state.bank.stacks, stack] } };
+  throw new Error(state.character?.id === ownerId ? "Inventory and Bank are full" : "Bank is full; free Bank space before claiming this character's equipment");
+}
+function applyForgeSaleCredit(state, amount, destination, holder) {
+  if (!Number.isSafeInteger(amount) || amount < 0) throw new Error("Invalid Forge sale proceeds");
+  if (destination === "bank") {
+    const gold2 = (state.bank.gold ?? 0) + amount;
+    if (!Number.isSafeInteger(gold2)) throw new Error("Bank Gold exceeds supported limit");
+    return { ...state, bank: { ...state.bank, gold: gold2 } };
+  }
+  if (!state.character || state.character.id !== holder) throw new Error("Sale owner must be the active character");
+  const gold = state.character.gold + amount;
+  if (!Number.isSafeInteger(gold)) throw new Error("Carried Gold exceeds supported limit");
+  return { ...state, character: { ...state.character, gold } };
 }
 function awardOwnerSkillXp(state, ownerCharacterId, recipe2, job) {
   const ownerSkills = state.character?.id === ownerCharacterId ? state.skills : state.otherCharacters?.find((entry2) => entry2.character.id === ownerCharacterId)?.skills;
@@ -51973,15 +52845,53 @@ function claimForgeJob(state, jobId, nowMs, rarityRoll = Math.random()) {
   if (job.completesAtMs > nowMs) throw new Error(job.startedAtMs > nowMs ? "This forge job is still waiting for a slot" : "This forge job is still in progress");
   const equipmentRecipe = timedEquipmentRecipe(job.recipeId), gemCombineRecipe = gemCombineRecipeV1(job.recipeId), gemRefineRecipe = gemRefineRecipeV1(job.recipeId), gemRecipe = gemCombineRecipe ?? gemRefineRecipe, recipe2 = equipmentRecipe ?? gemRecipe;
   if (!recipe2) throw new Error("Crafting recipe is no longer available");
-  let next = grantCraftOutput(projected, recipe2, job.ownerCharacterId);
+  let next = projected;
   if (equipmentRecipe) {
+    const itemId = equipmentRecipe.output.itemId, args = { itemId, ownerCharacterId: job.ownerCharacterId, jobId: job.id, createdAtMs: nowMs, roll: rarityRoll };
+    const draft = draftCraftedGearInstance(args), capacity = craftedGearCopyCapacity(next, itemId), mode = next.account.craftedGearAutoSellMode ?? "off";
+    let saleGold = 0, autoSold;
+    if (capacity.count >= capacity.limit) {
+      if (mode !== "keep_best_seven") throw new Error("Equipment copy limit reached (7/7); enable Keep Best 7 or manage copies");
+      const entries = forgeOwnedCopyLocations(next, itemId);
+      if (!entries) throw new Error("Equipment copy ownership requires manual review before auto-selling");
+      const proposed = proposeCraftedGearSettlement({
+        existing: entries,
+        incoming: draft,
+        incomingStorage: next.character?.id === job.ownerCharacterId ? "inventory" : "bank",
+        incomingHolderCharacterId: next.character?.id === job.ownerCharacterId ? job.ownerCharacterId : void 0,
+        mode,
+        committedReceiptKeys: []
+      });
+      if (proposed.status === "blocked") throw new Error("Equipment requires manual review: " + proposed.retention.reason);
+      if (proposed.receipt.action === "sell_incoming") {
+        const credit = proposed.receipt.credit;
+        next = applyForgeSaleCredit(next, credit.amount, credit.destination, credit.characterId);
+        saleGold = credit.amount;
+        autoSold = "incoming";
+      } else if (proposed.receipt.action === "sell_existing") {
+        const victim = proposed.receipt.soldInstanceId;
+        next = disposeCraftedGearInstance(next, victim, "sell");
+        saleGold = proposed.receipt.credit?.amount ?? 0;
+        autoSold = "existing";
+      }
+    }
+    if (autoSold !== "incoming") {
+      next = deliverExactForgeCopy(next, itemId, draft.id, job.ownerCharacterId);
+      next = createCraftedGearInstance(next, args).state;
+    }
     next = awardOwnerSkillXp(next, job.ownerCharacterId, equipmentRecipe, job);
-    const created = createCraftedGearInstance(next, { itemId: equipmentRecipe.output.itemId, ownerCharacterId: job.ownerCharacterId, jobId: job.id, createdAtMs: nowMs, roll: rarityRoll });
-    next = created.state;
     next = { ...next, account: { ...next.account, equipmentCraftingQueue: queue.filter((row) => row.id !== jobId) } };
     next = applyTrustedLongTermProgression(next, [{ kind: "crafting", contentId: equipmentRecipe.id, units: 1, startedAtMs: job.startedAtMs }], void 0, nowMs, { accountId: next.account.longTermAccountScopeId ?? `local-account:${next.createdAtMs}`, eventId: `forge:${job.id}:${nowMs}` }).state;
-    return { state: next, recipe: equipmentRecipe, job, kind: "equipment", instance: created.instance, result: craftedInstanceResult(next, created.instance) };
+    return {
+      state: next,
+      recipe: equipmentRecipe,
+      job,
+      kind: "equipment",
+      instance: draft,
+      result: { ...craftedInstanceResult(next, draft), autoSold, saleGold }
+    };
   }
+  next = grantCraftOutput(next, recipe2, job.ownerCharacterId);
   next = awardOwnerSkillXp(next, job.ownerCharacterId, gemRecipe, job);
   next = { ...next, account: { ...next.account, equipmentCraftingQueue: queue.filter((row) => row.id !== jobId) } };
   next = applyTrustedLongTermProgression(next, [{ kind: "crafting", contentId: gemRecipe.id, units: 1, startedAtMs: job.startedAtMs }], void 0, nowMs, { accountId: next.account.longTermAccountScopeId ?? `local-account:${next.createdAtMs}`, eventId: `forge:${job.id}:${nowMs}` }).state;
@@ -51999,7 +52909,7 @@ function claimAllReadyEquipmentCrafts(state, nowMs, trustedRoll = Math.random())
       else gemClaims++;
     } catch (error) {
       const reason = error instanceof Error ? error.message : "";
-      if (reason === "Inventory and Bank are full" || reason.startsWith("Bank is full") || reason === "Crafting recipe is no longer available") {
+      if (reason === "Gem Pouch, Inventory and Bank are full" || reason === "Inventory and Bank are full" || reason.startsWith("Bank is full") || reason === "Crafting recipe is no longer available" || reason.startsWith("Crafted equipment storage is full") || reason.startsWith("Equipment copy limit reached") || reason.startsWith("Equipment copy ownership requires manual review") || reason.startsWith("Equipment requires manual review")) {
         blocked.push({ jobId: job.id, reason });
         continue;
       }
@@ -52067,7 +52977,7 @@ function moveWaitingEquipmentCraft(state, jobId, direction, nowMs) {
   return { ...projected, account: { ...projected.account, equipmentCraftingQueue: scheduled } };
 }
 
-// apps/mobile/src/core/account-actions.ts
+// ../apps/mobile/src/core/account-actions.ts
 function snapshot(state) {
   return { character: structuredClone(state.character), inventory: structuredClone(state.inventory), overflow: structuredClone(state.overflow), activity: structuredClone(state.activity), skills: structuredClone(state.skills), quests: structuredClone(state.quests), currentRegionId: state.currentRegionId };
 }
@@ -52198,14 +53108,14 @@ function deleteAccountCharacter(state, id, confirmation, now) {
   return { ...state, character: null, inventory: fresh.inventory, overflow: recovery.overflow, activity: null, skills: fresh.skills, quests: fresh.quests, currentRegionId: fresh.currentRegionId, bank: recovery.bank, otherCharacters: [], account };
 }
 
-// apps/mobile/src/content/equipment-release.ts
+// ../apps/mobile/src/content/equipment-release.ts
 var MAX_RELEASED_EQUIPMENT_TIER = 4;
 function isReleasedEquipmentItemId(itemId) {
   const match = /^T(\d+)[PX]_\d{3}$/.exec(itemId);
   return !match || Number(match[1]) <= MAX_RELEASED_EQUIPMENT_TIER;
 }
 
-// apps/mobile/src/core/loadout-storage.ts
+// ../apps/mobile/src/core/loadout-storage.ts
 var qty2 = (stacks, id) => stacks.find((entry2) => entry2.itemId === id)?.quantity ?? 0;
 var take3 = (stacks, id) => {
   if (qty2(stacks, id) < 1) throw new Error(`MISSING:${id}`);
@@ -52244,7 +53154,7 @@ function planLoadoutStorage(input) {
   return { inventory, bank };
 }
 
-// apps/mobile/src/core/character-loadouts.ts
+// ../apps/mobile/src/core/character-loadouts.ts
 var CHARACTER_LOADOUT_SLOT_COUNT = 1;
 var MAX_CHARACTER_LOADOUT_SLOTS = 5;
 function characterLoadoutSlotCount(state) {
@@ -52267,7 +53177,12 @@ function normalizeCharacterLoadouts(value, classId, slotCount = CHARACTER_LOADOU
     }
     const foodId = typeof raw2.foodId === "string" && ITEMS.some((item) => item.id === raw2.foodId && item.type === "food") ? raw2.foodId : void 0;
     const companionId = typeof raw2.companionId === "string" && COMBAT_COMPANIONS.some((def) => def.id === raw2.companionId) ? raw2.companionId : void 0;
-    bySlot.set(slotIndex, { id: typeof raw2.id === "string" && raw2.id ? raw2.id : `loadout-${slotIndex + 1}`, slotIndex, name: cleanName(raw2.name, `Loadout ${slotIndex + 1}`), classId, equipment, foodId, companionId, createdAtMs: Number.isFinite(raw2.createdAtMs) ? raw2.createdAtMs : 0, updatedAtMs: Number.isFinite(raw2.updatedAtMs) ? raw2.updatedAtMs : 0 });
+    const equipmentInstanceIds = {};
+    for (const slot of slots) {
+      const instanceId = raw2.equipmentInstanceIds?.[slot];
+      if (equipment[slot] && typeof instanceId === "string" && instanceId.trim() && instanceId.length <= 180) equipmentInstanceIds[slot] = instanceId;
+    }
+    bySlot.set(slotIndex, { equipmentInstanceIds, id: typeof raw2.id === "string" && raw2.id ? raw2.id : `loadout-${slotIndex + 1}`, slotIndex, name: cleanName(raw2.name, `Loadout ${slotIndex + 1}`), classId, equipment, foodId, companionId, createdAtMs: Number.isFinite(raw2.createdAtMs) ? raw2.createdAtMs : 0, updatedAtMs: Number.isFinite(raw2.updatedAtMs) ? raw2.updatedAtMs : 0 });
   });
   return [...bySlot.values()].sort((a, b) => a.slotIndex - b.slotIndex);
 }
@@ -52275,22 +53190,66 @@ function saveCharacterLoadout(state, index, name, nowMs = Date.now()) {
   if (!state.character) throw new Error("Create a character first.");
   const capacity = characterLoadoutSlotCount(state);
   if (index < 0 || index >= capacity) throw new Error("Invalid loadout slot.");
-  const current = normalizeCharacterLoadouts(state.character.savedLoadouts, state.character.classId, capacity), existing = current.find((entry2) => entry2.slotIndex === index), preset = { id: existing?.id ?? `loadout-${index + 1}`, slotIndex: index, name: cleanName(name, existing?.name ?? `Loadout ${index + 1}`), classId: state.character.classId, equipment: { ...state.character.equipment }, foodId: state.character.equippedFoodId, companionId: state.character.equippedCombatCompanionId, createdAtMs: existing?.createdAtMs ?? nowMs, updatedAtMs: nowMs };
+  const current = normalizeCharacterLoadouts(state.character.savedLoadouts, state.character.classId, capacity), existing = current.find((entry2) => entry2.slotIndex === index), preset = { id: existing?.id ?? `loadout-${index + 1}`, slotIndex: index, name: cleanName(name, existing?.name ?? `Loadout ${index + 1}`), classId: state.character.classId, equipment: { ...state.character.equipment }, equipmentInstanceIds: { ...state.character.equipmentInstanceIds ?? {} }, foodId: state.character.equippedFoodId, companionId: state.character.equippedCombatCompanionId, createdAtMs: existing?.createdAtMs ?? nowMs, updatedAtMs: nowMs };
   return { ...state, character: { ...state.character, savedLoadouts: [...current.filter((entry2) => entry2.slotIndex !== index), preset].sort((a, b) => a.slotIndex - b.slotIndex) } };
 }
 function deleteCharacterLoadout(state, id) {
   return !state.character ? state : { ...state, character: { ...state.character, savedLoadouts: normalizeCharacterLoadouts(state.character.savedLoadouts, state.character.classId, characterLoadoutSlotCount(state)).filter((entry2) => entry2.id !== id) } };
+}
+function applyExactCharacterLoadout(state, preset) {
+  if (!state.character) throw new Error("No active character");
+  const audit = auditCraftedGearOwnership(state);
+  if (audit.problems.length) throw new Error("Equipment identity conflict; resolve it before applying a loadout");
+  let next = state;
+  for (const slot of slots) {
+    const wanted = preset.equipment[slot], wantedCopy = preset.equipmentInstanceIds?.[slot];
+    const current = next.character.equipment[slot], currentCopy = next.character.equipmentInstanceIds?.[slot];
+    if (wantedCopy && currentCopy === wantedCopy && current === wanted) continue;
+    if (!wantedCopy && !currentCopy && wanted === current) continue;
+    if (!wanted) {
+      if (currentCopy) next = unequipCraftedGearInstance(next, currentCopy);
+      else if (current) next = unequipItem(next, slot);
+      continue;
+    }
+    if (wantedCopy) {
+      let loc = auditCraftedGearOwnership(next).linked.find((row) => row.instanceId === wantedCopy);
+      if (!loc) throw new Error("A saved equipment copy cannot be found. Review this loadout manually.");
+      if (loc.place === "bank") {
+        next = moveCraftedGearInstance(next, wantedCopy, "inventory");
+        loc = auditCraftedGearOwnership(next).linked.find((row) => row.instanceId === wantedCopy);
+      }
+      if (loc?.place !== "inventory" || loc.holderCharacterId !== next.character?.id)
+        throw new Error("The saved equipment copy belongs to another character or cannot be equipped");
+      next = equipCraftedGearInstance(next, wantedCopy);
+    } else {
+      if (currentCopy) next = unequipCraftedGearInstance(next, currentCopy);
+      if (!next.inventory.stacks.some((row) => row.itemId === wanted && row.instanceId === void 0 && row.quantity > 0)) {
+        if (!next.bank.stacks.some((row) => row.itemId === wanted && row.instanceId === void 0 && row.quantity > 0))
+          throw new Error(`${itemDef(wanted).name} is not available as an unassigned equipment copy`);
+        next = withdrawFromBank(next, wanted, 1);
+      }
+      next = equipItem(next, wanted);
+    }
+  }
+  if (preset.foodId && !next.inventory.stacks.some((entry2) => entry2.itemId === preset.foodId && entry2.quantity > 0))
+    throw new Error(`${itemDef(preset.foodId).name} must be carried in Inventory before this loadout can use it.`);
+  next = { ...next, character: { ...next.character, equippedFoodId: preset.foodId } };
+  next = preset.companionId ? equipCombatCompanion(next, preset.companionId) : unequipCombatCompanion(next);
+  next.character.currentHp = Math.min(next.character.currentHp, effectiveStats(next).hp);
+  return next;
 }
 function applyCharacterLoadout(state, id) {
   if (!state.character) throw new Error("Create a character first.");
   if (state.activity?.kind === "combat") throw new Error("Stop combat before changing loadouts.");
   const preset = normalizeCharacterLoadouts(state.character.savedLoadouts, state.character.classId, characterLoadoutSlotCount(state)).find((entry2) => entry2.id === id);
   if (!preset) throw new Error("Loadout not found.");
+  const affected = new Set([...Object.values(state.character.equipment), ...Object.values(preset.equipment)].filter((id2) => !!id2));
+  if (Object.keys(state.character.equipmentInstanceIds ?? {}).length || Object.keys(preset.equipmentInstanceIds ?? {}).length || [...state.inventory.stacks, ...state.bank.stacks].some((row) => row.instanceId && affected.has(row.itemId))) return applyExactCharacterLoadout(state, preset);
   for (const slot of slots) {
     const wanted = preset.equipment[slot];
     if (!wanted) continue;
     const def = itemDef(wanted);
-    if (def.type !== "gear" || def.slot !== slot || def.classRestriction && def.classRestriction !== state.character.classId) throw new Error(`${def.name} is not valid for this loadout.`);
+    if (def.type !== "gear" || !isReleasedEquipmentItemId(wanted) || def.slot !== slot || def.classRestriction && def.classRestriction !== state.character.classId) throw new Error(`${def.name} is not valid for this loadout.`);
   }
   let planned;
   try {
@@ -52306,7 +53265,7 @@ function applyCharacterLoadout(state, id) {
   return next;
 }
 
-// apps/mobile/src/core/arena-squad.ts
+// ../apps/mobile/src/core/arena-squad.ts
 var ARENA_SQUAD_SIZE = 3;
 function arenaSquadIds(state) {
   const owned = new Set(accountCharacters(state).map((entry2) => entry2.character.id));
@@ -52331,7 +53290,7 @@ function setArenaSquadSlot(state, slot, characterId) {
   return { ...state, account: { ...state.account, arenaSquadCharacterIds: ids2 } };
 }
 
-// apps/mobile/src/core/progression-goals-v40.ts
+// ../apps/mobile/src/core/progression-goals-v40.ts
 var MAX_PINNED_GOALS = 3;
 function validateProgressionGoals(goals, characterId) {
   if (goals.length > MAX_PINNED_GOALS) throw new Error("too_many_pinned_goals");
@@ -52376,10 +53335,10 @@ function normalizeProgressionGoals(value, characterId) {
   return validateProgressionGoals(out, characterId);
 }
 
-// apps/mobile/src/core/inventory-bulk.ts
+// ../apps/mobile/src/core/inventory-bulk.ts
 init_faith();
 
-// apps/mobile/src/core/profession-mastery-presentation.ts
+// ../apps/mobile/src/core/profession-mastery-presentation.ts
 function professionMasteryActiveBonusText(state, actionId, options = {}) {
   const view = professionMasteryView(actionId, state.account.professionMasteryByAction?.[actionId]), parts = [], yieldRelevant = options.yieldRelevant !== false, speedRelevant = options.speedRelevant !== false;
   if (view.xpBonusBps) parts.push("+" + (view.xpBonusBps / 100).toFixed(0) + "% XP");
@@ -52388,10 +53347,10 @@ function professionMasteryActiveBonusText(state, actionId, options = {}) {
   return parts.length ? parts.join(" \xB7 ") : "No active mastery bonus yet";
 }
 
-// apps/mobile/src/core/balance-projection.ts
+// ../apps/mobile/src/core/balance-projection.ts
 init_progression();
 
-// apps/mobile/src/content/dungeon-material-sources.ts
+// ../apps/mobile/src/content/dungeon-material-sources.ts
 var DUNGEON_MATERIAL_SOURCES = [
   { itemId: "REGIONAL_CATALYST", dungeonId: "COP_004", dungeonName: "Caravan of Glass", minLevel: 30, expectedMinutes: 18, chance: 0.15 },
   { itemId: "REGIONAL_CATALYST", dungeonId: "COP_005", dungeonName: "Mirage Well", minLevel: 36, expectedMinutes: 20, chance: 0.15 },
@@ -52407,7 +53366,7 @@ function dungeonMaterialSourceById(dungeonId) {
   return DUNGEON_MATERIAL_SOURCES.find((source) => source.dungeonId === dungeonId);
 }
 
-// apps/mobile/src/core/balance-projection.ts
+// ../apps/mobile/src/core/balance-projection.ts
 var safeEta = (remainingXp, xpPerHour) => xpPerHour > 0 && remainingXp > 0 ? remainingXp / xpPerHour * 3600 : remainingXp <= 0 ? 0 : void 0;
 function formatBalanceDuration(seconds) {
   if (seconds === void 0 || !Number.isFinite(seconds)) return "\u2014";
@@ -52440,14 +53399,14 @@ function gatheringBalanceProjection(state, activity, offlineHours) {
 }
 function combatBaselineProjection(monster) {
   const cycleSeconds = Math.max(0.1, monster.secondsPerKill * COMBAT_TIME_SCALE), killsPerHour = 3600 / cycleSeconds;
-  return { cycleSeconds, killsPerHour, xpPerHour: killsPerHour * monster.xp * characterCombatXpScale(monster.level, monster.boss), goldPerHour: killsPerHour * monster.gold };
+  return { cycleSeconds, killsPerHour, xpPerHour: killsPerHour * monster.xp, goldPerHour: killsPerHour * monster.gold };
 }
 function dropExpectation(chance, min, max, killsPerHour) {
   const normalizedChance = Math.max(0, Math.min(1, chance)), oneIn = normalizedChance > 0 ? 1 / normalizedChance : Number.POSITIVE_INFINITY, meanQuantity = (Math.max(0, min) + Math.max(min, max)) / 2, findsPerHour = killsPerHour * normalizedChance;
   return { chance: normalizedChance, oneIn, expectedQuantityPerHour: findsPerHour * meanQuantity, averageFindSeconds: findsPerHour > 0 ? 3600 / findsPerHour : Number.POSITIVE_INFINITY };
 }
-function acquisitionProjectionForDestination(state, itemId, quantity4, destination) {
-  const needed = Math.max(0, quantity4);
+function acquisitionProjectionForDestination(state, itemId, quantity2, destination) {
+  const needed = Math.max(0, quantity2);
   if (!needed) return void 0;
   if (destination.kind === "skills" && destination.actionId) {
     const activity = [...GATHERING, ...HERB_NODES].find((row) => row.id === destination.actionId);
@@ -52471,7 +53430,7 @@ function acquisitionProjectionForDestination(state, itemId, quantity4, destinati
   return void 0;
 }
 
-// apps/mobile/src/core/working-toward.ts
+// ../apps/mobile/src/core/working-toward.ts
 var gatherDefs = [...GATHERING, ...HERB_NODES];
 var skillLabel = (id) => id.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
 var regionForZoneName = (name) => WORLD_ZONES.find((zone) => zone.name === name);
@@ -52555,7 +53514,7 @@ function workingTowardItemSourceEntries(state, itemId) {
     candidates.push({ type: "crafting", typeLabel: "Crafting", title: recipe2.name, destination, availability: workingTowardDestinationAvailability(state, destination), typePriority: 1, progressionLevel: recipe2.level });
   }
   for (const monster of MONSTERS.filter((row) => row.drops.some((drop) => drop.itemId === itemId))) {
-    const drop = monster.drops.find((row) => row.itemId === itemId), region = regionForZoneName(monster.zone), quantity4 = drop.min === drop.max ? `${drop.min}` : `${drop.min}\u2013${drop.max}`, destination = { kind: "combat", monsterId: monster.id, zoneName: monster.zone, regionId: region?.id, button: `Hunt ${monster.name}`, detail: `${monster.name} in ${monster.zone} \xB7 ${sourceChanceLabel(drop.chance)} drop \xB7 ${quantity4} on hit.` };
+    const drop = monster.drops.find((row) => row.itemId === itemId), region = regionForZoneName(monster.zone), quantity2 = drop.min === drop.max ? `${drop.min}` : `${drop.min}\u2013${drop.max}`, destination = { kind: "combat", monsterId: monster.id, zoneName: monster.zone, regionId: region?.id, button: `Hunt ${monster.name}`, detail: `${monster.name} in ${monster.zone} \xB7 ${sourceChanceLabel(drop.chance)} drop \xB7 ${quantity2} on hit.` };
     candidates.push({ type: "monster_drop", typeLabel: "Monster Drop", title: monster.name, destination, availability: workingTowardDestinationAvailability(state, destination), typePriority: 2, progressionLevel: monster.unlockLevel });
   }
   for (const dungeon of dungeonMaterialSourcesForItem(itemId)) {
@@ -52565,7 +53524,7 @@ function workingTowardItemSourceEntries(state, itemId) {
   return candidates.sort((a, b) => sourceStatusPriority[a.availability.status] - sourceStatusPriority[b.availability.status] || a.typePriority - b.typePriority || a.progressionLevel - b.progressionLevel || a.destination.button.localeCompare(b.destination.button)).map(({ typePriority, ...row }) => row);
 }
 
-// apps/mobile/src/core/material-acquisition-plan.ts
+// ../apps/mobile/src/core/material-acquisition-plan.ts
 function stockLedger(state) {
   const ledger = /* @__PURE__ */ new Map();
   for (const stack of [...state.inventory.stacks, ...state.bank.stacks]) {
@@ -52573,14 +53532,14 @@ function stockLedger(state) {
   }
   return ledger;
 }
-function consumeOwned(ledger, itemId, quantity4) {
-  const have = Math.max(0, ledger.get(itemId) ?? 0), used = Math.min(have, Math.max(0, quantity4));
+function consumeOwned(ledger, itemId, quantity2) {
+  const have = Math.max(0, ledger.get(itemId) ?? 0), used = Math.min(have, Math.max(0, quantity2));
   ledger.set(itemId, have - used);
   return used;
 }
-function addOwned(ledger, itemId, quantity4) {
-  if (quantity4 <= 0) return;
-  ledger.set(itemId, (ledger.get(itemId) ?? 0) + quantity4);
+function addOwned(ledger, itemId, quantity2) {
+  if (quantity2 <= 0) return;
+  ledger.set(itemId, (ledger.get(itemId) ?? 0) + quantity2);
 }
 function recipeForDestination(itemId, destination) {
   if (destination.kind !== "skills" || !destination.recipeId) return void 0;
@@ -52594,8 +53553,8 @@ function outputForBatches(state, recipe2, batches) {
   const remainder = Math.max(0, state.rewardRemainders?.[remainderKey] ?? 0);
   return eligible ? Math.floor(batches * recipe2.output.quantity * mastery.yield + remainder + 1e-10) : batches * recipe2.output.quantity;
 }
-function batchesForQuantity(state, recipe2, quantity4) {
-  const target2 = Math.max(1, Math.ceil(quantity4));
+function batchesForQuantity(state, recipe2, quantity2) {
+  const target2 = Math.max(1, Math.ceil(quantity2));
   const mastery = professionMasteryMultipliers(recipe2.id, state.account.professionMasteryByAction?.[recipe2.id]);
   const approximate = Math.max(1, Math.ceil(target2 / Math.max(1e-4, recipe2.output.quantity * mastery.yield)));
   let batches = approximate;
@@ -52766,11 +53725,11 @@ function directStepKind(plan) {
   return "info";
 }
 function directStepLabel(plan) {
-  const quantity4 = Math.ceil(plan.remaining);
-  if (plan.sourceTypeLabel === "Gathering") return `Gather ${quantity4}\xD7 ${plan.name}`;
-  if (plan.sourceTypeLabel === "Monster Drop") return `Hunt for ${quantity4}\xD7 ${plan.name}`;
-  if (plan.sourceTypeLabel === "Dungeon") return `Run for ${quantity4}\xD7 ${plan.name}`;
-  return `Acquire ${quantity4}\xD7 ${plan.name}`;
+  const quantity2 = Math.ceil(plan.remaining);
+  if (plan.sourceTypeLabel === "Gathering") return `Gather ${quantity2}\xD7 ${plan.name}`;
+  if (plan.sourceTypeLabel === "Monster Drop") return `Hunt for ${quantity2}\xD7 ${plan.name}`;
+  if (plan.sourceTypeLabel === "Dungeon") return `Run for ${quantity2}\xD7 ${plan.name}`;
+  return `Acquire ${quantity2}\xD7 ${plan.name}`;
 }
 function planPreparationSteps(plan, path) {
   if (plan.remaining <= 0) return [];
@@ -52908,13 +53867,13 @@ function recipePreparationRoute(state, recipe2, batches = 1) {
   };
 }
 
-// apps/mobile/src/core/working-toward-inventory.ts
-function addProtection(rows2, itemId, goalId, goalTitle, quantity4, kind) {
+// ../apps/mobile/src/core/working-toward-inventory.ts
+function addProtection(rows2, itemId, goalId, goalTitle, quantity2, kind) {
   const current = rows2.get(itemId) ?? { itemId, goalIds: [], goalTitles: [], reservedQuantity: 0, kinds: [] };
   if (!current.goalIds.includes(goalId)) current.goalIds.push(goalId);
   if (!current.goalTitles.includes(goalTitle)) current.goalTitles.push(goalTitle);
   if (!current.kinds.includes(kind)) current.kinds.push(kind);
-  current.reservedQuantity += Math.max(0, quantity4);
+  current.reservedQuantity += Math.max(0, quantity2);
   rows2.set(itemId, current);
 }
 function workingTowardInventoryProtections(state) {
@@ -52937,17 +53896,17 @@ function workingTowardInventoryProtectionMap(state) {
   return new Map(workingTowardInventoryProtections(state).map((row) => [row.itemId, row]));
 }
 
-// apps/mobile/src/core/inventory-bulk.ts
+// ../apps/mobile/src/core/inventory-bulk.ts
 function uniqueIds(itemIds2) {
   return [...new Set(itemIds2.filter(Boolean))].slice(0, 100);
 }
 function selectedStacks(state, itemIds2, location) {
   const ids2 = new Set(uniqueIds(itemIds2));
-  return state[location].stacks.filter((stack) => stack.quantity > 0 && ids2.has(stack.itemId));
+  return state[location].stacks.filter((stack) => stack.quantity > 0 && stack.instanceId === void 0 && ids2.has(stack.itemId));
 }
 function protectedFromDisposal(state, itemId, goalProtectedIds) {
   const item = itemDef(itemId);
-  return goalProtectedIds.has(itemId) || !!state.settings.favoriteItemIds?.includes(itemId) || item.type === "gear" && hasEnhancement(state, itemId);
+  return goalProtectedIds.has(itemId) || !!state.settings.favoriteItemIds?.includes(itemId) || !!state.settings.lockedItemIds?.includes(itemId) || item.type === "gear" && hasEnhancement(state, itemId);
 }
 function bulkSelectionSummary(state, itemIds2, location) {
   const stacks = selectedStacks(state, itemIds2, location);
@@ -53005,34 +53964,34 @@ function bulkTransferSelected(state, itemIds2, from) {
   let next = state;
   for (const itemId of summary.transferableIds) {
     const source = from === "inventory" ? next.inventory : next.bank;
-    const quantity4 = source.stacks.find((stack) => stack.itemId === itemId)?.quantity ?? 0;
-    if (quantity4 <= 0) continue;
-    next = from === "inventory" ? depositToBank(next, itemId, quantity4) : withdrawFromBank(next, itemId, quantity4);
+    const quantity2 = source.stacks.find((stack) => stack.itemId === itemId)?.quantity ?? 0;
+    if (quantity2 <= 0) continue;
+    next = from === "inventory" ? depositToBank(next, itemId, quantity2) : withdrawFromBank(next, itemId, quantity2);
   }
   return next;
 }
 function bulkSellSelected(state, itemIds2) {
   const summary = bulkSelectionSummary(state, itemIds2, "inventory");
-  if (!summary.sellableIds.length) throw new Error("No selected items can be sold. Working Toward items, favorites, enhanced gear, auto-eat food, Holy Water and zero-value items stay protected.");
+  if (!summary.sellableIds.length) throw new Error("No selected items can be sold. Working Toward items, favorites, locked items, enhanced gear, auto-eat food, Holy Water and zero-value items stay protected.");
   let next = state;
   for (const itemId of summary.sellableIds) {
-    const quantity4 = next.inventory.stacks.find((stack) => stack.itemId === itemId)?.quantity ?? 0;
-    if (quantity4 > 0) next = sellItem(next, itemId, quantity4);
+    const quantity2 = next.inventory.stacks.find((stack) => stack.itemId === itemId)?.quantity ?? 0;
+    if (quantity2 > 0) next = sellItem(next, itemId, quantity2);
   }
   return next;
 }
 function bulkSalvageSelected(state, itemIds2) {
   const summary = bulkSelectionSummary(state, itemIds2, "inventory");
-  if (!summary.salvageableIds.length) throw new Error("No selected equipment can be salvaged. Working Toward items, favorites and enhanced gear stay protected.");
+  if (!summary.salvageableIds.length) throw new Error("No selected equipment can be salvaged. Working Toward items, favorites, locked items and enhanced gear stay protected.");
   let next = state;
   for (const itemId of summary.salvageableIds) {
-    const quantity4 = next.inventory.stacks.find((stack) => stack.itemId === itemId)?.quantity ?? 0;
-    for (let count = 0; count < quantity4; count++) next = salvageItem(next, itemId);
+    const quantity2 = next.inventory.stacks.find((stack) => stack.itemId === itemId)?.quantity ?? 0;
+    for (let count = 0; count < quantity2; count++) next = salvageItem(next, itemId);
   }
   return next;
 }
 
-// apps/mobile/src/features/chat-pilot/data/emotes.json
+// ../apps/mobile/src/features/chat-pilot/data/emotes.json
 var emotes_default = [
   {
     id: "male_01",
@@ -53903,7 +54862,7 @@ var emotes_default = [
   }
 ];
 
-// apps/mobile/src/core/chat-emotes.ts
+// ../apps/mobile/src/core/chat-emotes.ts
 var CHAT_EMOTE_TRAY_SIZE = 5;
 var rows = emotes_default;
 var catalog = new Map(rows.map((row) => [row.id, row]));
@@ -53913,8 +54872,8 @@ function normalizeChatEmoteTrayIds(value) {
   return [...new Set(value.filter((id) => typeof id === "string" && known.has(id)))].slice(0, CHAT_EMOTE_TRAY_SIZE);
 }
 
-// apps/mobile/src/core/equipment-crafting-prerequisites.ts
-function quantity3(state, itemId) {
+// ../apps/mobile/src/core/equipment-crafting-prerequisites.ts
+function quantity(state, itemId) {
   return (state.inventory.stacks.find((row) => row.itemId === itemId)?.quantity ?? 0) + (state.bank.stacks.find((row) => row.itemId === itemId)?.quantity ?? 0);
 }
 function processingRecipeFor(itemId) {
@@ -53932,12 +54891,12 @@ function craftEquipmentPrerequisites(state, equipmentRecipeId, nowMs) {
   const craftedByRecipe = /* @__PURE__ */ new Map();
   const visiting = /* @__PURE__ */ new Set();
   const ensure = (itemId, target2) => {
-    if (quantity3(next, itemId) >= target2) return;
+    if (quantity(next, itemId) >= target2) return;
     const recipe2 = processingRecipeFor(itemId);
-    if (!recipe2) throw new Error(`Need ${target2 - quantity3(next, itemId)} more ${itemDef(itemId).name} from gathering, combat or another external source`);
+    if (!recipe2) throw new Error(`Need ${target2 - quantity(next, itemId)} more ${itemDef(itemId).name} from gathering, combat or another external source`);
     if (visiting.has(itemId)) throw new Error("Crafting prerequisite cycle detected");
     visiting.add(itemId);
-    while (quantity3(next, itemId) < target2) {
+    while (quantity(next, itemId) < target2) {
       for (const input of recipe2.inputs) ensure(input.itemId, input.quantity);
       try {
         next = craftRecipe(next, recipe2.id, nowMs + ++stepClock);
@@ -53957,7 +54916,7 @@ function craftEquipmentPrerequisites(state, equipmentRecipeId, nowMs) {
   return { state: next, equipmentRecipeId, crafted: [...craftedByRecipe.values()] };
 }
 
-// apps/mobile/src/dev/debug-tools.ts
+// ../apps/mobile/src/dev/debug-tools.ts
 init_progression();
 function requireCharacter(state) {
   if (!state.character) throw new Error("Debug action requires a character");
@@ -53970,16 +54929,16 @@ function debugSetLevel(state, level) {
   const unlocked = MONSTERS.filter((m) => m.unlockLevel <= clamped).map((m) => m.id);
   return { ...state, character: { ...c, level: clamped, xp }, unlockedMonsterIds: [.../* @__PURE__ */ new Set([...state.unlockedMonsterIds, ...unlocked])] };
 }
-function debugAddItem(state, itemId, quantity4 = 1) {
+function debugAddItem(state, itemId, quantity2 = 1) {
   itemDef(itemId);
-  const incoming = { itemId, quantity: Math.max(1, Math.floor(quantity4)) };
+  const incoming = { itemId, quantity: Math.max(1, Math.floor(quantity2)) };
   return { ...state, inventory: { ...state.inventory, stacks: stackItems(state.inventory.stacks, [incoming]) } };
 }
-function debugAddQaSupplies(state, quantity4 = 9999) {
+function debugAddQaSupplies(state, quantity2 = 9999) {
   let next = state;
   for (const item of ITEMS) {
     if (item.type === "gear") continue;
-    next = debugAddItem(next, item.id, quantity4);
+    next = debugAddItem(next, item.id, quantity2);
   }
   return next;
 }
@@ -54030,7 +54989,7 @@ function debugPrepareFullQaSandbox(state) {
   return next;
 }
 
-// apps/mobile/src/dev/admin-qa-profile.ts
+// ../apps/mobile/src/dev/admin-qa-profile.ts
 function freshQaCharacter(classId, bodyPresentation, nowMs) {
   const state = createCharacter(newGame(nowMs), classId, "Sandbox Hero", bodyPresentation);
   return { ...state, character: { ...state.character, name: "Veldryn Admin" } };
@@ -54046,10 +55005,10 @@ function refillAdminQaResources(state) {
   return debugPrepareFullQaSandbox(state);
 }
 
-// apps/mobile/src/core/skill-progression-navigation.ts
+// ../apps/mobile/src/core/skill-progression-navigation.ts
 var gatheringDefs = [...GATHERING, ...HERB_NODES];
 
-// apps/mobile/src/core/working-toward-execution.ts
+// ../apps/mobile/src/core/working-toward-execution.ts
 var gatherDefs2 = [...GATHERING, ...HERB_NODES];
 function workingTowardGeneratedRuleId(goalId) {
   return ("goal-rule:" + goalId).slice(0, 80);
@@ -54085,7 +55044,7 @@ function reconcileWorkingTowardGeneratedRules(state) {
   return { ...state, character: { ...state.character, idleRulesV40: nextRules, activeIdleRuleIdV40 } };
 }
 
-// apps/mobile/src/core/companion-housing.ts
+// ../apps/mobile/src/core/companion-housing.ts
 var COMPANION_HOUSING_UPGRADES = [
   { tier: 1, gold: 12e3, inputs: [{ itemId: "IRONWOOD_LOG", quantity: 80 }, { itemId: "ASTER_IRON_INGOT", quantity: 30 }, { itemId: "REINFORCED_FITTING", quantity: 8 }] },
   { tier: 2, gold: 45e3, inputs: [{ itemId: "CROWNWOOD_LOG", quantity: 120 }, { itemId: "OATHSTONE_INGOT", quantity: 45 }, { itemId: "REINFORCED_FITTING", quantity: 16 }, { itemId: "OATHGLASS_SHARD", quantity: 10 }] },
@@ -54126,7 +55085,7 @@ function upgradeCompanionHousing(state, companionId) {
   return { ...state, character: { ...state.character, gold: state.character.gold - check.cost.gold }, inventory: { ...state.inventory, stacks: inventory }, bank: { ...state.bank, stacks: bank }, account: { ...state.account, companionHousingTiers: { ...state.account.companionHousingTiers ?? {}, [companionId]: tier } } };
 }
 
-// apps/mobile/src/core/game-commands.ts
+// ../apps/mobile/src/core/game-commands.ts
 var fields = {
   class_training: [],
   class_focus: ["focus"],
@@ -54151,6 +55110,8 @@ var fields = {
   companion_upgrade: ["id"],
   companion_training: [],
   companion_essence: [],
+  companion_trial_formation: ["ids"],
+  companion_trial_fight: ["ids", "requestId"],
   companion_trial_start: ["ids", "floor"],
   companion_trial_floor: ["id", "floor"],
   companion_trial_abandon: ["id"],
@@ -54187,6 +55148,14 @@ var fields = {
   roster_delete: ["id", "confirmation"],
   equip: ["id"],
   unequip: ["slot"],
+  gear_equip: ["instanceId"],
+  gear_unequip: ["instanceId"],
+  gear_move: ["instanceId", "to"],
+  gear_lock: ["instanceId", "locked"],
+  gear_sell: ["instanceId"],
+  gear_salvage: ["instanceId"],
+  gear_autosell: ["enabled"],
+  gear_link_legacy: ["instanceId", "from", "stackIndex"],
   food: ["id"],
   eat: ["id"],
   sell: ["id", "quantity"],
@@ -54201,6 +55170,8 @@ var fields = {
   bulk_sell: ["ids"],
   bulk_salvage: ["ids"],
   storage: ["location"],
+  gem_pouch_upgrade: [],
+  gem_pouch_sell: ["itemId", "quantity"],
   overflow: [],
   equip_tool: ["id"],
   equip_set: [],
@@ -54238,7 +55209,7 @@ var fields = {
   event_contribute: ["quantity"],
   event_community: ["percent"],
   event_purchase: ["id"],
-  event_candy: ["kind"],
+  event_candy: ["kind", "companionId"],
   qa_prepare: ["classId"],
   qa_refill: [],
   qa_switch_class: ["classId"]
@@ -54324,11 +55295,13 @@ function validateGameSettings(value) {
   if (![1, 1.15, 1.3, 1.5].includes(result.textScale) || !Number.isFinite(result.autoEatThresholdPct) || result.autoEatThresholdPct < 0 || result.autoEatThresholdPct > 100) throw new Error("invalid_settings");
   for (const key of ["reduceMotion", "stopCombatWhenOutOfFood", "autoTravelQueuedActivities", "autoJoinWorldChat"]) if (typeof result[key] !== "boolean") throw new Error("invalid_settings");
   if (![1, 2, 3, 4].includes(result.defaultWorldChat ?? 0) || ![1, 2, 3].includes(result.chatDockLines ?? 0) || !Array.isArray(result.quickNavDestinations) || result.quickNavDestinations.length > 8 || result.quickNavDestinations.some((id) => !QUICK_NAV_DESTINATIONS.some((destination) => destination === id))) throw new Error("invalid_settings");
-  const favoriteItemIds = result.favoriteItemIds, seenItemIds = result.seenItemIds, chatEmoteTrayIds = result.chatEmoteTrayIds;
+  const favoriteItemIds = result.favoriteItemIds, lockedItemIds = result.lockedItemIds, seenItemIds = result.seenItemIds, chatEmoteTrayIds = result.chatEmoteTrayIds;
   if (!Array.isArray(chatEmoteTrayIds) || chatEmoteTrayIds.length !== 0 && chatEmoteTrayIds.length !== CHAT_EMOTE_TRAY_SIZE || normalizeChatEmoteTrayIds(chatEmoteTrayIds).length !== chatEmoteTrayIds.length) throw new Error("invalid_settings");
   if (!Array.isArray(favoriteItemIds) || favoriteItemIds.length > 100 || favoriteItemIds.some((id) => typeof id !== "string" || !id || id.length > 120)) throw new Error("invalid_settings");
+  if (!Array.isArray(lockedItemIds) || lockedItemIds.length > 100 || lockedItemIds.some((id) => typeof id !== "string" || !id || id.length > 120)) throw new Error("invalid_settings");
   if (!Array.isArray(seenItemIds) || seenItemIds.length > 1e3 || seenItemIds.some((id) => typeof id !== "string" || !id || id.length > 120)) throw new Error("invalid_settings");
   result.favoriteItemIds = [...new Set(favoriteItemIds)];
+  result.lockedItemIds = [...new Set(lockedItemIds)];
   result.seenItemIds = [...new Set(seenItemIds)];
   result.chatEmoteTrayIds = normalizeChatEmoteTrayIds(chatEmoteTrayIds);
   return result;
@@ -54371,7 +55344,13 @@ function executeGameCommand(previous, value, now, options = {}) {
   if (command.type.startsWith("event_") && !earlyFeatureUnlocked(state, "events")) throw new Error("events_locked");
   const companionMetricBefore = command.type.startsWith("companion_") ? companionCommandEconomySnapshot(state) : void 0;
   if (["companion_equip", "companion_level", "companion_ascend", "companion_master"].includes(command.type)) assertCompanionIdle(state, text(a, "id"));
-  if (command.type === "event_candy") oneOf(a.kind, ["skill", "combat", "companion"]);
+  if (command.type === "event_candy") {
+    const kind = oneOf(a.kind, ["skill", "combat", "companion", "pet"]);
+    if (a.companionId !== void 0) {
+      if (kind !== "companion") throw new Error("invalid_companion_target");
+      text(a, "companionId", 80);
+    }
+  }
   switch (command.type) {
     case "qa_prepare":
     case "qa_switch_class": {
@@ -54438,14 +55417,14 @@ function executeGameCommand(previous, value, now, options = {}) {
       if (won) contributions.push({ kind: "boss", contentId: "FALLEN_KNIGHT", units: 1 });
       break;
     }
-    case "companion_starter":
-      state = chooseStarterCombatCompanion(state, text(a, "id"), now);
-      message = "Starter companion chosen";
-      break;
     case "companion_monthly":
     case "companion_supplies":
     case "companion_bond_reward":
       state = executeCompanionActivity(state, command.type, a, now);
+      break;
+    case "companion_starter":
+      state = chooseStarterCombatCompanion(state, text(a, "id"), now);
+      message = "Starter companion recruited";
       break;
     case "companion_equip":
       state = equipCombatCompanion(state, text(a, "id"));
@@ -54481,6 +55460,8 @@ function executeGameCommand(previous, value, now, options = {}) {
     case "companion_essence":
       state = claimSanctuaryEssence(state, now);
       break;
+    case "companion_trial_formation":
+    case "companion_trial_fight":
     case "companion_trial_start":
     case "companion_trial_floor":
     case "companion_trial_abandon":
@@ -54601,7 +55582,7 @@ function executeGameCommand(previous, value, now, options = {}) {
       state = result.state;
       if (result.kind === "equipment") forgeResults = [result.result];
       contributions.push({ kind: "crafting", contentId: result.recipe.id, units: 1 });
-      message = result.kind === "equipment" ? `${result.result.rarity.toUpperCase()} ${result.recipe.name}${result.result.qualityProc ? " \xB7 quality proc" : ""}${result.result.duplicateCount ? ` \xB7 duplicate ${result.result.duplicateCount + 1}` : ""}` : `${result.recipe.name} combined`;
+      message = result.kind === "equipment" ? `${result.result.rarity.toUpperCase()} ${result.recipe.name}${result.result.qualityProc ? " \xB7 rarity upgrade" : ""}${result.result.duplicateCount ? ` \xB7 duplicate ${result.result.duplicateCount + 1}` : ""}` : `${result.gemAction === "refine" ? "Refined" : "Combined"} ${result.recipe.name} \xB7 Gem Pouch`;
       break;
     }
     case "craft_claim_all": {
@@ -54617,8 +55598,8 @@ function executeGameCommand(previous, value, now, options = {}) {
       }
       const equipmentCount = result.claimed.length - result.gemClaims, procCount = result.results.filter((row) => row.qualityProc).length;
       const blockedCount = result.blocked.length;
-      const blockedReason = result.blocked.some((row) => row.reason === "Crafting recipe is no longer available") ? "Some jobs use retired recipes; please contact support." : "Free Inventory or Bank space, then claim the remaining jobs.";
-      message = result.claimed.length ? `${result.claimed.length} forge job${result.claimed.length === 1 ? "" : "s"} claimed \xB7 ${equipmentCount} equipment \xB7 ${result.gemClaims} gem combine${result.gemClaims === 1 ? "" : "s"} \xB7 ${procCount} quality proc${procCount === 1 ? "" : "s"}${blockedCount ? ` \xB7 ${blockedCount} still waiting. ${blockedReason}` : ""}` : blockedCount ? `${blockedCount} finished forge job${blockedCount === 1 ? " is" : "s are"} still waiting. ${blockedReason}` : "No finished forge jobs";
+      const blockedReason = result.blocked.some((row) => row.reason === "Crafting recipe is no longer available") ? "Some jobs use retired recipes; please contact support." : result.blocked.some((row) => row.reason.startsWith("Equipment copy") || row.reason.startsWith("Equipment requires") || row.reason.startsWith("Crafted equipment")) ? `Check your equipment copies. ${result.blocked[0].reason}` : "Free Gem Pouch, Inventory or Bank space, then claim the remaining jobs.";
+      message = result.claimed.length ? `${result.claimed.length} forge job${result.claimed.length === 1 ? "" : "s"} claimed \xB7 ${equipmentCount} equipment \xB7 ${result.gemClaims} gem claim${result.gemClaims === 1 ? "" : "s"} \xB7 ${procCount} rarity upgrade${procCount === 1 ? "" : "s"}${blockedCount ? ` \xB7 ${blockedCount} still waiting. ${blockedReason}` : ""}` : blockedCount ? `${blockedCount} finished forge job${blockedCount === 1 ? " is" : "s are"} still waiting. ${blockedReason}` : "No finished forge jobs";
       break;
     }
     case "craft_cancel": {
@@ -54643,6 +55624,42 @@ function executeGameCommand(previous, value, now, options = {}) {
       break;
     case "discard_preparation":
       state = discardPreparation(state);
+      break;
+    case "gear_link_legacy":
+      state = linkLegacyCraftedGearInstance(state, text(a, "instanceId", 180), oneOf(a.from, ["inventory", "bank"]), integer(a, "stackIndex", 0, 1e3));
+      message = "Legacy Forge copy linked to its existing rarity and quality record";
+      break;
+    case "gear_autosell": {
+      if (typeof a.enabled !== "boolean") throw new Error("invalid_autosell_preference");
+      state = { ...state, account: { ...state.account, craftedGearAutoSellMode: a.enabled ? "keep_best_seven" : "off" } };
+      message = a.enabled ? "Keep Best 7 enabled \u2014 only verified, unprotected copies can be sold" : "Automatic equipment selling disabled";
+      break;
+    }
+    case "gear_equip":
+      state = equipCraftedGearInstance(state, text(a, "instanceId", 180));
+      message = "Equipment copy equipped";
+      break;
+    case "gear_unequip":
+      state = unequipCraftedGearInstance(state, text(a, "instanceId", 180));
+      message = "Equipment copy unequipped";
+      break;
+    case "gear_move":
+      state = moveCraftedGearInstance(state, text(a, "instanceId", 180), oneOf(a.to, ["inventory", "bank"]));
+      message = "Equipment copy transferred";
+      break;
+    case "gear_lock": {
+      if (typeof a.locked !== "boolean") throw new Error("invalid_locked");
+      state = setCraftedGearInstanceLock(state, text(a, "instanceId", 180), a.locked);
+      message = a.locked ? "Equipment copy locked" : "Equipment copy unlocked";
+      break;
+    }
+    case "gear_sell":
+      state = disposeCraftedGearInstance(state, text(a, "instanceId", 180), "sell");
+      message = "Equipment copy sold";
+      break;
+    case "gear_salvage":
+      state = disposeCraftedGearInstance(state, text(a, "instanceId", 180), "salvage");
+      message = "Equipment copy salvaged";
       break;
     case "equip":
       state = equipItem(state, text(a, "id"));
@@ -54692,6 +55709,16 @@ function executeGameCommand(previous, value, now, options = {}) {
     case "storage":
       state = upgradeStorage(state, oneOf(a.location, ["inventory", "bank"]));
       break;
+    case "gem_pouch_upgrade":
+      state = upgradeGemPouch(state);
+      message = "Gem Pouch capacity upgraded";
+      break;
+    case "gem_pouch_sell": {
+      const itemId = text(a, "itemId"), quantity2 = integer(a, "quantity");
+      state = sellPouchGem(state, itemId, quantity2);
+      message = "Gems sold from Gem Pouch";
+      break;
+    }
     case "overflow":
       state = claimOverflowToBank(state);
       break;
@@ -54738,9 +55765,9 @@ function executeGameCommand(previous, value, now, options = {}) {
       break;
     }
     case "gem_dismantle": {
-      const gemId = text(a, "gemId", 120), quantity4 = integer(a, "quantity", 1, 999);
-      state = dismantleGemV1(state, gemId, quantity4);
-      message = `Dismantled ${quantity4} gem${quantity4 === 1 ? "" : "s"} into Gem Dust`;
+      const gemId = text(a, "gemId", 120), quantity2 = integer(a, "quantity", 1, 999);
+      state = dismantleGemV1(state, gemId, quantity2);
+      message = `Dismantled ${quantity2} gem${quantity2 === 1 ? "" : "s"} into Gem Dust`;
       break;
     }
     case "resonance_cache_claim": {
@@ -54844,17 +55871,18 @@ function executeGameCommand(previous, value, now, options = {}) {
       state = purchaseEventOffer(state, text(a, "id"), now);
       break;
     case "event_candy":
-      state = consumeEventCandy(state, now, oneOf(a.kind, ["skill", "combat", "companion"]));
+      state = consumeEventCandy(state, now, oneOf(a.kind, ["skill", "combat", "companion", "pet"]), a.companionId === void 0 ? void 0 : text(a, "companionId", 80));
       break;
     default:
       throw new Error("invalid_command");
   }
   if (companionMetricBefore) state = recordCompanionCommandMetrics(state, command.type, companionMetricBefore);
+  state = migrateGemPouch(state);
   if (state.character && (!Number.isSafeInteger(state.character.gold) || state.character.gold < 0)) throw new Error("invalid_wallet");
   return { state, reward: reward2, activity, message, won, storyBossBattle, upgrade, forgeResults, contributions };
 }
 
-// backend/online/gameplay.ts
+// online/gameplay.ts
 var GameplayError = class extends Error {
   constructor(message, status = 400) {
     super(message);
@@ -54979,8 +56007,12 @@ function gameplayHandler(services2) {
         return { ...event, metric, units };
       });
       const guildPveEffort = adminQa ? [] : (result.reward?.activityResults?.map((segment) => segment.reward) ?? [result.reward]).flatMap((earned) => earned?.combatEffort ? [{ kind: "combat", combatEffort: earned.combatEffort }] : []);
-      const projectSegments = result.reward?.activityResults ?? (result.reward && state.activity ? [{ activity: state.activity, reward: result.reward }] : []);
-      const guildProjectEffort = adminQa ? [] : projectSegments.flatMap(({ activity, reward: earned }) => earned.combatEffort ? [{ kind: "combat", ...earned.combatEffort }] : ["mining", "woodcutting", "fishing", "herbalism"].includes(activity.kind) && earned.elapsedSeconds > 0 ? [{ kind: "skilling", startsAtMs: activity.lastClaimAtMs, endsAtMs: activity.lastClaimAtMs + earned.elapsedSeconds * 1e3 }] : []);
+      const projectSegments = result.reward?.activityResults?.length ? result.reward.activityResults : result.reward && state.activity ? [{ activity: state.activity, reward: result.reward }] : [];
+      const guildProjectEffort = adminQa ? [] : [
+        ...projectSegments.flatMap(({ activity, reward: earned }) => earned.combatEffort ? [{ kind: "combat", ...earned.combatEffort }] : ["mining", "woodcutting", "fishing", "herbalism"].includes(activity.kind) && earned.elapsedSeconds > 0 ? [{ kind: "skilling", activity: "gathering", startsAtMs: activity.lastClaimAtMs, endsAtMs: activity.lastClaimAtMs + earned.elapsedSeconds * 1e3 }] : ["alchemy", "processing"].includes(activity.kind) && earned.elapsedSeconds > 0 ? [{ kind: "crafting", startsAtMs: activity.lastClaimAtMs, endsAtMs: activity.lastClaimAtMs + earned.elapsedSeconds * 1e3 }] : []),
+        // Count verified instant crafts only when no timed crafting lane was settled.
+        ...projectSegments.some(({ activity }) => activity.kind === "alchemy" || activity.kind === "processing") ? [] : contributions.filter((event) => event.kind === "crafting" && event.units > 0).map((event) => ({ kind: "crafting", units: Math.min(100, event.units) }))
+      ];
       const response = { guildProjectEffort, guildPveEffort, state: result.state, version: loaded.version + 1, serverNow: loaded.serverNow, accountId, reward: result.reward, activity: result.activity, message: result.message, won: result.won, storyBossBattle: result.storyBossBattle, upgrade: result.upgrade, forgeResults: result.forgeResults };
       const commitRpc = "commit_online_game_guild_pve_v1";
       const committed = await services2.rpc(commitRpc, { p_account_id: accountId, p_expected_version: loaded.version, p_expected_gold: loaded.walletGold, p_request_id: body.requestId, p_request_hash: requestHash, p_response: response, p_contributions: contributions, ...command.type === "roster_delete" ? { p_deleted_character_id: command.args.id } : {} });
@@ -55000,7 +56032,7 @@ function gameplayHandler(services2) {
   };
 }
 
-// apps/mobile/src/core/app-release-policy.ts
+// ../apps/mobile/src/core/app-release-policy.ts
 function compareVersions(a, b) {
   const parts = (s) => s.trim().split(".").map((part) => Number.parseInt(part.replace(/\D.*$/, ""), 10) || 0);
   const left = parts(a), right = parts(b);
@@ -55020,7 +56052,7 @@ function appPolicyFromRow(data) {
   return { latestVersion: String(data.latest_version), minimumVersion: String(data.minimum_version), forceAfterMs, title: String(data.title ?? data.update_title ?? "VELDRYN has been updated"), message: String(data.message ?? data.update_message ?? "This version is no longer supported. Update to continue your adventure."), maintenanceMode: data.maintenance_mode === true, maintenanceMessage: String(data.maintenance_message ?? "VELDRYN is temporarily unavailable while maintenance is completed.") };
 }
 
-// backend/online/release-gate.ts
+// online/release-gate.ts
 var cors = { "Access-Control-Allow-Origin": "*", "Access-Control-Allow-Headers": "authorization,apikey,content-type,x-client-info,x-app-version,x-app-platform", "Access-Control-Allow-Methods": "GET,POST,OPTIONS", "Cache-Control": "no-store" };
 var json2 = (body, status) => new Response(JSON.stringify(body), { status, headers: { ...cors, "Content-Type": "application/json" } });
 function withReleaseGate(handler, loadPolicies, now = Date.now) {
@@ -55061,10 +56093,10 @@ function releasePolicyLoader(url2, publicKey) {
   };
 }
 
-// backend/src/server/combat/regional-combat-runtime-v1.ts
+// src/server/combat/regional-combat-runtime-v1.ts
 import { createHash } from "node:crypto";
 
-// backend/src/server/companions/character-assist.ts
+// src/server/companions/character-assist.ts
 function applyCharacterCompanionAssist(owner, progress) {
   if (!progress) return owner;
   const policy = validateCompanionLoadout({ classId: owner.classId, companionId: progress.companionId, ownedCompanionIds: [progress.companionId] });
@@ -55081,7 +56113,7 @@ function applyCharacterCompanionAssist(owner, progress) {
   return { ...owner, abilities: [...owner.abilities, ability2], tags: [...owner.tags ?? [], `companion:${def.id}`] };
 }
 
-// backend/src/server/combat/snapshot-adapter.ts
+// src/server/combat/snapshot-adapter.ts
 function combatantFromVerifiedSnapshot(s, abilities) {
   if (!Number.isInteger(s.level) || s.level < 1 || s.level > 100) throw new Error("invalid_snapshot_level");
   if ([s.maxHp, s.attackPower, s.healingPower, s.defense, s.accuracy, s.evasion, s.critChance, s.haste].some((value) => !Number.isFinite(value)) || s.maxHp <= 0 || [s.attackPower, s.healingPower, s.defense, s.accuracy, s.evasion].some((value) => value < 0)) throw new Error("invalid_snapshot_stats");
@@ -55101,7 +56133,7 @@ function combatantFromVerifiedSnapshot(s, abilities) {
   }, s.combatCompanion);
 }
 
-// backend/src/server/content/combat-stat-contract-v20.ts
+// src/server/content/combat-stat-contract-v20.ts
 var COMBAT_STAT_LIMITS_V20 = {
   critChance: { min: 0, max: 0.5 },
   critDamage: { min: 1, max: 2.5 },
@@ -55129,7 +56161,7 @@ function mechanicDamagePolicyV20(input) {
   return { canCrit, telegraphedMechanic: input.telegraphed, avoidable: input.avoidable, notes: input.telegraphed ? "Telegraphed pass/fail damage is deterministic by default." : void 0 };
 }
 
-// backend/src/server/content/sunscar-region-v20.ts
+// src/server/content/sunscar-region-v20.ts
 var stats2 = (v) => {
   const errors = validateCombatStatsV20(v);
   if (errors.length) throw new Error(`invalid_sunscar_stats:${errors.join(",")}`);
@@ -55167,7 +56199,7 @@ for (const boss2 of SUNSCAR_BOSSES_V20) {
   if (validateCombatStatsV20(boss2.stats).length) throw new Error(`invalid_boss:${boss2.id}`);
 }
 
-// backend/src/server/equipment/gems/gem-catalog-v1.ts
+// src/server/equipment/gems/gem-catalog-v1.ts
 var vals2 = (a, b, c, d, e) => ({ 1: a, 2: b, 3: c, 4: d, 5: e });
 var STAT_GEMS_V1 = [
   { familyId: "stat_might", name: "Might", stat: "power", unit: "percent", values: vals2(4e-3, 5e-3, 65e-4, 8e-3, 0.01) },
@@ -55206,7 +56238,7 @@ var EFFECT_GEMS_V1 = [
   { familyId: "effect_opportunist", name: "Opportunist", category: "hybrid", values: vals2(7e-3, 9e-3, 0.011, 0.013, 0.015), maxEquippedCopies: 3, baseDescription: "Applying a new Mark/debuff/exposed/control state empowers the next direct hit within 4s.", resonance2: "Per-target cooldown becomes 3s.", resonance3: "A critical empowered hit extends the triggering effect by 1s once.", triggerCooldownMs: 4e3 }
 ];
 
-// backend/src/server/equipment/gems/gem-acquisition-v1.ts
+// src/server/equipment/gems/gem-acquisition-v1.ts
 var GEM_SOURCE_POOLS_V1 = [
   { id: "ZONE_006", kind: "enemy", regionId: "REG_002", families: ["stat_might", "stat_vitality", "effect_opening_strike", "effect_sustenance"], grade: 1, chance: 75e-4 },
   { id: "ZONE_007", kind: "elite", regionId: "REG_002", families: ["stat_iron", "stat_piercing", "effect_predator", "effect_retaliation"], grade: 2, chance: 0.015, pityAt: 60 },
@@ -55226,7 +56258,7 @@ function gemPoolForSourceV1(sourceId) {
   return GEM_SOURCE_POOLS_V1.find((v) => v.id === sourceId);
 }
 
-// backend/src/server/equipment/gems/regional-gem-settlement-v1.ts
+// src/server/equipment/gems/regional-gem-settlement-v1.ts
 function regionalGemSourceForEncounterV1(zoneId, kind) {
   const pool = gemPoolForSourceV1(zoneId);
   if (!pool || !["enemy", "elite", "regional_boss"].includes(pool.kind) || pool.kind !== kind) return void 0;
@@ -55244,7 +56276,7 @@ async function settleVerifiedRegionalGemEncounterV1(services2, encounter) {
   });
 }
 
-// backend/src/server/combat/regional-combat-runtime-v1.ts
+// src/server/combat/regional-combat-runtime-v1.ts
 var SUNSCAR_REGIONAL_COMBAT_CATALOG_V1 = [
   { encounterId: "REGCOM_SUN_006_STANDARD", zoneId: "ZONE_006", kind: "standard", contentId: "SUNMON_001", name: "Saffron Gate Patrol", level: 25 },
   { encounterId: "REGCOM_SUN_007_ELITE", zoneId: "ZONE_007", kind: "elite", contentId: "SUNMON_005", name: "Sunspine Elite", level: 32 },
@@ -55410,10 +56442,10 @@ async function resolveRegionalCombatV1(deps, input) {
   return { result: committed.result, reward: reward2, duplicate: committed.duplicate };
 }
 
-// backend/online/coop-loadout.ts
+// online/coop-loadout.ts
 import { createHash as createHash2 } from "node:crypto";
 
-// backend/src/server/combat/content/launch-combat.ts
+// src/server/combat/content/launch-combat.ts
 var stats3 = (maxHp, attackPower, healingPower, defense, accuracy, evasion, critChance = 0.08, haste = 0.05) => ({ maxHp, attackPower, healingPower, defense, accuracy, evasion, critChance, critMultiplier: 1.5, haste });
 var dmg = (id, name, coeff, cooldownMs, priority, extra = {}) => ({ id, name, cooldownMs, castTimeMs: 0, target: "current_target", priority, effects: [{ kind: "damage", coeff, damageType: "physical" }], ...extra });
 function launchPlayer(classId, level = 25) {
@@ -55469,7 +56501,7 @@ function launchPlayer(classId, level = 25) {
   }
 }
 
-// backend/src/server/coop/role-readiness.ts
+// src/server/coop/role-readiness.ts
 var CLASS_ROLES = Object.freeze({
   IRONWARDEN: "tank",
   BASTION: "tank",
@@ -55487,7 +56519,7 @@ function deriveRole(classId) {
   return role;
 }
 
-// backend/src/server/coop/normalization.ts
+// src/server/coop/normalization.ts
 var COOP_NORMALIZATION_V1 = Object.freeze({
   version: "coop-normalization-v1",
   softThreshold: 1.15,
@@ -55506,7 +56538,7 @@ var ROOTBOUND_ROLE_REFERENCES = Object.freeze({
   support: { level: 25, maxHp: 3800, attackPower: 330, healingPower: 650, defense: 900, accuracy: 700, evasion: 210 }
 });
 
-// backend/online/coop-loadout.ts
+// online/coop-loadout.ts
 function referenceStats(classId) {
   const reference = createCharacter(newGame(0), classId, "Calibration");
   reference.character.equipment = Object.fromEntries(noviceSetFor(classId).slots.map((slot) => [slot, noviceItemId(classId, slot)]));
@@ -55562,7 +56594,7 @@ function deriveOnlineCoopLoadout(accountId, state, version) {
   };
 }
 
-// backend/online/regional-combat.ts
+// online/regional-combat.ts
 var RpcRegionalCombatStore = class {
   constructor(services2, accountId) {
     this.services = services2;
@@ -55703,7 +56735,7 @@ function regionalCombatHandlerV1(services2) {
   };
 }
 
-// packages/guild-shop/src/catalogue.ts
+// ../packages/guild-shop/src/catalogue.ts
 var GUILD_SHOP_CATALOGUE = [
   { id: "guild_pet_01", category: "pet", name: "Guild Pet I", guildLevel: 3, tokenCost: 2e3, oneTimePerAccount: true },
   { id: "guild_pet_02", category: "pet", name: "Guild Pet II", guildLevel: 7, tokenCost: 4e3, oneTimePerAccount: true },
@@ -55739,10 +56771,27 @@ var GUILD_CONSTRUCTION_TEMPLATES = [
     { materialKey: "IRONWOOD_LOG", amount: 22e3 },
     { materialKey: "ASTER_IRON_INGOT", amount: 12e3 },
     { materialKey: "OATHGLASS_SHARD", amount: 4e3 }
-  ], unlockId: "guild_decoration_fellowship_statue" }
+  ], unlockId: "guild_decoration_fellowship_statue" },
+  { id: "construction_hall_1", guildLevel: 1, gold: 0, materials: [{ materialKey: "GUILD_REINFORCED_TIMBER", amount: 120 }, { materialKey: "GUILD_BANNERWEAVE", amount: 100 }], unlockId: "guild_construction_hall_1" },
+  { id: "construction_forge_1", guildLevel: 2, gold: 0, materials: [{ materialKey: "GUILD_REINFORCED_TIMBER", amount: 180 }, { materialKey: "GUILD_BANNERWEAVE", amount: 80 }], unlockId: "guild_construction_forge_1" },
+  { id: "construction_library_1", guildLevel: 2, gold: 0, materials: [{ materialKey: "GUILD_REINFORCED_TIMBER", amount: 80 }, { materialKey: "GUILD_BANNERWEAVE", amount: 200 }], unlockId: "guild_construction_library_1" },
+  { id: "construction_treasury_1", guildLevel: 3, gold: 0, materials: [{ materialKey: "GUILD_REINFORCED_TIMBER", amount: 160 }, { materialKey: "GUILD_HERALDIC_DYE", amount: 120 }], unlockId: "guild_construction_treasury_1" },
+  { id: "construction_hall_2", guildLevel: 3, gold: 0, materials: [{ materialKey: "GUILD_MASONS_KEYSTONE", amount: 300 }, { materialKey: "GUILD_HERALDIC_DYE", amount: 240 }], unlockId: "guild_construction_hall_2" },
+  { id: "construction_war_room_1", guildLevel: 3, gold: 0, materials: [{ materialKey: "GUILD_MASONS_KEYSTONE", amount: 200 }, { materialKey: "GUILD_BANNERWEAVE", amount: 180 }], unlockId: "guild_construction_war_room_1" },
+  { id: "construction_expedition_1", guildLevel: 4, gold: 0, materials: [{ materialKey: "GUILD_MASONS_KEYSTONE", amount: 240 }, { materialKey: "GUILD_HERALDIC_DYE", amount: 240 }], unlockId: "guild_construction_expedition_1" },
+  { id: "construction_forge_2", guildLevel: 5, gold: 0, materials: [{ materialKey: "GUILD_FORGED_RIVETS", amount: 300 }, { materialKey: "GUILD_SEAL_WAX", amount: 160 }], unlockId: "guild_construction_forge_2" },
+  { id: "construction_library_2", guildLevel: 5, gold: 0, materials: [{ materialKey: "GUILD_FORGED_RIVETS", amount: 160 }, { materialKey: "GUILD_SEAL_WAX", amount: 300 }], unlockId: "guild_construction_library_2" },
+  { id: "construction_treasury_2", guildLevel: 7, gold: 0, materials: [{ materialKey: "GUILD_FORGED_RIVETS", amount: 240 }, { materialKey: "GUILD_SEAL_WAX", amount: 200 }], unlockId: "guild_construction_treasury_2" },
+  { id: "construction_hall_3", guildLevel: 6, gold: 0, materials: [{ materialKey: "GUILD_FORGED_RIVETS", amount: 400 }, { materialKey: "GUILD_SEAL_WAX", amount: 320 }], unlockId: "guild_construction_hall_3" },
+  { id: "construction_war_room_2", guildLevel: 7, gold: 0, materials: [{ materialKey: "GUILD_FORGED_RIVETS", amount: 300 }, { materialKey: "GUILD_SEAL_WAX", amount: 250 }], unlockId: "guild_construction_war_room_2" },
+  { id: "construction_expedition_2", guildLevel: 8, gold: 0, materials: [{ materialKey: "GUILD_FORGED_RIVETS", amount: 250 }, { materialKey: "GUILD_SEAL_WAX", amount: 240 }], unlockId: "guild_construction_expedition_2" },
+  { id: "construction_forge_3", guildLevel: 10, gold: 0, materials: [{ materialKey: "GUILD_FORTIFICATION_HINGES", amount: 300 }, { materialKey: "GUILD_BEACON_OIL", amount: 240 }], unlockId: "guild_construction_forge_3" },
+  { id: "construction_library_3", guildLevel: 10, gold: 0, materials: [{ materialKey: "GUILD_FORTIFICATION_HINGES", amount: 200 }, { materialKey: "GUILD_BEACON_OIL", amount: 300 }], unlockId: "guild_construction_library_3" },
+  { id: "construction_hall_4", guildLevel: 10, gold: 0, materials: [{ materialKey: "GUILD_FORTIFICATION_HINGES", amount: 400 }, { materialKey: "GUILD_BEACON_OIL", amount: 350 }], unlockId: "guild_construction_hall_4" },
+  { id: "construction_war_room_3", guildLevel: 15, gold: 0, materials: [{ materialKey: "GUILD_FORTIFICATION_HINGES", amount: 320 }, { materialKey: "GUILD_BEACON_OIL", amount: 300 }], unlockId: "guild_construction_war_room_3" }
 ];
 
-// packages/guild-shop/src/view-model.ts
+// ../packages/guild-shop/src/view-model.ts
 function buildGuildShopCards(state) {
   const owned = new Set(state.ownedItemIds);
   return GUILD_SHOP_CATALOGUE.map((entry2) => ({
@@ -55756,7 +56805,7 @@ function buildGuildShopCards(state) {
   }));
 }
 
-// backend/online/guild-shop-read.ts
+// online/guild-shop-read.ts
 var responseHeaders = { "Content-Type": "application/json", "Cache-Control": "no-store" };
 var json4 = (value, status = 200) => new Response(JSON.stringify(value), { status, headers: responseHeaders });
 function guildShopReadHandler(services2) {
@@ -55769,12 +56818,14 @@ function guildShopReadHandler(services2) {
     try {
       const guildLevel = await services2.guildLevelForAccount(accountId);
       if (guildLevel === null) return json4({ error: "guild_membership_required" }, 403);
-      const [base, constructionResult, eventResult, enabledResult, weeklyResult] = await Promise.allSettled([
+      const [base, constructionResult, eventResult, enabledResult, weeklyResult, bankResult, perksResult] = await Promise.allSettled([
         services2.rpc("guild_shop_snapshot_server_v1", { p_account_id: accountId }),
         services2.rpc("guild_construction_snapshot_server_v1", { p_account_id: accountId }),
         services2.rpc("guild_shop_event_community_rewards_server_v1", { p_account_id: accountId }),
         services2.rpc("guild_construction_enabled_server_v1", { p_account_id: accountId }),
-        services2.rpc("guild_shop_weekly_rewards_server_v1", { p_account_id: accountId })
+        services2.rpc("guild_shop_weekly_rewards_server_v1", { p_account_id: accountId }),
+        services2.rpc("guild_bank_snapshot_server_v1", { p_account_id: accountId }),
+        services2.rpc("guild_construction_benefits_server_v1", { p_account_id: accountId })
       ]);
       if (base.status !== "fulfilled") throw new Error("guild_shop_wallet_snapshot_unavailable");
       const snapshot2 = base.value;
@@ -55784,11 +56835,14 @@ function guildShopReadHandler(services2) {
       const eventBonuses = eventResult.status === "fulfilled" && Array.isArray(eventResult.value) ? eventResult.value : [];
       const constructionEnabled = enabledResult.status === "fulfilled" && Array.isArray(enabledResult.value) ? enabledResult.value : [];
       const weeklyRewards = weeklyResult.status === "fulfilled" && Array.isArray(weeklyResult.value) ? weeklyResult.value : [];
+      const perks = perksResult.status === "fulfilled" && perksResult.value && [0, 1e3, 2e3].includes(perksResult.value.guildTokenBonusBps) && [250, 275, 300].includes(perksResult.value.guildTokenWeeklyCap) ? perksResult.value : null;
       const unavailableSections = [
         ...constructionResult.status === "fulfilled" && Array.isArray(constructionResult.value) ? [] : ["construction"],
         ...eventResult.status === "fulfilled" && Array.isArray(eventResult.value) ? [] : ["eventBonuses"],
         ...enabledResult.status === "fulfilled" && Array.isArray(enabledResult.value) ? [] : ["constructionUnlocks"],
-        ...weeklyResult.status === "fulfilled" && Array.isArray(weeklyResult.value) ? [] : ["weeklyRewards"]
+        ...weeklyResult.status === "fulfilled" && Array.isArray(weeklyResult.value) ? [] : ["weeklyRewards"],
+        ...bankResult.status === "fulfilled" && bankResult.value && Array.isArray(bankResult.value.balances) ? [] : ["bank"],
+        ...perks ? [] : ["constructionBenefits"]
       ];
       return json4({
         guildLevel,
@@ -55796,13 +56850,15 @@ function guildShopReadHandler(services2) {
         balance: snapshot2.balance,
         earnedThisWeek: snapshot2.earnedThisWeek,
         claimedDailyKinds: Array.isArray(snapshot2.claimedDailyKinds) ? snapshot2.claimedDailyKinds : [],
-        weeklyCap: 250,
+        weeklyCap: perks?.guildTokenWeeklyCap ?? 250,
+        treasuryBonusBps: perks?.guildTokenBonusBps ?? 0,
         catalogue: GUILD_SHOP_CATALOGUE,
         constructionTemplates: GUILD_CONSTRUCTION_TEMPLATES.map((template) => ({
           ...template,
           enabled: constructionEnabled.includes(template.id)
         })),
         construction,
+        bank: bankResult.status === "fulfilled" && bankResult.value && Array.isArray(bankResult.value.balances) ? bankResult.value : null,
         eventBonuses,
         weeklyRewards,
         cards: buildGuildShopCards({ guildLevel, tokenBalance: snapshot2.balance, ownedItemIds: snapshot2.ownedItemIds }).map((card) => ({
@@ -55839,7 +56895,7 @@ function guildShopDailyClaimHandler(services2) {
         p_account_id: accountId,
         p_kind: candidate.kind
       });
-      if (!Number.isSafeInteger(credited) || credited < 0 || credited > 10)
+      if (!Number.isSafeInteger(credited) || credited < 0 || credited > 12)
         return json4({ error: "invalid_claim_result" }, 503);
       return json4({ credited });
     } catch (reason) {
@@ -55938,7 +56994,7 @@ function guildConstructionDonationHandler(services2) {
       return json4({ error: "invalid_construction_resource" }, 400);
     try {
       const result = await services2.rpc(
-        "guild_construction_donate_server_v2",
+        "guild_bank_allocate_server_v1",
         {
           p_account_id: accountId,
           p_template_id: body.templateId,
@@ -55960,8 +57016,9 @@ function guildConstructionDonationHandler(services2) {
         "construction_donations_not_released",
         "guild_level_locked",
         "guild_membership_required",
-        "guild_construction_request_conflict"
-      ].includes(code)) return json4({ error: code }, code === "insufficient_gold" || code === "insufficient_construction_materials" ? 422 : 409);
+        "guild_construction_request_conflict",
+        "insufficient_guild_bank_balance"
+      ].includes(code)) return json4({ error: code }, code === "insufficient_gold" || code === "insufficient_construction_materials" || code === "insufficient_guild_bank_balance" ? 422 : 409);
       return json4({ error: "guild_construction_donation_unavailable" }, 503);
     }
   };
@@ -55990,7 +57047,7 @@ function guildShopWeeklyClaimHandler(services2) {
         p_account_id: accountId,
         p_kind: body.kind
       });
-      if (!Number.isSafeInteger(credited) || credited < 0 || credited > 50)
+      if (!Number.isSafeInteger(credited) || credited < 0 || credited > 60)
         return json4({ error: "invalid_claim_result" }, 503);
       return json4({ credited });
     } catch {
@@ -55998,8 +57055,54 @@ function guildShopWeeklyClaimHandler(services2) {
     }
   };
 }
+function guildBankDepositHandler(services2) {
+  return async (request) => {
+    if (request.method !== "POST") return json4({ error: "method_not_allowed" }, 405);
+    const token = request.headers.get("authorization")?.match(/^Bearer (\S+)$/i)?.[1];
+    if (!token) return json4({ error: "auth_required" }, 401);
+    const accountId = await services2.authenticate(token);
+    if (!accountId) return json4({ error: "invalid_session" }, 401);
+    const raw2 = await request.text();
+    if (raw2.length > 1024) return json4({ error: "request_too_large" }, 413);
+    let input;
+    try {
+      input = JSON.parse(raw2);
+    } catch {
+      return json4({ error: "invalid_json" }, 400);
+    }
+    if (!input || typeof input !== "object" || Array.isArray(input)) return json4({ error: "invalid_request" }, 400);
+    const body = input;
+    if (Object.keys(body).length !== 3 || typeof body.resourceId !== "string" || !GUILD_CONSTRUCTION_TEMPLATES.some((t) => ["gold", ...t.materials.map((m) => m.materialKey)].includes(body.resourceId)) || !Number.isSafeInteger(body.amount) || Number(body.amount) < 1 || Number(body.amount) > 1e6 || typeof body.requestKey !== "string" || !/^[A-Za-z0-9_-]{8,128}$/.test(body.requestKey))
+      return json4({ error: "invalid_guild_bank_deposit" }, 400);
+    try {
+      const result = await services2.rpc("guild_bank_deposit_server_v1", {
+        p_account_id: accountId,
+        p_resource_id: body.resourceId,
+        p_amount: body.amount,
+        p_request_key: body.requestKey
+      });
+      if (!result || typeof result.alreadyProcessed !== "boolean" || result.amount !== body.amount || result.resourceId !== body.resourceId)
+        return json4({ error: "invalid_bank_receipt" }, 503);
+      return json4(result);
+    } catch (reason) {
+      const code = reason instanceof Error ? reason.message : "";
+      if ([
+        "guild_membership_required",
+        "guild_bank_resource_unavailable",
+        "guild_bank_item_locked",
+        "insufficient_gold",
+        "insufficient_construction_materials",
+        "guild_bank_capacity_reached",
+        "guild_bank_request_conflict",
+        "character_required"
+      ].includes(code))
+        return json4({ error: code }, code.startsWith("insufficient_") ? 422 : 409);
+      return json4({ error: "guild_bank_deposit_unavailable" }, 503);
+    }
+  };
+}
 
-// backend/online/edge.ts
+// online/edge.ts
 var url = Deno.env.get("SUPABASE_URL");
 var serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
 var anonKey = Deno.env.get("SUPABASE_ANON_KEY");
@@ -56043,6 +57146,7 @@ var guildShopClaim = guildShopDailyClaimHandler(guildShopServices);
 var guildShopPurchase = guildShopPurchaseHandler(guildShopServices);
 var guildShopEventClaim = guildShopEventClaimHandler(guildShopServices);
 var guildConstructionDonation = guildConstructionDonationHandler(guildShopServices);
+var guildBankDeposit = guildBankDepositHandler(guildShopServices);
 var guildShopWeeklyClaim = guildShopWeeklyClaimHandler(guildShopServices);
 Deno.serve(withReleaseGate(async (request) => {
   const route = new URL(request.url);
@@ -56051,6 +57155,7 @@ Deno.serve(withReleaseGate(async (request) => {
     if (route.searchParams.get("action") === "purchase") return guildShopPurchase(request);
     if (route.searchParams.get("action") === "event-claim") return guildShopEventClaim(request);
     if (route.searchParams.get("action") === "donate") return guildConstructionDonation(request);
+    if (route.searchParams.get("action") === "bank-deposit") return guildBankDeposit(request);
     if (route.searchParams.get("action") === "weekly-claim") return guildShopWeeklyClaim(request);
     return request.method === "POST" ? guildShopClaim(request) : guildShop(request);
   }

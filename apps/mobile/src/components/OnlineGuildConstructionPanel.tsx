@@ -5,6 +5,7 @@ import {Panel} from './Panel';
 import {gameAlert} from '../core/game-alerts';
 import {useGameTheme} from '../theme/ThemeContext';
 import type {ThemeColors} from '../theme/theme';
+import type {ItemStack} from '../core/types';
 import type {GuildTokenShopSnapshot} from '../online/guild-token-shop';
 import {discardPendingGuildConstructionDonation,donateOnlineGuildConstruction,
  pendingGuildConstructionDonation,type PendingGuildDonation} from '../online/guild-construction';
@@ -18,15 +19,16 @@ function resourceName(key:string){
  * This component never mutates local inventory optimistically.
  */
 export function OnlineGuildConstructionPanel({
- snapshot,onRewardsChanged,onReload,
+ snapshot,onRewardsChanged,onReload,inventory,gold,
 }:{
  snapshot:GuildTokenShopSnapshot;
+ inventory?:ItemStack[];gold?:number;
  onRewardsChanged?:()=>void|Promise<unknown>;
  onReload?:()=>void|Promise<unknown>;
 }){
  const C=useGameTheme(),s=useMemo(()=>styles(C),[C]);
  const [selected,setSelected]=useState<{templateId:string;resourceId:string}|null>(null);
- const [quantity,setQuantity]=useState('100'),[busy,setBusy]=useState(false);
+ const [quantity,setQuantity]=useState('1'),[busy,setBusy]=useState(false);
  const [pending,setPending]=useState<PendingGuildDonation|null>(null);
  const [error,setError]=useState(''),[notice,setNotice]=useState('');
  useEffect(()=>{
@@ -58,9 +60,9 @@ export function OnlineGuildConstructionPanel({
  );
  return <Panel>
   <Text style={s.kicker}>GUILD CONSTRUCTION</Text>
-  <Text style={s.title}>Build something together</Text>
-  <Text style={s.copy}>Permanent guild cosmetics need collective Gold and materials. Construction never blocks ordinary Guild levels or Guild XP.</Text>
-  <Text style={s.note}>Only released projects accept donations. All contributions are permanent and verified on the server.</Text>
+  <Text style={s.title}>Needed Now</Text>
+  <Text style={s.copy}>Choose an active upgrade, then donate only the amount still needed. Your resources stay in your inventory until you confirm.</Text>
+  <Text style={s.note}>Donations are permanent. The server checks membership, materials and the remaining goal before deducting anything.</Text>
   {error?<Text accessibilityRole="alert" style={s.error}>{error}</Text>:null}
   {notice?<Text accessibilityLiveRegion="polite" style={s.notice}>{notice}</Text>:null}
   {pending?<View style={s.pending}>
@@ -71,6 +73,7 @@ export function OnlineGuildConstructionPanel({
     <GameButton compact title="Discard local retry" tone="secondary" disabled={busy} onPress={confirmDiscard}/>
    </View>
   </View>:null}
+  {!snapshot.constructionTemplates.some(template=>template.enabled&&snapshot.guildLevel>=template.guildLevel&&!snapshot.construction.some(p=>p.templateId===template.id&&p.completed))?<Text style={s.copy}>No construction materials are needed right now. Future projects cannot accept donations.</Text>:null}
   {snapshot.constructionTemplates.map(template=>{
    const row=snapshot.construction.find(p=>p.templateId===template.id);
    const requirements=[{key:'gold',required:template.gold},...template.materials.map(material=>({key:material.materialKey,required:material.amount}))];
@@ -79,10 +82,11 @@ export function OnlineGuildConstructionPanel({
    const canDonate=unlocked&&template.enabled&&!row?.completed&&!pending;
    const selectedHere=selected?.templateId===template.id;
    const chosen=requirements.find(res=>res.key===selected?.resourceId);
-   const remaining=chosen?chosen.required-Math.max(0,row?.resources[chosen.key]??0):0;
+   const remaining=chosen?Math.max(0,chosen.required-Math.max(0,row?.resources[chosen.key]??0)):0;
+   const owned=chosen?.key==='gold'?gold:inventory?.reduce((sum,stack)=>stack.itemId===chosen?.key?sum+stack.quantity:sum,0);
+   const limit=Math.max(0,Math.min(1000000,remaining,owned===undefined?Infinity:Math.max(0,Math.floor(owned))));
    const donationAmount=Number(quantity);
-   const validQuantity=Number.isSafeInteger(donationAmount)&&donationAmount>0
-    &&donationAmount<=remaining&&donationAmount<=1000000;
+   const validQuantity=Number.isSafeInteger(donationAmount)&&donationAmount>0&&donationAmount<=limit;
    return <View key={template.id} style={s.project}>
     <View style={s.head}><View style={s.flex}>
      <Text style={s.projectName}>{resourceName(template.id)}</Text>
@@ -94,22 +98,24 @@ export function OnlineGuildConstructionPanel({
      return <Pressable key={res.key} disabled={!canDonate||amount>=res.required}
       accessibilityRole="button" accessibilityState={{selected:active,disabled:!canDonate||amount>=res.required}}
       accessibilityLabel={`Donate ${resourceName(res.key)} to ${resourceName(template.id)}`}
-      onPress={()=>{setSelected({templateId:template.id,resourceId:res.key});setQuantity(res.key==='gold'?'1000':'100');}}
+      onPress={()=>{setSelected({templateId:template.id,resourceId:res.key});setQuantity('1');}}
       style={[s.resource,active&&s.resourceSelected]}>
       <View style={s.head}><Text style={s.resourceName}>{resourceName(res.key)}</Text><Text style={s.resourceAmount}>{amount.toLocaleString()} / {res.required.toLocaleString()}</Text></View>
       <View style={s.track}><View style={[s.fill,{width:`${pct}%` as `${number}%`}]}/></View>
      </Pressable>;
     })}
     {canDonate&&selectedHere&&chosen&&remaining>0?<View style={s.donationControls}>
-     <Text style={s.projectMeta}>Contribute {resourceName(chosen.key)} · {remaining.toLocaleString()} still needed</Text>
+     <Text style={s.projectMeta}>{resourceName(chosen.key)} · Need {remaining.toLocaleString()}{owned===undefined?'':` · You own ${Math.max(0,Math.floor(owned)).toLocaleString()}`}</Text>
      <View style={s.actions}>
+      <Pressable accessibilityRole="button" accessibilityLabel="Decrease donation amount" accessibilityState={{disabled:busy||donationAmount<=1}} disabled={busy||donationAmount<=1} onPress={()=>setQuantity(String(Math.max(1,donationAmount-1)))} style={s.preset}><Text style={s.presetText}>−</Text></Pressable>
       <TextInput accessibilityLabel="Donation amount" value={quantity} onChangeText={setQuantity}
        keyboardType="number-pad" maxLength={7} selectTextOnFocus style={s.input}/>
-      <GameButton compact title={busy?'Saving…':'Donate'} disabled={busy||!validQuantity}
-       onPress={()=>donate({templateId:template.id,resourceId:chosen.key,amount:donationAmount})}/>
+      <Pressable accessibilityRole="button" accessibilityLabel="Increase donation amount" accessibilityState={{disabled:busy||limit<1||donationAmount>=limit}} disabled={busy||limit<1||donationAmount>=limit} onPress={()=>setQuantity(String(Math.min(limit,Math.max(0,donationAmount)+1)))} style={s.preset}><Text style={s.presetText}>+</Text></Pressable>
+      <Pressable accessibilityRole="button" accessibilityLabel="Donate maximum needed from inventory" accessibilityState={{disabled:busy||limit<1}} disabled={busy||limit<1} onPress={()=>setQuantity(String(limit))} style={s.preset}><Text style={s.presetText}>Max</Text></Pressable>
      </View>
-     <View style={s.actions}>{[10,100,1000].map(value=><Pressable key={value} onPress={()=>setQuantity(String(Math.min(value,remaining,1000000)))}
-      accessibilityRole="button" style={s.preset}><Text style={s.presetText}>{value.toLocaleString()}</Text></Pressable>)}</View>
+     <GameButton compact title={busy?'Donating…':`Donate ${validQuantity?donationAmount.toLocaleString():''}`.trim()} disabled={busy||!validQuantity}
+      onPress={()=>donate({templateId:template.id,resourceId:chosen.key,amount:donationAmount})}/>
+     {limit<1?<Text style={s.note}>No eligible resources available to donate.</Text>:null}
     </View>:null}
     <Text style={s.unlock}>{row?.completed?'Guild reward unlocked':`Reward: ${resourceName(template.unlockId)}`}</Text>
    </View>;

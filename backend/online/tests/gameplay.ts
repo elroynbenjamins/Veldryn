@@ -8,14 +8,14 @@ import {COMBAT_COMPANIONS} from '../../../apps/mobile/src/content/combat-compani
 import {unlockCombatCompanion} from '../../../apps/mobile/src/core/combat-companions';
 import {setLocalEventEnabled} from '../../../apps/mobile/src/core/live-events';
 async function main(){
- let state:GameState|null=null,version=0,commits=0,clock=1700000000000,transportFailure=false,generatedIds=0,blockedDeleteCharacterId:string|null=null,deletedCommitCharacterId:string|null=null;
+ let state:GameState|null=null,version=0,commits=0,clock=1700000000000,transportFailure=false,suppressLiveEvent=false,generatedIds=0,blockedDeleteCharacterId:string|null=null,deletedCommitCharacterId:string|null=null;
  const commandMetrics:Record<string,unknown>[]=[];
  const receipts=new Map<string,{response:unknown;requestHash:string}>();
  const services:GameplayServices={authenticate:async token=>token==='alice-token'?'alice':null,randomId:()=>['11111111-1111-4111-8111-111111111111','33333333-3333-4333-8333-333333333333'][generatedIds++]??'44444444-4444-4444-8444-444444444444',randomRoll:()=>.25,
   rpc:async<T>(name:string,args:Record<string,unknown>):Promise<T>=>{
    if(name==='record_online_command_outcome_server_v1'){commandMetrics.push(args);return null as T;}
    if(name==='read_online_game_receipt_server_v1')return (receipts.get(args.p_request_id as string)??null) as T;
-   if(name==='load_online_game_server_v1')return {state:structuredClone(state),version,serverNow:clock,characterId:state?.character?.id??null,walletGold:state?.character?.gold??null,guildMember:false,liveEvent:state?.account.liveEvent,communityProgress:{}} as T;
+   if(name==='load_online_game_server_v1')return {state:structuredClone(state),version,serverNow:clock,characterId:state?.character?.id??null,walletGold:state?.character?.gold??null,guildMember:false,liveEvent:suppressLiveEvent?undefined:state?.account.liveEvent,communityProgress:{}} as T;
    if(name==='character_delete_coop_guard_server_v1')return {blocked:args.p_character_id===blockedDeleteCharacterId,reason:'Leave the Live co-op queue or ready check before deleting this character.'} as T;
    if(name==='commit_online_game_guild_pve_v1'){
     if(args.p_expected_version!==version)throw new GameplayError('stale_state');
@@ -166,6 +166,22 @@ async function main(){
  assert.equal(state!.account.eventCandyChargesById?.[candyId],3);
  assert.equal(state!.account.eventShopPurchaseCounts?.[candyEventId+':candy:companion_material:'+otherId],1);
  assert.equal(state!.account.eventShopPurchaseCounts?.[candyEventId+':candy:companion_material'],5,'legacy aggregate counter is unchanged by per-companion claims');
+ // The server may stop returning an event after its scheduled window. A previously
+ // server-issued end timestamp must still protect players' unused candy.
+ const remainingCandy=state!.account.eventCandyChargesById?.[candyId]??0;
+ const beforeExpiryEssence=state!.account.companionEssence??0;
+ clock=state!.account.liveEvent!.endsAtMs+7*86400_000+1;
+ suppressLiveEvent=true;
+ const expired=await request({type:'gear_autosell',args:{enabled:false}},'event-expiry-authority-01',version);
+ assert.equal(expired.status,200,'ended event metadata survives archive long enough to settle valid rewards');
+ assert.equal(state!.account.eventCandyChargesById?.[candyId],0,'all retired candy charges are consumed exactly once');
+ assert.equal(state!.account.companionEssence,beforeExpiryEssence+remainingCandy*10,'archived candy is exchanged for fixed, exact Companion Essence');
+ assert.equal(state!.account.eventShopPurchaseCounts?.[candyEventId+':candy:expired_to_essence_v1'],1);
+ const expiredCommits=commits,expiredEssence=state!.account.companionEssence;
+ assert.equal((await request({type:'gear_autosell',args:{enabled:false}},'event-expiry-again-01',version)).status,200);
+ assert.equal(commits,expiredCommits+1);
+ assert.equal(state!.account.companionEssence,expiredEssence,'subsequent legitimate actions never mint another expiry reward');
+
  console.log('PASS authenticated gameplay HTTP, input authority, Admin QA authorization, canonical replay, stale version, lost-response recovery and aggregate command telemetry');
 }
 void main().catch(error=>{console.error(error);process.exitCode=1;});

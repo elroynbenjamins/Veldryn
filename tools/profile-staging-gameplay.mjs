@@ -15,7 +15,7 @@ const percentile=(values,fraction)=>{
 export function validateStagingProfileConfig(env){
  if(env.STAGING_PROFILE_CONFIRM!==CONFIRM)throw Error('Staging load test requires an explicit write confirmation.');
  const expected=env.STAGING_PROFILE_PROJECT_REF,production=env.STAGING_PROFILE_PRODUCTION_REF;
- if(!/^[a-z0-9]{20}$/.test(expected??'')||!/^[a-z0-9]{20}$/.test(production??'')||expected===production)
+ if(!/^[a-z0-9]{20}$/.test(expected??'')||!/^[a-z0-9]{20}$/.test(production??'')||expected===production||expected===KNOWN_PRODUCTION_REF)
   throw Error('Provide distinct staging and production project refs to prevent production load.');
  let url;
  try{url=new URL(env.STAGING_PROFILE_URL);}catch{throw Error('Invalid staging URL.');}

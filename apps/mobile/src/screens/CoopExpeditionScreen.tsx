@@ -102,7 +102,7 @@ export function CoopExpeditionScreen({onClose,language,state,entrySource=realCoo
   const syncMode=eventRun?'event':run?.mode??'qmode';
   const syncPhase=eventRun?.phase??run?.phase;
   const syncDecisionId=eventRun?.decisionId??run?.decisionId;
-  const syncUrgency:CoopSyncUrgency=syncPhase==='resolving_node'?'combat':syncDecisionId?'decision':'idle';
+  const syncUrgency:CoopSyncUrgency=syncPhase==='resolving_node'?'combat':syncPhase!=='completed'&&syncPhase!=='failed'&&syncDecisionId?'decision':'idle';
   const refreshActiveRun=useCallback(async(id:string)=>{
     if(activeEventRunId.current===id)await refreshEventRun(id);
     else if(activeRunId.current===id)await refreshRun(id);

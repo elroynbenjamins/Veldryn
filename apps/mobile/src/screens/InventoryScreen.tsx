@@ -31,6 +31,7 @@ import {formatGameNumber} from '../core/number-format';
 import {ot} from '../i18n';
 import {itemRarity,rarityMeta} from '../core/item-rarity';
 import {craftedGearInstances,craftedGearDisplayQuality} from '../core/crafted-gear-instances';
+import {indexInventoryGearCopies} from '../core/inventory-gear-lookup';
 import {auditCraftedGearOwnership,craftedGearCopiesAt} from '../core/crafted-gear-ownership';
 import type {GameCommand} from '../core/game-commands';
 import {bulkSelectionSummary,type BulkStorageLocation} from '../core/inventory-bulk';
@@ -115,6 +116,10 @@ export function InventoryScreen({state,viewMemory,foodRequest=0,onEquip,onFood,o
   const activeStacks=state[location].stacks;
    const activeNewCount=useMemo(()=>new Set(activeStacks.filter(stack=>{const item=itemDef(stack.itemId);return stack.quantity>0&&newItemSet.has(stack.itemId)&&(item.type!=='gear'||isReleasedEquipmentItemId(item.id));}).map(stack=>stack.itemId)).size,[activeStacks,newItemSet]);
   const stacks=useMemo(()=>visibleStacks(activeStacks,query,filter,sort,favorites,newItemIds),[activeStacks,query,filter,sort,favorites,newItemIds]);
+  // Normalize once per authoritative equipment snapshot; tile rendering must not
+  // scan or re-normalize every crafted copy for every visible inventory tile.
+  const exactRecords=useMemo(()=>craftedGearInstances(state),[state.account.craftedGearInstances]);
+  const exactRecordsById=useMemo(()=>indexInventoryGearCopies(exactRecords),[exactRecords]);
   const selectedSet=useMemo(()=>new Set(selectedIds),[selectedIds]);
    const selectionSummary=useMemo(()=>bulkSelectionSummary(state,selectedIds,location),[state,selectedIds,location]);
   const exitSelection=()=>{setSelectMode(false);setSelectedIds([]);setBulkPending(null)};
@@ -126,7 +131,7 @@ export function InventoryScreen({state,viewMemory,foodRequest=0,onEquip,onFood,o
   const beginBulk=(kind:BulkAction)=>{const ids=kind==='transfer'?selectionSummary.transferableIds:kind==='sell'?selectionSummary.sellableIds:selectionSummary.salvageableIds;if(ids.length)setBulkPending({kind,ids})};
   const closeInspect=()=>{if(inspectId&&newItemSet.has(inspectId))run(()=>onAcknowledgeItem(inspectId));setInspectId(null);setSelectedInstanceId(null)};
   const renderStack=(stack:ItemStack)=>{
-    const item=itemDef(stack.itemId),exactRecord=stack.instanceId?craftedGearInstances(state).find(row=>row.id===stack.instanceId):undefined,favorite=favoriteSet.has(item.id),locked=lockedSet.has(item.id)||exactRecord?.locked===true,newItem=newItemSet.has(item.id),selected=selectedSet.has(item.id),autoEat=state.character?.equippedFoodId===item.id,rarity=rarityMeta(exactRecord?.rarity??itemRarity(item)),goalProtected=goalProtection.has(item.id);
+    const item=itemDef(stack.itemId),exactRecord=stack.instanceId?exactRecordsById.get(stack.instanceId):undefined,favorite=favoriteSet.has(item.id),locked=lockedSet.has(item.id)||exactRecord?.locked===true,newItem=newItemSet.has(item.id),selected=selectedSet.has(item.id),autoEat=state.character?.equippedFoodId===item.id,rarity=rarityMeta(exactRecord?.rarity??itemRarity(item)),goalProtected=goalProtection.has(item.id);
     const label=[gt('{name}, {count} owned',{name:item.name,count:formatGameNumber(stack.quantity,state.settings.numberMode,state.settings.language)}),favorite?gt('favorite'):'',locked?gt('Locked'):'',exactRecord?rarity.label:'',newItem?gt('New'):'',goalProtected?gt('needed for Working Toward'):''].filter(Boolean).join(', ');
     return <View key={`${location}:${item.id}:${stack.instanceId??'legacy'}`} style={[s.itemTile,{width:tileSize,height:tileSize,borderColor:rarity.color,borderWidth:rarity.borderWidth,backgroundColor:selected?C.selection:C.panel}]}>
       <Pressable accessibilityRole={selectMode?'checkbox':'button'} accessibilityLabel={selectMode?gt(selected?'Deselect {label}':'Select {label}',{label}):label} accessibilityHint={selectMode?gt("Select this stack for bulk management"):gt("Open item details, sources and crafting uses")} accessibilityState={selectMode?{checked:selected}:undefined} onPress={()=>{if(selectMode){toggleSelection(item.id);return;}if(!stack.instanceId&&item.type==='gear'&&location==='inventory'){setPreviewId(item.id);return;}setSelectedInstanceId(stack.instanceId??null);setInspectId(item.id)}} style={({pressed})=>[s.itemOpen,pressed&&s.pressed]}>
@@ -160,8 +165,8 @@ export function InventoryScreen({state,viewMemory,foodRequest=0,onEquip,onFood,o
   const overflowCount=state.overflow.stacks.reduce((sum,item)=>sum+item.quantity,0);
   const inventoryUpgrade=useMemo(()=>storageUpgradePreview(state,'inventory'),[state]),bankUpgrade=useMemo(()=>storageUpgradePreview(state,'bank'),[state]);
   const inspected=inspectId?itemDef(inspectId):undefined,carried=location==='inventory';
-  const exactRecords=craftedGearInstances(state);
-  const exactCopies=inspected?.type==='gear'?craftedGearCopiesAt(state,inspected.id,location).map(row=>exactRecords.find(record=>record.id===row.instanceId)!).filter(Boolean):[];
+
+  const exactCopies=inspected?.type==='gear'?craftedGearCopiesAt(state,inspected.id,location).map(row=>exactRecordsById.get(row.instanceId)!).filter(Boolean):[];
   const selectedCopy=exactCopies.find(row=>row.id===selectedInstanceId)??exactCopies[0];
   const hasLegacyStack=inspected?state[location].stacks.some(row=>row.itemId===inspected.id&&row.instanceId===undefined&&row.quantity>0):false;
   const legacyStackIndex=inspected?state[location].stacks.findIndex(row=>row.itemId===inspected.id&&row.instanceId===undefined&&row.quantity>0):-1;

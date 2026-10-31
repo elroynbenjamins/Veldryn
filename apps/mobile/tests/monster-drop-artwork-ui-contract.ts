@@ -8,7 +8,7 @@ const mastery=read('src/components/MonsterMasteryPanel.tsx');
 ok(bestiary.includes("import {ItemArtwork}"),'Bestiary must import real item artwork');
 ok(bestiary.includes("<ItemArtwork itemId={drop.itemId}"),'Bestiary drop previews must render item art');
 ok(bestiary.includes("itemDef(drop.itemId)"),'Bestiary must show canonical item names');
-ok(bestiary.includes("dropStrip")&&bestiary.includes("dropChip"),'Bestiary drops must use compact visual chips');
+ok(bestiary.includes("detail.drops.map")&&bestiary.includes("dropGrid")&&bestiary.includes("dropRow"),'Bestiary detail must show the full known drop list in compact illustrated rows');
 ok(bestiary.includes("v33EquipmentMaterialLabel(drop.itemId)"),'Bestiary must identify monster materials that feed Equipment 2.0');
 
 ok(mastery.includes("import {ItemArtwork}"),'Monster Mastery must import real item artwork');

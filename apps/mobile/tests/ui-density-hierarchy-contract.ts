@@ -324,6 +324,15 @@ ok(accountBonuses.includes('source:{minHeight:52'),'Account bonus sources must a
 
 const rankings=read('src/screens/RankingsScreen.tsx');
 ok(rankings.includes('<GameButton compact title={st("Refresh")} tone="secondary"'),"Rankings refresh must remain a secondary compact action");
+ok(rankings.includes('const podium=activeSnapshot?.entries.filter(entry=>entry.rank<=3)')&&rankings.includes('const remaining=activeSnapshot?.entries.filter(entry=>entry.rank>3)'),"Rankings podium must not duplicate names in the compact list");
+ok(rankings.includes('visible={boardPickerOpen}')&&rankings.includes('onPress={()=>{setBoard(value.id);setBoardPickerOpen(false)}}'),"Rankings board selection must stay actionable and use the server board ID");
+ok(rankings.includes('activeSnapshot?.self')&&rankings.includes('s.selfCard'),"Rankings must keep own standing visible independently of the top places");
+const journalPage=read('src/screens/AdventurersJournalScreen.tsx');
+ok(journalPage.includes('journal?.unlockedAchievements')&&journalPage.includes('journal?.unlockedTitles')&&journalPage.includes('journal?.records'),"Journal summary must show earned counts, not full catalog counts");
+ok(journalPage.includes('showMastery?<MasteryHallPanel')&&journalPage.includes('showRecords?<PersonalRecordsPanel'),"Journal heavy details must stay behind independently expandable surfaces");
+ok(journalPage.includes("onNavigate('Bestiary')")&&journalPage.includes("onNavigate('Collections')")&&journalPage.includes("onNavigate('Profile')"),"Journal must preserve its three existing destinations");
+ok(masteryHall.includes("showAllSkills?skills:skills.slice(0,6)")&&masteryHall.includes("showAllRecords?records:records.slice(0,5)"),"Mastery lists must stay compact without hiding access to older records");
+
 
 const arena=read('src/screens/ArenaScreen.tsx');
 ok(arena.includes('<GameButton compact title={st("Clear slot")} tone="secondary"'),"Arena clear-slot controls must not compete with character selection");

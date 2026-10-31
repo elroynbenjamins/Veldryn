@@ -23,7 +23,7 @@
     "test:companion-stage-picks": "node tests/companion-stage-picks.cjs",
     "test:master-roster": "node ../../tools/validate-master-roster-assets.mjs && node ../../tools/validate-companion-art-coverage.mjs",
     "test:guild-shop-art": "node ../../tools/validate-guild-token-shop-assets.mjs",
-    "test:guild-ui": "node tests/guild-pve-combat-visuals.cjs && node tests/guild-token-shop-interactions.cjs && node tests/guild-roster-interactions.cjs && node ../../tools/run-mobile-tests.mjs guild-construction-benefits guild-management-ui-contract guild-chat-projects-ui-contract guild-notice-board-ui-contract guild-muster-ui-contract v44-guild-hall",
+    "test:guild-ui": "node tests/guild-pve-combat-visuals.cjs && node tests/guild-token-shop-interactions.cjs && node tests/guild-roster-interactions.cjs && node ../../tools/run-mobile-tests.mjs guild-construction-benefits guild-construction-commissions guild-management-ui-contract guild-chat-projects-ui-contract guild-notice-board-ui-contract guild-muster-ui-contract v44-guild-hall",
     "test:guild-pve-visuals": "node tests/guild-pve-combat-visuals.cjs",
     "test:event-release-graph": "node ../../tools/validate-event-release-graph.mjs",
     "test:release-bundle": "expo export --platform android --output-dir .release-bundle-audit && node ../../tools/validate-mobile-export-budget.mjs .release-bundle-audit",

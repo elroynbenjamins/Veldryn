@@ -870,6 +870,7 @@ export function sellItem(state:GameState,itemId:string,quantity=1):GameState{
   if(state.settings.favoriteItemIds?.includes(itemId))throw new Error('Favorite item is protected. Remove it from Favorites before selling.');
   if(state.settings.lockedItemIds?.includes(itemId))throw new Error('Locked item is protected. Unlock it before selling.');
   const d=itemDef(itemId);
+  if(d.guildOnly)throw new Error('Guild commission materials can only be donated to active Guild construction.');
   if(d.knowledgeUnlockId)throw new Error('Blueprints cannot be sold. Learn the recipe by crafting its tool.');
   if(d.type==='gear'&&hasEnhancement(state,itemId)){
     // Allow selling duplicates: enhancement travels with the remaining copy. Only block the last one.
@@ -911,6 +912,7 @@ export function sellBankItem(state:GameState,itemId:string,quantity=1):GameState
   if(state.settings.favoriteItemIds?.includes(itemId))throw new Error('Favorite item is protected.');
   if(state.settings.lockedItemIds?.includes(itemId))throw new Error('Locked item is protected.');
   const def=itemDef(itemId);
+  if(def.guildOnly)throw new Error('Guild commission materials can only be donated to active Guild construction.');
   if(def.knowledgeUnlockId)throw new Error('Blueprints cannot be sold.');
   if(def.type==='gear'&&hasEnhancement(state,itemId))throw new Error('Enhanced equipment is protected.');
   const stacks=consume(state.bank.stacks,itemId,quantity);

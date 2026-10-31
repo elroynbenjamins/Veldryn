@@ -97,7 +97,7 @@ let processingQueued=createCharacter(newGame(now),'WAYFINDER','Processing Queue'
 ok(queueSkillReadiness(processingQueued,'smithing').ready&&queueSkillReadiness(processingQueued,'cooking').ready,'Cooking and Smithing are normal queue choices for every character');
 const futureSmelt={kind:'processing' as const,targetId:'SMELT_COPPER_INGOT'};
 ok(queuedActivityPlanningReadiness(processingQueued,futureSmelt).ready&&!queuedActivityReadiness(processingQueued,futureSmelt).ready,'A Smithing recipe may be queued before ingredients are available, but waits until it can start');
-processingQueued={...processingQueued,inventory:{...processingQueued.inventory,stacks:[...processingQueued.inventory.stacks,{itemId:'COPPER_ORE',quantity:10}]}};
+processingQueued={...processingQueued,inventory:{...processingQueued.inventory,stacks:[...processingQueued.inventory.stacks,{itemId:'COPPER_ORE',quantity:10},{itemId:'GREENWOOD_LOG',quantity:2}]}};
 processingQueued=executeGameCommand(processingQueued,{type:'queue_add',args:{kind:'processing',id:'SMELT_COPPER_INGOT'}},now).state;
 processingQueued=executeGameCommand(processingQueued,{type:'queue_add',args:{kind:'gathering',id:'GREENWOOD_TREE',goal:{kind:'duration_seconds',value:60}}},now).state;
 processingQueued=executeGameCommand(processingQueued,{type:'queue_start'},now).state;

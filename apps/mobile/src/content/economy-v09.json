@@ -6,19 +6,31 @@
       "ore": "Copper Ore",
       "bar": "Copper Ingot",
       "batch": "10 ore -> 5 bars",
-      "smelt_seconds": 36
+      "smelt_seconds": 36,
+      "fuel": {
+        "item_id": "GREENWOOD_LOG",
+        "quantity_per_batch": 2
+      }
     },
     {
       "ore": "Aster-Iron Ore",
       "bar": "Aster-Iron Ingot",
       "batch": "8 ore -> 4 bars",
-      "smelt_seconds": 42
+      "smelt_seconds": 42,
+      "fuel": {
+        "item_id": "IRONWOOD_LOG",
+        "quantity_per_batch": 2
+      }
     },
     {
       "ore": "Oathstone Ore",
       "bar": "Oathstone Ingot",
       "batch": "6 ore -> 3 bars",
-      "smelt_seconds": 54
+      "smelt_seconds": 54,
+      "fuel": {
+        "item_id": "CROWNWOOD_LOG",
+        "quantity_per_batch": 3
+      }
     }
   ],
   "guild_member_models": [

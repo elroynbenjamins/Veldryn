@@ -98,14 +98,14 @@ const combatClaim=claimActivity(boostedCombat,t0+3600_000),combatRemaining=comba
 ok(combatRemaining>=3600&&combatRemaining<7200,'Combat boost time should stop draining when combat itself stops early');
 
 let craft=createCharacter(newGame(t0),'WAYFINDER','Craft Output');
-craft={...craft,character:{...craft.character!,gold:1000,activeDailySupplyBoost:{type:'crafting_output' as const,remainingSeconds:7200}},inventory:{...craft.inventory,stacks:[...craft.inventory.stacks,{itemId:'COPPER_ORE',quantity:30}]}};
+craft={...craft,character:{...craft.character!,gold:1000,activeDailySupplyBoost:{type:'crafting_output' as const,remainingSeconds:7200}},inventory:{...craft.inventory,stacks:[...craft.inventory.stacks,{itemId:'COPPER_ORE',quantity:30},{itemId:'GREENWOOD_LOG',quantity:4}]}};
 craft=craftRecipe(craft,'SMELT_COPPER_INGOT',t0);
 craft=craftRecipe(craft,'SMELT_COPPER_INGOT',t0+1);
 equal(qty(craft,'COPPER_INGOT'),11,'Two five-ingot processing batches should produce one carried +10% bonus ingot');
 equal(craft.character?.activeDailySupplyBoost?.remainingSeconds,7200-72,'Crafting Output should consume recipe seconds, not menu time');
 
 let craftSkill=createCharacter(newGame(t0),'WAYFINDER','Craft XP');
-craftSkill={...craftSkill,character:{...craftSkill.character!,gold:1000,activeDailySupplyBoost:{type:'skill_xp' as const,remainingSeconds:7200}},inventory:{...craftSkill.inventory,stacks:[...craftSkill.inventory.stacks,{itemId:'COPPER_ORE',quantity:10}]}};
+craftSkill={...craftSkill,character:{...craftSkill.character!,gold:1000,activeDailySupplyBoost:{type:'skill_xp' as const,remainingSeconds:7200}},inventory:{...craftSkill.inventory,stacks:[...craftSkill.inventory.stacks,{itemId:'COPPER_ORE',quantity:10},{itemId:'GREENWOOD_LOG',quantity:2}]}};
 craftSkill=craftRecipe(craftSkill,'SMELT_COPPER_INGOT',t0);
 equal(craftSkill.skills.find(row=>row.skillId==='smithing')?.xp,88,'Skill XP should add 10% to instant processing XP');
 equal(craftSkill.character?.activeDailySupplyBoost?.remainingSeconds,7200-36,'Skill XP should consume the recipe duration');

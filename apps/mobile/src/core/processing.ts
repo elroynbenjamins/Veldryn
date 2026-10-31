@@ -107,14 +107,26 @@ export function previewProcessingReward(state:GameState,elapsed:number):RewardBu
 export function processingRefund(processing:ProcessingBatchState){
   return {items:processing.inputsPerBatch.map(input=>({itemId:input.itemId,quantity:input.quantity*processing.remainingBatches})),gold:processing.goldPerBatch*processing.remainingBatches};
 }
+// Early smelting used to reserve only ore. Those already-paid in-flight runs
+// must settle and refund their original snapshot without retroactive wood costs.
+const LEGACY_ORE_ONLY_SMELTING:Readonly<Record<string,ItemStack>>={
+ SMELT_COPPER_INGOT:{itemId:'COPPER_ORE',quantity:10},
+ SMELT_ASTER_IRON_INGOT:{itemId:'ASTER_IRON_ORE',quantity:8},
+ SMELT_OATHSTONE_INGOT:{itemId:'OATHSTONE_ORE',quantity:6},
+};
 export function normalizeProcessingBatch(value:unknown,targetId:string):ProcessingBatchState{
   const p=value as ProcessingBatchState|undefined,recipe=processingRecipeDef(targetId);
   const integer=(n:unknown,min:number,max:number)=>Number.isSafeInteger(n)&&Number(n)>=min&&Number(n)<=max;
-  // Existing reservations may contain multiple operations from older saves; let them finish safely.
+  // Modern reservations must contain all current ingredients. Exact ore-only
+  // snapshots from the three pre-fuel recipes remain valid until fully settled.
+  const legacy=LEGACY_ORE_ONLY_SMELTING[targetId];
+  const inputsValid=!!p&&!!recipe&&Array.isArray(p.inputsPerBatch)&&(
+    (p.inputsPerBatch.length===recipe.inputs.length&&recipe.inputs.every(input=>
+      p.inputsPerBatch.filter(saved=>saved.itemId===input.itemId&&integer(saved.quantity,1,10000)).length===1))
+    ||(!!legacy&&p.inputsPerBatch.length===1&&p.inputsPerBatch[0]?.itemId===legacy.itemId&&p.inputsPerBatch[0]?.quantity===legacy.quantity));
   const valid=!!p&&!!recipe&&p.version===1&&p.recipeId===targetId&&p.skillId===recipe.skillId&&integer(p.totalBatches,1,MAX_PROCESSING_BATCHES)&&integer(p.remainingBatches,1,p.totalBatches)&&
     integer(p.goldPerBatch,0,100000)&&Number.isFinite(p.cycleSeconds)&&p.cycleSeconds>=1&&p.cycleSeconds<=86400&&Number.isFinite(p.xpPerBatch)&&p.xpPerBatch>=0&&p.xpPerBatch<=100000&&
-    p.outputPerBatch?.itemId===recipe.output.itemId&&integer(p.outputPerBatch?.quantity,1,10000)&&Array.isArray(p.inputsPerBatch)&&p.inputsPerBatch.length===recipe.inputs.length&&
-    recipe.inputs.every(input=>p.inputsPerBatch.filter(saved=>saved.itemId===input.itemId&&integer(saved.quantity,1,10000)).length===1);
+    p.outputPerBatch?.itemId===recipe.output.itemId&&integer(p.outputPerBatch?.quantity,1,10000)&&inputsValid;
   if(!valid)throw new Error('Invalid reserved processing batch. Keep the save backup; do not reset or discard the reservation.');
   return {version:1,recipeId:targetId,skillId:recipe!.skillId as ProcessingSkillId,totalBatches:p!.totalBatches,remainingBatches:p!.remainingBatches,
     inputsPerBatch:p!.inputsPerBatch.map(input=>({...input})),goldPerBatch:p!.goldPerBatch,outputPerBatch:{...p!.outputPerBatch},cycleSeconds:p!.cycleSeconds,xpPerBatch:p!.xpPerBatch};

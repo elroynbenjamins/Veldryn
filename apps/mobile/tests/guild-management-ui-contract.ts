@@ -46,6 +46,8 @@ ok(screen.includes("onlineSection==='Roster'?")&&screen.includes('cloneElement(o
 ok(screen.includes("onlineSection==='Hall'?<View")&&screen.includes("hallSection==='Shop'||hallSection==='Bank'")&&screen.includes("(['Facilities','Skills','Trophies','Shop','Bank'] as const)")&&screen.includes('<OnlineGuildTokenShopPanel')&&screen.includes('<OnlineGuildBankPanel')&&screen.includes('cloneElement(onlineHall'),'Hall must keep existing Shop/Hall destinations and add Guild Bank within Hall');
 const bank=read('src/components/OnlineGuildConstructionPanel.tsx');
 const bankEntry=read('src/components/OnlineGuildBankPanel.tsx');
+const shopView=read('src/components/GuildTokenShopView.tsx');
+ok(shopView.includes("(['Browse','Earn'] as const)")&&!shopView.includes("section==='Projects'"),'Guild Token Shop must not expose a second, inventory-unaware Guild donation screen');
 ok(bank.includes('const limit=Math.max(0,Math.min(1000000,remaining')&&bank.includes('disabled={busy||!validQuantity}'),'Donation quantity must never exceed the client-held amount or remaining project requirement');
 ok(bank.includes('pendingGuildConstructionDonation')&&bank.includes('donateOnlineGuildConstruction'),'Donations must retain pending idempotent receipt recovery');
 ok(bankEntry.includes('loadOnlineGuildTokenShop()')&&bankEntry.includes('inventory={state.inventory.stacks}'),'Bank must read server-owned requirements and show owned inventory');

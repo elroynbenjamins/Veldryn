@@ -304,7 +304,7 @@ async function reducedMotionAndUnmount() {
     await act(async () => { recovering = create(React.createElement(DungeonCombatStage, {run, boss: true})); });
     await act(async () => { failedQuery.reject(new Error('Native accessibility service unavailable')); });
     assert.strictEqual(currentCue(recovering), run.lastCombat.cues[0]);
-    findButton(recovering, 'Pause combat replay');
+    assert.equal(recovering.root.findAll(n=>n.props?.accessibilityLabel==='Pause combat replay').length,0,'recovery keeps automatic playback without a pause control');
     await fallback.tick(fallback.nextDelay());
     assert.strictEqual(currentCue(recovering), run.lastCombat.cues[1], 'failed accessibility lookup retains normal controllable playback');
     await act(async () => { recovering.unmount(); }); recovering = null;

@@ -112,6 +112,9 @@ import {DailySuppliesScreen} from './src/screens/DailySuppliesScreen';
 import {RewardsInboxScreen} from './src/screens/RewardsInboxScreen';
 import {AccountBonusesScreen} from './src/screens/AccountBonusesScreen';
 import {MasteryHallScreen} from './src/screens/MasteryHallScreen';
+import {AdventurersJournalScreen} from './src/screens/AdventurersJournalScreen';
+import {BestiaryScreen} from './src/screens/BestiaryScreen';
+import {WorldMilestoneFeedScreen} from './src/screens/WorldMilestoneFeedScreen';
 import {PartySocialProvider} from './src/online/PartySocialProvider';
 import {AuthSessionProvider,useAuthSession} from './src/online/AuthSessionProvider';
 import {PlayerBadgeProvider} from './src/online/PlayerBadgeProvider';
@@ -146,13 +149,13 @@ import {TutorialHighlightProvider} from './src/components/TutorialBeacon';
 import {completeFirstSessionTutorialStep,loadFirstSessionTutorialCompleted} from './src/storage/first-session-tutorial';
 import {eventAnnouncementStore} from './src/storage/event-announcement';
 
-type Tab=QuickNavDestination|'NewUnlocks'|'Activity'|'DailySupplies'|'AccountBonuses'|'RewardsInbox'|'MasteryHall'|'Arena'|'Rankings'|'Collections'|'ResourceCodex'|'Profile'|'ProfileCustomize'|'Combat'|'Coop';
+type Tab=QuickNavDestination|'NewUnlocks'|'Activity'|'DailySupplies'|'AccountBonuses'|'RewardsInbox'|'MasteryHall'|'AdventurersJournal'|'Bestiary'|'WorldMilestones'|'Arena'|'Rankings'|'Collections'|'ResourceCodex'|'Profile'|'ProfileCustomize'|'Combat'|'Coop';
 type PrimaryTab='Home'|'Skills'|'World'|'Character'|'Inventory'|'More';
 type NavigationContext={skillsMode:'gathering'|'crafting'|'novice'|'faith';selectedSkill?:string;goalActionId?:string;goalRecipeId?:string;questMode:QuestMode;questFocusOrderId?:string;settingsSection?:SettingsSection;socialInitialTab:SocialHubTab;profileCustomizeSection:'Appearance'|'Identity';goalMonsterId?:string;goalRegionId?:string;goalDungeonId?:string};
 const primaryTabs:PrimaryTab[]=['Home','Character','Skills','World','Inventory','More'];
 function tabLabel(language:Language,tab:Tab):string{
   switch(tab){
-    case 'Home':return t(language,'nav.home');case 'World':return t(language,'nav.world');case 'Character':return t(language,'nav.character');case 'Inventory':return t(language,'nav.inventory');case 'More':return appText(language,'Account');case 'Activity':return appText(language,'Characters');case 'DailySupplies':return appText(language,'Daily Supplies');case 'AccountBonuses':return appText(language,'Account Bonuses');case 'RewardsInbox':return appText(language,'Rewards Inbox');case 'MasteryHall':return appText(language,'Mastery Hall');
+    case 'Home':return t(language,'nav.home');case 'World':return t(language,'nav.world');case 'Character':return t(language,'nav.character');case 'Inventory':return t(language,'nav.inventory');case 'More':return appText(language,'Account');case 'Activity':return appText(language,'Characters');case 'DailySupplies':return appText(language,'Daily Supplies');case 'AccountBonuses':return appText(language,'Account Bonuses');case 'RewardsInbox':return appText(language,'Rewards Inbox');case 'MasteryHall':return appText(language,'Mastery Hall');case 'AdventurersJournal':return appText(language,"Adventurer's Journal");case 'Bestiary':return appText(language,'Bestiary');case 'WorldMilestones':return appText(language,'World Milestones');
     case 'Quests':return t(language,'more.quests');case 'Companions':return appText(language,'Companions');case 'Skills':return t(language,'more.skills');case 'Events':return t(language,'more.events');case 'Friends':return t(language,'more.friends');case 'Guild':return t(language,'more.guild');case 'Settings':return t(language,'more.settings');case 'Account':return appText(language,'Account');case 'Dungeon':return appText(language,'Dungeon');case 'Empty':return appText(language,'Empty');
     case 'Combat':return appText(language,'Combat');case 'Coop':return ct(language,'browse.title');
     case 'Social':return appText(language,'Social');case 'Party':return appText(language,'Party');
@@ -776,6 +779,9 @@ const next=normalizeProfileIcon(migrateGemPouch(candidate));queuePreparationNoti
     {tab==='DailySupplies'&&<DailySuppliesScreen state={state} nowMs={now} onCommand={runCompanionCommand}/>}
     {tab==='RewardsInbox'&&<RewardsInboxScreen state={state} online={serverGameplayEnabled} onRefresh={async()=>online.refresh()} onEventClaim={async id=>{if(serverGameplayEnabled){if(!await perform({type:'event_reward',args:{id}},false))throw new Error('Event reward was not confirmed.');return;}const result=executeGameCommand(state,{type:'event_reward',args:{id}},Date.now());await commit(result.state)}}/>}
     {tab==='AccountBonuses'&&<AccountBonusesScreen state={state}/>}
+    {tab==='AdventurersJournal'&&<AdventurersJournalScreen state={state} onNavigate={destination=>setTab(destination)}/>}
+    {tab==='Bestiary'&&<BestiaryScreen state={state}/>}
+    {tab==='WorldMilestones'&&<WorldMilestoneFeedScreen/>}
     {tab==='MasteryHall'&&<MasteryHallScreen state={state} onOpenSkill={skillId=>{setSelectedSkill(skillId);setSkillsMode(['mining','woodcutting','fishing','herbalism'].includes(skillId)?'gathering':'crafting');setTab('Skills')}} onNavigate={openWorkingTowardDestination} onProfile={()=>{setProfileCustomizeSection('Identity');setTab('ProfileCustomize')}}/>}
     {tab==='Companions'&&<CompanionsScreen state={state} language={state.settings.language} now={now} onCommand={runCompanionCommand} onCreate={()=>setCreatingRoster(true)} initialNavigation={companionNavigationMemory.current?.characterId===state.character.id?companionNavigationMemory.current.context:undefined} onNavigationChange={context=>{companionNavigationMemory.current={characterId:state.character?.id??'',context};}} onNavigateSource={source=>{
       if(source.kind==='combat'){const currentZone=WORLD_ZONES.find(zone=>zone.id===state.currentRegionId)?.name;setTab(currentZone===source.zoneName?'Combat':'World');return;}

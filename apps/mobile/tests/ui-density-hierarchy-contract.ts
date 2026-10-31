@@ -270,7 +270,7 @@ ok(character.includes("keyStat:{flex:1,alignItems:'center',gap:2,paddingVertical
 ok(character.includes('primaryAction:{flexGrow:2,flexBasis:180}')&&character.includes('secondaryAction:{flexGrow:1,flexBasis:110'),'Character global actions must preserve one obvious primary equipment action');
 ok(!character.includes("title={showLoadouts?'Hide guides':'Build guides'}"),'Build Guides disclosure must not be duplicated by a second global button');
 ok(character.includes('disclosureOpen:{borderColor:C.info,backgroundColor:C.infoSurface}'),'Character secondary disclosures must show a clean selected/open state');
-ok(character.includes('<GameButton compact title={fullSet?')&&character.includes('<GameButton compact title={profileT(language,"Craft missing gear")}'),"Novice-set utility actions must stay compact");
+ok(character.includes('<ConfirmModal visible={confirming}')&&character.includes("confirmLabel={profileT(language,\"Equip set\")}")&&character.includes("onEquipSet")&&character.includes('<EquipmentSlotPicker'),'Starter-set equip confirmation and individual gear selection must remain accessible without duplicate guide buttons');
 
 const empty=read('src/components/EmptyState.tsx');
 ok(empty.includes('padding:spacing.lg'),'Empty states must avoid excessive vertical padding');

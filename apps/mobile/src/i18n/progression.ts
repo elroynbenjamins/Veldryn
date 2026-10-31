@@ -3,6 +3,12 @@ import {createTranslator} from './translator';
 
 // English source copy is the key. Proper names and player-authored text are never keys.
 export const progressionTranslationRows = {
+ // Read-only Journal milestone and bounded Mastery record lists.
+ "Next milestone: {title}":["Nächster Meilenstein: {title}","Siguiente hito: {title}","Volgende mijlpaal: {title}","Prossimo traguardo: {title}","Prochain jalon : {title}"],
+ "Rewards are cosmetic titles rather than power.":["Die Belohnungen sind kosmetische Titel, keine Kampfkraft.","Las recompensas son títulos cosméticos, no poder.","Beloningen zijn cosmetische titels, geen extra kracht.","Le ricompense sono titoli estetici, non potenza.","Les récompenses sont des titres cosmétiques, pas de la puissance."],
+ "All long-term achievements earned":["Alle Langzeiterfolge erreicht","Todos los logros a largo plazo obtenidos","Alle langetermijnprestaties behaald","Tutti gli obiettivi a lungo termine ottenuti","Tous les succès à long terme obtenus"],
+ "Show more records":["Weitere Rekorde anzeigen","Mostrar más récords","Meer records tonen","Mostra altri record","Afficher plus de records"],
+
   "All milestones":["Alle Meilensteine","Todos los hitos","Alle mijlpalen","Tutti i traguardi","Tous les jalons"],
   "Milestone type":["Meilensteintyp","Tipo de hito","Type mijlpaal","Tipo di traguardo","Type de jalon"],
   "No matching milestones":["Keine passenden Meilensteine","No hay hitos coincidentes","Geen passende mijlpalen","Nessun traguardo corrispondente","Aucun jalon correspondant"],

@@ -1,0 +1,31 @@
+import {createCharacter,newGame} from '../src/core/game';
+import {executeGameCommand} from '../src/core/game-commands';
+import {eventCandies} from '../src/content/live-events';
+import {EXPIRED_EVENT_CANDY_ESSENCE,settleExpiredEventCandies,setLocalEventEnabled} from '../src/core/live-events';
+
+const ok=(condition:boolean,message:string)=>{if(!condition)throw Error(message);};
+const start=Date.UTC(2026,9,21),id='EVT_ANNUAL_010_2026';
+const candies=eventCandies({id,name:'The Veilbreak',visualKey:'veilbreak'});
+const charges=Object.fromEntries(candies.map(row=>[row.id,row.kind==='companion'?5:row.kind==='skill'?2:row.kind==='pet'?1:0]));
+let state=setLocalEventEnabled(createCharacter(newGame(start),'IRONWARDEN','CandySettlement'),true,start,id);
+state={...state,account:{...state.account,eventCandyChargesById:charges,eventShopPurchaseCounts:{[id+':candy:companion_material']:5}}};
+const before=JSON.stringify(state),finish=state.account.liveEvent!.endsAtMs+7*86400_000;
+ok(settleExpiredEventCandies(state,finish-1)===state,'Candy is protected throughout the entire claim window');
+ok(JSON.stringify(state)===before,'Preview must not mutate or consume the player's candy');
+ok(EXPIRED_EVENT_CANDY_ESSENCE===10,'Each unused candy earns a small fixed Essence consolation');
+const invalid=()=>executeGameCommand(state,{type:'gear_autosell',args:{enabled:'invalid'}},finish+1);
+let rejected=false;try{invalid()}catch{rejected=true}
+ok(rejected&&JSON.stringify(state)===before,'Rejected commands cannot consume candy or apply an Essence settlement');
+const first=executeGameCommand(state,{type:'gear_autosell',args:{enabled:false}},finish+1).state;
+ok((first.account.companionEssence??0)===(state.account.companionEssence??0)+8*EXPIRED_EVENT_CANDY_ESSENCE,'All eight unused candies convert to an exact Essence amount');
+ok(Object.keys(charges).every(key=>first.account.eventCandyChargesById?.[key]===0),'Converted candy balances are zeroed');
+ok(first.account.eventShopPurchaseCounts?.[id+':candy:expired_to_essence_v1']===1,'Durable once-per-event settlement receipt is recorded');
+ok(first.account.eventShopPurchaseCounts?.[id+':candy:companion_material']===5,'Historic Bondbloom rewards remain untouched');
+const again=executeGameCommand(first,{type:'gear_autosell',args:{enabled:false}},finish+2).state;
+ok(again.account.companionEssence===first.account.companionEssence,'Repeat commands cannot duplicate the conversion');
+const newId='EVT_ANNUAL_011_2026';
+const rollover=setLocalEventEnabled(state,true,finish+5*86400_000,newId);
+const roll=executeGameCommand(rollover,{type:'gear_autosell',args:{enabled:false}},finish+5*86400_000+1).state;
+ok(roll.account.companionEssence===first.account.companionEssence,'Old event candy also settles when the next event takes ownership');
+ok((roll.account.eventCandyChargesById?.[id+':candy:companion']??0)===0,'Rollover cannot leave phantom Bond Candy charges');
+console.log('PASS expired event candy: grace window, rejected-command rollback, exact Essence, durable receipt, legacy grants and event rollover');

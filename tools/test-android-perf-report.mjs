@@ -23,7 +23,7 @@ assert.equal(capture.p95Ms,9);
 assert.equal(capture.totalPssMb,200);
 assert.equal(capture.overBudgetPercent,0);
 assert.ok(!JSON.stringify(capture).includes('auth'),'Capture may contain only aggregates');
-assert.throws(()=>makeAndroidCapture({...capture,framesRaw:'no valid frames',memoryRaw:''}),/120 valid/);
+assert.throws(()=>makeAndroidCapture({framesRaw:'no valid frames',memoryRaw:'',scenario:'inventory',deviceProfile:'test_phone',build:'1.0.3',hz:90}),/120 valid/);
 const sets=(build,p95Ms,jank,pss)=>[0,1,2].map(i=>({...capture,build,p95Ms:p95Ms+i,overBudgetPercent:jank+i,totalPssMb:pss+i,severeJankPercent:1+i}));
 const result=compareAndroidCaptures(sets('older',10,1,200),sets('newer',14,6,260));
 assert.equal(result.medians.p95Ms.baseline,11);

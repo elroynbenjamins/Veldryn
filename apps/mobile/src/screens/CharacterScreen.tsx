@@ -103,7 +103,7 @@ export function CharacterScreen({state,onEquip,onUnequip,onEquipSet,onCrafting,o
         </Pressable>)}
       </View>
       <View style={s.nextActionRow}>
-        <View style={s.detailCopy}><Text style={s.focusKicker}>{profileT(language,'NEXT ACTION')}</Text><Text numberOfLines={2} style={s.detailStats}>{equipmentFocus.reason}</Text></View>
+        <View style={s.detailCopy}><Text style={s.focusKicker}>{profileT(language,'NEXT ACTION')}</Text><Text numberOfLines={2} style={s.detailStats}>{profileText(language,equipmentFocus.reason)}</Text></View>
         <GameButton compact tone="secondary" title={profileText(language,equipmentFocus.label)} disabled={busy!==null} onPress={()=>{
           if(equipmentFocus.kind==='equip'){if(onEquip)setPickerSlot(selected.slot);else onInventory();return;}
           setEquipmentTool(equipmentFocus.kind);

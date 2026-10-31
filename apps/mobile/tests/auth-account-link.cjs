@@ -23,7 +23,7 @@ function fixture(initial=guest()){
    f.session={...f.session,user:copy(f.server)};
    return {data:{user:copy(f.server)},error:null};
   },
-  refreshSession:async()=>{f.refreshes++;if(f.refreshFailure)return {data:{session:null},error:f.refreshFailure};f.session=sessionFor(f.server);return {data:{session:f.session},error:null};},
+  refreshSession:async()=>{f.refreshes++;if(f.refreshFailure)return {data:{session:null},error:f.refreshFailure};f.session=sessionFor(f.server);return {data:{session:f.session,user:copy(f.server)},error:null};},
   resend:async()=>{f.resends++;return {error:null};},
   signUp:async()=>{f.signups++;throw Error('Unexpected account creation');},
   exchangeCodeForSession:async()=>{f.exchanges++;return {error:null};},

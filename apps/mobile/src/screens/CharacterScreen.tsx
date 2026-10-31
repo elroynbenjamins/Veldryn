@@ -103,7 +103,7 @@ export function CharacterScreen({state,onEquip,onUnequip,onEquipSet,onCrafting,o
           <Text numberOfLines={2} style={[s.toolTabLabel,equipmentTool===tool.id&&s.toolTabLabelActive]}>{tool.label}</Text>
         </Pressable>)}
       </View>
-      {(equipmentTool==='enhance'||equipmentTool==='gems')&&<View style={s.itemFocus}>
+      {(equipmentTool==='enhance'||equipmentTool==='gems')&&<View style={s.itemFocus}><Text style={s.focusKicker}>{'LOADOUT FOCUS'}</Text>
         <View style={[s.selectedGearRow,stackItem&&s.selectedGearStack]}>
           <View style={[s.selectedGearMain,stackItem&&s.selectedGearMainStack]}>
           {selected.item?<EquipmentArtwork item={selected.item} rarity={selectedRarity?.id} size={stackItem?56:64} framed={false}/>:<View style={s.emptyGearPreview}><Text style={s.emptyGearPreviewMark}>+</Text></View>}

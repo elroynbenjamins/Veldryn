@@ -4,6 +4,9 @@ import {totalXpAtLevel} from '../../../apps/mobile/src/core/progression';
 import type {GameState} from '../../../apps/mobile/src/core/types';
 import {createCraftedGearInstance} from '../../../apps/mobile/src/core/crafted-gear-instances';
 import {itemDef} from '../../../apps/mobile/src/content/items';
+import {COMBAT_COMPANIONS} from '../../../apps/mobile/src/content/combat-companions';
+import {unlockCombatCompanion} from '../../../apps/mobile/src/core/combat-companions';
+import {setLocalEventEnabled} from '../../../apps/mobile/src/core/live-events';
 async function main(){
  let state:GameState|null=null,version=0,commits=0,clock=1700000000000,transportFailure=false,generatedIds=0,blockedDeleteCharacterId:string|null=null,deletedCommitCharacterId:string|null=null;
  const commandMetrics:Record<string,unknown>[]=[];
@@ -12,7 +15,7 @@ async function main(){
   rpc:async<T>(name:string,args:Record<string,unknown>):Promise<T>=>{
    if(name==='record_online_command_outcome_server_v1'){commandMetrics.push(args);return null as T;}
    if(name==='read_online_game_receipt_server_v1')return (receipts.get(args.p_request_id as string)??null) as T;
-   if(name==='load_online_game_server_v1')return {state:structuredClone(state),version,serverNow:clock,characterId:state?.character?.id??null,walletGold:state?.character?.gold??null,guildMember:false,communityProgress:{}} as T;
+   if(name==='load_online_game_server_v1')return {state:structuredClone(state),version,serverNow:clock,characterId:state?.character?.id??null,walletGold:state?.character?.gold??null,guildMember:false,liveEvent:state?.account.liveEvent,communityProgress:{}} as T;
    if(name==='character_delete_coop_guard_server_v1')return {blocked:args.p_character_id===blockedDeleteCharacterId,reason:'Leave the Live co-op queue or ready check before deleting this character.'} as T;
    if(name==='commit_online_game_guild_pve_v1'){
     if(args.p_expected_version!==version)throw new GameplayError('stale_state');
@@ -128,6 +131,41 @@ async function main(){
  assert.equal((await request({type:'gear_sell',args:{instanceId:exact.id}},'gear-sale-exact-1',saleVersion)).status,200,'sale receipt replays');
  assert.equal(commits,saleCommits+1,'sale retry cannot produce another credit');
  assert.equal(state!.character!.gold,initialGold+itemDef(fixtureItemId).value,'sale retry credits Gold only once');
+ // One server request receipt protects every reward system, including multi-companion candy.
+ const firstCompanion=COMBAT_COMPANIONS[0].id,secondCompanion=COMBAT_COMPANIONS[1].id;
+ state=unlockCombatCompanion(unlockCombatCompanion(setLocalEventEnabled(state!,true,clock),firstCompanion,clock),secondCompanion,clock);
+ const candyEventId=state.account.liveEvent!.eventId,candyId=candyEventId+':candy:companion';
+ state={...state,account:{...state.account,
+  eventCandyChargesById:{...state.account.eventCandyChargesById,[candyId]:5},
+  eventShopPurchaseCounts:{...state.account.eventShopPurchaseCounts,[candyEventId+':candy:companion_material']:5},
+ }};
+ const candyStartVersion=version,candyStartCommits=commits;
+ const [candyRaceA,candyRaceB]=await Promise.all([
+  request({type:'event_candy',args:{kind:'companion',companionId:firstCompanion}},'candy-race-a-01',candyStartVersion),
+  request({type:'event_candy',args:{kind:'companion',companionId:secondCompanion}},'candy-race-b-01',candyStartVersion),
+ ]);
+ assert.deepEqual([candyRaceA.status,candyRaceB.status].sort((a,b)=>a-b),[200,409],'concurrent candy actions fence stale revisions');
+ assert.equal(commits,candyStartCommits+1,'only one candy claim commits under simultaneous taps/devices');
+ assert.equal(state!.account.eventCandyChargesById?.[candyId],4,'accepted action spends exactly one candy');
+ assert.equal(state!.account.companionMaterials?.EVENT_BONDBLOOM,1,'only one Bondbloom material is credited');
+ const wonId=candyRaceA.status===200?firstCompanion:secondCompanion,wonKey=candyRaceA.status===200?'candy-race-a-01':'candy-race-b-01';
+ assert.equal(state!.account.eventShopPurchaseCounts?.[candyEventId+':candy:companion_material:'+wonId],1);
+ const afterRace=commits;
+ assert.equal((await request({type:'event_candy',args:{kind:'companion',companionId:wonId}},wonKey,candyStartVersion)).status,200,'receipt replay returns original candy result');
+ assert.equal(commits,afterRace,'duplicate candy delivery cannot duplicate reward');
+ assert.equal(state!.account.eventCandyChargesById?.[candyId],4);
+ const otherId=wonId===firstCompanion?secondCompanion:firstCompanion;
+ const beforeRejected=commits;
+ assert.equal((await request({type:'event_candy',args:{kind:'companion',companionId:'NOT_OWNED'}},'candy-forged-001',version)).status,400,'unowned companion must be rejected by server');
+ assert.equal(commits,beforeRejected,'rejected target cannot spend candy');
+ transportFailure=true;
+ assert.equal((await request({type:'event_candy',args:{kind:'companion',companionId:otherId}},'candy-lost-reply-01',version)).status,503,'lost response is retriable');
+ const beforeRetry=commits;
+ assert.equal((await request({type:'event_candy',args:{kind:'companion',companionId:otherId}},'candy-lost-reply-01',version-1)).status,200,'same request key recovers across a stale expectedVersion');
+ assert.equal(commits,beforeRetry,'replay cannot double award under lost transport response');
+ assert.equal(state!.account.eventCandyChargesById?.[candyId],3);
+ assert.equal(state!.account.eventShopPurchaseCounts?.[candyEventId+':candy:companion_material:'+otherId],1);
+ assert.equal(state!.account.eventShopPurchaseCounts?.[candyEventId+':candy:companion_material'],5,'legacy aggregate counter is unchanged by per-companion claims');
  console.log('PASS authenticated gameplay HTTP, input authority, Admin QA authorization, canonical replay, stale version, lost-response recovery and aggregate command telemetry');
 }
 void main().catch(error=>{console.error(error);process.exitCode=1;});

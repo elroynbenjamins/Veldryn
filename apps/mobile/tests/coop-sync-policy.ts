@@ -10,5 +10,5 @@ check(coopSyncIntervalMs('event','combat',false)===2500,'event combat must recov
 check(coopSyncIntervalMs('live','idle',true)===12000,'live idle polling must not repeat every 2.5 seconds');
 check(coopSyncIntervalMs('qmode','idle',true)===20000,'realtime qmode should avoid redundant reads');
 check(coopSyncIntervalMs('qmode','idle',false)===6000,'qmode must still synchronize without realtime');
-check(COOP_CHAT_REFRESH_MS===10000,'party chat must not request every dungeon frame refresh');
+check(COOP_CHAT_REFRESH_MS===5000,'party chat must remain responsive without riding on every dungeon frame refresh');
 console.log('PASS dungeon realtime watchdog intervals, vote fallback and decoupled chat cadence');

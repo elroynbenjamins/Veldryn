@@ -33,4 +33,5 @@ const clean=compareAndroidCaptures(sets('older',10,2,200),sets('newer',8,1,190))
 assert.deepEqual(clean.regressionSignals,[]);
 assert.throws(()=>compareAndroidCaptures(sets('older',10,1,200).slice(0,2),sets('newer',12,4,230)),/three/);
 assert.throws(()=>compareAndroidCaptures(sets('older',10,1,200),sets('newer',12,4,230).map(c=>({...c,refreshHz:60}))),/refreshHz/);
+assert.throws(()=>compareAndroidCaptures(sets('older',10,1,200),sets('newer',12,4,230).map(c=>({...c,captureMode:'warm'}))),/captureMode/);
 console.log('PASS Android frame+PSS capture, comparable run medians and regression signals (no device required)');

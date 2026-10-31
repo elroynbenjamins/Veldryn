@@ -7,7 +7,6 @@ export const progressionTranslationRows = {
  "categories":["Kategorien","categorías","categorieën","categorie","catégories"],
  "Personal Records":["Persönliche Rekorde","Récords personales","Persoonlijke records","Record personali","Records personnels"],
  "Find next mastery target":["Nächstes Meisterschaftsziel finden","Buscar siguiente objetivo de maestría","Volgend meesterschapsdoel vinden","Trova il prossimo obiettivo di maestria","Trouver le prochain objectif de maîtrise"],
- "Show fewer":["Weniger anzeigen","Mostrar menos","Minder tonen","Mostra meno","Afficher moins"],
  "Show all professions":["Alle Berufe anzeigen","Mostrar todas las profesiones","Alle beroepen tonen","Mostra tutte le professioni","Afficher toutes les professions"],
  "Show all records":["Alle Rekorde anzeigen","Mostrar todos los récords","Alle records tonen","Mostra tutti i record","Afficher tous les records"],
 

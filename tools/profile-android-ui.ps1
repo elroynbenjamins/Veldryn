@@ -59,7 +59,7 @@ if ($LASTEXITCODE -ne 0) { throw 'Failed to collect CPU statistics.' }
 $reporter = Join-Path $PSScriptRoot 'android-perf-report.mjs'
 $mode = $LaunchMode.ToLowerInvariant()
 $summaryPath = "$prefix-summary.json"
-& node $reporter capture --frames "$prefix-frames.txt" --memory "$prefix-memory.txt" --scenario $Scenario --device-profile $DeviceProfile --build $BuildLabel --capture-mode $LaunchMode.ToLowerInvariant() --hz $RefreshHz --out $summaryPath
+& node $reporter capture --frames "$prefix-frames.txt" --memory "$prefix-memory.txt" --scenario $Scenario --device-profile $DeviceProfile --build $BuildLabel --capture-mode $mode --hz $RefreshHz --out $summaryPath
 if ($LASTEXITCODE -ne 0) { throw 'Android capture summary failed: inspect the raw diagnostics, then repeat with a longer sample.' }
 Write-Host "Privacy-minimal summary saved to $summaryPath"
 Write-Host "Raw frame/memory/CPU dumps remain local in $OutputDirectory. Do not commit or share raw device diagnostics."

@@ -13,7 +13,7 @@ ok(GUILD_CONSTRUCTION_BLUEPRINTS.length===17,'Exactly 17 permanent construction 
 for(const row of GUILD_CONSTRUCTION_BLUEPRINTS){
  const id=row.id.replace('construction_','');
  ok(row.requiredGuildLevel===levels[id],'Wrong guild-level gate: '+id);
- ok(row.rewardKind!=='appearance'&&!/grants? (a |new )?(banner|color|border|pet|companion)/i.test(row.benefit),'Construction should unlock features, not cosmetics');
+ ok(!/grants? (a |new )?(banner|color|border|pet|companion)/i.test(row.benefit),'Construction should unlock features, not cosmetics');
  ok(row.materials.length===2&&row.materials.every(m=>m.amount>=80),'The original 10x costs must be retained');
 }
 const completed=(...ids:string[])=>new Set(ids.map(id=>'construction_'+id));

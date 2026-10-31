@@ -118,7 +118,8 @@ ok(pve.includes('state?.character?.equippedCombatCompanionId')&&pve.includes('cl
 ok(pve.includes('disabled={busy||!view.canContribute||!onAttempt}')&&pve.includes("st('Begin 3-minute attempt')"),'The primary attempt action must respect server-derived eligibility and pending requests');
 ok(pve.includes('row.pendingAttempts?1000:30000')&&pve.includes('return()=>clearInterval(timer)')&&pve.includes("st('Resolving attempt…')"),'Pending attempt countdown must clean up its timer and never invent a resolved reward at zero');
 ok(pve.includes('accessibilityState={{expanded:detailsOpen}}')&&pve.indexOf('<GameButton title={actionLabel}')<pve.indexOf('accessibilityState={{expanded:detailsOpen}}'),'Encounter mechanics must stay available below the primary action through an accessible disclosure');
-ok(pve.includes('lastAttemptCharacterDamage')&&pve.includes('lastAttemptCompanionDamage')&&pve.includes('lastCompanion'),'Attempt summary must preserve authoritative player and companion damage breakdowns');
+const theater=read('src/components/GuildRaidTheater.tsx');
+ok(theater.includes('row.lastAttemptCharacterDamage')&&theater.includes('row.lastAttemptCompanionDamage')&&theater.includes('row.lastAttemptCompanionId')&&theater.includes('Companion damage'),'Attempt summary must preserve authoritative player and companion damage breakdowns');
 
 ok(management.includes('GUILD MANAGEMENT'),'Guild roster must expose management context');
 ok(management.includes("role.toUpperCase()"),'Guild management must surface the viewer role');

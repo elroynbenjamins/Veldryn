@@ -1,17 +1,18 @@
 import {useEffect,useMemo,useState} from 'react';
-import {Pressable,StyleSheet,Text,TextInput,View} from 'react-native';
+import {Image,Pressable,StyleSheet,Text,TextInput,View} from 'react-native';
 import {GameButton} from './GameButton';
 import {Panel} from './Panel';
 import {gameAlert} from '../core/game-alerts';
 import {useGameTheme} from '../theme/ThemeContext';
 import type {ThemeColors} from '../theme/theme';
 import type {GuildTokenShopSnapshot} from '../online/guild-token-shop';
+import {guildUpgradeComponentArtwork,guildUpgradeComponentName} from '../theme/guild-upgrade-component-art';
 import {discardPendingGuildConstructionDonation,donateOnlineGuildConstruction,
  pendingGuildConstructionDonation,type PendingGuildDonation} from '../online/guild-construction';
 
 function resourceName(key:string){
  if(key==='gold')return 'Gold';
- return key.toLowerCase().split('_').map(word=>word.charAt(0).toUpperCase()+word.slice(1)).join(' ');
+ return guildUpgradeComponentName(key)??key.toLowerCase().split('_').map(word=>word.charAt(0).toUpperCase()+word.slice(1)).join(' ');
 }
 
 /** Server-owned gold/items are deducted only inside the atomic donation RPC.
@@ -96,7 +97,7 @@ export function OnlineGuildConstructionPanel({
       accessibilityLabel={`Donate ${resourceName(res.key)} to ${resourceName(template.id)}`}
       onPress={()=>{setSelected({templateId:template.id,resourceId:res.key});setQuantity(res.key==='gold'?'1000':'100');}}
       style={[s.resource,active&&s.resourceSelected]}>
-      <View style={s.head}><Text style={s.resourceName}>{resourceName(res.key)}</Text><Text style={s.resourceAmount}>{amount.toLocaleString()} / {res.required.toLocaleString()}</Text></View>
+      <View style={s.head}><View style={s.materialLabel}>{guildUpgradeComponentArtwork(res.key)?<Image source={guildUpgradeComponentArtwork(res.key)} style={s.materialIcon} resizeMode="contain" accessible={false}/>:null}<Text style={s.resourceName}>{resourceName(res.key)}</Text></View><Text style={s.resourceAmount}>{amount.toLocaleString()} / {res.required.toLocaleString()}</Text></View>
       <View style={s.track}><View style={[s.fill,{width:`${pct}%` as `${number}%`}]}/></View>
      </Pressable>;
     })}
@@ -129,6 +130,7 @@ function styles(C:ThemeColors){return StyleSheet.create({
  flex:{flex:1},projectName:{fontSize:14,lineHeight:19,color:C.text,fontWeight:'800'},projectMeta:{fontSize:12,lineHeight:17,color:C.info,marginTop:3},
  percent:{fontSize:18,lineHeight:22,color:C.accent,fontWeight:'900'},
  resource:{gap:5,padding:6,borderWidth:1,borderColor:'transparent',borderRadius:8},
+ materialLabel:{flex:1,minWidth:0,flexDirection:'row',alignItems:'center',gap:6},materialIcon:{width:28,height:28},
  resourceSelected:{borderColor:C.accent},
  resourceName:{fontSize:12,lineHeight:16,color:C.text,fontWeight:'700'},
  resourceAmount:{fontSize:11,color:C.muted},track:{height:5,borderRadius:4,overflow:'hidden',backgroundColor:C.panel},

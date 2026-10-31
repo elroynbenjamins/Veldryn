@@ -30,7 +30,7 @@ export function OnlineGuildTokenShopPanel({onRewardsChanged}:{onRewardsChanged?:
   }catch(reason){syncRequired.current=true;if(mounted.current)setError(reason instanceof Error?reason.message:'Unable to confirm Guild reward. Refresh before trying again.')}
   finally{inFlight.current=false;if(mounted.current)setPending(null)}
  };
- return <GuildTokenShopView snapshot={snapshot} loading={loading} pending={pending} error={error} notice={notice} onRefresh={refresh} onRewardsChanged={onRewardsChanged}
+ return <GuildTokenShopView snapshot={snapshot} loading={loading} pending={pending} error={error} notice={notice} onRefresh={refresh}
   onBuy={id=>mutate(id,async()=>{const status=await purchaseOnlineGuildTokenReward(id);return status==='purchased'?'Reward unlocked for your account!':'Already owned. No additional Guild Tokens were spent.'},true)}
   onDaily={kind=>mutate(kind,async()=>{const credited=await claimOnlineGuildDailyTokens(kind);return credited?`+${credited} Guild Tokens earned!`:'Already claimed or weekly cap reached.'})}
   onWeekly={kind=>mutate(`weekly:${kind}`,async()=>{const credited=await claimOnlineGuildWeeklyTokens(kind);return credited?`+${credited} weekly Guild Tokens earned!`:'Already claimed or weekly cap reached.'})}

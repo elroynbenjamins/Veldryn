@@ -38,6 +38,8 @@ jobs:
         run: npx -y expo-doctor
       - name: Install backend dependencies used by reconciliation tests
         run: pnpm --dir ../../backend install --frozen-lockfile
+      - name: Verify generated gameplay Edge bundle matches shared engine
+        run: node ../../tools/verify-gameplay-edge.mjs
       - name: Validate Q-Mode NPC composition, level and real Echo priority
         run: pnpm --dir ../../backend test:coop-composition
       - name: Typecheck backend online Q-Mode runtime

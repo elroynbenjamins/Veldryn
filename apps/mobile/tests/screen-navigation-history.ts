@@ -35,7 +35,7 @@ for(const language of SUPPORTED_LANGUAGES){
   ok(guide.title.length>5&&guide.body.length>20&&guide.detail.length>25,language+' '+section+' guide content must be localized');
  }
  const facilities=guildHallSectionGuide(language,'Facilities');
- ok(!/donate to any|donate unlimited|free cosmetics/i.test(facilities.detail),'Guild help must not promise unlocked construction cosmetics');
+ ok(!/donate to any|donate unlimited|grants free cosmetics/i.test(facilities.detail),'Guild help must not promise unrestricted donations or free cosmetics');
 }
 ok(guildHallSectionGuide('en','Shop').detail.includes('never give the items for free'),'Guild Shop teaches access without free cosmetics');
 ok(guildHallSectionGuide('en','Facilities').detail.includes('Only released, active'),'Guild Bank guide must distinguish release-gated materials');

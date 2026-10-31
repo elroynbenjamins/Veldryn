@@ -3,6 +3,16 @@ import {createTranslator} from './translator';
 
 // English source copy is the key. Proper names and player-authored text are never keys.
 export const progressionTranslationRows = {
+// Compact Achievements UI (shared keys retain the existing translations).
+ "ACHIEVEMENT SCORE":["ERFOLGSPUNKTE","PUNTUACIÓN DE LOGROS","PRESTATIESCORE","PUNTEGGIO OBIETTIVI","SCORE DES SUCCÈS"],
+ "Showcase":["Schaukasten","Vitrina","Etalage","Vetrina","Vitrine"],
+ "points":["Punkte","puntos","punten","punti","points"],
+ "Filter achievement category":["Erfolgskategorie filtern","Filtrar categoría de logros","Prestatiecategorie filteren","Filtra categoria obiettivi","Filtrer la catégorie de succès"],
+ "All categories":["Alle Kategorien","Todas las categorías","Alle categorieën","Tutte le categorie","Toutes les catégories"],
+ "shown":["angezeigt","mostrados","weergegeven","mostrati","affichés"],
+ "Profile showcase":["Profil-Schaukasten","Vitrina del perfil","Profieletalage","Vetrina del profilo","Vitrine du profil"],
+ "Achievement categories":["Erfolgskategorien","Categorías de logros","Prestatiecategorieën","Categorie obiettivi","Catégories de succès"],
+
   "DAILY": ["TÄGLICH","DIARIO","DAGELIJKS","GIORNALIERO","QUOTIDIEN"],
   "JOBS COMPLETE": ["AUFTRÄGE ERLEDIGT","TRABAJOS COMPLETADOS","OPDRACHTEN VOLTOOID","INCARICHI COMPLETATI","CONTRATS TERMINÉS"],
   "Board cleared": ["Alle Aufträge erledigt","Tablón completado","Alle opdrachten voltooid","Bacheca completata","Tableau terminé"],

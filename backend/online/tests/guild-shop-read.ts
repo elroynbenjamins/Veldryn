@@ -68,6 +68,9 @@ async function run() {
  assert(claimCalls.length===1&&claimCalls[0].name==="guild_shop_claim_daily_server_v1","only verified claim RPC called");
  assert(claimCalls[0].args.p_kind==="contribution","reward kind forwarded");
  assert(claimCalls[0].args.p_account_id==="11111111-1111-4111-8111-111111111111","authenticated account forwarded");
+ const treasuryDaily=guildShopDailyClaimHandler({...services,rpc:async<T>()=>12 as unknown as T});
+ assert((await treasuryDaily(new Request(claimUri,{method:'POST',headers:{authorization:'Bearer valid'},body:'{"kind":"attendance"'}))).status===200,
+  'Treasury II +20% daily verified claim accepted');
 
  const purchaseCalls: Array<{name:string;args:Record<string,unknown>}>=[];
  const purchase=guildShopPurchaseHandler({...services,rpc:async<T>(name:string,args:Record<string,unknown>)=>{
@@ -159,6 +162,9 @@ async function run() {
  assert(weeklyOk.status===200,'valid weekly reward forwarded');
  assert(weeklyCalls.length===1&&weeklyCalls[0].name==='guild_shop_claim_weekly_server_v1','weekly reward uses verified SQL');
  assert(weeklyCalls[0].args.p_account_id==='11111111-1111-4111-8111-111111111111','weekly claim account is authenticated');
+ const treasuryWeekly=guildShopWeeklyClaimHandler({...services,rpc:async<T>()=>60 as unknown as T});
+ assert((await treasuryWeekly(new Request(weeklyUri,{method:'POST',headers:{authorization:'Bearer valid'},body:'{"kind":"attendance"'}))).status===200,
+  'Treasury II +20% weekly verified claim accepted');
  console.log("guild shop read handler tests passed");
 }
 void run();

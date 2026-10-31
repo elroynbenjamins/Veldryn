@@ -6,6 +6,8 @@ import {createTranslator,type TranslationParams} from './translator';
 
 // Columns are German, Spanish, Dutch, Italian and French; keys are the English catalog.
 export const socialTranslationRows = {
+ "TOP THREE":["TOP DREI","TRES PRIMEROS","TOP DRIE","PRIMI TRE","TROIS PREMIERS"],
+
  "Failed runs do not spend charges. {remaining} of 12 weekly consolation rewards left.":["Niederlagen kosten keine Ladungen. Noch {remaining} von 12 Trostbelohnungen pro Woche.","Los fracasos no gastan cargas. Quedan {remaining} de 12 recompensas de consuelo semanales.","Mislukte runs kosten geen ladingen. Nog {remaining} van 12 troostbeloningen deze week.","Le sconfitte non consumano cariche. Restano {remaining} di 12 ricompense di consolazione settimanali.","Les échecs ne coûtent pas de charges. Il reste {remaining} récompenses de consolation sur 12."],
  "Live Fellowship bonus: +{marks} Marks":["Live-Gruppenbonus: +{marks} Marken","Bono de equipo en vivo: +{marks} marcas","Live-groepsbonus: +{marks} Marken","Bonus gruppo Live: +{marks} marchi","Bonus d'équipe en direct : +{marks} marques"],
  "Consolation reward · No enhanced charge spent.":["Trostbelohnung · Keine Ladung verbraucht.","Premio de consuelo · No se gastó ninguna carga.","Troostbeloning · Geen lading verbruikt.","Premio di consolazione · Nessuna carica consumata.","Consolation · Aucune charge consommée."],

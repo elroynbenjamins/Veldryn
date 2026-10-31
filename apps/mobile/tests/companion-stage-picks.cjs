@@ -17,7 +17,7 @@ assert.ok(shared.includes("Math.floor((Math.max(1,safe)-1)/5)"),'Matchups must r
 assert.ok(shared.includes("COMPANION_TRIAL_STAGE_OFFENSE_MULTIPLIER=1.065")&&shared.includes("COMPANION_TRIAL_STAGE_GUARD_MULTIPLIER=1.06"),'Stat bonuses must stay bounded');
 assert.ok(shared.includes("COMPANION_TRIAL_STAGE_PAIR_HASTE_BONUS=.02"),'Dual-affinity synergy must stay modest');
 assert.ok(server.includes('applyCompanionTrialStageMatchups(modified.players,run.currentFloor)'), 'Server executor must apply matchup after season modifiers');
-assert.ok(server.includes('players:matchedPlayers,enemies:modified.enemies'), 'Real simulation must receive stat-adjusted players, unchanged enemies');
+assert.ok(server.includes('players:matchedPlayers,enemies:seasonEnemies')&&server.includes('const seasonEnemies=applyCompanionTrialMonthlyHazard(modified.enemies,progress.season.seasonKey)'), 'Real simulation must receive stage-adjusted players and season-hazard-adjusted enemies');
 assert.ok(server.includes("trial_matchup:pair"),'Combatant should be tagged when it benefits from pair');
 assert.ok(!shared.includes('COMPANION_MONTHLY_COMPLETION_REWARD')&&!shared.includes('rewardEssenceMultiplier'), 'Stage synergy must not alter reward calculations');
 assert.ok(runtime.includes('recommendedCompanionTrialStageTeam')&&runtime.includes('validateCompanionTrialTeam({companionIds:ids,owned})'), 'Stage team recommendation must preserve legal roles and ownership');

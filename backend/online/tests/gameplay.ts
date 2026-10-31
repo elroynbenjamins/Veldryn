@@ -182,6 +182,34 @@ async function main(){
  assert.equal(commits,expiredCommits+1);
  assert.equal(state!.account.companionEssence,expiredEssence,'subsequent legitimate actions never mint another expiry reward');
 
+ // Every Gold movement uses the same exactly-once receipt and optimistic
+ // version fence as equipment sales and event rewards.
+ state={...state!,character:{...state!.character!,gold:10000},bank:{...state!.bank,gold:2000}};
+ const bankInitialTotal=state.character!.gold+(state.bank.gold??0);
+ const bankVersion=version,bankCommits=commits;
+ const [depositRace,withdrawRace]=await Promise.all([
+  request({type:'bank_gold_deposit',args:{amount:1250}},'bank-deposit-race-a',bankVersion),
+  request({type:'bank_gold_withdraw',args:{amount:850}},'bank-withdraw-race-b',bankVersion),
+ ]);
+ assert.deepEqual([depositRace.status,withdrawRace.status].sort((a,b)=>a-b),[200,409],'concurrent deposits/withdrawals cannot both save an old wallet revision');
+ assert.equal(commits,bankCommits+1,'only one Gold movement commits under concurrent requests');
+ assert.equal(state!.character!.gold+(state!.bank.gold??0),bankInitialTotal,'total Gold conserved across bank race');
+ const firstBankCommand=depositRace.status===200?{type:'bank_gold_deposit',args:{amount:1250}}:{type:'bank_gold_withdraw',args:{amount:850}};
+ const firstBankKey=depositRace.status===200?'bank-deposit-race-a':'bank-withdraw-race-b';
+ const afterBankRace=commits;
+ assert.equal((await request(firstBankCommand,firstBankKey,bankVersion)).status,200,'same bank receipt replays without a new charge');
+ assert.equal(commits,afterBankRace,'bank receipt replay never duplicates Gold');
+ const bankReject=await request({type:'bank_gold_deposit',args:{amount:100000}},'bank-insufficient-1',version);
+ assert.equal(bankReject.status,400,'server refuses a bank deposit larger than carried Gold');
+ assert.equal(commits,afterBankRace,'rejected bank transaction is not persisted');
+ transportFailure=true;
+ const failedBankVersion=version;
+ assert.equal((await request({type:'bank_gold_deposit',args:{amount:500}},'bank-deposit-retry-1',failedBankVersion)).status,503,'lost bank receipt remains retriable');
+ const bankCommitted=commits;
+ const confirmedBankTotal=state!.character!.gold+(state!.bank.gold??0);
+ assert.equal((await request({type:'bank_gold_deposit',args:{amount:500}},'bank-deposit-retry-1',failedBankVersion)).status,200,'retry reuses the original Gold deposit receipt');
+ assert.equal(commits,bankCommitted,'retry cannot debit carried Gold twice');
+ assert.equal(confirmedBankTotal,bankInitialTotal,'all online Gold movements conserve account value');
  console.log('PASS authenticated gameplay HTTP, input authority, Admin QA authorization, canonical replay, stale version, lost-response recovery and aggregate command telemetry');
 }
 void main().catch(error=>{console.error(error);process.exitCode=1;});

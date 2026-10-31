@@ -1,4 +1,4 @@
-import {useState,type ReactNode} from 'react';
+import {useState} from 'react';
 import {ActivityIndicator,Image,Pressable,StyleSheet,Text,View} from 'react-native';
 import type {GuildTokenShopCard,GuildTokenShopSnapshot,GuildWeeklyRewardKind} from '../online/guild-token-shop';
 import {useGameTheme} from '../theme/ThemeContext';
@@ -31,10 +31,10 @@ export interface GuildTokenShopViewProps{
  snapshot:GuildTokenShopSnapshot|null;loading:boolean;pending:string|null;error:string;notice:string;
  onRefresh:()=>Promise<unknown>;onBuy:(id:string)=>Promise<unknown>;
  onDaily:(kind:'attendance'|'contribution')=>Promise<unknown>;onWeekly:(kind:GuildWeeklyRewardKind)=>Promise<unknown>;
- onEvent:(eventId:string,percent:number)=>Promise<unknown>;onRewardsChanged?:()=>void|Promise<unknown>;constructionContent?:ReactNode;
+ onEvent:(eventId:string,percent:number)=>Promise<unknown>;
 }
 /** Presentation-only. The authenticated server settles every claim and purchase. */
-export function GuildTokenShopView({snapshot,loading,pending,error,notice,onRefresh,onBuy,onDaily,onWeekly,onEvent,onRewardsChanged,constructionContent}:GuildTokenShopViewProps){
+export function GuildTokenShopView({snapshot,loading,pending,error,notice,onRefresh,onBuy,onDaily,onWeekly,onEvent}:GuildTokenShopViewProps){
  const C=useGameTheme(),[section,setSection]=useState<Section>('Browse'),[category,setCategory]=useState<Category>('all');
  const [selected,setSelected]=useState<string|null>(null),[affordable,setAffordable]=useState(false),[hideOwned,setHideOwned]=useState(false);
  const refreshBusy=loading||pending!==null,busy=refreshBusy||!!error,spendBlocked=busy,capReached=!!snapshot&&snapshot.earnedThisWeek>=snapshot.weeklyCap;

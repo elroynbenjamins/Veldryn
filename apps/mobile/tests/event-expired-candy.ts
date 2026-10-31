@@ -11,7 +11,7 @@ let state=setLocalEventEnabled(createCharacter(newGame(start),'IRONWARDEN','Cand
 state={...state,account:{...state.account,eventCandyChargesById:charges,eventShopPurchaseCounts:{[id+':candy:companion_material']:5}}};
 const before=JSON.stringify(state),finish=state.account.liveEvent!.endsAtMs+7*86400_000;
 ok(settleExpiredEventCandies(state,finish-1)===state,'Candy is protected throughout the entire claim window');
-ok(JSON.stringify(state)===before,'Preview must not mutate or consume the player's candy');
+ok(JSON.stringify(state)===before,'Preview must not mutate or consume previously earned candy');
 ok(EXPIRED_EVENT_CANDY_ESSENCE===10,'Each unused candy earns a small fixed Essence consolation');
 const invalid=()=>executeGameCommand(state,{type:'gear_autosell',args:{enabled:'invalid'}},finish+1);
 let rejected=false;try{invalid()}catch{rejected=true}

@@ -51,7 +51,7 @@ export async function profileStagingGameplay(config,{fetchImpl=fetch,uuid=random
   return {status:response.status,data};
  };
  const sessions=await Promise.all(config.accounts.map(async account=>{
-  const headers={'Content-Type':'application/json',apikey:account.anonKey??config.anonKey};
+  const headers={'Content-Type':'application/json',apikey:config.anonKey};
   const token=await request(config.url+'/auth/v1/token?grant_type=password','POST',headers,
    {email:account.email,password:account.password},'auth');
   if(token.status!==200||typeof token.data?.access_token!=='string'||typeof token.data?.user?.id!=='string')

@@ -485,7 +485,7 @@ function VeldrynApp(){
     ||startupBlocking||startupOverlayVisible||offlineSettling||hasBlockingAlert;
   const popupCandidates={
     characterWelcome:!!creationWelcome,activityReward:!!collected,storyBoss:!!storyBossBattle,
-    exceptionalForge:!!forgeResults?.some(isExceptionalForgeResult),mainTour:mainScreenTourIndex!==undefined,
+    exceptionalForge:!!forgeResults?.some(row=>row.qualityProc),mainTour:mainScreenTourIndex!==undefined,
     featureUnlock:featureUnlockMoments.length>0,
     firstSession:!!visibleTutorialStep,eventStart:!!eventStartPopup&&canAnnounceLiveEventStart(state?.character?.level),
     whatsNew:showWhatsNew,

@@ -29,7 +29,7 @@ ok(discovery.includes("disabled={busy||levelLoading||levelLocked()"),'Guild crea
 ok(discovery.includes("levelLocked(invite.minimumLevel)"),'Guild invitation acceptance must respect global and Guild-specific requirements');
 
 const memberIdentity=read('src/components/GuildMemberIdentity.tsx');
-const pve=read('src/components/OnlineGuildPve.tsx')+read('src/components/GuildRaidEncounter.tsx');
+const pve=read('src/components/OnlineGuildPve.tsx')+read('src/components/GuildRaidEncounter.tsx')+read('src/components/GuildRaidTheater.tsx');
 
 for(const [name,source] of [['GuildScreen',screen],['OnlineGuildManagement',management],['OnlineGuildCustomizationPanel',customization],['GuildIdentitySummary',identity],['OnlineGuildHallPanel',hall],['OnlineGuildPve',pve]] as const){
  ok(source.includes('useGameTheme'),name+' must use the active UI theme');

@@ -155,6 +155,14 @@ export function CharacterScreen({state,onEquip,onUnequip,onEquipSet,onCrafting,o
         <Pressable accessibilityRole="button" onPress={()=>setGemCodexOpen(true)} style={s.toolSecondaryLink}><Text style={s.allStatsText}>{profileT(language,'Gem Codex')} ›</Text></Pressable>
       </View>}
       {equipmentTool==='sets'&&<View style={s.toolContent}>
+        <View style={s.setToolCard}>
+          <View style={s.sectionHeading}><Text style={s.toolHeading}>{profileText(language,progress.set.name)}</Text><Text style={s.toolMuted}>{progress.equipped}/{progress.pieces.length} {profileText(language,'equipped')}</Text></View>
+          <Text style={s.toolMuted}>{progress.crafted}/{progress.pieces.length} {profileText(language,'crafted')}</Text>
+          <View style={s.focusButtons}>
+            <GameButton compact title={profileT(language,'Equip set')} disabled={busy!==null||!progress.canEquip||progress.equipped===progress.pieces.length} onPress={()=>setConfirming(true)}/>
+            <GameButton compact title={profileT(language,"Craft missing gear")} tone="secondary" disabled={busy!==null||!onCrafting} onPress={()=>onCrafting?.()}/>
+          </View>
+        </View>
         <View style={s.sectionHeading}><Text style={s.toolHeading}>{profileT(language,'Equipped sets')}</Text><Text style={s.toolMuted}>{equippedSets.length} {profileT(language,'sets')}</Text></View>
         {equippedSets.length===0?<Text style={s.toolMuted}>{profileT(language,'No matching set pieces equipped yet.')}</Text>:null}
         {visibleSets.map(set=>{const count=equippedSetPieceCount(character.equipment,set!);const nextBonus=[2,4,8,10].find(pieces=>count<pieces);return <View key={set!.id} style={s.setToolCard}>

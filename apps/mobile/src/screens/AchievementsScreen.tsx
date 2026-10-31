@@ -1,10 +1,9 @@
 import {useGameLanguage} from '../i18n/GameLanguageProvider';
 import {progressionT,progressionText,progressionError,type ProgressionKey} from '../i18n/progression';
 import {useEffect,useRef,useState,useMemo} from 'react';
-import {Animated,Pressable,ScrollView,StyleSheet,Text,View,useWindowDimensions} from 'react-native';
+import {Animated,Pressable,ScrollView,StyleSheet,Text,View} from 'react-native';
 import {GameButton} from '../components/GameButton';
 import {GameModalSurface,GameModalHeader} from '../components/GameModalSurface';
-import {Panel} from '../components/Panel';
 import {ActionFeedback} from '../components/ActionFeedback';
 import {EmptyState} from '../components/EmptyState';
 import {LoadingState} from '../components/LoadingState';
@@ -26,8 +25,6 @@ interface AchievementClaimMoment{
 function AchievementClaimMomentCard({moment,reduceMotion,onProfile}:{moment:AchievementClaimMoment;reduceMotion:boolean;onProfile?:()=>void}){
   const contextLanguage=useGameLanguage(),language=contextLanguage;
   const t=(key:ProgressionKey,params?:Record<string,string|number>)=>progressionT(language,key,params);
-  const p=(text:string)=>progressionText(language,text);
-
  const C=useGameTheme(),s=useMemo(()=>makeStyles(C),[C]),scale=useRef(new Animated.Value(1)).current;
  useEffect(()=>{scale.stopAnimation();scale.setValue(1);if(reduceMotion||moment.idempotentReplay)return;Animated.sequence([Animated.spring(scale,{toValue:1.03,damping:8,stiffness:230,mass:.6,useNativeDriver:true}),Animated.spring(scale,{toValue:1,damping:16,stiffness:210,mass:.75,useNativeDriver:true})]).start();return()=>scale.stopAnimation()},[moment.id,moment.idempotentReplay,reduceMotion,scale]);
  return <Animated.View accessibilityLiveRegion="polite" style={[s.claimMoment,{transform:[{scale}]}]}>
@@ -44,7 +41,7 @@ export function AchievementsScreen({reduceMotion=false,onProfile}:{reduceMotion?
   const t=(key:ProgressionKey,params?:Record<string,string|number>)=>progressionT(language,key,params);
   const p=(text:string)=>progressionText(language,text);
 
-  const C=useGameTheme(),equipmentColors=equipmentTheme(C),s=useMemo(()=>makeStyles(C),[C]),{width,fontScale}=useWindowDimensions(),stackRows=width<360||fontScale>=1.25;
+  const C=useGameTheme(),s=useMemo(()=>makeStyles(C),[C]);
   const [snapshot,setSnapshot]=useState<AchievementSnapshotProjection|null>(null);
   const [showcase,setShowcase]=useState<string[]>([]);
   const [filter,setFilter]=useState<'all'|'ready'|'claimed'>('all');
@@ -65,6 +62,7 @@ export function AchievementsScreen({reduceMotion=false,onProfile}:{reduceMotion?
     .sort((a,b)=>Number(b.completed&&!b.claimed)-Number(a.completed&&!a.claimed));
   const firstReady=readyEntries[0];
   const claimedCount=entries.filter(entry=>entry.claimed).length;
+  const showcaseChanged=!!snapshot&&(showcase.length!==snapshot.showcaseIds.length||showcase.some((id,index)=>id!==snapshot.showcaseIds[index]));
   return <>
   <ScrollView contentContainerStyle={s.root} showsVerticalScrollIndicator={false} showsHorizontalScrollIndicator={false}>
     <Text accessibilityRole="header" style={s.heading}>{t("Achievements")}</Text>
@@ -106,7 +104,7 @@ export function AchievementsScreen({reduceMotion=false,onProfile}:{reduceMotion?
       })}
     </View>
     {snapshot&&!loading&&!visibleEntries.length&&<EmptyState compact title={t("No achievements here")} message={t("Try another filter, or keep progressing to unlock more achievement entries.")} icon="quests"/>}
-    {snapshot?<View style={s.showcaseFooter}><View style={s.flex}><Text style={s.title}>{p("Profile showcase")}</Text><Text style={s.copy}>{t("Claimed: {count} · Showcase slots: {slots}/3",{count:snapshot.claimedCount,slots:showcase.length})}</Text></View><GameButton compact title={t("Save showcase")} tone="secondary" loading={busy==='showcase'} disabled={busy!==null} onPress={()=>saveShowcase()}/></View>:null}
+    {snapshot?<View style={s.showcaseFooter}><View style={s.flex}><Text style={s.title}>{p("Profile showcase")}</Text><Text style={s.copy}>{t("Claimed: {count} · Showcase slots: {slots}/3",{count:snapshot.claimedCount,slots:showcase.length})}</Text></View><GameButton compact title={t("Save showcase")} tone="secondary" loading={busy==='showcase'} disabled={busy!==null||!showcaseChanged} onPress={()=>saveShowcase()}/></View>:null}
     <Text style={s.footerNote}>{t("Progress, score, Gold, and titles are calculated by the authenticated server. Achievements do not grant combat power or multipliers.")}</Text>
   </ScrollView>
   <GameModalSurface visible={categoryOpen} onClose={()=>setCategoryOpen(false)} reduceMotion={reduceMotion}>

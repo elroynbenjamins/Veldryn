@@ -1,4 +1,5 @@
 import {createCharacter,newGame,effectiveStats,salvageItem,sellItem,sellBankItem} from '../src/core/game';
+import {indexInventoryGearCopies} from '../src/core/inventory-gear-lookup';
 import {acknowledgeAllInventoryItems,acknowledgeInventoryItem,inventoryFavoriteIds,inventoryLockedIds,inventoryNewItemIds,recoveryAmount,storageCapacityStatus,toggleInventoryFavorite,toggleInventoryLock,transferAmount,transferError,visibleStacks} from '../src/core/inventory-view';
 import {validateGameCommand,validateGameSettings,settingsForOnlineCommand} from '../src/core/game-commands';
 import {bulkSelectionSummary,bulkSellSelected,bulkSalvageSelected,bulkTransferSelected} from '../src/core/inventory-bulk';
@@ -160,4 +161,20 @@ ok(transferError(state,'TRAVEL_RATION',5,'inventory')==='','Valid transfer');
 ok(!!transferError({...state,bank:{stacks:[],capacity:0}},'TRAVEL_RATION',1,'inventory'),'Full destination rejected');
 ok(!!transferError(state,'TRAVEL_RATION',100,'inventory'),'Insufficient quantity rejected');
 ok(!!transferError(state,'TRAVEL_RATION',1,'bank'),'Empty bank cannot withdraw');
+// Synthetic projection benchmark (not a device frame-rate measurement).
+// Keep duplicate-ID behavior exactly the same as Array.find, including malformed legacy saves.
+const copies=Array.from({length:6000},(_,index)=>({id:'forge-'+index,quality:index%101,locked:index%11===0}));
+copies.push({id:'forge-0',quality:1000,locked:false});
+const copyBefore=JSON.stringify(copies),lookupStart=Date.now(),indexed=indexInventoryGearCopies(copies),buildMs=Date.now()-lookupStart;
+ok(indexed.size===6000&&indexed.get('forge-0')===copies[0],'Indexed lookup keeps first matching unique Forge record');
+ok(indexed.get('missing')===undefined,'A missing/legacy instance ID remains unlinked');
+const ids=Array.from({length:1500},(_,index)=>index%17===0?'not-linked-'+index:'forge-'+(index*17%6000));
+let naiveChecksum=0,indexedChecksum=0;const slowStart=Date.now();
+for(const id of ids)naiveChecksum+=copies.find(copy=>copy.id===id)?.quality??-1;
+const scanMs=Date.now()-slowStart,fastStart=Date.now();
+for(const id of ids)indexedChecksum+=indexed.get(id)?.quality??-1;
+const indexedMs=Date.now()-fastStart;
+ok(naiveChecksum===indexedChecksum,'Indexed gear lookup preserves all 1,500 synthetic item outcomes');
+ok(JSON.stringify(copies)===copyBefore,'Building gear index cannot modify persisted equipment records');
+console.log('PROFILE inventory gear lookup: 6001 records, 1500 lookups; linear scan '+scanMs+'ms, index build '+buildMs+'ms, indexed reads '+indexedMs+'ms (CI host only).');
 console.log('PASS: inventory search, NEW tracking, favorites, safe bulk actions, Quick Inspect gear decisions and availability, capacity status, sorting, transfer preflight and healing previews');

@@ -53,7 +53,7 @@ export function CoopExpeditionScreen({onClose,language,state,entrySource=realCoo
   const runWithIcons=useMemo(()=>displayRun&&entrySource.kind==='real'?{...displayRun,roleSlots:displayRun.roleSlots.map(slot=>({...slot,...(runIcons.get(slot.memberId??'')??noCoopProfileIcon)}))}:displayRun,[displayRun,entrySource.kind,runIcons]);
   const showRecruitment=mode==='live'&&coopLiveReadyEnabled&&entrySource.kind==='real'&&!showLive&&!showLoadouts&&!selected&&!selectedEvent&&!run&&!eventRun;
   const recruitmentIcons=useCoopProfileIcons('lfg',(entry?.liveRecruitment??[]).map(post=>post.id),showRecruitment);
-  const recruitmentWithIcons=(entry?.liveRecruitment??[]).map(post=>({...post,...(recruitmentIcons.get(post.id)??noCoopProfileIcon)}));
+  const recruitmentWithIcons=useMemo(()=>(entry?.liveRecruitment??[]).map(post=>({...post,...(recruitmentIcons.get(post.id)??noCoopProfileIcon)})),[entry?.liveRecruitment,recruitmentIcons]);
   const activeRunId=useRef<string|undefined>(undefined);activeRunId.current=run?.runId;
   const activeEventRunId=useRef<string|undefined>(undefined);activeEventRunId.current=eventRun?.runId;
   const initialDungeonHandled=useRef(false);

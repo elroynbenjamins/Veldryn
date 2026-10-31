@@ -1,7 +1,7 @@
 import {gameplayHandler,GameplayError,type GameplayServices} from './gameplay';
 import {withReleaseGate,releasePolicyLoader} from './release-gate';
 import {regionalCombatHandlerV1} from './regional-combat';
-import {guildShopReadHandler,guildShopDailyClaimHandler,guildShopPurchaseHandler,guildShopEventClaimHandler,guildConstructionDonationHandler,guildShopWeeklyClaimHandler,type GuildShopReadServices} from './guild-shop-read';
+import {guildShopReadHandler,guildShopDailyClaimHandler,guildShopPurchaseHandler,guildShopEventClaimHandler,guildConstructionDonationHandler,guildBankDepositHandler,guildShopWeeklyClaimHandler,type GuildShopReadServices} from './guild-shop-read';
 declare const Deno:{env:{get(name:string):string|undefined};serve(handler:(request:Request)=>Promise<Response>):void};
 const url=Deno.env.get('SUPABASE_URL')!,serviceKey=Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!,anonKey=Deno.env.get('SUPABASE_ANON_KEY')!;
 if(!url||!serviceKey||!anonKey)throw new Error('server_configuration_missing');
@@ -22,6 +22,7 @@ const guildShopClaim=guildShopDailyClaimHandler(guildShopServices);
 const guildShopPurchase=guildShopPurchaseHandler(guildShopServices);
 const guildShopEventClaim=guildShopEventClaimHandler(guildShopServices);
 const guildConstructionDonation=guildConstructionDonationHandler(guildShopServices);
+const guildBankDeposit=guildBankDepositHandler(guildShopServices);
 const guildShopWeeklyClaim=guildShopWeeklyClaimHandler(guildShopServices);
 Deno.serve(withReleaseGate(async request=>{
  const route=new URL(request.url);
@@ -30,6 +31,7 @@ Deno.serve(withReleaseGate(async request=>{
   if(route.searchParams.get('action')==='purchase')return guildShopPurchase(request);
   if(route.searchParams.get('action')==='event-claim')return guildShopEventClaim(request);
   if(route.searchParams.get('action')==='donate')return guildConstructionDonation(request);
+  if(route.searchParams.get('action')==='bank-deposit')return guildBankDeposit(request);
   if(route.searchParams.get('action')==='weekly-claim')return guildShopWeeklyClaim(request);
   return request.method==='POST'?guildShopClaim(request):guildShop(request);
  }

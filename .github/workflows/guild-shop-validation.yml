@@ -6,8 +6,10 @@ on:
       - 'backend/online/**'
       - 'backend/supabase/migrations/20261018*_guild*.sql'
       - 'backend/test-guild-shop-migrations.mjs'
+      - 'backend/test-guild-weekly-activity-migration.mjs'
       - 'backend/test-guild-activity-balance.mjs'
       - 'backend/supabase/migrations/2026110300000*_guild*.sql'
+      - 'backend/supabase/migrations/2026110400001*_guild*.sql'
       - 'backend/package.json'
       - 'packages/guild-shop/**'
       - '.github/workflows/guild-shop-validation.yml'
@@ -45,6 +47,8 @@ jobs:
           node backend/dist/online/backend/online/tests/guild-shop-policies.js
       - name: Isolated database migration and purchase tests
         run: node backend/test-guild-shop-migrations.mjs
+      - name: Shared weekly Guild Project paths and caps
+        run: node backend/test-guild-weekly-activity-migration.mjs
       - name: Guild Activity earned-unit balance tests
         run: node backend/test-guild-activity-balance.mjs
 

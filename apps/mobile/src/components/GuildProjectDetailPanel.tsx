@@ -1,10 +1,11 @@
 import {useSocialText} from '../i18n/social';
 import React from 'react';
-import {StyleSheet,Text,View} from 'react-native';
+import {Image,StyleSheet,Text,View} from 'react-native';
 import {GameButton} from './GameButton';
 import {projectFocusLabel,projectProgressPercent,type GuildProjectView} from '../core/guild-projects-v18';
 import {radii,typography,type ThemeColors} from '../theme/theme';
 import {useGameTheme} from '../theme/ThemeContext';
+import {guildUpgradeComponentArtwork} from '../theme/guild-upgrade-component-art';
 
 export function GuildProjectDetailPanel({project,onDonate,onClaim}:{project:GuildProjectView;onDonate?:Function;onClaim?:Function}){
  const st=useSocialText();
@@ -15,7 +16,7 @@ export function GuildProjectDetailPanel({project,onDonate,onClaim}:{project:Guil
   <Text style={s.copy}>{project.description}</Text>
   <View style={s.progressHead}><Text style={s.stat}>{pct}%</Text><Text style={s.meta}>{project.meaningfulContributors}/{project.minimumMeaningfulContributors} meaningful contributors</Text></View>
   {project.kind!=='development'?<><View style={s.track}><View style={[s.fill,{width:(Math.min(100,pct)+'%') as any}]} /></View><View style={s.split}><Text style={s.combat}>{st("Combat")} {project.combatPoints.toLocaleString()}</Text><Text style={s.skill}>{st("Skilling")} {project.skillingPoints.toLocaleString()}</Text></View><View style={[s.personal,personalMet&&s.personalMet]}><Text style={s.personalLabel}>{st("YOUR CONTRIBUTION")}</Text><Text style={[s.personalValue,personalMet&&s.personalValueMet]}>{project.personalPoints.toLocaleString()} · Today {project.dailyPoints.toLocaleString()}/{project.dailyCap.toLocaleString()}</Text></View></>:null}
-  {project.resourceGoals.length?<View style={s.resources}><Text style={s.section}>{st("RESOURCE GOALS")}</Text>{project.resourceGoals.map(goal=><View key={goal.resourceKind+':'+goal.resourceId} style={s.goal}><View style={s.flex}><Text style={s.goalTitle}>{goal.label}</Text><Text style={s.meta}>{goal.current.toLocaleString()} / {goal.target.toLocaleString()}</Text></View><GameButton compact title={st("Donate")} tone="secondary" disabled={!onDonate} onPress={()=>onDonate?.(project.id,goal)}/></View>)}</View>:null}
+  {project.resourceGoals.length?<View style={s.resources}><Text style={s.section}>{st("RESOURCE GOALS")}</Text>{project.resourceGoals.map(goal=><View key={goal.resourceKind+':'+goal.resourceId} style={s.goal}><View style={s.goalLabel}>{guildUpgradeComponentArtwork(goal.resourceId)?<Image source={guildUpgradeComponentArtwork(goal.resourceId)} style={s.goalIcon} resizeMode="contain" accessible={false}/>:null}<View style={s.flex}><Text style={s.goalTitle}>{goal.label}</Text><Text style={s.meta}>{goal.current.toLocaleString()} / {goal.target.toLocaleString()}</Text></View></View><GameButton compact title={st("Donate")} tone="secondary" disabled={!onDonate} onPress={()=>onDonate?.(project.id,goal)}/></View>)}</View>:null}
   <View style={s.sectionHead}><Text style={s.section}>{st("CONTRIBUTORS")}</Text><Text style={s.sectionMeta}>{project.members.length} tracked</Text></View>
   {project.members.slice(0,12).map(member=><View key={member.accountId} style={s.member}><View style={s.flex}><Text style={s.memberName}>{member.displayName}</Text><Text style={s.meta}>{member.role}{member.rewardEligible?' · reward eligible':''}</Text></View><Text style={s.points}>{member.points.toLocaleString()}</Text></View>)}
   {!project.members.length?<Text style={s.meta}>{st("No contributor rows yet.")}</Text>:null}
@@ -30,6 +31,6 @@ function makeStyles(C:ThemeColors){return StyleSheet.create({
  track:{height:8,backgroundColor:C.panel2,borderRadius:4,overflow:'hidden'},fill:{height:'100%',backgroundColor:C.accent},split:{flexDirection:'row',justifyContent:'space-between',gap:8},combat:{color:C.bad,fontSize:11,lineHeight:15,fontWeight:'900'},skill:{color:C.good,fontSize:11,lineHeight:15,fontWeight:'900'},
  personal:{flexDirection:'row',alignItems:'center',justifyContent:'space-between',gap:8,padding:9,borderWidth:1,borderColor:C.line,borderRadius:radii.sm,backgroundColor:C.panel2},personalMet:{borderColor:C.good,backgroundColor:C.goodSurface},personalLabel:{fontSize:10,color:C.muted,fontWeight:'900',letterSpacing:.6},personalValue:{fontSize:13,lineHeight:17,color:C.info,fontWeight:'900'},personalValueMet:{color:C.good},
  resources:{gap:5},sectionHead:{flexDirection:'row',alignItems:'center',justifyContent:'space-between',gap:8},section:{...typography.caption,color:C.accent,fontWeight:'900',letterSpacing:.9},sectionMeta:{fontSize:11,lineHeight:15,color:C.muted,fontWeight:'800'},
- goal:{minHeight:48,flexDirection:'row',alignItems:'center',gap:8,padding:9,borderWidth:1,borderColor:C.line,borderRadius:radii.sm,backgroundColor:C.panel2},goalTitle:{color:C.text,fontWeight:'900',fontSize:12,lineHeight:16},
+ goal:{minHeight:48,flexDirection:'row',alignItems:'center',gap:8,padding:9,borderWidth:1,borderColor:C.line,borderRadius:radii.sm,backgroundColor:C.panel2},goalLabel:{flex:1,flexDirection:'row',gap:7,alignItems:'center'},goalIcon:{width:30,height:30},goalTitle:{color:C.text,fontWeight:'900',fontSize:12,lineHeight:16},
  member:{minHeight:44,flexDirection:'row',alignItems:'center',paddingVertical:7,borderTopWidth:StyleSheet.hairlineWidth,borderTopColor:C.line},memberName:{color:C.text,fontWeight:'900',fontSize:13,lineHeight:17},points:{color:C.accent,fontWeight:'900',fontSize:13,lineHeight:17},
 });}

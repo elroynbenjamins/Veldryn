@@ -99,7 +99,7 @@ function makeHarness({user = null, recovering = false} = {}) {
   const root = () => tree.root;
   const dialogs = () => root().findAllByType('NativeModal');
   const dialog = () => {assert.equal(dialogs().length, 1, 'one visible confirmation dialog'); return dialogs()[0];};
-  const findButton = (label, scope = root()) => scope.findAllByType('Pressable').find(node => node.props.accessibilityRole === 'button' && (node.props.accessibilityLabel === label || (!node.props.accessibilityLabel && visibleText(node).trim().replace(/^✓\s*/, '') === label)));
+  const findButton = (label, scope = root()) => scope.findAllByType('Pressable').find(node => (node.props.accessibilityRole === 'button' || node.props.accessibilityRole === 'tab') && (node.props.accessibilityLabel === label || (!node.props.accessibilityLabel && visibleText(node).trim().replace(/^✓\s*/, '') === label)));
   const input = label => {
     const matches = root().findAllByType('TextInput').filter(node => node.props.accessibilityLabel === label);
     assert.equal(matches.length, 1, 'one input for ' + label); return matches[0];
@@ -299,7 +299,8 @@ async function checkAndResendFeedback() {
   try {
     await signInHelp.mount();
     await signInHelp.type('Email address', ' Aster@Example.Test ');
-    await signInHelp.press('Need help signing in?');
+    await signInHelp.press('Forgot password?');
+    await signInHelp.press('Other sign-in options');
     await signInHelp.press('Resend confirmation');
     const text = visibleText(signInHelp.dialog());
     assert.ok(text.includes('aster@example.test'), 'sign-in help opens guidance for the normalized recipient');

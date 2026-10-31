@@ -4,15 +4,17 @@ import {DiscordButton} from '../components/DiscordButton';
 import {LineworkIcon} from '../components/LineworkIcon';
 import {navigationLinework} from '../components/NavigationLinework';
 import {accountText} from '../i18n/account';
-import {useMemo} from 'react';
+import {useMemo,useState} from 'react';
 import {UiIcon} from '../components/UiIcon';
 import {TutorialBeacon} from '../components/TutorialBeacon';
 import {ThemedNavigationIcon} from '../components/ThemedNavigationIcon';
-import {Linking,Pressable,ScrollView,StyleSheet,Text,View,useWindowDimensions} from 'react-native';
+import {Image,Linking,Pressable,ScrollView,StyleSheet,Text,View,useWindowDimensions} from 'react-native';
 import {radii,spacing,typography,type ThemeColors} from '../theme/theme';
 import {useGameTheme} from '../theme/ThemeContext';
 import {t} from '../i18n';
 import {GameState} from '../core/types';
+import {CLASSES} from '../content/classes';
+import {classEmblemIconArtwork} from '../theme/class-emblem-assets';
 import {EARLY_FEATURE_DESTINATION_ORDER} from '../core/feature-unlocks';
 import type {QuickNavDestination} from '../core/quick-navigation';
 
@@ -64,10 +66,14 @@ function itemMeta(language:GameState['settings']['language'],id:MoreDestination)
   }
 }
 
-export function MoreScreen({language,onNavigate,onOpenAdminQa,onOpenUpdates,newReleaseAvailable=false,companionAttention=false,companionUnlocked=true,lockedDestinations={},dailySuppliesAttention=false,friendRequestCount=0,guildAttentionCount=0,socialAttentionCount=0,newUnlockCount=0,storyRewardCount=0}:{language:GameState['settings']['language'];onNavigate:(destination:MoreDestination)=>void;onOpenAdminQa?:()=>void;onOpenUpdates?:()=>void;newReleaseAvailable?:boolean;companionAttention?:boolean;companionUnlocked?:boolean;lockedDestinations?:Partial<Record<MoreDestination,string>>;dailySuppliesAttention?:boolean;friendRequestCount?:number;guildAttentionCount?:number;socialAttentionCount?:number;newUnlockCount?:number;storyRewardCount?:number}){
+export function MoreScreen({language,character,accountStatus='local',onNavigate,onOpenAdminQa,onOpenUpdates,newReleaseAvailable=false,companionAttention=false,companionUnlocked=true,lockedDestinations={},dailySuppliesAttention=false,friendRequestCount=0,guildAttentionCount=0,socialAttentionCount=0,newUnlockCount=0,storyRewardCount=0}:{language:GameState['settings']['language'];character?:GameState['character'];accountStatus?:'guest'|'pending'|'linked'|'local';onNavigate:(destination:MoreDestination)=>void;onOpenAdminQa?:()=>void;onOpenUpdates?:()=>void;newReleaseAvailable?:boolean;companionAttention?:boolean;companionUnlocked?:boolean;lockedDestinations?:Partial<Record<MoreDestination,string>>;dailySuppliesAttention?:boolean;friendRequestCount?:number;guildAttentionCount?:number;socialAttentionCount?:number;newUnlockCount?:number;storyRewardCount?:number}){
  const a=(text:string,params?:Record<string,string|number>)=>accountText(language,text,params);
 
   const C=useGameTheme(),s=useMemo(()=>makeStyles(C),[C]),{width,fontScale}=useWindowDimensions(),singleColumn=width<350||fontScale>=1.25;
+  const [collapsed,setCollapsed]=useState<Record<string,boolean>>({});
+  const className=CLASSES.find(row=>row.id===character?.classId)?.name??character?.classId??'';
+  const quickAccess:readonly MoreDestination[]=['Activity','ResourceCodex','Store','Settings'];
+  const toggleSection=(label:string)=>setCollapsed(current=>({...current,[label]:!current[label]}));
   const lockedReason=(id:MoreDestination)=>(lockedDestinations[id]?a(lockedDestinations[id]!):undefined)??(id==='Companions'&&!companionUnlocked?a("Complete Into Ironwood (Level 10)."):'');
   const attentionLabel=(id:MoreDestination)=>{
     if(lockedReason(id))return '';
@@ -98,16 +104,36 @@ export function MoreScreen({language,onNavigate,onOpenAdminQa,onOpenUpdates,newR
   const attentionTotal=(lockedReason('Quests')?0:storyRewardCount)+(lockedReason('Social')?0:socialAttentionCount)+(lockedReason('Friends')?0:friendRequestCount)+(lockedReason('Guild')?0:guildAttentionCount)+Number(!lockedReason('Companions')&&companionAttention)+Number(!lockedReason('DailySupplies')&&dailySuppliesAttention)+newUnlockCount;
   return <ScrollView contentContainerStyle={s.root} showsVerticalScrollIndicator={false} showsHorizontalScrollIndicator={false}>
     <TutorialBeacon id="more-shortcuts"><View style={s.header}><Text accessibilityRole="header" style={s.heading}>{a("Account")}</Text>{attentionTotal>0?<View accessible accessibilityLabel={`${attentionTotal} ${a("NEEDS ATTENTION")}`} style={s.headerAttention}><Text style={s.headerAttentionValue}>{attentionTotal>99?'99+':attentionTotal}</Text></View>:null}</View></TutorialBeacon>
+
+    {character&&<View style={s.profileCard}>
+      <View style={s.profileAvatar}><Image accessible={false} source={classEmblemIconArtwork[character.classId]} resizeMode="contain" style={s.avatarArt}/></View>
+      <View style={s.profileCopy}><Text numberOfLines={1} style={s.profileName}>{character.name}</Text><Text numberOfLines={2} style={s.profileMeta}>{className} · {a('Level')} {character.level}</Text>
+        <Text style={[s.profileStatus,accountStatus==='linked'&&s.profileLinked]}>{accountStatus==='guest'?a('Guest account'):accountStatus==='pending'?a('Account setup pending'):accountStatus==='linked'?a('Linked account'):a('Local character')}</Text>
+      </View>
+      <Pressable accessibilityRole="button" accessibilityLabel={a('Profile')} onPress={()=>onNavigate('Profile')} style={({pressed})=>[s.profileAction,pressed&&s.pressed]}><Text style={s.profileActionText}>{a('Profile')}</Text></Pressable>
+    </View>}
+    {(accountStatus==='guest'||accountStatus==='pending')?<Pressable accessibilityRole="button" accessibilityLabel={a('Secure guest account')} accessibilityHint={a('Open Account settings to add an email and protect your progress.')} onPress={()=>onNavigate('Settings')} style={({pressed})=>[s.securityCard,pressed&&s.pressed]}>
+     <View style={s.securityIcon}><Text style={s.securityIconText}>◇</Text></View>
+     <View style={s.flex}><Text style={s.securityTitle}>{a('Secure your progress')}</Text><Text style={s.securityDescription}>{a(accountStatus==='pending'?'Complete email verification or password setup in Account settings.':'Link an email to protect access to this guest account.')}</Text></View>
+     <Text style={s.securityArrow}>›</Text>
+    </Pressable>:null}
     {onOpenUpdates?<Pressable accessibilityRole="button" accessibilityLabel={a("What's New & Updates")} accessibilityHint={newReleaseAvailable?a("New release information available"):a("Release notes and app versions")} onPress={onOpenUpdates} style={({pressed})=>[s.releaseRow,pressed&&s.pressed]}>
       <UiIcon name="events" size={22}/><Text style={s.releaseTitle}>{a("What's New & Updates")}</Text>{newReleaseAvailable?<AttentionDot label={a("New update available")}/>:null}<UiIcon name="next" size={18}/>
     </Pressable>:null}
     {attentionDestinations.length?<View style={s.attentionRail}><Text style={s.sectionLabel}>{a("NEEDS ATTENTION")}</Text><View style={s.attentionQuickRow}>{attentionDestinations.slice(0,3).map(id=>{const meta=itemMeta(language,id),alert=attentionLabel(id);return <Pressable key={id} accessibilityRole="button" accessibilityLabel={meta.title+', '+alert} onPress={()=>onNavigate(id)} style={({pressed})=>[s.attentionQuick,singleColumn&&s.attentionQuickWide,pressed&&s.pressed]}><MoreIcon id={id} size={23}/><Text numberOfLines={1} style={s.quickTitle}>{meta.title}</Text>{attention(id)}</Pressable>})}</View></View>:null}
+
+    <View style={s.quickSection}><Text style={s.sectionLabel}>{a('QUICK ACCESS')}</Text>
+      <View style={[s.quickAccessRow,singleColumn&&s.quickAccessWrapped]}>{quickAccess.map(id=><Pressable key={id} accessibilityRole="button" accessibilityLabel={itemMeta(language,id).title} onPress={()=>onNavigate(id)} style={({pressed})=>[s.quickAccessItem,singleColumn&&s.quickAccessWide,pressed&&s.pressed]}>
+        <MoreIcon id={id} size={24}/><Text numberOfLines={2} style={s.quickAccessLabel}>{itemMeta(language,id).title}</Text>
+      </Pressable>)}</View>
+    </View>
     {sections.map(section=><View key={a(section.label)} style={s.section}>
-      <Text style={s.sectionLabel}>{a(section.label)}</Text>
-      <View style={s.grid}>{section.items.filter(id=>(id!=='Rankings'||RANKINGS_RELEASED)&&!lockedReason(id)).map(id=>{const meta=itemMeta(language,id),alert=attentionLabel(id),reason=lockedReason(id),locked=!!reason,inDevelopment=id==='Arena';return <Pressable key={id} accessibilityRole="button" accessibilityState={{disabled:inDevelopment||locked}} accessibilityLabel={inDevelopment?a('{title}, In Development',{title:meta.title}):locked?a('{title}, Locked',{title:meta.title}):alert?`${meta.title}, ${alert}`:meta.title} accessibilityHint={locked?reason:meta.description} disabled={inDevelopment||locked} onPress={()=>onNavigate(id)} style={({pressed})=>[s.tile,alert&&s.tileAttention,(inDevelopment||locked)&&s.tileDisabled,singleColumn&&s.tileWide,pressed&&!inDevelopment&&!locked&&s.pressed]}>
+      <Pressable accessibilityRole="button" accessibilityLabel={a(section.label)} accessibilityState={{expanded:!collapsed[section.label]}} onPress={()=>toggleSection(section.label)} style={({pressed})=>[s.sectionToggle,pressed&&s.pressed]}>
+       <Text style={s.sectionLabel}>{a(section.label)}</Text><Text style={s.sectionCount}>{section.items.length}</Text><Text style={s.sectionChevron}>{collapsed[section.label]?'+':'−'}</Text>
+      </Pressable>
+      {!collapsed[section.label]&&<View style={s.grid}>{section.items.filter(id=>(id!=='Rankings'||RANKINGS_RELEASED)&&!lockedReason(id)).map(id=>{const meta=itemMeta(language,id),alert=attentionLabel(id),reason=lockedReason(id),locked=!!reason,inDevelopment=id==='Arena';return <Pressable key={id} accessibilityRole="button" accessibilityState={{disabled:inDevelopment||locked}} accessibilityLabel={inDevelopment?a('{title}, In Development',{title:meta.title}):locked?a('{title}, Locked',{title:meta.title}):alert?`${meta.title}, ${alert}`:meta.title} accessibilityHint={locked?reason:meta.description} disabled={inDevelopment||locked} onPress={()=>onNavigate(id)} style={({pressed})=>[s.tile,alert&&s.tileAttention,(inDevelopment||locked)&&s.tileDisabled,singleColumn&&s.tileWide,pressed&&!inDevelopment&&!locked&&s.pressed]}>
         <View style={s.tileTop}><View style={[s.iconFrame,alert&&s.iconFrameAttention]}><MoreIcon id={id} size={29}/></View><View style={s.titleRow}><Text numberOfLines={2} style={s.title}>{meta.title}</Text>{locked?<View style={s.lockPill}><Text style={s.lockPillText}>{a("LOCKED")}</Text></View>:inDevelopment?<View style={s.developmentPill}><Text style={s.developmentPillText}>{a("IN DEVELOPMENT")}</Text></View>:null}</View><View style={s.attentionSlot}>{attention(id)}</View></View>
-      </Pressable>})}</View>
-    </View>)}
+      </Pressable>})}</View>}</View>)}
     {upcomingLocked.length?<View style={s.unlockAhead}><View style={s.unlockAheadHead}><Text style={s.sectionLabel}>{a("UNLOCKS AHEAD")}</Text><Text style={s.lockCountText}>{lockedItems.length}</Text></View>{upcomingLocked.map(id=>{const meta=itemMeta(language,id),reason=lockedReason(id);return <View key={id} style={s.unlockRow}><View style={s.unlockIcon}><MoreIcon id={id} size={23} muted/></View><View style={s.flex}><Text style={s.unlockTitle}>{meta.title}</Text><Text numberOfLines={2} style={s.unlockReason}>{reason}</Text></View></View>})}</View>:null}
     {onOpenAdminQa?<View style={s.section}><Text style={s.sectionLabel}>{a("DEVELOPER")}</Text><Pressable accessibilityRole="button" accessibilityLabel={a("Open Admin QA Console")} onPress={onOpenAdminQa} style={({pressed})=>[s.devCard,pressed&&s.pressed]}><ThemedNavigationIcon destination="Character" size={32}/><View style={s.devCopy}><Text style={s.title}>{a("Admin QA Console")}</Text><Text style={s.description}>{a("Full-content, crafting and dungeon test profile")}</Text></View><UiIcon name="next" size={18}/></Pressable></View>:null}
     <DiscordButton label={a('Join Discord')} onPress={()=>void Linking.openURL('https://discord.gg/Db83APvP5y')}/>
@@ -118,6 +144,20 @@ export function MoreScreen({language,onNavigate,onOpenAdminQa,onOpenUpdates,newR
 function AttentionDot({label}:{label:string}){const C=useGameTheme(),s=useMemo(()=>makeStyles(C),[C]);return <View accessible={false} accessibilityLabel={label} style={s.attentionDot}/>}
 function AttentionCount({count,label}:{count:number;label:string}){const C=useGameTheme(),s=useMemo(()=>makeStyles(C),[C]);return <View accessible={false} accessibilityLabel={`${count} ${label}`} style={s.attentionCount}><Text style={s.attentionCountText}>{count>99?'99+':count}</Text></View>}
 function makeStyles(C:ThemeColors){return StyleSheet.create({
+  profileCard:{flexDirection:'row',alignItems:'center',gap:11,borderWidth:1,borderColor:C.lineStrong,borderRadius:12,backgroundColor:C.panelRaised,padding:12},
+  profileAvatar:{width:61,height:64,alignItems:'center',justifyContent:'center',borderWidth:1,borderColor:C.selectionLine,borderRadius:9,backgroundColor:C.stage},
+  avatarArt:{height:54,width:54},profileCopy:{flex:1,minWidth:0,gap:3},
+  profileName:{fontSize:19,lineHeight:24,fontWeight:'800',color:C.text},profileMeta:{fontSize:11,lineHeight:16,color:C.muted},
+  profileStatus:{fontSize:10,fontWeight:'800',color:C.warning},profileLinked:{color:C.good},
+  profileAction:{minHeight:44,minWidth:65,alignItems:'center',justifyContent:'center',backgroundColor:C.secondaryButton,borderWidth:1,borderColor:C.secondaryButtonBorder,borderRadius:9,paddingHorizontal:9},
+  profileActionText:{fontSize:11,fontWeight:'800',color:C.secondaryButtonText},
+  securityCard:{minHeight:68,flexDirection:'row',alignItems:'center',gap:10,padding:10,borderWidth:1,borderColor:C.warning,borderRadius:10,backgroundColor:C.warningSurface},
+  securityIcon:{width:37,height:37,alignItems:'center',justifyContent:'center',borderRadius:9,borderWidth:1,borderColor:C.warning},
+  securityIconText:{fontSize:23,color:C.warning},securityTitle:{fontSize:12,fontWeight:'800',color:C.text},securityDescription:{fontSize:10,lineHeight:15,color:C.muted,marginTop:3},securityArrow:{fontSize:23,color:C.warning},
+  quickSection:{gap:8,paddingTop:7},quickAccessRow:{flexDirection:'row',gap:6},quickAccessWrapped:{flexWrap:'wrap'},quickAccessWide:{flexBasis:'47%'},quickAccessItem:{flex:1,minWidth:0,minHeight:69,alignItems:'center',justifyContent:'center',gap:6,borderWidth:1,borderColor:C.line,borderRadius:9,backgroundColor:C.panel,paddingHorizontal:3,paddingVertical:8},quickAccessLabel:{fontSize:9,color:C.text,fontWeight:'800',textAlign:'center'},
+  sectionToggle:{minHeight:44,flexDirection:'row',alignItems:'center',gap:9,backgroundColor:C.panel2,borderWidth:1,borderColor:C.line,borderRadius:9,paddingHorizontal:11,paddingVertical:8},
+  sectionCount:{color:C.muted,fontSize:10,fontWeight:'700'},sectionChevron:{color:C.accent,fontSize:20,fontWeight:'800',marginLeft:'auto'}, 
+
   root:{padding:spacing.md,gap:10,paddingBottom:spacing.xl},
   flex:{flex:1,minWidth:0},
   header:{minHeight:52,flexDirection:'row',alignItems:'center',justifyContent:'space-between',gap:10,paddingHorizontal:3},

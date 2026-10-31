@@ -184,7 +184,7 @@ async function main(){
 
  // Every Gold movement uses the same exactly-once receipt and optimistic
  // version fence as equipment sales and event rewards.
- state={...state!,character:{...state!.character!,gold:10000},bank:{...state!.bank,gold:2000}};
+ state={...state!,activity:null,character:{...state!.character!,gold:10000},bank:{...state!.bank,gold:2000}};
  const bankInitialTotal=state.character!.gold+(state.bank.gold??0);
  const bankVersion=version,bankCommits=commits;
  const [depositRace,withdrawRace]=await Promise.all([

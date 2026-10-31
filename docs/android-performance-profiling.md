@@ -37,7 +37,7 @@ Keep the same phone, build, refresh rate, login/test save, run duration and sequ
 
 ## Release safety
 
-No profiling tool writes to production. If staged load testing is introduced later, require a dedicated staging Supabase project, a bounded concurrency budget, a hard test timeout and test accounts before sending any traffic. Do not include auth tokens or private account identifiers in performance reports.
+No profiling tool writes to production. The optional staging workload refuses unconfirmed project targets, limits account count and workload, and enforces an overall 90-second deadline. Never run it against production or regular player accounts. Do not include auth tokens or private account identifiers in performance reports.
 
 ## Repeatable frame + memory comparison (new)
 
@@ -63,7 +63,7 @@ The comparison returns per-metric medians and review flags for p95 frame time ov
 
 Read-only staging observations on 2026-10-31 showed little or no populated gameplay data. The biggest recorded cumulative query-time consumers were `maintain_minute_tick_v18` (8,831 calls, 15.19 ms average) and `process_online_tick_server_v1` (17,650 calls, 7.60 ms average). These measurements are historical and do not demonstrate a problem for populated player accounts. Inspect query plans against representative test fixtures before changing cron schedules or adding indexes.
 
-`tools/profile-staging-gameplay.mjs` provides a **manual, bounded, write-enabled staging test** of the actual gameplay endpoint and PostgreSQL optimistic version fencing. It is never run by CI. It first authenticates two to four distinct test accounts and verifies all are idle; only then does it issue two competing, no-op `settings` commands per account, verify that exactly one wins and one receives `stale_state`, replay the winning receipt, and confirm unchanged Gold and bank balances. It reports sanitized p50/p95 request timings. The cap is two rounds, two contenders per account, and eight seconds per request.
+`tools/profile-staging-gameplay.mjs` provides a **manual, bounded, write-enabled staging test** of the actual gameplay endpoint and PostgreSQL optimistic version fencing. It is never run by CI. It first authenticates two to four distinct test accounts and verifies all are idle; only then does it issue two competing, no-op `settings` commands per account, verify that exactly one wins and one receives `stale_state`, replay the winning receipt, and confirm unchanged Gold and bank balances. It reports sanitized p50/p95 request timings. The cap is two rounds, two contenders per account, eight seconds per request and a 90-second total deadline.
 
 In a private terminal session, set these environment variables (do not commit credentials, console history or raw responses):
 

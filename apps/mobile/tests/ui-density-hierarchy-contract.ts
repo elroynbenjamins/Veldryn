@@ -173,7 +173,7 @@ ok(appMastery.includes('preparationNotices[0].message')&&appMastery.includes('pr
 ok(appMastery.includes('actionLabel={preparationNotices[0].actionLabel}')&&appMastery.includes('openPreparationNotice(preparationNotices[0])'),'Preparation feedback must provide a one-tap action for the exact current next step');
 ok(appMastery.includes("notice.kind==='complete'||!notice.destination||notice.destination.kind==='info'")&&appMastery.includes('openWorkingTowardDestination(notice.destination)'),'Preparation notice actions must route completion to Working Toward and live steps through canonical deep-link navigation');
 ok(appMastery.includes('preparationNotices.length||collected||forgeResults'),'Mastery feedback must wait behind preparation feedback and higher-priority reward/reveal surfaces');
-ok(appMastery.includes("forgeResults?.some(row=>row.qualityProc)"),'Mastery feedback must defer only behind a real exceptional Forge reveal');
+ok(appMastery.includes("forgeResults?.some(isExceptionalForgeResult)")&&read('src/components/ForgeResultFeedback.tsx').includes("result.qualityProc&&(result.rarity==='epic'||result.rarity==='legendary'||result.rarity==='mythic')"),'Mastery feedback must defer only behind an exceptional Epic-or-higher Forge reveal');
 
 const snapshot=read('src/components/SkillDashboard.tsx');
 ok(snapshot.includes('.slice(0,5)'),'Home skill snapshot must show only the five strongest non-combat skills');
@@ -264,13 +264,13 @@ const character=read('src/screens/CharacterScreen.tsx');
 ok(character.includes('disclosure:{minHeight:54'),'Character secondary disclosures must remain compact');
 ok(character.includes('identityKicker')&&character.includes('characterName')&&character.includes('classMeta'),'Character must use one consolidated identity hero instead of separate page and class headers');
 ok(!character.includes('pageHeading')&&!character.includes('headingCopy'),'Character must not regress to the duplicate heading stack');
-ok(character.includes("'LOADOUT FOCUS'")&&character.includes('s.itemFocus'),"Character equipment preview must have a purpose-specific title");
+ok(character.includes("profileT(language,'NEXT ACTION')")&&character.includes('equipmentFocusModel(selectedDecision)')&&character.includes('s.itemFocus')&&character.includes('setEquipmentTool(equipmentFocus.kind)'),"Character equipment preview must have a purpose-specific title");
 ok(!character.includes('>Lv. {character.level}<')&&character.includes('selectedDecision.stats'),"Character preview must not repeat the character level beside readiness");
 ok(character.includes("keyStat:{flex:1,alignItems:'center',gap:2,paddingVertical:6")&&character.includes('backgroundColor:C.panel2'),'Character key stats must use compact HUD-style cells');
 ok(character.includes('primaryAction:{flexGrow:2,flexBasis:180}')&&character.includes('secondaryAction:{flexGrow:1,flexBasis:110'),'Character global actions must preserve one obvious primary equipment action');
 ok(!character.includes("title={showLoadouts?'Hide guides':'Build guides'}"),'Build Guides disclosure must not be duplicated by a second global button');
 ok(character.includes('disclosureOpen:{borderColor:C.info,backgroundColor:C.infoSurface}'),'Character secondary disclosures must show a clean selected/open state');
-ok(character.includes('<GameButton compact title={fullSet?')&&character.includes('<GameButton compact title={profileT(language,"Craft missing gear")}'),"Novice-set utility actions must stay compact");
+ok(character.includes('<GameButton compact title={profileT(language,\'Equip set\')}')&&character.includes('<GameButton compact title={profileT(language,"Craft missing gear")}')&&character.includes('onPress={()=>setConfirming(true)}'),"Novice-set utility actions must stay compact");
 
 const empty=read('src/components/EmptyState.tsx');
 ok(empty.includes('padding:spacing.lg'),'Empty states must avoid excessive vertical padding');
@@ -354,8 +354,8 @@ ok(quests.includes('onOpenWeeklyBoss')&&questApp.includes("monsterId:'FALLEN_KNI
 
 
 const settings=read('src/screens/SettingsScreen.tsx');
-ok(settings.includes('themeChoice:{minHeight:82'),'Theme preview cards must stay compact enough to compare all themes');
-ok(settings.includes('<GameButton compact title={a("Restore gameplay defaults")} tone="secondary" onPress={restoreDefaults}'),"Settings reset-defaults action must remain secondary and compact");
+ok(settings.includes('themeChoice:{flex:1,minWidth:0,minHeight:78'),'Theme preview cards must stay compact enough to compare all themes');
+ok(settings.includes('<GameButton compact title={a("Restore gameplay defaults")} tone="secondary" onPress={()=>setConfirmDefaults(true)}')&&settings.includes('onConfirm={()=>{setConfirmDefaults(false);restoreDefaults();}}'),"Settings reset-defaults action must remain secondary and compact");
 
 
 const friends=read('src/screens/FriendsScreen.tsx');
@@ -364,7 +364,7 @@ ok(friends.includes('<GameButton compact title={st("Accept")}'),"Friend-request 
 ok(friends.includes('<GameButton compact title={st("Decline")} tone="secondary"'),"Friend-request decline must remain compact");
 
 const characterPolish=read('src/screens/CharacterScreen.tsx');
-ok(characterPolish.includes('<GameButton compact title={selectedDecision?.upgrade.maxed?')&&characterPolish.includes('selectedDecision?.upgrade.successChance')&&characterPolish.includes("openEnhancement('upgrade')"),"Selected equipment actions must remain compact even when the enhancement chance is surfaced");
+ok(characterPolish.includes('<GameButton compact title={selectedDecision.upgrade.canAfford?')&&characterPolish.includes('selectedDecision.upgrade.successChance')&&characterPolish.includes("openEnhancement('upgrade')"),"Selected equipment actions must remain compact even when the enhancement chance is surfaced");
 
 const worldPolish=read('src/screens/WorldScreen.tsx');
 ok(worldPolish.includes("backgroundColor:C.dark?'rgba(5,12,20,.64)':'rgba(255,255,255,.68)'"),'World artwork overlay must preserve text contrast in dark and light themes');

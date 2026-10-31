@@ -14,6 +14,15 @@ export function normalizeCompanionRuntimeSave(raw:any):CompanionAccountState {
   if(a.companionSchemaVersion!==undefined&&a.companionSchemaVersion!==1)throw new Error('Unsupported companion save version.');
   const out:CompanionAccountState={companionSchemaVersion:1,companionMaterials:record(a.companionMaterials),companionBossClears:record(a.companionBossClears),companionSpecialClears:list(a.companionSpecialClears),companionActionSequence:int(a.companionActionSequence),companionAssignmentBondstoneWeek:typeof a.companionAssignmentBondstoneWeek==='string'?a.companionAssignmentBondstoneWeek:undefined,companionAssignmentBondstones:int(a.companionAssignmentBondstones,1),companionRematchBondstoneWeek:typeof a.companionRematchBondstoneWeek==='string'?a.companionRematchBondstoneWeek:undefined,companionRematchBondstones:int(a.companionRematchBondstones,COMPANION_REMATCH_WEEKLY_BONDSTONE_CAP)};
   out.companionAssignments=Array.isArray(a.companionAssignments)?a.companionAssignments.filter((x:any)=>x&&typeof x.assignmentId==='string'&&companionMission(x.missionId)&&iso(x.startedAt)&&iso(x.endsAt)&&Array.isArray(x.companionIds)&&x.companionIds.length<=3&&x.companionIds.every((id:string)=>!!combatCompanionDef(id))&&['active','completed','claimed','cancelled'].includes(x.status)&&typeof x.seed==='string').slice(-12).map((x:any)=>({...x,companionIds:list(x.companionIds,3)})):[];
+  // Retain only a legal Tank / Damage / Support formation across backup import.
+  // Reject corrupt or duplicate IDs instead of restoring an invalid trial lineup.
+  const formation=list(a.companionTrialFormationIds,3);
+  if(formation.length===3&&formation.every(id=>!!combatCompanionDef(id))
+    &&new Set(formation.map(id=>combatCompanionDef(id)!.role)).size===3)
+    out.companionTrialFormationIds=formation;
+  // The accepted fight request is an idempotency marker, not a new authorization.
+  if(typeof a.companionTrialLastFightRequestId==='string'&&a.companionTrialLastFightRequestId.length>0&&a.companionTrialLastFightRequestId.length<=120)
+    out.companionTrialLastFightRequestId=a.companionTrialLastFightRequestId;
   out.companionBondRewardClaims=list(a.companionBondRewardClaims,100);
   out.companionBattleReadyAtMs=int(a.companionBattleReadyAtMs);
   out.companionBossRematchReadyAtMs=int(a.companionBossRematchReadyAtMs);

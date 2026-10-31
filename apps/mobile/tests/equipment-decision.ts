@@ -1,7 +1,7 @@
 import {EQUIPMENT_SETS} from '../src/content/equipment-sets';
 import {itemDef} from '../src/content/items';
 import {createCharacter,newGame} from '../src/core/game';
-import {equipmentDecisionModel,equipmentUpgradeSummary} from '../src/core/equipment-decision';
+import {equipmentDecisionModel,equipmentFocusModel,equipmentUpgradeSummary} from '../src/core/equipment-decision';
 import {upgradeQuote} from '../src/core/equipment-enhancement';
 
 function ok(value:unknown,message:string){if(!value)throw new Error(message)}
@@ -26,5 +26,12 @@ const poor={...state,character:{...state.character!,gold:0},inventory:{...state.
 const blocked=equipmentDecisionModel(poor,firstId);
 ok(!blocked.upgrade.canAfford,'Missing resources must block enhancement readiness');
 ok(equipmentUpgradeSummary(blocked).includes('Missing'),'Blocked enhancement summary must explain missing resources');
+
+ok(equipmentFocusModel(null).kind==='equip','Empty slot must recommend equipping gear');
+ok(equipmentFocusModel(model).kind==='enhance','Affordable upgrade is the next best equipment action');
+if(blocked.sockets.capacity>0)ok(equipmentFocusModel(blocked).kind==='gems','Available gem sockets take priority over an unaffordable enhancement');
+const withoutSockets={...blocked,sockets:{...blocked.sockets,capacity:0}};
+ok(equipmentFocusModel(withoutSockets).kind==='enhance','Blocked upgrades must link to exact missing requirements');
+ok(equipmentFocusModel({...withoutSockets,upgrade:{...withoutSockets.upgrade,maxed:true}}).kind==='compare','Maxed and socket-full gear should recommend comparing items');
 
 console.log('PASS: equipment decision model exposes rarity/set/enhancement/socket context without mutating state');

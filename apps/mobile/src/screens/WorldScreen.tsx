@@ -41,6 +41,7 @@ export function WorldScreen({state,onTravel,onOpenCombat,onOpenSkills,onCoop,dun
   const C=useGameTheme(),equipmentColors=equipmentTheme(C),s=useMemo(()=>makeStyles(C),[C]);
   const level=state.character!.level,currentId=currentRegionId(state);
   const current=WORLD_ZONES.find(zone=>zone.id===currentId)??WORLD_ZONES[0];
+   const goalTargetRegion=goalRegionId?WORLD_ZONES.find(zone=>zone.id===goalRegionId):undefined;
   const storyRegion=currentId==='SUNSCAR'||currentId==='FROSTMARCH'||currentId==='ASHLANDS'?currentId:undefined;
   const currentSummary=regionActivitySummary(state,current.id),travelRegions=orderedTravelRegions(state,current.id,goalRegionId);
   const next=WORLD_ZONES.filter(zone=>zone.id!==current.id&&regionTravelAvailability(state,zone)==='locked').sort((a,b)=>a.minLevel-b.minLevel)[0],nextLevelMet=!!next&&level>=next.minLevel,nextLockReason=next?regionTravelLockReason(state,next):undefined;
@@ -95,7 +96,7 @@ export function WorldScreen({state,onTravel,onOpenCombat,onOpenSkills,onCoop,dun
     <View style={s.currentActions}><View style={s.currentAction}><GameButton title={t("Combat")} onPress={()=>onOpenCombat()}/></View><View style={s.currentAction}><GameButton title={p("Gathering")} tone="secondary" onPress={onOpenSkills}/></View></View>
     <Text style={s.currentAvailability}>{t("Hunts {ready}/{total} · Gather {gatherReady}/{gatherTotal}",{ready:currentSummary.combatReady,total:currentSummary.combatTotal,gatherReady:currentSummary.gatheringReady,gatherTotal:currentSummary.gatheringTotal})}</Text>
 
-    {goalRegionId&&goalRegionId!==current.id?<View style={s.goalRoute}><Text style={s.goalRouteLabel}>{t("OBJECTIVE ROUTE")} · {WORLD_ZONES.find(zone=>zone.id===goalRegionId)?.name??goalRegionId}</Text></View>:null}
+    {goalTargetRegion&&goalTargetRegion.id!==current.id?<View style={s.goalRoute}><Text style={s.goalRouteLabel}>{t("OBJECTIVE ROUTE")} · {goalTargetRegion.name}</Text><Text style={s.goalRouteHint}>{t("Your current objective continues in {region}. That region is promoted to the top of Travel Elsewhere below.",{region:goalTargetRegion.name})}</Text></View>:null}
 
     {storyRegion&&<RegionalStoryLeadsPanel state={state} regionId={storyRegion} onOpenCombat={()=>onOpenCombat()}/>}
     {sunscar&&<><SunscarRegionPanel zones={sunscarZones}/>{onRegionalRewardsChanged?<RegionalCombatPanel state={state} onRewardsChanged={onRegionalRewardsChanged}/>:null}</>}
@@ -151,7 +152,7 @@ function makeStyles(C:ThemeColors){const equipmentColors=equipmentTheme(C);retur
   goalDestination:{borderColor:C.info,borderWidth:2},
   goalBadge:{fontSize:9,color:C.info,fontWeight:'900',letterSpacing:.8},
   goalRoute:{padding:spacing.sm,borderLeftWidth:3,borderLeftColor:C.info,backgroundColor:C.infoSurface},
-  goalRouteLabel:{...typography.caption,color:C.info,fontWeight:'900',letterSpacing:.8},
+  goalRouteLabel:{...typography.caption,color:C.info,fontWeight:'900',letterSpacing:.8},goalRouteHint:{...typography.caption,color:C.text,lineHeight:17},
   destinationMeta:{...typography.caption,color:C.info,fontWeight:'600'},
   destinationContent:{fontSize:10,lineHeight:14,color:C.text,fontWeight:'800'},
   destinationSub:{fontSize:12,lineHeight:17,color:C.muted},

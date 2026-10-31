@@ -11,6 +11,7 @@ const navigation=read('src/components/GuildNavigation.tsx');
 const management=read('src/components/OnlineGuildManagement.tsx');
 const customization=read('src/components/OnlineGuildCustomizationPanel.tsx');
 const identity=read('src/components/GuildIdentitySummary.tsx');
+const homeActions=read('src/components/GuildHomeActions.tsx');
 const hall=read('src/components/OnlineGuildHallPanel.tsx');
 const discovery=read('src/components/GuildDiscoveryFlow.tsx');
 const onlineSocial=read('src/online/social.ts');
@@ -28,7 +29,7 @@ ok(discovery.includes("disabled={busy||levelLoading||levelLocked()"),'Guild crea
 ok(discovery.includes("levelLocked(invite.minimumLevel)"),'Guild invitation acceptance must respect global and Guild-specific requirements');
 
 const memberIdentity=read('src/components/GuildMemberIdentity.tsx');
-const pve=read('src/components/OnlineGuildPve.tsx')+read('src/components/GuildRaidEncounter.tsx');
+const pve=read('src/components/OnlineGuildPve.tsx')+read('src/components/GuildRaidEncounter.tsx')+read('src/components/GuildRaidTheater.tsx');
 
 for(const [name,source] of [['GuildScreen',screen],['OnlineGuildManagement',management],['OnlineGuildCustomizationPanel',customization],['GuildIdentitySummary',identity],['OnlineGuildHallPanel',hall],['OnlineGuildPve',pve]] as const){
  ok(source.includes('useGameTheme'),name+' must use the active UI theme');
@@ -71,8 +72,8 @@ ok(memberIdentity.includes('myGuild,guildDetails,ownGuildMemberCount')&&memberId
  'Member home must show real Guild identity, membership count and crest');
 ok(memberIdentity.includes('useGameTheme')&&memberIdentity.includes('C.panelRaised')&&memberIdentity.includes('C.accentSurface')===false,
  'Member identity must use shared theme surfaces and color tokens');
-ok(screen.includes('<GuildMemberIdentity onRoster=')&&screen.includes("['Hall','guild'")&&screen.includes("['Roster','friends'"),
- 'Member dashboard must prioritize real Guild identity, Hall and Members');
+ok(screen.includes('<GuildMemberIdentity onRoster=')&&screen.includes('<GuildHomeActions')&&homeActions.includes("{title:'Roster',action:onRoster}")&&homeActions.includes("{title:'Hall',action:onHall}"),
+ 'Member dashboard must prioritize real Guild identity and keep tappable Hall and Roster actions in the shared home component');
 ok(screen.includes("homeCard:{flexGrow:1,flexBasis:'46%',minWidth:142,minHeight:140"),
  'Guild dashboard cards must preserve readable two-column mobile geometry');
 
@@ -111,14 +112,14 @@ ok(hall.includes("<Text style={s.levelMax}>/10</Text>")&&hall.includes('Launch H
 ok(hall.includes('backgroundColor:C.warningSurface'),'Guild Hall level badge must remain light-theme safe');
 ok(pve.includes("'EVENT BOSS':'WEEKLY BOSS'")&&pve.includes('MILESTONE REWARDS'),"Guild PvE must distinguish weekly and event bosses and milestone rewards");
 ok(pve.includes('accessibilityRole="alert" style={{color:C.bad}}')&&pve.includes('backgroundColor:C.panel2'),"Guild PvE must use semantic error and progress colors");
-ok(pve.includes("rows.filter(row=>row.kind===encounterKind)")&&pve.includes('selected={encounterKind===kind}'),'Raid Gate must present weekly and event encounters as selectable destinations');
+ok(pve.includes('guildRaidEncountersForTab(rows,encounterKind)')&&pve.includes('selected={encounterKind===kind}')&&pve.includes('onPress={()=>setEncounterKind(kind)}'),'Raid Gate must present weekly and event encounters as selectable destinations');
 ok(pve.includes('<ImageBackground')&&pve.includes("overflow:'hidden'},backdrop:{opacity:.7,width:'100%',height:'100%'}"),'Boss scenes must bound their artwork to the stage instead of overflowing over the action area');
 ok(pve.includes("accessibilityLabel={st('Boss health')}")&&pve.includes('now:Math.round(100-view.percent)')&&pve.includes('width:`${100-view.percent}%`'),'Boss HP label, accessible value and remaining-health fill must agree');
 ok(pve.includes('state?.character?.equippedCombatCompanionId')&&pve.includes('classIconArtwork[state.character.classId]')&&pve.includes('companionArtSource(companionId)'),'Raid party must show the actual current class and equipped companion artwork');
 ok(pve.includes('disabled={busy||!view.canContribute||!onAttempt}')&&pve.includes("st('Begin 3-minute attempt')"),'The primary attempt action must respect server-derived eligibility and pending requests');
 ok(pve.includes('row.pendingAttempts?1000:30000')&&pve.includes('return()=>clearInterval(timer)')&&pve.includes("st('Resolving attempt…')"),'Pending attempt countdown must clean up its timer and never invent a resolved reward at zero');
 ok(pve.includes('accessibilityState={{expanded:detailsOpen}}')&&pve.indexOf('<GameButton title={actionLabel}')<pve.indexOf('accessibilityState={{expanded:detailsOpen}}'),'Encounter mechanics must stay available below the primary action through an accessible disclosure');
-ok(pve.includes('lastAttemptCharacterDamage')&&pve.includes('lastAttemptCompanionDamage')&&pve.includes('lastCompanion'),'Attempt summary must preserve authoritative player and companion damage breakdowns');
+ok(pve.includes('lastAttemptCharacterDamage')&&pve.includes('lastAttemptCompanionDamage')&&pve.includes('lastAttemptCompanionId'),'Attempt summary must preserve authoritative player and companion damage breakdowns');
 
 ok(management.includes('GUILD MANAGEMENT'),'Guild roster must expose management context');
 ok(management.includes("role.toUpperCase()"),'Guild management must surface the viewer role');

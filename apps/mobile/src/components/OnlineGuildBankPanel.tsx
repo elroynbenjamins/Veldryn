@@ -3,13 +3,14 @@ import {Pressable,StyleSheet,Text,TextInput,View} from 'react-native';
 import {Panel} from './Panel';
 import {GameButton} from './GameButton';
 import {ResourceArtwork} from './ResourceArtwork';
+import {guildUpgradeComponentName} from '../theme/guild-upgrade-component-art';
 import {gameAlert} from '../core/game-alerts';
 import {useGameTheme} from '../theme/ThemeContext';
 import type {ThemeColors} from '../theme/theme';
 import type {GuildTokenShopSnapshot} from '../online/guild-token-shop';
 import {depositOnlineGuildBank,pendingGuildBankDeposit,discardPendingGuildBankDeposit,type PendingGuildBankDeposit} from '../online/guild-bank';
 
-const title=(id:string)=>id==='gold'?'Gold':id.toLowerCase().replace(/_/g,' ').replace(/\b\w/g,x=>x.toUpperCase());
+const title=(id:string)=>id==='gold'?'Gold':guildUpgradeComponentName(id)??id.toLowerCase().replace(/_/g,' ').replace(/\b\w/g,x=>x.toUpperCase());
 export function OnlineGuildBankPanel({snapshot,onReload}:{snapshot:GuildTokenShopSnapshot;onReload:()=>Promise<unknown>}){
  const C=useGameTheme(),s=useMemo(()=>styles(C),[C]);
  const [selection,setSelection]=useState<string|null>(null),[quantity,setQuantity]=useState('100');

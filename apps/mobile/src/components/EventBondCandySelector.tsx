@@ -39,7 +39,7 @@ export function EventBondCandySelector({
   <GameModalSurface visible={open} onClose={()=>setOpen(false)} surfaceStyle={{maxHeight:Math.min(height*.86,670)}}>
    <GameModalHeader eyebrow="EVENT BOND CANDY" title="Choose companion" onClose={()=>setOpen(false)} closeDisabled={busy}/>
    <Text style={[s.helper,{color:C.muted}]}>Every use gives +75 Companion XP. Each companion can earn 5 bonus Bondbloom per event.</Text>
-   <ScrollView style={s.scroll} contentContainerStyle={s.list} showsVerticalScrollIndicator={false}>
+   <ScrollView style={s.scroll} contentContainerStyle={s.list} showsVerticalScrollIndicator={false} showsHorizontalScrollIndicator={false}>
     {ownedIds.map(id=>{
      const def=combatCompanionDef(id);if(!def)return null;
      const count=eventBondCandyMaterialUses(state,eventId,id),isSelected=id===targetId,art=companionArtSource(id),filled=count>=EVENT_BOND_CANDY_MATERIAL_CAP;

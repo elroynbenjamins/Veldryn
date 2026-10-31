@@ -55,7 +55,18 @@ export async function discardPendingGuildConstructionDonation(){
 /** The same receipt survives retries, app closures and network timeouts.
  * A new donation cannot silently replace a receipt that may have succeeded.
  */
+let constructionDonationInFlight=false;
 export async function donateOnlineGuildConstruction(
+ input:{templateId:string;resourceId:string;amount:number}
+):Promise<DonationResult>{
+ // Prevent simultaneous taps or multiple surfaces from allocating different
+ // receipt keys before the first pending request is persisted.
+ if(constructionDonationInFlight)throw new Error('A Guild donation is already being processed.');
+ constructionDonationInFlight=true;
+ try{return await performGuildConstructionDonation(input);}
+ finally{constructionDonationInFlight=false;}
+}
+async function performGuildConstructionDonation(
  input:{templateId:string;resourceId:string;amount:number}
 ):Promise<DonationResult>{
  if(!Number.isSafeInteger(input.amount)||input.amount<=0||input.amount>1000000)

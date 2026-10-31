@@ -10,6 +10,22 @@ check(ids.size===8,'Eight illustrated guild component IDs required');
 check(GUILD_COMPONENT_RECIPES.length===8,'Exactly eight authored guild profession recipes');
 check(!GUILD_COMPONENT_CRAFTING_RELEASED,'Guild commissions remain disabled until server integrations are ready');
 const icons=fs.readFileSync('src/theme/guild-upgrade-component-art.ts','utf8');
+const resourceIcons=fs.readFileSync('src/theme/resource-assets.ts','utf8');
+const resourceRenderer=fs.readFileSync('src/components/ResourceArtwork.tsx','utf8');
+const guildBank=fs.readFileSync('src/components/OnlineGuildBankPanel.tsx','utf8');
+const guildConstruction=fs.readFileSync('src/components/OnlineGuildConstructionPanel.tsx','utf8');
+const roadmap=fs.readFileSync('src/components/GuildConstructionRoadmapPanel.tsx','utf8');
+check(resourceIcons.includes('guildUpgradeComponentArtwork(itemId)'),
+ 'Guild PNGs must be resolved through canonical shared resource artwork');
+check(resourceRenderer.includes('resourceIconSource(itemId)'),
+ 'Inventory and crafting artwork must use the shared source resolver');
+check(guildBank.includes('<ResourceArtwork itemId={id}'),
+ 'Guild Bank slots must render the same Guild component images as inventory');
+check(guildConstruction.includes('guildUpgradeComponentArtwork(res.key)'),
+ 'Construction allocations must show Guild component artwork');
+check(roadmap.includes('<ResourceArtwork itemId={material.id}'),
+ 'The construction roadmap must show the illustrated component requirements');
+
 for(const component of GUILD_COMPONENT_ITEMS){
  check(ITEMS.includes(component)&&itemDef(component.id)===component,'Component must exist in canonical item catalog');
  check(component.guildOnly&&component.value===0&&component.type==='material','No guild component can be sold');

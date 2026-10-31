@@ -43,7 +43,13 @@ ok(app.includes('onlineCustomize={<OnlineGuildCustomizationPanel/>}'),'Guild scr
 
 for(const label of ['Home','PvE','Roster','Activities','Hall','Chat','Manage'])ok(screen.includes("'"+label+"'"),'Consolidated online Guild tabs must include '+label);
 ok(screen.includes("onlineSection==='Roster'?")&&screen.includes('cloneElement(onlineManagement'),'Roster tab must render authoritative Guild management');
-ok(screen.includes("onlineSection==='Hall'?<View")&&screen.includes("hallSection==='Shop'")&&screen.includes("(['Facilities','Skills','Trophies','Shop'] as const)")&&screen.includes('<OnlineGuildTokenShopPanel')&&screen.includes('cloneElement(onlineHall'),'Hall must retain its four shared sections and nest the Guild Shop without adding an eighth destination');
+ok(screen.includes("onlineSection==='Hall'?<View")&&screen.includes("hallSection==='Shop'||hallSection==='Bank'")&&screen.includes("(['Facilities','Skills','Trophies','Shop','Bank'] as const)")&&screen.includes('<OnlineGuildTokenShopPanel')&&screen.includes('<OnlineGuildBankPanel')&&screen.includes('cloneElement(onlineHall'),'Hall must keep existing Shop/Hall destinations and add Guild Bank within Hall');
+const bank=read('src/components/OnlineGuildConstructionPanel.tsx');
+const bankEntry=read('src/components/OnlineGuildBankPanel.tsx');
+ok(bank.includes('const limit=Math.max(0,Math.min(1000000,remaining')&&bank.includes('disabled={busy||!validQuantity}'),'Donation quantity must never exceed the client-held amount or remaining project requirement');
+ok(bank.includes('pendingGuildConstructionDonation')&&bank.includes('donateOnlineGuildConstruction'),'Donations must retain pending idempotent receipt recovery');
+ok(bankEntry.includes('loadOnlineGuildTokenShop()')&&bankEntry.includes('inventory={state.inventory.stacks}'),'Bank must read server-owned requirements and show owned inventory');
+ok(!screen.includes('GUILD_BANK_RESOURCES')&&screen.includes('const requiredNow:Record<string,number>'),'Local QA Guild Bank must not permit unrelated inventory items');
 ok(screen.includes('<OnlineGuildMusterPanel/>')&&screen.includes("onlineSection==='PvE'?onlinePve:null"),"Guild navigation must preserve Muster and a dedicated PvE destination");
 ok(screen.includes("onlineSection==='Manage'?<View")&&screen.includes('{onlineCustomize}'),'Manage must preserve member Guild appearance customization');
 ok(!screen.includes('{onlineDirectory}')&&!screen.includes('Directory & Creation'),'Joined members must not be offered guild creation inside Guild management');

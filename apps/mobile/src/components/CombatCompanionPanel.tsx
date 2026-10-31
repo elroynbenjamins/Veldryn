@@ -101,9 +101,15 @@ export function CombatCompanionPanel({state,now,onCommand,onNavigateSource,initi
   const sectionGuide=COMPANION_TOUR_STEPS.find(step=>step.section===section)??COMPANION_TOUR_STEPS[0];
   useEffect(()=>{if(!message||messageError)return;const timer=setTimeout(()=>setMessage(''),4500);return()=>clearTimeout(timer)},[message,messageError]);
   useEffect(()=>{setMessage('');setMessageError(false)},[section]);
-  const lock=useRef(false),view=companionView(state,now),model=combatCompanionUiModel(state,selection),e=companionEconomy(state),progress=model?.progress;
-  const equipped=state.character?.equippedCombatCompanionId,contribution=companionCombatContribution(state),run=view.trial.progress.season.activeRun;
-  const recovery=companionRecoverySeconds(state,now),season=companionTrialSeasonDefinition(view.trial.progress.season.seasonKey),rotationPreview=companionTrialRotationPreview(now),specialFacts=companionUnlockFacts(state),trialSuggestion=recommendedCompanionTrialTeam(state,now),expeditionSuggestion=recommendedCompanionMissionTeam(state,mission,now);
+  const lock=useRef(false);
+  // Opening sheets, expanding details and changing filters must not recompute
+  // the full companion codex or account economy without new gameplay state.
+  const view=useMemo(()=>companionView(state,now),[state,now]);
+  const model=useMemo(()=>combatCompanionUiModel(state,selection),[state,selection]);
+  const e=useMemo(()=>companionEconomy(state),[state]);
+  const progress=model?.progress;
+  const equipped=state.character?.equippedCombatCompanionId,contribution=useMemo(()=>companionCombatContribution(state),[state]),run=view.trial.progress.season.activeRun;
+  const recovery=companionRecoverySeconds(state,now),season=companionTrialSeasonDefinition(view.trial.progress.season.seasonKey),rotationPreview=useMemo(()=>companionTrialRotationPreview(now),[now]),specialFacts=useMemo(()=>companionUnlockFacts(state),[state]),trialSuggestion=useMemo(()=>recommendedCompanionTrialTeam(state,now),[state,now]),expeditionSuggestion=useMemo(()=>recommendedCompanionMissionTeam(state,mission,now),[state,mission,now]);
   const safeTeam=team.filter(id=>!!view.owned[id]);
   const successMessage=(type:string,args?:Record<string,unknown>)=>{
     const id=typeof args?.id==='string'?args.id:selection,target=combatCompanionUiModel(state,id),name=target?.def.name??named(id);
@@ -128,7 +134,7 @@ const selectedIndex=Math.max(0,COMBAT_COMPANIONS.findIndex(def=>def.id===selecti
   const roadmapView=progressionRoadmap?<View style={s.roadmap}><View style={s.roadmapHeader}><View style={s.flex}><Text style={s.name}>{progressionRoadmap.owned ? t("Progression roadmap") : t("Recruitment roadmap")}</Text><Text style={s.body}>{t("Next · {value0}", {value0: companionContent(language,progressionRoadmap.nextStep)})}</Text></View><Text style={s.roadmapNext}>{t("NEXT")}</Text></View><Text style={s.roadmapLane}>{t("POWER PATH")}</Text>{progressionRoadmap.power.map(step=><View key={step.id} style={s.roadmapRow}><Text style={[s.roadmapMark,step.status==='complete'?s.roadmapDone:step.status==='ready'?s.roadmapReady:step.status==='current'?s.roadmapCurrent:s.roadmapFuture]}>{step.status==='complete' ? '✓' : step.status==='ready' ? '!' : '○'}</Text><View style={s.flex}><Text style={s.name}>{companionContent(language,step.label)}</Text><Text style={s.body}>{companionContent(language,step.detail)}</Text><Text style={s.roadmapReward}>{companionContent(language,step.reward)}</Text></View><Text style={[s.roadmapState,step.status==='complete'?s.roadmapDone:step.status==='ready'?s.roadmapReady:step.status==='current'?s.roadmapCurrent:s.roadmapFuture]}>{label(step.status).toLocaleUpperCase(language)}</Text></View>)}{progressionRoadmap.bond.length?<><Text style={s.roadmapLane}>{t("BOND PATH")}</Text>{progressionRoadmap.bond.map(step=><View key={step.id} style={s.roadmapRow}><Text style={[s.roadmapMark,step.status==='complete'?s.roadmapDone:step.status==='ready'?s.roadmapReady:step.status==='current'?s.roadmapCurrent:s.roadmapFuture]}>{step.status==='complete' ? '✓' : step.status==='ready' ? '!' : '○'}</Text><View style={s.flex}><Text style={s.name}>{companionContent(language,step.label)}</Text><Text style={s.body}>{companionContent(language,step.detail)}</Text><Text style={s.roadmapReward}>{companionContent(language,step.reward)}</Text></View><Text style={[s.roadmapState,step.status==='complete'?s.roadmapDone:step.status==='ready'?s.roadmapReady:step.status==='current'?s.roadmapCurrent:s.roadmapFuture]}>{label(step.status).toLocaleUpperCase(language)}</Text></View>)}</>:null}</View>:null;
   const trialPreviewTeam=run?.teamCompanionIds??safeTeam,trialPreviewFloor=run?.currentFloor??view.trial.projection.checkpointFloor;
   const trialHazard=companionTrialMonthlyHazard(view.trial.progress.season.seasonKey);
-  const trialStageSuggestion=recommendedCompanionTrialStageTeam(state,trialPreviewFloor,now);
+  const trialStageSuggestion=useMemo(()=>recommendedCompanionTrialStageTeam(state,trialPreviewFloor,now),[state,trialPreviewFloor,now]);
   const trialMatchup=companionTrialStageTeamMatchup(trialPreviewFloor,trialPreviewTeam.flatMap(id=>{
     const entry=COMBAT_COMPANIONS.find(row=>row.id===id);
     return entry?[companionAffinity(entry)]:[];

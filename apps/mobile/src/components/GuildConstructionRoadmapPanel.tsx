@@ -6,6 +6,7 @@ import {loadOnlineGuildTokenShop,type GuildTokenShopSnapshot} from '../online/gu
 import {useGameTheme} from '../theme/ThemeContext';
 import type {ThemeColors} from '../theme/theme';
 import {Panel} from './Panel';
+import {ResourceArtwork} from './ResourceArtwork';
 import {GameButton} from './GameButton';
 
 const BUILDINGS=[
@@ -51,13 +52,13 @@ export function GuildConstructionRoadmapPanel({onOpenBank}:{onOpenBank?:()=>void
     const status=finished?'Completed':!template?.enabled?'Not released':missingLevel?`Guild Lv ${plan.requiredGuildLevel} required`:'Ready for donations';
     const required=plan.materials.map(material=>{
      const saved=progress?.resources[material.itemId]??0;
-     return {name:itemDef(material.itemId).name,amount:material.amount,done:Math.min(saved,material.amount)};
+     return {id:material.itemId,name:itemDef(material.itemId).name,amount:material.amount,done:Math.min(saved,material.amount)};
     });
     return <View key={plan.id} style={s.plan}>
      <View style={s.head}><View style={s.flex}><Text style={s.planTitle}>{plan.name}</Text><Text style={s.level}>Guild Level {plan.requiredGuildLevel}</Text></View><Text style={[s.status,{color:finished?C.good:available?C.info:C.muted}]}>{status}</Text></View>
      <Text style={s.reward}>{plan.benefit}</Text>
      <Text style={s.copy}>{plan.description}</Text>
-     {required.map(material=><View key={material.name} style={s.materialRow}><Text style={s.materialName}>{material.name}</Text><Text style={s.materialAmount}>{material.done.toLocaleString()} / {material.amount.toLocaleString()}</Text></View>)}
+     {required.map(material=><View key={material.id} style={s.materialRow}><ResourceArtwork itemId={material.id} size={27} framed/><Text style={s.materialName}>{material.name}</Text><Text style={s.materialAmount}>{material.done.toLocaleString()} / {material.amount.toLocaleString()}</Text></View>)}
      {available&&!finished&&onOpenBank?<GameButton compact title="Donate in Guild Bank" tone="secondary" onPress={onOpenBank}/>:null}
     </View>;
    })}

@@ -25,7 +25,7 @@ export function validateStagingProfileConfig(env){
  let accounts;
  try{accounts=JSON.parse(env.STAGING_PROFILE_ACCOUNTS_JSON);}catch{throw Error('Missing/invalid JSON array of dedicated staging test accounts.');}
  const suffix=env.STAGING_PROFILE_TEST_EMAIL_MARKER;
- if(typeof suffix!=='string'||!/^\\+[a-z0-9._-]{3,20}$/i.test(suffix))throw Error('Specify a dedicated plus-address test email marker such as +perf.');
+ if(typeof suffix!=='string'||!/^\+[a-z0-9._-]{3,20}$/i.test(suffix))throw Error('Specify a dedicated plus-address test email marker such as +perf.');
  if(!Array.isArray(accounts)||accounts.length<2||accounts.length>4)throw Error('Use 2–4 dedicated staging test accounts only.');
  for(const account of accounts){
   if(typeof account?.email!=='string'||!account.email.toLowerCase().includes(suffix.toLowerCase())||typeof account.password!=='string'||!account.password)

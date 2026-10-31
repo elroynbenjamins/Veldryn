@@ -39,6 +39,13 @@ export function eventCandyStatus(state:GameState,nowMs=Date.now(),kind:EventCand
  return {active:remaining>0,remainingSeconds:remaining,candy};
 }
 export function eventCandyUtilityMultiplier(state:GameState,nowMs=Date.now(),kind:EventCandyKind='skill'){return eventCandyStatus(state,nowMs,kind).active?(kind==='pet'?2:1.1):1;}
+/** Each owned companion can earn five event Bondbloom materials. Candy XP stays uncapped. */
+export const EVENT_BOND_CANDY_MATERIAL_CAP=5;
+export function eventBondCandyMaterialUses(state:GameState,eventId:string,companionId:string):number{
+  const key=`${eventId}:candy:companion_material:${companionId}`;
+  const count=state.account.eventShopPurchaseCounts?.[key]??0;
+  return Number.isFinite(count)?Math.max(0,Math.min(EVENT_BOND_CANDY_MATERIAL_CAP,Math.floor(count))):0;
+}
 export function consumeEventCandy(state:GameState,nowMs=Date.now(),kind:EventCandyKind='skill',companionId?:string):GameState{
   const active=activeLiveEvent(state,nowMs);if(!active||!state.character)throw new Error('This event is not active.');
   const candy=eventCandies(active.definition).find(entry=>entry.kind===kind);if(!candy)throw new Error('Unknown event candy.');
@@ -47,9 +54,13 @@ export function consumeEventCandy(state:GameState,nowMs=Date.now(),kind:EventCan
   if(!state.character)throw new Error('Character required.');
   if(kind==='companion'){
     const targetId=companionId??state.character.equippedCombatCompanionId;if(!targetId||(state.account.unlockedCombatCompanionIds??[]).includes(targetId)===false)throw new Error('Select a companion you own.');
-    const materialKey=`${active.definition.id}:candy:companion_material`,materialUses=state.account.eventShopPurchaseCounts?.[materialKey]??0;
-    if(materialUses>=5)throw new Error('This event candy has reached its five-material cap. Companion XP remains available from normal companion activities.');
-    const awarded=awardCompanionCandyXp(state,targetId,75,nowMs),materials={...(awarded.account.companionMaterials??{})};materials.EVENT_BONDBLOOM=(materials.EVENT_BONDBLOOM??0)+1;
+    const materialKey=`${active.definition.id}:candy:companion_material:${targetId}`,materialUses=eventBondCandyMaterialUses(state,active.definition.id,targetId);
+    // Legacy event-wide grants are retained, but were not attributed to a companion.
+    // New claims use a per-companion event key. Once capped, the candy still grants XP.
+    const awarded=awardCompanionCandyXp(state,targetId,75,nowMs);
+    if(materialUses>=EVENT_BOND_CANDY_MATERIAL_CAP)return awarded;
+    const materials={...(awarded.account.companionMaterials??{})};
+    materials.EVENT_BONDBLOOM=(materials.EVENT_BONDBLOOM??0)+1;
     return {...awarded,account:{...awarded.account,companionMaterials:materials,eventShopPurchaseCounts:{...(awarded.account.eventShopPurchaseCounts??{}),[materialKey]:materialUses+1}}};
   }
   const current=eventCandyStatus(state,nowMs,kind);if(current.active&&current.remainingSeconds>=candy.maxSeconds)throw new Error('Event candy duration is already full.');

@@ -1,26 +1,26 @@
 -- Draft 10x Guild Construction commissions. 17 new templates, all disabled.
 -- Keep separate from the automatic Hall v44 project-progress facilities.
 -- No donor/RPC permission or reward entitlement release in this migration.
--- Guild levels above the live level cap remain permanently locked until rollout.
+-- Only War Room III requires the future guild level cap expansion.
 insert into public.guild_construction_templates(template_id,required_guild_level,unlock_id,enabled)
 values
  ('construction_hall_1',1,'guild_construction_hall_1',false),
- ('construction_forge_1',5,'guild_construction_forge_1',false),
- ('construction_library_1',5,'guild_construction_library_1',false),
- ('construction_treasury_1',8,'guild_construction_treasury_1',false),
- ('construction_hall_2',10,'guild_construction_hall_2',false),
- ('construction_war_room_1',10,'guild_construction_war_room_1',false),
- ('construction_expedition_1',12,'guild_construction_expedition_1',false),
- ('construction_forge_2',20,'guild_construction_forge_2',false),
- ('construction_library_2',20,'guild_construction_library_2',false),
- ('construction_treasury_2',25,'guild_construction_treasury_2',false),
- ('construction_hall_3',25,'guild_construction_hall_3',false),
- ('construction_war_room_2',30,'guild_construction_war_room_2',false),
- ('construction_expedition_2',30,'guild_construction_expedition_2',false),
- ('construction_forge_3',35,'guild_construction_forge_3',false),
- ('construction_library_3',35,'guild_construction_library_3',false),
- ('construction_hall_4',40,'guild_construction_hall_4',false),
- ('construction_war_room_3',45,'guild_construction_war_room_3',false)
+ ('construction_forge_1',2,'guild_construction_forge_1',false),
+ ('construction_library_1',2,'guild_construction_library_1',false),
+ ('construction_treasury_1',3,'guild_construction_treasury_1',false),
+ ('construction_hall_2',3,'guild_construction_hall_2',false),
+ ('construction_war_room_1',3,'guild_construction_war_room_1',false),
+ ('construction_expedition_1',4,'guild_construction_expedition_1',false),
+ ('construction_forge_2',5,'guild_construction_forge_2',false),
+ ('construction_library_2',5,'guild_construction_library_2',false),
+ ('construction_treasury_2',7,'guild_construction_treasury_2',false),
+ ('construction_hall_3',6,'guild_construction_hall_3',false),
+ ('construction_war_room_2',7,'guild_construction_war_room_2',false),
+ ('construction_expedition_2',8,'guild_construction_expedition_2',false),
+ ('construction_forge_3',10,'guild_construction_forge_3',false),
+ ('construction_library_3',10,'guild_construction_library_3',false),
+ ('construction_hall_4',10,'guild_construction_hall_4',false),
+ ('construction_war_room_3',15,'guild_construction_war_room_3',false)
 on conflict(template_id) do nothing;
 
 insert into public.guild_construction_requirements(template_id,resource_id,required_amount)

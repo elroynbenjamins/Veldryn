@@ -5,6 +5,8 @@ import type {Recipe} from './skills';
  * do not roll rarity/quality and deliberately have no shop resale value.
  * Server donations remain disabled until construction and inventory sync pass staging.
  */
+/** Release with completed construction benefits and server-synchronized crafting. */
+export const GUILD_COMMISSION_RECIPES_RELEASED:boolean=false;
 export const GUILD_COMMISSION_ITEMS:ItemDef[]=[
  {id:'GUILD_IRON_BRACKET',name:'Guild Iron Bracket',type:'material',value:0,rarity:'common',guildOnly:true},
  {id:'GUILD_HEARTIRON_SUPPORT',name:'Heartiron Support',type:'material',value:0,rarity:'uncommon',guildOnly:true},

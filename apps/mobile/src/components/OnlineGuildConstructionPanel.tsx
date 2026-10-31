@@ -78,7 +78,7 @@ export function OnlineGuildConstructionPanel({
    </View>
   </View>:null}
   {!snapshot.constructionTemplates.some(template=>template.enabled&&snapshot.guildLevel>=template.guildLevel&&!snapshot.construction.some(p=>p.templateId===template.id&&p.completed))?<Text style={s.copy}>No construction materials are needed right now. Future projects cannot accept donations.</Text>:null}
-  {snapshot.constructionTemplates.map(template=>{
+  {snapshot.constructionTemplates.filter(template=>template.enabled&&snapshot.guildLevel>=template.guildLevel&&!snapshot.construction.some(progress=>progress.templateId===template.id&&progress.completed)).map(template=>{
    const row=snapshot.construction.find(p=>p.templateId===template.id);
    const requirements=[{key:'gold',required:template.gold},...template.materials.map(material=>({key:material.materialKey,required:material.amount}))];
    const completion=requirements.length?requirements.reduce((sum,res)=>sum+Math.min(1,Math.max(0,(row?.resources[res.key]??0)/res.required)),0)/requirements.length:0;

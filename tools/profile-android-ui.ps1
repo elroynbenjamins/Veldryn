@@ -7,6 +7,8 @@ param(
     [string]$Scenario = 'inventory',
     [ValidateRange(24,240)]
     [int]$RefreshHz = 60,
+    [ValidateSet('Cold','Warm')]
+    [string]$LaunchMode = 'Cold',
     [ValidatePattern('^[A-Za-z0-9_.-]{1,64}$')]
     [string]$DeviceProfile = 'test_device',
     [ValidatePattern('^[A-Za-z0-9_.-]{1,64}$')]
@@ -33,13 +35,15 @@ if ($Serial) {
 }
 if ($Phase -eq 'Start') {
     Write-Host "Resetting app frame statistics and launching $Package on the selected test device."
-    & $adb -s $target shell am force-stop $Package
-    if ($LASTEXITCODE -ne 0) { throw 'Failed to stop the package. Is Veldryn installed?' }
+    if ($LaunchMode -eq 'Cold') {
+        & $adb -s $target shell am force-stop $Package
+        if ($LASTEXITCODE -ne 0) { throw 'Failed to stop the package. Is Veldryn installed?' }
+    }
     & $adb -s $target shell dumpsys gfxinfo $Package reset
     if ($LASTEXITCODE -ne 0) { throw 'Could not reset graphics statistics.' }
     & $adb -s $target shell monkey -p $Package -c android.intent.category.LAUNCHER 1
     if ($LASTEXITCODE -ne 0) { throw 'Failed to launch Veldryn.' }
-    Write-Host "Exercise $Scenario for 30-60 seconds, then run -Phase Capture with the same -Scenario, -DeviceProfile, -BuildLabel and -RefreshHz."
+    Write-Host "Exercise $Scenario for 30-60 seconds, then run -Phase Capture with the same -Scenario, -DeviceProfile, -BuildLabel, -LaunchMode and -RefreshHz."
     return
 }
 New-Item -ItemType Directory -Path $OutputDirectory -Force | Out-Null
@@ -54,7 +58,7 @@ if ($LASTEXITCODE -ne 0) { throw 'Failed to collect CPU statistics.' }
 
 $reporter = Join-Path $PSScriptRoot 'android-perf-report.mjs'
 $summaryPath = "$prefix-summary.json"
-& node $reporter capture --frames "$prefix-frames.txt" --memory "$prefix-memory.txt" --scenario $Scenario --device-profile $DeviceProfile --build $BuildLabel --hz $RefreshHz --out $summaryPath
+& node $reporter capture --frames "$prefix-frames.txt" --memory "$prefix-memory.txt" --scenario $Scenario --device-profile $DeviceProfile --build $BuildLabel --capture-mode $LaunchMode.ToLowerInvariant() --hz $RefreshHz --out $summaryPath
 if ($LASTEXITCODE -ne 0) { throw 'Android capture summary failed: inspect the raw diagnostics, then repeat with a longer sample.' }
 Write-Host "Privacy-minimal summary saved to $summaryPath"
 Write-Host "Raw frame/memory/CPU dumps remain local in $OutputDirectory. Do not commit or share raw device diagnostics."

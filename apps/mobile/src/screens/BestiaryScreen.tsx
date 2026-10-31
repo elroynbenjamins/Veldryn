@@ -22,7 +22,7 @@ export function BestiaryScreen({state}:{state:GameState}){
  const language=useGameLanguage(),t=companionTranslator(language),label=(value:string)=>companionLabel(language,value);
 
  const projection=useMemo(()=>bestiaryProjection(state),[state]),zones=['all',...projection.zones.map(row=>row.zone)] as const;
- const [query,setQuery]=useState(''),[zone,setZone]=useState<string>('all'),[status,setStatus]=useState<'all'|BestiaryStatus>('all'),[filtersOpen,setFiltersOpen]=useState(false);
+ const [query,setQuery]=useState(''),[zone,setZone]=useState<string>('all'),[status,setStatus]=useState<'all'|BestiaryStatus>('all'),[filtersOpen,setFiltersOpen]=useState(false),[detailId,setDetailId]=useState<string|null>(null);
  const active=(zone==='all'?0:1)+(status==='all'?0:1);
  const rows=useMemo(()=>projection.entries.filter(entry=>(zone==='all'||entry.zone===zone)&&(status==='all'||entry.status===status)&&(!query.trim()||(entry.name+' '+entry.zone).toLowerCase().includes(query.trim().toLowerCase()))),[projection.entries,zone,status,query]);
 

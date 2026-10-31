@@ -11,6 +11,7 @@ const navigation=read('src/components/GuildNavigation.tsx');
 const management=read('src/components/OnlineGuildManagement.tsx');
 const customization=read('src/components/OnlineGuildCustomizationPanel.tsx');
 const identity=read('src/components/GuildIdentitySummary.tsx');
+const homeActions=read('src/components/GuildHomeActions.tsx');
 const hall=read('src/components/OnlineGuildHallPanel.tsx');
 const discovery=read('src/components/GuildDiscoveryFlow.tsx');
 const onlineSocial=read('src/online/social.ts');
@@ -71,8 +72,8 @@ ok(memberIdentity.includes('myGuild,guildDetails,ownGuildMemberCount')&&memberId
  'Member home must show real Guild identity, membership count and crest');
 ok(memberIdentity.includes('useGameTheme')&&memberIdentity.includes('C.panelRaised')&&memberIdentity.includes('C.accentSurface')===false,
  'Member identity must use shared theme surfaces and color tokens');
-ok(screen.includes('<GuildMemberIdentity onRoster=')&&screen.includes("['Hall','guild'")&&screen.includes("['Roster','friends'"),
- 'Member dashboard must prioritize real Guild identity, Hall and Members');
+ok(screen.includes('<GuildMemberIdentity onRoster=')&&screen.includes('<GuildHomeActions')&&homeActions.includes("{title:'Roster',action:onRoster}")&&homeActions.includes("{title:'Hall',action:onHall}"),
+ 'Member dashboard must prioritize real Guild identity and keep tappable Hall and Roster actions in the shared home component');
 ok(screen.includes("homeCard:{flexGrow:1,flexBasis:'46%',minWidth:142,minHeight:140"),
  'Guild dashboard cards must preserve readable two-column mobile geometry');
 

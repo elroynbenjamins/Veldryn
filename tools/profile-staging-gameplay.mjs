@@ -4,6 +4,8 @@ import path from 'node:path';
 import {fileURLToPath} from 'node:url';
 
 const CONFIRM='I_CONFIRM_ISOLATED_STAGING_LOAD_TEST';
+// Verified against the Veldryn production project; defense-in-depth beyond operator-supplied refs.
+const KNOWN_PRODUCTION_REF='nyjwigipamnvpdvpauuv';
 const finiteInt=(value,min,max)=>Number.isSafeInteger(value)&&value>=min&&value<=max;
 const percentile=(values,fraction)=>{
  const sorted=[...values].sort((a,b)=>a-b);

@@ -321,7 +321,6 @@ async function responsiveCardContract() {
     const {DungeonCombatStage} = h.load(path.join(app, 'src/components/coop/DungeonCombatStage'));
     const {dungeonCombatLayout} = h.load(path.join(app, 'src/core/dungeon-combat-layout'));
     await act(async () => { tree = create(React.createElement(DungeonCombatStage, {run, boss: true})); });
-    await press(tree, 'Pause combat replay');
     for (const width of [320, 360, 390]) {
       h.size.width = width;
       await act(async () => { tree.update(React.createElement(DungeonCombatStage, {run, boss: true})); });
@@ -334,13 +333,9 @@ async function responsiveCardContract() {
         assert.equal(field.flexWrap, 'wrap'); assert.equal(field.flexDirection, 'row');
       }
       assert.equal(enemy(tree).props.statusLimit, expected.statusLimit);
-      assert.strictEqual(currentCue(tree), run.lastCombat.cues[0], 'responsive re-render must preserve the paused cursor');
-      for (const label of ['Resume combat replay', 'Previous combat event', 'Next combat event', 'Skip combat replay to result']) {
-        const control = findButton(tree, label), style = typeof control.props.style === 'function' ? control.props.style({pressed: false}) : control.props.style;
-        assert.ok(flattenStyle(style).minHeight >= 44, `${label} retains a usable touch height at width ${width}`);
-      }
-      const controls = flattenStyle(findButton(tree, 'Resume combat replay').parent.props.style);
-      if (expected.controlsWrap) assert.equal(controls.flexWrap, 'wrap', 'narrow phone playback controls wrap instead of overflowing');
+      assert.strictEqual(currentCue(tree), run.lastCombat.cues[0], 'responsive re-render must preserve the current automatic cursor');
+      assert.equal(tree.root.findAll(n=>['Pause combat replay','Resume combat replay','Skip combat replay to result','Next combat event','Previous combat event'].includes(n.props?.accessibilityLabel)).length,0,
+        'responsive battlefield must not expose retired replay transport controls');
     }
     await act(async () => { tree.unmount(); }); tree = null;
     h.mocks.delete(path.join(app, 'src/components/coop/CombatantProfileCard'));

@@ -87,3 +87,23 @@ export function equipmentUpgradeSummary(model:EquipmentDecisionModel){
     ? 'Next +'+model.upgrade.targetRank+' · '+chance+'% · Missing '+missing.join(', ')
     : 'Next +'+model.upgrade.targetRank+' · '+chance+'% · Materials ready';
 }
+
+/** The highest-value next step for the currently selected equipment slot.
+ * The Character UI uses this shared model to offer a single actionable shortcut
+ * rather than choosing from four unrelated tool tabs.
+ */
+export type EquipmentFocusKind='equip'|'enhance'|'gems'|'compare';
+export interface EquipmentFocusModel{
+ kind:EquipmentFocusKind;
+ label:string;
+ reason:string;
+}
+export function equipmentFocusModel(model:EquipmentDecisionModel|null):EquipmentFocusModel{
+ if(!model)return {kind:'equip',label:'Find gear',reason:'Equip an item in this slot to improve your build.'};
+ if(model.upgrade.canAfford)return {kind:'enhance',label:'Enhance',reason:'The next enhancement is ready.'};
+ if(model.sockets.capacity>model.sockets.filled)
+  return {kind:'gems',label:'Gems',reason:'An available gem socket can improve this item.'};
+ if(!model.upgrade.maxed)
+  return {kind:'enhance',label:'View requirements',reason:'Check the materials needed for the next enhancement.'};
+ return {kind:'compare',label:'Compare & Swap',reason:'Review another item or equipment set.'};
+}

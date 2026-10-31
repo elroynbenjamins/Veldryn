@@ -45,8 +45,12 @@ export function OnlineGuildConstructionPanel({
    setPending(null);
    setNotice(result.alreadyProcessed?'Previous donation confirmed. No second deduction.':
     result.completed?'Donation accepted. Guild construction is complete!':'Donation accepted. Thank you for helping your guild.');
-   await onRewardsChanged?.();
-   await onReload?.();
+   const sync=await Promise.allSettled([
+    Promise.resolve().then(()=>onRewardsChanged?.()),
+    Promise.resolve().then(()=>onReload?.()),
+   ]);
+   if(sync.some(result=>result.status==='rejected'))
+    setError('Donation confirmed, but inventory or project progress could not refresh. Refresh before donating again.');
   }catch(reason){
    setError(reason instanceof Error?reason.message:'Donation could not be confirmed. Retry your saved request.');
    try{setPending(await pendingGuildConstructionDonation());}catch{/* Retain existing receipt state. */}

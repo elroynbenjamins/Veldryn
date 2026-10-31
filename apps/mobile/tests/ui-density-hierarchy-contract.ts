@@ -313,6 +313,16 @@ const activityOverview=read('src/screens/ActivityOverviewScreen.tsx');
 ok(activityOverview.includes('combatTone:{color:C.bad}'),'Character Activity combat emphasis must use the active theme');
 ok(activityOverview.includes('faithTone:{color:C.special}'),'Character Activity Faith emphasis must use the active theme');
 
+ok(activityOverview.includes('stackRows=width<380||fontScale>=1.2')&&activityOverview.includes('s.actionsStack'),'Character roster actions must remain accessible with larger text');
+ok(activityOverview.includes('characterDeleteBlockReason(state,target.character.id)')&&activityOverview.includes('characterDeleteConfirmation(target.character.name)')&&activityOverview.includes('onDelete(target.character.id,confirmation)'),'Character management must preserve permanent deletion validation and server action');
+const unlockHistory=read('src/screens/NewUnlocksScreen.tsx');
+ok(unlockHistory.includes("filter==='title'?row.kind==='title'")&&unlockHistory.includes('entries.slice')===false&&unlockHistory.includes('filtered.slice(0,20)'),'Unlock categories must filter owned entries before bounded rendering');
+ok(unlockHistory.includes('<UiIcon name={icons[row.kind]}')&&unlockHistory.includes('onCustomize'),'Unlock history must use semantic icons and retain customization navigation');
+const milestoneFeed=read('src/screens/WorldMilestoneFeedScreen.tsx');
+ok(milestoneFeed.includes('worldMilestoneFeedV43()')&&milestoneFeed.includes('request.current===version'),'World feed must preserve authoritative results and ignore stale requests');
+ok(milestoneFeed.includes("row.display_name")&&milestoneFeed.includes("row.occurred_at")&&milestoneFeed.includes("row.feed_id"),'Milestone cards must be sourced from real visible feed entries');
+
+
 const dailySupplies=read('src/screens/DailySuppliesScreen.tsx');
 ok(dailySupplies.includes("cell:{flexBasis:'12%',flexGrow:1,minWidth:0,height:32"),"Daily Supplies track must fit seven compact columns on narrow phones");
 ok(dailySupplies.includes('boostRow:{minHeight:56'),'Daily Supplies banked boost rows must remain compact');

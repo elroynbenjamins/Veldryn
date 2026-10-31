@@ -1,11 +1,12 @@
 import {versionedFetch as fetch} from './versioned-fetch';
+import {guildConstructionBenefits,GUILD_SHOP_ITEM_QUALITY,GUILD_SHOP_QUALITY_TIER,type GuildShopQuality} from '../content/guild-construction-benefits';
 import {supabase,supabasePublicEndpoint,supabasePublicKey} from './supabase';
 
 export type GuildTokenShopCategory='pet'|'companion'|'border'|'profile_icon'|'emote_set';
-export type GuildTokenShopStatus='owned'|'guild_level_locked'|'insufficient_tokens'|'eligible';
+export type GuildTokenShopStatus='owned'|'guild_level_locked'|'guild_shop_quality_locked'|'insufficient_tokens'|'eligible';
 export interface GuildTokenShopCard{
  id:string;title:string;category:GuildTokenShopCategory;requiredGuildLevel:number;
- price:number;status:GuildTokenShopStatus;progressToPrice:number;released:boolean;
+ price:number;status:GuildTokenShopStatus;progressToPrice:number;released:boolean;quality?:GuildShopQuality;
 }
 export interface GuildConstructionTemplate{
  id:string;guildLevel:number;gold:number;materials:Array<{materialKey:string;amount:number}>;unlockId:string;enabled:boolean;
@@ -21,7 +22,7 @@ export interface GuildTokenWeeklyReward{
  kind:GuildWeeklyRewardKind;tokens:number;eligible:boolean;claimed:boolean;
 }
 export interface GuildTokenShopSnapshot{
- guildLevel:number;balance:number;earnedThisWeek:number;weeklyCap:number;cards:GuildTokenShopCard[];
+ guildLevel:number;balance:number;earnedThisWeek:number;weeklyCap:number;cards:GuildTokenShopCard[];treasuryBonusBps?:number;
  unavailableSections?:string[];
  claimedDailyKinds:Array<"attendance"|"contribution">;
  constructionTemplates:GuildConstructionTemplate[];construction:GuildConstructionProgress[];
@@ -36,7 +37,7 @@ function validateSnapshot(value:unknown):GuildTokenShopSnapshot{
  if(!Number.isSafeInteger(o.guildLevel)||Number(o.guildLevel)<1
     ||!Number.isSafeInteger(o.balance)||Number(o.balance)<0
     ||!Number.isSafeInteger(o.earnedThisWeek)||Number(o.earnedThisWeek)<0
-    ||o.weeklyCap!==250||!Array.isArray(o.claimedDailyKinds)
+    ||![250,275,300].includes(Number(o.weeklyCap))||!Array.isArray(o.claimedDailyKinds)
     ||o.claimedDailyKinds.some(k=>k!=="attendance"&&k!=="contribution")||!Array.isArray(o.cards)
     ||!Array.isArray(o.constructionTemplates)||!Array.isArray(o.construction)
     ||!Array.isArray(o.eventBonuses)||!Array.isArray(o.weeklyRewards))throw new Error('Invalid Guild Token Shop response.');
@@ -88,8 +89,23 @@ function validateSnapshot(value:unknown):GuildTokenShopSnapshot{
    throw new Error('Invalid weekly Guild reward.');
   return reward as unknown as GuildTokenWeeklyReward;
  });
+ const completed=new Set(construction.filter(progress=>progress.completed).map(progress=>progress.templateId));
+ const benefits=guildConstructionBenefits(completed);
+ const shopTierEnabled=(requiredTier:number)=>{
+  if(requiredTier===0)return false;
+  return constructionTemplates.some(t=>t.id===`construction_hall_${requiredTier+1}`&&t.enabled);
+ };
+ const verifiedCards=cards.map(card=>{
+  const quality=GUILD_SHOP_ITEM_QUALITY[card.id]??'standard';
+  const required=GUILD_SHOP_QUALITY_TIER[quality];
+  const status=card.status!=='owned'&&card.status!=='guild_level_locked'&&shopTierEnabled(required)
+   &&GUILD_SHOP_QUALITY_TIER[benefits.shopQuality]<required
+   ?'guild_shop_quality_locked' as const:card.status;
+  return {...card,quality,status};
+ });
  return {unavailableSections:Array.isArray(o.unavailableSections)?o.unavailableSections.filter((item):item is string=>typeof item==='string'):[],guildLevel:o.guildLevel as number,balance:o.balance as number,earnedThisWeek:o.earnedThisWeek as number,
-  weeklyCap:o.weeklyCap as number,cards,claimedDailyKinds:o.claimedDailyKinds as Array<"attendance"|"contribution">,constructionTemplates,construction,eventBonuses,weeklyRewards};
+  weeklyCap:Math.max(o.weeklyCap as number,benefits.guildTokenWeeklyCap),treasuryBonusBps:benefits.guildTokenBonusBps,
+  cards:verifiedCards,claimedDailyKinds:o.claimedDailyKinds as Array<"attendance"|"contribution">,constructionTemplates,construction,eventBonuses,weeklyRewards};
 }
 
 /** Guild Tokens are distinct from the existing Quartermaster's Guild Marks.
@@ -134,7 +150,7 @@ export async function claimOnlineGuildDailyTokens(kind:'attendance'|'contributio
     throw new Error(kind==='attendance'?'Check in with Guild Muster first.':'Contribute through verified Combat or Skilling first.');
    throw new Error(typeof body?.error==='string'?body.error:'Unable to claim Guild Tokens.');
   }
-  if(!Number.isSafeInteger(body?.credited)||body.credited<0||body.credited>10)
+  if(!Number.isSafeInteger(body?.credited)||body.credited<0||body.credited>12)
    throw new Error('The reward could not be verified. Please refresh.');
   return body.credited as number;
  }finally{clearTimeout(timeout);}
@@ -204,7 +220,7 @@ export async function claimOnlineGuildWeeklyTokens(kind:GuildWeeklyRewardKind):P
   });
   const value=await response.json();
   if(!response.ok)throw new Error(typeof value?.error==='string'?value.error:'Weekly Guild reward could not be claimed.');
-  if(!Number.isSafeInteger(value?.credited)||value.credited<0||value.credited>50)
+  if(!Number.isSafeInteger(value?.credited)||value.credited<0||value.credited>60)
    throw new Error('The weekly reward result could not be verified.');
   return value.credited as number;
  }finally{clearTimeout(timeout);}

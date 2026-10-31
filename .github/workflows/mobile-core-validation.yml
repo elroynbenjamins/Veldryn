@@ -40,6 +40,8 @@ jobs:
         run: pnpm --dir ../../backend install --frozen-lockfile
       - name: Verify generated gameplay Edge bundle matches shared engine
         run: node ../../tools/verify-gameplay-edge.mjs
+      - name: Validate mandatory update, maintenance, and fail-closed release gates
+        run: pnpm --dir ../../backend test:release-gate
       - name: Validate Q-Mode NPC composition, level and real Echo priority
         run: pnpm --dir ../../backend test:coop-composition
       - name: Typecheck backend online Q-Mode runtime

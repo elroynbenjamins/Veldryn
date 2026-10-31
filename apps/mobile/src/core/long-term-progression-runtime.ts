@@ -138,7 +138,8 @@ function combinedAccountSkillLevels(state:GameState){
  return active+(state.otherCharacters??[]).reduce((sum,row)=>sum+row.skills.reduce((a,b)=>a+b.level,0)+(row.character.classSkills??[]).reduce((a,b)=>a+b.level,0),0);
 }
 function companionCollectionPercent(state:GameState){const total=COMBAT_COMPANIONS.length,owned=state.account.unlockedCombatCompanionIds?.length??0;return total?Math.min(100,Math.round(owned/total*100)):100}
-function journalMetrics(state:GameState){
+/** Shared read-only achievement metrics, identical to trusted journal settlement projections. */
+export function journalMetrics(state:GameState){
  const metrics={...(state.account.longTermMetrics??{})};
  metrics['account.combined_skill_levels']=combinedAccountSkillLevels(state);
  metrics['bestiary.completion_percent']=bestiaryProjection(state).completionPercent;

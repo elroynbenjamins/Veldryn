@@ -3,6 +3,11 @@ import {createTranslator} from './translator';
 
 // Each row supplies German, Spanish, Dutch, Italian and French; its key is English.
 export const companionTranslationRows={
+ "DISCOVERED":["ENTDECKT","DESCUBIERTOS","ONTDEKT","SCOPERTI","DÉCOUVERTS"],
+ "Open creature details":["Kreaturdetails öffnen","Abrir detalles de la criatura","Wezentdetails openen","Apri i dettagli della creatura","Ouvrir les détails de la créature"],
+ "Mastery":["Meisterschaft","Maestría","Meesterschap","Maestria","Maîtrise"],
+ "Known drops":["Bekannte Beute","Botín conocido","Bekende buit","Bottino noto","Butin connu"],
+
  // Companion clarity and Sanctuary upgrade labels.
  "Choose Mission":["Mission wählen","Elegir misión","Kies missie","Scegli missione","Choisir une mission"],
  "Choose a mission for your spare companions.":["Wähle eine Mission für deine freien Begleiter.","Elige una misión para tus compañeros disponibles.","Kies een missie voor je beschikbare metgezellen.","Scegli una missione per i compagni disponibili.","Choisissez une mission pour vos compagnons disponibles."],

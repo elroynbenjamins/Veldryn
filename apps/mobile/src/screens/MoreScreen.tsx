@@ -18,11 +18,11 @@ import {classEmblemIconArtwork} from '../theme/class-emblem-assets';
 import {EARLY_FEATURE_DESTINATION_ORDER} from '../core/feature-unlocks';
 import type {QuickNavDestination} from '../core/quick-navigation';
 
-export type MoreDestination='Home'|'Social'|'Activity'|'DailySupplies'|'AccountBonuses'|'RewardsInbox'|'NewUnlocks'|'Quests'|'Companions'|'Skills'|'Events'|'Friends'|'Guild'|'Settings'|'Arena'|'Rankings'|'Collections'|'ResourceCodex'|'Profile'|'MasteryHall'|'Store';
+export type MoreDestination='Home'|'Social'|'Activity'|'DailySupplies'|'AccountBonuses'|'RewardsInbox'|'NewUnlocks'|'Quests'|'Companions'|'Skills'|'Events'|'Friends'|'Guild'|'Settings'|'Arena'|'Rankings'|'Collections'|'ResourceCodex'|'Profile'|'MasteryHall'|'AdventurersJournal'|'Bestiary'|'WorldMilestones'|'Store';
 const sections:Array<{label:string;items:MoreDestination[]}>= [
   {label:'PLAY & PROGRESSION',items:['Home','Quests','Companions','DailySupplies','RewardsInbox','Events','AccountBonuses']},
-  {label:'SOCIAL & COMPETITION',items:['Social','Friends','Guild','Arena','Rankings']},
-  {label:'IDENTITY & ACCOUNT',items:['Activity','Profile','NewUnlocks','MasteryHall','Collections','ResourceCodex','Store','Settings']},
+  {label:'SOCIAL & COMPETITION',items:['Social','Friends','Guild','Arena','Rankings','WorldMilestones']},
+  {label:'IDENTITY & ACCOUNT',items:['Activity','Profile','NewUnlocks','AdventurersJournal','MasteryHall','Bestiary','Collections','ResourceCodex','Store','Settings']},
 ];
 
 function iconForDestination(id:MoreDestination):QuickNavDestination{
@@ -32,6 +32,8 @@ function iconForDestination(id:MoreDestination):QuickNavDestination{
   if(id==='Collections'||id==='ResourceCodex')return 'Inventory';
   if(id==='Store')return 'Inventory';
   if(id==='MasteryHall')return 'Skills';
+  if(id==='AdventurersJournal')return 'Quests';
+  if(id==='Bestiary'||id==='WorldMilestones')return 'World';
   return id;
 }
 const customAccountIcons:Partial<Record<MoreDestination,keyof typeof navigationLinework>>={Activity:'roster',Profile:'identity',NewUnlocks:'unlocks',AccountBonuses:'bonuses',DailySupplies:'supplies',RewardsInbox:'inbox',Rankings:'trophy',Arena:'arena',Collections:'collection',ResourceCodex:'codex',MasteryHall:'mastery',Store:'store'};
@@ -63,6 +65,9 @@ function itemMeta(language:GameState['settings']['language'],id:MoreDestination)
     case 'Profile':return {title:a("Profile"),description:a("Identity, showcase and customization")};
     case 'NewUnlocks':return {title:a('New Unlocks'),description:a('Titles, pets, emotes and profile cosmetics you earned.')};
     case 'MasteryHall':return {title:a("Mastery Hall"),description:a("Account-wide R50 profession records and prestige")};
+    case 'AdventurersJournal':return {title:a("Adventurer's Journal"),description:a("Achievements, records and collection progress")};
+    case 'Bestiary':return {title:a("Bestiary"),description:a("Discover creatures and their known drops")};
+    case 'WorldMilestones':return {title:a("World Milestones"),description:a("Recent public achievements across Veldryn")};
   }
 }
 

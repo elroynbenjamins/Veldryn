@@ -307,11 +307,21 @@ ok(petBonusOverview.includes('accessibilityState={{expanded:showBonusHelp}}')&&p
 
 const achievements=read('src/screens/AchievementsScreen.tsx');
 ok(achievements.includes('<GameButton compact title={t("Save showcase")}'),"Achievements showcase action must not dominate the screen");
-ok(achievements.includes('<GameButton compact title={entry.claimed?t("Claimed"):entry.completed?t("Claim"):t("Locked")}'),"Achievement row actions must remain compact");
+ok(achievements.includes('<GameButton compact title={t("Claim")}')&&achievements.includes('entryActions:{alignSelf:'),"Achievement claim and showcase row actions must remain compact");
 
 const activityOverview=read('src/screens/ActivityOverviewScreen.tsx');
 ok(activityOverview.includes('combatTone:{color:C.bad}'),'Character Activity combat emphasis must use the active theme');
 ok(activityOverview.includes('faithTone:{color:C.special}'),'Character Activity Faith emphasis must use the active theme');
+
+ok(activityOverview.includes('stackRows=width<380||fontScale>=1.2')&&activityOverview.includes('s.actionsStack'),'Character roster actions must remain accessible with larger text');
+ok(activityOverview.includes('characterDeleteBlockReason(state,target.character.id)')&&activityOverview.includes('characterDeleteConfirmation(target.character.name)')&&activityOverview.includes('onDelete(target.character.id,confirmation)'),'Character management must preserve permanent deletion validation and server action');
+const unlockHistory=read('src/screens/NewUnlocksScreen.tsx');
+ok(unlockHistory.includes("filter==='title'?row.kind==='title'")&&unlockHistory.includes('entries.slice')===false&&unlockHistory.includes('filtered.slice(0,20)'),'Unlock categories must filter owned entries before bounded rendering');
+ok(unlockHistory.includes('<UiIcon name={icons[row.kind]}')&&unlockHistory.includes('onCustomize'),'Unlock history must use semantic icons and retain customization navigation');
+const milestoneFeed=read('src/screens/WorldMilestoneFeedScreen.tsx');
+ok(milestoneFeed.includes('worldMilestoneFeedV43()')&&milestoneFeed.includes('request.current===version'),'World feed must preserve authoritative results and ignore stale requests');
+ok(milestoneFeed.includes("row.display_name")&&milestoneFeed.includes("row.occurred_at")&&milestoneFeed.includes("row.feed_id"),'Milestone cards must be sourced from real visible feed entries');
+
 
 const dailySupplies=read('src/screens/DailySuppliesScreen.tsx');
 ok(dailySupplies.includes("cell:{flexBasis:'12%',flexGrow:1,minWidth:0,height:32"),"Daily Supplies track must fit seven compact columns on narrow phones");
@@ -324,6 +334,26 @@ ok(accountBonuses.includes('source:{minHeight:52'),'Account bonus sources must a
 
 const rankings=read('src/screens/RankingsScreen.tsx');
 ok(rankings.includes('<GameButton compact title={st("Refresh")} tone="secondary"'),"Rankings refresh must remain a secondary compact action");
+ok(rankings.includes('const podium=activeSnapshot?.entries.filter(entry=>entry.rank<=3)')&&rankings.includes('const remaining=activeSnapshot?.entries.filter(entry=>entry.rank>3)'),"Rankings podium must not duplicate names in the compact list");
+ok(rankings.includes('visible={boardPickerOpen}')&&rankings.includes('onPress={()=>{setBoard(value.id);setBoardPickerOpen(false)}}'),"Rankings board selection must stay actionable and use the server board ID");
+ok(rankings.includes('activeSnapshot?.self')&&rankings.includes('s.selfCard'),"Rankings must keep own standing visible independently of the top places");
+const journalPage=read('src/screens/AdventurersJournalScreen.tsx');
+ok(journalPage.includes('journal?.unlockedAchievements')&&journalPage.includes('journal?.unlockedTitles')&&journalPage.includes('journal?.records'),"Journal summary must show earned counts, not full catalog counts");
+ok(journalPage.includes('showMastery?<MasteryHallPanel')&&journalPage.includes('showRecords?<PersonalRecordsPanel'),"Journal heavy details must stay behind independently expandable surfaces");
+ok(journalPage.includes("onNavigate('Bestiary')")&&journalPage.includes("onNavigate('Collections')")&&journalPage.includes("onNavigate('Profile')"),"Journal must preserve its three existing destinations");
+ok(masteryHall.includes("showAllSkills?skills:skills.slice(0,6)")&&masteryHall.includes("records.slice(0,recordLimit)")&&masteryHall.includes("Math.min(records.length,limit+20)"),"Mastery lists must remain compact, progressively load older records and retain access to all records");
+ok(journalPage.includes("journalMetrics(state)")&&journalPage.includes("nextAchievement.row.title")&&journalPage.includes('accessibilityRole="progressbar"'),"Journal achievement disclosure must display real trusted next-milestone progress");
+ok(rankings.includes("podiumGrid:{flexDirection:'column'")&&rankings.includes("podiumRow:{flexDirection:'row'"),"Ranking podium must fit full player identities without narrow three-column compression");
+ok(milestoneFeed.includes("stackToolbar=width<370||fontScale>=1.2")&&milestoneFeed.includes("s.filterButtonStack"),"Public milestone toolbar must wrap when device text or viewport is narrow");
+ok(activityOverview.includes('showDeleteDetails')&&activityOverview.includes('Read full deletion details')&&activityOverview.includes('characterDeleteConfirmation'),"Character deletion must provide both concise and complete consequences before typed confirmation");
+const mobileRouter=read('App.tsx');
+ok(mobileRouter.includes("tab==='AdventurersJournal'&&<AdventurersJournalScreen")&&mobileRouter.includes("tab==='Bestiary'&&<BestiaryScreen")&&mobileRouter.includes("tab==='WorldMilestones'&&<WorldMilestoneFeedScreen"),"Read-only Journal, Bestiary and World Milestones must mount from Account");
+ok(account.includes("items:['Activity','Profile','NewUnlocks','AdventurersJournal'")&&account.includes("'WorldMilestones'"),"Read-only progression and World Milestones must be discoverable in Account");
+ok(mobileRouter.includes("RANKINGS_RELEASED&&tab==='Rankings'")&&!mobileRouter.includes("tab==='Achievements'&&"),"Unfinished Achievements and Rankings must remain release-gated");
+const rewardsScreen=read('src/screens/RewardsInboxScreen.tsx');
+ok(rewardsScreen.includes("accountText(language,text,params)")&&rewardsScreen.includes("label={a('Claim reward')}")&&rewardsScreen.includes("a('Claimed history')"),"Rewards Inbox must translate claims, tabs and feedback");
+
+
 
 const arena=read('src/screens/ArenaScreen.tsx');
 ok(arena.includes('<GameButton compact title={st("Clear slot")} tone="secondary"'),"Arena clear-slot controls must not compete with character selection");

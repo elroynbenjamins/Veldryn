@@ -3,6 +3,33 @@ import {createTranslator} from './translator';
 
 // English source copy is the key. Proper names and player-authored text are never keys.
 export const progressionTranslationRows = {
+ // Read-only Journal milestone and bounded Mastery record lists.
+ "Next milestone: {title}":["Nächster Meilenstein: {title}","Siguiente hito: {title}","Volgende mijlpaal: {title}","Prossimo traguardo: {title}","Prochain jalon : {title}"],
+ "Rewards are cosmetic titles rather than power.":["Die Belohnungen sind kosmetische Titel, keine Kampfkraft.","Las recompensas son títulos cosméticos, no poder.","Beloningen zijn cosmetische titels, geen extra kracht.","Le ricompense sono titoli estetici, non potenza.","Les récompenses sont des titres cosmétiques, pas de la puissance."],
+ "All long-term achievements earned":["Alle Langzeiterfolge erreicht","Todos los logros a largo plazo obtenidos","Alle langetermijnprestaties behaald","Tutti gli obiettivi a lungo termine ottenuti","Tous les succès à long terme obtenus"],
+ "Show more records":["Weitere Rekorde anzeigen","Mostrar más récords","Meer records tonen","Mostra altri record","Afficher plus de records"],
+
+  "All milestones":["Alle Meilensteine","Todos los hitos","Alle mijlpalen","Tutti i traguardi","Tous les jalons"],
+  "Milestone type":["Meilensteintyp","Tipo de hito","Type mijlpaal","Tipo di traguardo","Type de jalon"],
+  "No matching milestones":["Keine passenden Meilensteine","No hay hitos coincidentes","Geen passende mijlpalen","Nessun traguardo corrispondente","Aucun jalon correspondant"],
+
+ // Compact Journal and Mastery Hall presentation.
+ "categories":["Kategorien","categorías","categorieën","categorie","catégories"],
+ "Personal Records":["Persönliche Rekorde","Récords personales","Persoonlijke records","Record personali","Records personnels"],
+ "Find next mastery target":["Nächstes Meisterschaftsziel finden","Buscar siguiente objetivo de maestría","Volgend meesterschapsdoel vinden","Trova il prossimo obiettivo di maestria","Trouver le prochain objectif de maîtrise"],
+ "Show all professions":["Alle Berufe anzeigen","Mostrar todas las profesiones","Alle beroepen tonen","Mostra tutte le professioni","Afficher toutes les professions"],
+ "Show all records":["Alle Rekorde anzeigen","Mostrar todos los récords","Alle records tonen","Mostra tutti i record","Afficher tous les records"],
+
+// Compact Achievements UI (shared keys retain the existing translations).
+ "ACHIEVEMENT SCORE":["ERFOLGSPUNKTE","PUNTUACIÓN DE LOGROS","PRESTATIESCORE","PUNTEGGIO OBIETTIVI","SCORE DES SUCCÈS"],
+ "Showcase":["Schaukasten","Vitrina","Etalage","Vetrina","Vitrine"],
+ "points":["Punkte","puntos","punten","punti","points"],
+ "Filter achievement category":["Erfolgskategorie filtern","Filtrar categoría de logros","Prestatiecategorie filteren","Filtra categoria obiettivi","Filtrer la catégorie de succès"],
+ "All categories":["Alle Kategorien","Todas las categorías","Alle categorieën","Tutte le categorie","Toutes les catégories"],
+ "shown":["angezeigt","mostrados","weergegeven","mostrati","affichés"],
+ "Profile showcase":["Profil-Schaukasten","Vitrina del perfil","Profieletalage","Vetrina del profilo","Vitrine du profil"],
+ "Achievement categories":["Erfolgskategorien","Categorías de logros","Prestatiecategorieën","Categorie obiettivi","Catégories de succès"],
+
   "DAILY": ["TÄGLICH","DIARIO","DAGELIJKS","GIORNALIERO","QUOTIDIEN"],
   "JOBS COMPLETE": ["AUFTRÄGE ERLEDIGT","TRABAJOS COMPLETADOS","OPDRACHTEN VOLTOOID","INCARICHI COMPLETATI","CONTRATS TERMINÉS"],
   "Board cleared": ["Alle Aufträge erledigt","Tablón completado","Alle opdrachten voltooid","Bacheca completata","Tableau terminé"],

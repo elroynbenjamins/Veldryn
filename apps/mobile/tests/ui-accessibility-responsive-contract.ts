@@ -130,8 +130,8 @@ ok(profileCustomize.includes('keyboardShouldPersistTaps="handled"')&&profileCust
 
 const achievements=read('src/screens/AchievementsScreen.tsx');
 ok(achievements.includes('filter:{minHeight:44'),'Achievement filters must retain a 44px touch target');
-ok(achievements.includes('stackRows=width<360||fontScale>=1.25'),'Achievement rows must adapt to narrow phones and large text');
-ok(achievements.includes("rowStack:{flexDirection:'column'"),'Achievement actions must stack instead of squeezing text');
+ok(achievements.includes('stackRows=width<360||fontScale>=1.25')&&achievements.includes('entryHeaderStack:{flexWrap:'),'Achievement rows must adapt to narrow phones and large text');
+ok(achievements.includes("entryRightStack:{width:'100%',maxWidth:'100%',flexDirection:'row'")&&achievements.includes('stackRows&&s.entryRightStack'),'Achievement status must wrap below content rather than squeeze names');
 
 const rankings=read('src/screens/RankingsScreen.tsx');
 ok(rankings.includes('chip:{minHeight:44'),'Ranking filters must retain a 44px touch target');

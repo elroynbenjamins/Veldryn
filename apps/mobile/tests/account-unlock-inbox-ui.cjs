@@ -25,7 +25,7 @@ assert(app.includes("const viewing=tabRef.current==='NewUnlocks'"),'Cosmetics ea
 assert(more.includes("items:['Activity','Profile','NewUnlocks'"),'Account visibly links to the unlock history');
 assert(more.includes('newUnlockCount={')===false&&more.includes("id==='NewUnlocks'&&newUnlockCount>0"),'Unread badge belongs to New Unlocks');
 assert(app.includes('newUnlockCount={unreadUnlockCount(unlockInbox)}'),'The badge count uses saved inbox entries');
-assert(screen.includes('entries.slice(0,20)')&&screen.includes('Show older unlocks'),'History stays compact by default');
+assert(screen.includes('filtered.slice(0,20)')&&screen.includes('Show older unlocks')&&screen.includes('setShowAll(false)'),'History remains bounded after category filtering and resets the page on filter changes');
 assert(screen.includes("onCustomize"),'Unlock list links to existing profile customization');
 assert(screen.includes("pet:'COSMETIC PET'")&&screen.includes("emote:'EMOTE'")&&screen.includes("guild_cosmetic:'GUILD COSMETIC'"),'More cosmetic kinds have readable labels');
 assert(core.includes("UNLOCK_INBOX_LIMIT=100")&&storage.includes("PREFIX='veldryn.unlock-inbox.v1:'"),'Inbox is capped and account scoped');

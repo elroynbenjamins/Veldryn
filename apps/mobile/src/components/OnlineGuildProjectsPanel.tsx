@@ -15,6 +15,7 @@ import {radii,spacing,typography,type ThemeColors} from '../theme/theme';
 import {useGameTheme} from '../theme/ThemeContext';
 import {guildProjectArtwork} from '../theme/guild-remaster-art';
 import {guildUpgradeComponentArtwork} from '../theme/guild-upgrade-component-art';
+import {ActivityArtwork} from './ActivityArtwork';
 
 function progressPercent(project:OnlineGuildProjectSummary){
  if(project.kind==='development'){
@@ -26,7 +27,7 @@ function progressPercent(project:OnlineGuildProjectSummary){
  return Math.max(0,Math.min(125,Math.round(project.completionPoints/project.targetPoints*100)));
 }
 
-export function OnlineGuildProjectsPanel({onRewardsChanged}:{onRewardsChanged?:()=>void|Promise<unknown>}){
+export function OnlineGuildProjectsPanel({onRewardsChanged,onNavigateActivity}:{onRewardsChanged?:()=>void|Promise<unknown>;onNavigateActivity?:(activity:'combat'|'gathering'|'crafting')=>void}){
  const st=useSocialText();
  const C=useGameTheme(),s=useMemo(()=>makeStyles(C),[C]);
  const [snapshot,setSnapshot]=useState<OnlineGuildProjectsSnapshot|null>(null),[loading,setLoading]=useState(true),[error,setError]=useState(''),[expanded,setExpanded]=useState<string|null>(null),[busy,setBusy]=useState('');
@@ -66,9 +67,9 @@ export function OnlineGuildProjectsPanel({onRewardsChanged}:{onRewardsChanged?:(
  return <View style={s.root}>
   <QuestBoard>
    <View style={s.sectionHead}><View style={s.flex}><Text style={s.kicker}>{st("GUILD PROJECTS")}</Text><Text style={s.title}>{st("Shared Progress")}</Text></View><StatusPill label={st("LIVE")} tone="good"/></View>
-   <Text style={s.copy}>One weekly project starts automatically, from Guild Level 1. Hunt or gather to contribute. A new project opens every Monday at 00:00 UTC.</Text>
+   <Text style={s.copy}>One shared weekly goal · Combat, Gathering and Crafting activities all contribute. Earn the same weekly Guild rewards. Resets Monday at 00:00 UTC.</Text>
    {snapshot.candidates.length?<View style={s.board}><View style={s.sectionHead}><Text style={s.boardTitle}>{st("NEXT WEEKLY PROJECT")}</Text><Text style={s.sectionMeta}>{st("1 vote per member")}</Text></View>{snapshot.candidates.map(candidate=><CandidateCard key={candidate.id} candidate={candidate} busy={busy} onVote={()=>act('vote',candidate.id)} onStart={()=>act('start',candidate.id)}/>)}</View>:null}
-   {active.length?active.map(project=><GuildProjectPosting key={project.id} project={project} onClaim={()=>act('claim',project.id)} busy={!!busy} expanded={expanded===project.id} onToggle={()=>setExpanded(id=>id===project.id?null:project.id)}/>):<View style={s.empty}><Text style={s.emptyTitle}>{st("No active Guild Project")}</Text><Text style={s.emptyText}>Your next weekly project will appear here automatically.</Text></View>}
+   {active.length?active.map(project=><GuildProjectPosting key={project.id} project={project} onClaim={()=>act('claim',project.id)} onNavigateActivity={onNavigateActivity} busy={!!busy} expanded={expanded===project.id} onToggle={()=>setExpanded(id=>id===project.id?null:project.id)}/>):<View style={s.empty}><Text style={s.emptyTitle}>{st("No active Guild Project")}</Text><Text style={s.emptyText}>Your next weekly project will appear here automatically.</Text></View>}
   </QuestBoard>
   {completed.length?<Panel><View style={s.sectionHead}><Text style={s.title}>{st("Recent completions")}</Text><Text style={s.sectionMeta}>{completed.length} shown</Text></View>{completed.map(project=><GuildProjectPosting key={project.id} project={project} onClaim={()=>act('claim',project.id)} busy={!!busy} compact expanded={expanded===project.id} onToggle={()=>setExpanded(id=>id===project.id?null:project.id)}/>)}</Panel>:null}
   <Panel>
@@ -92,7 +93,7 @@ function CandidateCard({candidate,busy,onVote,onStart}:{candidate:OnlineGuildPro
  </QuestPosting>;
 }
 
-export function GuildProjectPosting({project,expanded,compact=false,onToggle,onClaim,busy}:{onClaim:()=>void;busy:boolean;project:OnlineGuildProjectSummary;expanded:boolean;compact?:boolean;onToggle:()=>void}){
+export function GuildProjectPosting({project,expanded,compact=false,onToggle,onClaim,onNavigateActivity,busy}:{onClaim:()=>void;onNavigateActivity?:(activity:'combat'|'gathering'|'crafting')=>void;busy:boolean;project:OnlineGuildProjectSummary;expanded:boolean;compact?:boolean;onToggle:()=>void}){
  const st=useSocialText();
  const C=useGameTheme(),s=useMemo(()=>makeStyles(C),[C]),pct=progressPercent(project);
  const thresholdMet=project.personalRewardThreshold>0&&project.personalPoints>=project.personalRewardThreshold;
@@ -102,6 +103,20 @@ export function GuildProjectPosting({project,expanded,compact=false,onToggle,onC
   {project.kind!=='development'?<Text style={s.meta}>{project.completionPoints.toLocaleString()} / {project.targetPoints.toLocaleString()} effort · {project.meaningfulContributors}/{project.minimumMeaningfulContributors} meaningful contributors</Text>:<Text style={s.meta}>{project.resourceGoals.length} resource goal{project.resourceGoals.length===1?'':'s'}</Text>}
   {!compact?<View style={s.personal}><Text style={s.personalLabel}>{st("YOUR CONTRIBUTION")}</Text><Text style={[s.personalValue,thresholdMet&&s.personalMet]}>{project.personalPoints.toLocaleString()}{project.personalRewardThreshold>0?' / '+project.personalRewardThreshold.toLocaleString()+' threshold':''}</Text></View>:null}
   </Pressable>
+  {project.launchWeekly&&project.status==='active'?<View style={s.activityBoard}>
+   <Text style={s.activityHeading}>WEEKLY ACTIVITIES · SHARED EFFORT</Text>
+   {([
+    {source:'combat',title:'Hunt & battle',desc:'Fight enemies and bosses · 20 effort per active minute',art:'combat'},
+    {source:'gathering',title:'Gather resources',desc:'Mine, chop, fish or gather · 20 effort per active minute',art:'herbalism'},
+    {source:'crafting',title:'Craft supplies',desc:'Complete verified recipes · 5 effort per crafted item',art:'smithing'},
+   ] as const).map(activity=><View key={activity.source} style={s.activityRow}>
+    <ActivityArtwork id={activity.art} size={38}/>
+    <View style={s.flex}><Text style={s.activityTitle}>{activity.title}</Text><Text style={s.activityCopy}>{activity.desc}</Text></View>
+    <View style={s.activityScore}><Text style={s.activityPoints}>{project.activityTotals[activity.source].toLocaleString()}</Text><Text style={s.activitySmall}>effort</Text></View>
+    {onNavigateActivity?<GameButton compact title={activity.source==='combat'?'Hunt':activity.source==='gathering'?'Gather':'Craft'} tone="secondary" onPress={()=>onNavigateActivity(activity.source)}/>:null}
+   </View>)}
+   <Text style={s.activityFoot}>All three activities fill the one Guild progress bar above. You can focus on any combination; the daily limit and completion rewards are unchanged.</Text>
+  </View>:null}
   {project.launchWeekly?<View style={{gap:6}}><Text style={s.description}>Guild reward: 200 Hall progress · Member reward: 500 Gold</Text>{project.status==='completed'?<GameButton compact title={project.completionRewardClaimed?'Reward claimed':'Claim 500 Gold'} disabled={busy||project.completionRewardClaimed||!thresholdMet||Date.now()>=Date.parse(project.endsAt??'')+7*86400000} onPress={onClaim}/>:null}</View>:null}
   {expanded?<View style={s.detail}>
    <Text style={s.description}>{project.description}</Text>
@@ -112,7 +127,7 @@ export function GuildProjectPosting({project,expanded,compact=false,onToggle,onC
 }
 
 function makeStyles(C:ThemeColors){return StyleSheet.create({projectButton:{gap:10,minHeight:44},
- root:{gap:14},flex:{flex:1,minWidth:0},sectionHead:{flexDirection:'row',alignItems:'center',justifyContent:'space-between',gap:8},kicker:{...typography.caption,color:C.accent,fontWeight:'900',letterSpacing:.8},title:{...typography.title,color:C.text},sectionMeta:{fontSize:12,color:C.muted,fontWeight:'800'},copy:{fontSize:13,lineHeight:19,color:C.muted},board:{gap:6,paddingTop:8,marginTop:8,borderTopWidth:StyleSheet.hairlineWidth,borderTopColor:C.line},boardTitle:{...typography.caption,color:C.accent,fontWeight:'900',letterSpacing:.9},candidate:{gap:5,padding:8,borderWidth:1,borderColor:C.line,borderRadius:radii.md,backgroundColor:C.panel2},candidateVoted:{borderColor:C.good},actions:{flexDirection:'row',flexWrap:'wrap',gap:6},safety:{fontSize:12,lineHeight:18,color:C.muted,textAlign:'center'},
+ root:{gap:14},flex:{flex:1,minWidth:0},activityBoard:{gap:7,padding:9,backgroundColor:C.panel2,borderColor:C.line,borderWidth:1,borderRadius:10},activityHeading:{fontSize:10,fontWeight:'900',color:C.accent,letterSpacing:.9},activityRow:{flexDirection:'row',alignItems:'center',gap:9,minHeight:52,paddingVertical:3,borderBottomWidth:StyleSheet.hairlineWidth,borderBottomColor:C.line},activityTitle:{fontSize:12,fontWeight:'800',color:C.text},activityCopy:{fontSize:11,lineHeight:15,color:C.muted,marginTop:2},activityScore:{alignItems:'flex-end',minWidth:58},activityPoints:{fontSize:14,fontWeight:'900',color:C.info},activitySmall:{fontSize:10,color:C.muted},activityFoot:{fontSize:11,lineHeight:15,color:C.muted},sectionHead:{flexDirection:'row',alignItems:'center',justifyContent:'space-between',gap:8},kicker:{...typography.caption,color:C.accent,fontWeight:'900',letterSpacing:.8},title:{...typography.title,color:C.text},sectionMeta:{fontSize:12,color:C.muted,fontWeight:'800'},copy:{fontSize:13,lineHeight:19,color:C.muted},board:{gap:6,paddingTop:8,marginTop:8,borderTopWidth:StyleSheet.hairlineWidth,borderTopColor:C.line},boardTitle:{...typography.caption,color:C.accent,fontWeight:'900',letterSpacing:.9},candidate:{gap:5,padding:8,borderWidth:1,borderColor:C.line,borderRadius:radii.md,backgroundColor:C.panel2},candidateVoted:{borderColor:C.good},actions:{flexDirection:'row',flexWrap:'wrap',gap:6},safety:{fontSize:12,lineHeight:18,color:C.muted,textAlign:'center'},
  project:{gap:5,padding:9,borderWidth:1,borderColor:C.line,borderRadius:radii.md,backgroundColor:C.panel2,marginTop:7},projectCompact:{paddingVertical:7},projectDone:{borderColor:C.good,backgroundColor:C.goodSurface},pressed:{opacity:.72},
  projectHead:{flexDirection:'row',alignItems:'center',gap:8},projectTitle:{fontSize:15,color:C.text,fontWeight:'900'},meta:{fontSize:12,lineHeight:17,color:C.muted},statusPill:{paddingHorizontal:8,paddingVertical:4,borderWidth:1,borderColor:C.info,borderRadius:99,backgroundColor:C.infoSurface},statusText:{fontSize:10,color:C.info,fontWeight:'900',letterSpacing:.6},statusDone:{borderColor:C.good,backgroundColor:C.goodSurface},statusDoneText:{color:C.good},
  progressRow:{flexDirection:'row',alignItems:'center',gap:7},percent:{width:34,fontSize:13,color:C.accent,fontWeight:'900'},track:{flex:1,height:7,borderRadius:4,overflow:'hidden',backgroundColor:C.panel},fill:{height:'100%',backgroundColor:C.good},

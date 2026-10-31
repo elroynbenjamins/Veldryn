@@ -20,11 +20,16 @@ export type GuildWeeklyRewardKind='attendance'|'project'|'boss';
 export interface GuildTokenWeeklyReward{
  kind:GuildWeeklyRewardKind;tokens:number;eligible:boolean;claimed:boolean;
 }
+export interface GuildBankSnapshot{
+ balances:Array<{resourceId:string;amount:number}>;
+ activity:Array<{kind:'deposit'|'construction';resourceId:string;amount:number;templateId?:string|null;mine:boolean;createdAt:string}>;
+}
 export interface GuildTokenShopSnapshot{
  guildLevel:number;balance:number;earnedThisWeek:number;weeklyCap:number;cards:GuildTokenShopCard[];
  unavailableSections?:string[];
  claimedDailyKinds:Array<"attendance"|"contribution">;
  constructionTemplates:GuildConstructionTemplate[];construction:GuildConstructionProgress[];
+ bank:GuildBankSnapshot|null;
  eventBonuses:GuildTokenEventBonus[];weeklyRewards:GuildTokenWeeklyReward[];
 }
 const categories=new Set<string>(['pet','companion','border','profile_icon','emote_set']);
@@ -69,6 +74,16 @@ function validateSnapshot(value:unknown):GuildTokenShopSnapshot{
    throw new Error('Invalid construction progress.');
   return progress;
  });
+ let bank:GuildBankSnapshot|null=null;
+ if(o.bank!=null){
+  const b=o.bank as GuildBankSnapshot;
+  if(typeof b!=='object'||!Array.isArray(b.balances)||!Array.isArray(b.activity)
+   ||b.balances.some(v=>typeof v.resourceId!=='string'||!Number.isSafeInteger(v.amount)||v.amount<0)
+   ||b.activity.some(v=>!['deposit','construction'].includes(v.kind)||typeof v.resourceId!=='string'
+    ||!Number.isSafeInteger(v.amount)||v.amount<1||typeof v.mine!=='boolean'||typeof v.createdAt!=='string'))
+   throw new Error('Invalid Guild Bank snapshot.');
+  bank=b;
+ }
  const eventBonuses:GuildTokenEventBonus[]=o.eventBonuses.map((value:unknown)=>{
   if(!value||typeof value!=='object')throw new Error('Invalid event reward.');
   const reward=value as Record<string,unknown>;
@@ -89,7 +104,7 @@ function validateSnapshot(value:unknown):GuildTokenShopSnapshot{
   return reward as unknown as GuildTokenWeeklyReward;
  });
  return {unavailableSections:Array.isArray(o.unavailableSections)?o.unavailableSections.filter((item):item is string=>typeof item==='string'):[],guildLevel:o.guildLevel as number,balance:o.balance as number,earnedThisWeek:o.earnedThisWeek as number,
-  weeklyCap:o.weeklyCap as number,cards,claimedDailyKinds:o.claimedDailyKinds as Array<"attendance"|"contribution">,constructionTemplates,construction,eventBonuses,weeklyRewards};
+  weeklyCap:o.weeklyCap as number,cards,claimedDailyKinds:o.claimedDailyKinds as Array<"attendance"|"contribution">,constructionTemplates,construction,bank,eventBonuses,weeklyRewards};
 }
 
 /** Guild Tokens are distinct from the existing Quartermaster's Guild Marks.

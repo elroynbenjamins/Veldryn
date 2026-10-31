@@ -51,7 +51,7 @@ ok(projectClient.includes("db.rpc('guild_project_vote_v1'"),'Member voting must 
 ok(projectClient.includes("db.rpc('guild_project_start_v1'"),'Project starting must use a server-authoritative RPC');
 ok(!projectClient.includes('guild_project_donate_v1')&&!projectClient.includes('guild_project_claim_v1'),'Donation/reward settlement must stay unavailable until atomic authoritative transport exists');
 
-ok(onlineProjects.includes('One weekly project starts automatically, from Guild Level 1.'),"Live Projects must explain automatic weekly progression");
+ok(onlineProjects.includes('One shared weekly goal')&&onlineProjects.includes('WEEKLY ACTIVITIES · SHARED EFFORT')&&onlineProjects.includes("source:'crafting'"),"Live Projects must present three verified activity paths and one shared progress goal");
 ok(projectClient.includes("client().rpc('claim_guild_project_reward_v2'")&&onlineProjects.includes('onRewardsChanged'),"Unsafe donation/reward actions must keep an explicit authority boundary");
 ok(onlineProjects.includes('Start Project'),'Authorized roles must get the supported server-validated start action');
 ok(onlineProjects.includes("import {LoadingState} from './LoadingState'"),'Live Projects must use the shared loading state');

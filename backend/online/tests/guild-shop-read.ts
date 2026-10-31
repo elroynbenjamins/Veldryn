@@ -1,4 +1,4 @@
-import { guildShopReadHandler, guildShopDailyClaimHandler, guildShopPurchaseHandler, guildShopEventClaimHandler, guildConstructionDonationHandler, guildShopWeeklyClaimHandler, type GuildShopReadServices } from "../guild-shop-read";
+import { guildShopReadHandler, guildShopDailyClaimHandler, guildShopPurchaseHandler, guildShopEventClaimHandler, guildConstructionDonationHandler, guildBankDepositHandler, guildShopWeeklyClaimHandler, type GuildShopReadServices } from "../guild-shop-read";
 function assert(value: unknown, message: string): asserts value {
  if (!value) throw new Error(message);
 }
@@ -9,6 +9,7 @@ async function run() {
   guildLevelForAccount: async () => 7,
   rpc: async <T>(name:string,args:Record<string,unknown>) => {
    calls.push({name,args});
+   if(name==="guild_bank_snapshot_server_v1")return {balances:[],activity:[]} as unknown as T;
    if(name==="guild_construction_snapshot_server_v1"||name==="guild_shop_event_community_rewards_server_v1"||name==="guild_construction_enabled_server_v1"||name==="guild_shop_weekly_rewards_server_v1")return [] as unknown as T;
    return {balance:3000,earnedThisWeek:125,claimedDailyKinds:[],enabledItemIds:[],ownedItemIds:["border_silver"]} as unknown as T;
   },
@@ -27,7 +28,7 @@ async function run() {
  assert(body.cards.find(x=>x.id==="border_silver")?.status==="owned","owned cosmetics");
  assert(body.cards.find(x=>x.id==="guild_pet_02")?.status==="insufficient_tokens","unaffordable pet");
  assert(body.cards.find(x=>x.id==="guild_companion_01")?.status==="guild_level_locked","guild level lock");
- assert(calls.length===5 && calls[0].name==="guild_shop_snapshot_server_v1" && calls[1].name==="guild_construction_snapshot_server_v1" && calls[2].name==="guild_shop_event_community_rewards_server_v1" && calls[3].name==="guild_construction_enabled_server_v1" && calls[4].name==="guild_shop_weekly_rewards_server_v1","all authenticated read-only RPCs called");
+ assert(calls.length===6 && calls[0].name==="guild_shop_snapshot_server_v1" && calls[1].name==="guild_construction_snapshot_server_v1" && calls[2].name==="guild_shop_event_community_rewards_server_v1" && calls[3].name==="guild_construction_enabled_server_v1" && calls[4].name==="guild_shop_weekly_rewards_server_v1" && calls[5].name==="guild_bank_snapshot_server_v1","all authenticated read-only RPCs called");
  assert(calls[0].args.p_account_id==="11111111-1111-4111-8111-111111111111","verified identity forwarded");
  const optionalFailure=guildShopReadHandler({...services,rpc:async<T>(name:string,args:Record<string,unknown>)=>{
   if(name==='guild_construction_snapshot_server_v1'||name==='guild_shop_event_community_rewards_server_v1')throw new Error('unavailable_optional_projection');
@@ -113,14 +114,14 @@ async function run() {
  assert(donateUnknown.status===400,'unknown material rejected');
  const donateOk=await donate(new Request(donateUri,{method:'POST',headers:{authorization:'Bearer valid'},body:JSON.stringify(donateInput)}));
  assert(donateOk.status===200,'valid donation forwarded');
- assert(donationCalls.length===1&&donationCalls[0].name==='guild_construction_donate_server_v2','construction donation uses locked SQL');
+ assert(donationCalls.length===1&&donationCalls[0].name==='guild_bank_allocate_server_v1','construction donation uses locked SQL');
  assert(donationCalls[0].args.p_account_id==='11111111-1111-4111-8111-111111111111','donation account comes from bearer auth');
  const declined=guildConstructionDonationHandler({...services,rpc:async<T>():Promise<T>=>{
-  throw new Error('insufficient_gold');
+  throw new Error('insufficient_guild_bank_balance');
  }});
  const declinedResult=await declined(new Request(donateUri,{method:'POST',headers:{authorization:'Bearer valid'},body:JSON.stringify(donateInput)}));
  assert(declinedResult.status===422,'verified insufficient balance has actionable rejection status');
- assert((await declinedResult.json() as {error:string}).error==='insufficient_gold','safe validation reason forwarded');
+ assert((await declinedResult.json() as {error:string}).error==='insufficient_guild_bank_balance','safe validation reason forwarded');
  const hidden=guildConstructionDonationHandler({...services,rpc:async<T>():Promise<T>=>{
   throw new Error('sensitive_database_statement');
  }});
@@ -129,7 +130,20 @@ async function run() {
  assert((await hiddenResult.json() as {error:string}).error==='guild_construction_donation_unavailable','no internal errors leaked');
 
 
- const weeklyCalls:Array<{name:string;args:Record<string,unknown>}>=[];
+ const bankCalls:Array<{name:string;args:Record<string,unknown>}>=[];
+ const bank=guildBankDepositHandler({...services,rpc:async<T>(name:string,args:Record<string,unknown>)=>{
+  bankCalls.push({name,args});return {alreadyProcessed:false,resourceId:'GREENWOOD_LOG',amount:10} as unknown as T;
+ }});
+ const bankUri=claimUri+'&action=bank-deposit';
+ const bankInput={resourceId:'GREENWOOD_LOG',amount:10,requestKey:'bank-deposit-123'};
+ assert((await bank(new Request(bankUri,{method:'POST',body:JSON.stringify(bankInput)}))).status===401,'Guild Bank requires auth');
+ assert((await bank(new Request(bankUri,{method:'POST',headers:{authorization:'Bearer valid'},body:JSON.stringify({...bankInput,accountId:'spoof'})}))).status===400,'Guild Bank rejects account spoofing');
+ assert((await bank(new Request(bankUri,{method:'POST',headers:{authorization:'Bearer valid'},body:JSON.stringify({...bankInput,resourceId:'NOT_AN_ITEM'})}))).status===400,'Guild Bank only accepts reviewed construction materials');
+ assert((await bank(new Request(bankUri,{method:'POST',headers:{authorization:'Bearer valid'},body:JSON.stringify(bankInput)}))).status===200,'verified Guild Bank deposit succeeds');
+ assert(bankCalls.length===1&&bankCalls[0].name==='guild_bank_deposit_server_v1','Guild Bank writes only through bank SQL');
+ assert(bankCalls[0].args.p_account_id==='11111111-1111-4111-8111-111111111111','bank cannot accept caller-supplied account identity');
+
+  const weeklyCalls:Array<{name:string;args:Record<string,unknown>}>=[];
  const weekly=guildShopWeeklyClaimHandler({...services,rpc:async<T>(name:string,args:Record<string,unknown>)=>{
   weeklyCalls.push({name,args});return 50 as unknown as T;
  }});

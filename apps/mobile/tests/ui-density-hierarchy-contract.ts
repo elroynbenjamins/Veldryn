@@ -341,7 +341,18 @@ const journalPage=read('src/screens/AdventurersJournalScreen.tsx');
 ok(journalPage.includes('journal?.unlockedAchievements')&&journalPage.includes('journal?.unlockedTitles')&&journalPage.includes('journal?.records'),"Journal summary must show earned counts, not full catalog counts");
 ok(journalPage.includes('showMastery?<MasteryHallPanel')&&journalPage.includes('showRecords?<PersonalRecordsPanel'),"Journal heavy details must stay behind independently expandable surfaces");
 ok(journalPage.includes("onNavigate('Bestiary')")&&journalPage.includes("onNavigate('Collections')")&&journalPage.includes("onNavigate('Profile')"),"Journal must preserve its three existing destinations");
-ok(masteryHall.includes("showAllSkills?skills:skills.slice(0,6)")&&masteryHall.includes("showAllRecords?records:records.slice(0,5)"),"Mastery lists must stay compact without hiding access to older records");
+ok(masteryHall.includes("showAllSkills?skills:skills.slice(0,6)")&&masteryHall.includes("records.slice(0,recordLimit)")&&masteryHall.includes("Math.min(records.length,limit+20)"),"Mastery lists must remain compact, progressively load older records and retain access to all records");
+ok(journalPage.includes("journalMetrics(state)")&&journalPage.includes("nextAchievement.row.title")&&journalPage.includes('accessibilityRole="progressbar"'),"Journal achievement disclosure must display real trusted next-milestone progress");
+ok(rankings.includes("podiumGrid:{flexDirection:'column'")&&rankings.includes("podiumRow:{flexDirection:'row'"),"Ranking podium must fit full player identities without narrow three-column compression");
+ok(milestoneFeed.includes("stackToolbar=width<370||fontScale>=1.2")&&milestoneFeed.includes("s.filterButtonStack"),"Public milestone toolbar must wrap when device text or viewport is narrow");
+ok(activityOverview.includes('showDeleteDetails')&&activityOverview.includes('Read full deletion details')&&activityOverview.includes('characterDeleteConfirmation'),"Character deletion must provide both concise and complete consequences before typed confirmation");
+const mobileRouter=read('App.tsx');
+ok(mobileRouter.includes("tab==='AdventurersJournal'&&<AdventurersJournalScreen")&&mobileRouter.includes("tab==='Bestiary'&&<BestiaryScreen")&&mobileRouter.includes("tab==='WorldMilestones'&&<WorldMilestoneFeedScreen"),"Read-only Journal, Bestiary and World Milestones must mount from Account");
+ok(account.includes("items:['Activity','Profile','NewUnlocks','AdventurersJournal'")&&account.includes("'WorldMilestones'"),"Read-only progression and World Milestones must be discoverable in Account");
+ok(mobileRouter.includes("RANKINGS_RELEASED&&tab==='Rankings'")&&!mobileRouter.includes("tab==='Achievements'&&"),"Unfinished Achievements and Rankings must remain release-gated");
+const rewardsScreen=read('src/screens/RewardsInboxScreen.tsx');
+ok(rewardsScreen.includes("accountText(language,text,params)")&&rewardsScreen.includes("label={a('Claim reward')}")&&rewardsScreen.includes("a('Claimed history')"),"Rewards Inbox must translate claims, tabs and feedback");
+
 
 
 const arena=read('src/screens/ArenaScreen.tsx');

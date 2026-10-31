@@ -41,7 +41,7 @@ export function GuildHallView({projection,loading=false,error='',onRefresh,activ
     <View style={s.between}><Image source={guildFacilityArtwork(def.id)} resizeMode="contain" style={{width:56,height:56}}/><View style={s.flex}><Text style={s.facilityName}>{def.name}</Text><Text style={s.note}>{tier>=5?'Max tier':`Tier ${tier} → ${tier+1}`}</Text></View><Text style={s.tierText}>T{tier}/5</Text></View><Text style={s.sub}>{def.description}</Text>
     {tier<5?<><StatBar rounded label="Facility progress" current={Math.min(facility.progress,threshold)} max={threshold}/><Text style={[s.note,{color:level<requiredLevel?C.warning:C.muted}]}>{level<requiredLevel?`Hall Level ${requiredLevel} required · `:''}{Math.max(0,threshold-facility.progress).toLocaleString()} more facility progress from Projects</Text></>:null}
    </View>})}
-   <GuildConstructionRoadmapPanel/>
+   <GuildConstructionRoadmapPanel onOpenBank={onSectionChange?()=>onSectionChange('Bank'):undefined}/>
   </View>:null}
   {section==='Skills'?<View style={s.root}><Panel><Text style={s.title}>Guild Skill Trees</Text><Text style={s.sub}>Permanent bonuses are chosen through three Guild Skill Trees. Hall facilities represent progression visually; their tiers do not automatically stack stat bonuses.</Text></Panel><GuildSpecializationPaths/></View>:null}
   {section==='Trophies'?<QuestBoard><View style={s.between}><Text style={s.title}>{st('Trophy Room')}</Text><Text style={s.note}>{state.trophies.length} recorded</Text></View>

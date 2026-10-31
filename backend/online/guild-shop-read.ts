@@ -102,7 +102,7 @@ export function guildShopDailyClaimHandler(services: GuildShopReadServices) {
    const credited=await services.rpc<number>("guild_shop_claim_daily_server_v1",{
     p_account_id:accountId,p_kind:candidate.kind,
    });
-   if(!Number.isSafeInteger(credited)||credited<0||credited>10)
+   if(!Number.isSafeInteger(credited)||credited<0||credited>12)
     return json({error:"invalid_claim_result"},503);
    return json({credited});
   } catch(reason) {
@@ -247,7 +247,7 @@ export function guildShopWeeklyClaimHandler(services:GuildShopReadServices){
    const credited=await services.rpc<number>("guild_shop_claim_weekly_server_v1",{
     p_account_id:accountId,p_kind:body.kind,
    });
-   if(!Number.isSafeInteger(credited)||credited<0||credited>50)
+   if(!Number.isSafeInteger(credited)||credited<0||credited>60)
     return json({error:"invalid_claim_result"},503);
    return json({credited});
   }catch{return json({error:"weekly_guild_reward_not_earned_or_unavailable"},503);}

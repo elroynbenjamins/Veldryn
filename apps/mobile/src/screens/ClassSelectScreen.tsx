@@ -100,7 +100,7 @@ export function ClassSelectScreen({language:languageProp,onLanguage,themeId,onTh
     <View style={s.progressCaption}><Text style={s.progressText}>{stepName}</Text><Text style={s.progressText}>{stepIndex+1} / 3</Text></View>
    </View>}
   </View>
-  <ScrollView ref={scroll} style={s.scroll} contentContainerStyle={s.root} keyboardShouldPersistTaps="handled" keyboardDismissMode="on-drag" showsVerticalScrollIndicator={false}>
+  <ScrollView ref={scroll} style={s.scroll} contentContainerStyle={s.root} keyboardShouldPersistTaps="handled" keyboardDismissMode="on-drag" showsVerticalScrollIndicator={false} showsHorizontalScrollIndicator={false}>
    <View pointerEvents={saving?'none':'auto'} style={s.section}>
     {step==='welcome'&&<>
      <Text style={s.eyebrow}>{ct(language,'CREATE A CHARACTER')}</Text>

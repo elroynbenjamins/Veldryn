@@ -47,6 +47,32 @@ async function main(){
  await writingNow;
  assert(await during==='saved','concurrent read observes committed pending receipt');
 
+ // Two overlapping writes must remain ordered; the last confirmed durable value wins.
+ const releaseFirst=deferred<void>();
+ const pendingWrites:string[]=[];
+ const queued=new SessionPendingStore<string>({
+  read:async()=>null,
+  write:async value=>{pendingWrites.push(String(value));if(pendingWrites.length===1)await releaseFirst.promise;},
+ });
+ const firstWrite=queued.write('first');
+ const secondWrite=queued.write('second');
+ const lateRead=queued.read();
+ await Promise.resolve();await Promise.resolve();
+ assert(pendingWrites.length===1&&pendingWrites[0]==='first','second write cannot overtake the first durable write');
+ releaseFirst.resolve();
+ await Promise.all([firstWrite,secondWrite]);
+ assert(await lateRead==='second'&&pendingWrites.join(',')==='first,second','reads wait for the final committed queued write');
+
+ // A failed cold-start read must not poison later recovery attempts.
+ let failRead=true;
+ const coldStart=new SessionPendingStore<string>({
+  read:async()=>{if(failRead){failRead=false;throw Error('storage_unavailable');}return 'recovered';},
+  write:async()=>{},
+ });
+ try{await coldStart.read();throw Error('expected read rejection');}
+ catch(error){assert((error as Error).message==='storage_unavailable','failed cold-start storage read propagates');}
+ assert(await coldStart.read()==='recovered','failed cold-start read can be retried');
+
  let fail=true,durableAfterFailure='old';
  const unreliable=new SessionPendingStore<string>({
   read:async()=>{reads++;return durableAfterFailure;},

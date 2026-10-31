@@ -40,11 +40,13 @@ export function validateStagingProfileConfig(env){
 /** No automatic retries: on timeout a server-side write may still have committed. */
 export async function profileStagingGameplay(config,{fetchImpl=fetch,uuid=randomUUID}={}){
  const methods={auth:[],read:[],write:[],receipt:[]};
+ const deadline=performance.now()+90_000;
  const request=async(url,method,headers,body,kind)=>{
-  const started=performance.now();
+  const started=performance.now(),remaining=deadline-started;
+  if(remaining<=0)throw Error('Staging profile exceeded its 90-second safety deadline.');
   const response=await fetchImpl(url,{
    method,headers,body:body===undefined?undefined:JSON.stringify(body),
-   signal:AbortSignal.timeout(8000),
+   signal:AbortSignal.timeout(Math.ceil(Math.min(8000,remaining))),
   });
   methods[kind].push(performance.now()-started);
   const data=await response.json();
@@ -109,7 +111,11 @@ export async function profileStagingGameplay(config,{fetchImpl=fetch,uuid=random
 async function main(){
  const config=validateStagingProfileConfig(process.env);
  const anonKey=process.env.STAGING_PROFILE_ANON_KEY;
- if(typeof anonKey!=='string'||anonKey.length<15)throw Error('A staging publishable/anon key is required (never use a service-role key).');
+ if(typeof anonKey!=='string'||anonKey.length<15||anonKey.startsWith('sb_secret_'))throw Error('A staging publishable/anon key is required (never use a service-role key).');
+ if(anonKey.split('.').length===3){
+  try{if(JSON.parse(Buffer.from(anonKey.split('.')[1],'base64url').toString()).role==='service_role')throw Error('Service-role keys are not allowed in a load test.');}
+  catch(error){if(error.message==='Service-role keys are not allowed in a load test.')throw error;}
+ }
  const result=await profileStagingGameplay({...config,anonKey});
  console.log(JSON.stringify(result,null,2));
 }

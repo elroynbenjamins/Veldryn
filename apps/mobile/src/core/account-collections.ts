@@ -37,19 +37,5 @@ export function reconcileAccountCollections(state:GameState):GameState{
  if(!same(state.account.unlockedProfileBackgroundIds,backgrounds)){nextAccount.unlockedProfileBackgroundIds=backgrounds;changed=true;}
  if(!same(state.account.unlockedProfileIconIds,icons)){nextAccount.unlockedProfileIconIds=icons;changed=true;}
 
- // Future full-character outfits use account ownership, but each character
- // retains a different equipped outfit. Never import deleted equipment-set skins.
- const ownedOutfits=new Set(state.account.unlockedOutfitIds??[]);
- const cleanChoice=(c:CharacterState):CharacterState=>
-   c.equippedOutfitId&&c.equippedOutfitId!=='default'&&!ownedOutfits.has(c.equippedOutfitId)
-   ?{...c,equippedOutfitId:undefined}:c;
- const character=state.character?cleanChoice(state.character):null;
- const otherCharacters=state.otherCharacters?.map(entry=>{
-   const cleaned=cleanChoice(entry.character);
-   return cleaned===entry.character?entry:{...entry,character:cleaned};
- });
- const selectionChanged=character!==state.character||otherCharacters?.some((row,i)=>row!==state.otherCharacters?.[i]);
- return changed||selectionChanged
-   ?{...state,account:changed?nextAccount:state.account,character,otherCharacters:selectionChanged?otherCharacters:state.otherCharacters}
-   :state;
+ return changed?{...state,account:nextAccount}:state;
 }

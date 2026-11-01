@@ -33,6 +33,7 @@ import type {FallenKnightBattleResult} from './story-boss';
 import {reconcileWorkingTowardGeneratedRules} from './working-toward-execution';
 import {earlyFeatureUnlocked} from './feature-unlocks';
 import {upgradeCompanionHousing} from './companion-housing';
+import {reconcileAccountCollections} from './account-collections';
 
 /** Commands express intent. Neither a client save nor a client reward is accepted. */
 export interface GameCommand {type:string;args?:Record<string,unknown>}
@@ -152,7 +153,7 @@ export function executeGameCommand(previous:GameState,value:unknown,now:number,o
  // returns unfinished reserved work (such as brews) through its normal stop path.
  const activityStartCommand=['start','explore','class_training','faith_practice','alchemy_start','processing_start'].includes(command.type);
  if(state.character&&command.type!=='create'&&!settlementFreeCommand){if(activityStartCommand)settleAndStop();else settle();}
- state=refreshCompanions(state,now);
+ state=reconcileAccountCollections(refreshCompanions(state,now));
  // Expired event candy settlement is account-wide and shares this command's atomic receipt.
  state=events.settleExpiredEventCandies(state,now);
  if(command.type.startsWith('companion_')&&!earlyFeatureUnlocked(state,'companions'))throw new Error('companion_system_locked');
@@ -427,7 +428,7 @@ export function executeGameCommand(previous:GameState,value:unknown,now:number,o
  }
  if(companionMetricBefore)state=recordCompanionCommandMetrics(state,command.type,companionMetricBefore);
  // Includes loot added by combat, quests, co-op and old save actions.
- state=migrateGemPouch(state);
+ state=reconcileAccountCollections(migrateGemPouch(state));
  if(state.character&&(!Number.isSafeInteger(state.character.gold)||state.character.gold<0))throw new Error('invalid_wallet');
  return {state,reward,activity,message,won,storyBossBattle,upgrade,forgeResults,contributions};
 }

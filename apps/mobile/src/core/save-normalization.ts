@@ -3,6 +3,7 @@ import {QUESTS} from '../content/quests';
 import {GameState} from './types';
 import {CLASSES} from '../content/classes';
 import {normalizeProfileIcon} from './profile-icons';
+import {reconcileAccountCollections} from './account-collections';
 import {isSupportedLanguage} from '../i18n/languages';
 import {normalizeQuickNavDestinations} from './quick-navigation';
 import {WORLD_ZONES} from '../content/world-map';
@@ -75,6 +76,7 @@ export function normalizeSave(input:any):GameState{
   const legacyCosmeticPets=normalizeOwnedPetIds(
     input.account?.unlockedCosmeticPetIds,
     input.character?.ownedPetIds,
+    ...(Array.isArray(input.otherCharacters)?input.otherCharacters.map((entry:any)=>entry?.character?.ownedPetIds):[]),
   );
   const legacyOwnedBoostIds=[...new Set([
     ...(Array.isArray(input.account?.ownedBoostIds)?input.account.ownedBoostIds:[]),
@@ -223,5 +225,5 @@ export function normalizeSave(input:any):GameState{
   if(character?.id&&rosterIds.has(character.id))throw new Error('Duplicate active account character.');
   normalized.otherCharacters=roster as GameState['otherCharacters'];
   normalized.account.unlockedCharacterSlots=Math.max(1,Math.min(5,Number(input.account?.unlockedCharacterSlots??1)));
-  return normalizeProfileIcon(reconcileCombatCompanionUnlocks(migrateGemPouch(normalized),normalized.createdAtMs));
+  return normalizeProfileIcon(reconcileAccountCollections(reconcileCombatCompanionUnlocks(migrateGemPouch(normalized),normalized.createdAtMs)));
 }

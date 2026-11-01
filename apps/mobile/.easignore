@@ -74,6 +74,39 @@ apps/mobile/art-archive/
 apps/mobile/tests/
 apps/mobile/*.log
 
+# Local scratch/export/audit snapshots that only live on dev machines.
+apps/mobile/.release-*/
+apps/mobile/.release-*-audit*/
+apps/mobile/.release-readiness-*/
+apps/mobile/.release-bundle-*/
+apps/mobile/.release-size-*/
+apps/mobile/.web-scratch/
+apps/mobile/.browser-review-export/
+apps/mobile/.remaster-export/
+apps/mobile/.chat-ui-v11-export/
+apps/mobile/.expo-export-aab-check/
+apps/mobile/.codex-aab-export/
+apps/mobile/.*-export/
+apps/mobile/.*-build/
+apps/mobile/*-export/
+apps/mobile/*-build/
+# Repeat without the apps/mobile/ prefix in case EAS resolves from the eas.json directory.
+.release-*/
+.release-*-audit*/
+.release-readiness-*/
+.release-bundle-*/
+.release-size-*/
+.web-scratch/
+.browser-review-export/
+.remaster-export/
+.chat-ui-v11-export/
+.expo-export-aab-check/
+.codex-aab-export/
+.*-export/
+.*-build/
+*-export/
+*-build/
+
 # Monorepo material not used by the mobile Metro build.
 control-center/
 docs/

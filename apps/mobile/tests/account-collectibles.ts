@@ -64,7 +64,6 @@ if(!alternate.account.unlockedCosmeticPetIds?.includes('PET_018'))fail('account 
 if(!profileTitleUnlocked(alternate,'oathbound'))fail('account-earned title available to low-level alt');
 if(!profileBackgroundUnlocked(alternate,'oathglass-hall'))fail('account-earned background available to low-level alt');
 if(collectionBonusBreakdown(alternate).find(row=>row.target==='gatheringYield')?.ownedAppliedBps!==50)fail('alt receives shared passive pet collection bonus');
-let rejected=false;
 alternate=switchAccountCharacter(alternate,primary.character!.id,now+4);
 equal(alternate.character?.selectedCosmeticPetId,'PET_001','original character retains its own pet selection');
 alternate=switchAccountCharacter(alternate,'LOCAL_CHAR_2',now+5);

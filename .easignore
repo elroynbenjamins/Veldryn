@@ -35,6 +35,12 @@ tools/
 supabase/
 output/
 artifacts/
+sites/
+review-screens/
+.codex-tmp/
+.codex-attachments/
+.wrangler/
+packages/
 
 # Codex / historical / generated material
 .codex/
@@ -74,3 +80,43 @@ apps/mobile/*.log
 *.ai
 *.xcf
 *.kra
+
+# Explicit local scratch snapshots (gitignored audits/exports that EAS's pattern
+# matcher does not expand from the globbed forms above).
+apps/mobile/.browser-review-export/
+apps/mobile/.core-build/
+apps/mobile/.event-build/
+apps/mobile/.expo-export-aab-check/
+apps/mobile/.perf-build/
+apps/mobile/.pet-test-build/
+apps/mobile/.release-bundle-audit/
+apps/mobile/.release-bundle-audit-final/
+apps/mobile/.release-bundle-audit-rerun/
+apps/mobile/.release-bundle-final/
+apps/mobile/.release-readiness-2026-10-19/
+apps/mobile/.release-size-audit-095/
+apps/mobile/.release-size-audit-095-final/
+apps/mobile/.release-size-audit-095-final-png/
+apps/mobile/.release-size-audit-095-optimized/
+apps/mobile/.release-size-export/
+apps/mobile/.remaster-export/
+apps/mobile/.web-scratch/
+apps/mobile/.exploration-export/
+apps/mobile/.next-pass-export/
+apps/mobile/.herbalism-export/
+apps/mobile/.chat-ui-v11-export/
+apps/mobile/.faith-export/
+apps/mobile/.roster-export/
+apps/mobile/.codex-aab-export/
+apps/mobile/.browser-review-build.log
+apps/mobile/.online-improvements-core.log
+apps/mobile/.release-core-tests.log
+apps/mobile/.release-core-tests-final.log
+apps/mobile/.release-core-tests-final-2.log
+apps/mobile/.release-core-tests-final-3.log
+apps/mobile/.release-core-tests-final-4.log
+apps/mobile/.release-export-final.log
+apps/mobile/.release-export-final-2.log
+apps/mobile/.release-export-exit-final-2.txt
+apps/mobile/.review-resolution.log
+apps/mobile/.today-implementation-tests.log

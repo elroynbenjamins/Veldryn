@@ -33,6 +33,7 @@ import type {FallenKnightBattleResult} from './story-boss';
 import {reconcileWorkingTowardGeneratedRules} from './working-toward-execution';
 import {earlyFeatureUnlocked} from './feature-unlocks';
 import {upgradeCompanionHousing} from './companion-housing';
+import {reconcileAccountCollections} from './account-collections';
 
 /** Commands express intent. Neither a client save nor a client reward is accepted. */
 export interface GameCommand {type:string;args?:Record<string,unknown>}
@@ -50,7 +51,7 @@ const fields:Record<string,readonly string[]>={
  bank_sell:['id','quantity'],bank_gold_deposit:['amount'],bank_gold_withdraw:['amount'],deposit:['id','quantity'],withdraw:['id','quantity'],deposit_materials:[],bulk_transfer:['location','ids'],bulk_sell:['ids'],bulk_salvage:['ids'],storage:['location'],gem_pouch_upgrade:[],gem_pouch_sell:['itemId','quantity'],overflow:[],
  equip_tool:['id'],equip_set:[],upgrade:['id'],socket:['id','gemId'],replace_socket:['id','gemId'],unsocket:['id','index'],gem_combine:['familyId','grade'],gem_refine:['familyId','grade'],gem_research:['familyId'],gem_dismantle:['gemId','quantity'],resonance_cache_claim:['familyId'],profile_icon:['id'],
  loadout_save:['index','name'],loadout_apply:['id'],loadout_delete:['id'],arena_slot:['index','characterId'],goals_set:['goals'],idle_rules_set:['rules','activeId'],daily_supplies_claim:['characterId'],daily_supplies_activate:['type'],
- quest:['id'],seasonal:['period','id'],settings:['settings'],profile:['profileIconId','profileTitle','profileBackgroundId','profileBorderId','selectedCosmeticPetId'],
+ quest:['id'],seasonal:['period','id'],settings:['settings'],profile:['profileIconId','profileTitle','profileBackgroundId','profileBorderId','selectedCosmeticPetId'],outfit_select:['id'],
  event_daily:[],event_cache:[],event_milestones:[],event_discovery:['id'],event_reward:['id'],event_accept:['id'],
  event_objective:['id'],event_weekly:['id'],event_project:['id'],event_contribute:['quantity'],event_community:['percent'],event_purchase:['id'],event_candy:['kind','companionId'],
  qa_prepare:['classId'],qa_refill:[],qa_switch_class:['classId'],
@@ -152,7 +153,7 @@ export function executeGameCommand(previous:GameState,value:unknown,now:number,o
  // returns unfinished reserved work (such as brews) through its normal stop path.
  const activityStartCommand=['start','explore','class_training','faith_practice','alchemy_start','processing_start'].includes(command.type);
  if(state.character&&command.type!=='create'&&!settlementFreeCommand){if(activityStartCommand)settleAndStop();else settle();}
- state=refreshCompanions(state,now);
+ state=reconcileAccountCollections(refreshCompanions(state,now));
  // Expired event candy settlement is account-wide and shares this command's atomic receipt.
  state=events.settleExpiredEventCandies(state,now);
  if(command.type.startsWith('companion_')&&!earlyFeatureUnlocked(state,'companions'))throw new Error('companion_system_locked');
@@ -410,6 +411,12 @@ export function executeGameCommand(previous:GameState,value:unknown,now:number,o
    if(patch.selectedCosmeticPetId&&!state.account.unlockedCosmeticPetIds?.includes(patch.selectedCosmeticPetId))throw new Error('cosmetic_not_owned');
    state={...state,character:{...state.character,...patch}};break;
   }
+  case 'outfit_select':{
+    if(!state.character)throw new Error('Create a character first.');
+    const id=text(a,'id',120);
+    if(id!=='default'&&!state.account.unlockedOutfitIds?.includes(id))throw new Error('cosmetic_not_owned');
+    state={...state,character:{...state.character,equippedOutfitId:id==='default'?undefined:id}};break;
+  }
   case 'event_daily':state=events.claimEventDailyGift(state,now);break;
   case 'event_cache':state=events.claimEventRepeatCache(state,now);break;
   case 'event_milestones':state=events.claimAllEventMilestones(state,now);break;
@@ -427,7 +434,7 @@ export function executeGameCommand(previous:GameState,value:unknown,now:number,o
  }
  if(companionMetricBefore)state=recordCompanionCommandMetrics(state,command.type,companionMetricBefore);
  // Includes loot added by combat, quests, co-op and old save actions.
- state=migrateGemPouch(state);
+ state=reconcileAccountCollections(migrateGemPouch(state));
  if(state.character&&(!Number.isSafeInteger(state.character.gold)||state.character.gold<0))throw new Error('invalid_wallet');
  return {state,reward,activity,message,won,storyBossBattle,upgrade,forgeResults,contributions};
 }

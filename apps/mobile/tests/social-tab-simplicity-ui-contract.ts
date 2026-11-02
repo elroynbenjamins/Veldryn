@@ -47,8 +47,8 @@ ok(!social.includes('onFindParty={()=>setTab'),'Party Event must not show an ine
 ok(social.includes('shouldShowPartyChat(social.party,social.accountId)'),'Chat gating must check current membership, not only a party ID');
 ok(social.includes('partyInvitations={partyInvitations} invitationCount='),'Party invitations must remain available within Party Options');
 ok(social.includes("!social.party?partyInvitations:null"),'Incoming Party invitations must remain visible when no party is active');
-ok(party.includes('{props.partyInvitations}')&&party.includes('showSettings?<><View'),'Party invitations must not clutter active Party overview');
-ok(party.includes("Recruitment</Text>")&&party.includes('{props.recruitmentDetails}'),'Recruitment composer, matches and details must remain in Recruitment');
+ok(party.includes('{props.partyInvitations}')&&party.includes('GameModalSurface visible={showSettings&&inParty}'),'Party invitations must remain inside the options modal, not the active Party overview');
+ok(party.includes("st('Recruitment')")&&party.includes('{props.recruitmentDetails}'),'Recruitment composer, matches and details must remain in Recruitment');
 ok(social.includes("partyExtras={partyExtras}")&&party.includes("inParty&&section==='party'?props.partyExtras:null"),'Party Events must only appear within My Party');
 ok(!weekly.includes('tiers.map(t=><View key={t.tier}'),'Compact Party progress must not render the full tier chip strip');
 ok(chat.includes('expanded={expanded}')&&chatLog.includes('expanded&&s.expandedLog'),'Chat must use full available height only in dedicated Social Chat');

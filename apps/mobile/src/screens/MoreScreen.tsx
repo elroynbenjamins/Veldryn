@@ -29,6 +29,7 @@ function iconForDestination(id:MoreDestination):QuickNavDestination{
   if(id==='Activity'||id==='Profile'||id==='NewUnlocks'||id==='AccountBonuses')return 'Character';
   if(id==='DailySupplies'||id==='RewardsInbox'||id==='Rankings')return 'Events';
   if(id==='Arena')return 'Party';
+  if(id==='Recruitment')return 'Social';
   if(id==='Collections'||id==='ResourceCodex')return 'Inventory';
   if(id==='Store')return 'Inventory';
   if(id==='MasteryHall')return 'Skills';

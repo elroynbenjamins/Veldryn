@@ -27,7 +27,7 @@ const appSource=fs.readFileSync('App.tsx','utf8'),guildSource=fs.readFileSync('s
 ok(appSource.includes('goalRegionId,goalDungeonId]);'),'Dungeon destination must invalidate memoized back-history context when changed');
 ok(appSource.includes("useEffect(()=>{setTabHistory([]);},[auth.session?.user.id,state?.character?.id])"),'Back history must reset on account and character switch');
 ok(appSource.includes('guildNavigationMemory.current?.scope===')&&appSource.includes('onNavigationChange={context=>'),'Guild navigation must restore account-scoped tabs and keep their latest section');
-ok(guildSource.includes("onlineSection==='Hall'&&hallSection!=='Facilities'?\u0060Hall/\u0024{hallSection}\u0060"),'Guild Hall sub-tabs must have separate first-visit guides');
+ok(guildSource.includes("onlineSection==='Hall'&&hallSection!=='Overview'?\u0060Hall/\u0024{hallSection}\u0060"),'Guild Hall sub-tabs must have separate first-visit guides');
 ok(guildSource.includes("onlineSection==='Hall'?guildHallSectionGuide(language,hallSection)"),'Guild Hall guidance must follow the actually visible Hall tab');
 for(const language of SUPPORTED_LANGUAGES){
  for(const section of ['Facilities','Skills','Trophies','Shop'] as const){

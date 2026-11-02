@@ -75,7 +75,7 @@ const forecast=combatSustainProjection(base,region.monsterId,8)!;
 assert.ok(Math.abs(bare.foodConsumed!-forecast.projectedFood)<effectiveStats(base).hp/forecast.healingPerFood+3,'forecast and settlement differ only by starting HP, food rounding and champions');
 for(const earlyRegion of REGIONAL_COMBAT_FIXTURES.slice(0,5))for(const cls of CLASSES){
  const projected=combatSustainProjection(regionalCombatFixture(earlyRegion,'prepared',cls.id),earlyRegion.monsterId)!;
- assert.ok(projected.foodPerHour<=projected.target.foodPerHourMax*1.08,`${earlyRegion.regionName}/${cls.id} must stay near the authored prepared food budget`);
+ assert.ok(projected.foodPerHour<=projected.target.foodPerHourMax*1.08,`${earlyRegion.regionName}/${cls.id} food consumption ${projected.foodPerHour.toFixed(2)}/hour exceeds prepared budget ${projected.target.foodPerHourMax.toFixed(2)}`);
  assert.ok(projected.foodPerHour>0,'prepared builds still need supplies');
 }
 console.log('PASS combat potion charges, timed candy, split encounters, event boundaries and food forecasts');

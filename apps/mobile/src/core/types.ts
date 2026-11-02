@@ -31,6 +31,8 @@ export interface CharacterState {
   herbalismMethodId?:import('../content/herbalism').HerbalismMethodId;
   faith?: import('./faith-types').CharacterFaithState;
   preparation?:import('./alchemy-types').ActivePreparation;
+  /** Single non-stacking special-meal effect; counts eligible activity seconds, including AFK. */
+  activeMealBuff?:import('./meal-buffs').ActiveMealBuff;
 
   equippedCombatCompanionId?:string;
   id:string; name:string; classId:ClassId; level:number; xp:number; gold:number;
@@ -117,8 +119,11 @@ export interface GameState {
   currentRegionId:string;
   /** Optional server/read-model projection for versioned regional journals. */
   regionalProgressById?:Record<string,RegionalProgressState>;
+  /** Transient, server-injected authoritative Guild Skill bonuses for one
+   * resolution. Not persisted; absent means no bonus (skills unreleased). */
+  guildSkillEffects?:import('./guild-skill-effects').GuildSkillEffects;
   quests:QuestState[]; unlockedMonsterIds:string[]; exploredRouteIds?:string[]; defeatedBossIds:string[]; skills:SkillState[];
-  account:CompanionAccountState & {longTermAccountScopeId?:string;entitlements?:Record<string,boolean>;playerNameStyle?:import('./player-name-style').PlayerNameStylePreference;vipPlusNameColor?:string;equipmentCraftingQueue?:EquipmentCraftJob[];gemPouch?:InventoryState;craftedGearInstances?:CraftedGearInstance[];craftedGearAutoSellMode?:import('./crafted-gear-retention').CraftedGearAutoSellMode;unlockedCharacterSlots?:number;premiumCurrencyBalance?:number;ownedBoostIds?:string[];eventCommunityProgressById?:Record<string,number>;createdCharacterCount:number;guildMember:boolean;patronTier:'none'|'bloom'|'crown';guildBackgroundId?:import('./guild-customization').GuildBackgroundId;guildBannerId?:import('./guild-customization').GuildBannerId;guildProfileFrameId?:import('./guild-customization').GuildFrameId;guildNameplateId?:import('./guild-customization').GuildNameplateId;guildMotto?:string;
+  account:CompanionAccountState & {longTermAccountScopeId?:string;entitlements?:Record<string,boolean>;playerNameStyle?:import('./player-name-style').PlayerNameStylePreference;vipPlusNameColor?:string;equipmentCraftingQueue?:EquipmentCraftJob[];gemPouch?:InventoryState;gemPouchMigrationDone?:boolean;craftedGearInstances?:CraftedGearInstance[];craftedGearAutoSellMode?:import('./crafted-gear-retention').CraftedGearAutoSellMode;unlockedCharacterSlots?:number;premiumCurrencyBalance?:number;ownedBoostIds?:string[];eventCommunityProgressById?:Record<string,number>;createdCharacterCount:number;guildMember:boolean;patronTier:'none'|'bloom'|'crown';guildBackgroundId?:import('./guild-customization').GuildBackgroundId;guildBannerId?:import('./guild-customization').GuildBannerId;guildProfileFrameId?:import('./guild-customization').GuildFrameId;guildNameplateId?:import('./guild-customization').GuildNameplateId;guildMotto?:string;
   unlockedGuildCosmeticIds?:string[];
   professionMasteryByAction?:Record<string,import('./profession-mastery-v40').ProfessionMasteryRecord>;
   weeklyOrders?:import('./weekly-orders-v41').WeeklyOrdersState;

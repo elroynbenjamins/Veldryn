@@ -1,7 +1,7 @@
 import {useCoopStyles} from '../../theme/useCoopStyles';
 import {useSocialText} from '../../i18n/social';
 import {useEffect,useRef,useState} from 'react';
-import {Animated,StyleSheet,Text,View} from 'react-native';
+import {Animated,Modal,ScrollView,StyleSheet,Text,View} from 'react-native';
 import type {CoopRunView} from '../../core/coop-presentation';
 import {validateCoopRunView} from '../../core/coop-presentation';
 import {ct,t,type Language} from '../../i18n';
@@ -28,50 +28,79 @@ function TerminalRunMoment({phase,rewardsReady,rewardsSecured,reduceMotion}:{pha
     ?rewardsSecured?'Your expedition rewards are secured. Return when you are ready.':rewardsReady?'Final encounter cleared. Collect the expedition reward below.':'Final encounter cleared. Your reward entitlement is being prepared.'
     :'This expedition has ended. Review any available rewards before returning.';
   return <Animated.View accessibilityLiveRegion="polite" style={[s.terminal,{transform:[{scale}]}]}>
-    <View style={s.terminalHead}><View style={s.grow}><Text style={[s.terminalEyebrow,completed?s.terminalSuccess:s.terminalDanger]}>{completed?st("✦ EXPEDITION CLEARED"):st("EXPEDITION ENDED")}</Text><Text style={s.terminalTitle}>{completed?st("Victory secured"):st("Run complete")}</Text></View><StateChip label={completed?(rewardsSecured?'REWARDS SECURED':'VICTORY'):st("ENDED")} tone={completed?'success':'danger'}/></View>
-    <Text style={s.copy}>{body}</Text>
+    <View style={[s.rewardCrest,completed?s.rewardCrestSuccess:s.rewardCrestFailure]}><Text style={[s.rewardCrestText,completed?s.terminalSuccess:s.terminalDanger]}>{completed?'✦':'◇'}</Text></View>
+    <Text style={[s.terminalEyebrow,completed?s.terminalSuccess:s.terminalDanger]}>{completed?st("EXPEDITION CLEARED"):st("EXPEDITION ENDED")}</Text>
+    <Text style={s.terminalTitle}>{completed?st("Victory secured!"):st("Run complete")}</Text>
+    <Text style={s.terminalDescription}>{body}</Text>
   </Animated.View>;
 }
 
 export interface CoopRewardDisplay {id:string;claimed_at:string|null;reward_json:{marks?:number;enhanced_reward?:boolean;live_fellowship_bonus?:number;reward_charges_remaining?:number;weekly_enhanced_remaining?:number;failure_consolation_remaining?:number;failure_consolation_applied?:boolean};}
-export function CoopRunOverview({language,run,myVotedNodeId,selfVoter,onBack,onChoose,onRefresh,onClaim,busy=false,notice,syncError,rewards=[],terminalAction,reduceMotion=false,seasonal=false,eventName,chatMessages=[],onChatSend}:{language:Language;run:CoopRunView;myVotedNodeId?:string;selfVoter?:{name:string;profileIconId?:string|null;className?:string|null};onBack:()=>void;onChoose?:(nodeId:string)=>void;onRefresh?:()=>void;onClaim?:(id:string)=>void;busy?:boolean;notice?:string;syncError?:string;rewards?:CoopRewardDisplay[];terminalAction?:{label:string;claimed?:boolean;completeText?:string;onPress:()=>void};reduceMotion?:boolean;seasonal?:boolean;eventName?:string;chatMessages?:CoopChatMessage[];onChatSend?:(text:string)=>Promise<void>}){
+export function CoopRunOverview({language,run,myVotedNodeId,selfVoter,onBack,onChoose,onRefresh,onClaim,onQueueAgain,onPartyRematch,busy=false,notice,syncError,rewards=[],terminalAction,reduceMotion=false,seasonal=false,eventName,chatMessages=[],onChatSend}:{language:Language;run:CoopRunView;myVotedNodeId?:string;selfVoter?:{name:string;profileIconId?:string|null;className?:string|null};onBack:()=>void;onChoose?:(nodeId:string)=>void;onRefresh?:()=>void;onClaim?:(id:string)=>void;onQueueAgain?:{label:string;onPress:()=>void};onPartyRematch?:()=>void;busy?:boolean;notice?:string;syncError?:string;rewards?:CoopRewardDisplay[];terminalAction?:{label:string;claimed?:boolean;completeText?:string;onPress:()=>void};reduceMotion?:boolean;seasonal?:boolean;eventName?:string;chatMessages?:CoopChatMessage[];onChatSend?:(text:string)=>Promise<void>}){
  const {styles:s}=useCoopStyles(makeStyles);
  const st=useSocialText(),a=(value:string)=>accountText(language,value);
   validateCoopRunView(run);
   const modeLabel=run.modeLabel??(run.mode==='qmode'?ct(language,'details.qmode'):ct(language,'details.live')),bossNext=run.options.some(option=>option.kind==='boss');
   const terminal=run.phase==='completed'||run.phase==='failed',unclaimedRewards=rewards.filter(reward=>!reward.claimed_at),rewardSurfaceReady=rewards.length>0||Boolean(terminalAction),rewardsSecured=terminal&&rewardSurfaceReady&&!unclaimedRewards.length&&(!terminalAction||terminalAction.claimed===true);
-  const inCombat=run.phase==='resolving_node'||bossNext||Boolean(run.lastCombat);
+  const inCombat=run.phase==='resolving_node';
   const replayCues=run.lastCombat?.cues??[];
   const [clockTick,setClockTick]=useState(Date.now());
   const clockAnchor=useRef({serverNow:run.serverNow??0,localAt:Date.now()});
   if(run.serverNow!==undefined&&clockAnchor.current.serverNow!==run.serverNow)clockAnchor.current={serverNow:run.serverNow,localAt:Date.now()};
   useEffect(()=>{
-   if(run.mode!=='live'||!run.resolvesAtMs)return;
+   if(run.mode!=='live'||!run.resolvesAtMs||run.phase!=='awaiting_choice'||run.options.length<2)return;
    const timer=setInterval(()=>setClockTick(Date.now()),500);return()=>clearInterval(timer);
-  },[run.mode,run.resolvesAtMs]);
+  },[run.mode,run.resolvesAtMs,run.phase,run.options.length]);
   const liveServerNow=run.serverNow===undefined?undefined:clockAnchor.current.serverNow+Math.max(0,clockTick-clockAnchor.current.localAt);
-  const secondsRemaining=run.resolvesAtMs!==undefined&&liveServerNow!==undefined?Math.max(0,Math.ceil((run.resolvesAtMs-liveServerNow)/1000)):undefined;
+  const secondsRemaining=run.phase==='awaiting_choice'&&run.options.length>1&&run.resolvesAtMs!==undefined&&liveServerNow!==undefined?Math.max(0,Math.ceil((run.resolvesAtMs-liveServerNow)/1000)):undefined;
   const replayKey=`${run.runId}:${run.lastCombat?.nodeId??'pending'}:${run.lastCombat?.durationMs??0}:${replayCues.length}:${replayCues[replayCues.length-1]?.atMs??0}`;
-  const lastReplay=useRef(replayKey),wasResolving=useRef(run.phase==='resolving_node');
+  const lastReplay=useRef(replayKey),wasResolving=useRef(run.phase==='resolving_node'),wasTerminal=useRef(terminal);
   const [theaterOpen,setTheaterOpen]=useState(run.phase==='resolving_node');
+  const [rewardOpen,setRewardOpen]=useState(terminal);
+  const [enteringCombat,setEnteringCombat]=useState(false);
+  const enterFromVersion=useRef(run.stateVersion),enterFromNode=useRef(run.lastCombat?.nodeId);
   useEffect(()=>{
    const resolving=run.phase==='resolving_node';
-   // Only automatically open for a new encounter or authoritative replay;
-   // returning to the dungeon screen must not repeatedly force open an old one.
-   if((resolving&&!wasResolving.current)||(run.lastCombat&&lastReplay.current!==replayKey))setTheaterOpen(true);
-   lastReplay.current=replayKey;wasResolving.current=resolving;
-  },[run.phase,run.lastCombat,replayKey]);
+   const newCombat=Boolean(run.lastCombat&&lastReplay.current!==replayKey);
+   // Present each server-authorized battle once; never expose a replay control.
+   if((resolving&&!wasResolving.current)||newCombat){
+    setTheaterOpen(true);
+    if(terminal)setRewardOpen(false);
+   }else if(terminal&&!wasTerminal.current&&!theaterOpen&&!resolving){
+    setRewardOpen(true);
+   }
+   lastReplay.current=replayKey;wasResolving.current=resolving;wasTerminal.current=terminal;
+  },[run.phase,run.lastCombat,replayKey,terminal]);
+  // The battle stage opens before the request finishes. Combat cues, HP and
+  // outcomes still come exclusively from the authoritative server response.
+  const chooseRoom=(nodeId:string)=>{
+   const option=run.options.find(item=>item.nodeId===nodeId);
+   if(onChoose&&run.mode==='qmode'&&option&&['battle','elite','boss','risk'].includes(option.kind)){
+    enterFromVersion.current=run.stateVersion;
+    enterFromNode.current=run.lastCombat?.nodeId;
+    setEnteringCombat(true);setTheaterOpen(true);
+   }
+   onChoose?.(nodeId);
+  };
+  useEffect(()=>{
+   if(!enteringCombat)return;
+   const resolved=run.phase==='resolving_node'||run.stateVersion!==enterFromVersion.current||run.lastCombat?.nodeId!==enterFromNode.current;
+   if(resolved||notice){
+    setEnteringCombat(false);
+    if(notice||(!run.pendingCombat&&run.lastCombat?.nodeId===enterFromNode.current))setTheaterOpen(false);
+   }
+  },[enteringCombat,run.phase,run.stateVersion,run.lastCombat?.nodeId,run.pendingCombat,notice]);
   const combatName=run.bossMechanic?.telegraph?.bossName??(run.pendingCombat??run.lastCombat)?.combatants?.find(member=>member.boss)?.name??st('DUNGEON COMBAT');
   return <><ExpeditionScreenShell compactHeader={inCombat} eyebrow={ct(language,'browse.resumeTitle')} title={inCombat?combatName:ct(language,'browse.resume')} onBack={onBack} backLabel={ct(language,'details.backList')} banner={inCombat?undefined:<View style={s.banner}><StateChip label={modeLabel} tone="selected"/><Text style={s.phase}>{run.phase.replaceAll('_',' ')}</Text></View>}>
     {inCombat?<FantasyPanel variant="selected"><View style={s.summary}>
-      <View style={s.grow}><Text style={s.title}>{run.phase==='resolving_node'?st('Battle in progress'):run.lastCombat?.reason==='victory'?st('Encounter cleared'):run.lastCombat?.reason==='wipe'?st('Party defeated'):st('Encounter replay')}</Text><Text style={s.copy}>{combatName}</Text></View>
-      <GameButton compact title={st('Watch battle')} onPress={()=>setTheaterOpen(true)}/>
+      <View style={s.grow}><Text style={s.title}>{run.phase==='resolving_node'?st('Battle in progress'):run.lastCombat?.reason==='victory'?st('Encounter cleared'):run.lastCombat?.reason==='wipe'?st('Party defeated'):st('Battle complete')}</Text><Text style={s.copy}>{combatName}</Text></View>
+      <GameButton compact title={st('View battle')} onPress={()=>setTheaterOpen(true)}/>
      </View></FantasyPanel>:null}
     {!!syncError&&<FantasyPanel variant="danger"><Text accessibilityRole="alert" style={s.title}>{a('Connection interrupted')}</Text><Text style={s.copy}>{a('Showing the last saved expedition progress. Reconnecting automatically.')}</Text><Text style={s.copy} numberOfLines={2}>{syncError}</Text>{onRefresh?<GameButton compact title={a('Retry connection')} tone="secondary" disabled={busy} onPress={onRefresh}/>:null}</FantasyPanel>}
     {run.options.length?<View style={s.actionArea}>
       <Text style={s.section}>{run.mode==='live'?st('Vote for the next path'):st('Choose the next room')}</Text>
       {run.mode==='live'?<Text style={s.copy}>{st('The route with the most votes will be selected.')}{secondsRemaining!==undefined?` · ${st('Vote ends in {seconds}s',{seconds:secondsRemaining})}`:''}</Text>:null}
-      <DungeonRouteChoices options={run.options} mode={run.mode} phase={run.phase} busy={busy} onChoose={onChoose} myVotedNodeId={myVotedNodeId} selfVoter={selfVoter}/>
+      <DungeonRouteChoices options={run.options} mode={run.mode} phase={run.phase} busy={busy} onChoose={onChoose?chooseRoom:undefined} myVotedNodeId={myVotedNodeId} selfVoter={selfVoter}/>
      </View>:run.phase!=='resolving_node'&&!terminal?<FantasyPanel><Text style={s.copy}>{ct(language,'browse.resumeBody')}</Text></FantasyPanel>:null}
     {!(run.phase==='resolving_node'||bossNext||run.lastCombat)?<DungeonDisclosure title={st('Party & formation')}>
     <FantasyPanel variant="selected"><View style={s.summary}><View style={s.grow}><Text style={s.title}>{ct(language,'details.party')}</Text><Text style={s.copy}>{ct(language,'details.partyValue')}</Text></View><StateChip label={`Lv. ${run.syncedLevel}`} tone="success"/></View></FantasyPanel>
@@ -86,24 +115,39 @@ export function CoopRunOverview({language,run,myVotedNodeId,selfVoter,onBack,onC
     {run.bossMechanic?<FantasyPanel variant={run.bossMechanic.tone==='danger'?'danger':run.bossMechanic.tone==='benefit'?'success':'selected'}><View style={s.mechanicHead}><View style={s.grow}><Text style={s.title}>Final Boss Reaction · {run.bossMechanic.label}</Text><Text style={s.copy}>{run.bossMechanic.summary}</Text></View><StateChip label={run.bossMechanic.tone==='danger'?st("DANGER"):run.bossMechanic.tone==='benefit'?st("ADVANTAGE"):st("MIXED")} tone={run.bossMechanic.tone==='danger'?'danger':run.bossMechanic.tone==='benefit'?'success':'warning'}/></View></FantasyPanel>:null}
     <SeasonalBossTelegraphPanel mechanic={run.bossMechanic} recap={run.bossRecap} showPlan={bossNext}/>
     {run.mode==='live'&&onChatSend?<DungeonDisclosure title={st('Party Chat')}><CoopPartyChat messages={chatMessages} busy={busy} onSend={onChatSend}/></DungeonDisclosure>:null}
-    {terminal?<TerminalRunMoment phase={run.phase} rewardsReady={rewardSurfaceReady} rewardsSecured={rewardsSecured} reduceMotion={reduceMotion}/>:null}
     {!!notice&&<Text accessibilityRole="alert" style={s.copy}>{notice}</Text>}
-    {run.phase==='resolving_node'&&<FantasyPanel><Text style={s.copy}>{secondsRemaining!==undefined?st('Battle resolves in {seconds}s',{seconds:secondsRemaining}):st("Your party is resolving this room. Progress is saved online.")}</Text></FantasyPanel>}
+    {run.phase==='resolving_node'&&<FantasyPanel><Text style={s.copy}>{st('Battle in progress · Results are saved online.')}</Text></FantasyPanel>}
 
-    {rewards.map(reward=><FantasyPanel key={reward.id} variant="success">{reward.claimed_at?<View style={s.actionArea}>
- <Text style={s.title}>{reward.reward_json.marks??0} {st("Expedition Marks collected.")}</Text>
- {reward.reward_json.live_fellowship_bonus?<Text style={s.copy}>{st("Live Fellowship bonus: +{marks} Marks",{marks:reward.reward_json.live_fellowship_bonus})}</Text>:null}
- {reward.reward_json.failure_consolation_applied?<Text style={s.copy}>{st("Consolation reward · No enhanced charge spent.")}</Text>:null}
- {reward.reward_json.reward_charges_remaining!==undefined&&reward.reward_json.weekly_enhanced_remaining!==undefined?<Text style={s.copy}>{st("Enhanced: {charges} charges · {weekly} weekly rewards left",{charges:reward.reward_json.reward_charges_remaining,weekly:reward.reward_json.weekly_enhanced_remaining})}</Text>:null}
- </View>:<GameButton title={st("Collect expedition reward")} disabled={busy} onPress={()=>onClaim?.(reward.id)}/>}</FantasyPanel>)}
-    {terminalAction?<FantasyPanel variant="success">{terminalAction.claimed?<View style={s.claimedReward}><StateChip label={st("SECURED")} tone="success"/><Text style={s.copy}>{terminalAction.completeText??'Seasonal expedition reward collected.'}</Text></View>:<GameButton title={terminalAction.label} disabled={busy} onPress={terminalAction.onPress}/>}</FantasyPanel>:null}
     {run.rewardText?<FantasyPanel variant="success"><Text style={s.title}>{ct(language,'details.reward')}</Text><Text style={s.copy}>{run.rewardText}</Text></FantasyPanel>:null}
-    {terminal?<GameButton title={rewardsSecured?st("Return to dungeon list"):st("Leave expedition")} tone="secondary" disabled={busy} onPress={onBack}/>:null}
+    {terminal?<GameButton title={st('View rewards')} tone="secondary" disabled={busy} onPress={()=>setRewardOpen(true)}/>:null}
   </ExpeditionScreenShell>
-   {inCombat&&theaterOpen?<CombatTheaterModal visible tone={seasonal?'event':'dungeon'} onClose={()=>setTheaterOpen(false)} title={combatName} eyebrow={st('DUNGEON COMBAT')} subtitle={modeLabel} reduceMotion={reduceMotion}>
-    <DungeonCombatStage run={run} seasonal={seasonal} eventName={eventName} reduceMotionSetting={reduceMotion} boss={bossNext||run.lastCombat?.nodeId==='boss'} enemyLabel={(bossNext||run.lastCombat?.nodeId==='boss')?run.bossMechanic?.telegraph?.bossName:undefined}/>
+   {terminal?<Modal visible={rewardOpen&&!theaterOpen} transparent animationType={reduceMotion?'none':'fade'} onRequestClose={()=>setRewardOpen(false)}>
+    <View style={s.rewardOverlay}>
+     <ScrollView style={s.rewardDialog} contentContainerStyle={s.rewardContent} showsVerticalScrollIndicator={false} showsHorizontalScrollIndicator={false}>
+      <TerminalRunMoment phase={run.phase} rewardsReady={rewardSurfaceReady} rewardsSecured={rewardsSecured} reduceMotion={reduceMotion}/>
+      {!rewardSurfaceReady?<Text style={s.copy}>{st("Preparing expedition rewards. You can retry if they have not appeared yet.")}</Text>:null}
+      {rewards.map(reward=><View key={reward.id} style={s.rewardRow}>
+       <View style={s.summary}><View style={s.rewardCurrencyIcon}><Text style={s.rewardCurrencyMark}>⬡</Text></View><View style={s.grow}><Text style={s.rewardRowTitle}>{st("Expedition Marks")}</Text><Text style={s.rewardRowAmount}>+{reward.reward_json.marks??0}</Text>
+       {reward.reward_json.live_fellowship_bonus?<Text style={s.copy}>{st("Live Fellowship bonus: +{marks} Marks",{marks:reward.reward_json.live_fellowship_bonus})}</Text>:null}
+       {reward.reward_json.failure_consolation_applied?<Text style={s.copy}>{st("Consolation reward · No enhanced charge spent.")}</Text>:null}
+        {reward.reward_json.reward_charges_remaining!==undefined&&reward.reward_json.weekly_enhanced_remaining!==undefined?<Text style={s.copy}>{st("Enhanced: {charges} charges · {weekly} weekly rewards left",{charges:reward.reward_json.reward_charges_remaining,weekly:reward.reward_json.weekly_enhanced_remaining})}</Text>:null}
+       </View><StateChip label={reward.claimed_at?st("CLAIMED"):st("READY")} tone={reward.claimed_at?'success':'selected'}/></View>
+       {!reward.claimed_at?<GameButton title={st("Claim rewards")} disabled={busy||!onClaim} onPress={()=>onClaim?.(reward.id)}/>:null}
+      </View>)}
+      {terminalAction?<View style={s.rewardRow}>{terminalAction.claimed?<View style={s.claimedReward}><StateChip label={st("CLAIMED")} tone="success"/><Text style={s.copy}>{terminalAction.completeText??st("Seasonal reward collected.")}</Text></View>:<GameButton title={terminalAction.label} disabled={busy} onPress={terminalAction.onPress}/>}</View>:null}
+      {run.rewardText?<Text style={s.copy}>{run.rewardText}</Text>:null}
+      {!!notice?<Text accessibilityRole="alert" style={s.copy}>{notice}</Text>:null}
+      {rewardsSecured&&run.phase==='completed'&&run.mode==='live'&&onPartyRematch?<GameButton title={st('Rematch with this party')} disabled={busy} onPress={()=>{setRewardOpen(false);onPartyRematch();}}/>:null}
+      {rewardsSecured&&onQueueAgain?<GameButton title={onQueueAgain.label} disabled={busy} onPress={onQueueAgain.onPress}/>:null}
+      {!rewardSurfaceReady&&onRefresh?<GameButton title={st("Refresh rewards")} tone="secondary" disabled={busy} onPress={onRefresh}/>:null}
+      <GameButton title={st("Return to dungeon list")} tone="secondary" disabled={busy} onPress={onBack}/>
+     </ScrollView>
+    </View>
+   </Modal>:null}
+   {theaterOpen?<CombatTheaterModal visible tone={seasonal?'event':'dungeon'} onClose={()=>{setTheaterOpen(false);if(terminal)setRewardOpen(true);}} title={combatName} eyebrow={st('DUNGEON COMBAT')} subtitle={modeLabel} reduceMotion={reduceMotion}>
+    {enteringCombat?<View style={s.battlePrelude} accessibilityLiveRegion="polite"><Text style={s.preludeIcon}>⚔</Text><Text style={s.preludeTitle}>{st("Entering battle")}</Text><Text style={s.copy}>{st("Preparing the encounter…")}</Text></View>:<DungeonCombatStage run={run} onPresentationComplete={terminal?()=>{setTheaterOpen(false);setRewardOpen(true);}:undefined} seasonal={seasonal} eventName={eventName} reduceMotionSetting={reduceMotion} boss={Boolean((run.pendingCombat??run.lastCombat)?.combatants?.some(member=>member.boss))} enemyLabel={run.bossMechanic?.telegraph?.bossName}/>}
    </CombatTheaterModal>:null}
   </>;
 }
 
-const makeStyles=(coopColors:CoopColors)=>StyleSheet.create({actionArea:{gap:8},terminal:{gap:coopSpacing.sm,padding:coopSpacing.md,borderWidth:1,borderColor:coopColors.gold,backgroundColor:coopColors.surfaceRaised},terminalHead:{flexDirection:'row',alignItems:'center',gap:coopSpacing.sm},terminalEyebrow:{...coopTypography.meta,fontWeight:'900',letterSpacing:.8},terminalSuccess:{color:coopColors.success},terminalDanger:{color:coopColors.danger},terminalTitle:{...coopTypography.section,color:coopColors.text,fontWeight:'900'},claimedReward:{flexDirection:'row',alignItems:'center',gap:coopSpacing.sm},banner:{flexDirection:'row',alignItems:'center',gap:coopSpacing.sm},phase:{...coopTypography.meta,color:coopColors.textSecondary,textTransform:'capitalize',flex:1},summary:{flexDirection:'row',alignItems:'center',gap:coopSpacing.sm},grow:{flex:1,minWidth:0},section:{...coopTypography.section,color:coopColors.gold,marginTop:coopSpacing.xs},title:{...coopTypography.section,color:coopColors.text},copy:{...coopTypography.body,color:coopColors.textSecondary},party:{flexDirection:'row',flexWrap:'wrap',gap:coopSpacing.sm},member:{width:'48%',flexGrow:1},name:{...coopTypography.body,color:coopColors.text,fontWeight:'800'},className:{...coopTypography.meta,color:coopColors.cyan},memberMeta:{flexDirection:'row',flexWrap:'wrap',gap:coopSpacing.xs},option:{minHeight:64,flexDirection:'row',alignItems:'center',gap:coopSpacing.md},encounterIntel:{marginTop:3,flexDirection:'row',alignItems:'center',gap:5},encounterIntelLabel:{fontSize:7,lineHeight:9,color:coopColors.cyan,fontWeight:'900',letterSpacing:.45},encounterIntelCopy:{flex:1,fontSize:8,lineHeight:10,color:coopColors.textMuted,fontWeight:'800'},mechanicHead:{flexDirection:'row',alignItems:'flex-start',gap:coopSpacing.sm},meterTrack:{height:6,borderRadius:999,overflow:'hidden',backgroundColor:coopColors.surfaceRaised},meterFill:{height:'100%',borderRadius:999,backgroundColor:coopColors.cyan}});
+const makeStyles=(coopColors:CoopColors)=>StyleSheet.create({actionArea:{gap:8},battlePrelude:{minHeight:300,justifyContent:'center',alignItems:'center',gap:14,padding:24},preludeIcon:{fontSize:46,color:coopColors.gold},preludeTitle:{...coopTypography.section,color:coopColors.text,fontWeight:'900'},rewardOverlay:{flex:1,justifyContent:'center',padding:16,backgroundColor:'rgba(0,0,0,.84)'},rewardDialog:{maxHeight:'88%',flexGrow:0,borderRadius:16,borderWidth:1,borderColor:coopColors.goldDim,backgroundColor:coopColors.background},rewardContent:{gap:12,padding:16},rewardRow:{gap:8,padding:10,borderWidth:1,borderColor:coopColors.goldDim,borderRadius:10,backgroundColor:coopColors.surfaceRaised},terminal:{gap:6,paddingVertical:coopSpacing.md,paddingHorizontal:coopSpacing.sm,alignItems:"center"},rewardCrest:{width:48,height:48,borderRadius:24,borderWidth:1,alignItems:"center",justifyContent:"center",marginBottom:6},rewardCrestSuccess:{borderColor:coopColors.success,backgroundColor:coopColors.selection},rewardCrestFailure:{borderColor:coopColors.danger,backgroundColor:coopColors.surfaceRaised},rewardCrestText:{fontSize:24,fontWeight:"800"},terminalDescription:{...coopTypography.meta,color:coopColors.textMuted,textAlign:"center",marginTop:4},rewardCurrencyIcon:{width:40,height:40,borderRadius:10,borderWidth:1,borderColor:coopColors.goldDim,alignItems:"center",justifyContent:"center",backgroundColor:coopColors.surface},rewardCurrencyMark:{fontSize:23,color:coopColors.warning},rewardRowTitle:{...coopTypography.meta,fontWeight:"700",color:coopColors.text},rewardRowAmount:{...coopTypography.section,color:coopColors.text,fontWeight:"900"},terminalHead:{flexDirection:'row',alignItems:'center',gap:coopSpacing.sm},terminalEyebrow:{...coopTypography.meta,fontWeight:'900',letterSpacing:.8,textAlign:'center'},terminalSuccess:{color:coopColors.success},terminalDanger:{color:coopColors.danger},terminalTitle:{...coopTypography.section,color:coopColors.text,fontWeight:'900',textAlign:'center'},claimedReward:{flexDirection:'row',alignItems:'center',gap:coopSpacing.sm},banner:{flexDirection:'row',alignItems:'center',gap:coopSpacing.sm},phase:{...coopTypography.meta,color:coopColors.textSecondary,textTransform:'capitalize',flex:1},summary:{flexDirection:'row',alignItems:'center',gap:coopSpacing.sm},grow:{flex:1,minWidth:0},section:{...coopTypography.section,color:coopColors.gold,marginTop:coopSpacing.xs},title:{...coopTypography.section,color:coopColors.text},copy:{...coopTypography.body,color:coopColors.textSecondary},party:{flexDirection:'row',flexWrap:'wrap',gap:coopSpacing.sm},member:{width:'48%',flexGrow:1},name:{...coopTypography.body,color:coopColors.text,fontWeight:'800'},className:{...coopTypography.meta,color:coopColors.cyan},memberMeta:{flexDirection:'row',flexWrap:'wrap',gap:coopSpacing.xs},option:{minHeight:64,flexDirection:'row',alignItems:'center',gap:coopSpacing.md},encounterIntel:{marginTop:3,flexDirection:'row',alignItems:'center',gap:5},encounterIntelLabel:{fontSize:7,lineHeight:9,color:coopColors.cyan,fontWeight:'900',letterSpacing:.45},encounterIntelCopy:{flex:1,fontSize:8,lineHeight:10,color:coopColors.textMuted,fontWeight:'800'},mechanicHead:{flexDirection:'row',alignItems:'flex-start',gap:coopSpacing.sm},meterTrack:{height:6,borderRadius:999,overflow:'hidden',backgroundColor:coopColors.surfaceRaised},meterFill:{height:'100%',borderRadius:999,backgroundColor:coopColors.cyan}});

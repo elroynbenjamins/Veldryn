@@ -5,7 +5,7 @@ const root=path.resolve(__dirname,'..');
 const read=p=>fs.readFileSync(path.join(root,p),'utf8');
 const overview=read('src/components/coop/CoopRunOverview.tsx');
 const choices=read('src/components/coop/DungeonRouteChoices.tsx');
-assert(overview.includes('<DungeonRouteChoices options={run.options} mode={run.mode} phase={run.phase} busy={busy} onChoose={onChoose} myVotedNodeId={myVotedNodeId} selfVoter={selfVoter}/>'),'Dungeon run renders shared actionable room choices and the player vote identity');
+assert(overview.includes('<DungeonRouteChoices options={run.options} mode={run.mode} phase={run.phase} busy={busy} onChoose={onChoose?chooseRoom:undefined} myVotedNodeId={myVotedNodeId} selfVoter={selfVoter}/>'),'Dungeon run wraps one-tap choices to show a battle-entry transition while retaining player vote identity');
 assert(!overview.includes('run.options.map(option=><FantasyPanel'),'Old per-room text panels are removed');
 assert(choices.includes('onPress={()=>onChoose?.(option.nodeId)}'),'Room tap uses the existing authoritative choose/vote callback');
 assert(choices.includes("phase==='awaiting_choice'&&!busy"),'Busy and non-choice phases cannot submit votes');
@@ -15,6 +15,6 @@ assert(choices.includes("option.votes??0"),'Server-owned Live vote counts remain
 assert(choices.includes('IdentityArtwork name={selfVoter.name}'),'The player icon marks only the route they actually voted for');
 assert(choices.includes('myVotedNodeId===option.nodeId'),'Voted-route highlight depends on a confirmed vote for this route');
 assert(choices.includes("option.encounterPreview?.summary"),'Existing encounter preview remains readable');
-assert(choices.includes("size=\"room\""),'Illustrated room cards use large authored room artwork');
+assert(choices.includes("size=\"thumbnail\"")&&choices.includes("minHeight:88"),'Room cards use compact thumbnails and one-tap targets');
 assert(!choices.includes('<GameButton'),'No duplicate Choose/Vote button is rendered under each room');
 console.log('PASS: dungeon room cards are image-led, one-tap, server-vote safe and readable');

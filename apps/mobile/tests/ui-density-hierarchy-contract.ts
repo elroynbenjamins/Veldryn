@@ -173,7 +173,14 @@ ok(appMastery.includes('preparationNotices[0].message')&&appMastery.includes('pr
 ok(appMastery.includes('actionLabel={preparationNotices[0].actionLabel}')&&appMastery.includes('openPreparationNotice(preparationNotices[0])'),'Preparation feedback must provide a one-tap action for the exact current next step');
 ok(appMastery.includes("notice.kind==='complete'||!notice.destination||notice.destination.kind==='info'")&&appMastery.includes('openWorkingTowardDestination(notice.destination)'),'Preparation notice actions must route completion to Working Toward and live steps through canonical deep-link navigation');
 ok(appMastery.includes('preparationNotices.length||collected||forgeResults'),'Mastery feedback must wait behind preparation feedback and higher-priority reward/reveal surfaces');
-ok(appMastery.includes("forgeResults?.some(isExceptionalForgeResult)")&&read('src/components/ForgeResultFeedback.tsx').includes("result.qualityProc&&(result.rarity==='epic'||result.rarity==='legendary'||result.rarity==='mythic')"),'Mastery feedback must defer only behind an exceptional Epic-or-higher Forge reveal');
+// A pending reveal must block Mastery feedback. Current Forge UX reserves its
+// large reveal for retained Legendary/Mythic gear; older branches used Epic+
+// rarity-upgrade reveals until the claim-flow consolidation was merged.
+const forgeResultSource=read('src/components/ForgeResultFeedback.tsx');
+ok(appMastery.includes("forgeResults?.some(isExceptionalForgeResult)")&&(
+ forgeResultSource.includes("result.autoSold!=='incoming'&&(result.rarity==='legendary'||result.rarity==='mythic')")||
+ forgeResultSource.includes("result.qualityProc&&(result.rarity==='epic'||result.rarity==='legendary'||result.rarity==='mythic')")
+),'Mastery feedback must defer behind the actual exceptional Forge reveal without reopening auto-sold results');
 
 const snapshot=read('src/components/SkillDashboard.tsx');
 ok(snapshot.includes('.slice(0,5)'),'Home skill snapshot must show only the five strongest non-combat skills');
@@ -292,7 +299,7 @@ ok(appShell.includes('<SafeAreaProvider>'),'App root must provide safe-area metr
 ok(appShell.includes("import {SafeAreaProvider,SafeAreaView} from 'react-native-safe-area-context';"),'App shell must use cross-platform safe-area handling instead of React Native core SafeAreaView');
 ok(appShell.includes("edges={['top','left','right']}"),'Main app shell must leave the bottom inset to persistent navigation instead of double-padding it');
 ok(appShell.includes('buildQuickNavigationBadges')&&appShell.includes("row.kind!=='reward_ready'&&row.kind!=='weekly_order_complete'"),'Primary nav must avoid misleading Home/Contract claim dots while quick navigation routes those notices exactly');
-ok(packageJson.includes('"react-native-safe-area-context": "~5.7.0"'),'Expo 57 safe-area dependency must stay on the SDK-compatible line');
+ok(packageJson.includes('"react-native-safe-area-context": "~5.10.1"'),'Expo 58 safe-area dependency must stay on the SDK-compatible line');
 ok(!topBar.includes('StatusBar.currentHeight')&&!topBar.includes('NativeStatusBar'),'Edge-to-edge top bar must rely on the app-shell safe area instead of manually adding Android status-bar height');
 const startupScreen=read('src/components/StartupScreen.tsx');
 ok(startupScreen.includes("from 'react-native-safe-area-context'")&&!startupScreen.includes('StatusBar.currentHeight'),'Startup screen must use real safe-area insets under mandatory Android edge-to-edge');
@@ -347,8 +354,9 @@ ok(rankings.includes("podiumGrid:{flexDirection:'column'")&&rankings.includes("p
 ok(milestoneFeed.includes("stackToolbar=width<370||fontScale>=1.2")&&milestoneFeed.includes("s.filterButtonStack"),"Public milestone toolbar must wrap when device text or viewport is narrow");
 ok(activityOverview.includes('showDeleteDetails')&&activityOverview.includes('Read full deletion details')&&activityOverview.includes('characterDeleteConfirmation'),"Character deletion must provide both concise and complete consequences before typed confirmation");
 const mobileRouter=read('App.tsx');
-ok(mobileRouter.includes("tab==='AdventurersJournal'&&<AdventurersJournalScreen")&&mobileRouter.includes("tab==='Bestiary'&&<BestiaryScreen")&&mobileRouter.includes("tab==='WorldMilestones'&&<WorldMilestoneFeedScreen"),"Read-only Journal, Bestiary and World Milestones must mount from Account");
-ok(account.includes("items:['Activity','Profile','NewUnlocks','AdventurersJournal'")&&account.includes("'WorldMilestones'"),"Read-only progression and World Milestones must be discoverable in Account");
+ok(mobileRouter.includes("tab==='AdventurersJournal'&&<AdventurersJournalScreen")&&mobileRouter.includes("tab==='Bestiary'&&<BestiaryScreen")&&mobileRouter.includes("tab==='WorldMilestones'&&<WorldMilestoneFeedScreen"),"Read-only progression and World Milestones routes must remain available for a future re-enable");
+ok(account.includes("items:['Activity','Profile','NewUnlocks','AdventurersJournal'"),"Journal and Bestiary must stay discoverable in Account");
+ok(account.includes("items:['Party','Recruitment','Friends','Guild','Arena','Rankings']}")&&!account.includes("items:['Party','Recruitment','Friends','Guild','Arena','Rankings','WorldMilestones']"),"World Milestones button is hidden from Account Social & Competition until re-enabled");
 ok(mobileRouter.includes("RANKINGS_RELEASED&&tab==='Rankings'")&&!mobileRouter.includes("tab==='Achievements'&&"),"Unfinished Achievements and Rankings must remain release-gated");
 const rewardsScreen=read('src/screens/RewardsInboxScreen.tsx');
 ok(rewardsScreen.includes("accountText(language,text,params)")&&rewardsScreen.includes("label={a('Claim reward')}")&&rewardsScreen.includes("a('Claimed history')"),"Rewards Inbox must translate claims, tabs and feedback");
@@ -366,16 +374,19 @@ const eventTrail=read('src/components/EventRewardTrail.tsx');
 ok(event.includes('<EventRewardTrail')&&eventTrail.includes('<GameButton compact title={pending?')&&eventTrail.includes('{ready?<GameButton'),"Event trail must show compact full-width claim actions only for earned, unclaimed rewards");
 ok(event.includes("(['Overview','Activities','Shop','Rewards'] as Tab[])")&&event.includes('tab===\'Activities\'')&&event.includes('tab===\'Shop\'')&&event.includes('tab===\'Rewards\''),'Event navigation must split overview, activities, shop and rewards into separate mobile workloads');
 
-const quests=read('src/screens/QuestScreen.tsx');
+const quests=read('src/screens/QuestRefinedScreen.tsx');
 const questModes=read('src/components/QuestModeSwitch.tsx');
-ok(quests.includes("mode==='story'")&&quests.includes("mode==='contracts'")&&quests.includes("mode==='challenges'"),'Quest screen must render Story, Contract Board and Class Challenges as separate workloads instead of one long feed');
-ok(quests.includes('<QuestModeSwitch')&&questModes.includes("accessibilityRole=\"tablist\"")&&questModes.includes("accessibilityRole=\"tab\""),'Quest modes must use one compact accessible three-tab switch');
-ok(questModes.includes('minHeight:66')&&questModes.includes('flex:1,minWidth:0'),"Quest mode tabs must stay compact and share narrow mobile width safely");
-ok(quests.includes('focusedWeeklyOrderId')&&quests.includes('label={t("FOCUSED")}')&&quests.includes("Number(b.id===focusedOrderId)-Number(a.id===focusedOrderId)"),"Contract Board deep links must promote the focused weekly job to the top");
-ok(quests.includes('focusedOrderMissing')&&quests.includes('board refreshed'),'Stale Contract Board deep links must fail visibly after weekly rollover');
-ok(quests.includes("challengePeriod")&&quests.includes("['all','daily','weekly','monthly']"),'Class Challenges must support compact cadence filtering');
-ok(quests.includes("Number(b.progress>=b.required)-Number(a.progress>=a.required)"),'Claimable Class Challenges must sort ahead of incomplete rows');
-ok(quests.includes('<GameButton compact title={locked?')&&quests.includes('if(!locked)onOpenOrder(order)'),"Contract Board utility actions must remain compact");
+ok(read('App.tsx').includes('QuestRefinedScreen as QuestScreen'),'App Quests route must mount the approved compact quest screen');
+ok(quests.includes("mode==='story'")&&quests.includes("mode==='contracts'")&&quests.includes("mode==='challenges'"),'Quest screen must render Story, Contract Board and Class Challenges as separate workloads');
+ok(quests.includes('<QuestModeSwitch')&&questModes.includes('accessibilityRole="tablist"')&&questModes.includes('accessibilityRole="tab"'),'Quest modes must use one compact accessible three-tab switch');
+ok(questModes.includes('minHeight:50')&&questModes.includes('flex:1,minWidth:0'),'Quest mode tabs must retain compact 50-point height and safely share narrow mobile width');
+ok(quests.includes("focusedWeeklyOrderId&&mode==='contracts'")&&quests.includes('Number(b.id===focusedWeeklyOrderId)-Number(a.id===focusedWeeklyOrderId)'),'Contract Board deep links must open and promote the focused job');
+ok(quests.includes('Your focused weekly job expired. Showing the latest board.'),'Stale Contract Board deep links must fail visibly after weekly rollover');
+ok(quests.includes("challengePeriod==='all'||challengePeriod===period")&&quests.includes("id:'daily'")&&quests.includes("id:'weekly'")&&quests.includes("id:'monthly'"),'Class Challenges must support compact daily/weekly/monthly filtering');
+ok(quests.includes('Number(b.progress>=b.required)-Number(a.progress>=a.required)'),'Claimable Class Challenges must sort ahead of incomplete rows');
+ok(quests.includes('weeklyOrderLockReason(state,chosenOrder)')&&quests.includes('onQueueWeeklyOrder(chosenOrder)')&&quests.includes('onStopWeeklyOrder(chosenOrder)'),'Contract Board action sheet must retain safe queue, stop and unlock behavior');
+ok(quests.includes('GameModalSurface')&&quests.includes("sheetStage==='confirm'")&&quests.includes("sheetStage==='success'"),'Quest detail sheet must confirm claims and celebrate server-verified rewards');
+
 const questApp=read('App.tsx');
 ok(questApp.includes("const [questMode,setQuestMode]=useState<QuestMode>('story')")&&questApp.includes("openQuestMode('contracts'"),'App routing must preserve explicit Story/Contract destinations');
 ok(questApp.includes("focusedWeeklyOrderId={questFocusOrderId}")&&questApp.includes("onOpenContracts={order=>openQuestMode('contracts',order?.id)}"),'World regional Contract links must open the Contract Board with the exact job focused');

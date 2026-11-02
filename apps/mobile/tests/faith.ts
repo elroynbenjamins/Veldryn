@@ -24,7 +24,8 @@ test('Holy Water source strength scales with regional Faith progression',()=>{
  equal(HOLY_WATER_SOURCES.length,6,'six dedicated sources');
  const projected=HOLY_WATER_SOURCES.map(source=>{const monster=MONSTERS.find(x=>x.id===source.monsterId)!;const drop=monster.drops.find(x=>x.itemId===HOLY_WATER_ID)!;const pace=combatBaselineProjection(monster);return {source,drop,perHour:dropExpectation(drop.chance,drop.min,drop.max,pace.killsPerHour).expectedQuantityPerHour};});
  ok(projected[0].perHour>=50,'starter Faith source should provide at least ~50 Water/hour baseline');
- for(const row of projected.slice(3))ok(row.perHour>=80,'regional Faith source should provide at least ~80 Water/hour baseline');
+ // Stronger late-region enemies take 20% longer; existing per-kill Holy Water odds stay unchanged.
+ for(const row of projected.slice(3))ok(row.perHour>=65,'regional Faith source should provide at least ~65 Water/hour after the difficulty increase');
  ok(projected[0].drop.max===2&&projected.at(-1)!.drop.max===10,'later sources must award larger Water stacks than the starter source');
 });
 test('practice reserves Inventory before Bank and grants no free XP at start',()=>{let s=water(fresh(),1);s.bank.stacks=[{itemId:HOLY_WATER_ID,quantity:9}];const n=startFaithPractice(s,'FAITH_QUIET',5,T);equal(qty(n,HOLY_WATER_ID),5,'five reserved');equal(n.activity!.kind,'faith','activity');equal(n.skills,s.skills,'no xp');equal(n.activity!.faithPractice!.remainingPractices,5,'five');});

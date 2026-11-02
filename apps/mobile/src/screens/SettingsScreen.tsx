@@ -1,16 +1,14 @@
 import {accountText,accountDuration} from '../i18n/account';
 import {appBuildText} from '../i18n/app-build';
 import {APP_BUILD_INFO} from '../app-build';
-import type {Language} from '../i18n/languages';
 import {useEffect,useMemo,useRef,useState} from 'react';
-import {Linking,Pressable,ScrollView,StyleSheet,Text,TextInput,View,useWindowDimensions} from 'react-native';
+import {Linking,Pressable,ScrollView,StyleSheet,Text,View,useWindowDimensions,type ScrollViewInstance} from 'react-native';
 import {GameButton} from '../components/GameButton';
 import {ConfirmModal} from '../components/ConfirmModal';
 import {SettingToggle} from '../components/SettingToggle';
 import {Panel} from '../components/Panel';
 import {DeveloperTools} from '../components/DeveloperTools';
 import {OnlineAccountPanel} from '../components/OnlineAccountPanel';
-import {GooglePlayCommercePanel} from '../components/GooglePlayCommercePanel';
 import {SaveTransferPanel} from '../components/SaveTransferPanel';
 import {GameState} from '../core/types';
 import {typography,UI_THEMES,equipmentTheme,type ThemeColors,type UiThemeId} from '../theme/theme';
@@ -37,52 +35,38 @@ type Props={
   onChange:(next:GameState)=>void;
   /** Legacy caller compatibility; activity Stop is available on the activity bar instead. */
   onStopActivity?:()=>Promise<void>;
-  onRefreshCommerce?:(expectedAccountId:string)=>Promise<void>;
   onExport:()=>Promise<void>;
   onImport:(raw:string)=>Promise<void>;
-  onRedeemCode?:(code:string)=>Promise<string|void>|string|void;
   onOpenCoopUiGallery?:()=>void;
 };
-// Legacy section IDs remain accepted for existing deep links; they share the Display screen.
+// Legacy section IDs remain accepted for existing navigation context; Store is now a separate Account destination.
 export type SettingsSection='gameplay'|'chat'|'display'|'appearance'|'accessibility'|'account'|'store'|'data'|'guide'|'developer';
-const normalizeSettingsSection=(value?:SettingsSection):SettingsSection=>value==='appearance'||value==='accessibility'?'display':value??'account';
+const normalizeSettingsSection=(value?:SettingsSection):SettingsSection=>value==='appearance'||value==='accessibility'?'display':value==='store'?'account':value??'account';
 const PRIVACY_POLICY_URL='https://elroynbenjamins.github.io/veldryn/privacy/';
 const openExternal=(url:string)=>{void Linking.openURL(url)};
 function SettingChip({label,selected,onPress}:{label:string;selected:boolean;onPress:()=>void}){const C=useGameTheme(),s=useMemo(()=>makeStyles(C),[C]);return <Pressable accessibilityRole="button" accessibilityState={{selected}} onPress={onPress} style={({pressed})=>[s.chip,selected&&s.chipSelected,pressed&&s.pressed]}><Text style={[s.chipText,selected&&s.chipTextSelected]}>{selected?'✓ ':''}{label}</Text></Pressable>}
 function ThemeChoice({id,selected,onPress}:{id:UiThemeId;selected:boolean;onPress:()=>void}){
 const C=useGameTheme(),s=useMemo(()=>makeStyles(C),[C]),p=UI_THEMES[id];return <Pressable accessibilityRole="button" accessibilityLabel={p.name} accessibilityState={{selected}} onPress={onPress} style={({pressed})=>[s.themeChoice,{backgroundColor:p.panel,borderColor:selected?p.selectionLine:p.line},pressed&&s.pressed]}><View style={s.themeChoiceHead}><View style={s.flex}><Text style={[s.themeChoiceName,{color:p.text}]}>{p.name}</Text></View>{selected?<Text style={[s.themeCheck,{color:p.selectionLine}]}>✓</Text>:null}</View><View style={s.swatches}>{[p.bg,p.panelRaised,p.accent,p.selectionLine,p.good,p.bad].map((color,index)=><View key={index} style={[s.swatch,{backgroundColor:color,borderColor:p.line}]}/>)}</View></Pressable>}
 
-function RedeemCodePanel({language,onRedeemCode}:{language:Language;onRedeemCode?:Props['onRedeemCode']}){
- const a=(text:string,params?:Record<string,string|number>)=>accountText(language,text,params),C=useGameTheme(),s=useMemo(()=>makeStyles(C),[C]);
- const [code,setCode]=useState(''),[status,setStatus]=useState(''),[busy,setBusy]=useState(false);
- const redeem=async()=>{
-  const normalized=code.trim().toUpperCase();if(!normalized||busy)return;setStatus('');setBusy(true);
-  try{const result=onRedeemCode?await onRedeemCode(normalized):a('Code redemption will be available when Live-Ops redemption is enabled.');setStatus(result??a('Code submitted.')) ;if(onRedeemCode)setCode('');}
-  catch(error){setStatus(error instanceof Error?error.message:a('Unable to redeem this code.'));}
-  finally{setBusy(false);}
- };
- return <Panel><Text style={[s.title,{color:C.text}]}>{a('Redeem code')}</Text><Text style={[s.sub,{color:C.muted}]}>{a('Enter a promotional code from an official VELDRYN announcement or event.')}</Text><View style={s.redeemRow}><TextInput accessibilityLabel={a('Redeem code')} autoCapitalize="characters" autoCorrect={false} value={code} onChangeText={value=>{setCode(value.replace(/\s/g,''));setStatus('')}} placeholder={a('ENTER CODE')} placeholderTextColor={C.muted} style={[s.codeInput,{color:C.text,borderColor:C.line,backgroundColor:C.inputBg}]}/><GameButton compact title={busy?a('Checking…'):a('Redeem')} disabled={!code.trim()||busy} onPress={()=>redeem()}/></View>{status?<Text accessibilityLiveRegion="polite" style={[s.redeemStatus,{color:onRedeemCode?C.info:C.muted}]}>{status}</Text>:null}</Panel>;
-}
-
-export function SettingsScreen({state,onLanguage,onReset,onChange,onRefreshCommerce,onExport,onImport,onRedeemCode,onOpenCoopUiGallery,onOpenUpdates,initialSection,onSectionChange,onNavigateGuide,onStartMainScreenTour,online=false}:Props){
+export function SettingsScreen({state,onLanguage,onReset,onChange,onExport,onImport,onOpenCoopUiGallery,onOpenUpdates,initialSection,onSectionChange,onNavigateGuide,onStartMainScreenTour,online=false}:Props){
  const language=state.settings.language;
  const a=(text:string,params?:Record<string,string|number>)=>accountText(language,text,params);
 
   const theme=useGameTheme(),s=useMemo(()=>makeStyles(theme),[theme]);
   const [selectedSection,setSelectedSection]=useState<SettingsSection>(normalizeSettingsSection(initialSection));
   const setSection=(next:SettingsSection)=>{const normalized=normalizeSettingsSection(next);setSelectedSection(normalized);onSectionChange?.(normalized);};
-  // Respect deep links from the Account hub (notably the dedicated Store button).
+  // Respect deep links to Settings while normalizing retired section IDs.
   useEffect(()=>{setSelectedSection(normalizeSettingsSection(initialSection));},[initialSection]);
   const [guideId,setGuideId]=useState<GameGuideId>();
   const [showAfkDetails,setShowAfkDetails]=useState(false),[showEmotes,setShowEmotes]=useState(false),[showDeleteControls,setShowDeleteControls]=useState(false);
-  const [confirmDefaults,setConfirmDefaults]=useState(false),[confirmDelete,setConfirmDelete]=useState(false),[showPromoCode,setShowPromoCode]=useState(false);
+  const [confirmDefaults,setConfirmDefaults]=useState(false),[confirmDelete,setConfirmDelete]=useState(false);
   const {width}=useWindowDimensions(),phone=width<768;
   const section=selectedSection;
   const navigationStyles=useMemo(()=>makeNavigationStyles(theme),[theme]);
   const sections:SettingsSection[]=['account','gameplay','chat','display','data'];
-  const sectionLabel=(value:SettingsSection)=>value==='guide'?a('Help & Guide'):value==='data'?a('Data & Privacy'):value==='display'?a('Display'):value==='store'?a('Store'):a(value.charAt(0).toUpperCase()+value.slice(1));
-  const sectionDescription=(value:SettingsSection)=>value==='gameplay'?a('Combat and activity queue.'):value==='chat'?a('Chat dock, channels and emotes.'):value==='display'?a('Themes, numbers, motion and language.'):value==='account'?a('Account and sign-in.'):value==='store'?a('VIP, VIP+, Supporter and purchase restore.'):value==='data'?a('Backups and privacy.'):value==='guide'?a('Interactive game guides and tutorials.'):a('Development tools.');
-  const scrollRef=useRef<ScrollView>(null),scrollPositions=useRef<Record<string,number>>({}),restoredPage=useRef<string|undefined>(undefined);
+  const sectionLabel=(value:SettingsSection)=>value==='guide'?a('Help & Guide'):value==='data'?a('Data & Privacy'):value==='display'?a('Display'):a(value.charAt(0).toUpperCase()+value.slice(1));
+  const sectionDescription=(value:SettingsSection)=>value==='gameplay'?a('Combat and activity queue.'):value==='chat'?a('Chat dock, channels and emotes.'):value==='display'?a('Themes, numbers, motion and language.'):value==='account'?a('Account and sign-in.'):value==='data'?a('Backups and privacy.'):value==='guide'?a('Interactive game guides and tutorials.'):a('Development tools.');
+  const scrollRef=useRef<ScrollViewInstance>(null),scrollPositions=useRef<Record<string,number>>({}),restoredPage=useRef<string|undefined>(undefined);
   const pageKey=(phone?'phone:':'wide:')+(section??'index');
   const restoreScroll=()=>{if(restoredPage.current===pageKey)return;scrollRef.current?.scrollTo({y:scrollPositions.current[pageKey]??0,animated:false});restoredPage.current=pageKey;};
   const afk=offlineCapBreakdown(state),premiumRegionQueue=activityQueueCrossRegionAllowed(state);
@@ -97,9 +81,6 @@ export function SettingsScreen({state,onLanguage,onReset,onChange,onRefreshComme
       </Pressable>)}
     </View>
     <View style={navigationStyles.shortcutRow}>
-      <Pressable accessibilityRole="button" accessibilityLabel={a('Store')} accessibilityHint={sectionDescription('store')} accessibilityState={{selected:section==='store'}} onPress={()=>setSection('store')} style={({pressed})=>[navigationStyles.shortcut,section==='store'&&navigationStyles.shortcutSelected,pressed&&s.pressed]}>
-        <Text style={navigationStyles.shortcutText}>{a('Store')}</Text>
-      </Pressable>
       <Pressable accessibilityRole="button" accessibilityLabel={a('Help & Guide')} accessibilityState={{selected:section==='guide'}} onPress={()=>setSection('guide')} style={({pressed})=>[navigationStyles.shortcut,section==='guide'&&navigationStyles.shortcutSelected,pressed&&s.pressed]}>
         <Text style={navigationStyles.shortcutText}>{a('Help & Guide')}</Text>
       </Pressable>
@@ -111,10 +92,6 @@ export function SettingsScreen({state,onLanguage,onReset,onChange,onRefreshComme
 
     </Panel>
     <OnlineAccountPanel state={state}/></>}
-    {section==='store'&&<><GooglePlayCommercePanel state={state} online={online} onChange={onChange} onRefreshCommerce={onRefreshCommerce}/>
-      <Panel><Pressable accessibilityRole="button" accessibilityState={{expanded:showPromoCode}} onPress={()=>setShowPromoCode(value=>!value)} style={({pressed})=>[s.disclosure,pressed&&s.pressed]}><Text style={[s.settingLabel,{color:theme.text,marginTop:0}]}>{a('Redeem code')}</Text></Pressable></Panel>
-      {showPromoCode?<RedeemCodePanel language={language} onRedeemCode={onRedeemCode}/>:null}
-    </>}
     {section==='gameplay'&&<><Panel>
       <View style={s.afkBox}><View style={s.afkHead}><Text style={[s.settingLabel,{color:theme.text,marginTop:0}]}>{a("AFK reserve")}</Text><Text style={[s.afkValue,{color:theme.good}]}>{accountDuration(language,afk.hours*3600)}</Text></View><Pressable accessibilityRole="button" accessibilityState={{expanded:showAfkDetails}} onPress={()=>setShowAfkDetails(value=>!value)} style={({pressed})=>[s.disclosure,pressed&&s.pressed]}><Text style={s.disclosureLabel}>{a("AFK details")}</Text></Pressable>{showAfkDetails?<View style={s.detailStack}><Text style={[s.muted,{color:theme.muted}]}>{a('{base}h base · up to {free}h through progression · {max}h maximum',{base:afk.baseHours,free:afk.freeMaxHours,max:afk.maxHours})}</Text><Text style={[s.muted,{color:theme.muted}]}>{a("Earned milestones include class, quest, boss, guild and character-slot progression through slot #5.")}</Text><Text style={[s.afkPaid,{color:theme.info}]}>{a("Final +6h: VIP +2h · VIP+ +2h extra · Supporter +2h")}</Text></View>:null}</View>
       <Text style={[s.settingLabel,{color:theme.text}]}>{a("Auto-eat threshold")}</Text><View style={s.choices}>{([20,40,60,80] as const).map(threshold=><SettingChip key={threshold} label={a('{percent}% HP',{percent:threshold})} selected={state.settings.autoEatThresholdPct===threshold} onPress={()=>update({autoEatThresholdPct:threshold})}/>)}</View>
@@ -198,4 +175,4 @@ function makeNavigationStyles(C:ThemeColors){return StyleSheet.create({
   shortcutText:{...typography.caption,fontWeight:'800',color:C.text,flexShrink:1},
 });}
 
-function makeStyles(C:ThemeColors){const equipmentColors=equipmentTheme(C);return StyleSheet.create({root:{padding:14,gap:10},h:{...typography.hero,color:C.text},title:{...typography.title,color:C.text,marginBottom:5},sub:{color:C.muted,lineHeight:20,marginBottom:8},muted:{color:C.muted,lineHeight:19,opacity:.8},tabs:{gap:6,paddingRight:16},sectionHint:{...typography.caption,color:C.info,lineHeight:18},chip:{minHeight:44,paddingHorizontal:13,justifyContent:'center',borderWidth:1,borderColor:C.line,borderRadius:99,backgroundColor:C.bg},chipSelected:{borderColor:equipmentColors.selectedLine,backgroundColor:equipmentColors.selected},chipText:{fontSize:12,color:C.muted,fontWeight:'700'},chipTextSelected:{color:C.text},pressed:{opacity:.76},settingLabel:{...typography.bodyStrong,color:C.text,marginTop:8},choices:{flexDirection:'row',flexWrap:'wrap',gap:8},choice:{flexGrow:1,flexBasis:120,minWidth:120},largeChoice:{flexBasis:'100%' as const},languageGrid:{flexDirection:'row',flexWrap:'wrap',gap:8},languageChoice:{minWidth:96,flexGrow:1},flex:{flex:1},communityRow:{flexDirection:'row',alignItems:'center',gap:10},communityLabel:{...typography.caption,fontWeight:'900',letterSpacing:.8},communityText:{...typography.caption,lineHeight:17},chatSettings:{gap:10,paddingTop:8},disclosure:{minHeight:44,flexDirection:'row',alignItems:'center',gap:8,justifyContent:'space-between'},disclosureLabel:{...typography.caption,color:C.info,fontWeight:'700'},disclosureArrowOpen:{transform:[{rotate:'90deg'}]},detailStack:{gap:8,paddingTop:8,borderTopWidth:StyleSheet.hairlineWidth,borderTopColor:C.line},afkBox:{gap:4,padding:10,borderWidth:1,borderColor:C.line,borderRadius:10,backgroundColor:C.panel2},afkHead:{flexDirection:'row',alignItems:'center',justifyContent:'space-between',gap:8},afkValue:{...typography.title,fontWeight:'900'},afkPaid:{...typography.caption,fontWeight:'800',lineHeight:17},redeemRow:{flexDirection:'row',alignItems:'center',gap:8},codeInput:{flex:1,minHeight:44,borderWidth:1,borderRadius:10,paddingHorizontal:12,fontSize:15,fontWeight:'700',letterSpacing:1},redeemStatus:{...typography.caption,lineHeight:17,marginTop:6},footerLinks:{paddingTop:4,paddingBottom:10},themeList:{flexDirection:'row',gap:8},themeChoice:{flex:1,minWidth:0,minHeight:78,borderWidth:2,borderRadius:12,padding:8,gap:8},themeChoiceHead:{flexDirection:'row',alignItems:'center',gap:8},themeChoiceName:{...typography.caption,fontWeight:'800'},themeChoiceSub:{...typography.caption},themeCheck:{fontSize:20,fontWeight:'900'},swatches:{flexDirection:'row',gap:6},swatch:{flex:1,height:16,borderWidth:1,borderRadius:5}});}
+function makeStyles(C:ThemeColors){const equipmentColors=equipmentTheme(C);return StyleSheet.create({root:{padding:14,gap:10},h:{...typography.hero,color:C.text},title:{...typography.title,color:C.text,marginBottom:5},sub:{color:C.muted,lineHeight:20,marginBottom:8},muted:{color:C.muted,lineHeight:19,opacity:.8},tabs:{gap:6,paddingRight:16},sectionHint:{...typography.caption,color:C.info,lineHeight:18},chip:{minHeight:44,paddingHorizontal:13,justifyContent:'center',borderWidth:1,borderColor:C.line,borderRadius:99,backgroundColor:C.bg},chipSelected:{borderColor:equipmentColors.selectedLine,backgroundColor:equipmentColors.selected},chipText:{fontSize:12,color:C.muted,fontWeight:'700'},chipTextSelected:{color:C.text},pressed:{opacity:.76},settingLabel:{...typography.bodyStrong,color:C.text,marginTop:8},choices:{flexDirection:'row',flexWrap:'wrap',gap:8},choice:{flexGrow:1,flexBasis:120,minWidth:120},largeChoice:{flexBasis:'100%' as const},languageGrid:{flexDirection:'row',flexWrap:'wrap',gap:8},languageChoice:{minWidth:96,flexGrow:1},flex:{flex:1},communityRow:{flexDirection:'row',alignItems:'center',gap:10},communityLabel:{...typography.caption,fontWeight:'900',letterSpacing:.8},communityText:{...typography.caption,lineHeight:17},chatSettings:{gap:10,paddingTop:8},disclosure:{minHeight:44,flexDirection:'row',alignItems:'center',gap:8,justifyContent:'space-between'},disclosureLabel:{...typography.caption,color:C.info,fontWeight:'700'},disclosureArrowOpen:{transform:[{rotate:'90deg'}]},detailStack:{gap:8,paddingTop:8,borderTopWidth:StyleSheet.hairlineWidth,borderTopColor:C.line},afkBox:{gap:4,padding:10,borderWidth:1,borderColor:C.line,borderRadius:10,backgroundColor:C.panel2},afkHead:{flexDirection:'row',alignItems:'center',justifyContent:'space-between',gap:8},afkValue:{...typography.title,fontWeight:'900'},afkPaid:{...typography.caption,fontWeight:'800',lineHeight:17},footerLinks:{paddingTop:4,paddingBottom:10},themeList:{flexDirection:'row',gap:8},themeChoice:{flex:1,minWidth:0,minHeight:78,borderWidth:2,borderRadius:12,padding:8,gap:8},themeChoiceHead:{flexDirection:'row',alignItems:'center',gap:8},themeChoiceName:{...typography.caption,fontWeight:'800'},themeChoiceSub:{...typography.caption},themeCheck:{fontSize:20,fontWeight:'900'},swatches:{flexDirection:'row',gap:6},swatch:{flex:1,height:16,borderWidth:1,borderRadius:5}});}

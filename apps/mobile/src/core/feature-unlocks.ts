@@ -5,7 +5,7 @@ export const GUILD_UNLOCK_LEVEL=7;
 /** Guild browsing and all membership actions share the same Level 7 unlock. */
 export const GUILD_JOIN_LEVEL=GUILD_UNLOCK_LEVEL;
 export const PARTY_UNLOCK_LEVEL=20;
-export const EARLY_FEATURE_DESTINATION_ORDER=['DailySupplies','Events','AccountBonuses','Friends','Companions','Social','MasteryHall','Guild','Rankings'] as const;
+export const EARLY_FEATURE_DESTINATION_ORDER=['DailySupplies','Events','AccountBonuses','Friends','Companions','Recruitment','MasteryHall','Guild','Rankings'] as const;
 
 export const EARLY_FEATURE_UNLOCKS={
  dailySupplies:{questId:'QST_002',title:'Daily Supplies',requirement:'Complete First Blood, First Skill',description:'The daily reward track appears after the player understands basic skilling.'},
@@ -24,7 +24,7 @@ export const EARLY_FEATURE_UNLOCKS={
 
 /** Convert internal gameplay permission failures into actionable player feedback. */
 export function playerFacingGameplayError(message:string){
- return message==='events_locked'?'Events are temporarily unavailable. Please try again.':message==='contract_board_locked'?EARLY_FEATURE_UNLOCKS.contracts.requirement+' and claim its quest reward to unlock the Contract Board.':message;
+ return /unknown event-shop offer/i.test(message)?'This Event Shop offer is not supported by the current game server. Your currency was not spent. The gameplay server needs an update.':message==='events_locked'?'Events are temporarily unavailable. Please try again.':message==='contract_board_locked'?EARLY_FEATURE_UNLOCKS.contracts.requirement+' and claim its quest reward to unlock the Contract Board.':message;
 }
 
 export interface FeatureUnlockHost{character?:{level?:number}|null;quests?:readonly {questId:string;status:string}[];otherCharacters?:readonly {level?:number;quests:readonly {questId:string;status:string}[]}[];account:{guildMember?:boolean};}
@@ -101,7 +101,7 @@ export function newlyUnlockedEarlyFeatures(before:GameState|null|undefined,after
 export function earlyFeatureForDestination(destination:string):EarlyFeatureId|undefined{
  const map:Record<string,EarlyFeatureId>={
   DailySupplies:'dailySupplies',AccountBonuses:'accountBonuses',
-  Companions:'companions',Friends:'friends',Social:'social',MasteryHall:'masteryHall',
+  Companions:'companions',Friends:'friends',Social:'social',Recruitment:'social',MasteryHall:'masteryHall',
   Guild:'guild',Rankings:'rankings',
  };
  return map[destination];

@@ -8,13 +8,15 @@ import {ActivityIndicator,Pressable,ScrollView,StyleSheet,Text,View} from 'react
 import {PartyHubPanel,PartyLockedNotice} from '../components/PartyHubPanel';
 import {PartyEventHubPanel} from '../components/PartyEventHubPanel';
 import {SocialHubPanel,type SocialHubTab} from '../components/SocialHubPanel';
+import {RecruitmentBoardPanel} from '../components/RecruitmentBoardPanel';
+import {PartyCreateSheet} from '../components/PartyCreateSheet';
+import {GameModalSurface,GameModalHeader} from '../components/GameModalSurface';
 import {GuildSeekerPanel} from '../components/GuildSeekerPanel';
 import {RecruitmentComposer} from '../components/RecruitmentComposer';
 import {RecruitmentFiltersPanel} from '../components/RecruitmentFiltersPanel';
 import {RecruitmentListing} from '../components/RecruitmentListing';
 import {SocialInvitationCard} from '../components/SocialInvitationCard';
 import {OnlinePartyChat} from '../components/OnlinePartyChat';
-import {SectionGuide} from '../components/SectionGuide';
 import {GameButton} from '../components/GameButton';
 import {Panel} from '../components/Panel';
 import {ChatPlayerSheet,type ChatPlayerIdentity} from '../components/ChatPlayerSheet';
@@ -27,12 +29,14 @@ import {useGameTheme} from '../theme/ThemeContext';
 import {PARTY_UNLOCK_LEVEL} from '../core/feature-unlocks';
 type SocialBoard={cards:RecruitmentCardView[];own:RecruitmentCardView[]};
 const EMPTY_BOARD:SocialBoard={cards:[],own:[]};
-export function SocialScreen({initialTab='party',characterLevel=0,onGuild,onAccount,onInvitationsChanged,partyUnlocked,onTabChange}:{initialTab?:SocialHubTab;characterLevel?:number;partyUnlocked?:boolean;onGuild:()=>void;onAccount:()=>void;onInvitationsChanged?:()=>void;onTabChange?:(tab:SocialHubTab)=>void}){
+export function SocialScreen({mode='legacy',initialTab='party',characterLevel=0,onGuild,onAccount,onInvitationsChanged,partyUnlocked,onTabChange,onRecruitment,onParty}:{mode?:'party'|'recruitment'|'legacy';initialTab?:SocialHubTab;characterLevel?:number;partyUnlocked?:boolean;onGuild:()=>void;onAccount:()=>void;onInvitationsChanged?:()=>void;onTabChange?:(tab:SocialHubTab)=>void;onRecruitment?:(area:'party'|'guild')=>void;onParty?:()=>void}){
  const st=useSocialText();
   const language=useGameLanguage();
   const C=useGameTheme(),s=useMemo(()=>makeStyles(C),[C]);
- const social=usePartySocial();const [tab,setTab]=useState<SocialHubTab>(initialTab);const [filters,setFilters]=useState({...EMPTY_RECRUITMENT_FILTERS});
- useEffect(()=>{setTab(initialTab);setSelected(null);setDraft(null)},[initialTab]);
+ const social=usePartySocial();const [tab,setTab]=useState<SocialHubTab>(mode==='party'?'party':initialTab==='guild'?'guild':'party');const [filters,setFilters]=useState({...EMPTY_RECRUITMENT_FILTERS});
+ const [partyView,setPartyView]=useState<'Overview'|'Contracts'|'Chat'>('Overview');
+ const [showPartyCreate,setShowPartyCreate]=useState(false);
+ useEffect(()=>{setTab(mode==='party'?'party':initialTab==='guild'?'guild':'party');setSelected(null);setDraft(null)},[initialTab,mode]);
   useEffect(()=>{onTabChange?.(tab)},[tab,onTabChange]);
  const [guildContext,setGuildContext]=useState<{accountId:string;membership:Awaited<ReturnType<typeof myGuild>>|undefined}|null>(null);
  const guildMembership=guildContext?.accountId===social.accountId?guildContext.membership:undefined;
@@ -52,20 +56,20 @@ export function SocialScreen({initialTab='party',characterLevel=0,onGuild,onAcco
   if(!social.accountId||tab==='chat'||accountIdRef.current!==social.accountId){setUpdating(false);return;}
   const accountId=social.accountId;
   const context: 'party'|'guild'=tab==='guild'?'guild':'party';
-  const browse={...filters,postTypes:(context==='guild'?['looking_for_guild']:['looking_for_party','party_recruiting']) as RecruitmentPostType[]};
+  const browse={...filters,postTypes:(context==='guild'?['looking_for_guild','guild_recruiting']:['looking_for_party','party_recruiting']) as RecruitmentPostType[]};
   setUpdating(true);
   try{
    // Run independent requests in parallel. Guild browsing still waits for the
    // player's membership so that its existing access restrictions are respected.
-   const membershipRequest=myGuild().catch(()=>undefined);
-   const browseRequest=context==='guild'
-     ?membershipRequest.then(membership=>membership===undefined||(membership&&!canManageGuild(membership.role))?[] as RecruitmentCardView[]:repository.browseRecruitment(browse))
+   const membershipRequest=mode==='party'?Promise.resolve(null):myGuild().catch(()=>undefined);
+   const browseRequest=mode==='party'?Promise.resolve([] as RecruitmentCardView[]):context==='guild'
+     ?membershipRequest.then(membership=>membership===undefined?[] as RecruitmentCardView[]:repository.browseRecruitment(browse))
      :repository.browseRecruitment(browse);
    const [membership,next,mine,board,invites,outgoing,alerts]=await Promise.all([
-    membershipRequest,browseRequest,ownRecruitmentPosts(),partyRankings(),
-    socialInvitations().catch(()=>({party:[],guild:[],serverTime:''})),
-    socialOutgoingInvitations().catch(()=>({party:[],guild:[],serverTime:''})),
-    recruitmentMatchAlerts().catch(()=>[])
+    membershipRequest,browseRequest,mode==='party'?Promise.resolve([] as RecruitmentCardView[]):ownRecruitmentPosts(),mode==='recruitment'?Promise.resolve([] as PartyRanking[]):partyRankings(),
+    mode==='recruitment'?Promise.resolve({party:[] as PartyInvitationView[],guild:[],serverTime:''}):socialInvitations().catch(()=>({party:[],guild:[],serverTime:''})),
+    mode==='recruitment'?Promise.resolve({party:[] as OutgoingInvitationView[],guild:[],serverTime:''}):socialOutgoingInvitations().catch(()=>({party:[],guild:[],serverTime:''})),
+    mode==='party'?Promise.resolve([] as RecruitmentMatchAlert[]):recruitmentMatchAlerts().catch(()=>[])
    ]);
    if(generation!==requestGeneration.current||accountIdRef.current!==accountId)return;
    // If the guild status request failed, keep the last confirmed membership
@@ -93,7 +97,7 @@ export function SocialScreen({initialTab='party',characterLevel=0,onGuild,onAcco
   }finally{
    if(generation===requestGeneration.current&&accountIdRef.current===accountId)setUpdating(false);
   }
- },[filters,tab,social.accountId]);
+ },[filters,tab,social.accountId,mode]);
  useEffect(()=>{
   requestGeneration.current++;
   setBoardCache({accountId:social.accountId,party:EMPTY_BOARD,guild:EMPTY_BOARD});
@@ -131,6 +135,7 @@ export function SocialScreen({initialTab='party',characterLevel=0,onGuild,onAcco
  const canUsePartyChat=shouldShowPartyChat(social.party,social.accountId);
  // If the party is disbanded while Chat is selected, return to the Party tab.
  useEffect(()=>{if(tab==='chat'&&!canUsePartyChat&&!social.loading){setTab('party');setSelected(null);setDraft(null);}},[tab,canUsePartyChat,social.loading]);
+ useEffect(()=>{if(mode==='party'&&partyView==='Chat'&&!canUsePartyChat&&!social.loading)setPartyView('Overview');},[mode,partyView,canUsePartyChat,social.loading]);
 
  const recruitmentPreferences=<>
 <Pressable accessibilityRole="button" accessibilityState={{expanded:showPrefs}} onPress={()=>setShowPrefs(v=>!v)} style={s.prefsHeader}><Text style={s.prefsHeaderLabel}>{'Role & focus · '}{socialLabel(language,role)}{!social.party?' / '+socialLabel(language,focus):''}</Text><Text style={s.chevron}>{showPrefs?'−':'+'}</Text></Pressable>
@@ -145,7 +150,7 @@ export function SocialScreen({initialTab='party',characterLevel=0,onGuild,onAcco
    {outgoingPartyInvites.length>0?<Panel><View style={s.sectionHead}><Text style={s.selectedLabel}>{st("OUTGOING PARTY INVITES")}</Text><Text style={s.sectionMeta}>{st('{count} pending',{count:outgoingPartyInvites.length})}</Text></View>{outgoingPartyInvites.map(invite=>{const expiry=socialExpiry(language,Date.parse(invite.expiresAt),at);return <SocialInvitationCard key={invite.id} accountId={invite.recipientAccountId} name={invite.recipientName} status={st("INVITE SENT")} statusTone="muted" detail={st("Waiting for this player to respond.")} expiry={expiry.text} actions={<GameButton compact title={st("Cancel invite")} tone="secondary" disabled={busy} onPress={()=>run(async()=>{await cancelPartyInvitation(invite.id);onInvitationsChanged?.()})}/>}/>})}</Panel>:null}
  </>;
  const recruitmentDetails=<>
-  {tab==='party'&&matchAlerts.length>0?<><Pressable accessibilityRole="button" accessibilityState={{expanded:showMatches}} onPress={()=>setShowMatches(value=>!value)} style={s.prefsHeader}><Text style={s.prefsHeaderLabel}>{st("MATCHES FOUND")} · {matchAlerts.length}</Text><Text style={s.chevron}>{showMatches?'−':'+'}</Text></Pressable>{showMatches?<Panel>{matchAlerts.slice(0,5).map(alert=><Pressable key={alert.id} onPress={()=>{const card=cards.find(item=>item.id===alert.id);if(card)setSelected(card);}}><Text style={s.text}>{alert.title} · {alert.focus.toUpperCase()} · {alert.owner_name??st("Adventurer")}</Text></Pressable>)}<GameButton compact title={st("Dismiss matches")} tone="secondary" onPress={()=>run(async()=>{await ackRecruitmentMatchAlerts();setMatchAlerts([]);})}/></Panel>:null}</>:null}
+  {mode==='legacy'&&tab==='party'&&matchAlerts.length>0?<><Pressable accessibilityRole="button" accessibilityState={{expanded:showMatches}} onPress={()=>setShowMatches(value=>!value)} style={s.prefsHeader}><Text style={s.prefsHeaderLabel}>{st("MATCHES FOUND")} · {matchAlerts.length}</Text><Text style={s.chevron}>{showMatches?'−':'+'}</Text></Pressable>{showMatches?<Panel>{matchAlerts.slice(0,5).map(alert=><Pressable key={alert.id} onPress={()=>{const card=cards.find(item=>item.id===alert.id);if(card)setSelected(card);}}><Text style={s.text}>{alert.title} · {alert.focus.toUpperCase()} · {alert.owner_name??st("Adventurer")}</Text></Pressable>)}<GameButton compact title={st("Dismiss matches")} tone="secondary" onPress={()=>run(async()=>{await ackRecruitmentMatchAlerts();setMatchAlerts([]);})}/></Panel>:null}</>:null}
    {draft&&<RecruitmentComposer key={draft.postType} initial={draft} busy={busy} onCancel={()=>setDraft(null)} onPublish={input=>run(async()=>{await repository.publishRecruitment(input);setDraft(null);})}/>}
    {selected&&(()=>{const presentation=recruitmentPostTypePresentation(selected.postType),context=[...(selected.activityLevel?[socialLabel(language,selected.activityLevel.charAt(0).toUpperCase()+selected.activityLevel.slice(1))]:[]),...(selected.language?[selected.language]:[]),...(selected.region?[selected.region.toUpperCase()]:[]),...(selected.minCombatLevel!==undefined?[st('Combat {level}+',{level:Math.max(0,Math.floor(selected.minCombatLevel))})]:[]),...(selected.minTotalLevel!==undefined?[st('Total {level}+',{level:Math.max(0,Math.floor(selected.minTotalLevel))})]:[])],expiry=socialExpiry(language,selected.expiresAtMs,at);return <Panel accentColor={C.info} accentSurface={C.infoSurface}>
     <View style={s.selectedHead}><View style={s.flex}><Text style={s.selectedLabel}>{socialLabel(language,presentation.shortLabel)} · {socialLabel(language,selected.focus).toLocaleUpperCase()}</Text><Text style={s.title}>{selected.title}</Text></View><Text style={[s.expiry,expiry.urgency==='soon'&&s.expirySoon]}>{expiry.text}</Text></View>
@@ -169,14 +174,32 @@ export function SocialScreen({initialTab='party',characterLevel=0,onGuild,onAcco
     </>:null}
    </>:null}
  </>:null;
+ if(mode!=='legacy'){
+  const recruitment=mode==='recruitment',leader=!!social.party?.members.some(member=>member.accountId===social.accountId&&member.isLeader),openSpots=Math.max(0,4-(social.party?.members.length??0));
+  const switchParty=(view:'Overview'|'Contracts'|'Chat')=>{setPartyView(view);setTab(view==='Chat'?'chat':'party')};
+  return <View style={s.page}>
+   {!recruitment&&!partyLocked?<View accessibilityRole="tablist" style={s.pageTabs}>{(['Overview','Contracts','Chat'] as const).map(view=><Pressable key={view} accessibilityRole="tab" accessibilityState={{selected:partyView===view,disabled:view==='Chat'&&!canUsePartyChat}} disabled={view==='Chat'&&!canUsePartyChat} onPress={()=>switchParty(view)} style={({pressed})=>[s.pageTab,partyView===view&&s.pageTabSelected,view==='Chat'&&!canUsePartyChat&&s.pageTabDisabled,pressed&&s.pressed]}><Text style={[s.pageTabLabel,partyView===view&&s.pageTabLabelSelected]}>{view}</Text></Pressable>)}</View>:null}
+   {!recruitment&&partyView==='Chat'&&canUsePartyChat?<View style={s.chatContent}><Text accessibilityRole="header" style={s.title}>Party Chat</Text><OnlinePartyChat expanded/></View>:<ScrollView contentContainerStyle={s.content} keyboardShouldPersistTaps="handled" keyboardDismissMode="on-drag" showsVerticalScrollIndicator={false} showsHorizontalScrollIndicator={false}>
+     {social.accountId&&(backgroundError||social.error||showUpdating)?<View style={s.syncRow}>{backgroundError||social.error?<><Text style={s.syncError}>Could not refresh {recruitment?'Recruitment':'Party'}.</Text><GameButton compact title="Retry" tone="secondary" onPress={()=>{void social.refresh();void load()}}/></>:<><ActivityIndicator color={C.muted} size="small"/><Text style={s.syncText}>Updating…</Text></>}</View>:null}
+     {!!error?<Text accessibilityRole="alert" style={s.error}>{error}</Text>:null}
+     {!social.accountId?<Panel><Text style={s.text}>{social.loading?'Connecting…':'Sign in and sync a character to use Parties and Recruitment.'}</Text><GameButton title="Account settings" onPress={onAccount}/></Panel>:recruitment?<RecruitmentBoardPanel area={tab==='guild'?'guild':'party'} onAreaChange={area=>{setTab(area);setFilters({...EMPTY_RECRUITMENT_FILTERS});setSelected(null);setDraft(null)}} cards={cards} own={own} filters={filters} onFiltersChange={setFilters} nowMs={at} busy={busy} canRecruitGuild={canRecruit} guildMembershipKnown={guildMembership!==undefined} inGuild={!!guildMembership} partyUnlocked={partyAvailable} inParty={!!social.party} partyLeader={leader} partyOpenSpots={openSpots} onPost={post} onOpen={setSelected} onRefresh={id=>void run(()=>repository.refreshRecruitment(id))} onClose={id=>gameAlert.alert('Close recruitment advert?','This advert will no longer appear on the board.',[{text:'Cancel',style:'cancel'},{text:'Close advert',style:'destructive',onPress:()=>void run(()=>repository.closeRecruitment(id))}])} onOpenParty={()=>onParty?.()} onOpenGuild={onGuild} loading={social.loading||updating&&guildContext===null} matches={tab==='party'?cards.filter(card=>matchAlerts.some(alert=>alert.id===card.id)):[]} onDismissMatches={()=>void run(async()=>{await ackRecruitmentMatchAlerts();setMatchAlerts([])})}/>:<>
+      {partyLocked?<PartyLockedNotice level={PARTY_UNLOCK_LEVEL}/>:<>
+      {!social.party?partyInvitations:null}
+      {social.loading&&!social.party?<Text style={s.syncText}>Checking your Party…</Text>:null}
+      {(!social.loading||!!social.party)?<PartyHubPanel dedicated activeView={partyView==='Contracts'?'Contracts':'Overview'} onOpenRecruitment={()=>onRecruitment?.('party')} accountId={social.accountId} party={social.party} contracts={social.contracts} recruitment={[]} nowMs={at} partyUnlocked={partyAvailable} partyUnlockLevel={PARTY_UNLOCK_LEVEL} onCreateParty={busy||!partyAvailable?undefined:()=>setShowPartyCreate(true)} onLeaveParty={busy?undefined:()=>{const party=social.party!;const self=party.members.find(member=>member.accountId===social.accountId),successor=party.members.find(member=>member.accountId!==social.accountId);gameAlert.alert(self?.isLeader?(successor?st("Leave Party and hand over leadership?"):st("Leave and disband Party?")):st("Leave Party?"),self?.isLeader?(successor?st('Leadership will pass to {name}, the oldest remaining Party member.',{name:successor.characterName}):st("You are the only Party member, so leaving will disband it.")):st("You will leave this persistent Party."),[{text:st("Cancel"),style:'cancel'},{text:st("Leave"),style:'destructive',onPress:()=>void run(async()=>{await repository.leaveParty({partyId:party.id,idempotencyKey:key(`leave:${party.id}`)});await social.refresh();})}])}} onDisbandParty={busy?undefined:()=>gameAlert.alert('Disband Party?','Remove every member and cancel invitations?', [{text:'Cancel',style:'cancel'},{text:'Disband',style:'destructive',onPress:()=>void run(()=>disbandParty(social.party!.id))}])} onOpenMemberProfile={member=>setSelectedProfile({account_id:member.accountId,sender_name:member.characterName})} onTransferLeadership={member=>gameAlert.alert('Transfer leadership?',member.characterName+' becomes the Party leader.',[{text:'Cancel',style:'cancel'},{text:'Transfer',onPress:()=>void run(()=>transferPartyLeadership(social.party!.id,member.accountId))}])} onRemoveMember={member=>gameAlert.alert('Remove '+member.characterName+'?','They will leave the Party immediately.',[{text:'Cancel',style:'cancel'},{text:'Remove',style:'destructive',onPress:()=>void run(()=>removePartyMember(social.party!.id,member.accountId))}])} onClaimReward={busy?undefined:id=>void run(()=>claimPartyContractReward(id,character()))} partyExtras={partyExtras} partyInvitations={partyInvitations} invitationCount={partyInvites.length+outgoingPartyInvites.length}/>:null}
+     </>}</>}</ScrollView>}
+     <PartyCreateSheet visible={!recruitment&&showPartyCreate} busy={busy} focus={focus} role={role} error={error} onFocus={setFocus} onRole={setRole} onClose={()=>setShowPartyCreate(false)} onCreate={()=>void run(async()=>{await repository.createParty({characterId:character(),role,focus,idempotencyKey:key('create:'+focus+':'+role)});setShowPartyCreate(false)})}/>
+     {recruitment?<GameModalSurface visible={!!(draft||selected)} presentation="sheet" onClose={()=>{if(!busy){setDraft(null);setSelected(null)}}} dismissOnBackdrop={!busy}><GameModalHeader eyebrow="RECRUITMENT" title={draft?'Create advert':'Advert details'} closeDisabled={busy} onClose={()=>{if(!busy){setDraft(null);setSelected(null)}}}/><ScrollView keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false} showsHorizontalScrollIndicator={false} contentContainerStyle={s.modalContent}>{recruitmentDetails}</ScrollView></GameModalSurface>:null}
+     {selectedProfile?<ChatPlayerSheet message={selectedProfile} onClose={()=>setSelectedProfile(null)} onBlocked={()=>setSelectedProfile(null)}/>:null}
+   </View>;
+ }
  return <SocialHubPanel active={tab} hasParty={canUsePartyChat} badges={{party:partyInvites.length}} onChange={next=>{setTab(next);setSelected(null);setDraft(null);setError('');setBackgroundError('');}}>
- {tab==='chat'?(canUsePartyChat?<View style={s.chatContent}><SectionGuide scope={social.accountId} area="social" section="Chat" translate={value=>socialLabel(language,value)} guide={{title:'Party Chat',body:'Message your current Party here. Other social controls stay in their own tabs.',detail:'The Chat tab disappears when you leave or disband your Party.'}}/><OnlinePartyChat expanded/></View>:social.loading?<View style={s.chatContent}><Text style={s.syncText}>{st("Opening Party Chat…")}</Text></View>:null):
+ {tab==='chat'?(canUsePartyChat?<View style={s.chatContent}><OnlinePartyChat expanded/></View>:social.loading?<View style={s.chatContent}><Text style={s.syncText}>{st("Opening Party Chat…")}</Text></View>:null):
  <ScrollView contentContainerStyle={s.content} keyboardShouldPersistTaps="handled" keyboardDismissMode="on-drag" showsVerticalScrollIndicator={false} showsHorizontalScrollIndicator={false}>
   {tab==='party'&&partyLocked?<PartyLockedNotice level={PARTY_UNLOCK_LEVEL}/>:<>
   {(social.accountId&&(backgroundError||social.error||showUpdating))?<View style={s.syncRow}>{backgroundError||social.error?<><Text style={s.syncError}>{st("Could not update Social.")}</Text><GameButton compact title={st("Retry")} tone="secondary" onPress={()=>{void social.refresh();void load();}}/></>:<><ActivityIndicator color={C.muted} size="small"/><Text style={s.syncText}>{st("Updating…")}</Text></>}</View>:null}
   {!!error&&<View accessibilityRole="alert" style={s.errorCard}><Text style={s.errorLabel}>{st("SOCIAL UNAVAILABLE")}</Text><Text style={s.error}>{error}</Text></View>}
   {!social.accountId?<Panel>{social.loading?<Text style={s.syncText}>{st("Connecting…")}</Text>:<Text style={s.text}>{st("Sign in and sync a character to use Parties and Recruitment.")}</Text>}<GameButton title={st("Account settings")} onPress={onAccount}/></Panel>:<>
-   {tab==='guild'?<SectionGuide scope={social.accountId} area="social" section="Guild" translate={value=>socialLabel(language,value)} guide={{title:'Guild',body:'Open your Guild here, or browse recruiting guilds before joining.',detail:'Guild Chat and activities are inside Guild and remain independent of Party unlocks.'}}/>:null}
    {tab==='guild'?recruitmentDetails:null}
    {tab==='party'&&!social.party?partyInvitations:null}
    {tab==='party'&&!!social.accountId&&social.loading&&!social.party?<Text style={s.syncText}>{st("Checking your Party…")}</Text>:null}
@@ -198,7 +221,7 @@ export function SocialScreen({initialTab='party',characterLevel=0,onGuild,onAcco
  </SocialHubPanel>;
 }
 function QuickChip({label,selected,onPress}:{label:string;selected:boolean;onPress:()=>void}){const C=useGameTheme(),s=useMemo(()=>makeStyles(C),[C]);return <Pressable accessibilityRole="button" accessibilityState={{selected}} onPress={onPress} style={({pressed})=>[s.chip,selected&&s.chipSelected,pressed&&s.pressed]}><Text style={[s.chipText,selected&&s.chipTextSelected]}>{selected?'✓ ':''}{label}</Text></Pressable>}
-function makeStyles(C:ThemeColors){return StyleSheet.create({content:{padding:spacing.md,gap:spacing.md,paddingBottom:32},chatContent:{flex:1,minHeight:0,paddingHorizontal:spacing.md,paddingVertical:spacing.sm},
+function makeStyles(C:ThemeColors){return StyleSheet.create({page:{flex:1,minHeight:0},pageTabs:{flexDirection:'row',gap:5,paddingHorizontal:12,paddingTop:10,paddingBottom:2},pageTab:{minHeight:44,flex:1,alignItems:'center',justifyContent:'center',paddingHorizontal:7,backgroundColor:C.panel,borderWidth:1,borderRadius:9,borderColor:C.line},pageTabSelected:{backgroundColor:C.selection,borderColor:C.selectionLine},pageTabDisabled:{opacity:.45},pageTabLabel:{fontSize:11,color:C.muted,fontWeight:'800'},pageTabLabelSelected:{color:C.text},modalContent:{gap:10,paddingVertical:12},content:{padding:spacing.md,gap:spacing.md,paddingBottom:32},chatContent:{flex:1,minHeight:0,paddingHorizontal:spacing.md,paddingVertical:spacing.sm},
  prefsHeader:{flexDirection:'row',alignItems:'center',gap:8,minHeight:40,paddingHorizontal:12,paddingVertical:6,borderWidth:1,borderColor:C.line,borderRadius:8,backgroundColor:C.panel},
  prefsHeaderLabel:{flex:1,...typography.caption,color:C.muted,fontWeight:'800'},
  chevron:{fontSize:16,color:C.muted,fontWeight:'900'},flex:{flex:1,minWidth:0},chipRow:{flexDirection:'row',flexWrap:'wrap',alignItems:'center',gap:6},chipLabel:{fontSize:10,fontWeight:'900',letterSpacing:1,color:C.accentSoft,marginRight:2},chip:{minHeight:38,paddingHorizontal:12,justifyContent:'center',borderWidth:1,borderColor:C.line,borderRadius:99,backgroundColor:C.bg},chipSelected:{borderColor:C.selectionLine,backgroundColor:C.selection},chipText:{fontSize:12,color:C.muted,fontWeight:'800'},chipTextSelected:{color:C.text},pressed:{opacity:.76},title:{color:C.accent,fontSize:18,fontWeight:'800'},selectedLabel:{...typography.caption,color:C.info,fontWeight:'900',letterSpacing:1},selectedHead:{flexDirection:'row',alignItems:'flex-start',gap:8},expiry:{fontSize:9,color:C.muted,fontWeight:'800',paddingTop:2},expirySoon:{color:C.warning},detailMeta:{flexDirection:'row',flexWrap:'wrap',gap:5},detailPill:{maxWidth:130,paddingHorizontal:6,paddingVertical:3,borderWidth:1,borderColor:C.line,borderRadius:99,backgroundColor:C.panel2},detailPillText:{fontSize:8,color:C.muted,fontWeight:'800'},objectivePill:{maxWidth:'100%',borderColor:C.info,backgroundColor:C.infoSurface},objectivePillText:{fontSize:8,color:C.info,fontWeight:'800'},detailActions:{flexDirection:'row',flexWrap:'wrap',gap:6},text:{color:C.text,lineHeight:21},errorCard:{gap:4,padding:spacing.md,borderWidth:1,borderColor:C.bad,borderRadius:10,backgroundColor:C.badSurface},errorLabel:{...typography.caption,color:C.bad,fontWeight:'900',letterSpacing:1},error:{color:C.text,lineHeight:21},syncRow:{flexDirection:'row',alignItems:'center',gap:spacing.sm,paddingVertical:3,minHeight:36},syncText:{...typography.caption,color:C.muted,flexShrink:1},syncError:{...typography.caption,color:C.warning,flex:1},sectionHead:{flexDirection:'row',alignItems:'center',justifyContent:'space-between',gap:8},sectionMeta:{fontSize:9,color:C.muted,fontWeight:'800'},ad:{gap:6,paddingVertical:6},adActions:{flexDirection:'row',gap:6},closedLabel:{fontSize:8,color:C.muted,fontWeight:'900',letterSpacing:.7,textAlign:'right'}});}

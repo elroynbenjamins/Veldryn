@@ -39,6 +39,9 @@ const MONSTERS_RAW:MonsterDef[]=[
 ];
 const MONSTER_TIME_SCALE=1.95;
 const MONSTER_STAT_SCALE=1.07;
+/** King’s Road is the first crafted-gear checkpoint. Keep early regions unchanged. */
+export const ADVANCED_REGION_MONSTER_MULTIPLIER=1.20;
+const ADVANCED_MONSTER_REGIONS=new Set(["King's Road",'Sunscar','Frostmarch','Ashlands']);
 
 function asterfallRawGemDrop(monster:MonsterDef):MonsterDef['drops'][number]|undefined{
   if(monster.boss||monster.level<4||monster.level>25)return undefined;
@@ -61,12 +64,16 @@ const enhancementDrops=(monster:MonsterDef):MonsterDef['drops']=>{
 };
 export const MONSTERS:MonsterDef[]=MONSTERS_RAW.map(monster=>{
   const holyWater=HOLY_WATER_SOURCES.find(source=>source.monsterId===monster.id);
+  const advancedScale=ADVANCED_MONSTER_REGIONS.has(monster.zone)?ADVANCED_REGION_MONSTER_MULTIPLIER:1;
   return {...monster,
   // Standard-enemy materials are intentionally half as likely from combat.
   // Gathering remains the reliable source; guaranteed boss rewards stay intact.
   drops:[...monster.drops,...(holyWater?[{itemId:HOLY_WATER_ID,chance:holyWater.chance,min:holyWater.min,max:holyWater.max}]:[]),...enhancementDrops(monster)].map(drop=>!monster.boss&&drop.itemId!==HOLY_WATER_ID&&itemDef(drop.itemId).type==='material'?{...drop,chance:drop.chance*.5}:drop),
-  secondsPerKill:Math.ceil(monster.secondsPerKill*MONSTER_TIME_SCALE),
-  hp:Math.ceil(monster.hp*MONSTER_STAT_SCALE),
-  attack:Math.ceil(monster.attack*MONSTER_STAT_SCALE),
-  defense:Math.ceil(monster.defense*MONSTER_STAT_SCALE),
+  // Idle combat uses authored cycle duration rather than HP to calculate kills.
+  // Scale both the displayed combat stats and cycle time, so 20% more HP
+  // actually costs time; leave XP, loot chances, and early regions untouched.
+  secondsPerKill:Math.ceil(monster.secondsPerKill*MONSTER_TIME_SCALE*advancedScale),
+  hp:Math.ceil(monster.hp*MONSTER_STAT_SCALE*advancedScale),
+  attack:Math.ceil(monster.attack*MONSTER_STAT_SCALE*advancedScale),
+  defense:Math.ceil(monster.defense*MONSTER_STAT_SCALE*advancedScale),
 };});

@@ -1,3 +1,4 @@
+import {mealSpeedFactor} from './meal-buffs';
 import {FAITH_TIERS,FAITH_BLESSINGS,HOLY_WATER_ID,faithBlessingDef} from '../content/faith';
 import {levelFromXp,totalXpAtLevel} from './progression';
 import type {GameState,RewardBundle,ItemStack} from './types';
@@ -45,12 +46,12 @@ export function settleFaithPractice(state:GameState,now:number,capSeconds:number
  const empty:RewardBundle={xp:0,gold:0,kills:0,items:[],elapsedSeconds:0,faithActions:0,faithXp:0,holyWaterConsumed:0};
  const normalized=normalizeFaith(state.character?.faith),skillXp=state.skills.find(s=>s.skillId==='faith')?.xp??0,faith={...normalized,xp:Math.max(normalized.xp,skillXp)},reservation=state.activity?.faithPractice,p=faith.practice??(reservation?{tierId:reservation.tierId,remaining:reservation.remainingPractices,lastClaimAtMs:reservation.lastClaimAtMs,progressMs:Math.floor(reservation.progressFraction*60000)}:undefined),tier=FAITH_TIERS.find(t=>t.id===p?.tierId);
  if(!state.character||!p||!tier||now<p.lastClaimAtMs)return {state,reward:empty,refund:0};
- const elapsed=Math.min(capSeconds*1000,now-p.lastClaimAtMs),total=p.progressMs+elapsed;
+ const elapsed=Math.min(capSeconds*1000,now-p.lastClaimAtMs),speed=mealSpeedFactor(state.character,'noncombat'),total=p.progressMs+elapsed*speed;
  const actions=Math.min(p.remaining,Math.floor(total/(tier.seconds*1000)),Math.ceil((MAX_XP-faith.xp)/tier.xp)),xp=Math.min(MAX_XP-faith.xp,actions*tier.xp);
  const remaining=p.remaining-actions,mastered=faith.xp+xp===MAX_XP,refund=mastered?remaining*tier.water:0;
- const nextPractice=remaining&&!mastered?{...p,remaining,lastClaimAtMs:now,progressMs:total%(tier.seconds*1000)}:undefined;
+ const nextPractice=remaining&&!mastered?{...p,remaining,lastClaimAtMs:now,progressMs:Math.floor(total%(tier.seconds*1000))}:undefined;
  const nextActivity=nextPractice&&state.activity?{...state.activity,lastClaimAtMs:now,faithPractice:{tierId:nextPractice.tierId,remainingPractices:nextPractice.remaining,lastClaimAtMs:now,progressFraction:nextPractice.progressMs/(tier.seconds*1000)}}:null;
- const qualifyingActivitySeconds=nextPractice?Math.floor(elapsed/1000):actions?Math.max(0,Math.min(Math.floor(elapsed/1000),actions*tier.seconds-Math.floor(p.progressMs/1000))):0;
+ const qualifyingActivitySeconds=nextPractice?Math.floor(elapsed/1000):actions?Math.max(0,Math.min(Math.floor(elapsed/1000),Math.floor((actions*tier.seconds*1000-p.progressMs)/speed/1000))):0;
  return {state:{...state,activity:nextActivity,character:{...state.character,faith:{...faith,xp:faith.xp+xp,practice:nextPractice}}},refund,reward:{...empty,xp,elapsedSeconds:Math.floor(elapsed/1000),qualifyingActivitySeconds,faithActions:actions,faithXp:xp,holyWaterConsumed:actions*tier.water,faithWaterRefund:refund}};
 }
 export function cancelFaithPractice(state:GameState):{state:GameState;refund:number}{

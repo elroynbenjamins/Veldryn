@@ -1,6 +1,6 @@
 import {useSocialText} from '../i18n/social';
 import {useEffect,useMemo,useRef,useState,type ReactNode} from 'react';
-import {AppState,Pressable,ScrollView,StyleSheet,Text,View,type LayoutChangeEvent,type NativeScrollEvent,type NativeSyntheticEvent} from 'react-native';
+import {AppState,Pressable,ScrollView,StyleSheet,Text,View,type LayoutChangeEvent,type NativeScrollEvent,type NativeSyntheticEvent,type ScrollViewInstance} from 'react-native';
 import {useGameTheme} from '../theme/ThemeContext';
 import {ChatReadAcknowledgement} from '../core/chat-read-ack';
 
@@ -8,7 +8,7 @@ export interface ChatLogItem{id:string}
 
 export function ChatLog<T extends ChatLogItem>({channelKey,items,firstUnreadMessageId,emptyText,renderItem,onCaughtUp,active=true,expanded=false}:{channelKey:string;items:readonly T[];firstUnreadMessageId?:string;emptyText:string;renderItem:(item:T)=>ReactNode;onCaughtUp?:(messageId:string)=>void|Promise<void>;active?:boolean;expanded?:boolean}){
  const st=useSocialText();
- const C=useGameTheme(),scrollRef=useRef<ScrollView>(null),nearBottomRef=useRef(!firstUnreadMessageId),initializedRef=useRef(false),previousIdsRef=useRef<Set<string>>(new Set()),viewportHeightRef=useRef(0),contentHeightRef=useRef(0),activeRef=useRef(active),readAckRef=useRef<ChatReadAcknowledgement|null>(null),onCaughtUpRef=useRef(onCaughtUp);
+ const C=useGameTheme(),scrollRef=useRef<ScrollViewInstance>(null),nearBottomRef=useRef(!firstUnreadMessageId),initializedRef=useRef(false),previousIdsRef=useRef<Set<string>>(new Set()),viewportHeightRef=useRef(0),contentHeightRef=useRef(0),activeRef=useRef(active),readAckRef=useRef<ChatReadAcknowledgement|null>(null),onCaughtUpRef=useRef(onCaughtUp);
  const [dividerId,setDividerId]=useState(firstUnreadMessageId),[dividerCleared,setDividerCleared]=useState(false),[pendingNew,setPendingNew]=useState(0),[foreground,setForeground]=useState(()=>AppState.currentState==='active'||AppState.currentState===null);
  activeRef.current=active&&foreground;onCaughtUpRef.current=onCaughtUp;
  const hasMessages=items.length>0,latestId=hasMessages?items[items.length-1].id:undefined;
@@ -23,7 +23,7 @@ export function ChatLog<T extends ChatLogItem>({channelKey,items,firstUnreadMess
  const visible=()=>activeRef.current&&readAckRef.current===readAck;
 
  useEffect(()=>{
-  const update=(next:string|null)=>{const visible=next==='active'||next===null;activeRef.current=active&&visible;readAck.setActive(activeRef.current&&hasMessages);setForeground(visible);};
+  const update=(next:string|null|undefined)=>{const visible=next==='active'||!next;activeRef.current=active&&visible;readAck.setActive(activeRef.current&&hasMessages);setForeground(visible);};
   update(AppState.currentState);
   const listener=active?AppState.addEventListener('change',update):undefined;
   return()=>{activeRef.current=false;readAck.setActive(false);listener?.remove();};

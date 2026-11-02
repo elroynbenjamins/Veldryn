@@ -27,6 +27,7 @@ export interface CoopDecisionBody {requestId:string;decisionId:string;decisionRe
 export interface CoopReadyBody {requestId:string;rosterRevision:number;accept:boolean;}
 export interface CoopChatMessage {id:string;senderName:string;body:string;createdAt:number;}
 export interface CoopChatResponse {sent:boolean;messageId?:string;messages:CoopChatMessage[];}
+export interface CoopLiveRematchState {status:'open'|'committed'|'declined'|'expired';readyCheckId?:string|null;runId?:string|null;closesAtMs?:number|null;serverNow:number;members:Array<{accountId:string;characterId:string;role:'tank'|'damage'|'support';self:boolean;accepted:boolean}>;}
 async function request<T>(path:string,method='GET',body?:unknown,expectedAccount?:string):Promise<T>{
  if(!supabase||!apiBase||!coopOnlineConfigured)throw new Error('Co-op server is not configured.');
  const session=(await supabase.auth.getSession()).data.session;if(!session)throw new Error('Sign in to use co-op expeditions.');
@@ -87,6 +88,8 @@ export const coopClient={
  ready:(checkId:string,body:CoopReadyBody)=>mutate<LiveReadyView>(`/coop/ready/${checkId}`,body),
  chat:(runId:string,text:string)=>request<CoopChatResponse>(`/coop/runs/${runId}/chat`,'POST',{requestId:coopRequestId(),text}),
  partyChat:(runId:string)=>request<CoopChatResponse>(`/coop/runs/${runId}/chat`),
+ liveRematch:(runId:string)=>request<CoopLiveRematchState>(`/coop/runs/${runId}/rematch`),
+ respondLiveRematch:(runId:string,accept:boolean)=>mutate<CoopLiveRematchState>(`/coop/runs/${runId}/rematch`,{requestId:coopRequestId(),accept}),
  hasPending:async()=>(await journal()).pending(),
  retryPending:async()=>(await journal()).execute(),
  shareEcho:(expectedVersion:number,share:boolean)=>mutate<{sharing:boolean}>('/coop/echo',{requestId:coopRequestId(),expectedVersion,share}),

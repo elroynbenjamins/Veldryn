@@ -5,7 +5,7 @@ import {useGameLanguage} from '../i18n/GameLanguageProvider';
 import {socialLabel} from '../i18n/social';
 import {IdentityArtwork} from '../components/SocialIdentity';
 import {GuildIdentitySummary} from '../components/GuildIdentitySummary';
-import {cloneElement,isValidElement,useEffect,useState,type ReactNode,useMemo} from 'react';
+import {cloneElement,isValidElement,useEffect,useRef,useState,type ReactNode,type ElementRef,useMemo} from 'react';
 import {ActivityIndicator,Image,Modal,Pressable,ScrollView,StyleSheet,Text,View} from 'react-native';
 import {GuildDiscoveryFlow} from '../components/GuildDiscoveryFlow';
 import {SectionGuide} from '../components/SectionGuide';
@@ -17,7 +17,9 @@ import {GameButton} from '../components/GameButton';
 import {Panel} from '../components/Panel';
 import {GuildBoardHero} from '../components/GuildBoardHero';
 import {GuildHomeActions} from '../components/GuildHomeActions';
+import {GuildHallSummary} from '../components/GuildHallSummary';
 import {GuildNavigation} from '../components/GuildNavigation';
+import {GuildProgressPanel,type GuildProgressTab} from '../components/GuildProgressPanel';
 import {GuildMemberIdentity} from '../components/GuildMemberIdentity';
 import {guildDetails,myGuild,type OnlineGuild} from '../online/social';
 import {BoardTabs} from '../components/BoardTabs';
@@ -47,7 +49,8 @@ export type OnlineGuildSection='Home'|'PvE'|'Roster'|'Activities'|'Hall'|'Chat'|
 export type GuildNavigationState={
  section:'Home'|'PvE'|'Roster'|'Activities'|'Hall'|'Future';
  activityView:'Quests'|'Muster'|'Projects';
- hallSection:'Facilities'|'Skills'|'Trophies'|'Shop';
+ hallSection:'Overview'|'Construction'|'Bank'|'Skills'|'Legacy'|'Shop';
+ progressTab?:GuildProgressTab;
 };
 type LocalGuildMember={name:string;role:'Leader'|'Officer'|'Member';className:string;level:number;online:boolean;lastOnline:string;status:string};
 const LOCAL_ROSTER:LocalGuildMember[]=[{name:'Elowen',role:'Leader',className:'Dawnkeeper',level:28,online:true,lastOnline:'Online now',status:'Leading the guild'}, {name:'Brann',role:'Officer',className:'Ironwarden',level:24,online:true,lastOnline:'Online now',status:'Managing projects'}, {name:'Mira',role:'Member',className:'Wayfinder',level:21,online:false,lastOnline:'12 min ago',status:'Exploring Ironwood'}, {name:'Tovan',role:'Member',className:'Ravager',level:19,online:false,lastOnline:'Yesterday',status:'Last active in combat'}, {name:'Sera',role:'Member',className:'Hexweaver',level:17,online:false,lastOnline:'3 days ago',status:'Away'}];
@@ -70,28 +73,36 @@ const GUILD_PROJECT_COST={MOSS_FIBER:200,GREENWOOD_LOG:120,IRONWOOD_LOG:60,ASTER
 export function GuildScreen({state,onChange,onlineManagement,onlineBoard,onlineProjects,onlinePve,onlineHall,onlineChat,onlineCustomize,onlineChatUnread=0,onlineChatMentions=0,onOpenChat,onRecruitment,online=false,membershipRevision=0,onTokenRewardsChanged,initialPve=false,onInitialPveHandled,initialNavigation,onNavigationChange}:{initialNavigation?:GuildNavigationState;onNavigationChange?:(state:GuildNavigationState)=>void;onOpenChat?:()=>void;onRecruitment?:()=>void;onTokenRewardsChanged?:()=>void|Promise<unknown>;online?:boolean;membershipRevision?:number;state:GameState;onChange:(next:GameState)=>void;onlineManagement?:ReactNode;onlineBoard?:ReactNode;onlineProjects?:ReactNode;onlinePve?:ReactNode;onlineHall?:ReactNode;onlineChat?:ReactNode;onlineCustomize?:ReactNode;onlineChatUnread?:number;onlineChatMentions?:number;initialPve?:boolean;onInitialPveHandled?:()=>void}){
  const st=useSocialText();
   const language=useGameLanguage();
+  const guildScroll=useRef<ElementRef<typeof ScrollView>>(null);
  const C=useGameTheme(),s=useMemo(()=>makeStyles(C),[C]);
  const {session}=useAuthSession();
   const [activityView,setActivityView]=useState<'Quests'|'Muster'|'Projects'>(initialNavigation?.activityView??'Quests');
+  const [progressTab,setProgressTab]=useState<GuildProgressTab>(initialNavigation?.progressTab??'Projects');
   const [rosterSection,setRosterSection]=useState<'Members'|'Requests'|'Safety'>('Members');
-  const [section,setSection]=useState<GuildSection>(initialPve?'PvE':'Home'),[onlineSection,setOnlineSection]=useState<OnlineGuildSection>(initialPve?'PvE':initialNavigation?.section??'Home'),[hallSection,setHallSection]=useState<'Facilities'|'Skills'|'Trophies'|'Shop'>(initialNavigation?.hallSection??'Facilities');
+  const previousHallSection=initialNavigation?.hallSection as string|undefined;
+  const initialHallSection:GuildNavigationState['hallSection']=previousHallSection==='Facilities'?'Overview':previousHallSection==='Trophies'?'Legacy':(['Overview','Construction','Bank','Skills','Legacy','Shop'].includes(previousHallSection??'')?previousHallSection as GuildNavigationState['hallSection']:'Overview');
+  const [section,setSection]=useState<GuildSection>(initialPve?'PvE':'Home'),[onlineSection,setOnlineSection]=useState<OnlineGuildSection>(initialPve?'PvE':initialNavigation?.section??'Home'),[hallSection,setHallSection]=useState<GuildNavigationState['hallSection']>(initialHallSection);
   useEffect(()=>{if(initialPve)onInitialPveHandled?.()},[]);
+  // Older saved Hall/Skills destinations open the single Progress destination.
+  useEffect(()=>{if(online&&onlineSection==='Hall'&&hallSection==='Skills'){
+    setProgressTab('Skills');setActivityView('Projects');setOnlineSection('Activities');
+  }},[online,onlineSection,hallSection]);
   // Capture the visible Guild sub-route; never persist privileged Manage/Appearance
   // or the Chat overlay as a back-history destination.
   useEffect(()=>{
    if(!online)return;
    const safeSection:GuildNavigationState['section']=
     onlineSection==='Manage'||onlineSection==='Appearance'||onlineSection==='Chat'?'Home':onlineSection;
-   onNavigationChange?.({section:safeSection,activityView,hallSection});
-  },[online,onlineSection,activityView,hallSection,onNavigationChange]);
+   onNavigationChange?.({section:safeSection,activityView,hallSection,progressTab});
+  },[online,onlineSection,activityView,hallSection,progressTab,onNavigationChange]);
   const [guildMembership,setGuildMembership]=useState<'loading'|'member'|'none'|'error'>(online?'loading':'member');
   const [guildRole,setGuildRole]=useState<GuildManagementRole|null>(null);
   const canCustomize=canManageGuild(guildRole);
   const [guildLoadError,setGuildLoadError]=useState('');
   const guideIndex=onlineSection==='Activities'?(activityView==='Muster'?2:activityView==='Projects'?4:3):onlineSection==='PvE'?5:onlineSection==='Hall'?6:onlineSection==='Chat'?1:0;
   const guideStep=GUILD_TUTORIAL_STEPS[guideIndex];
-  const guideSection=onlineSection==='Activities'?`Activities/${activityView}`:onlineSection==='Hall'&&hallSection!=='Facilities'?`Hall/${hallSection}`:onlineSection;
-  const guildGuide=onlineSection==='Hall'?guildHallSectionGuide(language,hallSection):onlineSection==='Roster'?{title:'Your Guild roster',body:'Open a member to see their role and activity. Leaders can manage members from the roster.',detail:'Use Home → Members to return here.'}:onlineSection==='Manage'?{title:'Manage your Guild',body:'Recruitment and Guild settings are available to leaders and officers.',detail:'Open Requests to review applications or Guild Appearance for cosmetics.'}:onlineSection==='Appearance'?{title:'Guild appearance',body:'Choose your Guild tag, banner and profile details here.',detail:'Changes are saved separately; review your choices before applying them.'}:{title:guideStep.title,body:guideStep.body,detail:guideStep.tip};
+  const guideSection=onlineSection==='Activities'?`Activities/${activityView}`:onlineSection==='Hall'&&hallSection!=='Overview'?`Hall/${hallSection}`:onlineSection;
+  const guildGuide=onlineSection==='Activities'&&activityView==='Projects'?{title:'Guild Progress',body:'Complete the weekly Guild Project together, or open Skills to review permanent Guild bonuses.',detail:'Any combat, gathering or crafting activity can contribute to the shared project.'}:onlineSection==='Hall'?guildHallSectionGuide(language,hallSection):onlineSection==='Roster'?{title:'Your Guild roster',body:'Open a member to see their role and activity. Leaders can manage members from the roster.',detail:'Use Home → Members to return here.'}:onlineSection==='Manage'?{title:'Manage your Guild',body:'Recruitment and Guild settings are available to leaders and officers.',detail:'Open Requests to review applications or Guild Appearance for cosmetics.'}:onlineSection==='Appearance'?{title:'Guild appearance',body:'Choose your Guild tag, banner and profile details here.',detail:'Changes are saved separately; review your choices before applying them.'}:{title:guideStep.title,body:guideStep.body,detail:guideStep.tip};
   const reloadGuildMembership=()=>{
    setGuildMembership('loading');setGuildLoadError('');
    void myGuild().then(membership=>{setGuildRole(membership?.role??null);setGuildMembership(membership?'member':'none')})
@@ -109,21 +120,21 @@ export function GuildScreen({state,onChange,onlineManagement,onlineBoard,onlineP
   if(online&&guildMembership==='loading')return <Panel><Text style={s.title}>Guild</Text><ActivityIndicator color={C.accent}/></Panel>;
   if(online&&guildMembership==='error')return <Panel><Text style={s.title}>Unable to open Guilds</Text><Text style={s.sub}>{guildLoadError}</Text><GameButton title="Retry" onPress={reloadGuildMembership}/></Panel>;
   if(online&&guildMembership==='none')return <GuildDiscoveryFlow onJoined={reloadGuildMembership}/>;
-  if(online)return <View style={{flex:1,minHeight:0}}><GuildNavigation value={onlineSection} unread={onlineChatUnread} mentions={onlineChatMentions} onChange={next=>{if(next==='Chat'&&onOpenChat)onOpenChat();else setOnlineSection(next)}}/><ScrollView contentContainerStyle={s.root} keyboardShouldPersistTaps="handled" keyboardDismissMode="on-drag" showsVerticalScrollIndicator={false} showsHorizontalScrollIndicator={false}>
-    {(['Activities','Hall','Roster','Manage'] as const).some(section=>section===onlineSection)?<GuildSectionHeader label={st('Guild')} title={socialLabel(language,onlineSection==='Activities'?'Guild Activity Board':onlineSection==='Hall'?(hallSection==='Shop'?'Guild Token Shop':'Guild Hall'):onlineSection==='Roster'?'Guild Roster':'Manage Guild')} copy={socialLabel(language,onlineSection==='Activities'?'Shared objectives, daily participation and weekly Projects.':onlineSection==='Roster'?'Roster, activity and your membership.':onlineSection==='Manage'?'Guild identity and recruitment.':'')}/>:null}
-    {onlineSection!=='Future'?<SectionGuide scope={session?.user.id??''} area="guild" section={guideSection} guide={guildGuide} translate={value=>guildTutorialText(language,value)}/>:null}
+  if(online)return <View style={{flex:1,minHeight:0}}><GuildNavigation value={onlineSection} unread={onlineChatUnread} mentions={onlineChatMentions} onChange={next=>{if(next==='Chat'&&onOpenChat)onOpenChat();else setOnlineSection(next)}}/><ScrollView ref={guildScroll} contentContainerStyle={s.root} keyboardShouldPersistTaps="handled" keyboardDismissMode="on-drag" showsVerticalScrollIndicator={false} showsHorizontalScrollIndicator={false}>
+    {(['Activities','Roster','Manage'] as const).some(section=>section===onlineSection)?<GuildSectionHeader label={st('Guild')} title={socialLabel(language,onlineSection==='Activities'?(activityView==='Projects'?'Guild Progress':'Guild Activity Board'):onlineSection==='Hall'?(hallSection==='Shop'?'Guild Token Shop':'Guild Hall'):onlineSection==='Roster'?'Guild Roster':'Manage Guild')} copy={socialLabel(language,onlineSection==='Activities'?(activityView==='Projects'?'Weekly cooperation and permanent Guild bonuses.':'Shared objectives, daily participation and weekly Projects.'):onlineSection==='Roster'?'Roster, activity and your membership.':onlineSection==='Manage'?'Guild identity and recruitment.':'')}/>:null}
+    {onlineSection!=='Home'&&onlineSection!=='PvE'&&onlineSection!=='Chat'&&onlineSection!=='Future'?<SectionGuide scope={session?.user.id??''} area="guild" section={guideSection} guide={guildGuide} translate={value=>guildTutorialText(language,value)}/>:null}
 
     {onlineSection==='Home'?<GuildOnlineHome onNavigateMuster={()=>{setActivityView('Muster');setOnlineSection('Activities')}} onNavigateShop={()=>{setHallSection('Shop');setOnlineSection('Hall')}} canCustomize={canCustomize} onNavigate={next=>{if(next==='Chat'&&onOpenChat){onOpenChat();return;}if((next!=='Manage'&&next!=='Appearance')||canCustomize)setOnlineSection(next)}} board={onlineBoard} chatUnread={onlineChatUnread}/>:null}
     {onlineSection==='Roster'?(isValidElement<{initialView?:'Members'|'Requests'|'Safety'}>(onlineManagement)?cloneElement(onlineManagement,{initialView:rosterSection}):onlineManagement):null}
     {onlineSection==='Activities'?<View style={s.sectionStack}>
-      <BoardTabs compact label="Guild activity boards" items={(['Quests','Muster','Projects'] as const).map(id=>({id,label:id}))} value={activityView} onChange={setActivityView}/>
+      <BoardTabs compact label="Guild activity boards" items={(['Quests','Muster','Projects'] as const).map(id=>({id,label:id==='Projects'?'Progress':id}))} value={activityView} onChange={setActivityView}/>
       {activityView==='Quests'?<><GuildActivitySummaryPanel compact/><GuildQuestPanel/></>:null}
       {activityView==='Muster'?<><GuildSectionHeader label={st("DAILY & WEEKLY")} title={st("Muster & Rally")} copy={st("Daily participation rolls into the shared weekly Rally without adding another currency.")}/><OnlineGuildMusterPanel/></>:null}
-      {activityView==='Projects'?<><GuildSectionHeader label={st("SHARED PROGRESSION")} title={st("Guild Projects")} copy={st("Hunt or gather to progress your automatic weekly Project, and review recent Guild activity.")}/>{onlineProjects}</>:null}
+      {activityView==='Projects'?<GuildProgressPanel tab={progressTab} onChange={setProgressTab} projects={onlineProjects}/>:null}
     </View>:null}
     {onlineSection==='PvE'?onlinePve:null}
     {onlineSection==='Hall'?<View style={s.sectionStack}>
-     {hallSection==='Shop'?<><BoardTabs compact label="Guild Hall destinations" items={(['Facilities','Skills','Trophies','Shop'] as const).map(id=>({id,label:id}))} value={hallSection} onChange={setHallSection}/><OnlineGuildTokenShopPanel onRewardsChanged={onTokenRewardsChanged}/></>:isValidElement<{activeSection?:'Facilities'|'Skills'|'Trophies';onSectionChange?:(section:'Facilities'|'Skills'|'Trophies'|'Shop')=>void}>(onlineHall)?cloneElement(onlineHall,{activeSection:hallSection,onSectionChange:setHallSection}):onlineHall}
+     {hallSection==='Shop'?<><GameButton compact title="Back to Guild Hall" tone="secondary" onPress={()=>setHallSection('Overview')}/><OnlineGuildTokenShopPanel onRewardsChanged={onTokenRewardsChanged} onOpenConstruction={()=>setHallSection('Construction')}/></>:isValidElement<{activeSection?:'Overview'|'Construction'|'Bank'|'Skills'|'Legacy';onSectionChange?:(section:GuildNavigationState['hallSection'])=>void}>(onlineHall)?cloneElement(onlineHall,{activeSection:hallSection,onSectionChange:(next)=>{if(next==='Skills'){setProgressTab('Skills');setActivityView('Projects');setOnlineSection('Activities')}else{setHallSection(next);guildScroll.current?.scrollTo({y:0,animated:true})}}}):onlineHall}
     </View>:null}
     {onlineSection==='Chat'?onlineChat:null}
     {onlineSection==='Appearance'&&canCustomize?<View style={s.sectionStack}><GameButton compact title={st('Manage Guild')} tone="secondary" onPress={()=>setOnlineSection('Manage')}/><GuildSectionHeader label={st("IDENTITY")} title={st("Guild Appearance")} copy={st("Manage the Guild tag, banner, border, colors, nameplate and motto with role-based permissions.")}/>{onlineCustomize}</View>:null}
@@ -268,6 +279,7 @@ export function GuildOnlineHome({onNavigate,onNavigateMuster,onNavigateShop,boar
  const st=useSocialText(),language=useGameLanguage(),C=useGameTheme(),s=useMemo(()=>makeStyles(C),[C]);
  return <View style={s.homeStack}>
   <GuildMemberIdentity onRoster={()=>onNavigate('Roster')} onManage={canCustomize?()=>onNavigate('Manage'):undefined}/>
+  <GuildHallSummary onOpenMuster={()=>onNavigateMuster()} onOpenShop={()=>onNavigateShop()}/>
   <GuildHomeActions board={isValidElement<{compact?:boolean}>(board)?cloneElement(board,{compact:true}):board} activity={<GuildActivitySummaryPanel compact/>} canManage={canCustomize} chatUnread={chatUnread} onMuster={()=>onNavigateMuster()} onQuests={()=>onNavigate('Activities')} onShop={()=>onNavigateShop()} onPve={()=>onNavigate('PvE')} onRoster={()=>onNavigate('Roster')} onHall={()=>onNavigate('Hall')} onChat={()=>onNavigate('Chat')} onManage={()=>onNavigate('Manage')}/>
   <GameButton compact title="Roadmap & future Guild content" tone="secondary" onPress={()=>onNavigate('Future')}/>
  </View>;

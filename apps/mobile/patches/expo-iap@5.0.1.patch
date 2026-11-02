@@ -1,0 +1,14 @@
+diff --git a/android/build.gradle b/android/build.gradle
+index f3690c8b4a7ca14542c603e578f6d1f428e14481..fd2b22151dacd76e2fff8e93bf557b7d317cfa62 100644
+--- a/android/build.gradle
++++ b/android/build.gradle
+@@ -79,6 +79,9 @@ if (useManagedAndroidSdkVersions) {
+ 
+ android {
+   namespace = "expo.modules.iap"
++  buildFeatures {
++    buildConfig true
++  }
+   defaultConfig {
+     versionCode = 1
+     versionName = expoIapPackageVersion

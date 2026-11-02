@@ -52,6 +52,38 @@ export function gearEnhancement(state:GameState,itemId:string):GearEnhancementSt
   return {rank:Math.max(0,Math.min(MAX_UPGRADE_RANK,Math.floor(raw?.rank??0))),failures:Math.max(0,Math.floor(raw?.failures??0)),...slots};
 }
 export function hasEnhancement(state:GameState,itemId:string){const enhancement=gearEnhancement(state,itemId);return enhancement.rank>0||enhancement.gemIds.length>0;}
+/**
+ * Legacy equipment has no per-copy marker: upgrades were saved under itemId.
+ * Reserve a physical copy when disposing untagged spares, but never count an
+ * upgraded, currently equipped weapon as though it were still in Inventory.
+ *
+ * This only authorizes untagged stacks: unique Forge instances must use their
+ * exact instanceId disposal command and retain independent protection checks.
+ * When the legacy owner is unequipped we retain at least one unmarked copy
+ * across the active character's Inventory, Bank and Overflow.
+ */
+export function canDisposeLegacyEquipment(state:GameState,itemId:string,location:'inventory'|'bank',quantity:number):boolean{
+  if(!Number.isSafeInteger(quantity)||quantity<=0)return false;
+  const unmarked=(stacks:readonly ItemStack[])=>stacks.reduce((sum,row)=>
+    sum+(row.itemId===itemId&&row.instanceId===undefined&&Number.isSafeInteger(row.quantity)&&row.quantity>0?row.quantity:0),0);
+  if(unmarked(state[location].stacks)<quantity)return false;
+  const allCharacters=[state.character,...(state.otherCharacters??[]).map(entry=>entry.character)].filter(
+    (character):character is NonNullable<GameState['character']>=>!!character);
+  // A legacy enchantment belongs to a character and definition, not to all
+  // matching items across the account. Never discard the last physical copy
+  // needed by a different character's unequipped, upgraded legacy item.
+  const reserved=allCharacters.filter(character=>{
+    const enhancement=character.gearEnhancements?.[itemId];
+    const protectedUpgrade=!!enhancement&&(enhancement.rank>0||enhancement.failures>0
+      ||!!enhancement.statGemId||!!enhancement.effectGemId||(enhancement.gemIds?.length??0)>0);
+    return protectedUpgrade&&!Object.values(character.equipment??{}).includes(itemId);
+  }).length;
+  if(!reserved)return true;
+  const stored=unmarked(state.inventory.stacks)+unmarked(state.bank.stacks)+unmarked(state.overflow.stacks)
+    +(state.otherCharacters??[]).reduce((count,entry)=>count+unmarked(entry.inventory.stacks)+unmarked(entry.overflow.stacks),0);
+  return stored-quantity>=reserved;
+}
+
 export function gemSocketCapacity(itemId:string){const item=itemDef(itemId);return item.type==='gear'?EQUIPMENT_GEM_SOCKET_COUNT:0;}
 export function gemSocketState(state:GameState,itemId:string){const enhancement=gearEnhancement(state,itemId);return {statGemId:enhancement.statGemId,effectGemId:enhancement.effectGemId,filled:Number(Boolean(enhancement.statGemId))+Number(Boolean(enhancement.effectGemId)),capacity:gemSocketCapacity(itemId)};}
 export type UpgradeMaterialCost={itemId:string;quantity:number};

@@ -17,7 +17,7 @@ for(const [id,first,second,type,index] of pairs)SUNSCAR_ENCOUNTERS[id]=()=>[
 ];
 
 function eliteIdentity(name:string):{archetype:PveArchetype;mechanics:PveMechanicId[]}{
- if(name==='Orrery Warden'||name==='Amberglass Sentinel'||name==='Wellbound Colossus')return{archetype:'guardian',mechanics:['heavy_hit','barrier']};
+ if(name==='Orrery Warden'||name==='Glasshide Warder'||name==='Wellbound Colossus')return{archetype:'guardian',mechanics:['heavy_hit','barrier']};
  if(name==='Solar Archivist')return{archetype:'caster',mechanics:['interrupt','aoe']};
  if(name==='Dune Sphinx')return{archetype:'hexer',mechanics:['vulnerability','dot']};
  if(name==='Veiled Huntmaster')return{archetype:'assassin',mechanics:['focus','execute']};
@@ -32,7 +32,7 @@ function elite(id:string,name:string,type:'physical'|'fire'|'arcane',index:numbe
  return[withPveIdentity({id,name,team:'enemies',role:'enemy',level:45,stats:stats(hp,ap,def),basicAttackMs:2800,basicAttackCoeff:.72,abilities},identity.archetype,identity.mechanics)];
 }
 for(const [prefix,names,type] of [
- ['SUN_OBS',['Orrery Warden','Solar Archivist','Amberglass Sentinel'],'arcane'],
+ ['SUN_OBS',['Orrery Warden','Solar Archivist','Glasshide Warder'],'arcane'],
  ['SUN_MIRAGE',['Dune Sphinx','Veiled Huntmaster','Wellbound Colossus'],'fire'],
 ] as const)names.forEach((name,index)=>{SUNSCAR_ENCOUNTERS[`${prefix}_ELITE_0${index+1}`]=()=>elite(`${prefix}_ELITE_${index+1}`,name,type,index)});
 

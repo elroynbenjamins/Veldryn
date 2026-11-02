@@ -9,6 +9,9 @@ const navigation=read('src/components/GuildNavigation.tsx');
 const chat=read('src/components/GuildChat.tsx');
 const composer=read('src/components/ChatComposer.tsx');
 const onlineProjects=read('src/components/OnlineGuildProjectsPanel.tsx');
+const progress=read('src/components/GuildProgressPanel.tsx');
+const skillPaths=read('src/components/GuildSpecializationPaths.tsx');
+const onlineSkills=read('src/components/OnlineGuildSkillsPanel.tsx');
 const projectClient=read('src/online/guild-projects-v18.ts');
 const projectTransport=read('../../backend/supabase/migrations/20261018000165_guild_project_interactions_v1.sql');
 const activity=read('src/components/GuildActivityFeedPanel.tsx');
@@ -32,8 +35,8 @@ ok(app.includes('onlineChatMentions={notificationCounts.guildChatMentions}'),'Gu
 ok(app.includes('firstUnreadMessageId={notificationCounts.guildFirstUnreadMessageId}'),'Direct Guild Chat must preserve unread divider state');
 
 for(const label of ['Home','PvE','Roster','Activities','Hall','Chat','Manage'])ok(guildScreen.includes("'"+label+"'"),'Consolidated online Guild tabs must include '+label);
-ok(guildScreen.includes('{onlineProjects}')&&guildScreen.includes("onlineSection==='PvE'?onlinePve:null"),"Guild navigation must expose live Projects and dedicated PvE");
-ok(guildScreen.includes('title={st("Guild Projects")}')&&guildScreen.includes("onlineSection==='PvE'?onlinePve:null"),"Activities must label Projects and keep PvE in its dedicated destination");
+ok(guildScreen.includes('projects={onlineProjects}')&&guildScreen.includes('<GuildProgressPanel')&&guildScreen.includes("onlineSection==='PvE'?onlinePve:null"),"Guild navigation must expose live Progress tabs and dedicated PvE");
+ok(guildScreen.includes("id==='Projects'?'Progress':id")&&guildScreen.includes("onlineSection==='PvE'?onlinePve:null"),"Activities must expose Guild Progress and keep PvE dedicated");
 ok(guildScreen.includes("onlineSection==='Chat'?onlineChat:null"),'Chat tab must render Guild Chat');
 ok(guildScreen.includes("onlineSection==='Manage'?<View")&&!guildScreen.includes('{onlineDirectory}')&&guildScreen.includes('{onlineCustomize}'),'Joined-member management must preserve Customize without offering duplicate Guild creation');
 ok(guildScreen.includes('<GuildMemberIdentity onRoster=')&&guildScreen.includes('<GuildHomeActions board=')&&guildScreen.includes('board={onlineBoard}'),'Guild Home must preserve member identity and the private Notice Board');
@@ -51,13 +54,13 @@ ok(projectClient.includes("db.rpc('guild_project_vote_v1'"),'Member voting must 
 ok(projectClient.includes("db.rpc('guild_project_start_v1'"),'Project starting must use a server-authoritative RPC');
 ok(!projectClient.includes('guild_project_donate_v1')&&!projectClient.includes('guild_project_claim_v1'),'Donation/reward settlement must stay unavailable until atomic authoritative transport exists');
 
-ok(onlineProjects.includes('One shared weekly goal')&&onlineProjects.includes('WEEKLY ACTIVITIES · SHARED EFFORT')&&onlineProjects.includes("source:'crafting'"),"Live Projects must present three verified activity paths and one shared progress goal");
+ok(onlineProjects.includes('Weekly Projects')&&onlineProjects.includes('Contribute now')&&onlineProjects.includes("source:'crafting'"),"Live Projects must present compact progress and three verified activity paths");
 ok(projectClient.includes("client().rpc('claim_guild_project_reward_v2'")&&onlineProjects.includes('onRewardsChanged'),"Unsafe donation/reward actions must keep an explicit authority boundary");
-ok(onlineProjects.includes('Start Project'),'Authorized roles must get the supported server-validated start action');
+ok(onlineProjects.includes('Start project'),'Authorized roles must get the supported server-validated start action');
 ok(onlineProjects.includes("import {LoadingState} from './LoadingState'"),'Live Projects must use the shared loading state');
 ok(onlineProjects.includes("import {StatusPill} from './StatusPill'"),'Live Projects must use shared semantic status pills');
-ok(onlineProjects.includes('<StatusPill label={st("LIVE")} tone="good"/>'),'Live Projects must expose a localized semantic live status');
-ok(onlineProjects.includes('YOUR CONTRIBUTION'),'Live Projects must surface personal contribution');
+ok(onlineProjects.includes('<StatusPill label="SHARED" tone="good"/>'),'Live Projects must expose semantic shared-project status');
+ok(onlineProjects.includes('Your contribution'),'Live Projects must surface personal contribution');
 ok(onlineProjects.includes('meaningful contributors'),'Live Projects must surface anti-leech contributor progress');
 ok(onlineProjects.includes('<GuildActivityFeedPanel entries={snapshot.activity}/>'),'Live Projects must surface recent Guild activity');
 ok(onlineProjects.includes("project.status==='completed'"),'Live Project cards must distinguish completed state');
@@ -66,6 +69,14 @@ ok(projectTransport.includes("v_slot_cap:=case when v_level<5 then 0 when v_leve
 ok(projectTransport.includes('for update'),'Vote/start transport must serialize candidate selection');
 ok(projectTransport.includes('GUILD_WEEKLY_PROJECT_ALREADY_ACTIVE'),'Server must enforce one active weekly Guild Project');
 
+// Unified Progress navigation and second-confirmation guard are UI-only.
+ok(progress.includes("label:'Weekly Projects'")&&progress.includes("label:'Guild Skills'"),'Progress must present two compact destinations');
+ok(guildScreen.includes("next==='Skills'")&&guildScreen.includes("setProgressTab('Skills')"),'Hall Skills shortcut must open unified Guild Progress');
+ok(skillPaths.includes('<Modal visible={review}')&&skillPaths.includes('Confirm upgrade')&&skillPaths.includes('Cancel'),'Guild Skill upgrades must use a real dismissal-safe confirmation modal');
+ok(skillPaths.includes('const ready=known&&released&&canUpgrade')&&skillPaths.includes('disabled={!ready}'),'Release, role, points and materials must gate confirmations');
+ok(onlineSkills.includes('isReleased={id=>releasedIds.has(id)}')&&onlineSkills.includes('upgradeFlight.current'),'Live skill upgrade must retain server flags and single-flight protection');
+ok(onlineProjects.includes('const qualifying=project.personalRewardThreshold>0'),'Personal reward claim must require a positive configured threshold');
+ok(onlineProjects.includes('claimOnlineGuildProjectReward')&&onlineProjects.includes('Date.now()<claimDeadline'),'Claim must use server RPC and respect reward deadline');
 ok(chat.includes('MEMBERS ONLY'),'Guild Chat must keep member-only context');
 ok(chat.includes('GuildTaggedPlayerName name={guild.name}'),'Guild Chat header must use the shared Guild identity treatment');
 const chatMessageRow=read('src/components/ChatMessageRow.tsx');

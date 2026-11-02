@@ -12,40 +12,41 @@ import {GameButton} from './GameButton';
 import {GameModalHeader,GameModalSurface} from './GameModalSurface';
 
 const RARITY_ORDER:ItemRarity[]=['common','uncommon','rare','epic','legendary','mythic'];
-/** Only Epic+ upgrades interrupt play with a reveal; Common-to-Uncommon/Rare uses the normal compact feedback. */
-export function isExceptionalForgeResult(result:ForgeCraftResult){return result.qualityProc&&(result.rarity==='epic'||result.rarity==='legendary'||result.rarity==='mythic');}
+/** Legendary and Mythic gear get a special reveal, whether upgraded or crafted at their base rarity. Never celebrate gear that was auto-sold on arrival. */
+export function isExceptionalForgeResult(result:ForgeCraftResult){return result.autoSold!=='incoming'&&(result.rarity==='legendary'||result.rarity==='mythic');}
 function highest(results:readonly ForgeCraftResult[]){return results.slice().sort((a,b)=>RARITY_ORDER.indexOf(b.rarity)-RARITY_ORDER.indexOf(a.rarity))[0];}
 export function forgeClaimBannerMessage(results:readonly ForgeCraftResult[]){
   if(!results.length)return '';
-  if(results.length===1){const result=results[0],item=itemDef(result.itemId);return `Forged ${item.name} · ${rarityMeta(result.rarity).label}${result.quality!==undefined?` · Q${result.quality}/100`:''}${result.autoSold==='incoming'?` · auto-sold new copy for ${result.saleGold} Gold`:result.autoSold==='existing'?` · sold a weaker existing copy for ${result.saleGold} Gold`:result.duplicateCount?` · copy ${result.duplicateCount+1}`:''}.`;}
+  if(results.length===1){const result=results[0],item=itemDef(result.itemId);return `Forged ${item.name} · ${rarityMeta(result.rarity).label}${result.quality!==undefined?` · Q${result.quality}/100`:''}${result.autoSold==='incoming'?` · auto-sold new gear for ${result.saleGold} Gold`:result.autoSold==='existing'?` · sold weaker existing gear for ${result.saleGold} Gold`:''}.`;}
   const best=highest(results),sold=results.filter(row=>row.autoSold),gold=sold.reduce((sum,row)=>sum+row.saleGold,0);return `${results.length} Forge jobs settled · ${sold.length?`${sold.length} auto-sold for ${gold} Gold · `:''}best roll ${rarityMeta(best.rarity).label}.`;
 }
 
 export function ForgeClaimBanner({results,reduceMotion,onDismiss}:{results:readonly ForgeCraftResult[];reduceMotion:boolean;onDismiss:()=>void}){
+  const C=useGameTheme(),best=results.length?highest(results):undefined,meta=best?rarityMeta(best.rarity):undefined;
   const dismissRef=useRef(onDismiss);dismissRef.current=onDismiss;
   useEffect(()=>{if(!results.length||results.some(isExceptionalForgeResult))return;const timer=setTimeout(()=>dismissRef.current(),4500);return()=>clearTimeout(timer)},[results]);
   if(!results.length||results.some(isExceptionalForgeResult))return null;
-  return <ActionFeedback message={forgeClaimBannerMessage(results)} tone="success" reduceMotion={reduceMotion} compact/>;
+  return <ActionFeedback message={forgeClaimBannerMessage(results)} tone="success" reduceMotion={reduceMotion} compact accentColor={meta?.color} accentSurface={meta?.surface} highlightText={meta?.label} highlightTextColor={meta?(C.dark?meta.color:meta.lightTextColor):undefined}/>;
 }
 
 export function ForgeRarityRevealModal({results,reduceMotion,onClose,onInventory}:{results:readonly ForgeCraftResult[];reduceMotion:boolean;onClose:()=>void;onInventory:()=>void}){
- const {gt,gl,language}=useGameplayText();
+ const {gt}=useGameplayText();
   const C=useGameTheme(),s=useMemo(()=>makeStyles(C),[C]),{width,fontScale}=useWindowDimensions(),stackActions=width<360||fontScale>=1.25,scale=useRef(new Animated.Value(1)).current;
   const procs=results.filter(isExceptionalForgeResult),best=procs.length?highest(procs):undefined,bestMeta=best?rarityMeta(best.rarity):undefined;
-  useEffect(()=>{scale.stopAnimation();scale.setValue(1);if(!procs.length||reduceMotion)return;Animated.sequence([Animated.spring(scale,{toValue:1.035,damping:8,stiffness:210,mass:.65,useNativeDriver:true}),Animated.spring(scale,{toValue:1,damping:15,stiffness:190,mass:.8,useNativeDriver:true})]).start();return()=>scale.stopAnimation()},[best?.instanceId,procs.length,reduceMotion,scale]);
+  useEffect(()=>{scale.stopAnimation();scale.setValue(1);if(!procs.length||reduceMotion)return;Animated.sequence([Animated.spring(scale,{toValue:best?.rarity==='mythic'?1.085:1.045,damping:9,stiffness:200,mass:.65,useNativeDriver:true}),Animated.spring(scale,{toValue:1,damping:15,stiffness:190,mass:.8,useNativeDriver:true})]).start();return()=>scale.stopAnimation()},[best?.instanceId,best?.rarity,procs.length,reduceMotion,scale]);
   if(!procs.length)return null;
-  return <GameModalSurface visible presentation="dialog" reduceMotion={reduceMotion} onClose={onClose} backdropLabel={gt("Close Forge result")} surfaceStyle={[s.dialog,bestMeta&&{borderColor:bestMeta.color}]}>
-    <GameModalHeader eyebrow={gt("EXCEPTIONAL FORGE RESULT")} title={procs.length===1?`${bestMeta!.label} rarity upgrade`:`${procs.length} rarity upgrades`} onClose={onClose}/>
-    <Animated.View style={[s.reveal,{transform:[{scale}]}]}>
+  return <GameModalSurface visible presentation="dialog" reduceMotion={reduceMotion} onClose={onClose} backdropLabel={gt("Close Forge result")} surfaceStyle={[s.dialog,bestMeta&&{borderColor:bestMeta.color,borderWidth:best?.rarity==='mythic'?3:2}]}>
+    <GameModalHeader eyebrow={gt("EXCEPTIONAL FORGE RESULT")} title={procs.length===1?`${bestMeta!.label} gear forged`:`${procs.length} exceptional Forge results`} onClose={onClose}/>
+    <Animated.View style={[s.reveal,bestMeta&&{borderColor:bestMeta.color,borderWidth:bestMeta.borderWidth,backgroundColor:bestMeta.surface},{transform:[{scale}]}]}>
       <Text style={[s.revealMark,{color:bestMeta?.color}]}>{bestMeta?.symbol} {bestMeta?.label.toUpperCase()} {bestMeta?.symbol}</Text>
-      <Text style={s.revealCopy}>{procs.length===1?gt("The Forge produced a rarer crafted copy."):gt("Multiple finished crafts produced rarer copies.")}</Text>
+      <Text style={s.revealCopy}>{gt("Added to inventory")}</Text>
     </Animated.View>
     <View style={s.results}>{procs.map(result=>{const item=itemDef(result.itemId),meta=rarityMeta(result.rarity),base=rarityMeta(result.baseRarity),bonus=Math.round((result.statMultiplier-1)*100);return <View key={result.instanceId} style={[s.result,{borderColor:meta.color,backgroundColor:meta.surface}]}>
       <View style={[s.artFrame,{borderColor:meta.color}]}><EquipmentArtwork item={item} rarity={result.rarity} compact framed={false}/></View>
-      <View style={s.flex}><Text style={[s.itemName,{color:rarityNameColor(result.rarity,C.dark,C.text)}]}>{item.name}</Text><Text style={s.meta}>{base.label} base → {meta.label} crafted copy{result.quality!==undefined?` · Q${result.quality}/100`:''}</Text><Text style={[s.bonus,{color:meta.color}]}>{bonus>0?'+':''}{bonus}% equipment stats vs base gear</Text>{result.autoSold?<Text style={s.copy}>{result.autoSold==='incoming'?'New roll auto-sold; existing copies kept':'Weaker prior copy sold; improved roll retained'} · +{result.saleGold} Gold</Text>:result.duplicateCount>0?<Text style={s.copy}>Crafted copy #{result.duplicateCount+1} owned</Text>:<Text style={s.copy}>{gt("First crafted copy owned")}</Text>}</View>
+      <View style={s.flex}><Text style={[s.itemName,{color:rarityNameColor(result.rarity,C.dark,C.text)}]}>{item.name}</Text><Text style={s.meta}>{result.qualityProc?`${base.label} → ${meta.label}`:meta.label} gear{result.quality!==undefined?` · Q${result.quality}/100`:''}</Text>{bonus>0?<Text style={[s.bonus,{color:meta.color}]}>+{bonus}% equipment stats vs base gear</Text>:null}{result.autoSold?<Text style={s.copy}>{result.autoSold==='incoming'?'New gear auto-sold; existing gear kept':'Weaker gear sold; stronger gear kept'} · +{result.saleGold} Gold</Text>:<Text style={s.copy}>{gt("Added to inventory")}</Text>}</View>
       <View style={[s.rarityBadge,{borderColor:meta.color}]}><Text style={[s.rarityText,{color:meta.color}]}>{meta.label.toUpperCase()}</Text></View>
     </View>})}</View>
-    {results.length>procs.length?<Text style={s.normal}>{results.length-procs.length} additional normal craft{results.length-procs.length===1?'':'s'} claimed at the same time.</Text>:null}
+    {results.length>procs.length?<Text style={s.normal}>{results.length-procs.length} other Forge job{results.length-procs.length===1?'':'s'} completed at the same time.</Text>:null}
     <View style={[s.actions,stackActions&&s.actionsStack]}><View style={[s.action,stackActions&&s.actionStack]}><GameButton title={gt("Continue forging")} tone="secondary" onPress={onClose}/></View><View style={[s.action,stackActions&&s.actionStack]}><GameButton title={gt("View inventory")} onPress={onInventory}/></View></View>
   </GameModalSurface>;
 }

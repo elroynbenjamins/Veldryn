@@ -141,7 +141,7 @@ export function GuildProjectPosting({project,expanded,compact=false,onToggle,onC
  const C=useGameTheme(),s=useMemo(()=>makeStyles(C),[C]);
  const pct=progressPercent(project);
  const weekly=project.launchWeekly===true;
- const qualifying=project.personalRewardThreshold<=0||project.personalPoints>=project.personalRewardThreshold;
+ const qualifying=project.personalRewardThreshold>0&&project.personalPoints>=project.personalRewardThreshold;
  const claimDeadline=project.endsAt?Date.parse(project.endsAt)+7*86400000:NaN;
  const claimOpen=project.status==='completed'&&!project.completionRewardClaimed&&qualifying
   &&Number.isFinite(claimDeadline)&&Date.now()<claimDeadline;

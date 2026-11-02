@@ -1,5 +1,5 @@
 import {accountText} from '../i18n/account';
-import {useMemo} from 'react';
+import {useMemo,useState} from 'react';
 import {Image,Pressable,StyleSheet,Text,View,useWindowDimensions} from 'react-native';
 import type {GameState} from '../core/types';
 import {homeSessionSummary,type HomeReadyKind} from '../core/dashboard';
@@ -31,7 +31,23 @@ export function HomeSessionOverview({state,nowMs,onQuests,onDaily,onEvents,onWee
  if(summary.companionAttention)parts.push(a('{count} companion',{count:summary.companionAttention}));
  const visibleParts=parts.slice(0,4),hiddenPartCount=Math.max(0,parts.length-visibleParts.length),readyDisplay=summary.readyTotal>99?'99+':String(summary.readyTotal);
  const event=eventLifecycle(state,nowMs),eventBadge=summary.primaryReady?.kind==='events'&&event?liveEventVisuals(event.definition.visualKey).badgeIcon:undefined;
- if(compact)return summary.readyTotal>0?<View style={[s.root,s.readyRoot]}><View style={s.head}>{eventBadge?<Image source={eventBadge} resizeMode="contain" style={{width:42,height:42}}/>:null}<View style={s.flex}><Text style={s.title}>{a(summary.primaryReady?.title??'No immediate claims')}</Text><Text style={s.meta}>{visibleParts.join(' · ')}</Text></View><Text style={s.readyBadge}>{a('{count} READY',{count:readyDisplay})}</Text></View>{summary.primaryReady?<GameButton compact title={a(summary.primaryReady.button)} onPress={()=>openReady(summary.primaryReady!.kind)}/>:null}</View>:null;
+ const readyRows=[
+  ...(summary.forgeReady?[{id:'forge',title:summary.forgeReady===1?'Forge craft ready':summary.forgeReady+' Forge crafts ready',detail:'Collect finished equipment',onPress:onForge,mark:'⚒'}]:[]),
+  ...(summary.storyRewards?[{id:'story',title:summary.storyRewards===1?'Story reward ready':summary.storyRewards+' story rewards ready',detail:'Claim your completed chapter',onPress:onQuests,mark:'✦'}]:[]),
+  ...(summary.dailyReady?[{id:'daily',title:'Daily Supplies ready',detail:'Claim today’s account-wide supplies',onPress:onDaily,mark:'☀'}]:[]),
+  ...(summary.eventRewards?[{id:'event',title:summary.eventRewards+' Event reward'+(summary.eventRewards===1?'':'s')+' ready',detail:'Open the active Event',onPress:onEvents,mark:'✧'}]:[]),
+  ...(summary.companionAttention?[{id:'companion',title:summary.companionAttention+' Companion action'+(summary.companionAttention===1?'':'s')+' ready',detail:'Review companion progression',onPress:onCompanions,mark:'♙'}]:[]),
+  ...(summary.weeklyRewards?[{id:'weekly',title:summary.weeklyRewards+' Contract rewards',detail:'Review the weekly board',onPress:onWeekly,mark:'▤'}]:[]),
+ ];
+ if(compact)return summary.readyTotal>0?<View style={s.readySection}>
+   <View style={s.readyHeading}><Text style={s.readyTitle}>{a('READY NOW')}</Text><Text style={s.readySummary}>{a('{count} actions need attention',{count:summary.readyTotal})}</Text></View>
+   {(showAllReady?readyRows:readyRows.slice(0,3)).map(row=><Pressable key={row.id} accessibilityRole="button" accessibilityLabel={a(row.title)} accessibilityHint={a(row.detail)} onPress={row.onPress} style={({pressed})=>[s.readyRow,pressed&&s.pressed]}>
+    <View style={s.readyMark}><Text style={s.readyMarkText}>{row.mark}</Text></View>
+    <View style={s.flex}><Text numberOfLines={2} style={s.readyRowTitle}>{a(row.title)}</Text><Text numberOfLines={2} style={s.readyRowDetail}>{a(row.detail)}</Text></View>
+    <Text style={s.readyStatus}>{a('READY')}</Text><Text style={s.readyArrow}>›</Text>
+   </Pressable>)}
+   {readyRows.length>3?<Pressable accessibilityRole="button" accessibilityState={{expanded:showAllReady}} onPress={()=>setShowAllReady(value=>!value)} style={s.moreReady}><Text style={s.moreReadyText}>{showAllReady?a('Show fewer'):a('Show {count} more',{count:readyRows.length-3})}</Text></Pressable>:null}
+  </View>:null;
  return <View style={[s.root,summary.readyTotal>0&&s.readyRoot]}>
   <View style={s.head}><View style={s.flex}><Text style={s.kicker}>{a('SESSION OVERVIEW')}</Text><Text style={s.title}>{a(summary.primaryReady?.title??'No immediate claims')}</Text><Text style={s.meta}>{summary.primaryReady?a(summary.primaryReady.detail):a(weeklyUnlocked?'Your next progression step is shown above. Use this row to jump into weekly progress.':'Keep following the campaign to unlock weekly systems.')}</Text></View>{summary.readyTotal>0?<Text style={s.readyBadge}>{a('{count} READY',{count:readyDisplay})}</Text>:<Text style={s.clearBadge}>{a('CLEAR')}</Text>}</View>
   <View style={s.cells}>
@@ -52,7 +68,20 @@ function SessionCell({label,value,tone,emphasized=false,stack=false,onPress}:{la
 }
 
 function makeStyles(C:ThemeColors){return StyleSheet.create({
- root:{gap:6,padding:spacing.sm,borderWidth:1,borderColor:C.line,borderRadius:radii.md,backgroundColor:C.panel},
+ readySection:{gap:6},
+  readyHeading:{minHeight:23,flexDirection:'row',alignItems:'center',justifyContent:'space-between',gap:8},
+  readyTitle:{fontSize:10,lineHeight:15,fontWeight:'900',color:C.accent,letterSpacing:.8},
+  readySummary:{fontSize:10,lineHeight:14,color:C.muted},
+  readyRow:{minHeight:54,flexDirection:'row',alignItems:'center',gap:9,paddingHorizontal:10,paddingVertical:8,borderWidth:1,borderColor:C.good,borderRadius:10,backgroundColor:C.goodSurface},
+  readyMark:{width:35,height:35,borderWidth:1,borderColor:C.line,borderRadius:9,alignItems:'center',justifyContent:'center',backgroundColor:C.panel},
+  readyMarkText:{fontSize:19,lineHeight:24,color:C.accent},
+  readyRowTitle:{fontSize:12,lineHeight:17,fontWeight:'900',color:C.text},
+  readyRowDetail:{fontSize:10,lineHeight:14,color:C.muted},
+  readyStatus:{fontSize:9,lineHeight:12,fontWeight:'900',color:C.good},
+  readyArrow:{fontSize:23,lineHeight:26,color:C.accent},
+  moreReady:{minHeight:44,justifyContent:'center',alignItems:'center',borderWidth:1,borderColor:C.line,borderRadius:9,backgroundColor:C.panel2},
+  moreReadyText:{fontSize:11,fontWeight:'800',color:C.info},
+  root:{gap:6,padding:spacing.sm,borderWidth:1,borderColor:C.line,borderRadius:radii.md,backgroundColor:C.panel},
  readyRoot:{borderLeftWidth:4,borderLeftColor:C.good},
  head:{flexDirection:'row',alignItems:'flex-start',gap:8},flex:{flex:1,minWidth:0},kicker:{...typography.caption,color:C.accent,fontWeight:'900',letterSpacing:.8},title:{...typography.bodyStrong,color:C.text},meta:{...typography.caption,color:C.muted,lineHeight:16},
  readyBadge:{fontSize:9,color:C.good,fontWeight:'900',letterSpacing:.5},clearBadge:{fontSize:9,color:C.muted,fontWeight:'900',letterSpacing:.5},

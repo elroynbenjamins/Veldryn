@@ -7,6 +7,10 @@ import {useMemo} from 'react';
 // Every row is complete, in en/de/es/nl/it/fr order. English phrases are typed keys.
 type TranslationRow=readonly [string,string,string,string,string,string];
 const common={
+"Decrease quality":["Decrease quality","Qualität verringern","Reducir calidad","Kwaliteit verlagen","Riduci qualità","Réduire la qualité"],
+"Increase quality":["Increase quality","Qualität erhöhen","Aumentar calidad","Kwaliteit verhogen","Aumenta qualità","Augmenter la qualité"],
+"Previous set":["Previous set","Vorheriges Set","Conjunto anterior","Vorige set","Set precedente","Ensemble précédent"],
+"Next set":["Next set","Nächstes Set","Conjunto siguiente","Volgende set","Set successivo","Ensemble suivant"],
  // Interactive Forge odds and quality preview: en/de/es/nl/it/fr.
  "Mythic":["Mythic","Mythisch","Mítico","Mythisch","Mitico","Mythique"],
  "Quality preview":["Quality preview","Qualitätsvorschau","Vista previa de calidad","Kwaliteitsvoorbeeld","Anteprima qualità","Aperçu de la qualité"],

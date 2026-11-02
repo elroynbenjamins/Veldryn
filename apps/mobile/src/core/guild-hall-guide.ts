@@ -1,6 +1,6 @@
 import type {Language} from '../i18n/languages';
 
-export type GuildHallGuideSection='Overview'|'Construction'|'Bank'|'Skills'|'Legacy'|'Shop';
+export type GuildHallGuideSection='Overview'|'Construction'|'Bank'|'Skills'|'Legacy'|'Shop'|'Facilities'|'Trophies';
 type LegacyGuideSection='Facilities'|'Skills'|'Trophies'|'Shop';
 type Guide={title:string;body:string;detail:string};
 
@@ -46,7 +46,7 @@ const guides:Record<Language,Record<LegacyGuideSection,Guide>>={
  },
 };
 export function guildHallSectionGuide(language:Language,section:GuildHallGuideSection):Guide{
- const oldSection:LegacyGuideSection=section==='Legacy'?'Trophies':section==='Skills'||section==='Shop'?section:'Facilities';
+ const oldSection:LegacyGuideSection=section==='Legacy'||section==='Trophies'?'Trophies':section==='Skills'||section==='Shop'?section:'Facilities';
  const guide=guides[language][oldSection];
  if(language!=='en')return guide;
  if(section==='Overview')return {title:'Guild Headquarters',body:'Track Hall progression, construction priorities and active guild benefits in one place.',detail:'Hall facilities progress automatically through Projects. Construction and Guild Skills have separate upgrades.'};

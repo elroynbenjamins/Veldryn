@@ -121,7 +121,7 @@ ok(pve.includes('row.pendingAttempts?1000:30000')&&pve.includes('return()=>clear
 ok(pve.includes('accessibilityState={{expanded:detailsOpen}}')&&pve.indexOf('<GameButton title={actionLabel}')<pve.indexOf('accessibilityState={{expanded:detailsOpen}}'),'Encounter mechanics must stay available below the primary action through an accessible disclosure');
 ok(pve.includes('lastAttemptCharacterDamage')&&pve.includes('lastAttemptCompanionDamage')&&pve.includes('lastAttemptCompanionId'),'Attempt summary must preserve authoritative player and companion damage breakdowns');
 
-ok(management.includes('GUILD MANAGEMENT'),'Guild roster must expose management context');
+ok(management.includes('Guild roster and member requests')&&management.includes('<GuildMemberActionSheet'),'Guild roster must expose management context through its compact member sheet');
 ok(management.includes("role.toUpperCase()"),'Guild management must surface the viewer role');
 ok(management.includes('?st("WATCH"):st("ACTIVE")'),'Leadership safety must expose localized compact watch/active state');
 ok(management.includes('DANGER ZONE'),'Leave/disband controls must stay separated from ordinary management');

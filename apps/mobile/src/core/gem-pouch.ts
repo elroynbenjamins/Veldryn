@@ -60,11 +60,26 @@ function addStack(stacks:readonly ItemStack[],capacity:number,itemId:string,quan
   if(stacks.filter(row=>row.quantity>0).length>=capacity)return null;
   return [...stacks,{itemId,quantity}];
 }
+/** A bank deposit routes recognized gems to the account-wide pouch whenever a
+ * matching stack exists or a new slot is available. Full pouches fall back to Bank. */
+export function gemDepositDestination(state:GameState,itemId:string):'gem_pouch'|'bank'{
+  if(!isGemPouchItemId(itemId))return 'bank';
+  const pouch=gemPouch(state);
+  return pouch.stacks.some(stack=>stack.itemId===itemId&&stack.instanceId===undefined)
+    ||pouch.stacks.length<pouch.capacity?'gem_pouch':'bank';
+}
+/** Pouch-only attempt. Never silently reinsert a manually deposited gem into Inventory. */
+export function tryStoreGemInPouch(state:GameState,itemId:string,quantity:number):GameState|null{
+  if(!isGemPouchItemId(itemId))return null;
+  if(!Number.isSafeInteger(quantity)||quantity<1)throw new Error('Invalid gem quantity');
+  const pouch=gemPouch(state),stored=addStack(pouch.stacks,pouch.capacity,itemId,quantity);
+  return stored?{...state,account:{...state.account,gemPouch:{...pouch,stacks:stored}}}:null;
+}
 /** First pouch, then legacy Inventory/Bank, so a full pouch cannot strand a finished craft. */
 export function storePouchGem(state:GameState,itemId:string,quantity=1):GameState{
   if(!isGemPouchItemId(itemId)||!Number.isSafeInteger(quantity)||quantity<1)throw new Error('Invalid gem reward');
-  const pouch=gemPouch(state),stored=addStack(pouch.stacks,pouch.capacity,itemId,quantity);
-  if(stored)return {...state,account:{...state.account,gemPouch:{...pouch,stacks:stored}}};
+  const stored=tryStoreGemInPouch(state,itemId,quantity);
+  if(stored)return stored;
   const inv=addStack(state.inventory.stacks,entitlementStorageCapacity(state,'inventory'),itemId,quantity);
   if(inv)return {...state,inventory:{...state.inventory,stacks:inv}};
   const bank=addStack(state.bank.stacks,entitlementStorageCapacity(state,'bank'),itemId,quantity);

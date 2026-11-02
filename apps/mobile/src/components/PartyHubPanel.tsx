@@ -111,11 +111,12 @@ export function PartyHubPanel(props: PartyHubPanelProps){
     <View style={s.between}><Text style={s.sectionTitle}>{st('PARTY MEMBERS')}</Text><Text style={s.metaCount}>{props.party!.members.length}/4</Text></View>
     <View style={s.members}>{props.party!.members.map(member=>{
      const manage=partyMemberManagement(canManageParty,props.accountId,member.accountId);
+     const canOpenManagement=manage.canTransfer&&!!props.onTransferLeadership||manage.canRemove&&!!props.onRemoveMember;
      return <View key={member.accountId} style={s.memberRow}>
       <Pressable accessibilityRole="button" accessibilityLabel={st('Open {name} profile',{name:member.characterName})} disabled={!props.onOpenMemberProfile} onPress={()=>props.onOpenMemberProfile?.(member)} style={({pressed})=>[s.memberIdentity,pressed&&s.pressed]}>
        <CompactPlayerIdentity accountId={member.accountId} badges={member.playerBadges} name={member.characterName} className={member.className} status={member.isLeader?st('PARTY LEADER'):socialLabel(language,member.role).toUpperCase()} statusTone={member.isLeader?'accent':'info'} hint={props.onOpenMemberProfile?st('VIEW PROFILE ›'):undefined}/>
       </Pressable>
-      {manage.canTransfer||manage.canRemove?<Pressable accessibilityRole="button" accessibilityLabel={st('Manage {name}',{name:member.characterName})} onPress={()=>setSelectedMember(member)} style={({pressed})=>[s.iconAction,pressed&&s.pressed]}><Text style={s.iconActionText}>•••</Text></Pressable>:null}
+      {canOpenManagement?<Pressable accessibilityRole="button" accessibilityLabel={st('Manage {name}',{name:member.characterName})} onPress={()=>setSelectedMember(member)} style={({pressed})=>[s.iconAction,pressed&&s.pressed]}><Text style={s.iconActionText}>•••</Text></Pressable>:null}
      </View>;
     })}</View>
     {openSpots>0?<Pressable accessibilityRole="button" accessibilityLabel={st('Find members')} onPress={()=>{setBrowseMode('players');setSection('find');}} style={({pressed})=>[s.emptySlots,pressed&&s.pressed]}>
@@ -158,8 +159,9 @@ export function PartyHubPanel(props: PartyHubPanelProps){
    <GameModalHeader eyebrow={st('ACTIVE PARTY')} title={st('Party options')} onClose={()=>setShowSettings(false)}/>
    <ScrollView showsVerticalScrollIndicator={false} showsHorizontalScrollIndicator={false} contentContainerStyle={s.modalBody}>
     <View style={s.optionSummary}><Text style={s.sectionTitle}>{socialLabel(language,props.party?.focus??'mixed')} {st('Party')}</Text><Text style={s.muted}>{props.party?.members.length??0}/4 {st('Members')} · {openSpots} {st('open spots')}</Text></View>
-    {props.partyInvitations}
-    <Text style={s.eyebrow}>{st('PARTY MANAGEMENT')}</Text>
+    {(props.invitationCount??0)>0?props.partyInvitations:<Text style={s.muted}>{st('No pending invitations.')}</Text>}
+    {canManageParty&&openSpots>0?<GameButton compact tone="secondary" title={st('Find members')} onPress={()=>{setShowSettings(false);setBrowseMode('players');setSection('find');}}/>:null}
+    <View style={s.divider}/><Text style={s.eyebrow}>{st('PARTY MANAGEMENT')}</Text>
     <GameButton tone="secondary" title={st('Leave Party')} disabled={!props.onLeaveParty} onPress={()=>{setShowSettings(false);props.onLeaveParty?.();}}/>
     {canManageParty&&props.party!.members.length>1?<GameButton tone="danger" title={st('Disband Party')} disabled={!props.onDisbandParty} onPress={()=>{setShowSettings(false);props.onDisbandParty?.();}}/>:null}
     <Text style={s.muted}>{st('Leaving or disbanding requires confirmation.')}</Text>

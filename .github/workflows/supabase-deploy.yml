@@ -35,9 +35,19 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+
       - uses: actions/setup-node@v4
         with:
           node-version: 22
+          cache: pnpm
+          cache-dependency-path: backend/pnpm-lock.yaml
+
+      - name: Install backend dependencies for reproducible Edge verification
+        run: pnpm install --frozen-lockfile
+        working-directory: backend
 
       - uses: supabase/setup-cli@v1
         with:

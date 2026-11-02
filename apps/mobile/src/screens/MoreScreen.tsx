@@ -18,10 +18,10 @@ import {classEmblemIconArtwork} from '../theme/class-emblem-assets';
 import {EARLY_FEATURE_DESTINATION_ORDER} from '../core/feature-unlocks';
 import type {QuickNavDestination} from '../core/quick-navigation';
 
-export type MoreDestination='Home'|'Social'|'Activity'|'DailySupplies'|'AccountBonuses'|'RewardsInbox'|'NewUnlocks'|'Quests'|'Companions'|'Skills'|'Events'|'Friends'|'Guild'|'Settings'|'Arena'|'Rankings'|'Collections'|'ResourceCodex'|'Profile'|'MasteryHall'|'AdventurersJournal'|'Bestiary'|'WorldMilestones'|'Store';
+export type MoreDestination='Home'|'Party'|'Recruitment'|'Activity'|'DailySupplies'|'AccountBonuses'|'RewardsInbox'|'NewUnlocks'|'Quests'|'Companions'|'Skills'|'Events'|'Friends'|'Guild'|'Settings'|'Arena'|'Rankings'|'Collections'|'ResourceCodex'|'Profile'|'MasteryHall'|'AdventurersJournal'|'Bestiary'|'WorldMilestones'|'Store';
 const sections:Array<{label:string;items:MoreDestination[]}>= [
   {label:'PLAY & PROGRESSION',items:['Home','Quests','Companions','DailySupplies','RewardsInbox','Events','AccountBonuses']},
-  {label:'SOCIAL & COMPETITION',items:['Social','Friends','Guild','Arena','Rankings']},
+  {label:'SOCIAL & COMPETITION',items:['Party','Recruitment','Friends','Guild','Arena','Rankings']},
   {label:'IDENTITY & ACCOUNT',items:['Activity','Profile','NewUnlocks','AdventurersJournal','MasteryHall','Bestiary','Collections','ResourceCodex','Store','Settings']},
 ];
 
@@ -45,7 +45,8 @@ function itemMeta(language:GameState['settings']['language'],id:MoreDestination)
 
   switch(id){
     case 'Home':return {title:a("Home"),description:a("Current activity and account overview")};
-    case 'Social':return {title:a("Social"),description:a("Party, contracts, recruitment and chat")};
+    case 'Party':return {title:a("Party"),description:a("Your team, weekly contracts, invites and chat")};
+    case 'Recruitment':return {title:a("Recruitment"),description:a("Find Parties, players and Guilds")};
     case 'Activity':return {title:a("Characters"),description:a("Switch, reroll or safely delete characters")};
     case 'DailySupplies':return {title:a("Daily Supplies"),description:a("28-claim track and +10% activity boosts")};
     case 'AccountBonuses':return {title:a("Account Bonuses"),description:a("Permanent and temporary modifiers")};
@@ -83,7 +84,7 @@ export function MoreScreen({language,character,accountStatus='local',onNavigate,
   const attentionLabel=(id:MoreDestination)=>{
     if(lockedReason(id))return '';
     if(id==='Quests'&&storyRewardCount>0)return a('{count} story rewards ready',{count:storyRewardCount});
-    if(id==='Social'&&socialAttentionCount>0)return a('{count} social updates',{count:socialAttentionCount});
+    if(id==='Party'&&socialAttentionCount>0)return a('{count} Party updates',{count:socialAttentionCount});
     if(id==='Friends'&&friendRequestCount>0)return a('{count} incoming friend requests',{count:friendRequestCount});
     if(id==='Guild'&&guildAttentionCount>0)return a('{count} guild updates',{count:guildAttentionCount});
     if(id==='Companions'&&companionUnlocked&&companionAttention)return a("companion actions ready");
@@ -94,7 +95,7 @@ export function MoreScreen({language,character,accountStatus='local',onNavigate,
   const attention=(id:MoreDestination)=>{
     if(lockedReason(id))return null;
     if(id==='Quests'&&storyRewardCount>0)return <AttentionCount count={storyRewardCount} label={a('{count} story rewards ready',{count:storyRewardCount})}/>;
-    if(id==='Social'&&socialAttentionCount>0)return <AttentionCount count={socialAttentionCount} label={a("Social updates")}/>;
+    if(id==='Social'&&socialAttentionCount>0)return <AttentionCount count={socialAttentionCount} label={a("Party updates")}/>;
     if(id==='Friends'&&friendRequestCount>0)return <AttentionCount count={friendRequestCount} label={a("Incoming friend requests")}/>;
     if(id==='Guild'&&guildAttentionCount>0)return <AttentionCount count={guildAttentionCount} label={a("Guild updates")}/>;
     if(id==='Companions'&&companionUnlocked&&companionAttention)return <AttentionDot label={a("Companion actions ready")}/>;
@@ -102,11 +103,11 @@ export function MoreScreen({language,character,accountStatus='local',onNavigate,
     if(id==='NewUnlocks'&&newUnlockCount>0)return <AttentionCount count={newUnlockCount} label={a('New Unlocks')}/>;
     return null;
   };
-  const attentionPriority:MoreDestination[]=['NewUnlocks','Quests','DailySupplies','Companions','Social','Friends','Guild'];
+  const attentionPriority:MoreDestination[]=['NewUnlocks','Quests','DailySupplies','Companions','Party','Friends','Guild'];
   const lockedItems=EARLY_FEATURE_DESTINATION_ORDER.filter(id=>(id!=='Rankings'||RANKINGS_RELEASED)&&!!lockedReason(id)) as MoreDestination[];
   const upcomingLocked=lockedItems.slice(0,4);
   const attentionDestinations=attentionPriority.filter(id=>!!attentionLabel(id));
-  const attentionTotal=(lockedReason('Quests')?0:storyRewardCount)+(lockedReason('Social')?0:socialAttentionCount)+(lockedReason('Friends')?0:friendRequestCount)+(lockedReason('Guild')?0:guildAttentionCount)+Number(!lockedReason('Companions')&&companionAttention)+Number(!lockedReason('DailySupplies')&&dailySuppliesAttention)+newUnlockCount;
+  const attentionTotal=(lockedReason('Quests')?0:storyRewardCount)+(lockedReason('Party')?0:socialAttentionCount)+(lockedReason('Friends')?0:friendRequestCount)+(lockedReason('Guild')?0:guildAttentionCount)+Number(!lockedReason('Companions')&&companionAttention)+Number(!lockedReason('DailySupplies')&&dailySuppliesAttention)+newUnlockCount;
   return <ScrollView contentContainerStyle={s.root} showsVerticalScrollIndicator={false} showsHorizontalScrollIndicator={false}>
     <TutorialBeacon id="more-shortcuts"><View style={s.header}><Text accessibilityRole="header" style={s.heading}>{a("Account")}</Text>{attentionTotal>0?<View accessible accessibilityLabel={`${attentionTotal} ${a("NEEDS ATTENTION")}`} style={s.headerAttention}><Text style={s.headerAttentionValue}>{attentionTotal>99?'99+':attentionTotal}</Text></View>:null}</View></TutorialBeacon>
 

@@ -37,7 +37,7 @@ export function eatMealForBonus(state:GameState,itemId:string):GameState{
  }};
 }
 export function activeMealBonus(character:CharacterState|null|undefined):MealBonusDefinition|undefined{
- return character?.activeMealBuff?.remainingSeconds>0?mealBonusDef(character.activeMealBuff.itemId):undefined;
+ return (character?.activeMealBuff?.remainingSeconds??0)>0?mealBonusDef(character.activeMealBuff.itemId):undefined;
 }
 /** Spend active duration for settled, eligible play time, including offline progress. */
 export function commitMealActivityTime(state:GameState,source:GameState['activity'],reward:RewardBundle):GameState{

@@ -86,7 +86,7 @@ ok(guildLanguage.includes('Gilde Home → Leden')&&guildLanguage.includes('Hall 
 
 ok(companion.includes('COMPANION_TOUR_STEPS.find(step=>step.section===section)')&&companion.includes('area="companions"'),'Companion Roster, Training, Sanctuary, Trials, Expeditions and Codex must use independent tab tips');
 ok(party.includes('area="social-party"')&&party.includes("inParty?section:'solo'"),'My Party and Recruitment should not share the same guide acknowledgement');
-ok(social.includes('area="social" section="Chat"')&&social.includes('area="social" section="Guild"'),'Social Chat and Guild must have separate optional tips');
+ok(!social.includes('area="social" section="Chat"')&&!social.includes('area="social" section="Guild"'),'Chat and Guild must not reintroduce unnecessary tutorial headers');
 ok(guildScreen.includes('area="guild"')&&guildScreen.includes("Activities/${activityView}"),'Guild Activities subviews require independent tips');
 ok(app.includes('MAIN_TAB_GUIDANCE')&&app.includes('area="main" section={tab}')&&app.includes('showReplay={false}'),'Main tabs must show only a one-time compact hint, not a mandatory tutorial');
 ok(sectionGuide.includes('if(!expanded&&!showReplay)return null')&&sectionGuide.includes('void store.complete(scope,area,section)'),'A player can dismiss each tab guide without blocking gameplay');

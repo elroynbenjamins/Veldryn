@@ -144,7 +144,7 @@ function consume(stacks:ItemStack[],id:string,amount:number){let left=amount;ret
 function consumeAcross(state:GameState,id:string,amount:number){if(isGemPouchItemId(id))return consumeGemFromStorage(state,id,amount);if(combinedQuantity(state,id)<amount)throw new Error(`Need ${amount} ${itemDef(id).name}`);const inventory=consume(state.inventory.stacks,id,amount),used=qty(state.inventory.stacks,id)-qty(inventory,id);return {...state,inventory:{...state.inventory,stacks:inventory},bank:{...state.bank,stacks:consume(state.bank.stacks,id,amount-used)}};}
 function setEnhancement(state:GameState,itemId:string,value:GearEnhancementState){
   const slots=normalizeEnhancementGemSlots(value),instance=equippedCraftedInstance(state,itemId);
-  if(instance)return {...state,account:{...state.account,craftedGearInstances:craftedGearInstances(state).map(row=>row.id===instance.id?{...row,locked:true,enhancement:{...value,...slots}}:row)}};
+  if(instance)return {...state,account:{...state.account,craftedGearInstances:craftedGearInstances(state).map(row=>row.id===instance.id?{...row,locked:true,enhancedSaleUnlocked:false,enhancement:{...value,...slots}}:row)}};
   return {...state,character:{...state.character!,gearEnhancements:{...(state.character!.gearEnhancements??{}),[itemId]:{...value,...slots,locked:true}}}};
 }
 function requireEquipped(state:GameState,itemId:string){if(!state.character||!Object.values(state.character.equipment).includes(itemId))throw new Error('Equip this item first');}

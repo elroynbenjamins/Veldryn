@@ -62,5 +62,5 @@ export type UiIconName=keyof typeof uiIcons;
 export const navigationIcons:Record<QuickNavDestination,ImageSourcePropType>={
   Home:uiIcons.home,Skills:uiIcons.skills,Character:uiIcons.character,World:uiIcons.world,
   Inventory:uiIcons.inventory,Account:uiIcons.account,More:uiIcons.account,Quests:uiIcons.quests,Events:uiIcons.events,
-  Friends:uiIcons.friends,Guild:uiIcons.guild,Settings:uiIcons.settings,Social:uiIcons.chat,Recruitment:uiIcons.chat,Party:uiIcons.party,Dungeon:require('../../assets/navigation-icons-v4/dungeon.webp'),Companions:uiIcons.companions,Empty:uiIcons.home,
+  Friends:uiIcons.friends,Guild:uiIcons.guild,Settings:uiIcons.settings,Social:uiIcons.chat,Party:uiIcons.party,Dungeon:require('../../assets/navigation-icons-v4/dungeon.webp'),Companions:uiIcons.companions,Empty:uiIcons.home,
 };

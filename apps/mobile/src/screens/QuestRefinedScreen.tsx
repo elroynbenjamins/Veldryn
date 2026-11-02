@@ -79,7 +79,7 @@ function ChallengeArt({quest}:{quest:SeasonalQuest}){
  return <ActivityArtwork id={quest.tag==='boss'?'combat':quest.tag==='equipment'||quest.tag==='crafting'?'smithing':quest.tag==='gathering'?'woodcutting':quest.tag} size={38}/>;
 }
 function Rail({items,selected,onChange,C}:{items:{id:string;label:string}[];selected:string;onChange:(value:any)=>void;C:ThemeColors}){
- return <ScrollView horizontal accessibilityRole="tablist" showsHorizontalScrollIndicator={false} contentContainerStyle={styles.rail}>
+ return <ScrollView horizontal accessibilityRole="tablist" showsHorizontalScrollIndicator={false} showsVerticalScrollIndicator={false} contentContainerStyle={styles.rail}>
   {items.map(item=><Pressable key={item.id} accessibilityRole="tab" accessibilityState={{selected:item.id===selected}} onPress={()=>onChange(item.id)}
    style={({pressed})=>[styles.railChip,{borderColor:item.id===selected?C.selectionLine:C.line,backgroundColor:item.id===selected?C.selection:C.panel2},pressed&&styles.pressed]}>
    <Text style={[styles.railText,{color:item.id===selected?C.text:C.muted}]}>{item.label}</Text>
@@ -254,7 +254,7 @@ export function QuestRefinedScreen({state,mode,onModeChange,focusedWeeklyOrderId
   </ScrollView>
   <GameModalSurface visible={sheetOpen} onClose={closeSheet} reduceMotion={state.settings.reduceMotion} surfaceStyle={styles.sheetSurface}>
    <GameModalHeader eyebrow={sheetStage==='success'?p('REWARDS COLLECTED'):sheetStage==='confirm'?p('CONFIRM REWARD'):selected?.kind==='story'?p('STORY CHAPTER'):selected?.kind==='contract'?p('WEEKLY CONTRACT'):p('CLASS CHALLENGE')} title={sheetStage==='confirm'?p('Collect quest rewards?'):selectedTitle} onClose={closeSheet}/>
-   <ScrollView style={styles.sheetScroll} contentContainerStyle={styles.sheetContent} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
+   <ScrollView style={styles.sheetScroll} contentContainerStyle={styles.sheetContent} showsVerticalScrollIndicator={false} showsHorizontalScrollIndicator={false} keyboardShouldPersistTaps="handled">
     {sheetStage==='success'&&moment!==null&&moment.id===selected?.id?<View style={[styles.success,{backgroundColor:C.goodSurface,borderColor:C.good}]}>
      <Text style={[styles.successMark,{color:C.good}]}>✦ ✓</Text><Text style={[styles.featuredTitle,{color:C.text}]}>{p('Rewards secured')}</Text>
      <Text style={[styles.subtitle,{color:C.muted}]}>{p('Reward collected · the next objective is ready when unlocked.')}</Text>

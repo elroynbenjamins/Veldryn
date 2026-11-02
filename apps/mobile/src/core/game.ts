@@ -881,7 +881,7 @@ export function sellItem(state:GameState,itemId:string,quantity=1):GameState{
   if(d.guildOnly)throw new Error('Guild construction components cannot be sold.');
   if(d.knowledgeUnlockId)throw new Error('Blueprints cannot be sold. Learn the recipe by crafting its tool.');
   const releasing=d.type==='gear'&&quantity===1&&canReleaseLegacyEnhancedGear(state,itemId,'inventory')&&!legacyEnhancedGearLocked(state,itemId);
-  if(d.type==='gear'&&!canDisposeLegacyEquipment(state,itemId,'inventory',quantity)&&!releasing)
+  if(d.type==='gear'&&state.inventory.stacks.some(row=>row.itemId===itemId&&row.instanceId===undefined)&&!canDisposeLegacyEquipment(state,itemId,'inventory',quantity)&&!releasing)
     throw new Error('Enhanced equipment is protected. Unlock the exact older copy before selling, or keep its remaining duplicate.');
   let next:GameState={...state,inventory:{...state.inventory,stacks:consume(state.inventory.stacks,itemId,quantity)},character:{...state.character!,gold:state.character!.gold+d.value*quantity}};
   return releasing?clearSoldLegacyEnhancement(next,itemId):next;
@@ -891,7 +891,7 @@ export function salvageItem(state:GameState,itemId:string):GameState{
   if(state.settings.lockedItemIds?.includes(itemId))throw new Error('Locked item is protected. Unlock it before salvaging.');
   const d=itemDef(itemId);if(d.type!=='gear'||!d.salvage)throw new Error('Cannot salvage');
   const releasing=canReleaseLegacyEnhancedGear(state,itemId,'inventory')&&!legacyEnhancedGearLocked(state,itemId);
-  if(!canDisposeLegacyEquipment(state,itemId,'inventory',1)&&!releasing)
+  if(state.inventory.stacks.some(row=>row.itemId===itemId&&row.instanceId===undefined)&&!canDisposeLegacyEquipment(state,itemId,'inventory',1)&&!releasing)
     throw new Error('Enhanced equipment is protected. Unlock the exact older copy before salvaging.');
   let next:GameState={...state,inventory:{...state.inventory,stacks:stackItems(consume(state.inventory.stacks,itemId,1),[d.salvage])}};
   return releasing?clearSoldLegacyEnhancement(next,itemId):next;
@@ -920,7 +920,7 @@ export function sellBankItem(state:GameState,itemId:string,quantity=1):GameState
   if(def.guildOnly)throw new Error('Guild construction components cannot be sold.');
   if(def.knowledgeUnlockId)throw new Error('Blueprints cannot be sold.');
   const releasing=def.type==='gear'&&quantity===1&&canReleaseLegacyEnhancedGear(state,itemId,'bank')&&!legacyEnhancedGearLocked(state,itemId);
-  if(def.type==='gear'&&!canDisposeLegacyEquipment(state,itemId,'bank',quantity)&&!releasing)
+  if(def.type==='gear'&&state.bank.stacks.some(row=>row.itemId===itemId&&row.instanceId===undefined)&&!canDisposeLegacyEquipment(state,itemId,'bank',quantity)&&!releasing)
     throw new Error('Enhanced equipment is protected. Unlock the exact older copy before selling.');
   const stacks=consume(state.bank.stacks,itemId,quantity);
   const proceeds=def.value*quantity;

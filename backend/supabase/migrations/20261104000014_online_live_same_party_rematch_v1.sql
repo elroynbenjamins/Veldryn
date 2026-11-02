@@ -162,7 +162,7 @@ end $$;
 -- never a losing caller's speculative client projection.
 create or replace function public.start_online_live_server_v1(
  p_account_id uuid,p_check_id uuid,p_run_id uuid,p_seed_hash text,p_private_state jsonb,p_client_projection jsonb,p_members jsonb
-) returns jsonb language plpgsql security definer set search_path=public as $
+) returns jsonb language plpgsql security definer set search_path=public as $$
 declare c public.coop_ready_checks;r jsonb;m jsonb;v_index integer:=0;v_epoch integer;
 begin
  perform pg_advisory_xact_lock(hashtextextended('online-live-runtime',0));
@@ -202,7 +202,7 @@ begin
  insert into public.coop_outbox(semantic_key,run_id,channel_epoch,event_type,client_payload) values('live:'||p_run_id||':start',p_run_id,1,'run_started',p_client_projection);
  update public.coop_ready_checks set run_id=p_run_id where id=c.id;
  return p_client_projection;
-end $;
+end $$;
 
 revoke all on function public.online_live_rematch_sources_server_v1(uuid,uuid),
  public.online_live_rematch_state_server_v1(uuid,uuid),

@@ -47364,6 +47364,23 @@ function collectionBonusBreakdown(state, catalog2 = COLLECTIBLES) {
 
 // ../apps/mobile/src/core/permanent-boosts.ts
 init_meal_buffs();
+
+// ../apps/mobile/src/core/guild-skill-effects.ts
+var BPS = 1e4;
+function bonusMultiplier(bps) {
+  const value = typeof bps === "number" && Number.isFinite(bps) ? bps : 0;
+  const clamped = Math.max(0, Math.min(600, value));
+  return 1 + clamped / BPS;
+}
+function guildSkillProfessionMultipliers(effects) {
+  return {
+    gatheringSpeedMultiplier: bonusMultiplier(effects?.gatheringSpeedBps),
+    craftingSpeedMultiplier: bonusMultiplier(effects?.craftingSpeedBps),
+    skillXpMultiplier: bonusMultiplier(effects?.skillingXpBps)
+  };
+}
+
+// ../apps/mobile/src/core/permanent-boosts.ts
 var BASE = {
   attackMultiplier: 1,
   combatSpeedMultiplier: 1,
@@ -47528,6 +47545,10 @@ function characterPermanentMultipliers(state) {
     if (meal.kind === "gathering_speed" || meal.kind === "noncombat_speed") result.gatheringSpeedMultiplier *= boost;
     if (meal.kind === "crafting_speed" || meal.kind === "noncombat_speed") result.craftingSpeedMultiplier *= boost;
     if (meal.kind === "combat_xp") result.characterXpMultiplier *= boost;
+  }
+  if (state.guildSkillEffects) {
+    const g = guildSkillProfessionMultipliers(state.guildSkillEffects);
+    result = merge(result, { ...BASE, gatheringSpeedMultiplier: g.gatheringSpeedMultiplier, craftingSpeedMultiplier: g.craftingSpeedMultiplier, skillXpMultiplier: g.skillXpMultiplier });
   }
   return result;
 }
@@ -56163,6 +56184,13 @@ function gameplayHandler(services2) {
       state.account.liveEvent = loaded.liveEvent ?? (previousEvent?.enabled && loaded.serverNow >= previousEvent.endsAtMs ? previousEvent : void 0);
       state.account.eventCommunityProgressById = loaded.communityProgress;
       if (state.character && loaded.walletGold !== null) state.character.gold = loaded.walletGold;
+      state.guildSkillEffects = void 0;
+      if (state.account.guildMember) {
+        try {
+          state.guildSkillEffects = await services2.rpc("guild_skill_effects_server_v1", { p_account_id: accountId });
+        } catch {
+        }
+      }
       if (!body || !command) return json({ state, version: loaded.version, serverNow: loaded.serverNow, accountId });
       if (body.expectedVersion !== loaded.version) {
         const committed2 = await services2.rpc("read_online_game_receipt_server_v1", { p_account_id: accountId, p_request_id: body.requestId });

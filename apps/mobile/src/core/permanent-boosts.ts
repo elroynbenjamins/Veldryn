@@ -5,6 +5,7 @@ import {selectedFaithBlessing} from './faith';
 import {accountEntitlementBenefits} from './account-entitlements';
 import {collectionBonusBreakdown} from './collectibles';
 import {activeMealBonus} from './meal-buffs';
+import {guildSkillProfessionMultipliers} from './guild-skill-effects';
 
 export interface PermanentMultipliers {
   attackMultiplier: number;
@@ -176,6 +177,14 @@ export function characterPermanentMultipliers(state:GameState):PermanentMultipli
     if(meal.kind==='gathering_speed'||meal.kind==='noncombat_speed')result.gatheringSpeedMultiplier*=boost;
     if(meal.kind==='crafting_speed'||meal.kind==='noncombat_speed')result.craftingSpeedMultiplier*=boost;
     if(meal.kind==='combat_xp')result.characterXpMultiplier*=boost;
+  }
+
+  // Professions Guild Skill tree. Authoritative, server-injected values; absent
+  // or zero (skills unreleased) leaves every multiplier at 1. Distinct from
+  // Guild Construction benefits, which never touch these multipliers.
+  if(state.guildSkillEffects){
+    const g=guildSkillProfessionMultipliers(state.guildSkillEffects);
+    result=merge(result,{...BASE,gatheringSpeedMultiplier:g.gatheringSpeedMultiplier,craftingSpeedMultiplier:g.craftingSpeedMultiplier,skillXpMultiplier:g.skillXpMultiplier});
   }
   return result;
 }

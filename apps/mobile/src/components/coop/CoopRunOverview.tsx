@@ -117,7 +117,7 @@ export function CoopRunOverview({language,run,myVotedNodeId,selfVoter,onBack,onC
     {run.phase==='resolving_node'&&<FantasyPanel><Text style={s.copy}>{st('Battle in progress · Results are saved online.')}</Text></FantasyPanel>}
 
     {run.rewardText?<FantasyPanel variant="success"><Text style={s.title}>{ct(language,'details.reward')}</Text><Text style={s.copy}>{run.rewardText}</Text></FantasyPanel>:null}
-    {terminal?<GameButton title={rewardsSecured?st("Return to dungeon list"):st("View rewards")} tone="secondary" disabled={busy} onPress={rewardsSecured?onBack:()=>setRewardOpen(true)}/>:null}
+    {terminal?<GameButton title={st('View rewards')} tone="secondary" disabled={busy} onPress={()=>setRewardOpen(true)}/>:null}
   </ExpeditionScreenShell>
    {terminal?<Modal visible={rewardOpen&&!theaterOpen} transparent animationType={reduceMotion?'none':'fade'} onRequestClose={()=>setRewardOpen(false)}>
     <View style={s.rewardOverlay}>
@@ -136,7 +136,7 @@ export function CoopRunOverview({language,run,myVotedNodeId,selfVoter,onBack,onC
       {run.rewardText?<Text style={s.copy}>{run.rewardText}</Text>:null}
       {!!notice?<Text accessibilityRole="alert" style={s.copy}>{notice}</Text>:null}
       {rewardsSecured&&run.phase==='completed'&&run.mode==='live'&&onPartyRematch?<GameButton title={st('Rematch with this party')} disabled={busy} onPress={()=>{setRewardOpen(false);onPartyRematch();}}/>:null}
-       {rewardsSecured&&onQueueAgain?<GameButton title={onQueueAgain.label} disabled={busy} onPress={onQueueAgain.onPress}/>:null}
+      {rewardsSecured&&onQueueAgain?<GameButton title={onQueueAgain.label} disabled={busy} onPress={onQueueAgain.onPress}/>:null}
       {!rewardSurfaceReady&&onRefresh?<GameButton title={st("Refresh rewards")} tone="secondary" disabled={busy} onPress={onRefresh}/>:null}
       <GameButton title={st("Return to dungeon list")} tone="secondary" disabled={busy} onPress={onBack}/>
      </ScrollView>

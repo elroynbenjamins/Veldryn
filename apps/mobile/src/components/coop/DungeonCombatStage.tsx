@@ -69,7 +69,7 @@ function motionScale(fx:DungeonCombatCueFx|undefined){
  if(fx.actorMotion==='dash')return 1.025;
  return 1.015;
 }
-export function DungeonCombatStage({run,enemyLabel,boss=false,seasonal=false,eventName,reduceMotionSetting=false}:{run:CoopRunView;enemyLabel?:string;boss?:boolean;seasonal?:boolean;eventName?:string;reduceMotionSetting?:boolean}){
+export function DungeonCombatStage({run,enemyLabel,boss=false,seasonal=false,eventName,reduceMotionSetting=false,onPresentationComplete}:{run:CoopRunView;enemyLabel?:string;boss?:boolean;seasonal?:boolean;eventName?:string;reduceMotionSetting?:boolean;onPresentationComplete?:()=>void}){
  const {styles:s}=useCoopStyles(makeStyles);
  const backdrop=combatBackdrop(seasonal,eventName);
  const st=useSocialText();
@@ -144,6 +144,8 @@ export function DungeonCombatStage({run,enemyLabel,boss=false,seasonal=false,eve
  useEffect(()=>{if(!pending)return;clockAnchor.current={key:battleClockKey,elapsedMs:pending.elapsedMs,localAt:Date.now()};setClockTick(Date.now());},[battleClockKey,pending?.elapsedMs]);
  useEffect(()=>{if(!replay||complete)return;const timer=setInterval(()=>setClockTick(Date.now()),1000);return()=>clearInterval(timer);},[battleClockKey,Boolean(replay),complete]);
  const elapsedMs=clockAnchor.current.elapsedMs+Math.max(0,clockTick-clockAnchor.current.localAt);
+ const completionHandler=useRef(onPresentationComplete);completionHandler.current=onPresentationComplete;
+ useEffect(()=>{if(!complete||!completionHandler.current)return;const timer=setTimeout(()=>completionHandler.current?.(),1200);return()=>clearTimeout(timer);},[complete,battleClockKey]);
  const recent=cues.slice(Math.max(0,cueIndex-5),cueIndex+1);
  const contributionRows=complete&&replay?(ordered.map(slot=>{const combatant=playbackCombatant(replay,slot.memberId??slot.name),value=(replay.contributions??[]).find(row=>row.id===combatant?.id);return value?{slot,value}:undefined;}).filter((row):row is {slot:Slot;value:Contribution}=>Boolean(row))):[];
  const actorDirection=actorIsParty===false?1:-1,targetDirection=targetIsParty===false?-1:1;

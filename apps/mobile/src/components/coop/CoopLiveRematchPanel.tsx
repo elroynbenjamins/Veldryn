@@ -1,4 +1,5 @@
 import {useMemo} from 'react';
+import {useSocialText} from '../../i18n/social';
 import {Modal,Pressable,ScrollView,StyleSheet,Text,View} from 'react-native';
 import {useSafeAreaInsets} from 'react-native-safe-area-context';
 import type {CoopRunView} from '../../core/coop-presentation';
@@ -14,6 +15,7 @@ export function CoopLiveRematchPanel({visible,run,status,busy=false,error,onRead
  visible:boolean;run:CoopRunView;status?:CoopLiveRematchState;busy?:boolean;error?:string;
  onReady:()=>void;onDecline:()=>void;onClose:()=>void;onEnter:()=>void;
 }){
+ const st=useSocialText();
  const C=useGameTheme(),s=useMemo(()=>styles(C),[C]),insets=useSafeAreaInsets();
  const members=status?.members??[],ready=members.filter(member=>member.accepted).length;
  const self=members.find(member=>member.self);
@@ -23,28 +25,28 @@ export function CoopLiveRematchPanel({visible,run,status,busy=false,error,onRead
    <View style={s.dialog}>
     <ScrollView contentContainerStyle={s.content} showsVerticalScrollIndicator={false}>
      <View style={s.head}>
-      <View style={s.heading}><Text style={s.kicker}>LIVE DUNGEON · REMATCH</Text><Text accessibilityRole="header" style={s.title}>Keep the party together</Text></View>
-      <Pressable accessibilityRole="button" accessibilityLabel="Close rematch" onPress={onClose} style={s.close}><Text style={s.closeText}>×</Text></Pressable>
+      <View style={s.heading}><Text style={s.kicker}>{st('LIVE DUNGEON · REMATCH')}</Text><Text accessibilityRole="header" style={s.title}>{st('Keep the party together')}</Text></View>
+      <Pressable accessibilityRole="button" accessibilityLabel={st('Close rematch')} onPress={onClose} style={s.close}><Text style={s.closeText}>×</Text></Pressable>
      </View>
-     <Text style={s.description}>Run this dungeon again with a fresh route, current equipment, and the same four adventurers.</Text>
-     <View style={s.readyHeader}><Text style={s.section}>Party ready check</Text><Text style={[s.counter,committed&&s.good]}>{ready}/4 ready</Text></View>
+     <Text style={s.description}>{st('Run this dungeon again with a fresh route, current equipment, and the same four adventurers.')}</Text>
+     <View style={s.readyHeader}><Text style={s.section}>{st('Party ready check')}</Text><Text style={[s.counter,committed&&s.good]}>{ready}/4 ready</Text></View>
      {members.length===4?members.map((member,index)=>{
-      const slot=run.roleSlots.find(slot=>slot.memberId===member.characterId)??run.roleSlots[index];const name=member.self?'You':slot?.name??`Party member ${index+1}`;
+      const slot=run.roleSlots.find(slot=>slot.memberId===member.characterId)??run.roleSlots[index];const name=member.self?st('You'):slot?.name??`${st('Party member')} ${index+1}`;
       return <View key={member.accountId} style={s.member}>
        <IdentityArtwork name={slot?.name??name} profileIconId={slot?.profileIconId} className={slot?.iconClassId??slot?.classId} size={36}/>
-       <View style={s.memberText}><Text numberOfLines={1} style={s.memberName}>{name}</Text><Text style={s.role}>{member.role==='damage'?'DAMAGE':member.role.toUpperCase()}</Text></View>
-       <Text style={[s.stateText,member.accepted&&s.good]}>{member.accepted?'✓ Ready':'Waiting'}</Text>
+       <View style={s.memberText}><Text numberOfLines={1} style={s.memberName}>{name}</Text><Text style={s.role}>{(member.role==='damage'?st('Damage'):member.role==='tank'?st('Tank'):st('Support')).toUpperCase()}</Text></View>
+       <Text style={[s.stateText,member.accepted&&s.good]}>{member.accepted?`✓ ${st('Ready')}`:st('Waiting')}</Text>
       </View>;
-     }):<Text style={s.description}>Checking the original party roster…</Text>}
-     {committed?<Text accessibilityLiveRegion="polite" style={s.success}>✓ All four members approved a new dungeon run.</Text>
-      :status?.status==='declined'||status?.status==='expired'?<Text style={s.warning}>This rematch is no longer available. You can find a new Live party instead.</Text>
-      :<Text style={s.note}>Everyone must agree. Leaving or declining never starts a run. This ready check expires automatically.</Text>}
+     }):<Text style={s.description}>{st('Checking the original party roster…')}</Text>}
+     {committed?<Text accessibilityLiveRegion="polite" style={s.success}>{'✓ '+st('All four members approved a new dungeon run.')}</Text>
+      :status?.status==='declined'||status?.status==='expired'?<Text style={s.warning}>{st('This rematch is no longer available. You can find a new Live party instead.')}</Text>
+      :<Text style={s.note}>{st('Everyone must agree. Leaving or declining never starts a run. This ready check expires automatically.')}</Text>}
      {error?<Text accessibilityRole="alert" style={s.warning}>{error}</Text>:null}
-     {committed&&status?.runId?<GameButton title="Enter new dungeon" disabled={busy} onPress={onEnter}/>:
-      status?.status==='open'&&!accepted?<GameButton title="✓ I'm ready" disabled={busy||members.length!==4} onPress={onReady}/>:
-      accepted?<Text style={s.waiting}>✓ Your vote is saved. Waiting for your party…</Text>:null}
-     {status?.status==='open'&&!committed&&!accepted?<GameButton title="Decline rematch" tone="secondary" disabled={busy} onPress={onDecline}/>:null}
-     <GameButton title="Close" tone="secondary" onPress={onClose} disabled={busy}/>
+     {committed&&status?.runId?<GameButton title={st('Enter new dungeon')} disabled={busy} onPress={onEnter}/>:
+      status?.status==='open'&&!accepted?<GameButton title={`✓ ${st("I'm ready")}`} disabled={busy||members.length!==4} onPress={onReady}/>:
+      accepted?<Text style={s.waiting}>{'✓ '+st('Your vote is saved. Waiting for your party…')}</Text>:null}
+     {status?.status==='open'&&!committed&&!accepted?<GameButton title={st('Decline rematch')} tone="secondary" disabled={busy} onPress={onDecline}/>:null}
+     <GameButton title={st('Close')} tone="secondary" onPress={onClose} disabled={busy}/>
     </ScrollView>
    </View>
   </View>

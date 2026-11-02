@@ -33,7 +33,8 @@
           "backgroundColor": "#101C2C"
         }
       ],
-      "./plugins/with-veldryn-play-games"
+      "./plugins/with-veldryn-play-games",
+      "./plugins/with-veldryn-game-category"
     ]
   }
 }

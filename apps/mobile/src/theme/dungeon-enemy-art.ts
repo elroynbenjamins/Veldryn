@@ -24,7 +24,6 @@ export const DUNGEON_TRIAL_PORTRAIT_ALIASES:Readonly<Record<string,string>>=Obje
   'moss stalker':'Gloamblade Raider',
   'grove sentinel':'Runebound Bulwark',
   'root warden':'Runebound Bulwark',
-  'briar husk':'Runebound Bulwark',
   'lantern wretch':'Gloamblade Raider',
   'drowned pilgrim':'Silverbrook Adept',
   'bell sentinel':'Oathglass Sentinel',

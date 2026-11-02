@@ -16,6 +16,7 @@ export function HomeSessionOverview({state,nowMs,onQuests,onDaily,onEvents,onWee
  const a=(text:string,params?:Record<string,string|number>)=>accountText(language,text,params);
 
  const C=useGameTheme(),s=useMemo(()=>makeStyles(C),[C]);
+ const [showAllReady,setShowAllReady]=useState(false);
  // homeSessionSummary aggregates quests, dailies, events, forge, companions —
  // bucketing nowMs cuts the aggregation to one recompute per 10s.
  const summaryMs=bucketedMs(nowMs,10_000);

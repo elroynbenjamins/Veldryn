@@ -101,7 +101,20 @@ export function coopHandler(services:GameplayServices){
     return json(await eventRuntime.claim(accountId,eventRun![1],row.requestId));
    }
 
-   const rematch=path.match(new RegExp('/coop/runs/('+uuid+')/rematch
+   const rematch=path.match(new RegExp('/coop/runs/('+uuid+')/rematch$'));
+   if(rematch){
+    const service=new OnlineLiveRematch(services);
+    if(request.method==='GET')return json(await service.load(accountId,rematch[1]));
+    if(request.method!=='POST')return json({error:'method_not_allowed'},405);
+    const raw=await request.text();if(raw.length>1024)return json({error:'request_too_large'},413);
+    let body:unknown;try{body=JSON.parse(raw);}catch{throw new GameplayError('invalid_json');}
+    if(!body||typeof body!=='object'||Array.isArray(body))throw new GameplayError('invalid_request');
+    const row=body as Record<string,unknown>;
+    if(Object.keys(row).some(key=>!['requestId','accept'].includes(key))||typeof row.requestId!=='string'||typeof row.accept!=='boolean')throw new GameplayError('invalid_request');
+    return json(await service.respond(accountId,rematch[1],{requestId:row.requestId,accept:row.accept}));
+   }
+
+   const chat=path.match(new RegExp('/coop/runs/('+uuid+')/chat$'));
    if(chat){
     if(request.method==='GET')return json(await liveRuntime.chat(accountId,chat[1],services.randomId()));
     if(request.method!=='POST')return json({error:'method_not_allowed'},405);
@@ -134,95 +147,6 @@ export function coopHandler(services:GameplayServices){
    const status=/^(stale_|idempotency_|node_resolving|account_already_participating|rematch_closed|rematch_vote_locked|rematch_loadout_changed|echo_no_longer_eligible|ticket_not_queued|ready_check_closed|loadout_changed_since_queue|reservation_conflict|event_not_live|event_claim_closed|event_daily_clear_limit)/.test(code)?409:
     /^(not_participant|loadout_not_owned|ticket_not_owned|not_ready_member)/.test(code)?403:
     /^(invalid_|rematch_unavailable|rematch_roster_unavailable|unknown_expedition|unknown_event_expedition|dungeon_|character_|role_not_ready|illegal_equipment|echo_pool_unavailable|run_not_awaiting_choice|event_level_requirement|event_reward_not_ready|event_run_not_awaiting_choice|event_run_not_found)/.test(code)?400:error instanceof GameplayError?error.status:503;
-   if(status===503)console.error('coop_unexpected_error',request.method,code);
-   return json({error:status===503?(request.method==='GET'?'Dungeons are temporarily unavailable. Try again.':'Could not confirm the co-op action. Retry it.'):code},status);
-  }
- };
-}
-));
-   if(rematch){
-    const service=new OnlineLiveRematch(services);
-    if(request.method==='GET')return json(await service.load(accountId,rematch[1]));
-    if(request.method!=='POST')return json({error:'method_not_allowed'},405);
-    const raw=await request.text();if(raw.length>1024)return json({error:'request_too_large'},413);
-    let body:unknown;try{body=JSON.parse(raw);}catch{throw new GameplayError('invalid_json');}
-    if(!body||typeof body!=='object'||Array.isArray(body))throw new GameplayError('invalid_request');
-    const row=body as Record<string,unknown>;
-    if(Object.keys(row).some(key=>!['requestId','accept'].includes(key))||typeof row.requestId!=='string'||typeof row.accept!=='boolean')throw new GameplayError('invalid_request');
-    return json(await service.respond(accountId,rematch[1],{requestId:row.requestId,accept:row.accept}));
-   }
-
-   const chat=path.match(new RegExp('/coop/runs/('+uuid+')/chat
-   if(chat){
-    if(request.method==='GET')return json(await liveRuntime.chat(accountId,chat[1],services.randomId()));
-    if(request.method!=='POST')return json({error:'method_not_allowed'},405);
-    const raw=await request.text();if(raw.length>4096)return json({error:'request_too_large'},413);
-    let body:unknown;try{body=JSON.parse(raw);}catch{throw new GameplayError('invalid_json');}
-    if(!body||typeof body!=='object'||Array.isArray(body))throw new GameplayError('invalid_request');
-    const row=body as Record<string,unknown>;
-    if(Object.keys(row).some(key=>!['requestId','text'].includes(key))||typeof row.requestId!=='string'||!/^[a-zA-Z0-9_-]{8,128}$/.test(row.requestId)||typeof row.text!=='string')throw new GameplayError('invalid_request');
-    return json(await liveRuntime.chat(accountId,chat[1],row.requestId,row.text));
-   }
-
-   const start=path.endsWith('/coop/qmode'),run=path.match(new RegExp('/coop/runs/('+uuid+')(?:/(choose|vote))?$'));
-   if(!start&&!run)return json({error:'not_found'},404);
-   const mutation=start||Boolean(run?.[2]);
-   if(request.method!==(mutation?'POST':'GET'))return json({error:'method_not_allowed'},405);
-   if(!mutation){
-    try{return json(await liveRuntime.load(accountId,run![1]));}
-    catch(error){if(error instanceof GameplayError&&error.message==='not_live_run')return json(await runtime.load(accountId,run![1]));throw error;}
-   }
-   const raw=await request.text();if(raw.length>4096)return json({error:'request_too_large'},413);
-   let body:unknown;try{body=JSON.parse(raw);}catch{throw new GameplayError('invalid_json');}
-   if(!body||typeof body!=='object'||Array.isArray(body))throw new GameplayError('invalid_request');
-   const allowed=start?['requestId','dungeonId','tier','characterId','loadoutId','loadoutRevision']:['requestId','decisionId','decisionRevision','optionId'];
-   if(Object.keys(body).some(key=>!allowed.includes(key)))throw new GameplayError('invalid_request');
-   if(start)return json(await runtime.start(accountId,parseCoopRunRequest(body,'qmode')));
-   try{return json(run?.[2]==='vote'?await liveRuntime.vote(accountId,run![1],parseCoopDecisionCommand(body)):await liveRuntime.choose(accountId,run![1],parseCoopDecisionCommand(body)));}
-   catch(error){if(error instanceof GameplayError&&error.message==='not_live_run')return json(await runtime.choose(accountId,run![1],parseCoopDecisionCommand(body)));throw error;}
-  }catch(error){
-   const message=error instanceof Error?error.message:'server_error',code=message.toLowerCase();
-   const status=/^(stale_|idempotency_|node_resolving|account_already_participating|echo_no_longer_eligible|ticket_not_queued|ready_check_closed|loadout_changed_since_queue|reservation_conflict|event_not_live|event_claim_closed|event_daily_clear_limit)/.test(code)?409:
-    /^(not_participant|loadout_not_owned|ticket_not_owned|not_ready_member)/.test(code)?403:
-    /^(invalid_|unknown_expedition|unknown_event_expedition|dungeon_|character_|role_not_ready|illegal_equipment|echo_pool_unavailable|run_not_awaiting_choice|event_level_requirement|event_reward_not_ready|event_run_not_awaiting_choice|event_run_not_found)/.test(code)?400:error instanceof GameplayError?error.status:503;
-   if(status===503)console.error('coop_unexpected_error',request.method,code);
-   return json({error:status===503?(request.method==='GET'?'Dungeons are temporarily unavailable. Try again.':'Could not confirm the co-op action. Retry it.'):code},status);
-  }
- };
-}
-));
-   if(chat){
-    if(request.method==='GET')return json(await liveRuntime.chat(accountId,chat[1],services.randomId()));
-    if(request.method!=='POST')return json({error:'method_not_allowed'},405);
-    const raw=await request.text();if(raw.length>4096)return json({error:'request_too_large'},413);
-    let body:unknown;try{body=JSON.parse(raw);}catch{throw new GameplayError('invalid_json');}
-    if(!body||typeof body!=='object'||Array.isArray(body))throw new GameplayError('invalid_request');
-    const row=body as Record<string,unknown>;
-    if(Object.keys(row).some(key=>!['requestId','text'].includes(key))||typeof row.requestId!=='string'||!/^[a-zA-Z0-9_-]{8,128}$/.test(row.requestId)||typeof row.text!=='string')throw new GameplayError('invalid_request');
-    return json(await liveRuntime.chat(accountId,chat[1],row.requestId,row.text));
-   }
-
-   const start=path.endsWith('/coop/qmode'),run=path.match(new RegExp('/coop/runs/('+uuid+')(?:/(choose|vote))?$'));
-   if(!start&&!run)return json({error:'not_found'},404);
-   const mutation=start||Boolean(run?.[2]);
-   if(request.method!==(mutation?'POST':'GET'))return json({error:'method_not_allowed'},405);
-   if(!mutation){
-    try{return json(await liveRuntime.load(accountId,run![1]));}
-    catch(error){if(error instanceof GameplayError&&error.message==='not_live_run')return json(await runtime.load(accountId,run![1]));throw error;}
-   }
-   const raw=await request.text();if(raw.length>4096)return json({error:'request_too_large'},413);
-   let body:unknown;try{body=JSON.parse(raw);}catch{throw new GameplayError('invalid_json');}
-   if(!body||typeof body!=='object'||Array.isArray(body))throw new GameplayError('invalid_request');
-   const allowed=start?['requestId','dungeonId','tier','characterId','loadoutId','loadoutRevision']:['requestId','decisionId','decisionRevision','optionId'];
-   if(Object.keys(body).some(key=>!allowed.includes(key)))throw new GameplayError('invalid_request');
-   if(start)return json(await runtime.start(accountId,parseCoopRunRequest(body,'qmode')));
-   try{return json(run?.[2]==='vote'?await liveRuntime.vote(accountId,run![1],parseCoopDecisionCommand(body)):await liveRuntime.choose(accountId,run![1],parseCoopDecisionCommand(body)));}
-   catch(error){if(error instanceof GameplayError&&error.message==='not_live_run')return json(await runtime.choose(accountId,run![1],parseCoopDecisionCommand(body)));throw error;}
-  }catch(error){
-   const message=error instanceof Error?error.message:'server_error',code=message.toLowerCase();
-   const status=/^(stale_|idempotency_|node_resolving|account_already_participating|echo_no_longer_eligible|ticket_not_queued|ready_check_closed|loadout_changed_since_queue|reservation_conflict|event_not_live|event_claim_closed|event_daily_clear_limit)/.test(code)?409:
-    /^(not_participant|loadout_not_owned|ticket_not_owned|not_ready_member)/.test(code)?403:
-    /^(invalid_|unknown_expedition|unknown_event_expedition|dungeon_|character_|role_not_ready|illegal_equipment|echo_pool_unavailable|run_not_awaiting_choice|event_level_requirement|event_reward_not_ready|event_run_not_awaiting_choice|event_run_not_found)/.test(code)?400:error instanceof GameplayError?error.status:503;
    if(status===503)console.error('coop_unexpected_error',request.method,code);
    return json({error:status===503?(request.method==='GET'?'Dungeons are temporarily unavailable. Try again.':'Could not confirm the co-op action. Retry it.'):code},status);
   }

@@ -72,9 +72,12 @@ ok(COMMERCE_PRODUCT_BONUSES.vip_plus.note.includes('Stacks with VIP'),'VIP+ disc
 ok(COMMERCE_PRODUCT_BONUSES.supporter_monthly.note.includes('while subscribed'),'Supporter bonuses disclose their duration');
 const fs=require('fs') as {readFileSync:(path:string,encoding:string)=>string};
 const rowSource=fs.readFileSync('src/components/CommerceProductRow.tsx','utf8');
-ok(rowSource.includes('useState(false)')&&rowSource.includes('accessibilityState={{expanded}}'),'Product bonuses start collapsed and expose expansion state');
-ok(rowSource.includes('{expanded?<View')&&rowSource.includes('setExpanded(value=>!value)'),'Bonus content mounts only when expanded and can be collapsed');
-ok(rowSource.includes('width:44,height:44')&&rowSource.includes('title:label'),'Small plus retains a touch target and web tooltip');
+const catalogSource=fs.readFileSync('src/components/CommerceCatalog.tsx','utf8');
+ok(rowSource.includes('onDetails')&&rowSource.includes('accessibilityRole="button"'),'Membership cards open accessible product details instead of launching purchases');
+ok(!rowSource.includes('onBuy(')&&catalogSource.includes('<GameModalSurface visible={selected!==null}'),'All benefit disclosures live in the dedicated product detail sheet');
+ok(catalogSource.includes('COMMERCE_PRODUCT_BONUSES[selected]')&&catalogSource.includes('bonuses.items.map('),'Every product retains its full authored benefit list in the detail sheet');
+ok(catalogSource.includes('!current.confirmed||current.owned||!available(current.id)')&&catalogSource.includes('onBuy(id)'),'Only confirmed, eligible and available purchases reach Google Play');
+ok(catalogSource.includes('<GameModalHeader')&&catalogSource.includes('onClose={()=>setSelected(null)}'),'Details can be dismissed without a purchase');
 ok(COMMERCE_GUARDRAILS.pricesManagedByPlayConsole&&!COMMERCE_GUARDRAILS.ads,'Play Console pricing should be authoritative and ads disabled');
 
 const stale={...base,account:{...base.account,entitlements:{vipplus:true,supporter_subscription:true,unrelated:true}}};

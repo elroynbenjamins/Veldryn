@@ -33,7 +33,7 @@ import {InventoryScreen} from './src/screens/InventoryScreen';
 import {CharacterScreen} from './src/screens/CharacterScreen';
 import {CombatCompanionPanel,type CompanionNavigationState} from './src/components/CombatCompanionPanel';
 import {executeGameCommand,settingsForOnlineCommand,type ForgeCraftResult} from './src/core/game-commands';
-import {QuestScreen,type QuestMode} from './src/screens/QuestScreen';
+import {QuestRefinedScreen as QuestScreen,type QuestMode} from './src/screens/QuestRefinedScreen';
 import {SkillsScreen} from './src/screens/SkillsScreen';
 import {CompanionsScreen} from './src/screens/CompanionsScreen';
 import {SectionGuide} from './src/components/SectionGuide';

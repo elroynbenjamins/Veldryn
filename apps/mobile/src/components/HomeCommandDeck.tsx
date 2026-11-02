@@ -15,8 +15,8 @@ export function HomeCommandDeck({state,onGuild,onDungeons,onContracts,onForge,on
  const capacity=activityQueueCapacity(state),queue=normalizeActivityQueue(state.character?.activityQueue,capacity);
  const member=!!state.account.guildMember;
  return <View style={s.section}>
-  <View style={s.head}><View><Text style={s.kicker}>ADVENTURER'S COMMAND DECK</Text><Text style={s.title}>Your next moves</Text></View><Text style={s.sub}>QUICK ACCESS</Text></View>
-  {guild?<Pressable accessibilityRole="button" accessibilityLabel={member?'Open Guild Hall':'Find a Guild'} onPress={onGuild} style={({pressed})=>[s.guild,pressed&&s.pressed]}>
+  <View style={s.head}><View><Text style={s.kicker}>QUICK ACTIONS</Text><Text style={s.title}>Your next moves</Text></View><Text style={s.sub}>QUICK ACCESS</Text></View>
+  {guild&&!member?<Pressable accessibilityRole="button" accessibilityLabel={member?'Open Guild Hall':'Find a Guild'} onPress={onGuild} style={({pressed})=>[s.guild,pressed&&s.pressed]}>
     <View style={s.guildMark}><ThemedIcon name="guild" size={31}/></View>
     <View style={s.flex}><Text style={s.tileName}>{member?'Guild Hall':'Find your Guild'}</Text><Text style={s.tileHint}>{member?'Projects · Guild Shop · Chat':'Guild projects, events and co-op rewards'}</Text></View><Text style={s.chevron}>›</Text>
   </Pressable>:null}
@@ -34,15 +34,15 @@ function DeckAction({label,detail,mark,onPress,s}:{label:string;detail:string;ma
  </Pressable>;
 }
 function styles(C:ThemeColors){return StyleSheet.create({
- section:{gap:9},head:{flexDirection:'row',alignItems:'flex-end',justifyContent:'space-between',gap:8},
+ section:{gap:7},head:{flexDirection:'row',alignItems:'flex-end',justifyContent:'space-between',gap:8},
  kicker:{fontSize:9,color:C.accent,fontWeight:'900',letterSpacing:1},
- title:{fontSize:18,fontWeight:'900',color:C.text,marginTop:3},sub:{fontSize:9,color:C.muted,fontWeight:'800',letterSpacing:.5},
+ title:{fontSize:16,fontWeight:'900',color:C.text,marginTop:2},sub:{fontSize:9,color:C.muted,fontWeight:'800',letterSpacing:.5},
  guild:{flexDirection:'row',alignItems:'center',gap:11,padding:11,minHeight:70,borderWidth:1,borderRadius:13,borderColor:C.special,backgroundColor:C.specialSurface},
  guildMark:{width:42,height:42,alignItems:'center',justifyContent:'center',borderRadius:11,borderWidth:1,borderColor:C.special,backgroundColor:C.panel},
  guildGlyph:{fontSize:26,color:C.special},flex:{flex:1,minWidth:0,gap:3},
  tileName:{fontSize:13,fontWeight:'900',color:C.text},tileHint:{fontSize:10,color:C.muted},
  chevron:{color:C.accent,fontSize:21,fontWeight:'900'},
  grid:{flexDirection:'row',flexWrap:'wrap',gap:8},
- tile:{flexBasis:'47%',flexGrow:1,minWidth:130,minHeight:64,flexDirection:'row',alignItems:'center',gap:8,paddingHorizontal:10,paddingVertical:9,borderWidth:1,borderRadius:11,borderColor:C.line,backgroundColor:C.panel},
+ tile:{flexBasis:'47%',flexGrow:1,minWidth:130,minHeight:58,flexDirection:'row',alignItems:'center',gap:8,paddingHorizontal:10,paddingVertical:7,borderWidth:1,borderRadius:10,borderColor:C.line,backgroundColor:C.panel},
  mark:{fontSize:22,color:C.info},pressed:{opacity:.73}
 });}

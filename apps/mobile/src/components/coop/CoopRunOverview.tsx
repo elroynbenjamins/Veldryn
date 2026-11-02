@@ -128,6 +128,7 @@ export function CoopRunOverview({language,run,myVotedNodeId,selfVoter,onBack,onC
        <View style={s.summary}><View style={s.grow}><Text style={s.title}>{reward.reward_json.marks??0} {st("Expedition Marks")}</Text>
        {reward.reward_json.live_fellowship_bonus?<Text style={s.copy}>{st("Live Fellowship bonus: +{marks} Marks",{marks:reward.reward_json.live_fellowship_bonus})}</Text>:null}
        {reward.reward_json.failure_consolation_applied?<Text style={s.copy}>{st("Consolation reward · No enhanced charge spent.")}</Text>:null}
+        {reward.reward_json.reward_charges_remaining!==undefined&&reward.reward_json.weekly_enhanced_remaining!==undefined?<Text style={s.copy}>{st("Enhanced: {charges} charges · {weekly} weekly rewards left",{charges:reward.reward_json.reward_charges_remaining,weekly:reward.reward_json.weekly_enhanced_remaining})}</Text>:null}
        </View><StateChip label={reward.claimed_at?st("CLAIMED"):st("READY")} tone={reward.claimed_at?'success':'selected'}/></View>
        {!reward.claimed_at?<GameButton title={st("Claim rewards")} disabled={busy||!onClaim} onPress={()=>onClaim?.(reward.id)}/>:null}
       </View>)}

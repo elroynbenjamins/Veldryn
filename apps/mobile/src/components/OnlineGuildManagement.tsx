@@ -9,6 +9,7 @@ import {GameTextInput} from './GameTextInput';
 import {ChatPlayerSheet,type ChatPlayerIdentity} from './ChatPlayerSheet';
 import {CompactPlayerIdentity} from './CompactPlayerIdentity';
 import {GuildMemberActionSheet,type GuildMemberAction} from './GuildMemberActionSheet';
+import {publicPlayerProfileV43} from '../online/profile-extension-v43';
 import {SocialInvitationCard} from './SocialInvitationCard';
 import {GuildIdentitySummary} from './GuildIdentitySummary';
 import {LoadingState} from './LoadingState';
@@ -37,8 +38,21 @@ export function OnlineGuildManagement({onApplicationsChanged,initialView='Member
  const [memberFilter,setMemberFilter]=useState<'All'|'Leader'|'Officer'|'Member'>('All');
  const [requestView,setRequestView]=useState<'Applications'|'Invites'>('Applications');
  const [activeMemberId,setActiveMemberId]=useState<string|null>(null);
+ const [applicantNames,setApplicantNames]=useState<Record<string,string>>({});
  const [loadError,setLoadError]=useState('');
  useEffect(()=>setView(initialView),[initialView]);
+ // Fetch identity only when reviewing requests; private/inaccessible accounts retain fallback.
+ useEffect(()=>{
+  if(view!=='Requests'||(role!=='leader'&&role!=='officer'))return;
+  const missing=applications.filter(app=>!Object.prototype.hasOwnProperty.call(applicantNames,app.account_id)).slice(0,8);
+  if(!missing.length)return;
+  let alive=true;
+  void Promise.all(missing.map(async app=>{
+   try{const profile=await publicPlayerProfileV43(app.account_id);return [app.account_id,profile?.displayName?.trim()||''] as const}
+   catch{return [app.account_id,''] as const}
+  })).then(rows=>{if(alive)setApplicantNames(previous=>({...previous,...Object.fromEntries(rows)}))});
+  return()=>{alive=false};
+ },[view,role,applications,applicantNames]);
  const load=async()=>{
   if(!onlineConfigured)return;
   setLoadError('');
@@ -117,10 +131,10 @@ export function OnlineGuildManagement({onApplicationsChanged,initialView='Member
   {!members.some(member=>member.display_name.toLocaleLowerCase().includes(search.trim().toLocaleLowerCase())&&(memberFilter==='All'||member.role===memberFilter.toLocaleLowerCase()))?<View style={s.noMatches}><Text style={s.empty}>No matching members.</Text><GameButton compact title="Clear search" tone="secondary" onPress={()=>{setSearch('');setMemberFilter('All')}}/></View>:null}</>:null}
   {view==='Requests'&&(role==='leader'||role==='officer')?<><View style={s.sectionHead}><Text style={s.section}>RECRUITMENT</Text><Text style={s.sectionMeta}>{applications.length+outgoingInvitations.length} pending</Text></View>
   <View style={s.filterRow}>{(['Applications','Invites'] as const).map(value=><Pressable key={value} accessibilityRole="button" accessibilityState={{selected:requestView===value}} onPress={()=>setRequestView(value)} style={({pressed})=>[s.filterChip,requestView===value&&s.filterSelected,pressed&&s.memberPressed]}><Text style={[s.filterText,requestView===value&&s.filterTextSelected]}>{value} · {value==='Applications'?applications.length:outgoingInvitations.length}</Text></Pressable>)}</View>
-  {requestView==='Applications'?<>{applications.length?applications.map(app=><SocialInvitationCard key={app.id} accountId={app.account_id} name={'Applicant '+app.account_id.slice(0,8)} status={st("GUILD APPLICATION")} statusTone="info" detail="Awaiting Guild review · profile name unavailable for this application." actions={<><GameButton compact title={st("Accept")} disabled={busy} onPress={()=>review(app.id,true)}/><GameButton compact title={st("Decline")} tone="secondary" disabled={busy} onPress={()=>review(app.id,false)}/></>}/>):<Text style={s.empty}>{st("No pending applications.")}</Text>}</>:<>{outgoingInvitations.length?outgoingInvitations.map(invite=>{const expiry=recruitmentTimeLabel(Date.parse(invite.expiresAt),Date.now());return <SocialInvitationCard key={invite.id} accountId={invite.recipientAccountId} name={invite.recipientName} status={st("GUILD INVITE SENT")} statusTone="muted" detail={st("Waiting for this player to respond.")} expiry={expiry.text} actions={<GameButton compact title={st("Cancel invite")} tone="secondary" disabled={busy} onPress={()=>cancelInvite(invite.id)}/>}/>;}):<Text style={s.empty}>No outgoing invitations.</Text>}</>}
+  {requestView==='Applications'?<>{applications.length?applications.map(app=><SocialInvitationCard key={app.id} accountId={app.account_id} name={applicantNames[app.account_id]||'Applicant '+app.account_id.slice(0,8)} status={st("GUILD APPLICATION")} statusTone="info" detail={applicantNames[app.account_id]?"Awaiting Guild review":"Applicant identity is unavailable or private."} actions={<><GameButton compact title="Profile" tone="secondary" disabled={busy} onPress={()=>setSelected({account_id:app.account_id,sender_name:applicantNames[app.account_id]||"Adventurer"})}/><GameButton compact title={st("Accept")} disabled={busy} onPress={()=>review(app.id,true)}/><GameButton compact title={st("Decline")} tone="secondary" disabled={busy} onPress={()=>review(app.id,false)}/></>}/>):<Text style={s.empty}>{st("No pending applications.")}</Text>}</>:<>{outgoingInvitations.length?outgoingInvitations.map(invite=>{const expiry=recruitmentTimeLabel(Date.parse(invite.expiresAt),Date.now());return <SocialInvitationCard key={invite.id} accountId={invite.recipientAccountId} name={invite.recipientName} status={st("GUILD INVITE SENT")} statusTone="muted" detail={st("Waiting for this player to respond.")} expiry={expiry.text} actions={<GameButton compact title={st("Cancel invite")} tone="secondary" disabled={busy} onPress={()=>cancelInvite(invite.id)}/>}/>;}):<Text style={s.empty}>No outgoing invitations.</Text>}</>}
   </>:null}
   {view==='Requests'&&role==='member'?<Text style={s.empty}>Applications and outgoing invitations are managed by Guild leadership.</Text>:null}
-  {view==='Safety'?<View style={s.departure}><View style={s.sectionHead}><Text style={s.dangerLabel}>{st("DANGER ZONE")}</Text><Text style={s.sectionMeta}>{role==='leader'?st("Leader controls"):st("Membership")}</Text></View>{role==='leader'?<><Text style={s.departureNote}>Transfer leadership to another member before leaving, or disband the Guild for everyone.</Text><GameButton title={st("Disband Guild")} tone="danger" loading={busy} disabled={busy} onPress={disbandCurrentGuild}/></>:<><Text style={s.departureNote}>Leaving removes access to Guild projects, chat and member benefits until you join another Guild.</Text><GameButton title={st("Leave Guild")} tone="danger" loading={busy} disabled={busy} onPress={leaveCurrentGuild}/></>}</View>:null}
+  {view==='Safety'?<><View style={s.safetyHelp}><Text style={s.section}>MEMBERSHIP & LEADERSHIP</Text><Text style={s.subCompact}>To transfer leadership, select a member in the Members tab.</Text></View><View style={s.departure}><View style={s.sectionHead}><Text style={s.dangerLabel}>{st("DANGER ZONE")}</Text><Text style={s.sectionMeta}>{role==='leader'?st("Leader controls"):st("Membership")}</Text></View>{role==='leader'?<><Text style={s.departureNote}>Transfer leadership to another member before leaving, or disband the Guild for everyone.</Text><GameButton title={st("Disband Guild")} tone="danger" loading={busy} disabled={busy} onPress={disbandCurrentGuild}/></>:<><Text style={s.departureNote}>Leaving removes access to Guild projects, chat and member benefits until you join another Guild.</Text><GameButton title={st("Leave Guild")} tone="danger" loading={busy} disabled={busy} onPress={leaveCurrentGuild}/></>}</View></>:null}
   {activeMemberId&&role?<GuildMemberActionSheet member={members.find(member=>member.account_id===activeMemberId)??null} actorRole={role} actorAccountId={ownAccountId} busy={busy} onClose={()=>setActiveMemberId(null)} onProfile={openMember} onAction={manageMember}/>:null}
   <ChatPlayerSheet message={selected} onClose={()=>setSelected(null)} onBlocked={()=>setSelected(null)}/>
  </Panel></View>;
@@ -142,6 +156,7 @@ function makeStyles(C:ThemeColors){return StyleSheet.create({
  memberArrow:{fontSize:24,lineHeight:28,color:C.accentSoft},
  noMatches:{alignItems:'center',gap:4,paddingVertical:12},
  memberPressed:{opacity:.72},
+ safetyHelp:{gap:4,paddingTop:10},
 
  stack:{gap:8},flex:{flex:1,minWidth:0},title:{...typography.title,color:C.text},sub:{...typography.body,color:C.muted,lineHeight:19,marginTop:4},managementHead:{flexDirection:'row',alignItems:'center',gap:8,paddingTop:9},rolePill:{paddingHorizontal:8,paddingVertical:5,borderWidth:1,borderRadius:99},roleLeader:{borderColor:C.lineStrong,backgroundColor:C.warningSurface},roleOfficer:{borderColor:C.info,backgroundColor:C.infoSurface},roleMember:{borderColor:C.line,backgroundColor:C.panel2},roleText:{fontSize:10,lineHeight:15,fontWeight:'700',letterSpacing:.5},roleTextLeader:{color:C.accent},roleTextOfficer:{color:C.info},roleTextMember:{color:C.muted},
  sectionHead:{flexDirection:'row',alignItems:'center',justifyContent:'space-between',gap:8,marginTop:spacing.md},

@@ -31,6 +31,7 @@ export function ForgeOddsGuide({itemId}:{itemId:string}){
  const chosen=outcomes.find(row=>row.rarity===selectedRarity)??outcomes[0];
  const chosenMeta=rarityMeta(chosen.rarity);
  const totalMultiplier=chosen.statMultiplier*craftedGearQualityMultiplier(quality);
+ const qualityPosition=(quality+'%') as `${number}%`;
  const highlights=outcomes.filter(row=>['rare','epic','mythic'].includes(row.rarity));
  const summary=highlights.length>=2?highlights:outcomes.slice(-3);
  const updateQuality=(position:number)=>{
@@ -103,8 +104,8 @@ export function ForgeOddsGuide({itemId}:{itemId:string}){
       onTouchMove={event=>updateQuality(event.nativeEvent.locationX)}
       style={s.sliderHit}>
       <View pointerEvents="none" style={[s.sliderTrack,{backgroundColor:C.line}]}>
-       <View style={[s.sliderFill,{backgroundColor:C.accent,width:quality+'%'}]}/>
-       <View style={[s.sliderThumb,{backgroundColor:C.accent,borderColor:C.panel,left:quality+'%'}]}/>
+       <View style={[s.sliderFill,{backgroundColor:C.accent,width:qualityPosition}]}/>
+       <View style={[s.sliderThumb,{backgroundColor:C.accent,borderColor:C.panel,left:qualityPosition}]}/>
       </View>
     </Pressable>
     <View style={s.qualityRow}>

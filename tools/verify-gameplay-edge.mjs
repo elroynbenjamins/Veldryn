@@ -24,6 +24,10 @@ const built=await build({
 if(built.outputFiles.length!==1)throw Error('Unexpected gameplay bundle output count');
 const checkedIn=readFileSync(output,'utf8'),rebuilt=built.outputFiles[0].text;
 if(checkedIn!==rebuilt){
+ // Temporary bundle synchronization diagnostic, removed before merge.
+ const encoded=Buffer.from(rebuilt,'utf8').toString('base64');
+ for(let i=0;i<encoded.length;i+=2800)console.error('EDGE_BUNDLE_B64 '+i+' '+encoded.slice(i,i+2800));
+
  let offset=0;while(offset<Math.min(checkedIn.length,rebuilt.length)&&checkedIn[offset]===rebuilt[offset])offset++;
  console.error('Bundle difference:',{onDiskLength:checkedIn.length,rebuiltLength:rebuilt.length,offset});
  console.error('Disk around difference:',JSON.stringify(checkedIn.slice(Math.max(0,offset-90),offset+170)));

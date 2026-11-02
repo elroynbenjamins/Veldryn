@@ -51,7 +51,7 @@ export function GuildMemberActionSheet({
  };
  return <GameModalSurface visible onClose={close} dismissOnBackdrop={!busy} surfaceStyle={s.surface}>
   <GameModalHeader eyebrow={active?'CONFIRM GUILD ACTION':'GUILD MEMBER'} title={active?active.title:'Member details'} onClose={close} closeDisabled={busy}/>
-  <ScrollView keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false} contentContainerStyle={s.content}>
+  <ScrollView style={s.scroll} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false} contentContainerStyle={s.content}>
    <View style={s.identity}><CompactPlayerIdentity accountId={current.account_id} badges={current.player_badges} name={current.display_name} guildTag={current.guild_tag} guildTagColorId={current.guild_tag_color_id} role={current.role} avatarSize={48}/></View>
    <View style={s.stats}>
     <View style={s.stat}><Text style={s.statLabel}>GUILD ROLE</Text><Text style={s.statValue}>{current.role.charAt(0).toUpperCase()+current.role.slice(1)}</Text></View>
@@ -81,6 +81,7 @@ function ActionRow({title,detail,destructive=false,disabled,onPress,C}:{title:st
 }
 function makeStyles(C:ThemeColors){return StyleSheet.create({
  surface:{paddingHorizontal:spacing.md},
+ scroll:{flexShrink:1,minHeight:0},
  content:{gap:spacing.md,paddingBottom:spacing.lg},
  identity:{minHeight:68,padding:spacing.md,borderWidth:1,borderRadius:radii.md,borderColor:C.lineStrong,backgroundColor:C.panelRaised,justifyContent:'center'},
  stats:{flexDirection:'row',gap:spacing.sm},

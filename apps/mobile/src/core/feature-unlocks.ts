@@ -5,7 +5,7 @@ export const GUILD_UNLOCK_LEVEL=7;
 /** Guild browsing and all membership actions share the same Level 7 unlock. */
 export const GUILD_JOIN_LEVEL=GUILD_UNLOCK_LEVEL;
 export const PARTY_UNLOCK_LEVEL=20;
-export const EARLY_FEATURE_DESTINATION_ORDER=['DailySupplies','Events','AccountBonuses','Friends','Companions','Social','MasteryHall','Guild','Rankings'] as const;
+export const EARLY_FEATURE_DESTINATION_ORDER=['DailySupplies','Events','AccountBonuses','Friends','Companions','Recruitment','MasteryHall','Guild','Rankings'] as const;
 
 export const EARLY_FEATURE_UNLOCKS={
  dailySupplies:{questId:'QST_002',title:'Daily Supplies',requirement:'Complete First Blood, First Skill',description:'The daily reward track appears after the player understands basic skilling.'},
@@ -101,7 +101,7 @@ export function newlyUnlockedEarlyFeatures(before:GameState|null|undefined,after
 export function earlyFeatureForDestination(destination:string):EarlyFeatureId|undefined{
  const map:Record<string,EarlyFeatureId>={
   DailySupplies:'dailySupplies',AccountBonuses:'accountBonuses',
-  Companions:'companions',Friends:'friends',Social:'social',MasteryHall:'masteryHall',
+  Companions:'companions',Friends:'friends',Social:'social',Recruitment:'social',MasteryHall:'masteryHall',
   Guild:'guild',Rankings:'rankings',
  };
  return map[destination];

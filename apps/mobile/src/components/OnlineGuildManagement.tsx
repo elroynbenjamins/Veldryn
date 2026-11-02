@@ -97,8 +97,13 @@ export function OnlineGuildManagement({onApplicationsChanged,initialView='Member
  return <View style={s.stack}>
   {busy?<LoadingState compact/>:null}
   {loadError?<ActionFeedback tone="error" message={loadError}/>:null}
-  <Panel><GuildIdentitySummary compact name={guild.name} tag={guild.tag} tagColorId={guild.tag_color_id} level={guild.level} memberCount={members.length} memberCap={guild.member_cap} backgroundId={guild.background_id} bannerId={guild.banner_id} frameId={guild.profile_frame_id} nameColorId={guild.name_color_id} nameplateId={guild.nameplate_id} motto={guild.motto}/><View style={s.managementHead}><View style={s.flex}><Text style={s.section}>{st("GUILD MANAGEMENT")}</Text><Text style={s.subCompact}>{st("Member controls and succession safety")}</Text></View><View style={[s.rolePill,role==='leader'?s.roleLeader:role==='officer'?s.roleOfficer:s.roleMember]}><Text style={[s.roleText,role==='leader'?s.roleTextLeader:role==='officer'?s.roleTextOfficer:s.roleTextMember]}>{role.toUpperCase()}</Text></View></View></Panel>
-  <BoardTabs compact label="Guild roster sections" items={[{id:'Members',label:'Members'},{id:'Requests',label:`Requests${applications.length+invitations.length+outgoingInvitations.length?' · '+(applications.length+invitations.length+outgoingInvitations.length):''}`},{id:'Safety',label:'Membership'}]} value={view} onChange={setView}/>
+  <Panel>
+   <GuildIdentitySummary compact name={guild.name} tag={guild.tag} tagColorId={guild.tag_color_id} level={guild.level} memberCount={members.length} memberCap={guild.member_cap} backgroundId={guild.background_id} bannerId={guild.banner_id} frameId={guild.profile_frame_id} nameColorId={guild.name_color_id} nameplateId={guild.nameplate_id} motto={guild.motto}/>
+   <View style={s.managementHead}><View style={s.flex}><Text style={s.managementTitle}>{st("Members")}</Text><Text style={s.subCompact}>{st("Guild roster and member requests")}</Text></View><View style={[s.rolePill,role==='leader'?s.roleLeader:role==='officer'?s.roleOfficer:s.roleMember]}><Text style={[s.roleText,role==='leader'?s.roleTextLeader:role==='officer'?s.roleTextOfficer:s.roleTextMember]}>{role.toUpperCase()}</Text></View></View>
+   <View style={s.capacityHeader}><Text style={s.capacityCount}>{members.length} / {guild.member_cap} {st("MEMBERS")}</Text><Text style={s.capacityFree}>{Math.max(0,guild.member_cap-members.length)} {st("spaces available")}</Text></View>
+   <View style={s.capacityTrack}><View style={[s.capacityFill,{width:(Math.min(1,members.length/Math.max(1,guild.member_cap))*100).toFixed(2)+'%'}]}/></View>
+  </Panel>
+  <BoardTabs compact label="Guild roster sections" items={[{id:'Members',label:'Members'},{id:'Requests',label:`Requests${applications.length+invitations.length+outgoingInvitations.length?' · '+(applications.length+invitations.length+outgoingInvitations.length):''}`},{id:'Safety',label:'Membership'}]} value={view} onChange={next=>{setView(next);setActiveMemberId(null)}}/>
   {view==='Requests'?invitePanel:null}
   <Panel>
   {view==='Safety'&&leadership?<View style={[s.leadership,Number(leadership.inactiveDays??0)>=14&&s.leadershipWarn]}><View style={s.copy}><View style={s.leadershipHead}><Text style={s.section}>LEADERSHIP SAFETY · {leadership.thresholdDays} DAYS</Text><View style={[s.safetyPill,Number(leadership.inactiveDays??0)>=14&&s.safetyPillWarn]}><Text style={[s.safetyText,Number(leadership.inactiveDays??0)>=14&&s.safetyTextWarn]}>{Number(leadership.inactiveDays??0)>=14?st("WATCH"):st("ACTIVE")}</Text></View></View>
@@ -121,7 +126,23 @@ export function OnlineGuildManagement({onApplicationsChanged,initialView='Member
 }
 
 function makeStyles(C:ThemeColors){return StyleSheet.create({
- stack:{gap:10},flex:{flex:1,minWidth:0},title:{...typography.title,color:C.text},sub:{...typography.body,color:C.muted,lineHeight:19,marginTop:4},managementHead:{flexDirection:'row',alignItems:'center',gap:8,paddingTop:2},rolePill:{paddingHorizontal:8,paddingVertical:5,borderWidth:1,borderRadius:99},roleLeader:{borderColor:C.lineStrong,backgroundColor:C.warningSurface},roleOfficer:{borderColor:C.info,backgroundColor:C.infoSurface},roleMember:{borderColor:C.line,backgroundColor:C.panel2},roleText:{fontSize:10,lineHeight:15,fontWeight:'700',letterSpacing:.5},roleTextLeader:{color:C.accent},roleTextOfficer:{color:C.info},roleTextMember:{color:C.muted},
+ managementTitle:{...typography.title,color:C.text,fontWeight:'800'},
+ capacityHeader:{flexDirection:'row',justifyContent:'space-between',alignItems:'center',gap:8,marginTop:10},
+ capacityCount:{fontSize:11,lineHeight:16,fontWeight:'800',color:C.accent},
+ capacityFree:{fontSize:11,lineHeight:16,fontWeight:'600',color:C.muted},
+ capacityTrack:{height:5,backgroundColor:C.stage,borderRadius:5,overflow:'hidden',marginTop:5},
+ capacityFill:{height:'100%',backgroundColor:C.accent,borderRadius:5},
+ filterRow:{flexDirection:'row',flexWrap:'wrap',gap:5,marginTop:10,marginBottom:4},
+ filterChip:{minHeight:36,minWidth:54,paddingHorizontal:10,paddingVertical:7,borderWidth:1,borderColor:C.line,backgroundColor:C.panel2,borderRadius:6,alignItems:'center',justifyContent:'center'},
+ filterSelected:{backgroundColor:C.selection,borderColor:C.selectionLine},
+ filterText:{fontSize:11,lineHeight:16,color:C.muted,fontWeight:'700'},
+ filterTextSelected:{color:C.text,fontWeight:'900'},
+ memberCard:{minHeight:62,flexDirection:'row',alignItems:'center',gap:8,paddingVertical:8,paddingHorizontal:9,borderWidth:1,borderRadius:8,borderColor:C.line,backgroundColor:C.panel2,marginTop:6},
+ memberArrow:{fontSize:24,lineHeight:28,color:C.accentSoft},
+ noMatches:{alignItems:'center',gap:4,paddingVertical:12},
+ memberPressed:{opacity:.72},
+
+ stack:{gap:8},flex:{flex:1,minWidth:0},title:{...typography.title,color:C.text},sub:{...typography.body,color:C.muted,lineHeight:19,marginTop:4},managementHead:{flexDirection:'row',alignItems:'center',gap:8,paddingTop:9},rolePill:{paddingHorizontal:8,paddingVertical:5,borderWidth:1,borderRadius:99},roleLeader:{borderColor:C.lineStrong,backgroundColor:C.warningSurface},roleOfficer:{borderColor:C.info,backgroundColor:C.infoSurface},roleMember:{borderColor:C.line,backgroundColor:C.panel2},roleText:{fontSize:10,lineHeight:15,fontWeight:'700',letterSpacing:.5},roleTextLeader:{color:C.accent},roleTextOfficer:{color:C.info},roleTextMember:{color:C.muted},
  sectionHead:{flexDirection:'row',alignItems:'center',justifyContent:'space-between',gap:8,marginTop:spacing.md},
  section:{...typography.caption,color:C.accent,fontWeight:'900',letterSpacing:.8},
  sectionMeta:{fontSize:12,lineHeight:17,color:C.muted,fontWeight:'600'},

@@ -23,7 +23,7 @@ export function CoopLiveRematchPanel({visible,run,status,busy=false,error,onRead
  return <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose} statusBarTranslucent>
   <View style={[s.overlay,{paddingTop:insets.top+14,paddingBottom:insets.bottom+14}]}>
    <View style={s.dialog}>
-    <ScrollView contentContainerStyle={s.content} showsVerticalScrollIndicator={false}>
+    <ScrollView contentContainerStyle={s.content} showsVerticalScrollIndicator={false} showsHorizontalScrollIndicator={false}>
      <View style={s.head}>
       <View style={s.heading}><Text style={s.kicker}>{st('LIVE DUNGEON · REMATCH')}</Text><Text accessibilityRole="header" style={s.title}>{st('Keep the party together')}</Text></View>
       <Pressable accessibilityRole="button" accessibilityLabel={st('Close rematch')} onPress={onClose} style={s.close}><Text style={s.closeText}>×</Text></Pressable>

@@ -33,7 +33,7 @@ import {gatheringToolDef} from '../content/gathering-tools';
 import {currentRegionId} from './combat-region';
 import {regionTravelAvailability,regionTravelLockReason} from './world-navigation';
 import {WORLD_ZONES,worldZoneInDevelopment} from '../content/world-map';
-import {enhancedGearStats,equippedEffectGemBonuses,equippedGemBonuses,hasEnhancement,canDisposeLegacyEquipment} from './equipment-enhancement';
+import {enhancedGearStats,equippedEffectGemBonuses,equippedGemBonuses,canDisposeLegacyEquipment} from './equipment-enhancement';
 import {activeEquipmentSetRuntime,equipmentSetCombatModifiers} from './equipment-set-runtime';
 import {companionCombatContribution,reconcileCombatCompanionUnlocks,grantCompanionEssence,grantBondstones} from './combat-companions';
 import {awardCompanionRematchBondstone,companionRematchBondstoneStatus,recordCompanionActivity} from './companion-runtime';

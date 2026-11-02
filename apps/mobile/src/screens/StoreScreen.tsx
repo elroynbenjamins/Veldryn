@@ -1,5 +1,5 @@
 import {useMemo,useRef,useState} from 'react';
-import {Pressable,ScrollView,StyleSheet,Text,TextInput,View} from 'react-native';
+import {Pressable,ScrollView,StyleSheet,Text,TextInput,View,type ScrollViewInstance} from 'react-native';
 import {GooglePlayCommercePanel} from '../components/GooglePlayCommercePanel';
 import {GameButton} from '../components/GameButton';
 import {Panel} from '../components/Panel';
@@ -26,7 +26,7 @@ export function StoreScreen({state,onChange,online=false,onRefreshCommerce,onRed
  const C=useGameTheme(),s=useMemo(()=>styles(C),[C]);
  const a=(text:string)=>accountText(state.settings.language,text);
  const [section,setSection]=useState<StoreSection>('Memberships');
- const scrollRef=useRef<ScrollView>(null);
+ const scrollRef=useRef<ScrollViewInstance>(null);
  const changeSection=(next:StoreSection)=>{setSection(next);scrollRef.current?.scrollTo({y:0,animated:false});};
  const [showPromoCode,setShowPromoCode]=useState(false);
  const [code,setCode]=useState(''),[status,setStatus]=useState(''),[redeeming,setRedeeming]=useState(false);

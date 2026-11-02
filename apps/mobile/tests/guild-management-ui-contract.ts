@@ -44,7 +44,7 @@ ok(app.includes('onlineCustomize={<OnlineGuildCustomizationPanel/>}'),'Guild scr
 
 for(const label of ['Home','PvE','Roster','Activities','Hall','Chat','Manage'])ok(screen.includes("'"+label+"'"),'Consolidated online Guild tabs must include '+label);
 ok(screen.includes("onlineSection==='Roster'?")&&screen.includes('cloneElement(onlineManagement'),'Roster tab must render authoritative Guild management');
-ok(screen.includes("onlineSection==='Hall'?<View")&&screen.includes("hallSection==='Shop'")&&screen.includes("(['Facilities','Skills','Trophies','Shop'] as const)")&&screen.includes('<OnlineGuildTokenShopPanel')&&screen.includes('cloneElement(onlineHall'),'Hall must retain its four shared sections and nest the Guild Shop without adding an eighth destination');
+ok(screen.includes("onlineSection==='Hall'?<View")&&screen.includes("hallSection==='Shop'")&&screen.includes('Back to Guild Hall')&&screen.includes('onOpenConstruction')&&screen.includes('cloneElement(onlineHall')&&hall.includes("'Overview','Construction','Bank','Skills','Legacy'"),'Hall must provide direct headquarters sections, while the Guild Token Shop remains a separate route reachable from Guild Home');
 ok(screen.includes('<OnlineGuildMusterPanel/>')&&screen.includes("onlineSection==='PvE'?onlinePve:null"),"Guild navigation must preserve Muster and a dedicated PvE destination");
 ok(screen.includes("onlineSection==='Manage'?<View")&&screen.includes('{onlineCustomize}'),'Manage must preserve member Guild appearance customization');
 ok(!screen.includes('{onlineDirectory}')&&!screen.includes('Directory & Creation'),'Joined members must not be offered guild creation inside Guild management');

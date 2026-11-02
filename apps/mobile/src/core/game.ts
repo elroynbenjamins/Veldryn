@@ -33,7 +33,7 @@ import {gatheringToolDef} from '../content/gathering-tools';
 import {currentRegionId} from './combat-region';
 import {regionTravelAvailability,regionTravelLockReason} from './world-navigation';
 import {WORLD_ZONES,worldZoneInDevelopment} from '../content/world-map';
-import {enhancedGearStats,equippedEffectGemBonuses,equippedGemBonuses,canDisposeLegacyEquipment} from './equipment-enhancement';
+import {enhancedGearStats,equippedEffectGemBonuses,equippedGemBonuses,canDisposeLegacyEquipment,canReleaseLegacyEnhancedGear,legacyEnhancedGearLocked} from './equipment-enhancement';
 import {activeEquipmentSetRuntime,equipmentSetCombatModifiers} from './equipment-set-runtime';
 import {companionCombatContribution,reconcileCombatCompanionUnlocks,grantCompanionEssence,grantBondstones} from './combat-companions';
 import {awardCompanionRematchBondstone,companionRematchBondstoneStatus,recordCompanionActivity} from './companion-runtime';
@@ -864,6 +864,14 @@ export function eatFood(state:GameState,itemId?:string):GameState{if(!state.char
 export function usePotion(state:GameState,itemId:string):GameState{if(!state.character)throw new Error('Create a character first.');const potion=potionDef(itemId);if(!potion)throw new Error('Unknown potion.');if(state.activity?.kind==='combat')throw new Error('Potions cannot be used during a hunt.');const stacks=consume(state.inventory.stacks,itemId,1);if(potion.effect.kind==='healing'){const max=effectiveStats(state).hp,healing=characterPermanentMultipliers(state).healingEffectivenessMultiplier;return {...state,inventory:{...state.inventory,stacks},character:{...state.character,currentHp:Math.min(max,state.character.currentHp+Math.ceil(max*potion.effect.maxHpFraction*healing))}};}return {...state,inventory:{...state.inventory,stacks},character:{...state.character,preparation:{itemId,remainingEncounters:potion.effect.encounters}}};}
 export function discardPreparation(state:GameState):GameState{return state.character?.preparation?{...state,character:{...state.character,preparation:undefined}}:state;}
 export function unequipItem(state:GameState,slot:GearSlot):GameState{if(!state.character)return state;const old=state.character.equipment[slot];if(!old)return state;if(state.character.equipmentInstanceIds?.[slot])throw new Error('Choose the exact equipped copy before unequipping uniquely identified gear');const eq={...state.character.equipment};delete eq[slot];const next={...state,inventory:{...state.inventory,stacks:stackItems(state.inventory.stacks,[{itemId:old,quantity:1}])},character:{...state.character,equipment:eq}} as GameState;next.character!.currentHp=Math.min(effectiveStats(next).hp,next.character!.currentHp);return next}
+/** A confirmed, unlocked legacy sale consumes the last provably owned copy.
+ * Unlike ordinary duplicate disposal, it must also delete its itemId-based
+ * enhancement so no later item inherits the destroyed weapon's gems or rank. */
+function clearSoldLegacyEnhancement(state:GameState,itemId:string):GameState{
+  const gearEnhancements={...(state.character?.gearEnhancements??{})};
+  delete gearEnhancements[itemId];
+  return {...state,character:{...state.character!,gearEnhancements}};
+}
 export function sellItem(state:GameState,itemId:string,quantity=1):GameState{
   if(!state.character||quantity<=0)return state;
   if(itemId===HOLY_WATER_ID)throw new Error('Holy Water cannot be sold.');
@@ -872,19 +880,21 @@ export function sellItem(state:GameState,itemId:string,quantity=1):GameState{
   const d=itemDef(itemId);
   if(d.guildOnly)throw new Error('Guild construction components cannot be sold.');
   if(d.knowledgeUnlockId)throw new Error('Blueprints cannot be sold. Learn the recipe by crafting its tool.');
-  if(d.type==='gear'&&state.inventory.stacks.some(row=>row.itemId===itemId&&row.instanceId===undefined&&row.quantity>=quantity)&&!canDisposeLegacyEquipment(state,itemId,'inventory',quantity))
-    throw new Error('Enhanced equipment is protected. Keep the upgraded copy or extract its gems before disposal.');
+  const releasing=d.type==='gear'&&quantity===1&&canReleaseLegacyEnhancedGear(state,itemId,'inventory')&&!legacyEnhancedGearLocked(state,itemId);
+  if(d.type==='gear'&&!canDisposeLegacyEquipment(state,itemId,'inventory',quantity)&&!releasing)
+    throw new Error('Enhanced equipment is protected. Unlock the exact older copy before selling, or keep its remaining duplicate.');
   let next:GameState={...state,inventory:{...state.inventory,stacks:consume(state.inventory.stacks,itemId,quantity)},character:{...state.character!,gold:state.character!.gold+d.value*quantity}};
-  return next;
+  return releasing?clearSoldLegacyEnhancement(next,itemId):next;
 }
 export function salvageItem(state:GameState,itemId:string):GameState{
   if(state.settings.favoriteItemIds?.includes(itemId))throw new Error('Favorite item is protected. Remove it from Favorites before salvaging.');
   if(state.settings.lockedItemIds?.includes(itemId))throw new Error('Locked item is protected. Unlock it before salvaging.');
   const d=itemDef(itemId);if(d.type!=='gear'||!d.salvage)throw new Error('Cannot salvage');
-  if(state.inventory.stacks.some(row=>row.itemId===itemId&&row.instanceId===undefined&&row.quantity>0)&&!canDisposeLegacyEquipment(state,itemId,'inventory',1))
-    throw new Error('Enhanced equipment is protected. Keep the upgraded copy or extract its gems before disposal.');
+  const releasing=canReleaseLegacyEnhancedGear(state,itemId,'inventory')&&!legacyEnhancedGearLocked(state,itemId);
+  if(!canDisposeLegacyEquipment(state,itemId,'inventory',1)&&!releasing)
+    throw new Error('Enhanced equipment is protected. Unlock the exact older copy before salvaging.');
   let next:GameState={...state,inventory:{...state.inventory,stacks:stackItems(consume(state.inventory.stacks,itemId,1),[d.salvage])}};
-  return next;
+  return releasing?clearSoldLegacyEnhancement(next,itemId):next;
 }
 
 function validBankGoldAmount(amount:number):void{
@@ -909,11 +919,14 @@ export function sellBankItem(state:GameState,itemId:string,quantity=1):GameState
   const def=itemDef(itemId);
   if(def.guildOnly)throw new Error('Guild construction components cannot be sold.');
   if(def.knowledgeUnlockId)throw new Error('Blueprints cannot be sold.');
-  if(def.type==='gear'&&state.bank.stacks.some(row=>row.itemId===itemId&&row.instanceId===undefined&&row.quantity>=quantity)&&!canDisposeLegacyEquipment(state,itemId,'bank',quantity))throw new Error('Enhanced equipment is protected. Keep the upgraded copy or extract its gems before disposal.');
+  const releasing=def.type==='gear'&&quantity===1&&canReleaseLegacyEnhancedGear(state,itemId,'bank')&&!legacyEnhancedGearLocked(state,itemId);
+  if(def.type==='gear'&&!canDisposeLegacyEquipment(state,itemId,'bank',quantity)&&!releasing)
+    throw new Error('Enhanced equipment is protected. Unlock the exact older copy before selling.');
   const stacks=consume(state.bank.stacks,itemId,quantity);
   const proceeds=def.value*quantity;
   if(!Number.isSafeInteger(proceeds)||!Number.isSafeInteger((state.bank.gold??0)+proceeds))throw new Error('Gold amount exceeds supported limit.');
-  return {...state,bank:{...state.bank,stacks,gold:(state.bank.gold??0)+proceeds}};
+  const next:GameState={...state,bank:{...state.bank,stacks,gold:(state.bank.gold??0)+proceeds}};
+  return releasing?clearSoldLegacyEnhancement(next,itemId):next;
 }
 export function depositToBank(state:GameState,itemId:string,quantity:number):GameState{
   if(quantity<=0)return state;

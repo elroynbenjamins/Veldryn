@@ -4,6 +4,14 @@ import {createTranslator} from './translator';
 // Each row contains English, German, Spanish, Dutch, Italian and French.
 // English source keys also let owned views translate core-generated presentation text.
 export const accountTranslationRows = {
+ "Find a Guild, follow weekly Quests and Projects in Activities, and review shared Hall upgrades.": [
+  "Find a Guild, follow weekly Quests and Projects in Activities, and review shared Hall upgrades.",
+  "Finde eine Gilde, verfolge wöchentliche Quests und Projekte unter Aktivitäten und prüfe die gemeinsamen Hallen-Upgrades.",
+  "Encuentra un gremio, sigue las misiones y proyectos semanales en Actividades y consulta las mejoras compartidas de la Sala.",
+  "Zoek een gilde, volg wekelijkse quests en projecten bij Activiteiten en bekijk de gezamenlijke gildehal-upgrades.",
+  "Trova una gilda, segui missioni e progetti settimanali in Attività e consulta i miglioramenti condivisi della Sala.",
+  "Rejoins une guilde, suis les quêtes et projets hebdomadaires dans Activités et consulte les améliorations de la salle commune."
+ ],
  // Account UX integration and Rewards Inbox localization.
   "Adventurer's Journal": ["Adventurer's Journal","Abenteurertagebuch","Diario del aventurero","Avonturiersdagboek","Diario dell'avventuriero","Journal de l'aventurier"],
   "Bestiary": ["Bestiary","Bestiarium","Bestiario","Bestiarium","Bestiario","Bestiaire"],

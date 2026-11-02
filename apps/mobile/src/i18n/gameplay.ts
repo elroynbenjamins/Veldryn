@@ -8,11 +8,6 @@ import {useMemo} from 'react';
 type TranslationRow=readonly [string,string,string,string,string,string];
 const common={
  // Interactive Forge odds and quality preview: en/de/es/nl/it/fr.
- "Common":["Common","Gewöhnlich","Común","Gewoon","Comune","Commun"],
- "Uncommon":["Uncommon","Ungewöhnlich","Poco común","Ongewoon","Non comune","Peu commun"],
- "Rare":["Rare","Selten","Raro","Zeldzaam","Raro","Rare"],
- "Epic":["Epic","Episch","Épico","Episch","Epico","Épique"],
- "Legendary":["Legendary","Legendär","Legendario","Legendarisch","Leggendario","Légendaire"],
  "Mythic":["Mythic","Mythisch","Mítico","Mythisch","Mitico","Mythique"],
  "Quality preview":["Quality preview","Qualitätsvorschau","Vista previa de calidad","Kwaliteitsvoorbeeld","Anteprima qualità","Aperçu de la qualité"],
  "Combined base stats":["Combined base stats","Kombinierte Grundwerte","Atributos base combinados","Gecombineerde basisstats","Statistiche base combinate","Stats de base combinées"],

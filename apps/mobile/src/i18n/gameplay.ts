@@ -7,6 +7,8 @@ import {useMemo} from 'react';
 // Every row is complete, in en/de/es/nl/it/fr order. English phrases are typed keys.
 type TranslationRow=readonly [string,string,string,string,string,string];
 const common={
+ "reserved":["reserved","reserviert","reservados","gereserveerd","prenotati","réservés"],
+ "Check ingredients and Gold after switching; the server will reject an unaffordable run without replacing your current activity.":["Check ingredients and Gold after switching; the server will reject an unaffordable run without replacing your current activity.","Nach dem Wechsel Zutaten und Gold prüfen; ein unbezahlbarer Vorgang wird ohne Unterbrechung abgewiesen.","Comprueba ingredientes y oro; el servidor rechazará una operación sin recursos sin interrumpir la actividad actual.","Controleer grondstoffen en goud; de server weigert een onbetaalbare actie zonder je huidige activiteit te onderbreken.","Controlla ingredienti e oro; il server rifiuta un'attività non sostenibile senza interrompere quella attuale.","Vérifiez ingrédients et or ; le serveur refusera une activité non finançable sans interrompre celle en cours."],
  // One-tap consumable workshops and meal effects, en/de/es/nl/it/fr.
  "Fish":["Fish","Fisch","Pescado","Vis","Pesce","Poisson"],
  "Meals":["Meals","Gerichte","Comidas","Maaltijden","Pasti","Plats"],

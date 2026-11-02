@@ -9,6 +9,69 @@ var __esm = (fn, res, err) => function __init() {
   }
 };
 
+// ../apps/mobile/src/core/meal-buffs.ts
+function mealBonusDef(itemId) {
+  return MEAL_BONUSES.find((row) => row.itemId === itemId);
+}
+function eatMealForBonus(state, itemId) {
+  if (!state.character) throw new Error("Create a character first.");
+  const def = mealBonusDef(itemId);
+  if (!def) throw new Error("This food does not grant a meal bonus.");
+  let remaining = 1;
+  const stacks = state.inventory.stacks.map((row) => {
+    if (row.itemId !== itemId || remaining === 0) return row;
+    const take4 = Math.min(remaining, row.quantity);
+    remaining -= take4;
+    return { ...row, quantity: row.quantity - take4 };
+  }).filter((row) => row.quantity > 0);
+  if (remaining) throw new Error("Meal not available in Inventory.");
+  return { ...state, inventory: { ...state.inventory, stacks }, character: {
+    ...state.character,
+    activeMealBuff: { itemId, remainingSeconds: def.durationHours * 3600 }
+  } };
+}
+function activeMealBonus(character) {
+  const buff = character?.activeMealBuff;
+  return buff && buff.remainingSeconds > 0 ? mealBonusDef(buff.itemId) : void 0;
+}
+function mealSpeedFactor(character, domain) {
+  const meal = activeMealBonus(character);
+  const applies = meal?.kind === "noncombat_speed" || domain === "crafting" && meal?.kind === "crafting_speed";
+  return applies ? 1 + meal.percent / 100 : 1;
+}
+function retimeReservedMealCraft(state, prior) {
+  const previous = mealSpeedFactor(prior, "crafting"), current = mealSpeedFactor(state.character, "crafting");
+  if (!state.activity || previous === current) return state;
+  const factor = previous / current;
+  const a = state.activity;
+  if (a.kind === "alchemy" && a.brew) return { ...state, activity: { ...a, brew: { ...a.brew, cycleSeconds: Math.max(1, Math.min(86400, a.brew.cycleSeconds * factor)) } } };
+  if (a.kind === "processing" && a.processing) return { ...state, activity: { ...a, processing: { ...a.processing, cycleSeconds: Math.max(1, Math.min(86400, a.processing.cycleSeconds * factor)) } } };
+  return state;
+}
+function commitMealActivityTime(state, source, reward2) {
+  const buff = state.character?.activeMealBuff;
+  if (!buff || !source) return state;
+  const eligible = source.kind === "combat" || source.kind === "mining" || source.kind === "woodcutting" || source.kind === "fishing" || source.kind === "herbalism" || source.kind === "alchemy" || source.kind === "processing" || source.kind === "exploration" || source.kind === "faith" || source.kind === "training";
+  if (!eligible) return state;
+  const qualified = Math.max(0, Math.min(reward2.elapsedSeconds, reward2.qualifyingActivitySeconds ?? reward2.elapsedSeconds));
+  if (qualified <= 0) return state;
+  const seconds = Math.max(0, buff.remainingSeconds - qualified);
+  return { ...state, character: { ...state.character, activeMealBuff: seconds > 0 ? { ...buff, remainingSeconds: seconds } : void 0 } };
+}
+var MEAL_BONUSES;
+var init_meal_buffs = __esm({
+  "../apps/mobile/src/core/meal-buffs.ts"() {
+    "use strict";
+    MEAL_BONUSES = [
+      { itemId: "IRONWOOD_STEW", kind: "gathering_speed", percent: 2, durationHours: 3, label: "+2% Gathering speed" },
+      { itemId: "GLASSFIN_FEAST", kind: "gathering_speed", percent: 3, durationHours: 4, label: "+3% Gathering speed" },
+      { itemId: "FROSTED_ICEFIN", kind: "crafting_speed", percent: 3, durationHours: 4, label: "+3% Crafting speed" },
+      { itemId: "CHARRED_EMBERFIN", kind: "combat_xp", percent: 4, durationHours: 4, label: "+4% Combat XP" },
+      { itemId: "ASHLANDS_EMBER_STEW", kind: "noncombat_speed", percent: 5, durationHours: 4, label: "+5% Non-combat skill speed" }
+    ];
+  }
+});
+
 // ../apps/mobile/src/core/progression.ts
 function baseXpForNextLevel(level) {
   return Math.floor(90 * Math.pow(level, 1.42) + level * 35);
@@ -142,12 +205,12 @@ function settleFaithPractice(state, now, capSeconds) {
   const empty2 = { xp: 0, gold: 0, kills: 0, items: [], elapsedSeconds: 0, faithActions: 0, faithXp: 0, holyWaterConsumed: 0 };
   const normalized = normalizeFaith(state.character?.faith), skillXp = state.skills.find((s) => s.skillId === "faith")?.xp ?? 0, faith = { ...normalized, xp: Math.max(normalized.xp, skillXp) }, reservation = state.activity?.faithPractice, p = faith.practice ?? (reservation ? { tierId: reservation.tierId, remaining: reservation.remainingPractices, lastClaimAtMs: reservation.lastClaimAtMs, progressMs: Math.floor(reservation.progressFraction * 6e4) } : void 0), tier = FAITH_TIERS.find((t) => t.id === p?.tierId);
   if (!state.character || !p || !tier || now < p.lastClaimAtMs) return { state, reward: empty2, refund: 0 };
-  const elapsed = Math.min(capSeconds * 1e3, now - p.lastClaimAtMs), total = p.progressMs + elapsed;
+  const elapsed = Math.min(capSeconds * 1e3, now - p.lastClaimAtMs), speed = mealSpeedFactor(state.character, "noncombat"), total = p.progressMs + elapsed * speed;
   const actions = Math.min(p.remaining, Math.floor(total / (tier.seconds * 1e3)), Math.ceil((MAX_XP - faith.xp) / tier.xp)), xp = Math.min(MAX_XP - faith.xp, actions * tier.xp);
   const remaining = p.remaining - actions, mastered = faith.xp + xp === MAX_XP, refund = mastered ? remaining * tier.water : 0;
-  const nextPractice = remaining && !mastered ? { ...p, remaining, lastClaimAtMs: now, progressMs: total % (tier.seconds * 1e3) } : void 0;
+  const nextPractice = remaining && !mastered ? { ...p, remaining, lastClaimAtMs: now, progressMs: Math.floor(total % (tier.seconds * 1e3)) } : void 0;
   const nextActivity = nextPractice && state.activity ? { ...state.activity, lastClaimAtMs: now, faithPractice: { tierId: nextPractice.tierId, remainingPractices: nextPractice.remaining, lastClaimAtMs: now, progressFraction: nextPractice.progressMs / (tier.seconds * 1e3) } } : null;
-  const qualifyingActivitySeconds = nextPractice ? Math.floor(elapsed / 1e3) : actions ? Math.max(0, Math.min(Math.floor(elapsed / 1e3), actions * tier.seconds - Math.floor(p.progressMs / 1e3))) : 0;
+  const qualifyingActivitySeconds = nextPractice ? Math.floor(elapsed / 1e3) : actions ? Math.max(0, Math.min(Math.floor(elapsed / 1e3), Math.floor((actions * tier.seconds * 1e3 - p.progressMs) / speed / 1e3))) : 0;
   return { state: { ...state, activity: nextActivity, character: { ...state.character, faith: { ...faith, xp: faith.xp + xp, practice: nextPractice } } }, refund, reward: { ...empty2, xp, elapsedSeconds: Math.floor(elapsed / 1e3), qualifyingActivitySeconds, faithActions: actions, faithXp: xp, holyWaterConsumed: actions * tier.water, faithWaterRefund: refund } };
 }
 function cancelFaithPractice(state) {
@@ -159,6 +222,7 @@ var MAX_XP, faithLevel, selectedFaithBlessing, holyWaterAvailable, faithPractice
 var init_faith2 = __esm({
   "../apps/mobile/src/core/faith.ts"() {
     "use strict";
+    init_meal_buffs();
     init_faith();
     init_progression();
     MAX_XP = totalXpAtLevel(100);
@@ -741,6 +805,7 @@ var CLASS_SKILLS = {
 var classSkillsFor = (id) => CLASS_SKILLS[id];
 
 // ../apps/mobile/src/core/class-skills.ts
+init_meal_buffs();
 init_progression();
 var MAX_CLASS_SKILL_XP = totalXpAtLevel(100);
 var CLASS_DRILL_BASE_XP = 24;
@@ -786,7 +851,8 @@ function settleClassDrills(state, now, capSeconds) {
   const c = state.character, drill = normalizeClassDrills(c?.classTraining);
   const empty2 = { xp: 0, gold: 0, kills: 0, items: [], elapsedSeconds: 0 };
   if (!c || !drill || now <= drill.lastClaimAtMs) return { state, reward: empty2 };
-  const elapsed = Math.min(capSeconds * 1e3, now - drill.lastClaimAtMs), total = elapsed + drill.progressMs, actions = Math.floor(total / 6e4);
+  const elapsed = Math.min(capSeconds * 1e3, now - drill.lastClaimAtMs), speed = mealSpeedFactor(c, "noncombat");
+  const total = elapsed * speed + drill.progressMs, actions = Math.floor(total / 6e4);
   let character = c;
   const awards = {};
   const apply = (count, focus2) => {
@@ -804,8 +870,9 @@ function settleClassDrills(state, now, capSeconds) {
   apply(rest, focus);
   completed += rest;
   const capped = characterClassSkills(character).every((s) => s.level === 100);
-  character = { ...character, classTraining: capped ? void 0 : { ...drill, lastClaimAtMs: now, progressMs: total % 6e4, focus: actions ? normalizeTrainingFocus(c.trainingFocus) : drill.focus } };
-  return { state: { ...state, character }, reward: { ...empty2, elapsedSeconds: Math.floor(elapsed / 1e3), trainingActions: completed, classSkillXp: Object.entries(awards).map(([skillId, xp]) => ({ skillId, xp })) } };
+  character = { ...character, classTraining: capped ? void 0 : { ...drill, lastClaimAtMs: now, progressMs: Math.floor(total % 6e4), focus: actions ? normalizeTrainingFocus(c.trainingFocus) : drill.focus } };
+  const qualified = capped ? Math.max(0, Math.min(elapsed, (completed * 6e4 - drill.progressMs) / speed)) : elapsed;
+  return { state: { ...state, character }, reward: { ...empty2, elapsedSeconds: Math.floor(elapsed / 1e3), qualifyingActivitySeconds: Math.floor(qualified / 1e3), trainingActions: completed, classSkillXp: Object.entries(awards).map(([skillId, xp]) => ({ skillId, xp })) } };
 }
 
 // ../apps/mobile/src/content/monsters.ts
@@ -47289,50 +47356,8 @@ function collectionBonusBreakdown(state, catalog2 = COLLECTIBLES) {
   });
 }
 
-// ../apps/mobile/src/core/meal-buffs.ts
-var MEAL_BONUSES = [
-  { itemId: "IRONWOOD_STEW", kind: "gathering_speed", percent: 2, durationHours: 3, label: "+2% Gathering speed" },
-  { itemId: "GLASSFIN_FEAST", kind: "gathering_speed", percent: 3, durationHours: 4, label: "+3% Gathering speed" },
-  { itemId: "FROSTED_ICEFIN", kind: "crafting_speed", percent: 3, durationHours: 4, label: "+3% Crafting speed" },
-  { itemId: "CHARRED_EMBERFIN", kind: "combat_xp", percent: 4, durationHours: 4, label: "+4% Combat XP" },
-  { itemId: "ASHLANDS_EMBER_STEW", kind: "noncombat_speed", percent: 5, durationHours: 4, label: "+5% Non-combat skill speed" }
-];
-function mealBonusDef(itemId) {
-  return MEAL_BONUSES.find((row) => row.itemId === itemId);
-}
-function eatMealForBonus(state, itemId) {
-  if (!state.character) throw new Error("Create a character first.");
-  const def = mealBonusDef(itemId);
-  if (!def) throw new Error("This food does not grant a meal bonus.");
-  let remaining = 1;
-  const stacks = state.inventory.stacks.map((row) => {
-    if (row.itemId !== itemId || remaining === 0) return row;
-    const take4 = Math.min(remaining, row.quantity);
-    remaining -= take4;
-    return { ...row, quantity: row.quantity - take4 };
-  }).filter((row) => row.quantity > 0);
-  if (remaining) throw new Error("Meal not available in Inventory.");
-  return { ...state, inventory: { ...state.inventory, stacks }, character: {
-    ...state.character,
-    activeMealBuff: { itemId, remainingSeconds: def.durationHours * 3600 }
-  } };
-}
-function activeMealBonus(character) {
-  const buff = character?.activeMealBuff;
-  return buff && buff.remainingSeconds > 0 ? mealBonusDef(buff.itemId) : void 0;
-}
-function commitMealActivityTime(state, source, reward2) {
-  const buff = state.character?.activeMealBuff;
-  if (!buff || !source) return state;
-  const eligible = source.kind === "combat" || source.kind === "mining" || source.kind === "woodcutting" || source.kind === "fishing" || source.kind === "herbalism" || source.kind === "alchemy" || source.kind === "processing" || source.kind === "exploration" || source.kind === "faith" || source.kind === "training";
-  if (!eligible) return state;
-  const qualified = Math.max(0, Math.min(reward2.elapsedSeconds, reward2.qualifyingActivitySeconds ?? reward2.elapsedSeconds));
-  if (qualified <= 0) return state;
-  const seconds = Math.max(0, buff.remainingSeconds - qualified);
-  return { ...state, character: { ...state.character, activeMealBuff: seconds > 0 ? { ...buff, remainingSeconds: seconds } : void 0 } };
-}
-
 // ../apps/mobile/src/core/permanent-boosts.ts
+init_meal_buffs();
 var BASE = {
   attackMultiplier: 1,
   combatSpeedMultiplier: 1,
@@ -48241,6 +48266,12 @@ function combineActivityRewards(results) {
     items: sumRows(rewards.flatMap((row) => row.items), (row) => row.itemId, "quantity"),
     foodConsumed: sum("foodConsumed"),
     explorationXp: sum("explorationXp"),
+    craftingActions: sum("craftingActions"),
+    trainingActions: sum("trainingActions"),
+    faithActions: sum("faithActions"),
+    faithXp: sum("faithXp"),
+    holyWaterConsumed: sum("holyWaterConsumed"),
+    craftingCompletedAtMs: rewards.flatMap((row) => row.craftingCompletedAtMs ?? []),
     classSkillXp: sumRows(rewards.flatMap((row) => row.classSkillXp ?? []), (row) => row.skillId, "xp"),
     eventDrops: sumRows(rewards.flatMap((row) => row.eventDrops ?? []), (row) => row.eventId + ":" + row.currencyId, "quantity"),
     eventDiscoveries: sumRows(rewards.flatMap((row) => row.eventDiscoveries ?? []), (row) => row.eventId + ":" + row.discoveryId, "quantity"),
@@ -48252,6 +48283,7 @@ function combineActivityRewards(results) {
 }
 
 // ../apps/mobile/src/core/game.ts
+init_meal_buffs();
 init_progression();
 
 // ../apps/mobile/src/core/identity-names.ts
@@ -51472,13 +51504,14 @@ function previewStandardActivityRewardRaw(state, effectiveNowMs) {
       const route = explorationRoute(state.activity.targetId);
       if (!route) return { xp: 0, gold: 0, items: [], kills: 0, elapsedSeconds: elapsed };
       const candy = eventCandyWindow(state, "skill");
-      const bankedSeconds = (state.activity.progressFraction ?? 0) * route.seconds;
+      const routeSeconds = route.seconds / mealSpeedFactor(state.character, "noncombat");
+      const bankedSeconds = (state.activity.progressFraction ?? 0) * routeSeconds;
       const totalSeconds = bankedSeconds + elapsed;
-      const actions2 = Math.floor(totalSeconds / route.seconds);
-      const nextProgressFraction = actions2 > 0 ? totalSeconds % route.seconds / route.seconds : totalSeconds / route.seconds;
+      const actions2 = Math.floor(totalSeconds / routeSeconds);
+      const nextProgressFraction = actions2 > 0 ? totalSeconds % routeSeconds / routeSeconds : totalSeconds / routeSeconds;
       let boostedActions = 0;
       for (let i = 1; i <= actions2; i++) {
-        const at = state.activity.lastClaimAtMs + (i * route.seconds - bankedSeconds) * 1e3;
+        const at = state.activity.lastClaimAtMs + (i * routeSeconds - bankedSeconds) * 1e3;
         if (candy && at > candy.startsAtMs && at <= candy.endsAtMs) boostedActions++;
       }
       return { xp: Math.floor((actions2 + 0.1 * boostedActions) * route.xp * characterPermanentMultipliers(state).skillXpMultiplier), gold: 0, items: [], kills: actions2, elapsedSeconds: elapsed, nextProgressFraction, explorationDiscoveries: actions2 && route.unlockMonsterId ? [route.unlockMonsterId] : [] };
@@ -51755,25 +51788,27 @@ function claimActivity(state, nowMs) {
   return { state, reward: reward2 };
 }
 function claimActivitySegment(state, nowMs) {
-  const source = state.activity, buff = state.character?.activeMealBuff;
+  const drill = state.character?.classTraining;
+  const source = state.activity ?? (drill ? { kind: "training", targetId: "class_drills", startedAtMs: drill.lastClaimAtMs, lastClaimAtMs: drill.lastClaimAtMs } : null);
+  const buff = state.character?.activeMealBuff;
   if (source && buff && buff.remainingSeconds > 0 && Number.isFinite(buff.remainingSeconds) && nowMs > source.lastClaimAtMs) {
     const cappedEnd = Math.min(nowMs, source.lastClaimAtMs + offlineCapSeconds(state) * 1e3);
     const cut = source.lastClaimAtMs + buff.remainingSeconds * 1e3;
     if (cut > source.lastClaimAtMs && cut < cappedEnd) {
       const first = claimActivitySegmentRaw(state, cut);
-      const updated = commitMealActivityTime(first.state, source, first.reward);
-      if (!updated.activity) return { state: updated, reward: first.reward };
-      const nextSource = updated.activity;
+      const elapsedState = commitMealActivityTime(first.state, source, first.reward);
+      const updated = retimeReservedMealCraft(elapsedState, state.character);
+      if (!updated.activity && !updated.character?.classTraining) return { state: updated, reward: first.reward };
+      const nextDrill = updated.character?.classTraining;
+      const nextSource = updated.activity ?? (nextDrill ? { kind: "training", targetId: "class_drills", startedAtMs: nextDrill.lastClaimAtMs, lastClaimAtMs: nextDrill.lastClaimAtMs } : source);
       const second = claimActivitySegment(updated, cappedEnd);
       const combined = combineActivityRewards([
         { activity: source, reward: first.reward, goalReached: !!first.reward.goalReached },
         { activity: nextSource, reward: second.reward, goalReached: !!second.reward.goalReached }
       ]);
       const hasCappedRemainder = nowMs > cappedEnd && !!second.state.activity;
-      return {
-        state: hasCappedRemainder ? { ...second.state, activity: { ...second.state.activity, lastClaimAtMs: nowMs } } : second.state,
-        reward: { ...combined, offlineCapReached: hasCappedRemainder || combined.offlineCapReached }
-      };
+      const final = hasCappedRemainder ? { ...second.state, activity: { ...second.state.activity, lastClaimAtMs: nowMs } } : second.state;
+      return { state: final, reward: { ...combined, offlineCapReached: hasCappedRemainder || combined.offlineCapReached } };
     }
   }
   const result = claimActivitySegmentRaw(state, nowMs);
@@ -55205,6 +55240,7 @@ function upgradeCompanionHousing(state, companionId) {
 }
 
 // ../apps/mobile/src/core/game-commands.ts
+init_meal_buffs();
 var fields = {
   class_training: [],
   class_focus: ["focus"],
@@ -55794,10 +55830,12 @@ function executeGameCommand(previous, value, now, options = {}) {
     case "eat":
       state = eatFood(state, a.id === void 0 ? void 0 : text(a, "id"));
       break;
-    case "meal_bonus":
-      state = eatMealForBonus(state, text(a, "id"));
+    case "meal_bonus": {
+      const prior = state.character;
+      state = retimeReservedMealCraft(eatMealForBonus(state, text(a, "id")), prior);
       message = "Meal bonus activated";
       break;
+    }
     case "sell":
       state = sellItem(state, text(a, "id"), a.quantity === void 0 ? 1 : integer(a, "quantity"));
       break;

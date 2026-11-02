@@ -60,4 +60,43 @@ ok(!active.state.character?.activeMealBuff,'a five-hour offline session must exp
 ok(active.reward.kills>0,'expired meal does not cancel gathering progress');
 const again=claimActivity(active.state,now+5*3600000);
 ok(again.reward.kills===0,'claiming same interval cannot duplicate rewards');
+
+// Starting a meal while Cooking is running must preserve escrow and partial progress.
+const cookingRun=executeGameCommand(fresh(),{type:'processing_start',args:{id:'COOK_IRONWOOD_STEW'}},now).state;
+const priorCycle=cookingRun.activity!.processing!.cycleSeconds,priorReserved=cookingRun.activity!.processing!.remainingBatches;
+const foodBefore=cookingRun.inventory.stacks.find(row=>row.itemId==='FROSTED_ICEFIN')!.quantity;
+const activated=executeGameCommand(cookingRun,{type:'meal_bonus',args:{id:'FROSTED_ICEFIN'}},now+15000).state;
+ok(activated.activity?.kind==='processing'&&activated.activity.processing!.cycleSeconds<priorCycle,'eating a crafting meal speeds an ongoing reserved run');
+ok(activated.activity!.processing!.remainingBatches===priorReserved,'changing meal speed never grants extra reserved batches');
+ok(Math.abs((activated.activity!.progressFraction??0)-15000/(priorCycle*1000))<.001,'already earned partial cooking progress is preserved');
+ok(activated.inventory.stacks.find(row=>row.itemId==='FROSTED_ICEFIN')!.quantity===foodBefore-1,'meal activation costs exactly one food');
+
+// AFK expiry must match sequential settlement and restore normal cycle timing.
+const sample={...activated,character:{...activated.character!,activeMealBuff:{itemId:'FROSTED_ICEFIN',remainingSeconds:20}}} as GameState;
+const oneShot=claimActivity(sample,now+135000);
+const a=claimActivity(sample,now+35000);
+const manual=claimActivity(a.state,now+135000);
+ok(!oneShot.state.character?.activeMealBuff,'short active meal expires during a longer AFK claim');
+ok(Math.abs((oneShot.state.activity?.processing?.cycleSeconds??0)-priorCycle)<.0001,'remaining cooking cycles return to original unboosted speed');
+ok(oneShot.state.activity?.processing?.remainingBatches===manual.state.activity?.processing?.remainingBatches,'one long claim matches two short claims for reserved work');
+ok((oneShot.state.inventory.stacks.find(row=>row.itemId==='IRONWOOD_STEW')?.quantity??0)===(manual.state.inventory.stacks.find(row=>row.itemId==='IRONWOOD_STEW')?.quantity??0),'claim split does not duplicate or lose food');
+ok(oneShot.state.skills.find(row=>row.skillId==='cooking')?.xp===manual.state.skills.find(row=>row.skillId==='cooking')?.xp,'claim split awards exactly the same Cooking XP');
+ok((oneShot.reward.craftingActions??0)===(a.reward.craftingActions??0)+(manual.reward.craftingActions??0),'claim summary includes actions from both sides of expiry');
+ok(claimActivity(oneShot.state,now+135000).reward.craftingActions===0,'repeat settlement at the same timestamp is idempotent');
+
+// All noncombat skills include the class-skill drill loop; speed stops at expiry.
+const noBuffTraining=executeGameCommand(fresh(),{type:'class_training'},now).state;
+const boostedTraining=executeGameCommand(executeGameCommand(fresh(),{type:'meal_bonus',args:{id:'ASHLANDS_EMBER_STEW'}},now).state,{type:'class_training'},now).state;
+const baseline59=claimActivity(noBuffTraining,now+59000);
+const boosted59=claimActivity(boostedTraining,now+59000);
+ok((baseline59.reward.trainingActions??0)===0,'baseline class drills need 60 seconds');
+ok((boosted59.reward.trainingActions??0)>=1,'Ashlands meal increases class drill speed by 5%');
+const shortTraining={...boostedTraining,character:{...boostedTraining.character!,activeMealBuff:{itemId:'ASHLANDS_EMBER_STEW',remainingSeconds:60}}} as GameState;
+const drillOne=claimActivity(shortTraining,now+120000);
+const drillPart=claimActivity(shortTraining,now+60000);
+const drillTwo=claimActivity(drillPart.state,now+120000);
+ok(!drillOne.state.character?.activeMealBuff,'class drill sessions consume meal active time');
+ok(JSON.stringify(drillOne.state.character?.classSkills)===JSON.stringify(drillTwo.state.character?.classSkills),'class drill rewards match across offline split and sequential claims');
+ok((drillOne.reward.trainingActions??0)===(drillPart.reward.trainingActions??0)+(drillTwo.reward.trainingActions??0),'class drill action summary includes both sides of meal expiry');
+
 console.log('PASS special meals: doubled rates, activation, nonstacking, save security, AFK expiry and repeatable stew');

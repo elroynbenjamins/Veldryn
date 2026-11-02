@@ -1,4 +1,5 @@
 import {classSkillsFor} from '../content/class-skills';
+import {mealSpeedFactor} from './meal-buffs';
 import {levelFromXp,totalXpAtLevel} from './progression';
 import type {CharacterState,ClassId,GameState,RewardBundle} from './types';
 export type TrainingFocus='balanced'|'primary'|'secondary';
@@ -37,7 +38,8 @@ export function characterClassEffects(c:CharacterState){
 export function settleClassDrills(state:GameState,now:number,capSeconds:number):{state:GameState;reward:RewardBundle}{
  const c=state.character,drill=normalizeClassDrills(c?.classTraining);const empty:RewardBundle={xp:0,gold:0,kills:0,items:[],elapsedSeconds:0};
  if(!c||!drill||now<=drill.lastClaimAtMs)return {state,reward:empty};
- const elapsed=Math.min(capSeconds*1000,now-drill.lastClaimAtMs),total=elapsed+drill.progressMs,actions=Math.floor(total/60000);
+ const elapsed=Math.min(capSeconds*1000,now-drill.lastClaimAtMs),speed=mealSpeedFactor(c,'noncombat');
+ const total=elapsed*speed+drill.progressMs,actions=Math.floor(total/60000);
  let character=c;const awards:Record<string,number>={};
  const apply=(count:number,focus:TrainingFocus)=>{if(!count)return;const earned=awardClassSkillXp(character,drill.xpPerDrill*count,focus);character=earned.character;for(const a of earned.awards)awards[a.skillId]=(awards[a.skillId]??0)+a.xp;};
  const focus=normalizeTrainingFocus(c.trainingFocus);
@@ -48,6 +50,7 @@ export function settleClassDrills(state:GameState,now:number,capSeconds:number):
  const rest=Math.min(Math.max(0,actions-completed),remainingToCap);
  apply(rest,focus);completed+=rest;
  const capped=characterClassSkills(character).every(s=>s.level===100);
- character={...character,classTraining:capped?undefined:{...drill,lastClaimAtMs:now,progressMs:total%60000,focus:actions?normalizeTrainingFocus(c.trainingFocus):drill.focus}};
- return {state:{...state,character},reward:{...empty,elapsedSeconds:Math.floor(elapsed/1000),trainingActions:completed,classSkillXp:Object.entries(awards).map(([skillId,xp])=>({skillId,xp}))}};
+ character={...character,classTraining:capped?undefined:{...drill,lastClaimAtMs:now,progressMs:Math.floor(total%60000),focus:actions?normalizeTrainingFocus(c.trainingFocus):drill.focus}};
+ const qualified=capped?Math.max(0,Math.min(elapsed,(completed*60000-drill.progressMs)/speed)):elapsed;
+ return {state:{...state,character},reward:{...empty,elapsedSeconds:Math.floor(elapsed/1000),qualifyingActivitySeconds:Math.floor(qualified/1000),trainingActions:completed,classSkillXp:Object.entries(awards).map(([skillId,xp])=>({skillId,xp}))}};
 }

@@ -40,6 +40,25 @@ export function activeMealBonus(character:CharacterState|null|undefined):MealBon
  const buff=character?.activeMealBuff;
  return buff&&buff.remainingSeconds>0?mealBonusDef(buff.itemId):undefined;
 }
+/** The pace bonus of one active meal, independent of class, gear and mastery. */
+export function mealSpeedFactor(character:CharacterState|null|undefined,domain:'crafting'|'noncombat'){
+ const meal=activeMealBonus(character);
+ const applies=meal?.kind==='noncombat_speed'||(domain==='crafting'&&meal?.kind==='crafting_speed');
+ return applies?1+meal!.percent/100:1;
+}
+/** Re-time the *remaining* reserved work after a meal is activated, replaced or expires.
+ * Keep progressFraction, XP, owned output, reserved inputs and Gold intact.
+ * Never recalculate the number of already-paid batches.
+ */
+export function retimeReservedMealCraft(state:GameState,prior:CharacterState|null|undefined):GameState{
+ const previous=mealSpeedFactor(prior,'crafting'),current=mealSpeedFactor(state.character,'crafting');
+ if(!state.activity||previous===current)return state;
+ const factor=previous/current;
+ const a=state.activity;
+ if(a.kind==='alchemy'&&a.brew)return {...state,activity:{...a,brew:{...a.brew,cycleSeconds:Math.max(1,Math.min(86400,a.brew.cycleSeconds*factor))}}};
+ if(a.kind==='processing'&&a.processing)return {...state,activity:{...a,processing:{...a.processing,cycleSeconds:Math.max(1,Math.min(86400,a.processing.cycleSeconds*factor))}}};
+ return state;
+}
 /** Spend active duration for settled, eligible play time, including offline progress. */
 export function commitMealActivityTime(state:GameState,source:GameState['activity'],reward:RewardBundle):GameState{
  const buff=state.character?.activeMealBuff;

@@ -35,7 +35,7 @@ import {earlyFeatureUnlocked} from './feature-unlocks';
 import {upgradeCompanionHousing} from './companion-housing';
 
 /** Commands express intent. Neither a client save nor a client reward is accepted. */
-import {eatMealForBonus} from './meal-buffs';
+import {eatMealForBonus,retimeReservedMealCraft} from './meal-buffs';
 
 export interface GameCommand {type:string;args?:Record<string,unknown>}
 export interface VerifiedActivity {kind:'combat'|'gathering'|'crafting'|'boss';contentId:string;units:number;startedAtMs?:number}
@@ -333,7 +333,7 @@ export function executeGameCommand(previous:GameState,value:unknown,now:number,o
   case 'unequip':state=game.unequipItem(state,oneOf(a.slot,['weapon','offhand','helmet','chest','legs','boots','gloves','cape','amulet','ring']) as GearSlot);break;
   case 'food':state=game.equipFood(state,text(a,'id'));break;
   case 'eat':state=game.eatFood(state,a.id===undefined?undefined:text(a,'id'));break;
-  case 'meal_bonus':state=eatMealForBonus(state,text(a,'id'));message='Meal bonus activated';break;
+  case 'meal_bonus':{const prior=state.character;state=retimeReservedMealCraft(eatMealForBonus(state,text(a,'id')),prior);message='Meal bonus activated';break;}
   case 'sell':state=game.sellItem(state,text(a,'id'),a.quantity===undefined?1:integer(a,'quantity'));break;
   case 'salvage':state=game.salvageItem(state,text(a,'id'));break;
   case 'bank_sell':state=game.sellBankItem(state,text(a,'id'),integer(a,'quantity'));break;

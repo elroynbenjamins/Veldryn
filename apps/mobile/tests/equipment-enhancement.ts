@@ -60,16 +60,19 @@ const storedEnhanced={...upgraded,inventory:{...upgraded.inventory,stacks:[...up
 const soldSpare=sellItem(storedEnhanced,ringId);
 ok(!soldSpare.inventory.stacks.some(row=>row.itemId===ringId),'An unenchanted Inventory spare can be sold while its upgraded twin is equipped');
 ok(gearEnhancement(soldSpare,ringId).rank===1&&soldSpare.character!.equipment.ring===ringId,'Selling the spare must preserve the equipped original and its upgrade');
-const salvagedSpare=salvageItem(storedEnhanced,ringId);
-ok(!salvagedSpare.inventory.stacks.some(row=>row.itemId===ringId),'A spare can also be salvaged while the enhanced original is equipped');
-ok(gearEnhancement(salvagedSpare,ringId).rank===1,'Salvaging the spare must preserve the original enhancement');
+if(itemDef(ringId).salvage){
+ const salvagedSpare=salvageItem(storedEnhanced,ringId);
+ ok(!salvagedSpare.inventory.stacks.some(row=>row.itemId===ringId),'A salvageable spare can be salvaged while the enhanced original is equipped');
+ ok(gearEnhancement(salvagedSpare,ringId).rank===1,'Salvaging a spare must preserve the original enhancement');
+}
 const previewSpare=previewEquipment(storedEnhanced,ringId);
 ok(gearEnhancement(previewSpare,ringId).rank===0,'Inventory duplicate preview must not borrow the equipped same-ID enchantment');
 ok(gearEnhancement(storedEnhanced,ringId).rank===1,'Preview must never mutate the actual equipped enchantment');
 const bulkSpare=bulkSelectionSummary(storedEnhanced,[ringId],'inventory');
-ok(bulkSpare.sellableIds.includes(ringId)&&bulkSpare.salvageableIds.includes(ringId),'Bulk management may offer a spare when the enhanced copy is equipped');
+ok(bulkSpare.sellableIds.includes(ringId),'Bulk management may offer selling an unmarked spare when the enhanced copy is equipped');
+ok(bulkSpare.salvageableIds.includes(ringId)===!!itemDef(ringId).salvage,'Bulk salvage must still require an authored salvage recipe');
 ok(gearEnhancement(bulkSellSelected(storedEnhanced,[ringId]),ringId).rank===1,'Bulk selling an unenchanted spare retains the equipped upgrade');
-ok(gearEnhancement(bulkSalvageSelected(storedEnhanced,[ringId]),ringId).rank===1,'Bulk salvaging an unenchanted spare retains the equipped upgrade');
+if(itemDef(ringId).salvage)ok(gearEnhancement(bulkSalvageSelected(storedEnhanced,[ringId]),ringId).rank===1,'Bulk salvaging an unenchanted spare retains the equipped upgrade');
 const bankSpare={...storedEnhanced,inventory:{...storedEnhanced.inventory,stacks:storedEnhanced.inventory.stacks.filter(row=>row.itemId!==ringId)},bank:{...storedEnhanced.bank,stacks:[...storedEnhanced.bank.stacks,{itemId:ringId,quantity:1}]}};
 ok(gearEnhancement(sellBankItem(bankSpare,ringId),ringId).rank===1,'Selling an unmarked Bank duplicate preserves the enchanted equipped original');
 

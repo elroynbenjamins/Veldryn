@@ -23,7 +23,7 @@ const sectionGuide=read('src/components/SectionGuide.tsx');
 ok(app.includes("tab==='Party'&&<PartyScreen")&&app.includes("tab==='Recruitment'||tab==='Social'")&&app.includes('<RecruitmentScreen'), 'Party and Recruitment must have independent route components');
 ok(!account.includes("items:['Social'")&&account.includes("items:['Party','Recruitment','Friends','Guild','Arena','Rankings']"),'Account must replace Social with two dedicated destinations');
 ok(quick.includes("'Social','Party','Empty'")&&app.includes("if(destination==='Social')destination='Recruitment'"),'Old Social shortcuts must migrate without dropping a saved shortcut');
-ok(icons.includes("Recruitment:'search'")&&icons.includes("Party:'party'"),'Party and Recruitment must have distinct icon affordances');
+ok(icons.includes("Social:'search'")&&icons.includes("Party:'party'")&&app.includes("case 'Social':return appText(language,'Recruitment')"),'Party and Recruitment must use distinct icons, with the legacy Social shortcut labeled Recruitment');
 ok(app.includes("onRecruitment={()=>{setSocialInitialTab('guild');setTab('Recruitment')}"),'Guild recruiting must navigate directly to Guild Recruitment');
 ok(partyRoute.includes('mode="party"')&&recruitmentRoute.includes('mode="recruitment"'),'Separate routes must use the corresponding dedicated flow');
 ok(app.includes("partyUnlocked={earlyFeatureUnlocked(state,'party')}"),'Both Party and Recruitment must honor the account-wide Party unlock');

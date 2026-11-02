@@ -114,6 +114,8 @@
   ".core-build/apps/mobile/tests/dungeon-combat-playback.js",
   ".core-build/apps/mobile/tests/dungeon-combat-fx.js",
   ".core-build/apps/mobile/tests/dungeon-combat-layout.js",
+  "tests/dungeon-rematch-formation-ui.cjs",
+  "tests/dungeon-enemy-trial-portraits.cjs",
   ".core-build/apps/mobile/tests/dungeon-combat-outcome-feedback.js",
   ".core-build/apps/mobile/tests/dungeon-combat-profile-card-ui-contract.js",
   "../../tools/validate-dungeon-combat-lifecycle.cjs",

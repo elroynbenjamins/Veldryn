@@ -38,8 +38,8 @@ function battle(prefix:string,level:number,index:number,type:DamageType,names:[s
  ];
 }
 function eliteIdentity(name:string):{archetype:PveArchetype;mechanics:PveMechanicId[]}{
- if(name==='Permafrost Warden'||name==='Crucible Warden')return{archetype:'guardian',mechanics:['heavy_hit','barrier']};
- if(name==='Choirbreaker'||name==='Fen Pyrecaller')return{archetype:'caster',mechanics:['interrupt','aoe','dot']};
+ if(name==='Rimeplate Guard'||name==='Forgeplate Custodian')return{archetype:'guardian',mechanics:['heavy_hit','barrier']};
+ if(name==='Choirbreaker'||name==='Cinder Channeler')return{archetype:'caster',mechanics:['interrupt','aoe','dot']};
  if(name==='Blackglass Devourer')return{archetype:'executioner',mechanics:['heavy_hit','execute']};
  if(name==='Rimehorn Alpha')return{archetype:'bruiser',mechanics:['heavy_hit','enrage']};
  return{archetype:'bruiser',mechanics:['heavy_hit']};
@@ -48,7 +48,7 @@ function elite(id:string,name:string,level:number,type:DamageType,index:number,b
  const hp=baseHp+index*1700,attackPower=baseAttack+index*120,defense=baseDefense+index*95,identity=eliteIdentity(name);
  let abilities:AbilityDefinition[]=[pveHeavyStrike(`${id}_BLAST`,`${name} Smash`,type,1.25+index*.04,7200,700)];
  if(identity.archetype==='guardian'){
-  const crush=name==='Permafrost Warden'?'Permafrost Crush':'Crucible Crush',ward=name==='Permafrost Warden'?'Icebound Ward':'Furnace Ward';
+  const crush=name==='Rimeplate Guard'?'Permafrost Crush':'Crucible Crush',ward=name==='Rimeplate Guard'?'Icebound Ward':'Furnace Ward';
   abilities=[pveHeavyStrike(`${id}_CRUSH`,crush,type,1.18+index*.04,7200,700),pveBarrier(`${id}_WARD`,ward,2400+index*220,13000)];
  }
  if(identity.archetype==='caster')abilities=[pveDotWave(`${id}_BLAST`,name==='Choirbreaker'?'Shattering Chorus':'Fenfire Deluge',type,.82+index*.03,9800)];
@@ -116,7 +116,7 @@ const frostBattleNames:[string,string][][]=[[['Rimewolf','Shiverling']],[['Glaci
 for(const [index,id] of ['FROST_LAKE_BATTLE_01','FROST_LAKE_BATTLE_02','FROST_LAKE_BATTLE_03'].entries())FROSTMARCH_ENCOUNTERS[id]=()=>battle(id,70,index,'ice',frostBattleNames[index][0] as [string,string],13_500,5_000,1_450);
 const frostChoirNames:[string,string][][]=[[['Choir Wisp','Rime Cantor']],[['Frozen Pilgrim','Bellbound Shade']],[['Choir Sentinel','Glacial Acolyte']]];
 for(const [index,id] of ['FROST_CHOIR_BATTLE_01','FROST_CHOIR_BATTLE_02','FROST_CHOIR_BATTLE_03'].entries())FROSTMARCH_ENCOUNTERS[id]=()=>battle(id,70,index,'ice',frostChoirNames[index][0] as [string,string],13_900,5_100,1_500);
-for(const [index,name] of ['Rimehorn Alpha','Choirbreaker','Permafrost Warden'].entries()){
+for(const [index,name] of ['Rimehorn Alpha','Choirbreaker','Rimeplate Guard'].entries()){
  FROSTMARCH_ENCOUNTERS[`FROST_LAKE_ELITE_0${index+1}`]=()=>elite(`FROST_LAKE_ELITE_${index+1}`,name,70,'ice',index,35_000,5_600,2_100);
  FROSTMARCH_ENCOUNTERS[`FROST_CHOIR_ELITE_0${index+1}`]=()=>elite(`FROST_CHOIR_ELITE_${index+1}`,name,70,'ice',index,35_800,5_700,2_150);
 }
@@ -127,7 +127,7 @@ export const ASHLANDS_ENCOUNTERS:Record<string,()=>CombatantDefinition[]>={};
 const ashBattleNames:[string,string][][]=[[['Cinder Mireling','Blackglass Beetle']],[['Ember Wraith','Ashen Marauder']],[['Fen Reaver','Glassbone Hound']],[['Crucible Imp','Charred Adept']],[['Molten Pilgrim','Cinderbound Guard']],[['Prime Scoria','Ashen Colossus']]];
 const ashIds=['ASH_FEN_BATTLE_01','ASH_FEN_BATTLE_02','ASH_FEN_BATTLE_03','ASH_CRUCIBLE_BATTLE_01','ASH_CRUCIBLE_BATTLE_02','ASH_CRUCIBLE_BATTLE_03'];
 for(const [index,id] of ashIds.entries())ASHLANDS_ENCOUNTERS[id]=()=>battle(id,94,index%3,'fire',ashBattleNames[index][0] as [string,string],15_500,6_300,1_850);
-for(const [index,name] of ['Fen Pyrecaller','Blackglass Devourer','Crucible Warden'].entries()){
+for(const [index,name] of ['Cinder Channeler','Blackglass Devourer','Forgeplate Custodian'].entries()){
  ASHLANDS_ENCOUNTERS[`ASH_FEN_ELITE_0${index+1}`]=()=>elite(`ASH_FEN_ELITE_${index+1}`,name,94,'fire',index,39_000,7_000,2_500);
  ASHLANDS_ENCOUNTERS[`ASH_CRUCIBLE_ELITE_0${index+1}`]=()=>elite(`ASH_CRUCIBLE_ELITE_${index+1}`,name,94,'fire',index,41_000,7_200,2_550);
 }

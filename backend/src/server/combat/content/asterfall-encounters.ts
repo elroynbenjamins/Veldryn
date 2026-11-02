@@ -9,7 +9,7 @@ const enemy=(id:string,name:string,hp:number,ap:number,def:number,abilityCoeff=1
 },'bruiser',['heavy_hit']);
 
 function rootWarden():CombatantDefinition{
- const base=enemy('ROOT_WARDEN','Root Warden',13500,430,900,1.25);
+ const base=enemy('ROOT_WARDEN','Runebound Bulwark',13500,430,900,1.25);
  return withPveIdentity({...base,boss:false,abilities:[...base.abilities,pveBarrier('ROOT_WARDEN_WARD','Root Ward',1250,12000)]},'guardian',['heavy_hit','barrier']);
 }
 function lanternPilgrim():CombatantDefinition{

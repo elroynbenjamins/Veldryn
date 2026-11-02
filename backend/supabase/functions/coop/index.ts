@@ -47459,7 +47459,7 @@ var enemy = (id, name, hp, ap, def, abilityCoeff = 1) => withPveIdentity({
   abilities: [{ id: `${id}_HEAVY`, name: "Heavy Strike", cooldownMs: 7e3, castTimeMs: 700, target: "current_target", priority: 70, effects: [{ kind: "damage", coeff: abilityCoeff, damageType: "physical" }] }]
 }, "bruiser", ["heavy_hit"]);
 function rootWarden() {
-  const base = enemy("ROOT_WARDEN", "Root Warden", 13500, 430, 900, 1.25);
+  const base = enemy("ROOT_WARDEN", "Runebound Bulwark", 13500, 430, 900, 1.25);
   return withPveIdentity({ ...base, boss: false, abilities: [...base.abilities, pveBarrier("ROOT_WARDEN_WARD", "Root Ward", 1250, 12e3)] }, "guardian", ["heavy_hit", "barrier"]);
 }
 function lanternPilgrim() {
@@ -47522,7 +47522,7 @@ for (const [id, first, second, type, index] of pairs) SUNSCAR_ENCOUNTERS[id] = (
   enemy2(`${id}_B`, second, 7500 + index * 400, 2900 + index * 45, 920 + index * 40, strike(`${id}_B_STRIKE`, "Scouring Hit", 0.96 + index * 0.03, type), "bruiser", ["heavy_hit"])
 ];
 function eliteIdentity(name) {
-  if (name === "Orrery Warden" || name === "Amberglass Sentinel" || name === "Wellbound Colossus") return { archetype: "guardian", mechanics: ["heavy_hit", "barrier"] };
+  if (name === "Orrery Warden" || name === "Glasshide Warder" || name === "Wellbound Colossus") return { archetype: "guardian", mechanics: ["heavy_hit", "barrier"] };
   if (name === "Solar Archivist") return { archetype: "caster", mechanics: ["interrupt", "aoe"] };
   if (name === "Dune Sphinx") return { archetype: "hexer", mechanics: ["vulnerability", "dot"] };
   if (name === "Veiled Huntmaster") return { archetype: "assassin", mechanics: ["focus", "execute"] };
@@ -47537,7 +47537,7 @@ function elite(id, name, type, index) {
   return [withPveIdentity({ id, name, team: "enemies", role: "enemy", level: 45, stats: stats3(hp, ap, def), basicAttackMs: 2800, basicAttackCoeff: 0.72, abilities }, identity.archetype, identity.mechanics)];
 }
 for (const [prefix, names, type] of [
-  ["SUN_OBS", ["Orrery Warden", "Solar Archivist", "Amberglass Sentinel"], "arcane"],
+  ["SUN_OBS", ["Orrery Warden", "Solar Archivist", "Glasshide Warder"], "arcane"],
   ["SUN_MIRAGE", ["Dune Sphinx", "Veiled Huntmaster", "Wellbound Colossus"], "fire"]
 ]) names.forEach((name, index) => {
   SUNSCAR_ENCOUNTERS[`${prefix}_ELITE_0${index + 1}`] = () => elite(`${prefix}_ELITE_${index + 1}`, name, type, index);
@@ -47599,8 +47599,8 @@ function battle(prefix, level, index, type, names, baseHp, baseAttack, baseDefen
   ];
 }
 function eliteIdentity2(name) {
-  if (name === "Permafrost Warden" || name === "Crucible Warden") return { archetype: "guardian", mechanics: ["heavy_hit", "barrier"] };
-  if (name === "Choirbreaker" || name === "Fen Pyrecaller") return { archetype: "caster", mechanics: ["interrupt", "aoe", "dot"] };
+  if (name === "Rimeplate Guard" || name === "Forgeplate Custodian") return { archetype: "guardian", mechanics: ["heavy_hit", "barrier"] };
+  if (name === "Choirbreaker" || name === "Cinder Channeler") return { archetype: "caster", mechanics: ["interrupt", "aoe", "dot"] };
   if (name === "Blackglass Devourer") return { archetype: "executioner", mechanics: ["heavy_hit", "execute"] };
   if (name === "Rimehorn Alpha") return { archetype: "bruiser", mechanics: ["heavy_hit", "enrage"] };
   return { archetype: "bruiser", mechanics: ["heavy_hit"] };
@@ -47609,7 +47609,7 @@ function elite2(id, name, level, type, index, baseHp, baseAttack, baseDefense) {
   const hp = baseHp + index * 1700, attackPower = baseAttack + index * 120, defense = baseDefense + index * 95, identity = eliteIdentity2(name);
   let abilities = [pveHeavyStrike(`${id}_BLAST`, `${name} Smash`, type, 1.25 + index * 0.04, 7200, 700)];
   if (identity.archetype === "guardian") {
-    const crush = name === "Permafrost Warden" ? "Permafrost Crush" : "Crucible Crush", ward2 = name === "Permafrost Warden" ? "Icebound Ward" : "Furnace Ward";
+    const crush = name === "Rimeplate Guard" ? "Permafrost Crush" : "Crucible Crush", ward2 = name === "Rimeplate Guard" ? "Icebound Ward" : "Furnace Ward";
     abilities = [pveHeavyStrike(`${id}_CRUSH`, crush, type, 1.18 + index * 0.04, 7200, 700), pveBarrier(`${id}_WARD`, ward2, 2400 + index * 220, 13e3)];
   }
   if (identity.archetype === "caster") abilities = [pveDotWave(`${id}_BLAST`, name === "Choirbreaker" ? "Shattering Chorus" : "Fenfire Deluge", type, 0.82 + index * 0.03, 9800)];
@@ -47676,7 +47676,7 @@ var frostBattleNames = [[["Rimewolf", "Shiverling"]], [["Glacier Stalker", "Fros
 for (const [index, id] of ["FROST_LAKE_BATTLE_01", "FROST_LAKE_BATTLE_02", "FROST_LAKE_BATTLE_03"].entries()) FROSTMARCH_ENCOUNTERS[id] = () => battle(id, 70, index, "ice", frostBattleNames[index][0], 13500, 5e3, 1450);
 var frostChoirNames = [[["Choir Wisp", "Rime Cantor"]], [["Frozen Pilgrim", "Bellbound Shade"]], [["Choir Sentinel", "Glacial Acolyte"]]];
 for (const [index, id] of ["FROST_CHOIR_BATTLE_01", "FROST_CHOIR_BATTLE_02", "FROST_CHOIR_BATTLE_03"].entries()) FROSTMARCH_ENCOUNTERS[id] = () => battle(id, 70, index, "ice", frostChoirNames[index][0], 13900, 5100, 1500);
-for (const [index, name] of ["Rimehorn Alpha", "Choirbreaker", "Permafrost Warden"].entries()) {
+for (const [index, name] of ["Rimehorn Alpha", "Choirbreaker", "Rimeplate Guard"].entries()) {
   FROSTMARCH_ENCOUNTERS[`FROST_LAKE_ELITE_0${index + 1}`] = () => elite2(`FROST_LAKE_ELITE_${index + 1}`, name, 70, "ice", index, 35e3, 5600, 2100);
   FROSTMARCH_ENCOUNTERS[`FROST_CHOIR_ELITE_0${index + 1}`] = () => elite2(`FROST_CHOIR_ELITE_${index + 1}`, name, 70, "ice", index, 35800, 5700, 2150);
 }
@@ -47686,7 +47686,7 @@ var ASHLANDS_ENCOUNTERS = {};
 var ashBattleNames = [[["Cinder Mireling", "Blackglass Beetle"]], [["Ember Wraith", "Ashen Marauder"]], [["Fen Reaver", "Glassbone Hound"]], [["Crucible Imp", "Charred Adept"]], [["Molten Pilgrim", "Cinderbound Guard"]], [["Prime Scoria", "Ashen Colossus"]]];
 var ashIds = ["ASH_FEN_BATTLE_01", "ASH_FEN_BATTLE_02", "ASH_FEN_BATTLE_03", "ASH_CRUCIBLE_BATTLE_01", "ASH_CRUCIBLE_BATTLE_02", "ASH_CRUCIBLE_BATTLE_03"];
 for (const [index, id] of ashIds.entries()) ASHLANDS_ENCOUNTERS[id] = () => battle(id, 94, index % 3, "fire", ashBattleNames[index][0], 15500, 6300, 1850);
-for (const [index, name] of ["Fen Pyrecaller", "Blackglass Devourer", "Crucible Warden"].entries()) {
+for (const [index, name] of ["Cinder Channeler", "Blackglass Devourer", "Forgeplate Custodian"].entries()) {
   ASHLANDS_ENCOUNTERS[`ASH_FEN_ELITE_0${index + 1}`] = () => elite2(`ASH_FEN_ELITE_${index + 1}`, name, 94, "fire", index, 39e3, 7e3, 2500);
   ASHLANDS_ENCOUNTERS[`ASH_CRUCIBLE_ELITE_0${index + 1}`] = () => elite2(`ASH_CRUCIBLE_ELITE_${index + 1}`, name, 94, "fire", index, 41e3, 7200, 2550);
 }
@@ -49278,6 +49278,54 @@ var OnlineLiveRuntime = class {
   }
 };
 
+// backend/online/live-rematch.ts
+var OnlineLiveRematch = class {
+  constructor(services) {
+    this.services = services;
+  }
+  services;
+  async ensureStarted(accountId, state) {
+    if (state.status === "committed" && state.readyCheckId && !state.runId) {
+      const runId = await new OnlineLiveRuntime(this.services).startFromReady(accountId, state.readyCheckId);
+      return { ...state, runId };
+    }
+    return state;
+  }
+  async load(accountId, runId) {
+    const state = await this.services.rpc("online_live_rematch_state_server_v1", { p_account_id: accountId, p_run_id: runId });
+    return this.ensureStarted(accountId, state);
+  }
+  async respond(accountId, runId, body) {
+    if (!/^[a-zA-Z0-9_-]{8,128}$/.test(body.requestId)) throw new GameplayError("invalid_request");
+    const previous = await this.load(accountId, runId);
+    if (previous.status !== "open") return previous;
+    const myVote = previous.members.find((member) => member.self);
+    if (myVote?.accepted) return previous;
+    let frozen = null;
+    if (body.accept) {
+      const source = await this.services.rpc("online_live_rematch_sources_server_v1", { p_account_id: accountId, p_run_id: runId });
+      const definition = EXPEDITIONS[source.dungeonId];
+      if (!definition?.coopImplemented) throw new GameplayError("dungeon_unavailable");
+      const records = source.members.map((member) => deriveOnlineCoopLoadout(member.accountId, member.state, member.version));
+      frozen = freezeCoopRosterAtCommit({
+        minLevel: coopRequiredLevel(definition.minLevel, source.tier),
+        syncLevel: definition.recommendedLevel,
+        selections: source.members.map((member) => ({ accountId: member.accountId, characterId: member.characterId, loadoutId: member.loadoutId, expectedRevision: member.loadoutRevision })),
+        repository: { getOwnedLoadout: (owner, character, loadout) => records.find((record) => record.accountId === owner && record.characterId === character && record.loadoutId === loadout) }
+      });
+    }
+    const state = await this.services.rpc("online_live_rematch_respond_server_v1", {
+      p_account_id: accountId,
+      p_run_id: runId,
+      p_request_id: body.requestId,
+      p_accept: body.accept,
+      p_check_id: this.services.randomId(),
+      p_frozen_roster: frozen
+    });
+    return this.ensureStarted(accountId, state);
+  }
+};
+
 // backend/online/coop-lfg.ts
 import { createHash as createHash7 } from "node:crypto";
 var OnlineCoopLfg = class {
@@ -50032,6 +50080,24 @@ function coopHandler(services) {
         if (eventRun?.[2] === "choose") return json2(await eventRuntime.choose(accountId, eventRun[1], parseCoopDecisionCommand(body2)));
         return json2(await eventRuntime.claim(accountId, eventRun[1], row.requestId));
       }
+      const rematch = path.match(new RegExp("/coop/runs/(" + uuid + ")/rematch$"));
+      if (rematch) {
+        const service = new OnlineLiveRematch(services);
+        if (request.method === "GET") return json2(await service.load(accountId, rematch[1]));
+        if (request.method !== "POST") return json2({ error: "method_not_allowed" }, 405);
+        const raw3 = await request.text();
+        if (raw3.length > 1024) return json2({ error: "request_too_large" }, 413);
+        let body2;
+        try {
+          body2 = JSON.parse(raw3);
+        } catch {
+          throw new GameplayError("invalid_json");
+        }
+        if (!body2 || typeof body2 !== "object" || Array.isArray(body2)) throw new GameplayError("invalid_request");
+        const row = body2;
+        if (Object.keys(row).some((key) => !["requestId", "accept"].includes(key)) || typeof row.requestId !== "string" || typeof row.accept !== "boolean") throw new GameplayError("invalid_request");
+        return json2(await service.respond(accountId, rematch[1], { requestId: row.requestId, accept: row.accept }));
+      }
       const chat = path.match(new RegExp("/coop/runs/(" + uuid + ")/chat$"));
       if (chat) {
         if (request.method === "GET") return json2(await liveRuntime.chat(accountId, chat[1], services.randomId()));
@@ -50081,7 +50147,7 @@ function coopHandler(services) {
       }
     } catch (error) {
       const message = error instanceof Error ? error.message : "server_error", code = message.toLowerCase();
-      const status = /^(stale_|idempotency_|node_resolving|account_already_participating|echo_no_longer_eligible|ticket_not_queued|ready_check_closed|loadout_changed_since_queue|reservation_conflict|event_not_live|event_claim_closed|event_daily_clear_limit)/.test(code) ? 409 : /^(not_participant|loadout_not_owned|ticket_not_owned|not_ready_member)/.test(code) ? 403 : /^(invalid_|unknown_expedition|unknown_event_expedition|dungeon_|character_|role_not_ready|illegal_equipment|echo_pool_unavailable|run_not_awaiting_choice|event_level_requirement|event_reward_not_ready|event_run_not_awaiting_choice|event_run_not_found)/.test(code) ? 400 : error instanceof GameplayError ? error.status : 503;
+      const status = /^(stale_|idempotency_|node_resolving|account_already_participating|rematch_closed|rematch_vote_locked|rematch_loadout_changed|echo_no_longer_eligible|ticket_not_queued|ready_check_closed|loadout_changed_since_queue|reservation_conflict|event_not_live|event_claim_closed|event_daily_clear_limit)/.test(code) ? 409 : /^(not_participant|loadout_not_owned|ticket_not_owned|not_ready_member)/.test(code) ? 403 : /^(invalid_|rematch_unavailable|rematch_roster_unavailable|unknown_expedition|unknown_event_expedition|dungeon_|character_|role_not_ready|illegal_equipment|echo_pool_unavailable|run_not_awaiting_choice|event_level_requirement|event_reward_not_ready|event_run_not_awaiting_choice|event_run_not_found)/.test(code) ? 400 : error instanceof GameplayError ? error.status : 503;
       if (status === 503) console.error("coop_unexpected_error", request.method, code);
       return json2({ error: status === 503 ? request.method === "GET" ? "Dungeons are temporarily unavailable. Try again." : "Could not confirm the co-op action. Retry it." : code }, status);
     }

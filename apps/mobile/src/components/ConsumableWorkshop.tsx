@@ -53,14 +53,19 @@ export function ConsumableWorkshop({state,skillId,preferredRecipeId,onStart}:Pro
  const activity=state.activity,activeId=activity?.kind==='alchemy'?activity.targetId:activity?.kind==='processing'&&activity.processing?.skillId==='cooking'?activity.targetId:undefined;
  const skillLevel=state.skills.find(sk=>sk.skillId===skillId)?.level??1;
  const afkCap=offlineCapSeconds(state);
- const count=(recipe:Recipe)=>{
+ const capacities=useMemo(()=>all.map(recipe=>{
+  const r=recipe;
+  let capacity=0;
   try{
-   const cycle=professionActionPace(state,recipe,'batch').cycleSeconds;
+   const cycle=professionActionPace(state,r,'batch').cycleSeconds;
    const timeCount=Math.floor(afkCap/cycle);
-   if(skillId==='alchemy'){const a=alchemyAvailability(state,recipe.id);return a.ready?Math.max(0,Math.min(timeCount,a.maxBatches)):0;}
-   const p=processingRunCapacity(state,recipe.id,afkCap,true);return p.availableBatches;
-  }catch{return 0;}
- };
+   if(skillId==='alchemy'){const a=alchemyAvailability(state,r.id);capacity=a.ready?Math.max(0,Math.min(timeCount,a.maxBatches)):0;}
+   else capacity=processingRunCapacity(state,r.id,afkCap,true).availableBatches;
+  }catch{capacity=0;}
+  return [r.id,capacity] as const;
+ }),[all,state,skillId,afkCap]);
+ const counts=new Map(capacities);
+ const count=(recipe:Recipe)=>counts.get(recipe.id)??0;
  const recipes=all.filter(r=>categoryOf(r)===category&&(!readyOnly||(r.level<=skillLevel&&count(r)>0)));
  const detail=all.find(r=>r.id===detailId);
  const submit=async(id:string)=>{
@@ -73,17 +78,17 @@ export function ConsumableWorkshop({state,skillId,preferredRecipeId,onStart}:Pro
  const start=(recipe:Recipe)=>{
   if(busyRef.current||recipe.id===activeId)return;
   setError('');
-  if(count(recipe)<1){setDetailId(recipe.id);return;}
   if(activity){setPendingId(recipe.id);return;}
+  if(count(recipe)<1){setDetailId(recipe.id);return;}
   void submit(recipe.id);
  };
  const selected=all.find(r=>r.id===pendingId);
  const mobile=width<360||fontScale>=1.35;
  return <View style={s.root}>
   {activeId?<View style={[s.active,{backgroundColor:C.goodSurface,borderColor:C.good}]}>
-    <View style={s.line}><Text style={[s.bold,{color:C.good}]}>{gt('Crafting')} · {gt('Active')}</Text><Text style={[s.caption,{color:C.muted}]}>{gt('Stop')} / {gt('Flee')} · {gt('Activity')}</Text></View>
+    <View style={s.line}><Text style={[s.bold,{color:C.good}]}>{gt('Crafting')} · {gt('Active')}</Text></View>
     <Text style={[s.name,{color:C.text}]}>{all.find(r=>r.id===activeId)?.name??activeId}</Text>
-    <Text style={[s.caption,{color:C.muted}]}>{(activity?.kind==='alchemy'?activity?.brew?.remainingBatches:activity?.processing?.remainingBatches)??0} {gt('batches')} · {gt('Continue until resources or AFK time run out')}</Text>
+    <Text style={[s.caption,{color:C.muted}]}>{(activity?.kind==='alchemy'?activity?.brew?.remainingBatches:activity?.processing?.remainingBatches)??0} {gt('batches')} {gt('reserved')} · {gt('Continue until resources or AFK time run out')}</Text>
     <Text style={[s.caption,{color:C.muted}]}>{gt('Use the main Activity bar to stop or claim production.')}</Text>
   </View>:null}
   <View style={s.line}><Text style={[s.title,{color:C.text}]}>{gt('Recipes')}</Text><Pressable accessibilityRole="checkbox" accessibilityState={{checked:readyOnly}} onPress={()=>setReadyOnly(x=>!x)} style={[s.toggle,{borderColor:C.line,backgroundColor:readyOnly?C.selection:C.panel2}]}><Text style={[s.caption,{color:C.text}]}>{readyOnly?'✓ ':''}{gt('Craftable only')}</Text></Pressable></View>
@@ -108,7 +113,7 @@ export function ConsumableWorkshop({state,skillId,preferredRecipeId,onStart}:Pro
     <Text style={[s.caption,{color:C.good}]}>{benefit(detail)}</Text>
     {mealBonusDef(detail.output.itemId)?<Text style={[s.buff,{color:C.good}]}>{mealBonusDef(detail.output.itemId)!.label} · {mealBonusDef(detail.output.itemId)!.durationHours}h · {gt('Eat for Bonus in Inventory')}</Text>:null}
     <Text style={[s.caption,{color:C.muted}]}>{gt('Per batch')}: {detail.output.quantity} {gt('items')} · {detail.gold} Gold · {timeLabel(professionActionPace(state,detail,'batch').cycleSeconds)}</Text>
-    <Text style={[s.caption,{color:C.muted}]}>{gt('Maximum production')}: {count(detail)} {gt('batches')} · {count(detail)*detail.output.quantity} {gt('items')}</Text>
+    <Text style={[s.caption,{color:C.muted}]}>{gt('Maximum production')}: {count(detail)} {gt('batches')} · {count(detail)*detail.output.quantity} {gt('items')} · {count(detail)*detail.gold} Gold</Text>
     <IngredientList inputs={detail.inputs.map(r=>({...r,inventory:state.inventory.stacks.filter(s=>s.itemId===r.itemId).reduce((n,s)=>n+s.quantity,0),bank:state.bank.stacks.filter(s=>s.itemId===r.itemId).reduce((n,s)=>n+s.quantity,0)}))} numberMode={state.settings.numberMode} showStorage/>
     <Pressable accessibilityRole="button" accessibilityState={{disabled:busy||count(detail)<1||activeId===detail.id}} disabled={busy||count(detail)<1||activeId===detail.id} onPress={()=>start(detail)} style={[s.primary,{backgroundColor:C.accent,opacity:busy||count(detail)<1?.5:1}]}><Text style={[s.bold,{color:C.panel}]}>{activeId===detail.id?gt('Active'):skillId==='cooking'?gt('Start Cooking'):gt('Start Brewing')}</Text></Pressable>
   </View>:null}
@@ -116,6 +121,7 @@ export function ConsumableWorkshop({state,skillId,preferredRecipeId,onStart}:Pro
     <Text style={[s.title,{color:C.text}]}>{gt('Switch activity?')}</Text>
     <Text style={[s.caption,{color:C.muted}]}>{gt('Starting a new activity settles the current one and safely refunds any unfinished reserved batches.')}</Text>
     <Text style={[s.name,{color:C.text}]}>{selected.name}</Text>
+    {count(selected)===0?<Text style={[s.caption,{color:C.warning}]}>{gt('Check ingredients and Gold after switching; the server will reject an unaffordable run without replacing your current activity.')}</Text>:null}
     <View style={s.line}><Pressable accessibilityRole="button" onPress={()=>setPendingId(null)} style={[s.secondary,{borderColor:C.line}]}><Text style={[s.bold,{color:C.text}]}>{gt('Cancel')}</Text></Pressable><Pressable accessibilityRole="button" disabled={busy} onPress={()=>void submit(selected.id)} style={[s.secondary,{borderColor:C.good,backgroundColor:C.goodSurface}]}><Text style={[s.bold,{color:C.good}]}>{gt('Switch')}</Text></Pressable></View>
   </View>:null}
   {error?<Text accessibilityRole="alert" style={[s.caption,{color:C.bad}]}>{error}</Text>:null}

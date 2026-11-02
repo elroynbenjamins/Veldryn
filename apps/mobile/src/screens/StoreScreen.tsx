@@ -26,6 +26,8 @@ export function StoreScreen({state,onChange,online=false,onRefreshCommerce,onRed
  const C=useGameTheme(),s=useMemo(()=>styles(C),[C]);
  const a=(text:string)=>accountText(state.settings.language,text);
  const [section,setSection]=useState<StoreSection>('Memberships');
+ const scrollRef=useRef<ScrollView>(null);
+ const changeSection=(next:StoreSection)=>{setSection(next);scrollRef.current?.scrollTo({y:0,animated:false});};
  const [showPromoCode,setShowPromoCode]=useState(false);
  const [code,setCode]=useState(''),[status,setStatus]=useState(''),[redeeming,setRedeeming]=useState(false);
  const redeemFlight=useRef(false);
@@ -40,7 +42,7 @@ export function StoreScreen({state,onChange,online=false,onRefreshCommerce,onRed
   }catch(error){setStatus(error instanceof Error?error.message:a('Unable to redeem this code.'));}
   finally{redeemFlight.current=false;setRedeeming(false);}
  };
- return <ScrollView contentContainerStyle={s.root} keyboardShouldPersistTaps="handled" keyboardDismissMode="on-drag" showsVerticalScrollIndicator={false} showsHorizontalScrollIndicator={false}>
+ return <ScrollView ref={scrollRef} contentContainerStyle={s.root} keyboardShouldPersistTaps="handled" keyboardDismissMode="on-drag" showsVerticalScrollIndicator={false} showsHorizontalScrollIndicator={false}>
   <View style={s.hero}>
    <View pointerEvents="none" style={s.heroAccent}><Text style={[s.heroSymbol,{color:C.accentSoft}]}>✦</Text></View>
    <Text style={s.eyebrow}>THE REALM STORE</Text>
@@ -48,7 +50,7 @@ export function StoreScreen({state,onChange,online=false,onRefreshCommerce,onRed
    <Text style={s.heroDescription}>Permanent upgrades, optional Supporter benefits and a future home for cosmetics.</Text>
    <Text style={s.heroFooter}>NO PAID PREMIUM CURRENCY · NO PAID PVP POWER</Text>
   </View>
-  <BoardTabs compact label="Store categories" items={[{id:'Memberships',label:'Memberships'},{id:'Collections',label:'Collections · Concept'}] as const} value={section} onChange={setSection}/>
+  <BoardTabs compact label="Store categories" items={[{id:'Memberships',label:'Memberships'},{id:'Collections',label:'Collections · Concept'}] as const} value={section} onChange={changeSection}/>
   <View style={section==='Memberships'?s.visible:s.hidden}>
    <GooglePlayCommercePanel state={state} onChange={onChange} online={online} onRefreshCommerce={onRefreshCommerce}/>
    <Panel>
@@ -59,7 +61,7 @@ export function StoreScreen({state,onChange,online=false,onRefreshCommerce,onRed
     {showPromoCode?<View style={s.redeemContent}>
      <Text style={s.redeemDescription}>{a('Enter a promotional code from an official VELDRYN announcement or event.')}</Text>
      <View style={s.redeemRow}>
-      <TextInput accessibilityLabel={a('Redeem code')} autoCapitalize="characters" autoCorrect={false} value={code} onChangeText={value=>{setCode(value.replace(/\s/g,''));setStatus('')}} placeholder={a('ENTER CODE')} placeholderTextColor={C.muted} style={s.codeInput}/>
+      <TextInput accessibilityLabel={a('Redeem code')} autoCapitalize="characters" autoCorrect={false} maxLength={64} value={code} onChangeText={value=>{setCode(value.replace(/\s/g,''));setStatus('')}} placeholder={a('ENTER CODE')} placeholderTextColor={C.muted} style={s.codeInput}/>
       <GameButton compact loading={redeeming} title={redeeming?a('Checking…'):a('Redeem')} disabled={!code.trim()||redeeming||!onRedeemCode} onPress={()=>void redeem()}/>
      </View>
      {!onRedeemCode?<Text style={s.redeemStatus}>{a('Code redemption will be available when Live-Ops redemption is enabled.')}</Text>:null}

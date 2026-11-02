@@ -45273,6 +45273,23 @@ function collectionBonusBreakdown(state, catalog2 = COLLECTIBLES) {
 
 // apps/mobile/src/core/permanent-boosts.ts
 init_meal_buffs();
+
+// apps/mobile/src/core/guild-skill-effects.ts
+var BPS = 1e4;
+function bonusMultiplier(bps) {
+  const value = typeof bps === "number" && Number.isFinite(bps) ? bps : 0;
+  const clamped = Math.max(0, Math.min(600, value));
+  return 1 + clamped / BPS;
+}
+function guildSkillProfessionMultipliers(effects) {
+  return {
+    gatheringSpeedMultiplier: bonusMultiplier(effects?.gatheringSpeedBps),
+    craftingSpeedMultiplier: bonusMultiplier(effects?.craftingSpeedBps),
+    skillXpMultiplier: bonusMultiplier(effects?.skillingXpBps)
+  };
+}
+
+// apps/mobile/src/core/permanent-boosts.ts
 var BASE = {
   attackMultiplier: 1,
   combatSpeedMultiplier: 1,
@@ -45437,6 +45454,10 @@ function characterPermanentMultipliers(state) {
     if (meal.kind === "gathering_speed" || meal.kind === "noncombat_speed") result.gatheringSpeedMultiplier *= boost;
     if (meal.kind === "crafting_speed" || meal.kind === "noncombat_speed") result.craftingSpeedMultiplier *= boost;
     if (meal.kind === "combat_xp") result.characterXpMultiplier *= boost;
+  }
+  if (state.guildSkillEffects) {
+    const g = guildSkillProfessionMultipliers(state.guildSkillEffects);
+    result = merge(result, { ...BASE, gatheringSpeedMultiplier: g.gatheringSpeedMultiplier, craftingSpeedMultiplier: g.craftingSpeedMultiplier, skillXpMultiplier: g.skillXpMultiplier });
   }
   return result;
 }

@@ -55,6 +55,12 @@ export function gameplayHandler(services:GameplayServices){return async(request:
   state.account.liveEvent=loaded.liveEvent??(previousEvent?.enabled&&loaded.serverNow>=previousEvent.endsAtMs?previousEvent:undefined);
   state.account.eventCommunityProgressById=loaded.communityProgress;
   if(state.character&&loaded.walletGold!==null)state.character.gold=loaded.walletGold;
+  // Authoritative Guild Skill bonuses for this one resolution. Always reset so a
+  // player who left a guild keeps no stale effects; best-effort so an
+  // unavailable projection never blocks a gameplay command. Zero while skills
+  // are unreleased, so this is a no-op until the database owner releases them.
+  state.guildSkillEffects=undefined;
+  if(state.account.guildMember){try{state.guildSkillEffects=await services.rpc('guild_skill_effects_server_v1',{p_account_id:accountId});}catch{/* no bonus this resolution */}}
   if(!body||!command)return json({state,version:loaded.version,serverNow:loaded.serverNow,accountId});
   if(body.expectedVersion!==loaded.version){
    // Another request may commit this key between the first receipt read and state read.

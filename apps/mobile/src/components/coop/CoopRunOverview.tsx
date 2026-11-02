@@ -55,6 +55,8 @@ export function CoopRunOverview({language,run,myVotedNodeId,selfVoter,onBack,onC
   const lastReplay=useRef(replayKey),wasResolving=useRef(run.phase==='resolving_node');
   const [theaterOpen,setTheaterOpen]=useState(run.phase==='resolving_node');
   const [rewardOpen,setRewardOpen]=useState(terminal);
+  const [enteringCombat,setEnteringCombat]=useState(false);
+  const enterFromVersion=useRef(run.stateVersion),enterFromNode=useRef(run.lastCombat?.nodeId);
   useEffect(()=>{
    const resolving=run.phase==='resolving_node';
    const newCombat=Boolean(run.lastCombat&&lastReplay.current!==replayKey);
@@ -67,6 +69,25 @@ export function CoopRunOverview({language,run,myVotedNodeId,selfVoter,onBack,onC
    }
    lastReplay.current=replayKey;wasResolving.current=resolving;
   },[run.phase,run.lastCombat,replayKey,terminal]);
+  // The battle stage opens before the request finishes. Combat cues, HP and
+  // outcomes still come exclusively from the authoritative server response.
+  const chooseRoom=(nodeId:string)=>{
+   const option=run.options.find(item=>item.nodeId===nodeId);
+   if(onChoose&&run.mode==='qmode'&&option&&['battle','elite','boss','risk'].includes(option.kind)){
+    enterFromVersion.current=run.stateVersion;
+    enterFromNode.current=run.lastCombat?.nodeId;
+    setEnteringCombat(true);setTheaterOpen(true);
+   }
+   onChoose?.(nodeId);
+  };
+  useEffect(()=>{
+   if(!enteringCombat)return;
+   const resolved=run.phase==='resolving_node'||run.stateVersion!==enterFromVersion.current||run.lastCombat?.nodeId!==enterFromNode.current;
+   if(resolved||notice){
+    setEnteringCombat(false);
+    if(notice||(!run.pendingCombat&&run.lastCombat?.nodeId===enterFromNode.current))setTheaterOpen(false);
+   }
+  },[enteringCombat,run.phase,run.stateVersion,run.lastCombat?.nodeId,run.pendingCombat,notice]);
   const combatName=run.bossMechanic?.telegraph?.bossName??(run.pendingCombat??run.lastCombat)?.combatants?.find(member=>member.boss)?.name??st('DUNGEON COMBAT');
   return <><ExpeditionScreenShell compactHeader={inCombat} eyebrow={ct(language,'browse.resumeTitle')} title={inCombat?combatName:ct(language,'browse.resume')} onBack={onBack} backLabel={ct(language,'details.backList')} banner={inCombat?undefined:<View style={s.banner}><StateChip label={modeLabel} tone="selected"/><Text style={s.phase}>{run.phase.replaceAll('_',' ')}</Text></View>}>
     {inCombat?<FantasyPanel variant="selected"><View style={s.summary}>
@@ -77,7 +98,7 @@ export function CoopRunOverview({language,run,myVotedNodeId,selfVoter,onBack,onC
     {run.options.length?<View style={s.actionArea}>
       <Text style={s.section}>{run.mode==='live'?st('Vote for the next path'):st('Choose the next room')}</Text>
       {run.mode==='live'?<Text style={s.copy}>{st('The route with the most votes will be selected.')}{secondsRemaining!==undefined?` · ${st('Vote ends in {seconds}s',{seconds:secondsRemaining})}`:''}</Text>:null}
-      <DungeonRouteChoices options={run.options} mode={run.mode} phase={run.phase} busy={busy} onChoose={onChoose} myVotedNodeId={myVotedNodeId} selfVoter={selfVoter}/>
+      <DungeonRouteChoices options={run.options} mode={run.mode} phase={run.phase} busy={busy} onChoose={onChoose?chooseRoom:undefined} myVotedNodeId={myVotedNodeId} selfVoter={selfVoter}/>
      </View>:run.phase!=='resolving_node'&&!terminal?<FantasyPanel><Text style={s.copy}>{ct(language,'browse.resumeBody')}</Text></FantasyPanel>:null}
     {!(run.phase==='resolving_node'||bossNext||run.lastCombat)?<DungeonDisclosure title={st('Party & formation')}>
     <FantasyPanel variant="selected"><View style={s.summary}><View style={s.grow}><Text style={s.title}>{ct(language,'details.party')}</Text><Text style={s.copy}>{ct(language,'details.partyValue')}</Text></View><StateChip label={`Lv. ${run.syncedLevel}`} tone="success"/></View></FantasyPanel>
@@ -120,9 +141,9 @@ export function CoopRunOverview({language,run,myVotedNodeId,selfVoter,onBack,onC
     </View>
    </Modal>:null}
    {theaterOpen?<CombatTheaterModal visible tone={seasonal?'event':'dungeon'} onClose={()=>{setTheaterOpen(false);if(terminal)setRewardOpen(true);}} title={combatName} eyebrow={st('DUNGEON COMBAT')} subtitle={modeLabel} reduceMotion={reduceMotion}>
-    <DungeonCombatStage run={run} onPresentationComplete={terminal?()=>{setTheaterOpen(false);setRewardOpen(true);}:undefined} seasonal={seasonal} eventName={eventName} reduceMotionSetting={reduceMotion} boss={bossNext||run.lastCombat?.nodeId==='boss'} enemyLabel={(bossNext||run.lastCombat?.nodeId==='boss')?run.bossMechanic?.telegraph?.bossName:undefined}/>
+    {enteringCombat?<View style={s.battlePrelude} accessibilityLiveRegion="polite"><Text style={s.preludeIcon}>⚔</Text><Text style={s.preludeTitle}>{st("Entering battle")}</Text><Text style={s.copy}>{st("Preparing the encounter…")}</Text></View>:<DungeonCombatStage run={run} onPresentationComplete={terminal?()=>{setTheaterOpen(false);setRewardOpen(true);}:undefined} seasonal={seasonal} eventName={eventName} reduceMotionSetting={reduceMotion} boss={bossNext||run.lastCombat?.nodeId==='boss'} enemyLabel={(bossNext||run.lastCombat?.nodeId==='boss')?run.bossMechanic?.telegraph?.bossName:undefined}/>}
    </CombatTheaterModal>:null}
   </>;
 }
 
-const makeStyles=(coopColors:CoopColors)=>StyleSheet.create({actionArea:{gap:8},rewardOverlay:{flex:1,justifyContent:'center',padding:16,backgroundColor:'rgba(4,9,19,.8)'},rewardDialog:{maxHeight:'85%',flexGrow:0,borderRadius:16,borderWidth:1,borderColor:coopColors.goldDim,backgroundColor:coopColors.background},rewardContent:{gap:12,padding:16},rewardRow:{gap:8,padding:10,borderWidth:1,borderColor:coopColors.goldDim,borderRadius:10,backgroundColor:coopColors.surfaceRaised},terminal:{gap:coopSpacing.sm,padding:coopSpacing.md,borderWidth:1,borderColor:coopColors.gold,backgroundColor:coopColors.surfaceRaised},terminalHead:{flexDirection:'row',alignItems:'center',gap:coopSpacing.sm},terminalEyebrow:{...coopTypography.meta,fontWeight:'900',letterSpacing:.8},terminalSuccess:{color:coopColors.success},terminalDanger:{color:coopColors.danger},terminalTitle:{...coopTypography.section,color:coopColors.text,fontWeight:'900'},claimedReward:{flexDirection:'row',alignItems:'center',gap:coopSpacing.sm},banner:{flexDirection:'row',alignItems:'center',gap:coopSpacing.sm},phase:{...coopTypography.meta,color:coopColors.textSecondary,textTransform:'capitalize',flex:1},summary:{flexDirection:'row',alignItems:'center',gap:coopSpacing.sm},grow:{flex:1,minWidth:0},section:{...coopTypography.section,color:coopColors.gold,marginTop:coopSpacing.xs},title:{...coopTypography.section,color:coopColors.text},copy:{...coopTypography.body,color:coopColors.textSecondary},party:{flexDirection:'row',flexWrap:'wrap',gap:coopSpacing.sm},member:{width:'48%',flexGrow:1},name:{...coopTypography.body,color:coopColors.text,fontWeight:'800'},className:{...coopTypography.meta,color:coopColors.cyan},memberMeta:{flexDirection:'row',flexWrap:'wrap',gap:coopSpacing.xs},option:{minHeight:64,flexDirection:'row',alignItems:'center',gap:coopSpacing.md},encounterIntel:{marginTop:3,flexDirection:'row',alignItems:'center',gap:5},encounterIntelLabel:{fontSize:7,lineHeight:9,color:coopColors.cyan,fontWeight:'900',letterSpacing:.45},encounterIntelCopy:{flex:1,fontSize:8,lineHeight:10,color:coopColors.textMuted,fontWeight:'800'},mechanicHead:{flexDirection:'row',alignItems:'flex-start',gap:coopSpacing.sm},meterTrack:{height:6,borderRadius:999,overflow:'hidden',backgroundColor:coopColors.surfaceRaised},meterFill:{height:'100%',borderRadius:999,backgroundColor:coopColors.cyan}});
+const makeStyles=(coopColors:CoopColors)=>StyleSheet.create({actionArea:{gap:8},battlePrelude:{minHeight:300,justifyContent:'center',alignItems:'center',gap:14,padding:24},preludeIcon:{fontSize:46,color:coopColors.gold},preludeTitle:{...coopTypography.section,color:coopColors.text,fontWeight:'900'},rewardOverlay:{flex:1,justifyContent:'center',padding:16,backgroundColor:'rgba(4,9,19,.8)'},rewardDialog:{maxHeight:'85%',flexGrow:0,borderRadius:16,borderWidth:1,borderColor:coopColors.goldDim,backgroundColor:coopColors.background},rewardContent:{gap:12,padding:16},rewardRow:{gap:8,padding:10,borderWidth:1,borderColor:coopColors.goldDim,borderRadius:10,backgroundColor:coopColors.surfaceRaised},terminal:{gap:coopSpacing.sm,padding:coopSpacing.md,borderWidth:1,borderColor:coopColors.gold,backgroundColor:coopColors.surfaceRaised},terminalHead:{flexDirection:'row',alignItems:'center',gap:coopSpacing.sm},terminalEyebrow:{...coopTypography.meta,fontWeight:'900',letterSpacing:.8},terminalSuccess:{color:coopColors.success},terminalDanger:{color:coopColors.danger},terminalTitle:{...coopTypography.section,color:coopColors.text,fontWeight:'900'},claimedReward:{flexDirection:'row',alignItems:'center',gap:coopSpacing.sm},banner:{flexDirection:'row',alignItems:'center',gap:coopSpacing.sm},phase:{...coopTypography.meta,color:coopColors.textSecondary,textTransform:'capitalize',flex:1},summary:{flexDirection:'row',alignItems:'center',gap:coopSpacing.sm},grow:{flex:1,minWidth:0},section:{...coopTypography.section,color:coopColors.gold,marginTop:coopSpacing.xs},title:{...coopTypography.section,color:coopColors.text},copy:{...coopTypography.body,color:coopColors.textSecondary},party:{flexDirection:'row',flexWrap:'wrap',gap:coopSpacing.sm},member:{width:'48%',flexGrow:1},name:{...coopTypography.body,color:coopColors.text,fontWeight:'800'},className:{...coopTypography.meta,color:coopColors.cyan},memberMeta:{flexDirection:'row',flexWrap:'wrap',gap:coopSpacing.xs},option:{minHeight:64,flexDirection:'row',alignItems:'center',gap:coopSpacing.md},encounterIntel:{marginTop:3,flexDirection:'row',alignItems:'center',gap:5},encounterIntelLabel:{fontSize:7,lineHeight:9,color:coopColors.cyan,fontWeight:'900',letterSpacing:.45},encounterIntelCopy:{flex:1,fontSize:8,lineHeight:10,color:coopColors.textMuted,fontWeight:'800'},mechanicHead:{flexDirection:'row',alignItems:'flex-start',gap:coopSpacing.sm},meterTrack:{height:6,borderRadius:999,overflow:'hidden',backgroundColor:coopColors.surfaceRaised},meterFill:{height:'100%',borderRadius:999,backgroundColor:coopColors.cyan}});

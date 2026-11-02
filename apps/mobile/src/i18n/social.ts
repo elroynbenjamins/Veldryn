@@ -6639,7 +6639,7 @@ export const socialTranslationRows = {
     "In deze versie ontbreekt de configuratie van de online diensten. Werk de productieversie bij of installeer die opnieuw in plaats van de tijdelijke demo-chat te gebruiken.",
     "In questa versione manca la configurazione dei servizi online. Aggiorna o reinstalla la versione di produzione invece di usare la chat demo temporanea.",
     "La configuration des services en ligne manque dans cette version. Mettez à jour ou réinstallez la version de production plutôt que d’utiliser le chat de démonstration temporaire."
-  ]
+  ],
  // Party hub compact redesign.
  "Party locked": ["Gruppe gesperrt","Grupo bloqueado","Party vergrendeld","Gruppo bloccato","Groupe verrouillé"],
  "Parties unlock at Level {level}": ["Gruppen werden ab Stufe {level} freigeschaltet","Los grupos se desbloquean en el nivel {level}","Party's worden ontgrendeld op niveau {level}","I gruppi si sbloccano al livello {level}","Les groupes se débloquent au niveau {level}"],

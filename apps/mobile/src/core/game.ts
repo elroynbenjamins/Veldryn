@@ -401,7 +401,13 @@ function combatRuntimeDetails(state:GameState,monsterId:string,nowMs=Date.now())
   // player can still scout them in starter gear, but the missing tier creates
   // a clear time and sustain cost instead of making early equipment optional.
   const wornTier=highestEquippedV33Tier(state);
-  const expectedTier=regionalMonsterPressureBand(m.id)==='hard'?(m.level>=22?2:m.level>=10?1:0):0;
+  // Region-entry gear matters even when combat power reaches the speed cap.
+  // Never require a tier before its character-level floor is attainable.
+  const regionalGearTier=m.zone==="King's Road"?2:
+    m.zone==='Sunscar'?(m.level>=40?4:3):
+    m.zone==='Frostmarch'?(m.level>=70?6:m.level>=55?5:4):
+    m.zone==='Ashlands'?(m.level>=82?7:6):undefined;
+  const expectedTier=regionalGearTier??(regionalMonsterPressureBand(m.id)==='hard'?(m.level>=22?2:m.level>=10?1:0):0);
   const tierGap=Math.max(0,expectedTier-wornTier);
   const progressionSpeedPenalty=tierGap===0?1:Math.max(.62,1-tierGap*.18);
   const progressionDamagePenalty=tierGap===0?1:1+tierGap*.12;

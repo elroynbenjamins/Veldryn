@@ -30,6 +30,8 @@ ok(feedback.includes('Animated.sequence'),'exceptional Forge results need a brie
 ok(feedback.includes('reduceMotion'),'Forge celebration must respect reduced motion');
 ok(feedback.includes('4500'),'ordinary Forge feedback should dismiss automatically instead of blocking play');
 ok(feedback.includes('forgeClaimBannerMessage'),'ordinary Forge claims need compact local feedback');
+ok(!feedback.includes('result.duplicateCount')&&!feedback.includes('Crafted copy #')&&!feedback.includes(' · copy ${result.duplicateCount+1}')&&feedback.includes('Added to inventory'),
+  'Forge claim feedback must not expose numbered equipment copy labels');
 ok(feedback.includes('useWindowDimensions')&&feedback.includes("stackActions=width<360||fontScale>=1.25"),'Exceptional Forge result actions must adapt to narrow phones and large text');
 ok(feedback.includes('actionsStack')&&feedback.includes("actionStack:{flex:0,width:'100%'}"),'Exceptional Forge result actions must stack full-width instead of squeezing');
 

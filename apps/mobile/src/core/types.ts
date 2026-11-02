@@ -90,6 +90,8 @@ export interface CraftedGearInstance{
   quality?:number;
   /** Individual per-copy disposal protection. */
   locked?:boolean;
+  /** Explicit manual unlock of an enhanced copy; absent on older saves. */
+  enhancedSaleUnlocked?:boolean;
   acquireSource:'craft';
   sourceReceiptKey:string;
   createdAtMs:number;

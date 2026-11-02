@@ -95,7 +95,7 @@ export function MoreScreen({language,character,accountStatus='local',onNavigate,
   const attention=(id:MoreDestination)=>{
     if(lockedReason(id))return null;
     if(id==='Quests'&&storyRewardCount>0)return <AttentionCount count={storyRewardCount} label={a('{count} story rewards ready',{count:storyRewardCount})}/>;
-    if(id==='Social'&&socialAttentionCount>0)return <AttentionCount count={socialAttentionCount} label={a("Party updates")}/>;
+    if(id==='Party'&&socialAttentionCount>0)return <AttentionCount count={socialAttentionCount} label={a("Party updates")}/>;
     if(id==='Friends'&&friendRequestCount>0)return <AttentionCount count={friendRequestCount} label={a("Incoming friend requests")}/>;
     if(id==='Guild'&&guildAttentionCount>0)return <AttentionCount count={guildAttentionCount} label={a("Guild updates")}/>;
     if(id==='Companions'&&companionUnlocked&&companionAttention)return <AttentionDot label={a("Companion actions ready")}/>;

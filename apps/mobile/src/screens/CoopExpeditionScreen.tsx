@@ -223,8 +223,8 @@ export function CoopExpeditionScreen({onClose,language,state,entrySource=realCoo
   const retry=pending?<GameButton title={st("Retry pending co-op action")} disabled={busy} onPress={()=>action(async()=>{const value=await coopClient.retryPending();if(value&&typeof value==='object'&&'eventExpeditionId' in value)acceptEventRun(value as CoopEventRunServerProjection);else if(value&&typeof value==='object'&&'team' in value)acceptRun(value as CoopQModeServerProjection);await load();})}/>:null;
   const quickLiveMatch=()=>void action(async()=>{const loadout=verifiedLoadout();if(!loadout)throw new Error(st("No verified Live-ready loadout is available. Refresh your co-op loadout first."));await coopClient.quickLive({requestId:coopRequestId(),characterId:loadout.characterId,loadoutId:loadout.id,loadoutRevision:loadout.revision});setShowLive(true);});
   // A repeat run is a fresh server-validated start, never a replay of results.
-  // Live Quick Match makes a new party; preserving the old roster needs unanimous
-  // server-authorized rematch consent and is intentionally not claimed here.
+  // Quick Match seeks a new roster. Same-party rematches use the separate
+  // unanimous server-authorized ready check after rewards are claimed.
   const queueAgainAction=run?.mode==='qmode'&&lastQModeIntent?{
     label:st("Run again"),
     onPress:()=>void action(async()=>{

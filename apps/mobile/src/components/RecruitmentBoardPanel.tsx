@@ -11,10 +11,10 @@ import type {ThemeColors} from '../theme/theme';
 type Area='party'|'guild';
 type Kind='groups'|'players';
 type Action='looking_for_party'|'party_recruiting'|'looking_for_guild'|'guild_recruiting';
-export function RecruitmentBoardPanel({area,onAreaChange,cards,own,filters,onFiltersChange,nowMs,busy,canRecruitGuild,inGuild,inParty,partyLeader,partyOpenSpots,onPost,onOpen,onRefresh,onClose,onOpenParty,onOpenGuild}:{
+export function RecruitmentBoardPanel({area,onAreaChange,cards,own,filters,onFiltersChange,nowMs,busy,canRecruitGuild,inGuild,guildMembershipKnown,inParty,partyUnlocked,partyLeader,partyOpenSpots,onPost,onOpen,onRefresh,onClose,onOpenParty,onOpenGuild}:{
  area:Area;onAreaChange:(area:Area)=>void;cards:RecruitmentCardView[];own:RecruitmentCardView[];
  filters:RecruitmentClientFilters;onFiltersChange:(next:RecruitmentClientFilters)=>void;nowMs:number;busy:boolean;
- canRecruitGuild:boolean;inGuild:boolean;inParty:boolean;partyLeader:boolean;partyOpenSpots:number;
+ canRecruitGuild:boolean;inGuild:boolean;guildMembershipKnown:boolean;inParty:boolean;partyUnlocked:boolean;partyLeader:boolean;partyOpenSpots:number;
  onPost:(type:RecruitmentPostType)=>void;onOpen:(card:RecruitmentCardView)=>void;
  onRefresh:(id:string)=>void;onClose:(id:string)=>void;onOpenParty:()=>void;onOpenGuild:()=>void;
 }){
@@ -24,9 +24,9 @@ export function RecruitmentBoardPanel({area,onAreaChange,cards,own,filters,onFil
  const visible=filterRecruitmentCards(cards,{...filters,postTypes:types},nowMs);
  const myPosts=own.filter(card=>area==='party'?card.postType.includes('party'):card.postType.includes('guild'));
  const options:{id:Action;title:string;detail:string;enabled:boolean}[]=[
-  {id:'looking_for_party',title:'Looking for a Party',detail:'Find a persistent team',enabled:!inParty},
-  {id:'party_recruiting',title:'Recruit for my Party',detail:partyOpenSpots>0?'Find members for open Party slots':'Your Party has no open slots',enabled:inParty&&partyLeader&&partyOpenSpots>0},
-  {id:'looking_for_guild',title:'Looking for a Guild',detail:'Let Guilds discover you',enabled:!inGuild},
+  {id:'looking_for_party',title:'Looking for a Party',detail:'Find a persistent team',enabled:partyUnlocked&&!inParty},
+  {id:'party_recruiting',title:'Recruit for my Party',detail:partyOpenSpots>0?'Find members for open Party slots':'Your Party has no open slots',enabled:partyUnlocked&&inParty&&partyLeader&&partyOpenSpots>0},
+  {id:'looking_for_guild',title:'Looking for a Guild',detail:'Let Guilds discover you',enabled:guildMembershipKnown&&!inGuild},
   {id:'guild_recruiting',title:'Recruit for my Guild',detail:'Leader or Officer access',enabled:canRecruitGuild},
  ];
  return <View style={s.root}>

@@ -29,7 +29,7 @@ export function CoopLiveRematchPanel({visible,run,status,busy=false,error,onRead
      <Text style={s.description}>Run this dungeon again with a fresh route, current equipment, and the same four adventurers.</Text>
      <View style={s.readyHeader}><Text style={s.section}>Party ready check</Text><Text style={[s.counter,committed&&s.good]}>{ready}/4 ready</Text></View>
      {members.length===4?members.map((member,index)=>{
-      const slot=run.roleSlots[index];const name=member.self?'You':slot?.name??`Party member ${index+1}`;
+      const slot=run.roleSlots.find(slot=>slot.memberId===member.characterId)??run.roleSlots[index];const name=member.self?'You':slot?.name??`Party member ${index+1}`;
       return <View key={member.accountId} style={s.member}>
        <IdentityArtwork name={slot?.name??name} profileIconId={slot?.profileIconId} className={slot?.iconClassId??slot?.classId} size={36}/>
        <View style={s.memberText}><Text numberOfLines={1} style={s.memberName}>{name}</Text><Text style={s.role}>{member.role==='damage'?'DAMAGE':member.role.toUpperCase()}</Text></View>

@@ -1,4 +1,4 @@
-import {useState,type ReactNode} from 'react';
+import {useState} from 'react';
 import {ActivityIndicator,Image,Pressable,StyleSheet,Text,View} from 'react-native';
 import type {GuildTokenShopCard,GuildTokenShopSnapshot,GuildWeeklyRewardKind} from '../online/guild-token-shop';
 import {useGameTheme} from '../theme/ThemeContext';
@@ -31,7 +31,7 @@ export interface GuildTokenShopViewProps{
  snapshot:GuildTokenShopSnapshot|null;loading:boolean;pending:string|null;error:string;notice:string;
  onRefresh:()=>Promise<unknown>;onBuy:(id:string)=>Promise<unknown>;
  onDaily:(kind:'attendance'|'contribution')=>Promise<unknown>;onWeekly:(kind:GuildWeeklyRewardKind)=>Promise<unknown>;
- onEvent:(eventId:string,percent:number)=>Promise<unknown>;onRewardsChanged?:()=>void|Promise<unknown>;constructionContent?:ReactNode;onOpenConstruction?:()=>void;
+ onEvent:(eventId:string,percent:number)=>Promise<unknown>;onRewardsChanged?:()=>void|Promise<unknown>;onOpenConstruction?:()=>void;
 }
 /** Presentation-only. The authenticated server settles every claim and purchase. */
 export function GuildTokenShopView({snapshot,loading,pending,error,notice,onRefresh,onBuy,onDaily,onWeekly,onEvent,onOpenConstruction}:GuildTokenShopViewProps){

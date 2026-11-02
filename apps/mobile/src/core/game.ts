@@ -872,7 +872,7 @@ export function sellItem(state:GameState,itemId:string,quantity=1):GameState{
   const d=itemDef(itemId);
   if(d.guildOnly)throw new Error('Guild construction components cannot be sold.');
   if(d.knowledgeUnlockId)throw new Error('Blueprints cannot be sold. Learn the recipe by crafting its tool.');
-  if(d.type==='gear'&&!canDisposeLegacyEquipment(state,itemId,'inventory',quantity))
+  if(d.type==='gear'&&state.inventory.stacks.some(row=>row.itemId===itemId&&row.instanceId===undefined&&row.quantity>=quantity)&&!canDisposeLegacyEquipment(state,itemId,'inventory',quantity))
     throw new Error('Enhanced equipment is protected. Keep the upgraded copy or extract its gems before disposal.');
   let next:GameState={...state,inventory:{...state.inventory,stacks:consume(state.inventory.stacks,itemId,quantity)},character:{...state.character!,gold:state.character!.gold+d.value*quantity}};
   return next;
@@ -881,7 +881,7 @@ export function salvageItem(state:GameState,itemId:string):GameState{
   if(state.settings.favoriteItemIds?.includes(itemId))throw new Error('Favorite item is protected. Remove it from Favorites before salvaging.');
   if(state.settings.lockedItemIds?.includes(itemId))throw new Error('Locked item is protected. Unlock it before salvaging.');
   const d=itemDef(itemId);if(d.type!=='gear'||!d.salvage)throw new Error('Cannot salvage');
-  if(!canDisposeLegacyEquipment(state,itemId,'inventory',1))
+  if(state.inventory.stacks.some(row=>row.itemId===itemId&&row.instanceId===undefined&&row.quantity>0)&&!canDisposeLegacyEquipment(state,itemId,'inventory',1))
     throw new Error('Enhanced equipment is protected. Keep the upgraded copy or extract its gems before disposal.');
   let next:GameState={...state,inventory:{...state.inventory,stacks:stackItems(consume(state.inventory.stacks,itemId,1),[d.salvage])}};
   return next;
@@ -909,7 +909,7 @@ export function sellBankItem(state:GameState,itemId:string,quantity=1):GameState
   const def=itemDef(itemId);
   if(def.guildOnly)throw new Error('Guild construction components cannot be sold.');
   if(def.knowledgeUnlockId)throw new Error('Blueprints cannot be sold.');
-  if(def.type==='gear'&&!canDisposeLegacyEquipment(state,itemId,'bank',quantity))throw new Error('Enhanced equipment is protected. Keep the upgraded copy or extract its gems before disposal.');
+  if(def.type==='gear'&&state.bank.stacks.some(row=>row.itemId===itemId&&row.instanceId===undefined&&row.quantity>=quantity)&&!canDisposeLegacyEquipment(state,itemId,'bank',quantity))throw new Error('Enhanced equipment is protected. Keep the upgraded copy or extract its gems before disposal.');
   const stacks=consume(state.bank.stacks,itemId,quantity);
   const proceeds=def.value*quantity;
   if(!Number.isSafeInteger(proceeds)||!Number.isSafeInteger((state.bank.gold??0)+proceeds))throw new Error('Gold amount exceeds supported limit.');

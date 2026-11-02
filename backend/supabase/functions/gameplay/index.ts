@@ -48710,7 +48710,8 @@ function normalizeCraftedGearInstances(raw2) {
         rarity,
         // Preserve absence as a legacy marker. In particular, do not invent an authoritative Forge roll.
         quality: isValidCraftedGearQuality(row.quality) ? row.quality : void 0,
-        locked: row.locked === true,
+        locked: row.locked === true || (Number(enhancement.rank) > 0 || Number(enhancement.failures) > 0 || !!enhancement.statGemId || !!enhancement.effectGemId || Array.isArray(enhancement.gemIds) && enhancement.gemIds.length > 0) && row.enhancedSaleUnlocked !== true,
+        enhancedSaleUnlocked: row.enhancedSaleUnlocked === true,
         statRoll: clampStatRoll(row.statRoll),
         acquireSource: "craft",
         sourceReceiptKey: String(row.sourceReceiptKey ?? row.id).slice(0, 200),
@@ -48771,6 +48772,7 @@ function draftCraftedGearInstance(args) {
     rarity: craftedGearRarity(args.itemId, args.roll),
     quality: craftedGearQualityRoll(args.roll, args.jobId),
     locked: false,
+    enhancedSaleUnlocked: false,
     statRoll: deterministicCraftRarityRoll(`stat:${args.jobId}:${args.ownerCharacterId}`),
     acquireSource: "craft",
     sourceReceiptKey: args.jobId,
@@ -49215,7 +49217,39 @@ function equippedCraftedInstance(state, itemId) {
 }
 function gearEnhancement(state, itemId) {
   const raw2 = equippedCraftedInstance(state, itemId)?.enhancement ?? state.character?.gearEnhancements?.[itemId], slots2 = normalizeEnhancementGemSlots(raw2);
-  return { rank: Math.max(0, Math.min(MAX_UPGRADE_RANK, Math.floor(raw2?.rank ?? 0))), failures: Math.max(0, Math.floor(raw2?.failures ?? 0)), ...slots2 };
+  return { rank: Math.max(0, Math.min(MAX_UPGRADE_RANK, Math.floor(raw2?.rank ?? 0))), failures: Math.max(0, Math.floor(raw2?.failures ?? 0)), ...slots2, locked: raw2?.locked === false ? false : raw2?.locked === true || !!(raw2?.rank || raw2?.failures || slots2.gemIds.length) };
+}
+function canReleaseLegacyEnhancedGear(state, itemId, location) {
+  const current = state.character;
+  if (!current) return false;
+  const raw2 = current.gearEnhancements?.[itemId], slots2 = normalizeEnhancementGemSlots(raw2);
+  if (!raw2 || !(raw2.rank > 0 || raw2.failures > 0 || slots2.gemIds.length > 0)) return false;
+  if (itemDef(itemId).type !== "gear") return false;
+  const characters = [current, ...(state.otherCharacters ?? []).map((row) => row.character)];
+  if (characters.some((character) => Object.values(character.equipment ?? {}).includes(itemId))) return false;
+  if (characters.some((character) => character.savedLoadouts?.some((loadout) => Object.values(loadout.equipment).includes(itemId)))) return false;
+  if ((state.otherCharacters ?? []).some((row) => {
+    const other = row.character.gearEnhancements?.[itemId], gems = normalizeEnhancementGemSlots(other);
+    return !!other && (other.rank > 0 || other.failures > 0 || gems.gemIds.length > 0);
+  })) return false;
+  const count = (stacks) => stacks.reduce((n, row) => n + (row.itemId === itemId && row.instanceId === void 0 && Number.isSafeInteger(row.quantity) && row.quantity > 0 ? row.quantity : 0), 0);
+  const total = count(state.inventory.stacks) + count(state.bank.stacks) + count(state.overflow.stacks) + (state.otherCharacters ?? []).reduce((n, row) => n + count(row.inventory.stacks) + count(row.overflow.stacks), 0);
+  return total === 1 && count(state[location].stacks) === 1;
+}
+function legacyEnhancedGearLocked(state, itemId) {
+  const raw2 = state.character?.gearEnhancements?.[itemId];
+  return !!raw2 && raw2.locked !== false;
+}
+function setLegacyEnhancedGearLock(state, itemId, locked) {
+  if (typeof locked !== "boolean") throw new Error("Invalid equipment lock state");
+  if (!state.character || !canReleaseLegacyEnhancedGear(state, itemId, "inventory") && !canReleaseLegacyEnhancedGear(state, itemId, "bank"))
+    throw new Error("Cannot identify the exact older enhanced equipment copy. Keep it protected until its duplicates are resolved.");
+  const raw2 = state.character.gearEnhancements?.[itemId];
+  if (!raw2) throw new Error("Equipment enhancement not found");
+  return { ...state, character: { ...state.character, gearEnhancements: {
+    ...state.character.gearEnhancements,
+    [itemId]: { ...raw2, locked }
+  } } };
 }
 function canDisposeLegacyEquipment(state, itemId, location, quantity2) {
   if (!Number.isSafeInteger(quantity2) || quantity2 <= 0) return false;
@@ -49270,8 +49304,8 @@ function consumeAcross(state, id, amount) {
 }
 function setEnhancement(state, itemId, value) {
   const slots2 = normalizeEnhancementGemSlots(value), instance = equippedCraftedInstance(state, itemId);
-  if (instance) return { ...state, account: { ...state.account, craftedGearInstances: craftedGearInstances(state).map((row) => row.id === instance.id ? { ...row, enhancement: { ...value, ...slots2 } } : row) } };
-  return { ...state, character: { ...state.character, gearEnhancements: { ...state.character.gearEnhancements ?? {}, [itemId]: { ...value, ...slots2 } } } };
+  if (instance) return { ...state, account: { ...state.account, craftedGearInstances: craftedGearInstances(state).map((row) => row.id === instance.id ? { ...row, locked: true, enhancedSaleUnlocked: false, enhancement: { ...value, ...slots2 } } : row) } };
+  return { ...state, character: { ...state.character, gearEnhancements: { ...state.character.gearEnhancements ?? {}, [itemId]: { ...value, ...slots2, locked: true } } } };
 }
 function requireEquipped(state, itemId) {
   if (!state.character || !Object.values(state.character.equipment).includes(itemId)) throw new Error("Equip this item first");
@@ -51905,6 +51939,11 @@ function unequipItem(state, slot) {
   next.character.currentHp = Math.min(effectiveStats(next).hp, next.character.currentHp);
   return next;
 }
+function clearSoldLegacyEnhancement(state, itemId) {
+  const gearEnhancements = { ...state.character?.gearEnhancements ?? {} };
+  delete gearEnhancements[itemId];
+  return { ...state, character: { ...state.character, gearEnhancements } };
+}
 function sellItem(state, itemId, quantity2 = 1) {
   if (!state.character || quantity2 <= 0) return state;
   if (itemId === HOLY_WATER_ID) throw new Error("Holy Water cannot be sold.");
@@ -51913,20 +51952,22 @@ function sellItem(state, itemId, quantity2 = 1) {
   const d = itemDef(itemId);
   if (d.guildOnly) throw new Error("Guild construction components cannot be sold.");
   if (d.knowledgeUnlockId) throw new Error("Blueprints cannot be sold. Learn the recipe by crafting its tool.");
-  if (d.type === "gear" && state.inventory.stacks.some((row) => row.itemId === itemId && row.instanceId === void 0 && row.quantity >= quantity2) && !canDisposeLegacyEquipment(state, itemId, "inventory", quantity2))
-    throw new Error("Enhanced equipment is protected. Keep the upgraded copy or extract its gems before disposal.");
+  const releasing = d.type === "gear" && quantity2 === 1 && canReleaseLegacyEnhancedGear(state, itemId, "inventory") && !legacyEnhancedGearLocked(state, itemId);
+  if (d.type === "gear" && state.inventory.stacks.some((row) => row.itemId === itemId && row.instanceId === void 0) && !canDisposeLegacyEquipment(state, itemId, "inventory", quantity2) && !releasing)
+    throw new Error("Enhanced equipment is protected. Unlock the exact older copy before selling, or keep its remaining duplicate.");
   let next = { ...state, inventory: { ...state.inventory, stacks: consume2(state.inventory.stacks, itemId, quantity2) }, character: { ...state.character, gold: state.character.gold + d.value * quantity2 } };
-  return next;
+  return releasing ? clearSoldLegacyEnhancement(next, itemId) : next;
 }
 function salvageItem(state, itemId) {
   if (state.settings.favoriteItemIds?.includes(itemId)) throw new Error("Favorite item is protected. Remove it from Favorites before salvaging.");
   if (state.settings.lockedItemIds?.includes(itemId)) throw new Error("Locked item is protected. Unlock it before salvaging.");
   const d = itemDef(itemId);
   if (d.type !== "gear" || !d.salvage) throw new Error("Cannot salvage");
-  if (state.inventory.stacks.some((row) => row.itemId === itemId && row.instanceId === void 0 && row.quantity > 0) && !canDisposeLegacyEquipment(state, itemId, "inventory", 1))
-    throw new Error("Enhanced equipment is protected. Keep the upgraded copy or extract its gems before disposal.");
+  const releasing = canReleaseLegacyEnhancedGear(state, itemId, "inventory") && !legacyEnhancedGearLocked(state, itemId);
+  if (state.inventory.stacks.some((row) => row.itemId === itemId && row.instanceId === void 0) && !canDisposeLegacyEquipment(state, itemId, "inventory", 1) && !releasing)
+    throw new Error("Enhanced equipment is protected. Unlock the exact older copy before salvaging.");
   let next = { ...state, inventory: { ...state.inventory, stacks: stackItems(consume2(state.inventory.stacks, itemId, 1), [d.salvage]) } };
-  return next;
+  return releasing ? clearSoldLegacyEnhancement(next, itemId) : next;
 }
 function validBankGoldAmount(amount) {
   if (!Number.isSafeInteger(amount) || amount <= 0) throw new Error("Enter a valid positive Gold amount.");
@@ -51950,11 +51991,14 @@ function sellBankItem(state, itemId, quantity2 = 1) {
   const def = itemDef(itemId);
   if (def.guildOnly) throw new Error("Guild construction components cannot be sold.");
   if (def.knowledgeUnlockId) throw new Error("Blueprints cannot be sold.");
-  if (def.type === "gear" && state.bank.stacks.some((row) => row.itemId === itemId && row.instanceId === void 0 && row.quantity >= quantity2) && !canDisposeLegacyEquipment(state, itemId, "bank", quantity2)) throw new Error("Enhanced equipment is protected. Keep the upgraded copy or extract its gems before disposal.");
+  const releasing = def.type === "gear" && quantity2 === 1 && canReleaseLegacyEnhancedGear(state, itemId, "bank") && !legacyEnhancedGearLocked(state, itemId);
+  if (def.type === "gear" && state.bank.stacks.some((row) => row.itemId === itemId && row.instanceId === void 0) && !canDisposeLegacyEquipment(state, itemId, "bank", quantity2) && !releasing)
+    throw new Error("Enhanced equipment is protected. Unlock the exact older copy before selling.");
   const stacks = consume2(state.bank.stacks, itemId, quantity2);
   const proceeds = def.value * quantity2;
   if (!Number.isSafeInteger(proceeds) || !Number.isSafeInteger((state.bank.gold ?? 0) + proceeds)) throw new Error("Gold amount exceeds supported limit.");
-  return { ...state, bank: { ...state.bank, stacks, gold: (state.bank.gold ?? 0) + proceeds } };
+  const next = { ...state, bank: { ...state.bank, stacks, gold: (state.bank.gold ?? 0) + proceeds } };
+  return releasing ? clearSoldLegacyEnhancement(next, itemId) : next;
 }
 function depositToBank(state, itemId, quantity2) {
   if (quantity2 <= 0) return state;
@@ -52390,7 +52434,7 @@ function setCraftedGearInstanceLock(state, instanceId, locked) {
   if (location.place !== "bank" && location.holderCharacterId !== state.character.id)
     throw new Error("Cannot change another character's equipment protection");
   const records = craftedGearInstances(state);
-  return { ...state, account: { ...state.account, craftedGearInstances: records.map((record) => record.id === instanceId ? { ...record, locked } : record) } };
+  return { ...state, account: { ...state.account, craftedGearInstances: records.map((record) => record.id === instanceId ? { ...record, locked, enhancedSaleUnlocked: !locked } : record) } };
 }
 function linkLegacyCraftedGearInstance(state, instanceId, from, stackIndex) {
   if (!state.character) throw new Error("No active character");
@@ -52453,8 +52497,8 @@ function protectedGear(state, record) {
   const enhancement = record.enhancement;
   if (record.locked === true) throw new Error("This equipment copy is locked");
   if (state.settings.favoriteItemIds?.includes(record.itemId)) throw new Error("Favorite equipment cannot be sold or salvaged");
-  if (enhancement.rank > 0 || enhancement.statGemId || enhancement.effectGemId || enhancement.gemIds.length > 0)
-    throw new Error("Enhanced or socketed equipment cannot be sold or salvaged");
+  if ((enhancement.rank > 0 || enhancement.failures > 0 || enhancement.statGemId || enhancement.effectGemId || enhancement.gemIds.length > 0) && record.enhancedSaleUnlocked !== true)
+    throw new Error("Unlock this enhanced equipment copy before disposal");
   const characters = [state.character, ...(state.otherCharacters ?? []).map((entry2) => entry2.character)].filter(Boolean);
   if (characters.some((character) => character?.savedLoadouts?.some((preset) => Object.values(preset.equipmentInstanceIds ?? {}).includes(record.id) || Object.entries(preset.equipment).some(([slot, id]) => id === record.itemId && !preset.equipmentInstanceIds?.[slot]))))
     throw new Error("A saved loadout protects this equipment copy");
@@ -55196,6 +55240,7 @@ var fields = {
   gear_unequip: ["instanceId"],
   gear_move: ["instanceId", "to"],
   gear_lock: ["instanceId", "locked"],
+  legacy_gear_lock: ["itemId", "locked"],
   gear_sell: ["instanceId"],
   gear_salvage: ["instanceId"],
   gear_autosell: ["enabled"],
@@ -55696,6 +55741,12 @@ function executeGameCommand(previous, value, now, options = {}) {
       if (typeof a.locked !== "boolean") throw new Error("invalid_locked");
       state = setCraftedGearInstanceLock(state, text(a, "instanceId", 180), a.locked);
       message = a.locked ? "Equipment copy locked" : "Equipment copy unlocked";
+      break;
+    }
+    case "legacy_gear_lock": {
+      if (typeof a.locked !== "boolean") throw new Error("invalid_locked");
+      state = setLegacyEnhancedGearLock(state, text(a, "itemId", 180), a.locked);
+      message = a.locked ? "Older enhanced equipment locked" : "Older enhanced equipment unlocked";
       break;
     }
     case "gear_sell":

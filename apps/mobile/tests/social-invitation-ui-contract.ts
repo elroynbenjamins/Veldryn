@@ -40,7 +40,7 @@ ok(guild.includes('status={st("GUILD INVITE SENT")}'),'Outgoing Guild invitation
 ok(guild.includes('respondGuildInvitation(id,accept)'),'Guild invitation response behavior must remain wired');
 ok(guild.includes('reviewGuildApplication(id,accept)'),'Guild application review behavior must remain wired');
 ok(guild.includes('cancelGuildInvitation(id)'),'Outgoing Guild invitation cancellation must remain wired');
-ok(guild.includes('profile name unavailable for this application'),'Guild application UI must not invent a display name when the API only returns an account reference');
+ok(guild.includes('publicPlayerProfileV43(app.account_id)')&&guild.includes("name={applicantNames[app.account_id]||'Applicant '")&&guild.includes('Applicant identity is unavailable or private.'),'Guild applicant names must come from a verified public profile with an anonymous fallback');
 ok(guild.includes('Min Lv. '),'Incoming Guild invite requirements must remain visible');
 
 console.log('PASS: Social Hub, Party/Guild invites and applications share compact theme-aware invitation presentation');

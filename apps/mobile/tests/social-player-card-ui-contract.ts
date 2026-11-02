@@ -9,6 +9,7 @@ const identity=read('src/components/SocialIdentity.tsx');
 const friends=read('src/screens/FriendsScreen.tsx');
 const party=read('src/components/PartyHubPanel.tsx');
 const guild=read('src/components/OnlineGuildManagement.tsx');
+const guildMemberSheet=read('src/components/GuildMemberActionSheet.tsx');
 const rankings=read('src/screens/RankingsScreen.tsx');
 const legacyGuild=read('src/components/GuildMemberRosterPanel.tsx');
 const chatPlayer=read('src/components/ChatPlayerSheet.tsx');
@@ -32,8 +33,8 @@ ok(identity.includes('borderColor:C.line')&&identity.includes('backgroundColor:C
 ok(friends.includes('statusTone="good"')&&friends.includes('statusTone="warning"')&&friends.includes('statusTone="info"'),'Friends must use consistent semantic relationship states');
 ok(party.includes("import {CompactPlayerIdentity} from './CompactPlayerIdentity'"),'Party roster must use the shared player identity component');
 ok(!party.includes('IdentityArtwork name={member.characterName}'),'Party roster must not regress to its old custom player row');
-ok(guild.includes("accessibilityLabel={\`Open \${member.display_name}'s profile\`}"),'Guild roster identity itself must open the player profile');
-ok(!guild.includes('title="Profile"'),'Guild roster must not duplicate a separate Profile button beside a tappable identity');
+ok(guild.includes("accessibilityLabel={'Open '+member.display_name+' Guild member details'}")&&guild.includes('onPress={()=>setActiveMemberId(member.account_id)}'),'Guild roster rows must open compact member details');
+ok(guild.includes('<GuildMemberActionSheet')&&guildMemberSheet.includes('onProfile(current)'),'The member detail sheet must lead to the existing player profile');
 ok(rankings.includes("import {CompactPlayerIdentity} from '../components/CompactPlayerIdentity'"),'Rankings must use the shared identity presentation');
 ok(rankings.includes("guild={entry.entityType==='guild'}"),'Rankings must distinguish Guild and player identity artwork');
 ok(legacyGuild.includes('CompactPlayerIdentity'),'Legacy Guild roster fallback must also use the shared identity component');

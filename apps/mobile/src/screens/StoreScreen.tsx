@@ -45,8 +45,8 @@ export function StoreScreen({state,onChange,online=false,onRefreshCommerce,onRed
  return <ScrollView ref={scrollRef} contentContainerStyle={s.root} keyboardShouldPersistTaps="handled" keyboardDismissMode="on-drag" showsVerticalScrollIndicator={false} showsHorizontalScrollIndicator={false}>
   <View style={s.hero}>
    <View pointerEvents="none" style={s.heroAccent}><Text style={[s.heroSymbol,{color:C.accentSoft}]}>✦</Text></View>
-   <Text style={s.eyebrow}>THE REALM STORE</Text>
-   <Text accessibilityRole="header" style={s.heroTitle}>Support the adventure</Text>
+   <Text style={s.eyebrow}>SUPPORT THE ADVENTURE</Text>
+   <Text accessibilityRole="header" style={s.heroTitle}>The Realm Store</Text>
    <Text style={s.heroDescription}>Permanent upgrades, optional Supporter benefits and a future home for cosmetics.</Text>
    <Text style={s.heroFooter}>NO PAID PREMIUM CURRENCY · NO PAID PVP POWER</Text>
   </View>

@@ -2,6 +2,7 @@ import {gameplayHandler,GameplayError,type GameplayServices} from './gameplay';
 import {withReleaseGate,releasePolicyLoader} from './release-gate';
 import {regionalCombatHandlerV1} from './regional-combat';
 import {guildShopReadHandler,guildShopDailyClaimHandler,guildShopPurchaseHandler,guildShopEventClaimHandler,guildConstructionDonationHandler,guildBankDepositHandler,guildShopWeeklyClaimHandler,type GuildShopReadServices} from './guild-shop-read';
+import {guildSkillsReadHandler,guildSkillsUpgradeHandler,type GuildSkillsServices} from './guild-skills-read';
 declare const Deno:{env:{get(name:string):string|undefined};serve(handler:(request:Request)=>Promise<Response>):void};
 const url=Deno.env.get('SUPABASE_URL')!,serviceKey=Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!,anonKey=Deno.env.get('SUPABASE_ANON_KEY')!;
 if(!url||!serviceKey||!anonKey)throw new Error('server_configuration_missing');
@@ -24,6 +25,9 @@ const guildShopEventClaim=guildShopEventClaimHandler(guildShopServices);
 const guildConstructionDonation=guildConstructionDonationHandler(guildShopServices);
 const guildBankDeposit=guildBankDepositHandler(guildShopServices);
 const guildShopWeeklyClaim=guildShopWeeklyClaimHandler(guildShopServices);
+const guildSkillsServices:GuildSkillsServices={authenticate:services.authenticate,rpc:services.rpc};
+const guildSkillsRead=guildSkillsReadHandler(guildSkillsServices);
+const guildSkillsUpgrade=guildSkillsUpgradeHandler(guildSkillsServices);
 Deno.serve(withReleaseGate(async request=>{
  const route=new URL(request.url);
  if(route.pathname.includes('/regional-combat'))return regionalCombat(request);
@@ -34,6 +38,10 @@ Deno.serve(withReleaseGate(async request=>{
   if(route.searchParams.get('action')==='bank-deposit')return guildBankDeposit(request);
   if(route.searchParams.get('action')==='weekly-claim')return guildShopWeeklyClaim(request);
   return request.method==='POST'?guildShopClaim(request):guildShop(request);
+ }
+ if(route.searchParams.get('view')==='guild-skills'){
+  if(route.searchParams.get('action')==='upgrade')return guildSkillsUpgrade(request);
+  return guildSkillsRead(request);
  }
  return gameplay(request);
 },releasePolicyLoader(url,anonKey)));

@@ -57304,6 +57304,76 @@ function guildBankDepositHandler(services2) {
   };
 }
 
+// online/guild-skills-read.ts
+var responseHeaders2 = { "Content-Type": "application/json", "Cache-Control": "no-store" };
+var json5 = (value, status = 200) => new Response(JSON.stringify(value), { status, headers: responseHeaders2 });
+function validSnapshot(value) {
+  if (!value || typeof value !== "object") return false;
+  const s = value;
+  return typeof s.guildLevel === "number" && Number.isSafeInteger(s.totalSkillPoints) && Number.isSafeInteger(s.spentSkillPoints) && Number.isSafeInteger(s.skillPoints) && Array.isArray(s.nodes) && Array.isArray(s.bank);
+}
+function guildSkillsReadHandler(services2) {
+  return async (request) => {
+    if (request.method !== "GET") return json5({ error: "method_not_allowed" }, 405);
+    const token = request.headers.get("authorization")?.match(/^Bearer (\S+)$/i)?.[1];
+    if (!token) return json5({ error: "auth_required" }, 401);
+    const accountId = await services2.authenticate(token);
+    if (!accountId) return json5({ error: "invalid_session" }, 401);
+    try {
+      const snapshot2 = await services2.rpc("guild_skill_snapshot_server_v1", { p_account_id: accountId });
+      if (!validSnapshot(snapshot2)) return json5({ error: "invalid_guild_skill_snapshot" }, 503);
+      return json5(snapshot2);
+    } catch (reason) {
+      const code = reason instanceof Error ? reason.message : "";
+      if (code === "guild_membership_required") return json5({ error: code }, 403);
+      return json5({ error: "guild_skill_snapshot_unavailable" }, 503);
+    }
+  };
+}
+function guildSkillsUpgradeHandler(services2) {
+  return async (request) => {
+    if (request.method !== "POST") return json5({ error: "method_not_allowed" }, 405);
+    const token = request.headers.get("authorization")?.match(/^Bearer (\S+)$/i)?.[1];
+    if (!token) return json5({ error: "auth_required" }, 401);
+    const accountId = await services2.authenticate(token);
+    if (!accountId) return json5({ error: "invalid_session" }, 401);
+    const raw2 = await request.text();
+    if (raw2.length > 1024) return json5({ error: "request_too_large" }, 413);
+    let input;
+    try {
+      input = JSON.parse(raw2);
+    } catch {
+      return json5({ error: "invalid_json" }, 400);
+    }
+    if (!input || typeof input !== "object" || Array.isArray(input)) return json5({ error: "invalid_request" }, 400);
+    const body = input;
+    if (Object.keys(body).length !== 2 || typeof body.skillId !== "string" || !/^[a-z][a-z0-9_]{1,63}$/.test(body.skillId) || typeof body.requestKey !== "string" || !/^[A-Za-z0-9_-]{8,128}$/.test(body.requestKey))
+      return json5({ error: "invalid_guild_skill_upgrade" }, 400);
+    try {
+      const result = await services2.rpc(
+        "guild_skill_upgrade_server_v1",
+        { p_account_id: accountId, p_skill_id: body.skillId, p_request_key: body.requestKey }
+      );
+      if (!result || typeof result.alreadyProcessed !== "boolean" || result.skillId !== body.skillId || !Number.isSafeInteger(result.rank) || !Array.isArray(result.costs))
+        return json5({ error: "invalid_guild_skill_receipt" }, 503);
+      return json5(result);
+    } catch (reason) {
+      const code = reason instanceof Error ? reason.message : "";
+      if (code === "guild_skill_not_released") return json5({ error: code }, 409);
+      if ([
+        "guild_membership_required",
+        "guild_skill_not_leader",
+        "guild_skill_max_rank",
+        "guild_skill_request_conflict",
+        "character_required"
+      ].includes(code)) return json5({ error: code }, 409);
+      if (["insufficient_skill_points", "insufficient_guild_bank_materials"].includes(code)) return json5({ error: code }, 422);
+      if (code === "unknown_guild_skill") return json5({ error: code }, 404);
+      return json5({ error: "guild_skill_upgrade_unavailable" }, 503);
+    }
+  };
+}
+
 // online/edge.ts
 var url = Deno.env.get("SUPABASE_URL");
 var serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
@@ -57350,6 +57420,9 @@ var guildShopEventClaim = guildShopEventClaimHandler(guildShopServices);
 var guildConstructionDonation = guildConstructionDonationHandler(guildShopServices);
 var guildBankDeposit = guildBankDepositHandler(guildShopServices);
 var guildShopWeeklyClaim = guildShopWeeklyClaimHandler(guildShopServices);
+var guildSkillsServices = { authenticate: services.authenticate, rpc: services.rpc };
+var guildSkillsRead = guildSkillsReadHandler(guildSkillsServices);
+var guildSkillsUpgrade = guildSkillsUpgradeHandler(guildSkillsServices);
 Deno.serve(withReleaseGate(async (request) => {
   const route = new URL(request.url);
   if (route.pathname.includes("/regional-combat")) return regionalCombat(request);
@@ -57360,6 +57433,10 @@ Deno.serve(withReleaseGate(async (request) => {
     if (route.searchParams.get("action") === "bank-deposit") return guildBankDeposit(request);
     if (route.searchParams.get("action") === "weekly-claim") return guildShopWeeklyClaim(request);
     return request.method === "POST" ? guildShopClaim(request) : guildShop(request);
+  }
+  if (route.searchParams.get("view") === "guild-skills") {
+    if (route.searchParams.get("action") === "upgrade") return guildSkillsUpgrade(request);
+    return guildSkillsRead(request);
   }
   return gameplay(request);
 }, releasePolicyLoader(url, anonKey)));

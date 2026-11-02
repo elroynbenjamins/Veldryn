@@ -9,6 +9,7 @@ import {useGameTheme} from '../theme/ThemeContext';
 
 const chanceLabel=(chance:number)=>(chance*100).toFixed(2)+'%';
 const rarityPower=(multiplier:number)=>multiplier.toFixed(2)+'×';
+const translatedRarityName={common:'Common',uncommon:'Uncommon',rare:'Rare',epic:'Epic',legendary:'Legendary',mythic:'Mythic'} as const;
 const QUALITY_STEP=5;
 const qualityAnchors=[CRAFTED_GEAR_QUALITY_MIN,LEGACY_CRAFTED_GEAR_QUALITY,90,CRAFTED_GEAR_QUALITY_MAX] as const;
 function statEffect(multiplier:number){
@@ -47,7 +48,7 @@ export function ForgeOddsGuide({itemId}:{itemId:string}){
     <Text style={[s.summary,{color:C.muted}]}>
       {summary.map((row,index)=>{
        const meta=rarityMeta(row.rarity);
-       return <Text key={row.rarity} style={{color:C.dark?meta.color:meta.lightTextColor}}>{index>0?' · ':''}{gt(meta.label)} {chanceLabel(row.chance)}</Text>;
+       return <Text key={row.rarity} style={{color:C.dark?meta.color:meta.lightTextColor}}>{index>0?' · ':''}{gt(translatedRarityName[meta.id])} {chanceLabel(row.chance)}</Text>;
       })}
     </Text>
     <Text style={[s.subtitle,{color:C.muted}]}>Q0 −25%  ·  Q50 {gt('Normal')}  ·  Q100 +25%</Text>
@@ -75,7 +76,7 @@ export function ForgeOddsGuide({itemId}:{itemId:string}){
         },pressed&&s.pressed]}>
         <View style={[s.nameWrap,compact&&s.nameCompact]}>
          <View accessible={false} style={[s.rarityDot,{backgroundColor:meta.color}]}/>
-         <Text style={[s.rarity,{color:C.dark?meta.color:meta.lightTextColor}]}>{gt(meta.label)}</Text>
+         <Text style={[s.rarity,{color:C.dark?meta.color:meta.lightTextColor}]}>{gt(translatedRarityName[meta.id])}</Text>
         </View>
         {compact?<View style={s.compactMeta}>
           <Text style={[s.value,{color:C.text}]}>{chanceLabel(row.chance)}</Text>
@@ -127,7 +128,7 @@ export function ForgeOddsGuide({itemId}:{itemId:string}){
     </View>
     <View style={[s.preview,{backgroundColor:C.panel2,borderColor:C.line}]}>
       <View style={s.previewRow}>
-       <Text style={[s.sectionTitle,{color:C.dark?chosenMeta.color:chosenMeta.lightTextColor}]}>{gt(chosenMeta.label)} · Q{quality}</Text>
+       <Text style={[s.sectionTitle,{color:C.dark?chosenMeta.color:chosenMeta.lightTextColor}]}>{gt(translatedRarityName[chosenMeta.id])} · Q{quality}</Text>
        <Text style={[s.previewValue,{color:C.text}]}>{rarityPower(totalMultiplier)}</Text>
       </View>
       <Text style={[s.explain,{color:C.muted}]}>{gt('Combined base stats')}</Text>

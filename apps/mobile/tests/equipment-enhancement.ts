@@ -1,5 +1,5 @@
 import {createCharacter,effectiveStats,newGame,previewActivityReward,salvageItem,sellItem,sellBankItem,startCombat} from '../src/core/game';
-import {attemptEquipmentUpgrade,equippedEffectGemBonuses,gearEnhancement,gearStatsAtRank,gemSocketCapacity,normalizeEnhancementGemSlots,socketGem,unsocketGem,upgradeQuote} from '../src/core/equipment-enhancement';
+import {attemptEquipmentUpgrade,equippedEffectGemBonuses,gearEnhancement,gearStatsAtRank,gemSocketCapacity,normalizeEnhancementGemSlots,socketGem,unsocketGem,upgradeQuote,canReleaseLegacyEnhancedGear,legacyEnhancedGearLocked,setLegacyEnhancedGearLock} from '../src/core/equipment-enhancement';
 import {V33_EQUIPMENT_RECIPES} from '../src/content/equipment-recipes-v33';
 import {itemDef} from '../src/content/items';
 import {previewEquipment} from '../src/core/equipment-preview';
@@ -81,9 +81,26 @@ ok(gearEnhancement(sellBankItem(bankSpare,ringId),ringId).rank===1,'Selling an u
 const unequippedLegacy={...storedEnhanced,character:{...storedEnhanced.character!,equipment:{...storedEnhanced.character!.equipment,ring:undefined}}};
 let soldOnly=false,salvagedOnly=false;try{sellItem(unequippedLegacy,ringId)}catch{soldOnly=true}try{salvageItem(unequippedLegacy,ringId)}catch{salvagedOnly=true}
 ok(soldOnly&&salvagedOnly,'Never dispose of the last unlocated legacy enhanced copy');
+ok(legacyEnhancedGearLocked(unequippedLegacy,ringId),'Old item-ID-based enhancements are locked by default');
+ok(canReleaseLegacyEnhancedGear(unequippedLegacy,ringId,'inventory'),'Sole unequipped legacy enhancement can be identified for explicit manual release');
+const legacyUnlocked=setLegacyEnhancedGearLock(unequippedLegacy,ringId,false);
+ok(!legacyEnhancedGearLocked(legacyUnlocked,ringId),'Manually unlocking a legacy enhancement must persist');
+const legacySold=sellItem(legacyUnlocked,ringId,1);
+ok(!legacySold.character!.gearEnhancements?.[ringId]&&legacySold.inventory.stacks.every(row=>row.itemId!==ringId),'Selling the last explicitly unlocked legacy copy must remove its upgrade record and item');
+ok(legacySold.character!.gold===legacyUnlocked.character!.gold+itemDef(ringId).value,'Released legacy equipment pays its exact vendor value');
+if(itemDef(ringId).salvage){
+ const legacySalvaged=salvageItem(legacyUnlocked,ringId);
+ ok(!legacySalvaged.character!.gearEnhancements?.[ringId],'Salvage also removes the released legacy enchantment');
+}
+const legacyRelocked=setLegacyEnhancedGearLock(legacyUnlocked,ringId,true);
+let relockBlocked=false;try{sellItem(legacyRelocked,ringId)}catch{relockBlocked=true}
+ok(relockBlocked,'Relocking an enchanted legacy item must block disposal again');
 ok(!bulkSelectionSummary(unequippedLegacy,[ringId],'inventory').sellableIds.includes(ringId),'Bulk selling must also protect the last unlocated enhanced copy');
 const twoUnequipped={...unequippedLegacy,inventory:{...unequippedLegacy.inventory,stacks:unequippedLegacy.inventory.stacks.map(row=>row.itemId===ringId?{...row,quantity:2}:row)}};
 ok(sellItem(twoUnequipped,ringId).inventory.stacks.some(row=>row.itemId===ringId&&row.quantity===1),'Legacy enhancement retains at least one unmarked copy after selling a duplicate');
+ok(!canReleaseLegacyEnhancedGear(twoUnequipped,ringId,'inventory'),'Multiple unmarked copies cannot be treated as the upgraded one');
+let ambiguousUnlockDenied=false;try{setLegacyEnhancedGearLock(twoUnequipped,ringId,false)}catch{ambiguousUnlockDenied=true}
+ok(ambiguousUnlockDenied,'Cannot unlock an ambiguous legacy upgraded copy');
 
 
 // But a crafted duplicate copy of an enhanced item can be sold: the enhancement travels with the retained copy.

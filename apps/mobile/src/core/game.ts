@@ -16,7 +16,7 @@ import {GameState,ClassId,RewardBundle,ItemStack,GearSlot,BodyPresentation,Gathe
 import {activityQueueCapacity,activityQueueRegion,activityQueueLocationIssue,normalizeActivityQueue,activityCanAdvanceCondition,queuedActivityReadiness} from './activity-queue';
 import type {ActiveActivity} from './types';
 import {combineActivityRewards} from './activity-rewards';
-import {commitMealActivityTime} from './meal-buffs';
+import {commitMealActivityTime,mealSpeedFactor,retimeReservedMealCraft} from './meal-buffs';
 import {characterLevelFromXp,levelFromXp,totalXpAtLevel} from './progression';
 import {random01} from './rng';
 import {characterNameError,normalizeCharacterName} from './character-creation';
@@ -483,11 +483,12 @@ function previewStandardActivityRewardRaw(state:GameState,effectiveNowMs:number)
     if(state.activity.kind==='exploration'){
       const route=explorationRoute(state.activity.targetId);if(!route)return {xp:0,gold:0,items:[],kills:0,elapsedSeconds:elapsed};
       const candy=eventCandyWindow(state,'skill');
-      const bankedSeconds=(state.activity.progressFraction??0)*route.seconds;
+      const routeSeconds=route.seconds/mealSpeedFactor(state.character,'noncombat');
+      const bankedSeconds=(state.activity.progressFraction??0)*routeSeconds;
       const totalSeconds=bankedSeconds+elapsed;
-      const actions=Math.floor(totalSeconds/route.seconds);
-      const nextProgressFraction=actions>0?(totalSeconds%route.seconds)/route.seconds:(totalSeconds/route.seconds);
-      let boostedActions=0;for(let i=1;i<=actions;i++){const at=state.activity.lastClaimAtMs+(i*route.seconds-bankedSeconds)*1000;if(candy&&at>candy.startsAtMs&&at<=candy.endsAtMs)boostedActions++;}
+      const actions=Math.floor(totalSeconds/routeSeconds);
+      const nextProgressFraction=actions>0?(totalSeconds%routeSeconds)/routeSeconds:(totalSeconds/routeSeconds);
+      let boostedActions=0;for(let i=1;i<=actions;i++){const at=state.activity.lastClaimAtMs+(i*routeSeconds-bankedSeconds)*1000;if(candy&&at>candy.startsAtMs&&at<=candy.endsAtMs)boostedActions++;}
       return {xp:Math.floor((actions+.1*boostedActions)*route.xp*characterPermanentMultipliers(state).skillXpMultiplier),gold:0,items:[],kills:actions,elapsedSeconds:elapsed,nextProgressFraction,explorationDiscoveries:actions&&route.unlockMonsterId?[route.unlockMonsterId]:[]};
     }
     const g=[...GATHERING,...HERB_NODES].find(x=>x.id===state.activity!.targetId);if(!g)return {xp:0,gold:0,items:[],kills:0,elapsedSeconds:elapsed};
@@ -724,23 +725,30 @@ export function claimActivity(state:GameState,nowMs:number):{state:GameState;rew
  * Each side of the expiry is settled with the correct bonuses and no duplicate rewards.
  */
 function claimActivitySegment(state:GameState,nowMs:number):{state:GameState;reward:RewardBundle}{
- const source=state.activity,buff=state.character?.activeMealBuff;
+ // Class drills have a timer but no ActiveActivity; treat their interval as eligible
+ // without inventing a persisted activity or changing the class-drill save shape.
+ const drill=state.character?.classTraining;
+ const source=state.activity??(drill?{kind:'training' as const,targetId:'class_drills',startedAtMs:drill.lastClaimAtMs,lastClaimAtMs:drill.lastClaimAtMs}:null);
+ const buff=state.character?.activeMealBuff;
  if(source&&buff&&buff.remainingSeconds>0&&Number.isFinite(buff.remainingSeconds)&&nowMs>source.lastClaimAtMs){
   const cappedEnd=Math.min(nowMs,source.lastClaimAtMs+offlineCapSeconds(state)*1000);
   const cut=source.lastClaimAtMs+buff.remainingSeconds*1000;
   if(cut>source.lastClaimAtMs&&cut<cappedEnd){
    const first=claimActivitySegmentRaw(state,cut);
-   const updated=commitMealActivityTime(first.state,source,first.reward);
-   if(!updated.activity)return {state:updated,reward:first.reward};
-   const nextSource=updated.activity;
+   const elapsedState=commitMealActivityTime(first.state,source,first.reward);
+   const updated=retimeReservedMealCraft(elapsedState,state.character);
+   if(!updated.activity&&!updated.character?.classTraining)return {state:updated,reward:first.reward};
+   const nextDrill=updated.character?.classTraining;
+   const nextSource=updated.activity??(nextDrill?{kind:'training' as const,targetId:'class_drills',startedAtMs:nextDrill.lastClaimAtMs,lastClaimAtMs:nextDrill.lastClaimAtMs}:source);
    const second=claimActivitySegment(updated,cappedEnd);
    const combined=combineActivityRewards([
     {activity:source,reward:first.reward,goalReached:!!first.reward.goalReached},
     {activity:nextSource,reward:second.reward,goalReached:!!second.reward.goalReached},
    ]);
+   // A capped AFK interval cannot be reclaimed simply by repeating the claim.
    const hasCappedRemainder=nowMs>cappedEnd&&!!second.state.activity;
-   return {state:hasCappedRemainder?{...second.state,activity:{...second.state.activity!,lastClaimAtMs:nowMs}}:second.state,
-    reward:{...combined,offlineCapReached:hasCappedRemainder||combined.offlineCapReached}};
+   const final=hasCappedRemainder?{...second.state,activity:{...second.state.activity!,lastClaimAtMs:nowMs}}:second.state;
+   return {state:final,reward:{...combined,offlineCapReached:hasCappedRemainder||combined.offlineCapReached}};
   }
  }
  const result=claimActivitySegmentRaw(state,nowMs);

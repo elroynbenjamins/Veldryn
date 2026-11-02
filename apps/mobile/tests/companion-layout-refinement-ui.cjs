@@ -32,7 +32,15 @@ assert(panel.includes('disabled={busy||!trainingDue}')&&panel.includes('disabled
 // Existing progression and mission validation must survive layout simplification.
 assert(training.includes('costBreakdown(model.nextLevelCost)'),'Training must show resource cost before upgrading');
 assert(training.includes('resourceId:"bondstones"'),'Training must display a Bondstone icon when required');
-for(const title of ['Choose Mission','Prepare Team','Expedition Supplies'])assert(expedition.includes(title),'Missing expedition step '+title);
+for(const title of ['Mission Board','Prepare Expedition','Prepare Team','Expedition Supplies'])assert(expedition.includes(title),'Missing expedition section '+title);
+assert(expedition.includes("activeCompanionMissions(now)"),'Mission board must use the active weekly rotation');
+assert(expedition.includes('companionExpeditionPenCapacity(pens)'),'Expedition slots must reflect sanctuary upgrades');
+assert(expedition.includes('recommendedCompanionMissionTeam(state,id,now)'),'Mission selection must prepare a suggested eligible team');
+assert(expedition.includes('companionAutoStaminaSelection(state,'),'Mission preparation must select actual available food');
+assert(expedition.includes('companionStaminaFoodOptions(state)'),'Manual food selection must use inventory and bank quantities');
+assert(expedition.includes('visible={confirmOpen}')&&expedition.includes('disabled={!canSend}'),'Dispatch must require an eligible team, stamina and free pen slot');
+assert(expedition.includes('pendingClaim.current=id')&&expedition.includes('rewardSnapshot'),'Claim dialog must show the claimed server reward instead of a predicted reward');
+assert(expedition.includes('visible={teamPickerOpen}')&&expedition.includes('visible={foodOpen}'),'Team and supplies must have dedicated modals');
 assert(expedition.includes('validateCompanionMissionTeam('),'Mission team rules must remain authoritative');
 assert(expedition.includes('companionStaminaSelectionTotal(foodSelection)'),'Stamina must use real food selection');
 assert(expedition.includes("type:'companion_assignment_start'"),'Starting expeditions must still send the real command');

@@ -26,7 +26,7 @@ export function ForgeClaimBanner({results,reduceMotion,onDismiss}:{results:reado
   const dismissRef=useRef(onDismiss);dismissRef.current=onDismiss;
   useEffect(()=>{if(!results.length||results.some(isExceptionalForgeResult))return;const timer=setTimeout(()=>dismissRef.current(),4500);return()=>clearTimeout(timer)},[results]);
   if(!results.length||results.some(isExceptionalForgeResult))return null;
-  return <ActionFeedback message={forgeClaimBannerMessage(results)} tone="success" reduceMotion={reduceMotion} compact accentColor={meta?.color} accentSurface={meta?.surface} accentTextColor={best?rarityNameColor(best.rarity,C.dark,C.text):undefined}/>;
+  return <ActionFeedback message={forgeClaimBannerMessage(results)} tone="success" reduceMotion={reduceMotion} compact accentColor={meta?.color} accentSurface={meta?.surface} highlightText={meta?.label} highlightTextColor={meta?(C.dark?meta.color:meta.lightTextColor):undefined}/>;
 }
 
 export function ForgeRarityRevealModal({results,reduceMotion,onClose,onInventory}:{results:readonly ForgeCraftResult[];reduceMotion:boolean;onClose:()=>void;onInventory:()=>void}){

@@ -70,8 +70,8 @@ ok((level25Combat.etaSeconds??Infinity)<=6.5*3600,'Asterfall-end combat levels s
 const glassbound=MONSTERS.find(row=>row.id==='GLASSBOUND_SENTINEL')!,ashen=MONSTERS.find(row=>row.id==='ASHEN_REVENANT')!;
 const level40State={...state,character:{...state.character!,level:40,xp:characterTotalXpAtLevel(40)}},level88State={...state,character:{...state.character!,level:88,xp:characterTotalXpAtLevel(88)}};
 const level40Combat=characterLevelPace(level40State,combatBaselineProjection(glassbound).xpPerHour),level88Combat=characterLevelPace(level88State,combatBaselineProjection(ashen).xpPerHour);
-ok((level40Combat.etaSeconds??Infinity)<=7*3600,'Matching-level combat around level 40 should stay within a long session');
-ok((level88Combat.etaSeconds??Infinity)<=10*3600,'Late matching-level combat should remain under roughly ten baseline hours per level');
+ok((level40Combat.etaSeconds??Infinity)<=9*3600,'A 20%-stronger matching-level Sunscar encounter should remain within nine baseline hours');
+ok((level88Combat.etaSeconds??Infinity)<=12.5*3600,'A 20%-stronger late-region encounter should remain within 12.5 baseline hours per level');
 const echoBat=MONSTERS.find(row=>row.id==='ECHO_BAT')!,echoPace=combatBaselineProjection(echoBat),rareMaterial=echoBat.drops.find(drop=>drop.itemId==='OATHGLASS_SHARD')!;
 const expected=dropExpectation(rareMaterial.chance,rareMaterial.min,rareMaterial.max,echoPace.killsPerHour);
 close(expected.oneIn,1/rareMaterial.chance,.001,'Drop odds must be the reciprocal of per-kill chance');

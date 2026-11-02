@@ -61,12 +61,15 @@ for(const classDef of CLASSES){
   const t2=atLevel(regionalCombatFixture(kingsRoad,'prepared',classDef.id),25);
   const t1Gear=Object.values(t1.character!.equipment).filter(id=>/^T1P_/.test(id??''));
   const t2Gear=Object.values(t2.character!.equipment).filter(id=>/^T2P_/.test(id??''));
+  const mixed={...t1,character:{...t1.character!,equipment:{...t1.character!.equipment,weapon:t2.character!.equipment.weapon}}};
   check(t1Gear.length>=5&&t2Gear.length>=5,classDef.id+' must have real T1/T2 gear');
   check(!t1.character!.gearEnhancements&&!t2.character!.gearEnhancements,classDef.id+' test builds are unenhanced');
   check(effectiveStats(t2).power>effectiveStats(t1).power,classDef.id+' T2 improves power');
   for(const monsterId of ['LANTERN_WRETCH','OATHGLASS_REVENANT']){
     const t1Projection=combatSustainProjection(t1,monsterId)!;
     const t2Projection=combatSustainProjection(t2,monsterId)!;
+    const mixedProjection=combatSustainProjection(mixed,monsterId)!;
+    check(t2Projection.killsPerHour>mixedProjection.killsPerHour,classDef.id+' one T2 item must not bypass tier readiness');
     check(t2Projection.killsPerHour>t1Projection.killsPerHour,classDef.id+' '+monsterId+' T2 must farm faster');
     const hour=3_600_000,now=1_000_000;
     const t1Reward=previewActivityReward(startCombat(withFood(t1,monsterId),monsterId,now),now+hour);

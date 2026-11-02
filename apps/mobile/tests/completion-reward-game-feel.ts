@@ -14,11 +14,12 @@ ok(quests.includes('detail:t("Rewards secured · the next available story beat i
 ok(quests.includes('newlyConfirmedIds'),'claim celebration must derive from committed claim state rather than the button press');
 ok(quests.includes('Animated.sequence')&&quests.includes('reduceMotion'),'quest completion motion must be brief and respect Reduce Motion');
 
-ok(run.includes('✦ EXPEDITION CLEARED'),'completed dungeons need an explicit victory moment');
-ok(run.includes("rewardsSecured?'REWARDS SECURED':'VICTORY'"),'dungeon completion must distinguish victory from fully secured rewards');
+ok(run.includes('s.rewardCrest')&&run.includes('st("EXPEDITION CLEARED")'),'Completed dungeons need an illustrated, localized victory moment');
+ok(run.includes('reward.claimed_at?st("CLAIMED"):st("READY")'),'Dungeon rewards distinguish secured claims from claimable entitlements');
 ok(run.includes('Collect the expedition reward below.'),'victory screen must point directly at the next primary action');
 ok(run.includes("rewardSurfaceReady=rewards.length>0||Boolean(terminalAction)"),'dungeon completion must wait for a real reward surface before declaring rewards secured');
-ok(run.includes('title={rewardsSecured?st("Return to dungeon list"):st("Leave expedition")}'),'terminal runs need an explicit localized return action after reward handling');
+ok(run.includes("title={st('View rewards')}")&&run.includes('title={st("Return to dungeon list")}'),'Terminal runs must offer reopening rewards and explicit return from the popup');
+ok(run.includes('visible={rewardOpen&&!theaterOpen}')&&run.includes('onClaim?.(reward.id)'),'Reward claim must only display after combat and use server-confirmed entitlements');
 ok(run.includes('Animated.sequence')&&run.includes('reduceMotion'),'dungeon victory motion must respect Reduce Motion');
 ok(coop.includes('reduceMotion={state.settings.reduceMotion}'),'co-op screen must pass the player motion preference into terminal feedback');
 

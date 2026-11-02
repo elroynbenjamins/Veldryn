@@ -117,6 +117,9 @@ export function consumeGemFromStorage(state:GameState,itemId:string,quantity:num
 }
 /** Idempotent migration: do not move a legacy stack unless the entire stack fits. */
 export function migrateGemPouch(state:GameState):GameState{
+  // Legacy contents are consolidated once. Re-running after every command would
+  // ignore a player's chosen partial deposit quantity and move their entire stack.
+  if(state.account.gemPouchMigrationDone===true)return state;
   let pouch=gemPouch(state);
   const move=(stacks:readonly ItemStack[])=>stacks.filter(row=>{
     if(!row||typeof row.itemId!=='string'||row.instanceId!==undefined||!isGemPouchItemId(row.itemId)||!Number.isSafeInteger(row.quantity)||row.quantity<=0)return true;
@@ -127,6 +130,6 @@ export function migrateGemPouch(state:GameState):GameState{
   });
   const inventory=move(state.inventory.stacks),bank=move(state.bank.stacks);
   const otherCharacters=state.otherCharacters?.map(entry=>({...entry,inventory:{...entry.inventory,stacks:move(Array.isArray(entry.inventory?.stacks)?entry.inventory.stacks:[])}}));
-  return {...state,account:{...state.account,gemPouch:pouch},otherCharacters,
+  return {...state,account:{...state.account,gemPouch:pouch,gemPouchMigrationDone:true},otherCharacters,
     inventory:{...state.inventory,stacks:inventory},bank:{...state.bank,stacks:bank}};
 }

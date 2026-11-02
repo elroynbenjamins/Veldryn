@@ -44,7 +44,7 @@ export function OnlineGuildManagement({onApplicationsChanged,initialView='Member
  // Fetch identity only when reviewing requests; private/inaccessible accounts retain fallback.
  useEffect(()=>{
   if(view!=='Requests'||(role!=='leader'&&role!=='officer'))return;
-  const missing=applications.filter(app=>!Object.prototype.hasOwnProperty.call(applicantNames,app.account_id)).slice(0,8);
+  const missing=applications.filter(app=>!Object.prototype.hasOwnProperty.call(applicantNames,app.account_id)).slice(0,4);
   if(!missing.length)return;
   let alive=true;
   void Promise.all(missing.map(async app=>{
@@ -58,8 +58,7 @@ export function OnlineGuildManagement({onApplicationsChanged,initialView='Member
   setLoadError('');
   setBusy(true);
   try{
-   const succession=await guildLeadershipStatus().catch(()=>null);setLeadership(succession);
-   const [mine,inviteState,outgoingState]=await Promise.all([myGuild(),socialInvitations().catch(()=>({party:[],guild:[],serverTime:''})),socialOutgoingInvitations().catch(()=>({party:[],guild:[],serverTime:''}))]);setRole(mine?.role??null);setOwnAccountId(mine?.account_id??'');setInvitations(inviteState.guild);setOutgoingInvitations(outgoingState.guild);
+   const [mine,inviteState,outgoingState,succession]=await Promise.all([myGuild(),socialInvitations().catch(()=>({party:[],guild:[],serverTime:''})),socialOutgoingInvitations().catch(()=>({party:[],guild:[],serverTime:''})),guildLeadershipStatus().catch(()=>null)]);setLeadership(succession);setRole(mine?.role??null);setOwnAccountId(mine?.account_id??'');setInvitations(inviteState.guild);setOutgoingInvitations(outgoingState.guild);
    if(mine){
     const [details,roster,apps]=await Promise.all([
      guildDetails(mine.guild_id),
@@ -127,7 +126,7 @@ export function OnlineGuildManagement({onApplicationsChanged,initialView='Member
   {view==='Members'?<><GameTextInput accessibilityLabel="Search Guild members" placeholder="Search guild members" value={search} onChangeText={setSearch}/>
   <View style={s.filterRow}>{(['All','Leader','Officer','Member'] as const).map(value=><Pressable key={value} accessibilityRole="button" accessibilityLabel={'Show '+value+' Guild members'} accessibilityState={{selected:memberFilter===value}} onPress={()=>setMemberFilter(value)} style={({pressed})=>[s.filterChip,memberFilter===value&&s.filterSelected,pressed&&s.memberPressed]}><Text style={[s.filterText,memberFilter===value&&s.filterTextSelected]}>{value==='All'?'All':value==='Leader'?'Leaders':value==='Officer'?'Officers':'Members'}</Text></Pressable>)}</View>
   <View style={s.sectionHead}><Text style={s.section}>ROSTER · {members.length}</Text><View style={s.rosterActions}><GameButton compact title={busy?st("Refreshing…"):st("Refresh")} tone="secondary" disabled={busy} onPress={()=>load()}/></View></View>
-  {members.filter(member=>member.display_name.toLocaleLowerCase().includes(search.trim().toLocaleLowerCase())&&(memberFilter==='All'||member.role===memberFilter.toLocaleLowerCase())).map(member=><Pressable key={member.account_id} accessibilityRole="button" accessibilityLabel={'Open '+member.display_name+' Guild member details'} onPress={()=>setActiveMemberId(member.account_id)} style={({pressed})=>[s.memberCard,pressed&&s.memberPressed]}><View style={s.memberIdentity}><CompactPlayerIdentity accountId={member.account_id} badges={member.player_badges} name={member.display_name} guildTag={member.guild_tag} guildTagColorId={member.guild_tag_color_id} role={member.role} status={joinedGuildLabel(member.joined_at)} statusTone="muted" avatarSize={38}/></View><Text style={s.memberArrow}>›</Text></Pressable>)}
+  {members.filter(member=>member.display_name.toLocaleLowerCase().includes(search.trim().toLocaleLowerCase())&&(memberFilter==='All'||member.role===memberFilter.toLocaleLowerCase())).map(member=><Pressable key={member.account_id} accessibilityRole="button" accessibilityLabel={'Open '+member.display_name+' Guild member details'} onPress={()=>setActiveMemberId(member.account_id)} style={({pressed})=>[s.memberCard,pressed&&s.memberPressed]}><View style={s.memberIdentity}><CompactPlayerIdentity accountId={member.account_id} badges={member.player_badges} name={member.display_name} guildTag={member.guild_tag} guildTagColorId={member.guild_tag_color_id} status={joinedGuildLabel(member.joined_at)} statusTone="muted" avatarSize={38}/></View><View style={[s.memberRolePill,member.role==='leader'?s.roleLeader:member.role==='officer'?s.roleOfficer:s.roleMember]}><Text style={[s.memberRoleText,{color:member.role==='leader'?C.accent:member.role==='officer'?C.info:C.muted}]}>{member.role.toUpperCase()}</Text></View><Text style={s.memberArrow}>›</Text></Pressable>)}
   {!members.some(member=>member.display_name.toLocaleLowerCase().includes(search.trim().toLocaleLowerCase())&&(memberFilter==='All'||member.role===memberFilter.toLocaleLowerCase()))?<View style={s.noMatches}><Text style={s.empty}>No matching members.</Text><GameButton compact title="Clear search" tone="secondary" onPress={()=>{setSearch('');setMemberFilter('All')}}/></View>:null}</>:null}
   {view==='Requests'&&(role==='leader'||role==='officer')?<><View style={s.sectionHead}><Text style={s.section}>RECRUITMENT</Text><Text style={s.sectionMeta}>{applications.length+outgoingInvitations.length} pending</Text></View>
   <View style={s.filterRow}>{(['Applications','Invites'] as const).map(value=><Pressable key={value} accessibilityRole="button" accessibilityState={{selected:requestView===value}} onPress={()=>setRequestView(value)} style={({pressed})=>[s.filterChip,requestView===value&&s.filterSelected,pressed&&s.memberPressed]}><Text style={[s.filterText,requestView===value&&s.filterTextSelected]}>{value} · {value==='Applications'?applications.length:outgoingInvitations.length}</Text></Pressable>)}</View>
@@ -153,7 +152,9 @@ function makeStyles(C:ThemeColors){return StyleSheet.create({
  filterText:{fontSize:11,lineHeight:16,color:C.muted,fontWeight:'700'},
  filterTextSelected:{color:C.text,fontWeight:'900'},
  memberCard:{minHeight:62,flexDirection:'row',alignItems:'center',gap:8,paddingVertical:8,paddingHorizontal:9,borderWidth:1,borderRadius:8,borderColor:C.line,backgroundColor:C.panel2,marginTop:6},
- memberArrow:{fontSize:24,lineHeight:28,color:C.accentSoft},
+ memberArrow:{fontSize:21,lineHeight:26,color:C.accentSoft},
+ memberRolePill:{maxWidth:77,paddingHorizontal:6,paddingVertical:4,borderWidth:1,borderRadius:5},
+ memberRoleText:{fontSize:9,lineHeight:12,fontWeight:'900',letterSpacing:.25},
  noMatches:{alignItems:'center',gap:4,paddingVertical:12},
  memberPressed:{opacity:.72},
  safetyHelp:{gap:4,paddingTop:10},

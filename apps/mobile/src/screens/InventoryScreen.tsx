@@ -40,6 +40,8 @@ import {workingTowardInventoryProtectionMap} from '../core/working-toward-invent
 import {equipmentChangeFeedback,equipmentFeedbackSnapshot,type EquipmentChangeFeedback} from '../core/equipment-change-feedback';
 import {inventoryFeedbackIntent,resolveInventoryActionFeedback,type InventoryActionFeedback,type InventoryFeedbackIntent,type InventoryFeedbackRequest} from '../core/inventory-action-feedback';
 
+import {mealBonusDef} from '../core/meal-buffs';
+
 type Pending={kind:'sell'|'salvage'|'deposit';item:ItemDef;quantity:number}|null;
 type BulkAction='transfer'|'sell'|'salvage';
 type BulkPending={kind:BulkAction;ids:string[]}|null;
@@ -178,6 +180,11 @@ export function InventoryScreen({state,viewMemory,foodRequest=0,onEquip,onFood,o
     {carried&&inspected.type==='gear'?<GameButton compact title={gt("Compare stats")} tone="secondary" onPress={()=>{setPreviewId(inspected.id);closeInspect()}}/>:null}
     {hasLegacyStack&&carried&&inspected.type==='gear'?<GameButton compact title={gt('Equip {slot}',{slot:gl(inspected.slot)})} onPress={()=>{run(()=>onEquip(inspected.id));closeInspect()}}/>:null}
     {carried&&inspected.type==='food'?<GameButton compact title={state.character?.equippedFoodId===inspected.id?gt("Auto-eat selected"):gt("Use for auto-eat")} disabled={state.character?.equippedFoodId===inspected.id} onPress={()=>{run(()=>onFood(inspected.id));closeInspect()}}/>:null}
+    {carried&&inspected.type==='food'&&mealBonusDef(inspected.id)?<>
+      <Text style={[s.sub,{color:C.good}]}>{mealBonusDef(inspected.id)!.label} · {mealBonusDef(inspected.id)!.durationHours}h · {gt('Only one meal buff can be active.')}</Text>
+      {state.character?.activeMealBuff?<Text style={s.sub}>{gt('Active meal')}: {itemDef(state.character.activeMealBuff.itemId).name} · {Math.ceil(state.character.activeMealBuff.remainingSeconds/60)} min</Text>:null}
+      <GameButton compact title={gt('Eat for Bonus')} disabled={!onCommand||inventoryBusyLabel!==null} onPress={()=>void beginInventorySubmission(gt('Eat for Bonus'),async()=>{await onCommand?.({type:'meal_bonus',args:{id:inspected.id}});closeInspect()})}/>
+    </>:null}
     {carried&&inspected.type==='food'?<GameButton compact title={recoveryAmount(healthState,inspected.id)===0?gt("Health full"):gt('Eat 1 · +{hp} HP',{hp:formatGameNumber(Math.round(recoveryAmount(healthState,inspected.id)),state.settings.numberMode,state.settings.language)})} disabled={recoveryAmount(healthState,inspected.id)===0} tone="secondary" onPress={()=>{run(()=>onEat(inspected.id));closeInspect()}}/>:null}
     <GameButton compact title={favoriteSet.has(inspected.id)?gt("Remove favorite"):gt("Favorite")} tone="secondary" onPress={()=>{run(()=>onToggleFavorite(inspected.id));closeInspect()}}/>
     <GameButton compact title={lockedSet.has(inspected.id)?gt("Unlock item"):gt("Lock item")} tone="secondary" onPress={()=>{run(()=>onToggleLock(inspected.id));closeInspect()}}/>

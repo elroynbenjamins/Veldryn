@@ -36,7 +36,7 @@ function normalizeGearEnhancements(raw:unknown){
     .filter(([id,value])=>gearIds.has(id)&&value&&typeof value==='object')
     .map(([id,value])=>{
       const slots=normalizeEnhancementGemSlots(value);
-      return [id,{rank:Math.max(0,Math.min(4,Math.floor(Number(value.rank)||0))),failures:Math.max(0,Math.floor(Number(value.failures)||0)),...slots}];
+      return [id,{rank:Math.max(0,Math.min(4,Math.floor(Number(value.rank)||0))),failures:Math.max(0,Math.floor(Number(value.failures)||0)),...slots,locked:value.locked===false?false:value.locked===true?true:undefined}];
     }));
 }
 

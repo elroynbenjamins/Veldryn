@@ -123,7 +123,7 @@ export function CoopRunOverview({language,run,myVotedNodeId,selfVoter,onBack,onC
   </ExpeditionScreenShell>
    {terminal?<Modal visible={rewardOpen&&!theaterOpen} transparent animationType={reduceMotion?'none':'fade'} onRequestClose={()=>setRewardOpen(false)}>
     <View style={s.rewardOverlay}>
-     <ScrollView style={s.rewardDialog} contentContainerStyle={s.rewardContent} showsVerticalScrollIndicator={false}>
+     <ScrollView style={s.rewardDialog} contentContainerStyle={s.rewardContent} showsVerticalScrollIndicator={false} showsHorizontalScrollIndicator={false}>
       <TerminalRunMoment phase={run.phase} rewardsReady={rewardSurfaceReady} rewardsSecured={rewardsSecured} reduceMotion={reduceMotion}/>
       {!rewardSurfaceReady?<Text style={s.copy}>{st("Preparing expedition rewards. You can retry if they have not appeared yet.")}</Text>:null}
       {rewards.map(reward=><View key={reward.id} style={s.rewardRow}>

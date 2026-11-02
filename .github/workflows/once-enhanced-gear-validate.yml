@@ -1,4 +1,4 @@
-name: One-time localization recheck
+name: One-time localization recheck after catalog completion
 on:
   push:
     branches:

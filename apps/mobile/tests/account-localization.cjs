@@ -78,5 +78,5 @@ for(const relative of files){
  visit(tree);
 }
 const more=fs.readFileSync(path.join(root,'screens/MoreScreen.tsx'),'utf8');
-assert.ok(more.includes("const attentionPriority:MoreDestination[]=['DailySupplies','Progression','Companions','Social','Friends','Guild','Profile'];"));
+assert.ok(more.includes("const attentionPriority:MoreDestination[]=['NewUnlocks','Quests','DailySupplies','Companions','Social','Friends','Guild'];"));
 console.log('Account localization passed: '+keys.length+' keys x 6 languages; '+guides.length+' guides; '+records.length+' records; '+files.length+' owned files; '+displayCalls+' display calls.');

@@ -111,7 +111,7 @@ export function GuildSpecializationPaths({guildLevel,skillPoints,metrics,canUpgr
 
   <Modal visible={review} transparent animationType="fade" onRequestClose={close} statusBarTranslucent>
    <View style={s.modalShade}>
-    <Pressable style={StyleSheet.absoluteFillObject} accessibilityLabel="Dismiss upgrade confirmation" accessibilityRole="button" onPress={close}/>
+    <Pressable style={s.modalBackdrop} accessibilityLabel="Dismiss upgrade confirmation" accessibilityRole="button" onPress={close}/>
     <View style={s.modalCard} accessibilityViewIsModal>
      <ScrollView style={s.modalScroll} contentContainerStyle={s.modalBody} bounces={false} keyboardShouldPersistTaps="handled">
       <Text style={s.eyebrow}>CONFIRM GUILD UPGRADE</Text>
@@ -161,6 +161,7 @@ function styles(C:ThemeColors){return StyleSheet.create({
  materialRight:{alignItems:'flex-end',minWidth:60},materialAmount:{fontSize:13,lineHeight:17,fontWeight:'800'},materialStatus:{fontSize:10,lineHeight:14},
  warning:{fontSize:12,lineHeight:18,fontWeight:'700'},footer:{fontSize:11,lineHeight:16,color:C.muted,textAlign:'center',paddingHorizontal:8},
  pressed:{opacity:.75},modalShade:{flex:1,justifyContent:'center',alignItems:'center',paddingHorizontal:18,paddingVertical:28,backgroundColor:'rgba(7,14,19,.78)'},
+ modalBackdrop:{position:'absolute',top:0,right:0,bottom:0,left:0},
  modalCard:{width:'100%',maxWidth:440,maxHeight:'88%',overflow:'hidden',borderWidth:1,borderColor:C.lineStrong,borderRadius:13,backgroundColor:C.panel},
  modalScroll:{flexShrink:1},modalBody:{padding:16,gap:12},modalTitle:{fontSize:18,lineHeight:24,color:C.text,fontWeight:'800'},
  modalMaterial:{flexDirection:'row',alignItems:'center',gap:9,paddingVertical:8,borderBottomWidth:StyleSheet.hairlineWidth,borderBottomColor:C.line},

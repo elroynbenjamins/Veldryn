@@ -46,11 +46,11 @@ export function CoopRunOverview({language,run,myVotedNodeId,selfVoter,onBack,onC
   const clockAnchor=useRef({serverNow:run.serverNow??0,localAt:Date.now()});
   if(run.serverNow!==undefined&&clockAnchor.current.serverNow!==run.serverNow)clockAnchor.current={serverNow:run.serverNow,localAt:Date.now()};
   useEffect(()=>{
-   if(run.mode!=='live'||!run.resolvesAtMs)return;
+   if(run.mode!=='live'||!run.resolvesAtMs||run.phase!=='awaiting_choice'||run.options.length<2)return;
    const timer=setInterval(()=>setClockTick(Date.now()),500);return()=>clearInterval(timer);
-  },[run.mode,run.resolvesAtMs]);
+  },[run.mode,run.resolvesAtMs,run.phase,run.options.length]);
   const liveServerNow=run.serverNow===undefined?undefined:clockAnchor.current.serverNow+Math.max(0,clockTick-clockAnchor.current.localAt);
-  const secondsRemaining=run.resolvesAtMs!==undefined&&liveServerNow!==undefined?Math.max(0,Math.ceil((run.resolvesAtMs-liveServerNow)/1000)):undefined;
+  const secondsRemaining=run.phase==='awaiting_choice'&&run.options.length>1&&run.resolvesAtMs!==undefined&&liveServerNow!==undefined?Math.max(0,Math.ceil((run.resolvesAtMs-liveServerNow)/1000)):undefined;
   const replayKey=`${run.runId}:${run.lastCombat?.nodeId??'pending'}:${run.lastCombat?.durationMs??0}:${replayCues.length}:${replayCues[replayCues.length-1]?.atMs??0}`;
   const lastReplay=useRef(replayKey),wasResolving=useRef(run.phase==='resolving_node'),wasTerminal=useRef(terminal);
   const [theaterOpen,setTheaterOpen]=useState(run.phase==='resolving_node');

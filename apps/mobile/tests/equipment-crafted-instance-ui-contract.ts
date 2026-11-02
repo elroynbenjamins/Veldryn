@@ -49,8 +49,8 @@ const oddsBeforeCraft=collection.indexOf('<ForgeOddsGuide key={recipe.output.ite
 const craftButton=collection.indexOf('accessibilityState={{disabled:!ready}}');
 ok(oddsBeforeCraft>0&&craftButton>oddsBeforeCraft,'Rarity and quality odds must appear immediately before the selected equipment craft action');
 ok(collection.indexOf('<ForgeOddsGuide',oddsBeforeCraft+1)===-1,'Odds guide must not be repeated under the queue');
-ok(collection.includes("skillId='smithing'")&&collection.includes("skillId='tailoring'")===false&&collection.includes("skillId='smithing'"),
- 'Smithing and Tailoring must use the one shared collection component instead of separate odds models');
+ok(collection.includes("type EquipmentCraftingSkill='smithing'|'tailoring'")&&read('src/screens/SkillsScreen.tsx').includes("initialSkill==='smithing'||initialSkill==='tailoring'"),
+ 'Smithing and Tailoring must use the same odds-bearing equipment crafting collection');
 ok(oddsGuide.includes('craftedGearRarityOutcomes(item.id)')&&oddsGuide.includes('outcomes.filter('),
  'Recipe-specific rarity odds must be used for both collapsed summary and expanded rarity choices');
 ok(oddsGuide.includes('accessibilityState={{selected}}')&&oddsGuide.includes('setSelectedRarity(row.rarity)'),

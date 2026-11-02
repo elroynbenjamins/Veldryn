@@ -1,0 +1,36 @@
+name: One-time legacy gear Edge bundle sync
+on:
+  push:
+    branches:
+      - fix/legacy-enchanted-duplicate-safe-disposal-20261102
+    paths:
+      - '.github/workflows/legacy-gear-bundle-sync.yml'
+permissions:
+  contents: write
+jobs:
+  sync-bundle:
+    if: github.repository == 'elroynbenjamins/Veldryn'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: fix/legacy-enchanted-duplicate-safe-disposal-20261102
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+          cache-dependency-path: backend/pnpm-lock.yaml
+      - name: Install backend dependencies
+        run: pnpm --dir backend install --frozen-lockfile
+      - name: Rebuild authoritative Edge bundle
+        run: pnpm --dir backend build:online
+      - name: Commit generated bundle to the feature branch only
+        run: |
+          git add backend/supabase/functions/gameplay/index.ts
+          if ! git diff --cached --quiet; then
+            git -c user.name='veldryn-ci' -c user.email='41898282+github-actions[bot]@users.noreply.github.com' commit -m 'build(gameplay): regenerate Edge bundle for legacy gear disposal'
+            git push origin HEAD:fix/legacy-enchanted-duplicate-safe-disposal-20261102
+          fi

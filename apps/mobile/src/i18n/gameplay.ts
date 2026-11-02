@@ -7,6 +7,13 @@ import {useMemo} from 'react';
 // Every row is complete, in en/de/es/nl/it/fr order. English phrases are typed keys.
 type TranslationRow=readonly [string,string,string,string,string,string];
 const common={
+ // Interactive Forge odds and quality preview: en/de/es/nl/it/fr.
+ "Mythic":["Mythic","Mythisch","Mítico","Mythisch","Mitico","Mythique"],
+ "Quality preview":["Quality preview","Qualitätsvorschau","Vista previa de calidad","Kwaliteitsvoorbeeld","Anteprima qualità","Aperçu de la qualité"],
+ "Combined base stats":["Combined base stats","Kombinierte Grundwerte","Atributos base combinados","Gecombineerde basisstats","Statistiche base combinate","Stats de base combinées"],
+ "Chance of Q{quality}+":["Chance of Q{quality}+","Chance auf Q{quality}+","Probabilidad de Q{quality}+","Kans op Q{quality}+","Probabilità di Q{quality}+","Chance de Q{quality}+"],
+ "Odds depend on the selected recipe’s base rarity.":["Odds depend on the selected recipe’s base rarity.","Die Chancen hängen von der Grundseltenheit des Rezepts ab.","Las probabilidades dependen de la rareza base de la receta elegida.","De kansen hangen af van de basiszeldzaamheid van het gekozen recept.","Le probabilità dipendono dalla rarità base della ricetta selezionata.","Les chances dépendent de la rareté de base de la recette choisie."],
+ "Preview only. Rarity and quality are rolled when claimed.":["Preview only. Rarity and quality are rolled when claimed.","Nur Vorschau. Seltenheit und Qualität werden beim Abholen ausgewürfelt.","Solo vista previa. La rareza y la calidad se determinan al recoger.","Alleen een voorbeeld. Zeldzaamheid en kwaliteit worden bepaald bij het claimen.","Solo anteprima. Rarità e qualità vengono estratte al ritiro.","Aperçu uniquement. La rareté et la qualité sont tirées lors de la récupération."],
  // Explain legacy itemId-based enchantment without promising duplicate upgrades.
  "The equipped weapon keeps its enchantment. This spare has no separate upgrade record.":["The equipped weapon keeps its enchantment. This spare has no separate upgrade record.","Die ausgerüstete Waffe behält ihre Verzauberung. Dieses Ersatzstück hat keinen eigenen Verbesserungsstand.","El arma equipada conserva su encantamiento. Esta copia no tiene mejoras propias.","Het uitgeruste wapen behoudt zijn betovering. Dit extra exemplaar heeft geen eigen upgrades.","L'arma equipaggiata mantiene l'incantesimo. Questa copia non ha potenziamenti propri.","L'arme équipée conserve son enchantement. Cet exemplaire n'a pas ses propres améliorations."],
  // Compact gathering drops disclosure; language order en/de/es/nl/it/fr.

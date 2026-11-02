@@ -1,5 +1,5 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import {useEffect,useState} from 'react';
+import {useEffect,useState,type ReactNode} from 'react';
 import {Pressable,StyleSheet,Text,View} from 'react-native';
 import {createSectionGuideStore} from '../core/section-guidance';
 import {useGameTheme} from '../theme/ThemeContext';
@@ -9,9 +9,9 @@ import {spacing,typography} from '../theme/theme';
 
 const store=createSectionGuideStore(AsyncStorage);
 type GuideText={title:string;body:string;detail?:string};
-type Props={scope:string;area:string;section:string;guide:GuideText;translate?:(value:string)=>string;showReplay?:boolean};
+type Props={scope:string;area:string;section:string;guide:GuideText;translate?:(value:string)=>string;showReplay?:boolean;header?:ReactNode};
 /** One unobtrusive tip on first entry to each tab. Tabs and actions remain usable. */
-export function SectionGuide({scope,area,section,guide,translate,showReplay=true}:Props){
+export function SectionGuide({scope,area,section,guide,translate,showReplay=true,header}:Props){
  const C=useGameTheme(),language=useGameLanguage();
  const t=(value:string)=>{const mapped=translate?.(value)??value;return mapped===value?accountText(language,value):mapped;};
  const identity=area+':'+scope;
@@ -36,13 +36,18 @@ export function SectionGuide({scope,area,section,guide,translate,showReplay=true
    void store.complete(scope,area,section);
   }
  };
- if(!expanded&&!showReplay)return null;
- if(!expanded)return <View style={styles.reopenRow}>
-  <Pressable accessibilityRole="button" accessibilityLabel={t('Show guide for this tab')} onPress={()=>{setOpen({identity,section});setMore(false)}} style={[styles.reopen,{borderColor:C.line,backgroundColor:C.panel}]}>
-   <Text style={[styles.question,{color:C.muted}]}>?</Text>
-  </Pressable>
- </View>;
- return <View style={[styles.card,{borderColor:C.selectionLine,backgroundColor:C.panel}]}>
+ // Completed guides must never add a dedicated replay row. A replay control
+ // is only shown as part of a caller-supplied, existing screen/section header.
+ // Screens without a suitable header keep their guide available in Account.
+ const replay=seen&&showReplay&&!(open?.identity===identity&&open?.section===section);
+ const trigger=replay&&header?<Pressable accessibilityRole="button" accessibilityLabel={t('Show guide for this tab')}
+   accessibilityHint={t(guide.title)} onPress={()=>{setOpen({identity,section});setMore(false)}}
+   hitSlop={4} style={[styles.reopen,{borderColor:C.line,backgroundColor:C.panel}]}>
+    <Text style={[styles.question,{color:C.muted}]}>?</Text>
+   </Pressable>:null;
+ const headerRow=header?<View style={styles.headerRow}><View style={styles.headerContent}>{header}</View>{trigger}</View>:null;
+ if(!expanded)return headerRow;
+ return <>{headerRow}<View style={[styles.card,{borderColor:C.selectionLine,backgroundColor:C.panel}]}>
   <View style={styles.top}>
    <View style={styles.copy}><Text accessibilityRole="header" style={[styles.title,{color:C.text}]}>{t(guide.title)}</Text></View>
    <Pressable accessibilityRole="button" accessibilityLabel={t('Got it')} onPress={close} style={[styles.done,{backgroundColor:C.selection}]}>
@@ -54,7 +59,7 @@ export function SectionGuide({scope,area,section,guide,translate,showReplay=true
    <Text style={[styles.extraLink,{color:C.accent}]}>{t(more?'Less detail':'More detail')} {more?'−':'+'}</Text>
   </Pressable>:null}
   {more&&guide.detail?<Text style={[styles.detail,{color:C.info}]}>{t(guide.detail)}</Text>:null}
- </View>;
+ </View></>;
 }
 const styles=StyleSheet.create({
  card:{gap:6,padding:spacing.sm,borderWidth:1,borderRadius:10},
@@ -67,7 +72,8 @@ const styles=StyleSheet.create({
  more:{alignSelf:'flex-start',minHeight:32,justifyContent:'center',paddingRight:12},
  extraLink:{fontSize:11,fontWeight:'800'},
  detail:{...typography.caption,lineHeight:18},
- reopenRow:{flexDirection:'row',justifyContent:'flex-end'},
- reopen:{minWidth:36,minHeight:36,justifyContent:'center',alignItems:'center',borderWidth:1,borderRadius:8},
+ headerRow:{flexDirection:'row',alignItems:'center',gap:6},
+ headerContent:{flex:1,minWidth:0},
+ reopen:{width:36,height:36,flexShrink:0,justifyContent:'center',alignItems:'center',borderWidth:1,borderRadius:8},
  question:{fontSize:17,fontWeight:'800'},
 });

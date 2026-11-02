@@ -48652,6 +48652,142 @@ function accountCharacters(state) {
   return [{ character: state.character }, ...state.otherCharacters ?? []].filter((entry2) => entry2.character);
 }
 
+// ../apps/mobile/src/core/gem-pouch.ts
+var GEM_POUCH_BASE_CAPACITY = 30;
+var GEM_POUCH_UPGRADES = [
+  { capacity: 40, cost: 5e3, level: 10 },
+  { capacity: 50, cost: 15e3, level: 20 },
+  { capacity: 60, cost: 4e4, level: 35 },
+  { capacity: 75, cost: 1e5, level: 50 },
+  { capacity: 100, cost: 25e4, level: 70 }
+];
+function isGemPouchItemId(itemId) {
+  try {
+    const item = itemDef(itemId);
+    return item.type === "gem" || !!item.rawGemFamilyId;
+  } catch {
+    return false;
+  }
+}
+function normalizeGemPouch(raw2) {
+  const value = raw2 && typeof raw2 === "object" && !Array.isArray(raw2) ? raw2 : {};
+  const capacity = [GEM_POUCH_BASE_CAPACITY, ...GEM_POUCH_UPGRADES.map((t) => t.capacity)].includes(Number(value.capacity)) ? Number(value.capacity) : GEM_POUCH_BASE_CAPACITY;
+  const grouped = /* @__PURE__ */ new Map();
+  for (const stack of Array.isArray(value.stacks) ? value.stacks : []) {
+    if (!stack || typeof stack.itemId !== "string" || !isGemPouchItemId(stack.itemId) || stack.instanceId !== void 0 || !Number.isSafeInteger(stack.quantity) || stack.quantity <= 0) continue;
+    const next = (grouped.get(stack.itemId) ?? 0) + stack.quantity;
+    if (Number.isSafeInteger(next)) grouped.set(stack.itemId, next);
+  }
+  return { capacity, stacks: [...grouped].map(([itemId, quantity2]) => ({ itemId, quantity: quantity2 })) };
+}
+function gemPouch(state) {
+  return normalizeGemPouch(state.account.gemPouch);
+}
+function gemPouchUpgradePreview(state) {
+  return GEM_POUCH_UPGRADES.find((tier) => tier.capacity > gemPouch(state).capacity) ?? null;
+}
+function upgradeGemPouch(state) {
+  if (!state.character) throw new Error("Create a character first");
+  const next = gemPouchUpgradePreview(state);
+  if (!next) throw new Error("Gem Pouch is already at maximum capacity");
+  if (state.character.level < next.level) throw new Error(`Requires Level ${next.level}`);
+  if (state.character.gold < next.cost) throw new Error(`Requires ${next.cost.toLocaleString()} Gold`);
+  return {
+    ...state,
+    character: { ...state.character, gold: state.character.gold - next.cost },
+    account: { ...state.account, gemPouch: { ...gemPouch(state), capacity: next.capacity } }
+  };
+}
+function stackQty(stacks, id) {
+  return stacks.reduce((total, row) => total + (row.itemId === id && row.instanceId === void 0 ? row.quantity : 0), 0);
+}
+function gemStorageQuantity(state, id) {
+  return stackQty(state.inventory.stacks, id) + stackQty(state.bank.stacks, id) + (isGemPouchItemId(id) ? stackQty(gemPouch(state).stacks, id) : 0);
+}
+function addStack2(stacks, capacity, itemId, quantity2) {
+  const index = stacks.findIndex((row) => row.itemId === itemId && row.instanceId === void 0);
+  if (index >= 0) {
+    const next = stacks.map((row) => ({ ...row }));
+    const amount = next[index].quantity + quantity2;
+    if (!Number.isSafeInteger(amount)) throw new Error("Gem stack quantity is too large");
+    next[index].quantity = amount;
+    return next;
+  }
+  if (stacks.filter((row) => row.quantity > 0).length >= capacity) return null;
+  return [...stacks, { itemId, quantity: quantity2 }];
+}
+function tryStoreGemInPouch(state, itemId, quantity2) {
+  if (!isGemPouchItemId(itemId)) return null;
+  if (!Number.isSafeInteger(quantity2) || quantity2 < 1) throw new Error("Invalid gem quantity");
+  const pouch = gemPouch(state), stored = addStack2(pouch.stacks, pouch.capacity, itemId, quantity2);
+  return stored ? { ...state, account: { ...state.account, gemPouch: { ...pouch, stacks: stored } } } : null;
+}
+function storePouchGem(state, itemId, quantity2 = 1) {
+  if (!isGemPouchItemId(itemId) || !Number.isSafeInteger(quantity2) || quantity2 < 1) throw new Error("Invalid gem reward");
+  const stored = tryStoreGemInPouch(state, itemId, quantity2);
+  if (stored) return stored;
+  const inv = addStack2(state.inventory.stacks, entitlementStorageCapacity(state, "inventory"), itemId, quantity2);
+  if (inv) return { ...state, inventory: { ...state.inventory, stacks: inv } };
+  const bank = addStack2(state.bank.stacks, entitlementStorageCapacity(state, "bank"), itemId, quantity2);
+  if (bank) return { ...state, bank: { ...state.bank, stacks: bank } };
+  throw new Error("Gem Pouch, Inventory and Bank are full");
+}
+function sellPouchGem(state, itemId, quantity2) {
+  if (!state.character) throw new Error("Create a character first");
+  if (!isGemPouchItemId(itemId) || !Number.isSafeInteger(quantity2) || quantity2 < 1) throw new Error("Invalid gem sale");
+  if (state.settings.favoriteItemIds?.includes(itemId)) throw new Error("Favorite gems cannot be sold");
+  if (state.settings.lockedItemIds?.includes(itemId)) throw new Error("Locked gems cannot be sold");
+  const pouch = gemPouch(state), owned = stackQty(pouch.stacks, itemId);
+  if (owned < quantity2) throw new Error("Not enough gems in the pouch");
+  const proceeds = itemDef(itemId).value * quantity2;
+  if (!Number.isSafeInteger(proceeds) || !Number.isSafeInteger(state.character.gold + proceeds)) throw new Error("Gold amount exceeds supported limit");
+  const stacks = pouch.stacks.map((row) => row.itemId === itemId ? { ...row, quantity: row.quantity - quantity2 } : row).filter((row) => row.quantity > 0);
+  return {
+    ...state,
+    account: { ...state.account, gemPouch: { ...pouch, stacks } },
+    character: { ...state.character, gold: state.character.gold + proceeds }
+  };
+}
+function consumeGemFromStorage(state, itemId, quantity2) {
+  if (!Number.isSafeInteger(quantity2) || quantity2 < 1 || gemStorageQuantity(state, itemId) < quantity2)
+    throw new Error(`Need ${quantity2} ${itemDef(itemId).name}`);
+  let left = quantity2;
+  const take4 = (stacks) => stacks.map((row) => {
+    if (row.itemId !== itemId || row.instanceId !== void 0 || left <= 0) return row;
+    const used = Math.min(left, row.quantity);
+    left -= used;
+    return { ...row, quantity: row.quantity - used };
+  }).filter((row) => row.quantity > 0);
+  const pouch = gemPouch(state), pouchStacks = isGemPouchItemId(itemId) ? take4(pouch.stacks) : pouch.stacks;
+  const inventory = take4(state.inventory.stacks), bank = take4(state.bank.stacks);
+  return {
+    ...state,
+    account: { ...state.account, gemPouch: { ...pouch, stacks: pouchStacks } },
+    inventory: { ...state.inventory, stacks: inventory },
+    bank: { ...state.bank, stacks: bank }
+  };
+}
+function migrateGemPouch(state) {
+  if (state.account.gemPouchMigrationDone === true) return state;
+  let pouch = gemPouch(state);
+  const move = (stacks) => stacks.filter((row) => {
+    if (!row || typeof row.itemId !== "string" || row.instanceId !== void 0 || !isGemPouchItemId(row.itemId) || !Number.isSafeInteger(row.quantity) || row.quantity <= 0) return true;
+    const placed = addStack2(pouch.stacks, pouch.capacity, row.itemId, row.quantity);
+    if (!placed) return true;
+    pouch = { ...pouch, stacks: placed };
+    return false;
+  });
+  const inventory = move(state.inventory.stacks), bank = move(state.bank.stacks);
+  const otherCharacters = state.otherCharacters?.map((entry2) => ({ ...entry2, inventory: { ...entry2.inventory, stacks: move(Array.isArray(entry2.inventory?.stacks) ? entry2.inventory.stacks : []) } }));
+  return {
+    ...state,
+    account: { ...state.account, gemPouch: pouch, gemPouchMigrationDone: true },
+    otherCharacters,
+    inventory: { ...state.inventory, stacks: inventory },
+    bank: { ...state.bank, stacks: bank }
+  };
+}
+
 // ../apps/mobile/src/core/gathering-tools.ts
 var NO_TOOL_TIME_MULTIPLIER = 1.15;
 function equippedGatheringTool(state, skillId) {
@@ -48889,137 +49025,6 @@ function craftedInstanceResult(state, instance) {
 
 // ../apps/mobile/src/core/gem-progression-v1.ts
 init_progression();
-
-// ../apps/mobile/src/core/gem-pouch.ts
-var GEM_POUCH_BASE_CAPACITY = 30;
-var GEM_POUCH_UPGRADES = [
-  { capacity: 40, cost: 5e3, level: 10 },
-  { capacity: 50, cost: 15e3, level: 20 },
-  { capacity: 60, cost: 4e4, level: 35 },
-  { capacity: 75, cost: 1e5, level: 50 },
-  { capacity: 100, cost: 25e4, level: 70 }
-];
-function isGemPouchItemId(itemId) {
-  try {
-    const item = itemDef(itemId);
-    return item.type === "gem" || !!item.rawGemFamilyId;
-  } catch {
-    return false;
-  }
-}
-function normalizeGemPouch(raw2) {
-  const value = raw2 && typeof raw2 === "object" && !Array.isArray(raw2) ? raw2 : {};
-  const capacity = [GEM_POUCH_BASE_CAPACITY, ...GEM_POUCH_UPGRADES.map((t) => t.capacity)].includes(Number(value.capacity)) ? Number(value.capacity) : GEM_POUCH_BASE_CAPACITY;
-  const grouped = /* @__PURE__ */ new Map();
-  for (const stack of Array.isArray(value.stacks) ? value.stacks : []) {
-    if (!stack || typeof stack.itemId !== "string" || !isGemPouchItemId(stack.itemId) || stack.instanceId !== void 0 || !Number.isSafeInteger(stack.quantity) || stack.quantity <= 0) continue;
-    const next = (grouped.get(stack.itemId) ?? 0) + stack.quantity;
-    if (Number.isSafeInteger(next)) grouped.set(stack.itemId, next);
-  }
-  return { capacity, stacks: [...grouped].map(([itemId, quantity2]) => ({ itemId, quantity: quantity2 })) };
-}
-function gemPouch(state) {
-  return normalizeGemPouch(state.account.gemPouch);
-}
-function gemPouchUpgradePreview(state) {
-  return GEM_POUCH_UPGRADES.find((tier) => tier.capacity > gemPouch(state).capacity) ?? null;
-}
-function upgradeGemPouch(state) {
-  if (!state.character) throw new Error("Create a character first");
-  const next = gemPouchUpgradePreview(state);
-  if (!next) throw new Error("Gem Pouch is already at maximum capacity");
-  if (state.character.level < next.level) throw new Error(`Requires Level ${next.level}`);
-  if (state.character.gold < next.cost) throw new Error(`Requires ${next.cost.toLocaleString()} Gold`);
-  return {
-    ...state,
-    character: { ...state.character, gold: state.character.gold - next.cost },
-    account: { ...state.account, gemPouch: { ...gemPouch(state), capacity: next.capacity } }
-  };
-}
-function stackQty(stacks, id) {
-  return stacks.reduce((total, row) => total + (row.itemId === id && row.instanceId === void 0 ? row.quantity : 0), 0);
-}
-function gemStorageQuantity(state, id) {
-  return stackQty(state.inventory.stacks, id) + stackQty(state.bank.stacks, id) + (isGemPouchItemId(id) ? stackQty(gemPouch(state).stacks, id) : 0);
-}
-function addStack2(stacks, capacity, itemId, quantity2) {
-  const index = stacks.findIndex((row) => row.itemId === itemId && row.instanceId === void 0);
-  if (index >= 0) {
-    const next = stacks.map((row) => ({ ...row }));
-    const amount = next[index].quantity + quantity2;
-    if (!Number.isSafeInteger(amount)) throw new Error("Gem stack quantity is too large");
-    next[index].quantity = amount;
-    return next;
-  }
-  if (stacks.filter((row) => row.quantity > 0).length >= capacity) return null;
-  return [...stacks, { itemId, quantity: quantity2 }];
-}
-function storePouchGem(state, itemId, quantity2 = 1) {
-  if (!isGemPouchItemId(itemId) || !Number.isSafeInteger(quantity2) || quantity2 < 1) throw new Error("Invalid gem reward");
-  const pouch = gemPouch(state), stored = addStack2(pouch.stacks, pouch.capacity, itemId, quantity2);
-  if (stored) return { ...state, account: { ...state.account, gemPouch: { ...pouch, stacks: stored } } };
-  const inv = addStack2(state.inventory.stacks, entitlementStorageCapacity(state, "inventory"), itemId, quantity2);
-  if (inv) return { ...state, inventory: { ...state.inventory, stacks: inv } };
-  const bank = addStack2(state.bank.stacks, entitlementStorageCapacity(state, "bank"), itemId, quantity2);
-  if (bank) return { ...state, bank: { ...state.bank, stacks: bank } };
-  throw new Error("Gem Pouch, Inventory and Bank are full");
-}
-function sellPouchGem(state, itemId, quantity2) {
-  if (!state.character) throw new Error("Create a character first");
-  if (!isGemPouchItemId(itemId) || !Number.isSafeInteger(quantity2) || quantity2 < 1) throw new Error("Invalid gem sale");
-  if (state.settings.favoriteItemIds?.includes(itemId)) throw new Error("Favorite gems cannot be sold");
-  if (state.settings.lockedItemIds?.includes(itemId)) throw new Error("Locked gems cannot be sold");
-  const pouch = gemPouch(state), owned = stackQty(pouch.stacks, itemId);
-  if (owned < quantity2) throw new Error("Not enough gems in the pouch");
-  const proceeds = itemDef(itemId).value * quantity2;
-  if (!Number.isSafeInteger(proceeds) || !Number.isSafeInteger(state.character.gold + proceeds)) throw new Error("Gold amount exceeds supported limit");
-  const stacks = pouch.stacks.map((row) => row.itemId === itemId ? { ...row, quantity: row.quantity - quantity2 } : row).filter((row) => row.quantity > 0);
-  return {
-    ...state,
-    account: { ...state.account, gemPouch: { ...pouch, stacks } },
-    character: { ...state.character, gold: state.character.gold + proceeds }
-  };
-}
-function consumeGemFromStorage(state, itemId, quantity2) {
-  if (!Number.isSafeInteger(quantity2) || quantity2 < 1 || gemStorageQuantity(state, itemId) < quantity2)
-    throw new Error(`Need ${quantity2} ${itemDef(itemId).name}`);
-  let left = quantity2;
-  const take4 = (stacks) => stacks.map((row) => {
-    if (row.itemId !== itemId || row.instanceId !== void 0 || left <= 0) return row;
-    const used = Math.min(left, row.quantity);
-    left -= used;
-    return { ...row, quantity: row.quantity - used };
-  }).filter((row) => row.quantity > 0);
-  const pouch = gemPouch(state), pouchStacks = isGemPouchItemId(itemId) ? take4(pouch.stacks) : pouch.stacks;
-  const inventory = take4(state.inventory.stacks), bank = take4(state.bank.stacks);
-  return {
-    ...state,
-    account: { ...state.account, gemPouch: { ...pouch, stacks: pouchStacks } },
-    inventory: { ...state.inventory, stacks: inventory },
-    bank: { ...state.bank, stacks: bank }
-  };
-}
-function migrateGemPouch(state) {
-  let pouch = gemPouch(state);
-  const move = (stacks) => stacks.filter((row) => {
-    if (!row || typeof row.itemId !== "string" || row.instanceId !== void 0 || !isGemPouchItemId(row.itemId) || !Number.isSafeInteger(row.quantity) || row.quantity <= 0) return true;
-    const placed = addStack2(pouch.stacks, pouch.capacity, row.itemId, row.quantity);
-    if (!placed) return true;
-    pouch = { ...pouch, stacks: placed };
-    return false;
-  });
-  const inventory = move(state.inventory.stacks), bank = move(state.bank.stacks);
-  const otherCharacters = state.otherCharacters?.map((entry2) => ({ ...entry2, inventory: { ...entry2.inventory, stacks: move(Array.isArray(entry2.inventory?.stacks) ? entry2.inventory.stacks : []) } }));
-  return {
-    ...state,
-    account: { ...state.account, gemPouch: pouch },
-    otherCharacters,
-    inventory: { ...state.inventory, stacks: inventory },
-    bank: { ...state.bank, stacks: bank }
-  };
-}
-
-// ../apps/mobile/src/core/gem-progression-v1.ts
 var GEM_EFFECT_RESONANCE_CAP_V1 = 3;
 var GEM_COMBINE_COSTS_V1 = {
   1: { to: 2, copies: 3, dust: 0, gold: 1500, seconds: 5 * 60, level: 8, xp: 140 },
@@ -51163,7 +51168,7 @@ function newGame(nowMs) {
     exploredRouteIds: [],
     defeatedBossIds: [],
     skills: ["mining", "woodcutting", "fishing", "smithing", "cooking", "herbalism", "alchemy", "exploration", "tailoring", "enchanting", "faith"].map((skillId) => ({ skillId, xp: 0, level: 1 })),
-    account: { gemPouch: { stacks: [], capacity: 30 }, createdCharacterCount: 1, unlockedCharacterSlots: 1, guildMember: false, patronTier: "none", guildBannerId: "world_tree_green", guildProfileFrameId: "classic", guildNameplateId: "classic", guildMotto: "Stronger together.", guildContribution: 0, guildProjectProgress: 0, guildBossHp: 1e5, guildProjectClaimed: false, guildJoinPolicy: "open", guildMinimumLevel: 10, guildApplicationStatus: "none", seasonalContractClaimIds: [] },
+    account: { gemPouch: { stacks: [], capacity: 30 }, gemPouchMigrationDone: true, createdCharacterCount: 1, unlockedCharacterSlots: 1, guildMember: false, patronTier: "none", guildBannerId: "world_tree_green", guildProfileFrameId: "classic", guildNameplateId: "classic", guildMotto: "Stronger together.", guildContribution: 0, guildProjectProgress: 0, guildBossHp: 1e5, guildProjectClaimed: false, guildJoinPolicy: "open", guildMinimumLevel: 10, guildApplicationStatus: "none", seasonalContractClaimIds: [] },
     settings: { language: "en", uiTheme: "obsidian", numberMode: "abbreviated", reduceMotion: false, textScale: 1, autoEatThresholdPct: 40, stopCombatWhenOutOfFood: true, autoTravelQueuedActivities: false, autoJoinWorldChat: true, defaultWorldChat: 1, chatDockLines: 1, chatEmoteTrayIds: [], quickNavDestinations: [...DEFAULT_QUICK_NAV_DESTINATIONS], favoriteItemIds: [], lockedItemIds: [], seenItemIds: [] }
   };
 }
@@ -52067,13 +52072,17 @@ function sellBankItem(state, itemId, quantity2 = 1) {
   return { ...state, bank: { ...state.bank, stacks, gold: (state.bank.gold ?? 0) + proceeds } };
 }
 function depositToBank(state, itemId, quantity2) {
+  if (!Number.isSafeInteger(quantity2)) throw new Error("Invalid deposit quantity");
   if (quantity2 <= 0) return state;
   const invQty = stackQty2(state.inventory.stacks, itemId);
   if (invQty < quantity2) throw new Error("Not enough items in inventory");
   const removed = consume2(state.inventory.stacks, itemId, quantity2);
+  const remaining = { ...state, inventory: { ...state.inventory, stacks: removed } };
+  const pouchDeposit = tryStoreGemInPouch(remaining, itemId, quantity2);
+  if (pouchDeposit) return pouchDeposit;
   const added = addBounded(state.bank.stacks, entitlementStorageCapacity(state, "bank"), [{ itemId, quantity: quantity2 }]);
-  if (added.overflow.length) throw new Error("Bank is full");
-  return { ...state, inventory: { ...state.inventory, stacks: removed }, bank: { ...state.bank, stacks: added.stacks } };
+  if (added.overflow.length) throw new Error(isGemPouchItemId(itemId) ? "Gem Pouch and Bank are full" : "Bank is full");
+  return { ...remaining, bank: { ...state.bank, stacks: added.stacks } };
 }
 function withdrawFromBank(state, itemId, quantity2) {
   if (quantity2 <= 0) return state;

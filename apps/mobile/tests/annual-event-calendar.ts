@@ -8,13 +8,14 @@ function ok(value:unknown,message:string){if(!value)fail(message)}
 let state=createCharacter(newGame(1),'IRONWARDEN','Calendar Tester');
 let rows=annualEventCalendar(state);
 
-equal(rows.length,8,'eight scheduled events remain after retiring Harvestwake');
+equal(rows.length,7,'seven visible festivals remain after cancelling 2026 Merchant & Guild');
+ok(!rows.some(row=>row.eventId==='EVT_ANNUAL_011_2026'),'cancelled Merchant & Guild 2026 cannot appear in annual calendar');
 equal(rows[0]?.eventId,'EVT_ANNUAL_001_2026','Turning of the Age starts the annual calendar');
 equal(rows[0]?.windowLabel,'Dec 29 – Jan 4','Turning window label');
 equal(rows[1]?.eventId,'EVT_ANNUAL_002_2026','Heartbond follows Turning');
 equal(rows.at(-1)?.eventId,'EVT_ANNUAL_012_2026','Frostfall closes the annual calendar');
 equal(rows.find(row=>row.eventId==='EVT_ANNUAL_010_2026')?.windowLabel,'Oct 10 – Nov 2','Veilbreak publishes its exact window');
-equal(rows.find(row=>row.eventId==='EVT_ANNUAL_011_2026')?.windowLabel,'Nov 6 – Nov 26','Merchant & Guild publishes its exact window');
+ok(!rows.find(row=>row.eventId==='EVT_ANNUAL_011_2026'),'Merchant & Guild no longer advertises a November 2026 window');
 equal(rows.find(row=>row.eventId==='EVT_ANNUAL_012_2026')?.windowLabel,'Dec 3 – Dec 29','Frostfall publishes its exact window');
 ok(rows.every(row=>row.collectionTotal>0),'every production event exposes collection rewards');
 ok(rows.every(row=>row.collectionOwned===0),'fresh account starts with no annual event collection ownership');

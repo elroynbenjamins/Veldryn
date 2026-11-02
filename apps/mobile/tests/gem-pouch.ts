@@ -1,7 +1,10 @@
-import {createCharacter,newGame} from '../src/core/game';
+import {createCharacter,depositAllMaterials,depositToBank,newGame} from '../src/core/game';
+import {switchAccountCharacter} from '../src/core/account-actions';
+import {bulkTransferSelected} from '../src/core/inventory-bulk';
+import {inventoryFeedbackIntent,resolveInventoryActionFeedback} from '../src/core/inventory-action-feedback';
 import {socketGem,unsocketGem} from '../src/core/equipment-enhancement';
 import {claimAllReadyEquipmentCrafts,claimForgeJob,startGemRefinement} from '../src/core/equipment-crafting-queue';
-import {gemPouch,gemPouchUpgradePreview,gemStorageQuantity,migrateGemPouch,sellPouchGem,storePouchGem,upgradeGemPouch} from '../src/core/gem-pouch';
+import {gemDepositDestination,gemPouch,gemPouchUpgradePreview,gemStorageQuantity,migrateGemPouch,sellPouchGem,storePouchGem,upgradeGemPouch} from '../src/core/gem-pouch';
 import {gemRefineRecipeIdV1} from '../src/core/gem-progression-v1';
 import {MOBILE_GEM_FAMILIES_V1} from '../src/content/gems-v1';
 import {normalizeSave} from '../src/core/save-normalization';
@@ -76,4 +79,51 @@ ok(gemPouch(preserved).stacks.length===30&&gemStorageQuantity(preserved,excessId
 let noGold=false;try{upgradeGemPouch({...start,character:{...start.character!,level:10,gold:0}})}catch{noGold=true}
 ok(noGold,'Pouch upgrades must require the authored Gold price');
 
-console.log('PASS: Gem Pouch migration, stacking, blocked claims, recovery and authoritative upgrades');
+// Depositing a gem (including raw/unrefined gems) must use the shared Gem Pouch
+// rather than the ordinary account Bank, whether submitted singly or in bulk.
+const carried={...start,inventory:{...start.inventory,stacks:[{itemId:gemId,quantity:5},{itemId:rawId,quantity:3}]}};
+const depositIntent=inventoryFeedbackIntent(carried,{kind:'deposit',itemId:gemId,quantity:2});
+const deposited=executeGameCommand(carried,{type:'deposit',args:{id:gemId,quantity:2}},1000).state;
+ok(gemDepositDestination(carried,gemId)==='gem_pouch','New gem should prefer a free pouch slot');
+ok(gemPouch(deposited).stacks.some(stack=>stack.itemId===gemId&&stack.quantity===2),'Normal Deposit sends a gem to the pouch');
+ok(deposited.bank.stacks.every(stack=>stack.itemId!==gemId),'Normal Deposit must not bypass the pouch for Bank');
+ok(deposited.inventory.stacks.some(stack=>stack.itemId===gemId&&stack.quantity===3),'Deposit removes exactly the requested number from Inventory');
+ok(resolveInventoryActionFeedback(depositIntent,carried)===null,'Pouch feedback waits for committed state');
+ok(resolveInventoryActionFeedback(depositIntent,deposited)?.message.includes('Gem Pouch'),'Successful pouch deposit reports its actual destination');
+const rawDeposited=depositToBank(deposited,rawId,3);
+ok(gemPouch(rawDeposited).stacks.some(stack=>stack.itemId===rawId&&stack.quantity===3),'Unrefined gems use the pouch too');
+
+const sameGemFiller={...fullPouch,inventory:{...fullPouch.inventory,stacks:[{itemId:filler[0].itemId,quantity:7}]}};
+const stackedIntoFull=depositToBank(sameGemFiller,filler[0].itemId,7);
+ok(gemPouch(stackedIntoFull).stacks.find(stack=>stack.itemId===filler[0].itemId)?.quantity===9,'Full pouch still stacks an already owned gem type');
+ok(stackedIntoFull.bank.stacks.every(stack=>stack.itemId!==filler[0].itemId),'Existing pouch stack never unnecessarily uses Bank');
+
+const fullPouchDeposit={...fullPouch,inventory:{...fullPouch.inventory,stacks:[{itemId:gemId,quantity:4}]},bank:{...fullPouch.bank,stacks:[]}};
+ok(gemDepositDestination(fullPouchDeposit,gemId)==='bank','A new gem type goes to Bank when pouch slots are full');
+const bankIntent=inventoryFeedbackIntent(fullPouchDeposit,{kind:'deposit',itemId:gemId,quantity:4});
+const bankFallback=depositToBank(fullPouchDeposit,gemId,4);
+ok(bankFallback.bank.stacks.some(stack=>stack.itemId===gemId&&stack.quantity===4),'Full pouch falls back to Bank');
+ok(gemPouch(bankFallback).stacks.length===30,'Bank fallback must not overfill pouch');
+ok(resolveInventoryActionFeedback(bankIntent,bankFallback)?.message.includes('Bank'),'Fallback reports Bank instead of Gem Pouch');
+const noRoom={...fullPouchDeposit,bank:{...fullPouchDeposit.bank,capacity:0,stacks:[]}};
+let noRoomError='';try{depositToBank(noRoom,gemId,4)}catch(e){noRoomError=e instanceof Error?e.message:''}
+ok(noRoomError==='Gem Pouch and Bank are full','A full pouch AND Bank must reject without silently losing inventory');
+ok(noRoom.inventory.stacks[0].quantity===4&&gemStorageQuantity(noRoom,gemId)===4,'Failed deposit leaves original ownership unchanged');
+
+const bulkBase={...start,inventory:{...start.inventory,stacks:[{itemId:gemId,quantity:2},{itemId:'COPPER_ORE',quantity:5}]}};
+const bulkIntent=inventoryFeedbackIntent(bulkBase,{kind:'bulk_transfer',direction:'deposit',stacks:2,units:7});
+const bulkDeposited=bulkTransferSelected(bulkBase,[gemId,'COPPER_ORE'],'inventory');
+ok(gemPouch(bulkDeposited).stacks.find(stack=>stack.itemId===gemId)?.quantity===2,'Bulk deposit routes selected gems to pouch');
+ok(bulkDeposited.bank.stacks.find(stack=>stack.itemId==='COPPER_ORE')?.quantity===5,'Bulk deposit routes ordinary materials to Bank');
+ok(resolveInventoryActionFeedback(bulkIntent,bulkDeposited)?.message.includes('Bulk deposit complete'),'Bulk feedback works when some items go to pouch');
+
+// The canonical GameState.account (including Gem Pouch and capacity upgrades)
+// is shared between character snapshots and survives character switches.
+const otherCharacterId='Pouch-account-second-character';
+const shared={...deposited,otherCharacters:[{character:{...deposited.character!,id:otherCharacterId,name:'Second Character'},inventory:{stacks:[],capacity:30},overflow:{stacks:[],expiresAtMs:null},activity:null,skills:deposited.skills,quests:deposited.quests,currentRegionId:deposited.currentRegionId}]};
+const switched=switchAccountCharacter(shared,otherCharacterId,1000);
+ok(switched.character?.id===otherCharacterId&&gemPouch(switched).stacks.find(stack=>stack.itemId===gemId)?.quantity===2,'Gem Pouch is shared across all account characters');
+ok(gemPouch(normalizeSave(switched)).stacks.find(stack=>stack.itemId===gemId)?.quantity===2,'Account shared Gem Pouch survives save normalization');
+ok(depositAllMaterials({...rawDeposited,inventory:{...rawDeposited.inventory,stacks:[{itemId:'COPPER_ORE',quantity:1}]}}).bank.stacks.some(s=>s.itemId==='COPPER_ORE'),'Ordinary auto-deposit materials still use Bank');
+
+console.log('PASS: account-shared Gem Pouch deposits, fallbacks, feedback, migration, stacking, recovery, upgrades');

@@ -173,7 +173,14 @@ ok(appMastery.includes('preparationNotices[0].message')&&appMastery.includes('pr
 ok(appMastery.includes('actionLabel={preparationNotices[0].actionLabel}')&&appMastery.includes('openPreparationNotice(preparationNotices[0])'),'Preparation feedback must provide a one-tap action for the exact current next step');
 ok(appMastery.includes("notice.kind==='complete'||!notice.destination||notice.destination.kind==='info'")&&appMastery.includes('openWorkingTowardDestination(notice.destination)'),'Preparation notice actions must route completion to Working Toward and live steps through canonical deep-link navigation');
 ok(appMastery.includes('preparationNotices.length||collected||forgeResults'),'Mastery feedback must wait behind preparation feedback and higher-priority reward/reveal surfaces');
-ok(appMastery.includes("forgeResults?.some(isExceptionalForgeResult)")&&read('src/components/ForgeResultFeedback.tsx').includes("result.qualityProc&&(result.rarity==='epic'||result.rarity==='legendary'||result.rarity==='mythic')"),'Mastery feedback must defer only behind an exceptional Epic-or-higher Forge reveal');
+// A pending reveal must block Mastery feedback. Current Forge UX reserves its
+// large reveal for retained Legendary/Mythic gear; older branches used Epic+
+// rarity-upgrade reveals until the claim-flow consolidation was merged.
+const forgeResultSource=read('src/components/ForgeResultFeedback.tsx');
+ok(appMastery.includes("forgeResults?.some(isExceptionalForgeResult)")&&(
+ forgeResultSource.includes("result.autoSold!=='incoming'&&(result.rarity==='legendary'||result.rarity==='mythic')")||
+ forgeResultSource.includes("result.qualityProc&&(result.rarity==='epic'||result.rarity==='legendary'||result.rarity==='mythic')")
+),'Mastery feedback must defer behind the actual exceptional Forge reveal without reopening auto-sold results');
 
 const snapshot=read('src/components/SkillDashboard.tsx');
 ok(snapshot.includes('.slice(0,5)'),'Home skill snapshot must show only the five strongest non-combat skills');

@@ -35,6 +35,7 @@ export function ForgeOddsGuide({itemId}:{itemId:string}){
  const chosenMeta=rarityMeta(chosen.rarity);
  const totalMultiplier=chosen.statMultiplier*craftedGearQualityMultiplier(quality);
  const qualityPosition=(quality+'%') as `${number}%`;
+ const rarityTileWidth=(stacked?'100%':'48.4%') as `${number}%`;
  const highlights=outcomes.filter(row=>['rare','epic','mythic'].includes(row.rarity));
  const summary=highlights.length>=2?highlights:outcomes.slice(-3);
  const updateQuality=(position:number)=>{
@@ -71,7 +72,7 @@ export function ForgeOddsGuide({itemId}:{itemId:string}){
        return <Pressable key={row.rarity} accessibilityRole="button"
          accessibilityLabel={gt(translatedRarityName[meta.id])+', '+chanceLabel(row.chance)+' '+gt('Chance')+', '+rarityPower(row.statMultiplier)+' '+gt('Stats')}
          accessibilityState={{selected}} onPress={()=>setSelectedRarity(row.rarity)}
-         style={({pressed})=>[s.chanceTile,{width:stacked?'100%':'48.4%',
+         style={({pressed})=>[s.chanceTile,{width:rarityTileWidth,
            borderColor:selected?meta.color:C.line,backgroundColor:selected?meta.surface:C.panel,
          },pressed&&s.pressed]}>
          <View style={s.tileHeading}>
@@ -101,7 +102,7 @@ export function ForgeOddsGuide({itemId}:{itemId:string}){
        accessibilityState={{disabled:quality===CRAFTED_GEAR_QUALITY_MIN}}
        disabled={quality===CRAFTED_GEAR_QUALITY_MIN}
        hitSlop={4} onPress={()=>setQuality(value=>Math.max(CRAFTED_GEAR_QUALITY_MIN,value-QUALITY_STEP))}
-       style={({pressed})=>[s.stepButton,{borderColor:C.line,backgroundColor:C.panel2,opacity:quality===0?.4:pressed?.7:1}]}>
+       style={({pressed})=>[s.stepButton,{borderColor:C.line,backgroundColor:C.panel2,opacity:quality===0 ? 0.4 : pressed ? 0.7 : 1}]}>
        <Text style={[s.stepText,{color:C.text}]}>−</Text>
      </Pressable>
      <Pressable accessibilityRole="adjustable" accessibilityLabel={gt('Quality preview')}
@@ -124,7 +125,7 @@ export function ForgeOddsGuide({itemId}:{itemId:string}){
        accessibilityState={{disabled:quality===CRAFTED_GEAR_QUALITY_MAX}}
        disabled={quality===CRAFTED_GEAR_QUALITY_MAX}
        hitSlop={4} onPress={()=>setQuality(value=>Math.min(CRAFTED_GEAR_QUALITY_MAX,value+QUALITY_STEP))}
-       style={({pressed})=>[s.stepButton,{borderColor:C.line,backgroundColor:C.panel2,opacity:quality===100?.4:pressed?.7:1}]}>
+       style={({pressed})=>[s.stepButton,{borderColor:C.line,backgroundColor:C.panel2,opacity:quality===100 ? 0.4 : pressed ? 0.7 : 1}]}>
        <Text style={[s.stepText,{color:C.text}]}>+</Text>
      </Pressable>
     </View>

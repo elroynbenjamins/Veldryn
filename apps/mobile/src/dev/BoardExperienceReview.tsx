@@ -5,7 +5,7 @@ import {EventScreen} from '../screens/EventScreen';
 import {GuildQuestBoard} from '../components/GuildQuestPanel';
 import {GuildActivityMeter} from '../components/GuildActivitySummaryPanel';
 import {GuildSpecializationPaths} from '../components/GuildSpecializationPaths';
-import {GuildHallView} from '../components/OnlineGuildHallPanel';
+import {GuildHallView,type HeadquartersSection} from '../components/OnlineGuildHallPanel';
 import {GuildProjectPosting} from '../components/OnlineGuildProjectsPanel';
 import {GuildBoardHero} from '../components/GuildBoardHero';
 import {GuildIdentitySummary} from '../components/GuildIdentitySummary';
@@ -31,7 +31,7 @@ export default function BoardExperienceReview(){return <SafeAreaProvider><Review
 function Review(){
  const query=typeof window==='undefined'?new URLSearchParams():new URLSearchParams(window.location.search),requested=query.get('theme'),language=query.get('language');
  const [scenario,setScenario]=useState(query.get('scenario'));
- const [hallView,setHallView]=useState<'Facilities'|'Skills'|'Trophies'>('Facilities');
+ const [hallView,setHallView]=useState<HeadquartersSection>('Overview');
  const [screen,setScreen]=useState(query.get('screen')??'event'),[theme,setTheme]=useState<UiThemeId>(requested==='ivory'||requested==='ember'?requested:'obsidian'),C=resolveTheme(theme);
  const [state,setState]=useState(()=>{const now=Date.now(),created=createCharacter(newGame(now),'IRONWARDEN','Board Review'),id='EVT_ANNUAL_010_2026';const next={...created,quests:created.quests.map(q=>({...q,status:'claimed' as const})),character:{...created.character!,level:28},account:{...created.account,liveEvent:{enabled:true,eventId:id,startsAtMs:now-86400000,endsAtMs:now+7*86400000,graceEndsAtMs:now+14*86400000},eventCurrencyBalanceById:{[id]:scenario==='poor'?0:3200},eventPrestigeBalanceById:{[id]:8}}};return applyEventDrops(next,[{eventId:id,currencyId:'VEIL_SHARD',name:'Veil Shards',quantity:0,source:'combat',units:1240,recordedAtMs:now},{eventId:id,currencyId:'VEIL_SHARD',name:'Veil Shards',quantity:0,source:'gathering',units:900,recordedAtMs:now}]);});
  const current=useRef(state);current.current=state;

@@ -102,6 +102,7 @@ export function OnlineGuildProjectsPanel({onRewardsChanged,onNavigateActivity}:{
    <Pressable accessibilityRole="button" accessibilityLabel="Recent Guild progress" accessibilityState={{expanded:showHistory}}
     onPress={()=>setShowHistory(v=>!v)} style={({pressed})=>[s.accordion,pressed&&s.pressed]}>
     <View style={s.flex}><Text style={s.sectionTitle}>Recent Guild activity</Text><Text style={s.copy}>{completed.length} completed · {snapshot.activity.length} events</Text></View>
+    {completed.some(p=>p.launchWeekly&&!p.completionRewardClaimed&&p.personalRewardThreshold>0&&p.personalPoints>=p.personalRewardThreshold&&!!p.endsAt&&Date.now()<Date.parse(p.endsAt)+7*86400000)?<StatusPill label="REWARD" tone="good"/>:null}
     <Text style={s.chevron}>{showHistory?'▴':'▾'}</Text>
    </Pressable>
    {showHistory?<View style={s.history}>
@@ -148,7 +149,7 @@ export function GuildProjectPosting({project,expanded,compact=false,onToggle,onC
  const projectArtwork=guildProjectArtwork(project.templateId);
  const readyToClaim=weekly&&claimOpen;
  return <View style={[s.project,project.status==='completed'&&s.complete]}>
-  <Pressable accessibilityRole="button" accessibilityLabel={`Project details: ${project.name}`} accessibilityState={{expanded}}
+  <Pressable accessibilityRole="button" accessibilityLabel={`Project details: ${project.name}`} accessibilityHint="Show or hide the full progress and reward rules" accessibilityState={{expanded}}
    onPress={onToggle} style={({pressed})=>[s.projectPress,pressed&&s.pressed]}>
    <View style={s.sectionHead}>
     {projectArtwork?<Image source={projectArtwork} resizeMode="contain" style={s.projectIcon}/>:<ActivityArtwork id="combat" size={42}/>}
@@ -157,7 +158,8 @@ export function GuildProjectPosting({project,expanded,compact=false,onToggle,onC
    </View>
    <View style={s.progressHead}><Text style={s.percent}>{pct}%</Text><View style={s.progressNumbers}><Text style={s.progressAmount}>{project.kind==='development'?'Resource goals':`${project.completionPoints.toLocaleString()} / ${project.targetPoints.toLocaleString()}`}</Text><Text style={s.meta}>Guild progress</Text></View></View>
    <View style={s.track}><View style={[s.fill,{width:`${Math.min(100,pct)}%` as any}]}/></View>
-   <View style={s.sectionHead}><Text style={s.meta}>{project.meaningfulContributors} / {project.minimumMeaningfulContributors} meaningful contributors</Text><Text style={s.expandHint}>{expanded?'Hide details ▴':'Details ▾'}</Text></View>
+   <View style={s.sectionHead}><Text style={[s.meta,s.flex]}>{project.meaningfulContributors} / {project.minimumMeaningfulContributors} meaningful contributors</Text><Text style={s.expandHint}>{expanded?'Hide details ▴':'Details ▾'}</Text></View>
+   {weekly&&project.status==='active'?<Text style={s.meta}>Weekly reset: Monday at 00:00 UTC</Text>:null}
   </Pressable>
   {!compact?<View style={s.personal}>
    <View style={s.sectionHead}><Text style={s.sectionTitle}>Your contribution</Text>

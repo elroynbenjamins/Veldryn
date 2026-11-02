@@ -43536,7 +43536,7 @@ var RECIPES = [
   { id: "COOK_OATHSCALE", name: "Roast Oathscale", skillId: "cooking", level: 16, xp: 260, gold: 130, seconds: 54, repeatableTraining: true, inputs: [{ itemId: "OATHSCALE_PIKE", quantity: 3 }, { itemId: "CROWNWOOD_LOG", quantity: 1 }], output: { itemId: "ROASTED_OATHSCALE", quantity: 3 } },
   { id: "COOK_CAVE_LOACH", name: "Bake Cave Loach", skillId: "cooking", level: 16, xp: 245, gold: 120, seconds: 52, repeatableTraining: true, inputs: [{ itemId: "CAVE_LOACH", quantity: 3 }, { itemId: "CROWNWOOD_LOG", quantity: 1 }], output: { itemId: "BAKED_CAVE_LOACH", quantity: 3 } },
   { id: "COOK_CROWN_CARP", name: "Roast Crown Carp", skillId: "cooking", level: 20, xp: 330, gold: 165, seconds: 70, repeatableTraining: true, inputs: [{ itemId: "CROWN_CARP", quantity: 3 }, { itemId: "CROWNWOOD_LOG", quantity: 1 }], output: { itemId: "ROASTED_CROWN_CARP", quantity: 3 } },
-  { id: "COOK_IRONWOOD_STEW", name: "Ironwood Hunter Stew", skillId: "cooking", level: 15, xp: 105, gold: 140, seconds: 66, inputs: [{ itemId: "RIVER_EEL", quantity: 2 }, { itemId: "THORN_SAP", quantity: 1 }, { itemId: "IRONWOOD_LOG", quantity: 1 }], output: { itemId: "IRONWOOD_STEW", quantity: 1 } },
+  { id: "COOK_IRONWOOD_STEW", name: "Ironwood Hunter Stew", skillId: "cooking", level: 15, xp: 105, gold: 140, seconds: 66, repeatableTraining: true, inputs: [{ itemId: "RIVER_EEL", quantity: 2 }, { itemId: "THORN_SAP", quantity: 1 }, { itemId: "IRONWOOD_LOG", quantity: 1 }], output: { itemId: "IRONWOOD_STEW", quantity: 1 } },
   { id: "COOK_ASHLANDS_EMBER_STEW", name: "Ashlands Ember Stew", skillId: "cooking", level: 72, xp: 760, gold: 900, seconds: 110, repeatableTraining: true, inputs: [{ itemId: "ASHEN_MYRRH", quantity: 2 }, { itemId: "CINDER_HEART", quantity: 1 }, { itemId: "CINDERWOOD_LOG", quantity: 1 }], output: { itemId: "ASHLANDS_EMBER_STEW", quantity: 2 } },
   { id: "COOK_OASIS_CARP", name: "Grill Oasis Carp", skillId: "cooking", level: 26, xp: 420, gold: 220, seconds: 120, repeatableTraining: true, inputs: [{ itemId: "OASIS_CARP", quantity: 4 }, { itemId: "DUNEWOOD", quantity: 1 }], output: { itemId: "GRILLED_OASIS_CARP", quantity: 4 } },
   { id: "COOK_GLASSFIN_FEAST", name: "Amberglass Glassfin Feast", skillId: "cooking", level: 38, xp: 720, gold: 520, seconds: 210, repeatableTraining: true, inputs: [{ itemId: "GLASSFIN", quantity: 3 }, { itemId: "AMBERGLASS", quantity: 1 }, { itemId: "DUNEWOOD", quantity: 1 }], output: { itemId: "GLASSFIN_FEAST", quantity: 2 } },
@@ -47289,6 +47289,49 @@ function collectionBonusBreakdown(state, catalog2 = COLLECTIBLES) {
   });
 }
 
+// ../apps/mobile/src/core/meal-buffs.ts
+var MEAL_BONUSES = [
+  { itemId: "IRONWOOD_STEW", kind: "gathering_speed", percent: 2, durationHours: 3, label: "+2% Gathering speed" },
+  { itemId: "GLASSFIN_FEAST", kind: "gathering_speed", percent: 3, durationHours: 4, label: "+3% Gathering speed" },
+  { itemId: "FROSTED_ICEFIN", kind: "crafting_speed", percent: 3, durationHours: 4, label: "+3% Crafting speed" },
+  { itemId: "CHARRED_EMBERFIN", kind: "combat_xp", percent: 4, durationHours: 4, label: "+4% Combat XP" },
+  { itemId: "ASHLANDS_EMBER_STEW", kind: "noncombat_speed", percent: 5, durationHours: 4, label: "+5% Non-combat skill speed" }
+];
+function mealBonusDef(itemId) {
+  return MEAL_BONUSES.find((row) => row.itemId === itemId);
+}
+function eatMealForBonus(state, itemId) {
+  if (!state.character) throw new Error("Create a character first.");
+  const def = mealBonusDef(itemId);
+  if (!def) throw new Error("This food does not grant a meal bonus.");
+  let remaining = 1;
+  const stacks = state.inventory.stacks.map((row) => {
+    if (row.itemId !== itemId || remaining === 0) return row;
+    const take4 = Math.min(remaining, row.quantity);
+    remaining -= take4;
+    return { ...row, quantity: row.quantity - take4 };
+  }).filter((row) => row.quantity > 0);
+  if (remaining) throw new Error("Meal not available in Inventory.");
+  return { ...state, inventory: { ...state.inventory, stacks }, character: {
+    ...state.character,
+    activeMealBuff: { itemId, remainingSeconds: def.durationHours * 3600 }
+  } };
+}
+function activeMealBonus(character) {
+  const buff = character?.activeMealBuff;
+  return buff && buff.remainingSeconds > 0 ? mealBonusDef(buff.itemId) : void 0;
+}
+function commitMealActivityTime(state, source, reward2) {
+  const buff = state.character?.activeMealBuff;
+  if (!buff || !source) return state;
+  const eligible = source.kind === "combat" || source.kind === "mining" || source.kind === "woodcutting" || source.kind === "fishing" || source.kind === "herbalism" || source.kind === "alchemy" || source.kind === "processing" || source.kind === "exploration" || source.kind === "faith" || source.kind === "training";
+  if (!eligible) return state;
+  const qualified = Math.max(0, Math.min(reward2.elapsedSeconds, reward2.qualifyingActivitySeconds ?? reward2.elapsedSeconds));
+  if (qualified <= 0) return state;
+  const seconds = Math.max(0, buff.remainingSeconds - qualified);
+  return { ...state, character: { ...state.character, activeMealBuff: seconds > 0 ? { ...buff, remainingSeconds: seconds } : void 0 } };
+}
+
 // ../apps/mobile/src/core/permanent-boosts.ts
 var BASE = {
   attackMultiplier: 1,
@@ -47448,6 +47491,13 @@ function characterPermanentMultipliers(state) {
     dropChanceMultiplier: entitlements.dropChanceMultiplier,
     craftingSpeedMultiplier: entitlements.craftingSpeedMultiplier
   });
+  const meal = activeMealBonus(c);
+  if (meal) {
+    const boost = 1 + meal.percent / 100;
+    if (meal.kind === "gathering_speed" || meal.kind === "noncombat_speed") result.gatheringSpeedMultiplier *= boost;
+    if (meal.kind === "crafting_speed" || meal.kind === "noncombat_speed") result.craftingSpeedMultiplier *= boost;
+    if (meal.kind === "combat_xp") result.characterXpMultiplier *= boost;
+  }
   return result;
 }
 
@@ -51705,6 +51755,31 @@ function claimActivity(state, nowMs) {
   return { state, reward: reward2 };
 }
 function claimActivitySegment(state, nowMs) {
+  const source = state.activity, buff = state.character?.activeMealBuff;
+  if (source && buff && buff.remainingSeconds > 0 && Number.isFinite(buff.remainingSeconds) && nowMs > source.lastClaimAtMs) {
+    const cappedEnd = Math.min(nowMs, source.lastClaimAtMs + offlineCapSeconds(state) * 1e3);
+    const cut = source.lastClaimAtMs + buff.remainingSeconds * 1e3;
+    if (cut > source.lastClaimAtMs && cut < cappedEnd) {
+      const first = claimActivitySegmentRaw(state, cut);
+      const updated = commitMealActivityTime(first.state, source, first.reward);
+      if (!updated.activity) return { state: updated, reward: first.reward };
+      const nextSource = updated.activity;
+      const second = claimActivitySegment(updated, cappedEnd);
+      const combined = combineActivityRewards([
+        { activity: source, reward: first.reward, goalReached: !!first.reward.goalReached },
+        { activity: nextSource, reward: second.reward, goalReached: !!second.reward.goalReached }
+      ]);
+      const hasCappedRemainder = nowMs > cappedEnd && !!second.state.activity;
+      return {
+        state: hasCappedRemainder ? { ...second.state, activity: { ...second.state.activity, lastClaimAtMs: nowMs } } : second.state,
+        reward: { ...combined, offlineCapReached: hasCappedRemainder || combined.offlineCapReached }
+      };
+    }
+  }
+  const result = claimActivitySegmentRaw(state, nowMs);
+  return { state: commitMealActivityTime(result.state, source, result.reward), reward: result.reward };
+}
+function claimActivitySegmentRaw(state, nowMs) {
   state = reconcileWeeklyOrderRollover(state, nowMs).state;
   if (state.character?.classTraining) {
     const r = settleClassDrills(state, nowMs, offlineCapSeconds(state)), next2 = reconcileCombatCompanionUnlocks(r.state, nowMs);
@@ -55202,6 +55277,7 @@ var fields = {
   gear_link_legacy: ["instanceId", "from", "stackIndex"],
   food: ["id"],
   eat: ["id"],
+  meal_bonus: ["id"],
   sell: ["id", "quantity"],
   salvage: ["id"],
   bank_sell: ["id", "quantity"],
@@ -55717,6 +55793,10 @@ function executeGameCommand(previous, value, now, options = {}) {
       break;
     case "eat":
       state = eatFood(state, a.id === void 0 ? void 0 : text(a, "id"));
+      break;
+    case "meal_bonus":
+      state = eatMealForBonus(state, text(a, "id"));
+      message = "Meal bonus activated";
       break;
     case "sell":
       state = sellItem(state, text(a, "id"), a.quantity === void 0 ? 1 : integer(a, "quantity"));

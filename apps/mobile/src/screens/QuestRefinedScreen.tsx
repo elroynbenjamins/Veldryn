@@ -255,7 +255,7 @@ export function QuestRefinedScreen({state,mode,onModeChange,focusedWeeklyOrderId
   <GameModalSurface visible={sheetOpen} onClose={closeSheet} reduceMotion={state.settings.reduceMotion} surfaceStyle={styles.sheetSurface}>
    <GameModalHeader eyebrow={sheetStage==='success'?p('REWARDS COLLECTED'):sheetStage==='confirm'?p('CONFIRM REWARD'):selected?.kind==='story'?p('STORY CHAPTER'):selected?.kind==='contract'?p('WEEKLY CONTRACT'):p('CLASS CHALLENGE')} title={sheetStage==='confirm'?p('Collect quest rewards?'):selectedTitle} onClose={closeSheet}/>
    <ScrollView style={styles.sheetScroll} contentContainerStyle={styles.sheetContent} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
-    {sheetStage==='success'&&moment?.id===selected?.id?<View style={[styles.success,{backgroundColor:C.goodSurface,borderColor:C.good}]}>
+    {sheetStage==='success'&&moment!==null&&moment.id===selected?.id?<View style={[styles.success,{backgroundColor:C.goodSurface,borderColor:C.good}]}>
      <Text style={[styles.successMark,{color:C.good}]}>✦ ✓</Text><Text style={[styles.featuredTitle,{color:C.text}]}>{p('Rewards secured')}</Text>
      <Text style={[styles.subtitle,{color:C.muted}]}>{p('Reward collected · the next objective is ready when unlocked.')}</Text>
      <QuestReward gold={moment.gold} xp={moment.xp} itemId={moment.itemId} quantity={moment.quantity} rarityColor={moment.rarityColor} label={p('Rewards collected')}/>

@@ -49,7 +49,7 @@ export function equippedCraftedInstance(state:GameState,itemId:string){
 }
 export function gearEnhancement(state:GameState,itemId:string):GearEnhancementState{
   const raw=equippedCraftedInstance(state,itemId)?.enhancement??state.character?.gearEnhancements?.[itemId],slots=normalizeEnhancementGemSlots(raw);
-  return {rank:Math.max(0,Math.min(MAX_UPGRADE_RANK,Math.floor(raw?.rank??0))),failures:Math.max(0,Math.floor(raw?.failures??0)),...slots};
+  return {rank:Math.max(0,Math.min(MAX_UPGRADE_RANK,Math.floor(raw?.rank??0))),failures:Math.max(0,Math.floor(raw?.failures??0)),...slots,locked:raw?.locked===false?false:raw?.locked===true||!!(raw?.rank||raw?.failures||slots.gemIds.length)};
 }
 export function hasEnhancement(state:GameState,itemId:string){const enhancement=gearEnhancement(state,itemId);return enhancement.rank>0||enhancement.gemIds.length>0;}
 /**
@@ -62,6 +62,44 @@ export function hasEnhancement(state:GameState,itemId:string){const enhancement=
  * When the legacy owner is unequipped we retain at least one unmarked copy
  * across the active character's Inventory, Bank and Overflow.
  */
+/** Legacy enhancements predate per-copy IDs. Their one remaining unmarked
+ * physical copy can be voluntarily discarded only after an explicit unlock,
+ * with no equipped/other-character/loadout ambiguity. Bulk disposal never uses
+ * this exception; it keeps the last copy protected. */
+export function canReleaseLegacyEnhancedGear(state:GameState,itemId:string,location:'inventory'|'bank'):boolean{
+  const current=state.character;
+  if(!current)return false;
+  const raw=current.gearEnhancements?.[itemId],slots=normalizeEnhancementGemSlots(raw);
+  if(!raw||!(raw.rank>0||raw.failures>0||slots.gemIds.length>0))return false;
+  if(itemDef(itemId).type!=='gear')return false;
+  const characters=[current,...(state.otherCharacters??[]).map(row=>row.character)];
+  if(characters.some(character=>Object.values(character.equipment??{}).includes(itemId)))return false;
+  if(characters.some(character=>character.savedLoadouts?.some(loadout=>
+    Object.values(loadout.equipment).includes(itemId))))return false;
+  if((state.otherCharacters??[]).some(row=>{
+    const other=row.character.gearEnhancements?.[itemId],gems=normalizeEnhancementGemSlots(other);
+    return !!other&&(other.rank>0||other.failures>0||gems.gemIds.length>0);
+  }))return false;
+  const count=(stacks:readonly ItemStack[])=>stacks.reduce((n,row)=>
+    n+(row.itemId===itemId&&row.instanceId===undefined&&Number.isSafeInteger(row.quantity)&&row.quantity>0?row.quantity:0),0);
+  const total=count(state.inventory.stacks)+count(state.bank.stacks)+count(state.overflow.stacks)
+    +(state.otherCharacters??[]).reduce((n,row)=>n+count(row.inventory.stacks)+count(row.overflow.stacks),0);
+  return total===1&&count(state[location].stacks)===1;
+}
+export function legacyEnhancedGearLocked(state:GameState,itemId:string):boolean{
+  const raw=state.character?.gearEnhancements?.[itemId];
+  return !!raw&&raw.locked!==false;
+}
+export function setLegacyEnhancedGearLock(state:GameState,itemId:string,locked:boolean):GameState{
+  if(typeof locked!=='boolean')throw new Error('Invalid equipment lock state');
+  if(!state.character||(!canReleaseLegacyEnhancedGear(state,itemId,'inventory')&&!canReleaseLegacyEnhancedGear(state,itemId,'bank')))
+    throw new Error('Cannot identify the exact older enhanced equipment copy. Keep it protected until its duplicates are resolved.');
+  const raw=state.character.gearEnhancements?.[itemId];
+  if(!raw)throw new Error('Equipment enhancement not found');
+  return {...state,character:{...state.character,gearEnhancements:{
+    ...state.character.gearEnhancements,[itemId]:{...raw,locked}}}};
+}
+
 export function canDisposeLegacyEquipment(state:GameState,itemId:string,location:'inventory'|'bank',quantity:number):boolean{
   if(!Number.isSafeInteger(quantity)||quantity<=0)return false;
   const unmarked=(stacks:readonly ItemStack[])=>stacks.reduce((sum,row)=>
@@ -106,8 +144,8 @@ function consume(stacks:ItemStack[],id:string,amount:number){let left=amount;ret
 function consumeAcross(state:GameState,id:string,amount:number){if(isGemPouchItemId(id))return consumeGemFromStorage(state,id,amount);if(combinedQuantity(state,id)<amount)throw new Error(`Need ${amount} ${itemDef(id).name}`);const inventory=consume(state.inventory.stacks,id,amount),used=qty(state.inventory.stacks,id)-qty(inventory,id);return {...state,inventory:{...state.inventory,stacks:inventory},bank:{...state.bank,stacks:consume(state.bank.stacks,id,amount-used)}};}
 function setEnhancement(state:GameState,itemId:string,value:GearEnhancementState){
   const slots=normalizeEnhancementGemSlots(value),instance=equippedCraftedInstance(state,itemId);
-  if(instance)return {...state,account:{...state.account,craftedGearInstances:craftedGearInstances(state).map(row=>row.id===instance.id?{...row,enhancement:{...value,...slots}}:row)}};
-  return {...state,character:{...state.character!,gearEnhancements:{...(state.character!.gearEnhancements??{}),[itemId]:{...value,...slots}}}};
+  if(instance)return {...state,account:{...state.account,craftedGearInstances:craftedGearInstances(state).map(row=>row.id===instance.id?{...row,locked:true,enhancement:{...value,...slots}}:row)}};
+  return {...state,character:{...state.character!,gearEnhancements:{...(state.character!.gearEnhancements??{}),[itemId]:{...value,...slots,locked:true}}}};
 }
 function requireEquipped(state:GameState,itemId:string){if(!state.character||!Object.values(state.character.equipment).includes(itemId))throw new Error('Equip this item first');}
 export function attemptEquipmentUpgrade(state:GameState,itemId:string,roll=Math.random()){

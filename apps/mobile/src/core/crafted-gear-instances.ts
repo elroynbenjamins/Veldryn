@@ -63,7 +63,8 @@ export function normalizeCraftedGearInstances(raw:unknown):CraftedGearInstance[]
           id:String(row.id).slice(0,180),itemId:item.id,ownerCharacterId:String(row.ownerCharacterId).slice(0,120),rarity,
           // Preserve absence as a legacy marker. In particular, do not invent an authoritative Forge roll.
           quality:isValidCraftedGearQuality(row.quality)?row.quality:undefined,
-          locked:row.locked===true,
+          locked:row.locked===true||((Number(enhancement.rank)>0||Number(enhancement.failures)>0||!!enhancement.statGemId||!!enhancement.effectGemId||(Array.isArray(enhancement.gemIds)&&enhancement.gemIds.length>0))&&row.enhancedSaleUnlocked!==true),
+          enhancedSaleUnlocked:row.enhancedSaleUnlocked===true,
           statRoll:clampStatRoll(row.statRoll),
           acquireSource:'craft' as const,sourceReceiptKey:String(row.sourceReceiptKey??row.id).slice(0,200),
           createdAtMs:Math.max(0,Math.floor(Number(row.createdAtMs)||0)),
@@ -144,7 +145,7 @@ export function draftCraftedGearInstance(args:{itemId:string;ownerCharacterId:st
   return {
     id:`gear:${args.ownerCharacterId}:${args.jobId}`,itemId:args.itemId,ownerCharacterId:args.ownerCharacterId,
     rarity:craftedGearRarity(args.itemId,args.roll),quality:craftedGearQualityRoll(args.roll,args.jobId),
-    locked:false,statRoll:deterministicCraftRarityRoll(`stat:${args.jobId}:${args.ownerCharacterId}`),acquireSource:'craft',sourceReceiptKey:args.jobId,createdAtMs:args.createdAtMs,enhancement:emptyEnhancement(),
+    locked:false,enhancedSaleUnlocked:false,statRoll:deterministicCraftRarityRoll(`stat:${args.jobId}:${args.ownerCharacterId}`),acquireSource:'craft',sourceReceiptKey:args.jobId,createdAtMs:args.createdAtMs,enhancement:emptyEnhancement(),
   };
 }
 export function createCraftedGearInstance(state:GameState,args:{itemId:string;ownerCharacterId:string;jobId:string;createdAtMs:number;roll:number}){

@@ -43,7 +43,7 @@ export function GuildHallView({projection,loading=false,error='',onRefresh,activ
    </View>})}
    <GuildConstructionRoadmapPanel/>
   </View>:null}
-  {section==='Skills'?<View style={s.root}><Panel><Text style={s.title}>Guild Skill Trees</Text><Text style={s.sub}>Permanent bonuses are chosen through three Guild Skill Trees. Hall facilities represent progression visually; their tiers do not automatically stack stat bonuses.</Text></Panel><OnlineGuildSkillsPanel onViewBank={()=>onSectionChange?.('Shop')}/></View>:null}
+  {section==='Skills'?<View style={s.root}><Panel><Text style={s.title}>Guild Skill Trees</Text><Text style={s.sub}>Permanent bonuses are chosen through three Guild Skill Trees. Hall facilities represent progression visually; their tiers do not automatically stack stat bonuses.</Text></Panel><OnlineGuildSkillsPanel/></View>:null}
   {section==='Trophies'?<QuestBoard><View style={s.between}><Text style={s.title}>{st('Trophy Room')}</Text><Text style={s.note}>{state.trophies.length} recorded</Text></View>
    <Text style={s.sub}>Future Guild Legacy will preserve major trophies and season records permanently.</Text>
    {state.trophies.slice(0,10).map(trophy=><View key={trophy.trophyKey} style={s.facility}><Text style={s.facilityName}>{trophy.label}</Text><Text style={s.sub}>{trophy.description||trophy.sourceKind}</Text><Text style={s.note}>{new Date(trophy.earnedAtMs).toLocaleDateString()}</Text></View>)}

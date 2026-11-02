@@ -8,8 +8,9 @@ import {eventDailyGift} from '../src/core/live-events';
 function claimQuest(state:any,id:string,progress:number){return {...state,quests:state.quests.map((q:any)=>q.questId===id?{...q,status:'claimed',progress}:q)}}
 function expectLocked(state:any,command:any,message:string){let actual='';try{executeGameCommand(state,command,1)}catch(error){actual=error instanceof Error?error.message:''}assert.equal(actual,message);}
 
-assert.deepEqual([...EARLY_FEATURE_DESTINATION_ORDER],['DailySupplies','Events','AccountBonuses','Friends','Companions','Social','MasteryHall','Guild','Rankings']);
+assert.deepEqual([...EARLY_FEATURE_DESTINATION_ORDER],['DailySupplies','Events','AccountBonuses','Friends','Companions','Recruitment','MasteryHall','Guild','Rankings']);
 let state=createCharacter(newGame(0),'IRONWARDEN','Onboarding Audit');
+assert.ok(earlyFeatureLockReason(state,'Recruitment').length>0,'Recruitment should retain the original social quest unlock');
 assert.equal(earlyFeatureLockReason(state,'Events'),'','festival calendar and gameplay should be accessible immediately');
 assert.equal(earlyFeatureUnlocked(state,'events'),true,'Live events should be available from level 1 without an introductory quest');
 assert.equal(earlyFeatureUnlockProgress(state,'events').unlocked,true,'Event unlock progress should be consistent with level-one access');

@@ -171,9 +171,11 @@ const selectedIndex=Math.max(0,COMBAT_COMPANIONS.findIndex(def=>def.id===selecti
       })]);
 
   return <View style={s.root}>
-    <View style={s.resourceBar}><Text style={s.resources}>{amount(e.companionEssence)} {t("Essence")}</Text><Text style={s.body}>{amount(e.bondstones)} {t("Bondstones")} · {amount(e.gold)} {t("Gold")}</Text></View>
+    <SectionGuide scope={guideScope} area="companions" section={section}
+      guide={{title:sectionGuide.title,body:sectionGuide.body,detail:sectionGuide.hint}}
+      translate={text=>companionTutorialText(language,text)}
+      header={<View style={s.resourceBar}><Text style={s.resources}>{amount(e.companionEssence)} {t("Essence")}</Text><Text style={s.body}>{amount(e.bondstones)} {t("Bondstones")} · {amount(e.gold)} {t("Gold")}</Text></View>}/>
     <View accessibilityRole="tablist" style={s.navigation}>{sections.map(tab=><Pressable key={tab} accessibilityRole="tab" accessibilityLabel={tab==='Collection'?t("Roster"):label(tab)} accessibilityState={{selected:section===tab||(section==='Codex'&&tab==='Collection')}} onPress={()=>setSection(tab)} style={({pressed})=>[s.navigationTab,(section===tab||section==='Codex'&&tab==='Collection')&&s.navigationSelected,pressed&&s.pressed]}><UiIcon name={sectionIcons[tab]} size={20} muted={section!==tab&&!(section==='Codex'&&tab==='Collection')}/><Text style={[s.navigationText,(section===tab||section==='Codex'&&tab==='Collection')&&s.navigationTextSelected]}>{tab==='Collection'?t("Roster"):label(tab)}</Text></Pressable>)}</View>
-    <SectionGuide scope={guideScope} area="companions" section={section} guide={{title:sectionGuide.title,body:sectionGuide.body,detail:sectionGuide.hint}} translate={text=>companionTutorialText(language,text)}/>
     {message?(isCompanionProgressMoment(message)?<CompanionProgressMoment message={message} reduceMotion={state.settings.reduceMotion}/>:<View accessibilityLiveRegion={messageError?'assertive':'polite'} style={[s.messageCard,messageError&&{borderColor:C.bad,backgroundColor:C.badSurface}]}><Text style={[s.messageLabel,messageError&&{color:C.bad}]}>{messageError?t('Action failed'):t("COMPANION UPDATE")}</Text><Text style={s.message}>{companionMessage(language,message)}</Text></View>):null}
     {section==='Training'&&<CompanionTrainingV50Panel key={selection} initialSelection={selection} onSelectionChange={setSelection} state={state} now={now} onCommand={onCommand} onNavigateSource={source=>source.kind==='companion'?setSection(source.section):onNavigateSource?.(source)}/>}
     {section==='Sanctuary'?<View style={s.group}>

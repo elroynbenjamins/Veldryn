@@ -10,7 +10,7 @@ const dialog=read('apps/mobile/src/components/coop/CoopLiveRematchPanel.tsx');
 const client=read('apps/mobile/src/online/coop-client.ts');
 const backend=read('backend/online/live-rematch.ts');
 const router=read('backend/online/coop.ts');
-const migration=read('backend/supabase/migrations/20261104000022_online_live_same_party_rematch_v1.sql');
+const migration=read('backend/supabase/migrations/20261104000029_online_live_same_party_rematch_v1.sql');
 const arena=stage.indexOf('style={[s.arena,');
 const backdrop=stage.indexOf('style={s.arenaBackdrop}',arena);
 const enemies=stage.indexOf('style={s.enemyFormation}',arena);

@@ -26,7 +26,7 @@ export function CoopLiveRematchPanel({visible,run,status,busy=false,error,onRead
       <View style={s.heading}><Text style={s.kicker}>LIVE DUNGEON · REMATCH</Text><Text accessibilityRole="header" style={s.title}>Keep the party together</Text></View>
       <Pressable accessibilityRole="button" accessibilityLabel="Close rematch" onPress={onClose} style={s.close}><Text style={s.closeText}>×</Text></Pressable>
      </View>
-     <Text style={s.description}>Replay the dungeon route with a fresh run, your current equipment, and the same four adventurers.</Text>
+     <Text style={s.description}>Run this dungeon again with a fresh route, current equipment, and the same four adventurers.</Text>
      <View style={s.readyHeader}><Text style={s.section}>Party ready check</Text><Text style={[s.counter,committed&&s.good]}>{ready}/4 ready</Text></View>
      {members.length===4?members.map((member,index)=>{
       const slot=run.roleSlots[index];const name=member.self?'You':slot?.name??`Party member ${index+1}`;
@@ -44,7 +44,7 @@ export function CoopLiveRematchPanel({visible,run,status,busy=false,error,onRead
       status?.status==='open'&&!accepted?<GameButton title="✓ I'm ready" disabled={busy||members.length!==4} onPress={onReady}/>:
       accepted?<Text style={s.waiting}>✓ Your vote is saved. Waiting for your party…</Text>:null}
      {status?.status==='open'&&!committed&&!accepted?<GameButton title="Decline rematch" tone="secondary" disabled={busy} onPress={onDecline}/>:null}
-     <GameButton title="Back to rewards" tone="secondary" onPress={onClose} disabled={busy}/>
+     <GameButton title="Close" tone="secondary" onPress={onClose} disabled={busy}/>
     </ScrollView>
    </View>
   </View>

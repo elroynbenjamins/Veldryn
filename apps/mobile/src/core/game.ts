@@ -29,6 +29,7 @@ import {gatheringEventRewards,timedEventRewards,applyEventDiscoveries,applyEvent
 import {DEFAULT_QUICK_NAV_DESTINATIONS} from './quick-navigation';
 import {unlockedCharacterSlots} from './account-roster';
 import {accountEntitlementBenefits,entitlementStorageCapacity} from './account-entitlements';
+import {isGemPouchItemId,tryStoreGemInPouch} from './gem-pouch';
 import {gatheringPacing} from './gathering-tools';
 import {gatheringToolDef} from '../content/gathering-tools';
 import {currentRegionId} from './combat-region';
@@ -134,7 +135,7 @@ export function newGame(nowMs:number):GameState{return {
   quests:QUESTS.map((q,i)=>({questId:q.id,status:i===0?'active':'locked',progress:0 as number})) as any,
   unlockedMonsterIds:['MOSS_RAT'],exploredRouteIds:[],defeatedBossIds:[],
   skills:['mining','woodcutting','fishing','smithing','cooking','herbalism','alchemy','exploration','tailoring','enchanting','faith'].map(skillId=>({skillId:skillId as any,xp:0,level:1})),
-  account:{gemPouch:{stacks:[],capacity:30},createdCharacterCount:1,unlockedCharacterSlots:1,guildMember:false,patronTier:'none',guildBannerId:'world_tree_green',guildProfileFrameId:'classic',guildNameplateId:'classic',guildMotto:'Stronger together.',guildContribution:0,guildProjectProgress:0,guildBossHp:100000,guildProjectClaimed:false,guildJoinPolicy:'open',guildMinimumLevel:10,guildApplicationStatus:'none',seasonalContractClaimIds:[]},
+  account:{gemPouch:{stacks:[],capacity:30},gemPouchMigrationDone:true,createdCharacterCount:1,unlockedCharacterSlots:1,guildMember:false,patronTier:'none',guildBannerId:'world_tree_green',guildProfileFrameId:'classic',guildNameplateId:'classic',guildMotto:'Stronger together.',guildContribution:0,guildProjectProgress:0,guildBossHp:100000,guildProjectClaimed:false,guildJoinPolicy:'open',guildMinimumLevel:10,guildApplicationStatus:'none',seasonalContractClaimIds:[]},
   settings:{language:'en',uiTheme:'obsidian',numberMode:'abbreviated',reduceMotion:false,textScale:1,autoEatThresholdPct:40,stopCombatWhenOutOfFood:true,autoTravelQueuedActivities:false,autoJoinWorldChat:true,defaultWorldChat:1,chatDockLines:1,chatEmoteTrayIds:[],quickNavDestinations:[...DEFAULT_QUICK_NAV_DESTINATIONS],favoriteItemIds:[],lockedItemIds:[],seenItemIds:[]}
 }}
 
@@ -952,12 +953,20 @@ export function sellBankItem(state:GameState,itemId:string,quantity=1):GameState
   return {...state,bank:{...state.bank,stacks,gold:(state.bank.gold??0)+proceeds}};
 }
 export function depositToBank(state:GameState,itemId:string,quantity:number):GameState{
+  if(!Number.isSafeInteger(quantity))throw new Error('Invalid deposit quantity');
   if(quantity<=0)return state;
   const invQty=stackQty(state.inventory.stacks,itemId);if(invQty<quantity)throw new Error('Not enough items in inventory');
+  // One atomic state mutation: gems always target the shared account pouch first.
+  // An existing pouch stack can grow even when all pouch slots are occupied.
   const removed=consume(state.inventory.stacks,itemId,quantity);
+  const remaining={...state,inventory:{...state.inventory,stacks:removed}};
+  const pouchDeposit=tryStoreGemInPouch(remaining,itemId,quantity);
+  if(pouchDeposit)return pouchDeposit;
+  // If the pouch has no room for this new gem type, use the shared Bank.
+  // If both are full, throw before returning any state so no items are lost.
   const added=addBounded(state.bank.stacks,entitlementStorageCapacity(state,'bank'),[{itemId,quantity}]);
-  if(added.overflow.length)throw new Error('Bank is full');
-  return {...state,inventory:{...state.inventory,stacks:removed},bank:{...state.bank,stacks:added.stacks}};
+  if(added.overflow.length)throw new Error(isGemPouchItemId(itemId)?'Gem Pouch and Bank are full':'Bank is full');
+  return {...remaining,bank:{...state.bank,stacks:added.stacks}};
 }
 export function withdrawFromBank(state:GameState,itemId:string,quantity:number):GameState{
   if(quantity<=0)return state;

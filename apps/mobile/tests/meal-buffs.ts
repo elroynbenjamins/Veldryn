@@ -12,7 +12,7 @@ function throws(fn:()=>unknown,message:string){let rejected=false;try{fn()}catch
 const now=Date.UTC(2026,10,2);
 const fresh=()=>{
  const state=createCharacter(newGame(now),'IRONWARDEN','Meal Tester');
- return {...state,character:{...state.character!,gold:500000},inventory:{...state.inventory,stacks:[
+ return {...state,skills:state.skills.map(sk=>sk.skillId==='cooking'?{...sk,level:80}:sk),character:{...state.character!,gold:500000},inventory:{...state.inventory,stacks:[
   ...MEAL_BONUSES.map(row=>({itemId:row.itemId,quantity:4})),{itemId:'RIVER_EEL',quantity:40},{itemId:'THORN_SAP',quantity:20},{itemId:'IRONWOOD_LOG',quantity:20},
   {itemId:'GREENWOOD_LOG',quantity:100}
  ]}} as GameState;

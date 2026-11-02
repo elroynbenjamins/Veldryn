@@ -32,8 +32,8 @@ export function EventShopCatalogue({state,definition,offers,currency,prestige,bu
  const C=useGameTheme(),[filter,setFilter]=useState<Filter>('all'),[selected,setSelected]=useState<string|null>(null),[affordableOnly,setAffordableOnly]=useState(false),visuals=liveEventVisuals(definition.visualKey);
  const {width,fontScale}=useWindowDimensions(),twoColumns=width>=350&&fontScale<1.35;
  const entries=offers.map(offer=>{
-  const count=eventOfferPurchaseCount(state,definition.id,offer.id),purchase=eventShopPurchaseStatus(offer,count),left=purchase.remaining,locked=(state.character?.level??0)<(offer.minLevel??1),sold=purchase.complete,balance=offer.currency==='common'?currency:prestige,shortfall=Math.max(0,offer.cost-balance);
-  return {offer,purchase,left,locked,sold,balance,shortfall,owned:sold&&!supply(offer.reward)&&offer.limit===1,canBuy:!locked&&!sold&&shortfall===0};
+  const count=eventOfferPurchaseCount(state,definition.id,offer.id),purchase=eventShopPurchaseStatus(offer,count),locked=(state.character?.level??0)<(offer.minLevel??1),sold=purchase.complete,balance=offer.currency==='common'?currency:prestige,shortfall=Math.max(0,offer.cost-balance);
+  return {offer,purchase,locked,sold,balance,shortfall,owned:sold&&!supply(offer.reward)&&offer.limit===1,canBuy:!locked&&!sold&&shortfall===0};
  });
  const categoryEntries=entries.filter(({offer})=>filter==='all'||supply(offer.reward)===(filter==='supplies'));
  const available=categoryEntries.filter(row=>row.canBuy).length;
@@ -41,13 +41,13 @@ export function EventShopCatalogue({state,definition,offers,currency,prestige,bu
  return <View style={s.stack}>
   <View style={s.toolbar}><View style={s.categories}><BoardTabs compact items={FILTERS} value={filter} label="Shop categories" onChange={next=>{setFilter(next);setSelected(null)}}/></View><Pressable accessibilityRole="checkbox" aria-checked={affordableOnly} accessibilityState={{checked:affordableOnly}} accessibilityLabel={`Show offers I can afford · ${available} available`} onPress={()=>{setAffordableOnly(value=>!value);setSelected(null)}} style={({pressed})=>[s.affordable,{borderColor:affordableOnly?C.selectionLine:C.line,backgroundColor:affordableOnly?C.selection:C.panel},pressed&&s.pressed]}><Text style={[s.meta,{color:affordableOnly?C.text:C.muted}]}>{affordableOnly?'✓ ':''}Can afford</Text></Pressable></View>
   <Text accessibilityLiveRegion="polite" style={[s.meta,{color:C.muted}]}>{visible.length} offers{affordableOnly?' · affordable':''}</Text>
-  <View style={[s.offers,twoColumns&&s.offersGrid]}>{visible.map(({offer,purchase,left,locked,sold,balance,shortfall,owned})=>{
+  <View style={[s.offers,twoColumns&&s.offersGrid]}>{visible.map(({offer,purchase,locked,sold,balance,shortfall,owned})=>{
    const name=offer.currency==='common'?definition.currencyName:definition.prestigeCurrencyName,icon=offer.currency==='common'?visuals.commonCurrencyIcon:visuals.prestigeCurrencyIcon,expanded=selected===offer.id;
    const unavailable=sold?purchase.detail:locked?`Level ${offer.minLevel}+ required`:shortfall?`Need ${shortfall.toLocaleString()} more ${name}`:null;
    return <View key={offer.id} style={[s.offer,twoColumns&&s.offerHalf,{borderColor:expanded?C.selectionLine:C.line,backgroundColor:C.panel}]}>
     <Pressable accessibilityRole="button" accessibilityLabel={`${expanded?'Close':'Inspect'} ${offer.reward.name}`} aria-expanded={expanded} accessibilityState={{expanded}} onPress={()=>setSelected(expanded?null:offer.id)} style={({pressed})=>[s.row,twoColumns&&s.rowCompact,pressed&&s.pressed]}>
      <View style={[s.art,{backgroundColor:C.panel2,borderColor:C.line}]}><RewardArt reward={offer.reward} definition={definition} size={52}/></View>
-     <View style={[s.flex,twoColumns&&s.compactInfo]}><Text style={[s.eyebrow,{color:eventRewardRarity[offer.reward.rarity]}]}>{offer.reward.rarity.toUpperCase()}</Text><Text numberOfLines={2} style={[s.title,twoColumns&&s.compactTitle,{color:C.text}]}>{offer.reward.name}</Text>{!twoColumns?<Text style={[s.meta,{color:C.muted}]}>{kindLabel(offer.reward)} · {purchase.bought} / {offer.limit} bought</Text>:null}<View style={s.price}>{icon?<Image accessible={false} source={icon} style={s.currency}/>:null}<Text numberOfLines={1} style={[s.copy,twoColumns&&s.compactCost,{color:sold?C.muted:C.text,flexShrink:1}]}>{offer.cost.toLocaleString()}{twoColumns?'':' '+name}</Text></View></View>
+     <View style={[s.flex,twoColumns&&s.compactInfo]}><Text style={[s.eyebrow,{color:eventRewardRarity[offer.reward.rarity]}]}>{offer.reward.rarity.toUpperCase()}</Text><Text numberOfLines={2} style={[s.title,twoColumns&&s.compactTitle,{color:C.text}]}>{offer.reward.name}</Text>{!twoColumns?<Text style={[s.meta,{color:C.muted}]}>{kindLabel(offer.reward)}</Text>:null}<View style={s.price}>{icon?<Image accessible={false} source={icon} style={s.currency}/>:null}<Text numberOfLines={1} style={[s.copy,twoColumns&&s.compactCost,{color:sold?C.muted:C.text,flexShrink:1}]}>{offer.cost.toLocaleString()}{twoColumns?'':' '+name}</Text></View></View>
      <Text style={[s.inspect,twoColumns&&s.inspectCompact,{color:expanded?C.accent:C.muted}]}>{expanded?'Selected':'Details'}</Text>
     </Pressable>
     <View style={[s.purchaseStatus,sold&&{backgroundColor:C.goodSurface,borderColor:C.good},!sold&&purchase.bought>0&&{backgroundColor:C.selection,borderColor:C.selectionLine}]}><Text numberOfLines={1} style={[s.purchaseStatusText,{color:sold?C.good:purchase.bought?C.text:C.muted}]}>{purchase.label}</Text></View>
@@ -56,7 +56,7 @@ export function EventShopCatalogue({state,definition,offers,currency,prestige,bu
    </View>;
   })}</View>
   <GameModalSurface visible={selected!==null} presentation="sheet" reduceMotion={state.settings.reduceMotion} onClose={()=>setSelected(null)}>
-  {selected?visible.filter(({offer})=>offer.id===selected).map(({offer,purchase,left,locked,sold,balance,shortfall,owned})=>{
+  {selected?visible.filter(({offer})=>offer.id===selected).map(({offer,purchase,locked,sold,balance,shortfall,owned})=>{
    const name=offer.currency==='common'?definition.currencyName:definition.prestigeCurrencyName;
    const unavailable=sold?purchase.detail:locked?'Level '+offer.minLevel+'+ required':shortfall?'Need '+shortfall.toLocaleString()+' more '+name:null;
    return <View key={offer.id} style={s.detailShell}><GameModalHeader eyebrow={kindLabel(offer.reward).toUpperCase()} title={offer.reward.name} onClose={()=>setSelected(null)}/><ScrollView showsHorizontalScrollIndicator={false} showsVerticalScrollIndicator={false} contentContainerStyle={s.modalBody}><View style={[s.detail,{borderColor:C.selectionLine,backgroundColor:C.panel}]}>

@@ -5,7 +5,7 @@ import {useGameLanguage} from '../i18n/GameLanguageProvider';
 import {socialLabel} from '../i18n/social';
 import {IdentityArtwork} from '../components/SocialIdentity';
 import {GuildIdentitySummary} from '../components/GuildIdentitySummary';
-import {cloneElement,isValidElement,useEffect,useRef,useState,type ReactNode,useMemo} from 'react';
+import {cloneElement,isValidElement,useEffect,useRef,useState,type ReactNode,type ElementRef,useMemo} from 'react';
 import {ActivityIndicator,Image,Modal,Pressable,ScrollView,StyleSheet,Text,View} from 'react-native';
 import {GuildDiscoveryFlow} from '../components/GuildDiscoveryFlow';
 import {SectionGuide} from '../components/SectionGuide';
@@ -71,7 +71,7 @@ const GUILD_PROJECT_COST={MOSS_FIBER:200,GREENWOOD_LOG:120,IRONWOOD_LOG:60,ASTER
 export function GuildScreen({state,onChange,onlineManagement,onlineBoard,onlineProjects,onlinePve,onlineHall,onlineChat,onlineCustomize,onlineChatUnread=0,onlineChatMentions=0,onOpenChat,onRecruitment,online=false,membershipRevision=0,onTokenRewardsChanged,initialPve=false,onInitialPveHandled,initialNavigation,onNavigationChange}:{initialNavigation?:GuildNavigationState;onNavigationChange?:(state:GuildNavigationState)=>void;onOpenChat?:()=>void;onRecruitment?:()=>void;onTokenRewardsChanged?:()=>void|Promise<unknown>;online?:boolean;membershipRevision?:number;state:GameState;onChange:(next:GameState)=>void;onlineManagement?:ReactNode;onlineBoard?:ReactNode;onlineProjects?:ReactNode;onlinePve?:ReactNode;onlineHall?:ReactNode;onlineChat?:ReactNode;onlineCustomize?:ReactNode;onlineChatUnread?:number;onlineChatMentions?:number;initialPve?:boolean;onInitialPveHandled?:()=>void}){
  const st=useSocialText();
   const language=useGameLanguage();
-  const guildScroll=useRef<ScrollView>(null);
+  const guildScroll=useRef<ElementRef<typeof ScrollView>>(null);
  const C=useGameTheme(),s=useMemo(()=>makeStyles(C),[C]);
  const {session}=useAuthSession();
   const [activityView,setActivityView]=useState<'Quests'|'Muster'|'Projects'>(initialNavigation?.activityView??'Quests');

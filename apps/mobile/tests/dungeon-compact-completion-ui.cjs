@@ -9,7 +9,7 @@ const stage=read('components/coop/DungeonCombatStage.tsx');
 const screen=read('screens/CoopExpeditionScreen.tsx');
 assert(choices.includes('minHeight:88')&&choices.includes('size="thumbnail"'),'Room selections are compact');
 assert(choices.includes('option.votes??0')&&choices.includes('myVotedNodeId===option.nodeId'),'Live vote counts and identity remain');
-assert(stage.includes('elapsedClock(elapsedMs)')&&!stage.includes('seconds(pending.wallDurationMs)'),'Combat time counts upward, without revealing expected duration');
+assert(stage.includes('<BattleElapsedSeconds')&&stage.includes('elapsedClock(anchor.current.elapsedMs')&&!stage.includes('seconds(pending.wallDurationMs)'),'Combat time counts upward, without revealing expected duration');
 assert(!stage.includes('Replay combat recap')&&!stage.includes('↻ Replay encounter'),'No combat replay control');
 assert(overview.includes('enteringCombat')&&overview.includes('Preparing the encounter'),'Solo battles transition immediately before the server response');
 assert(overview.includes('<Modal visible={rewardOpen}')&&overview.includes('onPresentationComplete'),'Terminal results open the reward popup after battle presentation');

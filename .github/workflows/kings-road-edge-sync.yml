@@ -1,0 +1,38 @@
+name: Temporary King's Road gameplay Edge sync
+
+on:
+  push:
+    branches:
+      - balance/kings-road-plus-20-20261102
+    paths:
+      - .github/workflows/kings-road-edge-sync.yml
+
+permissions:
+  contents: write
+
+jobs:
+  rebuild:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: balance/kings-road-plus-20-20261102
+          persist-credentials: true
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: pnpm --dir apps/mobile install --frozen-lockfile
+      - run: pnpm --dir backend install --frozen-lockfile
+      - run: pnpm --dir backend build:online
+      - name: Commit only the generated gameplay Edge artifact
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add backend/supabase/functions/gameplay/index.ts
+          if ! git diff --cached --quiet; then
+            git commit -m "build: synchronize gameplay Edge artifact for balance targets"
+            git push origin HEAD:balance/kings-road-plus-20-20261102
+          fi

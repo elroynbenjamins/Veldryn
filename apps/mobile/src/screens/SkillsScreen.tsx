@@ -39,6 +39,7 @@ import {GatheringActivityList} from '../components/GatheringActivityList';
 import {ZoneSceneArtwork} from '../components/ZoneSceneArtwork';
 import {CraftingRecipeBrowser} from '../components/CraftingRecipeBrowser';
 import {EquipmentCraftingHeader,SmithingCollection} from '../components/SmithingCollection';
+import {ConsumableWorkshop} from '../components/ConsumableWorkshop';
 import {progressAnticipation} from '../core/progress-anticipation';
 import {skillIdentity,type SkillIdentityTone} from '../core/profession-mastery-presentation';
 import {HerbalismMethodPanel} from '../components/HerbalismMethodPanel';
@@ -77,6 +78,10 @@ export function SkillsScreen({state,now=Date.now(),onGather,onQueueGather,onQueu
   if(mode==='crafting'&&(initialSkill==='smithing'||initialSkill==='tailoring'))return <ScrollView contentContainerStyle={{padding:16,gap:14,paddingBottom:32,maxWidth:660,width:'100%',alignSelf:'center'}} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled" showsHorizontalScrollIndicator={false}>
     <EquipmentCraftingHeader state={state} skillId={initialSkill}/>
     <SmithingCollection state={state} skillId={initialSkill} initialQuery={initialRecipe?.name??''} preferredRecipeId={initialRecipeId} onCraft={onCraft} onProcessingStart={id=>onCommand({type:'processing_start',args:{id}})} onNavigate={onNavigateCraftingSource} onCraftPrerequisites={onCraftPrerequisites} queueProps={{state,onClaim:onClaimCraft,onClaimAll:onClaimAllCrafts,onCancel:onCancelCraft,onMoveWaiting:onMoveCraftWaiting,forgeResults,onDismissForgeResults,onSetAutoSell:enabled=>onCommand({type:'gear_autosell',args:{enabled}})}}/>
+  </ScrollView>;
+  if(mode==='crafting'&&(initialSkill==='cooking'||initialSkill==='alchemy'))return <ScrollView contentContainerStyle={{padding:16,gap:14,paddingBottom:32,maxWidth:660,width:'100%',alignSelf:'center'}} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled" showsHorizontalScrollIndicator={false}>
+    <SkillHero state={state} skillId={initialSkill} kind={gt('Crafting skill')}/>
+    <ConsumableWorkshop state={state} skillId={initialSkill} preferredRecipeId={initialRecipeId} onStart={id=>onCommand({type:initialSkill==='alchemy'?'alchemy_start':'processing_start',args:{id}})}/>
   </ScrollView>;
   if(!initialSkill)return <SkillHub state={state} onSelect={onSelectSkill??(()=>{})} onCombat={onOpenCombat} onCommand={onCommand}/>;
   if(initialSkill==='exploration')return <ScrollView contentContainerStyle={s.root} showsVerticalScrollIndicator={false} showsHorizontalScrollIndicator={false}><SkillHero state={state} skillId="exploration" kind={gt("Discovery skill")}/><ExplorationPanel state={state} onCommand={onCommand}/></ScrollView>;

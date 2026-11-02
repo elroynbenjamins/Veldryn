@@ -16,6 +16,7 @@ import {GameState,ClassId,RewardBundle,ItemStack,GearSlot,BodyPresentation,Gathe
 import {activityQueueCapacity,activityQueueRegion,activityQueueLocationIssue,normalizeActivityQueue,activityCanAdvanceCondition,queuedActivityReadiness} from './activity-queue';
 import type {ActiveActivity} from './types';
 import {combineActivityRewards} from './activity-rewards';
+import {commitMealActivityTime} from './meal-buffs';
 import {characterLevelFromXp,levelFromXp,totalXpAtLevel} from './progression';
 import {random01} from './rng';
 import {characterNameError,normalizeCharacterName} from './character-creation';
@@ -719,7 +720,34 @@ export function claimActivity(state:GameState,nowMs:number):{state:GameState;rew
  return {state,reward};
 }
 
-function claimActivitySegment(state:GameState,nowMs:number){
+/** Respect meal duration even if an entire AFK window is claimed at once.
+ * Each side of the expiry is settled with the correct bonuses and no duplicate rewards.
+ */
+function claimActivitySegment(state:GameState,nowMs:number):{state:GameState;reward:RewardBundle}{
+ const source=state.activity,buff=state.character?.activeMealBuff;
+ if(source&&buff&&buff.remainingSeconds>0&&Number.isFinite(buff.remainingSeconds)&&nowMs>source.lastClaimAtMs){
+  const cappedEnd=Math.min(nowMs,source.lastClaimAtMs+offlineCapSeconds(state)*1000);
+  const cut=source.lastClaimAtMs+buff.remainingSeconds*1000;
+  if(cut>source.lastClaimAtMs&&cut<cappedEnd){
+   const first=claimActivitySegmentRaw(state,cut);
+   const updated=commitMealActivityTime(first.state,source,first.reward);
+   if(!updated.activity)return {state:updated,reward:first.reward};
+   const nextSource=updated.activity;
+   const second=claimActivitySegment(updated,cappedEnd);
+   const combined=combineActivityRewards([
+    {activity:source,reward:first.reward,goalReached:!!first.reward.goalReached},
+    {activity:nextSource,reward:second.reward,goalReached:!!second.reward.goalReached},
+   ]);
+   const hasCappedRemainder=nowMs>cappedEnd&&!!second.state.activity;
+   return {state:hasCappedRemainder?{...second.state,activity:{...second.state.activity!,lastClaimAtMs:nowMs}}:second.state,
+    reward:{...combined,offlineCapReached:hasCappedRemainder||combined.offlineCapReached}};
+  }
+ }
+ const result=claimActivitySegmentRaw(state,nowMs);
+ return {state:commitMealActivityTime(result.state,source,result.reward),reward:result.reward};
+}
+function claimActivitySegmentRaw(state:GameState,nowMs:number){
+
   state=reconcileWeeklyOrderRollover(state,nowMs).state;
   if(state.character?.classTraining){const r=settleClassDrills(state,nowMs,offlineCapSeconds(state)),next=reconcileCombatCompanionUnlocks(r.state,nowMs);return {state:next,reward:withCompanionUnlocks(r.reward,state,next)};}
   if(state.activity?.kind==='faith'){

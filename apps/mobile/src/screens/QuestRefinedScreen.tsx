@@ -1,4 +1,4 @@
-import {useCallback,useEffect,useMemo,useRef,useState,type ReactNode} from 'react';
+import {useCallback,useEffect,useRef,useState,type ReactNode} from 'react';
 import {Pressable,ScrollView,StyleSheet,Text,View} from 'react-native';
 import type {GameState} from '../core/types';
 import {QUESTS,QUEST_ACTS,type QuestDef} from '../content/quests';
@@ -14,7 +14,7 @@ import {WORLD_ZONES} from '../content/world-map';
 import {MONSTERS} from '../content/monsters';
 import {newlyConfirmedIds} from '../core/visual-feedback';
 import {useGameTheme} from '../theme/ThemeContext';
-import {type ThemeColors,spacing,typography,touchTargetMin} from '../theme/theme';
+import {type ThemeColors,spacing,touchTargetMin} from '../theme/theme';
 import {useGameLanguage} from '../i18n/GameLanguageProvider';
 import {progressionText,progressionT,type ProgressionKey} from '../i18n/progression';
 import {QuestModeSwitch,type QuestMode} from '../components/QuestModeSwitch';
@@ -39,7 +39,7 @@ type RewardMoment={id:string;title:string;gold:number;xp?:number;itemId?:string;
 function ProgressLine({current,max,C}:{current:number;max:number;C:ThemeColors}){
  const percentage=Math.max(0,Math.min(100,Math.round(current/Math.max(1,max)*100)));
  return <View accessible={false} style={[styles.progressTrack,{backgroundColor:C.line}]}>
-  <View style={[styles.progressFill,{width:(percentage+'%') as \`\${number}%\`,backgroundColor:percentage===100?C.good:C.accent}]}/>
+  <View style={[styles.progressFill,{width:(percentage+'%') as `${number}%`,backgroundColor:percentage===100?C.good:C.accent}]}/>
  </View>;
 }
 function statusTone(status:Status):'good'|'info'|'muted'|'warning'{
@@ -72,7 +72,8 @@ function OrderArt({order}:{order:WeeklyOrder}){
  if(monster)return <MonsterPortraitFrame monster={monster} size={40} framed={false} reduceMotion/>;
  if(order.source.kind==='item')return <ItemArtwork itemId={order.source.id} size={38}/>;
  if(order.kind==='regional')return <View style={styles.orderZone}><ActivityArtwork id="exploration" size={38}/></View>;
- return <ActivityArtwork id={weeklyOrderDestination(order).kind==='skills'?weeklyOrderDestination(order).skillId??'exploration':'smithing'} size={38}/>;
+ const destination=weeklyOrderDestination(order);
+ return <ActivityArtwork id={destination.kind==='skills'?destination.skillId??'exploration':'smithing'} size={38}/>;
 }
 function ChallengeArt({quest}:{quest:SeasonalQuest}){
  return <ActivityArtwork id={quest.tag==='boss'?'combat':quest.tag==='equipment'||quest.tag==='crafting'?'smithing':quest.tag==='gathering'?'woodcutting':quest.tag} size={38}/>;

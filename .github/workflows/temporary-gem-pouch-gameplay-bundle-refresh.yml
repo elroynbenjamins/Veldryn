@@ -1,0 +1,38 @@
+name: Temporary Guild-safe gameplay bundle refresh
+on:
+  push:
+    branches: [fix/account-gem-pouch-deposit-priority-20261102]
+    paths: [.github/workflows/temporary-gem-pouch-gameplay-bundle-refresh.yml]
+permissions:
+  contents: write
+jobs:
+  refresh-bundle:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: fix/account-gem-pouch-deposit-priority-20261102
+          persist-credentials: true
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+          cache-dependency-path: backend/pnpm-lock.yaml
+      - name: Install backend dependencies
+        run: pnpm --dir backend install --frozen-lockfile
+      - name: Rebuild authoritative gameplay Edge bundle
+        run: pnpm --dir backend build:online
+      - name: Commit only generated gameplay bundle
+        run: |
+          git add backend/supabase/functions/gameplay/index.ts
+          if git diff --cached --quiet; then
+            echo "Generated gameplay bundle is already current."
+          else
+            git config user.name "github-actions[bot]"
+            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+            git commit -m "Regenerate gameplay Edge bundle for Gem Pouch deposit priority"
+            git push origin HEAD:fix/account-gem-pouch-deposit-priority-20261102
+          fi

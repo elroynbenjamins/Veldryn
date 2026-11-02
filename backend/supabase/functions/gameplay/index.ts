@@ -49217,9 +49217,21 @@ function gearEnhancement(state, itemId) {
   const raw2 = equippedCraftedInstance(state, itemId)?.enhancement ?? state.character?.gearEnhancements?.[itemId], slots2 = normalizeEnhancementGemSlots(raw2);
   return { rank: Math.max(0, Math.min(MAX_UPGRADE_RANK, Math.floor(raw2?.rank ?? 0))), failures: Math.max(0, Math.floor(raw2?.failures ?? 0)), ...slots2 };
 }
-function hasEnhancement(state, itemId) {
-  const enhancement = gearEnhancement(state, itemId);
-  return enhancement.rank > 0 || enhancement.gemIds.length > 0;
+function canDisposeLegacyEquipment(state, itemId, location, quantity2) {
+  if (!Number.isSafeInteger(quantity2) || quantity2 <= 0) return false;
+  const unmarked = (stacks) => stacks.reduce((sum, row) => sum + (row.itemId === itemId && row.instanceId === void 0 && Number.isSafeInteger(row.quantity) && row.quantity > 0 ? row.quantity : 0), 0);
+  if (unmarked(state[location].stacks) < quantity2) return false;
+  const allCharacters = [state.character, ...(state.otherCharacters ?? []).map((entry2) => entry2.character)].filter(
+    (character) => !!character
+  );
+  const reserved = allCharacters.filter((character) => {
+    const enhancement = character.gearEnhancements?.[itemId];
+    const protectedUpgrade = !!enhancement && (enhancement.rank > 0 || enhancement.failures > 0 || !!enhancement.statGemId || !!enhancement.effectGemId || (enhancement.gemIds?.length ?? 0) > 0);
+    return protectedUpgrade && !Object.values(character.equipment ?? {}).includes(itemId);
+  }).length;
+  if (!reserved) return true;
+  const stored = unmarked(state.inventory.stacks) + unmarked(state.bank.stacks) + unmarked(state.overflow.stacks) + (state.otherCharacters ?? []).reduce((count, entry2) => count + unmarked(entry2.inventory.stacks) + unmarked(entry2.overflow.stacks), 0);
+  return stored - quantity2 >= reserved;
 }
 function upgradeMaterialCosts(itemId, targetRank) {
   const recipe2 = v33EquipmentRecipeForItem(itemId);
@@ -51901,10 +51913,8 @@ function sellItem(state, itemId, quantity2 = 1) {
   const d = itemDef(itemId);
   if (d.guildOnly) throw new Error("Guild construction components cannot be sold.");
   if (d.knowledgeUnlockId) throw new Error("Blueprints cannot be sold. Learn the recipe by crafting its tool.");
-  if (d.type === "gear" && hasEnhancement(state, itemId)) {
-    const invQty = state.inventory.stacks.filter((row) => row.itemId === itemId && row.instanceId === void 0).reduce((sum, row) => sum + row.quantity, 0);
-    if (invQty - quantity2 < 1) throw new Error("Enhanced equipment is protected. Extract its gems before disposal; upgraded ranks cannot be recovered.");
-  }
+  if (d.type === "gear" && state.inventory.stacks.some((row) => row.itemId === itemId && row.instanceId === void 0 && row.quantity >= quantity2) && !canDisposeLegacyEquipment(state, itemId, "inventory", quantity2))
+    throw new Error("Enhanced equipment is protected. Keep the upgraded copy or extract its gems before disposal.");
   let next = { ...state, inventory: { ...state.inventory, stacks: consume2(state.inventory.stacks, itemId, quantity2) }, character: { ...state.character, gold: state.character.gold + d.value * quantity2 } };
   return next;
 }
@@ -51913,10 +51923,8 @@ function salvageItem(state, itemId) {
   if (state.settings.lockedItemIds?.includes(itemId)) throw new Error("Locked item is protected. Unlock it before salvaging.");
   const d = itemDef(itemId);
   if (d.type !== "gear" || !d.salvage) throw new Error("Cannot salvage");
-  if (hasEnhancement(state, itemId)) {
-    const invQty = stackQty2(state.inventory.stacks, itemId);
-    if (invQty - 1 < 1) throw new Error("Enhanced equipment is protected. Extract its gems before disposal; upgraded ranks cannot be recovered.");
-  }
+  if (state.inventory.stacks.some((row) => row.itemId === itemId && row.instanceId === void 0 && row.quantity > 0) && !canDisposeLegacyEquipment(state, itemId, "inventory", 1))
+    throw new Error("Enhanced equipment is protected. Keep the upgraded copy or extract its gems before disposal.");
   let next = { ...state, inventory: { ...state.inventory, stacks: stackItems(consume2(state.inventory.stacks, itemId, 1), [d.salvage]) } };
   return next;
 }
@@ -51942,7 +51950,7 @@ function sellBankItem(state, itemId, quantity2 = 1) {
   const def = itemDef(itemId);
   if (def.guildOnly) throw new Error("Guild construction components cannot be sold.");
   if (def.knowledgeUnlockId) throw new Error("Blueprints cannot be sold.");
-  if (def.type === "gear" && hasEnhancement(state, itemId)) throw new Error("Enhanced equipment is protected.");
+  if (def.type === "gear" && state.bank.stacks.some((row) => row.itemId === itemId && row.instanceId === void 0 && row.quantity >= quantity2) && !canDisposeLegacyEquipment(state, itemId, "bank", quantity2)) throw new Error("Enhanced equipment is protected. Keep the upgraded copy or extract its gems before disposal.");
   const stacks = consume2(state.bank.stacks, itemId, quantity2);
   const proceeds = def.value * quantity2;
   if (!Number.isSafeInteger(proceeds) || !Number.isSafeInteger((state.bank.gold ?? 0) + proceeds)) throw new Error("Gold amount exceeds supported limit.");
@@ -53940,9 +53948,9 @@ function selectedStacks(state, itemIds2, location) {
   const ids2 = new Set(uniqueIds(itemIds2));
   return state[location].stacks.filter((stack) => stack.quantity > 0 && stack.instanceId === void 0 && ids2.has(stack.itemId));
 }
-function protectedFromDisposal(state, itemId, goalProtectedIds) {
+function protectedFromDisposal(state, itemId, goalProtectedIds, quantity2, location) {
   const item = itemDef(itemId);
-  return goalProtectedIds.has(itemId) || !!state.settings.favoriteItemIds?.includes(itemId) || !!state.settings.lockedItemIds?.includes(itemId) || item.type === "gear" && hasEnhancement(state, itemId);
+  return goalProtectedIds.has(itemId) || !!state.settings.favoriteItemIds?.includes(itemId) || !!state.settings.lockedItemIds?.includes(itemId) || item.type === "gear" && !canDisposeLegacyEquipment(state, itemId, location, quantity2);
 }
 function bulkSelectionSummary(state, itemIds2, location) {
   const stacks = selectedStacks(state, itemIds2, location);
@@ -53969,11 +53977,11 @@ function bulkSelectionSummary(state, itemIds2, location) {
   const transferable = stacks.filter((stack) => location === "bank" || stack.itemId !== autoEatId);
   const sellable = location === "inventory" ? stacks.filter((stack) => {
     const item = itemDef(stack.itemId);
-    return stack.itemId !== autoEatId && stack.itemId !== HOLY_WATER_ID && item.value > 0 && !protectedFromDisposal(state, stack.itemId, goalProtectedIds);
+    return stack.itemId !== autoEatId && stack.itemId !== HOLY_WATER_ID && item.value > 0 && !protectedFromDisposal(state, stack.itemId, goalProtectedIds, stack.quantity, location);
   }) : [];
   const salvageable = location === "inventory" ? stacks.filter((stack) => {
     const item = itemDef(stack.itemId);
-    return item.type === "gear" && !!item.salvage && !protectedFromDisposal(state, stack.itemId, goalProtectedIds);
+    return item.type === "gear" && !!item.salvage && !protectedFromDisposal(state, stack.itemId, goalProtectedIds, stack.quantity, location);
   }) : [];
   return {
     selectedStackCount: stacks.length,

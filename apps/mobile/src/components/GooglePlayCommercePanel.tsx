@@ -279,26 +279,41 @@ function AndroidGooglePlayCommercePanel({state,onChange,online=false,onRefreshCo
 
   const manageSupporter=()=>void deepLinkToSubscriptions({skuAndroid:'supporter_monthly',packageNameAndroid:PLAY_BILLING_PACKAGE_NAME}).catch(e=>setError(googlePlayBillingErrorMessage(e)));
 
-  return <Panel>
-    <Text accessibilityRole="header" style={s.title}>{a("Google Play purchases")}</Text>
+  return <View style={s.store}>
     {!signedIn&&<View style={s.warning}><Text style={s.warningTitle}>{a("ACCOUNT REQUIRED")}</Text><Text style={s.body}>{a("Secure your guest account or sign in before buying. Purchases are bound to that VELDRYN account for safe restore.")}</Text></View>}
     {!connected&&<Text style={s.muted}>{a("Connecting to Google Play Billing…")}</Text>}
     {!!ownershipError&&<Text accessibilityRole="alert" style={s.error}>{accountError(language,ownershipError,'Could not load account benefits. Please try again.')}</Text>}
     {!!error&&<Text accessibilityRole="alert" style={s.error}>{accountError(language,error,'Google Play billing could not complete that request.')}</Text>}
     {!!notice&&<Text accessibilityRole="alert" style={s.success}>{a(notice)}</Text>}
-    <CommerceCatalog language={language} owned={benefits} checking={ownershipChecking} ready={!busy&&!refreshing&&!ownershipChecking&&signedIn&&!!context&&context.checkoutAvailable!==false&&connected}
+    <CommerceCatalog language={language} owned={benefits} checking={ownershipChecking} signedIn={signedIn} reduceMotion={state.settings.reduceMotion}
+      ready={!busy&&!refreshing&&!ownershipChecking&&signedIn&&!!context&&context.checkoutAvailable!==false&&connected}
       price={id=>id==='supporter_monthly'?subscriptionPrice(sub,offer):productPrice(byId(id))}
       available={id=>id==='supporter_monthly'?!!offer?.offerTokenAndroid:!!byId(id)}
       onBuy={id=>buy(id)}/>
-    <Text style={s.muted}>{a("Owned and active benefits include redeemed codes.")}</Text>
-    <GameButton compact title={a("Manage Supporter in Google Play")} tone="secondary" disabled={busy||!signedIn} onPress={manageSupporter}/>
-    <GameButton compact title={refreshing?a("Refreshing purchases…"):a("Refresh purchases")} tone="secondary" disabled={busy||refreshing||!signedIn} onPress={()=>refresh()}/>
-    <GameButton compact title={busy?a("Checking purchases…"):a("Restore purchases")} tone="secondary" disabled={busy||refreshing||!signedIn} onPress={()=>restore()}/>
+    <View style={[s.management,{backgroundColor:C.panel,borderColor:C.line}]}>
+      <View style={s.managementTitle}>
+        <View style={s.managementCopy}><Text style={s.managementHeading}>{a("Google Play purchases")}</Text><Text style={s.muted}>{a("Owned and active benefits include redeemed codes.")}</Text></View>
+        <Text style={[s.managementSymbol,{color:C.accent}]}>⚙</Text>
+      </View>
+      <View style={s.managementButtons}>
+        <View style={s.managementAction}><GameButton compact title={busy?a("Checking purchases…"):a("Restore purchases")} tone="secondary" disabled={busy||refreshing||!signedIn} onPress={()=>restore()}/></View>
+        <View style={s.managementAction}><GameButton compact title={a("Manage Supporter in Google Play")} tone="secondary" disabled={busy||!signedIn} onPress={manageSupporter}/></View>
+      </View>
+      <GameButton compact title={refreshing?a("Refreshing purchases…"):a("Refresh purchases")} tone="secondary" loading={refreshing} disabled={busy||refreshing||!signedIn} onPress={()=>refresh()}/>
+    </View>
     <Text style={s.foot}>{a("VIP and VIP+ are one-time purchases. Supporter stacks with them while the subscription is active. There are no ads and no paid PvP power.")}</Text>
-  </Panel>;
+  </View>;
 }
 
 function styles(C:ThemeColors){return StyleSheet.create({
+  store:{gap:10,minWidth:0},
+  management:{padding:11,gap:10,borderWidth:1,borderRadius:10},
+  managementTitle:{flexDirection:'row',justifyContent:'space-between',alignItems:'center',gap:8},
+  managementCopy:{flex:1,gap:3,minWidth:0},
+  managementHeading:{fontSize:14,lineHeight:20,fontWeight:'800',color:C.text},
+  managementSymbol:{fontSize:20,fontWeight:'900'},
+  managementButtons:{flexDirection:'row',gap:8},
+  managementAction:{flex:1,minWidth:0},
   title:{...typography.title,color:C.text},
   body:{color:C.muted,lineHeight:20,marginTop:spacing.xs},
   muted:{color:C.muted,fontSize:12,lineHeight:17},

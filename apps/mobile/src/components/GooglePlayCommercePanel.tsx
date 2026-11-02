@@ -2,7 +2,7 @@ import {accountText,accountError} from '../i18n/account';
 import type {Language} from '../i18n/languages';
 import {useGameLanguage} from '../i18n/GameLanguageProvider';
 import {useCallback,useEffect,useMemo,useRef,useState} from 'react';
-import {AppState,Platform,StyleSheet,Text,View} from 'react-native';
+import {AppState,Platform,StyleSheet,Text,View,useWindowDimensions} from 'react-native';
 import {
   deepLinkToSubscriptions,
   ErrorCode,
@@ -74,6 +74,7 @@ function AndroidGooglePlayCommercePanel({state,onChange,online=false,onRefreshCo
  const a=(text:string,params?:Record<string,string|number>)=>accountText(language,text,params);
 
   const C=useGameTheme(),s=useMemo(()=>styles(C),[C]),auth=useAuthSession();
+  const {width,fontScale}=useWindowDimensions(),wideActions=width>=390&&fontScale<1.35;
   const accountId=auth.session?.user.is_anonymous?undefined:auth.session?.user.id;
   const viewerRef=useRef(accountId);viewerRef.current=accountId;
   useEffect(()=>{viewerRef.current=accountId;return()=>{viewerRef.current=undefined;};},[accountId]);
@@ -295,7 +296,7 @@ function AndroidGooglePlayCommercePanel({state,onChange,online=false,onRefreshCo
         <View style={s.managementCopy}><Text style={s.managementHeading}>{a("Google Play purchases")}</Text><Text style={s.muted}>{a("Owned and active benefits include redeemed codes.")}</Text></View>
         <Text style={[s.managementSymbol,{color:C.accent}]}>⚙</Text>
       </View>
-      <View style={s.managementButtons}>
+      <View style={[s.managementButtons,!wideActions&&s.managementStack]}>
         <View style={s.managementAction}><GameButton compact title={busy?a("Checking purchases…"):a("Restore purchases")} tone="secondary" disabled={busy||refreshing||!signedIn} onPress={()=>restore()}/></View>
         <View style={s.managementAction}><GameButton compact title={a("Manage Supporter in Google Play")} tone="secondary" disabled={busy||!signedIn} onPress={manageSupporter}/></View>
       </View>
@@ -314,6 +315,7 @@ function styles(C:ThemeColors){return StyleSheet.create({
   managementSymbol:{fontSize:20,fontWeight:'900'},
   managementButtons:{flexDirection:'row',gap:8},
   managementAction:{flex:1,minWidth:0},
+  managementStack:{flexDirection:'column'},
   title:{...typography.title,color:C.text},
   body:{color:C.muted,lineHeight:20,marginTop:spacing.xs},
   muted:{color:C.muted,fontSize:12,lineHeight:17},

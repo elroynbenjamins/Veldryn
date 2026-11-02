@@ -41,7 +41,7 @@ export function OnlineGuildHallPanel(navigation:HallNavigation){
  },[]);
  useEffect(()=>{void load()},[load]);
  if(loading&&!projection)return <Panel><Text style={s.title}>Guild Hall</Text><ActivityIndicator color={C.accent}/></Panel>;
- if(error&&!projection)return <Panel><Text style={s.title}>Guild Hall</Text><Text accessibilityRole="alert" style={s.error}>{error}</Text><GameButton title="Retry Guild Hall" tone="secondary" onPress={()=>void load(true)}/></Panel>;
+ if(error&&!projection)return <Panel><Text style={s.title}>Guild Hall</Text><Text accessibilityRole="alert" style={s.error}>{error}</Text><GameButton title="Retry Guild Hall" tone="secondary" loading={loading} disabled={loading} onPress={()=>void load(true)}/></Panel>;
  if(!projection)return <Panel><Text style={s.title}>Guild Hall</Text><Text style={s.copy}>Join a Guild to unlock shared Hall progression.</Text></Panel>;
  return <GuildHallView {...navigation} projection={projection} loading={loading} error={error} onRefresh={()=>void load(true)}/>;
 }
@@ -85,14 +85,14 @@ export function GuildHallView({projection,loading=false,error='',onRefresh,activ
   <StatBar rounded label="Hall Progress" current={level>=10?1:Math.max(0,state.hallProgress-previous)} max={level>=10?1:Math.max(1,next-previous)}/>
   <Text style={s.note}>{level>=10?'Launch Hall level cap reached.':hallRemaining.toLocaleString()+' Hall Progress to Level '+(level+1)}</Text>
  </Panel>;
- const shopFallback=()=>previewMode?<Panel><Text style={s.copy}>Construction and bank balances require a connected Guild. This is a memory-only layout preview.</Text></Panel>:shopLoading&&!shop?<Panel><ActivityIndicator color={C.accent}/><Text style={s.copy}>Loading Guild Bank and construction…</Text></Panel>:!shop?<Panel><Text accessibilityRole="alert" style={s.error}>{shopError||'Guild supplies are unavailable.'}</Text><GameButton title="Retry" tone="secondary" onPress={()=>void refreshShop()}/></Panel>:null;
+ const shopFallback=()=>previewMode?<Panel><Text style={s.copy}>Construction and bank balances require a connected Guild. This is a memory-only layout preview.</Text></Panel>:shopLoading&&!shop?<Panel><ActivityIndicator color={C.accent}/><Text style={s.copy}>Loading Guild Bank and construction…</Text></Panel>:!shop?<Panel><Text accessibilityRole="alert" style={s.error}>{shopError||'Guild supplies are unavailable.'}</Text><GameButton title="Retry" tone="secondary" loading={shopLoading} disabled={shopLoading} onPress={()=>void refreshShop()}/></Panel>:null;
  return <View style={s.root}>
   <View style={s.header}>
    <View style={s.crest}><Image source={guildFacilityArtwork('banner_gallery')} style={s.crestImage} resizeMode="contain" accessible={false}/></View>
    <View style={s.flex}><Text style={s.kicker}>GUILD HEADQUARTERS</Text><Text accessibilityRole="header" style={s.title}>Guild Hall</Text><Text style={s.note}>Shared progression and lasting benefits</Text></View>
    {onRefresh?<Pressable accessibilityRole="button" accessibilityLabel="Refresh Guild Hall and supplies" disabled={loading||shopLoading} accessibilityState={{disabled:loading||shopLoading}} onPress={()=>{onRefresh();void refreshShop()}} style={({pressed})=>[s.refresh,pressed&&s.pressed]}><Text style={s.refreshText}>↻</Text></Pressable>:null}
   </View>
-  <ScrollView horizontal showsHorizontalScrollIndicator={false} accessibilityRole="tablist" accessibilityLabel="Guild Hall sections" contentContainerStyle={s.tabs}>
+  <ScrollView horizontal showsVerticalScrollIndicator={false} showsHorizontalScrollIndicator={false} accessibilityRole="tablist" accessibilityLabel="Guild Hall sections" contentContainerStyle={s.tabs}>
    {DESTINATIONS.map(id=><Pressable key={id} accessibilityRole="tab" accessibilityState={{selected:section===id}} onPress={()=>navigate(id)} style={({pressed})=>[s.tab,{backgroundColor:section===id?C.selection:C.panel,borderColor:section===id?C.selectionLine:C.line},pressed&&s.pressed]}><Text style={[s.tabText,{color:section===id?C.text:C.muted}]}>{id==='Legacy'?'Legacy':id}</Text></Pressable>)}
   </ScrollView>
   {section==='Overview'?<View style={s.root}>
@@ -124,7 +124,7 @@ export function GuildHallView({projection,loading=false,error='',onRefresh,activ
     {tier<5?<><StatBar rounded label="Facility progress" current={Math.min(facility.progress,threshold)} max={Math.max(1,threshold)}/><Text style={[s.note,{color:level<requiredLevel?C.warning:C.muted}]}>{level<requiredLevel?'Hall Level '+requiredLevel+' required · ':''}+{Math.max(0,threshold-facility.progress).toLocaleString()} project progress needed</Text></>:null}
     </View></View>})}
    <QuestBoard><View style={s.between}><Text style={s.headingText}>Trophy Room</Text><Text style={s.note}>{state.trophies.length} recorded</Text></View>
-    <Text style={s.copy}>Earned milestones and guild history. Future Guild Legacy is not a claimable reward.</Text>
+    <Text style={s.copy}>Future Guild Legacy will preserve major trophies and season records permanently.</Text>
     {state.trophies.slice(0,10).map(trophy=><View key={trophy.trophyKey} style={s.trophy}><Text style={s.priorityTitle}>{trophy.label}</Text><Text style={s.copy}>{trophy.description||trophy.sourceKind}</Text><Text style={s.note}>{new Date(trophy.earnedAtMs).toLocaleDateString()}</Text></View>)}
     {!state.trophies.length?<Text style={s.note}>No recorded trophies yet.</Text>:null}
    </QuestBoard>

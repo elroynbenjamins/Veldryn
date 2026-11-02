@@ -1,0 +1,64 @@
+name: Deploy Supabase (manual)
+
+# Manual-dispatch only. Database deployment and feature activation are owned by
+# the database owner, so this never runs on push/merge — it is a controlled tool
+# that a maintainer triggers deliberately, choosing the environment each time.
+# Production is gated behind the "supabase-production" GitHub Environment, which
+# can require a reviewer's approval before the job runs.
+on:
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: Target environment
+        type: choice
+        required: true
+        options: [staging, production]
+        default: staging
+      functions_only:
+        description: Skip migrations (db push), deploy functions only
+        type: boolean
+        default: false
+
+concurrency:
+  group: supabase-deploy-${{ github.event.inputs.environment }}
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    # Production maps to a protected environment so it can require approval.
+    environment: supabase-${{ github.event.inputs.environment }}
+    env:
+      SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+      SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
+      PROJECT_REF: ${{ github.event.inputs.environment == 'production' && 'nyjwigipamnvpdvpauuv' || 'iqfmmpvwanvvmxcftfxw' }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - uses: supabase/setup-cli@v1
+        with:
+          version: latest
+
+      - name: Verify committed gameplay Edge bundle matches the shared engine
+        run: node tools/verify-gameplay-edge.mjs
+
+      - name: Link project
+        run: supabase link --project-ref "$PROJECT_REF"
+        working-directory: backend/supabase
+
+      - name: Apply migrations
+        if: ${{ github.event.inputs.functions_only != 'true' }}
+        run: supabase db push
+        working-directory: backend/supabase
+
+      - name: Deploy gameplay function
+        run: supabase functions deploy gameplay --project-ref "$PROJECT_REF"
+        working-directory: backend/supabase
+
+      - name: Deploy coop function
+        run: supabase functions deploy coop --project-ref "$PROJECT_REF"
+        working-directory: backend/supabase

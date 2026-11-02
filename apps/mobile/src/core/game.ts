@@ -203,13 +203,16 @@ export function startCombat(state:GameState,monsterId:string,nowMs:number,combat
   return {...state,outOfCombatSinceMs:undefined,character:{...state.character,activityQueuePausedReason:undefined},activity:{kind:'combat',targetId:monsterId,combatTacticId:normalizeCombatTactic(combatTacticId),...(huntGoalSnapshot(normalizeHuntGoalId(huntGoalId))?{huntGoal:huntGoalSnapshot(normalizeHuntGoalId(huntGoalId))}:{}),sessionKills:0,sessionChampions:0,startedAtMs:nowMs,lastClaimAtMs:nowMs,classFocus:normalizeTrainingFocus(state.character.trainingFocus),classTrainingSnapshot:{faithBlessingId:selectedFaithBlessing(state)?.id},environment:captureActivityEnvironment(monsterId,nowMs)}}
 }
 
-/** Returns the highest crafted V33 tier currently worn (starter/novice gear is 0). */
-function highestEquippedV33Tier(state:GameState){
-  if(!state.character)return 0;
-  return Object.values(state.character.equipment).reduce((highest,itemId)=>{
-    const match=typeof itemId==='string'?/^T([1-9])P_/.exec(itemId):undefined;
-    return Math.max(highest,match?Number(match[1]):0);
+/** Average missing tier across all 10 gear slots, including empty/novice slots.
+ * One high-tier item must not bypass the entire regional readiness check. */
+function regionalEquippedTierGap(state:GameState,expectedTier:number){
+  if(!state.character||expectedTier<=0)return 0;
+  const items=Object.values(state.character.equipment).filter((id):id is string=>typeof id==='string'&&id.length>0);
+  const gap=items.reduce((total,id)=>{
+    const match=/^T([1-9])P_/.exec(id),tier=match?Number(match[1]):0;
+    return total+Math.max(0,expectedTier-tier);
   },0);
+  return (gap+Math.max(0,10-items.length)*expectedTier)/10;
 }
 
 function tryStartNextQueuedActivity(state:GameState,nowMs:number,throwOnFailure=false,index=0,allowAutoTravel=true):GameState{
@@ -400,7 +403,7 @@ function combatRuntimeDetails(state:GameState,monsterId:string,nowMs=Date.now())
   // Regional elites are the first real reason to finish the current tier. A
   // player can still scout them in starter gear, but the missing tier creates
   // a clear time and sustain cost instead of making early equipment optional.
-  const wornTier=highestEquippedV33Tier(state);
+  // Gear preparation is measured over the whole loadout, not the best item.
   // Region-entry gear matters even when combat power reaches the speed cap.
   // Never require a tier before its character-level floor is attainable.
   const regionalGearTier=m.zone==="King's Road"?2:
@@ -408,7 +411,7 @@ function combatRuntimeDetails(state:GameState,monsterId:string,nowMs=Date.now())
     m.zone==='Frostmarch'?(m.level>=70?6:m.level>=55?5:4):
     m.zone==='Ashlands'?(m.level>=82?7:6):undefined;
   const expectedTier=regionalGearTier??(regionalMonsterPressureBand(m.id)==='hard'?(m.level>=22?2:m.level>=10?1:0):0);
-  const tierGap=Math.max(0,expectedTier-wornTier);
+  const tierGap=regionalEquippedTierGap(state,expectedTier);
   const progressionSpeedPenalty=tierGap===0?1:Math.max(.62,1-tierGap*.18);
   const progressionDamagePenalty=tierGap===0?1:1+tierGap*.12;
   const speed=Math.max(COMBAT_SPEED_MIN,Math.min(COMBAT_SPEED_MAX,boostedPower/Math.max(1,expected)))*style.speedMultiplier*tactic.speedMultiplier*modifiers.combatSpeedMultiplier*companion.outputMultiplier*(1+monsterMastery(state,monsterId).damageBonus)*(1+effectGems.combat_speed)*setOutput*combatCandy*progressionSpeedPenalty;

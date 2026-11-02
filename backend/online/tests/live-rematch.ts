@@ -18,7 +18,7 @@ async function main(){
  const calls:Array<{name:string;args:Record<string,unknown>}>=[];
  let current:LiveRematchState={
   status:'open',serverNow:1000,closesAtMs:121000,
-  members:members.map((member,index)=>({accountId:member.accountId,characterId:member.characterId,role:index===0?'tank':index===3?'support':'damage',self:index===0,accepted:false})),
+  members:members.map((member,index)=>({accountId:member.accountId,characterId:member.characterId,role:(index===0?'tank':index===3?'support':'damage') as 'tank'|'support'|'damage',self:index===0,accepted:false})),
  };
  let errorOnSources=false;
  const services={
@@ -54,7 +54,7 @@ async function main(){
  current={...current,status:'committed',readyCheckId:sourceId,runId:winningId};
  assert.equal((await rematch.load(members[0].accountId,sourceId)).runId,winningId,'Reconnection returns server-owned winning run');
  assert.equal(calls.filter(x=>x.name==='online_live_committed_sources_server_v1').length,0,'Existing committed rematch must never recreate the dungeon');
- calls.length=0;current={...current,status:'open',runId:null};
+ calls.length=0;current={...current,status:'open',runId:null,members:current.members.map(m=>({...m,accepted:false}))};
  errorOnSources=true;
  await assert.rejects(()=>rematch.respond(members[0].accountId,sourceId,{requestId:'rematch-invalid-01',accept:true}),/rematch_roster_unavailable/);
  assert.equal(calls.filter(x=>x.name==='online_live_rematch_respond_server_v1').length,0,'Failed roster validation cannot cast a ready vote');

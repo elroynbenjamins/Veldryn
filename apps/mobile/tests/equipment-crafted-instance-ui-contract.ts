@@ -62,4 +62,16 @@ ok(oddsGuide.includes('craftedGearQualityChanceAtLeast(quality)')&&oddsGuide.inc
 ok(oddsGuide.includes('Preview only. Rarity and quality are rolled when claimed.'),
  'Rarity/quality inspection must be explicitly non-purchasing and non-deterministic');
 
+ok(oddsGuide.includes('style={s.chanceGrid}')&&oddsGuide.includes('s.chanceTile')&&oddsGuide.includes("const stacked=width<320||fontScale>=1.45"),
+ 'Forge odds must use space-efficient two-column tiles that expand for accessibility or narrow screens');
+ok(oddsGuide.includes('const usableWidth=trackWidth-2*SLIDER_INSET')&&oddsGuide.includes('position-SLIDER_INSET'),
+ 'Quality slider taps must account for its inset so Q0 and Q100 can be reached accurately');
+ok(oddsGuide.includes("gt('Decrease quality')")&&oddsGuide.includes("gt('Increase quality')")&&oddsGuide.includes('accessibilityState={{disabled:quality===CRAFTED_GEAR_QUALITY_MAX}}'),
+ 'Quality preview must have touch-friendly step controls with bounded disabled states');
+ok(collection.includes('tileColumns=width<345||fontScale>=1.3?4:5')&&collection.includes("gt('Previous set')")&&collection.includes("gt('Next set')"),
+ 'Crafting set tiles must support narrow phones / font scaling and accessible set navigation');
+const forgeLocalizations=read('src/i18n/gameplay.ts');
+ok(['Decrease quality','Increase quality','Previous set','Next set'].every(key=>forgeLocalizations.includes('"'+key+'":')),
+ 'New Forge controls must be translated for each supported gameplay language');
+
 console.log('PASS: crafted-instance result/economy UI and authority wiring are protected');

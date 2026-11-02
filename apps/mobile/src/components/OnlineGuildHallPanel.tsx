@@ -1,56 +1,176 @@
-import {useSocialText} from '../i18n/social';
-import {useEffect,useMemo,useState} from 'react';
-import {ActivityIndicator,Image,StyleSheet,Text,View} from 'react-native';
+import {useCallback,useEffect,useMemo,useState} from 'react';
+import {ActivityIndicator,Image,Pressable,ScrollView,StyleSheet,Text,View} from 'react-native';
 import {GameButton} from './GameButton';
 import {Panel} from './Panel';
-import {BoardTabs} from './BoardTabs';
 import {QuestBoard} from './QuestBoard';
 import {OnlineGuildSkillsPanel} from './OnlineGuildSkillsPanel';
-import {GuildConstructionRoadmapPanel} from './GuildConstructionRoadmapPanel';
+import {OnlineGuildConstructionPanel} from './OnlineGuildConstructionPanel';
+import {OnlineGuildBankPanel} from './OnlineGuildBankPanel';
 import {StatBar} from './StatBar';
 import {guildFacilityArtwork} from '../theme/guild-remaster-art';
 import {GUILD_HALL_FACILITIES,DEFAULT_GUILD_HALL_POLICY} from '../core/guild-hall-v44';
+import {guildConstructionBenefits} from '../content/guild-construction-benefits';
+import {guildConstructionBlueprint} from '../content/guild-construction-blueprints';
 import {loadOnlineGuildHallV44} from '../online/guild-hall-v44';
+import {loadOnlineGuildTokenShop,type GuildTokenShopSnapshot} from '../online/guild-token-shop';
 import {type ThemeColors} from '../theme/theme';
 import {useGameTheme} from '../theme/ThemeContext';
 
 type Projection=Awaited<ReturnType<typeof loadOnlineGuildHallV44>>;
-type HallSection='Facilities'|'Skills'|'Trophies';
-interface HallNavigation{activeSection?:HallSection;onSectionChange?:(section:HallSection|'Shop')=>void;}
+export type HeadquartersSection='Overview'|'Construction'|'Bank'|'Skills'|'Legacy';
+interface HallNavigation {
+ activeSection?:HeadquartersSection;
+ onSectionChange?:(section:HeadquartersSection|'Shop')=>void;
+}
+const DESTINATIONS:readonly HeadquartersSection[]=['Overview','Construction','Bank','Skills','Legacy'];
+const SHORTCUTS=[
+ {id:'Construction' as const,title:'Construction',detail:'Build together',art:'workshop' as const},
+ {id:'Bank' as const,title:'Guild Bank',detail:'Donate supplies',art:'banner_gallery' as const},
+ {id:'Skills' as const,title:'Guild Skills',detail:'Shared skill trees',art:'training_room' as const},
+ {id:'Legacy' as const,title:'Hall & trophies',detail:'Facilities and history',art:'trophy_room' as const},
+];
+
 export function OnlineGuildHallPanel(navigation:HallNavigation){
- const st=useSocialText(),C=useGameTheme(),s=useMemo(()=>makeStyles(C),[C]);
+ const C=useGameTheme(),s=useMemo(()=>styles(C),[C]);
  const [projection,setProjection]=useState<Projection>(null),[loading,setLoading]=useState(true),[error,setError]=useState('');
- const load=async(force=false)=>{setLoading(true);setError('');try{setProjection(await loadOnlineGuildHallV44(force))}catch(reason){setError(reason instanceof Error?reason.message:st('Unable to load Guild Hall.'))}finally{setLoading(false)}};
- useEffect(()=>{void load()},[]);
- const navigationTabs=navigation.onSectionChange?<BoardTabs compact label="Guild Hall sections" items={(['Facilities','Skills','Trophies','Shop'] as const).map(id=>({id,label:id}))} value={navigation.activeSection??'Facilities'} onChange={navigation.onSectionChange}/>:null;
- if(loading&&!projection)return <View style={s.root}>{navigationTabs}<Panel><Text style={s.title}>{st('Guild Hall')}</Text><ActivityIndicator color={C.accent}/></Panel></View>;
- if(error&&!projection)return <View style={s.root}>{navigationTabs}<Panel><Text style={s.title}>{st('Guild Hall')}</Text><Text style={s.error}>{error}</Text><GameButton title={st('Retry')} tone="secondary" loading={loading} disabled={loading} onPress={()=>void load(true)}/></Panel></View>;
- if(!projection)return <View style={s.root}>{navigationTabs}<Panel><Text style={s.title}>{st('Guild Hall')}</Text><Text style={s.sub}>{st('Join a Guild to unlock long-term Guild Hall progression.')}</Text></Panel></View>;
+ const load=useCallback(async(force=false)=>{
+  setLoading(true);setError('');
+  try{setProjection(await loadOnlineGuildHallV44(force))}
+  catch(reason){setError(reason instanceof Error?reason.message:'Unable to load Guild Hall.')}
+  finally{setLoading(false)}
+ },[]);
+ useEffect(()=>{void load()},[load]);
+ if(loading&&!projection)return <Panel><Text style={s.title}>Guild Hall</Text><ActivityIndicator color={C.accent}/></Panel>;
+ if(error&&!projection)return <Panel><Text style={s.title}>Guild Hall</Text><Text accessibilityRole="alert" style={s.error}>{error}</Text><GameButton title="Retry Guild Hall" tone="secondary" loading={loading} disabled={loading} onPress={()=>void load(true)}/></Panel>;
+ if(!projection)return <Panel><Text style={s.title}>Guild Hall</Text><Text style={s.copy}>Join a Guild to unlock shared Hall progression.</Text></Panel>;
  return <GuildHallView {...navigation} projection={projection} loading={loading} error={error} onRefresh={()=>void load(true)}/>;
 }
-export function GuildHallView({projection,loading=false,error='',onRefresh,activeSection,onSectionChange}:{projection:NonNullable<Projection>;loading?:boolean;error?:string;onRefresh?:()=>void}&HallNavigation){
- const st=useSocialText(),C=useGameTheme(),s=useMemo(()=>makeStyles(C),[C]),[localSection,setSection]=useState<HallSection>('Facilities');
+
+export function GuildHallView({projection,loading=false,error='',onRefresh,activeSection,onSectionChange,previewMode=false}:{projection:NonNullable<Projection>;loading?:boolean;error?:string;onRefresh?:()=>void;previewMode?:boolean}&HallNavigation){
+ const C=useGameTheme(),s=useMemo(()=>styles(C),[C]);
+ const [localSection,setLocalSection]=useState<HeadquartersSection>('Overview');
+ const [shop,setShop]=useState<GuildTokenShopSnapshot|null>(null);
+ const [shopLoading,setShopLoading]=useState(true);
+ const [shopError,setShopError]=useState('');
  const section=activeSection??localSection;
+ const navigate=(next:HeadquartersSection)=>{if(onSectionChange)onSectionChange(next);else setLocalSection(next)};
+ const refreshShop=useCallback(async()=>{
+  setShopLoading(true);setShopError('');
+  try{setShop(await loadOnlineGuildTokenShop())}
+  catch(reason){setShopError(reason instanceof Error?reason.message:'Could not load guild construction and bank balances.')}
+  finally{setShopLoading(false)}
+ },[]);
+ useEffect(()=>{if(previewMode)setShopLoading(false);else void refreshShop()},[previewMode,refreshShop]);
  const {state,level,stage}=projection;
- const nextThreshold=DEFAULT_GUILD_HALL_POLICY.hallLevelThresholds[level]??DEFAULT_GUILD_HALL_POLICY.hallLevelThresholds[9],prev=DEFAULT_GUILD_HALL_POLICY.hallLevelThresholds[Math.max(0,level-1)]??0;
+ const next=DEFAULT_GUILD_HALL_POLICY.hallLevelThresholds[level]??DEFAULT_GUILD_HALL_POLICY.hallLevelThresholds[9];
+ const previous=DEFAULT_GUILD_HALL_POLICY.hallLevelThresholds[Math.max(0,level-1)]??0;
+ const hallRemaining=Math.max(0,next-state.hallProgress);
+ const completed=new Set((shop?.construction??[]).filter(row=>row.completed).map(row=>row.templateId));
+ const benefits=guildConstructionBenefits(completed);
+ const nextProject=shop?.constructionTemplates.find(template=>template.id.startsWith('construction_')&&template.enabled&&template.guildLevel<=shop.guildLevel&&!shop.construction.some(row=>row.templateId===template.id&&row.completed));
+ const funding=nextProject?shop?.construction.find(row=>row.templateId===nextProject.id):undefined;
+ const needs=nextProject?[...(nextProject.gold>0?[{key:'gold',amount:nextProject.gold}]:[]),...nextProject.materials.map(material=>({key:material.materialKey,amount:material.amount}))]:[];
+ const funded=needs.reduce((total,requirement)=>total+Math.min(requirement.amount,Math.max(0,funding?.resources[requirement.key]??0)),0);
+ const required=needs.reduce((total,requirement)=>total+requirement.amount,0);
+ const benefitsList=[
+  ...(benefits.canChangeGuildColors?[{name:'Guild color editing',detail:'Only previously unlocked colors can be selected'}]:[]),
+  ...(benefits.smithingTailoringSpeedBps?[{name:'Smithing & Tailoring',detail:'+'+(benefits.smithingTailoringSpeedBps/100)+'% processing speed'}]:[]),
+  ...(benefits.nonCombatXpBps?[{name:'Non-combat skill XP',detail:'+'+(benefits.nonCombatXpBps/100)+'%'}]:[]),
+  ...(benefits.guildTokenBonusBps?[{name:'Guild Token earnings',detail:'+'+(benefits.guildTokenBonusBps/100)+'% · weekly cap '+benefits.guildTokenWeeklyCap}]:[]),
+  ...(benefits.guildBossDamageBps?[{name:'Guild Boss damage',detail:'+'+(benefits.guildBossDamageBps/100)+'%'}]:[]),
+  ...(benefits.guildQuestGoldBps?[{name:'Guild Quest Gold',detail:'+'+(benefits.guildQuestGoldBps/100)+'%'}]:[]),
+ ];
+ const renderHallProgress=()=> <Panel style={s.hero}>
+  <View style={s.between}><View style={s.flex}><Text style={s.kicker}>AUTOMATIC HALL PROGRESSION</Text><Text style={s.heroTitle}>{stage}</Text><Text style={s.note}>{state.lifetimeProjectsCompleted} completed Guild Projects</Text></View><View style={s.levelBadge}><Text style={s.level}>Lv {level}</Text><Text style={s.note}>/ 10</Text></View></View>
+  <StatBar rounded label="Hall Progress" current={level>=10?1:Math.max(0,state.hallProgress-previous)} max={level>=10?1:Math.max(1,next-previous)}/>
+  <Text style={s.note}>{level>=10?'Launch Hall level cap reached.':hallRemaining.toLocaleString()+' Hall Progress to Level '+(level+1)}</Text>
+ </Panel>;
+ const shopFallback=()=>previewMode?<Panel><Text style={s.copy}>Construction and bank balances require a connected Guild. This is a memory-only layout preview.</Text></Panel>:shopLoading&&!shop?<Panel><ActivityIndicator color={C.accent}/><Text style={s.copy}>Loading Guild Bank and construction…</Text></Panel>:!shop?<Panel><Text accessibilityRole="alert" style={s.error}>{shopError||'Guild supplies are unavailable.'}</Text><GameButton title="Retry" tone="secondary" loading={shopLoading} disabled={shopLoading} onPress={()=>void refreshShop()}/></Panel>:null;
  return <View style={s.root}>
-  <BoardTabs compact label="Guild Hall sections" items={(onSectionChange?['Facilities','Skills','Trophies','Shop'] as const:['Facilities','Skills','Trophies'] as const).map(id=>({id,label:id}))} value={section} onChange={value=>{if(onSectionChange)onSectionChange(value);else if(value!=='Shop')setSection(value)}}/>
-  <Panel><View style={s.between}><View style={s.flex}><Text style={s.kicker}>GUILD HALL</Text><Text accessibilityRole="header" style={s.title}>{stage}</Text><Text style={s.sub}>{state.lifetimeProjectsCompleted} completed projects</Text></View><View style={s.levelBadge}><Text style={s.level}>Lv {level}</Text><Text style={s.levelMax}>/10</Text></View></View><StatBar rounded label="Hall Progress" current={level>=10?1:state.hallProgress-prev} max={level>=10?1:nextThreshold-prev}/><Text style={s.note}>{level<10?Math.max(0,nextThreshold-state.hallProgress).toLocaleString()+' Hall Progress to level '+(level+1):'Launch Hall level cap reached.'}</Text></Panel>
-  {section==='Facilities'?<View style={s.root}><Text style={s.kicker}>{st('Automatic progression')}</Text><Text style={s.sub}>Facilities improve through authored Guild Projects. Hall Progress is never spent.</Text>
-   {GUILD_HALL_FACILITIES.map(def=>{const facility=state.facilities[def.id],tier=facility.tier,threshold=DEFAULT_GUILD_HALL_POLICY.facilityProgressThresholds[tier],requiredLevel=def.tierHallLevels[tier];return <View key={def.id} style={s.facility}>
-    <View style={s.between}><Image source={guildFacilityArtwork(def.id)} resizeMode="contain" style={{width:56,height:56}}/><View style={s.flex}><Text style={s.facilityName}>{def.name}</Text><Text style={s.note}>{tier>=5?'Max tier':`Tier ${tier} → ${tier+1}`}</Text></View><Text style={s.tierText}>T{tier}/5</Text></View><Text style={s.sub}>{def.description}</Text>
-    {tier<5?<><StatBar rounded label="Facility progress" current={Math.min(facility.progress,threshold)} max={threshold}/><Text style={[s.note,{color:level<requiredLevel?C.warning:C.muted}]}>{level<requiredLevel?`Hall Level ${requiredLevel} required · `:''}{Math.max(0,threshold-facility.progress).toLocaleString()} more facility progress from Projects</Text></>:null}
-   </View>})}
-   <GuildConstructionRoadmapPanel/>
+  <View style={s.header}>
+   <View style={s.crest}><Image source={guildFacilityArtwork('banner_gallery')} style={s.crestImage} resizeMode="contain" accessible={false}/></View>
+   <View style={s.flex}><Text style={s.kicker}>GUILD HEADQUARTERS</Text><Text accessibilityRole="header" style={s.title}>Guild Hall</Text><Text style={s.note}>Shared progression and lasting benefits</Text></View>
+   {onRefresh?<Pressable accessibilityRole="button" accessibilityLabel="Refresh Guild Hall and supplies" disabled={loading||shopLoading} accessibilityState={{disabled:loading||shopLoading}} onPress={()=>{onRefresh();void refreshShop()}} style={({pressed})=>[s.refresh,pressed&&s.pressed]}><Text style={s.refreshText}>↻</Text></Pressable>:null}
+  </View>
+  <ScrollView horizontal showsVerticalScrollIndicator={false} showsHorizontalScrollIndicator={false} accessibilityRole="tablist" accessibilityLabel="Guild Hall sections" contentContainerStyle={s.tabs}>
+   {DESTINATIONS.map(id=><Pressable key={id} accessibilityRole="tab" accessibilityState={{selected:section===id}} onPress={()=>navigate(id)} style={({pressed})=>[s.tab,{backgroundColor:section===id?C.selection:C.panel,borderColor:section===id?C.selectionLine:C.line},pressed&&s.pressed]}><Text style={[s.tabText,{color:section===id?C.text:C.muted}]}>{id==='Legacy'?'Legacy':id}</Text></Pressable>)}
+  </ScrollView>
+  {section==='Overview'?<View style={s.root}>
+   {renderHallProgress()}
+   <View style={s.heading}><Text style={s.headingText}>Next guild construction</Text><GameButton compact tone="secondary" title="View all" onPress={()=>navigate('Construction')}/></View>
+   {shopFallback()}
+   {nextProject?<Panel style={s.priority}>
+    <View style={s.between}><View style={s.flex}><Text style={s.priorityTitle}>{guildConstructionBlueprint(nextProject.id)?.name??'Guild Construction'}</Text><Text style={s.note}>Guild Lv {nextProject.guildLevel} · {guildConstructionBlueprint(nextProject.id)?.benefit??'Permanent guild upgrade'}</Text></View><Text style={s.percent}>{required?Math.round(100*funded/required):0}%</Text></View>
+    <StatBar rounded label="Materials allocated" current={funded} max={Math.max(1,required)}/>
+    <GameButton compact title="Contribute materials" onPress={()=>navigate('Construction')}/>
+   </Panel>:!shopLoading&&shop?<Panel><Text style={s.copy}>No eligible released construction is currently waiting for supplies.</Text><GameButton compact tone="secondary" title="View roadmap" onPress={()=>navigate('Construction')}/></Panel>:null}
+   <View style={s.heading}><Text style={s.headingText}>Active construction benefits</Text><Text style={s.counter}>{benefitsList.length} unlocked</Text></View>
+   <Panel style={s.benefitList}>
+    {benefitsList.length?benefitsList.slice(0,4).map((item,index)=><View key={item.name} style={[s.benefit,index>0&&s.benefitDivider]}><Text style={s.check}>✓</Text><View style={s.flex}><Text style={s.benefitTitle}>{item.name}</Text><Text style={s.note}>{item.detail}</Text></View></View>):<Text style={s.copy}>Complete Guild Construction to unlock permanent shared bonuses.</Text>}
+    <Text style={s.note}>Shop quality unlocked: {benefits.shopQuality.charAt(0).toUpperCase()+benefits.shopQuality.slice(1)}. Construction does not award free items.</Text>
+   </Panel>
+   <Text style={s.headingText}>Guild Hall destinations</Text>
+   <View style={s.shortcuts}>{SHORTCUTS.map(item=><Pressable key={item.id} accessibilityRole="button" accessibilityLabel={'Open '+item.title} onPress={()=>navigate(item.id)} style={({pressed})=>[s.shortcut,pressed&&s.pressed]}><Image source={guildFacilityArtwork(item.art)} resizeMode="contain" style={s.shortcutArt} accessible={false}/><View style={s.flex}><Text style={s.shortcutTitle}>{item.title}</Text><Text style={s.note}>{item.detail}</Text></View></Pressable>)}</View>
+   <View style={s.heading}><Text style={s.headingText}>Hall facilities</Text><GameButton compact tone="secondary" title="View details" onPress={()=>navigate('Legacy')}/></View>
+   <View style={s.facilityGrid}>{GUILD_HALL_FACILITIES.slice(0,4).map(def=><View key={def.id} style={s.facilityTile}><Text style={s.tileName}>{def.name}</Text><Text style={s.tileTier}>Tier {state.facilities[def.id].tier}/5</Text></View>)}</View>
   </View>:null}
-  {section==='Skills'?<View style={s.root}><Panel><Text style={s.title}>Guild Skill Trees</Text><Text style={s.sub}>Permanent bonuses are chosen through three Guild Skill Trees. Hall facilities represent progression visually; their tiers do not automatically stack stat bonuses.</Text></Panel><OnlineGuildSkillsPanel/></View>:null}
-  {section==='Trophies'?<QuestBoard><View style={s.between}><Text style={s.title}>{st('Trophy Room')}</Text><Text style={s.note}>{state.trophies.length} recorded</Text></View>
-   <Text style={s.sub}>Future Guild Legacy will preserve major trophies and season records permanently.</Text>
-   {state.trophies.slice(0,10).map(trophy=><View key={trophy.trophyKey} style={s.facility}><Text style={s.facilityName}>{trophy.label}</Text><Text style={s.sub}>{trophy.description||trophy.sourceKind}</Text><Text style={s.note}>{new Date(trophy.earnedAtMs).toLocaleDateString()}</Text></View>)}
-   {!state.trophies.length?<Text style={s.sub}>No trophies yet. Completed eligible Guild Projects and raids will appear here.</Text>:null}
-  </QuestBoard>:null}
-  {onRefresh?<GameButton compact title={loading?st('Refreshing…'):st('Refresh Guild Hall')} tone="secondary" disabled={loading} onPress={onRefresh}/>:null}
+  {section==='Construction'?<View style={s.root}><Text style={s.headingText}>Guild Construction</Text><Text style={s.copy}>Build permanent benefits with Guild Bank supplies. Unlike Hall Progress, these projects require materials and a released upgrade.</Text>{shopFallback()}{shop?<OnlineGuildConstructionPanel snapshot={shop} onReload={refreshShop}/>:null}<GameButton compact tone="secondary" title="Open Guild Bank" onPress={()=>navigate('Bank')}/></View>:null}
+  {section==='Bank'?<View style={s.root}><Text style={s.headingText}>Guild Bank</Text><Text style={s.copy}>Deposit materials needed by released, level-eligible construction. Deposits cannot be withdrawn.</Text>{shopFallback()}{shop?<OnlineGuildBankPanel snapshot={shop} onReload={refreshShop}/>:null}<GameButton compact title="Allocate to construction" onPress={()=>navigate('Construction')}/></View>:null}
+  {section==='Skills'?<View style={s.root}><Panel><Text style={s.headingText}>Guild Skill Trees</Text><Text style={s.copy}>Professions, Fellowship and Vanguard. Only released, server-verified bonuses can be upgraded by authorized officers.</Text></Panel><OnlineGuildSkillsPanel onViewBank={()=>navigate('Bank')}/></View>:null}
+  {section==='Legacy'?<View style={s.root}>{renderHallProgress()}<Text style={s.headingText}>Hall facilities</Text><Text style={s.copy}>Facilities advance automatically through Guild Projects. Construction and Guild Skills grant their own separate benefits.</Text>
+   {GUILD_HALL_FACILITIES.map(def=>{const facility=state.facilities[def.id],tier=facility.tier,threshold=DEFAULT_GUILD_HALL_POLICY.facilityProgressThresholds[tier],requiredLevel=def.tierHallLevels[tier];return <View key={def.id} style={s.facility}>
+    <Image source={guildFacilityArtwork(def.id)} resizeMode="contain" style={s.facilityImage} accessible={false}/>
+    <View style={s.flex}><View style={s.between}><Text style={s.priorityTitle}>{def.name}</Text><Text style={s.tileTier}>T{tier}/5</Text></View><Text style={s.note}>{def.description}</Text>
+    {tier<5?<><StatBar rounded label="Facility progress" current={Math.min(facility.progress,threshold)} max={Math.max(1,threshold)}/><Text style={[s.note,{color:level<requiredLevel?C.warning:C.muted}]}>{level<requiredLevel?'Hall Level '+requiredLevel+' required · ':''}+{Math.max(0,threshold-facility.progress).toLocaleString()} project progress needed</Text></>:null}
+    </View></View>})}
+   <QuestBoard><View style={s.between}><Text style={s.headingText}>Trophy Room</Text><Text style={s.note}>{state.trophies.length} recorded</Text></View>
+    <Text style={s.copy}>Future Guild Legacy will preserve major trophies and season records permanently.</Text>
+    {state.trophies.slice(0,10).map(trophy=><View key={trophy.trophyKey} style={s.trophy}><Text style={s.priorityTitle}>{trophy.label}</Text><Text style={s.copy}>{trophy.description||trophy.sourceKind}</Text><Text style={s.note}>{new Date(trophy.earnedAtMs).toLocaleDateString()}</Text></View>)}
+    {!state.trophies.length?<Text style={s.note}>No recorded trophies yet.</Text>:null}
+   </QuestBoard>
+  </View>:null}
+  {!!shopError&&shop?<Text accessibilityRole="alert" style={s.error}>Showing previously loaded supplies. Refresh failed: {shopError}</Text>:null}
   {!!error&&<Text accessibilityRole="alert" style={s.error}>{error}</Text>}
  </View>;
 }
-function makeStyles(C:ThemeColors){return StyleSheet.create({root:{gap:12},kicker:{fontSize:11,lineHeight:16,color:C.info,fontWeight:'700',letterSpacing:.7},title:{fontSize:19,lineHeight:25,color:C.text,fontWeight:'700'},sub:{fontSize:13,lineHeight:19,color:C.muted},note:{fontSize:12,lineHeight:18,color:C.muted},between:{flexDirection:'row',alignItems:'center',gap:10,justifyContent:'space-between'},flex:{flex:1,minWidth:0,gap:4},levelBadge:{flexDirection:'row',alignItems:'baseline',paddingHorizontal:8,paddingVertical:5,borderRadius:8,borderWidth:1,borderColor:C.lineStrong,backgroundColor:C.warningSurface},level:{color:C.accent,fontSize:18,fontWeight:'700'},levelMax:{color:C.muted,fontSize:12},facility:{padding:12,gap:10,borderWidth:1,borderColor:C.line,borderRadius:10,backgroundColor:C.panelRaised},facilityName:{fontSize:15,lineHeight:21,color:C.text,fontWeight:'700'},tierText:{fontSize:13,color:C.accent,fontWeight:'600'},error:{fontSize:13,lineHeight:19,color:C.bad}});}
+
+function styles(C:ThemeColors){return StyleSheet.create({
+ root:{gap:11},header:{flexDirection:'row',alignItems:'center',gap:10},flex:{flex:1,minWidth:0,gap:4},
+ crest:{width:51,height:51,borderRadius:12,borderWidth:1,borderColor:C.lineStrong,backgroundColor:C.panel2,justifyContent:'center',alignItems:'center'},
+ crestImage:{width:43,height:43},
+ title:{fontSize:20,lineHeight:26,fontWeight:'900',color:C.text},
+ heroTitle:{fontSize:17,lineHeight:24,fontWeight:'800',color:C.text},
+ kicker:{fontSize:10,lineHeight:15,fontWeight:'900',letterSpacing:.8,color:C.accentSoft},
+ copy:{fontSize:12,lineHeight:18,color:C.muted},
+ note:{fontSize:11,lineHeight:16,color:C.muted},
+ error:{fontSize:12,lineHeight:18,color:C.bad},
+ heading:{flexDirection:'row',alignItems:'center',justifyContent:'space-between',gap:8},
+ headingText:{fontSize:15,lineHeight:21,fontWeight:'800',color:C.text},
+ hero:{gap:10,backgroundColor:C.panelRaised},
+ priority:{gap:9},priorityTitle:{fontSize:13,lineHeight:19,fontWeight:'800',color:C.text},
+ between:{flexDirection:'row',alignItems:'center',justifyContent:'space-between',gap:9},
+ levelBadge:{paddingVertical:5,paddingHorizontal:9,borderWidth:1,borderColor:C.lineStrong,borderRadius:9,alignItems:'center',backgroundColor:C.panel2},
+ level:{fontSize:19,fontWeight:'900',color:C.accent},
+ tabs:{gap:5,paddingBottom:2},tab:{minHeight:44,minWidth:83,alignItems:'center',justifyContent:'center',paddingHorizontal:10,borderRadius:9,borderWidth:1},
+ tabText:{fontSize:11,fontWeight:'800'},pressed:{opacity:.72},
+ refresh:{width:44,height:44,alignItems:'center',justifyContent:'center',borderRadius:10,borderWidth:1,borderColor:C.line,backgroundColor:C.panel},
+ refreshText:{fontSize:23,color:C.accent},
+ percent:{fontSize:17,fontWeight:'900',color:C.accent},
+ benefitList:{gap:7},
+ benefit:{flexDirection:'row',alignItems:'flex-start',gap:9,paddingVertical:5},
+ benefitDivider:{borderTopWidth:1,borderTopColor:C.line,paddingTop:10},
+ check:{fontSize:17,fontWeight:'900',color:C.good},
+ benefitTitle:{fontSize:12,lineHeight:18,fontWeight:'800',color:C.text},
+ counter:{fontSize:11,color:C.good,fontWeight:'800'},
+ shortcuts:{flexDirection:'row',flexWrap:'wrap',gap:8},
+ shortcut:{width:'48%',flexGrow:1,minHeight:73,flexDirection:'row',alignItems:'center',gap:7,paddingHorizontal:8,paddingVertical:10,borderRadius:10,borderWidth:1,borderColor:C.lineStrong,backgroundColor:C.panel},
+ shortcutArt:{width:35,height:35},
+ shortcutTitle:{fontSize:12,lineHeight:16,fontWeight:'800',color:C.text},
+ facilityGrid:{flexDirection:'row',flexWrap:'wrap',gap:7},
+ facilityTile:{width:'48%',flexGrow:1,minHeight:61,padding:10,borderWidth:1,borderColor:C.line,borderRadius:9,backgroundColor:C.panel},
+ tileName:{fontSize:11,lineHeight:16,fontWeight:'700',color:C.muted},
+ tileTier:{fontSize:12,lineHeight:18,fontWeight:'900',color:C.accent},
+ facility:{flexDirection:'row',alignItems:'flex-start',gap:9,padding:10,borderWidth:1,borderRadius:10,borderColor:C.line,backgroundColor:C.panelRaised},
+ facilityImage:{width:46,height:46},
+ trophy:{borderTopWidth:1,borderTopColor:C.line,paddingTop:9,gap:4},
+ });}

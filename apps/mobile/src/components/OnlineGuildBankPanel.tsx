@@ -51,6 +51,12 @@ export function OnlineGuildBankPanel({snapshot,onReload}:{snapshot:GuildTokenSho
    try{setPending(await pendingGuildBankDeposit())}catch{/* Keep error until retry. */}
   }finally{setBusy(false)}
  };
+ const confirmDeposit=()=>{
+  if(!selected||!valid||busy||pending)return;
+  gameAlert.alert('Deposit Guild Bank supplies?',
+   'Deposit '+amount.toLocaleString()+' '+title(selected)+' permanently into the shared Guild Bank? Members cannot withdraw donated resources.',
+   [{text:'Cancel',style:'cancel'},{text:'Confirm deposit',onPress:()=>void deposit({resourceId:selected,amount})}]);
+ };
  const discard=()=>gameAlert.alert('Discard saved deposit?',
   'Only discard after checking the Guild Bank balance. If the previous request succeeded, a new deposit would spend resources again.',
   [{text:'Keep receipt',style:'cancel'},{text:'Discard local retry',style:'destructive',
@@ -73,7 +79,7 @@ export function OnlineGuildBankPanel({snapshot,onReload}:{snapshot:GuildTokenSho
    {resources.map(id=><Pressable key={id} accessibilityRole="button" accessibilityLabel={title(id)+', '+balance(id).toLocaleString()+' in Guild Bank. Deposit resource.'}
     accessibilityState={{selected:selected===id,disabled:busy||!!pending||snapshot.bank===null||depositCapacity(id)<=0}}
     disabled={busy||!!pending||snapshot.bank===null||depositCapacity(id)<=0}
-    onPress={()=>{setSelection(selected===id?null:id);setQuantity(id==='gold'?'1000':'100')}}
+    onPress={()=>{setSelection(selected===id?null:id);setQuantity(String(Math.min(id==='gold'?1000:100,depositCapacity(id))))}}
     style={[s.bankSlot,selected===id&&s.bankSlotSelected]}>
     <Text numberOfLines={1} style={s.slotName}>{title(id)}</Text>
     {id==='gold'?<View style={s.goldIcon}><Text style={s.goldGlyph}>G</Text></View>:<ResourceArtwork itemId={id} size={40} framed/>}
@@ -87,9 +93,8 @@ export function OnlineGuildBankPanel({snapshot,onReload}:{snapshot:GuildTokenSho
    <View style={s.row}><TextInput value={quantity} onChangeText={setQuantity} accessibilityLabel={'Deposit '+title(selected)}
     keyboardType="number-pad" selectTextOnFocus maxLength={7} style={s.input}/>
     <GameButton compact title={busy?'Depositing…':'Confirm deposit'} disabled={busy||!valid} loading={busy}
-     onPress={()=>deposit({resourceId:selected,amount})}/></View>
-   <View style={s.row}>{[10,100,1000].map(n=><Pressable key={n} accessibilityRole="button"
-    onPress={()=>setQuantity(String(Math.min(n,depositCapacity(selected))))} style={s.preset}><Text style={s.meta}>{Math.min(n,depositCapacity(selected)).toLocaleString()}</Text></Pressable>)}</View>
+     onPress={confirmDeposit}/></View>
+   <View style={s.row}>{[10,100,'Max' as const].map(n=><Pressable key={n} accessibilityRole="button" accessibilityLabel={'Set deposit quantity to '+n} disabled={busy} onPress={()=>setQuantity(String(Math.min(n==='Max'?1000000:n,depositCapacity(selected))))} style={s.preset}><Text style={s.meta}>{n==='Max'?'Max':n.toLocaleString()}</Text></Pressable>)}</View>
   </View>:null}
   {snapshot.bank&&snapshot.bank.activity.length>0?<View style={s.history}>
    <Text style={s.name}>Recent bank activity</Text>
@@ -107,14 +112,14 @@ function styles(C:ThemeColors){return StyleSheet.create({
  warning:{color:C.warning,fontSize:12,marginTop:9},
  error:{color:C.bad,fontSize:12,marginTop:9},
  success:{color:C.good,fontSize:12,marginTop:9},
- bankGrid:{flexDirection:'row',flexWrap:'wrap',gap:7,marginTop:12},bankSlot:{width:'23%',minWidth:69,flexGrow:1,alignItems:'center',justifyContent:'space-between',minHeight:91,paddingVertical:7,paddingHorizontal:3,borderWidth:1,borderColor:C.line,borderRadius:9,backgroundColor:C.panel2,gap:4},bankSlotSelected:{borderColor:C.accent,backgroundColor:C.selection},slotName:{fontSize:10,fontWeight:'800',textAlign:'center',color:C.text},slotAmount:{fontSize:11,fontWeight:'900',color:C.info},slotNeed:{fontSize:9,textAlign:'center',color:C.muted},
+ bankGrid:{flexDirection:'row',flexWrap:'wrap',gap:7,marginTop:12},bankSlot:{width:'47%',minWidth:110,flexGrow:1,alignItems:'center',justifyContent:'space-between',minHeight:112,paddingVertical:10,paddingHorizontal:7,borderWidth:1,borderColor:C.line,borderRadius:9,backgroundColor:C.panel2,gap:4},bankSlotSelected:{borderColor:C.accent,backgroundColor:C.selection},slotName:{fontSize:11,fontWeight:'800',textAlign:'center',color:C.text},slotAmount:{fontSize:11,fontWeight:'900',color:C.info},slotNeed:{fontSize:9,textAlign:'center',color:C.muted},
  row:{flexDirection:'row',alignItems:'center',flexWrap:'wrap',gap:8},
  flex:{flex:1,minWidth:100},
  name:{fontSize:13,fontWeight:'800',color:C.text},
  meta:{fontSize:11,color:C.muted},
  entry:{marginTop:10,padding:9,backgroundColor:C.panel2,borderRadius:9,gap:8},
  input:{minWidth:85,flex:1,minHeight:42,paddingHorizontal:10,borderRadius:8,borderWidth:1,borderColor:C.lineStrong,color:C.text,backgroundColor:C.inputBg},
- preset:{paddingHorizontal:12,paddingVertical:9,borderWidth:1,borderColor:C.line,borderRadius:8},
+ preset:{minHeight:44,minWidth:56,justifyContent:'center',alignItems:'center',paddingHorizontal:12,paddingVertical:9,borderWidth:1,borderColor:C.line,borderRadius:8},
  goldIcon:{width:36,height:36,borderRadius:8,alignItems:'center',justifyContent:'center',backgroundColor:C.accentSurface},
  goldGlyph:{fontWeight:'900',color:C.accent,fontSize:17},
  pending:{padding:10,backgroundColor:C.panel2,borderColor:C.warning,borderWidth:1,borderRadius:10,marginTop:9,gap:6},

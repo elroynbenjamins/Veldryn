@@ -5,6 +5,7 @@ import {itemDef} from '../src/content/items';
 import {previewEquipment} from '../src/core/equipment-preview';
 import {bulkSelectionSummary,bulkSellSelected,bulkSalvageSelected} from '../src/core/inventory-bulk';
 import {gemPouch,gemStorageQuantity} from '../src/core/gem-pouch';
+import {normalizeSave} from '../src/core/save-normalization';
 function ok(condition:unknown,message:string){if(!condition)throw new Error(message)}
 
 const ringRecipe=V33_EQUIPMENT_RECIPES.find(row=>row.classId==='IRONWARDEN'&&row.v33EquipmentTier==='T1'&&itemDef(row.output.itemId).slot==='ring')!;
@@ -85,6 +86,7 @@ ok(legacyEnhancedGearLocked(unequippedLegacy,ringId),'Old item-ID-based enhancem
 ok(canReleaseLegacyEnhancedGear(unequippedLegacy,ringId,'inventory'),'Sole unequipped legacy enhancement can be identified for explicit manual release');
 const legacyUnlocked=setLegacyEnhancedGearLock(unequippedLegacy,ringId,false);
 ok(!legacyEnhancedGearLocked(legacyUnlocked,ringId),'Manually unlocking a legacy enhancement must persist');
+ok(normalizeSave(legacyUnlocked).character?.gearEnhancements?.[ringId]?.locked===false,'Saving and loading must preserve legacy manual unlock');
 const legacySold=sellItem(legacyUnlocked,ringId,1);
 ok(!legacySold.character!.gearEnhancements?.[ringId]&&legacySold.inventory.stacks.every(row=>row.itemId!==ringId),'Selling the last explicitly unlocked legacy copy must remove its upgrade record and item');
 ok(legacySold.character!.gold===legacyUnlocked.character!.gold+itemDef(ringId).value,'Released legacy equipment pays its exact vendor value');

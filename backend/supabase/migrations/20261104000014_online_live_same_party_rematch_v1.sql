@@ -182,7 +182,8 @@ begin
   then raise exception 'rematch_loadout_changed';end if;
   if exists(select 1 from public.coop_run_access_memberships a join public.expedition_runs e on e.id=a.run_id
     where a.account_id in(select (m->'snapshot'->>'accountId')::uuid from jsonb_array_elements(p_members) m)
-      and a.active and e.status='active')
+      and a.active and e.status='active' and e.id not in(
+       select source_run_id from public.coop_live_rematch_sessions where ready_check_id=p_check_id))
   then raise exception 'account_already_participating';end if;
  end if;
  r:=p_private_state->'run';

@@ -279,6 +279,19 @@ ok(craftedGearInstances(lockedOnce).find(row=>row.id===ownedIds[1])?.locked!==tr
 ok(normalizeSave(lockedOnce).account.craftedGearInstances?.find(row=>row.id===firstCopy)?.locked===true,'Save migration must preserve per-copy protection');
 const unlockedOnce=setCraftedGearInstanceLock(lockedOnce,firstCopy,false);
 ok(craftedGearInstances(unlockedOnce).find(row=>row.id===firstCopy)?.locked===false,'Unlock should be reversible and exact');
+
+const historicalEnhanced={...taggedState,account:{...taggedState.account,craftedGearInstances:craftedGearInstances(taggedState).map(row=>
+ row.id===firstCopy?{...row,locked:false,enhancedSaleUnlocked:undefined,enhancement:{rank:1,failures:0,statGemId:'WARD_SHARD',gemIds:['WARD_SHARD']}}:row)}};
+ok(craftedGearInstances(historicalEnhanced).find(row=>row.id===firstCopy)?.locked===true,'Older enchanted crafted records must become protected without silently authorizing disposal');
+let historicalSaleBlocked=false;try{executeGameCommand(historicalEnhanced,{type:'gear_sell',args:{instanceId:firstCopy}},1300)}catch{historicalSaleBlocked=true}
+ok(historicalSaleBlocked,'An old enchanted copy cannot be sold until explicitly unlocked');
+const permittedEnhanced=executeGameCommand(historicalEnhanced,{type:'gear_lock',args:{instanceId:firstCopy,locked:false}},1301).state;
+ok(craftedGearInstances(permittedEnhanced).find(row=>row.id===firstCopy)?.enhancedSaleUnlocked===true,'Manual unlock records the deliberate enhanced-sale decision');
+const soldEnhancedCopy=executeGameCommand(permittedEnhanced,{type:'gear_sell',args:{instanceId:firstCopy}},1302).state;
+ok(craftedGearInstances(soldEnhancedCopy).every(row=>row.id!==firstCopy),'Explicitly unlocked upgraded and gemmed exact copy can be sold');
+ok(craftedGearInstances(soldEnhancedCopy).some(row=>row.id===ownedIds[1])&&soldEnhancedCopy.inventory.stacks.some(row=>row.instanceId===ownedIds[1]),'Disposing enhanced copy must preserve the unrelated physical duplicate');
+ok(!soldEnhancedCopy.inventory.stacks.some(row=>row.instanceId===firstCopy),'Destroyed enhanced instance must not leave a ghost item');
+
 let legacyLockDenied=false;try{setCraftedGearInstanceLock(legacyState,firstCopy,true)}catch(error){legacyLockDenied=error instanceof Error&&error.message.includes('not verified')}
 ok(legacyLockDenied,'Never allow a per-copy lock action against an unlocated legacy receipt');
 

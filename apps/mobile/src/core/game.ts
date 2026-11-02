@@ -29,7 +29,7 @@ import {gatheringEventRewards,timedEventRewards,applyEventDiscoveries,applyEvent
 import {DEFAULT_QUICK_NAV_DESTINATIONS} from './quick-navigation';
 import {unlockedCharacterSlots} from './account-roster';
 import {accountEntitlementBenefits,entitlementStorageCapacity} from './account-entitlements';
-import {tryStoreGemInPouch} from './gem-pouch';
+import {isGemPouchItemId,tryStoreGemInPouch} from './gem-pouch';
 import {gatheringPacing} from './gathering-tools';
 import {gatheringToolDef} from '../content/gathering-tools';
 import {currentRegionId} from './combat-region';
@@ -965,7 +965,7 @@ export function depositToBank(state:GameState,itemId:string,quantity:number):Gam
   // If the pouch has no room for this new gem type, use the shared Bank.
   // If both are full, throw before returning any state so no items are lost.
   const added=addBounded(state.bank.stacks,entitlementStorageCapacity(state,'bank'),[{itemId,quantity}]);
-  if(added.overflow.length)throw new Error('Gem Pouch and Bank are full');
+  if(added.overflow.length)throw new Error(isGemPouchItemId(itemId)?'Gem Pouch and Bank are full':'Bank is full');
   return {...remaining,bank:{...state.bank,stacks:added.stacks}};
 }
 export function withdrawFromBank(state:GameState,itemId:string,quantity:number):GameState{

@@ -12,6 +12,7 @@ import {reserveFaithPractice,updateFaithPreference} from './faith';
 import {executeCompanionActivity,refreshCompanions,assertCompanionIdle,claimCompanionTraining} from './companion-runtime';
 import {createAccountCharacter,deleteAccountCharacter,switchAccountCharacter} from './account-actions';
 import {CLASSES} from '../content/classes';
+import {itemDef} from '../content/items';
 import {applyCharacterLoadout,characterLoadoutSlotCount,deleteCharacterLoadout,saveCharacterLoadout} from './character-loadouts';
 import {setArenaSquadSlot} from './arena-squad';
 import {normalizeProgressionGoals} from './progression-goals-v40';
@@ -52,7 +53,7 @@ const fields:Record<string,readonly string[]>={
  bank_sell:['id','quantity'],bank_gold_deposit:['amount'],bank_gold_withdraw:['amount'],deposit:['id','quantity'],withdraw:['id','quantity'],deposit_materials:[],bulk_transfer:['location','ids'],bulk_sell:['ids'],bulk_salvage:['ids'],storage:['location'],gem_pouch_upgrade:[],gem_pouch_sell:['itemId','quantity'],overflow:[],
  equip_tool:['id'],equip_set:[],upgrade:['id'],socket:['id','gemId'],replace_socket:['id','gemId'],unsocket:['id','index'],gem_combine:['familyId','grade'],gem_refine:['familyId','grade'],gem_research:['familyId'],gem_dismantle:['gemId','quantity'],resonance_cache_claim:['familyId'],profile_icon:['id'],
  loadout_save:['index','name'],loadout_apply:['id'],loadout_delete:['id'],arena_slot:['index','characterId'],goals_set:['goals'],idle_rules_set:['rules','activeId'],daily_supplies_claim:['characterId'],daily_supplies_activate:['type'],
- quest:['id'],seasonal:['period','id'],settings:['settings'],profile:['profileIconId','profileTitle','profileBackgroundId','profileBorderId','selectedCosmeticPetId'],
+ quest:['id'],seasonal:['period','id'],settings:['settings'],inventory_preference:['id','kind','enabled'],inventory_seen_all:[],profile:['profileIconId','profileTitle','profileBackgroundId','profileBorderId','selectedCosmeticPetId'],
  event_daily:[],event_cache:[],event_milestones:[],event_discovery:['id'],event_reward:['id'],event_accept:['id'],
  event_objective:['id'],event_weekly:['id'],event_project:['id'],event_contribute:['quantity'],event_community:['percent'],event_purchase:['id'],event_candy:['kind','companionId'],
  qa_prepare:['classId'],qa_refill:[],qa_switch_class:['classId'],
@@ -149,7 +150,7 @@ export function executeGameCommand(previous:GameState,value:unknown,now:number,o
  // Settle before any mutation that can alter past activity rates, food, gear or inventory.
  // Event weekly contracts are automatic. Keep the retired accept command
  // compatible with older clients without needlessly settling an activity.
- const settlementFreeCommand=(command.type==='queue_add'&&a.handoffGoal===undefined)||command.type==='queue_remove'||command.type==='queue_move'||command.type==='queue_clear'||command.type==='queue_start'||command.type==='daily_supplies_claim'||command.type==='roster_delete'||command.type==='event_accept'||command.type.startsWith('qa_');
+ const settlementFreeCommand=(command.type==='queue_add'&&a.handoffGoal===undefined)||command.type==='queue_remove'||command.type==='queue_move'||command.type==='queue_clear'||command.type==='queue_start'||command.type==='daily_supplies_claim'||command.type==='roster_delete'||command.type==='inventory_preference'||command.type==='inventory_seen_all'||command.type==='event_accept'||command.type.startsWith('qa_');
  // Starting a new activity replaces the old one in a single trusted operation. This also
  // returns unfinished reserved work (such as brews) through its normal stop path.
  const activityStartCommand=['start','explore','class_training','faith_practice','alchemy_start','processing_start'].includes(command.type);
@@ -402,6 +403,25 @@ export function executeGameCommand(previous:GameState,value:unknown,now:number,o
   case 'quest':state=game.claimQuest(state,text(a,'id'));break;
   case 'seasonal':state=game.claimSeasonalContract(state,oneOf(a.period,['daily','weekly','monthly']),text(a,'id'),now);break;
   case 'settings':state={...state,settings:validateGameSettings(a.settings)};break;
+  case 'inventory_preference':{
+    // Only the requested preference changes; legacy settings cannot break locks.
+    const id=text(a,'id',120),kind=oneOf(a.kind,['lock','favorite','seen']);
+    if(typeof a.enabled!=='boolean'||(kind==='seen'&&a.enabled!==true))throw new Error('invalid_inventory_preference');
+    itemDef(id); // Reject unknown content IDs.
+    const key=kind==='lock'?'lockedItemIds':kind==='favorite'?'favoriteItemIds':'seenItemIds';
+    const max=kind==='seen'?1000:100;
+    const selected=new Set(state.settings[key]??[]);
+    if(a.enabled)selected.add(id);else selected.delete(id);
+    if(selected.size>max)throw new Error('inventory_preference_limit');
+    state={...state,settings:{...state.settings,[key]:[...selected]}};
+    break;
+  }
+  case 'inventory_seen_all':{
+    const seen=new Set(state.settings.seenItemIds??[]);
+    for(const stack of [...state.inventory.stacks,...state.bank.stacks])if(stack.quantity>0)seen.add(stack.itemId);
+    state={...state,settings:{...state.settings,seenItemIds:[...seen].slice(-1000)}};
+    break;
+  }
   case 'profile':{
    if(!state.character)throw new Error('character_required');
    const patch:Record<string,string|undefined>={};

@@ -1,5 +1,6 @@
 import {itemDef} from '../content/items';
 import type {GameState} from './types';
+import {gemPouch} from './gem-pouch';
 
 export type InventoryFeedbackRequest=
  | {kind:'deposit';itemId:string;quantity:number}
@@ -17,13 +18,15 @@ export interface InventoryFeedbackIntent{
  salvageRewardId?:string;
  salvageRewardName?:string;
  salvageRewardQuantity?:number;
- before:{inventoryItem:number;bankItem:number;gold:number;rewardTotal:number;inventoryUnits:number;bankUnits:number};
+ before:{inventoryItem:number;bankItem:number;pouchItem:number;gold:number;rewardTotal:number;inventoryUnits:number;bankUnits:number;pouchUnits:number};
 }
 export interface InventoryActionFeedback{message:string;tone:'success'|'info';}
 
 const itemQty=(state:GameState,location:'inventory'|'bank',itemId:string)=>state[location].stacks.filter(row=>row.itemId===itemId).reduce((sum,row)=>sum+row.quantity,0);
 const totalQty=(state:GameState,itemId:string)=>itemQty(state,'inventory',itemId)+itemQty(state,'bank',itemId);
 const units=(state:GameState,location:'inventory'|'bank')=>state[location].stacks.reduce((sum,row)=>sum+row.quantity,0);
+const pouchQty=(state:GameState,id:string)=>gemPouch(state).stacks.filter(row=>row.itemId===id).reduce((sum,row)=>sum+row.quantity,0);
+const pouchUnits=(state:GameState)=>gemPouch(state).stacks.reduce((sum,row)=>sum+row.quantity,0);
 
 export function inventoryFeedbackIntent(state:GameState,request:InventoryFeedbackRequest):InventoryFeedbackIntent{
  const itemId='itemId' in request?request.itemId:undefined,item=itemId?itemDef(itemId):undefined,salvage=item?.salvage;
@@ -32,10 +35,12 @@ export function inventoryFeedbackIntent(state:GameState,request:InventoryFeedbac
   before:{
    inventoryItem:itemId?itemQty(state,'inventory',itemId):0,
    bankItem:itemId?itemQty(state,'bank',itemId):0,
+   pouchItem:itemId?pouchQty(state,itemId):0,
    gold:state.character?.gold??0,
    rewardTotal:salvage?totalQty(state,salvage.itemId):0,
    inventoryUnits:units(state,'inventory'),
    bankUnits:units(state,'bank'),
+   pouchUnits:pouchUnits(state),
   },
  };
 }
@@ -44,9 +49,11 @@ export function inventoryFeedbackIntent(state:GameState,request:InventoryFeedbac
 export function resolveInventoryActionFeedback(intent:InventoryFeedbackIntent,state:GameState):InventoryActionFeedback|null{
  const request=intent.request;
  if(request.kind==='deposit'){
-  const inv=itemQty(state,'inventory',request.itemId),bank=itemQty(state,'bank',request.itemId);
-  if(inv>intent.before.inventoryItem-request.quantity||bank<intent.before.bankItem+request.quantity)return null;
-  return {message:`Deposited ${request.quantity}× ${intent.itemName??'item'} to Bank.`,tone:'info'};
+  const inv=itemQty(state,'inventory',request.itemId),bank=itemQty(state,'bank',request.itemId),pouch=pouchQty(state,request.itemId);
+  const pouchAdded=pouch-intent.before.pouchItem;
+  const bankAdded=bank-intent.before.bankItem;
+  if(inv>intent.before.inventoryItem-request.quantity||pouchAdded+bankAdded<request.quantity)return null;
+  return {message:`Deposited ${request.quantity}× ${intent.itemName??'item'} to ${pouchAdded>=request.quantity?'Gem Pouch':'Bank'}.`,tone:'info'};
  }
  if(request.kind==='withdraw'){
   const inv=itemQty(state,'inventory',request.itemId),bank=itemQty(state,'bank',request.itemId);
@@ -64,8 +71,8 @@ export function resolveInventoryActionFeedback(intent:InventoryFeedbackIntent,st
   return {message:`Salvaged ${intent.itemName??'equipment'}${intent.salvageRewardName?` · +${gained||(intent.salvageRewardQuantity??0)} ${intent.salvageRewardName}`:''}.`,tone:'success'};
  }
  if(request.kind==='bulk_transfer'){
-  const inv=units(state,'inventory'),bank=units(state,'bank'),deposit=request.direction==='deposit';
-  const committed=deposit?inv<intent.before.inventoryUnits&&bank>intent.before.bankUnits:bank<intent.before.bankUnits&&inv>intent.before.inventoryUnits;
+  const inv=units(state,'inventory'),bank=units(state,'bank'),pouch=pouchUnits(state),deposit=request.direction==='deposit';
+  const committed=deposit?inv<intent.before.inventoryUnits&&(bank>intent.before.bankUnits||pouch>intent.before.pouchUnits):bank<intent.before.bankUnits&&inv>intent.before.inventoryUnits;
   if(!committed)return null;
   return {message:`Bulk ${deposit?'deposit':'withdrawal'} complete · ${request.stacks} stack${request.stacks===1?'':'s'} · ${request.units} item${request.units===1?'':'s'} moved.`,tone:'info'};
  }

@@ -31,6 +31,8 @@ export interface CharacterState {
   herbalismMethodId?:import('../content/herbalism').HerbalismMethodId;
   faith?: import('./faith-types').CharacterFaithState;
   preparation?:import('./alchemy-types').ActivePreparation;
+  /** Single non-stacking special-meal effect; counts eligible activity seconds, including AFK. */
+  activeMealBuff?:import('./meal-buffs').ActiveMealBuff;
 
   equippedCombatCompanionId?:string;
   id:string; name:string; classId:ClassId; level:number; xp:number; gold:number;

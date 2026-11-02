@@ -25,7 +25,7 @@ type Props={
 const kindNames:Record<ActivityKind,string>={combat:'HUNTING',mining:'MINING',woodcutting:'WOODCUTTING',fishing:'FISHING',herbalism:'HERBALISM',alchemy:'ALCHEMY',processing:'PROCESSING',faith:'FAITH',training:'TRAINING',exploration:'EXPLORATION'};
 const unitNames:Record<ActivityKind,string>={combat:'kills',mining:'actions',woodcutting:'actions',fishing:'actions',herbalism:'actions',alchemy:'brews',processing:'crafts',faith:'practices',training:'drills',exploration:'routes'};
 export function HomeActivityFocus(props:Props){
- const {gt,gl,language}=useGameplayText();
+ const {gl,language}=useGameplayText();
  const C=useGameTheme(),s=useMemo(()=>styles(C),[C]);
  const [detailOpen,setDetailOpen]=useState(false),[stopOpen,setStopOpen]=useState(false);
  const {kind,preview,activity,rates,resourceRate}=props;
@@ -36,7 +36,7 @@ export function HomeActivityFocus(props:Props){
  const capped=preview.elapsedSeconds>=props.capHours*3600;
  const stopped=!!preview.stoppedReason;
  const reserve=Math.max(0,props.capHours-preview.elapsedSeconds/3600);
- const progress=stopped||capped?100:Math.max(0,Math.min(100,100*(preview.nextProgressFraction??(preview.elapsedSeconds/Math.max(1,props.cycleSeconds)%1*Math.max(1,props.cycleSeconds))/Math.max(1,props.cycleSeconds))));
+ const progress=stopped||capped?100:Math.max(0,Math.min(100,100*(preview.nextProgressFraction??((preview.elapsedSeconds%Math.max(1,props.cycleSeconds))/Math.max(1,props.cycleSeconds)))));
  const remaining=Math.max(1,Math.ceil(props.cycleSeconds*(1-progress/100)));
  const monster=kind==='combat'?MONSTERS.find(row=>row.id===activity.targetId):undefined;
  const iconId=(kind==='processing'?'cooking':kind==='training'?'combat':kind==='faith'?'faith':kind) as Parameters<typeof ActivityArtwork>[0]['id'];
@@ -44,41 +44,41 @@ export function HomeActivityFocus(props:Props){
  const act=()=>{setStopOpen(false);setDetailOpen(false);props.onStop()};
  return <>
   <View style={[s.card,stopped&&s.stopped]}>
-   <View style={s.top}><Text style={s.eyebrow}>{gt('CURRENT ACTIVITY')}</Text>
+   <View style={s.top}><Text style={s.eyebrow}>{gl('CURRENT ACTIVITY')}</Text>
     <View style={[s.status,{borderColor:stopped?C.bad:capped?C.warning:C.good,backgroundColor:stopped?C.badSurface:capped?C.warningSurface:C.goodSurface}]}>
-     <Text style={[s.statusLabel,{color:stopped?C.bad:capped?C.warning:C.good}]}>{stopped?gt('STOPPED'):capped?gt('AFK FULL'):gt('ACTIVE')}</Text>
+     <Text style={[s.statusLabel,{color:stopped?C.bad:capped?C.warning:C.good}]}>{stopped?gl('STOPPED'):capped?gl('AFK FULL'):gl('ACTIVE')}</Text>
     </View>
    </View>
    <View style={s.identity}>
     <View style={s.art}>{monster?<MonsterPortraitFrame monster={monster} size={44} framed={false} reduceMotion/>:<ActivityArtwork id={iconId} size={38}/>}</View>
-    <View style={s.copy}><Text numberOfLines={2} style={s.name}>{gl(props.title)}</Text><Text style={s.sub}>{gl(kindNames[kind])} · {gt('Rewards since last collection')}</Text></View>
-    <Pressable accessibilityRole="button" accessibilityLabel={gt('Activity rates and details')} onPress={()=>setDetailOpen(true)} style={({pressed})=>[s.info,pressed&&s.pressed]}><Text style={s.infoText}>⌕</Text></Pressable>
+    <View style={s.copy}><Text numberOfLines={2} style={s.name}>{gl(props.title)}</Text><Text style={s.sub}>{gl(kindNames[kind])} · {gl('Rewards since last collection')}</Text></View>
+    <Pressable accessibilityRole="button" accessibilityLabel={gl('Activity rates and details')} onPress={()=>setDetailOpen(true)} style={({pressed})=>[s.info,pressed&&s.pressed]}><Text style={s.infoText}>⌕</Text></Pressable>
    </View>
    {stop?<Text accessibilityRole="alert" style={[s.warning,{color:C.bad}]}>{gl(stop.title)} · {gl(preview.stoppedReason??'')}</Text>:null}
-   <View style={s.progressHead}><Text style={s.meta}>{stopped?gt('ACTIVITY STOPPED'):capped?gt('OFFLINE STORAGE FULL'):gt('NEXT ACTION')}</Text><Text style={s.time}>{stopped||capped?'—':remaining+'s'}</Text></View>
-   <View accessible accessibilityRole="progressbar" accessibilityLabel={gt('Activity progress')} accessibilityValue={{min:0,max:100,now:Math.round(progress)}} style={s.track}><View style={[s.fill,{width:(progress+'%') as `${number}%`,backgroundColor:stopped?C.bad:C.good}]}/></View>
+   <View style={s.progressHead}><Text style={s.meta}>{stopped?gl('ACTIVITY STOPPED'):capped?gl('OFFLINE STORAGE FULL'):gl('NEXT ACTION')}</Text><Text style={s.time}>{stopped||capped?'—':remaining+'s'}</Text></View>
+   <View accessible accessibilityRole="progressbar" accessibilityLabel={gl('Activity progress')} accessibilityValue={{min:0,max:100,now:Math.round(progress)}} style={s.track}><View style={[s.fill,{width:(progress+'%') as `${number}%`,backgroundColor:stopped?C.bad:C.good}]}/></View>
    <View style={s.metrics}>
-    <View style={s.metric}><Text style={s.metricLabel}>{kind==='combat'?gt('KILLS / HR'):gt('ACTIONS / HR')}</Text><Text style={s.metricValue}>≈ {formatted(rates.actionsPerHour)}</Text></View>
-    <View style={s.metric}><Text style={s.metricLabel}>{gt('XP / HR')}</Text><Text style={s.metricValue}>≈ {formatted(rates.xpPerHour)}</Text></View>
-    <View style={s.metric}><Text style={s.metricLabel}>{gt('AFK LEFT')}</Text><Text style={s.metricValue}>{reserve>0?reserve.toFixed(1)+'h':'0h'}</Text></View>
+    <View style={s.metric}><Text style={s.metricLabel}>{kind==='combat'?gl('KILLS / HR'):gl('ACTIONS / HR')}</Text><Text style={s.metricValue}>≈ {formatted(rates.actionsPerHour)}</Text></View>
+    <View style={s.metric}><Text style={s.metricLabel}>{gl('XP / HR')}</Text><Text style={s.metricValue}>≈ {formatted(rates.xpPerHour)}</Text></View>
+    <View style={s.metric}><Text style={s.metricLabel}>{gl('AFK LEFT')}</Text><Text style={s.metricValue}>{reserve>0?reserve.toFixed(1)+'h':'0h'}</Text></View>
    </View>
-   <View style={s.bottom}><View style={s.flex}><Text style={s.reward}>{formatted(count)} {gt(unitNames[kind])} {gt('ready')}</Text><Text style={s.sub}>+{formatted(preview.xp)} XP{resourceRate?' · '+resourceRate.name:''}</Text></View><Pressable accessibilityRole="button" accessibilityLabel={gt('More activity details')} onPress={()=>setDetailOpen(true)} style={s.detailLink}><Text style={s.detailText}>{gt('Details')} ›</Text></Pressable></View>
-   <View style={s.actions}><View style={s.flex}><GameButton title={canCollect?gt('Collect rewards'):gt('Rewards building…')} disabled={!canCollect} onPress={()=>{setDetailOpen(false);props.onClaim()}}/></View><View style={s.secondary}><GameButton title={gt('Stop')} tone="secondary" onPress={()=>setStopOpen(true)}/></View></View>
+   <View style={s.bottom}><View style={s.flex}><Text style={s.reward}>{formatted(count)} {gl(unitNames[kind])} {gl('ready')}</Text><Text style={s.sub}>+{formatted(preview.xp)} XP{resourceRate?' · '+resourceRate.name:''}</Text></View><Pressable accessibilityRole="button" accessibilityLabel={gl('More activity details')} onPress={()=>setDetailOpen(true)} style={s.detailLink}><Text style={s.detailText}>{gl('Details')} ›</Text></Pressable></View>
+   <View style={s.actions}><View style={s.flex}><GameButton title={canCollect?gl('Collect rewards'):gl('Rewards building…')} disabled={!canCollect} onPress={()=>{setDetailOpen(false);props.onClaim()}}/></View><View style={s.secondary}><GameButton title={gl('Stop')} tone="secondary" onPress={()=>setStopOpen(true)}/></View></View>
   </View>
   {detailOpen?<GameModalSurface visible onClose={()=>setDetailOpen(false)} reduceMotion={props.reduceMotion} surfaceStyle={s.sheet}>
-   <GameModalHeader eyebrow={gt('CURRENT ACTIVITY')} title={gl(props.title)} onClose={()=>setDetailOpen(false)}/>
+   <GameModalHeader eyebrow={gl('CURRENT ACTIVITY')} title={gl(props.title)} onClose={()=>setDetailOpen(false)}/>
    <ScrollView style={s.scroll} contentContainerStyle={s.content} showsVerticalScrollIndicator={false} showsHorizontalScrollIndicator={false}>
     <ActivityCard {...props} onClaim={()=>{setDetailOpen(false);props.onClaim()}} onStop={()=>{setDetailOpen(false);setStopOpen(true)}}/>
-    {insights.combat?.lowProjectedHp?<Text style={[s.warning,{color:C.warning}]}>{gt('Projected health is low. Check food before continuing.')}</Text>:null}
+    {insights.combat?.lowProjectedHp?<Text style={[s.warning,{color:C.warning}]}>{gl('Projected health is low. Check food before continuing.')}</Text>:null}
    </ScrollView>
   </GameModalSurface>:null}
   {stopOpen?<GameModalSurface visible presentation="dialog" onClose={()=>setStopOpen(false)} reduceMotion={props.reduceMotion} surfaceStyle={s.confirmSheet}>
-   <GameModalHeader eyebrow={gt('STOP ACTIVITY')} title={gt('Collect & stop?')} onClose={()=>setStopOpen(false)}/>
-   <Text style={s.confirmCopy}>{gt('Collect the current activity rewards and stop this activity. Queued actions still follow their goal and safety rules.')}</Text>
+   <GameModalHeader eyebrow={gl('STOP ACTIVITY')} title={gl('Collect & stop?')} onClose={()=>setStopOpen(false)}/>
+   <Text style={s.confirmCopy}>{gl('Collect the current activity rewards and stop this activity. Queued actions still follow their goal and safety rules.')}</Text>
    <View style={[s.confirmPreview,{backgroundColor:C.panel2,borderColor:C.line}]}>
-    <Text style={s.name}>{gl(props.title)}</Text><Text style={s.sub}>{formatted(count)} {gt(unitNames[kind])} · +{formatted(preview.xp)} XP</Text>
+    <Text style={s.name}>{gl(props.title)}</Text><Text style={s.sub}>{formatted(count)} {gl(unitNames[kind])} · +{formatted(preview.xp)} XP</Text>
    </View>
-   <View style={s.actions}><View style={s.flex}><GameButton title={gt('Keep running')} tone="secondary" onPress={()=>setStopOpen(false)}/></View><View style={s.flex}><GameButton title={gt('Collect & stop')} onPress={act}/></View></View>
+   <View style={s.actions}><View style={s.flex}><GameButton title={gl('Keep running')} tone="secondary" onPress={()=>setStopOpen(false)}/></View><View style={s.flex}><GameButton title={gl('Collect & stop')} onPress={act}/></View></View>
   </GameModalSurface>:null}
  </>;
 }

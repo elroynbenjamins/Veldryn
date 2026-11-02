@@ -29,6 +29,7 @@ import {gatheringEventRewards,timedEventRewards,applyEventDiscoveries,applyEvent
 import {DEFAULT_QUICK_NAV_DESTINATIONS} from './quick-navigation';
 import {unlockedCharacterSlots} from './account-roster';
 import {accountEntitlementBenefits,entitlementStorageCapacity} from './account-entitlements';
+import {tryStoreGemInPouch} from './gem-pouch';
 import {gatheringPacing} from './gathering-tools';
 import {gatheringToolDef} from '../content/gathering-tools';
 import {currentRegionId} from './combat-region';
@@ -952,12 +953,20 @@ export function sellBankItem(state:GameState,itemId:string,quantity=1):GameState
   return {...state,bank:{...state.bank,stacks,gold:(state.bank.gold??0)+proceeds}};
 }
 export function depositToBank(state:GameState,itemId:string,quantity:number):GameState{
+  if(!Number.isSafeInteger(quantity))throw new Error('Invalid deposit quantity');
   if(quantity<=0)return state;
   const invQty=stackQty(state.inventory.stacks,itemId);if(invQty<quantity)throw new Error('Not enough items in inventory');
+  // One atomic state mutation: gems always target the shared account pouch first.
+  // An existing pouch stack can grow even when all pouch slots are occupied.
   const removed=consume(state.inventory.stacks,itemId,quantity);
+  const remaining={...state,inventory:{...state.inventory,stacks:removed}};
+  const pouchDeposit=tryStoreGemInPouch(remaining,itemId,quantity);
+  if(pouchDeposit)return pouchDeposit;
+  // If the pouch has no room for this new gem type, use the shared Bank.
+  // If both are full, throw before returning any state so no items are lost.
   const added=addBounded(state.bank.stacks,entitlementStorageCapacity(state,'bank'),[{itemId,quantity}]);
-  if(added.overflow.length)throw new Error('Bank is full');
-  return {...state,inventory:{...state.inventory,stacks:removed},bank:{...state.bank,stacks:added.stacks}};
+  if(added.overflow.length)throw new Error('Gem Pouch and Bank are full');
+  return {...remaining,bank:{...state.bank,stacks:added.stacks}};
 }
 export function withdrawFromBank(state:GameState,itemId:string,quantity:number):GameState{
   if(quantity<=0)return state;

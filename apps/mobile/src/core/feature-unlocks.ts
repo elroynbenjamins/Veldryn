@@ -14,7 +14,7 @@ export const EARLY_FEATURE_UNLOCKS={
  accountBonuses:{questId:'QST_003',title:'Account Bonuses',requirement:'Complete A Hound\'s Trail',description:'Account-wide bonus summaries appear alongside the first collectible system.'},
  friends:{questId:'QST_003',title:'Friends',requirement:'Complete A Hound\'s Trail',description:'Friends unlock once the first regional combat loop has been completed.'},
  companions:{questId:'QST_005',title:'Companions',requirement:'Complete Into Ironwood',description:'The Companion Sanctuary unlocks after reaching Level 10 and entering deeper Ironwood progression.'},
- social:{questId:'QST_005',title:'Recruitment',requirement:'Complete Into Ironwood',description:'Recruitment boards unlock after the core solo loop. Creating or joining a persistent Party still requires Level 20.'},
+ social:{questId:'QST_005',title:'Social & Parties',requirement:'Complete Into Ironwood',description:'Party recruitment and cooperative social systems unlock after the core solo loop is understood.'},
  contracts:{questId:'QST_005',title:'Contract Board',requirement:'Complete Into Ironwood',description:'Weekly and cooperative contract planning unlocks with deeper regional progression.'},
  masteryHall:{questId:'QST_005',title:'Mastery Hall',requirement:'Complete Into Ironwood',description:'Long-term profession mastery records appear once the player has enough skill actions to make the system meaningful.'},
  guild:{questId:'QST_005',title:'Guilds',requirement:`Reach Level ${GUILD_UNLOCK_LEVEL}`,description:`Guilds unlock at Level ${GUILD_UNLOCK_LEVEL}, so you can find, join or create a Guild before deeper regional progression.`},

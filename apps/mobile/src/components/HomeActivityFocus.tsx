@@ -30,13 +30,13 @@ export function HomeActivityFocus(props:Props){
  const [detailOpen,setDetailOpen]=useState(false),[stopOpen,setStopOpen]=useState(false);
  const {kind,preview,activity,rates,resourceRate}=props;
  const insights=useMemo(()=>idleActivityInsights({kind,rates,preview,resource:resourceRate,maxHp:props.maxHp}),[kind,rates,preview,resourceRate,props.maxHp]);
- const formatted=(n:number)=>formatGameNumber(Math.max(0,Math.round(n)),props.numberMode,language);
+ const formatted=(n:number)=>formatGameNumber(Math.max(0,Math.round(n)),props.numberMode??'abbreviated',language);
  const count=kind==='combat'?preview.kills:kind==='alchemy'||kind==='processing'?(preview.craftingActions??0):kind==='faith'?(preview.faithActions??0):kind==='training'?(preview.trainingActions??0):preview.kills;
  const canCollect=count>0||!!preview.stoppedReason;
  const capped=preview.elapsedSeconds>=props.capHours*3600;
  const stopped=!!preview.stoppedReason;
  const reserve=Math.max(0,props.capHours-preview.elapsedSeconds/3600);
- const progress=stopped||capped?100:Math.max(0,Math.min(100,100*(preview.nextProgressFraction??(preview.elapsedSeconds%props.cycleSeconds)/Math.max(1,props.cycleSeconds))));
+ const progress=stopped||capped?100:Math.max(0,Math.min(100,100*(preview.nextProgressFraction??(preview.elapsedSeconds/Math.max(1,props.cycleSeconds)%1*Math.max(1,props.cycleSeconds))/Math.max(1,props.cycleSeconds))));
  const remaining=Math.max(1,Math.ceil(props.cycleSeconds*(1-progress/100)));
  const monster=kind==='combat'?MONSTERS.find(row=>row.id===activity.targetId):undefined;
  const iconId=(kind==='processing'?'cooking':kind==='training'?'combat':kind==='faith'?'faith':kind) as Parameters<typeof ActivityArtwork>[0]['id'];
@@ -65,21 +65,21 @@ export function HomeActivityFocus(props:Props){
    <View style={s.bottom}><View style={s.flex}><Text style={s.reward}>{formatted(count)} {gt(unitNames[kind])} {gt('ready')}</Text><Text style={s.sub}>+{formatted(preview.xp)} XP{resourceRate?' · '+resourceRate.name:''}</Text></View><Pressable accessibilityRole="button" accessibilityLabel={gt('More activity details')} onPress={()=>setDetailOpen(true)} style={s.detailLink}><Text style={s.detailText}>{gt('Details')} ›</Text></Pressable></View>
    <View style={s.actions}><View style={s.flex}><GameButton title={canCollect?gt('Collect rewards'):gt('Rewards building…')} disabled={!canCollect} onPress={()=>{setDetailOpen(false);props.onClaim()}}/></View><View style={s.secondary}><GameButton title={gt('Stop')} tone="secondary" onPress={()=>setStopOpen(true)}/></View></View>
   </View>
-  <GameModalSurface visible={detailOpen} onClose={()=>setDetailOpen(false)} reduceMotion={props.reduceMotion} surfaceStyle={s.sheet}>
+  {detailOpen?<GameModalSurface visible onClose={()=>setDetailOpen(false)} reduceMotion={props.reduceMotion} surfaceStyle={s.sheet}>
    <GameModalHeader eyebrow={gt('CURRENT ACTIVITY')} title={gl(props.title)} onClose={()=>setDetailOpen(false)}/>
    <ScrollView style={s.scroll} contentContainerStyle={s.content} showsVerticalScrollIndicator={false} showsHorizontalScrollIndicator={false}>
     <ActivityCard {...props} onClaim={()=>{setDetailOpen(false);props.onClaim()}} onStop={()=>{setDetailOpen(false);setStopOpen(true)}}/>
     {insights.combat?.lowProjectedHp?<Text style={[s.warning,{color:C.warning}]}>{gt('Projected health is low. Check food before continuing.')}</Text>:null}
    </ScrollView>
-  </GameModalSurface>
-  <GameModalSurface visible={stopOpen} presentation="dialog" onClose={()=>setStopOpen(false)} reduceMotion={props.reduceMotion} surfaceStyle={s.confirmSheet}>
+  </GameModalSurface>:null}
+  {stopOpen?<GameModalSurface visible presentation="dialog" onClose={()=>setStopOpen(false)} reduceMotion={props.reduceMotion} surfaceStyle={s.confirmSheet}>
    <GameModalHeader eyebrow={gt('STOP ACTIVITY')} title={gt('Collect & stop?')} onClose={()=>setStopOpen(false)}/>
    <Text style={s.confirmCopy}>{gt('Collect the current activity rewards and stop this activity. Queued actions still follow their goal and safety rules.')}</Text>
    <View style={[s.confirmPreview,{backgroundColor:C.panel2,borderColor:C.line}]}>
     <Text style={s.name}>{gl(props.title)}</Text><Text style={s.sub}>{formatted(count)} {gt(unitNames[kind])} · +{formatted(preview.xp)} XP</Text>
    </View>
    <View style={s.actions}><View style={s.flex}><GameButton title={gt('Keep running')} tone="secondary" onPress={()=>setStopOpen(false)}/></View><View style={s.flex}><GameButton title={gt('Collect & stop')} onPress={act}/></View></View>
-  </GameModalSurface>
+  </GameModalSurface>:null}
  </>;
 }
 function styles(C:ThemeColors){return StyleSheet.create({

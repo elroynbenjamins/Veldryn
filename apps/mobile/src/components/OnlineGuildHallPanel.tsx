@@ -1,4 +1,3 @@
-import {useSocialText} from '../i18n/social';
 import {useCallback,useEffect,useMemo,useState} from 'react';
 import {ActivityIndicator,Image,Pressable,ScrollView,StyleSheet,Text,View} from 'react-native';
 import {GameButton} from './GameButton';
@@ -32,14 +31,14 @@ const SHORTCUTS=[
 ];
 
 export function OnlineGuildHallPanel(navigation:HallNavigation){
- const st=useSocialText(),C=useGameTheme(),s=useMemo(()=>styles(C),[C]);
+ const C=useGameTheme(),s=useMemo(()=>styles(C),[C]);
  const [projection,setProjection]=useState<Projection>(null),[loading,setLoading]=useState(true),[error,setError]=useState('');
  const load=useCallback(async(force=false)=>{
   setLoading(true);setError('');
   try{setProjection(await loadOnlineGuildHallV44(force))}
-  catch(reason){setError(reason instanceof Error?reason.message:st('Unable to load Guild Hall.'))}
+  catch(reason){setError(reason instanceof Error?reason.message:'Unable to load Guild Hall.')}
   finally{setLoading(false)}
- },[st]);
+ },[]);
  useEffect(()=>{void load()},[load]);
  if(loading&&!projection)return <Panel><Text style={s.title}>Guild Hall</Text><ActivityIndicator color={C.accent}/></Panel>;
  if(error&&!projection)return <Panel><Text style={s.title}>Guild Hall</Text><Text accessibilityRole="alert" style={s.error}>{error}</Text><GameButton title="Retry Guild Hall" tone="secondary" onPress={()=>void load(true)}/></Panel>;
@@ -140,20 +139,20 @@ function styles(C:ThemeColors){return StyleSheet.create({
  crest:{width:51,height:51,borderRadius:12,borderWidth:1,borderColor:C.lineStrong,backgroundColor:C.panel2,justifyContent:'center',alignItems:'center'},
  crestImage:{width:43,height:43},
  title:{fontSize:20,lineHeight:26,fontWeight:'900',color:C.text},
- heroTitle:{fontSize:17,lineHeight:24,fontWeight:'850',color:C.text},
+ heroTitle:{fontSize:17,lineHeight:24,fontWeight:'800',color:C.text},
  kicker:{fontSize:10,lineHeight:15,fontWeight:'900',letterSpacing:.8,color:C.accentSoft},
  copy:{fontSize:12,lineHeight:18,color:C.muted},
  note:{fontSize:11,lineHeight:16,color:C.muted},
  error:{fontSize:12,lineHeight:18,color:C.bad},
  heading:{flexDirection:'row',alignItems:'center',justifyContent:'space-between',gap:8},
- headingText:{fontSize:15,lineHeight:21,fontWeight:'850',color:C.text},
+ headingText:{fontSize:15,lineHeight:21,fontWeight:'800',color:C.text},
  hero:{gap:10,backgroundColor:C.panelRaised},
- priority:{gap:9},priorityTitle:{fontSize:13,lineHeight:19,fontWeight:'850',color:C.text},
+ priority:{gap:9},priorityTitle:{fontSize:13,lineHeight:19,fontWeight:'800',color:C.text},
  between:{flexDirection:'row',alignItems:'center',justifyContent:'space-between',gap:9},
  levelBadge:{paddingVertical:5,paddingHorizontal:9,borderWidth:1,borderColor:C.lineStrong,borderRadius:9,alignItems:'center',backgroundColor:C.panel2},
  level:{fontSize:19,fontWeight:'900',color:C.accent},
  tabs:{gap:5,paddingBottom:2},tab:{minHeight:44,minWidth:83,alignItems:'center',justifyContent:'center',paddingHorizontal:10,borderRadius:9,borderWidth:1},
- tabText:{fontSize:11,fontWeight:'850'},pressed:{opacity:.72},
+ tabText:{fontSize:11,fontWeight:'800'},pressed:{opacity:.72},
  refresh:{width:44,height:44,alignItems:'center',justifyContent:'center',borderRadius:10,borderWidth:1,borderColor:C.line,backgroundColor:C.panel},
  refreshText:{fontSize:23,color:C.accent},
  percent:{fontSize:17,fontWeight:'900',color:C.accent},
@@ -166,10 +165,10 @@ function styles(C:ThemeColors){return StyleSheet.create({
  shortcuts:{flexDirection:'row',flexWrap:'wrap',gap:8},
  shortcut:{width:'48%',flexGrow:1,minHeight:73,flexDirection:'row',alignItems:'center',gap:7,paddingHorizontal:8,paddingVertical:10,borderRadius:10,borderWidth:1,borderColor:C.lineStrong,backgroundColor:C.panel},
  shortcutArt:{width:35,height:35},
- shortcutTitle:{fontSize:12,lineHeight:16,fontWeight:'850',color:C.text},
+ shortcutTitle:{fontSize:12,lineHeight:16,fontWeight:'800',color:C.text},
  facilityGrid:{flexDirection:'row',flexWrap:'wrap',gap:7},
  facilityTile:{width:'48%',flexGrow:1,minHeight:61,padding:10,borderWidth:1,borderColor:C.line,borderRadius:9,backgroundColor:C.panel},
- tileName:{fontSize:11,lineHeight:16,fontWeight:'750',color:C.muted},
+ tileName:{fontSize:11,lineHeight:16,fontWeight:'700',color:C.muted},
  tileTier:{fontSize:12,lineHeight:18,fontWeight:'900',color:C.accent},
  facility:{flexDirection:'row',alignItems:'flex-start',gap:9,padding:10,borderWidth:1,borderRadius:10,borderColor:C.line,backgroundColor:C.panelRaised},
  facilityImage:{width:46,height:46},

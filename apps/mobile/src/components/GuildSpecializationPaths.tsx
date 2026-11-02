@@ -69,14 +69,15 @@ export function GuildSpecializationPaths({guildLevel,skillPoints,metrics,canUpgr
 
   <BoardTabs compact label="Guild Skill branches" items={GUILD_MAJOR_BRANCHES.map(id=>({id,label:id}))} value={branch} onChange={changeBranch}/>
   <View style={s.tiles}>
-   {nodes.map(n=>{const current=rank(n.id),chosen=n.id===node.id;return <Pressable key={n.id}
-     accessibilityRole="button" accessibilityLabel={`${n.name}, rank ${current} of 3. View skill.`}
+   {nodes.map(n=>{const current=rank(n.id),chosen=n.id===node.id,live=isReleased?.(n.id)??true;return <Pressable key={n.id}
+     accessibilityRole="button" accessibilityLabel={`${n.name}, rank ${current} of 3${live?'':', not released'}. View skill.`}
      accessibilityState={{selected:chosen}} onPress={()=>{setSelected(n.id);setReview(false)}}
      style={({pressed})=>[s.tile,{borderColor:chosen?C.selectionLine:C.line,backgroundColor:chosen?C.selection:C.panelRaised},pressed&&s.pressed]}>
     <Image source={guildSkillArtwork(n.id)} resizeMode="contain" style={s.tileIcon} accessible={false}/>
     <Text numberOfLines={2} style={s.tileName}>{n.name}</Text>
     <Text style={s.tileBonus}>{known?bonus(n,current):'3 ranks'}</Text>
     <View style={s.rankDots}>{[1,2,3].map(k=><View key={k} style={[s.rankDot,{backgroundColor:current>=k?C.accent:C.lineStrong}]}/>)}</View>
+    {!live?<Text style={s.unreleased}>NOT RELEASED</Text>:null}
    </Pressable>})}
   </View>
 
@@ -110,6 +111,7 @@ export function GuildSpecializationPaths({guildLevel,skillPoints,metrics,canUpgr
 
   <Modal visible={review} transparent animationType="fade" onRequestClose={close} statusBarTranslucent>
    <View style={s.modalShade}>
+    <Pressable style={StyleSheet.absoluteFillObject} accessibilityLabel="Dismiss upgrade confirmation" accessibilityRole="button" onPress={close}/>
     <View style={s.modalCard} accessibilityViewIsModal>
      <ScrollView style={s.modalScroll} contentContainerStyle={s.modalBody} bounces={false} keyboardShouldPersistTaps="handled">
       <Text style={s.eyebrow}>CONFIRM GUILD UPGRADE</Text>
@@ -146,8 +148,8 @@ function styles(C:ThemeColors){return StyleSheet.create({
  pointsValue:{fontSize:20,lineHeight:24,fontWeight:'800',color:C.accent},pointsLabel:{fontSize:10,color:C.muted},
  summary:{flexDirection:'row',alignItems:'center',justifyContent:'space-between'},summaryValue:{fontSize:13,fontWeight:'800',color:C.text},
  active:{flexDirection:'row',gap:6,flexWrap:'wrap'},activeChip:{paddingHorizontal:8,paddingVertical:5,borderRadius:6,borderWidth:1,borderColor:C.line,backgroundColor:C.panel2},activeText:{fontSize:11,color:C.good,fontWeight:'700'},
- tiles:{flexDirection:'row',gap:7},tile:{flex:1,minWidth:0,minHeight:118,alignItems:'center',justifyContent:'center',gap:4,paddingHorizontal:4,paddingVertical:9,borderRadius:9,borderWidth:1},
- tileIcon:{width:38,height:38},tileName:{fontSize:11,lineHeight:14,minHeight:28,textAlign:'center',color:C.text,fontWeight:'800'},
+ tiles:{flexDirection:'row',gap:7},tile:{flex:1,minWidth:0,minHeight:126,alignItems:'center',justifyContent:'center',gap:4,paddingHorizontal:4,paddingVertical:9,borderRadius:9,borderWidth:1},
+ tileIcon:{width:38,height:38},unreleased:{fontSize:8,lineHeight:11,fontWeight:'800',color:C.warning,letterSpacing:.2},tileName:{fontSize:11,lineHeight:14,minHeight:28,textAlign:'center',color:C.text,fontWeight:'800'},
  tileBonus:{fontSize:10,color:C.good,fontWeight:'700'},rankDots:{flexDirection:'row',gap:4,marginTop:2},rankDot:{width:10,height:5,borderRadius:2},
  detail:{gap:11,padding:12,borderWidth:1,borderColor:C.lineStrong,borderRadius:10,backgroundColor:C.panelRaised},
  detailIcon:{width:45,height:45},detailTitle:{fontSize:16,lineHeight:22,fontWeight:'800',color:C.text},
@@ -159,7 +161,7 @@ function styles(C:ThemeColors){return StyleSheet.create({
  materialRight:{alignItems:'flex-end',minWidth:60},materialAmount:{fontSize:13,lineHeight:17,fontWeight:'800'},materialStatus:{fontSize:10,lineHeight:14},
  warning:{fontSize:12,lineHeight:18,fontWeight:'700'},footer:{fontSize:11,lineHeight:16,color:C.muted,textAlign:'center',paddingHorizontal:8},
  pressed:{opacity:.75},modalShade:{flex:1,justifyContent:'center',alignItems:'center',paddingHorizontal:18,paddingVertical:28,backgroundColor:'rgba(7,14,19,.78)'},
- modalCard:{width:'100%',maxWidth:440,maxHeight:'92%',overflow:'hidden',borderWidth:1,borderColor:C.lineStrong,borderRadius:13,backgroundColor:C.panel},
+ modalCard:{width:'100%',maxWidth:440,maxHeight:'88%',overflow:'hidden',borderWidth:1,borderColor:C.lineStrong,borderRadius:13,backgroundColor:C.panel},
  modalScroll:{flexShrink:1},modalBody:{padding:16,gap:12},modalTitle:{fontSize:18,lineHeight:24,color:C.text,fontWeight:'800'},
  modalMaterial:{flexDirection:'row',alignItems:'center',gap:9,paddingVertical:8,borderBottomWidth:StyleSheet.hairlineWidth,borderBottomColor:C.line},
  modalActions:{padding:14,gap:8,borderTopWidth:1,borderTopColor:C.line},

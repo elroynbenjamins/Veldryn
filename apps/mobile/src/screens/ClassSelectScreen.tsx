@@ -1,5 +1,5 @@
 import {useEffect,useMemo,useRef,useState} from 'react';
-import {Image,Keyboard,KeyboardAvoidingView,Platform,Pressable,ScrollView,StyleSheet,Text,TextInput,View,useWindowDimensions} from 'react-native';
+import {Image,Keyboard,KeyboardAvoidingView,Platform,Pressable,ScrollView,StyleSheet,Text,TextInput,View,useWindowDimensions,type ScrollViewInstance} from 'react-native';
 import {ConfirmModal} from '../components/ConfirmModal';
 import {CreationLanguagePicker} from '../components/creation/CreationLanguagePicker';
 import {classSkillIcon} from '../theme/class-skill-assets';
@@ -39,7 +39,7 @@ export function ClassSelectScreen({language:languageProp,onLanguage,themeId,onTh
  const {width,fontScale}=useWindowDimensions();
  const compact=width<360||fontScale>1.25;
  const classWidth=Math.floor((Math.min(width-32,488)-16)/3);
- const scroll=useRef<ScrollView>(null),submitting=useRef(false);
+ const scroll=useRef<ScrollViewInstance>(null),submitting=useRef(false);
  const [step,setStep]=useState<Step>(onCancel?'class':'welcome');
  const [index,setIndex]=useState(0);
  const [name,setName]=useState('');

@@ -1,5 +1,5 @@
 import {useRef,useState,useMemo} from 'react';
-import {Pressable,StyleSheet,TextInput,View,type StyleProp,type TextInputProps,type ViewStyle} from 'react-native';
+import {Pressable,StyleSheet,TextInput,View,type StyleProp,type TextInputProps,type TextInputInstance,type ViewStyle} from 'react-native';
 import {GameTextInput} from './GameTextInput';
 import {UiIcon} from './UiIcon';
 import {radii,equipmentTheme,type ThemeColors} from '../theme/theme';
@@ -11,7 +11,7 @@ type Props=Omit<TextInputProps,'style'|'value'|'onChangeText'|'multiline'> & {va
 export function SearchField({value,onChangeText,style,onFocus,onBlur,editable=true,...props}:Props){
  const language=useGameLanguage();
  const C=useGameTheme(),equipmentColors=equipmentTheme(C),s=useMemo(()=>makeStyles(C),[C]);
-  const ref=useRef<TextInput>(null),[focused,setFocused]=useState(false);
+  const ref=useRef<TextInputInstance>(null),[focused,setFocused]=useState(false);
   return <View style={[s.field,style,focused&&s.focused,!editable&&s.disabled]}>
     <UiIcon name="search" size={24} muted={!focused}/>
     <GameTextInput {...props} ref={ref} value={value} onChangeText={onChangeText} editable={editable} multiline={false}

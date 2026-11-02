@@ -1,3 +1,5 @@
+> **2026-11-02 LIVE UPDATE — READ FIRST:** This document originally described an unreleased foundation. Production now has **all nine Guild Skills marked released** (9/9), 54 cost rows and the effects projection RPC. Both generated gameplay/co-op Edge Functions were deployed from `main` (gameplay v38, coop v21). The mobile Skills panel and authenticated upgrade routes are **still not wired**, and the effect projection is **not proof that game calculations consume the bonuses**. Claude must implement and verify the real game-wide effects and player UI/transport before treating Guild Skills as complete. Current authoritative deployment details and migration cautions: [Production backend deployment 2026-11-02](implementation/PRODUCTION_BACKEND_DEPLOYMENT_2026_11_02.md). The historical unreleased instructions below are retained as implementation background, not current production state.
+
 # VELDRYN Guild Skill Trees — authoritative Supabase foundation / Claude UI handoff
 
 ## Verified state (2026-11-02)

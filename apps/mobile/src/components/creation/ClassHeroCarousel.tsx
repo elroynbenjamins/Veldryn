@@ -4,7 +4,7 @@ import type {Language} from '../../i18n/languages';
 import {ClassSkillAffinityNote} from '../ClassSkillAffinityNote';
 import {UiIcon} from '../UiIcon';
 import {useEffect,useRef} from 'react';
-import {Image,Platform,Pressable,ScrollView,StyleSheet,Text,View,useWindowDimensions,type GestureResponderHandlers} from 'react-native';
+import {Image,Platform,Pressable,ScrollView,StyleSheet,Text,View,useWindowDimensions,type GestureResponderHandlers,type ScrollViewInstance} from 'react-native';
 import type {ClassDef} from '../../content/classes';
 import {classEmblemIconArtwork} from '../../theme/class-emblem-assets';
 import {classCreationPresentation} from '../../theme/class-creation-art';
@@ -15,7 +15,7 @@ export function ClassHeroCarousel({language:languageProp,selected,classes,index,
   const gameLanguage=useGameLanguage(),language=languageProp??gameLanguage;
   const presentation=classCreationPresentation[selected.id];
   const {width,fontScale}=useWindowDimensions(),compact=width<380||fontScale>1.2;
-  const strip=useRef<ScrollView>(null);
+  const strip=useRef<ScrollViewInstance>(null);
   useEffect(()=>{strip.current?.scrollTo({x:Math.max(0,index*64-96),animated:true});},[selected.id,index]);
   return <View style={s.root} {...panHandlers}>
     <View style={[s.summary,compact&&s.compactSummary]} accessibilityLiveRegion="polite">

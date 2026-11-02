@@ -15,7 +15,7 @@ export function equipmentSheetCellAspect(sheet:ImageSourcePropType){
   // React Native Web does not expose resolveAssetSource; fall back to the
   // authored sprite-sheet ratio when running the Expo web preview.
   const resolved=Image.resolveAssetSource?.(sheet);
-  return resolved?.width>0&&resolved?.height>0?(resolved.width/5)/(resolved.height/2):fallbackCellAspect;
+  return resolved&&(resolved.width??0)>0&&(resolved.height??0)>0?(resolved.width!/5)/(resolved.height!/2):fallbackCellAspect;
 }
 
 export function hasEquipmentArtwork(item:ItemDef){

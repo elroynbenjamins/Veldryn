@@ -1,10 +1,10 @@
 import {forwardRef,useMemo,useState} from 'react';
-import {TextInput,StyleSheet,type TextInputProps} from 'react-native';
+import {TextInput,StyleSheet,type TextInputProps,type TextInputInstance} from 'react-native';
 import {radii,type ThemeColors} from '../theme/theme';
 import {useGameTheme} from '../theme/ThemeContext';
 
 /** Shared field metrics; native text and placeholder keep the same baseline. */
-export const GameTextInput=forwardRef<TextInput,TextInputProps>(function GameTextInput({style,multiline=false,editable=true,onFocus,onBlur,placeholderTextColor,...props},ref){
+export const GameTextInput=forwardRef<TextInputInstance,TextInputProps>(function GameTextInput({style,multiline=false,editable=true,onFocus,onBlur,placeholderTextColor,...props},ref){
   const C=useGameTheme(),s=useMemo(()=>makeStyles(C),[C]);
   const [focused,setFocused]=useState(false);
   const metrics=StyleSheet.flatten(style);

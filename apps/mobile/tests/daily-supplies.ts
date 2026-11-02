@@ -107,7 +107,7 @@ equal(craft.character?.activeDailySupplyBoost?.remainingSeconds,7200-72,'Craftin
 let craftSkill=createCharacter(newGame(t0),'WAYFINDER','Craft XP');
 craftSkill={...craftSkill,character:{...craftSkill.character!,gold:1000,activeDailySupplyBoost:{type:'skill_xp' as const,remainingSeconds:7200}},inventory:{...craftSkill.inventory,stacks:[...craftSkill.inventory.stacks,{itemId:'COPPER_ORE',quantity:10},{itemId:'GREENWOOD_LOG',quantity:2}]}};
 craftSkill=craftRecipe(craftSkill,'SMELT_COPPER_INGOT',t0);
-equal(craftSkill.skills.find(row=>row.skillId==='smithing')?.xp,88,'Skill XP should add 10% to instant processing XP');
+equal(craftSkill.skills.find(row=>row.skillId==='smithing')?.xp,110,'Skill XP should add 10% to the boosted 100-XP Copper processing recipe');
 equal(craftSkill.character?.activeDailySupplyBoost?.remainingSeconds,7200-36,'Skill XP should consume the recipe duration');
 
 let noGearDup=createCharacter(newGame(t0),'IRONWARDEN','No Gear Dup');

@@ -6641,6 +6641,7 @@ export const socialTranslationRows = {
     "La configuration des services en ligne manque dans cette version. Mettez à jour ou réinstallez la version de production plutôt que d’utiliser le chat de démonstration temporaire."
   ],
  // Party hub compact redesign.
+ "No pending invitations.": ["Keine ausstehenden Einladungen.","No hay invitaciones pendientes.","Geen openstaande uitnodigingen.","Nessun invito in sospeso.","Aucune invitation en attente."],
  "Party locked": ["Gruppe gesperrt","Grupo bloqueado","Party vergrendeld","Gruppo bloccato","Groupe verrouillé"],
  "Parties unlock at Level {level}": ["Gruppen werden ab Stufe {level} freigeschaltet","Los grupos se desbloquean en el nivel {level}","Party's worden ontgrendeld op niveau {level}","I gruppi si sbloccano al livello {level}","Les groupes se débloquent au niveau {level}"],
  "Reach Level {level} to create or join a Party.": ["Erreiche Stufe {level}, um eine Gruppe zu erstellen oder ihr beizutreten.","Alcanza el nivel {level} para crear un grupo o unirte.","Bereik niveau {level} om een party te maken of toe te treden.","Raggiungi il livello {level} per creare un gruppo o unirti.","Atteignez le niveau {level} pour créer ou rejoindre un groupe."],

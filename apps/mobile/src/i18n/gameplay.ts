@@ -7,6 +7,8 @@ import {useMemo} from 'react';
 // Every row is complete, in en/de/es/nl/it/fr order. English phrases are typed keys.
 type TranslationRow=readonly [string,string,string,string,string,string];
 const common={
+ // Explain legacy itemId-based enchantment without promising duplicate upgrades.
+ "The equipped weapon keeps its enchantment. This spare has no separate upgrade record.":["The equipped weapon keeps its enchantment. This spare has no separate upgrade record.","Die ausgerüstete Waffe behält ihre Verzauberung. Dieses Ersatzstück hat keinen eigenen Verbesserungsstand.","El arma equipada conserva su encantamiento. Esta copia no tiene mejoras propias.","Het uitgeruste wapen behoudt zijn betovering. Dit extra exemplaar heeft geen eigen upgrades.","L'arma equipaggiata mantiene l'incantesimo. Questa copia non ha potenziamenti propri.","L'arme équipée conserve son enchantement. Cet exemplaire n'a pas ses propres améliorations."],
  // Compact gathering drops disclosure; language order en/de/es/nl/it/fr.
  "Drops":["Drops","Beute","Botín","Drops","Bottino","Butin"],
  "Pet":["Pet","Begleiter","Mascota","Huisdier","Famiglio","Familier"],

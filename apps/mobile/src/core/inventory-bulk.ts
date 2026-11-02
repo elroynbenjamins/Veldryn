@@ -1,7 +1,7 @@
 import {itemDef} from '../content/items';
 import {HOLY_WATER_ID} from '../content/faith';
 import {GameState} from './types';
-import {hasEnhancement} from './equipment-enhancement';
+import {canDisposeLegacyEquipment} from './equipment-enhancement';
 import {depositToBank,salvageItem,sellItem,withdrawFromBank} from './game';
 import {workingTowardInventoryProtectionMap} from './working-toward-inventory';
 
@@ -13,9 +13,10 @@ function selectedStacks(state:GameState,itemIds:readonly string[],location:BulkS
   // Unique crafted equipment is managed by exact instance ID, never by a bulk item-type selection.
   return state[location].stacks.filter(stack=>stack.quantity>0&&stack.instanceId===undefined&&ids.has(stack.itemId));
 }
-function protectedFromDisposal(state:GameState,itemId:string,goalProtectedIds:Set<string>){
+function protectedFromDisposal(state:GameState,itemId:string,goalProtectedIds:Set<string>,quantity:number,location:BulkStorageLocation){
   const item=itemDef(itemId);
-  return goalProtectedIds.has(itemId)||!!state.settings.favoriteItemIds?.includes(itemId)||!!state.settings.lockedItemIds?.includes(itemId)||(item.type==='gear'&&hasEnhancement(state,itemId));
+  return goalProtectedIds.has(itemId)||!!state.settings.favoriteItemIds?.includes(itemId)||!!state.settings.lockedItemIds?.includes(itemId)
+    ||(item.type==='gear'&&!canDisposeLegacyEquipment(state,itemId,location,quantity));
 }
 
 export function bulkSelectionSummary(state:GameState,itemIds:readonly string[],location:BulkStorageLocation){
@@ -33,11 +34,11 @@ export function bulkSelectionSummary(state:GameState,itemIds:readonly string[],l
   const transferable=stacks.filter(stack=>location==='bank'||stack.itemId!==autoEatId);
   const sellable=location==='inventory'?stacks.filter(stack=>{
     const item=itemDef(stack.itemId);
-    return stack.itemId!==autoEatId&&stack.itemId!==HOLY_WATER_ID&&item.value>0&&!protectedFromDisposal(state,stack.itemId,goalProtectedIds);
+    return stack.itemId!==autoEatId&&stack.itemId!==HOLY_WATER_ID&&item.value>0&&!protectedFromDisposal(state,stack.itemId,goalProtectedIds,stack.quantity,location);
   }):[];
   const salvageable=location==='inventory'?stacks.filter(stack=>{
     const item=itemDef(stack.itemId);
-    return item.type==='gear'&&!!item.salvage&&!protectedFromDisposal(state,stack.itemId,goalProtectedIds);
+    return item.type==='gear'&&!!item.salvage&&!protectedFromDisposal(state,stack.itemId,goalProtectedIds,stack.quantity,location);
   }):[];
   return {
     selectedStackCount:stacks.length,

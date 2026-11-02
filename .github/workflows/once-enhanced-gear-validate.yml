@@ -1,4 +1,4 @@
-name: One-time localization recheck after catalog completion
+name: One-time localization recheck after current Account UI contract
 on:
   push:
     branches:

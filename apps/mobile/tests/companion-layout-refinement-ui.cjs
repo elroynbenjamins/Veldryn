@@ -44,5 +44,5 @@ assert(expedition.includes('visible={teamPickerOpen}')&&expedition.includes('vis
 assert(expedition.includes('validateCompanionMissionTeam('),'Mission team rules must remain authoritative');
 assert(expedition.includes('companionStaminaSelectionTotal(foodSelection)'),'Stamina must use real food selection');
 assert(expedition.includes("type:'companion_assignment_start'"),'Starting expeditions must still send the real command');
-assert(expedition.includes('CompanionDisclosure title={t("Mission Details")}'),'Detailed requirements must stay accessible');
+assert(/CompanionDisclosure\s+title=\{t\(['"]Mission Details['"]\)\}/.test(expedition),'Detailed requirements must stay accessible');
 console.log('PASS Companion layout refinement and resource icon UX');

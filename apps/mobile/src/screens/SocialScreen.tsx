@@ -175,7 +175,6 @@ export function SocialScreen({initialTab='party',characterLevel=0,onGuild,onAcco
   {(social.accountId&&(backgroundError||social.error||showUpdating))?<View style={s.syncRow}>{backgroundError||social.error?<><Text style={s.syncError}>{st("Could not update Social.")}</Text><GameButton compact title={st("Retry")} tone="secondary" onPress={()=>{void social.refresh();void load();}}/></>:<><ActivityIndicator color={C.muted} size="small"/><Text style={s.syncText}>{st("Updating…")}</Text></>}</View>:null}
   {!!error&&<View accessibilityRole="alert" style={s.errorCard}><Text style={s.errorLabel}>{st("SOCIAL UNAVAILABLE")}</Text><Text style={s.error}>{error}</Text></View>}
   {!social.accountId?<Panel>{social.loading?<Text style={s.syncText}>{st("Connecting…")}</Text>:<Text style={s.text}>{st("Sign in and sync a character to use Parties and Recruitment.")}</Text>}<GameButton title={st("Account settings")} onPress={onAccount}/></Panel>:<>
-   {tab==='guild'?:null}
    {tab==='guild'?recruitmentDetails:null}
    {tab==='party'&&!social.party?partyInvitations:null}
    {tab==='party'&&!!social.accountId&&social.loading&&!social.party?<Text style={s.syncText}>{st("Checking your Party…")}</Text>:null}

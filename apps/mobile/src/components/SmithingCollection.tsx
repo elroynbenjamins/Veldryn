@@ -1,5 +1,5 @@
 import {useEffect,useMemo,useState,type ComponentProps} from 'react';
-import {Pressable,StyleSheet,Text,View} from 'react-native';
+import {Pressable,StyleSheet,Text,View,useWindowDimensions} from 'react-native';
 import {EQUIPMENT_SETS} from '../content/equipment-sets';
 import {RECIPES} from '../content/skills';
 import {alchemyRecipeDef} from '../content/alchemy';
@@ -32,7 +32,7 @@ export const SmithingHeader=EquipmentCraftingHeader;
 
 /** Collection browsing is presentation only; existing forge commands own all costs and gates. */
 export function SmithingCollection(props:Props){
- const {state,preferredRecipeId,onCraft,queueProps,skillId='smithing'}=props,C=useGameTheme(),{gl,gt,language}=useGameplayText();
+ const {state,preferredRecipeId,onCraft,queueProps,skillId='smithing'}=props,C=useGameTheme(),{gl,gt,language}=useGameplayText(),{fontScale}=useWindowDimensions();
  const recipes=useMemo(()=>RECIPES.filter(r=>r.skillId===skillId&&!r.noviceSetId&&(!r.classId||r.classId===state.character?.classId)),[state.character?.classId,skillId]);
  const preferred=recipes.find(r=>r.id===preferredRecipeId);
  const [tab,setTab]=useState<'equipment'|'materials'|'tools'>(preferred&&!preferred.v33SetId?(itemDef(preferred.output.itemId).type==='tool'?'tools':'materials'):'equipment');
@@ -46,10 +46,13 @@ export function SmithingCollection(props:Props){
  const status=recipe?equipmentCraftAvailability(state,recipe.id):undefined,queue=equipmentCraftQueueModel(state,now),full=queue.freeSlots<=0&&queue.freeWaiting<=0,ready=!!status?.ready&&!full;
  const owned=new Set([...state.inventory.stacks,...state.bank.stacks].filter(row=>row.quantity>0).map(row=>row.itemId));
  Object.values(state.character?.equipment??{}).forEach(id=>{if(id)owned.add(id)});
- const tileWidth=(width-32)/5,artSize=Math.max(32,Math.min(78,tileWidth-12));
+ // Keep the familiar two-row, five-column equipment grid on regular phones.
+ // Switch to larger touch targets only on narrow screens or enlarged system text.
+ const tileColumns=width<345||fontScale>=1.3?4:5;
+ const tileWidth=(width-8*(tileColumns-1))/tileColumns,artSize=Math.max(32,Math.min(78,tileWidth-12));
  const chooseSet=(id:string)=>{setSetId(id);setItemId(undefined);setDetailsOpen(false);setBonusesOpen(false);setError('')};
  const panel={backgroundColor:C.panel,borderColor:C.line},text={color:C.text},muted={color:C.muted};
- const button=(title:string,onPress:()=>void,extra?:object)=><Pressable accessibilityRole="button" accessibilityLabel={title} onPress={onPress} style={({pressed})=>[s.control,panel,extra,pressed&&s.pressed]}><Text style={[s.body,text]}>{title}</Text></Pressable>;
+ const button=(title:string,onPress:()=>void,extra?:object,accessibleLabel=title)=><Pressable accessibilityRole="button" accessibilityLabel={accessibleLabel} onPress={onPress} style={({pressed})=>[s.control,panel,extra,pressed&&s.pressed]}><Text style={[s.body,text]}>{title}</Text></Pressable>;
  const active=queue.jobs.find(job=>job.status==='active'),progress=active?Math.max(0,Math.min(1,1-active.remainingSeconds/Math.max(1,active.durationSeconds))):0;
  return <View style={s.root} onLayout={e=>setWidth(e.nativeEvent.layout.width)}>
   <View accessibilityRole="tablist" style={[s.tabs,{borderBottomColor:C.line}]}>{(['equipment','materials','tools'] as const).map(value=><Pressable key={value} accessibilityRole="tab" accessibilityState={{selected:tab===value}} onPress={()=>setTab(value)} style={[s.tab,{borderBottomColor:tab===value?C.selectionLine:'transparent'}]}><Text style={[s.body,{color:tab===value?C.text:C.muted,fontWeight:tab===value?'700':'400'}]}>{gl(value[0].toUpperCase()+value.slice(1))}</Text></Pressable>)}</View>
@@ -57,14 +60,14 @@ export function SmithingCollection(props:Props){
    <View style={s.between}>{button(gl('Tier')+' '+set.tier.slice(1)+'  ⌄',()=>setTiersOpen(!tiersOpen),{minWidth:130})}<Text style={[s.body,muted]}>{state.character?.classId.toLowerCase().replace(/_/g,' ').replace(/\b\w/g,c=>c.toUpperCase())}</Text></View>
    {tiersOpen?<View style={s.tiers}>{[...new Set(sets.map(row=>row.tier))].map(tier=><Pressable key={tier} accessibilityRole="button" accessibilityState={{selected:tier===set.tier}} onPress={()=>{chooseSet(sets.find(row=>row.tier===tier)!.id);setTiersOpen(false)}} style={[s.control,panel,tier===set.tier&&{borderColor:C.selectionLine}]}><Text style={text}>{tier}</Text></Pressable>)}</View>:null}
    <View style={[s.setHeader,panel]}>
-    {button('‹',()=>chooseSet(tierSets[(setIndex-1+tierSets.length)%tierSets.length].id))}
+    {button('‹',()=>chooseSet(tierSets[(setIndex-1+tierSets.length)%tierSets.length].id),undefined,gt('Previous set'))}
     <View style={s.center}>
      <Text style={[s.caption,muted]}>{gt('Set {number} / {total}',{number:setIndex+1,total:tierSets.length})}</Text>
      <Text style={[s.setName,text]}>{set.name}</Text>
      <Text style={[s.caption,text,{textAlign:'center'}]}>{profileSourceText(language,set.buildFocus)}</Text>
      <Text style={[s.caption,muted]}>{pieces.filter(id=>owned.has(id)).length} / {pieces.length} {gl('pieces owned')}</Text>
     </View>
-    {button('›',()=>chooseSet(tierSets[(setIndex+1)%tierSets.length].id))}
+    {button('›',()=>chooseSet(tierSets[(setIndex+1)%tierSets.length].id),undefined,gt('Next set'))}
    </View>
    <View style={s.grid}>{pieces.map(id=>{const def=itemDef(id),chosen=id===selected;return <Pressable key={id} accessibilityRole="button" accessibilityLabel={def.name+(owned.has(id)?', '+gl('Owned'):'')} accessibilityState={{selected:chosen}} onPress={()=>{setItemId(id);setDetailsOpen(false);setError('')}} style={({pressed})=>[s.tile,panel,{width:tileWidth,borderColor:chosen?C.selectionLine:C.line,backgroundColor:chosen?C.selection:C.panel},pressed&&s.pressed]}><ItemArtwork itemId={id} size={artSize}/><Text numberOfLines={1} adjustsFontSizeToFit style={[s.slot,chosen?text:muted]}>{gl(slotLabels[def.slot??'']??'Equipment')}</Text>{owned.has(id)?<View style={[s.check,{backgroundColor:C.good}]}><Text style={{color:C.bg,fontSize:10,fontWeight:'800'}}>✓</Text></View>:null}</Pressable>})}</View>
    <Pressable accessibilityRole="button" accessibilityState={{expanded:bonusesOpen}} onPress={()=>setBonusesOpen(!bonusesOpen)} style={[s.disclosure,panel]}><Text style={[s.body,text]}>{gl('Set bonuses')}</Text><Text style={muted}>{bonusesOpen?'⌃':'⌄'}</Text></Pressable>

@@ -1,6 +1,6 @@
 {
   "name": "veldryn-offline-prototype",
-  "version": "1.0.3",
+  "version": "1.0.4",
   "private": true,
   "main": "index.js",
   "scripts": {

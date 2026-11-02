@@ -5,7 +5,7 @@ import type {CoopRunView} from '../../core/coop-presentation';
 import type {CoopLiveRematchState} from '../../online/coop-client';
 import {useGameTheme} from '../../theme/ThemeContext';
 import type {ThemeColors} from '../../theme/theme';
-import {IdentityArtwork} from '../IdentityArtwork';
+import {IdentityArtwork} from '../SocialIdentity';
 import {GameButton} from '../GameButton';
 
 /** The modal never chooses a party or creates a dungeon locally. Every ready

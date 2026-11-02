@@ -1,0 +1,26 @@
+bundle: PASS
+localization: FAIL
+    throw err;
+    ^
+
+AssertionError [ERR_ASSERTION]: screens/DailySuppliesScreen.tsx missing {name} · activate any combination of the four boosts. Each timer runs only during matching activities, including eligible offline settlement.
+    at visit (/home/runner/work/Veldryn/Veldryn/apps/mobile/tests/account-localization.cjs:73:52)
+    at visitNode2 (/home/runner/work/Veldryn/Veldryn/apps/mobile/node_modules/.pnpm/typescript@6.0.3/node_modules/typescript/lib/typescript.js:32551:18)
+    at forEachChildInJsxExpression (/home/runner/work/Veldryn/Veldryn/apps/mobile/node_modules/.pnpm/typescript@6.0.3/node_modules/typescript/lib/typescript.js:32935:55)
+    at Object.forEachChild (/home/runner/work/Veldryn/Veldryn/apps/mobile/node_modules/.pnpm/typescript@6.0.3/node_modules/typescript/lib/typescript.js:33072:35)
+    at visit (/home/runner/work/Veldryn/Veldryn/apps/mobile/tests/account-localization.cjs:76:6)
+    at visitNodes (/home/runner/work/Veldryn/Veldryn/apps/mobile/node_modules/.pnpm/typescript@6.0.3/node_modules/typescript/lib/typescript.js:32559:22)
+    at forEachChildInJsxElement (/home/runner/work/Veldryn/Veldryn/apps/mobile/node_modules/.pnpm/typescript@6.0.3/node_modules/typescript/lib/typescript.js:32918:55)
+    at Object.forEachChild (/home/runner/work/Veldryn/Veldryn/apps/mobile/node_modules/.pnpm/typescript@6.0.3/node_modules/typescript/lib/typescript.js:33072:35)
+    at visit (/home/runner/work/Veldryn/Veldryn/apps/mobile/tests/account-localization.cjs:76:6)
+    at visitNodes (/home/runner/work/Veldryn/Veldryn/apps/mobile/node_modules/.pnpm/typescript@6.0.3/node_modules/typescript/lib/typescript.js:32559:22) {
+  generatedMessage: false,
+  code: 'ERR_ASSERTION',
+  actual: false,
+  expected: true,
+  operator: '==',
+  diff: 'simple'
+}
+
+Node.js v22.23.4
+ ELIFECYCLE  Command failed with exit code 1.

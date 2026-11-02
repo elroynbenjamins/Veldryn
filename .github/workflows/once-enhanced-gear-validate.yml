@@ -1,4 +1,4 @@
-name: One-time enhanced gear full validation
+name: One-time localization recheck
 on:
   push:
     branches:
@@ -26,47 +26,23 @@ jobs:
           cache-dependency-path: apps/mobile/pnpm-lock.yaml
       - run: pnpm --dir apps/mobile install --frozen-lockfile
       - run: pnpm --dir backend install --frozen-lockfile
-      - name: Run critical validation and report exact outcome on branch
+      - name: Recheck localization and generated gameplay bundle
         shell: bash
         run: |
           set +e
-          report=.enhanced-gear-validation-report.txt
+          report=.enhanced-gear-localization-result.txt
           : > "$report"
-          run_check () {
-            local name="$1"
-            shift
-            echo "CHECK $name"
-            "$@" > "/tmp/gear-$name.log" 2>&1
-            code=$?
-            if [ "$code" -eq 0 ]; then
-              echo "$name: PASS" | tee -a "$report"
-            else
-              echo "$name: FAIL (exit=$code)" | tee -a "$report"
-              grep -E 'error TS|Error:|FAIL:|##\[error\]|AssertionError|Cannot find' "/tmp/gear-$name.log" | tail -n 12 >> "$report"
-              tail -n 8 "/tmp/gear-$name.log" >> "$report"
-            fi
-          }
-          run_check bundle node tools/verify-gameplay-edge.mjs
-          run_check typecheck pnpm --dir apps/mobile typecheck
-          run_check core-typecheck pnpm --dir apps/mobile typecheck:core
-          run_check unique-compile pnpm --dir apps/mobile exec tsc -p tsconfig.unique-gear.json --outDir .unique-gear-build
-          if [ -f apps/mobile/.unique-gear-build/apps/mobile/tests/equipment-crafted-instance-results.js ]; then
-            (cd apps/mobile && NODE_PATH=../../backend/node_modules node .unique-gear-build/apps/mobile/tests/equipment-crafted-instance-results.js) > /tmp/gear-unique-tests.log 2>&1
-            code=$?
-            if [ "$code" -eq 0 ]; then echo 'unique-tests: PASS' >> "$report"; else
-              echo "unique-tests: FAIL (exit=$code)" >> "$report"
-              tail -n 14 /tmp/gear-unique-tests.log >> "$report"
-            fi
-          else
-            echo 'unique-tests: SKIPPED (compile failed)' >> "$report"
-          fi
-          run_check mobile-core pnpm --dir apps/mobile test:core
-          run_check localization pnpm --dir apps/mobile test:localization
-          run_check online-typecheck pnpm --dir backend typecheck:online
-          echo '--- END ---' >> "$report"
+          node tools/verify-gameplay-edge.mjs > /tmp/gear-bundle.txt 2>&1
+          code=$?
+          echo "bundle: $([ "$code" -eq 0 ] && echo PASS || echo FAIL)" >> "$report"
+          if [ "$code" -ne 0 ]; then tail -n 8 /tmp/gear-bundle.txt >> "$report"; fi
+          pnpm --dir apps/mobile test:localization > /tmp/gear-loc.txt 2>&1
+          code=$?
+          echo "localization: $([ "$code" -eq 0 ] && echo PASS || echo FAIL)" >> "$report"
+          if [ "$code" -ne 0 ]; then tail -n 24 /tmp/gear-loc.txt >> "$report"; fi
           cat "$report"
           git config user.name "veldryn-ci"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add "$report"
-          git commit -m "test: record temporary enhanced gear validation result"
+          git commit -m "test: temporary localization recheck results"
           git push origin HEAD:refs/heads/fix/auto-lock-enhanced-gear-and-allow-manual-sale

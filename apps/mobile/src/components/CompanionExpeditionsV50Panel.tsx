@@ -29,7 +29,7 @@ function remaining(end:string,now:number){const sec=Math.max(0,Math.ceil((Date.p
 type ExpeditionFilter='all'|'short'|'long';
 type ClaimedReward={name:string;grade?:string;reward:{companionEssence:number;gold:number;companionXp:number;bondXp:number;bondstones:number;materials:Record<string,number>;bonusRewardGranted?:boolean}};
 const fmt=(n:number)=>n.toLocaleString();
-function missionRequirements(req:any,t:(value:string,vars?:Record<string,unknown>)=>string,label:(value:string)=>string){
+function missionRequirements(req:any,t:ReturnType<typeof companionTranslator>,label:(value:string)=>string){
  if(req.type==='role_count')return (req.count??1)+'× '+label(String(req.role));
  if(req.type==='affinity_count')return (req.count??1)+'× '+label(String(req.affinity))+' Affinity';
  if(req.type==='affinity_diversity')return (req.count??2)+'+ '+t('different Affinities');

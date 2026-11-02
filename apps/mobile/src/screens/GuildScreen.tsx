@@ -126,7 +126,7 @@ export function GuildScreen({state,onChange,onlineManagement,onlineBoard,onlineP
     </View>:null}
     {onlineSection==='PvE'?onlinePve:null}
     {onlineSection==='Hall'?<View style={s.sectionStack}>
-     {hallSection==='Shop'?<><GameButton compact title="Back to Guild Hall" tone="secondary" onPress={()=>setHallSection('Overview')}/><OnlineGuildTokenShopPanel onRewardsChanged={onTokenRewardsChanged}/></>:isValidElement<{activeSection?:'Overview'|'Construction'|'Bank'|'Skills'|'Legacy';onSectionChange?:(section:GuildNavigationState['hallSection'])=>void}>(onlineHall)?cloneElement(onlineHall,{activeSection:hallSection,onSectionChange:setHallSection}):onlineHall}
+     {hallSection==='Shop'?<><GameButton compact title="Back to Guild Hall" tone="secondary" onPress={()=>setHallSection('Overview')}/><OnlineGuildTokenShopPanel onRewardsChanged={onTokenRewardsChanged} onOpenConstruction={()=>setHallSection('Construction')}/></>:isValidElement<{activeSection?:'Overview'|'Construction'|'Bank'|'Skills'|'Legacy';onSectionChange?:(section:GuildNavigationState['hallSection'])=>void}>(onlineHall)?cloneElement(onlineHall,{activeSection:hallSection,onSectionChange:setHallSection}):onlineHall}
     </View>:null}
     {onlineSection==='Chat'?onlineChat:null}
     {onlineSection==='Appearance'&&canCustomize?<View style={s.sectionStack}><GameButton compact title={st('Manage Guild')} tone="secondary" onPress={()=>setOnlineSection('Manage')}/><GuildSectionHeader label={st("IDENTITY")} title={st("Guild Appearance")} copy={st("Manage the Guild tag, banner, border, colors, nameplate and motto with role-based permissions.")}/>{onlineCustomize}</View>:null}

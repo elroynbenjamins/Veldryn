@@ -6,6 +6,29 @@ import {createTranslator,type TranslationParams} from './translator';
 
 // Columns are German, Spanish, Dutch, Italian and French; keys are the English catalog.
 export const socialTranslationRows = {
+ // Dungeon formation, rewards, Live rematches and server-side clarity.
+ "EXPEDITION CLEARED":["EXPEDITION ABGESCHLOSSEN","EXPEDICIÓN COMPLETADA","EXPEDITIE VOLTOOID","SPEDIZIONE COMPLETATA","EXPÉDITION TERMINÉE"],
+ "Victory secured!":["Sieg gesichert!","¡Victoria conseguida!","Overwinning behaald!","Vittoria conquistata!","Victoire remportée !"],
+ "Battle complete":["Kampf abgeschlossen","Combate terminado","Gevecht voltooid","Combattimento concluso","Combat terminé"],
+ "View battle":["Kampf ansehen","Ver combate","Gevecht bekijken","Visualizza il combattimento","Voir le combat"],
+ "Battle in progress · Results are saved online.":["Kampf läuft · Ergebnisse werden online gespeichert.","Combate en curso · Los resultados se guardan en línea.","Gevecht bezig · Resultaten worden online opgeslagen.","Combattimento in corso · I risultati vengono salvati online.","Combat en cours · Résultats enregistrés en ligne."],
+ "View rewards":["Belohnungen ansehen","Ver recompensas","Beloningen bekijken","Visualizza ricompense","Voir les récompenses"],
+ "Preparing expedition rewards. You can retry if they have not appeared yet.":["Expeditionsbelohnungen werden vorbereitet. Erneut versuchen, falls sie noch nicht angezeigt werden.","Preparando recompensas. Vuelve a intentarlo si aún no aparecen.","Expeditiebeloningen voorbereiden. Probeer opnieuw als ze nog niet verschijnen.","Preparazione delle ricompense. Riprova se non sono ancora visibili.","Préparation des récompenses. Réessayez si elles n'apparaissent pas encore."],
+ "Expedition Marks":["Expeditionsmarken","Marcas de expedición","Expeditiemarken","Marchi di spedizione","Marques d'expédition"],
+ "CLAIMED":["ABGEHOLT","RECLAMADO","GECLAIMD","RISCATTATO","RÉCUPÉRÉ"],
+ "Seasonal reward collected.":["Saisonbelohnung abgeholt.","Recompensa de temporada reclamada.","Seizoensbeloning geclaimd.","Ricompensa stagionale riscattata.","Récompense saisonnière récupérée."],
+ "Rematch with this party":["Mit dieser Gruppe erneut starten","Revancha con este grupo","Opnieuw met deze groep","Rivincita con questo gruppo","Rejouer avec ce groupe"],
+ "Refresh rewards":["Belohnungen aktualisieren","Actualizar recompensas","Beloningen vernieuwen","Aggiorna ricompense","Actualiser les récompenses"],
+ "Entering battle":["Kampf beginnt","Entrando en combate","Gevecht starten","Inizio del combattimento","Début du combat"],
+ "Preparing the encounter…":["Begegnung wird vorbereitet…","Preparando el encuentro…","Gevecht voorbereiden…","Preparazione dello scontro…","Préparation de la rencontre…"],
+ "Battle arena: enemies at the top, party at the bottom":["Kampfarena: Gegner oben, Gruppe unten","Arena de combate: enemigos arriba, grupo abajo","Gevechtsarena: vijanden boven, groep onder","Arena: nemici in alto, gruppo in basso","Arène : ennemis en haut, groupe en bas"],
+ "ENEMIES":["GEGNER","ENEMIGOS","VIJANDEN","NEMICI","ENNEMIS"],
+ "YOUR PARTY":["DEINE GRUPPE","TU GRUPO","JOUW GROEP","IL TUO GRUPPO","VOTRE GROUPE"],
+ "Elapsed":["Vergangen","Transcurrido","Verstreken","Trascorso","Écoulé"],
+ "Invalid Live rematch response.":["Ungültige Antwort für den Live-Rückkampf.","Respuesta de revancha en vivo no válida.","Ongeldig antwoord voor Live-herkansing.","Risposta non valida per la rivincita Live.","Réponse de revanche Live invalide."],
+ "Run again":["Erneut starten","Jugar de nuevo","Opnieuw spelen","Gioca ancora","Rejouer"],
+ "Find new Live party":["Neue Live-Gruppe finden","Buscar otro grupo en vivo","Nieuwe Live-groep zoeken","Trova un nuovo gruppo Live","Trouver un nouveau groupe Live"],
+ "A verified Live-ready loadout is required.":["Eine geprüfte Live-Ausrüstung ist erforderlich.","Se requiere un equipamiento verificado para Live.","Een geverifieerde Live-uitrusting is vereist.","Serve un equipaggiamento Live verificato.","Un équipement Live vérifié est nécessaire."],
  "TOP THREE":["TOP DREI","TRES PRIMEROS","TOP DRIE","PRIMI TRE","TROIS PREMIERS"],
 
  "Failed runs do not spend charges. {remaining} of 12 weekly consolation rewards left.":["Niederlagen kosten keine Ladungen. Noch {remaining} von 12 Trostbelohnungen pro Woche.","Los fracasos no gastan cargas. Quedan {remaining} de 12 recompensas de consuelo semanales.","Mislukte runs kosten geen ladingen. Nog {remaining} van 12 troostbeloningen deze week.","Le sconfitte non consumano cariche. Restano {remaining} di 12 ricompense di consolazione settimanali.","Les échecs ne coûtent pas de charges. Il reste {remaining} récompenses de consolation sur 12."],

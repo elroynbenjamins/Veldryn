@@ -183,7 +183,7 @@ export function InventoryScreen({state,viewMemory,foodRequest=0,onEquip,onFood,o
     {carried&&inspected.type==='food'&&mealBonusDef(inspected.id)?<>
       <Text style={[s.sub,{color:C.good}]}>{mealBonusDef(inspected.id)!.label} · {mealBonusDef(inspected.id)!.durationHours}h · {gt('Only one meal buff can be active.')}</Text>
       {state.character?.activeMealBuff?<Text style={s.sub}>{gt('Active meal')}: {itemDef(state.character.activeMealBuff.itemId).name} · {Math.ceil(state.character.activeMealBuff.remainingSeconds/60)} min</Text>:null}
-      <GameButton compact title={gt('Eat for Bonus')} disabled={!onCommand||inventoryBusyLabel!==null} onPress={()=>void beginInventorySubmission(gt('Eat for Bonus'),async()=>{await onCommand?.({type:'meal_bonus',args:{id:inspected.id}});closeInspect()})}/>
+      <GameButton compact title={gt('Eat for Bonus')} disabled={!onCommand||inventoryBusyLabel!==null} onPress={()=>beginInventorySubmission(gt('Eat for Bonus'),async()=>{await onCommand?.({type:'meal_bonus',args:{id:inspected.id}});closeInspect()})}/>
     </>:null}
     {carried&&inspected.type==='food'?<GameButton compact title={recoveryAmount(healthState,inspected.id)===0?gt("Health full"):gt('Eat 1 · +{hp} HP',{hp:formatGameNumber(Math.round(recoveryAmount(healthState,inspected.id)),state.settings.numberMode,state.settings.language)})} disabled={recoveryAmount(healthState,inspected.id)===0} tone="secondary" onPress={()=>{run(()=>onEat(inspected.id));closeInspect()}}/>:null}
     <GameButton compact title={favoriteSet.has(inspected.id)?gt("Remove favorite"):gt("Favorite")} tone="secondary" onPress={()=>{run(()=>onToggleFavorite(inspected.id));closeInspect()}}/>

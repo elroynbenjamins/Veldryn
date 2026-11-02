@@ -16,7 +16,7 @@ for(const [i,source] of files.entries()){
 assert.ok(home.includes('<HomeAdventureHeader state={state} compactHome/>'),'Compact Home must retain real character/region art');
 assert.ok(header.includes('ZoneSceneArtwork')&&header.includes('CharacterPortrait')&&header.includes('compactHome&&s.heroCompact'),'Compact header must keep real assets');
 assert.ok(home.includes('<HomeActivityFocus title={activityName}')&&home.includes('kind={state.activity.kind}')&&home.includes('preview={preview}'),'Home focus must use real live activity projections');
-assert.ok(focus.includes('<ActivityCard {...props}')&&focus.includes('GameModalSurface visible={detailOpen}')&&focus.includes('GameModalHeader'),'Detailed activity remains available in shared native sheet');
+assert.ok(focus.includes('<ActivityCard {...props}')&&focus.includes('detailOpen?<GameModalSurface visible')&&focus.includes('GameModalHeader'),'Detailed activity remains available in shared native sheet');
 assert.ok(focus.includes("const requestStop=()=>{setStopFor(activityKey);setStopOpen(true)}")&&focus.includes('presentation="dialog"')&&focus.includes("title={gl('Keep running')}")&&focus.includes("if(stopFor!==activityKey)")&&focus.includes("props.onStop()"),'Collect & stop must require confirmation and protect against stale activity');
 assert.ok(focus.includes("canCollect=count>0||!!preview.stoppedReason")&&focus.includes('disabled={!canCollect}'),'No empty reward claim action');
 assert.ok(focus.includes('props.onClaim()')&&!focus.includes('setReward('),'Reward collection must call the existing authoritative action');

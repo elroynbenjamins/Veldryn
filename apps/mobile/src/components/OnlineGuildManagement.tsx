@@ -92,7 +92,7 @@ export function OnlineGuildManagement({onApplicationsChanged,initialView='Member
    if(action==='transfer')await transferGuildLeadership(member.account_id);
    await load();onApplicationsChanged?.();
    return true;
-  }catch(error){gameAlert.alert(st("Guild member"),error instanceof Error?error.message:st("Unable to update Guild member."));return false;}
+  }catch(error){gameAlert.alert(st("Guild member"),error instanceof Error?error.message:"Unable to update Guild member.");return false;}
   finally{setBusy(false)}
  };
  const leaveCurrentGuild=()=>gameAlert.alert(st("Leave Guild?"),st("You will lose access to Guild projects, chat and member benefits until you join another Guild."),[
@@ -112,8 +112,8 @@ export function OnlineGuildManagement({onApplicationsChanged,initialView='Member
   {loadError?<ActionFeedback tone="error" message={loadError}/>:null}
   <Panel>
    <GuildIdentitySummary compact name={guild.name} tag={guild.tag} tagColorId={guild.tag_color_id} level={guild.level} memberCount={members.length} memberCap={guild.member_cap} backgroundId={guild.background_id} bannerId={guild.banner_id} frameId={guild.profile_frame_id} nameColorId={guild.name_color_id} nameplateId={guild.nameplate_id} motto={guild.motto}/>
-   <View style={s.managementHead}><View style={s.flex}><Text style={s.managementTitle}>{st("Members")}</Text><Text style={s.subCompact}>{st("Guild roster and member requests")}</Text></View><View style={[s.rolePill,role==='leader'?s.roleLeader:role==='officer'?s.roleOfficer:s.roleMember]}><Text style={[s.roleText,role==='leader'?s.roleTextLeader:role==='officer'?s.roleTextOfficer:s.roleTextMember]}>{role.toUpperCase()}</Text></View></View>
-   <View style={s.capacityHeader}><Text style={s.capacityCount}>{members.length} / {guild.member_cap} {st("MEMBERS")}</Text><Text style={s.capacityFree}>{Math.max(0,guild.member_cap-members.length)} {st("spaces available")}</Text></View>
+   <View style={s.managementHead}><View style={s.flex}><Text style={s.managementTitle}>{st("Members")}</Text><Text style={s.subCompact}>{"Guild roster and member requests"}</Text></View><View style={[s.rolePill,role==='leader'?s.roleLeader:role==='officer'?s.roleOfficer:s.roleMember]}><Text style={[s.roleText,role==='leader'?s.roleTextLeader:role==='officer'?s.roleTextOfficer:s.roleTextMember]}>{role.toUpperCase()}</Text></View></View>
+   <View style={s.capacityHeader}><Text style={s.capacityCount}>{members.length} / {guild.member_cap} {st("MEMBERS")}</Text><Text style={s.capacityFree}>{Math.max(0,guild.member_cap-members.length)} {"spaces available"}</Text></View>
    <View style={s.capacityTrack}><View style={[s.capacityFill,{width:((Math.min(1,members.length/Math.max(1,guild.member_cap))*100).toFixed(2)+'%') as `${number}%`}]}/></View>
   </Panel>
   <BoardTabs compact label="Guild roster sections" items={[{id:'Members',label:'Members'},{id:'Requests',label:`Requests${applications.length+invitations.length+outgoingInvitations.length?' · '+(applications.length+invitations.length+outgoingInvitations.length):''}`},{id:'Safety',label:'Membership'}]} value={view} onChange={next=>{setView(next);setActiveMemberId(null)}}/>
@@ -164,7 +164,7 @@ function makeStyles(C:ThemeColors){return StyleSheet.create({
  section:{...typography.caption,color:C.accent,fontWeight:'900',letterSpacing:.8},
  sectionMeta:{fontSize:12,lineHeight:17,color:C.muted,fontWeight:'600'},
  member:{minHeight:60,flexDirection:'row',alignItems:'center',gap:8,paddingVertical:8,borderTopWidth:1,borderColor:C.line},
- memberIdentity:{flex:1,minWidth:0},memberPressed:{opacity:.72},
+ memberIdentity:{flex:1,minWidth:0},
  memberActions:{width:82},
  leadership:{padding:12,borderWidth:1,borderColor:C.line,borderRadius:10,backgroundColor:C.panel2},leadershipWarn:{borderColor:C.warning,backgroundColor:C.warningSurface},leadershipHead:{flexDirection:'row',flexWrap:'wrap',alignItems:'center',justifyContent:'space-between',gap:8},safetyPill:{paddingHorizontal:7,paddingVertical:4,borderWidth:1,borderColor:C.good,borderRadius:99,backgroundColor:C.goodSurface},safetyPillWarn:{borderColor:C.warning,backgroundColor:C.warningSurface},safetyText:{fontSize:10,lineHeight:15,color:C.good,fontWeight:'700',letterSpacing:.55},safetyTextWarn:{color:C.warning},warningText:{fontSize:13,lineHeight:19,color:C.warning,marginTop:3},rosterActions:{flexDirection:'row',alignItems:'center',gap:6},departure:{gap:10,marginTop:spacing.sm,padding:12,borderWidth:1,borderColor:C.bad,borderRadius:10,backgroundColor:C.badSurface},dangerLabel:{...typography.caption,color:C.bad,fontWeight:'700',letterSpacing:.6},departureNote:{fontSize:13,lineHeight:19,color:C.muted},
  copy:{flex:1,minWidth:0},subCompact:{fontSize:12,lineHeight:17,color:C.muted,marginTop:2},

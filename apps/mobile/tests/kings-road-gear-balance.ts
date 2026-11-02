@@ -1,6 +1,7 @@
 import {CLASSES} from '../src/content/classes';
 import {MONSTERS,ADVANCED_REGION_MONSTER_MULTIPLIER} from '../src/content/monsters';
 import {NOVICE_RECIPES} from '../src/content/novice-sets';
+import {EQUIPMENT_ITEMS_V33} from '../src/content/equipment-items-v33';
 import {V33_EQUIPMENT_RECIPES,TIER_CHARACTER_LEVEL_FLOOR} from '../src/content/equipment-recipes-v33';
 import {RECIPES} from '../src/content/skills';
 import {combatSustainProjection,effectiveStats,startCombat,previewActivityReward} from '../src/core/game';
@@ -32,10 +33,14 @@ for(const base of baselines){
 for(const monster of MONSTERS.filter(m=>regions.has(m.zone)))
   check(monster.hp>0&&monster.attack>0&&monster.defense>0,'scaled late monster '+monster.id);
 
+const slotXpWeight:Record<string,number>={helmet:.85,chest:1.2,gloves:.7,legs:1,boots:.75,weapon:1.35,offhand:1.15,cape:.85,amulet:.65,ring:.55};
+const itemById=new Map(EQUIPMENT_ITEMS_V33.map(item=>[item.id,item]));
 for(const recipe of V33_EQUIPMENT_RECIPES.filter(r=>r.v33EquipmentTier==='T1'||r.v33EquipmentTier==='T2')){
   check(recipe.skillId==='smithing'||recipe.skillId==='tailoring',recipe.id+' supports both profession routes');
-  const oldXp=recipe.v33EquipmentTier==='T1'?120:250;
-  check(recipe.xp>oldXp*.95,recipe.id+' retains its early-training XP budget');
+  const slot=itemById.get(recipe.output.itemId)?.slot;
+  check(!!slot,recipe.id+' has an equipment slot');
+  const xpBase=recipe.v33EquipmentTier==='T1'?165:290;
+  near(recipe.xp,Math.max(1,Math.round(xpBase*slotXpWeight[slot!])),recipe.id+' boosted XP');
 }
 check(NOVICE_RECIPES.every(r=>r.xp>=50),'novice Smithing/Tailoring crafts award boosted XP');
 near(RECIPES.find(r=>r.id==='SMELT_COPPER_INGOT')!.xp,100,'starter Smithing training XP');

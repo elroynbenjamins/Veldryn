@@ -66,7 +66,7 @@ export const QUICK_NOTIFICATION_DESTINATIONS:Record<NotificationKind,QuickNavDes
  party_invite:'Party',
  guild_invite:'Guild',
  guild_application:'Guild',
- chat_unread:'Social',
+ chat_unread:'Party',
  weekly_order_complete:'Quests',
  story_reward_ready:'Quests',
  inventory_overflow:'Inventory',

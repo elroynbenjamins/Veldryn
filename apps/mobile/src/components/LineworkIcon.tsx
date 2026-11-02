@@ -6,7 +6,7 @@ import {useGameTheme} from '../theme/ThemeContext';
 import {NavigationLinework,navigationLinework} from './NavigationLinework';
 
 type LineworkName='chat'|'back'|'character'|'skills'|'world'|'inventory'|'account'|'home'|keyof typeof navigationLinework;
-const navigationNames:Record<QuickNavDestination,LineworkName>={Home:'home',Character:'character',Skills:'skills',World:'world',Inventory:'inventory',More:'account',Account:'account',Guild:'guild',Dungeon:'dungeon',Quests:'quests',Companions:'companions',Friends:'friends',Settings:'settings',Social:'chat',Party:'party',Events:'events',Empty:'empty'};
+const navigationNames:Record<QuickNavDestination,LineworkName>={Home:'home',Character:'character',Skills:'skills',World:'world',Inventory:'inventory',More:'account',Account:'account',Guild:'guild',Dungeon:'dungeon',Quests:'quests',Companions:'companions',Friends:'friends',Settings:'settings',Social:'search',Party:'party',Events:'events',Empty:'empty'};
 const navigationName=(value:QuickNavDestination)=>navigationNames[value];
 
 export function LineworkNavigationIcon({destination,size=32,muted=false}:{destination:QuickNavDestination;size?:number;muted?:boolean}){

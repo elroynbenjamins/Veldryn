@@ -24,12 +24,18 @@ ok(app.includes('setForgeResults([claimed.result])'),'offline single claims must
 ok(!app.includes("Alert.alert('Equipment forged'"),'successful Forge claims must not regress to generic alert dialogs');
 
 ok(feedback.includes('EXCEPTIONAL FORGE RESULT'),'quality procs need a dedicated reward moment');
-ok(feedback.includes('result.qualityProc&&(result.rarity===\'epic\'||result.rarity===\'legendary\'||result.rarity===\'mythic\')')&&feedback.includes('results.filter(isExceptionalForgeResult)'),'large reveal must be reserved for genuine Epic+ rarity procs');
+ok(feedback.includes("result.autoSold!=='incoming'&&(result.rarity==='legendary'||result.rarity==='mythic')")&&feedback.includes('results.filter(isExceptionalForgeResult)'),'large reveal must be reserved for retained Legendary or Mythic gear');
 ok(feedback.includes('equipment stats vs base gear')&&feedback.includes('result.statMultiplier-1'),'rarity reveal must explain the actual crafted stat multiplier against base gear');
 ok(feedback.includes('Animated.sequence'),'exceptional Forge results need a brief celebration motion');
 ok(feedback.includes('reduceMotion'),'Forge celebration must respect reduced motion');
 ok(feedback.includes('4500'),'ordinary Forge feedback should dismiss automatically instead of blocking play');
 ok(feedback.includes('forgeClaimBannerMessage'),'ordinary Forge claims need compact local feedback');
+ok(feedback.includes('accentColor={meta?.color}')&&feedback.includes('accentSurface={meta?.surface}')&&feedback.includes('highlightText={meta?.label}')&&feedback.includes('meta.lightTextColor'),
+  'Compact Forge feedback must highlight only the true rarity label with light-theme contrast');
+ok(read('src/components/ActionFeedback.tsx').includes('message.lastIndexOf(highlightText)')&&read('src/components/ActionFeedback.tsx').includes('highlightTextColor'),
+  'Shared feedback must highlight the exact rarity text, while the rest of the message remains readable');
+ok(feedback.includes("best?.rarity==='mythic'?1.085:1.045")&&feedback.includes('borderWidth:best?.rarity===\'mythic\'?3:2'),
+  'Mythic results must receive a stronger, reduced-motion-aware reveal treatment than Legendary');
 ok(!feedback.includes('result.duplicateCount')&&!feedback.includes('Crafted copy #')&&!feedback.includes(' · copy ${result.duplicateCount+1}')&&feedback.includes('Added to inventory'),
   'Forge claim feedback must not expose numbered equipment copy labels');
 ok(feedback.includes('useWindowDimensions')&&feedback.includes("stackActions=width<360||fontScale>=1.25"),'Exceptional Forge result actions must adapt to narrow phones and large text');

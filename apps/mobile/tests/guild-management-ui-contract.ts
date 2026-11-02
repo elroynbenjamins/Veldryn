@@ -107,9 +107,9 @@ ok(customization.includes('backgroundColor:C.warningSurface'),'Permanent tag war
 ok(customization.includes('backgroundColor:C.selection'),'Selected Guild cosmetics must be theme-safe');
 
 ok(identity.includes('plainTag')&&identity.includes('color:nameColor.color')&&identity.includes('color:C.text'),"Guild identity must retain plain names with selected name color and theme text");
-ok(hall.includes('GUILD HALL')&&hall.includes('Guild Skill Trees')&&hall.includes('Permanent bonuses are chosen through three Guild Skill Trees'),'Guild Hall must preserve current progression and separate visual facilities from Guild Skill power');
-ok(hall.includes("<Text style={s.levelMax}>/10</Text>")&&hall.includes('Launch Hall level cap reached.'),'Guild Hall UI must expose the current 10-level launch cap');
-ok(hall.includes('backgroundColor:C.warningSurface'),'Guild Hall level badge must remain light-theme safe');
+ok(hall.includes('AUTOMATIC HALL PROGRESSION')&&hall.includes('Guild Skill Trees')&&hall.includes('Only released, server-verified bonuses')&&hall.includes('OnlineGuildBankPanel')&&hall.includes('OnlineGuildConstructionPanel'),'Guild Hall must preserve automatic progression and server-guarded skill, construction and bank flows');
+ok(hall.includes('Launch Hall level cap reached.')&&hall.includes('Lv {level}')&&hall.includes('/ 10'),'Guild Hall UI must expose the current 10-level launch cap');
+ok(hall.includes('backgroundColor:C.panel2')&&hall.includes('borderColor:C.lineStrong'),'Guild Hall level badge must use theme-aware surfaces and borders');
 ok(pve.includes("'EVENT BOSS':'WEEKLY BOSS'")&&pve.includes('MILESTONE REWARDS'),"Guild PvE must distinguish weekly and event bosses and milestone rewards");
 ok(pve.includes('accessibilityRole="alert" style={{color:C.bad}}')&&pve.includes('backgroundColor:C.panel2'),"Guild PvE must use semantic error and progress colors");
 ok(pve.includes('guildRaidEncountersForTab(rows,encounterKind)')&&pve.includes('selected={encounterKind===kind}')&&pve.includes('onPress={()=>setEncounterKind(kind)}'),'Raid Gate must present weekly and event encounters as selectable destinations');

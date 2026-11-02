@@ -1,8 +1,10 @@
 import {eventShopPurchaseStatus} from '../src/core/event-shop-presentation';
 import {eventOfferPurchaseCount,eventShopOffers,purchaseEventOffer,setLocalEventEnabled} from '../src/core/live-events';
 import {createCharacter,newGame} from '../src/core/game';
+import {playerFacingGameplayError} from '../src/core/feature-unlocks';
 
 function ok(value:unknown,message:string):asserts value{if(!value)throw new Error(message);}
+ok(/server needs an update/i.test(playerFacingGameplayError('Unknown event-shop offer.')),'older backend rejection is explained as a deployment mismatch');
 const now=Date.UTC(2026,9,30),eventId='EVT_ANNUAL_010_2026';
 let state=setLocalEventEnabled(createCharacter(newGame(now),'IRONWARDEN','EventShopTest'),true,now,eventId);
 state={...state,character:{...state.character!,level:20},account:{...state.account,

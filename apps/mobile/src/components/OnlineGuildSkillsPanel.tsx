@@ -31,7 +31,7 @@ export function OnlineGuildSkillsPanel({onViewBank}:{onViewBank?:()=>void}){
  const C=useGameTheme(),s=useMemo(()=>makeStyles(C),[C]);
  const [snapshot,setSnapshot]=useState<GuildSkillsSnapshot|null>(null);
  const [loading,setLoading]=useState(true),[error,setError]=useState(''),[busy,setBusy]=useState(false),[notice,setNotice]=useState('');
- const mounted=useRef(true);
+ const mounted=useRef(true),upgradeFlight=useRef(false);
 
  const load=async()=>{
   if(!mounted.current)return;
@@ -55,10 +55,11 @@ export function OnlineGuildSkillsPanel({onViewBank}:{onViewBank?:()=>void}){
  const metrics=useMemo(()=>snapshot?snapshotMetrics(snapshot):undefined,[snapshot]);
 
  const spend=async(skillId:string)=>{
-  if(!snapshot||busy)return;
+  if(!snapshot||busy||upgradeFlight.current)return;
   const node=snapshot.nodes.find(n=>n.id===skillId);
   if(!node)return;
   if(!node.released){setNotice(upgradeError.guild_skill_not_released);return;}
+  upgradeFlight.current=true;
   setBusy(true);setNotice('');
   // Idempotent per (skill, target rank): a retry reuses the key, so a dropped
   // response can never charge the Guild Bank twice for the same rank.
@@ -70,7 +71,7 @@ export function OnlineGuildSkillsPanel({onViewBank}:{onViewBank?:()=>void}){
   }catch(reason){
    const code=reason instanceof Error?reason.message:'';
    setNotice(upgradeError[code]??'Could not complete the upgrade. Try again.');
-  }finally{if(mounted.current)setBusy(false);}
+  }finally{upgradeFlight.current=false;if(mounted.current)setBusy(false);}
  };
 
  if(loading&&!snapshot)return <LoadingState label="Loading Guild Skills…" detail="Reading authoritative skill points, ranks and Guild Bank materials."/>;
@@ -79,24 +80,25 @@ export function OnlineGuildSkillsPanel({onViewBank}:{onViewBank?:()=>void}){
 
  const noneReleased=releasedIds.size===0;
  return <View style={s.root}>
-  {noneReleased?<Panel accentColor={C.info} accentSurface={C.infoSurface}><Text style={s.kicker}>COMING SOON</Text><Text style={s.copy}>Guild Skill bonuses are being finalised. You can see your points, ranks and material readiness now; allocation unlocks once each bonus is active.</Text></Panel>:null}
+  {noneReleased?<View style={[s.releaseNotice,{backgroundColor:C.infoSurface,borderColor:C.info}]}><Text style={s.kicker}>BONUSES ACTIVATING SOON</Text><Text style={s.copy}>Skill ranks and materials can be reviewed. Upgrades remain disabled until released.</Text></View>:null}
   <GuildSpecializationPaths
    guildLevel={snapshot.guildLevel}
    skillPoints={snapshot.skillPoints}
    metrics={metrics}
-   canUpgrade={snapshot.canUpgrade}
+   canUpgrade={snapshot.canUpgrade&&!busy&&!loading}
    isReleased={id=>releasedIds.has(id)}
    onSpend={id=>void spend(id)}
    onViewBank={onViewBank}
   />
-  {busy?<Text style={s.copy}>Processing upgrade…</Text>:null}
-  {notice?<Text style={[s.notice,{color:notice.includes('upgraded')||notice.includes('Synced')?C.good:C.warning}]}>{notice}</Text>:null}
+  {busy?<Text accessibilityRole="alert" style={s.copy}>Processing upgrade…</Text>:null}
+  {notice?<Text accessibilityRole="alert" style={[s.notice,{color:notice.includes('upgraded')||notice.includes('Synced')?C.good:C.warning}]}>{notice}</Text>:null}
   <GameButton compact tone="secondary" title={loading?'Refreshing…':'Refresh Guild Skills'} loading={loading} disabled={loading||busy} onPress={()=>void load()}/>
  </View>;
 }
 
 function makeStyles(C:ThemeColors){return StyleSheet.create({
- root:{gap:12},
+ root:{gap:10,minWidth:0},
+ releaseNotice:{gap:4,paddingHorizontal:11,paddingVertical:9,borderWidth:1,borderRadius:8},
  title:{...typography.title,color:C.text},
  kicker:{...typography.caption,color:C.info,fontWeight:'900',letterSpacing:.8},
  copy:{fontSize:13,lineHeight:19,color:C.muted},

@@ -55352,6 +55352,8 @@ var fields = {
   quest: ["id"],
   seasonal: ["period", "id"],
   settings: ["settings"],
+  inventory_preference: ["id", "kind", "enabled"],
+  inventory_seen_all: [],
   profile: ["profileIconId", "profileTitle", "profileBackgroundId", "profileBorderId", "selectedCosmeticPetId"],
   event_daily: [],
   event_cache: [],
@@ -55486,7 +55488,7 @@ function executeGameCommand(previous, value, now, options = {}) {
     settle();
     state = stopActivity(state, now);
   };
-  const settlementFreeCommand = command.type === "queue_add" && a.handoffGoal === void 0 || command.type === "queue_remove" || command.type === "queue_move" || command.type === "queue_clear" || command.type === "queue_start" || command.type === "daily_supplies_claim" || command.type === "roster_delete" || command.type === "event_accept" || command.type.startsWith("qa_");
+  const settlementFreeCommand = command.type === "queue_add" && a.handoffGoal === void 0 || command.type === "queue_remove" || command.type === "queue_move" || command.type === "queue_clear" || command.type === "queue_start" || command.type === "daily_supplies_claim" || command.type === "roster_delete" || command.type === "inventory_preference" || command.type === "inventory_seen_all" || command.type === "event_accept" || command.type.startsWith("qa_");
   const activityStartCommand = ["start", "explore", "class_training", "faith_practice", "alchemy_start", "processing_start"].includes(command.type);
   if (state.character && command.type !== "create" && !settlementFreeCommand) {
     if (activityStartCommand) settleAndStop();
@@ -55982,6 +55984,25 @@ function executeGameCommand(previous, value, now, options = {}) {
     case "settings":
       state = { ...state, settings: validateGameSettings(a.settings) };
       break;
+    case "inventory_preference": {
+      const id = text(a, "id", 120), kind = oneOf(a.kind, ["lock", "favorite", "seen"]);
+      if (typeof a.enabled !== "boolean" || kind === "seen" && a.enabled !== true) throw new Error("invalid_inventory_preference");
+      itemDef(id);
+      const key = kind === "lock" ? "lockedItemIds" : kind === "favorite" ? "favoriteItemIds" : "seenItemIds";
+      const max = kind === "seen" ? 1e3 : 100;
+      const selected2 = new Set(state.settings[key] ?? []);
+      if (a.enabled) selected2.add(id);
+      else selected2.delete(id);
+      if (selected2.size > max) throw new Error("inventory_preference_limit");
+      state = { ...state, settings: { ...state.settings, [key]: [...selected2] } };
+      break;
+    }
+    case "inventory_seen_all": {
+      const seen = new Set(state.settings.seenItemIds ?? []);
+      for (const stack of [...state.inventory.stacks, ...state.bank.stacks]) if (stack.quantity > 0) seen.add(stack.itemId);
+      state = { ...state, settings: { ...state.settings, seenItemIds: [...seen].slice(-1e3) } };
+      break;
+    }
     case "profile": {
       if (!state.character) throw new Error("character_required");
       const patch = {};

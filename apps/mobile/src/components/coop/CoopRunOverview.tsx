@@ -52,7 +52,7 @@ export function CoopRunOverview({language,run,myVotedNodeId,selfVoter,onBack,onC
   const liveServerNow=run.serverNow===undefined?undefined:clockAnchor.current.serverNow+Math.max(0,clockTick-clockAnchor.current.localAt);
   const secondsRemaining=run.resolvesAtMs!==undefined&&liveServerNow!==undefined?Math.max(0,Math.ceil((run.resolvesAtMs-liveServerNow)/1000)):undefined;
   const replayKey=`${run.runId}:${run.lastCombat?.nodeId??'pending'}:${run.lastCombat?.durationMs??0}:${replayCues.length}:${replayCues[replayCues.length-1]?.atMs??0}`;
-  const lastReplay=useRef(replayKey),wasResolving=useRef(run.phase==='resolving_node');
+  const lastReplay=useRef(replayKey),wasResolving=useRef(run.phase==='resolving_node'),wasTerminal=useRef(terminal);
   const [theaterOpen,setTheaterOpen]=useState(run.phase==='resolving_node');
   const [rewardOpen,setRewardOpen]=useState(terminal);
   const [enteringCombat,setEnteringCombat]=useState(false);
@@ -64,10 +64,10 @@ export function CoopRunOverview({language,run,myVotedNodeId,selfVoter,onBack,onC
    if((resolving&&!wasResolving.current)||newCombat){
     setTheaterOpen(true);
     if(terminal)setRewardOpen(false);
-   }else if(terminal&&!theaterOpen&&!resolving){
+   }else if(terminal&&!wasTerminal.current&&!theaterOpen&&!resolving){
     setRewardOpen(true);
    }
-   lastReplay.current=replayKey;wasResolving.current=resolving;
+   lastReplay.current=replayKey;wasResolving.current=resolving;wasTerminal.current=terminal;
   },[run.phase,run.lastCombat,replayKey,terminal]);
   // The battle stage opens before the request finishes. Combat cues, HP and
   // outcomes still come exclusively from the authoritative server response.

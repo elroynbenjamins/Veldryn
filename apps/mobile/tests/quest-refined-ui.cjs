@@ -1,0 +1,38 @@
+const assert=require('node:assert/strict');
+const fs=require('node:fs');
+const path=require('node:path');
+const ts=require('typescript');
+
+const screen=fs.readFileSync(path.join(__dirname,'../src/screens/QuestRefinedScreen.tsx'),'utf8');
+const app=fs.readFileSync(path.join(__dirname,'../App.tsx'),'utf8');
+const tabs=fs.readFileSync(path.join(__dirname,'../src/components/QuestModeSwitch.tsx'),'utf8');
+const syntax=ts.transpileModule(screen,{fileName:'QuestRefinedScreen.tsx',reportDiagnostics:true,compilerOptions:{module:ts.ModuleKind.CommonJS,jsx:ts.JsxEmit.ReactJSX}}).diagnostics??[];
+assert.equal(syntax.filter(d=>d.category===ts.DiagnosticCategory.Error).length,0,
+  'refined quest layout must parse as TypeScript/JSX');
+
+assert.ok(app.includes("QuestRefinedScreen as QuestScreen"),'App must mount the redesigned quests screen');
+assert.ok(screen.includes('journalEntries(state,filter,query)'),'story filtering/search must use real journal state');
+assert.ok(screen.includes('seasonalQuestBoard(state'),'challenge cards must preserve class/period projections');
+assert.ok(screen.includes('weeklyOrderBoardForState(state)'),'contracts must use real current weekly board');
+assert.ok(screen.includes('GameModalSurface')&&screen.includes('GameModalHeader'),
+  'details and confirmations use the shared themed native sheet');
+assert.ok(screen.includes('accessibilityRole="button"')&&screen.includes('minHeight:touchTargetMin'),
+  'list rows and tabs must have clear accessible touch targets');
+assert.ok(screen.includes('newlyConfirmedIds(prior.story,next.story)')&&screen.includes('newlyConfirmedIds(prior.challenges,next.challenges)'),
+  'reward success must be gated on confirmed authoritative state transitions');
+assert.ok(screen.includes("setSheetStage('claiming')")&&screen.includes("selectedStatus!=='ready'"),
+  'claim confirmation must prevent unsolicited/repeated claims');
+assert.ok(screen.includes('onClaimContract(chosenChallenge.period,chosenChallenge.id)'),
+  'challenge claims must pass actual period and challenge id');
+assert.ok(screen.includes('onQueueWeeklyOrder(chosenOrder)')&&screen.includes('onStopWeeklyOrder(chosenOrder)'),
+  'weekly orders must retain Queue and Stop at done actions');
+assert.ok(screen.includes('weeklyOrderLockReason(state,chosenOrder)'),
+  'weekly contract actions must honour progression locks');
+assert.ok(screen.includes('onOpenWeeklyBoss'),'Fallen Knight weekly bounty flow must remain reachable');
+assert.ok(screen.includes('onOpenWeeklyOrder(chosenOrder)'),'contract routes must open the canonical destination');
+assert.ok(screen.includes('Rewards process automatically')&&screen.includes('chosenOrder&&selectedStatus'),
+  'contract rewards remain automatic without a manual claim action');
+assert.ok(screen.includes('onClose={closeSheet}')&&screen.includes("sheetScroll:{flexShrink:1,minHeight:0}"),
+  'native detail sheet must close and scroll on smaller devices');
+assert.ok(tabs.includes('minHeight:50'),'mode tabs should be compact');
+console.log('PASS: Quest redesign structure, modal safety, authoritative rewards and weekly controls');

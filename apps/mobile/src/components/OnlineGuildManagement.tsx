@@ -8,6 +8,7 @@ import {BoardTabs} from './BoardTabs';
 import {GameTextInput} from './GameTextInput';
 import {ChatPlayerSheet,type ChatPlayerIdentity} from './ChatPlayerSheet';
 import {CompactPlayerIdentity} from './CompactPlayerIdentity';
+import {GuildMemberActionSheet,type GuildMemberAction} from './GuildMemberActionSheet';
 import {SocialInvitationCard} from './SocialInvitationCard';
 import {GuildIdentitySummary} from './GuildIdentitySummary';
 import {LoadingState} from './LoadingState';
@@ -33,6 +34,9 @@ export function OnlineGuildManagement({onApplicationsChanged,initialView='Member
  const [members,setMembers]=useState<GuildMember[]>([]),[applications,setApplications]=useState<GuildApplication[]>([]),[invitations,setInvitations]=useState<GuildInvitationView[]>([]),[outgoingInvitations,setOutgoingInvitations]=useState<OutgoingInvitationView[]>([]),[guild,setGuild]=useState<OnlineGuild|null>(null),[leadership,setLeadership]=useState<GuildLeadershipStatus|null>(null);
  const [selected,setSelected]=useState<ChatPlayerIdentity|null>(null),[role,setRole]=useState<'leader'|'officer'|'member'|null>(null),[ownAccountId,setOwnAccountId]=useState(''),[busy,setBusy]=useState(false),[loaded,setLoaded]=useState(false);
  const [view,setView]=useState<'Members'|'Requests'|'Safety'>(initialView),[search,setSearch]=useState('');
+ const [memberFilter,setMemberFilter]=useState<'All'|'Leader'|'Officer'|'Member'>('All');
+ const [requestView,setRequestView]=useState<'Applications'|'Invites'>('Applications');
+ const [activeMemberId,setActiveMemberId]=useState<string|null>(null);
  const [loadError,setLoadError]=useState('');
  useEffect(()=>setView(initialView),[initialView]);
  const load=async()=>{
@@ -62,16 +66,21 @@ export function OnlineGuildManagement({onApplicationsChanged,initialView='Member
  if(!role||!guild)return <View style={s.stack}>{invitePanel}<Panel><Text style={s.title}>{st("My guild · online")}</Text><Text style={s.sub}>{st("You have not joined an online guild yet.")}</Text><GameButton title={st("Refresh my guild")} tone="secondary" disabled={busy} onPress={()=>load()}/></Panel></View>;
  const review=async(id:string,accept:boolean)=>{setBusy(true);try{await reviewGuildApplication(id,accept);await load();onApplicationsChanged?.()}catch(error){gameAlert.alert(st("Guild application"),error instanceof Error?error.message:st("Unable to review application."))}finally{setBusy(false)}};
  const cancelInvite=async(id:string)=>{setBusy(true);try{await cancelGuildInvitation(id);await load()}catch(error){gameAlert.alert(st("Guild invitation"),error instanceof Error?error.message:st("Unable to cancel invitation."))}finally{setBusy(false)}};
- const manageMember=(member:GuildMember)=>{
-  if(!role)return;
+ const manageMember=async(member:GuildMember,action:GuildMemberAction):Promise<boolean>=>{
+  if(!role||busy)return false;
   const permissions=guildMemberManagement(role,member.role,member.account_id===ownAccountId);
-  const runMember=async(action:()=>Promise<unknown>,fallback:string)=>{if(busy)return;setBusy(true);try{await action();await load();onApplicationsChanged?.()}catch(error){gameAlert.alert(st("Guild member"),error instanceof Error?error.message:fallback)}finally{setBusy(false)}};
-  const choices:{text:string;style?:'default'|'cancel'|'destructive';onPress?:()=>void}[]=[{text:'Cancel',style:'cancel'}];
-  if(permissions.canTransferLeadership)choices.unshift({text:'Transfer Leadership',onPress:()=>gameAlert.alert(st("Transfer Guild leadership?"),member.display_name+' will become Guild Leader. You will become an Officer.',[{text:st("Cancel"),style:'cancel'},{text:st("Transfer"),onPress:()=>void runMember(()=>transferGuildLeadership(member.account_id),'Unable to transfer leadership.')}])});
-  if(permissions.canPromote)choices.unshift({text:'Promote to Officer',onPress:()=>void runMember(()=>updateGuildMemberRole(member.account_id,'officer'),'Unable to promote member.')});
-  if(permissions.canDemote)choices.unshift({text:'Demote to Member',onPress:()=>void runMember(()=>updateGuildMemberRole(member.account_id,'member'),'Unable to demote officer.')});
-  if(permissions.canRemove)choices.unshift({text:'Remove from Guild',style:'destructive',onPress:()=>void runMember(()=>removeGuildMember(member.account_id),'Unable to remove member.')});
-  gameAlert.alert(member.display_name,st("Guild member controls"),choices);
+  const allowed={promote:permissions.canPromote,demote:permissions.canDemote,remove:permissions.canRemove,transfer:permissions.canTransferLeadership}[action];
+  if(!allowed)return false;
+  setBusy(true);
+  try{
+   if(action==='promote')await updateGuildMemberRole(member.account_id,'officer');
+   if(action==='demote')await updateGuildMemberRole(member.account_id,'member');
+   if(action==='remove')await removeGuildMember(member.account_id);
+   if(action==='transfer')await transferGuildLeadership(member.account_id);
+   await load();onApplicationsChanged?.();
+   return true;
+  }catch(error){gameAlert.alert(st("Guild member"),error instanceof Error?error.message:st("Unable to update Guild member."));return false;}
+  finally{setBusy(false)}
  };
  const leaveCurrentGuild=()=>gameAlert.alert(st("Leave Guild?"),st("You will lose access to Guild projects, chat and member benefits until you join another Guild."),[
   {text:st("Cancel"),style:'cancel'},

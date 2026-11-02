@@ -113,7 +113,7 @@ export function GuildSpecializationPaths({guildLevel,skillPoints,metrics,canUpgr
    <View style={s.modalShade}>
     <Pressable style={s.modalBackdrop} accessibilityLabel="Dismiss upgrade confirmation" accessibilityRole="button" onPress={close}/>
     <View style={s.modalCard} accessibilityViewIsModal>
-     <ScrollView style={s.modalScroll} contentContainerStyle={s.modalBody} bounces={false} keyboardShouldPersistTaps="handled">
+     <ScrollView style={s.modalScroll} contentContainerStyle={s.modalBody} bounces={false} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false} showsHorizontalScrollIndicator={false}>
       <Text style={s.eyebrow}>CONFIRM GUILD UPGRADE</Text>
       <View style={s.header}><Image source={guildSkillArtwork(node.id)} style={s.detailIcon} resizeMode="contain" accessible={false}/>
        <View style={s.flex}><Text style={s.modalTitle}>{node.name}</Text><Text style={s.copy}>Rank {level} → Rank {level+1} of 3</Text></View>

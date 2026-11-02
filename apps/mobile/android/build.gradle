@@ -21,23 +21,5 @@ allprojects {
   }
 }
 
-// expo-iap references its own BuildConfig, but AGP 8 (Expo SDK 58) no longer
-// generates BuildConfig for library modules by default and the module does not
-// enable the feature itself. Force it on for that subproject so its Kotlin
-// compiles (":expo-iap:compileReleaseKotlin" -> Unresolved reference 'BuildConfig').
-subprojects { subproject ->
-  if (subproject.name == 'expo-iap') {
-    afterEvaluate {
-      if (subproject.extensions.findByName('android') != null) {
-        subproject.android {
-          buildFeatures {
-            buildConfig true
-          }
-        }
-      }
-    }
-  }
-}
-
 apply plugin: "expo-root-project"
 apply plugin: "com.facebook.react.rootproject"

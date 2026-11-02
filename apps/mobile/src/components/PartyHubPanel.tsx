@@ -144,7 +144,7 @@ export function PartyHubPanel(props: PartyHubPanelProps){
    <Text style={s.muted}>{st('Choose a role and focus. Your Party stays together between activities.')}</Text>
    {!props.dedicated?props.recruitmentPreferences:null}
    <GameButton title={st('Create Party')} disabled={!props.onCreateParty} onPress={()=>props.onCreateParty?.()}/>
-   {props.dedicated?<GameButton tone="secondary" title={st('Find a Party')} onPress={()=>props.onOpenRecruitment?.()}/>:null}
+   {props.dedicated?<GameButton tone="secondary" title="Find a Party" onPress={()=>props.onOpenRecruitment?.()}/>:null}
   </View>:null}
   {!props.dedicated&&(section==='find'||!inParty)&&<View style={s.recruitPanel}>
    <View style={s.between}><View style={s.flex}><Text style={s.sectionTitle}>{st('Recruitment')}</Text><Text style={s.muted}>{inParty?st('Discover available players and recruiting teams.'):st('Browse recruiting parties or advertise yourself.')}</Text></View><Text style={s.metaCount}>{cards.length}</Text></View>

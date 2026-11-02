@@ -34,7 +34,7 @@ function TerminalRunMoment({phase,rewardsReady,rewardsSecured,reduceMotion}:{pha
 }
 
 export interface CoopRewardDisplay {id:string;claimed_at:string|null;reward_json:{marks?:number;enhanced_reward?:boolean;live_fellowship_bonus?:number;reward_charges_remaining?:number;weekly_enhanced_remaining?:number;failure_consolation_remaining?:number;failure_consolation_applied?:boolean};}
-export function CoopRunOverview({language,run,myVotedNodeId,selfVoter,onBack,onChoose,onRefresh,onClaim,onQueueAgain,busy=false,notice,syncError,rewards=[],terminalAction,reduceMotion=false,seasonal=false,eventName,chatMessages=[],onChatSend}:{language:Language;run:CoopRunView;myVotedNodeId?:string;selfVoter?:{name:string;profileIconId?:string|null;className?:string|null};onBack:()=>void;onChoose?:(nodeId:string)=>void;onRefresh?:()=>void;onClaim?:(id:string)=>void;onQueueAgain?:{label:string;onPress:()=>void};busy?:boolean;notice?:string;syncError?:string;rewards?:CoopRewardDisplay[];terminalAction?:{label:string;claimed?:boolean;completeText?:string;onPress:()=>void};reduceMotion?:boolean;seasonal?:boolean;eventName?:string;chatMessages?:CoopChatMessage[];onChatSend?:(text:string)=>Promise<void>}){
+export function CoopRunOverview({language,run,myVotedNodeId,selfVoter,onBack,onChoose,onRefresh,onClaim,onQueueAgain,onPartyRematch,busy=false,notice,syncError,rewards=[],terminalAction,reduceMotion=false,seasonal=false,eventName,chatMessages=[],onChatSend}:{language:Language;run:CoopRunView;myVotedNodeId?:string;selfVoter?:{name:string;profileIconId?:string|null;className?:string|null};onBack:()=>void;onChoose?:(nodeId:string)=>void;onRefresh?:()=>void;onClaim?:(id:string)=>void;onQueueAgain?:{label:string;onPress:()=>void};onPartyRematch?:()=>void;busy?:boolean;notice?:string;syncError?:string;rewards?:CoopRewardDisplay[];terminalAction?:{label:string;claimed?:boolean;completeText?:string;onPress:()=>void};reduceMotion?:boolean;seasonal?:boolean;eventName?:string;chatMessages?:CoopChatMessage[];onChatSend?:(text:string)=>Promise<void>}){
  const {styles:s}=useCoopStyles(makeStyles);
  const st=useSocialText(),a=(value:string)=>accountText(language,value);
   validateCoopRunView(run);
@@ -135,7 +135,8 @@ export function CoopRunOverview({language,run,myVotedNodeId,selfVoter,onBack,onC
       {terminalAction?<View style={s.rewardRow}>{terminalAction.claimed?<View style={s.claimedReward}><StateChip label={st("CLAIMED")} tone="success"/><Text style={s.copy}>{terminalAction.completeText??st("Seasonal reward collected.")}</Text></View>:<GameButton title={terminalAction.label} disabled={busy} onPress={terminalAction.onPress}/>}</View>:null}
       {run.rewardText?<Text style={s.copy}>{run.rewardText}</Text>:null}
       {!!notice?<Text accessibilityRole="alert" style={s.copy}>{notice}</Text>:null}
-      {rewardsSecured&&onQueueAgain?<GameButton title={onQueueAgain.label} disabled={busy} onPress={onQueueAgain.onPress}/>:null}
+      {rewardsSecured&&run.phase==='completed'&&run.mode==='live'&&onPartyRematch?<GameButton title={st('Rematch with this party')} disabled={busy} onPress={()=>{setRewardOpen(false);onPartyRematch();}}/>:null}
+       {rewardsSecured&&onQueueAgain?<GameButton title={onQueueAgain.label} disabled={busy} onPress={onQueueAgain.onPress}/>:null}
       {!rewardSurfaceReady&&onRefresh?<GameButton title={st("Refresh rewards")} tone="secondary" disabled={busy} onPress={onRefresh}/>:null}
       <GameButton title={st("Return to dungeon list")} tone="secondary" disabled={busy} onPress={onBack}/>
      </ScrollView>

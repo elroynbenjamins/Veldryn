@@ -122,7 +122,7 @@ function makeHarness({width = 390, reducedMotion = false, motionQuery} = {}) {
     }
     now = end;
   }
-  function nextDelay() { return Math.min(...[...timers.values()].map(timer => timer.due - now)); }
+  function nextDelay() { return Math.min(...[...timers.values()].filter(timer=>!timer.interval).map(timer => timer.due - now)); }
   function restore() {
     global.setTimeout = originals.setTimeout; global.clearTimeout = originals.clearTimeout;
     global.setInterval = originals.setInterval; global.clearInterval = originals.clearInterval; Date.now = originals.now;
@@ -220,15 +220,12 @@ async function replayControlsAndTiming() {
     assert.match(text(tree), /PARTY CONTRIBUTION/);
     await press(tree, 'Show combat battle log');
     assert.equal(findButton(tree, 'Hide combat battle log').props.accessibilityState.expanded, true);
-    await press(tree, 'Replay combat recap');
-    assert.strictEqual(currentCue(tree), cues[0], 'replay restarts from the first cue');
-    await h.tick(10000);
-    assert.strictEqual(currentCue(tree), cues.at(-1), 'replayed encounter advances to completion automatically');
-    assert.equal(findButton(tree, 'Show combat battle log').props.accessibilityState.expanded, false, 'replay resets the expanded recap log');
+    assert.equal(tree.root.findAllByType('Pressable').filter(node=>node.props.accessibilityLabel==='Replay combat recap').length,0,'completed encounters have no replay control');
+    assert.strictEqual(currentCue(tree),cues.at(-1),'expanding the battle log must not replay the encounter');
     await act(async () => { tree.unmount(); }); tree = null;
     assert.equal(h.timers.size, 0);
     assert.equal(h.animations.filter(item => item.running).length, 0, 'unmount stops stage-owned animations');
-    console.log('PASS dungeon automatic replay: normal timing, boss cast, assist, outcome, log/replay and unmount cleanup');
+    console.log('PASS dungeon automatic presentation: normal cue timing, boss cast, assist, outcome, read-only log and unmount cleanup');
   } finally { if (tree) await act(async () => tree.unmount()); h.restore(); }
 }
 

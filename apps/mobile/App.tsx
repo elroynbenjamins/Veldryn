@@ -151,7 +151,7 @@ import {TutorialHighlightProvider} from './src/components/TutorialBeacon';
 import {completeFirstSessionTutorialStep,loadFirstSessionTutorialCompleted} from './src/storage/first-session-tutorial';
 import {eventAnnouncementStore} from './src/storage/event-announcement';
 
-type Tab=QuickNavDestination|'NewUnlocks'|'Activity'|'DailySupplies'|'AccountBonuses'|'RewardsInbox'|'MasteryHall'|'AdventurersJournal'|'Bestiary'|'WorldMilestones'|'Arena'|'Rankings'|'Collections'|'ResourceCodex'|'Profile'|'ProfileCustomize'|'Combat'|'Coop'|'Store';
+type Tab=QuickNavDestination|'Recruitment'|'NewUnlocks'|'Activity'|'DailySupplies'|'AccountBonuses'|'RewardsInbox'|'MasteryHall'|'AdventurersJournal'|'Bestiary'|'WorldMilestones'|'Arena'|'Rankings'|'Collections'|'ResourceCodex'|'Profile'|'ProfileCustomize'|'Combat'|'Coop'|'Store';
 type PrimaryTab='Home'|'Skills'|'World'|'Character'|'Inventory'|'More';
 type NavigationContext={skillsMode:'gathering'|'crafting'|'novice'|'faith';selectedSkill?:string;goalActionId?:string;goalRecipeId?:string;questMode:QuestMode;questFocusOrderId?:string;settingsSection?:SettingsSection;socialInitialTab:SocialHubTab;profileCustomizeSection:'Appearance'|'Identity';goalMonsterId?:string;goalRegionId?:string;goalDungeonId?:string};
 const primaryTabs:PrimaryTab[]=['Home','Character','Skills','World','Inventory','More'];

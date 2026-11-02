@@ -50,6 +50,7 @@ export type GuildNavigationState={
  section:'Home'|'PvE'|'Roster'|'Activities'|'Hall'|'Future';
  activityView:'Quests'|'Muster'|'Projects';
  hallSection:'Facilities'|'Skills'|'Trophies'|'Shop';
+ progressTab?:GuildProgressTab;
 };
 type LocalGuildMember={name:string;role:'Leader'|'Officer'|'Member';className:string;level:number;online:boolean;lastOnline:string;status:string};
 const LOCAL_ROSTER:LocalGuildMember[]=[{name:'Elowen',role:'Leader',className:'Dawnkeeper',level:28,online:true,lastOnline:'Online now',status:'Leading the guild'}, {name:'Brann',role:'Officer',className:'Ironwarden',level:24,online:true,lastOnline:'Online now',status:'Managing projects'}, {name:'Mira',role:'Member',className:'Wayfinder',level:21,online:false,lastOnline:'12 min ago',status:'Exploring Ironwood'}, {name:'Tovan',role:'Member',className:'Ravager',level:19,online:false,lastOnline:'Yesterday',status:'Last active in combat'}, {name:'Sera',role:'Member',className:'Hexweaver',level:17,online:false,lastOnline:'3 days ago',status:'Away'}];
@@ -75,7 +76,7 @@ export function GuildScreen({state,onChange,onlineManagement,onlineBoard,onlineP
  const C=useGameTheme(),s=useMemo(()=>makeStyles(C),[C]);
  const {session}=useAuthSession();
   const [activityView,setActivityView]=useState<'Quests'|'Muster'|'Projects'>(initialNavigation?.activityView??'Quests');
-  const [progressTab,setProgressTab]=useState<GuildProgressTab>('Projects');
+  const [progressTab,setProgressTab]=useState<GuildProgressTab>(initialNavigation?.progressTab??'Projects');
   const [rosterSection,setRosterSection]=useState<'Members'|'Requests'|'Safety'>('Members');
   const [section,setSection]=useState<GuildSection>(initialPve?'PvE':'Home'),[onlineSection,setOnlineSection]=useState<OnlineGuildSection>(initialPve?'PvE':initialNavigation?.section??'Home'),[hallSection,setHallSection]=useState<'Facilities'|'Skills'|'Trophies'|'Shop'>(initialNavigation?.hallSection??'Facilities');
   useEffect(()=>{if(initialPve)onInitialPveHandled?.()},[]);
@@ -89,8 +90,8 @@ export function GuildScreen({state,onChange,onlineManagement,onlineBoard,onlineP
    if(!online)return;
    const safeSection:GuildNavigationState['section']=
     onlineSection==='Manage'||onlineSection==='Appearance'||onlineSection==='Chat'?'Home':onlineSection;
-   onNavigationChange?.({section:safeSection,activityView,hallSection});
-  },[online,onlineSection,activityView,hallSection,onNavigationChange]);
+   onNavigationChange?.({section:safeSection,activityView,hallSection,progressTab});
+  },[online,onlineSection,activityView,hallSection,progressTab,onNavigationChange]);
   const [guildMembership,setGuildMembership]=useState<'loading'|'member'|'none'|'error'>(online?'loading':'member');
   const [guildRole,setGuildRole]=useState<GuildManagementRole|null>(null);
   const canCustomize=canManageGuild(guildRole);

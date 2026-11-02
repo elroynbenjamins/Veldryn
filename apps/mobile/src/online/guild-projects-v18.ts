@@ -61,8 +61,10 @@ async function readGuildProjects(membership:NonNullable<Awaited<ReturnType<typeo
    db.from('guild_project_effort_sources_v1').select('project_id,source,points').in('project_id',ids),
   ]);
   if(progressResult.error)throw progressResult.error;if(resourceResult.error)throw resourceResult.error;
-  if(sourceResult.error)throw sourceResult.error;
-  activitySources=(sourceResult.data??[]) as EffortSourceRow[];
+  // The per-source effort breakdown is supplementary. Tolerate a backend that
+  // has not applied the effort-sources view yet so Projects still load with a
+  // zeroed activity breakdown instead of failing the whole board.
+  if(!sourceResult.error)activitySources=(sourceResult.data??[]) as EffortSourceRow[];
   progress=(progressResult.data??[]) as ProgressRow[];resources=(resourceResult.data??[]) as ResourceRow[];
  }
  const {data:activityData,error:activityError}=await db.from('guild_activity_feed').select('id,kind,title,body,created_at').eq('guild_id',membership.guild_id).order('created_at',{ascending:false}).limit(30);

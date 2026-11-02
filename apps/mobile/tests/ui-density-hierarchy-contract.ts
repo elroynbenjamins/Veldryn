@@ -374,16 +374,19 @@ const eventTrail=read('src/components/EventRewardTrail.tsx');
 ok(event.includes('<EventRewardTrail')&&eventTrail.includes('<GameButton compact title={pending?')&&eventTrail.includes('{ready?<GameButton'),"Event trail must show compact full-width claim actions only for earned, unclaimed rewards");
 ok(event.includes("(['Overview','Activities','Shop','Rewards'] as Tab[])")&&event.includes('tab===\'Activities\'')&&event.includes('tab===\'Shop\'')&&event.includes('tab===\'Rewards\''),'Event navigation must split overview, activities, shop and rewards into separate mobile workloads');
 
-const quests=read('src/screens/QuestScreen.tsx');
+const quests=read('src/screens/QuestRefinedScreen.tsx');
 const questModes=read('src/components/QuestModeSwitch.tsx');
-ok(quests.includes("mode==='story'")&&quests.includes("mode==='contracts'")&&quests.includes("mode==='challenges'"),'Quest screen must render Story, Contract Board and Class Challenges as separate workloads instead of one long feed');
-ok(quests.includes('<QuestModeSwitch')&&questModes.includes("accessibilityRole=\"tablist\"")&&questModes.includes("accessibilityRole=\"tab\""),'Quest modes must use one compact accessible three-tab switch');
-ok(questModes.includes('minHeight:66')&&questModes.includes('flex:1,minWidth:0'),"Quest mode tabs must stay compact and share narrow mobile width safely");
-ok(quests.includes('focusedWeeklyOrderId')&&quests.includes('label={t("FOCUSED")}')&&quests.includes("Number(b.id===focusedOrderId)-Number(a.id===focusedOrderId)"),"Contract Board deep links must promote the focused weekly job to the top");
-ok(quests.includes('focusedOrderMissing')&&quests.includes('board refreshed'),'Stale Contract Board deep links must fail visibly after weekly rollover');
-ok(quests.includes("challengePeriod")&&quests.includes("['all','daily','weekly','monthly']"),'Class Challenges must support compact cadence filtering');
-ok(quests.includes("Number(b.progress>=b.required)-Number(a.progress>=a.required)"),'Claimable Class Challenges must sort ahead of incomplete rows');
-ok(quests.includes('<GameButton compact title={locked?')&&quests.includes('if(!locked)onOpenOrder(order)'),"Contract Board utility actions must remain compact");
+ok(read('App.tsx').includes('QuestRefinedScreen as QuestScreen'),'App Quests route must mount the approved compact quest screen');
+ok(quests.includes("mode==='story'")&&quests.includes("mode==='contracts'")&&quests.includes("mode==='challenges'"),'Quest screen must render Story, Contract Board and Class Challenges as separate workloads');
+ok(quests.includes('<QuestModeSwitch')&&questModes.includes('accessibilityRole="tablist"')&&questModes.includes('accessibilityRole="tab"'),'Quest modes must use one compact accessible three-tab switch');
+ok(questModes.includes('minHeight:50')&&questModes.includes('flex:1,minWidth:0'),'Quest mode tabs must retain compact 50-point height and safely share narrow mobile width');
+ok(quests.includes("focusedWeeklyOrderId&&mode==='contracts'")&&quests.includes('Number(b.id===focusedWeeklyOrderId)-Number(a.id===focusedWeeklyOrderId)'),'Contract Board deep links must open and promote the focused job');
+ok(quests.includes('Your focused weekly job expired. Showing the latest board.'),'Stale Contract Board deep links must fail visibly after weekly rollover');
+ok(quests.includes("challengePeriod==='all'||challengePeriod===period")&&quests.includes("id:'daily'")&&quests.includes("id:'weekly'")&&quests.includes("id:'monthly'"),'Class Challenges must support compact daily/weekly/monthly filtering');
+ok(quests.includes('Number(b.progress>=b.required)-Number(a.progress>=a.required)'),'Claimable Class Challenges must sort ahead of incomplete rows');
+ok(quests.includes('weeklyOrderLockReason(state,chosenOrder)')&&quests.includes('onQueueWeeklyOrder(chosenOrder)')&&quests.includes('onStopWeeklyOrder(chosenOrder)'),'Contract Board action sheet must retain safe queue, stop and unlock behavior');
+ok(quests.includes('GameModalSurface')&&quests.includes("sheetStage==='confirm'")&&quests.includes("sheetStage==='success'"),'Quest detail sheet must confirm claims and celebrate server-verified rewards');
+
 const questApp=read('App.tsx');
 ok(questApp.includes("const [questMode,setQuestMode]=useState<QuestMode>('story')")&&questApp.includes("openQuestMode('contracts'"),'App routing must preserve explicit Story/Contract destinations');
 ok(questApp.includes("focusedWeeklyOrderId={questFocusOrderId}")&&questApp.includes("onOpenContracts={order=>openQuestMode('contracts',order?.id)}"),'World regional Contract links must open the Contract Board with the exact job focused');

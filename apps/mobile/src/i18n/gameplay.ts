@@ -7,6 +7,14 @@ import {useMemo} from 'react';
 // Every row is complete, in en/de/es/nl/it/fr order. English phrases are typed keys.
 type TranslationRow=readonly [string,string,string,string,string,string];
 const common={
+ "This is your older enchanted copy. Selling or salvaging it permanently destroys its upgrades and socketed gems. Extract gems first if you want to keep them.":[
+  "This is your older enchanted copy. Selling or salvaging it permanently destroys its upgrades and socketed gems. Extract gems first if you want to keep them.",
+  "Dies ist dein älteres verzaubertes Ausrüstungsteil. Verkaufen oder Zerlegen zerstört Verbesserungen und eingesetzte Edelsteine dauerhaft. Entferne zuerst die Edelsteine, wenn du sie behalten möchtest.",
+  "Esta es tu pieza antigua encantada. Venderla o desmantelarla destruye permanentemente sus mejoras y gemas engastadas. Extrae las gemas primero si quieres conservarlas.",
+  "Dit is je oudere betoverde uitrusting. Verkopen of ontmantelen vernietigt alle upgrades en ingezette edelstenen definitief. Haal de edelstenen eerst eruit als je ze wilt behouden.",
+  "Questo è il tuo vecchio equipaggiamento incantato. Venderlo o smantellarlo distrugge permanentemente potenziamenti e gemme incastonate. Estrai prima le gemme se vuoi conservarle.",
+  "Voici ton ancien équipement enchanté. Le vendre ou le démanteler détruit définitivement ses améliorations et gemmes serties. Retire d'abord les gemmes si tu souhaites les conserver."
+ ],
  // Explain legacy itemId-based enchantment without promising duplicate upgrades.
  "The equipped weapon keeps its enchantment. This spare has no separate upgrade record.":["The equipped weapon keeps its enchantment. This spare has no separate upgrade record.","Die ausgerüstete Waffe behält ihre Verzauberung. Dieses Ersatzstück hat keinen eigenen Verbesserungsstand.","El arma equipada conserva su encantamiento. Esta copia no tiene mejoras propias.","Het uitgeruste wapen behoudt zijn betovering. Dit extra exemplaar heeft geen eigen upgrades.","L'arma equipaggiata mantiene l'incantesimo. Questa copia non ha potenziamenti propri.","L'arme équipée conserve son enchantement. Cet exemplaire n'a pas ses propres améliorations."],
  // Compact gathering drops disclosure; language order en/de/es/nl/it/fr.

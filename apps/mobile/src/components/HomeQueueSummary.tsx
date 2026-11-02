@@ -15,14 +15,14 @@ export function HomeQueueSummary({state,onOpen}:{state:GameState;onOpen:()=>void
  const waiting=!!next&&!!state.activity;
  return <View style={s.card}>
   <View style={s.header}>
-   <View style={s.flex}><Text style={s.kicker}>{gt('UP NEXT · ACTIVITY QUEUE')}</Text><Text style={s.title}>{queue.length?gt('{count} waiting',{count:queue.length}):gt('Your queue is empty')}</Text></View>
+   <View style={s.flex}><Text style={s.kicker}>{gt('UP NEXT · ACTIVITY QUEUE')}</Text><Text style={s.title}>{queue.length?gt('{count} waiting',{count:queue.length}):state.activity?.queueManaged?gt('Current queue goal'):gt('Your queue is empty')}</Text></View>
    <GameButton compact title={gt('Manage')} tone="secondary" onPress={onOpen}/>
   </View>
   {next?<Pressable accessibilityRole="button" accessibilityLabel={gt('Manage activity queue')} onPress={onOpen} style={({pressed})=>[s.next,pressed&&s.pressed]}>
     <View style={s.number}><Text style={s.numberText}>1</Text></View>
-    <View style={s.flex}><Text numberOfLines={1} style={s.nextTitle}>{gl(activityQueueLabel(next))}</Text><Text numberOfLines={2} style={[s.nextMeta,{color:readiness?.ready?C.muted:C.warning}]}>{readiness?.ready?(waiting?gt('Waiting for current activity to finish'):gt('Ready to start')):gl(readiness?.blocker??handoff.nextBlocker??gt('Needs attention'))}</Text></View>
+    <View style={s.flex}><Text numberOfLines={1} style={s.nextTitle}>{gl(activityQueueLabel(next))}</Text><Text numberOfLines={2} style={[s.nextMeta,{color:readiness?.ready?C.muted:C.warning}]}>{readiness?.ready?(waiting?(handoff.armed?gt('Handoff armed · starts after the current goal'):gt('Waiting · set a stop goal to enable handoff')):gt('Ready to start')):gl(readiness?.blocker??handoff.nextBlocker??gt('Needs attention'))}</Text></View>
     <Text style={s.chevron}>›</Text>
-   </Pressable>:<Text style={s.empty}>{gt('Plan your next hunt, skill or exploration activity.')}</Text>}
+   </Pressable>:<Text style={s.empty}>{state.activity?.queueManaged?gt('Open the queue to review your active goal.'):gt('Plan your next hunt, skill or exploration activity.')}</Text>}
   {queue.length>1?<Text style={s.extra}>{gt('+ {count} more queued',{count:queue.length-1})}</Text>:null}
   {!next?<GameButton title={gt('＋ Add activity')} compact tone="secondary" onPress={onOpen}/>:null}
  </View>;

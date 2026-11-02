@@ -61,15 +61,15 @@ export function SocialScreen({mode='legacy',initialTab='party',characterLevel=0,
   try{
    // Run independent requests in parallel. Guild browsing still waits for the
    // player's membership so that its existing access restrictions are respected.
-   const membershipRequest=myGuild().catch(()=>undefined);
-   const browseRequest=context==='guild'
+   const membershipRequest=mode==='party'?Promise.resolve(null):myGuild().catch(()=>undefined);
+   const browseRequest=mode==='party'?Promise.resolve([] as RecruitmentCardView[]):context==='guild'
      ?membershipRequest.then(membership=>membership===undefined?[] as RecruitmentCardView[]:repository.browseRecruitment(browse))
      :repository.browseRecruitment(browse);
    const [membership,next,mine,board,invites,outgoing,alerts]=await Promise.all([
-    membershipRequest,browseRequest,ownRecruitmentPosts(),partyRankings(),
-    socialInvitations().catch(()=>({party:[],guild:[],serverTime:''})),
-    socialOutgoingInvitations().catch(()=>({party:[],guild:[],serverTime:''})),
-    recruitmentMatchAlerts().catch(()=>[])
+    membershipRequest,browseRequest,mode==='party'?Promise.resolve([] as RecruitmentCardView[]):ownRecruitmentPosts(),mode==='recruitment'?Promise.resolve([] as PartyRanking[]):partyRankings(),
+    mode==='recruitment'?Promise.resolve({party:[] as PartyInvitationView[],guild:[],serverTime:''}):socialInvitations().catch(()=>({party:[],guild:[],serverTime:''})),
+    mode==='recruitment'?Promise.resolve({party:[] as OutgoingInvitationView[],guild:[],serverTime:''}):socialOutgoingInvitations().catch(()=>({party:[],guild:[],serverTime:''})),
+    mode==='party'?Promise.resolve([] as RecruitmentMatchAlert[]):recruitmentMatchAlerts().catch(()=>[])
    ]);
    if(generation!==requestGeneration.current||accountIdRef.current!==accountId)return;
    // If the guild status request failed, keep the last confirmed membership
@@ -97,7 +97,7 @@ export function SocialScreen({mode='legacy',initialTab='party',characterLevel=0,
   }finally{
    if(generation===requestGeneration.current&&accountIdRef.current===accountId)setUpdating(false);
   }
- },[filters,tab,social.accountId]);
+ },[filters,tab,social.accountId,mode]);
  useEffect(()=>{
   requestGeneration.current++;
   setBoardCache({accountId:social.accountId,party:EMPTY_BOARD,guild:EMPTY_BOARD});

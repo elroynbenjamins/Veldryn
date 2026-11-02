@@ -19,6 +19,10 @@ export interface AnnualEventCalendarEntry{
   hasHistory:boolean;
 }
 
+/** The 2026 Merchant & Guild Festival was cancelled to prioritize launch stability.
+ * Keep its authored definition and assets for a future, explicitly approved edition. */
+export const CANCELLED_ANNUAL_EVENT_IDS=new Set(['EVT_ANNUAL_011_2026']);
+
 const WINDOWS:Record<string,{windowLabel:string;order:number}>={
   EVT_ANNUAL_001_2026:{windowLabel:'Dec 29 – Jan 4',order:1},
   EVT_ANNUAL_002_2026:{windowLabel:'February',order:2},
@@ -47,7 +51,7 @@ function rewards(definition:LiveEventDef,classId:ClassId){
 export function annualEventCalendar(state:GameState):AnnualEventCalendarEntry[]{
   const classId=state.character?.classId??'IRONWARDEN';
   // Planning-only definitions never register a playable event or enable rewards.
-  const calendarCatalog=[...new Map([TURNING_OF_THE_AGE_EVENT,HEARTBOND_EVENT,BLOOMWAKE_EVENT,SUNCREST_GAMES_EVENT,STARFALL_NIGHTS_EVENT,VEILBREAK_EVENT,MERCHANT_GUILD_FESTIVAL_EVENT,FROSTFALL_EVENT,...LIVE_EVENT_CATALOG].map(event=>[event.id,event])).values()];
+  const calendarCatalog=[...new Map([TURNING_OF_THE_AGE_EVENT,HEARTBOND_EVENT,BLOOMWAKE_EVENT,SUNCREST_GAMES_EVENT,STARFALL_NIGHTS_EVENT,VEILBREAK_EVENT,MERCHANT_GUILD_FESTIVAL_EVENT,FROSTFALL_EVENT,...LIVE_EVENT_CATALOG].filter(event=>!CANCELLED_ANNUAL_EVENT_IDS.has(event.id)).map(event=>[event.id,event])).values()];
   return calendarCatalog.map(definition=>{
     const schedule=WINDOWS[definition.id]??{windowLabel:'Seasonal',order:99};
     const collection=rewards(definition,classId);

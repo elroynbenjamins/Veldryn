@@ -14,6 +14,7 @@ import {normalizeClassSkills,normalizeTrainingFocus,normalizeClassDrills} from '
 import {normalizeFaith} from './faith';
 import {normalizeAlchemyBatch} from './alchemy';
 import {normalizeProcessingBatch} from './processing';
+import {normalizeMealBuff} from './meal-buffs';
 import {normalizeCollectionPreferences} from './collection-preferences';
 import {normalizeCharacterLoadouts} from './character-loadouts';
 import {normalizeOnboardingGuideState} from './onboarding';
@@ -118,6 +119,7 @@ export function normalizeSave(input:any):GameState{
     ,activityQueueCombatRecovery:normalizeQueueCombatRecovery(input.character.activityQueueCombatRecovery)
     ,dailySupplyBoostBank:normalizeDailySupplyBank(input.character.dailySupplyBoostBank)
     ,activeDailySupplyBoost:normalizeActiveDailySupplyBoost(input.character.activeDailySupplyBoost)
+    ,activeMealBuff:normalizeMealBuff(input.character.activeMealBuff)
     ,activeDailySupplyBoosts:activeDailySupplyBoosts(input.character)
     ,activeEventCandy:(input.character.activeEventCandy&&typeof input.character.activeEventCandy==='object'&&typeof input.character.activeEventCandy.eventId==='string'&&typeof input.character.activeEventCandy.itemId==='string'&&Number.isFinite(Number(input.character.activeEventCandy.remainingSeconds))&&Number(input.character.activeEventCandy.remainingSeconds)>0?{eventId:input.character.activeEventCandy.eventId,itemId:input.character.activeEventCandy.itemId,remainingSeconds:Math.min(36000,Math.max(1,Math.floor(Number(input.character.activeEventCandy.remainingSeconds)))),lastUpdatedAtMs:Math.max(0,Math.floor(Number(input.character.activeEventCandy.lastUpdatedAtMs??0)))}:undefined)
     ,activeEventCandies:input.character.activeEventCandies

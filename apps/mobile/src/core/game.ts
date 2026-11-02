@@ -16,6 +16,7 @@ import {GameState,ClassId,RewardBundle,ItemStack,GearSlot,BodyPresentation,Gathe
 import {activityQueueCapacity,activityQueueRegion,activityQueueLocationIssue,normalizeActivityQueue,activityCanAdvanceCondition,queuedActivityReadiness} from './activity-queue';
 import type {ActiveActivity} from './types';
 import {combineActivityRewards} from './activity-rewards';
+import {commitMealActivityTime,mealSpeedFactor,retimeReservedMealCraft} from './meal-buffs';
 import {characterLevelFromXp,levelFromXp,totalXpAtLevel} from './progression';
 import {random01} from './rng';
 import {characterNameError,normalizeCharacterName} from './character-creation';
@@ -33,7 +34,7 @@ import {gatheringToolDef} from '../content/gathering-tools';
 import {currentRegionId} from './combat-region';
 import {regionTravelAvailability,regionTravelLockReason} from './world-navigation';
 import {WORLD_ZONES,worldZoneInDevelopment} from '../content/world-map';
-import {enhancedGearStats,equippedEffectGemBonuses,equippedGemBonuses,hasEnhancement} from './equipment-enhancement';
+import {enhancedGearStats,equippedEffectGemBonuses,equippedGemBonuses,canDisposeLegacyEquipment} from './equipment-enhancement';
 import {activeEquipmentSetRuntime,equipmentSetCombatModifiers} from './equipment-set-runtime';
 import {companionCombatContribution,reconcileCombatCompanionUnlocks,grantCompanionEssence,grantBondstones} from './combat-companions';
 import {awardCompanionRematchBondstone,companionRematchBondstoneStatus,recordCompanionActivity} from './companion-runtime';
@@ -482,11 +483,12 @@ function previewStandardActivityRewardRaw(state:GameState,effectiveNowMs:number)
     if(state.activity.kind==='exploration'){
       const route=explorationRoute(state.activity.targetId);if(!route)return {xp:0,gold:0,items:[],kills:0,elapsedSeconds:elapsed};
       const candy=eventCandyWindow(state,'skill');
-      const bankedSeconds=(state.activity.progressFraction??0)*route.seconds;
+      const routeSeconds=route.seconds/mealSpeedFactor(state.character,'noncombat');
+      const bankedSeconds=(state.activity.progressFraction??0)*routeSeconds;
       const totalSeconds=bankedSeconds+elapsed;
-      const actions=Math.floor(totalSeconds/route.seconds);
-      const nextProgressFraction=actions>0?(totalSeconds%route.seconds)/route.seconds:(totalSeconds/route.seconds);
-      let boostedActions=0;for(let i=1;i<=actions;i++){const at=state.activity.lastClaimAtMs+(i*route.seconds-bankedSeconds)*1000;if(candy&&at>candy.startsAtMs&&at<=candy.endsAtMs)boostedActions++;}
+      const actions=Math.floor(totalSeconds/routeSeconds);
+      const nextProgressFraction=actions>0?(totalSeconds%routeSeconds)/routeSeconds:(totalSeconds/routeSeconds);
+      let boostedActions=0;for(let i=1;i<=actions;i++){const at=state.activity.lastClaimAtMs+(i*routeSeconds-bankedSeconds)*1000;if(candy&&at>candy.startsAtMs&&at<=candy.endsAtMs)boostedActions++;}
       return {xp:Math.floor((actions+.1*boostedActions)*route.xp*characterPermanentMultipliers(state).skillXpMultiplier),gold:0,items:[],kills:actions,elapsedSeconds:elapsed,nextProgressFraction,explorationDiscoveries:actions&&route.unlockMonsterId?[route.unlockMonsterId]:[]};
     }
     const g=[...GATHERING,...HERB_NODES].find(x=>x.id===state.activity!.targetId);if(!g)return {xp:0,gold:0,items:[],kills:0,elapsedSeconds:elapsed};
@@ -719,7 +721,41 @@ export function claimActivity(state:GameState,nowMs:number):{state:GameState;rew
  return {state,reward};
 }
 
-function claimActivitySegment(state:GameState,nowMs:number){
+/** Respect meal duration even if an entire AFK window is claimed at once.
+ * Each side of the expiry is settled with the correct bonuses and no duplicate rewards.
+ */
+function claimActivitySegment(state:GameState,nowMs:number):{state:GameState;reward:RewardBundle}{
+ // Class drills have a timer but no ActiveActivity; treat their interval as eligible
+ // without inventing a persisted activity or changing the class-drill save shape.
+ const drill=state.character?.classTraining;
+ const source=state.activity??(drill?{kind:'training' as const,targetId:'class_drills',startedAtMs:drill.lastClaimAtMs,lastClaimAtMs:drill.lastClaimAtMs}:null);
+ const buff=state.character?.activeMealBuff;
+ if(source&&buff&&buff.remainingSeconds>0&&Number.isFinite(buff.remainingSeconds)&&nowMs>source.lastClaimAtMs){
+  const cappedEnd=Math.min(nowMs,source.lastClaimAtMs+offlineCapSeconds(state)*1000);
+  const cut=source.lastClaimAtMs+buff.remainingSeconds*1000;
+  if(cut>source.lastClaimAtMs&&cut<cappedEnd){
+   const first=claimActivitySegmentRaw(state,cut);
+   const elapsedState=commitMealActivityTime(first.state,source,first.reward);
+   const updated=retimeReservedMealCraft(elapsedState,state.character);
+   if(!updated.activity&&!updated.character?.classTraining)return {state:updated,reward:first.reward};
+   const nextDrill=updated.character?.classTraining;
+   const nextSource=updated.activity??(nextDrill?{kind:'training' as const,targetId:'class_drills',startedAtMs:nextDrill.lastClaimAtMs,lastClaimAtMs:nextDrill.lastClaimAtMs}:source);
+   const second=claimActivitySegment(updated,cappedEnd);
+   const combined=combineActivityRewards([
+    {activity:source,reward:first.reward,goalReached:!!first.reward.goalReached},
+    {activity:nextSource,reward:second.reward,goalReached:!!second.reward.goalReached},
+   ]);
+   // A capped AFK interval cannot be reclaimed simply by repeating the claim.
+   const hasCappedRemainder=nowMs>cappedEnd&&!!second.state.activity;
+   const final=hasCappedRemainder?{...second.state,activity:{...second.state.activity!,lastClaimAtMs:nowMs}}:second.state;
+   return {state:final,reward:{...combined,offlineCapReached:hasCappedRemainder||combined.offlineCapReached}};
+  }
+ }
+ const result=claimActivitySegmentRaw(state,nowMs);
+ return {state:commitMealActivityTime(result.state,source,result.reward),reward:result.reward};
+}
+function claimActivitySegmentRaw(state:GameState,nowMs:number){
+
   state=reconcileWeeklyOrderRollover(state,nowMs).state;
   if(state.character?.classTraining){const r=settleClassDrills(state,nowMs,offlineCapSeconds(state)),next=reconcileCombatCompanionUnlocks(r.state,nowMs);return {state:next,reward:withCompanionUnlocks(r.reward,state,next)};}
   if(state.activity?.kind==='faith'){
@@ -872,11 +908,8 @@ export function sellItem(state:GameState,itemId:string,quantity=1):GameState{
   const d=itemDef(itemId);
   if(d.guildOnly)throw new Error('Guild construction components cannot be sold.');
   if(d.knowledgeUnlockId)throw new Error('Blueprints cannot be sold. Learn the recipe by crafting its tool.');
-  if(d.type==='gear'&&hasEnhancement(state,itemId)){
-    // Allow selling duplicates: enhancement travels with the remaining copy. Only block the last one.
-    const invQty=state.inventory.stacks.filter(row=>row.itemId===itemId&&row.instanceId===undefined).reduce((sum,row)=>sum+row.quantity,0);
-    if(invQty-quantity<1)throw new Error('Enhanced equipment is protected. Extract its gems before disposal; upgraded ranks cannot be recovered.');
-  }
+  if(d.type==='gear'&&state.inventory.stacks.some(row=>row.itemId===itemId&&row.instanceId===undefined&&row.quantity>=quantity)&&!canDisposeLegacyEquipment(state,itemId,'inventory',quantity))
+    throw new Error('Enhanced equipment is protected. Keep the upgraded copy or extract its gems before disposal.');
   let next:GameState={...state,inventory:{...state.inventory,stacks:consume(state.inventory.stacks,itemId,quantity)},character:{...state.character!,gold:state.character!.gold+d.value*quantity}};
   return next;
 }
@@ -884,10 +917,8 @@ export function salvageItem(state:GameState,itemId:string):GameState{
   if(state.settings.favoriteItemIds?.includes(itemId))throw new Error('Favorite item is protected. Remove it from Favorites before salvaging.');
   if(state.settings.lockedItemIds?.includes(itemId))throw new Error('Locked item is protected. Unlock it before salvaging.');
   const d=itemDef(itemId);if(d.type!=='gear'||!d.salvage)throw new Error('Cannot salvage');
-  if(hasEnhancement(state,itemId)){
-    const invQty=stackQty(state.inventory.stacks,itemId);
-    if(invQty-1<1)throw new Error('Enhanced equipment is protected. Extract its gems before disposal; upgraded ranks cannot be recovered.');
-  }
+  if(state.inventory.stacks.some(row=>row.itemId===itemId&&row.instanceId===undefined&&row.quantity>0)&&!canDisposeLegacyEquipment(state,itemId,'inventory',1))
+    throw new Error('Enhanced equipment is protected. Keep the upgraded copy or extract its gems before disposal.');
   let next:GameState={...state,inventory:{...state.inventory,stacks:stackItems(consume(state.inventory.stacks,itemId,1),[d.salvage])}};
   return next;
 }
@@ -914,7 +945,7 @@ export function sellBankItem(state:GameState,itemId:string,quantity=1):GameState
   const def=itemDef(itemId);
   if(def.guildOnly)throw new Error('Guild construction components cannot be sold.');
   if(def.knowledgeUnlockId)throw new Error('Blueprints cannot be sold.');
-  if(def.type==='gear'&&hasEnhancement(state,itemId))throw new Error('Enhanced equipment is protected.');
+  if(def.type==='gear'&&state.bank.stacks.some(row=>row.itemId===itemId&&row.instanceId===undefined&&row.quantity>=quantity)&&!canDisposeLegacyEquipment(state,itemId,'bank',quantity))throw new Error('Enhanced equipment is protected. Keep the upgraded copy or extract its gems before disposal.');
   const stacks=consume(state.bank.stacks,itemId,quantity);
   const proceeds=def.value*quantity;
   if(!Number.isSafeInteger(proceeds)||!Number.isSafeInteger((state.bank.gold??0)+proceeds))throw new Error('Gold amount exceeds supported limit.');

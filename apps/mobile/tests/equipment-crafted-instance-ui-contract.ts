@@ -43,4 +43,35 @@ ok(forgeFeedback.includes('rarityMeta(result.rarity)')&&forgeFeedback.includes('
 ok(feedback.includes('accentColor?:string')&&feedback.includes('accentSurface?:string'),'Compact Forge feedback must support rarity accents while preserving other feedback tones');
 ok(save.includes('normalizeCraftedGearInstances'),'Crafted instances must persist through save normalization');
 
+const collection=read('src/components/SmithingCollection.tsx');
+const oddsGuide=read('src/components/ForgeOddsGuide.tsx');
+const oddsBeforeCraft=collection.indexOf('<ForgeOddsGuide key={recipe.output.itemId} itemId={recipe.output.itemId}/>');
+const craftButton=collection.indexOf('accessibilityState={{disabled:!ready}}');
+ok(oddsBeforeCraft>0&&craftButton>oddsBeforeCraft,'Rarity and quality odds must appear immediately before the selected equipment craft action');
+ok(collection.indexOf('<ForgeOddsGuide',oddsBeforeCraft+1)===-1,'Odds guide must not be repeated under the queue');
+ok(collection.includes("type EquipmentCraftingSkill='smithing'|'tailoring'")&&read('src/screens/SkillsScreen.tsx').includes("initialSkill==='smithing'||initialSkill==='tailoring'"),
+ 'Smithing and Tailoring must use the same odds-bearing equipment crafting collection');
+ok(oddsGuide.includes('craftedGearRarityOutcomes(item.id)')&&oddsGuide.includes('outcomes.filter('),
+ 'Recipe-specific rarity odds must be used for both collapsed summary and expanded rarity choices');
+ok(oddsGuide.includes('accessibilityState={{selected}}')&&oddsGuide.includes('setSelectedRarity(row.rarity)'),
+ 'Each colored rarity outcome must be interactive');
+ok(oddsGuide.includes('craftedGearQualityMultiplier(quality)')&&oddsGuide.includes('chosen.statMultiplier*craftedGearQualityMultiplier(quality)'),
+ 'Preview must multiply actual rarity and quality effects, never add them');
+ok(oddsGuide.includes('craftedGearQualityChanceAtLeast(quality)')&&oddsGuide.includes('onAccessibilityAction'),
+ 'Quality control must expose real weighted chances and accessible adjustments');
+ok(oddsGuide.includes('Preview only. Rarity and quality are rolled when claimed.'),
+ 'Rarity/quality inspection must be explicitly non-purchasing and non-deterministic');
+
+ok(oddsGuide.includes('style={s.chanceGrid}')&&oddsGuide.includes('s.chanceTile')&&oddsGuide.includes("const stacked=width<320||fontScale>=1.45"),
+ 'Forge odds must use space-efficient two-column tiles that expand for accessibility or narrow screens');
+ok(oddsGuide.includes('const usableWidth=trackWidth-2*SLIDER_INSET')&&oddsGuide.includes('position-SLIDER_INSET'),
+ 'Quality slider taps must account for its inset so Q0 and Q100 can be reached accurately');
+ok(oddsGuide.includes("gt('Decrease quality')")&&oddsGuide.includes("gt('Increase quality')")&&oddsGuide.includes('accessibilityState={{disabled:quality===CRAFTED_GEAR_QUALITY_MAX}}'),
+ 'Quality preview must have touch-friendly step controls with bounded disabled states');
+ok(collection.includes('tileColumns=width<345||fontScale>=1.3?4:5')&&collection.includes("gt('Previous set')")&&collection.includes("gt('Next set')"),
+ 'Crafting set tiles must support narrow phones / font scaling and accessible set navigation');
+const forgeLocalizations=read('src/i18n/gameplay.ts');
+ok(['Decrease quality','Increase quality','Previous set','Next set'].every(key=>forgeLocalizations.includes('"'+key+'":')),
+ 'New Forge controls must be translated for each supported gameplay language');
+
 console.log('PASS: crafted-instance result/economy UI and authority wiring are protected');

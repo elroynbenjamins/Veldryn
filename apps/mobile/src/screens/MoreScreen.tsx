@@ -21,7 +21,7 @@ import type {QuickNavDestination} from '../core/quick-navigation';
 export type MoreDestination='Home'|'Social'|'Activity'|'DailySupplies'|'AccountBonuses'|'RewardsInbox'|'NewUnlocks'|'Quests'|'Companions'|'Skills'|'Events'|'Friends'|'Guild'|'Settings'|'Arena'|'Rankings'|'Collections'|'ResourceCodex'|'Profile'|'MasteryHall'|'AdventurersJournal'|'Bestiary'|'WorldMilestones'|'Store';
 const sections:Array<{label:string;items:MoreDestination[]}>= [
   {label:'PLAY & PROGRESSION',items:['Home','Quests','Companions','DailySupplies','RewardsInbox','Events','AccountBonuses']},
-  {label:'SOCIAL & COMPETITION',items:['Social','Friends','Guild','Arena','Rankings','WorldMilestones']},
+  {label:'SOCIAL & COMPETITION',items:['Social','Friends','Guild','Arena','Rankings']},
   {label:'IDENTITY & ACCOUNT',items:['Activity','Profile','NewUnlocks','AdventurersJournal','MasteryHall','Bestiary','Collections','ResourceCodex','Store','Settings']},
 ];
 

@@ -1,5 +1,17 @@
 # Veldryn — Merchant & Guild Festival release readiness (28 October 2026)
 
+## Final 2026 decision — cancelled (2 November 2026)
+
+**The 2026 Merchant & Guild Festival is cancelled, not postponed within 2026.** Prioritize Android launch stabilization, onboarding, performance, account recovery, combat/dungeons, economy and event-shop reliability instead of shipping another major festival in the first release weeks.
+
+- Intended November 6–26 gameplay and November 27–29 claim-only windows below are **historical plans, not an upcoming event**.
+- The production `live_events` row for `EVT_ANNUAL_011_2026` remains preserved but is disabled. Its `config.catalogStatus` is `cancelled`, its `config.cancelledYear` is `2026`, and it is removed from the public calendar API and client annual festival list.
+- Retain the Merchant event definition, art, pet/companion rewards, dungeon encounter assets and escort design as draft material. **Do not activate the 2026 event or distribute its rewards.**
+- This does not cancel or shift The Veilbreak or Frostfall. Frostfall retains its own independent release/QA gate; it is not automatically approved by this cancellation.
+- A possible Merchant festival in 2027 requires a separately approved event edition (new year-specific event ID), tested schedule, economy and artwork, and explicit rollout; do not silently recycle the 2026 event ID.
+- If rebuilding a fresh database from older migrations, ensure `EVT_ANNUAL_011_2026` is disabled and `catalogStatus='cancelled'` before publishing a public calendar.
+
+
 **Assessment: NOT READY FOR RELEASE.** This is a source-level inventory, not a verified live deployment test.
 
 ## Intended production dates

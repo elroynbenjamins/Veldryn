@@ -80,7 +80,7 @@ function AccountChatOverlay({state,initialChannel='world',visible,onOpen,onClose
     <Modal visible={visible&&chatEnabled} transparent statusBarTranslucent animationType={state.settings.reduceMotion?'none':'fade'} onRequestClose={()=>{if(channelMenuOpen)setChannelMenuOpen(false);else if(languageMenuOpen)setLanguageMenuOpen(false);else closeChat();}}>
       <View style={[s.modalRoot,{paddingTop:Math.max(insets.top,8),paddingBottom:bottomOffset}]}>
         <Pressable accessible={false} accessibilityElementsHidden importantForAccessibility="no-hide-descendants" onPress={closeChat} style={StyleSheet.absoluteFill}/>
-        <KeyboardAvoidingView behavior={Platform.OS==='ios'?'padding':'height'} keyboardVerticalOffset={insets.top} style={s.keyboard}><View accessibilityViewIsModal onAccessibilityEscape={()=>{if(channelMenuOpen)setChannelMenuOpen(false);else if(languageMenuOpen)setLanguageMenuOpen(false);else closeChat();}} style={[s.window,expandWindow&&s.windowExpanded]}>
+        <KeyboardAvoidingView behavior="padding" keyboardVerticalOffset={0} style={s.keyboard}><View accessibilityViewIsModal onAccessibilityEscape={()=>{if(channelMenuOpen)setChannelMenuOpen(false);else if(languageMenuOpen)setLanguageMenuOpen(false);else closeChat();}} style={[s.window,expandWindow&&s.windowExpanded]}>
           <View style={s.chatLayout}>
             <View style={s.conversation}>
               <View style={s.header}>

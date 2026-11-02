@@ -158,12 +158,60 @@ begin
    'roster',c.roster_json,'frozenRoster',c.frozen_roster_json);
 end $$;
 
+-- Fix the already-committed check race: return the *stored* winning run,
+-- never a losing caller's speculative client projection.
+create or replace function public.start_online_live_server_v1(
+ p_account_id uuid,p_check_id uuid,p_run_id uuid,p_seed_hash text,p_private_state jsonb,p_client_projection jsonb,p_members jsonb
+) returns jsonb language plpgsql security definer set search_path=public as $
+declare c public.coop_ready_checks;r jsonb;m jsonb;v_index integer:=0;v_epoch integer;
+begin
+ perform pg_advisory_xact_lock(hashtextextended('online-live-runtime',0));
+ select * into c from public.coop_ready_checks where id=p_check_id for update;
+ if not found or c.status<>'committed' then raise exception 'ready_check_not_committed';end if;
+ if not exists(select 1 from jsonb_array_elements(c.roster_json) x where x->>'accountId'=p_account_id::text) then raise exception 'not_ready_member';end if;
+ if c.run_id is not null then return (select projection_json from public.coop_run_client_snapshots where run_id=c.run_id);end if;
+ if p_run_id is null or jsonb_array_length(p_members)<>4 or p_private_state->'run'->>'id' is distinct from p_run_id::text then raise exception 'invalid_live_run';end if;
+ if p_members->0->'snapshot' is null then raise exception 'invalid_frozen_roster';end if;
+ -- A rematch can start only while the four frozen members still belong to
+ -- their original roster and have not joined another active expedition.
+ if exists(select 1 from public.coop_live_rematch_sessions where ready_check_id=p_check_id) then
+  if exists(select 1 from jsonb_array_elements(p_members) m
+    left join public.online_game_states g on g.account_id=(m->'snapshot'->>'accountId')::uuid
+   where g.account_id is null or g.character_id is distinct from (m->'snapshot'->>'characterId')::uuid
+    or g.revision is distinct from (m->'snapshot'->>'revision')::bigint)
+  then raise exception 'rematch_loadout_changed';end if;
+  if exists(select 1 from public.coop_run_access_memberships a join public.expedition_runs e on e.id=a.run_id
+    where a.account_id in(select (m->'snapshot'->>'accountId')::uuid from jsonb_array_elements(p_members) m)
+      and a.active and e.status='active')
+  then raise exception 'account_already_participating';end if;
+ end if;
+ r:=p_private_state->'run';
+ insert into public.expedition_runs(id,expedition_id,tier,content_version,seed_hash,created_by,coop_mode,route_schema_version,route_graph_json,current_node_id,balance_version,engine_version,phase,controller_account_id)
+ values(p_run_id,r->>'expeditionId',(r->>'tier')::smallint,'online-coop-loadout-v1',p_seed_hash,p_account_id,'live',1,r->'graph',r->>'currentNodeId','online-coop-loadout-v1','online-coop-runtime-v1','awaiting_choice',p_account_id);
+ for m in select * from jsonb_array_elements(p_members) loop
+  if (m->'snapshot'#>>'{readiness,ready}')::boolean is not true then raise exception 'loadout_not_ready';end if;
+  insert into public.expedition_run_members(run_id,character_id,account_id,role,synced_level,loadout_snapshot,stat_snapshot,slot_id,member_kind,source_account_id,active_participant_account_id,snapshot_hash)
+  values(p_run_id,(m->'snapshot'->>'characterId')::uuid,(m->'snapshot'->>'accountId')::uuid,m->'snapshot'#>>'{readiness,role}',(m->'snapshot'#>>'{normalized,effectiveLevel}')::integer,m->'snapshot',m->'snapshot'->'normalized'->'snapshot',v_index::text,'human',(m->'snapshot'->>'accountId')::uuid,(m->'snapshot'->>'accountId')::uuid,m->'snapshot'->>'snapshotHash');
+  insert into public.coop_run_access_memberships(run_id,account_id,membership_kind) values(p_run_id,(m->'snapshot'->>'accountId')::uuid,'live_participant');
+  delete from public.coop_account_reservations where account_id=(m->'snapshot'->>'accountId')::uuid and reservation_kind='ready';
+  update public.matchmaking_tickets set status='matched',reservation_id=null,reservation_expires_at=null where account_id=(m->'snapshot'->>'accountId')::uuid and reservation_id=c.id;
+  v_index:=v_index+1;
+ end loop;
+ insert into public.coop_run_private_state(run_id,state_json) values(p_run_id,p_private_state);
+ insert into public.coop_run_client_snapshots(run_id,state_version,event_cursor,projection_json) values(p_run_id,1,1,p_client_projection);
+ insert into public.coop_outbox(semantic_key,run_id,channel_epoch,event_type,client_payload) values('live:'||p_run_id||':start',p_run_id,1,'run_started',p_client_projection);
+ update public.coop_ready_checks set run_id=p_run_id where id=c.id;
+ return p_client_projection;
+end $;
+
 revoke all on function public.online_live_rematch_sources_server_v1(uuid,uuid),
  public.online_live_rematch_state_server_v1(uuid,uuid),
  public.online_live_rematch_respond_server_v1(uuid,uuid,text,boolean,uuid,jsonb),
- public.online_live_committed_sources_server_v1(uuid,uuid) from public,anon,authenticated;
+ public.online_live_committed_sources_server_v1(uuid,uuid),
+ public.start_online_live_server_v1(uuid,uuid,uuid,text,jsonb,jsonb,jsonb) from public,anon,authenticated;
 grant execute on function public.online_live_rematch_sources_server_v1(uuid,uuid),
  public.online_live_rematch_state_server_v1(uuid,uuid),
  public.online_live_rematch_respond_server_v1(uuid,uuid,text,boolean,uuid,jsonb),
- public.online_live_committed_sources_server_v1(uuid,uuid) to service_role;
+ public.online_live_committed_sources_server_v1(uuid,uuid),
+ public.start_online_live_server_v1(uuid,uuid,uuid,text,jsonb,jsonb,jsonb) to service_role;
 commit;

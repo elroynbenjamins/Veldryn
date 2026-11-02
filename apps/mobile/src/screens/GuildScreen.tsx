@@ -17,6 +17,7 @@ import {GameButton} from '../components/GameButton';
 import {Panel} from '../components/Panel';
 import {GuildBoardHero} from '../components/GuildBoardHero';
 import {GuildHomeActions} from '../components/GuildHomeActions';
+import {GuildHallSummary} from '../components/GuildHallSummary';
 import {GuildNavigation} from '../components/GuildNavigation';
 import {GuildMemberIdentity} from '../components/GuildMemberIdentity';
 import {guildDetails,myGuild,type OnlineGuild} from '../online/social';
@@ -268,6 +269,7 @@ export function GuildOnlineHome({onNavigate,onNavigateMuster,onNavigateShop,boar
  const st=useSocialText(),language=useGameLanguage(),C=useGameTheme(),s=useMemo(()=>makeStyles(C),[C]);
  return <View style={s.homeStack}>
   <GuildMemberIdentity onRoster={()=>onNavigate('Roster')} onManage={canCustomize?()=>onNavigate('Manage'):undefined}/>
+  <GuildHallSummary onOpenMuster={()=>onNavigateMuster()} onOpenShop={()=>onNavigateShop()}/>
   <GuildHomeActions board={isValidElement<{compact?:boolean}>(board)?cloneElement(board,{compact:true}):board} activity={<GuildActivitySummaryPanel compact/>} canManage={canCustomize} chatUnread={chatUnread} onMuster={()=>onNavigateMuster()} onQuests={()=>onNavigate('Activities')} onShop={()=>onNavigateShop()} onPve={()=>onNavigate('PvE')} onRoster={()=>onNavigate('Roster')} onHall={()=>onNavigate('Hall')} onChat={()=>onNavigate('Chat')} onManage={()=>onNavigate('Manage')}/>
   <GameButton compact title="Roadmap & future Guild content" tone="secondary" onPress={()=>onNavigate('Future')}/>
  </View>;

@@ -13,7 +13,7 @@ import {executeGameCommand,validateGameCommand} from '../src/core/game-commands'
 function ok(value:unknown,message:string){if(!value)throw new Error(message)}
 const rawId='raw_gem:stat_vitality:g1',gemId='gem:stat_vitality:g1';
 const start=createCharacter(newGame(0),'IRONWARDEN','Pouch Tester');
-const base={...start,character:{...start.character!,level:70,gold:100000},inventory:{capacity:3,stacks:[{itemId:rawId,quantity:1},{itemId:'WISP_DUST',quantity:2}]},bank:{...start.bank,capacity:0,stacks:[]}};
+const base={...start,account:{...start.account,gemPouchMigrationDone:false},character:{...start.character!,level:70,gold:100000},inventory:{capacity:3,stacks:[{itemId:rawId,quantity:1},{itemId:'WISP_DUST',quantity:2}]},bank:{...start.bank,capacity:0,stacks:[]}};
 const recipe=gemRefineRecipeIdV1('stat_vitality',1);
 const reserved=startGemRefinement(base,recipe,1000);
 const migratedInputs=migrateGemPouch(base);
@@ -65,7 +65,7 @@ let oversellBlocked=false;try{sellPouchGem(saleBase,gemId,6)}catch{oversellBlock
 ok(oversellBlocked,'Pouch selling cannot mint Gold from nonexistent gems');
 ok(gemPouch(stackedPouch).stacks.length===1&&gemStorageQuantity(stackedPouch,gemId)===5,'Matching gems must occupy a single pouch slot');
 
-const oldSave={...start,account:{...start.account,gemPouch:undefined},inventory:{...start.inventory,stacks:[{itemId:gemId,quantity:3},{itemId:'WISP_DUST',quantity:1}]},bank:{...start.bank,stacks:[{itemId:gemId,quantity:2},{itemId:rawId,quantity:1}]}};
+const oldSave={...start,account:{...start.account,gemPouch:undefined,gemPouchMigrationDone:false},inventory:{...start.inventory,stacks:[{itemId:gemId,quantity:3},{itemId:'WISP_DUST',quantity:1}]},bank:{...start.bank,stacks:[{itemId:gemId,quantity:2},{itemId:rawId,quantity:1}]}};
 const migrated=normalizeSave(oldSave);
 ok(gemStorageQuantity(migrated,gemId)===5&&gemPouch(migrated).stacks.find(row=>row.itemId===gemId)?.quantity===5,'Existing Inventory and Bank gems must migrate without loss');
 ok(migrated.inventory.stacks.every(row=>row.itemId!=='gem:stat_vitality:g1')&&migrated.bank.stacks.every(row=>row.itemId!=='gem:stat_vitality:g1'),'Migrated gem stacks must not also remain in legacy storage');
@@ -73,7 +73,7 @@ const twice=normalizeSave(migrated);
 ok(gemStorageQuantity(twice,gemId)===5,'Loading an already migrated save must not duplicate gems');
 
 const excessId='gem:stat_might:g5';
-const crowded={...start,account:{...start.account,gemPouch:{capacity:30,stacks:filler}},inventory:{...start.inventory,stacks:[{itemId:excessId,quantity:2}]}};
+const crowded={...start,account:{...start.account,gemPouch:{capacity:30,stacks:filler},gemPouchMigrationDone:false},inventory:{...start.inventory,stacks:[{itemId:excessId,quantity:2}]}};
 const preserved=migrateGemPouch(crowded);
 ok(gemPouch(preserved).stacks.length===30&&gemStorageQuantity(preserved,excessId)===2,'Migration cannot discard gems when every pouch slot is taken');
 let noGold=false;try{upgradeGemPouch({...start,character:{...start.character!,level:10,gold:0}})}catch{noGold=true}
@@ -98,7 +98,7 @@ const stackedIntoFull=depositToBank(sameGemFiller,filler[0].itemId,7);
 ok(gemPouch(stackedIntoFull).stacks.find(stack=>stack.itemId===filler[0].itemId)?.quantity===9,'Full pouch still stacks an already owned gem type');
 ok(stackedIntoFull.bank.stacks.every(stack=>stack.itemId!==filler[0].itemId),'Existing pouch stack never unnecessarily uses Bank');
 
-const fullPouchDeposit={...fullPouch,inventory:{...fullPouch.inventory,stacks:[{itemId:gemId,quantity:4}]},bank:{...fullPouch.bank,stacks:[]}};
+const fullPouchDeposit={...fullPouch,inventory:{...fullPouch.inventory,stacks:[{itemId:gemId,quantity:4}]},bank:{...fullPouch.bank,capacity:120,stacks:[]}};
 ok(gemDepositDestination(fullPouchDeposit,gemId)==='bank','A new gem type goes to Bank when pouch slots are full');
 const bankIntent=inventoryFeedbackIntent(fullPouchDeposit,{kind:'deposit',itemId:gemId,quantity:4});
 const bankFallback=depositToBank(fullPouchDeposit,gemId,4);

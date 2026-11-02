@@ -63,7 +63,7 @@ export function GuildSpecializationPaths({guildLevel,skillPoints,metrics,canUpgr
     <Text style={s.copy}>Active skills</Text><Text style={s.summaryValue}>{known?`${active.length} / ${GUILD_SKILL_NODES.length}`:'—'}</Text>
    </View>
    {active.length?<View style={s.active}>
-    {active.map(n=><View key={n.id} style={s.activeChip}><Text style={s.activeText}>{n.label} {bonus(n,rank(n))}</Text></View>)}
+    {active.map(n=><View key={n.id} style={s.activeChip}><Text style={s.activeText}>{n.label} {bonus(n,rank(n.id))}</Text></View>)}
    </View>:null}
   </View>
 

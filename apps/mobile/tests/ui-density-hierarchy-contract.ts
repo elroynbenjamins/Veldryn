@@ -173,7 +173,14 @@ ok(appMastery.includes('preparationNotices[0].message')&&appMastery.includes('pr
 ok(appMastery.includes('actionLabel={preparationNotices[0].actionLabel}')&&appMastery.includes('openPreparationNotice(preparationNotices[0])'),'Preparation feedback must provide a one-tap action for the exact current next step');
 ok(appMastery.includes("notice.kind==='complete'||!notice.destination||notice.destination.kind==='info'")&&appMastery.includes('openWorkingTowardDestination(notice.destination)'),'Preparation notice actions must route completion to Working Toward and live steps through canonical deep-link navigation');
 ok(appMastery.includes('preparationNotices.length||collected||forgeResults'),'Mastery feedback must wait behind preparation feedback and higher-priority reward/reveal surfaces');
-ok(appMastery.includes("forgeResults?.some(isExceptionalForgeResult)")&&read('src/components/ForgeResultFeedback.tsx').includes("result.qualityProc&&(result.rarity==='epic'||result.rarity==='legendary'||result.rarity==='mythic')"),'Mastery feedback must defer only behind an exceptional Epic-or-higher Forge reveal');
+// A pending reveal must block Mastery feedback. Current Forge UX reserves its
+// large reveal for retained Legendary/Mythic gear; older branches used Epic+
+// rarity-upgrade reveals until the claim-flow consolidation was merged.
+const forgeResultSource=read('src/components/ForgeResultFeedback.tsx');
+ok(appMastery.includes("forgeResults?.some(isExceptionalForgeResult)")&&(
+ forgeResultSource.includes("result.autoSold!=='incoming'&&(result.rarity==='legendary'||result.rarity==='mythic')")||
+ forgeResultSource.includes("result.qualityProc&&(result.rarity==='epic'||result.rarity==='legendary'||result.rarity==='mythic')")
+),'Mastery feedback must defer behind the actual exceptional Forge reveal without reopening auto-sold results');
 
 const snapshot=read('src/components/SkillDashboard.tsx');
 ok(snapshot.includes('.slice(0,5)'),'Home skill snapshot must show only the five strongest non-combat skills');
@@ -292,7 +299,7 @@ ok(appShell.includes('<SafeAreaProvider>'),'App root must provide safe-area metr
 ok(appShell.includes("import {SafeAreaProvider,SafeAreaView} from 'react-native-safe-area-context';"),'App shell must use cross-platform safe-area handling instead of React Native core SafeAreaView');
 ok(appShell.includes("edges={['top','left','right']}"),'Main app shell must leave the bottom inset to persistent navigation instead of double-padding it');
 ok(appShell.includes('buildQuickNavigationBadges')&&appShell.includes("row.kind!=='reward_ready'&&row.kind!=='weekly_order_complete'"),'Primary nav must avoid misleading Home/Contract claim dots while quick navigation routes those notices exactly');
-ok(packageJson.includes('"react-native-safe-area-context": "~5.7.0"'),'Expo 57 safe-area dependency must stay on the SDK-compatible line');
+ok(packageJson.includes('"react-native-safe-area-context": "~5.10.1"'),'Expo 58 safe-area dependency must stay on the SDK-compatible line');
 ok(!topBar.includes('StatusBar.currentHeight')&&!topBar.includes('NativeStatusBar'),'Edge-to-edge top bar must rely on the app-shell safe area instead of manually adding Android status-bar height');
 const startupScreen=read('src/components/StartupScreen.tsx');
 ok(startupScreen.includes("from 'react-native-safe-area-context'")&&!startupScreen.includes('StatusBar.currentHeight'),'Startup screen must use real safe-area insets under mandatory Android edge-to-edge');

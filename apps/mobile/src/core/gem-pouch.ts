@@ -60,11 +60,26 @@ function addStack(stacks:readonly ItemStack[],capacity:number,itemId:string,quan
   if(stacks.filter(row=>row.quantity>0).length>=capacity)return null;
   return [...stacks,{itemId,quantity}];
 }
+/** A bank deposit routes recognized gems to the account-wide pouch whenever a
+ * matching stack exists or a new slot is available. Full pouches fall back to Bank. */
+export function gemDepositDestination(state:GameState,itemId:string):'gem_pouch'|'bank'{
+  if(!isGemPouchItemId(itemId))return 'bank';
+  const pouch=gemPouch(state);
+  return pouch.stacks.some(stack=>stack.itemId===itemId&&stack.instanceId===undefined)
+    ||pouch.stacks.length<pouch.capacity?'gem_pouch':'bank';
+}
+/** Pouch-only attempt. Never silently reinsert a manually deposited gem into Inventory. */
+export function tryStoreGemInPouch(state:GameState,itemId:string,quantity:number):GameState|null{
+  if(!isGemPouchItemId(itemId))return null;
+  if(!Number.isSafeInteger(quantity)||quantity<1)throw new Error('Invalid gem quantity');
+  const pouch=gemPouch(state),stored=addStack(pouch.stacks,pouch.capacity,itemId,quantity);
+  return stored?{...state,account:{...state.account,gemPouch:{...pouch,stacks:stored}}}:null;
+}
 /** First pouch, then legacy Inventory/Bank, so a full pouch cannot strand a finished craft. */
 export function storePouchGem(state:GameState,itemId:string,quantity=1):GameState{
   if(!isGemPouchItemId(itemId)||!Number.isSafeInteger(quantity)||quantity<1)throw new Error('Invalid gem reward');
-  const pouch=gemPouch(state),stored=addStack(pouch.stacks,pouch.capacity,itemId,quantity);
-  if(stored)return {...state,account:{...state.account,gemPouch:{...pouch,stacks:stored}}};
+  const stored=tryStoreGemInPouch(state,itemId,quantity);
+  if(stored)return stored;
   const inv=addStack(state.inventory.stacks,entitlementStorageCapacity(state,'inventory'),itemId,quantity);
   if(inv)return {...state,inventory:{...state.inventory,stacks:inv}};
   const bank=addStack(state.bank.stacks,entitlementStorageCapacity(state,'bank'),itemId,quantity);
@@ -102,6 +117,9 @@ export function consumeGemFromStorage(state:GameState,itemId:string,quantity:num
 }
 /** Idempotent migration: do not move a legacy stack unless the entire stack fits. */
 export function migrateGemPouch(state:GameState):GameState{
+  // Legacy contents are consolidated once. Re-running after every command would
+  // ignore a player's chosen partial deposit quantity and move their entire stack.
+  if(state.account.gemPouchMigrationDone===true)return state;
   let pouch=gemPouch(state);
   const move=(stacks:readonly ItemStack[])=>stacks.filter(row=>{
     if(!row||typeof row.itemId!=='string'||row.instanceId!==undefined||!isGemPouchItemId(row.itemId)||!Number.isSafeInteger(row.quantity)||row.quantity<=0)return true;
@@ -112,6 +130,6 @@ export function migrateGemPouch(state:GameState):GameState{
   });
   const inventory=move(state.inventory.stacks),bank=move(state.bank.stacks);
   const otherCharacters=state.otherCharacters?.map(entry=>({...entry,inventory:{...entry.inventory,stacks:move(Array.isArray(entry.inventory?.stacks)?entry.inventory.stacks:[])}}));
-  return {...state,account:{...state.account,gemPouch:pouch},otherCharacters,
+  return {...state,account:{...state.account,gemPouch:pouch,gemPouchMigrationDone:true},otherCharacters,
     inventory:{...state.inventory,stacks:inventory},bank:{...state.bank,stacks:bank}};
 }

@@ -5,6 +5,9 @@ import type {GameState} from '../../../apps/mobile/src/core/types';
 import {createCraftedGearInstance} from '../../../apps/mobile/src/core/crafted-gear-instances';
 import {itemDef} from '../../../apps/mobile/src/content/items';
 import {COMBAT_COMPANIONS} from '../../../apps/mobile/src/content/combat-companions';
+import {EQUIPMENT_ITEMS_V33} from '../../../apps/mobile/src/content/equipment-items-v33';
+import {V33_EQUIPMENT_RECIPES} from '../../../apps/mobile/src/content/equipment-recipes-v33';
+import {effectiveStats} from '../../../apps/mobile/src/core/game';
 import {unlockCombatCompanion} from '../../../apps/mobile/src/core/combat-companions';
 import {setLocalEventEnabled} from '../../../apps/mobile/src/core/live-events';
 async function main(){
@@ -65,6 +68,19 @@ async function main(){
  const regionalBrew=await request({type:'claim'},'sunscar-brew-claim-01',15);assert.equal(regionalBrew.status,200,'Regional Alchemy settlement persists online');
  assert.equal((await request({type:'claim'},'create-00001',1)).status,409,'same key different command');
  assert.equal((await request({type:'claim'},'stale-00001',0)).status,409);
+ // The online combat receipt test uses region-attainable equipment:
+ // an unprepared level-30 starter loadout should not efficiently farm Sunscar.
+ const tierByItem=new Map(V33_EQUIPMENT_RECIPES.map(recipe=>[recipe.output.itemId,Number(recipe.v33EquipmentTier.slice(1))]));
+ const sunscarPieces=EQUIPMENT_ITEMS_V33.filter(item=>item.classRestriction===state!.character!.classId&&item.slot
+   &&(item.requiredLevel??1)<=state!.character!.level&&(tierByItem.get(item.id)??99)<=3)
+   .sort((left,right)=>(tierByItem.get(right.id)??0)-(tierByItem.get(left.id)??0));
+ const sunscarKit:Record<string,string>={};
+ for(const item of sunscarPieces)if(item.slot&&!sunscarKit[item.slot])sunscarKit[item.slot]=item.id;
+ assert.ok(Object.keys(sunscarKit).length>=5,'Sunscar online combat fixture equips attainable T3 gear');
+ state={...state!,character:{...state!.character!,equipment:{...state!.character!.equipment,...sunscarKit},
+   equippedFoodId:'GRILLED_OASIS_CARP'},inventory:{...state!.inventory,
+   stacks:[...state!.inventory.stacks,{itemId:'GRILLED_OASIS_CARP',quantity:30}]}};
+ state.character!.currentHp=effectiveStats(state).hp;
  assert.equal((await request({type:'start',args:{kind:'combat',id:'SUNSCAR_SCORPION'}},'start-00001',16)).status,200);
  clock+=120000;transportFailure=true;
  assert.equal((await request({type:'claim'},'claim-00001',17)).status,503,'uncertain commit is retryable');

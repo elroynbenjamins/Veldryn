@@ -97,7 +97,7 @@ ok((preview.nextProgressFraction??0)>.49&&(preview.nextProgressFraction??0)<.51,
 let claimed=claimActivity(state,at(1));
 equal(claimed.reward.craftingActions,1,'one effective cycle completes one batch');
 equal(qty(claimed.state,'COPPER_INGOT'),5,'completed batch grants its output');
-equal(claimed.state.skills.find(row=>row.skillId==='smithing')?.xp,84,'Ironwarden earns base 80 plus 5% Smithing XP');
+equal(claimed.state.skills.find(row=>row.skillId==='smithing')?.xp,105,'Ironwarden earns the boosted 100-XP Copper recipe plus 5% Smithing affinity');
 equal(claimed.state.activity?.processing?.remainingBatches,4,'remaining reservation persists');
 const partial=claimActivity(claimed.state,at(1.5));
 equal(partial.reward.craftingActions,0,'claiming midway does not lose or invent a batch');

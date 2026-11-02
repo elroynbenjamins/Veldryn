@@ -12,16 +12,17 @@ import {StatBar} from './StatBar';
 import {guildSkillArtwork} from '../theme/guild-remaster-art';
 
 /** Undefined allocations mean unavailable server data, never an invented zero rank. */
-export function GuildSpecializationPaths({guildLevel,skillPoints,metrics,canUpgrade=false,onSpend,onViewBank}:{guildLevel?:number;skillPoints?:number;metrics?:Record<string,number>;canUpgrade?:boolean;onSpend?:(id:string)=>void;onViewBank?:()=>void}){
+export function GuildSpecializationPaths({guildLevel,skillPoints,metrics,canUpgrade=false,isReleased,onSpend,onViewBank}:{guildLevel?:number;skillPoints?:number;metrics?:Record<string,number>;canUpgrade?:boolean;isReleased?:(id:string)=>boolean;onSpend?:(id:string)=>void;onViewBank?:()=>void}){
  const C=useGameTheme(),s=styles(C);
  const [branch,setBranch]=useState<typeof GUILD_MAJOR_BRANCHES[number]>('Professions');
  const [selected,setSelected]=useState('professions_gathering'),[confirm,setConfirm]=useState(false);
  const nodes=GUILD_SKILL_NODES.filter(n=>n.major===branch),node=nodes.find(n=>n.id===selected)??nodes[0];
  const rank=(id:string)=>Math.min(3,Math.max(0,Math.floor(metrics?.[`guild_skill_${id}`]??0)));
  const level=rank(node.id),cost=node.costs[level]??{},known=metrics!==undefined;
+ const released=isReleased?isReleased(node.id):true;
  const affordable=known&&Object.entries(cost).every(([id,n])=>(metrics[`guild_bank_${id}`]??0)>=n);
- const ready=known&&canUpgrade&&!!onSpend&&(skillPoints??0)>0&&level<3&&affordable;
- const reviewable=known&&canUpgrade&&!!onSpend&&level<3;
+ const ready=known&&released&&canUpgrade&&!!onSpend&&(skillPoints??0)>0&&level<3&&affordable;
+ const reviewable=known&&released&&canUpgrade&&!!onSpend&&level<3;
  const bonus=(n:number)=>`+${n*node.perTier}${node.id==='fellowship_membership'?' members':'%'}`;
  const active=known?GUILD_SKILL_NODES.filter(n=>rank(n.id)>0):[];
  return <QuestBoard>
@@ -36,7 +37,7 @@ export function GuildSpecializationPaths({guildLevel,skillPoints,metrics,canUpgr
    {known&&level<3?<>
     <Text style={s.eyebrow}>{confirm?'UPGRADE COST · 1 SKILL POINT':'GUILD BANK READINESS · 1 SKILL POINT'}</Text>
     {Object.entries(cost).map(([id,n])=>{const owned=Math.max(0,metrics[`guild_bank_${id}`]??0),missing=Math.max(0,n-owned);return <View key={id} style={s.material}><View style={s.head}><ResourceIcon resourceId={id} size={24}/><Text style={[s.nodeTitle,s.flex]}>{itemDef(id).name}</Text></View>{confirm?<View style={s.bankNumbers}>{[['Bank',owned],['Cost',n],[missing?'Missing':'After',missing||owned-n]].map(([label,value])=><View key={String(label)} style={s.flex}><Text style={s.copy}>{label}</Text><Text style={[s.number,label==='Missing'&&{color:C.warning}]}>{Number(value).toLocaleString()}</Text></View>)}</View>:<><StatBar rounded label={itemDef(id).name} current={Math.min(owned,n)} max={n}/><Text style={[s.copy,{color:missing?C.warning:C.good}]}>{missing?`${missing.toLocaleString()} missing`:'Materials ready'} · Bank {owned.toLocaleString()}</Text></>}</View>})}
-    {!canUpgrade?<Text style={s.copy}>Officers and Leaders allocate upgrades.</Text>:!skillPoints?<Text style={s.copy}>Earn Guild XP for more skill points.</Text>:null}
+    {known&&!released?<Text style={[s.copy,{color:C.warning}]}>Bonus activating soon — allocation is temporarily disabled.</Text>:!canUpgrade?<Text style={s.copy}>Officers and Leaders allocate upgrades.</Text>:!skillPoints?<Text style={s.copy}>Earn Guild XP for more skill points.</Text>:null}
     {confirm?<><Text style={s.copy}>Spends 1 skill point and these shared bank materials.</Text><GameButton title="Confirm upgrade" disabled={!ready} onPress={()=>{if(ready){onSpend?.(node.id);setConfirm(false)}}}/><Pressable accessibilityRole="button" accessibilityLabel="Cancel upgrade" onPress={()=>setConfirm(false)} style={({pressed})=>[s.cancel,pressed&&s.pressed]}><Text style={s.cancelText}>Cancel</Text></Pressable></>:<><GameButton title="Review upgrade" tone="secondary" disabled={!reviewable} onPress={()=>setConfirm(true)}/>{onViewBank?<GameButton title="View bank" tone="secondary" onPress={onViewBank}/>:null}</>}
    </>:null}
   </View>

@@ -9,6 +9,69 @@ var __esm = (fn, res, err) => function __init() {
   }
 };
 
+// ../apps/mobile/src/core/meal-buffs.ts
+function mealBonusDef(itemId) {
+  return MEAL_BONUSES.find((row) => row.itemId === itemId);
+}
+function eatMealForBonus(state, itemId) {
+  if (!state.character) throw new Error("Create a character first.");
+  const def = mealBonusDef(itemId);
+  if (!def) throw new Error("This food does not grant a meal bonus.");
+  let remaining = 1;
+  const stacks = state.inventory.stacks.map((row) => {
+    if (row.itemId !== itemId || remaining === 0) return row;
+    const take4 = Math.min(remaining, row.quantity);
+    remaining -= take4;
+    return { ...row, quantity: row.quantity - take4 };
+  }).filter((row) => row.quantity > 0);
+  if (remaining) throw new Error("Meal not available in Inventory.");
+  return { ...state, inventory: { ...state.inventory, stacks }, character: {
+    ...state.character,
+    activeMealBuff: { itemId, remainingSeconds: def.durationHours * 3600 }
+  } };
+}
+function activeMealBonus(character) {
+  const buff = character?.activeMealBuff;
+  return buff && buff.remainingSeconds > 0 ? mealBonusDef(buff.itemId) : void 0;
+}
+function mealSpeedFactor(character, domain) {
+  const meal = activeMealBonus(character);
+  const applies = meal?.kind === "noncombat_speed" || domain === "crafting" && meal?.kind === "crafting_speed";
+  return applies ? 1 + meal.percent / 100 : 1;
+}
+function retimeReservedMealCraft(state, prior) {
+  const previous = mealSpeedFactor(prior, "crafting"), current = mealSpeedFactor(state.character, "crafting");
+  if (!state.activity || previous === current) return state;
+  const factor = previous / current;
+  const a = state.activity;
+  if (a.kind === "alchemy" && a.brew) return { ...state, activity: { ...a, brew: { ...a.brew, cycleSeconds: Math.max(1, Math.min(86400, a.brew.cycleSeconds * factor)) } } };
+  if (a.kind === "processing" && a.processing) return { ...state, activity: { ...a, processing: { ...a.processing, cycleSeconds: Math.max(1, Math.min(86400, a.processing.cycleSeconds * factor)) } } };
+  return state;
+}
+function commitMealActivityTime(state, source, reward2) {
+  const buff = state.character?.activeMealBuff;
+  if (!buff || !source) return state;
+  const eligible = source.kind === "combat" || source.kind === "mining" || source.kind === "woodcutting" || source.kind === "fishing" || source.kind === "herbalism" || source.kind === "alchemy" || source.kind === "processing" || source.kind === "exploration" || source.kind === "faith" || source.kind === "training";
+  if (!eligible) return state;
+  const qualified = Math.max(0, Math.min(reward2.elapsedSeconds, reward2.qualifyingActivitySeconds ?? reward2.elapsedSeconds));
+  if (qualified <= 0) return state;
+  const seconds = Math.max(0, buff.remainingSeconds - qualified);
+  return { ...state, character: { ...state.character, activeMealBuff: seconds > 0 ? { ...buff, remainingSeconds: seconds } : void 0 } };
+}
+var MEAL_BONUSES;
+var init_meal_buffs = __esm({
+  "../apps/mobile/src/core/meal-buffs.ts"() {
+    "use strict";
+    MEAL_BONUSES = [
+      { itemId: "IRONWOOD_STEW", kind: "gathering_speed", percent: 2, durationHours: 3, label: "+2% Gathering speed" },
+      { itemId: "GLASSFIN_FEAST", kind: "gathering_speed", percent: 3, durationHours: 4, label: "+3% Gathering speed" },
+      { itemId: "FROSTED_ICEFIN", kind: "crafting_speed", percent: 3, durationHours: 4, label: "+3% Crafting speed" },
+      { itemId: "CHARRED_EMBERFIN", kind: "combat_xp", percent: 4, durationHours: 4, label: "+4% Combat XP" },
+      { itemId: "ASHLANDS_EMBER_STEW", kind: "noncombat_speed", percent: 5, durationHours: 4, label: "+5% Non-combat skill speed" }
+    ];
+  }
+});
+
 // ../apps/mobile/src/core/progression.ts
 function baseXpForNextLevel(level) {
   return Math.floor(90 * Math.pow(level, 1.42) + level * 35);
@@ -142,12 +205,12 @@ function settleFaithPractice(state, now, capSeconds) {
   const empty2 = { xp: 0, gold: 0, kills: 0, items: [], elapsedSeconds: 0, faithActions: 0, faithXp: 0, holyWaterConsumed: 0 };
   const normalized = normalizeFaith(state.character?.faith), skillXp = state.skills.find((s) => s.skillId === "faith")?.xp ?? 0, faith = { ...normalized, xp: Math.max(normalized.xp, skillXp) }, reservation = state.activity?.faithPractice, p = faith.practice ?? (reservation ? { tierId: reservation.tierId, remaining: reservation.remainingPractices, lastClaimAtMs: reservation.lastClaimAtMs, progressMs: Math.floor(reservation.progressFraction * 6e4) } : void 0), tier = FAITH_TIERS.find((t) => t.id === p?.tierId);
   if (!state.character || !p || !tier || now < p.lastClaimAtMs) return { state, reward: empty2, refund: 0 };
-  const elapsed = Math.min(capSeconds * 1e3, now - p.lastClaimAtMs), total = p.progressMs + elapsed;
+  const elapsed = Math.min(capSeconds * 1e3, now - p.lastClaimAtMs), speed = mealSpeedFactor(state.character, "noncombat"), total = p.progressMs + elapsed * speed;
   const actions = Math.min(p.remaining, Math.floor(total / (tier.seconds * 1e3)), Math.ceil((MAX_XP - faith.xp) / tier.xp)), xp = Math.min(MAX_XP - faith.xp, actions * tier.xp);
   const remaining = p.remaining - actions, mastered = faith.xp + xp === MAX_XP, refund = mastered ? remaining * tier.water : 0;
-  const nextPractice = remaining && !mastered ? { ...p, remaining, lastClaimAtMs: now, progressMs: total % (tier.seconds * 1e3) } : void 0;
+  const nextPractice = remaining && !mastered ? { ...p, remaining, lastClaimAtMs: now, progressMs: Math.floor(total % (tier.seconds * 1e3)) } : void 0;
   const nextActivity = nextPractice && state.activity ? { ...state.activity, lastClaimAtMs: now, faithPractice: { tierId: nextPractice.tierId, remainingPractices: nextPractice.remaining, lastClaimAtMs: now, progressFraction: nextPractice.progressMs / (tier.seconds * 1e3) } } : null;
-  const qualifyingActivitySeconds = nextPractice ? Math.floor(elapsed / 1e3) : actions ? Math.max(0, Math.min(Math.floor(elapsed / 1e3), actions * tier.seconds - Math.floor(p.progressMs / 1e3))) : 0;
+  const qualifyingActivitySeconds = nextPractice ? Math.floor(elapsed / 1e3) : actions ? Math.max(0, Math.min(Math.floor(elapsed / 1e3), Math.floor((actions * tier.seconds * 1e3 - p.progressMs) / speed / 1e3))) : 0;
   return { state: { ...state, activity: nextActivity, character: { ...state.character, faith: { ...faith, xp: faith.xp + xp, practice: nextPractice } } }, refund, reward: { ...empty2, xp, elapsedSeconds: Math.floor(elapsed / 1e3), qualifyingActivitySeconds, faithActions: actions, faithXp: xp, holyWaterConsumed: actions * tier.water, faithWaterRefund: refund } };
 }
 function cancelFaithPractice(state) {
@@ -159,6 +222,7 @@ var MAX_XP, faithLevel, selectedFaithBlessing, holyWaterAvailable, faithPractice
 var init_faith2 = __esm({
   "../apps/mobile/src/core/faith.ts"() {
     "use strict";
+    init_meal_buffs();
     init_faith();
     init_progression();
     MAX_XP = totalXpAtLevel(100);
@@ -741,6 +805,7 @@ var CLASS_SKILLS = {
 var classSkillsFor = (id) => CLASS_SKILLS[id];
 
 // ../apps/mobile/src/core/class-skills.ts
+init_meal_buffs();
 init_progression();
 var MAX_CLASS_SKILL_XP = totalXpAtLevel(100);
 var CLASS_DRILL_BASE_XP = 24;
@@ -786,7 +851,8 @@ function settleClassDrills(state, now, capSeconds) {
   const c = state.character, drill = normalizeClassDrills(c?.classTraining);
   const empty2 = { xp: 0, gold: 0, kills: 0, items: [], elapsedSeconds: 0 };
   if (!c || !drill || now <= drill.lastClaimAtMs) return { state, reward: empty2 };
-  const elapsed = Math.min(capSeconds * 1e3, now - drill.lastClaimAtMs), total = elapsed + drill.progressMs, actions = Math.floor(total / 6e4);
+  const elapsed = Math.min(capSeconds * 1e3, now - drill.lastClaimAtMs), speed = mealSpeedFactor(c, "noncombat");
+  const total = elapsed * speed + drill.progressMs, actions = Math.floor(total / 6e4);
   let character = c;
   const awards = {};
   const apply = (count, focus2) => {
@@ -804,8 +870,9 @@ function settleClassDrills(state, now, capSeconds) {
   apply(rest, focus);
   completed += rest;
   const capped = characterClassSkills(character).every((s) => s.level === 100);
-  character = { ...character, classTraining: capped ? void 0 : { ...drill, lastClaimAtMs: now, progressMs: total % 6e4, focus: actions ? normalizeTrainingFocus(c.trainingFocus) : drill.focus } };
-  return { state: { ...state, character }, reward: { ...empty2, elapsedSeconds: Math.floor(elapsed / 1e3), trainingActions: completed, classSkillXp: Object.entries(awards).map(([skillId, xp]) => ({ skillId, xp })) } };
+  character = { ...character, classTraining: capped ? void 0 : { ...drill, lastClaimAtMs: now, progressMs: Math.floor(total % 6e4), focus: actions ? normalizeTrainingFocus(c.trainingFocus) : drill.focus } };
+  const qualified = capped ? Math.max(0, Math.min(elapsed, (completed * 6e4 - drill.progressMs) / speed)) : elapsed;
+  return { state: { ...state, character }, reward: { ...empty2, elapsedSeconds: Math.floor(elapsed / 1e3), qualifyingActivitySeconds: Math.floor(qualified / 1e3), trainingActions: completed, classSkillXp: Object.entries(awards).map(([skillId, xp]) => ({ skillId, xp })) } };
 }
 
 // ../apps/mobile/src/content/monsters.ts
@@ -42444,7 +42511,7 @@ var timerRange = {
 };
 var EQUIPMENT_FORGE_GOLD_MULTIPLIER = 3;
 var tierGold = { T1: 120, T2: 420, T3: 900, T4: 1800, T5: 3500, T6: 1e4, T7: 18e3, T8: 3e4, T9: 5e4 };
-var tierXp = { T1: 120, T2: 250, T3: 450, T4: 700, T5: 1100, T6: 1600, T7: 2200, T8: 2900, T9: 3800 };
+var tierXp = { T1: 165, T2: 290, T3: 450, T4: 700, T5: 1100, T6: 1600, T7: 2200, T8: 2900, T9: 3800 };
 var infusionByTier = {
   T1: { itemId: "VERDANT_BINDING_RESIN", quantity: 1 },
   T2: { itemId: "VERDANT_BINDING_RESIN", quantity: 1 },
@@ -42626,7 +42693,7 @@ var NOVICE_RECIPES = NOVICE_SETS.flatMap((set) => set.slots.map((slot) => {
     requiresCraftedItemId: prerequisite[slot] ? noviceItemId(set.classId, prerequisite[slot]) : void 0,
     // Keep the existing novice-set baseline and apply the same equipment-only
     // forge gold increase used by the regional T1–T9 equipment recipes.
-    xp: stage * 40,
+    xp: stage * 50,
     gold: (slot === "weapon" || slot === "amulet" || slot === "ring" ? 20 : stage === 4 ? 15 : 10) * 2 * EQUIPMENT_FORGE_GOLD_MULTIPLIER,
     seconds: 0,
     inputs: [{ itemId: "COPPER_ORE", quantity: (stage >= 4 ? 16 : slot === "chest" || slot === "weapon" ? 16 : 8) * 2 }, { itemId: "GREENWOOD_LOG", quantity: (stage >= 4 ? 16 : slot === "chest" || slot === "weapon" ? 16 : 8) * 2 }, { itemId: "MOSS_FIBER", quantity: (stage >= 5 ? 8 : 4) * 2 }],
@@ -43023,6 +43090,8 @@ var MONSTERS_RAW = [
 ];
 var MONSTER_TIME_SCALE = 1.95;
 var MONSTER_STAT_SCALE = 1.07;
+var ADVANCED_REGION_MONSTER_MULTIPLIER = 1.2;
+var ADVANCED_MONSTER_REGIONS = /* @__PURE__ */ new Set(["King's Road", "Sunscar", "Frostmarch", "Ashlands"]);
 function asterfallRawGemDrop(monster) {
   if (monster.boss || monster.level < 4 || monster.level > 25) return void 0;
   const familyId = monster.level >= 20 ? monster.attack >= monster.defense * 1.8 ? "stat_keen" : "stat_potent" : monster.level >= 16 ? monster.attack >= monster.defense * 1.7 ? "stat_precision" : "stat_ward" : monster.level >= 10 ? monster.attack >= monster.defense * 1.7 ? "stat_swift" : "stat_iron" : monster.attack >= monster.defense * 1.7 ? "stat_might" : "stat_vitality";
@@ -43038,15 +43107,19 @@ var enhancementDrops = (monster) => {
 };
 var MONSTERS = MONSTERS_RAW.map((monster) => {
   const holyWater = HOLY_WATER_SOURCES.find((source) => source.monsterId === monster.id);
+  const advancedScale = ADVANCED_MONSTER_REGIONS.has(monster.zone) ? ADVANCED_REGION_MONSTER_MULTIPLIER : 1;
   return {
     ...monster,
     // Standard-enemy materials are intentionally half as likely from combat.
     // Gathering remains the reliable source; guaranteed boss rewards stay intact.
     drops: [...monster.drops, ...holyWater ? [{ itemId: HOLY_WATER_ID, chance: holyWater.chance, min: holyWater.min, max: holyWater.max }] : [], ...enhancementDrops(monster)].map((drop) => !monster.boss && drop.itemId !== HOLY_WATER_ID && itemDef(drop.itemId).type === "material" ? { ...drop, chance: drop.chance * 0.5 } : drop),
-    secondsPerKill: Math.ceil(monster.secondsPerKill * MONSTER_TIME_SCALE),
-    hp: Math.ceil(monster.hp * MONSTER_STAT_SCALE),
-    attack: Math.ceil(monster.attack * MONSTER_STAT_SCALE),
-    defense: Math.ceil(monster.defense * MONSTER_STAT_SCALE)
+    // Idle combat uses authored cycle duration rather than HP to calculate kills.
+    // Scale both the displayed combat stats and cycle time, so 20% more HP
+    // actually costs time; leave XP, loot chances, and early regions untouched.
+    secondsPerKill: Math.ceil(monster.secondsPerKill * MONSTER_TIME_SCALE * advancedScale),
+    hp: Math.ceil(monster.hp * MONSTER_STAT_SCALE * advancedScale),
+    attack: Math.ceil(monster.attack * MONSTER_STAT_SCALE * advancedScale),
+    defense: Math.ceil(monster.defense * MONSTER_STAT_SCALE * advancedScale)
   };
 });
 
@@ -43520,8 +43593,8 @@ var RECIPES = [
   // compatibility. Presentation layers apply their release gate separately.
   ...V33_EQUIPMENT_RECIPES,
   ...TOOL_RECIPES,
-  { id: "SMELT_COPPER_INGOT", name: "Smelt Copper Ingot", skillId: "smithing", level: 1, xp: 80, gold: 30, seconds: 36, repeatableTraining: true, inputs: [{ itemId: "COPPER_ORE", quantity: 10 }, { itemId: "GREENWOOD_LOG", quantity: 2 }], output: { itemId: "COPPER_INGOT", quantity: 5 } },
-  { id: "SMELT_ASTER_IRON_INGOT", name: "Smelt Aster-Iron Ingot", skillId: "smithing", level: 8, xp: 140, gold: 50, seconds: 42, repeatableTraining: true, inputs: [{ itemId: "ASTER_IRON_ORE", quantity: 8 }, { itemId: "IRONWOOD_LOG", quantity: 2 }], output: { itemId: "ASTER_IRON_INGOT", quantity: 4 } },
+  { id: "SMELT_COPPER_INGOT", name: "Smelt Copper Ingot", skillId: "smithing", level: 1, xp: 100, gold: 30, seconds: 36, repeatableTraining: true, inputs: [{ itemId: "COPPER_ORE", quantity: 10 }, { itemId: "GREENWOOD_LOG", quantity: 2 }], output: { itemId: "COPPER_INGOT", quantity: 5 } },
+  { id: "SMELT_ASTER_IRON_INGOT", name: "Smelt Aster-Iron Ingot", skillId: "smithing", level: 8, xp: 165, gold: 50, seconds: 42, repeatableTraining: true, inputs: [{ itemId: "ASTER_IRON_ORE", quantity: 8 }, { itemId: "IRONWOOD_LOG", quantity: 2 }], output: { itemId: "ASTER_IRON_INGOT", quantity: 4 } },
   { id: "FORGE_REINFORCED_FITTING", name: "Forge Reinforced Fitting", skillId: "smithing", level: 12, xp: 180, gold: 50, seconds: 48, repeatableTraining: true, inputs: [{ itemId: "ASTER_IRON_INGOT", quantity: 2 }, { itemId: "IRONWOOD_LOG", quantity: 2 }], output: { itemId: "REINFORCED_FITTING", quantity: 1 } },
   { id: "SMELT_OATHSTONE_INGOT", name: "Smelt Oathstone Ingot", skillId: "smithing", level: 16, xp: 230, gold: 80, seconds: 54, repeatableTraining: true, inputs: [{ itemId: "OATHSTONE_ORE", quantity: 6 }, { itemId: "CROWNWOOD_LOG", quantity: 3 }], output: { itemId: "OATHSTONE_INGOT", quantity: 3 } },
   { id: "SMELT_SUNSTONE_INGOT", name: "Smelt Sunstone Ingot", skillId: "smithing", level: 26, xp: 520, gold: 280, seconds: 180, repeatableTraining: true, inputs: [{ itemId: "SUNSTONE_ORE", quantity: 6 }, { itemId: "DUNEWOOD", quantity: 4 }], output: { itemId: "SUNSTONE_INGOT", quantity: 3 } },
@@ -43536,7 +43609,7 @@ var RECIPES = [
   { id: "COOK_OATHSCALE", name: "Roast Oathscale", skillId: "cooking", level: 16, xp: 260, gold: 130, seconds: 54, repeatableTraining: true, inputs: [{ itemId: "OATHSCALE_PIKE", quantity: 3 }, { itemId: "CROWNWOOD_LOG", quantity: 1 }], output: { itemId: "ROASTED_OATHSCALE", quantity: 3 } },
   { id: "COOK_CAVE_LOACH", name: "Bake Cave Loach", skillId: "cooking", level: 16, xp: 245, gold: 120, seconds: 52, repeatableTraining: true, inputs: [{ itemId: "CAVE_LOACH", quantity: 3 }, { itemId: "CROWNWOOD_LOG", quantity: 1 }], output: { itemId: "BAKED_CAVE_LOACH", quantity: 3 } },
   { id: "COOK_CROWN_CARP", name: "Roast Crown Carp", skillId: "cooking", level: 20, xp: 330, gold: 165, seconds: 70, repeatableTraining: true, inputs: [{ itemId: "CROWN_CARP", quantity: 3 }, { itemId: "CROWNWOOD_LOG", quantity: 1 }], output: { itemId: "ROASTED_CROWN_CARP", quantity: 3 } },
-  { id: "COOK_IRONWOOD_STEW", name: "Ironwood Hunter Stew", skillId: "cooking", level: 15, xp: 105, gold: 140, seconds: 66, inputs: [{ itemId: "RIVER_EEL", quantity: 2 }, { itemId: "THORN_SAP", quantity: 1 }, { itemId: "IRONWOOD_LOG", quantity: 1 }], output: { itemId: "IRONWOOD_STEW", quantity: 1 } },
+  { id: "COOK_IRONWOOD_STEW", name: "Ironwood Hunter Stew", skillId: "cooking", level: 15, xp: 105, gold: 140, seconds: 66, repeatableTraining: true, inputs: [{ itemId: "RIVER_EEL", quantity: 2 }, { itemId: "THORN_SAP", quantity: 1 }, { itemId: "IRONWOOD_LOG", quantity: 1 }], output: { itemId: "IRONWOOD_STEW", quantity: 1 } },
   { id: "COOK_ASHLANDS_EMBER_STEW", name: "Ashlands Ember Stew", skillId: "cooking", level: 72, xp: 760, gold: 900, seconds: 110, repeatableTraining: true, inputs: [{ itemId: "ASHEN_MYRRH", quantity: 2 }, { itemId: "CINDER_HEART", quantity: 1 }, { itemId: "CINDERWOOD_LOG", quantity: 1 }], output: { itemId: "ASHLANDS_EMBER_STEW", quantity: 2 } },
   { id: "COOK_OASIS_CARP", name: "Grill Oasis Carp", skillId: "cooking", level: 26, xp: 420, gold: 220, seconds: 120, repeatableTraining: true, inputs: [{ itemId: "OASIS_CARP", quantity: 4 }, { itemId: "DUNEWOOD", quantity: 1 }], output: { itemId: "GRILLED_OASIS_CARP", quantity: 4 } },
   { id: "COOK_GLASSFIN_FEAST", name: "Amberglass Glassfin Feast", skillId: "cooking", level: 38, xp: 720, gold: 520, seconds: 210, repeatableTraining: true, inputs: [{ itemId: "GLASSFIN", quantity: 3 }, { itemId: "AMBERGLASS", quantity: 1 }, { itemId: "DUNEWOOD", quantity: 1 }], output: { itemId: "GLASSFIN_FEAST", quantity: 2 } },
@@ -47290,6 +47363,7 @@ function collectionBonusBreakdown(state, catalog2 = COLLECTIBLES) {
 }
 
 // ../apps/mobile/src/core/permanent-boosts.ts
+init_meal_buffs();
 var BASE = {
   attackMultiplier: 1,
   combatSpeedMultiplier: 1,
@@ -47448,6 +47522,13 @@ function characterPermanentMultipliers(state) {
     dropChanceMultiplier: entitlements.dropChanceMultiplier,
     craftingSpeedMultiplier: entitlements.craftingSpeedMultiplier
   });
+  const meal = activeMealBonus(c);
+  if (meal) {
+    const boost = 1 + meal.percent / 100;
+    if (meal.kind === "gathering_speed" || meal.kind === "noncombat_speed") result.gatheringSpeedMultiplier *= boost;
+    if (meal.kind === "crafting_speed" || meal.kind === "noncombat_speed") result.craftingSpeedMultiplier *= boost;
+    if (meal.kind === "combat_xp") result.characterXpMultiplier *= boost;
+  }
   return result;
 }
 
@@ -48191,6 +48272,12 @@ function combineActivityRewards(results) {
     items: sumRows(rewards.flatMap((row) => row.items), (row) => row.itemId, "quantity"),
     foodConsumed: sum("foodConsumed"),
     explorationXp: sum("explorationXp"),
+    craftingActions: sum("craftingActions"),
+    trainingActions: sum("trainingActions"),
+    faithActions: sum("faithActions"),
+    faithXp: sum("faithXp"),
+    holyWaterConsumed: sum("holyWaterConsumed"),
+    craftingCompletedAtMs: rewards.flatMap((row) => row.craftingCompletedAtMs ?? []),
     classSkillXp: sumRows(rewards.flatMap((row) => row.classSkillXp ?? []), (row) => row.skillId, "xp"),
     eventDrops: sumRows(rewards.flatMap((row) => row.eventDrops ?? []), (row) => row.eventId + ":" + row.currencyId, "quantity"),
     eventDiscoveries: sumRows(rewards.flatMap((row) => row.eventDiscoveries ?? []), (row) => row.eventId + ":" + row.discoveryId, "quantity"),
@@ -48202,6 +48289,7 @@ function combineActivityRewards(results) {
 }
 
 // ../apps/mobile/src/core/game.ts
+init_meal_buffs();
 init_progression();
 
 // ../apps/mobile/src/core/identity-names.ts
@@ -48570,6 +48658,142 @@ function accountCharacters(state) {
   return [{ character: state.character }, ...state.otherCharacters ?? []].filter((entry2) => entry2.character);
 }
 
+// ../apps/mobile/src/core/gem-pouch.ts
+var GEM_POUCH_BASE_CAPACITY = 30;
+var GEM_POUCH_UPGRADES = [
+  { capacity: 40, cost: 5e3, level: 10 },
+  { capacity: 50, cost: 15e3, level: 20 },
+  { capacity: 60, cost: 4e4, level: 35 },
+  { capacity: 75, cost: 1e5, level: 50 },
+  { capacity: 100, cost: 25e4, level: 70 }
+];
+function isGemPouchItemId(itemId) {
+  try {
+    const item = itemDef(itemId);
+    return item.type === "gem" || !!item.rawGemFamilyId;
+  } catch {
+    return false;
+  }
+}
+function normalizeGemPouch(raw2) {
+  const value = raw2 && typeof raw2 === "object" && !Array.isArray(raw2) ? raw2 : {};
+  const capacity = [GEM_POUCH_BASE_CAPACITY, ...GEM_POUCH_UPGRADES.map((t) => t.capacity)].includes(Number(value.capacity)) ? Number(value.capacity) : GEM_POUCH_BASE_CAPACITY;
+  const grouped = /* @__PURE__ */ new Map();
+  for (const stack of Array.isArray(value.stacks) ? value.stacks : []) {
+    if (!stack || typeof stack.itemId !== "string" || !isGemPouchItemId(stack.itemId) || stack.instanceId !== void 0 || !Number.isSafeInteger(stack.quantity) || stack.quantity <= 0) continue;
+    const next = (grouped.get(stack.itemId) ?? 0) + stack.quantity;
+    if (Number.isSafeInteger(next)) grouped.set(stack.itemId, next);
+  }
+  return { capacity, stacks: [...grouped].map(([itemId, quantity2]) => ({ itemId, quantity: quantity2 })) };
+}
+function gemPouch(state) {
+  return normalizeGemPouch(state.account.gemPouch);
+}
+function gemPouchUpgradePreview(state) {
+  return GEM_POUCH_UPGRADES.find((tier) => tier.capacity > gemPouch(state).capacity) ?? null;
+}
+function upgradeGemPouch(state) {
+  if (!state.character) throw new Error("Create a character first");
+  const next = gemPouchUpgradePreview(state);
+  if (!next) throw new Error("Gem Pouch is already at maximum capacity");
+  if (state.character.level < next.level) throw new Error(`Requires Level ${next.level}`);
+  if (state.character.gold < next.cost) throw new Error(`Requires ${next.cost.toLocaleString()} Gold`);
+  return {
+    ...state,
+    character: { ...state.character, gold: state.character.gold - next.cost },
+    account: { ...state.account, gemPouch: { ...gemPouch(state), capacity: next.capacity } }
+  };
+}
+function stackQty(stacks, id) {
+  return stacks.reduce((total, row) => total + (row.itemId === id && row.instanceId === void 0 ? row.quantity : 0), 0);
+}
+function gemStorageQuantity(state, id) {
+  return stackQty(state.inventory.stacks, id) + stackQty(state.bank.stacks, id) + (isGemPouchItemId(id) ? stackQty(gemPouch(state).stacks, id) : 0);
+}
+function addStack2(stacks, capacity, itemId, quantity2) {
+  const index = stacks.findIndex((row) => row.itemId === itemId && row.instanceId === void 0);
+  if (index >= 0) {
+    const next = stacks.map((row) => ({ ...row }));
+    const amount = next[index].quantity + quantity2;
+    if (!Number.isSafeInteger(amount)) throw new Error("Gem stack quantity is too large");
+    next[index].quantity = amount;
+    return next;
+  }
+  if (stacks.filter((row) => row.quantity > 0).length >= capacity) return null;
+  return [...stacks, { itemId, quantity: quantity2 }];
+}
+function tryStoreGemInPouch(state, itemId, quantity2) {
+  if (!isGemPouchItemId(itemId)) return null;
+  if (!Number.isSafeInteger(quantity2) || quantity2 < 1) throw new Error("Invalid gem quantity");
+  const pouch = gemPouch(state), stored = addStack2(pouch.stacks, pouch.capacity, itemId, quantity2);
+  return stored ? { ...state, account: { ...state.account, gemPouch: { ...pouch, stacks: stored } } } : null;
+}
+function storePouchGem(state, itemId, quantity2 = 1) {
+  if (!isGemPouchItemId(itemId) || !Number.isSafeInteger(quantity2) || quantity2 < 1) throw new Error("Invalid gem reward");
+  const stored = tryStoreGemInPouch(state, itemId, quantity2);
+  if (stored) return stored;
+  const inv = addStack2(state.inventory.stacks, entitlementStorageCapacity(state, "inventory"), itemId, quantity2);
+  if (inv) return { ...state, inventory: { ...state.inventory, stacks: inv } };
+  const bank = addStack2(state.bank.stacks, entitlementStorageCapacity(state, "bank"), itemId, quantity2);
+  if (bank) return { ...state, bank: { ...state.bank, stacks: bank } };
+  throw new Error("Gem Pouch, Inventory and Bank are full");
+}
+function sellPouchGem(state, itemId, quantity2) {
+  if (!state.character) throw new Error("Create a character first");
+  if (!isGemPouchItemId(itemId) || !Number.isSafeInteger(quantity2) || quantity2 < 1) throw new Error("Invalid gem sale");
+  if (state.settings.favoriteItemIds?.includes(itemId)) throw new Error("Favorite gems cannot be sold");
+  if (state.settings.lockedItemIds?.includes(itemId)) throw new Error("Locked gems cannot be sold");
+  const pouch = gemPouch(state), owned = stackQty(pouch.stacks, itemId);
+  if (owned < quantity2) throw new Error("Not enough gems in the pouch");
+  const proceeds = itemDef(itemId).value * quantity2;
+  if (!Number.isSafeInteger(proceeds) || !Number.isSafeInteger(state.character.gold + proceeds)) throw new Error("Gold amount exceeds supported limit");
+  const stacks = pouch.stacks.map((row) => row.itemId === itemId ? { ...row, quantity: row.quantity - quantity2 } : row).filter((row) => row.quantity > 0);
+  return {
+    ...state,
+    account: { ...state.account, gemPouch: { ...pouch, stacks } },
+    character: { ...state.character, gold: state.character.gold + proceeds }
+  };
+}
+function consumeGemFromStorage(state, itemId, quantity2) {
+  if (!Number.isSafeInteger(quantity2) || quantity2 < 1 || gemStorageQuantity(state, itemId) < quantity2)
+    throw new Error(`Need ${quantity2} ${itemDef(itemId).name}`);
+  let left = quantity2;
+  const take4 = (stacks) => stacks.map((row) => {
+    if (row.itemId !== itemId || row.instanceId !== void 0 || left <= 0) return row;
+    const used = Math.min(left, row.quantity);
+    left -= used;
+    return { ...row, quantity: row.quantity - used };
+  }).filter((row) => row.quantity > 0);
+  const pouch = gemPouch(state), pouchStacks = isGemPouchItemId(itemId) ? take4(pouch.stacks) : pouch.stacks;
+  const inventory = take4(state.inventory.stacks), bank = take4(state.bank.stacks);
+  return {
+    ...state,
+    account: { ...state.account, gemPouch: { ...pouch, stacks: pouchStacks } },
+    inventory: { ...state.inventory, stacks: inventory },
+    bank: { ...state.bank, stacks: bank }
+  };
+}
+function migrateGemPouch(state) {
+  if (state.account.gemPouchMigrationDone === true) return state;
+  let pouch = gemPouch(state);
+  const move = (stacks) => stacks.filter((row) => {
+    if (!row || typeof row.itemId !== "string" || row.instanceId !== void 0 || !isGemPouchItemId(row.itemId) || !Number.isSafeInteger(row.quantity) || row.quantity <= 0) return true;
+    const placed = addStack2(pouch.stacks, pouch.capacity, row.itemId, row.quantity);
+    if (!placed) return true;
+    pouch = { ...pouch, stacks: placed };
+    return false;
+  });
+  const inventory = move(state.inventory.stacks), bank = move(state.bank.stacks);
+  const otherCharacters = state.otherCharacters?.map((entry2) => ({ ...entry2, inventory: { ...entry2.inventory, stacks: move(Array.isArray(entry2.inventory?.stacks) ? entry2.inventory.stacks : []) } }));
+  return {
+    ...state,
+    account: { ...state.account, gemPouch: pouch, gemPouchMigrationDone: true },
+    otherCharacters,
+    inventory: { ...state.inventory, stacks: inventory },
+    bank: { ...state.bank, stacks: bank }
+  };
+}
+
 // ../apps/mobile/src/core/gathering-tools.ts
 var NO_TOOL_TIME_MULTIPLIER = 1.15;
 function equippedGatheringTool(state, skillId) {
@@ -48807,137 +49031,6 @@ function craftedInstanceResult(state, instance) {
 
 // ../apps/mobile/src/core/gem-progression-v1.ts
 init_progression();
-
-// ../apps/mobile/src/core/gem-pouch.ts
-var GEM_POUCH_BASE_CAPACITY = 30;
-var GEM_POUCH_UPGRADES = [
-  { capacity: 40, cost: 5e3, level: 10 },
-  { capacity: 50, cost: 15e3, level: 20 },
-  { capacity: 60, cost: 4e4, level: 35 },
-  { capacity: 75, cost: 1e5, level: 50 },
-  { capacity: 100, cost: 25e4, level: 70 }
-];
-function isGemPouchItemId(itemId) {
-  try {
-    const item = itemDef(itemId);
-    return item.type === "gem" || !!item.rawGemFamilyId;
-  } catch {
-    return false;
-  }
-}
-function normalizeGemPouch(raw2) {
-  const value = raw2 && typeof raw2 === "object" && !Array.isArray(raw2) ? raw2 : {};
-  const capacity = [GEM_POUCH_BASE_CAPACITY, ...GEM_POUCH_UPGRADES.map((t) => t.capacity)].includes(Number(value.capacity)) ? Number(value.capacity) : GEM_POUCH_BASE_CAPACITY;
-  const grouped = /* @__PURE__ */ new Map();
-  for (const stack of Array.isArray(value.stacks) ? value.stacks : []) {
-    if (!stack || typeof stack.itemId !== "string" || !isGemPouchItemId(stack.itemId) || stack.instanceId !== void 0 || !Number.isSafeInteger(stack.quantity) || stack.quantity <= 0) continue;
-    const next = (grouped.get(stack.itemId) ?? 0) + stack.quantity;
-    if (Number.isSafeInteger(next)) grouped.set(stack.itemId, next);
-  }
-  return { capacity, stacks: [...grouped].map(([itemId, quantity2]) => ({ itemId, quantity: quantity2 })) };
-}
-function gemPouch(state) {
-  return normalizeGemPouch(state.account.gemPouch);
-}
-function gemPouchUpgradePreview(state) {
-  return GEM_POUCH_UPGRADES.find((tier) => tier.capacity > gemPouch(state).capacity) ?? null;
-}
-function upgradeGemPouch(state) {
-  if (!state.character) throw new Error("Create a character first");
-  const next = gemPouchUpgradePreview(state);
-  if (!next) throw new Error("Gem Pouch is already at maximum capacity");
-  if (state.character.level < next.level) throw new Error(`Requires Level ${next.level}`);
-  if (state.character.gold < next.cost) throw new Error(`Requires ${next.cost.toLocaleString()} Gold`);
-  return {
-    ...state,
-    character: { ...state.character, gold: state.character.gold - next.cost },
-    account: { ...state.account, gemPouch: { ...gemPouch(state), capacity: next.capacity } }
-  };
-}
-function stackQty(stacks, id) {
-  return stacks.reduce((total, row) => total + (row.itemId === id && row.instanceId === void 0 ? row.quantity : 0), 0);
-}
-function gemStorageQuantity(state, id) {
-  return stackQty(state.inventory.stacks, id) + stackQty(state.bank.stacks, id) + (isGemPouchItemId(id) ? stackQty(gemPouch(state).stacks, id) : 0);
-}
-function addStack2(stacks, capacity, itemId, quantity2) {
-  const index = stacks.findIndex((row) => row.itemId === itemId && row.instanceId === void 0);
-  if (index >= 0) {
-    const next = stacks.map((row) => ({ ...row }));
-    const amount = next[index].quantity + quantity2;
-    if (!Number.isSafeInteger(amount)) throw new Error("Gem stack quantity is too large");
-    next[index].quantity = amount;
-    return next;
-  }
-  if (stacks.filter((row) => row.quantity > 0).length >= capacity) return null;
-  return [...stacks, { itemId, quantity: quantity2 }];
-}
-function storePouchGem(state, itemId, quantity2 = 1) {
-  if (!isGemPouchItemId(itemId) || !Number.isSafeInteger(quantity2) || quantity2 < 1) throw new Error("Invalid gem reward");
-  const pouch = gemPouch(state), stored = addStack2(pouch.stacks, pouch.capacity, itemId, quantity2);
-  if (stored) return { ...state, account: { ...state.account, gemPouch: { ...pouch, stacks: stored } } };
-  const inv = addStack2(state.inventory.stacks, entitlementStorageCapacity(state, "inventory"), itemId, quantity2);
-  if (inv) return { ...state, inventory: { ...state.inventory, stacks: inv } };
-  const bank = addStack2(state.bank.stacks, entitlementStorageCapacity(state, "bank"), itemId, quantity2);
-  if (bank) return { ...state, bank: { ...state.bank, stacks: bank } };
-  throw new Error("Gem Pouch, Inventory and Bank are full");
-}
-function sellPouchGem(state, itemId, quantity2) {
-  if (!state.character) throw new Error("Create a character first");
-  if (!isGemPouchItemId(itemId) || !Number.isSafeInteger(quantity2) || quantity2 < 1) throw new Error("Invalid gem sale");
-  if (state.settings.favoriteItemIds?.includes(itemId)) throw new Error("Favorite gems cannot be sold");
-  if (state.settings.lockedItemIds?.includes(itemId)) throw new Error("Locked gems cannot be sold");
-  const pouch = gemPouch(state), owned = stackQty(pouch.stacks, itemId);
-  if (owned < quantity2) throw new Error("Not enough gems in the pouch");
-  const proceeds = itemDef(itemId).value * quantity2;
-  if (!Number.isSafeInteger(proceeds) || !Number.isSafeInteger(state.character.gold + proceeds)) throw new Error("Gold amount exceeds supported limit");
-  const stacks = pouch.stacks.map((row) => row.itemId === itemId ? { ...row, quantity: row.quantity - quantity2 } : row).filter((row) => row.quantity > 0);
-  return {
-    ...state,
-    account: { ...state.account, gemPouch: { ...pouch, stacks } },
-    character: { ...state.character, gold: state.character.gold + proceeds }
-  };
-}
-function consumeGemFromStorage(state, itemId, quantity2) {
-  if (!Number.isSafeInteger(quantity2) || quantity2 < 1 || gemStorageQuantity(state, itemId) < quantity2)
-    throw new Error(`Need ${quantity2} ${itemDef(itemId).name}`);
-  let left = quantity2;
-  const take4 = (stacks) => stacks.map((row) => {
-    if (row.itemId !== itemId || row.instanceId !== void 0 || left <= 0) return row;
-    const used = Math.min(left, row.quantity);
-    left -= used;
-    return { ...row, quantity: row.quantity - used };
-  }).filter((row) => row.quantity > 0);
-  const pouch = gemPouch(state), pouchStacks = isGemPouchItemId(itemId) ? take4(pouch.stacks) : pouch.stacks;
-  const inventory = take4(state.inventory.stacks), bank = take4(state.bank.stacks);
-  return {
-    ...state,
-    account: { ...state.account, gemPouch: { ...pouch, stacks: pouchStacks } },
-    inventory: { ...state.inventory, stacks: inventory },
-    bank: { ...state.bank, stacks: bank }
-  };
-}
-function migrateGemPouch(state) {
-  let pouch = gemPouch(state);
-  const move = (stacks) => stacks.filter((row) => {
-    if (!row || typeof row.itemId !== "string" || row.instanceId !== void 0 || !isGemPouchItemId(row.itemId) || !Number.isSafeInteger(row.quantity) || row.quantity <= 0) return true;
-    const placed = addStack2(pouch.stacks, pouch.capacity, row.itemId, row.quantity);
-    if (!placed) return true;
-    pouch = { ...pouch, stacks: placed };
-    return false;
-  });
-  const inventory = move(state.inventory.stacks), bank = move(state.bank.stacks);
-  const otherCharacters = state.otherCharacters?.map((entry2) => ({ ...entry2, inventory: { ...entry2.inventory, stacks: move(Array.isArray(entry2.inventory?.stacks) ? entry2.inventory.stacks : []) } }));
-  return {
-    ...state,
-    account: { ...state.account, gemPouch: pouch },
-    otherCharacters,
-    inventory: { ...state.inventory, stacks: inventory },
-    bank: { ...state.bank, stacks: bank }
-  };
-}
-
-// ../apps/mobile/src/core/gem-progression-v1.ts
 var GEM_EFFECT_RESONANCE_CAP_V1 = 3;
 var GEM_COMBINE_COSTS_V1 = {
   1: { to: 2, copies: 3, dust: 0, gold: 1500, seconds: 5 * 60, level: 8, xp: 140 },
@@ -51081,7 +51174,7 @@ function newGame(nowMs) {
     exploredRouteIds: [],
     defeatedBossIds: [],
     skills: ["mining", "woodcutting", "fishing", "smithing", "cooking", "herbalism", "alchemy", "exploration", "tailoring", "enchanting", "faith"].map((skillId) => ({ skillId, xp: 0, level: 1 })),
-    account: { gemPouch: { stacks: [], capacity: 30 }, createdCharacterCount: 1, unlockedCharacterSlots: 1, guildMember: false, patronTier: "none", guildBannerId: "world_tree_green", guildProfileFrameId: "classic", guildNameplateId: "classic", guildMotto: "Stronger together.", guildContribution: 0, guildProjectProgress: 0, guildBossHp: 1e5, guildProjectClaimed: false, guildJoinPolicy: "open", guildMinimumLevel: 10, guildApplicationStatus: "none", seasonalContractClaimIds: [] },
+    account: { gemPouch: { stacks: [], capacity: 30 }, gemPouchMigrationDone: true, createdCharacterCount: 1, unlockedCharacterSlots: 1, guildMember: false, patronTier: "none", guildBannerId: "world_tree_green", guildProfileFrameId: "classic", guildNameplateId: "classic", guildMotto: "Stronger together.", guildContribution: 0, guildProjectProgress: 0, guildBossHp: 1e5, guildProjectClaimed: false, guildJoinPolicy: "open", guildMinimumLevel: 10, guildApplicationStatus: "none", seasonalContractClaimIds: [] },
     settings: { language: "en", uiTheme: "obsidian", numberMode: "abbreviated", reduceMotion: false, textScale: 1, autoEatThresholdPct: 40, stopCombatWhenOutOfFood: true, autoTravelQueuedActivities: false, autoJoinWorldChat: true, defaultWorldChat: 1, chatDockLines: 1, chatEmoteTrayIds: [], quickNavDestinations: [...DEFAULT_QUICK_NAV_DESTINATIONS], favoriteItemIds: [], lockedItemIds: [], seenItemIds: [] }
   };
 }
@@ -51180,12 +51273,14 @@ function startCombat(state, monsterId, nowMs, combatTacticId = "balanced", huntG
   if (zoneIdForTarget(monsterId) !== currentRegionId(state)) throw new Error(`Travel to ${m.zone} before fighting ${m.name}`);
   return { ...state, outOfCombatSinceMs: void 0, character: { ...state.character, activityQueuePausedReason: void 0 }, activity: { kind: "combat", targetId: monsterId, combatTacticId: normalizeCombatTactic(combatTacticId), ...huntGoalSnapshot(normalizeHuntGoalId(huntGoalId)) ? { huntGoal: huntGoalSnapshot(normalizeHuntGoalId(huntGoalId)) } : {}, sessionKills: 0, sessionChampions: 0, startedAtMs: nowMs, lastClaimAtMs: nowMs, classFocus: normalizeTrainingFocus(state.character.trainingFocus), classTrainingSnapshot: { faithBlessingId: selectedFaithBlessing(state)?.id }, environment: captureActivityEnvironment(monsterId, nowMs) } };
 }
-function highestEquippedV33Tier(state) {
-  if (!state.character) return 0;
-  return Object.values(state.character.equipment).reduce((highest, itemId) => {
-    const match = typeof itemId === "string" ? /^T([1-9])P_/.exec(itemId) : void 0;
-    return Math.max(highest, match ? Number(match[1]) : 0);
+function regionalEquippedTierGap(state, expectedTier) {
+  if (!state.character || expectedTier <= 0) return 0;
+  const items = Object.values(state.character.equipment).filter((id) => typeof id === "string" && id.length > 0);
+  const gap = items.reduce((total, id) => {
+    const match = /^T([1-9])P_/.exec(id), tier = match ? Number(match[1]) : 0;
+    return total + Math.max(0, expectedTier - tier);
   }, 0);
+  return (gap + Math.max(0, 10 - items.length) * expectedTier) / 10;
 }
 function tryStartNextQueuedActivity(state, nowMs, throwOnFailure = false, index = 0, allowAutoTravel = true) {
   if (!state.character) throw new Error("Create a character first.");
@@ -51364,9 +51459,9 @@ function combatRuntimeDetails(state, monsterId, nowMs = Date.now()) {
   const expected = (m.attack * 1.2 + m.defense * 0.8 + m.level * 2.2) * COMBAT_EXPECTED_SCALE;
   const setOutput = secondary.playerOutputMultiplier * setCombat.penetrationMultiplier;
   const combatCandy = eventCandyUtilityMultiplier(state, nowMs, "combat");
-  const wornTier = highestEquippedV33Tier(state);
-  const expectedTier = regionalMonsterPressureBand(m.id) === "hard" ? m.level >= 22 ? 2 : m.level >= 10 ? 1 : 0 : 0;
-  const tierGap = Math.max(0, expectedTier - wornTier);
+  const regionalGearTier = m.zone === "King's Road" ? 2 : m.zone === "Sunscar" ? m.level >= 40 ? 4 : 3 : m.zone === "Frostmarch" ? m.level >= 70 ? 6 : m.level >= 55 ? 5 : 4 : m.zone === "Ashlands" ? m.level >= 82 ? 7 : 6 : void 0;
+  const expectedTier = regionalGearTier ?? (regionalMonsterPressureBand(m.id) === "hard" ? m.level >= 22 ? 2 : m.level >= 10 ? 1 : 0 : 0);
+  const tierGap = regionalEquippedTierGap(state, expectedTier);
   const progressionSpeedPenalty = tierGap === 0 ? 1 : Math.max(0.62, 1 - tierGap * 0.18);
   const progressionDamagePenalty = tierGap === 0 ? 1 : 1 + tierGap * 0.12;
   const speed = Math.max(COMBAT_SPEED_MIN, Math.min(COMBAT_SPEED_MAX, boostedPower / Math.max(1, expected))) * style.speedMultiplier * tactic.speedMultiplier * modifiers.combatSpeedMultiplier * companion.outputMultiplier * (1 + monsterMastery(state, monsterId).damageBonus) * (1 + effectGems.combat_speed) * setOutput * combatCandy * progressionSpeedPenalty;
@@ -51422,13 +51517,14 @@ function previewStandardActivityRewardRaw(state, effectiveNowMs) {
       const route = explorationRoute(state.activity.targetId);
       if (!route) return { xp: 0, gold: 0, items: [], kills: 0, elapsedSeconds: elapsed };
       const candy = eventCandyWindow(state, "skill");
-      const bankedSeconds = (state.activity.progressFraction ?? 0) * route.seconds;
+      const routeSeconds = route.seconds / mealSpeedFactor(state.character, "noncombat");
+      const bankedSeconds = (state.activity.progressFraction ?? 0) * routeSeconds;
       const totalSeconds = bankedSeconds + elapsed;
-      const actions2 = Math.floor(totalSeconds / route.seconds);
-      const nextProgressFraction = actions2 > 0 ? totalSeconds % route.seconds / route.seconds : totalSeconds / route.seconds;
+      const actions2 = Math.floor(totalSeconds / routeSeconds);
+      const nextProgressFraction = actions2 > 0 ? totalSeconds % routeSeconds / routeSeconds : totalSeconds / routeSeconds;
       let boostedActions = 0;
       for (let i = 1; i <= actions2; i++) {
-        const at = state.activity.lastClaimAtMs + (i * route.seconds - bankedSeconds) * 1e3;
+        const at = state.activity.lastClaimAtMs + (i * routeSeconds - bankedSeconds) * 1e3;
         if (candy && at > candy.startsAtMs && at <= candy.endsAtMs) boostedActions++;
       }
       return { xp: Math.floor((actions2 + 0.1 * boostedActions) * route.xp * characterPermanentMultipliers(state).skillXpMultiplier), gold: 0, items: [], kills: actions2, elapsedSeconds: elapsed, nextProgressFraction, explorationDiscoveries: actions2 && route.unlockMonsterId ? [route.unlockMonsterId] : [] };
@@ -51705,6 +51801,33 @@ function claimActivity(state, nowMs) {
   return { state, reward: reward2 };
 }
 function claimActivitySegment(state, nowMs) {
+  const drill = state.character?.classTraining;
+  const source = state.activity ?? (drill ? { kind: "training", targetId: "class_drills", startedAtMs: drill.lastClaimAtMs, lastClaimAtMs: drill.lastClaimAtMs } : null);
+  const buff = state.character?.activeMealBuff;
+  if (source && buff && buff.remainingSeconds > 0 && Number.isFinite(buff.remainingSeconds) && nowMs > source.lastClaimAtMs) {
+    const cappedEnd = Math.min(nowMs, source.lastClaimAtMs + offlineCapSeconds(state) * 1e3);
+    const cut = source.lastClaimAtMs + buff.remainingSeconds * 1e3;
+    if (cut > source.lastClaimAtMs && cut < cappedEnd) {
+      const first = claimActivitySegmentRaw(state, cut);
+      const elapsedState = commitMealActivityTime(first.state, source, first.reward);
+      const updated = retimeReservedMealCraft(elapsedState, state.character);
+      if (!updated.activity && !updated.character?.classTraining) return { state: updated, reward: first.reward };
+      const nextDrill = updated.character?.classTraining;
+      const nextSource = updated.activity ?? (nextDrill ? { kind: "training", targetId: "class_drills", startedAtMs: nextDrill.lastClaimAtMs, lastClaimAtMs: nextDrill.lastClaimAtMs } : source);
+      const second = claimActivitySegment(updated, cappedEnd);
+      const combined = combineActivityRewards([
+        { activity: source, reward: first.reward, goalReached: !!first.reward.goalReached },
+        { activity: nextSource, reward: second.reward, goalReached: !!second.reward.goalReached }
+      ]);
+      const hasCappedRemainder = nowMs > cappedEnd && !!second.state.activity;
+      const final = hasCappedRemainder ? { ...second.state, activity: { ...second.state.activity, lastClaimAtMs: nowMs } } : second.state;
+      return { state: final, reward: { ...combined, offlineCapReached: hasCappedRemainder || combined.offlineCapReached } };
+    }
+  }
+  const result = claimActivitySegmentRaw(state, nowMs);
+  return { state: commitMealActivityTime(result.state, source, result.reward), reward: result.reward };
+}
+function claimActivitySegmentRaw(state, nowMs) {
   state = reconcileWeeklyOrderRollover(state, nowMs).state;
   if (state.character?.classTraining) {
     const r = settleClassDrills(state, nowMs, offlineCapSeconds(state)), next2 = reconcileCombatCompanionUnlocks(r.state, nowMs);
@@ -51957,13 +52080,17 @@ function sellBankItem(state, itemId, quantity2 = 1) {
   return { ...state, bank: { ...state.bank, stacks, gold: (state.bank.gold ?? 0) + proceeds } };
 }
 function depositToBank(state, itemId, quantity2) {
+  if (!Number.isSafeInteger(quantity2)) throw new Error("Invalid deposit quantity");
   if (quantity2 <= 0) return state;
   const invQty = stackQty2(state.inventory.stacks, itemId);
   if (invQty < quantity2) throw new Error("Not enough items in inventory");
   const removed = consume2(state.inventory.stacks, itemId, quantity2);
+  const remaining = { ...state, inventory: { ...state.inventory, stacks: removed } };
+  const pouchDeposit = tryStoreGemInPouch(remaining, itemId, quantity2);
+  if (pouchDeposit) return pouchDeposit;
   const added = addBounded(state.bank.stacks, entitlementStorageCapacity(state, "bank"), [{ itemId, quantity: quantity2 }]);
-  if (added.overflow.length) throw new Error("Bank is full");
-  return { ...state, inventory: { ...state.inventory, stacks: removed }, bank: { ...state.bank, stacks: added.stacks } };
+  if (added.overflow.length) throw new Error(isGemPouchItemId(itemId) ? "Gem Pouch and Bank are full" : "Bank is full");
+  return { ...remaining, bank: { ...state.bank, stacks: added.stacks } };
 }
 function withdrawFromBank(state, itemId, quantity2) {
   if (quantity2 <= 0) return state;
@@ -55130,6 +55257,7 @@ function upgradeCompanionHousing(state, companionId) {
 }
 
 // ../apps/mobile/src/core/game-commands.ts
+init_meal_buffs();
 var fields = {
   class_training: [],
   class_focus: ["focus"],
@@ -55202,6 +55330,7 @@ var fields = {
   gear_link_legacy: ["instanceId", "from", "stackIndex"],
   food: ["id"],
   eat: ["id"],
+  meal_bonus: ["id"],
   sell: ["id", "quantity"],
   salvage: ["id"],
   bank_sell: ["id", "quantity"],
@@ -55240,6 +55369,8 @@ var fields = {
   quest: ["id"],
   seasonal: ["period", "id"],
   settings: ["settings"],
+  inventory_preference: ["id", "kind", "enabled"],
+  inventory_seen_all: [],
   profile: ["profileIconId", "profileTitle", "profileBackgroundId", "profileBorderId", "selectedCosmeticPetId"],
   event_daily: [],
   event_cache: [],
@@ -55374,7 +55505,7 @@ function executeGameCommand(previous, value, now, options = {}) {
     settle();
     state = stopActivity(state, now);
   };
-  const settlementFreeCommand = command.type === "queue_add" && a.handoffGoal === void 0 || command.type === "queue_remove" || command.type === "queue_move" || command.type === "queue_clear" || command.type === "queue_start" || command.type === "daily_supplies_claim" || command.type === "roster_delete" || command.type === "event_accept" || command.type.startsWith("qa_");
+  const settlementFreeCommand = command.type === "queue_add" && a.handoffGoal === void 0 || command.type === "queue_remove" || command.type === "queue_move" || command.type === "queue_clear" || command.type === "queue_start" || command.type === "daily_supplies_claim" || command.type === "roster_delete" || command.type === "inventory_preference" || command.type === "inventory_seen_all" || command.type === "event_accept" || command.type.startsWith("qa_");
   const activityStartCommand = ["start", "explore", "class_training", "faith_practice", "alchemy_start", "processing_start"].includes(command.type);
   if (state.character && command.type !== "create" && !settlementFreeCommand) {
     if (activityStartCommand) settleAndStop();
@@ -55718,6 +55849,12 @@ function executeGameCommand(previous, value, now, options = {}) {
     case "eat":
       state = eatFood(state, a.id === void 0 ? void 0 : text(a, "id"));
       break;
+    case "meal_bonus": {
+      const prior = state.character;
+      state = retimeReservedMealCraft(eatMealForBonus(state, text(a, "id")), prior);
+      message = "Meal bonus activated";
+      break;
+    }
     case "sell":
       state = sellItem(state, text(a, "id"), a.quantity === void 0 ? 1 : integer(a, "quantity"));
       break;
@@ -55864,6 +56001,25 @@ function executeGameCommand(previous, value, now, options = {}) {
     case "settings":
       state = { ...state, settings: validateGameSettings(a.settings) };
       break;
+    case "inventory_preference": {
+      const id = text(a, "id", 120), kind = oneOf(a.kind, ["lock", "favorite", "seen"]);
+      if (typeof a.enabled !== "boolean" || kind === "seen" && a.enabled !== true) throw new Error("invalid_inventory_preference");
+      itemDef(id);
+      const key = kind === "lock" ? "lockedItemIds" : kind === "favorite" ? "favoriteItemIds" : "seenItemIds";
+      const max = kind === "seen" ? 1e3 : 100;
+      const selected2 = new Set(state.settings[key] ?? []);
+      if (a.enabled) selected2.add(id);
+      else selected2.delete(id);
+      if (selected2.size > max) throw new Error("inventory_preference_limit");
+      state = { ...state, settings: { ...state.settings, [key]: [...selected2] } };
+      break;
+    }
+    case "inventory_seen_all": {
+      const seen = new Set(state.settings.seenItemIds ?? []);
+      for (const stack of [...state.inventory.stacks, ...state.bank.stacks]) if (stack.quantity > 0) seen.add(stack.itemId);
+      state = { ...state, settings: { ...state.settings, seenItemIds: [...seen].slice(-1e3) } };
+      break;
+    }
     case "profile": {
       if (!state.character) throw new Error("character_required");
       const patch = {};
@@ -57148,6 +57304,76 @@ function guildBankDepositHandler(services2) {
   };
 }
 
+// online/guild-skills-read.ts
+var responseHeaders2 = { "Content-Type": "application/json", "Cache-Control": "no-store" };
+var json5 = (value, status = 200) => new Response(JSON.stringify(value), { status, headers: responseHeaders2 });
+function validSnapshot(value) {
+  if (!value || typeof value !== "object") return false;
+  const s = value;
+  return typeof s.guildLevel === "number" && Number.isSafeInteger(s.totalSkillPoints) && Number.isSafeInteger(s.spentSkillPoints) && Number.isSafeInteger(s.skillPoints) && Array.isArray(s.nodes) && Array.isArray(s.bank);
+}
+function guildSkillsReadHandler(services2) {
+  return async (request) => {
+    if (request.method !== "GET") return json5({ error: "method_not_allowed" }, 405);
+    const token = request.headers.get("authorization")?.match(/^Bearer (\S+)$/i)?.[1];
+    if (!token) return json5({ error: "auth_required" }, 401);
+    const accountId = await services2.authenticate(token);
+    if (!accountId) return json5({ error: "invalid_session" }, 401);
+    try {
+      const snapshot2 = await services2.rpc("guild_skill_snapshot_server_v1", { p_account_id: accountId });
+      if (!validSnapshot(snapshot2)) return json5({ error: "invalid_guild_skill_snapshot" }, 503);
+      return json5(snapshot2);
+    } catch (reason) {
+      const code = reason instanceof Error ? reason.message : "";
+      if (code === "guild_membership_required") return json5({ error: code }, 403);
+      return json5({ error: "guild_skill_snapshot_unavailable" }, 503);
+    }
+  };
+}
+function guildSkillsUpgradeHandler(services2) {
+  return async (request) => {
+    if (request.method !== "POST") return json5({ error: "method_not_allowed" }, 405);
+    const token = request.headers.get("authorization")?.match(/^Bearer (\S+)$/i)?.[1];
+    if (!token) return json5({ error: "auth_required" }, 401);
+    const accountId = await services2.authenticate(token);
+    if (!accountId) return json5({ error: "invalid_session" }, 401);
+    const raw2 = await request.text();
+    if (raw2.length > 1024) return json5({ error: "request_too_large" }, 413);
+    let input;
+    try {
+      input = JSON.parse(raw2);
+    } catch {
+      return json5({ error: "invalid_json" }, 400);
+    }
+    if (!input || typeof input !== "object" || Array.isArray(input)) return json5({ error: "invalid_request" }, 400);
+    const body = input;
+    if (Object.keys(body).length !== 2 || typeof body.skillId !== "string" || !/^[a-z][a-z0-9_]{1,63}$/.test(body.skillId) || typeof body.requestKey !== "string" || !/^[A-Za-z0-9_-]{8,128}$/.test(body.requestKey))
+      return json5({ error: "invalid_guild_skill_upgrade" }, 400);
+    try {
+      const result = await services2.rpc(
+        "guild_skill_upgrade_server_v1",
+        { p_account_id: accountId, p_skill_id: body.skillId, p_request_key: body.requestKey }
+      );
+      if (!result || typeof result.alreadyProcessed !== "boolean" || result.skillId !== body.skillId || !Number.isSafeInteger(result.rank) || !Array.isArray(result.costs))
+        return json5({ error: "invalid_guild_skill_receipt" }, 503);
+      return json5(result);
+    } catch (reason) {
+      const code = reason instanceof Error ? reason.message : "";
+      if (code === "guild_skill_not_released") return json5({ error: code }, 409);
+      if ([
+        "guild_membership_required",
+        "guild_skill_not_leader",
+        "guild_skill_max_rank",
+        "guild_skill_request_conflict",
+        "character_required"
+      ].includes(code)) return json5({ error: code }, 409);
+      if (["insufficient_skill_points", "insufficient_guild_bank_materials"].includes(code)) return json5({ error: code }, 422);
+      if (code === "unknown_guild_skill") return json5({ error: code }, 404);
+      return json5({ error: "guild_skill_upgrade_unavailable" }, 503);
+    }
+  };
+}
+
 // online/edge.ts
 var url = Deno.env.get("SUPABASE_URL");
 var serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
@@ -57194,6 +57420,9 @@ var guildShopEventClaim = guildShopEventClaimHandler(guildShopServices);
 var guildConstructionDonation = guildConstructionDonationHandler(guildShopServices);
 var guildBankDeposit = guildBankDepositHandler(guildShopServices);
 var guildShopWeeklyClaim = guildShopWeeklyClaimHandler(guildShopServices);
+var guildSkillsServices = { authenticate: services.authenticate, rpc: services.rpc };
+var guildSkillsRead = guildSkillsReadHandler(guildSkillsServices);
+var guildSkillsUpgrade = guildSkillsUpgradeHandler(guildSkillsServices);
 Deno.serve(withReleaseGate(async (request) => {
   const route = new URL(request.url);
   if (route.pathname.includes("/regional-combat")) return regionalCombat(request);
@@ -57204,6 +57433,10 @@ Deno.serve(withReleaseGate(async (request) => {
     if (route.searchParams.get("action") === "bank-deposit") return guildBankDeposit(request);
     if (route.searchParams.get("action") === "weekly-claim") return guildShopWeeklyClaim(request);
     return request.method === "POST" ? guildShopClaim(request) : guildShop(request);
+  }
+  if (route.searchParams.get("view") === "guild-skills") {
+    if (route.searchParams.get("action") === "upgrade") return guildSkillsUpgrade(request);
+    return guildSkillsRead(request);
   }
   return gameplay(request);
 }, releasePolicyLoader(url, anonKey)));

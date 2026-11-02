@@ -26,7 +26,7 @@ ok(hub.includes("hasParty?[...VISIBLE_TABS,'chat']:VISIBLE_TABS"),'Chat tab must
 ok(hub.includes("const VISIBLE_TABS:SocialHubTab[]=['party','guild']"),'Guild remains visible regardless of Party status');
 ok(social.includes("tab==='party'&&partyLocked?<PartyLockedNotice"),'Locked Party view must show only the locked notice');
 ok(party.includes("if(!inParty&&props.partyUnlocked===false)return"),'Locked Party hub must not render recruitment or other Party controls');
-ok(social.includes("tab==='chat'?(canUsePartyChat?<View style={s.chatContent}><SectionGuide")&&social.includes("<OnlinePartyChat expanded/></View>:social.loading?"),'Chat must have its own full-height view with optional contextual guidance');
+ok(social.includes("tab==='chat'?(canUsePartyChat?<View style={s.chatContent}><OnlinePartyChat")&&social.includes("<OnlinePartyChat expanded/></View>:social.loading?"),'Chat must have its own full-height view with optional contextual guidance');
 ok(social.includes("if(tab==='chat'&&!canUsePartyChat&&!social.loading){setTab('party')"),'Party disband exits Chat safely without disrupting a pending Chat deep link');
 ok(!social.includes('PARTY_SOCIAL_TUTORIAL_STEPS')&&!social.includes('setHelp('),'Duplicate Social help controls must be removed');
 ok(!social.includes('onFriends')&&!social.includes('heroStatus'),'Generic Friends toolbar and redundant hero must be removed');
@@ -86,7 +86,7 @@ ok(guildLanguage.includes('Gilde Home → Leden')&&guildLanguage.includes('Hall 
 
 ok(companion.includes('COMPANION_TOUR_STEPS.find(step=>step.section===section)')&&companion.includes('area="companions"'),'Companion Roster, Training, Sanctuary, Trials, Expeditions and Codex must use independent tab tips');
 ok(party.includes('area="social-party"')&&party.includes("inParty?section:'solo'"),'My Party and Recruitment should not share the same guide acknowledgement');
-ok(social.includes('area="social" section="Chat"')&&social.includes('area="social" section="Guild"'),'Social Chat and Guild must have separate optional tips');
+ok(!social.includes('area="social" section="Chat"')&&!social.includes('area="social" section="Guild"'),'Chat and Guild must not reintroduce unnecessary tutorial headers');
 ok(guildScreen.includes('area="guild"')&&guildScreen.includes("Activities/${activityView}"),'Guild Activities subviews require independent tips');
 ok(app.includes('MAIN_TAB_GUIDANCE')&&app.includes('area="main" section={tab}')&&app.includes('showReplay={false}'),'Main tabs must show only a one-time compact hint, not a mandatory tutorial');
 ok(sectionGuide.includes('if(!expanded&&!showReplay)return null')&&sectionGuide.includes('void store.complete(scope,area,section)'),'A player can dismiss each tab guide without blocking gameplay');

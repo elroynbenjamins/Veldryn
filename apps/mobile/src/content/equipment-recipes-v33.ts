@@ -38,7 +38,9 @@ const timerRange:Record<string,{base:number;min:number;max:number}>={
 export const EQUIPMENT_FORGE_GOLD_MULTIPLIER=3;
 export const EQUIPMENT_CRAFT_GOLD_MULTIPLIER=EQUIPMENT_FORGE_GOLD_MULTIPLIER;
 const tierGold:Record<string,number>={T1:120,T2:420,T3:900,T4:1800,T5:3500,T6:10000,T7:18000,T8:30000,T9:50000};
-const tierXp:Record<string,number>={T1:120,T2:250,T3:450,T4:700,T5:1100,T6:1600,T7:2200,T8:2900,T9:3800};
+// More early profession XP helps Smithing/Tailoring reach T2 without
+// lowering level gates, reducing costs, or speeding up late-tier training.
+const tierXp:Record<string,number>={T1:165,T2:290,T3:450,T4:700,T5:1100,T6:1600,T7:2200,T8:2900,T9:3800};
 const infusionByTier:Record<string,{itemId:string;quantity:number}>={
   T1:{itemId:'VERDANT_BINDING_RESIN',quantity:1},T2:{itemId:'VERDANT_BINDING_RESIN',quantity:1},
   T3:{itemId:'OATHGLASS_SOLVENT',quantity:1},T4:{itemId:'OATHGLASS_SOLVENT',quantity:2},

@@ -1,5 +1,5 @@
 {
   "extends": "./tsconfig.json",
-  "compilerOptions": {"rootDir":"..","outDir":"dist/online","lib":["ES2022","DOM"]},
+  "compilerOptions": {"rootDir":"..","outDir":"dist/online","lib":["ES2022","DOM"],"module":"NodeNext","moduleResolution":"NodeNext"},
   "include":["online/**/*.ts"]
 }

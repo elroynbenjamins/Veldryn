@@ -16,6 +16,7 @@ import {GameState,ClassId,RewardBundle,ItemStack,GearSlot,BodyPresentation,Gathe
 import {activityQueueCapacity,activityQueueRegion,activityQueueLocationIssue,normalizeActivityQueue,activityCanAdvanceCondition,queuedActivityReadiness} from './activity-queue';
 import type {ActiveActivity} from './types';
 import {combineActivityRewards} from './activity-rewards';
+import {commitMealActivityTime,mealSpeedFactor,retimeReservedMealCraft} from './meal-buffs';
 import {characterLevelFromXp,levelFromXp,totalXpAtLevel} from './progression';
 import {random01} from './rng';
 import {characterNameError,normalizeCharacterName} from './character-creation';
@@ -28,6 +29,7 @@ import {gatheringEventRewards,timedEventRewards,applyEventDiscoveries,applyEvent
 import {DEFAULT_QUICK_NAV_DESTINATIONS} from './quick-navigation';
 import {unlockedCharacterSlots} from './account-roster';
 import {accountEntitlementBenefits,entitlementStorageCapacity} from './account-entitlements';
+import {isGemPouchItemId,tryStoreGemInPouch} from './gem-pouch';
 import {gatheringPacing} from './gathering-tools';
 import {gatheringToolDef} from '../content/gathering-tools';
 import {currentRegionId} from './combat-region';
@@ -90,7 +92,7 @@ export const REGIONAL_COMBAT_PRESSURE:Readonly<Record<string,number>>={Greenfiel
 export const REGIONAL_HUNT_DAMAGE_TUNING:Readonly<Record<string,number>>={Greenfields:.36,Silverbrook:.25,'Ironwood Forest':.40,'Old Mines':.55,"King's Road":.42,Ashlands:.40};
 export type RegionalMonsterPressureBand='entry'|'standard'|'hard';
 export const REGIONAL_MONSTER_PRESSURE_MULTIPLIER:Readonly<Record<RegionalMonsterPressureBand,number>>={entry:.92,standard:1,hard:1.10};
-export const REGIONAL_FOOD_SUSTAIN_TARGETS:Readonly<Record<string,{foodPerHourMin:number;foodPerHourMax:number}>>={Greenfields:{foodPerHourMin:3,foodPerHourMax:5},Silverbrook:{foodPerHourMin:4,foodPerHourMax:7},'Ironwood Forest':{foodPerHourMin:4,foodPerHourMax:7},'Old Mines':{foodPerHourMin:2,foodPerHourMax:5},"King's Road":{foodPerHourMin:2,foodPerHourMax:5},Sunscar:{foodPerHourMin:2,foodPerHourMax:5},Frostmarch:{foodPerHourMin:1.75,foodPerHourMax:5},Ashlands:{foodPerHourMin:1.75,foodPerHourMax:4}};
+export const REGIONAL_FOOD_SUSTAIN_TARGETS:Readonly<Record<string,{foodPerHourMin:number;foodPerHourMax:number}>>={Greenfields:{foodPerHourMin:3,foodPerHourMax:5},Silverbrook:{foodPerHourMin:4,foodPerHourMax:7},'Ironwood Forest':{foodPerHourMin:4,foodPerHourMax:7},'Old Mines':{foodPerHourMin:2,foodPerHourMax:5},"King's Road":{foodPerHourMin:2,foodPerHourMax:8},Sunscar:{foodPerHourMin:2,foodPerHourMax:7},Frostmarch:{foodPerHourMin:1.75,foodPerHourMax:6.5},Ashlands:{foodPerHourMin:1.75,foodPerHourMax:5.5}};
 /** Minimum incoming pressure is applied before healing. Even overgeared hunts
  * drain unhealed players; a sufficiently strong healer can sustain easy enemies. */
 export const REGIONAL_MIN_ATTRITION_HP_PER_HOUR:Readonly<Record<string,number>>={Greenfields:80,Silverbrook:120,'Ironwood Forest':180,'Old Mines':180,"King's Road":230,Sunscar:330,Frostmarch:520,Ashlands:620};
@@ -133,7 +135,7 @@ export function newGame(nowMs:number):GameState{return {
   quests:QUESTS.map((q,i)=>({questId:q.id,status:i===0?'active':'locked',progress:0 as number})) as any,
   unlockedMonsterIds:['MOSS_RAT'],exploredRouteIds:[],defeatedBossIds:[],
   skills:['mining','woodcutting','fishing','smithing','cooking','herbalism','alchemy','exploration','tailoring','enchanting','faith'].map(skillId=>({skillId:skillId as any,xp:0,level:1})),
-  account:{gemPouch:{stacks:[],capacity:30},createdCharacterCount:1,unlockedCharacterSlots:1,guildMember:false,patronTier:'none',guildBannerId:'world_tree_green',guildProfileFrameId:'classic',guildNameplateId:'classic',guildMotto:'Stronger together.',guildContribution:0,guildProjectProgress:0,guildBossHp:100000,guildProjectClaimed:false,guildJoinPolicy:'open',guildMinimumLevel:10,guildApplicationStatus:'none',seasonalContractClaimIds:[]},
+  account:{gemPouch:{stacks:[],capacity:30},gemPouchMigrationDone:true,createdCharacterCount:1,unlockedCharacterSlots:1,guildMember:false,patronTier:'none',guildBannerId:'world_tree_green',guildProfileFrameId:'classic',guildNameplateId:'classic',guildMotto:'Stronger together.',guildContribution:0,guildProjectProgress:0,guildBossHp:100000,guildProjectClaimed:false,guildJoinPolicy:'open',guildMinimumLevel:10,guildApplicationStatus:'none',seasonalContractClaimIds:[]},
   settings:{language:'en',uiTheme:'obsidian',numberMode:'abbreviated',reduceMotion:false,textScale:1,autoEatThresholdPct:40,stopCombatWhenOutOfFood:true,autoTravelQueuedActivities:false,autoJoinWorldChat:true,defaultWorldChat:1,chatDockLines:1,chatEmoteTrayIds:[],quickNavDestinations:[...DEFAULT_QUICK_NAV_DESTINATIONS],favoriteItemIds:[],lockedItemIds:[],seenItemIds:[]}
 }}
 
@@ -201,13 +203,16 @@ export function startCombat(state:GameState,monsterId:string,nowMs:number,combat
   return {...state,outOfCombatSinceMs:undefined,character:{...state.character,activityQueuePausedReason:undefined},activity:{kind:'combat',targetId:monsterId,combatTacticId:normalizeCombatTactic(combatTacticId),...(huntGoalSnapshot(normalizeHuntGoalId(huntGoalId))?{huntGoal:huntGoalSnapshot(normalizeHuntGoalId(huntGoalId))}:{}),sessionKills:0,sessionChampions:0,startedAtMs:nowMs,lastClaimAtMs:nowMs,classFocus:normalizeTrainingFocus(state.character.trainingFocus),classTrainingSnapshot:{faithBlessingId:selectedFaithBlessing(state)?.id},environment:captureActivityEnvironment(monsterId,nowMs)}}
 }
 
-/** Returns the highest crafted V33 tier currently worn (starter/novice gear is 0). */
-function highestEquippedV33Tier(state:GameState){
-  if(!state.character)return 0;
-  return Object.values(state.character.equipment).reduce((highest,itemId)=>{
-    const match=typeof itemId==='string'?/^T([1-9])P_/.exec(itemId):undefined;
-    return Math.max(highest,match?Number(match[1]):0);
+/** Average missing tier across all 10 gear slots, including empty/novice slots.
+ * One high-tier item must not bypass the entire regional readiness check. */
+function regionalEquippedTierGap(state:GameState,expectedTier:number){
+  if(!state.character||expectedTier<=0)return 0;
+  const items=Object.values(state.character.equipment).filter((id):id is string=>typeof id==='string'&&id.length>0);
+  const gap=items.reduce((total,id)=>{
+    const match=/^T([1-9])P_/.exec(id),tier=match?Number(match[1]):0;
+    return total+Math.max(0,expectedTier-tier);
   },0);
+  return (gap+Math.max(0,10-items.length)*expectedTier)/10;
 }
 
 function tryStartNextQueuedActivity(state:GameState,nowMs:number,throwOnFailure=false,index=0,allowAutoTravel=true):GameState{
@@ -398,9 +403,15 @@ function combatRuntimeDetails(state:GameState,monsterId:string,nowMs=Date.now())
   // Regional elites are the first real reason to finish the current tier. A
   // player can still scout them in starter gear, but the missing tier creates
   // a clear time and sustain cost instead of making early equipment optional.
-  const wornTier=highestEquippedV33Tier(state);
-  const expectedTier=regionalMonsterPressureBand(m.id)==='hard'?(m.level>=22?2:m.level>=10?1:0):0;
-  const tierGap=Math.max(0,expectedTier-wornTier);
+  // Gear preparation is measured over the whole loadout, not the best item.
+  // Region-entry gear matters even when combat power reaches the speed cap.
+  // Never require a tier before its character-level floor is attainable.
+  const regionalGearTier=m.zone==="King's Road"?2:
+    m.zone==='Sunscar'?(m.level>=40?4:3):
+    m.zone==='Frostmarch'?(m.level>=70?6:m.level>=55?5:4):
+    m.zone==='Ashlands'?(m.level>=82?7:6):undefined;
+  const expectedTier=regionalGearTier??(regionalMonsterPressureBand(m.id)==='hard'?(m.level>=22?2:m.level>=10?1:0):0);
+  const tierGap=regionalEquippedTierGap(state,expectedTier);
   const progressionSpeedPenalty=tierGap===0?1:Math.max(.62,1-tierGap*.18);
   const progressionDamagePenalty=tierGap===0?1:1+tierGap*.12;
   const speed=Math.max(COMBAT_SPEED_MIN,Math.min(COMBAT_SPEED_MAX,boostedPower/Math.max(1,expected)))*style.speedMultiplier*tactic.speedMultiplier*modifiers.combatSpeedMultiplier*companion.outputMultiplier*(1+monsterMastery(state,monsterId).damageBonus)*(1+effectGems.combat_speed)*setOutput*combatCandy*progressionSpeedPenalty;
@@ -482,11 +493,12 @@ function previewStandardActivityRewardRaw(state:GameState,effectiveNowMs:number)
     if(state.activity.kind==='exploration'){
       const route=explorationRoute(state.activity.targetId);if(!route)return {xp:0,gold:0,items:[],kills:0,elapsedSeconds:elapsed};
       const candy=eventCandyWindow(state,'skill');
-      const bankedSeconds=(state.activity.progressFraction??0)*route.seconds;
+      const routeSeconds=route.seconds/mealSpeedFactor(state.character,'noncombat');
+      const bankedSeconds=(state.activity.progressFraction??0)*routeSeconds;
       const totalSeconds=bankedSeconds+elapsed;
-      const actions=Math.floor(totalSeconds/route.seconds);
-      const nextProgressFraction=actions>0?(totalSeconds%route.seconds)/route.seconds:(totalSeconds/route.seconds);
-      let boostedActions=0;for(let i=1;i<=actions;i++){const at=state.activity.lastClaimAtMs+(i*route.seconds-bankedSeconds)*1000;if(candy&&at>candy.startsAtMs&&at<=candy.endsAtMs)boostedActions++;}
+      const actions=Math.floor(totalSeconds/routeSeconds);
+      const nextProgressFraction=actions>0?(totalSeconds%routeSeconds)/routeSeconds:(totalSeconds/routeSeconds);
+      let boostedActions=0;for(let i=1;i<=actions;i++){const at=state.activity.lastClaimAtMs+(i*routeSeconds-bankedSeconds)*1000;if(candy&&at>candy.startsAtMs&&at<=candy.endsAtMs)boostedActions++;}
       return {xp:Math.floor((actions+.1*boostedActions)*route.xp*characterPermanentMultipliers(state).skillXpMultiplier),gold:0,items:[],kills:actions,elapsedSeconds:elapsed,nextProgressFraction,explorationDiscoveries:actions&&route.unlockMonsterId?[route.unlockMonsterId]:[]};
     }
     const g=[...GATHERING,...HERB_NODES].find(x=>x.id===state.activity!.targetId);if(!g)return {xp:0,gold:0,items:[],kills:0,elapsedSeconds:elapsed};
@@ -719,7 +731,41 @@ export function claimActivity(state:GameState,nowMs:number):{state:GameState;rew
  return {state,reward};
 }
 
-function claimActivitySegment(state:GameState,nowMs:number){
+/** Respect meal duration even if an entire AFK window is claimed at once.
+ * Each side of the expiry is settled with the correct bonuses and no duplicate rewards.
+ */
+function claimActivitySegment(state:GameState,nowMs:number):{state:GameState;reward:RewardBundle}{
+ // Class drills have a timer but no ActiveActivity; treat their interval as eligible
+ // without inventing a persisted activity or changing the class-drill save shape.
+ const drill=state.character?.classTraining;
+ const source=state.activity??(drill?{kind:'training' as const,targetId:'class_drills',startedAtMs:drill.lastClaimAtMs,lastClaimAtMs:drill.lastClaimAtMs}:null);
+ const buff=state.character?.activeMealBuff;
+ if(source&&buff&&buff.remainingSeconds>0&&Number.isFinite(buff.remainingSeconds)&&nowMs>source.lastClaimAtMs){
+  const cappedEnd=Math.min(nowMs,source.lastClaimAtMs+offlineCapSeconds(state)*1000);
+  const cut=source.lastClaimAtMs+buff.remainingSeconds*1000;
+  if(cut>source.lastClaimAtMs&&cut<cappedEnd){
+   const first=claimActivitySegmentRaw(state,cut);
+   const elapsedState=commitMealActivityTime(first.state,source,first.reward);
+   const updated=retimeReservedMealCraft(elapsedState,state.character);
+   if(!updated.activity&&!updated.character?.classTraining)return {state:updated,reward:first.reward};
+   const nextDrill=updated.character?.classTraining;
+   const nextSource=updated.activity??(nextDrill?{kind:'training' as const,targetId:'class_drills',startedAtMs:nextDrill.lastClaimAtMs,lastClaimAtMs:nextDrill.lastClaimAtMs}:source);
+   const second=claimActivitySegment(updated,cappedEnd);
+   const combined=combineActivityRewards([
+    {activity:source,reward:first.reward,goalReached:!!first.reward.goalReached},
+    {activity:nextSource,reward:second.reward,goalReached:!!second.reward.goalReached},
+   ]);
+   // A capped AFK interval cannot be reclaimed simply by repeating the claim.
+   const hasCappedRemainder=nowMs>cappedEnd&&!!second.state.activity;
+   const final=hasCappedRemainder?{...second.state,activity:{...second.state.activity!,lastClaimAtMs:nowMs}}:second.state;
+   return {state:final,reward:{...combined,offlineCapReached:hasCappedRemainder||combined.offlineCapReached}};
+  }
+ }
+ const result=claimActivitySegmentRaw(state,nowMs);
+ return {state:commitMealActivityTime(result.state,source,result.reward),reward:result.reward};
+}
+function claimActivitySegmentRaw(state:GameState,nowMs:number){
+
   state=reconcileWeeklyOrderRollover(state,nowMs).state;
   if(state.character?.classTraining){const r=settleClassDrills(state,nowMs,offlineCapSeconds(state)),next=reconcileCombatCompanionUnlocks(r.state,nowMs);return {state:next,reward:withCompanionUnlocks(r.reward,state,next)};}
   if(state.activity?.kind==='faith'){
@@ -916,12 +962,20 @@ export function sellBankItem(state:GameState,itemId:string,quantity=1):GameState
   return {...state,bank:{...state.bank,stacks,gold:(state.bank.gold??0)+proceeds}};
 }
 export function depositToBank(state:GameState,itemId:string,quantity:number):GameState{
+  if(!Number.isSafeInteger(quantity))throw new Error('Invalid deposit quantity');
   if(quantity<=0)return state;
   const invQty=stackQty(state.inventory.stacks,itemId);if(invQty<quantity)throw new Error('Not enough items in inventory');
+  // One atomic state mutation: gems always target the shared account pouch first.
+  // An existing pouch stack can grow even when all pouch slots are occupied.
   const removed=consume(state.inventory.stacks,itemId,quantity);
+  const remaining={...state,inventory:{...state.inventory,stacks:removed}};
+  const pouchDeposit=tryStoreGemInPouch(remaining,itemId,quantity);
+  if(pouchDeposit)return pouchDeposit;
+  // If the pouch has no room for this new gem type, use the shared Bank.
+  // If both are full, throw before returning any state so no items are lost.
   const added=addBounded(state.bank.stacks,entitlementStorageCapacity(state,'bank'),[{itemId,quantity}]);
-  if(added.overflow.length)throw new Error('Bank is full');
-  return {...state,inventory:{...state.inventory,stacks:removed},bank:{...state.bank,stacks:added.stacks}};
+  if(added.overflow.length)throw new Error(isGemPouchItemId(itemId)?'Gem Pouch and Bank are full':'Bank is full');
+  return {...remaining,bank:{...state.bank,stacks:added.stacks}};
 }
 export function withdrawFromBank(state:GameState,itemId:string,quantity:number):GameState{
   if(quantity<=0)return state;

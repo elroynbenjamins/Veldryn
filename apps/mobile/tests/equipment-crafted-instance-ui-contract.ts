@@ -35,7 +35,8 @@ ok(commands.includes("if(options.randomRoll===undefined)throw new Error('trusted
 ok(commands.includes("result.result.qualityProc?' · rarity upgrade'")&&commands.includes('result.results.filter(row=>row.qualityProc)'),'Authoritative claim messages must surface rarity upgrades and count quality procs');
 ok(app.includes('setForgeResults(result.forgeResults)')&&app.includes('ForgeRarityRevealModal'),'Mobile online claims must present authoritative structured Forge rarity results');
 ok(app.includes('setForgeResults([claimed.result])'),'Mobile offline claims must use the same structured Forge rarity result path');
-ok(forgeFeedback.includes('EXCEPTIONAL FORGE RESULT')&&forgeFeedback.includes('qualityProc'),'Quality procs must use the dedicated rarity-aware Forge reveal');
+ok(forgeFeedback.includes('EXCEPTIONAL FORGE RESULT')&&forgeFeedback.includes("result.rarity==='legendary'||result.rarity==='mythic'")&&forgeFeedback.includes('qualityProc'),
+ 'Legendary/Mythic Forge rewards must use a rarity-aware reveal, with upgrade context when relevant');
 const forgeQueueUi=read('src/components/EquipmentCraftQueuePanel.tsx');
 const feedback=read('src/components/ActionFeedback.tsx');
 ok(forgeQueueUi.includes('Rarity revealed on claim')&&!forgeQueueUi.includes('effectiveOwnedGearRarity(state,job.outputItemId)'),'Unclaimed Forge results must not borrow rarity from previously owned gear');

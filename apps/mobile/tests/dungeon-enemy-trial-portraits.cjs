@@ -19,7 +19,7 @@ for(const [name,trial] of aliases){
  assert(trialNames.has(trial),name+' must map to a real named Trial NPC, never generic fallback');
  assert.equal(name,name.toLowerCase(),'Dungeon aliases are normalized keys');
 }
-for(const creature of ['sporeling','thornling','strangling vine','briar hound','echo bat','orrery scarab','mirage jackal','amberglass asp','rimewolf','icefang hound','blackglass beetle','crucible imp','ash en colossus']){
+for(const creature of ['briar husk','sporeling','thornling','strangling vine','briar hound','echo bat','orrery scarab','mirage jackal','amberglass asp','rimewolf','icefang hound','blackglass beetle','crucible imp','ashen colossus']){
  assert(!aliases.has(creature),creature+' has no matching humanoid Trial portrait');
 }
 for(const [oldName,trialName] of [

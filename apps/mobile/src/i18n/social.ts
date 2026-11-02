@@ -6,6 +6,21 @@ import {createTranslator,type TranslationParams} from './translator';
 
 // Columns are German, Spanish, Dutch, Italian and French; keys are the English catalog.
 export const socialTranslationRows = {
+ "LIVE DUNGEON · REMATCH":["LIVE-DUNGEON · REVANCHE","MAZMORRA EN VIVO · REVANCHA","LIVE-DUNGEON · HERKANSING","DUNGEON LIVE · RIVINCITA","DONJON LIVE · REVANCHE"],
+ "Keep the party together":["Gruppe zusammenhalten","Mantener al grupo unido","Houd de groep bij elkaar","Mantieni unito il gruppo","Garder le groupe ensemble"],
+ "Close rematch":["Rückkampf schließen","Cerrar revancha","Herkansing sluiten","Chiudi rivincita","Fermer la revanche"],
+ "Run this dungeon again with a fresh route, current equipment, and the same four adventurers.":["Starte diesen Dungeon erneut mit neuer Route, aktueller Ausrüstung und denselben vier Abenteurern.","Repite esta mazmorra con una ruta nueva, tu equipo actual y los mismos cuatro aventureros.","Speel deze dungeon opnieuw met een nieuwe route, huidige uitrusting en dezelfde vier avonturiers.","Rigioca il dungeon con un nuovo percorso, equipaggiamento attuale e gli stessi quattro avventurieri.","Rejouez ce donjon avec un nouveau parcours, votre équipement actuel et les quatre mêmes aventuriers."],
+ "Party ready check":["Bereitschaftsabfrage","Confirmación del grupo","Gereedmelding groep","Conferma del gruppo","Confirmation du groupe"],
+ "Party member":["Gruppenmitglied","Miembro del grupo","Groepslid","Membro del gruppo","Membre du groupe"],
+ "Waiting":["Warten","Esperando","Wachten","In attesa","En attente"],
+ "Checking the original party roster…":["Ursprüngliche Gruppe wird geprüft…","Comprobando el grupo original…","Oorspronkelijke groep controleren…","Verifica del gruppo originale…","Vérification du groupe d'origine…"],
+ "All four members approved a new dungeon run.":["Alle vier Mitglieder haben einen neuen Lauf bestätigt.","Los cuatro miembros han aprobado una nueva partida.","Alle vier leden hebben een nieuwe dungeonrun goedgekeurd.","Tutti e quattro hanno approvato una nuova spedizione.","Les quatre membres ont accepté une nouvelle expédition."],
+ "This rematch is no longer available. You can find a new Live party instead.":["Dieser Rückkampf ist nicht mehr verfügbar. Suche stattdessen eine neue Live-Gruppe.","Esta revancha ya no está disponible. Puedes buscar otro grupo.","Deze herkansing is niet meer beschikbaar. Zoek eventueel een nieuwe Live-groep.","Questa rivincita non è più disponibile. Cerca un nuovo gruppo Live.","Cette revanche n'est plus disponible. Cherchez un nouveau groupe Live."],
+ "Everyone must agree. Leaving or declining never starts a run. This ready check expires automatically.":["Alle müssen zustimmen. Bei Ablehnung oder Verlassen startet kein Lauf. Die Abfrage läuft automatisch ab.","Todos deben aceptar. Rechazar o salir no inicia la partida. La confirmación caduca automáticamente.","Iedereen moet akkoord gaan. Afwijzen of vertrekken start nooit een run. De gereedmelding verloopt automatisch.","Tutti devono accettare. Uscire o rifiutare non avvia la partita. La conferma scade automaticamente.","Les quatre doivent accepter. Quitter ou refuser ne lance rien. La confirmation expire automatiquement."],
+ "Enter new dungeon":["Neuen Dungeon betreten","Entrar en la nueva mazmorra","Nieuwe dungeon betreden","Entra nel nuovo dungeon","Entrer dans le nouveau donjon"],
+ "I'm ready":["Ich bin bereit","Estoy listo","Ik ben klaar","Sono pronto","Je suis prêt"],
+ "Your vote is saved. Waiting for your party…":["Deine Stimme wurde gespeichert. Warten auf die Gruppe…","Tu voto se ha guardado. Esperando al grupo…","Je stem is opgeslagen. Wachten op de groep…","Voto salvato. In attesa del gruppo…","Votre vote est enregistré. En attente du groupe…"],
+ "Decline rematch":["Rückkampf ablehnen","Rechazar revancha","Herkansing weigeren","Rifiuta rivincita","Refuser la revanche"],
  // Dungeon formation, rewards, Live rematches and server-side clarity.
  "EXPEDITION CLEARED":["EXPEDITION ABGESCHLOSSEN","EXPEDICIÓN COMPLETADA","EXPEDITIE VOLTOOID","SPEDIZIONE COMPLETATA","EXPÉDITION TERMINÉE"],
  "Victory secured!":["Sieg gesichert!","¡Victoria conseguida!","Overwinning behaald!","Vittoria conquistata!","Victoire remportée !"],

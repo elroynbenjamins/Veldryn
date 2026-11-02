@@ -12,15 +12,13 @@ import {companionTeamPower} from '../../../../backend/src/server/companions/team
 import {GameButton} from './GameButton';
 import {ResourceIcon} from './ResourceIcon';
 import {GameModalSurface,GameModalHeader} from './GameModalSurface';
-import {radii,spacing,typography,type ThemeColors} from '../theme/theme';
+import {radii,typography,type ThemeColors} from '../theme/theme';
 import {useGameTheme} from '../theme/ThemeContext';
-import {CompanionDisclosure,CompanionTeamPortraits,companionRarityBorder} from './CompanionPresentation';
+import {CompanionDisclosure,companionRarityBorder} from './CompanionPresentation';
 import {companionArtSource} from '../theme/companion-art';
-import {COMPANION_AFFINITIES,companionAffinity} from '../core/companion-affinities';
 import {companionExpeditionStaminaCost} from '../core/companion-provisions';
 import {companionAutoStaminaSelection,companionStaminaFoodOptions,companionStaminaSelectionTotal,type CompanionStaminaFoodSelection} from '../core/companion-stamina-selection';
 
-const roleGlyph={damage:'⚔',tank:'◆',support:'✦'};
 function duration(ms:number){const h=Math.round(ms/3600000);return h+'h';}
 function remaining(end:string,now:number){const sec=Math.max(0,Math.ceil((Date.parse(end)-now)/1000)),h=Math.floor(sec/3600),m=Math.ceil(sec%3600/60);return h?h+'h '+m+'m':m+'m';}
 
@@ -109,8 +107,8 @@ export function CompanionExpeditionsV50Panel({state,now,onCommand}:{state:GameSt
    const next=Math.max(0,Math.min(option.owned,Math.floor(quantity)));
    setFoodSelection(current=>[...current.filter(item=>item.itemId!==itemId),...(next?[{itemId,quantity:next}]:[])]);
  };
- const cost=(row:typeof COMPANION_MISSIONS[number])=><View style={s.costLine}><ResourceIcon resourceId="gold" size={17}/><Text style={s.value}>{fmt(row.costs.gold)}</Text>{Object.entries(row.costs.materials??{}).map(([id,quantity])=><View key={id} style={s.inline}><ResourceIcon resourceId={id} size={17}/><Text style={s.value}>{quantity}</Text></View>)}</View>;
- const rewards=(row:typeof COMPANION_MISSIONS[number])=><View style={s.rewardWrap}>
+ const cost=(row:(typeof COMPANION_MISSIONS)[number])=><View style={s.costLine}><ResourceIcon resourceId="gold" size={17}/><Text style={s.value}>{fmt(row.costs.gold)}</Text>{Object.entries(row.costs.materials??{}).map(([id,quantity])=><View key={id} style={s.inline}><ResourceIcon resourceId={id} size={17}/><Text style={s.value}>{quantity}</Text></View>)}</View>;
+ const rewards=(row:(typeof COMPANION_MISSIONS)[number])=><View style={s.rewardWrap}>
   <Text style={s.rewardText}>{fmt(row.baseRewards.companionEssence)} {t('Essence')}</Text>
   <Text style={s.rewardText}>{fmt(row.baseRewards.companionXp)} {t('Companion XP')}</Text>
   <Text style={s.rewardText}>{fmt(row.baseRewards.bondXp)} {t('Bond XP')}</Text>
@@ -130,7 +128,8 @@ export function CompanionExpeditionsV50Panel({state,now,onCommand}:{state:GameSt
    {assignments.map(row=>{
     const def=COMPANION_MISSIONS.find(item=>item.id===row.missionId),completed=row.status==='completed'||Date.parse(row.endsAt)<=now;
     const total=Math.max(1,Date.parse(row.endsAt)-Date.parse(row.startedAt));
-    const percentage=Math.max(0,Math.min(100,(now-Date.parse(row.startedAt))/total*100));
+    const elapsed=now-Date.parse(row.startedAt);
+    const percentage=Number.isFinite(elapsed)&&Number.isFinite(total)?Math.max(0,Math.min(100,elapsed/total*100)):0;
     return <View key={row.assignmentId} style={[s.assignment,completed&&s.claimPanel]}>
      <View style={s.between}><View style={s.flex}><Text style={[s.eyebrow,completed&&s.good]}>{completed?t('EXPEDITION COMPLETE'):t('IN PROGRESS')}</Text><Text numberOfLines={2} style={s.itemTitle}>{def?.name??row.missionId}</Text></View>
       {completed?<GameButton compact title={t('Claim')} loading={busy&&pendingClaim.current===row.assignmentId} disabled={busy} onPress={()=>claim(row.assignmentId)}/>:<Text style={s.timer}>{remaining(row.endsAt,now)}</Text>}</View>
@@ -141,11 +140,11 @@ export function CompanionExpeditionsV50Panel({state,now,onCommand}:{state:GameSt
   <View style={s.headingRow}><View style={s.flex}><Text style={s.sectionTitle}>{t('Mission Board')}</Text><Text style={s.meta}>{t('Choose a mission for your spare companions.')}</Text></View><Text style={s.meta}>{t('Weekly Missions')}</Text></View>
   <View style={s.filters}>{([{id:'all',title:t('All')},{id:'short',title:t('Short')+' · 2–4h'},{id:'long',title:t('Long')+' · 6h+'}] as const).map(option=><Pressable key={option.id} accessibilityRole="button" accessibilityState={{selected:filter===option.id}} onPress={()=>setFilter(option.id)} style={({pressed})=>[s.filter,filter===option.id&&s.filterSelected,pressed&&s.pressed]}><Text style={[s.filterText,filter===option.id&&s.filterTextSelected]}>{option.title}</Text></Pressable>)}</View>
   <View style={s.missionList}>{visible.map(row=>{
-   const selected=row.id===mission?.id,locked=pens<row.minimumPenLevel;
+   const selected=row.id===mission?.id,locked=pens<(row.minimumPenLevel??1);
    return <Pressable key={row.id} accessibilityRole="button" accessibilityState={{selected,disabled:busy}} accessibilityLabel={row.name+' · '+duration(row.durationMs)} disabled={busy} onPress={()=>selectMission(row.id)} style={({pressed})=>[s.missionRow,selected&&s.selectedMission,pressed&&s.pressed]}>
     <View style={s.between}><Text style={[s.itemTitle,s.flex]} numberOfLines={2}>{selected?'◉  ':'○  '}{row.name}</Text><Text style={s.duration}>{duration(row.durationMs)}</Text></View>
     <View style={s.between}><Text style={s.meta}>{row.minCompanions}–{row.maxCompanions} {t('companions')} · {t('Power')} {fmt(row.recommendedPower)}</Text><Text style={[s.rewardHint,locked&&s.warning]}>{locked?t('Locked'):fmt(row.baseRewards.companionEssence)+' '+t('Essence')}</Text></View>
-    <View style={s.between}>{cost(row)}{locked?<Text style={s.warning}>{t('Pens Lv {value0}',{value0:row.minimumPenLevel})}</Text>:null}</View>
+    <View style={s.between}>{cost(row)}{locked?<Text style={s.warning}>{t('Pens Lv {value0}',{value0:row.minimumPenLevel??1})}</Text>:null}</View>
    </Pressable>;
   })}</View>
   {mission?<><View style={s.headingRow}><Text style={s.sectionTitle}>{t('Prepare Expedition')}</Text><Text style={[s.status,check.ok?s.good:s.warning]}>{check.ok?'✓ '+t('Team ready'):t('Not ready')}</Text></View>
@@ -189,7 +188,7 @@ export function CompanionExpeditionsV50Panel({state,now,onCommand}:{state:GameSt
        <View style={s.flex}><Text style={s.itemTitle}>{def.name}</Text><Text style={s.meta}>{label(def.role)} · {t('Lv {value0}',{value0:view.owned[id].level})}{!available?' · '+(id===equipped?t('Equipped'):t('Busy')):''}</Text></View><Text style={selected?s.good:s.meta}>{selected?'✓':'+'}</Text>
       </Pressable>;
     })}{!ownedIds.length?<Text style={s.meta}>{t('Unlock companions before sending expeditions.')}</Text>:null}
-   </ScrollView><View style={s.modalActions}><GameButton compact tone="secondary" title={t('Use suggested team')} disabled={busy||!suggestion?.ready} onPress={()=>suggestion?.ready&&setTeam(suggestion.ids)}/><GameButton title={t('Done')} disabled={busy} onPress={()=>setTeamPickerOpen(false)}/></View></View>
+   </ScrollView><Text style={[s.meta,check.ok?s.good:s.warning]}>{check.ok?t('Team ready'):companionError(language,check.reason)}</Text><View style={s.modalActions}><GameButton compact tone="secondary" title={t('Use suggested team')} disabled={busy||!suggestion?.ready} onPress={()=>suggestion?.ready&&setTeam(suggestion.ids)}/><GameButton title={t('Done')} disabled={busy} onPress={()=>setTeamPickerOpen(false)}/></View></View>
   </GameModalSurface>
   <GameModalSurface visible={foodOpen} onClose={()=>setFoodOpen(false)} reduceMotion={state.settings.reduceMotion} surfaceStyle={{maxHeight:windowHeight*.82}}>
    <GameModalHeader title={t('Expedition Supplies')} onClose={()=>setFoodOpen(false)}/>
@@ -204,7 +203,7 @@ export function CompanionExpeditionsV50Panel({state,now,onCommand}:{state:GameSt
   <GameModalSurface visible={confirmOpen} presentation="dialog" dismissOnBackdrop={!busy} onClose={()=>!busy&&setConfirmOpen(false)} reduceMotion={state.settings.reduceMotion}>
    <GameModalHeader title={t('Confirm Expedition')} onClose={()=>!busy&&setConfirmOpen(false)} closeDisabled={busy}/>
    <View style={s.modalContent}><Text style={s.itemTitle}>{mission.name}</Text><Text style={s.meta}>{duration(mission.durationMs)} · {safeTeam.length} {t('companions')} · {requiredStamina} {t('Stamina')}</Text>
-    {rewards(mission)}<View style={s.divider}/><View style={s.between}><Text style={s.eyebrow}>{t('COST')}</Text>{cost(mission)}</View><View style={s.modalActions}><GameButton tone="secondary" title={t('Cancel')} disabled={busy} onPress={()=>setConfirmOpen(false)}/><GameButton title={t('Start Expedition')} loading={busy} disabled={!canSend} onPress={start}/></View>
+    {rewards(mission)}<View style={s.divider}/><View style={s.between}><Text style={s.eyebrow}>{t('COST')}</Text>{cost(mission)}</View>{message?<Text accessibilityLiveRegion="polite" style={s.warning}>{companionMessage(language,message)}</Text>:null}<View style={s.modalActions}><GameButton tone="secondary" title={t('Cancel')} disabled={busy} onPress={()=>setConfirmOpen(false)}/><GameButton title={t('Start Expedition')} loading={busy} disabled={!canSend} onPress={start}/></View>
    </View>
   </GameModalSurface>
   <GameModalSurface visible={!!claimedReward} presentation="dialog" onClose={()=>setClaimedReward(null)} reduceMotion={state.settings.reduceMotion}>
@@ -225,5 +224,5 @@ function makeStyles(C:ThemeColors){return StyleSheet.create({
  activeList:{gap:8},assignment:{borderRadius:radii.md,borderColor:C.line,borderWidth:1,backgroundColor:C.panel,padding:11,gap:8},claimPanel:{borderColor:C.good,backgroundColor:C.goodSurface},quiet:{padding:11,borderRadius:radii.md,borderWidth:1,borderColor:C.line,backgroundColor:C.panel},between:{flexDirection:'row',alignItems:'center',justifyContent:'space-between',gap:8},progress:{height:6,borderRadius:6,overflow:'hidden',backgroundColor:C.bg},progressFill:{height:'100%',borderRadius:6,backgroundColor:C.good},filters:{flexDirection:'row',gap:6},filter:{flexGrow:1,alignItems:'center',justifyContent:'center',minHeight:44,paddingHorizontal:7,borderRadius:radii.sm,borderWidth:1,borderColor:C.line,backgroundColor:C.panel},filterSelected:{borderColor:C.selectionLine,backgroundColor:C.selection},filterText:{fontSize:11,fontWeight:'800',color:C.muted,textAlign:'center'},filterTextSelected:{color:C.text},pressed:{opacity:.78},
  missionList:{gap:7},missionRow:{padding:11,borderWidth:1,borderColor:C.line,borderRadius:radii.md,backgroundColor:C.panel,gap:7},selectedMission:{borderColor:C.accent,backgroundColor:C.accentSurface},duration:{fontSize:11,fontWeight:'900',color:C.accent,borderWidth:1,borderColor:C.line,borderRadius:5,paddingVertical:3,paddingHorizontal:7,overflow:'hidden'},rewardHint:{fontSize:11,fontWeight:'800',color:C.good},costLine:{flexDirection:'row',alignItems:'center',gap:5,flexWrap:'wrap'},inline:{flexDirection:'row',alignItems:'center',gap:5,minWidth:0},prepareCard:{padding:12,borderRadius:radii.lg,borderWidth:1,borderColor:C.line,backgroundColor:C.panel,gap:10},divider:{height:1,backgroundColor:C.line},status:{fontSize:11,fontWeight:'800'},portraitRow:{flexDirection:'row',alignItems:'center',gap:7},portraitBox:{height:44,width:44,borderWidth:1,borderStyle:'solid',borderColor:C.line,borderRadius:9,backgroundColor:C.panel2,alignItems:'center',justifyContent:'center',overflow:'hidden'},portrait:{width:42,height:42},emptyPortrait:{fontSize:22,fontWeight:'500',color:C.muted},
  rewardWrap:{flexDirection:'row',flexWrap:'wrap',gap:6},rewardText:{fontSize:11,color:C.good,fontWeight:'800',borderRadius:6,borderWidth:1,borderColor:C.line,backgroundColor:C.goodSurface,paddingVertical:5,paddingHorizontal:7},materials:{gap:6},details:{padding:10,gap:8},chips:{flexDirection:'row',flexWrap:'wrap',gap:6},chip:{fontSize:11,color:C.text,borderColor:C.line,borderWidth:1,borderRadius:20,paddingHorizontal:9,paddingVertical:6,overflow:'hidden'},message:{fontSize:12,textAlign:'center',padding:8},
- modalContent:{paddingHorizontal:14,paddingBottom:18,gap:11},modalScroll:{paddingBottom:8,gap:5},modalActions:{flexDirection:'row',gap:8,alignItems:'center',justifyContent:'flex-end',flexWrap:'wrap',paddingTop:7},companionRow:{minHeight:60,flexDirection:'row',alignItems:'center',gap:10,paddingHorizontal:8,paddingVertical:6,borderRadius:radii.sm,borderWidth:1,borderColor:'transparent'},chosenCompanion:{borderColor:C.selectionLine,backgroundColor:C.selection},unavailable:{opacity:.45},companionPortrait:{width:44,height:44,borderRadius:8,borderWidth:1,backgroundColor:C.panelRaised},foodRow:{flexDirection:'row',alignItems:'center',gap:8,minHeight:61,borderBottomWidth:1,borderBottomColor:C.line},stepper:{flexDirection:'row',alignItems:'center',gap:4},stepperButton:{height:44,width:44,alignItems:'center',justifyContent:'center',borderWidth:1,borderColor:C.line,borderRadius:radii.sm,backgroundColor:C.panel2},stepperText:{fontSize:20,fontWeight:'800',color:C.accent},stepperNumber:{fontSize:14,fontWeight:'800',minWidth:24,textAlign:'center',color:C.text}
+ modalContent:{paddingHorizontal:14,paddingBottom:Math.max(18,12),gap:12},modalScroll:{paddingBottom:12,gap:5},modalActions:{flexDirection:'row',gap:8,alignItems:'center',justifyContent:'flex-end',flexWrap:'wrap',paddingTop:10},companionRow:{minHeight:60,flexDirection:'row',alignItems:'center',gap:10,paddingHorizontal:8,paddingVertical:6,borderRadius:radii.sm,borderWidth:1,borderColor:'transparent'},chosenCompanion:{borderColor:C.selectionLine,backgroundColor:C.selection},unavailable:{opacity:.45},companionPortrait:{width:44,height:44,borderRadius:8,borderWidth:1,backgroundColor:C.panelRaised},foodRow:{flexDirection:'row',alignItems:'center',gap:8,minHeight:61,borderBottomWidth:1,borderBottomColor:C.line},stepper:{flexDirection:'row',alignItems:'center',gap:4},stepperButton:{height:44,width:44,alignItems:'center',justifyContent:'center',borderWidth:1,borderColor:C.line,borderRadius:radii.sm,backgroundColor:C.panel2},stepperText:{fontSize:20,fontWeight:'800',color:C.accent},stepperNumber:{fontSize:14,fontWeight:'800',minWidth:24,textAlign:'center',color:C.text}
 });}

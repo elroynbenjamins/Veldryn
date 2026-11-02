@@ -27,7 +27,7 @@ export function SectionGuide({scope,area,section,guide,translate,showReplay=true
  },[scope,area,identity]);
  useEffect(()=>{setOpen(null);setMore(false)},[section]);
  // Existing headers must remain visible while guide completion loads.
- if(!scope||!section||saved?.identity!==identity)return header??null;
+ if(!scope||!section||saved?.identity!==identity)return header?<>{header}</>:null;
  const seen=saved.seen.includes(section);
  const expanded=!seen||open?.identity===identity&&open?.section===section;
  const close=()=>{

@@ -287,6 +287,7 @@ let historicalSaleBlocked=false;try{executeGameCommand(historicalEnhanced,{type:
 ok(historicalSaleBlocked,'An old enchanted copy cannot be sold until explicitly unlocked');
 const permittedEnhanced=executeGameCommand(historicalEnhanced,{type:'gear_lock',args:{instanceId:firstCopy,locked:false}},1301).state;
 ok(craftedGearInstances(permittedEnhanced).find(row=>row.id===firstCopy)?.enhancedSaleUnlocked===true,'Manual unlock records the deliberate enhanced-sale decision');
+ok(normalizeSave(permittedEnhanced).account.craftedGearInstances?.find(row=>row.id===firstCopy)?.enhancedSaleUnlocked===true,'Explicit enhanced-sale consent must survive save normalization');
 const soldEnhancedCopy=executeGameCommand(permittedEnhanced,{type:'gear_sell',args:{instanceId:firstCopy}},1302).state;
 ok(craftedGearInstances(soldEnhancedCopy).every(row=>row.id!==firstCopy),'Explicitly unlocked upgraded and gemmed exact copy can be sold');
 ok(craftedGearInstances(soldEnhancedCopy).some(row=>row.id===ownedIds[1])&&soldEnhancedCopy.inventory.stacks.some(row=>row.instanceId===ownedIds[1]),'Disposing enhanced copy must preserve the unrelated physical duplicate');

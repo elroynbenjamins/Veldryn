@@ -19,6 +19,17 @@ type Slot=CoopRunView['roleSlots'][number];
 
 function seconds(value:number){return `${Math.max(0,value/1000).toFixed(1)}s`;}
 function elapsedClock(value:number){const whole=Math.max(0,Math.floor(value/1000));return `${String(Math.floor(whole/60)).padStart(2,"0")}:${String(whole%60).padStart(2,"0")}`;}
+/** Only the timer text rerenders once per second: the combat arena and animated
+ * sprites remain mounted and do not recompute their layouts on a clock tick. */
+function BattleElapsedSeconds({battleKey,serverElapsedMs,active}:{battleKey:string;serverElapsedMs?:number;active:boolean}){
+ const [tick,setTick]=useState(Date.now());
+ const anchor=useRef({key:battleKey,elapsedMs:serverElapsedMs??0,localAt:Date.now()});
+ if(anchor.current.key!==battleKey)anchor.current={key:battleKey,elapsedMs:serverElapsedMs??0,localAt:Date.now()};
+ useEffect(()=>{if(serverElapsedMs===undefined)return;anchor.current={key:battleKey,elapsedMs:serverElapsedMs,localAt:Date.now()};setTick(Date.now());},[battleKey,serverElapsedMs]);
+ useEffect(()=>{if(!active)return;const timer=setInterval(()=>setTick(Date.now()),1000);return()=>clearInterval(timer);},[battleKey,active]);
+ return <Text>{elapsedClock(anchor.current.elapsedMs+Math.max(0,tick-anchor.current.localAt))}</Text>;
+}
+
 type Contribution={id:string;damage:number;healing:number;damageTaken:number;interrupts:number};
 function compactMetric(value:number){
  const safe=Math.max(0,value);
@@ -137,15 +148,9 @@ export function DungeonCombatStage({run,enemyLabel,boss=false,seasonal=false,eve
  const fallbackEnemyState=playbackCombatantState(replay,cueIndex,fallbackEnemyCombatant?.id),fallbackEnemyStatuses=playbackCombatantStatuses(replay,cueIndex,fallbackEnemyCombatant?.id);
  const complete=Boolean(replay&&!pending&&(!cues.length||cueIndex>=cues.length-1));
  // Elapsed wall time only, never expose the scheduled server resolution duration.
- const [clockTick,setClockTick]=useState(Date.now());
  const battleClockKey=`${run.runId}:${replay?.nodeId??'waiting'}`;
- const clockAnchor=useRef({key:battleClockKey,elapsedMs:pending?.elapsedMs??0,localAt:Date.now()});
- if(clockAnchor.current.key!==battleClockKey)clockAnchor.current={key:battleClockKey,elapsedMs:pending?.elapsedMs??0,localAt:Date.now()};
- useEffect(()=>{if(!pending)return;clockAnchor.current={key:battleClockKey,elapsedMs:pending.elapsedMs,localAt:Date.now()};setClockTick(Date.now());},[battleClockKey,pending?.elapsedMs]);
- useEffect(()=>{if(!replay||complete)return;const timer=setInterval(()=>setClockTick(Date.now()),1000);return()=>clearInterval(timer);},[battleClockKey,Boolean(replay),complete]);
- const elapsedMs=clockAnchor.current.elapsedMs+Math.max(0,clockTick-clockAnchor.current.localAt);
  const completionHandler=useRef(onPresentationComplete);completionHandler.current=onPresentationComplete;
- useEffect(()=>{if(!complete||!completionHandler.current)return;const timer=setTimeout(()=>completionHandler.current?.(),1200);return()=>clearTimeout(timer);},[complete,battleClockKey]);
+ useEffect(()=>{if(!complete||!completionHandler.current)return;const timer=setTimeout(()=>completionHandler.current?.(),reduceMotion?0:1200);return()=>clearTimeout(timer);},[complete,battleClockKey,reduceMotion]);
  const recent=cues.slice(Math.max(0,cueIndex-5),cueIndex+1);
  const contributionRows=complete&&replay?(ordered.map(slot=>{const combatant=playbackCombatant(replay,slot.memberId??slot.name),value=(replay.contributions??[]).find(row=>row.id===combatant?.id);return value?{slot,value}:undefined;}).filter((row):row is {slot:Slot;value:Contribution}=>Boolean(row))):[];
  const actorDirection=actorIsParty===false?1:-1,targetDirection=targetIsParty===false?-1:1;
@@ -181,7 +186,7 @@ export function DungeonCombatStage({run,enemyLabel,boss=false,seasonal=false,eve
   {replay?<View style={s.replayPanel}>
    {complete?<CombatOutcomeMoment outcome={replay.reason==='victory'?'victory':replay.reason==='wipe'?'defeat':'timeout'} title={replay.reason==='victory'?st('Encounter cleared'):replay.reason==='wipe'?st('Party defeated'):st('Encounter timed out')} detail={`${replay.cues.length} combat events`} reduceMotion={reduceMotion}/>:null}
    <View style={s.replayHead}><View style={s.grow}><Text style={s.replayKicker}>{complete?st("ENCOUNTER RECAP"):st("LIVE COMBAT")}</Text><Text accessibilityLiveRegion="polite" style={s.replayCurrent}>{currentCue?playbackCueLabel(currentCue):pending?st("Battle in progress"):replay.reason==='victory'?st("Encounter cleared"):replay.reason==='wipe'?st("Party defeated"):st("Encounter timed out")}</Text></View><StateChip label={currentCue?.type.toUpperCase()??(pending?'LIVE':replay.reason.toUpperCase())} tone={currentCue?playbackCueTone(currentCue):pending?'selected':replay.reason==='victory'?'success':replay.reason==='wipe'?'danger':'warning'}/></View>
-   <View style={s.replayMeta}><Text style={s.replayTime}>{st("Elapsed")} · {elapsedClock(elapsedMs)}</Text></View>
+   <View style={s.replayMeta}><Text style={s.replayTime}>{st("Elapsed")} · <BattleElapsedSeconds battleKey={battleClockKey} serverElapsedMs={pending?.elapsedMs} active={!complete}/></Text></View>
    {contributionRows.length?<View style={s.contributionPanel}><View style={s.contributionHead}><Text style={s.contributionKicker}>{st("PARTY CONTRIBUTION")}</Text><Text style={s.contributionHint}>{st("Encounter totals")}</Text></View>{contributionRows.map(({slot,value})=><View key={slot.memberId??slot.name} style={s.contributionRow}><View style={[s.contributionIdentity,{width:`${layout.contributionIdentityWidthPct}%` as `${number}%`,minWidth:layout.contributionIdentityMinWidth}]}><Text style={s.contributionRole}>{roleShort(slot.role)}</Text><Text numberOfLines={1} style={s.contributionName}>{slot.name}</Text></View><Text style={s.contributionStats}>{contributionSummary(slot.role,value)}</Text></View>)}</View>:null}
    {complete&&recent.length?<Pressable accessibilityRole="button" accessibilityLabel={showLog?st("Hide combat battle log"):st("Show combat battle log")} accessibilityState={{expanded:showLog}} onPress={()=>setShowLog(value=>!value)} style={({pressed})=>[s.logToggle,pressed&&s.controlPressed]}><Text style={s.logToggleText}>{showLog?st("Hide battle log"):st("Battle log")}</Text><Text style={s.logToggleMeta}>{showLog?'▲':`${recent.length} recent ▼`}</Text></Pressable>:null}
    {recent.length&&(!complete||showLog)?<View style={s.log}>{recent.map((cue,index)=><View key={`${cue.atMs}-${cue.type}-${index}`} style={s.logRow}><Text style={s.logTime}>{seconds(cue.atMs)}</Text><Text numberOfLines={2} style={s.logCopy}>{playbackCueLabel(cue)}</Text></View>)}</View>:!recent.length?<Text style={s.note}>{pending?st("Battle in progress"):st("No event details were saved for this encounter.")}</Text>:null}

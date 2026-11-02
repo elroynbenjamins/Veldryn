@@ -356,7 +356,7 @@ ok(activityOverview.includes('showDeleteDetails')&&activityOverview.includes('Re
 const mobileRouter=read('App.tsx');
 ok(mobileRouter.includes("tab==='AdventurersJournal'&&<AdventurersJournalScreen")&&mobileRouter.includes("tab==='Bestiary'&&<BestiaryScreen")&&mobileRouter.includes("tab==='WorldMilestones'&&<WorldMilestoneFeedScreen"),"Read-only progression and World Milestones routes must remain available for a future re-enable");
 ok(account.includes("items:['Activity','Profile','NewUnlocks','AdventurersJournal'"),"Journal and Bestiary must stay discoverable in Account");
-ok(account.includes("items:['Social','Friends','Guild','Arena','Rankings']}")&&!account.includes("items:['Social','Friends','Guild','Arena','Rankings','WorldMilestones']"),"World Milestones button is hidden from Account Social & Competition until re-enabled");
+ok(account.includes("items:['Party','Recruitment','Friends','Guild','Arena','Rankings']}")&&!account.includes("items:['Party','Recruitment','Friends','Guild','Arena','Rankings','WorldMilestones']"),"World Milestones button is hidden from Account Social & Competition until re-enabled");
 ok(mobileRouter.includes("RANKINGS_RELEASED&&tab==='Rankings'")&&!mobileRouter.includes("tab==='Achievements'&&"),"Unfinished Achievements and Rankings must remain release-gated");
 const rewardsScreen=read('src/screens/RewardsInboxScreen.tsx');
 ok(rewardsScreen.includes("accountText(language,text,params)")&&rewardsScreen.includes("label={a('Claim reward')}")&&rewardsScreen.includes("a('Claimed history')"),"Rewards Inbox must translate claims, tabs and feedback");

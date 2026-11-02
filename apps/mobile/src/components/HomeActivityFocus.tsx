@@ -1,4 +1,4 @@
-import {useMemo,useState} from 'react';
+import {useEffect,useMemo,useState} from 'react';
 import {Pressable,ScrollView,StyleSheet,Text,View} from 'react-native';
 import type {ActiveActivity,ActivityKind,RewardBundle} from '../core/types';
 import type {IdleResourceRate} from '../core/idle-activity-insights';
@@ -27,8 +27,11 @@ const unitNames:Record<ActivityKind,string>={combat:'kills',mining:'actions',woo
 export function HomeActivityFocus(props:Props){
  const {gl,language}=useGameplayText();
  const C=useGameTheme(),s=useMemo(()=>styles(C),[C]);
- const [detailOpen,setDetailOpen]=useState(false),[stopOpen,setStopOpen]=useState(false);
+ const [detailOpen,setDetailOpen]=useState(false),[stopOpen,setStopOpen]=useState(false),[stopFor,setStopFor]=useState<string|null>(null);
  const {kind,preview,activity,rates,resourceRate}=props;
+ const activityKey=activity.kind+':'+activity.targetId+':'+activity.startedAtMs;
+ useEffect(()=>{if(stopFor&&stopFor!==activityKey){setStopOpen(false);setStopFor(null)}},[stopFor,activityKey]);
+ const requestStop=()=>{setStopFor(activityKey);setStopOpen(true)};
  const insights=useMemo(()=>idleActivityInsights({kind,rates,preview,resource:resourceRate,maxHp:props.maxHp}),[kind,rates,preview,resourceRate,props.maxHp]);
  const formatted=(n:number)=>formatGameNumber(Math.max(0,Math.round(n)),props.numberMode??'abbreviated',language);
  const count=kind==='combat'?preview.kills:kind==='alchemy'||kind==='processing'?(preview.craftingActions??0):kind==='faith'?(preview.faithActions??0):kind==='training'?(preview.trainingActions??0):preview.kills;
@@ -41,7 +44,7 @@ export function HomeActivityFocus(props:Props){
  const monster=kind==='combat'?MONSTERS.find(row=>row.id===activity.targetId):undefined;
  const iconId=(kind==='processing'?'cooking':kind==='training'?'combat':kind==='faith'?'faith':kind) as Parameters<typeof ActivityArtwork>[0]['id'];
  const stop=preview.stoppedReason?activityStopPresentation(preview.stoppedReason):undefined;
- const act=()=>{setStopOpen(false);setDetailOpen(false);props.onStop()};
+ const act=()=>{if(stopFor!==activityKey){setStopOpen(false);return;}setStopOpen(false);setStopFor(null);setDetailOpen(false);props.onStop()};
  return <>
   <View style={[s.card,stopped&&s.stopped]}>
    <View style={s.top}><Text style={s.eyebrow}>{gl('CURRENT ACTIVITY')}</Text>
@@ -63,12 +66,12 @@ export function HomeActivityFocus(props:Props){
     <View style={s.metric}><Text style={s.metricLabel}>{gl('AFK LEFT')}</Text><Text style={s.metricValue}>{reserve>0?reserve.toFixed(1)+'h':'0h'}</Text></View>
    </View>
    <View style={s.bottom}><View style={s.flex}><Text style={s.reward}>{formatted(count)} {gl(unitNames[kind])} {gl('ready')}</Text><Text style={s.sub}>+{formatted(preview.xp)} XP{resourceRate?' · '+resourceRate.name:''}</Text></View><Pressable accessibilityRole="button" accessibilityLabel={gl('More activity details')} onPress={()=>setDetailOpen(true)} style={s.detailLink}><Text style={s.detailText}>{gl('Details')} ›</Text></Pressable></View>
-   <View style={s.actions}><View style={s.flex}><GameButton title={canCollect?gl('Collect rewards'):gl('Rewards building…')} disabled={!canCollect} onPress={()=>{setDetailOpen(false);props.onClaim()}}/></View><View style={s.secondary}><GameButton title={gl('Stop')} tone="secondary" onPress={()=>setStopOpen(true)}/></View></View>
+   <View style={s.actions}><View style={s.flex}><GameButton title={canCollect?gl('Collect rewards'):gl('Rewards building…')} disabled={!canCollect} onPress={()=>{setDetailOpen(false);props.onClaim()}}/></View><View style={s.secondary}><GameButton title={gl('Stop')} tone="secondary" onPress={()=>requestStop()}/></View></View>
   </View>
   {detailOpen?<GameModalSurface visible onClose={()=>setDetailOpen(false)} reduceMotion={props.reduceMotion} surfaceStyle={s.sheet}>
    <GameModalHeader eyebrow={gl('CURRENT ACTIVITY')} title={gl(props.title)} onClose={()=>setDetailOpen(false)}/>
    <ScrollView style={s.scroll} contentContainerStyle={s.content} showsVerticalScrollIndicator={false} showsHorizontalScrollIndicator={false}>
-    <ActivityCard {...props} onClaim={()=>{setDetailOpen(false);props.onClaim()}} onStop={()=>{setDetailOpen(false);setStopOpen(true)}}/>
+    <ActivityCard {...props} onClaim={()=>{setDetailOpen(false);props.onClaim()}} onStop={()=>{setDetailOpen(false);requestStop()}}/>
     {insights.combat?.lowProjectedHp?<Text style={[s.warning,{color:C.warning}]}>{gl('Projected health is low. Check food before continuing.')}</Text>:null}
    </ScrollView>
   </GameModalSurface>:null}

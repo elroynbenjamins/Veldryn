@@ -81,11 +81,11 @@ export function PartyHubPanel(props: PartyHubPanelProps) {
   if(!inParty&&props.partyUnlocked===false)return <View style={styles.content}><PartyLockedNotice level={props.partyUnlockLevel}/></View>;
   // When the user is in a party, offer the segmented switch; otherwise jump directly to Find.
   return <View style={styles.content}>
-    {inParty?<View style={styles.browseTabs}><BrowseChip label="My party" selected={section==='party'} onPress={()=>setSection('party')}/><BrowseChip label="Recruitment" selected={section==='find'} onPress={()=>setSection('find')}/></View>:null}
     <SectionGuide scope={props.accountId} area="social-party" section={inParty?section:'solo'} translate={value=>socialLabel(language,value)} guide={inParty&&section==='party'?
       {title:'My Party',body:'Your members and weekly rewards are here. Claim ready rewards without opening extra menus.',detail:'Use Party options for invitations or to leave. Open Recruitment to find new members.'}:
       inParty?{title:'Recruitment',body:'Find players or publish an advert for your Party here.',detail:'Search and filters narrow the list. Your adverts and matching players appear below.'}:
-      {title:'Find or create a Party',body:'Create a Party or browse recruiting groups here.',detail:'Choose your role before creating a Party. You can also post that you are looking for one.'}}/>
+      {title:'Find or create a Party',body:'Create a Party or browse recruiting groups here.',detail:'Choose your role before creating a Party. You can also post that you are looking for one.'}} header={inParty?<View style={styles.browseTabs}><BrowseChip label="My party" selected={section==='party'} onPress={()=>setSection('party')}/><BrowseChip label="Recruitment" selected={section==='find'} onPress={()=>setSection('find')}/></View>:undefined}/>
+
 
 
     {inParty && section==='party' && <View style={styles.panel}>

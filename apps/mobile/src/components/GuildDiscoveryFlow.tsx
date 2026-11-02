@@ -1,5 +1,5 @@
 import {useEffect,useMemo,useRef,useState} from 'react';
-import {ActivityIndicator,Pressable,ScrollView,StyleSheet,Text,View} from 'react-native';
+import {ActivityIndicator,Pressable,ScrollView,StyleSheet,Text,View,type ScrollViewInstance} from 'react-native';
 import {useGameTheme} from '../theme/ThemeContext';
 import {spacing,typography,touchTargetMin,type ThemeColors} from '../theme/theme';
 import {GameButton} from './GameButton';
@@ -30,7 +30,7 @@ const guildPolicy=(guild:OnlineGuild)=>typeof guild.member_count==='number'&&gui
 /** The Guild destination for accounts with no membership. No Guild Hall or member actions mount here. */
 export function GuildDiscoveryFlow({onJoined}:{onJoined:()=>void}){
  const C=useGameTheme(),s=useMemo(()=>styles(C),[C]);
- const scrollRef=useRef<ScrollView>(null);
+ const scrollRef=useRef<ScrollViewInstance>(null);
  const [page,setPage]=useState<Page>('welcome');
  const [search,setSearch]=useState(''),[filter,setFilter]=useState<DirectoryFilter>('recruiting');
  const [guilds,setGuilds]=useState<OnlineGuild[]>([]),[selected,setSelected]=useState<OnlineGuild|null>(null);

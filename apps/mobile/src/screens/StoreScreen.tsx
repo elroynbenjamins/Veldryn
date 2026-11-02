@@ -44,7 +44,7 @@ export function StoreScreen({state,onChange,online=false,onRefreshCommerce,onRed
     <Text style={s.redeemDescription}>{a('Enter a promotional code from an official VELDRYN announcement or event.')}</Text>
     <View style={s.redeemRow}>
      <TextInput accessibilityLabel={a('Redeem code')} autoCapitalize="characters" autoCorrect={false} value={code} onChangeText={value=>{setCode(value.replace(/\s/g,''));setStatus('')}} placeholder={a('ENTER CODE')} placeholderTextColor={C.muted} style={s.codeInput}/>
-     <GameButton compact title={redeeming?a('Checking…'):a('Redeem')} disabled={!code.trim()||redeeming||!onRedeemCode} onPress={()=>void redeem()}/>
+     <GameButton compact loading={redeeming} title={redeeming?a('Checking…'):a('Redeem')} disabled={!code.trim()||redeeming||!onRedeemCode} onPress={()=>void redeem()}/>
     </View>
     {!onRedeemCode?<Text style={s.redeemStatus}>{a('Code redemption will be available when Live-Ops redemption is enabled.')}</Text>:null}
     {status?<Text accessibilityLiveRegion="polite" style={[s.redeemStatus,{color:C.info}]}>{status}</Text>:null}

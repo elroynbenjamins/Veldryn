@@ -3,7 +3,7 @@
     "name": "VELDRYN",
     "slug": "veldryn",
     "scheme": "veldryn",
-    "version": "1.0.3",
+    "version": "1.0.4",
     "orientation": "portrait",
     "userInterfaceStyle": "dark",
     "icon": "./assets/app-icon-v1/icon-1024.png",
@@ -34,7 +34,9 @@
         }
       ],
       "./plugins/with-veldryn-play-games",
-      "./plugins/with-veldryn-game-category"
+      "./plugins/with-veldryn-game-category",
+      "expo-secure-store",
+      "expo-status-bar"
     ]
   }
 }

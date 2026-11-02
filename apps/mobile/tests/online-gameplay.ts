@@ -12,6 +12,29 @@ async function main(){
  throws(()=>validateGameCommand({type:'processing_start',args:{id:'SMELT_COPPER_INGOT',batches:5,gold:0}}),'processing batch arguments rejected when client forges economy fields');
  throws(()=>executeGameCommand(state,{type:'deposit',args:{id:'TRAVEL_RATION',quantity:-1}},now),'negative inventory rejected');
  throws(()=>executeGameCommand(state,{type:'profile',args:{profileBorderId:'unowned'}},now),'cosmetic entitlement required');
+ // Inventory flags must remain writable when an old save has unrelated settings
+ // fields that would make the full-settings command fail validation.
+ const legacyState={...state,settings:{...state.settings,retiredInventoryTheme:'legacy'}} as typeof state;
+ throws(()=>executeGameCommand(legacyState,{type:'settings',args:{settings:legacyState.settings}},now),'full-settings validation remains strict for unknown keys');
+ const lock={type:'inventory_preference',args:{id:'TRAVEL_RATION',kind:'lock',enabled:true}};
+ let protectedState=executeGameCommand(legacyState,lock,now).state;
+ ok(protectedState.settings.lockedItemIds?.includes('TRAVEL_RATION'),'online lock works without submitting legacy settings');
+ protectedState=executeGameCommand(protectedState,lock,now).state;
+ ok(protectedState.settings.lockedItemIds?.filter(id=>id==='TRAVEL_RATION').length===1,'repeat lock is idempotent');
+ throws(()=>executeGameCommand(protectedState,{type:'sell',args:{id:'TRAVEL_RATION',quantity:1}},now),'locked items are protected from sale');
+ protectedState=executeGameCommand(protectedState,{type:'inventory_preference',args:{id:'TRAVEL_RATION',kind:'favorite',enabled:true}},now).state;
+ ok(protectedState.settings.favoriteItemIds?.includes('TRAVEL_RATION'),'online favorite is independent of lock');
+ protectedState=executeGameCommand(protectedState,{type:'inventory_preference',args:{id:'TRAVEL_RATION',kind:'lock',enabled:false}},now).state;
+ ok(!protectedState.settings.lockedItemIds?.includes('TRAVEL_RATION'),'online unlock succeeds');
+ throws(()=>executeGameCommand(protectedState,{type:'sell',args:{id:'TRAVEL_RATION',quantity:1}},now),'favorite still protects from sale after unlock');
+ protectedState=executeGameCommand(protectedState,{type:'inventory_preference',args:{id:'TRAVEL_RATION',kind:'favorite',enabled:false}},now).state;
+ ok(!protectedState.settings.favoriteItemIds?.includes('TRAVEL_RATION'),'online favorite removal succeeds');
+ protectedState={...protectedState,settings:{...protectedState.settings,seenItemIds:[]}};
+ protectedState=executeGameCommand(protectedState,{type:'inventory_seen_all'},now).state;
+ ok(protectedState.settings.seenItemIds?.includes('TRAVEL_RATION'),'mark all seen uses atomic inventory command');
+ throws(()=>executeGameCommand(state,{type:'inventory_preference',args:{id:'TRAVEL_RATION',kind:'lock',enabled:'true'}},now),'non-boolean inventory flags rejected');
+ throws(()=>executeGameCommand(state,{type:'inventory_preference',args:{id:'not_an_item',kind:'lock',enabled:true}},now),'unknown inventory item rejected');
+ throws(()=>validateGameCommand({type:'inventory_preference',args:{id:'TRAVEL_RATION',kind:'lock',enabled:true,gold:500}}),'unrecognized inventory command arguments rejected');
  state=executeGameCommand(state,{type:'start',args:{kind:'combat',id:'MOSS_RAT'}},now).state;
  const claim=executeGameCommand(state,{type:'claim'},now+60000);ok((claim.reward?.kills??0)>0&&claim.state.character!.xp>0,'server elapsed combat');
  ok(claim.contributions.length===1&&claim.contributions[0].contentId==='MOSS_RAT','verified Contract event');

@@ -40,7 +40,7 @@ export const NOVICE_RECIPES:Recipe[]=NOVICE_SETS.flatMap(set=>set.slots.map(slot
     requiresCraftedItemId:prerequisite[slot]?noviceItemId(set.classId,prerequisite[slot]!):undefined,
     // Keep the existing novice-set baseline and apply the same equipment-only
     // forge gold increase used by the regional T1–T9 equipment recipes.
-    xp:stage*40,gold:(slot==='weapon'||slot==='amulet'||slot==='ring'?20:stage===4?15:10)*2*EQUIPMENT_FORGE_GOLD_MULTIPLIER,seconds:0,
+    xp:stage*50,gold:(slot==='weapon'||slot==='amulet'||slot==='ring'?20:stage===4?15:10)*2*EQUIPMENT_FORGE_GOLD_MULTIPLIER,seconds:0,
     inputs:[{itemId:'COPPER_ORE',quantity:(stage>=4?16:slot==='chest'||slot==='weapon'?16:8)*2},{itemId:'GREENWOOD_LOG',quantity:(stage>=4?16:slot==='chest'||slot==='weapon'?16:8)*2},{itemId:'MOSS_FIBER',quantity:(stage>=5?8:4)*2}],
     output:{itemId:item.id,quantity:1}};
 }));

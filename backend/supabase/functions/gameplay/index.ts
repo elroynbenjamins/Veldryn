@@ -42511,7 +42511,7 @@ var timerRange = {
 };
 var EQUIPMENT_FORGE_GOLD_MULTIPLIER = 3;
 var tierGold = { T1: 120, T2: 420, T3: 900, T4: 1800, T5: 3500, T6: 1e4, T7: 18e3, T8: 3e4, T9: 5e4 };
-var tierXp = { T1: 120, T2: 250, T3: 450, T4: 700, T5: 1100, T6: 1600, T7: 2200, T8: 2900, T9: 3800 };
+var tierXp = { T1: 165, T2: 290, T3: 450, T4: 700, T5: 1100, T6: 1600, T7: 2200, T8: 2900, T9: 3800 };
 var infusionByTier = {
   T1: { itemId: "VERDANT_BINDING_RESIN", quantity: 1 },
   T2: { itemId: "VERDANT_BINDING_RESIN", quantity: 1 },
@@ -42693,7 +42693,7 @@ var NOVICE_RECIPES = NOVICE_SETS.flatMap((set) => set.slots.map((slot) => {
     requiresCraftedItemId: prerequisite[slot] ? noviceItemId(set.classId, prerequisite[slot]) : void 0,
     // Keep the existing novice-set baseline and apply the same equipment-only
     // forge gold increase used by the regional T1–T9 equipment recipes.
-    xp: stage * 40,
+    xp: stage * 50,
     gold: (slot === "weapon" || slot === "amulet" || slot === "ring" ? 20 : stage === 4 ? 15 : 10) * 2 * EQUIPMENT_FORGE_GOLD_MULTIPLIER,
     seconds: 0,
     inputs: [{ itemId: "COPPER_ORE", quantity: (stage >= 4 ? 16 : slot === "chest" || slot === "weapon" ? 16 : 8) * 2 }, { itemId: "GREENWOOD_LOG", quantity: (stage >= 4 ? 16 : slot === "chest" || slot === "weapon" ? 16 : 8) * 2 }, { itemId: "MOSS_FIBER", quantity: (stage >= 5 ? 8 : 4) * 2 }],
@@ -43090,6 +43090,8 @@ var MONSTERS_RAW = [
 ];
 var MONSTER_TIME_SCALE = 1.95;
 var MONSTER_STAT_SCALE = 1.07;
+var ADVANCED_REGION_MONSTER_MULTIPLIER = 1.2;
+var ADVANCED_MONSTER_REGIONS = /* @__PURE__ */ new Set(["King's Road", "Sunscar", "Frostmarch", "Ashlands"]);
 function asterfallRawGemDrop(monster) {
   if (monster.boss || monster.level < 4 || monster.level > 25) return void 0;
   const familyId = monster.level >= 20 ? monster.attack >= monster.defense * 1.8 ? "stat_keen" : "stat_potent" : monster.level >= 16 ? monster.attack >= monster.defense * 1.7 ? "stat_precision" : "stat_ward" : monster.level >= 10 ? monster.attack >= monster.defense * 1.7 ? "stat_swift" : "stat_iron" : monster.attack >= monster.defense * 1.7 ? "stat_might" : "stat_vitality";
@@ -43105,15 +43107,19 @@ var enhancementDrops = (monster) => {
 };
 var MONSTERS = MONSTERS_RAW.map((monster) => {
   const holyWater = HOLY_WATER_SOURCES.find((source) => source.monsterId === monster.id);
+  const advancedScale = ADVANCED_MONSTER_REGIONS.has(monster.zone) ? ADVANCED_REGION_MONSTER_MULTIPLIER : 1;
   return {
     ...monster,
     // Standard-enemy materials are intentionally half as likely from combat.
     // Gathering remains the reliable source; guaranteed boss rewards stay intact.
     drops: [...monster.drops, ...holyWater ? [{ itemId: HOLY_WATER_ID, chance: holyWater.chance, min: holyWater.min, max: holyWater.max }] : [], ...enhancementDrops(monster)].map((drop) => !monster.boss && drop.itemId !== HOLY_WATER_ID && itemDef(drop.itemId).type === "material" ? { ...drop, chance: drop.chance * 0.5 } : drop),
-    secondsPerKill: Math.ceil(monster.secondsPerKill * MONSTER_TIME_SCALE),
-    hp: Math.ceil(monster.hp * MONSTER_STAT_SCALE),
-    attack: Math.ceil(monster.attack * MONSTER_STAT_SCALE),
-    defense: Math.ceil(monster.defense * MONSTER_STAT_SCALE)
+    // Idle combat uses authored cycle duration rather than HP to calculate kills.
+    // Scale both the displayed combat stats and cycle time, so 20% more HP
+    // actually costs time; leave XP, loot chances, and early regions untouched.
+    secondsPerKill: Math.ceil(monster.secondsPerKill * MONSTER_TIME_SCALE * advancedScale),
+    hp: Math.ceil(monster.hp * MONSTER_STAT_SCALE * advancedScale),
+    attack: Math.ceil(monster.attack * MONSTER_STAT_SCALE * advancedScale),
+    defense: Math.ceil(monster.defense * MONSTER_STAT_SCALE * advancedScale)
   };
 });
 
@@ -43587,8 +43593,8 @@ var RECIPES = [
   // compatibility. Presentation layers apply their release gate separately.
   ...V33_EQUIPMENT_RECIPES,
   ...TOOL_RECIPES,
-  { id: "SMELT_COPPER_INGOT", name: "Smelt Copper Ingot", skillId: "smithing", level: 1, xp: 80, gold: 30, seconds: 36, repeatableTraining: true, inputs: [{ itemId: "COPPER_ORE", quantity: 10 }, { itemId: "GREENWOOD_LOG", quantity: 2 }], output: { itemId: "COPPER_INGOT", quantity: 5 } },
-  { id: "SMELT_ASTER_IRON_INGOT", name: "Smelt Aster-Iron Ingot", skillId: "smithing", level: 8, xp: 140, gold: 50, seconds: 42, repeatableTraining: true, inputs: [{ itemId: "ASTER_IRON_ORE", quantity: 8 }, { itemId: "IRONWOOD_LOG", quantity: 2 }], output: { itemId: "ASTER_IRON_INGOT", quantity: 4 } },
+  { id: "SMELT_COPPER_INGOT", name: "Smelt Copper Ingot", skillId: "smithing", level: 1, xp: 100, gold: 30, seconds: 36, repeatableTraining: true, inputs: [{ itemId: "COPPER_ORE", quantity: 10 }, { itemId: "GREENWOOD_LOG", quantity: 2 }], output: { itemId: "COPPER_INGOT", quantity: 5 } },
+  { id: "SMELT_ASTER_IRON_INGOT", name: "Smelt Aster-Iron Ingot", skillId: "smithing", level: 8, xp: 165, gold: 50, seconds: 42, repeatableTraining: true, inputs: [{ itemId: "ASTER_IRON_ORE", quantity: 8 }, { itemId: "IRONWOOD_LOG", quantity: 2 }], output: { itemId: "ASTER_IRON_INGOT", quantity: 4 } },
   { id: "FORGE_REINFORCED_FITTING", name: "Forge Reinforced Fitting", skillId: "smithing", level: 12, xp: 180, gold: 50, seconds: 48, repeatableTraining: true, inputs: [{ itemId: "ASTER_IRON_INGOT", quantity: 2 }, { itemId: "IRONWOOD_LOG", quantity: 2 }], output: { itemId: "REINFORCED_FITTING", quantity: 1 } },
   { id: "SMELT_OATHSTONE_INGOT", name: "Smelt Oathstone Ingot", skillId: "smithing", level: 16, xp: 230, gold: 80, seconds: 54, repeatableTraining: true, inputs: [{ itemId: "OATHSTONE_ORE", quantity: 6 }, { itemId: "CROWNWOOD_LOG", quantity: 3 }], output: { itemId: "OATHSTONE_INGOT", quantity: 3 } },
   { id: "SMELT_SUNSTONE_INGOT", name: "Smelt Sunstone Ingot", skillId: "smithing", level: 26, xp: 520, gold: 280, seconds: 180, repeatableTraining: true, inputs: [{ itemId: "SUNSTONE_ORE", quantity: 6 }, { itemId: "DUNEWOOD", quantity: 4 }], output: { itemId: "SUNSTONE_INGOT", quantity: 3 } },
@@ -51267,12 +51273,14 @@ function startCombat(state, monsterId, nowMs, combatTacticId = "balanced", huntG
   if (zoneIdForTarget(monsterId) !== currentRegionId(state)) throw new Error(`Travel to ${m.zone} before fighting ${m.name}`);
   return { ...state, outOfCombatSinceMs: void 0, character: { ...state.character, activityQueuePausedReason: void 0 }, activity: { kind: "combat", targetId: monsterId, combatTacticId: normalizeCombatTactic(combatTacticId), ...huntGoalSnapshot(normalizeHuntGoalId(huntGoalId)) ? { huntGoal: huntGoalSnapshot(normalizeHuntGoalId(huntGoalId)) } : {}, sessionKills: 0, sessionChampions: 0, startedAtMs: nowMs, lastClaimAtMs: nowMs, classFocus: normalizeTrainingFocus(state.character.trainingFocus), classTrainingSnapshot: { faithBlessingId: selectedFaithBlessing(state)?.id }, environment: captureActivityEnvironment(monsterId, nowMs) } };
 }
-function highestEquippedV33Tier(state) {
-  if (!state.character) return 0;
-  return Object.values(state.character.equipment).reduce((highest, itemId) => {
-    const match = typeof itemId === "string" ? /^T([1-9])P_/.exec(itemId) : void 0;
-    return Math.max(highest, match ? Number(match[1]) : 0);
+function regionalEquippedTierGap(state, expectedTier) {
+  if (!state.character || expectedTier <= 0) return 0;
+  const items = Object.values(state.character.equipment).filter((id) => typeof id === "string" && id.length > 0);
+  const gap = items.reduce((total, id) => {
+    const match = /^T([1-9])P_/.exec(id), tier = match ? Number(match[1]) : 0;
+    return total + Math.max(0, expectedTier - tier);
   }, 0);
+  return (gap + Math.max(0, 10 - items.length) * expectedTier) / 10;
 }
 function tryStartNextQueuedActivity(state, nowMs, throwOnFailure = false, index = 0, allowAutoTravel = true) {
   if (!state.character) throw new Error("Create a character first.");
@@ -51451,9 +51459,9 @@ function combatRuntimeDetails(state, monsterId, nowMs = Date.now()) {
   const expected = (m.attack * 1.2 + m.defense * 0.8 + m.level * 2.2) * COMBAT_EXPECTED_SCALE;
   const setOutput = secondary.playerOutputMultiplier * setCombat.penetrationMultiplier;
   const combatCandy = eventCandyUtilityMultiplier(state, nowMs, "combat");
-  const wornTier = highestEquippedV33Tier(state);
-  const expectedTier = regionalMonsterPressureBand(m.id) === "hard" ? m.level >= 22 ? 2 : m.level >= 10 ? 1 : 0 : 0;
-  const tierGap = Math.max(0, expectedTier - wornTier);
+  const regionalGearTier = m.zone === "King's Road" ? 2 : m.zone === "Sunscar" ? m.level >= 40 ? 4 : 3 : m.zone === "Frostmarch" ? m.level >= 70 ? 6 : m.level >= 55 ? 5 : 4 : m.zone === "Ashlands" ? m.level >= 82 ? 7 : 6 : void 0;
+  const expectedTier = regionalGearTier ?? (regionalMonsterPressureBand(m.id) === "hard" ? m.level >= 22 ? 2 : m.level >= 10 ? 1 : 0 : 0);
+  const tierGap = regionalEquippedTierGap(state, expectedTier);
   const progressionSpeedPenalty = tierGap === 0 ? 1 : Math.max(0.62, 1 - tierGap * 0.18);
   const progressionDamagePenalty = tierGap === 0 ? 1 : 1 + tierGap * 0.12;
   const speed = Math.max(COMBAT_SPEED_MIN, Math.min(COMBAT_SPEED_MAX, boostedPower / Math.max(1, expected))) * style.speedMultiplier * tactic.speedMultiplier * modifiers.combatSpeedMultiplier * companion.outputMultiplier * (1 + monsterMastery(state, monsterId).damageBonus) * (1 + effectGems.combat_speed) * setOutput * combatCandy * progressionSpeedPenalty;

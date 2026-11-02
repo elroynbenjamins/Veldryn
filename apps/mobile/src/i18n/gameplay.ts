@@ -7,6 +7,7 @@ import {useMemo} from 'react';
 // Every row is complete, in en/de/es/nl/it/fr order. English phrases are typed keys.
 type TranslationRow=readonly [string,string,string,string,string,string];
 const common={
+ "Added to inventory":["Added to inventory","Zum Inventar hinzugefügt","Añadido al inventario","Toegevoegd aan inventaris","Aggiunto all'inventario","Ajouté à l’inventaire"],
  "Moving gems to Gem Pouch…":["Moving gems to Gem Pouch…","Edelsteine in den Edelsteinbeutel verschieben…","Moviendo gemas a la bolsa de gemas…","Edelstenen naar de edelsteenzak verplaatsen…","Spostamento gemme nella borsa delle gemme…","Déplacement des gemmes vers la sacoche…"],
  "Depositing selected items…":["Depositing selected items…","Ausgewählte Gegenstände einlagern…","Depositando objetos seleccionados…","Geselecteerde voorwerpen opslaan…","Deposito degli oggetti selezionati…","Dépôt des objets sélectionnés…"],
  "Move {count}× {name} to {destination}?":["Move {count}× {name} to {destination}?","{count}× {name} nach {destination} verschieben?","¿Mover {count}× {name} a {destination}?","{count}× {name} naar {destination} verplaatsen?","Spostare {count}× {name} in {destination}?","Déplacer {count}× {name} vers {destination} ?"],

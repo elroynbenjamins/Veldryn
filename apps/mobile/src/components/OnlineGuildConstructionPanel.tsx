@@ -38,7 +38,10 @@ export function OnlineGuildConstructionPanel({
 }){
  const C=useGameTheme(),s=useMemo(()=>styles(C),[C]);
  const [selected,setSelected]=useState<{templateId:string;resourceId:string}|null>(null);
- const [selectedBuilding,setSelectedBuilding]=useState<(typeof BUILDINGS)[number]['id']>('forge');
+ const [selectedBuilding,setSelectedBuilding]=useState<(typeof BUILDINGS)[number]['id']>(()=>{
+  const active=snapshot.constructionTemplates.find(template=>template.enabled&&template.guildLevel<=snapshot.guildLevel&&!snapshot.construction.some(row=>row.templateId===template.id&&row.completed));
+  return BUILDINGS.find(building=>active?.id.startsWith('construction_'+building.id+'_'))?.id??'hall';
+ });
  const [quantity,setQuantity]=useState('100'),[busy,setBusy]=useState(false);
  const [pending,setPending]=useState<PendingGuildDonation|null>(null);
  const [error,setError]=useState(''),[notice,setNotice]=useState('');

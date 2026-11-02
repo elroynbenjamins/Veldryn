@@ -5,13 +5,22 @@ import {ResourceArtwork} from './ResourceArtwork';
 import {guildUpgradeComponentArtwork,guildUpgradeComponentName} from '../theme/guild-upgrade-component-art';
 import {Panel} from './Panel';
 import {gameAlert} from '../core/game-alerts';
-import {guildConstructionBlueprint} from '../content/guild-construction-blueprints';
+import {guildConstructionBlueprint,GUILD_CONSTRUCTION_BLUEPRINTS} from '../content/guild-construction-blueprints';
+import {guildFacilityArtwork} from '../theme/guild-remaster-art';
 import {useGameTheme} from '../theme/ThemeContext';
 import type {ThemeColors} from '../theme/theme';
 import type {GuildTokenShopSnapshot} from '../online/guild-token-shop';
 import {discardPendingGuildConstructionDonation,donateOnlineGuildConstruction,
  pendingGuildConstructionDonation,type PendingGuildDonation} from '../online/guild-construction';
 
+const BUILDINGS=[
+ {id:'hall',title:'Hall',art:'banner_gallery' as const},
+ {id:'forge',title:'Forge',art:'workshop' as const},
+ {id:'library',title:'Library',art:'training_room' as const},
+ {id:'treasury',title:'Treasury',art:'trophy_room' as const},
+ {id:'war_room',title:'War Room',art:'raid_memorial' as const},
+ {id:'expedition',title:'Lodge',art:'expedition_board' as const},
+] as const;
 function resourceName(key:string){
  if(key==='gold')return 'Gold';
  return guildUpgradeComponentName(key)??key.toLowerCase().split('_').map(word=>word.charAt(0).toUpperCase()+word.slice(1)).join(' ');
@@ -29,6 +38,7 @@ export function OnlineGuildConstructionPanel({
 }){
  const C=useGameTheme(),s=useMemo(()=>styles(C),[C]);
  const [selected,setSelected]=useState<{templateId:string;resourceId:string}|null>(null);
+ const [selectedBuilding,setSelectedBuilding]=useState<(typeof BUILDINGS)[number]['id']>('forge');
  const [quantity,setQuantity]=useState('100'),[busy,setBusy]=useState(false);
  const [pending,setPending]=useState<PendingGuildDonation|null>(null);
  const [error,setError]=useState(''),[notice,setNotice]=useState('');
@@ -53,6 +63,11 @@ export function OnlineGuildConstructionPanel({
    try{setPending(await pendingGuildConstructionDonation());}catch{/* Retain existing receipt state. */}
   }finally{setBusy(false);}
  };
+ const confirmFunding=(templateId:string,resourceId:string,amount:number)=>gameAlert.alert(
+  'Allocate Guild Bank materials?',
+  'Allocate '+amount.toLocaleString()+' '+resourceName(resourceId)+' to '+(guildConstructionBlueprint(templateId)?.name??'this upgrade')+'? This Guild Bank allocation cannot be reversed.',
+  [{text:'Cancel',style:'cancel'},{text:'Allocate',onPress:()=>void donate({templateId,resourceId,amount})}],
+ );
  const confirmDiscard=()=>gameAlert.alert(
   'Discard pending donation?',
   'Only discard after checking Guild Construction and your balances. If the earlier request succeeded, a new request could spend resources again.',
@@ -62,8 +77,9 @@ export function OnlineGuildConstructionPanel({
  return <Panel>
   <Text style={s.kicker}>GUILD CONSTRUCTION</Text>
   <Text style={s.title}>Build something together</Text>
-  <Text style={s.copy}>Use Guild Bank supplies toward long-term upgrades and special projects. Construction grants guild benefits, never free cosmetic items.</Text>
-  <Text style={s.note}>Only released projects accept funding. Deposit supplies into the Guild Bank above, then allocate them to a project here.</Text>
+  <Text style={s.copy}>Choose a building to see its permanent bonuses, upgrade tiers and material requirements.</Text>
+  <View style={s.buildingGrid}>{BUILDINGS.map(building=><Pressable key={building.id} accessibilityRole="button" accessibilityLabel={'View '+building.title+' upgrades'} accessibilityState={{selected:selectedBuilding===building.id}} onPress={()=>{setSelectedBuilding(building.id);setSelected(null)}} style={({pressed})=>[s.building,{borderColor:selectedBuilding===building.id?C.selectionLine:C.lineStrong,backgroundColor:selectedBuilding===building.id?C.selection:C.panel2},pressed&&s.pressed]}><Image source={guildFacilityArtwork(building.art)} style={s.buildingArt} resizeMode="contain" accessible={false}/><Text style={[s.buildingName,{color:selectedBuilding===building.id?C.text:C.muted}]}>{building.title}</Text></Pressable>)}</View>
+  <Text style={s.note}>Only released upgrades accept funding. Deposit supplies into the Guild Bank first, then allocate them here.</Text>
   {error?<Text accessibilityRole="alert" style={s.error}>{error}</Text>:null}
   {notice?<Text accessibilityLiveRegion="polite" style={s.notice}>{notice}</Text>:null}
   {pending?<View style={s.pending}>
@@ -74,7 +90,7 @@ export function OnlineGuildConstructionPanel({
     <GameButton compact title="Discard local retry" tone="secondary" disabled={busy} onPress={confirmDiscard}/>
    </View>
   </View>:null}
-  {snapshot.constructionTemplates.filter(template=>!template.id.startsWith('construction_')||template.enabled||snapshot.construction.some(row=>row.templateId===template.id&&row.completed)).map(template=>{
+  {snapshot.constructionTemplates.filter(template=>template.id.startsWith('construction_'+selectedBuilding+'_')&&(template.enabled||snapshot.construction.some(row=>row.templateId===template.id&&row.completed))).map(template=>{
    const row=snapshot.construction.find(p=>p.templateId===template.id);
    const requirements=[...(template.gold>0?[{key:'gold',required:template.gold}]:[]),...template.materials.map(material=>({key:material.materialKey,required:material.amount}))];
    const completion=requirements.length?requirements.reduce((sum,res)=>sum+Math.min(1,Math.max(0,(row?.resources[res.key]??0)/res.required)),0)/requirements.length:0;
@@ -98,7 +114,7 @@ export function OnlineGuildConstructionPanel({
      return <Pressable key={res.key} disabled={!canDonate||amount>=res.required}
       accessibilityRole="button" accessibilityState={{selected:active,disabled:!canDonate||amount>=res.required}}
       accessibilityLabel={`Donate ${resourceName(res.key)} to ${resourceName(template.id)}`}
-      onPress={()=>{setSelected({templateId:template.id,resourceId:res.key});setQuantity(res.key==='gold'?'1000':'100');}}
+      onPress={()=>{setSelected({templateId:template.id,resourceId:res.key});const available=snapshot.bank?.balances.find(item=>item.resourceId===res.key)?.amount??0;setQuantity(String(Math.min(res.key==='gold'?1000:100,res.required-amount,available)));}}
       style={[s.resource,active&&s.resourceSelected]}>
       <View style={s.head}>
        {res.key==='gold'?<Text style={[s.resourceName,{color:C.accent}]}>◈</Text>:guildUpgradeComponentArtwork(res.key)?<Image source={guildUpgradeComponentArtwork(res.key)} style={s.materialIcon} resizeMode="contain" accessible={false}/>:<ResourceArtwork itemId={res.key} size={28} framed/>}
@@ -114,19 +130,24 @@ export function OnlineGuildConstructionPanel({
       <TextInput accessibilityLabel="Donation amount" value={quantity} onChangeText={setQuantity}
        keyboardType="number-pad" maxLength={7} selectTextOnFocus style={s.input}/>
       <GameButton compact title={busy?'Funding…':'Fund project'} disabled={busy||!validQuantity}
-       onPress={()=>donate({templateId:template.id,resourceId:chosen.key,amount:donationAmount})}/>
+       onPress={()=>confirmFunding(template.id,chosen.key,donationAmount)}/>
      </View>
-     <View style={s.actions}>{[10,100,1000].map(value=><Pressable key={value} onPress={()=>setQuantity(String(Math.min(value,remaining,1000000)))}
-      accessibilityRole="button" style={s.preset}><Text style={s.presetText}>{value.toLocaleString()}</Text></Pressable>)}</View>
+     <View style={s.actions}>{[10,100,'Max' as const].map(value=><Pressable key={value} accessibilityRole="button" accessibilityLabel={'Set funding amount to '+value} disabled={busy} onPress={()=>setQuantity(String(Math.min(value==='Max'?1000000:value,remaining,bankAmount,1000000)))} style={s.preset}><Text style={s.presetText}>{value==='Max'?'Max':value.toLocaleString()}</Text></Pressable>)}</View>
     </View>:null}
     <Text style={s.unlock}>{row?.completed?'Guild upgrade completed':`Reward: ${guildConstructionBlueprint(template.id)?.benefit??resourceName(template.unlockId)}`}</Text>
     {!template.enabled?<Text style={s.projectMeta}>Awaiting construction release</Text>:null}
    </View>;
   })}
+  <Text style={s.kicker}>UPGRADE ROADMAP</Text>
+  {GUILD_CONSTRUCTION_BLUEPRINTS.filter(plan=>plan.id.startsWith('construction_'+selectedBuilding+'_')&&!snapshot.constructionTemplates.some(template=>template.id===plan.id&&template.enabled)).map(plan=><View key={plan.id} style={s.lockedTier}><View style={s.head}><Text style={s.projectName}>{plan.name}</Text><Text style={s.projectMeta}>Guild Lv {plan.requiredGuildLevel}</Text></View><Text style={s.unlock}>{plan.benefit}</Text><Text style={s.projectMeta}>Not released for funding</Text></View>)}
  </Panel>;
 }
 function styles(C:ThemeColors){return StyleSheet.create({
- kicker:{fontSize:11,color:C.accent,fontWeight:'900',letterSpacing:1},
+ kicker:{fontSize:11,color:C.accent,fontWeight:'900',letterSpacing:1,marginTop:8},
+ buildingGrid:{flexDirection:'row',flexWrap:'wrap',gap:7,marginTop:13},
+ building:{width:'31%',flexGrow:1,minHeight:80,alignItems:'center',justifyContent:'center',gap:5,padding:6,borderWidth:1,borderRadius:9},
+ buildingArt:{width:38,height:38},buildingName:{fontSize:11,fontWeight:'800',textAlign:'center'},pressed:{opacity:.72},
+ lockedTier:{marginTop:7,gap:6,borderColor:C.line,borderWidth:1,borderRadius:9,padding:10,backgroundColor:C.panel2},
  title:{fontSize:18,lineHeight:24,color:C.text,fontWeight:'900',marginTop:3},
  copy:{fontSize:12,color:C.muted,lineHeight:17,marginTop:7},
  note:{fontSize:12,color:C.warning,marginTop:10,lineHeight:17},
@@ -137,7 +158,7 @@ function styles(C:ThemeColors){return StyleSheet.create({
  head:{flexDirection:'row',alignItems:'center',justifyContent:'space-between',gap:8},
  flex:{flex:1},projectName:{fontSize:14,lineHeight:19,color:C.text,fontWeight:'800'},projectMeta:{fontSize:12,lineHeight:17,color:C.info,marginTop:3},
  percent:{fontSize:18,lineHeight:22,color:C.accent,fontWeight:'900'},
- resource:{gap:5,padding:6,borderWidth:1,borderColor:'transparent',borderRadius:8},
+ resource:{gap:6,padding:8,minHeight:48,borderWidth:1,borderColor:'transparent',borderRadius:8},
  materialIcon:{width:28,height:28},resourceSelected:{borderColor:C.accent},
  resourceName:{fontSize:12,lineHeight:16,color:C.text,fontWeight:'700'},
  resourceAmount:{fontSize:11,color:C.muted},track:{height:5,borderRadius:4,overflow:'hidden',backgroundColor:C.panel},
@@ -145,6 +166,6 @@ function styles(C:ThemeColors){return StyleSheet.create({
  actions:{flexDirection:'row',flexWrap:'wrap',alignItems:'center',gap:8},
  donationControls:{gap:8,padding:8,borderRadius:8,backgroundColor:C.panel},
  input:{minWidth:90,minHeight:40,flex:1,borderWidth:1,borderColor:C.lineStrong,borderRadius:7,paddingHorizontal:9,color:C.text,backgroundColor:C.inputBg},
- preset:{paddingHorizontal:12,paddingVertical:8,borderWidth:1,borderColor:C.lineStrong,borderRadius:7},
+ preset:{minHeight:44,minWidth:55,alignItems:'center',justifyContent:'center',paddingHorizontal:12,paddingVertical:8,borderWidth:1,borderColor:C.lineStrong,borderRadius:8},
  presetText:{color:C.info,fontSize:12,fontWeight:'800'},
  });}

@@ -6,12 +6,13 @@ import {CoopDungeonDetails,CoopDungeonList,CoopEventExpeditionDetails} from '../
 import {CoopLoadoutSelection} from '../components/coop/CoopLoadoutSelection';
 import {buildCoopLoadoutIntent,presentCoopLoadout,type CoopLoadoutIntent} from '../core/coop-loadout-presentation';
 import {CoopRunOverview,type CoopRewardDisplay} from '../components/coop/CoopRunOverview';
+import {CoopLiveRematchPanel} from '../components/coop/CoopLiveRematchPanel';
 import {CoopLiveLobby} from '../components/coop/CoopLiveLobby';
 import {CoopLiveRecruitmentBoard} from '../components/coop/CoopLiveRecruitmentBoard';
 import {presentCoopDungeon,validateCoopDungeonView,type CoopDungeonView,type CoopTier} from '../core/coop-dungeon-browsing';
 import type {CoopMode,CoopRunView} from '../core/coop-presentation';
 import type {Language} from '../i18n';
-import {coopClient,coopLiveReadyEnabled,coopRequestId,type CoopEntryData} from '../online/coop-client';
+import {coopClient,coopLiveReadyEnabled,coopRequestId,type CoopEntryData,type CoopLiveRematchState} from '../online/coop-client';
 import {presentQModeRun,type CoopQModeServerProjection} from '../core/coop-qmode';
 import {realCoopQModeSource} from '../online/coop-qmode-source';
 import {COOP_CHAT_REFRESH_MS,type CoopSyncUrgency} from '../core/coop-sync-policy';
@@ -62,6 +63,11 @@ export function CoopExpeditionScreen({onClose,language,state,entrySource=realCoo
   const initialEventHandled=useRef(false);
   const [rewards,setRewards]=useState<CoopRewardDisplay[]>([]);
   const [lastQModeIntent,setLastQModeIntent]=useState<CoopLoadoutIntent>();
+  const [rematchOpen,setRematchOpen]=useState(false);
+  const [rematchState,setRematchState]=useState<CoopLiveRematchState>();
+  const [rematchError,setRematchError]=useState('');
+  const [rematchBusy,setRematchBusy]=useState(false);
+  const rematchEntered=useRef<string|undefined>(undefined);
   const [chatMessages,setChatMessages]=useState<CoopChatMessage[]>([]);
   useEffect(()=>{const listener=AppState.addEventListener('change',status=>setForeground(status==='active'));return()=>listener.remove();},[]);
   const acceptRun=useCallback((projection:CoopQModeServerProjection)=>{const next=presentQModeRun(projection);setRun(current=>current&&current.runId===next.runId&&(current.stateVersion??0)>(next.stateVersion??0)?current:next);},[]);
@@ -83,6 +89,39 @@ export function CoopExpeditionScreen({onClose,language,state,entrySource=realCoo
     catch(reason){if(requestId===loadRequestId.current)setError(reason instanceof Error?reason.message:String(reason))}
     finally{if(requestId===loadRequestId.current)setLoading(false)}
   },[entrySource]);
+  // Server-owned ready checks are polled only while this modal is open.
+  const enterRematch=useCallback(async(nextRunId:string)=>{
+   if(rematchEntered.current===nextRunId)return;
+   const value=await coopClient.run(nextRunId);
+   if(!('team' in value))throw new Error(st('Invalid Live rematch response.'));
+   rematchEntered.current=nextRunId;
+   setRematchOpen(false);setRematchError('');setRewards([]);setChatMessages([]);setNotice('');
+   acceptRun(value);void load();
+  },[acceptRun,load]);
+  useEffect(()=>{
+   if(!rematchOpen||!run||run.mode!=='live'||!foreground)return;
+   let stopped=false,inFlight=false;const oldRunId=run.runId;
+   const poll=async()=>{
+    if(stopped||inFlight)return;
+    inFlight=true;
+    try{
+     const next=await coopClient.liveRematch(oldRunId);
+     if(stopped||activeRunId.current!==oldRunId)return;
+     setRematchState(next);setRematchError('');
+     if(next.status==='committed'&&next.runId)await enterRematch(next.runId);
+    }catch(error){if(!stopped)setRematchError(error instanceof Error?error.message:String(error));}
+    finally{inFlight=false;}
+   };
+   void poll();const interval=setInterval(()=>void poll(),2400);
+   return()=>{stopped=true;clearInterval(interval);};
+  },[rematchOpen,run?.runId,run?.mode,foreground,enterRematch]);
+  const respondRematch=(accept:boolean)=>{if(!run||rematchBusy)return;const oldRunId=run.runId;setRematchBusy(true);setRematchError('');
+   void coopClient.respondLiveRematch(oldRunId,accept).then(next=>{
+    if(activeRunId.current!==oldRunId)return;
+    setRematchState(next);
+    if(next.status==='committed'&&next.runId)void enterRematch(next.runId).catch(error=>setRematchError(error instanceof Error?error.message:String(error)));
+   }).catch(error=>setRematchError(error instanceof Error?error.message:String(error))).finally(()=>setRematchBusy(false));
+  };
   useEffect(()=>{void load();return()=>{loadRequestId.current++}},[load]);
   useEffect(()=>{
     if(initialEventHandled.current||!initialEventLiveId||!entry)return;
@@ -212,7 +251,10 @@ export function CoopExpeditionScreen({onClose,language,state,entrySource=realCoo
     const view=runWithIcons!,marks=eventRun.settlement.rewardMarks??0;
     return <View style={{flex:1}}>{retry}<CoopRunOverview language={language} run={view} seasonal eventName={eventRun.eventName} notice={notice} syncError={syncError} busy={busy} reduceMotion={state.settings.reduceMotion} onBack={()=>{setEventRun(undefined);void load();}} onRefresh={()=>action(async()=>{await refreshEventRun(eventRun.runId);setSyncError('')})} onChoose={nodeId=>void action(async()=>{if(!eventRun.decisionId||eventRun.decisionRevision===undefined)throw new Error(st("Refresh this run before choosing."));acceptEventRun(await coopClient.chooseEvent(eventRun.runId,{requestId:coopRequestId(),decisionId:eventRun.decisionId,decisionRevision:eventRun.decisionRevision,optionId:nodeId}));})} terminalAction={eventRun.phase==='completed'?{label:st('Collect {marks} event currency',{marks}),claimed:eventRun.settlement.status==='claimed',completeText:st('{marks} event currency collected.',{marks}),onPress:()=>void action(async()=>{acceptEventRun(await coopClient.claimEvent(eventRun.runId));setNotice(st('{marks} event currency and reputation collected.',{marks}));await onRewardsChanged?.();})}:undefined}/></View>;
   }
-  if(run)return <View style={{flex:1}}>{retry}<CoopRunOverview language={language} run={runWithIcons!} myVotedNodeId={myLiveVote?.runId===run.runId&&myLiveVote.decisionId===run.decisionId?myLiveVote.optionId:undefined} selfVoter={state.character?{name:state.character.name,profileIconId:state.character.profileIconId,className:state.character.classId}:undefined} notice={notice} syncError={syncError} busy={busy} rewards={rewards} chatMessages={chatMessages} onChatSend={run.mode==='live'?async text=>{const response=await coopClient.chat(run.runId,text);setChatMessages(response.messages);}:undefined} reduceMotion={state.settings.reduceMotion} onBack={()=>{setRun(undefined);setChatMessages([]);setRewards([]);void load();}} onRefresh={()=>action(async()=>{await refreshRun(run.runId);if(run.mode==='live'){const chat=await coopClient.partyChat(run.runId);if(activeRunId.current===run.runId)setChatMessages(chat.messages);}if(['completed','failed'].includes(run.phase)){const items=await coopClient.rewards(run.runId);if(activeRunId.current===run.runId)setRewards(items);}setSyncError('')})} onChoose={nodeId=>void action(async()=>{if(!run.decisionId||run.decisionRevision===undefined)throw new Error(st("Refresh this run before choosing."));const body={requestId:coopRequestId(),decisionId:run.decisionId,decisionRevision:run.decisionRevision,optionId:nodeId};const voting=run.mode==='live'&&run.options.length>1;const result=voting?await coopClient.vote(run.runId,body):await coopClient.choose(run.runId,body);if(voting)setMyLiveVote({runId:run.runId,decisionId:run.decisionId,optionId:nodeId});acceptRun(result);})} onQueueAgain={queueAgainAction} onClaim={id=>action(async()=>{const reward=await coopClient.claim(id);setNotice(reward.live_fellowship_bonus?st('{marks} Expedition Marks collected. Includes +{bonus} Live Fellowship bonus.',{marks:reward.marks,bonus:reward.live_fellowship_bonus}):st('{marks} Expedition Marks collected.',{marks:reward.marks}));await onRewardsChanged?.();await refreshRun(run.runId);const latestRewards=await coopClient.rewards(run.runId);if(activeRunId.current===run.runId)setRewards(latestRewards);await load();})}/></View>;
+  if(run)return <View style={{flex:1}}>{retry}<CoopRunOverview language={language} run={runWithIcons!} myVotedNodeId={myLiveVote?.runId===run.runId&&myLiveVote.decisionId===run.decisionId?myLiveVote.optionId:undefined} selfVoter={state.character?{name:state.character.name,profileIconId:state.character.profileIconId,className:state.character.classId}:undefined} notice={notice} syncError={syncError} busy={busy} rewards={rewards} chatMessages={chatMessages} onChatSend={run.mode==='live'?async text=>{const response=await coopClient.chat(run.runId,text);setChatMessages(response.messages);}:undefined} reduceMotion={state.settings.reduceMotion} onBack={()=>{setRun(undefined);setChatMessages([]);setRewards([]);void load();}} onRefresh={()=>action(async()=>{await refreshRun(run.runId);if(run.mode==='live'){const chat=await coopClient.partyChat(run.runId);if(activeRunId.current===run.runId)setChatMessages(chat.messages);}if(['completed','failed'].includes(run.phase)){const items=await coopClient.rewards(run.runId);if(activeRunId.current===run.runId)setRewards(items);}setSyncError('')})} onChoose={nodeId=>void action(async()=>{if(!run.decisionId||run.decisionRevision===undefined)throw new Error(st("Refresh this run before choosing."));const body={requestId:coopRequestId(),decisionId:run.decisionId,decisionRevision:run.decisionRevision,optionId:nodeId};const voting=run.mode==='live'&&run.options.length>1;const result=voting?await coopClient.vote(run.runId,body):await coopClient.choose(run.runId,body);if(voting)setMyLiveVote({runId:run.runId,decisionId:run.decisionId,optionId:nodeId});acceptRun(result);})} onQueueAgain={queueAgainAction} onPartyRematch={run.mode==='live'&&coopLiveReadyEnabled?()=>{setRematchState(undefined);setRematchError('');rematchEntered.current=undefined;setRematchOpen(true);}:undefined} onClaim={id=>action(async()=>{const reward=await coopClient.claim(id);setNotice(reward.live_fellowship_bonus?st('{marks} Expedition Marks collected. Includes +{bonus} Live Fellowship bonus.',{marks:reward.marks,bonus:reward.live_fellowship_bonus}):st('{marks} Expedition Marks collected.',{marks:reward.marks}));await onRewardsChanged?.();await refreshRun(run.runId);const latestRewards=await coopClient.rewards(run.runId);if(activeRunId.current===run.runId)setRewards(latestRewards);await load();})}/><CoopLiveRematchPanel visible={rematchOpen} run={runWithIcons!} status={rematchState} busy={rematchBusy} error={rematchError}
+    onReady={()=>respondRematch(true)} onDecline={()=>respondRematch(false)} onClose={()=>setRematchOpen(false)}
+    onEnter={()=>{if(rematchState?.runId)void enterRematch(rematchState.runId).catch(error=>setRematchError(error instanceof Error?error.message:String(error)));}}
+   /></View>;
   if(selectedEvent)return <CoopEventExpeditionDetails language={language} event={selectedEvent} notice={notice} busy={busy} onBack={()=>{setSelectedEvent(undefined);setNotice('')}} onLaunch={()=>void action(async()=>{
     if(entrySource.kind!=='real'){setNotice(clt(language,'intentOnly'));return;}
     const loadout=entry?.loadouts.find(item=>item.id==='current'&&item.status==='verified'&&item.ready)??entry?.loadouts.find(item=>item.status==='verified'&&item.ready);

@@ -166,7 +166,7 @@ const smith1=RECIPES.find(row=>row.id==='SMELT_COPPER_INGOT')!,cook1=RECIPES.fin
 const hourly=(recipe:typeof alchemy1)=>recipe.xp*3600/recipe.seconds;
 ok(hourly(alchemy1)>=3600,'Starter Alchemy should provide at least 3,600 XP/hour before bonuses');
 ok(hourly(alchemy8)>=5500&&hourly(alchemy16)>=7500,'Mid Asterfall Alchemy must remain session-scale');
-ok(hourly(alchemy1)>=hourly(smith1)*.40&&hourly(alchemy1)>=hourly(cook1)*.35,'Starter Alchemy should stay within a reasonable band of Smithing/Cooking rather than being 5–7x slower');
+ok(hourly(alchemy1)>=hourly(smith1)*.32&&hourly(alchemy1)>=hourly(cook1)*.35,'After the early Smithing XP catch-up, starter Alchemy must still earn at least 32% of Smithing and 35% of Cooking XP/hour');
 ok(hourly(alchemy85)>=30000,'Late Alchemy should remain fast enough that herbs, not the XP curve, carry the grind');
 const level16Alchemy={...state,skills:state.skills.map(row=>row.skillId==='alchemy'?{...row,level:16,xp:totalXpAtLevel(16)}:row)};
 const alchemy16Pace=craftingPaceProjection(level16Alchemy,alchemy16,alchemy16.seconds,alchemy16.xp).levelPace;

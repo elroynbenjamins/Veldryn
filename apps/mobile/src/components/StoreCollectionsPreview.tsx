@@ -19,7 +19,7 @@ export function StoreCollectionsPreview(){
   <View style={s.between}><Text style={s.title} accessibilityRole="header">Seasonal Collections</Text><Text style={s.coming}>CONCEPT ONLY</Text></View>
   <Text style={s.copy}>A future home for rotating cosmetics. Nothing on this page can be purchased or claimed yet.</Text>
   <View accessibilityRole="tablist" accessibilityLabel="Collection seasons" style={s.seasons}>
-   {COLLECTIONS.map(row=><Pressable key={row.id} accessibilityRole="tab" accessibilityState={{selected:selected===row.id}} onPress={()=>setSelected(row.id)} style={({pressed})=>[s.season,{backgroundColor:selected===row.id?C.selection:C.panel,borderColor:selected===row.id?C.selectionLine:C.line},pressed&&s.pressed]}><Text style={[s.seasonName,{color:selected===row.id?C.text:C.muted}]}>{row.season}</Text></Pressable>)}
+   {COLLECTIONS.map(row=><Pressable key={row.id} accessibilityRole="tab" accessibilityLabel={row.season+' collection preview'} accessibilityState={{selected:selected===row.id}} onPress={()=>setSelected(row.id)} style={({pressed})=>[s.season,{backgroundColor:selected===row.id?C.selection:C.panel,borderColor:selected===row.id?C.selectionLine:C.line},pressed&&s.pressed]}><Text style={[s.seasonName,{color:selected===row.id?C.text:C.muted}]}>{row.season}</Text></Pressable>)}
   </View>
   <View style={[s.collection,{borderColor:collection.color,backgroundColor:C.panelRaised}]}>
    <View style={s.collectionTop}><Text style={s.eyebrow}>COLLECTION PREVIEW · {collection.season.toUpperCase()}</Text><Text style={[s.sigil,{color:collection.color}]}>{collection.symbol}</Text></View>
@@ -29,7 +29,7 @@ export function StoreCollectionsPreview(){
   <Text style={s.eyebrow}>ILLUSTRATIVE COSMETIC CATEGORIES</Text>
   <View style={s.items}>{EXAMPLES.map(item=><View key={item.rarity} style={[s.item,{backgroundColor:C.panel,borderColor:C.line}]}>
    <View style={[s.itemArt,{backgroundColor:C.panel2,borderColor:C.lineStrong}]}><Text style={[s.itemSymbol,{color:collection.color}]}>{item.symbol}</Text></View>
-   <Text style={s.itemRarity}>{item.rarity}</Text>
+   <Text style={s.itemRarity} numberOfLines={1}>{item.rarity}</Text>
    <Text style={s.itemName}>{item.kind}</Text>
   </View>)}</View>
   <View style={[s.note,{backgroundColor:C.infoSurface,borderColor:C.info}]}><Text style={s.noteTitle}>Not available yet</Text><Text style={s.copy}>These are examples, not registered catalogue items. No prices, paid currency, entitlements or purchase actions have been added. A future annual pet could be considered separately.</Text></View>

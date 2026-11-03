@@ -32,7 +32,7 @@ function readyClaims(snapshot:GuildTokenShopSnapshot|null):ClaimRow[]{
  * claiming — at the top of the Guild home, instead of buried under
  * Activities -> Muster and Hall -> Shop -> Earn.
  */
-export function GuildHallSummary({onOpenMuster,onOpenShop,onRewardsChanged}:{onOpenMuster:()=>void;onOpenShop:()=>void;onRewardsChanged?:()=>void|Promise<unknown>}){
+export function GuildHallSummary({onOpenMuster,onOpenShop,onRewardsChanged,compact=false}:{onOpenMuster:()=>void;onOpenShop:()=>void;onRewardsChanged?:()=>void|Promise<unknown>;compact?:boolean}){
  const C=useGameTheme(),s=useMemo(()=>makeStyles(C),[C]);
  const [muster,setMuster]=useState<OnlineGuildMusterState|null>(null);
  const [shop,setShop]=useState<GuildTokenShopSnapshot|null>(null);
@@ -86,6 +86,25 @@ export function GuildHallSummary({onOpenMuster,onOpenShop,onRewardsChanged}:{onO
  const weeklyPct=shop&&shop.weeklyCap>0?Math.max(0,Math.min(100,Math.round(shop.earnedThisWeek/shop.weeklyCap*100))):0;
  const treasury=shop?.treasuryBonusBps?Math.round(shop.treasuryBonusBps/100):0;
  const busyAll=busy==='all';
+
+ if(compact)return <View style={s.stack}>
+  <Panel style={s.compactPanel}>
+   <View style={s.row}>
+    <View style={s.flex}><Text style={s.kicker}>DAILY MUSTER</Text><Text style={s.compactTitle}>{checkedIn?'Checked in today':'Check-in pending'}</Text><Text style={s.compactMeta}>{muster?'Rally '+rallyPct+'% · '+muster.dailyPoints+' points today':loading?'Checking attendance…':'Muster unavailable'}</Text></View>
+    <StatusPill label={checkedIn?'DONE':'TODAY'} tone={checkedIn?'good':'warning'}/>
+   </View>
+   <GameButton compact tone="secondary" title="View Muster & Rally" onPress={onOpenMuster}/>
+  </Panel>
+  <Panel style={s.compactPanel}>
+   <View style={s.row}><View style={s.flex}><Text style={s.kicker}>GUILD TOKENS</Text><Text style={s.compactTitle}>{shop?shop.balance.toLocaleString():'—'} <Text style={s.compactMeta}>available</Text></Text></View>
+    {claims.length>0?<StatusPill label={claims.length+' READY'} tone="good"/>:null}
+   </View>
+   {claims.length>1?<GameButton compact title={busyAll?'Claiming…':'Claim all '+claims.length+' rewards'} disabled={!!busy} loading={busyAll} onPress={()=>void claimAll()}/>:null}
+   {claims.slice(0,claims.length>1?0:1).map(row=><View key={row.id} style={s.compactClaim}><Text numberOfLines={2} style={[s.claimTitle,s.flex]}>{row.title} · +{row.tokens}</Text><GameButton compact title="Claim" disabled={!!busy} loading={busy===row.id} onPress={()=>void claim(row)}/></View>)}
+   {notice?<Text accessibilityLiveRegion="polite" style={s.notice}>{notice}</Text>:null}
+   <GameButton compact tone="secondary" title="Guild Token Shop" onPress={onOpenShop}/>
+  </Panel>
+ </View>;
 
  return <View style={s.stack}>
   {/* CHECK-IN */}
@@ -151,6 +170,7 @@ function Metric({label,value,C,s}:{label:string;value:string;C:ThemeColors;s:Ret
 
 function makeStyles(C:ThemeColors){return StyleSheet.create({
  stack:{gap:12},
+ compactPanel:{gap:7,padding:10},compactTitle:{fontSize:16,lineHeight:22,fontWeight:'800',color:C.text},compactMeta:{fontSize:11,lineHeight:16,color:C.muted,fontWeight:'600'},compactClaim:{flexDirection:'row',alignItems:'center',gap:8},
  hero:{gap:11},
  wallet:{gap:11},
  row:{flexDirection:'row',alignItems:'center',gap:10},

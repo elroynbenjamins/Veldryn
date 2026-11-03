@@ -13,13 +13,13 @@ import {GameModalHeader,GameModalSurface} from './GameModalSurface';
 import {GameButton} from './GameButton';
 import {ItemArtwork} from './ItemArtwork';
 
-const wholeHp=(value:number)=>Math.max(0,Math.round(value));
+const displayHealHp=(value:number)=>displayStat(Math.max(0,Math.round(value)));
 
 export function QuickFoodSheet({state,hunt,stopped,onCommand,onClose,onInventory}:{state:GameState;hunt:ActiveActivity|null;stopped:boolean;onCommand:(command:GameCommand)=>Promise<void>;onClose:()=>void;onInventory:()=>void}){
  const {gt,gl}=useGameplayText(),C=useGameTheme(),[busy,setBusy]=useState(false),[error,setError]=useState(''),inFlight=useRef(false);
  const foods=useMemo(()=>state.inventory.stacks.filter(stack=>stack.quantity>0&&itemDef(stack.itemId).type==='food'),[state.inventory.stacks]);
  const maxHp=useMemo(()=>effectiveStats(state).hp,[state]);
- const hp=state.character?.currentHp??0,canResume=!!hunt&&!state.activity&&hp>1,hpPct=Math.max(0,Math.min(100,Math.round(hp/Math.max(1,maxHp)*100))),equippedFoodId=state.character?.equippedFoodId,equippedStack=equippedFoodId?state.inventory.stacks.find(stack=>stack.itemId===equippedFoodId):undefined,equippedFood=equippedFoodId?itemDef(equippedFoodId):undefined,equippedHeal=equippedFoodId?recoveryAmount(state,equippedFoodId):0,equippedHealLabel=wholeHp(equippedHeal);
+ const hp=state.character?.currentHp??0,canResume=!!hunt&&!state.activity&&hp>1,hpPct=Math.max(0,Math.min(100,Math.round(hp/Math.max(1,maxHp)*100))),equippedFoodId=state.character?.equippedFoodId,equippedStack=equippedFoodId?state.inventory.stacks.find(stack=>stack.itemId===equippedFoodId):undefined,equippedFood=equippedFoodId?itemDef(equippedFoodId):undefined,equippedHeal=equippedFoodId?recoveryAmount(state,equippedFoodId):0,equippedHealLabel=displayHealHp(equippedHeal);
  const equippedActionLabel=equippedHeal>0&&equippedFood?gt('Eat {name} · restore {hp} HP',{name:equippedFood.name,hp:equippedHealLabel}):gt('Health is full');
  const s=useMemo(()=>makeStyles(C),[C]);
  async function run(command:GameCommand,close=false){if(inFlight.current)return;inFlight.current=true;setBusy(true);setError('');try{await onCommand(command);if(close)onClose();}catch(e){setError(e instanceof Error?e.message:gt('Action failed. Please try again.'));}finally{inFlight.current=false;setBusy(false);}}
@@ -31,7 +31,7 @@ export function QuickFoodSheet({state,hunt,stopped,onCommand,onClose,onInventory
   {equippedFood?<GameButton title={equippedActionLabel} disabled={busy||equippedHeal<=0||(equippedStack?.quantity??0)<1} onPress={()=>run({type:'eat',args:{id:equippedFood.id}})}/>:null}
   {error?<Text accessibilityRole="alert" style={s.error}>{gl(error)}</Text>:null}
   <ScrollView style={s.foodScroll} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled" contentContainerStyle={s.foodList} showsHorizontalScrollIndicator={false}>
-   {foods.map(stack=>{const food=itemDef(stack.itemId),heal=recoveryAmount(state,food.id),healLabel=wholeHp(heal),selected=equippedFoodId===food.id;return <View key={food.id} style={s.foodRow}>
+   {foods.map(stack=>{const food=itemDef(stack.itemId),heal=recoveryAmount(state,food.id),healLabel=displayHealHp(heal),selected=equippedFoodId===food.id;return <View key={food.id} style={s.foodRow}>
     <View style={s.foodHead}><View style={s.foodArtwork}><ItemArtwork itemId={food.id} size={42}/></View><View style={s.foodCopy}><Text style={s.foodName}>{food.name} ×{stack.quantity}</Text><Text style={s.foodHeal}>Restores {healLabel} HP</Text></View>{selected?<Text style={s.selected}>AUTO-EAT</Text>:null}</View>
     <View style={s.foodActions}><View style={s.foodAction}><GameButton compact title={gt('Eat 1 · +{hp} HP',{hp:healLabel})} disabled={busy||heal<=0} onPress={()=>run({type:'eat',args:{id:food.id}})}/></View><View style={s.foodAction}><GameButton compact tone="secondary" title={gt(selected?'Selected':'Use for auto-eat')} disabled={busy||selected} onPress={()=>run({type:'food',args:{id:food.id}})}/></View></View>
    </View>;})}

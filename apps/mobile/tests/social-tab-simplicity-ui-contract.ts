@@ -34,6 +34,16 @@ ok(shared.includes("if(mode!=='legacy')")&&shared.includes("<PartyHubPanel dedic
 ok(shared.includes("['Overview','Contracts','Chat'] as const")&&shared.includes('view===\'Chat\'&&!canUsePartyChat'),'Party must expose only Overview, Contracts and membership-gated Chat');
 ok(shared.includes('shouldShowPartyChat(social.party,social.accountId)')&&shared.includes("setPartyView('Overview')"),'Chat access must be checked against current Party membership and recover after disbanding');
 ok(shared.includes('<PartyCreateSheet')&&shared.includes('savePartyPreferences')&&shared.includes('idempotencyKey:key(\'create:\'+activityLevel+\':\'+partyLanguage+\':\'+minimumLevel)'),'Party creation must use the activity/language/level sheet and preserve idempotent backend creation');
+const createPartySheet=read('src/components/PartyCreateSheet.tsx');
+const partyPostComposer=read('src/components/PartyRecruitmentComposer.tsx');
+const partyBackend=read('src/online/party-social.ts');
+ok(createPartySheet.includes('partyActivityLabel')&&createPartySheet.includes('PARTY_LANGUAGES')&&createPartySheet.includes('minimumLevel'),'Party creation must offer activity, language and optional level');
+ok(!createPartySheet.includes('Your role')&&!createPartySheet.includes('Party focus'),'Persistent Party creation must not require dungeon roles');
+ok(partyPostComposer.includes('roles:[]')&&partyPostComposer.includes('minCombatLevel:levelLimit||undefined')&&partyPostComposer.includes('recruitmentPaceForParty(level)'),'Party adverts inherit preferences and never demand combat roles');
+ok(shared.includes('PartyRecruitmentComposer')&&shared.includes("post('party_recruiting')"),'Party creation can continue directly to simplified recruiting');
+ok(partyBackend.includes("'create_party_with_preferences_v1'")&&partyBackend.includes("'update_party_preferences_v1'")&&partyBackend.includes("'party_social_state_v18'")&&partyBackend.includes("'join_party_auto_role_v1'"),'Party preferences and joins are backed by authenticated RPCs');
+ok(party.includes('onEditPreferences')&&party.includes('Edit Party preferences'),'Party leaders can edit preferences without disbanding the team');
+
 ok(shared.includes('respondPartyInvitation(invite.id,true,character())')&&shared.includes('respondPartyInvitation(invite.id,false)')&&shared.includes('cancelPartyInvitation(invite.id)'),'Party invitations must preserve verified accept, decline and cancel paths');
 ok(shared.includes('partyInvitations={partyInvitations} invitationCount=')&&party.includes('GameModalSurface visible={showSettings&&inParty}'),'Invitations and Party management must remain accessible in the focused Party Options sheet');
 ok(shared.includes('transferPartyLeadership(')&&shared.includes('removePartyMember(')&&shared.includes('disbandParty('),'Party leadership, removal and disband must retain server-authoritative commands');

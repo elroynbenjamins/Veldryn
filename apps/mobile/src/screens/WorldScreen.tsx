@@ -27,13 +27,14 @@ type Props={
   onOpenSkills:()=>void;
   onCoop?:(dungeonId?:string)=>void;
   dungeonContent?:ReactNode;
+  dungeonFlowActive?:boolean;
   onRegionalRewardsChanged?:()=>Promise<void>|void;
   onOpenWeeklyOrder?:(order:WeeklyOrder)=>void;
   onOpenContracts?:(order?:WeeklyOrder)=>void;
   goalRegionId?:string;
 };
 
-export function WorldScreen({state,onTravel,onOpenCombat,onOpenSkills,onCoop,dungeonContent,onRegionalRewardsChanged,onOpenWeeklyOrder,onOpenContracts,goalRegionId}:Props){
+export function WorldScreen({state,onTravel,onOpenCombat,onOpenSkills,onCoop,dungeonContent,dungeonFlowActive=false,onRegionalRewardsChanged,onOpenWeeklyOrder,onOpenContracts,goalRegionId}:Props){
   const contextLanguage=useGameLanguage(),language=state.settings.language??contextLanguage;
   const t=(key:ProgressionKey,params?:Record<string,string|number>)=>progressionT(language,key,params);
   const p=(text:string)=>progressionText(language,text);
@@ -68,12 +69,12 @@ export function WorldScreen({state,onTravel,onOpenCombat,onOpenSkills,onCoop,dun
   const frostmarchProgress=serverFrostmarchProgress??frostmarchProgressFromState(state);
   // Dungeons have their own scrolling and heading; don't nest them in Regions.
   if(topTab==='dungeon'&&dungeonContent)return <View style={{flex:1,backgroundColor:C.bg}}>
-    <View style={{paddingHorizontal:spacing.lg,paddingTop:spacing.sm,paddingBottom:spacing.xs}}>
+    {!dungeonFlowActive&&<View style={{paddingHorizontal:spacing.lg,paddingTop:spacing.sm,paddingBottom:spacing.xs}}>
       <View accessibilityRole="tablist" style={s.topTabs}>
         <Pressable accessibilityRole="tab" accessibilityState={{selected:false}} style={s.topTab} onPress={()=>setTopTab('region')}><Text style={s.topTabText}>{t("Current Region")}</Text></Pressable>
         <Pressable accessibilityRole="tab" accessibilityState={{selected:true}} style={[s.topTab,s.topTabActive]} onPress={()=>setTopTab('dungeon')}><Text style={[s.topTabText,s.topTabTextActive]}>{t("Dungeon")}</Text></Pressable>
       </View>
-    </View>
+    </View>}
     <View style={{flex:1,minHeight:0}}>{dungeonContent}</View>
   </View>;
   return <ScrollView contentContainerStyle={s.root} showsVerticalScrollIndicator={false} showsHorizontalScrollIndicator={false}>

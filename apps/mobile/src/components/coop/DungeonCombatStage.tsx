@@ -1,6 +1,6 @@
 import {useCoopStyles} from '../../theme/useCoopStyles';
 import {useSocialText} from '../../i18n/social';
-import {useEffect,useMemo,useRef,useState} from 'react';
+import {useEffect,useLayoutEffect,useMemo,useRef,useState} from 'react';
 import {AccessibilityInfo,Animated,Easing,Image,Pressable,StyleSheet,Text,useWindowDimensions,View} from 'react-native';
 import type {CoopRunView} from '../../core/coop-presentation';
 import {dungeonCombatClassFx,dungeonCombatCueFx,type DungeonCombatCueFx} from '../../core/dungeon-combat-fx';
@@ -95,7 +95,7 @@ export function DungeonCombatStage({run,enemyLabel,boss=false,seasonal=false,eve
  // Keep the same arena mounted, gently fading confirmed portraits/actions
  // into the temporary animation without a loading overlay.
  const handoffOpacity=useRef(new Animated.Value(1)).current,wasAnticipating=useRef(anticipation);
- useEffect(()=>{
+ useLayoutEffect(()=>{
   const was=wasAnticipating.current;wasAnticipating.current=anticipation;
   handoffOpacity.stopAnimation();
   if(was&&!anticipation&&replay&&!reduceMotion){
@@ -103,7 +103,7 @@ export function DungeonCombatStage({run,enemyLabel,boss=false,seasonal=false,eve
    Animated.timing(handoffOpacity,{toValue:1,duration:220,easing:Easing.out(Easing.cubic),useNativeDriver:true}).start();
   }else handoffOpacity.setValue(1);
   return()=>handoffOpacity.stopAnimation();
- },[anticipation,replayKey,reduceMotion,handoffOpacity]);
+ },[anticipation,Boolean(replay),reduceMotion,handoffOpacity]);
  const [anticipationTick,setAnticipationTick]=useState(0);
  useEffect(()=>{
   if(!anticipation||reduceMotion)return;

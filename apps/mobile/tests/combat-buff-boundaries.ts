@@ -27,7 +27,9 @@ assert.equal(whole.encounters.filter(row=>row.prepared).length,3,'exactly three 
 assert.ok(whole.encounters.some(row=>row.candy)&&whole.encounters.some(row=>!row.candy),'candy starts and expires within a batch');
 const empty=combatTimeline({...options,elapsedSeconds:0});assert.equal(empty.encounters.length,0);assert.equal(empty.nextProgressFraction,.3);
 
-const region=REGIONAL_COMBAT_FIXTURES.at(-1)!;
+// Use a repeatable mid-game hunt: Ashlands now deliberately stops insufficiently
+// prepared eight-hour sessions before sixty potion charges can be consumed.
+const region=REGIONAL_COMBAT_FIXTURES.find(row=>row.regionId==='KINGS_ROAD')!;
 function fixture():GameState{
  const s=regionalCombatFixture(region,'prepared','WAYFINDER');
  s.character!.currentHp=effectiveStats(s).hp;s.inventory.stacks=[{itemId:region.foodId,quantity:10000}];

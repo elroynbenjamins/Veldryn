@@ -28,7 +28,28 @@ jobs:
             const branches = await github.paginate(github.rest.repos.listBranches, {
               owner, repo, per_page: 100
             });
-            const protectedPrefixes = ['backup/', 'release/'];
+            // Backup snapshots remain protected; old release branches may be removed
+            // only after GitHub verifies that their exact heads were merged.
+            const protectedPrefixes = ['backup/'];
+            // Closed superseded drafts documented as replaced by already merged PRs,
+            // or explicitly retired in their closed PR discussions. Never widen
+            // this allowlist automatically or infer deletion from branch age.
+            const retired = {
+              'balance/fallen-knight-gear-food-checkpoint-1.0.5': { legacy: 757, replacement: 768 },
+              'balance/meaningful-overworld-gear-and-food-1.0.5': { legacy: 754, replacement: 768 },
+              'chore/release-notes-1-0-4-final': { legacy: 732, replacement: null },
+              'consolidate/account-collections-20261103': { legacy: 766, replacement: 768 },
+              'consolidate/combat-balance-20261103': { legacy: 767, replacement: 768 },
+              'consolidate/1-0-5-combat-and-account-collections-20261103': { legacy: 765, replacement: 768 },
+              'feat/guild-bank-needed-materials-20261031': { legacy: 677, replacement: 680 },
+              'feature/account-wide-collections-20261101': { legacy: 700, replacement: 768 },
+              'feature/journal-skill-learning-paths-20261103': { legacy: 764, replacement: 769 },
+              'fix/auto-lock-enhanced-gear-and-allow-manual-sale': { legacy: 709, replacement: null },
+              'fix/compact-section-guide-replay-20261102': { legacy: 707, replacement: 763 },
+              'fix/guild-guide-and-skills-unavailable-20261103': { legacy: 747, replacement: 762 },
+              'fix/inventory-lock-invalid-settings-20261102': { legacy: 703, replacement: null },
+              'fix/mobile-core-seven-contracts-20261031': { legacy: 682, replacement: 681 },
+            };
             const eligible = [];
             const skipped = [];
             for (const branch of branches) {
@@ -50,7 +71,38 @@ jobs:
                 pr.head.repo?.full_name === owner + '/' + repo &&
                 pr.head.sha === branch.commit.sha && pr.merge_commit_sha);
               if (!merged) {
-                skipped.push({ branch: name, reason: 'no exact-head merged PR' });
+                const entry = retired[name];
+                const old = entry && prs.find(pr =>
+                  pr.number === entry.legacy && pr.state === 'closed' &&
+                  !pr.merged_at && pr.base.ref === 'main' &&
+                  pr.head.repo?.full_name === owner + '/' + repo &&
+                  pr.head.ref === name && pr.head.sha === branch.commit.sha &&
+                  /supersed|reconcil|current main|already works|duplicate/i.test(pr.body || ''));
+                if (!old) {
+                  skipped.push({ branch: name, reason: 'not an exact merged or verified retired head' });
+                  continue;
+                }
+                if (entry.replacement) {
+                  const replacement = await github.rest.pulls.get({
+                    owner, repo, pull_number: entry.replacement
+                  });
+                  const pr = replacement.data;
+                  if (!pr.merged || pr.base.ref !== 'main' || !pr.merge_commit_sha) {
+                    skipped.push({ branch: name, reason: 'replacement not merged' });
+                    continue;
+                  }
+                  const check = await github.rest.repos.compareCommits({
+                    owner, repo, base: pr.merge_commit_sha, head: 'main', per_page: 1
+                  });
+                  if (!['ahead', 'identical'].includes(check.data.status)) {
+                    skipped.push({ branch: name, reason: 'replacement not on main' });
+                    continue;
+                  }
+                }
+                // Three explicitly retired branches (old 1.0.4 note draft,
+                // auto-lock duplicate, inventory-lock duplicate) have no
+                // separate replacement PR; their closed reviews explain why.
+                eligible.push({ name, sha: branch.commit.sha, pr: old.number });
                 continue;
               }
               // A branch is removable only while its merge commit is still

@@ -8,6 +8,9 @@ on:
       - .github/workflows/generate-gathering-tool-icons.yml
       - tools/split-gathering-tool-icons.py
       - apps/mobile/assets/tools/gathering-tools-v3.png
+      - apps/mobile/tests/gathering-tool-individual-artwork.cjs
+      - apps/mobile/src/theme/gathering-tool-assets.ts
+      - apps/mobile/src/components/GatheringToolArtwork.tsx
 
 permissions:
   contents: write
@@ -39,6 +42,8 @@ jobs:
                   assert icon.getchannel("A").getbbox(), f"Blank tool: {path}"
           print("Verified 12 individual 256x256 transparent icons")
           PY
+      - name: Check standalone asset references and UI contracts
+        run: node apps/mobile/tests/gathering-tool-individual-artwork.cjs
       - name: Commit only generated icon assets
         run: |
           git config user.name "github-actions[bot]"

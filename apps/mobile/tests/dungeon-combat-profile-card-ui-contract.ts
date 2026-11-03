@@ -27,6 +27,13 @@ ok(stage.includes("partyField:{width:'100%',flexDirection:'row',flexWrap:'wrap'"
 ok(stage.includes('layout.bossWidthPctFinal')&&stage.includes('layout.bossWidthPct'),'Boss encounter card must retain stronger centered emphasis through the responsive width contract');
 ok(!stage.includes('<ClassAvatar'),'Dungeon stage must not regress to the generic initial/weapon combat box');
 ok(card.includes('dungeonEnemyPortraitSource(name)'),'Named bosses/enemies must resolve real artwork in the encounter card');
+
+// Keep enemy portraits unobstructed in normal and boss rooms. Their names remain
+// available through tap-to-inspect and the existing accessibility label.
+ok(!card.includes('s.enemyPlate')&&!card.includes('s.enemyBossPlate'),'Enemy portraits must not be covered by an encounter/name plate');
+ok(!card.includes('st("ENCOUNTER")')&&!card.includes('st("FINAL BOSS")'),'Enemy and boss combat cards must omit redundant name headers');
+ok(card.includes('accessibilityLabel={`${boss?')&&card.includes('Dungeon enemy'),'Enemy identity must remain available for screen readers');
+ok(card.includes('enemyHpHead')&&card.includes('enemyHpTrack'),'Enemy HP counters and progress bars must remain visible');
 ok(card.includes("boss?'♛':'◆'"),'Unknown enemies must retain a safe visual fallback');
 ok(card.includes('bossPhaseLabel')&&card.includes('PHASE'),'Boss card must keep the latest authoritative phase visible');
 ok(card.includes('INTERRUPT NOW')&&card.includes('castTrack'),'Interruptible boss casts must be readable inside the encounter card');

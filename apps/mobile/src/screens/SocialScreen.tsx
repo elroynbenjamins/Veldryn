@@ -195,7 +195,7 @@ export function SocialScreen({mode='legacy',initialTab='party',characterLevel=0,
      {!recruitment?<GameModalSurface visible={showPartyCreated} presentation="dialog" onClose={()=>setShowPartyCreated(false)}>
       <GameModalHeader eyebrow="PARTY CREATED" title="Your Party is ready" onClose={()=>setShowPartyCreated(false)}/>
       <View style={s.createdBody}><Text style={s.text}>Your {partyActivityLabel(activityLevel)} Party has been created. All classes are welcome.</Text>
-       <GameButton title="Find members" onPress={()=>{setShowPartyCreated(false);post('party_recruiting')}}/>
+       <GameButton title="Find members" disabled={busy} onPress={()=>{setShowPartyCreated(false);post('party_recruiting')}}/>
        <GameButton title="Later" tone="secondary" onPress={()=>setShowPartyCreated(false)}/>
       </View>
      </GameModalSurface>:null}

@@ -11,7 +11,7 @@ import {navigationText} from '../i18n/navigation';
 import {progressionText} from '../i18n/progression';
 import type {Language} from '../i18n/languages';
 
-export function SystemNoticeLog({state,now:providedNow,active=true}:{state:GameState;now?:number;active?:boolean}){
+export function SystemNoticeLog({state,now:providedNow,active=true,expanded=false}:{state:GameState;now?:number;active?:boolean;expanded?:boolean}){
  const tr=(text:string)=>navigationText(state.settings.language,text);
  const C=useGameTheme(),s=useMemo(()=>makeStyles(C),[C]),[worldRows,setWorldRows]=useState<WorldMilestoneFeedRow[]>([]),[clock,setClock]=useState(Date.now);
  const lastLoadedAt=useRef(0),inFlight=useRef(false),mounted=useRef(true),now=providedNow??clock;
@@ -34,7 +34,7 @@ export function SystemNoticeLog({state,now:providedNow,active=true}:{state:GameS
   return()=>{alive=false;clearInterval(timer);foreground.remove();};
  },[active]);
  const items=useMemo(()=>[...systemNotifications(state,now),...worldRows.slice().reverse().map(row=>worldNotice(row,state.settings.language))],[state,now,worldRows]);
- return <ChatLog active={active} channelKey="system" items={items} emptyText={tr("No system notices right now.")} renderItem={item=><NoticeRow item={item}/>}/>;
+ return <ChatLog expanded={expanded} active={active} channelKey="system" items={items} emptyText={tr("No system notices right now.")} renderItem={item=><NoticeRow item={item}/>}/>;
 }
 
 function worldNotice(row:WorldMilestoneFeedRow,language:Language):SystemNotice{return {id:'world:'+row.feed_id,title:`${row.display_name} · ${progressionText(language,kindLabel(row.kind))}`,body:`${row.subject_name}${row.detail?' · '+row.detail:''}`,tone:'info'};}

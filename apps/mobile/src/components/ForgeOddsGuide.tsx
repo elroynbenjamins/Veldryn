@@ -105,7 +105,7 @@ export function ForgeOddsGuide({itemId}:{itemId:string}){
        style={({pressed})=>[s.stepButton,{borderColor:C.line,backgroundColor:C.panel2,opacity:quality===0 ? 0.4 : pressed ? 0.7 : 1}]}>
        <Text style={[s.stepText,{color:C.text}]}>−</Text>
      </Pressable>
-     <Pressable accessibilityRole="adjustable" accessibilityLabel={gt('Quality preview')}
+     <View accessible accessibilityRole="adjustable" accessibilityLabel={gt('Quality preview')}
        accessibilityValue={{min:CRAFTED_GEAR_QUALITY_MIN,max:CRAFTED_GEAR_QUALITY_MAX,now:quality}}
        accessibilityActions={[{name:'increment'},{name:'decrement'}]}
        onAccessibilityAction={event=>{
@@ -113,14 +113,18 @@ export function ForgeOddsGuide({itemId}:{itemId:string}){
         if(event.nativeEvent.actionName==='decrement')setQuality(value=>Math.max(0,value-QUALITY_STEP));
        }}
        onLayout={event=>setTrackWidth(event.nativeEvent.layout.width)}
-       onPress={event=>updateQuality(event.nativeEvent.locationX)}
-       onTouchMove={event=>updateQuality(event.nativeEvent.locationX)}
+       // Own touches from the start: dragging the slider must not turn into a screen-back swipe.
+       onStartShouldSetResponder={()=>true}
+       onMoveShouldSetResponder={()=>true}
+       onResponderTerminationRequest={()=>false}
+       onResponderGrant={event=>updateQuality(event.nativeEvent.locationX)}
+       onResponderMove={event=>updateQuality(event.nativeEvent.locationX)}
        style={s.sliderHit}>
        <View pointerEvents="none" style={[s.sliderTrack,{backgroundColor:C.line}]}>
         <View style={[s.sliderFill,{backgroundColor:C.accent,width:qualityPosition}]}/>
         <View style={[s.sliderThumb,{backgroundColor:C.accent,borderColor:C.panel,left:qualityPosition}]}/>
        </View>
-     </Pressable>
+     </View>
      <Pressable accessibilityRole="button" accessibilityLabel={gt('Increase quality')}
        accessibilityState={{disabled:quality===CRAFTED_GEAR_QUALITY_MAX}}
        disabled={quality===CRAFTED_GEAR_QUALITY_MAX}

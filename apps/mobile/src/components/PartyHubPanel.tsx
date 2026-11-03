@@ -158,7 +158,7 @@ export function PartyHubPanel(props: PartyHubPanelProps){
    <View accessibilityRole="tablist" style={s.browseTabs}><BrowseChip label={st('Parties recruiting')} selected={browseMode==='parties'} onPress={()=>setBrowseMode('parties')}/><BrowseChip label={st('Players seeking')} selected={browseMode==='players'} onPress={()=>setBrowseMode('players')}/></View>
    {browseMode==='players'&&!inParty?<GameButton compact tone="secondary" title={st('Post my LFG')} disabled={!props.onCreateRecruitmentPost} onPress={()=>props.onCreateRecruitmentPost?.('looking_for_party')}/>:null}
    {browseMode==='parties'&&canManageParty?<GameButton compact tone="secondary" title={st('Post Party LFM')} disabled={!props.onCreateRecruitmentPost} onPress={()=>props.onCreateRecruitmentPost?.('party_recruiting')}/>:null}
-   <RecruitmentFiltersPanel value={filters} onChange={setFilters} hidePostType/>
+   <RecruitmentFiltersPanel value={filters} onChange={setFilters} hidePostType partyMode/>
    <View style={s.resultsHead}><Text style={s.eyebrow}>{st('AVAILABLE ADVERTS')}</Text><Text style={s.muted}>{st('{count} results',{count:cards.length})}</Text></View>
    {cards.map(card=><RecruitmentListing key={card.id} card={card} nowMs={props.nowMs} onPress={()=>props.onOpenRecruitmentPost?.(card.id)}/>)}
    {!cards.length?<View style={s.emptyState}><Text style={s.emptyTitle}>{st('No matching adverts.')}</Text><Text style={s.muted}>{st('Try different filters, or post your own advert.')}</Text></View>:null}

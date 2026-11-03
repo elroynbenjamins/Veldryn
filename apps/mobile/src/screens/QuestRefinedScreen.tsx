@@ -26,6 +26,7 @@ import {MonsterPortraitFrame} from '../components/MonsterPortraitFrame';
 import {ActivityArtwork} from '../components/ActivityArtwork';
 import {ItemArtwork} from '../components/ItemArtwork';
 import {SearchField} from '../components/SearchField';
+import {JournalSkillPathsPanel} from '../components/JournalSkillPathsPanel';
 import {StatusPill} from '../components/StatusPill';
 import {ActionFeedback} from '../components/ActionFeedback';
 import {EmptyState} from '../components/EmptyState';
@@ -201,6 +202,7 @@ export function QuestRefinedScreen({state,mode,onModeChange,focusedWeeklyOrderId
       <Text style={[styles.rewardHint,{color:C.accent}]}>{nextChapter.rewardGold} {t('Gold')}{nextChapter.rewardItemId?' · '+(nextChapter.rewardItemQty??1)+'× '+nextChapter.rewardItemId.replace(/_/g,' '):''}</Text>
       <GameButton title={chapterProgress?.status==='complete'?p('Claim rewards'):p('View objective')} onPress={()=>open('story',nextChapter.id)}/>
      </View>:null}
+    <JournalSkillPathsPanel state={state} onNavigate={onNavigate}/>
     <View style={styles.sectionHead}><Text style={[styles.sectionTitle,{color:C.accent}]}>{p('STORY CHAPTERS')}</Text><Text style={[styles.mini,{color:C.muted}]}>{QUESTS.length} {p('total')}</Text></View>
     <Rail C={C} selected={filter} onChange={setFilter} items={[{id:'current',label:p('Current')+' · '+journalEntries(state,'current','').length},{id:'all',label:p('All')},{id:'claimed',label:p('Completed')},{id:'locked',label:p('Locked')} ]}/>
     <SearchField accessibilityLabel={t('Search quests')} placeholder={p('Search chapters…')} placeholderTextColor={C.muted} value={query} onChangeText={setQuery}/>

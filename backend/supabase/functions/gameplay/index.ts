@@ -44536,7 +44536,12 @@ function simulateCombat(input) {
     }
     const mit = effect2.damageType === "true" ? 0 : defenseMitigation(gemEffectiveDefenseV1(target2, now), mitigationConstant);
     const crit = rng.next(`${now}:${source.definition.id}:${abilityId}:crit`) < clamp2(source.definition.stats.critChance + modifier(source, "crit", now), 0, 0.75);
-    let raw2 = damageAfterMitigation(source.definition.stats.attackPower, effect2.coeff ?? 0, mit, 0.95 + rng.next(`${now}:${abilityId}:var`) * 0.1, crit, source.definition.stats.critMultiplier) + (effect2.flat ?? 0);
+    const qmodeStrike = input.enemyDamageProfile === "qmode-v1" && source.definition.team === "enemies" && target2.definition.team === "players" && eventType === "damage";
+    const varianceRoll = rng.next(`${now}:${abilityId}:var`);
+    const variance = qmodeStrike ? 0.925 + varianceRoll * 0.2 : 0.95 + varianceRoll * 0.1;
+    const heavyHit = qmodeStrike && !crit && rng.next(`${now}:${source.definition.id}:${target2.definition.id}:${abilityId}:heavy`) * 2 < 0.04;
+    let raw2 = damageAfterMitigation(source.definition.stats.attackPower, effect2.coeff ?? 0, mit, variance, crit, source.definition.stats.critMultiplier) + (effect2.flat ?? 0);
+    if (heavyHit) raw2 *= 1.1;
     raw2 *= gemOutgoingDamageMultiplierV1(source, target2, now, abilityId, eventType === "dot_tick");
     raw2 *= Math.max(0.1, 1 + modifier(source, "damage_done", now));
     raw2 *= Math.max(0.1, 1 + modifier(target2, "damage_taken", now));
@@ -44561,7 +44566,7 @@ function simulateCombat(input) {
       }
     }
     addThreat(target2, source, dealt * (effect2.threatMultiplier ?? 1));
-    events.push({ atMs: now, type: eventType, actorId: source.definition.id, targetId: target2.definition.id, abilityId, amount: Number(dealt.toFixed(2)), ...eventType === "damage" ? { critical: crit } : {}, ...absorbed > 0 ? { absorbed: Number(absorbed.toFixed(2)) } : {} });
+    events.push({ atMs: now, type: eventType, actorId: source.definition.id, targetId: target2.definition.id, abilityId, amount: Number(dealt.toFixed(2)), ...eventType === "damage" ? { critical: crit } : {}, ...heavyHit ? { detail: "heavy_hit" } : {}, ...absorbed > 0 ? { absorbed: Number(absorbed.toFixed(2)) } : {} });
     let reflectable = absorbed;
     for (const shield of target2.reflectiveShields ?? []) {
       const used = Math.min(reflectable, shield.remaining);

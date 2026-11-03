@@ -44581,7 +44581,12 @@ function simulateCombat(input) {
     }
     const mit = effect2.damageType === "true" ? 0 : defenseMitigation(gemEffectiveDefenseV1(target2, now), mitigationConstant);
     const crit = rng.next(`${now}:${source.definition.id}:${abilityId}:crit`) < clamp2(source.definition.stats.critChance + modifier(source, "crit", now), 0, 0.75);
-    let raw2 = damageAfterMitigation(source.definition.stats.attackPower, effect2.coeff ?? 0, mit, 0.95 + rng.next(`${now}:${abilityId}:var`) * 0.1, crit, source.definition.stats.critMultiplier) + (effect2.flat ?? 0);
+    const qmodeStrike = input.enemyDamageProfile === "qmode-v1" && source.definition.team === "enemies" && target2.definition.team === "players" && eventType === "damage";
+    const varianceRoll = rng.next(`${now}:${abilityId}:var`);
+    const variance = qmodeStrike ? 0.925 + varianceRoll * 0.2 : 0.95 + varianceRoll * 0.1;
+    const heavyHit = qmodeStrike && !crit && rng.next(`${now}:${source.definition.id}:${target2.definition.id}:${abilityId}:heavy`) * 2 < 0.04;
+    let raw2 = damageAfterMitigation(source.definition.stats.attackPower, effect2.coeff ?? 0, mit, variance, crit, source.definition.stats.critMultiplier) + (effect2.flat ?? 0);
+    if (heavyHit) raw2 *= 1.1;
     raw2 *= gemOutgoingDamageMultiplierV1(source, target2, now, abilityId, eventType === "dot_tick");
     raw2 *= Math.max(0.1, 1 + modifier(source, "damage_done", now));
     raw2 *= Math.max(0.1, 1 + modifier(target2, "damage_taken", now));
@@ -44606,7 +44611,7 @@ function simulateCombat(input) {
       }
     }
     addThreat(target2, source, dealt * (effect2.threatMultiplier ?? 1));
-    events.push({ atMs: now, type: eventType, actorId: source.definition.id, targetId: target2.definition.id, abilityId, amount: Number(dealt.toFixed(2)), ...eventType === "damage" ? { critical: crit } : {}, ...absorbed > 0 ? { absorbed: Number(absorbed.toFixed(2)) } : {} });
+    events.push({ atMs: now, type: eventType, actorId: source.definition.id, targetId: target2.definition.id, abilityId, amount: Number(dealt.toFixed(2)), ...eventType === "damage" ? { critical: crit } : {}, ...heavyHit ? { detail: "heavy_hit" } : {}, ...absorbed > 0 ? { absorbed: Number(absorbed.toFixed(2)) } : {} });
     let reflectable = absorbed;
     for (const shield of target2.reflectiveShields ?? []) {
       const used = Math.min(reflectable, shield.remaining);
@@ -48109,7 +48114,7 @@ function resolveExpeditionCombat(input, includeDebugTrace = false) {
     const defensiveAbilities = player2.abilities.filter((ability3) => ability3.effects.length > 0 && ability3.effects.every((effect2) => effect2.kind === "heal" || effect2.kind === "shield"));
     return { ...player2, stats: { ...player2.stats, attackPower: player2.stats.attackPower * 0.7, healingPower: player2.stats.healingPower * 0.7 }, abilities: defensiveAbilities };
   });
-  const result = simulateCombat({ seed: `${input.serverSeed}:${input.runId}:${input.nodeIndex}:${input.encounterId}`, players, enemies, initialPlayerState: input.initialPlayerState, maxDurationMs: input.maxDurationMs ?? 18e4 });
+  const result = simulateCombat({ seed: `${input.serverSeed}:${input.runId}:${input.nodeIndex}:${input.encounterId}`, players, enemies, initialPlayerState: input.initialPlayerState, maxDurationMs: input.maxDurationMs ?? 18e4, enemyDamageProfile: input.enemyDamageProfile });
   const eventDigest = createHash2("sha256").update(JSON.stringify(result.events)).digest().toString("hex");
   const rec = (xs, pick) => Object.fromEntries(xs.map((x) => [x.definition.id, Number(pick(x).toFixed(2))]));
   const bossIds = new Set(result.enemies.filter((enemy4) => enemy4.definition.boss).map((enemy4) => enemy4.definition.id));
@@ -48198,7 +48203,7 @@ function resolveCoopNode(input) {
     });
     const depthMultiplier = input.node.depth >= balance.lateDepthStart ? balance.lateDepthAttackMultiplier : 1;
     const tierScale = input.tier ? coopTierEnemyMultipliers(input.tier) : { attack: 1, hp: 1, defense: 1 };
-    const combat = resolveExpeditionCombat({ runId: input.runId, nodeIndex: input.node.depth, encounterId: input.node.contentId, serverSeed: input.serverSecret, players, initialPlayerState: state.actors, safetyAiPlayerIds: input.safetyAiPlayerIds, enemyAttackMultiplier: (rootbound ? balance.enemyAttackMultiplier * depthMultiplier : 1) * tierScale.attack * (input.enemyAttackMultiplier ?? 1), enemyHpMultiplier: tierScale.hp * (input.enemyHpMultiplier ?? 1), enemyDefenseMultiplier: tierScale.defense * (input.enemyDefenseMultiplier ?? 1), enemyLevel: input.enemyLevel, bossTuning: input.bossTuning });
+    const combat = resolveExpeditionCombat({ runId: input.runId, nodeIndex: input.node.depth, encounterId: input.node.contentId, serverSeed: input.serverSecret, players, initialPlayerState: state.actors, safetyAiPlayerIds: input.safetyAiPlayerIds, enemyAttackMultiplier: (rootbound ? balance.enemyAttackMultiplier * depthMultiplier : 1) * tierScale.attack * (input.enemyAttackMultiplier ?? 1), enemyHpMultiplier: tierScale.hp * (input.enemyHpMultiplier ?? 1), enemyDefenseMultiplier: tierScale.defense * (input.enemyDefenseMultiplier ?? 1), enemyDamageProfile: input.enemyDamageProfile, enemyLevel: input.enemyLevel, bossTuning: input.bossTuning });
     state = { ...state, actors: combat.endingPlayerState };
     return { success: combat.success, state, summary: { kind: "combat", ...combat.resultJson, ...input.bossTuning ? { bossTuningProfile: input.bossTuning.profileId } : {} } };
   }
@@ -48493,7 +48498,7 @@ var QModeService = class {
     validateCoopRoster([{ accountId: input.controllerAccountId, characterId: input.controllerSnapshot.characterId, role: input.controllerSnapshot.readiness.role }, ...allies.map((ally) => ({ accountId: ally.snapshot.accountId, characterId: ally.snapshot.characterId, role: ally.snapshot.readiness.role }))]);
     validateUniqueDamageClasses([input.controllerSnapshot, ...allies.map((ally) => ally.snapshot)].map((snapshot) => ({ role: snapshot.readiness.role, classId: snapshot.classId })));
     const players = [combatant(input.controllerSnapshot), ...allies.map((ally) => combatant(ally.snapshot))];
-    return this.createRun({ requestId: input.requestId, runId: input.runId, controllerAccountId: input.controllerAccountId, expeditionId: input.expeditionId, tier: input.tier, contentVersion: input.contentVersion, balanceVersion: input.balanceVersion, players, echoSourceAccountIds: allies.filter((ally) => ally.kind === "echo").map((ally) => ally.snapshot.accountId), npcCharacterIds: allies.filter((ally) => ally.kind === "npc").map((ally) => ally.snapshot.characterId) });
+    return this.createRun({ requestId: input.requestId, runId: input.runId, controllerAccountId: input.controllerAccountId, expeditionId: input.expeditionId, tier: input.tier, contentVersion: input.contentVersion, balanceVersion: input.balanceVersion, players, qmodePressureVersion: 1, echoSourceAccountIds: allies.filter((ally) => ally.kind === "echo").map((ally) => ally.snapshot.accountId), npcCharacterIds: allies.filter((ally) => ally.kind === "npc").map((ally) => ally.snapshot.characterId) });
   }
   createLive(input) {
     const definition = EXPEDITIONS[input.expeditionId];
@@ -48519,7 +48524,7 @@ var QModeService = class {
     if (!current || !current.nextNodeIds.includes(input.optionNodeId)) throw new Error("invalid_option");
     const selected2 = run.graph.nodes.find((node) => node.nodeId === input.optionNodeId);
     if (!selected2) throw new Error("invalid_option");
-    const result = resolveCoopNode({ runId: run.id, serverSecret: this.serverSecret, node: selected2, players: run.players, state: run.persistentState, tier: run.tierScalingVersion === 2 ? run.tier : void 0, safetyAiPlayerIds: input.safetyAiPlayerIds });
+    const result = resolveCoopNode({ runId: run.id, serverSecret: this.serverSecret, node: selected2, players: run.players, state: run.persistentState, tier: run.tierScalingVersion === 2 ? run.tier : void 0, enemyAttackMultiplier: run.qmodePressureVersion === 1 ? 1.005 : void 0, enemyDamageProfile: run.qmodePressureVersion === 1 ? "qmode-v1" : void 0, safetyAiPlayerIds: input.safetyAiPlayerIds });
     run.lastResolution = { nodeId: selected2.nodeId, result: structuredClone(result) };
     run.persistentState = result.state;
     run.currentNodeId = selected2.nodeId;
@@ -48545,7 +48550,7 @@ var QModeService = class {
   }
   createRun(input) {
     const graph2 = generateCoopRouteGraph(this.serverSecret, input.expeditionId, input.runId, input.contentVersion, input.balanceVersion);
-    const run = { id: input.runId, requestId: input.requestId, controllerAccountId: input.controllerAccountId, expeditionId: input.expeditionId, tier: input.tier, graph: graph2, currentNodeId: graph2.entryNodeId, phase: "awaiting_choice", players: input.players, persistentState: initialPersistentRunState(input.players), tierScalingVersion: 2, echoSourceAccountIds: input.echoSourceAccountIds, npcCharacterIds: input.npcCharacterIds ?? [] };
+    const run = { id: input.runId, requestId: input.requestId, controllerAccountId: input.controllerAccountId, expeditionId: input.expeditionId, tier: input.tier, graph: graph2, currentNodeId: graph2.entryNodeId, phase: "awaiting_choice", players: input.players, persistentState: initialPersistentRunState(input.players), tierScalingVersion: 2, qmodePressureVersion: input.qmodePressureVersion, echoSourceAccountIds: input.echoSourceAccountIds, npcCharacterIds: input.npcCharacterIds ?? [] };
     this.repository.save(run);
     return structuredClone(run);
   }

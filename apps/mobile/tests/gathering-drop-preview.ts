@@ -21,7 +21,8 @@ check(copper.some(row=>row.kind==='pet'&&row.name==='Pebblemole'&&row.chance===.
 check(preview('GREENWOOD_TREE').some(row=>row.kind==='pet'&&row.name==='Twiglet'&&row.chance===.0012),'Greenwood shows Twiglet instead of invented pet');
 check(preview('IRONWOOD_TREE').every(row=>row.kind!=='pet'),'A node without a pet rule must not advertise a pet');
 check(preview('SILVERBROOK_SHOAL').some(row=>row.kind==='pet'&&row.name==='Silverfin'),'Fishing uses exact source-to-pet mapping');
-check(preview('DEWLEAF_PATCH').some(row=>row.kind==='essence'&&row.chance===.01),'Herbalism preview includes actual zone essence rate');
+check(preview('DEWLEAF_PATCH').some(row=>row.kind==='essence'&&row.chance===.02),'T1 Asterfall Herbalism preview displays doubled 2% base essence chance');
+check(preview('OATHBLOSSOM_PATCH').some(row=>row.kind==='essence'&&row.chance===.025),'King\'s Road Herbalism preview displays doubled 2.5% base essence chance');
 check(preview('DEWLEAF_PATCH').every(row=>row.kind!=='pet'),'Herb with no pet source must not invent one');
 check(preview('FROSTBELL_FLOWER').some(row=>row.kind==='essence'&&row.chance===.0175),'Frostmarch zone essence chance');
 check(preview('FROSTBELL_FLOWER').some(row=>row.kind==='pet'&&row.name==='Rimecap'),'Herbalism pet mapping');

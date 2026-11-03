@@ -15,7 +15,7 @@ function echo(accountId:string,classId:string,characterId:string):PublishedEcho{
 const profiles=[echo('tank-owner','Ironwarden','tank-char'),echo('damage-owner-1','Wayfinder','damage-char-1'),echo('damage-owner-dup','Wayfinder','damage-char-dup'),echo('damage-owner-2','Ravager','damage-char-2'),echo('support-owner','Stonecaller','support-char')];
 const repository=new MemoryQModeRunRepository();const firstService=new QModeService(repository,'q-secret-success');
 let run=firstService.create({requestId:'request-1',runId:'q-run-1',controllerAccountId:'controller',controllerSnapshot:frozen('controller','Dawnkeeper','controller-char'),expeditionId:'EXP_001',tier:1,contentVersion:'v1',balanceVersion:'b1',nowMs:10_000,profiles});
-assert.equal(run.players.length,4);assert.equal(new Set(run.echoSourceAccountIds).size,3);assert.equal(run.phase,'awaiting_choice');
+assert.equal(run.players.length,4);assert.equal(run.qmodePressureVersion,1,'New Q-Mode runs use stronger Echo/NPC enemy hits');assert.equal(new Set(run.echoSourceAccountIds).size,3);assert.equal(run.phase,'awaiting_choice');
 const damageClasses=run.players.filter(player=>player.role==='damage').map(player=>player.classId);assert.equal(damageClasses.length,2);assert.equal(new Set(damageClasses).size,2,'Q-Mode must choose two different Damage classes even if duplicate-class Echoes are available');
 assert.equal(firstService.create({requestId:'request-1',runId:'different',controllerAccountId:'controller',controllerSnapshot:frozen('controller','Dawnkeeper','controller-char'),expeditionId:'EXP_001',tier:1,contentVersion:'v1',balanceVersion:'b1',nowMs:10_000,profiles}).id,'q-run-1');
 let denied='';try{firstService.getAuthorized(run.id,'tank-owner');}catch(error){denied=error instanceof Error?error.message:String(error);}assert.equal(denied,'not_participant');
@@ -38,9 +38,23 @@ const npcOnly=new QModeService(new MemoryQModeRunRepository(),'npc-test').create
  controllerSnapshot:frozen('controller','Dawnkeeper','controller-char'),expeditionId:'EXP_001',tier:1,
  contentVersion:'v1',balanceVersion:'b1',nowMs:10_000,profiles:[],npcSnapshots:npcKits});
 assert.equal(npcOnly.npcCharacterIds?.length,3);
+assert.equal(npcOnly.qmodePressureVersion,1,'NPC fallback receives same combat difficulty as real Echo recruits');
 assert.equal(npcOnly.echoSourceAccountIds.length,0);
 assert.deepEqual(projectQModeRun(npcOnly).team.map(member=>member.kind),['controller','npc','npc','npc']);
 assert.equal(new Set(npcOnly.players.filter(player=>player.role==='damage').map(player=>player.classId)).size,2);
+// Live remains on its established pressure profile; old persisted Q-Mode runs
+// without the explicit opt-in marker are not silently changed mid-run.
+const liveRun=new QModeService(new MemoryQModeRunRepository(),'live-test').createLive({
+ requestId:'live-test-request',runId:'live-test-run',controllerAccountId:'controller',
+ expeditionId:'EXP_001',tier:1,contentVersion:'v1',balanceVersion:'b1',
+ snapshots:[frozen('controller','Ironwarden','tank-live'),frozen('damage-1','Wayfinder','dps-live-1'),frozen('damage-2','Ravager','dps-live-2'),frozen('support','Stonecaller','support-live')],
+});
+assert.equal(liveRun.qmodePressureVersion,undefined,'Live combat must not inherit Q-Mode pressure');
+const legacyRepository=new MemoryQModeRunRepository();
+legacyRepository.save({...npcOnly,qmodePressureVersion:undefined});
+assert.equal(new QModeService(legacyRepository,'npc-test').getAuthorized(npcOnly.id,'controller').qmodePressureVersion,undefined,
+ 'Previously saved Q-Mode runs retain their existing difficulty');
+
 const mixed=new QModeService(new MemoryQModeRunRepository(),'npc-test').create({
  requestId:'mixed-test-request',runId:'mixed-run',controllerAccountId:'controller',
  controllerSnapshot:frozen('controller','Dawnkeeper','controller-char'),expeditionId:'EXP_001',tier:1,

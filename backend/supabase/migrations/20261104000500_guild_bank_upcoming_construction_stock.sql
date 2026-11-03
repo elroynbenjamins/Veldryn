@@ -39,7 +39,7 @@ begin
      on p.guild_id=v_guild::text and p.template_id=t.template_id
    where t.enabled
    and p.completed_at is null and req.resource_id=p_resource_id
-   and req.required_amount>coalesce((
+   and public.guild_construction_scaled_amount_v1(req.required_amount,public.guild_construction_project_member_count_v1(v_guild,t.template_id))>coalesce((
      select sum(d.amount) from public.guild_construction_donations d
      where d.guild_id=v_guild::text and d.template_id=t.template_id
        and d.resource_id=req.resource_id),0)
@@ -108,7 +108,7 @@ declare
   v_skill_need bigint := 0;
 begin
   select coalesce(sum(greatest(0,
-    r.required_amount - coalesce((
+    public.guild_construction_scaled_amount_v1(r.required_amount,public.guild_construction_project_member_count_v1(new.guild_id,r.template_id)) - coalesce((
       select sum(d.amount)
       from public.guild_construction_donations d
       where d.guild_id = new.guild_id::text
@@ -149,7 +149,7 @@ begin
   end if;
 
   -- This is the bank balance *after* the deposit RPC's row-locked credit.
-  -- Deposits may never exceed all remaining released construction and skill requirements.
+  -- Deposits may never exceed all remaining published current/upcoming construction and released skill requirements.
   select amount into v_bank
   from public.guild_bank_balances
   where guild_id = new.guild_id and resource_id = new.resource_id;

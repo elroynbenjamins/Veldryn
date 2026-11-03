@@ -166,7 +166,7 @@ export function OnlineGuildBankPanel({snapshot,onReload,focusResourceId,onFocusH
   return <View key={(upcoming?'later-':'now-')+id} style={s.neededRow}>
    <View style={s.neededArt}>{id==='gold'?<Text style={s.goldGlyph}>G</Text>:<ResourceArtwork itemId={id} size={34} framed={false}/>}</View>
    <View style={s.flex}><Text numberOfLines={2} style={s.name}>{resourceTitle(id)}</Text>
-    <Text style={s.meta}>{balance(id).toLocaleString()} stored · {shortage.toLocaleString()} more to deposit</Text>
+    <Text style={s.meta}>{balance(id).toLocaleString()} stored · {shortage.toLocaleString()} more to deposit{!upcoming&&(needs.get(id)?.skills??0)>0?' · Guild Skills':''}</Text>
    </View>
    {shortage>0?<GameButton compact tone="secondary" title="Donate" disabled={depositDisabled} onPress={()=>choose(id)}/>:
     <Text style={[s.meta,s.nowText]}>In bank</Text>}
@@ -188,6 +188,11 @@ export function OnlineGuildBankPanel({snapshot,onReload,focusResourceId,onFocusH
    <View style={s.stat}><Text style={s.statLabel}>STILL TO DEPOSIT</Text><Text style={s.statValue}>{snapshot.bank?remainingTotal.toLocaleString():'—'}<Text style={s.statSuffix}> units</Text></Text></View>
   </View>
   {snapshot.bank===null?<Text accessibilityRole="alert" style={s.warning}>Bank balances are unavailable. Donations are paused until a refresh succeeds.</Text>:null}
+  {skillLoading?<Text style={s.meta}>Checking released Guild Skill requirements…</Text>:null}
+  {skillError?<View style={s.actions}>
+   <Text accessibilityRole="alert" style={[s.warning,s.flex]}>Guild Skill requirements could not load. Construction deposits remain available.</Text>
+   <GameButton compact tone="secondary" title="Retry" onPress={()=>setSkillRefresh(v=>v+1)}/>
+  </View>:null}
   {!!error&&<Text accessibilityRole="alert" style={s.error}>{error}</Text>}
   {!!notice&&<Text accessibilityLiveRegion="polite" style={s.success}>{notice}</Text>}
   {pending?<View style={s.pending}>
@@ -213,12 +218,14 @@ export function OnlineGuildBankPanel({snapshot,onReload,focusResourceId,onFocusH
    <View style={s.bankGrid}>{visibleIds.map(inventoryCard)}</View>
    {!visibleIds.length?<View style={s.empty}><Text style={s.name}>No matching materials</Text>
     <Text style={s.help}>Try a different search. Only published upgrade materials are accepted.</Text></View>:null}
-   <Text style={s.footerHelp}>Only materials needed by published Guild upgrades can be deposited. Donated items cannot be withdrawn.</Text>
+   <Text style={s.footerHelp}>Only materials required by published Construction or released Guild Skills can be deposited. Donations cannot be withdrawn.</Text>
    <GameButton compact tone="secondary" title="View materials needed" onPress={()=>{setView('needed');setNotice('')}}/>
   </View>:null}
   {view==='needed'?<View style={s.section}>
-   <View style={s.sectionHead}><Text style={s.sectionTitle}>Construction requirements</Text><Text style={s.meta}>{currentIds.length} needed now</Text></View>
-   <Text style={s.help}>Donate supplies to the Bank first. Guild Construction allocates them to individual projects.</Text>
+   <View style={s.sectionHead}><Text style={s.sectionTitle}>Guild supply requirements</Text><Text style={s.meta}>{currentIds.length} needed now</Text></View>
+   <GameButton compact tone="secondary" title={skillLoading?'Refreshing Guild Skill needs…':'Refresh requirements'} disabled={skillLoading}
+    onPress={()=>{setSkillRefresh(v=>v+1);void onReload()}}/>
+   <Text style={s.help}>Construction and released Guild Skills draw from the same Bank. Donate supplies first; spending is done in the relevant Guild screen.</Text>
    <Text style={s.groupLabel}>NEEDED NOW</Text>
    {currentIds.length?currentIds.map(id=>neededRow(id,false)):
     <Text style={s.help}>No current construction or released Guild Skill requirements need more materials.</Text>}

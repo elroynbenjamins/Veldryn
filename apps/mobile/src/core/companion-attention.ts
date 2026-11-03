@@ -41,7 +41,9 @@ export function companionAttentionSummary(state:GameState,now:number):CompanionA
  const monthlyCompletion=view.trial.progress.season.monthlyChallengeCompletion??{};
  const monthlyClaims=new Set(view.trial.progress.season.monthlyChallengeClaims??[]);
  const monthlyTrialClaims=Object.entries(monthlyCompletion).filter(([id,complete])=>complete&&!monthlyClaims.has(id)).length;
- const total=expeditionClaims+bondRewards+ascensions+sanctuaryClaims+codexClaims+monthlyTrialClaims+recentUnlocks;
+ // Ascension is optional progression, not a claimable reward. Never keep the
+ // Account / Companion urgent badge lit simply because a tier is available.
+ const total=expeditionClaims+bondRewards+sanctuaryClaims+codexClaims+monthlyTrialClaims+recentUnlocks;
  return {total,hasAttention:total>0,expeditionClaims,bondRewards,ascensions,sanctuaryClaims,codexClaims,monthlyTrialClaims,recentUnlocks};
 }
 
@@ -49,7 +51,6 @@ export function companionAttentionLabels(summary:CompanionAttentionSummary){
  return [
   summary.expeditionClaims?summary.expeditionClaims+' expedition'+(summary.expeditionClaims===1?'':'s')+' ready':undefined,
   summary.bondRewards?summary.bondRewards+' Bond reward'+(summary.bondRewards===1?'':'s'):undefined,
-  summary.ascensions?summary.ascensions+' Ascension'+(summary.ascensions===1?'':'s')+' ready':undefined,
   summary.sanctuaryClaims?summary.sanctuaryClaims+' Sanctuary claim'+(summary.sanctuaryClaims===1?'':'s'):undefined,
   summary.codexClaims?summary.codexClaims+' Codex reward'+(summary.codexClaims===1?'':'s'):undefined,
   summary.monthlyTrialClaims?summary.monthlyTrialClaims+' Trial reward'+(summary.monthlyTrialClaims===1?'':'s'):undefined,

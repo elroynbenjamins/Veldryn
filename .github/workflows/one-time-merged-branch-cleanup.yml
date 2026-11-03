@@ -79,10 +79,27 @@ jobs:
                   skipped.push({ branch: item.name, reason: 'ref changed' });
                   continue;
                 }
-                await github.rest.git.deleteRef({
-                  owner, repo, ref: 'heads/' + item.name
-                });
-                deleted.push(item.name);
+                // Retry transient GitHub 5xx errors, but recheck the exact
+                // branch SHA before every retry. Never delete a moved ref.
+                for (let attempt = 1; attempt <= 3; attempt++) {
+                  try {
+                    await github.rest.git.deleteRef({
+                      owner, repo, ref: 'heads/' + item.name
+                    });
+                    deleted.push(item.name);
+                    break;
+                  } catch (err) {
+                    if (attempt === 3 || (err.status && err.status < 500)) throw err;
+                    await new Promise(resolve => setTimeout(resolve, attempt * 1200));
+                    const retryHead = await github.rest.repos.getBranch({
+                      owner, repo, branch: item.name
+                    });
+                    if (retryHead.data.protected || retryHead.data.commit.sha !== item.sha) {
+                      skipped.push({ branch: item.name, reason: 'changed during retry' });
+                      break;
+                    }
+                  }
+                }
               } catch (err) {
                 failed.push({ branch: item.name, error: String(err.message) });
               }

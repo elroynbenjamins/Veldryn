@@ -12,6 +12,8 @@ const onlineProjects=read('src/components/OnlineGuildProjectsPanel.tsx');
 const progress=read('src/components/GuildProgressPanel.tsx');
 const skillPaths=read('src/components/GuildSpecializationPaths.tsx');
 const onlineSkills=read('src/components/OnlineGuildSkillsPanel.tsx');
+const guides=read('src/components/SectionGuide.tsx');
+const hall=read('src/components/OnlineGuildHallPanel.tsx');
 const projectClient=read('src/online/guild-projects-v18.ts');
 const projectTransport=read('../../backend/supabase/migrations/20261018000165_guild_project_interactions_v1.sql');
 const activity=read('src/components/GuildActivityFeedPanel.tsx');
@@ -76,6 +78,9 @@ ok(guildScreen.includes("next==='Skills'")&&guildScreen.includes("setProgressTab
 ok(skillPaths.includes('<Modal visible={review}')&&skillPaths.includes('Confirm upgrade')&&skillPaths.includes('Cancel'),'Guild Skill upgrades must use a real dismissal-safe confirmation modal');
 ok(skillPaths.includes('const ready=known&&released&&canUpgrade')&&skillPaths.includes('disabled={!ready}'),'Release, role, points and materials must gate confirmations');
 ok(onlineSkills.includes('isReleased={id=>releasedIds.has(id)}')&&onlineSkills.includes('upgradeFlight.current'),'Live skill upgrade must retain server flags and single-flight protection');
+ok(guides.includes("placement==='header'")&&guides.includes('accessibilityViewIsModal'),'Header tutorials must use an accessible compact modal while preserving card guides');
+ok(guildScreen.includes('placement="header"')&&guildScreen.includes('action={headerGuide}')&&progress.includes('headerHelp?:ReactNode')&&hall.includes('headerHelp?:ReactNode'),'Guild section help must live in relevant headings rather than a standalone question row');
+ok(onlineSkills.includes("error==='app_update_required'")&&onlineSkills.includes('openStoreListing()'),'Outdated Guild Skills clients must receive a safe Android update action');
 ok(onlineProjects.includes('const qualifying=project.personalRewardThreshold>0'),'Personal reward claim must require a positive configured threshold');
 ok(onlineProjects.includes('claimOnlineGuildProjectReward')&&onlineProjects.includes('Date.now()<claimDeadline'),'Claim must use server RPC and respect reward deadline');
 ok(chat.includes('MEMBERS ONLY'),'Guild Chat must keep member-only context');

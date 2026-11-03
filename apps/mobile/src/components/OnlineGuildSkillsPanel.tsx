@@ -1,5 +1,5 @@
 import {useEffect,useMemo,useRef,useState} from 'react';
-import {AppState,StyleSheet,Text,View} from 'react-native';
+import {AppState,Platform,StyleSheet,Text,View} from 'react-native';
 import {GameButton} from './GameButton';
 import {Panel} from './Panel';
 import {LoadingState} from './LoadingState';
@@ -7,6 +7,7 @@ import {GuildSpecializationPaths} from './GuildSpecializationPaths';
 import {loadOnlineGuildSkills,upgradeOnlineGuildSkill,type GuildSkillsSnapshot} from '../online/guild-skills';
 import {typography,type ThemeColors} from '../theme/theme';
 import {useGameTheme} from '../theme/ThemeContext';
+import {openStoreListing} from '../online/app-version-gate';
 
 /** Server-verified skill ranks and bank balances become the metrics record the
  * presentation reads, so nothing is invented on-device. */
@@ -75,7 +76,15 @@ export function OnlineGuildSkillsPanel({onViewBank}:{onViewBank?:()=>void}){
  };
 
  if(loading&&!snapshot)return <LoadingState label="Loading Guild Skills…" detail="Reading authoritative skill points, ranks and Guild Bank materials."/>;
- if(error&&!snapshot)return <Panel><Text style={s.title}>Guild Skills</Text><Text style={s.error}>{error}</Text><GameButton compact tone="secondary" title="Retry" loading={loading} disabled={loading} onPress={()=>void load()}/></Panel>;
+ if(error&&!snapshot){
+  const updateRequired=error==='app_update_required';
+  return <Panel>
+   <Text style={s.title}>Guild Skills</Text>
+   <Text accessibilityRole="alert" style={updateRequired?s.copy:s.error}>{updateRequired?'A newer version of VELDRYN is needed to view Guild Skills. Your other Guild activities are still available.':error}</Text>
+   {updateRequired&&Platform.OS==='android'?<GameButton compact title="Check Google Play for update" onPress={()=>openStoreListing()}/>:null}
+   <GameButton compact tone="secondary" title={updateRequired?'Check again':'Retry'} loading={loading} disabled={loading} onPress={()=>void load()}/>
+  </Panel>;
+ }
  if(!snapshot)return <Panel><Text style={s.title}>Guild Skills</Text><Text style={s.copy}>Join a Guild to shape shared Skill Trees.</Text></Panel>;
 
  const noneReleased=releasedIds.size===0;

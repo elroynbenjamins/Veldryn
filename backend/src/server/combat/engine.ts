@@ -112,8 +112,12 @@ export function simulateCombat(input: CombatInput): CombatResult {
     // Preserve all legacy RNG draws for Live, ordinary hunts and in-flight runs.
     // In new Q-Mode runs enemy direct hits vary by ±10%; roughly one in ten
     // noncritical hits becomes a heavier blow. DoTs never roll the burst.
-    const variance=qmodeStrike?.90+rng.next(`${now}:${abilityId}:var`)*.20:.95+rng.next(`${now}:${abilityId}:var`)*.10;
-    const heavyHit=qmodeStrike&&!crit&&rng.next(`${now}:${source.definition.id}:${target.definition.id}:${abilityId}:heavy`)<.10;
+    // The legacy CombatRng returns [0, .5) with its existing portable
+    // denominator. Scale Q-Mode-only draws by two to reach the intended
+    // probabilities; changing that RNG globally would invalidate old replays.
+    const varianceRoll=rng.next(`${now}:${abilityId}:var`);
+    const variance=qmodeStrike?.90+varianceRoll*.40:.95+varianceRoll*.10;
+    const heavyHit=qmodeStrike&&!crit&&rng.next(`${now}:${source.definition.id}:${target.definition.id}:${abilityId}:heavy`)*2<.10;
     let raw=damageAfterMitigation(source.definition.stats.attackPower,effect.coeff??0,mit,variance,crit,source.definition.stats.critMultiplier)+(effect.flat??0);
     if(heavyHit)raw*=1.16;
     raw*=gemOutgoingDamageMultiplierV1(source,target,now,abilityId,eventType==='dot_tick'); raw*=Math.max(.1,1+modifier(source,'damage_done',now)); raw*=Math.max(.1,1+modifier(target,'damage_taken',now)); raw*=gemIncomingDamageMultiplierV1(target,now);

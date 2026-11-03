@@ -1,0 +1,11 @@
+-- Migration history marker for a production-first Supabase MCP rollout.
+--
+-- Production applied the full Guild Construction membership pricing migration
+-- under version 20261103035909 using the verified Supabase migration endpoint.
+-- The actual schema + data migration remains in
+-- 20261104000034_guild_construction_member_cost_scaling_v1.sql,
+-- AFTER the Guild Bank / construction tables and their upgrade rules are created.
+--
+-- This marker keeps Supabase CLI migration history consistent across production
+-- and fresh/staging databases. It intentionally performs no schema mutation.
+select 1;

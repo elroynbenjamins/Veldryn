@@ -46989,15 +46989,12 @@ function eventOfferPurchaseCount(state, eventId, offerId) {
   if (offer?.reward.kind === "candy") return offers.filter((row) => row.currency === offer.currency && row.reward.kind === "candy" && row.reward.id === offer.reward.id).reduce((total, row) => total + eventOfferOwnPurchaseCount(state, eventId, row.id), 0);
   return eventOfferOwnPurchaseCount(state, eventId, offerId);
 }
-function eventShopOffers(state, nowMs = Date.now()) {
-  const event = claimableLiveEvent(state, nowMs);
-  return event ? [...event.definition.shop, ...eventPrestigeSupplyOffers(event.definition)] : [];
-}
 function purchaseEventOffer(state, offerId, nowMs = Date.now()) {
   const event = claimableLiveEvent(state, nowMs);
   if (!event) throw new Error("The event shop is closed.");
-  const offer = eventShopOffers(state, nowMs).find((entry2) => entry2.id === offerId);
+  const offer = [...event.definition.shop, ...eventPrestigeSupplyOffers(event.definition)].find((entry2) => entry2.id === offerId);
   if (!offer) throw new Error("Unknown event-shop offer.");
+  if (offer.reward.kind === "candy" && event.phase !== "active") throw new Error("Event candy purchases close when the event ends.");
   if ((state.character?.level ?? 0) < (offer.minLevel ?? 1)) throw new Error(`Reach level ${offer.minLevel} to purchase this offer.`);
   const count = eventOfferPurchaseCount(state, event.definition.id, offerId);
   if (count >= offer.limit) throw new Error("Purchase limit reached.");

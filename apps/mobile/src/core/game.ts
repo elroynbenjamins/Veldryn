@@ -298,7 +298,7 @@ export function travelToRegion(state:GameState,regionId:string,nowMs:number){
   if(!zone)throw new Error('Unknown region');
   if(worldZoneInDevelopment(zone))throw new Error(`${zone.name} is still in development`);
   if(!state.character||regionTravelAvailability(state,zone)!=='available')throw new Error(regionTravelLockReason(state,zone)??`Cannot travel to ${zone.name} yet`);
-  if(currentRegionId(state)===zone.id)return {state,reward:{xp:0,gold:0,items:[],kills:0,elapsedSeconds:0} as RewardBundle};
+  if(currentRegionId(state)===zone.id&&state.currentRegionId===zone.id)return {state,reward:{xp:0,gold:0,items:[],kills:0,elapsedSeconds:0} as RewardBundle};
   const settled=claimActivity(state,nowMs);
   const travelled={...settled.state,currentRegionId:zone.id,activity:null,outOfCombatSinceMs:nowMs};
   const next=normalizeActivityQueue(travelled.character?.activityQueue,activityQueueCapacity(travelled))[0];

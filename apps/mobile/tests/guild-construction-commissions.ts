@@ -14,6 +14,16 @@ const resourceIcons=fs.readFileSync('src/theme/resource-assets.ts','utf8');
 const resourceRenderer=fs.readFileSync('src/components/ResourceArtwork.tsx','utf8');
 const guildBank=fs.readFileSync('src/components/OnlineGuildBankPanel.tsx','utf8');
 const guildConstruction=fs.readFileSync('src/components/OnlineGuildConstructionPanel.tsx','utf8');
+const profession=fs.readFileSync('src/components/CraftingRecipeBrowser.tsx','utf8');
+const upcomingMigration=fs.readFileSync('../../backend/supabase/migrations/20261104000027_guild_bank_upcoming_construction_stock.sql','utf8');
+check(guildBank.includes("width:'23%'")&&guildBank.includes('<GameModalSurface')&&guildBank.includes('Needed now')&&guildBank.includes('Upcoming'),'Guild Bank should be a compact shared inventory with a dedicated donation modal and current/upcoming filters');
+check(guildBank.includes('Math.max(0,totalNeed(id)-balance(id))'),'Donatable capacity must subtract Guild Bank holdings from remaining requirements');
+check(guildBank.includes('if(!template.enabled)continue')&&guildBank.includes('if(progress?.completed)continue'),'Guild Bank must exclude unreleased and completed upgrades');
+check(profession.includes('guildMaterialsOnly')&&profession.includes("itemDef(recipe.output.itemId).guildOnly"),'Smithing and Tailoring must expose a Guild materials recipe filter');
+check(upcomingMigration.includes('guild_bank_deposit_server_v1')&&upcomingMigration.includes('guild_bank_required_resources_guard_v1'),'Both independent server donation guards must support upcoming upgrades');
+check(!upcomingMigration.includes('t.required_guild_level<=v_level')&&!upcomingMigration.includes('and t.required_guild_level <= g.level'),'Published upcoming projects should not require the guild to have already reached their level');
+check(upcomingMigration.includes('p.completed_at is null')&&upcomingMigration.includes('v_bank > v_need')&&upcomingMigration.includes('skill.is_released'),'Do not accept completed, overfunded or unreleased Guild Skill stock');
+
 const roadmap=fs.readFileSync('src/components/GuildConstructionRoadmapPanel.tsx','utf8');
 check(resourceIcons.includes('guildUpgradeComponentArtwork(itemId)'),
  'Guild PNGs must be resolved through canonical shared resource artwork');

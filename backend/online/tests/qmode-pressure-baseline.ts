@@ -6,6 +6,7 @@ import {deriveOnlineCoopLoadout} from '../coop-loadout';
 import {resolveAndFreezeLoadout} from '../../src/server/coop/loadout-snapshots';
 import {MemoryQModeRunRepository,QModeService} from '../../src/server/coop/qmode';
 import {EXPEDITIONS} from '../../src/server/expeditions/content/launch-content';
+import {resolveCoopNode} from '../../src/server/expeditions/node-resolution';
 
 const classes=['IRONWARDEN','WAYFINDER','RAVAGER','DAWNKEEPER'] as ClassId[];
 const dungeon=EXPEDITIONS.EXP_001;
@@ -35,6 +36,31 @@ for(let seed=0;seed<100;seed++){
  if(clear(seed,true))baselineClears++;
  if(clear(seed,false))qmodeClears++;
 }
+// Calibrate against the full six-room dungeon, not just damage in one fight.
+function tunedClear(seed:number,attackMultiplier:number):boolean{
+ const id='pressure-'+seed;
+ const repo=new MemoryQModeRunRepository(),service=new QModeService(repo,'published-loadout-balance-v1');
+ const run=service.create({requestId:id,runId:id,controllerAccountId:roster[0].accountId,controllerSnapshot:roster[0],expeditionId:dungeon.id,tier:1,contentVersion:'online-coop-loadout-v1',balanceVersion:'online-coop-loadout-v1',nowMs:1000,profiles:roster.slice(1).map((snapshot,index)=>({profileId:'echo-'+index,sourceAccountId:snapshot.accountId,optedIn:true,publishedAtMs:0,contentVersion:'online-coop-loadout-v1',blockedAccountIds:[],snapshot}))});
+ let state=run.persistentState,currentId=run.currentNodeId;
+ for(let room=0;room<6;room++){
+  const current=run.graph.nodes.find(node=>node.nodeId===currentId)!;
+  const options=current.nextNodeIds.map(optionId=>run.graph.nodes.find(node=>node.nodeId===optionId)!);
+  if(!options.length)return false;
+  const selected=options.find(node=>node.kind==='camp')??options[0];
+  const result=resolveCoopNode({runId:run.id,serverSecret:'published-loadout-balance-v1',node:selected,players:run.players,state,tier:1,enemyAttackMultiplier:attackMultiplier,enemyDamageProfile:'qmode-v1'});
+  if(!result.success)return false;
+  state=result.state;currentId=selected.nodeId;
+  if(selected.kind==='boss')return true;
+ }
+ return false;
+}
+const candidates:Record<string,number>={};
+for(const attack of [1,1.005,1.01,1.015,1.02,1.03,1.04]){
+ let clears=0;
+ for(let seed=0;seed<100;seed++)if(tunedClear(seed,attack))clears++;
+ candidates[String(attack)]=clears;
+}
+console.log('Q-Mode calibrated attack candidates:',JSON.stringify(candidates));
 console.log('Q-Mode baseline comparison:',JSON.stringify({baselineClears,qmodeClears,samples:100,delta:qmodeClears-baselineClears}));
 assert.ok(baselineClears>=85,'Baseline prepared-roster clear rate must remain healthy independently of new tuning');
 assert.ok(qmodeClears>=baselineClears-15,'New pressure should not collapse prepared Echo clear rates');

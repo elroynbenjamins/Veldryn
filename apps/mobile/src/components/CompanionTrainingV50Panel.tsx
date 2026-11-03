@@ -136,8 +136,8 @@ export function CompanionTrainingV50Panel({state,now,onCommand,onNavigateSource,
       <GameButton title={busy?t('Ascending…'):t("Ascend to Tier {value0}",{value0:model.nextAscensionTier??0})}
        loading={busy} tone={ascension.ready?'primary':'secondary'} disabled={busy||!ascension.ready}
        onPress={()=>act('companion_ascend',{id:selection})}/>
-      {message?<Text accessibilityLiveRegion={messageError?'assertive':'polite'} style={[s.message,messageError&&{color:C.bad}]}>{companionMessage(language,message)}</Text>:null}
     </View>:<Text style={s.copy}>{roadmap?companionContent(language,roadmap.power.find(step=>step.status!=='complete')?.detail??t("No further ascension is currently available.")):t("No further ascension is currently available.")}</Text>}
+    {message?<Text accessibilityLiveRegion={messageError?'assertive':'polite'} style={[s.message,messageError&&{color:C.bad}]}>{companionMessage(language,message)}</Text>:null}
     {ascensionResourceId?<View style={s.materialCard}>
       <Text style={s.materialName}>{material(ascensionResourceId)}</Text>
       <Text style={s.materialOwned}>{t("{value0} owned",{value0:economy.materials[ascensionResourceId]??0})}</Text>

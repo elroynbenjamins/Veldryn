@@ -30,19 +30,20 @@ ok(app.includes("import {OnlineGuildProjectsPanel}"),'App must wire the live Gui
 ok(app.includes("import {GuildChat}"),'App must wire direct Guild Chat');
 ok(app.includes('onlineProjects={<OnlineGuildProjectsPanel onRewardsChanged='),"Guild screen must receive live Projects");
 ok(app.includes('onlineChat={<GuildChat'),'Guild screen must receive direct Guild Chat');
-ok(app.includes('onlineChatUnread={notificationCounts.guildChatUnread}'),'Guild Chat tab must reuse durable unread state');
-ok(app.includes('onlineChatMentions={notificationCounts.guildChatMentions}'),'Guild Chat tab must reuse durable mention state');
+ok(app.includes('onlineChatUnread={notificationCounts.guildChatUnread}'),'Guild Home chat shortcut must reuse durable unread state');
+ok(app.includes('onlineChatMentions={notificationCounts.guildChatMentions}'),'Guild Home chat access must retain mention data');
 ok(app.includes('firstUnreadMessageId={notificationCounts.guildFirstUnreadMessageId}'),'Direct Guild Chat must preserve unread divider state');
 
-for(const label of ['Home','PvE','Roster','Activities','Hall','Chat','Manage'])ok(guildScreen.includes("'"+label+"'"),'Consolidated online Guild tabs must include '+label);
+for(const label of ['Home','PvE','Roster','Activities','Progress','Hall','Chat','Manage'])ok(guildScreen.includes("'"+label+"'"),'Guild destinations must retain '+label);
 ok(guildScreen.includes('projects={onlineProjects}')&&guildScreen.includes('<GuildProgressPanel')&&guildScreen.includes("onlineSection==='PvE'?onlinePve:null"),"Guild navigation must expose live Progress tabs and dedicated PvE");
-ok(guildScreen.includes("id==='Projects'?'Progress':id")&&guildScreen.includes("onlineSection==='PvE'?onlinePve:null"),"Activities must expose Guild Progress and keep PvE dedicated");
-ok(guildScreen.includes("onlineSection==='Chat'?onlineChat:null"),'Chat tab must render Guild Chat');
+ok(guildScreen.includes("onlineSection==='Progress'?<GuildProgressPanel")&&guildScreen.includes("onlineSection==='PvE'?onlinePve:null"),'Progress must be a dedicated primary Guild destination, separate from PvE');
+ok(guildScreen.includes("onlineSection==='Chat'?onlineChat:null")&&guildScreen.includes("onChat={()=>onNavigate('Chat')}"),'Guild Home must preserve working chat access');
 ok(guildScreen.includes("onlineSection==='Manage'?<View")&&!guildScreen.includes('{onlineDirectory}')&&guildScreen.includes('{onlineCustomize}'),'Joined-member management must preserve Customize without offering duplicate Guild creation');
 ok(guildScreen.includes('<GuildMemberIdentity onRoster=')&&guildScreen.includes('<GuildHomeActions board=')&&guildScreen.includes('board={onlineBoard}'),'Guild Home must preserve member identity and the private Notice Board');
 ok(guildScreen.includes('<GuildDiscoveryFlow onJoined={reloadGuildMembership}/>'),'Nonmembers must use the dedicated Guild discovery and creation flow');
-ok(guildScreen.includes('unread={onlineChatUnread} mentions={onlineChatMentions}')&&navigation.includes("item.id==='Chat'&&(unread>0||mentions>0)"),'Guild Chat tab must surface unread/mention attention');
-ok(navigation.includes('backgroundColor:mentions?C.warning:C.notification'),'Guild Chat mentions must have warning emphasis');
+ok(navigation.includes("{id:'Progress',label:'Progress',icon:'skills'}")&&!navigation.includes("{id:'Chat',label:'Chat'"),'Guild navigation must replace Chat with Progress');
+ok(guildScreen.includes('chatUnread={onlineChatUnread}')&&guildScreen.includes('onOpenChat()'),'Unread attention and Guild Chat access must remain on Guild Home');
+ok(!guildScreen.includes("activityView==='Projects'?<GuildProgressPanel"),'Projects must not stay nested under Activities');
 
 ok(projectClient.includes("from('guild_project_instances')"),'Guild Project client must read authoritative Project instances');
 ok(projectClient.includes("from('guild_project_member_progress')"),'Guild Project client must read personal authoritative contribution');
@@ -70,8 +71,8 @@ ok(projectTransport.includes('for update'),'Vote/start transport must serialize 
 ok(projectTransport.includes('GUILD_WEEKLY_PROJECT_ALREADY_ACTIVE'),'Server must enforce one active weekly Guild Project');
 
 // Unified Progress navigation and second-confirmation guard are UI-only.
-ok(progress.includes("label:'Weekly Projects'")&&progress.includes("label:'Guild Skills'"),'Progress must present two compact destinations');
-ok(guildScreen.includes("next==='Skills'")&&guildScreen.includes("setProgressTab('Skills')"),'Hall Skills shortcut must open unified Guild Progress');
+ok(progress.includes("id:'Projects',label:st('Projects')")&&progress.includes("id:'Skills',label:st('Skills')"),'Progress must present localized Skills and Projects tabs');
+ok(guildScreen.includes("next==='Skills'")&&guildScreen.includes("setProgressTab('Skills')")&&guildScreen.includes("setOnlineSection('Progress')"),'Hall Skills shortcut must open standalone Guild Progress');
 ok(skillPaths.includes('<Modal visible={review}')&&skillPaths.includes('Confirm upgrade')&&skillPaths.includes('Cancel'),'Guild Skill upgrades must use a real dismissal-safe confirmation modal');
 ok(skillPaths.includes('const ready=known&&released&&canUpgrade')&&skillPaths.includes('disabled={!ready}'),'Release, role, points and materials must gate confirmations');
 ok(onlineSkills.includes('isReleased={id=>releasedIds.has(id)}')&&onlineSkills.includes('upgradeFlight.current'),'Live skill upgrade must retain server flags and single-flight protection');
@@ -91,4 +92,4 @@ ok(detail.includes('disabled={!onDonate}')&&detail.includes('disabled={!onClaim}
 ok(decrees.includes('disabled={!onVote}'),'Decree voting must disable without an authoritative callback');
 ok(hub.includes('backgroundColor:C.selection'),'Legacy Guild hub tabs must use active theme selection surfaces');
 
-console.log('PASS: Guild Chat, safe Project voting/starting and activity presentation are wired, compact and server-authoritative');
+console.log('PASS: Guild Progress replaces the Chat tab, while chat access and server-authoritative Projects remain available');

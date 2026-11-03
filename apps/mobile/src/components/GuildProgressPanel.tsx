@@ -3,10 +3,10 @@ import {StyleSheet,Text,View} from 'react-native';
 import {BoardTabs} from './BoardTabs';
 import {OnlineGuildSkillsPanel} from './OnlineGuildSkillsPanel';
 import {useGameTheme} from '../theme/ThemeContext';
+import {useSocialText} from '../i18n/social';
 
-/** One progression destination, without duplicating the authoritative
- * Skills or Projects state. The existing Activity/Projects route remains
- * compatible with previously persisted navigation histories. */
+/** Standalone Guild Progress screen. Shares the live, authoritative Skills
+ * and Projects panels without embedding them in Activities or Guild Hall. */
 export type GuildProgressTab='Projects'|'Skills';
 export function GuildProgressPanel({tab,onChange,projects,onViewBank}:{
  tab:GuildProgressTab;
@@ -14,9 +14,9 @@ export function GuildProgressPanel({tab,onChange,projects,onViewBank}:{
  projects?:ReactNode;
  onViewBank?:()=>void;
 }){
- const C=useGameTheme();
+ const C=useGameTheme(),st=useSocialText();
  return <View style={s.root}>
-  <BoardTabs compact label="Guild progression" items={[{id:'Projects',label:'Weekly Projects'},{id:'Skills',label:'Guild Skills'}] as const} value={tab} onChange={onChange}/>
+  <BoardTabs compact label="Guild progression" items={[{id:'Skills',label:st('Skills')},{id:'Projects',label:st('Projects')}] as const} value={tab} onChange={onChange}/>
   {tab==='Projects'?projects??<Text style={[s.message,{color:C.muted}]}>Guild Projects are unavailable. Return to this board after reconnecting.</Text>:<OnlineGuildSkillsPanel onViewBank={onViewBank}/>}
  </View>;
 }

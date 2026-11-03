@@ -6,6 +6,12 @@ import {createTranslator,type TranslationParams} from './translator';
 
 // Columns are German, Spanish, Dutch, Italian and French; keys are the English catalog.
 export const socialTranslationRows = {
+ "Progress":["Fortschritt","Progreso","Voortgang","Progressi","Progression"],
+ "Guild Progress":["Gildenfortschritt","Progreso del gremio","Gildevoortgang","Progressi della gilda","Progression de guilde"],
+ "Skills":["Fähigkeiten","Habilidades","Vaardigheden","Abilità","Compétences"],
+ "Projects":["Projekte","Proyectos","Projecten","Progetti","Projets"],
+ "Develop lasting Guild Skills and complete shared Projects.":["Entwickle dauerhafte Gildenfähigkeiten und schließe gemeinsame Projekte ab.","Desarrolla habilidades permanentes del gremio y completa proyectos compartidos.","Ontwikkel blijvende gildevaardigheden en voltooi gezamenlijke projecten.","Sviluppa abilità di gilda permanenti e completa progetti condivisi.","Développez des compétences de guilde permanentes et terminez des projets communs."],
+ "Shared objectives and daily participation.":["Gemeinsame Ziele und tägliche Teilnahme.","Objetivos compartidos y participación diaria.","Gezamenlijke doelen en dagelijkse deelname.","Obiettivi condivisi e partecipazione giornaliera.","Objectifs communs et participation quotidienne."],
  "LIVE DUNGEON · REMATCH":["LIVE-DUNGEON · REVANCHE","MAZMORRA EN VIVO · REVANCHA","LIVE-DUNGEON · HERKANSING","DUNGEON LIVE · RIVINCITA","DONJON LIVE · REVANCHE"],
  "Keep the party together":["Gruppe zusammenhalten","Mantener al grupo unido","Houd de groep bij elkaar","Mantieni unito il gruppo","Garder le groupe ensemble"],
  "Close rematch":["Rückkampf schließen","Cerrar revancha","Herkansing sluiten","Chiudi rivincita","Fermer la revanche"],

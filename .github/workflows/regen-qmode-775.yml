@@ -39,6 +39,9 @@ jobs:
       - name: Install locked backend dependencies
         working-directory: backend
         run: pnpm install --frozen-lockfile
+      - name: Install locked mobile dependencies for shared imports
+        working-directory: apps/mobile
+        run: pnpm install --frozen-lockfile
       - name: Validate backend TypeScript before generating
         working-directory: backend
         run: pnpm typecheck:online

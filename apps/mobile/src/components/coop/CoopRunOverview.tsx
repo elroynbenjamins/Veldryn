@@ -3,7 +3,7 @@ import {useSocialText} from '../../i18n/social';
 import {useEffect,useRef,useState} from 'react';
 import {Animated,Modal,ScrollView,StyleSheet,Text,View} from 'react-native';
 import type {CoopRunView} from '../../core/coop-presentation';
-import {validateCoopRunView} from '../../core/coop-presentation';
+import {isCoopBattleResolving,isCoopCombatNodeKind,validateCoopRunView} from '../../core/coop-presentation';
 import {ct,t,type Language} from '../../i18n';
 import {accountText} from '../../i18n/account';
 import {type CoopColors,coopSpacing,coopTypography} from '../../theme/coop-ui-theme';
@@ -42,7 +42,7 @@ export function CoopRunOverview({language,run,myVotedNodeId,selfVoter,onBack,onC
   validateCoopRunView(run);
   const modeLabel=run.modeLabel??(run.mode==='qmode'?ct(language,'details.qmode'):ct(language,'details.live')),bossNext=run.options.some(option=>option.kind==='boss');
   const terminal=run.phase==='completed'||run.phase==='failed',unclaimedRewards=rewards.filter(reward=>!reward.claimed_at),rewardSurfaceReady=rewards.length>0||Boolean(terminalAction),rewardsSecured=terminal&&rewardSurfaceReady&&!unclaimedRewards.length&&(!terminalAction||terminalAction.claimed===true);
-  const inCombat=run.phase==='resolving_node';
+  const inCombat=isCoopBattleResolving(run);
   const replayCues=run.lastCombat?.cues??[];
   const [clockTick,setClockTick]=useState(Date.now());
   const clockAnchor=useRef({serverNow:run.serverNow??0,localAt:Date.now()});
@@ -54,28 +54,27 @@ export function CoopRunOverview({language,run,myVotedNodeId,selfVoter,onBack,onC
   const liveServerNow=run.serverNow===undefined?undefined:clockAnchor.current.serverNow+Math.max(0,clockTick-clockAnchor.current.localAt);
   const secondsRemaining=run.phase==='awaiting_choice'&&run.options.length>1&&run.resolvesAtMs!==undefined&&liveServerNow!==undefined?Math.max(0,Math.ceil((run.resolvesAtMs-liveServerNow)/1000)):undefined;
   const replayKey=`${run.runId}:${run.lastCombat?.nodeId??'pending'}:${run.lastCombat?.durationMs??0}:${replayCues.length}:${replayCues[replayCues.length-1]?.atMs??0}`;
-  const lastReplay=useRef(replayKey),wasResolving=useRef(run.phase==='resolving_node'),wasTerminal=useRef(terminal);
-  const [theaterOpen,setTheaterOpen]=useState(run.phase==='resolving_node');
+  const lastReplay=useRef(replayKey),wasInCombat=useRef(inCombat),wasTerminal=useRef(terminal);
+  const [theaterOpen,setTheaterOpen]=useState(inCombat);
   const [rewardOpen,setRewardOpen]=useState(terminal);
   const [enteringCombat,setEnteringCombat]=useState(false);
   const enterFromVersion=useRef(run.stateVersion),enterFromNode=useRef(run.lastCombat?.nodeId);
   useEffect(()=>{
-   const resolving=run.phase==='resolving_node';
    const newCombat=Boolean(run.lastCombat&&lastReplay.current!==replayKey);
    // Present each server-authorized battle once; never expose a replay control.
-   if((resolving&&!wasResolving.current)||newCombat){
+   if((inCombat&&!wasInCombat.current)||newCombat){
     setTheaterOpen(true);
     if(terminal)setRewardOpen(false);
-   }else if(terminal&&!wasTerminal.current&&!theaterOpen&&!resolving){
+   }else if(terminal&&!wasTerminal.current&&!theaterOpen&&!inCombat){
     setRewardOpen(true);
    }
-   lastReplay.current=replayKey;wasResolving.current=resolving;wasTerminal.current=terminal;
-  },[run.phase,run.lastCombat,replayKey,terminal]);
+   lastReplay.current=replayKey;wasInCombat.current=inCombat;wasTerminal.current=terminal;
+  },[inCombat,run.lastCombat,replayKey,terminal]);
   // The battle stage opens before the request finishes. Combat cues, HP and
   // outcomes still come exclusively from the authoritative server response.
   const chooseRoom=(nodeId:string)=>{
    const option=run.options.find(item=>item.nodeId===nodeId);
-   if(onChoose&&run.mode==='qmode'&&option&&['battle','elite','boss','risk'].includes(option.kind)){
+   if(onChoose&&run.mode==='qmode'&&isCoopCombatNodeKind(option?.kind)){
     enterFromVersion.current=run.stateVersion;
     enterFromNode.current=run.lastCombat?.nodeId;
     setEnteringCombat(true);setTheaterOpen(true);
@@ -85,17 +84,21 @@ export function CoopRunOverview({language,run,myVotedNodeId,selfVoter,onBack,onC
   useEffect(()=>{
    if(!enteringCombat)return;
    const resolved=run.phase==='resolving_node'||run.stateVersion!==enterFromVersion.current||run.lastCombat?.nodeId!==enterFromNode.current;
-   if(resolved||notice){
+   if(notice){setEnteringCombat(false);setTheaterOpen(false);return;}
+   if(resolved){
     setEnteringCombat(false);
-    if(notice||(!run.pendingCombat&&run.lastCombat?.nodeId===enterFromNode.current))setTheaterOpen(false);
+    // Pending combat is only projected for Live mode, so Q-Mode must stay
+    // open while its valid server-authorized encounter is resolving.
+    if(!inCombat&&(!run.lastCombat||run.lastCombat.nodeId===enterFromNode.current))setTheaterOpen(false);
    }
-  },[enteringCombat,run.phase,run.stateVersion,run.lastCombat?.nodeId,run.pendingCombat,notice]);
+  },[enteringCombat,inCombat,run.phase,run.stateVersion,run.lastCombat?.nodeId,notice]);
   const combatName=run.bossMechanic?.telegraph?.bossName??(run.pendingCombat??run.lastCombat)?.combatants?.find(member=>member.boss)?.name??st('DUNGEON COMBAT');
   return <><ExpeditionScreenShell compactHeader={inCombat} eyebrow={ct(language,'browse.resumeTitle')} title={inCombat?combatName:ct(language,'browse.resume')} onBack={onBack} backLabel={ct(language,'details.backList')} banner={inCombat?undefined:<View style={s.banner}><StateChip label={modeLabel} tone="selected"/><Text style={s.phase}>{run.phase.replaceAll('_',' ')}</Text></View>}>
     {inCombat?<FantasyPanel variant="selected"><View style={s.summary}>
       <View style={s.grow}><Text style={s.title}>{run.phase==='resolving_node'?st('Battle in progress'):run.lastCombat?.reason==='victory'?st('Encounter cleared'):run.lastCombat?.reason==='wipe'?st('Party defeated'):st('Battle complete')}</Text><Text style={s.copy}>{combatName}</Text></View>
       <GameButton compact title={st('View battle')} onPress={()=>setTheaterOpen(true)}/>
      </View></FantasyPanel>:null}
+    {run.phase==='resolving_node'&&!inCombat?<FantasyPanel variant="selected"><Text style={s.title}>{st('Room in progress')}</Text><Text style={s.copy}>{run.selectedNodeKind?st('Resolving')+' '+run.selectedNodeKind.charAt(0).toUpperCase()+run.selectedNodeKind.slice(1):st('Resolving the selected room')}</Text></FantasyPanel>:null}
     {!!syncError&&<FantasyPanel variant="danger"><Text accessibilityRole="alert" style={s.title}>{a('Connection interrupted')}</Text><Text style={s.copy}>{a('Showing the last saved expedition progress. Reconnecting automatically.')}</Text><Text style={s.copy} numberOfLines={2}>{syncError}</Text>{onRefresh?<GameButton compact title={a('Retry connection')} tone="secondary" disabled={busy} onPress={onRefresh}/>:null}</FantasyPanel>}
     {run.options.length?<View style={s.actionArea}>
       <Text style={s.section}>{run.mode==='live'?st('Vote for the next path'):st('Choose the next room')}</Text>
@@ -116,7 +119,7 @@ export function CoopRunOverview({language,run,myVotedNodeId,selfVoter,onBack,onC
     <SeasonalBossTelegraphPanel mechanic={run.bossMechanic} recap={run.bossRecap} showPlan={bossNext}/>
     {run.mode==='live'&&onChatSend?<DungeonDisclosure title={st('Party Chat')}><CoopPartyChat messages={chatMessages} busy={busy} onSend={onChatSend}/></DungeonDisclosure>:null}
     {!!notice&&<Text accessibilityRole="alert" style={s.copy}>{notice}</Text>}
-    {run.phase==='resolving_node'&&<FantasyPanel><Text style={s.copy}>{st('Battle in progress · Results are saved online.')}</Text></FantasyPanel>}
+    {run.phase==='resolving_node'&&<FantasyPanel><Text style={s.copy}>{inCombat?st('Battle in progress · Results are saved online.'):st('Resolving room · Progress is saved online.')}</Text></FantasyPanel>}
 
     {run.rewardText?<FantasyPanel variant="success"><Text style={s.title}>{ct(language,'details.reward')}</Text><Text style={s.copy}>{run.rewardText}</Text></FantasyPanel>:null}
     {terminal?<GameButton title={st('View rewards')} tone="secondary" disabled={busy} onPress={()=>setRewardOpen(true)}/>:null}

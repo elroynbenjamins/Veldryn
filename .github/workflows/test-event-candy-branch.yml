@@ -24,5 +24,7 @@ jobs:
           cache: pnpm
           cache-dependency-path: apps/mobile/pnpm-lock.yaml
       - run: pnpm install --frozen-lockfile
+      - name: Install backend TypeScript dependencies used by shared engine
+        run: pnpm --dir ../../backend install --frozen-lockfile
       - name: Check exact event candy cutoffs and purchase invariants
         run: node ../../tools/run-mobile-tests.mjs event-prestige-supplies event-expired-candy event-shop-presentation

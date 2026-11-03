@@ -8,7 +8,7 @@ function check(condition:unknown,detail:string){if(!condition)throw new Error(de
 const ids=new Set(GUILD_COMPONENT_ITEMS.map(x=>x.id));
 check(ids.size===8,'Eight illustrated guild component IDs required');
 check(GUILD_COMPONENT_RECIPES.length===8,'Exactly eight authored guild profession recipes');
-check(!GUILD_COMPONENT_CRAFTING_RELEASED,'Guild commissions remain disabled until server integrations are ready');
+check(GUILD_COMPONENT_CRAFTING_RELEASED,'Guild components should be craftable now that released Guild Construction needs them');
 const icons=fs.readFileSync('src/theme/guild-upgrade-component-art.ts','utf8');
 const resourceIcons=fs.readFileSync('src/theme/resource-assets.ts','utf8');
 const resourceRenderer=fs.readFileSync('src/components/ResourceArtwork.tsx','utf8');
@@ -35,7 +35,7 @@ for(const recipe of GUILD_COMPONENT_RECIPES){
  check(ids.has(recipe.output.itemId),'Every commission output must be guild-only');
  check(recipe.inputs.length>0&&recipe.inputs.every(x=>x.quantity>0&&itemDef(x.itemId)),'Every input must exist');
  check(recipe.repeatableTraining&&(recipe.skillId==='smithing'||recipe.skillId==='tailoring'),'Guild craft must use a profession');
- check(!RECIPES.some(x=>x.id===recipe.id),'Unreleased guild recipes must not be craftable');
+ check(RECIPES.some(x=>x.id===recipe.id),'Released guild commission must be in the Smithing/Tailoring catalogue');
 }
 const sql=fs.readFileSync('../../backend/supabase/migrations/20261104000017_guild_construction_10x_commissions.sql','utf8');
 for(const row of GUILD_CONSTRUCTION_BLUEPRINTS){
@@ -49,4 +49,4 @@ for(const row of GUILD_CONSTRUCTION_BLUEPRINTS){
 const shared=fs.readFileSync('../../packages/guild-shop/src/catalogue.ts','utf8');
 for(const row of GUILD_CONSTRUCTION_BLUEPRINTS)check(shared.includes('id:"'+row.id+'"'),'Server catalogue missing '+row.id);
 check(sql.includes('set enabled=false'),'New construction cannot accept live donations until release gates pass');
-console.log('PASS: 8 illustrated guild materials, 8 real-input gated recipes, 17x 10x server project requirements');
+console.log('PASS: 8 illustrated guild materials, 8 released profession recipes, 17x 10x server project requirements');

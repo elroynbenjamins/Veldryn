@@ -43,6 +43,8 @@ jobs:
         run: node tests/dungeon-failure-consolation-ui.cjs
       - name: Validate chat emote Settings navigation
         run: node tests/chat-emote-settings-navigation.cjs
+      - name: Verify expanded chat tabs, keyboard clearance and floating emotes
+        run: node tests/chat-channel-dropdown-ui-contract.cjs && node tests/chat-overlay-layout.cjs
       - name: Typecheck app
         run: pnpm typecheck
       - name: Validate focused Home layout and queue/reward safety

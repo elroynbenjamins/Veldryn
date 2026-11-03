@@ -24,7 +24,7 @@ jobs:
         working-directory: backend
         run: pnpm install --frozen-lockfile
       - name: Compile and regenerate the committed gameplay Edge bundle
-        run: pnpm --dir backend build:online
+        run: node tools/build-online.mjs
       - name: Commit generated gameplay bundle (if changed)
         run: |
           git add backend/supabase/functions/gameplay/index.ts

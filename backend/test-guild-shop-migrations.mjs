@@ -292,6 +292,8 @@ try{
  await db.exec(`update public.guild_construction_templates set enabled=true where template_id='stormwatch_banner';`);
  const enabledAfter=await single('select public.guild_construction_enabled_server_v1($1) as enabled',[account]);
  assert.deepEqual(enabledAfter.enabled,['stormwatch_banner']);
+ // Restore the original one-member fixture after the separate wallet-cap test.
+ await db.query('delete from public.guild_members where account_id=$1',[cappedAccount]);
  // Construction donation checks same-row replay and inventory/gold deduction.
  const donate=(resource,amount,key)=>single(
   'select public.guild_construction_donate_server_v2($1,$2,$3,$4,$5) as result',

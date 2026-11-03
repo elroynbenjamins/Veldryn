@@ -280,7 +280,7 @@ export function GuildOnlineHome({onNavigate,onNavigateMuster,onNavigateShop,boar
  return <View style={s.homeStack}>
   <GuildMemberIdentity onRoster={()=>onNavigate('Roster')} onManage={canCustomize?()=>onNavigate('Manage'):undefined}/>
   <GuildHallSummary onOpenMuster={()=>onNavigateMuster()} onOpenShop={()=>onNavigateShop()}/>
-  <GuildHomeActions board={isValidElement<{compact?:boolean}>(board)?cloneElement(board,{compact:true}):board} activity={<GuildActivitySummaryPanel compact/>} canManage={canCustomize} chatUnread={chatUnread} onMuster={()=>onNavigateMuster()} onQuests={()=>onNavigate('Activities')} onShop={()=>onNavigateShop()} onPve={()=>onNavigate('PvE')} onRoster={()=>onNavigate('Roster')} onHall={()=>onNavigate('Hall')} onChat={()=>onNavigate('Chat')} onManage={()=>onNavigate('Manage')}/>
+  <GuildHomeActions board={isValidElement<{compact?:boolean}>(board)?cloneElement(board,{compact:true}):board} activity={<GuildActivitySummaryPanel compact/>} canManage={canCustomize} chatUnread={chatUnread} onQuests={()=>onNavigate('Activities')} onShop={()=>onNavigateShop()} onPve={()=>onNavigate('PvE')} onRoster={()=>onNavigate('Roster')} onHall={()=>onNavigate('Hall')} onChat={()=>onNavigate('Chat')} onManage={()=>onNavigate('Manage')}/>
   <GameButton compact title="Roadmap & future Guild content" tone="secondary" onPress={()=>onNavigate('Future')}/>
  </View>;
 }

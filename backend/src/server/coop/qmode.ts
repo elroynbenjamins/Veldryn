@@ -52,7 +52,7 @@ export class QModeService{
   const run=this.getAuthorized(input.runId,input.controllerAccountId);if(run.phase!=='awaiting_choice')throw new Error('run_not_awaiting_choice');
   const current=run.graph.nodes.find(node=>node.nodeId===run.currentNodeId);if(!current||!current.nextNodeIds.includes(input.optionNodeId))throw new Error('invalid_option');
   const selected=run.graph.nodes.find(node=>node.nodeId===input.optionNodeId);if(!selected)throw new Error('invalid_option');
-  const result=resolveCoopNode({runId:run.id,serverSecret:this.serverSecret,node:selected,players:run.players,state:run.persistentState,tier:run.tierScalingVersion===2?run.tier:undefined,enemyAttackMultiplier:run.qmodePressureVersion===1?1.12:undefined,enemyDamageProfile:run.qmodePressureVersion===1?'qmode-v1':undefined,safetyAiPlayerIds:input.safetyAiPlayerIds});
+  const result=resolveCoopNode({runId:run.id,serverSecret:this.serverSecret,node:selected,players:run.players,state:run.persistentState,tier:run.tierScalingVersion===2?run.tier:undefined,enemyAttackMultiplier:run.qmodePressureVersion===1?1.01:undefined,enemyDamageProfile:run.qmodePressureVersion===1?'qmode-v1':undefined,safetyAiPlayerIds:input.safetyAiPlayerIds});
   run.lastResolution={nodeId:selected.nodeId,result:structuredClone(result)};
   run.persistentState=result.state;run.currentNodeId=selected.nodeId;
   if(!result.success)run.phase='failed';

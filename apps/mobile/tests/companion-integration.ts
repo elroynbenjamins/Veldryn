@@ -2,6 +2,7 @@ import {createCharacter,newGame,claimActivity,claimQuest,startCombat,previewActi
 import {executeGameCommand,validateGameCommand} from '../src/core/game-commands';
 import {unlockCombatCompanion,equipCombatCompanion,companionCombatContribution,companionLevelCost,companionRemainingLevelCost,companionAscensionCost,applyCompanionBondXp,claimSanctuaryTraining,claimSanctuaryEssence} from '../src/core/combat-companions';
 import {companionAvailability,refreshCompanions,companionOwned,companionCombatExecutor,recordCompanionActivity,companionView,companionUnlockFacts,recommendedCompanionMissionTeam,recommendedCompanionTrialTeam} from '../src/core/companion-runtime';
+import {companionAscensionReadiness} from '../src/core/companion-ascension-readiness';
 import {migrateSave} from '../src/core/save-migrations';
 import {createSaveBackup,parseSaveBackup} from '../src/core/save-transfer';
 import {characterPermanentMultipliers} from '../src/core/permanent-boosts';
@@ -77,6 +78,23 @@ ok(COMBAT_COMPANIONS.find(d=>d.id==='UNIT_001')?.activeAbility.name==='Hamstring
 const beforeGold=s.character!.gold,cost=companionLevelCost('standard',1);s=command(s,'companion_level',{id:'UNIT_001'});ok(s.account.combatCompanionProgress!.UNIT_001.level===2&&s.character!.gold===beforeGold-cost.gold,'level and cost atomic');ok(s.account.longTermMetrics?.['companions.command.level.uses']===1,'companion level command telemetry missing');ok(s.account.longTermMetrics?.['companions.command.level.essence_spent']===cost.companionEssence&&s.account.longTermMetrics?.['companions.command.level.gold_spent']===cost.gold,'companion level sink telemetry wrong');
 let partial=fixture();partial.account.combatCompanionProgress!.UNIT_001.xp=32;const partialDef=COMBAT_COMPANIONS.find(d=>d.id==='UNIT_001')!,partialCost=companionRemainingLevelCost(partialDef,partial.account.combatCompanionProgress!.UNIT_001),fullCost=companionLevelCost('standard',1),partialGold=partial.character!.gold;partial=command(partial,'companion_level',{id:'UNIT_001'});ok(partialCost.gold<fullCost.gold&&partial.character!.gold===partialGold-partialCost.gold&&partial.account.combatCompanionProgress!.UNIT_001.level===2,'paid training only buys missing XP');
 for(let i=2;i<10;i++)s=command(s,'companion_level',{id:'UNIT_001'});
+ok(companionAscensionReadiness(s,'UNIT_001').ready,'Level 10 with all resources is explicitly ready to ascend');
+const shortage=structuredClone(s);shortage.account.bondstones=0;
+ok(companionAscensionReadiness(shortage,'UNIT_001').blocker==='bondstones','Missing Bondstones are reported alongside a disabled Ascend button');
+const onAssignment=structuredClone(s);onAssignment.account.companionAssignments=[{assignmentId:'readiness-only',companionIds:['UNIT_001'],status:'active'} as any];
+ok(companionAscensionReadiness(onAssignment,'UNIT_001').blocker==='expedition','Expedition activity explicitly blocks Ascension even with green resources');
+const onTrial=structuredClone(s);onTrial.account.companionTrialProgress!.season.activeRun={teamCompanionIds:['UNIT_001']} as any;
+ok(companionAscensionReadiness(onTrial,'UNIT_001').blocker==='trial','An active Companion Trial is reported as blocking Ascension');
+const bankMaterials=structuredClone(s);bankMaterials.account.companionMaterials={};bankMaterials.inventory.stacks=[];bankMaterials.bank.stacks=[{itemId:'IRONWOOD_FANG',quantity:4} as any];
+ok(companionAscensionReadiness(bankMaterials,'UNIT_001').ready,'Banked companion materials count toward Ascension');
+const bankAscended=command(bankMaterials,'companion_ascend',{id:'UNIT_001'});
+ok(bankAscended.account.combatCompanionProgress!.UNIT_001.ascensionTier===1,'Ascension with banked material succeeds on authoritative game command');
+const eliteDefinition=COMBAT_COMPANIONS.find(d=>d.rarity==='elite');
+if(eliteDefinition){
+ let eliteReady=unlockCombatCompanion(fixture(),eliteDefinition.id,now);
+ eliteReady.account.combatCompanionProgress![eliteDefinition.id]={...eliteReady.account.combatCompanionProgress![eliteDefinition.id],level:25,ascensionTier:2};
+ ok(companionAscensionReadiness(eliteReady,eliteDefinition.id).blocker==='mastery-chamber','Ascension III reports missing Mastery Chamber');
+}
 rejects(()=>command(s,'companion_level',{id:'UNIT_001'}),'ascension gate');
 let poor=structuredClone(s);poor.account.bondstones=0;const poorBefore=JSON.stringify(poor);rejects(()=>command(poor,'companion_ascend',{id:'UNIT_001'}),'missing resources rejected');ok(JSON.stringify(poor)===poorBefore,'failure leaves original intact');
 s=command(s,'companion_ascend',{id:'UNIT_001'});ok(s.account.combatCompanionProgress!.UNIT_001.ascensionTier===1,'ascend works using companion materials');

@@ -3,6 +3,8 @@ import {createTranslator} from './translator';
 
 // Each row supplies German, Spanish, Dutch, Italian and French; its key is English.
 export const companionTranslationRows={
+ "Ascending…":["Aufstieg läuft…","Ascendiendo…","Verheffen…","Ascensione in corso…","Ascension en cours…"],
+ "Mastery Chamber is required for Ascension III.":["Für Aufstieg III wird die Meisterschaftskammer benötigt.","La Cámara de Maestría es necesaria para la Ascensión III.","Voor Ascensie III is de Meesterschapskamer vereist.","La Camera della Maestria è necessaria per l'Ascensione III.","La Chambre de maîtrise est requise pour l'Ascension III."],
  "DISCOVERED":["ENTDECKT","DESCUBIERTOS","ONTDEKT","SCOPERTI","DÉCOUVERTS"],
  "Open creature details":["Kreaturdetails öffnen","Abrir detalles de la criatura","Wezentdetails openen","Apri i dettagli della creatura","Ouvrir les détails de la créature"],
  "Mastery":["Meisterschaft","Maestría","Meesterschap","Maestria","Maîtrise"],

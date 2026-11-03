@@ -45,4 +45,11 @@ assert.ok(modal.includes("type Presentation='sheet'|'dialog'|'fullscreen'"), 'fu
 assert.ok(modal.includes('paddingTop:Math.max(spacing.sm,insets.top)'), 'full-screen modal respects top safe area');
 assert.ok(battle.includes('accessibilityRole="progressbar"'), 'event playback exposes readable progress');
 assert.ok(battle.includes('!playback||!fresh||state.settings.reduceMotion'), 'reduced motion skips timed animation, not rewards');
+assert.ok(training.includes('companionAscensionReadiness(state,selection)'),'Ascend button derives availability from authoritative progression, currency and activity gates');
+assert.ok(training.includes("tone={ascension.ready?'primary':'secondary'}")&&training.includes("disabled={busy||!ascension.ready}"),'Blocked Ascension never looks like a ready green button');
+assert.ok(training.includes("loading={busy}")&&training.includes("busy?t('Ascending…')"),'Ascension shows an immediate in-flight acknowledgement');
+assert.ok(training.includes("accessibilityRole=\"alert\"")&&training.includes('ascensionBlocker'),'Activity and resource blockers are explained in the Ascension modal');
+assert.ok(training.includes("message&&tab!=='Materials'")&&training.includes("messageError?'assertive':'polite'"),'Ascension success and failure stay visible in the modal rather than being lost below it');
+assert.ok(training.includes("model?.nextAscensionCost?.materialId??selectedDef?.ascensionMaterialId"),'Material source matches the actual tier-specific ascension catalyst');
+
 console.log('PASS: Companion simple-flow source/layout invariants');

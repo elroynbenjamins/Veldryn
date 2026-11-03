@@ -24,6 +24,8 @@ import type {GameGuideId,GameGuideDestination} from '../core/onboarding';
 
 type Props={
   initialSection?:SettingsSection;
+  focusChatEmotes?:boolean;
+  onChatEmotesFocusHandled?:()=>void;
   onSectionChange?:(section:SettingsSection|undefined)=>void;
   onNavigateGuide?:(destination:GameGuideDestination)=>void;
   onStartMainScreenTour?:()=>void;
@@ -48,7 +50,7 @@ function SettingChip({label,selected,onPress}:{label:string;selected:boolean;onP
 function ThemeChoice({id,selected,onPress}:{id:UiThemeId;selected:boolean;onPress:()=>void}){
 const C=useGameTheme(),s=useMemo(()=>makeStyles(C),[C]),p=UI_THEMES[id];return <Pressable accessibilityRole="button" accessibilityLabel={p.name} accessibilityState={{selected}} onPress={onPress} style={({pressed})=>[s.themeChoice,{backgroundColor:p.panel,borderColor:selected?p.selectionLine:p.line},pressed&&s.pressed]}><View style={s.themeChoiceHead}><View style={s.flex}><Text style={[s.themeChoiceName,{color:p.text}]}>{p.name}</Text></View>{selected?<Text style={[s.themeCheck,{color:p.selectionLine}]}>✓</Text>:null}</View><View style={s.swatches}>{[p.bg,p.panelRaised,p.accent,p.selectionLine,p.good,p.bad].map((color,index)=><View key={index} style={[s.swatch,{backgroundColor:color,borderColor:p.line}]}/>)}</View></Pressable>}
 
-export function SettingsScreen({state,onLanguage,onReset,onChange,onExport,onImport,onOpenCoopUiGallery,onOpenUpdates,initialSection,onSectionChange,onNavigateGuide,onStartMainScreenTour,online=false}:Props){
+export function SettingsScreen({state,onLanguage,onReset,onChange,onExport,onImport,onOpenCoopUiGallery,onOpenUpdates,initialSection,focusChatEmotes=false,onChatEmotesFocusHandled,onSectionChange,onNavigateGuide,onStartMainScreenTour,online=false}:Props){
  const language=state.settings.language;
  const a=(text:string,params?:Record<string,string|number>)=>accountText(language,text,params);
 
@@ -58,7 +60,7 @@ export function SettingsScreen({state,onLanguage,onReset,onChange,onExport,onImp
   // Respect deep links to Settings while normalizing retired section IDs.
   useEffect(()=>{setSelectedSection(normalizeSettingsSection(initialSection));},[initialSection]);
   const [guideId,setGuideId]=useState<GameGuideId>();
-  const [showAfkDetails,setShowAfkDetails]=useState(false),[showEmotes,setShowEmotes]=useState(false),[showDeleteControls,setShowDeleteControls]=useState(false);
+  const [showAfkDetails,setShowAfkDetails]=useState(false),[showEmotes,setShowEmotes]=useState(focusChatEmotes),[showDeleteControls,setShowDeleteControls]=useState(false);
   const [confirmDefaults,setConfirmDefaults]=useState(false),[confirmDelete,setConfirmDelete]=useState(false);
   const {width}=useWindowDimensions(),phone=width<768;
   const section=selectedSection;
@@ -66,9 +68,17 @@ export function SettingsScreen({state,onLanguage,onReset,onChange,onExport,onImp
   const sections:SettingsSection[]=['account','gameplay','chat','display','data'];
   const sectionLabel=(value:SettingsSection)=>value==='guide'?a('Help & Guide'):value==='data'?a('Data & Privacy'):value==='display'?a('Display'):a(value.charAt(0).toUpperCase()+value.slice(1));
   const sectionDescription=(value:SettingsSection)=>value==='gameplay'?a('Combat and activity queue.'):value==='chat'?a('Chat dock, channels and emotes.'):value==='display'?a('Themes, numbers, motion and language.'):value==='account'?a('Account and sign-in.'):value==='data'?a('Backups and privacy.'):value==='guide'?a('Interactive game guides and tutorials.'):a('Development tools.');
-  const scrollRef=useRef<ScrollViewInstance>(null),scrollPositions=useRef<Record<string,number>>({}),restoredPage=useRef<string|undefined>(undefined);
+  const scrollRef=useRef<ScrollViewInstance>(null),scrollPositions=useRef<Record<string,number>>({}),restoredPage=useRef<string|undefined>(undefined),emotesOffset=useRef<number|undefined>(undefined);
   const pageKey=(phone?'phone:':'wide:')+(section??'index');
-  const restoreScroll=()=>{if(restoredPage.current===pageKey)return;scrollRef.current?.scrollTo({y:scrollPositions.current[pageKey]??0,animated:false});restoredPage.current=pageKey;};
+  const scrollToEmotes=()=>{if(!focusChatEmotes||emotesOffset.current===undefined)return;
+    const y=Math.max(0,emotesOffset.current-16);
+    scrollRef.current?.scrollTo({y,animated:false});
+    scrollPositions.current[pageKey]=y;
+    restoredPage.current=pageKey;
+    onChatEmotesFocusHandled?.();
+  };
+  const restoreScroll=()=>{if(focusChatEmotes){scrollToEmotes();return;}if(restoredPage.current===pageKey)return;scrollRef.current?.scrollTo({y:scrollPositions.current[pageKey]??0,animated:false});restoredPage.current=pageKey;};
+  useEffect(()=>{if(focusChatEmotes){setSelectedSection('chat');setShowEmotes(true)}},[focusChatEmotes]);
   const afk=offlineCapBreakdown(state),premiumRegionQueue=activityQueueCrossRegionAllowed(state);
   const update=(partial:Partial<GameState['settings']>)=>onChange({...state,settings:{...state.settings,...partial}});
   const restoreDefaults=()=>update({autoEatThresholdPct:40,stopCombatWhenOutOfFood:true,autoTravelQueuedActivities:false});
@@ -110,12 +120,12 @@ export function SettingsScreen({state,onLanguage,onReset,onChange,onExport,onImp
         <View style={s.choices}>{([{id:1,label:'English'},{id:2,label:'Spanish'},{id:3,label:'Global 1'},{id:4,label:'Global 2'}] as const).map(channel=><SettingChip key={channel.id} label={channel.label} selected={(state.settings.defaultWorldChat??1)===channel.id} onPress={()=>update({defaultWorldChat:channel.id})}/>)}</View>
       </View>:null}
     </Panel>
-    <Panel><Pressable accessibilityRole="button" accessibilityState={{expanded:showEmotes}} onPress={()=>setShowEmotes(value=>!value)} style={({pressed})=>[s.disclosure,pressed&&s.pressed]}>
-        <View style={s.flex}><Text style={[s.title,{color:theme.text}]}>{a("Chat emotes")}</Text><Text style={[s.muted,{color:theme.muted}]}>{a("Choose the eight emotes available from the chat composer.")}</Text></View>
+    <View onLayout={event=>{emotesOffset.current=event.nativeEvent.layout.y;scrollToEmotes();}}><Panel><Pressable accessibilityRole="button" accessibilityState={{expanded:showEmotes}} onPress={()=>setShowEmotes(value=>!value)} style={({pressed})=>[s.disclosure,pressed&&s.pressed]}>
+        <View style={s.flex}><Text style={[s.title,{color:theme.text}]}>{a("Chat emotes")}</Text><Text style={[s.muted,{color:theme.muted}]}>{a("Choose the five emotes available from the chat composer.")}</Text></View>
         
       </Pressable>
-      {showEmotes?<View style={s.detailStack}><ChatEmotePicker settingsMode unlockedIds={state.account.unlockedEmoteIds} trayIds={state.settings.chatEmoteTrayIds} bodyPresentation={state.character?.bodyPresentation} onPick={()=>{}} onTrayChange={chatEmoteTrayIds=>update({chatEmoteTrayIds})}/></View>:null}
-    </Panel></>}
+      {showEmotes?<View style={s.detailStack}><ChatEmotePicker settingsMode initiallyOpen={focusChatEmotes} unlockedIds={state.account.unlockedEmoteIds} trayIds={state.settings.chatEmoteTrayIds} bodyPresentation={state.character?.bodyPresentation} onPick={()=>{}} onTrayChange={chatEmoteTrayIds=>update({chatEmoteTrayIds})}/></View>:null}
+    </Panel></View></>}
     {section==='display'&&<>
     <Panel>
       <Text style={[s.settingLabel,{color:theme.text,marginTop:0}]}>{a("Number display")}</Text><View style={s.choices}>{(['abbreviated','exact'] as const).map(mode=><SettingChip key={mode} label={mode==='abbreviated'?a("Abbreviated · 1.2K"):a("Exact · 1,200")} selected={state.settings.numberMode===mode} onPress={()=>update({numberMode:mode})}/>)}</View>

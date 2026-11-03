@@ -1,5 +1,5 @@
 import {useEffect,useMemo,useState} from 'react';
-import {Pressable,ScrollView,StyleSheet,Text,TextInput,View,useWindowDimensions} from 'react-native';
+import {Keyboard,Pressable,ScrollView,StyleSheet,Text,TextInput,View,useWindowDimensions} from 'react-native';
 import {Panel} from './Panel';
 import {GameButton} from './GameButton';
 import {GameModalHeader,GameModalSurface} from './GameModalSurface';
@@ -42,6 +42,7 @@ export function OnlineGuildBankPanel({snapshot,onReload,focusResourceId,onFocusH
  const [selection,setSelection]=useState<string|null>(null),[quantity,setQuantity]=useState('1');
  const [view,setView]=useState<BankSection>('inventory'),[search,setSearch]=useState('');
  const [pending,setPending]=useState<PendingGuildBankDeposit|null>(null);
+ const [confirming,setConfirming]=useState(false);
  const [busy,setBusy]=useState(false),[notice,setNotice]=useState(''),[error,setError]=useState('');
  useEffect(()=>{let active=true;void pendingGuildBankDeposit().then(value=>{if(active)setPending(value)}).catch(reason=>{if(active)setError(String(reason))});return()=>{active=false}},[]);
  const needs=useMemo(()=>projectNeeds(snapshot),[snapshot]);
@@ -89,25 +90,24 @@ export function OnlineGuildBankPanel({snapshot,onReload,focusResourceId,onFocusH
  const selected=selection&&ids.includes(selection)?selection:null;
  const amount=Number(quantity);
  const valid=!!selected&&depositCapacity(selected)>0&&Number.isSafeInteger(amount)&&amount>=1&&amount<=1000000&&amount<=depositCapacity(selected);
- const close=()=>{if(!busy){setSelection(null);setQuantity('1');}};
+ const close=()=>{if(!busy){Keyboard.dismiss();setConfirming(false);setSelection(null);setQuantity('1');}};
  const deposit=async(input:{resourceId:string;amount:number})=>{
   if(busy)return;setBusy(true);setError('');setNotice('');
   try{
    const response=await depositOnlineGuildBank(input);
-   setPending(null);setSelection(null);
+   setPending(null);setConfirming(false);setSelection(null);
    setNotice(response.alreadyProcessed?'Saved deposit confirmed. No additional resources were deducted.':
     input.amount.toLocaleString()+' '+resourceTitle(input.resourceId)+' deposited into the Guild Bank.');
    try{await onReload()}catch{setNotice('Deposit confirmed. Bank refresh is unavailable; reopen the Bank to update balances.');}
   }catch(reason){
+   setConfirming(false);setSelection(null);
    setError(reason instanceof Error?reason.message:'Unable to confirm Guild Bank deposit.');
    try{setPending(await pendingGuildBankDeposit())}catch{/* Keep original error. */}
   }finally{setBusy(false)}
  };
  const confirmDeposit=()=>{
   if(!selected||!valid||pending||busy||snapshot.bank===null)return;
-  gameAlert.alert('Confirm Guild Bank donation',
-   'Deposit '+amount.toLocaleString()+' '+resourceTitle(selected)+' into the shared Guild inventory? Donations cannot be withdrawn.',
-   [{text:'Cancel',style:'cancel'},{text:'Donate',onPress:()=>void deposit({resourceId:selected,amount})}]);
+  Keyboard.dismiss();setConfirming(true);
  };
  const discard=()=>gameAlert.alert('Discard saved deposit?',
   'Only discard after checking the Guild Bank. If the original request was completed, donating again spends resources again.',
@@ -115,7 +115,7 @@ export function OnlineGuildBankPanel({snapshot,onReload,focusResourceId,onFocusH
    onPress:()=>void discardPendingGuildBankDeposit().then(()=>setPending(null)).catch(reason=>setError(String(reason)))}]);
  const choose=(id:string)=>{
   if(busy||pending||snapshot.bank===null)return;
-  setSelection(id);setQuantity(String(Math.min(10,1000000,depositCapacity(id))));
+  setConfirming(false);setSelection(id);setQuantity(String(Math.min(10,1000000,depositCapacity(id))));
  };
  const depositDisabled=busy||!!pending||snapshot.bank===null;
  const inventoryCard=(id:string)=>{
@@ -223,9 +223,23 @@ export function OnlineGuildBankPanel({snapshot,onReload,focusResourceId,onFocusH
   </View>:null}
   <GameModalSurface visible={!!selected} presentation="sheet" surfaceStyle={{maxHeight:windowHeight*.86}}
    dismissOnBackdrop={!busy} onClose={close}>
-   <GameModalHeader eyebrow="GUILD BANK · DONATE" title={selected?resourceTitle(selected):'Guild Bank'}
+   <GameModalHeader eyebrow={confirming?"CONFIRM DONATION":"GUILD BANK · DONATE"} title={confirming?"Donate to Guild Bank?":selected?resourceTitle(selected):'Guild Bank'}
     closeDisabled={busy} onClose={close}/>
-   {selected?<ScrollView keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}
+   {selected?(confirming?<View style={s.confirmBody}>
+    <View style={s.modalSummary}>
+     <View style={s.modalArt}>{selected==='gold'?<Text style={s.goldGlyph}>G</Text>:<ResourceArtwork itemId={selected} size={56} framed={false}/>}</View>
+     <View style={s.flex}><Text style={s.name}>{resourceTitle(selected)}</Text>
+      <Text style={s.help}>{amount.toLocaleString()} from your inventory into the shared Guild Bank</Text>
+      <Text style={s.meta}>{balance(selected).toLocaleString()} currently stored</Text>
+     </View>
+    </View>
+    <View style={s.warningCard}><Text style={s.help}>This donation is permanent and cannot be withdrawn. Guild Construction will allocate it to an upgrade separately.</Text></View>
+    <View style={s.actions}>
+     <View style={s.flex}><GameButton tone="secondary" title="Back" disabled={busy} onPress={()=>setConfirming(false)}/></View>
+     <View style={s.flex}><GameButton title="Confirm donation" disabled={!valid||depositDisabled} loading={busy}
+      onPress={()=>void deposit({resourceId:selected,amount})}/></View>
+    </View>
+   </View>:<ScrollView keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}
     showsHorizontalScrollIndicator={false} contentContainerStyle={s.modalBody}>
     <View style={s.modalSummary}>
      <View style={s.modalArt}>{selected==='gold'?<Text style={s.goldGlyph}>G</Text>:<ResourceArtwork itemId={selected} size={56} framed={false}/>}</View>
@@ -255,7 +269,7 @@ export function OnlineGuildBankPanel({snapshot,onReload,focusResourceId,onFocusH
     <View style={s.warningCard}><Text style={s.help}>Deposits are permanent. Only Guild systems may allocate these supplies; members cannot withdraw or transfer them.</Text></View>
     <View style={s.actions}><View style={s.flex}><GameButton tone="secondary" title="Cancel" disabled={busy} onPress={close}/></View>
      <View style={s.flex}><GameButton title="Review donation" disabled={!valid||depositDisabled} loading={busy} onPress={confirmDeposit}/></View></View>
-   </ScrollView>:null}
+   </ScrollView>):null}
   </GameModalSurface>
  </Panel>;
 }
@@ -310,6 +324,7 @@ function styles(C:ThemeColors){return StyleSheet.create({
  pending:{gap:8,padding:10,borderWidth:1,borderColor:C.warning,borderRadius:radii.md,backgroundColor:C.warningSurface,marginTop:9},
  actions:{flexDirection:'row',gap:8,alignItems:'center',flexWrap:'wrap'},
  modalBody:{paddingTop:8,paddingBottom:18,gap:11},
+ confirmBody:{paddingTop:8,paddingBottom:20,gap:14},
  modalSummary:{flexDirection:'row',alignItems:'center',gap:11,borderWidth:1,borderColor:C.line,borderRadius:radii.md,backgroundColor:C.panel2,padding:10},
  modalArt:{width:59,height:59,alignItems:'center',justifyContent:'center'},
  modalStats:{flexDirection:'row',gap:6},

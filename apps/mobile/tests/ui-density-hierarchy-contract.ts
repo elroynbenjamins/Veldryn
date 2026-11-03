@@ -385,7 +385,7 @@ ok(quests.includes('Your focused weekly job expired. Showing the latest board.')
 ok(quests.includes("challengePeriod==='all'||challengePeriod===period")&&quests.includes("id:'daily'")&&quests.includes("id:'weekly'")&&quests.includes("id:'monthly'"),'Class Challenges must support compact daily/weekly/monthly filtering');
 ok(quests.includes('Number(b.progress>=b.required)-Number(a.progress>=a.required)'),'Claimable Class Challenges must sort ahead of incomplete rows');
 ok(quests.includes('weeklyOrderLockReason(state,chosenOrder)')&&quests.includes('onQueueWeeklyOrder(chosenOrder)')&&quests.includes('onStopWeeklyOrder(chosenOrder)'),'Contract Board action sheet must retain safe queue, stop and unlock behavior');
-ok(quests.includes('GameModalSurface')&&quests.includes("sheetStage==='confirm'")&&quests.includes("sheetStage==='success'"),'Quest detail sheet must confirm claims and celebrate server-verified rewards');
+ok(quests.includes('GameModalSurface')&&quests.includes("sheetStage==='claiming'")&&quests.includes("sheetStage==='success'")&&!quests.includes("sheetStage==='confirm'"),'Quest detail sheet must claim once and celebrate server-verified rewards without a duplicate confirmation');
 
 const questApp=read('App.tsx');
 ok(questApp.includes("const [questMode,setQuestMode]=useState<QuestMode>('story')")&&questApp.includes("openQuestMode('contracts'"),'App routing must preserve explicit Story/Contract destinations');

@@ -15,13 +15,21 @@ assert.ok(screen.includes('journalEntries(state,filter,query)'),'story filtering
 assert.ok(screen.includes('seasonalQuestBoard(state'),'challenge cards must preserve class/period projections');
 assert.ok(screen.includes('weeklyOrderBoardForState(state)'),'contracts must use real current weekly board');
 assert.ok(screen.includes('GameModalSurface')&&screen.includes('GameModalHeader'),
-  'details and confirmations use the shared themed native sheet');
+  'details and final reward receipts use the shared themed native sheet');
 assert.ok(screen.includes('accessibilityRole="button"')&&screen.includes('minHeight:touchTargetMin'),
   'list rows and tabs must have clear accessible touch targets');
 assert.ok(screen.includes('newlyConfirmedIds(prior.story,next.story)')&&screen.includes('newlyConfirmedIds(prior.challenges,next.challenges)'),
   'reward success must be gated on confirmed authoritative state transitions');
 assert.ok(screen.includes("setSheetStage('claiming')")&&screen.includes("selectedStatus!=='ready'"),
   'claim confirmation must prevent unsolicited/repeated claims');
+assert.ok(!screen.includes("sheetStage==='confirm'")&&!screen.includes("setSheetStage('confirm')")&&!screen.includes('Collect quest rewards?'),
+  'one-tap Journal claims must not open an intermediate confirmation');
+assert.ok(screen.includes("submitClaimFor('story',nextChapter.id)")&&screen.includes("submitClaimFor('challenge',nextReward.id)"),
+  'featured ready rewards must claim directly instead of opening another details step');
+assert.ok(screen.includes("if(sheetStage==='success')setMoment(null)")&&screen.includes("sheetStage==='success'&&selected?.id===moment.id"),
+  'closing the final receipt must not show another reward banner or time out prematurely');
+assert.ok(screen.includes("pendingClaim.current")&&screen.includes("if(confirmed===false)"),
+  'single-flight claims must recover safely on rejection');
 assert.ok(screen.includes('onClaimContract(chosenChallenge.period,chosenChallenge.id)'),
   'challenge claims must pass actual period and challenge id');
 assert.ok(screen.includes('onQueueWeeklyOrder(chosenOrder)')&&screen.includes('onStopWeeklyOrder(chosenOrder)'),

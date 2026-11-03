@@ -33,7 +33,7 @@ import {EmptyState} from '../components/EmptyState';
 
 export type {QuestMode} from '../components/QuestModeSwitch';
 type Selection={kind:'story'|'contract'|'challenge';id:string};
-type SheetStage='details'|'confirm'|'claiming'|'success';
+type SheetStage='details'|'claiming'|'success';
 type Status='ready'|'active'|'locked'|'claimed'|'processing';
 type RewardMoment={id:string;source:'story'|'challenges';title:string;gold:number;xp?:number;itemId?:string;quantity?:number;rarityColor?:string};
 
@@ -90,7 +90,7 @@ function Rail({items,selected,onChange,C}:{items:{id:string;label:string}[];sele
 
 export function QuestRefinedScreen({state,mode,onModeChange,focusedWeeklyOrderId,onClaim,onClaimContract,onNavigate,onOpenWeeklyBoss,onOpenWeeklyOrder,onQueueWeeklyOrder,onStopWeeklyOrder}:{
  state:GameState;mode:QuestMode;onModeChange:(mode:QuestMode)=>void;focusedWeeklyOrderId?:string;
- onClaim:(id:string)=>void;onClaimContract:(period:SeasonalPeriod,id:string)=>void;
+ onClaim:(id:string)=>void|boolean|Promise<void|boolean>;onClaimContract:(period:SeasonalPeriod,id:string)=>void|boolean|Promise<void|boolean>;
  onNavigate:(destination:QuestDestination)=>void;onOpenWeeklyBoss:()=>void;
  onOpenWeeklyOrder:(order:WeeklyOrder)=>void;onQueueWeeklyOrder:(order:WeeklyOrder)=>void;onStopWeeklyOrder:(order:WeeklyOrder)=>void;
 }){
@@ -101,12 +101,13 @@ export function QuestRefinedScreen({state,mode,onModeChange,focusedWeeklyOrderId
  const [selected,setSelected]=useState<Selection|null>(null),[sheetStage,setSheetStage]=useState<SheetStage>('details');
  const [storyExpanded,setStoryExpanded]=useState(false),[notice,setNotice]=useState('');
  const [moment,setMoment]=useState<RewardMoment|null>(null);
- // Claim feedback is transient, rather than a persistent card on the quest board.
+ const pendingClaim=useRef<{kind:'story'|'challenge';id:string}|null>(null);
+ // The confirmed success receipt stays visible until the player closes it.
  useEffect(()=>{
-  if(!moment)return;
+  if(!moment||(sheetStage==='success'&&selected?.id===moment.id))return;
   const timeout=setTimeout(()=>setMoment(null),3000);
   return ()=>clearTimeout(timeout);
- },[moment]);
+ },[moment,sheetStage,selected?.id]);
  // The active quest tab can also change from navigation outside this screen.
  useEffect(()=>{setMoment(null);},[mode]);
  const previous=useRef({characterId:state.character?.id,story:state.quests.filter(q=>q.status==='claimed').map(q=>q.questId),challenges:state.account.seasonalContractClaimIds??[]});
@@ -132,7 +133,11 @@ export function QuestRefinedScreen({state,mode,onModeChange,focusedWeeklyOrderId
  const selectedProgress=chosenStory?state.quests.find(q=>q.questId===chosenStory.id):undefined;
  const selectedLocked=chosenOrder?weeklyOrderLockReason(state,chosenOrder):undefined;
  const selectedStatus:Status=chosenStory?(selectedProgress?.status==='complete'?'ready':selectedProgress?.status==='claimed'?'claimed':selectedProgress?.status==='active'?'active':'locked'):chosenOrder?(selectedLocked?'locked':chosenOrder.claimed?'claimed':chosenOrder.progress>=chosenOrder.target?'processing':'active'):chosenChallenge?(challengeClaimed.has(chosenChallenge.id)?'claimed':chosenChallenge.progress>=chosenChallenge.required?'ready':'active'):'locked';
- const closeSheet=useCallback(()=>{setSelected(null);setSheetStage('details');setStoryExpanded(false);},[]);
+ const closeSheet=useCallback(()=>{
+  pendingClaim.current=null;
+  if(sheetStage==='success')setMoment(null);
+  setSelected(null);setSheetStage('details');setStoryExpanded(false);
+ },[sheetStage]);
  function open(kind:Selection['kind'],id:string){setSelected({kind,id});setSheetStage('details');setStoryExpanded(false);setMoment(null);setNotice('');}
  function changeMode(next:QuestMode){closeSheet();setMoment(null);setNotice('');onModeChange(next);}
  useEffect(()=>{
@@ -146,20 +151,41 @@ export function QuestRefinedScreen({state,mode,onModeChange,focusedWeeklyOrderId
   const newStory=newlyConfirmedIds(prior.story,next.story),newChallenge=newlyConfirmedIds(prior.challenges,next.challenges);
   if(newStory.length){
    const def=QUESTS.find(q=>q.id===newStory[newStory.length-1]);
-   if(def){setMoment({id:def.id,source:'story',title:def.name,gold:def.rewardGold,itemId:def.rewardItemId,quantity:def.rewardItemQty??1});if(selected?.kind==='story'&&selected.id===def.id)setSheetStage('success');}
+   if(def){
+    setMoment({id:def.id,source:'story',title:def.name,gold:def.rewardGold,itemId:def.rewardItemId,quantity:def.rewardItemQty??1});
+    if((selected?.kind==='story'&&selected.id===def.id)||(pendingClaim.current?.kind==='story'&&pendingClaim.current.id===def.id)){pendingClaim.current=null;setSheetStage('success');}
+   }
   }else if(newChallenge.length){
    const def=allChallenges.find(q=>q.id===newChallenge[newChallenge.length-1]);
-   if(def){setMoment({id:def.id,source:'challenges',title:def.name,gold:def.rewardGold,xp:def.rewardXp,itemId:def.rewardItemId,quantity:def.rewardItemQty,rarityColor:QUEST_RARITIES[def.rarity].color});if(selected?.kind==='challenge'&&selected.id===def.id)setSheetStage('success');}
+   if(def){
+    setMoment({id:def.id,source:'challenges',title:def.name,gold:def.rewardGold,xp:def.rewardXp,itemId:def.rewardItemId,quantity:def.rewardItemQty,rarityColor:QUEST_RARITIES[def.rarity].color});
+    if((selected?.kind==='challenge'&&selected.id===def.id)||(pendingClaim.current?.kind==='challenge'&&pendingClaim.current.id===def.id)){pendingClaim.current=null;setSheetStage('success');}
+   }
   }
  },[state.quests,state.account.seasonalContractClaimIds,state.character?.id]);
- function submitClaim(){
-  if(selectedStatus!=='ready'||sheetStage!=='confirm')return;
-  setSheetStage('claiming');
+ // One click claims the reward. Only server-confirmed state can show the receipt.
+ async function submitClaimFor(kind:'story'|'challenge',id:string){
+  if(pendingClaim.current)return;
+  const chosenStory=kind==='story'?QUESTS.find(q=>q.id===id):undefined;
+  const chosenChallenge=kind==='challenge'?allChallenges.find(q=>q.id===id):undefined;
+  const isReady=chosenStory?state.quests.some(q=>q.questId===id&&q.status==='complete'):chosenChallenge?!challengeClaimed.has(id)&&chosenChallenge.progress>=chosenChallenge.required:false;
+  if(!isReady)return;
+  pendingClaim.current={kind,id};
+  setSelected({kind,id});setSheetStage('claiming');setStoryExpanded(false);setMoment(null);setNotice('');
   try{
-   if(chosenStory)onClaim(chosenStory.id);
-   else if(chosenChallenge)onClaimContract(chosenChallenge.period,chosenChallenge.id);
-   else setSheetStage('details');
-  }catch(err){setSheetStage('details');setNotice(err instanceof Error?err.message:p('Could not claim reward. Please try again.'));}
+   const confirmed=chosenStory?await onClaim(chosenStory.id):chosenChallenge?await onClaimContract(chosenChallenge.period,chosenChallenge.id):false;
+   if(confirmed===false)throw new Error(p('Could not claim reward. Please try again.'));
+   // Waiting ends when the authoritative character state confirms the claim.
+  }catch(err){
+   if(pendingClaim.current?.kind===kind&&pendingClaim.current.id===id){
+    pendingClaim.current=null;setSheetStage('details');
+    setNotice(err instanceof Error?err.message:p('Could not claim reward. Please try again.'));
+   }
+  }
+ }
+ function submitClaim(){
+  if(selectedStatus!=='ready'||sheetStage!=='details'||!selected||selected.kind==='contract')return;
+  return submitClaimFor(selected.kind,selected.id);
  }
  const summaries={story:{title:p('Quest Journal'),subtitle:p('Your next chapter, story progress and rewards.')},contracts:{title:p('Weekly Contracts'),subtitle:p('Weekly assignments and automatic reward processing.')},challenges:{title:p('Class Challenges'),subtitle:p('Your daily, weekly and monthly class objectives.')}};
  const summary=summaries[mode];
@@ -200,7 +226,7 @@ export function QuestRefinedScreen({state,mode,onModeChange,focusedWeeklyOrderId
       <Text style={[styles.subtitle,{color:C.muted}]}>{p(nextChapter.description)}</Text>
       <ProgressLine current={Math.min(nextChapter.required,chapterProgress?.progress??0)} max={nextChapter.required} C={C}/>
       <Text style={[styles.rewardHint,{color:C.accent}]}>{nextChapter.rewardGold} {t('Gold')}{nextChapter.rewardItemId?' · '+(nextChapter.rewardItemQty??1)+'× '+nextChapter.rewardItemId.replace(/_/g,' '):''}</Text>
-      <GameButton title={chapterProgress?.status==='complete'?p('Claim rewards'):p('View objective')} onPress={()=>open('story',nextChapter.id)}/>
+      <GameButton title={chapterProgress?.status==='complete'?p('Claim rewards'):p('View objective')} onPress={()=>chapterProgress?.status==='complete'?submitClaimFor('story',nextChapter.id):open('story',nextChapter.id)}/>
      </View>:null}
     <JournalSkillPathsPanel state={state} onNavigate={onNavigate}/>
     <View style={styles.sectionHead}><Text style={[styles.sectionTitle,{color:C.accent}]}>{p('STORY CHAPTERS')}</Text><Text style={[styles.mini,{color:C.muted}]}>{QUESTS.length} {p('total')}</Text></View>
@@ -249,7 +275,7 @@ export function QuestRefinedScreen({state,mode,onModeChange,focusedWeeklyOrderId
      <View style={styles.rowMeta}><Text style={[styles.eyebrow,{color:C.good}]}>{p('REWARD READY')}</Text><StatusPill label={QUEST_RARITIES[nextReward.rarity].label.toUpperCase()} tone="special"/></View>
      <Text style={[styles.featuredTitle,{color:C.text}]}>{p(nextReward.name)}</Text>
      <Text style={[styles.subtitle,{color:C.muted}]}>{nextReward.period.toUpperCase()} · {p(QUEST_RARITIES[nextReward.rarity].cache)}</Text>
-     <GameButton title={p('Claim')+' '+p(QUEST_RARITIES[nextReward.rarity].cache)} onPress={()=>open('challenge',nextReward.id)}/>
+     <GameButton title={p('Claim')+' '+p(QUEST_RARITIES[nextReward.rarity].cache)} onPress={()=>submitClaimFor('challenge',nextReward.id)}/>
     </View>:null}
     <View style={styles.sectionHead}><Text style={[styles.sectionTitle,{color:C.accent}]}>{p('CHALLENGE LIST')}</Text><Text style={[styles.mini,{color:C.muted}]}>{daily.length} {p('daily')} · {weekly.length} {p('weekly')} · {monthly.length} {p('monthly')}</Text></View>
     <Rail C={C} selected={challengePeriod} onChange={setChallengePeriod} items={[{id:'all',label:p('All')},{id:'daily',label:p('Daily')},{id:'weekly',label:p('Weekly')},{id:'monthly',label:p('Monthly')}]}/>
@@ -263,13 +289,13 @@ export function QuestRefinedScreen({state,mode,onModeChange,focusedWeeklyOrderId
    </>:null}
   </ScrollView>
   <GameModalSurface visible={sheetOpen} onClose={closeSheet} reduceMotion={state.settings.reduceMotion} surfaceStyle={styles.sheetSurface}>
-   <GameModalHeader eyebrow={sheetStage==='success'?p('REWARDS COLLECTED'):sheetStage==='confirm'?p('CONFIRM REWARD'):selected?.kind==='story'?p('STORY CHAPTER'):selected?.kind==='contract'?p('WEEKLY CONTRACT'):p('CLASS CHALLENGE')} title={sheetStage==='confirm'?p('Collect quest rewards?'):selectedTitle} onClose={closeSheet}/>
+   <GameModalHeader eyebrow={sheetStage==='success'?p('REWARDS COLLECTED'):selected?.kind==='story'?p('STORY CHAPTER'):selected?.kind==='contract'?p('WEEKLY CONTRACT'):p('CLASS CHALLENGE')} title={selectedTitle} onClose={closeSheet}/>
    <ScrollView style={styles.sheetScroll} contentContainerStyle={styles.sheetContent} showsVerticalScrollIndicator={false} showsHorizontalScrollIndicator={false} keyboardShouldPersistTaps="handled">
     {sheetStage==='success'&&moment!==null&&moment.id===selected?.id?<View style={[styles.success,{backgroundColor:C.goodSurface,borderColor:C.good}]}>
      <Text style={[styles.successMark,{color:C.good}]}>✦ ✓</Text><Text style={[styles.featuredTitle,{color:C.text}]}>{p('Rewards secured')}</Text>
      <Text style={[styles.subtitle,{color:C.muted}]}>{p('Reward collected · the next objective is ready when unlocked.')}</Text>
      <QuestReward gold={moment.gold} xp={moment.xp} itemId={moment.itemId} quantity={moment.quantity} rarityColor={moment.rarityColor} label={p('Rewards collected')}/>
-    </View>:sheetStage==='confirm'||sheetStage==='claiming'?<View style={[styles.featured,{backgroundColor:C.panelRaised,borderColor:C.lineStrong}]}>
+    </View>:sheetStage==='claiming'?<View style={[styles.featured,{backgroundColor:C.panelRaised,borderColor:C.lineStrong}]}>
      <Text style={[styles.rowTitle,{color:C.text}]}>{selectedTitle}</Text>
      <Text style={[styles.subtitle,{color:C.muted}]}>{p('The server will verify your progress before granting this reward.')}</Text>
      {selectedRewards?<QuestReward gold={selectedRewards.gold} xp={'xp' in selectedRewards?selectedRewards.xp:undefined} itemId={selectedRewards.itemId} quantity={selectedRewards.quantity} rarityColor={'color' in selectedRewards?selectedRewards.color:undefined} label={p('Rewards')}/>:null}
@@ -300,9 +326,7 @@ export function QuestRefinedScreen({state,mode,onModeChange,focusedWeeklyOrderId
     </>}
    </ScrollView>
    <View style={[styles.sheetFooter,{borderColor:C.line}]}>
-    {sheetStage==='success'?<GameButton title={p('Continue')} onPress={closeSheet}/>:sheetStage==='confirm'?<>
-     <View style={styles.actionPair}><View style={styles.flex}><GameButton title={p('Back')} tone="secondary" onPress={()=>setSheetStage('details')}/></View><View style={styles.flex}><GameButton title={p('Collect rewards')} onPress={submitClaim}/></View></View>
-    </>:sheetStage==='claiming'?<GameButton title={p('Waiting for server confirmation…')} loading disabled onPress={()=>{}}/>:hasClaim?<GameButton title={p('Claim rewards')} onPress={()=>setSheetStage('confirm')}/>:chosenStory&&selectedStatus==='active'?<GameButton title={p(questDestination(chosenStory).label)} onPress={()=>{const target=questDestination(chosenStory);closeSheet();onNavigate(target)}}/>:chosenOrder&&selectedStatus==='active'?<>
+    {sheetStage==='success'?<GameButton title={p('Continue')} onPress={closeSheet}/>:sheetStage==='claiming'?<GameButton title={p('Waiting for server confirmation…')} loading disabled onPress={()=>{}}/>:hasClaim?<GameButton title={p('Claim rewards')} onPress={submitClaim}/>:chosenStory&&selectedStatus==='active'?<GameButton title={p(questDestination(chosenStory).label)} onPress={()=>{const target=questDestination(chosenStory);closeSheet();onNavigate(target)}}/>:chosenOrder&&selectedStatus==='active'?<>
      <GameButton title={p(chosenDestination?.button??'Open activity')} onPress={()=>{closeSheet();onOpenWeeklyOrder(chosenOrder)}}/>
      {chosenQueueable?<View style={styles.actionPair}>
       <View style={styles.flex}><GameButton compact tone="secondary" title={queueFull?p('Queue full'):p('Queue')} disabled={queueFull} onPress={()=>{onQueueWeeklyOrder(chosenOrder);closeSheet()}}/></View>

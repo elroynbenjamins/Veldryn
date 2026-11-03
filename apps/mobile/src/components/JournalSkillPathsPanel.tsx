@@ -17,7 +17,8 @@ export function JournalSkillPathsPanel({state,onNavigate}:{state:GameState;onNav
  const language=state.settings.language;
  const p=(value:string)=>progressionText(language,value);
  const paths=journalSkillLessonProgress(state),summary=journalSkillLessonSummary(state);
- const recommended=paths.filter(row=>row.introduced&&!row.practiceComplete);
+ const introductionRank=(row:JournalSkillLessonProgress)=>row.lesson.afterQuest==='QST_005'?5:row.lesson.afterQuest==='QST_004'?4:row.lesson.afterQuest==='QST_002'?3:row.lesson.characterLevel?3:row.lesson.afterQuest==='QST_001'?2:1;
+ const recommended=paths.filter(row=>row.introduced&&!row.practiceComplete).sort((a,b)=>introductionRank(b)-introductionRank(a)||Number(a.starterComplete)-Number(b.starterComplete));
  const selected=showAll?paths:(recommended.length?recommended:paths.filter(row=>row.introduced)).slice(0,3);
  const rows=selected.length?selected:paths.slice(0,3);
  const openSkill=(row:JournalSkillLessonProgress)=>{

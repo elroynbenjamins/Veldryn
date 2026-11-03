@@ -147,7 +147,7 @@ function makeStyles(C:ThemeColors){return StyleSheet.create({
  capacityTrack:{height:5,backgroundColor:C.stage,borderRadius:5,overflow:'hidden',marginTop:5},
  capacityFill:{height:'100%',backgroundColor:C.accent,borderRadius:5},
  filterRow:{flexDirection:'row',flexWrap:'wrap',gap:5,marginTop:10,marginBottom:4},
- filterChip:{minHeight:36,minWidth:54,paddingHorizontal:10,paddingVertical:7,borderWidth:1,borderColor:C.line,backgroundColor:C.panel2,borderRadius:6,alignItems:'center',justifyContent:'center'},
+ filterChip:{minHeight:44,minWidth:54,paddingHorizontal:10,paddingVertical:7,borderWidth:1,borderColor:C.line,backgroundColor:C.panel2,borderRadius:6,alignItems:'center',justifyContent:'center'},
  filterSelected:{backgroundColor:C.selection,borderColor:C.selectionLine},
  filterText:{fontSize:11,lineHeight:16,color:C.muted,fontWeight:'700'},
  filterTextSelected:{color:C.text,fontWeight:'900'},

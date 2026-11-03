@@ -1,5 +1,13 @@
 import type {RewardBundle} from './types';
 
+/** Activity bar shows unclaimed combat defeats, not all kills in the current hunt.
+ * sessionKills remains cumulative for Hunt Momentum, goals and trusted settlement.
+ */
+export function unclaimedCombatKillCount(previewKills:number|undefined,completedCycles:number):number{
+ const value=previewKills??completedCycles;
+ return Number.isFinite(value)?Math.max(0,Math.floor(value)):0;
+}
+
 function sumRows<T>(rows:T[],key:(row:T)=>string,amount:keyof T):T[]{
  const merged=new Map<string,T>();
  for(const row of rows){const id=key(row),before=merged.get(id);merged.set(id,before?{...before,[amount]:Number(before[amount])+Number(row[amount])}:{...row});}

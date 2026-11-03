@@ -1,4 +1,5 @@
 import {claimActivity,createCharacter,newGame,previewActivityReward,startCombat} from '../src/core/game';
+import {unclaimedCombatKillCount} from '../src/core/activity-rewards';
 import {executeGameCommand,validateGameCommand} from '../src/core/game-commands';
 import {huntGoalIdFromSnapshot,huntGoalProgress} from '../src/core/hunt-goals';
 
@@ -20,6 +21,13 @@ hundred=startCombat(hundred,'MOSS_RAT',now,'balanced','kills_100');
 const partial=claimActivity(hundred,now+5*60*1000);
 ok(!!partial.state.activity&&partial.reward.kills>0&&partial.reward.kills<100,'Early claim should keep a 100-kill session active');
 ok(partial.state.activity!.sessionKills===partial.reward.kills,'Manual claim must persist session kill progress');
+const afterClaimPreview=previewActivityReward(partial.state,now+5*60*1000);
+ok(afterClaimPreview.kills===0,'Claiming the current combat rewards clears the pending combat window');
+ok(unclaimedCombatKillCount(afterClaimPreview.kills,999)===0,'Activity bar must show zero after claim even when hunt session kills are retained');
+const newPendingPreview=previewActivityReward(partial.state,now+6*60*1000);
+ok(unclaimedCombatKillCount(newPendingPreview.kills,999)===newPendingPreview.kills,'Activity bar only counts new defeats since the most recent claim');
+ok(unclaimedCombatKillCount(undefined,7)===7,'Activity bar can fall back to completed cycles before the preview arrives');
+ok(unclaimedCombatKillCount(-1,7)===0,'Activity bar never displays negative kills');
 const projected=huntGoalProgress(partial.state.activity!,0,0,now+5*60*1000);
 ok(projected?.current===partial.reward.kills,'Hunt goal UI should reflect persisted claimed kills');
 const finished=claimActivity(partial.state,now+4*60*60*1000);

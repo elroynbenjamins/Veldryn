@@ -238,6 +238,15 @@ export function SocialScreen({mode='legacy',initialTab='party',characterLevel=0,
    {selectedProfile?<ChatPlayerSheet message={selectedProfile} onClose={()=>setSelectedProfile(null)} onBlocked={()=>setSelectedProfile(null)}/>:null}
   </>}
  </ScrollView>}
+ <PartyCreateSheet visible={showPartyCreate} busy={busy} activityLevel={activityLevel} language={partyLanguage} minimumLevel={minimumLevel} editing={showPartyPrefsEdit} error={error} onActivityLevel={setActivityLevel} onLanguage={setPartyLanguage} onMinimumLevel={setMinimumLevel} onClose={()=>{setShowPartyCreate(false);setShowPartyPrefsEdit(false)}} onCreate={savePartyPreferences}/>
+ <GameModalSurface visible={showPartyCreated} presentation="dialog" onClose={()=>setShowPartyCreated(false)}>
+  <GameModalHeader eyebrow="PARTY CREATED" title="Your Party is ready" onClose={()=>setShowPartyCreated(false)}/>
+  <View style={s.createdBody}><Text style={s.text}>Your {partyActivityLabel(activityLevel)} Party is ready. All classes are welcome.</Text>
+   <GameButton title="Find members" disabled={busy} onPress={()=>{setShowPartyCreated(false);post('party_recruiting')}}/>
+   <GameButton title="Later" tone="secondary" onPress={()=>setShowPartyCreated(false)}/>
+  </View>
+ </GameModalSurface>
+ {tab==='party'&&draft?<GameModalSurface visible presentation="sheet" onClose={()=>{if(!busy)setDraft(null)}} dismissOnBackdrop={!busy}><GameModalHeader eyebrow="RECRUITMENT" title="Find members" closeDisabled={busy} onClose={()=>{if(!busy)setDraft(null)}}/><ScrollView keyboardShouldPersistTaps="handled" contentContainerStyle={s.modalContent}>{recruitmentDetails}</ScrollView></GameModalSurface>:null}
  </SocialHubPanel>;
 }
 function makeStyles(C:ThemeColors){return StyleSheet.create({page:{flex:1,minHeight:0},pageTabs:{flexDirection:'row',gap:5,paddingHorizontal:12,paddingTop:10,paddingBottom:2},pageTab:{minHeight:44,flex:1,alignItems:'center',justifyContent:'center',paddingHorizontal:7,backgroundColor:C.panel,borderWidth:1,borderRadius:9,borderColor:C.line},pageTabSelected:{backgroundColor:C.selection,borderColor:C.selectionLine},pageTabDisabled:{opacity:.45},pageTabLabel:{fontSize:11,color:C.muted,fontWeight:'800'},pageTabLabelSelected:{color:C.text},modalContent:{gap:10,paddingVertical:12},createdBody:{gap:12,paddingVertical:16},content:{padding:spacing.md,gap:spacing.md,paddingBottom:32},chatContent:{flex:1,minHeight:0,paddingHorizontal:spacing.md,paddingVertical:spacing.sm},

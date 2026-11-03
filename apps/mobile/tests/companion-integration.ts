@@ -2,6 +2,9 @@ import {createCharacter,newGame,claimActivity,claimQuest,startCombat,previewActi
 import {executeGameCommand,validateGameCommand} from '../src/core/game-commands';
 import {unlockCombatCompanion,equipCombatCompanion,companionCombatContribution,companionLevelCost,companionRemainingLevelCost,companionAscensionCost,applyCompanionBondXp,claimSanctuaryTraining,claimSanctuaryEssence} from '../src/core/combat-companions';
 import {companionAvailability,refreshCompanions,companionOwned,companionCombatExecutor,recordCompanionActivity,companionView,companionUnlockFacts,recommendedCompanionMissionTeam,recommendedCompanionTrialTeam} from '../src/core/companion-runtime';
+import {companionAttentionSummary,companionAttentionLabels} from '../src/core/companion-attention';
+import {buildNavigationBadges,buildQuickNavigationBadges} from '../src/core/navigation-notifications';
+import {companionAttentionText} from '../src/i18n/companions';
 import {companionAscensionReadiness} from '../src/core/companion-ascension-readiness';
 import {migrateSave} from '../src/core/save-migrations';
 import {createSaveBackup,parseSaveBackup} from '../src/core/save-transfer';
@@ -95,6 +98,19 @@ if(eliteDefinition){
  eliteReady.account.combatCompanionProgress![eliteDefinition.id]={...eliteReady.account.combatCompanionProgress![eliteDefinition.id],level:25,ascensionTier:2};
  ok(companionAscensionReadiness(eliteReady,eliteDefinition.id).blocker==='mastery-chamber','Ascension III reports missing Mastery Chamber');
 }
+// Eligible Ascension is a persistent progression opportunity, never an urgent Account alert.
+const ascensionAttention=companionAttentionSummary(s,now+10*60_000);
+ok(ascensionAttention.ascensions>=1,'Level-10 companion still exposes the available Ascension for in-screen progress');
+ok(ascensionAttention.total===ascensionAttention.expeditionClaims+ascensionAttention.bondRewards+ascensionAttention.sanctuaryClaims+ascensionAttention.codexClaims+ascensionAttention.monthlyTrialClaims+ascensionAttention.recentUnlocks,'Ascension eligibility must not inflate actionable notification totals');
+const ascensionOnly={total:0,hasAttention:false,expeditionClaims:0,bondRewards:0,ascensions:1,sanctuaryClaims:0,codexClaims:0,monthlyTrialClaims:0,recentUnlocks:0};
+ok(companionAttentionLabels(ascensionOnly).length===0,'Ascension does not create an urgent companion attention label');
+ok(companionAttentionText('en',ascensionOnly).length===0,'Ascension does not create a persistent translated attention banner');
+const onlyAscensionRows=[{key:'companion-attention',kind:'companion_attention' as const,unread:ascensionOnly.hasAttention}];
+ok(!buildNavigationBadges(onlyAscensionRows).account.dot,'Ascension alone cannot flag Account navigation');
+ok(!buildQuickNavigationBadges(onlyAscensionRows).Companions?.dot,'Ascension alone cannot flag the Companion shortcut');
+const rewardAttention={...ascensionOnly,bondRewards:1,total:1,hasAttention:true};
+ok(companionAttentionText('en',rewardAttention).length===1,'Claimable Bond rewards still produce one actionable Companion alert');
+ok(buildNavigationBadges([{key:'companion-attention',kind:'companion_attention' as const,unread:rewardAttention.hasAttention}]).account.dot,'Real claimable companion rewards continue to notify Account');
 rejects(()=>command(s,'companion_level',{id:'UNIT_001'}),'ascension gate');
 let poor=structuredClone(s);poor.account.bondstones=0;const poorBefore=JSON.stringify(poor);rejects(()=>command(poor,'companion_ascend',{id:'UNIT_001'}),'missing resources rejected');ok(JSON.stringify(poor)===poorBefore,'failure leaves original intact');
 s=command(s,'companion_ascend',{id:'UNIT_001'});ok(s.account.combatCompanionProgress!.UNIT_001.ascensionTier===1,'ascend works using companion materials');

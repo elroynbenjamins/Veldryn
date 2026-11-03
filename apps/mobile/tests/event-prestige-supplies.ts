@@ -50,4 +50,24 @@ ok(eventPrestigeBalance(state,eventId)===40-3*2-4-5-5-5*2,'Prestige wallet is de
 
 const empty=setLocalEventEnabled(createCharacter(newGame(now),'IRONWARDEN','NoPrestige'),true,now,eventId);
 rejects(()=>purchaseEventOffer(empty,'prestige_bondstone',now),'Insufficient prestige must reject purchase');
+rejects(()=>purchaseEventOffer(empty,'prestige_bondstone',now),'Insufficient prestige must reject purchase');
+
+// The end time is exact. Grace days are for claims and permanent/supply shopping, not candy.
+const endsAtMs=now+1_000,graceEndsAtMs=endsAtMs+3*86400_000;
+const claimState={...empty,account:{...empty.account,liveEvent:{...empty.account.liveEvent!,endsAtMs,graceEndsAtMs},
+ eventPrestigeBalanceById:{[eventId]:10},eventCurrencyBalanceById:{[eventId]:10000}}};
+ok(eventShopOffers(claimState,endsAtMs-1).some(offer=>offer.id==='prestige_candy_pet'),'Candy remains available up to but excluding event end');
+ok(eventShopOffers(claimState,endsAtMs).every(offer=>offer.reward.kind!=='candy'),'All common and prestige candies disappear at exact end time');
+ok(eventShopOffers(claimState,endsAtMs).some(offer=>offer.id==='prestige_bondstone'),'Useful claim-period supplies remain available');
+ok(eventShopOffers(claimState,graceEndsAtMs-1).some(offer=>offer.id==='prestige_bondstone'),'Claim-period shop remains open through grace end');
+ok(eventShopOffers(claimState,graceEndsAtMs).length===0,'All event offers close at claim deadline');
+const beforeCandyBuy=JSON.stringify(claimState);
+let candyRejected=false;
+try{executeGameCommand(claimState,{type:'event_purchase',args:{id:'prestige_candy_pet'}},endsAtMs);}catch(error){candyRejected=(error as Error).message==='Event candy purchases close when the event ends.';}
+ok(candyRejected,'Server command must explicitly reject post-event candy buys');
+ok(JSON.stringify(claimState)===beforeCandyBuy,'Rejected candy purchases cannot deduct currency or grant candy');
+ok((purchaseEventOffer(claimState,'prestige_candy_pet',endsAtMs-1).account.eventCandyChargesById?.[`${eventId}:candy:pet`]??0)===1,'Last millisecond of active event still accepts candy purchase');
+const claimPurchase=executeGameCommand(claimState,{type:'event_purchase',args:{id:'prestige_bondstone'}},endsAtMs).state;
+ok((claimPurchase.account.bondstones??0)===(claimState.account.bondstones??0)+1,'Claim-period non-candy supplies remain purchasable');
+ok(eventPrestigeBalance(claimPurchase,eventId)===8,'Claim-period non-candy purchase charges exact currency amount');
 console.log('PASS: prestige event supply rewards, wallet accounting, independent per-currency candy limits and 2h pet candy, insufficient funds and PvP safety.');

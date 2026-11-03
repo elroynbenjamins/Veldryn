@@ -52,7 +52,7 @@ export function SectionGuide({scope,area,section,guide,translate,showReplay=true
    </Pressable>
    <Modal transparent visible={visible} statusBarTranslucent animationType="fade" onRequestClose={close}>
     <View style={styles.shade}>
-     <Pressable accessible={false} style={StyleSheet.absoluteFillObject} onPress={close}/>
+     <Pressable accessible={false} style={StyleSheet.absoluteFill} onPress={close}/>
      <View accessibilityViewIsModal style={[styles.dialog,{backgroundColor:C.panel,borderColor:C.selectionLine}]}>
       <View style={styles.dialogHeading}>
        <View style={styles.copy}>

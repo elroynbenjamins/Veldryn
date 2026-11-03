@@ -1,5 +1,6 @@
 import {legacyCraftingReservation} from './legacy-crafting-fixture';
-import {HERB_NODES,HERB_ITEMS} from '../src/content/herbalism';
+import {HERB_NODES,HERB_ITEMS,HERBALISM_ESSENCE_BY_ZONE} from '../src/content/herbalism';
+import {V33_EQUIPMENT_RECIPES} from '../src/content/equipment-recipes-v33';
 import {ALCHEMY_EQUIPMENT_INFUSIONS,ALCHEMY_RECIPES,POTIONS,MAX_ALCHEMY_BATCHES,alchemyRecipeDef} from '../src/content/alchemy';
 import {CLASSES} from '../src/content/classes';
 import {ITEMS,itemDef} from '../src/content/items';
@@ -28,6 +29,20 @@ const T=Date.UTC(2026,8,10,12),R='BREW_DEWLEAF_DRAUGHT';
 const fresh=()=>createCharacter(newGame(T),'IRONWARDEN','Herbalist');
 function skilled(s:GameState,id:SkillId,level:number){return {...s,skills:s.skills.map(k=>k.skillId===id?{...k,level,xp:totalXpAtLevel(level)}:k)};}
 const legacyAlchemyBatch=(state:GameState,id:string,count:number,now:number)=>legacyCraftingReservation(state,'alchemy',id,count,now);
+test('T1 equipment across all nine classes uses Verdant Resin and doubled Asterfall essence drop rates',()=>{
+ const tierOne=V33_EQUIPMENT_RECIPES.filter(recipe=>recipe.v33EquipmentTier==='T1');
+ equal(new Set(tierOne.map(recipe=>recipe.classId)).size,CLASSES.length,'all class families have T1 recipes');
+ ok(CLASSES.every(row=>tierOne.some(recipe=>recipe.classId===row.id)),'every class has the common rare binding requirement');
+ ok(tierOne.every(recipe=>recipe.inputs.some(input=>input.itemId==='VERDANT_BINDING_RESIN'&&input.quantity===1)),'all T1 equipment requires one Verdant Binding Resin');
+ const resin=ALCHEMY_RECIPES.find(recipe=>recipe.id==='BREW_VERDANT_BINDING_RESIN');
+ ok(!!resin&&resin.inputs.some(input=>input.itemId==='ASTERFALL_BOTANICAL_ESSENCE'&&input.quantity===1),'rare Asterfall essence is a required resin ingredient');
+ for(const zone of ['GREENFIELDS','SILVERBROOK','IRONWOOD','OLD_MINES'])
+  equal(HERBALISM_ESSENCE_BY_ZONE[zone].baseChance,.02,zone+' base drop chance doubled to 2%');
+ equal(HERBALISM_ESSENCE_BY_ZONE.KINGS_ROAD.baseChance,.025,'King\'s Road base chance doubled to 2.5%');
+ for(const [zone,rate] of [['SUNSCAR',.015],['FROSTMARCH',.0175],['ASHLANDS',.02]] as const)
+  equal(HERBALISM_ESSENCE_BY_ZONE[zone].baseChance,rate,zone+' higher-tier essence rate unchanged');
+});
+
 function supplied(batches=10){let s=fresh();s.character!.gold=10000;s.inventory.stacks=[{itemId:'DEWLEAF',quantity:batches*2}];return s;}
 const qty=(s:GameState,id:string)=>storedQuantity([...s.inventory.stacks,...s.bank.stacks,...s.overflow.stacks],id);
 

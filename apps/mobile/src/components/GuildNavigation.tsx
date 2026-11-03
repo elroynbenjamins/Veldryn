@@ -14,7 +14,9 @@ const destinations=[
 
 export function GuildNavigation({value,onChange}:{value:string;onChange:(next:GuildPrimarySection)=>void}){
  const C=useGameTheme(),st=useSocialText();
- const active=destinations.some(item=>item.id===value)?value:'Home';
+ // Roster, member management and other secondary pages are not Home.
+ // Leave the primary tabs unselected rather than misleading the player.
+ const active=destinations.some(item=>item.id===value)?value:null;
  return <View accessibilityRole="tablist" accessibilityLabel="Guild sections" style={[s.tabs,{backgroundColor:C.panel,borderColor:C.line}]}>
   {destinations.map(item=><Pressable
    key={item.id}

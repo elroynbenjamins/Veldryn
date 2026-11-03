@@ -81,7 +81,7 @@ export function OnlineGuildSkillsPanel({onViewBank}:{onViewBank?:()=>void}){
   return <Panel>
    <Text style={s.title}>Guild Skills</Text>
    <Text accessibilityRole="alert" style={updateRequired?s.copy:s.error}>{updateRequired?'A newer version of VELDRYN is needed to view Guild Skills. Your other Guild activities are still available.':error}</Text>
-   {updateRequired&&Platform.OS==='android'?<GameButton compact title="Check Google Play for update" onPress={()=>void openStoreListing()}/>:null}
+   {updateRequired&&Platform.OS==='android'?<GameButton compact title="Check Google Play for update" onPress={()=>openStoreListing()}/>:null}
    <GameButton compact tone="secondary" title={updateRequired?'Check again':'Retry'} loading={loading} disabled={loading} onPress={()=>void load()}/>
   </Panel>;
  }

@@ -1,4 +1,4 @@
-import {useCallback,useEffect,useMemo,useState} from 'react';
+import {useCallback,useEffect,useMemo,useRef,useState} from 'react';
 import {ActivityIndicator,Image,Pressable,ScrollView,StyleSheet,Text,View} from 'react-native';
 import {GameButton} from './GameButton';
 import {Panel} from './Panel';
@@ -8,6 +8,7 @@ import {OnlineGuildConstructionPanel} from './OnlineGuildConstructionPanel';
 import {OnlineGuildBankPanel} from './OnlineGuildBankPanel';
 import {StatBar} from './StatBar';
 import {guildFacilityArtwork} from '../theme/guild-remaster-art';
+import {guildTokenIcon} from '../theme/guild-token-shop-art';
 import {GUILD_HALL_FACILITIES,DEFAULT_GUILD_HALL_POLICY} from '../core/guild-hall-v44';
 import {guildConstructionBenefits} from '../content/guild-construction-benefits';
 import {guildConstructionBlueprint} from '../content/guild-construction-blueprints';
@@ -51,6 +52,7 @@ export function OnlineGuildHallPanel(navigation:HallNavigation){
 export function GuildHallView({projection,loading=false,error='',onRefresh,activeSection,onSectionChange,onTokenRewardsChanged,previewMode=false}:{projection:NonNullable<Projection>;loading?:boolean;error?:string;onRefresh?:()=>void;previewMode?:boolean}&HallNavigation){
  const C=useGameTheme(),s=useMemo(()=>styles(C),[C]);
  const [localSection,setLocalSection]=useState<HeadquartersSection>('Overview');
+ const hallTabsRef=useRef<ScrollView>(null);
  const [shop,setShop]=useState<GuildTokenShopSnapshot|null>(null);
  const [shopLoading,setShopLoading]=useState(true);
  const [shopError,setShopError]=useState('');
@@ -58,6 +60,11 @@ export function GuildHallView({projection,loading=false,error='',onRefresh,activ
  const [returnBuilding,setReturnBuilding]=useState<string|undefined>(undefined);
  const [returnSelection,setReturnSelection]=useState<{templateId:string;resourceId:string}|undefined>(undefined);
  const section=(activeSection??localSection)==='Skills'?'Overview':activeSection??localSection;
+ // On a narrow phone the Hall tabs scroll horizontally; always reveal the selected tab.
+ useEffect(()=>{
+  const index=DESTINATIONS.indexOf(section);
+  if(index>=0)hallTabsRef.current?.scrollTo({x:Math.max(0,index-2)*88,animated:false});
+ },[section]);
  const navigate=(next:HeadquartersSection)=>{if(onSectionChange)onSectionChange(next);else setLocalSection(next)};
  const refreshShop=useCallback(async()=>{
   setShopLoading(true);setShopError('');
@@ -97,7 +104,7 @@ export function GuildHallView({projection,loading=false,error='',onRefresh,activ
    <View style={s.flex}><Text style={s.kicker}>GUILD HEADQUARTERS</Text><Text accessibilityRole="header" style={s.title}>Guild Hall</Text><Text style={s.note}>Shared progression and lasting benefits</Text></View>
    {onRefresh?<Pressable accessibilityRole="button" accessibilityLabel="Refresh Guild Hall and supplies" disabled={loading||shopLoading} accessibilityState={{disabled:loading||shopLoading}} onPress={()=>{onRefresh();void refreshShop()}} style={({pressed})=>[s.refresh,pressed&&s.pressed]}><Text style={s.refreshText}>↻</Text></Pressable>:null}
   </View>
-  <ScrollView horizontal showsVerticalScrollIndicator={false} showsHorizontalScrollIndicator={false} accessibilityRole="tablist" accessibilityLabel="Guild Hall sections" contentContainerStyle={s.tabs}>
+  <ScrollView ref={hallTabsRef} horizontal showsVerticalScrollIndicator={false} showsHorizontalScrollIndicator={false} accessibilityRole="tablist" accessibilityLabel="Guild Hall sections" contentContainerStyle={s.tabs}>
    {DESTINATIONS.map(id=><Pressable key={id} accessibilityRole="tab" accessibilityState={{selected:section===id}} onPress={()=>navigate(id)} style={({pressed})=>[s.tab,{backgroundColor:section===id?C.selection:C.panel,borderColor:section===id?C.selectionLine:C.line},pressed&&s.pressed]}><Text style={[s.tabText,{color:section===id?C.text:C.muted}]}>{id==='Legacy'?'Legacy':id}</Text></Pressable>)}
   </ScrollView>
   {section==='Overview'?<View style={s.root}>
@@ -115,7 +122,7 @@ export function GuildHallView({projection,loading=false,error='',onRefresh,activ
     <Text style={s.note}>Shop quality unlocked: {benefits.shopQuality.charAt(0).toUpperCase()+benefits.shopQuality.slice(1)}. Construction does not award free items.</Text>
    </Panel>
    <Text style={s.headingText}>Guild Hall destinations</Text>
-   <View style={s.shortcuts}>{SHORTCUTS.map(item=><Pressable key={item.id} accessibilityRole="button" accessibilityLabel={'Open '+item.title} onPress={()=>navigate(item.id)} style={({pressed})=>[s.shortcut,pressed&&s.pressed]}><Image source={guildFacilityArtwork(item.art)} resizeMode="contain" style={s.shortcutArt} accessible={false}/><View style={s.flex}><Text style={s.shortcutTitle}>{item.title}</Text><Text style={s.note}>{item.detail}</Text></View></Pressable>)}</View>
+   <View style={s.shortcuts}>{SHORTCUTS.map(item=><Pressable key={item.id} accessibilityRole="button" accessibilityLabel={'Open '+item.title} onPress={()=>navigate(item.id)} style={({pressed})=>[s.shortcut,pressed&&s.pressed]}><Image source={item.id==='Shop'?guildTokenIcon:guildFacilityArtwork(item.art)} resizeMode="contain" style={s.shortcutArt} accessible={false}/><View style={s.flex}><Text style={s.shortcutTitle}>{item.title}</Text><Text style={s.note}>{item.detail}</Text></View></Pressable>)}</View>
    <View style={s.heading}><Text style={s.headingText}>Hall facilities</Text><GameButton compact tone="secondary" title="View details" onPress={()=>navigate('Legacy')}/></View>
    <View style={s.facilityGrid}>{GUILD_HALL_FACILITIES.slice(0,4).map(def=><View key={def.id} style={s.facilityTile}><Text style={s.tileName}>{def.name}</Text><Text style={s.tileTier}>Tier {state.facilities[def.id].tier}/5</Text></View>)}</View>
   </View>:null}
@@ -132,7 +139,7 @@ export function GuildHallView({projection,loading=false,error='',onRefresh,activ
     onFocusHandled={()=>setBankFocus(null)}/>:null}
    <GameButton compact title="Return to Construction" onPress={()=>{setBankFocus(null);navigate('Construction')}}/>
   </View>:null}
-  {section==='Shop'?<OnlineGuildTokenShopPanel onRewardsChanged={onTokenRewardsChanged} onOpenConstruction={()=>navigate('Construction')}/>:null}
+  {section==='Shop'?(previewMode?shopFallback():<OnlineGuildTokenShopPanel onRewardsChanged={onTokenRewardsChanged} onOpenConstruction={()=>navigate('Construction')}/>):null}
   {section==='Legacy'?<View style={s.root}>{renderHallProgress()}<Text style={s.headingText}>Hall facilities</Text><Text style={s.copy}>Facilities advance automatically through Guild Projects. Construction and Guild Skills grant their own separate benefits.</Text>
    {GUILD_HALL_FACILITIES.map(def=>{const facility=state.facilities[def.id],tier=facility.tier,threshold=DEFAULT_GUILD_HALL_POLICY.facilityProgressThresholds[tier],requiredLevel=def.tierHallLevels[tier];return <View key={def.id} style={s.facility}>
     <Image source={guildFacilityArtwork(def.id)} resizeMode="contain" style={s.facilityImage} accessible={false}/>

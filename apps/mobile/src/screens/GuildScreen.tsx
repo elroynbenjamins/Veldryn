@@ -280,7 +280,7 @@ function GuildSectionHeader({label,title,copy,action}:{label:string;title:string
     <Text accessibilityRole="header" style={s.groupTitle}>{title}</Text>
     {copy?<Text style={s.groupCopy}>{copy}</Text>:null}
    </View>
-   {action?<View style={{flexShrink:0}}>{action}</View>:null}
+   {action?<View style={{width:42,height:42,flexShrink:0,alignItems:'center',justifyContent:'center'}}>{action}</View>:null}
   </View>
  </View>;
 }

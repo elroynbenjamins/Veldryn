@@ -1,5 +1,6 @@
 import {useSocialText} from '../i18n/social';
 import React from 'react';
+import {SectionGuide} from './SectionGuide';
 import {Pressable,StyleSheet,Text,View} from 'react-native';
 import {radii,type ThemeColors} from '../theme/theme';
 import {useGameTheme} from '../theme/ThemeContext';
@@ -13,12 +14,14 @@ const tabLabel:Record<SocialHubTab,import('../i18n/social').SocialMessageKey>={p
  * crowded. */
 const VISIBLE_TABS:SocialHubTab[]=['party','guild'];
 
-export function SocialHubPanel({active,onChange,children,badges,hasParty=false}:{active:SocialHubTab;onChange:(tab:SocialHubTab)=>void;children:React.ReactNode;badges?:Partial<Record<SocialHubTab,number>>;hasParty?:boolean}){
+type HeaderGuide={scope:string;area:string;section:string;guide:{title:string;body:string;detail?:string};translate?:(value:string)=>string};
+export function SocialHubPanel({active,onChange,children,badges,hasParty=false,headerGuide}:{active:SocialHubTab;onChange:(tab:SocialHubTab)=>void;children:React.ReactNode;badges?:Partial<Record<SocialHubTab,number>>;hasParty?:boolean;headerGuide?:HeaderGuide}){
  const st=useSocialText();
  const C=useGameTheme(),s=React.useMemo(()=>makeStyles(C),[C]);
  const tabs:SocialHubTab[]=hasParty?[...VISIBLE_TABS,'chat']:VISIBLE_TABS;
+ const tabBar=<View accessibilityRole="tablist" style={s.tabs}>{tabs.map(tab=><Pressable accessibilityRole="tab" accessibilityState={{selected:active===tab}} key={tab} onPress={()=>onChange(tab)} style={({pressed})=>[s.tab,active===tab&&s.active,pressed&&s.pressed]}><View style={s.tabLabel}><Text numberOfLines={1} style={[s.text,active===tab&&s.activeText]}>{st(tabLabel[tab])}</Text>{(badges?.[tab]??0)>0?<View style={s.badge}><Text style={s.badgeText}>{Math.min(99,badges?.[tab]??0)}</Text></View>:null}</View>{active===tab?<View style={s.indicator}/>:null}</Pressable>)}</View>;
  return <View style={s.root}>
-  <View accessibilityRole="tablist" style={s.tabs}>{tabs.map(tab=><Pressable accessibilityRole="tab" accessibilityState={{selected:active===tab}} key={tab} onPress={()=>onChange(tab)} style={({pressed})=>[s.tab,active===tab&&s.active,pressed&&s.pressed]}><View style={s.tabLabel}><Text numberOfLines={1} style={[s.text,active===tab&&s.activeText]}>{st(tabLabel[tab])}</Text>{(badges?.[tab]??0)>0?<View style={s.badge}><Text style={s.badgeText}>{Math.min(99,badges?.[tab]??0)}</Text></View>:null}</View>{active===tab?<View style={s.indicator}/>:null}</Pressable>)}</View>
+  {headerGuide?<SectionGuide {...headerGuide} header={tabBar}/>:tabBar}
   <View style={s.body}>{children}</View>
  </View>;
 }

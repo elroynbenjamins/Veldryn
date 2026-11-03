@@ -98,11 +98,11 @@ export function PartyHubPanel(props: PartyHubPanelProps){
    </View>
    {inParty?<View style={s.memberCount}><Text style={s.memberCountValue}>{props.party!.members.length}/4</Text><Text style={s.memberCountLabel}>{st('Members')}</Text></View>:null}
   </View>
-  {inParty&&!props.dedicated?<View accessibilityRole="tablist" style={s.browseTabs}><BrowseChip label={st('My Party')} selected={section==='party'} onPress={()=>setSection('party')}/><BrowseChip label={st('Recruitment')} selected={section==='find'} onPress={()=>setSection('find')}/></View>:null}
+
   <SectionGuide scope={props.accountId} area="social-party" section={inParty?section:'solo'} translate={value=>socialLabel(language,value)} guide={inParty&&section==='party'?
      {title:'My Party',body:'Your members and weekly rewards are here. Claim ready rewards without opening extra menus.',detail:'Use Party options for invitations or to leave. Open Recruitment to find new members.'}:
      inParty?{title:'Recruitment',body:'Find players or publish an advert for your Party here.',detail:'Search and filters narrow the list. Your adverts and matching players appear below.'}:
-     {title:'Find or create a Party',body:'Create a Party or browse recruiting groups here.',detail:'Choose your role before creating a Party. You can also post that you are looking for one.'}}/>
+     {title:'Find or create a Party',body:'Create a Party or browse recruiting groups here.',detail:'Choose your role before creating a Party. You can also post that you are looking for one.'}} header={inParty&&!props.dedicated?<View accessibilityRole="tablist" style={s.browseTabs}><BrowseChip label={st('My Party')} selected={section==='party'} onPress={()=>setSection('party')}/><BrowseChip label={st('Recruitment')} selected={section==='find'} onPress={()=>setSection('find')}/></View>:undefined} showReplay={false}/>
   {inParty&&section==='party'?<>
    {(!props.dedicated||props.activeView!=='Contracts')?<View style={s.summaryCard}>
     <View style={s.between}><View style={s.flex}><Text style={s.eyebrow}>{st('ACTIVE PARTY')}</Text><Text style={s.sectionTitle}>{socialLabel(language,props.party!.focus)} {st('Party')}</Text></View>

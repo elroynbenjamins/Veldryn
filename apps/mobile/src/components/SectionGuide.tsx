@@ -1,5 +1,5 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import {useEffect,useState} from 'react';
+import {useEffect,useState,type ReactNode} from 'react';
 import {Modal,Pressable,StyleSheet,Text,View} from 'react-native';
 import {createSectionGuideStore} from '../core/section-guidance';
 import {useGameTheme} from '../theme/ThemeContext';
@@ -9,9 +9,9 @@ import {spacing,typography} from '../theme/theme';
 
 const store=createSectionGuideStore(AsyncStorage);
 type GuideText={title:string;body:string;detail?:string};
-type Props={scope:string;area:string;section:string;guide:GuideText;translate?:(value:string)=>string;showReplay?:boolean;placement?:'card'|'header'};
+type Props={scope:string;area:string;section:string;guide:GuideText;translate?:(value:string)=>string;showReplay?:boolean;placement?:'card'|'header';header?:ReactNode};
 /** One unobtrusive tip on first entry to each tab. Tabs and actions remain usable. */
-export function SectionGuide({scope,area,section,guide,translate,showReplay=true,placement='card'}:Props){
+export function SectionGuide({scope,area,section,guide,translate,showReplay=true,placement='card',header}:Props){
  const C=useGameTheme(),language=useGameLanguage();
  const t=(value:string)=>{const mapped=translate?.(value)??value;return mapped===value?accountText(language,value):mapped;};
  const identity=area+':'+scope;
@@ -26,7 +26,7 @@ export function SectionGuide({scope,area,section,guide,translate,showReplay=true
   return()=>{active=false;};
  },[scope,area,identity]);
  useEffect(()=>{setOpen(null);setMore(false)},[section]);
- if(!scope||!section||saved?.identity!==identity)return null;
+ if(!scope||!section||saved?.identity!==identity)return header??null;
  const seen=saved.seen.includes(section);
  const expanded=!seen||open?.identity===identity&&open?.section===section;
  const close=()=>{
@@ -36,10 +36,9 @@ export function SectionGuide({scope,area,section,guide,translate,showReplay=true
    void store.complete(scope,area,section);
   }
  };
- if(placement==='header'){
+ if(placement==='header'||header!==undefined){
   const visible=open?.identity===identity&&open?.section===section;
-  return <>
-   <Pressable
+  const trigger=<Pressable
     accessibilityRole="button"
     accessibilityLabel={t('Show guide for this tab')}
     accessibilityHint={t('Open help for the current Guild section')}
@@ -49,7 +48,9 @@ export function SectionGuide({scope,area,section,guide,translate,showReplay=true
     style={({pressed})=>[styles.headerTrigger,{borderColor:seen?C.line:C.selectionLine,backgroundColor:C.panel},pressed&&styles.pressed]}>
     <Text style={[styles.headerQuestion,{color:C.muted}]}>?</Text>
     {!seen?<View accessible={false} style={[styles.newDot,{backgroundColor:C.accent}]}/>:null}
-   </Pressable>
+   </Pressable>;
+  return <>
+   {header!==undefined?<View style={styles.headerRow}><View style={styles.headerMain}>{header}</View>{trigger}</View>:trigger}
    <Modal transparent visible={visible} statusBarTranslucent animationType="fade" onRequestClose={close}>
     <View style={styles.shade}>
      <Pressable accessible={false} style={StyleSheet.absoluteFill} onPress={close}/>
@@ -110,6 +111,7 @@ const styles=StyleSheet.create({
  reopenRow:{flexDirection:'row',justifyContent:'flex-end'},
  reopen:{minWidth:36,minHeight:36,justifyContent:'center',alignItems:'center',borderWidth:1,borderRadius:8},
  question:{fontSize:17,fontWeight:'800'},
+ headerRow:{flexDirection:'row',alignItems:'center',gap:8},headerMain:{flex:1,minWidth:0},
  headerTrigger:{width:42,height:42,flexShrink:0,justifyContent:'center',alignItems:'center',borderWidth:1,borderRadius:11},
  headerQuestion:{fontSize:18,fontWeight:'800'},
  newDot:{position:'absolute',top:5,right:5,width:6,height:6,borderRadius:3},

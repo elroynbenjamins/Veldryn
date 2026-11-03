@@ -24,6 +24,15 @@ check(guildBank.includes('snapshot.bank.activity.slice(0,20)')&&guildBank.includ
 check(guildBank.includes('Keyboard.dismiss();setConfirming(true)')&&guildBank.includes('Confirm donation')&&guildBank.includes('onPress={()=>void deposit({resourceId:selected,amount})}'),'Donations must receive an in-theme second confirmation before the server transaction');
 check(guildBank.includes('pendingGuildBankDeposit()')&&guildBank.includes('Retry saved deposit')&&guildBank.includes('depositOnlineGuildBank(input)'),'A pending deposit must remain idempotently recoverable');
 check(guildBank.includes('The server checks your available unlocked items or Gold')&&!guildBank.includes('You own'),'Do not present fabricated personal balances: server verifies inventory and Gold before a donation');
+check(guildBank.includes('loadOnlineGuildSkills()')&&guildBank.includes('skillSnapshot.skillPoints>0')
+ &&guildBank.includes('if(!node.released||node.rank>=node.maxRank)continue')
+ &&guildBank.includes('cost.rank!==node.rank+1'),
+ 'Guild Bank must surface ONLY released, unmaxed next-rank Skill requirements while points remain');
+check(guildBank.includes('(row?.skills??0)')&&guildBank.includes('Guild Skills draw from the same Bank'),
+ 'Guild Bank must count Skill materials together with current/upcoming Construction capacity');
+const guildShop=fs.readFileSync('src/online/guild-token-shop.ts','utf8');
+check(guildShop.includes("'construction'|'skill_upgrade'")&&guildShop.includes("'deposit','construction','skill_upgrade'"),
+ 'Guild Bank validation must accept the server ledger skill-upgrade spend entries');
 const hallNav=fs.readFileSync('src/components/OnlineGuildHallPanel.tsx','utf8');
 check(hallNav.includes('onOpenConstruction={()=>{setBankFocus(null);navigate(\'Construction\')}}'),'Guild Bank Needed view must link directly to Construction without duplicate bottom action');
 check(guildBank.includes('Math.max(0,totalNeed(id)-balance(id))'),'Donatable capacity must subtract Guild Bank holdings from remaining requirements');
@@ -72,4 +81,40 @@ for(const row of GUILD_CONSTRUCTION_BLUEPRINTS){
 const shared=fs.readFileSync('../../packages/guild-shop/src/catalogue.ts','utf8');
 for(const row of GUILD_CONSTRUCTION_BLUEPRINTS)check(shared.includes('id:"'+row.id+'"'),'Server catalogue missing '+row.id);
 check(sql.includes('set enabled=false'),'New construction cannot accept live donations until release gates pass');
+// Four Guild Skill release gates: consumers must exist before any purchase flag opens.
+const questConsumer=fs.readFileSync('../../backend/supabase/migrations/20261104000600_fellowship_quest_reward_consumer_v1.sql','utf8');
+const bossConsumer=fs.readFileSync('../../backend/supabase/migrations/20261104000610_vanguard_boss_support_attempt_consumer_v1.sql','utf8');
+const defenceConsumer=fs.readFileSync('../../backend/supabase/migrations/20261104000611_vanguard_defence_raid_endurance_consumer_v1.sql','utf8');
+const questReturnFix=fs.readFileSync('../../backend/supabase/migrations/20261104000602_guild_quest_completion_return_qualification_v1.sql','utf8');
+const capFix=fs.readFileSync('../../backend/supabase/migrations/20261104000612_vanguard_attempt_cap_and_support_snapshot_v1.sql','utf8');
+const guildSkills=fs.readFileSync('src/content/guild-skill-paths.ts','utf8');
+check(questConsumer.includes('guild_quest_reward_units_server_v1')&&questConsumer.includes('guild_quest_state_v1')&&questConsumer.includes('guild_quest_completions'),
+ 'Fellowship Quest skill must change immutable server award records, not visual rewards');
+check(questConsumer.includes('guild_quest_bonus_rounding_contract_failed')&&questConsumer.includes('guild_quest_objective_return_pattern_missing'),
+ 'Fellowship Quest reward calculation must have rank-math and settlement-patch contracts');
+check(questConsumer.includes('c.is_released')&&questConsumer.includes('fellowship_quests_must_stay_locked'),
+ 'Fellowship Quest bonuses must be gated behind a verified DB release');
+check(bossConsumer.includes('guild_skill_effects_server_v1(uid)')&&bossConsumer.includes("v_skill_effects->>'guildId'=e.guild_id::text"),
+ 'Vanguard attempts must use server guild-scoped, released-skill projections');
+check(bossConsumer.includes("v_skill_effects->>'guildBossDamageBps'")&&bossConsumer.includes("v_skill_effects->>'guildSupportBps'"),
+ 'Guild Boss and Battle Support must affect server-recorded attempt damage');
+check(bossConsumer.includes('ceil(e.max_hp*.11)')&&bossConsumer.includes('v_companion_damage:=least(v_companion_damage,v_damage)'),
+ 'Vanguard effects must retain the authored per-attempt cap and consistent damage partition');
+check(bossConsumer.includes('guild_boss_bonus_bps')&&bossConsumer.includes('guild_support_bonus_bps'),
+ 'Guild Boss and Support bonuses must snapshot percentages on committed attempts');
+check(defenceConsumer.includes("v_skill_effects->>'guildDefenceBps'")&&defenceConsumer.includes('v_defense*35+v_hp*2'),
+ 'Defensive Doctrine must improve authoritative defensive raid stat contribution');
+check(defenceConsumer.includes('guild_defence_bonus_bps')&&defenceConsumer.includes('guildDefenceBps'),
+ 'Defensive Doctrine must snapshot its effective rank in the owner-only attempt timeline');
+check(questReturnFix.includes('returning public.guild_quest_completions.quest_key into inserted_key;'),
+ 'Completed Guild Quests must qualify RETURNING to avoid PL/pgSQL output-variable ambiguity');
+check(capFix.includes('PERSONAL_DAMAGE_CAP_REACHED')&&capFix.includes('if v_companion_id is null then v_guild_support_bps:=0;end if;'),
+ 'Raid attempt cap must reject already-full players and zero out support without a companion');
+check(guildSkills.includes('Does not reduce overworld or dungeon damage taken.'),
+ 'UI must not claim Defensive Doctrine mitigates damage outside the raid calculation');
+check(!questConsumer.includes('update public.guild_skill_catalogue_v1 set is_released=true')
+ &&!bossConsumer.includes('update public.guild_skill_catalogue_v1 set is_released=true')
+ &&!defenceConsumer.includes('update public.guild_skill_catalogue_v1 set is_released=true'),
+ 'No consumer migration may prematurely unlock a Guild Skill for spending');
+
 console.log('PASS: 8 illustrated guild materials, 8 released profession recipes, 17x 10x server project requirements');

@@ -9,12 +9,13 @@ import {gameAlert} from '../core/game-alerts';
 import {useGameTheme} from '../theme/ThemeContext';
 import {radii,type ThemeColors} from '../theme/theme';
 import type {GuildTokenShopSnapshot} from '../online/guild-token-shop';
+import {loadOnlineGuildSkills,type GuildSkillsSnapshot} from '../online/guild-skills';
 import {depositOnlineGuildBank,pendingGuildBankDeposit,discardPendingGuildBankDeposit,type PendingGuildBankDeposit} from '../online/guild-bank';
 
 const resourceTitle=(id:string)=>id==='gold'?'Gold':guildUpgradeComponentName(id)??id.toLowerCase().replace(/_/g,' ').replace(/\b\w/g,letter=>letter.toUpperCase());
-type Need={current:number;upcoming:number};
+type Need={current:number;upcoming:number;skills:number};
 type BankSection='inventory'|'needed'|'activity';
-function projectNeeds(snapshot:GuildTokenShopSnapshot){
+function projectNeeds(snapshot:GuildTokenShopSnapshot,skillSnapshot:GuildSkillsSnapshot|null){
  const needed=new Map<string,Need>();
  for(const template of snapshot.constructionTemplates){
   if(!template.enabled)continue; // Future content is not donatable until released.
@@ -26,8 +27,20 @@ function projectNeeds(snapshot:GuildTokenShopSnapshot){
   for(const req of requirements){
    const remainder=Math.max(0,req.amount-Math.max(0,progress?.resources[req.resourceId]??0));
    if(!remainder)continue;
-   const before=needed.get(req.resourceId)??{current:0,upcoming:0};
+   const before=needed.get(req.resourceId)??{current:0,upcoming:0,skills:0};
    needed.set(req.resourceId,{...before,[upcoming?'upcoming':'current']:before[upcoming?'upcoming':'current']+remainder});
+  }
+ }
+ // Only released Guild Skills' next-rank costs can be banked, and only
+ // while the guild still holds unspent skill points.
+ if(skillSnapshot&&skillSnapshot.guildLevel===snapshot.guildLevel&&skillSnapshot.skillPoints>0){
+  for(const node of skillSnapshot.nodes){
+   if(!node.released||node.rank>=node.maxRank)continue;
+   for(const cost of node.costs){
+    if(cost.rank!==node.rank+1||cost.amount<=0)continue;
+    const before=needed.get(cost.resourceId)??{current:0,upcoming:0,skills:0};
+    needed.set(cost.resourceId,{...before,skills:before.skills+cost.amount});
+   }
   }
  }
  return needed;
@@ -43,12 +56,23 @@ export function OnlineGuildBankPanel({snapshot,onReload,focusResourceId,onFocusH
  const [view,setView]=useState<BankSection>('inventory'),[search,setSearch]=useState('');
  const [pending,setPending]=useState<PendingGuildBankDeposit|null>(null);
  const [confirming,setConfirming]=useState(false);
+ const [skillSnapshot,setSkillSnapshot]=useState<GuildSkillsSnapshot|null>(null);
+ const [skillLoading,setSkillLoading]=useState(true),[skillError,setSkillError]=useState(false);
+ const [skillRefresh,setSkillRefresh]=useState(0);
+ useEffect(()=>{
+  let active=true;setSkillLoading(true);setSkillError(false);
+  void loadOnlineGuildSkills().then(value=>{
+   if(active){setSkillSnapshot(value);setSkillError(!value);}
+  }).catch(()=>{if(active){setSkillSnapshot(null);setSkillError(true)}})
+   .finally(()=>{if(active)setSkillLoading(false)});
+  return()=>{active=false};
+ },[snapshot.guildLevel,skillRefresh]);
  const [busy,setBusy]=useState(false),[notice,setNotice]=useState(''),[error,setError]=useState('');
  useEffect(()=>{let active=true;void pendingGuildBankDeposit().then(value=>{if(active)setPending(value)}).catch(reason=>{if(active)setError(String(reason))});return()=>{active=false}},[]);
- const needs=useMemo(()=>projectNeeds(snapshot),[snapshot]);
+ const needs=useMemo(()=>projectNeeds(snapshot,skillSnapshot),[snapshot,skillSnapshot]);
  const stored=new Map((snapshot.bank?.balances??[]).map(row=>[row.resourceId,row.amount]));
  const balance=(id:string)=>stored.get(id)??0;
- const totalNeed=(id:string)=>{const row=needs.get(id);return (row?.current??0)+(row?.upcoming??0)};
+ const totalNeed=(id:string)=>{const row=needs.get(id);return (row?.current??0)+(row?.upcoming??0)+(row?.skills??0)};
  const depositCapacity=(id:string)=>Math.max(0,totalNeed(id)-balance(id));
  // The Construction shortcut focuses this material once. Clearing the focus
  // prevents the sheet from reopening after a successful deposit or dismissal.
@@ -63,13 +87,13 @@ export function OnlineGuildBankPanel({snapshot,onReload,focusResourceId,onFocusH
  // eslint-disable-next-line react-hooks/exhaustive-deps
  },[focusResourceId]);
  const ids=[...new Set([...needs.keys(),...stored.keys()])].sort((a,b)=>{
-  const aNow=(needs.get(a)?.current??0)>0?0:1,bNow=(needs.get(b)?.current??0)>0?0:1;
+  const aNow=(needs.get(a)?.current??0)+(needs.get(a)?.skills??0)>0?0:1,bNow=(needs.get(b)?.current??0)+(needs.get(b)?.skills??0)>0?0:1;
   return aNow-bNow||Number(b==='gold')-Number(a==='gold')||a.localeCompare(b);
  });
  const visibleIds=ids.filter(id=>resourceTitle(id).toLowerCase().includes(search.trim().toLowerCase()));
- const shortageNow=(id:string)=>Math.max(0,(needs.get(id)?.current??0)-balance(id));
- const shortageUpcoming=(id:string)=>Math.max(0,(needs.get(id)?.upcoming??0)-Math.max(0,balance(id)-(needs.get(id)?.current??0)));
- const currentIds=ids.filter(id=>(needs.get(id)?.current??0)>0);
+ const shortageNow=(id:string)=>Math.max(0,(needs.get(id)?.current??0)+(needs.get(id)?.skills??0)-balance(id));
+ const shortageUpcoming=(id:string)=>Math.max(0,(needs.get(id)?.upcoming??0)-Math.max(0,balance(id)-(needs.get(id)?.current??0)-(needs.get(id)?.skills??0)));
+ const currentIds=ids.filter(id=>(needs.get(id)?.current??0)+(needs.get(id)?.skills??0)>0);
  const upcomingIds=ids.filter(id=>(needs.get(id)?.upcoming??0)>0);
  const remainingTotal=ids.reduce((sum,id)=>sum+depositCapacity(id),0);
  const storedTypes=ids.filter(id=>balance(id)>0).length;
@@ -98,7 +122,7 @@ export function OnlineGuildBankPanel({snapshot,onReload,focusResourceId,onFocusH
    setPending(null);setConfirming(false);setSelection(null);
    setNotice(response.alreadyProcessed?'Saved deposit confirmed. No additional resources were deducted.':
     input.amount.toLocaleString()+' '+resourceTitle(input.resourceId)+' deposited into the Guild Bank.');
-   try{await onReload()}catch{setNotice('Deposit confirmed. Bank refresh is unavailable; reopen the Bank to update balances.');}
+   try{await onReload();setSkillRefresh(x=>x+1)}catch{setNotice('Deposit confirmed. Bank refresh is unavailable; reopen the Bank to update balances.');}
   }catch(reason){
    setConfirming(false);setSelection(null);
    setError(reason instanceof Error?reason.message:'Unable to confirm Guild Bank deposit.');
@@ -142,7 +166,7 @@ export function OnlineGuildBankPanel({snapshot,onReload,focusResourceId,onFocusH
   return <View key={(upcoming?'later-':'now-')+id} style={s.neededRow}>
    <View style={s.neededArt}>{id==='gold'?<Text style={s.goldGlyph}>G</Text>:<ResourceArtwork itemId={id} size={34} framed={false}/>}</View>
    <View style={s.flex}><Text numberOfLines={2} style={s.name}>{resourceTitle(id)}</Text>
-    <Text style={s.meta}>{balance(id).toLocaleString()} stored · {shortage.toLocaleString()} more to deposit</Text>
+    <Text style={s.meta}>{balance(id).toLocaleString()} stored · {shortage.toLocaleString()} more to deposit{!upcoming&&(needs.get(id)?.skills??0)>0?' · Guild Skills':''}</Text>
    </View>
    {shortage>0?<GameButton compact tone="secondary" title="Donate" disabled={depositDisabled} onPress={()=>choose(id)}/>:
     <Text style={[s.meta,s.nowText]}>In bank</Text>}
@@ -154,7 +178,7 @@ export function OnlineGuildBankPanel({snapshot,onReload,focusResourceId,onFocusH
   <View style={s.headingRow}>
    <View style={s.flex}><Text style={s.kicker}>SHARED STORAGE</Text>
     <Text accessibilityRole="header" style={s.heading}>Guild Bank</Text>
-    <Text style={s.meta}>Deposit only · Construction supplies</Text>
+    <Text style={s.meta}>Deposit only · Construction & Guild Skills</Text>
    </View>
    <View style={s.vaultMark}><Text style={s.vaultGlyph}>▣</Text></View>
   </View>
@@ -164,6 +188,11 @@ export function OnlineGuildBankPanel({snapshot,onReload,focusResourceId,onFocusH
    <View style={s.stat}><Text style={s.statLabel}>STILL TO DEPOSIT</Text><Text style={s.statValue}>{snapshot.bank?remainingTotal.toLocaleString():'—'}<Text style={s.statSuffix}> units</Text></Text></View>
   </View>
   {snapshot.bank===null?<Text accessibilityRole="alert" style={s.warning}>Bank balances are unavailable. Donations are paused until a refresh succeeds.</Text>:null}
+  {skillLoading?<Text style={s.meta}>Checking released Guild Skill requirements…</Text>:null}
+  {skillError?<View style={s.actions}>
+   <Text accessibilityRole="alert" style={[s.warning,s.flex]}>Guild Skill requirements could not load. Construction deposits remain available.</Text>
+   <GameButton compact tone="secondary" title="Retry" onPress={()=>setSkillRefresh(v=>v+1)}/>
+  </View>:null}
   {!!error&&<Text accessibilityRole="alert" style={s.error}>{error}</Text>}
   {!!notice&&<Text accessibilityLiveRegion="polite" style={s.success}>{notice}</Text>}
   {pending?<View style={s.pending}>
@@ -189,15 +218,17 @@ export function OnlineGuildBankPanel({snapshot,onReload,focusResourceId,onFocusH
    <View style={s.bankGrid}>{visibleIds.map(inventoryCard)}</View>
    {!visibleIds.length?<View style={s.empty}><Text style={s.name}>No matching materials</Text>
     <Text style={s.help}>Try a different search. Only published upgrade materials are accepted.</Text></View>:null}
-   <Text style={s.footerHelp}>Only materials needed by published Guild upgrades can be deposited. Donated items cannot be withdrawn.</Text>
+   <Text style={s.footerHelp}>Only materials required by published Construction or released Guild Skills can be deposited. Donations cannot be withdrawn.</Text>
    <GameButton compact tone="secondary" title="View materials needed" onPress={()=>{setView('needed');setNotice('')}}/>
   </View>:null}
   {view==='needed'?<View style={s.section}>
-   <View style={s.sectionHead}><Text style={s.sectionTitle}>Construction requirements</Text><Text style={s.meta}>{currentIds.length} needed now</Text></View>
-   <Text style={s.help}>Donate supplies to the Bank first. Guild Construction allocates them to individual projects.</Text>
+   <View style={s.sectionHead}><Text style={s.sectionTitle}>Guild supply requirements</Text><Text style={s.meta}>{currentIds.length} needed now</Text></View>
+   <GameButton compact tone="secondary" title={skillLoading?'Refreshing Guild Skill needs…':'Refresh requirements'} disabled={skillLoading}
+    onPress={()=>{setSkillRefresh(v=>v+1);void onReload()}}/>
+   <Text style={s.help}>Construction and released Guild Skills draw from the same Bank. Donate supplies first; spending is done in the relevant Guild screen.</Text>
    <Text style={s.groupLabel}>NEEDED NOW</Text>
    {currentIds.length?currentIds.map(id=>neededRow(id,false)):
-    <Text style={s.help}>No currently released construction requires additional materials.</Text>}
+    <Text style={s.help}>No current construction or released Guild Skill requirements need more materials.</Text>}
    <Text style={s.groupLabel}>UPCOMING</Text>
    {upcomingIds.length?upcomingIds.map(id=>neededRow(id,true)):
     <Text style={s.help}>No upcoming published material requirements.</Text>}
@@ -212,7 +243,7 @@ export function OnlineGuildBankPanel({snapshot,onReload,focusResourceId,onFocusH
    {snapshot.bank?.activity.length?snapshot.bank.activity.slice(0,20).map((item,index)=><View key={item.createdAt+'-'+item.resourceId+'-'+index} style={s.activityRow}>
     <View style={s.neededArt}>{item.resourceId==='gold'?<Text style={s.goldGlyph}>G</Text>:<ResourceArtwork itemId={item.resourceId} size={30} framed={false}/>}</View>
     <View style={s.flex}>
-     <Text numberOfLines={2} style={s.name}>{item.kind==='deposit'?(item.mine?'You donated':'Member donated'):'Allocated to construction'}</Text>
+     <Text numberOfLines={2} style={s.name}>{item.kind==='deposit'?(item.mine?'You donated':'Member donated'):item.kind==='skill_upgrade'?'Spent on Guild Skill':'Allocated to construction'}</Text>
      <Text numberOfLines={2} style={s.meta}>{resourceTitle(item.resourceId)} · {activityTime(item.createdAt)}</Text>
     </View>
     <Text style={[s.activityAmount,{color:item.kind==='deposit'?C.good:C.info}]}>
@@ -233,7 +264,7 @@ export function OnlineGuildBankPanel({snapshot,onReload,focusResourceId,onFocusH
       <Text style={s.meta}>{balance(selected).toLocaleString()} currently stored</Text>
      </View>
     </View>
-    <View style={s.warningCard}><Text style={s.help}>This donation is permanent and cannot be withdrawn. Guild Construction will allocate it to an upgrade separately.</Text></View>
+    <View style={s.warningCard}><Text style={s.help}>This donation is permanent and cannot be withdrawn. Guild Construction or Guild Skills can spend it separately.</Text></View>
     <View style={s.actions}>
      <View style={s.flex}><GameButton tone="secondary" title="Back" disabled={busy} onPress={()=>setConfirming(false)}/></View>
      <View style={s.flex}><GameButton title="Confirm donation" disabled={!valid||depositDisabled} loading={busy}
@@ -245,12 +276,12 @@ export function OnlineGuildBankPanel({snapshot,onReload,focusResourceId,onFocusH
      <View style={s.modalArt}>{selected==='gold'?<Text style={s.goldGlyph}>G</Text>:<ResourceArtwork itemId={selected} size={56} framed={false}/>}</View>
      <View style={s.flex}><Text style={s.name}>{resourceTitle(selected)}</Text>
       <Text style={s.help}>{balance(selected).toLocaleString()} stored in the shared Bank</Text>
-      <Text style={s.meta}>Only required materials can be deposited</Text>
+      <Text style={s.meta}>Only published Construction and released Skill materials can be deposited</Text>
      </View>
     </View>
     <View style={s.modalStats}>
      <View style={s.modalStat}><Text style={s.statLabel}>GUILD OWNS</Text><Text style={s.modalNumber}>{balance(selected).toLocaleString()}</Text></View>
-     <View style={s.modalStat}><Text style={s.statLabel}>NEEDED NOW</Text><Text style={s.modalNumber}>{(needs.get(selected)?.current??0).toLocaleString()}</Text></View>
+     <View style={s.modalStat}><Text style={s.statLabel}>NEEDED NOW</Text><Text style={s.modalNumber}>{((needs.get(selected)?.current??0)+(needs.get(selected)?.skills??0)).toLocaleString()}</Text></View>
      <View style={s.modalStat}><Text style={s.statLabel}>BANK LIMIT</Text><Text style={s.modalNumber}>{maxAmount.toLocaleString()}</Text></View>
     </View>
     <Text style={s.name}>Donation amount</Text>

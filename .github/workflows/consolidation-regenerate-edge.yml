@@ -29,6 +29,9 @@ jobs:
       - name: Install pinned backend
         working-directory: backend
         run: pnpm install --frozen-lockfile
+      - name: Install shared mobile dependencies referenced by backend types
+        working-directory: apps/mobile
+        run: pnpm install --frozen-lockfile
       - name: Generate both gameplay and co-op Edge entrypoints
         run: pnpm --dir backend build:online
       - name: Verify generated gameplay is byte-for-byte current

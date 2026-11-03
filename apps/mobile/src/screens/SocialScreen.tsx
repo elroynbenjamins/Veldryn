@@ -193,7 +193,16 @@ export function SocialScreen({mode='legacy',initialTab='party',characterLevel=0,
      {selectedProfile?<ChatPlayerSheet message={selectedProfile} onClose={()=>setSelectedProfile(null)} onBlocked={()=>setSelectedProfile(null)}/>:null}
    </View>;
  }
- return <SocialHubPanel active={tab} hasParty={canUsePartyChat} badges={{party:partyInvites.length}} onChange={next=>{setTab(next);setSelected(null);setDraft(null);setError('');setBackgroundError('');}}>
+ const headerGuide=tab==='guild'?{
+  scope:social.accountId,area:'social',section:'Guild',
+  translate:(value:string)=>socialLabel(language,value),
+  guide:{title:'Guild',body:'Open your Guild here, or browse recruiting guilds before joining.',detail:'Guild Chat and activities are inside Guild and remain independent of Party unlocks.'},
+ }:tab==='chat'&&canUsePartyChat?{
+  scope:social.accountId,area:'social',section:'Chat',
+  translate:(value:string)=>socialLabel(language,value),
+  guide:{title:'Party Chat',body:'Message your current Party here. Other social controls stay in their own tabs.',detail:'The Chat tab disappears when you leave or disband your Party.'},
+ }:undefined;
+ return <SocialHubPanel headerGuide={headerGuide} active={tab} hasParty={canUsePartyChat} badges={{party:partyInvites.length}} onChange={next=>{setTab(next);setSelected(null);setDraft(null);setError('');setBackgroundError('');}}>
  {tab==='chat'?(canUsePartyChat?<View style={s.chatContent}><OnlinePartyChat expanded/></View>:social.loading?<View style={s.chatContent}><Text style={s.syncText}>{st("Opening Party Chat…")}</Text></View>:null):
  <ScrollView contentContainerStyle={s.content} keyboardShouldPersistTaps="handled" keyboardDismissMode="on-drag" showsVerticalScrollIndicator={false} showsHorizontalScrollIndicator={false}>
   {tab==='party'&&partyLocked?<PartyLockedNotice level={PARTY_UNLOCK_LEVEL}/>:<>

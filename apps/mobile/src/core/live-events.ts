@@ -240,11 +240,16 @@ export function eventOfferPurchaseCount(state:GameState,eventId:string,offerId:s
  if(offer?.reward.kind==='candy')return offers.filter(row=>row.currency===offer.currency&&row.reward.kind==='candy'&&row.reward.id===offer.reward.id).reduce((total,row)=>total+eventOfferOwnPurchaseCount(state,eventId,row.id),0);
  return eventOfferOwnPurchaseCount(state,eventId,offerId);
 }
-export function eventShopOffers(state:GameState,nowMs=Date.now()){const event=claimableLiveEvent(state,nowMs);return event?[...event.definition.shop,...eventPrestigeSupplyOffers(event.definition)]:[];}
+export function eventShopOffers(state:GameState,nowMs=Date.now()){
+ const event=claimableLiveEvent(state,nowMs);if(!event)return [];
+ const offers=[...event.definition.shop,...eventPrestigeSupplyOffers(event.definition)];
+ // The claim window still permits permanent and immediately usable rewards, but not event-only candy.
+ return event.phase==='active'?offers:offers.filter(offer=>offer.reward.kind!=='candy');
+}
 /** @deprecated Compatibility alias for older tests/callers. Player-facing UI uses Event Shop; this is not the retired player Market. */
 export const eventMarketOffers=eventShopOffers;
 export function purchaseEventOffer(state:GameState,offerId:string,nowMs=Date.now()):GameState{
-  const event=claimableLiveEvent(state,nowMs);if(!event)throw new Error('The event shop is closed.');const offer=eventShopOffers(state,nowMs).find(entry=>entry.id===offerId);if(!offer)throw new Error('Unknown event-shop offer.');if((state.character?.level??0)<(offer.minLevel??1))throw new Error(`Reach level ${offer.minLevel} to purchase this offer.`);const count=eventOfferPurchaseCount(state,event.definition.id,offerId);if(count>=offer.limit)throw new Error('Purchase limit reached.');
+  const event=claimableLiveEvent(state,nowMs);if(!event)throw new Error('The event shop is closed.');const offer=[...event.definition.shop,...eventPrestigeSupplyOffers(event.definition)].find(entry=>entry.id===offerId);if(!offer)throw new Error('Unknown event-shop offer.');if(offer.reward.kind==='candy'&&event.phase!=='active')throw new Error('Event candy purchases close when the event ends.');if((state.character?.level??0)<(offer.minLevel??1))throw new Error(`Reach level ${offer.minLevel} to purchase this offer.`);const count=eventOfferPurchaseCount(state,event.definition.id,offerId);if(count>=offer.limit)throw new Error('Purchase limit reached.');
   const common={...(state.account.eventCurrencyBalanceById??{})},prestige={...(state.account.eventPrestigeBalanceById??{})},balance=offer.currency==='common'?(common[event.definition.id]??0):(prestige[event.definition.id]??0);if(balance<offer.cost)throw new Error(`Requires ${offer.cost} ${offer.currency==='common'?event.definition.currencyName:event.definition.prestigeCurrencyName}.`);if(offer.currency==='common')common[event.definition.id]=balance-offer.cost;else prestige[event.definition.id]=balance-offer.cost;
   const rewarded=addReward(state,offer.reward,nowMs),key=`${event.definition.id}:${offer.id}`;return {...rewarded,account:{...rewarded.account,eventCurrencyBalanceById:common,eventPrestigeBalanceById:prestige,eventShopPurchaseCounts:{...(rewarded.account.eventShopPurchaseCounts??{}),[key]:eventOfferOwnPurchaseCount(state,event.definition.id,offerId)+1}}};
 }

@@ -34,7 +34,7 @@ export type {QuestMode} from '../components/QuestModeSwitch';
 type Selection={kind:'story'|'contract'|'challenge';id:string};
 type SheetStage='details'|'confirm'|'claiming'|'success';
 type Status='ready'|'active'|'locked'|'claimed'|'processing';
-type RewardMoment={id:string;title:string;gold:number;xp?:number;itemId?:string;quantity?:number;rarityColor?:string};
+type RewardMoment={id:string;source:'story'|'challenges';title:string;gold:number;xp?:number;itemId?:string;quantity?:number;rarityColor?:string};
 
 function ProgressLine({current,max,C}:{current:number;max:number;C:ThemeColors}){
  const percentage=Math.max(0,Math.min(100,Math.round(current/Math.max(1,max)*100)));
@@ -100,6 +100,14 @@ export function QuestRefinedScreen({state,mode,onModeChange,focusedWeeklyOrderId
  const [selected,setSelected]=useState<Selection|null>(null),[sheetStage,setSheetStage]=useState<SheetStage>('details');
  const [storyExpanded,setStoryExpanded]=useState(false),[notice,setNotice]=useState('');
  const [moment,setMoment]=useState<RewardMoment|null>(null);
+ // Claim feedback is transient, rather than a persistent card on the quest board.
+ useEffect(()=>{
+  if(!moment)return;
+  const timeout=setTimeout(()=>setMoment(null),3000);
+  return ()=>clearTimeout(timeout);
+ },[moment]);
+ // The active quest tab can also change from navigation outside this screen.
+ useEffect(()=>{setMoment(null);},[mode]);
  const previous=useRef({characterId:state.character?.id,story:state.quests.filter(q=>q.status==='claimed').map(q=>q.questId),challenges:state.account.seasonalContractClaimIds??[]});
  const daily=seasonalQuestBoard(state,'daily'),weekly=seasonalQuestBoard(state,'weekly'),monthly=seasonalQuestBoard(state,'monthly');
  const allChallenges=[...daily,...weekly,...monthly];
@@ -125,7 +133,7 @@ export function QuestRefinedScreen({state,mode,onModeChange,focusedWeeklyOrderId
  const selectedStatus:Status=chosenStory?(selectedProgress?.status==='complete'?'ready':selectedProgress?.status==='claimed'?'claimed':selectedProgress?.status==='active'?'active':'locked'):chosenOrder?(selectedLocked?'locked':chosenOrder.claimed?'claimed':chosenOrder.progress>=chosenOrder.target?'processing':'active'):chosenChallenge?(challengeClaimed.has(chosenChallenge.id)?'claimed':chosenChallenge.progress>=chosenChallenge.required?'ready':'active'):'locked';
  const closeSheet=useCallback(()=>{setSelected(null);setSheetStage('details');setStoryExpanded(false);},[]);
  function open(kind:Selection['kind'],id:string){setSelected({kind,id});setSheetStage('details');setStoryExpanded(false);setMoment(null);setNotice('');}
- function changeMode(next:QuestMode){closeSheet();setNotice('');onModeChange(next);}
+ function changeMode(next:QuestMode){closeSheet();setMoment(null);setNotice('');onModeChange(next);}
  useEffect(()=>{
   if(focusedWeeklyOrderId&&mode==='contracts'&&board.orders.some(q=>q.id===focusedWeeklyOrderId)){setSelected({kind:'contract',id:focusedWeeklyOrderId});setSheetStage('details');}
  },[focusedWeeklyOrderId,mode]);
@@ -137,10 +145,10 @@ export function QuestRefinedScreen({state,mode,onModeChange,focusedWeeklyOrderId
   const newStory=newlyConfirmedIds(prior.story,next.story),newChallenge=newlyConfirmedIds(prior.challenges,next.challenges);
   if(newStory.length){
    const def=QUESTS.find(q=>q.id===newStory[newStory.length-1]);
-   if(def){setMoment({id:def.id,title:def.name,gold:def.rewardGold,itemId:def.rewardItemId,quantity:def.rewardItemQty??1});if(selected?.kind==='story'&&selected.id===def.id)setSheetStage('success');}
+   if(def){setMoment({id:def.id,source:'story',title:def.name,gold:def.rewardGold,itemId:def.rewardItemId,quantity:def.rewardItemQty??1});if(selected?.kind==='story'&&selected.id===def.id)setSheetStage('success');}
   }else if(newChallenge.length){
    const def=allChallenges.find(q=>q.id===newChallenge[newChallenge.length-1]);
-   if(def){setMoment({id:def.id,title:def.name,gold:def.rewardGold,xp:def.rewardXp,itemId:def.rewardItemId,quantity:def.rewardItemQty,rarityColor:QUEST_RARITIES[def.rarity].color});if(selected?.kind==='challenge'&&selected.id===def.id)setSheetStage('success');}
+   if(def){setMoment({id:def.id,source:'challenges',title:def.name,gold:def.rewardGold,xp:def.rewardXp,itemId:def.rewardItemId,quantity:def.rewardItemQty,rarityColor:QUEST_RARITIES[def.rarity].color});if(selected?.kind==='challenge'&&selected.id===def.id)setSheetStage('success');}
   }
  },[state.quests,state.account.seasonalContractClaimIds,state.character?.id]);
  function submitClaim(){
@@ -177,7 +185,7 @@ export function QuestRefinedScreen({state,mode,onModeChange,focusedWeeklyOrderId
     challengeMeta={challengeReady.length?t('{count} ready',{count:challengeReady.length}):t('{current}/{total} claimed',{current:challengeClaimed.size,total:allChallenges.length})}
     storyAttention={storyReady} contractAttention={boardPending.length} challengeAttention={challengeReady.length}/>
    {notice?<ActionFeedback compact tone="error" message={notice} reduceMotion={state.settings.reduceMotion} actionLabel={p('Dismiss')} onAction={()=>setNotice('')}/>:null}
-   {moment&&!sheetOpen?<View style={[styles.moment,{borderColor:C.good,backgroundColor:C.goodSurface}]}><View style={styles.rowMeta}><Text style={[styles.eyebrow,{color:C.good}]}>{p('REWARDS SECURED')}</Text><StatusPill label={p('CLAIMED')} tone="good"/></View><Text style={[styles.rowTitle,{color:C.text}]}>{moment.title}</Text><QuestReward gold={moment.gold} xp={moment.xp} itemId={moment.itemId} quantity={moment.quantity} rarityColor={moment.rarityColor} label={p('Rewards collected')}/></View>:null}
+   {moment?.source===mode&&!sheetOpen?<View style={[styles.moment,{borderColor:C.good,backgroundColor:C.goodSurface}]}><View style={styles.rowMeta}><Text style={[styles.eyebrow,{color:C.good}]}>{p('REWARDS SECURED')}</Text><StatusPill label={p('CLAIMED')} tone="good"/></View><Text style={[styles.rowTitle,{color:C.text}]}>{moment.title}</Text><QuestReward gold={moment.gold} xp={moment.xp} itemId={moment.itemId} quantity={moment.quantity} rarityColor={moment.rarityColor} label={p('Rewards collected')}/></View>:null}
    {mode==='story'?<>
     <View style={[styles.hero,{backgroundColor:C.panelRaised,borderColor:C.lineStrong}]}>
      <View style={styles.rowMeta}><Text style={[styles.eyebrow,{color:C.accent}]}>{p('ACT')+' '+(act.act===1?'I':act.act===2?'II':'III')+' · '+p(act.name.toUpperCase())}</Text><Text style={[styles.mini,{color:C.muted}]}>{storyClaimed}/{QUESTS.length}</Text></View>

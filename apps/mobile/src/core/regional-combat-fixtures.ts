@@ -30,7 +30,16 @@ export function regionalCombatFixture(def:RegionalCombatFixtureDef,preparation:R
  let state=createCharacter(newGame(0),classId,'Regional Sustain');
  const level=Math.max(1,def.level+(preparation==='optimized'?4:preparation==='underprepared'?-3:0));
  const equipment=equipmentFor(classId,def.tier,preparation,level);
- state={...state,currentRegionId:def.regionId,unlockedMonsterIds:[...new Set([...state.unlockedMonsterIds,def.monsterId])],character:{...state.character!,level,xp:characterTotalXpAtLevel(level),currentHp:state.character!.hp,equippedFoodId:def.foodId,equipment:{...state.character!.equipment,...equipment}}};
+ // Test fixtures must satisfy real world-travel prerequisites. Merely setting
+ // currentRegionId now falls back to the previous zone when a route is locked.
+ const scoutChain=['SCOUT_IRONWOOD','SCOUT_OLD_MINES','SCOUT_KINGS_ROAD','SCOUT_SUNSCAR','SCOUT_FROSTMARCH'];
+ const scoutCount=def.regionId==='OLD_MINES'?1:def.regionId==='KINGS_ROAD'?2:
+  def.regionId==='SUNSCAR'?3:def.regionId==='FROSTMARCH'?4:def.regionId==='ASHLANDS'?5:0;
+ const postChapterOne=['SUNSCAR','FROSTMARCH','ASHLANDS'].includes(def.regionId);
+ state={...state,currentRegionId:def.regionId,
+  exploredRouteIds:[...new Set([...(state.exploredRouteIds??[]),...scoutChain.slice(0,scoutCount)])],
+  defeatedBossIds:postChapterOne?[...new Set([...state.defeatedBossIds,'FALLEN_KNIGHT'])]:state.defeatedBossIds,
+  unlockedMonsterIds:[...new Set([...state.unlockedMonsterIds,def.monsterId])],character:{...state.character!,level,xp:characterTotalXpAtLevel(level),currentHp:state.character!.hp,equippedFoodId:def.foodId,equipment:{...state.character!.equipment,...equipment}}};
  state.character!.currentHp=effectiveStats(state).hp;
  return state;
 }

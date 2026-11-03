@@ -4,6 +4,8 @@ function ok(value:boolean,message:string){if(!value)throw new Error(message)}
 const read=(path:string)=>fs.readFileSync(path,'utf8');
 
 const screen=read('src/screens/GuildScreen.tsx');
+const homeActions=read('src/components/GuildHomeActions.tsx');
+const hallSummary=read('src/components/GuildHallSummary.tsx');
 const panel=read('src/components/OnlineGuildMusterPanel.tsx');
 const client=read('src/online/guild-muster.ts');
 const core=read('src/core/guild-muster.ts');
@@ -18,6 +20,9 @@ ok(screen.includes("onlineSection==='Activities'?<View")&&screen.includes('<Onli
 ok(screen.includes('title={st("Muster & Rally")}')&&screen.includes('copy={st("Daily participation rolls into the shared weekly Rally without adding another currency.")}'),'Activities must explain Muster and Rally with localized copy after consolidation');
 ok(screen.includes('<GuildMemberIdentity onRoster=')&&screen.includes('<GuildHomeActions board=')&&screen.includes('board={onlineBoard}'),'Guild Home must keep member identity and Notice Board together');
 
+ok(!homeActions.includes('Open Muster')&&!homeActions.includes('DAILY GUILD PARTICIPATION'),'Guild Home must not render a second oversized Muster promotion');
+ok(hallSummary.includes('title="Open Muster & Rally"')&&screen.includes('<GuildHallSummary onOpenMuster={()=>onNavigateMuster()}'),'Primary Guild Hall summary Muster shortcut must remain functional');
+ok(screen.includes("activityView==='Muster'?")&&screen.includes('<OnlineGuildMusterPanel/>'),'Guild Activities Muster destination must remain available');
 ok(panel.includes('GUILD MUSTER'),'Muster must have a clear player-facing identity');
 ok(panel.includes('not a consecutive login streak'),'Muster must explicitly avoid punitive consecutive streaks');
 ok(panel.includes('35% / 70% / 100%'),'Rally tier milestones must be visible');

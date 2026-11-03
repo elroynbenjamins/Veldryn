@@ -44,7 +44,7 @@ export function GatheringActivityList({state,skillId,skillLevel,preferredActionI
       <View style={s.copy}>
        <View style={s.topLine}>
         <View style={s.nameLine}><Text numberOfLines={1} style={s.name}>{activity.name}</Text>{inCurrentRegion&&<Text style={s.regionTag}>{gt("HERE")}</Text>}</View>
-        <Text style={s.xp}>+${formatGameNumber(Math.round(activity.xp),state.settings.numberMode,state.settings.language)} XP</Text>
+        <Text style={s.xp}>{`+${formatGameNumber(Math.round(activity.xp),state.settings.numberMode,state.settings.language)} XP`}</Text>
        </View>
        <Text numberOfLines={1} style={active?s.activeMeta:s.meta}>{active?gt("Gathering now"):!inCurrentRegion?`Region: ${nodeRegion?.name??activity.zoneId}`:unlocked?`Have: ${formatGameNumber(available,state.settings.numberMode,state.settings.language)} ${resource.name} · ${Math.ceil(view.cycleSeconds)}s`:`Unlocks at ${skillId} level ${activity.unlockLevel}`}</Text>
       </View>

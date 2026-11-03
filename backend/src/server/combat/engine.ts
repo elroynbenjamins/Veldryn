@@ -110,9 +110,9 @@ export function simulateCombat(input: CombatInput): CombatResult {
     const crit=rng.next(`${now}:${source.definition.id}:${abilityId}:crit`)<clamp(source.definition.stats.critChance+modifier(source,'crit',now),0,.75);
     const qmodeStrike=input.enemyDamageProfile==='qmode-v1'&&source.definition.team==='enemies'&&target.definition.team==='players'&&eventType==='damage';
     // Preserve all legacy RNG draws for Live, ordinary hunts and in-flight runs.
-    // In new Q-Mode runs enemy direct hits vary by ±12%; roughly one in ten
+    // In new Q-Mode runs enemy direct hits vary by ±10%; roughly one in ten
     // noncritical hits becomes a heavier blow. DoTs never roll the burst.
-    const variance=qmodeStrike?.88+rng.next(`${now}:${abilityId}:var`)*.24:.95+rng.next(`${now}:${abilityId}:var`)*.10;
+    const variance=qmodeStrike?.90+rng.next(`${now}:${abilityId}:var`)*.20:.95+rng.next(`${now}:${abilityId}:var`)*.10;
     const heavyHit=qmodeStrike&&!crit&&rng.next(`${now}:${source.definition.id}:${target.definition.id}:${abilityId}:heavy`)<.10;
     let raw=damageAfterMitigation(source.definition.stats.attackPower,effect.coeff??0,mit,variance,crit,source.definition.stats.critMultiplier)+(effect.flat??0);
     if(heavyHit)raw*=1.16;

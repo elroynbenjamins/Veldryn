@@ -27,7 +27,9 @@ assert.equal(whole.encounters.filter(row=>row.prepared).length,3,'exactly three 
 assert.ok(whole.encounters.some(row=>row.candy)&&whole.encounters.some(row=>!row.candy),'candy starts and expires within a batch');
 const empty=combatTimeline({...options,elapsedSeconds:0});assert.equal(empty.encounters.length,0);assert.equal(empty.nextProgressFraction,.3);
 
-const region=REGIONAL_COMBAT_FIXTURES.at(-1)!;
+// Exercise potion/candy timing on an attainable T2 prepared route: Ashlands is now
+// deliberately lethal to under-supplied builds and is tested separately by sustain contracts.
+const region=REGIONAL_COMBAT_FIXTURES.find(row=>row.regionId==='KINGS_ROAD')!;
 function fixture():GameState{
  const s=regionalCombatFixture(region,'prepared','WAYFINDER');
  s.character!.currentHp=effectiveStats(s).hp;s.inventory.stacks=[{itemId:region.foodId,quantity:10000}];

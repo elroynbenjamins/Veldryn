@@ -92,6 +92,9 @@ export function CoopRunOverview({language,run,myVotedNodeId,selfVoter,onBack,onC
     if(!inCombat&&(!run.lastCombat||run.lastCombat.nodeId===enterFromNode.current))setTheaterOpen(false);
    }
   },[enteringCombat,inCombat,run.phase,run.stateVersion,run.lastCombat?.nodeId,notice]);
+  // Solo runs reveal their server-authored replay after node settlement.
+  // Never play the previous room's lastCombat while the new fight is pending.
+  const awaitingCombatPlayback=inCombat&&run.mode==='qmode'&&!!run.selectedNodeId&&run.lastCombat?.nodeId!==run.selectedNodeId;
   const combatName=run.bossMechanic?.telegraph?.bossName??(run.pendingCombat??run.lastCombat)?.combatants?.find(member=>member.boss)?.name??st('DUNGEON COMBAT');
   return <><ExpeditionScreenShell compactHeader={inCombat} eyebrow={ct(language,'browse.resumeTitle')} title={inCombat?combatName:ct(language,'browse.resume')} onBack={onBack} backLabel={ct(language,'details.backList')} banner={inCombat?undefined:<View style={s.banner}><StateChip label={modeLabel} tone="selected"/><Text style={s.phase}>{run.phase.replaceAll('_',' ')}</Text></View>}>
     {inCombat?<FantasyPanel variant="selected"><View style={s.summary}>
@@ -148,7 +151,7 @@ export function CoopRunOverview({language,run,myVotedNodeId,selfVoter,onBack,onC
     </View>
    </Modal>:null}
    {theaterOpen?<CombatTheaterModal visible tone={seasonal?'event':'dungeon'} onClose={()=>{setTheaterOpen(false);if(terminal)setRewardOpen(true);}} title={combatName} eyebrow={st('DUNGEON COMBAT')} subtitle={modeLabel} reduceMotion={reduceMotion}>
-    {enteringCombat?<View style={s.battlePrelude} accessibilityLiveRegion="polite"><Text style={s.preludeIcon}>⚔</Text><Text style={s.preludeTitle}>{st("Entering battle")}</Text><Text style={s.copy}>{st("Preparing the encounter…")}</Text></View>:<DungeonCombatStage run={run} onPresentationComplete={terminal?()=>{setTheaterOpen(false);setRewardOpen(true);}:undefined} seasonal={seasonal} eventName={eventName} reduceMotionSetting={reduceMotion} boss={Boolean((run.pendingCombat??run.lastCombat)?.combatants?.some(member=>member.boss))} enemyLabel={run.bossMechanic?.telegraph?.bossName}/>}
+    {enteringCombat||awaitingCombatPlayback?<View style={s.battlePrelude} accessibilityLiveRegion="polite"><Text style={s.preludeIcon}>⚔</Text><Text style={s.preludeTitle}>{awaitingCombatPlayback?st("Battle in progress"):st("Entering battle")}</Text><Text style={s.copy}>{awaitingCombatPlayback?st("Your encounter is running. Combat results will appear when the server settles this room."):st("Preparing the encounter…")}</Text></View>:<DungeonCombatStage run={run} onPresentationComplete={terminal?()=>{setTheaterOpen(false);setRewardOpen(true);}:undefined} seasonal={seasonal} eventName={eventName} reduceMotionSetting={reduceMotion} boss={Boolean((run.pendingCombat??run.lastCombat)?.combatants?.some(member=>member.boss))} enemyLabel={run.bossMechanic?.telegraph?.bossName}/>}
    </CombatTheaterModal>:null}
   </>;
 }

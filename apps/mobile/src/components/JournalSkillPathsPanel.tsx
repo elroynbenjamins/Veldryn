@@ -5,7 +5,7 @@ import type {QuestDestination} from '../core/quest-journal';
 import {journalSkillLessonProgress,journalSkillLessonSummary,type JournalSkillLessonProgress} from '../core/journal-skill-lessons';
 import {progressionText} from '../i18n/progression';
 import {useGameTheme} from '../theme/ThemeContext';
-import {spacing,type ThemeColors} from '../theme/theme';
+import type {ThemeColors} from '../theme/theme';
 import {ActivityArtwork} from './ActivityArtwork';
 import {GameButton} from './GameButton';
 

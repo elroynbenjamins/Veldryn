@@ -59,7 +59,7 @@ export function OnlineGuildBankPanel({snapshot,onReload}:{snapshot:GuildTokenSho
    setPending(null);setSelection(null);
    setNotice(response.alreadyProcessed?'Saved deposit confirmed. No additional resources were deducted.':
     input.amount.toLocaleString()+' '+resourceTitle(input.resourceId)+' deposited into the Guild Bank.');
-   await onReload();
+   try{await onReload()}catch{setNotice('Deposit confirmed. Bank refresh is unavailable; reopen the Bank to update balances.');}
   }catch(reason){
    setError(reason instanceof Error?reason.message:'Unable to confirm Guild Bank deposit.');
    try{setPending(await pendingGuildBankDeposit())}catch{/* Keep original error. */}

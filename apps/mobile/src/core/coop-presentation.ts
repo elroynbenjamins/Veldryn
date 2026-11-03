@@ -1,4 +1,9 @@
 export type CoopMode='qmode'|'live';
+/** Forge, shrines, risk rooms and other utility nodes do not start battles. */
+export function isCoopCombatNodeKind(kind:string|undefined):boolean{
+ return kind==='battle'||kind==='elite'||kind==='boss';
+}
+
 export interface CoopEncounterPreviewView {archetypes:Array<{id:string;label:string}>;mechanics:Array<{id:string;label:string;description:string}>;summary:string;}
 export interface CoopRouteOptionView {nodeId:string;title:string;kind:string;risk:string;reward:string;votes?:number;hidden?:boolean;encounterPreview?:CoopEncounterPreviewView;}
 export interface CoopRunMechanicView {label:string;description:string;value:number;maxValue:number;status:'critical'|'steady'|'strong';bossEffect:string;}
@@ -47,7 +52,16 @@ export interface CoopCombatReplayView{
  cues:CoopCombatReplayCueView[];
 }
 export type CoopPendingCombatView=Omit<CoopCombatReplayView,'reason'|'contributions'>&{elapsedMs:number;wallDurationMs:number};
-export interface CoopRunView {runId:string;mode:CoopMode;modeLabel?:string;phase:string;syncedLevel:number;roleSlots:Array<{memberId?:string;role:'tank'|'damage'|'support';name:string;echo:boolean;npc?:boolean;classId?:string;profileIconId?:string|null;iconClassId?:string|null;bodyPresentation?:'male'|'female';companionId?:string;currentHp?:number;maximumHp?:number;ready?:boolean}>;options:CoopRouteOptionView[];presenceSummary?:{connectedCount:number;safetyAiCount:number;activeCount:number;safetyAiCharacterIds:string[]};mechanic?:CoopRunMechanicView;objective?:CoopRunObjectiveView;bossMechanic?:CoopRunBossMechanicView;bossRecap?:CoopRunBossRecapView;lastCombat?:CoopCombatReplayView;pendingCombat?:CoopPendingCombatView;serverNow?:number;rewardText?:string;stateVersion?:number;decisionId?:string;decisionRevision?:number;resolvesAtMs?:number;}
+export interface CoopRunView {runId:string;mode:CoopMode;modeLabel?:string;phase:string;syncedLevel:number;roleSlots:Array<{memberId?:string;role:'tank'|'damage'|'support';name:string;echo:boolean;npc?:boolean;classId?:string;profileIconId?:string|null;iconClassId?:string|null;bodyPresentation?:'male'|'female';companionId?:string;currentHp?:number;maximumHp?:number;ready?:boolean}>;options:CoopRouteOptionView[];selectedNodeId?:string;selectedNodeKind?:string;presenceSummary?:{connectedCount:number;safetyAiCount:number;activeCount:number;safetyAiCharacterIds:string[]};mechanic?:CoopRunMechanicView;objective?:CoopRunObjectiveView;bossMechanic?:CoopRunBossMechanicView;bossRecap?:CoopRunBossRecapView;lastCombat?:CoopCombatReplayView;pendingCombat?:CoopPendingCombatView;serverNow?:number;rewardText?:string;stateVersion?:number;decisionId?:string;decisionRevision?:number;resolvesAtMs?:number;}
+/**
+ * During a node-resolution timer the client can only show battle if that
+ * selected server-owned node is actually combat (or live combat cues exist).
+ * Do not infer combat from `phase='resolving_node'` or a stale lastCombat.
+ */
+export function isCoopBattleResolving(run:Pick<CoopRunView,'phase'|'selectedNodeKind'|'pendingCombat'>):boolean{
+ if(run.phase!=='resolving_node')return false;
+ return run.selectedNodeKind!==undefined?isCoopCombatNodeKind(run.selectedNodeKind):Boolean(run.pendingCombat);
+}
 export function parseCoopEncounterPreview(value:unknown):CoopEncounterPreviewView|undefined{
  if(value===undefined||value===null)return undefined;
  if(!value||typeof value!=='object')throw new Error('invalid_encounter_preview');

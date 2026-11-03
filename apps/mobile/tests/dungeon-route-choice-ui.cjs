@@ -31,7 +31,7 @@ assert(overview.includes("run.lastCombat?.nodeId!==run.selectedNodeId")&&overvie
 const stage=read('src/components/coop/DungeonCombatStage.tsx');
 assert(overview.includes('anticipation={enteringCombat||awaitingCombatPlayback}'),'The existing battle arena mounts immediately on a combat tap or an authoritative Q-Mode pending battle');
 assert(!overview.includes('<View style={s.battlePrelude}'),'The old static Entering battle panel must never replace the arena');
-assert(stage.includes('anticipation=false')&&stage.includes('const pending=anticipation?undefined:run.pendingCombat'),'Anticipation does not use previous or unreleased combat data');
+assert(stage.includes('anticipation=false')&&stage.includes('const pending=run.pendingCombat,replay=anticipation?undefined:pending?'),'Anticipation does not use previous or unreleased combat data');
 assert(stage.includes('replay=anticipation?undefined:pending?'),'The previous room replay cannot be played during a new battle');
 assert(stage.includes('setInterval(()=>setAnticipationTick(tick=>tick+1),700)'),'A bounded visual-only attack loop begins on entering the arena');
 assert(stage.includes('anticipation-party:')&&stage.includes('anticipation-enemy:'),'Both party and enemy use existing animated attack artwork');

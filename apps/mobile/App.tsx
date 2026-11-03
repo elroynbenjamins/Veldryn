@@ -591,6 +591,8 @@ function VeldrynApp(){
       }finally{forgeClaimAllInFlight.current=false;}
     }
     if(!silentFailure)setOnlineActionError(playerFacingGameplayError(message));
+    // Send Ascension failures to the action sheet, not just the global banner.
+    if(command?.type==='companion_ascend')throw new Error(playerFacingGameplayError(message));
     return null;
   }finally{if(welcomeBack)setOfflineSettling(false);}}
   async function inventoryCommand(command:GameCommand,local:()=>GameState){

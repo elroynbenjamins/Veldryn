@@ -32,6 +32,10 @@ check(profession.includes('guildMaterialsOnly')&&profession.includes("itemDef(re
 check(upcomingMigration.includes('guild_bank_deposit_server_v1')&&upcomingMigration.includes('guild_bank_required_resources_guard_v1'),'Both independent server donation guards must support upcoming upgrades');
 check(!upcomingMigration.includes('t.required_guild_level<=v_level')&&!upcomingMigration.includes('and t.required_guild_level <= g.level'),'Published upcoming projects should not require the guild to have already reached their level');
 check(upcomingMigration.includes('p.completed_at is null')&&upcomingMigration.includes('v_bank > v_need')&&upcomingMigration.includes('skill.is_released'),'Do not accept completed, overfunded or unreleased Guild Skill stock');
+check(upcomingMigration.includes('guild_construction_scaled_amount_v1(req.required_amount,public.guild_construction_project_member_count_v1(v_guild,t.template_id))'),
+ 'Published upcoming Guild deposits must respect the member-scaled construction cost');
+check(upcomingMigration.includes('guild_construction_scaled_amount_v1(r.required_amount,public.guild_construction_project_member_count_v1(new.guild_id,r.template_id))'),
+ 'The post-deposit bank guard must retain the +20%-per-member scaled allocation cap');
 
 const roadmap=fs.readFileSync('src/components/GuildConstructionRoadmapPanel.tsx','utf8');
 check(resourceIcons.includes('guildUpgradeComponentArtwork(itemId)'),

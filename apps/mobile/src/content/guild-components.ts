@@ -1,5 +1,6 @@
 import type {ItemDef} from './items';
 import type {Recipe} from './skills';
+import {increasedCraftingGoldCost} from './crafting-gold-cost';
 
 /** Eight illustrated guild-only construction components. Material costs and
  * crafting inputs are fixed, not equipment rarity/quality rolls.
@@ -27,4 +28,4 @@ export const GUILD_COMPONENT_RECIPES:Recipe[]=[
  {id:'GUILD_TAILOR_DYE',name:'Prepare Heraldic Dye',skillId:'tailoring',level:18,xp:275,gold:90,seconds:140,repeatableTraining:true,inputs:[{itemId:'WOLF_PELT',quantity:3},{itemId:'THORN_SAP',quantity:1}],output:{itemId:'GUILD_HERALDIC_DYE',quantity:1}},
  {id:'GUILD_TAILOR_WAX',name:'Prepare Guild Seal Wax',skillId:'tailoring',level:35,xp:565,gold:300,seconds:260,repeatableTraining:true,inputs:[{itemId:'ECHO_TOUCHED_PELT',quantity:1},{itemId:'TORN_OATHCLOTH',quantity:2}],output:{itemId:'GUILD_SEAL_WAX',quantity:1}},
  {id:'GUILD_TAILOR_BEACON_OIL',name:'Prepare Beacon Oil',skillId:'tailoring',level:60,xp:1420,gold:950,seconds:570,repeatableTraining:true,inputs:[{itemId:'ECHO_TOUCHED_PELT',quantity:2},{itemId:'WINTERMINT',quantity:2}],output:{itemId:'GUILD_BEACON_OIL',quantity:1}},
-];
+].map(recipe=>({...recipe,gold:increasedCraftingGoldCost(recipe.gold)}));

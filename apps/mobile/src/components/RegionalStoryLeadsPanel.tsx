@@ -2,7 +2,7 @@ import {useGameLanguage} from '../i18n/GameLanguageProvider';
 import {progressionT,progressionText,type ProgressionKey} from '../i18n/progression';
 import {StyleSheet,Text,View} from 'react-native';
 import type {GameState} from '../core/types';
-import {regionalStoryLeads} from '../core/regional-story-leads';
+import {regionalStoryLeads,nextRegionalStoryLead} from '../core/regional-story-leads';
 import {C,equipmentColors,radii,spacing,typography} from '../theme/theme';
 import {GameButton} from './GameButton';
 
@@ -12,16 +12,22 @@ export function RegionalStoryLeadsPanel({state,regionId,onOpenCombat}:{state:Gam
   const t=(key:ProgressionKey,params?:Record<string,string|number>)=>progressionT(language,key,params);
   const p=(text:string)=>progressionText(language,text);
 
- const leads=regionalStoryLeads(regionId,state),available=leads.find(row=>row.status==='available');
+ const leads=regionalStoryLeads(regionId,state),lead=nextRegionalStoryLead(regionId,state);
+ const studied=leads.filter(row=>row.status==='mastered').length,allStudied=studied===leads.length;
+ if(!lead)return null;
  return <View style={s.root}>
-  <View><Text style={s.eyebrow}>{regionLabel[regionId]}  {t("· REGIONAL STORY")}</Text><Text style={s.title}>{t("Story leads")}</Text><Text style={s.copy}>{t("These leads use existing regional hunts as narrative milestones. Mastery 20 marks a lead as fully studied without introducing another quest currency or separate combat mode.")}</Text></View>
-  {leads.map(lead=><View key={lead.id} style={[s.card,lead.status==='available'&&s.active,lead.status==='mastered'&&s.mastered,lead.status==='locked'&&s.locked]}>
-   <View style={s.head}><View style={s.flex}><Text style={s.chapter}>{t("CHAPTER")} {lead.chapter} · {lead.location.toUpperCase()}</Text><Text style={s.name}>{lead.title}</Text></View><Text style={[s.status,lead.status==='mastered'?s.statusDone:lead.status==='available'?s.statusReady:s.statusLocked]}>{lead.status==='mastered'?t("MASTERED"):lead.status==='available'?t("AVAILABLE"):`LV ${lead.minLevel}`}</Text></View>
-   <Text style={s.story}>{lead.lore}</Text>
-   <Text style={s.objective}>{t("HUNT LEAD ·")} {lead.monsterName}</Text><Text style={s.copy}>{lead.objective}</Text>
-   <View style={s.progress}><Text style={s.progressLabel}>{t("MASTERY")}</Text><Text style={s.progressValue}>{lead.masteryRank} / 20</Text></View>
-   {lead.status==='available'&&<GameButton title={available?.id===lead.id?t("Continue regional story"):t("Open hunt")} tone={available?.id===lead.id?'primary':'secondary'} onPress={onOpenCombat}/>}
-  </View>)}
+  <View style={s.head}>
+    <View style={s.flex}><Text style={s.eyebrow}>{regionLabel[regionId]} · OPTIONAL STORY</Text><Text style={s.title}>{t("Story leads")}</Text></View>
+    <Text style={s.progressValue}>{studied}/{leads.length}</Text>
+  </View>
+  {allStudied?<Text style={s.copy}>{p("All regional story leads studied.")}</Text>:<View style={[s.card,lead.status==='available'&&s.active,lead.status==='locked'&&s.locked]}>
+    <View style={s.head}><View style={s.flex}><Text style={s.chapter}>LEAD {lead.chapter} · {lead.location.toUpperCase()}</Text><Text style={s.name}>{lead.title}</Text></View><Text style={[s.status,lead.status==='available'?s.statusReady:s.statusLocked]}>{lead.status==='locked'?`LV ${lead.minLevel}`:t("AVAILABLE")}</Text></View>
+    <Text numberOfLines={2} style={s.story}>{lead.lore}</Text>
+    <Text style={s.objective}>HUNT · {lead.monsterName}</Text>
+    <Text numberOfLines={2} style={s.copy}>{lead.objective}</Text>
+    <View style={s.progress}><Text style={s.progressLabel}>{t("MASTERY")}</Text><Text style={s.progressValue}>{lead.masteryRank} / 20</Text></View>
+    {lead.status==='available'&&<GameButton compact title={t("Open hunt")} tone="secondary" onPress={onOpenCombat}/>}
+  </View>}
  </View>;
 }
 const s=StyleSheet.create({

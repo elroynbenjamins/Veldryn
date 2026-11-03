@@ -1,11 +1,11 @@
 import {useGameLanguage} from '../i18n/GameLanguageProvider';
-import {progressionT,progressionText,type ProgressionKey} from '../i18n/progression';
+import {progressionT,progressionText,progressionTravelReason,type ProgressionKey} from '../i18n/progression';
 import {useMemo} from 'react';
 import {ScrollView,StyleSheet,Text,View,useWindowDimensions} from 'react-native';
 import type {GameState} from '../core/types';
 import type {WorldZoneDef} from '../content/world-map';
 import {MONSTERS} from '../content/monsters';
-import {regionActivitySummary,regionTravelAvailability,regionTravelPreview} from '../core/world-navigation';
+import {regionActivitySummary,regionTravelAvailability,regionTravelLockReason,regionTravelPreview} from '../core/world-navigation';
 import {equipmentTheme,radii,spacing,typography,type ThemeColors} from '../theme/theme';
 import {useGameTheme} from '../theme/ThemeContext';
 import {GameButton} from './GameButton';
@@ -22,7 +22,7 @@ export function TravelRegionModal({visible,state,zone,onClose,onTravel}:{visible
   const C=useGameTheme(),equipmentColors=equipmentTheme(C),s=useMemo(()=>makeStyles(C),[C]),{width,fontScale}=useWindowDimensions(),stackLayout=width<360||fontScale>=1.25;
   if(!zone)return null;
   const summary=regionActivitySummary(state,zone.id),availability=regionTravelAvailability(state,zone),preview=regionTravelPreview(state,zone.id);
-  const inDevelopment=availability==='inDevelopment',locked=availability==='locked',unlocked=availability==='available';
+  const inDevelopment=availability==='inDevelopment',locked=availability==='locked',unlocked=availability==='available',lockReason=locked?regionTravelLockReason(state,zone):undefined;
   const combat=`${summary.combatReady}/${summary.combatTotal} hunts`;
   const gathering=`${summary.gatheringReady}/${summary.gatheringTotal} gather`;
   const bosses=summary.bossesTotal?`${summary.bossesReady}/${summary.bossesTotal} bosses`:undefined;
@@ -34,7 +34,7 @@ export function TravelRegionModal({visible,state,zone,onClose,onTravel}:{visible
         <ZoneSceneArtwork regionId={zone.id} muted={inDevelopment} blurRadius={2}/>
         <View style={s.heroFade}/>
         <View style={s.heroCopy}>
-          <Text style={s.level}>{inDevelopment?t("IN DEVELOPMENT"):locked?`UNLOCKS AT LEVEL ${zone.minLevel}`:`LEVELS ${zone.minLevel}–${zone.maxLevel}`}</Text>
+          <Text style={s.level}>{inDevelopment?t("IN DEVELOPMENT"):locked?(lockReason?.includes('Fallen Knight')?'STORY LOCKED':`UNLOCKS AT LEVEL ${zone.minLevel}`):`LEVELS ${zone.minLevel}–${zone.maxLevel}`}</Text>
           <Text style={s.heroTitle}>{zone.name}</Text>
           <Text style={s.heroSub}>{p(zone.subtitle)}</Text>
         </View>
@@ -44,7 +44,7 @@ export function TravelRegionModal({visible,state,zone,onClose,onTravel}:{visible
         <View style={s.metaCard}><Text style={s.metaLabel}>{inDevelopment?t("PLANNED CONTENT"):t("CONTENT")}</Text><Text style={s.metaValue}>{inDevelopment?(preview.activities.slice(0,2).join(' · ')||t("Coming later")):(contentSummary||t("Region activities"))}</Text></View>
       </View>
 
-      {inDevelopment?<View style={s.developmentNotice}><Text style={s.developmentTitle}>{t("IN DEVELOPMENT")}</Text><Text style={s.hint}>{zone.developmentNote??t("This region is planned but not yet available. You can preview its identity here, but travel remains disabled until the content is released.")}</Text></View>:locked?<View style={s.lockNotice}><Text style={s.lockTitle}>{t("LOCKED")}</Text><Text style={s.hint}>{t("Reach level {level} to travel here. You can still preview the region, enemies and notable drops.",{level:zone.minLevel})}</Text></View>:null}
+      {inDevelopment?<View style={s.developmentNotice}><Text style={s.developmentTitle}>{t("IN DEVELOPMENT")}</Text><Text style={s.hint}>{zone.developmentNote??t("This region is planned but not yet available. You can preview its identity here, but travel remains disabled until the content is released.")}</Text></View>:locked?<View style={s.lockNotice}><Text style={s.lockTitle}>{t("LOCKED")}</Text><Text style={s.hint}>{lockReason?progressionTravelReason(language,lockReason):t("Reach level {level} to travel here. You can still preview the region, enemies and notable drops.",{level:zone.minLevel})}</Text></View>:null}
 
       <View style={s.previewCard}><Text style={s.previewLabel}>{inDevelopment?t("PLANNED ACTIVITIES"):t("ACTIVITIES")}</Text><Text style={s.previewValue}>{preview.activities.slice(0,4).join(' · ')||t("Regional content")}</Text></View>
 
@@ -52,7 +52,7 @@ export function TravelRegionModal({visible,state,zone,onClose,onTravel}:{visible
 
       {preview.drops.length?<View style={s.dropBlock}><Text style={s.previewLabel}>{t("NOTABLE DROPS")}</Text><View style={s.dropRow}>{preview.drops.slice(0,6).map(drop=><View key={drop.itemId} style={s.dropItem}><ItemArtwork itemId={drop.itemId} size={34}/><Text numberOfLines={1} style={s.dropName}>{drop.name}</Text></View>)}</View></View>:null}
       {!inDevelopment&&summary.gatheringSkills.length?<View style={s.info}><Text style={s.infoLabel}>{t("GATHERING")}</Text><Text style={s.infoValue}>{summary.gatheringSkills.join(' · ')}</Text></View>:null}
-      <Text style={s.hint}>{unlocked?`Travel is instant. Your active region, hunts, gathering nodes and regional activities update to ${zone.name} immediately.`:inDevelopment?t("Preview only — this destination cannot be entered yet."):`Preview only until level ${zone.minLevel}.`}</Text>
+      <Text style={s.hint}>{unlocked?`Travel is instant. Your active region, hunts, gathering nodes and regional activities update to ${zone.name} immediately.`:inDevelopment?t("Preview only — this destination cannot be entered yet."):lockReason?`Preview only — ${progressionTravelReason(language,lockReason)}`:`Preview only until level ${zone.minLevel}.`}</Text>
     </ScrollView>
     <View style={[s.actions,stackLayout&&s.actionsStack]}><View style={[s.flex,stackLayout&&s.actionStack]}><GameButton title={unlocked?t("Cancel"):t("Close")} tone="secondary" onPress={onClose}/></View><View style={[s.flex,stackLayout&&s.actionStack]}><GameButton title={inDevelopment?t("In Development"):locked?t("Locked"):t("Travel")} disabled={!unlocked} onPress={()=>unlocked&&onTravel(zone.id)}/></View></View>
   </GameModalSurface>;

@@ -64,14 +64,14 @@ begin
  -- On subsequent views, report the originally credited immutable completion
  -- amount, not a hypothetical amount changed by later Guild Skill upgrades.
  v_next:=replace(v_src,
-  '''[]''::jsonb,'||v_old||',',
-  '''[]''::jsonb,coalesce((select c.activity_units from public.guild_quest_completions c where c.guild_id=gid and c.week_key=wk and c.quest_key=b.source_key||'':''||rr),'||v_new||'),'
+  $old_foundation$'[]'::jsonb,public.guild_quest_rarity_reward_v3(rr),$old_foundation$,
+  $new_foundation$'[]'::jsonb,coalesce((select c.activity_units from public.guild_quest_completions c where c.guild_id=gid and c.week_key=wk and c.quest_key=b.source_key||':'||rr),public.guild_quest_reward_units_server_v1(gid,rr)),$new_foundation$
  );
  if v_next=v_src then raise exception 'guild_quest_foundation_return_pattern_missing';end if;
  v_src:=v_next;
  v_next:=replace(v_src,
-  'totalp,totalt,prog,'||v_old||',',
-  'totalp,totalt,prog,coalesce((select c.activity_units from public.guild_quest_completions c where c.guild_id=gid and c.week_key=wk and c.quest_key=b.source_key||'':''||rr),'||v_new||'),'
+  $old_objective$totalp,totalt,prog,public.guild_quest_rarity_reward_v3(rr),$old_objective$,
+  $new_objective$totalp,totalt,prog,coalesce((select c.activity_units from public.guild_quest_completions c where c.guild_id=gid and c.week_key=wk and c.quest_key=b.source_key||':'||rr),public.guild_quest_reward_units_server_v1(gid,rr)),$new_objective$
  );
  if v_next=v_src then raise exception 'guild_quest_objective_return_pattern_missing';end if;
  v_src:=replace(v_next,v_old,v_new);

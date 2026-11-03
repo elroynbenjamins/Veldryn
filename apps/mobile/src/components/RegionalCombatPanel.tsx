@@ -62,7 +62,7 @@ export function RegionalCombatPanel({state,onRewardsChanged}:{state:GameState;on
     <View style={s.flex}><Text style={s.eyebrow}>SUNSCAR · OPTIONAL</Text><Text style={s.title}>Special encounters</Text></View>
     <Text style={s.level}>{expanded?'HIDE':'SHOW'}</Text>
   </Pressable>
-  {expanded?<><Text style={s.copy}>Optional battles for rare gems and materials, separate from idle hunts.</Text>
+  {expanded&&<><Text style={s.copy}>Optional battles for rare gems and materials, separate from idle hunts.</Text>
   <View style={s.list}>{SUNSCAR_REGIONAL_ENCOUNTERS_V1.map(encounter=>{
    const locked=level<encounter.level,active=busy===encounter.id,recent=last?.encounterId===encounter.id,intel=regionalGemIntelV1(encounter,state.account.gemPityBySource);
    const projectedNow=cadence?cadence.projection.serverNow+(tick-cadence.receivedAtMs):tick,cadenceRow=cadence?.projection.encounters.find(row=>row.encounterId===encounter.id),availability=regionalCombatAvailabilityV1(encounter,cadenceRow,projectedNow),cadenceLocked=availability.coolingDown||availability.dailyCapped;
@@ -84,7 +84,7 @@ export function RegionalCombatPanel({state,onRewardsChanged}:{state:GameState;on
    </View>;
   })}</View>
   {!!notice&&<View accessibilityRole="alert" style={s.notice}><Text style={s.noticeText}>{gl(notice)}</Text></View>}
-  <Text style={s.foot}>Rewards are granted automatically after a victory.</Text></>:null}
+  <Text style={s.foot}>Rewards are granted automatically after a victory.</Text></>}
  </Panel>;
 }
 function styles(C:ThemeColors){const E=equipmentTheme(C);return StyleSheet.create({

@@ -418,7 +418,7 @@ function uiMocks(h) {
   const originalRAF=global.requestAnimationFrame;
   global.requestAnimationFrame=fn=>setTimeout(fn,0);
   h.dimensions={width:420,height:844,fontScale:1,scale:1};
-  h.mocks.set('react-native',{...h.mocks.get('react-native'),Alert:{alert(){}},ActivityIndicator:'ActivityIndicator',Image:'Image',KeyboardAvoidingView:'KeyboardAvoidingView',Modal:'Modal',Platform:{OS:'android',select:options=>options.android??options.default},Pressable:'Pressable',ScrollView:'ScrollView',StyleSheet:{create:styles=>styles,flatten:flattenStyle,hairlineWidth:1,absoluteFill:{}},Text:'Text',TextInput:'TextInput',View:'View',useWindowDimensions:()=>h.dimensions});
+  h.mocks.set('react-native',{...h.mocks.get('react-native'),Alert:{alert(){}},ActivityIndicator:'ActivityIndicator',Image:'Image',Keyboard:{dismiss(){},addListener:()=>({remove(){}})},KeyboardAvoidingView:'KeyboardAvoidingView',Modal:'Modal',Platform:{OS:'android',select:options=>options.android??options.default},Pressable:'Pressable',ScrollView:'ScrollView',StyleSheet:{create:styles=>styles,flatten:flattenStyle,hairlineWidth:1,absoluteFill:{}},Text:'Text',TextInput:'TextInput',View:'View',useWindowDimensions:()=>h.dimensions});
   h.mocks.set('react-native-safe-area-context',{useSafeAreaInsets:()=>({top:0,bottom:0,left:0,right:0})});
   h.mocks.set(path.join(app,'src/i18n/social'),{useSocialText:()=>tr});
   h.mocks.set(path.join(app,'src/i18n'),{ot:(_language,text)=>text});
@@ -675,10 +675,8 @@ async function overlayLifecycle() {
     assert.equal(mounts.world,1);assert.equal(mounts.guild??0,0);assert.equal(mounts.party??0,0);assert.equal(mounts.system??0,0);
     const worldInstance=latest.world.instance;
     async function tab(name){
-      const picker=()=>tree.root.findAllByType('Pressable').find(x=>String(x.props.accessibilityLabel).startsWith('Change chat channel'));
-      await act(async()=>{picker().props.onPress();});
-      const option=tree.root.findAllByType('Pressable').find(x=>x.props.accessibilityRole==='button'&&String(x.props.accessibilityLabel).startsWith(name+' · '));
-      assert.ok(option,`missing accessible ${name} chat channel choice`);
+      const option=tree.root.findAllByType('Pressable').find(x=>x.props.accessibilityRole==='tab'&&String(x.props.accessibilityLabel).startsWith(name));
+      assert.ok(option,`missing accessible ${name} chat tab`);
       await act(async()=>{option.props.onPress();});
     }
     for(const name of ['Guild','Party','System','World','Party','Guild','System','World'])await tab(name);

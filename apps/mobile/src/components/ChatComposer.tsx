@@ -45,7 +45,7 @@ export function ChatComposer({value,onChangeText,onSend,accessibilityLabel,place
 }
 
 function makeStyles(C:ThemeColors){return StyleSheet.create({
- root:{width:'100%',minWidth:0},
+ root:{width:'100%',minWidth:0,position:'relative',zIndex:15,paddingTop:7,borderTopWidth:StyleSheet.hairlineWidth,borderTopColor:C.line},
  // Only the input shrinks. Fixed icon targets keep Send at the far right,
  // including narrow screens and large text; the emote tray is outside this row.
  row:{width:'100%',minWidth:0,flexDirection:'row',flexWrap:'nowrap',alignItems:'center',gap:spacing.xs},

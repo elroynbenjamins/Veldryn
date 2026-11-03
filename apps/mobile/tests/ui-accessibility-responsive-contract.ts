@@ -32,7 +32,7 @@ ok(reward.includes('useWindowDimensions')&&reward.includes('rewardActionsStack')
 ok(reward.includes('accessibilityViewIsModal')&&reward.includes('onAccessibilityEscape={onClose}'),'Reward results must expose modal accessibility semantics');
 
 const chatOverlay=read('src/components/ChatOverlay.tsx');
-ok(chatOverlay.includes('useWindowDimensions')&&chatOverlay.includes("expandWindow=width<360||fontScale>=1.25"),'Expanded chat must use more vertical space on narrow phones and large text');
+ok(chatOverlay.includes('useWindowDimensions')&&chatOverlay.includes('compactTabs=width<360||fontScale>=1.25')&&chatOverlay.includes("window:{width:'100%',flex:1,minHeight:0"),'Expanded chat must fill phone height and adapt tabs to narrow screens or large text');
 ok(chatOverlay.includes('reduceMotion={state.settings.reduceMotion}'),'Expanded chat must propagate reduced-motion preference into live channel identity rendering');
 
 const chatLog=read('src/components/ChatLog.tsx');

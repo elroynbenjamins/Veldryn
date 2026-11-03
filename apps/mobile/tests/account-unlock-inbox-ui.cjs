@@ -34,7 +34,7 @@ assert(screen.includes("art?<Image accessible={false} source={art}")&&screen.inc
 assert(screen.includes("row.kind==='background'?'cover':'contain'"),'Backgrounds crop to thumbnail while pets, frames and icons remain visible');
 const artwork=read('src/theme/unlock-inbox-art.ts');
 assert(artwork.includes("row.key.startsWith(prefix)")&&artwork.includes("row.key.slice(prefix.length)"),'Artwork lookup uses canonical kind:id keys, preserving colons in profile icon IDs');
-for(const resolver of ['profileIconArtwork(id)','profileBackgroundPreviewById.get(id)?.source','profileBorderSourceById.get(id)','petArtSource(id)','chatEmoteArtwork(id)','guildTokenShopOfferArt(id)']){
+for(const resolver of ['profileIconArtwork(id)','profileBackgroundPreviewById.get(id)?.source','profileBorderSourceById.get(id)','petArtSource(id)','chatEmoteArtwork(id)','guildTokenShopOfferArt(id)','guildBannerSourceByKey.get(id)','guildBorderSourceByKey.get(id)','guildNameplateSourceByKey.get(id)']){
  assert(artwork.includes(resolver),'Unlocked artwork must reuse existing production art source '+resolver);
 }
 assert(artwork.includes("case 'title':")&&artwork.includes('return undefined;'),'Titles without unique art retain the normal icon fallback');

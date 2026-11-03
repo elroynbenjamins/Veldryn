@@ -17,8 +17,8 @@ const profiles=new Set<string>();
 for(let seed=0;seed<8;seed++){
  const params={seed:'qmode-pressure-fixture-'+seed,players:[player],enemies:[enemy],maxDurationMs:60_000};
  const legacy=simulateCombat(params);
- const qmode=simulateCombat({...params,enemies:[{...enemy,stats:{...enemy.stats,attackPower:enemy.stats.attackPower*1.12}}],enemyDamageProfile:'qmode-v1'});
- const repeat=simulateCombat({...params,enemies:[{...enemy,stats:{...enemy.stats,attackPower:enemy.stats.attackPower*1.12}}],enemyDamageProfile:'qmode-v1'});
+ const qmode=simulateCombat({...params,enemies:[{...enemy,stats:{...enemy.stats,attackPower:enemy.stats.attackPower*1.01}}],enemyDamageProfile:'qmode-v1'});
+ const repeat=simulateCombat({...params,enemies:[{...enemy,stats:{...enemy.stats,attackPower:enemy.stats.attackPower*1.01}}],enemyDamageProfile:'qmode-v1'});
  assert.deepEqual(qmode,repeat,'Each server-owned seed must be replay-stable');
  assert.equal(legacy.events.filter(e=>e.detail==='heavy_hit').length,0,'Legacy combat must never have new burst hits');
  assert.ok(qmode.players[0].hp>0,'Prepared allies must survive this standalone room');

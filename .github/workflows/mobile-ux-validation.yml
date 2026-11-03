@@ -35,8 +35,8 @@ jobs:
           node .ux-popup-build/apps/mobile/tests/ux-popup-reliability.js
           node tests/ux-popup-reliability-ui.cjs
           node tests/settings-simplicity-ui.cjs
-      - name: Verify simplified Dungeon flow and Live vote UI
-        run: node tests/dungeon-flow-simplicity-ui.cjs && node tests/dungeon-route-choice-ui.cjs && node tests/dungeon-live-pacing-ui.cjs
+      - name: Verify immersive active Dungeon flow and Live vote UI
+        run: node tests/dungeon-active-run-immersive-ui.cjs && node tests/dungeon-flow-simplicity-ui.cjs && node tests/dungeon-route-choice-ui.cjs && node tests/dungeon-live-pacing-ui.cjs
       - name: Verify dungeon reward, tier and weekly budget UX
         run: node tests/dungeon-reward-balance-ui.cjs
       - name: Validate failure consolation and final Dungeon reward UX

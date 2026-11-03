@@ -27,7 +27,7 @@ import type {CoopChatMessage} from '../online/coop-client';
 import {noCoopProfileIcon,useCoopProfileIcons} from '../online/coop-profile-icons';
 import {combatPowerRating} from '../core/combat-power';
 
-export function CoopExpeditionScreen({onClose,language,state,entrySource=realCoopEntrySource,initialDungeonId,onInitialDungeonHandled,initialEventLiveId,onInitialEventHandled,onRewardsChanged}:{onClose:()=>void;language:Language;state:GameState;entrySource?:CoopEntrySource;initialDungeonId?:string;onInitialDungeonHandled?:()=>void;initialEventLiveId?:string;onInitialEventHandled?:()=>void;onRewardsChanged?:()=>void|Promise<void>}){
+export function CoopExpeditionScreen({onClose,language,state,entrySource=realCoopEntrySource,initialDungeonId,onInitialDungeonHandled,initialEventLiveId,onInitialEventHandled,onRewardsChanged,onRunActiveChange}:{onClose:()=>void;language:Language;state:GameState;entrySource?:CoopEntrySource;initialDungeonId?:string;onInitialDungeonHandled?:()=>void;initialEventLiveId?:string;onInitialEventHandled?:()=>void;onRewardsChanged?:()=>void|Promise<void>;onRunActiveChange?:(active:boolean)=>void}){
  const st=useSocialText();
   const C=useGameTheme();
   const [entry,setEntry]=useState<CoopEntryData>();
@@ -37,6 +37,13 @@ export function CoopExpeditionScreen({onClose,language,state,entrySource=realCoo
   const [tier,setTier]=useState<CoopTier>();
   const [run,setRun]=useState<CoopRunView>();
   const [eventRun,setEventRun]=useState<CoopEventRunServerProjection>();
+  // Active runs occupy the dungeon stage without the World tabs or global HUD.
+  // Report transitions and reset the shell when navigating away or unmounting.
+  const isActiveRun=Boolean(run||eventRun);
+  useEffect(()=>{
+    onRunActiveChange?.(isActiveRun);
+    return ()=>onRunActiveChange?.(false);
+  },[isActiveRun,onRunActiveChange]);
   const [showLive,setShowLive]=useState(false);
   const [showEchoSharing,setShowEchoSharing]=useState(false);
   const [foreground,setForeground]=useState(AppState.currentState==='active');

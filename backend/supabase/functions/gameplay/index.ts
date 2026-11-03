@@ -57056,14 +57056,15 @@ function guildShopReadHandler(services2) {
     try {
       const guildLevel = await services2.guildLevelForAccount(accountId);
       if (guildLevel === null) return json4({ error: "guild_membership_required" }, 403);
-      const [base, constructionResult, eventResult, enabledResult, weeklyResult, bankResult, perksResult] = await Promise.allSettled([
+      const [base, constructionResult, eventResult, enabledResult, weeklyResult, bankResult, perksResult, costsResult] = await Promise.allSettled([
         services2.rpc("guild_shop_snapshot_server_v1", { p_account_id: accountId }),
         services2.rpc("guild_construction_snapshot_server_v1", { p_account_id: accountId }),
         services2.rpc("guild_shop_event_community_rewards_server_v1", { p_account_id: accountId }),
         services2.rpc("guild_construction_enabled_server_v1", { p_account_id: accountId }),
         services2.rpc("guild_shop_weekly_rewards_server_v1", { p_account_id: accountId }),
         services2.rpc("guild_bank_snapshot_server_v1", { p_account_id: accountId }),
-        services2.rpc("guild_construction_benefits_server_v1", { p_account_id: accountId })
+        services2.rpc("guild_construction_benefits_server_v1", { p_account_id: accountId }),
+        services2.rpc("guild_construction_costs_server_v1", { p_account_id: accountId })
       ]);
       if (base.status !== "fulfilled") throw new Error("guild_shop_wallet_snapshot_unavailable");
       const snapshot2 = base.value;
@@ -57074,16 +57075,24 @@ function guildShopReadHandler(services2) {
       const constructionEnabled = enabledResult.status === "fulfilled" && Array.isArray(enabledResult.value) ? enabledResult.value : [];
       const weeklyRewards = weeklyResult.status === "fulfilled" && Array.isArray(weeklyResult.value) ? weeklyResult.value : [];
       const perks = perksResult.status === "fulfilled" && perksResult.value && [0, 1e3, 2e3].includes(perksResult.value.guildTokenBonusBps) && [250, 275, 300].includes(perksResult.value.guildTokenWeeklyCap) ? perksResult.value : null;
+      const costSnapshot = costsResult.status === "fulfilled" && costsResult.value && Number.isSafeInteger(costsResult.value.memberCount) && costsResult.value.memberCount >= 1 && Array.isArray(costsResult.value.requirements) ? costsResult.value : null;
+      const scaledCosts = /* @__PURE__ */ new Map();
+      if (costSnapshot) for (const row of costSnapshot.requirements) {
+        if (typeof row.templateId === "string" && typeof row.resourceId === "string" && Number.isSafeInteger(row.amount) && row.amount > 0 && Number.isSafeInteger(row.costMemberCount) && row.costMemberCount >= 1)
+          scaledCosts.set(row.templateId + ":" + row.resourceId, { amount: row.amount, costMemberCount: row.costMemberCount });
+      }
       const unavailableSections = [
         ...constructionResult.status === "fulfilled" && Array.isArray(constructionResult.value) ? [] : ["construction"],
         ...eventResult.status === "fulfilled" && Array.isArray(eventResult.value) ? [] : ["eventBonuses"],
         ...enabledResult.status === "fulfilled" && Array.isArray(enabledResult.value) ? [] : ["constructionUnlocks"],
         ...weeklyResult.status === "fulfilled" && Array.isArray(weeklyResult.value) ? [] : ["weeklyRewards"],
         ...bankResult.status === "fulfilled" && bankResult.value && Array.isArray(bankResult.value.balances) ? [] : ["bank"],
-        ...perks ? [] : ["constructionBenefits"]
+        ...perks ? [] : ["constructionBenefits"],
+        ...costSnapshot ? [] : ["constructionCosts"]
       ];
       return json4({
         guildLevel,
+        constructionMemberCount: costSnapshot?.memberCount ?? null,
         unavailableSections,
         balance: snapshot2.balance,
         earnedThisWeek: snapshot2.earnedThisWeek,
@@ -57091,10 +57100,21 @@ function guildShopReadHandler(services2) {
         weeklyCap: perks?.guildTokenWeeklyCap ?? 250,
         treasuryBonusBps: perks?.guildTokenBonusBps ?? 0,
         catalogue: GUILD_SHOP_CATALOGUE,
-        constructionTemplates: GUILD_CONSTRUCTION_TEMPLATES.map((template) => ({
-          ...template,
-          enabled: constructionEnabled.includes(template.id)
-        })),
+        constructionTemplates: GUILD_CONSTRUCTION_TEMPLATES.map((template) => {
+          const materials = template.materials.map((material) => {
+            const effective = scaledCosts.get(template.id + ":" + material.materialKey);
+            return { ...material, amount: effective?.amount ?? material.amount };
+          });
+          const gold = template.gold > 0 ? scaledCosts.get(template.id + ":gold")?.amount ?? template.gold : 0;
+          const priced = !!costSnapshot && template.materials.every((material) => scaledCosts.has(template.id + ":" + material.materialKey)) && (template.gold === 0 || scaledCosts.has(template.id + ":gold"));
+          return {
+            ...template,
+            gold,
+            materials,
+            costMemberCount: priced ? scaledCosts.get(template.id + ":" + template.materials[0]?.materialKey)?.costMemberCount ?? costSnapshot?.memberCount : null,
+            enabled: priced && constructionEnabled.includes(template.id)
+          };
+        }),
         construction,
         bank: bankResult.status === "fulfilled" && bankResult.value && Array.isArray(bankResult.value.balances) ? bankResult.value : null,
         eventBonuses,

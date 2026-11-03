@@ -26,5 +26,6 @@ assert(overview.includes("onChoose&&run.mode==='qmode'&&isCoopCombatNodeKind(opt
 assert(!overview.includes("['battle','elite','boss','risk']"),'Risk encounters are non-combat and cannot auto-open the battle theater');
 assert(overview.includes("if(!inCombat&&(!run.lastCombat||run.lastCombat.nodeId===enterFromNode.current))"),'Server-confirmed Q-Mode combat must not auto-close because pendingCombat is Live-only');
 assert(overview.includes("run.phase==='resolving_node'&&!inCombat"),'Forge and other utility rooms use a normal non-combat progress surface');
+assert(overview.includes("run.lastCombat?.nodeId!==run.selectedNodeId")&&overview.includes("enteringCombat||awaitingCombatPlayback"),'Solo combat cannot replay stale lastCombat while the new encounter is pending');
 
 console.log('PASS: dungeon room cards are image-led, one-tap, server-vote safe and readable');

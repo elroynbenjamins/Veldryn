@@ -8,6 +8,7 @@ const online=read('src/core/online-game-repository.ts');
 const backend=read('../../backend/online/gameplay.ts');
 const app=read('App.tsx');
 const feedback=read('src/components/ForgeResultFeedback.tsx');
+const odds=read('src/components/ForgeOddsGuide.tsx');
 const queue=read('src/components/EquipmentCraftQueuePanel.tsx');
 const skills=read('src/screens/SkillsScreen.tsx');
 
@@ -43,5 +44,11 @@ ok(feedback.includes('actionsStack')&&feedback.includes("actionStack:{flex:0,wid
 
 ok(queue.includes('ForgeClaimBanner'),'normal Forge claims must surface inside the Forge queue');
 ok(skills.includes('forgeResults={forgeResults}'),'Smithing must pass Forge results to its queue feedback');
+
+ok(odds.includes('<View accessible accessibilityRole="adjustable"'),'Forge quality slider must own a dedicated adjustable touch surface');
+ok(odds.includes('onStartShouldSetResponder={()=>true}')&&odds.includes('onMoveShouldSetResponder={()=>true}'),'slider must capture gesture from touch down, before screen navigation can claim it');
+ok(odds.includes('onResponderTerminationRequest={()=>false}'),'screen swipe navigation must not steal active slider drags');
+ok(odds.includes('onResponderGrant={event=>updateQuality(event.nativeEvent.locationX)}')&&odds.includes('onResponderMove={event=>updateQuality(event.nativeEvent.locationX)}'),'slider taps and drags must both update the preview');
+ok(odds.includes("accessibilityActions={[{name:'increment'},{name:'decrement'}]}"),'slider must retain accessible increment/decrement controls');
 
 console.log('PASS Forge claims use lightweight normal feedback and rarity-aware exceptional reveals');

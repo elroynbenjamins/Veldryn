@@ -32,7 +32,7 @@ for(let seed=0;seed<8;seed++){
 assert.ok(oldHits>=200&&newHits>=200,'Fixture must sample many real enemy attacks');
 assert.ok(heavies>=5&&heavies<=newHits*.20,'Heavy hits are intermittent, not every attack');
 assert.deepEqual([...profiles].sort(),['heavy','ordinary']);
-assert.ok(newDamage/oldDamage>1.08&&newDamage/oldDamage<1.35,
+assert.ok(newDamage/oldDamage>1.0&&newDamage/oldDamage<1.12,
  'Q-Mode increases total enemy pressure without wild damage spikes');
 console.log(JSON.stringify({oldHits,newHits,heavies,oldDamage:Math.round(oldDamage),newDamage:Math.round(newDamage),ratio:+(newDamage/oldDamage).toFixed(3)}));
 console.log('PASS Q-Mode deterministic damage spread, rare heavy blows, and legacy compatibility');

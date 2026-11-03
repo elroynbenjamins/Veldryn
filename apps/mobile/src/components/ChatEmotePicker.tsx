@@ -10,12 +10,11 @@ import {availableChatEmotes,CHAT_EMOTE_TRAY_SIZE,CHAT_MAX_EMOTES_PER_MESSAGE,def
 export function ChatEmotePicker({onPick,unlockedIds=[],trayIds=[],bodyPresentation='male',usedCount=0,onTrayChange,onManageEmotes,settingsMode=false,initiallyOpen=false,compact=false,renderTrigger}:{onPick:(token:string)=>void;unlockedIds?:readonly string[];trayIds?:readonly string[];bodyPresentation?:'male'|'female';usedCount?:number;onTrayChange?:(ids:string[])=>void|Promise<void>;onManageEmotes?:()=>void;settingsMode?:boolean;initiallyOpen?:boolean;compact?:boolean;renderTrigger?:(trigger:ReactNode)=>ReactNode}){
  const st=useSocialText();
  const C=useGameTheme(),s=useMemo(()=>makeStyles(C),[C]),{width,fontScale}=useWindowDimensions(),stackControls=width<360||fontScale>=1.25;
- const [open,setOpen]=useState(settingsMode&&initiallyOpen),[editing,setEditing]=useState(settingsMode&&initiallyOpen),[draft,setDraft]=useState<string[]>([]),[focused,setFocused]=useState(false);
  const available=useMemo(()=>availableChatEmotes(unlockedIds,bodyPresentation),[unlockedIds,bodyPresentation]);
  const byId=useMemo(()=>new Map(available.map(row=>[row.id,row])),[available]);
  const resolved=useMemo(()=>resolvedChatEmoteTray(trayIds,unlockedIds,bodyPresentation),[trayIds,unlockedIds,bodyPresentation]);
+ const [open,setOpen]=useState(settingsMode&&initiallyOpen),[editing,setEditing]=useState(settingsMode&&initiallyOpen),[draft,setDraft]=useState<string[]>(()=>settingsMode&&initiallyOpen?[...resolved]:[]),[focused,setFocused]=useState(false);
  useEffect(()=>{if(!editing)setDraft(resolved)},[editing,resolved.join('|')]);
- useEffect(()=>{if(settingsMode&&initiallyOpen)setDraft(resolved)},[settingsMode,initiallyOpen]);
  const selected=editing?draft:resolved;
  const toggle=(id:string)=>setDraft(current=>current.includes(id)?current.filter(value=>value!==id):current.length<CHAT_EMOTE_TRAY_SIZE?[...current,id]:current);
  const reset=()=>setDraft(defaultChatEmoteTray(bodyPresentation));

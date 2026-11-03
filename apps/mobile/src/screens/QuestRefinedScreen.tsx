@@ -185,7 +185,7 @@ export function QuestRefinedScreen({state,mode,onModeChange,focusedWeeklyOrderId
  }
  function submitClaim(){
   if(selectedStatus!=='ready'||sheetStage!=='details'||!selected||selected.kind==='contract')return;
-  void submitClaimFor(selected.kind,selected.id);
+  return submitClaimFor(selected.kind,selected.id);
  }
  const summaries={story:{title:p('Quest Journal'),subtitle:p('Your next chapter, story progress and rewards.')},contracts:{title:p('Weekly Contracts'),subtitle:p('Weekly assignments and automatic reward processing.')},challenges:{title:p('Class Challenges'),subtitle:p('Your daily, weekly and monthly class objectives.')}};
  const summary=summaries[mode];
@@ -226,7 +226,7 @@ export function QuestRefinedScreen({state,mode,onModeChange,focusedWeeklyOrderId
       <Text style={[styles.subtitle,{color:C.muted}]}>{p(nextChapter.description)}</Text>
       <ProgressLine current={Math.min(nextChapter.required,chapterProgress?.progress??0)} max={nextChapter.required} C={C}/>
       <Text style={[styles.rewardHint,{color:C.accent}]}>{nextChapter.rewardGold} {t('Gold')}{nextChapter.rewardItemId?' · '+(nextChapter.rewardItemQty??1)+'× '+nextChapter.rewardItemId.replace(/_/g,' '):''}</Text>
-      <GameButton title={chapterProgress?.status==='complete'?p('Claim rewards'):p('View objective')} onPress={()=>chapterProgress?.status==='complete'?void submitClaimFor('story',nextChapter.id):open('story',nextChapter.id)}/>
+      <GameButton title={chapterProgress?.status==='complete'?p('Claim rewards'):p('View objective')} onPress={()=>chapterProgress?.status==='complete'?submitClaimFor('story',nextChapter.id):open('story',nextChapter.id)}/>
      </View>:null}
     <JournalSkillPathsPanel state={state} onNavigate={onNavigate}/>
     <View style={styles.sectionHead}><Text style={[styles.sectionTitle,{color:C.accent}]}>{p('STORY CHAPTERS')}</Text><Text style={[styles.mini,{color:C.muted}]}>{QUESTS.length} {p('total')}</Text></View>
@@ -275,7 +275,7 @@ export function QuestRefinedScreen({state,mode,onModeChange,focusedWeeklyOrderId
      <View style={styles.rowMeta}><Text style={[styles.eyebrow,{color:C.good}]}>{p('REWARD READY')}</Text><StatusPill label={QUEST_RARITIES[nextReward.rarity].label.toUpperCase()} tone="special"/></View>
      <Text style={[styles.featuredTitle,{color:C.text}]}>{p(nextReward.name)}</Text>
      <Text style={[styles.subtitle,{color:C.muted}]}>{nextReward.period.toUpperCase()} · {p(QUEST_RARITIES[nextReward.rarity].cache)}</Text>
-     <GameButton title={p('Claim')+' '+p(QUEST_RARITIES[nextReward.rarity].cache)} onPress={()=>void submitClaimFor('challenge',nextReward.id)}/>
+     <GameButton title={p('Claim')+' '+p(QUEST_RARITIES[nextReward.rarity].cache)} onPress={()=>submitClaimFor('challenge',nextReward.id)}/>
     </View>:null}
     <View style={styles.sectionHead}><Text style={[styles.sectionTitle,{color:C.accent}]}>{p('CHALLENGE LIST')}</Text><Text style={[styles.mini,{color:C.muted}]}>{daily.length} {p('daily')} · {weekly.length} {p('weekly')} · {monthly.length} {p('monthly')}</Text></View>
     <Rail C={C} selected={challengePeriod} onChange={setChallengePeriod} items={[{id:'all',label:p('All')},{id:'daily',label:p('Daily')},{id:'weekly',label:p('Weekly')},{id:'monthly',label:p('Monthly')}]}/>

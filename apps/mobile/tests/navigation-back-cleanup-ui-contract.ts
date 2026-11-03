@@ -7,6 +7,8 @@ const forge=read('src/components/SmithingCollection.tsx');
 const unlocks=read('src/screens/NewUnlocksScreen.tsx');
 const settings=read('src/screens/SettingsScreen.tsx');
 const app=read('App.tsx');
+const companionPanel=read('src/components/CombatCompanionPanel.tsx');
+const companionScreen=read('src/screens/CompanionsScreen.tsx');
 ok(!skills.includes('<DetailBack')&&!skills.includes('function DetailBack'),'Skills details must not show an All skills back button');
 ok(!forge.includes('‹  {gl(\'Skills\')}'),'Forge header must not show a redundant back button');
 ok(!unlocks.includes('Back to Account'),'New Unlocks must not display an in-page back button');
@@ -15,4 +17,7 @@ ok(settings.includes("t(language,'settings.title')")&&settings.includes("const s
 ok(app.includes("tab==='Store'&&<StoreScreen")&&!app.includes("setSettingsSection('store')"),'Account Store opens a dedicated route with ordinary Back navigation');
 ok(app.includes("if(destination==='Skills'&&selectedSkill)")&&app.includes('setSelectedSkill(undefined);setGoalActionId(undefined);setGoalRecipeId(undefined);'),'Re-selecting the Skills tab must restore the skill hub');
 ok(app.includes("if(tab==='Skills'&&selectedSkill&&!skillsOpenedAsLink)"),'Android back-navigation for Skills should remain available');
+ok(app.includes("&&tab!=='Companions'&&<View style={[s.backBar"),'Companion root, training, sanctuary, trials, expeditions and codex must not render the redundant global Back bar');
+ok(companionPanel.includes("const sections=['Collection','Training','Sanctuary','Trials','Expeditions']")&&companionPanel.includes('accessibilityRole="tablist"'),'The Companion internal tab navigation must remain available');
+ok(companionScreen.includes('<CombatCompanionPanel state={state}')&&app.includes("BackHandler.addEventListener('hardwareBackPress',goBack)"),'Removing the visible Back bar must preserve Companion content and Android hardware Back behavior');
 console.log('PASS: back-button cleanup retains skill/settings navigation and Android Back.');

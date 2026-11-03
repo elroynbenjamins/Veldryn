@@ -7,7 +7,7 @@ import {ResourceArtwork} from './ResourceArtwork';
 import {guildUpgradeComponentName} from '../theme/guild-upgrade-component-art';
 import {gameAlert} from '../core/game-alerts';
 import {useGameTheme} from '../theme/ThemeContext';
-import {radii,spacing,type ThemeColors} from '../theme/theme';
+import {radii,type ThemeColors} from '../theme/theme';
 import type {GuildTokenShopSnapshot} from '../online/guild-token-shop';
 import {depositOnlineGuildBank,pendingGuildBankDeposit,discardPendingGuildBankDeposit,type PendingGuildBankDeposit} from '../online/guild-bank';
 
@@ -80,6 +80,7 @@ export function OnlineGuildBankPanel({snapshot,onReload,focusResourceId,onFocusH
   .replace('Heraldic Dye Flask','Heraldic Dye')
   .replace('Beacon Oil Flask','Beacon Oil');
  const status=(id:string)=>depositCapacity(id)<=0?'Covered':shortageNow(id)>0?'Needed now':'Upcoming';
+ const compactQuantity=(value:number)=>value>=10000?(Math.round(value/100)/10).toLocaleString()+'k':value.toLocaleString();
  const activityTime=(iso:string)=>{
   const date=new Date(iso);
   if(!Number.isFinite(date.getTime()))return 'Recent';
@@ -128,11 +129,11 @@ export function OnlineGuildBankPanel({snapshot,onReload,focusResourceId,onFocusH
    <View style={[s.statusDot,state==='Needed now'?s.nowDot:state==='Upcoming'?s.futureDot:s.fundedDot]}/>
    <View style={s.artFrame}>
     {id==='gold'?<Text style={s.goldGlyph}>G</Text>:<ResourceArtwork itemId={id} size={39} framed={false}/>}
-    <View style={s.stackCount}><Text numberOfLines={1} style={s.stackText}>{onHand.toLocaleString()}</Text></View>
+    <View style={s.stackCount}><Text numberOfLines={1} style={s.stackText}>{compactQuantity(onHand)}</Text></View>
    </View>
    <Text numberOfLines={2} style={s.slotName}>{shortName(id)}</Text>
    <Text numberOfLines={1} style={[s.slotNeed,state==='Needed now'?s.nowText:state==='Upcoming'?s.futureText:null]}>
-    {remaining>0?'+'+remaining.toLocaleString()+' needed':'✓ Covered'}
+    {remaining>0?'+'+compactQuantity(remaining)+' needed':'✓ Covered'}
    </Text>
   </Pressable>;
  };
@@ -158,9 +159,9 @@ export function OnlineGuildBankPanel({snapshot,onReload,focusResourceId,onFocusH
    <View style={s.vaultMark}><Text style={s.vaultGlyph}>▣</Text></View>
   </View>
   <View style={s.stats}>
-   <View style={s.stat}><Text style={s.statLabel}>STORED MATERIALS</Text><Text style={s.statValue}>{storedTypes}<Text style={s.statSuffix}> types</Text></Text></View>
+   <View style={s.stat}><Text style={s.statLabel}>STORED MATERIALS</Text><Text style={s.statValue}>{snapshot.bank?storedTypes:'—'}<Text style={s.statSuffix}> types</Text></Text></View>
    <View style={s.statDivider}/>
-   <View style={s.stat}><Text style={s.statLabel}>STILL TO DEPOSIT</Text><Text style={s.statValue}>{remainingTotal.toLocaleString()}<Text style={s.statSuffix}> units</Text></Text></View>
+   <View style={s.stat}><Text style={s.statLabel}>STILL TO DEPOSIT</Text><Text style={s.statValue}>{snapshot.bank?remainingTotal.toLocaleString():'—'}<Text style={s.statSuffix}> units</Text></Text></View>
   </View>
   {snapshot.bank===null?<Text accessibilityRole="alert" style={s.warning}>Bank balances are unavailable. Donations are paused until a refresh succeeds.</Text>:null}
   {!!error&&<Text accessibilityRole="alert" style={s.error}>{error}</Text>}
@@ -175,7 +176,7 @@ export function OnlineGuildBankPanel({snapshot,onReload,focusResourceId,onFocusH
   </View>:null}
   <View style={s.tabs} accessibilityRole="tablist">
    {([{id:'inventory',label:'▦  Inventory'},{id:'needed',label:'◎  Needed'},{id:'activity',label:'◷  Activity'}] as const).map(tab=><Pressable key={tab.id} accessibilityRole="tab"
-    accessibilityState={{selected:view===tab.id}} onPress={()=>setView(tab.id)}
+    accessibilityState={{selected:view===tab.id}} onPress={()=>{setView(tab.id);setNotice('')}}
     style={({pressed})=>[s.tab,view===tab.id&&s.activeTab,pressed&&s.pressed]}>
     <Text numberOfLines={1} style={[s.tabText,view===tab.id&&s.activeTabText]}>{tab.label}</Text>
    </Pressable>)}
@@ -189,7 +190,7 @@ export function OnlineGuildBankPanel({snapshot,onReload,focusResourceId,onFocusH
    {!visibleIds.length?<View style={s.empty}><Text style={s.name}>No matching materials</Text>
     <Text style={s.help}>Try a different search. Only published upgrade materials are accepted.</Text></View>:null}
    <Text style={s.footerHelp}>Only materials needed by published Guild upgrades can be deposited. Donated items cannot be withdrawn.</Text>
-   <GameButton compact tone="secondary" title="View materials needed" onPress={()=>setView('needed')}/>
+   <GameButton compact tone="secondary" title="View materials needed" onPress={()=>{setView('needed');setNotice('')}}/>
   </View>:null}
   {view==='needed'?<View style={s.section}>
    <View style={s.sectionHead}><Text style={s.sectionTitle}>Construction requirements</Text><Text style={s.meta}>{currentIds.length} needed now</Text></View>
@@ -236,7 +237,7 @@ export function OnlineGuildBankPanel({snapshot,onReload,focusResourceId,onFocusH
     <View style={s.modalStats}>
      <View style={s.modalStat}><Text style={s.statLabel}>GUILD OWNS</Text><Text style={s.modalNumber}>{balance(selected).toLocaleString()}</Text></View>
      <View style={s.modalStat}><Text style={s.statLabel}>NEEDED NOW</Text><Text style={s.modalNumber}>{(needs.get(selected)?.current??0).toLocaleString()}</Text></View>
-     <View style={s.modalStat}><Text style={s.statLabel}>CAN DEPOSIT</Text><Text style={s.modalNumber}>{maxAmount.toLocaleString()}</Text></View>
+     <View style={s.modalStat}><Text style={s.statLabel}>BANK LIMIT</Text><Text style={s.modalNumber}>{maxAmount.toLocaleString()}</Text></View>
     </View>
     <Text style={s.name}>Donation amount</Text>
     <TextInput value={quantity} onChangeText={setQuantity} selectTextOnFocus keyboardType="number-pad"
@@ -248,9 +249,9 @@ export function OnlineGuildBankPanel({snapshot,onReload,focusResourceId,onFocusH
      style={({pressed})=>[s.preset,pressed&&s.pressed]}>
      <Text style={s.presetText}>{preset}</Text>
     </Pressable>)}</View>
-    {maxAmount<=0?<Text style={s.success}>This material is fully covered by Guild Bank stock.</Text>:
+    {maxAmount<=0?<Text style={s.success}>The Guild Bank already holds enough for all published requirements.</Text>:
      !valid?<Text style={s.warning}>Enter a whole number between 1 and {maxAmount.toLocaleString()}.</Text>:
-     <Text style={s.meta}>Up to {maxAmount.toLocaleString()} more can be deposited. Your unlocked inventory and Gold are checked by the server.</Text>}
+     <Text style={s.meta}>Up to {maxAmount.toLocaleString()} more can be deposited. The server checks your available unlocked items or Gold when you confirm.</Text>}
     <View style={s.warningCard}><Text style={s.help}>Deposits are permanent. Only Guild systems may allocate these supplies; members cannot withdraw or transfer them.</Text></View>
     <View style={s.actions}><View style={s.flex}><GameButton tone="secondary" title="Cancel" disabled={busy} onPress={close}/></View>
      <View style={s.flex}><GameButton title="Review donation" disabled={!valid||depositDisabled} loading={busy} onPress={confirmDeposit}/></View></View>

@@ -17,7 +17,7 @@ import {ChatMessageRow} from './ChatMessageRow';
 import {ChatLog} from './ChatLog';
 import {ChatMentionSuggestions} from './ChatMentionSuggestions';
 
-export function OnlineWorldChat({playerName,language,unlockedEmoteIds=[],trayIds=[],bodyPresentation='male',onTrayChange,embedded=false,reduceMotion=false,selectedChannel,active=true}:{playerName:string;language:Language;unlockedEmoteIds?:readonly string[];trayIds?:readonly string[];bodyPresentation?:'male'|'female';onTrayChange?:(ids:string[])=>void|Promise<void>;embedded?:boolean;reduceMotion?:boolean;selectedChannel?:number;active?:boolean}){
+export function OnlineWorldChat({playerName,language,unlockedEmoteIds=[],trayIds=[],bodyPresentation='male',onTrayChange,onManageEmotes,embedded=false,reduceMotion=false,selectedChannel,active=true}:{playerName:string;language:Language;unlockedEmoteIds?:readonly string[];trayIds?:readonly string[];bodyPresentation?:'male'|'female';onTrayChange?:(ids:string[])=>void|Promise<void>;onManageEmotes?:()=>void;embedded?:boolean;reduceMotion?:boolean;selectedChannel?:number;active?:boolean}){
  const st=useSocialText();
  const C=useGameTheme(),s=useMemo(()=>makeStyles(C),[C]);
  const [open,setOpen]=useState(embedded),[localChannel,setChannel]=useState(0),[drafts,setDrafts]=useState<Record<string,string>>({}),[selected,setSelected]=useState<WorldMessage|null>(null),[busy,setBusy]=useState(false);
@@ -53,7 +53,7 @@ export function OnlineWorldChat({playerName,language,unlockedEmoteIds=[],trayIds
   <ChatLog active={active&&(open||embedded)} channelKey={draftKey} items={rows} emptyText={ot(language,'chat.none')} renderItem={row=><ChatMessageRow accountId={row.account_id} name={row.sender_name} body={row.body} createdAt={row.created_at} guildTag={row.guild_tag} tagColorId={row.guild_tag_color_id} nameStyle={row.player_name_style} badges={row.player_badges} mentionName={playerName} onPress={()=>setSelected(row)} reduceMotion={reduceMotion}/>} />
   {!!error&&<View accessibilityRole="alert" style={s.errorCard}><Text style={s.errorLabel}>{st("CHAT UNAVAILABLE")}</Text><Text style={s.error}>{error}</Text><GameButton compact title={st("Retry")} tone="secondary" onPress={()=>refresh()}/></View>}
   <ChatMentionSuggestions value={text} names={mentionNames} currentName={playerName} onChange={setText}/>
-  <ChatComposer accessibilityLabel={st("World chat message")} value={text} onChangeText={setText} onSend={()=>send()} placeholder={ot(language,'chat.placeholder')} busy={busy} disabled={!accountId} emotes={{unlockedIds:unlockedEmoteIds,trayIds,bodyPresentation,onTrayChange,onPick:token=>setText(value=>(value+token).slice(0,300))}}/>
+  <ChatComposer accessibilityLabel={st("World chat message")} value={text} onChangeText={setText} onSend={()=>send()} placeholder={ot(language,'chat.placeholder')} busy={busy} disabled={!accountId} emotes={{unlockedIds:unlockedEmoteIds,trayIds,bodyPresentation,onTrayChange,onManageEmotes,onPick:token=>setText(value=>(value+token).slice(0,300))}}/>
   {!embedded&&<Pressable accessibilityRole="button" onPress={()=>setOpen(false)} style={s.closeInline}><Text style={s.closeText}>{ot(language,'chat.close')}</Text></Pressable>}
   <ChatPlayerSheet reduceMotion={reduceMotion} message={selected?{...selected,message_id:selected.id}:null} onClose={()=>setSelected(null)} onBlocked={accountId=>setRows(current=>current.filter(message=>message.account_id!==accountId))}/>
  </View>;

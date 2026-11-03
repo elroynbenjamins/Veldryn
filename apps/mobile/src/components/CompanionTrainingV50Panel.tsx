@@ -144,7 +144,7 @@ export function CompanionTrainingV50Panel({state,now,onCommand,onNavigateSource,
       {sources.slice(0,4).map(source=><View key={source.id} style={s.sourceRow}><View style={s.flex}><Text style={s.sourceName}>{companionContent(language,source.label)}</Text><Text style={s.copy}>{companionContent(language,source.detail)}</Text></View>{source.kind!=='info'?<Pressable accessibilityRole="button" onPress={()=>openSource(source)} style={s.sourceButton}><Text style={s.sourceButtonText}>{t("GO →")}</Text></Pressable>:null}</View>)}
     </View>:null}
     {model.def.rarity==='prestige'&&progress.level===35&&!progress.mastered?<GameButton title={t("Complete Prestige Mastery")} disabled={busy||!idle(selection)} onPress={()=>act('companion_master',{id:selection})}/>:null}
-   </View>:null}
+   </View>:null}</>:null}
     {tab==='Materials'&&roadmap?.owned?<View style={s.roadmap}><Text style={s.sectionTitle}>{t('Progression Roadmap')}</Text>{roadmap.power.map(step=><View key={step.id} style={s.roadmapRow}><Text style={s.copy}>{companionContent(language,step.label)}</Text><Text style={s.roadmapReward}>{companionContent(language,step.reward)}</Text></View>)}</View>:null}
     {message&&tab!=='Materials'?<Text accessibilityLiveRegion={messageError?'assertive':'polite'} style={[s.message,messageError&&{color:C.bad}]}>{companionMessage(language,message)}</Text>:null}
    </ScrollView>

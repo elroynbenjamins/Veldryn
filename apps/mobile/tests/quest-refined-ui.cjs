@@ -24,7 +24,7 @@ assert.ok(screen.includes("setSheetStage('claiming')")&&screen.includes("selecte
   'claim confirmation must prevent unsolicited/repeated claims');
 assert.ok(!screen.includes("sheetStage==='confirm'")&&!screen.includes("setSheetStage('confirm')")&&!screen.includes('Collect quest rewards?'),
   'one-tap Journal claims must not open an intermediate confirmation');
-assert.ok(screen.includes("void submitClaimFor('story',nextChapter.id)")&&screen.includes("void submitClaimFor('challenge',nextReward.id)"),
+assert.ok(screen.includes("submitClaimFor('story',nextChapter.id)")&&screen.includes("submitClaimFor('challenge',nextReward.id)"),
   'featured ready rewards must claim directly instead of opening another details step');
 assert.ok(screen.includes("if(sheetStage==='success')setMoment(null)")&&screen.includes("sheetStage==='success'&&selected?.id===moment.id"),
   'closing the final receipt must not show another reward banner or time out prematurely');

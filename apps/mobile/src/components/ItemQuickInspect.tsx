@@ -3,7 +3,7 @@ import {itemDetailText,itemDetailContent,type itemDetailRows} from '../i18n/item
 
 import {useMemo,useState} from 'react';
 import type {ReactNode} from 'react';
-import {Image,Pressable,ScrollView,StyleSheet,Text,View} from 'react-native';
+import {Pressable,ScrollView,StyleSheet,Text,View} from 'react-native';
 import {GameModalSurface} from './GameModalSurface';
 import {GameState} from '../core/types';
 import {itemInspectModel} from '../core/item-inspect';
@@ -20,7 +20,7 @@ import {ResourceArtwork} from './ResourceArtwork';
 import {hasResourceArtwork} from '../theme/resource-assets';
 import {GemArtwork} from './GemArtwork';
 import {ItemArtwork} from './ItemArtwork';
-import {hasGemArtworkV1,hasRawGemArtworkV1,rawGemSpriteSourceV1} from '../theme/gem-assets';
+import {hasGemArtworkV1,hasRawGemArtworkV1} from '../theme/gem-assets';
 import type {WorkingTowardDestination} from '../core/working-toward';
 
 function InspectArt({itemId,model}:{itemId:string;model:ReturnType<typeof itemInspectModel>}){
@@ -28,7 +28,7 @@ function InspectArt({itemId,model}:{itemId:string;model:ReturnType<typeof itemIn
   const C=useGameTheme(),item=model.item;
   if(item.type==='gear'&&hasEquipmentArtwork(item))return <EquipmentArtwork item={item} framed={false}/>;
   if(item.type==='tool')return <GatheringToolArtwork itemId={item.id} size={72} framed={false}/>;
-  if(hasRawGemArtworkV1(item.id))return <Image source={rawGemSpriteSourceV1} resizeMode="contain" style={{width:72,height:72}}/>;
+  if(hasRawGemArtworkV1(item.id))return <GemArtwork itemId={item.id} size={72} framed={false}/>;
   if(hasGemArtworkV1(item.id))return <GemArtwork itemId={item.id} size={72} framed={false}/>;
   if(hasResourceArtwork(item.id))return <ResourceArtwork itemId={item.id} size={72} framed={false}/>;
   return <View style={[art.fallback,{borderColor:model.rarity.color,backgroundColor:model.rarity.surface}]}><Text style={[art.symbol,{color:model.rarity.color}]}>{model.rarity.symbol}</Text><Text style={[art.fallbackText,{color:C.muted}]}>{itemDetailContent(language,item.type,gl).toLocaleUpperCase(language)}</Text></View>;
@@ -56,7 +56,7 @@ export function ItemQuickInspect({state,itemId,onClose,onNavigate,actions}:{stat
           <View style={s.heroCopy}>
             <Text style={[s.rarity,{color:rarity.color}]}>{rarity.symbol+' '+contentText(rarity.label).toLocaleUpperCase(language)+' · '+contentText(item.type).toLocaleUpperCase(language)}</Text>
             <Text numberOfLines={2} style={[s.name,{color:nameColor}]}>{item.name+(upgrade?.rank?' +'+upgrade.rank:'')}</Text>
-            <Text style={s.owned}>{it('Owned · {total} total · {carried} carried · {banked} banked',{total:formatGameNumber(model.totalQuantity,state.settings.numberMode,language),carried:formatGameNumber(model.inventoryQuantity,state.settings.numberMode,language),banked:formatGameNumber(model.bankQuantity,state.settings.numberMode,language)})}</Text>
+            <Text style={s.owned}>{it('Owned · {total} total · {carried} carried · {banked} banked',{total:formatGameNumber(model.totalQuantity,state.settings.numberMode,language),carried:formatGameNumber(model.inventoryQuantity,state.settings.numberMode,language),banked:formatGameNumber(model.bankQuantity,state.settings.numberMode,language)})}{model.pouchQuantity?' · '+formatGameNumber(model.pouchQuantity,state.settings.numberMode,language)+' in Gem Pouch':''}</Text>
           </View>
           <Pressable accessibilityRole="button" accessibilityLabel={gt("Close item quick inspect")} onPress={onClose} style={({pressed})=>[s.close,pressed&&s.pressed]}><Text style={s.closeText}>×</Text></Pressable>
         </View>

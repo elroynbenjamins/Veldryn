@@ -1,15 +1,16 @@
 import {useMemo,useState} from 'react';
-import {Pressable,StyleSheet,Text,View} from 'react-native';
+import {Pressable,ScrollView,StyleSheet,Text,View} from 'react-native';
 import type {GameState} from '../core/types';
 import {gemPouch,gemPouchUpgradePreview} from '../core/gem-pouch';
-import {canonicalGemMetaV1} from '../core/gem-progression-v1';
-import {GEM_GRADE_LABEL_V1,GEM_GRADE_RARITY_V1} from '../content/gems-v1';
+import {availableGemRefinementsV1,canonicalGemMetaV1} from '../core/gem-progression-v1';
+import {GEM_GRADE_LABEL_V1,GEM_GRADE_RARITY_V1,mobileGemFamilyV1,parseMobileRawGemItemIdV1} from '../content/gems-v1';
 import {itemRarity,rarityMeta} from '../core/item-rarity';
 import type {GameCommand} from '../core/game-commands';
 import {itemDef} from '../content/items';
 import {ItemArtwork} from './ItemArtwork';
 import {GameButton} from './GameButton';
 import {ConfirmModal} from './ConfirmModal';
+import {GameModalHeader,GameModalSurface} from './GameModalSurface';
 import {useGameTheme} from '../theme/ThemeContext';
 import {spacing,typography,type ThemeColors} from '../theme/theme';
 
@@ -27,7 +28,13 @@ export function GemPouchPanel({state,busy=false,standalone=false,onUpgrade,onAct
   const pages=Math.ceil(pouch.capacity/PAGE_SIZE),shownPage=Math.min(page,pages-1),start=shownPage*PAGE_SIZE;
   const entries=Array.from({length:Math.min(PAGE_SIZE,pouch.capacity-start)},(_,index)=>pouch.stacks[start+index]);
   const selectedStack=pouch.stacks.find(stack=>stack.itemId===selected);
+  const selectedItem=selectedStack?itemDef(selectedStack.itemId):undefined;
   const selectedMeta=selectedStack?canonicalGemMetaV1(selectedStack.itemId):undefined;
+  const selectedRaw=selectedStack?parseMobileRawGemItemIdV1(selectedStack.itemId):undefined;
+  const grade=selectedMeta?.grade??selectedRaw?.grade;
+  const family=mobileGemFamilyV1(selectedMeta?.familyId??selectedRaw?.familyId??'');
+  const refinement=selectedRaw?availableGemRefinementsV1(state).find(row=>row.recipe.familyId===selectedRaw.familyId&&row.recipe.grade===selectedRaw.grade):undefined;
+  const selectedRarity=selectedItem?rarityMeta(grade?GEM_GRADE_RARITY_V1[grade]:itemRarity(selectedItem)):undefined;
   const favorite=!!selectedStack&&!!state.settings.favoriteItemIds?.includes(selectedStack.itemId),locked=!!selectedStack&&!!state.settings.lockedItemIds?.includes(selectedStack.itemId);
   const protectedGem=favorite||locked;
   const canUpgrade=!!upgrade&&(state.character?.level??0)>=upgrade.level&&(state.character?.gold??0)>=upgrade.cost&&!busy;
@@ -37,25 +44,50 @@ export function GemPouchPanel({state,busy=false,standalone=false,onUpgrade,onAct
       {!standalone?<Text style={s.chevron}>{expanded?'−':'+'}</Text>:null}
     </Pressable>
     {expanded?<View style={s.body}>
-      <Text style={s.hint}>Account-wide gem storage · gems are used automatically when socketing and Enchanting.</Text>
-      <View style={s.grid} onLayout={event=>{const width=Math.floor(event.nativeEvent.layout.width);setGridWidth(previous=>previous===width?previous:width)}}>{entries.map((stack,index)=><Pressable key={stack?.itemId??'empty-'+(start+index)} accessibilityRole="button" accessibilityLabel={stack?itemDef(stack.itemId).name+', '+stack.quantity+' owned':'Empty Gem Pouch slot'} disabled={!stack} onPress={()=>setSelected(current=>current===stack?.itemId?null:stack?.itemId??null)} style={[s.slot,{width:slotWidth,minHeight:Math.max(slotWidth,62)},stack&&s.filled,stack?.itemId===selected&&s.selected,stack&&{borderColor:rarityMeta(canonicalGemMetaV1(stack.itemId)?.grade?GEM_GRADE_RARITY_V1[canonicalGemMetaV1(stack.itemId)!.grade]:itemRarity(itemDef(stack.itemId))).color}]}>
+      <Text style={s.hint}>Tap a gem to inspect or manage it. Shared across characters; socketing and Enchanting use stored gems automatically.</Text>
+      <View style={s.grid} onLayout={event=>{const width=Math.floor(event.nativeEvent.layout.width);setGridWidth(previous=>previous===width?previous:width)}}>{entries.map((stack,index)=><Pressable key={stack?.itemId??'empty-'+(start+index)} accessibilityRole="button" accessibilityLabel={stack?itemDef(stack.itemId).name+', '+stack.quantity+' owned. Tap for details and actions':'Empty Gem Pouch slot'} accessibilityHint={stack?'Opens gem details and actions':undefined} accessibilityState={stack?{selected:stack.itemId===selected}:undefined} disabled={!stack} onPress={()=>setSelected(stack?.itemId??null)} style={[s.slot,{width:slotWidth,minHeight:Math.max(slotWidth,62)},stack&&s.filled,stack?.itemId===selected&&s.selected,stack&&{borderColor:rarityMeta(canonicalGemMetaV1(stack.itemId)?.grade?GEM_GRADE_RARITY_V1[canonicalGemMetaV1(stack.itemId)!.grade]:itemRarity(itemDef(stack.itemId))).color}]}>
         {stack?<><ItemArtwork itemId={stack.itemId} size={Math.min(42,slotWidth-12)}/><Text numberOfLines={1} style={s.quantity}>×{stack.quantity}</Text></>:<Text style={s.emptyMark}>·</Text>}
       </Pressable>)}</View>
-      {selectedStack?<View style={s.info}><Text style={s.itemName}>{itemDef(selectedStack.itemId).name}</Text><Text style={s.meta}>{selectedStack.quantity} owned · {selectedMeta?GEM_GRADE_LABEL_V1[selectedMeta.grade]+' · '+(selectedMeta.kind==='stat'?'Stat':'Effect'):'Unrefined'} gem{protectedGem?' · Protected from selling':''}</Text>
-        <View style={s.actions}>
-          <GameButton compact tone="secondary" title={favorite?'★ Favorited':'☆ Favorite'} disabled={!onFavorite||busy} onPress={()=>onFavorite?.(selectedStack.itemId)}/>
-          <GameButton compact tone="secondary" title={locked?'Unlock':'Lock'} disabled={!onLock||busy} onPress={()=>onLock?.(selectedStack.itemId)}/>
-        </View>
-        <View style={s.actions}>
-          <GameButton compact tone="secondary" title="Sell 1" disabled={!onAction||busy||protectedGem} onPress={()=>setPendingSell({itemId:selectedStack.itemId,quantity:1})}/>
-          <GameButton compact tone="secondary" title="Sell all" disabled={!onAction||busy||protectedGem} onPress={()=>setPendingSell({itemId:selectedStack.itemId,quantity:selectedStack.quantity})}/>
-          {canonicalGemMetaV1(selectedStack.itemId)?<GameButton compact tone="secondary" title="Dismantle 1" disabled={!onAction||busy||protectedGem} onPress={()=>setPendingDismantle(selectedStack.itemId)}/>:null}
-        </View>
-      </View>:null}
       {pages>1?<View style={s.paging}><GameButton compact tone="secondary" title="Previous" disabled={shownPage===0} onPress={()=>{setSelected(null);setPage(p=>Math.max(0,p-1))}}/><Text style={s.meta}>{shownPage+1}/{pages}</Text><GameButton compact tone="secondary" title="Next" disabled={shownPage===pages-1} onPress={()=>{setSelected(null);setPage(p=>Math.min(pages-1,p+1))}}/></View>:null}
       <View style={s.upgrade}><View style={s.flex}><Text style={s.itemName}>{upgrade?'Next: '+upgrade.capacity+' slots':'Maximum capacity reached'}</Text>{upgrade?<Text style={s.meta}>Level {upgrade.level} · {upgrade.cost.toLocaleString()} Gold{!canUpgrade?' · Requires level and Gold':''}</Text>:null}</View>
         <GameButton compact tone="secondary" title={upgrade?'Upgrade':'Maxed'} disabled={!canUpgrade||!onUpgrade} onPress={()=>onUpgrade?.()}/></View>
     </View>:null}
+    <GameModalSurface visible={!!selectedStack} reduceMotion={state.settings.reduceMotion} onClose={()=>setSelected(null)}
+      backdropLabel="Close Gem Pouch item details" surfaceStyle={s.sheet}>
+      <GameModalHeader eyebrow="GEM POUCH · ACCOUNT STORAGE" title={selectedItem?.name??'Gem details'} onClose={()=>setSelected(null)}/>
+      {selectedStack&&selectedItem?<ScrollView style={s.sheetScroll} contentContainerStyle={s.sheetBody} showsVerticalScrollIndicator={false}>
+        <View style={s.gemHero}>
+          <View style={[s.largeArt,{borderColor:selectedRarity?.color??C.lineStrong}]}><ItemArtwork itemId={selectedStack.itemId} size={76}/></View>
+          <View style={s.flex}>
+            <Text style={[s.gemGrade,{color:selectedRarity?.color??C.accent}]}>{selectedRaw?'UNREFINED':selectedMeta?.kind==='stat'?'STAT GEM':selectedMeta?.kind==='effect'?'EFFECT GEM':'GEM'}{grade?' · G'+grade:''}</Text>
+            <Text style={s.itemName}>{family?.name??selectedItem.name}{grade?' · '+(selectedRaw?'Raw':GEM_GRADE_LABEL_V1[grade]):''}</Text>
+            <Text style={s.meta}>{selectedStack.quantity} in Gem Pouch · Account-wide</Text>
+          </View>
+        </View>
+        <View style={s.detail}>
+          <Text style={s.itemName}>What it does</Text>
+          <Text style={s.meta}>{family?.description??selectedItem.passive??'Gem material.'}</Text>
+          {selectedRaw?<Text style={s.meta}>Unrefined gems are materials, not socketable. Refine them using Enchanting first.</Text>:null}
+          {protectedGem?<Text style={[s.meta,{color:C.warning}]}>★ Protected: remove Favorite and Lock before selling or dismantling.</Text>:null}
+        </View>
+        <Text style={s.actionTitle}>ACTIONS</Text>
+        <View style={s.actions}>
+          <GameButton compact tone="secondary" title={favorite?'★ Favorited':'☆ Favorite'} disabled={!onFavorite||busy} onPress={()=>onFavorite?.(selectedStack.itemId)}/>
+          <GameButton compact tone="secondary" title={locked?'Unlock':'Lock'} disabled={!onLock||busy} onPress={()=>onLock?.(selectedStack.itemId)}/>
+        </View>
+        {selectedRaw&&refinement?<View style={s.refinement}>
+          <Text style={s.itemName}>Enchanting · Grade {selectedRaw.grade}</Text>
+          <Text style={s.meta}>Requires Lv {refinement.recipe.level} · {refinement.recipe.gold.toLocaleString()} Gold · {refinement.recipe.inputs.map(input=>input.quantity+'× '+itemDef(input.itemId).name).join(', ')}</Text>
+          <GameButton compact title={refinement.ready?'Refine 1 gem':'Refinement unavailable'} disabled={!onAction||busy||!refinement.ready} onPress={()=>{setSelected(null);return onAction?.({type:'gem_refine',args:{familyId:selectedRaw.familyId,grade:selectedRaw.grade}})}}/>
+        </View>:null}
+        <View style={s.actions}>
+          <GameButton compact tone="secondary" title="Sell 1" disabled={!onAction||busy||protectedGem||selectedItem.value<=0} onPress={()=>{setSelected(null);setPendingSell({itemId:selectedStack.itemId,quantity:1})}}/>
+          <GameButton compact tone="secondary" title="Sell all" disabled={!onAction||busy||protectedGem||selectedItem.value<=0} onPress={()=>{setSelected(null);setPendingSell({itemId:selectedStack.itemId,quantity:selectedStack.quantity})}}/>
+          {selectedMeta?<GameButton compact tone="secondary" title="Dismantle 1" disabled={!onAction||busy||protectedGem} onPress={()=>{setSelected(null);setPendingDismantle(selectedStack.itemId)}}/>:null}
+        </View>
+        <Text style={s.meta}>Gems remain available for equipment socketing and crafting directly from shared storage.</Text>
+      </ScrollView>:null}
+    </GameModalSurface>
     <ConfirmModal visible={!!pendingSell} title="Sell gems from Gem Pouch?" message={pendingSell?`${pendingSell.quantity}× ${itemDef(pendingSell.itemId).name} · ${ (pendingSell.quantity*itemDef(pendingSell.itemId).value).toLocaleString() } Gold. This cannot be undone.`:''} confirmLabel="Sell gems" danger reduceMotion={state.settings.reduceMotion} onConfirm={()=>{const pending=pendingSell;setPendingSell(null);if(pending)void onAction?.({type:'gem_pouch_sell',args:pending})}} onCancel={()=>setPendingSell(null)}/>
     <ConfirmModal visible={!!pendingDismantle} title="Dismantle this gem?" message={pendingDismantle?`Convert 1× ${itemDef(pendingDismantle).name} into Gem Dust? This cannot be undone.`:''} confirmLabel="Dismantle" danger reduceMotion={state.settings.reduceMotion} onConfirm={()=>{const id=pendingDismantle;setPendingDismantle(null);if(id)void onAction?.({type:'gem_dismantle',args:{gemId:id,quantity:1}})}} onCancel={()=>setPendingDismantle(null)}/>
   </View>;
@@ -70,7 +102,13 @@ function styles(C:ThemeColors){return StyleSheet.create({
  slot:{minHeight:66,alignItems:'center',justifyContent:'center',borderWidth:1,borderColor:C.line,borderRadius:8,backgroundColor:C.bg,padding:2},
  filled:{borderColor:C.lineStrong,backgroundColor:C.panel2},selected:{borderColor:C.accent},
  quantity:{...typography.caption,color:C.text,fontWeight:'800'},emptyMark:{fontSize:16,color:C.muted,opacity:.45},
- info:{padding:spacing.sm,backgroundColor:C.panel2,borderRadius:8,gap:6},actions:{flexDirection:'row',flexWrap:'wrap',gap:6},itemName:{...typography.bodyStrong,color:C.text},
+ sheet:{maxWidth:640,maxHeight:'88%'},sheetScroll:{flexShrink:1},sheetBody:{gap:spacing.md,paddingBottom:spacing.md},
+ gemHero:{flexDirection:'row',alignItems:'center',gap:spacing.md},
+ largeArt:{width:84,height:84,alignItems:'center',justifyContent:'center',borderWidth:1,borderRadius:12,backgroundColor:C.panel2},
+ gemGrade:{...typography.caption,fontWeight:'900'},detail:{padding:spacing.md,gap:spacing.xs,borderRadius:10,backgroundColor:C.panel2},
+ actionTitle:{...typography.caption,color:C.accent,fontWeight:'900',letterSpacing:.6},
+ refinement:{gap:spacing.sm,padding:spacing.md,borderWidth:1,borderColor:C.line,borderRadius:10},
+ actions:{flexDirection:'row',flexWrap:'wrap',gap:6},itemName:{...typography.bodyStrong,color:C.text},
  paging:{flexDirection:'row',alignItems:'center',justifyContent:'space-between'},
  upgrade:{flexDirection:'row',alignItems:'center',gap:10,paddingTop:spacing.sm,borderTopWidth:1,borderTopColor:C.line}
  });}

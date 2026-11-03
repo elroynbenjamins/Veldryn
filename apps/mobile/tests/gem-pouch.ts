@@ -8,6 +8,7 @@ import {gemDepositDestination,gemPouch,gemPouchUpgradePreview,gemStorageQuantity
 import {gemRefineRecipeIdV1} from '../src/core/gem-progression-v1';
 import {MOBILE_GEM_FAMILIES_V1} from '../src/content/gems-v1';
 import {normalizeSave} from '../src/core/save-normalization';
+import {itemInspectModel} from '../src/core/item-inspect';
 import {executeGameCommand,validateGameCommand} from '../src/core/game-commands';
 
 function ok(value:unknown,message:string){if(!value)throw new Error(message)}
@@ -53,6 +54,8 @@ ok(gemPouch(recovered.state).stacks.some(stack=>stack.itemId===gemId&&stack.quan
 ok(!recovered.state.account.equipmentCraftingQueue?.length,'Recovered claim must settle once');
 
 const stackedPouch=storePouchGem(storePouchGem(start,gemId,3),gemId,2);
+const inspection=itemInspectModel(stackedPouch,gemId);
+ok(inspection.pouchQuantity===5&&inspection.totalQuantity===5,'Item Quick Inspect must count account-wide Gem Pouch gems in total ownership');
 const saleBase={...stackedPouch,character:{...stackedPouch.character!,gold:100}};
 const sold=executeGameCommand(saleBase,{type:'gem_pouch_sell',args:{itemId:gemId,quantity:2}},1000);
 ok(gemStorageQuantity(sold.state,gemId)===3,'Selling gems must remove only the requested pouch units');

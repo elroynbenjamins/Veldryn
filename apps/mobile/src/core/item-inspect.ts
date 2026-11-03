@@ -1,4 +1,5 @@
 import {itemDef} from '../content/items';
+import {gemPouch,isGemPouchItemId} from './gem-pouch';
 import {GATHERING,RECIPES} from '../content/skills';
 import {HERB_NODES} from '../content/herbalism';
 import {MONSTERS} from '../content/monsters';
@@ -85,6 +86,7 @@ export function itemInspectModel(state:GameState,itemId:string){
 
   const inventoryQuantity=state.inventory.stacks.find(stack=>stack.itemId===itemId)?.quantity??0;
   const bankQuantity=state.bank.stacks.find(stack=>stack.itemId===itemId)?.quantity??0;
+  const pouchQuantity=isGemPouchItemId(itemId)?gemPouch(state).stacks.find(stack=>stack.itemId===itemId)?.quantity??0:0;
   const effectLines:string[]=[];
   let upgrade:undefined|{rank:number;nextRank:number;successChance:number;dust:number;cores:number;gold:number;materials:{itemId:string;name:string;quantity:number}[];maxed:boolean;failures:number;equipped:boolean};
   let sockets:undefined|{filled:number;capacity:number;statGemName?:string;effectGemName?:string};
@@ -142,5 +144,5 @@ export function itemInspectModel(state:GameState,itemId:string){
       :workingTowardDestinationAvailability(state,recipe.navigation)};
   });
   const craftedInstances=item.type==='gear'?craftedInstancesForItem(state,itemId):[];
-  return {item,rarityId,rarity,inventoryQuantity,bankQuantity,totalQuantity:inventoryQuantity+bankQuantity,craftedCopies:craftedInstances.length,craftedRarities:[...new Set(craftedInstances.map(row=>row.rarity))],effectLines,stats,upgrade,sockets,gearDecision,sources:actionableSources,usedIn:actionableUses};
+  return {item,rarityId,rarity,inventoryQuantity,bankQuantity,pouchQuantity,totalQuantity:inventoryQuantity+bankQuantity+pouchQuantity,craftedCopies:craftedInstances.length,craftedRarities:[...new Set(craftedInstances.map(row=>row.rarity))],effectLines,stats,upgrade,sockets,gearDecision,sources:actionableSources,usedIn:actionableUses};
 }

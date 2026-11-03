@@ -76,6 +76,15 @@ const LEGACY_GEM_ARTWORK_KEY_V1:Readonly<Record<string,string>>={
   RENEWAL_SIGIL:'effect_renewal',
 };
 
+/** A gem tile is identified by family artwork, grade and unrefined status.
+ * This is visual metadata only: neither raw grades nor item IDs are changed. */
+export function gemVisualIdentityV1(itemId:string){
+  const match=/^(raw_gem|gem):(stat_[a-z_]+|effect_[a-z_]+):g([1-5])$/.exec(itemId);
+  if(!match||!GEM_ARTWORK_CELL_BY_KEY_V1[match[2]])return undefined;
+  return {raw:match[1]==='raw_gem',grade:Number(match[3]) as 1|2|3|4|5,
+    familyId:match[2],artworkId:`gem:${match[2]}:g${match[3]}`};
+}
+
 export function gemArtworkKeyV1(itemId:string){
   if(itemId==='GEM_DUST'||itemId==='REGIONAL_CATALYST'||itemId==='RADIANT_CATALYST')return itemId;
   if(LEGACY_GEM_ARTWORK_KEY_V1[itemId])return LEGACY_GEM_ARTWORK_KEY_V1[itemId];

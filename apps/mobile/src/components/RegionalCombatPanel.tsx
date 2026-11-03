@@ -84,7 +84,7 @@ export function RegionalCombatPanel({state,onRewardsChanged}:{state:GameState;on
    </View>;
   })}</View>
   {!!notice&&<View accessibilityRole="alert" style={s.notice}><Text style={s.noticeText}>{gl(notice)}</Text></View>}
-  <Text style={s.foot}>Rewards are granted automatically after a victory.</Text></>}
+  <Text style={s.foot}>Rewards are granted automatically after a victory.</Text></>:null}
  </Panel>;
 }
 function styles(C:ThemeColors){const E=equipmentTheme(C);return StyleSheet.create({

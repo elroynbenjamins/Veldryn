@@ -1,16 +1,8 @@
 name: Generate standalone gathering-tool icons
 
+# Manual regeneration only: do not overwrite polished standalone PNGs on ordinary pushes.
 on:
-  push:
-    branches:
-      - fix/standalone-gathering-tool-icons
-    paths:
-      - .github/workflows/generate-gathering-tool-icons.yml
-      - tools/split-gathering-tool-icons.py
-      - apps/mobile/assets/tools/gathering-tools-v3.png
-      - apps/mobile/tests/gathering-tool-individual-artwork.cjs
-      - apps/mobile/src/theme/gathering-tool-assets.ts
-      - apps/mobile/src/components/GatheringToolArtwork.tsx
+  workflow_dispatch:
 
 permissions:
   contents: write

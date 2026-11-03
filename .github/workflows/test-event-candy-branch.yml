@@ -1,0 +1,28 @@
+name: Targeted event candy regression
+on:
+  push:
+    branches:
+      - fix/event-candy-purchases-after-end-20261103
+    paths:
+      - '.github/workflows/test-event-candy-branch.yml'
+permissions:
+  contents: read
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: apps/mobile
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+          cache-dependency-path: apps/mobile/pnpm-lock.yaml
+      - run: pnpm install --frozen-lockfile
+      - name: Check exact event candy cutoffs and purchase invariants
+        run: node ../../tools/run-mobile-tests.mjs event-prestige-supplies event-expired-candy event-shop-presentation

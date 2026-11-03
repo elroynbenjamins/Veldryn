@@ -39,7 +39,7 @@ ok(guildScreen.includes('projects={onlineProjects}')&&guildScreen.includes('<Gui
 ok(guildScreen.includes("onlineSection==='Progress'?<GuildProgressPanel")&&guildScreen.includes("onlineSection==='PvE'?onlinePve:null"),'Progress must be a dedicated primary Guild destination, separate from PvE');
 ok(guildScreen.includes("onlineSection==='Chat'?onlineChat:null")&&guildScreen.includes("onChat={()=>onNavigate('Chat')}"),'Guild Home must preserve working chat access');
 ok(guildScreen.includes("onlineSection==='Manage'?<View")&&!guildScreen.includes('{onlineDirectory}')&&guildScreen.includes('{onlineCustomize}'),'Joined-member management must preserve Customize without offering duplicate Guild creation');
-ok(guildScreen.includes('<GuildMemberIdentity onRoster=')&&guildScreen.includes('<GuildHomeActions board=')&&guildScreen.includes('board={onlineBoard}'),'Guild Home must preserve member identity and the private Notice Board');
+ok(guildScreen.includes('<GuildMemberIdentity onRoster=')&&guildScreen.includes('<GuildHomeActions summary=')&&guildScreen.includes('board={onlineBoard}'),'Guild Home must preserve member identity and the private Notice Board');
 ok(guildScreen.includes('<GuildDiscoveryFlow onJoined={reloadGuildMembership}/>'),'Nonmembers must use the dedicated Guild discovery and creation flow');
 ok(navigation.includes("{id:'Progress',label:'Progress',icon:'skills'}")&&!navigation.includes("{id:'Chat',label:'Chat'"),'Guild navigation must replace Chat with Progress');
 ok(guildScreen.includes('chatUnread={onlineChatUnread}')&&guildScreen.includes('onOpenChat()'),'Unread attention and Guild Chat access must remain on Guild Home');
@@ -72,7 +72,7 @@ ok(projectTransport.includes('GUILD_WEEKLY_PROJECT_ALREADY_ACTIVE'),'Server must
 
 // Unified Progress navigation and second-confirmation guard are UI-only.
 ok(progress.includes("id:'Projects',label:st('Projects')")&&progress.includes("id:'Skills',label:st('Skills')"),'Progress must present localized Skills and Projects tabs');
-ok(guildScreen.includes("next==='Skills'")&&guildScreen.includes("setProgressTab('Skills')")&&guildScreen.includes("setOnlineSection('Progress')"),'Hall Skills shortcut must open standalone Guild Progress');
+ok(guildScreen.includes("next==='Skills'")&&guildScreen.includes("setProgressTab('Skills')")&&guildScreen.includes("setOnlineSection('Progress')"),'Saved Hall Skills navigation must still open Guild Progress');
 ok(skillPaths.includes('<Modal visible={review}')&&skillPaths.includes('Confirm upgrade')&&skillPaths.includes('Cancel'),'Guild Skill upgrades must use a real dismissal-safe confirmation modal');
 ok(skillPaths.includes('const ready=known&&released&&canUpgrade')&&skillPaths.includes('disabled={!ready}'),'Release, role, points and materials must gate confirmations');
 ok(onlineSkills.includes('isReleased={id=>releasedIds.has(id)}')&&onlineSkills.includes('upgradeFlight.current'),'Live skill upgrade must retain server flags and single-flight protection');

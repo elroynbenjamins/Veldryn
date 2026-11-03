@@ -15,7 +15,7 @@ const resourceRenderer=fs.readFileSync('src/components/ResourceArtwork.tsx','utf
 const guildBank=fs.readFileSync('src/components/OnlineGuildBankPanel.tsx','utf8');
 const guildConstruction=fs.readFileSync('src/components/OnlineGuildConstructionPanel.tsx','utf8');
 const profession=fs.readFileSync('src/components/CraftingRecipeBrowser.tsx','utf8');
-const upcomingMigration=fs.readFileSync('../../backend/supabase/migrations/20261104000033_guild_bank_upcoming_construction_stock.sql','utf8');
+const upcomingMigration=fs.readFileSync('../../backend/supabase/migrations/20261104000500_guild_bank_upcoming_construction_stock.sql','utf8');
 check(guildBank.includes("width:'23%'")&&guildBank.includes('<GameModalSurface')&&guildBank.includes('Needed now')&&guildBank.includes('Upcoming'),'Guild Bank should be a compact shared inventory with a dedicated donation modal and current/upcoming filters');
 check(guildBank.includes('Math.max(0,totalNeed(id)-balance(id))'),'Donatable capacity must subtract Guild Bank holdings from remaining requirements');
 check(guildBank.includes('if(!template.enabled)continue')&&guildBank.includes('if(progress?.completed)continue'),'Guild Bank must exclude unreleased and completed upgrades');

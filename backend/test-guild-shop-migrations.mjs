@@ -157,7 +157,7 @@ try{
  await db.query(`insert into public.online_game_states(account_id,character_id,state)
   values($1,$2,$3::jsonb)`,[account,character,JSON.stringify({
   character:{gold:1000},
-  inventory:{stacks:[{itemId:'GREENWOOD_LOG',quantity:80},{itemId:'ASTER_IRON_INGOT',quantity:2},{itemId:'MOSS_FIBER',quantity:2}]},
+  inventory:{stacks:[{itemId:'GREENWOOD_LOG',quantity:80},{itemId:'ASTER_IRON_INGOT',quantity:20},{itemId:'MOSS_FIBER',quantity:20}]},
   account:{unlockedCosmeticPetIds:[],unlockedCombatCompanionIds:[],
    unlockedProfileIconIds:[],unlockedProfileBorderIds:[],combatCompanionProgress:{}}
  })]);
@@ -202,7 +202,7 @@ try{
  await db.query(`update public.online_game_states set revision=1,
   state=jsonb_set(jsonb_set(state,'{character,gold}','1000'::jsonb),
    '{inventory,stacks}',$2::jsonb) where account_id=$1`,[
-   account,JSON.stringify([{itemId:'GREENWOOD_LOG',quantity:80},{itemId:'ASTER_IRON_INGOT',quantity:2},{itemId:'MOSS_FIBER',quantity:2}]),
+   account,JSON.stringify([{itemId:'GREENWOOD_LOG',quantity:80},{itemId:'ASTER_IRON_INGOT',quantity:20},{itemId:'MOSS_FIBER',quantity:20}]),
  ]);
 
 
@@ -308,10 +308,11 @@ try{
  assert.equal(project.snapshot[0].resources.GREENWOOD_LOG,25);
  // Rebalance only the isolated fixture's project targets to test completion.
  await db.exec(`update public.guild_construction_requirements set required_amount=
-  case resource_id when 'gold' then 100 when 'GREENWOOD_LOG' then 25 else 1 end
+  case resource_id when 'gold' then 100 when 'GREENWOOD_LOG' then 40 else 20 end
   where template_id='stormwatch_banner';`);
- await donate('ASTER_IRON_INGOT',1,'donation_iron_one');
- const completed=await donate('MOSS_FIBER',1,'donation_fiber_one');
+ await donate('GREENWOOD_LOG',15,'donation_logs_finish');
+ await donate('ASTER_IRON_INGOT',20,'donation_iron_one');
+ const completed=await donate('MOSS_FIBER',20,'donation_fiber_one');
  assert.equal(completed.result.completed,true,'last contribution completes project');
  const unlock=await single('select unlock_id from public.guild_construction_unlocks where guild_id=$1',[guild]);
  assert.equal(unlock.unlock_id,'guild_banner_stormwatch','cosmetic unlock issued once for guild');
@@ -348,7 +349,7 @@ try{
  assert.equal((await single(`select has_function_privilege('authenticated',
   'public.update_guild_appearance_with_construction_v1(text,text,text,text,text,text,text)','EXECUTE') as allowed`)).allowed,true);
 
- assert.equal((await donate('MOSS_FIBER',1,'donation_fiber_one')).result.alreadyProcessed,true);
+ assert.equal((await donate('MOSS_FIBER',20,'donation_fiber_one')).result.alreadyProcessed,true);
  await fail(`select public.guild_construction_donate_server_v2($1,'stormwatch_banner','gold',100,'donation_gold_two')`,[account]);
  console.log(`Guild Shop database migrations and transactional invariants passed (${guildFiles.length} migrations).`);
 }finally{await db.close();}

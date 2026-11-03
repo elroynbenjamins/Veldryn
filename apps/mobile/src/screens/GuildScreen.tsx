@@ -128,7 +128,7 @@ export function GuildScreen({state,onChange,onlineManagement,onlineBoard,onlineP
     {onlineSection==='Home'?<GuildOnlineHome onNavigateMuster={()=>{setActivityView('Muster');setOnlineSection('Activities')}} onNavigateQuests={()=>{setActivityView('Quests');setOnlineSection('Activities')}} onNavigateShop={()=>{setHallSection('Shop');setOnlineSection('Hall')}} onRewardsChanged={onTokenRewardsChanged} canCustomize={canCustomize} onNavigate={next=>{if(next==='Chat'&&onOpenChat){onOpenChat();return;}if((next!=='Manage'&&next!=='Appearance')||canCustomize)setOnlineSection(next)}} board={onlineBoard} chatUnread={onlineChatUnread}/>:null}
     {onlineSection==='Roster'?(isValidElement<{initialView?:'Members'|'Requests'|'Safety'}>(onlineManagement)?cloneElement(onlineManagement,{initialView:rosterSection}):onlineManagement):null}
     {onlineSection==='Activities'?<View style={s.sectionStack}>
-       <GuildSectionHeader label={st('Guild')} title={st('Guild Activity Board')} copy={st('Shared weekly objectives and daily participation.')} action={headerGuide}/>
+       <GuildSectionHeader label={st('Guild')} title={socialLabel(language,'Guild Activity Board')} copy="Shared objectives and daily participation." action={headerGuide}/>
       <BoardTabs compact label="Guild activity boards" items={[{id:'Quests',label:'Quests'},{id:'Muster',label:'Muster'}] as const} value={activityView} onChange={setActivityView}/>
       {activityView==='Quests'?<><GuildActivitySummaryPanel compact/><GuildQuestPanel/></>:null}
       {activityView==='Muster'?<><GuildSectionHeader label={st("DAILY & WEEKLY")} title={st("Muster & Rally")} copy={st("Daily participation rolls into the shared weekly Rally without adding another currency.")}/><OnlineGuildMusterPanel/></>:null}

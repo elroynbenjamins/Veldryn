@@ -996,7 +996,7 @@ export function withdrawFromBank(state:GameState,itemId:string,quantity:number):
 }
 export type StorageLocation='inventory'|'bank';
 const STORAGE_UPGRADES:Record<StorageLocation,{capacity:number;cost:number;level:number}[]>={
-  inventory:[{capacity:40,cost:5000,level:10},{capacity:50,cost:15000,level:20},{capacity:60,cost:40000,level:35},{capacity:75,cost:100000,level:50},{capacity:100,cost:250000,level:70}],
+  inventory:[{capacity:40,cost:10000,level:10},{capacity:50,cost:30000,level:20},{capacity:60,cost:80000,level:35},{capacity:75,cost:200000,level:50},{capacity:100,cost:500000,level:70}],
   bank:[{capacity:160,cost:10000,level:10},{capacity:220,cost:30000,level:20},{capacity:300,cost:80000,level:35},{capacity:400,cost:200000,level:50},{capacity:500,cost:500000,level:70}],
 };
 export function storageUpgradePreview(state:GameState,location:StorageLocation){const current=state[location].capacity;return STORAGE_UPGRADES[location].find(tier=>tier.capacity>current)??null}

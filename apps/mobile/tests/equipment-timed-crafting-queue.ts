@@ -13,12 +13,12 @@ function ok(value:unknown,message:string){if(!value)throw new Error(message)}
 const recipe=V33_EQUIPMENT_RECIPES.find(row=>row.v33SetId==='T1_001'&&row.output.itemId==='T1P_001')!;
 const tailoringRecipe=V33_EQUIPMENT_RECIPES.find(row=>row.v33EquipmentTier==='T1'&&row.skillId==='tailoring'&&row.classId==='WAYFINDER')!;
 ok(EQUIPMENT_CRAFT_GOLD_MULTIPLIER===3,'Standard forged equipment Gold costs must use the 3x balancing multiplier');
-for(const sample of [{tier:'T1',slot:'helmet',gold:306},{tier:'T1',slot:'weapon',gold:486},{tier:'T9',slot:'weapon',gold:202500}]){
+for(const sample of [{tier:'T1',slot:'helmet',gold:368},{tier:'T1',slot:'weapon',gold:584},{tier:'T9',slot:'weapon',gold:243000}]){
  const crafted=V33_EQUIPMENT_RECIPES.find(row=>row.v33EquipmentTier===sample.tier&&itemDef(row.output.itemId).slot===sample.slot);
- ok(crafted?.gold===sample.gold,`${sample.tier} ${sample.slot} Gold cost must equal 3x its original rounded forge cost`);
+ ok(crafted?.gold===sample.gold,`${sample.tier} ${sample.slot} Gold cost must include the 20% surcharge above its original triple-forge price`);
 }
-ok(V33_EQUIPMENT_RECIPES.length===1620&&V33_EQUIPMENT_RECIPES.every(row=>row.gold>0&&row.gold%3===0),'All 1,620 tiered equipment recipes must have the increased Gold costs');
-ok(NOVICE_RECIPES.filter(row=>row.output.itemId.endsWith('_WEAPON')).every(row=>row.gold===120),'Starter tutorial weapons must use the shared 3x equipment Gold multiplier');
+ok(V33_EQUIPMENT_RECIPES.length===1620&&V33_EQUIPMENT_RECIPES.every(row=>row.gold>0&&Number.isSafeInteger(row.gold)),'All 1,620 tiered equipment recipes must have the increased Gold costs');
+ok(NOVICE_RECIPES.filter(row=>row.output.itemId.endsWith('_WEAPON')).every(row=>row.gold===144),'Starter tutorial weapons must use the shared 3x equipment Gold multiplier');
 
 function prepared(){
  let state=createCharacter(newGame(0),'IRONWARDEN','Queue Tester','male');

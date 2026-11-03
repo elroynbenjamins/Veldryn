@@ -1,4 +1,5 @@
 import type {ClassId,GearSlot} from '../core/types';
+import {increasedCraftingGoldCost} from './crafting-gold-cost';
 import catalog from './equipment_catalog_t1_t9_v33.json';
 
 export interface V33EquipmentRecipeDef{
@@ -138,7 +139,7 @@ export const V33_EQUIPMENT_RECIPES:V33EquipmentRecipeDef[]=(catalog.pieces as Ar
     skillId,
     level,
     xp:q(tierXp[tier]??120,multiplier),
-    gold:q(tierGold[tier]??120,multiplier)*EQUIPMENT_FORGE_GOLD_MULTIPLIER,
+    gold:increasedCraftingGoldCost(q(tierGold[tier]??120,multiplier)*EQUIPMENT_FORGE_GOLD_MULTIPLIER),
     seconds:clamp(Math.round(range.base*multiplier),range.min,range.max),
     inputs:mergeInputs([...ingredients(tier,String(piece.Path),multiplier,skillId),infusionByTier[tier]]),
     output:{itemId:String(piece['Piece ID']),quantity:1},

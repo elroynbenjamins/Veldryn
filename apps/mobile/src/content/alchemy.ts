@@ -1,5 +1,6 @@
 import type {ItemDef} from './items';
 import type {ItemStack} from '../core/types';
+import {increasedCraftingGoldCost} from './crafting-gold-cost';
 
 export type PotionEffect = {kind:'healing';maxHpFraction:number} |
   {kind:'preparation';attackFraction:number;damageReductionFraction:number;encounters:number};
@@ -34,7 +35,7 @@ export const ALCHEMY_EQUIPMENT_INFUSIONS=Object.freeze([
 const recipe=(potionId:string,level:number,seconds:number,xp:number,gold:number,inputs:ItemStack[],suffix=''):AlchemyRecipe=>({
   id:`BREW_${potionId}${suffix}`,name:POTIONS.find(p=>p.id===potionId)!.name,skillId:'alchemy',level,seconds,xp,gold,inputs,output:{itemId:potionId,quantity:1},
 });
-export const ALCHEMY_RECIPES:readonly AlchemyRecipe[]=[
+export const ALCHEMY_RECIPES:readonly AlchemyRecipe[]=([
   recipe('DEWLEAF_DRAUGHT',1,60,60,4,[{itemId:'DEWLEAF',quantity:2}]),
   recipe('VIGOR_TONIC',8,75,115,8,[{itemId:'DEWLEAF',quantity:2},{itemId:'RIVER_MINT',quantity:2}]),
   recipe('WARD_TONIC',16,90,195,12,[{itemId:'DEWLEAF',quantity:2},{itemId:'IRONBLOOM',quantity:2}]),
@@ -52,7 +53,7 @@ export const ALCHEMY_RECIPES:readonly AlchemyRecipe[]=[
   {id:'BREW_SUNFUSED_FIXATIVE',name:'Sunfused Fixative',skillId:'alchemy',level:49,seconds:165,xp:950,gold:110,inputs:[{itemId:'SUNSCALE',quantity:3},{itemId:'AMBERGLASS',quantity:2},{itemId:'SCORPION_VENOM',quantity:2}],output:{itemId:'SUNFUSED_FIXATIVE',quantity:1}},
   {id:'BREW_RIMEWARD_DISTILLATE',name:'Rimeward Distillate',skillId:'alchemy',level:76,seconds:195,xp:1750,gold:220,inputs:[{itemId:'WINTERMINT',quantity:3},{itemId:'RIMEGLASS',quantity:2},{itemId:'RIME_RESIN',quantity:3}],output:{itemId:'RIMEWARD_DISTILLATE',quantity:1}},
   {id:'BREW_CINDERHEART_ELIXIR',name:'Cinderheart Elixir',skillId:'alchemy',level:96,seconds:225,xp:3000,gold:420,inputs:[{itemId:'ASHEN_MYRRH',quantity:4},{itemId:'BLACKGLASS_CORE',quantity:2},{itemId:'CINDER_HEART',quantity:1}],output:{itemId:'CINDERHEART_ELIXIR',quantity:1}},
-];
+] as AlchemyRecipe[]).map(recipe=>({...recipe,gold:increasedCraftingGoldCost(recipe.gold)}));
 export const POTION_ITEMS:ItemDef[]=POTIONS.map(potion=>({id:potion.id,name:potion.name,type:'potion',
   value:potion.id==='DEWLEAF_DRAUGHT'?4:potion.id.includes('OATH')?32:potion.id.includes('GREATER')?20:8,
   rarity:potion.id.includes('OATH')?'rare':potion.id.includes('GREATER')?'uncommon':'common',passive:potion.description}));

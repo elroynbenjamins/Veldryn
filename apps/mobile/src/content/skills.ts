@@ -4,6 +4,7 @@ import {GUILD_COMPONENT_RECIPES,GUILD_COMPONENT_CRAFTING_RELEASED} from './guild
 import {TOOL_RECIPES} from './gathering-tools';
 import {ALCHEMY_RECIPES} from './alchemy';
 import {V33_EQUIPMENT_RECIPES} from './equipment-recipes-v33';
+import {increasedCraftingGoldCost} from './crafting-gold-cost';
 export interface GatherDef{id:string;skillId:'mining'|'woodcutting'|'fishing'|'herbalism';name:string;unlockLevel:number;seconds:number;xp:number;itemId:string;min:number;max:number;zoneId:string;difficultyMultiplier:number;recommendedToolTier:number;}
 export const GATHERING:GatherDef[]=([
 {id:'COPPER_VEIN',skillId:'mining',name:'Copper Vein',unlockLevel:1,seconds:15,xp:9,itemId:'COPPER_ORE',min:1,max:2,zoneId:'OLD_MINES'},
@@ -53,6 +54,7 @@ export const RECIPES:Recipe[]=[
 // compatibility. Presentation layers apply their release gate separately.
 ...(V33_EQUIPMENT_RECIPES as Recipe[]),
 ...(TOOL_RECIPES as Recipe[]),
+...([
 {id:'SMELT_COPPER_INGOT',name:'Smelt Copper Ingot',skillId:'smithing',level:1,xp:100,gold:30,seconds:36,repeatableTraining:true,inputs:[{itemId:'COPPER_ORE',quantity:10},{itemId:'GREENWOOD_LOG',quantity:2}],output:{itemId:'COPPER_INGOT',quantity:5}},
 {id:'SMELT_ASTER_IRON_INGOT',name:'Smelt Aster-Iron Ingot',skillId:'smithing',level:8,xp:165,gold:50,seconds:42,repeatableTraining:true,inputs:[{itemId:'ASTER_IRON_ORE',quantity:8},{itemId:'IRONWOOD_LOG',quantity:2}],output:{itemId:'ASTER_IRON_INGOT',quantity:4}},
 {id:'FORGE_REINFORCED_FITTING',name:'Forge Reinforced Fitting',skillId:'smithing',level:12,xp:180,gold:50,seconds:48,repeatableTraining:true,inputs:[{itemId:'ASTER_IRON_INGOT',quantity:2},{itemId:'IRONWOOD_LOG',quantity:2}],output:{itemId:'REINFORCED_FITTING',quantity:1}},
@@ -78,6 +80,7 @@ export const RECIPES:Recipe[]=[
 {id:'COOK_GLASSFIN_FEAST',name:'Amberglass Glassfin Feast',skillId:'cooking',level:38,xp:720,gold:520,seconds:210,repeatableTraining:true,inputs:[{itemId:'GLASSFIN',quantity:3},{itemId:'AMBERGLASS',quantity:1},{itemId:'DUNEWOOD',quantity:1}],output:{itemId:'GLASSFIN_FEAST',quantity:2}},
 {id:'COOK_ICEFISH',name:'Frosted Icefin',skillId:'cooking',level:48,xp:1100,gold:900,seconds:300,repeatableTraining:true,inputs:[{itemId:'ICEFIN',quantity:3},{itemId:'WINTERMINT',quantity:1},{itemId:'WHITEPINE_LOG',quantity:1}],output:{itemId:'FROSTED_ICEFIN',quantity:3}},
 {id:'COOK_EMBERFIN',name:'Char Emberfin',skillId:'cooking',level:74,xp:1650,gold:1200,seconds:420,repeatableTraining:true,inputs:[{itemId:'EMBERFIN',quantity:3},{itemId:'ASHEN_MYRRH',quantity:1},{itemId:'CINDERWOOD_LOG',quantity:1}],output:{itemId:'CHARRED_EMBERFIN',quantity:3}},
+] as Recipe[]).map(recipe=>({...recipe,gold:increasedCraftingGoldCost(recipe.gold)})),
 ];
 const recipesById=new Map(RECIPES.map(recipe=>[recipe.id,recipe]));
 if(recipesById.size!==RECIPES.length)throw new Error('Duplicate recipe IDs in the recipe catalog');

@@ -35,4 +35,13 @@ assert.ok(screen.includes('Rewards process automatically')&&screen.includes('cho
 assert.ok(screen.includes('onClose={closeSheet}')&&screen.includes("sheetScroll:{flexShrink:1,minHeight:0}"),
   'native detail sheet must close and scroll on smaller devices');
 assert.ok(tabs.includes('minHeight:50'),'mode tabs should be compact');
+const lessonPanel=fs.readFileSync(path.join(__dirname,'../src/components/JournalSkillPathsPanel.tsx'),'utf8');
+const lessonModel=fs.readFileSync(path.join(__dirname,'../src/core/journal-skill-lessons.ts'),'utf8');
+const lessonSyntax=ts.transpileModule(lessonPanel,{fileName:'JournalSkillPathsPanel.tsx',reportDiagnostics:true,compilerOptions:{module:ts.ModuleKind.CommonJS,jsx:ts.JsxEmit.ReactJSX}}).diagnostics??[];
+assert.equal(lessonSyntax.filter(d=>d.category===ts.DiagnosticCategory.Error).length,0,'Training panel must parse on mobile');
+assert.ok(screen.includes('<JournalSkillPathsPanel state={state} onNavigate={onNavigate}/>'),'Training lives alongside the canonical story journal');
+assert.ok(lessonPanel.includes('accessibilityRole="button"')&&lessonPanel.includes('minHeight:44'),'Training cards and browse control have accessible touch targets');
+assert.ok(lessonPanel.includes('journalSkillLessonProgress(state)')&&lessonModel.includes('status:practiceComplete?'),'Milestones follow the live skill state');
+assert.ok(app.includes("destination.skillId==='faith'?'faith'")&&app.includes("?'gathering':'crafting'"),'Quest deep links route to the correct skill mode');
+
 console.log('PASS: Quest redesign structure, modal safety, authoritative rewards and weekly controls');

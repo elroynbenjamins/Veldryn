@@ -13,6 +13,7 @@ export interface BuildExpeditionEncounterInput {
   enemyDefenseMultiplier?:number;
   bossTuning?:EncounterBossTuning;
   enemyLevel?:number;
+  enemyDamageProfile?:'qmode-v1';
 }
 export interface ResolveExpeditionCombatInput extends BuildExpeditionEncounterInput {
   runId:string;
@@ -181,7 +182,7 @@ export function resolveExpeditionCombat(input:ResolveExpeditionCombatInput, incl
     const defensiveAbilities=player.abilities.filter(ability=>ability.effects.length>0&&ability.effects.every(effect=>effect.kind==='heal'||effect.kind==='shield'));
     return {...player,stats:{...player.stats,attackPower:player.stats.attackPower*.70,healingPower:player.stats.healingPower*.70},abilities:defensiveAbilities};
   });
-  const result=simulateCombat({seed:`${input.serverSeed}:${input.runId}:${input.nodeIndex}:${input.encounterId}`,players,enemies,initialPlayerState:input.initialPlayerState,maxDurationMs:input.maxDurationMs??180000});
+  const result=simulateCombat({seed:`${input.serverSeed}:${input.runId}:${input.nodeIndex}:${input.encounterId}`,players,enemies,initialPlayerState:input.initialPlayerState,maxDurationMs:input.maxDurationMs??180000,enemyDamageProfile:input.enemyDamageProfile});
   const eventDigest=createHash('sha256').update(JSON.stringify(result.events)).digest().toString('hex');
   const rec=(xs:CombatResult['players'],pick:(x:CombatResult['players'][number])=>number)=>Object.fromEntries(xs.map(x=>[x.definition.id,Number(pick(x).toFixed(2))]));
   const bossIds=new Set(result.enemies.filter(enemy=>enemy.definition.boss).map(enemy=>enemy.definition.id));

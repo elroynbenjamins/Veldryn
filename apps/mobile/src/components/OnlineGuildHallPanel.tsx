@@ -138,8 +138,8 @@ export function GuildHallView({projection,loading=false,error='',onRefresh,activ
   {section==='Bank'?<View style={s.root}>
    {shopFallback()}
    {shop?<OnlineGuildBankPanel snapshot={shop} onReload={refreshShop} focusResourceId={bankFocus}
-    onFocusHandled={()=>setBankFocus(null)}/>:null}
-   <GameButton compact title="Return to Construction" onPress={()=>{setBankFocus(null);navigate('Construction')}}/>
+    onFocusHandled={()=>setBankFocus(null)}
+    onOpenConstruction={()=>{setBankFocus(null);navigate('Construction')}}/>:null}
   </View>:null}
   {section==='Shop'?(previewMode?shopFallback():<OnlineGuildTokenShopPanel onRewardsChanged={onTokenRewardsChanged} onOpenConstruction={()=>navigate('Construction')}/>):null}
   {section==='Legacy'?<View style={s.root}>{renderHallProgress()}<Text style={s.headingText}>Hall facilities</Text><Text style={s.copy}>Facilities advance automatically through Guild Projects. Construction and Guild Skills grant their own separate benefits.</Text>

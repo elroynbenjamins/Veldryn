@@ -63,7 +63,9 @@ equal(alternate.character?.selectedCosmeticPetId,undefined,'new character has in
 if(!alternate.account.unlockedCosmeticPetIds?.includes('PET_018'))fail('account pet collection shared across characters');
 if(!profileTitleUnlocked(alternate,'oathbound'))fail('account-earned title available to low-level alt');
 if(!profileBackgroundUnlocked(alternate,'oathglass-hall'))fail('account-earned background available to low-level alt');
-if(collectionBonusBreakdown(alternate).find(row=>row.target==='gatheringYield')?.ownedAppliedBps!==50)fail('alt receives shared passive pet collection bonus');
+const originalPassiveYield=collectionBonusBreakdown(primary).find(row=>row.target==='gatheringYield')?.ownedAppliedBps??0;
+if(originalPassiveYield<50)fail('owned gathering pet preserves its base passive benefit');
+if(collectionBonusBreakdown(alternate).find(row=>row.target==='gatheringYield')?.ownedAppliedBps!==originalPassiveYield)fail('alt receives the same passive pet and earned-background bonuses as the original character');
 alternate=switchAccountCharacter(alternate,primary.character!.id,now+4);
 equal(alternate.character?.selectedCosmeticPetId,'PET_001','original character retains its own pet selection');
 alternate=switchAccountCharacter(alternate,'LOCAL_CHAR_2',now+5);

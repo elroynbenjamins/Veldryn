@@ -1,6 +1,6 @@
 import {useCoopStyles} from '../../theme/useCoopStyles';
 import {useSocialText} from '../../i18n/social';
-import {useEffect,useMemo,useRef,useState} from 'react';
+import {useEffect,useLayoutEffect,useMemo,useRef,useState} from 'react';
 import {AccessibilityInfo,Animated,Easing,Image,Pressable,StyleSheet,Text,useWindowDimensions,View} from 'react-native';
 import type {CoopRunView} from '../../core/coop-presentation';
 import {dungeonCombatClassFx,dungeonCombatCueFx,type DungeonCombatCueFx} from '../../core/dungeon-combat-fx';
@@ -25,7 +25,7 @@ function BattleElapsedSeconds({battleKey,serverElapsedMs,active}:{battleKey:stri
  const [tick,setTick]=useState(Date.now());
  const anchor=useRef({key:battleKey,elapsedMs:serverElapsedMs??0,localAt:Date.now()});
  if(anchor.current.key!==battleKey)anchor.current={key:battleKey,elapsedMs:serverElapsedMs??0,localAt:Date.now()};
- useEffect(()=>{if(serverElapsedMs===undefined)return;anchor.current={key:battleKey,elapsedMs:serverElapsedMs,localAt:Date.now()};setTick(Date.now());},[battleKey,serverElapsedMs]);
+ useEffect(()=>{if(serverElapsedMs===undefined)return;const now=Date.now(),previous=anchor.current.elapsedMs+Math.max(0,now-anchor.current.localAt);anchor.current={key:battleKey,elapsedMs:Math.max(previous,serverElapsedMs),localAt:now};setTick(now);},[battleKey,serverElapsedMs]);
  useEffect(()=>{if(!active)return;const timer=setInterval(()=>setTick(Date.now()),1000);return()=>clearInterval(timer);},[battleKey,active]);
  return <Text>{elapsedClock(anchor.current.elapsedMs+Math.max(0,tick-anchor.current.localAt))}</Text>;
 }
@@ -80,7 +80,7 @@ function motionScale(fx:DungeonCombatCueFx|undefined){
  if(fx.actorMotion==='dash')return 1.025;
  return 1.015;
 }
-export function DungeonCombatStage({run,enemyLabel,boss=false,seasonal=false,eventName,reduceMotionSetting=false,anticipation=false,onPresentationComplete}:{run:CoopRunView;enemyLabel?:string;boss?:boolean;seasonal?:boolean;eventName?:string;reduceMotionSetting?:boolean;anticipation?:boolean;onPresentationComplete?:()=>void}){
+export function DungeonCombatStage({run,enemyLabel,boss=false,seasonal=false,eventName,reduceMotionSetting=false,anticipation=false,entryNodeId,onPresentationComplete}:{run:CoopRunView;enemyLabel?:string;boss?:boolean;seasonal?:boolean;eventName?:string;reduceMotionSetting?:boolean;anticipation?:boolean;entryNodeId?:string;onPresentationComplete?:()=>void}){
  const {styles:s}=useCoopStyles(makeStyles);
  const backdrop=combatBackdrop(seasonal,eventName);
  const st=useSocialText();
@@ -92,6 +92,18 @@ export function DungeonCombatStage({run,enemyLabel,boss=false,seasonal=false,eve
  const [cueIndex,setCueIndex]=useState(0),[systemReduceMotion,setReduceMotion]=useState(false);
  const [inspectKey,setInspectKey]=useState<string|undefined>(undefined),[showLog,setShowLog]=useState(false);
  const reduceMotion=reduceMotionSetting||systemReduceMotion;
+ // Keep the same arena mounted, gently fading confirmed portraits/actions
+ // into the temporary animation without a loading overlay.
+ const handoffOpacity=useRef(new Animated.Value(1)).current,wasAnticipating=useRef(anticipation);
+ useLayoutEffect(()=>{
+  const was=wasAnticipating.current;wasAnticipating.current=anticipation;
+  handoffOpacity.stopAnimation();
+  if(was&&!anticipation&&replay&&!reduceMotion){
+   handoffOpacity.setValue(.72);
+   Animated.timing(handoffOpacity,{toValue:1,duration:220,easing:Easing.out(Easing.cubic),useNativeDriver:true}).start();
+  }else handoffOpacity.setValue(1);
+  return()=>handoffOpacity.stopAnimation();
+ },[anticipation,Boolean(replay),reduceMotion,handoffOpacity]);
  const [anticipationTick,setAnticipationTick]=useState(0);
  useEffect(()=>{
   if(!anticipation||reduceMotion)return;
@@ -159,7 +171,7 @@ export function DungeonCombatStage({run,enemyLabel,boss=false,seasonal=false,eve
  const fallbackEnemyState=playbackCombatantState(replay,cueIndex,fallbackEnemyCombatant?.id),fallbackEnemyStatuses=playbackCombatantStatuses(replay,cueIndex,fallbackEnemyCombatant?.id);
  const complete=Boolean(replay&&!pending&&(!cues.length||cueIndex>=cues.length-1));
  // Elapsed wall time only, never expose the scheduled server resolution duration.
- const battleClockKey=`${run.runId}:${replay?.nodeId??'waiting'}`;
+ const battleClockKey=`${run.runId}:${entryNodeId??run.selectedNodeId??replay?.nodeId??'waiting'}`;
  const completionHandler=useRef(onPresentationComplete);completionHandler.current=onPresentationComplete;
  useEffect(()=>{if(!complete||!completionHandler.current)return;const timer=setTimeout(()=>completionHandler.current?.(),reduceMotion?0:1200);return()=>clearTimeout(timer);},[complete,battleClockKey,reduceMotion]);
  const recent=cues.slice(Math.max(0,cueIndex-5),cueIndex+1);
@@ -189,15 +201,15 @@ export function DungeonCombatStage({run,enemyLabel,boss=false,seasonal=false,eve
   <View accessibilityLabel={st('Battle arena: enemies at the top, party at the bottom')} style={[s.arena,{padding:layout.arenaPadding,minHeight:layout.mode==='compact'?420:480}]}>
    <Image accessibilityIgnoresInvertColors source={backdrop} resizeMode="cover" style={s.arenaBackdrop}/>
    <View pointerEvents="none" style={s.arenaShade}/>
-   <View style={s.enemyFormation}>
+   <Animated.View style={[s.enemyFormation,{opacity:handoffOpacity}]}>
     <Text style={s.formationHeading}>{bossEncounter?st('FINAL BOSS'):st('ENEMIES')}</Text>
    {visibleEnemies.length?<View style={bossEncounter?[s.enemyField,{width:`${layout.bossWidthPctFinal}%` as `${number}%`}]:[s.enemyGroup,{gap:layout.partyGap}]}>{visibleEnemies.map(enemy=>{const state=playbackCombatantState(replay,cueIndex,enemy.id),statuses=playbackCombatantStatuses(replay,cueIndex,enemy.id),active=currentCue?.actorId===enemy.id,targeted=!active&&currentCue?.targetId===enemy.id,key=enemyInspectKey(enemy.id);return <View key={enemy.id} style={bossEncounter?undefined:s.enemySlot}><EnemyCombatProfileCard name={enemy.name} combatantId={enemy.id} boss={enemy.boss} compact={!bossEncounter&&visibleEnemies.length>1} active={active} targeted={targeted} currentCue={currentCue} bossPhaseLabel={enemy.boss?bossPhaseLabel:undefined} bossPhases={enemy.boss?run.bossMechanic?.telegraph?.phases:undefined} bossCast={enemy.boss?bossCast:undefined} currentHp={state?.hp} maximumHp={state?.maxHp} combatShield={state?.shield??0} statuses={statuses} statusLimit={layout.statusLimit} animateHealth={!reduceMotion} onPress={()=>toggleInspect(key)} selectedForInspect={inspectKey===key} feedbackStyle={feedbackStyle} motionStyle={active?actorStyle:targeted?targetStyle:undefined}/>{active&&fx&&(currentCue?.type==='action'||currentCue?.type==='cast')?<CombatAttackSprite eventId={`${replayKey}:${cueIndex}:attack:${enemy.id}`} motion={fx.actorMotion} accent={fx.accent} actionKind={currentCue?.actionKind} enemy reduceMotion={reduceMotion}/>:null}{((currentCue?.targetId===enemy.id&&actionImpact)||(active&&enemyCastImpact))?<CombatImpactBurst eventId={`${replayKey}:${cueIndex}:enemy:${enemy.id}`} kind={(currentCue?.targetId===enemy.id&&actionImpact)||enemyCastImpact!} size={68} reduceMotion={reduceMotion}/>:null}</View>;})}</View>:<View style={[s.enemyField,{width:`${bossEncounter?layout.bossWidthPctFinal:layout.bossWidthPct}%` as `${number}%`}]}><EnemyCombatProfileCard name={fallbackEnemyName} combatantId={fallbackEnemyCombatant?.id} boss={bossEncounter} active={Boolean(currentCue?.actorId&&!partyIds.has(currentCue.actorId))} targeted={Boolean(currentCue?.targetId&&!partyIds.has(currentCue.targetId)&&currentCue.actorId!==currentCue.targetId)} currentCue={currentCue} bossPhaseLabel={bossEncounter?bossPhaseLabel:undefined} bossPhases={bossEncounter?run.bossMechanic?.telegraph?.phases:undefined} bossCast={bossEncounter?bossCast:undefined} currentHp={fallbackEnemyState?.hp} maximumHp={fallbackEnemyState?.maxHp} combatShield={fallbackEnemyState?.shield??0} statuses={fallbackEnemyStatuses} statusLimit={layout.statusLimit} animateHealth={!reduceMotion} onPress={()=>toggleInspect('enemy:fallback')} selectedForInspect={inspectKey==='enemy:fallback'} feedbackStyle={feedbackStyle} motionStyle={currentCue?.actorId&&!partyIds.has(currentCue.actorId)?actorStyle:currentCue?.targetId&&!partyIds.has(currentCue.targetId)?targetStyle:undefined}/>{fx&&currentCue?.actorId&&!partyIds.has(currentCue.actorId)&&(currentCue.type==='action'||currentCue.type==='cast')?<CombatAttackSprite eventId={`${replayKey}:${cueIndex}:attack:fallback`} motion={fx.actorMotion} accent={fx.accent} actionKind={currentCue.actionKind} enemy reduceMotion={reduceMotion}/>:null}{anticipation&&!reduceMotion&&anticipationTick%(ordered.length+1)===ordered.length?<CombatAttackSprite eventId={`${run.runId}:anticipation-enemy:${anticipationTick}`} motion="smash" accent="danger" enemy reduceMotion={reduceMotion}/>:null}{((currentCue?.targetId&&!partyIds.has(currentCue.targetId)&&actionImpact)||(currentCue?.actorId&&!partyIds.has(currentCue.actorId)&&enemyCastImpact))?<CombatImpactBurst eventId={`${replayKey}:${cueIndex}:enemy:fallback`} kind={(currentCue?.targetId&&!partyIds.has(currentCue.targetId)&&actionImpact)||enemyCastImpact!} size={68} reduceMotion={reduceMotion}/>:null}</View>}
-   </View>
-   <View style={s.partyFormation}>
+   </Animated.View>
+   <Animated.View style={[s.partyFormation,{opacity:handoffOpacity}]}>
     <Text style={s.formationHeading}>{st('YOUR PARTY')}</Text>
    <View style={[s.partyField,{gap:layout.partyGap}]}>{ordered.map((slot,index)=>{const active=Boolean(currentCue?.actorId&&slot.memberId===currentCue.actorId),isTarget=Boolean(currentCue?.targetId&&slot.memberId===currentCue.targetId),targeted=!active&&isTarget,assistProc=active&&currentCue?.type==='assist',combatant=playbackCombatant(replay,slot.memberId??slot.name),state=playbackCombatantState(replay,cueIndex,combatant?.id),statuses=playbackCombatantStatuses(replay,cueIndex,combatant?.id),displaySlot=state?{...slot,currentHp:state.hp,maximumHp:state.maxHp,ready:state.hp>0}:slot,gemProcActive=Boolean(currentCue?.gemProc&&currentCue.actorId===combatant?.id);return <View key={slot.memberId??`${slot.name}-${index}`} style={s.formationSlot}><CombatantProfileCard level={run.syncedLevel} slot={displaySlot} active={active||(anticipation&&anticipationTick%(ordered.length+1)===index)} targeted={targeted} assistProc={assistProc} currentCue={currentCue} combatShield={state?.shield??0} statuses={statuses} gemProcActive={gemProcActive} animateHealth={!reduceMotion} layout={layout} onPress={()=>toggleInspect(slotInspectKey(slot))} selectedForInspect={inspectKey===slotInspectKey(slot)} feedbackStyle={feedbackStyle} motionStyle={active?actorStyle:isTarget?targetStyle:undefined}/>{active&&fx&&(currentCue?.type==='action'||currentCue?.type==='cast')?<CombatAttackSprite eventId={`${replayKey}:${cueIndex}:attack:${slot.memberId??index}`} motion={fx.actorMotion} accent={fx.accent} actionKind={currentCue?.actionKind} reduceMotion={reduceMotion}/>:null}{anticipation&&!reduceMotion&&anticipationTick%(ordered.length+1)===index?<CombatAttackSprite eventId={`${run.runId}:anticipation-party:${index}:${anticipationTick}`} motion={dungeonCombatClassFx(slot.classId)?.damageMotion??'lunge'} accent={dungeonCombatClassFx(slot.classId)?.damageAccent??'gold'} reduceMotion={reduceMotion}/>:null}{isTarget&&actionImpact?<CombatImpactBurst eventId={`${replayKey}:${cueIndex}:party:${slot.memberId??index}`} kind={actionImpact} size={52} reduceMotion={reduceMotion}/>:null}</View>;})}</View>
 
-   </View>
+   </Animated.View>
   </View>
   {inspectTarget?<CombatantInspectPanel target={inspectTarget} onClose={()=>setInspectKey(undefined)}/>:null}
   {replay?<View style={s.replayPanel}>
@@ -207,7 +219,7 @@ export function DungeonCombatStage({run,enemyLabel,boss=false,seasonal=false,eve
    {contributionRows.length?<View style={s.contributionPanel}><View style={s.contributionHead}><Text style={s.contributionKicker}>{st("PARTY CONTRIBUTION")}</Text><Text style={s.contributionHint}>{st("Encounter totals")}</Text></View>{contributionRows.map(({slot,value})=><View key={slot.memberId??slot.name} style={s.contributionRow}><View style={[s.contributionIdentity,{width:`${layout.contributionIdentityWidthPct}%` as `${number}%`,minWidth:layout.contributionIdentityMinWidth}]}><Text style={s.contributionRole}>{roleShort(slot.role)}</Text><Text numberOfLines={1} style={s.contributionName}>{slot.name}</Text></View><Text style={s.contributionStats}>{contributionSummary(slot.role,value)}</Text></View>)}</View>:null}
    {complete&&recent.length?<Pressable accessibilityRole="button" accessibilityLabel={showLog?st("Hide combat battle log"):st("Show combat battle log")} accessibilityState={{expanded:showLog}} onPress={()=>setShowLog(value=>!value)} style={({pressed})=>[s.logToggle,pressed&&s.controlPressed]}><Text style={s.logToggleText}>{showLog?st("Hide battle log"):st("Battle log")}</Text><Text style={s.logToggleMeta}>{showLog?'▲':`${recent.length} recent ▼`}</Text></Pressable>:null}
    {recent.length&&(!complete||showLog)?<View style={s.log}>{recent.map((cue,index)=><View key={`${cue.atMs}-${cue.type}-${index}`} style={s.logRow}><Text style={s.logTime}>{seconds(cue.atMs)}</Text><Text numberOfLines={2} style={s.logCopy}>{playbackCueLabel(cue)}</Text></View>)}</View>:!recent.length?<Text style={s.note}>{pending?st("Battle in progress"):st("No event details were saved for this encounter.")}</Text>:null}
-     </View>:<Text accessibilityLiveRegion="polite" style={s.note}>{anticipation?st("Your encounter is running. Combat results will appear when the server settles this room."):st("Your party is resolving this room. Progress is saved online.")}</Text>}
+     </View>:anticipation?null:<Text accessibilityLiveRegion="polite" style={s.note}>{st("Your party is resolving this room. Progress is saved online.")}</Text>}
  </View>;
 }
 const makeStyles=(C:CoopColors)=>StyleSheet.create({

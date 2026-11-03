@@ -58,6 +58,8 @@ export function CoopRunOverview({language,run,myVotedNodeId,selfVoter,onBack,onC
   const [theaterOpen,setTheaterOpen]=useState(inCombat);
   const [rewardOpen,setRewardOpen]=useState(terminal);
   const [enteringCombat,setEnteringCombat]=useState(false);
+  const [entryCombatNodeId,setEntryCombatNodeId]=useState<string|undefined>();
+  const [entryCombatKind,setEntryCombatKind]=useState<string|undefined>();
   const enterFromVersion=useRef(run.stateVersion),enterFromNode=useRef(run.lastCombat?.nodeId);
   useEffect(()=>{
    const newCombat=Boolean(run.lastCombat&&lastReplay.current!==replayKey);
@@ -77,6 +79,7 @@ export function CoopRunOverview({language,run,myVotedNodeId,selfVoter,onBack,onC
    if(onChoose&&run.mode==='qmode'&&isCoopCombatNodeKind(option?.kind)){
     enterFromVersion.current=run.stateVersion;
     enterFromNode.current=run.lastCombat?.nodeId;
+    setEntryCombatNodeId(nodeId);setEntryCombatKind(option?.kind);
     setEnteringCombat(true);setTheaterOpen(true);
    }
    onChoose?.(nodeId);
@@ -94,7 +97,7 @@ export function CoopRunOverview({language,run,myVotedNodeId,selfVoter,onBack,onC
   },[enteringCombat,inCombat,run.phase,run.stateVersion,run.lastCombat?.nodeId,notice]);
   // Solo runs reveal their server-authored replay after node settlement.
   // Never play the previous room's lastCombat while the new fight is pending.
-  const awaitingCombatPlayback=inCombat&&run.mode==='qmode'&&!!run.selectedNodeId&&run.lastCombat?.nodeId!==run.selectedNodeId;
+  const awaitingCombatPlayback=inCombat&&(run.mode==='qmode'?!!run.selectedNodeId&&run.lastCombat?.nodeId!==run.selectedNodeId:!run.pendingCombat?.cues.length);
   const combatName=run.bossMechanic?.telegraph?.bossName??(run.pendingCombat??run.lastCombat)?.combatants?.find(member=>member.boss)?.name??st('DUNGEON COMBAT');
   return <><ExpeditionScreenShell hideHeader compactHeader={inCombat} eyebrow={ct(language,'browse.resumeTitle')} title={inCombat?combatName:ct(language,'browse.resume')} banner={inCombat?undefined:<View style={s.banner}><StateChip label={modeLabel} tone="selected"/><Text style={s.phase}>{run.phase.replaceAll('_',' ')}</Text></View>}>
     {inCombat?<FantasyPanel variant="selected"><View style={s.summary}>
@@ -151,7 +154,7 @@ export function CoopRunOverview({language,run,myVotedNodeId,selfVoter,onBack,onC
     </View>
    </Modal>:null}
    {theaterOpen?<CombatTheaterModal visible tone={seasonal?'event':'dungeon'} onClose={()=>{setTheaterOpen(false);if(terminal)setRewardOpen(true);}} title={combatName} eyebrow={st('DUNGEON COMBAT')} subtitle={modeLabel} reduceMotion={reduceMotion}>
-    <DungeonCombatStage run={run} anticipation={enteringCombat||awaitingCombatPlayback} onPresentationComplete={terminal?()=>{setTheaterOpen(false);setRewardOpen(true);}:undefined} seasonal={seasonal} eventName={eventName} reduceMotionSetting={reduceMotion} boss={enteringCombat||awaitingCombatPlayback?run.selectedNodeKind==='boss':Boolean((run.pendingCombat??run.lastCombat)?.combatants?.some(member=>member.boss))} enemyLabel={run.selectedNodeKind==='boss'?run.bossMechanic?.telegraph?.bossName:undefined}/>
+    <DungeonCombatStage run={run} anticipation={enteringCombat||awaitingCombatPlayback} entryNodeId={entryCombatNodeId} onPresentationComplete={terminal?()=>{setTheaterOpen(false);setRewardOpen(true);}:undefined} seasonal={seasonal} eventName={eventName} reduceMotionSetting={reduceMotion} boss={enteringCombat||awaitingCombatPlayback?(run.selectedNodeKind??entryCombatKind)==='boss':Boolean((run.pendingCombat??run.lastCombat)?.combatants?.some(member=>member.boss))} enemyLabel={run.selectedNodeKind==='boss'?run.bossMechanic?.telegraph?.bossName:undefined}/>
    </CombatTheaterModal>:null}
   </>;
 }

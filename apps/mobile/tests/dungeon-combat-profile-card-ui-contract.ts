@@ -19,7 +19,7 @@ ok(!card.includes('profileTitle')&&!card.includes('guildTag'),'Combat cards must
 ok(stage.includes("import {CombatantProfileCard,EnemyCombatProfileCard} from './CombatantProfileCard'"),'Dungeon stage must use profile-derived combat cards');
 ok(stage.includes('<CombatantProfileCard')&&stage.includes('<EnemyCombatProfileCard'),'Both party and enemy sides must use the combat profile-card language');
 ok(stage.indexOf('<EnemyCombatProfileCard')<stage.indexOf('<CombatantProfileCard'),'Enemy/boss card must render above the party cards on the mobile battlefield');
-ok(stage.indexOf('style={s.enemyFormation}')<stage.indexOf('style={s.partyFormation}'),'Enemy formation must stay above the four-player formation for all encounter types');
+ok(stage.indexOf('style={[s.enemyFormation')<stage.indexOf('style={[s.partyFormation'),'Enemy formation must stay above the four-player formation for all encounter types');
 // The October profile-art refresh deliberately changed the old four-card strip
 // to a readable two-column formation. Preserve that scene while testing the
 // replay behavior that the visual refresh accidentally removed.

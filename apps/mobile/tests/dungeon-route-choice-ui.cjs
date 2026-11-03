@@ -17,4 +17,15 @@ assert(choices.includes('myVotedNodeId===option.nodeId'),'Voted-route highlight 
 assert(choices.includes("option.encounterPreview?.summary"),'Existing encounter preview remains readable');
 assert(choices.includes("size=\"thumbnail\"")&&choices.includes("minHeight:88"),'Room cards use compact thumbnails and one-tap targets');
 assert(!choices.includes('<GameButton'),'No duplicate Choose/Vote button is rendered under each room');
+const model=read('src/core/coop-qmode.ts');
+const contract=read('src/core/coop-presentation.ts');
+assert(model.includes('selectedNodeId:projection.selectedNodeId,selectedNodeKind'),'Pending room kind is projected from the server-visible route graph');
+assert(contract.includes('isCoopBattleResolving')&&contract.includes('isCoopCombatNodeKind'),'Combat is explicitly classified independently of room resolution');
+assert(overview.includes('const inCombat=isCoopBattleResolving(run)'),'Generic room resolution must never trigger battle UI');
+assert(overview.includes("onChoose&&run.mode==='qmode'&&isCoopCombatNodeKind(option?.kind)"),'Q-Mode opens battle immediately only when a real combat room is tapped');
+assert(!overview.includes("['battle','elite','boss','risk']"),'Risk encounters are non-combat and cannot auto-open the battle theater');
+assert(overview.includes("if(!inCombat&&(!run.lastCombat||run.lastCombat.nodeId===enterFromNode.current))"),'Server-confirmed Q-Mode combat must not auto-close because pendingCombat is Live-only');
+assert(overview.includes("run.phase==='resolving_node'&&!inCombat"),'Forge and other utility rooms use a normal non-combat progress surface');
+assert(overview.includes("run.lastCombat?.nodeId!==run.selectedNodeId")&&overview.includes("enteringCombat||awaitingCombatPlayback"),'Solo combat cannot replay stale lastCombat while the new encounter is pending');
+
 console.log('PASS: dungeon room cards are image-led, one-tap, server-vote safe and readable');

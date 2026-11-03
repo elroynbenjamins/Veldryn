@@ -1,5 +1,5 @@
 export {};
-const fs=require('fs') as {readFileSync:(path:string,encoding:string)=>string};
+const fs=require('fs') as {readFileSync:(path:string,encoding:string)=>string;existsSync:(path:string)=>boolean};
 function ok(value:boolean,message:string){if(!value)throw new Error(message)}
 const read=(path:string)=>fs.readFileSync(path,'utf8');
 
@@ -8,7 +8,6 @@ const crafted=read('src/theme/crafted-item-assets.ts');
 const arcane=read('src/theme/arcane-material-assets.ts');
 const tools=read('src/theme/gathering-tool-assets.ts');
 const toolArtwork=read('src/components/GatheringToolArtwork.tsx');
-const toolLayout=read('src/core/gathering-tool-artwork-layout.ts');
 const resourceArtwork=read('src/components/ResourceArtwork.tsx');
 const resolver=read('src/theme/resource-assets.ts');
 
@@ -25,7 +24,12 @@ for(const id of toolIds)ok(tools.includes(id+':'),'Missing regenerated gathering
 ok(gathering.includes("require('../../assets/asterfall-logs-fish-v2.png')"),'Logs/fish atlas must be bundled');
 ok(crafted.includes("require('../../assets/food-v2/")||crafted.includes("require('../../assets/crafted-items-v1/"),'Crafted items must use direct production image assets');
 ok(arcane.includes("require('../../assets/arcane-materials-v2.png')"),'Arcane atlas must be bundled');
-ok(tools.includes("require('../../assets/tools/gathering-tools-v3.png')"),'Gathering tools must use v3 regenerated atlas');
+for(const id of toolIds){
+ const png='assets/tools/individual/'+id.toLowerCase().replace(/_/g,'-')+'.png';
+ ok(fs.existsSync(png),'Missing distinct transparent tool image '+png);
+ ok(tools.includes("require('../../"+png+"')"),'Tool '+id+' must resolve to its own PNG file');
+}
+ok(!tools.includes('gathering-tools-v3.png'),'Gathering tools must not use the obsolete shared atlas');
 
 ok(resolver.includes('hasAsterfallGatheringArtwork(itemId)'),'Shared resolver must recognize logs/fish atlas');
 ok(resolver.includes('hasArcaneMaterialArtwork(itemId)'),'Shared resolver must recognize arcane atlas');
@@ -36,8 +40,9 @@ for(const needle of ['const asterfallGathering=asterfallGatheringCell(itemId)','
   ok(fallbackIndex>=0&&index>fallbackIndex,needle+' must remain available after the bundled image path');
 }
 
-ok(toolLayout.includes('GATHERING_TOOL_SHEET_WIDTH')&&toolLayout.includes('GATHERING_TOOL_SHEET_HEIGHT'),'Tool artwork layout must use explicit v2 atlas dimensions');
-ok(toolArtwork.includes('gatheringToolArtworkLayout'),'Tool artwork must consume the shared layout helper');
-ok(!toolArtwork.includes('ATLAS_ASPECT')&&!toolLayout.includes('ATLAS_ASPECT'),'Old gathering-tool atlas aspect workaround must be removed');
+ok(toolArtwork.includes('gatheringToolImages[itemId]')&&toolArtwork.includes('resizeMode="contain"'),
+ 'Tool artwork must render the correct individual PNG without clipping');
+ok(!toolArtwork.includes('gatheringToolArtworkLayout')&&!toolArtwork.includes('ATLAS_ASPECT'),
+ 'Do not reintroduce legacy tool sheet cropping or atlas aspect workarounds');
 
-console.log('PASS: Asterfall resources and arcane materials use atlases; crafted items use direct production image assets; gathering tools use unified artwork');
+console.log('PASS: Asterfall/arcane atlases, crafted item assets, and all 12 individually framed gathering-tool PNGs');

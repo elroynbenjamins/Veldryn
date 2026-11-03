@@ -71,11 +71,11 @@ export function GuildHallSummary({onOpenMuster,onOpenShop,onRewardsChanged,compa
  };
  const claimAll=async()=>{
   setBusy('all');setNotice('');
-  let total=0;
+  let total=0,failed=0;
   for(const row of claims){
-   try{total+=await row.run();}catch{/* continue; surfaced by refresh */}
+   try{total+=await row.run();}catch{failed++;}
   }
-  setNotice(total?`+${total} Guild Tokens claimed`:'Nothing left to claim right now.');
+  setNotice((total?`+${total} Guild Tokens claimed`:'No rewards claimed')+(failed?` · ${failed} claim${failed===1?'':'s'} failed. Retry remaining rewards.`:''));
   try{await onRewardsChanged?.();}catch{/* non-fatal */}
   await load();
   if(mounted.current)setBusy('');

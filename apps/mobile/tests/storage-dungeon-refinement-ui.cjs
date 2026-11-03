@@ -24,7 +24,7 @@ assert(pouch.includes('accessible={!standalone}')&&pouch.includes("accessibility
 assert(inventory.includes('storageChipTopCompact'),'All three storage tabs fit narrow devices and large text');
 assert(pouch.includes('const columns=gridWidth>=600?8:gridWidth>=440?6:gridWidth>=345?5:4')&&pouch.includes('{width:slotWidth,minHeight:Math.max(slotWidth,62)}'),'Gem grid responds to available width without fixed percentage overflow');
 assert(pouch.includes('onFavorite?')&&pouch.includes('onLock?'),'Gem favorites and locks remain actionable');
-assert(pouch.includes('||protectedGem} onPress={()=>setPendingDismantle'),'Protected gems cannot be dismantled accidentally');
+assert(pouch.includes('||protectedGem} onPress={()=>{setSelected(null);setPendingDismantle'),'Protected gems cannot be dismantled accidentally');
 assert(pouch.includes('Gem Pouch,')===false,'Pouch UI is not implementing gameplay inventory logic itself');
 
 // Retain the last server-confirmed dungeon state during harmless catalogue refreshes

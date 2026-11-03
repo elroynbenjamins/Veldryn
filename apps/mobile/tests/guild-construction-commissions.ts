@@ -72,4 +72,34 @@ for(const row of GUILD_CONSTRUCTION_BLUEPRINTS){
 const shared=fs.readFileSync('../../packages/guild-shop/src/catalogue.ts','utf8');
 for(const row of GUILD_CONSTRUCTION_BLUEPRINTS)check(shared.includes('id:"'+row.id+'"'),'Server catalogue missing '+row.id);
 check(sql.includes('set enabled=false'),'New construction cannot accept live donations until release gates pass');
+// Four Guild Skill release gates: consumers must exist before any purchase flag opens.
+const questConsumer=fs.readFileSync('../../backend/supabase/migrations/20261104000600_fellowship_quest_reward_consumer_v1.sql','utf8');
+const bossConsumer=fs.readFileSync('../../backend/supabase/migrations/20261104000610_vanguard_boss_support_attempt_consumer_v1.sql','utf8');
+const defenceConsumer=fs.readFileSync('../../backend/supabase/migrations/20261104000611_vanguard_defence_raid_endurance_consumer_v1.sql','utf8');
+const guildSkills=fs.readFileSync('src/content/guild-skill-paths.ts','utf8');
+check(questConsumer.includes('guild_quest_reward_units_server_v1')&&questConsumer.includes('guild_quest_state_v1')&&questConsumer.includes('guild_quest_completions'),
+ 'Fellowship Quest skill must change immutable server award records, not visual rewards');
+check(questConsumer.includes('guild_quest_bonus_rounding_contract_failed')&&questConsumer.includes('guild_quest_objective_return_pattern_missing'),
+ 'Fellowship Quest reward calculation must have rank-math and settlement-patch contracts');
+check(questConsumer.includes('c.is_released')&&questConsumer.includes('fellowship_quests_must_stay_locked'),
+ 'Fellowship Quest bonuses must be gated behind a verified DB release');
+check(bossConsumer.includes('guild_skill_effects_server_v1(uid)')&&bossConsumer.includes("v_skill_effects->>'guildId'=e.guild_id::text"),
+ 'Vanguard attempts must use server guild-scoped, released-skill projections');
+check(bossConsumer.includes("v_skill_effects->>'guildBossDamageBps'")&&bossConsumer.includes("v_skill_effects->>'guildSupportBps'"),
+ 'Guild Boss and Battle Support must affect server-recorded attempt damage');
+check(bossConsumer.includes('ceil(e.max_hp*.11)')&&bossConsumer.includes('v_companion_damage:=least(v_companion_damage,v_damage)'),
+ 'Vanguard effects must retain the authored per-attempt cap and consistent damage partition');
+check(bossConsumer.includes('guild_boss_bonus_bps')&&bossConsumer.includes('guild_support_bonus_bps'),
+ 'Guild Boss and Support bonuses must snapshot percentages on committed attempts');
+check(defenceConsumer.includes("v_skill_effects->>'guildDefenceBps'")&&defenceConsumer.includes('v_defense*35+v_hp*2'),
+ 'Defensive Doctrine must improve authoritative defensive raid stat contribution');
+check(defenceConsumer.includes('guild_defence_bonus_bps')&&defenceConsumer.includes('guildDefenceBps'),
+ 'Defensive Doctrine must snapshot its effective rank in the owner-only attempt timeline');
+check(guildSkills.includes('Does not reduce overworld or dungeon damage taken.'),
+ 'UI must not claim Defensive Doctrine mitigates damage outside the raid calculation');
+check(!questConsumer.includes('update public.guild_skill_catalogue_v1 set is_released=true')
+ &&!bossConsumer.includes('update public.guild_skill_catalogue_v1 set is_released=true')
+ &&!defenceConsumer.includes('update public.guild_skill_catalogue_v1 set is_released=true'),
+ 'No consumer migration may prematurely unlock a Guild Skill for spending');
+
 console.log('PASS: 8 illustrated guild materials, 8 released profession recipes, 17x 10x server project requirements');

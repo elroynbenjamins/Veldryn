@@ -1,6 +1,7 @@
 import {createCharacter,newGame,claimQuest,refreshQuests} from '../src/core/game';
 import {journalEntries,questDestination} from '../src/core/quest-journal';
 import {QUESTS,QUEST_ACTS} from '../src/content/quests';
+import {JOURNAL_SKILL_LESSONS,journalSkillLessonProgress,journalSkillLessonSummary} from '../src/core/journal-skill-lessons';
 import {questPresentationMeta,questPresentationTier} from '../src/core/quest-presentation';
 function ok(value:boolean,message:string){if(!value)throw new Error(message)}
 const state=createCharacter(newGame(1000),'IRONWARDEN');
@@ -33,4 +34,21 @@ ok(journalEntries(claimed,'locked','')[0].previous===QUESTS[1].name,'Locked prer
 const finished={...state,quests:state.quests.map(q=>({...q,status:'claimed' as const}))};
 ok(journalEntries(finished,'current','').length===0,'Completed campaign has no current quests');
 ok(journalEntries(finished,'claimed','').length===15,'All chapters remain browsable');
+// New tutorial paths must be non-invasive for existing campaign saves.
+ok(JOURNAL_SKILL_LESSONS.length===11,'The training journal covers every profession');
+ok(new Set(JOURNAL_SKILL_LESSONS.map(row=>row.skillId)).size===11,'Training lessons have unique skill IDs');
+ok(JOURNAL_SKILL_LESSONS.every(row=>state.skills.some(skill=>skill.skillId===row.skillId)),'Every lesson maps to an existing profession');
+const noviceLessons=journalSkillLessonProgress(state);
+ok(noviceLessons.filter(row=>row.introduced).length===3,'First session introduces only the three basic gathering lessons');
+ok(noviceLessons.every(row=>row.level===1&&!row.practiceComplete),'A new character receives no unearned training completion');
+const beginner={...state,skills:state.skills.map(skill=>skill.skillId==='mining'?{...skill,level:2}:skill)};
+ok(journalSkillLessonProgress(beginner).find(row=>row.lesson.skillId==='mining')?.status==='practice','Mining level 2 finishes its first milestone');
+const trained={...state,skills:state.skills.map(skill=>skill.skillId==='mining'?{...skill,level:5}:skill)};
+ok(journalSkillLessonProgress(trained).find(row=>row.lesson.skillId==='mining')?.status==='complete','Level 5 completes an existing training track retroactively');
+ok(journalSkillLessonSummary(trained).practiced===1,'Training summary follows actual levels');
+const learned={...state,quests:state.quests.map(row=>row.questId==='QST_002'?{...row,status:'claimed' as const}:row)};
+ok(journalSkillLessonProgress(learned).find(row=>row.lesson.skillId==='cooking')?.introduced===true,'Crafting becomes introduced after the second story reward');
+ok(journalSkillLessonProgress(state).find(row=>row.lesson.skillId==='enchanting')?.status==='preview','Advanced skills can be previewed without progression gates changing');
+ok(QUESTS.length===15,'Optional lessons must not insert or reorder campaign chapters');
+
 console.log('PASS: quest story acts, filters, search, destinations, claim advancement and finished campaign');

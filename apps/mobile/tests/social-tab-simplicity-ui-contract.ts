@@ -19,6 +19,8 @@ const partyEvents=read('src/components/PartyEventHubPanel.tsx');
 const gameGuide=read('src/core/onboarding.ts');
 const guildScreen=read('src/screens/GuildScreen.tsx');
 const sectionGuide=read('src/components/SectionGuide.tsx');
+const companion=read('src/components/CombatCompanionPanel.tsx');
+const socialHub=read('src/components/SocialHubPanel.tsx');
 
 ok(app.includes("tab==='Party'&&<PartyScreen")&&app.includes("tab==='Recruitment'||tab==='Social'")&&app.includes('<RecruitmentScreen'), 'Party and Recruitment must have independent route components');
 ok(!account.includes("items:['Social'")&&account.includes("items:['Party','Recruitment','Friends','Guild','Arena','Rankings']"),'Account must replace Social with two dedicated destinations');
@@ -59,4 +61,8 @@ ok(gameGuide.includes("id:'parties'")&&gameGuide.includes("earlyFeatureUnlocked(
 ok(guildScreen.includes('onRecruitment')&&app.includes("setTab('Recruitment')"),'Guild recruitment shortcuts must open the new destination');
 ok(sectionGuide.includes('if(!expanded&&!showReplay)return null'),'Guidance should never block normal Party navigation');
 
+ok(sectionGuide.includes('header?:ReactNode')&&sectionGuide.includes("placement==='header'||header!==undefined"),'SectionGuide must anchor optional replay controls while preserving legacy card guides');
+ok(companion.includes('header={<View style={s.resourceBar}>'),'Companion help must share the resource-strip header without adding a replay row');
+ok(party.includes('header={inParty&&!props.dedicated?'),'Party help must reuse the Party/Recruitment tabs when available');
+ok(shared.includes('headerGuide={headerGuide}')&&socialHub.includes('<SectionGuide {...headerGuide} header={tabBar}'),'Legacy Social Guild/Chat help must reuse the top tab strip');
 console.log('PASS: dedicated Party and Recruitment routing, role gates, server actions, modals and compact UI contracts');

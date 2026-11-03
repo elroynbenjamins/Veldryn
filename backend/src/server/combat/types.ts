@@ -154,6 +154,8 @@ export interface CombatInput {
   mitigationConstant?: number;
   accuracyScale?: number;
   initialPlayerState?: Record<string, PersistentActorState>;
+  /** Only set by server-owned Q-Mode runs; Live and legacy combat retain baseline rolls. */
+  enemyDamageProfile?:'qmode-v1';
 }
 
 export interface PersistentActorState {

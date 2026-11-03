@@ -13,7 +13,7 @@ function at25(state:GameState):GameState{
  next.character.currentHp=effectiveStats(next).hp;
  return next;
 }
-const report:Record<string,{fullT2Won:boolean;fullT1Won:boolean;fullT2Food:number;fullT1Food:number;fullT2BossHp:number;fullT1BossHp:number}>={};
+const report:Record<string,{fullT2Won:boolean;fullT1Won:boolean;fullT2Food:number;fullT1Food:number;fullT2BossHp:number;fullT1BossHp:number;t2WinsOf12:number;t1WinsOf12:number}>={};
 for(const cls of CLASSES){
  const fullT2=at25(regionalCombatFixture(road,'prepared',cls.id));
  const fullT1=at25(regionalCombatFixture(road,'underprepared',cls.id));
@@ -51,7 +51,12 @@ for(const cls of CLASSES){
  const foodless=at25({...fullT2,inventory:{...fullT2.inventory,stacks:[]}});
  assert.equal(previewFallenKnightBattle(foodless,nowMs,'story').foodConsumed,0,label+' no phantom food');
  assert.ok(t2.player.attackIntervalMs<=t1.player.attackIntervalMs,label+' T2 attack interval is no slower');
- report[label]={fullT2Won:t2.won,fullT1Won:t1.won,fullT2Food:t2.foodConsumed,fullT1Food:t1.foodConsumed,fullT2BossHp:t2.finalBossHp,fullT1BossHp:t1.finalBossHp};
+ // Vary deterministic encounter seeds so one favorable animation/RNG
+ // sequence does not conceal an impossible checkpoint for a particular class.
+ const seeds=Array.from({length:12},(_,index)=>nowMs+(index+1)*61_003);
+ const t2WinsOf12=seeds.filter(time=>previewFallenKnightBattle(fullT2,time,'story').won).length;
+ const t1WinsOf12=seeds.filter(time=>previewFallenKnightBattle(fullT1,time,'story').won).length;
+ report[label]={fullT2Won:t2.won,fullT1Won:t1.won,fullT2Food:t2.foodConsumed,fullT1Food:t1.foodConsumed,fullT2BossHp:t2.finalBossHp,fullT1BossHp:t1.finalBossHp,t2WinsOf12,t1WinsOf12};
 }
 console.log('PASS Fallen Knight T2 readiness, nine classes, one-food-per-hit and finite food budget');
 console.log(JSON.stringify(report));

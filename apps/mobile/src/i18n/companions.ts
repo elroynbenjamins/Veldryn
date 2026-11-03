@@ -1057,7 +1057,7 @@ export function companionError(language:Language,error:unknown):string{
 export function companionAttentionText(language:Language,summary:{expeditionClaims:number;bondRewards:number;ascensions:number;sanctuaryClaims:number;codexClaims:number;monthlyTrialClaims:number;recentUnlocks:number}){
  const counts:[CompanionMessageKey,number][]=[
   ['Expeditions ready: {count}',summary.expeditionClaims],['Bond rewards: {count}',summary.bondRewards],
-  ['Ascensions ready: {count}',summary.ascensions],['Sanctuary claims: {count}',summary.sanctuaryClaims],
+  ['Sanctuary claims: {count}',summary.sanctuaryClaims],
   ['Codex rewards: {count}',summary.codexClaims],['Trial rewards: {count}',summary.monthlyTrialClaims],
   ['New companions: {count}',summary.recentUnlocks],
  ];

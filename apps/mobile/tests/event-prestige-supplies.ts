@@ -50,7 +50,6 @@ ok(eventPrestigeBalance(state,eventId)===40-3*2-4-5-5-5*2,'Prestige wallet is de
 
 const empty=setLocalEventEnabled(createCharacter(newGame(now),'IRONWARDEN','NoPrestige'),true,now,eventId);
 rejects(()=>purchaseEventOffer(empty,'prestige_bondstone',now),'Insufficient prestige must reject purchase');
-rejects(()=>purchaseEventOffer(empty,'prestige_bondstone',now),'Insufficient prestige must reject purchase');
 
 // The end time is exact. Grace days are for claims and permanent/supply shopping, not candy.
 const endsAtMs=now+1_000,graceEndsAtMs=endsAtMs+3*86400_000;

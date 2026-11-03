@@ -11,8 +11,16 @@ const rewards=read('src/components/RewardPopup.tsx');
 const inspect=read('src/components/ItemQuickInspect.tsx');
 const queue=read('src/components/EquipmentCraftQueuePanel.tsx');
 const queueCore=read('src/core/equipment-crafting-queue.ts');
+const pouch=read('src/components/GemPouchPanel.tsx');
+const gemAssets=read('src/theme/gem-assets.ts');
 
 ok(artwork.includes('gemArtworkCellV1'),'GemArtwork must resolve canonical atlas cells');
+ok(artwork.includes('gemVisualIdentityV1(itemId)')&&artwork.includes("identity?.raw")&&artwork.includes('G{identity.grade}'),'Gem artwork must use distinct family art, raw marker, and grade indicator');
+ok(gemAssets.includes('gemVisualIdentityV1'),'Gem asset resolver must expose raw/refined tier identity');
+ok(itemArtwork.includes('if(hasRawGemArtworkV1(itemId))return <GemArtwork'),'Unrefined items must not use one identical raw gem illustration');
+ok(pouch.includes('GameModalSurface visible={!!selectedStack}')&&pouch.includes('onPress={()=>setSelected(stack?.itemId??null)}'),'Pouch taps must open an immediate inspection modal instead of offscreen details');
+ok(pouch.includes('setSelected(null);setPendingSell')&&pouch.includes('setSelected(null);setPendingDismantle'),'Destructive confirmations must close inspection modal to avoid nested Android modals');
+ok(pouch.includes("type:'gem_refine'")&&pouch.includes('refinement.ready'),'Raw gems must expose guarded Enchanting refinement in their modal');
 ok(itemArtwork.includes('hasGemArtworkV1(itemId)'),'Shared ItemArtwork must route gems and catalysts to GemArtwork');
 ok(codex.includes('mobileGemItemIdV1(row.family.familyId,row.highestOwned??1)'),'Gem Codex family rows must show the correct family art');
 ok(codex.includes('itemId={recipe.output.itemId}'),'Gem combine rows must show the output gem art');

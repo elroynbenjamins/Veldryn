@@ -1,0 +1,57 @@
+name: Combat balance validation
+
+# Focused checks run before the full-release Edge bundle parity gate.
+# This does NOT deploy gameplay or change production combat.
+on:
+  pull_request:
+    paths:
+      - 'apps/mobile/src/core/game.ts'
+      - 'apps/mobile/src/core/story-boss.ts'
+      - 'apps/mobile/tests/regional-*.ts'
+      - 'apps/mobile/tests/fallen-knight-gear-food.ts'
+      - 'apps/mobile/src/content/monsters.ts'
+      - 'tools/mobile-core-tests.json'
+      - '.github/workflows/combat-balance-validation.yml'
+  workflow_dispatch:
+
+jobs:
+  combat-balance:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: apps/mobile
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+          cache-dependency-path: apps/mobile/pnpm-lock.yaml
+      - name: Install mobile dependencies
+        run: pnpm install --frozen-lockfile
+      - name: Install backend modules imported by shared engine
+        run: pnpm --dir ../../backend install --frozen-lockfile
+      - name: Typecheck and compile gameplay engine tests
+        run: |
+          pnpm typecheck:core
+          pnpm exec tsc -p tsconfig.core.json --outDir .core-build
+      - name: Verify regional food, gear, and story boss combat contracts
+        run: |
+          failed=0
+          for test in \
+            .core-build/apps/mobile/tests/regional-food-pressure.js \
+            .core-build/apps/mobile/tests/regional-combat-sustain-matrix.js \
+            .core-build/apps/mobile/tests/regional-combat-preparation-matrix.js \
+            .core-build/apps/mobile/tests/regional-undergeared-sustain.js \
+            .core-build/apps/mobile/tests/kings-road-gear-balance.js \
+            .core-build/apps/mobile/tests/combat-attrition.js \
+            .core-build/apps/mobile/tests/fallen-knight-gear-food.js
+          do
+            if [ -f "$test" ]; then
+              node "$test" || { echo "FAILED: $test"; failed=1; }
+            fi
+          done
+          exit "$failed"

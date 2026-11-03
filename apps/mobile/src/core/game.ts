@@ -92,10 +92,13 @@ export const REGIONAL_COMBAT_PRESSURE:Readonly<Record<string,number>>={Greenfiel
 export const REGIONAL_HUNT_DAMAGE_TUNING:Readonly<Record<string,number>>={Greenfields:.36,Silverbrook:.25,'Ironwood Forest':.40,'Old Mines':.55,"King's Road":.42,Ashlands:.40};
 export type RegionalMonsterPressureBand='entry'|'standard'|'hard';
 export const REGIONAL_MONSTER_PRESSURE_MULTIPLIER:Readonly<Record<RegionalMonsterPressureBand,number>>={entry:.92,standard:1,hard:1.10};
-export const REGIONAL_FOOD_SUSTAIN_TARGETS:Readonly<Record<string,{foodPerHourMin:number;foodPerHourMax:number}>>={Greenfields:{foodPerHourMin:3,foodPerHourMax:5},Silverbrook:{foodPerHourMin:4,foodPerHourMax:7},'Ironwood Forest':{foodPerHourMin:4,foodPerHourMax:7},'Old Mines':{foodPerHourMin:2,foodPerHourMax:5},"King's Road":{foodPerHourMin:2,foodPerHourMax:8},Sunscar:{foodPerHourMin:2,foodPerHourMax:7},Frostmarch:{foodPerHourMin:1.75,foodPerHourMax:6.5},Ashlands:{foodPerHourMin:1.75,foodPerHourMax:5.5}};
+export const REGIONAL_FOOD_SUSTAIN_TARGETS:Readonly<Record<string,{foodPerHourMin:number;foodPerHourMax:number}>>={Greenfields:{foodPerHourMin:3,foodPerHourMax:5},Silverbrook:{foodPerHourMin:4,foodPerHourMax:8},'Ironwood Forest':{foodPerHourMin:5,foodPerHourMax:9},'Old Mines':{foodPerHourMin:4,foodPerHourMax:8},"King's Road":{foodPerHourMin:4,foodPerHourMax:10},Sunscar:{foodPerHourMin:5,foodPerHourMax:11},Frostmarch:{foodPerHourMin:6,foodPerHourMax:13},Ashlands:{foodPerHourMin:8,foodPerHourMax:17}};
 /** Minimum incoming pressure is applied before healing. Even overgeared hunts
  * drain unhealed players; a sufficiently strong healer can sustain easy enemies. */
-export const REGIONAL_MIN_ATTRITION_HP_PER_HOUR:Readonly<Record<string,number>>={Greenfields:80,Silverbrook:120,'Ironwood Forest':180,'Old Mines':180,"King's Road":230,Sunscar:330,Frostmarch:520,Ashlands:620};
+export const REGIONAL_MIN_ATTRITION_HP_PER_HOUR:Readonly<Record<string,number>>={Greenfields:80,Silverbrook:120,'Ironwood Forest':240,'Old Mines':280,"King's Road":420,Sunscar:780,Frostmarch:1450,Ashlands:2150};
+/** Missing entire gear tiers must increase food use even when encounter damage
+ * would otherwise be hidden by the hourly attrition floor. */
+export const MISSING_GEAR_HUNT_ATTRITION_PER_TIER=.60;
 export const MIN_UNHEALED_HP_FRACTION_PER_HOUR=.08;
 /** Slow recovery between activities keeps food valuable while preventing a defeated run from becoming a hard lockout. */
 export const OUT_OF_COMBAT_REGEN_FRACTION_PER_MINUTE=.05;
@@ -406,17 +409,21 @@ function combatRuntimeDetails(state:GameState,monsterId:string,nowMs=Date.now())
   // Gear preparation is measured over the whole loadout, not the best item.
   // Region-entry gear matters even when combat power reaches the speed cap.
   // Never require a tier before its character-level floor is attainable.
-  const regionalGearTier=m.zone==="King's Road"?2:
+  const regionalGearTier=m.zone==='Silverbrook'?(m.level>=20?2:1):
+    m.zone==='Ironwood Forest'?(m.level>=14?2:1):
+    m.zone==='Old Mines'?2:
+    m.zone==="King's Road"?2:
     m.zone==='Sunscar'?(m.level>=40?4:3):
     m.zone==='Frostmarch'?(m.level>=70?6:m.level>=55?5:4):
     m.zone==='Ashlands'?(m.level>=82?7:6):undefined;
   const expectedTier=regionalGearTier??(regionalMonsterPressureBand(m.id)==='hard'?(m.level>=22?2:m.level>=10?1:0):0);
   const tierGap=regionalEquippedTierGap(state,expectedTier);
-  const progressionSpeedPenalty=tierGap===0?1:Math.max(.62,1-tierGap*.18);
-  const progressionDamagePenalty=tierGap===0?1:1+tierGap*.12;
+  const progressionSpeedPenalty=tierGap===0?1:Math.max(.50,1-tierGap*.24);
+  const progressionDamagePenalty=tierGap===0?1:1+tierGap*.20;
+  const gearAttritionMultiplier=1+tierGap*MISSING_GEAR_HUNT_ATTRITION_PER_TIER;
   const speed=Math.max(COMBAT_SPEED_MIN,Math.min(COMBAT_SPEED_MAX,boostedPower/Math.max(1,expected)))*style.speedMultiplier*tactic.speedMultiplier*modifiers.combatSpeedMultiplier*companion.outputMultiplier*(1+monsterMastery(state,monsterId).damageBonus)*(1+effectGems.combat_speed)*setOutput*combatCandy*progressionSpeedPenalty;
   const killCycleSeconds=m.secondsPerKill*COMBAT_TIME_SCALE*(environment?.actionTimeMultiplier??1)/speed;
-  return {c,m,stats,modifiers,companion,style,tactic,environment,effectGems,setCombat,secondary,boostedDefense,killCycleSeconds,progressionDamagePenalty};
+  return {c,m,stats,modifiers,companion,style,tactic,environment,effectGems,setCombat,secondary,boostedDefense,killCycleSeconds,progressionDamagePenalty,gearAttritionMultiplier};
 }
 
 /** Shared ordinary-hunt damage; fractional HP preserves small defensive bonuses. */
@@ -426,7 +433,9 @@ function combatEncounterDamage(runtime:ReturnType<typeof combatRuntimeDetails>,c
  const regionalPressure=(REGIONAL_COMBAT_PRESSURE[m.zone]??1)*REGIONAL_MONSTER_PRESSURE_MULTIPLIER[regionalMonsterPressureBand(m.id)];
  const damage=Math.max(.1,(raw*.48+m.level*.16)*(REGIONAL_HUNT_DAMAGE_TUNING[m.zone]??1)*regionalPressure*secondary.incomingPressureMultiplier*style.damageTakenMultiplier*tactic.damageTakenMultiplier*(champion?CHAMPION_DAMAGE_MULTIPLIER:1)*modifiers.incomingDamageMultiplier*companion.incomingDamageMultiplier*(1-effectGems.damage_reduction)*Math.max(.5,1-setCombat.stats.ward)*(c.preparation?preparationEffects(c.preparation).damage:1)*runtime.progressionDamagePenalty);
  const healing=stats.hp*companion.directHealingPctPerHour*killCycleSeconds/3600;
- const floor=Math.max(REGIONAL_MIN_ATTRITION_HP_PER_HOUR[m.zone]??0,stats.hp*MIN_UNHEALED_HP_FRACTION_PER_HOUR)*killCycleSeconds/3600;
+ // The floor is part of actual server-authoritative damage. Missing gear
+ // cannot bypass this attrition through defense or longer kill cycles.
+ const floor=Math.max(REGIONAL_MIN_ATTRITION_HP_PER_HOUR[m.zone]??0,stats.hp*MIN_UNHEALED_HP_FRACTION_PER_HOUR)*runtime.gearAttritionMultiplier*killCycleSeconds/3600;
  const incoming=Math.max(floor,damage);
  return {damage:incoming,healing,net:incoming-healing};
 }

@@ -110,16 +110,16 @@ export function simulateCombat(input: CombatInput): CombatResult {
     const crit=rng.next(`${now}:${source.definition.id}:${abilityId}:crit`)<clamp(source.definition.stats.critChance+modifier(source,'crit',now),0,.75);
     const qmodeStrike=input.enemyDamageProfile==='qmode-v1'&&source.definition.team==='enemies'&&target.definition.team==='players'&&eventType==='damage';
     // Preserve all legacy RNG draws for Live, ordinary hunts and in-flight runs.
-    // In new Q-Mode runs enemy direct hits vary by ±10%; roughly one in ten
+    // In new Q-Mode runs enemy direct hits vary by ±4%; roughly one in twenty
     // noncritical hits becomes a heavier blow. DoTs never roll the burst.
     // The legacy CombatRng returns [0, .5) with its existing portable
     // denominator. Scale Q-Mode-only draws by two to reach the intended
     // probabilities; changing that RNG globally would invalidate old replays.
     const varianceRoll=rng.next(`${now}:${abilityId}:var`);
-    const variance=qmodeStrike?.90+varianceRoll*.40:.95+varianceRoll*.10;
-    const heavyHit=qmodeStrike&&!crit&&rng.next(`${now}:${source.definition.id}:${target.definition.id}:${abilityId}:heavy`)*2<.10;
+    const variance=qmodeStrike?.96+varianceRoll*.16:.95+varianceRoll*.10;
+    const heavyHit=qmodeStrike&&!crit&&rng.next(`${now}:${source.definition.id}:${target.definition.id}:${abilityId}:heavy`)*2<.05;
     let raw=damageAfterMitigation(source.definition.stats.attackPower,effect.coeff??0,mit,variance,crit,source.definition.stats.critMultiplier)+(effect.flat??0);
-    if(heavyHit)raw*=1.16;
+    if(heavyHit)raw*=1.08;
     raw*=gemOutgoingDamageMultiplierV1(source,target,now,abilityId,eventType==='dot_tick'); raw*=Math.max(.1,1+modifier(source,'damage_done',now)); raw*=Math.max(.1,1+modifier(target,'damage_taken',now)); raw*=gemIncomingDamageMultiplierV1(target,now);
     if(hpPct(target)<clamp(effect.executeBelowHpPct??0,0,1))raw*=1+clamp(effect.executeBonus??0,0,1);
     // Poison applied as a true-damage DoT attacks HP directly, regardless of shields.

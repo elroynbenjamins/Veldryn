@@ -99,7 +99,7 @@ export function WorldScreen({state,onTravel,onOpenCombat,onOpenSkills,onCoop,dun
     {goalTargetRegion&&goalTargetRegion.id!==current.id?<View style={s.goalRoute}><Text style={s.goalRouteLabel}>{t("OBJECTIVE ROUTE")} · {goalTargetRegion.name}</Text><Text style={s.goalRouteHint}>{t("Your current objective continues in {region}. That region is promoted to the top of Travel Elsewhere below.",{region:goalTargetRegion.name})}</Text></View>:null}
 
     {storyRegion&&<RegionalStoryLeadsPanel state={state} regionId={storyRegion} onOpenCombat={()=>onOpenCombat()}/>}
-    {sunscar&&<><SunscarRegionPanel zones={sunscarZones}/>{onRegionalRewardsChanged?<RegionalCombatPanel state={state} onRewardsChanged={onRegionalRewardsChanged}/>:null}</>}
+    {sunscar&&<><SunscarRegionPanel zones={sunscarZones} onZone={zoneId=>onOpenCombat(zoneId)}/>{onRegionalRewardsChanged?<RegionalCombatPanel state={state} onRewardsChanged={onRegionalRewardsChanged}/>:null}</>}
     {frostmarch&&<>
       <FrostmarchRegionPanel zones={frostmarchZones} progress={frostmarchProgress} contentVersion={activeFrostmarchVersion??undefined} dungeons={frostmarchDungeons} onZone={zoneId=>onOpenCombat(zoneId)} onDungeon={onCoop}/>
       <RegionalJournalPanel name="Frostmarch" progress={frostmarchProgress}/>

@@ -1,5 +1,5 @@
 import {useCallback,useEffect,useMemo,useRef,useState} from 'react';
-import {ActivityIndicator,Image,Pressable,ScrollView,StyleSheet,Text,View} from 'react-native';
+import {ActivityIndicator,Image,Pressable,ScrollView,StyleSheet,Text,View,type ScrollViewInstance} from 'react-native';
 import {GameButton} from './GameButton';
 import {Panel} from './Panel';
 import {QuestBoard} from './QuestBoard';
@@ -52,7 +52,7 @@ export function OnlineGuildHallPanel(navigation:HallNavigation){
 export function GuildHallView({projection,loading=false,error='',onRefresh,activeSection,onSectionChange,onTokenRewardsChanged,previewMode=false}:{projection:NonNullable<Projection>;loading?:boolean;error?:string;onRefresh?:()=>void;previewMode?:boolean}&HallNavigation){
  const C=useGameTheme(),s=useMemo(()=>styles(C),[C]);
  const [localSection,setLocalSection]=useState<HeadquartersSection>('Overview');
- const hallTabsRef=useRef<ScrollView>(null);
+ const hallTabsRef=useRef<ScrollViewInstance>(null);
  const [shop,setShop]=useState<GuildTokenShopSnapshot|null>(null);
  const [shopLoading,setShopLoading]=useState(true);
  const [shopError,setShopError]=useState('');

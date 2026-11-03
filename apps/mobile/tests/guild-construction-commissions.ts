@@ -16,7 +16,16 @@ const guildBank=fs.readFileSync('src/components/OnlineGuildBankPanel.tsx','utf8'
 const guildConstruction=fs.readFileSync('src/components/OnlineGuildConstructionPanel.tsx','utf8');
 const profession=fs.readFileSync('src/components/CraftingRecipeBrowser.tsx','utf8');
 const upcomingMigration=fs.readFileSync('../../backend/supabase/migrations/20261104000500_guild_bank_upcoming_construction_stock.sql','utf8');
-check(guildBank.includes("width:'23%'")&&guildBank.includes('<GameModalSurface')&&guildBank.includes('Needed now')&&guildBank.includes('Upcoming'),'Guild Bank should be a compact shared inventory with a dedicated donation modal and current/upcoming filters');
+check(guildBank.includes("width:'23%'")&&guildBank.includes("type BankSection='inventory'|'needed'|'activity'")&&guildBank.includes('<GameModalSurface'),'Guild Bank must use a four-column inventory with dedicated Needed and Activity screens');
+check(guildBank.includes("width:'31%'")&&guildBank.includes('fontScale>=1.35'),'Very small devices and large accessible fonts must receive readable slot geometry');
+check(guildBank.includes('setSearch')&&guildBank.includes('visibleIds.map(inventoryCard)'),'Guild inventory must support client-side searching without changing server resources');
+check(guildBank.includes('shortageNow')&&guildBank.includes('shortageUpcoming')&&guildBank.includes('neededRow(id,false)')&&guildBank.includes('neededRow(id,true)'),'Needed view must distinguish current and upcoming outstanding requirements');
+check(guildBank.includes('snapshot.bank.activity.slice(0,20)')&&guildBank.includes('activityTime(item.createdAt)'),'Activity must use actual server ledger records and timestamps');
+check(guildBank.includes('Keyboard.dismiss();setConfirming(true)')&&guildBank.includes('Confirm donation')&&guildBank.includes('onPress={()=>void deposit({resourceId:selected,amount})}'),'Donations must receive an in-theme second confirmation before the server transaction');
+check(guildBank.includes('pendingGuildBankDeposit()')&&guildBank.includes('Retry saved deposit')&&guildBank.includes('depositOnlineGuildBank(input)'),'A pending deposit must remain idempotently recoverable');
+check(guildBank.includes('The server checks your available unlocked items or Gold')&&!guildBank.includes('You own'),'Do not present fabricated personal balances: server verifies inventory and Gold before a donation');
+const hallNav=fs.readFileSync('src/components/OnlineGuildHallPanel.tsx','utf8');
+check(hallNav.includes('onOpenConstruction={()=>{setBankFocus(null);navigate(\'Construction\')}}'),'Guild Bank Needed view must link directly to Construction without duplicate bottom action');
 check(guildBank.includes('Math.max(0,totalNeed(id)-balance(id))'),'Donatable capacity must subtract Guild Bank holdings from remaining requirements');
 check(guildBank.includes('if(!template.enabled)continue')&&guildBank.includes('if(progress?.completed)continue'),'Guild Bank must exclude unreleased and completed upgrades');
 check(profession.includes('guildMaterialsOnly')&&profession.includes("itemDef(recipe.output.itemId).guildOnly"),'Smithing and Tailoring must expose a Guild materials recipe filter');

@@ -24,7 +24,7 @@ import {ChatPlayerSheet,type ChatPlayerIdentity} from '../components/ChatPlayerS
 import {usePartySocial} from '../online/PartySocialProvider';
 import {partySocialRepository as repository,ownRecruitmentPosts,partyRankings,partyCommandKey,claimPartyContractReward,activePartyEvent,transferPartyLeadership,removePartyMember,cancelPartyInvitation,disbandParty,recruitmentMatchAlerts,ackRecruitmentMatchAlerts,type PublishRecruitmentInput,type PartyRanking,type RecruitmentMatchAlert} from '../online/party-social';
 import {myGuild,requestGuildMembership,respondPartyInvitation,sendPartyInvitation,socialInvitations,socialOutgoingInvitations,type OutgoingInvitationView,type PartyInvitationView} from '../online/social';
-import {EMPTY_RECRUITMENT_FILTERS,shouldShowPartyChat,recruitmentPostTypePresentation,recruitmentTimeLabel,normalizedPartyPreferences,partyActivityLabel,recruitmentPaceForParty,PARTY_LANGUAGES,type PartyActivityLevel,type PartyLanguage,type RecruitmentCardView,type RecruitmentPostType} from '../core/party-social';
+import {EMPTY_RECRUITMENT_FILTERS,shouldShowPartyChat,recruitmentPostTypePresentation,recruitmentTimeLabel,normalizedPartyPreferences,partyActivityLabel,recruitmentPaceForParty,type PartyActivityLevel,type PartyLanguage,type RecruitmentCardView,type RecruitmentPostType} from '../core/party-social';
 import {spacing,typography,type ThemeColors} from '../theme/theme';
 import {useGameTheme} from '../theme/ThemeContext';
 import {PARTY_UNLOCK_LEVEL} from '../core/feature-unlocks';
@@ -240,7 +240,6 @@ export function SocialScreen({mode='legacy',initialTab='party',characterLevel=0,
  </ScrollView>}
  </SocialHubPanel>;
 }
-function QuickChip({label,selected,onPress}:{label:string;selected:boolean;onPress:()=>void}){const C=useGameTheme(),s=useMemo(()=>makeStyles(C),[C]);return <Pressable accessibilityRole="button" accessibilityState={{selected}} onPress={onPress} style={({pressed})=>[s.chip,selected&&s.chipSelected,pressed&&s.pressed]}><Text style={[s.chipText,selected&&s.chipTextSelected]}>{selected?'✓ ':''}{label}</Text></Pressable>}
 function makeStyles(C:ThemeColors){return StyleSheet.create({page:{flex:1,minHeight:0},pageTabs:{flexDirection:'row',gap:5,paddingHorizontal:12,paddingTop:10,paddingBottom:2},pageTab:{minHeight:44,flex:1,alignItems:'center',justifyContent:'center',paddingHorizontal:7,backgroundColor:C.panel,borderWidth:1,borderRadius:9,borderColor:C.line},pageTabSelected:{backgroundColor:C.selection,borderColor:C.selectionLine},pageTabDisabled:{opacity:.45},pageTabLabel:{fontSize:11,color:C.muted,fontWeight:'800'},pageTabLabelSelected:{color:C.text},modalContent:{gap:10,paddingVertical:12},createdBody:{gap:12,paddingVertical:16},content:{padding:spacing.md,gap:spacing.md,paddingBottom:32},chatContent:{flex:1,minHeight:0,paddingHorizontal:spacing.md,paddingVertical:spacing.sm},
  prefsHeader:{flexDirection:'row',alignItems:'center',gap:8,minHeight:40,paddingHorizontal:12,paddingVertical:6,borderWidth:1,borderColor:C.line,borderRadius:8,backgroundColor:C.panel},
  prefsHeaderLabel:{flex:1,...typography.caption,color:C.muted,fontWeight:'800'},

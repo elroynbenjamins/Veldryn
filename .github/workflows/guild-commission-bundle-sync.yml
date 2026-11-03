@@ -31,6 +31,7 @@ jobs:
           git add backend/supabase/functions/gameplay/index.ts
           git diff --cached --quiet && exit 0
           git commit -m "build(gameplay): sync released guild crafting recipes"
+          git reset --hard HEAD
           git fetch origin "${GITHUB_REF_NAME}"
           git rebase "origin/${GITHUB_REF_NAME}"
           git push origin "HEAD:${GITHUB_REF_NAME}"

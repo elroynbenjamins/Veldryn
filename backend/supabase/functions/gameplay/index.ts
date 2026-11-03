@@ -44241,11 +44241,11 @@ function gemOnAbilityUsedV1(now, actor, ability2) {
   const flow = gem(actor, "effect_flow");
   if (flow) {
     const last = actor.modifiers.find((row) => row.tag.startsWith("gem:flow_last:"));
-    const same = last?.tag === "gem:flow_last:" + ability2.id;
+    const same2 = last?.tag === "gem:flow_last:" + ability2.id;
     actor.modifiers = actor.modifiers.filter((row) => !row.tag.startsWith("gem:flow_last:"));
     actor.modifiers.push({ sourceId: actor.definition.id, tag: "gem:flow_last:" + ability2.id, value: 1, expiresAt: FOREVER, createdAt: now, kind: "gem" });
     const cap = flow.resonance >= 2 ? 4 : 3, rows2 = active(actor, "gem:flow", now, actor.definition.id);
-    if (!same && rows2.length < cap) actor.modifiers.push({ sourceId: actor.definition.id, tag: "gem:flow", value: 1, expiresAt: now + 6e3, createdAt: now, kind: "gem" });
+    if (!same2 && rows2.length < cap) actor.modifiers.push({ sourceId: actor.definition.id, tag: "gem:flow", value: 1, expiresAt: now + 6e3, createdAt: now, kind: "gem" });
     const refreshed = active(actor, "gem:flow", now, actor.definition.id).sort((a, b) => (a.createdAt ?? 0) - (b.createdAt ?? 0));
     for (let i = 0; i < refreshed.length; i++) refreshed[i].expiresAt = now + 6e3 + (flow.resonance >= 3 ? i * 2e3 : 0);
   }
@@ -53174,11 +53174,73 @@ function moveWaitingEquipmentCraft(state, jobId, direction, nowMs) {
   return { ...projected, account: { ...projected.account, equipmentCraftingQueue: scheduled } };
 }
 
+// ../apps/mobile/src/core/pet-collection.ts
+function normalizeOwnedPetIds(...sources) {
+  const ids2 = [];
+  for (const source of sources) {
+    if (!Array.isArray(source)) continue;
+    for (const value of source) {
+      if (typeof value !== "string") continue;
+      const id = value.trim();
+      if (id && !ids2.includes(id)) ids2.push(id);
+    }
+  }
+  return ids2;
+}
+
+// ../apps/mobile/src/core/profile-unlocks.ts
+var PROFILE_BACKGROUNDS = [{ id: "asterfall-night", name: "Asterfall Night", requiredLevel: 1 }, { id: "ironwood-dawn", name: "Ironwood Dawn", requiredLevel: 10 }, { id: "silverbrook-mist", name: "Silverbrook Mist", requiredLevel: 20 }, { id: "oathglass-hall", name: "Oathglass Hall", requiredLevel: 25 }];
+var PROFILE_TITLES = [{ id: "new-adventurer", name: "New Adventurer", requiredLevel: 1 }, { id: "pathfinder", name: "Pathfinder", requiredLevel: 10 }, { id: "oathbound", name: "Oathbound", requiredLevel: 25 }, { id: "bloomwarden", name: "Bloomwarden", requiredGuild: true }];
+
+// ../apps/mobile/src/core/account-collections.ts
+function union(existing, earned) {
+  const merged = [...existing ?? []];
+  const seen = new Set(merged);
+  for (const id of earned) if (id && !seen.has(id)) {
+    merged.push(id);
+    seen.add(id);
+  }
+  return merged;
+}
+function same(a, b) {
+  return (a ?? []).length === b.length && b.every((id, index) => (a ?? [])[index] === id);
+}
+function reconcileAccountCollections(state) {
+  const characters = [state.character, ...(state.otherCharacters ?? []).map((entry2) => entry2.character)].filter((c) => !!c);
+  const highestLevel = characters.reduce((level, c) => Math.max(level, c.level || 0), 0);
+  const pets = normalizeOwnedPetIds(state.account.unlockedCosmeticPetIds, ...characters.map((c) => c.ownedPetIds));
+  const titles = union(state.account.unlockedTitleIds, PROFILE_TITLES.filter((t) => !t.requiredGuild && highestLevel >= (t.requiredLevel ?? 1)).map((t) => t.id));
+  const backgrounds = union(state.account.unlockedProfileBackgroundIds, PROFILE_BACKGROUNDS.filter((b) => highestLevel >= b.requiredLevel).map((b) => b.id));
+  const icons = union(state.account.unlockedProfileIconIds, PROFILE_ICON_CATALOG.filter(
+    (icon) => icon.bossId !== void 0 && state.defeatedBossIds.includes(icon.bossId) || icon.monsterId !== void 0 && characters.some((c) => (c.monsterMasteryPoints?.[icon.monsterId] ?? 0) >= 10)
+  ).map((icon) => icon.id));
+  const nextAccount = { ...state.account };
+  let changed = false;
+  if (!same(state.account.unlockedCosmeticPetIds, pets)) {
+    nextAccount.unlockedCosmeticPetIds = pets;
+    changed = true;
+  }
+  if (!same(state.account.unlockedTitleIds, titles)) {
+    nextAccount.unlockedTitleIds = titles;
+    changed = true;
+  }
+  if (!same(state.account.unlockedProfileBackgroundIds, backgrounds)) {
+    nextAccount.unlockedProfileBackgroundIds = backgrounds;
+    changed = true;
+  }
+  if (!same(state.account.unlockedProfileIconIds, icons)) {
+    nextAccount.unlockedProfileIconIds = icons;
+    changed = true;
+  }
+  return changed ? { ...state, account: nextAccount } : state;
+}
+
 // ../apps/mobile/src/core/account-actions.ts
 function snapshot(state) {
   return { character: structuredClone(state.character), inventory: structuredClone(state.inventory), overflow: structuredClone(state.overflow), activity: structuredClone(state.activity), skills: structuredClone(state.skills), quests: structuredClone(state.quests), currentRegionId: state.currentRegionId };
 }
 function createAccountCharacter(state, classId, name, body, now) {
+  state = reconcileAccountCollections(state);
   if (!state.character) return createCharacter(state, classId, name, body);
   if (accountCharacters(state).length >= unlockedCharacterSlots(state)) throw new Error("Character slot is locked.");
   const next = createCharacter(newGame(now), classId, name, body);
@@ -53188,6 +53250,7 @@ function createAccountCharacter(state, classId, name, body, now) {
   return { ...next, version: state.version, createdAtMs: state.createdAtMs, settings: state.settings, bank: state.bank, account: { ...state.account, createdCharacterCount: Math.max(state.account.createdCharacterCount, accountCharacters(state).length + 1) }, otherCharacters: [...state.otherCharacters ?? [], active2] };
 }
 function switchAccountCharacter(state, id, now) {
+  state = reconcileAccountCollections(state);
   if (!state.character) return state;
   if (state.character.id === id) return state;
   const target2 = state.otherCharacters?.find((x) => x.character.id === id);
@@ -53284,6 +53347,7 @@ function characterDeleteBlockReason(state, id) {
   return void 0;
 }
 function deleteAccountCharacter(state, id, confirmation, now) {
+  state = reconcileAccountCollections(state);
   if (!state.character) throw new Error("Create a character first.");
   const active2 = state.character.id === id;
   const stored = active2 ? snapshot(state) : (state.otherCharacters ?? []).find((entry2) => entry2.character.id === id);
@@ -55537,7 +55601,7 @@ function executeGameCommand(previous, value, now, options = {}) {
     if (activityStartCommand) settleAndStop();
     else settle();
   }
-  state = refreshCompanions(state, now);
+  state = reconcileAccountCollections(refreshCompanions(state, now));
   state = settleExpiredEventCandies(state, now);
   if (command.type.startsWith("companion_") && !earlyFeatureUnlocked(state, "companions")) throw new Error("companion_system_locked");
   if ((command.type === "daily_supplies_claim" || command.type === "daily_supplies_activate") && !earlyFeatureUnlocked(state, "dailySupplies")) throw new Error("daily_supplies_locked");
@@ -56104,7 +56168,7 @@ function executeGameCommand(previous, value, now, options = {}) {
       throw new Error("invalid_command");
   }
   if (companionMetricBefore) state = recordCompanionCommandMetrics(state, command.type, companionMetricBefore);
-  state = migrateGemPouch(state);
+  state = reconcileAccountCollections(migrateGemPouch(state));
   if (state.character && (!Number.isSafeInteger(state.character.gold) || state.character.gold < 0)) throw new Error("invalid_wallet");
   return { state, reward: reward2, activity, message, won, storyBossBattle, upgrade, forgeResults, contributions };
 }

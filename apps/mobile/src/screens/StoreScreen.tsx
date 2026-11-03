@@ -18,10 +18,11 @@ type Props={
  onRedeemCode?:(code:string)=>Promise<string|void>|string|void;
 };
 type StoreSection='Memberships'|'Collections';
+// Keep the concept implemented, but hide the unfinished Collections tab until release.
+const STORE_COLLECTIONS_VISIBLE=false;
 
-/** Store remains independent of Settings. Billing is deliberately kept mounted
- * when switching to the unavailable collections preview: Google Play callbacks
- * must never be lost during a pending purchase or restoration. */
+/** Store remains independent of Settings. Billing stays mounted when switching
+ * categories so purchase and restoration callbacks are never lost. */
 export function StoreScreen({state,onChange,online=false,onRefreshCommerce,onRedeemCode}:Props){
  const C=useGameTheme(),s=useMemo(()=>styles(C),[C]);
  const a=(text:string)=>accountText(state.settings.language,text);
@@ -47,10 +48,10 @@ export function StoreScreen({state,onChange,online=false,onRefreshCommerce,onRed
    <View pointerEvents="none" style={s.heroAccent}><Text style={[s.heroSymbol,{color:C.accentSoft}]}>✦</Text></View>
    <Text style={s.eyebrow}>SUPPORT THE ADVENTURE</Text>
    <Text accessibilityRole="header" style={s.heroTitle}>The Realm Store</Text>
-   <Text style={s.heroDescription}>Permanent upgrades, optional Supporter benefits and a future home for cosmetics.</Text>
+   <Text style={s.heroDescription}>Permanent upgrades and optional Supporter benefits.</Text>
    <Text style={s.heroFooter}>NO PAID PREMIUM CURRENCY · NO PAID PVP POWER</Text>
   </View>
-  <BoardTabs compact label="Store categories" items={[{id:'Memberships',label:'Memberships'},{id:'Collections',label:'Collections · Concept'}] as const} value={section} onChange={changeSection}/>
+  {STORE_COLLECTIONS_VISIBLE?<BoardTabs compact label="Store categories" items={[{id:'Memberships',label:'Memberships'},{id:'Collections',label:'Collections · Concept'}] as const} value={section} onChange={changeSection}/>:null}
   <View style={section==='Memberships'?s.visible:s.hidden}>
    <GooglePlayCommercePanel state={state} onChange={onChange} online={online} onRefreshCommerce={onRefreshCommerce}/>
    <Panel>
@@ -69,7 +70,7 @@ export function StoreScreen({state,onChange,online=false,onRefreshCommerce,onRed
     </View>:null}
    </Panel>
   </View>
-  {section==='Collections'?<StoreCollectionsPreview/>:null}
+  {STORE_COLLECTIONS_VISIBLE&&section==='Collections'?<StoreCollectionsPreview/>:null}
  </ScrollView>;
 }
 function styles(C:ThemeColors){return StyleSheet.create({

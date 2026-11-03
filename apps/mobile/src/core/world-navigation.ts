@@ -7,6 +7,9 @@ import {ITEMS} from '../content/items';
 import {EXPLORATION_ROUTES} from '../content/exploration';
 
 export type RegionTravelAvailability='available'|'locked'|'inDevelopment';
+// The opening story boss is mandatory before entering the second region or beyond.
+const FIRST_CHAPTER_BOSS_ID='FALLEN_KNIGHT';
+const POST_CHAPTER_ONE_REGIONS=new Set(['SUNSCAR','FROSTMARCH','ASHLANDS']);
 const REGION_SCOUT_REQUIREMENTS:Partial<Record<string,string>>={
  OLD_MINES:'SCOUT_IRONWOOD',
  KINGS_ROAD:'SCOUT_OLD_MINES',
@@ -18,6 +21,7 @@ export function regionTravelLockReason(state:GameState,zone:WorldZoneDef){
   if(worldZoneInDevelopment(zone))return zone.name+' is still in development';
   const level=state.character?.level??1;
   if(level<zone.minLevel)return `Reach Level ${zone.minLevel} to travel to ${zone.name}`;
+  if(POST_CHAPTER_ONE_REGIONS.has(zone.id)&&!(state.defeatedBossIds??[]).includes(FIRST_CHAPTER_BOSS_ID))return `Defeat the Fallen Knight to unlock ${zone.name}`;
   const routeId=REGION_SCOUT_REQUIREMENTS[zone.id];
   if(routeId&&!(state.exploredRouteIds??[]).includes(routeId)){
     const source=routeId.replace(/^SCOUT_/,'').replace(/_/g,' ').toLowerCase().replace(/\b\w/g,char=>char.toUpperCase());

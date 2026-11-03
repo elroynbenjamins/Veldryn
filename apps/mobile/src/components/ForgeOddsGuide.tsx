@@ -113,7 +113,6 @@ export function ForgeOddsGuide({itemId}:{itemId:string}){
         if(event.nativeEvent.actionName==='decrement')setQuality(value=>Math.max(0,value-QUALITY_STEP));
        }}
        onLayout={event=>setTrackWidth(event.nativeEvent.layout.width)}
-       // Own touches from the start: dragging the slider must not turn into a screen-back swipe.
        onStartShouldSetResponder={()=>true}
        onMoveShouldSetResponder={()=>true}
        onResponderTerminationRequest={()=>false}

@@ -44,6 +44,7 @@ function AccountChatOverlay({state,initialChannel='world',visible,onOpen,onClose
  const chatEnabled=state.settings.autoJoinWorldChat!==false;
  const wasVisible=useRef(false);
  const selectChannel=(next:Channel)=>{
+  if(next!==channel)Keyboard.dismiss();
   pendingGuildChannel.current=false;
   setLanguageMenuOpen(false);
   setChannel(next);
@@ -87,7 +88,7 @@ function AccountChatOverlay({state,initialChannel='world',visible,onOpen,onClose
   const hiding=Keyboard.addListener('keyboardDidHide',()=>setKeyboardVisible(false));
   return()=>{showing.remove();hiding.remove();};
  },[visible]);
- const closeChat=()=>{pendingGuildChannel.current=false;setLanguageMenuOpen(false);onChatRead?.();onClose();};
+ const closeChat=()=>{Keyboard.dismiss();pendingGuildChannel.current=false;setLanguageMenuOpen(false);onChatRead?.();onClose();};
  const activeLabel=channel==='world'?st("Global chat"):channel==='guild'?(guildTitle||st("Guild members")):channel==='party'?st("Your party"):st("Game notifications");
 
  return <>
@@ -116,7 +117,7 @@ function AccountChatOverlay({state,initialChannel='world',visible,onOpen,onClose
        <ChatChannelIcon channel={channel} color={C.accent}/>
        <Text numberOfLines={1} style={s.channelName}>{activeLabel}</Text>
        <View style={s.headerSpacer}/>
-       {channel==='world'&&<Pressable accessibilityRole="button" accessibilityLabel={st('World language: {language}',{language:WORLD_CHANNELS[worldChannel].name})} accessibilityState={{expanded:languageMenuOpen}} onPress={()=>setLanguageMenuOpen(value=>!value)} style={({pressed})=>[s.languageButton,pressed&&s.pressed]}>
+       {channel==='world'&&<Pressable accessibilityRole="button" accessibilityLabel={st('World language: {language}',{language:WORLD_CHANNELS[worldChannel].name})} accessibilityState={{expanded:languageMenuOpen}} onPress={()=>{Keyboard.dismiss();setLanguageMenuOpen(value=>!value);}} style={({pressed})=>[s.languageButton,pressed&&s.pressed]}>
         <Text numberOfLines={1} style={s.languageText}>{WORLD_CHANNELS[worldChannel].name}</Text>
         <DropdownChevron open={languageMenuOpen} color={C.info}/>
        </Pressable>}
@@ -170,16 +171,16 @@ function makeStyles(C:ThemeColors){return StyleSheet.create({
  header:{minHeight:56,flexDirection:'row',alignItems:'center',paddingLeft:14,paddingRight:8,gap:8,borderBottomWidth:StyleSheet.hairlineWidth,borderBottomColor:C.line,backgroundColor:C.panel2},
  brandBlock:{justifyContent:'center',gap:1},
  eyebrow:{color:C.accent,fontSize:9,fontWeight:'900',letterSpacing:1.5},
- title:{color:C.text,fontSize:20,fontWeight:'900'},
+ title:{color:C.accent,fontSize:20,fontWeight:'900'},
  headerSpacer:{flex:1,minWidth:0},
  onlinePill:{flexDirection:'row',alignItems:'center',gap:5,paddingHorizontal:7,paddingVertical:4,borderRadius:99},
  onlineDot:{width:7,height:7,borderRadius:4,backgroundColor:C.good},
  onlineText:{fontSize:9,color:C.good,fontWeight:'900',letterSpacing:.7},
  close:{width:44,height:44,alignItems:'center',justifyContent:'center',borderWidth:1,borderColor:C.line,borderRadius:10,backgroundColor:C.panelRaised},
  closeText:{fontSize:24,lineHeight:27,color:C.text,fontWeight:'400'},
- tabs:{minHeight:52,flexDirection:'row',alignItems:'center',gap:5,paddingHorizontal:9,paddingVertical:7,backgroundColor:C.panel2},
+ tabs:{minHeight:58,flexDirection:'row',alignItems:'center',gap:5,paddingHorizontal:9,paddingVertical:7,backgroundColor:C.panel2},
  tabsCompact:{gap:3,paddingHorizontal:6},
- tab:{flex:1,minWidth:0,minHeight:40,alignItems:'center',justifyContent:'center',paddingHorizontal:3,borderWidth:1,borderColor:C.line,borderRadius:9,backgroundColor:C.panelRaised},
+ tab:{flex:1,minWidth:0,minHeight:44,alignItems:'center',justifyContent:'center',paddingHorizontal:3,borderWidth:1,borderColor:C.line,borderRadius:9,backgroundColor:C.panelRaised},
  tabSelected:{backgroundColor:C.selection,borderColor:C.accent},
  tabDisabled:{opacity:.46},
  tabLabel:{fontSize:11,fontWeight:'900',color:C.muted},
@@ -187,14 +188,14 @@ function makeStyles(C:ThemeColors){return StyleSheet.create({
  tabLabelSelected:{color:C.text},
  tabBadge:{position:'absolute',top:-5,right:-3,minWidth:17,height:17,paddingHorizontal:3,borderRadius:9,alignItems:'center',justifyContent:'center',borderWidth:1,borderColor:C.panel2},
  tabBadgeText:{fontSize:9,color:C.notificationText,fontWeight:'900'},
- channelMeta:{height:43,minHeight:43,flexDirection:'row',alignItems:'center',gap:8,paddingHorizontal:12,backgroundColor:C.panel2,borderBottomWidth:StyleSheet.hairlineWidth,borderBottomColor:C.line},
+ channelMeta:{height:48,minHeight:48,flexDirection:'row',alignItems:'center',gap:8,paddingHorizontal:12,backgroundColor:C.panel2,borderBottomWidth:StyleSheet.hairlineWidth,borderBottomColor:C.line},
  channelName:{flexShrink:1,fontSize:11,color:C.muted,fontWeight:'700'},
- languageButton:{minHeight:36,maxWidth:142,flexDirection:'row',alignItems:'center',justifyContent:'center',gap:7,paddingHorizontal:10,borderWidth:1,borderColor:C.line,borderRadius:8,backgroundColor:C.panelRaised},
+ languageButton:{minHeight:44,maxWidth:142,flexDirection:'row',alignItems:'center',justifyContent:'center',gap:7,paddingHorizontal:10,borderWidth:1,borderColor:C.line,borderRadius:8,backgroundColor:C.panelRaised},
  languageText:{fontSize:11,color:C.info,fontWeight:'800',flexShrink:1},
  content:{flex:1,minHeight:0,paddingHorizontal:10,paddingTop:8,paddingBottom:9},
  channelPanel:{flex:1,minHeight:0},
- popoverDismiss:{position:'absolute',top:151,right:0,bottom:0,left:0,zIndex:18,backgroundColor:'transparent'},
- languagePopover:{position:'absolute',zIndex:30,elevation:18,top:144,right:10,width:220,maxWidth:'78%',padding:6,borderWidth:1,borderColor:C.selectionLine,borderRadius:12,backgroundColor:C.panel2,shadowColor:'#000',shadowOpacity:.24,shadowRadius:12,shadowOffset:{width:0,height:6}},
+ popoverDismiss:{position:'absolute',top:162,right:0,bottom:0,left:0,zIndex:18,backgroundColor:'transparent'},
+ languagePopover:{position:'absolute',zIndex:30,elevation:18,top:162,right:10,width:220,maxWidth:'78%',padding:6,borderWidth:1,borderColor:C.selectionLine,borderRadius:12,backgroundColor:C.panel2,shadowColor:'#000',shadowOpacity:.24,shadowRadius:12,shadowOffset:{width:0,height:6}},
  languageOptions:{maxHeight:222},
  languageOption:{minHeight:44,flexDirection:'row',alignItems:'center',gap:8,paddingHorizontal:12,paddingVertical:8,borderRadius:8},
  languageOptionSelected:{backgroundColor:C.selection},

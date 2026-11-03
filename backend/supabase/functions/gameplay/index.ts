@@ -50938,6 +50938,7 @@ function regionalSecondaryExchange(player, monster, basePlayerCritChance = 0.05)
 // ../apps/mobile/src/core/story-boss.ts
 var clamp6 = (value, min, max) => Math.max(min, Math.min(max, value));
 var FALLEN_KNIGHT_MAX_DURATION_MS = 1e5;
+var FALLEN_KNIGHT_MAX_FOOD_UNITS = 6;
 function mitigation(defense) {
   return clamp6(defense / Math.max(1, defense + 110), 0, 0.72);
 }
@@ -50946,7 +50947,7 @@ function simulateFallenKnightStoryBattle(player, seed, mode = "story") {
   if (!monster) throw new Error("fallen_knight_missing");
   const bossSecondary = regionalEnemySecondaryStats(monster);
   const bossMaxHp = monster.hp, playerMaxHp = Math.max(1, Math.round(player.maxHp));
-  let bossHp = bossMaxHp, playerHp = clamp6(Math.round(player.currentHp || playerMaxHp), 1, playerMaxHp), foodLeft = Math.max(0, Math.floor(player.foodQuantity)), foodConsumed = 0;
+  let bossHp = bossMaxHp, playerHp = clamp6(Math.round(player.currentHp || playerMaxHp), 1, playerMaxHp), foodLeft = clamp6(Math.floor(player.foodQuantity), 0, FALLEN_KNIGHT_MAX_FOOD_UNITS), foodConsumed = 0;
   let phase = 1, phaseWardUntilMs = 0, rngIndex = 0, bossAttackCount = 0;
   const phasesReached = [1], events = [];
   const playerHitChance = clamp6(player.accuracy - bossSecondary.evasion, 0.55, 0.99);
@@ -50957,14 +50958,14 @@ function simulateFallenKnightStoryBattle(player, seed, mode = "story") {
   const maybeEat = (atMs) => {
     const threshold = clamp6(player.autoEatThresholdPct, 10, 90) / 100;
     if (player.foodHeal <= 0) return;
-    while (playerHp > 0 && playerHp / playerMaxHp <= threshold && foodLeft > 0) {
+    if (playerHp > 0 && playerHp / playerMaxHp <= threshold && foodLeft > 0) {
       const healed = Math.min(playerMaxHp - playerHp, Math.max(1, Math.round(player.foodHeal)));
-      if (healed <= 0) break;
-      playerHp += healed;
-      foodLeft--;
-      foodConsumed++;
-      push({ atMs: atMs + 40, type: "heal", label: "Auto-eat", amount: healed });
-      if (playerHp / playerMaxHp > threshold) break;
+      if (healed > 0) {
+        playerHp += healed;
+        foodLeft--;
+        foodConsumed++;
+        push({ atMs: atMs + 40, type: "heal", label: "Auto-eat", amount: healed });
+      }
     }
   };
   const enterPhase = (atMs, next) => {
@@ -51151,7 +51152,8 @@ var COMBAT_MONSTER_DAMAGE_SCALE = 1.13;
 var REGIONAL_COMBAT_PRESSURE = { Greenfields: 1, Silverbrook: 1.04, "Ironwood Forest": 1.08, "Old Mines": 1.12, "King's Road": 1.16, Sunscar: 1.2, Frostmarch: 1.25, Ashlands: 1.3 };
 var REGIONAL_HUNT_DAMAGE_TUNING = { Greenfields: 0.36, Silverbrook: 0.25, "Ironwood Forest": 0.4, "Old Mines": 0.55, "King's Road": 0.42, Ashlands: 0.4 };
 var REGIONAL_MONSTER_PRESSURE_MULTIPLIER = { entry: 0.92, standard: 1, hard: 1.1 };
-var REGIONAL_MIN_ATTRITION_HP_PER_HOUR = { Greenfields: 80, Silverbrook: 120, "Ironwood Forest": 180, "Old Mines": 180, "King's Road": 230, Sunscar: 330, Frostmarch: 520, Ashlands: 620 };
+var REGIONAL_MIN_ATTRITION_HP_PER_HOUR = { Greenfields: 80, Silverbrook: 120, "Ironwood Forest": 240, "Old Mines": 280, "King's Road": 420, Sunscar: 780, Frostmarch: 1450, Ashlands: 2150 };
+var MISSING_GEAR_HUNT_ATTRITION_PER_TIER = 0.6;
 var MIN_UNHEALED_HP_FRACTION_PER_HOUR = 0.08;
 var OUT_OF_COMBAT_REGEN_FRACTION_PER_MINUTE = 0.05;
 var GATHER_TIME_SCALE = 1.25;
@@ -51485,14 +51487,15 @@ function combatRuntimeDetails(state, monsterId, nowMs = Date.now()) {
   const expected = (m.attack * 1.2 + m.defense * 0.8 + m.level * 2.2) * COMBAT_EXPECTED_SCALE;
   const setOutput = secondary.playerOutputMultiplier * setCombat.penetrationMultiplier;
   const combatCandy = eventCandyUtilityMultiplier(state, nowMs, "combat");
-  const regionalGearTier = m.zone === "King's Road" ? 2 : m.zone === "Sunscar" ? m.level >= 40 ? 4 : 3 : m.zone === "Frostmarch" ? m.level >= 70 ? 6 : m.level >= 55 ? 5 : 4 : m.zone === "Ashlands" ? m.level >= 82 ? 7 : 6 : void 0;
+  const regionalGearTier = m.zone === "Silverbrook" ? m.level >= 20 ? 2 : 1 : m.zone === "Ironwood Forest" ? m.level >= 14 ? 2 : 1 : m.zone === "Old Mines" ? 2 : m.zone === "King's Road" ? 2 : m.zone === "Sunscar" ? m.level >= 40 ? 4 : 3 : m.zone === "Frostmarch" ? m.level >= 70 ? 6 : m.level >= 55 ? 5 : 4 : m.zone === "Ashlands" ? m.level >= 82 ? 7 : 6 : void 0;
   const expectedTier = regionalGearTier ?? (regionalMonsterPressureBand(m.id) === "hard" ? m.level >= 22 ? 2 : m.level >= 10 ? 1 : 0 : 0);
   const tierGap = regionalEquippedTierGap(state, expectedTier);
-  const progressionSpeedPenalty = tierGap === 0 ? 1 : Math.max(0.62, 1 - tierGap * 0.18);
-  const progressionDamagePenalty = tierGap === 0 ? 1 : 1 + tierGap * 0.12;
+  const progressionSpeedPenalty = tierGap === 0 ? 1 : Math.max(0.5, 1 - tierGap * 0.24);
+  const progressionDamagePenalty = tierGap === 0 ? 1 : 1 + tierGap * 0.2;
+  const gearAttritionMultiplier = 1 + tierGap * MISSING_GEAR_HUNT_ATTRITION_PER_TIER;
   const speed = Math.max(COMBAT_SPEED_MIN, Math.min(COMBAT_SPEED_MAX, boostedPower / Math.max(1, expected))) * style.speedMultiplier * tactic.speedMultiplier * modifiers.combatSpeedMultiplier * companion.outputMultiplier * (1 + monsterMastery(state, monsterId).damageBonus) * (1 + effectGems.combat_speed) * setOutput * combatCandy * progressionSpeedPenalty;
   const killCycleSeconds = m.secondsPerKill * COMBAT_TIME_SCALE * (environment?.actionTimeMultiplier ?? 1) / speed;
-  return { c, m, stats: stats4, modifiers, companion, style, tactic, environment, effectGems, setCombat, secondary, boostedDefense, killCycleSeconds, progressionDamagePenalty };
+  return { c, m, stats: stats4, modifiers, companion, style, tactic, environment, effectGems, setCombat, secondary, boostedDefense, killCycleSeconds, progressionDamagePenalty, gearAttritionMultiplier };
 }
 function combatEncounterDamage(runtime, champion = false) {
   const { m, c, stats: stats4, modifiers, companion, style, tactic, effectGems, setCombat, secondary, boostedDefense, killCycleSeconds } = runtime;
@@ -51500,7 +51503,7 @@ function combatEncounterDamage(runtime, champion = false) {
   const regionalPressure = (REGIONAL_COMBAT_PRESSURE[m.zone] ?? 1) * REGIONAL_MONSTER_PRESSURE_MULTIPLIER[regionalMonsterPressureBand(m.id)];
   const damage = Math.max(0.1, (raw2 * 0.48 + m.level * 0.16) * (REGIONAL_HUNT_DAMAGE_TUNING[m.zone] ?? 1) * regionalPressure * secondary.incomingPressureMultiplier * style.damageTakenMultiplier * tactic.damageTakenMultiplier * (champion ? CHAMPION_DAMAGE_MULTIPLIER : 1) * modifiers.incomingDamageMultiplier * companion.incomingDamageMultiplier * (1 - effectGems.damage_reduction) * Math.max(0.5, 1 - setCombat.stats.ward) * (c.preparation ? preparationEffects(c.preparation).damage : 1) * runtime.progressionDamagePenalty);
   const healing = stats4.hp * companion.directHealingPctPerHour * killCycleSeconds / 3600;
-  const floor = Math.max(REGIONAL_MIN_ATTRITION_HP_PER_HOUR[m.zone] ?? 0, stats4.hp * MIN_UNHEALED_HP_FRACTION_PER_HOUR) * killCycleSeconds / 3600;
+  const floor = Math.max(REGIONAL_MIN_ATTRITION_HP_PER_HOUR[m.zone] ?? 0, stats4.hp * MIN_UNHEALED_HP_FRACTION_PER_HOUR) * runtime.gearAttritionMultiplier * killCycleSeconds / 3600;
   const incoming = Math.max(floor, damage);
   return { damage: incoming, healing, net: incoming - healing };
 }
@@ -52304,13 +52307,23 @@ function equipNoviceSet(state) {
   next.character.currentHp = Math.min(state.character.currentHp, effectiveStats(next).hp);
   return refreshQuests(next);
 }
+var FALLEN_KNIGHT_EXPECTED_GEAR_TIER = 2;
+function fallenKnightGearReadiness(state) {
+  const tierGap = regionalEquippedTierGap(state, FALLEN_KNIGHT_EXPECTED_GEAR_TIER);
+  return {
+    tierGap,
+    outgoingDamageMultiplier: Math.max(0.7, 1 - tierGap * 0.15),
+    actionSpeedMultiplier: Math.max(0.7, 1 - tierGap * 0.15),
+    incomingDamageMultiplier: 1 + tierGap * 0.25
+  };
+}
 function fallenKnightPlayerSnapshot(state) {
   const character = state.character;
   if (!character) throw new Error("No character");
   const stats4 = effectiveStats(state), multipliers = characterPermanentMultipliers(state), companion = companionCombatContribution(state), style = classCombatStyle(character.classId);
   const effectGems = equippedEffectGemBonuses(state), baseCritChance = CLASSES.find((def) => def.id === character.classId)?.role === "Damage" ? 0.1 : 0.05, setCombat = equipmentSetCombatModifiers(state, baseCritChance, 0.84);
   const foodId = character.equippedFoodId, food = foodId ? itemDef(foodId) : void 0, foodQuantity = stackQty2(state.inventory.stacks, foodId);
-  const prep = character.preparation ? preparationEffects(character.preparation) : void 0;
+  const prep = character.preparation ? preparationEffects(character.preparation) : void 0, gear = fallenKnightGearReadiness(state);
   return {
     name: character.name,
     classId: character.classId,
@@ -52324,9 +52337,9 @@ function fallenKnightPlayerSnapshot(state) {
     critChance: stats4.critChance,
     critMultiplier: stats4.critMultiplier,
     haste: stats4.haste,
-    damageMultiplier: Math.max(0.7, (1 + effectGems.boss_power) * setCombat.penetrationMultiplier),
-    actionSpeedMultiplier: Math.max(0.65, style.speedMultiplier * multipliers.combatSpeedMultiplier * companion.outputMultiplier * (1 + effectGems.combat_speed) * setCombat.speedMultiplier),
-    incomingDamageMultiplier: Math.max(0.45, style.damageTakenMultiplier * multipliers.incomingDamageMultiplier * companion.incomingDamageMultiplier * (1 - effectGems.damage_reduction) * Math.max(0.5, 1 - setCombat.stats.ward) * (prep?.damage ?? 1)),
+    damageMultiplier: Math.max(0.7, (1 + effectGems.boss_power) * setCombat.penetrationMultiplier) * gear.outgoingDamageMultiplier,
+    actionSpeedMultiplier: Math.max(0.65, style.speedMultiplier * multipliers.combatSpeedMultiplier * companion.outputMultiplier * (1 + effectGems.combat_speed) * setCombat.speedMultiplier) * gear.actionSpeedMultiplier,
+    incomingDamageMultiplier: Math.max(0.45, style.damageTakenMultiplier * multipliers.incomingDamageMultiplier * companion.incomingDamageMultiplier * (1 - effectGems.damage_reduction) * Math.max(0.5, 1 - setCombat.stats.ward) * (prep?.damage ?? 1)) * gear.incomingDamageMultiplier,
     foodHeal: food?.heal ?? 0,
     foodQuantity,
     autoEatThresholdPct: state.settings.autoEatThresholdPct

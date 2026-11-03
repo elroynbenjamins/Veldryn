@@ -42712,7 +42712,7 @@ var GUILD_COMPONENT_ITEMS = [
   { id: "GUILD_SEAL_WAX", name: "Guild Seal Wax", type: "material", rarity: "rare", value: 0, guildOnly: true },
   { id: "GUILD_BEACON_OIL", name: "Beacon Oil Flask", type: "material", rarity: "epic", value: 0, guildOnly: true }
 ];
-var GUILD_COMPONENT_CRAFTING_RELEASED = false;
+var GUILD_COMPONENT_CRAFTING_RELEASED = true;
 var GUILD_COMPONENT_RECIPES = [
   { id: "GUILD_FORGE_TIMBER", name: "Prepare Reinforced Timber", skillId: "smithing", level: 5, xp: 110, gold: 30, seconds: 75, repeatableTraining: true, inputs: [{ itemId: "COPPER_INGOT", quantity: 3 }, { itemId: "GREENWOOD_LOG", quantity: 2 }], output: { itemId: "GUILD_REINFORCED_TIMBER", quantity: 1 } },
   { id: "GUILD_FORGE_KEYSTONE", name: "Forge Mason's Keystone", skillId: "smithing", level: 18, xp: 280, gold: 95, seconds: 140, repeatableTraining: true, inputs: [{ itemId: "ASTER_IRON_INGOT", quantity: 2 }, { itemId: "IRONWOOD_LOG", quantity: 3 }], output: { itemId: "GUILD_MASONS_KEYSTONE", quantity: 1 } },

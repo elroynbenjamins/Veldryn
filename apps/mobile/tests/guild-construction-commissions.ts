@@ -8,12 +8,22 @@ function check(condition:unknown,detail:string){if(!condition)throw new Error(de
 const ids=new Set(GUILD_COMPONENT_ITEMS.map(x=>x.id));
 check(ids.size===8,'Eight illustrated guild component IDs required');
 check(GUILD_COMPONENT_RECIPES.length===8,'Exactly eight authored guild profession recipes');
-check(!GUILD_COMPONENT_CRAFTING_RELEASED,'Guild commissions remain disabled until server integrations are ready');
+check(GUILD_COMPONENT_CRAFTING_RELEASED,'Guild components should be craftable now that released Guild Construction needs them');
 const icons=fs.readFileSync('src/theme/guild-upgrade-component-art.ts','utf8');
 const resourceIcons=fs.readFileSync('src/theme/resource-assets.ts','utf8');
 const resourceRenderer=fs.readFileSync('src/components/ResourceArtwork.tsx','utf8');
 const guildBank=fs.readFileSync('src/components/OnlineGuildBankPanel.tsx','utf8');
 const guildConstruction=fs.readFileSync('src/components/OnlineGuildConstructionPanel.tsx','utf8');
+const profession=fs.readFileSync('src/components/CraftingRecipeBrowser.tsx','utf8');
+const upcomingMigration=fs.readFileSync('../../backend/supabase/migrations/20261104000500_guild_bank_upcoming_construction_stock.sql','utf8');
+check(guildBank.includes("width:'23%'")&&guildBank.includes('<GameModalSurface')&&guildBank.includes('Needed now')&&guildBank.includes('Upcoming'),'Guild Bank should be a compact shared inventory with a dedicated donation modal and current/upcoming filters');
+check(guildBank.includes('Math.max(0,totalNeed(id)-balance(id))'),'Donatable capacity must subtract Guild Bank holdings from remaining requirements');
+check(guildBank.includes('if(!template.enabled)continue')&&guildBank.includes('if(progress?.completed)continue'),'Guild Bank must exclude unreleased and completed upgrades');
+check(profession.includes('guildMaterialsOnly')&&profession.includes("itemDef(recipe.output.itemId).guildOnly"),'Smithing and Tailoring must expose a Guild materials recipe filter');
+check(upcomingMigration.includes('guild_bank_deposit_server_v1')&&upcomingMigration.includes('guild_bank_required_resources_guard_v1'),'Both independent server donation guards must support upcoming upgrades');
+check(!upcomingMigration.includes('t.required_guild_level<=v_level')&&!upcomingMigration.includes('and t.required_guild_level <= g.level'),'Published upcoming projects should not require the guild to have already reached their level');
+check(upcomingMigration.includes('p.completed_at is null')&&upcomingMigration.includes('v_bank > v_need')&&upcomingMigration.includes('skill.is_released'),'Do not accept completed, overfunded or unreleased Guild Skill stock');
+
 const roadmap=fs.readFileSync('src/components/GuildConstructionRoadmapPanel.tsx','utf8');
 check(resourceIcons.includes('guildUpgradeComponentArtwork(itemId)'),
  'Guild PNGs must be resolved through canonical shared resource artwork');
@@ -35,7 +45,7 @@ for(const recipe of GUILD_COMPONENT_RECIPES){
  check(ids.has(recipe.output.itemId),'Every commission output must be guild-only');
  check(recipe.inputs.length>0&&recipe.inputs.every(x=>x.quantity>0&&itemDef(x.itemId)),'Every input must exist');
  check(recipe.repeatableTraining&&(recipe.skillId==='smithing'||recipe.skillId==='tailoring'),'Guild craft must use a profession');
- check(!RECIPES.some(x=>x.id===recipe.id),'Unreleased guild recipes must not be craftable');
+ check(RECIPES.some(x=>x.id===recipe.id),'Released guild commission must be in the Smithing/Tailoring catalogue');
 }
 const sql=fs.readFileSync('../../backend/supabase/migrations/20261104000017_guild_construction_10x_commissions.sql','utf8');
 for(const row of GUILD_CONSTRUCTION_BLUEPRINTS){
@@ -49,4 +59,4 @@ for(const row of GUILD_CONSTRUCTION_BLUEPRINTS){
 const shared=fs.readFileSync('../../packages/guild-shop/src/catalogue.ts','utf8');
 for(const row of GUILD_CONSTRUCTION_BLUEPRINTS)check(shared.includes('id:"'+row.id+'"'),'Server catalogue missing '+row.id);
 check(sql.includes('set enabled=false'),'New construction cannot accept live donations until release gates pass');
-console.log('PASS: 8 illustrated guild materials, 8 real-input gated recipes, 17x 10x server project requirements');
+console.log('PASS: 8 illustrated guild materials, 8 released profession recipes, 17x 10x server project requirements');

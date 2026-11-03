@@ -28,6 +28,17 @@ assert(app.includes('newUnlockCount={unreadUnlockCount(unlockInbox)}'),'The badg
 assert(screen.includes('filtered.slice(0,20)')&&screen.includes('Show older unlocks')&&screen.includes('setShowAll(false)'),'History remains bounded after category filtering and resets the page on filter changes');
 assert(screen.includes("onCustomize"),'Unlock list links to existing profile customization');
 assert(screen.includes("pet:'COSMETIC PET'")&&screen.includes("emote:'EMOTE'")&&screen.includes("guild_cosmetic:'GUILD COSMETIC'"),'More cosmetic kinds have readable labels');
+
+assert(screen.includes("import {unlockInboxArtwork} from '../theme/unlock-inbox-art'")&&screen.includes('const art=unlockInboxArtwork(row)'),'Each unlock row looks up the earned cosmetic artwork');
+assert(screen.includes("art?<Image accessible={false} source={art}")&&screen.includes('<UiIcon name={icons[row.kind]} size={27}/>'),'Actual cosmetic art renders first and a themed icon remains the fallback');
+assert(screen.includes("row.kind==='background'?'cover':'contain'"),'Backgrounds crop to thumbnail while pets, frames and icons remain visible');
+const artwork=read('src/theme/unlock-inbox-art.ts');
+assert(artwork.includes("row.key.startsWith(prefix)")&&artwork.includes("row.key.slice(prefix.length)"),'Artwork lookup uses canonical kind:id keys, preserving colons in profile icon IDs');
+for(const resolver of ['profileIconArtwork(id)','profileBackgroundPreviewById.get(id)?.source','profileBorderSourceById.get(id)','petArtSource(id)','chatEmoteArtwork(id)','guildTokenShopOfferArt(id)','guildBannerSourceByKey.get(id)','guildBorderSourceByKey.get(id)','guildNameplateSourceByKey.get(id)']){
+ assert(artwork.includes(resolver),'Unlocked artwork must reuse existing production art source '+resolver);
+}
+assert(artwork.includes("case 'title':")&&artwork.includes('return undefined;'),'Titles without unique art retain the normal icon fallback');
+
 assert(core.includes("UNLOCK_INBOX_LIMIT=100")&&storage.includes("PREFIX='veldryn.unlock-inbox.v1:'"),'Inbox is capped and account scoped');
 assert(storage.includes('queues=new Map<string,Promise<void>>()'),'Concurrent writes must be serialized by scope');
 assert(notifications.includes("subroute:'account.new-unlocks'"),'Global notification route points to the new inbox');

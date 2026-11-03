@@ -13,6 +13,7 @@ import {HERB_NODES} from '../src/content/herbalism';
 import {combatBaselineProjection,dropExpectation,gatheringBalanceProjection} from '../src/core/balance-projection';
 import {isV33EquipmentCraftingMaterial,v33EquipmentMaterialUse} from '../src/core/equipment-loot-v33';
 import {ALCHEMY_EQUIPMENT_INFUSIONS} from '../src/content/alchemy';
+import {increasedCraftingGoldCost} from '../src/content/crafting-gold-cost';
 
 function ok(value:unknown,message:string){if(!value)throw new Error(message)}
 
@@ -23,13 +24,13 @@ const originalSlotGold:Record<string,number>={helmet:.85,chest:1.2,gloves:.7,leg
 for(const recipe of V33_EQUIPMENT_RECIPES){
   const slot=itemDef(recipe.output.itemId).slot!;
   const previousPrice=Math.max(1,Math.round(originalTierGold[recipe.v33EquipmentTier]*originalSlotGold[slot]));
-  ok(recipe.gold===previousPrice*3,recipe.id+' must cost exactly 3× its previous gold price');
+  ok(recipe.gold===increasedCraftingGoldCost(previousPrice*3),recipe.id+' must cost 20% above the 3× forge baseline');
   ok(RECIPES.find(row=>row.id===recipe.id)?.gold===recipe.gold,recipe.id+' registered recipe price must match the forge');
 }
 for(const recipe of NOVICE_RECIPES){
   const slot=itemDef(recipe.output.itemId).slot!,stage=NOVICE_STAGE[slot]??4;
   const previousPrice=(slot==='weapon'||slot==='amulet'||slot==='ring'?20:stage===4?15:10)*2;
-  ok(recipe.gold===previousPrice*3,recipe.id+' novice equipment must also cost exactly 3×');
+  ok(recipe.gold===increasedCraftingGoldCost(previousPrice*3),recipe.id+' novice equipment must cost 20% above the 3× forge baseline');
   ok(RECIPES.find(row=>row.id===recipe.id)?.gold===recipe.gold,recipe.id+' novice recipe price must match the shared catalog');
 }
 const firstNovice=NOVICE_RECIPES.find(row=>row.classId==='IRONWARDEN'&&row.output.itemId.endsWith('_CHEST'))!;
@@ -164,4 +165,4 @@ ok(readyPath.canCraftNow&&readyPath.blockers.length===0,'Recipe planner should b
 const crafted=craftRecipe(state,t1.id,1000);
 ok(crafted.inventory.stacks.some(row=>row.itemId==='T1P_001'&&row.quantity===1),'Authoritative craft path must actually create the V33 equipment piece');
 
-console.log('PASS: all V33 and novice equipment recipes charge triple gold, with paced, sourceable, actionable V33 crafting');
+console.log('PASS: all V33 and novice equipment recipes charge 20% above the triple-Gold forge baseline, with paced, sourceable, actionable V33 crafting');

@@ -1,17 +1,47 @@
 import type {ReactNode} from 'react';
-import {Image,Pressable,StyleSheet,Text,View} from 'react-native';
+import {Pressable,StyleSheet,Text,View} from 'react-native';
 import {useGameTheme} from '../theme/ThemeContext';
 import {ThemedIcon} from './ThemedNavigationIcon';
-import {guildTokenIcon} from '../theme/guild-token-shop-art';
 
-export function GuildHomeActions({activity,board,chatUnread=0,canManage=true,onQuests,onShop,onPve,onRoster,onHall,onChat,onManage}:{activity:ReactNode;board?:ReactNode;chatUnread?:number;canManage?:boolean;onQuests:()=>void;onShop:()=>void;onPve:()=>void;onRoster:()=>void;onHall:()=>void;onChat:()=>void;onManage:()=>void}){
+/** Guild Home is a dashboard, not a second copy of every Guild section.
+ * Put communication and unclaimed rewards above supplementary information. */
+export function GuildHomeActions({activity,board,summary,chatUnread=0,canManage=true,onQuests,onShop,onPve,onRoster,onHall,onChat,onManage}:{
+ activity:ReactNode;board?:ReactNode;summary?:ReactNode;chatUnread?:number;canManage?:boolean;
+ onQuests:()=>void;onShop:()=>void;onPve:()=>void;onRoster:()=>void;onHall:()=>void;onChat:()=>void;onManage:()=>void;
+}){
  const C=useGameTheme();
- const rows=[{title:'Guild Quests',copy:'Shared objectives and your contribution',icon:'quests',action:onQuests},{title:'Guild Token Shop',copy:'Permanent account rewards',icon:'inventory',action:onShop},{title:'The Raid Gate',copy:'Weekly and event encounters',icon:'dungeon',action:onPve}] as const;
+ const quickLinks=[
+  {title:chatUnread>0?`Chat · ${chatUnread>99?'99+':chatUnread}`:'Chat',action:onChat},
+  {title:'Members',action:onRoster},
+  {title:'Shop',action:onShop},
+  ...(canManage?[{title:'Manage',action:onManage}]:[]),
+ ];
+ const actions=[
+  {title:'Guild Quests',detail:'Shared weekly objectives',icon:'quests' as const,action:onQuests},
+  {title:'Raid Gate',detail:'Weekly & event bosses',icon:'dungeon' as const,action:onPve},
+ ];
  return <View style={s.stack}>
-  {board?<View style={s.stack}><Text style={[s.kicker,{color:C.muted}]}>MEMBER NOTICE BOARD</Text>{board}</View>:null}
-  {activity}
-  <View style={s.stack}>{rows.map(row=><Pressable key={row.title} accessibilityRole="button" onPress={row.action} style={({pressed})=>[s.row,{borderColor:C.line,backgroundColor:C.panel},pressed&&s.pressed]}><View style={[s.icon,{borderColor:C.line,backgroundColor:C.panel2}]}>{row.title==='Guild Token Shop'?<Image accessible={false} source={guildTokenIcon} style={{width:28,height:28}} resizeMode="contain"/>:<ThemedIcon name={row.icon} size={25}/>}</View><View style={s.flex}><Text style={[s.name,{color:C.text}]}>{row.title}</Text><Text style={[s.copy,{color:C.muted}]}>{row.copy}</Text></View><Text style={[s.arrow,{color:C.muted}]}>›</Text></Pressable>)}</View>
-  <View style={s.links}>{[{title:'Roster',action:onRoster},{title:'Hall',action:onHall},{title:chatUnread?`Chat · ${chatUnread}`:'Chat',action:onChat},...(canManage?[{title:'Manage Guild',action:onManage}]:[])].map(row=><Pressable key={row.title} accessibilityRole="button" onPress={row.action} style={[s.link,{borderColor:C.line,backgroundColor:C.panel}]}><Text style={[s.linkText,{color:C.text}]}>{row.title}</Text></Pressable>)}</View>
+  <View accessibilityRole="group" accessibilityLabel="Guild quick actions" style={s.quickLinks}>
+   {quickLinks.map(item=><Pressable key={item.title} accessibilityRole="button" accessibilityLabel={item.title} onPress={item.action} style={({pressed})=>[s.quickLink,{backgroundColor:C.panel,borderColor:C.lineStrong},pressed&&s.pressed]}>
+    <Text numberOfLines={1} style={[s.quickLinkText,{color:item.title.startsWith('Chat ·')?C.notification:C.text}]}>{item.title}</Text>
+   </Pressable>)}
+  </View>
+  {summary}
+  {board?<View style={s.section}><Text style={[s.kicker,{color:C.muted}]}>GUILD NOTICE</Text>{board}</View>:null}
+  <View style={s.section}>{activity}</View>
+  <View style={s.actionGrid}>{actions.map(item=><Pressable key={item.title} accessibilityRole="button" onPress={item.action} style={({pressed})=>[s.action,{borderColor:C.line,backgroundColor:C.panel},pressed&&s.pressed]}>
+   <ThemedIcon name={item.icon} size={23}/>
+   <View style={s.flex}><Text style={[s.actionTitle,{color:C.text}]}>{item.title}</Text><Text style={[s.actionDetail,{color:C.muted}]}>{item.detail}</Text></View>
+   <Text style={[s.arrow,{color:C.muted}]}>›</Text>
+  </Pressable>)}</View>
  </View>;
 }
-const s=StyleSheet.create({stack:{gap:10},flex:{flex:1,minWidth:0,gap:3},kicker:{fontSize:10,lineHeight:15,fontWeight:'700',letterSpacing:.6},copy:{fontSize:13,lineHeight:19},name:{fontSize:15,lineHeight:21,fontWeight:'700'},row:{flexDirection:'row',gap:10,alignItems:'center',padding:12,minHeight:76,borderWidth:1,borderRadius:10},icon:{width:42,height:42,borderWidth:1,borderRadius:8,alignItems:'center',justifyContent:'center'},arrow:{fontSize:26},links:{flexDirection:'row',flexWrap:'wrap',gap:6},link:{minHeight:44,paddingHorizontal:12,borderWidth:1,borderRadius:8,justifyContent:'center'},linkText:{fontSize:12,lineHeight:17,fontWeight:'600'},pressed:{opacity:.76}});
+const s=StyleSheet.create({
+ stack:{gap:10},section:{gap:5},kicker:{fontSize:10,lineHeight:15,fontWeight:'800',letterSpacing:.6},
+ quickLinks:{flexDirection:'row',flexWrap:'wrap',gap:6},quickLink:{minHeight:44,flexGrow:1,flexBasis:'21%',minWidth:70,paddingHorizontal:8,alignItems:'center',justifyContent:'center',borderWidth:1,borderRadius:8},
+ quickLinkText:{fontSize:12,lineHeight:17,fontWeight:'800',textAlign:'center'},
+ actionGrid:{flexDirection:'row',flexWrap:'wrap',gap:8},
+ action:{flexGrow:1,flexBasis:'46%',minWidth:135,minHeight:65,flexDirection:'row',alignItems:'center',gap:8,paddingHorizontal:9,paddingVertical:8,borderWidth:1,borderRadius:10},
+ flex:{flex:1,minWidth:0},actionTitle:{fontSize:13,lineHeight:18,fontWeight:'800'},actionDetail:{fontSize:11,lineHeight:15},
+ arrow:{fontSize:20},pressed:{opacity:.76},
+});

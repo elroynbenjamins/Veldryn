@@ -115,6 +115,11 @@ try{
  // Guild Bank is a separately gated migration. Test its functions in the
  // disposable PGlite database; no live player resources can be affected.
  await db.exec(readFileSync(path.join(migrations,'20261104000016_guild_bank_construction_v1.sql'),'utf8'));
+ await db.exec(readFileSync(path.join(migrations,'20261104000034_guild_construction_member_cost_scaling_v1.sql'),'utf8'));
+ assert.equal(Number((await single('select public.guild_construction_scaled_amount_v1(120,1) as cost')).cost),120);
+ assert.equal(Number((await single('select public.guild_construction_scaled_amount_v1(120,2) as cost')).cost),160);
+ assert.equal(Number((await single('select public.guild_construction_scaled_amount_v1(120,4) as cost')).cost),200);
+ assert.equal(Number((await single('select public.guild_construction_scaled_amount_v1(120,20) as cost')).cost),580);
  assert.equal((await single(`select has_function_privilege('authenticated',
   'public.guild_bank_deposit_server_v1(uuid,text,integer,text)','EXECUTE') as permitted`)).permitted,false);
  assert.equal((await single(`select has_function_privilege('authenticated',
@@ -137,6 +142,14 @@ try{
  await db.query('insert into auth.users(id) values ($1)',[account]);
  await db.query('insert into public.guilds(id,level) values ($1,20)',[guild]);
  await db.query('insert into public.guild_members(guild_id,account_id) values ($1,$2)',[guild,account]);
+ const temporaryMember='44444444-4444-4444-8444-444444444444';
+ await db.query('insert into auth.users(id) values ($1)',[temporaryMember]);
+ await db.query('insert into public.guild_members(guild_id,account_id) values ($1,$2)',[guild,temporaryMember]);
+ const twoMemberPrices=(await single('select public.guild_construction_costs_server_v1($1) as costs',[account])).costs;
+ assert.equal(twoMemberPrices.memberCount,2,'authoritative guild roster counts all current members');
+ const baseLogCost=Number((await single("select required_amount from public.guild_construction_requirements where template_id='stormwatch_banner' and resource_id='GREENWOOD_LOG'")).required_amount);
+ const effectiveLogCost=twoMemberPrices.requirements.find(row=>row.templateId==='stormwatch_banner'&&row.resourceId==='GREENWOOD_LOG')?.amount;
+ assert.equal(Number(effectiveLogCost),Math.ceil(baseLogCost*1.2/20)*20,'each construction material scales independently');
  await db.query(`insert into public.guild_muster_daily(guild_id,account_id,activity_date,
   check_in_points,combat_points) values($1,$2,(now() at time zone 'utc')::date,10,5)`,[guild,account]);
  await db.query(`insert into public.event_community_claims(account_id,event_id,milestone_percent)
@@ -167,6 +180,13 @@ try{
  assert.equal((await single("select state#>>'{character,gold}' as gold from public.online_game_states where account_id=$1",[account])).gold,'900');
  const allocated=await single(`select public.guild_bank_allocate_server_v1($1,'stormwatch_banner','GREENWOOD_LOG',10,'bank-alloc-01') as receipt`,[account]);
  assert.equal(allocated.receipt.alreadyProcessed,false);
+ assert.equal(Number((await single("select cost_member_count from public.guild_construction_projects where guild_id=$1 and template_id='stormwatch_banner'",[guild])).cost_member_count),2,
+   'first successful allocation locks the funding roster size');
+ await db.query('delete from public.guild_members where account_id=$1',[temporaryMember]);
+ const afterLeave=(await single('select public.guild_construction_costs_server_v1($1) as costs',[account])).costs;
+ assert.equal(afterLeave.memberCount,1,'current roster updates after members leave');
+ assert.equal(Number(afterLeave.requirements.find(row=>row.templateId==='stormwatch_banner'&&row.resourceId==='GREENWOOD_LOG')?.amount),Number(effectiveLogCost),
+   'already funded projects retain their locked requirements after membership changes');
  assert.equal((await single(`select public.guild_bank_allocate_server_v1($1,'stormwatch_banner','GREENWOOD_LOG',10,'bank-alloc-01') as receipt`,[account])).receipt.alreadyProcessed,true);
  assert.equal((await single(`select amount from public.guild_bank_balances where guild_id=$1 and resource_id='GREENWOOD_LOG'`,[guild])).amount,15);
  await fail(`select public.guild_bank_allocate_server_v1($1,'stormwatch_banner','GREENWOOD_LOG',16,'bank-alloc-02')`,[account]);

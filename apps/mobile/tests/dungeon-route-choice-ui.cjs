@@ -38,4 +38,13 @@ assert(stage.includes('anticipation-party:')&&stage.includes('anticipation-enemy
 assert(stage.includes('if(!anticipation||reduceMotion)return')&&stage.includes('return()=>clearInterval(timer)'),'Reduce-motion and unmount stop visual-only combat animations');
 assert(!stage.includes('setRun(')&&!stage.includes('setState('),'The early animation never mutates gameplay or server authority');
 
+assert(overview.includes('entryNodeId={entryCombatNodeId}'),'The same selected room identity persists across anticipation, server resolution and replay');
+assert(overview.includes('setEntryCombatNodeId(nodeId);setEntryCombatKind(option?.kind)'),'Room identity and boss layout are captured synchronously on tap');
+assert(overview.includes("run.mode==='qmode'?!!run.selectedNodeId")&&overview.includes("!run.pendingCombat?.cues.length"),'Q-Mode and Live keep animating only until real combat cues are available');
+assert(stage.includes('entryNodeId??run.selectedNodeId??replay?.nodeId'),'Battle identity and timer do not reset when server replay arrives');
+assert(stage.includes('Math.max(previous,serverElapsedMs)'),'Live server clock corrections never send the elapsed display backwards');
+assert(stage.includes('was&&!anticipation&&replay&&!reduceMotion')&&stage.includes('duration:220'),'Confirmed combat portraits have a short transition without another loading screen');
+assert(stage.includes('opacity:handoffOpacity')&&stage.includes('<Animated.View style={[s.partyFormation'),'Enemy and party formations share the handoff fade, without remounting the arena');
+assert(stage.includes('anticipation?null:<Text accessibilityLiveRegion'),'Waiting/settlement copy never blocks the combat art during anticipation');
+
 console.log('PASS: dungeon room cards are image-led, one-tap, server-vote safe and readable');

@@ -1,3 +1,4 @@
+import { GUILD_CONSTRUCTION_TEMPLATES } from "../../../packages/guild-shop/src/catalogue";
 import { guildShopReadHandler, guildShopDailyClaimHandler, guildShopPurchaseHandler, guildShopEventClaimHandler, guildConstructionDonationHandler, guildBankDepositHandler, guildShopWeeklyClaimHandler, type GuildShopReadServices } from "../guild-shop-read";
 function assert(value: unknown, message: string): asserts value {
  if (!value) throw new Error(message);
@@ -10,8 +11,16 @@ async function run() {
   rpc: async <T>(name:string,args:Record<string,unknown>) => {
    calls.push({name,args});
    if(name==="guild_bank_snapshot_server_v1")return {balances:[],activity:[]} as unknown as T;
+   if(name==="guild_construction_costs_server_v1")return {
+    memberCount:4,
+    requirements:GUILD_CONSTRUCTION_TEMPLATES.flatMap(template=>[
+     ...(template.gold>0?[{templateId:template.id,resourceId:"gold",amount:Math.ceil(template.gold*1.6/20)*20,costMemberCount:4}]:[]),
+     ...template.materials.map(material=>({templateId:template.id,resourceId:material.materialKey,amount:Math.ceil(material.amount*1.6/20)*20,costMemberCount:4})),
+    ]),
+   } as unknown as T;
    if(name==="guild_construction_benefits_server_v1")return {guildTokenBonusBps:0,guildTokenWeeklyCap:250} as unknown as T;
-   if(name==="guild_construction_snapshot_server_v1"||name==="guild_shop_event_community_rewards_server_v1"||name==="guild_construction_enabled_server_v1"||name==="guild_shop_weekly_rewards_server_v1")return [] as unknown as T;
+   if(name==="guild_construction_enabled_server_v1")return ["construction_hall_1"] as unknown as T;
+   if(name==="guild_construction_snapshot_server_v1"||name==="guild_shop_event_community_rewards_server_v1"||name==="guild_shop_weekly_rewards_server_v1")return [] as unknown as T;
    return {balance:3000,earnedThisWeek:125,claimedDailyKinds:[],enabledItemIds:[],ownedItemIds:["border_silver"]} as unknown as T;
   },
  };
@@ -24,12 +33,18 @@ async function run() {
  assert(method.status===405,"writes must be disallowed");
  const ok = await handler(new Request("https://example.test/guild/shop",{headers:{authorization:"Bearer valid"}}));
  assert(ok.status===200,"valid request should succeed");
- const body = await ok.json() as {balance:number;weeklyCap:number;cards:Array<{id:string;status:string}>};
+ const body = await ok.json() as {balance:number;weeklyCap:number;constructionMemberCount:number;constructionTemplates:Array<{id:string;enabled:boolean;costMemberCount:number;materials:Array<{materialKey:string;amount:number}>}>;cards:Array<{id:string;status:string}>};
  assert(body.balance===3000 && body.weeklyCap===250,"snapshot fields");
+ assert(body.constructionMemberCount===4,"authoritative current guild roster size is returned");
+ const pricedHall=body.constructionTemplates.find(t=>t.id==="construction_hall_1");
+ assert(pricedHall?.enabled&&pricedHall.costMemberCount===4&&
+   pricedHall.materials.find(m=>m.materialKey==="GUILD_REINFORCED_TIMBER")?.amount===200&&
+   pricedHall.materials.find(m=>m.materialKey==="GUILD_BANNERWEAVE")?.amount===160,
+   "Guild Construction uses server-scaled 4-member costs, not static one-member catalogue amounts");
  assert(body.cards.find(x=>x.id==="border_silver")?.status==="owned","owned cosmetics");
  assert(body.cards.find(x=>x.id==="guild_pet_02")?.status==="insufficient_tokens","unaffordable pet");
  assert(body.cards.find(x=>x.id==="guild_companion_01")?.status==="guild_level_locked","guild level lock");
- assert(calls.length===7 && calls[0].name==="guild_shop_snapshot_server_v1" && calls[1].name==="guild_construction_snapshot_server_v1" && calls[2].name==="guild_shop_event_community_rewards_server_v1" && calls[3].name==="guild_construction_enabled_server_v1" && calls[4].name==="guild_shop_weekly_rewards_server_v1" && calls[5].name==="guild_bank_snapshot_server_v1" && calls[6].name==="guild_construction_benefits_server_v1","all authenticated read-only RPCs called");
+ assert(calls.length===8 && calls[0].name==="guild_shop_snapshot_server_v1" && calls[1].name==="guild_construction_snapshot_server_v1" && calls[2].name==="guild_shop_event_community_rewards_server_v1" && calls[3].name==="guild_construction_enabled_server_v1" && calls[4].name==="guild_shop_weekly_rewards_server_v1" && calls[5].name==="guild_bank_snapshot_server_v1" && calls[6].name==="guild_construction_benefits_server_v1" && calls[7].name==="guild_construction_costs_server_v1","all authenticated read-only RPCs called");
  assert(calls[0].args.p_account_id==="11111111-1111-4111-8111-111111111111","verified identity forwarded");
  const optionalFailure=guildShopReadHandler({...services,rpc:async<T>(name:string,args:Record<string,unknown>)=>{
   if(name==='guild_construction_snapshot_server_v1'||name==='guild_shop_event_community_rewards_server_v1')throw new Error('unavailable_optional_projection');
@@ -40,7 +55,17 @@ async function run() {
  const degradedData=await degraded.json() as {balance:number;construction:unknown[];eventBonuses:unknown[];unavailableSections:string[]};
  assert(degradedData.balance===3000&&degradedData.construction.length===0&&degradedData.eventBonuses.length===0,'wallet must remain authoritative with optional sections safely empty');
  assert(degradedData.unavailableSections.includes('construction')&&degradedData.unavailableSections.includes('eventBonuses'),'unavailable projections are explicitly reported');
- const walletFailure=guildShopReadHandler({...services,rpc:async<T>(name:string,args:Record<string,unknown>)=>{
+ const costFailure=guildShopReadHandler({...services,rpc:async<T>(name:string,args:Record<string,unknown>)=>{
+  if(name==="guild_construction_costs_server_v1")throw new Error("cost_projection_unavailable");
+  return services.rpc<T>(name,args);
+ }});
+ const costDegraded=await costFailure(new Request('https://example.test/guild/shop',{headers:{authorization:'Bearer valid'}}));
+ assert(costDegraded.status===200,'Guild Shop remains accessible when construction cost projection fails');
+ const costData=await costDegraded.json() as {unavailableSections:string[];constructionTemplates:Array<{id:string;enabled:boolean}>};
+ assert(costData.unavailableSections.includes("constructionCosts")&&
+   costData.constructionTemplates.find(t=>t.id==="construction_hall_1")?.enabled===false,
+   "Missing scaled costs must disable funding, not offer stale fixed costs");
+  const walletFailure=guildShopReadHandler({...services,rpc:async<T>(name:string,args:Record<string,unknown>)=>{
   if(name==='guild_shop_snapshot_server_v1')throw new Error('wallet_failure');
   return services.rpc<T>(name,args);
  }});

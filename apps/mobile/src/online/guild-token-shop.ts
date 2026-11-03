@@ -9,7 +9,7 @@ export interface GuildTokenShopCard{
  price:number;status:GuildTokenShopStatus;progressToPrice:number;released:boolean;quality?:GuildShopQuality;
 }
 export interface GuildConstructionTemplate{
- id:string;guildLevel:number;gold:number;materials:Array<{materialKey:string;amount:number}>;unlockId:string;enabled:boolean;
+ id:string;guildLevel:number;gold:number;materials:Array<{materialKey:string;amount:number}>;unlockId:string;enabled:boolean;costMemberCount?:number|null;
 }
 export interface GuildConstructionProgress{
  templateId:string;completed:boolean;resources:Record<string,number>;
@@ -26,7 +26,7 @@ export interface GuildBankSnapshot{
  activity:Array<{kind:'deposit'|'construction';resourceId:string;amount:number;templateId?:string|null;mine:boolean;createdAt:string}>;
 }
 export interface GuildTokenShopSnapshot{
- guildLevel:number;balance:number;earnedThisWeek:number;weeklyCap:number;cards:GuildTokenShopCard[];treasuryBonusBps?:number;
+ guildLevel:number;constructionMemberCount?:number|null;balance:number;earnedThisWeek:number;weeklyCap:number;cards:GuildTokenShopCard[];treasuryBonusBps?:number;
  unavailableSections?:string[];
  claimedDailyKinds:Array<"attendance"|"contribution">;
  constructionTemplates:GuildConstructionTemplate[];construction:GuildConstructionProgress[];
@@ -63,7 +63,8 @@ function validateSnapshot(value:unknown):GuildTokenShopSnapshot{
   if(!template||typeof template.id!=='string'||typeof template.unlockId!=='string'||typeof template.enabled!=='boolean'
    ||!Number.isSafeInteger(template.guildLevel)||template.guildLevel<1
    ||!Number.isSafeInteger(template.gold)||template.gold<0||!Array.isArray(template.materials)
-   ||template.materials.some(m=>typeof m.materialKey!=='string'||!Number.isSafeInteger(m.amount)||m.amount<=0))
+   ||template.materials.some(m=>typeof m.materialKey!=='string'||!Number.isSafeInteger(m.amount)||m.amount<=0)
+    ||(template.costMemberCount!=null&&(!Number.isSafeInteger(template.costMemberCount)||template.costMemberCount<1)))
    throw new Error('Invalid construction template.');
   return template;
  });
@@ -115,7 +116,7 @@ function validateSnapshot(value:unknown):GuildTokenShopSnapshot{
     ?'guild_shop_quality_locked' as const:card.status;
   return {...card,quality,status};
  });
- return {unavailableSections:Array.isArray(o.unavailableSections)?o.unavailableSections.filter((item):item is string=>typeof item==='string'):[],guildLevel:o.guildLevel as number,balance:o.balance as number,earnedThisWeek:o.earnedThisWeek as number,
+ return {unavailableSections:Array.isArray(o.unavailableSections)?o.unavailableSections.filter((item):item is string=>typeof item==='string'):[],guildLevel:o.guildLevel as number,constructionMemberCount:Number.isSafeInteger(o.constructionMemberCount)&&Number(o.constructionMemberCount)>=1?Number(o.constructionMemberCount):null,balance:o.balance as number,earnedThisWeek:o.earnedThisWeek as number,
   weeklyCap:Math.max(o.weeklyCap as number,benefits.guildTokenWeeklyCap),treasuryBonusBps:benefits.guildTokenBonusBps,
   cards:displayedCards,claimedDailyKinds:o.claimedDailyKinds as Array<"attendance"|"contribution">,constructionTemplates,construction,bank,eventBonuses,weeklyRewards};
 }

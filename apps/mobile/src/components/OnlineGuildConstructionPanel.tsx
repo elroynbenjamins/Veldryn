@@ -83,6 +83,9 @@ export function OnlineGuildConstructionPanel({
   <Text style={s.copy}>Choose a building to see its permanent bonuses, upgrade tiers and material requirements.</Text>
   <View style={s.buildingGrid}>{BUILDINGS.map(building=><Pressable key={building.id} accessibilityRole="button" accessibilityLabel={'View '+building.title+' upgrades'} accessibilityState={{selected:selectedBuilding===building.id}} onPress={()=>{setSelectedBuilding(building.id);setSelected(null)}} style={({pressed})=>[s.building,{borderColor:selectedBuilding===building.id?C.selectionLine:C.lineStrong,backgroundColor:selectedBuilding===building.id?C.selection:C.panel2},pressed&&s.pressed]}><Image source={guildFacilityArtwork(building.art)} style={s.buildingArt} resizeMode="contain" accessible={false}/><Text style={[s.buildingName,{color:selectedBuilding===building.id?C.text:C.muted}]}>{building.title}</Text></Pressable>)}</View>
   <Text style={s.note}>Only released upgrades accept funding. Deposit supplies into the Guild Bank first, then allocate them here.</Text>
+  {snapshot.unavailableSections?.includes('constructionCosts')
+   ?<Text style={s.error}>Current Guild Construction prices are unavailable. Refresh before funding.</Text>
+   :<Text style={s.copy}>Guild size: {snapshot.constructionMemberCount??1} · Each member after the first adds 20% to base costs, rounded up to 20. A project's requirements lock when funding begins.</Text>}
   {error?<Text accessibilityRole="alert" style={s.error}>{error}</Text>:null}
   {notice?<Text accessibilityLiveRegion="polite" style={s.notice}>{notice}</Text>:null}
   {pending?<View style={s.pending}>
@@ -110,6 +113,7 @@ export function OnlineGuildConstructionPanel({
     <View style={s.head}><View style={s.flex}>
      <Text style={s.projectName}>{resourceName(template.id)}</Text>
      <Text style={s.projectMeta}>Guild Level {template.guildLevel} · {row?.completed?'Completed':!unlocked?'Guild level locked':template.enabled?'Donations open':'Coming soon'}</Text>
+     {template.costMemberCount?<Text style={s.projectMeta}>Requirements based on {template.costMemberCount} {template.costMemberCount===1?'member':'members'}</Text>:null}
     </View><Text style={s.percent}>{Math.round(completion*100)}%</Text></View>
     {requirements.map(res=>{
      const amount=Math.max(0,row?.resources[res.key]??0),pct=res.required?Math.min(100,Math.round(amount/res.required*100)):100;

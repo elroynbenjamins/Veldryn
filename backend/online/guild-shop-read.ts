@@ -31,7 +31,7 @@ export function guildShopReadHandler(services: GuildShopReadServices) {
    // Wallet, owned rewards and balances are required; optional projections
    // should not take down the entire shop if a guild feature is temporarily
    // unavailable. Claims/purchases still use separate authoritative RPCs.
-   const [base,constructionResult,eventResult,enabledResult,weeklyResult,bankResult,perksResult]=await Promise.allSettled([
+   const [base,constructionResult,eventResult,enabledResult,weeklyResult,bankResult,perksResult,costsResult]=await Promise.allSettled([
     services.rpc<GuildShopSnapshot>("guild_shop_snapshot_server_v1",{p_account_id:accountId}),
     services.rpc<Array<{templateId:string;completed:boolean;resources:Record<string,number>}>>("guild_construction_snapshot_server_v1",{p_account_id:accountId}),
     services.rpc<Array<{eventId:string;milestonePercent:number;tokens:number;claimed:boolean}>>("guild_shop_event_community_rewards_server_v1",{p_account_id:accountId}),
@@ -39,6 +39,7 @@ export function guildShopReadHandler(services: GuildShopReadServices) {
     services.rpc<Array<{kind:string;tokens:number;eligible:boolean;claimed:boolean}>>("guild_shop_weekly_rewards_server_v1",{p_account_id:accountId}),
     services.rpc<{balances:Array<{resourceId:string;amount:number}>;activity:Array<{kind:string;resourceId:string;amount:number;templateId?:string;mine:boolean;createdAt:string}>}>("guild_bank_snapshot_server_v1",{p_account_id:accountId}),
     services.rpc<{guildTokenBonusBps:number;guildTokenWeeklyCap:number}>("guild_construction_benefits_server_v1",{p_account_id:accountId}),
+    services.rpc<{memberCount:number;requirements:Array<{templateId:string;resourceId:string;amount:number;costMemberCount:number}>}>("guild_construction_costs_server_v1",{p_account_id:accountId}),
    ]);
    if(base.status!=="fulfilled")throw new Error("guild_shop_wallet_snapshot_unavailable");
    const snapshot=base.value;
@@ -52,6 +53,18 @@ export function guildShopReadHandler(services: GuildShopReadServices) {
     [0,1000,2000].includes(perksResult.value.guildTokenBonusBps)&&
     [250,275,300].includes(perksResult.value.guildTokenWeeklyCap)
     ?perksResult.value:null;
+   // Construction pricing comes from the same SQL function as bank allocation.
+   // Never offer a fixed-price client fallback when the member-scaled quote is missing.
+   const costSnapshot=costsResult.status==="fulfilled"&&costsResult.value&&
+    Number.isSafeInteger(costsResult.value.memberCount)&&costsResult.value.memberCount>=1&&
+    Array.isArray(costsResult.value.requirements)?costsResult.value:null;
+   const scaledCosts=new Map<string,{amount:number;costMemberCount:number}>();
+   if(costSnapshot)for(const row of costSnapshot.requirements){
+    if(typeof row.templateId==="string"&&typeof row.resourceId==="string"&&
+      Number.isSafeInteger(row.amount)&&row.amount>0&&
+      Number.isSafeInteger(row.costMemberCount)&&row.costMemberCount>=1)
+     scaledCosts.set(row.templateId+":"+row.resourceId,{amount:row.amount,costMemberCount:row.costMemberCount});
+   }
    const unavailableSections=[
     ...(constructionResult.status==="fulfilled"&&Array.isArray(constructionResult.value)?[]:["construction"]),
     ...(eventResult.status==="fulfilled"&&Array.isArray(eventResult.value)?[]:["eventBonuses"]),
@@ -59,9 +72,11 @@ export function guildShopReadHandler(services: GuildShopReadServices) {
     ...(weeklyResult.status==="fulfilled"&&Array.isArray(weeklyResult.value)?[]:["weeklyRewards"]),
     ...(bankResult.status==="fulfilled"&&bankResult.value&&Array.isArray(bankResult.value.balances)?[]:["bank"]),
     ...(perks?[]:["constructionBenefits"]),
+    ...(costSnapshot?[]:["constructionCosts"]),
    ];
    return json({
     guildLevel,
+    constructionMemberCount:costSnapshot?.memberCount??null,
     unavailableSections,
     balance:snapshot.balance,
     earnedThisWeek:snapshot.earnedThisWeek,
@@ -69,9 +84,18 @@ export function guildShopReadHandler(services: GuildShopReadServices) {
     weeklyCap:perks?.guildTokenWeeklyCap??250,
     treasuryBonusBps:perks?.guildTokenBonusBps??0,
     catalogue:GUILD_SHOP_CATALOGUE,
-    constructionTemplates:GUILD_CONSTRUCTION_TEMPLATES.map(template=>({
-      ...template,enabled:constructionEnabled.includes(template.id),
-    })),
+    constructionTemplates:GUILD_CONSTRUCTION_TEMPLATES.map(template=>{
+     const materials=template.materials.map(material=>{
+      const effective=scaledCosts.get(template.id+":"+material.materialKey);
+      return {...material,amount:effective?.amount??material.amount};
+     });
+     const gold=template.gold>0?scaledCosts.get(template.id+":gold")?.amount??template.gold:0;
+     const priced=!!costSnapshot&&template.materials.every(material=>scaledCosts.has(template.id+":"+material.materialKey))
+      &&(template.gold===0||scaledCosts.has(template.id+":gold"));
+     return {...template,gold,materials,
+      costMemberCount:priced?(scaledCosts.get(template.id+":"+template.materials[0]?.materialKey)?.costMemberCount??costSnapshot?.memberCount):null,
+      enabled:priced&&constructionEnabled.includes(template.id)};
+    }),
     construction,
     bank:bankResult.status==="fulfilled"&&bankResult.value&&Array.isArray(bankResult.value.balances)?bankResult.value:null,
     eventBonuses,

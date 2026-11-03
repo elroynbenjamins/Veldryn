@@ -115,6 +115,11 @@ try{
  // Guild Bank is a separately gated migration. Test its functions in the
  // disposable PGlite database; no live player resources can be affected.
  await db.exec(readFileSync(path.join(migrations,'20261104000016_guild_bank_construction_v1.sql'),'utf8'));
+ await db.exec(readFileSync(path.join(migrations,'20261104000034_guild_construction_member_cost_scaling_v1.sql'),'utf8'));
+ assert.equal(Number((await single('select public.guild_construction_scaled_amount_v1(120,1) as cost')).cost),120);
+ assert.equal(Number((await single('select public.guild_construction_scaled_amount_v1(120,2) as cost')).cost),160);
+ assert.equal(Number((await single('select public.guild_construction_scaled_amount_v1(120,4) as cost')).cost),200);
+ assert.equal(Number((await single('select public.guild_construction_scaled_amount_v1(120,20) as cost')).cost),580);
  assert.equal((await single(`select has_function_privilege('authenticated',
   'public.guild_bank_deposit_server_v1(uuid,text,integer,text)','EXECUTE') as permitted`)).permitted,false);
  assert.equal((await single(`select has_function_privilege('authenticated',
@@ -137,6 +142,14 @@ try{
  await db.query('insert into auth.users(id) values ($1)',[account]);
  await db.query('insert into public.guilds(id,level) values ($1,20)',[guild]);
  await db.query('insert into public.guild_members(guild_id,account_id) values ($1,$2)',[guild,account]);
+ const temporaryMember='44444444-4444-4444-8444-444444444444';
+ await db.query('insert into auth.users(id) values ($1)',[temporaryMember]);
+ await db.query('insert into public.guild_members(guild_id,account_id) values ($1,$2)',[guild,temporaryMember]);
+ const twoMemberPrices=(await single('select public.guild_construction_costs_server_v1($1) as costs',[account])).costs;
+ assert.equal(twoMemberPrices.memberCount,2,'authoritative guild roster counts all current members');
+ const baseLogCost=Number((await single("select required_amount from public.guild_construction_requirements where template_id='stormwatch_banner' and resource_id='GREENWOOD_LOG'")).required_amount);
+ const effectiveLogCost=twoMemberPrices.requirements.find(row=>row.templateId==='stormwatch_banner'&&row.resourceId==='GREENWOOD_LOG')?.amount;
+ assert.equal(Number(effectiveLogCost),Math.ceil(baseLogCost*1.2/20)*20,'each construction material scales independently');
  await db.query(`insert into public.guild_muster_daily(guild_id,account_id,activity_date,
   check_in_points,combat_points) values($1,$2,(now() at time zone 'utc')::date,10,5)`,[guild,account]);
  await db.query(`insert into public.event_community_claims(account_id,event_id,milestone_percent)
@@ -144,7 +157,7 @@ try{
  await db.query(`insert into public.online_game_states(account_id,character_id,state)
   values($1,$2,$3::jsonb)`,[account,character,JSON.stringify({
   character:{gold:1000},
-  inventory:{stacks:[{itemId:'GREENWOOD_LOG',quantity:80},{itemId:'ASTER_IRON_INGOT',quantity:2},{itemId:'MOSS_FIBER',quantity:2}]},
+  inventory:{stacks:[{itemId:'GREENWOOD_LOG',quantity:80},{itemId:'ASTER_IRON_INGOT',quantity:20},{itemId:'MOSS_FIBER',quantity:20}]},
   account:{unlockedCosmeticPetIds:[],unlockedCombatCompanionIds:[],
    unlockedProfileIconIds:[],unlockedProfileBorderIds:[],combatCompanionProgress:{}}
  })]);
@@ -167,6 +180,13 @@ try{
  assert.equal((await single("select state#>>'{character,gold}' as gold from public.online_game_states where account_id=$1",[account])).gold,'900');
  const allocated=await single(`select public.guild_bank_allocate_server_v1($1,'stormwatch_banner','GREENWOOD_LOG',10,'bank-alloc-01') as receipt`,[account]);
  assert.equal(allocated.receipt.alreadyProcessed,false);
+ assert.equal(Number((await single("select cost_member_count from public.guild_construction_projects where guild_id=$1 and template_id='stormwatch_banner'",[guild])).cost_member_count),2,
+   'first successful allocation locks the funding roster size');
+ await db.query('delete from public.guild_members where account_id=$1',[temporaryMember]);
+ const afterLeave=(await single('select public.guild_construction_costs_server_v1($1) as costs',[account])).costs;
+ assert.equal(afterLeave.memberCount,1,'current roster updates after members leave');
+ assert.equal(Number(afterLeave.requirements.find(row=>row.templateId==='stormwatch_banner'&&row.resourceId==='GREENWOOD_LOG')?.amount),Number(effectiveLogCost),
+   'already funded projects retain their locked requirements after membership changes');
  assert.equal((await single(`select public.guild_bank_allocate_server_v1($1,'stormwatch_banner','GREENWOOD_LOG',10,'bank-alloc-01') as receipt`,[account])).receipt.alreadyProcessed,true);
  assert.equal((await single(`select amount from public.guild_bank_balances where guild_id=$1 and resource_id='GREENWOOD_LOG'`,[guild])).amount,15);
  await fail(`select public.guild_bank_allocate_server_v1($1,'stormwatch_banner','GREENWOOD_LOG',16,'bank-alloc-02')`,[account]);
@@ -182,7 +202,7 @@ try{
  await db.query(`update public.online_game_states set revision=1,
   state=jsonb_set(jsonb_set(state,'{character,gold}','1000'::jsonb),
    '{inventory,stacks}',$2::jsonb) where account_id=$1`,[
-   account,JSON.stringify([{itemId:'GREENWOOD_LOG',quantity:80},{itemId:'ASTER_IRON_INGOT',quantity:2},{itemId:'MOSS_FIBER',quantity:2}]),
+   account,JSON.stringify([{itemId:'GREENWOOD_LOG',quantity:80},{itemId:'ASTER_IRON_INGOT',quantity:20},{itemId:'MOSS_FIBER',quantity:20}]),
  ]);
 
 
@@ -272,6 +292,8 @@ try{
  await db.exec(`update public.guild_construction_templates set enabled=true where template_id='stormwatch_banner';`);
  const enabledAfter=await single('select public.guild_construction_enabled_server_v1($1) as enabled',[account]);
  assert.deepEqual(enabledAfter.enabled,['stormwatch_banner']);
+ // Restore the original one-member fixture after the separate wallet-cap test.
+ await db.query('delete from public.guild_members where account_id=$1',[cappedAccount]);
  // Construction donation checks same-row replay and inventory/gold deduction.
  const donate=(resource,amount,key)=>single(
   'select public.guild_construction_donate_server_v2($1,$2,$3,$4,$5) as result',
@@ -288,10 +310,11 @@ try{
  assert.equal(project.snapshot[0].resources.GREENWOOD_LOG,25);
  // Rebalance only the isolated fixture's project targets to test completion.
  await db.exec(`update public.guild_construction_requirements set required_amount=
-  case resource_id when 'gold' then 100 when 'GREENWOOD_LOG' then 25 else 1 end
+  case resource_id when 'gold' then 100 when 'GREENWOOD_LOG' then 40 else 20 end
   where template_id='stormwatch_banner';`);
- await donate('ASTER_IRON_INGOT',1,'donation_iron_one');
- const completed=await donate('MOSS_FIBER',1,'donation_fiber_one');
+ await donate('GREENWOOD_LOG',15,'donation_logs_finish');
+ await donate('ASTER_IRON_INGOT',20,'donation_iron_one');
+ const completed=await donate('MOSS_FIBER',20,'donation_fiber_one');
  assert.equal(completed.result.completed,true,'last contribution completes project');
  const unlock=await single('select unlock_id from public.guild_construction_unlocks where guild_id=$1',[guild]);
  assert.equal(unlock.unlock_id,'guild_banner_stormwatch','cosmetic unlock issued once for guild');
@@ -328,7 +351,7 @@ try{
  assert.equal((await single(`select has_function_privilege('authenticated',
   'public.update_guild_appearance_with_construction_v1(text,text,text,text,text,text,text)','EXECUTE') as allowed`)).allowed,true);
 
- assert.equal((await donate('MOSS_FIBER',1,'donation_fiber_one')).result.alreadyProcessed,true);
+ assert.equal((await donate('MOSS_FIBER',20,'donation_fiber_one')).result.alreadyProcessed,true);
  await fail(`select public.guild_construction_donate_server_v2($1,'stormwatch_banner','gold',100,'donation_gold_two')`,[account]);
  console.log(`Guild Shop database migrations and transactional invariants passed (${guildFiles.length} migrations).`);
 }finally{await db.close();}

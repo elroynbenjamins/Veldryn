@@ -1,0 +1,40 @@
+name: Q-Mode enemy pressure validation
+
+on:
+  pull_request:
+    paths:
+      - 'backend/src/server/combat/**'
+      - 'backend/src/server/coop/qmode.ts'
+      - 'backend/src/server/coop/__tests__/phase6-qmode.ts'
+      - 'backend/src/server/expeditions/node-resolution.ts'
+      - 'backend/online/tests/qmode-hit-variance.ts'
+      - 'backend/online/tests/coop-published-balance.ts'
+      - 'backend/package.json'
+      - '.github/workflows/qmode-pressure-validation.yml'
+  workflow_dispatch:
+
+jobs:
+  qmode-pressure:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+          cache-dependency-path: backend/pnpm-lock.yaml
+      - name: Install backend dependencies
+        working-directory: backend
+        run: pnpm install --frozen-lockfile
+      - name: Install shared mobile engine dependencies
+        working-directory: apps/mobile
+        run: pnpm install --frozen-lockfile
+      - name: Validate Q-Mode pressure and 9600 full Echo runs
+        working-directory: backend
+        run: pnpm test:qmode-pressure
+      - name: Validate Q-Mode / Live / NPC composition contracts
+        working-directory: backend
+        run: pnpm test:coop-composition

@@ -7,8 +7,12 @@ on:
     paths:
       - 'apps/mobile/src/core/game.ts'
       - 'apps/mobile/src/core/story-boss.ts'
+      - 'apps/mobile/src/core/account-collections.ts'
+      - 'apps/mobile/src/core/profile-unlocks.ts'
       - 'apps/mobile/tests/regional-*.ts'
       - 'apps/mobile/tests/fallen-knight-gear-food.ts'
+      - 'apps/mobile/tests/account-collectibles.ts'
+      - 'apps/mobile/tests/combat-buff-boundaries.ts'
       - 'apps/mobile/src/content/monsters.ts'
       - 'tools/mobile-core-tests.json'
       - '.github/workflows/combat-balance-validation.yml'
@@ -48,6 +52,8 @@ jobs:
             .core-build/apps/mobile/tests/regional-undergeared-sustain.js \
             .core-build/apps/mobile/tests/kings-road-gear-balance.js \
             .core-build/apps/mobile/tests/combat-attrition.js \
+            .core-build/apps/mobile/tests/combat-buff-boundaries.js \
+            .core-build/apps/mobile/tests/account-collectibles.js \
             .core-build/apps/mobile/tests/fallen-knight-gear-food.js
           do
             if [ -f "$test" ]; then

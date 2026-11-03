@@ -14,7 +14,7 @@
     "build": "tsc",
     "typecheck:online": "tsc -p tsconfig.online.json --noEmit",
     "build:online": "tsc -p tsconfig.online.json && node ../tools/build-online.mjs",
-    "test:online": "tsc -p tsconfig.online.json && node dist/online/backend/online/tests/offline-event-currency.js && node dist/online/backend/online/tests/gameplay.js && node dist/online/backend/online/tests/coop-loadout.js && node dist/online/backend/online/tests/coop-entry.js && node dist/online/backend/online/tests/qmode-runtime.js && node dist/online/backend/online/tests/event-expedition-runtime.js && node dist/online/backend/online/tests/live-queue.js && node dist/online/backend/online/tests/live-ready.js && node dist/online/backend/online/tests/live-rematch.js && node dist/online/backend/online/tests/coop-published-balance.js && node dist/online/backend/online/tests/regional-combat.js && node dist/online/backend/online/tests/guild-shop-read.js && node dist/online/backend/online/tests/guild-shop-policies.js && node dist/online/backend/online/tests/guild-skills-routes.js",
+    "test:online": "tsc -p tsconfig.online.json && node dist/online/backend/online/tests/offline-event-currency.js && node dist/online/backend/online/tests/gameplay.js && node dist/online/backend/online/tests/coop-loadout.js && node dist/online/backend/online/tests/coop-entry.js && node dist/online/backend/online/tests/qmode-runtime.js && node dist/online/backend/online/tests/event-expedition-runtime.js && node dist/online/backend/online/tests/live-queue.js && node dist/online/backend/online/tests/live-ready.js && node dist/online/backend/online/tests/live-rematch.js && node dist/online/backend/online/tests/qmode-hit-variance.js && node dist/online/backend/online/tests/coop-published-balance.js && node dist/online/backend/online/tests/regional-combat.js && node dist/online/backend/online/tests/guild-shop-read.js && node dist/online/backend/online/tests/guild-shop-policies.js && node dist/online/backend/online/tests/guild-skills-routes.js",
     "test:live-pacing": "tsc -p tsconfig.online.json && node dist/online/backend/online/tests/live-pacing.js",
     "test:event-expedition-online": "tsc -p tsconfig.online.json && node dist/online/backend/online/tests/event-expedition-runtime.js",
     "smoke": "node dist/server/expeditions/__tests__/smoke.js",
@@ -77,7 +77,8 @@
     "test:pve-balance": "tsc -p tsconfig.gems.json && node dist-gems/server/combat/__tests__/pve-balance-batch.js",
     "pve-balance": "tsc -p tsconfig.gems.json && node dist-gems/server/combat/pve-balance-cli.js",
     "test:release-economy": "tsc && node dist/server/__tests__/release-economy.js",
-    "test:live-rematch": "tsc -p tsconfig.online.json && node dist/online/backend/online/tests/live-rematch.js"
+    "test:live-rematch": "tsc -p tsconfig.online.json && node dist/online/backend/online/tests/live-rematch.js",
+    "test:qmode-pressure": "tsc -p tsconfig.online.json && node dist/online/backend/online/tests/qmode-hit-variance.js && node dist/online/backend/online/tests/coop-published-balance.js"
   },
   "devDependencies": {
     "@electric-sql/pglite": "0.5.8",

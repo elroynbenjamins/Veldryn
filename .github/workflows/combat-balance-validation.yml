@@ -40,6 +40,7 @@ jobs:
           pnpm exec tsc -p tsconfig.core.json --outDir .core-build
       - name: Verify regional food, gear, and story boss combat contracts
         run: |
+          failed=0
           for test in \
             .core-build/apps/mobile/tests/regional-food-pressure.js \
             .core-build/apps/mobile/tests/regional-combat-sustain-matrix.js \
@@ -49,5 +50,8 @@ jobs:
             .core-build/apps/mobile/tests/combat-attrition.js \
             .core-build/apps/mobile/tests/fallen-knight-gear-food.js
           do
-            if [ -f "$test" ]; then node "$test"; fi
+            if [ -f "$test" ]; then
+              node "$test" || { echo "FAILED: $test"; failed=1; }
+            fi
           done
+          exit "$failed"

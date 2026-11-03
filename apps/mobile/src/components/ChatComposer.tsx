@@ -23,6 +23,7 @@ type ChatComposerProps={
   trayIds?:readonly string[];
   bodyPresentation?:'male'|'female';
   onTrayChange?:(ids:string[])=>void|Promise<void>;
+  onManageEmotes?:()=>void;
   onPick:(token:string)=>void;
  };
 };

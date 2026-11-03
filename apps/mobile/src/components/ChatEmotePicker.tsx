@@ -7,13 +7,13 @@ import {useGameTheme} from '../theme/ThemeContext';
 import {chatEmoteArtwork} from '../theme/chat-emote-assets';
 import {availableChatEmotes,CHAT_EMOTE_TRAY_SIZE,CHAT_MAX_EMOTES_PER_MESSAGE,defaultChatEmoteTray,resolvedChatEmoteTray,type ChatEmoteDef} from '../core/chat-emotes';
 
-export function ChatEmotePicker({onPick,unlockedIds=[],trayIds=[],bodyPresentation='male',usedCount=0,onTrayChange,settingsMode=false,compact=false,renderTrigger}:{onPick:(token:string)=>void;unlockedIds?:readonly string[];trayIds?:readonly string[];bodyPresentation?:'male'|'female';usedCount?:number;onTrayChange?:(ids:string[])=>void|Promise<void>;settingsMode?:boolean;compact?:boolean;renderTrigger?:(trigger:ReactNode)=>ReactNode}){
+export function ChatEmotePicker({onPick,unlockedIds=[],trayIds=[],bodyPresentation='male',usedCount=0,onTrayChange,onManageEmotes,settingsMode=false,initiallyOpen=false,compact=false,renderTrigger}:{onPick:(token:string)=>void;unlockedIds?:readonly string[];trayIds?:readonly string[];bodyPresentation?:'male'|'female';usedCount?:number;onTrayChange?:(ids:string[])=>void|Promise<void>;onManageEmotes?:()=>void;settingsMode?:boolean;initiallyOpen?:boolean;compact?:boolean;renderTrigger?:(trigger:ReactNode)=>ReactNode}){
  const st=useSocialText();
  const C=useGameTheme(),s=useMemo(()=>makeStyles(C),[C]),{width,fontScale}=useWindowDimensions(),stackControls=width<360||fontScale>=1.25;
- const [open,setOpen]=useState(false),[editing,setEditing]=useState(false),[draft,setDraft]=useState<string[]>([]),[focused,setFocused]=useState(false);
  const available=useMemo(()=>availableChatEmotes(unlockedIds,bodyPresentation),[unlockedIds,bodyPresentation]);
  const byId=useMemo(()=>new Map(available.map(row=>[row.id,row])),[available]);
  const resolved=useMemo(()=>resolvedChatEmoteTray(trayIds,unlockedIds,bodyPresentation),[trayIds,unlockedIds,bodyPresentation]);
+ const [open,setOpen]=useState(settingsMode&&initiallyOpen),[editing,setEditing]=useState(settingsMode&&initiallyOpen),[draft,setDraft]=useState<string[]>(()=>settingsMode&&initiallyOpen?[...resolved]:[]),[focused,setFocused]=useState(false);
  useEffect(()=>{if(!editing)setDraft(resolved)},[editing,resolved.join('|')]);
  const selected=editing?draft:resolved;
  const toggle=(id:string)=>setDraft(current=>current.includes(id)?current.filter(value=>value!==id):current.length<CHAT_EMOTE_TRAY_SIZE?[...current,id]:current);
@@ -24,7 +24,7 @@ export function ChatEmotePicker({onPick,unlockedIds=[],trayIds=[],bodyPresentati
  return <View style={s.root}>
   {renderTrigger?renderTrigger(trigger):trigger}
   {open&&<View style={s.picker}>
-    <View style={[s.headingRow,stackControls&&s.headingRowStack]}><View><Text style={s.heading}>{editing?st("Choose your 5 emotes"):st("Quick emotes")}</Text><Text style={s.count}>{editing?st('{count}/{total} selected',{count:draft.length,total:CHAT_EMOTE_TRAY_SIZE}):st('5 slots · {count}/{total} used',{count:Math.min(usedCount,CHAT_MAX_EMOTES_PER_MESSAGE),total:CHAT_MAX_EMOTES_PER_MESSAGE})}</Text></View><Pressable accessibilityRole="button" accessibilityLabel={editing?st("Cancel emote tray editing"):st("Edit emote tray")} onPress={()=>{setDraft(resolved);setEditing(value=>!value)}} style={[s.editButton,stackControls&&s.editButtonStack]}><Text style={s.editText}>{editing?st("Cancel"):st("Edit 5")}</Text></Pressable></View>
+    <View style={[s.headingRow,stackControls&&s.headingRowStack]}><View><Text style={s.heading}>{editing?st("Choose your 5 emotes"):st("Quick emotes")}</Text><Text style={s.count}>{editing?st('{count}/{total} selected',{count:draft.length,total:CHAT_EMOTE_TRAY_SIZE}):st('5 slots · {count}/{total} used',{count:Math.min(usedCount,CHAT_MAX_EMOTES_PER_MESSAGE),total:CHAT_MAX_EMOTES_PER_MESSAGE})}</Text></View><Pressable accessibilityRole="button" accessibilityLabel={editing?st("Cancel emote tray editing"):st("Edit emote tray")} onPress={()=>{if(onManageEmotes&&!settingsMode){setOpen(false);onManageEmotes();return;}setDraft(resolved);setEditing(value=>!value)}} style={[s.editButton,stackControls&&s.editButtonStack]}><Text style={s.editText}>{editing?st("Cancel"):st("Edit 5")}</Text></Pressable></View>
     {!editing?<View style={s.quickGrid}>{selected.map(id=><EmoteButton key={id} emote={byId.get(id)} id={id} disabled={usedCount>=CHAT_MAX_EMOTES_PER_MESSAGE} onPress={()=>{onPick(`:${id}:`);setOpen(false)}} selected={false}/>)}</View>:<>
       <View style={s.quickGrid}>{draft.map((id,index)=><EmoteButton key={id} emote={byId.get(id)} id={id} labelPrefix={st('Slot {slot}: ',{slot:index+1})} selected onPress={()=>toggle(id)}/>)}</View>
       <Text style={s.help}>{st("Tap selected emotes to remove them, then choose replacements below. Save becomes available when all 5 slots are filled.")}</Text>

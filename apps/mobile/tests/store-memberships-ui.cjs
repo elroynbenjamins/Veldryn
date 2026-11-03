@@ -14,7 +14,9 @@ for(const path of paths){
  assert.deepEqual(file.parseDiagnostics.map(x=>ts.flattenDiagnosticMessageText(x.messageText,' ')),[],path+' should parse');
 }
 const store=read(paths[0]),collections=read(paths[1]),billing=read(paths[2]),catalog=read(paths[3]),cards=read(paths[4]);
-assert.ok(store.includes("type StoreSection='Memberships'|'Collections'")&&store.includes('label="Store categories"'),'Store has two accessible destinations');
+assert.ok(store.includes('const STORE_COLLECTIONS_VISIBLE=false;'),'Unreleased store collections are disabled');
+assert.ok(store.includes('STORE_COLLECTIONS_VISIBLE?<BoardTabs')&&store.includes("STORE_COLLECTIONS_VISIBLE&&section==='Collections'"),'Collections tab and preview are both hidden behind the release flag');
+assert.ok(store.includes("type StoreSection='Memberships'|'Collections'"),'The concept can be restored without recreating its UI');
 assert.ok(store.includes("s.hidden")&&store.includes("<GooglePlayCommercePanel state={state}"),'Switching tabs retains mounted billing listeners');
 assert.ok(store.includes('onRedeemCode(normalized)')&&store.includes('redeemFlight.current'),'Promo redemptions retain server authority and prevent double submit');
 assert.ok(collections.includes('CONCEPT ONLY')&&collections.includes('Nothing on this page can be purchased')&&!collections.includes('onBuy('),'Unreleased cosmetics never masquerade as active commerce');

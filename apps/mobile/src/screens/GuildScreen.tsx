@@ -70,7 +70,7 @@ const GUILD_BANK_RESOURCES=[
  {itemId:'TORN_OATHCLOTH',label:'Torn Oathcloth'},
 ] as const;
 const GUILD_PROJECT_COST={MOSS_FIBER:200,GREENWOOD_LOG:120,IRONWOOD_LOG:60,ASTER_IRON_INGOT:20};
-export function GuildScreen({state,onChange,onlineManagement,onlineBoard,onlineProjects,onlinePve,onlineHall,onlineChat,onlineCustomize,onlineChatUnread=0,onlineChatMentions=0,onOpenChat,onRecruitment,online=false,membershipRevision=0,onTokenRewardsChanged,initialPve=false,onInitialPveHandled,initialNavigation,onNavigationChange}:{initialNavigation?:GuildNavigationState;onNavigationChange?:(state:GuildNavigationState)=>void;onOpenChat?:()=>void;onRecruitment?:()=>void;onTokenRewardsChanged?:()=>void|Promise<unknown>;online?:boolean;membershipRevision?:number;state:GameState;onChange:(next:GameState)=>void;onlineManagement?:ReactNode;onlineBoard?:ReactNode;onlineProjects?:ReactNode;onlinePve?:ReactNode;onlineHall?:ReactNode;onlineChat?:ReactNode;onlineCustomize?:ReactNode;onlineChatUnread?:number;onlineChatMentions?:number;initialPve?:boolean;onInitialPveHandled?:()=>void}){
+export function GuildScreen({state,onChange,onlineManagement,onlineBoard,onlineProjects,onlinePve,onlineHall,onlineChat,onlineCustomize,onlineChatUnread=0,onOpenChat,onRecruitment,online=false,membershipRevision=0,onTokenRewardsChanged,initialPve=false,onInitialPveHandled,initialNavigation,onNavigationChange}:{initialNavigation?:GuildNavigationState;onNavigationChange?:(state:GuildNavigationState)=>void;onOpenChat?:()=>void;onRecruitment?:()=>void;onTokenRewardsChanged?:()=>void|Promise<unknown>;online?:boolean;membershipRevision?:number;state:GameState;onChange:(next:GameState)=>void;onlineManagement?:ReactNode;onlineBoard?:ReactNode;onlineProjects?:ReactNode;onlinePve?:ReactNode;onlineHall?:ReactNode;onlineChat?:ReactNode;onlineCustomize?:ReactNode;onlineChatUnread?:number;onlineChatMentions?:number;initialPve?:boolean;onInitialPveHandled?:()=>void}){
  const st=useSocialText();
   const language=useGameLanguage();
   const guildScroll=useRef<ElementRef<typeof ScrollView>>(null);
@@ -83,7 +83,7 @@ export function GuildScreen({state,onChange,onlineManagement,onlineBoard,onlineP
   const initialHallSection:GuildNavigationState['hallSection']=previousHallSection==='Facilities'?'Overview':previousHallSection==='Trophies'?'Legacy':(['Overview','Construction','Bank','Skills','Legacy','Shop'].includes(previousHallSection??'')?previousHallSection as GuildNavigationState['hallSection']:'Overview');
   const [section,setSection]=useState<GuildSection>(initialPve?'PvE':'Home'),[onlineSection,setOnlineSection]=useState<OnlineGuildSection>(initialPve?'PvE':initialNavigation?.section==='Activities'&&initialNavigation.activityView==='Projects'?'Progress':initialNavigation?.section??'Home'),[hallSection,setHallSection]=useState<GuildNavigationState['hallSection']>(initialHallSection);
   useEffect(()=>{if(initialPve)onInitialPveHandled?.()},[]);
-  // Older saved Hall/Skills destinations open the single Progress destination.
+  // Older Hall/Skills links open the dedicated Progress → Skills screen.
   useEffect(()=>{if(online&&onlineSection==='Hall'&&hallSection==='Skills'){
     setProgressTab('Skills');setHallSection('Overview');setOnlineSection('Progress');
   }},[online,onlineSection,hallSection]);
@@ -130,9 +130,8 @@ export function GuildScreen({state,onChange,onlineManagement,onlineBoard,onlineP
       <BoardTabs compact label="Guild activity boards" items={[{id:'Quests',label:'Quests'},{id:'Muster',label:'Muster'}] as const} value={activityView} onChange={setActivityView}/>
       {activityView==='Quests'?<><GuildActivitySummaryPanel compact/><GuildQuestPanel/></>:null}
       {activityView==='Muster'?<><GuildSectionHeader label={st("DAILY & WEEKLY")} title={st("Muster & Rally")} copy={st("Daily participation rolls into the shared weekly Rally without adding another currency.")}/><OnlineGuildMusterPanel/></>:null}
-      
     </View>:null}
-    {onlineSection==='Progress'?<GuildProgressPanel tab={progressTab} onChange={setProgressTab} projects={onlineProjects}/>:null}
+    {onlineSection==='Progress'?<GuildProgressPanel tab={progressTab} onChange={setProgressTab} projects={onlineProjects} onViewBank={()=>{setHallSection('Bank');setOnlineSection('Hall');guildScroll.current?.scrollTo({y:0,animated:false})}}/>:null}
     {onlineSection==='PvE'?onlinePve:null}
     {onlineSection==='Hall'?<View style={s.sectionStack}>
      {hallSection==='Shop'?<><GameButton compact title="Back to Guild Hall" tone="secondary" onPress={()=>setHallSection('Overview')}/><OnlineGuildTokenShopPanel onRewardsChanged={onTokenRewardsChanged} onOpenConstruction={()=>setHallSection('Construction')}/></>:isValidElement<{activeSection?:'Overview'|'Construction'|'Bank'|'Skills'|'Legacy';onSectionChange?:(section:GuildNavigationState['hallSection'])=>void}>(onlineHall)?cloneElement(onlineHall,{activeSection:hallSection,onSectionChange:(next)=>{if(next==='Skills'){setProgressTab('Skills');setOnlineSection('Progress');guildScroll.current?.scrollTo({y:0,animated:false})}else{setHallSection(next);guildScroll.current?.scrollTo({y:0,animated:true})}}}):onlineHall}

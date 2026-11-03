@@ -32,8 +32,12 @@ function projectNeeds(snapshot:GuildTokenShopSnapshot){
  }
  return needed;
 }
-export function OnlineGuildBankPanel({snapshot,onReload}:{snapshot:GuildTokenShopSnapshot;onReload:()=>Promise<unknown>}){
- const C=useGameTheme(),s=useMemo(()=>styles(C),[C]),{height:windowHeight}=useWindowDimensions();
+export function OnlineGuildBankPanel({snapshot,onReload,focusResourceId,onFocusHandled}:{
+ snapshot:GuildTokenShopSnapshot;onReload:()=>Promise<unknown>;
+ focusResourceId?:string|null;onFocusHandled?:()=>void;
+}){
+ const C=useGameTheme(),s=useMemo(()=>styles(C),[C]),{height:windowHeight,width:windowWidth,fontScale}=useWindowDimensions();
+ const compactGrid=windowWidth<390||fontScale>=1.15;
  const [selection,setSelection]=useState<string|null>(null),[quantity,setQuantity]=useState('1'),[view,setView]=useState<ViewMode>('all');
  const [pending,setPending]=useState<PendingGuildBankDeposit|null>(null);
  const [busy,setBusy]=useState(false),[notice,setNotice]=useState(''),[error,setError]=useState('');
@@ -43,6 +47,18 @@ export function OnlineGuildBankPanel({snapshot,onReload}:{snapshot:GuildTokenSho
  const balance=(id:string)=>stored.get(id)??0;
  const totalNeed=(id:string)=>{const row=needs.get(id);return (row?.current??0)+(row?.upcoming??0)};
  const depositCapacity=(id:string)=>Math.max(0,totalNeed(id)-balance(id));
+ // The Construction shortcut focuses this material once. Clearing the focus
+ // prevents the sheet from reopening after a successful deposit or dismissal.
+ useEffect(()=>{
+  if(!focusResourceId)return;
+  const capacity=depositCapacity(focusResourceId);
+  if(capacity>0&&!pending&&!busy&&snapshot.bank!==null){
+   setView('all');setSelection(focusResourceId);setQuantity(String(Math.min(10,capacity)));
+  }
+  onFocusHandled?.();
+ // The focus is a one-shot navigation instruction, not a subscription to balances.
+ // eslint-disable-next-line react-hooks/exhaustive-deps
+ },[focusResourceId]);
  const ids=[...new Set([...needs.keys(),...stored.keys()])].sort((a,b)=>{
   const aNow=(needs.get(a)?.current??0)>0?0:1,bNow=(needs.get(b)?.current??0)>0?0:1;
   return aNow-bNow||Number(b==='gold')-Number(a==='gold')||a.localeCompare(b);
@@ -102,7 +118,7 @@ export function OnlineGuildBankPanel({snapshot,onReload}:{snapshot:GuildTokenSho
     const label=need.current>0?'Needed now':need.upcoming>0?'Upcoming':'Stored';
     return <Pressable key={id} accessibilityRole="button" accessibilityLabel={resourceTitle(id)+', '+onHand.toLocaleString()+' stored. '+remaining.toLocaleString()+' can be deposited.'}
      accessibilityState={{disabled:!canDeposit}} disabled={!canDeposit} onPress={()=>choose(id)}
-     style={({pressed})=>[s.bankSlot,remaining===0&&s.funded,pressed&&s.pressed]}>
+     style={({pressed})=>[s.bankSlot,compactGrid&&s.compactSlot,remaining===0&&s.funded,pressed&&s.pressed]}>
      <Text numberOfLines={2} style={s.slotName}>{resourceTitle(id)}</Text>
      <View style={s.artFrame}>{id==='gold'?<Text style={s.goldGlyph}>G</Text>:<ResourceArtwork itemId={id} size={40} framed/>}
       <View style={s.stackCount}><Text numberOfLines={1} style={s.stackText}>{onHand.toLocaleString()}</Text></View>
@@ -145,9 +161,9 @@ function styles(C:ThemeColors){return StyleSheet.create({
  flex:{flex:1,minWidth:0},headingRow:{flexDirection:'row',alignItems:'center',gap:10},kicker:{fontSize:10,color:C.accent,fontWeight:'900',letterSpacing:1},heading:{fontSize:21,lineHeight:27,fontWeight:'900',color:C.text,marginTop:3},
  help:{fontSize:12,lineHeight:18,color:C.muted},meta:{fontSize:11,lineHeight:16,color:C.muted},warning:{color:C.warning,fontSize:12,lineHeight:18},error:{color:C.bad,fontSize:12},success:{color:C.good,fontSize:12},name:{fontSize:13,lineHeight:18,fontWeight:'800',color:C.text},count:{minWidth:72,alignItems:'center',borderRadius:radii.md,borderWidth:1,borderColor:C.line,backgroundColor:C.panel2,padding:7},countValue:{fontSize:19,fontWeight:'900',color:C.text},countText:{fontSize:10,color:C.muted},
  tabs:{flexDirection:'row',gap:6,marginTop:6},tab:{minHeight:44,flex:1,minWidth:0,paddingHorizontal:5,alignItems:'center',justifyContent:'center',borderWidth:1,borderColor:C.line,borderRadius:radii.sm,backgroundColor:C.panel2},activeTab:{borderColor:C.selectionLine,backgroundColor:C.selection},tabText:{fontSize:11,color:C.muted,fontWeight:'800',textAlign:'center'},activeTabText:{color:C.text},pressed:{opacity:.76},
- bankGrid:{flexDirection:'row',flexWrap:'wrap',columnGap:6,rowGap:7,marginTop:5},bankSlot:{width:'23%',flexGrow:1,minWidth:0,maxWidth:'24%',minHeight:119,alignItems:'center',justifyContent:'space-between',gap:3,paddingHorizontal:3,paddingVertical:7,borderWidth:1,borderColor:C.line,borderRadius:radii.sm,backgroundColor:C.panel2},funded:{opacity:.65},slotName:{fontSize:10,lineHeight:13,color:C.text,textAlign:'center',fontWeight:'800',minHeight:26},
+ bankGrid:{flexDirection:'row',flexWrap:'wrap',columnGap:6,rowGap:7,marginTop:5},bankSlot:{width:'23%',flexGrow:1,minWidth:0,maxWidth:'24%',minHeight:119,alignItems:'center',justifyContent:'space-between',gap:3,paddingHorizontal:3,paddingVertical:7,borderWidth:1,borderColor:C.line,borderRadius:radii.sm,backgroundColor:C.panel2},compactSlot:{width:'31%',maxWidth:'32%'},funded:{opacity:.65},slotName:{fontSize:11,lineHeight:14,color:C.text,textAlign:'center',fontWeight:'800',minHeight:26},
  artFrame:{width:51,height:49,alignItems:'center',justifyContent:'center',position:'relative'},goldGlyph:{fontSize:28,fontWeight:'900',color:C.accent},stackCount:{position:'absolute',bottom:-2,right:-6,backgroundColor:C.panelRaised,borderWidth:1,borderColor:C.lineStrong,borderRadius:4,minWidth:20,paddingHorizontal:3,paddingVertical:1,alignItems:'center'},stackText:{fontSize:10,fontWeight:'900',color:C.text},
- slotStatus:{fontSize:10,lineHeight:13,color:C.muted,textAlign:'center'},nowStatus:{color:C.good},upcomingStatus:{color:C.info},slotNeed:{fontSize:9,lineHeight:12,color:C.muted,textAlign:'center'},empty:{padding:12,borderColor:C.line,borderWidth:1,borderRadius:radii.md,backgroundColor:C.panel2,gap:4,width:'100%'},
+ slotStatus:{fontSize:10,lineHeight:14,color:C.muted,textAlign:'center'},nowStatus:{color:C.good},upcomingStatus:{color:C.info},slotNeed:{fontSize:10,lineHeight:13,color:C.muted,textAlign:'center'},empty:{padding:12,borderColor:C.line,borderWidth:1,borderRadius:radii.md,backgroundColor:C.panel2,gap:4,width:'100%'},
  footerHelp:{fontSize:11,lineHeight:16,color:C.muted,marginTop:4},pending:{gap:8,padding:10,borderWidth:1,borderColor:C.warning,borderRadius:radii.md,backgroundColor:C.warningSurface},
  actions:{flexDirection:'row',gap:8,alignItems:'center',flexWrap:'wrap'},history:{gap:7,marginTop:6,paddingTop:12,borderTopWidth:1,borderTopColor:C.line},historyRow:{flexDirection:'row',alignItems:'center',gap:10,justifyContent:'space-between'},
  modalBody:{paddingTop:8,paddingBottom:18,gap:12},modalSummary:{flexDirection:'row',alignItems:'center',gap:12,borderWidth:1,borderColor:C.line,borderRadius:radii.md,backgroundColor:C.panel2,padding:10},modalArt:{width:64,height:64,alignItems:'center',justifyContent:'center'},input:{minHeight:48,borderWidth:1,borderColor:C.lineStrong,borderRadius:radii.sm,color:C.text,backgroundColor:C.inputBg,paddingHorizontal:12,fontSize:17},

@@ -14,7 +14,9 @@ export function herbalismMethodUnlocked(id:HerbalismMethodId,level:number){retur
 export function herbalismInsightMultiplier(level:number){return level>=100?1.5:level>=75?1.35:level>=50?1.2:level>=25?1.1:1;}
 
 export const HERBALISM_ESSENCE_BY_ZONE:Readonly<Record<string,{itemId:string;baseChance:number}>>={
-  GREENFIELDS:{itemId:'ASTERFALL_BOTANICAL_ESSENCE',baseChance:.010},SILVERBROOK:{itemId:'ASTERFALL_BOTANICAL_ESSENCE',baseChance:.010},IRONWOOD:{itemId:'ASTERFALL_BOTANICAL_ESSENCE',baseChance:.010},OLD_MINES:{itemId:'ASTERFALL_BOTANICAL_ESSENCE',baseChance:.010},KINGS_ROAD:{itemId:'ASTERFALL_BOTANICAL_ESSENCE',baseChance:.0125},
+  // Verdant Binding Resin is required by every T1 class kit. Double only the
+  // underlying Asterfall rare botanical drop; T2+ essences remain unchanged.
+  GREENFIELDS:{itemId:'ASTERFALL_BOTANICAL_ESSENCE',baseChance:.020},SILVERBROOK:{itemId:'ASTERFALL_BOTANICAL_ESSENCE',baseChance:.020},IRONWOOD:{itemId:'ASTERFALL_BOTANICAL_ESSENCE',baseChance:.020},OLD_MINES:{itemId:'ASTERFALL_BOTANICAL_ESSENCE',baseChance:.020},KINGS_ROAD:{itemId:'ASTERFALL_BOTANICAL_ESSENCE',baseChance:.025},
   SUNSCAR:{itemId:'SUNSCAR_BOTANICAL_ESSENCE',baseChance:.015},FROSTMARCH:{itemId:'FROSTMARCH_BOTANICAL_ESSENCE',baseChance:.0175},ASHLANDS:{itemId:'ASHLANDS_BOTANICAL_ESSENCE',baseChance:.020},
 };
 

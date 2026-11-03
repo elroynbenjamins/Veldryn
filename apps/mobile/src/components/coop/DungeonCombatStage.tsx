@@ -88,7 +88,7 @@ export function DungeonCombatStage({run,enemyLabel,boss=false,seasonal=false,eve
  const tank=run.roleSlots.find(slot=>slot.role==='tank'),damage=run.roleSlots.filter(slot=>slot.role==='damage'),support=run.roleSlots.find(slot=>slot.role==='support');
  const ordered=[tank,damage[0],damage[1],support].filter((slot):slot is Slot=>Boolean(slot)),assists=ordered.filter(slot=>slot.companionId).length;
  // Visual-only anticipation never plays the previous encounter's replay.
- const pending=anticipation?undefined:run.pendingCombat,replay=anticipation?undefined:pending?{...pending,reason:'victory' as const}:run.lastCombat,cues=replay?.cues??[],replayKey=`${run.runId}:${replay?.nodeId??'preview'}:${replay?.durationMs??0}`;
+ const pending=run.pendingCombat,replay=anticipation?undefined:pending?{...pending,reason:'victory' as const}:run.lastCombat,cues=replay?.cues??[],replayKey=`${run.runId}:${replay?.nodeId??'preview'}:${replay?.durationMs??0}`;
  const [cueIndex,setCueIndex]=useState(0),[systemReduceMotion,setReduceMotion]=useState(false);
  const [inspectKey,setInspectKey]=useState<string|undefined>(undefined),[showLog,setShowLog]=useState(false);
  const reduceMotion=reduceMotionSetting||systemReduceMotion;

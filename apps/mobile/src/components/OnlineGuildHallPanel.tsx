@@ -1,4 +1,4 @@
-import {useCallback,useEffect,useMemo,useState} from 'react';
+import {useCallback,useEffect,useMemo,useState,type ReactNode} from 'react';
 import {ActivityIndicator,Image,Pressable,ScrollView,StyleSheet,Text,View} from 'react-native';
 import {GameButton} from './GameButton';
 import {Panel} from './Panel';
@@ -21,6 +21,7 @@ export type HeadquartersSection='Overview'|'Construction'|'Bank'|'Skills'|'Legac
 interface HallNavigation {
  activeSection?:HeadquartersSection;
  onSectionChange?:(section:HeadquartersSection|'Shop')=>void;
+ headerHelp?:ReactNode;
 }
 const DESTINATIONS:readonly HeadquartersSection[]=['Overview','Construction','Bank','Skills','Legacy'];
 const SHORTCUTS=[
@@ -46,7 +47,7 @@ export function OnlineGuildHallPanel(navigation:HallNavigation){
  return <GuildHallView {...navigation} projection={projection} loading={loading} error={error} onRefresh={()=>void load(true)}/>;
 }
 
-export function GuildHallView({projection,loading=false,error='',onRefresh,activeSection,onSectionChange,previewMode=false}:{projection:NonNullable<Projection>;loading?:boolean;error?:string;onRefresh?:()=>void;previewMode?:boolean}&HallNavigation){
+export function GuildHallView({projection,loading=false,error='',onRefresh,activeSection,onSectionChange,headerHelp,previewMode=false}:{projection:NonNullable<Projection>;loading?:boolean;error?:string;onRefresh?:()=>void;previewMode?:boolean}&HallNavigation){
  const C=useGameTheme(),s=useMemo(()=>styles(C),[C]);
  const [localSection,setLocalSection]=useState<HeadquartersSection>('Overview');
  const [shop,setShop]=useState<GuildTokenShopSnapshot|null>(null);
@@ -90,6 +91,7 @@ export function GuildHallView({projection,loading=false,error='',onRefresh,activ
   <View style={s.header}>
    <View style={s.crest}><Image source={guildFacilityArtwork('banner_gallery')} style={s.crestImage} resizeMode="contain" accessible={false}/></View>
    <View style={s.flex}><Text style={s.kicker}>GUILD HEADQUARTERS</Text><Text accessibilityRole="header" style={s.title}>Guild Hall</Text><Text style={s.note}>Shared progression and lasting benefits</Text></View>
+   {headerHelp?<View style={s.helpWrap}>{headerHelp}</View>:null}
    {onRefresh?<Pressable accessibilityRole="button" accessibilityLabel="Refresh Guild Hall and supplies" disabled={loading||shopLoading} accessibilityState={{disabled:loading||shopLoading}} onPress={()=>{onRefresh();void refreshShop()}} style={({pressed})=>[s.refresh,pressed&&s.pressed]}><Text style={s.refreshText}>↻</Text></Pressable>:null}
   </View>
   <ScrollView horizontal showsVerticalScrollIndicator={false} showsHorizontalScrollIndicator={false} accessibilityRole="tablist" accessibilityLabel="Guild Hall sections" contentContainerStyle={s.tabs}>
@@ -135,7 +137,7 @@ export function GuildHallView({projection,loading=false,error='',onRefresh,activ
 }
 
 function styles(C:ThemeColors){return StyleSheet.create({
- root:{gap:11},header:{flexDirection:'row',alignItems:'center',gap:10},flex:{flex:1,minWidth:0,gap:4},
+ root:{gap:11},header:{flexDirection:'row',alignItems:'center',gap:10},helpWrap:{width:42,height:42,alignItems:'center',justifyContent:'center'},flex:{flex:1,minWidth:0,gap:4},
  crest:{width:51,height:51,borderRadius:12,borderWidth:1,borderColor:C.lineStrong,backgroundColor:C.panel2,justifyContent:'center',alignItems:'center'},
  crestImage:{width:43,height:43},
  title:{fontSize:20,lineHeight:26,fontWeight:'900',color:C.text},

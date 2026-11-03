@@ -47864,6 +47864,8 @@ function spendPreparationEncounter(preparation, itemId) {
 }
 
 // ../apps/mobile/src/core/world-navigation.ts
+var FIRST_CHAPTER_BOSS_ID = "FALLEN_KNIGHT";
+var POST_CHAPTER_ONE_REGIONS = /* @__PURE__ */ new Set(["SUNSCAR", "FROSTMARCH", "ASHLANDS"]);
 var REGION_SCOUT_REQUIREMENTS = {
   OLD_MINES: "SCOUT_IRONWOOD",
   KINGS_ROAD: "SCOUT_OLD_MINES",
@@ -47875,6 +47877,7 @@ function regionTravelLockReason(state, zone) {
   if (worldZoneInDevelopment(zone)) return zone.name + " is still in development";
   const level = state.character?.level ?? 1;
   if (level < zone.minLevel) return `Reach Level ${zone.minLevel} to travel to ${zone.name}`;
+  if (POST_CHAPTER_ONE_REGIONS.has(zone.id) && !(state.defeatedBossIds ?? []).includes(FIRST_CHAPTER_BOSS_ID)) return `Defeat the Fallen Knight to unlock ${zone.name}`;
   const routeId = REGION_SCOUT_REQUIREMENTS[zone.id];
   if (routeId && !(state.exploredRouteIds ?? []).includes(routeId)) {
     const source = routeId.replace(/^SCOUT_/, "").replace(/_/g, " ").toLowerCase().replace(/\b\w/g, (char) => char.toUpperCase());
@@ -48836,11 +48839,16 @@ function gatheringPacing(state, activity) {
 // ../apps/mobile/src/core/combat-region.ts
 function currentRegionId(state) {
   const level = state.character?.level ?? 1;
-  const usable = (id) => WORLD_ZONES.find((zone) => zone.id === id && !worldZoneInDevelopment(zone) && level >= zone.minLevel)?.id;
+  const usable = (id) => WORLD_ZONES.find((zone) => zone.id === id && !worldZoneInDevelopment(zone) && level >= zone.minLevel && regionTravelAvailability(state, zone) === "available")?.id;
   const saved = usable(state.currentRegionId);
   if (saved) return saved;
   const activityZone = usable(state.activity?.environment?.zoneId);
   if (activityZone) return activityZone;
+  const savedZone = WORLD_ZONES.find((zone) => zone.id === state.currentRegionId && !worldZoneInDevelopment(zone));
+  if (savedZone) {
+    const previous = [...WORLD_ZONES].reverse().find((zone) => zone.minLevel < savedZone.minLevel && usable(zone.id));
+    if (previous) return previous.id;
+  }
   return WORLD_ZONES[0].id;
 }
 
@@ -51369,7 +51377,7 @@ function travelToRegion(state, regionId, nowMs) {
   if (!zone) throw new Error("Unknown region");
   if (worldZoneInDevelopment(zone)) throw new Error(`${zone.name} is still in development`);
   if (!state.character || regionTravelAvailability(state, zone) !== "available") throw new Error(regionTravelLockReason(state, zone) ?? `Cannot travel to ${zone.name} yet`);
-  if (currentRegionId(state) === zone.id) return { state, reward: { xp: 0, gold: 0, items: [], kills: 0, elapsedSeconds: 0 } };
+  if (currentRegionId(state) === zone.id && state.currentRegionId === zone.id) return { state, reward: { xp: 0, gold: 0, items: [], kills: 0, elapsedSeconds: 0 } };
   const settled = claimActivity(state, nowMs);
   const travelled = { ...settled.state, currentRegionId: zone.id, activity: null, outOfCombatSinceMs: nowMs };
   const next = normalizeActivityQueue(travelled.character?.activityQueue, activityQueueCapacity(travelled))[0];

@@ -66,6 +66,9 @@ export interface FallenKnightBattleResult{
 
 const clamp=(value:number,min:number,max:number)=>Math.max(min,Math.min(max,value));
 const FALLEN_KNIGHT_MAX_DURATION_MS=100_000;
+/** Prepared meals help in the story fight, but unlimited food cannot
+ * erase the need to upgrade equipment. Also used for rewarded rematches. */
+export const FALLEN_KNIGHT_MAX_FOOD_UNITS=6;
 
 function mitigation(defense:number){
   return clamp(defense/Math.max(1,defense+110),0,.72);
@@ -76,7 +79,7 @@ export function simulateFallenKnightStoryBattle(player:FallenKnightPlayerSnapsho
   if(!monster)throw new Error('fallen_knight_missing');
   const bossSecondary=regionalEnemySecondaryStats(monster);
   const bossMaxHp=monster.hp,playerMaxHp=Math.max(1,Math.round(player.maxHp));
-  let bossHp=bossMaxHp,playerHp=clamp(Math.round(player.currentHp||playerMaxHp),1,playerMaxHp),foodLeft=Math.max(0,Math.floor(player.foodQuantity)),foodConsumed=0;
+  let bossHp=bossMaxHp,playerHp=clamp(Math.round(player.currentHp||playerMaxHp),1,playerMaxHp),foodLeft=clamp(Math.floor(player.foodQuantity),0,FALLEN_KNIGHT_MAX_FOOD_UNITS),foodConsumed=0;
   let phase=1,phaseWardUntilMs=0,rngIndex=0,bossAttackCount=0;
   const phasesReached:(1|2|3)[]=[1],events:StoryBossEvent[]=[];
   const playerHitChance=clamp(player.accuracy-bossSecondary.evasion,.55,.99);
@@ -88,12 +91,14 @@ export function simulateFallenKnightStoryBattle(player:FallenKnightPlayerSnapsho
   const maybeEat=(atMs:number)=>{
     const threshold=clamp(player.autoEatThresholdPct,10,90)/100;
     if(player.foodHeal<=0)return;
-    while(playerHp>0&&playerHp/playerMaxHp<=threshold&&foodLeft>0){
+    // A single boss attack can trigger at most one meal. Spamming an entire
+    // stack instantly at one timestamp is not an intended survival strategy.
+    if(playerHp>0&&playerHp/playerMaxHp<=threshold&&foodLeft>0){
       const healed=Math.min(playerMaxHp-playerHp,Math.max(1,Math.round(player.foodHeal)));
-      if(healed<=0)break;
-      playerHp+=healed;foodLeft--;foodConsumed++;
-      push({atMs:atMs+40,type:'heal',label:'Auto-eat',amount:healed});
-      if(playerHp/playerMaxHp>threshold)break;
+      if(healed>0){
+        playerHp+=healed;foodLeft--;foodConsumed++;
+        push({atMs:atMs+40,type:'heal',label:'Auto-eat',amount:healed});
+      }
     }
   };
 

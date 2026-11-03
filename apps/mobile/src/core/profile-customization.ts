@@ -1,6 +1,6 @@
 import {LIVE_EVENT_CATALOG,type EventReward,type LiveEventDef} from '../content/live-events';
 import type {GameState} from './types';
-import {PROFILE_TITLES,profileTitleUnlocked} from './profile-unlocks';
+import {PROFILE_TITLES,profileTitleUnlocked,profileBackgroundUnlocked} from './profile-unlocks';
 import {JOURNAL_TITLES_V42} from './adventurers-journal-v42';
 
 export type ProfileCustomizationDestination='Events'|'Guild'|'Character'|'Collections';
@@ -132,12 +132,14 @@ function addedIds(before:string[]|undefined,after:string[]|undefined){
 export function newlyUnlockedProfileRewards(before:GameState,after:GameState):ProfileUnlockNotice[]{
  const notices:ProfileUnlockNotice[]=[];
  for(const id of addedIds(before.account.unlockedProfileBackgroundIds,after.account.unlockedProfileBackgroundIds)){
+  if(profileBackgroundUnlocked(before,id))continue; // Legacy ownership backfill is not a newly earned reward.
   notices.push({kind:'background',id,name:eventRewardName(after,'background',id),source:profileRewardSource(after,'background',id)});
  }
  for(const id of addedIds(before.account.unlockedProfileBorderIds,after.account.unlockedProfileBorderIds)){
   notices.push({kind:'border',id,name:eventRewardName(after,'border',id),source:profileRewardSource(after,'border',id)});
  }
  for(const id of addedIds(before.account.unlockedTitleIds,after.account.unlockedTitleIds)){
+  if(profileTitleUnlocked(before,id))continue; // Existing account-level eligibility predates this command.
   notices.push({kind:'title',id,name:eventRewardName(after,'title',id),source:profileRewardSource(after,'title',id)});
  }
  const beforeJournalTitles=before.account.journalState?.unlockedTitles??{},afterJournalTitles=after.account.journalState?.unlockedTitles??{};

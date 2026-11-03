@@ -10,7 +10,7 @@ import {firstInstalledReleaseVersion,shouldAutoAnnounceReleaseNotes,shouldAutoSh
 import {WhatsNewModal} from './src/components/WhatsNewModal';
 import {selectGlobalPopup} from './src/core/global-popup-priority';
 import {buildWelcomeBackFromStates,type WelcomeBackProgressReport} from './src/core/welcome-back-v46';
-import {ActivityIndicator,Animated,ScrollView,AppState,BackHandler,Image,PanResponder,Pressable,Share,StyleSheet,Text,TextInput,View,useWindowDimensions} from 'react-native';
+import {ActivityIndicator,Animated,ScrollView,AppState,BackHandler,Image,Keyboard,PanResponder,Pressable,Share,StyleSheet,Text,TextInput,View,useWindowDimensions} from 'react-native';
 import {StatusBar} from 'expo-status-bar';
 import {SafeAreaProvider,SafeAreaView} from 'react-native-safe-area-context';
 import {AccountWelcomeScreen} from './src/components/AccountWelcomeScreen';
@@ -395,7 +395,8 @@ function VeldrynApp(){
     });
   },[tab,selectedSkill,settingsSection,navigationContext,confirmProfileCustomizeExit]);
   const openChatEmoteSettings=useCallback(()=>{
-    // Leave the keyboard-constrained chat modal before opening the full Settings editor.
+    // Dismiss the composer keyboard and leave the constrained chat modal.
+    Keyboard.dismiss();
     setShowChatOverlay(false);
     setTab('Settings');
     setSettingsSection('chat');

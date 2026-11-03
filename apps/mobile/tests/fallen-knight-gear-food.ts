@@ -56,6 +56,8 @@ for(const cls of CLASSES){
  const seeds=Array.from({length:12},(_,index)=>nowMs+(index+1)*61_003);
  const t2WinsOf12=seeds.filter(time=>previewFallenKnightBattle(fullT2,time,'story').won).length;
  const t1WinsOf12=seeds.filter(time=>previewFallenKnightBattle(fullT1,time,'story').won).length;
+ assert.ok(t2WinsOf12>=9,label+' attainable T2 should win at least 9 of 12 reproducible encounters');
+ assert.ok(t1WinsOf12<=2,label+' basic T1 must not trivialize first boss');
  report[label]={fullT2Won:t2.won,fullT1Won:t1.won,fullT2Food:t2.foodConsumed,fullT1Food:t1.foodConsumed,fullT2BossHp:t2.finalBossHp,fullT1BossHp:t1.finalBossHp,t2WinsOf12,t1WinsOf12};
 }
 console.log('PASS Fallen Knight T2 readiness, nine classes, one-food-per-hit and finite food budget');

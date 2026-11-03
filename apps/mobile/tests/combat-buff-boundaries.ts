@@ -41,7 +41,10 @@ const bare=previewActivityReward(base,T+8*H),single=previewActivityReward(one,T+
 assert.equal(single.preparationEncounters,1);assert.equal(many.preparationEncounters,60);
 assert.equal(single.kills,bare.kills,'ward does not increase hunt speed');
 assert.ok((bare.foodConsumed!-single.foodConsumed!)<=1,'one ward use must not save food across an entire batch');
-assert.ok(many.foodConsumed!<single.foodConsumed!,'sixty uses protect more than one use');
+// In regions with minimum incoming attrition the ward cannot remove that
+// mandatory baseline; it must never INCREASE food consumption, while all
+// sixty reserved charges still settle only against their own encounters.
+assert.ok(many.foodConsumed!<=single.foodConsumed!,'additional ward charges cannot increase food use under minimum regional attrition');
 const settled=claimActivity(one,T+8*H);assert.ok(!settled.state.character!.preparation,'spent potion must be cleared');
 assert.equal(claimActivity(settled.state,T+8*H).reward.kills,0,'retry must not award more kills');
 

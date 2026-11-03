@@ -56,7 +56,7 @@ export function ItemQuickInspect({state,itemId,onClose,onNavigate,actions}:{stat
           <View style={s.heroCopy}>
             <Text style={[s.rarity,{color:rarity.color}]}>{rarity.symbol+' '+contentText(rarity.label).toLocaleUpperCase(language)+' · '+contentText(item.type).toLocaleUpperCase(language)}</Text>
             <Text numberOfLines={2} style={[s.name,{color:nameColor}]}>{item.name+(upgrade?.rank?' +'+upgrade.rank:'')}</Text>
-            <Text style={s.owned}>{it('Owned · {total} total · {carried} carried · {banked} banked',{total:formatGameNumber(model.totalQuantity,state.settings.numberMode,language),carried:formatGameNumber(model.inventoryQuantity,state.settings.numberMode,language),banked:formatGameNumber(model.bankQuantity,state.settings.numberMode,language)})}</Text>
+            <Text style={s.owned}>{it('Owned · {total} total · {carried} carried · {banked} banked',{total:formatGameNumber(model.totalQuantity,state.settings.numberMode,language),carried:formatGameNumber(model.inventoryQuantity,state.settings.numberMode,language),banked:formatGameNumber(model.bankQuantity,state.settings.numberMode,language)})}{model.pouchQuantity?' · '+formatGameNumber(model.pouchQuantity,state.settings.numberMode,language)+' in Gem Pouch':''}</Text>
           </View>
           <Pressable accessibilityRole="button" accessibilityLabel={gt("Close item quick inspect")} onPress={onClose} style={({pressed})=>[s.close,pressed&&s.pressed]}><Text style={s.closeText}>×</Text></Pressable>
         </View>

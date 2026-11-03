@@ -6,6 +6,7 @@ import {profileIconArtwork} from './profile-icon-assets';
 import {petArtSource} from './pet-art';
 import {chatEmoteArtwork} from './chat-emote-assets';
 import {guildTokenShopOfferArt} from './guild-token-shop-art';
+import {guildBannerSourceByKey,guildBorderSourceByKey,guildNameplateSourceByKey} from './guild-customization-assets';
 
 /** Present the earned reward itself, never a substitute cosmetic's artwork.
  * Inbox records retain their canonical kind:id keys across save migrations.
@@ -23,7 +24,7 @@ export function unlockInboxArtwork(row:Pick<UnlockInboxEntry,'kind'|'key'>):Imag
   case 'emote':return chatEmoteArtwork(id);
   case 'guild_cosmetic':
    // Guild unlocks can be registered as shop SKUs, profile decorations or emotes.
-   return guildTokenShopOfferArt(id)??profileBorderSourceById.get(id)??profileIconArtwork(id)??chatEmoteArtwork(id);
+   return guildTokenShopOfferArt(id)??guildBannerSourceByKey.get(id)??guildBorderSourceByKey.get(id)??guildNameplateSourceByKey.get(id)??profileBorderSourceById.get(id)??profileIconArtwork(id)??chatEmoteArtwork(id);
   case 'title':
    // Titles have names but no unique bitmap assets.
    return undefined;

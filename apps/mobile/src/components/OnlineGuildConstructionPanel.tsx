@@ -47,7 +47,14 @@ export function OnlineGuildConstructionPanel({
   const active=snapshot.constructionTemplates.find(template=>template.enabled&&template.guildLevel<=snapshot.guildLevel&&!snapshot.construction.some(row=>row.templateId===template.id&&row.completed));
   return BUILDINGS.find(building=>active?.id.startsWith('construction_'+building.id+'_'))?.id??'hall';
  });
- const [quantity,setQuantity]=useState('100'),[busy,setBusy]=useState(false);
+ const [quantity,setQuantity]=useState(()=>{
+  if(!initialSelection)return '100';
+  const template=snapshot.constructionTemplates.find(row=>row.id===initialSelection.templateId);
+  const required=initialSelection.resourceId==='gold'?template?.gold??0:template?.materials.find(row=>row.materialKey===initialSelection.resourceId)?.amount??0;
+  const committed=snapshot.construction.find(row=>row.templateId===initialSelection.templateId)?.resources[initialSelection.resourceId]??0;
+  const available=snapshot.bank?.balances.find(row=>row.resourceId===initialSelection.resourceId)?.amount??0;
+  return String(Math.max(1,Math.min(100,Math.max(0,required-committed),available)));
+ }),[busy,setBusy]=useState(false);
  const [pending,setPending]=useState<PendingGuildDonation|null>(null);
  const [error,setError]=useState(''),[notice,setNotice]=useState('');
  useEffect(()=>{

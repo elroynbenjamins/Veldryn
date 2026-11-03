@@ -175,7 +175,7 @@ const blockedNotices=recipePreparationTransitionNotices(initialTrackedState,gold
 equal(blockedNotices[0]?.kind,'blocked','Advancing into a Gold-blocked final step emits a blocked transition');
 ok(blockedNotices[0]?.message.includes('Next blocked'),'Blocked advancement explains that the new next step cannot start yet');
 equal(blockedNotices[0]?.actionLabel,'Review','Blocked preparation notice uses a review action rather than implying it can start');
-ok(blockedNotices[0]?.message.includes('Need 50 more Gold')&&!blockedNotices[0]?.message.includes('Gold..'),'Blocked notice includes the actual blocker with normalized punctuation');
+ok(blockedNotices[0]?.message.includes('Need 60 more Gold')&&!blockedNotices[0]?.message.includes('Gold..'),'Blocked notice includes the actual blocker with normalized punctuation');
 const resumedNotices=recipePreparationTransitionNotices(goldBlockedState,finalReadyState);
 equal(resumedNotices[0]?.kind,'resumed','Restoring a blocked tracked preparation emits a resumed notice');
 equal(resumedNotices[0]?.actionLabel,'Open next','Resumed preparation offers the exact next-step action again');

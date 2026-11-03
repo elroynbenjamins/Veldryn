@@ -3,7 +3,7 @@ import {ActivityIndicator,Image,Pressable,ScrollView,StyleSheet,Text,View} from 
 import {GameButton} from './GameButton';
 import {Panel} from './Panel';
 import {QuestBoard} from './QuestBoard';
-import {OnlineGuildSkillsPanel} from './OnlineGuildSkillsPanel';
+import {OnlineGuildTokenShopPanel} from './OnlineGuildTokenShopPanel';
 import {OnlineGuildConstructionPanel} from './OnlineGuildConstructionPanel';
 import {OnlineGuildBankPanel} from './OnlineGuildBankPanel';
 import {StatBar} from './StatBar';
@@ -17,16 +17,18 @@ import {type ThemeColors} from '../theme/theme';
 import {useGameTheme} from '../theme/ThemeContext';
 
 type Projection=Awaited<ReturnType<typeof loadOnlineGuildHallV44>>;
-export type HeadquartersSection='Overview'|'Construction'|'Bank'|'Skills'|'Legacy';
+// 'Skills' remains valid only for migration of older Hall navigation histories.
+export type HeadquartersSection='Overview'|'Construction'|'Bank'|'Shop'|'Legacy'|'Skills';
 interface HallNavigation {
  activeSection?:HeadquartersSection;
- onSectionChange?:(section:HeadquartersSection|'Shop')=>void;
+ onSectionChange?:(section:HeadquartersSection)=>void;
+ onTokenRewardsChanged?:()=>void|Promise<unknown>;
 }
-const DESTINATIONS:readonly HeadquartersSection[]=['Overview','Construction','Bank','Skills','Legacy'];
+const DESTINATIONS:readonly HeadquartersSection[]=['Overview','Construction','Bank','Shop','Legacy'];
 const SHORTCUTS=[
  {id:'Construction' as const,title:'Construction',detail:'Build together',art:'workshop' as const},
  {id:'Bank' as const,title:'Guild Bank',detail:'Donate supplies',art:'banner_gallery' as const},
- {id:'Skills' as const,title:'Guild Skills',detail:'Shared skill trees',art:'training_room' as const},
+ {id:'Shop' as const,title:'Token Shop',detail:'Spend Guild Tokens',art:'training_room' as const},
  {id:'Legacy' as const,title:'Hall & trophies',detail:'Facilities and history',art:'trophy_room' as const},
 ];
 
@@ -52,7 +54,10 @@ export function GuildHallView({projection,loading=false,error='',onRefresh,activ
  const [shop,setShop]=useState<GuildTokenShopSnapshot|null>(null);
  const [shopLoading,setShopLoading]=useState(true);
  const [shopError,setShopError]=useState('');
- const section=activeSection??localSection;
+ const [bankFocus,setBankFocus]=useState<string|null>(null);
+ const [returnBuilding,setReturnBuilding]=useState<string|undefined>(undefined);
+ const [returnSelection,setReturnSelection]=useState<{templateId:string;resourceId:string}|undefined>(undefined);
+ const section=(activeSection??localSection)==='Skills'?'Overview':activeSection??localSection;
  const navigate=(next:HeadquartersSection)=>{if(onSectionChange)onSectionChange(next);else setLocalSection(next)};
  const refreshShop=useCallback(async()=>{
   setShopLoading(true);setShopError('');
@@ -114,9 +119,20 @@ export function GuildHallView({projection,loading=false,error='',onRefresh,activ
    <View style={s.heading}><Text style={s.headingText}>Hall facilities</Text><GameButton compact tone="secondary" title="View details" onPress={()=>navigate('Legacy')}/></View>
    <View style={s.facilityGrid}>{GUILD_HALL_FACILITIES.slice(0,4).map(def=><View key={def.id} style={s.facilityTile}><Text style={s.tileName}>{def.name}</Text><Text style={s.tileTier}>Tier {state.facilities[def.id].tier}/5</Text></View>)}</View>
   </View>:null}
-  {section==='Construction'?<View style={s.root}><Text style={s.headingText}>Guild Construction</Text><Text style={s.copy}>Build permanent benefits with Guild Bank supplies. Unlike Hall Progress, these projects require materials and a released upgrade.</Text>{shopFallback()}{shop?<OnlineGuildConstructionPanel snapshot={shop} onReload={refreshShop}/>:null}<GameButton compact tone="secondary" title="Open Guild Bank" onPress={()=>navigate('Bank')}/></View>:null}
-  {section==='Bank'?<View style={s.root}><Text style={s.headingText}>Guild Bank</Text><Text style={s.copy}>Deposit materials needed by released, level-eligible construction. Deposits cannot be withdrawn.</Text>{shopFallback()}{shop?<OnlineGuildBankPanel snapshot={shop} onReload={refreshShop}/>:null}<GameButton compact title="Allocate to construction" onPress={()=>navigate('Construction')}/></View>:null}
-  {section==='Skills'?<View style={s.root}><Panel><Text style={s.headingText}>Guild Skill Trees</Text><Text style={s.copy}>Professions, Fellowship and Vanguard. Only released, server-verified bonuses can be upgraded by authorized officers.</Text></Panel><OnlineGuildSkillsPanel onViewBank={()=>navigate('Bank')}/></View>:null}
+  {section==='Construction'?<View style={s.root}>
+   {shopFallback()}
+   {shop?<OnlineGuildConstructionPanel snapshot={shop} onReload={refreshShop}
+    initialBuilding={returnBuilding} initialSelection={returnSelection}
+    onOpenBank={(resourceId,building,selected)=>{setReturnBuilding(building);setReturnSelection(selected);setBankFocus(resourceId);navigate('Bank');}}/>:null}
+   <GameButton compact tone="secondary" title="Open Guild Bank" onPress={()=>navigate('Bank')}/>
+  </View>:null}
+  {section==='Bank'?<View style={s.root}>
+   {shopFallback()}
+   {shop?<OnlineGuildBankPanel snapshot={shop} onReload={refreshShop} focusResourceId={bankFocus}
+    onFocusHandled={()=>setBankFocus(null)}/>:null}
+   <GameButton compact title="Return to Construction" onPress={()=>{setBankFocus(null);navigate('Construction')}}/>
+  </View>:null}
+  {section==='Shop'?<OnlineGuildTokenShopPanel onRewardsChanged={onTokenRewardsChanged} onOpenConstruction={()=>navigate('Construction')}/>:null}
   {section==='Legacy'?<View style={s.root}>{renderHallProgress()}<Text style={s.headingText}>Hall facilities</Text><Text style={s.copy}>Facilities advance automatically through Guild Projects. Construction and Guild Skills grant their own separate benefits.</Text>
    {GUILD_HALL_FACILITIES.map(def=>{const facility=state.facilities[def.id],tier=facility.tier,threshold=DEFAULT_GUILD_HALL_POLICY.facilityProgressThresholds[tier],requiredLevel=def.tierHallLevels[tier];return <View key={def.id} style={s.facility}>
     <Image source={guildFacilityArtwork(def.id)} resizeMode="contain" style={s.facilityImage} accessible={false}/>

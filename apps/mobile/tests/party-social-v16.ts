@@ -1,5 +1,8 @@
 import {
   filterRecruitmentCards,
+  normalizedPartyPreferences,
+  partyActivityLabel,
+  recruitmentPaceForParty,
   partyOpenSpots,
   personalContributionEligible,
   recruitmentTimeLabel,
@@ -14,6 +17,11 @@ import {
 } from '../src/core/party-social';
 function assert(value: unknown,message:string): asserts value { if(!value) throw new Error(message); }
 const party:PersistentPartySummary={id:'p',focus:'mixed',maxMembers:4,members:[{accountId:'a1',characterId:'c1',characterName:'A',className:'Wayfinder',role:'damage',isLeader:true}]};
+assert(normalizedPartyPreferences(null).activityLevel==='active','new Party default is active without a forced level gate');
+assert(normalizedPartyPreferences({activityLevel:'tryhard',language:'nl',minimumLevel:10}).minimumLevel===10,'Party preferences retain optional level');
+assert(partyActivityLabel('tryhard')==='Tryhard','Tryhard label is player-facing');
+assert(recruitmentPaceForParty('tryhard')==='hardcore','Tryhard persists in existing recruitment pace schema');
+assert(recruitmentPaceForParty('casual')==='casual','Casual activity inherits cleanly');
 assert(partyOpenSpots(party)===3,'party open spots');
 assert(shouldShowPartyChat(party,'a1'),'member sees party chat');
 assert(!shouldShowPartyChat(party,'a2'),'nonmember must not see party chat');

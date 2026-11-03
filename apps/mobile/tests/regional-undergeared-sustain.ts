@@ -20,8 +20,12 @@ for(const def of REGIONAL_COMBAT_FIXTURES.filter(row=>row.regionName!=='Greenfie
   assert.ok(fullProjection.netHpLossPerHour>0,label+' prepared hunt must carry food pressure');
   assert.ok(oneProjection.netHpLossPerHour>fullProjection.netHpLossPerHour*1.2,
    label+' missing nine slots must meaningfully increase hourly HP loss');
-  assert.ok(emptyProjection.netHpLossPerHour>=oneProjection.netHpLossPerHour*.95,
-   label+' removing the final weapon must not make farming cheaper');
+  // Empty gear also slows kills, so its food burned per *hour* can drop
+  // despite becoming substantially less efficient. Compare cost per kill.
+  const emptyHpPerKill=Math.max(0,emptyProjection.netDamagePerKill);
+  const oneHpPerKill=Math.max(0,oneProjection.netDamagePerKill);
+  assert.ok(emptyHpPerKill>=oneHpPerKill*.95,
+   label+' removing the final weapon must not reduce damage per kill');
   assert.ok(oneProjection.killsPerHour<fullProjection.killsPerHour,
    label+' full regional gear must beat a one-slot kit on kill speed');
   assert.ok(emptyProjection.killsPerHour<=oneProjection.killsPerHour,

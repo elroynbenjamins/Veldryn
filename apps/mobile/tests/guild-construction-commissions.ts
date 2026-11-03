@@ -24,6 +24,15 @@ check(guildBank.includes('snapshot.bank.activity.slice(0,20)')&&guildBank.includ
 check(guildBank.includes('Keyboard.dismiss();setConfirming(true)')&&guildBank.includes('Confirm donation')&&guildBank.includes('onPress={()=>void deposit({resourceId:selected,amount})}'),'Donations must receive an in-theme second confirmation before the server transaction');
 check(guildBank.includes('pendingGuildBankDeposit()')&&guildBank.includes('Retry saved deposit')&&guildBank.includes('depositOnlineGuildBank(input)'),'A pending deposit must remain idempotently recoverable');
 check(guildBank.includes('The server checks your available unlocked items or Gold')&&!guildBank.includes('You own'),'Do not present fabricated personal balances: server verifies inventory and Gold before a donation');
+check(guildBank.includes('loadOnlineGuildSkills()')&&guildBank.includes('skillSnapshot.skillPoints>0')
+ &&guildBank.includes('if(!node.released||node.rank>=node.maxRank)continue')
+ &&guildBank.includes('cost.rank!==node.rank+1'),
+ 'Guild Bank must surface ONLY released, unmaxed next-rank Skill requirements while points remain');
+check(guildBank.includes('(row?.skills??0)')&&guildBank.includes('Guild Skills draw from the same Bank'),
+ 'Guild Bank must count Skill materials together with current/upcoming Construction capacity');
+const guildShop=fs.readFileSync('src/online/guild-token-shop.ts','utf8');
+check(guildShop.includes("'construction'|'skill_upgrade'")&&guildShop.includes("'deposit','construction','skill_upgrade'"),
+ 'Guild Bank validation must accept the server ledger skill-upgrade spend entries');
 const hallNav=fs.readFileSync('src/components/OnlineGuildHallPanel.tsx','utf8');
 check(hallNav.includes('onOpenConstruction={()=>{setBankFocus(null);navigate(\'Construction\')}}'),'Guild Bank Needed view must link directly to Construction without duplicate bottom action');
 check(guildBank.includes('Math.max(0,totalNeed(id)-balance(id))'),'Donatable capacity must subtract Guild Bank holdings from remaining requirements');

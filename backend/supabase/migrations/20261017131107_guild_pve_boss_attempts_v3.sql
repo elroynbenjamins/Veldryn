@@ -36,7 +36,7 @@ revoke all on function public.guild_pve_attempt_cap_v3(timestamptz,timestamptz) 
 grant execute on function public.guild_pve_attempt_cap_v3(timestamptz,timestamptz) to service_role;
 
 create or replace function public.settle_guild_pve_attempts_v3(p_guild uuid,p_now timestamptz)
-language plpgsql security definer set search_path=public as $$
+returns void language plpgsql security definer set search_path=public as $$
 declare a record;e public.guild_pve_encounters_v1;
 begin
  for a in select a.* from public.guild_pve_attempts_v3 a join public.guild_pve_encounters_v1 x on x.id=a.encounter_id where x.guild_id=p_guild and a.resolved_at is null and a.resolves_at<=p_now order by a.created_at for update of a loop

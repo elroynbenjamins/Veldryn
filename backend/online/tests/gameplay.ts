@@ -51,9 +51,15 @@ async function main(){
  // This later-region fixture must satisfy the same scouting gates as a real character.
  const beforeLockedTravel=commits;
  const lockedTravel=await request({type:'travel',args:{id:'SUNSCAR'}},'sunscar-locked-01',8);
- assert.equal(lockedTravel.status,400,'Character level alone cannot bypass scouting');
- assert.match((await lockedTravel.json()).error,/Kings Road scouting/);
- assert.equal(commits,beforeLockedTravel,'Rejected travel cannot commit progress');
+ assert.equal(lockedTravel.status,400,'Character level alone cannot bypass the Chapter 1 story boss');
+ assert.match((await lockedTravel.json()).error,/Fallen Knight/);
+ assert.equal(commits,beforeLockedTravel,'Rejected story-locked travel cannot commit progress');
+ // Verify the separate scouting gate after the required Chapter 1 boss is defeated.
+ state={...state!,defeatedBossIds:[...new Set([...(state!.defeatedBossIds??[]),'FALLEN_KNIGHT'])]};
+ const scoutingLocked=await request({type:'travel',args:{id:'SUNSCAR'}},'sunscar-scout-locked-01',8);
+ assert.equal(scoutingLocked.status,400,'Finishing Chapter 1 alone does not bypass scouting');
+ assert.match((await scoutingLocked.json()).error,/Kings Road scouting/);
+ assert.equal(commits,beforeLockedTravel,'Rejected scouting-locked travel cannot commit progress');
  state={...state!,exploredRouteIds:['SCOUT_IRONWOOD','SCOUT_OLD_MINES','SCOUT_KINGS_ROAD']};
  assert.equal((await request({type:'travel',args:{id:'SUNSCAR'}},'sunscar-travel-01',8)).status,200,'Later-region travel persists online');
  assert.equal((await request({type:'explore',args:{id:'SCOUT_SUNSCAR'}},'sunscar-scout-01',9)).status,200,'Later-region scouting starts online');

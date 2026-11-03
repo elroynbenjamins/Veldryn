@@ -55,7 +55,7 @@ export function GemPouchPanel({state,busy=false,standalone=false,onUpgrade,onAct
     <GameModalSurface visible={!!selectedStack} reduceMotion={state.settings.reduceMotion} onClose={()=>setSelected(null)}
       backdropLabel="Close Gem Pouch item details" surfaceStyle={s.sheet}>
       <GameModalHeader eyebrow="GEM POUCH · ACCOUNT STORAGE" title={selectedItem?.name??'Gem details'} onClose={()=>setSelected(null)}/>
-      {selectedStack&&selectedItem?<ScrollView style={s.sheetScroll} contentContainerStyle={s.sheetBody} showsVerticalScrollIndicator={false}>
+      {selectedStack&&selectedItem?<ScrollView style={s.sheetScroll} contentContainerStyle={s.sheetBody} showsVerticalScrollIndicator={false} showsHorizontalScrollIndicator={false}>
         <View style={s.gemHero}>
           <View style={[s.largeArt,{borderColor:selectedRarity?.color??C.lineStrong}]}><ItemArtwork itemId={selectedStack.itemId} size={76}/></View>
           <View style={s.flex}>

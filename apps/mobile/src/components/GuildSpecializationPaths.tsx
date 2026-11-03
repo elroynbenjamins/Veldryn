@@ -1,5 +1,5 @@
 import {useMemo,useState} from 'react';
-import {Image,Modal,Pressable,ScrollView,StyleSheet,Text,View} from 'react-native';
+import {Image,Modal,Pressable,ScrollView,StyleSheet,Text,View,useWindowDimensions} from 'react-native';
 import {GUILD_MAJOR_BRANCHES,GUILD_SKILL_NODES,type GuildSkillNode} from '../content/guild-skill-paths';
 import {itemDef} from '../content/items';
 import {useGameTheme} from '../theme/ThemeContext';
@@ -24,6 +24,8 @@ type Props={
  * All skill upgrades require a second, explicit confirmation. */
 export function GuildSpecializationPaths({guildLevel,skillPoints,metrics,canUpgrade=false,isReleased,onSpend,onViewBank}:Props){
  const C=useGameTheme(),s=useMemo(()=>styles(C),[C]);
+ const {width:windowWidth,fontScale}=useWindowDimensions();
+ const narrow=windowWidth<350||fontScale>=1.25;
  const [branch,setBranch]=useState<typeof GUILD_MAJOR_BRANCHES[number]>('Professions');
  const [selected,setSelected]=useState('professions_gathering');
  const [review,setReview]=useState(false);
@@ -68,11 +70,11 @@ export function GuildSpecializationPaths({guildLevel,skillPoints,metrics,canUpgr
   </View>
 
   <BoardTabs compact label="Guild Skill branches" items={GUILD_MAJOR_BRANCHES.map(id=>({id,label:id}))} value={branch} onChange={changeBranch}/>
-  <View style={s.tiles}>
+  <View style={[s.tiles,narrow&&s.tilesNarrow]}>
    {nodes.map(n=>{const current=rank(n.id),chosen=n.id===node.id,live=isReleased?.(n.id)??true;return <Pressable key={n.id}
      accessibilityRole="button" accessibilityLabel={`${n.name}, rank ${current} of 3${live?'':', not released'}. View skill.`}
      accessibilityState={{selected:chosen}} onPress={()=>{setSelected(n.id);setReview(false)}}
-     style={({pressed})=>[s.tile,{borderColor:chosen?C.selectionLine:C.line,backgroundColor:chosen?C.selection:C.panelRaised},pressed&&s.pressed]}>
+     style={({pressed})=>[s.tile,narrow&&s.tileNarrow,{borderColor:chosen?C.selectionLine:C.line,backgroundColor:chosen?C.selection:C.panelRaised},pressed&&s.pressed]}>
     <Image source={guildSkillArtwork(n.id)} resizeMode="contain" style={s.tileIcon} accessible={false}/>
     <Text numberOfLines={2} style={s.tileName}>{n.name}</Text>
     <Text style={s.tileBonus}>{known?bonus(n,current):'3 ranks'}</Text>
@@ -148,7 +150,7 @@ function styles(C:ThemeColors){return StyleSheet.create({
  pointsValue:{fontSize:20,lineHeight:24,fontWeight:'800',color:C.accent},pointsLabel:{fontSize:10,color:C.muted},
  summary:{flexDirection:'row',alignItems:'center',justifyContent:'space-between'},summaryValue:{fontSize:13,fontWeight:'800',color:C.text},
  active:{flexDirection:'row',gap:6,flexWrap:'wrap'},activeChip:{paddingHorizontal:8,paddingVertical:5,borderRadius:6,borderWidth:1,borderColor:C.line,backgroundColor:C.panel2},activeText:{fontSize:11,color:C.good,fontWeight:'700'},
- tiles:{flexDirection:'row',gap:7},tile:{flex:1,minWidth:0,minHeight:126,alignItems:'center',justifyContent:'center',gap:4,paddingHorizontal:4,paddingVertical:9,borderRadius:9,borderWidth:1},
+ tiles:{flexDirection:'row',gap:7},tilesNarrow:{flexWrap:'wrap'},tileNarrow:{flex:0,width:'48%',minHeight:128},tile:{flex:1,minWidth:0,minHeight:126,alignItems:'center',justifyContent:'center',gap:4,paddingHorizontal:4,paddingVertical:9,borderRadius:9,borderWidth:1},
  tileIcon:{width:38,height:38},unreleased:{fontSize:8,lineHeight:11,fontWeight:'800',color:C.warning,letterSpacing:.2},tileName:{fontSize:11,lineHeight:14,minHeight:28,textAlign:'center',color:C.text,fontWeight:'800'},
  tileBonus:{fontSize:10,color:C.good,fontWeight:'700'},rankDots:{flexDirection:'row',gap:4,marginTop:2},rankDot:{width:10,height:5,borderRadius:2},
  detail:{gap:11,padding:12,borderWidth:1,borderColor:C.lineStrong,borderRadius:10,backgroundColor:C.panelRaised},

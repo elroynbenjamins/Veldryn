@@ -18,10 +18,10 @@ const activityCore=read('src/core/guild-activity.ts');
 ok(screen.includes("'Activities'"),'Consolidated online Guild sections must include Activities');
 ok(screen.includes("onlineSection==='Activities'?<View")&&screen.includes('<OnlineGuildMusterPanel/>'),'Guild Muster must remain reachable inside the Activities destination');
 ok(screen.includes('title={st("Muster & Rally")}')&&screen.includes('copy={st("Daily participation rolls into the shared weekly Rally without adding another currency.")}'),'Activities must explain Muster and Rally with localized copy after consolidation');
-ok(screen.includes('<GuildMemberIdentity onRoster=')&&screen.includes('<GuildHomeActions board=')&&screen.includes('board={onlineBoard}'),'Guild Home must keep member identity and Notice Board together');
+ok(screen.includes('<GuildMemberIdentity onRoster=')&&screen.includes('<GuildHomeActions summary=')&&screen.includes('board={onlineBoard}'),'Guild Home must keep member identity and Notice Board together');
 
 ok(!homeActions.includes('Open Muster')&&!homeActions.includes('DAILY GUILD PARTICIPATION'),'Guild Home must not render a second oversized Muster promotion');
-ok(hallSummary.includes('title="Open Muster & Rally"')&&screen.includes('<GuildHallSummary onOpenMuster={()=>onNavigateMuster()}'),'Primary Guild Hall summary Muster shortcut must remain functional');
+ok(hallSummary.includes('title="View Muster & Rally"')&&screen.includes('<GuildHallSummary compact onOpenMuster={onNavigateMuster}'),'Primary Guild Hall summary Muster shortcut must remain functional');
 ok(screen.includes("activityView==='Muster'?")&&screen.includes('<OnlineGuildMusterPanel/>'),'Guild Activities Muster destination must remain available');
 ok(panel.includes('GUILD MUSTER'),'Muster must have a clear player-facing identity');
 ok(panel.includes('not a consecutive login streak'),'Muster must explicitly avoid punitive consecutive streaks');

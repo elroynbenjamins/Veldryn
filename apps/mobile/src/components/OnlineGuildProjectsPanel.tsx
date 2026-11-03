@@ -91,7 +91,7 @@ export function OnlineGuildProjectsPanel({onRewardsChanged,onNavigateActivity}:{
      onNavigateActivity={onNavigateActivity}
      expanded={expanded===project.id}
      onToggle={()=>setExpanded(old=>old===project.id?null:project.id)}
-   />):<View style={s.empty}><Text style={s.emptyTitle}>No active Guild Project</Text><Text style={s.copy}>Your next shared weekly project will appear here automatically.</Text></View>}
+   />):<View style={s.empty}><Text style={s.emptyTitle}>No active Guild Project</Text><Text style={s.copy}>No project is currently active. Check the candidates below to vote; Guild Officers or Leaders can start an eligible project.</Text></View>}
   </QuestBoard>
   {snapshot.candidates.length?<Panel>
    <View style={s.sectionHead}><Text style={s.sectionTitle}>Next weekly project</Text><Text style={s.meta}>One vote per member</Text></View>

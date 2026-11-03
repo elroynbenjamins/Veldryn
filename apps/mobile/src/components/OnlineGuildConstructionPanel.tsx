@@ -30,19 +30,31 @@ function resourceName(key:string){
  * This component never mutates local inventory optimistically.
  */
 export function OnlineGuildConstructionPanel({
- snapshot,onRewardsChanged,onReload,
+ snapshot,onRewardsChanged,onReload,initialBuilding,initialSelection,onOpenBank,
 }:{
  snapshot:GuildTokenShopSnapshot;
  onRewardsChanged?:()=>void|Promise<unknown>;
  onReload?:()=>void|Promise<unknown>;
+ initialBuilding?:string;
+ initialSelection?:{templateId:string;resourceId:string};
+ onOpenBank?:(resourceId:string,building:string,selection:{templateId:string;resourceId:string})=>void;
 }){
  const C=useGameTheme(),s=useMemo(()=>styles(C),[C]);
- const [selected,setSelected]=useState<{templateId:string;resourceId:string}|null>(null);
+ const [selected,setSelected]=useState<{templateId:string;resourceId:string}|null>(initialSelection??null);
  const [selectedBuilding,setSelectedBuilding]=useState<(typeof BUILDINGS)[number]['id']>(()=>{
+  const remembered=BUILDINGS.find(building=>building.id===initialBuilding);
+  if(remembered)return remembered.id;
   const active=snapshot.constructionTemplates.find(template=>template.enabled&&template.guildLevel<=snapshot.guildLevel&&!snapshot.construction.some(row=>row.templateId===template.id&&row.completed));
   return BUILDINGS.find(building=>active?.id.startsWith('construction_'+building.id+'_'))?.id??'hall';
  });
- const [quantity,setQuantity]=useState('100'),[busy,setBusy]=useState(false);
+ const [quantity,setQuantity]=useState(()=>{
+  if(!initialSelection)return '100';
+  const template=snapshot.constructionTemplates.find(row=>row.id===initialSelection.templateId);
+  const required=initialSelection.resourceId==='gold'?template?.gold??0:template?.materials.find(row=>row.materialKey===initialSelection.resourceId)?.amount??0;
+  const committed=snapshot.construction.find(row=>row.templateId===initialSelection.templateId)?.resources[initialSelection.resourceId]??0;
+  const available=snapshot.bank?.balances.find(row=>row.resourceId===initialSelection.resourceId)?.amount??0;
+  return String(Math.max(1,Math.min(100,Math.max(0,required-committed),available)));
+ }),[busy,setBusy]=useState(false);
  const [pending,setPending]=useState<PendingGuildDonation|null>(null);
  const [error,setError]=useState(''),[notice,setNotice]=useState('');
  useEffect(()=>{
@@ -140,6 +152,8 @@ export function OnlineGuildConstructionPanel({
        onPress={()=>confirmFunding(template.id,chosen.key,donationAmount)}/>
      </View>
      <View style={s.actions}>{[10,100,'Max' as const].map(value=><Pressable key={value} accessibilityRole="button" accessibilityLabel={'Set funding amount to '+value} disabled={busy} onPress={()=>setQuantity(String(Math.min(value==='Max'?1000000:value,remaining,bankAmount,1000000)))} style={s.preset}><Text style={s.presetText}>{value==='Max'?'Max':value.toLocaleString()}</Text></Pressable>)}</View>
+      {bankAmount<remaining&&onOpenBank?<GameButton compact tone="secondary" title={'Deposit '+resourceName(chosen.key)+' into Guild Bank'} disabled={busy}
+       onPress={()=>onOpenBank(chosen.key,selectedBuilding,{templateId:template.id,resourceId:chosen.key})}/>:null}
     </View>:null}
     <Text style={s.unlock}>{row?.completed?'Guild upgrade completed':`Reward: ${guildConstructionBlueprint(template.id)?.benefit??resourceName(template.unlockId)}`}</Text>
     {!template.enabled?<Text style={s.projectMeta}>Awaiting construction release</Text>:null}

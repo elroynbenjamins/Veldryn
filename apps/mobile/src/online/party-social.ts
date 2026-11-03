@@ -2,6 +2,7 @@ import type {
   PartyContractView,
   PartyFocus,
   PartyRole,
+  PartyPreferences,
   PersistentPartySummary,
   RecruitmentCardView,
   RecruitmentClientFilters,
@@ -56,8 +57,9 @@ export interface PublishRecruitmentInput {
 
 export interface PartySocialRepository {
   getMyParty(): Promise<PersistentPartySummary | null>;
-  createParty(input: { characterId: string; role: PartyRole; focus: PartyFocus; idempotencyKey: string }): Promise<PersistentPartySummary>;
-  joinParty(input: { partyId: string; characterId: string; role: PartyRole; idempotencyKey: string }): Promise<PersistentPartySummary>;
+  createParty(input: PartyPreferences & { characterId: string; idempotencyKey: string }): Promise<PersistentPartySummary>;
+  updatePartyPreferences(partyId:string,preferences:PartyPreferences):Promise<PartyPreferences>;
+  joinParty(input: { partyId: string; characterId: string; idempotencyKey: string }): Promise<PersistentPartySummary>;
   leaveParty(input: { partyId: string; idempotencyKey: string }): Promise<void>;
   getPartyContracts(partyId: string): Promise<PartyContractView[]>;
   browseRecruitment(filters: RecruitmentClientFilters): Promise<RecruitmentCardView[]>;
@@ -76,16 +78,17 @@ export const PARTY_SOCIAL_SERVER_AUTHORITY_NOTE = true;
 export interface PartySocialSnapshot {party:PersistentPartySummary|null;contracts:PartyContractView[];serverTime:string}
 export interface PartyRanking {event_key:string;name:string;party_id:string;normalized_points:number;rank:number;ends_at:string}
 function client(){if(!supabase)throw new Error('Online services are not configured.');return supabase;}
-async function rpc<T>(name:string,args:Record<string,unknown>={}):Promise<T>{const {data,error}=await client().rpc(name,args);if(error)throw new Error(error.message);return data as T;}
+async function rpc<T>(name:string,args:Record<string,unknown>={}):Promise<T>{const {data,error}=await client().rpc(name,args);if(error)throw new Error(error.message.includes('party_minimum_level_not_met')?"Your character doesn't meet this Party's minimum combat level.":error.message);return data as T;}
 export function partyCommandKey(){return `party-${Date.now()}-${Math.random().toString(36).slice(2,14)}`;}
-export async function partySocialSnapshot(){const snapshot=await rpc<PartySocialSnapshot>('party_social_state_v16');if(!snapshot.party)return snapshot;const identities=await guildIdentities(snapshot.party.members.map(member=>member.accountId));return {...snapshot,party:{...snapshot.party,members:snapshot.party.members.map(member=>({...member,playerBadges:identities.get(member.accountId)?.player_badges}))}};}
+export async function partySocialSnapshot(){const snapshot=await rpc<PartySocialSnapshot>('party_social_state_v18');if(!snapshot.party)return snapshot;const identities=await guildIdentities(snapshot.party.members.map(member=>member.accountId));return {...snapshot,party:{...snapshot.party,members:snapshot.party.members.map(member=>({...member,playerBadges:identities.get(member.accountId)?.player_badges}))}};}
 type RecruitmentRow={id:string;post_type:RecruitmentCardView['postType'];owner_account_id:string;owner_name?:string;party_id?:string;guild_id?:string;guild_name?:string;title:string;body:string;roles:PartyRole[];focus:RecruitmentFocus;activity_tags:string[];playstyle_tags:string[];availability_tags:string[];guild_interest_tags:string[];activity_level?:RecruitmentCardView['activityLevel'];current_objective?:string;open_spots?:number;actual_open_spots?:number;language?:string;region?:string;min_combat_level?:number;min_total_level?:number;expires_at:string;status:RecruitmentCardView['status']};
 function card(row:RecruitmentRow):RecruitmentCardView{const tags=recruitmentStructuredTags({activityTags:row.activity_tags,availabilityTags:row.availability_tags,playstyleTags:row.playstyle_tags});return {id:row.id,postType:row.post_type,ownerAccountId:row.owner_account_id,ownerName:row.owner_name??'Your advert',partyId:row.party_id??undefined,guildId:row.guild_id??undefined,guildName:row.guild_name??undefined,title:row.title,body:row.body,roles:row.roles,focus:row.focus,activityTags:row.activity_tags,playstyleTags:row.playstyle_tags,availabilityTags:row.availability_tags,guildInterestTags:row.guild_interest_tags,activityLevel:row.activity_level??undefined,currentObjective:row.current_objective??undefined,openSpots:row.actual_open_spots??row.open_spots??undefined,language:row.language??undefined,region:row.region??undefined,minCombatLevel:row.min_combat_level??undefined,minTotalLevel:row.min_total_level??undefined,expiresAtMs:Date.parse(row.expires_at),status:row.status,...tags};}
 async function cardsWithGuildIdentity(rows:RecruitmentRow[]){const identities=await guildIdentities(rows.map(row=>row.owner_account_id));return rows.map(row=>{const view=card(row),identity=identities.get(row.owner_account_id);return {...view,guildTag:identity?.guild_tag??null,guildTagColorId:identity?.guild_tag_color_id??null,playerBadges:identity?.player_badges};});}
 export const partySocialRepository:PartySocialRepository={
  getMyParty:async()=>(await partySocialSnapshot()).party,
- createParty:async input=>{await rpc('create_persistent_party_v16',{p_leader_character_id:input.characterId,p_role:input.role,p_focus:input.focus,p_idempotency_key:input.idempotencyKey});const state=await partySocialSnapshot();if(!state.party)throw new Error('Party no longer active.');return state.party;},
- joinParty:async input=>{await rpc('join_persistent_party_v16',{p_party_id:input.partyId,p_character_id:input.characterId,p_role:input.role,p_idempotency_key:input.idempotencyKey});const state=await partySocialSnapshot();if(!state.party)throw new Error('Party no longer active.');return state.party;},
+ createParty:async input=>{await rpc('create_party_with_preferences_v1',{p_character_id:input.characterId,p_activity_level:input.activityLevel,p_language:input.language,p_minimum_level:input.minimumLevel,p_idempotency_key:input.idempotencyKey});const state=await partySocialSnapshot();if(!state.party)throw new Error('Party no longer active.');return state.party;},
+ updatePartyPreferences:async (partyId,preferences)=>rpc<PartyPreferences>('update_party_preferences_v1',{p_party_id:partyId,p_activity_level:preferences.activityLevel,p_language:preferences.language,p_minimum_level:preferences.minimumLevel}),
+ joinParty:async input=>{await rpc('join_party_auto_role_v1',{p_party_id:input.partyId,p_character_id:input.characterId,p_idempotency_key:input.idempotencyKey});const state=await partySocialSnapshot();if(!state.party)throw new Error('Party no longer active.');return state.party;},
  leaveParty:async input=>{await rpc('leave_persistent_party_v16',{p_party_id:input.partyId,p_idempotency_key:input.idempotencyKey});},
  getPartyContracts:async partyId=>{const state=await partySocialSnapshot();return state.party?.id===partyId?state.contracts:[];},
  browseRecruitment:async filters=>cardsWithGuildIdentity(await rpc<RecruitmentRow[]>('browse_recruitment_v16',{p_filters:filters})),

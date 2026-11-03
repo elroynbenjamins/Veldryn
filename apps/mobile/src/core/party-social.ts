@@ -1,5 +1,15 @@
 import type {PartyContractTierView} from './party-weekly-tiers';
 export type PartyRole = 'tank' | 'damage' | 'support';
+/** Social Party preferences, independent of combat/dungeon roles. */
+export type PartyActivityLevel='casual'|'active'|'tryhard';
+export type PartyLanguage='any'|'en'|'nl'|'de'|'fr'|'es';
+export interface PartyPreferences{activityLevel:PartyActivityLevel;language:PartyLanguage;minimumLevel:number}
+export const DEFAULT_PARTY_PREFERENCES:PartyPreferences={activityLevel:'active',language:'any',minimumLevel:0};
+export const PARTY_LANGUAGES:ReadonlyArray<{id:PartyLanguage;label:string}>=[{id:'any',label:'Any language'},{id:'en',label:'English'},{id:'nl',label:'Dutch'},{id:'de',label:'German'},{id:'fr',label:'French'},{id:'es',label:'Spanish'}];
+export const partyActivityLabel=(value:PartyActivityLevel)=>({casual:'Casual',active:'Active',tryhard:'Tryhard'})[value];
+export function normalizedPartyPreferences(value?:Partial<PartyPreferences>|null):PartyPreferences{return {activityLevel:value?.activityLevel??DEFAULT_PARTY_PREFERENCES.activityLevel,language:value?.language??DEFAULT_PARTY_PREFERENCES.language,minimumLevel:value?.minimumLevel??0};}
+export function recruitmentPaceForParty(value:PartyActivityLevel):'casual'|'active'|'hardcore'{return value==='tryhard'?'hardcore':value;}
+
 export type PartyActivityPreference = PartyFocus;
 export type PartyPlayStyle = 'casual' | 'balanced' | 'active' | 'competitive';
 export type PartyGoalTag = 'weekly_contracts' | 'combat' | 'bosses' | 'skilling' | 'gathering' | 'crafting' | 'party_events' | 'dungeons' | 'social';
@@ -41,6 +51,9 @@ export interface PartyMemberSummary {
 }
 
 export interface PersistentPartySummary {
+  activityLevel?:PartyActivityLevel;
+  language?:PartyLanguage;
+  minimumLevel?:number;
   id: string;
   focus: PartyFocus;
   members: PartyMemberSummary[];

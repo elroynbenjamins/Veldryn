@@ -61,6 +61,22 @@ begin
 end;
 $function$;
 
+-- Joining a Party never asks players to pick a class/role; existing combat resolution
+-- retains its per-member role derived from the selected owned character.
+create or replace function public.join_party_auto_role_v1(
+ p_party_id uuid,p_character_id uuid,p_idempotency_key text
+) returns uuid language plpgsql security definer set search_path = '' as $function$
+declare v_uid uuid:=auth.uid();v_class text;v_role text;
+begin
+ if v_uid is null then raise exception 'authentication_required'; end if;
+ select c.class_id into v_class from public.characters c where c.id=p_character_id and c.account_id=v_uid;
+ if v_class is null then raise exception 'character_not_owned'; end if;
+ v_role:=case when v_class in ('IRONWARDEN','BASTION','DREADGUARD') then 'tank'
+   when v_class in ('DAWNKEEPER','STONECALLER') then 'support' else 'damage' end;
+ return public.join_persistent_party_v16(p_party_id,p_character_id,v_role,p_idempotency_key);
+end;
+$function$;
+
 -- Existing leaders can edit preferences without disbanding their Party.
 create or replace function public.update_party_preferences_v1(
  p_party_id uuid,p_activity_level text,p_language text,p_minimum_level integer
@@ -102,7 +118,9 @@ $function$;
 revoke all on function public.party_minimum_level_guard_v1() from public,anon,authenticated;
 revoke all on function public.create_party_with_preferences_v1(uuid,text,text,integer,text) from public,anon;
 revoke all on function public.update_party_preferences_v1(uuid,text,text,integer) from public,anon;
+revoke all on function public.join_party_auto_role_v1(uuid,uuid,text) from public,anon;
 revoke all on function public.party_social_state_v18() from public,anon;
 grant execute on function public.create_party_with_preferences_v1(uuid,text,text,integer,text) to authenticated;
 grant execute on function public.update_party_preferences_v1(uuid,text,text,integer) to authenticated;
+grant execute on function public.join_party_auto_role_v1(uuid,uuid,text) to authenticated;
 grant execute on function public.party_social_state_v18() to authenticated;

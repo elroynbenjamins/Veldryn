@@ -1,17 +1,22 @@
 import type {ImageSourcePropType} from 'react-native';
 
-// Keep the existing public constants while sharing the atlas grid with
-// the pure, regression-tested thumbnail layout helper.
-export {
-  GATHERING_TOOL_CELL,
-  GATHERING_TOOL_SHEET_WIDTH,
-  GATHERING_TOOL_SHEET_HEIGHT,
-} from '../core/gathering-tool-artwork-layout';
-export const gatheringToolAtlas:ImageSourcePropType=require('../../assets/tools/gathering-tools-v3.png');
-
-export interface GatheringToolCell{column:0|1|2|3;row:0|1|2}
-export const gatheringToolCells:Record<string,GatheringToolCell>={
-  COPPER_PICKAXE:{column:0,row:0},ASTER_IRON_PICKAXE:{column:1,row:0},OATHSTONE_PICKAXE:{column:2,row:0},FROSTIRON_PICKAXE:{column:3,row:0},
-  GREENWOOD_HATCHET:{column:0,row:1},ASTER_IRON_HATCHET:{column:1,row:1},OATHSTONE_HATCHET:{column:2,row:1},FROSTIRON_HATCHET:{column:3,row:1},
-  REEDLINE_ROD:{column:0,row:2},IRONWOOD_ROD:{column:1,row:2},OATHSCALE_ROD:{column:2,row:2},RIMEGLASS_ROD:{column:3,row:2},
+// Each tool has its own transparent PNG. Do not crop the old 4x3 atlas at
+// runtime: that introduced art fragments and incorrect framing at small sizes.
+export const gatheringToolImages:Record<string,ImageSourcePropType>={
+  COPPER_PICKAXE:require('../../assets/tools/individual/copper-pickaxe.png'),
+  ASTER_IRON_PICKAXE:require('../../assets/tools/individual/aster-iron-pickaxe.png'),
+  OATHSTONE_PICKAXE:require('../../assets/tools/individual/oathstone-pickaxe.png'),
+  FROSTIRON_PICKAXE:require('../../assets/tools/individual/frostiron-pickaxe.png'),
+  GREENWOOD_HATCHET:require('../../assets/tools/individual/greenwood-hatchet.png'),
+  ASTER_IRON_HATCHET:require('../../assets/tools/individual/aster-iron-hatchet.png'),
+  OATHSTONE_HATCHET:require('../../assets/tools/individual/oathstone-hatchet.png'),
+  FROSTIRON_HATCHET:require('../../assets/tools/individual/frostiron-hatchet.png'),
+  REEDLINE_ROD:require('../../assets/tools/individual/reedline-rod.png'),
+  IRONWOOD_ROD:require('../../assets/tools/individual/ironwood-rod.png'),
+  OATHSCALE_ROD:require('../../assets/tools/individual/oathscale-rod.png'),
+  RIMEGLASS_ROD:require('../../assets/tools/individual/rimeglass-rod.png'),
 };
+
+export function hasGatheringToolArtwork(itemId:string):boolean{
+  return Object.prototype.hasOwnProperty.call(gatheringToolImages,itemId);
+}

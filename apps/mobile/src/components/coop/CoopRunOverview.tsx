@@ -151,7 +151,7 @@ export function CoopRunOverview({language,run,myVotedNodeId,selfVoter,onBack,onC
     </View>
    </Modal>:null}
    {theaterOpen?<CombatTheaterModal visible tone={seasonal?'event':'dungeon'} onClose={()=>{setTheaterOpen(false);if(terminal)setRewardOpen(true);}} title={combatName} eyebrow={st('DUNGEON COMBAT')} subtitle={modeLabel} reduceMotion={reduceMotion}>
-    {enteringCombat||awaitingCombatPlayback?<View style={s.battlePrelude} accessibilityLiveRegion="polite"><Text style={s.preludeIcon}>⚔</Text><Text style={s.preludeTitle}>{awaitingCombatPlayback?st("Battle in progress"):st("Entering battle")}</Text><Text style={s.copy}>{awaitingCombatPlayback?st("Your encounter is running. Combat results will appear when the server settles this room."):st("Preparing the encounter…")}</Text></View>:<DungeonCombatStage run={run} onPresentationComplete={terminal?()=>{setTheaterOpen(false);setRewardOpen(true);}:undefined} seasonal={seasonal} eventName={eventName} reduceMotionSetting={reduceMotion} boss={Boolean((run.pendingCombat??run.lastCombat)?.combatants?.some(member=>member.boss))} enemyLabel={run.bossMechanic?.telegraph?.bossName}/>}
+    <DungeonCombatStage run={run} anticipation={enteringCombat||awaitingCombatPlayback} onPresentationComplete={terminal?()=>{setTheaterOpen(false);setRewardOpen(true);}:undefined} seasonal={seasonal} eventName={eventName} reduceMotionSetting={reduceMotion} boss={enteringCombat||awaitingCombatPlayback?run.selectedNodeKind==='boss':Boolean((run.pendingCombat??run.lastCombat)?.combatants?.some(member=>member.boss))} enemyLabel={run.selectedNodeKind==='boss'?run.bossMechanic?.telegraph?.bossName:undefined}/>
    </CombatTheaterModal>:null}
   </>;
 }

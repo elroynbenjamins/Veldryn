@@ -28,4 +28,14 @@ assert(overview.includes("if(!inCombat&&(!run.lastCombat||run.lastCombat.nodeId=
 assert(overview.includes("run.phase==='resolving_node'&&!inCombat"),'Forge and other utility rooms use a normal non-combat progress surface');
 assert(overview.includes("run.lastCombat?.nodeId!==run.selectedNodeId")&&overview.includes("enteringCombat||awaitingCombatPlayback"),'Solo combat cannot replay stale lastCombat while the new encounter is pending');
 
+const stage=read('src/components/coop/DungeonCombatStage.tsx');
+assert(overview.includes('anticipation={enteringCombat||awaitingCombatPlayback}'),'The existing battle arena mounts immediately on a combat tap or an authoritative Q-Mode pending battle');
+assert(!overview.includes('<View style={s.battlePrelude}'),'The old static Entering battle panel must never replace the arena');
+assert(stage.includes('anticipation=false')&&stage.includes('const pending=run.pendingCombat,replay=anticipation?undefined:pending?'),'Anticipation does not use previous or unreleased combat data');
+assert(stage.includes('replay=anticipation?undefined:pending?'),'The previous room replay cannot be played during a new battle');
+assert(stage.includes('setInterval(()=>setAnticipationTick(tick=>tick+1),700)'),'A bounded visual-only attack loop begins on entering the arena');
+assert(stage.includes('anticipation-party:')&&stage.includes('anticipation-enemy:'),'Both party and enemy use existing animated attack artwork');
+assert(stage.includes('if(!anticipation||reduceMotion)return')&&stage.includes('return()=>clearInterval(timer)'),'Reduce-motion and unmount stop visual-only combat animations');
+assert(!stage.includes('setRun(')&&!stage.includes('setState('),'The early animation never mutates gameplay or server authority');
+
 console.log('PASS: dungeon room cards are image-led, one-tap, server-vote safe and readable');

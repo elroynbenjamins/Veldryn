@@ -76,6 +76,8 @@ check(sql.includes('set enabled=false'),'New construction cannot accept live don
 const questConsumer=fs.readFileSync('../../backend/supabase/migrations/20261104000600_fellowship_quest_reward_consumer_v1.sql','utf8');
 const bossConsumer=fs.readFileSync('../../backend/supabase/migrations/20261104000610_vanguard_boss_support_attempt_consumer_v1.sql','utf8');
 const defenceConsumer=fs.readFileSync('../../backend/supabase/migrations/20261104000611_vanguard_defence_raid_endurance_consumer_v1.sql','utf8');
+const questReturnFix=fs.readFileSync('../../backend/supabase/migrations/20261104000602_guild_quest_completion_return_qualification_v1.sql','utf8');
+const capFix=fs.readFileSync('../../backend/supabase/migrations/20261104000612_vanguard_attempt_cap_and_support_snapshot_v1.sql','utf8');
 const guildSkills=fs.readFileSync('src/content/guild-skill-paths.ts','utf8');
 check(questConsumer.includes('guild_quest_reward_units_server_v1')&&questConsumer.includes('guild_quest_state_v1')&&questConsumer.includes('guild_quest_completions'),
  'Fellowship Quest skill must change immutable server award records, not visual rewards');
@@ -95,6 +97,10 @@ check(defenceConsumer.includes("v_skill_effects->>'guildDefenceBps'")&&defenceCo
  'Defensive Doctrine must improve authoritative defensive raid stat contribution');
 check(defenceConsumer.includes('guild_defence_bonus_bps')&&defenceConsumer.includes('guildDefenceBps'),
  'Defensive Doctrine must snapshot its effective rank in the owner-only attempt timeline');
+check(questReturnFix.includes('returning public.guild_quest_completions.quest_key into inserted_key;'),
+ 'Completed Guild Quests must qualify RETURNING to avoid PL/pgSQL output-variable ambiguity');
+check(capFix.includes('PERSONAL_DAMAGE_CAP_REACHED')&&capFix.includes('if v_companion_id is null then v_guild_support_bps:=0;end if;'),
+ 'Raid attempt cap must reject already-full players and zero out support without a companion');
 check(guildSkills.includes('Does not reduce overworld or dungeon damage taken.'),
  'UI must not claim Defensive Doctrine mitigates damage outside the raid calculation');
 check(!questConsumer.includes('update public.guild_skill_catalogue_v1 set is_released=true')

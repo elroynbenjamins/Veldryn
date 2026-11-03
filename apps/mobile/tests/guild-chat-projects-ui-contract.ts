@@ -71,7 +71,7 @@ ok(projectTransport.includes('for update'),'Vote/start transport must serialize 
 ok(projectTransport.includes('GUILD_WEEKLY_PROJECT_ALREADY_ACTIVE'),'Server must enforce one active weekly Guild Project');
 
 // Unified Progress navigation and second-confirmation guard are UI-only.
-ok(progress.includes("label:'Projects'")&&progress.includes("label:'Skills'"),'Progress must present Skills and Projects tabs');
+ok(progress.includes("id:'Projects',label:st('Projects')")&&progress.includes("id:'Skills',label:st('Skills')"),'Progress must present localized Skills and Projects tabs');
 ok(guildScreen.includes("next==='Skills'")&&guildScreen.includes("setProgressTab('Skills')")&&guildScreen.includes("setOnlineSection('Progress')"),'Hall Skills shortcut must open standalone Guild Progress');
 ok(skillPaths.includes('<Modal visible={review}')&&skillPaths.includes('Confirm upgrade')&&skillPaths.includes('Cancel'),'Guild Skill upgrades must use a real dismissal-safe confirmation modal');
 ok(skillPaths.includes('const ready=known&&released&&canUpgrade')&&skillPaths.includes('disabled={!ready}'),'Release, role, points and materials must gate confirmations');

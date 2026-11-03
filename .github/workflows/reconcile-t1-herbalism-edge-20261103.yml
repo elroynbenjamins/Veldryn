@@ -1,0 +1,51 @@
+name: Rebuild authoritative T1 botanical gameplay Edge (temporary)
+on:
+  push:
+    branches:
+      - balance/t1-botanical-essence-double-drop-20261103
+    paths:
+      - 'apps/mobile/src/content/herbalism.ts'
+      - '.github/workflows/reconcile-t1-herbalism-edge-20261103.yml'
+  workflow_dispatch:
+permissions:
+  contents: write
+concurrency:
+  group: t1-botanical-edge-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  regenerate:
+    if: github.repository == 'elroynbenjamins/Veldryn'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: true
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+          cache-dependency-path: backend/pnpm-lock.yaml
+      - name: Install pinned shared-engine dependencies
+        run: |
+          printf '\npackages:\n  - "."\n' >> backend/pnpm-workspace.yaml
+          pnpm --dir backend install --frozen-lockfile
+          printf '\npackages:\n  - "."\n' >> apps/mobile/pnpm-workspace.yaml
+          pnpm --dir apps/mobile install --frozen-lockfile --ignore-scripts
+      - name: Rebuild generated gameplay and co-op Edge entrypoints
+        run: pnpm --dir backend build:online
+      - name: Verify runtime source matches generated Edge bundles
+        run: node tools/verify-gameplay-edge.mjs
+      - name: Commit the regenerated Edge bundles back to this branch
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add backend/supabase/functions/gameplay/index.ts backend/supabase/functions/coop/index.ts
+          if git diff --cached --quiet; then
+            echo "Generated bundle already matches source."
+          else
+            git commit -m "build: align gameplay Edge with doubled T1 botanical drop chance"
+            git push origin "HEAD:${GITHUB_REF_NAME}"
+          fi

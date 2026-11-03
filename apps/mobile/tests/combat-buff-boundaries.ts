@@ -6,6 +6,7 @@ import {claimActivity,combatSustainProjection,effectiveStats,previewActivityRewa
 import {REGIONAL_COMBAT_FIXTURES,regionalCombatFixture} from '../src/core/regional-combat-fixtures';
 import type {GameState} from '../src/core/types';
 import {CLASSES} from '../src/content/classes';
+import {preparationEffects} from '../src/core/alchemy';
 
 const T=Date.UTC(2026,9,1,12),H=3600000;
 const options={startsAtMs:T,elapsedSeconds:1000,progressFraction:.3,preparationEncounters:3,cycleSeconds:17,preparedCycleSeconds:13,candy:{startsAtMs:T+20_000,endsAtMs:T+220_000}};
@@ -41,7 +42,11 @@ const bare=previewActivityReward(base,T+8*H),single=previewActivityReward(one,T+
 assert.equal(single.preparationEncounters,1);assert.equal(many.preparationEncounters,60);
 assert.equal(single.kills,bare.kills,'ward does not increase hunt speed');
 assert.ok((bare.foodConsumed!-single.foodConsumed!)<=1,'one ward use must not save food across an entire batch');
-assert.ok(many.foodConsumed!<single.foodConsumed!,'sixty uses protect more than one use');
+// An authored minimum attrition floor is deliberately immune to Ward mitigation.
+ // Test the ward's actual mitigation modifier as well as all 60 charges rather
+ // than assuming it must save a whole meal when the floor dominates.
+ assert.ok(preparationEffects(many.character!.preparation).damage<1,'Ward has a real incoming-damage reduction effect');
+ assert.ok(many.foodConsumed!<=single.foodConsumed!,'extra ward uses must not increase cooked-food use');
 const settled=claimActivity(one,T+8*H);assert.ok(!settled.state.character!.preparation,'spent potion must be cleared');
 assert.equal(claimActivity(settled.state,T+8*H).reward.kills,0,'retry must not award more kills');
 

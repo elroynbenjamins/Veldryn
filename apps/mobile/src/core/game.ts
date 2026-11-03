@@ -1138,18 +1138,30 @@ export function regionalReadiness(state:GameState){
   mastery=Math.min(10,mastery);const total=level+quest+equipment+food+mastery;
   return {total,level,quest,equipment,food,mastery,recommended:total>=80};
 }
+/** Chapter 1's first boss is a T2 preparation checkpoint. This only affects
+ * the dedicated Fallen Knight story/rematch simulator, not ordinary hunts. */
+export const FALLEN_KNIGHT_EXPECTED_GEAR_TIER=2;
+export function fallenKnightGearReadiness(state:GameState){
+ const tierGap=regionalEquippedTierGap(state,FALLEN_KNIGHT_EXPECTED_GEAR_TIER);
+ return {
+  tierGap,
+  outgoingDamageMultiplier:Math.max(.70,1-tierGap*.15),
+  actionSpeedMultiplier:Math.max(.70,1-tierGap*.15),
+  incomingDamageMultiplier:1+tierGap*.25,
+ };
+}
 function fallenKnightPlayerSnapshot(state:GameState):FallenKnightPlayerSnapshot{
   const character=state.character;if(!character)throw new Error('No character');
   const stats=effectiveStats(state),multipliers=characterPermanentMultipliers(state),companion=companionCombatContribution(state),style=classCombatStyle(character.classId);
   const effectGems=equippedEffectGemBonuses(state),baseCritChance=CLASSES.find(def=>def.id===character.classId)?.role==='Damage'?.10:.05,setCombat=equipmentSetCombatModifiers(state,baseCritChance,.84);
   const foodId=character.equippedFoodId,food=foodId?itemDef(foodId):undefined,foodQuantity=stackQty(state.inventory.stacks,foodId);
-  const prep=character.preparation?preparationEffects(character.preparation):undefined;
+  const prep=character.preparation?preparationEffects(character.preparation):undefined,gear=fallenKnightGearReadiness(state);
   return {
     name:character.name,classId:character.classId,maxHp:stats.hp,currentHp:Math.max(1,Math.min(stats.hp,character.currentHp||stats.hp)),
     attack:stats.attack,defense:stats.defense,power:stats.power,accuracy:stats.accuracy,evasion:stats.evasion,critChance:stats.critChance,critMultiplier:stats.critMultiplier,haste:stats.haste,
-    damageMultiplier:Math.max(.7,(1+effectGems.boss_power)*setCombat.penetrationMultiplier),
-    actionSpeedMultiplier:Math.max(.65,style.speedMultiplier*multipliers.combatSpeedMultiplier*companion.outputMultiplier*(1+effectGems.combat_speed)*setCombat.speedMultiplier),
-    incomingDamageMultiplier:Math.max(.45,style.damageTakenMultiplier*multipliers.incomingDamageMultiplier*companion.incomingDamageMultiplier*(1-effectGems.damage_reduction)*Math.max(.5,1-setCombat.stats.ward)*(prep?.damage??1)),
+    damageMultiplier:Math.max(.7,(1+effectGems.boss_power)*setCombat.penetrationMultiplier)*gear.outgoingDamageMultiplier,
+    actionSpeedMultiplier:Math.max(.65,style.speedMultiplier*multipliers.combatSpeedMultiplier*companion.outputMultiplier*(1+effectGems.combat_speed)*setCombat.speedMultiplier)*gear.actionSpeedMultiplier,
+    incomingDamageMultiplier:Math.max(.45,style.damageTakenMultiplier*multipliers.incomingDamageMultiplier*companion.incomingDamageMultiplier*(1-effectGems.damage_reduction)*Math.max(.5,1-setCombat.stats.ward)*(prep?.damage??1))*gear.incomingDamageMultiplier,
     foodHeal:food?.heal??0,foodQuantity,autoEatThresholdPct:state.settings.autoEatThresholdPct,
   };
 }

@@ -8,6 +8,12 @@ import {useMemo} from 'react';
 type TranslationRow=readonly [string,string,string,string,string,string];
 const common={
  // Per-character dungeon Alchemy healing, en/de/es/nl/it/fr.
+
+ "DUNGEON TONIC":["DUNGEON TONIC","DUNGEON-TONIKUM","TÓNICO DE MAZMORRA","KERKERTONIC","TONICO DEL DUNGEON","TONIQUE DE DONJON"],
+ "One per run":["One per run","Einer pro Durchlauf","Uno por incursión","Eén per tocht","Uno per spedizione","Un par expédition"],
+ "Choose a tonic before the first room.":["Choose a tonic before the first room.","Wähle vor dem ersten Raum ein Tonikum.","Elige un tónico antes de la primera sala.","Kies een tonic vóór de eerste kamer.","Scegli un tonico prima della prima stanza.","Choisissez un tonique avant la première salle."],
+ "No tonics carried.":["No tonics carried.","Keine Tonika dabei.","No llevas tónicos.","Geen tonics bij je.","Nessun tonico disponibile.","Aucun tonique dans l'inventaire."],
+ "Use tonic":["Use tonic","Tonikum verwenden","Usar tónico","Gebruik tonic","Usa tonico","Utiliser le tonique"],
  "DUNGEON HEALING":["DUNGEON HEALING","DUNGEON-HEILUNG","CURACIÓN EN MAZMORRA","GENEZING IN KERKERS","CURA NEI DUNGEON","SOINS EN DONJON"],
  "Select a healing potion in the HP menu.":["Select a healing potion in the HP menu.","Wähle einen Heiltrank im LP-Menü.","Selecciona una poción curativa en el menú de salud.","Kies een heeldrankje in het HP-menu.","Seleziona una pozione curativa nel menu PV.","Choisissez une potion de soin dans le menu PV."],
  "Food is disabled. Healing potions can be used between dungeon rooms only.":["Food is disabled. Healing potions can be used between dungeon rooms only.","Essen ist deaktiviert. Heiltränke können nur zwischen Dungeonräumen genutzt werden.","La comida está desactivada. Las pociones curativas solo pueden usarse entre salas.","Eten is uitgeschakeld. Heeldrankjes kunnen alleen tussen kerkerkamers worden gebruikt.","Il cibo è disattivato. Le pozioni si usano solo tra una stanza e l'altra.","La nourriture est désactivée. Les potions s'utilisent uniquement entre les salles."],

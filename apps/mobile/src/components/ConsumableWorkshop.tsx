@@ -84,6 +84,7 @@ export function ConsumableWorkshop({state,skillId,preferredRecipeId,onStart}:Pro
   void submit(recipe.id);
  };
  const selected=all.find(r=>r.id===pendingId);
+ const regionVariant=(recipe:Recipe)=>recipe.id.endsWith('_SUNSCAR')?'Sunscar':recipe.id.endsWith('_FROSTMARCH')?'Frostmarch':recipe.id.endsWith('_ASHLANDS')?'Ashlands':undefined;
  const mobile=width<360||fontScale>=1.35;
  /** Potion tiers are visual section breaks inside the existing Alchemy categories, not tabs. */
  const potionList=skillId==='alchemy'&&category!=='Infusions';
@@ -93,7 +94,7 @@ export function ConsumableWorkshop({state,skillId,preferredRecipeId,onStart}:Pro
     <Pressable accessibilityRole="button" accessibilityLabel={recipe.name+'. '+benefit(recipe)+'. '+gt('Show recipe details')} onPress={()=>setDetailId(recipe.id)} style={({pressed})=>[s.potionRowMain,pressed&&{opacity:.72}]}>
       <ItemArtwork itemId={recipe.output.itemId} size={44}/>
       <View style={s.potionRowCopy}>
-        <Text style={[s.name,{color:C.text}]} numberOfLines={1}>{itemDef(recipe.output.itemId).name}</Text>
+        <Text style={[s.name,{color:C.text}]} numberOfLines={1}>{itemDef(recipe.output.itemId).name}{regionVariant(recipe)?' · '+regionVariant(recipe):''}</Text>
         <Text style={[s.caption,{color:C.muted}]} numberOfLines={2}>{benefit(recipe)}</Text>
         <Text style={[s.ready,{color:isActive||available?C.good:C.warning}]}>{isActive?'● '+gt('Active'):locked?gt('Locked'):available?available+' '+gt('batches'):gt('Needs materials')}</Text>
       </View>

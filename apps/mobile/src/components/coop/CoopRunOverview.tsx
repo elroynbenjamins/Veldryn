@@ -1,5 +1,7 @@
 import {useCoopStyles} from '../../theme/useCoopStyles';
 import {useSocialText} from '../../i18n/social';
+import {useGameplayText} from '../../i18n/gameplay';
+import type {DungeonHealingPotionView} from '../../core/coop-potion-view';
 import {useEffect,useRef,useState} from 'react';
 import {Animated,Modal,ScrollView,StyleSheet,Text,View} from 'react-native';
 import type {CoopRunView} from '../../core/coop-presentation';
@@ -39,9 +41,9 @@ function TerminalRunMoment({phase,rewardsReady,rewardsSecured,reduceMotion}:{pha
 }
 
 export interface CoopRewardDisplay {id:string;claimed_at:string|null;reward_json:{marks?:number;enhanced_reward?:boolean;live_fellowship_bonus?:number;reward_charges_remaining?:number;weekly_enhanced_remaining?:number;failure_consolation_remaining?:number;failure_consolation_applied?:boolean};}
-export function CoopRunOverview({language,run,myVotedNodeId,selfVoter,onBack,onChoose,onPurchaseMerchant,onRefresh,onClaim,onQueueAgain,onPartyRematch,busy=false,notice,syncError,rewards=[],terminalAction,reduceMotion=false,seasonal=false,eventName,chatMessages=[],onChatSend}:{language:Language;run:CoopRunView;myVotedNodeId?:string;selfVoter?:{name:string;profileIconId?:string|null;className?:string|null};onBack:()=>void;onChoose?:(nodeId:string)=>void;onPurchaseMerchant?:(offerId:string)=>void;onRefresh?:()=>void;onClaim?:(id:string)=>void;onQueueAgain?:{label:string;onPress:()=>void};onPartyRematch?:()=>void;busy?:boolean;notice?:string;syncError?:string;rewards?:CoopRewardDisplay[];terminalAction?:{label:string;claimed?:boolean;completeText?:string;onPress:()=>void};reduceMotion?:boolean;seasonal?:boolean;eventName?:string;chatMessages?:CoopChatMessage[];onChatSend?:(text:string)=>Promise<void>}){
+export function CoopRunOverview({language,run,myVotedNodeId,selfVoter,onBack,onChoose,onPurchaseMerchant,onUseHealingPotion,healingPotion,onRefresh,onClaim,onQueueAgain,onPartyRematch,busy=false,notice,syncError,rewards=[],terminalAction,reduceMotion=false,seasonal=false,eventName,chatMessages=[],onChatSend}:{language:Language;run:CoopRunView;myVotedNodeId?:string;selfVoter?:{name:string;profileIconId?:string|null;className?:string|null};onBack:()=>void;onChoose?:(nodeId:string)=>void;onPurchaseMerchant?:(offerId:string)=>void;onUseHealingPotion?:()=>void;healingPotion?:DungeonHealingPotionView;onRefresh?:()=>void;onClaim?:(id:string)=>void;onQueueAgain?:{label:string;onPress:()=>void};onPartyRematch?:()=>void;busy?:boolean;notice?:string;syncError?:string;rewards?:CoopRewardDisplay[];terminalAction?:{label:string;claimed?:boolean;completeText?:string;onPress:()=>void};reduceMotion?:boolean;seasonal?:boolean;eventName?:string;chatMessages?:CoopChatMessage[];onChatSend?:(text:string)=>Promise<void>}){
  const {styles:s}=useCoopStyles(makeStyles);
- const st=useSocialText(),a=(value:string)=>accountText(language,value);
+ const st=useSocialText(),a=(value:string)=>accountText(language,value),{gt}=useGameplayText();
   validateCoopRunView(run);
   const modeLabel=run.modeLabel??(run.mode==='qmode'?ct(language,'details.qmode'):ct(language,'details.live')),bossNext=run.phase==='awaiting_choice'&&run.options.some(option=>option.kind==='boss');
   const terminal=run.phase==='completed'||run.phase==='failed',unclaimedRewards=rewards.filter(reward=>!reward.claimed_at),rewardSurfaceReady=rewards.length>0||Boolean(terminalAction),rewardsSecured=terminal&&rewardSurfaceReady&&!unclaimedRewards.length&&(!terminalAction||terminalAction.claimed===true);
@@ -111,6 +113,17 @@ export function CoopRunOverview({language,run,myVotedNodeId,selfVoter,onBack,onC
     {!!syncError&&<FantasyPanel variant="danger"><Text accessibilityRole="alert" style={s.title}>{a('Connection interrupted')}</Text><Text style={s.copy}>{a('Showing the last saved expedition progress. Reconnecting automatically.')}</Text><Text style={s.copy} numberOfLines={2}>{syncError}</Text>{onRefresh?<GameButton compact title={a('Retry connection')} tone="secondary" disabled={busy} onPress={onRefresh}/>:null}</FantasyPanel>}
     <DungeonRoomOutcomeBanner outcome={run.phase==='awaiting_choice'?run.lastRoomOutcome:undefined}/>
     {run.merchantShop?<DungeonMerchantPanel shop={run.merchantShop} busy={busy} onPurchase={onPurchaseMerchant}/>:null}
+    {!seasonal&&healingPotion&&run.phase==='awaiting_choice'?<FantasyPanel>
+      <View style={s.summary}>
+       <View style={s.grow}>
+        <Text style={s.title}>{gt('DUNGEON HEALING')}</Text>
+        <Text style={s.copy}>{healingPotion.name?`${healingPotion.name} · ${healingPotion.healPercent}% HP · ${healingPotion.carried} ${gt('carried')}`:gt('Select a healing potion in the HP menu.')}</Text>
+       </View>
+       <StateChip label={`${healingPotion.remaining}/${healingPotion.capacity}`} tone={healingPotion.remaining>0?'selected':'warning'}/>
+      </View>
+      <Text style={s.copy}>{gt('Food is disabled. Healing potions can be used between dungeon rooms only.')}</Text>
+      {healingPotion.name&&onUseHealingPotion?<GameButton compact title={healingPotion.canUse?gt('Use 1 healing potion'):healingPotion.currentHp>=healingPotion.maximumHp?gt('Health full'):healingPotion.remaining===0?gt('No potion charges left'):healingPotion.carried===0?gt('No healing potions carried. Brew them in Alchemy or withdraw from Bank.'):gt('Use 1 healing potion')} disabled={busy||!healingPotion.canUse} onPress={onUseHealingPotion}/>:null}
+    </FantasyPanel>:null}
     {run.phase==='awaiting_choice'&&run.options.length?<View style={s.actionArea}>
       <Text style={s.section}>{run.mode==='live'?st('Vote for the next path'):st('Choose the next room')}</Text>
       {run.mode==='live'?<Text style={s.copy}>{st('The route with the most votes will be selected.')}{secondsRemaining!==undefined?` · ${st('Vote ends in {seconds}s',{seconds:secondsRemaining})}`:''}</Text>:null}

@@ -26,9 +26,8 @@ export function SeasonalBossTelegraphPanel({mechanic,recap,showPlan}:{mechanic?:
      <Text style={s.kicker}>{showPlan?st('FINAL BOSS'):st('BOSS OUTLOOK')}</Text>
      <Text style={s.title} numberOfLines={1}>{showPlan&&telegraph?telegraph.bossName:mechanic.label}</Text>
     </View>
-    {showPlan&&telegraph?<Text style={s.phaseCount}>{telegraph.phases.length} {telegraph.phases.length===1?st('phase'):st('phases')}</Text>:null}
+    {showPlan&&telegraph&&telegraph.phases.length>1?<Text style={s.phaseCount}>{telegraph.phases.length} {telegraph.phases.length===1?st('phase'):st('phases')}</Text>:null}
    </View>
-   {showPlan&&telegraph&&mechanic.label!==telegraph.bossName?<Text numberOfLines={1} style={s.subtitle}>{mechanic.label}</Text>:null}
    <Text style={s.copy} numberOfLines={detailsOpen?undefined:2}>{mechanic.summary}</Text>
    {showPlan&&telegraph&&!detailsOpen&&(priorityCast||priorityPhase)?<View style={s.glance}>
     {priorityCast?<View style={s.glanceRow}><Text style={[s.actionLabel,priorityCast.interruptible?s.interrupt:s.watch]}>{priorityCast.interruptible?st('INTERRUPT'):st('WATCH')}</Text><Text style={s.glanceValue} numberOfLines={1}>{priorityCast.label}</Text></View>:null}
@@ -66,7 +65,6 @@ const makeStyles=(C:CoopColors)=>StyleSheet.create({
  grow:{flex:1,minWidth:0},
  kicker:{fontSize:11,lineHeight:16,color:C.gold,fontWeight:'800',letterSpacing:.8},
  title:{fontSize:18,lineHeight:24,color:C.text,fontWeight:'800'},
- subtitle:{fontSize:12,lineHeight:17,color:C.textMuted},
  copy:{fontSize:13,lineHeight:19,color:C.textSecondary},
  phaseCount:{fontSize:11,lineHeight:16,color:C.textMuted,fontWeight:'700'},
  glance:{gap:6,paddingVertical:2},

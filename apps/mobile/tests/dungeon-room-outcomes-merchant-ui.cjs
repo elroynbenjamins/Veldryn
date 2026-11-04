@@ -17,7 +17,7 @@ const domain=backend('src/server/expeditions/node-resolution.ts');
 const projection=backend('src/server/coop/qmode-public-projection.ts');
 const runtime=backend('online/qmode-runtime.ts');
 const handler=backend('online/coop.ts');
-const sql=backend('supabase/migrations/20261104000631_online_qmode_merchant_purchase_v1.sql');
+const sql=backend('supabase/migrations/20261104091107_online_qmode_merchant_purchase_v1.sql');
 assert(source.includes('<DungeonMerchantPanel shop={run.merchantShop}'),'Merchant offers use the authoritative server projection');
 assert(source.includes('<DungeonRoomOutcomeBanner outcome={run.phase==='awaiting_choice'?run.lastRoomOutcome:undefined}/>'),'Room outcomes come from committed server state');
 assert(merchant.includes('shop.resources>=offer.cost')&&merchant.includes('offer.purchased'),'Already purchased and unaffordable offers are disabled');

@@ -52,7 +52,10 @@ const repeatReady={...storyWin.state,character:{...storyWin.state.character!,lev
 const repeat=challengeFallenKnight(repeatReady,222223);
 if(!repeat.won||!repeat.battle||repeat.battle.mode!=='rematch'||!repeat.battle.events.some(event=>event.type==='victory'))throw new Error('Weekly Fallen Knight rematches must return the full victory battle timeline');
 if(repeat.state.inventory.stacks.filter(row=>row.itemId==='FALLEN_KNIGHT_SIGIL').reduce((sum,row)=>sum+row.quantity,0)!==1)throw new Error('Weekly rematches must not repeat the unique story Sigil');
-const repeat2=challengeFallenKnight(repeat.state,222224),repeat3=challengeFallenKnight(repeat2.state,222225);
+const healedRepeat={...repeat.state,character:{...repeat.state.character!,currentHp:repeat.state.character!.hp}};
+const repeat2=challengeFallenKnight(healedRepeat,222224);
+const healedAgain={...repeat2.state,character:{...repeat2.state.character!,currentHp:repeat2.state.character!.hp}};
+const repeat3=challengeFallenKnight(healedAgain,222225);
 if(!repeat2.won||!repeat2.battle||!repeat3.won||!repeat3.battle||repeat3.state.account.fallenKnightWeekly?.rewardedClears!==3)throw new Error('All three weekly victories must retain battle playback and consume exactly three weekly clears');
 let capped=false;try{challengeFallenKnight(repeat3.state,222226)}catch(error){capped=error instanceof Error&&error.message.includes('weekly rematches are complete');}
 if(!capped)throw new Error('Three weekly rematch victories must enforce the existing weekly cap');

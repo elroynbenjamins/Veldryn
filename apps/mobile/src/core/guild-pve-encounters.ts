@@ -10,6 +10,20 @@ export function guildRaidEncountersForTab(rows:readonly GuildPveEncounter[],tab:
  return rows.filter(row=>row.kind===tab);
 }
 
+/** Keep expired festival bosses out of the raid encounter UI, without
+ * discarding milestone rewards during the server's claim window. */
+export function guildEventBossSections(rows:readonly GuildPveEncounter[],now=Date.now()){
+ const active:GuildPveEncounter[]=[];
+ const rewards:GuildPveEncounter[]=[];
+ for(const row of rows){
+  if(row.kind!=='event')continue;
+  const start=Date.parse(row.startsAt),end=Date.parse(row.endsAt),claimEnd=Date.parse(row.claimEndsAt);
+  if(now>=start&&now<end){active.push(row);continue;}
+  if(now>=end&&now<claimEnd&&guildPveView(row,now).milestones.some(m=>m.ready))rewards.push(row);
+ }
+ return {active,rewards};
+}
+
 export type GuildPveActivity='combat'|'gathering'|'crafting';
 export interface GuildPvePresentation{
  bossName:string;bossTitle:string;summary:string;mechanicName?:string;mechanicSummary?:string;activities:readonly GuildPveActivity[];visualKey:'treant'|'fallen_knight'|'forest_troll'|'veilbreak'|'harvestwake'|'merchant_guild'|'default_event';

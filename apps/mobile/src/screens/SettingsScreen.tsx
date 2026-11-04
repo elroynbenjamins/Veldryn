@@ -138,6 +138,7 @@ export function SettingsScreen({state,onLanguage,onReset,onChange,onExport,onImp
       <Text style={[s.title,{color:theme.text}]}>{t(state.settings.language,'settings.language')}</Text>
       
       <View style={s.languageGrid}>{SUPPORTED_LANGUAGES.map(id=><SettingChip key={id} label={LANGUAGE_NAMES[id]} selected={state.settings.language===id} onPress={()=>onLanguage(id)}/>)}</View>
+      {(state.settings.language==='ru'||state.settings.language==='tr')&&<Text style={[s.muted,{color:theme.muted,marginTop:8}]}>{t(state.settings.language,'settings.languageStatus')}</Text>}
     </Panel></>}
     {section==='data'&&<>
       {online?<Panel>

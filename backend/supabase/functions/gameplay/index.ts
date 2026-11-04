@@ -668,11 +668,12 @@ var COMPANION_STAGE_CAPS = {
   prestige: [10, 20, 25, 35]
 };
 var COMPANION_LEVEL_CURVE = { baseXp: 65, xpGrowth: 1.16, goldBase: 38, goldGrowth: 1.21, essenceBase: 4, essenceGrowth: 1.16 };
+var COMPANION_BOND_ESSENCE_REWARDS = { 2: 20, 4: 35, 6: 55, 8: 80 };
 var COMPANION_BOND_CONFIG = {
   maxLevel: 10,
   // cumulative XP required for Bond Levels 1-10
   xpThresholds: [0, 90, 210, 370, 580, 840, 1160, 1540, 1990, 2520],
-  rewards: { 2: "Small progression reward", 4: "Companion profile icon", 6: "Passive improvement", 8: "Companion title/profile reward", 10: "Bond Trait" },
+  rewards: { 2: "20 Essence", 4: "35 Essence", 6: "55 Essence", 8: "80 Essence", 10: "Bond Trait" },
   sourceXp: { battle: 4, boss: 60, dungeon: 32, companion_objective: 45, future_activity: 12 }
 };
 var COMPANION_ASCENSION_BASE_COST = {
@@ -42835,9 +42836,9 @@ var HERB_ITEMS = [
 // ../apps/mobile/src/content/alchemy.ts
 var MAX_ALCHEMY_BATCHES = 1e4;
 var POTIONS = [
-  { id: "DEWLEAF_DRAUGHT", name: "Dewleaf Draught", effect: { kind: "healing", maxHpFraction: 0.25 }, description: "Restore 25% of maximum HP outside a hunt. No effect at full health." },
-  { id: "RIVERHEART_DRAUGHT", name: "Riverheart Draught", effect: { kind: "healing", maxHpFraction: 0.45 }, description: "Restore 45% of maximum HP outside a hunt. No effect at full health." },
-  { id: "OATHBLOOM_DRAUGHT", name: "Oathbloom Draught", effect: { kind: "healing", maxHpFraction: 0.65 }, description: "Restore 65% of maximum HP outside a hunt. No effect at full health." },
+  { id: "DEWLEAF_DRAUGHT", name: "Dewleaf Draught", effect: { kind: "healing", maxHpFraction: 0.25 }, description: "Restore 25% maximum HP automatically during boss fights. Select below Food in the HP menu; not for ordinary hunts." },
+  { id: "RIVERHEART_DRAUGHT", name: "Riverheart Draught", effect: { kind: "healing", maxHpFraction: 0.45 }, description: "Restore 45% maximum HP automatically during boss fights. Select below Food in the HP menu; not for ordinary hunts." },
+  { id: "OATHBLOOM_DRAUGHT", name: "Oathbloom Draught", effect: { kind: "healing", maxHpFraction: 0.65 }, description: "Restore 65% maximum HP automatically during boss fights. Select below Food in the HP menu; not for ordinary hunts." },
   { id: "VIGOR_TONIC", name: "Vigor Tonic", effect: { kind: "preparation", attackFraction: 0.04, damageReductionFraction: 0, encounters: 30 }, description: "+4% attack for 30 resolved ordinary encounters." },
   { id: "GREATER_VIGOR_TONIC", name: "Greater Vigor Tonic", effect: { kind: "preparation", attackFraction: 0.06, damageReductionFraction: 0, encounters: 45 }, description: "+6% attack for 45 resolved ordinary encounters." },
   { id: "OATH_VIGOR_TONIC", name: "Oath Vigor Tonic", effect: { kind: "preparation", attackFraction: 0.08, damageReductionFraction: 0, encounters: 60 }, description: "+8% attack for 60 resolved ordinary encounters." },
@@ -46422,18 +46423,13 @@ function executeCompanionActivity(input, type, a, now) {
     case "companion_bond_reward": {
       const id = stringArg(a, "id"), progress = owned[id];
       if (!progress) throw new Error("Companion is locked.");
-      const rewards = { 2: 20, 4: 35, 6: 55, 8: 80 }, claims = state.account.companionBondRewardClaims ?? [];
+      const rewards = COMPANION_BOND_ESSENCE_REWARDS, claims = state.account.companionBondRewardClaims ?? [];
       const requested = a.level === void 0 ? [8, 6, 4, 2].find((level) => progress.bondLevel >= level && !claims.includes(`${id}:${level}`)) : Number(a.level);
       if (!requested || !rewards[requested]) throw new Error("No Bond milestone reward is available.");
       if (progress.bondLevel < requested) throw new Error(`Reach Bond ${requested} first.`);
       const key = `${id}:${requested}`;
       if (claims.includes(key)) throw new Error("Bond reward already claimed.");
       state = reward(state, { companionEssence: rewards[requested] });
-      const profileRewards = requested === 4 ? [`COMPANION_PORTRAIT_${id}`] : requested === 8 ? [`COMPANION_TITLE_${id}`] : [];
-      if (profileRewards.length) {
-        const current = state.account.companionPhase2Profile ?? { showcaseCompanionIds: [], showcaseSlotsUnlocked: 1 };
-        state.account.companionPhase2Profile = { ...current, codexRewardIds: [.../* @__PURE__ */ new Set([...current.codexRewardIds ?? [], ...profileRewards])] };
-      }
       state.account.companionBondRewardClaims = [...claims, key];
       break;
     }
@@ -51033,7 +51029,7 @@ function regionalSecondaryExchange(player, monster, basePlayerCritChance = 0.05)
 // ../apps/mobile/src/core/story-boss.ts
 var clamp6 = (value, min, max) => Math.max(min, Math.min(max, value));
 var FALLEN_KNIGHT_MAX_DURATION_MS = 1e5;
-var FALLEN_KNIGHT_MAX_FOOD_UNITS = 6;
+var FALLEN_KNIGHT_MAX_POTION_UNITS = 5;
 function mitigation(defense) {
   return clamp6(defense / Math.max(1, defense + 110), 0, 0.72);
 }
@@ -51042,7 +51038,7 @@ function simulateFallenKnightStoryBattle(player, seed, mode = "story") {
   if (!monster) throw new Error("fallen_knight_missing");
   const bossSecondary = regionalEnemySecondaryStats(monster);
   const bossMaxHp = monster.hp, playerMaxHp = Math.max(1, Math.round(player.maxHp));
-  let bossHp = bossMaxHp, playerHp = clamp6(Math.round(player.currentHp || playerMaxHp), 1, playerMaxHp), foodLeft = clamp6(Math.floor(player.foodQuantity), 0, FALLEN_KNIGHT_MAX_FOOD_UNITS), foodConsumed = 0;
+  let bossHp = bossMaxHp, playerHp = clamp6(Math.round(player.currentHp || playerMaxHp), 1, playerMaxHp), potionLeft = clamp6(Math.floor(player.potionQuantity), 0, FALLEN_KNIGHT_MAX_POTION_UNITS), potionConsumed = 0;
   let phase = 1, phaseWardUntilMs = 0, rngIndex = 0, bossAttackCount = 0;
   const phasesReached = [1], events = [];
   const playerHitChance = clamp6(player.accuracy - bossSecondary.evasion, 0.55, 0.99);
@@ -51050,16 +51046,16 @@ function simulateFallenKnightStoryBattle(player, seed, mode = "story") {
   let nextPlayerAt = 650, nextBossAt = 1800;
   const push = (event) => events.push({ ...event, playerHp: Math.max(0, Math.round(playerHp)), bossHp: Math.max(0, Math.round(bossHp)), phase });
   push({ atMs: 0, type: "battle_start", label: "The Fallen Knight raises the oathglass blade." });
-  const maybeEat = (atMs) => {
+  const maybePotion = (atMs) => {
     const threshold = clamp6(player.autoEatThresholdPct, 10, 90) / 100;
-    if (player.foodHeal <= 0) return;
-    if (playerHp > 0 && playerHp / playerMaxHp <= threshold && foodLeft > 0) {
-      const healed = Math.min(playerMaxHp - playerHp, Math.max(1, Math.round(player.foodHeal)));
+    if (player.potionHeal <= 0) return;
+    if (playerHp > 0 && playerHp / playerMaxHp <= threshold && potionLeft > 0) {
+      const healed = Math.min(playerMaxHp - playerHp, Math.max(1, Math.round(player.potionHeal)));
       if (healed > 0) {
         playerHp += healed;
-        foodLeft--;
-        foodConsumed++;
-        push({ atMs: atMs + 40, type: "heal", label: "Auto-eat", amount: healed });
+        potionLeft--;
+        potionConsumed++;
+        push({ atMs: atMs + 40, type: "heal", label: "Healing potion", amount: healed });
       }
     }
   };
@@ -51131,7 +51127,7 @@ function simulateFallenKnightStoryBattle(player, seed, mode = "story") {
       const amount = Math.max(1, Math.round(raw2 * (1 - mitigation(player.defense)) * coeff * phaseDamage * variance * player.incomingDamageMultiplier * (critical ? bossSecondary.critMultiplier : 1)));
       playerHp = Math.max(0, playerHp - amount);
       push({ atMs: now, type: "boss_hit", label, abilityId, amount, critical });
-      maybeEat(now);
+      maybePotion(now);
     }
     nextBossAt += attackInterval;
   }
@@ -51155,7 +51151,8 @@ function simulateFallenKnightStoryBattle(player, seed, mode = "story") {
     playerMaxHp,
     finalBossHp: Math.max(0, Math.round(bossHp)),
     finalPlayerHp: Math.max(0, Math.round(playerHp)),
-    foodConsumed,
+    foodConsumed: 0,
+    potionConsumed,
     phasesReached,
     events,
     player: { hitChance: playerHitChance, critChance: clamp6(player.critChance, 0, 0.75), attackIntervalMs: playerAttackIntervalMs },
@@ -52176,16 +52173,21 @@ function eatFood(state, itemId) {
   const maxHp = effectiveStats(state).hp, heal = Math.max(1, Math.ceil(d.heal * characterPermanentMultipliers(state).healingEffectivenessMultiplier));
   return { ...state, inventory: { ...state.inventory, stacks: consume2(state.inventory.stacks, id, 1) }, character: { ...state.character, currentHp: Math.min(maxHp, state.character.currentHp + heal) } };
 }
+function selectHealingPotion(state, itemId) {
+  if (!state.character) throw new Error("Create a character first.");
+  if (itemId === "none") return { ...state, character: { ...state.character, equippedHealingPotionId: void 0 } };
+  const potion = potionDef(itemId);
+  if (!potion || potion.effect.kind !== "healing") throw new Error("Select an Alchemy healing potion.");
+  if (stackQty2(state.inventory.stacks, itemId) < 1) throw new Error("Carry a healing potion to select it.");
+  return { ...state, character: { ...state.character, equippedHealingPotionId: itemId } };
+}
 function usePotion(state, itemId) {
   if (!state.character) throw new Error("Create a character first.");
   const potion = potionDef(itemId);
   if (!potion) throw new Error("Unknown potion.");
-  if (state.activity?.kind === "combat") throw new Error("Potions cannot be used during a hunt.");
+  if (potion.effect.kind === "healing") throw new Error("Healing potions are reserved for boss encounters. Select one under the HP bar; ordinary hunts use food.");
+  if (state.activity?.kind === "combat") throw new Error("Tonics cannot be used during a hunt.");
   const stacks = consume2(state.inventory.stacks, itemId, 1);
-  if (potion.effect.kind === "healing") {
-    const max = effectiveStats(state).hp, healing = characterPermanentMultipliers(state).healingEffectivenessMultiplier;
-    return { ...state, inventory: { ...state.inventory, stacks }, character: { ...state.character, currentHp: Math.min(max, state.character.currentHp + Math.ceil(max * potion.effect.maxHpFraction * healing)) } };
-  }
   return { ...state, inventory: { ...state.inventory, stacks }, character: { ...state.character, preparation: { itemId, remainingEncounters: potion.effect.encounters } } };
 }
 function discardPreparation(state) {
@@ -52467,7 +52469,7 @@ function fallenKnightPlayerSnapshot(state) {
   if (!character) throw new Error("No character");
   const stats4 = effectiveStats(state), multipliers = characterPermanentMultipliers(state), companion = companionCombatContribution(state), style = classCombatStyle(character.classId);
   const effectGems = equippedEffectGemBonuses(state), baseCritChance = CLASSES.find((def) => def.id === character.classId)?.role === "Damage" ? 0.1 : 0.05, setCombat = equipmentSetCombatModifiers(state, baseCritChance, 0.84);
-  const foodId = character.equippedFoodId, food = foodId ? itemDef(foodId) : void 0, foodQuantity = stackQty2(state.inventory.stacks, foodId);
+  const potionId = character.equippedHealingPotionId, potion = potionDef(potionId), potionQuantity = potion?.effect.kind === "healing" ? stackQty2(state.inventory.stacks, potionId) : 0;
   const prep = character.preparation ? preparationEffects(character.preparation) : void 0, gear = fallenKnightGearReadiness(state);
   return {
     name: character.name,
@@ -52485,8 +52487,8 @@ function fallenKnightPlayerSnapshot(state) {
     damageMultiplier: Math.max(0.7, (1 + effectGems.boss_power) * setCombat.penetrationMultiplier) * gear.outgoingDamageMultiplier,
     actionSpeedMultiplier: Math.max(0.65, style.speedMultiplier * multipliers.combatSpeedMultiplier * companion.outputMultiplier * (1 + effectGems.combat_speed) * setCombat.speedMultiplier) * gear.actionSpeedMultiplier,
     incomingDamageMultiplier: Math.max(0.45, style.damageTakenMultiplier * multipliers.incomingDamageMultiplier * companion.incomingDamageMultiplier * (1 - effectGems.damage_reduction) * Math.max(0.5, 1 - setCombat.stats.ward) * (prep?.damage ?? 1)) * gear.incomingDamageMultiplier,
-    foodHeal: food?.heal ?? 0,
-    foodQuantity,
+    potionHeal: potion?.effect.kind === "healing" ? Math.ceil(stats4.hp * potion.effect.maxHpFraction * multipliers.healingEffectivenessMultiplier) : 0,
+    potionQuantity,
     autoEatThresholdPct: state.settings.autoEatThresholdPct
   };
 }
@@ -52512,9 +52514,9 @@ function challengeFallenKnightRematch(state, nowMs) {
   if (!state.character) throw new Error("No character");
   const weekly = fallenKnightWeeklyStatus(state, nowMs);
   if (weekly.remaining <= 0) throw new Error("Fallen Knight weekly rematches are complete. Rewards reset with the next UTC week.");
-  const battle = previewFallenKnightBattle(state, nowMs, "rematch"), foodId = state.character.equippedFoodId, stats4 = effectiveStats(state);
+  const battle = previewFallenKnightBattle(state, nowMs, "rematch"), potionId = state.character.equippedHealingPotionId, stats4 = effectiveStats(state);
   let inventory = state.inventory.stacks;
-  if (battle.foodConsumed && foodId) inventory = consume2(inventory, foodId, battle.foodConsumed);
+  if (battle.potionConsumed && potionId) inventory = consume2(inventory, potionId, battle.potionConsumed);
   const postFightCharacter = { ...state.character, currentHp: Math.max(1, Math.min(stats4.hp, battle.finalPlayerHp || 1)) };
   const attemptMetrics = { ...state.account.longTermMetrics ?? {} };
   attemptMetrics["companions.fallen_knight_rematch_attempts"] = (attemptMetrics["companions.fallen_knight_rematch_attempts"] ?? 0) + 1;
@@ -52554,13 +52556,13 @@ function challengeFallenKnight(state, nowMs = Date.now()) {
   if (state.defeatedBossIds.includes("FALLEN_KNIGHT")) return challengeFallenKnightRematch(state, nowMs);
   const q14 = state.quests.find((q2) => q2.questId === "QST_014");
   if (q14 && q14.status === "locked") return { state, won: false, message: "Advance the Asterfall questline before challenging the Fallen Knight." };
-  const battle = previewFallenKnightBattle(state, nowMs), foodId = state.character.equippedFoodId;
+  const battle = previewFallenKnightBattle(state, nowMs), potionId = state.character.equippedHealingPotionId;
   let inventory = state.inventory.stacks;
-  if (battle.foodConsumed && foodId) inventory = consume2(inventory, foodId, battle.foodConsumed);
+  if (battle.potionConsumed && potionId) inventory = consume2(inventory, potionId, battle.potionConsumed);
   const postFightCharacter = { ...state.character, currentHp: Math.max(1, Math.min(effectiveStats(state).hp, battle.finalPlayerHp || 1)) };
   if (!battle.won) {
     const next2 = { ...state, inventory: { ...state.inventory, stacks: inventory }, character: postFightCharacter, activity: null, outOfCombatSinceMs: nowMs };
-    return { state: next2, won: false, battle, message: `Fallen Knight repelled you after ${Math.max(1, Math.round(battle.durationMs / 1e3))}s. ${battle.foodConsumed ? battle.foodConsumed + " food used. " : ""}Upgrade gear, improve class progression or bring stronger food before the next attempt.` };
+    return { state: next2, won: false, battle, message: `Fallen Knight repelled you after ${Math.max(1, Math.round(battle.durationMs / 1e3))}s. ${battle.potionConsumed ? battle.potionConsumed + " healing potions used. " : ""}Upgrade gear, improve class progression or select stronger healing potions before the next attempt.` };
   }
   const xp = state.character.xp + 3e3;
   const storyDrops = fallenKnightDropRoll(state, `${state.character.id}:FALLEN_KNIGHT_STORY_DROP:${nowMs}`, true);
@@ -55589,6 +55591,7 @@ var fields = {
   craft_move: ["id", "direction"],
   craft_prerequisites: ["id"],
   use_potion: ["id"],
+  select_healing_potion: ["id"],
   discard_preparation: [],
   roster_create: ["classId", "name", "body"],
   roster_switch: ["id"],
@@ -56075,6 +56078,9 @@ function executeGameCommand(previous, value, now, options = {}) {
     }
     case "use_potion":
       state = usePotion(state, text(a, "id"));
+      break;
+    case "select_healing_potion":
+      state = selectHealingPotion(state, text(a, "id"));
       break;
     case "discard_preparation":
       state = discardPreparation(state);

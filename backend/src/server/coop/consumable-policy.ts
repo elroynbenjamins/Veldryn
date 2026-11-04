@@ -57,7 +57,6 @@ function verifiedInventoryTake(stacks:readonly ItemStack[],itemId:string):ItemSt
 export function planDungeonPotionUse(input:DungeonPotionTransaction):DungeonPotionTransactionResult{
  const {runId,phase,actorId,ownerCharacterId,requestId,persistentState,characterState,maxHp}=input;
  if(!runId.trim()||!actorId.trim()||!ownerCharacterId.trim()||!requestId.trim()||requestId.length>MAX_RECEIPT_ID_LENGTH)throw new Error('invalid_dungeon_potion_request');
- if(phase!=='awaiting_choice')throw new Error('dungeon_potion_run_not_active');
  const character=characterState.character;
  if(!character||character.id!==ownerCharacterId||actorId!==ownerCharacterId)throw new Error('dungeon_potion_character_mismatch');
  const actor=persistentState.actors[actorId];if(!actor)throw new Error('dungeon_potion_actor_not_found');
@@ -69,6 +68,7 @@ export function planDungeonPotionUse(input:DungeonPotionTransaction):DungeonPoti
   if(already.actorId!==actorId||!already.itemId||!Number.isFinite(already.healedHp))throw new Error('dungeon_potion_receipt_conflict');
   return {persistentState,characterState,receipt:already,replayed:true,remainingCharges:cap-used};
  }
+ if(phase!=='awaiting_choice')throw new Error('dungeon_potion_run_not_active');
  if(used>=cap)throw new Error('dungeon_potion_charges_exhausted');
  if(actor.downed||!Number.isFinite(actor.hp)||actor.hp<=0)throw new Error('dungeon_potion_actor_downed');
  if(!Number.isFinite(maxHp)||maxHp<=0||actor.hp>=maxHp)throw new Error('dungeon_potion_health_full');

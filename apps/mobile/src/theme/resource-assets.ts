@@ -73,6 +73,9 @@ export const resourceIconSourceById:Readonly<Partial<Record<string,ImageSourcePr
   WARD_TONIC:require('../../assets/ingredient-icons-v1/ward_tonic.webp'),
   GREATER_WARD_TONIC:require('../../assets/ingredient-icons-v1/greater_ward_tonic.webp'),
   OATH_WARD_TONIC:require('../../assets/ingredient-icons-v1/oath_ward_tonic.webp'),
+  HARMONY_TONIC:require('../../assets/ingredient-icons-v1/harmony_tonic.webp'),
+  GREATER_HARMONY_TONIC:require('../../assets/ingredient-icons-v1/greater_harmony_tonic.webp'),
+  OATH_HARMONY_TONIC:require('../../assets/ingredient-icons-v1/oath_harmony_tonic.webp'),
   ASTRAL_SCRIPT:require('../../assets/ingredient-icons-v1/astral_script.webp'),
   RUNEBOUND_CORE:require('../../assets/ingredient-icons-v1/runebound_core.webp'),
   // The regional atlas cell was clipping the venom bottle at small sizes.

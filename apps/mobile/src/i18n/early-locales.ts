@@ -1981,6 +1981,18 @@ export const EARLY_LOCALE_ROWS={
   "Bonuses: +{gather}% Gathering · +{production}% Production · +{skill}% Skill XP · +{mastery}% Mastery XP · +{rare}% Rare Materials.": [
     "Бонусы: сбор +{gather}% · производство +{production}% · опыт навыков +{skill}% · мастерство +{mastery}% · редкие материалы +{rare}%.",
     "Bonuslar: Toplama +%{gather} · Üretim +%{production} · Beceri TP +%{skill} · Ustalık TP +%{mastery} · Nadir Malzeme +%{rare}."
+  ],
+  "Leader": [
+    "Лидер",
+    "Lider"
+  ],
+  "Officer": [
+    "Офицер",
+    "Yetkili"
+  ],
+  "Member": [
+    "Участник",
+    "Üye"
   ]
 } satisfies Record<string,readonly [string,string]>;
 

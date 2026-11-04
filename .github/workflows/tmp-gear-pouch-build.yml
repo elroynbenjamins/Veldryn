@@ -68,3 +68,5 @@ jobs:
 # Rerun after valid Forge test character name and idle pouch projection updates.
 
 # Final stable-head run: regenerated bundle must include all later shared-engine changes.
+
+# Final verification includes both scroll-indicator fixes and the five historical core failures.

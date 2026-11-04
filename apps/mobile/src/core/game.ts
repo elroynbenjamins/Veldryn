@@ -353,7 +353,7 @@ function addBounded(stacks:ItemStack[],capacity:number,incoming:ItemStack[]){
   }
   return {stacks:next,overflow};
 }
-function routeRewards(state:GameState,incoming:ItemStack[],nowMs:number){
+export function routeRewards(state:GameState,incoming:ItemStack[],nowMs:number){
   // Pouches are first-class destinations at reward settlement, not just manual deposit targets.
   // Keep every displaced reward in the old Inventory -> Bank -> Overflow path if a pouch is full.
   let stored=state;

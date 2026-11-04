@@ -31,6 +31,7 @@ function mergeStacks(stacks:ItemStack[]){
  const merged:ItemStack[]=[];
  for(const stack of stacks){
   if(!stack||typeof stack.itemId!=='string'||!Number.isFinite(stack.quantity)||stack.quantity<=0)continue;
+  if(stack.instanceId){if(stack.quantity===1)merged.push({...stack});continue;}
   const cap=stackCap(stack.itemId);let remaining=Math.floor(stack.quantity);
   while(remaining>0){
    const existing=merged.find(row=>row.itemId===stack.itemId&&row.quantity<cap);
@@ -43,8 +44,9 @@ function mergeStacks(stacks:ItemStack[]){
 function routeToBank(bank:GameState['bank'],baseOverflow:OverflowState,incoming:ItemStack[],now:number){
  const stacks=bank.stacks.map(row=>({...row})),overflow=baseOverflow.stacks.map(row=>({...row}));
  for(const incomingStack of mergeStacks(incoming)){
+  if(incomingStack.instanceId){if(stacks.some(row=>row.instanceId===incomingStack.instanceId)||overflow.some(row=>row.instanceId===incomingStack.instanceId))throw new Error('Duplicate recovered equipment copy');if(stacks.length<bank.capacity)stacks.push({...incomingStack});else overflow.push({...incomingStack});continue;}
   let remaining=incomingStack.quantity,cap=stackCap(incomingStack.itemId);
-  for(const existing of stacks.filter(row=>row.itemId===incomingStack.itemId)){
+  for(const existing of stacks.filter(row=>row.itemId===incomingStack.itemId&&row.instanceId===undefined)){
    if(remaining<=0)break;const room=Math.max(0,cap-existing.quantity),moved=Math.min(room,remaining);existing.quantity+=moved;remaining-=moved;
   }
   while(remaining>0&&stacks.length<bank.capacity){const moved=Math.min(cap,remaining);stacks.push({itemId:incomingStack.itemId,quantity:moved});remaining-=moved;}

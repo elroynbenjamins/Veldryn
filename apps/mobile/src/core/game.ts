@@ -353,13 +353,25 @@ function addBounded(stacks:ItemStack[],capacity:number,incoming:ItemStack[]){
   return {stacks:next,overflow};
 }
 function routeRewards(state:GameState,incoming:ItemStack[],nowMs:number){
-  const inv=addBounded(state.inventory.stacks,entitlementStorageCapacity(state,'inventory'),incoming);
-  const bank=addBounded(state.bank.stacks,entitlementStorageCapacity(state,'bank'),inv.overflow);
-  const overflow=stackItems(state.overflow.stacks,bank.overflow);
+  // Earned cut/raw gems automatically prefer the shared Gem Pouch. A full pouch
+  // falls back to Inventory/Bank/Overflow without changing item ownership.
+  let staged=state;
+  const regular:ItemStack[]=[];
+  for(const stack of incoming){
+    if(!stack.instanceId&&isGemPouchItemId(stack.itemId)){
+      const pouched=tryStoreGemInPouch(staged,stack.itemId,stack.quantity);
+      if(pouched){staged=pouched;continue;}
+    }
+    regular.push(stack);
+  }
+  const inv=addBounded(staged.inventory.stacks,entitlementStorageCapacity(staged,'inventory'),regular);
+  const bank=addBounded(staged.bank.stacks,entitlementStorageCapacity(staged,'bank'),inv.overflow);
+  const overflow=stackItems(staged.overflow.stacks,bank.overflow);
   return {
-    inventory:{...state.inventory,stacks:inv.stacks},
-    bank:{...state.bank,stacks:bank.stacks},
-    overflow:{stacks:overflow,expiresAtMs:overflow.length?Math.max(state.overflow.expiresAtMs||0,nowMs+72*60*60*1000):null}
+    account:staged.account,
+    inventory:{...staged.inventory,stacks:inv.stacks},
+    bank:{...staged.bank,stacks:bank.stacks},
+    overflow:{stacks:overflow,expiresAtMs:overflow.length?Math.max(staged.overflow.expiresAtMs||0,nowMs+72*60*60*1000):null}
   };
 }
 
@@ -691,7 +703,7 @@ export function claimSeasonalContract(state:GameState,period:SeasonalPeriod,cont
   const xp=state.character.xp+contract.rewardXp,level=characterLevelFromXp(xp);
   const routed=routeRewards(state,[{itemId:contract.rewardItemId,quantity:contract.rewardItemQty}],nowMs);
   const claimed=[...(state.account.seasonalContractClaimIds??[]),contract.id].slice(-120);
-  return applyLocalBalanceSnapshot(refreshQuests({...state,...routed,character:{...state.character,xp,level,gold:state.character.gold+contract.rewardGold},account:{...state.account,seasonalContractClaimIds:claimed}} as GameState),nowMs);
+  return applyLocalBalanceSnapshot(refreshQuests({...state,...routed,character:{...state.character,xp,level,gold:state.character.gold+contract.rewardGold},account:{...routed.account,seasonalContractClaimIds:claimed}} as GameState),nowMs);
 }
 
 /** Finite reservations hand off at the cycle boundary, not at the later login. */

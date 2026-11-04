@@ -56,7 +56,23 @@ const legacyPolicyCopy:Record<Exclude<Language,'ru'|'tr'>,{duration:string;durat
   it:{duration:'Durata',durationValue:'6–8 minuti',rewardCadence:'3 cariche ricompensa potenziata · +1 ogni 8 ore · 12 a settimana · partite illimitate',fellowshipLabel:'Compagnia Live',fellowshipCopy:'Le prime 3 vittorie Live di ogni settimana UTC danno +25% del valore pieno delle Marche Spedizione della run.'},
   fr:{duration:'Durée',durationValue:'6–8 minutes',rewardCadence:'3 charges de récompense améliorée · +1 toutes les 8 heures · 12 par semaine · parties illimitées',fellowshipLabel:'Camaraderie Live',fellowshipCopy:'Les 3 premières réussites Live de chaque semaine UTC accordent +25 % de la valeur complète en Marques d’expédition.'},
 };
-const policyCopy={...legacyPolicyCopy,ru:legacyPolicyCopy.en,tr:legacyPolicyCopy.en};
+const policyCopy={
+ ...legacyPolicyCopy,
+ ru:{
+  duration:'Время похода',
+  durationValue:'6–8 минут',
+  rewardCadence:'3 улучшенных заряда · +1 каждые 8 часов · 12 в неделю · походы без ограничений',
+  fellowshipLabel:'Живая группа',
+  fellowshipCopy:'Первые 3 успешных Live-похода за каждую неделю UTC дают +25% от полной стоимости похода в Знаках экспедиции.',
+ },
+ tr:{
+  duration:'Sefer süresi',
+  durationValue:'6–8 dakika',
+  rewardCadence:'3 artırılmış ödül hakkı · 8 saatte +1 · haftada 12 · sınırsız sefer',
+  fellowshipLabel:'Canlı Ekip',
+  fellowshipCopy:'Her UTC haftasındaki ilk 3 başarılı Canlı sefer, seferin toplam Sefer Nişanı değerine ek %25 kazandırır.',
+ },
+};
 export type CoopPolicyCopyKey=keyof (typeof policyCopy)['en'];
 export function coopPolicyText(language:Language,key:CoopPolicyCopyKey):string{return policyCopy[language][key];}
 export function ct(language:Language,key:CoopMessageKey,values:Record<string,string|number>={}):string{

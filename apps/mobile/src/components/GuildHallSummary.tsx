@@ -154,11 +154,12 @@ export function GuildHallSummary({onOpenMuster,onOpenShop,onRewardsChanged,compa
    <View style={s.row}><View style={s.flex}><Text style={s.kicker}>GUILD TOKENS</Text><Text style={s.compactTitle}>{shop?shop.balance.toLocaleString():'—'} <Text style={s.compactMeta}>available</Text></Text></View>
     {claims.length>0?<StatusPill label={claims.length+' READY'} tone="good"/>:null}
    </View>
-   {claims.length>1?<GameButton compact title={busyAll?'Claiming…':'Claim all '+claims.length+' rewards'} disabled={!!busy} loading={busyAll} onPress={()=>void claimAll()}/>:null}
-   {claims.slice(0,claims.length>1?0:1).map(row=><View key={row.id} style={s.compactClaim}><Text numberOfLines={2} style={[s.claimTitle,s.flex]}>{row.title} · +{row.tokens}</Text><GameButton compact title="Claim" disabled={!!busy} loading={busy===row.id} onPress={()=>void claim(row)}/></View>)}
-   {notice?<Text accessibilityLiveRegion="polite" style={[s.notice,{color:noticeError?C.bad:C.good}]}>{notice}</Text>:null}
+   {shop?<Text style={s.compactMeta}>Earned this week: {shop.earnedThisWeek} / {shop.weeklyCap}</Text>:null}
    <GameButton compact tone="secondary" title="Guild Token Shop" onPress={onOpenShop}/>
    {dailyActions}
+   {notice?<Text accessibilityLiveRegion="polite" style={[s.notice,{color:noticeError?C.bad:C.good}]}>{notice}</Text>:null}
+   {claims.length>1?<GameButton compact title={busyAll?'Claiming…':'Claim all '+claims.length+' rewards'} disabled={!!busy} loading={busyAll} onPress={()=>void claimAll()}/>:null}
+   {claims.slice(0,claims.length>1?0:1).map(row=><View key={row.id} style={s.compactClaim}><Text numberOfLines={2} style={[s.claimTitle,s.flex]}>{row.title} · +{row.tokens}</Text><GameButton compact title="Claim" disabled={!!busy} loading={busy===row.id} onPress={()=>void claim(row)}/></View>)}
   </Panel>
  </View>;
 
@@ -202,8 +203,11 @@ export function GuildHallSummary({onOpenMuster,onOpenShop,onRewardsChanged,compa
     <View style={s.track}><View style={[s.fill,{width:(weeklyPct+'%') as `${number}%`,backgroundColor:C.accent}]}/></View>
    </View>:null}
 
+   <GameButton compact tone="secondary" title="Open Guild Token Shop" onPress={onOpenShop}/>
+   {dailyActions}
+   {notice?<Text accessibilityLiveRegion="polite" style={[s.notice,{color:noticeError?C.bad:C.good}]}>{notice}</Text>:null}
    <View style={s.claimHead}>
-    <Text style={s.claimKicker}>{claims.length?'Ready to claim':'Nothing to claim right now'}</Text>
+    <Text style={s.claimKicker}>{claims.length?'Other rewards ready':'Other weekly/event rewards'}</Text>
     {claims.length>1?<GameButton compact title="Claim all" loading={busyAll} disabled={!!busy} onPress={()=>void claimAll()}/>:null}
    </View>
    {claims.map(row=><View key={row.id} style={s.claim}>
@@ -213,10 +217,7 @@ export function GuildHallSummary({onOpenMuster,onOpenShop,onRewardsChanged,compa
     </View>
     <GameButton compact title="Claim" loading={busy===row.id} disabled={!!busy} onPress={()=>void claim(row)}/>
    </View>)}
-   {!claims.length&&shop?<Text style={s.copy}>Earn Tokens through daily Muster, Guild Projects and Guild bosses. New rewards appear here to claim.</Text>:null}
-   {notice?<Text accessibilityLiveRegion="polite" style={[s.notice,{color:noticeError?C.bad:C.good}]}>{notice}</Text>:null}
-   <GameButton compact tone="secondary" title="Open Guild Token Shop" onPress={onOpenShop}/>
-   {dailyActions}
+   {!claims.length&&shop?<Text style={s.copy}>Weekly and event bonuses appear here when ready to claim.</Text>:null}
   </Panel>
  </View>;
 }

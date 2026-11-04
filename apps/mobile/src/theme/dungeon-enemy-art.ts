@@ -148,21 +148,6 @@ export const DUNGEON_TRIAL_PORTRAIT_ALIASES:Readonly<Record<string,string>>=Obje
 
 function enemyKey(name:string){return name.trim().toLocaleLowerCase().replace(/\s+/g,' ');}
 
-/** Display-only monster renames; server combatant IDs, mechanics, and
- * historical replay data remain untouched. */
-const DUNGEON_ENEMY_DISPLAY_NAMES:Readonly<Record<string,string>>=Object.freeze({
- 'dune sphinx':'Dune Oracle',
- 'the veiled sphinx':'The Veiled Oracle',
-});
-export function dungeonEnemyDisplayName(name:string):string{
- return DUNGEON_ENEMY_DISPLAY_NAMES[enemyKey(name)]??name;
-}
-
-/** Rename creature-specific attack labels in the UI, without changing
- * the server ability IDs, cast timings or effect coefficients. */
-export function dungeonEnemyAbilityDisplayName(name:string):string{
- return name.replace(/^Sphinx (?=Riddleburst|Pursuit$)/,'Oracle ');
-}
 const TRIAL_ART_BY_KEY:Readonly<Record<string,ImageSourcePropType>>=Object.freeze(
  Object.fromEntries(Object.entries(TRIAL_ENEMY_PORTRAITS).map(([name,art])=>[enemyKey(name),art])),
 );

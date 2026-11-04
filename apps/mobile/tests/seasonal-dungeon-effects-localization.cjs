@@ -17,6 +17,11 @@ const definitionSource=fs.readFileSync(path.join(root,'backend/src/server/expedi
 const bossSource=fs.readFileSync(path.join(root,'backend/src/server/expeditions/event-boss-mechanics.ts'),'utf8');
 const overview=fs.readFileSync(path.join(app,'src/components/coop/CoopRunOverview.tsx'),'utf8');
 const locales=['en','de','es','nl','it','fr','ru','tr'];
+const {DUNGEON_GEM_EFFECT_ROWS,localizedDungeonEffectLabel}=load(path.join(app,'src/i18n/dungeon-effect-copy.ts'));
+const playbackSource=fs.readFileSync(path.join(app,'src/core/dungeon-combat-playback.ts'),'utf8');
+const inspectSource=fs.readFileSync(path.join(app,'src/components/coop/CombatantInspectPanel.tsx'),'utf8');
+const profileSource=fs.readFileSync(path.join(app,'src/components/coop/CombatantProfileCard.tsx'),'utf8');
+
 assert.equal(Object.keys(SEASONAL_MECHANIC_ROWS).length,8);
 assert.equal(Object.keys(SEASONAL_OBJECTIVE_ROWS).length,8);
 assert.equal(Object.keys(SEASONAL_BOSS_DYNAMIC_ROWS).length,8);
@@ -98,4 +103,19 @@ for(const text of [
  'localizedMechanic?.label','localizedMechanic?.description','localizedMechanic?.bossEffect',
  'localizedObjective?.label','localizedObjective?.description','localizedObjective?.effectText',
 ])assert.ok(overview.includes(text),'Overview does not render translated effect: '+text);
+assert.equal(Object.keys(DUNGEON_GEM_EFFECT_ROWS).length,14,'All fourteen replay gem status names translate');
+for(const [tag,values] of Object.entries(DUNGEON_GEM_EFFECT_ROWS)){
+ assert.equal(values.length,8,'Gem effect missing language: '+tag);
+ assert.ok(playbackSource.includes("'"+tag+"':{label:'"+values[0]+"'"),'Gem effect backend display source changed: '+tag);
+ for(const [index,language] of locales.entries()){
+  assert.ok(values[index].trim(),'Blank effect name: '+tag+' '+language);
+  assert.equal(localizedDungeonEffectLabel(language,{tag,label:values[0],source:'gem'}),values[index]);
+ }
+ assert.equal(localizedDungeonEffectLabel('ru',{tag,label:'New server effect',source:'gem'}),'New server effect');
+}
+assert.equal(localizedDungeonEffectLabel('fr',{tag:'new_tag',label:'New effect',source:'gem'}),'New effect');
+assert.equal(localizedDungeonEffectLabel('nl',{tag:'damage_done',label:'Unreviewed effect',source:'ability'}),'Unreviewed effect');
+assert.ok(inspectSource.includes('localizedDungeonEffectLabel(language,status)'),'Combat inspect panel must localize effect rows');
+assert.ok(profileSource.includes('localizedDungeonEffectLabel(language,status)'),'Combat status screen reader must localize effect labels');
+
 console.log('PASS 8 seasonal mechanics + 8 objectives x 7 locales; 3 boss-effect and 5 objective-effect formulas; '+dynamicCases+' server-generated boss cases x 7 locales, strict fallback and UI contract');

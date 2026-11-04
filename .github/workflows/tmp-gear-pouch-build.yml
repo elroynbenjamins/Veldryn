@@ -57,3 +57,5 @@ jobs:
 # Rerun focused pouch validations after correcting fixture level requirements.
 
 # Rerun after valid Forge test character name and idle pouch projection updates.
+
+# Final stable-head run: regenerated bundle must include all later shared-engine changes.

@@ -28,8 +28,8 @@ for(const style of Object.values(CLASS_COMBAT_STYLES))assert.ok(Object.hasOwn(BA
 assert.equal(appText('nl','Cannot travel'),'Reizen niet mogelijk');
 assert.equal(appText('ru','Account'),'Аккаунт');
 assert.equal(appText('tr','Guild'),'Lonca');
-assert.equal(appText('ru','Cannot travel'),'Cannot travel');
-assert.equal(appText('tr','{name} is ready.',{name:'Ironwarden'}),'Ironwarden is ready.');
+assert.equal(appText('ru','Cannot travel'),'Переход недоступен');
+assert.equal(appText('tr','{name} is ready.',{name:'Ironwarden'}),'Ironwarden hazır.');
 assert.equal(appBuildText('ru','version',{version:'1.0.6'}),'Version 1.0.6');
 assert.equal(appBuildText('tr','channel',{channel:'production'}),'Release channel: production');
 assert.equal(navigationText('ru','{count} notifications',{count:3}),'Уведомления: 3');

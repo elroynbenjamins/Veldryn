@@ -13,6 +13,7 @@ export interface AlchemyRecipe {
 export const MAX_ALCHEMY_BATCHES=10_000;
 /** Healing potions are scarce consumables for dungeon and boss encounters. */
 export const HEALING_POTION_CRAFT_COST_MULTIPLIER=5;
+export const HEALING_POTION_XP_MULTIPLIER=3;
 export const POTIONS:readonly PotionDefinition[]=[
   {id:'DEWLEAF_DRAUGHT',name:'Dewleaf Draught',effect:{kind:'healing',maxHpFraction:.20},description:'Restore 20% maximum HP during boss fights and dungeons. Select below Food in the HP menu; not for ordinary hunts.'},
   {id:'RIVERHEART_DRAUGHT',name:'Riverheart Draught',effect:{kind:'healing',maxHpFraction:.35},description:'Restore 35% maximum HP during boss fights and dungeons. Select below Food in the HP menu; not for ordinary hunts.'},
@@ -59,6 +60,7 @@ export const ALCHEMY_RECIPES:readonly AlchemyRecipe[]=([
   const healing=POTIONS.some(potion=>potion.id===recipe.output.itemId&&potion.effect.kind==='healing');
   const costMultiplier=healing?HEALING_POTION_CRAFT_COST_MULTIPLIER:1;
   return {...recipe,
+    xp:recipe.xp*(healing?HEALING_POTION_XP_MULTIPLIER:1),
     gold:increasedCraftingGoldCost(recipe.gold)*costMultiplier,
     inputs:recipe.inputs.map(input=>({...input,quantity:input.quantity*costMultiplier}))};
 });

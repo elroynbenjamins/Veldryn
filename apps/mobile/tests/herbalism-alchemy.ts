@@ -47,11 +47,11 @@ function supplied(batches=10){let s=fresh();s.character!.gold=10000;s.inventory.
 const qty=(s:GameState,id:string)=>storedQuantity([...s.inventory.stacks,...s.bank.stacks,...s.overflow.stacks],id);
 
 test('catalog has eleven regional herb nodes, twelve potions and five regional equipment infusions',()=>{equal(HERB_NODES.length,11,'nodes');equal(POTIONS.length,9,'potions');equal(ALCHEMY_EQUIPMENT_INFUSIONS.length,5,'equipment infusions');equal(ALCHEMY_RECIPES.length,17,'recipes');equal(new Set(ITEMS.map(i=>i.id)).size,ITEMS.length,'item IDs unique');equal(new Set(ALCHEMY_RECIPES.map(r=>r.id)).size,17,'recipeIDs');});
-test('healing potions have 20/35/50% HP recovery and fivefold Gold and ingredient costs',()=>{
+test('healing potions have 20/35/50% HP recovery, fivefold crafting costs and triple XP',()=>{
  const expected=[
-  {id:'DEWLEAF_DRAUGHT',healing:.20,materials:[{itemId:'DEWLEAF',quantity:10}],gold:25},
-  {id:'RIVERHEART_DRAUGHT',healing:.35,materials:[{itemId:'DEWLEAF',quantity:15},{itemId:'RIVER_MINT',quantity:15}],gold:110},
-  {id:'OATHBLOOM_DRAUGHT',healing:.50,materials:[{itemId:'DEWLEAF',quantity:20},{itemId:'OATHBLOSSOM',quantity:10}],gold:360},
+  {id:'DEWLEAF_DRAUGHT',healing:.20,materials:[{itemId:'DEWLEAF',quantity:10}],gold:25,xp:180},
+  {id:'RIVERHEART_DRAUGHT',healing:.35,materials:[{itemId:'DEWLEAF',quantity:15},{itemId:'RIVER_MINT',quantity:15}],gold:110,xp:945},
+  {id:'OATHBLOOM_DRAUGHT',healing:.50,materials:[{itemId:'DEWLEAF',quantity:20},{itemId:'OATHBLOSSOM',quantity:10}],gold:360,xp:3225},
  ] as const;
  for(const entry of expected){
   const potion=POTIONS.find(p=>p.id===entry.id)!;
@@ -60,9 +60,12 @@ test('healing potions have 20/35/50% HP recovery and fivefold Gold and ingredien
   const recipe=alchemyRecipeDef('BREW_'+entry.id)!;
   equal(recipe.inputs,entry.materials,entry.id+' ingredients');
   equal(recipe.gold,entry.gold,entry.id+' gold');
+  equal(recipe.xp,entry.xp,entry.id+' 3× Alchemy XP');
   equal(recipe.output.quantity,1,entry.id+' single output');
  }
  equal(alchemyRecipeDef('BREW_VIGOR_TONIC')!.gold,10,'tonic costs are unaffected');
+ equal(alchemyRecipeDef('BREW_VIGOR_TONIC')!.xp,115,'tonic XP is unchanged');
+ equal(alchemyRecipeDef('BREW_VERDANT_BINDING_RESIN')!.xp,95,'infusion XP is unchanged');
 });
 for(const herb of HERB_NODES){test(`${herb.id}: reachable region, item and recipe uses; no missing-tool penalty`,()=>{ok(WORLD_ZONES.some(z=>z.id===herb.zoneId),'real zone');equal(itemDef(herb.itemId).type,'material','item');ok(ALCHEMY_RECIPES.some(r=>r.inputs.some(i=>i.itemId===herb.itemId)),'use');close(gatheringPacing(fresh(),herb).timeMultiplier,1,'hand picking');});}
 for(const r of ALCHEMY_RECIPES){test(`${r.id}: craft and sell cannot create free Gold from the inputs`,()=>{const output=itemDef(r.output.itemId),potion=POTIONS.some(p=>p.id===r.output.itemId),infusion=ALCHEMY_EQUIPMENT_INFUSIONS.some(row=>row.id===r.output.itemId);ok(potion||infusion,'registered output');const inputValue=r.inputs.reduce((sum,i)=>sum+itemDef(i.itemId).value*i.quantity,0);ok(output.value*r.output.quantity<inputValue+r.gold,'no vendor arbitrage');ok(potion?r.inputs.every(i=>HERB_NODES.some(node=>node.itemId===i.itemId)):output.type==='material'&&output.rarity!=='common','regional infusion is a rare-plus material');ok(r.seconds>=60&&r.output.quantity===1,'finite timed result');});}

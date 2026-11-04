@@ -298,6 +298,254 @@ export const SEASONAL_BOSS_SUMMARY_ROWS={
     "Ek bir sezon bossu mekaniği etkin değil."
   ]
 } as const;
+/** Server-owned dynamic seasonal boss warnings; exact canonical English patterns only. */
+export const SEASONAL_BOSS_DYNAMIC_ROWS={
+  "turning": {
+    "one": [
+      "{count} unversiegelter Chronikbruch bricht während der Letzten Stunde aus",
+      "{count} fractura de la crónica sin sellar entrará en erupción durante La Última Hora",
+      "{count} onverzegelde kroniekbreuk barst uit tijdens Het Laatste Uur",
+      "{count} frattura della cronaca non sigillata esploderà durante L'Ultima Ora",
+      "{count} fracture chronologique non scellée éclatera pendant La Dernière Heure",
+      "Во время Последнего Часа возникнет {count} незапечатанный разлом хроники",
+      "Son Saat sırasında {count} mühürlenmemiş kronik çatlağı patlayacak"
+    ],
+    "many": [
+      "{count} unversiegelte Chronikbrüche brechen während der Letzten Stunde aus",
+      "{count} fracturas de la crónica sin sellar entrarán en erupción durante La Última Hora",
+      "{count} onverzegelde kroniekbreuken barsten uit tijdens Het Laatste Uur",
+      "{count} fratture della cronaca non sigillate esploderanno durante L'Ultima Ora",
+      "{count} fractures chronologiques non scellées éclateront pendant La Dernière Heure",
+      "Во время Последнего Часа возникнут {count} незапечатанных разлома хроники",
+      "Son Saat sırasında {count} mühürlenmemiş kronik çatlağı patlayacak"
+    ],
+    "extra": [
+      "; kritische Stabilität aktiviert zudem Zeitumkehr.",
+      "; además, la estabilidad crítica activa Reversión temporal.",
+      "; kritieke stabiliteit activeert ook Tijdomkering.",
+      "; inoltre, la stabilità critica attiva Inversione temporale.",
+      " ; une stabilité critique active aussi l'Inversion du temps.",
+      "; критическая стабильность также активирует Обращение времени.",
+      "; kritik denge ayrıca Zamanı Geri Sarma'yı etkinleştirir."
+    ]
+  },
+  "heartbond": {
+    "one": [
+      "{count} gebrochenes Versprechen löst zusätzliche Kummerphasen aus; die aktuelle Harmonie verändert die Stärke der Nova.",
+      "{count} promesa rota activará fases extra de Dolor; la armonía actual modifica la fuerza de la Nova.",
+      "{count} verbroken belofte veroorzaakt extra Verdrietfasen; de huidige harmonie beïnvloedt de kracht van de Nova.",
+      "{count} promessa infranta attiverà fasi extra di Dolore; l'armonia attuale modifica la potenza della Nova.",
+      "{count} promesse rompue déclenchera des phases de Chagrin supplémentaires ; l'harmonie actuelle modifie la puissance de la Nova.",
+      "{count} разорванное обещание вызовет дополнительные фазы Скорби; текущая гармония меняет силу Новы.",
+      "{count} bozulmuş söz ek Keder aşamaları başlatır; mevcut uyum Nova'nın gücünü değiştirir."
+    ],
+    "many": [
+      "{count} gebrochene Versprechen lösen zusätzliche Kummerphasen aus; die aktuelle Harmonie verändert die Stärke der Nova.",
+      "{count} promesas rotas activarán fases extra de Dolor; la armonía actual modifica la fuerza de la Nova.",
+      "{count} verbroken beloften veroorzaken extra Verdrietfasen; de huidige harmonie beïnvloedt de kracht van de Nova.",
+      "{count} promesse infrante attiveranno fasi extra di Dolore; l'armonia attuale modifica la potenza della Nova.",
+      "{count} promesses rompues déclencheront des phases de Chagrin supplémentaires ; l'harmonie actuelle modifie la puissance de la Nova.",
+      "{count} разорванных обещания вызовут дополнительные фазы Скорби; текущая гармония меняет силу Новы.",
+      "{count} bozulmuş söz ek Keder aşamaları başlatır; mevcut uyum Nova'nın gücünü değiştirir."
+    ]
+  },
+  "bloomwake": {
+    "one": [
+      "{count} ungebundener Herzwurzelknoten versetzt den Dornherz-Uralten im Kampf in Raserei",
+      "{count} nudo de raíz del corazón sin atar enfurecerá al Ancestro Corazón de Espinas durante el combate",
+      "{count} ongebonden hartwortelknoop maakt de Oude Doornhart woedend tijdens het gevecht",
+      "{count} nodo della radice del cuore non legato farà infuriare l'Antico Cuorspina durante il combattimento",
+      "{count} nœud de racine-cœur non lié provoquera la rage de l'Ancien Cœur-d'Épines pendant le combat",
+      "{count} несвязанный узел сердечного корня приведёт Древнего Терносердца в ярость во время боя",
+      "{count} bağlanmamış Kalp Kökü düğümü, savaş sırasında Dikenyürek Kadim'i öfkelendirir"
+    ],
+    "many": [
+      "{count} ungebundene Herzwurzelknoten versetzen den Dornherz-Uralten im Kampf in Raserei",
+      "{count} nudos de raíz del corazón sin atar enfurecerán al Ancestro Corazón de Espinas durante el combate",
+      "{count} ongebonden hartwortelknopen maken de Oude Doornhart woedend tijdens het gevecht",
+      "{count} nodi della radice del cuore non legati faranno infuriare l'Antico Cuorspina durante il combattimento",
+      "{count} nœuds de racine-cœur non liés provoqueront la rage de l'Ancien Cœur-d'Épines pendant le combat",
+      "{count} несвязанных узла сердечного корня приведут Древнего Терносердца в ярость во время боя",
+      "{count} bağlanmamış Kalp Kökü düğümü, savaş sırasında Dikenyürek Kadim'i öfkelendirir"
+    ],
+    "extra": [
+      "; kritische Hainbalance aktiviert zudem Wilder Dornenausbruch.",
+      "; además, el equilibrio crítico del bosque activa Estallido de espinas salvajes.",
+      "; een kritieke bosbalans activeert ook Wilde doornenuitbarsting.",
+      "; inoltre, l'equilibrio critico del bosco attiva Esplosione di spine ferali.",
+      " ; un équilibre critique du bosquet active aussi Explosion d'épines sauvages.",
+      "; критическое равновесие рощи также активирует Взрыв диких шипов.",
+      "; kritik Koru Dengesi ayrıca Yabani Diken Patlaması'nı etkinleştirir."
+    ]
+  },
+  "suncrest": {
+    "one": [
+      "{count}/{max} Lorbeer schwächt Aureons Sonnen-Nova; ein vollständiger Satz verändert den Duellverlauf.",
+      "{count}/{max} laureles debilitan la Nova solar de Aureon; el conjunto completo cambia el duelo.",
+      "{count}/{max} lauweren verzwakken Aureons Zonnenova; een volledige set verandert het duel.",
+      "{count}/{max} allori attenuano la Nova solare di Aureon; il set completo cambia il duello.",
+      "{count}/{max} lauriers affaiblissent la Nova solaire d'Aureon ; la collection complète change le duel.",
+      "{count}/{max} лавров ослабляют Солнечную Нову Авреона; полный набор меняет ход поединка.",
+      "{count}/{max} defne Aureon'un Güneş Novasını zayıflatır; tam set düellonun gidişini değiştirir."
+    ]
+  },
+  "starfall": {
+    "one": [
+      "{count} großer Riss bleibt offen und verursacht zusätzliche Einsturzphasen",
+      "{count} grieta mayor sigue abierta y añade fases de colapso",
+      "{count} grote scheur blijft open en veroorzaakt extra instortingsfasen",
+      "{count} grande varco resta aperto e aggiunge fasi di collasso",
+      "{count} faille majeure reste ouverte et ajoute des phases d'effondrement",
+      "{count} крупный разлом остаётся открытым, добавляя фазы обрушения",
+      "{count} büyük yarık açık kalır ve ek çöküş aşamaları başlatır"
+    ],
+    "many": [
+      "{count} große Risse bleiben offen und verursachen zusätzliche Einsturzphasen",
+      "{count} grietas mayores siguen abiertas y añaden fases de colapso",
+      "{count} grote scheuren blijven open en veroorzaken extra instortingsfasen",
+      "{count} grandi varchi restano aperti e aggiungono fasi di collasso",
+      "{count} failles majeures restent ouvertes et ajoutent des phases d'effondrement",
+      "{count} крупных разлома остаются открытыми, добавляя фазы обрушения",
+      "{count} büyük yarık açık kalır ve ek çöküş aşamaları başlatır"
+    ],
+    "extra": [
+      " und den Zauber Risskollaps.",
+      " y el hechizo Colapso de la grieta.",
+      " en de spreuk Instorting van de scheur.",
+      " e l'abilità Collasso del varco.",
+      " et le sort Effondrement de la faille.",
+      " и заклинание Обрушение разлома.",
+      " ve Yarık Çöküşü büyüsünü de etkinleştirir."
+    ]
+  },
+  "veilbreak": {
+    "one": [
+      "{count} dunkle Schutzlaterne verursacht zusätzliche Finsternisphasen",
+      "{count} farol protector apagado causa fases extra de apagón",
+      "{count} gedoofde beschermlantaarn veroorzaakt extra verduisteringsfasen",
+      "{count} lanterna protettiva spenta causa fasi extra di oscuramento",
+      "{count} lanterne protectrice éteinte provoque des phases d'obscurité supplémentaires",
+      "{count} погасший защитный фонарь вызывает дополнительные фазы тьмы",
+      "{count} sönmüş koruma feneri ek Karartma aşamaları başlatır"
+    ],
+    "many": [
+      "{count} dunkle Schutzlaternen verursachen zusätzliche Finsternisphasen",
+      "{count} faroles protectores apagados causan fases extra de apagón",
+      "{count} gedoofde beschermlantaarns veroorzaken extra verduisteringsfasen",
+      "{count} lanterne protettive spente causano fasi extra di oscuramento",
+      "{count} lanternes protectrices éteintes provoquent des phases d'obscurité supplémentaires",
+      "{count} погасших защитных фонаря вызывают дополнительные фазы тьмы",
+      "{count} sönmüş koruma feneri ek Karartma aşamaları başlatır"
+    ],
+    "extra": [
+      " und aktiviert Völlige Finsternis.",
+      " y activa Apagón total.",
+      " en activeert Totale verduistering.",
+      " e attiva Oscuramento totale.",
+      " et active Obscurité totale.",
+      " и включают Полную тьму.",
+      " ve Tam Karartma'yı etkinleştirir."
+    ]
+  },
+  "merchant": {
+    "one": [
+      "{count} geschützter Frachtposten bleibt. Er fügt eine Plünderungsphase hinzu: Der Kampf wird schwerer, aber die Lieferbelohnung steigt.",
+      "Queda {count} lote de carga protegida. Añade una fase de saqueo: la pelea se endurece, pero aumenta la recompensa de entrega.",
+      "Er blijft {count} beschermde ladingpartij over. Die voegt een plunderfase toe: een zwaarder gevecht voor een hogere bezorgbeloning.",
+      "Resta {count} lotto di carico protetto. Aggiunge una fase di saccheggio: lo scontro è più duro, ma la ricompensa di consegna aumenta.",
+      "Il reste {count} lot de cargaison protégée. Il ajoute une phase de pillage : le combat devient plus difficile mais la récompense de livraison augmente.",
+      "Остаётся {count} партия защищённого груза. Она добавляет фазу разграбления: бой сложнее, но награда за доставку выше.",
+      "{count} korunan yük partisi kaldı. Bir yağma aşaması ekler: savaş zorlaşır ama teslimat ödülü artar."
+    ],
+    "many": [
+      "{count} geschützte Frachtposten bleiben. Jeder fügt eine Plünderungsphase hinzu: Der Kampf wird schwerer, aber die Lieferbelohnung steigt.",
+      "Quedan {count} lotes de carga protegida. Cada uno añade una fase de saqueo: la pelea se endurece, pero aumenta la recompensa de entrega.",
+      "Er blijven {count} beschermde ladingpartijen over. Elk voegt een plunderfase toe: een zwaarder gevecht voor een hogere bezorgbeloning.",
+      "Restano {count} lotti di carico protetto. Ognuno aggiunge una fase di saccheggio: lo scontro è più duro, ma la ricompensa di consegna aumenta.",
+      "Il reste {count} lots de cargaison protégée. Chacun ajoute une phase de pillage : le combat devient plus difficile mais la récompense de livraison augmente.",
+      "Остаются {count} партии защищённого груза. Каждая добавляет фазу разграбления: бой сложнее, но награда за доставку выше.",
+      "{count} korunan yük partisi kaldı. Her biri bir yağma aşaması ekler: savaş zorlaşır ama teslimat ödülü artar."
+    ]
+  },
+  "frostfall": {
+    "one": [
+      "{count} unentzündeter Herd ermöglicht zusätzliche Tieffrostphasen. Entzündete Herde schwächen Aurorabruch um {pct}% ab",
+      "{count} hogar apagado permite fases extra de congelación profunda. Los hogares encendidos reducen Fragmentación de la Aurora un {pct}%",
+      "{count} onverlichte haard veroorzaakt extra diepe-vorstfasen. Brandende haarden verminderen Aurorabreuk met {pct}%",
+      "{count} focolare spento permette fasi extra di gelo profondo. I focolari accesi riducono Frattura dell'Aurora del {pct}%",
+      "{count} foyer éteint permet des phases supplémentaires de gel profond. Les foyers allumés réduisent Fracture de l'Aurore de {pct} %",
+      "{count} незажжённый очаг допускает дополнительные фазы Глубокой заморозки. Горящие очаги ослабляют Раскол Авроры на {pct}%",
+      "{count} yanmamış ocak ek Derin Don aşamalarına yol açar. Yanan ocaklar Kutup Işığı Parçalanmasını %{pct} azaltır"
+    ],
+    "many": [
+      "{count} unentzündete Herde ermöglichen zusätzliche Tieffrostphasen. Entzündete Herde schwächen Aurorabruch um {pct}% ab",
+      "{count} hogares apagados permiten fases extra de congelación profunda. Los hogares encendidos reducen Fragmentación de la Aurora un {pct}%",
+      "{count} onverlichte haarden veroorzaken extra diepe-vorstfasen. Brandende haarden verminderen Aurorabreuk met {pct}%",
+      "{count} focolari spenti permettono fasi extra di gelo profondo. I focolari accesi riducono Frattura dell'Aurora del {pct}%",
+      "{count} foyers éteints permettent des phases supplémentaires de gel profond. Les foyers allumés réduisent Fracture de l'Aurore de {pct} %",
+      "{count} незажжённых очага допускают дополнительные фазы Глубокой заморозки. Горящие очаги ослабляют Раскол Авроры на {pct}%",
+      "{count} yanmamış ocak ek Derin Don aşamalarına yol açar. Yanan ocaklar Kutup Işığı Parçalanmasını %{pct} azaltır"
+    ],
+    "extra": [
+      "; kritische Wärme aktiviert zudem Absoluter Nullpunkt.",
+      "; además, el calor crítico activa Cero absoluto.",
+      "; kritieke warmte activeert ook Absoluut nulpunt.",
+      "; inoltre, il calore critico attiva Zero assoluto.",
+      " ; une chaleur critique active aussi Zéro absolu.",
+      "; критический уровень тепла также активирует Абсолютный ноль.",
+      "; kritik sıcaklık ayrıca Mutlak Sıfır'ı etkinleştirir."
+    ]
+  }
+} as const;
+const fillBoss=(template:string,values:Record<string,number>)=>template.replace(/\{(\w+)\}/g,(_match,key:string)=>String(values[key]??'{'+key+'}'));
+function dynamicSeasonalBossSummary(language:Language,english:string):string|undefined{
+ const idx=column[language];
+ const render=(row:{one:readonly string[];many?:readonly string[];extra?:readonly string[]},count:number,values:Record<string,number>,extra=false):string=>{
+  const base=fillBoss((count===1?row.one:row.many??row.one)[idx],values);
+  return base+(extra&&row.extra?row.extra[idx]:'.');
+ };
+ const valid=(n:number)=>Number.isInteger(n)&&n>=1&&n<=3;
+ let m:RegExpExecArray|null;
+ m=/^(\d+) unsealed fractures? will erupt during The Last Hour(?: and critical stability enables Time Reversal)?\.$/.exec(english);
+ if(m){const n=Number(m[1]),extra=english.endsWith(' and critical stability enables Time Reversal.');
+  if(!valid(n)||english!==n+' unsealed fracture'+(n===1?'':'s')+' will erupt during The Last Hour'+(extra?' and critical stability enables Time Reversal.':'.'))return undefined;
+  return render(SEASONAL_BOSS_DYNAMIC_ROWS.turning,n,{count:n},extra);
+ }
+ m=/^(\d+) broken promises? will trigger extra Sorrow phases; current harmony modifies the Nova’s strength\.$/.exec(english);
+ if(m){const n=Number(m[1]);if(!valid(n)||english!==n+' broken promise'+(n===1?'':'s')+' will trigger extra Sorrow phases; current harmony modifies the Nova’s strength.')return undefined;
+  return fillBoss((n===1?SEASONAL_BOSS_DYNAMIC_ROWS.heartbond.one:SEASONAL_BOSS_DYNAMIC_ROWS.heartbond.many)[idx],{count:n});
+ }
+ m=/^(\d+) unbound Heartroot knots? will enrage the Thornheart Ancient during the fight(?:; critical Grove Balance also enables Feral Thornburst)?\.$/.exec(english);
+ if(m){const n=Number(m[1]),extra=english.endsWith('; critical Grove Balance also enables Feral Thornburst.');
+  if(!valid(n)||english!==n+' unbound Heartroot knot'+(n===1?'':'s')+' will enrage the Thornheart Ancient during the fight'+(extra?'; critical Grove Balance also enables Feral Thornburst.':'.'))return undefined;
+  return render(SEASONAL_BOSS_DYNAMIC_ROWS.bloomwake,n,{count:n},extra);
+ }
+ m=/^(\d+)\/(\d+) Laurels soften Aureon’s Solar Nova; a complete set changes the duel pattern\.$/.exec(english);
+ if(m){const n=Number(m[1]),max=Number(m[2]);if(n<1||n>2||max!==3)return undefined;
+  return fillBoss(SEASONAL_BOSS_DYNAMIC_ROWS.suncrest.one[idx],{count:n,max});
+ }
+ m=/^(\d+) major rifts? remain[s]? open, adding collapse phases(?: and the Rift Collapse cast)?\.$/.exec(english);
+ if(m){const n=Number(m[1]),extra=english.endsWith(' and the Rift Collapse cast.');
+  if(!valid(n)||english!==n+' major rift'+(n===1?' remains':'s remain')+' open, adding collapse phases'+(extra?' and the Rift Collapse cast.':'.'))return undefined;
+  return render(SEASONAL_BOSS_DYNAMIC_ROWS.starfall,n,{count:n},extra);
+ }
+ m=/^(\d+) dark wards? create extra Blackout phases(?: and enable Total Blackout)?\.$/.exec(english);
+ if(m){const n=Number(m[1]),extra=english.endsWith(' and enable Total Blackout.');
+  if(!valid(n)||english!==n+' dark ward'+(n===1?'':'s')+' create extra Blackout phases'+(extra?' and enable Total Blackout.':'.'))return undefined;
+  return render(SEASONAL_BOSS_DYNAMIC_ROWS.veilbreak,n,{count:n},extra);
+ }
+ m=/^(\d+) protected cargo lots? remain\. Each one adds a Plunder Attempt phase, trading a harder fight for a larger delivery payout\.$/.exec(english);
+ if(m){const n=Number(m[1]);if(!valid(n)||english!==n+' protected cargo lot'+(n===1?'':'s')+' remain. Each one adds a Plunder Attempt phase, trading a harder fight for a larger delivery payout.')return undefined;
+  return fillBoss((n===1?SEASONAL_BOSS_DYNAMIC_ROWS.merchant.one:SEASONAL_BOSS_DYNAMIC_ROWS.merchant.many)[idx],{count:n});
+ }
+ m=/^(\d+) unlit hearths? allow extra Deep Freeze phases\. Lit hearths reduce Aurora Shatter by (\d+)%(?:; critical Warmth also enables Absolute Zero)?\.$/.exec(english);
+ if(m){const n=Number(m[1]),pct=Number(m[2]),extra=english.endsWith('; critical Warmth also enables Absolute Zero.');
+  if(!valid(n)||pct!==(3-n)*8||english!==n+' unlit hearth'+(n===1?'':'s')+' allow extra Deep Freeze phases. Lit hearths reduce Aurora Shatter by '+pct+'%'+(extra?'; critical Warmth also enables Absolute Zero.':'.'))return undefined;
+  return render(SEASONAL_BOSS_DYNAMIC_ROWS.frostfall,n,{count:n,pct},extra);
+ }
+ return undefined;
+}
+
 const column:Record<Language,number>={en:-1,de:0,es:1,nl:2,it:3,fr:4,ru:5,tr:6};
 function lookup(language:Language,source:string,rows:Readonly<Record<string,readonly string[]>>):string|undefined{
  return Object.prototype.hasOwnProperty.call(rows,source)?rows[source]?.[column[language]]:undefined;
@@ -314,5 +562,5 @@ export function seasonalBossDisplayName(language:Language,english:string):string
 }
 export function seasonalBossDisplaySummary(language:Language,english:string):string{
  if(language==='en')return english;
- return lookup(language,english,SEASONAL_BOSS_SUMMARY_ROWS)??english;
+ return lookup(language,english,SEASONAL_BOSS_SUMMARY_ROWS)??dynamicSeasonalBossSummary(language,english)??english;
 }

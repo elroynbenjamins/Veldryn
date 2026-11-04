@@ -7,7 +7,7 @@ type Guide={title:string;body:string;detail:string};
 /** Each Hall destination has its own first-visit tip, not a compulsory tour.
  * Construction is release-gated; do not suggest players can donate to unreleased tiers.
  */
-const guides:Record<Language,Record<LegacyGuideSection,Guide>>={
+const guides:Record<Exclude<Language,'ru'|'tr'>,Record<LegacyGuideSection,Guide>>={
  en:{
   Facilities:{title:'Guild Hall & construction',body:'Review facility upgrades and the materials your Guild still needs.',detail:'Only released, active construction can receive donations in the Guild Bank. Completed tiers give shared benefits, not free cosmetics. Only already-unlocked name colors can be selected.'},
   Skills:{title:'Guild Skills',body:'Spend earned Guild skill points on shared progression branches.',detail:'Guild Skills are separate from material-funded Hall construction. Check the current bonus and next cost before upgrading.'},
@@ -47,8 +47,11 @@ const guides:Record<Language,Record<LegacyGuideSection,Guide>>={
 };
 export function guildHallSectionGuide(language:Language,section:GuildHallGuideSection):Guide{
  const oldSection:LegacyGuideSection=section==='Legacy'||section==='Trophies'?'Trophies':section==='Skills'||section==='Shop'?section:'Facilities';
- const guide=guides[language][oldSection];
- if(language!=='en')return guide;
+ // Russian and Turkish are intentionally partial locales. Use the English
+ // Guild Hall tour until these sections have their own translated copy.
+ const guideLanguage=language==='ru'||language==='tr'?'en':language;
+ const guide=guides[guideLanguage][oldSection];
+ if(guideLanguage!=='en')return guide;
  if(section==='Overview')return {title:'Guild Headquarters',body:'Track Hall progression, construction priorities and active guild benefits in one place.',detail:'Hall facilities progress automatically through Projects. Construction and Guild Skills have separate upgrades.'};
  if(section==='Construction')return {title:'Guild Construction',body:'Choose a building and fund released upgrades with shared Guild Bank materials.',detail:'Deposit to the bank first, then allocate only what a project still needs. Completed upgrades grant benefits, not free items.'};
  if(section==='Bank')return {title:'Guild Bank',body:'Deposit only supplies needed for eligible, released construction.',detail:'Deposits are permanent. All deductions and allocation limits are verified by the server.'};

@@ -55,6 +55,7 @@
   ".core-build/apps/mobile/tests/equipment-swap-game-feel.js",
   ".core-build/apps/mobile/tests/inventory-action-game-feel.js",
   ".core-build/apps/mobile/tests/gem-pouch.js",
+  ".core-build/apps/mobile/tests/equipment-pouch.js",
   ".core-build/apps/mobile/tests/forge-reward-game-feel.js",
   ".core-build/apps/mobile/tests/loot-levelup-game-feel.js",
   ".core-build/apps/mobile/tests/command-progress-feedback.js",

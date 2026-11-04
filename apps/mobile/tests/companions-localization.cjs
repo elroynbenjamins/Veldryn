@@ -31,6 +31,16 @@ assert.equal(companionContent('fr','below 50% HP'),'sous 50 % des PV');
 assert.equal(companionContent('ru','Rare discovery while following the Frostmarch bells'),'Редкая находка по следам колоколов Frostmarch');
 assert.equal(companionContent('tr','defensive stance'),'savunma duruşu');
 assert.equal(companionContent('en','Rare discovery while mapping Silverbrook'),'Rare discovery while mapping Silverbrook');
+const bondNotice='BOND REWARD CLAIMED · Ironwood Wolf · Bond 4 · 35 Essence.';
+assert.equal(companionMessage('de',bondNotice),'BINDUNGSBELOHNUNG ABGEHOLT · Ironwood Wolf · Bindung 4 · 35 × Essenz.');
+assert.equal(companionMessage('nl',bondNotice),'BANDBELONING GECLAIMD · Ironwood Wolf · Band 4 · 35 × Essentie.');
+assert.equal(companionMessage('ru',bondNotice),'НАГРАДА ЗА СВЯЗЬ ПОЛУЧЕНА · Ironwood Wolf · Связь 4 · 35 × Эссенция.');
+assert.equal(companionMessage('tr',bondNotice),'BAĞ ÖDÜLÜ ALINDI · Ironwood Wolf · Bağ 4 · 35 × Öz.');
+const oldCompanionPanel=fs.readFileSync(path.join(root,'apps/mobile/src/components/CombatCompanionPanel.tsx'),'utf8');
+const newCompanionTraining=fs.readFileSync(path.join(root,'apps/mobile/src/components/CompanionTrainingV50Panel.tsx'),'utf8');
+assert.ok(oldCompanionPanel.includes('COMPANION_BOND_ESSENCE_REWARDS')&&newCompanionTraining.includes('COMPANION_BOND_ESSENCE_REWARDS'),'Both companion flows must use the same authoritative Bond Essence reward map');
+assert.ok(!oldCompanionPanel.includes("'35 Essence + portrait'")&&!oldCompanionPanel.includes("'80 Essence + title'")&&!oldCompanionPanel.includes("'55 Essence + Bond Resonance'"),'No current Bond claim confirmation may promise obsolete portrait, title or Resonance rewards');
+
 assert.ok(!Object.values(knownGaps.untranslatedCatalogStrings).flat().includes('Defeat 250 Old Mines enemies'),'Completed companion unlock translations must not remain incorrectly marked as gaps');
 
 for(const values of Object.values(knownGaps.untranslatedCatalogStrings))for(const value of values){

@@ -986,10 +986,13 @@ export const companionCatalogs:Record<Language,Record<CompanionMessageKey,string
  en:{} as Record<CompanionMessageKey,string>,de:{} as Record<CompanionMessageKey,string>,
  es:{} as Record<CompanionMessageKey,string>,nl:{} as Record<CompanionMessageKey,string>,
  it:{} as Record<CompanionMessageKey,string>,fr:{} as Record<CompanionMessageKey,string>,
+ ru:{} as Record<CompanionMessageKey,string>,tr:{} as Record<CompanionMessageKey,string>,
 };
 for(const key of Object.keys(companionTranslationRows) as CompanionMessageKey[]){
  companionCatalogs.en[key]=key;
  (['de','es','nl','it','fr'] as const).forEach((language,index)=>{companionCatalogs[language][key]=companionTranslationRows[key][index];});
+ companionCatalogs.ru[key]=key;
+ companionCatalogs.tr[key]=key;
 }
 export const translateCompanion=createTranslator(companionCatalogs);
 export const companionTranslator=(language:Language)=>(key:CompanionMessageKey,params?:Record<string,string|number>)=>translateCompanion(language,key,params);

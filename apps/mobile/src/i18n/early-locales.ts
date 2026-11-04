@@ -1,7 +1,7 @@
 import type {Language} from './languages';
 
 // Starter-only RU/TR copy; missing phrases deliberately fall back to English.
-const EARLY_LOCALE_ROWS={
+export const EARLY_LOCALE_ROWS={
   "Home": [
     "Главная",
     "Ana Sayfa"

@@ -9,7 +9,7 @@ import {rarityMeta} from './item-rarity';
  * sale, Gold credit, Forge receipt and new copy together in one transaction.
  */
 export type CraftedGearAutoSellMode='off'|'keep_best_seven';
-export type CraftedGearInstanceLocation='inventory'|'bank'|'equipped'|'unknown';
+export type CraftedGearInstanceLocation='inventory'|'bank'|'equipment_pouch'|'equipped'|'unknown';
 
 export interface CraftedGearRetentionEntry {
   instance:CraftedGearInstance;
@@ -45,7 +45,7 @@ export function compareCraftedGearRetentionPower(a:CraftedGearInstance,b:Crafted
 
 export function craftedGearCanAutoSell(entry:CraftedGearRetentionEntry){
   const gear=entry.instance,enhancement=gear.enhancement;
-  return (entry.location==='inventory'||entry.location==='bank')
+  return (entry.location==='inventory'||entry.location==='bank'||entry.location==='equipment_pouch')
     &&(entry.location==='bank'||(typeof entry.holderCharacterId==='string'&&entry.holderCharacterId.length>0))
     &&entry.ownershipVerified===true&&entry.protectionsVerified===true
     &&entry.locked===false&&gear.locked!==true&&entry.favorite===false&&entry.savedLoadout===false

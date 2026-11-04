@@ -33,7 +33,7 @@ ok(character.includes('wrapToolTabs=width<360||fontScale>=1.2'),'Equipment tools
 ok(preview.includes('useGameTheme'),'Equipment comparison must use the active theme');
 ok(preview.includes('GameModalSurface'),'Equipment comparison must use the shared modal surface');
 ok(!preview.includes("import {C,")&&!preview.includes('equipmentColors}'),'Equipment comparison must not use the legacy static palette');
-ok(preview.includes('SET CONTEXT'),'Equipment comparison must show set-piece tradeoffs');
+ok(preview.includes('SET PROGRESS')&&preview.includes('sets.some(row=>row.after!==row.before)'),'Equipment comparison must surface authoritative set-piece progress changes');
 ok(preview.includes('equippedSetPieceCount'),'Equipment comparison must compute set counts from the preview state');
 ok(preview.includes('previewEquipment'),'Comparison copy must not imply unimplemented V33 set effects are active');
 

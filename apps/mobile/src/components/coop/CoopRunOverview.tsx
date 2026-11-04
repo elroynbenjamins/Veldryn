@@ -10,6 +10,8 @@ import {type CoopColors,coopSpacing,coopTypography} from '../../theme/coop-ui-th
 import {ExpeditionScreenShell,FantasyPanel,RoleBadge,StateChip} from './CoopVisualKit';
 import {DungeonRouteChoices} from './DungeonRouteChoices';
 import {DungeonRoomResolution} from './DungeonRoomResolution';
+import {DungeonMerchantPanel} from './DungeonMerchantPanel';
+import {DungeonRoomOutcomeBanner} from './DungeonRoomOutcomeBanner';
 import {GameButton} from '../GameButton';
 import {IdentityArtwork} from '../SocialIdentity';
 import {SeasonalBossTelegraphPanel} from './SeasonalBossTelegraphPanel';
@@ -37,7 +39,7 @@ function TerminalRunMoment({phase,rewardsReady,rewardsSecured,reduceMotion}:{pha
 }
 
 export interface CoopRewardDisplay {id:string;claimed_at:string|null;reward_json:{marks?:number;enhanced_reward?:boolean;live_fellowship_bonus?:number;reward_charges_remaining?:number;weekly_enhanced_remaining?:number;failure_consolation_remaining?:number;failure_consolation_applied?:boolean};}
-export function CoopRunOverview({language,run,myVotedNodeId,selfVoter,onBack,onChoose,onRefresh,onClaim,onQueueAgain,onPartyRematch,busy=false,notice,syncError,rewards=[],terminalAction,reduceMotion=false,seasonal=false,eventName,chatMessages=[],onChatSend,potionOptions=[],preferredPotionId,ownCharacterId,onUsePotion}:{language:Language;run:CoopRunView;myVotedNodeId?:string;selfVoter?:{name:string;profileIconId?:string|null;className?:string|null};onBack:()=>void;onChoose?:(nodeId:string)=>void;onRefresh?:()=>void;onClaim?:(id:string)=>void;onQueueAgain?:{label:string;onPress:()=>void};onPartyRematch?:()=>void;busy?:boolean;notice?:string;syncError?:string;rewards?:CoopRewardDisplay[];terminalAction?:{label:string;claimed?:boolean;completeText?:string;onPress:()=>void};reduceMotion?:boolean;seasonal?:boolean;eventName?:string;chatMessages?:CoopChatMessage[];onChatSend?:(text:string)=>Promise<void>;potionOptions?:Array<{id:string;name:string;quantity:number;healPercent:number}>;preferredPotionId?:string;ownCharacterId?:string;onUsePotion?:(itemId:string)=>void}){
+export function CoopRunOverview({language,run,myVotedNodeId,selfVoter,onBack,onChoose,onPurchaseMerchant,onRefresh,onClaim,onQueueAgain,onPartyRematch,busy=false,notice,syncError,rewards=[],terminalAction,reduceMotion=false,seasonal=false,eventName,chatMessages=[],onChatSend,potionOptions=[],preferredPotionId,ownCharacterId,onUsePotion}:{language:Language;run:CoopRunView;myVotedNodeId?:string;selfVoter?:{name:string;profileIconId?:string|null;className?:string|null};onBack:()=>void;onChoose?:(nodeId:string)=>void;onPurchaseMerchant?:(offerId:string)=>void;onRefresh?:()=>void;onClaim?:(id:string)=>void;onQueueAgain?:{label:string;onPress:()=>void};onPartyRematch?:()=>void;busy?:boolean;notice?:string;syncError?:string;rewards?:CoopRewardDisplay[];terminalAction?:{label:string;claimed?:boolean;completeText?:string;onPress:()=>void};reduceMotion?:boolean;seasonal?:boolean;eventName?:string;chatMessages?:CoopChatMessage[];onChatSend?:(text:string)=>Promise<void>;potionOptions?:Array<{id:string;name:string;quantity:number;healPercent:number}>;preferredPotionId?:string;ownCharacterId?:string;onUsePotion?:(itemId:string)=>void}){
  const {styles:s}=useCoopStyles(makeStyles);
  const st=useSocialText(),a=(value:string)=>accountText(language,value);
   validateCoopRunView(run);
@@ -111,6 +113,8 @@ export function CoopRunOverview({language,run,myVotedNodeId,selfVoter,onBack,onC
      </View></FantasyPanel>:null}
     {run.phase==='resolving_node'&&!inCombat?<DungeonRoomResolution kind={run.selectedNodeKind} reduceMotion={reduceMotion}/>:null}
     {!!syncError&&<FantasyPanel variant="danger"><Text accessibilityRole="alert" style={s.title}>{a('Connection interrupted')}</Text><Text style={s.copy}>{a('Showing the last saved expedition progress. Reconnecting automatically.')}</Text><Text style={s.copy} numberOfLines={2}>{syncError}</Text>{onRefresh?<GameButton compact title={a('Retry connection')} tone="secondary" disabled={busy} onPress={onRefresh}/>:null}</FantasyPanel>}
+    <DungeonRoomOutcomeBanner outcome={run.phase==='awaiting_choice'?run.lastRoomOutcome:undefined}/>
+    {run.merchantShop?<DungeonMerchantPanel shop={run.merchantShop} busy={busy} onPurchase={onPurchaseMerchant}/>:null}
     {run.phase==='awaiting_choice'&&onUsePotion&&run.potionCharges?<FantasyPanel variant="selected">
       <View style={s.summary}><View style={s.grow}><Text style={s.title}>Healing potions</Text><Text style={s.copy}>Food is disabled. Healing potions restore dungeon HP between rooms and use the shared charge budget.</Text></View><StateChip label={`${run.potionCharges.remaining}/${run.potionCharges.max}`} tone={run.potionCharges.remaining>0?'success':'warning'}/></View>
       <View style={{flexDirection:'row',flexWrap:'wrap',gap:6}}>

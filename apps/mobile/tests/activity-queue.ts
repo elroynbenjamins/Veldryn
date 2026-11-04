@@ -74,7 +74,7 @@ ok(queuedActivityReadiness(alchemyQueued,alchemyQueued.character?.activityQueue?
 alchemyQueued=executeGameCommand(alchemyQueued,{type:'queue_start'},now).state;
 ok(alchemyQueued.activity?.kind==='alchemy'&&(alchemyQueued.activity.brew?.remainingBatches??0)>1,'Queue start launches an Alchemy run until the normal AFK cap');
 let alchemyHandoff=createCharacter(newGame(now),'WAYFINDER','Alchemy Handoff');
-alchemyHandoff={...alchemyHandoff,inventory:{...alchemyHandoff.inventory,stacks:[...alchemyHandoff.inventory.stacks,{itemId:'DEWLEAF',quantity:2}]}};
+alchemyHandoff={...alchemyHandoff,inventory:{...alchemyHandoff.inventory,stacks:[...alchemyHandoff.inventory.stacks,{itemId:'DEWLEAF',quantity:10}]}};
 alchemyHandoff=executeGameCommand(alchemyHandoff,{type:'queue_add',args:{kind:'alchemy',id:'BREW_DEWLEAF_DRAUGHT'}},now).state;
 alchemyHandoff=executeGameCommand(alchemyHandoff,{type:'queue_add',args:{kind:'gathering',id:'GREENWOOD_TREE',goal:{kind:'duration_seconds',value:60}}},now).state;
 alchemyHandoff=executeGameCommand(alchemyHandoff,{type:'queue_start'},now).state;

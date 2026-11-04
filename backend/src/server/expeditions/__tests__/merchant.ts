@@ -14,9 +14,13 @@ if(!merchant)throw new Error('route must expose a merchant fixture');
 let state=initialPersistentRunState(players);state={...state,resources:5};
 const resolved=resolveCoopNode({runId,serverSecret:secret,node:merchant,players,state});
 assert.equal(resolved.success,true);state=resolved.state;
+assert.equal(resolved.summary.kind,'merchant');
+assert.equal(resolved.summary.resourcesDelta,0);
+assert.equal(resolved.summary.healedHp,0);
 const offers=merchantOffers(merchant.contentId);assert.equal(offers.length,3);
 const purchased=purchaseMerchantOffer({runId,node:merchant,actorId:player.id,offerId:offers[0].id,state,players});
 assert.equal(purchased.state.resources,3);assert.deepEqual(purchased.state.personalEffects[player.id]?.boons,[`${merchant.contentId}:merchant_boon`]);
+assert.equal(purchased.summary.resourcesDelta,-2);assert.equal(purchased.summary.boonCount,1);assert.equal(purchased.summary.artifactCount,0);
 let duplicate='';try{purchaseMerchantOffer({runId,node:merchant,actorId:player.id,offerId:offers[0].id,state:purchased.state,players});}catch(error){duplicate=error instanceof Error?error.message:String(error)}
 assert.equal(duplicate,'merchant_offer_already_purchased');
 let poor='';try{purchaseMerchantOffer({runId,node:merchant,actorId:player.id,offerId:offers[1].id,state:{...purchased.state,resources:2},players});}catch(error){poor=error instanceof Error?error.message:String(error)}

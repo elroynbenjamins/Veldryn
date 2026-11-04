@@ -24,6 +24,7 @@ export interface CoopQuickStartBody {requestId:string;characterId:string;loadout
 export interface CoopLfgPublishBody {requestId:string;dungeonId:string;note?:string;}
 export interface CoopEventStartBody {requestId:string;eventExpeditionId:string;characterId:string;loadoutId:string;loadoutRevision:number;}
 export interface CoopDecisionBody {requestId:string;decisionId:string;decisionRevision:number;optionId:string;}
+export interface CoopMerchantPurchaseBody {requestId:string;expectedVersion:number;offerId:string;}
 export interface CoopReadyBody {requestId:string;rosterRevision:number;accept:boolean;}
 export interface CoopChatMessage {id:string;senderName:string;body:string;createdAt:number;}
 export interface CoopChatResponse {sent:boolean;messageId?:string;messages:CoopChatMessage[];}
@@ -89,6 +90,7 @@ export const coopClient={
   return data as {runId:string;stateVersion:number;gameVersion:number;healedHp:number;potionId:string;chargesRemaining:number;chargesMax:number};
  },
  eventRun:(runId:string)=>request<CoopEventRunServerProjection>(`/coop/event-runs/${runId}`),
+ purchaseMerchant:(runId:string,body:CoopMerchantPurchaseBody)=>mutate<CoopQModeServerProjection>(`/coop/runs/${runId}/merchant`,body),
  choose:(runId:string,body:CoopDecisionBody)=>mutate<CoopQModeServerProjection>(`/coop/runs/${runId}/choose`,body),
  chooseEvent:(runId:string,body:CoopDecisionBody)=>mutate<CoopEventRunServerProjection>(`/coop/event-runs/${runId}/choose`,body),
  claimEvent:(runId:string)=>mutate<CoopEventRunServerProjection>(`/coop/event-runs/${runId}/claim`,{requestId:coopRequestId()}),

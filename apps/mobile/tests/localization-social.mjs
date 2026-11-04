@@ -49,6 +49,15 @@ assert.equal(socialText('ru','{count} open slots',{count:2}),'Свободно �
 assert.equal(socialText('tr','PRIVATE PARTY INVITATIONS'),'ÖZEL GRUP DAVETLERİ');
 assert.equal(socialLabel('nl','Your Party is full.'),'Je groep zit vol.');
 assert.equal(socialLabel('nl','Unrecognized server error'),'Unrecognized server error');
+assert.equal(socialText('de','{current} OF {goal}',{current:2,goal:4}),'2 VON 4');
+assert.equal(socialText('es','{percent}% Guild Activity',{percent:60}),'60 % de actividad del gremio');
+assert.equal(socialText('nl','{count} members',{count:12}),'12 leden');
+assert.equal(socialText('it','{percent}% NEXT',{percent:80}),'PROSSIMO: 80%');
+assert.equal(socialText('fr','RALLY III'),'RALLYE III');
+assert.equal(socialText('ru','{current} OF {goal}',{current:1,goal:4}),'1 ИЗ 4');
+assert.equal(socialText('tr','Earn 1 Rally Mark at {count} points today.',{count:25}),'Bugün 25 puanda 1 Ralli İşareti kazan.');
+assert.equal(socialLabel('de','Gathering Momentum'),'Sammel-Schwung');
+assert.equal(socialLabel('nl','+5% crafting and processing speed.'),'+5% maak- en verwerkingssnelheid.');
 const bossNames={en:'Rootbound Colossus',de:'Wurzelkoloss',es:'Coloso arraigado',nl:'Wortelkolos',it:'Colosso radicato',fr:'Colosse enraciné',ru:'Rootbound Colossus',tr:'Rootbound Colossus'};
 for(const language of SUPPORTED_LANGUAGES){
  assert.deepEqual(Object.keys(socialCatalogs[language]).sort(),keys);

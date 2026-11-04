@@ -14,6 +14,8 @@ export interface PersistentRunState {
   curses:string[];
   personalEffects:Record<string,{boons:string[];artifacts:string[];purchases:string[]}>;
   visitedNodeIds:string[];
+  /** Shared per-run Alchemy potion charge usage; authoritative dungeon RPC is the only mutator. */
+  potionChargesUsed?:number;
 }
 export interface NodeResolutionResult {success:boolean;state:PersistentRunState;summary:Record<string,unknown>}
 export interface MerchantOffer {id:string;label:string;cost:number;kind:'boon'|'artifact'|'salve'}
@@ -22,7 +24,7 @@ const COMBAT_KINDS=new Set(['battle','elite','boss']);
 const IMPLEMENTED_NONCOMBAT=new Set(['event','camp','shrine','treasure','forge','merchant','echo','risk','secret']);
 
 export function initialPersistentRunState(players:readonly CombatantDefinition[]):PersistentRunState{
- return {actors:Object.fromEntries(players.map(player=>[player.id,{hp:player.stats.maxHp,downed:false,cooldownRemainingMs:{},basicAttackRemainingMs:0}])),resources:0,boons:[],artifacts:[],curses:[],personalEffects:{},visitedNodeIds:[]};
+ return {actors:Object.fromEntries(players.map(player=>[player.id,{hp:player.stats.maxHp,downed:false,cooldownRemainingMs:{},basicAttackRemainingMs:0}])),resources:0,boons:[],artifacts:[],curses:[],personalEffects:{},visitedNodeIds:[],potionChargesUsed:0};
 }
 
 export function merchantOffers(contentId:string):readonly MerchantOffer[]{

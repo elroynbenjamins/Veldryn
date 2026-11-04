@@ -15,6 +15,7 @@ function echo(accountId:string,classId:string,characterId:string):PublishedEcho{
 const profiles=[echo('tank-owner','Ironwarden','tank-char'),echo('damage-owner-1','Wayfinder','damage-char-1'),echo('damage-owner-dup','Wayfinder','damage-char-dup'),echo('damage-owner-2','Ravager','damage-char-2'),echo('support-owner','Stonecaller','support-char')];
 const repository=new MemoryQModeRunRepository();const firstService=new QModeService(repository,'q-secret-success');
 let run=firstService.create({requestId:'request-1',runId:'q-run-1',controllerAccountId:'controller',controllerSnapshot:frozen('controller','Dawnkeeper','controller-char'),expeditionId:'EXP_001',tier:1,contentVersion:'v1',balanceVersion:'b1',nowMs:10_000,profiles});
+assert.equal(run.persistentState.potionChargesUsed,0,'New runs start with no potion charges consumed');
 assert.equal(run.players.length,4);assert.equal(run.qmodePressureVersion,1,'New Q-Mode runs use stronger Echo/NPC enemy hits');assert.equal(new Set(run.echoSourceAccountIds).size,3);assert.equal(run.phase,'awaiting_choice');
 const damageClasses=run.players.filter(player=>player.role==='damage').map(player=>player.classId);assert.equal(damageClasses.length,2);assert.equal(new Set(damageClasses).size,2,'Q-Mode must choose two different Damage classes even if duplicate-class Echoes are available');
 assert.equal(firstService.create({requestId:'request-1',runId:'different',controllerAccountId:'controller',controllerSnapshot:frozen('controller','Dawnkeeper','controller-char'),expeditionId:'EXP_001',tier:1,contentVersion:'v1',balanceVersion:'b1',nowMs:10_000,profiles}).id,'q-run-1');
@@ -25,6 +26,7 @@ for(let depth=1;depth<=run.graph.preBossNodeCount;depth++){
 }
 run=resumedService.choose({runId:run.id,controllerAccountId:'controller',optionNodeId:'boss'});assert.equal(run.phase,'completed');assert.ok((run.rewardMarks??0)>0);
 assert.equal(run.persistentState.visitedNodeIds.length,run.graph.preBossNodeCount+1);
+assert.deepEqual(projectQModeRun(run).potionCharges,{used:0,max:3,remaining:3},'Run charge budget is server projected');
 console.log('coop phase6 qmode OK',JSON.stringify({echoes:run.echoSourceAccountIds.length,preBoss:run.graph.preBossNodeCount,rewardMarks:run.rewardMarks}));
 
 // Production NPC fallback: preserve roles, unique DPS and real Echo preference.

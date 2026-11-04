@@ -1,5 +1,5 @@
 import type {CoopRole} from './coop-ui-contract';
-import {parseCoopEncounterPreview,validateCoopRunView,type CoopCombatReplayView,type CoopEncounterPreviewView,type CoopRunView} from './coop-presentation';
+import {parseCoopEncounterPreview,validateCoopRunView,type CoopCombatReplayView,type CoopEncounterPreviewView,type CoopRunView,type CoopRoomOutcomeView} from './coop-presentation';
 
 export type CoopEventExpeditionStatus='preview'|'available';
 

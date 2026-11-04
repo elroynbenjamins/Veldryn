@@ -1,21 +1,24 @@
-# Temporary trusted generator. Remove after generated files are committed.
-name: Regenerate dungeon potion Edge bundles temporary
+name: Temporary dungeon potion Edge bundle sync
+
 on:
-  pull_request:
+  push:
+    branches: [feat/dungeon-crafted-healing-potions-106]
     paths:
       - '.github/workflows/regenerate-dungeon-potion-edge-temp.yml'
       - 'backend/online/**'
       - 'backend/src/**'
+  workflow_dispatch:
+
 permissions:
   contents: write
+
 jobs:
-  generate:
-    if: ${{ github.event.pull_request.head.ref == 'feat/dungeon-crafted-healing-potions-106' && github.event.pull_request.head.repo.full_name == github.repository }}
+  regenerate:
+    if: github.actor != 'github-actions[bot]'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
         with:
-          ref: ${{ github.event.pull_request.head.ref }}
           persist-credentials: true
       - uses: pnpm/action-setup@v4
         with:
@@ -23,18 +26,22 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 22
-      - name: Install dependencies
+          cache: pnpm
+          cache-dependency-path: backend/pnpm-lock.yaml
+      - name: Install pinned backend tooling
+        run: pnpm install --frozen-lockfile
+        working-directory: backend
+      - name: Regenerate canonical gameplay and co-op bundles
+        run: node tools/build-online.mjs
+      - name: Verify gameplay bundle parity
+        run: node tools/verify-gameplay-edge.mjs
+      - name: Commit generated bundles to feature branch
         run: |
-          pnpm --dir backend install --frozen-lockfile
-          pnpm --dir apps/mobile install --frozen-lockfile
-      - name: Regenerate authoritative online Edge source
-        run: pnpm --dir backend build:online
-      - name: Commit generated artifacts only
-        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add backend/supabase/functions/gameplay/index.ts backend/supabase/functions/coop/index.ts
           if ! git diff --cached --quiet; then
-            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-            git config user.name "github-actions[bot]"
-            git commit -m "Regenerate online Edge bundles for dungeon potion integration"
-            git push origin "HEAD:${{ github.event.pull_request.head.ref }}"
+            git commit -m "build(coop): synchronize crafted dungeon potion Edge bundles"
+            git push origin HEAD:feat/dungeon-crafted-healing-potions-106
           fi

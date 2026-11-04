@@ -1,4 +1,5 @@
 import {useSocialText} from '../i18n/social';
+import {useGuildActivityUiText} from '../i18n/guild-activity-ui';
 import {useCallback,useEffect,useMemo,useState} from 'react';
 import {AppState,Pressable,StyleSheet,Text,View} from 'react-native';
 import {Panel} from './Panel';
@@ -38,35 +39,35 @@ export function GuildQuestPanel(){
 
 /** Shared projection renderer for production and memory-only visual fixtures. */
 export function GuildQuestBoard({quests}:{quests:OnlineGuildQuest[]}){
- const st=useSocialText(),C=useGameTheme(),s=useMemo(()=>styles(C),[C]);
+ const st=useSocialText(),{ui}=useGuildActivityUiText(),C=useGameTheme(),s=useMemo(()=>styles(C),[C]);
  const completed=quests.filter(q=>q.completed).length,totalActivity=quests.filter(q=>q.completed).reduce((sum,q)=>sum+q.activityReward,0);
  const remaining=quests.length?Math.max(0,Math.ceil((Date.parse(quests[0].weekEndsAt)-Date.now())/86400000)):0;
  const ordered=[...quests].sort((a,b)=>Number(a.completed)-Number(b.completed)||Number(b.featured)-Number(a.featured)||a.boardSlot-b.boardSlot);
  const transition=quests.find(q=>q.newlyCompleted&&q.activityBeforePercent!=null&&q.activityAfterPercent!=null);
  return <QuestBoard style={s.board}>
-  <View style={s.head}><View style={s.flex}><Text accessibilityRole="header" style={s.title}>{st('Guild Quests')}</Text><Text style={s.copy}>{completed} / {quests.length} completed · +{totalActivity} {st('ACTIVITY EARNED')}</Text></View>{quests.length?<StatusPill label={remaining<=1?st('ENDS SOON'):remaining+'D LEFT'} tone={remaining<=1?'warning':'info'}/>:null}</View>
+  <View style={s.head}><View style={s.flex}><Text accessibilityRole="header" style={s.title}>{st('Guild Quests')}</Text><Text style={s.copy}>{ui('{completed}/{total} completed · +{activity} Activity earned',{completed,total:quests.length,activity:totalActivity})}</Text></View>{quests.length?<StatusPill label={remaining<=1?st('ENDS SOON'):ui('{days}d left',{days:remaining})} tone={remaining<=1?'warning':'info'}/>:null}</View>
   {transition?<ActivityTransition quest={transition}/>:null}
-  {!quests.length?<Text style={s.copy}>No quests available. Check back later.</Text>:null}
+  {!quests.length?<Text style={s.copy}>{ui('No quests available. Check back later.')}</Text>:null}
   {ordered.map(q=><Quest key={`${q.boardSlot}:${q.questKey}`} quest={q}/>)}
-  {quests.length?<Text style={s.foot}>5 quests per week · No rerolls.</Text>:null}
+  {quests.length?<Text style={s.foot}>{ui('5 quests per week · No rerolls.')}</Text>:null}
  </QuestBoard>;
 }
 function ActivityTransition({quest:q}:{quest:OnlineGuildQuest}){
- const st=useSocialText(),C=useGameTheme(),s=useMemo(()=>styles(C),[C]),before=q.activityBeforePercent??0,after=q.activityAfterPercent??before;
+ const st=useSocialText(),{ui,milestone}=useGuildActivityUiText(),C=useGameTheme(),s=useMemo(()=>styles(C),[C]),before=q.activityBeforePercent??0,after=q.activityAfterPercent??before;
  const crossed=GUILD_ACTIVITY_MILESTONE_DEFS.filter(m=>before<m.threshold&&after>=m.threshold);
- return <View accessibilityRole="alert" style={s.transition}><Text style={s.title}>{st('Guild Activity increased')} · {before}% → {after}%</Text><Text style={s.copy}>{q.title} completed · +{q.activityReward} Activity units.{after>100?` Reserve ${after-100}/10%.`:''}</Text>{crossed.map(m=><Text key={m.threshold} style={s.reward}>✓ {m.name} active · {m.description}</Text>)}</View>;
+ return <View accessibilityRole="alert" style={s.transition}><Text style={s.title}>{st('Guild Activity increased')} · {before}% → {after}%</Text><Text style={s.copy}>{ui('{quest} completed · +{activity} Activity units.',{quest:q.title,activity:q.activityReward})}{after>100?' '+ui('Reserve {reserve}/10%.',{reserve:after-100}):''}</Text>{crossed.map(m=><Text key={m.threshold} style={s.reward}>✓ {ui('{name} active · {description}',{name:milestone(m.name),description:milestone(m.description)})}</Text>)}</View>;
 }
 function Quest({quest:q}:{quest:OnlineGuildQuest}){
- const st=useSocialText(),C=useGameTheme(),s=useMemo(()=>styles(C),[C]),[expanded,setExpanded]=useState(false),rarity=rarityMeta(q.rarity);
+ const st=useSocialText(),{ui}=useGuildActivityUiText(),C=useGameTheme(),s=useMemo(()=>styles(C),[C]),[expanded,setExpanded]=useState(false),rarity=rarityMeta(q.rarity);
  const duration=q.estimatedMinutes>=60?`${q.estimatedMinutes/60}h`:`${q.estimatedMinutes}m`;
  return <QuestPosting style={q.completed?s.done:undefined}>
-  <View style={s.head}><View style={s.flex}><Text style={s.category}>{q.featured?'FEATURED · ':''}{q.category.toUpperCase()} · {rarity.label.toUpperCase()} · ~{duration}</Text><Text accessibilityRole="header" style={s.questTitle}>{q.title}</Text></View><ActivityArtwork id={q.category==='Combat'?'combat':q.category==='Crafting'?'smithing':q.category==='Skilling'?'herbalism':'exploration'} size={42}/></View>
+  <View style={s.head}><View style={s.flex}><Text style={s.category}>{q.featured?ui('FEATURED · '):''}{q.category.toUpperCase()} · {rarity.label.toUpperCase()} · ~{duration}</Text><Text accessibilityRole="header" style={s.questTitle}>{q.title}</Text></View><ActivityArtwork id={q.category==='Combat'?'combat':q.category==='Crafting'?'smithing':q.category==='Skilling'?'herbalism':'exploration'} size={42}/></View>
   {q.completed?<StatusPill label={st('COMPLETE')} tone="good"/>:null}
   <Text style={s.copy}>{q.description}</Text>
-  <StatBar rounded label="Shared guild progress" current={Math.min(q.progress,q.target)} max={q.target}/>
-  <View style={s.personal}><Text style={s.personalLabel}>{st('YOUR CONTRIBUTION')}</Text>{q.personalProgress.length?q.personalProgress.map(o=><Text key={o.key} style={s.copy}>{objectiveLabel(o.key)}: {Math.min(o.progress,o.target).toLocaleString()} / {o.target.toLocaleString()}</Text>):<Text style={s.copy}>No contribution recorded yet.</Text>}<Text style={s.foot}>{q.contributorCount} contributor{q.contributorCount===1?'':'s'} · daily contribution capped</Text></View>
-  <Text style={s.reward}>+{q.activityReward} {q.completed?'Guild Activity secured':'Guild Activity on completion'}</Text>
-  {q.objectiveProgress.length?<><Pressable accessibilityRole="button" aria-expanded={expanded} accessibilityState={{expanded}} accessibilityLabel={`Objective breakdown · ${q.title}`} onPress={()=>setExpanded(value=>!value)} style={s.disclosure}><Text style={s.disclosureText}>Objective breakdown</Text><Text style={s.disclosureText}>{expanded?'−':'+'}</Text></Pressable>{expanded?q.objectiveProgress.map(o=><Text key={o.key} style={s.copy}>{objectiveLabel(o.key)}: {Math.min(o.progress,o.target).toLocaleString()} / {o.target.toLocaleString()}</Text>):null}</>:null}
+  <StatBar rounded label={ui("Shared guild progress")} current={Math.min(q.progress,q.target)} max={q.target}/>
+  <View style={s.personal}><Text style={s.personalLabel}>{st('YOUR CONTRIBUTION')}</Text>{q.personalProgress.length?q.personalProgress.map(o=><Text key={o.key} style={s.copy}>{objectiveLabel(o.key)}: {Math.min(o.progress,o.target).toLocaleString()} / {o.target.toLocaleString()}</Text>):<Text style={s.copy}>{ui("No contribution recorded yet.")}</Text>}<Text style={s.foot}>{ui(q.contributorCount===1?'{count} contributor · daily contribution capped':'{count} contributors · daily contribution capped',{count:q.contributorCount})}</Text></View>
+  <Text style={s.reward}>{ui(q.completed?'+{activity} Guild Activity secured':'+{activity} Guild Activity on completion',{activity:q.activityReward})}</Text>
+  {q.objectiveProgress.length?<><Pressable accessibilityRole="button" aria-expanded={expanded} accessibilityState={{expanded}} accessibilityLabel={ui("Objective breakdown · {quest}",{quest:q.title})} onPress={()=>setExpanded(value=>!value)} style={s.disclosure}><Text style={s.disclosureText}>{ui("Objective breakdown")}</Text><Text style={s.disclosureText}>{expanded?'−':'+'}</Text></Pressable>{expanded?q.objectiveProgress.map(o=><Text key={o.key} style={s.copy}>{objectiveLabel(o.key)}: {Math.min(o.progress,o.target).toLocaleString()} / {o.target.toLocaleString()}</Text>):null}</>:null}
  </QuestPosting>;
 }
 function objectiveLabel(key:string){return key.replace(/_/g,' ').replace(/\b\w/g,m=>m.toUpperCase());}

@@ -18,6 +18,9 @@ check(gatheringDropPercent(.0175)==='1.75%','Regional botanical base chance form
 const copper=preview('COPPER_VEIN');
 check(copper[0].kind==='yield'&&copper[0].min===1&&copper[0].max===2,'Copper shows actual primary resource quantity');
 check(copper.some(row=>row.kind==='pet'&&row.name==='Pebblemole'&&row.chance===.0012&&row.locked),'Copper pet uses canonical drop rule and unlock');
+check(preview('GREENFIELDS_COPPER_OUTCROP').some(row=>row.kind==='essence'&&row.itemId==='ASTERFALL_MINERAL_ESSENCE'&&row.chance===.02),'Starting-area Mining discloses its rare mineral find and exact base chance');
+check(preview('COPPER_VEIN').some(row=>row.kind==='essence'&&row.itemId==='ASTERFALL_MINERAL_ESSENCE'&&row.chance===.02),'Old Mines Mining discloses the same rare mineral find');
+check(preview('SUNSTONE_OUTCROP').every(row=>row.itemId!=='ASTERFALL_MINERAL_ESSENCE'),'Asterfall essence must not appear from unrelated late-tier mining');
 check(preview('GREENWOOD_TREE').some(row=>row.kind==='pet'&&row.name==='Twiglet'&&row.chance===.0012),'Greenwood shows Twiglet instead of invented pet');
 check(preview('IRONWOOD_TREE').every(row=>row.kind!=='pet'),'A node without a pet rule must not advertise a pet');
 check(preview('SILVERBROOK_SHOAL').some(row=>row.kind==='pet'&&row.name==='Silverfin'),'Fishing uses exact source-to-pet mapping');

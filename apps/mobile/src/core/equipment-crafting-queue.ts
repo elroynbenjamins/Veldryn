@@ -8,6 +8,7 @@ import {levelFromXp,totalXpAtLevel} from './progression';
 import type {EquipmentCraftJob,GameState,ItemStack,SkillState} from './types';
 import {craftClaimSubRoll,craftedInstanceResult,createCraftedGearInstance,draftCraftedGearInstance,craftedGearCopyCapacity,craftedGearInstances} from './crafted-gear-instances';
 import {auditCraftedGearOwnership,disposeCraftedGearInstance} from './crafted-gear-ownership';
+import {storeForgedEquipmentInPouch} from './equipment-pouch';
 import {proposeCraftedGearSettlement} from './crafted-gear-settlement';
 import type {CraftedGearRetentionEntry} from './crafted-gear-retention';
 import {gemCombineRecipeV1,gemRefineRecipeV1,isGemFamilyRecipeUnlockedV1} from './gem-progression-v1';
@@ -268,7 +269,7 @@ function forgeOwnedCopyLocations(state:GameState,itemId:string):CraftedGearReten
       const value=c?.gearEnhancements?.[itemId];
       return !!value&&(value.rank>0||!!value.statGemId||!!value.effectGemId||(value.gemIds?.length??0)>0);
     });
-    const accessible=loc.place==='bank'||loc.place==='inventory'&&loc.holderCharacterId===state.character?.id;
+    const accessible=loc.place==='bank'||(loc.place==='inventory'||loc.place==='equipment_pouch')&&loc.holderCharacterId===state.character?.id;
     return {
       instance,location:loc.place==='overflow'?'unknown':loc.place,
       holderCharacterId:loc.holderCharacterId,
@@ -283,11 +284,13 @@ function forgeOwnedCopyLocations(state:GameState,itemId:string):CraftedGearReten
 function craftGearPhysicalCopies(state:GameState,itemId:string){
   const count=(rows:ItemStack[])=>rows.reduce((n,row)=>n+(row.itemId===itemId?row.quantity:0),0);
   const equipped=(equipment:Record<string,string|undefined>)=>Object.values(equipment).filter(id=>id===itemId).length;
-  return count(state.inventory.stacks)+count(state.bank.stacks)+count(state.overflow.stacks)
+  return count(state.inventory.stacks)+count(state.equipmentPouch?.stacks??[])+count(state.bank.stacks)+count(state.overflow.stacks)
     +equipped(state.character?.equipment??{})
-    +(state.otherCharacters??[]).reduce((n,row)=>n+count(row.inventory.stacks)+count(row.overflow.stacks)+equipped(row.character.equipment),0);
+    +(state.otherCharacters??[]).reduce((n,row)=>n+count(row.inventory.stacks)+count(row.equipmentPouch?.stacks??[])+count(row.overflow.stacks)+equipped(row.character.equipment),0);
 }
 function deliverExactForgeCopy(state:GameState,itemId:string,instanceId:string,ownerId:string){
+  const pouched=storeForgedEquipmentInPouch(state,itemId,instanceId,ownerId);
+  if(pouched)return pouched;
   const stack:ItemStack={itemId,quantity:1,instanceId};
   const invAllowed=state.character?.id===ownerId&&state.inventory.stacks.length<state.inventory.capacity;
   if(invAllowed)return {...state,inventory:{...state.inventory,stacks:[...state.inventory.stacks,stack]}} as GameState;

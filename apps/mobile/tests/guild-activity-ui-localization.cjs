@@ -10,7 +10,9 @@ function compile(mod,filename){
 require.extensions['.ts']=compile;
 require.extensions['.tsx']=compile;
 const {SUPPORTED_LANGUAGES}=require('../src/i18n/languages.ts');
-const {guildActivityUiRows,guildActivityUiText,guildMilestoneText,guildMilestoneEarlyRows}=require('../src/i18n/guild-activity-ui.ts');
+const {guildActivityUiRows,guildActivityUiText,guildMilestoneText}=require('../src/i18n/guild-activity-ui.ts');
+const {socialTranslationRows}=require('../src/i18n/social.ts');
+const {EARLY_LOCALE_ROWS}=require('../src/i18n/early-locales.ts');
 const {GUILD_ACTIVITY_MILESTONE_DEFS}=require('../src/core/guild-activity.ts');
 const expected=30,legacy=['de','es','nl','it','fr','ru','tr'],placeholders=value=>[...value.matchAll(/\{([a-zA-Z][a-zA-Z0-9_]*)\}/g)].map(match=>match[1]).sort();
 assert.equal(Object.keys(guildActivityUiRows).length,expected,'All current authored Guild Quest/Activity labels covered');

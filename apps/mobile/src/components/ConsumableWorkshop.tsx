@@ -112,7 +112,7 @@ export function ConsumableWorkshop({state,skillId,preferredRecipeId,onStart}:Pro
   <GameModalSurface visible={!!detail} reduceMotion={state.settings.reduceMotion} onClose={()=>setDetailId(null)} surfaceStyle={s.detailModal}>
     {detail?<>
       <GameModalHeader title={itemDef(detail.output.itemId).name} onClose={()=>setDetailId(null)} closeDisabled={busy}/>
-      <ScrollView style={s.detailScroll} contentContainerStyle={s.detailContent} keyboardShouldPersistTaps="handled">
+      <ScrollView style={s.detailScroll} contentContainerStyle={s.detailContent} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false} showsHorizontalScrollIndicator={false}>
         <View style={s.line}><ItemArtwork itemId={detail.output.itemId} size={52}/><Text style={[s.caption,{color:C.good,flex:1}]}>{benefit(detail)}</Text></View>
         {mealBonusDef(detail.output.itemId)?<Text style={[s.buff,{color:C.good}]}>{mealBonusDef(detail.output.itemId)!.label} · {mealBonusDef(detail.output.itemId)!.durationHours}h · {gt('Eat for Bonus in Inventory')}</Text>:null}
         <Text style={[s.caption,{color:C.muted}]}>{gt('Per batch')}: {detail.output.quantity} {gt('items')} · {detail.gold} Gold · {timeLabel(professionActionPace(state,detail,'batch').cycleSeconds)}</Text>

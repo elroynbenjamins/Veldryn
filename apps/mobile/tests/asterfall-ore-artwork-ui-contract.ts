@@ -13,4 +13,21 @@ ok(resolver.includes('hasAsterfallOreArtwork(itemId)'),'Shared resolver must rec
 const oreIndex=artwork.indexOf('const asterfallOre=asterfallOreCell(itemId)');
 const sourceIndex=artwork.indexOf('const source=resourceIconSource(itemId)');
 ok(sourceIndex>=0&&oreIndex>sourceIndex,'Bundled resource PNGs must render first, with ore atlas fallback');
+// The approved Asterfall Mineral Essence must use a real transparent PNG, not
+// the generic fallback icon or an incomplete resource atlas entry.
+const fsBinary=require('fs') as {readFileSync:(path:string)=>Uint8Array};
+const mineralIconPath='assets/items/resources/asterfall_mineral_essence.png';
+ok(resolver.includes("ASTERFALL_MINERAL_ESSENCE:require('../../"+mineralIconPath+"')"),
+  'Asterfall Mineral Essence must resolve the actual approved direct icon');
+const icon=fsBinary.readFileSync(mineralIconPath);
+ok(icon.length>1000&&icon[0]===137&&icon[1]===80&&icon[2]===78&&icon[3]===71,
+  'Approved mineral icon must be a nonempty PNG');
+const width=(icon[16]*2**24+icon[17]*2**16+icon[18]*256+icon[19]);
+const height=(icon[20]*2**24+icon[21]*2**16+icon[22]*256+icon[23]);
+ok(width===256&&height===256,'Mineral resource icon must use the 256×256 export size');
+const colorType=icon[25];
+ok(colorType===6||(colorType===3&&Buffer.from(icon).includes(Buffer.from('tRNS'))),
+  'Approved mineral icon must contain transparency');
+ok(artwork.includes('const source=resourceIconSource(itemId)'),
+  'Mining drop, item inventory, Codex and material cost views must share resource artwork');
 console.log('PASS: unified Asterfall ore visuals override older standalone resource artwork');

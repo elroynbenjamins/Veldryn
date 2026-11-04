@@ -7,9 +7,6 @@ import {useMemo} from 'react';
 // Every row is complete, in en/de/es/nl/it/fr order. English phrases are typed keys.
 type TranslationRow=readonly [string,string,string,string,string,string];
 const common={
- // Guild Muster labels required by current mobile UI validation.
- 'Play together. Earn rewards.':['Play together. Earn rewards.','Spielt gemeinsam. Verdient Belohnungen.','Jugad juntos. Ganad recompensas.','Speel samen. Verdien beloningen.','Giocate insieme. Ottenete ricompense.','Jouez ensemble. Gagnez des récompenses.'],
- 'Your week':['Your week','Deine Woche','Tu semana','Jouw week','La tua settimana','Votre semaine'],
  // Equipment comparison parity: live combat modifiers vs pending set hooks.
  "Other combat bonuses changed":["Other combat bonuses changed","Andere Kampfboni geändert","Cambian otros bonos de combate","Andere gevechtsbonussen gewijzigd","Altri bonus di combattimento cambiati","Autres bonus de combat modifiés"],
  "6-piece trigger not active":["6-piece trigger not active","6er-Seteffekt noch nicht aktiv","Efecto de 6 piezas aún inactivo","6-delig seteffect nog niet actief","Effetto da 6 pezzi non ancora attivo","Effet 6 pièces pas encore actif"],

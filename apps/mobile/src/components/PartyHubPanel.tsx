@@ -148,7 +148,7 @@ export function PartyHubPanel(props: PartyHubPanelProps){
   </>:null}
   {!inParty?<View style={s.panel}>
    <View style={s.between}><View style={s.flex}><Text style={s.eyebrow}>{st('START A TEAM')}</Text><Text style={s.sectionTitle}>{st('Create a Party')}</Text></View><Text style={s.statusPill}>{st('Up to 4')}</Text></View>
-   <Text style={s.muted}>'Choose activity, language and minimum level.'</Text>
+   <Text style={s.muted}>{st('Choose activity, language and minimum level.')}</Text>
    {!props.dedicated?props.recruitmentPreferences:null}
    <GameButton title={st('Create Party')} disabled={!props.onCreateParty} onPress={()=>props.onCreateParty?.()}/>
    {props.dedicated?<GameButton tone="secondary" title="Find a Party" onPress={()=>props.onOpenRecruitment?.()}/>:null}

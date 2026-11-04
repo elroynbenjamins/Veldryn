@@ -21,6 +21,7 @@ const {socialTranslationRows,socialCatalogs,socialText,socialLabel,socialExpiry,
 const {socialEarlyRows}=load('social-early-coverage');
 const {SUPPORTED_LANGUAGES}=load('languages');
 const {GameLanguageProvider}=load('GameLanguageProvider');
+const placeholders=text=>[...text.matchAll(/\{([a-zA-Z][a-zA-Z0-9_]*)\}/g)].map(match=>match[1]).sort();
 const keys=Object.keys(socialTranslationRows).sort();
 const sourceAdditions=[
   "Uses your verified role and sends you to the eligible dungeon where your role helps matchmaking most. The matched party still uses Auto Tier.",
@@ -65,7 +66,6 @@ assert.equal(socialText('nl','Your post · {name} · {time}',{name:'Ironwood Wol
 assert.equal(socialText('de','Combat details for {name}',{name:'Person {count}'}),'Kampfdetails für Person {count}');
 assert.equal(socialLabel('tr','Unrecognized player post const keys=Object.keys(socialTranslationRows).sort();'),'Unrecognized player post const keys=Object.keys(socialTranslationRows).sort();');
 
-const placeholders=text=>[...text.matchAll(/\{([a-zA-Z][a-zA-Z0-9_]*)\}/g)].map(match=>match[1]).sort();
 assert.equal(socialText('ru','Your week'),'Ваша неделя');
 assert.equal(socialText('tr','Your week'),'Bu hafta');
 assert.equal(socialText('ru','Boss room'),'Комната босса');

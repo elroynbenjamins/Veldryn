@@ -37,7 +37,10 @@ assert.equal(guildActivityUiText('fr','Objective breakdown · {quest}',{quest:'Q
 assert.equal(guildActivityUiText('en','Guild Activity details'),'Guild Activity details');
 const milestoneSource=GUILD_ACTIVITY_MILESTONE_DEFS.flatMap(row=>[row.name,row.description]);
 assert.equal(milestoneSource.length,10);
-assert.deepEqual(Object.keys(guildMilestoneEarlyRows).sort(),milestoneSource.sort(),'RU/TR milestone keys must match authoritative content');
+for(const key of milestoneSource){
+ assert.ok(Object.prototype.hasOwnProperty.call(socialTranslationRows,key),'Legacy milestone translation missing: '+key);
+ assert.ok(Object.prototype.hasOwnProperty.call(EARLY_LOCALE_ROWS,key),'Existing RU/TR milestone translation missing: '+key);
+}
 for(const row of GUILD_ACTIVITY_MILESTONE_DEFS){
  for(const language of legacy){
   assert.ok(guildMilestoneText(language,row.name).trim());

@@ -8,7 +8,7 @@ The project is in **active pre-release development**. The offline/solo game loop
 
 Recent production work on main includes:
 
-- **Expo SDK 57** with React Native 0.86.3, React 19.2.3, TypeScript 6, Android edge-to-edge handling, Node 22 build profiles, and Expo Doctor in CI.
+- **Expo SDK 58** with React Native 0.88.1, React 19.3.0, TypeScript 6, Android edge-to-edge handling, Node 22 build profiles, and Expo Doctor in CI.
 - Android release-bundle validation on **Android API 36**.
 - Native **Google Sign-In** account linking/recovery and **Google Play Games Services v2** integration.
 - Guest-first accounts with email verification recovery, password setup, and preservation of the original account/character ownership when linking.
@@ -112,9 +112,9 @@ Permanent tiers stack independently. Supporter can stack with them. Paid premium
 
 ## Technology
 
-- Expo SDK 57
-- React Native 0.86.3
-- React 19.2.3
+- Expo SDK 58
+- React Native 0.88.1
+- React 19.3.0
 - TypeScript 6
 - Supabase Auth / PostgreSQL / RLS / Realtime / RPCs
 - EAS Build
@@ -137,6 +137,8 @@ Android package: **com.elroybenjamins.veldryn**
     docs/implementation/         Current system contracts, status documents, QA/release notes
     docs/sources/                Canonical design workbooks and supporting source material
     tools/                       Validation, asset optimization, migration, and review utilities
+
+Generated legacy preview packs and historical design exports formerly kept under `output/` have been retired from the active tree. They remain recoverable from earlier Git commits; `output/` is gitignored and is not a build input. Keep only the latest canonical master workbook under `docs/sources/`. Never delete deployed SQL migrations or production art under `apps/mobile/assets/` as documentation cleanup.
 
 ## Source of truth
 

@@ -42,6 +42,7 @@
   "tests/guild-quest-authored-localization.cjs",
   "tests/guild-project-authored-localization.cjs",
   "tests/dungeon-encounter-preview-localization.cjs",
+  "tests/seasonal-dungeon-localization.cjs",
   "tests/equipment-metadata-localization.cjs",
   ".core-build/apps/mobile/tests/class-selection.js",
   ".core-build/apps/mobile/tests/character-creation-onboarding.js",

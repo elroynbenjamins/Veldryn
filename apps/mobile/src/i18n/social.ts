@@ -6,6 +6,23 @@ import {createTranslator,type TranslationParams} from './translator';
 
 // Columns are German, Spanish, Dutch, Italian and French; keys are the English catalog.
 export const socialTranslationRows = {
+ "Choose a room": ["Raum wählen","Elegir sala","Kies een kamer","Scegli una stanza","Choisir une salle"],
+ "Vote on a route": ["Über Route abstimmen","Votar por una ruta","Stem op een route","Vota un percorso","Voter pour un itinéraire"],
+ "BOSS OUTLOOK": ["BOSSAUSBLICK","PRÓXIMO JEFE","BOSSVOORUITZICHT","ANTEPRIMA BOSS","APERÇU DU BOSS"],
+ "phase": ["Phase","fase","fase","fase","phase"],
+ "phases": ["Phasen","fases","fasen","fasi","phases"],
+ "Boss details": ["Bossdetails","Detalles del jefe","Bossdetails","Dettagli del boss","Détails du boss"],
+ "Hide boss details": ["Bossdetails verbergen","Ocultar detalles del jefe","Bossdetails verbergen","Nascondi dettagli del boss","Masquer les détails du boss"],
+ "PHASES": ["PHASEN","FASES","FASEN","FASI","PHASES"],
+ "Objective-sensitive": ["Vom Ziel abhängig","Sensible al objetivo","Afhankelijk van doel","Sensibile all'obiettivo","Dépend de l'objectif"],
+ "ABILITIES": ["FÄHIGKEITEN","HABILIDADES","VAARDIGHEDEN","ABILITÀ","CAPACITÉS"],
+ "cast": ["Zauberzeit","lanzamiento","spreektijd","lancio","incantation"],
+ "cooldown": ["Abklingzeit","recarga","afkoeltijd","ricarica","recharge"],
+ "SUPPRESSED": ["UNTERDRÜCKT","SUPRIMIDO","ONDERDRUKT","SOPPRESSO","SUPPRIMÉ"],
+ "Hide boss recap": ["Bossrückblick verbergen","Ocultar resumen del jefe","Bossverslag verbergen","Nascondi riepilogo del boss","Masquer le bilan du boss"],
+ "Boss recap": ["Bossrückblick","Resumen del jefe","Bossverslag","Riepilogo del boss","Bilan du boss"],
+ "down": ["K. o.","caída","neer","a terra","à terre"],
+ "downs": ["K. o.","caídas","neer","a terra","à terre"],
  // Guild festival encounter expiry: rewards are accessible after the boss closes.
  "Unclaimed event rewards":["Nicht abgeholte Eventbelohnungen","Recompensas del evento sin reclamar","Niet-geclaimde evenementbeloningen","Ricompense evento non riscosse","Récompenses d'événement non réclamées"],
  "The event boss has ended. Earned rewards remain claimable until the deadline.":["Der Eventboss ist beendet. Verdiente Belohnungen können bis zum Ablauf der Frist abgeholt werden.","El jefe del evento ha terminado. Puedes reclamar las recompensas ganadas hasta la fecha límite.","De evenementbaas is voorbij. Verdiende beloningen kun je tot de deadline claimen.","Il boss dell'evento è terminato. Puoi riscattare le ricompense ottenute entro la scadenza.","Le boss de l'événement est terminé. Vous pouvez récupérer les récompenses gagnées jusqu'à la date limite."],

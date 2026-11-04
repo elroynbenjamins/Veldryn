@@ -240,7 +240,7 @@ function protectedGear(state:GameState,record:CraftedGearInstance){
 export function disposeCraftedGearInstance(state:GameState,instanceId:string,method:'sell'|'salvage'):GameState{
   if(!state.character)throw new Error('No active character');
   const {record,location}=resolveTracked(state,instanceId);
-  if(!['inventory','bank','equipment_pouch'].includes(location.place))throw new Error('Unequip the exact equipment copy before disposal');
+  if(location.place!=='inventory'&&location.place!=='bank'&&location.place!=='equipment_pouch')throw new Error('Unequip the exact equipment copy before disposal');
   if(location.place!=='bank'&&location.holderCharacterId!==state.character.id)
     throw new Error('Cannot dispose equipment carried by another character');
   protectedGear(state,record);

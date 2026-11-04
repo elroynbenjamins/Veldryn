@@ -2,7 +2,7 @@ import {MONSTERS} from '../src/content/monsters';
 import {combatPresentation,combatReadiness} from '../src/core/combat-presentation';
 import {combatMotionProfile} from '../src/core/combat-motion';
 import {encounterIdentity,encounterProfileCoverage} from '../src/core/encounter-identity';
-import {createCharacter,newGame,startCombat} from '../src/core/game';
+import {createCharacter,newGame,startCombat,effectiveStats} from '../src/core/game';
 import {COMBAT_TACTICS} from '../src/core/combat-tactics';
 import {itemRarity} from '../src/core/item-rarity';
 import {itemDef} from '../src/content/items';
@@ -52,7 +52,9 @@ const repeatReady={...storyWin.state,character:{...storyWin.state.character!,lev
 const repeat=challengeFallenKnight(repeatReady,222223);
 if(!repeat.won||!repeat.battle||repeat.battle.mode!=='rematch'||!repeat.battle.events.some(event=>event.type==='victory'))throw new Error('Weekly Fallen Knight rematches must return the full victory battle timeline');
 if(repeat.state.inventory.stacks.filter(row=>row.itemId==='FALLEN_KNIGHT_SIGIL').reduce((sum,row)=>sum+row.quantity,0)!==1)throw new Error('Weekly rematches must not repeat the unique story Sigil');
-const repeat2=challengeFallenKnight(repeat.state,222224),repeat3=challengeFallenKnight(repeat2.state,222225);
+// Each rematch may leave the player injured; recover between attempts to test the weekly reward cap independently.
+const recoverForRematch=(s:typeof repeat.state)=>({...s,character:{...s.character!,currentHp:effectiveStats(s).hp}});
+const repeat2=challengeFallenKnight(recoverForRematch(repeat.state),222224),repeat3=challengeFallenKnight(recoverForRematch(repeat2.state),222225);
 if(!repeat2.won||!repeat2.battle||!repeat3.won||!repeat3.battle||repeat3.state.account.fallenKnightWeekly?.rewardedClears!==3)throw new Error('All three weekly victories must retain battle playback and consume exactly three weekly clears');
 let capped=false;try{challengeFallenKnight(repeat3.state,222226)}catch(error){capped=error instanceof Error&&error.message.includes('weekly rematches are complete');}
 if(!capped)throw new Error('Three weekly rematch victories must enforce the existing weekly cap');

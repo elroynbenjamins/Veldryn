@@ -27,6 +27,7 @@ ok(stage.includes("partyField:{width:'100%',flexDirection:'row',flexWrap:'wrap'"
 ok(stage.includes('layout.bossWidthPctFinal')&&stage.includes('layout.bossWidthPct'),'Boss encounter card must retain stronger centered emphasis through the responsive width contract');
 ok(!stage.includes('<ClassAvatar'),'Dungeon stage must not regress to the generic initial/weapon combat box');
 ok(card.includes('dungeonEnemyPortraitSource(name)'),'Named bosses/enemies must resolve real artwork in the encounter card');
+ok(enemyArt.includes("'bell-warden':'Oathglass Sentinel'")&&enemyArt.includes("'bell warden':'Oathglass Sentinel'"),'Bell-Warden must resolve an existing humanoid portrait rather than the placeholder crown');
 
 // Keep enemy portraits unobstructed in normal and boss rooms. Their names remain
 // available through tap-to-inspect and the existing accessibility label.
@@ -43,6 +44,7 @@ ok(stage.includes('bossPhaseLabel')&&stage.includes('bossCast={bossEncounter?bos
 ok(card.includes('AnimatedHealthBar')&&card.includes('animateHealth'),'Combat HP bars must animate between authoritative replay states and honor reduced motion');
 ok(card.includes('BARRIER +')&&card.includes('barrierTrack'),'Party combat cards must show active replay-time barriers');
 ok(card.includes('boss?st("BOSS HP"):st("HP")')&&card.includes('enemyHpTrack'),'Enemy and boss cards must show localized replay-time HP');
+ok(card.includes('enemyPct===undefined?st("Syncing")')&&card.includes('enemyPct===undefined?<View style={s.enemyHpTrack}/>')&&!card.includes('{enemyPct!==undefined?<><View style={s.enemyHpHead}>'),'Boss HP heading and track must remain visible before the server replay becomes available');
 ok(stage.includes('playbackCombatantState')&&stage.includes('currentHp={state?.hp}')&&stage.includes('combatShield={state?.shield??0}'),'Battlefield must drive each replay enemy HP and shield from authoritative snapshots');
 ok(stage.includes('ready:state.hp>0')&&stage.includes('currentHp:state.hp'),'Party downed and HP state must follow the current replay cue rather than final run state');
 ok(card.includes('LOW')&&card.includes('criticalInline'),'Party cards must call out critical health inline without adding another card row');

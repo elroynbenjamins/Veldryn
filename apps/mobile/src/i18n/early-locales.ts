@@ -2321,6 +2321,30 @@ export const EARLY_LOCALE_ROWS={
   "Companion": [
     "Спутник",
     "Yoldaş"
+  ],
+  "FIRST COMPANION": [
+    "ПЕРВЫЙ СПУТНИК",
+    "İLK YOLDAŞ"
+  ],
+  "Choose your combat partner": [
+    "Выберите боевого спутника",
+    "Savaş yoldaşını seç"
+  ],
+  "Choose a companion outside your class role. Your other two starter roles will join through Silverbrook and Old Mines progress.": [
+    "Выберите спутника с ролью, отличной от вашей. Два других стартовых спутника откроются по мере продвижения в Silverbrook и Old Mines.",
+    "Sınıfının rolünden farklı bir yoldaş seç. Diğer iki başlangıç rolü Silverbrook ve Old Mines ilerlemesiyle açılacak."
+  ],
+  "Choose {name}, {role}": [
+    "Выбрать {name}, роль: {role}",
+    "{name} seç, rol: {role}"
+  ],
+  "Recruiting…": [
+    "Приглашение…",
+    "Katılıyor…"
+  ],
+  "Choose companion": [
+    "Выбрать спутника",
+    "Yoldaş seç"
   ]
 } satisfies Record<string,readonly [string,string]>;
 

@@ -74,7 +74,7 @@ export function planDungeonPotionUse(input:DungeonPotionTransaction):DungeonPoti
  if(!Number.isFinite(maxHp)||maxHp<=0||actor.hp>=maxHp)throw new Error('dungeon_potion_health_full');
  const itemId=character.equippedHealingPotionId;
  const potion=itemId?potionDef(itemId):undefined;
- if(!potion||potion.effect.kind!=='healing')throw new Error('dungeon_healing_potion_not_selected');
+ if(!itemId||!potion||potion.effect.kind!=='healing')throw new Error('dungeon_healing_potion_not_selected');
  const stacks=verifiedInventoryTake(characterState.inventory.stacks,itemId);
  const heal=Math.min(maxHp-actor.hp,Math.max(1,Math.ceil(maxHp*potion.effect.maxHpFraction)));
  const receipt:DungeonPotionReceipt={requestId,actorId,itemId,healedHp:heal,chargesUsed:used+1};

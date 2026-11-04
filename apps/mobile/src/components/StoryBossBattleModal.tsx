@@ -1,6 +1,6 @@
 import {useGameplayText} from '../i18n/gameplay';
 import {useEffect,useMemo,useRef,useState} from 'react';
-import {Animated,Easing,ScrollView,StyleSheet,Text,View} from 'react-native';
+import {Animated,AppState,Easing,ScrollView,StyleSheet,Text,View} from 'react-native';
 import {MONSTERS} from '../content/monsters';
 import {WORLD_ZONES} from '../content/world-map';
 import type {GameState} from '../core/types';
@@ -24,11 +24,15 @@ export function StoryBossBattleModal({state,battle,message,onClose}:{state:GameS
   const playbackRealMs=Math.min(38_000,Math.max(12_000,battle.durationMs));
   const simPerRealMs=battle.durationMs/playbackRealMs;
   const [playhead,setPlayhead]=useState(0);
-  const startRef=useRef(Date.now());
   const enemyImpact=useRef(new Animated.Value(0)).current,playerImpact=useRef(new Animated.Value(0)).current,phasePulse=useRef(new Animated.Value(0)).current;
   useEffect(()=>{
-    startRef.current=Date.now();setPlayhead(0);
-    const id=setInterval(()=>setPlayhead(Math.min(battle.durationMs,(Date.now()-startRef.current)*simPerRealMs)),80);
+    let lastTick=Date.now();setPlayhead(0);
+    // Pause when backgrounded and clamp stalled JS ticks so leaving the app cannot skip the fight.
+    const id=setInterval(()=>{
+      const now=Date.now(),delta=Math.max(0,Math.min(250,now-lastTick));lastTick=now;
+      if(AppState.currentState!=='background'&&AppState.currentState!=='inactive')
+        setPlayhead(previous=>Math.min(battle.durationMs,previous+delta*simPerRealMs));
+    },80);
     return()=>clearInterval(id);
   },[battle.durationMs,simPerRealMs]);
   const visible=useMemo(()=>battle.events.filter(event=>event.atMs<=playhead),[battle.events,playhead]);

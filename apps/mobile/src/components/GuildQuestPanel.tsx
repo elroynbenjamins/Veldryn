@@ -1,5 +1,7 @@
 import {useSocialText} from '../i18n/social';
 import {useGuildActivityUiText} from '../i18n/guild-activity-ui';
+import {useGameLanguage} from '../i18n/GameLanguageProvider';
+import {guildQuestAuthoredCopy} from '../i18n/guild-quest-authored';
 import {useCallback,useEffect,useMemo,useState} from 'react';
 import {AppState,Pressable,StyleSheet,Text,View} from 'react-native';
 import {Panel} from './Panel';
@@ -53,21 +55,23 @@ export function GuildQuestBoard({quests}:{quests:OnlineGuildQuest[]}){
  </QuestBoard>;
 }
 function ActivityTransition({quest:q}:{quest:OnlineGuildQuest}){
- const st=useSocialText(),{ui,milestone}=useGuildActivityUiText(),C=useGameTheme(),s=useMemo(()=>styles(C),[C]),before=q.activityBeforePercent??0,after=q.activityAfterPercent??before;
+ const st=useSocialText(),{ui,milestone}=useGuildActivityUiText(),language=useGameLanguage(),C=useGameTheme(),s=useMemo(()=>styles(C),[C]),before=q.activityBeforePercent??0,after=q.activityAfterPercent??before;
+ const authored=guildQuestAuthoredCopy(language,q.questKey,q.title,q.description);
  const crossed=GUILD_ACTIVITY_MILESTONE_DEFS.filter(m=>before<m.threshold&&after>=m.threshold);
- return <View accessibilityRole="alert" style={s.transition}><Text style={s.title}>{st('Guild Activity increased')} · {before}% → {after}%</Text><Text style={s.copy}>{ui('{quest} completed · +{activity} Activity units.',{quest:q.title,activity:q.activityReward})}{after>100?' '+ui('Reserve {reserve}/10%.',{reserve:after-100}):''}</Text>{crossed.map(m=><Text key={m.threshold} style={s.reward}>✓ {ui('{name} active · {description}',{name:milestone(m.name),description:milestone(m.description)})}</Text>)}</View>;
+ return <View accessibilityRole="alert" style={s.transition}><Text style={s.title}>{st('Guild Activity increased')} · {before}% → {after}%</Text><Text style={s.copy}>{ui('{quest} completed · +{activity} Activity units.',{quest:authored.title,activity:q.activityReward})}{after>100?' '+ui('Reserve {reserve}/10%.',{reserve:after-100}):''}</Text>{crossed.map(m=><Text key={m.threshold} style={s.reward}>✓ {ui('{name} active · {description}',{name:milestone(m.name),description:milestone(m.description)})}</Text>)}</View>;
 }
 function Quest({quest:q}:{quest:OnlineGuildQuest}){
- const st=useSocialText(),{ui}=useGuildActivityUiText(),C=useGameTheme(),s=useMemo(()=>styles(C),[C]),[expanded,setExpanded]=useState(false),rarity=rarityMeta(q.rarity);
+ const st=useSocialText(),{ui}=useGuildActivityUiText(),language=useGameLanguage(),C=useGameTheme(),s=useMemo(()=>styles(C),[C]),[expanded,setExpanded]=useState(false),rarity=rarityMeta(q.rarity);
+ const authored=guildQuestAuthoredCopy(language,q.questKey,q.title,q.description);
  const duration=q.estimatedMinutes>=60?`${q.estimatedMinutes/60}h`:`${q.estimatedMinutes}m`;
  return <QuestPosting style={q.completed?s.done:undefined}>
-  <View style={s.head}><View style={s.flex}><Text style={s.category}>{q.featured?ui('FEATURED · '):''}{q.category.toUpperCase()} · {rarity.label.toUpperCase()} · ~{duration}</Text><Text accessibilityRole="header" style={s.questTitle}>{q.title}</Text></View><ActivityArtwork id={q.category==='Combat'?'combat':q.category==='Crafting'?'smithing':q.category==='Skilling'?'herbalism':'exploration'} size={42}/></View>
+  <View style={s.head}><View style={s.flex}><Text style={s.category}>{q.featured?ui('FEATURED · '):''}{q.category.toUpperCase()} · {rarity.label.toUpperCase()} · ~{duration}</Text><Text accessibilityRole="header" style={s.questTitle}>{authored.title}</Text></View><ActivityArtwork id={q.category==='Combat'?'combat':q.category==='Crafting'?'smithing':q.category==='Skilling'?'herbalism':'exploration'} size={42}/></View>
   {q.completed?<StatusPill label={st('COMPLETE')} tone="good"/>:null}
-  <Text style={s.copy}>{q.description}</Text>
+  <Text style={s.copy}>{authored.description}</Text>
   <StatBar rounded label={ui("Shared guild progress")} current={Math.min(q.progress,q.target)} max={q.target}/>
   <View style={s.personal}><Text style={s.personalLabel}>{st('YOUR CONTRIBUTION')}</Text>{q.personalProgress.length?q.personalProgress.map(o=><Text key={o.key} style={s.copy}>{objectiveLabel(o.key)}: {Math.min(o.progress,o.target).toLocaleString()} / {o.target.toLocaleString()}</Text>):<Text style={s.copy}>{ui("No contribution recorded yet.")}</Text>}<Text style={s.foot}>{ui(q.contributorCount===1?'{count} contributor · daily contribution capped':'{count} contributors · daily contribution capped',{count:q.contributorCount})}</Text></View>
   <Text style={s.reward}>{ui(q.completed?'+{activity} Guild Activity secured':'+{activity} Guild Activity on completion',{activity:q.activityReward})}</Text>
-  {q.objectiveProgress.length?<><Pressable accessibilityRole="button" aria-expanded={expanded} accessibilityState={{expanded}} accessibilityLabel={ui("Objective breakdown · {quest}",{quest:q.title})} onPress={()=>setExpanded(value=>!value)} style={s.disclosure}><Text style={s.disclosureText}>{ui("Objective breakdown")}</Text><Text style={s.disclosureText}>{expanded?'−':'+'}</Text></Pressable>{expanded?q.objectiveProgress.map(o=><Text key={o.key} style={s.copy}>{objectiveLabel(o.key)}: {Math.min(o.progress,o.target).toLocaleString()} / {o.target.toLocaleString()}</Text>):null}</>:null}
+  {q.objectiveProgress.length?<><Pressable accessibilityRole="button" aria-expanded={expanded} accessibilityState={{expanded}} accessibilityLabel={ui("Objective breakdown · {quest}",{quest:authored.title})} onPress={()=>setExpanded(value=>!value)} style={s.disclosure}><Text style={s.disclosureText}>{ui("Objective breakdown")}</Text><Text style={s.disclosureText}>{expanded?'−':'+'}</Text></Pressable>{expanded?q.objectiveProgress.map(o=><Text key={o.key} style={s.copy}>{objectiveLabel(o.key)}: {Math.min(o.progress,o.target).toLocaleString()} / {o.target.toLocaleString()}</Text>):null}</>:null}
  </QuestPosting>;
 }
 function objectiveLabel(key:string){return key.replace(/_/g,' ').replace(/\b\w/g,m=>m.toUpperCase());}

@@ -87,6 +87,8 @@ function makeHarness({width = 390, reducedMotion = false, motionQuery} = {}) {
     [path.join(app, 'src/theme/companion-art'), {companionArtSource: id => ({kind: 'companion', id})}],
     [path.join(app, 'src/theme/dungeon-combat-art'), {dungeonCombatPortraitSource: classId => ({kind: 'portrait', classId})}],
     [path.join(app, 'src/theme/dungeon-enemy-art'), {dungeonEnemyPortraitSource: name => ({kind: 'enemy', name})}],
+    [path.join(app, 'src/components/UiIcon'), {UiIcon: 'UiIcon'}],
+    [path.join(app, 'src/components/coop/CoopCombatSetupPanel'), {CoopCombatSetupPanel: 'CoopCombatSetupPanel'}],
     [path.join(app, 'src/components/SocialIdentity'), {IdentityArtwork: 'IdentityArtwork'}]
   ]);
   function load(file) {

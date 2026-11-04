@@ -8,7 +8,7 @@ import {type LiveQueueView,type LiveReadyView} from '../../core/coop-live-lobby'
 
 /** Available only behind the internal Live lobby gate. Closing/backgrounding
  * stops heartbeats; the database owns expiry and ready acceptance deadlines. */
-export function CoopLiveLobby({onBack,onRunReady,dungeons,selfPortrait}:LobbyIdentity&{onBack:()=>void;onRunReady?:(runId:string)=>void}){
+export function CoopLiveLobby({onBack,onRunReady,dungeons,selfPortrait,setupState}:LobbyIdentity&{onBack:()=>void;onRunReady?:(runId:string)=>void}){
  const [queue,setQueue]=useState<LiveQueueView>(),[ready,setReady]=useState<LiveReadyView>();
  const icons=useCoopProfileIcons('ready',ready?[ready.readyCheckId]:[],true,ready?.rosterRevision);
  const readyWithIcons=ready?{...ready,members:ready.members.map(member=>({...member,...(icons.get(member.characterId)??noCoopProfileIcon)}))}:undefined;
@@ -37,5 +37,5 @@ export function CoopLiveLobby({onBack,onRunReady,dungeons,selfPortrait}:LobbyIde
   return result;
  };
  const acceptReady=()=>void act(async()=>{const result=await coopClient.ready(ready!.readyCheckId,{requestId:coopRequestId(),rosterRevision:ready!.rosterRevision,accept:true});if(result.runId&&onRunReady)onRunReady(result.runId);return result;});
- return <CoopLiveLobbyView dungeons={dungeons} selfPortrait={selfPortrait} queue={queue} ready={readyWithIcons} notice={notice} busy={busy} pending={pending} loading={loading} onBack={onBack} onRetry={()=>refresh.current()} onRetryPending={()=>void act(()=>coopClient.retryPending())} onCancel={()=>void act(()=>coopClient.cancelLive(queue!.ticket!.ticketId))} onAccept={acceptReady} onDecline={()=>act(()=>coopClient.ready(ready!.readyCheckId,{requestId:coopRequestId(),rosterRevision:ready!.rosterRevision,accept:false}))}/>;
+ return <CoopLiveLobbyView dungeons={dungeons} selfPortrait={selfPortrait} setupState={setupState} queue={queue} ready={readyWithIcons} notice={notice} busy={busy} pending={pending} loading={loading} onBack={onBack} onRetry={()=>refresh.current()} onRetryPending={()=>void act(()=>coopClient.retryPending())} onCancel={()=>void act(()=>coopClient.cancelLive(queue!.ticket!.ticketId))} onAccept={acceptReady} onDecline={()=>act(()=>coopClient.ready(ready!.readyCheckId,{requestId:coopRequestId(),rosterRevision:ready!.rosterRevision,accept:false}))}/>;
 }

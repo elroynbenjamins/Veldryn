@@ -27,6 +27,8 @@ export const DUNGEON_TRIAL_PORTRAIT_ALIASES:Readonly<Record<string,string>>=Obje
   'lantern wretch':'Gloamblade Raider',
   'drowned pilgrim':'Silverbrook Adept',
   'bell sentinel':'Oathglass Sentinel',
+  'bell-warden':'Oathglass Sentinel',
+  'bell warden':'Oathglass Sentinel',
   'fallen lantern knight':'Oathglass Sentinel',
   'banner shade':'Regent Adept',
   'sunstone custodian':'Glasshide Warder',

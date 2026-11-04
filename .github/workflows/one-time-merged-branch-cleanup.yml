@@ -52,6 +52,11 @@ jobs:
               // Older closed PRs explicitly superseded by merged, schema-compatible replacements.
               'feat/character-equipment-pouch-auto-routing': { legacy: 816, replacement: 810 },
               'feat/dungeon-lobby-combat-setup-polish-106': { legacy: 838, replacement: 843 },
+              // #829 explicitly replaces #817, #821 and #824; verify those exact
+              // PR numbers are still mentioned in its merged description before deletion.
+              'feat/dungeon-brewed-healing-potions-v106': { legacy: 817, replacement: 829, requireReplacementReference: true },
+              'feat/dungeon-crafted-healing-potions-106': { legacy: 821, replacement: 829, requireReplacementReference: true },
+              'feat/dungeon-alchemy-potion-consumption-106': { legacy: 824, replacement: 829, requireReplacementReference: true },
             };
             const eligible = [];
             const skipped = [];
@@ -80,7 +85,8 @@ jobs:
                   !pr.merged_at && pr.base.ref === 'main' &&
                   pr.head.repo?.full_name === owner + '/' + repo &&
                   pr.head.ref === name && pr.head.sha === branch.commit.sha &&
-                  /supersed|reconcil|current main|already works|duplicate/i.test(pr.body || ''));
+                  (/supersed|reconcil|current main|already works|duplicate/i.test(pr.body || '') ||
+                    entry.requireReplacementReference === true));
                 if (!old) {
                   skipped.push({ branch: name, reason: 'not an exact merged or verified retired head' });
                   continue;
@@ -92,6 +98,11 @@ jobs:
                   const pr = replacement.data;
                   if (!pr.merged || pr.base.ref !== 'main' || !pr.merge_commit_sha) {
                     skipped.push({ branch: name, reason: 'replacement not merged' });
+                    continue;
+                  }
+                  if (entry.requireReplacementReference &&
+                      !(pr.body || '').includes('#' + entry.legacy)) {
+                    skipped.push({ branch: name, reason: 'replacement no longer cites legacy PR' });
                     continue;
                   }
                   const check = await github.rest.repos.compareCommits({

@@ -1,16 +1,18 @@
 # Localization status
 
-Release target: English (`en`), German (`de`), Spanish (`es`), Dutch (`nl`), Italian (`it`), and French (`fr`).
+Selectable languages: English (`en`), German (`de`), Spanish (`es`), Dutch (`nl`), Italian (`it`), French (`fr`), Russian (`ru`), and Turkish (`tr`).
+
+Russian and Turkish are starter-only languages. English remains the fallback for all untranslated copy. Existing DE/ES/NL/IT/FR catalog rows are preserved.
 
 ## Implemented
 
-- Typed six-language catalog with English as the default and fallback language.
+- Typed eight-language catalog with English as the default and fallback language.
 - Language selection during character creation and in Settings.
 - Localized primary phone navigation, secondary destination titles, back control, More screen, character-creation headings, and Settings section headings.
 - Localized critical save-recovery controls, crafting and combat outcomes, live-combat labels, inventory overflow recovery, permanent-skin states, and world/guild chat controls.
 - The language preference is stored separately from the main save so a damaged-save recovery screen can still use the player's chosen language.
-- Save migration and normalization preserve all six supported language codes.
-- Catalog-completeness and save-roundtrip coverage in the core test suite.
+- Save migration and normalization preserve all eight supported language codes.
+- Legacy-catalog validation and save-roundtrip coverage for all selectable languages.
 
 ## Still required before localization is release-complete
 

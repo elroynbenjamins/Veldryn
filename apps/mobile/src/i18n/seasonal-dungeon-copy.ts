@@ -560,4 +560,13 @@ export const SEASONAL_ROOM_TITLE_ROWS={
     "Провести ритуал равновесия",
     "Denge Ayinini Gerçekleştir"
   ]
-} as const;
+} as const satisfies Record<string,readonly [string,string,string,string,string,string,string]>;
+
+const LANGUAGE_COLUMN:Record<Language,number>={en:-1,de:0,es:1,nl:2,it:3,fr:4,ru:5,tr:6};
+/** Known English titles only; all user or future server-provided names pass through verbatim. */
+export function seasonalDungeonRoomTitle(language:Language,englishTitle:string):string{
+ if(language==='en')return englishTitle;
+ const translations=Object.prototype.hasOwnProperty.call(SEASONAL_ROOM_TITLE_ROWS,englishTitle)
+  ?SEASONAL_ROOM_TITLE_ROWS[englishTitle as keyof typeof SEASONAL_ROOM_TITLE_ROWS]:undefined;
+ return translations?.[LANGUAGE_COLUMN[language]]??englishTitle;
+}

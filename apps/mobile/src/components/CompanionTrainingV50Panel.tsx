@@ -86,7 +86,7 @@ export function CompanionTrainingV50Panel({state,now,onCommand,onNavigateSource,
       <Text style={s.copy}>{t('Companion Power {value0}',{value0:amount(companionTeamPower([selection],view.owned))})} → {amount(companionTeamPower([selection],{...view.owned,[selection]:{...view.owned[selection],level:progress.level+1}}))}</Text>
       {costBreakdown(model.nextLevelCost)}
     </View>
-    <GameButton title={busy?t('Training…'):t('Train to Level {value0}',{value0:progress.level+1})} disabled={busy||!idle(selection)||!affordable(model.nextLevelCost)} onPress={()=>act('companion_level',{id:selection})}/></>:<View style={s.cost}><Text style={s.done}>{t('Current level cap reached.')}</Text><Text style={s.copy}>{roadmap?companionContent(language,roadmap.nextStep):''}</Text></View>}
+    <GameButton title={busy?t('Training…'):t('Train to Level {value0}',{value0:progress.level+1})} disabled={busy||!idle(selection)||!affordable(model.nextLevelCost)} onPress={()=>act('companion_level',{id:selection})}/></>:<View style={s.cost}><Text style={s.done}>{t('Max level reached.')}</Text><Text style={s.copy}>{roadmap?companionContent(language,roadmap.nextStep):''}</Text></View>}
     {model.equipped?<GameButton title={t("Unequip Companion")} disabled={busy} tone="secondary" onPress={()=>act('companion_unequip')}/>:<GameButton title={model.compatible ? t("Equip Companion") : t("Same role as your character")} disabled={busy||!model.compatible||!idle(selection)} onPress={()=>act('companion_equip',{id:selection})}/>}</View>
 
 

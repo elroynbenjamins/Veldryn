@@ -3,6 +3,14 @@ import {createTranslator} from './translator';
 
 // Each row supplies German, Spanish, Dutch, Italian and French; its key is English.
 export const companionTranslationRows={
+ // Starter Companion onboarding flow (current 1.0.6 redesign).
+ "FIRST COMPANION":["ERSTER BEGLEITER","PRIMER COMPAÑERO","EERSTE METGEZEL","PRIMO COMPAGNO","PREMIER COMPAGNON"],
+ "Choose your combat partner":["Wähle deinen Kampfgefährten","Elige a tu compañero de combate","Kies je gevechtsmetgezel","Scegli il tuo compagno di battaglia","Choisis ton compagnon de combat"],
+ "Choose a companion outside your class role. Your other two starter roles will join through Silverbrook and Old Mines progress.":["Wähle einen Begleiter mit einer anderen Rolle als deine Klasse. Die beiden übrigen Startrollen schließen sich durch Fortschritte in Silverbrook und Old Mines an.","Elige un compañero con un rol distinto al de tu clase. Los otros dos roles iniciales se unirán al avanzar en Silverbrook y Old Mines.","Kies een metgezel met een andere rol dan je klasse. De andere twee startrollen komen vrij via voortgang in Silverbrook en Old Mines.","Scegli un compagno con un ruolo diverso dalla tua classe. Gli altri due ruoli iniziali si uniranno progredendo a Silverbrook e nelle Old Mines.","Choisis un compagnon dont le rôle diffère de celui de ta classe. Les deux autres rôles de départ se débloquent en progressant à Silverbrook et Old Mines."],
+ "Choose {name}, {role}":["{name} wählen, Rolle: {role}","Elegir a {name}, rol: {role}","Kies {name}, rol: {role}","Scegli {name}, ruolo: {role}","Choisir {name}, rôle : {role}"],
+ "Recruiting…":["Wird rekrutiert…","Reclutando…","Rekruteren…","Reclutamento…","Recrutement…"],
+ "Choose companion":["Begleiter wählen","Elegir compañero","Kies metgezel","Scegli compagno","Choisir un compagnon"],
+
  // Active companion unlock goals, discovery clues and Trial effect labels.
  "Defeat 250 Old Mines enemies":["Besiege 250 Gegner in den Old Mines","Derrota a 250 enemigos en Old Mines","Versla 250 vijanden in Old Mines","Sconfiggi 250 nemici nelle Old Mines","Vaincre 250 ennemis dans Old Mines"],
  "Defeat the Fallen Knight 3 times":["Besiege den Fallen Knight 3-mal","Derrota al Fallen Knight 3 veces","Versla de Fallen Knight 3 keer","Sconfiggi il Fallen Knight 3 volte","Vaincre le Fallen Knight 3 fois"],

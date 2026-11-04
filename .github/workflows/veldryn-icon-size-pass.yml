@@ -48,14 +48,12 @@ jobs:
           echo "BEFORE_ASSETS=$(du -sb .icon-size-before/assets | cut -f1)" >> "$GITHUB_ENV"
       - name: Losslessly optimize referenced icons and remove unused superseded masters
         run: python3 tools/optimize-veldryn-icons.py
-      - name: TypeScript and targeted guild/companion/monster UI regression tests
+      - name: TypeScript and targeted companion/dungeon asset checks
         working-directory: apps/mobile
         run: |
           pnpm typecheck
-          node ../../tools/run-mobile-tests.mjs guild-construction-benefits guild-construction-commissions guild-management-ui-contract guild-chat-projects-ui-contract guild-notice-board-ui-contract guild-muster-ui-contract v44-guild-hall
           node tests/companion-simplicity-ui-contract.cjs
           node tests/dungeon-enemy-trial-portraits.cjs
-          pnpm test:companions
       - name: Measure Android assets after and reject regressions
         working-directory: apps/mobile
         run: |

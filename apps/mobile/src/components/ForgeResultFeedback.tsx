@@ -17,7 +17,7 @@ export function isExceptionalForgeResult(result:ForgeCraftResult){return result.
 function highest(results:readonly ForgeCraftResult[]){return results.slice().sort((a,b)=>RARITY_ORDER.indexOf(b.rarity)-RARITY_ORDER.indexOf(a.rarity))[0];}
 export function forgeClaimBannerMessage(results:readonly ForgeCraftResult[]){
   if(!results.length)return '';
-  if(results.length===1){const result=results[0],item=itemDef(result.itemId);return `Forged ${item.name} · ${rarityMeta(result.rarity).label}${result.quality!==undefined?` · Q${result.quality}/100`:''}${result.autoSold==='incoming'?` · auto-sold new gear for ${result.saleGold} Gold`:result.autoSold==='existing'?` · sold weaker existing gear for ${result.saleGold} Gold`:''}.`;}
+  if(results.length===1){const result=results[0],item=itemDef(result.itemId);return `Forged ${item.name} · ${rarityMeta(result.rarity).label}${result.quality!==undefined?` · Q${result.quality}/100`:''}${result.autoSold==='incoming'?` · auto-sold new gear for ${result.saleGold} Gold`:result.autoSold==='existing'?` · sold weaker existing gear for ${result.saleGold} Gold`:' · sent to your Equipment Pouch (or fallback storage)'}.`;}
   const best=highest(results),sold=results.filter(row=>row.autoSold),gold=sold.reduce((sum,row)=>sum+row.saleGold,0);return `${results.length} Forge jobs settled · ${sold.length?`${sold.length} auto-sold for ${gold} Gold · `:''}best roll ${rarityMeta(best.rarity).label}.`;
 }
 
@@ -39,15 +39,15 @@ export function ForgeRarityRevealModal({results,reduceMotion,onClose,onInventory
     <GameModalHeader eyebrow={gt("EXCEPTIONAL FORGE RESULT")} title={procs.length===1?`${bestMeta!.label} gear forged`:`${procs.length} exceptional Forge results`} onClose={onClose}/>
     <Animated.View style={[s.reveal,bestMeta&&{borderColor:bestMeta.color,borderWidth:bestMeta.borderWidth,backgroundColor:bestMeta.surface},{transform:[{scale}]}]}>
       <Text style={[s.revealMark,{color:bestMeta?.color}]}>{bestMeta?.symbol} {bestMeta?.label.toUpperCase()} {bestMeta?.symbol}</Text>
-      <Text style={s.revealCopy}>{gt("Added to inventory")}</Text>
+      <Text style={s.revealCopy}>{"Equipment Pouch first · Inventory or Bank if full"}</Text>
     </Animated.View>
     <View style={s.results}>{procs.map(result=>{const item=itemDef(result.itemId),meta=rarityMeta(result.rarity),base=rarityMeta(result.baseRarity),bonus=Math.round((result.statMultiplier-1)*100);return <View key={result.instanceId} style={[s.result,{borderColor:meta.color,backgroundColor:meta.surface}]}>
       <View style={[s.artFrame,{borderColor:meta.color}]}><EquipmentArtwork item={item} rarity={result.rarity} compact framed={false}/></View>
-      <View style={s.flex}><Text style={[s.itemName,{color:rarityNameColor(result.rarity,C.dark,C.text)}]}>{item.name}</Text><Text style={s.meta}>{result.qualityProc?`${base.label} → ${meta.label}`:meta.label} gear{result.quality!==undefined?` · Q${result.quality}/100`:''}</Text>{bonus>0?<Text style={[s.bonus,{color:meta.color}]}>+{bonus}% equipment stats vs base gear</Text>:null}{result.autoSold?<Text style={s.copy}>{result.autoSold==='incoming'?'New gear auto-sold; existing gear kept':'Weaker gear sold; stronger gear kept'} · +{result.saleGold} Gold</Text>:<Text style={s.copy}>{gt("Added to inventory")}</Text>}</View>
+      <View style={s.flex}><Text style={[s.itemName,{color:rarityNameColor(result.rarity,C.dark,C.text)}]}>{item.name}</Text><Text style={s.meta}>{result.qualityProc?`${base.label} → ${meta.label}`:meta.label} gear{result.quality!==undefined?` · Q${result.quality}/100`:''}</Text>{bonus>0?<Text style={[s.bonus,{color:meta.color}]}>+{bonus}% equipment stats vs base gear</Text>:null}{result.autoSold?<Text style={s.copy}>{result.autoSold==='incoming'?'New gear auto-sold; existing gear kept':'Weaker gear sold; stronger gear kept'} · +{result.saleGold} Gold</Text>:<Text style={s.copy}>{"Equipment Pouch first · Inventory or Bank if full"}</Text>}</View>
       <View style={[s.rarityBadge,{borderColor:meta.color}]}><Text style={[s.rarityText,{color:meta.color}]}>{meta.label.toUpperCase()}</Text></View>
     </View>})}</View>
     {results.length>procs.length?<Text style={s.normal}>{results.length-procs.length} other Forge job{results.length-procs.length===1?'':'s'} completed at the same time.</Text>:null}
-    <View style={[s.actions,stackActions&&s.actionsStack]}><View style={[s.action,stackActions&&s.actionStack]}><GameButton title={gt("Continue forging")} tone="secondary" onPress={onClose}/></View><View style={[s.action,stackActions&&s.actionStack]}><GameButton title={gt("View inventory")} onPress={onInventory}/></View></View>
+    <View style={[s.actions,stackActions&&s.actionsStack]}><View style={[s.action,stackActions&&s.actionStack]}><GameButton title={gt("Continue forging")} tone="secondary" onPress={onClose}/></View><View style={[s.action,stackActions&&s.actionStack]}><GameButton title="View Gear storage" onPress={onInventory}/></View></View>
   </GameModalSurface>;
 }
 

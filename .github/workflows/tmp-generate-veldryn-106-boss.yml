@@ -1,0 +1,40 @@
+name: Regenerate gameplay bundle for 1.0.6 boss replay (temporary)
+on:
+  push:
+    branches: [feat/next-1-0-6-story-boss-unskippable]
+    paths:
+      - .github/workflows/tmp-generate-veldryn-106-boss.yml
+permissions:
+  contents: write
+jobs:
+  regenerate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: feat/next-1-0-6-story-boss-unskippable
+          persist-credentials: true
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+          cache-dependency-path: backend/pnpm-lock.yaml
+      - name: Install pinned backend dependencies
+        run: pnpm install --frozen-lockfile
+        working-directory: backend
+      - name: Build gameplay and co-op bundles from the shared engine
+        run: node tools/build-online.mjs
+      - name: Verify gameplay bundle parity
+        run: node tools/verify-gameplay-edge.mjs
+      - name: Commit generated gameplay bundle to this feature branch
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add backend/supabase/functions/gameplay/index.ts
+          if ! git diff --cached --quiet; then
+            git commit -m "build(gameplay): sync Fallen Knight rematch replay bundle"
+            git push origin HEAD:feat/next-1-0-6-story-boss-unskippable
+          fi

@@ -51,7 +51,7 @@ export function CraftingRecipeBrowser({state,skillId,initialQuery='',preferredRe
  }),[recipes,category,q,guildMaterialsOnly]);
  const matching:Row[]=useMemo(()=>visibleRecipes.map(recipe=>{
   try{
-   if(recipe.level>skillLevel||(recipe.characterLevel??1)>characterLevel)return {recipe,status:{ready:false,reason:recipe.level>skillLevel?`Requires ${gl(recipe.skillId)} level ${recipe.level}.`:`Requires character level ${recipe.characterLevel}.`,inputs:recipe.inputs.map(input=>({...input,inventory:stored.inventory.get(input.itemId)??0,bank:stored.bank.get(input.itemId)??0}))}};
+   if(recipe.level>skillLevel||(recipe.characterLevel??1)>characterLevel)return {recipe,status:{ready:false,reason:recipe.level>skillLevel?gt('Requires {skill} level {level}.',{skill:gl(recipe.skillId),level:recipe.level}):gt('Requires character level {level}.',{level:recipe.characterLevel??1}),inputs:recipe.inputs.map(input=>({...input,inventory:stored.inventory.get(input.itemId)??0,bank:stored.bank.get(input.itemId)??0}))}};
    const processing=isTimedProcessingRecipe(recipe.id),timedEquipment=Boolean(timedEquipmentRecipe(recipe.id));
    const status=skillId==='alchemy'?alchemyAvailability(state,recipe.id):processing?processingAvailability(state,recipe.id,undefined,true):timedEquipment?equipmentCraftAvailability(state,recipe.id):recipeAvailability(state,recipe.id);
    return {recipe,status};

@@ -1993,6 +1993,194 @@ export const EARLY_LOCALE_ROWS={
   "Member": [
     "Участник",
     "Üye"
+  ],
+  "Restores {percent}% maximum HP in boss fights or between dungeon rooms.": [
+    "Восстанавливает {percent}% максимального здоровья в бою с боссом или между комнатами подземелья.",
+    "Boss savaşında veya zindan odaları arasında azami canın %{percent} kadarını yeniler."
+  ],
+  "Deals {percent}% more damage for {count} ordinary encounters.": [
+    "Урон +{percent}% на {count} обычных боёв.",
+    "{count} normal karşılaşma boyunca %{percent} daha fazla hasar verir."
+  ],
+  "Takes {percent}% less damage for {count} ordinary encounters.": [
+    "Получаемый урон −{percent}% на {count} обычных боёв.",
+    "{count} normal karşılaşma boyunca alınan hasarı %{percent} azaltır."
+  ],
+  "+{damage}% damage · +{strength}% healing and shielding for {count} ordinary encounters.": [
+    "Урон +{damage}% · Лечение и щиты +{strength}% на {count} обычных боёв.",
+    "{count} normal karşılaşma boyunca hasar +%{damage} · İyileştirme ve kalkanlar +%{strength}."
+  ],
+  "Healing potions work in boss fights and between dungeon rooms. Food is disabled there. Choose a potion from the HP menu.": [
+    "Лечебные зелья используются в боях с боссами и между комнатами подземелий. Еда там не лечит. Выберите зелье в меню здоровья.",
+    "İyileştirme iksirleri boss savaşlarında ve zindan odaları arasında kullanılabilir. Yiyecek orada iyileştirmez. İksiri Can menüsünden seç."
+  ],
+  "Restores {hp} HP per food": [
+    "Восстанавливает {hp} здоровья за порцию",
+    "Porsiyon başına {hp} can yeniler"
+  ],
+  "Equipment infusion material": [
+    "Материал для улучшения снаряжения",
+    "Ekipman infüzyon malzemesi"
+  ],
+  "Lv {level}": [
+    "Ур. {level}",
+    "Sv. {level}"
+  ],
+  "A dewleaf resin that binds early regional gear.": [
+    "Смола из росолиста для начального регионального снаряжения.",
+    "Başlangıç bölge ekipmanları için çiy yaprağı reçinesi."
+  ],
+  "A crystalline solvent for Oathstone-era gear.": [
+    "Кристаллический растворитель для снаряжения эпохи Клятвенного камня.",
+    "Yemin Taşı dönemi ekipmanları için kristal çözücü."
+  ],
+  "A heat-stable fixative for Sunscar equipment.": [
+    "Термостойкий закрепитель для снаряжения Санскара.",
+    "Sunscar ekipmanları için ısıya dayanıklı sabitleyici."
+  ],
+  "A frostbound distillate for Frostmarch equipment.": [
+    "Морозный дистиллят для снаряжения Фростмарша.",
+    "Frostmarch ekipmanları için buzla güçlendirilmiş distilat."
+  ],
+  "A volatile Ashlands elixir for capstone equipment.": [
+    "Нестабильный эликсир Эшлендса для лучшего снаряжения.",
+    "Üst seviye ekipmanlar için uçucu Ashlands iksiri."
+  ],
+  "Requires {skill} level {level}.": [
+    "Требуется уровень навыка «{skill}»: {level}.",
+    "{skill} becerisi için seviye {level} gerekli."
+  ],
+  "Requires character level {level}.": [
+    "Требуется уровень персонажа {level}.",
+    "Karakter seviyesi {level} gerekli."
+  ],
+  "Show how to unlock or obtain materials for this recipe": [
+    "Показать, как открыть рецепт или получить материалы",
+    "Bu tarifin nasıl açılacağını veya malzemelerin nereden alınacağını göster"
+  ],
+  "See requirements and where to get materials": [
+    "Посмотреть условия и источники материалов",
+    "Gereksinimleri ve malzemelerin nereden alınacağını gör"
+  ],
+  "NPC or Echo allies fill the missing roles": [
+    "Недостающие роли заполнят НИП или союзники-Эхо.",
+    "Eksik roller NPC veya Yankı müttefikleriyle doldurulur."
+  ],
+  "Find an eligible party automatically": [
+    "Автоматически найти подходящую группу",
+    "Uygun bir grubu otomatik bul"
+  ],
+  "Group finder & options": [
+    "Поиск группы и настройки",
+    "Grup bulma ve seçenekler"
+  ],
+  "My Echo & sharing": [
+    "Моё Эхо и публикация",
+    "Yankım ve paylaşım"
+  ],
+  "Solo": [
+    "В одиночку",
+    "Tek başına"
+  ],
+  "Live": [
+    "Живой режим",
+    "Canlı"
+  ],
+  "Play with three other players": [
+    "Играть с тремя другими игроками",
+    "Üç başka oyuncuyla oyna"
+  ],
+  "Play with three Echo allies": [
+    "Играть с тремя союзниками-Эхо",
+    "Üç Yankı müttefikiyle oyna"
+  ],
+  "Locked dungeons": [
+    "Недоступные подземелья",
+    "Kilitli zindanlar"
+  ],
+  "Hide locked dungeons": [
+    "Скрыть недоступные подземелья",
+    "Kilitli zindanları gizle"
+  ],
+  "Find Party": [
+    "Найти группу",
+    "Grup bul"
+  ],
+  "Start Dungeon": [
+    "Начать подземелье",
+    "Zindanı başlat"
+  ],
+  "Prepare Loadout": [
+    "Подготовить снаряжение",
+    "Ekipmanı hazırla"
+  ],
+  "More information": [
+    "Подробнее",
+    "Daha fazla bilgi"
+  ],
+  "Recommended power": [
+    "Рекомендуемая сила",
+    "Önerilen güç"
+  ],
+  "rooms before the boss": [
+    "комнат до босса",
+    "bosstan önceki odalar"
+  ],
+  "Prepare expedition": [
+    "Подготовить поход",
+    "Seferi hazırla"
+  ],
+  "View expedition": [
+    "Посмотреть поход",
+    "Seferi görüntüle"
+  ],
+  "Base completion reward": [
+    "Базовая награда за прохождение",
+    "Temel tamamlama ödülü"
+  ],
+  "Expedition preparation": [
+    "Подготовка к походу",
+    "Sefer hazırlığı"
+  ],
+  "Mechanics & objectives": [
+    "Механики и задачи",
+    "Mekanikler ve hedefler"
+  ],
+  "Rewards & entry rules": [
+    "Награды и условия входа",
+    "Ödüller ve giriş kuralları"
+  ],
+  "Reward rules": [
+    "Правила наград",
+    "Ödül kuralları"
+  ],
+  "Route & encounters": [
+    "Маршрут и встречи",
+    "Rota ve karşılaşmalar"
+  ],
+  "Expedition Marks": [
+    "Знаки похода",
+    "Sefer İşaretleri"
+  ],
+  "Enhanced rewards · unlimited runs": [
+    "Усиленные награды · Неограниченные походы",
+    "Geliştirilmiş ödüller · Sınırsız sefer"
+  ],
+  "Choose a difficulty to continue.": [
+    "Выберите сложность для продолжения.",
+    "Devam etmek için zorluk seç."
+  ],
+  "themed stages + final boss": [
+    "тематические этапы и финальный босс",
+    "temalı aşamalar ve son boss"
+  ],
+  "non-boss rooms · final boss follows": [
+    "комнаты без босса · Далее финальный босс",
+    "boss olmayan odalar · Sonra final bossu"
+  ],
+  "Your verified character + three eligible Echo recruits": [
+    "Ваш подтверждённый персонаж и три подходящих Эхо",
+    "Doğrulanmış karakterin ve üç uygun Yankı üyesi"
   ]
 } satisfies Record<string,readonly [string,string]>;
 

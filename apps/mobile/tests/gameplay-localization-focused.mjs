@@ -25,6 +25,21 @@ function load(filename){
 }
 const {gameplayCatalogs,gameplayDomains,gameplayTranslate,localizeGameplay,useGameplayText}=load(path.join(root,'src/i18n/gameplay.ts'));
 const languages=['en','de','es','nl','it','fr']; // Fully populated legacy rows; RU/TR use English fallback.
+
+// Alchemy copy must reflect current potion effects, not hard-coded obsolete percentages or boss-only rules.
+assert.equal(gameplayTranslate('en','Food is disabled in bosses and dungeons. Boss fights use your selected Alchemy healing potion (up to 5 per fight); dungeon runs have their own limited potion charges.'),'Food is disabled in bosses and dungeons. Boss fights use your selected Alchemy healing potion (up to 5 per fight); dungeon runs have their own limited potion charges.');
+assert.equal(gameplayTranslate('nl','Restores {percent}% maximum HP in boss fights or between dungeon rooms.',{percent:35}),'Herstelt 35% maximale HP bij bazen of tussen kerkerkamers.');
+assert.equal(gameplayTranslate('de','Deals {percent}% more damage for {count} ordinary encounters.',{percent:10,count:45}),'Verursacht 10 % mehr Schaden für 45 normale Kämpfe.');
+assert.equal(gameplayTranslate('es','Takes {percent}% less damage for {count} ordinary encounters.',{percent:15,count:60}),'Recibe un 15 % menos de daño durante 60 encuentros normales.');
+assert.equal(gameplayTranslate('fr','+{damage}% damage · +{strength}% healing and shielding for {count} ordinary encounters.',{damage:6,strength:15,count:60}),'+6 % de dégâts · +15 % de soins et de boucliers pendant 60 combats ordinaires.');
+assert.equal(gameplayTranslate('ru','Restores {percent}% maximum HP in boss fights or between dungeon rooms.',{percent:50}),'Восстанавливает 50% максимального здоровья в бою с боссом или между комнатами подземелья.');
+assert.equal(gameplayTranslate('tr','Requires {skill} level {level}.',{skill:'Simya',level:25}),'Simya becerisi için seviye 25 gerekli.');
+assert.equal(localizeGameplay('de','A heat-stable fixative for Sunscar equipment.'),'Hitzebeständiges Fixiermittel für Sunscar-Ausrüstung.');
+const workshopSource=fs.readFileSync(path.join(root,'src/components/ConsumableWorkshop.tsx'),'utf8');
+assert.ok(workshopSource.includes('Math.round(effect.maxHpFraction*100)')&&workshopSource.includes('Math.round(effect.damageReductionFraction*100)')&&workshopSource.includes('Math.round(effect.healingStrengthFraction*100)'),'Alchemy benefit labels must use the current potion magnitudes');
+assert.ok(workshopSource.includes("gt('Healing potions work in boss fights and between dungeon rooms.")&&!workshopSource.includes("gt('Healing potions are for boss fights. Select one"),'Alchemy healing help must describe both boss and dungeon recovery');
+assert.ok(workshopSource.includes("gt('Lv {level}'")&&workshopSource.includes("gt('Tap to start')"),'Alchemy level badges and actionable hints must be localized');
+
 assert.equal(gameplayTranslate('ru','BOSS HEALING POTIONS'),'ЛЕЧЕБНЫЕ ЗЕЛЬЯ ДЛЯ БОССОВ');
 assert.equal(gameplayTranslate('tr','Select for bosses'),'Bosslar için seç');
 assert.equal(gameplayTranslate('ru','No healing potions carried. Brew them in Alchemy or withdraw from Bank.'),'При себе нет лечебных зелий. Создайте их в Алхимии или возьмите из банка.');

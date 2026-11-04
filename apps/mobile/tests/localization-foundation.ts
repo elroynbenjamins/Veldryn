@@ -2,7 +2,7 @@ import {assert} from './test-assert';
 import {SUPPORTED_LANGUAGES} from '../src/i18n/languages';
 import {APP_SHELL_MESSAGES,appText} from '../src/i18n/app-shell';
 import {appBuildText} from '../src/i18n/app-build';
-import {earlyLocaleText} from '../src/i18n/early-locales';
+import {EARLY_LOCALE_ROWS,earlyLocaleText} from '../src/i18n/early-locales';
 import {navigationText} from '../src/i18n/navigation';
 import {NAVIGATION_MESSAGES} from '../src/i18n/navigation';
 import {BATTLE_MESSAGES} from '../src/i18n/battle';
@@ -19,6 +19,14 @@ const placeholders=(text:string)=>[...new Set([...text.matchAll(/\{([A-Za-z][A-Z
 for(const [source,translations] of Object.entries({...APP_SHELL_MESSAGES,...NAVIGATION_MESSAGES,...BATTLE_MESSAGES,...VISUAL_MESSAGES})){
  assert.equal(translations.length,5); // Legacy catalogs stay at five translations; RU/TR are intentionally partial.
  for(const translation of translations){assert.ok(translation.trim().length>0);assert.equal(placeholders(translation),placeholders(source),source);}
+}
+assert.ok(Object.keys(EARLY_LOCALE_ROWS).length>=200,'RU/TR starter coverage unexpectedly shrank');
+for(const [source,translations] of Object.entries(EARLY_LOCALE_ROWS)){
+ assert.equal(translations.length,2,'RU/TR starter row must have two translations: '+source);
+ for(const translation of translations){
+  assert.ok(translation.trim().length>0,'Empty RU/TR starter translation: '+source);
+  assert.equal(placeholders(translation),placeholders(source),'RU/TR placeholder mismatch: '+source);
+ }
 }
 for(const monster of MONSTERS){
  const encounter=encounterIdentity(monster);
@@ -53,6 +61,9 @@ assert.equal(translate('nl','constructor' as 'key'),'constructor');
 assert.equal(translate('nl','Unknown source' as 'key'),'Unknown source');
 assert.equal(formatLocalizedNumber('nl',12345.6),'12.345,6');
 assert.equal(formatLocalizedNumber('en',12345.6),'12,345.6');
+assert.equal(formatLocalizedNumber('tr',12345.6),'12.345,6');
+assert.ok(formatLocalizedNumber('ru',12345.6).endsWith(',6'));
+
 assert.equal(formatGameNumber(12345,'exact','nl'),'12.345');
 assert.equal(formatGameNumber(12500,'abbreviated','de'),'12,5K');
 assert.ok(formatLocalizedDate('de',new Date('2026-09-27T12:00:00Z'),{timeZone:'UTC',year:'numeric',month:'2-digit',day:'2-digit'}).includes('27.09.2026'));

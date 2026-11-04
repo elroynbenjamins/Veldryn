@@ -20,7 +20,7 @@
   "additionalRuntimeGaps": [
     "Raw Error.message strings and server validation results remain as supplied; localized fallback errors are covered.",
     "Rankings snapshot self.reason, entries[].subtitle/detail remain server-driven.",
-    "The five-slot Guild Quest board's 15 known authored title/description pairs now localize in seven target languages with exact source-and-key matching; Guild project/decree/facility/trophy titles, descriptions, effects, statuses, roster summaries and activity-feed text from server/content helpers remain incomplete.",
+    "The active shared weekly Guild Project, nine retained weekly templates, and four development definitions now show reviewed names/descriptions in seven target languages when ID and English source pair match. Guild project status/rules/action labels and related decree/facility/trophy text remain partly English; unknown server snapshots intentionally fall back to unchanged text.",
     "Party contract/event names, objectives, reward qualification explanations, recruitment tags/context/expiry helpers in flat components remain partly English. SocialScreen itself localizes its expiry and known labels.",
     "Co-op projections still supply English node titles, risk/reward summaries, phase labels, encounter intel, boss telegraphs and recaps, reward text, effects/status names, lock reasons and event descriptions.",
     "Chat relationship presentation labels and profile record/collection/achievement metadata, emote labels from definitions, and fixed offline sample-message/profile prose remain partly English.",

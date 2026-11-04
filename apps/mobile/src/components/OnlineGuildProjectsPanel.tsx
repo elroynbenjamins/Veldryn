@@ -1,4 +1,6 @@
 import {useSocialText} from '../i18n/social';
+import {useGameLanguage} from '../i18n/GameLanguageProvider';
+import {guildProjectAuthoredCopy} from '../i18n/guild-project-authored';
 import {useEffect,useMemo,useRef,useState} from 'react';
 import {AppState,Image,Pressable,StyleSheet,Text,View} from 'react-native';
 import {GameButton} from './GameButton';
@@ -119,10 +121,11 @@ export function OnlineGuildProjectsPanel({onRewardsChanged,onNavigateActivity}:{
 }
 
 function CandidateCard({candidate,busy,onVote,onStart}:{candidate:OnlineGuildProjectCandidate;busy:string;onVote:()=>void;onStart:()=>void}){
- const C=useGameTheme(),s=useMemo(()=>makeStyles(C),[C]);
+ const language=useGameLanguage(),C=useGameTheme(),s=useMemo(()=>makeStyles(C),[C]);
+ const authored=guildProjectAuthoredCopy(language,candidate.templateId,candidate.name,candidate.description);
  return <View style={s.candidate}>
-  <View style={s.sectionHead}><View style={s.flex}><Text style={s.projectTitle}>{candidate.name}</Text><Text style={s.meta}>{projectFocusLabel(candidate.focus)} · {candidate.voteCount} votes</Text></View>{candidate.myVote?<StatusPill label="VOTED" tone="good"/>:null}</View>
-  <Text style={s.copy}>{candidate.description}</Text>
+  <View style={s.sectionHead}><View style={s.flex}><Text style={s.projectTitle}>{authored.name}</Text><Text style={s.meta}>{projectFocusLabel(candidate.focus)} · {candidate.voteCount} votes</Text></View>{candidate.myVote?<StatusPill label="VOTED" tone="good"/>:null}</View>
+  <Text style={s.copy}>{authored.description}</Text>
   <Text style={s.meta}>Voting closes {new Date(candidate.expiresAt).toLocaleString()}</Text>
   <View style={s.actions}><View style={s.flex}><GameButton compact title={candidate.myVote?'Your vote':'Vote'} tone="secondary" disabled={!!busy||candidate.myVote} onPress={onVote}/></View>
    {candidate.canStart?<View style={s.flex}><GameButton compact title="Start project" disabled={!!busy} onPress={onStart}/></View>:null}
@@ -139,7 +142,8 @@ export function GuildProjectPosting({project,expanded,compact=false,onToggle,onC
  compact?:boolean;
  onToggle:()=>void;
 }){
- const C=useGameTheme(),s=useMemo(()=>makeStyles(C),[C]);
+ const language=useGameLanguage(),C=useGameTheme(),s=useMemo(()=>makeStyles(C),[C]);
+ const authored=guildProjectAuthoredCopy(language,project.templateId,project.name,project.description);
  const pct=progressPercent(project);
  const weekly=project.launchWeekly===true;
  const qualifying=project.personalRewardThreshold>0&&project.personalPoints>=project.personalRewardThreshold;
@@ -149,11 +153,11 @@ export function GuildProjectPosting({project,expanded,compact=false,onToggle,onC
  const projectArtwork=guildProjectArtwork(project.templateId);
  const readyToClaim=weekly&&claimOpen;
  return <View style={[s.project,project.status==='completed'&&s.complete]}>
-  <Pressable accessibilityRole="button" accessibilityLabel={`Project details: ${project.name}`} accessibilityHint="Show or hide the full progress and reward rules" accessibilityState={{expanded}}
+  <Pressable accessibilityRole="button" accessibilityLabel={`Project details: ${authored.name}`} accessibilityHint="Show or hide the full progress and reward rules" accessibilityState={{expanded}}
    onPress={onToggle} style={({pressed})=>[s.projectPress,pressed&&s.pressed]}>
    <View style={s.sectionHead}>
     {projectArtwork?<Image source={projectArtwork} resizeMode="contain" style={s.projectIcon}/>:<ActivityArtwork id="combat" size={42}/>}
-    <View style={s.flex}><Text numberOfLines={2} style={s.projectTitle}>{project.name}</Text><Text style={s.meta}>{projectFocusLabel(project.focus)} · {weekly?'Weekly':project.kind==='development'?'Development':'Event'}</Text></View>
+    <View style={s.flex}><Text numberOfLines={2} style={s.projectTitle}>{authored.name}</Text><Text style={s.meta}>{projectFocusLabel(project.focus)} · {weekly?'Weekly':project.kind==='development'?'Development':'Event'}</Text></View>
     <StatusPill label={project.status==='completed'?'DONE':'ACTIVE'} tone={project.status==='completed'?'good':'info'}/>
    </View>
    <View style={s.progressHead}><Text style={s.percent}>{pct}%</Text><View style={s.progressNumbers}><Text style={s.progressAmount}>{project.kind==='development'?'Resource goals':`${project.completionPoints.toLocaleString()} / ${project.targetPoints.toLocaleString()}`}</Text><Text style={s.meta}>Guild progress</Text></View></View>
@@ -189,7 +193,7 @@ export function GuildProjectPosting({project,expanded,compact=false,onToggle,onC
   {readyToClaim?<GameButton title={busy?'Claiming…':'Claim 500 Gold'} disabled={busy} onPress={onClaim}/>:null}
   {project.status==='completed'&&weekly&&!readyToClaim&&!compact?<Text style={s.meta}>{project.completionRewardClaimed?'Reward claimed':!qualifying?'Personal contribution threshold not met':'Reward claim period ended'}</Text>:null}
   {expanded?<View style={s.details}>
-   <Text style={s.copy}>{project.description}</Text>
+   <Text style={s.copy}>{authored.description}</Text>
    {project.kind!=='development'?<View style={s.breakdown}>
     <Text style={s.meta}>Combat: {project.combatPoints.toLocaleString()}</Text><Text style={s.meta}>Skilling: {project.skillingPoints.toLocaleString()}</Text>
    </View>:project.resourceGoals.map(goal=><View key={goal.resourceKind+':'+goal.resourceId} style={s.resource}>

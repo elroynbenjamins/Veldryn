@@ -958,6 +958,8 @@ const details={
 "Requirements missing":["Requirements missing","Voraussetzungen fehlen","Faltan requisitos","Vereisten ontbreken","Requisiti mancanti","Conditions manquantes"],
 "Story boss battle":["Story boss battle","Story-Bosskampf","Combate de jefe de historia","Verhaalbaasgevecht","Battaglia boss della storia","Combat de boss d’histoire"],
 "ASTERFALL STORY BOSS":["ASTERFALL STORY BOSS","ASTERFALL-STORY-BOSS","JEFE DE HISTORIA DE ASTERFALL","ASTERFALL-VERHAALBAAS","BOSS STORIA DI ASTERFALL","BOSS D’HISTOIRE D’ASTERFALL"],
+"WEEKLY REMATCH":["WEEKLY REMATCH","WÖCHENTLICHER RÜCKKAMPF","REVANCHA SEMANAL","WEKELIJKSE HERKANSING","RIVINCITA SETTIMANALE","REVANCHE HEBDOMADAIRE"],
+"BATTLE IN PROGRESS":["BATTLE IN PROGRESS","KAMPF LÄUFT","COMBATE EN CURSO","GEVECHT BEZIG","BATTAGLIA IN CORSO","COMBAT EN COURS"],
 "PHASE":["PHASE","PHASE","FASE","FASE","FASE","PHASE"],
 "⚠ TELEGRAPH":["⚠ TELEGRAPH","⚠ ANKÜNDIGUNG","⚠ AVISO","⚠ WAARSCHUWING","⚠ AVVISO","⚠ AVERTISSEMENT"],
 "Adventurer":["Adventurer","Abenteurer","Aventurero","Avonturier","Avventuriero","Aventurier"],

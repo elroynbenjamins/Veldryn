@@ -1184,8 +1184,8 @@ export function previewFallenKnightBattle(state:GameState,nowMs=Date.now(),mode:
 }
 
 export function fallenKnightWinChance(state:GameState){const r=regionalReadiness(state).total;if(r<50)return .10;if(r<60)return .18;if(r<70)return .34;if(r<80)return .48;if(r<90)return .64;if(r<100)return .82;return .90;}
-/** Rewarded rematches are capped weekly. Resolution is immediate; only the first story clear uses cinematic playback. */
-export function challengeFallenKnightRematch(state:GameState,nowMs:number):{state:GameState;won:boolean;message:string}{
+/** Rewarded rematches stay capped weekly; all valid attempts return the same battle timeline for cinematic playback. */
+export function challengeFallenKnightRematch(state:GameState,nowMs:number):{state:GameState;won:boolean;message:string;battle:FallenKnightBattleResult}{
   if(!state.character||state.character.level<25||!state.defeatedBossIds.includes('FALLEN_KNIGHT'))throw new Error('Defeat the Fallen Knight in the story first.');
   state=settleOutOfCombatRecovery(state,nowMs);
   if(!state.character)throw new Error('No character');
@@ -1200,7 +1200,7 @@ export function challengeFallenKnightRematch(state:GameState,nowMs:number):{stat
   let next={...state,inventory:{...state.inventory,stacks:inventory},character:postFightCharacter,activity:null,outOfCombatSinceMs:nowMs,account:{...state.account,longTermMetrics:attemptMetrics}} as GameState;
   if(!battle.won){
     next.account.companionLastBattle={title:'Fallen Knight rematch',won:false,durationMs:battle.durationMs,gold:0,essence:0,bondstones:0,atMs:nowMs};
-    return {state:next,won:false,message:`Fallen Knight rematch lost after ${Math.max(1,Math.round(battle.durationMs/1000))}s. No weekly clear was consumed.`};
+    return {state:next,won:false,battle,message:`Fallen Knight rematch lost after ${Math.max(1,Math.round(battle.durationMs/1000))}s. No weekly clear was consumed.`};
   }
 
   const weeklyRecorded=recordFallenKnightWeeklyVictory(next,nowMs);next=weeklyRecorded.state;
@@ -1222,7 +1222,7 @@ export function challengeFallenKnightRematch(state:GameState,nowMs:number):{stat
   next=applyTrustedLongTermProgression(next,[{kind:'boss',contentId:'FALLEN_KNIGHT',units:1}],undefined,nowMs,{accountId:longTermAccountScope(next),eventId:`boss-rematch:${state.character.id}:FALLEN_KNIGHT:${weeklyRecorded.status.weekKey}:${weeklyRecorded.clearNumber}`}).state;
   next={...next,defeatedBossIds:[...new Set([...next.defeatedBossIds,'FALLEN_KNIGHT'])]};
   const strikes=battle.events.filter(event=>event.type==='player_hit').length,stoneText=stone.reward?'+1 Bondstone':`Bondstone weekly cap already reached`,dropText=bossDrops.length?bossDrops.map(row=>`${row.quantity}× ${itemDef(row.itemId).name}`).join(', '):'no bonus drop';
-  return {state:next,won:true,message:`Fallen Knight weekly clear ${weeklyRecorded.clearNumber}/${weeklyRecorded.status.cap} won${strikes===1?' in one hit':` in ${Math.max(1,Math.round(battle.durationMs/1000))}s`}. +${rewardGold} Gold, +${rewardXp} XP, +${rewardEssence} Essence${weeklyRecorded.bountyTriggered?' · Oathglass Bounty completed: 1 Oathglass Fragment, 1 Tempering Core, 10 Gem Dust, 1 Regional Catalyst':''} · Boss drops: ${dropText} · ${stoneText}.`};
+  return {state:next,won:true,battle,message:`Fallen Knight weekly clear ${weeklyRecorded.clearNumber}/${weeklyRecorded.status.cap} won${strikes===1?' in one hit':` in ${Math.max(1,Math.round(battle.durationMs/1000))}s`}. +${rewardGold} Gold, +${rewardXp} XP, +${rewardEssence} Essence${weeklyRecorded.bountyTriggered?' · Oathglass Bounty completed: 1 Oathglass Fragment, 1 Tempering Core, 10 Gem Dust, 1 Regional Catalyst':''} · Boss drops: ${dropText} · ${stoneText}.`};
 }
 
 export function challengeFallenKnight(state:GameState,nowMs=Date.now()):{state:GameState;won:boolean;message:string;battle?:FallenKnightBattleResult}{

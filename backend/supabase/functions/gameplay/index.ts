@@ -51068,6 +51068,7 @@ function simulateFallenKnightStoryBattle(player, seed, mode = "story") {
   return {
     bossId: "FALLEN_KNIGHT",
     bossName: "Fallen Knight",
+    mode,
     won,
     durationMs: Math.min(FALLEN_KNIGHT_MAX_DURATION_MS, now + 450),
     bossMaxHp,
@@ -52391,7 +52392,7 @@ function challengeFallenKnightRematch(state, nowMs) {
   let next = { ...state, inventory: { ...state.inventory, stacks: inventory }, character: postFightCharacter, activity: null, outOfCombatSinceMs: nowMs, account: { ...state.account, longTermMetrics: attemptMetrics } };
   if (!battle.won) {
     next.account.companionLastBattle = { title: "Fallen Knight rematch", won: false, durationMs: battle.durationMs, gold: 0, essence: 0, bondstones: 0, atMs: nowMs };
-    return { state: next, won: false, message: `Fallen Knight rematch lost after ${Math.max(1, Math.round(battle.durationMs / 1e3))}s. No weekly clear was consumed.` };
+    return { state: next, won: false, battle, message: `Fallen Knight rematch lost after ${Math.max(1, Math.round(battle.durationMs / 1e3))}s. No weekly clear was consumed.` };
   }
   const weeklyRecorded = recordFallenKnightWeeklyVictory(next, nowMs);
   next = weeklyRecorded.state;
@@ -52414,7 +52415,7 @@ function challengeFallenKnightRematch(state, nowMs) {
   next = applyTrustedLongTermProgression(next, [{ kind: "boss", contentId: "FALLEN_KNIGHT", units: 1 }], void 0, nowMs, { accountId: longTermAccountScope(next), eventId: `boss-rematch:${state.character.id}:FALLEN_KNIGHT:${weeklyRecorded.status.weekKey}:${weeklyRecorded.clearNumber}` }).state;
   next = { ...next, defeatedBossIds: [.../* @__PURE__ */ new Set([...next.defeatedBossIds, "FALLEN_KNIGHT"])] };
   const strikes = battle.events.filter((event) => event.type === "player_hit").length, stoneText = stone.reward ? "+1 Bondstone" : `Bondstone weekly cap already reached`, dropText = bossDrops.length ? bossDrops.map((row) => `${row.quantity}\xD7 ${itemDef(row.itemId).name}`).join(", ") : "no bonus drop";
-  return { state: next, won: true, message: `Fallen Knight weekly clear ${weeklyRecorded.clearNumber}/${weeklyRecorded.status.cap} won${strikes === 1 ? " in one hit" : ` in ${Math.max(1, Math.round(battle.durationMs / 1e3))}s`}. +${rewardGold} Gold, +${rewardXp} XP, +${rewardEssence} Essence${weeklyRecorded.bountyTriggered ? " \xB7 Oathglass Bounty completed: 1 Oathglass Fragment, 1 Tempering Core, 10 Gem Dust, 1 Regional Catalyst" : ""} \xB7 Boss drops: ${dropText} \xB7 ${stoneText}.` };
+  return { state: next, won: true, battle, message: `Fallen Knight weekly clear ${weeklyRecorded.clearNumber}/${weeklyRecorded.status.cap} won${strikes === 1 ? " in one hit" : ` in ${Math.max(1, Math.round(battle.durationMs / 1e3))}s`}. +${rewardGold} Gold, +${rewardXp} XP, +${rewardEssence} Essence${weeklyRecorded.bountyTriggered ? " \xB7 Oathglass Bounty completed: 1 Oathglass Fragment, 1 Tempering Core, 10 Gem Dust, 1 Regional Catalyst" : ""} \xB7 Boss drops: ${dropText} \xB7 ${stoneText}.` };
 }
 function challengeFallenKnight(state, nowMs = Date.now()) {
   if (!state.character) throw new Error("No character");

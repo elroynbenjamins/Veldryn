@@ -41,6 +41,7 @@ export interface FallenKnightPlayerSnapshot{
 export interface FallenKnightBattleResult{
   bossId:'FALLEN_KNIGHT';
   bossName:'Fallen Knight';
+  mode:'story'|'rematch';
   won:boolean;
   durationMs:number;
   bossMaxHp:number;
@@ -179,7 +180,7 @@ export function simulateFallenKnightStoryBattle(player:FallenKnightPlayerSnapsho
   push({atMs:Math.min(FALLEN_KNIGHT_MAX_DURATION_MS,now+450),type:won?'victory':'defeat',label:won?'The Fallen Knight falls.':'You are forced back from the oathglass road.'});
   events.sort((a,b)=>a.atMs-b.atMs||a.type.localeCompare(b.type));
   return {
-    bossId:'FALLEN_KNIGHT',bossName:'Fallen Knight',won,
+    bossId:'FALLEN_KNIGHT',bossName:'Fallen Knight',mode,won,
     durationMs:Math.min(FALLEN_KNIGHT_MAX_DURATION_MS,now+450),
     bossMaxHp,playerMaxHp,finalBossHp:Math.max(0,Math.round(bossHp)),finalPlayerHp:Math.max(0,Math.round(playerHp)),foodConsumed,
     phasesReached,events,

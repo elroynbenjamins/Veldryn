@@ -1,4 +1,5 @@
 import {useSocialText} from '../i18n/social';
+import {useGuildActivityUiText} from '../i18n/guild-activity-ui';
 import {useEffect,useMemo,useState} from 'react';
 import {Pressable,StyleSheet,Text,View} from 'react-native';
 import {Panel} from './Panel';
@@ -17,20 +18,20 @@ export function GuildActivitySummaryPanel({compact=false}:{compact?:boolean}){
 }
 
 export function GuildActivityMeter({state,compact=false}:{state:OnlineGuildActivityState;compact?:boolean}){
- const st=useSocialText(),C=useGameTheme(),s=useMemo(()=>makeStyles(C),[C]),[detailsOpen,setDetailsOpen]=useState(false);
+ const st=useSocialText(),{ui,milestone}=useGuildActivityUiText(),C=useGameTheme(),s=useMemo(()=>makeStyles(C),[C]),[detailsOpen,setDetailsOpen]=useState(false);
  const next=guildActivityNextMilestone(Math.min(100,state.activityPercent)),reserve=Math.max(0,state.activityPercent-100);
- const decayLabel=state.decayMode==='protected'?'Protected today':state.decayMode==='partial'?'-'+state.partialDecayPercent+'% if today ends here':'-'+state.inactiveDecayPercent+'% if inactive';
+ const decayLabel=state.decayMode==='protected'?ui('Protected today'):state.decayMode==='partial'?ui('-{percent}% if today ends here',{percent:state.partialDecayPercent}):ui('-{percent}% if inactive',{percent:state.inactiveDecayPercent});
  const unlocked=GUILD_ACTIVITY_MILESTONE_DEFS.filter(row=>state.activityPercent>=row.threshold);
  return <Panel style={compact?s.compact:undefined}>
-  <View style={s.head}><View style={s.flex}>{!compact?<Text style={s.kicker}>{st("ACTIVE GUILD")}</Text>:null}<Text style={[s.title,compact&&s.compactTitle]}>{state.activityPercent}% Guild Activity</Text></View><StatusPill label={state.activityPercent>=100?st("MAX ACTIVITY"):state.decayMode==='protected'?st("PROTECTED"):st("BUILDING")} tone={state.activityPercent>=60?'good':'info'}/></View>
-  <View accessibilityRole="progressbar" accessibilityLabel="Guild Activity" aria-valuemin={0} aria-valuemax={100} aria-valuenow={Math.min(100,state.activityPercent)} accessibilityValue={{min:0,max:100,now:Math.min(100,state.activityPercent)}} style={s.track}><View style={[s.fill,{width:((Math.min(100,state.activityPercent))+'%') as any}]}/>{GUILD_ACTIVITY_MILESTONE_DEFS.filter(row=>row.threshold<100).map(row=><View key={row.threshold} accessible={false} pointerEvents="none" style={{position:'absolute',top:0,bottom:0,width:1,left:(row.threshold+'%') as any,backgroundColor:C.stage}}/>)}</View>
-  {reserve>0?<Text style={s.reserveText}>{st("Activity Reserve")} {reserve}/10% · bonuses remain capped at 100%; reserve absorbs future decay.</Text>:null}
-  {next?<Text style={s.next}>{compact?`Next: ${next.threshold}% · ${next.name}`:`${Math.max(0,next.threshold-state.activityPercent)}% until ${next.name} · ${next.description}`}</Text>:<Text style={s.next}>{st("All Guild Activity milestones active.")}</Text>}
-  {compact?<Pressable accessibilityRole="button" accessibilityLabel="Guild Activity details" aria-expanded={detailsOpen} accessibilityState={{expanded:detailsOpen}} onPress={()=>setDetailsOpen(value=>!value)} style={s.disclosure}><Text style={s.copy}>{unlocked.length}/5 milestones active</Text><Text style={s.detailLink}>{detailsOpen?'Less −':'Details +'}</Text></Pressable>:null}
+  <View style={s.head}><View style={s.flex}>{!compact?<Text style={s.kicker}>{st("ACTIVE GUILD")}</Text>:null}<Text style={[s.title,compact&&s.compactTitle]}>{ui('{percent}% Guild Activity',{percent:state.activityPercent})}</Text></View><StatusPill label={state.activityPercent>=100?st("MAX ACTIVITY"):state.decayMode==='protected'?st("PROTECTED"):st("BUILDING")} tone={state.activityPercent>=60?'good':'info'}/></View>
+  <View accessibilityRole="progressbar" accessibilityLabel={st("Guild Activity")} aria-valuemin={0} aria-valuemax={100} aria-valuenow={Math.min(100,state.activityPercent)} accessibilityValue={{min:0,max:100,now:Math.min(100,state.activityPercent)}} style={s.track}><View style={[s.fill,{width:((Math.min(100,state.activityPercent))+'%') as any}]}/>{GUILD_ACTIVITY_MILESTONE_DEFS.filter(row=>row.threshold<100).map(row=><View key={row.threshold} accessible={false} pointerEvents="none" style={{position:'absolute',top:0,bottom:0,width:1,left:(row.threshold+'%') as any,backgroundColor:C.stage}}/>)}</View>
+  {reserve>0?<Text style={s.reserveText}>{ui("Activity Reserve {reserve}/10% · bonuses capped at 100%; reserve absorbs decay.",{reserve})}</Text>:null}
+  {next?<Text style={s.next}>{compact?ui('Next: {percent}% · {name}',{percent:next.threshold,name:milestone(next.name)}):ui('{percent}% until {name} · {description}',{percent:Math.max(0,next.threshold-state.activityPercent),name:milestone(next.name),description:milestone(next.description)})}</Text>:<Text style={s.next}>{st("All Guild Activity milestones active.")}</Text>}
+  {compact?<Pressable accessibilityRole="button" accessibilityLabel={ui("Guild Activity details")} aria-expanded={detailsOpen} accessibilityState={{expanded:detailsOpen}} onPress={()=>setDetailsOpen(value=>!value)} style={s.disclosure}><Text style={s.copy}>{ui("{count}/5 milestones active",{count:unlocked.length})}</Text><Text style={s.detailLink}>{detailsOpen?ui('Less −'):ui('Details +')}</Text></Pressable>:null}
   {!compact||detailsOpen?<>
-   <View style={s.metaRow}><Text style={s.meta}>{state.activeMemberCount} recently active member{state.activeMemberCount===1?'':'s'} · target {state.activityTargetUnits} units</Text><Text style={s.decay}>{decayLabel}</Text></View>
-   <View style={s.milestones}>{GUILD_ACTIVITY_MILESTONE_DEFS.map(row=><View key={row.threshold} style={[s.milestone,state.activityPercent>=row.threshold&&s.on]}><Text style={[s.pct,state.activityPercent>=row.threshold&&s.pctOn]}>{row.threshold}%</Text><View style={s.flex}><Text style={s.name}>{row.name}</Text><Text style={s.copy}>{row.description}</Text></View></View>)}</View>
-   <Text style={s.copy}>Guild Quests, Muster and completed Projects sustain this meter.</Text>
+   <View style={s.metaRow}><Text style={s.meta}>{ui(state.activeMemberCount===1?'{count} recently active member · target {units} units':'{count} recently active members · target {units} units',{count:state.activeMemberCount,units:state.activityTargetUnits})}</Text><Text style={s.decay}>{decayLabel}</Text></View>
+   <View style={s.milestones}>{GUILD_ACTIVITY_MILESTONE_DEFS.map(row=><View key={row.threshold} style={[s.milestone,state.activityPercent>=row.threshold&&s.on]}><Text style={[s.pct,state.activityPercent>=row.threshold&&s.pctOn]}>{row.threshold}%</Text><View style={s.flex}><Text style={s.name}>{milestone(row.name)}</Text><Text style={s.copy}>{milestone(row.description)}</Text></View></View>)}</View>
+   <Text style={s.copy}>{ui('Guild Quests, Muster and completed Projects sustain this meter.')}</Text>
   </>:null}
  </Panel>;
 }

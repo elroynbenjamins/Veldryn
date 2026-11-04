@@ -1,4 +1,7 @@
-import {createCharacter,newGame,effectiveStats} from '../src/core/game';
+import {createCharacter,newGame,effectiveStats,equipItem,equipItemFromEquipmentPouch} from '../src/core/game';
+import {equipCraftedGearInstance} from '../src/core/crafted-gear-ownership';
+import {equipmentComparison} from '../src/core/equipment-comparison';
+import {itemDef,ITEMS} from '../src/content/items';
 import {previewEquipment} from '../src/core/equipment-preview';
 import {availableEquipmentChoicesForSlot} from '../src/core/equipment-slot-picker';
 import {EQUIPMENT_ITEMS_V33} from '../src/content/equipment-items-v33';
@@ -75,5 +78,68 @@ if(!missingCopyRejected)throw new Error('Preview must reject missing Forge insta
 let implicitCopyRejected=false;
 try{previewEquipment(forged,forgeWeapon.id)}catch{implicitCopyRejected=true}
 if(!implicitCopyRejected)throw new Error('Preview must not silently pick a Forge copy');
+
+
+function assertPreviewEqualsActual(preview:typeof state,actual:typeof state,label:string){
+ const p=effectiveStats(preview),a=effectiveStats(actual);
+ for(const key of Object.keys(a) as Array<keyof typeof a>)
+  if(Math.abs(p[key]-a[key])>1e-9)
+   throw new Error(label+' preview differs from authoritative equip in '+key+': '+p[key]+' vs '+a[key]);
+}
+assertPreviewEqualsActual(highPreview,equipCraftedGearInstance(forged,'COPY_HIGH'),'Q100 Forge equip');
+assertPreviewEqualsActual(lowPreview,equipCraftedGearInstance(forged,'COPY_LOW'),'Q0 Forge equip');
+assertPreviewEqualsActual(upgradedPreview,equipCraftedGearInstance(equippedLow,'COPY_HIGH'),'same-item unique-copy replacement');
+assertPreviewEqualsActual(pouchPreview,equipCraftedGearInstance(pouchForged,'COPY_HIGH'),'Equipment Pouch unique-copy equip');
+
+// Legacy same-id swaps must NOT discard itemId-keyed upgrades or sockets.
+// The old preview used to delete gearEnhancements even though equipItem retains it.
+const legacyState={...state,character:{...state.character!,gearEnhancements:{basic_sword:{rank:2,failures:0,gemIds:[]}}},
+ inventory:{...state.inventory,stacks:[...state.inventory.stacks,{itemId:'basic_sword',quantity:1}]}};
+const legacyPreview=previewEquipment(legacyState,'basic_sword');
+assertPreviewEqualsActual(legacyPreview,equipItem(legacyState,'basic_sword'),'same legacy item with upgrades');
+if(effectiveStats(legacyPreview).attack!==effectiveStats(legacyState).attack||
+ legacyPreview.character?.gearEnhancements?.basic_sword?.rank!==2)
+ throw new Error('Comparing the same legacy item must preserve the actual +2 enhancement');
+const legacyPouch={...legacyState,
+ inventory:state.inventory,
+ character:{...legacyState.character!,equipmentPouch:{capacity:30,stacks:[{itemId:'basic_sword',quantity:1}]}}};
+assertPreviewEqualsActual(previewEquipment(legacyPouch,'basic_sword',undefined,'equipment_pouch'),
+ equipItemFromEquipmentPouch(legacyPouch,'basic_sword'),'pouch legacy gear');
+
+const uniqueBlockingLegacy={...equippedLow,
+ inventory:{...equippedLow.inventory,stacks:[...equippedLow.inventory.stacks,{itemId:forgeWeapon.id,quantity:1}]}};
+let rejectedPreview=false,rejectedActual=false;
+try{previewEquipment(uniqueBlockingLegacy,forgeWeapon.id)}catch{rejectedPreview=true}
+try{equipItem(uniqueBlockingLegacy,forgeWeapon.id)}catch{rejectedActual=true}
+if(!rejectedPreview||!rejectedActual)
+ throw new Error('Comparison must reject legacy swaps when a unique equipped copy blocks the real equip');
+
+// The same six-piece set milestone that appears visually must not be labelled
+// as an active combat trigger; only 2/4/8/10 have runtime static bonuses.
+const setId=itemDef(forgeWeapon.id).equipmentSetId;
+const setItems=EQUIPMENT_ITEMS_V33.filter(item=>item.equipmentSetId===setId&&item.classRestriction==='IRONWARDEN');
+if(setItems.length>=6){
+ const beforeEquipment=Object.fromEntries(setItems.slice(0,5).map(item=>[item.slot!,item.id]));
+ const sixth=setItems[5];
+ const fivePiece={...state,character:{...state.character!,level:100,equipment:beforeEquipment},
+  inventory:{...state.inventory,stacks:[...state.inventory.stacks,{itemId:sixth.id,quantity:1}]}};
+ const sixPiecePreview=previewEquipment(fivePiece,sixth.id);
+ assertPreviewEqualsActual(sixPiecePreview,equipItem(fivePiece,sixth.id),'6-piece set transition');
+ const diff=equipmentComparison(fivePiece,sixPiecePreview);
+ if(!diff.sets.some(row=>row.id===setId&&row.milestones.some(m=>m.threshold===6&&m.status==='pending')))
+  throw new Error('Six-piece set milestone must be marked pending, not active');
+}
+// Verify the percentage bonuses in the comparison come from the actual
+// capped effect-gem totals, rather than raw gem IDs or guessed item values.
+const effectGem=ITEMS.find(item=>item.type==='gem'&&item.gemEffect&&item.gemEffectValue);
+if(effectGem){
+ const gemForged={...equippedLow,account:{...equippedLow.account,craftedGearInstances:
+  equippedLow.account.craftedGearInstances.map(row=>row.id==='COPY_HIGH'?{...row,
+   enhancement:{...row.enhancement,effectGemId:effectGem.id,gemIds:[effectGem.id]}}:row)}};
+ const projected=previewEquipment(gemForged,forgeWeapon.id,'COPY_HIGH');
+ assertPreviewEqualsActual(projected,equipCraftedGearInstance(gemForged,'COPY_HIGH'),'effect gem equipped with Forge copy');
+ if(!equipmentComparison(gemForged,projected).effects.length)
+  throw new Error('Combat effect gem changes must appear in the comparison');
+}
 
 console.log('PASS: equipment screen uses ten live slots, canonical stats, loadout guides, contextual focus and saved presentation');

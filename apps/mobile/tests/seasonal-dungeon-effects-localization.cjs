@@ -7,7 +7,10 @@ const root=path.resolve(__dirname,'../../..'),app=path.resolve(__dirname,'..');
 function load(file){
  const source=fs.readFileSync(file,'utf8');
  const compiled=ts.transpileModule(source,{compilerOptions:{module:ts.ModuleKind.CommonJS,target:ts.ScriptTarget.ES2022}}).outputText;
- const mod=new Module(file,module);mod.filename=file;mod.paths=Module._nodeModulePaths(path.dirname(file));mod._compile(compiled,file);
+ const mod=new Module(file,module);mod.filename=file;mod.paths=Module._nodeModulePaths(path.dirname(file));
+ const nativeRequire=mod.require.bind(mod);
+ mod.require=(request)=>request==='./seasonal-boss-copy'?load(path.join(app,'src/i18n/seasonal-boss-copy.ts')):nativeRequire(request);
+ mod._compile(compiled,file);
  return mod.exports;
 }
 const {SEASONAL_MECHANIC_ROWS,SEASONAL_OBJECTIVE_ROWS,SEASONAL_BOSS_EFFECT_TEMPLATES,SEASONAL_OBJECTIVE_EFFECT_TEMPLATES,localizedSeasonalDungeonMechanic,localizedSeasonalDungeonObjective}=load(path.join(app,'src/i18n/seasonal-dungeon-effects.ts'));

@@ -21,7 +21,7 @@ export function EquipmentPouchPanel({state,busy=false,onAction}:{state:GameState
  const [page,setPage]=useState(0),[selectedIndex,setSelectedIndex]=useState<number|null>(null),[gridWidth,setGridWidth]=useState(300);
  const columns=gridWidth>=600?8:gridWidth>=440?6:gridWidth>=345?5:4;
  const slotWidth=Math.max(54,Math.floor((gridWidth-(columns-1)*5)/columns));
- const pages=Math.max(1,Math.ceil(pouch.capacity/PAGE_SIZE)),shownPage=Math.min(page,pages-1),start=shownPage*PAGE_SIZE;
+ const pages=Math.max(1,Math.ceil(Math.max(pouch.capacity,pouch.stacks.length)/PAGE_SIZE)),shownPage=Math.min(page,pages-1),start=shownPage*PAGE_SIZE;
  const entries=Array.from({length:Math.min(PAGE_SIZE,Math.max(pouch.capacity,pouch.stacks.length)-start)},(_,index)=>pouch.stacks[start+index]);
  const copyById=useMemo(()=>new Map(craftedGearInstances(state).map(row=>[row.id,row])),[state.account.craftedGearInstances]);
  const selected=selectedIndex===null?undefined:pouch.stacks[selectedIndex];
@@ -64,7 +64,8 @@ export function EquipmentPouchPanel({state,busy=false,onAction}:{state:GameState
       {record?<Text style={s.meta}>{record.locked?'Locked · ':''}{record.enhancement.rank>0?'+'+record.enhancement.rank+' enhanced · ':''}Unique forged copy</Text>:<Text style={s.meta}>Standard equipment</Text>}</View>
     </View>
     <View style={s.actions}>
-     {record?<GameButton compact title="Equip" disabled={!onAction||busy} onPress={()=>send({type:'gear_equip',args:{instanceId:record.id}})}/>:null}
+     {record?<GameButton compact title="Equip" disabled={!onAction||busy} onPress={()=>send({type:'gear_equip',args:{instanceId:record.id}})}/>
+       :<GameButton compact title="Equip" disabled={!onAction||busy} onPress={()=>send({type:'equipment_pouch_equip',args:{itemId:item.id}})}/>}
      <GameButton compact tone="secondary" title="To Inventory" disabled={!onAction||busy} onPress={()=>move('inventory')}/>
      <GameButton compact tone="secondary" title="To Bank" disabled={!onAction||busy} onPress={()=>move('bank')}/>
      {record?<GameButton compact tone="secondary" title={record.locked?'Unlock':'Lock'} disabled={!onAction||busy} onPress={()=>send({type:'gear_lock',args:{instanceId:record.id,locked:!record.locked}})}/>:null}

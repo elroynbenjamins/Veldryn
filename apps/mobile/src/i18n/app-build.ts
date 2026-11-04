@@ -3,8 +3,10 @@ import {createTranslator} from './translator';
 
 type Catalog={version:string;build:string;channel:string;source:string};
 
+const en:Catalog={version:'Version {version}',build:'Build {build}',channel:'Release channel: {channel}',source:'Source: {source}'};
+
 export const appBuildCatalogs:Record<Language,Catalog>={
-  en:{version:'Version {version}',build:'Build {build}',channel:'Release channel: {channel}',source:'Source: {source}'},
+  en,
   de:{version:'Version {version}',build:'Build {build}',channel:'Veröffentlichungskanal: {channel}',source:'Quelle: {source}'},
   es:{version:'Versión {version}',build:'Compilación {build}',channel:'Canal de lanzamiento: {channel}',source:'Origen: {source}'},
   nl:{version:'Versie {version}',build:'Build {build}',channel:'Releasekanaal: {channel}',source:'Bron: {source}'},

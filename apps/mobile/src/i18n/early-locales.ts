@@ -1429,6 +1429,178 @@ export const EARLY_LOCALE_ROWS={
   "Stop combat when out of food": [
     "Останавливать бой, когда закончится еда",
     "Yiyecek bitince savaşı durdur"
+  ],
+  "NEW PARTY": [
+    "НОВАЯ ГРУППА",
+    "YENİ GRUP"
+  ],
+  "PARTY SETTINGS": [
+    "НАСТРОЙКИ ГРУППЫ",
+    "GRUP AYARLARI"
+  ],
+  "Party preferences": [
+    "Настройки группы",
+    "Grup tercihleri"
+  ],
+  "Change how other players discover your Party. Existing members stay.": [
+    "Измените, как другие игроки находят вашу группу. Участники останутся.",
+    "Diğer oyuncuların grubunu nasıl bulduğunu değiştir. Mevcut üyeler kalır."
+  ],
+  "Choose the kind of teammates you want to play with.": [
+    "Выберите, с какими игроками хотите играть.",
+    "Birlikte oynamak istediğin takım arkadaşlarını seç."
+  ],
+  "Activity level": [
+    "Уровень активности",
+    "Etkinlik düzeyi"
+  ],
+  "Tryhard": [
+    "Упорная игра",
+    "Rekabetçi"
+  ],
+  "Regular": [
+    "Регулярно",
+    "Düzenli"
+  ],
+  "Casual": [
+    "Неспешно",
+    "Rahat"
+  ],
+  "Active play": [
+    "Активная игра",
+    "Aktif oyun"
+  ],
+  "Play whenever you like": [
+    "Играйте, когда удобно",
+    "İstediğin zaman oyna"
+  ],
+  "Regular play and group activities": [
+    "Регулярная игра и групповые занятия",
+    "Düzenli oyun ve grup etkinlikleri"
+  ],
+  "Push progression and efficiency": [
+    "Упор на прогресс и эффективность",
+    "İlerlemeye ve verimliliğe odaklan"
+  ],
+  "Preferred language": [
+    "Предпочитаемый язык",
+    "Tercih edilen dil"
+  ],
+  "Any language": [
+    "Любой язык",
+    "Herhangi bir dil"
+  ],
+  "For discovery and communication only. Players are not blocked by language.": [
+    "Только для поиска и общения. Язык не ограничивает вступление.",
+    "Yalnızca arama ve iletişim içindir. Dil, katılmayı engellemez."
+  ],
+  "Minimum combat level": [
+    "Минимальный боевой уровень",
+    "Asgari savaş seviyesi"
+  ],
+  "Optional · all levels welcome by default": [
+    "Необязательно · По умолчанию любой уровень",
+    "İsteğe bağlı · Varsayılan olarak tüm seviyeler kabul edilir"
+  ],
+  "Required level": [
+    "Требуемый уровень",
+    "Gerekli seviye"
+  ],
+  "Up to 4 players · All classes welcome": [
+    "До 4 игроков · Любые классы",
+    "En fazla 4 oyuncu · Tüm sınıflar kabul edilir"
+  ],
+  "Save preferences": [
+    "Сохранить настройки",
+    "Tercihleri kaydet"
+  ],
+  "PARTY RECRUITMENT": [
+    "НАБОР В ГРУППУ",
+    "GRUP OYUNCU ARAMA"
+  ],
+  "Find teammates": [
+    "Найти соратников",
+    "Takım arkadaşları bul"
+  ],
+  "Looking for a Party": [
+    "Ищу группу",
+    "Grup arıyorum"
+  ],
+  "Make your Party easy for others to find.": [
+    "Помогите другим игрокам найти вашу группу.",
+    "Diğer oyuncuların grubunu kolayca bulmasını sağla."
+  ],
+  "Tell Party leaders what you are looking for.": [
+    "Расскажите лидерам групп, что вы ищете.",
+    "Grup liderlerine ne aradığını anlat."
+  ],
+  "Your Party": [
+    "Ваша группа",
+    "Grubun"
+  ],
+  "{count} open": [
+    "Свободно: {count}",
+    "{count} boş yer"
+  ],
+  "Language and minimum level follow your Party settings.": [
+    "Язык и минимальный уровень берутся из настроек группы.",
+    "Dil ve asgari seviye grup ayarlarından alınır."
+  ],
+  "How active is your Party?": [
+    "Насколько активна ваша группа?",
+    "Grubun ne kadar aktif?"
+  ],
+  "How active are you?": [
+    "Насколько вы активны?",
+    "Ne kadar aktifsin?"
+  ],
+  "Choose how often you plan to play together.": [
+    "Укажите, как часто планируете играть вместе.",
+    "Birlikte ne sıklıkta oynayacağınızı seçin."
+  ],
+  "Post title": [
+    "Название объявления",
+    "İlan başlığı"
+  ],
+  "Recruitment title": [
+    "Название объявления о наборе",
+    "Oyuncu arama başlığı"
+  ],
+  "Looking for active teammates": [
+    "Ищем активных игроков",
+    "Aktif takım arkadaşları aranıyor"
+  ],
+  "Description": [
+    "Описание",
+    "Açıklama"
+  ],
+  "Recruitment description": [
+    "Описание объявления о наборе",
+    "Oyuncu arama açıklaması"
+  ],
+  "What would you like to do together?": [
+    "Чем хотите заниматься вместе?",
+    "Birlikte ne yapmak istersiniz?"
+  ],
+  "Expires automatically after 24 hours": [
+    "Срок действия — 24 часа",
+    "24 saat sonra otomatik sona erer"
+  ],
+  "Publish recruitment post": [
+    "Опубликовать объявление",
+    "Oyuncu arama ilanını yayımla"
+  ],
+  "Create a Party": [
+    "Создать группу",
+    "Grup oluştur"
+  ],
+  "Create Party": [
+    "Создать группу",
+    "Grup oluştur"
+  ],
+  "Publishing…": [
+    "Публикация…",
+    "Yayımlanıyor…"
   ]
 } satisfies Record<string,readonly [string,string]>;
 

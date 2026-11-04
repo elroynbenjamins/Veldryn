@@ -1,6 +1,7 @@
 import {ITEMS} from '../content/items';
 import {GATHERING,RECIPES} from '../content/skills';
 import {HERB_NODES} from '../content/herbalism';
+import {MINING_ESSENCE_BY_ZONE} from '../content/mining-essence';
 import {MONSTERS} from '../content/monsters';
 import {COMBAT_COMPANIONS,COMPANION_SANCTUARY_CONFIG} from '../content/combat-companions';
 import {COMPANION_MISSIONS,COMPANION_WEEKLY_CHALLENGES,COMPANION_MONTHLY_COMPLETION_REWARD} from '../../../../backend/src/server/companions/content';
@@ -38,6 +39,7 @@ const companionMaterialIds=(()=>{
 })();
 const gatheringSkill=new Map<string,string>();
 for(const node of [...GATHERING,...HERB_NODES])if(!gatheringSkill.has(node.itemId))gatheringSkill.set(node.itemId,node.skillId);
+for(const essence of Object.values(MINING_ESSENCE_BY_ZONE))gatheringSkill.set(essence.itemId,'mining');
 const monsterItems=new Set(MONSTERS.flatMap(monster=>monster.drops.map(drop=>drop.itemId)));
 const craftItems=new Set(RECIPES.map(recipe=>recipe.output.itemId));
 function categoryFor(id:string,type:string):ResourceCodexEntry['category']{

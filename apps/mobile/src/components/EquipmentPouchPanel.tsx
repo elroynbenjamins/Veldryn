@@ -70,7 +70,7 @@ export function EquipmentPouchPanel({state,busy=false,onAction}:{state:GameState
      <GameButton compact tone="secondary" title="To Bank" disabled={!onAction||busy} onPress={()=>move('bank')}/>
      {record?<GameButton compact tone="secondary" title={record.locked?'Unlock':'Lock'} disabled={!onAction||busy} onPress={()=>send({type:'gear_lock',args:{instanceId:record.id,locked:!record.locked}})}/>:null}
     </View>
-    {!record?<Text style={s.meta}>Move standard equipment to Inventory to equip, sell or salvage it.</Text>:<Text style={s.meta}>Unique equipment can be equipped directly; safeguards still protect locked, enhanced and loadout equipment.</Text>}
+    {!record?<Text style={s.meta}>Standard equipment can be equipped directly. Move it to Inventory to sell or salvage.</Text>:<Text style={s.meta}>Unique equipment can be equipped directly; safeguards still protect locked, enhanced and loadout equipment.</Text>}
    </ScrollView>:null}
   </GameModalSurface>
  </View>;

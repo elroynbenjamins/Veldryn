@@ -20,4 +20,7 @@ assert.match(roster,/companionSlot\.echo\?st\('Frozen Echo companion'\)/, 'froze
 assert.match(chip,/if\(!companion\)return null/, 'no invented companion for NPCs');
 assert.match(chip,/accessibilityState=\{\{expanded\}\}/, 'Echo companion details keyboard and screen reader accessible');
 assert.doesNotMatch(live,/ownerAccountId|sourceAccountId|inventory\.stacks/, 'Live roster must not show other inventories');
+assert.match(chip,/Frozen Echo companion/, 'frozen Echo assist must be identified in the roster');
+assert.match(setup,/tonicPreviewId/, 'tonic summary uses existing potion artwork');
+assert.match(roster,/companionMemberId/, 'companion detail state exists and can be dismissed');
 console.log('PASS compact Live, loadout and frozen Echo companion UI wiring');

@@ -26,8 +26,7 @@ apps/mobile/art-archive/
 apps/mobile/src/**/*.js
 apps/mobile/tests/*.js
 
-output/
-
+# Generated design previews and historical export packs (recoverable from Git history).
 output/
 
 .combat-balance-build/

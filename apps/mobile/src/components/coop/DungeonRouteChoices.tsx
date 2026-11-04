@@ -5,6 +5,7 @@ import {useCoopStyles} from '../../theme/useCoopStyles';
 import {useSocialText} from '../../i18n/social';
 import {useGameLanguage} from '../../i18n/GameLanguageProvider';
 import {localizedDungeonEncounterPreview} from '../../i18n/dungeon-encounter-preview';
+import {seasonalDungeonRoomTitle} from '../../i18n/seasonal-dungeon-copy';
 import {CoopImageSlot} from './CoopVisualKit';
 import {IdentityArtwork} from '../SocialIdentity';
 import {dungeonRoomPresentation} from './dungeon-room-presentation';
@@ -25,7 +26,7 @@ export function DungeonRouteChoices({options,mode,phase,busy=false,onChoose,myVo
    const canPress=canChoose&&!option.hidden;
    const votedHere=live&&myVotedNodeId===option.nodeId;
    const room=dungeonRoomPresentation(option.kind);
-   const title=room&&(option.title.trim().toLowerCase()===option.kind.trim().toLowerCase()||(option.kind==='boss'&&option.title.trim().toLowerCase()==='final boss'))?st(room.name):option.title;
+   const title=room&&(option.title.trim().toLowerCase()===option.kind.trim().toLowerCase()||(option.kind==='boss'&&option.title.trim().toLowerCase()==='final boss'))?st(room.name):seasonalDungeonRoomTitle(language,option.title);
    const preview=option.encounterPreview?localizedDungeonEncounterPreview(language,option.encounterPreview).summary:(room?st(room.description):undefined);
    const riskBaseline=/^risk\s+1(?:\.0+)?$/i.test(option.risk.trim());
    const redundantReward=option.reward.trim().toLowerCase().replace(/[\s_-]+/g,'')===option.kind.trim().toLowerCase().replace(/[\s_-]+/g,'');

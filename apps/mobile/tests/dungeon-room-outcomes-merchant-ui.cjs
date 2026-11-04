@@ -32,7 +32,7 @@ assert(projection.includes("publicCoopRoomOutcome")&&!projection.includes('offer
 assert(domain.includes('resourcesDelta:state.resources-input.state.resources')&&domain.includes('healedHp,revivedCount'),'Noncombat outcomes are measured instead of invented');
 assert(banner.includes('outcome.resourcesDelta')&&banner.includes('Restored {amount} HP'),'A compact result banner shows confirmed resource and HP changes');
 assert(banner.includes('setTimeout(()=>setVisible(false),6500)'),'Outcome banner dismisses without a blocking modal');
-assert(route.includes("const title=room&&(")&&route.includes("st(room.name):option.title"),'Generic room names are translated while seasonal authored titles stay intact');
+assert(route.includes("const title=room&&(")&&route.includes("st(room.name):seasonalDungeonRoomTitle(language,option.title)"),'Generic room names are translated while seasonal authored titles stay intact');
 assert(mode.includes('lastRoomOutcome:projection.lastRoomOutcome')&&seasonal.includes('lastRoomOutcome:projection.lastRoomOutcome'),'Normal and seasonal projections carry room feedback');
 assert(sql.includes('for update')&&sql.includes('idempotency_key_conflict')&&sql.includes('insufficient_run_resources'),'Purchase RPC serializes conflicting commands and checks resources');
 assert(sql.includes('grant execute on function public.purchase_online_qmode_merchant_server_v1')&&sql.includes('to service_role'),'Purchase procedure remains server-only');

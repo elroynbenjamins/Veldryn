@@ -2,6 +2,8 @@ import {useState} from 'react';
 import {Pressable,StyleSheet,Text,View} from 'react-native';
 import {useCoopStyles} from '../../theme/useCoopStyles';
 import {useSocialText} from '../../i18n/social';
+import {useGameLanguage} from '../../i18n/GameLanguageProvider';
+import {seasonalBossDisplayName,seasonalBossDisplaySummary} from '../../i18n/seasonal-boss-copy';
 import type {CoopRunBossMechanicView,CoopRunBossRecapView} from '../../core/coop-presentation';
 import {type CoopColors,coopSpacing} from '../../theme/coop-ui-theme';
 import {FantasyPanel} from './CoopVisualKit';
@@ -12,7 +14,7 @@ import {FantasyPanel} from './CoopVisualKit';
  */
 export function SeasonalBossTelegraphPanel({mechanic,recap,showPlan}:{mechanic?:CoopRunBossMechanicView;recap?:CoopRunBossRecapView;showPlan:boolean}){
  const {styles:s}=useCoopStyles(makeStyles);
- const st=useSocialText();
+ const st=useSocialText(),language=useGameLanguage();
  const [detailsOpen,setDetailsOpen]=useState(false);
  const [recapOpen,setRecapOpen]=useState(false);
  const telegraph=mechanic?.telegraph;
@@ -24,27 +26,27 @@ export function SeasonalBossTelegraphPanel({mechanic,recap,showPlan}:{mechanic?:
    <View style={s.head}>
     <View style={s.grow}>
      <Text style={s.kicker}>{showPlan?st('FINAL BOSS'):st('BOSS OUTLOOK')}</Text>
-     <Text style={s.title} numberOfLines={1}>{showPlan&&telegraph?telegraph.bossName:mechanic.label}</Text>
+     <Text style={s.title} numberOfLines={1}>{showPlan&&telegraph?telegraph.bossName:seasonalBossDisplayName(language,mechanic.label)}</Text>
     </View>
     {showPlan&&telegraph&&telegraph.phases.length>1?<Text style={s.phaseCount}>{telegraph.phases.length} {telegraph.phases.length===1?st('phase'):st('phases')}</Text>:null}
    </View>
-   <Text style={s.copy} numberOfLines={detailsOpen?undefined:2}>{mechanic.summary}</Text>
+   <Text style={s.copy} numberOfLines={detailsOpen?undefined:2}>{seasonalBossDisplaySummary(language,mechanic.summary)}</Text>
    {showPlan&&telegraph&&!detailsOpen&&(priorityCast||priorityPhase)?<View style={s.glance}>
-    {priorityCast?<View style={s.glanceRow}><Text style={[s.actionLabel,priorityCast.interruptible?s.interrupt:s.watch]}>{priorityCast.interruptible?st('INTERRUPT'):st('WATCH')}</Text><Text style={s.glanceValue} numberOfLines={1}>{priorityCast.label}</Text></View>:null}
-    {priorityPhase?<View style={s.glanceRow}><Text style={s.threshold}>{priorityPhase.hpPct}% HP</Text><Text style={s.glanceValue} numberOfLines={1}>{priorityPhase.label}</Text></View>:null}
+    {priorityCast?<View style={s.glanceRow}><Text style={[s.actionLabel,priorityCast.interruptible?s.interrupt:s.watch]}>{priorityCast.interruptible?st('INTERRUPT'):st('WATCH')}</Text><Text style={s.glanceValue} numberOfLines={1}>{seasonalBossDisplayName(language,priorityCast.label)}</Text></View>:null}
+    {priorityPhase?<View style={s.glanceRow}><Text style={s.threshold}>{priorityPhase.hpPct}% HP</Text><Text style={s.glanceValue} numberOfLines={1}>{seasonalBossDisplayName(language,priorityPhase.label)}</Text></View>:null}
    </View>:null}
    {showPlan&&telegraph?<Pressable accessibilityRole="button" accessibilityLabel={detailsOpen?st('Hide boss details'):st('Boss details')} accessibilityState={{expanded:detailsOpen}} onPress={()=>setDetailsOpen(open=>!open)} style={({pressed})=>[s.disclosure,pressed&&s.pressed]}>
     <Text style={s.disclosureLabel}>{detailsOpen?st('Hide boss details'):st('Boss details')}</Text><Text style={s.disclosureGlyph}>{detailsOpen?'−':'+'}</Text>
    </Pressable>:null}
    {showPlan&&telegraph&&detailsOpen?<View style={s.details}>
     {telegraph.phases.length?<View style={s.detailGroup}><Text style={s.detailTitle}>{st('PHASES')}</Text>{telegraph.phases.map(phase=><View key={phase.id} style={s.detailRow}>
-     <Text style={s.threshold}>{phase.hpPct}% HP</Text><View style={s.grow}><Text style={s.detailValue}>{phase.label}</Text>{phase.objectiveSensitive?<Text style={s.detailHint}>{st('Objective-sensitive')}</Text>:null}</View>
+     <Text style={s.threshold}>{phase.hpPct}% HP</Text><View style={s.grow}><Text style={s.detailValue}>{seasonalBossDisplayName(language,phase.label)}</Text>{phase.objectiveSensitive?<Text style={s.detailHint}>{st('Objective-sensitive')}</Text>:null}</View>
     </View>)}</View>:null}
     {telegraph.castAbilities.length?<View style={s.detailGroup}><Text style={s.detailTitle}>{st('ABILITIES')}</Text>{telegraph.castAbilities.map(ability=><View key={ability.id} style={s.detailRow}>
      <Text style={[s.actionLabel,ability.interruptible?s.interrupt:s.watch]}>{ability.interruptible?st('INTERRUPT'):st('WATCH')}</Text>
-     <View style={s.grow}><Text style={s.detailValue}>{ability.label}</Text><Text style={s.detailHint}>{(ability.castMs/1000).toFixed(1)}s {st('cast')} · {(ability.cooldownMs/1000).toFixed(1)}s {st('cooldown')}{ability.objectiveSensitive?' · '+st('Objective-sensitive'):''}</Text></View>
+     <View style={s.grow}><Text style={s.detailValue}>{seasonalBossDisplayName(language,ability.label)}</Text><Text style={s.detailHint}>{(ability.castMs/1000).toFixed(1)}s {st('cast')} · {(ability.cooldownMs/1000).toFixed(1)}s {st('cooldown')}{ability.objectiveSensitive?' · '+st('Objective-sensitive'):''}</Text></View>
     </View>)}</View>:null}
-    {telegraph.suppressedAbilities.length?<View style={s.detailGroup}><Text style={s.detailTitle}>{st('SUPPRESSED')}</Text>{telegraph.suppressedAbilities.map(ability=><Text key={ability.id} style={s.suppressed}>✓ {ability.label}</Text>)}</View>:null}
+    {telegraph.suppressedAbilities.length?<View style={s.detailGroup}><Text style={s.detailTitle}>{st('SUPPRESSED')}</Text>{telegraph.suppressedAbilities.map(ability=><Text key={ability.id} style={s.suppressed}>✓ {seasonalBossDisplayName(language,ability.label)}</Text>)}</View>:null}
    </View>:null}
   </FantasyPanel>:null}
   {recap?<FantasyPanel variant="default">
@@ -52,8 +54,8 @@ export function SeasonalBossTelegraphPanel({mechanic,recap,showPlan}:{mechanic?:
     <View style={s.grow}><Text style={s.kicker}>{st('BOSS RECAP')}</Text><Text style={s.recapSummary}>{Math.max(0,recap.durationMs/1000).toFixed(1)}s · {recap.downs} {recap.downs===1?st('down'):st('downs')}</Text></View><Text style={s.disclosureGlyph}>{recapOpen?'−':'+'}</Text>
    </Pressable>
    {recapOpen?<View style={s.details}>
-    <Text style={s.detailTitle}>{st('Phases triggered')}</Text><Text style={s.copy}>{recap.phasesTriggered.length?recap.phasesTriggered.join(' · '):st('No threshold phases triggered.')}</Text>
-    <Text style={s.detailTitle}>{st('Boss casts seen')}</Text><Text style={s.copy}>{recap.abilitiesCast.length?recap.abilitiesCast.join(' · '):st('No boss casts started before the fight ended.')}</Text>
+    <Text style={s.detailTitle}>{st('Phases triggered')}</Text><Text style={s.copy}>{recap.phasesTriggered.length?recap.phasesTriggered.map(name=>seasonalBossDisplayName(language,name)).join(' · '):st('No threshold phases triggered.')}</Text>
+    <Text style={s.detailTitle}>{st('Boss casts seen')}</Text><Text style={s.copy}>{recap.abilitiesCast.length?recap.abilitiesCast.map(name=>seasonalBossDisplayName(language,name)).join(' · '):st('No boss casts started before the fight ended.')}</Text>
    </View>:null}
   </FantasyPanel>:null}
  </View>;

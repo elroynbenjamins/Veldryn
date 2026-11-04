@@ -75,7 +75,7 @@ assert.equal(earlyLocaleText('ru','Unknown player message'),undefined,'Unknown t
 const route=fs.readFileSync(path.join(app,'src/components/coop/DungeonRouteChoices.tsx'),'utf8');
 const resolution=fs.readFileSync(path.join(app,'src/components/coop/DungeonRoomResolution.tsx'),'utf8');
 assert.ok(route.includes('localizedDungeonEncounterPreview(language,option.encounterPreview).summary'),'Route previews must use checked translated intel');
-assert.ok(route.includes("st(room.name):option.title"),'Seasonal authored room titles must keep their safe fallback');
+assert.ok(route.includes("st(room.name):seasonalDungeonRoomTitle(language,option.title)"),'Seasonal authored room titles must use a verified translation with safe English fallback');
 assert.ok(route.includes('option.risk')&&route.includes('option.reward'),'Authoritative risk/reward projections must not be invented');
 assert.ok(resolution.includes('st(room.description)'),'Resolving screen uses existing translated room descriptions');
 console.log('PASS 12 Dungeon room types (RU/TR complete), 8 encounter archetypes, 11 mechanics, 210 locale entries, exact server-contract parity and fallback');

@@ -24,6 +24,10 @@ const baseProjection={
  currentNodeId:'entry',options:[],visitedNodeIds:[],resources:0,boons:[],artifacts:[],curses:[],
  settlement:{status:'not_ready' as const},
 };
+const potionProjection={...baseProjection,phase:'awaiting_choice',potionCharges:{used:1,max:3,remaining:2}};
+equal(presentQModeRun(potionProjection).potionCharges,{used:1,max:3,remaining:2},'Server-owned dungeon potion charges must reach the UI unchanged');
+throws(()=>presentQModeRun({...potionProjection,potionCharges:{used:4,max:3,remaining:-1}}),/invalid_dungeon_potion_charges/);
+throws(()=>presentQModeRun({...potionProjection,potionCharges:{used:1,max:3,remaining:3}}),/invalid_dungeon_potion_charges/);
 for(const kind of ['forge','risk','camp','battle','elite','boss'] as const){
  const projection={...baseProjection,selectedNodeId:'room-'+kind};
  const view=presentQModeRun(projection);

@@ -56,6 +56,7 @@ export interface PartyHubPanelProps {
   dedicated?:boolean;
   activeView?:'Overview'|'Contracts';
   onOpenRecruitment?:()=>void;
+  onInviteFriends?:()=>void;
   partyUnlocked?: boolean;
   partyUnlockLevel?: number;
 }
@@ -170,6 +171,7 @@ export function PartyHubPanel(props: PartyHubPanelProps){
     <View style={s.optionSummary}><Text style={s.sectionTitle}>{socialLabel(language,props.party?.focus??'mixed')} {st('Party')}</Text><Text style={s.muted}>{props.party?.members.length??0}/4 {st('Members')} · {openSpots} {st('open spots')}</Text><Text style={s.muted}>{partyActivityLabel(preferences.activityLevel)} · {languageLabel}{preferences.minimumLevel?' · Lv. '+preferences.minimumLevel+'+':''}</Text></View>
     {(props.invitationCount??0)>0?props.partyInvitations:<Text style={s.muted}>{st('No pending invitations.')}</Text>}
     {canManageParty&&openSpots>0?<GameButton compact tone="secondary" title={st('Find members')} onPress={()=>{setShowSettings(false);if(props.dedicated)props.onOpenRecruitment?.();else{setBrowseMode('players');setSection('find');}}}/>:null}
+    {canManageParty&&openSpots>0&&props.onInviteFriends?<GameButton compact title="Invite friends" onPress={()=>{setShowSettings(false);props.onInviteFriends?.();}}/>:null}
     {canManageParty&&props.onEditPreferences?<GameButton compact tone="secondary" title="Edit Party preferences" onPress={()=>{setShowSettings(false);props.onEditPreferences?.()}}/>:null}
     <View style={s.divider}/><Text style={s.eyebrow}>{st('PARTY MANAGEMENT')}</Text>
     <GameButton tone="secondary" title={st('Leave Party')} disabled={!props.onLeaveParty} onPress={()=>{setShowSettings(false);props.onLeaveParty?.();}}/>

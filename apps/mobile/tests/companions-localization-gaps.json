@@ -1,51 +1,14 @@
 {
-  "status": "Companion objective descriptions and 29 active guidance/source-help labels are localized in seven target languages. Remaining dynamic templates, proper names and screen reviews are tracked below.",
+  "status": "Companion objectives (42), fixed guidance (29), and dynamic presentation/status/ownership labels (38) have seven-language coverage. Equipment metadata, proper names, other data-driven labels, and native-speaker review remain outstanding.",
   "unchangedByDesign": [
     "Gameplay IDs, command payloads, filter values, and player-entered content.",
     "World, class, item, companion, creature, ability, mission, challenge, season and collection-set proper names."
   ],
   "untranslatedCatalogStrings": {},
-  "partiallyTranslatedCatalogStrings": [
-    "Own 5 Combat Companions.",
-    "Own 15 Combat Companions.",
-    "Own 24 Combat Companions.",
-    "Own 3 Prestige Combat Companions.",
-    "Own 5 annual Event Companions.",
-    "Own 3 companions earned from special Companion challenges."
-  ],
+  "partiallyTranslatedCatalogStrings": [],
   "untranslatedDynamicTemplates": {
-    "apps/mobile/src/core/companion-presentation.ts": [
-      "{skill} · level {level}",
-      "Raise Monster Mastery to {amount}.",
-      "Train {skill}",
-      "Reach skill level {amount}.",
-      "Challenge {name}",
-      "Defeat it {amount} time(s).",
-      "Complete {amount} assignments in {region}.",
-      "Earn S grade on {amount} regional Sanctuary assignments.",
-      "Raise {name} Bond",
-      "Reach Bond {amount} with {name}.",
-      "Progress {amount} required.",
-      "{complete}/{total} requirements complete",
-      "{percent}% recruitment progress",
-      " · Technique choice unlock",
-      "Prestige Mastery",
-      "Profile identity reward",
-      "Profile title milestone",
-      "Bond Trait · {name}",
-      "Claim Bond {level} reward",
-      "Companion portrait · {name}",
-      "Companion title · {name}",
-      "Profile badge · {name}",
-      "Profile background · {name}",
-      "Profile border · {name}",
-      "Title · {name}"
-    ],
-    "apps/mobile/src/core/companion-runtime.ts": [
-      "In Trial",
-      "Expedition complete",
-      "On Expedition"
-    ],
+    "apps/mobile/src/core/companion-presentation.ts": [],
+    "apps/mobile/src/core/companion-runtime.ts": [],
     "apps/mobile/src/core/equipment-loot-v33.ts": [
       "EQUIPMENT 2.0 · {tiers} MATERIAL"
     ]
@@ -136,5 +99,45 @@
     "First Bond reward",
     "Passive improvement milestone",
     "Continue companion progression"
+  ],
+  "completedDynamicDescriptions": [
+    "{skill} · level {level}",
+    "Raise Monster Mastery to {amount}.",
+    "Train {skill}",
+    "Reach skill level {amount}.",
+    "Challenge {name}",
+    "Defeat it {amount} time.",
+    "Defeat it {amount} times.",
+    "Complete {amount} assignments in {region}.",
+    "Earn S grade on {amount} regional Sanctuary assignments.",
+    "Raise {name} Bond",
+    "Reach Bond {amount} with {name}.",
+    "Progress {amount} required.",
+    "{complete}/{total} requirements complete",
+    "{percent}% recruitment progress",
+    " · Technique choice unlock",
+    "Level cap {level} · Technique choice unlock",
+    "Final rarity ascension · Technique choice unlock",
+    "Prestige Mastery",
+    "Profile identity reward",
+    "Profile title milestone",
+    "Bond Trait · {name}",
+    "Claim Bond {level} reward",
+    "Companion portrait · {name}",
+    "Companion title · {name}",
+    "Profile badge · {name}",
+    "Profile background · {name}",
+    "Profile border · {name}",
+    "Title · {name}",
+    "Companion Essence milestone",
+    "In Trial",
+    "Expedition complete",
+    "On Expedition",
+    "Own 5 Combat Companions.",
+    "Own 15 Combat Companions.",
+    "Own 24 Combat Companions.",
+    "Own 3 Prestige Combat Companions.",
+    "Own 5 annual Event Companions.",
+    "Own 3 companions earned from special Companion challenges."
   ]
 }

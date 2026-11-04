@@ -25,6 +25,7 @@ const keys=Object.keys(companionTranslationRows).sort();
 const knownGaps=require('./companions-localization-gaps.json');
 const {companionObjectiveRows,companionObjectiveText}=require('../src/i18n/companion-objectives.ts');
 const {companionGuidanceRows,companionGuidanceText}=require('../src/i18n/companion-guidance.ts');
+const {companionDynamicRows,companionDynamicText}=require('../src/i18n/companion-dynamic.ts');
 assert.equal(companionContent('de','Defeat 250 Old Mines enemies'),'Besiege 250 Gegner in den Old Mines');
 assert.equal(companionContent('es','Reach Fishing 16'),'Alcanza Pesca 16');
 assert.equal(companionContent('nl','Rare discovery while mapping Silverbrook'),'Zeldzame ontdekking bij het in kaart brengen van Silverbrook');
@@ -81,6 +82,31 @@ for(const key of guidanceKeys){
   if(key.startsWith('Complete '))assert.equal(companionUnlockRequirement(language,key),translated,'Guidance must not be misclassified as a quest title');
  }
 }
+const dynamicKeys=Object.keys(companionDynamicRows).sort();
+assert.equal(dynamicKeys.length,38,'Current dynamic Companion presentation and availability coverage');
+assert.deepEqual(dynamicKeys,[...knownGaps.completedDynamicDescriptions].sort(),'Dynamic QA snapshot must match the translated source strings');
+assert.equal(knownGaps.partiallyTranslatedCatalogStrings.length,0,'Translated ownership goals must not remain partially covered');
+assert.equal(knownGaps.untranslatedDynamicTemplates['apps/mobile/src/core/companion-presentation.ts'].length,0,'All tracked Companion presentation templates should be accounted for');
+assert.equal(knownGaps.untranslatedDynamicTemplates['apps/mobile/src/core/companion-runtime.ts'].length,0,'All tracked Companion status labels should be accounted for');
+for(const key of dynamicKeys){
+ assert.equal(companionDynamicText('en',key),key,'English authored template must remain unchanged');
+ for(const language of SUPPORTED_LANGUAGES.filter(l=>l!=='en')){
+  const sample=key.replace(/\{([a-zA-Z][a-zA-Z0-9_]*)\}/g,(_,name)=>'SENTINEL_'+name.toUpperCase());
+  const result=companionContent(language,sample),localized=companionDynamicText(language,sample);
+  assert.ok(result&&result!==sample,language+' untranslated dynamic text: '+key);
+  assert.equal(result,localized,language+' dynamic routing: '+key);
+  for(const name of placeholders(key))assert.ok(result.includes('SENTINEL_'+name.toUpperCase()),language+' interpolated name changed: '+key);
+  assert.deepEqual(placeholders(companionDynamicText(language,key)),placeholders(key),language+' dynamic placeholders: '+key);
+ }
+}
+assert.equal(companionContent('nl','Defeat it 1 time.'),'Versla deze vijand 1 keer.');
+assert.equal(companionContent('nl','Defeat it 3 times.'),'Versla deze vijand 3 keer.');
+assert.equal(companionContent('de','Level cap 25 · Technique choice unlock'),'Stufenlimit 25 · Technikauswahl freigeschaltet');
+assert.equal(companionContent('ru','Claim Bond 4 reward'),'Забрать награду за связь 4');
+assert.equal(companionContent('tr','In Trial'),'Denemede');
+assert.equal(companionUnlockRequirement('es','Own 5 Combat Companions.'),'Posee 5 compañeros de combate.');
+assert.equal(companionContent('fr','Profile background · Ironwood Wolf'),'Fond de profil · Ironwood Wolf');
+assert.equal(companionContent('de','Unlisted dynamic {player_name}'),'Unlisted dynamic {player_name}','Unknown player text must remain unchanged');
 assert.equal(companionContent('de','Custom player text'),'Custom player text','Unknown player text must not be translated');
 for(const language of SUPPORTED_LANGUAGES){
  assert.deepEqual(Object.keys(companionCatalogs[language]).sort(),keys);

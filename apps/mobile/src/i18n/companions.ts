@@ -2,6 +2,7 @@ import type {Language} from './languages';
 import {createTranslator} from './translator';
 import {companionObjectiveText} from './companion-objectives';
 import {companionGuidanceText} from './companion-guidance';
+import {companionDynamicText} from './companion-dynamic';
 
 // Each row supplies German, Spanish, Dutch, Italian and French; its key is English.
 export const companionTranslationRows={
@@ -1142,6 +1143,8 @@ export function companionUnlockRequirement(language:Language,requirement:string)
  if(objective!==undefined)return objective;
  const guidance=companionGuidanceText(language,requirement);
  if(guidance!==undefined)return guidance;
+ const dynamic=companionDynamicText(language,requirement);
+ if(dynamic!==undefined)return dynamic;
  if(requirement.startsWith('Complete '))return translateCompanion(language,'Complete {quest}',{quest:requirement.slice('Complete '.length)});
  return companionContent(language,requirement);
 }
@@ -1152,6 +1155,8 @@ export function companionContent(language:Language,value:string):string{
  if(Object.prototype.hasOwnProperty.call(companionTranslationRows,value))return translateCompanion(language,value as CompanionMessageKey);
  const guidance=companionGuidanceText(language,value);
  if(guidance!==undefined)return guidance;
+ const dynamic=companionDynamicText(language,value);
+ if(dynamic!==undefined)return dynamic;
  for(const {key,names,pattern} of contentPatterns){
   const match=pattern.exec(value);
   if(match)return translateCompanion(language,key,Object.fromEntries(names.map((name,index)=>[name,match[index+1]])));

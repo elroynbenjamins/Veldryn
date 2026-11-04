@@ -779,7 +779,7 @@ export const profileTranslationRows = {
 } as const satisfies Record<string,readonly [string,string,string,string,string]>;
 export type ProfileKey = keyof typeof profileTranslationRows;
 export const profileCatalogs = Object.fromEntries(SUPPORTED_LANGUAGES.map((language,index)=>[
-  language,Object.fromEntries(Object.entries(profileTranslationRows).map(([key,values])=>[key,index===0?key:values[index-1]])),
+  language,Object.fromEntries(Object.entries(profileTranslationRows).map(([key,values])=>[key,index===0?key:values[index-1]??key])),
 ])) as Record<Language,Record<ProfileKey,string>>;
 export const profileT = createTranslator(profileCatalogs);
 

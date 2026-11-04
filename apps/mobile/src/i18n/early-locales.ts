@@ -1601,6 +1601,174 @@ export const EARLY_LOCALE_ROWS={
   "Publishing…": [
     "Публикация…",
     "Yayımlanıyor…"
+  ],
+  "FIND YOUR FELLOWSHIP": [
+    "НАЙДИТЕ СОЮЗНИКОВ",
+    "YOLDAŞLARINI BUL"
+  ],
+  "Find players, Parties and Guilds": [
+    "Ищите игроков, группы и гильдии",
+    "Oyuncular, gruplar ve loncalar bul"
+  ],
+  "Browse": [
+    "Обзор",
+    "Göz at"
+  ],
+  "My Posts": [
+    "Мои объявления",
+    "İlanlarım"
+  ],
+  "Hide": [
+    "Скрыть",
+    "Gizle"
+  ],
+  "View": [
+    "Просмотр",
+    "Görüntüle"
+  ],
+  "GUILD RECRUITMENT": [
+    "НАБОР В ГИЛЬДИЮ",
+    "LONCA OYUNCU ARAMA"
+  ],
+  "Find the right teammates": [
+    "Найдите подходящих соратников",
+    "Uygun takım arkadaşlarını bul"
+  ],
+  "Find your Guild connection": [
+    "Найдите подходящую гильдию",
+    "Sana uygun loncayı bul"
+  ],
+  "Find a Party or teammates.": [
+    "Найдите группу или соратников.",
+    "Grup veya takım arkadaşları bul."
+  ],
+  "Find a Guild or recruit players.": [
+    "Найдите гильдию или пригласите игроков.",
+    "Lonca bul veya oyuncu al."
+  ],
+  "+ Post for Party": [
+    "+ Объявление для группы",
+    "+ Grup ilanı"
+  ],
+  "+ Create advert": [
+    "+ Создать объявление",
+    "+ İlan oluştur"
+  ],
+  "Invite friends privately": [
+    "Пригласить друзей лично",
+    "Arkadaşları özel olarak davet et"
+  ],
+  "Guilds recruiting": [
+    "Гильдии набирают участников",
+    "Üye arayan loncalar"
+  ],
+  "Recruiting groups": [
+    "Группы с набором",
+    "Oyuncu arayan gruplar"
+  ],
+  "Available players": [
+    "Свободные игроки",
+    "Müsait oyuncular"
+  ],
+  "Checking Recruitment…": [
+    "Поиск объявлений…",
+    "Oyuncu arama ilanları kontrol ediliyor…"
+  ],
+  "No matching adverts": [
+    "Подходящих объявлений нет",
+    "Eşleşen ilan yok"
+  ],
+  "Try different filters or publish your own advert.": [
+    "Измените фильтры или создайте объявление.",
+    "Filtreleri değiştir veya kendi ilanını yayımla."
+  ],
+  "Create advert": [
+    "Создать объявление",
+    "İlan oluştur"
+  ],
+  "Party posts: 1 day · Guild posts: 1–3 days.": [
+    "Группы: 1 день · Гильдии: 1–3 дня.",
+    "Grup: 1 gün · Lonca: 1–3 gün."
+  ],
+  "Your active adverts": [
+    "Ваши активные объявления",
+    "Aktif ilanların"
+  ],
+  "+ New post": [
+    "+ Новое объявление",
+    "+ Yeni ilan"
+  ],
+  "Invite friends": [
+    "Пригласить друзей",
+    "Arkadaşları davet et"
+  ],
+  "No active adverts": [
+    "Нет активных объявлений",
+    "Aktif ilan yok"
+  ],
+  "Create a post to find players.": [
+    "Создайте объявление, чтобы найти игроков.",
+    "Oyuncu bulmak için ilan oluştur."
+  ],
+  "One active post per type · 6h refresh cooldown.": [
+    "Одно объявление каждого типа · Обновление раз в 6 часов.",
+    "Her türden bir aktif ilan · 6 saat yenileme süresi."
+  ],
+  "Open my Party": [
+    "Открыть мою группу",
+    "Grubumu aç"
+  ],
+  "Open Guild": [
+    "Открыть гильдию",
+    "Loncayı aç"
+  ],
+  "What are you looking for?": [
+    "Что вы ищете?",
+    "Ne arıyorsun?"
+  ],
+  "Choose a post type.": [
+    "Выберите тип объявления.",
+    "İlan türünü seç."
+  ],
+  "Looking for a Guild": [
+    "Ищу гильдию",
+    "Lonca arıyorum"
+  ],
+  "Recruit for my Party": [
+    "Набор в мою группу",
+    "Grubuma oyuncu al"
+  ],
+  "Recruit for my Guild": [
+    "Набор в мою гильдию",
+    "Loncama oyuncu al"
+  ],
+  "Find a persistent team": [
+    "Найти постоянную группу",
+    "Kalıcı bir ekip bul"
+  ],
+  "Find members for open Party slots": [
+    "Найти участников на свободные места",
+    "Boş grup yerlerine üye bul"
+  ],
+  "Your Party has no open slots": [
+    "В вашей группе нет свободных мест",
+    "Grubunda boş yer yok"
+  ],
+  "Let Guilds discover you": [
+    "Пусть гильдии найдут вас",
+    "Loncalar seni bulabilsin"
+  ],
+  "Leader or Officer access": [
+    "Только лидер или офицер",
+    "Yalnızca lider veya yetkili"
+  ],
+  "{count} compatible recruitment adverts": [
+    "Подходящих объявлений: {count}",
+    "{count} uygun ilan"
+  ],
+  "{count} results": [
+    "Результатов: {count}",
+    "{count} sonuç"
   ]
 } satisfies Record<string,readonly [string,string]>;
 

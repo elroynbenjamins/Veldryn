@@ -24,8 +24,8 @@ export function DungeonRouteChoices({options,mode,phase,busy=false,onChoose,myVo
    const votedHere=live&&myVotedNodeId===option.nodeId;
    const room=dungeonRoomPresentation(option.kind);
    const preview=option.encounterPreview?.summary??(room?st(room.description):undefined);
-   const riskBaseline=/^risk\\s+1(?:\\.0+)?$/i.test(option.risk.trim());
-   const redundantReward=option.reward.trim().toLowerCase().replace(/[\\s_-]+/g,'')===option.kind.trim().toLowerCase().replace(/[\\s_-]+/g,'');
+   const riskBaseline=/^risk\s+1(?:\.0+)?$/i.test(option.risk.trim());
+   const redundantReward=option.reward.trim().toLowerCase().replace(/[\s_-]+/g,'')===option.kind.trim().toLowerCase().replace(/[\s_-]+/g,'');
    return <Pressable
     key={option.nodeId}
     accessibilityRole="button"

@@ -1,6 +1,10 @@
 import type {CoopRole,CoopRouteGraph,CoopRouteNode} from '../../shared/coop-types';
 import {coopRouteClientProjection} from '../expeditions/route-generation';
 import {merchantOffers} from '../expeditions/node-resolution';
+import type {QModeRun} from './qmode';
+import {projectCombatReplay,type PublicCombatReplay} from './combat-replay-projection';
+import {expeditionBossTelegraph,expeditionEncounterPreview} from '../combat/expedition-combat-service';
+
 /** Never publish RNG rolls, hidden graph nodes, private state or account IDs in room feedback. */
 export function publicCoopRoomOutcome(nodeId:string|undefined,summary:Record<string,unknown>|undefined){
  if(!nodeId||!summary)return undefined;
@@ -11,9 +15,6 @@ export function publicCoopRoomOutcome(nodeId:string|undefined,summary:Record<str
  return {nodeId,kind,resourcesDelta:delta,healedHp:count('healedHp'),revivedCount:count('revivedCount'),boonCount:count('boonCount'),artifactCount:count('artifactCount'),curseCount:count('curseCount'),...(kind==='merchant_purchase'&&typeof summary.offerKind==='string'?{offerKind:summary.offerKind}: {})};
 }
 
-import type {QModeRun} from './qmode';
-import {projectCombatReplay,type PublicCombatReplay} from './combat-replay-projection';
-import {expeditionBossTelegraph,expeditionEncounterPreview} from '../combat/expedition-combat-service';
 
 export interface PublicQModeMember {memberId:string;displayName:string;role:CoopRole;classId:string;bodyPresentation?:'male'|'female';companionId?:string;kind:'controller'|'echo'|'npc';effectiveLevel:number;currentHp:number;maximumHp:number;downed:boolean;}
 export interface PublicQModeRunProjection {

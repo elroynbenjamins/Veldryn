@@ -198,7 +198,7 @@ begin
  if v_private is null or v_projection is null or v_private ? 'pending'
  or v_private#>>'{run,phase}' is distinct from 'awaiting_choice'
  then raise exception 'run_not_awaiting_choice';end if;
- if jsonb_typeof(v_private#>'{run,persistentState,visitedNodeIds}')<>'array'
+ if coalesce(jsonb_typeof(v_private#>'{run,persistentState,visitedNodeIds}'),'null')<>'array'
  or jsonb_array_length(v_private#>'{run,persistentState,visitedNodeIds}')<>0
  then raise exception 'tonic_preparation_closed';end if;
 

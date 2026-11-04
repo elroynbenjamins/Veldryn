@@ -37,6 +37,7 @@
   "tests/localization-social.mjs",
   "tests/companions-localization.cjs",
   "tests/coop-ru-tr-localization.cjs",
+  "tests/guild-ru-tr-localization.cjs",
   ".core-build/apps/mobile/tests/class-selection.js",
   ".core-build/apps/mobile/tests/character-creation-onboarding.js",
   ".core-build/apps/mobile/tests/inventory-view.js",

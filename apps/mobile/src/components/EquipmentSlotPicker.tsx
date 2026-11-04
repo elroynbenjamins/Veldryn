@@ -46,7 +46,7 @@ export function EquipmentSlotPicker({state,slot,onEquip,onEquipInstance,onEquipP
   const projected=previewEquipment(state,choice.itemId,choice.instanceId,choice.source);
   const after=effectiveStats(projected),item=itemDef(choice.itemId);
   const instance=choice.instanceId?instances.get(choice.instanceId):undefined;
-  return {...choice,item,instance,after,projected,key:choice.instanceId?'copy:'+choice.instanceId:'legacy:'+choice.source+':'+choice.itemId,
+  return [{...choice,item,instance,after,projected,key:choice.instanceId?'copy:'+choice.instanceId:'legacy:'+choice.source+':'+choice.itemId,
    powerDelta:after.power-before.power}];
   }catch{return []}
  }).sort((a,b)=>b.powerDelta-a.powerDelta),[state,slot,instances]);

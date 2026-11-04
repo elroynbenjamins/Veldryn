@@ -1,6 +1,7 @@
 import {accountText} from './account';
+import {earlyLocaleText} from './early-locales';
 import type {Language} from './languages';
-const rows:Record<string,readonly string[]>={
+const rows:Record<string,readonly [string,string,string,string,string]>={
  "NPC or Echo allies fill the missing roles":["NPCs oder Echos füllen fehlende Rollen.","Los PNJ o Ecos cubren los roles que faltan.","NPC's of Echo's vullen ontbrekende rollen.","PNG o Echi coprono i ruoli mancanti.","Des PNJ ou des Échos complètent les rôles manquants."],
  "Find an eligible party automatically":["Automatisch eine passende Gruppe finden","Encuentra un grupo apto automáticamente","Vind automatisch een geschikte groep","Trova automaticamente un gruppo idoneo","Trouver automatiquement un groupe admissible"],
  "Group finder & options":["Gruppensuche & Optionen","Buscador de grupos y opciones","Groepszoeker en opties","Ricerca gruppo e opzioni","Recherche de groupe et options"],
@@ -32,4 +33,9 @@ const rows:Record<string,readonly string[]>={
  'non-boss rooms · final boss follows':['Räume ohne Boss · danach der Endboss','salas sin jefe · después el jefe final','kamers zonder baas · daarna de eindbaas','stanze senza boss · poi il boss finale','salles sans boss · puis le boss final'],
  'Your verified character + three eligible Echo recruits':['Dein verifizierter Charakter + drei geeignete Echo-Rekruten','Tu personaje verificado + tres reclutas Eco aptos','Je geverifieerde personage + drie geschikte Echo-rekruten','Il tuo personaggio verificato + tre reclute Eco idonee','Votre personnage vérifié + trois recrues Écho admissibles'],
 };
-export function dungeonText(language:Language,text:string){const index=['de','es','nl','it','fr'].indexOf(language);return rows[text]?.[index]??accountText(language,text);}
+export function dungeonText(language:Language,text:string){
+ const index=['de','es','nl','it','fr'].indexOf(language);
+ // The five legacy columns are complete. Starter RU/TR must look up their
+ // own dictionary rather than silently routing through Account's fallback.
+ return (index>=0?rows[text]?.[index]:earlyLocaleText(language,text))??accountText(language,text);
+}

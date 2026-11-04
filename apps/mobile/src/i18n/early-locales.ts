@@ -997,6 +997,438 @@ export const EARLY_LOCALE_ROWS={
   "Your week": [
     "Ваша неделя",
     "Bu hafta"
+  ],
+  "Play together. Earn rewards.": [
+    "Играйте вместе. Получайте награды.",
+    "Birlikte oyna. Ödüller kazan."
+  ],
+  "Progress and rewards": [
+    "Прогресс и награды",
+    "İlerleme ve ödüller"
+  ],
+  "Dungeon resources": [
+    "Ресурсы подземелья",
+    "Zindan kaynakları"
+  ],
+  "Grants a dungeon boon": [
+    "Даёт благословение подземелья",
+    "Zindan lütfu verir"
+  ],
+  "Grants a dungeon artifact": [
+    "Даёт артефакт подземелья",
+    "Zindan eseri verir"
+  ],
+  "Room cleared": [
+    "Комната пройдена",
+    "Oda tamamlandı"
+  ],
+  "Battle room": [
+    "Боевая комната",
+    "Savaş odası"
+  ],
+  "Elite room": [
+    "Элитный бой",
+    "Seçkin oda"
+  ],
+  "Boss room": [
+    "Комната босса",
+    "Boss odası"
+  ],
+  "Camp room": [
+    "Лагерь",
+    "Kamp odası"
+  ],
+  "Shrine room": [
+    "Святилище",
+    "Tapınak odası"
+  ],
+  "Forge room": [
+    "Кузница",
+    "Demirhane odası"
+  ],
+  "Treasure room": [
+    "Сокровищница",
+    "Hazine odası"
+  ],
+  "Merchant room": [
+    "Торговец",
+    "Tüccar odası"
+  ],
+  "Echo room": [
+    "Комната Эха",
+    "Yankı odası"
+  ],
+  "Risk room": [
+    "Комната риска",
+    "Risk odası"
+  ],
+  "Event room": [
+    "Комната события",
+    "Etkinlik odası"
+  ],
+  "Secret room": [
+    "Тайная комната",
+    "Gizli oda"
+  ],
+  "Fight the enemies ahead.": [
+    "Сразитесь с врагами впереди.",
+    "Önündeki düşmanlarla savaş."
+  ],
+  "Expect a tougher fight.": [
+    "Впереди более сложный бой.",
+    "Daha zorlu bir savaşa hazırlan."
+  ],
+  "Receive a dungeon boon.": [
+    "Получите благословение подземелья.",
+    "Zindan lütfu kazan."
+  ],
+  "Discover a dungeon artifact.": [
+    "Найдите артефакт подземелья.",
+    "Bir zindan eseri keşfet."
+  ],
+  "Visit a dungeon merchant.": [
+    "Посетите торговца подземелья.",
+    "Zindan tüccarını ziyaret et."
+  ],
+  "Saving room progress": [
+    "Сохранение прогресса комнаты",
+    "Oda ilerlemesi kaydediliyor"
+  ],
+  "Choose a room": [
+    "Выберите комнату",
+    "Bir oda seç"
+  ],
+  "Vote on a route": [
+    "Голосовать за маршрут",
+    "Rota için oy ver"
+  ],
+  "BOSS OUTLOOK": [
+    "СВЕДЕНИЯ О БОССЕ",
+    "BOSS BİLGİSİ"
+  ],
+  "Boss details": [
+    "Подробности о боссе",
+    "Boss ayrıntıları"
+  ],
+  "Hide boss details": [
+    "Скрыть подробности о боссе",
+    "Boss ayrıntılarını gizle"
+  ],
+  "Boss recap": [
+    "Итоги боя с боссом",
+    "Boss özeti"
+  ],
+  "Hide boss recap": [
+    "Скрыть итоги боя",
+    "Boss özetini gizle"
+  ],
+  "LIVE DUNGEON · REMATCH": [
+    "ЖИВОЕ ПОДЗЕМЕЛЬЕ · РЕВАНШ",
+    "CANLI ZİNDAN · YENİDEN"
+  ],
+  "Keep the party together": [
+    "Сохранить группу",
+    "Grubu birlikte tut"
+  ],
+  "Party ready check": [
+    "Проверка готовности группы",
+    "Grup hazır kontrolü"
+  ],
+  "Party member": [
+    "Участник группы",
+    "Grup üyesi"
+  ],
+  "All four members approved a new dungeon run.": [
+    "Все четверо участников согласились на новый поход.",
+    "Dört üyenin tamamı yeni zindan seferini onayladı."
+  ],
+  "Everyone must agree. Leaving or declining never starts a run. This ready check expires automatically.": [
+    "Все должны согласиться. При выходе или отказе поход не начнётся. Проверка завершится автоматически.",
+    "Herkes onaylamalı. Ayrılmak veya reddetmek seferi başlatmaz. Hazır kontrolü otomatik olarak sona erer."
+  ],
+  "Enter new dungeon": [
+    "Войти в новое подземелье",
+    "Yeni zindana gir"
+  ],
+  "Your vote is saved. Waiting for your party…": [
+    "Голос учтён. Ожидание группы…",
+    "Verdiğin oy kaydedildi. Grubun bekleniyor…"
+  ],
+  "Room in progress": [
+    "Прохождение комнаты",
+    "Oda devam ediyor"
+  ],
+  "Resolving the selected room": [
+    "Завершение выбранной комнаты",
+    "Seçilen oda sonuçlandırılıyor"
+  ],
+  "Resolving room · Progress is saved online.": [
+    "Обработка комнаты · Прогресс сохранён на сервере.",
+    "Oda sonuçlandırılıyor · İlerleme çevrimiçi kaydedildi."
+  ],
+  "Your encounter is running. Combat results will appear when the server settles this room.": [
+    "Бой продолжается. Результат появится после обработки комнаты сервером.",
+    "Karşılaşma sürüyor. Sunucu odayı sonuçlandırdığında savaş sonucu görünecek."
+  ],
+  "View rewards": [
+    "Посмотреть награды",
+    "Ödülleri görüntüle"
+  ],
+  "Rematch with this party": [
+    "Повторить поход с этой группой",
+    "Bu grupla yeniden dene"
+  ],
+  "Refresh rewards": [
+    "Обновить награды",
+    "Ödülleri yenile"
+  ],
+  "YOUR PARTY": [
+    "ВАША ГРУППА",
+    "GRUBUN"
+  ],
+  "Find new Live party": [
+    "Найти новую живую группу",
+    "Yeni canlı grup bul"
+  ],
+  "A verified Live-ready loadout is required.": [
+    "Нужен подтверждённый набор снаряжения для живого похода.",
+    "Canlı sefer için doğrulanmış bir ekipman düzeni gerekiyor."
+  ],
+  "Failed runs do not spend charges. {remaining} of 12 weekly consolation rewards left.": [
+    "Неудачные походы не тратят заряды. Осталось утешительных наград за неделю: {remaining} из 12.",
+    "Başarısız seferler hak tüketmez. Haftalık 12 teselli ödülünden kalan: {remaining}."
+  ],
+  "Consolation reward · No enhanced charge spent.": [
+    "Утешительная награда · Усиленный заряд не потрачен.",
+    "Teselli ödülü · Geliştirilmiş hak harcanmadı."
+  ],
+  "Enhanced: {charges} charges · {weekly} weekly rewards left": [
+    "Усиленные заряды: {charges} · Недельных наград осталось: {weekly}",
+    "Geliştirilmiş hak: {charges} · Kalan haftalık ödül: {weekly}"
+  ],
+  "Estimated clear reward · Tier {tier}": [
+    "Ожидаемая награда · Ранг {tier}",
+    "Tahmini tamamlama ödülü · Kademe {tier}"
+  ],
+  "weekly rewards": [
+    "недельных наград",
+    "haftalık ödüller"
+  ],
+  "After enhanced rewards: 20% Marks. Unlimited entries.": [
+    "После усиленных наград: 20% знаков. Число входов не ограничено.",
+    "Geliştirilmiş ödüllerden sonra: %20 İşaret. Giriş sınırsız."
+  ],
+  "One reward charge replenishes every 8 hours.": [
+    "Один заряд награды восстанавливается каждые 8 часов.",
+    "Her 8 saatte bir ödül hakkı yenilenir."
+  ],
+  "Vote ends in {seconds}s": [
+    "Голосование завершится через {seconds} с",
+    "Oylama {seconds} sn sonra bitiyor"
+  ],
+  "Vote for the next path": [
+    "Голосовать за следующий путь",
+    "Sonraki rota için oy ver"
+  ],
+  "Choose the next room": [
+    "Выберите следующую комнату",
+    "Sonraki odayı seç"
+  ],
+  "The route with the most votes will be selected.": [
+    "Будет выбран маршрут с большинством голосов.",
+    "En çok oyu alan rota seçilecek."
+  ],
+  "Party & formation": [
+    "Группа и построение",
+    "Grup ve diziliş"
+  ],
+  "Your vote": [
+    "Ваш голос",
+    "Oyun"
+  ],
+  "Your party": [
+    "Ваша группа",
+    "Grubun"
+  ],
+  "Recruitment & members": [
+    "Набор и участники",
+    "Oyuncu arama ve üyeler"
+  ],
+  "Guild recruitment": [
+    "Набор в гильдию",
+    "Lonca üye alımı"
+  ],
+  "LIVE COMBAT": [
+    "ЖИВОЙ БОЙ",
+    "CANLI SAVAŞ"
+  ],
+  "Opening Party Chat…": [
+    "Открытие чата группы…",
+    "Grup sohbeti açılıyor…"
+  ],
+  "Checking your Party…": [
+    "Проверка группы…",
+    "Grubun kontrol ediliyor…"
+  ],
+  "Choose room": [
+    "Выбрать комнату",
+    "Oda seç"
+  ],
+  "votes": [
+    "голосов",
+    "oy"
+  ],
+  "My Echo · Current equipment": [
+    "Моё Эхо · Текущее снаряжение",
+    "Yankım · Mevcut ekipman"
+  ],
+  "Your character Echo is shared with other adventurers.": [
+    "Эхо персонажа доступно другим искателям приключений.",
+    "Karakter Yankın diğer maceracılarla paylaşılır."
+  ],
+  "Prepare a snapshot of your current dungeon loadout for other players.": [
+    "Создайте снимок текущего набора снаряжения для других игроков.",
+    "Mevcut zindan ekipmanının diğer oyunculara yönelik bir kopyasını hazırla."
+  ],
+  "READY TO SHARE": [
+    "ГОТОВО К ПУБЛИКАЦИИ",
+    "PAYLAŞMAYA HAZIR"
+  ],
+  "NOT READY": [
+    "НЕ ГОТОВО",
+    "HAZIR DEĞİL"
+  ],
+  "Echo sharing unlocks at character level 15.": [
+    "Обмен Эхом откроется на 15-м уровне персонажа.",
+    "Yankı paylaşımı karakter seviyesi 15'te açılır."
+  ],
+  "Update Echo from current gear": [
+    "Обновить Эхо по текущему снаряжению",
+    "Yankıyı mevcut ekipmanla güncelle"
+  ],
+  "DUNGEONS": [
+    "ПОДЗЕМЕЛЬЯ",
+    "ZİNDANLAR"
+  ],
+  "DUNGEON": [
+    "ПОДЗЕМЕЛЬЕ",
+    "ZİNDAN"
+  ],
+  "Open Dungeons": [
+    "Открыть подземелья",
+    "Zindanları aç"
+  ],
+  "Dungeons are available when online play is configured.": [
+    "Подземелья доступны при настроенной сетевой игре.",
+    "Çevrimiçi oyun yapılandırıldığında zindanlar kullanılabilir."
+  ],
+  "REWARD": [
+    "НАГРАДА",
+    "ÖDÜL"
+  ],
+  "REWARDS": [
+    "НАГРАДЫ",
+    "ÖDÜLLER"
+  ],
+  "REWARD READY": [
+    "НАГРАДА ГОТОВА",
+    "ÖDÜL HAZIR"
+  ],
+  "Reward already collected": [
+    "Награда уже получена",
+    "Ödül zaten alındı"
+  ],
+  "Rewards collected": [
+    "Награды получены",
+    "Ödüller alındı"
+  ],
+  "NEXT REWARD": [
+    "СЛЕДУЮЩАЯ НАГРАДА",
+    "SONRAKİ ÖDÜL"
+  ],
+  "DAMAGE": [
+    "УРОН",
+    "HASAR"
+  ],
+  "SUPPORT": [
+    "ПОДДЕРЖКА",
+    "DESTEK"
+  ],
+  "BOSS HEALING POTIONS": [
+    "ЛЕЧЕБНЫЕ ЗЕЛЬЯ ДЛЯ БОССОВ",
+    "BOSS İYİLEŞTİRME İKSİRLERİ"
+  ],
+  "Selected for bosses": [
+    "Выбрано для боссов",
+    "Bosslar için seçildi"
+  ],
+  "Select for bosses": [
+    "Выбрать для боссов",
+    "Bosslar için seç"
+  ],
+  "No healing potions carried. Brew them in Alchemy or withdraw from Bank.": [
+    "При себе нет лечебных зелий. Создайте их в Алхимии или возьмите из банка.",
+    "Yanında iyileştirme iksiri yok. Simya ile üret veya Bankadan al."
+  ],
+  "Clear boss potion choice": [
+    "Сбросить выбор зелья для босса",
+    "Boss iksiri seçimini temizle"
+  ],
+  "Health is full": [
+    "Здоровье полное",
+    "Can dolu"
+  ],
+  "Combat stopped": [
+    "Бой остановлен",
+    "Savaş durduruldu"
+  ],
+  "Combat stopped. Too injured. Open food.": [
+    "Бой остановлен. Мало здоровья. Откройте еду.",
+    "Savaş durdu. Can çok az. Yiyecekleri aç."
+  ],
+  "Combat stopped. View results.": [
+    "Бой остановлен. Посмотрите результаты.",
+    "Savaş durdu. Sonuçları görüntüle."
+  ],
+  "Loot & encounter details": [
+    "Добыча и подробности боя",
+    "Ganimet ve karşılaşma ayrıntıları"
+  ],
+  "Attack": [
+    "Атака",
+    "Saldırı"
+  ],
+  "Combat XP": [
+    "Опыт боя",
+    "Savaş TP"
+  ],
+  "Skill level": [
+    "Уровень навыка",
+    "Beceri seviyesi"
+  ],
+  "Reward ready": [
+    "Награда готова",
+    "Ödül hazır"
+  ],
+  "Ready only": [
+    "Только готовые",
+    "Yalnızca hazır olanlar"
+  ],
+  "Queue full": [
+    "Очередь заполнена",
+    "Kuyruk dolu"
+  ],
+  "Ready to brew": [
+    "Готово к варке",
+    "İksir hazırlamaya hazır"
+  ],
+  "Ready to process": [
+    "Готово к обработке",
+    "İşlemeye hazır"
+  ],
+  "Stop combat when out of food": [
+    "Останавливать бой, когда закончится еда",
+    "Yiyecek bitince savaşı durdur"
   ]
 } satisfies Record<string,readonly [string,string]>;
 

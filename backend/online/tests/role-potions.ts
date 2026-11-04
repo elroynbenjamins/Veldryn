@@ -1,8 +1,22 @@
 import {strict as assert} from 'node:assert';
 import {frozenAlchemyPotionCombatant,preparedCoopCombatants} from '../coop-potion-modifiers';
+import {DUNGEON_ROLE_TONIC_MODIFIERS} from '../../src/server/coop/potion-modifiers';
+import {POTIONS} from '../../../apps/mobile/src/content/alchemy';
 import {launchPlayer,rootboundHeartBoss} from '../../src/server/combat/content/launch-combat';
 import {simulateCombat} from '../../src/server/combat/engine';
 
+for(const potion of POTIONS.filter(item=>item.effect.kind==='preparation')){
+ const effect=potion.effect;
+ if(effect.kind!=='preparation')throw new Error('unexpected non-preparation');
+ const id=potion.id as keyof typeof DUNGEON_ROLE_TONIC_MODIFIERS;
+ const actual=DUNGEON_ROLE_TONIC_MODIFIERS[id];
+ assert.ok(actual,'server catalog missing brewed potion '+id);
+ assert.equal(actual.outgoing,1+effect.damageDealtFraction,id+' outgoing source parity');
+ assert.equal(actual.incoming,1-effect.damageReductionFraction,id+' incoming source parity');
+ assert.equal(actual.healing,1+effect.healingStrengthFraction,id+' healing source parity');
+ assert.equal(actual.shielding,1+effect.shieldStrengthFraction,id+' shielding source parity');
+}
+assert.equal(POTIONS.filter(item=>item.effect.kind==='preparation').length,Object.keys(DUNGEON_ROLE_TONIC_MODIFIERS).length,'no server-only tonics');
 const base=launchPlayer('Ravager',25);
 const vigor=frozenAlchemyPotionCombatant(base,'VIGOR_TONIC');
 const greater=frozenAlchemyPotionCombatant(base,'GREATER_VIGOR_TONIC');

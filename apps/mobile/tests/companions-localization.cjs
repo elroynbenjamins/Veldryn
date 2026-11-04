@@ -164,7 +164,7 @@ const baseline={
   "apps/mobile/src/components/MonsterMasteryPanel.tsx": [],
   "apps/mobile/src/components/RareDiscoveriesPanel.tsx": []
 };
-const contractDrift=[];
+const contractDrift=[],untranslatedNodes=[];
 for(const file of owned){
  const source=fs.readFileSync(path.join(root,file),'utf8');
  const sf=ts.createSourceFile(file,source,ts.ScriptTarget.Latest,true,ts.ScriptKind.TSX);
@@ -176,9 +176,9 @@ for(const file of owned){
   if(ts.isJsxAttribute(node)&&['key','testID','accessibilityRole','accessibilityLiveRegion','keyboardShouldPersistTaps','resizeMode','animationType','tone'].includes(node.name.getText(sf))){
    assert.ok(!/\b(?:t|label|companionContent|translateCompanion)\(/.test(node.initializer?.getText(sf)??''),file+' translated technical prop');
   }
-  if(ts.isJsxText(node))assert.ok(!/[A-Za-z]/.test(node.text),file+' untranslated JSX text: '+node.text);
+  if(ts.isJsxText(node)&&/[A-Za-z]/.test(node.text))untranslatedNodes.push({file,text:node.text.trim()});
   ts.forEachChild(node,walk);
  };walk(sf);
 }
-assert.deepEqual(contractDrift,[],'Companion gameplay command/filter contracts changed');
+assert.deepEqual({contractDrift,untranslatedNodes},{contractDrift:[],untranslatedNodes:[]},'Companion localization source contracts changed');
 console.log('Companion localization passed: '+keys.length+' keys × 6 languages; placeholders, names, errors, JSX, and gameplay command/filter contracts.');

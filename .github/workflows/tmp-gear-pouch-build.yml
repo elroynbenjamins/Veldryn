@@ -70,3 +70,5 @@ jobs:
 # Final stable-head run: regenerated bundle must include all later shared-engine changes.
 
 # Final verification includes both scroll-indicator fixes and the five historical core failures.
+
+# Recheck deterministic weekly replay fixtures after removing combat-loss variance.

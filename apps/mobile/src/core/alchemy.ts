@@ -84,15 +84,16 @@ export function alchemyRefund(brew:AlchemyBatchState) {
 }
 /** Legacy reservations retain the material mix and cost actually paid at start.
  * T1–T3 rebalancing must not invalidate escrow started on 1.0.5. */
-const PREVIOUS_TONIC_INPUTS:Record<string,readonly string[]>={
- 'BREW_VIGOR_TONIC':['DEWLEAF','RIVER_MINT'],
- 'BREW_WARD_TONIC':['DEWLEAF','IRONBLOOM'],
- 'BREW_GREATER_VIGOR_TONIC':['RIVER_MINT','CAVELICHEN'],
- 'BREW_GREATER_WARD_TONIC':['IRONBLOOM','CROWN_SAGE'],
+const PREVIOUS_TONIC_INPUTS:Record<string,readonly ItemStack[]>={
+ 'BREW_VIGOR_TONIC':[{itemId:'DEWLEAF',quantity:2},{itemId:'RIVER_MINT',quantity:2}],
+ 'BREW_WARD_TONIC':[{itemId:'DEWLEAF',quantity:2},{itemId:'IRONBLOOM',quantity:2}],
+ 'BREW_GREATER_VIGOR_TONIC':[{itemId:'RIVER_MINT',quantity:3},{itemId:'CAVELICHEN',quantity:2}],
+ 'BREW_GREATER_WARD_TONIC':[{itemId:'IRONBLOOM',quantity:3},{itemId:'CROWN_SAGE',quantity:2}],
 };
 function permittedReservationInputs(recipeId:string,current:readonly ItemStack[],saved:readonly ItemStack[]):boolean{
- const expected=[current.map(row=>row.itemId),PREVIOUS_TONIC_INPUTS[recipeId]].filter((row):row is string[]=>!!row).map(ids=>[...ids].sort().join('|'));
- return saved.length>0&&new Set(saved.map(row=>row.itemId)).size===saved.length&&expected.includes(saved.map(row=>row.itemId).sort().join('|'));
+ const allowed=[current,PREVIOUS_TONIC_INPUTS[recipeId]].filter((rows):rows is readonly ItemStack[]=>!!rows);
+ return allowed.some(inputs=>inputs.length===saved.length&&inputs.every(input=>
+  saved.filter(row=>row.itemId===input.itemId&&row.quantity===input.quantity).length===1));
 }
 /** Reject unreadable escrow, rather than silently deleting paid ingredients on load. */
 export function normalizeAlchemyBatch(value:unknown,targetId:string):AlchemyBatchState {

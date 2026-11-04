@@ -11,12 +11,12 @@ import type {ThemeColors} from '../theme/theme';
 type Area='party'|'guild';
 type Kind='groups'|'players';
 type Action='looking_for_party'|'party_recruiting'|'looking_for_guild'|'guild_recruiting';
-export function RecruitmentBoardPanel({area,onAreaChange,cards,own,filters,onFiltersChange,nowMs,busy,canRecruitGuild,inGuild,guildMembershipKnown,inParty,partyUnlocked,partyLeader,partyOpenSpots,onPost,onOpen,onRefresh,onClose,onOpenParty,onOpenGuild,matches=[],onDismissMatches,loading=false}:{
+export function RecruitmentBoardPanel({area,onAreaChange,cards,own,filters,onFiltersChange,nowMs,busy,canRecruitGuild,inGuild,guildMembershipKnown,inParty,partyUnlocked,partyLeader,partyOpenSpots,onPost,onOpen,onRefresh,onClose,onOpenParty,onOpenGuild,onInviteFriends,matches=[],onDismissMatches,loading=false}:{
  area:Area;onAreaChange:(area:Area)=>void;cards:RecruitmentCardView[];own:RecruitmentCardView[];
  filters:RecruitmentClientFilters;onFiltersChange:(next:RecruitmentClientFilters)=>void;nowMs:number;busy:boolean;
  canRecruitGuild:boolean;inGuild:boolean;guildMembershipKnown:boolean;inParty:boolean;partyUnlocked:boolean;partyLeader:boolean;partyOpenSpots:number;
  onPost:(type:RecruitmentPostType)=>void;onOpen:(card:RecruitmentCardView)=>void;
- onRefresh:(id:string)=>void;onClose:(id:string)=>void;onOpenParty:()=>void;onOpenGuild:()=>void;
+ onRefresh:(id:string)=>void;onClose:(id:string)=>void;onOpenParty:()=>void;onOpenGuild:()=>void;onInviteFriends?:()=>void;
  matches?:RecruitmentCardView[];onDismissMatches?:()=>void;loading?:boolean;
 }){
  const C=useGameTheme(),s=useMemo(()=>styles(C),[C]);
@@ -40,6 +40,7 @@ export function RecruitmentBoardPanel({area,onAreaChange,cards,own,filters,onFil
    <View style={s.hero}><View style={s.between}><View style={s.flex}><Text style={s.eyebrow}>{area.toUpperCase()} RECRUITMENT</Text><Text style={s.heading}>{area==='party'?'Find the right teammates':'Find your Guild connection'}</Text></View><Text style={s.pill}>{area==='party'?'LFG / LFM':'GUILDS'}</Text></View>
     <Text style={s.copy}>{area==='party'?'Browse recruiting Parties or players looking for a group.':'Explore Guild opportunities and players seeking Guilds.'}</Text>
     <GameButton title={area==='party'?'+ Post for Party':'+ Create advert'} disabled={busy} onPress={createAdvert}/>
+    {area==='party'&&inParty&&partyLeader&&partyOpenSpots>0&&onInviteFriends?<GameButton compact tone="secondary" title="Invite friends privately" disabled={busy} onPress={onInviteFriends}/>:null}
    </View>
    <View accessibilityRole="tablist" style={s.tabs}>{(['groups','players'] as const).map(id=><Pressable key={id} accessibilityRole="tab" accessibilityState={{selected:kind===id}} onPress={()=>setKind(id)} style={[s.tab,kind===id&&s.selected]}><Text style={[s.tabLabel,kind===id&&s.selectedLabel]}>{id==='groups'?area==='party'?'Parties recruiting':'Guilds recruiting':area==='party'?'Players seeking':'Guild seekers'}</Text></Pressable>)}</View>
    <RecruitmentFiltersPanel value={filters} onChange={onFiltersChange} hidePostType partyMode={area==='party'}/>
@@ -50,7 +51,7 @@ export function RecruitmentBoardPanel({area,onAreaChange,cards,own,filters,onFil
    <Text style={s.copy}>Recruitment posts expire automatically. Party posts last 1 day; Guild posts last 1–3 days.</Text>
   </>:<>
    <View style={s.between}><Text style={s.headingSmall}>Your active adverts</Text><GameButton compact title="+ New post" disabled={busy} onPress={createAdvert}/></View>
-   {myPosts.length?myPosts.map(card=><View key={card.id} style={s.post}><View style={s.between}><Text style={[s.headingSmall,s.flex]}>{card.title}</Text><Text style={s.pill}>{card.status==='closed'?'CLOSED':'ACTIVE'}</Text></View><Text style={s.copy}>{card.body}</Text><RecruitmentListing card={card} nowMs={nowMs} onPress={()=>onOpen(card)}/>{card.status!=='closed'?<View style={s.actions}><View style={s.flex}><GameButton compact tone="secondary" title="Refresh" disabled={busy} onPress={()=>onRefresh(card.id)}/></View><View style={s.flex}><GameButton compact tone="secondary" title="Close advert" disabled={busy} onPress={()=>onClose(card.id)}/></View></View>:null}</View>):<View style={s.empty}><Text style={s.headingSmall}>No active adverts</Text><Text style={s.copy}>Post what you are looking for to reach other players.</Text><GameButton compact title="Create advert" onPress={createAdvert}/></View>}
+   {myPosts.length?myPosts.map(card=><View key={card.id} style={s.post}><View style={s.between}><Text style={[s.headingSmall,s.flex]}>{card.title}</Text><Text style={s.pill}>{card.status==='closed'?'CLOSED':'ACTIVE'}</Text></View><Text style={s.copy}>{card.body}</Text><RecruitmentListing card={card} nowMs={nowMs} onPress={()=>onOpen(card)}/>{card.status!=='closed'?<View style={s.actions}><View style={s.flex}><GameButton compact tone="secondary" title="Refresh" disabled={busy} onPress={()=>onRefresh(card.id)}/></View><View style={s.flex}><GameButton compact tone="secondary" title="Close advert" disabled={busy} onPress={()=>onClose(card.id)}/></View></View>:null}{area==='party'&&card.postType==='party_recruiting'&&card.status!=='closed'&&inParty&&partyLeader&&partyOpenSpots>0&&onInviteFriends?<GameButton compact title="Invite friends" disabled={busy} onPress={onInviteFriends}/>:null}</View>):<View style={s.empty}><Text style={s.headingSmall}>No active adverts</Text><Text style={s.copy}>Post what you are looking for to reach other players.</Text><GameButton compact title="Create advert" onPress={createAdvert}/></View>}
    <Text style={s.copy}>The live game enforces one active advert per type and a 6-hour refresh or replacement cooldown.</Text>
   </>}
   <GameButton compact tone="secondary" title={area==='party'?'Open my Party':'Open Guild'} onPress={area==='party'?onOpenParty:onOpenGuild}/>

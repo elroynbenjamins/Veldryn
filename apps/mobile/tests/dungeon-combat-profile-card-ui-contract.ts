@@ -92,7 +92,7 @@ ok(read('src/theme/theme.ts').includes('touchTargetMin=44'),'The shared minimum 
 ok(!stage.includes('replayButton:{')&&!stage.includes('Replay combat recap'),'Dungeon combat must not have replay controls after completion');
 ok(stage.includes('layout.contributionIdentityMinWidth')&&stage.includes('layout.contributionIdentityWidthPct'),'Contribution recap identity width must adapt on narrow phones');
 ok(card.includes('selectedForInspect')&&card.includes('Inspect ${slot.name} combat details'),'Party combat cards must expose tap-to-inspect interaction without adding a permanent button row');
-ok(card.includes('Inspect ${name} combat details')&&card.includes('inspectSelected'),'Boss/enemy combat cards must support the same inspect interaction and selected state');
+ok(card.includes('Inspect ${dungeonEnemyDisplayName(name)} combat details')&&card.includes('inspectSelected'),'Boss/enemy combat cards must support the same inspect interaction and selected state');
 ok(stage.includes('inspectKey')&&stage.includes('enemyInspectKey(enemy.id)')&&stage.includes('slotInspectKey(slot)'),'Battlefield must track inspection by authoritative id for every enemy and all four party cards');
 ok(stage.includes('const toggleInspect=(key:string)=>setInspectKey('),'Combatant inspection must never pause automatic combat playback');
 ok(stage.includes('<CombatantInspectPanel')&&stage.includes('onClose={()=>setInspectKey(undefined)}'),'Selected combatant must render a closable compact inspection panel');

@@ -26,7 +26,11 @@ export const DUNGEON_MONSTER_PORTRAIT_ALIASES:Readonly<Record<string,string>>=Ob
  'dune phantom':'DUNE_ORACLE',
  'amberglass asp':'SUNSCAR_SCORPION',
  'wellbound colossus':'GLASSBOUND_SENTINEL',
- // The two Sphinx encounters intentionally await Sphinx art.
+ // Mirage Well: the existing Sunscar Dune Oracle atlas cell serves both
+ // encounters. Keep old server/replay names as aliases; no duplicate art.
+ 'dune sphinx':'DUNE_ORACLE',
+ 'the veiled sphinx':'DUNE_ORACLE',
+ 'the veiled oracle':'DUNE_ORACLE',
  // Frostmarch beast and spectral variants
  'rimewolf':'FROSTWOLF',
  'shiverling':'BELLWRAITH',
@@ -143,6 +147,7 @@ export const DUNGEON_TRIAL_PORTRAIT_ALIASES:Readonly<Record<string,string>>=Obje
 });
 
 function enemyKey(name:string){return name.trim().toLocaleLowerCase().replace(/\s+/g,' ');}
+
 const TRIAL_ART_BY_KEY:Readonly<Record<string,ImageSourcePropType>>=Object.freeze(
  Object.fromEntries(Object.entries(TRIAL_ENEMY_PORTRAITS).map(([name,art])=>[enemyKey(name),art])),
 );

@@ -23,9 +23,14 @@ jobs:
           node-version: 22
           cache: pnpm
           cache-dependency-path: backend/pnpm-lock.yaml
+      - name: Supply CI workspace roots
+        run: |
+          printf '\npackages:\n  - "."\n' >> backend/pnpm-workspace.yaml
+          printf '\npackages:\n  - "."\n' >> apps/mobile/pnpm-workspace.yaml
       - name: Install pinned backend tooling
-        run: pnpm install --frozen-lockfile
-        working-directory: backend
+        run: pnpm --dir backend install --frozen-lockfile
+      - name: Install cross-package mobile type dependencies
+        run: pnpm --dir apps/mobile install --frozen-lockfile --ignore-scripts
       - name: Typecheck updated online dungeon combat
         run: pnpm exec tsc -p tsconfig.online.json --noEmit
         working-directory: backend

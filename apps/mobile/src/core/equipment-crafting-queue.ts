@@ -15,7 +15,7 @@ import {consumeGemFromStorage,gemStorageQuantity,isGemPouchItemId,storePouchGem}
 import {professionMasteryMultipliers} from './profession-mastery-v40';
 import {applyTrustedLongTermProgression} from './long-term-progression-runtime';
 import {accountEntitlementBenefits} from './account-entitlements';
-import {tryStoreEquipmentInPouch} from './equipment-pouch';
+import {tryStoreEquipmentInPouch,equipmentPouchForCharacter} from './equipment-pouch';
 
 export const BASE_EQUIPMENT_CRAFT_SLOTS=3;
 export const MAX_EQUIPMENT_CRAFT_SLOTS=7;
@@ -298,15 +298,33 @@ function deliverExactForgeCopy(state:GameState,itemId:string,instanceId:string,o
     return {...state,bank:{...state.bank,stacks:[...state.bank.stacks,stack]}} as GameState;
   throw new Error(state.character?.id===ownerId?'Equipment Pouch, Inventory and Bank are full':'Equipment Pouch and Bank are full; free space before claiming this character\'s equipment');
 }
+/** Predict where a newly crafted copy would settle for exact owner-correct auto-sale proceeds. */
+function forgeIncomingDelivery(state:GameState,ownerId:string){
+  const active=state.character?.id===ownerId;
+  const owner=active?state.character:state.otherCharacters?.find(entry=>entry.character.id===ownerId)?.character;
+  if(!owner)throw new Error('Crafting owner is no longer available');
+  const pouch=equipmentPouchForCharacter(owner);
+  if(pouch.stacks.length<pouch.capacity)
+    return {incomingStorage:'equipment_pouch' as const,incomingHolderCharacterId:ownerId};
+  if(active&&state.inventory.stacks.length<state.inventory.capacity)
+    return {incomingStorage:'inventory' as const,incomingHolderCharacterId:ownerId};
+  return {incomingStorage:'bank' as const,incomingHolderCharacterId:undefined};
+}
 function applyForgeSaleCredit(state:GameState,amount:number,destination:'bank'|'character',holder?:string):GameState{
   if(!Number.isSafeInteger(amount)||amount<0)throw new Error('Invalid Forge sale proceeds');
   if(destination==='bank'){
     const gold=(state.bank.gold??0)+amount;if(!Number.isSafeInteger(gold))throw new Error('Bank Gold exceeds supported limit');
     return {...state,bank:{...state.bank,gold}};
   }
-  if(!state.character||state.character.id!==holder)throw new Error('Sale owner must be the active character');
-  const gold=state.character.gold+amount;if(!Number.isSafeInteger(gold))throw new Error('Carried Gold exceeds supported limit');
-  return {...state,character:{...state.character,gold}};
+  if(!holder)throw new Error('Sale owner is missing');
+  if(state.character?.id===holder){
+    const gold=state.character.gold+amount;if(!Number.isSafeInteger(gold))throw new Error('Carried Gold exceeds supported limit');
+    return {...state,character:{...state.character,gold}};
+  }
+  const entry=state.otherCharacters?.find(row=>row.character.id===holder);
+  if(!entry)throw new Error('Sale owner no longer has a character on this account');
+  const gold=entry.character.gold+amount;if(!Number.isSafeInteger(gold))throw new Error('Character Gold exceeds supported limit');
+  return {...state,otherCharacters:state.otherCharacters!.map(row=>row.character.id===holder?{...row,character:{...row.character,gold}}:row)};
 }
 
 function awardOwnerSkillXp(state:GameState,ownerCharacterId:string,recipe:Pick<Recipe,'id'|'skillId'|'xp'>,job:EquipmentCraftJob){
@@ -338,10 +356,9 @@ export function claimForgeJob(state:GameState,jobId:string,nowMs:number,rarityRo
       if(mode!=='keep_best_seven')throw new Error('Equipment copy limit reached (7/7); enable Keep Best 7 or manage copies');
       const entries=forgeOwnedCopyLocations(next,itemId);
       if(!entries)throw new Error('Equipment copy ownership requires manual review before auto-selling');
+      const delivery=forgeIncomingDelivery(next,job.ownerCharacterId);
       const proposed=proposeCraftedGearSettlement({
-        existing:entries,incoming:draft,
-        incomingStorage:next.character?.id===job.ownerCharacterId?'equipment_pouch':'bank',
-        incomingHolderCharacterId:next.character?.id===job.ownerCharacterId?job.ownerCharacterId:undefined,
+        existing:entries,incoming:draft,...delivery,
         mode,committedReceiptKeys:[],
       });
       if(proposed.status==='blocked')throw new Error('Equipment requires manual review: '+proposed.retention.reason);

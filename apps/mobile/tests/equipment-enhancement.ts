@@ -10,10 +10,13 @@ function ok(condition:unknown,message:string){if(!condition)throw new Error(mess
 const ringRecipe=V33_EQUIPMENT_RECIPES.find(row=>row.classId==='IRONWARDEN'&&row.v33EquipmentTier==='T1'&&itemDef(row.output.itemId).slot==='ring')!;
 const ringId=ringRecipe.output.itemId;
 let state=createCharacter(newGame(1),'IRONWARDEN','Smith','male');
-state={...state,character:{...state.character!,gold:100000,equipment:{...state.character!.equipment,ring:ringId}},inventory:{...state.inventory,stacks:[...ringRecipe.inputs.map(input=>({itemId:input.itemId,quantity:999})),{itemId:'TEMPERING_DUST',quantity:999},{itemId:'TEMPERING_CORE',quantity:99},{itemId:'WARD_SHARD',quantity:2},{itemId:'SWIFT_SIGIL',quantity:1}]}};
+state={...state,character:{...state.character!,gold:100000,equipment:{...state.character!.equipment,ring:ringId}},inventory:{...state.inventory,stacks:[...ringRecipe.inputs.map(input=>({itemId:input.itemId,quantity:999})),{itemId:'TEMPERING_DUST',quantity:999},{itemId:'TEMPERING_CORE',quantity:99},{itemId:'ASTERFALL_MINERAL_ESSENCE',quantity:999},{itemId:'WARD_SHARD',quantity:2},{itemId:'SWIFT_SIGIL',quantity:1}]}};
 ok(gemSocketCapacity(ringId)===2,'Every equipment piece should expose one Stat and one Effect socket');
 ok(Math.abs(upgradeQuote(state,ringId).successChance-.95)<.000001,'The first regional improvement should have its authored 95% chance');
-ok(upgradeQuote(state,ringId).materials.length===ringRecipe.inputs.length,'Regional improvement must consume the gear recipe materials');
+ok(upgradeQuote(state,ringId).materials.length===ringRecipe.inputs.length,'Regional improvement must retain regional material cost slots');
+ok(ringRecipe.inputs.some(input=>input.itemId==='VERDANT_BINDING_RESIN'),'T1 Forge must still use Verdant Binding Resin');
+ok(upgradeQuote(state,ringId).materials.some(input=>input.itemId==='ASTERFALL_MINERAL_ESSENCE'&&input.quantity===1),'Early enchantments use one rare Mining Essence per attempt');
+ok(!upgradeQuote(state,ringId).materials.some(input=>input.itemId==='VERDANT_BINDING_RESIN'),'Early enchantments must never consume Verdant Binding Resin');
 ok(Math.abs(gearStatsAtRank(ringId,1).defense-(itemDef(ringId).defense??0)*1.04)<.000001,'A +4% improvement must preserve fractional item stats until equipped totals are calculated');
 const before=effectiveStats(state);
 const upgraded=attemptEquipmentUpgrade(state,ringId,.1).state;

@@ -34,6 +34,7 @@ const BASE_ITEMS:ItemDef[]=[
 ...RAW_GEM_ITEMS_V1,
 ...GEM_ITEMS_V1,
 {id:'TEMPERING_DUST',name:'Tempering Dust',type:'material',value:22,rarity:'uncommon'},
+{id:'ASTERFALL_MINERAL_ESSENCE',name:'Asterfall Mineral Essence',type:'material',value:75,rarity:'rare',passive:'Rare concentrated ore resonance from Mining in Greenfields and the Old Mines. Used for early equipment enchanting.'},
 {id:'TEMPERING_CORE',name:'Tempering Core',type:'material',value:180,rarity:'rare'},
 {id:'EMBER_SHARD',name:'Ember Shard',type:'gem',gemStat:'attack',gemPercent:.02,gemTier:1,value:320,rarity:'rare'},
 {id:'EMBERHEART_GEM',name:'Emberheart Gem',type:'gem',gemStat:'attack',gemPercent:.05,gemTier:2,value:1900,rarity:'legendary'},

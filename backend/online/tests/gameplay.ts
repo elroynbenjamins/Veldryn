@@ -7,6 +7,7 @@ import {itemDef} from '../../../apps/mobile/src/content/items';
 import {COMBAT_COMPANIONS} from '../../../apps/mobile/src/content/combat-companions';
 import {EQUIPMENT_ITEMS_V33} from '../../../apps/mobile/src/content/equipment-items-v33';
 import {V33_EQUIPMENT_RECIPES} from '../../../apps/mobile/src/content/equipment-recipes-v33';
+import {alchemyRecipeDef} from '../../../apps/mobile/src/content/alchemy';
 import {effectiveStats} from '../../../apps/mobile/src/core/game';
 import {unlockCombatCompanion} from '../../../apps/mobile/src/core/combat-companions';
 import {setLocalEventEnabled} from '../../../apps/mobile/src/core/live-events';
@@ -41,7 +42,9 @@ async function main(){
  assert.equal((await request({type:'start',args:{kind:'gathering',id:'DEWLEAF_PATCH'}},'herb-start-01',3)).status,200,'Herbalism activity starts online');
  clock+=60000;
  const herbClaim=await request({type:'claim'},'herb-claim-01',4);assert.equal(herbClaim.status,200,'Herbalism settlement persists online');const herbPayload=await herbClaim.json();assert.equal(herbPayload.guildProjectEffort[0].kind,'skilling');assert.equal(herbPayload.guildProjectEffort[0].endsAtMs-herbPayload.guildProjectEffort[0].startsAtMs,60000);assert.deepEqual(herbPayload.guildPveEffort,[],'Gathering does not damage bosses');
- state={...state!,inventory:{...state!.inventory,stacks:state!.inventory.stacks.map(stack=>stack.itemId==='DEWLEAF'?{...stack,quantity:2}:stack)}};
+ // The healing potion recipe now charges five times the original ingredients.
+ const dewleafCost=alchemyRecipeDef('BREW_DEWLEAF_DRAUGHT')!.inputs.find(input=>input.itemId==='DEWLEAF')!.quantity;
+ state={...state!,inventory:{...state!.inventory,stacks:state!.inventory.stacks.map(stack=>stack.itemId==='DEWLEAF'?{...stack,quantity:dewleafCost}:stack)}};
  assert.equal((await request({type:'stop'},'herb-stop-01',5)).status,200,'Herbalism activity stops online');
  assert.equal((await request({type:'alchemy_start',args:{id:'BREW_DEWLEAF_DRAUGHT',batches:1}},'brew-start-01',6)).status,200,'Alchemy reservation persists online');
  clock+=60000;

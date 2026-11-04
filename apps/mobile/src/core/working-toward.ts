@@ -3,6 +3,7 @@ import type {GoalContext,GoalSource,ProgressionGoal} from './progression-goals-v
 import {professionMasteryRank} from './profession-mastery-v40';
 import {GATHERING,RECIPES} from '../content/skills';
 import {HERB_NODES,HERBALISM_ESSENCE_BY_ZONE} from '../content/herbalism';
+import {MINING_ESSENCE_BY_ZONE} from '../content/mining-essence';
 import {MONSTERS} from '../content/monsters';
 import {WORLD_ZONES} from '../content/world-map';
 import {ITEMS} from '../content/items';
@@ -114,6 +115,13 @@ export function workingTowardItemSourceEntries(state:GameState,itemId:string):Wo
   for(const herb of HERB_NODES.filter(row=>row.zoneId===zoneId)){
    const destination:WorkingTowardDestination={kind:'skills',skillId:'herbalism',mode:'gathering',actionId:herb.id,regionId:zoneId,button:`Harvest ${herb.name}`,detail:`${itemId.replaceAll('_',' ').replace(/\b\w/g,c=>c.toUpperCase())} is a rare secondary find from Herbalism in ${zone?.name??zoneId}. Careful Harvest improves the chance.`};
    candidates.push({type:'gathering',typeLabel:'Gathering',title:herb.name,destination,availability:workingTowardDestinationAvailability(state,destination),typePriority:0,progressionLevel:herb.unlockLevel});
+  }
+ }
+ for(const [zoneId,essence] of Object.entries(MINING_ESSENCE_BY_ZONE).filter(([,source])=>source.itemId===itemId)){
+  const zone=WORLD_ZONES.find(row=>row.id===zoneId);
+  for(const mine of GATHERING.filter(row=>row.skillId==='mining'&&row.zoneId===zoneId)){
+   const destination:WorkingTowardDestination={kind:'skills',skillId:'mining',mode:'gathering',actionId:mine.id,regionId:zoneId,button:`Mine ${mine.name}`,detail:`Rare ${itemId.replaceAll('_',' ').toLowerCase()} from Mining at ${mine.name} in ${zone?.name??zoneId} · ${(essence.baseChance*100).toFixed(0)}% base chance per completed action.`};
+   candidates.push({type:'gathering',typeLabel:'Gathering',title:mine.name,destination,availability:workingTowardDestinationAvailability(state,destination),typePriority:0,progressionLevel:mine.unlockLevel});
   }
  }
  for(const recipe of RECIPES.filter(row=>row.output.itemId===itemId)){

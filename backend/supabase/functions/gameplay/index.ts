@@ -42835,10 +42835,12 @@ var HERB_ITEMS = [
 
 // ../apps/mobile/src/content/alchemy.ts
 var MAX_ALCHEMY_BATCHES = 1e4;
+var HEALING_POTION_CRAFT_COST_MULTIPLIER = 5;
+var HEALING_POTION_XP_MULTIPLIER = 3;
 var POTIONS = [
-  { id: "DEWLEAF_DRAUGHT", name: "Dewleaf Draught", effect: { kind: "healing", maxHpFraction: 0.25 }, description: "Restore 25% maximum HP automatically during boss fights. Select below Food in the HP menu; not for ordinary hunts." },
-  { id: "RIVERHEART_DRAUGHT", name: "Riverheart Draught", effect: { kind: "healing", maxHpFraction: 0.45 }, description: "Restore 45% maximum HP automatically during boss fights. Select below Food in the HP menu; not for ordinary hunts." },
-  { id: "OATHBLOOM_DRAUGHT", name: "Oathbloom Draught", effect: { kind: "healing", maxHpFraction: 0.65 }, description: "Restore 65% maximum HP automatically during boss fights. Select below Food in the HP menu; not for ordinary hunts." },
+  { id: "DEWLEAF_DRAUGHT", name: "Dewleaf Draught", effect: { kind: "healing", maxHpFraction: 0.2 }, description: "Restore 20% maximum HP during boss fights and dungeons. Select below Food in the HP menu; not for ordinary hunts." },
+  { id: "RIVERHEART_DRAUGHT", name: "Riverheart Draught", effect: { kind: "healing", maxHpFraction: 0.35 }, description: "Restore 35% maximum HP during boss fights and dungeons. Select below Food in the HP menu; not for ordinary hunts." },
+  { id: "OATHBLOOM_DRAUGHT", name: "Oathbloom Draught", effect: { kind: "healing", maxHpFraction: 0.5 }, description: "Restore 50% maximum HP during boss fights and dungeons. Select below Food in the HP menu; not for ordinary hunts." },
   { id: "VIGOR_TONIC", name: "Vigor Tonic", effect: { kind: "preparation", attackFraction: 0.04, damageReductionFraction: 0, encounters: 30 }, description: "+4% attack for 30 resolved ordinary encounters." },
   { id: "GREATER_VIGOR_TONIC", name: "Greater Vigor Tonic", effect: { kind: "preparation", attackFraction: 0.06, damageReductionFraction: 0, encounters: 45 }, description: "+6% attack for 45 resolved ordinary encounters." },
   { id: "OATH_VIGOR_TONIC", name: "Oath Vigor Tonic", effect: { kind: "preparation", attackFraction: 0.08, damageReductionFraction: 0, encounters: 60 }, description: "+8% attack for 60 resolved ordinary encounters." },
@@ -42882,7 +42884,16 @@ var ALCHEMY_RECIPES = [
   { id: "BREW_SUNFUSED_FIXATIVE", name: "Sunfused Fixative", skillId: "alchemy", level: 49, seconds: 165, xp: 950, gold: 110, inputs: [{ itemId: "SUNSCALE", quantity: 3 }, { itemId: "AMBERGLASS", quantity: 2 }, { itemId: "SCORPION_VENOM", quantity: 2 }], output: { itemId: "SUNFUSED_FIXATIVE", quantity: 1 } },
   { id: "BREW_RIMEWARD_DISTILLATE", name: "Rimeward Distillate", skillId: "alchemy", level: 76, seconds: 195, xp: 1750, gold: 220, inputs: [{ itemId: "WINTERMINT", quantity: 3 }, { itemId: "RIMEGLASS", quantity: 2 }, { itemId: "RIME_RESIN", quantity: 3 }], output: { itemId: "RIMEWARD_DISTILLATE", quantity: 1 } },
   { id: "BREW_CINDERHEART_ELIXIR", name: "Cinderheart Elixir", skillId: "alchemy", level: 96, seconds: 225, xp: 3e3, gold: 420, inputs: [{ itemId: "ASHEN_MYRRH", quantity: 4 }, { itemId: "BLACKGLASS_CORE", quantity: 2 }, { itemId: "CINDER_HEART", quantity: 1 }], output: { itemId: "CINDERHEART_ELIXIR", quantity: 1 } }
-].map((recipe2) => ({ ...recipe2, gold: increasedCraftingGoldCost(recipe2.gold) }));
+].map((recipe2) => {
+  const healing = POTIONS.some((potion) => potion.id === recipe2.output.itemId && potion.effect.kind === "healing");
+  const costMultiplier = healing ? HEALING_POTION_CRAFT_COST_MULTIPLIER : 1;
+  return {
+    ...recipe2,
+    xp: recipe2.xp * (healing ? HEALING_POTION_XP_MULTIPLIER : 1),
+    gold: increasedCraftingGoldCost(recipe2.gold) * costMultiplier,
+    inputs: recipe2.inputs.map((input) => ({ ...input, quantity: input.quantity * costMultiplier }))
+  };
+});
 var POTION_ITEMS = POTIONS.map((potion) => ({
   id: potion.id,
   name: potion.name,
@@ -42947,6 +42958,7 @@ var BASE_ITEMS = [
   ...RAW_GEM_ITEMS_V1,
   ...GEM_ITEMS_V1,
   { id: "TEMPERING_DUST", name: "Tempering Dust", type: "material", value: 22, rarity: "uncommon" },
+  { id: "ASTERFALL_MINERAL_ESSENCE", name: "Asterfall Mineral Essence", type: "material", value: 75, rarity: "rare", passive: "Rare concentrated ore resonance from Mining in Greenfields and the Old Mines. Used for early equipment enchanting." },
   { id: "TEMPERING_CORE", name: "Tempering Core", type: "material", value: 180, rarity: "rare" },
   { id: "EMBER_SHARD", name: "Ember Shard", type: "gem", gemStat: "attack", gemPercent: 0.02, gemTier: 1, value: 320, rarity: "rare" },
   { id: "EMBERHEART_GEM", name: "Emberheart Gem", type: "gem", gemStat: "attack", gemPercent: 0.05, gemTier: 2, value: 1900, rarity: "legendary" },
@@ -43559,6 +43571,8 @@ var WORLD_ZONES = [
 
 // ../apps/mobile/src/content/skills.ts
 var GATHERING = [
+  // Starting-region mining keeps early enchanting materials accessible before Old Mines unlocks at Character Level 16.
+  { id: "GREENFIELDS_COPPER_OUTCROP", skillId: "mining", name: "Copper Outcrop", unlockLevel: 1, seconds: 15, xp: 9, itemId: "COPPER_ORE", min: 1, max: 2, zoneId: "GREENFIELDS" },
   { id: "COPPER_VEIN", skillId: "mining", name: "Copper Vein", unlockLevel: 1, seconds: 15, xp: 9, itemId: "COPPER_ORE", min: 1, max: 2, zoneId: "OLD_MINES" },
   { id: "ASTER_IRON_VEIN", skillId: "mining", name: "Aster-Iron Vein", unlockLevel: 8, seconds: 24, xp: 18, itemId: "ASTER_IRON_ORE", min: 1, max: 2, zoneId: "OLD_MINES" },
   { id: "OATHSTONE_SEAM", skillId: "mining", name: "Oathstone Seam", unlockLevel: 16, seconds: 36, xp: 29, itemId: "OATHSTONE_ORE", min: 1, max: 1, zoneId: "OLD_MINES" },
@@ -47679,6 +47693,13 @@ var CLASSES = [
   { id: "STONECALLER", name: "Stonecaller", role: "Support", description: "Earth-and-storm support caster using resonance, geomancy and totems.", hp: 120, attack: 20, defense: 12, roleRatings: { tank: 2, damage: 2, support: 5 }, starterEquipment: { weapon: "basic_staff" } }
 ];
 
+// ../apps/mobile/src/content/mining-essence.ts
+var ASTERFALL_MINERAL_ESSENCE_ID = "ASTERFALL_MINERAL_ESSENCE";
+var MINING_ESSENCE_BY_ZONE = {
+  GREENFIELDS: { itemId: ASTERFALL_MINERAL_ESSENCE_ID, baseChance: 0.02 },
+  OLD_MINES: { itemId: ASTERFALL_MINERAL_ESSENCE_ID, baseChance: 0.02 }
+};
+
 // ../apps/mobile/src/content/exploration.ts
 var EXPLORATION_ROUTES = [
   { id: "SCOUT_GREENFIELDS", zoneId: "GREENFIELDS", name: "Scout the Greenfields", seconds: 48, xp: 24, unlockMonsterId: "FIELD_WISP", requiredLevel: 1, requiredExplorationLevel: 1 },
@@ -49447,7 +49468,7 @@ function upgradeMaterialCosts(itemId, targetRank) {
   const recipe2 = v33EquipmentRecipeForItem(itemId);
   if (!recipe2) return [];
   const ratio = targetRank === 1 ? 0.12 : targetRank === 2 ? 0.18 : targetRank === 3 ? 0.27 : targetRank === 4 ? 0.38 : 0;
-  return recipe2.inputs.map((input) => ({ itemId: input.itemId, quantity: Math.max(1, Math.ceil(input.quantity * ratio)) }));
+  return recipe2.inputs.map((input) => ({ itemId: input.itemId === "VERDANT_BINDING_RESIN" ? ASTERFALL_MINERAL_ESSENCE_ID : input.itemId, quantity: Math.max(1, Math.ceil(input.quantity * ratio)) }));
 }
 function upgradeQuote(state, itemId) {
   const item = itemDef(itemId);
@@ -51701,6 +51722,16 @@ function previewStandardActivityRewardRaw(state, effectiveNowMs) {
     const gain = settleAffinitySkillXp(actions * g.xp * effect3.xpMultiplier * (method?.xpMultiplier ?? 1) * multipliers.skillXpMultiplier * mastery2.xp * affinity.xpMultiplier * candyXpMultiplier, state.rewardRemainders?.[xpKey], totalXpAtLevel(100) - (skill2?.xp ?? 0));
     const xp = gain.xp;
     const items2 = quantity2 ? [{ itemId: g.itemId, quantity: quantity2 }] : [];
+    if (g.skillId === "mining") {
+      const essence = MINING_ESSENCE_BY_ZONE[g.zoneId];
+      if (essence && actions > 0) {
+        const rareChance = Math.min(1, essence.baseChance * effect3.dropChanceMultiplier * multipliers.dropChanceMultiplier);
+        const rareSeed = `${state.character.id}:${state.activity.lastClaimAtMs}:${g.id}:mineral-essence`;
+        let rareQuantity = 0;
+        for (let i = 0; i < actions; i++) if (random01(rareSeed, i) < rareChance) rareQuantity++;
+        if (rareQuantity) items2.push({ itemId: essence.itemId, quantity: rareQuantity });
+      }
+    }
     if (g.skillId === "herbalism") {
       const essence = HERBALISM_ESSENCE_BY_ZONE[g.zoneId];
       if (essence && actions > 0) {
@@ -53955,6 +53986,13 @@ function workingTowardItemSourceEntries(state, itemId) {
     for (const herb of HERB_NODES.filter((row) => row.zoneId === zoneId)) {
       const destination = { kind: "skills", skillId: "herbalism", mode: "gathering", actionId: herb.id, regionId: zoneId, button: `Harvest ${herb.name}`, detail: `${itemId.replaceAll("_", " ").replace(/\b\w/g, (c) => c.toUpperCase())} is a rare secondary find from Herbalism in ${zone?.name ?? zoneId}. Careful Harvest improves the chance.` };
       candidates.push({ type: "gathering", typeLabel: "Gathering", title: herb.name, destination, availability: workingTowardDestinationAvailability(state, destination), typePriority: 0, progressionLevel: herb.unlockLevel });
+    }
+  }
+  for (const [zoneId, essence] of Object.entries(MINING_ESSENCE_BY_ZONE).filter(([, source]) => source.itemId === itemId)) {
+    const zone = WORLD_ZONES.find((row) => row.id === zoneId);
+    for (const mine of GATHERING.filter((row) => row.skillId === "mining" && row.zoneId === zoneId)) {
+      const destination = { kind: "skills", skillId: "mining", mode: "gathering", actionId: mine.id, regionId: zoneId, button: `Mine ${mine.name}`, detail: `Rare ${itemId.replaceAll("_", " ").toLowerCase()} from Mining at ${mine.name} in ${zone?.name ?? zoneId} \xB7 ${(essence.baseChance * 100).toFixed(0)}% base chance per completed action.` };
+      candidates.push({ type: "gathering", typeLabel: "Gathering", title: mine.name, destination, availability: workingTowardDestinationAvailability(state, destination), typePriority: 0, progressionLevel: mine.unlockLevel });
     }
   }
   for (const recipe2 of RECIPES.filter((row) => row.output.itemId === itemId)) {

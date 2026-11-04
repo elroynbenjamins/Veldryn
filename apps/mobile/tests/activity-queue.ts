@@ -23,7 +23,9 @@ rejects(()=>enqueueActivity(vipQueue,{kind:'combat',targetId:'MOSS_RAT'}),'VIP+ 
 ok(normalizeSave(structuredClone(vipQueue)).character?.activityQueue?.length===3,'VIP+ third slot survives save loading');
 ok(activityQueueCapacity({...capped,account:{...capped.account,entitlements:{vip:true}}})===2,'VIP without plus retains two waiting slots');
 ok(queueSkillReadiness(capped,'woodcutting').ready,'Local unlocked woodcutting is available');
-ok(!queueSkillReadiness(capped,'mining').ready&&queueSkillReadiness(capped,'mining').blocker?.includes('Not available in Greenfields'),'Unavailable regional skill explains the region');
+ok(queueSkillReadiness(capped,'mining').ready,'Starting-region Copper Outcrop makes Mining accessible from Level 1');
+const noMineZone={...capped,currentRegionId:'IRONWOOD'};
+ok(!queueSkillReadiness(noMineZone,'mining').ready&&queueSkillReadiness(noMineZone,'mining').blocker?.includes('Ironwood'),'Unavailable regional Mining explains the region');
 const frost={...capped,currentRegionId:'FROSTMARCH'};
 ok(!queueSkillReadiness(frost,'woodcutting').ready&&queueSkillReadiness(frost,'woodcutting').blocker?.includes('level 46'),'Local locked skill explains minimum level');
 ok(queueSkillReadiness({...frost,skills:frost.skills.map(row=>row.skillId==='woodcutting'?{...row,level:46}:row)},'woodcutting').ready,'Meeting local minimum unlocks skill choice');

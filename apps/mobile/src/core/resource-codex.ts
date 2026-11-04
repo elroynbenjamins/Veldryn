@@ -1,6 +1,7 @@
 import {ITEMS} from '../content/items';
 import {GATHERING,RECIPES} from '../content/skills';
 import {HERB_NODES} from '../content/herbalism';
+import {MINING_ESSENCE_BY_ZONE} from '../content/mining-essence';
 import {MONSTERS} from '../content/monsters';
 import {COMBAT_COMPANIONS,COMPANION_SANCTUARY_CONFIG} from '../content/combat-companions';
 import {COMPANION_MISSIONS,COMPANION_WEEKLY_CHALLENGES,COMPANION_MONTHLY_COMPLETION_REWARD} from '../../../../backend/src/server/companions/content';
@@ -38,6 +39,7 @@ const companionMaterialIds=(()=>{
 })();
 const gatheringSkill=new Map<string,string>();
 for(const node of [...GATHERING,...HERB_NODES])if(!gatheringSkill.has(node.itemId))gatheringSkill.set(node.itemId,node.skillId);
+for(const essence of Object.values(MINING_ESSENCE_BY_ZONE))gatheringSkill.set(essence.itemId,'mining');
 const monsterItems=new Set(MONSTERS.flatMap(monster=>monster.drops.map(drop=>drop.itemId)));
 const craftItems=new Set(RECIPES.map(recipe=>recipe.output.itemId));
 function categoryFor(id:string,type:string):ResourceCodexEntry['category']{
@@ -100,6 +102,7 @@ export function resourceCodexUse(entry:ResourceCodexEntry){
   const uses=[...(companionUses.get(entry.id)??[])];
   return uses.length?uses.slice(0,5).join(' · ')+(uses.length>5?` · +${uses.length-5} more`:''):'Companion ascensions, Sanctuary upgrades or expedition provisions. Check the companion screen for exact costs.';
  }
+ if(entry.id==='ASTERFALL_MINERAL_ESSENCE')return 'Rare Mining find used for +1 to +4 enchanting improvements on Tier 1 and Tier 2 equipment. Verdant Binding Resin is reserved for forging the equipment.';
  if(entry.category==='Gems')return 'Equipment gem sockets and gem progression.';
  return 'Crafting, equipment upgrades, recipes or other progression.';
 }

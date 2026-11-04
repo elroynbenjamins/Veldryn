@@ -7,6 +7,10 @@ const card=read('src/components/SocialInvitationCard.tsx');
 const hub=read('src/components/SocialHubPanel.tsx');
 const social=read('src/screens/SocialScreen.tsx');
 const guild=read('src/components/OnlineGuildManagement.tsx');
+const friendPicker=read('src/components/PartyFriendInviteSheet.tsx');
+const party=read('src/components/PartyHubPanel.tsx');
+const recruitment=read('src/components/RecruitmentBoardPanel.tsx');
+const socialApi=read('src/online/social.ts');
 
 for(const [name,source] of [['SocialInvitationCard',card],['SocialHubPanel',hub]] as const){
  ok(source.includes('useGameTheme'),name+' must use the active UI theme');
@@ -43,4 +47,12 @@ ok(guild.includes('cancelGuildInvitation(id)'),'Outgoing Guild invitation cancel
 ok(guild.includes('publicPlayerProfileV43(app.account_id)')&&guild.includes("name={applicantNames[app.account_id]||'Applicant '")&&guild.includes('Applicant identity is unavailable or private.'),'Guild applicant names must come from a verified public profile with an anonymous fallback');
 ok(guild.includes('Min Lv. '),'Incoming Guild invite requirements must remain visible');
 
+ok(friendPicker.includes("friends,sendPartyInvitation,socialInviteCapabilities")&&socialApi.includes("client.rpc('send_party_invitation_v1'"),'Invite friends must use the authenticated Party invitation RPC, not chat messages');
+ok(friendPicker.includes("capability.pending")&&friendPicker.includes("!capability.available")&&friendPicker.includes("capability.partyId!==partyId"),'Friend invite picker validates eligibility, pending state and Party identity before sending');
+ok(friendPicker.includes("pendingAccountIds.includes(friend.account_id)")&&friendPicker.includes("openSpots<1")&&friendPicker.includes("busyId"),'Invite picker must block duplicate taps, pending invites and full Parties');
+ok(friendPicker.includes('onInvited?.()')&&friendPicker.includes('result.status')&&friendPicker.includes("status==='already_pending'"),'Successful invites must receive server confirmation and refresh the Party invitation list');
+ok(party.includes('onInviteFriends?:()=>void')&&party.includes('canManageParty&&openSpots>0&&props.onInviteFriends'),'Only a Party leader with open slots can access the private friend invite picker from Party overview');
+ok(recruitment.includes('onInviteFriends?:()=>void')&&recruitment.includes('partyLeader&&partyOpenSpots>0&&onInviteFriends')&&recruitment.includes("card.postType==='party_recruiting'"),'Party Recruitment and owned recruiting posts expose friend invites only for eligible leaders');
+ok(social.includes('friendInviteSheet')&&social.includes('pendingAccountIds={outgoingPartyInvites.map')&&social.includes('onInvited={()=>{void load();onInvitationsChanged?.();}}'),'Dedicated social routes must show private friend picker with live pending recipients and notification refresh');
+ok(friendPicker.includes('Expires after 24 hours')&&friendPicker.includes('not in public chat'),'Private invitations explain the existing Party inbox and expiration policy');
 console.log('PASS: Social Hub, Party/Guild invites and applications share compact theme-aware invitation presentation');

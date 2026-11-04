@@ -127,7 +127,7 @@ export function PartyHubPanel(props: PartyHubPanelProps){
       {canOpenManagement?<Pressable accessibilityRole="button" accessibilityLabel={st('Manage {name}',{name:member.characterName})} onPress={()=>setSelectedMember(member)} style={({pressed})=>[s.iconAction,pressed&&s.pressed]}><Text style={s.iconActionText}>•••</Text></Pressable>:null}
      </View>;
     })}</View>
-    {openSpots>0?<Pressable accessibilityRole="button" accessibilityLabel={st('Find members')} onPress={()=>{setBrowseMode('players');setSection('find');}} style={({pressed})=>[s.emptySlots,pressed&&s.pressed]}>
+    {openSpots>0?<Pressable accessibilityRole="button" accessibilityLabel={st('Find members')} onPress={()=>{if(props.dedicated){props.onOpenRecruitment?.();}else{setBrowseMode('players');setSection('find');}}} style={({pressed})=>[s.emptySlots,pressed&&s.pressed]}>
      <Text style={s.emptyPlus}>+</Text><Text style={[s.muted,s.flex]}>{st('{count} available party slots',{count:openSpots})}</Text><Text style={s.link}>{st('Recruit')} ›</Text>
     </Pressable>:null}
    </View>:null}

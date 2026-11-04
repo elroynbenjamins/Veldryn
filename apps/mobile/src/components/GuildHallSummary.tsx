@@ -19,7 +19,7 @@ function readyClaims(snapshot:GuildTokenShopSnapshot|null):ClaimRow[]{
  if(!snapshot)return [];
  const rows:ClaimRow[]=[];
  for(const reward of snapshot.weeklyRewards)
-  if(reward.eligible&&!reward.claimed)
+  if(reward.eligible&&!reward.claimed&&snapshot.earnedThisWeek<snapshot.weeklyCap)
    rows.push({id:`weekly:${reward.kind}`,title:weeklyLabel(reward.kind),tokens:reward.tokens,run:()=>claimOnlineGuildWeeklyTokens(reward.kind)});
  for(const reward of snapshot.eventBonuses)
   if(!reward.claimed)
@@ -134,7 +134,7 @@ export function GuildHallSummary({onOpenMuster,onOpenShop,onRewardsChanged,compa
      onPress={()=>void claimDaily(reward.kind)}
      style={({pressed})=>[s.dailyTile,{borderColor:ready?C.good:blocked?C.bad:C.line,backgroundColor:ready?C.goodSurface:blocked?C.badSurface:C.panel2},pressed&&s.dailyTilePressed]}>
      <Text style={[s.dailyTitle,{color:C.text}]}>{reward.title}</Text>
-     <Text style={[s.dailyAmount,{color:foreground}]}>Up to +{reward.tokens} Tokens</Text>
+     <Text style={[s.dailyAmount,{color:foreground}]}>{shop?'Up to +'+reward.tokens+' Tokens':'— Tokens'}</Text>
      <Text style={[s.dailyState,{color:foreground}]}>{stateText}</Text>
     </Pressable>;
    })}

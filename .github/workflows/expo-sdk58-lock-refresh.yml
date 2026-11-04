@@ -36,7 +36,7 @@ jobs:
       - name: Verify frozen-lockfile installation
         run: pnpm install --frozen-lockfile
       - name: Verify SDK-compatible versions
-        run: npx --no-install expo-doctor
+        run: npx -y expo-doctor
       - name: Commit generated lockfile
         run: |
           if ! git diff --quiet -- apps/mobile/pnpm-lock.yaml; then

@@ -65,8 +65,13 @@ if(itemDef(ringId).salvage){
  ok(!salvagedSpare.inventory.stacks.some(row=>row.itemId===ringId),'A salvageable spare can be salvaged while the enhanced original is equipped');
  ok(gearEnhancement(salvagedSpare,ringId).rank===1,'Salvaging a spare must preserve the original enhancement');
 }
-const previewSpare=previewEquipment(storedEnhanced,ringId);
-ok(gearEnhancement(previewSpare,ringId).rank===0,'Inventory duplicate preview must not borrow the equipped same-ID enchantment');
+// Legacy itemId-only copies cannot be individually distinguished on equip:
+ // the UI disables redundant same-ID swaps. A permitted comparison must
+ // match the real equip reducer, rather than invent an unattainable +0 result.
+const eligibleSpare={...storedEnhanced,character:{...storedEnhanced.character!,level:Math.max(storedEnhanced.character!.level,itemDef(ringId).requiredLevel??1)}};
+const previewSpare=previewEquipment(eligibleSpare,ringId),actualSpare=equipItem(eligibleSpare,ringId);
+ok(gearEnhancement(previewSpare,ringId).rank===gearEnhancement(actualSpare,ringId).rank,
+ 'Legacy duplicate preview must match the authoritative same-ID equip result');
 ok(gearEnhancement(storedEnhanced,ringId).rank===1,'Preview must never mutate the actual equipped enchantment');
 const bulkSpare=bulkSelectionSummary(storedEnhanced,[ringId],'inventory');
 ok(bulkSpare.sellableIds.includes(ringId),'Bulk management may offer selling an unmarked spare when the enhanced copy is equipped');

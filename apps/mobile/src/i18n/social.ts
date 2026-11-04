@@ -6,6 +6,8 @@ import {createTranslator,type TranslationParams} from './translator';
 
 // Columns are German, Spanish, Dutch, Italian and French; keys are the English catalog.
 export const socialTranslationRows = {
+ "Play together. Earn rewards.": ["Spielt gemeinsam. Verdient Belohnungen.","Jugad juntos. Ganad recompensas.","Speel samen. Verdien beloningen.","Giocate insieme. Ottenete ricompense.","Jouez ensemble. Gagnez des récompenses."],
+ "Your week": ["Deine Woche","Tu semana","Jouw week","La tua settimana","Votre semaine"],
  "Merchant offers": ["Händlerangebote","Ofertas del mercader","Aanbiedingen van handelaar","Offerte del mercante","Offres du marchand"],
  "Dungeon resources": ["Dungeon-Ressourcen","Recursos de mazmorra","Dungeongrondstoffen","Risorse del dungeon","Ressources du donjon"],
  "Sealed boon": ["Versiegelter Segen","Bendición sellada","Verzegende zegen","Bonus sigillato","Bénédiction scellée"],

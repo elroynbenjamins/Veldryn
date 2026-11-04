@@ -30,11 +30,11 @@ function details(card:GuildTokenShopCard){
 export interface GuildTokenShopViewProps{
  snapshot:GuildTokenShopSnapshot|null;loading:boolean;pending:string|null;error:string;notice:string;
  onRefresh:()=>Promise<unknown>;onBuy:(id:string)=>Promise<unknown>;
- onDaily:(kind:'attendance'|'contribution')=>Promise<unknown>;onWeekly:(kind:GuildWeeklyRewardKind)=>Promise<unknown>;
+ onWeekly:(kind:GuildWeeklyRewardKind)=>Promise<unknown>;
  onEvent:(eventId:string,percent:number)=>Promise<unknown>;onRewardsChanged?:()=>void|Promise<unknown>;onOpenConstruction?:()=>void;
 }
 /** Presentation-only. The authenticated server settles every claim and purchase. */
-export function GuildTokenShopView({snapshot,loading,pending,error,notice,onRefresh,onBuy,onDaily,onWeekly,onEvent,onOpenConstruction}:GuildTokenShopViewProps){
+export function GuildTokenShopView({snapshot,loading,pending,error,notice,onRefresh,onBuy,onWeekly,onEvent,onOpenConstruction}:GuildTokenShopViewProps){
  const C=useGameTheme(),[section,setSection]=useState<Section>('Browse'),[category,setCategory]=useState<Category>('all');
  const [selected,setSelected]=useState<string|null>(null),[affordable,setAffordable]=useState(false),[hideOwned,setHideOwned]=useState(false);
  const refreshBusy=loading||pending!==null,busy=refreshBusy||!!error,spendBlocked=busy,capReached=!!snapshot&&snapshot.earnedThisWeek>=snapshot.weeklyCap;
@@ -75,7 +75,7 @@ export function GuildTokenShopView({snapshot,loading,pending,error,notice,onRefr
    <Text style={[s.meta,muted]}>Permanent account unlocks. Rewards above Guild Level 10 remain locked until future guild progression.</Text>
   </>:null}
   {section==='Earn'&&snapshot?<>
-   <Panel><Text style={[s.title,text]}>Daily Muster</Text><Text style={[s.copy,muted]}>Check in and contribute through Guild Muster. Each verified reward can be claimed once per UTC day.</Text>{(['attendance','contribution'] as const).map(kind=>{const claimed=snapshot.claimedDailyKinds.includes(kind);return <GameButton key={kind} tone="secondary" title={claimed?'✓ '+(kind==='attendance'?'Check-in claimed':'Activity claimed'):capReached?'Weekly cap reached':kind==='attendance'?`Claim ${boosted(10)} · Check-in`:`Claim ${boosted(10)} · Activity`} loading={pending===kind} disabled={busy||claimed||capReached} onPress={()=>onDaily(kind)}/>})}</Panel>
+   <Panel><Text style={[s.title,text]}>Daily Guild Tokens</Text><Text style={[s.copy,muted]}>Check-in and Activity claims are now on Guild Home, directly below Guild Token Shop. Each claim shows when it is earned.</Text></Panel>
    <Panel><Text style={[s.title,text]}>Earn together</Text><Text style={[s.copy,muted]}>Daily and weekly rewards count toward your {snapshot.weeklyCap}-token weekly earning cap.</Text>{snapshot.weeklyRewards.map(reward=><View key={reward.kind} style={[s.earningRow,{borderTopColor:C.line}]}><View style={s.flex}><Text style={[s.title,text]}>{reward.kind==='attendance'?'Four-day participation':reward.kind==='project'?'Guild Project contribution':'Guild Boss reward'}</Text><Text style={[s.meta,muted]}>+{boosted(reward.tokens)} Guild Tokens · {reward.claimed?'Claimed':reward.eligible?'Ready to claim':'In progress'}</Text></View><GameButton compact tone="secondary" title={reward.claimed?'Claimed':capReached?'Cap reached':'Claim'} loading={pending===`weekly:${reward.kind}`} disabled={busy||reward.claimed||!reward.eligible||capReached} onPress={()=>onWeekly(reward.kind)}/></View>)}</Panel>
    {!!snapshot.eventBonuses.length&&<Panel><Text style={[s.title,text]}>Event bonuses</Text><Text style={[s.copy,muted]}>Earned community milestones award extra tokens outside the normal weekly cap.</Text>{snapshot.eventBonuses.map(reward=><View key={`${reward.eventId}:${reward.milestonePercent}`} style={[s.earningRow,{borderTopColor:C.line}]}><View style={s.flex}><Text style={[s.title,text]}>{reward.eventId.replace(/[_-]/g,' ')} · {reward.milestonePercent}%</Text><Text style={[s.meta,muted]}>+{reward.tokens} Guild Tokens</Text></View><GameButton compact tone="secondary" title={reward.claimed?'Claimed':'Claim'} loading={pending===`event:${reward.eventId}:${reward.milestonePercent}`} disabled={busy||reward.claimed} onPress={()=>onEvent(reward.eventId,reward.milestonePercent)}/></View>)}</Panel>}
    <Text style={[s.copy,muted]}>Your balance remains yours when changing guilds. Guild Tokens are separate from the Quartermaster’s Guild Marks.</Text>

@@ -1,6 +1,6 @@
 import {socialLabel,useSocialText} from '../i18n/social';
 import {ChatChannelIcon} from './ChatChannelIcon';
-import {useCallback,useEffect,useMemo,useRef,useState} from 'react';
+import {useCallback,useEffect,useMemo,useRef,useState,type ElementRef} from 'react';
 import {AppState,Keyboard,KeyboardAvoidingView,Modal,Platform,Pressable,ScrollView,StyleSheet,Text,View,useWindowDimensions} from 'react-native';
 import type {GameState} from '../core/types';
 import {onlineConfigured} from '../online/supabase';
@@ -37,7 +37,7 @@ function AccountChatOverlay({state,initialChannel='world',visible,onOpen,onClose
  const [languageMenuOpen,setLanguageMenuOpen]=useState(false);
  const [keyboardVisible,setKeyboardVisible]=useState(false);
  const [keyboardOverlap,setKeyboardOverlap]=useState(0);
- const modalRootRef=useRef<View>(null),keyboardTopRef=useRef<number|null>(null);
+ const modalRootRef=useRef<ElementRef<typeof View>>(null),keyboardTopRef=useRef<number|null>(null);
  // Android translucent Modals do not consistently resize with adjustResize.
  // Measure the actual modal window against the IME rather than letting
  // KeyboardAvoidingView subtract its height a second time (or collapse).

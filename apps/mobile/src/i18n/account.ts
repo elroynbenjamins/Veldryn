@@ -1,5 +1,5 @@
 import type {Language} from './languages';
-import {createTranslator} from './translator';
+import {createTranslator,interpolateTranslation} from './translator';
 
 // Each row contains English, German, Spanish, Dutch, Italian and French.
 // English source keys also let owned views translate core-generated presentation text.
@@ -1572,6 +1572,13 @@ export const accountTranslationRows = {
   "Run for {count}× {name}": ["Run for {count}× {name}","Absolviere einen Lauf für {count}× {name}","Completa una incursión para {count}× {name}","Voltooi een tocht voor {count}× {name}","Completa una spedizione per {count}× {name}","Terminez une expédition pour {count}× {name}"],
   "Acquire {count}× {name}": ["Acquire {count}× {name}","Beschaffe {count}× {name}","Consigue {count}× {name}","Verkrijg {count}× {name}","Ottieni {count}× {name}","Obtenez {count}× {name}"],
   "Resolve {count}× {name}": ["Resolve {count}× {name}","Kläre {count}× {name}","Resuelve {count}× {name}","Los {count}× {name} op","Risolvi {count}× {name}","Résolvez {count}× {name}"],
+  "{name} · Boost timers run only during matching activities, including eligible offline progress.": ["{name} · Boost timers run only during matching activities, including eligible offline progress.","{name} · Boost-Zeit läuft nur bei passenden Aktivitäten, auch bei geeignetem Offline-Fortschritt.","{name} · El tiempo de los bonus solo avanza durante actividades compatibles, incluido el progreso sin conexión válido.","{name} · Boosttijd loopt alleen bij passende activiteiten, ook bij geschikte offlinevoortgang.","{name} · Il tempo dei bonus scorre solo durante attività compatibili, inclusi i progressi offline validi.","{name} · Le temps des bonus ne s'écoule que pendant les activités compatibles, y compris la progression hors ligne admissible."],
+  "{count}/4 boosts active": ["{count}/4 boosts active","{count}/4 Boosts aktiv","{count}/4 bonificaciones activas","{count}/4 boosts actief","{count}/4 bonus attivi","{count}/4 bonus actifs"],
+  "{time} remaining": ["{time} remaining","Noch {time}","Quedan {time}","Nog {time}","Restano {time}","Encore {time}"],
+  "{count} saved · 2h each": ["{count} saved · 2h each","{count} gespeichert · je 2 Std.","{count} guardadas · 2 h cada una","{count} bewaard · elk 2 uur","{count} conservate · 2 h ciascuna","{count} stockées · 2 h chacune"],
+  "{count} saved": ["{count} saved","{count} gespeichert","{count} guardadas","{count} bewaard","{count} conservate","{count} stockées"],
+  "No charges": ["No charges","Keine Ladungen","Sin cargas","Geen ladingen","Nessuna carica","Aucune charge"],
+  "Claim once per UTC day. Missing a day never resets your progress. Regular claims bank a 2-hour +10% activity boost; milestones award account-wide premium currency.": ["Claim once per UTC day. Missing a day never resets your progress. Regular claims bank a 2-hour +10% activity boost; milestones award account-wide premium currency.","Einmal pro UTC-Tag einfordern. Verpasste Tage setzen deinen Fortschritt nicht zurück. Normale Belohnungen speichern einen +10%-Aktivitätsboost für 2 Stunden; Meilensteine geben kontoweite Premiumwährung.","Reclama una vez al día UTC. Saltarte un día no reinicia el progreso. Las recompensas normales guardan un bonus del +10 % durante 2 horas; los hitos dan moneda prémium para toda la cuenta.","Claim één keer per UTC-dag. Een gemiste dag zet je voortgang niet terug. Gewone claims bewaren een activiteitsboost van +10% voor 2 uur; mijlpalen geven premiumvaluta voor je account.","Riscatta una volta al giorno UTC. Saltare un giorno non azzera i progressi. I premi normali conservano un bonus attività del +10% per 2 ore; i traguardi danno valuta premium per l'account.","Réclame une fois par jour UTC. Manquer un jour ne réinitialise pas la progression. Les récompenses normales conservent un bonus d'activité de +10 % pendant 2 h ; les jalons donnent de la monnaie premium pour le compte."],
 } as const satisfies Record<string,readonly [string,string,string,string,string,string]>;
 
 export type AccountKey=keyof typeof accountTranslationRows;
@@ -1593,7 +1600,7 @@ const templates=(Object.keys(accountTranslationRows) as AccountKey[]).filter(key
 /** Only call for application-owned presentation strings, never player-authored text. */
 export function accountText(language:Language,text:string,params?:Record<string,string|number>):string{
   if(Object.prototype.hasOwnProperty.call(accountTranslationRows,text))return accountT(language,text as AccountKey,params);
-  if(language==='en')return text;
+  if(language==='en')return interpolateTranslation(text,params);
   const normalized=text
     .replace(/^\+1 saved loadout$/,'+1 saved loadouts')
     .replace(/^1 reward stack is waiting\./,'1 reward stacks are waiting.')
@@ -1607,7 +1614,8 @@ export function accountText(language:Language,text:string,params?:Record<string,
     if(key==='Collection · {target}')values.target=accountText(language,values.target);
     return accountT(language,key,values);
   }
-  return text;
+  // Uncatalogued UI copy must still resolve provided values, even when it falls back to English.
+  return interpolateTranslation(text,params);
 }
 
 export function accountError(language:Language,error:unknown,fallback:AccountKey='The request could not be completed. Please try again.'):string{

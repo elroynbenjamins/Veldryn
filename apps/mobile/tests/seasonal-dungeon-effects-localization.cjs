@@ -21,6 +21,7 @@ const {DUNGEON_GEM_EFFECT_ROWS,localizedDungeonEffectLabel}=load(path.join(app,'
 const playbackSource=fs.readFileSync(path.join(app,'src/core/dungeon-combat-playback.ts'),'utf8');
 const inspectSource=fs.readFileSync(path.join(app,'src/components/coop/CombatantInspectPanel.tsx'),'utf8');
 const profileSource=fs.readFileSync(path.join(app,'src/components/coop/CombatantProfileCard.tsx'),'utf8');
+const combatStageSource=fs.readFileSync(path.join(app,'src/components/coop/DungeonCombatStage.tsx'),'utf8');
 
 assert.equal(Object.keys(SEASONAL_MECHANIC_ROWS).length,8);
 assert.equal(Object.keys(SEASONAL_OBJECTIVE_ROWS).length,8);
@@ -118,4 +119,6 @@ assert.equal(localizedDungeonEffectLabel('nl',{tag:'damage_done',label:'Unreview
 assert.ok(inspectSource.includes('localizedDungeonEffectLabel(language,status)'),'Combat inspect panel must localize effect rows');
 assert.ok(profileSource.includes('localizedDungeonEffectLabel(language,status)'),'Combat status screen reader must localize effect labels');
 
+assert.ok(combatStageSource.includes('seasonalBossDisplayName(language,cue.abilityName)'),'Live boss phases must use reviewed names');
+assert.ok(combatStageSource.includes('seasonalBossDisplayName(language,dungeonEnemyAbilityDisplayName(currentBossCast.abilityName))'),'Live boss casts must use reviewed names');
 console.log('PASS 8 seasonal mechanics + 8 objectives x 7 locales; 3 boss-effect and 5 objective-effect formulas; '+dynamicCases+' server-generated boss cases x 7 locales, strict fallback and UI contract');

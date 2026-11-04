@@ -51808,7 +51808,6 @@ function projectedIdleContext(state, reward2, settleAtMs) {
   }
   const foodRemaining = Math.max(0, stackQty2(state.inventory.stacks, state.character?.equippedFoodId) - (reward2.foodConsumed ?? 0));
   const routed = routeRewards(state, reward2.items, settleAtMs);
-  const resultingGearPouch = routed.character?.equipmentPouch ?? equipmentPouch(state), resultingGemPouch = routed.account?.gemPouch ?? gemPouch(state);
   const beforeOverflow = state.overflow.stacks.reduce((sum, row) => sum + row.quantity, 0), afterOverflow = routed.overflow.stacks.reduce((sum, row) => sum + row.quantity, 0);
   return {
     itemQuantities: projectedStoredQuantities(state, reward2),
@@ -51818,7 +51817,7 @@ function projectedIdleContext(state, reward2, settleAtMs) {
     championDefeats: (activity.sessionChampions ?? 0) + (activity.kind === "combat" ? reward2.championEncounters?.count ?? 0 : 0),
     weeklyOrderProgress,
     foodRemaining,
-    freeStorageSlots: Math.max(0, entitlementStorageCapacity(state, "inventory") - usedSlots(routed.inventory.stacks)) + Math.max(0, entitlementStorageCapacity(state, "bank") - usedSlots(routed.bank.stacks)) + Math.max(0, resultingGearPouch.capacity - usedSlots(resultingGearPouch.stacks)) + Math.max(0, resultingGemPouch.capacity - usedSlots(resultingGemPouch.stacks)),
+    freeStorageSlots: Math.max(0, entitlementStorageCapacity(state, "inventory") - usedSlots(routed.inventory.stacks)) + Math.max(0, entitlementStorageCapacity(state, "bank") - usedSlots(routed.bank.stacks)),
     elapsedSeconds: Math.max(0, Math.floor((settleAtMs - activity.startedAtMs) / 1e3)),
     projectedRewardFits: afterOverflow <= beforeOverflow
   };
@@ -53172,6 +53171,17 @@ function deliverExactForgeCopy(state, itemId, instanceId, ownerId) {
     return { ...state, bank: { ...state.bank, stacks: [...state.bank.stacks, stack] } };
   throw new Error(state.character?.id === ownerId ? "Equipment Pouch, Inventory and Bank are full" : "Equipment Pouch and Bank are full; free space before claiming this character's equipment");
 }
+function forgeIncomingDelivery(state, ownerId) {
+  const active2 = state.character?.id === ownerId;
+  const owner = active2 ? state.character : state.otherCharacters?.find((entry2) => entry2.character.id === ownerId)?.character;
+  if (!owner) throw new Error("Crafting owner is no longer available");
+  const pouch = equipmentPouchForCharacter(owner);
+  if (pouch.stacks.length < pouch.capacity)
+    return { incomingStorage: "equipment_pouch", incomingHolderCharacterId: ownerId };
+  if (active2 && state.inventory.stacks.length < state.inventory.capacity)
+    return { incomingStorage: "inventory", incomingHolderCharacterId: ownerId };
+  return { incomingStorage: "bank", incomingHolderCharacterId: void 0 };
+}
 function applyForgeSaleCredit(state, amount, destination, holder) {
   if (!Number.isSafeInteger(amount) || amount < 0) throw new Error("Invalid Forge sale proceeds");
   if (destination === "bank") {
@@ -53179,10 +53189,17 @@ function applyForgeSaleCredit(state, amount, destination, holder) {
     if (!Number.isSafeInteger(gold2)) throw new Error("Bank Gold exceeds supported limit");
     return { ...state, bank: { ...state.bank, gold: gold2 } };
   }
-  if (!state.character || state.character.id !== holder) throw new Error("Sale owner must be the active character");
-  const gold = state.character.gold + amount;
-  if (!Number.isSafeInteger(gold)) throw new Error("Carried Gold exceeds supported limit");
-  return { ...state, character: { ...state.character, gold } };
+  if (!holder) throw new Error("Sale owner is missing");
+  if (state.character?.id === holder) {
+    const gold2 = state.character.gold + amount;
+    if (!Number.isSafeInteger(gold2)) throw new Error("Carried Gold exceeds supported limit");
+    return { ...state, character: { ...state.character, gold: gold2 } };
+  }
+  const entry2 = state.otherCharacters?.find((row) => row.character.id === holder);
+  if (!entry2) throw new Error("Sale owner no longer has a character on this account");
+  const gold = entry2.character.gold + amount;
+  if (!Number.isSafeInteger(gold)) throw new Error("Character Gold exceeds supported limit");
+  return { ...state, otherCharacters: state.otherCharacters.map((row) => row.character.id === holder ? { ...row, character: { ...row.character, gold } } : row) };
 }
 function awardOwnerSkillXp(state, ownerCharacterId, recipe2, job) {
   const ownerSkills = state.character?.id === ownerCharacterId ? state.skills : state.otherCharacters?.find((entry2) => entry2.character.id === ownerCharacterId)?.skills;
@@ -53216,11 +53233,11 @@ function claimForgeJob(state, jobId, nowMs, rarityRoll = Math.random()) {
       if (mode !== "keep_best_seven") throw new Error("Equipment copy limit reached (7/7); enable Keep Best 7 or manage copies");
       const entries = forgeOwnedCopyLocations(next, itemId);
       if (!entries) throw new Error("Equipment copy ownership requires manual review before auto-selling");
+      const delivery = forgeIncomingDelivery(next, job.ownerCharacterId);
       const proposed = proposeCraftedGearSettlement({
         existing: entries,
         incoming: draft,
-        incomingStorage: next.character?.id === job.ownerCharacterId ? "equipment_pouch" : "bank",
-        incomingHolderCharacterId: next.character?.id === job.ownerCharacterId ? job.ownerCharacterId : void 0,
+        ...delivery,
         mode,
         committedReceiptKeys: []
       });

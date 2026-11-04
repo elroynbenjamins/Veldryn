@@ -26,12 +26,12 @@ const skillDestination=progressionGoalDestination(state,skillGoal);
 equal(skillDestination.kind,'skills','skill goal routes to Skills');
 if(skillDestination.kind==='skills'){equal(skillDestination.mode,'gathering','Mining routes to gathering mode');equal(skillDestination.skillId,'mining','Mining remains selected');}
 const skillExecution=workingTowardExecutionPlan(state,skillGoal);
-equal(skillExecution.executionState,'blocked','gathering skill goal reports its region progression gate when no authored node is character-accessible yet');
-ok(skillExecution.queueBlocker?.includes('Level 16'),'skill execution blocker exposes the Old Mines Level gate');
-const travelSkillState={...state,exploredRouteIds:['SCOUT_IRONWOOD'],character:{...state.character!,level:20}};
+equal(skillExecution.executionState,'ready','Greenfields Copper Outcrop makes beginner Mining skill goals immediately queueable');
+equal(skillExecution.queueActivity?.targetId,'GREENFIELDS_COPPER_OUTCROP','Mining training uses the actual starter-region ore node');
+const travelSkillState={...state,currentRegionId:'IRONWOOD',exploredRouteIds:['SCOUT_IRONWOOD'],character:{...state.character!,level:20}};
 const travelSkillExecution=workingTowardExecutionPlan(travelSkillState,skillGoal);
 equal(travelSkillExecution.executionState,'travel','gathering skill goal switches to travel once the region is unlocked but not current');
-ok(travelSkillExecution.queueBlocker?.includes('Old Mines'),'skill execution travel state names the destination region');
+ok(travelSkillExecution.queueBlocker?.includes('Greenfields'),'skill execution travel state names the accessible beginner mining region');
 
 const huntGoal:ProgressionGoal={id:'goal-hunt',characterId,kind:'monster_kills',title:'Moss Rat kills',createdAtMs:0,pinnedAtMs:0,monsterId:'MOSS_RAT',targetKills:50};
 const huntDestination=progressionGoalDestination(state,huntGoal);
@@ -60,17 +60,20 @@ equal(workingTowardExecutionOverview(activeHuntState).active,1,'Execution overvi
 
 const copper=workingTowardTrackableItems().find(item=>item.id==='COPPER_ORE');
 ok(copper,'direct-source materials are authorable Working Toward items');
-const itemGoal:ProgressionGoal={id:'goal-item',characterId,kind:'item_quantity',title:'Copper stockpile',createdAtMs:0,pinnedAtMs:0,itemId:'COPPER_ORE',targetQuantity:25};
-const itemDestination=progressionGoalDestination(state,itemGoal);
+// Use a genuinely Old Mines-gated ore for region/route progression checks;
+// Copper is now deliberately available in Greenfields for early enchanting.
+const oreState={...state,skills:state.skills.map(row=>row.skillId==='mining'?{...row,level:20,xp:totalXpAtLevel(20)}:row)};
+const itemGoal:ProgressionGoal={id:'goal-item',characterId,kind:'item_quantity',title:'Oathstone stockpile',createdAtMs:0,pinnedAtMs:0,itemId:'OATHSTONE_ORE',targetQuantity:25};
+const itemDestination=progressionGoalDestination(oreState,itemGoal);
 equal(itemDestination.kind,'skills','gathered item goal routes to Skills');
-if(itemDestination.kind==='skills'){equal(itemDestination.actionId,'COPPER_VEIN','item goal deep-links its gathering source');equal(itemDestination.regionId,'OLD_MINES','item source carries its region');}
-const itemGoalProtection=workingTowardInventoryProtectionMap({...state,character:{...state.character!,progressionGoals:[itemGoal]}});
-ok(itemGoalProtection.has('COPPER_ORE'),'Pinned item-quantity goals protect their tracked stack from bulk disposal');
+if(itemDestination.kind==='skills'){equal(itemDestination.actionId,'OATHSTONE_SEAM','item goal deep-links its Old Mines gathering source');equal(itemDestination.regionId,'OLD_MINES','item source carries its region');}
+const itemGoalProtection=workingTowardInventoryProtectionMap({...oreState,character:{...oreState.character!,progressionGoals:[itemGoal]}});
+ok(itemGoalProtection.has('OATHSTONE_ORE'),'Pinned item-quantity goals protect their tracked stack from bulk disposal');
 
-const copperLockedExecution=workingTowardExecutionPlan(state,itemGoal);
+const copperLockedExecution=workingTowardExecutionPlan(oreState,itemGoal);
 equal(copperLockedExecution.executionState,'blocked','off-region gathered item goal reports the region level gate before offering travel');
 ok(copperLockedExecution.queueBlocker?.includes('Level 16'),'locked item-source execution exposes the Old Mines Level gate');
-const copperLevelReadyState={...state,character:{...state.character!,level:20}};
+const copperLevelReadyState={...oreState,character:{...oreState.character!,level:20}};
 const copperScoutBlocked=workingTowardExecutionPlan(copperLevelReadyState,itemGoal);
 equal(copperScoutBlocked.executionState,'blocked','level-ready later-region goals stay blocked until the route is discovered');
 ok(copperScoutBlocked.queueBlocker?.toLowerCase().includes('scouting'),'Exploration route blocker should be explained in Working Toward');
@@ -82,7 +85,7 @@ const copperReadyState={...copperTravelState,currentRegionId:'OLD_MINES',skills:
 const copperReadyExecution=workingTowardExecutionPlan(copperReadyState,itemGoal);
 equal(copperReadyExecution.executionState,'ready','same-region unlocked gathering source becomes queueable');
 equal(copperReadyExecution.queueActivity?.kind,'gathering','item goal execution uses the real gathering queue');
-equal(copperReadyExecution.queueActivity?.targetId,'COPPER_VEIN','item goal queue preserves the exact gathering node');
+equal(copperReadyExecution.queueActivity?.targetId,'OATHSTONE_SEAM','item goal queue preserves the exact gathering node');
 const fullQueueState={...copperReadyState,character:{...copperReadyState.character!,activityQueue:Array.from({length:activityQueueCapacity(copperReadyState)},(_,index)=>({kind:'gathering' as const,targetId:'queue-placeholder-'+index}))}};
 equal(workingTowardExecutionPlan(fullQueueState,itemGoal).executionState,'full','goal execution reports authoritative queue capacity instead of overfilling it');
 

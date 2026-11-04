@@ -14,7 +14,7 @@ export function RecruitmentListing({card,nowMs,onPress}:{card:RecruitmentCardVie
  const identityName=guild?(card.guildName??card.ownerName):card.ownerName;
  const statusTone:CompactIdentityStatusTone=presentation.tone==='good'?'good':presentation.tone==='info'?'info':'accent';
  const context=recruitmentContextLabels(card);
- const activityName=card.activityLevel==='hardcore'?'Tryhard':card.activityLevel==='regular'?'Active':card.activityLevel==='active'?'Active':card.activityLevel==='casual'?'Casual':'Any activity';
+ const activityName=card.activityLevel==='hardcore'?'Tryhard':card.activityLevel==='regular'?'Regular':card.activityLevel==='active'?'Active':card.activityLevel==='casual'?'Casual':'Any activity';
  const metaContext=guild?context:context.filter(item=>item.toLowerCase()!==String(card.activityLevel??'').toLowerCase());
  const tags=[...new Set([...recruitmentVisibleTags(card.activityTags),...recruitmentVisibleTags(card.playstyleTags),...recruitmentVisibleTags(card.availabilityTags),...card.guildInterestTags])].slice(0,2);
  return <Pressable accessibilityRole="button" accessibilityLabel={`${card.title}, ${presentation.label}, posted by ${identityName}, ${time.text}`} onPress={onPress} style={({pressed})=>[s.card,pressed&&s.pressed]}>

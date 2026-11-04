@@ -155,6 +155,7 @@
   ".core-build/apps/mobile/tests/core-pets.js",
   ".core-build/apps/mobile/tests/core-pet-drops.js",
   ".core-build/apps/mobile/tests/gathering-drop-preview.js",
+  ".core-build/apps/mobile/tests/mining-essence-enchanting.js",
   ".core-build/apps/mobile/tests/gathering-drop-ui-contract.js",
   ".core-build/apps/mobile/tests/gathering-tools.js",
   ".core-build/apps/mobile/tests/startup-summary.js",

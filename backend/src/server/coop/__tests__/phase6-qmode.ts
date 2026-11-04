@@ -136,7 +136,7 @@ const alchemySource=readFileSync('../apps/mobile/src/content/alchemy.ts','utf8')
 for(const [id,fraction] of Object.entries(HEALING_POTION_MAX_HP_FRACTIONS)){
  const potionLine=alchemySource.split('\n').find(line=>line.includes(`id:'${id}'`)&&line.includes('maxHpFraction:'));
  assert.ok(potionLine,`mobile Alchemy catalog missing ${id}`);
- const matched=potionLine!.match(/maxHpFraction:(0?\\.\\d+)/);
+ const matched=potionLine!.match(/maxHpFraction:(0?\.\d+)/);
  assert.ok(matched&&Number(matched[1])===fraction,`dungeon heal amount must match brewed ${id}`);
 }
 console.log('Draught heal values remain consistent across mobile and backend');

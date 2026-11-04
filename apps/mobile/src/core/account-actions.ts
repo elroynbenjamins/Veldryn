@@ -5,7 +5,7 @@ import {accountCharacters,unlockedCharacterSlots} from './account-roster';
 import {equipmentCraftingQueue} from './equipment-crafting-queue';
 import {reconcileAccountCollections} from './account-collections';
 
-function snapshot(state:GameState){return {character:structuredClone(state.character!),inventory:structuredClone(state.inventory),overflow:structuredClone(state.overflow),activity:structuredClone(state.activity),skills:structuredClone(state.skills),quests:structuredClone(state.quests),currentRegionId:state.currentRegionId};}
+function snapshot(state:GameState){return {character:structuredClone(state.character!),inventory:structuredClone(state.inventory),equipmentPouch:structuredClone(state.equipmentPouch??{stacks:[],capacity:30}),overflow:structuredClone(state.overflow),activity:structuredClone(state.activity),skills:structuredClone(state.skills),quests:structuredClone(state.quests),currentRegionId:state.currentRegionId};}
 export function createAccountCharacter(state:GameState,classId:ClassId,name:string,body:BodyPresentation,now:number){
  state=reconcileAccountCollections(state);
  if(!state.character) return createCharacter(state,classId,name,body);
@@ -19,7 +19,7 @@ export function switchAccountCharacter(state:GameState,id:string,now:number){
  state=reconcileAccountCollections(state);
  if(!state.character)return state;if(state.character.id===id)return state;const target=state.otherCharacters?.find(x=>x.character.id===id);if(!target)throw new Error('Character is not owned.');
  const remaining=(state.otherCharacters??[]).filter(x=>x.character.id!==id);const active=snapshot(state);
- return {...state,character:target.character,inventory:target.inventory,overflow:target.overflow,activity:target.activity,skills:target.skills,quests:target.quests,currentRegionId:target.currentRegionId,otherCharacters:[...remaining,active]};
+ return {...state,character:target.character,inventory:target.inventory,equipmentPouch:target.equipmentPouch??{stacks:[],capacity:30},overflow:target.overflow,activity:target.activity,skills:target.skills,quests:target.quests,currentRegionId:target.currentRegionId,otherCharacters:[...remaining,active]};
 }
 
 type CharacterSnapshot=NonNullable<GameState['otherCharacters']>[number];
@@ -64,7 +64,7 @@ function deletionRecoveryItems(entry:CharacterSnapshot,sharedBank:GameState['ban
   ...sharedBank.stacks.map(row=>row.itemId),
  ]);
  const socketed=Object.entries(entry.character.gearEnhancements??{}).flatMap(([itemId,enhancement])=>ownedGearIds.has(itemId)?[enhancement.statGemId,enhancement.effectGemId].filter((id):id is string=>Boolean(id)):[]);
- return [...entry.inventory.stacks,...entry.overflow.stacks,...held.map(itemId=>({itemId,quantity:1})),...socketed.map(itemId=>({itemId,quantity:1}))];
+ return [...entry.inventory.stacks,...(entry.equipmentPouch?.stacks??[]),...entry.overflow.stacks,...held.map(itemId=>({itemId,quantity:1})),...socketed.map(itemId=>({itemId,quantity:1}))];
 }
 function accountAfterCharacterDelete(state:GameState,character:CharacterSnapshot['character']){
  const earnedSlots=unlockedCharacterSlots(state);
@@ -106,7 +106,7 @@ export function deleteAccountCharacter(state:GameState,id:string,confirmation:st
  const replacement=other[0],remaining=replacement?other.slice(1):[];
  const baseOverflow=replacement?.overflow??{stacks:[],expiresAtMs:null};
  const recovery=routeToBank(state.bank,baseOverflow,deletionRecoveryItems(stored,state.bank),now);
- if(replacement)return {...state,character:replacement.character,inventory:replacement.inventory,overflow:recovery.overflow,activity:replacement.activity,skills:replacement.skills,quests:replacement.quests,currentRegionId:replacement.currentRegionId,bank:recovery.bank,otherCharacters:remaining,account};
+ if(replacement)return {...state,character:replacement.character,inventory:replacement.inventory,equipmentPouch:replacement.equipmentPouch??{stacks:[],capacity:30},overflow:recovery.overflow,activity:replacement.activity,skills:replacement.skills,quests:replacement.quests,currentRegionId:replacement.currentRegionId,bank:recovery.bank,otherCharacters:remaining,account};
  const fresh=newGame(now);
- return {...state,character:null,inventory:fresh.inventory,overflow:recovery.overflow,activity:null,skills:fresh.skills,quests:fresh.quests,currentRegionId:fresh.currentRegionId,bank:recovery.bank,otherCharacters:[],account};
+ return {...state,character:null,inventory:fresh.inventory,equipmentPouch:fresh.equipmentPouch,overflow:recovery.overflow,activity:null,skills:fresh.skills,quests:fresh.quests,currentRegionId:fresh.currentRegionId,bank:recovery.bank,otherCharacters:[],account};
 }

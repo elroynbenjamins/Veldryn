@@ -2269,6 +2269,58 @@ export const EARLY_LOCALE_ROWS={
   "Essence": [
     "Эссенция",
     "Öz"
+  ],
+  "BOND REWARD CLAIMED": [
+    "НАГРАДА ЗА СВЯЗЬ ПОЛУЧЕНА",
+    "BAĞ ÖDÜLÜ ALINDI"
+  ],
+  "TRAINING COMPLETE": [
+    "ТРЕНИРОВКА ЗАВЕРШЕНА",
+    "EĞİTİM TAMAMLANDI"
+  ],
+  "ASCENSION COMPLETE": [
+    "ВОЗВЫШЕНИЕ ЗАВЕРШЕНО",
+    "YÜKSELİŞ TAMAMLANDI"
+  ],
+  "PRESTIGE MASTERY COMPLETE": [
+    "ВЫСШЕЕ МАСТЕРСТВО ДОСТИГНУТО",
+    "PRESTİJ USTALIĞI TAMAMLANDI"
+  ],
+  "TECHNIQUE UPDATED": [
+    "ПРИЁМ ОБНОВЛЁН",
+    "TEKNİK GÜNCELLENDİ"
+  ],
+  "{name} · Bond {level} · {reward}.": [
+    "{name} · Связь {level} · {reward}.",
+    "{name} · Bağ {level} · {reward}."
+  ],
+  "{name} reached Level {level}.": [
+    "{name}: достигнут уровень {level}.",
+    "{name}, seviye {level} düzeyine ulaştı."
+  ],
+  "{name} reached Tier {tier}.": [
+    "{name}: достигнут ранг {tier}.",
+    "{name}, kademe {tier} düzeyine ulaştı."
+  ],
+  "{name} reached its final mastery milestone.": [
+    "{name}: достигнута последняя ступень мастерства.",
+    "{name}, son ustalık aşamasına ulaştı."
+  ],
+  "{name}'s combat choice is ready.": [
+    "Боевой приём спутника {name} готов.",
+    "{name} için savaş seçimi hazır."
+  ],
+  "Companion progress saved.": [
+    "Прогресс спутника сохранён.",
+    "Yoldaş ilerlemesi kaydedildi."
+  ],
+  "Bond reward": [
+    "Награда за связь",
+    "Bağ ödülü"
+  ],
+  "Companion": [
+    "Спутник",
+    "Yoldaş"
   ]
 } satisfies Record<string,readonly [string,string]>;
 

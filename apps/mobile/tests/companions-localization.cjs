@@ -23,6 +23,16 @@ const {SUPPORTED_LANGUAGES}=require('../src/i18n/languages.ts');
 const placeholders=value=>[...value.matchAll(/\{([a-zA-Z][a-zA-Z0-9_]*)\}/g)].map(match=>match[1]).sort();
 const keys=Object.keys(companionTranslationRows).sort();
 const knownGaps=require('./companions-localization-gaps.json');
+assert.equal(companionContent('de','Defeat 250 Old Mines enemies'),'Besiege 250 Gegner in den Old Mines');
+assert.equal(companionContent('es','Reach Fishing 16'),'Alcanza Pesca 16');
+assert.equal(companionContent('nl','Rare discovery while mapping Silverbrook'),'Zeldzame ontdekking bij het in kaart brengen van Silverbrook');
+assert.equal(companionContent('it','vulnerability'),'vulnerabilità');
+assert.equal(companionContent('fr','below 50% HP'),'sous 50 % des PV');
+assert.equal(companionContent('ru','Rare discovery while following the Frostmarch bells'),'Редкая находка по следам колоколов Frostmarch');
+assert.equal(companionContent('tr','defensive stance'),'savunma duruşu');
+assert.equal(companionContent('en','Rare discovery while mapping Silverbrook'),'Rare discovery while mapping Silverbrook');
+assert.ok(!Object.values(knownGaps.untranslatedCatalogStrings).flat().includes('Defeat 250 Old Mines enemies'),'Completed companion unlock translations must not remain incorrectly marked as gaps');
+
 for(const values of Object.values(knownGaps.untranslatedCatalogStrings))for(const value of values){
  assert.equal(companionContent('de',value),value,'Update the documented coverage gap after translating: '+value);
 }

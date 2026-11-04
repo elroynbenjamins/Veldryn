@@ -42,6 +42,8 @@ export interface CharacterState {
   equipmentInstanceIds?:Partial<Record<GearSlot,string>>;
   /** Local prototype key is the gear definition ID. Online persistence maps this shape to owned item instances. */
   gearEnhancements?:Record<string,GearEnhancementState>;
+  /** Character-only equipment storage: separate from Inventory, shared Bank and account Gem Pouch. */
+  equipmentPouch?:InventoryState;
   /** One character-bound gathering tool per skill. Equipped tools are removed from Inventory. */
   equippedToolIds?:Partial<Record<GatheringSkillId,string>>;
   equippedFoodId?:string;

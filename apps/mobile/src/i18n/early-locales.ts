@@ -1,7 +1,7 @@
 import type {Language} from './languages';
 
 // Starter-only RU/TR copy; missing phrases deliberately fall back to English.
-const EARLY_LOCALE_ROWS={
+export const EARLY_LOCALE_ROWS={
   "Home": [
     "Главная",
     "Ana Sayfa"
@@ -993,6 +993,10 @@ const EARLY_LOCALE_ROWS={
   "Damage taken": [
     "Полученный урон",
     "Alınan hasar"
+  ],
+  "Your week": [
+    "Ваша неделя",
+    "Bu hafta"
   ]
 } satisfies Record<string,readonly [string,string]>;
 

@@ -128,40 +128,23 @@ Android package: **com.elroybenjamins.veldryn**
 
 ## Repository layout
 
-    apps/mobile/                 Expo / React Native game, native modules, UI, assets, and mobile tests
-    backend/src/server/          Server-authoritative gameplay and service-domain code
-    backend/src/shared/          Shared backend contracts
-    backend/supabase/            Supabase config, SQL migrations, database tests
-    backend/online/              Hosted/online gameplay integration and tests
-    backend/artifacts/           Reproducible balance outputs
-    docs/implementation/         Current system contracts, status documents, QA/release notes
-    docs/sources/                Canonical design workbooks and supporting source material
-    tools/                       Validation, asset optimization, migration, and review utilities
+    apps/mobile/                 Expo / React Native app, production UI, assets, tests
+    backend/src/                Server-authoritative game logic and shared contracts
+    backend/online/             Online gameplay services and integration tests
+    backend/supabase/           SQL migrations, functions, policies, database tests
+    control-center/             Operations dashboard and its supporting code
+    packages/                   Shared packages
+    tools/                      Validation, build, asset, and deployment utilities
+    docs/operations/            Operational reference notes
+    docs/implementation/        Essential production, billing, and release references
+    docs/art/                   Approved art-style reference
+    marketing/                  Play Store marketing assets
 
-Generated legacy preview packs and historical design exports formerly kept under `output/` have been retired from the active tree. They remain recoverable from earlier Git commits; `output/` is gitignored and is not a build input. Keep only the latest canonical master workbook under `docs/sources/`. Never delete deployed SQL migrations or production art under `apps/mobile/assets/` as documentation cleanup.
+## Source of truth and workflow
 
-## Source of truth
+Current application/backend code, tests, database migrations, and the latest explicitly agreed changes govern implementation. Historical design workbooks, old roadmaps, concept packs, audits, and handoff reports are no longer maintained in the active tree, but remain recoverable from Git history.
 
-Read these before making broad gameplay/content changes:
-
-1. [START_HERE_CODEX.md](START_HERE_CODEX.md)
-2. [CODEX_IMPLEMENTATION_GUIDE.md](CODEX_IMPLEMENTATION_GUIDE.md)
-3. [CONTENT_MAPPING.md](CONTENT_MAPPING.md)
-4. [docs/implementation/README.md](docs/implementation/README.md)
-5. [docs/implementation/TEST_CONTRACT.md](docs/implementation/TEST_CONTRACT.md)
-6. [docs/implementation/UI_DESIGN_TOKENS.md](docs/implementation/UI_DESIGN_TOKENS.md)
-7. [docs/sources/VELDRYN_Master_Design_Database_v5.6.xlsx](docs/sources/VELDRYN_Master_Design_Database_v5.6.xlsx)
-
-The design workbook and stable implementation IDs take precedence over descriptive README copy. Intentional deviations belong in [docs/implementation/PROTOTYPE_OVERRIDES.md](docs/implementation/PROTOTYPE_OVERRIDES.md).
-
-Useful live status documents include:
-
-- [Chat/account reliability](docs/implementation/CHAT_ACCOUNT_RELIABILITY_20261004.md)
-- [Chat/account recovery](docs/implementation/CHAT_ACCOUNT_RECOVERY_20261005.md)
-- [Player identity surfaces](docs/implementation/PROFILE_IDENTITY_SURFACES.md)
-- [Co-op current status](docs/implementation/COOP_CURRENT_STATUS.md)
-- [Online gameplay status](docs/implementation/ONLINE_GAMEPLAY_STATUS.md)
-- [Google account + Play Games setup](apps/mobile/GOOGLE_SERVICES_SETUP.md)
+Plan and implement future changes in focused, verified passes rather than maintaining a long master development roadmap. Preserve migration history and deployed production assets.
 
 ## Development setup
 
@@ -270,4 +253,4 @@ The repository is not considered finished merely because a TypeScript/export bui
 - Keep public profile cosmetics separate from authoritative combat identity.
 - Do not silently fall back to demo chat or other non-production transports in production releases.
 - Keep event presentation and availability tied to authoritative/date-gated event state.
-- Run the relevant validation after each implementation pass and record meaningful durable behavior in the appropriate implementation document.
+- Run relevant validation after each implementation pass. Update code, tests, and operational references as needed.

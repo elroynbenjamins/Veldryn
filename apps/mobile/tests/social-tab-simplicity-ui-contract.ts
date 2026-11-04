@@ -24,6 +24,7 @@ const socialHub=read('src/components/SocialHubPanel.tsx');
 const partyLanguages=read('src/core/party-social.ts');
 const partyCreate=read('src/components/PartyCreateSheet.tsx');
 const partyRecruitment=read('src/components/PartyRecruitmentComposer.tsx');
+const partyInvitation=read('src/components/PartyFriendInviteSheet.tsx');
 const partyLanguageMigration=read('../../backend/supabase/migrations/20261104121600_party_language_preferences_eight_locales.sql');
 
 ok(["'en'","'de'","'es'","'nl'","'it'","'fr'","'ru'","'tr'"].every(code=>partyLanguages.includes("id:"+code)),'Party preference selector must include all eight UI locales');
@@ -32,6 +33,7 @@ ok((partyLanguageMigration.match(/\('any','en','nl','de','fr','es','it','ru','tr
 ok(partyCreate.includes('useSocialText()')&&partyCreate.includes("st('Minimum combat level')")&&partyCreate.includes("st('Preferred language')"),'Party creation must localize the current redesigned preference controls');
 ok(partyRecruitment.includes('useSocialText()')&&partyRecruitment.includes("st('How active are you?')")&&partyRecruitment.includes("st('Post title')"),'Party advert composer must localize its visible controls');
 ok(recruitment.includes('useSocialText()')&&recruitment.includes("st('No matching adverts')")&&recruitment.includes("st('Party posts: 1 day · Guild posts: 1–3 days.')"),'Redesigned recruitment board must localize its active interface');
+ok(partyInvitation.includes('useSocialText()')&&partyInvitation.includes("st('Invite')")&&partyInvitation.includes('socialLabel(language,error)'),'Private Party invitations must localize user-facing labels and known errors without translating arbitrary backend text');
 ok(app.includes("tab==='Party'&&<PartyScreen")&&app.includes("tab==='Recruitment'||tab==='Social'")&&app.includes('<RecruitmentScreen'), 'Party and Recruitment must have independent route components');
 ok(!account.includes("items:['Social'")&&account.includes("items:['Party','Recruitment','Friends','Guild','Arena','Rankings']"),'Account must replace Social with two dedicated destinations');
 ok(quick.includes("'Social','Party','Empty'")&&app.includes("if(destination==='Social')destination='Recruitment'"),'Old Social shortcuts must migrate without dropping a saved shortcut');

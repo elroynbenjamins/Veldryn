@@ -29,7 +29,7 @@ export function dungeonHealingPotionView(run:CoopRunView,state:GameState):Dungeo
  const remaining=Math.max(0,capacity-used);
  const currentHp=self.currentHp??0,maximumHp=self.maximumHp??0;
  return {
-  name:valid?potion.name:undefined,
+  name:valid?potion?.name:undefined,
   healPercent:effect?Math.round(effect.maxHpFraction*100):0,
   carried,capacity,remaining,currentHp,maximumHp,
   canUse:Boolean(valid&&carried>0&&remaining>0&&currentHp>0&&currentHp<maximumHp&&self.ready!==false&&run.phase==='awaiting_choice'),

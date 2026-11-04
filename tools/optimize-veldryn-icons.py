@@ -44,7 +44,7 @@ SKIP_DIRS = {'node_modules', '.git', 'dist', 'build', '.expo', '.next', '__pycac
 
 def source_files(root: Path) -> list[Path]:
     candidates = []
-    for parent in [root/'apps/mobile/src', root/'apps/mobile/tests', root/'apps/mobile/plugins', root/'tools', root/'docs']:
+    for parent in [root/'apps/mobile/src', root/'apps/mobile/tests', root/'apps/mobile/plugins', root/'apps/mobile/assets', root/'tools', root/'docs']:
         if not parent.exists():
             continue
         for p in parent.rglob('*'):
@@ -176,7 +176,7 @@ def main(root: Path, dry_run=False):
             continue
         # An exact filename appearing anywhere (including generated config or
         # tool notes) is an ambiguity; never automatically delete it.
-        if any(p.name in text for text in original_texts.values()):
+        if any(p.name in text for file,text in original_texts.items() if file.resolve()!=Path(__file__).resolve()):
             skipped.append('Referenced by basename: '+relative)
             continue
         removed.append({'file':p.relative_to(root).as_posix(),'bytes':p.stat().st_size,'reason':'runtime alternate' if superseded else 'unused Trial v1 legacy'})

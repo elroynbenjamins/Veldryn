@@ -42,7 +42,7 @@ export function SeasonalBossTelegraphPanel({mechanic,recap,showPlan}:{mechanic?:
     </View>)}</View>:null}
     {telegraph.castAbilities.length?<View style={s.detailGroup}><Text style={s.detailTitle}>{st('ABILITIES')}</Text>{telegraph.castAbilities.map(ability=><View key={ability.id} style={s.detailRow}>
      <Text style={[s.actionLabel,ability.interruptible?s.interrupt:s.watch]}>{ability.interruptible?st('INTERRUPT'):st('WATCH')}</Text>
-     <View style={s.grow}><Text style={s.detailValue}>{ability.label}</Text><Text style={s.detailHint}>{(ability.castMs/1000).toFixed(1)}s {st('cast')} · {(ability.cooldownMs/1000).toFixed(1)}s {st('cooldown')}{ability.objectiveSensitive?' · '+st('objective-sensitive'):''}</Text></View>
+     <View style={s.grow}><Text style={s.detailValue}>{ability.label}</Text><Text style={s.detailHint}>{(ability.castMs/1000).toFixed(1)}s {st('cast')} · {(ability.cooldownMs/1000).toFixed(1)}s {st('cooldown')}{ability.objectiveSensitive?' · '+st('Objective-sensitive'):''}</Text></View>
     </View>)}</View>:null}
     {telegraph.suppressedAbilities.length?<View style={s.detailGroup}><Text style={s.detailTitle}>{st('SUPPRESSED')}</Text>{telegraph.suppressedAbilities.map(ability=><Text key={ability.id} style={s.suppressed}>✓ {ability.label}</Text>)}</View>:null}
    </View>:null}

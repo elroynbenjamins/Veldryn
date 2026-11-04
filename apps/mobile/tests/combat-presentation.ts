@@ -55,7 +55,7 @@ if(repeat.state.inventory.stacks.filter(row=>row.itemId==='FALLEN_KNIGHT_SIGIL')
 // Each rematch may leave the player injured; recover between attempts to test the weekly reward cap independently.
 const recoverForRematch=(s:typeof repeat.state)=>({...s,character:{...s.character!,currentHp:effectiveStats(s).hp}});
 const repeat2=challengeFallenKnight(recoverForRematch(repeat.state),222224),repeat3=challengeFallenKnight(recoverForRematch(repeat2.state),222225);
-if(!repeat2.won||!repeat2.battle||!repeat3.won||!repeat3.battle||repeat3.state.account.fallenKnightWeekly?.rewardedClears!==3)throw new Error('All three weekly victories must retain battle playback and consume exactly three weekly clears');
+if(!repeat2.won||!repeat2.battle||!repeat3.won||!repeat3.battle||repeat3.state.account.fallenKnightWeekly?.rewardedClears!==3)throw new Error(`All three weekly victories must retain battle playback and consume exactly three weekly clears (repeat2=${repeat2.won}, repeat3=${repeat3.won}, clears=${repeat3.state.account.fallenKnightWeekly?.rewardedClears}, hp2=${repeat2.battle?.finalPlayerHp}, hp3=${repeat3.battle?.finalPlayerHp})`);
 let capped=false;try{challengeFallenKnight(repeat3.state,222226)}catch(error){capped=error instanceof Error&&error.message.includes('weekly rematches are complete');}
 if(!capped)throw new Error('Three weekly rematch victories must enforce the existing weekly cap');
 const fs=require('fs') as {readFileSync:(path:string,encoding:string)=>string};

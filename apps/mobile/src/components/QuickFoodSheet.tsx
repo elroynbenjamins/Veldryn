@@ -41,7 +41,7 @@ export function QuickFoodSheet({state,hunt,stopped,onCommand,onClose,onInventory
    {!foods.length?<Text style={s.empty}>{gt('No food in Inventory. Withdraw food from Bank or cook more.')}</Text>:null}
    <View style={s.potionSection}>
      <Text style={s.potionTitle}>{gt('BOSS HEALING POTIONS')}</Text>
-     <Text style={s.potionHint}>{gt('Food is disabled in bosses and dungeons. Boss fights use your selected Alchemy healing potion (up to 3 per fight); dungeon runs have their own limited potion charges.')}</Text>
+     <Text style={s.potionHint}>{gt('Food is disabled in bosses and dungeons. Boss fights use your selected Alchemy healing potion (up to 5 per fight); dungeon runs have their own limited potion charges.')}</Text>
      {selectedPotion?<Text style={s.potionSelected}>{gt('Selected')}: {selectedPotion.name} · {state.inventory.stacks.find(row=>row.itemId===selectedPotion.id)?.quantity??0} {gt('carried')}</Text>:null}
      {healingPotions.map(stack=>{const potion=potionDef(stack.itemId)!;const isSelected=selectedPotionId===potion.id;return <View key={potion.id} style={s.foodRow}>
        <View style={s.foodHead}><View style={s.foodArtwork}><ItemArtwork itemId={potion.id} size={42}/></View><View style={s.foodCopy}><Text style={s.foodName}>{potion.name} ×{stack.quantity}</Text><Text style={s.foodHeal}>{potion.effect.kind==='healing'?Math.round(potion.effect.maxHpFraction*100):0}% {gt('max HP per charge')}</Text></View>{isSelected?<Text style={s.selected}>{gt('SELECTED')}</Text>:null}</View>

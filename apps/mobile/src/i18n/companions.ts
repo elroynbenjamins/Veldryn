@@ -1115,7 +1115,7 @@ export function companionMessage(language:Language,message:string):string{
  match=/^(.*?)(?:'s)? combat choice is ready\.$/.exec(message);
  if(match)return t("{name}'s combat choice is ready.",{name:match[1]});
  match=/^(.*) · Bond (\d+) · (.*)\.$/.exec(message);
- if(match){const essence=/^(\d+) Essence$/.exec(match[3]);return t('{name} · Bond {level} · {reward}.',{name:match[1],level:match[2],reward:essence?essence[1]+' '+t('Essence'):companionLabel(language,match[3])});}
+ if(match){const essence=/^(\d+) Essence$/.exec(match[3]);return t('{name} · Bond {level} · {reward}.',{name:match[1],level:match[2],reward:essence?essence[1]+' × '+t('Essence'):companionLabel(language,match[3])});}
  const content=companionContent(language,message);
  return content!==message||Object.prototype.hasOwnProperty.call(companionTranslationRows,message)?content:companionError(language,message);
 }

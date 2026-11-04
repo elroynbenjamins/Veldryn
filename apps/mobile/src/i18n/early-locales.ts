@@ -993,6 +993,10 @@ export const EARLY_LOCALE_ROWS={
   "Damage taken": [
     "Полученный урон",
     "Alınan hasar"
+  ],
+  "Your week": [
+    "Ваша неделя",
+    "Bu hafta"
   ]
 } satisfies Record<string,readonly [string,string]>;
 

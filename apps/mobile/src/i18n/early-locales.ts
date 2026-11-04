@@ -1769,6 +1769,90 @@ export const EARLY_LOCALE_ROWS={
   "{count} results": [
     "Результатов: {count}",
     "{count} sonuç"
+  ],
+  "You are no longer in a Party.": [
+    "Вы больше не состоите в группе.",
+    "Artık bir grupta değilsin."
+  ],
+  "Only the Party leader can invite friends.": [
+    "Только лидер группы может приглашать друзей.",
+    "Yalnızca grup lideri arkadaş davet edebilir."
+  ],
+  "Your Party is full.": [
+    "Ваша группа заполнена.",
+    "Grubun dolu."
+  ],
+  "This friend is already in a Party.": [
+    "Этот друг уже состоит в группе.",
+    "Bu arkadaş zaten bir grupta."
+  ],
+  "This friend already has a pending invitation.": [
+    "У этого друга уже есть ожидающее приглашение.",
+    "Bu arkadaşın zaten bekleyen bir daveti var."
+  ],
+  "This player is unavailable for invitations.": [
+    "Этот игрок недоступен для приглашений.",
+    "Bu oyuncuya davet gönderilemiyor."
+  ],
+  "This friend cannot receive a Party invitation right now.": [
+    "Сейчас этому другу нельзя отправить приглашение в группу.",
+    "Bu arkadaş şu anda grup daveti alamıyor."
+  ],
+  "Your Party changed. Reopen the invitation list.": [
+    "Ваша группа изменилась. Откройте приглашения заново.",
+    "Grubun değişti. Davet listesini yeniden aç."
+  ],
+  "Could not send the invitation.": [
+    "Не удалось отправить приглашение.",
+    "Davet gönderilemedi."
+  ],
+  "PRIVATE PARTY INVITATIONS": [
+    "ЛИЧНЫЕ ПРИГЛАШЕНИЯ В ГРУППУ",
+    "ÖZEL GRUP DAVETLERİ"
+  ],
+  "Choose a friend to send a Party invitation. It appears with their Party invites, not in public chat. Expires after 24 hours.": [
+    "Выберите друга. Приглашение появится в его списке, а не в общем чате. Срок действия — 24 часа.",
+    "Davet göndermek için arkadaş seç. Davet, genel sohbette değil grup davetlerinde görünür. 24 saatte sona erer."
+  ],
+  "{count} open slot": [
+    "Свободно мест: {count}",
+    "{count} boş yer"
+  ],
+  "{count} open slots": [
+    "Свободно мест: {count}",
+    "{count} boş yer"
+  ],
+  "Party leader only": [
+    "Только лидер группы",
+    "Yalnızca grup lideri"
+  ],
+  "Loading friends…": [
+    "Загрузка друзей…",
+    "Arkadaşlar yükleniyor…"
+  ],
+  "Search friends for Party invites": [
+    "Поиск друзей для приглашения",
+    "Grup daveti için arkadaş ara"
+  ],
+  "Search friends": [
+    "Найти друзей",
+    "Arkadaş ara"
+  ],
+  "No friends yet. Add friends through the Friends screen to invite them privately.": [
+    "Пока нет друзей. Добавьте их в разделе «Друзья», чтобы отправлять личные приглашения.",
+    "Henüz arkadaşın yok. Özel davet göndermek için Arkadaşlar bölümünden arkadaş ekle."
+  ],
+  "No matching friends.": [
+    "Подходящих друзей нет.",
+    "Eşleşen arkadaş yok."
+  ],
+  "Invited": [
+    "Приглашён",
+    "Davet edildi"
+  ],
+  "Invite": [
+    "Пригласить",
+    "Davet et"
   ]
 } satisfies Record<string,readonly [string,string]>;
 

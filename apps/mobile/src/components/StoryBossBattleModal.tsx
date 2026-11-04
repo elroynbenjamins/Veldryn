@@ -59,7 +59,8 @@ export function StoryBossBattleModal({state,battle,message,onClose}:{state:GameS
   const telegraph=current?.type==='telegraph'?current:undefined;
   const damageEvent=current?.type==='player_hit'||current?.type==='boss_hit'?current:undefined;
 
-  const skip=()=>setPlayhead(battle.durationMs);
+  // Android Back and accessibility Escape cannot bypass the fight; Continue unlocks after the full timeline.
+  const closeAfterBattle=()=>{if(finished)onClose();};
   const eventText=(event:StoryBossEvent)=>{
     if(event.type==='player_hit')return `${event.critical?'CRIT · ':''}You hit for ${event.amount?.toLocaleString()??0}`;
     if(event.type==='boss_hit')return `${event.critical?'CRIT · ':''}${event.label} hits for ${event.amount?.toLocaleString()??0}`;
@@ -70,10 +71,10 @@ export function StoryBossBattleModal({state,battle,message,onClose}:{state:GameS
     return event.label;
   };
 
-  return <GameModalSurface visible presentation="dialog" reduceMotion={reduceMotion} onClose={finished?onClose:skip} dismissOnBackdrop={false} backdropLabel={gt("Story boss battle")} surfaceStyle={s.modal}>
+  return <GameModalSurface visible presentation="dialog" reduceMotion={reduceMotion} onClose={closeAfterBattle} dismissOnBackdrop={false} backdropLabel={gt("Story boss battle")} surfaceStyle={s.modal}>
       <ScrollView style={s.scroll} contentContainerStyle={s.modalContent} showsVerticalScrollIndicator={false} showsHorizontalScrollIndicator={false}>
         <View style={s.top}>
-          <View><Text style={s.kicker}>{gt("ASTERFALL STORY BOSS")}</Text><Text accessibilityRole="header" style={s.title}>The Fallen Knight</Text></View>
+          <View><Text style={s.kicker}>{battle.mode==='story'?gt('ASTERFALL STORY BOSS'):gt('WEEKLY REMATCH')}</Text><Text accessibilityRole="header" style={s.title}>The Fallen Knight</Text></View>
           <View style={[s.phaseBadge,phase===3&&s.phaseDanger]}><Text style={s.phaseText}>{gt("PHASE")} {phase}</Text></View>
         </View>
 
@@ -117,9 +118,9 @@ export function StoryBossBattleModal({state,battle,message,onClose}:{state:GameS
           {recent.length?recent.map((event,index)=><View key={event.atMs+':'+event.type+':'+index} style={s.logRow}><Text style={s.logTime}>{timeLabel(event.atMs)}</Text><Text numberOfLines={1} style={[s.logText,event.type==='telegraph'&&s.warn,event.type==='phase'&&s.phaseLog,event.critical&&s.critLog]}>{gl(eventText(event))}</Text></View>):<Text style={s.sub}>{gt("The duel begins…")}</Text>}
         </View>
 
-        {finished?<View style={[s.result,battle.won?s.win:s.loss]}><Text style={s.resultTitle}>{battle.won?gt("VICTORY"):gt("DEFEAT")}</Text><Text style={s.resultCopy}>{gl(message)}</Text>{battle.won&&<Text style={s.reward}>+900 Gold · +3,000 XP · +40 Essence · +1 Bondstone · boss drop table rolled</Text>}</View>:<Text style={s.note}>{gt("Boss outcome is already resolved by the deterministic combat simulation. Playback can be skipped.")}</Text>}
+        {finished?<View style={[s.result,battle.won?s.win:s.loss]}><Text style={s.resultTitle}>{battle.won?gt("VICTORY"):gt("DEFEAT")}</Text><Text style={s.resultCopy}>{gl(message)}</Text></View>:null}
 
-        <View style={s.actions}>{finished?<GameButton title={gt("Continue")} onPress={onClose}/>:<><View style={s.actionFlex}><GameButton title={gt("Skip fight")} tone="secondary" onPress={skip}/></View><Text style={s.live}>{gt("LIVE")}</Text></>}</View>
+        <View style={s.actions}>{finished?<GameButton title={gt("Continue")} onPress={onClose}/>:<Text style={s.live}>{gt("BATTLE IN PROGRESS")}</Text>}</View>
       </ScrollView>
   </GameModalSurface>;
 }
@@ -137,6 +138,6 @@ function makeStyles(C:ThemeColors){return StyleSheet.create({
   name:{...typography.bodyStrong,color:C.text,textAlign:'center'},sub:{...typography.caption,color:C.muted,textAlign:'center'},vsWrap:{width:38,alignItems:'center',gap:4},vs:{...typography.caption,color:C.accent,fontWeight:'900'},timer:{fontSize:8,color:C.muted,fontWeight:'900'},
   bars:{gap:7},barBlock:{gap:3},barHead:{flexDirection:'row',justifyContent:'space-between',gap:8},barLabel:{fontSize:9,color:C.text,fontWeight:'900',letterSpacing:.6},barValue:{fontSize:9,color:C.muted,fontWeight:'800',fontVariant:['tabular-nums']},track:{height:8,overflow:'hidden',borderRadius:99,backgroundColor:C.panel2},bossFill:{height:'100%',backgroundColor:C.bad},playerFill:{height:'100%',backgroundColor:C.good},
   log:{gap:4,padding:8,borderWidth:1,borderColor:C.line,borderRadius:radii.sm,backgroundColor:C.panel},logHead:{flexDirection:'row',justifyContent:'space-between',gap:8},logTitle:{fontSize:9,color:C.accent,fontWeight:'900',letterSpacing:.7},logMeta:{fontSize:9,color:C.muted,fontWeight:'800'},logRow:{flexDirection:'row',gap:8},logTime:{width:34,fontSize:9,color:C.muted,fontVariant:['tabular-nums']},logText:{flex:1,fontSize:10,color:C.text,fontWeight:'700'},warn:{color:C.warning},phaseLog:{color:C.info,fontWeight:'900'},critLog:{color:C.warning,fontWeight:'900'},
-  result:{gap:4,padding:9,borderLeftWidth:4,borderRadius:radii.sm},win:{borderLeftColor:C.good,backgroundColor:C.goodSurface},loss:{borderLeftColor:C.bad,backgroundColor:C.badSurface},resultTitle:{...typography.title,color:C.text},resultCopy:{...typography.body,color:C.text},reward:{...typography.caption,color:C.good,fontWeight:'900'},note:{...typography.caption,color:C.muted},
-  actions:{minHeight:44,flexDirection:'row',alignItems:'center',gap:10},actionFlex:{flex:1},live:{fontSize:9,color:C.bad,fontWeight:'900',letterSpacing:1.2},
+  result:{gap:4,padding:9,borderLeftWidth:4,borderRadius:radii.sm},win:{borderLeftColor:C.good,backgroundColor:C.goodSurface},loss:{borderLeftColor:C.bad,backgroundColor:C.badSurface},resultTitle:{...typography.title,color:C.text},resultCopy:{...typography.body,color:C.text},
+  actions:{minHeight:44,flexDirection:'row',alignItems:'center',gap:10},live:{fontSize:9,color:C.warning,fontWeight:'900',letterSpacing:1.2},
 });}

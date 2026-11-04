@@ -1,11 +1,12 @@
 import {useEffect,useMemo,useRef,useState} from 'react';
-import {AppState,StyleSheet,Text,View} from 'react-native';
+import {AppState,Pressable,StyleSheet,Text,View} from 'react-native';
 import {GameButton} from './GameButton';
 import {Panel} from './Panel';
 import {StatusPill} from './StatusPill';
 import {ThemedIcon} from './ThemedNavigationIcon';
 import {loadOnlineGuildMuster,type OnlineGuildMusterState} from '../online/guild-muster';
-import {claimOnlineGuildEventBonus,claimOnlineGuildWeeklyTokens,loadOnlineGuildTokenShop,type GuildTokenShopSnapshot,type GuildWeeklyRewardKind} from '../online/guild-token-shop';
+import {claimOnlineGuildDailyTokens,claimOnlineGuildEventBonus,claimOnlineGuildWeeklyTokens,loadOnlineGuildTokenShop,type GuildTokenShopSnapshot,type GuildWeeklyRewardKind} from '../online/guild-token-shop';
+import {guildDailyTokenClaimStatus,type GuildDailyTokenKind} from '../core/guild-token-daily-claim';
 import {typography,type ThemeColors} from '../theme/theme';
 import {useGameTheme} from '../theme/ThemeContext';
 
@@ -36,16 +37,18 @@ export function GuildHallSummary({onOpenMuster,onOpenShop,onRewardsChanged,compa
  const C=useGameTheme(),s=useMemo(()=>makeStyles(C),[C]);
  const [muster,setMuster]=useState<OnlineGuildMusterState|null>(null);
  const [shop,setShop]=useState<GuildTokenShopSnapshot|null>(null);
- const [loading,setLoading]=useState(true),[busy,setBusy]=useState(''),[notice,setNotice]=useState('');
- const mounted=useRef(true);
+ const [loading,setLoading]=useState(true),[busy,setBusy]=useState(''),[notice,setNotice]=useState(''),[noticeError,setNoticeError]=useState(false);
+ const mounted=useRef(true),claimPending=useRef(false),loadGeneration=useRef(0);
 
  const load=async()=>{
   if(!mounted.current)return;
+  const generation=++loadGeneration.current;
   setLoading(true);
   const [musterResult,shopResult]=await Promise.allSettled([loadOnlineGuildMuster(),loadOnlineGuildTokenShop()]);
-  if(!mounted.current)return;
-  if(musterResult.status==='fulfilled')setMuster(musterResult.value?.state??null);
-  if(shopResult.status==='fulfilled')setShop(shopResult.value??null);
+  if(!mounted.current||generation!==loadGeneration.current)return;
+  // Missing/failing snapshots must never leave a stale green Claim button.
+  setMuster(musterResult.status==='fulfilled'?musterResult.value?.state??null:null);
+  setShop(shopResult.status==='fulfilled'?shopResult.value??null:null);
   setLoading(false);
  };
 
@@ -53,7 +56,7 @@ export function GuildHallSummary({onOpenMuster,onOpenShop,onRewardsChanged,compa
   mounted.current=true;
   void load();
   const listener=AppState.addEventListener('change',next=>{if(next==='active')void load()});
-  return()=>{mounted.current=false;listener.remove();};
+  return()=>{mounted.current=false;loadGeneration.current++;listener.remove();};
  // eslint-disable-next-line react-hooks/exhaustive-deps
  },[]);
 

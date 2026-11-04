@@ -93,8 +93,8 @@ export function craftedGearLegacyOwnershipAudit(state:GameState,itemId:string){
     (stacks??[]).reduce((sum,stack)=>sum+(stack.itemId===itemId&&Number.isSafeInteger(stack.quantity)&&stack.quantity>0?stack.quantity:0),0);
   const equipped=(equipment:object|undefined)=>
     Object.values(equipment??{}).filter(id=>id===itemId).length;
-  const characterInventory=count(state.inventory.stacks)
-    +(state.otherCharacters??[]).reduce((sum,entry)=>sum+count(entry.inventory.stacks),0);
+  const characterInventory=count(state.inventory.stacks)+count(state.equipmentPouch?.stacks)
+    +(state.otherCharacters??[]).reduce((sum,entry)=>sum+count(entry.inventory.stacks)+count(entry.equipmentPouch?.stacks),0);
   const characterOverflow=count(state.overflow.stacks)
     +(state.otherCharacters??[]).reduce((sum,entry)=>sum+count(entry.overflow.stacks),0);
   const equippedCopies=equipped(state.character?.equipment)

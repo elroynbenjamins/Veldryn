@@ -1,5 +1,87 @@
 import type {ImageSourcePropType} from 'react-native';
 import {TRIAL_ENEMY_PORTRAITS} from './trial-enemy-portraits';
+import {monsterPortraitSource,regionalMonsterPortraitCell} from './monster-assets';
+
+type RegionalMonsterCell={column:number;row:number};
+
+/**
+ * Reuse files already bundled for overworld combat and the 3x3 regional atlas.
+ * Values are canonical MONSTERS ids, not new art files or separate copies.
+ * Only align a name with a creature whose silhouette/theme is recognizably related.
+ * Keep the old encounter names so existing combat replays still resolve.
+ */
+export const DUNGEON_MONSTER_PORTRAIT_ALIASES:Readonly<Record<string,string>>=Object.freeze({
+ // Asterfall roots and lanterns
+ 'sporeling':'GLOAM_MITE',
+ 'strangling vine':'THORNLING',
+ 'sap husk':'BRIAR_HUSK',
+ 'briar hound':'IRONWOOD_WOLF',
+ 'rootbound husk':'ANCIENT_TREANT',
+ 'rootbound heart':'ANCIENT_TREANT',
+ // Sunscar constructs, vermin and sorcery
+ 'orrery scarab':'SUNSCAR_SCORPION',
+ 'heliolith drone':'FIELD_WISP',
+ 'the buried heliarch':'GLASSBOUND_SENTINEL',
+ 'mirage jackal':'IRONWOOD_WOLF',
+ 'dune phantom':'DUNE_ORACLE',
+ 'amberglass asp':'SUNSCAR_SCORPION',
+ 'wellbound colossus':'GLASSBOUND_SENTINEL',
+ // The two Sphinx encounters intentionally await Sphinx art.
+ // Frostmarch beast and spectral variants
+ 'rimewolf':'FROSTWOLF',
+ 'shiverling':'BELLWRAITH',
+ 'icefang hound':'FROSTWOLF',
+ 'rimehorn alpha':'FROSTWOLF',
+ 'the bellbeast of shiverlake':'FROSTWOLF',
+ 'choir wisp':'BELLWRAITH',
+ 'bellbound shade':'BELLWRAITH',
+ 'the frozen cantor':'BELLWRAITH',
+ // Ashlands creatures
+ 'cinder mireling':'BLACKGLASS_MIRELING',
+ 'blackglass beetle':'GLOAM_MITE',
+ 'ember wraith':'ASHEN_REVENANT',
+ 'glassbone hound':'IRONWOOD_WOLF',
+ 'blackglass devourer':'BLACKGLASS_MIRELING',
+ 'the blackglass fen prime':'BLACKGLASS_MIRELING',
+ 'crucible imp':'GLOAM_MITE',
+ 'prime scoria':'ASHEN_REVENANT',
+ 'ashen colossus':'CINDER_TITAN',
+ 'the crucible prime':'CINDER_TITAN',
+ // Event dungeon encounters: use existing monsters rather than another icon set.
+ 'solar reef warden':'GLASSBOUND_SENTINEL',
+ 'meteoric sentinel':'GLASSBOUND_SENTINEL',
+ 'hourglass golem':'GLASSBOUND_SENTINEL',
+ 'thorned effigy':'ANCIENT_TREANT',
+ 'sorrowbound shade':'BANNER_SHADE',
+ 'briarling swarm':'THORNLING',
+ 'pollenmaw':'VENOM_WEAVER',
+ 'lantern-eater':'GLOAM_MITE',
+ 'hollow warden':'FALLEN_SENTINEL',
+ 'the thornheart ancient':'ANCIENT_TREANT',
+});
+export const DUNGEON_EVENT_TRIAL_PORTRAIT_ALIASES:Readonly<Record<string,string>>=Object.freeze({
+ 'suncrest corsair':'Gloamblade Raider',
+ 'astral marauder':'Gloamblade Raider',
+ 'riftbound herald':'Rift Weaver',
+ 'yearshade archivist':'Silverbrook Adept',
+ 'dawnless warden':'Oathglass Sentinel',
+ 'vowbreaker brigand':'Gloamblade Raider',
+ 'road reaver':'Gloamblade Raider',
+ 'iron tollkeeper':'Runebound Bulwark',
+ 'rimefang marauder':'Bellfang Hunter',
+ 'aureon, first champion':'Runebound Colossus',
+ 'the constellation eater':'Rift Wyrm',
+ 'the last hour':'Regent of Echoes',
+ 'the severed vow':'Regent of Echoes',
+});
+
+function monsterKeyId(key:string){
+ return DUNGEON_MONSTER_PORTRAIT_ALIASES[key]??key.toUpperCase().replace(/ /g,'_');
+}
+function monsterImageForKey(key:string){return monsterPortraitSource(monsterKeyId(key));}
+function monsterAtlasCellForKey(key:string):RegionalMonsterCell|undefined{return regionalMonsterPortraitCell(monsterKeyId(key));}
+function baseKey(key:string){return key.endsWith(' echo')?key.slice(0,-5):key;}
+
 
 const DUNGEON_ENEMY_ART:Readonly<Record<string,ImageSourcePropType>>=Object.freeze({
   'the hollow regent':require('../../assets/dungeon-enemies-v1/hollow-regent.webp'),
@@ -65,11 +147,27 @@ const TRIAL_ART_BY_KEY:Readonly<Record<string,ImageSourcePropType>>=Object.freez
  Object.fromEntries(Object.entries(TRIAL_ENEMY_PORTRAITS).map(([name,art])=>[enemyKey(name),art])),
 );
 
+/** Return existing bespoke/overworld/Trial images. Regional atlas cells are
+ * returned by dungeonEnemyRegionalPortraitCell and cropped at render time,
+ * rather than emitting nine new files or presenting the whole spritesheet. */
 export function dungeonEnemyPortraitSource(name:string|undefined):ImageSourcePropType|undefined{
  if(!name?.trim())return undefined;
- const key=enemyKey(name),alias=DUNGEON_TRIAL_PORTRAIT_ALIASES[key];
- // Existing bespoke dungeon boss/enemy artwork always takes priority.
- return DUNGEON_ENEMY_ART[key]??TRIAL_ART_BY_KEY[key]??(alias?TRIAL_ART_BY_KEY[enemyKey(alias)]:undefined);
+ const key=enemyKey(name),base=baseKey(key);
+ const trialAlias=DUNGEON_TRIAL_PORTRAIT_ALIASES[base]??DUNGEON_EVENT_TRIAL_PORTRAIT_ALIASES[base];
+ // Order: bespoke dungeon art, existing same-species overworld art, Trial NPC.
+ // Echo variants deliberately share their original enemy portrait at no new cost.
+ return DUNGEON_ENEMY_ART[key]??DUNGEON_ENEMY_ART[base]
+  ??monsterImageForKey(key)??monsterImageForKey(base)
+  ??TRIAL_ART_BY_KEY[key]??TRIAL_ART_BY_KEY[base]
+  ??(trialAlias?TRIAL_ART_BY_KEY[enemyKey(trialAlias)]:undefined);
+}
+
+/** A single existing 3x3 atlas backs all nine regional monsters.
+ * Never return the full sheet as a single monster portrait. */
+export function dungeonEnemyRegionalPortraitCell(name:string|undefined):RegionalMonsterCell|undefined{
+ if(!name?.trim())return undefined;
+ const key=enemyKey(name);
+ return monsterAtlasCellForKey(key)??monsterAtlasCellForKey(baseKey(key));
 }
 
 export const DUNGEON_ENEMY_ART_NAMES=Object.freeze([

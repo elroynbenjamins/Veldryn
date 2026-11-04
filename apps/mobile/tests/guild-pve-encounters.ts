@@ -1,5 +1,5 @@
 const assert={equal:(a:unknown,b:unknown)=>{if(a!==b)throw Error(`${a} !== ${b}`)},deepEqual:(a:unknown,b:unknown)=>{if(JSON.stringify(a)!==JSON.stringify(b))throw Error('Deep equality failed')}};
-import {guildPveActivitySummary,guildPvePresentation,guildPveView,guildRaidEncountersForTab,type GuildPveEncounter} from '../src/core/guild-pve-encounters';
+import {guildPveActivitySummary,guildPvePresentation,guildPveView,guildRaidEncountersForTab,guildEventBossSections,type GuildPveEncounter} from '../src/core/guild-pve-encounters';
 const row:GuildPveEncounter={rosterSize:12,personalCap:30000,dailyCap:6000,dailyUsed:1000,eligible:true,id:'test',kind:'weekly',name:'Boss',startsAt:'2026-10-01T00:00:00Z',endsAt:'2026-10-08T00:00:00Z',claimEndsAt:'2026-10-15T00:00:00Z',maxHp:500000,damage:250000,personalDamage:1000,allowanceUsed:1000,contributors:5,claimed:[]};
 const live=Date.parse('2026-10-04T00:00:00Z');
 assert.deepEqual(guildPveView(row,live).milestones.map(x=>x.ready),[true,true,false]);
@@ -30,4 +30,15 @@ assert.deepEqual(guildRaidEncountersForTab(mixedBosses,'weekly').map(boss=>boss.
 assert.deepEqual(guildRaidEncountersForTab(mixedBosses,'event').map(boss=>boss.id),['festival-boss']);
 assert.deepEqual(guildRaidEncountersForTab([row],'event'),[]);
 assert.deepEqual(guildRaidEncountersForTab([],'weekly'),[]);
+const eventBoss:GuildPveEncounter={...row,id:'veilbreak-2026',kind:'event',name:'The Veilbreak',eventId:'EVT_ANNUAL_010_2026',startsAt:'2026-10-10T00:00:00Z',endsAt:'2026-11-03T00:00:00Z',claimEndsAt:'2026-11-06T00:00:00Z'};
+const duringEvent=Date.parse('2026-11-02T23:59:59Z');
+const duringClaim=Date.parse('2026-11-04T08:00:00Z');
+assert.deepEqual(guildEventBossSections([eventBoss,row],duringEvent).active.map(x=>x.id),['veilbreak-2026']);
+assert.deepEqual(guildEventBossSections([eventBoss,row],duringEvent).rewards,[]);
+assert.deepEqual(guildEventBossSections([eventBoss,row],duringClaim).active,[]);
+assert.deepEqual(guildEventBossSections([eventBoss,row],duringClaim).rewards.map(x=>x.id),['veilbreak-2026']);
+assert.deepEqual(guildEventBossSections([{...eventBoss,claimed:[25,50]}],duringClaim).rewards,[]);
+assert.deepEqual(guildEventBossSections([{...eventBoss,personalDamage:999}],duringClaim).rewards,[]);
+assert.deepEqual(guildEventBossSections([eventBoss],Date.parse(eventBoss.claimEndsAt)).rewards,[]);
+assert.deepEqual(guildEventBossSections([eventBoss],Date.parse(eventBoss.startsAt)-1).active,[]);
 console.log('PASS Guild PvE thresholds, eligibility, claims, allowance, lifecycle boundaries');

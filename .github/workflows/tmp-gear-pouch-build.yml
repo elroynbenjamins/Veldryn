@@ -1,0 +1,55 @@
+name: Temporary Equipment Pouch regression and Edge bundle generation
+on:
+  push:
+    branches: [feat/character-equipment-pouch-automatic-rewards]
+    paths: [.github/workflows/tmp-gear-pouch-build.yml]
+permissions:
+  contents: write
+jobs:
+  validate-and-generate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: feat/character-equipment-pouch-automatic-rewards
+          persist-credentials: true
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+          cache-dependency-path: apps/mobile/pnpm-lock.yaml
+      - run: pnpm install --frozen-lockfile
+        working-directory: apps/mobile
+      - run: pnpm install --frozen-lockfile
+        working-directory: backend
+      - name: Typecheck and compile mobile gameplay
+        working-directory: apps/mobile
+        run: |
+          pnpm typecheck
+          pnpm exec tsc -p tsconfig.core.json --outDir .core-build
+      - name: Exercise new and old storage and unique copy flows
+        working-directory: apps/mobile
+        run: |
+          export NODE_PATH=../../backend/node_modules
+          node .core-build/apps/mobile/tests/equipment-pouch.js
+          node .core-build/apps/mobile/tests/equipment-timed-crafting-queue.js
+          node .core-build/apps/mobile/tests/equipment-crafted-instance-results.js
+          node .core-build/apps/mobile/tests/gem-pouch.js
+          node .core-build/apps/mobile/tests/character-delete-management.js
+          node tests/storage-dungeon-refinement-ui.cjs
+      - name: Generate authoritative gameplay bundle from shared engine
+        run: node tools/build-online.mjs
+      - name: Verify generated gameplay parity
+        run: node tools/verify-gameplay-edge.mjs
+      - name: Commit generated gameplay bundle
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add backend/supabase/functions/gameplay/index.ts
+          if ! git diff --cached --quiet; then
+            git commit -m "build(gameplay): sync Equipment Pouch reward routing and gear commands"
+            git push origin HEAD:feat/character-equipment-pouch-automatic-rewards
+          fi

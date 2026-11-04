@@ -2265,6 +2265,10 @@ export const EARLY_LOCALE_ROWS={
   "defensive stance": [
     "оборонительная стойка",
     "savunma duruşu"
+  ],
+  "Essence": [
+    "Эссенция",
+    "Öz"
   ]
 } satisfies Record<string,readonly [string,string]>;
 

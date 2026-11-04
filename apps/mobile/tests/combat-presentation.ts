@@ -44,7 +44,7 @@ if(weakBoss.won||weakBoss.finalPlayerHp>0)throw new Error('Unprepared story boss
 const storyState={...state,character:{...state.character!,level:25,currentHp:state.character!.hp},quests:state.quests.map(q=>q.questId==='QST_014'?{...q,status:'active' as const}:q)};
 const storyAttempt=challengeFallenKnight(storyState,123456);
 if(!storyAttempt.battle||storyAttempt.won!==storyAttempt.battle.won)throw new Error('Fallen Knight story command must return the deterministic battle it settled');
-const storyWinState={...storyState,character:{...storyState.character!,level:100,hp:5000,currentHp:5000,attack:5000,defense:1200}};
+const storyWinState={...storyState,character:{...storyState.character!,level:100,hp:50000,currentHp:50000,attack:30000,defense:15000}};
 const storyWin=challengeFallenKnight(storyWinState,222222);
 if(!storyWin.won||!storyWin.battle||storyWin.battle.mode!=='story')throw new Error('Prepared first story clear must settle through cinematic battle playback');
 if(!storyWin.state.inventory.stacks.some(row=>row.itemId==='FALLEN_KNIGHT_SIGIL'&&row.quantity>=1))throw new Error('First Fallen Knight clear must settle the guaranteed story Sigil from the boss drop table');

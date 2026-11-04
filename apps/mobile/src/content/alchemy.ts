@@ -11,10 +11,12 @@ export interface AlchemyRecipe {
 }
 // One start reserves a full AFK run, bounded by resources, Gold and the AFK cap.
 export const MAX_ALCHEMY_BATCHES=10_000;
+/** Healing potions are scarce consumables for dungeon and boss encounters. */
+export const HEALING_POTION_CRAFT_COST_MULTIPLIER=5;
 export const POTIONS:readonly PotionDefinition[]=[
-  {id:'DEWLEAF_DRAUGHT',name:'Dewleaf Draught',effect:{kind:'healing',maxHpFraction:.25},description:'Restore 25% maximum HP automatically during boss fights. Select below Food in the HP menu; not for ordinary hunts.'},
-  {id:'RIVERHEART_DRAUGHT',name:'Riverheart Draught',effect:{kind:'healing',maxHpFraction:.45},description:'Restore 45% maximum HP automatically during boss fights. Select below Food in the HP menu; not for ordinary hunts.'},
-  {id:'OATHBLOOM_DRAUGHT',name:'Oathbloom Draught',effect:{kind:'healing',maxHpFraction:.65},description:'Restore 65% maximum HP automatically during boss fights. Select below Food in the HP menu; not for ordinary hunts.'},
+  {id:'DEWLEAF_DRAUGHT',name:'Dewleaf Draught',effect:{kind:'healing',maxHpFraction:.20},description:'Restore 20% maximum HP during boss fights and dungeons. Select below Food in the HP menu; not for ordinary hunts.'},
+  {id:'RIVERHEART_DRAUGHT',name:'Riverheart Draught',effect:{kind:'healing',maxHpFraction:.35},description:'Restore 35% maximum HP during boss fights and dungeons. Select below Food in the HP menu; not for ordinary hunts.'},
+  {id:'OATHBLOOM_DRAUGHT',name:'Oathbloom Draught',effect:{kind:'healing',maxHpFraction:.50},description:'Restore 50% maximum HP during boss fights and dungeons. Select below Food in the HP menu; not for ordinary hunts.'},
   {id:'VIGOR_TONIC',name:'Vigor Tonic',effect:{kind:'preparation',attackFraction:.04,damageReductionFraction:0,encounters:30},description:'+4% attack for 30 resolved ordinary encounters.'},
   {id:'GREATER_VIGOR_TONIC',name:'Greater Vigor Tonic',effect:{kind:'preparation',attackFraction:.06,damageReductionFraction:0,encounters:45},description:'+6% attack for 45 resolved ordinary encounters.'},
   {id:'OATH_VIGOR_TONIC',name:'Oath Vigor Tonic',effect:{kind:'preparation',attackFraction:.08,damageReductionFraction:0,encounters:60},description:'+8% attack for 60 resolved ordinary encounters.'},
@@ -53,7 +55,13 @@ export const ALCHEMY_RECIPES:readonly AlchemyRecipe[]=([
   {id:'BREW_SUNFUSED_FIXATIVE',name:'Sunfused Fixative',skillId:'alchemy',level:49,seconds:165,xp:950,gold:110,inputs:[{itemId:'SUNSCALE',quantity:3},{itemId:'AMBERGLASS',quantity:2},{itemId:'SCORPION_VENOM',quantity:2}],output:{itemId:'SUNFUSED_FIXATIVE',quantity:1}},
   {id:'BREW_RIMEWARD_DISTILLATE',name:'Rimeward Distillate',skillId:'alchemy',level:76,seconds:195,xp:1750,gold:220,inputs:[{itemId:'WINTERMINT',quantity:3},{itemId:'RIMEGLASS',quantity:2},{itemId:'RIME_RESIN',quantity:3}],output:{itemId:'RIMEWARD_DISTILLATE',quantity:1}},
   {id:'BREW_CINDERHEART_ELIXIR',name:'Cinderheart Elixir',skillId:'alchemy',level:96,seconds:225,xp:3000,gold:420,inputs:[{itemId:'ASHEN_MYRRH',quantity:4},{itemId:'BLACKGLASS_CORE',quantity:2},{itemId:'CINDER_HEART',quantity:1}],output:{itemId:'CINDERHEART_ELIXIR',quantity:1}},
-] as AlchemyRecipe[]).map(recipe=>({...recipe,gold:increasedCraftingGoldCost(recipe.gold)}));
+] as AlchemyRecipe[]).map(recipe=>{
+  const healing=POTIONS.some(potion=>potion.id===recipe.output.itemId&&potion.effect.kind==='healing');
+  const costMultiplier=healing?HEALING_POTION_CRAFT_COST_MULTIPLIER:1;
+  return {...recipe,
+    gold:increasedCraftingGoldCost(recipe.gold)*costMultiplier,
+    inputs:recipe.inputs.map(input=>({...input,quantity:input.quantity*costMultiplier}))};
+});
 export const POTION_ITEMS:ItemDef[]=POTIONS.map(potion=>({id:potion.id,name:potion.name,type:'potion',
   value:potion.id==='DEWLEAF_DRAUGHT'?4:potion.id.includes('OATH')?32:potion.id.includes('GREATER')?20:8,
   rarity:potion.id.includes('OATH')?'rare':potion.id.includes('GREATER')?'uncommon':'common',passive:potion.description}));

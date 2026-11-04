@@ -289,5 +289,275 @@ export const SEASONAL_ROOM_TITLE_ROWS={
     "Sécuriser le dernier péage",
     "Обезопасить последнюю заставу",
     "Son Geçiş Kapısını Güvenceye Al"
+  ],
+  "Restore the Festival Hearth": [
+    "Entzünde den Festherd erneut",
+    "Restaura el hogar del festival",
+    "Herstel de feesthaard",
+    "Ripristina il focolare della festa",
+    "Rallumer le foyer du festival",
+    "Восстановить праздничный очаг",
+    "Festival Ocağını Onar"
+  ],
+  "Cross the Frozen Shortcut": [
+    "Durchquere die eisige Abkürzung",
+    "Cruza el atajo helado",
+    "Neem de bevroren sluiproute",
+    "Attraversa la scorciatoia gelata",
+    "Traverser le raccourci gelé",
+    "Пересечь ледяной короткий путь",
+    "Donmuş Kestirmeyi Aş"
+  ],
+  "Build a Snowbreak Shelter": [
+    "Errichte einen Schneeschutz",
+    "Construye un refugio contra la nieve",
+    "Bouw een schuilplaats tegen de sneeuw",
+    "Costruisci un riparo dalla neve",
+    "Construire un abri contre la neige",
+    "Построить снежное укрытие",
+    "Kar Sığınağı İnşa Et"
+  ],
+  "Drive Off the Bellfrost Spirits": [
+    "Vertreibe die Glockenfrost-Geister",
+    "Ahuyenta a los espíritus de la escarcha",
+    "Verjaag de klokvorstgeesten",
+    "Scaccia gli spiriti del gelo",
+    "Chasser les esprits du givre",
+    "Прогнать духов морозных колоколов",
+    "Çan Ayazı Ruhlarını Kov"
+  ],
+  "Kindle the Aurora Brazier": [
+    "Entzünde das Aurorafeuerbecken",
+    "Enciende el brasero de la aurora",
+    "Ontsteek de aurora-vuurkorf",
+    "Accendi il braciere dell'aurora",
+    "Allumer le brasero de l'aurore",
+    "Зажечь жаровню полярного сияния",
+    "Kutup Işığı Mangalını Yak"
+  ],
+  "Push Through the Whiteout": [
+    "Dringe durch das Schneegestöber",
+    "Atraviesa la ventisca blanca",
+    "Baan je een weg door de sneeuwstorm",
+    "Attraversa la bufera bianca",
+    "Traverser la tempête blanche",
+    "Прорваться сквозь снежную мглу",
+    "Tipiyi Aş"
+  ],
+  "Prepare a Festival Hot Meal": [
+    "Bereite ein warmes Festmahl zu",
+    "Prepara una comida caliente de fiesta",
+    "Bereid een warme feestmaaltijd",
+    "Prepara un pasto caldo festivo",
+    "Préparer un repas chaud de fête",
+    "Приготовить горячую праздничную еду",
+    "Sıcak Festival Yemeği Hazırla"
+  ],
+  "Ring the Warming Bells": [
+    "Läute die wärmenden Glocken",
+    "Haz sonar las campanas cálidas",
+    "Luid de verwarmende klokken",
+    "Suona le campane del calore",
+    "Faire sonner les cloches de chaleur",
+    "Зазвонить в согревающие колокола",
+    "Isınma Çanlarını Çal"
+  ],
+  "Repair the Chronicle Seal": [
+    "Repariere das Chroniksiegel",
+    "Repara el sello de la crónica",
+    "Herstel het kroniekzegel",
+    "Ripara il sigillo della cronaca",
+    "Réparer le sceau des chroniques",
+    "Восстановить печать хроники",
+    "Kronik Mührünü Onar"
+  ],
+  "Cross a Broken Hour": [
+    "Durchquere eine zerbrochene Stunde",
+    "Cruza una hora fracturada",
+    "Doorkruis een gebroken uur",
+    "Attraversa un'ora spezzata",
+    "Traverser une heure brisée",
+    "Пересечь расколотый час",
+    "Kırık Bir Saati Aş"
+  ],
+  "Anchor a First Dawn Memory": [
+    "Verankere eine Erinnerung an den ersten Morgen",
+    "Ancla un recuerdo del primer amanecer",
+    "Veranker een herinnering aan de eerste dageraad",
+    "Ancora un ricordo della prima alba",
+    "Ancrer un souvenir de la première aube",
+    "Закрепить память о Первом рассвете",
+    "İlk Şafak Anısını Sabitle"
+  ],
+  "Resolve the Closing-Age Echo": [
+    "Bändige das Echo des endenden Zeitalters",
+    "Resuelve el eco de la era final",
+    "Herstel de echo van het eindigende tijdperk",
+    "Risolvi l'eco della fine dell'era",
+    "Apaiser l'écho de l'âge finissant",
+    "Успокоить эхо уходящей эпохи",
+    "Biten Çağın Yankısını Gider"
+  ],
+  "Restore the Shattered Archive": [
+    "Stelle das zerbrochene Archiv wieder her",
+    "Restaura el archivo fracturado",
+    "Herstel het verbrijzelde archief",
+    "Ripristina l'archivio infranto",
+    "Restaurer les archives brisées",
+    "Восстановить разрушенный архив",
+    "Parçalanmış Arşivi Onar"
+  ],
+  "Force a Time Skip": [
+    "Erzwinge einen Zeitsprung",
+    "Fuerza un salto temporal",
+    "Forceer een tijdsprong",
+    "Forza un salto temporale",
+    "Forcer un saut dans le temps",
+    "Совершить принудительный скачок во времени",
+    "Zaman Atlamasını Zorla"
+  ],
+  "Rest at the First Dawn Observatory": [
+    "Raste am Observatorium der ersten Morgenröte",
+    "Descansa en el observatorio del primer amanecer",
+    "Rust bij het observatorium van de eerste dageraad",
+    "Riposa all'osservatorio della prima alba",
+    "Se reposer à l'observatoire de la première aube",
+    "Отдохнуть в обсерватории Первого рассвета",
+    "İlk Şafak Gözlemevinde Dinlen"
+  ],
+  "Defeat the Dawnless Warden": [
+    "Besiege den dämmerungslosen Wächter",
+    "Derrota al guardián sin alba",
+    "Versla de dageraadloze wachter",
+    "Sconfiggi il guardiano senza alba",
+    "Vaincre le gardien sans aube",
+    "Победить стража без рассвета",
+    "Şafaksız Muhafızı Yen"
+  ],
+  "Mend the Vow Shrine": [
+    "Repariere den Schwurschrein",
+    "Repara el santuario de los votos",
+    "Herstel het gelofteheiligdom",
+    "Ripara il santuario dei voti",
+    "Réparer le sanctuaire des vœux",
+    "Восстановить святилище клятв",
+    "Yemin Tapınağı'nı Onar"
+  ],
+  "Cross the Severed Bridge": [
+    "Überquere die zerrissene Brücke",
+    "Cruza el puente roto",
+    "Steek de gebroken brug over",
+    "Attraversa il ponte spezzato",
+    "Traverser le pont brisé",
+    "Пересечь разрушенный мост",
+    "Kopmuş Köprüyü Aş"
+  ],
+  "Renew the Rose Oath": [
+    "Erneuere den Rosenschwur",
+    "Renueva el juramento de la rosa",
+    "Vernieuw de rozenbelofte",
+    "Rinnova il giuramento della rosa",
+    "Renouveler le serment de la rose",
+    "Возобновить розовую клятву",
+    "Gül Yeminini Yenile"
+  ],
+  "Defeat the Sorrowbound Shade": [
+    "Besiege den trauergebundenen Schatten",
+    "Derrota a la sombra del dolor",
+    "Versla de aan verdriet gebonden schim",
+    "Sconfiggi l'ombra del dolore",
+    "Vaincre l'ombre liée au chagrin",
+    "Победить тень скорби",
+    "Kedere Bağlı Gölgeyi Yen"
+  ],
+  "Relight the Bond Lanterns": [
+    "Entzünde die Bindungslaternen erneut",
+    "Reenciende los faroles del vínculo",
+    "Steek de verbondenheidslantaarns opnieuw aan",
+    "Riaccendi le lanterne del legame",
+    "Rallumer les lanternes du lien",
+    "Вновь зажечь фонари уз",
+    "Bağ Fenerlerini Yeniden Yak"
+  ],
+  "Rest at the Lantern Promenade": [
+    "Raste an der Laternenpromenade",
+    "Descansa en el paseo de los faroles",
+    "Rust bij de lantaarnpromenade",
+    "Riposa sulla passeggiata delle lanterne",
+    "Se reposer sur la promenade des lanternes",
+    "Отдохнуть на Фонарной аллее",
+    "Fener Gezinti Yolunda Dinlen"
+  ],
+  "Prune the Feral Growth": [
+    "Beschneide den wilden Wuchs",
+    "Poda el crecimiento salvaje",
+    "Snoei de wilde begroeiing",
+    "Pota la crescita selvaggia",
+    "Tailler la végétation sauvage",
+    "Подрезать дикую поросль",
+    "Azgın Büyümeyi Budama"
+  ],
+  "Rush Through Pollen Hollow": [
+    "Eile durch die Pollenmulde",
+    "Corre por la hondonada de polen",
+    "Ren door de stuifmeelvallei",
+    "Corri attraverso la conca del polline",
+    "Foncer à travers le creux du pollen",
+    "Пронестись через Пыльцевую лощину",
+    "Polen Çukurundan Hızla Geç"
+  ],
+  "Awaken the Old Grove Shrine": [
+    "Erwecke den alten Hainschrein",
+    "Despierta el santuario de la arboleda antigua",
+    "Wek het oude bosheiligdom",
+    "Risveglia il santuario dell'antico bosco",
+    "Éveiller le sanctuaire du vieux bosquet",
+    "Пробудить святилище старой рощи",
+    "Eski Koru Tapınağı'nı Uyandır"
+  ],
+  "Calm the Rootbound Stag": [
+    "Beruhige den wurzelgebundenen Hirsch",
+    "Calma al ciervo de las raíces",
+    "Kalmeer het wortelgebonden hert",
+    "Calma il cervo legato alle radici",
+    "Apaiser le cerf lié aux racines",
+    "Усмирить оленя корней",
+    "Köke Bağlı Geyiği Sakinleştir"
+  ],
+  "Bind the Heartroot": [
+    "Binde die Herzwurzel",
+    "Vincula la raíz del corazón",
+    "Bind de hartwortel",
+    "Lega la radice del cuore",
+    "Lier la racine-cœur",
+    "Связать сердечный корень",
+    "Kalp Kökünü Bağla"
+  ],
+  "Cut Through the Thorn Tunnel": [
+    "Schlage dich durch den Dornentunnel",
+    "Ábrete paso por el túnel de espinas",
+    "Baan je een weg door de doorntunnel",
+    "Apriti la strada nel tunnel di spine",
+    "Se frayer un chemin dans le tunnel d'épines",
+    "Прорубиться через терновый тоннель",
+    "Diken Tünelinden Geç"
+  ],
+  "Rescue the Sacred Seed Cache": [
+    "Rette den heiligen Samenvorrat",
+    "Rescata el alijo de semillas sagradas",
+    "Red de heilige zaadvoorraad",
+    "Salva la scorta di semi sacri",
+    "Sauver la réserve de graines sacrées",
+    "Спасти тайник священных семян",
+    "Kutsal Tohum Zulasını Kurtar"
+  ],
+  "Perform the Balance Rite": [
+    "Vollziehe das Gleichgewichtsritual",
+    "Realiza el rito del equilibrio",
+    "Voer het evenwichtsritueel uit",
+    "Esegui il rito dell'equilibrio",
+    "Accomplir le rite d'équilibre",
+    "Провести ритуал равновесия",
+    "Denge Ayinini Gerçekleştir"
   ]
 } as const;

@@ -1,5 +1,16 @@
 import type {CoopRole,CoopRouteGraph,CoopRouteNode} from '../../shared/coop-types';
 import {coopRouteClientProjection} from '../expeditions/route-generation';
+import {merchantOffers} from '../expeditions/node-resolution';
+/** Never publish RNG rolls, hidden graph nodes, private state or account IDs in room feedback. */
+export function publicCoopRoomOutcome(nodeId:string|undefined,summary:Record<string,unknown>|undefined){
+ if(!nodeId||!summary)return undefined;
+ const kind=summary.kind;
+ if(typeof kind!=='string'||!['camp','shrine','forge','treasure','secret','event','risk','echo','merchant','merchant_purchase'].includes(kind))return undefined;
+ const count=(key:string)=>typeof summary[key]==='number'&&Number.isFinite(summary[key])?Math.max(0,summary[key] as number):0;
+ const delta=typeof summary.resourcesDelta==='number'&&Number.isFinite(summary.resourcesDelta)?summary.resourcesDelta:0;
+ return {nodeId,kind,resourcesDelta:delta,healedHp:count('healedHp'),revivedCount:count('revivedCount'),boonCount:count('boonCount'),artifactCount:count('artifactCount'),curseCount:count('curseCount'),...(kind==='merchant_purchase'&&typeof summary.offerKind==='string'?{offerKind:summary.offerKind}: {})};
+}
+
 import type {QModeRun} from './qmode';
 import {projectCombatReplay,type PublicCombatReplay} from './combat-replay-projection';
 import {expeditionBossTelegraph,expeditionEncounterPreview} from '../combat/expedition-combat-service';
@@ -12,6 +23,8 @@ export interface PublicQModeRunProjection {
   settlement:{status:'not_ready'|'pending_entitlement'};
   bossMechanic?:{label:string;summary:string;tone:'benefit'|'mixed'|'danger';telegraph:{bossName:string;phases:Array<{id:string;label:string;hpPct:number;objectiveSensitive:false}>;castAbilities:Array<{id:string;label:string;castMs:number;cooldownMs:number;interruptible:boolean;objectiveSensitive:false}>;suppressedAbilities:Array<{id:string;label:string}>}};
   lastCombat?:PublicCombatReplay;
+  lastRoomOutcome?:ReturnType<typeof publicCoopRoomOutcome>;
+  merchantShop?:{resources:number;offers:Array<{id:string;kind:'boon'|'artifact'|'salve';cost:number;purchased:boolean}>};
 }
 
 /** Sanitizes the server-owned run for its controller. Echo source account IDs,
@@ -23,6 +36,11 @@ export function projectQModeRun(run:QModeRun,mode:'qmode'|'live'='qmode'):Public
   const graph=coopRouteClientProjection(run.graph,revealed);
   const visible=new Set(graph.nodes.map(node=>node.nodeId));
   const options=run.phase==='awaiting_choice'?current.nextNodeIds.filter(id=>visible.has(id)).map(id=>graph.nodes.find(node=>node.nodeId===id)!).filter(Boolean).map(node=>({...node,...(['battle','elite','boss'].includes(node.kind)?{encounterPreview:expeditionEncounterPreview(node.contentId)}:{})})):[];
+  const lastRoomOutcome=publicCoopRoomOutcome(run.lastResolution?.nodeId,run.lastResolution?.result.summary);
+  const merchantShop=mode==='qmode'&&run.phase==='awaiting_choice'&&current.kind==='merchant'&&run.persistentState.visitedNodeIds.includes(current.nodeId)?{
+   resources:run.persistentState.resources,
+   offers:merchantOffers(current.contentId).map(offer=>({id:offer.id,kind:offer.kind,cost:offer.cost,purchased:(run.persistentState.personalEffects[run.players[0].id]?.purchases??[]).includes(offer.id)}))
+  }:undefined;
   const team=run.players.map((player,index):PublicQModeMember=>{const state=run.persistentState.actors[player.id];if(!state)throw new Error('missing_qmode_actor_state');const companionId=(player.tags??[]).find(tag=>tag.startsWith('companion:'))?.slice('companion:'.length),bodyTag=(player.tags??[]).find(tag=>tag.startsWith('body:'))?.slice('body:'.length),bodyPresentation=bodyTag==='female'?'female' as const:bodyTag==='male'?'male' as const:undefined;return{memberId:player.id,displayName:player.name,role:player.role as CoopRole,classId:player.classId??'',bodyPresentation,companionId,kind:index===0?'controller':run.npcCharacterIds?.includes(player.id)?'npc':'echo',effectiveLevel:player.level,currentHp:state.hp,maximumHp:player.stats.maxHp,downed:state.downed};});
-  return {runId:run.id,mode,phase:run.phase,tier:run.tier,expeditionId:run.expeditionId,controller:true,team:mode==='live'?team.map(member=>({...member,kind:'controller' as const})):team,graph,currentNodeId:run.currentNodeId,options,visitedNodeIds:[...run.persistentState.visitedNodeIds],resources:run.persistentState.resources,boons:[...run.persistentState.boons],artifacts:[...run.persistentState.artifacts],curses:[...run.persistentState.curses],personalEffects:run.persistentState.personalEffects,...(bossTelegraph?{bossMechanic:{label:'Dungeon boss mechanics',summary:'Read the cast telegraphs and interrupt dangerous abilities before the final phase.',tone:'mixed' as const,telegraph:bossTelegraph}}:{}),lastCombat:projectCombatReplay(run.lastResolution),settlement:{status:(run.phase==='completed'||run.phase==='failed')?'pending_entitlement':'not_ready'}};
+  return {runId:run.id,mode,phase:run.phase,tier:run.tier,expeditionId:run.expeditionId,controller:true,team:mode==='live'?team.map(member=>({...member,kind:'controller' as const})):team,graph,currentNodeId:run.currentNodeId,options,visitedNodeIds:[...run.persistentState.visitedNodeIds],resources:run.persistentState.resources,boons:[...run.persistentState.boons],artifacts:[...run.persistentState.artifacts],curses:[...run.persistentState.curses],personalEffects:run.persistentState.personalEffects,...(bossTelegraph?{bossMechanic:{label:'Dungeon boss mechanics',summary:'Read the cast telegraphs and interrupt dangerous abilities before the final phase.',tone:'mixed' as const,telegraph:bossTelegraph}}:{}),lastCombat:projectCombatReplay(run.lastResolution),...(lastRoomOutcome?{lastRoomOutcome}:{}),...(merchantShop?{merchantShop}:{}),settlement:{status:(run.phase==='completed'||run.phase==='failed')?'pending_entitlement':'not_ready'}};
 }

@@ -44,12 +44,21 @@ The Supabase `list_migrations` readback confirms all three canonical versions ar
 
 This does **not** resolve all history differences: on this readback GitHub `main` contains 342 migration files; **staging has 89 locally listed versions absent from its history and 27 remote-only versions**; **production has 8 and 2**, respectively. Many are historical migrations with different timestamps, staging-specific files or reconciled remote-history placeholders. Do not treat those numbers as executable pending migrations.
 
+## Edge deployment blocker (verified)
+
+- Supabase `coop` Edge Function last updated **2026-11-03 11:47 UTC** on staging and **11:48 UTC** on production. `gameplay` last updated **2026-11-03 14:43 / 14:46 UTC** respectively.
+- The latest committed bundled Edge sources `backend/supabase/functions/coop/index.ts` and `backend/supabase/functions/gameplay/index.ts` were updated **2026-11-04 12:58 UTC** by commit `17523efb72` (`Consolidate T1–T3 Alchemy role potions and safe Live/Q-Mode consumption`). Therefore the currently active deployments predate the new code. A DB migration alone cannot activate the new HTTP routes.
+- GitHub `backend/online/coop.ts` already routes authenticated `/coop/runs/:id/potion`, `/tonic`, and `/merchant` to the three installed service-role functions. The mobile `coop-client.ts` invokes those paths. GitHub source wiring is verified; **deployed runtime wiring is not**.
+- The repository provides a **manual-only** workflow at [Deploy Supabase](https://github.com/elroynbenjamins/Veldryn/actions/workflows/supabase-deploy.yml) with `environment=staging|production` and `functions_only=true`. It performs committed-bundle verification before deploying both `gameplay` and `coop`. Production can require the `supabase-production` environment approval.
+- Required sequence: manually dispatch **staging, functions_only=true**; verify new route responses with a disposable authenticated QA player and inspect logs; then manually dispatch **production, functions_only=true** after review. **Do not use the workflow's default migrations-on path** while historical migration versions remain divergent.
+- The GitHub connector used for this audit supports workflow reading and reruns but does **not** offer dispatch of a new manual workflow. Supabase's Edge deployment tool requires complete source files, but the current committed bundles are >2 MB and GitHub's connected file retrieval returns empty/oversized content. No deployment was attempted through an incomplete source transfer.
+
 ## Remaining release and migration checks
 
 1. Compare `supabase migration list --linked` against the GitHub migration directory for **each linked environment separately**. Supabase CLI supports `--linked` (not a blanket `--remote` flag). For future discrepancies, use the documented `supabase migration repair --status applied|reverted --linked` process only after confirming the actual schema/state.
 2. Review older divergent timestamps individually; do not apply all currently missing files to staging or production, and do not erase historical records by name matching alone.
 3. Validate one merchant purchase and one healing/tonic use against disposable staging QA characters, including retry idempotency, resource consumption, vote/concurrency guards and no cross-account spending. Non-mutating invalid-input calls already passed in both environments.
-4. Verify the deployed Edge runtime routes before declaring end-to-end gameplay functional. Both `gameplay` and `coop` were ACTIVE, but Edge source retrieval failed in the connector.
+4. Deploy the committed Edge bundles through the manual **functions-only** staging workflow, test the real routes, then release to production. Current deployed versions predate their source commit, even though the functions report ACTIVE.
 5. GitHub localization PR #848 merged to `main` after all its PR CI checks passed; PR #849 was closed as redundant because the dynamic Companion localization code/tests already exist on `main`. Existing branch refs have not been deleted. Latest main workflow checks may still be pending.
 
 This record was updated after verifying the three production fixes and their canonical migration-history readbacks.

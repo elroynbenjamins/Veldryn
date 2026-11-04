@@ -2,8 +2,9 @@ import type {GameState,GearSlot,ItemStack,CraftedGearInstance} from './types';
 import {craftedGearInstances} from './crafted-gear-instances';
 import {entitlementStorageCapacity} from './account-entitlements';
 import {itemDef} from '../content/items';
+import {equipmentPouch,equipmentPouchForCharacter} from './equipment-pouch';
 
-export type VerifiedGearPlace='inventory'|'bank'|'overflow'|'equipped';
+export type VerifiedGearPlace='inventory'|'bank'|'equipment_pouch'|'overflow'|'equipped';
 export interface VerifiedGearLocation{
   instanceId:string;
   itemId:string;
@@ -64,6 +65,7 @@ export function auditCraftedGearOwnership(state:GameState):CraftedGearOwnershipA
   const scanCharacter=(character:GameState['character'],inventory:GameState['inventory'],overflow:GameState['overflow'])=>{
     if(!character)return;
     scanStacks(inventory.stacks,'inventory',character.id);
+    scanStacks(equipmentPouchForCharacter(character).stacks,'equipment_pouch',character.id);
     scanStacks(overflow.stacks,'overflow',character.id);
     for(const [slot,itemId] of Object.entries(character.equipment)){
       if(itemId&&trackedItemIds.has(itemId)&&!character.equipmentInstanceIds?.[slot as GearSlot])
@@ -109,19 +111,25 @@ function appendInstance(stacks:readonly ItemStack[],instance:CraftedGearInstance
  * not perform any server write or authorize client-chosen ownership. The
  * authoritative command must recheck ownership under an account transaction.
  */
-export function moveCraftedGearInstance(state:GameState,instanceId:string,to:'inventory'|'bank'):GameState{
+export function moveCraftedGearInstance(state:GameState,instanceId:string,to:'inventory'|'bank'|'equipment_pouch'):GameState{
   if(!state.character)throw new Error('Create a character before moving equipment');
   const {record,location}=resolveTracked(state,instanceId);
   const from=location.place;
-  if(from!=='inventory'&&from!=='bank')throw new Error('Only stored equipment can be transferred');
+  if(from!=='inventory'&&from!=='bank'&&from!=='equipment_pouch')throw new Error('Only stored equipment can be transferred');
   if(from===to)return state;
-  if(from==='inventory'&&location.holderCharacterId!==state.character.id)throw new Error('Another character is carrying this equipment');
-  if(to==='bank'){
-    const bankStacks=appendInstance(state.bank.stacks,record,entitlementStorageCapacity(state,'bank'));
-    return {...state,inventory:{...state.inventory,stacks:withoutInstance(state.inventory.stacks,instanceId)},bank:{...state.bank,stacks:bankStacks}};
-  }
-  const inventoryStacks=appendInstance(state.inventory.stacks,record,entitlementStorageCapacity(state,'inventory'));
-  return {...state,bank:{...state.bank,stacks:withoutInstance(state.bank.stacks,instanceId)},inventory:{...state.inventory,stacks:inventoryStacks}};
+  if(from!=='bank'&&location.holderCharacterId!==state.character.id)throw new Error('Another character is carrying this equipment');
+  if(to==='equipment_pouch'&&record.ownerCharacterId!==state.character.id)throw new Error('Equipment Pouch belongs to the original crafting character');
+  const source=from==='equipment_pouch'?equipmentPouch(state):state[from];
+  const target=to==='equipment_pouch'?equipmentPouch(state):state[to];
+  const capacity=to==='equipment_pouch'?target.capacity:entitlementStorageCapacity(state,to);
+  const targetStacks=appendInstance(target.stacks,record,capacity);
+  const sourceStacks=withoutInstance(source.stacks,instanceId);
+  let next={...state};
+  if(from==='equipment_pouch')next={...next,character:{...next.character!,equipmentPouch:{...source,stacks:sourceStacks}}};
+  else next={...next,[from]:{...source,stacks:sourceStacks}};
+  if(to==='equipment_pouch')next={...next,character:{...next.character!,equipmentPouch:{...target,stacks:targetStacks}}};
+  else next={...next,[to]:{...target,stacks:targetStacks}};
+  return next;
 }
 
 /**
@@ -181,26 +189,25 @@ export function equipCraftedGearInstance(state:GameState,instanceId:string):Game
   if(!state.character)throw new Error('No active character');
   if(state.activity?.kind==='combat')throw new Error('Stop combat before equipping');
   const {record,location}=resolveTracked(state,instanceId);
-  if(location.place!=='inventory'||location.holderCharacterId!==state.character.id)
-    throw new Error('Move this exact equipment copy into your Inventory first');
+  if(!['inventory','equipment_pouch'].includes(location.place)||location.holderCharacterId!==state.character.id)
+    throw new Error('Move this exact equipment copy into your character storage first');
   const def=itemDef(record.itemId);
   if(def.type!=='gear'||!def.slot)throw new Error('Not equipment');
   if(def.classRestriction&&def.classRestriction!==state.character.classId)throw new Error('This equipment belongs to another class');
   if(state.character.level<(def.requiredLevel??1))throw new Error(`Requires level ${def.requiredLevel}`);
   const oldId=state.character.equipment[def.slot],oldInstanceId=state.character.equipmentInstanceIds?.[def.slot];
-  // Swapping between tagged/legacy gear is allowed, but the old item's exact
-  // identity is preserved when returning it to Inventory.
-  const nextStacks=withoutInstance(state.inventory.stacks,instanceId);
-  const returned=oldId?oldInstanceId
-    ?[{itemId:oldId,quantity:1,instanceId:oldInstanceId}]
-    :[{itemId:oldId,quantity:1}]
-    :[];
-  if(returned.length&&nextStacks.filter(row=>row.quantity>0).length>=entitlementStorageCapacity(state,'inventory'))
-    throw new Error('Inventory is full; make room before swapping equipment');
+  const returned=oldId?[{itemId:oldId,quantity:1,...(oldInstanceId?{instanceId:oldInstanceId}:{})}]:[];
+  const fromPouch=location.place==='equipment_pouch';
+  const source=fromPouch?equipmentPouch(state):state.inventory;
+  const remaining=withoutInstance(source.stacks,instanceId);
+  const capacity=fromPouch?source.capacity:entitlementStorageCapacity(state,'inventory');
+  if(returned.length&&remaining.filter(row=>row.quantity>0).length>=capacity)
+    throw new Error(fromPouch?'Equipment Pouch is full; make room before swapping':'Inventory is full; make room before swapping');
   const equipment={...state.character.equipment,[def.slot]:record.itemId};
   const equipmentInstanceIds={...(state.character.equipmentInstanceIds??{}),[def.slot]:record.id};
-  return {...state,inventory:{...state.inventory,stacks:[...nextStacks,...returned]},
-    character:{...state.character,equipment,equipmentInstanceIds}};
+  return fromPouch
+    ?{...state,character:{...state.character,equipment,equipmentInstanceIds,equipmentPouch:{...source,stacks:[...remaining,...returned]}}}
+    :{...state,inventory:{...state.inventory,stacks:[...remaining,...returned]},character:{...state.character,equipment,equipmentInstanceIds}};
 }
 
 export function unequipCraftedGearInstance(state:GameState,instanceId:string):GameState{
@@ -209,10 +216,13 @@ export function unequipCraftedGearInstance(state:GameState,instanceId:string):Ga
   const {record,location}=resolveTracked(state,instanceId);
   if(location.place!=='equipped'||location.holderCharacterId!==state.character.id||!location.slot)
     throw new Error('This exact equipment copy is not equipped on the active character');
-  const stacks=appendInstance(state.inventory.stacks,record,entitlementStorageCapacity(state,'inventory'));
+  const pouch=equipmentPouch(state),space=pouch.stacks.length<pouch.capacity;
+  const stacks=space?appendInstance(pouch.stacks,record,pouch.capacity):appendInstance(state.inventory.stacks,record,entitlementStorageCapacity(state,'inventory'));
   const equipment={...state.character.equipment},equipmentInstanceIds={...(state.character.equipmentInstanceIds??{})};
   delete equipment[location.slot];delete equipmentInstanceIds[location.slot];
-  return {...state,inventory:{...state.inventory,stacks},character:{...state.character,equipment,equipmentInstanceIds}};
+  return space
+    ?{...state,character:{...state.character,equipment,equipmentInstanceIds,equipmentPouch:{...pouch,stacks}}}
+    :{...state,inventory:{...state.inventory,stacks},character:{...state.character,equipment,equipmentInstanceIds}};
 }
 
 function protectedGear(state:GameState,record:CraftedGearInstance){
@@ -230,18 +240,19 @@ function protectedGear(state:GameState,record:CraftedGearInstance){
 export function disposeCraftedGearInstance(state:GameState,instanceId:string,method:'sell'|'salvage'):GameState{
   if(!state.character)throw new Error('No active character');
   const {record,location}=resolveTracked(state,instanceId);
-  if(location.place!=='inventory'&&location.place!=='bank')throw new Error('Unequip the exact equipment copy before disposal');
-  if(location.place==='inventory'&&location.holderCharacterId!==state.character.id)
+  if(!['inventory','bank','equipment_pouch'].includes(location.place))throw new Error('Unequip the exact equipment copy before disposal');
+  if(location.place!=='bank'&&location.holderCharacterId!==state.character.id)
     throw new Error('Cannot dispose equipment carried by another character');
   protectedGear(state,record);
   const def=itemDef(record.itemId);
   if(def.type!=='gear'||def.knowledgeUnlockId)throw new Error('This equipment cannot be disposed');
   if(method==='salvage'&&!def.salvage)throw new Error('This equipment cannot be salvaged');
   if(method==='sell'&&(!Number.isSafeInteger(def.value)||def.value<0))throw new Error('Invalid equipment vendor value');
-  const source=location.place==='bank'?state.bank.stacks:state.inventory.stacks;
+  const source=location.place==='bank'?state.bank.stacks:location.place==='equipment_pouch'?equipmentPouch(state).stacks:state.inventory.stacks;
   const removed=withoutInstance(source,record.id);
-  let next:GameState={...state,account:{...state.account,craftedGearInstances:craftedGearInstances(state).filter(row=>row.id!==record.id)},
-    [location.place]:{...state[location.place],stacks:removed}};
+  let next:GameState={...state,account:{...state.account,craftedGearInstances:craftedGearInstances(state).filter(row=>row.id!==record.id)}};
+  if(location.place==='equipment_pouch')next={...next,character:{...next.character!,equipmentPouch:{...equipmentPouch(next),stacks:removed}}};
+  else next={...next,[location.place]:{...state[location.place],stacks:removed}};
   if(method==='sell'){
     if(location.place==='bank'){
       const gold=(next.bank.gold??0)+def.value;
@@ -268,7 +279,7 @@ export function disposeCraftedGearInstance(state:GameState,instanceId:string,met
 }
 
 /** Exact-copy visibility for future slot and bank UIs. Does not select an untagged legacy copy. */
-export function craftedGearCopiesAt(state:GameState,itemId:string,place:'inventory'|'bank'){
+export function craftedGearCopiesAt(state:GameState,itemId:string,place:'inventory'|'bank'|'equipment_pouch'){
   const audit=auditCraftedGearOwnership(state);
   if(audit.problems.length)return [];
   return audit.linked.filter(row=>row.itemId===itemId&&row.place===place&&(place==='bank'||row.holderCharacterId===state.character?.id));

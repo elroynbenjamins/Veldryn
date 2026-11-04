@@ -19,6 +19,8 @@ function load(name){
 }
 const {socialTranslationRows,socialCatalogs,socialText,socialLabel,socialExpiry,useSocialText}=load('social');
 const {SUPPORTED_LANGUAGES}=load('languages');
+assert.equal(socialText('ru','Your week'),'Ваша неделя');
+assert.equal(socialText('tr','Your week'),'Bu hafta');
 const {GameLanguageProvider}=load('GameLanguageProvider');
 const keys=Object.keys(socialTranslationRows).sort();
 const placeholders=text=>[...text.matchAll(/\{([a-zA-Z][a-zA-Z0-9_]*)\}/g)].map(match=>match[1]).sort();

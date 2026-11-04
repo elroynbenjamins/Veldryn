@@ -40,6 +40,8 @@ assert.equal(appText('ru','Cannot travel'),'Переход недоступен'
 assert.equal(appText('tr','Cannot reorder backlog'),'Cannot reorder backlog');
 assert.equal(appText('ru','{name} is ready.',{name:'Ironwarden'}),'Ironwarden готов.');
 assert.equal(appText('tr','{name} is ready.',{name:'Ironwarden'}),'Ironwarden hazır.');
+assert.equal(appText('tr','Cannot reorder backlog'),'Cannot reorder backlog');
+assert.equal(appText('ru','{name} is ready.',{name:'Ironwarden'}),'Ironwarden готов.');
 assert.equal(appBuildText('ru','version',{version:'1.0.6'}),'Version 1.0.6');
 assert.equal(appBuildText('tr','channel',{channel:'production'}),'Release channel: production');
 assert.equal(navigationText('ru','{count} notifications',{count:3}),'Уведомления: 3');
@@ -60,6 +62,8 @@ assert.equal(translate('tr','key',{name:'Eira'}),'Hello Eira');
 assert.equal(translate('nl','constructor' as 'key'),'constructor');
 assert.equal(translate('nl','Unknown source' as 'key'),'Unknown source');
 assert.equal(formatLocalizedNumber('nl',12345.6),'12.345,6');
+assert.equal(formatLocalizedNumber('tr',12345.6),'12.345,6');
+assert.ok(formatLocalizedNumber('ru',12345.6).endsWith(',6'));
 assert.equal(formatLocalizedNumber('en',12345.6),'12,345.6');
 assert.equal(formatLocalizedNumber('tr',12345.6),'12.345,6');
 assert.ok(formatLocalizedNumber('ru',12345.6).endsWith(',6'));

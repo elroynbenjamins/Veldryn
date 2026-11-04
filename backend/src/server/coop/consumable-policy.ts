@@ -1,5 +1,7 @@
-import {potionDef} from '../../../../apps/mobile/src/content/alchemy';
-import type {GameState,ItemStack} from '../../../../apps/mobile/src/core/types';
+import {healingPotionFraction} from '../../shared/healing-potion-catalog';
+/** Minimal portable shape: never pull React Native modules into the backend compiler. */
+export interface DungeonPotionItemStack {itemId:string;quantity:number;instanceId?:string;}
+export interface DungeonPotionCharacterState {character:{id:string;equippedHealingPotionId?:string}|null;inventory:{stacks:DungeonPotionItemStack[];};}
 import type {PersistentRunState} from '../expeditions/node-resolution';
 
 export const DUNGEON_FOOD_ALLOWED=false;
@@ -15,7 +17,7 @@ export function dungeonConsumablePolicy(tier:number){
 /**
  * Portable, side-effect-free transaction plan. Production MUST load character
  * inventory and run state on the server and atomically persist both results with
- * a version/CAS check. Never trust a client-supplied GameState or call this from
+ * a version/CAS check. Never trust a client-supplied DungeonPotionCharacterState or call this from
  * a public route without verifying the authenticated run membership.
  */
 export interface DungeonPotionTransaction{
@@ -26,7 +28,7 @@ export interface DungeonPotionTransaction{
  ownerCharacterId:string;
  requestId:string;
  persistentState:PersistentRunState;
- characterState:GameState;
+ characterState:DungeonPotionCharacterState;
  maxHp:number;
 }
 export interface DungeonPotionReceipt{
@@ -38,13 +40,13 @@ export interface DungeonPotionReceipt{
 }
 export interface DungeonPotionTransactionResult{
  persistentState:PersistentRunState;
- characterState:GameState;
+ characterState:DungeonPotionCharacterState;
  receipt:DungeonPotionReceipt;
  replayed:boolean;
  remainingCharges:number;
 }
 const MAX_RECEIPT_ID_LENGTH=120;
-function verifiedInventoryTake(stacks:readonly ItemStack[],itemId:string):ItemStack[]{
+function verifiedInventoryTake(stacks:readonly DungeonPotionItemStack[],itemId:string):DungeonPotionItemStack[]{
  const available=stacks.reduce((n,row)=>n+(row.itemId===itemId&&Number.isSafeInteger(row.quantity)&&row.quantity>0?row.quantity:0),0);
  if(available<1)throw new Error('dungeon_potion_out_of_stock');
  let left=1;
@@ -73,10 +75,10 @@ export function planDungeonPotionUse(input:DungeonPotionTransaction):DungeonPoti
  if(actor.downed||!Number.isFinite(actor.hp)||actor.hp<=0)throw new Error('dungeon_potion_actor_downed');
  if(!Number.isFinite(maxHp)||maxHp<=0||actor.hp>=maxHp)throw new Error('dungeon_potion_health_full');
  const itemId=character.equippedHealingPotionId;
- const potion=itemId?potionDef(itemId):undefined;
- if(!itemId||!potion||potion.effect.kind!=='healing')throw new Error('dungeon_healing_potion_not_selected');
+ const healFraction=itemId?healingPotionFraction(itemId):undefined;
+ if(!itemId||healFraction===undefined)throw new Error('dungeon_healing_potion_not_selected');
  const stacks=verifiedInventoryTake(characterState.inventory.stacks,itemId);
- const heal=Math.min(maxHp-actor.hp,Math.max(1,Math.ceil(maxHp*potion.effect.maxHpFraction)));
+ const heal=Math.min(maxHp-actor.hp,Math.max(1,Math.ceil(maxHp*healFraction)));
  const receipt:DungeonPotionReceipt={requestId,actorId,itemId,healedHp:heal,chargesUsed:used+1};
  const nextState:PersistentRunState={
   ...persistentState,
@@ -84,7 +86,7 @@ export function planDungeonPotionUse(input:DungeonPotionTransaction):DungeonPoti
   dungeonPotionChargesUsed:used+1,
   dungeonPotionReceipts:{...persistentState.dungeonPotionReceipts,[requestId]:receipt},
  };
- const nextCharacter:GameState={...characterState,inventory:{...characterState.inventory,stacks}};
+ const nextCharacter:DungeonPotionCharacterState={...characterState,inventory:{...characterState.inventory,stacks}};
  return {persistentState:nextState,characterState:nextCharacter,receipt,replayed:false,remainingCharges:cap-used-1};
 }
 

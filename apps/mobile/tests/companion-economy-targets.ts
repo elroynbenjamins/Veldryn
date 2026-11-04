@@ -33,7 +33,8 @@ equal(byRarity.elite.ascension.bondstones,trialCycleStones,'Elite progression sh
 ok(byRarity.prestige.ascension.bondstones>trialCycleStones*2,'Prestige should not finish from only two Trial-only monthly cycles');
 ok(byRarity.prestige.ascension.bondstones<=trialCycleStones*3,'Prestige Trial-only gate should remain within three monthly cycles');
 ok(byRarity.prestige.ascension.companionEssence<=monthly.companionEssence,'One full monthly Trial should cover Prestige Ascension/Mastery Essence');
-ok(monthly.gold>=byRarity.prestige.ascension.gold,'One full monthly Trial should cover Prestige Ascension/Mastery Gold before optional paid leveling');
+ok(monthly.gold>=byRarity.elite.ascension.gold,'One complete monthly Trial can still fund Elite Ascensions before optional paid leveling');
+ok(monthly.gold<byRarity.prestige.ascension.gold,'5× Ascension Gold makes full Prestige Ascension and Mastery a longer-term Gold sink');
 
 equal(COMPANION_SANCTUARY_WEEKLY_ESSENCE[3],COMPANION_TECHNIQUE_SWITCH_COST.companionEssence,'Max Essence Basin should fund one Technique switch per week');
 equal(COMPANION_TECHNIQUE_SWITCH_COST.gold,0,'Technique switching should not add a second Gold tax');

@@ -283,56 +283,9 @@ export function guildActivityUiText(language:Language,key:GuildActivityUiKey,par
  const index=localeIndex[language];
  return interpolateTranslation(index===undefined?key:guildActivityUiRows[key][index],params);
 }
-/** Existing five-language Guild milestone translations stay in Social; fill RU/TR gaps only. */
-export const guildMilestoneEarlyRows={
-  "Gathering Momentum": [
-    "Сбор ресурсов",
-    "Toplama İvmesi"
-  ],
-  "Workshop Momentum": [
-    "Производственный импульс",
-    "Atölye İvmesi"
-  ],
-  "Learning Momentum": [
-    "Импульс обучения",
-    "Öğrenme İvmesi"
-  ],
-  "Mastery Momentum": [
-    "Импульс мастерства",
-    "Ustalık İvmesi"
-  ],
-  "Guild Momentum": [
-    "Импульс гильдии",
-    "Lonca İvmesi"
-  ],
-  "+5% gathering speed while the Guild remains active.": [
-    "+5% к скорости сбора ресурсов, пока гильдия активна.",
-    "Lonca etkin kaldıkça toplama hızı +%5."
-  ],
-  "+5% crafting and processing speed.": [
-    "+5% к скорости изготовления и переработки.",
-    "Üretim ve işleme hızı +%5."
-  ],
-  "+5% non-combat Skill XP.": [
-    "+5% к опыту мирных навыков.",
-    "Savaş dışı beceri XP'si +%5."
-  ],
-  "+5% non-combat Mastery XP.": [
-    "+5% к опыту мастерства мирных навыков.",
-    "Savaş dışı Ustalık XP'si +%5."
-  ],
-  "+5% relative rare-material chance from eligible non-combat activities.": [
-    "+5% к относительному шансу редких материалов за подходящие мирные занятия.",
-    "Uygun savaş dışı etkinliklerde nadir malzeme şansı göreceli +%5."
-  ]
-} as const satisfies Record<string,readonly [string,string]>;
+/** Existing milestone copy is already translated in Social and the early RU/TR dictionary. */
 export function guildMilestoneText(language:Language,source:string):string{
- const existing=socialLabel(language,source);
- if(existing!==source)return existing;
- if(language!=='ru'&&language!=='tr')return existing;
- const row=Object.prototype.hasOwnProperty.call(guildMilestoneEarlyRows,source)
-  ?guildMilestoneEarlyRows[source as keyof typeof guildMilestoneEarlyRows]:undefined;
- return row?.[language==='ru'?0:1]??source;
+ return socialLabel(language,source);
 }
 export function useGuildActivityUiText(){
  const language=useGameLanguage();

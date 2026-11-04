@@ -85,7 +85,9 @@ function commandContract(source,file){
  };visit(sf);return calls.sort();
 }
 const baseline={
-  "apps/mobile/src/screens/CompanionsScreen.tsx": [],
+  "apps/mobile/src/screens/CompanionsScreen.tsx": [
+    "onCommand({ type: 'companion_starter', args: { id: choice.id } })"
+  ],
   "apps/mobile/src/screens/CollectionsScreen.tsx": [
     "selectCollectible(state,'pet',row.id)",
     "selectCollectible(state,kind,row.id)"

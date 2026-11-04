@@ -1,11 +1,12 @@
 import {useEffect,useMemo,useRef,useState} from 'react';
-import {AppState,StyleSheet,Text,View} from 'react-native';
+import {AppState,Pressable,StyleSheet,Text,View} from 'react-native';
 import {GameButton} from './GameButton';
 import {Panel} from './Panel';
 import {StatusPill} from './StatusPill';
 import {ThemedIcon} from './ThemedNavigationIcon';
 import {loadOnlineGuildMuster,type OnlineGuildMusterState} from '../online/guild-muster';
-import {claimOnlineGuildEventBonus,claimOnlineGuildWeeklyTokens,loadOnlineGuildTokenShop,type GuildTokenShopSnapshot,type GuildWeeklyRewardKind} from '../online/guild-token-shop';
+import {claimOnlineGuildDailyTokens,claimOnlineGuildEventBonus,claimOnlineGuildWeeklyTokens,loadOnlineGuildTokenShop,type GuildTokenShopSnapshot,type GuildWeeklyRewardKind} from '../online/guild-token-shop';
+import {guildDailyTokenClaimStatus,type GuildDailyTokenKind} from '../core/guild-token-daily-claim';
 import {typography,type ThemeColors} from '../theme/theme';
 import {useGameTheme} from '../theme/ThemeContext';
 
@@ -18,7 +19,7 @@ function readyClaims(snapshot:GuildTokenShopSnapshot|null):ClaimRow[]{
  if(!snapshot)return [];
  const rows:ClaimRow[]=[];
  for(const reward of snapshot.weeklyRewards)
-  if(reward.eligible&&!reward.claimed)
+  if(reward.eligible&&!reward.claimed&&snapshot.earnedThisWeek<snapshot.weeklyCap)
    rows.push({id:`weekly:${reward.kind}`,title:weeklyLabel(reward.kind),tokens:reward.tokens,run:()=>claimOnlineGuildWeeklyTokens(reward.kind)});
  for(const reward of snapshot.eventBonuses)
   if(!reward.claimed)
@@ -36,16 +37,18 @@ export function GuildHallSummary({onOpenMuster,onOpenShop,onRewardsChanged,compa
  const C=useGameTheme(),s=useMemo(()=>makeStyles(C),[C]);
  const [muster,setMuster]=useState<OnlineGuildMusterState|null>(null);
  const [shop,setShop]=useState<GuildTokenShopSnapshot|null>(null);
- const [loading,setLoading]=useState(true),[busy,setBusy]=useState(''),[notice,setNotice]=useState('');
- const mounted=useRef(true);
+ const [loading,setLoading]=useState(true),[busy,setBusy]=useState(''),[notice,setNotice]=useState(''),[noticeError,setNoticeError]=useState(false);
+ const mounted=useRef(true),claimPending=useRef(false),loadGeneration=useRef(0);
 
  const load=async()=>{
   if(!mounted.current)return;
+  const generation=++loadGeneration.current;
   setLoading(true);
   const [musterResult,shopResult]=await Promise.allSettled([loadOnlineGuildMuster(),loadOnlineGuildTokenShop()]);
-  if(!mounted.current)return;
-  if(musterResult.status==='fulfilled')setMuster(musterResult.value?.state??null);
-  if(shopResult.status==='fulfilled')setShop(shopResult.value??null);
+  if(!mounted.current||generation!==loadGeneration.current)return;
+  // Missing/failing snapshots must never leave a stale green Claim button.
+  setMuster(musterResult.status==='fulfilled'?musterResult.value?.state??null:null);
+  setShop(shopResult.status==='fulfilled'?shopResult.value??null:null);
   setLoading(false);
  };
 
@@ -53,32 +56,52 @@ export function GuildHallSummary({onOpenMuster,onOpenShop,onRewardsChanged,compa
   mounted.current=true;
   void load();
   const listener=AppState.addEventListener('change',next=>{if(next==='active')void load()});
-  return()=>{mounted.current=false;listener.remove();};
+  return()=>{mounted.current=false;loadGeneration.current++;listener.remove();};
  // eslint-disable-next-line react-hooks/exhaustive-deps
  },[]);
 
  const claims=readyClaims(shop);
 
  const claim=async(row:ClaimRow)=>{
-  setBusy(row.id);setNotice('');
+  if(claimPending.current)return;
+  claimPending.current=true;setBusy(row.id);setNotice('');setNoticeError(false);
   try{
    const credited=await row.run();
    setNotice(credited?`+${credited} Guild Tokens`:'Already claimed, or weekly cap reached.');
-   await onRewardsChanged?.();
+   try{await onRewardsChanged?.();}catch{/* credited reward must remain successful */}
    await load();
-  }catch(reason){setNotice(reason instanceof Error?reason.message:'Could not claim right now.');}
-  finally{if(mounted.current)setBusy('');}
+  }catch(reason){
+   setNoticeError(true);setNotice(reason instanceof Error?reason.message:'Could not claim right now.');
+   await load();
+  }finally{claimPending.current=false;if(mounted.current)setBusy('');}
  };
  const claimAll=async()=>{
-  setBusy('all');setNotice('');
-  let total=0,failed=0;
-  for(const row of claims){
-   try{total+=await row.run();}catch{failed++;}
+  if(claimPending.current)return;
+  claimPending.current=true;setBusy('all');setNotice('');setNoticeError(false);
+  try{
+   let total=0,failed=0;
+   for(const row of claims){try{total+=await row.run();}catch{failed++;}}
+   setNoticeError(failed>0);
+   setNotice((total?`+${total} Guild Tokens claimed`:'No rewards claimed')+(failed?` · ${failed} claim${failed===1?'':'s'} failed. Retry remaining rewards.`:''));
+   try{await onRewardsChanged?.();}catch{/* non-fatal */}
+   await load();
+  }finally{claimPending.current=false;if(mounted.current)setBusy('');}
+ };
+ const claimDaily=async(kind:GuildDailyTokenKind)=>{
+  if(claimPending.current||busy||loading||guildDailyTokenClaimStatus(shop,muster,kind)!=='ready')return;
+  claimPending.current=true;setBusy('daily:'+kind);setNotice('');setNoticeError(false);
+  try{
+   const credited=await claimOnlineGuildDailyTokens(kind);
+   setNotice(credited?`+${credited} Guild Tokens claimed`:'Already claimed or weekly cap reached.');
+   try{await onRewardsChanged?.();}catch{/* credited reward must remain successful */}
+  }catch(reason){
+   setNoticeError(true);
+   setNotice(reason instanceof Error?reason.message:'Could not claim Guild Tokens. Refresh and try again.');
+  }finally{
+   await load();
+   claimPending.current=false;
+   if(mounted.current)setBusy('');
   }
-  setNotice((total?`+${total} Guild Tokens claimed`:'No rewards claimed')+(failed?` · ${failed} claim${failed===1?'':'s'} failed. Retry remaining rewards.`:''));
-  try{await onRewardsChanged?.();}catch{/* non-fatal */}
-  await load();
-  if(mounted.current)setBusy('');
  };
 
  const checkedIn=muster?.checkedIn===true;
@@ -86,6 +109,38 @@ export function GuildHallSummary({onOpenMuster,onOpenShop,onRewardsChanged,compa
  const weeklyPct=shop&&shop.weeklyCap>0?Math.max(0,Math.min(100,Math.round(shop.earnedThisWeek/shop.weeklyCap*100))):0;
  const treasury=shop?.treasuryBonusBps?Math.round(shop.treasuryBonusBps/100):0;
  const busyAll=busy==='all';
+ const dailyRewards=(['attendance','contribution'] as const).map(kind=>({
+  kind,
+  status:loading?'unavailable' as const:guildDailyTokenClaimStatus(shop,muster,kind),
+  title:kind==='attendance'?'Check-in':'Activity',
+  tokens:Math.min(Math.max(0,(shop?.weeklyCap??0)-(shop?.earnedThisWeek??0)),Math.ceil(10*(10000+(shop?.treasuryBonusBps??0))/10000)),
+ }));
+ const dailyActions=<View style={s.dailySection}>
+  <View style={s.dailyHead}>
+   <Text style={s.dailyHeading}>DAILY TOKEN REWARDS</Text>
+   <Pressable accessibilityRole="button" accessibilityLabel="Refresh daily Guild Token eligibility" disabled={loading||!!busy}
+    accessibilityState={{disabled:loading||!!busy}} onPress={()=>void load()} style={s.refresh}>
+    <Text style={[s.refreshText,{color:loading||!!busy?C.muted:C.accent}]}>{loading?'Checking…':'Refresh ↻'}</Text>
+   </Pressable>
+  </View>
+  <View style={s.dailyPair}>
+   {dailyRewards.map(reward=>{
+    const ready=reward.status==='ready',claimed=reward.status==='claimed',blocked=reward.status==='locked';
+    const enabled=ready&&!busy&&!loading;
+    const foreground=ready?C.good:blocked?C.bad:C.muted;
+    const stateText=busy==='daily:'+reward.kind?'Claiming…':ready?'Claim now':claimed?'Claimed today':reward.status==='capped'?'Weekly cap reached':blocked?(reward.kind==='attendance'?'Muster check-in needed':'Combat or Skilling needed'):'Status unavailable';
+    return <Pressable key={reward.kind} accessibilityRole="button" accessibilityLabel={reward.title+', up to '+reward.tokens+' Guild Tokens, '+stateText}
+     accessibilityState={{disabled:!enabled,busy:busy==='daily:'+reward.kind}} disabled={!enabled}
+     onPress={()=>void claimDaily(reward.kind)}
+     style={({pressed})=>[s.dailyTile,{borderColor:ready?C.good:blocked?C.bad:C.line,backgroundColor:ready?C.goodSurface:blocked?C.badSurface:C.panel2},pressed&&s.dailyTilePressed]}>
+     <Text style={[s.dailyTitle,{color:C.text}]}>{reward.title}</Text>
+     <Text style={[s.dailyAmount,{color:foreground}]}>{shop?'Up to +'+reward.tokens+' Tokens':'— Tokens'}</Text>
+     <Text style={[s.dailyState,{color:foreground}]}>{stateText}</Text>
+    </Pressable>;
+   })}
+  </View>
+  <Text style={s.dailyFootnote}>Activity requires verified Combat or Skilling today · Resets at 00:00 UTC</Text>
+ </View>;
 
  if(compact)return <View style={s.stack}>
   <Panel style={s.compactPanel}>
@@ -99,10 +154,12 @@ export function GuildHallSummary({onOpenMuster,onOpenShop,onRewardsChanged,compa
    <View style={s.row}><View style={s.flex}><Text style={s.kicker}>GUILD TOKENS</Text><Text style={s.compactTitle}>{shop?shop.balance.toLocaleString():'—'} <Text style={s.compactMeta}>available</Text></Text></View>
     {claims.length>0?<StatusPill label={claims.length+' READY'} tone="good"/>:null}
    </View>
+   {shop?<Text style={s.compactMeta}>Earned this week: {shop.earnedThisWeek} / {shop.weeklyCap}</Text>:null}
+   <GameButton compact tone="secondary" title="Guild Token Shop" onPress={onOpenShop}/>
+   {dailyActions}
+   {notice?<Text accessibilityLiveRegion="polite" style={[s.notice,{color:noticeError?C.bad:C.good}]}>{notice}</Text>:null}
    {claims.length>1?<GameButton compact title={busyAll?'Claiming…':'Claim all '+claims.length+' rewards'} disabled={!!busy} loading={busyAll} onPress={()=>void claimAll()}/>:null}
    {claims.slice(0,claims.length>1?0:1).map(row=><View key={row.id} style={s.compactClaim}><Text numberOfLines={2} style={[s.claimTitle,s.flex]}>{row.title} · +{row.tokens}</Text><GameButton compact title="Claim" disabled={!!busy} loading={busy===row.id} onPress={()=>void claim(row)}/></View>)}
-   {notice?<Text accessibilityLiveRegion="polite" style={s.notice}>{notice}</Text>:null}
-   <GameButton compact tone="secondary" title="Guild Token Shop" onPress={onOpenShop}/>
   </Panel>
  </View>;
 
@@ -146,8 +203,11 @@ export function GuildHallSummary({onOpenMuster,onOpenShop,onRewardsChanged,compa
     <View style={s.track}><View style={[s.fill,{width:(weeklyPct+'%') as `${number}%`,backgroundColor:C.accent}]}/></View>
    </View>:null}
 
+   <GameButton compact tone="secondary" title="Open Guild Token Shop" onPress={onOpenShop}/>
+   {dailyActions}
+   {notice?<Text accessibilityLiveRegion="polite" style={[s.notice,{color:noticeError?C.bad:C.good}]}>{notice}</Text>:null}
    <View style={s.claimHead}>
-    <Text style={s.claimKicker}>{claims.length?'Ready to claim':'Nothing to claim right now'}</Text>
+    <Text style={s.claimKicker}>{claims.length?'Other rewards ready':'Other weekly/event rewards'}</Text>
     {claims.length>1?<GameButton compact title="Claim all" loading={busyAll} disabled={!!busy} onPress={()=>void claimAll()}/>:null}
    </View>
    {claims.map(row=><View key={row.id} style={s.claim}>
@@ -157,9 +217,7 @@ export function GuildHallSummary({onOpenMuster,onOpenShop,onRewardsChanged,compa
     </View>
     <GameButton compact title="Claim" loading={busy===row.id} disabled={!!busy} onPress={()=>void claim(row)}/>
    </View>)}
-   {!claims.length&&shop?<Text style={s.copy}>Earn Tokens through daily Muster, Guild Projects and Guild bosses. New rewards appear here to claim.</Text>:null}
-   {notice?<Text style={s.notice}>{notice}</Text>:null}
-   <GameButton compact tone="secondary" title="Open Guild Token Shop" onPress={onOpenShop}/>
+   {!claims.length&&shop?<Text style={s.copy}>Weekly and event bonuses appear here when ready to claim.</Text>:null}
   </Panel>
  </View>;
 }
@@ -202,4 +260,16 @@ function makeStyles(C:ThemeColors){return StyleSheet.create({
  claimMeta:{fontSize:12,color:C.muted,marginTop:1},
  amt:{color:C.accent,fontWeight:'900'},
  notice:{fontSize:12.5,color:C.good,fontWeight:'700'},
+ dailySection:{gap:7,marginTop:4},
+ dailyHead:{flexDirection:'row',alignItems:'center',justifyContent:'space-between',gap:8},
+ dailyHeading:{...typography.caption,color:C.muted,fontWeight:'900',letterSpacing:.65},
+ refresh:{minHeight:32,minWidth:55,paddingHorizontal:5,alignItems:'center',justifyContent:'center'},
+ refreshText:{fontSize:11,fontWeight:'800'},
+ dailyPair:{flexDirection:'row',gap:8},
+ dailyTile:{flex:1,minWidth:0,minHeight:92,borderWidth:1,borderRadius:10,paddingVertical:10,paddingHorizontal:5,alignItems:'center',justifyContent:'center',gap:3},
+ dailyTilePressed:{opacity:.8},
+ dailyTitle:{fontSize:13,lineHeight:18,fontWeight:'900',textAlign:'center'},
+ dailyAmount:{fontSize:13,lineHeight:19,fontWeight:'900',textAlign:'center'},
+ dailyState:{fontSize:10.5,lineHeight:15,fontWeight:'800',textAlign:'center'},
+ dailyFootnote:{fontSize:10.5,lineHeight:15,color:C.muted},
 });}

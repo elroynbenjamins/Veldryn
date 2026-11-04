@@ -49,7 +49,8 @@ export function CoopRunOverview({language,run,myVotedNodeId,selfVoter,onBack,onC
   const [potionChoice,setPotionChoice]=useState<string|undefined>();
   const chosenPotion=potionOptions.find(p=>p.id===potionChoice)??potionOptions.find(p=>p.id===preferredPotionId)??potionOptions[0];
   const selfActor=run.roleSlots.find(slot=>slot.memberId===ownCharacterId);
-  const canUsePotion=!!selfActor&&selfActor.ready!==false&&selfActor.currentHp!==undefined&&selfActor.maximumHp!==undefined&&selfActor.currentHp>0&&selfActor.currentHp<selfActor.maximumHp;
+  const votingStarted=run.mode==='live'&&run.options.some(option=>(option.votes??0)>0);
+  const canUsePotion=!votingStarted&&!!selfActor&&selfActor.ready!==false&&selfActor.currentHp!==undefined&&selfActor.maximumHp!==undefined&&selfActor.currentHp>0&&selfActor.currentHp<selfActor.maximumHp;
   const replayCues=run.lastCombat?.cues??[];
   const [clockTick,setClockTick]=useState(Date.now());
   const clockAnchor=useRef({serverNow:run.serverNow??0,localAt:Date.now()});
@@ -122,7 +123,7 @@ export function CoopRunOverview({language,run,myVotedNodeId,selfVoter,onBack,onC
       </View>
       {!potionOptions.length?<Text style={s.copy}>No healing potions carried. Brew or withdraw them before the next dungeon.</Text>:null}
       <GameButton compact title={chosenPotion?`Use 1 ${chosenPotion.name}`:'No potion available'} disabled={busy||!chosenPotion||run.potionCharges.remaining<1||!canUsePotion} onPress={()=>{if(chosenPotion)onUsePotion(chosenPotion.id)}}/>
-      {!canUsePotion&&selfActor?<Text style={s.copy}>{selfActor.ready===false?'Downed characters cannot use potions.':'Potions only restore missing HP.'}</Text>:null}
+      {!canUsePotion&&selfActor?<Text style={s.copy}>{votingStarted?'Healing is unavailable after route voting begins.':selfActor.ready===false?'Downed characters cannot use potions.':'Potions only restore missing HP.'}</Text>:null}
     </FantasyPanel>:null}
     {run.phase==='awaiting_choice'&&run.options.length?<View style={s.actionArea}>
       <Text style={s.section}>{run.mode==='live'?st('Vote for the next path'):st('Choose the next room')}</Text>

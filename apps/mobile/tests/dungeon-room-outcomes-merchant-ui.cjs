@@ -19,7 +19,7 @@ const runtime=backend('online/qmode-runtime.ts');
 const handler=backend('online/coop.ts');
 const sql=backend('supabase/migrations/20261104091107_online_qmode_merchant_purchase_v1.sql');
 assert(source.includes('<DungeonMerchantPanel shop={run.merchantShop}'),'Merchant offers use the authoritative server projection');
-assert(source.includes('<DungeonRoomOutcomeBanner outcome={run.phase==='awaiting_choice'?run.lastRoomOutcome:undefined}/>'),'Room outcomes come from committed server state');
+assert(source.includes("<DungeonRoomOutcomeBanner outcome={run.phase===\'awaiting_choice\'?run.lastRoomOutcome:undefined}/>"),'Room outcomes come from committed server state');
 assert(merchant.includes('shop.resources>=offer.cost')&&merchant.includes('offer.purchased'),'Already purchased and unaffordable offers are disabled');
 assert(merchant.includes('onPurchase?.(offer.id)'),'Offer button transmits the server-defined offer id');
 assert(client.includes('purchaseMerchant:(runId:string,body:CoopMerchantPurchaseBody)=>mutate'),'Merchant commands use existing durable retries');

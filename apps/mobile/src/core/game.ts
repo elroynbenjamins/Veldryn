@@ -153,7 +153,7 @@ export function createCharacter(state:GameState,classId:ClassId,name='Adventurer
   const equipment={weapon:c.starterEquipment.weapon};
   let maxHp=c.hp;
   for(const id of Object.values(equipment) as string[]){const d=itemDef(id);maxHp+=d.hp||0;}
-  return {...state,character:{id:'LOCAL_CHAR_1',name:normalizedName||'Adventurer',classId,bodyPresentation,classSkills:classSkillsFor(classId).map(skill=>({skillId:skill.id,xp:0,level:1})),trainingFocus:'balanced',profileTitle:'New Adventurer',profileBackgroundId:'asterfall-night',ownedPetIds:[],ownedBoostIds:[],profileIconId:'class:'+classId,faith:{favoriteBlessingIds:[],hideWeakerBlessings:true},level:1,xp:0,gold:100,hp:c.hp,currentHp:maxHp,attack:c.attack,defense:c.defense,equipment,equippedFoodId:'TRAVEL_RATION'},
+  return {...state,character:{id:'LOCAL_CHAR_1',name:normalizedName||'Adventurer',classId,bodyPresentation,classSkills:classSkillsFor(classId).map(skill=>({skillId:skill.id,xp:0,level:1})),trainingFocus:'balanced',profileTitle:'New Adventurer',profileBackgroundId:'asterfall-night',ownedPetIds:[],ownedBoostIds:[],profileIconId:'class:'+classId,faith:{favoriteBlessingIds:[],hideWeakerBlessings:true},level:1,xp:0,gold:100,hp:c.hp,currentHp:maxHp,attack:c.attack,defense:c.defense,equipment,equipmentPouch:{capacity:30,stacks:[]},equippedFoodId:'TRAVEL_RATION'},
     inventory:{...state.inventory,stacks:[{itemId:'TRAVEL_RATION',quantity:8}]},settings:{...state.settings,seenItemIds:[...new Set([...(state.settings.seenItemIds??[]),'TRAVEL_RATION'])]}}
 }
 

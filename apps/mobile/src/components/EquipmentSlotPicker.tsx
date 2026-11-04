@@ -19,7 +19,7 @@ import {EquipmentArtwork} from './EquipmentArtwork';
 import {GameButton} from './GameButton';
 import {itemDef} from '../content/items';
 import {itemRarity,rarityMeta,rarityNameColor} from '../core/item-rarity';
-import {equipmentSetDef,equippedSetPieceCount} from '../content/equipment-sets';
+import {equipmentComparison} from '../core/equipment-comparison';
 
 type Props={
  state:GameState;slot:GearSlot;
@@ -28,6 +28,7 @@ type Props={
  onEquipPouch?:(itemId:string)=>Promise<void>|void;
  onClose:()=>void;onInventory?:()=>void;
 };
+const percent=(value:number)=>(value*100).toFixed(1).replace(/\.0$/,'')+'%';
 const delta=(value:number)=>{const n=displayStat(value);return n===0?'—':n>0?'+'+n:String(n)};
 const changeColor=(C:ThemeColors,value:number)=>value>0?C.good:value<0?C.bad:C.muted;
 
@@ -40,14 +41,17 @@ export function EquipmentSlotPicker({state,slot,onEquip,onEquipInstance,onEquipP
  useEffect(()=>{setSelectedKey(null);setDetails(false);setError('');},[slot]);
  const before=effectiveStats(state);
  const instances=useMemo(()=>new Map<string,import('../core/types').CraftedGearInstance>(craftedGearInstances(state).map(row=>[row.id,row] as const)),[state.account.craftedGearInstances]);
- const choices=useMemo(()=>availableEquipmentChoicesForSlot(state,slot).map(choice=>{
+ const choices=useMemo(()=>availableEquipmentChoicesForSlot(state,slot).flatMap(choice=>{
+  try{
   const projected=previewEquipment(state,choice.itemId,choice.instanceId,choice.source);
   const after=effectiveStats(projected),item=itemDef(choice.itemId);
   const instance=choice.instanceId?instances.get(choice.instanceId):undefined;
-  return {...choice,item,instance,after,projected,key:choice.instanceId?'copy:'+choice.instanceId:'legacy:'+choice.source+':'+choice.itemId,
-   powerDelta:after.power-before.power};
+  return [{...choice,item,instance,after,projected,key:choice.instanceId?'copy:'+choice.instanceId:'legacy:'+choice.source+':'+choice.itemId,
+   powerDelta:after.power-before.power}];
+  }catch{return []}
  }).sort((a,b)=>b.powerDelta-a.powerDelta),[state,slot,instances]);
  const selected=choices.find(choice=>choice.key===selectedKey)??choices[0];
+ const comparison=selected?equipmentComparison(state,selected.projected):undefined;
  const oldId=state.character?.equipment[slot],old=oldId?itemDef(oldId):undefined;
  const oldRarity=old?rarityMeta(equippedCraftedGearRarity(state,slot)??itemRarity(old)):undefined;
  const oldRank=oldId?gearEnhancement(state,oldId).rank:0;
@@ -58,11 +62,7 @@ export function EquipmentSlotPicker({state,slot,onEquip,onEquipInstance,onEquipP
  const blocked=state.activity?.kind==='combat'?gl('Stop combat before equipping'):undefined;
   const socket=selected?gemSocketState(selected.projected,selected.itemId):undefined;
  const enhancement=selected?gearEnhancement(selected.projected,selected.itemId):undefined;
- const candidateSet=selected?.item.equipmentSetId?equipmentSetDef(selected.item.equipmentSetId):undefined;
- const oldSet=old?.equipmentSetId&&old.equipmentSetId!==selected?.item.equipmentSetId?equipmentSetDef(old.equipmentSetId):undefined;
- const sets=[candidateSet,oldSet].filter((set):set is NonNullable<typeof set>=>Boolean(set)).map(set=>({
-  id:set.id,name:set.name,before:equippedSetPieceCount(state.character!.equipment,set),
-  after:equippedSetPieceCount(selected!.projected.character!.equipment,set)}));
+ const sets=comparison?.sets??[];
  const changes=selected?[
   {label:gl('Attack'),value:selected.after.attack-before.attack},
   {label:gl('Defense'),value:selected.after.defense-before.defense},
@@ -116,9 +116,9 @@ export function EquipmentSlotPicker({state,slot,onEquip,onEquipInstance,onEquipP
     <View style={s.previewHead}><Text style={s.heading}>{gl('SWAP PREVIEW')}</Text>
      <Text style={[s.previewPower,{color:changeColor(C,selected.powerDelta)}]}>{gl('Power')} {delta(selected.powerDelta)}</Text>
     </View>
-    <Text style={[s.trade,{color:trade.grade==='downgrade'?C.bad:trade.grade==='improvement'?C.good:trade.grade==='tradeoff'?C.warning:C.muted}]}>{gl(trade.title)}</Text>
+    <Text style={[s.trade,{color:trade.grade==='downgrade'?C.bad:trade.grade==='improvement'?C.good:trade.grade==='tradeoff'?C.warning:C.muted}]}>{trade.grade==='neutral'&&comparison&&(selected?.powerDelta!==0||comparison.secondary.length>0||comparison.effects.length>0)?gl('Other combat bonuses changed'):gl(trade.title)}</Text>
     <View style={s.chips}>{changes.map(stat=><View key={stat.label} style={s.chip}><Text style={s.chipLabel}>{stat.label}</Text><Text style={[s.chipValue,{color:changeColor(C,stat.value)}]}>{delta(stat.value)}</Text></View>)}</View>
-    {sets.some(set=>set.before!==set.after)?<Text style={s.warning}>{gl('Set progress')}: {sets.filter(set=>set.before!==set.after).map(set=>set.name+' '+set.before+' → '+set.after+'/10').join(' · ')}</Text>:null}
+    {sets.length?<Text style={s.warning}>{gl('Set progress')}: {sets.map(set=>set.name+' '+set.before+' → '+set.after+'/10'+set.milestones.map(m=>' · '+(m.threshold===6?gl('6-piece trigger not active'):m.threshold+'pc '+(m.direction==='gained'?gl('bonus active'):gl('bonus lost')))).join('')).join(' · ')}</Text>:null}
     {oldSockets?.effectGemId!==socket?.effectGemId?<Text style={s.warning}>{gl('Effect gem')}: {oldSockets?.effectGemId?itemDef(oldSockets.effectGemId).name:gl('Empty')} → {socket?.effectGemId?itemDef(socket.effectGemId).name:gl('Empty')}</Text>:null}
     <Pressable accessibilityRole="button" accessibilityState={{expanded:details}} onPress={()=>setDetails(v=>!v)} style={s.more}>
      <Text style={s.moreText}>{gl('Full stats, gems & set bonuses')}</Text><Text style={s.moreIcon}>{details?'−':'+'}</Text>
@@ -132,6 +132,8 @@ export function EquipmentSlotPicker({state,slot,onEquip,onEquipInstance,onEquipP
      ] as Array<[string,number,number]>).map(([label,current,next])=><View key={label} style={s.detailRow}><Text style={s.detailLabel}>{label}</Text><Text style={s.detailValue}>{displayStat(current)} → {displayStat(next)}</Text><Text style={[s.detailChange,{color:changeColor(C,next-current)}]}>{delta(next-current)}</Text></View>)}
      <Text style={s.note}>{gl('Enhancement')} +{enhancement?.rank??0} · {gl('Stat gem')} {socket?.statGemId?itemDef(socket.statGemId).name:gl('Empty')} · {gl('Effect gem')} {socket?.effectGemId?itemDef(socket.effectGemId).name:gl('Empty')}</Text>
      {sets.map(set=><Text key={set.id} style={s.note}>{set.name} · {set.before} → {set.after}/10</Text>)}
+     {comparison?.secondary.map(row=><Text key={row.key} style={s.note}>{gl(row.label)}: {percent(row.before)} → {percent(row.after)}</Text>)}
+     {comparison?.effects.map(row=><Text key={row.key} style={s.note}>{gl(row.label)}: {percent(row.before)} → {percent(row.after)}</Text>)}
     </View>:null}
    </View>:null}
   </ScrollView>

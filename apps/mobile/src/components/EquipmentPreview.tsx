@@ -1,11 +1,10 @@
 import {useEffect,useMemo,useState} from 'react';
 import {Pressable,ScrollView,StyleSheet,Text,View,useWindowDimensions} from 'react-native';
 import {itemDef} from '../content/items';
-import {equipmentSetDef,equippedSetPieceCount} from '../content/equipment-sets';
-import {effectiveStats} from '../core/game';
 import {displayStat} from '../core/stat-display';
 import {gearEnhancement,gemSocketState} from '../core/equipment-enhancement';
 import {previewEquipment} from '../core/equipment-preview';
+import {equipmentComparison} from '../core/equipment-comparison';
 import {equipmentTradeOff} from '../core/equipment-trade-off';
 import {craftedGearDisplayQuality,craftedGearInstances,equippedCraftedGearRarity} from '../core/crafted-gear-instances';
 import type {GameState} from '../core/types';
@@ -22,6 +21,7 @@ type Props={
  onClose:()=>void;onEquip?:()=>unknown|Promise<unknown>;onInspect?:()=>void;
 };
 
+function percent(value:number){return (value*100).toFixed(1).replace(/\.0$/,'')+'%';}
 function signed(value:number){const n=displayStat(value);return n===0?'—':n>0?'+'+n:String(n);}
 function statColor(C:ThemeColors,delta:number){return delta>0?C.good:delta<0?C.bad:C.muted;}
 
@@ -32,7 +32,7 @@ export function EquipmentPreview({state,itemId,instanceId,source='inventory',onC
  const C=useGameTheme(),E=equipmentTheme(C),s=useMemo(()=>makeStyles(C),[C]);
  const {height,width,fontScale}=useWindowDimensions();
  const [more,setMore]=useState(false),[busy,setBusy]=useState(false),[error,setError]=useState('');
- useEffect(()=>{setMore(false);setBusy(false);setError('');},[itemId,instanceId]);
+ useEffect(()=>{setMore(false);setBusy(false);setError('');},[itemId,instanceId,source]);
  if(!itemId)return null;
  let projected:GameState;
  try{projected=previewEquipment(state,itemId,instanceId,source)}catch(cause){
@@ -42,7 +42,8 @@ export function EquipmentPreview({state,itemId,instanceId,source='inventory',onC
   </GameModalSurface>;
  }
  const item=itemDef(itemId),slot=item.slot!;
- const before=effectiveStats(state),after=effectiveStats(projected),trade=equipmentTradeOff(before,after);
+ const comparison=equipmentComparison(state,projected),{before,after}=comparison,trade=equipmentTradeOff(before,after);
+ const combatOnly=trade.grade==='neutral'&&(before.power!==after.power||comparison.secondary.length>0||comparison.effects.length>0);
  const instance=instanceId?craftedGearInstances(state).find(row=>row.id===instanceId):undefined;
  const rarity=rarityMeta(instance?.rarity??itemRarity(item));
  const enhancement=gearEnhancement(projected,itemId),sockets=gemSocketState(projected,itemId);
@@ -57,13 +58,7 @@ export function EquipmentPreview({state,itemId,instanceId,source='inventory',onC
   ?gl('Requires level')+' '+String(item.requiredLevel??1)
   :state.activity?.kind==='combat'?gl('Stop combat before equipping')
   :undefined;
- const candidateSet=item.equipmentSetId?equipmentSetDef(item.equipmentSetId):undefined;
- const oldSet=old?.equipmentSetId&&old.equipmentSetId!==item.equipmentSetId?equipmentSetDef(old.equipmentSetId):undefined;
- const sets=[candidateSet,oldSet].filter((set):set is NonNullable<typeof set>=>Boolean(set)).map(set=>({
-  id:set.id,name:set.name,tier:set.tier,
-  before:equippedSetPieceCount(state.character!.equipment,set),
-  after:equippedSetPieceCount(projected.character!.equipment,set),
- }));
+ const sets=comparison.sets;
  const stats=[
   {id:'attack',label:gl('Attack'),before:before.attack,after:after.attack},
   {id:'defense',label:gl('Defense'),before:before.defense,after:after.defense},
@@ -100,7 +95,7 @@ export function EquipmentPreview({state,itemId,instanceId,source='inventory',onC
    </View>
    <View style={[s.impact,trade.grade==='improvement'?s.impactGood:trade.grade==='downgrade'?s.impactBad:trade.grade==='tradeoff'?s.impactWarn:null]}>
     <View style={s.impactHead}>
-     <Text style={[s.impactTitle,{color:trade.grade==='improvement'?C.good:trade.grade==='downgrade'?C.bad:trade.grade==='tradeoff'?C.warning:C.muted}]}>{gl(trade.title)}</Text>
+     <Text style={[s.impactTitle,{color:trade.grade==='improvement'?C.good:trade.grade==='downgrade'?C.bad:trade.grade==='tradeoff'?C.warning:C.muted}]}>{combatOnly?gl('Other combat bonuses changed'):gl(trade.title)}</Text>
      <Text style={[s.impactPower,{color:statColor(C,after.power-before.power)}]}>{gl('Power')} {signed(after.power-before.power)}</Text>
     </View>
     <Text style={s.impactText}>{stats.slice(0,3).filter(row=>displayStat(row.after-row.before)!==0).map(row=>row.label+' '+signed(row.after-row.before)).join(' · ')||gl('No visible Attack, Defense or Health change.')}</Text>
@@ -124,7 +119,7 @@ export function EquipmentPreview({state,itemId,instanceId,source='inventory',onC
    </View>
    {sets.some(row=>row.after!==row.before)?<View style={s.setAlert}>
     <Text style={s.sectionTitle}>{gl('SET PROGRESS')}</Text>
-    {sets.filter(row=>row.before!==row.after).map(row=><Text key={row.id} style={[s.setLine,{color:row.after<row.before?C.warning:C.good}]}>{row.tier} · {row.name}: {row.before} → {row.after}/10{[2,4,6,8,10].some(n=>row.before<n&&row.after>=n)?' · '+gl('threshold reached'):''}{[2,4,6,8,10].some(n=>row.before>=n&&row.after<n)?' · '+gl('threshold lost'):''}</Text>)}
+    {sets.filter(row=>row.before!==row.after).map(row=><Text key={row.id} style={[s.setLine,{color:row.after<row.before?C.warning:C.good}]}>{row.tier} · {row.name}: {row.before} → {row.after}/10{row.milestones.map(m=>m.threshold===6?' · '+gl('6-piece trigger not active'):' · '+m.threshold+'pc '+(m.direction==='gained'?gl('bonus active'):gl('bonus lost'))).join('')}</Text>)}
    </View>:null}
    <Pressable accessibilityRole="button" accessibilityState={{expanded:more}} accessibilityLabel={more?gl('Hide equipment details'):gl('Show equipment details')}
     onPress={()=>setMore(v=>!v)} style={s.disclosure}>
@@ -134,6 +129,8 @@ export function EquipmentPreview({state,itemId,instanceId,source='inventory',onC
     <Text style={s.note}>{gl('Includes upgrades, socketed gems and set bonuses. Equip to apply.')}</Text>
     <Text style={s.detail}>{gl('Enhancement')} +{enhancement.rank} · {gl('Stat gem')} {sockets.statGemId?itemDef(sockets.statGemId).name:gl('Empty')} · {gl('Effect gem')} {sockets.effectGemId?itemDef(sockets.effectGemId).name:gl('Empty')}</Text>
     {sets.map(row=><Text key={row.id} style={s.detail}>{row.tier} · {row.name} · {row.before} → {row.after}/10 {gl('pieces')}</Text>)}
+    {comparison.secondary.map(row=><Text key={row.key} style={s.detail}>{gl(row.label)}: {percent(row.before)} → {percent(row.after)}</Text>)}
+    {comparison.effects.map(row=><Text key={row.key} style={s.detail}>{gl(row.label)}: {percent(row.before)} → {percent(row.after)}</Text>)}
     {onInspect?<GameButton compact tone="secondary" title={gl('Sources & crafting uses')} onPress={onInspect}/>:null}
    </View>:null}
   </ScrollView>

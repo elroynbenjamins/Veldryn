@@ -7,6 +7,25 @@ import {useMemo} from 'react';
 // Every row is complete, in en/de/es/nl/it/fr order. English phrases are typed keys.
 type TranslationRow=readonly [string,string,string,string,string,string];
 const common={
+ // Equipment comparison parity: live combat modifiers vs pending set hooks.
+ "Other combat bonuses changed":["Other combat bonuses changed","Andere Kampfboni geändert","Cambian otros bonos de combate","Andere gevechtsbonussen gewijzigd","Altri bonus di combattimento cambiati","Autres bonus de combat modifiés"],
+ "6-piece trigger not active":["6-piece trigger not active","6er-Seteffekt noch nicht aktiv","Efecto de 6 piezas aún inactivo","6-delig seteffect nog niet actief","Effetto da 6 pezzi non ancora attivo","Effet 6 pièces pas encore actif"],
+ "bonus active":["bonus active","Bonus aktiv","bono activo","bonus actief","bonus attivo","bonus actif"],
+ "bonus lost":["bonus lost","Bonus verloren","bono perdido","bonus verloren","bonus perso","bonus perdu"],
+ "Crit chance":["Crit chance","Kritische Trefferchance","Probabilidad crítica","Kritieke kans","Probabilità critica","Chance critique"],
+ "Crit damage multiplier":["Crit damage multiplier","Kritischer Schadensmultiplikator","Multiplicador de daño crítico","Kritieke-schademultiplier","Moltiplicatore danni critici","Multiplicateur de dégâts critiques"],
+ "Accuracy":["Accuracy","Trefferchance","Precisión","Nauwkeurigheid","Precisione","Précision"],
+ "Evasion":["Evasion","Ausweichen","Evasión","Ontwijking","Schivata","Esquive"],
+ "Haste":["Haste","Tempo","Celeridad","Snelheid","Rapidità","Célérité"],
+ "Armor bonus":["Armor bonus","Rüstungsbonus","Bono de armadura","Pantserbonus","Bonus armatura","Bonus d'armure"],
+ "Ward":["Ward","Schutz","Protección","Bescherming","Protezione","Protection"],
+ "Tenacity":["Tenacity","Zähigkeit","Tenacidad","Vasthoudendheid","Tenacia","Ténacité"],
+ "Potency":["Potency","Wirksamkeit","Potencia","Potentie","Potenza","Puissance"],
+ "Penetration":["Penetration","Durchdringung","Penetración","Penetratie","Penetrazione","Pénétration"],
+ "Combat speed bonus":["Combat speed bonus","Kampfgeschwindigkeitsbonus","Bono de velocidad de combate","Gevechtssnelheidsbonus","Bonus velocità di combattimento","Bonus de vitesse de combat"],
+ "Boss power bonus":["Boss power bonus","Bosskampf-Kraftbonus","Bono de poder contra jefes","Bosskrachtbonus","Bonus potenza contro i boss","Bonus de puissance contre les boss"],
+ "Damage reduction":["Damage reduction","Schadensreduktion","Reducción de daño","Schadevermindering","Riduzione del danno","Réduction des dégâts"],
+ "Recovery bonus":["Recovery bonus","Erholungsbonus","Bono de recuperación","Herstelbonus","Bonus recupero","Bonus de récupération"],
  "Equipment Pouch":["Equipment Pouch","Ausrüstungsbeutel","Bolsa de equipo","Uitrustingszak","Sacca equipaggiamento","Sac d’équipement"],
  // Equipment swap mobile UI: English / German / Spanish / Dutch / Italian / French.
  "Compare & Swap":["Compare & Swap","Vergleichen & wechseln","Comparar y cambiar","Vergelijken en wisselen","Confronta e sostituisci","Comparer et remplacer"],

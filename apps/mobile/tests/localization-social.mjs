@@ -18,10 +18,55 @@ function load(name){
  return module.exports;
 }
 const {socialTranslationRows,socialCatalogs,socialText,socialLabel,socialExpiry,useSocialText}=load('social');
+const {socialEarlyRows}=load('social-early-coverage');
+const {earlyLocaleText}=load('early-locales');
 const {SUPPORTED_LANGUAGES}=load('languages');
 const {GameLanguageProvider}=load('GameLanguageProvider');
-const keys=Object.keys(socialTranslationRows).sort();
 const placeholders=text=>[...text.matchAll(/\{([a-zA-Z][a-zA-Z0-9_]*)\}/g)].map(match=>match[1]).sort();
+const keys=Object.keys(socialTranslationRows).sort();
+const sourceAdditions=[
+  "Uses your verified role and sends you to the eligible dungeon where your role helps matchmaking most. The matched party still uses Auto Tier.",
+  "Short-lived dungeon adverts only. Posts disappear after 30 minutes and never create a second Party system.",
+  "{count} LIVE",
+  "{count}/140 · expires 30 minutes after posting",
+  "Your post · {name} · {time}",
+  "Auto Tier ≤ {tier}",
+  "Combat details for {name}",
+  "Focus → {name}",
+  "+{count} more active effects",
+  "Effect Gem",
+  "Damage over time",
+  "Healing over time",
+  "Debuff",
+  "Buff",
+  "Final Boss",
+  "Dungeon Enemy",
+  "Your expedition rewards are secured. Return when you are ready.",
+  "Final encounter cleared. Collect the expedition reward below.",
+  "Final encounter cleared. Your reward entitlement is being prepared.",
+  "This expedition has ended. Review any available rewards before returning."
+];
+assert.equal(Object.keys(socialEarlyRows).length,95,'The active RU/TR core coverage is 95 authored messages');
+assert.equal(sourceAdditions.length,20,'Live Dungeon, combat inspect and terminal states require 20 new messages');
+for(const [key,values] of Object.entries(socialEarlyRows)){
+ assert.ok(Object.prototype.hasOwnProperty.call(socialTranslationRows,key),'RU/TR overlay key must exist in base Social catalog: '+key);
+ assert.equal(values.length,2,'RU/TR overlay must provide both languages: '+key);
+ for(const [index,language] of ['ru','tr'].entries()){
+  assert.ok(values[index].trim(),language+' empty overlay '+key);
+  assert.deepEqual(placeholders(values[index]),placeholders(key),language+' overlay placeholders '+key);
+  assert.equal(socialText(language,key),earlyLocaleText(language,key)??values[index],language+' overlay runtime and established starter-copy precedence '+key);
+ }
+}
+for(const key of sourceAdditions){
+ assert.ok(Object.prototype.hasOwnProperty.call(socialTranslationRows,key),'Missing localized Dungeon display string: '+key);
+ assert.ok(Object.prototype.hasOwnProperty.call(socialEarlyRows,key),'Missing RU/TR Dungeon display string: '+key);
+}
+assert.equal(socialText('ru','Auto Tier ≤ {tier}',{tier:3}),'Автоуровень ≤ 3');
+assert.equal(socialText('tr','{count}/140 · expires 30 minutes after posting',{count:15}),'15/140 · yayımlandıktan 30 dakika sonra sona erer');
+assert.equal(socialText('nl','Your post · {name} · {time}',{name:'Ironwood Wolf',time:'5m'}),'Jouw oproep · Ironwood Wolf · 5m');
+assert.equal(socialText('de','Combat details for {name}',{name:'Person {count}'}),'Kampfdetails für Person {count}');
+assert.equal(socialLabel('tr','Unrecognized player post const keys=Object.keys(socialTranslationRows).sort();'),'Unrecognized player post const keys=Object.keys(socialTranslationRows).sort();');
+
 assert.equal(socialText('ru','Your week'),'Ваша неделя');
 assert.equal(socialText('tr','Your week'),'Bu hafta');
 assert.equal(socialText('ru','Boss room'),'Комната босса');

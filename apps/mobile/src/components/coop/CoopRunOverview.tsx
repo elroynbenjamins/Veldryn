@@ -37,8 +37,8 @@ function TerminalRunMoment({phase,rewardsReady,rewardsSecured,reduceMotion}:{pha
   const scale=useRef(new Animated.Value(1)).current,completed=phase==='completed';
   useEffect(()=>{scale.stopAnimation();scale.setValue(1);if(reduceMotion||!completed)return;Animated.sequence([Animated.spring(scale,{toValue:1.025,damping:9,stiffness:220,mass:.65,useNativeDriver:true}),Animated.spring(scale,{toValue:1,damping:16,stiffness:200,mass:.75,useNativeDriver:true})]).start();return()=>scale.stopAnimation()},[phase,rewardsSecured,reduceMotion,scale,completed]);
   const body=completed
-    ?rewardsSecured?'Your expedition rewards are secured. Return when you are ready.':rewardsReady?'Final encounter cleared. Collect the expedition reward below.':'Final encounter cleared. Your reward entitlement is being prepared.'
-    :'This expedition has ended. Review any available rewards before returning.';
+    ?rewardsSecured?st("Your expedition rewards are secured. Return when you are ready."):rewardsReady?st("Final encounter cleared. Collect the expedition reward below."):st("Final encounter cleared. Your reward entitlement is being prepared.")
+    :st("This expedition has ended. Review any available rewards before returning.");
   return <Animated.View accessibilityLiveRegion="polite" style={[s.terminal,{transform:[{scale}]}]}>
     <View style={[s.rewardCrest,completed?s.rewardCrestSuccess:s.rewardCrestFailure]}><Text style={[s.rewardCrestText,completed?s.terminalSuccess:s.terminalDanger]}>{completed?'✦':'◇'}</Text></View>
     <Text style={[s.terminalEyebrow,completed?s.terminalSuccess:s.terminalDanger]}>{completed?st("EXPEDITION CLEARED"):st("EXPEDITION ENDED")}</Text>

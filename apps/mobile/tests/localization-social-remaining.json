@@ -11,7 +11,7 @@
   ],
   "auditedFiles": 62,
   "rawCandidates": 257,
-  "remainingDirectCandidates": 230,
+  "remainingDirectCandidates": 221,
   "screenCoverage": "No remaining direct UI literals in FriendsScreen, GuildScreen, SocialScreen, RankingsScreen, ArenaScreen, CoopExpeditionScreen. Proper names/numeric templates excluded. Existing coop translators remain unchanged.",
   "verification": [
     "node apps/mobile/tests/localization-social.mjs: PASS",
@@ -24,16 +24,14 @@
     "Party contract/event names, objectives, reward qualification explanations, recruitment tags/context/expiry helpers in flat components remain partly English. SocialScreen itself localizes its expiry and known labels.",
     "Co-op projections still supply English node titles, risk/reward summaries, phase labels, encounter intel, boss telegraphs and recaps, reward text, effects/status names, lock reasons and event descriptions.",
     "Chat relationship presentation labels and profile record/collection/achievement metadata, emote labels from definitions, and fixed offline sample-message/profile prose remain partly English.",
-    "Dynamic accessibility templates listed below still need localization in some flat/co-op components.",
-    "Player chat, guild names, notices, recruitment titles/body, usernames and IDs must remain verbatim. Proper names remain English."
+    "Player chat, guild names, notices, recruitment titles/body, usernames and IDs must remain verbatim. Proper names remain English.",
+    "Live Recruitment, combat inspection and terminal outcome copy are translated; other dynamic accessibility templates listed below still need coverage."
   ],
   "files": {
     "src/components/ArenaBattleStage.tsx": 2,
-    "src/components/coop/CombatantInspectPanel.tsx": 3,
     "src/components/coop/CombatantProfileCard.tsx": 6,
     "src/components/coop/CoopDungeonBrowser.tsx": 4,
     "src/components/coop/CoopLiveLobby.tsx": 3,
-    "src/components/coop/CoopLiveRecruitmentBoard.tsx": 6,
     "src/components/coop/CoopRunOverview.tsx": 5,
     "src/components/coop/DungeonCombatStage.tsx": 6,
     "src/components/coop/SeasonalBossTelegraphPanel.tsx": 7,
@@ -82,24 +80,6 @@
       "line": 50,
       "kind": "jsx",
       "text": "· Lv"
-    },
-    {
-      "file": "src/components/coop/CombatantInspectPanel.tsx",
-      "line": 53,
-      "kind": "template",
-      "text": "Combat details for {expression}"
-    },
-    {
-      "file": "src/components/coop/CombatantInspectPanel.tsx",
-      "line": 64,
-      "kind": "jsx",
-      "text": "Focus →"
-    },
-    {
-      "file": "src/components/coop/CombatantInspectPanel.tsx",
-      "line": 69,
-      "kind": "jsx",
-      "text": "more active effects"
     },
     {
       "file": "src/components/coop/CombatantProfileCard.tsx",
@@ -178,42 +158,6 @@
       "line": 47,
       "kind": "template",
       "text": "TIER {expression}"
-    },
-    {
-      "file": "src/components/coop/CoopLiveRecruitmentBoard.tsx",
-      "line": 21,
-      "kind": "jsx",
-      "text": "Uses your verified role and sends you to the eligible dungeon where your role helps matchmaking most. The matched party still uses Auto Tier."
-    },
-    {
-      "file": "src/components/coop/CoopLiveRecruitmentBoard.tsx",
-      "line": 25,
-      "kind": "literal",
-      "text": "LIVE"
-    },
-    {
-      "file": "src/components/coop/CoopLiveRecruitmentBoard.tsx",
-      "line": 26,
-      "kind": "jsx",
-      "text": "Short-lived dungeon adverts only. Posts disappear after 30 minutes and never create a second Party system."
-    },
-    {
-      "file": "src/components/coop/CoopLiveRecruitmentBoard.tsx",
-      "line": 29,
-      "kind": "jsx",
-      "text": "/140 · expires 30 minutes after posting"
-    },
-    {
-      "file": "src/components/coop/CoopLiveRecruitmentBoard.tsx",
-      "line": 30,
-      "kind": "jsx",
-      "text": "Your post ·"
-    },
-    {
-      "file": "src/components/coop/CoopLiveRecruitmentBoard.tsx",
-      "line": 31,
-      "kind": "jsx",
-      "text": "Auto Tier ≤"
     },
     {
       "file": "src/components/coop/CoopRunOverview.tsx",
@@ -1451,5 +1395,12 @@
       "kind": "jsx",
       "text": "fights"
     }
-  ]
+  ],
+  "remediation": {
+    "scope": "Social/Dungeon localization pass",
+    "resolvedDirectCandidates": 9,
+    "addedTypedMessages": 20,
+    "addedRussianTurkishCoverage": 95,
+    "notes": "Dynamic player names, LFG notes and server-provided proper names remain unchanged. Existing untranslated data-driven copy is still tracked."
+  }
 }

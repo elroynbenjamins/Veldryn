@@ -13,6 +13,8 @@ export interface PersistentRunState {
   artifacts:string[];
   curses:string[];
   personalEffects:Record<string,{boons:string[];artifacts:string[];purchases:string[]}>;
+  /** Server-owned per-character healing uses; survives Q-Mode and Live room transitions. */
+  healingPotionUsesByActor?:Record<string,number>;
   visitedNodeIds:string[];
 }
 export interface NodeResolutionResult {success:boolean;state:PersistentRunState;summary:Record<string,unknown>}

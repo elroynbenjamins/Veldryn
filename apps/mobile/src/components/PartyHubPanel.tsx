@@ -100,7 +100,7 @@ export function PartyHubPanel(props: PartyHubPanelProps){
  return <View style={s.content}>
   <View style={s.heading}>
    <View style={s.flex}><Text style={s.eyebrow}>{st('PARTY HUB')}</Text><Text accessibilityRole="header" style={s.heroTitle}>{title}</Text>
-    <Text style={s.muted}>{inParty?st('Your team, weekly progress and rewards.'):st('Team up for combat, skilling and shared rewards.')}</Text>
+    <Text style={s.muted}>{inParty?st('Your team, weekly progress and rewards.'):st('Play together. Earn rewards.')}</Text>
    </View>
    {inParty?<View style={s.memberCount}><Text style={s.memberCountValue}>{props.party!.members.length}/4</Text><Text style={s.memberCountLabel}>{st('Members')}</Text></View>:null}
   </View>
@@ -108,7 +108,7 @@ export function PartyHubPanel(props: PartyHubPanelProps){
   <SectionGuide scope={props.accountId} area="social-party" section={inParty?section:'solo'} translate={value=>socialLabel(language,value)} guide={inParty&&section==='party'?
      {title:'My Party',body:'Your members and weekly rewards are here. Claim ready rewards without opening extra menus.',detail:'Use Party options for invitations or to leave. Open Recruitment to find new members.'}:
      inParty?{title:'Recruitment',body:'Find players or publish an advert for your Party here.',detail:'Search and filters narrow the list. Your adverts and matching players appear below.'}:
-     {title:'Find or create a Party',body:'Create a Party or browse recruiting groups here.',detail:'Choose your role before creating a Party. You can also post that you are looking for one.'}} header={inParty&&!props.dedicated?<View accessibilityRole="tablist" style={s.browseTabs}><BrowseChip label={st('My Party')} selected={section==='party'} onPress={()=>setSection('party')}/><BrowseChip label={st('Recruitment')} selected={section==='find'} onPress={()=>setSection('find')}/></View>:undefined} showReplay={false}/>
+     {title:'Find or create a Party',body:'Create or find a Party.',detail:'Create a Party or post in Recruitment.'}} header={inParty&&!props.dedicated?<View accessibilityRole="tablist" style={s.browseTabs}><BrowseChip label={st('My Party')} selected={section==='party'} onPress={()=>setSection('party')}/><BrowseChip label={st('Recruitment')} selected={section==='find'} onPress={()=>setSection('find')}/></View>:undefined} showReplay={false}/>
   {inParty&&section==='party'?<>
    {(!props.dedicated||props.activeView!=='Contracts')?<View style={s.summaryCard}>
     <View style={s.between}><View style={s.flex}><Text style={s.eyebrow}>{st('ACTIVE PARTY')}</Text><Text style={s.sectionTitle}>{partyActivityLabel(preferences.activityLevel)} {st('Party')}</Text></View>
@@ -134,7 +134,7 @@ export function PartyHubPanel(props: PartyHubPanelProps){
     {canManageParty&&openSpots>0&&props.onInviteFriends?<GameButton compact tone="secondary" title="Invite friends privately" onPress={()=>props.onInviteFriends?.()}/>:null}
    </View>:null}
    {(!props.dedicated||props.activeView==='Contracts')?<View style={s.panel}>
-    <View style={s.between}><View style={s.flex}><Text style={s.sectionTitle}>{st('PARTY CONTRACTS')}</Text><Text style={s.muted}>{st('Weekly progress and claimable rewards')}</Text></View><Text style={s.metaCount}>{props.contracts.length}</Text></View>
+    <View style={s.between}><View style={s.flex}><Text style={s.sectionTitle}>{st('PARTY CONTRACTS')}</Text><Text style={s.muted}>{st('Progress and rewards')}</Text></View><Text style={s.metaCount}>{props.contracts.length}</Text></View>
     {props.contracts.map(contract=><View key={contract.id} style={s.contractOverview}>
       {contract.tiers?.length?<><PartyWeeklyLadder compact={!expandedContracts.includes(contract.id)} contract={contract} nowMs={props.nowMs} onClaimReward={props.onClaimReward}/>
        {contract.minimumPersonalPoints!==undefined?<View style={s.contributionRow}><Text style={s.muted}>{st('Your contribution')}</Text><Text style={personalContributionEligible(contract)?s.good:s.warning}>{(contract.personalPoints??0).toLocaleString()} / {contract.minimumPersonalPoints.toLocaleString()}{personalContributionEligible(contract)?' ✓':''}</Text></View>:null}
@@ -148,7 +148,7 @@ export function PartyHubPanel(props: PartyHubPanelProps){
   </>:null}
   {!inParty?<View style={s.panel}>
    <View style={s.between}><View style={s.flex}><Text style={s.eyebrow}>{st('START A TEAM')}</Text><Text style={s.sectionTitle}>{st('Create a Party')}</Text></View><Text style={s.statusPill}>{st('Up to 4')}</Text></View>
-   <Text style={s.muted}>'Choose activity level, preferred language and an optional minimum level. All classes are welcome.'</Text>
+   <Text style={s.muted}>'Choose activity, language and minimum level.'</Text>
    {!props.dedicated?props.recruitmentPreferences:null}
    <GameButton title={st('Create Party')} disabled={!props.onCreateParty} onPress={()=>props.onCreateParty?.()}/>
    {props.dedicated?<GameButton tone="secondary" title="Find a Party" onPress={()=>props.onOpenRecruitment?.()}/>:null}

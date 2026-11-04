@@ -33,8 +33,8 @@ export interface FallenKnightPlayerSnapshot{
   damageMultiplier:number;
   actionSpeedMultiplier:number;
   incomingDamageMultiplier:number;
-  foodHeal:number;
-  foodQuantity:number;
+  potionHeal:number;
+  potionQuantity:number;
   autoEatThresholdPct:number;
 }
 
@@ -48,7 +48,9 @@ export interface FallenKnightBattleResult{
   playerMaxHp:number;
   finalBossHp:number;
   finalPlayerHp:number;
+  /** Compatibility field; food is never consumed by a boss encounter. */
   foodConsumed:number;
+  potionConsumed:number;
   phasesReached:(1|2|3)[];
   events:StoryBossEvent[];
   player:{
@@ -67,9 +69,10 @@ export interface FallenKnightBattleResult{
 
 const clamp=(value:number,min:number,max:number)=>Math.max(min,Math.min(max,value));
 const FALLEN_KNIGHT_MAX_DURATION_MS=100_000;
-/** Prepared meals help in the story fight, but unlimited food cannot
- * erase the need to upgrade equipment. Also used for rewarded rematches. */
-export const FALLEN_KNIGHT_MAX_FOOD_UNITS=6;
+/** Boss fights use limited Alchemy healing potions, never ordinary food. */
+export const FALLEN_KNIGHT_MAX_POTION_UNITS=3;
+/** Legacy compatibility: no food charges are permitted in boss encounters. */
+export const FALLEN_KNIGHT_MAX_FOOD_UNITS=0;
 
 function mitigation(defense:number){
   return clamp(defense/Math.max(1,defense+110),0,.72);
@@ -80,7 +83,7 @@ export function simulateFallenKnightStoryBattle(player:FallenKnightPlayerSnapsho
   if(!monster)throw new Error('fallen_knight_missing');
   const bossSecondary=regionalEnemySecondaryStats(monster);
   const bossMaxHp=monster.hp,playerMaxHp=Math.max(1,Math.round(player.maxHp));
-  let bossHp=bossMaxHp,playerHp=clamp(Math.round(player.currentHp||playerMaxHp),1,playerMaxHp),foodLeft=clamp(Math.floor(player.foodQuantity),0,FALLEN_KNIGHT_MAX_FOOD_UNITS),foodConsumed=0;
+  let bossHp=bossMaxHp,playerHp=clamp(Math.round(player.currentHp||playerMaxHp),1,playerMaxHp),potionLeft=clamp(Math.floor(player.potionQuantity),0,FALLEN_KNIGHT_MAX_POTION_UNITS),potionConsumed=0;
   let phase=1,phaseWardUntilMs=0,rngIndex=0,bossAttackCount=0;
   const phasesReached:(1|2|3)[]=[1],events:StoryBossEvent[]=[];
   const playerHitChance=clamp(player.accuracy-bossSecondary.evasion,.55,.99);
@@ -89,16 +92,15 @@ export function simulateFallenKnightStoryBattle(player:FallenKnightPlayerSnapsho
   const push=(event:Omit<StoryBossEvent,'playerHp'|'bossHp'|'phase'>)=>events.push({...event,playerHp:Math.max(0,Math.round(playerHp)),bossHp:Math.max(0,Math.round(bossHp)),phase:phase as 1|2|3});
   push({atMs:0,type:'battle_start',label:'The Fallen Knight raises the oathglass blade.'});
 
-  const maybeEat=(atMs:number)=>{
+  const maybePotion=(atMs:number)=>{
     const threshold=clamp(player.autoEatThresholdPct,10,90)/100;
-    if(player.foodHeal<=0)return;
-    // A single boss attack can trigger at most one meal. Spamming an entire
-    // stack instantly at one timestamp is not an intended survival strategy.
-    if(playerHp>0&&playerHp/playerMaxHp<=threshold&&foodLeft>0){
-      const healed=Math.min(playerMaxHp-playerHp,Math.max(1,Math.round(player.foodHeal)));
+    if(player.potionHeal<=0)return;
+    // No more than one potion after a boss hit, with a strict fight-wide cap.
+    if(playerHp>0&&playerHp/playerMaxHp<=threshold&&potionLeft>0){
+      const healed=Math.min(playerMaxHp-playerHp,Math.max(1,Math.round(player.potionHeal)));
       if(healed>0){
-        playerHp+=healed;foodLeft--;foodConsumed++;
-        push({atMs:atMs+40,type:'heal',label:'Auto-eat',amount:healed});
+        playerHp+=healed;potionLeft--;potionConsumed++;
+        push({atMs:atMs+40,type:'heal',label:'Healing potion',amount:healed});
       }
     }
   };
@@ -163,7 +165,7 @@ export function simulateFallenKnightStoryBattle(player:FallenKnightPlayerSnapsho
       const amount=Math.max(1,Math.round(raw*(1-mitigation(player.defense))*coeff*phaseDamage*variance*player.incomingDamageMultiplier*(critical?bossSecondary.critMultiplier:1)));
       playerHp=Math.max(0,playerHp-amount);
       push({atMs:now,type:'boss_hit',label,abilityId,amount,critical});
-      maybeEat(now);
+      maybePotion(now);
     }
     nextBossAt+=attackInterval;
   }
@@ -182,7 +184,7 @@ export function simulateFallenKnightStoryBattle(player:FallenKnightPlayerSnapsho
   return {
     bossId:'FALLEN_KNIGHT',bossName:'Fallen Knight',mode,won,
     durationMs:Math.min(FALLEN_KNIGHT_MAX_DURATION_MS,now+450),
-    bossMaxHp,playerMaxHp,finalBossHp:Math.max(0,Math.round(bossHp)),finalPlayerHp:Math.max(0,Math.round(playerHp)),foodConsumed,
+    bossMaxHp,playerMaxHp,finalBossHp:Math.max(0,Math.round(bossHp)),finalPlayerHp:Math.max(0,Math.round(playerHp)),foodConsumed:0,potionConsumed,
     phasesReached,events,
     player:{hitChance:playerHitChance,critChance:clamp(player.critChance,0,.75),attackIntervalMs:playerAttackIntervalMs},
     boss:{accuracy:bossSecondary.accuracy,evasion:bossSecondary.evasion,critChance:bossSecondary.critChance,critMultiplier:bossSecondary.critMultiplier,haste:bossSecondary.haste},

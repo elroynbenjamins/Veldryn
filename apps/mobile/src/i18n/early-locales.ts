@@ -1152,7 +1152,7 @@ export const EARLY_LOCALE_ROWS={
   ],
   "Your vote is saved. Waiting for your party…": [
     "Голос учтён. Ожидание группы…",
-    "Oyun kaydedildi. Grup bekleniyor…"
+    "Verdiğin oy kaydedildi. Grubun bekleniyor…"
   ],
   "Room in progress": [
     "Прохождение комнаты",
@@ -1195,16 +1195,16 @@ export const EARLY_LOCALE_ROWS={
     "Canlı sefer için doğrulanmış bir ekipman düzeni gerekiyor."
   ],
   "Failed runs do not spend charges. {remaining} of 12 weekly consolation rewards left.": [
-    "Неудачные походы не тратят заряды. Утешительных наград на неделю: {remaining} из 12.",
-    "Başarısız seferler hak tüketmez. 12 haftalık teselli ödülünden {remaining} kaldı."
+    "Неудачные походы не тратят заряды. Осталось утешительных наград за неделю: {remaining} из 12.",
+    "Başarısız seferler hak tüketmez. Haftalık 12 teselli ödülünden kalan: {remaining}."
   ],
   "Consolation reward · No enhanced charge spent.": [
     "Утешительная награда · Усиленный заряд не потрачен.",
     "Teselli ödülü · Geliştirilmiş hak harcanmadı."
   ],
   "Enhanced: {charges} charges · {weekly} weekly rewards left": [
-    "Усиленные: {charges} зарядов · Недельных наград осталось: {weekly}",
-    "Geliştirilmiş: {charges} hak · {weekly} haftalık ödül kaldı"
+    "Усиленные заряды: {charges} · Недельных наград осталось: {weekly}",
+    "Geliştirilmiş hak: {charges} · Kalan haftalık ödül: {weekly}"
   ],
   "Estimated clear reward · Tier {tier}": [
     "Ожидаемая награда · Ранг {tier}",

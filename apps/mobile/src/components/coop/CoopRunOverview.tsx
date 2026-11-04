@@ -37,13 +37,17 @@ function TerminalRunMoment({phase,rewardsReady,rewardsSecured,reduceMotion}:{pha
 }
 
 export interface CoopRewardDisplay {id:string;claimed_at:string|null;reward_json:{marks?:number;enhanced_reward?:boolean;live_fellowship_bonus?:number;reward_charges_remaining?:number;weekly_enhanced_remaining?:number;failure_consolation_remaining?:number;failure_consolation_applied?:boolean};}
-export function CoopRunOverview({language,run,myVotedNodeId,selfVoter,onBack,onChoose,onRefresh,onClaim,onQueueAgain,onPartyRematch,busy=false,notice,syncError,rewards=[],terminalAction,reduceMotion=false,seasonal=false,eventName,chatMessages=[],onChatSend}:{language:Language;run:CoopRunView;myVotedNodeId?:string;selfVoter?:{name:string;profileIconId?:string|null;className?:string|null};onBack:()=>void;onChoose?:(nodeId:string)=>void;onRefresh?:()=>void;onClaim?:(id:string)=>void;onQueueAgain?:{label:string;onPress:()=>void};onPartyRematch?:()=>void;busy?:boolean;notice?:string;syncError?:string;rewards?:CoopRewardDisplay[];terminalAction?:{label:string;claimed?:boolean;completeText?:string;onPress:()=>void};reduceMotion?:boolean;seasonal?:boolean;eventName?:string;chatMessages?:CoopChatMessage[];onChatSend?:(text:string)=>Promise<void>}){
+export function CoopRunOverview({language,run,myVotedNodeId,selfVoter,onBack,onChoose,onRefresh,onClaim,onQueueAgain,onPartyRematch,busy=false,notice,syncError,rewards=[],terminalAction,reduceMotion=false,seasonal=false,eventName,chatMessages=[],onChatSend,potionOptions=[],preferredPotionId,ownCharacterId,onUsePotion}:{language:Language;run:CoopRunView;myVotedNodeId?:string;selfVoter?:{name:string;profileIconId?:string|null;className?:string|null};onBack:()=>void;onChoose?:(nodeId:string)=>void;onRefresh?:()=>void;onClaim?:(id:string)=>void;onQueueAgain?:{label:string;onPress:()=>void};onPartyRematch?:()=>void;busy?:boolean;notice?:string;syncError?:string;rewards?:CoopRewardDisplay[];terminalAction?:{label:string;claimed?:boolean;completeText?:string;onPress:()=>void};reduceMotion?:boolean;seasonal?:boolean;eventName?:string;chatMessages?:CoopChatMessage[];onChatSend?:(text:string)=>Promise<void>;potionOptions?:Array<{id:string;name:string;quantity:number;healPercent:number}>;preferredPotionId?:string;ownCharacterId?:string;onUsePotion?:(itemId:string)=>void}){
  const {styles:s}=useCoopStyles(makeStyles);
  const st=useSocialText(),a=(value:string)=>accountText(language,value);
   validateCoopRunView(run);
   const modeLabel=run.modeLabel??(run.mode==='qmode'?ct(language,'details.qmode'):ct(language,'details.live')),bossNext=run.phase==='awaiting_choice'&&run.options.some(option=>option.kind==='boss');
   const terminal=run.phase==='completed'||run.phase==='failed',unclaimedRewards=rewards.filter(reward=>!reward.claimed_at),rewardSurfaceReady=rewards.length>0||Boolean(terminalAction),rewardsSecured=terminal&&rewardSurfaceReady&&!unclaimedRewards.length&&(!terminalAction||terminalAction.claimed===true);
   const inCombat=isCoopBattleResolving(run);
+  const [potionChoice,setPotionChoice]=useState<string|undefined>();
+  const chosenPotion=potionOptions.find(p=>p.id===potionChoice)??potionOptions.find(p=>p.id===preferredPotionId)??potionOptions[0];
+  const selfActor=run.roleSlots.find(slot=>slot.memberId===ownCharacterId);
+  const canUsePotion=!!selfActor&&selfActor.ready!==false&&selfActor.currentHp!==undefined&&selfActor.maximumHp!==undefined&&selfActor.currentHp>0&&selfActor.currentHp<selfActor.maximumHp;
   const replayCues=run.lastCombat?.cues??[];
   const [clockTick,setClockTick]=useState(Date.now());
   const clockAnchor=useRef({serverNow:run.serverNow??0,localAt:Date.now()});
@@ -107,6 +111,15 @@ export function CoopRunOverview({language,run,myVotedNodeId,selfVoter,onBack,onC
      </View></FantasyPanel>:null}
     {run.phase==='resolving_node'&&!inCombat?<DungeonRoomResolution kind={run.selectedNodeKind} reduceMotion={reduceMotion}/>:null}
     {!!syncError&&<FantasyPanel variant="danger"><Text accessibilityRole="alert" style={s.title}>{a('Connection interrupted')}</Text><Text style={s.copy}>{a('Showing the last saved expedition progress. Reconnecting automatically.')}</Text><Text style={s.copy} numberOfLines={2}>{syncError}</Text>{onRefresh?<GameButton compact title={a('Retry connection')} tone="secondary" disabled={busy} onPress={onRefresh}/>:null}</FantasyPanel>}
+    {run.phase==='awaiting_choice'&&onUsePotion&&run.potionCharges?<FantasyPanel variant="selected">
+      <View style={s.summary}><View style={s.grow}><Text style={s.title}>Healing potions</Text><Text style={s.copy}>Food is disabled. Healing potions restore dungeon HP between rooms and use the shared charge budget.</Text></View><StateChip label={`${run.potionCharges.remaining}/${run.potionCharges.max}`} tone={run.potionCharges.remaining>0?'success':'warning'}/></View>
+      <View style={{flexDirection:'row',flexWrap:'wrap',gap:6}}>
+       {potionOptions.map(potion=><GameButton key={potion.id} compact tone="secondary" selected={potion.id===chosenPotion?.id} title={`${potion.name} · ${potion.healPercent}% · ×${potion.quantity}`} disabled={busy} onPress={()=>setPotionChoice(potion.id)}/>)}
+      </View>
+      {!potionOptions.length?<Text style={s.copy}>No healing potions carried. Brew or withdraw them before the next dungeon.</Text>:null}
+      <GameButton compact title={chosenPotion?`Use 1 ${chosenPotion.name}`:'No potion available'} disabled={busy||!chosenPotion||run.potionCharges.remaining<1||!canUsePotion} onPress={()=>{if(chosenPotion)onUsePotion(chosenPotion.id)}}/>
+      {!canUsePotion&&selfActor?<Text style={s.copy}>{selfActor.ready===false?'Downed characters cannot use potions.':'Potions only restore missing HP.'}</Text>:null}
+    </FantasyPanel>:null}
     {run.phase==='awaiting_choice'&&run.options.length?<View style={s.actionArea}>
       <Text style={s.section}>{run.mode==='live'?st('Vote for the next path'):st('Choose the next room')}</Text>
       {run.mode==='live'?<Text style={s.copy}>{st('The route with the most votes will be selected.')}{secondsRemaining!==undefined?` · ${st('Vote ends in {seconds}s',{seconds:secondsRemaining})}`:''}</Text>:null}

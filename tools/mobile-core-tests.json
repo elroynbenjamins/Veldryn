@@ -34,6 +34,7 @@
   "tests/guild-background-client.cjs",
   "tests/profile-guild-affiliation.cjs",
   ".core-build/apps/mobile/tests/localization-foundation.js",
+  "tests/localization-social.mjs",
   ".core-build/apps/mobile/tests/class-selection.js",
   ".core-build/apps/mobile/tests/character-creation-onboarding.js",
   ".core-build/apps/mobile/tests/inventory-view.js",

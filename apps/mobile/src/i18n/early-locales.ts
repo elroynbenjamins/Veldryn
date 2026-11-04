@@ -1429,6 +1429,430 @@ export const EARLY_LOCALE_ROWS={
   "Stop combat when out of food": [
     "Останавливать бой, когда закончится еда",
     "Yiyecek bitince savaşı durdur"
+  ],
+  "NEW PARTY": [
+    "НОВАЯ ГРУППА",
+    "YENİ GRUP"
+  ],
+  "PARTY SETTINGS": [
+    "НАСТРОЙКИ ГРУППЫ",
+    "GRUP AYARLARI"
+  ],
+  "Party preferences": [
+    "Настройки группы",
+    "Grup tercihleri"
+  ],
+  "Change how other players discover your Party. Existing members stay.": [
+    "Измените, как другие игроки находят вашу группу. Участники останутся.",
+    "Diğer oyuncuların grubunu nasıl bulduğunu değiştir. Mevcut üyeler kalır."
+  ],
+  "Choose the kind of teammates you want to play with.": [
+    "Выберите, с какими игроками хотите играть.",
+    "Birlikte oynamak istediğin takım arkadaşlarını seç."
+  ],
+  "Activity level": [
+    "Уровень активности",
+    "Etkinlik düzeyi"
+  ],
+  "Tryhard": [
+    "Упорная игра",
+    "Rekabetçi"
+  ],
+  "Regular": [
+    "Регулярно",
+    "Düzenli"
+  ],
+  "Casual": [
+    "Неспешно",
+    "Rahat"
+  ],
+  "Active play": [
+    "Активная игра",
+    "Aktif oyun"
+  ],
+  "Play whenever you like": [
+    "Играйте, когда удобно",
+    "İstediğin zaman oyna"
+  ],
+  "Regular play and group activities": [
+    "Регулярная игра и групповые занятия",
+    "Düzenli oyun ve grup etkinlikleri"
+  ],
+  "Push progression and efficiency": [
+    "Упор на прогресс и эффективность",
+    "İlerlemeye ve verimliliğe odaklan"
+  ],
+  "Preferred language": [
+    "Предпочитаемый язык",
+    "Tercih edilen dil"
+  ],
+  "Any language": [
+    "Любой язык",
+    "Herhangi bir dil"
+  ],
+  "For discovery and communication only. Players are not blocked by language.": [
+    "Только для поиска и общения. Язык не ограничивает вступление.",
+    "Yalnızca arama ve iletişim içindir. Dil, katılmayı engellemez."
+  ],
+  "Minimum combat level": [
+    "Минимальный боевой уровень",
+    "Asgari savaş seviyesi"
+  ],
+  "Optional · all levels welcome by default": [
+    "Необязательно · По умолчанию любой уровень",
+    "İsteğe bağlı · Varsayılan olarak tüm seviyeler kabul edilir"
+  ],
+  "Required level": [
+    "Требуемый уровень",
+    "Gerekli seviye"
+  ],
+  "Up to 4 players · All classes welcome": [
+    "До 4 игроков · Любые классы",
+    "En fazla 4 oyuncu · Tüm sınıflar kabul edilir"
+  ],
+  "Save preferences": [
+    "Сохранить настройки",
+    "Tercihleri kaydet"
+  ],
+  "PARTY RECRUITMENT": [
+    "НАБОР В ГРУППУ",
+    "GRUP OYUNCU ARAMA"
+  ],
+  "Find teammates": [
+    "Найти соратников",
+    "Takım arkadaşları bul"
+  ],
+  "Looking for a Party": [
+    "Ищу группу",
+    "Grup arıyorum"
+  ],
+  "Make your Party easy for others to find.": [
+    "Помогите другим игрокам найти вашу группу.",
+    "Diğer oyuncuların grubunu kolayca bulmasını sağla."
+  ],
+  "Tell Party leaders what you are looking for.": [
+    "Расскажите лидерам групп, что вы ищете.",
+    "Grup liderlerine ne aradığını anlat."
+  ],
+  "Your Party": [
+    "Ваша группа",
+    "Grubun"
+  ],
+  "{count} open": [
+    "Свободно: {count}",
+    "{count} boş yer"
+  ],
+  "Language and minimum level follow your Party settings.": [
+    "Язык и минимальный уровень берутся из настроек группы.",
+    "Dil ve asgari seviye grup ayarlarından alınır."
+  ],
+  "How active is your Party?": [
+    "Насколько активна ваша группа?",
+    "Grubun ne kadar aktif?"
+  ],
+  "How active are you?": [
+    "Насколько вы активны?",
+    "Ne kadar aktifsin?"
+  ],
+  "Choose how often you plan to play together.": [
+    "Укажите, как часто планируете играть вместе.",
+    "Birlikte ne sıklıkta oynayacağınızı seçin."
+  ],
+  "Post title": [
+    "Название объявления",
+    "İlan başlığı"
+  ],
+  "Recruitment title": [
+    "Название объявления о наборе",
+    "Oyuncu arama başlığı"
+  ],
+  "Looking for active teammates": [
+    "Ищем активных игроков",
+    "Aktif takım arkadaşları aranıyor"
+  ],
+  "Description": [
+    "Описание",
+    "Açıklama"
+  ],
+  "Recruitment description": [
+    "Описание объявления о наборе",
+    "Oyuncu arama açıklaması"
+  ],
+  "What would you like to do together?": [
+    "Чем хотите заниматься вместе?",
+    "Birlikte ne yapmak istersiniz?"
+  ],
+  "Expires automatically after 24 hours": [
+    "Срок действия — 24 часа",
+    "24 saat sonra otomatik sona erer"
+  ],
+  "Publish recruitment post": [
+    "Опубликовать объявление",
+    "Oyuncu arama ilanını yayımla"
+  ],
+  "Create a Party": [
+    "Создать группу",
+    "Grup oluştur"
+  ],
+  "Create Party": [
+    "Создать группу",
+    "Grup oluştur"
+  ],
+  "Publishing…": [
+    "Публикация…",
+    "Yayımlanıyor…"
+  ],
+  "FIND YOUR FELLOWSHIP": [
+    "НАЙДИТЕ СОЮЗНИКОВ",
+    "YOLDAŞLARINI BUL"
+  ],
+  "Find players, Parties and Guilds": [
+    "Ищите игроков, группы и гильдии",
+    "Oyuncular, gruplar ve loncalar bul"
+  ],
+  "Browse": [
+    "Обзор",
+    "Göz at"
+  ],
+  "My Posts": [
+    "Мои объявления",
+    "İlanlarım"
+  ],
+  "Hide": [
+    "Скрыть",
+    "Gizle"
+  ],
+  "View": [
+    "Просмотр",
+    "Görüntüle"
+  ],
+  "GUILD RECRUITMENT": [
+    "НАБОР В ГИЛЬДИЮ",
+    "LONCA OYUNCU ARAMA"
+  ],
+  "Find the right teammates": [
+    "Найдите подходящих соратников",
+    "Uygun takım arkadaşlarını bul"
+  ],
+  "Find your Guild connection": [
+    "Найдите подходящую гильдию",
+    "Sana uygun loncayı bul"
+  ],
+  "Find a Party or teammates.": [
+    "Найдите группу или соратников.",
+    "Grup veya takım arkadaşları bul."
+  ],
+  "Find a Guild or recruit players.": [
+    "Найдите гильдию или пригласите игроков.",
+    "Lonca bul veya oyuncu al."
+  ],
+  "+ Post for Party": [
+    "+ Объявление для группы",
+    "+ Grup ilanı"
+  ],
+  "+ Create advert": [
+    "+ Создать объявление",
+    "+ İlan oluştur"
+  ],
+  "Invite friends privately": [
+    "Пригласить друзей лично",
+    "Arkadaşları özel olarak davet et"
+  ],
+  "Guilds recruiting": [
+    "Гильдии набирают участников",
+    "Üye arayan loncalar"
+  ],
+  "Recruiting groups": [
+    "Группы с набором",
+    "Oyuncu arayan gruplar"
+  ],
+  "Available players": [
+    "Свободные игроки",
+    "Müsait oyuncular"
+  ],
+  "Checking Recruitment…": [
+    "Поиск объявлений…",
+    "Oyuncu arama ilanları kontrol ediliyor…"
+  ],
+  "No matching adverts": [
+    "Подходящих объявлений нет",
+    "Eşleşen ilan yok"
+  ],
+  "Try different filters or publish your own advert.": [
+    "Измените фильтры или создайте объявление.",
+    "Filtreleri değiştir veya kendi ilanını yayımla."
+  ],
+  "Create advert": [
+    "Создать объявление",
+    "İlan oluştur"
+  ],
+  "Party posts: 1 day · Guild posts: 1–3 days.": [
+    "Группы: 1 день · Гильдии: 1–3 дня.",
+    "Grup: 1 gün · Lonca: 1–3 gün."
+  ],
+  "Your active adverts": [
+    "Ваши активные объявления",
+    "Aktif ilanların"
+  ],
+  "+ New post": [
+    "+ Новое объявление",
+    "+ Yeni ilan"
+  ],
+  "Invite friends": [
+    "Пригласить друзей",
+    "Arkadaşları davet et"
+  ],
+  "No active adverts": [
+    "Нет активных объявлений",
+    "Aktif ilan yok"
+  ],
+  "Create a post to find players.": [
+    "Создайте объявление, чтобы найти игроков.",
+    "Oyuncu bulmak için ilan oluştur."
+  ],
+  "One active post per type · 6h refresh cooldown.": [
+    "Одно объявление каждого типа · Обновление раз в 6 часов.",
+    "Her türden bir aktif ilan · 6 saat yenileme süresi."
+  ],
+  "Open my Party": [
+    "Открыть мою группу",
+    "Grubumu aç"
+  ],
+  "Open Guild": [
+    "Открыть гильдию",
+    "Loncayı aç"
+  ],
+  "What are you looking for?": [
+    "Что вы ищете?",
+    "Ne arıyorsun?"
+  ],
+  "Choose a post type.": [
+    "Выберите тип объявления.",
+    "İlan türünü seç."
+  ],
+  "Looking for a Guild": [
+    "Ищу гильдию",
+    "Lonca arıyorum"
+  ],
+  "Recruit for my Party": [
+    "Набор в мою группу",
+    "Grubuma oyuncu al"
+  ],
+  "Recruit for my Guild": [
+    "Набор в мою гильдию",
+    "Loncama oyuncu al"
+  ],
+  "Find a persistent team": [
+    "Найти постоянную группу",
+    "Kalıcı bir ekip bul"
+  ],
+  "Find members for open Party slots": [
+    "Найти участников на свободные места",
+    "Boş grup yerlerine üye bul"
+  ],
+  "Your Party has no open slots": [
+    "В вашей группе нет свободных мест",
+    "Grubunda boş yer yok"
+  ],
+  "Let Guilds discover you": [
+    "Пусть гильдии найдут вас",
+    "Loncalar seni bulabilsin"
+  ],
+  "Leader or Officer access": [
+    "Только лидер или офицер",
+    "Yalnızca lider veya yetkili"
+  ],
+  "{count} compatible recruitment adverts": [
+    "Подходящих объявлений: {count}",
+    "{count} uygun ilan"
+  ],
+  "{count} results": [
+    "Результатов: {count}",
+    "{count} sonuç"
+  ],
+  "You are no longer in a Party.": [
+    "Вы больше не состоите в группе.",
+    "Artık bir grupta değilsin."
+  ],
+  "Only the Party leader can invite friends.": [
+    "Только лидер группы может приглашать друзей.",
+    "Yalnızca grup lideri arkadaş davet edebilir."
+  ],
+  "Your Party is full.": [
+    "Ваша группа заполнена.",
+    "Grubun dolu."
+  ],
+  "This friend is already in a Party.": [
+    "Этот друг уже состоит в группе.",
+    "Bu arkadaş zaten bir grupta."
+  ],
+  "This friend already has a pending invitation.": [
+    "У этого друга уже есть ожидающее приглашение.",
+    "Bu arkadaşın zaten bekleyen bir daveti var."
+  ],
+  "This player is unavailable for invitations.": [
+    "Этот игрок недоступен для приглашений.",
+    "Bu oyuncuya davet gönderilemiyor."
+  ],
+  "This friend cannot receive a Party invitation right now.": [
+    "Сейчас этому другу нельзя отправить приглашение в группу.",
+    "Bu arkadaş şu anda grup daveti alamıyor."
+  ],
+  "Your Party changed. Reopen the invitation list.": [
+    "Ваша группа изменилась. Откройте приглашения заново.",
+    "Grubun değişti. Davet listesini yeniden aç."
+  ],
+  "Could not send the invitation.": [
+    "Не удалось отправить приглашение.",
+    "Davet gönderilemedi."
+  ],
+  "PRIVATE PARTY INVITATIONS": [
+    "ЛИЧНЫЕ ПРИГЛАШЕНИЯ В ГРУППУ",
+    "ÖZEL GRUP DAVETLERİ"
+  ],
+  "Choose a friend to send a Party invitation. It appears with their Party invites, not in public chat. Expires after 24 hours.": [
+    "Выберите друга. Приглашение появится в его списке, а не в общем чате. Срок действия — 24 часа.",
+    "Davet göndermek için arkadaş seç. Davet, genel sohbette değil grup davetlerinde görünür. 24 saatte sona erer."
+  ],
+  "{count} open slot": [
+    "Свободно мест: {count}",
+    "{count} boş yer"
+  ],
+  "{count} open slots": [
+    "Свободно мест: {count}",
+    "{count} boş yer"
+  ],
+  "Party leader only": [
+    "Только лидер группы",
+    "Yalnızca grup lideri"
+  ],
+  "Loading friends…": [
+    "Загрузка друзей…",
+    "Arkadaşlar yükleniyor…"
+  ],
+  "Search friends for Party invites": [
+    "Поиск друзей для приглашения",
+    "Grup daveti için arkadaş ara"
+  ],
+  "Search friends": [
+    "Найти друзей",
+    "Arkadaş ara"
+  ],
+  "No friends yet. Add friends through the Friends screen to invite them privately.": [
+    "Пока нет друзей. Добавьте их в разделе «Друзья», чтобы отправлять личные приглашения.",
+    "Henüz arkadaşın yok. Özel davet göndermek için Arkadaşlar bölümünden arkadaş ekle."
+  ],
+  "No matching friends.": [
+    "Подходящих друзей нет.",
+    "Eşleşen arkadaş yok."
+  ],
+  "Invited": [
+    "Приглашён",
+    "Davet edildi"
+  ],
+  "Invite": [
+    "Пригласить",
+    "Davet et"
   ]
 } satisfies Record<string,readonly [string,string]>;
 

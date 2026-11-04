@@ -6,6 +6,10 @@ import {createTranslator,type TranslationParams} from './translator';
 
 // Columns are German, Spanish, Dutch, Italian and French; keys are the English catalog.
 export const socialTranslationRows = {
+ // Guild festival encounter expiry: rewards are accessible after the boss closes.
+ "Unclaimed event rewards":["Nicht abgeholte Eventbelohnungen","Recompensas del evento sin reclamar","Niet-geclaimde evenementbeloningen","Ricompense evento non riscosse","Récompenses d'événement non réclamées"],
+ "The event boss has ended. Earned rewards remain claimable until the deadline.":["Der Eventboss ist beendet. Verdiente Belohnungen können bis zum Ablauf der Frist abgeholt werden.","El jefe del evento ha terminado. Puedes reclamar las recompensas ganadas hasta la fecha límite.","De evenementbaas is voorbij. Verdiende beloningen kun je tot de deadline claimen.","Il boss dell'evento è terminato. Puoi riscattare le ricompense ottenute entro la scadenza.","Le boss de l'événement est terminé. Vous pouvez récupérer les récompenses gagnées jusqu'à la date limite."],
+ "{percent}% milestone unlocked":["{percent} % Meilenstein freigeschaltet","Hito del {percent}% desbloqueado","Mijlpaal van {percent}% ontgrendeld","Traguardo del {percent}% sbloccato","Palier de {percent} % débloqué"],
  "Progress":["Fortschritt","Progreso","Voortgang","Progressi","Progression"],
  "Guild Progress":["Gildenfortschritt","Progreso del gremio","Gildevoortgang","Progressi della gilda","Progression de guilde"],
  "Skills":["Fähigkeiten","Habilidades","Vaardigheden","Abilità","Compétences"],

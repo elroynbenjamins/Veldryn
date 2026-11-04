@@ -41,7 +41,7 @@ async function main(){
  assert.equal((await request({type:'start',args:{kind:'gathering',id:'DEWLEAF_PATCH'}},'herb-start-01',3)).status,200,'Herbalism activity starts online');
  clock+=60000;
  const herbClaim=await request({type:'claim'},'herb-claim-01',4);assert.equal(herbClaim.status,200,'Herbalism settlement persists online');const herbPayload=await herbClaim.json();assert.equal(herbPayload.guildProjectEffort[0].kind,'skilling');assert.equal(herbPayload.guildProjectEffort[0].endsAtMs-herbPayload.guildProjectEffort[0].startsAtMs,60000);assert.deepEqual(herbPayload.guildPveEffort,[],'Gathering does not damage bosses');
- state={...state!,inventory:{...state!.inventory,stacks:state!.inventory.stacks.map(stack=>stack.itemId==='DEWLEAF'?{...stack,quantity:2}:stack)}};
+ state={...state!,inventory:{...state!.inventory,stacks:state!.inventory.stacks.map(stack=>stack.itemId==='DEWLEAF'?{...stack,quantity:10}:stack)}};
  assert.equal((await request({type:'stop'},'herb-stop-01',5)).status,200,'Herbalism activity stops online');
  assert.equal((await request({type:'alchemy_start',args:{id:'BREW_DEWLEAF_DRAUGHT',batches:1}},'brew-start-01',6)).status,200,'Alchemy reservation persists online');
  clock+=60000;

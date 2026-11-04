@@ -30,7 +30,7 @@ import {DEFAULT_QUICK_NAV_DESTINATIONS} from './quick-navigation';
 import {unlockedCharacterSlots} from './account-roster';
 import {accountEntitlementBenefits,entitlementStorageCapacity} from './account-entitlements';
 import {isGemPouchItemId,tryStoreGemInPouch,gemPouch} from './gem-pouch';
-import {isEquipmentPouchItemId,tryStoreEquipmentInPouch,moveLegacyEquipmentPouchStack,equipmentPouch} from './equipment-pouch';
+import {isEquipmentPouchItemId,tryStoreEquipmentInPouch,equipmentPouch} from './equipment-pouch';
 import {gatheringPacing} from './gathering-tools';
 import {gatheringToolDef} from '../content/gathering-tools';
 import {currentRegionId} from './combat-region';
@@ -930,10 +930,27 @@ export function stopActivity(state:GameState,nowMs=Date.now()):GameState{
   }
   return {...state,activity:null,outOfCombatSinceMs:nowMs,character:state.character?{...state.character,classTraining:undefined}:null}
 }
-/** Equip legacy/non-unique gear from this character's pouch without a separate manual transfer. */
+/** Equip legacy/non-unique gear directly from the character's pouch.
+ * No Inventory slot is required: an equipped predecessor returns to the freed pouch slot. */
 export function equipItemFromEquipmentPouch(state:GameState,itemId:string):GameState{
-  const staged=moveLegacyEquipmentPouchStack(state,itemId,1,'equipment_pouch','inventory');
-  return equipItem(staged,itemId);
+  if(!state.character)throw new Error('No character');
+  const def=itemDef(itemId);
+  if(def.type!=='gear'||!def.slot)throw new Error('Not gear');
+  if(def.classRestriction&&def.classRestriction!==state.character.classId)throw new Error('This gear belongs to another class');
+  if(state.character.level<(def.requiredLevel??1))throw new Error(`Requires character level ${def.requiredLevel}`);
+  if(state.character.equipmentInstanceIds?.[def.slot])throw new Error('Select the exact equipped copy before replacing uniquely identified gear');
+  const pouch=equipmentPouch(state),index=pouch.stacks.findIndex(row=>row.itemId===itemId&&row.instanceId===undefined&&row.quantity>0);
+  if(index<0)throw new Error('This equipment is not in your Equipment Pouch');
+  const source=pouch.stacks[index],stacks=pouch.stacks.slice();
+  if(source.quantity===1)stacks.splice(index,1);
+  else stacks[index]={...source,quantity:source.quantity-1};
+  const old=state.character.equipment[def.slot];
+  const updatedStacks=old?stackItems(stacks,[{itemId:old,quantity:1}]):stacks;
+  if(updatedStacks.length>pouch.capacity)throw new Error('Equipment Pouch is full');
+  const temp={...state,character:{...state.character,equipment:{...state.character.equipment,[def.slot]:itemId},equipmentPouch:{...pouch,stacks:updatedStacks}}} as GameState;
+  const maxHp=effectiveStats(temp).hp;
+  temp.character!.currentHp=Math.min(maxHp,temp.character!.currentHp+(def.hp||0));
+  return applyLocalBalanceSnapshot(refreshQuests(temp),Date.now());
 }
 export function equipItem(state:GameState,itemId:string):GameState{
   if(!state.character)throw new Error('No character');const d=itemDef(itemId);if(d.type!=='gear'||!d.slot)throw new Error('Not gear');

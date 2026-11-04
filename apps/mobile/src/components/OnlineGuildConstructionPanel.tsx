@@ -97,7 +97,7 @@ export function OnlineGuildConstructionPanel({
   <Text style={s.note}>Only released upgrades accept funding. Deposit supplies into the Guild Bank first, then allocate them here.</Text>
   {snapshot.unavailableSections?.includes('constructionCosts')
    ?<Text style={s.error}>Current Guild Construction prices are unavailable. Refresh before funding.</Text>
-   :<Text style={s.copy}>Guild size: {snapshot.constructionMemberCount??1} · Each member after the first adds 20% to base costs, rounded up to 20. A project's requirements lock when funding begins.</Text>}
+   :null}
   {error?<Text accessibilityRole="alert" style={s.error}>{error}</Text>:null}
   {notice?<Text accessibilityLiveRegion="polite" style={s.notice}>{notice}</Text>:null}
   {pending?<View style={s.pending}>

@@ -6,7 +6,7 @@ import {CoopImageSlot,FantasyPanel} from './CoopVisualKit';
 import {dungeonRoomPresentation} from './dungeon-room-presentation';
 
 /** Used only for non-combat resolution. Never launches the combat theater. */
-export function DungeonRoomResolution({kind}:{kind?:string}){
+export function DungeonRoomResolution({kind,reduceMotion=false}:{kind?:string;reduceMotion?:boolean}){
  const {colors,styles:s}=useCoopStyles(makeStyles),st=useSocialText();
  const room=dungeonRoomPresentation(kind);
  return <FantasyPanel variant="default">
@@ -19,7 +19,7 @@ export function DungeonRoomResolution({kind}:{kind?:string}){
    </View>
   </View>
   <View style={s.progress} accessibilityLiveRegion="polite">
-   <ActivityIndicator size="small" color={colors.cyan}/>
+   {!reduceMotion?<ActivityIndicator size="small" color={colors.cyan}/>:null}
    <Text style={s.progressText}>{st('Saving room progress')}</Text>
   </View>
  </FantasyPanel>;

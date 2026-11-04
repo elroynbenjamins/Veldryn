@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import {createHash} from 'node:crypto';
 import {readFileSync} from 'node:fs';
 import {coopHandler} from '../coop';
+import {POTIONS} from '../../../apps/mobile/src/content/alchemy';
 import type {GameplayServices} from '../gameplay';
 
 const account='11111111-1111-4111-8111-111111111111';
@@ -37,6 +38,19 @@ async function main(){
  const requestHash=createHash('sha256').update(JSON.stringify({runId:run,requestId:valid.requestId,potionId:valid.potionId})).digest('hex');
  assert.deepEqual(seen,{p_account_id:account,p_run_id:run,p_request_id:valid.requestId,p_request_hash:requestHash,p_potion_id:valid.potionId});
  const sql=readFileSync('supabase/migrations/20261104100500_online_coop_alchemy_healing_potions.sql','utf8');
+ // SQL is the authority for consumption; assert every potion mapping stays
+ // exactly aligned with the mobile crafting catalog.
+ for(const potion of POTIONS){
+  if(potion.effect.kind!=='preparation')continue;
+  const line=sql.split('\n').find(row=>row.includes("when '"+potion.id+"' then"));
+  assert.ok(line,'SQL must recognize '+potion.id);
+  const e=potion.effect;
+  if(e.damageDealtFraction>0)assert.ok(line!.includes('v_outgoing:='+(1+e.damageDealtFraction).toFixed(2)),potion.id+' damage parity');
+  if(e.damageReductionFraction>0)assert.ok(line!.includes('v_incoming:='+(1-e.damageReductionFraction).toFixed(2)),potion.id+' reduction parity');
+  if(e.healingStrengthFraction>0)assert.ok(line!.includes('v_healing:='+(1+e.healingStrengthFraction).toFixed(2)),potion.id+' healing parity');
+  if(e.shieldStrengthFraction>0)assert.ok(line!.includes('v_shielding:='+(1+e.shieldStrengthFraction).toFixed(2)),potion.id+' shield parity');
+ }
+
  for(const clause of [
   'consume_online_coop_preparation_tonic_server_v1',
   "if v_prepared ? v_character_id::text then raise exception 'tonic_already_prepared'",

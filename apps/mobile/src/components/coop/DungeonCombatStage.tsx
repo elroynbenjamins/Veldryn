@@ -1,5 +1,7 @@
 import {useCoopStyles} from '../../theme/useCoopStyles';
 import {useSocialText} from '../../i18n/social';
+import {useGameLanguage} from '../../i18n/GameLanguageProvider';
+import {seasonalBossDisplayName} from '../../i18n/seasonal-boss-copy';
 import {useEffect,useLayoutEffect,useMemo,useRef,useState} from 'react';
 import {AccessibilityInfo,Animated,Easing,Image,Pressable,StyleSheet,Text,useWindowDimensions,View} from 'react-native';
 import type {CoopRunView} from '../../core/coop-presentation';
@@ -84,7 +86,7 @@ function motionScale(fx:DungeonCombatCueFx|undefined){
 export function DungeonCombatStage({run,enemyLabel,boss=false,seasonal=false,eventName,reduceMotionSetting=false,anticipation=false,entryNodeId,onPresentationComplete}:{run:CoopRunView;enemyLabel?:string;boss?:boolean;seasonal?:boolean;eventName?:string;reduceMotionSetting?:boolean;anticipation?:boolean;entryNodeId?:string;onPresentationComplete?:()=>void}){
  const {styles:s}=useCoopStyles(makeStyles);
  const backdrop=combatBackdrop(seasonal,eventName);
- const st=useSocialText();
+ const st=useSocialText(),language=useGameLanguage();
  const {width:windowWidth}=useWindowDimensions(),layout=useMemo(()=>dungeonCombatLayout(windowWidth),[windowWidth]);
  const tank=run.roleSlots.find(slot=>slot.role==='tank'),damage=run.roleSlots.filter(slot=>slot.role==='damage'),support=run.roleSlots.find(slot=>slot.role==='support');
  const ordered=[tank,damage[0],damage[1],support].filter((slot):slot is Slot=>Boolean(slot)),assists=ordered.filter(slot=>slot.companionId).length;
@@ -160,7 +162,7 @@ export function DungeonCombatStage({run,enemyLabel,boss=false,seasonal=false,eve
   Animated.timing(castAnim,{toValue:1,duration:displayMs,useNativeDriver:false,easing:Easing.linear}).start();
   return()=>castAnim.stopAnimation();
  },[cueIndex,replayKey,reduceMotion,currentBossCast?.durationMs,currentBossCast?.abilityId]);
- const bossPhaseLabel=useMemo(()=>{for(let index=Math.min(cueIndex,cues.length-1);index>=0;index--){const cue=cues[index];if(cue.type==='phase'&&cue.abilityName)return cue.abilityName;}return undefined;},[cues,cueIndex]);
+ const bossPhaseLabel=useMemo(()=>{for(let index=Math.min(cueIndex,cues.length-1);index>=0;index--){const cue=cues[index];if(cue.type==='phase'&&cue.abilityName)return seasonalBossDisplayName(language,cue.abilityName);}return undefined;},[cues,cueIndex,language]);
  const replayEnemy=useMemo(()=>{for(const cue of cues){if(cue.actorId&&!partyIds.has(cue.actorId)&&cue.actorName)return cue.actorName;if(cue.targetId&&!partyIds.has(cue.targetId)&&cue.targetName)return cue.targetName;}return undefined;},[cues,partyIds]);
  const replayEnemies=useMemo(()=>playbackEnemyCombatants(replay),[replay]);
  // Server combatants retain boss positioning even when the route has advanced.
@@ -189,7 +191,7 @@ export function DungeonCombatStage({run,enemyLabel,boss=false,seasonal=false,eve
   {scale:targetAnim.interpolate({inputRange:[0,.48,1],outputRange:[1,fx.targetMotion==='pulse'?1.055:fx.targetMotion==='brace'?1.035:1,1]})},
  ]}:undefined;
  const feedbackStyle=currentCue?.type==='action'&&!reduceMotion?{opacity:feedbackAnim.interpolate({inputRange:[0,.12,.72,1],outputRange:[0,1,1,0]}),transform:[{translateY:feedbackAnim.interpolate({inputRange:[0,1],outputRange:[6,-12]})},{scale:feedbackAnim.interpolate({inputRange:[0,.18,1],outputRange:[.9,1.08,1]})}]}:undefined;
- const bossCast=currentBossCast?{label:currentBossCast.abilityName?dungeonEnemyAbilityDisplayName(currentBossCast.abilityName):'Boss ability',durationMs:currentBossCast.durationMs??0,interruptible:bossCastDef?.interruptible??false,targetLabel:currentBossCast.targetName?.trim(),progressStyle:{width:reduceMotion?'100%' as const:castAnim.interpolate({inputRange:[0,1],outputRange:['0%','100%']})}}:undefined;
+ const bossCast=currentBossCast?{label:currentBossCast.abilityName?seasonalBossDisplayName(language,dungeonEnemyAbilityDisplayName(currentBossCast.abilityName)):'Boss ability',durationMs:currentBossCast.durationMs??0,interruptible:bossCastDef?.interruptible??false,targetLabel:currentBossCast.targetName?.trim(),progressStyle:{width:reduceMotion?'100%' as const:castAnim.interpolate({inputRange:[0,1],outputRange:['0%','100%']})}}:undefined;
  const toggleInspect=(key:string)=>setInspectKey(current=>current===key?undefined:key);
   const inspectedSlot=inspectKey?.startsWith('party:')?ordered.find(slot=>slotInspectKey(slot)===inspectKey):undefined;
  const inspectedEnemy=inspectKey?.startsWith('enemy:')?visibleEnemies.find(enemy=>enemyInspectKey(enemy.id)===inspectKey):undefined;

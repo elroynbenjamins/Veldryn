@@ -49,6 +49,9 @@ jobs:
               'fix/guild-guide-and-skills-unavailable-20261103': { legacy: 747, replacement: 762 },
               'fix/inventory-lock-invalid-settings-20261102': { legacy: 703, replacement: null },
               'fix/mobile-core-seven-contracts-20261031': { legacy: 682, replacement: 681 },
+              // Older closed PRs explicitly superseded by merged, schema-compatible replacements.
+              'feat/character-equipment-pouch-auto-routing': { legacy: 816, replacement: 810 },
+              'feat/dungeon-lobby-combat-setup-polish-106': { legacy: 838, replacement: 843 },
             };
             const eligible = [];
             const skipped = [];

@@ -7,7 +7,7 @@ import {alchemyAvailability} from '../core/alchemy';
 import {processingRunCapacity} from '../core/processing';
 import {offlineCapSeconds} from '../core/game';
 import {professionActionPace} from '../core/profession-action-pace';
-import {potionDef} from '../content/alchemy';
+import {potionDef,POTION_TIER_UNLOCK_LEVELS} from '../content/alchemy';
 import {mealBonusDef} from '../core/meal-buffs';
 import {useGameTheme} from '../theme/ThemeContext';
 import {useGameplayText} from '../i18n/gameplay';
@@ -84,7 +84,30 @@ export function ConsumableWorkshop({state,skillId,preferredRecipeId,onStart}:Pro
   void submit(recipe.id);
  };
  const selected=all.find(r=>r.id===pendingId);
+ const regionVariant=(recipe:Recipe)=>recipe.id.endsWith('_SUNSCAR')?'Sunscar':recipe.id.endsWith('_FROSTMARCH')?'Frostmarch':recipe.id.endsWith('_ASHLANDS')?'Ashlands':undefined;
  const mobile=width<360||fontScale>=1.35;
+ /** Potion tiers are visual section breaks inside the existing Alchemy categories, not tabs. */
+ const potionList=skillId==='alchemy'&&category!=='Infusions';
+ const renderPotionRow=(recipe:Recipe)=>{
+  const available=count(recipe),isActive=activeId===recipe.id,locked=recipe.level>skillLevel;
+  return <View key={recipe.id} style={[s.potionRow,{borderColor:isActive?C.good:C.line,backgroundColor:C.panel}]}>
+    <Pressable accessibilityRole="button" accessibilityLabel={recipe.name+'. '+benefit(recipe)+'. '+gt('Show recipe details')} onPress={()=>setDetailId(recipe.id)} style={({pressed})=>[s.potionRowMain,pressed&&{opacity:.72}]}>
+      <ItemArtwork itemId={recipe.output.itemId} size={44}/>
+      <View style={s.potionRowCopy}>
+        <Text style={[s.name,{color:C.text}]} numberOfLines={1}>{itemDef(recipe.output.itemId).name}{regionVariant(recipe)?' · '+regionVariant(recipe):''}</Text>
+        <Text style={[s.caption,{color:C.muted}]} numberOfLines={2}>{benefit(recipe)}</Text>
+        <Text style={[s.ready,{color:isActive||available?C.good:C.warning}]}>{isActive?'● '+gt('Active'):locked?gt('Locked'):available?available+' '+gt('batches'):gt('Needs materials')}</Text>
+      </View>
+      <View style={s.potionRowSide}>
+        <Text style={[s.tier,{color:locked?C.warning:C.muted}]}>Lv {recipe.level}</Text>
+        <Text style={[s.caption,{color:C.info}]}>ⓘ {gt('Details')}</Text>
+      </View>
+    </Pressable>
+    <Pressable accessibilityRole="button" accessibilityLabel={recipe.name+' · '+gt('Start Brewing')} accessibilityState={{disabled:busy||isActive||available<1}} disabled={busy||isActive||available<1} onPress={()=>start(recipe)} style={[s.potionRowBrew,{borderTopColor:C.line,backgroundColor:available>0&&!isActive?C.selection:C.panel2}]}>
+      <Text style={[s.bold,{color:available>0&&!isActive?C.text:C.muted}]}>{isActive?gt('Active'):locked?gt('Locked'):available>0?gt('Start Brewing'):gt('Needs materials')}</Text>
+    </Pressable>
+  </View>;
+ };
  return <View style={s.root}>
   {activeId?<View style={[s.active,{backgroundColor:C.goodSurface,borderColor:C.good}]}>
     <View style={s.line}><Text style={[s.bold,{color:C.good}]}>{gt('Crafting')} · {gt('Active')}</Text></View>
@@ -94,7 +117,19 @@ export function ConsumableWorkshop({state,skillId,preferredRecipeId,onStart}:Pro
   </View>:null}
   <View style={s.line}><Text style={[s.title,{color:C.text}]}>{gt('Recipes')}</Text><Pressable accessibilityRole="checkbox" accessibilityState={{checked:readyOnly}} onPress={()=>setReadyOnly(x=>!x)} style={[s.toggle,{borderColor:C.line,backgroundColor:readyOnly?C.selection:C.panel2}]}><Text style={[s.caption,{color:C.text}]}>{readyOnly?'✓ ':''}{gt('Craftable only')}</Text></Pressable></View>
   <View style={s.categories}>{groups.map(g=><Pressable key={g} accessibilityRole="tab" accessibilityState={{selected:category===g}} onPress={()=>{setCategory(g);setDetailId(null)}} style={[s.category,{borderColor:category===g?C.selectionLine:C.line,backgroundColor:category===g?C.selection:C.panel2}]}><Text style={[s.categoryText,{color:category===g?C.text:C.muted}]}>{gt(g as 'Fish'|'Meals'|'Special'|'Healing'|'Tonics'|'Infusions')}</Text></Pressable>)}</View>
-  <View style={s.grid}>{recipes.map(recipe=>{
+  {potionList?<View style={s.potionList}>
+    {([1,2,3] as const).map(tier=>{
+      const rows=recipes.filter(recipe=>potionDef(recipe.output.itemId)?.tier===tier);
+      return rows.length?<View key={tier} style={s.potionTierGroup}>
+        <View style={s.potionTierHeading}>
+          <Text style={[s.potionTierTitle,{color:C.text}]}>T{tier} {gt('Potions')}</Text>
+          <View style={[s.potionTierDivider,{backgroundColor:C.line}]}/>
+          <Text style={[s.caption,{color:C.muted}]}>Lv {POTION_TIER_UNLOCK_LEVELS[tier]}+</Text>
+        </View>
+        {rows.map(renderPotionRow)}
+      </View>:null;
+    })}
+  </View>:  <View style={s.grid}>{recipes.map(recipe=>{
     const available=count(recipe),isActive=activeId===recipe.id,meal=mealBonusDef(recipe.output.itemId);
     return <View key={recipe.id} style={[s.tile,{width:mobile?'100%':'48.7%',borderColor:isActive?C.good:C.line,backgroundColor:C.panel}]}>
      <Pressable accessibilityRole="button" accessibilityLabel={recipe.name+'. '+benefit(recipe)+'. '+(isActive?gt('Active'):available?'Tap to start':gt('Requirements missing'))} accessibilityState={{disabled:busy||isActive}} disabled={busy||isActive} onPress={()=>start(recipe)} style={({pressed})=>[s.tileTap,pressed&&{opacity:.7}]}>
@@ -107,11 +142,11 @@ export function ConsumableWorkshop({state,skillId,preferredRecipeId,onStart}:Pro
      <Pressable accessibilityRole="button" accessibilityLabel={gt('Show recipe details')} onPress={()=>setDetailId(x=>x===recipe.id?null:recipe.id)} style={[s.info,{borderTopColor:C.line}]}><Text style={[s.caption,{color:C.muted}]}>ⓘ {gt('Details')}</Text></Pressable>
     </View>;
    })}
-  </View>
+  </View>}
   {!recipes.length?<Text style={[s.caption,{color:C.muted}]}>{gt('No recipes available.')}</Text>:null}
   <GameModalSurface visible={!!detail} reduceMotion={state.settings.reduceMotion} onClose={()=>setDetailId(null)} surfaceStyle={s.detailModal}>
     {detail?<>
-      <GameModalHeader title={itemDef(detail.output.itemId).name} onClose={()=>setDetailId(null)} closeDisabled={busy}/>
+      <GameModalHeader title={itemDef(detail.output.itemId).name+(regionVariant(detail)?' · '+regionVariant(detail):'')} onClose={()=>setDetailId(null)} closeDisabled={busy}/>
       <ScrollView style={s.detailScroll} contentContainerStyle={s.detailContent} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false} showsHorizontalScrollIndicator={false}>
         <View style={s.line}><ItemArtwork itemId={detail.output.itemId} size={52}/><Text style={[s.caption,{color:C.good,flex:1}]}>{benefit(detail)}</Text></View>
         {mealBonusDef(detail.output.itemId)?<Text style={[s.buff,{color:C.good}]}>{mealBonusDef(detail.output.itemId)!.label} · {mealBonusDef(detail.output.itemId)!.durationHours}h · {gt('Eat for Bonus in Inventory')}</Text>:null}
@@ -138,6 +173,8 @@ export function ConsumableWorkshop({state,skillId,preferredRecipeId,onStart}:Pro
 const s=StyleSheet.create({
  root:{gap:12},line:{flexDirection:'row',alignItems:'center',justifyContent:'space-between',gap:8},title:{fontSize:17,fontWeight:'800',lineHeight:22},name:{fontSize:13,fontWeight:'800',lineHeight:18},bold:{fontSize:12,fontWeight:'800'},caption:{fontSize:11,lineHeight:16},tier:{fontSize:11,fontWeight:'800'},ready:{fontSize:11,fontWeight:'800',marginTop:4},buff:{fontSize:11,fontWeight:'800',lineHeight:16},toggle:{borderWidth:1,borderRadius:8,paddingHorizontal:10,minHeight:38,justifyContent:'center'},
  categories:{flexDirection:'row',gap:6},category:{flex:1,minWidth:0,minHeight:44,borderWidth:1,borderRadius:8,justifyContent:'center',alignItems:'center',paddingHorizontal:4},categoryText:{fontSize:11,fontWeight:'800'},
+ potionList:{gap:14},potionTierGroup:{gap:7},potionTierHeading:{minHeight:28,flexDirection:'row',alignItems:'center',gap:8},potionTierTitle:{fontSize:12,fontWeight:'900',letterSpacing:.6},potionTierDivider:{height:1,flex:1},
+ potionRow:{borderWidth:1,borderRadius:11,overflow:'hidden'},potionRowMain:{minHeight:72,flexDirection:'row',alignItems:'center',gap:10,padding:10},potionRowCopy:{flex:1,minWidth:0,gap:3},potionRowSide:{minWidth:54,alignItems:'flex-end',alignSelf:'stretch',justifyContent:'space-between'},potionRowBrew:{minHeight:38,borderTopWidth:1,alignItems:'center',justifyContent:'center'},
  grid:{flexDirection:'row',flexWrap:'wrap',justifyContent:'space-between',gap:8},tile:{borderWidth:1,borderRadius:11,overflow:'hidden'},tileTap:{minHeight:160,padding:11,gap:5},info:{minHeight:38,borderTopWidth:1,justifyContent:'center',alignItems:'center'},detail:{borderWidth:1,borderRadius:11,padding:12,gap:10},detailModal:{maxHeight:'86%'},detailScroll:{flexGrow:0,flexShrink:1},detailContent:{gap:10,paddingBottom:8},primary:{minHeight:48,alignItems:'center',justifyContent:'center',borderRadius:8},
  secondary:{minHeight:44,flex:1,alignItems:'center',justifyContent:'center',borderWidth:1,borderRadius:8},active:{borderWidth:1,borderRadius:11,padding:12,gap:5}
 });

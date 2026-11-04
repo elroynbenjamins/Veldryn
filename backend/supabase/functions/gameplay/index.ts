@@ -42838,15 +42838,18 @@ var MAX_ALCHEMY_BATCHES = 1e4;
 var HEALING_POTION_CRAFT_COST_MULTIPLIER = 5;
 var HEALING_POTION_XP_MULTIPLIER = 3;
 var POTIONS = [
-  { id: "DEWLEAF_DRAUGHT", name: "Dewleaf Draught", effect: { kind: "healing", maxHpFraction: 0.2 }, description: "Restore 20% maximum HP during boss fights and dungeons. Select below Food in the HP menu; not for ordinary hunts." },
-  { id: "RIVERHEART_DRAUGHT", name: "Riverheart Draught", effect: { kind: "healing", maxHpFraction: 0.35 }, description: "Restore 35% maximum HP during boss fights and dungeons. Select below Food in the HP menu; not for ordinary hunts." },
-  { id: "OATHBLOOM_DRAUGHT", name: "Oathbloom Draught", effect: { kind: "healing", maxHpFraction: 0.5 }, description: "Restore 50% maximum HP during boss fights and dungeons. Select below Food in the HP menu; not for ordinary hunts." },
-  { id: "VIGOR_TONIC", name: "Vigor Tonic", effect: { kind: "preparation", attackFraction: 0.04, damageReductionFraction: 0, encounters: 30 }, description: "+4% attack for 30 resolved ordinary encounters." },
-  { id: "GREATER_VIGOR_TONIC", name: "Greater Vigor Tonic", effect: { kind: "preparation", attackFraction: 0.06, damageReductionFraction: 0, encounters: 45 }, description: "+6% attack for 45 resolved ordinary encounters." },
-  { id: "OATH_VIGOR_TONIC", name: "Oath Vigor Tonic", effect: { kind: "preparation", attackFraction: 0.08, damageReductionFraction: 0, encounters: 60 }, description: "+8% attack for 60 resolved ordinary encounters." },
-  { id: "WARD_TONIC", name: "Ward Tonic", effect: { kind: "preparation", attackFraction: 0, damageReductionFraction: 0.04, encounters: 30 }, description: "4% less incoming damage for 30 resolved ordinary encounters." },
-  { id: "GREATER_WARD_TONIC", name: "Greater Ward Tonic", effect: { kind: "preparation", attackFraction: 0, damageReductionFraction: 0.06, encounters: 45 }, description: "6% less incoming damage for 45 resolved ordinary encounters." },
-  { id: "OATH_WARD_TONIC", name: "Oath Ward Tonic", effect: { kind: "preparation", attackFraction: 0, damageReductionFraction: 0.08, encounters: 60 }, description: "8% less incoming damage for 60 resolved ordinary encounters." }
+  { id: "DEWLEAF_DRAUGHT", name: "Dewleaf Draught", tier: 1, effect: { kind: "healing", maxHpFraction: 0.2 }, description: "Restore 20% max HP in boss fights or dungeons. Not usable in ordinary hunts." },
+  { id: "RIVERHEART_DRAUGHT", name: "Riverheart Draught", tier: 2, effect: { kind: "healing", maxHpFraction: 0.35 }, description: "Restore 35% max HP in boss fights or dungeons. Not usable in ordinary hunts." },
+  { id: "OATHBLOOM_DRAUGHT", name: "Oathbloom Draught", tier: 3, effect: { kind: "healing", maxHpFraction: 0.5 }, description: "Restore 50% max HP in boss fights or dungeons. Not usable in ordinary hunts." },
+  { id: "VIGOR_TONIC", name: "Vigor Tonic", tier: 1, effect: { kind: "preparation", attackFraction: 0, damageDealtFraction: 0.05, damageReductionFraction: 0, healingStrengthFraction: 0, shieldStrengthFraction: 0, encounters: 30 }, description: "+5% damage dealt; one active preparation, lasts 30 ordinary encounters." },
+  { id: "GREATER_VIGOR_TONIC", name: "Greater Vigor Tonic", tier: 2, effect: { kind: "preparation", attackFraction: 0, damageDealtFraction: 0.1, damageReductionFraction: 0, healingStrengthFraction: 0, shieldStrengthFraction: 0, encounters: 45 }, description: "+10% damage dealt; one active preparation, lasts 45 ordinary encounters." },
+  { id: "OATH_VIGOR_TONIC", name: "Oath Vigor Tonic", tier: 3, effect: { kind: "preparation", attackFraction: 0, damageDealtFraction: 0.15, damageReductionFraction: 0, healingStrengthFraction: 0, shieldStrengthFraction: 0, encounters: 60 }, description: "+15% damage dealt; one active preparation, lasts 60 ordinary encounters." },
+  { id: "WARD_TONIC", name: "Ward Tonic", tier: 1, effect: { kind: "preparation", attackFraction: 0, damageDealtFraction: 0, damageReductionFraction: 0.05, healingStrengthFraction: 0, shieldStrengthFraction: 0, encounters: 30 }, description: "5% less incoming damage; one active preparation, lasts 30 ordinary encounters." },
+  { id: "GREATER_WARD_TONIC", name: "Greater Ward Tonic", tier: 2, effect: { kind: "preparation", attackFraction: 0, damageDealtFraction: 0, damageReductionFraction: 0.1, healingStrengthFraction: 0, shieldStrengthFraction: 0, encounters: 45 }, description: "10% less incoming damage; one active preparation, lasts 45 ordinary encounters." },
+  { id: "OATH_WARD_TONIC", name: "Oath Ward Tonic", tier: 3, effect: { kind: "preparation", attackFraction: 0, damageDealtFraction: 0, damageReductionFraction: 0.15, healingStrengthFraction: 0, shieldStrengthFraction: 0, encounters: 60 }, description: "15% less incoming damage; one active preparation, lasts 60 ordinary encounters." },
+  { id: "HARMONY_TONIC", name: "Harmony Tonic", tier: 1, effect: { kind: "preparation", attackFraction: 0, damageDealtFraction: 0.02, damageReductionFraction: 0, healingStrengthFraction: 0.05, shieldStrengthFraction: 0.05, encounters: 30 }, description: "+2% damage and +5% ability healing/shielding. Lasts 30 ordinary encounters; dungeon support requires server integration." },
+  { id: "GREATER_HARMONY_TONIC", name: "Greater Harmony Tonic", tier: 2, effect: { kind: "preparation", attackFraction: 0, damageDealtFraction: 0.04, damageReductionFraction: 0, healingStrengthFraction: 0.1, shieldStrengthFraction: 0.1, encounters: 45 }, description: "+4% damage and +10% ability healing/shielding. Lasts 45 ordinary encounters; dungeon support requires server integration." },
+  { id: "OATH_HARMONY_TONIC", name: "Oath Harmony Tonic", tier: 3, effect: { kind: "preparation", attackFraction: 0, damageDealtFraction: 0.06, damageReductionFraction: 0, healingStrengthFraction: 0.15, shieldStrengthFraction: 0.15, encounters: 60 }, description: "+6% damage and +15% ability healing/shielding. Lasts 60 ordinary encounters; dungeon support requires server integration." }
 ];
 var ALCHEMY_EQUIPMENT_INFUSIONS = Object.freeze([
   { id: "VERDANT_BINDING_RESIN", name: "Verdant Binding Resin", rarity: "rare", value: 70, description: "A dewleaf resin that binds early regional gear." },
@@ -42868,17 +42871,20 @@ var recipe = (potionId, level, seconds, xp, gold, inputs, suffix = "") => ({
 });
 var ALCHEMY_RECIPES = [
   recipe("DEWLEAF_DRAUGHT", 1, 60, 60, 4, [{ itemId: "DEWLEAF", quantity: 2 }]),
-  recipe("VIGOR_TONIC", 8, 75, 115, 8, [{ itemId: "DEWLEAF", quantity: 2 }, { itemId: "RIVER_MINT", quantity: 2 }]),
-  recipe("WARD_TONIC", 16, 90, 195, 12, [{ itemId: "DEWLEAF", quantity: 2 }, { itemId: "IRONBLOOM", quantity: 2 }]),
+  recipe("VIGOR_TONIC", 1, 75, 115, 8, [{ itemId: "DEWLEAF", quantity: 4 }]),
+  recipe("WARD_TONIC", 1, 90, 195, 12, [{ itemId: "DEWLEAF", quantity: 5 }]),
+  recipe("HARMONY_TONIC", 1, 100, 220, 14, [{ itemId: "DEWLEAF", quantity: 6 }]),
   recipe("RIVERHEART_DRAUGHT", 25, 105, 315, 18, [{ itemId: "DEWLEAF", quantity: 3 }, { itemId: "RIVER_MINT", quantity: 3 }]),
-  recipe("GREATER_VIGOR_TONIC", 35, 120, 475, 28, [{ itemId: "RIVER_MINT", quantity: 3 }, { itemId: "CAVELICHEN", quantity: 2 }]),
-  recipe("GREATER_WARD_TONIC", 45, 135, 700, 40, [{ itemId: "IRONBLOOM", quantity: 3 }, { itemId: "CROWN_SAGE", quantity: 2 }]),
+  recipe("GREATER_VIGOR_TONIC", 25, 120, 475, 28, [{ itemId: "RIVER_MINT", quantity: 3 }, { itemId: "IRONBLOOM", quantity: 2 }]),
+  recipe("GREATER_WARD_TONIC", 25, 135, 700, 40, [{ itemId: "IRONBLOOM", quantity: 3 }, { itemId: "RIVER_MINT", quantity: 3 }]),
+  recipe("GREATER_HARMONY_TONIC", 25, 145, 760, 46, [{ itemId: "RIVER_MINT", quantity: 3 }, { itemId: "IRONBLOOM", quantity: 4 }]),
   recipe("OATHBLOOM_DRAUGHT", 60, 150, 1075, 60, [{ itemId: "DEWLEAF", quantity: 4 }, { itemId: "OATHBLOSSOM", quantity: 2 }]),
-  recipe("OATH_VIGOR_TONIC", 75, 165, 1550, 90, [{ itemId: "CAVELICHEN", quantity: 3 }, { itemId: "OATHBLOSSOM", quantity: 3 }]),
-  recipe("OATH_WARD_TONIC", 85, 180, 2e3, 120, [{ itemId: "CROWN_SAGE", quantity: 3 }, { itemId: "OATHBLOSSOM", quantity: 3 }]),
-  recipe("GREATER_VIGOR_TONIC", 35, 132, 550, 32, [{ itemId: "SUNSCALE", quantity: 2 }, { itemId: "RIVER_MINT", quantity: 2 }], "_SUNSCAR"),
-  recipe("OATH_VIGOR_TONIC", 75, 174, 1700, 98, [{ itemId: "WINTERMINT", quantity: 2 }, { itemId: "OATHBLOSSOM", quantity: 2 }], "_FROSTMARCH"),
-  recipe("OATH_WARD_TONIC", 85, 190, 2150, 128, [{ itemId: "ASHEN_MYRRH", quantity: 2 }, { itemId: "FROSTBLOOM", quantity: 2 }], "_ASHLANDS"),
+  recipe("OATH_VIGOR_TONIC", 60, 165, 1550, 90, [{ itemId: "CAVELICHEN", quantity: 3 }, { itemId: "OATHBLOSSOM", quantity: 3 }]),
+  recipe("OATH_WARD_TONIC", 60, 180, 2e3, 120, [{ itemId: "CROWN_SAGE", quantity: 3 }, { itemId: "OATHBLOSSOM", quantity: 3 }]),
+  recipe("OATH_HARMONY_TONIC", 60, 190, 2150, 135, [{ itemId: "CROWN_SAGE", quantity: 4 }, { itemId: "OATHBLOSSOM", quantity: 3 }]),
+  recipe("GREATER_VIGOR_TONIC", 25, 132, 550, 32, [{ itemId: "SUNSCALE", quantity: 2 }, { itemId: "RIVER_MINT", quantity: 2 }], "_SUNSCAR"),
+  recipe("OATH_VIGOR_TONIC", 60, 174, 1700, 98, [{ itemId: "WINTERMINT", quantity: 2 }, { itemId: "OATHBLOSSOM", quantity: 2 }], "_FROSTMARCH"),
+  recipe("OATH_WARD_TONIC", 60, 190, 2150, 128, [{ itemId: "ASHEN_MYRRH", quantity: 2 }, { itemId: "FROSTBLOOM", quantity: 2 }], "_ASHLANDS"),
   { id: "BREW_VERDANT_BINDING_RESIN", name: "Verdant Binding Resin", skillId: "alchemy", level: 1, seconds: 90, xp: 95, gold: 18, inputs: [{ itemId: "DEWLEAF", quantity: 5 }, { itemId: "MOSS_FIBER", quantity: 12 }, { itemId: "WISP_DUST", quantity: 3 }, { itemId: "ASTERFALL_BOTANICAL_ESSENCE", quantity: 1 }], output: { itemId: "VERDANT_BINDING_RESIN", quantity: 1 } },
   { id: "BREW_OATHGLASS_SOLVENT", name: "Oathglass Solvent", skillId: "alchemy", level: 20, seconds: 135, xp: 420, gold: 55, inputs: [{ itemId: "IRONBLOOM", quantity: 4 }, { itemId: "OATHGLASS_SHARD", quantity: 4 }, { itemId: "ECHO_QUARTZ", quantity: 2 }, { itemId: "ASTERFALL_BOTANICAL_ESSENCE", quantity: 1 }], output: { itemId: "OATHGLASS_SOLVENT", quantity: 1 } },
   { id: "BREW_SUNFUSED_FIXATIVE", name: "Sunfused Fixative", skillId: "alchemy", level: 49, seconds: 165, xp: 950, gold: 110, inputs: [{ itemId: "SUNSCALE", quantity: 3 }, { itemId: "AMBERGLASS", quantity: 2 }, { itemId: "SCORPION_VENOM", quantity: 2 }], output: { itemId: "SUNFUSED_FIXATIVE", quantity: 1 } },
@@ -43198,10 +43204,16 @@ function companionXpToNextLevel(rarity, level) {
   if (level >= COMPANION_RARITY_CONFIG[rarity].maxLevel) return 0;
   return Math.max(1, Math.round(COMPANION_LEVEL_CURVE.baseXp * Math.pow(COMPANION_LEVEL_CURVE.xpGrowth, Math.max(0, level - 1)) * COMPANION_RARITY_CONFIG[rarity].xpRequiredMultiplier));
 }
+var COMPANION_LEVEL_GOLD_MULTIPLIER = 2;
+var COMPANION_ASCENSION_GOLD_MULTIPLIER = 5;
+var roundGoldUp = (value, increment) => Math.ceil(value / increment) * increment;
+function baseCompanionLevelGold(rarity, level) {
+  return Math.round(COMPANION_LEVEL_CURVE.goldBase * Math.pow(COMPANION_LEVEL_CURVE.goldGrowth, Math.max(1, level) - 1) * COMPANION_RARITY_CONFIG[rarity].levelCostMultiplier);
+}
 function companionLevelCost(rarity, level) {
   const cfg = COMPANION_RARITY_CONFIG[rarity], l = Math.max(1, level);
   return {
-    gold: Math.round(COMPANION_LEVEL_CURVE.goldBase * Math.pow(COMPANION_LEVEL_CURVE.goldGrowth, l - 1) * cfg.levelCostMultiplier),
+    gold: roundGoldUp(baseCompanionLevelGold(rarity, l) * COMPANION_LEVEL_GOLD_MULTIPLIER, 10),
     companionEssence: Math.max(1, Math.round(COMPANION_LEVEL_CURVE.essenceBase * Math.pow(COMPANION_LEVEL_CURVE.essenceGrowth, l - 1) * cfg.levelCostMultiplier))
   };
 }
@@ -43209,7 +43221,8 @@ function companionRemainingLevelCost(def, progress) {
   const full = companionLevelCost(def.rarity, progress.level), needed = companionXpToNextLevel(def.rarity, progress.level);
   if (needed <= 0) return full;
   const remaining = Math.max(1, needed - Math.max(0, progress.xp)), ratio = Math.min(1, remaining / needed);
-  return { gold: Math.max(1, Math.ceil(full.gold * ratio)), companionEssence: Math.max(1, Math.ceil(full.companionEssence * ratio)) };
+  const baseRemainingGold = Math.max(1, Math.ceil(baseCompanionLevelGold(def.rarity, progress.level) * ratio));
+  return { gold: roundGoldUp(baseRemainingGold * COMPANION_LEVEL_GOLD_MULTIPLIER, 10), companionEssence: Math.max(1, Math.ceil(full.companionEssence * ratio)) };
 }
 function companionCurrentLevelCap(def, progress) {
   return Math.min(COMPANION_RARITY_CONFIG[def.rarity].maxLevel, COMPANION_STAGE_CAPS[def.rarity][Math.max(0, Math.min(3, progress.ascensionTier))]);
@@ -43456,7 +43469,7 @@ function purchaseCompanionLevel(state, id) {
 function companionAscensionCost(def, tier) {
   const base = COMPANION_ASCENSION_BASE_COST[tier], mult = COMPANION_RARITY_CONFIG[def.rarity].levelCostMultiplier;
   const override = def.ascensionMaterialCosts?.find((entry2) => entry2.tier === tier);
-  return { gold: Math.round(base.gold * mult), companionEssence: Math.round(base.companionEssence * mult), bondstones: Math.max(1, Math.round(base.bondstones * Math.sqrt(mult))), materialId: override?.itemId ?? def.ascensionMaterialId, materialQuantity: override?.quantity ?? base.materialQuantity };
+  return { gold: roundGoldUp(Math.round(base.gold * mult) * COMPANION_ASCENSION_GOLD_MULTIPLIER, 100), companionEssence: Math.round(base.companionEssence * mult), bondstones: Math.max(1, Math.round(base.bondstones * Math.sqrt(mult))), materialId: override?.itemId ?? def.ascensionMaterialId, materialQuantity: override?.quantity ?? base.materialQuantity };
 }
 function ascendCombatCompanion(state, id) {
   let clean2 = sanitizeCombatCompanionState(state);
@@ -44567,6 +44580,8 @@ function simulateCombat(input) {
     const heavyHit = qmodeStrike && !crit && rng.next(`${now}:${source.definition.id}:${target2.definition.id}:${abilityId}:heavy`) * 2 < 0.04;
     let raw2 = damageAfterMitigation(source.definition.stats.attackPower, effect2.coeff ?? 0, mit, variance, crit, source.definition.stats.critMultiplier) + (effect2.flat ?? 0);
     if (heavyHit) raw2 *= 1.1;
+    raw2 *= source.definition.alchemyModifiers?.outgoing ?? 1;
+    raw2 *= target2.definition.alchemyModifiers?.incoming ?? 1;
     raw2 *= gemOutgoingDamageMultiplierV1(source, target2, now, abilityId, eventType === "dot_tick");
     raw2 *= Math.max(0.1, 1 + modifier(source, "damage_done", now));
     raw2 *= Math.max(0.1, 1 + modifier(target2, "damage_taken", now));
@@ -44622,7 +44637,7 @@ function simulateCombat(input) {
   const applyHeal = (now, source, target2, effect2, abilityId, eventType = "heal") => {
     if (!target2.alive) return;
     const direct = eventType === "heal", sourceMult = direct ? gemHealingMultiplierV1(source, now) : 1, receivedMult = Math.max(0, 1 + modifier(target2, "healing_received", now));
-    const amount = Math.max(0, (source.definition.stats.healingPower * (effect2.coeff ?? 0) + (effect2.flat ?? 0)) * sourceMult * receivedMult);
+    const amount = Math.max(0, (source.definition.stats.healingPower * (effect2.coeff ?? 0) + (effect2.flat ?? 0)) * sourceMult * receivedMult * (source.definition.alchemyModifiers?.healing ?? 1));
     const actual = Math.min(amount, target2.definition.stats.maxHp - target2.hp);
     target2.hp += actual;
     source.healingDone += actual;
@@ -44653,7 +44668,7 @@ function simulateCombat(input) {
     if (effect2.kind === "damage") return applyDamage(now, source, target2, effect2, abilityId);
     if (effect2.kind === "heal") return applyHeal(now, source, target2, effect2, abilityId);
     if (effect2.kind === "shield") {
-      const amt = Math.max(0, (source.definition.stats.healingPower * (effect2.coeff ?? 0) + (effect2.flat ?? 0)) * gemShieldMultiplierV1(source, now));
+      const amt = Math.max(0, (source.definition.stats.healingPower * (effect2.coeff ?? 0) + (effect2.flat ?? 0)) * gemShieldMultiplierV1(source, now) * (source.definition.alchemyModifiers?.shielding ?? 1));
       target2.shield += amt;
       if (effect2.shieldReflectPct && amt > 0) (target2.reflectiveShields ??= []).push({ remaining: amt, rate: clamp2(effect2.shieldReflectPct, 0, 0.5), sourceId: source.definition.id });
       gemOnShieldAppliedV1(now, source, target2);
@@ -47885,7 +47900,14 @@ function alchemyRefund(brew) {
 }
 function preparationEffects(preparation) {
   const def = preparation && preparation.remainingEncounters > 0 ? potionDef(preparation.itemId) : void 0;
-  return def?.effect.kind === "preparation" ? { attack: 1 + def.effect.attackFraction, damage: 1 - def.effect.damageReductionFraction, itemId: def.id } : { attack: 1, damage: 1, itemId: void 0 };
+  return def?.effect.kind === "preparation" ? {
+    attack: 1 + def.effect.attackFraction,
+    outgoing: 1 + def.effect.damageDealtFraction,
+    damage: 1 - def.effect.damageReductionFraction,
+    healing: 1 + def.effect.healingStrengthFraction,
+    shielding: 1 + def.effect.shieldStrengthFraction,
+    itemId: def.id
+  } : { attack: 1, outgoing: 1, damage: 1, healing: 1, shielding: 1, itemId: void 0 };
 }
 function spendPreparationEncounter(preparation, itemId) {
   if (!itemId || !preparation || preparation.itemId !== itemId) return preparation;
@@ -51636,7 +51658,8 @@ function combatRuntimeDetails(state, monsterId, nowMs = Date.now()) {
   const progressionSpeedPenalty = tierGap === 0 ? 1 : Math.max(0.5, 1 - tierGap * 0.24);
   const progressionDamagePenalty = tierGap === 0 ? 1 : 1 + tierGap * 0.2;
   const gearAttritionMultiplier = 1 + tierGap * MISSING_GEAR_HUNT_ATTRITION_PER_TIER;
-  const speed = Math.max(COMBAT_SPEED_MIN, Math.min(COMBAT_SPEED_MAX, boostedPower / Math.max(1, expected))) * style.speedMultiplier * tactic.speedMultiplier * modifiers.combatSpeedMultiplier * companion.outputMultiplier * (1 + monsterMastery(state, monsterId).damageBonus) * (1 + effectGems.combat_speed) * setOutput * combatCandy * progressionSpeedPenalty;
+  const outgoingPreparation = c.preparation ? preparationEffects(c.preparation).outgoing : 1;
+  const speed = Math.max(COMBAT_SPEED_MIN, Math.min(COMBAT_SPEED_MAX, boostedPower / Math.max(1, expected))) * style.speedMultiplier * tactic.speedMultiplier * modifiers.combatSpeedMultiplier * companion.outputMultiplier * (1 + monsterMastery(state, monsterId).damageBonus) * (1 + effectGems.combat_speed) * setOutput * combatCandy * progressionSpeedPenalty * outgoingPreparation;
   const killCycleSeconds = m.secondsPerKill * COMBAT_TIME_SCALE * (environment?.actionTimeMultiplier ?? 1) / speed;
   return { c, m, stats: stats4, modifiers, companion, style, tactic, environment, effectGems, setCombat, secondary, boostedDefense, killCycleSeconds, progressionDamagePenalty, gearAttritionMultiplier };
 }
@@ -51645,7 +51668,7 @@ function combatEncounterDamage(runtime, champion = false) {
   const raw2 = Math.max(1, Math.round(m.attack * COMBAT_MONSTER_DAMAGE_SCALE) - Math.floor(boostedDefense * 0.58));
   const regionalPressure = (REGIONAL_COMBAT_PRESSURE[m.zone] ?? 1) * REGIONAL_MONSTER_PRESSURE_MULTIPLIER[regionalMonsterPressureBand(m.id)];
   const damage = Math.max(0.1, (raw2 * 0.48 + m.level * 0.16) * (REGIONAL_HUNT_DAMAGE_TUNING[m.zone] ?? 1) * regionalPressure * secondary.incomingPressureMultiplier * style.damageTakenMultiplier * tactic.damageTakenMultiplier * (champion ? CHAMPION_DAMAGE_MULTIPLIER : 1) * modifiers.incomingDamageMultiplier * companion.incomingDamageMultiplier * (1 - effectGems.damage_reduction) * Math.max(0.5, 1 - setCombat.stats.ward) * (c.preparation ? preparationEffects(c.preparation).damage : 1) * runtime.progressionDamagePenalty);
-  const healing = stats4.hp * companion.directHealingPctPerHour * killCycleSeconds / 3600;
+  const healing = stats4.hp * companion.directHealingPctPerHour * killCycleSeconds / 3600 * (c.preparation ? preparationEffects(c.preparation).healing : 1);
   const floor = Math.max(REGIONAL_MIN_ATTRITION_HP_PER_HOUR[m.zone] ?? 0, stats4.hp * MIN_UNHEALED_HP_FRACTION_PER_HOUR) * runtime.gearAttritionMultiplier * killCycleSeconds / 3600;
   const incoming = Math.max(floor, damage);
   return { damage: incoming, healing, net: incoming - healing };
@@ -52515,7 +52538,7 @@ function fallenKnightPlayerSnapshot(state) {
     critChance: stats4.critChance,
     critMultiplier: stats4.critMultiplier,
     haste: stats4.haste,
-    damageMultiplier: Math.max(0.7, (1 + effectGems.boss_power) * setCombat.penetrationMultiplier) * gear.outgoingDamageMultiplier,
+    damageMultiplier: Math.max(0.7, (1 + effectGems.boss_power) * setCombat.penetrationMultiplier) * gear.outgoingDamageMultiplier * (prep?.outgoing ?? 1),
     actionSpeedMultiplier: Math.max(0.65, style.speedMultiplier * multipliers.combatSpeedMultiplier * companion.outputMultiplier * (1 + effectGems.combat_speed) * setCombat.speedMultiplier) * gear.actionSpeedMultiplier,
     incomingDamageMultiplier: Math.max(0.45, style.damageTakenMultiplier * multipliers.incomingDamageMultiplier * companion.incomingDamageMultiplier * (1 - effectGems.damage_reduction) * Math.max(0.5, 1 - setCombat.stats.ward) * (prep?.damage ?? 1)) * gear.incomingDamageMultiplier,
     potionHeal: potion?.effect.kind === "healing" ? Math.ceil(stats4.hp * potion.effect.maxHpFraction * multipliers.healingEffectivenessMultiplier) : 0,
@@ -52548,7 +52571,7 @@ function challengeFallenKnightRematch(state, nowMs) {
   const battle = previewFallenKnightBattle(state, nowMs, "rematch"), potionId = state.character.equippedHealingPotionId, stats4 = effectiveStats(state);
   let inventory = state.inventory.stacks;
   if (battle.potionConsumed && potionId) inventory = consume2(inventory, potionId, battle.potionConsumed);
-  const postFightCharacter = { ...state.character, currentHp: Math.max(1, Math.min(stats4.hp, battle.finalPlayerHp || 1)) };
+  const postFightCharacter = { ...state.character, preparation: void 0, currentHp: Math.max(1, Math.min(stats4.hp, battle.finalPlayerHp || 1)) };
   const attemptMetrics = { ...state.account.longTermMetrics ?? {} };
   attemptMetrics["companions.fallen_knight_rematch_attempts"] = (attemptMetrics["companions.fallen_knight_rematch_attempts"] ?? 0) + 1;
   let next = { ...state, inventory: { ...state.inventory, stacks: inventory }, character: postFightCharacter, activity: null, outOfCombatSinceMs: nowMs, account: { ...state.account, longTermMetrics: attemptMetrics } };
@@ -52590,7 +52613,7 @@ function challengeFallenKnight(state, nowMs = Date.now()) {
   const battle = previewFallenKnightBattle(state, nowMs), potionId = state.character.equippedHealingPotionId;
   let inventory = state.inventory.stacks;
   if (battle.potionConsumed && potionId) inventory = consume2(inventory, potionId, battle.potionConsumed);
-  const postFightCharacter = { ...state.character, currentHp: Math.max(1, Math.min(effectiveStats(state).hp, battle.finalPlayerHp || 1)) };
+  const postFightCharacter = { ...state.character, preparation: void 0, currentHp: Math.max(1, Math.min(effectiveStats(state).hp, battle.finalPlayerHp || 1)) };
   if (!battle.won) {
     const next2 = { ...state, inventory: { ...state.inventory, stacks: inventory }, character: postFightCharacter, activity: null, outOfCombatSinceMs: nowMs };
     return { state: next2, won: false, battle, message: `Fallen Knight repelled you after ${Math.max(1, Math.round(battle.durationMs / 1e3))}s. ${battle.potionConsumed ? battle.potionConsumed + " healing potions used. " : ""}Upgrade gear, improve class progression or select stronger healing potions before the next attempt.` };
@@ -52615,7 +52638,7 @@ function transitionActivity(state, nowMs, next) {
 }
 
 // ../apps/mobile/src/i18n/languages.ts
-var SUPPORTED_LANGUAGES = ["en", "de", "es", "nl", "it", "fr"];
+var SUPPORTED_LANGUAGES = ["en", "de", "es", "nl", "it", "fr", "ru", "tr"];
 
 // ../apps/mobile/src/core/game-commands.ts
 init_faith2();

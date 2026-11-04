@@ -9,7 +9,7 @@ var __esm = (fn, res, err) => function __init() {
   }
 };
 
-// ../apps/mobile/src/core/meal-buffs.ts
+// apps/mobile/src/core/meal-buffs.ts
 function mealBonusDef(itemId) {
   return MEAL_BONUSES.find((row) => row.itemId === itemId);
 }
@@ -19,7 +19,7 @@ function activeMealBonus(character) {
 }
 var MEAL_BONUSES;
 var init_meal_buffs = __esm({
-  "../apps/mobile/src/core/meal-buffs.ts"() {
+  "apps/mobile/src/core/meal-buffs.ts"() {
     "use strict";
     MEAL_BONUSES = [
       { itemId: "IRONWOOD_STEW", kind: "gathering_speed", percent: 2, durationHours: 3, label: "+2% Gathering speed" },
@@ -31,7 +31,7 @@ var init_meal_buffs = __esm({
   }
 });
 
-// ../apps/mobile/src/core/progression.ts
+// apps/mobile/src/core/progression.ts
 function baseXpForNextLevel(level) {
   return Math.floor(90 * Math.pow(level, 1.42) + level * 35);
 }
@@ -61,16 +61,16 @@ function totalXpAtLevel(level) {
 }
 var SKILL_XP_SCALE;
 var init_progression = __esm({
-  "../apps/mobile/src/core/progression.ts"() {
+  "apps/mobile/src/core/progression.ts"() {
     "use strict";
     SKILL_XP_SCALE = 1.6;
   }
 });
 
-// ../apps/mobile/src/content/faith.ts
+// apps/mobile/src/content/faith.ts
 var HOLY_WATER_ID, FAITH_TIERS, FAITH_BLESSINGS, HOLY_WATER_SOURCES, faithBlessingDef;
 var init_faith = __esm({
-  "../apps/mobile/src/content/faith.ts"() {
+  "apps/mobile/src/content/faith.ts"() {
     "use strict";
     HOLY_WATER_ID = "HOLY_WATER";
     FAITH_TIERS = [
@@ -104,7 +104,7 @@ var init_faith = __esm({
   }
 });
 
-// ../apps/mobile/src/core/faith.ts
+// apps/mobile/src/core/faith.ts
 function normalizeFaith(raw2) {
   const xp = typeof raw2?.xp === "number" && Number.isFinite(raw2.xp) ? Math.max(0, Math.min(MAX_XP, Math.floor(raw2.xp))) : 0;
   const selected2 = faithBlessingDef(raw2?.selectedBlessingId), p = raw2?.practice, tier = FAITH_TIERS.find((t) => t.id === p?.tierId);
@@ -113,7 +113,7 @@ function normalizeFaith(raw2) {
 }
 var MAX_XP, faithLevel, selectedFaithBlessing;
 var init_faith2 = __esm({
-  "../apps/mobile/src/core/faith.ts"() {
+  "apps/mobile/src/core/faith.ts"() {
     "use strict";
     init_meal_buffs();
     init_faith();
@@ -127,7 +127,10 @@ var init_faith2 = __esm({
   }
 });
 
-// ../apps/mobile/src/content/classes.ts
+// backend/online/coop.ts
+import { createHash as createHash9 } from "node:crypto";
+
+// apps/mobile/src/content/classes.ts
 var CLASSES = [
   { id: "IRONWARDEN", name: "Ironwarden", role: "Tank", description: "Runic defender built around guard, threat and counterplay.", hp: 155, attack: 15, defense: 19, roleRatings: { tank: 5, damage: 2, support: 1 }, starterEquipment: { weapon: "basic_sword" } },
   { id: "BASTION", name: "Bastion", role: "Tank", description: "Fortress tank using layered barriers and heavy protection.", hp: 164, attack: 14, defense: 20, roleRatings: { tank: 5, damage: 1, support: 2 }, starterEquipment: { weapon: "basic_tower_shield" } },
@@ -140,7 +143,7 @@ var CLASSES = [
   { id: "STONECALLER", name: "Stonecaller", role: "Support", description: "Earth-and-storm support caster using resonance, geomancy and totems.", hp: 120, attack: 20, defense: 12, roleRatings: { tank: 2, damage: 2, support: 5 }, starterEquipment: { weapon: "basic_staff" } }
 ];
 
-// src/server/expeditions/content/launch-content.ts
+// backend/src/server/expeditions/content/launch-content.ts
 var EXPEDITIONS = {
   EXP_001: { id: "EXP_001", name: "Rootbound Vault", region: "Asterfall", minLevel: 15, recommendedLevel: 25, baseMarks: 74, minNodes: 8, maxNodes: 10, bossId: "BOSS_EXP_ROOT", coopImplemented: true, nodeWeights: { battle: 30, elite: 10, event: 18, camp: 9, treasure: 8, echo: 8, forge: 5, merchant: 4, risk: 5, secret: 3 } },
   EXP_002: { id: "EXP_002", name: "Lanternwatch Descent", region: "Asterfall", minLevel: 18, recommendedLevel: 25, baseMarks: 76, minNodes: 8, maxNodes: 10, bossId: "BOSS_EXP_BELL", coopImplemented: true, nodeWeights: { battle: 28, elite: 11, event: 17, camp: 8, treasure: 8, echo: 12, forge: 5, merchant: 4, risk: 5, secret: 2 } },
@@ -153,7 +156,7 @@ var EXPEDITIONS = {
 };
 var LAUNCH_BOON_IDS = Array.from({ length: 126 }, (_, i) => `BOON_${String(i + 1).padStart(3, "0")}`);
 
-// src/server/expeditions/constants.ts
+// backend/src/server/expeditions/constants.ts
 var EXPEDITION = {
   difficultyIndex: { 1: 1, 2: 1.06, 3: 1.11, 4: 1.19, 5: 1.29 },
   marksMultiplier: { 1: 1, 2: 1.1, 3: 1.25, 4: 1.45, 5: 1.7 },
@@ -193,7 +196,7 @@ var COMBAT_LIMITS = {
   unitContributionRaidMax: 0.05
 };
 
-// src/server/expeditions/rewards.ts
+// backend/src/server/expeditions/rewards.ts
 function failureRewardFraction(state) {
   if (state.cleared) return FAILURE_REWARD.clear;
   if (state.reachedFinalBoss && (state.finalBossHpFraction ?? 1) <= 0.25) return FAILURE_REWARD.bossLow;
@@ -225,7 +228,7 @@ function marksForRun(mapBaseMarks, tier, state, objectiveMultiplier = 1, enhance
   return enhancedEligible ? preCap : Math.round(preCap * EXPEDITION.postCapMarksCoefficient);
 }
 
-// src/shared/companion-affinity-catalog.ts
+// backend/src/shared/companion-affinity-catalog.ts
 var COMPANION_AFFINITY_BY_ID = {
   UNIT_001: "wild",
   UNIT_002: "construct",
@@ -270,7 +273,7 @@ function companionAffinityById(id) {
   return COMPANION_AFFINITY_BY_ID[id] ?? "wild";
 }
 
-// src/server/companions/content.ts
+// backend/src/server/companions/content.ts
 var raw = [
   ["UNIT_001", "Ironwood Hound", "damage", "standard", "REG_001", 180, 22, 12, 2, "damage", 1],
   ["UNIT_002", "Runebound Sentry", "tank", "standard", "REG_001", 260, 14, 24, 2.6, "shield", 0.06],
@@ -506,7 +509,7 @@ var COMPANION_MISSIONS = [
   { id: "MISSION_PRESTIGE_VIGIL_12H", name: "Sanctuary Prestige Vigil", durationMs: 12 * 36e5, missionVersion: 1, minCompanions: 3, maxCompanions: 3, minimumPenLevel: 3, minimumLevel: 20, recommendedPower: 4250, requirements: [{ type: "min_rarity", rarity: "elite", count: 2 }, { type: "min_ascension", tier: 2, count: 3 }, { type: "min_bond", value: 7, count: 3 }], bonusRequirements: [{ type: "min_rarity", rarity: "prestige", count: 1 }, { type: "affinity_diversity", count: 3 }], specialtyBonus: { label: "Prestige mentorship: +20% Companion XP and +10% Essence when a Prestige companion joins.", companionXpMultiplier: 1.2, essenceMultiplier: 1.1 }, costs: { gold: 1750, materials: { SUPPLIES: 4 } }, baseRewards: { companionEssence: 18, gold: 1450, companionXp: 420, bondXp: 48, materials: { TRIAL_SANCTUARY_MATERIAL: 1 } }, bonusRewards: { companionEssence: 12, materials: { TRIAL_SANCTUARY_MATERIAL: 1 } }, bonusRewardChanceByGrade: { A: 0.05, S: 0.12 }, bondstoneEligible: true }
 ];
 
-// src/server/coop/dungeon-power.ts
+// backend/src/server/coop/dungeon-power.ts
 function dungeonPowerIndex(input) {
   const stats6 = input.normalized.snapshot;
   const player2 = Math.max(1, Math.round(
@@ -524,7 +527,7 @@ function recommendedDungeonPower(minLevel) {
   return Math.round(700 + minLevel * 520);
 }
 
-// src/server/expeditions/content/event-expeditions.ts
+// backend/src/server/expeditions/content/event-expeditions.ts
 var special = (depth, choice, kind, contentId, title2, rewardTag, mechanicDelta, risk, objectiveDelta = 0) => ({ depth, choice, kind, contentId, title: title2, rewardTag, mechanicDelta, risk, objectiveDelta });
 var EVENT_EXPEDITIONS = Object.freeze([
   {
@@ -712,7 +715,7 @@ function eventExpeditionPreviews(nowMs) {
   return EVENT_EXPEDITIONS.map((definition) => ({ ...definition, status: "preview", scheduled: active(definition, nowMs) }));
 }
 
-// src/server/coop/config.ts
+// backend/src/server/coop/config.ts
 var COOP_ROGUELITE_CONFIG = Object.freeze({
   featureFlag: "coopRogueliteV1",
   enabledByDefault: false,
@@ -763,10 +766,16 @@ var ROOTBOUND_COOP_BALANCE_V2 = Object.freeze({
   lateDepthAttackMultiplier: 1
 });
 
-// online/coop-loadout.ts
+// backend/online/coop-loadout.ts
 import { createHash } from "node:crypto";
 
-// ../apps/mobile/src/content/equipment_catalog_t1_t9_v33.json
+// apps/mobile/src/content/crafting-gold-cost.ts
+function increasedCraftingGoldCost(baseGold) {
+  if (!Number.isSafeInteger(baseGold) || baseGold < 0) throw new Error("invalid_crafting_gold");
+  return Math.ceil(baseGold * 6 / 5);
+}
+
+// apps/mobile/src/content/equipment_catalog_t1_t9_v33.json
 var equipment_catalog_t1_t9_v33_default = {
   schemaVersion: "equipment-2.0-v33-10slot-fresh-start",
   source: "v23 catalog expanded by v33 GitHub integration",
@@ -42276,7 +42285,7 @@ var equipment_catalog_t1_t9_v33_default = {
   ]
 };
 
-// ../apps/mobile/src/content/equipment-recipes-v33.ts
+// apps/mobile/src/content/equipment-recipes-v33.ts
 var classIdByName = {
   Ironwarden: "IRONWARDEN",
   Bastion: "BASTION",
@@ -42439,7 +42448,7 @@ var V33_EQUIPMENT_RECIPES = equipment_catalog_t1_t9_v33_default.pieces.map((piec
     skillId,
     level,
     xp: q(tierXp[tier] ?? 120, multiplier),
-    gold: q(tierGold[tier] ?? 120, multiplier) * EQUIPMENT_FORGE_GOLD_MULTIPLIER,
+    gold: increasedCraftingGoldCost(q(tierGold[tier] ?? 120, multiplier) * EQUIPMENT_FORGE_GOLD_MULTIPLIER),
     seconds: clamp(Math.round(range.base * multiplier), range.min, range.max),
     inputs: mergeInputs([...ingredients(tier, String(piece.Path), multiplier, skillId), infusionByTier[tier]]),
     output: { itemId: String(piece["Piece ID"]), quantity: 1 },
@@ -42452,7 +42461,7 @@ var V33_EQUIPMENT_RECIPES = equipment_catalog_t1_t9_v33_default.pieces.map((piec
   };
 });
 
-// ../apps/mobile/src/content/novice-sets.ts
+// apps/mobile/src/content/novice-sets.ts
 var definitions = [
   { id: "ironwarden_recruit", classId: "IRONWARDEN", name: "Ironwarden Recruit", appearanceId: "beginner-ironwarden-recruit", weaponName: "Recruit Sword", weaponAttack: 6, offhandName: "Recruit Shield", setBonus: { name: "Runic Formation", attack: 3, defense: 8, hp: 28, description: "+8 DEF and +28 HP while the full set is equipped." }, theme: { accent: "#83a9c8", identity: "Disciplined steel frontline", material: "Steel, blue cloth and field leather" } },
   { id: "wallkeeper_initiate", classId: "BASTION", name: "Wallkeeper Initiate", appearanceId: "beginner-wallkeeper-initiate", weaponName: "Initiate Tower Shield", weaponAttack: 5, offhandName: "Initiate Guard Bell", setBonus: { name: "Unbroken Wall", attack: 1, defense: 12, hp: 42, description: "+12 DEF and +42 HP while the full set is equipped." }, theme: { accent: "#bc8045", identity: "Maximum defense and immovable presence", material: "Dark plate, copper trim and tower shield" } },
@@ -42505,14 +42514,14 @@ var NOVICE_RECIPES = NOVICE_SETS.flatMap((set) => set.slots.map((slot) => {
     // Keep the existing novice-set baseline and apply the same equipment-only
     // forge gold increase used by the regional T1–T9 equipment recipes.
     xp: stage * 50,
-    gold: (slot === "weapon" || slot === "amulet" || slot === "ring" ? 20 : stage === 4 ? 15 : 10) * 2 * EQUIPMENT_FORGE_GOLD_MULTIPLIER,
+    gold: increasedCraftingGoldCost((slot === "weapon" || slot === "amulet" || slot === "ring" ? 20 : stage === 4 ? 15 : 10) * 2 * EQUIPMENT_FORGE_GOLD_MULTIPLIER),
     seconds: 0,
     inputs: [{ itemId: "COPPER_ORE", quantity: (stage >= 4 ? 16 : slot === "chest" || slot === "weapon" ? 16 : 8) * 2 }, { itemId: "GREENWOOD_LOG", quantity: (stage >= 4 ? 16 : slot === "chest" || slot === "weapon" ? 16 : 8) * 2 }, { itemId: "MOSS_FIBER", quantity: (stage >= 5 ? 8 : 4) * 2 }],
     output: { itemId: item.id, quantity: 1 }
   };
 }));
 
-// ../apps/mobile/src/content/guild-components.ts
+// apps/mobile/src/content/guild-components.ts
 var GUILD_COMPONENT_ITEMS = [
   { id: "GUILD_REINFORCED_TIMBER", name: "Reinforced Timber Bundle", type: "material", rarity: "common", value: 0, guildOnly: true },
   { id: "GUILD_MASONS_KEYSTONE", name: "Mason's Keystone", type: "material", rarity: "uncommon", value: 0, guildOnly: true },
@@ -42533,10 +42542,10 @@ var GUILD_COMPONENT_RECIPES = [
   { id: "GUILD_TAILOR_DYE", name: "Prepare Heraldic Dye", skillId: "tailoring", level: 18, xp: 275, gold: 90, seconds: 140, repeatableTraining: true, inputs: [{ itemId: "WOLF_PELT", quantity: 3 }, { itemId: "THORN_SAP", quantity: 1 }], output: { itemId: "GUILD_HERALDIC_DYE", quantity: 1 } },
   { id: "GUILD_TAILOR_WAX", name: "Prepare Guild Seal Wax", skillId: "tailoring", level: 35, xp: 565, gold: 300, seconds: 260, repeatableTraining: true, inputs: [{ itemId: "ECHO_TOUCHED_PELT", quantity: 1 }, { itemId: "TORN_OATHCLOTH", quantity: 2 }], output: { itemId: "GUILD_SEAL_WAX", quantity: 1 } },
   { id: "GUILD_TAILOR_BEACON_OIL", name: "Prepare Beacon Oil", skillId: "tailoring", level: 60, xp: 1420, gold: 950, seconds: 570, repeatableTraining: true, inputs: [{ itemId: "ECHO_TOUCHED_PELT", quantity: 2 }, { itemId: "WINTERMINT", quantity: 2 }], output: { itemId: "GUILD_BEACON_OIL", quantity: 1 } }
-];
+].map((recipe2) => ({ ...recipe2, gold: increasedCraftingGoldCost(recipe2.gold) }));
 
-// ../apps/mobile/src/content/gathering-tools.ts
-var tool = (definition) => definition;
+// apps/mobile/src/content/gathering-tools.ts
+var tool = (definition) => ({ ...definition, recipe: { ...definition.recipe, gold: increasedCraftingGoldCost(definition.recipe.gold) } });
 var blueprint = (itemId, knowledgeId, sourceMonsterId, dropChance) => ({ itemId, knowledgeId, sourceMonsterId, dropChance });
 var GATHERING_TOOLS = [
   // Tier 1 is always learnable, but still requires early investment in the relevant gathering skill.
@@ -42580,7 +42589,7 @@ var TOOL_RECIPES = GATHERING_TOOLS.map((entry2) => ({
   knowledgeItemId: entry2.blueprint?.itemId
 }));
 
-// ../apps/mobile/src/content/herbalism.ts
+// apps/mobile/src/content/herbalism.ts
 var HERB_NODES = [
   { id: "DEWLEAF_PATCH", name: "Dewleaf Patch", itemId: "DEWLEAF", zoneId: "GREENFIELDS", unlockLevel: 1, seconds: 30, xp: 9 },
   { id: "RIVER_MINT_BED", name: "River Mint Bed", itemId: "RIVER_MINT", zoneId: "SILVERBROOK", unlockLevel: 8, seconds: 40, xp: 20 },
@@ -42610,17 +42619,22 @@ var HERB_ITEMS = [
   { id: "ASHLANDS_BOTANICAL_ESSENCE", name: "Ashlands Botanical Essence", type: "material", value: 300, rarity: "epic", passive: "A rare concentrated botanical reagent from Ashlands harvesting." }
 ];
 
-// ../apps/mobile/src/content/alchemy.ts
+// apps/mobile/src/content/alchemy.ts
+var HEALING_POTION_CRAFT_COST_MULTIPLIER = 5;
+var HEALING_POTION_XP_MULTIPLIER = 3;
 var POTIONS = [
-  { id: "DEWLEAF_DRAUGHT", name: "Dewleaf Draught", effect: { kind: "healing", maxHpFraction: 0.25 }, description: "Restore 25% of maximum HP outside a hunt. No effect at full health." },
-  { id: "RIVERHEART_DRAUGHT", name: "Riverheart Draught", effect: { kind: "healing", maxHpFraction: 0.45 }, description: "Restore 45% of maximum HP outside a hunt. No effect at full health." },
-  { id: "OATHBLOOM_DRAUGHT", name: "Oathbloom Draught", effect: { kind: "healing", maxHpFraction: 0.65 }, description: "Restore 65% of maximum HP outside a hunt. No effect at full health." },
-  { id: "VIGOR_TONIC", name: "Vigor Tonic", effect: { kind: "preparation", attackFraction: 0.04, damageReductionFraction: 0, encounters: 30 }, description: "+4% attack for 30 resolved ordinary encounters." },
-  { id: "GREATER_VIGOR_TONIC", name: "Greater Vigor Tonic", effect: { kind: "preparation", attackFraction: 0.06, damageReductionFraction: 0, encounters: 45 }, description: "+6% attack for 45 resolved ordinary encounters." },
-  { id: "OATH_VIGOR_TONIC", name: "Oath Vigor Tonic", effect: { kind: "preparation", attackFraction: 0.08, damageReductionFraction: 0, encounters: 60 }, description: "+8% attack for 60 resolved ordinary encounters." },
-  { id: "WARD_TONIC", name: "Ward Tonic", effect: { kind: "preparation", attackFraction: 0, damageReductionFraction: 0.04, encounters: 30 }, description: "4% less incoming damage for 30 resolved ordinary encounters." },
-  { id: "GREATER_WARD_TONIC", name: "Greater Ward Tonic", effect: { kind: "preparation", attackFraction: 0, damageReductionFraction: 0.06, encounters: 45 }, description: "6% less incoming damage for 45 resolved ordinary encounters." },
-  { id: "OATH_WARD_TONIC", name: "Oath Ward Tonic", effect: { kind: "preparation", attackFraction: 0, damageReductionFraction: 0.08, encounters: 60 }, description: "8% less incoming damage for 60 resolved ordinary encounters." }
+  { id: "DEWLEAF_DRAUGHT", name: "Dewleaf Draught", tier: 1, effect: { kind: "healing", maxHpFraction: 0.2 }, description: "Restore 20% max HP in boss fights or dungeons. Not usable in ordinary hunts." },
+  { id: "RIVERHEART_DRAUGHT", name: "Riverheart Draught", tier: 2, effect: { kind: "healing", maxHpFraction: 0.35 }, description: "Restore 35% max HP in boss fights or dungeons. Not usable in ordinary hunts." },
+  { id: "OATHBLOOM_DRAUGHT", name: "Oathbloom Draught", tier: 3, effect: { kind: "healing", maxHpFraction: 0.5 }, description: "Restore 50% max HP in boss fights or dungeons. Not usable in ordinary hunts." },
+  { id: "VIGOR_TONIC", name: "Vigor Tonic", tier: 1, effect: { kind: "preparation", attackFraction: 0, damageDealtFraction: 0.05, damageReductionFraction: 0, healingStrengthFraction: 0, shieldStrengthFraction: 0, encounters: 30 }, description: "+5% damage dealt; one active preparation, lasts 30 ordinary encounters." },
+  { id: "GREATER_VIGOR_TONIC", name: "Greater Vigor Tonic", tier: 2, effect: { kind: "preparation", attackFraction: 0, damageDealtFraction: 0.1, damageReductionFraction: 0, healingStrengthFraction: 0, shieldStrengthFraction: 0, encounters: 45 }, description: "+10% damage dealt; one active preparation, lasts 45 ordinary encounters." },
+  { id: "OATH_VIGOR_TONIC", name: "Oath Vigor Tonic", tier: 3, effect: { kind: "preparation", attackFraction: 0, damageDealtFraction: 0.15, damageReductionFraction: 0, healingStrengthFraction: 0, shieldStrengthFraction: 0, encounters: 60 }, description: "+15% damage dealt; one active preparation, lasts 60 ordinary encounters." },
+  { id: "WARD_TONIC", name: "Ward Tonic", tier: 1, effect: { kind: "preparation", attackFraction: 0, damageDealtFraction: 0, damageReductionFraction: 0.05, healingStrengthFraction: 0, shieldStrengthFraction: 0, encounters: 30 }, description: "5% less incoming damage; one active preparation, lasts 30 ordinary encounters." },
+  { id: "GREATER_WARD_TONIC", name: "Greater Ward Tonic", tier: 2, effect: { kind: "preparation", attackFraction: 0, damageDealtFraction: 0, damageReductionFraction: 0.1, healingStrengthFraction: 0, shieldStrengthFraction: 0, encounters: 45 }, description: "10% less incoming damage; one active preparation, lasts 45 ordinary encounters." },
+  { id: "OATH_WARD_TONIC", name: "Oath Ward Tonic", tier: 3, effect: { kind: "preparation", attackFraction: 0, damageDealtFraction: 0, damageReductionFraction: 0.15, healingStrengthFraction: 0, shieldStrengthFraction: 0, encounters: 60 }, description: "15% less incoming damage; one active preparation, lasts 60 ordinary encounters." },
+  { id: "HARMONY_TONIC", name: "Harmony Tonic", tier: 1, effect: { kind: "preparation", attackFraction: 0, damageDealtFraction: 0.02, damageReductionFraction: 0, healingStrengthFraction: 0.05, shieldStrengthFraction: 0.05, encounters: 30 }, description: "+2% damage and +5% ability healing/shielding. Lasts 30 ordinary encounters; dungeon support requires server integration." },
+  { id: "GREATER_HARMONY_TONIC", name: "Greater Harmony Tonic", tier: 2, effect: { kind: "preparation", attackFraction: 0, damageDealtFraction: 0.04, damageReductionFraction: 0, healingStrengthFraction: 0.1, shieldStrengthFraction: 0.1, encounters: 45 }, description: "+4% damage and +10% ability healing/shielding. Lasts 45 ordinary encounters; dungeon support requires server integration." },
+  { id: "OATH_HARMONY_TONIC", name: "Oath Harmony Tonic", tier: 3, effect: { kind: "preparation", attackFraction: 0, damageDealtFraction: 0.06, damageReductionFraction: 0, healingStrengthFraction: 0.15, shieldStrengthFraction: 0.15, encounters: 60 }, description: "+6% damage and +15% ability healing/shielding. Lasts 60 ordinary encounters; dungeon support requires server integration." }
 ];
 var ALCHEMY_EQUIPMENT_INFUSIONS = Object.freeze([
   { id: "VERDANT_BINDING_RESIN", name: "Verdant Binding Resin", rarity: "rare", value: 70, description: "A dewleaf resin that binds early regional gear." },
@@ -42642,23 +42656,35 @@ var recipe = (potionId, level, seconds, xp, gold, inputs, suffix = "") => ({
 });
 var ALCHEMY_RECIPES = [
   recipe("DEWLEAF_DRAUGHT", 1, 60, 60, 4, [{ itemId: "DEWLEAF", quantity: 2 }]),
-  recipe("VIGOR_TONIC", 8, 75, 115, 8, [{ itemId: "DEWLEAF", quantity: 2 }, { itemId: "RIVER_MINT", quantity: 2 }]),
-  recipe("WARD_TONIC", 16, 90, 195, 12, [{ itemId: "DEWLEAF", quantity: 2 }, { itemId: "IRONBLOOM", quantity: 2 }]),
+  recipe("VIGOR_TONIC", 1, 75, 115, 8, [{ itemId: "DEWLEAF", quantity: 4 }]),
+  recipe("WARD_TONIC", 1, 90, 195, 12, [{ itemId: "DEWLEAF", quantity: 5 }]),
+  recipe("HARMONY_TONIC", 1, 100, 220, 14, [{ itemId: "DEWLEAF", quantity: 6 }]),
   recipe("RIVERHEART_DRAUGHT", 25, 105, 315, 18, [{ itemId: "DEWLEAF", quantity: 3 }, { itemId: "RIVER_MINT", quantity: 3 }]),
-  recipe("GREATER_VIGOR_TONIC", 35, 120, 475, 28, [{ itemId: "RIVER_MINT", quantity: 3 }, { itemId: "CAVELICHEN", quantity: 2 }]),
-  recipe("GREATER_WARD_TONIC", 45, 135, 700, 40, [{ itemId: "IRONBLOOM", quantity: 3 }, { itemId: "CROWN_SAGE", quantity: 2 }]),
+  recipe("GREATER_VIGOR_TONIC", 25, 120, 475, 28, [{ itemId: "RIVER_MINT", quantity: 3 }, { itemId: "IRONBLOOM", quantity: 2 }]),
+  recipe("GREATER_WARD_TONIC", 25, 135, 700, 40, [{ itemId: "IRONBLOOM", quantity: 3 }, { itemId: "RIVER_MINT", quantity: 3 }]),
+  recipe("GREATER_HARMONY_TONIC", 25, 145, 760, 46, [{ itemId: "RIVER_MINT", quantity: 3 }, { itemId: "IRONBLOOM", quantity: 4 }]),
   recipe("OATHBLOOM_DRAUGHT", 60, 150, 1075, 60, [{ itemId: "DEWLEAF", quantity: 4 }, { itemId: "OATHBLOSSOM", quantity: 2 }]),
-  recipe("OATH_VIGOR_TONIC", 75, 165, 1550, 90, [{ itemId: "CAVELICHEN", quantity: 3 }, { itemId: "OATHBLOSSOM", quantity: 3 }]),
-  recipe("OATH_WARD_TONIC", 85, 180, 2e3, 120, [{ itemId: "CROWN_SAGE", quantity: 3 }, { itemId: "OATHBLOSSOM", quantity: 3 }]),
-  recipe("GREATER_VIGOR_TONIC", 35, 132, 550, 32, [{ itemId: "SUNSCALE", quantity: 2 }, { itemId: "RIVER_MINT", quantity: 2 }], "_SUNSCAR"),
-  recipe("OATH_VIGOR_TONIC", 75, 174, 1700, 98, [{ itemId: "WINTERMINT", quantity: 2 }, { itemId: "OATHBLOSSOM", quantity: 2 }], "_FROSTMARCH"),
-  recipe("OATH_WARD_TONIC", 85, 190, 2150, 128, [{ itemId: "ASHEN_MYRRH", quantity: 2 }, { itemId: "FROSTBLOOM", quantity: 2 }], "_ASHLANDS"),
+  recipe("OATH_VIGOR_TONIC", 60, 165, 1550, 90, [{ itemId: "CAVELICHEN", quantity: 3 }, { itemId: "OATHBLOSSOM", quantity: 3 }]),
+  recipe("OATH_WARD_TONIC", 60, 180, 2e3, 120, [{ itemId: "CROWN_SAGE", quantity: 3 }, { itemId: "OATHBLOSSOM", quantity: 3 }]),
+  recipe("OATH_HARMONY_TONIC", 60, 190, 2150, 135, [{ itemId: "CROWN_SAGE", quantity: 4 }, { itemId: "OATHBLOSSOM", quantity: 3 }]),
+  recipe("GREATER_VIGOR_TONIC", 25, 132, 550, 32, [{ itemId: "SUNSCALE", quantity: 2 }, { itemId: "RIVER_MINT", quantity: 2 }], "_SUNSCAR"),
+  recipe("OATH_VIGOR_TONIC", 60, 174, 1700, 98, [{ itemId: "WINTERMINT", quantity: 2 }, { itemId: "OATHBLOSSOM", quantity: 2 }], "_FROSTMARCH"),
+  recipe("OATH_WARD_TONIC", 60, 190, 2150, 128, [{ itemId: "ASHEN_MYRRH", quantity: 2 }, { itemId: "FROSTBLOOM", quantity: 2 }], "_ASHLANDS"),
   { id: "BREW_VERDANT_BINDING_RESIN", name: "Verdant Binding Resin", skillId: "alchemy", level: 1, seconds: 90, xp: 95, gold: 18, inputs: [{ itemId: "DEWLEAF", quantity: 5 }, { itemId: "MOSS_FIBER", quantity: 12 }, { itemId: "WISP_DUST", quantity: 3 }, { itemId: "ASTERFALL_BOTANICAL_ESSENCE", quantity: 1 }], output: { itemId: "VERDANT_BINDING_RESIN", quantity: 1 } },
   { id: "BREW_OATHGLASS_SOLVENT", name: "Oathglass Solvent", skillId: "alchemy", level: 20, seconds: 135, xp: 420, gold: 55, inputs: [{ itemId: "IRONBLOOM", quantity: 4 }, { itemId: "OATHGLASS_SHARD", quantity: 4 }, { itemId: "ECHO_QUARTZ", quantity: 2 }, { itemId: "ASTERFALL_BOTANICAL_ESSENCE", quantity: 1 }], output: { itemId: "OATHGLASS_SOLVENT", quantity: 1 } },
   { id: "BREW_SUNFUSED_FIXATIVE", name: "Sunfused Fixative", skillId: "alchemy", level: 49, seconds: 165, xp: 950, gold: 110, inputs: [{ itemId: "SUNSCALE", quantity: 3 }, { itemId: "AMBERGLASS", quantity: 2 }, { itemId: "SCORPION_VENOM", quantity: 2 }], output: { itemId: "SUNFUSED_FIXATIVE", quantity: 1 } },
   { id: "BREW_RIMEWARD_DISTILLATE", name: "Rimeward Distillate", skillId: "alchemy", level: 76, seconds: 195, xp: 1750, gold: 220, inputs: [{ itemId: "WINTERMINT", quantity: 3 }, { itemId: "RIMEGLASS", quantity: 2 }, { itemId: "RIME_RESIN", quantity: 3 }], output: { itemId: "RIMEWARD_DISTILLATE", quantity: 1 } },
   { id: "BREW_CINDERHEART_ELIXIR", name: "Cinderheart Elixir", skillId: "alchemy", level: 96, seconds: 225, xp: 3e3, gold: 420, inputs: [{ itemId: "ASHEN_MYRRH", quantity: 4 }, { itemId: "BLACKGLASS_CORE", quantity: 2 }, { itemId: "CINDER_HEART", quantity: 1 }], output: { itemId: "CINDERHEART_ELIXIR", quantity: 1 } }
-];
+].map((recipe2) => {
+  const healing = POTIONS.some((potion) => potion.id === recipe2.output.itemId && potion.effect.kind === "healing");
+  const costMultiplier = healing ? HEALING_POTION_CRAFT_COST_MULTIPLIER : 1;
+  return {
+    ...recipe2,
+    xp: recipe2.xp * (healing ? HEALING_POTION_XP_MULTIPLIER : 1),
+    gold: increasedCraftingGoldCost(recipe2.gold) * costMultiplier,
+    inputs: recipe2.inputs.map((input) => ({ ...input, quantity: input.quantity * costMultiplier }))
+  };
+});
 var POTION_ITEMS = POTIONS.map((potion) => ({
   id: potion.id,
   name: potion.name,
@@ -42670,7 +42696,7 @@ var POTION_ITEMS = POTIONS.map((potion) => ({
 var ALCHEMY_EQUIPMENT_INFUSION_ITEMS = ALCHEMY_EQUIPMENT_INFUSIONS.map((infusion) => ({ id: infusion.id, name: infusion.name, type: "material", value: infusion.value, rarity: infusion.rarity, passive: infusion.description }));
 var potionDef = (id) => POTIONS.find((p) => p.id === id);
 
-// ../apps/mobile/src/content/equipment-items-v33.ts
+// apps/mobile/src/content/equipment-items-v33.ts
 var classIdByName2 = { Ironwarden: "IRONWARDEN", Bastion: "BASTION", Dreadguard: "DREADGUARD", Dawnkeeper: "DAWNKEEPER", Wayfinder: "WAYFINDER", Ravager: "RAVAGER", Hexweaver: "HEXWEAVER", "Knife Dancer": "KNIFE_DANCER", Stonecaller: "STONECALLER" };
 var slotByName2 = { Helmet: "helmet", Chest: "chest", Gloves: "gloves", Legs: "legs", Boots: "boots", Weapon: "weapon", "Off-hand": "offhand", Cape: "cape", Amulet: "amulet", Ring: "ring" };
 var rarityByTier = { T1: "common", T2: "uncommon", T3: "rare", T4: "rare", T5: "epic", T6: "epic", T7: "legendary", T8: "legendary", T9: "mythic" };
@@ -42706,7 +42732,7 @@ var EQUIPMENT_ITEMS_V33 = equipment_catalog_t1_t9_v33_default.pieces.map((piece)
   };
 });
 
-// ../apps/mobile/src/content/gems-v1.ts
+// apps/mobile/src/content/gems-v1.ts
 var GEM_GRADE_LABEL_V1 = { 1: "Cut", 2: "Polished", 3: "Refined", 4: "Flawless", 5: "Radiant" };
 var GEM_GRADE_RARITY_V1 = { 1: "common", 2: "uncommon", 3: "rare", 4: "epic", 5: "mythic" };
 var vals = (a, b, c, d, e) => ({ 1: a, 2: b, 3: c, 4: d, 5: e });
@@ -42774,7 +42800,7 @@ function mobileRawGemItemIdV1(familyId, grade) {
   return `raw_gem:${familyId}:g${grade}`;
 }
 
-// ../apps/mobile/src/content/items.ts
+// apps/mobile/src/content/items.ts
 var BASE_ITEMS = [
   ...NOVICE_ITEMS,
   { id: "HOLY_WATER", name: "Holy Water", type: "material", value: 0, rarity: "uncommon" },
@@ -42790,6 +42816,7 @@ var BASE_ITEMS = [
   ...RAW_GEM_ITEMS_V1,
   ...GEM_ITEMS_V1,
   { id: "TEMPERING_DUST", name: "Tempering Dust", type: "material", value: 22, rarity: "uncommon" },
+  { id: "ASTERFALL_MINERAL_ESSENCE", name: "Asterfall Mineral Essence", type: "material", value: 75, rarity: "rare", passive: "Rare concentrated ore resonance from Mining in Greenfields and the Old Mines. Used for early equipment enchanting." },
   { id: "TEMPERING_CORE", name: "Tempering Core", type: "material", value: 180, rarity: "rare" },
   { id: "EMBER_SHARD", name: "Ember Shard", type: "gem", gemStat: "attack", gemPercent: 0.02, gemTier: 1, value: 320, rarity: "rare" },
   { id: "EMBERHEART_GEM", name: "Emberheart Gem", type: "gem", gemStat: "attack", gemPercent: 0.05, gemTier: 2, value: 1900, rarity: "legendary" },
@@ -42905,7 +42932,7 @@ function itemDef(id) {
   return x;
 }
 
-// ../apps/mobile/src/content/event-companions-v2.ts
+// apps/mobile/src/content/event-companions-v2.ts
 var eventNames = { turning_of_the_age: "Turning of the Age", heartbond_festival: "Heartbond Festival", bloomwake: "Bloomwake", suncrest_games: "Suncrest Games", starfall_nights: "Starfall Nights", harvestwake: "Harvestwake", veilbreak: "The Veilbreak", frostfall_festival: "Frostfall Festival", merchant_guild_festival: "Merchant / Guild Festival" };
 var seeds = [
   { id: "EVT_UNIT_001", name: "Keeper of First Dawn", rarity: "elite", role: "support", event: "turning_of_the_age", description: "Fast support pulses improve tempo and recovery for pressured allies." },
@@ -42941,7 +42968,7 @@ var EVENT_COMPANIONS = seeds.map((seed) => {
   return { id: seed.id, name: seed.name, description: seed.description, archetype: `Event ${seed.role}`, role: seed.role, rarity: seed.rarity, origin: { id: `EVENT_${seed.event.toUpperCase()}`, name: eventNames[seed.event] ?? seed.event.replaceAll("_", " "), type: "event" }, unlockRequirements: [{ type: "event_challenge", target: seed.event, description: `Earn ${seed.name} from ${eventNames[seed.event] ?? seed.event.replaceAll("_", " ")}.` }], baseStats: baseStats(seed.role, seed.rarity), activeAbility: { id: `${seed.id}_ACTIVE`, name: copy?.activeName ?? `${seed.name} Signature`, description: copy?.activeDescription ?? seed.description, cooldownSeconds: seed.rarity === "prestige" ? 24 : 20, target: seed.role === "support" ? "Lowest-HP ally" : seed.role === "tank" ? "Owner" : "Priority target", effect: { kind: copy?.activeKind ?? effect2, value: amount, description: copy?.activeDescription ?? seed.description, durationSeconds: 5 }, scaling: { baseValue: amount, perLevel: (copy?.activeKind ?? effect2) === "damage" ? 4e-3 : 1e-3, maxValue: (copy?.activeKind ?? effect2) === "damage" ? 1.35 : void 0 } }, passiveAbility: { kind: copy?.passiveKind ?? effect2, value: copy?.passiveValue ?? (effect2 === "damage" ? 0.035 : 0.025), description: copy?.passiveDescription ?? `${seed.name} reinforces its event identity.` }, bondTrait: { id: `${seed.id}_BOND`, name: copy?.bondName ?? `${seed.name} Bond`, description: copy?.bondDescription ?? `Bond mastery strengthens the ${seed.name} signature interaction.`, effect: { kind: copy?.bondKind ?? effect2, value: copy?.bondValue ?? (effect2 === "damage" ? 0.05 : 0.03), description: copy?.bondDescription ?? `Bond mastery strengthens ${seed.name}.` } }, ascensionMaterialId: "EVENT_BONDBLOOM", ascensionMaterialCosts: eventAscensionMaterials(seed.rarity), availability: { eventSource: eventNames[seed.event] ?? seed.event, originalReleaseYear: 2026, recurringAvailability: "annual", veteranCosmeticEligibility: true }, visual: { portraitId: seed.id, pixelSize: "96x96", accessibilityLabel: seed.name } };
 });
 
-// ../apps/mobile/src/content/veilbreak-event.ts
+// apps/mobile/src/content/veilbreak-event.ts
 function veilbreakCompanionMilestones(_classId) {
   return ["EVT_UNIT_008", "EVT_UNIT_007"].map((id) => EVENT_COMPANIONS.find((companion) => companion.id === id)).map((companion, index) => ({ points: index === 0 ? 16e3 : 2e4, reward: { kind: "companion", id: companion.id, name: companion.name, rarity: "epic" } }));
 }
@@ -43120,7 +43147,7 @@ var FROSTFALL_EVENT = {
   ]
 };
 
-// ../apps/mobile/src/content/guild-companions-v1.ts
+// apps/mobile/src/content/guild-companions-v1.ts
 var seeds2 = [
   {
     id: "GUILD_UNIT_001",
@@ -43217,14 +43244,14 @@ var GUILD_COMBAT_COMPANIONS = seeds2.map((seed) => {
   };
 });
 
-// ../apps/mobile/src/content/event-companions-active.ts
+// apps/mobile/src/content/event-companions-active.ts
 var RELEASED_EVENT_COMPANION_IDS = /* @__PURE__ */ new Set(["EVT_UNIT_007", "EVT_UNIT_008", "EVT_UNIT_011"]);
 var RELEASED_EVENT_COMPANIONS = EVENT_COMPANIONS.filter((companion) => RELEASED_EVENT_COMPANION_IDS.has(companion.id));
 
-// ../apps/mobile/src/core/release-flags.ts
+// apps/mobile/src/core/release-flags.ts
 var EVENTS_RELEASED = true;
 
-// ../apps/mobile/src/content/combat-companions.ts
+// apps/mobile/src/content/combat-companions.ts
 var COMPANION_RARITY_CONFIG = {
   standard: { maxLevel: 20, targetPowerMultiplier: 1, levelCostMultiplier: 1, xpRequiredMultiplier: 1, label: "Standard" },
   rare: { maxLevel: 25, targetPowerMultiplier: 1.09, levelCostMultiplier: 1.18, xpRequiredMultiplier: 1.08, label: "Rare" },
@@ -43242,15 +43269,15 @@ var COMPANION_BOND_CONFIG = {
   maxLevel: 10,
   // cumulative XP required for Bond Levels 1-10
   xpThresholds: [0, 90, 210, 370, 580, 840, 1160, 1540, 1990, 2520],
-  rewards: { 2: "Small progression reward", 4: "Companion profile icon", 6: "Passive improvement", 8: "Companion title/profile reward", 10: "Bond Trait" },
+  rewards: { 2: "20 Essence", 4: "35 Essence", 6: "55 Essence", 8: "80 Essence", 10: "Bond Trait" },
   sourceXp: { battle: 4, boss: 60, dungeon: 32, companion_objective: 45, future_activity: 12 }
 };
 var COMPANION_SANCTUARY_CONFIG = {
-  trainingGround: { maxLevel: 3, goldCosts: [1800, 5200, 12e3], essenceCosts: [120, 320, 720], materialId: "ASTER_IRON_INGOT", materialCosts: [8, 16, 28], description: "Provides passive Companion XP on long-timer claims." },
-  essenceBasin: { maxLevel: 3, goldCosts: [2200, 6500, 14500], essenceCosts: [80, 220, 520], materialId: "ECHO_QUARTZ", materialCosts: [5, 10, 18], description: "Generates a small weekly Companion Essence claim." },
-  bondHall: { maxLevel: 3, goldCosts: [2500, 7200, 16e3], essenceCosts: [160, 420, 900], materialId: "OATHGLASS_SHARD", materialCosts: [6, 12, 20], description: "Increases earned Bond XP by +5%, +10%, then +15%." },
-  expeditionPens: { maxLevel: 3, goldCosts: [8500, 16e3, 28e3], essenceCosts: [650, 1150, 1900], materialId: "RUNEBOUND_CORE", materialCosts: [6, 12, 20], description: "Unlocks 1, 2, then 3 simultaneous Sanctuary Companion Expeditions." },
-  masteryChamber: { maxLevel: 1, goldCosts: [18e3], essenceCosts: [1400], materialId: "OATHGLASS_FRAGMENT", materialCosts: [18], description: "Required for Prestige Mastery and highest companion progression." }
+  trainingGround: { maxLevel: 3, goldCosts: [3600, 10400, 24e3], essenceCosts: [120, 320, 720], materialId: "ASTER_IRON_INGOT", materialCosts: [8, 16, 28], description: "Provides passive Companion XP on long-timer claims." },
+  essenceBasin: { maxLevel: 3, goldCosts: [4400, 13e3, 29e3], essenceCosts: [80, 220, 520], materialId: "ECHO_QUARTZ", materialCosts: [5, 10, 18], description: "Generates a small weekly Companion Essence claim." },
+  bondHall: { maxLevel: 3, goldCosts: [5e3, 14400, 32e3], essenceCosts: [160, 420, 900], materialId: "OATHGLASS_SHARD", materialCosts: [6, 12, 20], description: "Increases earned Bond XP by +5%, +10%, then +15%." },
+  expeditionPens: { maxLevel: 3, goldCosts: [17e3, 32e3, 56e3], essenceCosts: [650, 1150, 1900], materialId: "RUNEBOUND_CORE", materialCosts: [6, 12, 20], description: "Unlocks 1, 2, then 3 simultaneous Sanctuary Companion Expeditions." },
+  masteryChamber: { maxLevel: 1, goldCosts: [36e3], essenceCosts: [1400], materialId: "OATHGLASS_FRAGMENT", materialCosts: [18], description: "Required for Prestige Mastery and highest companion progression." }
 };
 var ability = (id, name, description, cooldownSeconds, target2, kind, baseValue, perLevel, extra = {}) => ({
   id,
@@ -43349,7 +43376,7 @@ var ALL_COMBAT_COMPANIONS = [...ASTERFALL_COMPANIONS, ...REGIONAL_COMPANIONS, ..
 var COMBAT_COMPANIONS = EVENTS_RELEASED ? [...ASTERFALL_COMPANIONS, ...REGIONAL_COMPANIONS, ...GUILD_COMBAT_COMPANIONS, ...RELEASED_EVENT_COMPANIONS] : [...ASTERFALL_COMPANIONS, ...REGIONAL_COMPANIONS, ...GUILD_COMBAT_COMPANIONS];
 var combatCompanionDef = (id) => ALL_COMBAT_COMPANIONS.find((entry2) => entry2.id === id);
 
-// ../apps/mobile/src/content/class-skills.ts
+// apps/mobile/src/content/class-skills.ts
 var skill = (id, name, theme) => ({ id, name, theme });
 var guard = skill("guardcraft", "Guardcraft", "Physical protection");
 var ward = skill("warding", "Warding", "Magical protection");
@@ -43366,7 +43393,7 @@ var CLASS_SKILLS = {
 };
 var classSkillsFor = (id) => CLASS_SKILLS[id];
 
-// ../apps/mobile/src/core/class-skills.ts
+// apps/mobile/src/core/class-skills.ts
 init_meal_buffs();
 init_progression();
 var MAX_CLASS_SKILL_XP = totalXpAtLevel(100);
@@ -43385,7 +43412,7 @@ function characterClassEffects(c) {
   return tank ? { attack: 1, hp: 1 + 0.12 * a, defense: 1 + 0.1 * b } : support ? { attack: 1 + 0.1 * a, hp: 1 + 0.1 * b, defense: 1 } : { attack: 1 + 0.07 * a + 0.03 * b, hp: 1, defense: 1 + 0.06 * b };
 }
 
-// ../apps/mobile/src/content/monsters.ts
+// apps/mobile/src/content/monsters.ts
 init_faith();
 var MONSTERS_RAW = [
   { id: "MOSS_RAT", name: "Moss Rat", level: 1, hp: 28, attack: 5, defense: 2, xp: 14, gold: 1, secondsPerKill: 7, unlockLevel: 1, zone: "Greenfields", drops: [{ itemId: "MOSS_FIBER", chance: 0.55, min: 1, max: 2 }] },
@@ -43456,7 +43483,7 @@ var MONSTERS = MONSTERS_RAW.map((monster) => {
   };
 });
 
-// ../apps/mobile/src/core/combat-companions.ts
+// apps/mobile/src/core/combat-companions.ts
 var CLASS_COMPANION_ROLE = {
   IRONWARDEN: "tank",
   BASTION: "tank",
@@ -43615,7 +43642,7 @@ function companionCombatContribution(state) {
 }
 var COMBAT_COMPANION_IDS = COMBAT_COMPANIONS.map((entry2) => entry2.id);
 
-// ../apps/mobile/src/content/world-map.ts
+// apps/mobile/src/content/world-map.ts
 var WORLD_ZONES = [
   { availability: "released", id: "GREENFIELDS", name: "Greenfields", subtitle: "First hunts and a level-20 return encounter", minLevel: 1, maxLevel: 20, x: 0.18, y: 0.76, accent: "#79b88a", symbol: "\u2726" },
   { availability: "released", id: "SILVERBROOK", name: "Silverbrook", subtitle: "River paths and drowned secrets", minLevel: 5, maxLevel: 22, x: 0.56, y: 0.7, accent: "#6aaed6", symbol: "\u2248" },
@@ -43628,8 +43655,10 @@ var WORLD_ZONES = [
   { availability: "inDevelopment", id: "VEILLANDS", name: "The Veillands", subtitle: "A reality-thin frontier beyond the known road", minLevel: 91, maxLevel: 110, x: 0.82, y: 0.08, accent: "#8a6bc9", symbol: "\u25C8", developmentNote: "The Veillands is a future high-level region. Its travel preview is visible now, while enemies, gathering routes and progression rewards remain in development.", plannedActivities: ["High-level combat", "Regional gathering", "Elite encounters", "Region progression"] }
 ];
 
-// ../apps/mobile/src/content/skills.ts
+// apps/mobile/src/content/skills.ts
 var GATHERING = [
+  // Starting-region mining keeps early enchanting materials accessible before Old Mines unlocks at Character Level 16.
+  { id: "GREENFIELDS_COPPER_OUTCROP", skillId: "mining", name: "Copper Outcrop", unlockLevel: 1, seconds: 15, xp: 9, itemId: "COPPER_ORE", min: 1, max: 2, zoneId: "GREENFIELDS" },
   { id: "COPPER_VEIN", skillId: "mining", name: "Copper Vein", unlockLevel: 1, seconds: 15, xp: 9, itemId: "COPPER_ORE", min: 1, max: 2, zoneId: "OLD_MINES" },
   { id: "ASTER_IRON_VEIN", skillId: "mining", name: "Aster-Iron Vein", unlockLevel: 8, seconds: 24, xp: 18, itemId: "ASTER_IRON_ORE", min: 1, max: 2, zoneId: "OLD_MINES" },
   { id: "OATHSTONE_SEAM", skillId: "mining", name: "Oathstone Seam", unlockLevel: 16, seconds: 36, xp: 29, itemId: "OATHSTONE_ORE", min: 1, max: 1, zoneId: "OLD_MINES" },
@@ -43673,33 +43702,35 @@ var RECIPES = [
   // compatibility. Presentation layers apply their release gate separately.
   ...V33_EQUIPMENT_RECIPES,
   ...TOOL_RECIPES,
-  { id: "SMELT_COPPER_INGOT", name: "Smelt Copper Ingot", skillId: "smithing", level: 1, xp: 100, gold: 30, seconds: 36, repeatableTraining: true, inputs: [{ itemId: "COPPER_ORE", quantity: 10 }, { itemId: "GREENWOOD_LOG", quantity: 2 }], output: { itemId: "COPPER_INGOT", quantity: 5 } },
-  { id: "SMELT_ASTER_IRON_INGOT", name: "Smelt Aster-Iron Ingot", skillId: "smithing", level: 8, xp: 165, gold: 50, seconds: 42, repeatableTraining: true, inputs: [{ itemId: "ASTER_IRON_ORE", quantity: 8 }, { itemId: "IRONWOOD_LOG", quantity: 2 }], output: { itemId: "ASTER_IRON_INGOT", quantity: 4 } },
-  { id: "FORGE_REINFORCED_FITTING", name: "Forge Reinforced Fitting", skillId: "smithing", level: 12, xp: 180, gold: 50, seconds: 48, repeatableTraining: true, inputs: [{ itemId: "ASTER_IRON_INGOT", quantity: 2 }, { itemId: "IRONWOOD_LOG", quantity: 2 }], output: { itemId: "REINFORCED_FITTING", quantity: 1 } },
-  { id: "SMELT_OATHSTONE_INGOT", name: "Smelt Oathstone Ingot", skillId: "smithing", level: 16, xp: 230, gold: 80, seconds: 54, repeatableTraining: true, inputs: [{ itemId: "OATHSTONE_ORE", quantity: 6 }, { itemId: "CROWNWOOD_LOG", quantity: 3 }], output: { itemId: "OATHSTONE_INGOT", quantity: 3 } },
-  { id: "SMELT_SUNSTONE_INGOT", name: "Smelt Sunstone Ingot", skillId: "smithing", level: 26, xp: 520, gold: 280, seconds: 180, repeatableTraining: true, inputs: [{ itemId: "SUNSTONE_ORE", quantity: 6 }, { itemId: "DUNEWOOD", quantity: 4 }], output: { itemId: "SUNSTONE_INGOT", quantity: 3 } },
-  { id: "SMELT_FROSTIRON_INGOT", name: "Smelt Frostiron Ingot", skillId: "smithing", level: 46, xp: 980, gold: 720, seconds: 420, repeatableTraining: true, inputs: [{ itemId: "FROSTIRON", quantity: 6 }, { itemId: "WHITEPINE_LOG", quantity: 4 }], output: { itemId: "FROSTIRON_INGOT", quantity: 3 } },
-  { id: "SMELT_BLACKGLASS_INGOT", name: "Smelt Blackglass Ingot", skillId: "smithing", level: 68, xp: 1850, gold: 1800, seconds: 900, repeatableTraining: true, inputs: [{ itemId: "BLACKGLASS_ORE", quantity: 6 }, { itemId: "CINDERWOOD_LOG", quantity: 4 }], output: { itemId: "BLACKGLASS_INGOT", quantity: 3 } },
-  { id: "ENCHANT_REGIONAL_CATALYST", name: "Synthesize Regional Catalyst", skillId: "enchanting", level: 70, xp: 2400, gold: 12e3, seconds: 1800, repeatableTraining: true, inputs: [{ itemId: "GEM_DUST", quantity: 25 }, { itemId: "FROSTMARCH_BOTANICAL_ESSENCE", quantity: 2 }], output: { itemId: "REGIONAL_CATALYST", quantity: 1 } },
-  { id: "ENCHANT_RADIANT_CATALYST", name: "Synthesize Radiant Catalyst", skillId: "enchanting", level: 90, xp: 5600, gold: 5e4, seconds: 5400, repeatableTraining: true, inputs: [{ itemId: "REGIONAL_CATALYST", quantity: 3 }, { itemId: "GEM_DUST", quantity: 80 }, { itemId: "ASHLANDS_BOTANICAL_ESSENCE", quantity: 2 }], output: { itemId: "RADIANT_CATALYST", quantity: 1 } },
-  { id: "COOK_MEADOW_PERCH", name: "Cook Meadow Perch", skillId: "cooking", level: 1, xp: 80, gold: 35, seconds: 34, repeatableTraining: true, inputs: [{ itemId: "MEADOW_PERCH", quantity: 5 }, { itemId: "GREENWOOD_LOG", quantity: 1 }], output: { itemId: "COOKED_MEADOW_PERCH", quantity: 5 } },
-  { id: "COOK_SILVERFIN", name: "Cook Silverfin", skillId: "cooking", level: 1, xp: 100, gold: 50, seconds: 36, repeatableTraining: true, inputs: [{ itemId: "SILVERFIN", quantity: 5 }, { itemId: "GREENWOOD_LOG", quantity: 1 }], output: { itemId: "COOKED_SILVERFIN", quantity: 5 } },
-  { id: "COOK_ROOTSTREAM_TROUT", name: "Roast Rootstream Trout", skillId: "cooking", level: 7, xp: 145, gold: 65, seconds: 42, repeatableTraining: true, inputs: [{ itemId: "ROOTSTREAM_TROUT", quantity: 4 }, { itemId: "IRONWOOD_LOG", quantity: 1 }], output: { itemId: "ROASTED_ROOTSTREAM_TROUT", quantity: 4 } },
-  { id: "COOK_RIVER_EEL", name: "Sear River Eel", skillId: "cooking", level: 8, xp: 180, gold: 80, seconds: 44, repeatableTraining: true, inputs: [{ itemId: "RIVER_EEL", quantity: 4 }, { itemId: "IRONWOOD_LOG", quantity: 1 }], output: { itemId: "SEARED_RIVER_EEL", quantity: 4 } },
-  { id: "COOK_OATHSCALE", name: "Roast Oathscale", skillId: "cooking", level: 16, xp: 260, gold: 130, seconds: 54, repeatableTraining: true, inputs: [{ itemId: "OATHSCALE_PIKE", quantity: 3 }, { itemId: "CROWNWOOD_LOG", quantity: 1 }], output: { itemId: "ROASTED_OATHSCALE", quantity: 3 } },
-  { id: "COOK_CAVE_LOACH", name: "Bake Cave Loach", skillId: "cooking", level: 16, xp: 245, gold: 120, seconds: 52, repeatableTraining: true, inputs: [{ itemId: "CAVE_LOACH", quantity: 3 }, { itemId: "CROWNWOOD_LOG", quantity: 1 }], output: { itemId: "BAKED_CAVE_LOACH", quantity: 3 } },
-  { id: "COOK_CROWN_CARP", name: "Roast Crown Carp", skillId: "cooking", level: 20, xp: 330, gold: 165, seconds: 70, repeatableTraining: true, inputs: [{ itemId: "CROWN_CARP", quantity: 3 }, { itemId: "CROWNWOOD_LOG", quantity: 1 }], output: { itemId: "ROASTED_CROWN_CARP", quantity: 3 } },
-  { id: "COOK_IRONWOOD_STEW", name: "Ironwood Hunter Stew", skillId: "cooking", level: 15, xp: 105, gold: 140, seconds: 66, repeatableTraining: true, inputs: [{ itemId: "RIVER_EEL", quantity: 2 }, { itemId: "THORN_SAP", quantity: 1 }, { itemId: "IRONWOOD_LOG", quantity: 1 }], output: { itemId: "IRONWOOD_STEW", quantity: 1 } },
-  { id: "COOK_ASHLANDS_EMBER_STEW", name: "Ashlands Ember Stew", skillId: "cooking", level: 72, xp: 760, gold: 900, seconds: 110, repeatableTraining: true, inputs: [{ itemId: "ASHEN_MYRRH", quantity: 2 }, { itemId: "CINDER_HEART", quantity: 1 }, { itemId: "CINDERWOOD_LOG", quantity: 1 }], output: { itemId: "ASHLANDS_EMBER_STEW", quantity: 2 } },
-  { id: "COOK_OASIS_CARP", name: "Grill Oasis Carp", skillId: "cooking", level: 26, xp: 420, gold: 220, seconds: 120, repeatableTraining: true, inputs: [{ itemId: "OASIS_CARP", quantity: 4 }, { itemId: "DUNEWOOD", quantity: 1 }], output: { itemId: "GRILLED_OASIS_CARP", quantity: 4 } },
-  { id: "COOK_GLASSFIN_FEAST", name: "Amberglass Glassfin Feast", skillId: "cooking", level: 38, xp: 720, gold: 520, seconds: 210, repeatableTraining: true, inputs: [{ itemId: "GLASSFIN", quantity: 3 }, { itemId: "AMBERGLASS", quantity: 1 }, { itemId: "DUNEWOOD", quantity: 1 }], output: { itemId: "GLASSFIN_FEAST", quantity: 2 } },
-  { id: "COOK_ICEFISH", name: "Frosted Icefin", skillId: "cooking", level: 48, xp: 1100, gold: 900, seconds: 300, repeatableTraining: true, inputs: [{ itemId: "ICEFIN", quantity: 3 }, { itemId: "WINTERMINT", quantity: 1 }, { itemId: "WHITEPINE_LOG", quantity: 1 }], output: { itemId: "FROSTED_ICEFIN", quantity: 3 } },
-  { id: "COOK_EMBERFIN", name: "Char Emberfin", skillId: "cooking", level: 74, xp: 1650, gold: 1200, seconds: 420, repeatableTraining: true, inputs: [{ itemId: "EMBERFIN", quantity: 3 }, { itemId: "ASHEN_MYRRH", quantity: 1 }, { itemId: "CINDERWOOD_LOG", quantity: 1 }], output: { itemId: "CHARRED_EMBERFIN", quantity: 3 } }
+  ...[
+    { id: "SMELT_COPPER_INGOT", name: "Smelt Copper Ingot", skillId: "smithing", level: 1, xp: 100, gold: 30, seconds: 36, repeatableTraining: true, inputs: [{ itemId: "COPPER_ORE", quantity: 10 }, { itemId: "GREENWOOD_LOG", quantity: 2 }], output: { itemId: "COPPER_INGOT", quantity: 5 } },
+    { id: "SMELT_ASTER_IRON_INGOT", name: "Smelt Aster-Iron Ingot", skillId: "smithing", level: 8, xp: 165, gold: 50, seconds: 42, repeatableTraining: true, inputs: [{ itemId: "ASTER_IRON_ORE", quantity: 8 }, { itemId: "IRONWOOD_LOG", quantity: 2 }], output: { itemId: "ASTER_IRON_INGOT", quantity: 4 } },
+    { id: "FORGE_REINFORCED_FITTING", name: "Forge Reinforced Fitting", skillId: "smithing", level: 12, xp: 180, gold: 50, seconds: 48, repeatableTraining: true, inputs: [{ itemId: "ASTER_IRON_INGOT", quantity: 2 }, { itemId: "IRONWOOD_LOG", quantity: 2 }], output: { itemId: "REINFORCED_FITTING", quantity: 1 } },
+    { id: "SMELT_OATHSTONE_INGOT", name: "Smelt Oathstone Ingot", skillId: "smithing", level: 16, xp: 230, gold: 80, seconds: 54, repeatableTraining: true, inputs: [{ itemId: "OATHSTONE_ORE", quantity: 6 }, { itemId: "CROWNWOOD_LOG", quantity: 3 }], output: { itemId: "OATHSTONE_INGOT", quantity: 3 } },
+    { id: "SMELT_SUNSTONE_INGOT", name: "Smelt Sunstone Ingot", skillId: "smithing", level: 26, xp: 520, gold: 280, seconds: 180, repeatableTraining: true, inputs: [{ itemId: "SUNSTONE_ORE", quantity: 6 }, { itemId: "DUNEWOOD", quantity: 4 }], output: { itemId: "SUNSTONE_INGOT", quantity: 3 } },
+    { id: "SMELT_FROSTIRON_INGOT", name: "Smelt Frostiron Ingot", skillId: "smithing", level: 46, xp: 980, gold: 720, seconds: 420, repeatableTraining: true, inputs: [{ itemId: "FROSTIRON", quantity: 6 }, { itemId: "WHITEPINE_LOG", quantity: 4 }], output: { itemId: "FROSTIRON_INGOT", quantity: 3 } },
+    { id: "SMELT_BLACKGLASS_INGOT", name: "Smelt Blackglass Ingot", skillId: "smithing", level: 68, xp: 1850, gold: 1800, seconds: 900, repeatableTraining: true, inputs: [{ itemId: "BLACKGLASS_ORE", quantity: 6 }, { itemId: "CINDERWOOD_LOG", quantity: 4 }], output: { itemId: "BLACKGLASS_INGOT", quantity: 3 } },
+    { id: "ENCHANT_REGIONAL_CATALYST", name: "Synthesize Regional Catalyst", skillId: "enchanting", level: 70, xp: 2400, gold: 12e3, seconds: 1800, repeatableTraining: true, inputs: [{ itemId: "GEM_DUST", quantity: 25 }, { itemId: "FROSTMARCH_BOTANICAL_ESSENCE", quantity: 2 }], output: { itemId: "REGIONAL_CATALYST", quantity: 1 } },
+    { id: "ENCHANT_RADIANT_CATALYST", name: "Synthesize Radiant Catalyst", skillId: "enchanting", level: 90, xp: 5600, gold: 5e4, seconds: 5400, repeatableTraining: true, inputs: [{ itemId: "REGIONAL_CATALYST", quantity: 3 }, { itemId: "GEM_DUST", quantity: 80 }, { itemId: "ASHLANDS_BOTANICAL_ESSENCE", quantity: 2 }], output: { itemId: "RADIANT_CATALYST", quantity: 1 } },
+    { id: "COOK_MEADOW_PERCH", name: "Cook Meadow Perch", skillId: "cooking", level: 1, xp: 80, gold: 35, seconds: 34, repeatableTraining: true, inputs: [{ itemId: "MEADOW_PERCH", quantity: 5 }, { itemId: "GREENWOOD_LOG", quantity: 1 }], output: { itemId: "COOKED_MEADOW_PERCH", quantity: 5 } },
+    { id: "COOK_SILVERFIN", name: "Cook Silverfin", skillId: "cooking", level: 1, xp: 100, gold: 50, seconds: 36, repeatableTraining: true, inputs: [{ itemId: "SILVERFIN", quantity: 5 }, { itemId: "GREENWOOD_LOG", quantity: 1 }], output: { itemId: "COOKED_SILVERFIN", quantity: 5 } },
+    { id: "COOK_ROOTSTREAM_TROUT", name: "Roast Rootstream Trout", skillId: "cooking", level: 7, xp: 145, gold: 65, seconds: 42, repeatableTraining: true, inputs: [{ itemId: "ROOTSTREAM_TROUT", quantity: 4 }, { itemId: "IRONWOOD_LOG", quantity: 1 }], output: { itemId: "ROASTED_ROOTSTREAM_TROUT", quantity: 4 } },
+    { id: "COOK_RIVER_EEL", name: "Sear River Eel", skillId: "cooking", level: 8, xp: 180, gold: 80, seconds: 44, repeatableTraining: true, inputs: [{ itemId: "RIVER_EEL", quantity: 4 }, { itemId: "IRONWOOD_LOG", quantity: 1 }], output: { itemId: "SEARED_RIVER_EEL", quantity: 4 } },
+    { id: "COOK_OATHSCALE", name: "Roast Oathscale", skillId: "cooking", level: 16, xp: 260, gold: 130, seconds: 54, repeatableTraining: true, inputs: [{ itemId: "OATHSCALE_PIKE", quantity: 3 }, { itemId: "CROWNWOOD_LOG", quantity: 1 }], output: { itemId: "ROASTED_OATHSCALE", quantity: 3 } },
+    { id: "COOK_CAVE_LOACH", name: "Bake Cave Loach", skillId: "cooking", level: 16, xp: 245, gold: 120, seconds: 52, repeatableTraining: true, inputs: [{ itemId: "CAVE_LOACH", quantity: 3 }, { itemId: "CROWNWOOD_LOG", quantity: 1 }], output: { itemId: "BAKED_CAVE_LOACH", quantity: 3 } },
+    { id: "COOK_CROWN_CARP", name: "Roast Crown Carp", skillId: "cooking", level: 20, xp: 330, gold: 165, seconds: 70, repeatableTraining: true, inputs: [{ itemId: "CROWN_CARP", quantity: 3 }, { itemId: "CROWNWOOD_LOG", quantity: 1 }], output: { itemId: "ROASTED_CROWN_CARP", quantity: 3 } },
+    { id: "COOK_IRONWOOD_STEW", name: "Ironwood Hunter Stew", skillId: "cooking", level: 15, xp: 105, gold: 140, seconds: 66, repeatableTraining: true, inputs: [{ itemId: "RIVER_EEL", quantity: 2 }, { itemId: "THORN_SAP", quantity: 1 }, { itemId: "IRONWOOD_LOG", quantity: 1 }], output: { itemId: "IRONWOOD_STEW", quantity: 1 } },
+    { id: "COOK_ASHLANDS_EMBER_STEW", name: "Ashlands Ember Stew", skillId: "cooking", level: 72, xp: 760, gold: 900, seconds: 110, repeatableTraining: true, inputs: [{ itemId: "ASHEN_MYRRH", quantity: 2 }, { itemId: "CINDER_HEART", quantity: 1 }, { itemId: "CINDERWOOD_LOG", quantity: 1 }], output: { itemId: "ASHLANDS_EMBER_STEW", quantity: 2 } },
+    { id: "COOK_OASIS_CARP", name: "Grill Oasis Carp", skillId: "cooking", level: 26, xp: 420, gold: 220, seconds: 120, repeatableTraining: true, inputs: [{ itemId: "OASIS_CARP", quantity: 4 }, { itemId: "DUNEWOOD", quantity: 1 }], output: { itemId: "GRILLED_OASIS_CARP", quantity: 4 } },
+    { id: "COOK_GLASSFIN_FEAST", name: "Amberglass Glassfin Feast", skillId: "cooking", level: 38, xp: 720, gold: 520, seconds: 210, repeatableTraining: true, inputs: [{ itemId: "GLASSFIN", quantity: 3 }, { itemId: "AMBERGLASS", quantity: 1 }, { itemId: "DUNEWOOD", quantity: 1 }], output: { itemId: "GLASSFIN_FEAST", quantity: 2 } },
+    { id: "COOK_ICEFISH", name: "Frosted Icefin", skillId: "cooking", level: 48, xp: 1100, gold: 900, seconds: 300, repeatableTraining: true, inputs: [{ itemId: "ICEFIN", quantity: 3 }, { itemId: "WINTERMINT", quantity: 1 }, { itemId: "WHITEPINE_LOG", quantity: 1 }], output: { itemId: "FROSTED_ICEFIN", quantity: 3 } },
+    { id: "COOK_EMBERFIN", name: "Char Emberfin", skillId: "cooking", level: 74, xp: 1650, gold: 1200, seconds: 420, repeatableTraining: true, inputs: [{ itemId: "EMBERFIN", quantity: 3 }, { itemId: "ASHEN_MYRRH", quantity: 1 }, { itemId: "CINDERWOOD_LOG", quantity: 1 }], output: { itemId: "CHARRED_EMBERFIN", quantity: 3 } }
+  ].map((recipe2) => ({ ...recipe2, gold: increasedCraftingGoldCost(recipe2.gold) }))
 ];
 var recipesById = new Map(RECIPES.map((recipe2) => [recipe2.id, recipe2]));
 if (recipesById.size !== RECIPES.length) throw new Error("Duplicate recipe IDs in the recipe catalog");
 
-// src/server/combat/calculations.ts
+// backend/src/server/combat/calculations.ts
 var clamp2 = (v, min, max) => Math.max(min, Math.min(max, v));
 function defenseMitigation(defense, mitigationConstant) {
   const raw2 = defense / Math.max(1, defense + mitigationConstant);
@@ -43714,7 +43745,7 @@ function damageAfterMitigation(attackPowerValue, abilityCoeff, mitigation, varia
   return crit ? normal * critMultiplier : normal;
 }
 
-// node_modules/.pnpm/@noble+hashes@1.8.0/node_modules/@noble/hashes/esm/utils.js
+// backend/node_modules/.pnpm/@noble+hashes@1.8.0/node_modules/@noble/hashes/esm/utils.js
 function isBytes(a) {
   return a instanceof Uint8Array || ArrayBuffer.isView(a) && a.constructor.name === "Uint8Array";
 }
@@ -43795,7 +43826,7 @@ function createHasher(hashCons) {
   return hashC;
 }
 
-// node_modules/.pnpm/@noble+hashes@1.8.0/node_modules/@noble/hashes/esm/hmac.js
+// backend/node_modules/.pnpm/@noble+hashes@1.8.0/node_modules/@noble/hashes/esm/hmac.js
 var HMAC = class extends Hash {
   constructor(hash, _key) {
     super();
@@ -43863,7 +43894,7 @@ var HMAC = class extends Hash {
 var hmac = (hash, key, message) => new HMAC(hash, key).update(message).digest();
 hmac.create = (hash, key) => new HMAC(hash, key);
 
-// node_modules/.pnpm/@noble+hashes@1.8.0/node_modules/@noble/hashes/esm/_md.js
+// backend/node_modules/.pnpm/@noble+hashes@1.8.0/node_modules/@noble/hashes/esm/_md.js
 function setBigUint64(view, byteOffset, value, isLE) {
   if (typeof view.setBigUint64 === "function")
     return view.setBigUint64(byteOffset, value, isLE);
@@ -43983,7 +44014,7 @@ var SHA256_IV = /* @__PURE__ */ Uint32Array.from([
   1541459225
 ]);
 
-// node_modules/.pnpm/@noble+hashes@1.8.0/node_modules/@noble/hashes/esm/sha2.js
+// backend/node_modules/.pnpm/@noble+hashes@1.8.0/node_modules/@noble/hashes/esm/sha2.js
 var SHA256_K = /* @__PURE__ */ Uint32Array.from([
   1116352408,
   1899447441,
@@ -44123,10 +44154,10 @@ var SHA256 = class extends HashMD {
 };
 var sha256 = /* @__PURE__ */ createHasher(() => new SHA256());
 
-// node_modules/.pnpm/@noble+hashes@1.8.0/node_modules/@noble/hashes/esm/sha256.js
+// backend/node_modules/.pnpm/@noble+hashes@1.8.0/node_modules/@noble/hashes/esm/sha256.js
 var sha2562 = sha256;
 
-// src/server/combat/deterministic-rng.ts
+// backend/src/server/combat/deterministic-rng.ts
 function utf8(value) {
   const bytes = [];
   for (const character of value) {
@@ -44156,7 +44187,7 @@ var CombatRng = class {
   }
 };
 
-// src/server/combat/gem-effects-v1.ts
+// backend/src/server/combat/gem-effects-v1.ts
 var FOREVER = 9e15;
 var directAllowed = (abilityId) => !abilityId.startsWith("COMPANION_") && abilityId !== "COMPANION_REFLECT";
 function gem(state, familyId) {
@@ -44429,7 +44460,7 @@ function gemOnBossPhaseV1(now, players) {
   }
 }
 
-// src/server/combat/engine.ts
+// backend/src/server/combat/engine.ts
 function init(def, carried) {
   const hp = Math.max(0, Math.min(def.stats.maxHp, carried?.hp ?? def.stats.maxHp));
   const downed = carried?.downed ?? false;
@@ -44587,6 +44618,8 @@ function simulateCombat(input) {
     const heavyHit = qmodeStrike && !crit && rng.next(`${now}:${source.definition.id}:${target2.definition.id}:${abilityId}:heavy`) * 2 < 0.04;
     let raw2 = damageAfterMitigation(source.definition.stats.attackPower, effect2.coeff ?? 0, mit, variance, crit, source.definition.stats.critMultiplier) + (effect2.flat ?? 0);
     if (heavyHit) raw2 *= 1.1;
+    raw2 *= source.definition.alchemyModifiers?.outgoing ?? 1;
+    raw2 *= target2.definition.alchemyModifiers?.incoming ?? 1;
     raw2 *= gemOutgoingDamageMultiplierV1(source, target2, now, abilityId, eventType === "dot_tick");
     raw2 *= Math.max(0.1, 1 + modifier(source, "damage_done", now));
     raw2 *= Math.max(0.1, 1 + modifier(target2, "damage_taken", now));
@@ -44642,7 +44675,7 @@ function simulateCombat(input) {
   const applyHeal = (now, source, target2, effect2, abilityId, eventType = "heal") => {
     if (!target2.alive) return;
     const direct = eventType === "heal", sourceMult = direct ? gemHealingMultiplierV1(source, now) : 1, receivedMult = Math.max(0, 1 + modifier(target2, "healing_received", now));
-    const amount = Math.max(0, (source.definition.stats.healingPower * (effect2.coeff ?? 0) + (effect2.flat ?? 0)) * sourceMult * receivedMult);
+    const amount = Math.max(0, (source.definition.stats.healingPower * (effect2.coeff ?? 0) + (effect2.flat ?? 0)) * sourceMult * receivedMult * (source.definition.alchemyModifiers?.healing ?? 1));
     const actual = Math.min(amount, target2.definition.stats.maxHp - target2.hp);
     target2.hp += actual;
     source.healingDone += actual;
@@ -44673,7 +44706,7 @@ function simulateCombat(input) {
     if (effect2.kind === "damage") return applyDamage(now, source, target2, effect2, abilityId);
     if (effect2.kind === "heal") return applyHeal(now, source, target2, effect2, abilityId);
     if (effect2.kind === "shield") {
-      const amt = Math.max(0, (source.definition.stats.healingPower * (effect2.coeff ?? 0) + (effect2.flat ?? 0)) * gemShieldMultiplierV1(source, now));
+      const amt = Math.max(0, (source.definition.stats.healingPower * (effect2.coeff ?? 0) + (effect2.flat ?? 0)) * gemShieldMultiplierV1(source, now) * (source.definition.alchemyModifiers?.shielding ?? 1));
       target2.shield += amt;
       if (effect2.shieldReflectPct && amt > 0) (target2.reflectiveShields ??= []).push({ remaining: amt, rate: clamp2(effect2.shieldReflectPct, 0, 0.5), sourceId: source.definition.id });
       gemOnShieldAppliedV1(now, source, target2);
@@ -44817,7 +44850,7 @@ function persistentPlayerState(result) {
   }]));
 }
 
-// src/server/companions/combat-adapter.ts
+// backend/src/server/companions/combat-adapter.ts
 var COMMON_MAX_INVESTMENT_MULTIPLIER = 1.5;
 var clamp3 = (value, min, max) => Math.max(min, Math.min(max, value));
 var ROLE_ANCHORS = {
@@ -44899,7 +44932,7 @@ function buildOwnedCompanionCombatant(progress, context) {
   return buildCompanionCombatant(def, progress, context);
 }
 
-// src/server/companions/policy.ts
+// backend/src/server/companions/policy.ts
 var CLASS_ROLE = { IRONWARDEN: "tank", BASTION: "tank", DREADGUARD: "tank", DAWNKEEPER: "support", STONECALLER: "support", WAYFINDER: "damage", RAVAGER: "damage", HEXWEAVER: "damage", KNIFE_DANCER: "damage" };
 var COMPANION_ROLE = Object.fromEntries(COMPANION_SERVER_DEFINITIONS.map((x) => [x.id, x.role]));
 var COMPANION_RARITY = Object.fromEntries(COMPANION_SERVER_DEFINITIONS.map((x) => [x.id, x.rarity]));
@@ -44930,7 +44963,7 @@ function validateProgressionSnapshot(companionId, input) {
   return { level: Math.max(1, Math.min(cap, RARITY_MAX_LEVEL[rarity], Math.floor(input.level))), xp: Math.max(0, Math.floor(input.xp)), ascensionTier, bondLevel: Math.max(1, Math.min(10, Math.floor(input.bondLevel))), bondXp: Math.max(0, Math.floor(input.bondXp)), selectedTechniqueId: input.selectedTechniqueId };
 }
 
-// ../apps/mobile/src/core/feature-unlocks.ts
+// apps/mobile/src/core/feature-unlocks.ts
 var GUILD_UNLOCK_LEVEL = 7;
 var PARTY_UNLOCK_LEVEL = 20;
 var EARLY_FEATURE_UNLOCKS = {
@@ -44948,7 +44981,7 @@ var EARLY_FEATURE_UNLOCKS = {
   rankings: { questId: "QST_011", title: "Rankings", requirement: "Reach Level 20 and complete Place Among Guilds", description: "Prestige rankings unlock later at Level 20, after the player has had time to establish their character and social identity." }
 };
 
-// ../apps/mobile/src/core/companion-runtime.ts
+// apps/mobile/src/core/companion-runtime.ts
 function companionOwned(state) {
   return Object.fromEntries((state.account.unlockedCombatCompanionIds ?? []).flatMap((id) => {
     const p = state.account.combatCompanionProgress?.[id];
@@ -44959,7 +44992,7 @@ function assertCompanionIdle(state, id) {
   if ((state.account.companionAssignments ?? []).some((a) => a.status !== "claimed" && a.status !== "cancelled" && a.companionIds.includes(id)) || state.account.companionTrialProgress?.season.activeRun?.teamCompanionIds.includes(id)) throw new Error("Companion is busy. Finish or abandon its activity first.");
 }
 
-// ../apps/mobile/src/content/event-currency-promotion.ts
+// apps/mobile/src/content/event-currency-promotion.ts
 var VEILBREAK_CURRENCY_PROMOTION = {
   eventId: "EVT_ANNUAL_010_2026",
   startsAtMs: Date.parse("2026-10-19T05:48:31Z"),
@@ -44980,13 +45013,13 @@ function promotedEventCurrency(eventId, quantity, earnedAtMs) {
   return Math.floor(Math.max(0, quantity) * (1e4 + eventCurrencyPromotionBps(eventId, earnedAtMs)) / 1e4);
 }
 
-// ../apps/mobile/src/content/event-collectible-content-active.ts
+// apps/mobile/src/content/event-collectible-content-active.ts
 var EVENT_PET_COLLECTIBLES = [
   { id: "EVT_PET_013", kind: "pet", name: "Gloomkin", bonusFamilyId: "EVT_PET_013", target: "dropChance", ownedBps: 50, activeBps: 300, collectionGroup: "event", source: "The Veilbreak \xB7 October", event: "veilbreak", rarity: "Rare", buff: "+3% relative Combat Drop Chance", description: "A playful void kitten carrying a small spectral lantern." },
   { id: "EVT_PET_014", kind: "pet", name: "Lantern Mimic", bonusFamilyId: "EVT_PET_014", target: "dungeonReward", ownedBps: 50, activeBps: 400, collectionGroup: "event", source: "The Veilbreak \xB7 October", event: "veilbreak", rarity: "Epic", buff: "+4% Dungeon Reward Quantity Chance", description: "A compact mimic filled with ghost-fire and lantern light." }
 ];
 
-// ../apps/mobile/src/content/core-pets.ts
+// apps/mobile/src/content/core-pets.ts
 var pet = (id, name, region, target2, nativeSize, activeBps = 200, source) => ({
   id,
   kind: "pet",
@@ -45049,7 +45082,7 @@ function validateCorePetCatalog(catalog2 = CORE_PET_COLLECTIBLES) {
 }
 validateCorePetCatalog();
 
-// ../apps/mobile/src/content/guild-pets-v1.ts
+// apps/mobile/src/content/guild-pets-v1.ts
 var GUILD_PET_COLLECTIBLES = [
   {
     id: "GUILD_PET_001",
@@ -45083,7 +45116,7 @@ var GUILD_PET_COLLECTIBLES = [
   }
 ];
 
-// ../apps/mobile/src/content/collectibles.ts
+// apps/mobile/src/content/collectibles.ts
 var entry = (id, kind, name, target2, source, activeBps = 200, requiredCharacterLevel, collectionGroup = "profile") => ({ id, kind, name, bonusFamilyId: id, target: target2, ownedBps: 50, activeBps, source, requiredCharacterLevel, collectionGroup });
 var PROFILE_COLLECTIBLES = [
   entry("ironwood-dawn", "background", "Ironwood Dawn", "skillXp", "Reach character level 10", 200, 10, "profile"),
@@ -45118,7 +45151,7 @@ function validateCollectibleCatalog(catalog2 = COLLECTIBLES) {
 }
 validateCollectibleCatalog();
 
-// ../apps/mobile/src/content/permanent-boosts.ts
+// apps/mobile/src/content/permanent-boosts.ts
 var petBoostFor = (pet2) => {
   const amount = 1 + pet2.activeBps / 1e4;
   const base = { id: pet2.id, name: pet2.name };
@@ -45218,10 +45251,10 @@ var PERMANENT_BOOSTS_BASE = {
   ...BUYABLE_PERMANENT_BOOSTS
 };
 
-// ../apps/mobile/src/core/permanent-boosts.ts
+// apps/mobile/src/core/permanent-boosts.ts
 init_faith2();
 
-// ../apps/mobile/src/core/account-entitlements.ts
+// apps/mobile/src/core/account-entitlements.ts
 function has2(state, ...keys) {
   const entitlements = state.account.entitlements ?? {};
   return keys.some((key) => entitlements[key] === true);
@@ -45250,7 +45283,7 @@ function accountEntitlementBenefits(state) {
   };
 }
 
-// ../apps/mobile/src/core/collectibles.ts
+// apps/mobile/src/core/collectibles.ts
 var ids = (state, kind) => kind === "pet" ? state.account.unlockedCosmeticPetIds ?? [] : kind === "background" ? state.account.unlockedProfileBackgroundIds ?? [] : state.account.unlockedProfileBorderIds ?? [];
 var selected = (state, kind) => kind === "pet" ? state.character?.selectedCosmeticPetId : kind === "background" ? state.character?.profileBackgroundId : state.character?.profileBorderId;
 function collectionBonusBreakdown(state, catalog2 = COLLECTIBLES) {
@@ -45276,10 +45309,10 @@ function collectionBonusBreakdown(state, catalog2 = COLLECTIBLES) {
   });
 }
 
-// ../apps/mobile/src/core/permanent-boosts.ts
+// apps/mobile/src/core/permanent-boosts.ts
 init_meal_buffs();
 
-// ../apps/mobile/src/core/guild-skill-effects.ts
+// apps/mobile/src/core/guild-skill-effects.ts
 var BPS = 1e4;
 function bonusMultiplier(bps) {
   const value = typeof bps === "number" && Number.isFinite(bps) ? bps : 0;
@@ -45294,7 +45327,7 @@ function guildSkillProfessionMultipliers(effects) {
   };
 }
 
-// ../apps/mobile/src/core/permanent-boosts.ts
+// apps/mobile/src/core/permanent-boosts.ts
 var BASE = {
   attackMultiplier: 1,
   combatSpeedMultiplier: 1,
@@ -45467,7 +45500,7 @@ function characterPermanentMultipliers(state) {
   return result;
 }
 
-// ../apps/mobile/src/core/class-skill-affinities.ts
+// apps/mobile/src/core/class-skill-affinities.ts
 var CLASS_SKILL_AFFINITIES = Object.freeze({
   IRONWARDEN: "smithing",
   BASTION: "smithing",
@@ -45484,7 +45517,7 @@ var CLASS_AFFINITY_SPEED_MULTIPLIER = 1.03;
 var NEUTRAL = Object.freeze({ xpMultiplier: 1, speedMultiplier: 1 });
 var MATCHED = Object.freeze({ xpMultiplier: CLASS_AFFINITY_XP_MULTIPLIER, speedMultiplier: CLASS_AFFINITY_SPEED_MULTIPLIER });
 
-// ../apps/mobile/src/content/quests.ts
+// apps/mobile/src/content/quests.ts
 var QUESTS = [
   { id: "QST_001", name: "A Name in the Ledger", description: "Defeat 5 Moss Rats.", kind: "kills", targetId: "MOSS_RAT", required: 5, rewardGold: 40, rewardItemId: "MOSS_FIBER", rewardItemQty: 5, act: 1, location: "Greenfields", story: "The local ledger has more missing names than living ones. A simple rat cull is hardly heroic, but it is the first chance to prove you can return from the road." },
   { id: "QST_002", name: "First Blood, First Skill", description: "Reach level 2 in any guided gathering skill.", kind: "skillLevel", required: 2, rewardGold: 60, rewardItemId: "COPPER_ORE", rewardItemQty: 4, act: 1, location: "Greenfields Camp", story: "Steel alone will not carry you through Asterfall. The camp quartermaster sends you to learn the land, gather what it gives, and stop depending on supplies brought from safer places." },
@@ -45503,25 +45536,32 @@ var QUESTS = [
   { id: "QST_015", name: "Beyond the Green", description: "Claim victory over the Fallen Knight and reach level 25.", kind: "level", required: 25, rewardGold: 1250, rewardItemId: "OATHGLASS_CAPE", rewardItemQty: 1, act: 3, location: "Eastern Oathgate", story: "With the Knight defeated, the sealed routes beyond Asterfall begin to open. The victory ends one chapter, but the echoes carried on the wind make it clear the broken oath was never confined to the green lands." }
 ];
 
-// ../apps/mobile/src/core/activity-queue.ts
+// apps/mobile/src/core/activity-queue.ts
 init_faith();
 init_faith2();
 
-// ../apps/mobile/src/core/alchemy.ts
+// apps/mobile/src/core/alchemy.ts
 init_progression();
 function preparationEffects(preparation) {
   const def = preparation && preparation.remainingEncounters > 0 ? potionDef(preparation.itemId) : void 0;
-  return def?.effect.kind === "preparation" ? { attack: 1 + def.effect.attackFraction, damage: 1 - def.effect.damageReductionFraction, itemId: def.id } : { attack: 1, damage: 1, itemId: void 0 };
+  return def?.effect.kind === "preparation" ? {
+    attack: 1 + def.effect.attackFraction,
+    outgoing: 1 + def.effect.damageDealtFraction,
+    damage: 1 - def.effect.damageReductionFraction,
+    healing: 1 + def.effect.healingStrengthFraction,
+    shielding: 1 + def.effect.shieldStrengthFraction,
+    itemId: def.id
+  } : { attack: 1, outgoing: 1, damage: 1, healing: 1, shielding: 1, itemId: void 0 };
 }
 
-// ../apps/mobile/src/core/processing.ts
+// apps/mobile/src/core/processing.ts
 init_progression();
 
-// ../apps/mobile/src/core/game.ts
+// apps/mobile/src/core/game.ts
 init_meal_buffs();
 init_progression();
 
-// ../apps/mobile/src/core/identity-names.ts
+// apps/mobile/src/core/identity-names.ts
 var LATIN_WORD = String.raw`\p{Script=Latin}[\p{Script=Latin}\p{M}]*`;
 var SAFE_IDENTITY_NAME = new RegExp(`^${LATIN_WORD}(?:[ '-]${LATIN_WORD})*$`, "u");
 var RESERVED_NAME_TOKENS = /* @__PURE__ */ new Set(["admin", "administrator", "moderator", "mod", "developer", "dev", "staff", "support", "system", "official", "owner", "gamemaster", "game master", "gm", "bot", "null", "undefined", "deleted", "veldryn"]);
@@ -45546,7 +45586,7 @@ function characterNameError(value) {
   return identityNameError(value, 2, 20, "character names");
 }
 
-// ../apps/mobile/src/core/quick-navigation.ts
+// apps/mobile/src/core/quick-navigation.ts
 var QUICK_NAV_DESTINATIONS = [
   "Home",
   "Character",
@@ -45567,10 +45607,10 @@ var QUICK_NAV_DESTINATIONS = [
 var DEFAULT_QUICK_NAV_DESTINATIONS = ["Quests", "Dungeon", "Companions", "Guild", "Settings"];
 var allowed = new Set(QUICK_NAV_DESTINATIONS);
 
-// ../apps/mobile/src/core/account-roster.ts
+// apps/mobile/src/core/account-roster.ts
 init_progression();
 
-// ../apps/mobile/src/core/item-rarity.ts
+// apps/mobile/src/core/item-rarity.ts
 var GEAR_RARITIES = [
   { id: "common", label: "Common", chance: 0.89, color: "#9aa4b2", lightTextColor: "#52606D", surface: "rgba(154,164,178,.08)", statMultiplier: 1, borderWidth: 1, glowOpacity: 0, symbol: "\u25C6" },
   { id: "uncommon", label: "Uncommon", chance: 0.07, color: "#49c873", lightTextColor: "#1F7A46", surface: "rgba(73,200,115,.10)", statMultiplier: 1.12, borderWidth: 1, glowOpacity: 0.08, symbol: "\u25C6" },
@@ -45591,7 +45631,7 @@ function itemRarity(item) {
 }
 var rarityMeta = (rarity) => GEAR_RARITIES.find((entry2) => entry2.id === rarity);
 
-// ../apps/mobile/src/core/crafted-gear-rarity.ts
+// apps/mobile/src/core/crafted-gear-rarity.ts
 var CRAFTED_MYTHIC_CHANCE = 1e-3;
 var CRAFTED_LEGENDARY_CHANCE = 2e-3;
 var CRAFTED_EPIC_CHANCE = 6e-3;
@@ -45604,7 +45644,7 @@ function craftedRarityStatMultiplier(itemId, rarity) {
   return Math.max(1, rarityMeta(rarity).statMultiplier / baseMultiplier);
 }
 
-// ../apps/mobile/src/core/crafted-gear-instances.ts
+// apps/mobile/src/core/crafted-gear-instances.ts
 var CRAFTED_GEAR_QUALITY_MIN = 0;
 var CRAFTED_GEAR_QUALITY_MAX = 100;
 var LEGACY_CRAFTED_GEAR_QUALITY = 50;
@@ -45661,16 +45701,16 @@ function effectiveOwnedGearRarity(state, itemId, ownerCharacterId = state.charac
   return bestCraftedInstanceForItem(state, itemId, ownerCharacterId)?.rarity ?? itemRarity(itemDef(itemId));
 }
 
-// ../apps/mobile/src/core/gem-progression-v1.ts
+// apps/mobile/src/core/gem-progression-v1.ts
 init_progression();
 var GEM_COMBINE_COSTS_V1 = {
-  1: { to: 2, copies: 3, dust: 0, gold: 1500, seconds: 5 * 60, level: 8, xp: 140 },
-  2: { to: 3, copies: 3, dust: 5, gold: 5e3, seconds: 15 * 60, level: 20, xp: 420 },
-  3: { to: 4, copies: 3, dust: 15, gold: 18e3, seconds: 45 * 60, level: 40, xp: 1200, catalystId: "REGIONAL_CATALYST" },
-  4: { to: 5, copies: 3, dust: 40, gold: 6e4, seconds: 2 * 60 * 60, level: 60, xp: 3200, catalystId: "RADIANT_CATALYST" }
+  1: { to: 2, copies: 3, dust: 0, gold: 1800, seconds: 5 * 60, level: 8, xp: 140 },
+  2: { to: 3, copies: 3, dust: 5, gold: 6e3, seconds: 15 * 60, level: 20, xp: 420 },
+  3: { to: 4, copies: 3, dust: 15, gold: 21600, seconds: 45 * 60, level: 40, xp: 1200, catalystId: "REGIONAL_CATALYST" },
+  4: { to: 5, copies: 3, dust: 40, gold: 72e3, seconds: 2 * 60 * 60, level: 60, xp: 3200, catalystId: "RADIANT_CATALYST" }
 };
 
-// ../apps/mobile/src/core/equipment-enhancement.ts
+// apps/mobile/src/core/equipment-enhancement.ts
 var MAX_UPGRADE_RANK = 4;
 var UPGRADE_STAT_PER_RANK = 0.04;
 function safeGem(id) {
@@ -45736,7 +45776,7 @@ function equippedGemBonuses(state) {
   return result;
 }
 
-// ../apps/mobile/src/content/class-icon-colors.ts
+// apps/mobile/src/content/class-icon-colors.ts
 var CLASS_ICON_ACCENT = {
   IRONWARDEN: "#70BDFA",
   BASTION: "#C98342",
@@ -45749,7 +45789,7 @@ var CLASS_ICON_ACCENT = {
   STONECALLER: "#54C8BE"
 };
 
-// ../apps/mobile/src/content/equipment-sets.ts
+// apps/mobile/src/content/equipment-sets.ts
 var classIdByCatalogName = {
   Ironwarden: "IRONWARDEN",
   Bastion: "BASTION",
@@ -45809,7 +45849,7 @@ function equippedSetPieceCount(equipment, set) {
   return Object.values(equipment).filter((itemId) => itemId && set.itemIds.includes(itemId)).length;
 }
 
-// ../apps/mobile/src/core/equipment-set-runtime.ts
+// apps/mobile/src/core/equipment-set-runtime.ts
 var EMPTY_STATS = {
   maxHp: 0,
   armor: 0,
@@ -45891,11 +45931,11 @@ function activeEquipmentSetRuntime(state) {
   return { stats: total, activeSets: activeSets.sort((a, b) => b.pieces - a.pieces || a.setId.localeCompare(b.setId)) };
 }
 
-// ../apps/mobile/src/core/game.ts
+// apps/mobile/src/core/game.ts
 init_faith2();
 init_faith();
 
-// ../apps/mobile/src/core/collection-sets-v45.ts
+// apps/mobile/src/core/collection-sets-v45.ts
 var COLLECTION_SETS_V45 = [
   {
     id: "asterfall_cuisine_runtime",
@@ -45922,13 +45962,13 @@ var COLLECTION_SETS_V45 = [
   }
 ];
 
-// ../apps/mobile/src/core/launch-readiness-v47.ts
+// apps/mobile/src/core/launch-readiness-v47.ts
 var CURRENT_SKILL_IDS = ["mining", "woodcutting", "fishing", "smithing", "cooking", "herbalism", "alchemy", "exploration", "tailoring", "enchanting", "faith"];
 var itemIds = new Set(ITEMS.map((row) => row.id));
 var zoneIds = new Set(WORLD_ZONES.map((row) => row.id));
 var skillIds = new Set(CURRENT_SKILL_IDS);
 
-// ../apps/mobile/src/core/adventurers-journal-v42.ts
+// apps/mobile/src/core/adventurers-journal-v42.ts
 var TIERS = ["novice", "adventurer", "veteran", "master", "grandmaster"];
 var ladder = (category, key, name, metricKey, targets, descriptions, title2) => targets.map((target2, index) => ({ id: `${key}_${TIERS[index]}`, category, tier: TIERS[index], title: `${name} \u2014 ${TIERS[index][0].toUpperCase()}${TIERS[index].slice(1)}`, description: descriptions[index], metricKey, target: target2, ...index === 4 && title2 ? { rewardTitleId: title2.id } : {} }));
 var JOURNAL_TITLES_V42 = [
@@ -45955,10 +45995,10 @@ var JOURNAL_ACHIEVEMENTS_V42 = [
   ...ladder("account", "orderbound", "Orderbound", "weekly_orders.completed", [4, 20, 100, 300, 750], ["Complete four Weekly Orders.", "Complete 20 Weekly Orders.", "Complete 100 Weekly Orders.", "Complete 300 Weekly Orders.", "Complete 750 Weekly Orders."], title("orderbound"))
 ];
 
-// ../apps/mobile/src/core/daily-supplies.ts
+// apps/mobile/src/core/daily-supplies.ts
 var DAILY_SUPPLY_CHARGE_SECONDS = 2 * 60 * 60;
 
-// ../apps/mobile/src/core/game.ts
+// apps/mobile/src/core/game.ts
 var BASE_OFFLINE_CAP_HOURS = 8;
 var OFFLINE_CAP_SECONDS = BASE_OFFLINE_CAP_HOURS * 60 * 60;
 function newGame(nowMs) {
@@ -45996,7 +46036,7 @@ function createCharacter(state, classId, name = "Adventurer", bodyPresentation =
   }
   return {
     ...state,
-    character: { id: "LOCAL_CHAR_1", name: normalizedName || "Adventurer", classId, bodyPresentation, classSkills: classSkillsFor(classId).map((skill2) => ({ skillId: skill2.id, xp: 0, level: 1 })), trainingFocus: "balanced", profileTitle: "New Adventurer", profileBackgroundId: "asterfall-night", ownedPetIds: [], ownedBoostIds: [], profileIconId: "class:" + classId, faith: { favoriteBlessingIds: [], hideWeakerBlessings: true }, level: 1, xp: 0, gold: 100, hp: c.hp, currentHp: maxHp, attack: c.attack, defense: c.defense, equipment, equippedFoodId: "TRAVEL_RATION" },
+    character: { id: "LOCAL_CHAR_1", name: normalizedName || "Adventurer", classId, bodyPresentation, classSkills: classSkillsFor(classId).map((skill2) => ({ skillId: skill2.id, xp: 0, level: 1 })), trainingFocus: "balanced", profileTitle: "New Adventurer", profileBackgroundId: "asterfall-night", ownedPetIds: [], ownedBoostIds: [], profileIconId: "class:" + classId, faith: { favoriteBlessingIds: [], hideWeakerBlessings: true }, level: 1, xp: 0, gold: 100, hp: c.hp, currentHp: maxHp, attack: c.attack, defense: c.defense, equipment, equipmentPouch: { capacity: 30, stacks: [] }, equippedFoodId: "TRAVEL_RATION" },
     inventory: { ...state.inventory, stacks: [{ itemId: "TRAVEL_RATION", quantity: 8 }] },
     settings: { ...state.settings, seenItemIds: [.../* @__PURE__ */ new Set([...state.settings.seenItemIds ?? [], "TRAVEL_RATION"])] }
   };
@@ -46053,7 +46093,7 @@ function effectiveStats(state) {
   };
 }
 
-// src/server/combat/content/launch-combat.ts
+// backend/src/server/combat/content/launch-combat.ts
 var stats2 = (maxHp, attackPower, healingPower, defense, accuracy, evasion, critChance = 0.08, haste = 0.05) => ({ maxHp, attackPower, healingPower, defense, accuracy, evasion, critChance, critMultiplier: 1.5, haste });
 var dmg = (id, name, coeff, cooldownMs, priority, extra = {}) => ({ id, name, cooldownMs, castTimeMs: 0, target: "current_target", priority, effects: [{ kind: "damage", coeff, damageType: "physical" }], ...extra });
 function launchPlayer(classId, level = 25) {
@@ -46127,7 +46167,7 @@ function bellWardenBoss(level = 25) {
   ] };
 }
 
-// src/server/coop/role-readiness.ts
+// backend/src/server/coop/role-readiness.ts
 var CLASS_ROLES = Object.freeze({
   IRONWARDEN: "tank",
   BASTION: "tank",
@@ -46155,7 +46195,7 @@ function evaluateRoleReadiness(classId, normalizedScore, capabilities, floor = 0
   return { ready: failures.length === 0, role: role2, normalizedScore, failures };
 }
 
-// src/server/coop/normalization.ts
+// backend/src/server/coop/normalization.ts
 var COOP_NORMALIZATION_V1 = Object.freeze({
   version: "coop-normalization-v1",
   softThreshold: 1.15,
@@ -46230,7 +46270,7 @@ function normalizeCombatInput(source, abilities, syncLevel, reference, config = 
   };
 }
 
-// online/coop-loadout.ts
+// backend/online/coop-loadout.ts
 var ONLINE_COOP_BALANCE_VERSION = "online-coop-loadout-v1";
 function referenceStats(classId) {
   const reference = createCharacter(newGame(0), classId, "Calibration");
@@ -46303,22 +46343,22 @@ function assessOnlineCoopLoadout(record, syncLevel = 25) {
   return { normalized, readiness };
 }
 
-// ../apps/mobile/src/core/game-commands.ts
+// apps/mobile/src/core/game-commands.ts
 init_faith2();
 
-// ../apps/mobile/src/core/equipment-crafting-queue.ts
+// apps/mobile/src/core/equipment-crafting-queue.ts
 init_progression();
 
-// ../apps/mobile/src/core/inventory-bulk.ts
+// apps/mobile/src/core/inventory-bulk.ts
 init_faith();
 
-// ../apps/mobile/src/core/balance-projection.ts
+// apps/mobile/src/core/balance-projection.ts
 init_progression();
 
-// ../apps/mobile/src/core/working-toward.ts
+// apps/mobile/src/core/working-toward.ts
 var gatherDefs = [...GATHERING, ...HERB_NODES];
 
-// ../apps/mobile/src/features/chat-pilot/data/emotes.json
+// apps/mobile/src/features/chat-pilot/data/emotes.json
 var emotes_default = [
   {
     id: "male_01",
@@ -47189,24 +47229,24 @@ var emotes_default = [
   }
 ];
 
-// ../apps/mobile/src/core/chat-emotes.ts
+// apps/mobile/src/core/chat-emotes.ts
 var rows = emotes_default;
 var catalog = new Map(rows.map((row) => [row.id, row]));
 var known = new Set(catalog.keys());
 
-// ../apps/mobile/src/dev/debug-tools.ts
+// apps/mobile/src/dev/debug-tools.ts
 init_progression();
 
-// ../apps/mobile/src/core/skill-progression-navigation.ts
+// apps/mobile/src/core/skill-progression-navigation.ts
 var gatheringDefs = [...GATHERING, ...HERB_NODES];
 
-// ../apps/mobile/src/core/working-toward-execution.ts
+// apps/mobile/src/core/working-toward-execution.ts
 var gatherDefs2 = [...GATHERING, ...HERB_NODES];
 
-// ../apps/mobile/src/core/game-commands.ts
+// apps/mobile/src/core/game-commands.ts
 init_meal_buffs();
 
-// online/gameplay.ts
+// backend/online/gameplay.ts
 var GameplayError = class extends Error {
   constructor(message, status = 400) {
     super(message);
@@ -47215,7 +47255,7 @@ var GameplayError = class extends Error {
   status;
 };
 
-// online/coop-entry.ts
+// backend/online/coop-entry.ts
 var headers = { "Content-Type": "application/json", "Cache-Control": "no-store", "Access-Control-Allow-Origin": "*", "Access-Control-Allow-Headers": "authorization,apikey,content-type,x-client-info", "Access-Control-Allow-Methods": "GET,POST,OPTIONS" };
 var json = (value, status = 200) => new Response(JSON.stringify(value), { status, headers });
 var tiers = [1, 2, 3, 4, 5];
@@ -47297,10 +47337,10 @@ function coopEntryHandler(services) {
   };
 }
 
-// online/qmode-runtime.ts
+// backend/online/qmode-runtime.ts
 import { createHash as createHash4 } from "node:crypto";
 
-// src/server/companions/character-assist.ts
+// backend/src/server/companions/character-assist.ts
 function applyCharacterCompanionAssist(owner, progress) {
   if (!progress) return owner;
   const policy = validateCompanionLoadout({ classId: owner.classId, companionId: progress.companionId, ownedCompanionIds: [progress.companionId] });
@@ -47317,7 +47357,7 @@ function applyCharacterCompanionAssist(owner, progress) {
   return { ...owner, abilities: [...owner.abilities, ability3], tags: [...owner.tags ?? [], `companion:${def.id}`] };
 }
 
-// src/server/combat/snapshot-adapter.ts
+// backend/src/server/combat/snapshot-adapter.ts
 function combatantFromVerifiedSnapshot(s2, abilities) {
   if (!Number.isInteger(s2.level) || s2.level < 1 || s2.level > 100) throw new Error("invalid_snapshot_level");
   if ([s2.maxHp, s2.attackPower, s2.healingPower, s2.defense, s2.accuracy, s2.evasion, s2.critChance, s2.haste].some((value) => !Number.isFinite(value)) || s2.maxHp <= 0 || [s2.attackPower, s2.healingPower, s2.defense, s2.accuracy, s2.evasion].some((value) => value < 0)) throw new Error("invalid_snapshot_stats");
@@ -47337,7 +47377,7 @@ function combatantFromVerifiedSnapshot(s2, abilities) {
   }, s2.combatCompanion);
 }
 
-// src/server/expeditions/rng.ts
+// backend/src/server/expeditions/rng.ts
 import { createHmac } from "node:crypto";
 function deterministicDigest(secret, ...parts) {
   return createHmac("sha256", secret).update(parts.join("|")).digest();
@@ -47355,10 +47395,10 @@ function deterministicShuffle(secret, values, ...parts) {
   return values.map((value, index) => ({ value, key: deterministicDigest(secret, ...parts, index).toString("hex") })).sort((a, b) => a.key.localeCompare(b.key)).map((x) => x.value);
 }
 
-// src/server/combat/expedition-combat-service.ts
+// backend/src/server/combat/expedition-combat-service.ts
 import { createHash as createHash2 } from "node:crypto";
 
-// src/server/combat/pve-encounter-identity.ts
+// backend/src/server/combat/pve-encounter-identity.ts
 var ARCHETYPE_LABEL = Object.freeze({
   bruiser: "Bruiser",
   assassin: "Assassin",
@@ -47450,7 +47490,7 @@ function pveBossTelegraph(definitions2) {
   };
 }
 
-// src/server/combat/content/asterfall-encounters.ts
+// backend/src/server/combat/content/asterfall-encounters.ts
 var s = (maxHp, attackPower, defense, accuracy = 650, evasion = 120) => ({ maxHp, attackPower, healingPower: 0, defense, accuracy, evasion, critChance: 0.04, critMultiplier: 1.5, haste: 0 });
 var enemy = (id, name, hp, ap, def, abilityCoeff = 1) => withPveIdentity({
   id,
@@ -47509,7 +47549,7 @@ ASTERFALL_ENCOUNTERS.LANTERN_ELITE_02 = () => [bellSentinel("LANTERN_KNIGHT", "F
 ASTERFALL_ENCOUNTERS.LANTERN_ELITE_03 = () => [bellSentinel()];
 ASTERFALL_ENCOUNTERS.BOSS_EXP_BELL = () => [bellBoss()];
 
-// src/server/combat/content/sunscar-encounters.ts
+// backend/src/server/combat/content/sunscar-encounters.ts
 var stats3 = (maxHp, attackPower, defense, accuracy = 910, evasion = 220) => ({ maxHp, attackPower, healingPower: 0, defense, accuracy, evasion, critChance: 0.06, critMultiplier: 1.5, haste: 0.03 });
 var strike = (id, name, coeff, damageType, target2 = "current_target", castTimeMs = 650) => ({ id, name, cooldownMs: target2 === "all_enemies" ? 9500 : 6800, castTimeMs, target: target2, priority: target2 === "all_enemies" ? 90 : 70, interruptible: castTimeMs > 900, effects: [{ kind: "damage", coeff, damageType }] });
 var enemy2 = (id, name, hp, ap, def, ability3, archetype = "bruiser", mechanics = ["heavy_hit"]) => withPveIdentity({ id, name, team: "enemies", role: "enemy", level: 45, stats: stats3(hp, ap, def), basicAttackMs: 2800, basicAttackCoeff: 0.72, abilities: [ability3] }, archetype, mechanics);
@@ -47559,7 +47599,7 @@ function boss(id, name, type, attackPower = 3900) {
 SUNSCAR_ENCOUNTERS.BOSS_EXP_SOLAR = () => boss("BOSS_EXP_SOLAR", "The Buried Heliarch", "fire", 4e3);
 SUNSCAR_ENCOUNTERS.BOSS_EXP_SPHINX = () => boss("BOSS_EXP_SPHINX", "The Veiled Sphinx", "arcane", 3635);
 
-// src/server/combat/content/regional-encounters.ts
+// backend/src/server/combat/content/regional-encounters.ts
 var stats4 = (maxHp, attackPower, defense, level) => ({ maxHp, attackPower, healingPower: 0, defense, accuracy: 930, evasion: 190, critChance: 0.06, critMultiplier: 1.5, haste: 0.03 });
 function normalIdentity(name) {
   if (["Glacier Stalker", "Icefang Hound", "Glassbone Hound"].includes(name)) return { archetype: "assassin", mechanics: ["focus", "execute"] };
@@ -47698,7 +47738,7 @@ for (const [index, name] of ["Cinder Channeler", "Blackglass Devourer", "Forgepl
 ASHLANDS_ENCOUNTERS.BOSS_EXP_FEN = () => boss2("BOSS_EXP_FEN", "The Blackglass Fen Prime", 94, "fire", 125e3, 8200, 2900);
 ASHLANDS_ENCOUNTERS.BOSS_EXP_PRIME = () => boss2("BOSS_EXP_PRIME", "The Crucible Prime", 94, "fire", 132e3, 8400, 2950);
 
-// src/server/combat/content/event-encounters.ts
+// backend/src/server/combat/content/event-encounters.ts
 var stats5 = (maxHp, attackPower, defense, level) => ({ maxHp, attackPower, healingPower: 0, defense, accuracy: 930, evasion: 190, critChance: 0.06, critMultiplier: 1.5, haste: 0.03 });
 function archetypeFor(name) {
   const exact = {
@@ -47841,10 +47881,10 @@ var EVENT_ENCOUNTERS = {
   EVENT_FROSTFALL_BOSS: () => boss3("EVENT_FROSTFALL_BOSS", "The Rimebell Colossus", 35, 1.07, "ice", "Rimebell Hammer", "Aurora Shatter")
 };
 
-// src/server/combat/content/expedition-encounters.ts
+// backend/src/server/combat/content/expedition-encounters.ts
 var EXPEDITION_ENCOUNTERS = Object.freeze({ ...ASTERFALL_ENCOUNTERS, ...SUNSCAR_ENCOUNTERS, ...FROSTMARCH_ENCOUNTERS, ...ASHLANDS_ENCOUNTERS, ...EVENT_ENCOUNTERS });
 
-// src/server/combat/pve-simulation-telemetry.ts
+// backend/src/server/combat/pve-simulation-telemetry.ts
 var rounded = (value, digits = 4) => Number(value.toFixed(digits));
 function add(record, key, value) {
   if (!key) return;
@@ -47967,7 +48007,7 @@ function buildPveSimulationTelemetry(result, encounterId) {
   };
 }
 
-// src/server/combat/expedition-combat-service.ts
+// backend/src/server/combat/expedition-combat-service.ts
 function expeditionEncounterPreview(encounterId) {
   const factory = EXPEDITION_ENCOUNTERS[encounterId];
   return factory ? pveEncounterPreview(factory()) : void 0;
@@ -48125,7 +48165,7 @@ function resolveExpeditionCombat(input, includeDebugTrace = false) {
   return { success: result.victory, resultJson: { reason: result.reason, durationMs: result.durationMs, downs: result.players.filter((p) => p.downed).map((p) => p.definition.id), playerHp: rec(result.players, (x) => x.hp), enemyHp: rec(result.enemies, (x) => x.hp), damage: rec(result.players, (x) => x.damageDone), healing: rec(result.players, (x) => x.healingDone), damageTaken: rec(result.players, (x) => x.damageTaken), interrupts: rec(result.players, (x) => x.interrupts), eventDigest, eventCount: result.events.length, bossPhaseIds, bossCastAbilityIds, ...safetyAiIds.size ? { safetyAiPlayerIds: [...safetyAiIds], safetyAiPolicy: { outputMultiplier: 0.7, allowedActions: ["basic_attack", "basic_defensive"] } } : {}, ...encounterIdentity2 ? { encounterIdentity: encounterIdentity2 } : {}, pveTelemetry, replayCombatants: replay.combatants, replayStatuses: replay.statuses, replayGemStates: replay.gemStates, replayCues: replay.cues }, endingPlayerState: persistentPlayerState(result), ...includeDebugTrace ? { debugEvents: result.events } : {} };
 }
 
-// src/server/expeditions/tier-balance.ts
+// backend/src/server/expeditions/tier-balance.ts
 function coopTierEnemyMultipliers(tier) {
   const index = EXPEDITION.difficultyIndex[tier];
   if (!Number.isFinite(index)) throw new Error("invalid_expedition_tier");
@@ -48137,7 +48177,7 @@ function coopTierEnemyMultipliers(tier) {
   };
 }
 
-// src/server/expeditions/node-resolution.ts
+// backend/src/server/expeditions/node-resolution.ts
 var COMBAT_KINDS = /* @__PURE__ */ new Set(["battle", "elite", "boss"]);
 var IMPLEMENTED_NONCOMBAT = /* @__PURE__ */ new Set(["event", "camp", "shrine", "treasure", "forge", "merchant", "echo", "risk", "secret"]);
 function initialPersistentRunState(players) {
@@ -48172,7 +48212,7 @@ function purchaseMerchantOffer(input) {
     if (!player2) throw new Error("unknown_merchant_actor");
     actors = { ...actors, [input.actorId]: { ...actor, downed: false, hp: Math.min(player2.stats.maxHp, actor.hp + player2.stats.maxHp * 0.35) } };
   }
-  return { success: true, state: { ...input.state, actors, resources: input.state.resources - offer.cost, personalEffects: { ...input.state.personalEffects, [input.actorId]: { ...nextPersonal, boons, artifacts } } }, summary: { kind: "merchant_purchase", actorId: input.actorId, offerId: offer.id, cost: offer.cost } };
+  return { success: true, state: { ...input.state, actors, resources: input.state.resources - offer.cost, personalEffects: { ...input.state.personalEffects, [input.actorId]: { ...nextPersonal, boons, artifacts } } }, summary: { kind: "merchant_purchase", actorId: input.actorId, offerId: offer.id, offerKind: offer.kind, cost: offer.cost, resourcesDelta: -offer.cost, healedHp: Math.max(0, (actors[input.actorId]?.hp ?? 0) - actor.hp), revivedCount: actor.downed && !actors[input.actorId]?.downed ? 1 : 0, boonCount: boons.length - current.boons.length, artifactCount: artifacts.length - current.artifacts.length } };
 }
 function healAtCamp(state, players) {
   const actors = { ...state.actors };
@@ -48232,17 +48272,29 @@ function resolveCoopNode(input) {
       state = { ...state };
       break;
   }
-  return { success: true, state, summary: { kind: input.node.kind, roll, ...input.node.kind === "merchant" ? { offers: merchantOffers(input.node.contentId) } : {} } };
+  const healedHp = input.players.reduce((total, player2) => total + Math.max(0, (state.actors[player2.id]?.hp ?? 0) - (input.state.actors[player2.id]?.hp ?? 0)), 0);
+  const revivedCount = input.players.filter((player2) => input.state.actors[player2.id]?.downed && !state.actors[player2.id]?.downed).length;
+  return { success: true, state, summary: {
+    kind: input.node.kind,
+    roll,
+    resourcesDelta: state.resources - input.state.resources,
+    healedHp,
+    revivedCount,
+    boonCount: state.boons.length - input.state.boons.length,
+    artifactCount: state.artifacts.length - input.state.artifacts.length,
+    curseCount: state.curses.length - input.state.curses.length,
+    ...input.node.kind === "merchant" ? { offers: merchantOffers(input.node.contentId) } : {}
+  } };
 }
 
-// src/shared/coop-types.ts
+// backend/src/shared/coop-types.ts
 var COOP_ROLE_REQUIREMENT = Object.freeze({
   tank: 1,
   damage: 2,
   support: 1
 });
 
-// src/server/coop/invariants.ts
+// backend/src/server/coop/invariants.ts
 function roleCounts(roles) {
   const counts = { tank: 0, damage: 0, support: 0 };
   for (const role2 of roles) counts[role2] += 1;
@@ -48272,7 +48324,7 @@ function validatePreBossNodeCount(count) {
   }
 }
 
-// src/server/expeditions/content/coop-route-content.ts
+// backend/src/server/expeditions/content/coop-route-content.ts
 var ROOTBOUND = {
   battle: ["ROOT_SCOUTS", "ROOT_GUARDIANS", "ROOT_VINES", "ROOT_STALKERS", "ROOT_SENTINELS"],
   elite: ["ROOT_ELITE_BRAMBLE", "ROOT_ELITE_WARDEN", "ROOT_ELITE_MYCELIUM"],
@@ -48306,7 +48358,7 @@ function coopContentPool(expeditionId, kind) {
   return pool;
 }
 
-// src/server/expeditions/route-generation.ts
+// backend/src/server/expeditions/route-generation.ts
 var MODIFIERS = ["steady", "thorned", "volatile", "warded", "swift", "attrition"];
 function coopKind(secret, expeditionId, runId, contentVersion, balanceVersion, depth, choice) {
   if (depth <= 2) return "battle";
@@ -48398,7 +48450,7 @@ function coopRouteClientProjection(graph2, revealedNodeIds = [graph2.entryNodeId
   return { ...structuredClone(graph2), nodes: graph2.nodes.filter((node) => visible.has(node.nodeId)).map((node) => structuredClone(node)) };
 }
 
-// src/server/coop/echo-recruitment.ts
+// backend/src/server/coop/echo-recruitment.ts
 function missingRoles(controllerRole) {
   const roles = ["tank", "damage", "damage", "support"];
   const index = roles.indexOf(controllerRole);
@@ -48459,7 +48511,30 @@ function recruitQModeAllies(input) {
   return Object.freeze(team.map((row) => Object.freeze(structuredClone(row))));
 }
 
-// src/server/coop/qmode.ts
+// backend/src/server/coop/potion-modifiers.ts
+var DUNGEON_ROLE_TONIC_MODIFIERS = {
+  VIGOR_TONIC: { outgoing: 1.05, incoming: 1, healing: 1, shielding: 1 },
+  GREATER_VIGOR_TONIC: { outgoing: 1.1, incoming: 1, healing: 1, shielding: 1 },
+  OATH_VIGOR_TONIC: { outgoing: 1.15, incoming: 1, healing: 1, shielding: 1 },
+  WARD_TONIC: { outgoing: 1, incoming: 0.95, healing: 1, shielding: 1 },
+  GREATER_WARD_TONIC: { outgoing: 1, incoming: 0.9, healing: 1, shielding: 1 },
+  OATH_WARD_TONIC: { outgoing: 1, incoming: 0.85, healing: 1, shielding: 1 },
+  HARMONY_TONIC: { outgoing: 1.02, incoming: 1, healing: 1.05, shielding: 1.05 },
+  GREATER_HARMONY_TONIC: { outgoing: 1.04, incoming: 1, healing: 1.1, shielding: 1.1 },
+  OATH_HARMONY_TONIC: { outgoing: 1.06, incoming: 1, healing: 1.15, shielding: 1.15 }
+};
+function frozenAlchemyPotionCombatant(player2, potionId) {
+  if (!potionId) return player2;
+  if (player2.team !== "players") throw new Error("alchemy_potion_non_player");
+  const effect2 = DUNGEON_ROLE_TONIC_MODIFIERS[potionId];
+  if (!effect2) throw new Error("invalid_alchemy_preparation");
+  return { ...player2, alchemyModifiers: { ...effect2 } };
+}
+function preparedCoopCombatants(players, preparedByActor) {
+  return players.map((player2) => frozenAlchemyPotionCombatant(player2, preparedByActor?.[player2.id]));
+}
+
+// backend/src/server/coop/qmode.ts
 var MemoryQModeRunRepository = class {
   runs = /* @__PURE__ */ new Map();
   requests = /* @__PURE__ */ new Map();
@@ -48524,7 +48599,7 @@ var QModeService = class {
     if (!current || !current.nextNodeIds.includes(input.optionNodeId)) throw new Error("invalid_option");
     const selected2 = run.graph.nodes.find((node) => node.nodeId === input.optionNodeId);
     if (!selected2) throw new Error("invalid_option");
-    const result = resolveCoopNode({ runId: run.id, serverSecret: this.serverSecret, node: selected2, players: run.players, state: run.persistentState, tier: run.tierScalingVersion === 2 ? run.tier : void 0, enemyAttackMultiplier: run.qmodePressureVersion === 1 ? 1.005 : void 0, enemyDamageProfile: run.qmodePressureVersion === 1 ? "qmode-v1" : void 0, safetyAiPlayerIds: input.safetyAiPlayerIds });
+    const result = resolveCoopNode({ runId: run.id, serverSecret: this.serverSecret, node: selected2, players: preparedCoopCombatants(run.players, run.persistentState.preparedAlchemyPotionIdsByActor), state: run.persistentState, tier: run.tierScalingVersion === 2 ? run.tier : void 0, enemyAttackMultiplier: run.qmodePressureVersion === 1 ? 1.005 : void 0, enemyDamageProfile: run.qmodePressureVersion === 1 ? "qmode-v1" : void 0, safetyAiPlayerIds: input.safetyAiPlayerIds });
     run.lastResolution = { nodeId: selected2.nodeId, result: structuredClone(result) };
     run.persistentState = result.state;
     run.currentNodeId = selected2.nodeId;
@@ -48556,7 +48631,7 @@ var QModeService = class {
   }
 };
 
-// src/server/coop/combat-replay-projection.ts
+// backend/src/server/coop/combat-replay-projection.ts
 var TYPES = /* @__PURE__ */ new Set(["action", "phase", "cast", "interrupt", "down", "assist", "victory", "wipe", "timeout"]);
 var REASONS = /* @__PURE__ */ new Set(["victory", "wipe", "timeout"]);
 var VISIBLE_GEM_TAGS = /* @__PURE__ */ new Set([
@@ -48649,7 +48724,15 @@ function projectCombatReplay(lastResolution) {
   return { nodeId: lastResolution.nodeId, reason, durationMs: Math.round(duration), combatants, statuses, gemStates, contributions, cues };
 }
 
-// src/server/coop/qmode-public-projection.ts
+// backend/src/server/coop/qmode-public-projection.ts
+function publicCoopRoomOutcome(nodeId, summary) {
+  if (!nodeId || !summary) return void 0;
+  const kind = summary.kind;
+  if (typeof kind !== "string" || !["camp", "shrine", "forge", "treasure", "secret", "event", "risk", "echo", "merchant", "merchant_purchase"].includes(kind)) return void 0;
+  const count = (key) => typeof summary[key] === "number" && Number.isFinite(summary[key]) ? Math.max(0, summary[key]) : 0;
+  const delta = typeof summary.resourcesDelta === "number" && Number.isFinite(summary.resourcesDelta) ? summary.resourcesDelta : 0;
+  return { nodeId, kind, resourcesDelta: delta, healedHp: count("healedHp"), revivedCount: count("revivedCount"), boonCount: count("boonCount"), artifactCount: count("artifactCount"), curseCount: count("curseCount"), ...kind === "merchant_purchase" && typeof summary.offerKind === "string" ? { offerKind: summary.offerKind } : {} };
+}
 function projectQModeRun(run, mode = "qmode") {
   const current = run.graph.nodes.find((node) => node.nodeId === run.currentNodeId);
   if (!current) throw new Error("invalid_qmode_current_node");
@@ -48658,16 +48741,21 @@ function projectQModeRun(run, mode = "qmode") {
   const graph2 = coopRouteClientProjection(run.graph, revealed);
   const visible = new Set(graph2.nodes.map((node) => node.nodeId));
   const options = run.phase === "awaiting_choice" ? current.nextNodeIds.filter((id) => visible.has(id)).map((id) => graph2.nodes.find((node) => node.nodeId === id)).filter(Boolean).map((node) => ({ ...node, ...["battle", "elite", "boss"].includes(node.kind) ? { encounterPreview: expeditionEncounterPreview(node.contentId) } : {} })) : [];
+  const lastRoomOutcome = publicCoopRoomOutcome(run.lastResolution?.nodeId, run.lastResolution?.result.summary);
+  const merchantShop = mode === "qmode" && run.phase === "awaiting_choice" && current.kind === "merchant" && run.persistentState.visitedNodeIds.includes(current.nodeId) ? {
+    resources: run.persistentState.resources,
+    offers: merchantOffers(current.contentId).map((offer) => ({ id: offer.id, kind: offer.kind, cost: offer.cost, purchased: (run.persistentState.personalEffects[run.players[0].id]?.purchases ?? []).includes(offer.id) }))
+  } : void 0;
   const team = run.players.map((player2, index) => {
     const state = run.persistentState.actors[player2.id];
     if (!state) throw new Error("missing_qmode_actor_state");
     const companionId = (player2.tags ?? []).find((tag) => tag.startsWith("companion:"))?.slice("companion:".length), bodyTag = (player2.tags ?? []).find((tag) => tag.startsWith("body:"))?.slice("body:".length), bodyPresentation = bodyTag === "female" ? "female" : bodyTag === "male" ? "male" : void 0;
     return { memberId: player2.id, displayName: player2.name, role: player2.role, classId: player2.classId ?? "", bodyPresentation, companionId, kind: index === 0 ? "controller" : run.npcCharacterIds?.includes(player2.id) ? "npc" : "echo", effectiveLevel: player2.level, currentHp: state.hp, maximumHp: player2.stats.maxHp, downed: state.downed };
   });
-  return { runId: run.id, mode, phase: run.phase, tier: run.tier, expeditionId: run.expeditionId, controller: true, team: mode === "live" ? team.map((member) => ({ ...member, kind: "controller" })) : team, graph: graph2, currentNodeId: run.currentNodeId, options, visitedNodeIds: [...run.persistentState.visitedNodeIds], resources: run.persistentState.resources, boons: [...run.persistentState.boons], artifacts: [...run.persistentState.artifacts], curses: [...run.persistentState.curses], personalEffects: run.persistentState.personalEffects, ...bossTelegraph ? { bossMechanic: { label: "Dungeon boss mechanics", summary: "Read the cast telegraphs and interrupt dangerous abilities before the final phase.", tone: "mixed", telegraph: bossTelegraph } } : {}, lastCombat: projectCombatReplay(run.lastResolution), settlement: { status: run.phase === "completed" || run.phase === "failed" ? "pending_entitlement" : "not_ready" } };
+  return { runId: run.id, mode, phase: run.phase, tier: run.tier, expeditionId: run.expeditionId, controller: true, team: mode === "live" ? team.map((member) => ({ ...member, kind: "controller" })) : team, graph: graph2, currentNodeId: run.currentNodeId, options, visitedNodeIds: [...run.persistentState.visitedNodeIds], resources: run.persistentState.resources, boons: [...run.persistentState.boons], artifacts: [...run.persistentState.artifacts], curses: [...run.persistentState.curses], personalEffects: run.persistentState.personalEffects, potionChargeCapacity: [3, 3, 4, 4, 5][run.tier - 1], healingPotionUsesByActor: run.persistentState.healingPotionUsesByActor ?? {}, potionPreparationOpen: run.phase === "awaiting_choice" && !run.persistentState.visitedNodeIds.length, preparedAlchemyPotionIdsByActor: run.persistentState.preparedAlchemyPotionIdsByActor ?? {}, ...bossTelegraph ? { bossMechanic: { label: "Dungeon boss mechanics", summary: "Read the cast telegraphs and interrupt dangerous abilities before the final phase.", tone: "mixed", telegraph: bossTelegraph } } : {}, lastCombat: projectCombatReplay(run.lastResolution), ...lastRoomOutcome ? { lastRoomOutcome } : {}, ...merchantShop ? { merchantShop } : {}, settlement: { status: run.phase === "completed" || run.phase === "failed" ? "pending_entitlement" : "not_ready" } };
 }
 
-// src/server/coop/loadout-snapshots.ts
+// backend/src/server/coop/loadout-snapshots.ts
 import { createHash as createHash3 } from "node:crypto";
 function canonical(value) {
   if (Array.isArray(value)) return `[${value.map(canonical).join(",")}]`;
@@ -48715,7 +48803,7 @@ function freezeCoopRosterAtCommit(input) {
   return structuredClone(frozen);
 }
 
-// src/server/coop/qmode-npc-allies.ts
+// backend/src/server/coop/qmode-npc-allies.ts
 var CLASSES2 = [
   { id: "IRONWARDEN", className: "Ironwarden", name: "NPC \xB7 Iron Sentinel" },
   { id: "BASTION", className: "Bastion", name: "NPC \xB7 Shieldbearer" },
@@ -48774,7 +48862,7 @@ function createQModeNpcAllies({ minimumLevel, syncLevel, controllerLevel }) {
   });
 }
 
-// src/server/coop/dungeon-reward-balance.ts
+// backend/src/server/coop/dungeon-reward-balance.ts
 function dungeonRewardState(run) {
   const lastNode = run.lastResolution?.nodeId;
   const last = run.graph.nodes.find((node) => node.nodeId === lastNode);
@@ -48800,7 +48888,7 @@ function enhancedDungeonMarks(run) {
   return marksForRun(definition.baseMarks, run.tier, dungeonRewardState(run));
 }
 
-// online/qmode-runtime.ts
+// backend/online/qmode-runtime.ts
 var digest = (value) => createHash4("sha256").update(JSON.stringify(value)).digest("hex");
 var content = ONLINE_COOP_BALANCE_VERSION;
 var projection = (run, version) => ({ ...projectQModeRun(run), stateVersion: version, decisionId: run.currentNodeId, decisionRevision: version });
@@ -48872,6 +48960,27 @@ var OnlineQModeRuntime = class {
     const run = pending.run, last = run.lastResolution, final = settlement(run, loaded.stateVersion + 1);
     return this.services.rpc("finalize_online_qmode_node_server_v1", { p_account_id: accountId, p_run_id: runId, p_expected_version: loaded.stateVersion, p_private_state: { run, seed: loaded.privateState.seed }, p_client_projection: final.projection, p_node_id: last.nodeId, p_result: last.result, p_start_state_hash: pending.startStateHash, p_enhanced_marks: final.enhancedMarks, p_assistance_marks: final.assistanceMarks });
   }
+  async purchaseMerchant(accountId, runId, request) {
+    const hash = digest(request), operation = "qmode_merchant_purchase_v1";
+    const prior = await this.receipt(accountId, operation, runId, request.requestId, hash);
+    if (prior) return prior.response;
+    const loaded = await this.services.rpc("load_online_qmode_server_v1", { p_account_id: accountId, p_run_id: runId });
+    if (loaded.privateState.pending) throw new GameplayError("node_resolving", 409);
+    if (loaded.stateVersion !== request.expectedVersion) {
+      const replay = await this.receipt(accountId, operation, runId, request.requestId, hash);
+      if (replay) return replay.response;
+      throw new GameplayError("stale_state", 409);
+    }
+    const { run: before, seed } = loaded.privateState;
+    if (before.phase !== "awaiting_choice") throw new GameplayError("run_not_awaiting_choice", 409);
+    const repository = new MemoryQModeRunRepository();
+    repository.save(before);
+    const actorId = before.players[0]?.id;
+    if (!actorId) throw new GameplayError("invalid_merchant_actor");
+    const next = new QModeService(repository, seed).purchaseMerchant({ runId, controllerAccountId: accountId, actorId, offerId: request.offerId });
+    const client = projection(next, loaded.stateVersion + 1);
+    return this.services.rpc("purchase_online_qmode_merchant_server_v1", { p_account_id: accountId, p_run_id: runId, p_expected_version: loaded.stateVersion, p_request_id: request.requestId, p_request_hash: hash, p_offer_id: request.offerId, p_actor_id: actorId, p_private_state: { run: next, seed }, p_client_projection: client });
+  }
   async choose(accountId, runId, request) {
     const hash = digest(request), prior = await this.receipt(accountId, "qmode_choose_v1", runId, request.requestId, hash);
     if (prior) return prior.response;
@@ -48896,10 +49005,10 @@ var OnlineQModeRuntime = class {
   }
 };
 
-// online/live-queue.ts
+// backend/online/live-queue.ts
 import { createHash as createHash5 } from "node:crypto";
 
-// src/server/coop/queue-service.ts
+// backend/src/server/coop/queue-service.ts
 function queuePartition(ticket) {
   return `${ticket.expeditionId}|${ticket.contentVersion}|${ticket.balanceVersion}`;
 }
@@ -48956,7 +49065,7 @@ function chooseBoundedCoopMatch(tickets, nowMs, maxPerRole = 8, requiredTicketId
   return best;
 }
 
-// online/live-ready.ts
+// backend/online/live-ready.ts
 var OnlineLiveReady = class {
   constructor(services) {
     this.services = services;
@@ -49007,7 +49116,7 @@ var OnlineLiveReady = class {
   }
 };
 
-// online/live-queue.ts
+// backend/online/live-queue.ts
 var OnlineLiveQueue = class {
   constructor(services) {
     this.services = services;
@@ -49099,10 +49208,10 @@ var OnlineLiveQueue = class {
   }
 };
 
-// online/live-runtime.ts
+// backend/online/live-runtime.ts
 import { createHash as createHash6 } from "node:crypto";
 
-// online/live-pacing.ts
+// backend/online/live-pacing.ts
 var LIVE_DUNGEON_PACING = Object.freeze({
   standardVoteMs: 8e3,
   eventVoteMs: 1e4,
@@ -49134,7 +49243,7 @@ function livePendingCombat(run, elapsedMs, waitMs) {
   };
 }
 
-// online/live-runtime.ts
+// backend/online/live-runtime.ts
 var digest2 = (value) => createHash6("sha256").update(JSON.stringify(value)).digest("hex");
 var projection2 = (run, version) => ({ ...projectQModeRun(run, "live"), stateVersion: version, decisionId: run.currentNodeId, decisionRevision: version });
 function hashRequest(request) {
@@ -49283,7 +49392,7 @@ var OnlineLiveRuntime = class {
   }
 };
 
-// online/live-rematch.ts
+// backend/online/live-rematch.ts
 var OnlineLiveRematch = class {
   constructor(services) {
     this.services = services;
@@ -49331,7 +49440,7 @@ var OnlineLiveRematch = class {
   }
 };
 
-// online/coop-lfg.ts
+// backend/online/coop-lfg.ts
 import { createHash as createHash7 } from "node:crypto";
 var OnlineCoopLfg = class {
   constructor(services) {
@@ -49363,7 +49472,7 @@ var OnlineCoopLfg = class {
   }
 };
 
-// ../apps/mobile/src/core/combat-power.ts
+// apps/mobile/src/core/combat-power.ts
 var statScore = (stats6, level) => Math.max(0, Math.round(
   stats6.attack * 18 + stats6.defense * 11 + stats6.hp * 0.7 + (stats6.power ?? 0) * 4 + level * 12 + (stats6.critChance ?? 0) * 220 + (stats6.critMultiplier ?? 1.5) * 18 + (stats6.accuracy ?? 0.84) * 45 + (stats6.evasion ?? 0.04) * 50 + (stats6.haste ?? 0.05) * 150
 ));
@@ -49387,7 +49496,7 @@ function combatPowerRating(state) {
   return { total: player2 + companion, player: player2, companion, rows: rows2 };
 }
 
-// online/public-profile-power.ts
+// backend/online/public-profile-power.ts
 async function publicProfileCombatPower(services, viewerAccountId, targetAccountId) {
   const source = await services.rpc("online_public_profile_state_server_v1", { p_viewer_account_id: viewerAccountId, p_target_account_id: targetAccountId });
   if (!source.state?.character) return null;
@@ -49404,10 +49513,10 @@ async function publicProfileCombatPower(services, viewerAccountId, targetAccount
   return { combatPower: combatPowerRating(state).total };
 }
 
-// online/event-expedition-runtime.ts
+// backend/online/event-expedition-runtime.ts
 import { createHash as createHash8 } from "node:crypto";
 
-// src/server/expeditions/event-boss-mechanics.ts
+// backend/src/server/expeditions/event-boss-mechanics.ts
 var clamp4 = (value, min, max) => Math.max(min, Math.min(max, value));
 var phase = (id, hpPct2, name, damageType, damageCoeff, debuffTag, debuffValue) => ({
   id: `${id}_${name.replace(/[^A-Z0-9]+/gi, "_").toUpperCase()}`,
@@ -49483,7 +49592,7 @@ function eventBossMechanicProfile(input) {
   }
 }
 
-// src/server/expeditions/event-service.ts
+// backend/src/server/expeditions/event-service.ts
 var MemoryEventRunRepository = class {
   runs = /* @__PURE__ */ new Map();
   requests = /* @__PURE__ */ new Map();
@@ -49801,7 +49910,7 @@ var EventExpeditionService = class {
   }
 };
 
-// online/event-expedition-runtime.ts
+// backend/online/event-expedition-runtime.ts
 var digest3 = (value) => createHash8("sha256").update(JSON.stringify(value)).digest("hex");
 var player = (snapshot) => combatantFromVerifiedSnapshot(snapshot.normalized.snapshot, snapshot.normalized.abilities);
 function role(value) {
@@ -49846,6 +49955,7 @@ function projectOnlineEventRun(run, version, liveEventId, serverNow = Date.now()
     bossMechanic,
     bossRecap,
     lastCombat: projectCombatReplay(run.lastResolution),
+    lastRoomOutcome: publicCoopRoomOutcome(run.lastResolution?.nodeId, run.lastResolution?.result.summary),
     settlement: { status: run.settlement, rewardMarks: run.rewardMarks ?? promotedEventCurrency(liveEventId, definition.rewardMarks + mechanic.rewardBonus + objective.rewardBonus, serverNow) }
   };
 }
@@ -49939,7 +50049,7 @@ var OnlineEventExpeditionRuntime = class {
   }
 };
 
-// src/server/coop/api-contracts.ts
+// backend/src/server/coop/api-contracts.ts
 function object(value) {
   if (!value || typeof value !== "object" || Array.isArray(value)) throw new Error("invalid_request_body");
   return value;
@@ -49974,7 +50084,7 @@ function parseCoopReadyCommand(value) {
   return { requestId: text2(row, "requestId", 8), rosterRevision: integer(row, "rosterRevision", 1, Number.MAX_SAFE_INTEGER), accept: row.accept };
 }
 
-// online/coop.ts
+// backend/online/coop.ts
 var headers2 = { "Content-Type": "application/json", "Cache-Control": "no-store", "Access-Control-Allow-Origin": "*", "Access-Control-Allow-Headers": "authorization,apikey,content-type,x-client-info", "Access-Control-Allow-Methods": "GET,POST,OPTIONS" };
 var json2 = (value, status = 200) => new Response(JSON.stringify(value), { status, headers: headers2 });
 var uuid = "[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}";
@@ -50120,7 +50230,7 @@ function coopHandler(services) {
         if (Object.keys(row).some((key) => !["requestId", "text"].includes(key)) || typeof row.requestId !== "string" || !/^[a-zA-Z0-9_-]{8,128}$/.test(row.requestId) || typeof row.text !== "string") throw new GameplayError("invalid_request");
         return json2(await liveRuntime.chat(accountId, chat[1], row.requestId, row.text));
       }
-      const start = path.endsWith("/coop/qmode"), run = path.match(new RegExp("/coop/runs/(" + uuid + ")(?:/(choose|vote))?$"));
+      const start = path.endsWith("/coop/qmode"), run = path.match(new RegExp("/coop/runs/(" + uuid + ")(?:/(choose|vote|merchant|potion|tonic))?$"));
       if (!start && !run) return json2({ error: "not_found" }, 404);
       const mutation = start || Boolean(run?.[2]);
       if (request.method !== (mutation ? "POST" : "GET")) return json2({ error: "method_not_allowed" }, 405);
@@ -50141,9 +50251,37 @@ function coopHandler(services) {
         throw new GameplayError("invalid_json");
       }
       if (!body || typeof body !== "object" || Array.isArray(body)) throw new GameplayError("invalid_request");
-      const allowed2 = start ? ["requestId", "dungeonId", "tier", "characterId", "loadoutId", "loadoutRevision"] : ["requestId", "decisionId", "decisionRevision", "optionId"];
+      const allowed2 = start ? ["requestId", "dungeonId", "tier", "characterId", "loadoutId", "loadoutRevision"] : run?.[2] === "merchant" ? ["requestId", "expectedVersion", "offerId"] : run?.[2] === "potion" ? ["requestId"] : run?.[2] === "tonic" ? ["requestId", "potionId"] : ["requestId", "decisionId", "decisionRevision", "optionId"];
       if (Object.keys(body).some((key) => !allowed2.includes(key))) throw new GameplayError("invalid_request");
       if (start) return json2(await runtime.start(accountId, parseCoopRunRequest(body, "qmode")));
+      if (run?.[2] === "potion") {
+        const row = body;
+        if (typeof row.requestId !== "string" || !/^[a-zA-Z0-9_-]{8,128}$/.test(row.requestId)) throw new GameplayError("invalid_potion_request");
+        const requestHash = createHash9("sha256").update(JSON.stringify({ runId: run[1], requestId: row.requestId })).digest("hex");
+        return json2(await services.rpc("consume_online_coop_healing_potion_server_v1", {
+          p_account_id: accountId,
+          p_run_id: run[1],
+          p_request_id: row.requestId,
+          p_request_hash: requestHash
+        }));
+      }
+      if (run?.[2] === "tonic") {
+        const row = body;
+        if (typeof row.requestId !== "string" || !/^[a-zA-Z0-9_-]{8,128}$/.test(row.requestId) || typeof row.potionId !== "string" || !/^[A-Z_]{2,64}$/.test(row.potionId)) throw new GameplayError("invalid_tonic_request");
+        const requestHash = createHash9("sha256").update(JSON.stringify({ runId: run[1], requestId: row.requestId, potionId: row.potionId })).digest("hex");
+        return json2(await services.rpc("consume_online_coop_preparation_tonic_server_v1", {
+          p_account_id: accountId,
+          p_run_id: run[1],
+          p_request_id: row.requestId,
+          p_request_hash: requestHash,
+          p_potion_id: row.potionId
+        }));
+      }
+      if (run?.[2] === "merchant") {
+        const row = body;
+        if (typeof row.requestId !== "string" || !/^[a-zA-Z0-9_-]{8,128}$/.test(row.requestId) || !Number.isSafeInteger(row.expectedVersion) || row.expectedVersion < 1 || typeof row.offerId !== "string" || !/^[A-Z0-9_]{1,100}:(boon|artifact|salve)$/.test(row.offerId)) throw new GameplayError("invalid_merchant_request");
+        return json2(await runtime.purchaseMerchant(accountId, run[1], { requestId: row.requestId, expectedVersion: row.expectedVersion, offerId: row.offerId }));
+      }
       try {
         return json2(run?.[2] === "vote" ? await liveRuntime.vote(accountId, run[1], parseCoopDecisionCommand(body)) : await liveRuntime.choose(accountId, run[1], parseCoopDecisionCommand(body)));
       } catch (error) {
@@ -50152,14 +50290,14 @@ function coopHandler(services) {
       }
     } catch (error) {
       const message = error instanceof Error ? error.message : "server_error", code = message.toLowerCase();
-      const status = /^(stale_|idempotency_|node_resolving|account_already_participating|rematch_closed|rematch_vote_locked|rematch_loadout_changed|echo_no_longer_eligible|ticket_not_queued|ready_check_closed|loadout_changed_since_queue|reservation_conflict|event_not_live|event_claim_closed|event_daily_clear_limit)/.test(code) ? 409 : /^(not_participant|loadout_not_owned|ticket_not_owned|not_ready_member)/.test(code) ? 403 : /^(invalid_|rematch_unavailable|rematch_roster_unavailable|unknown_expedition|unknown_event_expedition|dungeon_|character_|role_not_ready|illegal_equipment|echo_pool_unavailable|run_not_awaiting_choice|event_level_requirement|event_reward_not_ready|event_run_not_awaiting_choice|event_run_not_found)/.test(code) ? 400 : error instanceof GameplayError ? error.status : 503;
+      const status = /^(stale_|idempotency_|node_resolving|potion_charges_exhausted|tonic_already_prepared|tonic_preparation_closed|insufficient_run_resources|merchant_offer_already_purchased|account_already_participating|rematch_closed|rematch_vote_locked|rematch_loadout_changed|echo_no_longer_eligible|ticket_not_queued|ready_check_closed|loadout_changed_since_queue|reservation_conflict|event_not_live|event_claim_closed|event_daily_clear_limit)/.test(code) ? 409 : /^(not_participant|loadout_not_owned|ticket_not_owned|not_ready_member)/.test(code) ? 403 : /^(invalid_|healing_potion_not_selected|healing_potion_not_carried|tonic_not_carried|potion_cannot_revive|health_full|not_a_merchant_node|merchant_not_resolved|rematch_unavailable|rematch_roster_unavailable|unknown_expedition|unknown_event_expedition|dungeon_|character_|role_not_ready|illegal_equipment|echo_pool_unavailable|run_not_awaiting_choice|event_level_requirement|event_reward_not_ready|event_run_not_awaiting_choice|event_run_not_found)/.test(code) ? 400 : error instanceof GameplayError ? error.status : 503;
       if (status === 503) console.error("coop_unexpected_error", request.method, code);
       return json2({ error: status === 503 ? request.method === "GET" ? "Dungeons are temporarily unavailable. Try again." : "Could not confirm the co-op action. Retry it." : code }, status);
     }
   };
 }
 
-// ../apps/mobile/src/core/app-release-policy.ts
+// apps/mobile/src/core/app-release-policy.ts
 function compareVersions(a, b) {
   const parts = (s2) => s2.trim().split(".").map((part) => Number.parseInt(part.replace(/\D.*$/, ""), 10) || 0);
   const left = parts(a), right = parts(b);
@@ -50179,7 +50317,7 @@ function appPolicyFromRow(data) {
   return { latestVersion: String(data.latest_version), minimumVersion: String(data.minimum_version), forceAfterMs, title: String(data.title ?? data.update_title ?? "VELDRYN has been updated"), message: String(data.message ?? data.update_message ?? "This version is no longer supported. Update to continue your adventure."), maintenanceMode: data.maintenance_mode === true, maintenanceMessage: String(data.maintenance_message ?? "VELDRYN is temporarily unavailable while maintenance is completed.") };
 }
 
-// online/release-gate.ts
+// backend/online/release-gate.ts
 var cors = { "Access-Control-Allow-Origin": "*", "Access-Control-Allow-Headers": "authorization,apikey,content-type,x-client-info,x-app-version,x-app-platform", "Access-Control-Allow-Methods": "GET,POST,OPTIONS", "Cache-Control": "no-store" };
 var json3 = (body, status) => new Response(JSON.stringify(body), { status, headers: { ...cors, "Content-Type": "application/json" } });
 function withReleaseGate(handler, loadPolicies, now = Date.now) {
@@ -50220,7 +50358,7 @@ function releasePolicyLoader(url2, publicKey) {
   };
 }
 
-// online/coop-edge.ts
+// backend/online/coop-edge.ts
 var url = Deno.env.get("SUPABASE_URL");
 var serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
 var anonKey = Deno.env.get("SUPABASE_ANON_KEY");

@@ -1,7 +1,7 @@
 import {legacyCraftingReservation} from './legacy-crafting-fixture';
 import {HERB_NODES,HERB_ITEMS,HERBALISM_ESSENCE_BY_ZONE} from '../src/content/herbalism';
 import {V33_EQUIPMENT_RECIPES} from '../src/content/equipment-recipes-v33';
-import {ALCHEMY_EQUIPMENT_INFUSIONS,ALCHEMY_RECIPES,POTIONS,MAX_ALCHEMY_BATCHES,alchemyRecipeDef} from '../src/content/alchemy';
+import {ALCHEMY_EQUIPMENT_INFUSIONS,ALCHEMY_RECIPES,POTIONS,POTION_TIER_UNLOCK_LEVELS,MAX_ALCHEMY_BATCHES,alchemyRecipeDef} from '../src/content/alchemy';
 import {CLASSES} from '../src/content/classes';
 import {ITEMS,itemDef} from '../src/content/items';
 import {WORLD_ZONES} from '../src/content/world-map';
@@ -46,7 +46,7 @@ test('T1 equipment across all nine classes uses Verdant Resin and doubled Asterf
 function supplied(batches=10){let s=fresh();s.character!.gold=10000;s.inventory.stacks=[{itemId:'DEWLEAF',quantity:batches*alchemyRecipeDef(R)!.inputs[0].quantity}];return s;}
 const qty=(s:GameState,id:string)=>storedQuantity([...s.inventory.stacks,...s.bank.stacks,...s.overflow.stacks],id);
 
-test('catalog has eleven regional herb nodes, twelve potions and five regional equipment infusions',()=>{equal(HERB_NODES.length,11,'nodes');equal(POTIONS.length,9,'potions');equal(ALCHEMY_EQUIPMENT_INFUSIONS.length,5,'equipment infusions');equal(ALCHEMY_RECIPES.length,17,'recipes');equal(new Set(ITEMS.map(i=>i.id)).size,ITEMS.length,'item IDs unique');equal(new Set(ALCHEMY_RECIPES.map(r=>r.id)).size,17,'recipeIDs');});
+test('catalog has eleven regional herb nodes, twelve potions and five regional equipment infusions',()=>{equal(HERB_NODES.length,11,'nodes');equal(POTIONS.length,12,'potions');equal(ALCHEMY_EQUIPMENT_INFUSIONS.length,5,'equipment infusions');equal(ALCHEMY_RECIPES.length,20,'recipes');equal(new Set(ITEMS.map(i=>i.id)).size,ITEMS.length,'item IDs unique');equal(new Set(ALCHEMY_RECIPES.map(r=>r.id)).size,20,'recipeIDs');});
 test('healing potions have 20/35/50% HP recovery, fivefold crafting costs and triple XP',()=>{
  const expected=[
   {id:'DEWLEAF_DRAUGHT',healing:.20,materials:[{itemId:'DEWLEAF',quantity:10}],gold:25,xp:180},
@@ -66,6 +66,54 @@ test('healing potions have 20/35/50% HP recovery, fivefold crafting costs and tr
  equal(alchemyRecipeDef('BREW_VIGOR_TONIC')!.gold,10,'tonic costs are unaffected');
  equal(alchemyRecipeDef('BREW_VIGOR_TONIC')!.xp,115,'tonic XP is unchanged');
  equal(alchemyRecipeDef('BREW_VERDANT_BINDING_RESIN')!.xp,95,'infusion XP is unchanged');
+});
+test('T1/T2/T3 potions include Damage, Defense, Support and Healing with shared level unlocks',()=>{
+ const tiers=[1,2,3] as const;
+ for(const tier of tiers){
+  const rows=POTIONS.filter(p=>p.tier===tier);
+  equal(rows.length,4,'exactly four distinct potions in tier '+tier);
+  const unlock=POTION_TIER_UNLOCK_LEVELS[tier];
+  for(const potion of rows){
+   const recipe=alchemyRecipeDef('BREW_'+potion.id)!;
+   ok(!!recipe,potion.id+' has base recipe');
+   equal(recipe.level,unlock,potion.id+' same-tier level gate');
+   ok(recipe.inputs.length>0&&recipe.inputs.every(row=>HERB_NODES.some(node=>node.itemId===row.itemId)),potion.id+' uses gatherable herbs');
+  }
+  const draught=rows.find(p=>p.effect.kind==='healing')!;
+  ok(draught.effect.kind==='healing','one healing draught');
+  const values=rows.filter(p=>p.effect.kind==='preparation').map(p=>p.effect);
+  ok(values.length===3,'three role tonics');
+  const dmg=values.find(e=>e.kind==='preparation'&&e.damageDealtFraction===[.05,.10,.15][tier-1]);
+  const ward=values.find(e=>e.kind==='preparation'&&e.damageReductionFraction===[.05,.10,.15][tier-1]);
+  const harmony=values.find(e=>e.kind==='preparation'&&e.healingStrengthFraction===[.05,.10,.15][tier-1]);
+  ok(!!dmg&&!!ward&&!!harmony,'damage defense and support variants');
+  if(harmony?.kind==='preparation'){
+   equal(harmony.damageDealtFraction,[.02,.04,.06][tier-1],'support damage');
+   equal(harmony.shieldStrengthFraction,[.05,.10,.15][tier-1],'support shielding');
+  }
+ }
+});
+test('Role tonics have actual outgoing, defensive and support multipliers and replace prior preparation',()=>{
+ let state=fresh();state.inventory.stacks.push({itemId:'VIGOR_TONIC',quantity:1},{itemId:'WARD_TONIC',quantity:1},{itemId:'HARMONY_TONIC',quantity:1});
+ state=usePotion(state,'VIGOR_TONIC');
+ equal(preparationEffects(state.character!.preparation).outgoing,1.05,'Vigor outgoing damage');
+ equal(preparationEffects(state.character!.preparation).attack,1,'Vigor does not artificially raise Attack display');
+ state=usePotion(state,'WARD_TONIC');
+ equal(preparationEffects(state.character!.preparation).damage,.95,'Ward incoming multiplier');
+ equal(state.inventory.stacks.find(row=>row.itemId==='WARD_TONIC'),undefined,'Ward consumed once');
+ state=usePotion(state,'HARMONY_TONIC');
+ const buff=preparationEffects(state.character!.preparation);
+ equal([buff.outgoing,buff.healing,buff.shielding],[1.02,1.05,1.05],'support magnitudes');
+ equal(buff.damage,1,'support does not secretly grant Ward');
+ equal(state.character!.preparation?.itemId,'HARMONY_TONIC','single nonstacking preparation');
+});
+test('Older tonic brewing escrow remains loadable after recipe ingredient changes',()=>{
+ const original=alchemyRecipeDef('BREW_VIGOR_TONIC')!;
+ const saved={version:1 as const,recipeId:original.id,totalBatches:2,remainingBatches:1,
+  inputsPerBatch:[{itemId:'DEWLEAF',quantity:2},{itemId:'RIVER_MINT',quantity:2}],
+  goldPerBatch:10,outputPerBatch:{itemId:'VIGOR_TONIC',quantity:1},cycleSeconds:75,xpPerBatch:115};
+ equal(normalizeAlchemyBatch(saved,original.id).inputsPerBatch,saved.inputsPerBatch,'preserve reserved ingredients without repricing');
+ throws(()=>normalizeAlchemyBatch({...saved,inputsPerBatch:[{itemId:'DEWLEAF',quantity:9999},{itemId:'RIVER_MINT',quantity:2}]},original.id),'prevent forged ingredient refund');
 });
 for(const herb of HERB_NODES){test(`${herb.id}: reachable region, item and recipe uses; no missing-tool penalty`,()=>{ok(WORLD_ZONES.some(z=>z.id===herb.zoneId),'real zone');equal(itemDef(herb.itemId).type,'material','item');ok(ALCHEMY_RECIPES.some(r=>r.inputs.some(i=>i.itemId===herb.itemId)),'use');close(gatheringPacing(fresh(),herb).timeMultiplier,1,'hand picking');});}
 for(const r of ALCHEMY_RECIPES){test(`${r.id}: craft and sell cannot create free Gold from the inputs`,()=>{const output=itemDef(r.output.itemId),potion=POTIONS.some(p=>p.id===r.output.itemId),infusion=ALCHEMY_EQUIPMENT_INFUSIONS.some(row=>row.id===r.output.itemId);ok(potion||infusion,'registered output');const inputValue=r.inputs.reduce((sum,i)=>sum+itemDef(i.itemId).value*i.quantity,0);ok(output.value*r.output.quantity<inputValue+r.gold,'no vendor arbitrage');ok(potion?r.inputs.every(i=>HERB_NODES.some(node=>node.itemId===i.itemId)):output.type==='material'&&output.rarity!=='common','regional infusion is a rare-plus material');ok(r.seconds>=60&&r.output.quantity===1,'finite timed result');});}

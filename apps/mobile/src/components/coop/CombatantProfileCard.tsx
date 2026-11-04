@@ -1,4 +1,6 @@
 import {useSocialText} from '../../i18n/social';
+import {useGameLanguage} from '../../i18n/GameLanguageProvider';
+import {localizedDungeonEffectLabel} from '../../i18n/dungeon-effect-copy';
 import {useEffect,useMemo,useRef} from 'react';
 import {Animated,Image,Platform,Pressable,StyleSheet,Text,View,useWindowDimensions} from 'react-native';
 import type {CoopBossPhaseView,CoopCombatReplayCueView,CoopRunView} from '../../core/coop-presentation';
@@ -51,10 +53,10 @@ function statusCode(status:PlaybackCombatStatus){
  return 'BUFF';
 }
 function CombatStatusStrip({statuses,gemProc=false,styles,limit=3}:{statuses?:PlaybackCombatStatus[];gemProc?:boolean;styles:ReturnType<typeof makeStyles>;limit?:number}){
- const st=useSocialText();
+ const st=useSocialText(),language=useGameLanguage();
  const visibleLimit=Math.max(1,gemProc?limit-1:limit),combined=(statuses??[]).slice(0,visibleLimit),overflow=Math.max(0,(statuses?.length??0)-combined.length);
  if(!combined.length&&!gemProc)return null;
- return <View style={styles.statusStrip} accessibilityLabel={[...combined.map(status=>`${status.label}${status.stacks>1?`, ${status.stacks} stacks`:''}`),gemProc?'Effect Gem proc':undefined,overflow?`${overflow} more effects`:undefined].filter(Boolean).join(', ')}>
+ return <View style={styles.statusStrip} accessibilityLabel={[...combined.map(status=>`${localizedDungeonEffectLabel(language,status)}${status.stacks>1?`, ${status.stacks} stacks`:''}`),gemProc?'Effect Gem proc':undefined,overflow?`${overflow} more effects`:undefined].filter(Boolean).join(', ')}>
   {combined.map((status,index)=>{const harmful=status.kind==='dot'||status.kind==='debuff',gem=status.source==='gem';return <View key={`${status.kind}:${status.tag}:${status.abilityId??status.label}:${index}`} style={[styles.statusPill,harmful?styles.statusHarmful:gem?styles.statusGem:styles.statusHelpful]}><Text style={[styles.statusPillText,harmful?styles.statusHarmfulText:gem?styles.statusGemText:styles.statusHelpfulText]}>{statusCode(status)}{status.stacks>1?`×${status.stacks}`:''}</Text></View>})}
   {gemProc?<View style={[styles.statusPill,styles.statusGem]}><Text style={[styles.statusPillText,styles.statusGemText]}>{st("GEM")}</Text></View>:null}
   {overflow?<View style={[styles.statusPill,styles.statusOverflow]}><Text style={[styles.statusPillText,styles.statusOverflowText]}>+{overflow}</Text></View>:null}

@@ -69,7 +69,7 @@ if(epicBaseRecipe){
 
 
 let state=createCharacter(newGame(0),recipe.classId,'Instance Crafter','male');
-state={...state,character:{...state.character!,level:recipe.characterLevel,gold:500000},skills:state.skills.map(row=>row.skillId==='smithing'?{...row,level:Math.max(10,recipe.level),xp:50000}:row),inventory:{...state.inventory,capacity:80,stacks:recipe.inputs.map(input=>({itemId:input.itemId,quantity:input.quantity*4}))},bank:{...state.bank,capacity:200,stacks:[]}};
+state={...state,character:{...state.character!,level:recipe.characterLevel,gold:500000,equipmentPouch:{capacity:30,stacks:Array.from({length:30},()=>({itemId:V33_EQUIPMENT_RECIPES.find(row=>row.output.itemId!==recipe.output.itemId)!.output.itemId,quantity:1}))}},skills:state.skills.map(row=>row.skillId==='smithing'?{...row,level:Math.max(10,recipe.level),xp:50000}:row),inventory:{...state.inventory,capacity:80,stacks:recipe.inputs.map(input=>({itemId:input.itemId,quantity:input.quantity*4}))},bank:{...state.bank,capacity:200,stacks:[]}};
 const beforeStats=enhancedGearStats(state,recipe.output.itemId),beforeQuote=upgradeQuote(state,recipe.output.itemId);
 
 let started=startEquipmentCraft(state,recipe.id,1000);state=started.state;
@@ -322,7 +322,7 @@ const subA=craftClaimSubRoll(.123456,'job-a'),subB=craftClaimSubRoll(.123456,'jo
 ok(subA>=0&&subA<1&&subB>=0&&subB<1&&subA!==subB,'Claim All must derive stable independent per-job sub-rolls');
 
 let online=createCharacter(newGame(0),recipe.classId,'Online Crafter','male');
-online={...online,character:{...online.character!,level:recipe.characterLevel,gold:500000},skills:online.skills.map(row=>row.skillId==='smithing'?{...row,level:10,xp:50000}:row),inventory:{...online.inventory,stacks:recipe.inputs.map(input=>({itemId:input.itemId,quantity:input.quantity}))}};
+online={...online,character:{...online.character!,level:recipe.characterLevel,gold:500000,equipmentPouch:{capacity:30,stacks:Array.from({length:30},()=>({itemId:V33_EQUIPMENT_RECIPES.find(row=>row.output.itemId!==recipe.output.itemId)!.output.itemId,quantity:1}))}},skills:online.skills.map(row=>row.skillId==='smithing'?{...row,level:10,xp:50000}:row),inventory:{...online.inventory,stacks:recipe.inputs.map(input=>({itemId:input.itemId,quantity:input.quantity}))}};
 const commandStart=executeGameCommand(online,{type:'craft',args:{id:recipe.id}},2000,{randomRoll:.5});
 const onlineJob=equipmentCraftingQueue(commandStart.state)[0];
 let trustedRequired=false;try{executeGameCommand(commandStart.state,{type:'craft_claim',args:{id:onlineJob.id}},onlineJob.completesAtMs)}catch(error){trustedRequired=error instanceof Error&&error.message==='trusted_random_required'}

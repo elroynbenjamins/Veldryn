@@ -41,14 +41,14 @@ export type CraftedGearSettlementProposal=
 export function proposeCraftedGearSettlement(args:{
   existing:readonly CraftedGearRetentionEntry[];
   incoming:CraftedGearInstance;
-  incomingStorage:'inventory'|'bank';
+  incomingStorage:'inventory'|'bank'|'equipment_pouch';
   /** Verified character receiving the fresh item, when not delivered to Bank. */
   incomingHolderCharacterId?:string;
   mode:CraftedGearAutoSellMode;
   committedReceiptKeys:readonly string[];
 }):CraftedGearSettlementProposal{
   const {existing,incoming,incomingStorage,mode,committedReceiptKeys}=args;
-  if(incomingStorage==='inventory'&&(!args.incomingHolderCharacterId||!args.incomingHolderCharacterId.trim()))
+  if(incomingStorage!=='bank'&&(!args.incomingHolderCharacterId||!args.incomingHolderCharacterId.trim()))
     throw new Error('Missing verified incoming inventory owner');
   if(!incoming.id||!incoming.sourceReceiptKey||!incoming.ownerCharacterId)
     throw new Error('Invalid Forge instance receipt');
@@ -60,7 +60,7 @@ export function proposeCraftedGearSettlement(args:{
     throw new Error('Duplicate or malformed owned Forge receipts');
   if(existing.some(entry=>entry.instance.itemId!==incoming.itemId))
     throw new Error('Cannot compare equipment from different item definitions');
-  if(!['inventory','bank'].includes(incomingStorage))
+  if(!['inventory','bank','equipment_pouch'].includes(incomingStorage))
     throw new Error('Unknown incoming item delivery location');
 
   const owned=existing.map(entry=>entry.instance);
@@ -83,7 +83,7 @@ export function proposeCraftedGearSettlement(args:{
   const currentHolder=retention.action==='sell_incoming'
     ?args.incomingHolderCharacterId
     :existing.find(entry=>entry.instance.id===sold.id)?.holderCharacterId;
-  if(location==='inventory'&&!currentHolder)throw new Error('Missing verified sale recipient');
+  if(location!=='bank'&&!currentHolder)throw new Error('Missing verified sale recipient');
   const credit:CraftedGearSaleCredit=location==='bank'
     ?{amount:def.value,destination:'bank'}
     :{amount:def.value,destination:'character',characterId:currentHolder};

@@ -4,6 +4,7 @@ import {newGame,createCharacter} from './game';
 import {accountCharacters,unlockedCharacterSlots} from './account-roster';
 import {equipmentCraftingQueue} from './equipment-crafting-queue';
 import {reconcileAccountCollections} from './account-collections';
+import {auditCraftedGearOwnership} from './crafted-gear-ownership';
 
 function snapshot(state:GameState){return {character:structuredClone(state.character!),inventory:structuredClone(state.inventory),overflow:structuredClone(state.overflow),activity:structuredClone(state.activity),skills:structuredClone(state.skills),quests:structuredClone(state.quests),currentRegionId:state.currentRegionId};}
 export function createAccountCharacter(state:GameState,classId:ClassId,name:string,body:BodyPresentation,now:number){
@@ -60,11 +61,12 @@ function deletionRecoveryItems(entry:CharacterSnapshot,sharedBank:GameState['ban
  const ownedGearIds=new Set<string>([
   ...equipped,
   ...entry.inventory.stacks.map(row=>row.itemId),
+  ...(entry.character.equipmentPouch?.stacks??[]).map(row=>row.itemId),
   ...entry.overflow.stacks.map(row=>row.itemId),
   ...sharedBank.stacks.map(row=>row.itemId),
  ]);
  const socketed=Object.entries(entry.character.gearEnhancements??{}).flatMap(([itemId,enhancement])=>ownedGearIds.has(itemId)?[enhancement.statGemId,enhancement.effectGemId].filter((id):id is string=>Boolean(id)):[]);
- return [...entry.inventory.stacks,...entry.overflow.stacks,...held.map(itemId=>({itemId,quantity:1})),...socketed.map(itemId=>({itemId,quantity:1}))];
+ return [...entry.inventory.stacks,...(entry.character.equipmentPouch?.stacks??[]),...entry.overflow.stacks,...held.map(itemId=>({itemId,quantity:1})),...socketed.map(itemId=>({itemId,quantity:1}))];
 }
 function accountAfterCharacterDelete(state:GameState,character:CharacterSnapshot['character']){
  const earnedSlots=unlockedCharacterSlots(state);
@@ -87,6 +89,8 @@ export function characterDeleteBlockReason(state:GameState,id:string){
  if(!stored)return 'Character is not owned.';
  if(stored.activity)return 'Stop or claim this character’s current activity before deleting it.';
  if(equipmentCraftingQueue(state).some(job=>job.ownerCharacterId===id))return 'Claim this character’s queued equipment crafts before deleting it.';
+ if(auditCraftedGearOwnership(state).linked.some(row=>row.holderCharacterId===id&&row.place!=='bank'))
+   return 'Transfer unique equipment copies to the shared Bank before deleting this character.';
  return undefined;
 }
 export function deleteAccountCharacter(state:GameState,id:string,confirmation:string,now:number){

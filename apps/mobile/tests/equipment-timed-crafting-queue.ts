@@ -22,7 +22,7 @@ ok(NOVICE_RECIPES.filter(row=>row.output.itemId.endsWith('_WEAPON')).every(row=>
 
 function prepared(){
  let state=createCharacter(newGame(0),'IRONWARDEN','Queue Tester','male');
- state={...state,character:{...state.character!,level:recipe.characterLevel,gold:500000},skills:state.skills.map(row=>row.skillId==='smithing'?{...row,level:Math.max(recipe.level,10),xp:0}:row),inventory:{...state.inventory,capacity:60,stacks:recipe.inputs.map(input=>({itemId:input.itemId,quantity:input.quantity*12}))},bank:{...state.bank,capacity:200,stacks:[]}};
+ state={...state,character:{...state.character!,level:recipe.characterLevel,gold:500000,equipmentPouch:{capacity:30,stacks:Array.from({length:30},()=>({itemId:V33_EQUIPMENT_RECIPES.find(row=>row.output.itemId!==recipe.output.itemId)!.output.itemId,quantity:1}))}},skills:state.skills.map(row=>row.skillId==='smithing'?{...row,level:Math.max(recipe.level,10),xp:0}:row),inventory:{...state.inventory,capacity:60,stacks:recipe.inputs.map(input=>({itemId:input.itemId,quantity:input.quantity*12}))},bank:{...state.bank,capacity:200,stacks:[]}};
  return state;
 }
 

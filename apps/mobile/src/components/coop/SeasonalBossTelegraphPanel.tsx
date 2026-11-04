@@ -20,7 +20,7 @@ export function SeasonalBossTelegraphPanel({mechanic,recap,showPlan}:{mechanic?:
  const priorityPhase=telegraph?.phases[0];
  if(!mechanic&&!recap)return null;
  return <View style={s.stack}>
-  {mechanic?<FantasyPanel variant="default">
+  {mechanic?<FantasyPanel variant={mechanic.tone==='danger'?'danger':mechanic.tone==='benefit'?'success':'default'}>
    <View style={s.head}>
     <View style={s.grow}>
      <Text style={s.kicker}>{showPlan?st('FINAL BOSS'):st('BOSS OUTLOOK')}</Text>

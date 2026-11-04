@@ -95,7 +95,7 @@ export function planDungeonPotionUse(input:DungeonPotionTransaction):DungeonPoti
 export interface DungeonPotionAtomicStore{
  transact(
   request:{runId:string;accountId:string;requestId:string},
-  apply:(verified:Omit<DungeonPotionTransaction,'requestId'>)=>DungeonPotionTransactionResult
+  apply:(verified:Omit<DungeonPotionTransaction,'requestId'>&{ownerAccountId:string})=>DungeonPotionTransactionResult
  ):Promise<DungeonPotionTransactionResult>;
 }
 export async function consumeAuthoritativeDungeonPotion(
@@ -104,7 +104,7 @@ export async function consumeAuthoritativeDungeonPotion(
 ):Promise<{receipt:DungeonPotionReceipt;replayed:boolean;remainingCharges:number}>{
  if(!request.accountId.trim()||!request.runId.trim())throw new Error('dungeon_potion_auth_required');
  const result=await store.transact(request,verified=>{
-  if(verified.runId!==request.runId)throw new Error('dungeon_potion_run_mismatch');
+  if(verified.runId!==request.runId||verified.ownerAccountId!==request.accountId)throw new Error('dungeon_potion_owner_mismatch');
   return planDungeonPotionUse({...verified,requestId:request.requestId});
  });
  return {receipt:result.receipt,replayed:result.replayed,remainingCharges:result.remainingCharges};

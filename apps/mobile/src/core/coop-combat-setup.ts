@@ -6,6 +6,7 @@ export interface CoopCombatSetup {
  companion?:{id:string;name:string;role:'damage'|'tank'|'support'};
  healing?:{id:string;name:string;percent:number;carried:number};
  tonicCount:number;
+ tonicPreviewId?:string;
 }
 
 /** Display-only summary of the current character's carried consumables.
@@ -19,6 +20,8 @@ export function coopCombatSetup(state:GameState):CoopCombatSetup {
  const selected=character?.equippedHealingPotionId?potionDef(character.equippedHealingPotionId):undefined;
  const carried=(id:string)=>state.inventory.stacks.filter(stack=>stack.itemId===id&&Number.isFinite(stack.quantity)&&stack.quantity>0).reduce((sum,stack)=>sum+Math.floor(stack.quantity),0);
  const healing=selected?.effect.kind==='healing'?{id:selected.id,name:selected.name,percent:Math.round(selected.effect.maxHpFraction*100),carried:carried(selected.id)}:undefined;
- const tonicCount=POTIONS.filter(p=>p.effect.kind==='preparation').reduce((sum,p)=>sum+carried(p.id),0);
- return {companion,healing,tonicCount};
+ const tonics=POTIONS.filter(p=>p.effect.kind==='preparation').map(p=>({id:p.id,carried:carried(p.id)}));
+ const tonicCount=tonics.reduce((sum,p)=>sum+p.carried,0);
+ const tonicPreviewId=tonics.find(p=>p.carried>0)?.id;
+ return {companion,healing,tonicCount,tonicPreviewId};
 }

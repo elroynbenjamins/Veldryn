@@ -70,7 +70,7 @@ export interface FallenKnightBattleResult{
 const clamp=(value:number,min:number,max:number)=>Math.max(min,Math.min(max,value));
 const FALLEN_KNIGHT_MAX_DURATION_MS=100_000;
 /** Boss fights use limited Alchemy healing potions, never ordinary food. */
-export const FALLEN_KNIGHT_MAX_POTION_UNITS=3;
+export const FALLEN_KNIGHT_MAX_POTION_UNITS=5;
 /** Legacy compatibility: no food charges are permitted in boss encounters. */
 export const FALLEN_KNIGHT_MAX_FOOD_UNITS=0;
 

@@ -2,6 +2,7 @@ import {useCoopStyles} from '../../theme/useCoopStyles';
 import {useSocialText} from '../../i18n/social';
 import {useGameplayText} from '../../i18n/gameplay';
 import type {DungeonHealingPotionView} from '../../core/coop-potion-view';
+import type {DungeonTonicView} from '../../core/coop-tonic-view';
 import {useEffect,useRef,useState} from 'react';
 import {Animated,Modal,ScrollView,StyleSheet,Text,View} from 'react-native';
 import type {CoopRunView} from '../../core/coop-presentation';
@@ -41,7 +42,7 @@ function TerminalRunMoment({phase,rewardsReady,rewardsSecured,reduceMotion}:{pha
 }
 
 export interface CoopRewardDisplay {id:string;claimed_at:string|null;reward_json:{marks?:number;enhanced_reward?:boolean;live_fellowship_bonus?:number;reward_charges_remaining?:number;weekly_enhanced_remaining?:number;failure_consolation_remaining?:number;failure_consolation_applied?:boolean};}
-export function CoopRunOverview({language,run,myVotedNodeId,selfVoter,onBack,onChoose,onPurchaseMerchant,onUseHealingPotion,healingPotion,onRefresh,onClaim,onQueueAgain,onPartyRematch,busy=false,notice,syncError,rewards=[],terminalAction,reduceMotion=false,seasonal=false,eventName,chatMessages=[],onChatSend}:{language:Language;run:CoopRunView;myVotedNodeId?:string;selfVoter?:{name:string;profileIconId?:string|null;className?:string|null};onBack:()=>void;onChoose?:(nodeId:string)=>void;onPurchaseMerchant?:(offerId:string)=>void;onUseHealingPotion?:()=>void;healingPotion?:DungeonHealingPotionView;onRefresh?:()=>void;onClaim?:(id:string)=>void;onQueueAgain?:{label:string;onPress:()=>void};onPartyRematch?:()=>void;busy?:boolean;notice?:string;syncError?:string;rewards?:CoopRewardDisplay[];terminalAction?:{label:string;claimed?:boolean;completeText?:string;onPress:()=>void};reduceMotion?:boolean;seasonal?:boolean;eventName?:string;chatMessages?:CoopChatMessage[];onChatSend?:(text:string)=>Promise<void>}){
+export function CoopRunOverview({language,run,myVotedNodeId,selfVoter,onBack,onChoose,onPurchaseMerchant,onUseHealingPotion,healingPotion,onPrepareTonic,dungeonTonic,onRefresh,onClaim,onQueueAgain,onPartyRematch,busy=false,notice,syncError,rewards=[],terminalAction,reduceMotion=false,seasonal=false,eventName,chatMessages=[],onChatSend}:{language:Language;run:CoopRunView;myVotedNodeId?:string;selfVoter?:{name:string;profileIconId?:string|null;className?:string|null};onBack:()=>void;onChoose?:(nodeId:string)=>void;onPurchaseMerchant?:(offerId:string)=>void;onUseHealingPotion?:()=>void;healingPotion?:DungeonHealingPotionView;onPrepareTonic?:(id:string)=>void;dungeonTonic?:DungeonTonicView;onRefresh?:()=>void;onClaim?:(id:string)=>void;onQueueAgain?:{label:string;onPress:()=>void};onPartyRematch?:()=>void;busy?:boolean;notice?:string;syncError?:string;rewards?:CoopRewardDisplay[];terminalAction?:{label:string;claimed?:boolean;completeText?:string;onPress:()=>void};reduceMotion?:boolean;seasonal?:boolean;eventName?:string;chatMessages?:CoopChatMessage[];onChatSend?:(text:string)=>Promise<void>}){
  const {styles:s}=useCoopStyles(makeStyles);
  const st=useSocialText(),a=(value:string)=>accountText(language,value),{gt}=useGameplayText();
   validateCoopRunView(run);
@@ -113,6 +114,23 @@ export function CoopRunOverview({language,run,myVotedNodeId,selfVoter,onBack,onC
     {!!syncError&&<FantasyPanel variant="danger"><Text accessibilityRole="alert" style={s.title}>{a('Connection interrupted')}</Text><Text style={s.copy}>{a('Showing the last saved expedition progress. Reconnecting automatically.')}</Text><Text style={s.copy} numberOfLines={2}>{syncError}</Text>{onRefresh?<GameButton compact title={a('Retry connection')} tone="secondary" disabled={busy} onPress={onRefresh}/>:null}</FantasyPanel>}
     <DungeonRoomOutcomeBanner outcome={run.phase==='awaiting_choice'?run.lastRoomOutcome:undefined}/>
     {run.merchantShop?<DungeonMerchantPanel shop={run.merchantShop} busy={busy} onPurchase={onPurchaseMerchant}/>:null}
+    {!seasonal&&dungeonTonic&&run.phase==='awaiting_choice'?<FantasyPanel>
+      <View style={s.summary}>
+       <View style={s.grow}>
+        <Text style={s.title}>{gt('DUNGEON TONIC')}</Text>
+        {dungeonTonic.preparedName?<Text style={s.copy}>{dungeonTonic.preparedName} · {gt('Active')}</Text>:<Text style={s.copy}>{gt('Choose a tonic before the first room.')}</Text>}
+       </View>
+       <StateChip label={gt('One per run')} tone={dungeonTonic.preparedName?'success':'neutral'}/>
+      </View>
+      {dungeonTonic.open&&!dungeonTonic.options.length?<Text style={s.copy}>{gt('No tonics carried.')}</Text>:null}
+      {dungeonTonic.open&&onPrepareTonic?dungeonTonic.options.map(option=><View key={option.id} style={[s.summary,{paddingVertical:4}]}>
+       <View style={s.grow}>
+        <Text style={s.name}>{option.name} · T{option.tier} ×{option.owned}</Text>
+        <Text style={s.copy} numberOfLines={2}>{option.effect}</Text>
+       </View>
+       <GameButton compact title={gt('Use tonic')} disabled={busy} onPress={()=>onPrepareTonic(option.id)}/>
+      </View>):null}
+    </FantasyPanel>:null}
     {!seasonal&&healingPotion&&run.phase==='awaiting_choice'?<FantasyPanel>
       <View style={s.summary}>
        <View style={s.grow}>

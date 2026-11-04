@@ -14,8 +14,6 @@ export interface PersistentRunState {
   curses:string[];
   personalEffects:Record<string,{boons:string[];artifacts:string[];purchases:string[]}>;
   visitedNodeIds:string[];
-  /** Shared per-run Alchemy potion charge usage; authoritative dungeon RPC is the only mutator. */
-  potionChargesUsed?:number;
 }
 export interface NodeResolutionResult {success:boolean;state:PersistentRunState;summary:Record<string,unknown>}
 export interface MerchantOffer {id:string;label:string;cost:number;kind:'boon'|'artifact'|'salve'}
@@ -24,7 +22,7 @@ const COMBAT_KINDS=new Set(['battle','elite','boss']);
 const IMPLEMENTED_NONCOMBAT=new Set(['event','camp','shrine','treasure','forge','merchant','echo','risk','secret']);
 
 export function initialPersistentRunState(players:readonly CombatantDefinition[]):PersistentRunState{
- return {actors:Object.fromEntries(players.map(player=>[player.id,{hp:player.stats.maxHp,downed:false,cooldownRemainingMs:{},basicAttackRemainingMs:0}])),resources:0,boons:[],artifacts:[],curses:[],personalEffects:{},visitedNodeIds:[],potionChargesUsed:0};
+ return {actors:Object.fromEntries(players.map(player=>[player.id,{hp:player.stats.maxHp,downed:false,cooldownRemainingMs:{},basicAttackRemainingMs:0}])),resources:0,boons:[],artifacts:[],curses:[],personalEffects:{},visitedNodeIds:[]};
 }
 
 export function merchantOffers(contentId:string):readonly MerchantOffer[]{
@@ -54,7 +52,7 @@ export function purchaseMerchantOffer(input:{runId:string;node:CoopRouteNode;act
   const player=input.players.find(item=>item.id===input.actorId);if(!player)throw new Error('unknown_merchant_actor');
   actors={...actors,[input.actorId]:{...actor,downed:false,hp:Math.min(player.stats.maxHp,actor.hp+player.stats.maxHp*.35)}};
  }
- return {success:true,state:{...input.state,actors,resources:input.state.resources-offer.cost,personalEffects:{...input.state.personalEffects,[input.actorId]:{...nextPersonal,boons,artifacts}}},summary:{kind:'merchant_purchase',actorId:input.actorId,offerId:offer.id,cost:offer.cost}};
+ return {success:true,state:{...input.state,actors,resources:input.state.resources-offer.cost,personalEffects:{...input.state.personalEffects,[input.actorId]:{...nextPersonal,boons,artifacts}}},summary:{kind:'merchant_purchase',actorId:input.actorId,offerId:offer.id,offerKind:offer.kind,cost:offer.cost,resourcesDelta:-offer.cost,healedHp:Math.max(0,(actors[input.actorId]?.hp??0)-actor.hp),revivedCount:actor.downed&&!actors[input.actorId]?.downed?1:0,boonCount:boons.length-current.boons.length,artifactCount:artifacts.length-current.artifacts.length}};
 }
 
 function healAtCamp(state:PersistentRunState,players:readonly CombatantDefinition[]):PersistentRunState{
@@ -86,5 +84,13 @@ export function resolveCoopNode(input:{runId:string;serverSecret:string;node:Coo
   case 'event': state={...state,resources:state.resources+1}; break;
   case 'merchant': state={...state}; break;
  }
- return {success:true,state,summary:{kind:input.node.kind,roll,...(input.node.kind==='merchant'?{offers:merchantOffers(input.node.contentId)}:{})}};
+ const healedHp=input.players.reduce((total,player)=>total+Math.max(0,(state.actors[player.id]?.hp??0)-(input.state.actors[player.id]?.hp??0)),0);
+ const revivedCount=input.players.filter(player=>input.state.actors[player.id]?.downed&&!state.actors[player.id]?.downed).length;
+ return {success:true,state,summary:{kind:input.node.kind,roll,
+  resourcesDelta:state.resources-input.state.resources,
+  healedHp,revivedCount,
+  boonCount:state.boons.length-input.state.boons.length,
+  artifactCount:state.artifacts.length-input.state.artifacts.length,
+  curseCount:state.curses.length-input.state.curses.length,
+  ...(input.node.kind==='merchant'?{offers:merchantOffers(input.node.contentId)}:{})}};
 }

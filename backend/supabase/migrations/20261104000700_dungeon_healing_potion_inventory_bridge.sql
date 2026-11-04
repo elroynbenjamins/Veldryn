@@ -142,3 +142,34 @@ revoke all on function public.use_online_dungeon_potion_v1(uuid,text,bigint,text
 grant execute on function public.use_online_dungeon_potion_v1(uuid,text,bigint,text) to authenticated;
 comment on function public.use_online_dungeon_potion_v1(uuid,text,bigint,text) is
  'Consumes one verified carried Alchemy healing potion and one shared dungeon charge atomically between rooms, with an idempotent server-owned HP update.';
+
+-- Existing co-op Edge endpoints read the persisted client snapshot, not a live
+-- recomputation of their TypeScript presentation. Keep charges accurate on
+-- every run start, room resolution and reconnect without regenerating that bundle.
+create or replace function public.sync_dungeon_potion_projection_v1()
+returns trigger
+language plpgsql security invoker set search_path = ''
+as $$
+declare
+ v_private jsonb;
+ v_max integer;
+ v_used integer;
+ v_tier integer;
+begin
+ if NEW.projection_json->>'mode' not in ('qmode','live') then return NEW; end if;
+ select state_json into v_private from public.coop_run_private_state
+ where run_id=NEW.run_id;
+ if v_private is null or jsonb_typeof(v_private#>'{run,persistentState,actors}')<>'object' then return NEW; end if;
+ v_tier:=coalesce((v_private#>>'{run,tier}')::integer,0);
+ v_max:=case v_tier when 1 then 3 when 2 then 3 when 3 then 4 when 4 then 4 when 5 then 5 else 0 end;
+ if v_max<1 then return NEW; end if;
+ v_used:=least(v_max,greatest(0,coalesce((v_private#>>'{run,persistentState,potionChargesUsed}')::integer,0)));
+ NEW.projection_json:=jsonb_set(NEW.projection_json,'{potionCharges}',
+  jsonb_build_object('used',v_used,'max',v_max,'remaining',v_max-v_used),true);
+ return NEW;
+end; $$;
+revoke all on function public.sync_dungeon_potion_projection_v1() from public,anon,authenticated;
+drop trigger if exists sync_dungeon_potion_projection_v1 on public.coop_run_client_snapshots;
+create trigger sync_dungeon_potion_projection_v1
+before insert or update of projection_json on public.coop_run_client_snapshots
+for each row execute function public.sync_dungeon_potion_projection_v1();

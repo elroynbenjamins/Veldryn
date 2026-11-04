@@ -36,6 +36,8 @@ for(const language of languages){
  assert.equal(accountText(language,'Fallen Knight'),'Fallen Knight');
  assert.equal(accountText(language,'VIP + VIP+'),'VIP + VIP+');
  assert.equal(accountText(language,'9,99 EUR'),'9,99 EUR');
+ assert.equal(accountText(language,'Unknown {name} has {count} charges',{name:'Novus',count:2}),'Unknown Novus has 2 charges',language+' uncatalogued placeholders');
+ assert.equal(accountText(language,'Unknown {name} has {count} charges'),'Unknown {name} has {count} charges',language+' no invented values');
 }
 for(const text of [
  '+1 saved loadout','+2 hours offline reserve',

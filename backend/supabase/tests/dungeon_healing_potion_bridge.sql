@@ -56,6 +56,8 @@ begin
  then raise exception 'public team HP not updated';end if;
  if (select projection_json#>>'{potionCharges,remaining}' from public.coop_run_client_snapshots where run_id=rid)<>'2'
  then raise exception 'remaining charge projection not updated';end if;
+ if (select projection_json->>'decisionRevision' from public.coop_run_client_snapshots where run_id=rid)<>'2'
+ then raise exception 'next room decision revision not refreshed';end if;
  if (select revision from public.online_game_states where account_id=a)<>5
  then raise exception 'game revision did not advance';end if;
  replay:=public.use_online_dungeon_potion_v1(rid,'DEWLEAF_DRAUGHT',1,'testpot001');

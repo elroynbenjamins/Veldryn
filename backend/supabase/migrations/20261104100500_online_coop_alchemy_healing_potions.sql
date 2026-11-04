@@ -137,7 +137,7 @@ grant execute on function public.consume_online_coop_healing_potion_server_v1(uu
 -- Client requests select an ID only, never its numeric potency or recipient.
 create or replace function public.consume_online_coop_preparation_tonic_server_v1(
  p_account_id uuid,p_run_id uuid,p_request_id text,p_request_hash text,p_potion_id text
-) returns jsonb language plpgsql security definer set search_path=public as $
+) returns jsonb language plpgsql security definer set search_path=public as $$
 declare
  v_run public.expedition_runs%rowtype;
  v_game public.online_game_states%rowtype;
@@ -148,8 +148,8 @@ declare
  v_found boolean:=false;v_player_found boolean:=false;
 begin
  if p_account_id is null or p_run_id is null or p_request_id is null
-  or p_request_id !~ '^[a-zA-Z0-9_-]{8,128}
-  or p_request_hash is null or p_request_hash !~ '^[a-f0-9]{64}
+  or p_request_id !~ '^[a-zA-Z0-9_-]{8,128}$'
+  or p_request_hash is null or p_request_hash !~ '^[a-f0-9]{64}$'
  then raise exception 'invalid_tonic_request';end if;
 
  -- Only these nine server-catalogued effects can be selected. Never derive
@@ -245,7 +245,7 @@ begin
  insert into public.coop_idempotency_receipts(caller_account_id,operation,resource_id,request_id,request_hash,response_json)
  values(p_account_id,'dungeon_tonic_v1',p_run_id::text,p_request_id,p_request_hash,v_projection);
  return v_projection;
-end $;
+end $$;
 
 revoke all on function public.consume_online_coop_preparation_tonic_server_v1(uuid,uuid,text,text,text) from public,anon,authenticated;
 grant execute on function public.consume_online_coop_preparation_tonic_server_v1(uuid,uuid,text,text,text) to service_role;

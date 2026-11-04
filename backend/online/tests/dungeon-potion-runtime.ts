@@ -55,7 +55,7 @@ async function main(){
  ]){
   assert.ok(sql.includes(clause),`Missing server transaction safety clause: ${clause}`);
  }
- assert.ok(!sql.includes('authenticated;\ngrant execute'),'RPC must not be granted to normal client roles');
+ assert.ok(!/grant execute on function public\\.consume_online_coop_healing_potion_server_v1[^;]*to\\s+(?:public|anon|authenticated)/i.test(sql),'RPC must not be granted to normal client roles');
  console.log('PASS dungeon potion endpoint rejects forged effects and SQL contract locks inventory, membership, caps, and receipts');
 }
 void main();

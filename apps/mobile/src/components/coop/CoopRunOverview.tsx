@@ -69,6 +69,7 @@ export function CoopRunOverview({language,run,myVotedNodeId,selfVoter,onBack,onC
   const [entryCombatNodeId,setEntryCombatNodeId]=useState<string|undefined>();
   const [entryCombatKind,setEntryCombatKind]=useState<string|undefined>();
   const [companionMemberId,setCompanionMemberId]=useState<string|undefined>();
+  useEffect(()=>setCompanionMemberId(undefined),[run.runId]);
   const companionSlot=run.roleSlots.find(slot=>(slot.memberId??slot.name)===companionMemberId&&slot.companionId);
   const companionInfo=companionSlot?.companionId?combatCompanionDef(companionSlot.companionId):undefined;
   const companionPortrait=companionSlot?.companionId?companionArtSource(companionSlot.companionId):undefined;
@@ -128,7 +129,7 @@ export function CoopRunOverview({language,run,myVotedNodeId,selfVoter,onBack,onC
     {!(run.phase==='resolving_node'||bossNext||run.lastCombat)?<DungeonDisclosure title={st('Party & formation')} initiallyOpen={run.mode==='qmode'&&run.phase==='awaiting_choice'}>
     <FantasyPanel variant="selected"><View style={s.summary}><View style={s.grow}><Text style={s.title}>{ct(language,'details.party')}</Text><Text style={s.copy}>{ct(language,'details.partyValue')}</Text></View><StateChip label={`Lv. ${run.syncedLevel}`} tone="success"/></View></FantasyPanel>
     <Text style={s.section}>{ct(language,'details.party')}</Text>
-    <View style={s.party}>{run.roleSlots.map((slot,index)=>{const avatar=dungeonCombatAvatar(slot.classId);return <FantasyPanel key={`${slot.role}-${index}`} variant={slot.ready===false?'danger':'default'} style={s.member}><RoleBadge role={slot.role} label={t(language,`coopUi.${slot.role}`)}/><View style={s.summary}><IdentityArtwork name={slot.name} profileIconId={slot.profileIconId} className={slot.iconClassId??slot.classId} size={36}/><View style={s.grow}><Text numberOfLines={2} style={s.name}>{slot.name}</Text>{avatar?<Text style={s.className}>{avatar.label}</Text>:null}</View></View><View style={s.memberMeta}><StateChip label={slot.npc?st('NPC'):slot.echo?'Echo':modeLabel} tone={slot.echo||slot.npc?'selected':'neutral'}/>{slot.ready!==undefined?<StateChip label={slot.ready?t(language,'coopUi.ready'):t(language,'coopUi.searching')} tone={slot.ready?'success':'warning'}/>:null}</View>{slot.companionId?<CoopPartyCompanionChip companionId={slot.companionId}
+    <View style={s.party}>{run.roleSlots.map((slot,index)=>{const avatar=dungeonCombatAvatar(slot.classId);return <FantasyPanel key={`${slot.role}-${index}`} variant={slot.ready===false?'danger':'default'} style={s.member}><RoleBadge role={slot.role} label={t(language,`coopUi.${slot.role}`)}/><View style={s.summary}><IdentityArtwork name={slot.name} profileIconId={slot.profileIconId} className={slot.iconClassId??slot.classId} size={36}/><View style={s.grow}><Text numberOfLines={2} style={s.name}>{slot.name}</Text>{avatar?<Text style={s.className}>{avatar.label}</Text>:null}</View></View><View style={s.memberMeta}><StateChip label={slot.npc?st('NPC'):slot.echo?'Echo':modeLabel} tone={slot.echo||slot.npc?'selected':'neutral'}/>{slot.ready!==undefined?<StateChip label={slot.ready?t(language,'coopUi.ready'):t(language,'coopUi.searching')} tone={slot.ready?'success':'warning'}/>:null}</View>{slot.companionId?<CoopPartyCompanionChip companionId={slot.companionId} echo={slot.echo}
       expanded={companionMemberId===(slot.memberId??slot.name)}
       onPress={()=>setCompanionMemberId(previous=>previous===(slot.memberId??slot.name)?undefined:(slot.memberId??slot.name))}/>:null}</FantasyPanel>})}</View>
     {companionSlot&&companionInfo?<FantasyPanel variant="selected">
@@ -136,7 +137,7 @@ export function CoopRunOverview({language,run,myVotedNodeId,selfVoter,onBack,onC
       <View style={s.companionDetailPortrait}>{companionPortrait?<Image source={companionPortrait} resizeMode="contain" style={s.companionDetailArt}/>:<UiIcon name="companions" size={40}/>}</View>
       <View style={s.grow}>
        <Text style={s.title}>{companionInfo.name}</Text>
-       <Text style={s.copy}>{companionSlot.echo?st('Frozen Echo companion'):st('Party companion')} · {companionInfo.role}</Text>
+       <Text style={s.copy}>{companionSlot.echo?st('Frozen Echo companion'):st('Party companion')} · {t(language,('coopUi.'+companionInfo.role) as 'coopUi.tank'|'coopUi.damage'|'coopUi.support')}</Text>
        {companionSlot.echo?<Text style={s.companionDetailNote}>{st('Echo companions use the published snapshot.')}</Text>:null}
       </View>
      </View>

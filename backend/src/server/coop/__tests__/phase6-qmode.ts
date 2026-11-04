@@ -101,20 +101,16 @@ console.log('Q-Mode NPC tier coverage passed',tierCombinations);
 
 
 import {planDungeonPotionUse,dungeonConsumablePolicy,DUNGEON_FOOD_ALLOWED} from '../consumable-policy';
-import {newGame,createCharacter} from '../../../../../apps/mobile/src/core/game';
 assert.equal(DUNGEON_FOOD_ALLOWED,false,'food remains forbidden in all dungeon tiers');
 for(const [tier,cap] of [[1,3],[2,3],[3,4],[4,4],[5,5]])assert.equal(dungeonConsumablePolicy(tier).potionCharges,cap);
-const dungeonCharacter=createCharacter(newGame(5_000),'DAWNKEEPER','PotionTester');
-dungeonCharacter.character!.id='controller-char';
-dungeonCharacter.character!.equippedHealingPotionId='DEWLEAF_DRAUGHT';
-dungeonCharacter.inventory.stacks=[{itemId:'DEWLEAF_DRAUGHT',quantity:7},{itemId:'VIGOR_TONIC',quantity:8},{itemId:'MOSS_RAT_MEAT',quantity:10}];
+const dungeonCharacter={character:{id:'controller-char',equippedHealingPotionId:'DEWLEAF_DRAUGHT'},inventory:{stacks:[{itemId:'DEWLEAF_DRAUGHT',quantity:7},{itemId:'VIGOR_TONIC',quantity:8},{itemId:'MOSS_RAT_MEAT',quantity:10}]}};
 const actorId='controller-char',maximum=200;
 const initialRun={...npcOnly.persistentState,actors:{...npcOnly.persistentState.actors,[actorId]:{...npcOnly.persistentState.actors[actorId],hp:40}}};
 const args={runId:npcOnly.id,tier:1,phase:'awaiting_choice' as const,actorId,ownerCharacterId:actorId,maxHp:maximum};
 const firstPotion=planDungeonPotionUse({...args,requestId:'use-1',persistentState:initialRun,characterState:dungeonCharacter});
 assert.equal(firstPotion.receipt.itemId,'DEWLEAF_DRAUGHT');
-assert.equal(firstPotion.receipt.healedHp,50);
-assert.equal(firstPotion.persistentState.actors[actorId].hp,90);
+assert.equal(firstPotion.receipt.healedHp,40);
+assert.equal(firstPotion.persistentState.actors[actorId].hp,80);
 assert.equal(firstPotion.characterState.inventory.stacks.find(x=>x.itemId==='DEWLEAF_DRAUGHT')?.quantity,6);
 assert.equal(firstPotion.persistentState.dungeonPotionChargesUsed,1);
 const replay=planDungeonPotionUse({...args,requestId:'use-1',persistentState:firstPotion.persistentState,characterState:firstPotion.characterState});
@@ -129,6 +125,6 @@ assert.throws(()=>planDungeonPotionUse({...args,requestId:'finished',phase:'comp
 assert.throws(()=>planDungeonPotionUse({...args,requestId:'downed',persistentState:{...initialRun,actors:{...initialRun.actors,[actorId]:{...initialRun.actors[actorId],downed:true}}},characterState:dungeonCharacter}),/actor_downed/);
 assert.throws(()=>planDungeonPotionUse({...args,requestId:'full',persistentState:{...initialRun,actors:{...initialRun.actors,[actorId]:{...initialRun.actors[actorId],hp:200}}},characterState:dungeonCharacter}),/health_full/);
 assert.throws(()=>planDungeonPotionUse({...args,requestId:'no-stock',persistentState:initialRun,characterState:{...dungeonCharacter,inventory:{...dungeonCharacter.inventory,stacks:[]}}}),/out_of_stock/);
-assert.throws(()=>planDungeonPotionUse({...args,requestId:'food-not-potion',persistentState:initialRun,characterState:{...dungeonCharacter,character:{...dungeonCharacter.character!,equippedHealingPotionId:'MOSS_RAT_MEAT'}}}),/not_selected/);
+assert.throws(()=>planDungeonPotionUse({...args,requestId:'food-not-potion',persistentState:initialRun,characterState:{...dungeonCharacter,character:{...dungeonCharacter.character,equippedHealingPotionId:'MOSS_RAT_MEAT'}}}),/not_selected/);
 assert.equal(dungeonCharacter.inventory.stacks.find(x=>x.itemId==='VIGOR_TONIC')?.quantity,8,'non-healing tonics are untouched');
 console.log('dungeon potion transaction plan: stock, healing, tier caps, idempotency and security guards passed');

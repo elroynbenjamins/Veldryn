@@ -12,7 +12,7 @@ const {dungeonText}=require('../src/i18n/dungeon-preparation.ts');
 const {coopEarlyRows}=require('../src/i18n/coop-early-locales.ts');
 const {coopLoadoutEarlyRows}=require('../src/i18n/coop-loadout-early-locales.ts');
 const {dungeonPreparationEarlyRows}=require('../src/i18n/dungeon-preparation-early-locales.ts');
-const placeholders=value=>[...value.matchAll(/\\{([a-zA-Z][a-zA-Z0-9_]*)\\}/g)].map(match=>match[1]).sort();
+const placeholders=value=>[...value.matchAll(/\{([a-zA-Z][a-zA-Z0-9_]*)\}/g)].map(match=>match[1]).sort();
 const assertCatalog=(name,rows,expectedCount,englishValue,translatedValue)=>{
  const keys=Object.keys(rows);
  assert.equal(keys.length,expectedCount,name+' coverage must include every English source key');

@@ -47,8 +47,9 @@ assert(roomPresentation.includes("Restore your party's health.")&&roomPresentati
 assert(route.includes('const redundantReward=')&&route.includes('!redundantReward?'),'Backend rewardTag duplicates are hidden rather than rendered as pointless labels');
 assert(route.includes('const riskBaseline=')&&route.includes('!riskBaseline?'),'Default 1.0 risk does not produce unnecessary tags');
 assert(route.includes('const preview=option.encounterPreview?.summary??'),'Authoritative combat previews take precedence over friendly room descriptions');
-assert(run.includes("<DungeonRoomResolution kind={run.selectedNodeKind}/>"),'Utility rooms use room-specific visuals instead of a generic resolving card');
+assert(run.includes("<DungeonRoomResolution kind={run.selectedNodeKind} reduceMotion={reduceMotion}/>"),'Utility rooms use room-specific visuals instead of a generic resolving card');
 assert(roomResolution.includes('dungeonRoomPresentation(kind)')&&roomResolution.includes('ActivityIndicator'),'Utility rooms show the correct art and a non-blocking sync state');
+assert(roomResolution.includes('!reduceMotion?<ActivityIndicator'),'Room resolving respects reduced-motion preference');
 assert(!roomResolution.includes('setTheaterOpen')&&!roomResolution.includes('onChoose'),'Non-combat room presentation never mutates combat or server decisions');
 assert(run.includes("run.phase==='awaiting_choice'&&run.options.length"),'Stale decisions are hidden while the selected room is resolving');
 assert(run.includes('initiallyOpen={run.presenceSummary.safetyAiCount>0}'),'Live party connection only expands when intervention is useful');

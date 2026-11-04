@@ -82,6 +82,18 @@ export function previewAlchemyReward(state:GameState,elapsed:number):RewardBundl
 export function alchemyRefund(brew:AlchemyBatchState) {
   return {items:brew.inputsPerBatch.map(input=>({itemId:input.itemId,quantity:input.quantity*brew.remainingBatches})),gold:brew.goldPerBatch*brew.remainingBatches};
 }
+/** Legacy reservations retain the material mix and cost actually paid at start.
+ * T1–T3 rebalancing must not invalidate escrow started on 1.0.5. */
+const PREVIOUS_TONIC_INPUTS:Record<string,readonly string[]>={
+ 'BREW_VIGOR_TONIC':['DEWLEAF','RIVER_MINT'],
+ 'BREW_WARD_TONIC':['DEWLEAF','IRONBLOOM'],
+ 'BREW_GREATER_VIGOR_TONIC':['RIVER_MINT','CAVELICHEN'],
+ 'BREW_GREATER_WARD_TONIC':['IRONBLOOM','CROWN_SAGE'],
+};
+function permittedReservationInputs(recipeId:string,current:readonly ItemStack[],saved:readonly ItemStack[]):boolean{
+ const expected=[current.map(row=>row.itemId),PREVIOUS_TONIC_INPUTS[recipeId]].filter((row):row is string[]=>!!row).map(ids=>[...ids].sort().join('|'));
+ return saved.length>0&&new Set(saved.map(row=>row.itemId)).size===saved.length&&expected.includes(saved.map(row=>row.itemId).sort().join('|'));
+}
 /** Reject unreadable escrow, rather than silently deleting paid ingredients on load. */
 export function normalizeAlchemyBatch(value:unknown,targetId:string):AlchemyBatchState {
   const b=value as AlchemyBatchState|undefined,recipe=alchemyRecipeDef(targetId);
@@ -91,8 +103,8 @@ export function normalizeAlchemyBatch(value:unknown,targetId:string):AlchemyBatc
     integer(b.goldPerBatch,0,100000)&&Number.isFinite(b.cycleSeconds)&&b.cycleSeconds>=1&&b.cycleSeconds<=86400&&
     Number.isFinite(b.xpPerBatch)&&b.xpPerBatch>=0&&b.xpPerBatch<=100000&&
     b.outputPerBatch?.itemId===recipe.output.itemId&&integer(b.outputPerBatch?.quantity,1,100)&&
-    Array.isArray(b.inputsPerBatch)&&b.inputsPerBatch.length===recipe.inputs.length&&
-    recipe.inputs.every(input=>b.inputsPerBatch.filter(saved=>saved.itemId===input.itemId&&integer(saved.quantity,1,10000)).length===1);
+    Array.isArray(b.inputsPerBatch)&&b.inputsPerBatch.every(saved=>typeof saved.itemId==='string'&&integer(saved.quantity,1,10000))&&
+    permittedReservationInputs(recipe.id,recipe.inputs,b.inputsPerBatch);
   if(!valid)throw new Error('Invalid reserved alchemy batch. Keep the save backup; do not reset or discard the reservation.');
   return {version:1,recipeId:targetId,totalBatches:b!.totalBatches,remainingBatches:b!.remainingBatches,
     inputsPerBatch:b!.inputsPerBatch.map(input=>({...input})),goldPerBatch:b!.goldPerBatch,
@@ -107,7 +119,10 @@ export function normalizePreparation(value:unknown):ActivePreparation|undefined 
 }
 export function preparationEffects(preparation:ActivePreparation|undefined) {
   const def=preparation&&preparation.remainingEncounters>0?potionDef(preparation.itemId):undefined;
-  return def?.effect.kind==='preparation'?{attack:1+def.effect.attackFraction,damage:1-def.effect.damageReductionFraction,itemId:def.id}:{attack:1,damage:1,itemId:undefined};
+  return def?.effect.kind==='preparation'?
+    {attack:1+def.effect.attackFraction,outgoing:1+def.effect.damageDealtFraction,damage:1-def.effect.damageReductionFraction,
+     healing:1+def.effect.healingStrengthFraction,shielding:1+def.effect.shieldStrengthFraction,itemId:def.id}:
+    {attack:1,outgoing:1,damage:1,healing:1,shielding:1,itemId:undefined};
 }
 export function spendPreparationEncounter(preparation:ActivePreparation|undefined,itemId:string|undefined):ActivePreparation|undefined {
   if(!itemId||!preparation||preparation.itemId!==itemId)return preparation;

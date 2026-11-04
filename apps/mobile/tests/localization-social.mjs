@@ -19,6 +19,7 @@ function load(name){
 }
 const {socialTranslationRows,socialCatalogs,socialText,socialLabel,socialExpiry,useSocialText}=load('social');
 const {socialEarlyRows}=load('social-early-coverage');
+const {earlyLocaleText}=load('early-locales');
 const {SUPPORTED_LANGUAGES}=load('languages');
 const {GameLanguageProvider}=load('GameLanguageProvider');
 const placeholders=text=>[...text.matchAll(/\{([a-zA-Z][a-zA-Z0-9_]*)\}/g)].map(match=>match[1]).sort();
@@ -53,7 +54,7 @@ for(const [key,values] of Object.entries(socialEarlyRows)){
  for(const [index,language] of ['ru','tr'].entries()){
   assert.ok(values[index].trim(),language+' empty overlay '+key);
   assert.deepEqual(placeholders(values[index]),placeholders(key),language+' overlay placeholders '+key);
-  assert.equal(socialText(language,key),values[index],language+' overlay runtime '+key);
+  assert.equal(socialText(language,key),earlyLocaleText(language,key)??values[index],language+' overlay runtime and established starter-copy precedence '+key);
  }
 }
 for(const key of sourceAdditions){

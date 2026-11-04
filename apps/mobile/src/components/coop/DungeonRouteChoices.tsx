@@ -1,17 +1,11 @@
 import {Pressable,StyleSheet,Text,View} from 'react-native';
 import type {CoopMode,CoopRouteOptionView} from '../../core/coop-presentation';
-import type {CoopUiAssetId} from '../../core/coop-ui-contract';
 import {type CoopColors,coopSpacing,coopTypography} from '../../theme/coop-ui-theme';
 import {useCoopStyles} from '../../theme/useCoopStyles';
 import {useSocialText} from '../../i18n/social';
 import {CoopImageSlot} from './CoopVisualKit';
 import {IdentityArtwork} from '../SocialIdentity';
-
-const artwork:Record<string,CoopUiAssetId>={
- battle:'node_battle',elite:'node_elite',event:'node_event',forge:'node_event',
- shrine:'node_shrine',camp:'node_camp',treasure:'node_treasure',merchant:'node_merchant',
- echo:'node_echo',risk:'node_risk',secret:'node_treasure',boss:'node_boss',
-};
+import {dungeonRoomPresentation} from './dungeon-room-presentation';
 
 /**
  * One decision per room card. The whole card is the Choose/Vote target;
@@ -28,6 +22,10 @@ export function DungeonRouteChoices({options,mode,phase,busy=false,onChoose,myVo
   {options.map((option,index)=>{
    const canPress=canChoose&&!option.hidden;
    const votedHere=live&&myVotedNodeId===option.nodeId;
+   const room=dungeonRoomPresentation(option.kind);
+   const preview=option.encounterPreview?.summary??(room?st(room.description):undefined);
+   const riskBaseline=/^risk\s+1(?:\.0+)?$/i.test(option.risk.trim());
+   const redundantReward=option.reward.trim().toLowerCase().replace(/[\s_-]+/g,'')===option.kind.trim().toLowerCase().replace(/[\s_-]+/g,'');
    return <Pressable
     key={option.nodeId}
     accessibilityRole="button"
@@ -37,17 +35,17 @@ export function DungeonRouteChoices({options,mode,phase,busy=false,onChoose,myVo
     onPress={()=>onChoose?.(option.nodeId)}
     style={({pressed})=>[s.card,option.kind==='boss'&&s.bossCard,votedHere&&s.myChoice,option.hidden&&s.hiddenCard,pressed&&canPress&&s.pressed]}
    >
-    <CoopImageSlot assetId={artwork[option.kind]??'node_event'} size="thumbnail" accessibilityLabel={option.title}/>
+    <CoopImageSlot assetId={room?.art??'node_event'} size="thumbnail" accessibilityLabel={option.title}/>
     <View style={s.content}>
      <View style={s.heading}>
       <Text style={s.title} numberOfLines={2}>{option.title}</Text>
       <Text style={s.roomNumber}>{String(index+1).padStart(2,'0')}</Text>
      </View>
-     <View style={s.tags}>
-      <View style={s.riskTag}><Text style={s.riskText} numberOfLines={2}>{option.risk}</Text></View>
-      <View style={s.rewardTag}><Text style={s.rewardText} numberOfLines={2}>{option.reward}</Text></View>
-     </View>
-     {option.encounterPreview?.summary?<Text numberOfLines={1} style={s.preview}>{option.encounterPreview.summary}</Text>:null}
+     {(!riskBaseline||!redundantReward)?<View style={s.tags}>
+      {!riskBaseline?<View style={s.riskTag}><Text style={s.riskText} numberOfLines={1}>{option.risk}</Text></View>:null}
+      {!redundantReward?<View style={s.rewardTag}><Text style={s.rewardText} numberOfLines={1}>{option.reward}</Text></View>:null}
+     </View>:null}
+     {preview?<Text numberOfLines={2} style={s.preview}>{preview}</Text>:null}
      <View style={s.footer}>
       {live?<View style={s.voteLine}>
        <Text style={s.votes}>{option.votes??0}/4 {st('votes')}</Text>

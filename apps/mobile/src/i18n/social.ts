@@ -3,6 +3,7 @@ import type {Language} from './languages';
 import {SUPPORTED_LANGUAGES} from './languages';
 import {useGameLanguage} from './GameLanguageProvider';
 import {createTranslator,type TranslationParams} from './translator';
+import {socialEarlyText} from './social-early-coverage';
 
 // Columns are German, Spanish, Dutch, Italian and French; keys are the English catalog.
 export const socialTranslationRows = {
@@ -6951,7 +6952,7 @@ export const socialTranslationRows = {
 } as const satisfies Record<string,readonly [string,string,string,string,string]>;
 export type SocialMessageKey=keyof typeof socialTranslationRows;
 export const socialCatalogs=Object.fromEntries(SUPPORTED_LANGUAGES.map((language,index)=>[
- language,Object.fromEntries(Object.entries(socialTranslationRows).map(([key,values])=>[key,index===0?key:values[index-1]??key])),
+ language,Object.fromEntries(Object.entries(socialTranslationRows).map(([key,values])=>[key,language==='ru'||language==='tr'?socialEarlyText(language,key)??key:index===0?key:values[index-1]??key])),
 ])) as Record<Language,Record<SocialMessageKey,string>>;
 export const socialText=createTranslator(socialCatalogs);
 export function useSocialText(preferredLanguage?:Language){

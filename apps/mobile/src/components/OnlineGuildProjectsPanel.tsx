@@ -153,7 +153,7 @@ export function GuildProjectPosting({project,expanded,compact=false,onToggle,onC
  const projectArtwork=guildProjectArtwork(project.templateId);
  const readyToClaim=weekly&&claimOpen;
  return <View style={[s.project,project.status==='completed'&&s.complete]}>
-  <Pressable accessibilityRole="button" accessibilityLabel={`Project details: ${authored.name}`} accessibilityHint="Show or hide the full progress and reward rules" accessibilityState={{expanded}}
+  <Pressable accessibilityRole="button" accessibilityLabel={`Project contributions: ${authored.name}`} accessibilityHint="Show or hide contributions from Guild members" accessibilityState={{expanded}}
    onPress={onToggle} style={({pressed})=>[s.projectPress,pressed&&s.pressed]}>
    <View style={s.sectionHead}>
     {projectArtwork?<Image source={projectArtwork} resizeMode="contain" style={s.projectIcon}/>:<ActivityArtwork id="combat" size={42}/>}
@@ -162,7 +162,7 @@ export function GuildProjectPosting({project,expanded,compact=false,onToggle,onC
    </View>
    <View style={s.progressHead}><Text style={s.percent}>{pct}%</Text><View style={s.progressNumbers}><Text style={s.progressAmount}>{project.kind==='development'?'Resource goals':`${project.completionPoints.toLocaleString()} / ${project.targetPoints.toLocaleString()}`}</Text><Text style={s.meta}>Guild progress</Text></View></View>
    <View style={s.track}><View style={[s.fill,{width:`${Math.min(100,pct)}%` as any}]}/></View>
-   <View style={s.sectionHead}><Text style={[s.meta,s.flex]}>{project.meaningfulContributors} / {project.minimumMeaningfulContributors} contributors</Text><Text style={s.expandHint}>{expanded?'Hide details ▴':'Details ▾'}</Text></View>
+   <View style={s.sectionHead}><Text style={[s.meta,s.flex]}>{project.meaningfulContributors} / {project.minimumMeaningfulContributors} contributors</Text><Text style={s.expandHint}>{expanded?'Hide contribution ▴':'Contribution ▾'}</Text></View>
    {weekly&&project.status==='active'?<Text style={s.meta}>Weekly reset: Monday at 00:00 UTC</Text>:null}
   </Pressable>
   {!compact?<View style={s.personal}>
@@ -201,6 +201,12 @@ export function GuildProjectPosting({project,expanded,compact=false,onToggle,onC
     <Text style={[s.copy,s.flex]}>{goal.label}</Text><Text style={s.resourceAmount}>{goal.current.toLocaleString()} / {goal.target.toLocaleString()}</Text>
    </View>)}
    {weekly?<View style={s.detailsRules}><Text style={s.meta}>Daily cap: 2,400 effort · Max 50% per member (Guilds of 2+) · 300 effort for 500 Gold · Claim within 7 days.</Text></View>:null}
+   <View style={s.contributionHead}><Text style={s.sectionTitle}>Member contribution</Text><Text style={s.meta}>{project.memberContributions.length} members</Text></View>
+   {project.memberContributions.map((member,index)=>{
+    const sources=[member.combatPoints?`Combat ${member.combatPoints.toLocaleString()}`:'',member.gatheringPoints?`Gather ${member.gatheringPoints.toLocaleString()}`:'',member.craftingPoints?`Craft ${member.craftingPoints.toLocaleString()}`:''].filter(Boolean).join(' · ');
+    return <View key={member.accountId} style={s.member}><Text style={s.memberRank}>#{index+1}</Text><View style={s.flex}><Text numberOfLines={1} style={s.memberName}>{member.displayName}</Text><Text style={s.meta}>{sources||'No effort yet'}{member.meaningful?' · contributor':''}</Text></View><Text style={s.memberPoints}>{member.points.toLocaleString()} effort</Text></View>;
+   })}
+   {!project.memberContributions.length?<Text style={s.meta}>No Guild members found.</Text>:null}
    {project.endsAt?<Text style={s.meta}>Ends {new Date(project.endsAt).toLocaleString()}</Text>:null}
   </View>:null}
   {compact&&weekly&&project.status==='completed'&&!project.completionRewardClaimed?<Text style={s.meta}>View reward eligibility.</Text>:null}
@@ -233,6 +239,8 @@ function makeStyles(C:ThemeColors){return StyleSheet.create({
  activityRule:{fontSize:10,lineHeight:14,textAlign:'center',color:C.muted},
  disabled:{opacity:.6},pressed:{opacity:.74},
  details:{gap:9,borderTopWidth:1,borderTopColor:C.line,paddingTop:11},
+ contributionHead:{flexDirection:'row',alignItems:'center',justifyContent:'space-between',gap:8,paddingTop:2},
+ member:{minHeight:42,flexDirection:'row',alignItems:'center',gap:8,paddingVertical:6,borderTopWidth:StyleSheet.hairlineWidth,borderTopColor:C.line},memberRank:{width:25,fontSize:11,lineHeight:16,fontWeight:'800',color:C.muted},memberName:{fontSize:12,lineHeight:17,fontWeight:'800',color:C.text},memberPoints:{fontSize:12,lineHeight:17,fontWeight:'900',color:C.accent},
  breakdown:{flexDirection:'row',justifyContent:'space-between',flexWrap:'wrap',gap:7},detailsRules:{padding:9,borderRadius:7,backgroundColor:C.panel2},
  resource:{flexDirection:'row',alignItems:'center',gap:8,paddingVertical:6},
  resourceIcon:{width:28,height:28},resourceAmount:{fontSize:11,color:C.accent,fontWeight:'800'},

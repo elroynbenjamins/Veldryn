@@ -2,7 +2,7 @@ import {useCallback,useEffect,useRef,useState,type ReactNode} from 'react';
 import {Pressable,ScrollView,StyleSheet,Text,View} from 'react-native';
 import type {GameState} from '../core/types';
 import {QUESTS,QUEST_ACTS,type QuestDef} from '../content/quests';
-import {journalEntries,questDestination,type JournalFilter,type QuestDestination} from '../core/quest-journal';
+import {journalEntries,questDestination,questLockHint,type JournalFilter,type QuestDestination} from '../core/quest-journal';
 import {seasonalQuestBoard,QUEST_RARITIES,type SeasonalPeriod,type SeasonalQuest} from '../core/seasonal-quests';
 import {weeklyOrderBoardForState} from '../core/long-term-progression-runtime';
 import type {WeeklyOrder} from '../core/weekly-orders-v41';
@@ -308,7 +308,7 @@ export function QuestRefinedScreen({state,mode,onModeChange,focusedWeeklyOrderId
      <View style={[styles.detailBlock,{backgroundColor:C.panel,borderColor:C.line}]}>
       <Text style={[styles.eyebrow,{color:C.accent}]}>{p('OBJECTIVE')}</Text>
       <Text style={[styles.detailText,{color:C.text}]}>{chosenStory?p(chosenStory.description):chosenOrder?p(chosenOrder.brief??chosenDestination?.detail??''):chosenChallenge?p(chosenChallenge.description):''}</Text>
-      {selectedStatus==='locked'?<Text style={[styles.footnote,{color:C.warning}]}>{chosenOrder?p(selectedLocked??''):chosenStory?p('Claim the previous chapter to unlock this quest. Progress does not count while locked.'):''}</Text>:<><View style={styles.rowMeta}><Text style={[styles.mini,{color:C.muted}]}>{p('Progress')}</Text><Text style={[styles.mini,{color:C.text}]}>{selectedValue}/{selectedGoal}</Text></View><ProgressLine current={selectedValue} max={selectedGoal} C={C}/></>}
+      {selectedStatus==='locked'?<Text style={[styles.footnote,{color:C.warning}]}>{chosenOrder?p(selectedLocked??''):chosenStory?p(questLockHint(state,chosenStory)):''}</Text>:<><View style={styles.rowMeta}><Text style={[styles.mini,{color:C.muted}]}>{p('Progress')}</Text><Text style={[styles.mini,{color:C.text}]}>{selectedValue}/{selectedGoal}</Text></View><ProgressLine current={selectedValue} max={selectedGoal} C={C}/></>}
      </View>
      {chosenStory?<View style={styles.storyDisclosure}>
       <Pressable accessibilityRole="button" accessibilityState={{expanded:storyExpanded}} onPress={()=>setStoryExpanded(v=>!v)} style={[styles.disclosure,{borderColor:C.line}]}>

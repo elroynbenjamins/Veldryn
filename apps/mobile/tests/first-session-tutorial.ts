@@ -1,7 +1,7 @@
 import {assert} from './test-assert';
 import {firstSessionTutorialStep as step,firstSessionTutorialSteps,normalizeFirstSessionTutorialCompleted as normalize,type FirstSessionTutorialHost} from '../src/core/first-session-tutorial';
 const questIds=['QST_001','QST_002','QST_003','QST_004','QST_005'];
-function at(index:number,level=1):FirstSessionTutorialHost{return {character:{level},activity:null,quests:questIds.map((questId,i)=>({questId,status:i<index?'claimed':i===index?'active':'locked',progress:0}))};}
+function at(index:number,level=1):FirstSessionTutorialHost{return {character:{level},activity:null,currentRegionId:'GREENFIELDS',quests:questIds.map((questId,i)=>({questId,status:i<index?'claimed':i===index?'active':'locked',progress:0}))};}
 let checks=0;
 function check(name:string,run:()=>void){run();checks++;console.log('PASS '+name)}
 check('no tutorial before character creation',()=>assert.equal(step({...at(0),character:null}),undefined));
@@ -14,9 +14,10 @@ for(let i=0;i<questIds.length;i++)check(`${questIds[i]} complete means claim, no
 check('gathering follows first quest claim',()=>assert.equal(step(at(1))?.id,'first_skill'));
 check('running guided gathering explains skill XP collection',()=>{const s=at(1);s.activity={kind:'fishing',targetId:'MEADOW_PERCH_POOL'};assert.equal(step(s)?.id,'first_skill_collect')});
 check('processing is not a gathering tutorial objective',()=>{const s=at(1);s.activity={kind:'processing',targetId:'SMELT_COPPER_INGOT'};assert.equal(step(s)?.id,'first_skill')});
-check('level 6 does not show scouting before its route unlock',()=>assert.equal(step(at(2,6)),undefined));
-check('level 7 directs the player to scout before hunting',()=>{assert.equal(step(at(2,7))?.id,'ironwood_scout');assert.equal(step(at(2,7))?.destination,'Skills');assert.ok(step(at(2,7))?.hint.includes('Trace Ironwood paths'))});
-check('running Ironwood scouting explains route collection',()=>{const s=at(2,7);s.activity={kind:'exploration',targetId:'SCOUT_IRONWOOD'};assert.equal(step(s)?.id,'ironwood_scout_collect');assert.equal(step(s)?.destination,'Home')});
+check('level 6 teaches wood, fish and cooking preparation before the trail unlocks',()=>{assert.equal(step(at(2,6))?.id,'ironwood_prepare');assert.equal(step(at(2,6))?.destination,'Skills');assert.ok(step(at(2,6))?.hint.includes('Combat rewards'))});
+check('level 7 first teaches travel to Ironwood before scouting',()=>{assert.equal(step(at(2,7))?.id,'ironwood_travel');assert.equal(step(at(2,7))?.destination,'World');assert.ok(step(at(2,7))?.hint.includes('Ironwood Forest'))});
+check('arriving in Ironwood directs the player to scout before hunting',()=>{const s=at(2,7);s.currentRegionId='IRONWOOD';assert.equal(step(s)?.id,'ironwood_scout');assert.equal(step(s)?.destination,'Skills');assert.ok(step(s)?.hint.includes('Trace Ironwood paths'))});
+check('running Ironwood scouting explains route collection',()=>{const s=at(2,7);s.currentRegionId='IRONWOOD';s.activity={kind:'exploration',targetId:'SCOUT_IRONWOOD'};assert.equal(step(s)?.id,'ironwood_scout_collect');assert.equal(step(s)?.destination,'Home')});
 check('equipment goal counts the starter weapon',()=>{assert.equal(step(at(3))?.destination,'Inventory');assert.ok(step(at(3))?.body.includes('already counts as one'))});
 check('level 10 objective distinguishes character and skill levels',()=>{assert.equal(step(at(4))?.id,'level_ten');assert.ok(step(at(4))?.body.includes('not the total'));assert.ok(step(at(4))?.hint.includes('combat rewards'))});
 check('no extra Account tour after QST_005',()=>assert.equal(step(at(5,10)),undefined));

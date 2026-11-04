@@ -3,6 +3,7 @@ import {Pressable,StyleSheet,Text,View} from 'react-native';
 import type {GameState} from '../core/types';
 import type {QuestDestination} from '../core/quest-journal';
 import {journalSkillLessonProgress,journalSkillLessonSummary,type JournalSkillLessonProgress} from '../core/journal-skill-lessons';
+import {EQUIPMENT_CRAFT_SKILL_BY_CLASS} from '../content/equipment-recipes-v33';
 import {progressionText} from '../i18n/progression';
 import {useGameTheme} from '../theme/ThemeContext';
 import type {ThemeColors} from '../theme/theme';
@@ -16,7 +17,9 @@ export function JournalSkillPathsPanel({state,onNavigate}:{state:GameState;onNav
  const [showAll,setShowAll]=useState(false),[expanded,setExpanded]=useState<string|null>(null);
  const language=state.settings.language;
  const p=(value:string)=>progressionText(language,value);
- const paths=journalSkillLessonProgress(state),summary=journalSkillLessonSummary(state);
+ const allPaths=journalSkillLessonProgress(state),equipmentCraftingSkill=state.character?EQUIPMENT_CRAFT_SKILL_BY_CLASS[state.character.classId]:undefined;
+ const paths=allPaths.filter(row=>!equipmentCraftingSkill||!(['smithing','tailoring'] as const).includes(row.lesson.skillId as 'smithing'|'tailoring')||row.lesson.skillId===equipmentCraftingSkill);
+ const allSummary=journalSkillLessonSummary(state),summary={...allSummary,total:paths.length,practiced:paths.filter(row=>row.practiceComplete).length,started:paths.filter(row=>row.starterComplete).length,introduced:paths.filter(row=>row.introduced).length};
  const introductionRank=(row:JournalSkillLessonProgress)=>row.lesson.afterQuest==='QST_005'?5:row.lesson.afterQuest==='QST_004'?4:row.lesson.afterQuest==='QST_002'?3:row.lesson.characterLevel?3:row.lesson.afterQuest==='QST_001'?2:1;
  const recommended=paths.filter(row=>row.introduced&&!row.practiceComplete).sort((a,b)=>introductionRank(b)-introductionRank(a)||Number(a.starterComplete)-Number(b.starterComplete));
  const selected=showAll?paths:(recommended.length?recommended:paths.filter(row=>row.introduced)).slice(0,3);
@@ -37,7 +40,7 @@ export function JournalSkillPathsPanel({state,onNavigate}:{state:GameState;onNav
   <View style={styles.overview}>
    <Text style={styles.overviewText}>{summary.started} {p('started')} · {summary.introduced} {p('introduced')}</Text>
    <Pressable accessibilityRole="button" accessibilityLabel={showAll?p('Show recommended paths'):p('Browse all skill paths')} accessibilityState={{expanded:showAll}} onPress={()=>setShowAll(value=>!value)} style={({pressed})=>[styles.toggle,pressed&&styles.pressed]}>
-    <Text style={styles.toggleText}>{showAll?p('Show recommended'):p('Browse all 11 skills')} {showAll?'−':'+'}</Text>
+    <Text style={styles.toggleText}>{showAll?p('Show recommended'):p('Browse all skills')+' · '+paths.length} {showAll?'−':'+'}</Text>
    </Pressable>
   </View>
   {rows.map(row=>{

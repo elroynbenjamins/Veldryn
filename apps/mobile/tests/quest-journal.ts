@@ -2,6 +2,7 @@ import {createCharacter,newGame,claimQuest,refreshQuests} from '../src/core/game
 import {journalEntries,questDestination} from '../src/core/quest-journal';
 import {QUESTS,QUEST_ACTS} from '../src/content/quests';
 import {JOURNAL_SKILL_LESSONS,journalSkillLessonProgress,journalSkillLessonSummary} from '../src/core/journal-skill-lessons';
+import {EQUIPMENT_CRAFT_SKILL_BY_CLASS} from '../src/content/equipment-recipes-v33';
 import {questPresentationMeta,questPresentationTier} from '../src/core/quest-presentation';
 function ok(value:boolean,message:string){if(!value)throw new Error(message)}
 const state=createCharacter(newGame(1000),'IRONWARDEN');
@@ -12,7 +13,7 @@ ok(journalEntries(state,'all',' oathgate ').length===2,'Search includes authored
 ok(journalEntries(state,'all',' ferrymen ').length===1,'Search includes authored story text');
 ok(journalEntries(state,'claimed','').length===0,'Empty completed filter');
 ok(questDestination(QUESTS[0]).zoneId==='GREENFIELDS','Rat quest navigates to region');
-ok(questDestination(QUESTS[2]).tab==='Skills'&&questDestination(QUESTS[2]).skillId==='exploration','Hound trail opens Exploration before the locked wolf encounter');
+ok(questDestination(QUESTS[2]).tab==='World'&&questDestination(QUESTS[2]).zoneId==='IRONWOOD','Hound trail teaches travel to Ironwood before exploration');
 ok(questDestination(QUESTS[3]).tab==='Inventory','Equip quest destination');
 ok(questDestination(QUESTS[6]).tab==='Skills','Gatherable item destination');
 ok(questDestination(QUESTS[13]).zoneId==='KINGS_ROAD','Boss destination');
@@ -31,11 +32,18 @@ const claimed=claimQuest(completed,'QST_001');
 ok(journalEntries(claimed,'claimed','').length===1,'Claimed chapter archived');
 ok(journalEntries(claimed,'current','')[0].def.id==='QST_002','Claim advances journal');
 ok(journalEntries(claimed,'locked','')[0].previous===QUESTS[1].name,'Locked prerequisite uses source order');
+const secondReady={...claimed,character:{...claimed.character!,level:2},quests:claimed.quests.map(row=>row.questId==='QST_002'?{...row,status:'complete' as const}:row)};
+const trailLocked=claimQuest(secondReady,'QST_002');
+ok(trailLocked.quests.find(row=>row.questId==='QST_003')?.status==='locked','Hound trail stays locked until character level 7');
+ok(journalEntries(trailLocked,'current','')[0]?.lockedHint?.includes('level 7 through Combat')===true,'Locked trail explains the combat level requirement');
+const trailReady=refreshQuests({...trailLocked,character:{...trailLocked.character!,level:7}});
+ok(trailReady.quests.find(row=>row.questId==='QST_003')?.status==='active','Hound trail activates at character level 7');
 const finished={...state,quests:state.quests.map(q=>({...q,status:'claimed' as const}))};
 ok(journalEntries(finished,'current','').length===0,'Completed campaign has no current quests');
 ok(journalEntries(finished,'claimed','').length===15,'All chapters remain browsable');
 // New tutorial paths must be non-invasive for existing campaign saves.
 ok(JOURNAL_SKILL_LESSONS.length===11,'The training journal covers every profession');
+ok(EQUIPMENT_CRAFT_SKILL_BY_CLASS.IRONWARDEN==='smithing'&&EQUIPMENT_CRAFT_SKILL_BY_CLASS.BASTION==='smithing'&&EQUIPMENT_CRAFT_SKILL_BY_CLASS.DREADGUARD==='smithing','Tank classes use Smithing for their equipment path');
 ok(new Set(JOURNAL_SKILL_LESSONS.map(row=>row.skillId)).size===11,'Training lessons have unique skill IDs');
 ok(JOURNAL_SKILL_LESSONS.every(row=>state.skills.some(skill=>skill.skillId===row.skillId)),'Every lesson maps to an existing profession');
 const noviceLessons=journalSkillLessonProgress(state);

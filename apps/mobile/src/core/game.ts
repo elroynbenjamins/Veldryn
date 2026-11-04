@@ -698,7 +698,14 @@ export function previewActivityReward(state:GameState,nowMs:number):RewardBundle
 }
 
 export function refreshQuests(state:GameState,lastCombatTarget?:string,lastKills=0):GameState{
-  let quests=state.quests.map(q=>({...q}));
+  const characterLevel=state.character?.level??0;
+  let quests=state.quests.map((quest,index)=>{
+    const definition=QUESTS[index],previous=index>0?state.quests[index-1]:undefined;
+    const eligible=(!previous||previous.status==='claimed')&&(!definition?.requiredCharacterLevel||characterLevel>=definition.requiredCharacterLevel);
+    if(quest.status==='locked'&&eligible)return {...quest,status:'active' as const};
+    if(quest.status==='active'&&!eligible)return {...quest,status:'locked' as const};
+    return {...quest};
+  });
   if(lastCombatTarget&&lastKills>0){quests=quests.map(q=>{const d=QUESTS.find(x=>x.id===q.questId);return q.status==='active'&&d?.kind==='kills'&&d.targetId===lastCombatTarget?{...q,progress:Math.min(d.required,q.progress+lastKills)}:q})}
   quests=quests.map(q=>{
     const d=QUESTS.find(x=>x.id===q.questId);if(!d||q.status!=='active')return q;let progress=q.progress;
@@ -716,7 +723,6 @@ export function claimQuest(state:GameState,questId:string,nowMs=Date.now()):Game
   const q=state.quests.find(x=>x.questId===questId),d=QUESTS.find(x=>x.id===questId);
   if(!q||!d||q.status!=='complete'||!state.character)throw new Error('Quest not claimable');
   let next={...state,character:{...state.character,gold:state.character.gold+d.rewardGold},inventory:{...state.inventory,stacks:d.rewardItemId?stackItems(state.inventory.stacks,[{itemId:d.rewardItemId,quantity:d.rewardItemQty||1}]):state.inventory.stacks},quests:state.quests.map(x=>x.questId===questId?{...x,status:'claimed' as const}:x)} as GameState;
-  const idx=QUESTS.findIndex(x=>x.id===questId),nextDef=QUESTS[idx+1];if(nextDef)next={...next,quests:next.quests.map(x=>x.questId===nextDef.id&&x.status==='locked'?{...x,status:'active' as const}:x)};
   return applyLocalBalanceSnapshot(reconcileCombatCompanionUnlocks(refreshQuests(next),nowMs),nowMs)
 }
 /** Offline contract claims are deterministic; online mode can replace this with the same server-authoritative contract ID. */

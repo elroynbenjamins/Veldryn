@@ -7,6 +7,7 @@ import {RecruitmentListing} from './RecruitmentListing';
 import {filterRecruitmentCards,type RecruitmentCardView,type RecruitmentClientFilters,type RecruitmentPostType} from '../core/party-social';
 import {useGameTheme} from '../theme/ThemeContext';
 import type {ThemeColors} from '../theme/theme';
+import {useSocialText} from '../i18n/social';
 
 type Area='party'|'guild';
 type Kind='groups'|'players';
@@ -19,46 +20,46 @@ export function RecruitmentBoardPanel({area,onAreaChange,cards,own,filters,onFil
  onRefresh:(id:string)=>void;onClose:(id:string)=>void;onOpenParty:()=>void;onOpenGuild:()=>void;onInviteFriends?:()=>void;
  matches?:RecruitmentCardView[];onDismissMatches?:()=>void;loading?:boolean;
 }){
- const C=useGameTheme(),s=useMemo(()=>styles(C),[C]);
+ const C=useGameTheme(),s=useMemo(()=>styles(C),[C]),st=useSocialText();
  const [kind,setKind]=useState<Kind>('groups'),[view,setView]=useState<'browse'|'posts'>('browse'),[showCreate,setShowCreate]=useState(false),[showMatches,setShowMatches]=useState(false);
  const types:RecruitmentPostType[]=area==='party'?(kind==='groups'?['party_recruiting']:['looking_for_party']):(kind==='groups'?['guild_recruiting']:['looking_for_guild']);
  const visible=filterRecruitmentCards(cards,{...filters,postTypes:types},nowMs);
  const myPosts=own.filter(card=>area==='party'?card.postType.includes('party'):card.postType.includes('guild'));
  const options:{id:Action;title:string;detail:string;enabled:boolean}[]=[
-  {id:'looking_for_party',title:'Looking for a Party',detail:'Find a persistent team',enabled:partyUnlocked&&!inParty},
-  {id:'party_recruiting',title:'Recruit for my Party',detail:partyOpenSpots>0?'Find members for open Party slots':'Your Party has no open slots',enabled:partyUnlocked&&inParty&&partyLeader&&partyOpenSpots>0},
-  {id:'looking_for_guild',title:'Looking for a Guild',detail:'Let Guilds discover you',enabled:guildMembershipKnown&&!inGuild},
-  {id:'guild_recruiting',title:'Recruit for my Guild',detail:'Leader or Officer access',enabled:canRecruitGuild},
+  {id:'looking_for_party',title:st('Looking for a Party'),detail:st('Find a persistent team'),enabled:partyUnlocked&&!inParty},
+  {id:'party_recruiting',title:st('Recruit for my Party'),detail:partyOpenSpots>0?st('Find members for open Party slots'):st('Your Party has no open slots'),enabled:partyUnlocked&&inParty&&partyLeader&&partyOpenSpots>0},
+  {id:'looking_for_guild',title:st('Looking for a Guild'),detail:st('Let Guilds discover you'),enabled:guildMembershipKnown&&!inGuild},
+  {id:'guild_recruiting',title:st('Recruit for my Guild'),detail:st('Leader or Officer access'),enabled:canRecruitGuild},
  ];
  const createAdvert=()=>{if(area==='party'){const eligible=options.filter(option=>option.id.includes('party')&&option.enabled);if(eligible.length===1){onPost(eligible[0].id);return;}}setShowCreate(true);};
  return <View style={s.root}>
-  <View style={s.header}><View style={s.flex}><Text style={s.eyebrow}>FIND YOUR FELLOWSHIP</Text><Text accessibilityRole="header" style={s.title}>Recruitment</Text><Text style={s.copy}>Find players, Parties and Guilds</Text></View></View>
-  <View accessibilityRole="tablist" style={s.tabs}>{(['party','guild'] as const).map(id=><Pressable key={id} accessibilityRole="tab" accessibilityState={{selected:area===id}} onPress={()=>{onAreaChange(id);setKind('groups');setView('browse')}} style={[s.tab,area===id&&s.selected]}><Text style={[s.tabLabel,area===id&&s.selectedLabel]}>{id==='party'?'Party':'Guild'}</Text></Pressable>)}</View>
-  <View accessibilityRole="tablist" style={s.tabs}>{(['browse','posts'] as const).map(id=><Pressable key={id} accessibilityRole="tab" accessibilityState={{selected:view===id}} onPress={()=>setView(id)} style={[s.tab,view===id&&s.selected]}><Text style={[s.tabLabel,view===id&&s.selectedLabel]}>{id==='browse'?'Browse':'My Posts'}</Text></Pressable>)}</View>
-  {matches.length&&area==='party'?<View style={s.matchCard}><View style={s.between}><View style={s.flex}><Text style={s.eyebrow}>MATCHES FOUND</Text><Text style={s.copy}>{matches.length} compatible recruitment adverts</Text></View><GameButton compact tone="secondary" title={showMatches?'Hide':'View'} onPress={()=>setShowMatches(v=>!v)}/></View>{showMatches?matches.slice(0,5).map(card=><RecruitmentListing key={card.id} card={card} nowMs={nowMs} onPress={()=>onOpen(card)}/>):null}{showMatches&&onDismissMatches?<GameButton compact tone="secondary" title="Dismiss matches" onPress={onDismissMatches}/>:null}</View>:null}
+  <View style={s.header}><View style={s.flex}><Text style={s.eyebrow}>{st('FIND YOUR FELLOWSHIP')}</Text><Text accessibilityRole="header" style={s.title}>{st('Recruitment')}</Text><Text style={s.copy}>{st('Find players, Parties and Guilds')}</Text></View></View>
+  <View accessibilityRole="tablist" style={s.tabs}>{(['party','guild'] as const).map(id=><Pressable key={id} accessibilityRole="tab" accessibilityState={{selected:area===id}} onPress={()=>{onAreaChange(id);setKind('groups');setView('browse')}} style={[s.tab,area===id&&s.selected]}><Text style={[s.tabLabel,area===id&&s.selectedLabel]}>{id==='party'?st('Party'):st('Guild')}</Text></Pressable>)}</View>
+  <View accessibilityRole="tablist" style={s.tabs}>{(['browse','posts'] as const).map(id=><Pressable key={id} accessibilityRole="tab" accessibilityState={{selected:view===id}} onPress={()=>setView(id)} style={[s.tab,view===id&&s.selected]}><Text style={[s.tabLabel,view===id&&s.selectedLabel]}>{id==='browse'?st('Browse'):st('My Posts')}</Text></Pressable>)}</View>
+  {matches.length&&area==='party'?<View style={s.matchCard}><View style={s.between}><View style={s.flex}><Text style={s.eyebrow}>{st('MATCHES FOUND')}</Text><Text style={s.copy}>{st('{count} compatible recruitment adverts',{count:matches.length})}</Text></View><GameButton compact tone="secondary" title={showMatches?st('Hide'):st('View')} onPress={()=>setShowMatches(v=>!v)}/></View>{showMatches?matches.slice(0,5).map(card=><RecruitmentListing key={card.id} card={card} nowMs={nowMs} onPress={()=>onOpen(card)}/>):null}{showMatches&&onDismissMatches?<GameButton compact tone="secondary" title={st('Dismiss matches')} onPress={onDismissMatches}/>:null}</View>:null}
   {view==='browse'?<>
-   <View style={s.hero}><View style={s.between}><View style={s.flex}><Text style={s.eyebrow}>{area.toUpperCase()} RECRUITMENT</Text><Text style={s.heading}>{area==='party'?'Find the right teammates':'Find your Guild connection'}</Text></View><Text style={s.pill}>{area==='party'?'LFG / LFM':'GUILDS'}</Text></View>
-    <Text style={s.copy}>{area==='party'?'Find a Party or teammates.':'Find a Guild or recruit players.'}</Text>
-    <GameButton title={area==='party'?'+ Post for Party':'+ Create advert'} disabled={busy} onPress={createAdvert}/>
-    {area==='party'&&inParty&&partyLeader&&partyOpenSpots>0&&onInviteFriends?<GameButton compact tone="secondary" title="Invite friends privately" disabled={busy} onPress={onInviteFriends}/>:null}
+   <View style={s.hero}><View style={s.between}><View style={s.flex}><Text style={s.eyebrow}>{area==='party'?st('PARTY RECRUITMENT'):st('GUILD RECRUITMENT')}</Text><Text style={s.heading}>{area==='party'?st('Find the right teammates'):st('Find your Guild connection')}</Text></View><Text style={s.pill}>{area==='party'?'LFG / LFM':'GUILDS'}</Text></View>
+    <Text style={s.copy}>{area==='party'?st('Find a Party or teammates.'):st('Find a Guild or recruit players.')}</Text>
+    <GameButton title={area==='party'?st('+ Post for Party'):st('+ Create advert')} disabled={busy} onPress={createAdvert}/>
+    {area==='party'&&inParty&&partyLeader&&partyOpenSpots>0&&onInviteFriends?<GameButton compact tone="secondary" title={st('Invite friends privately')} disabled={busy} onPress={onInviteFriends}/>:null}
    </View>
-   <View accessibilityRole="tablist" style={s.tabs}>{(['groups','players'] as const).map(id=><Pressable key={id} accessibilityRole="tab" accessibilityState={{selected:kind===id}} onPress={()=>setKind(id)} style={[s.tab,kind===id&&s.selected]}><Text style={[s.tabLabel,kind===id&&s.selectedLabel]}>{id==='groups'?area==='party'?'Parties recruiting':'Guilds recruiting':area==='party'?'Players seeking':'Guild seekers'}</Text></Pressable>)}</View>
+   <View accessibilityRole="tablist" style={s.tabs}>{(['groups','players'] as const).map(id=><Pressable key={id} accessibilityRole="tab" accessibilityState={{selected:kind===id}} onPress={()=>setKind(id)} style={[s.tab,kind===id&&s.selected]}><Text style={[s.tabLabel,kind===id&&s.selectedLabel]}>{id==='groups'?(area==='party'?st('Parties recruiting'):st('Guilds recruiting')):(area==='party'?st('Players seeking'):st('Guild seekers'))}</Text></Pressable>)}</View>
    <RecruitmentFiltersPanel value={filters} onChange={onFiltersChange} hidePostType partyMode={area==='party'}/>
-   <View style={s.between}><Text style={s.headingSmall}>{kind==='groups'?'Recruiting groups':'Available players'}</Text><Text style={s.copy}>{visible.length} results</Text></View>
-   {loading?<View style={s.loading}><ActivityIndicator color={C.accent}/><Text style={s.copy}>Checking Recruitment…</Text></View>:null}
+   <View style={s.between}><Text style={s.headingSmall}>{kind==='groups'?st('Recruiting groups'):st('Available players')}</Text><Text style={s.copy}>{st('{count} results',{count:visible.length})}</Text></View>
+   {loading?<View style={s.loading}><ActivityIndicator color={C.accent}/><Text style={s.copy}>{st('Checking Recruitment…')}</Text></View>:null}
    {!loading&&visible.map(card=><RecruitmentListing key={card.id} card={card} nowMs={nowMs} onPress={()=>onOpen(card)}/>)}
-   {!loading&&!visible.length?<View style={s.empty}><Text style={s.headingSmall}>No matching adverts</Text><Text style={[s.copy,{textAlign:'center'}]}>Try different filters or publish your own advert.</Text><GameButton compact title="Create advert" onPress={createAdvert}/></View>:null}
-   <Text style={s.copy}>Party posts: 1 day · Guild posts: 1–3 days.</Text>
+   {!loading&&!visible.length?<View style={s.empty}><Text style={s.headingSmall}>{st('No matching adverts')}</Text><Text style={[s.copy,{textAlign:'center'}]}>{st('Try different filters or publish your own advert.')}</Text><GameButton compact title={st('Create advert')} onPress={createAdvert}/></View>:null}
+   <Text style={s.copy}>{st('Party posts: 1 day · Guild posts: 1–3 days.')}</Text>
   </>:<>
-   <View style={s.between}><Text style={s.headingSmall}>Your active adverts</Text><GameButton compact title="+ New post" disabled={busy} onPress={createAdvert}/></View>
-   {myPosts.length?myPosts.map(card=><View key={card.id} style={s.post}><View style={s.between}><Text style={[s.headingSmall,s.flex]}>{card.title}</Text><Text style={s.pill}>{card.status==='closed'?'CLOSED':'ACTIVE'}</Text></View><Text style={s.copy}>{card.body}</Text><RecruitmentListing card={card} nowMs={nowMs} onPress={()=>onOpen(card)}/>{card.status!=='closed'?<View style={s.actions}><View style={s.flex}><GameButton compact tone="secondary" title="Refresh" disabled={busy} onPress={()=>onRefresh(card.id)}/></View><View style={s.flex}><GameButton compact tone="secondary" title="Close advert" disabled={busy} onPress={()=>onClose(card.id)}/></View></View>:null}{area==='party'&&card.postType==='party_recruiting'&&card.status!=='closed'&&inParty&&partyLeader&&partyOpenSpots>0&&onInviteFriends?<GameButton compact title="Invite friends" disabled={busy} onPress={onInviteFriends}/>:null}</View>):<View style={s.empty}><Text style={s.headingSmall}>No active adverts</Text><Text style={s.copy}>Create a post to find players.</Text><GameButton compact title="Create advert" onPress={createAdvert}/></View>}
-   <Text style={s.copy}>One active post per type · 6h refresh cooldown.</Text>
+   <View style={s.between}><Text style={s.headingSmall}>{st('Your active adverts')}</Text><GameButton compact title={st('+ New post')} disabled={busy} onPress={createAdvert}/></View>
+   {myPosts.length?myPosts.map(card=><View key={card.id} style={s.post}><View style={s.between}><Text style={[s.headingSmall,s.flex]}>{card.title}</Text><Text style={s.pill}>{card.status==='closed'?st('CLOSED'):st('ACTIVE')}</Text></View><Text style={s.copy}>{card.body}</Text><RecruitmentListing card={card} nowMs={nowMs} onPress={()=>onOpen(card)}/>{card.status!=='closed'?<View style={s.actions}><View style={s.flex}><GameButton compact tone="secondary" title={st('Refresh')} disabled={busy} onPress={()=>onRefresh(card.id)}/></View><View style={s.flex}><GameButton compact tone="secondary" title={st('Close advert')} disabled={busy} onPress={()=>onClose(card.id)}/></View></View>:null}{area==='party'&&card.postType==='party_recruiting'&&card.status!=='closed'&&inParty&&partyLeader&&partyOpenSpots>0&&onInviteFriends?<GameButton compact title={st('Invite friends')} disabled={busy} onPress={onInviteFriends}/>:null}</View>):<View style={s.empty}><Text style={s.headingSmall}>{st('No active adverts')}</Text><Text style={s.copy}>{st('Create a post to find players.')}</Text><GameButton compact title={st('Create advert')} onPress={createAdvert}/></View>}
+   <Text style={s.copy}>{st('One active post per type · 6h refresh cooldown.')}</Text>
   </>}
-  <GameButton compact tone="secondary" title={area==='party'?'Open my Party':'Open Guild'} onPress={area==='party'?onOpenParty:onOpenGuild}/>
+  <GameButton compact tone="secondary" title={area==='party'?st('Open my Party'):st('Open Guild')} onPress={area==='party'?onOpenParty:onOpenGuild}/>
   <GameModalSurface visible={showCreate} presentation="sheet" onClose={()=>setShowCreate(false)}>
-   <GameModalHeader eyebrow="NEW RECRUITMENT POST" title="What are you looking for?" onClose={()=>setShowCreate(false)}/>
-   <View style={s.modalBody}><Text style={s.copy}>Choose a post type.</Text>
-   {options.filter(option=>area==='party'?option.id.includes('party'):option.id.includes('guild')).map(option=><Pressable key={option.id} accessibilityRole="button" accessibilityState={{disabled:!option.enabled}} disabled={!option.enabled||busy} onPress={()=>{setShowCreate(false);onPost(option.id)}} style={({pressed})=>[s.option,!option.enabled&&s.disabled,pressed&&s.pressed]}><View style={s.flex}><Text style={s.headingSmall}>{option.title}</Text><Text style={s.copy}>{option.detail}{!option.enabled?' · Unavailable':''}</Text></View><Text style={s.arrow}>›</Text></Pressable>)}
+   <GameModalHeader eyebrow={st('NEW RECRUITMENT POST')} title={st('What are you looking for?')} onClose={()=>setShowCreate(false)}/>
+   <View style={s.modalBody}><Text style={s.copy}>{st('Choose a post type.')}</Text>
+   {options.filter(option=>area==='party'?option.id.includes('party'):option.id.includes('guild')).map(option=><Pressable key={option.id} accessibilityRole="button" accessibilityState={{disabled:!option.enabled}} disabled={!option.enabled||busy} onPress={()=>{setShowCreate(false);onPost(option.id)}} style={({pressed})=>[s.option,!option.enabled&&s.disabled,pressed&&s.pressed]}><View style={s.flex}><Text style={s.headingSmall}>{option.title}</Text><Text style={s.copy}>{option.detail}{!option.enabled?' · '+st('Unavailable'):''}</Text></View><Text style={s.arrow}>›</Text></Pressable>)}
    </View>
   </GameModalSurface>
  </View>;

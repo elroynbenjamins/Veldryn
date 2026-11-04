@@ -157,11 +157,13 @@ const baseline={
   "apps/mobile/src/components/MonsterMasteryPanel.tsx": [],
   "apps/mobile/src/components/RareDiscoveriesPanel.tsx": []
 };
+const contractDrift=[];
 for(const file of owned){
  const source=fs.readFileSync(path.join(root,file),'utf8');
  const sf=ts.createSourceFile(file,source,ts.ScriptTarget.Latest,true,ts.ScriptKind.TSX);
  assert.equal(sf.parseDiagnostics.length,0,file+' syntax');
- assert.deepEqual(commandContract(source,file),baseline[file],file+' gameplay commands/filters changed');
+ const actualCommands=commandContract(source,file);
+ if(JSON.stringify(actualCommands)!==JSON.stringify(baseline[file]))contractDrift.push({file,expected:baseline[file],actual:actualCommands});
  assert.ok(source.includes('useGameLanguage()'),file+' language hook');
  const walk=node=>{
   if(ts.isJsxAttribute(node)&&['key','testID','accessibilityRole','accessibilityLiveRegion','keyboardShouldPersistTaps','resizeMode','animationType','tone'].includes(node.name.getText(sf))){
@@ -171,4 +173,5 @@ for(const file of owned){
   ts.forEachChild(node,walk);
  };walk(sf);
 }
+assert.deepEqual(contractDrift,[],'Companion gameplay command/filter contracts changed');
 console.log('Companion localization passed: '+keys.length+' keys × 6 languages; placeholders, names, errors, JSX, and gameplay command/filter contracts.');

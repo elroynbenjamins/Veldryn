@@ -57,7 +57,7 @@ export function PartyFriendInviteSheet({visible,partyId,openSpots,pendingAccount
   {loading?<View style={s.loading}><ActivityIndicator color={C.accent}/><Text style={s.hint}>Loading friends…</Text></View>:null}
   {!loading&&rows.length>0?<GameTextInput accessibilityLabel="Search friends for Party invites" placeholder="Search friends" placeholderTextColor={C.muted} value={search} onChangeText={setSearch} style={s.search}/>:null}
   {!!error?<Text accessibilityRole="alert" style={s.error}>{error}</Text>:null}
-  <ScrollView style={s.list} contentContainerStyle={s.listContent} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
+  <ScrollView style={s.list} contentContainerStyle={s.listContent} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false} showsHorizontalScrollIndicator={false}>
    {!loading&&!rows.length?<Text style={s.hint}>No friends yet. Add friends through the Friends screen to invite them privately.</Text>:null}
    {!loading&&rows.length>0&&!shown.length?<Text style={s.hint}>No matching friends.</Text>:null}
    {shown.map(friend=>{
@@ -75,7 +75,7 @@ function makeStyles(C:ThemeColors){return StyleSheet.create({
  hint:{fontSize:11,lineHeight:17,color:C.muted,marginVertical:5},
  status:{fontSize:11,fontWeight:'800',color:C.accent,marginBottom:8},
  search:{minHeight:44,borderRadius:radii.md,borderWidth:1,borderColor:C.line,backgroundColor:C.inputBg,color:C.text,paddingHorizontal:12,marginBottom:8},
- list:{maxHeight:360,minHeight:50},
+ list:{maxHeight:340,minHeight:50,flexShrink:1},
  listContent:{paddingBottom:spacing.sm,gap:4},
  friendRow:{minHeight:62,flexDirection:'row',alignItems:'center',gap:8,borderBottomWidth:StyleSheet.hairlineWidth,borderColor:C.line,paddingVertical:6},
  identity:{flex:1,minWidth:0},

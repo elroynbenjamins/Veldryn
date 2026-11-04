@@ -56,7 +56,7 @@ ok(quest.includes('fallenKnightWeekly.remaining')&&quest.includes('fallenKnightW
 const storyBoss=read('src/components/StoryBossBattleModal.tsx');
 ok(storyBoss.includes('FALLEN KNIGHT')&&storyBoss.includes('{gt("PHASE")} {phase}'),'Story boss playback must surface boss identity and localized live phases');
 ok(storyBoss.includes('bossMaxHp')&&storyBoss.includes('playerMaxHp'),'Story boss playback must keep both HP bars');
-ok(storyBoss.includes('TELEGRAPH')&&storyBoss.includes('Skip fight'),'Story boss playback must surface telegraphs and remain skippable');
+ok(storyBoss.includes('TELEGRAPH')&&!storyBoss.includes('Skip fight')&&storyBoss.includes('onClose={closeAfterBattle}'),'Story boss must show telegraphs with no skip and only close after the full battle');
 ok(storyBoss.includes('slashA')&&storyBoss.includes('spark'),'Story boss playback must retain satisfying slash and particle impact feedback');
 const app=read('App.tsx');
 ok(app.includes('StoryBossBattleModal')&&app.includes('result.storyBossBattle'),'Fallen Knight action must open the returned battle playback instead of reverting to alert-only resolution');

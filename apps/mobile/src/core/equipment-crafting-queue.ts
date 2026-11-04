@@ -15,6 +15,7 @@ import {consumeGemFromStorage,gemStorageQuantity,isGemPouchItemId,storePouchGem}
 import {professionMasteryMultipliers} from './profession-mastery-v40';
 import {applyTrustedLongTermProgression} from './long-term-progression-runtime';
 import {accountEntitlementBenefits} from './account-entitlements';
+import {tryStoreEquipmentInPouch} from './equipment-pouch';
 
 export const BASE_EQUIPMENT_CRAFT_SLOTS=3;
 export const MAX_EQUIPMENT_CRAFT_SLOTS=7;
@@ -268,7 +269,7 @@ function forgeOwnedCopyLocations(state:GameState,itemId:string):CraftedGearReten
       const value=c?.gearEnhancements?.[itemId];
       return !!value&&(value.rank>0||!!value.statGemId||!!value.effectGemId||(value.gemIds?.length??0)>0);
     });
-    const accessible=loc.place==='bank'||loc.place==='inventory'&&loc.holderCharacterId===state.character?.id;
+    const accessible=loc.place==='bank'||['inventory','equipment_pouch'].includes(loc.place)&&loc.holderCharacterId===state.character?.id;
     return {
       instance,location:loc.place==='overflow'?'unknown':loc.place,
       holderCharacterId:loc.holderCharacterId,
@@ -283,17 +284,19 @@ function forgeOwnedCopyLocations(state:GameState,itemId:string):CraftedGearReten
 function craftGearPhysicalCopies(state:GameState,itemId:string){
   const count=(rows:ItemStack[])=>rows.reduce((n,row)=>n+(row.itemId===itemId?row.quantity:0),0);
   const equipped=(equipment:Record<string,string|undefined>)=>Object.values(equipment).filter(id=>id===itemId).length;
-  return count(state.inventory.stacks)+count(state.bank.stacks)+count(state.overflow.stacks)
+  return count(state.inventory.stacks)+count(state.bank.stacks)+count(state.overflow.stacks)+count(state.character?.equipmentPouch?.stacks??[])
     +equipped(state.character?.equipment??{})
-    +(state.otherCharacters??[]).reduce((n,row)=>n+count(row.inventory.stacks)+count(row.overflow.stacks)+equipped(row.character.equipment),0);
+    +(state.otherCharacters??[]).reduce((n,row)=>n+count(row.inventory.stacks)+count(row.overflow.stacks)+count(row.character.equipmentPouch?.stacks??[])+equipped(row.character.equipment),0);
 }
 function deliverExactForgeCopy(state:GameState,itemId:string,instanceId:string,ownerId:string){
   const stack:ItemStack={itemId,quantity:1,instanceId};
+  const stored=tryStoreEquipmentInPouch(state,stack,ownerId);
+  if(stored)return stored;
   const invAllowed=state.character?.id===ownerId&&state.inventory.stacks.length<state.inventory.capacity;
   if(invAllowed)return {...state,inventory:{...state.inventory,stacks:[...state.inventory.stacks,stack]}} as GameState;
   if(state.bank.stacks.length<state.bank.capacity)
     return {...state,bank:{...state.bank,stacks:[...state.bank.stacks,stack]}} as GameState;
-  throw new Error(state.character?.id===ownerId?'Inventory and Bank are full':'Bank is full; free Bank space before claiming this character\'s equipment');
+  throw new Error(state.character?.id===ownerId?'Equipment Pouch, Inventory and Bank are full':'Equipment Pouch and Bank are full; free space before claiming this character\'s equipment');
 }
 function applyForgeSaleCredit(state:GameState,amount:number,destination:'bank'|'character',holder?:string):GameState{
   if(!Number.isSafeInteger(amount)||amount<0)throw new Error('Invalid Forge sale proceeds');
@@ -337,7 +340,7 @@ export function claimForgeJob(state:GameState,jobId:string,nowMs:number,rarityRo
       if(!entries)throw new Error('Equipment copy ownership requires manual review before auto-selling');
       const proposed=proposeCraftedGearSettlement({
         existing:entries,incoming:draft,
-        incomingStorage:next.character?.id===job.ownerCharacterId?'inventory':'bank',
+        incomingStorage:next.character?.id===job.ownerCharacterId?'equipment_pouch':'bank',
         incomingHolderCharacterId:next.character?.id===job.ownerCharacterId?job.ownerCharacterId:undefined,
         mode,committedReceiptKeys:[],
       });
@@ -388,7 +391,7 @@ export function claimAllReadyEquipmentCrafts(state:GameState,nowMs:number,truste
       const reason=error instanceof Error?error.message:'';
       // Keep unclaimable jobs in the queue. They can be claimed after storage is freed
       // or after an obsolete recipe is repaired; never silently delete their rewards.
-      if(reason==='Gem Pouch, Inventory and Bank are full'||reason==='Inventory and Bank are full'||reason.startsWith('Bank is full')||reason==='Crafting recipe is no longer available'||reason.startsWith('Crafted equipment storage is full')||reason.startsWith('Equipment copy limit reached')||reason.startsWith('Equipment copy ownership requires manual review')||reason.startsWith('Equipment requires manual review')){
+      if(reason==='Gem Pouch, Inventory and Bank are full'||reason==='Equipment Pouch, Inventory and Bank are full'||reason.startsWith('Equipment Pouch and Bank are full')||reason==='Inventory and Bank are full'||reason.startsWith('Bank is full')||reason==='Crafting recipe is no longer available'||reason.startsWith('Crafted equipment storage is full')||reason.startsWith('Equipment copy limit reached')||reason.startsWith('Equipment copy ownership requires manual review')||reason.startsWith('Equipment requires manual review')){
         blocked.push({jobId:job.id,reason});
         continue;
       }

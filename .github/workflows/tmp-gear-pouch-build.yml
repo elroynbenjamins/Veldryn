@@ -53,3 +53,5 @@ jobs:
             git commit -m "build(gameplay): sync Equipment Pouch reward routing and gear commands"
             git push origin HEAD:feat/character-equipment-pouch-automatic-rewards
           fi
+
+# Rerun focused pouch validations after correcting fixture level requirements.

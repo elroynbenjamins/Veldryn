@@ -1269,7 +1269,8 @@ export function challengeFallenKnightRematch(state:GameState,nowMs:number):{stat
   const battle=previewFallenKnightBattle(state,nowMs,'rematch'),potionId=state.character.equippedHealingPotionId,stats=effectiveStats(state);
   let inventory=state.inventory.stacks;
   if(battle.potionConsumed&&potionId)inventory=consume(inventory,potionId,battle.potionConsumed);
-  const postFightCharacter={...state.character,currentHp:Math.max(1,Math.min(stats.hp,battle.finalPlayerHp||1))};
+  // One prepared enhancement lasts one boss attempt, not unlimited weekly rematches.
+  const postFightCharacter={...state.character,preparation:undefined,currentHp:Math.max(1,Math.min(stats.hp,battle.finalPlayerHp||1))};
   const attemptMetrics={...(state.account.longTermMetrics??{})};
   attemptMetrics['companions.fallen_knight_rematch_attempts']=(attemptMetrics['companions.fallen_knight_rematch_attempts']??0)+1;
   let next={...state,inventory:{...state.inventory,stacks:inventory},character:postFightCharacter,activity:null,outOfCombatSinceMs:nowMs,account:{...state.account,longTermMetrics:attemptMetrics}} as GameState;
@@ -1310,7 +1311,8 @@ export function challengeFallenKnight(state:GameState,nowMs=Date.now()):{state:G
   const battle=previewFallenKnightBattle(state,nowMs),potionId=state.character.equippedHealingPotionId;
   let inventory=state.inventory.stacks;
   if(battle.potionConsumed&&potionId)inventory=consume(inventory,potionId,battle.potionConsumed);
-  const postFightCharacter={...state.character,currentHp:Math.max(1,Math.min(effectiveStats(state).hp,battle.finalPlayerHp||1))};
+  // One prepared enhancement lasts one boss attempt, not unlimited weekly rematches.
+  const postFightCharacter={...state.character,preparation:undefined,currentHp:Math.max(1,Math.min(effectiveStats(state).hp,battle.finalPlayerHp||1))};
   if(!battle.won){
     const next={...state,inventory:{...state.inventory,stacks:inventory},character:postFightCharacter,activity:null,outOfCombatSinceMs:nowMs} as GameState;
     return {state:next,won:false,battle,message:`Fallen Knight repelled you after ${Math.max(1,Math.round(battle.durationMs/1000))}s. ${battle.potionConsumed?battle.potionConsumed+' healing potions used. ':''}Upgrade gear, improve class progression or select stronger healing potions before the next attempt.`};

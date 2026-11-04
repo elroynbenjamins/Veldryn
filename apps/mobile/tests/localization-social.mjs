@@ -19,13 +19,21 @@ function load(name){
 }
 const {socialTranslationRows,socialCatalogs,socialText,socialLabel,socialExpiry,useSocialText}=load('social');
 const {SUPPORTED_LANGUAGES}=load('languages');
-assert.equal(socialText('ru','Your week'),'Ваша неделя');
-assert.equal(socialText('tr','Your week'),'Bu hafta');
 const {GameLanguageProvider}=load('GameLanguageProvider');
 const keys=Object.keys(socialTranslationRows).sort();
 const placeholders=text=>[...text.matchAll(/\{([a-zA-Z][a-zA-Z0-9_]*)\}/g)].map(match=>match[1]).sort();
 assert.equal(socialText('ru','Your week'),'Ваша неделя');
 assert.equal(socialText('tr','Your week'),'Bu hafta');
+assert.equal(socialText('ru','Boss room'),'Комната босса');
+assert.equal(socialText('tr','Boss room'),'Boss odası');
+assert.equal(socialText('ru','Party ready check'),'Проверка готовности группы');
+assert.equal(socialText('tr','Vote ends in {seconds}s',{seconds:8}),'Oylama 8 sn sonra bitiyor');
+assert.equal(socialText('ru','Enhanced: {charges} charges · {weekly} weekly rewards left',{charges:2,weekly:4}),'Усиленные заряды: 2 · Недельных наград осталось: 4');
+assert.equal(socialText('tr','Your vote is saved. Waiting for your party…'),'Verdiğin oy kaydedildi. Grubun bekleniyor…');
+assert.equal(socialText('ru','A verified Live-ready loadout is required.'),'Нужен подтверждённый набор снаряжения для живого похода.');
+assert.equal(socialText('tr','Update Echo from current gear'),'Yankıyı mevcut ekipmanla güncelle');
+assert.equal(socialText('ru','Boss room'),socialLabel('ru','Boss room'));
+assert.equal(socialText('tr','Room cleared'),'Oda tamamlandı');
 const bossNames={en:'Rootbound Colossus',de:'Wurzelkoloss',es:'Coloso arraigado',nl:'Wortelkolos',it:'Colosso radicato',fr:'Colosse enraciné',ru:'Rootbound Colossus',tr:'Rootbound Colossus'};
 for(const language of SUPPORTED_LANGUAGES){
  assert.deepEqual(Object.keys(socialCatalogs[language]).sort(),keys);

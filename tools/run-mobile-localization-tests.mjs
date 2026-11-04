@@ -13,7 +13,7 @@ run(path.join(app,'node_modules/typescript/lib/tsc.js'),['--noEmit'],app);
 run(path.join(root,'tools/validate-localization-catalogs.mjs'));
 run(path.join(root,'tools/validate-localization-boundaries.mjs'));
 run(path.join(root,'tools/run-mobile-tests.mjs'),['localization','localization-foundation']);
-for(const file of ['account-localization.cjs','localization-creation-profile-focused.mjs','gameplay-localization-focused.mjs','progression-localization.cjs','companions-localization.cjs','coop-ru-tr-localization.cjs','guild-ru-tr-localization.cjs','localization-social.mjs']){
+for(const file of ['account-localization.cjs','localization-creation-profile-focused.mjs','gameplay-localization-focused.mjs','progression-localization.cjs','companions-localization.cjs','coop-ru-tr-localization.cjs','guild-ru-tr-localization.cjs','equipment-metadata-localization.cjs','localization-social.mjs']){
  run(path.join(app,'tests',file),[],app);
 }
 console.log('PASS: mobile localization checks');

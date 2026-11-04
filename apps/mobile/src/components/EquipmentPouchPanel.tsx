@@ -8,6 +8,7 @@ import {itemDef} from '../content/items';
 import {itemRarity,rarityMeta} from '../core/item-rarity';
 import {ItemArtwork} from './ItemArtwork';
 import {GameButton} from './GameButton';
+import {EquipmentPreview} from './EquipmentPreview';
 import {GameModalHeader,GameModalSurface} from './GameModalSurface';
 import {useGameTheme} from '../theme/ThemeContext';
 import {spacing,typography,type ThemeColors} from '../theme/theme';
@@ -19,6 +20,7 @@ export function EquipmentPouchPanel({state,busy=false,onAction}:{state:GameState
  const C=useGameTheme(),s=useMemo(()=>styles(C),[C]);
  const pouch=equipmentPouch(state),upgrade=equipmentPouchUpgradePreview(state);
  const [page,setPage]=useState(0),[selectedIndex,setSelectedIndex]=useState<number|null>(null),[gridWidth,setGridWidth]=useState(300);
+ const [previewStack,setPreviewStack]=useState<ItemStack|null>(null);
  const columns=gridWidth>=600?8:gridWidth>=440?6:gridWidth>=345?5:4;
  const slotWidth=Math.max(54,Math.floor((gridWidth-(columns-1)*5)/columns));
  const pages=Math.max(1,Math.ceil(Math.max(pouch.capacity,pouch.stacks.length)/PAGE_SIZE)),shownPage=Math.min(page,pages-1),start=shownPage*PAGE_SIZE;
@@ -55,6 +57,12 @@ export function EquipmentPouchPanel({state,busy=false,onAction}:{state:GameState
   {pages>1?<View style={s.paging}><GameButton compact title="Previous" tone="secondary" disabled={shownPage===0} onPress={()=>{setSelectedIndex(null);setPage(value=>Math.max(0,value-1))}}/><Text style={s.meta}>{shownPage+1}/{pages}</Text><GameButton compact title="Next" tone="secondary" disabled={shownPage>=pages-1} onPress={()=>{setSelectedIndex(null);setPage(value=>Math.min(pages-1,value+1))}}/></View>:null}
   <View style={s.upgrade}><View style={s.flex}><Text style={s.itemName}>{upgrade?'Next: '+upgrade.capacity+' slots':'Maximum capacity reached'}</Text>{upgrade?<Text style={s.meta}>Level {upgrade.level} · {upgrade.cost.toLocaleString()} Gold</Text>:null}</View>
     <GameButton compact title={upgrade?'Upgrade':'Maxed'} tone="secondary" disabled={!canUpgrade||!onAction} onPress={()=>onAction?.({type:'equipment_pouch_upgrade'})}/></View>
+  <EquipmentPreview state={state} itemId={previewStack?.itemId??null} instanceId={previewStack?.instanceId} source="equipment_pouch" onClose={()=>setPreviewStack(null)} onEquip={async()=>{
+    if(!previewStack||!onAction)throw new Error('Equipment Pouch equip is unavailable');
+    const result=await onAction(previewStack.instanceId?{type:'gear_equip',args:{instanceId:previewStack.instanceId}}:{type:'equipment_pouch_equip',args:{itemId:previewStack.itemId}});
+    if(result===false)throw new Error('Equipment was not equipped. Please try again.');
+    setPreviewStack(null);
+   }}/>
   <GameModalSurface visible={!!selected} reduceMotion={state.settings.reduceMotion} onClose={()=>setSelectedIndex(null)} backdropLabel="Close Equipment Pouch details" surfaceStyle={s.modal}>
    <GameModalHeader eyebrow="EQUIPMENT · CHARACTER STORAGE" title={item?.name??'Equipment'} onClose={()=>setSelectedIndex(null)}/>
    {selected&&item?<ScrollView contentContainerStyle={s.details} showsVerticalScrollIndicator={false} showsHorizontalScrollIndicator={false}>
@@ -64,8 +72,7 @@ export function EquipmentPouchPanel({state,busy=false,onAction}:{state:GameState
       {record?<Text style={s.meta}>{record.locked?'Locked · ':''}{record.enhancement.rank>0?'+'+record.enhancement.rank+' enhanced · ':''}Unique forged copy</Text>:<Text style={s.meta}>Standard equipment</Text>}</View>
     </View>
     <View style={s.actions}>
-     {record?<GameButton compact title="Equip" disabled={!onAction||busy} onPress={()=>send({type:'gear_equip',args:{instanceId:record.id}})}/>
-       :<GameButton compact title="Equip" disabled={!onAction||busy} onPress={()=>send({type:'equipment_pouch_equip',args:{itemId:item.id}})}/>}
+     <GameButton compact title="Compare & Equip" disabled={!onAction||busy} onPress={()=>{setPreviewStack(selected);setSelectedIndex(null)}}/>
      <GameButton compact tone="secondary" title="To Inventory" disabled={!onAction||busy} onPress={()=>move('inventory')}/>
      <GameButton compact tone="secondary" title="To Bank" disabled={!onAction||busy} onPress={()=>move('bank')}/>
      {record?<GameButton compact tone="secondary" title={record.locked?'Unlock':'Lock'} disabled={!onAction||busy} onPress={()=>send({type:'gear_lock',args:{instanceId:record.id,locked:!record.locked}})}/>:null}

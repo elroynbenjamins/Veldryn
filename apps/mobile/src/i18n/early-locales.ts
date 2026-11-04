@@ -1993,6 +1993,58 @@ export const EARLY_LOCALE_ROWS={
   "Member": [
     "Участник",
     "Üye"
+  ],
+  "Restores {percent}% maximum HP in boss fights or between dungeon rooms.": [
+    "Восстанавливает {percent}% максимального здоровья в бою с боссом или между комнатами подземелья.",
+    "Boss savaşında veya zindan odaları arasında azami canın %{percent} kadarını yeniler."
+  ],
+  "Deals {percent}% more damage for {count} ordinary encounters.": [
+    "Урон +{percent}% на {count} обычных боёв.",
+    "{count} normal karşılaşma boyunca %{percent} daha fazla hasar verir."
+  ],
+  "Takes {percent}% less damage for {count} ordinary encounters.": [
+    "Получаемый урон −{percent}% на {count} обычных боёв.",
+    "{count} normal karşılaşma boyunca alınan hasarı %{percent} azaltır."
+  ],
+  "+{damage}% damage · +{strength}% healing and shielding for {count} ordinary encounters.": [
+    "Урон +{damage}% · Лечение и щиты +{strength}% на {count} обычных боёв.",
+    "{count} normal karşılaşma boyunca hasar +%{damage} · İyileştirme ve kalkanlar +%{strength}."
+  ],
+  "Healing potions work in boss fights and between dungeon rooms. Food is disabled there. Choose a potion from the HP menu.": [
+    "Лечебные зелья используются в боях с боссами и между комнатами подземелий. Еда там не лечит. Выберите зелье в меню здоровья.",
+    "İyileştirme iksirleri boss savaşlarında ve zindan odaları arasında kullanılabilir. Yiyecek orada iyileştirmez. İksiri Can menüsünden seç."
+  ],
+  "Restores {hp} HP per food": [
+    "Восстанавливает {hp} здоровья за порцию",
+    "Porsiyon başına {hp} can yeniler"
+  ],
+  "Equipment infusion material": [
+    "Материал для улучшения снаряжения",
+    "Ekipman infüzyon malzemesi"
+  ],
+  "Lv {level}": [
+    "Ур. {level}",
+    "Sv. {level}"
+  ],
+  "A dewleaf resin that binds early regional gear.": [
+    "Смола из росолиста для начального регионального снаряжения.",
+    "Başlangıç bölge ekipmanları için çiy yaprağı reçinesi."
+  ],
+  "A crystalline solvent for Oathstone-era gear.": [
+    "Кристаллический растворитель для снаряжения эпохи Клятвенного камня.",
+    "Yemin Taşı dönemi ekipmanları için kristal çözücü."
+  ],
+  "A heat-stable fixative for Sunscar equipment.": [
+    "Термостойкий закрепитель для снаряжения Санскара.",
+    "Sunscar ekipmanları için ısıya dayanıklı sabitleyici."
+  ],
+  "A frostbound distillate for Frostmarch equipment.": [
+    "Морозный дистиллят для снаряжения Фростмарша.",
+    "Frostmarch ekipmanları için buzla güçlendirilmiş distilat."
+  ],
+  "A volatile Ashlands elixir for capstone equipment.": [
+    "Нестабильный эликсир Эшлендса для лучшего снаряжения.",
+    "Üst seviye ekipmanlar için uçucu Ashlands iksiri."
   ]
 } satisfies Record<string,readonly [string,string]>;
 

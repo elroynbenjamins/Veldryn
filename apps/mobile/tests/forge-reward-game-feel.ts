@@ -37,8 +37,8 @@ ok(read('src/components/ActionFeedback.tsx').includes('message.lastIndexOf(highl
   'Shared feedback must highlight the exact rarity text, while the rest of the message remains readable');
 ok(feedback.includes("best?.rarity==='mythic'?1.085:1.045")&&feedback.includes('borderWidth:best?.rarity===\'mythic\'?3:2'),
   'Mythic results must receive a stronger, reduced-motion-aware reveal treatment than Legendary');
-ok(!feedback.includes('result.duplicateCount')&&!feedback.includes('Crafted copy #')&&!feedback.includes(' · copy ${result.duplicateCount+1}')&&feedback.includes('Added to inventory'),
-  'Forge claim feedback must not expose numbered equipment copy labels');
+ok(!feedback.includes('result.duplicateCount')&&!feedback.includes('Crafted copy #')&&!feedback.includes(' · copy ${result.duplicateCount+1}')&&feedback.includes('Equipment Pouch first')&&!feedback.includes('Added to inventory'),
+  'Forge claim feedback must show pouch-first storage and avoid numbered equipment copy labels');
 ok(feedback.includes('useWindowDimensions')&&feedback.includes("stackActions=width<360||fontScale>=1.25"),'Exceptional Forge result actions must adapt to narrow phones and large text');
 ok(feedback.includes('actionsStack')&&feedback.includes("actionStack:{flex:0,width:'100%'}"),'Exceptional Forge result actions must stack full-width instead of squeezing');
 

@@ -6804,6 +6804,7 @@ export const socialTranslationRows = {
  "What would you like to do together?": ["Was möchtet ihr gemeinsam unternehmen?","¿Qué os gustaría hacer juntos?","Wat willen jullie samen doen?","Cosa vorreste fare insieme?","Que souhaitez-vous faire ensemble ?"],
  "Expires automatically after 24 hours": ["Läuft nach 24 Stunden automatisch ab","Caduca automáticamente después de 24 horas","Verloopt automatisch na 24 uur","Scade automaticamente dopo 24 ore","Expire automatiquement après 24 heures"],
  "Publish recruitment post": ["Rekrutierungsbeitrag veröffentlichen","Publicar anuncio de reclutamiento","Wervingsbericht plaatsen","Pubblica annuncio di reclutamento","Publier l’annonce de recrutement"],
+ "Active play": ["Aktives Spielen","Juego activo","Actief spelen","Gioco attivo","Jeu actif"],
 } as const satisfies Record<string,readonly [string,string,string,string,string]>;
 export type SocialMessageKey=keyof typeof socialTranslationRows;
 export const socialCatalogs=Object.fromEntries(SUPPORTED_LANGUAGES.map((language,index)=>[

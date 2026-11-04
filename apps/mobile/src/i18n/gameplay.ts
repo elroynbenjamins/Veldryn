@@ -769,7 +769,7 @@ function catalogsFor<const R extends Record<string,TranslationRow>>(rows:R):Reco
   const result={} as Record<Language,Record<keyof R,string>>;
   SUPPORTED_LANGUAGES.forEach((language,index)=>{
     const catalog={} as Record<keyof R,string>;
-    for(const key of Object.keys(rows) as Array<keyof R>)catalog[key]=rows[key][index];
+    for(const key of Object.keys(rows) as Array<keyof R>)catalog[key]=rows[key][index]??rows[key][0];
     result[language]=catalog;
   });
   return result;

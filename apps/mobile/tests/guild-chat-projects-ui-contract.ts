@@ -12,6 +12,7 @@ const onlineProjects=read('src/components/OnlineGuildProjectsPanel.tsx');
 const progress=read('src/components/GuildProgressPanel.tsx');
 const skillPaths=read('src/components/GuildSpecializationPaths.tsx');
 const onlineSkills=read('src/components/OnlineGuildSkillsPanel.tsx');
+const skillsClient=read('src/online/guild-skills.ts');
 const guides=read('src/components/SectionGuide.tsx');
 const hall=read('src/components/OnlineGuildHallPanel.tsx');
 const projectClient=read('src/online/guild-projects-v18.ts');
@@ -78,6 +79,7 @@ ok(guildScreen.includes("next==='Skills'")&&guildScreen.includes("setProgressTab
 ok(skillPaths.includes('<Modal visible={review}')&&skillPaths.includes('Confirm upgrade')&&skillPaths.includes('Cancel'),'Guild Skill upgrades must use a real dismissal-safe confirmation modal');
 ok(skillPaths.includes('const ready=known&&released&&canUpgrade')&&skillPaths.includes('disabled={!ready}'),'Release, role, points and materials must gate confirmations');
 ok(onlineSkills.includes('isReleased={id=>releasedIds.has(id)}')&&onlineSkills.includes('upgradeFlight.current'),'Live skill upgrade must retain server flags and single-flight protection');
+ok(skillsClient.includes("import {versionedFetch as fetch} from './versioned-fetch';")&&skillsClient.includes('view=guild-skills')&&skillsClient.includes('view=guild-skills&action=upgrade'), 'Guild Skills GET and upgrade must use the same versioned Edge transport as Guild Shop; missing headers are rejected by the live 1.0.5 release gate');
 ok(guides.includes("placement==='header'")&&guides.includes('accessibilityViewIsModal'),'Header tutorials must use an accessible compact modal while preserving card guides');
 ok(guildScreen.includes('placement="header"')&&guildScreen.includes('action={headerGuide}')&&progress.includes('headerHelp?:ReactNode')&&hall.includes('headerHelp?:ReactNode'),'Guild section help must live in relevant headings rather than a standalone question row');
 ok(onlineSkills.includes("error==='app_update_required'")&&onlineSkills.includes('openStoreListing()'),'Outdated Guild Skills clients must receive a safe Android update action');

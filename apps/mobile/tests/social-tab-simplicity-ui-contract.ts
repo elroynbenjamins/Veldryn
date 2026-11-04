@@ -36,12 +36,16 @@ ok(shared.includes('shouldShowPartyChat(social.party,social.accountId)')&&shared
 ok(shared.includes('<PartyCreateSheet')&&shared.includes('savePartyPreferences')&&shared.includes('idempotencyKey:key(\'create:\'+activityLevel+\':\'+partyLanguage+\':\'+minimumLevel)'),'Party creation must use the activity/language/level sheet and preserve idempotent backend creation');
 const createPartySheet=read('src/components/PartyCreateSheet.tsx');
 const partyPostComposer=read('src/components/PartyRecruitmentComposer.tsx');
+const recruitmentFilters=read('src/components/RecruitmentFiltersPanel.tsx');
+const recruitmentListing=read('src/components/RecruitmentListing.tsx');
 const partyBackend=read('src/online/party-social.ts');
 ok(createPartySheet.includes('partyActivityLabel')&&createPartySheet.includes('PARTY_LANGUAGES')&&createPartySheet.includes('minimumLevel'),'Party creation must offer activity, language and optional level');
 ok(!createPartySheet.includes('Your role')&&!createPartySheet.includes('Party focus'),'Persistent Party creation must not require dungeon roles');
 ok(partyPostComposer.includes('roles:[]')&&partyPostComposer.includes('minCombatLevel:recruiting?(prefs.minimumLevel||undefined):undefined')&&partyPostComposer.includes('activityLevel:advertActivityLevel'),'Party adverts use selected activity and inherit only relevant Party restrictions without roles');
 ok(["casual","regular","active","hardcore"].every(level=>partyPostComposer.includes("id:'"+level+"'"))&&partyPostComposer.includes('How active are you?')&&partyPostComposer.includes('How active is your Party?'),'Recruitment advert activity selector exposes all four authorized levels for LFG and LFM');
 ok(!partyPostComposer.includes('More options')&&!partyPostComposer.includes('Main activity')&&!partyPostComposer.includes("const activities="),'Old advanced controls and main activity dropdown are removed');
+ok(recruitmentFilters.includes("['casual','regular','active','hardcore'] as RecruitmentActivityLevel[]")&&!recruitmentFilters.includes("partyMode?['casual','active','hardcore']"),'Party Recruitment filters must offer all four activity levels');
+ok(recruitmentListing.includes("card.activityLevel==='regular'?'Regular'")&&recruitmentListing.includes("card.activityLevel==='hardcore'?'Tryhard'"),'Recruitment cards distinguish Regular, Active and Tryhard correctly');
 ok(partyPostComposer.includes('activityKind:undefined,goal:undefined,startMode:undefined,scheduledAt:undefined'),'Unused old advert metadata is not published');
 ok(party.includes("if(props.dedicated){props.onOpenRecruitment?.();}else{setBrowseMode('players');setSection('find');}}} style={({pressed})=>[s.emptySlots"),'The empty Party slot Recruit action must open the dedicated Recruitment route rather than a hidden embedded section');
 ok(shared.includes('PartyRecruitmentComposer')&&shared.includes("post('party_recruiting')"),'Party creation can continue directly to simplified recruiting');

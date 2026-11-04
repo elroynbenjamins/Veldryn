@@ -40,6 +40,11 @@ jobs:
           node .core-build/apps/mobile/tests/gem-pouch.js
           node .core-build/apps/mobile/tests/character-delete-management.js
           node tests/storage-dungeon-refinement-ui.cjs
+          node tests/online-loading-interactions.cjs
+          node .core-build/apps/mobile/tests/v40-idle-rule-boundaries.js
+          node .core-build/apps/mobile/tests/combat-presentation.js
+          node .core-build/apps/mobile/tests/ui-feedback-microinteraction-contract.js
+          node ../../tools/validate-scroll-indicators.mjs
       - name: Refresh latest branch after tests, before generating the bundle
         run: |
           git fetch origin feat/character-equipment-pouch-automatic-rewards

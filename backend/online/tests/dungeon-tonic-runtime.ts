@@ -66,7 +66,7 @@ async function main(){
   'revision=revision+1',
   'grant execute on function public.consume_online_coop_preparation_tonic_server_v1',
  ])assert.ok(sql.includes(clause),'missing SQL safeguard: '+clause);
- assert.ok(!/grant execute on function public\\.consume_online_coop_preparation_tonic_server_v1[^;]*to\\s+(?:public|anon|authenticated)/i.test(sql),'service role only');
+ assert.ok(!/grant execute on function public\.consume_online_coop_preparation_tonic_server_v1[^;]*to\s+(?:public|anon|authenticated)/i.test(sql),'service role only');
  console.log('PASS tonic endpoint, server-calculated effects, one-use lock and atomic ledger contract');
 }
 void main();

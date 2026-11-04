@@ -1,4 +1,4 @@
-import {createCharacter,effectiveStats,newGame,previewActivityReward,salvageItem,sellItem,sellBankItem,startCombat} from '../src/core/game';
+import {createCharacter,effectiveStats,equipItem,newGame,previewActivityReward,salvageItem,sellItem,sellBankItem,startCombat} from '../src/core/game';
 import {attemptEquipmentUpgrade,equippedEffectGemBonuses,gearEnhancement,gearStatsAtRank,gemSocketCapacity,normalizeEnhancementGemSlots,socketGem,unsocketGem,upgradeQuote} from '../src/core/equipment-enhancement';
 import {V33_EQUIPMENT_RECIPES} from '../src/content/equipment-recipes-v33';
 import {itemDef} from '../src/content/items';

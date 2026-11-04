@@ -23,7 +23,7 @@ export const companionDynamicRows={
   "Train {skill}": [
     "{skill} trainieren",
     "Entrenar {skill}",
-    "Train {skill}",
+    "Oefen {skill}",
     "Allena {skill}",
     "Entraîner {skill}",
     "Развивать {skill}",

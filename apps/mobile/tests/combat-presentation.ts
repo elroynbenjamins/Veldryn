@@ -56,7 +56,7 @@ const healedRepeat={...repeat.state,character:{...repeat.state.character!,curren
 const repeat2=challengeFallenKnight(healedRepeat,222224);
 const healedAgain={...repeat2.state,character:{...repeat2.state.character!,currentHp:repeat2.state.character!.hp}};
 const repeat3=challengeFallenKnight(healedAgain,222225);
-if(!repeat2.won||!repeat2.battle||!repeat3.won||!repeat3.battle||repeat3.state.account.fallenKnightWeekly?.rewardedClears!==3)throw new Error('All three weekly victories must retain battle playback and consume exactly three weekly clears');
+if(!repeat2.won||!repeat2.battle||!repeat3.won||!repeat3.battle||repeat3.state.account.fallenKnightWeekly?.rewardedClears!==3)throw new Error('All three weekly victories must retain battle playback and consume exactly three weekly clears: '+JSON.stringify({wins:[repeat.won,repeat2.won,repeat3.won],battles:[!!repeat.battle,!!repeat2.battle,!!repeat3.battle],clears:repeat3.state.account.fallenKnightWeekly?.rewardedClears,remainingHp:[repeat.state.character?.currentHp,repeat2.state.character?.currentHp,repeat3.state.character?.currentHp]}));
 let capped=false;try{challengeFallenKnight(repeat3.state,222226)}catch(error){capped=error instanceof Error&&error.message.includes('weekly rematches are complete');}
 if(!capped)throw new Error('Three weekly rematch victories must enforce the existing weekly cap');
 const fs=require('fs') as {readFileSync:(path:string,encoding:string)=>string};

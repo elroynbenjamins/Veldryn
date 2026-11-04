@@ -1,5 +1,6 @@
 import type {GatherDef} from '../content/skills';
 import {HERBALISM_ESSENCE_BY_ZONE} from '../content/herbalism';
+import {MINING_ESSENCE_BY_ZONE} from '../content/mining-essence';
 import {CORE_PET_COLLECTIBLES} from '../content/core-pets';
 import {itemDef} from '../content/items';
 import {corePetActivityDropsForSource} from './core-pet-drops';
@@ -36,6 +37,13 @@ export function gatheringDropPreview(activity:GatherDef,state:GameState,nowMs=Da
   rows.push({
    id:`pet:${rule.petId}`,kind:'pet',name:pet.name,petId:pet.id,chance:rule.chance,
    owned:owned.has(pet.id),locked:!petsUnlocked,
+  });
+ }
+ if(activity.skillId==='mining'){
+  const essence=MINING_ESSENCE_BY_ZONE[activity.zoneId];
+  if(essence)rows.push({
+   id:`essence:${essence.itemId}`,kind:'essence',name:itemDef(essence.itemId).name,
+   itemId:essence.itemId,chance:essence.baseChance,
   });
  }
  if(activity.skillId==='herbalism'){

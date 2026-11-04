@@ -50,7 +50,11 @@ const milestoneState={...claimed.state,account:{...claimed.state.account,compani
 const milestoneRoadmap=companionProgressionRoadmap(milestoneState,'UNIT_008');
 equal(milestoneRoadmap?.power.find(step=>step.id==='ascension-1')?.status,'ready','level 10 marks Ascension I ready');
 equal(milestoneRoadmap?.bond.find(step=>step.id==='bond-6')?.status,'ready','reached unclaimed Bond reward is visibly ready');
-ok(milestoneRoadmap?.bond.find(step=>step.id==='bond-6')?.reward.includes('Bond Resonance'),'Bond 6 roadmap names its meaningful reward');
+ok(milestoneRoadmap?.bond.find(step=>step.id==='bond-2')?.reward==='20 Essence','Bond 2 displays only its real Essence reward');
+ok(milestoneRoadmap?.bond.find(step=>step.id==='bond-4')?.reward==='35 Essence','Bond 4 no longer promises a portrait');
+ok(milestoneRoadmap?.bond.find(step=>step.id==='bond-6')?.reward==='55 Essence','Bond 6 does not promise nonexistent resonance');
+ok(milestoneRoadmap?.bond.find(step=>step.id==='bond-8')?.reward==='80 Essence','Bond 8 no longer promises a title');
+ok(milestoneRoadmap?.bond.find(step=>step.id==='bond-10')?.reward.startsWith('Bond Trait · '),'Bond 10 still presents its unique trait');
 
 const attention=companionAttentionSummary(milestoneState,30_000);
 ok(attention.hasAttention,'reached Companion milestones consolidate into a player-facing attention signal');

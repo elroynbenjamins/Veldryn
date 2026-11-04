@@ -27,7 +27,7 @@ ok(equipmentPouch(transferred).stacks.filter(row=>row.itemId===output).length===
  'Manual legacy equipment transfer must preserve exactly one physical copy');
 const back=moveLegacyEquipmentPouchStack(transferred,output,1,'inventory','equipment_pouch');
 ok(equipmentPouch(back).stacks.filter(row=>row.itemId===output).length===2,'Manual character storage movement must be reversible');
-const legacyEquipped=executeGameCommand(back,{type:'equipment_pouch_equip',args:{itemId:output}},1002).state;
+const legacyEquipped=executeGameCommand({...back,character:{...back.character!,level:100}},{type:'equipment_pouch_equip',args:{itemId:output}},1002).state;
 ok(legacyEquipped.character?.equipment[itemDef(output).slot!]===output&&equipmentPouch(legacyEquipped).stacks.filter(row=>row.itemId===output).length===1,'Legacy equipment can be equipped directly from its character pouch');
 let noGearFromPouch=false;try{moveLegacyEquipmentPouchStack(back,gem.id,1,'equipment_pouch','bank')}catch{noGearFromPouch=true}
 ok(noGearFromPouch,'Equipment Pouch must not accept gems or arbitrary materials');

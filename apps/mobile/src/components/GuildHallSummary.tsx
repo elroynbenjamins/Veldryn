@@ -156,8 +156,9 @@ export function GuildHallSummary({onOpenMuster,onOpenShop,onRewardsChanged,compa
    </View>
    {claims.length>1?<GameButton compact title={busyAll?'Claiming…':'Claim all '+claims.length+' rewards'} disabled={!!busy} loading={busyAll} onPress={()=>void claimAll()}/>:null}
    {claims.slice(0,claims.length>1?0:1).map(row=><View key={row.id} style={s.compactClaim}><Text numberOfLines={2} style={[s.claimTitle,s.flex]}>{row.title} · +{row.tokens}</Text><GameButton compact title="Claim" disabled={!!busy} loading={busy===row.id} onPress={()=>void claim(row)}/></View>)}
-   {notice?<Text accessibilityLiveRegion="polite" style={s.notice}>{notice}</Text>:null}
+   {notice?<Text accessibilityLiveRegion="polite" style={[s.notice,{color:noticeError?C.bad:C.good}]}>{notice}</Text>:null}
    <GameButton compact tone="secondary" title="Guild Token Shop" onPress={onOpenShop}/>
+   {dailyActions}
   </Panel>
  </View>;
 
@@ -213,8 +214,9 @@ export function GuildHallSummary({onOpenMuster,onOpenShop,onRewardsChanged,compa
     <GameButton compact title="Claim" loading={busy===row.id} disabled={!!busy} onPress={()=>void claim(row)}/>
    </View>)}
    {!claims.length&&shop?<Text style={s.copy}>Earn Tokens through daily Muster, Guild Projects and Guild bosses. New rewards appear here to claim.</Text>:null}
-   {notice?<Text style={s.notice}>{notice}</Text>:null}
+   {notice?<Text accessibilityLiveRegion="polite" style={[s.notice,{color:noticeError?C.bad:C.good}]}>{notice}</Text>:null}
    <GameButton compact tone="secondary" title="Open Guild Token Shop" onPress={onOpenShop}/>
+   {dailyActions}
   </Panel>
  </View>;
 }
@@ -257,4 +259,16 @@ function makeStyles(C:ThemeColors){return StyleSheet.create({
  claimMeta:{fontSize:12,color:C.muted,marginTop:1},
  amt:{color:C.accent,fontWeight:'900'},
  notice:{fontSize:12.5,color:C.good,fontWeight:'700'},
+ dailySection:{gap:7,marginTop:4},
+ dailyHead:{flexDirection:'row',alignItems:'center',justifyContent:'space-between',gap:8},
+ dailyHeading:{...typography.caption,color:C.muted,fontWeight:'900',letterSpacing:.65},
+ refresh:{minHeight:32,minWidth:55,paddingHorizontal:5,alignItems:'center',justifyContent:'center'},
+ refreshText:{fontSize:11,fontWeight:'800'},
+ dailyPair:{flexDirection:'row',gap:8},
+ dailyTile:{flex:1,minWidth:0,minHeight:92,borderWidth:1,borderRadius:10,paddingVertical:10,paddingHorizontal:5,alignItems:'center',justifyContent:'center',gap:3},
+ dailyTilePressed:{opacity:.8},
+ dailyTitle:{fontSize:13,lineHeight:18,fontWeight:'900',textAlign:'center'},
+ dailyAmount:{fontSize:13,lineHeight:19,fontWeight:'900',textAlign:'center'},
+ dailyState:{fontSize:10.5,lineHeight:15,fontWeight:'800',textAlign:'center'},
+ dailyFootnote:{fontSize:10.5,lineHeight:15,color:C.muted},
 });}

@@ -32,6 +32,24 @@ assert(panel.includes('disabled={busy||!trainingDue}')&&panel.includes('disabled
 // Existing progression and mission validation must survive layout simplification.
 assert(training.includes('costBreakdown(model.nextLevelCost)'),'Training must show resource cost before upgrading');
 assert(training.includes('resourceId:"bondstones"'),'Training must display a Bondstone icon when required');
+
+// Companion Training has two equal-width, translation-friendly actions on the
+// first row, with Materials & Ascension on its own full-width second row.
+const growthStart=training.indexOf('<View style={s.growthGrid}>');
+const growthEnd=training.indexOf('   </View>:null}',growthStart);
+assert(growthStart>=0&&growthEnd>growthStart,'Companion growth actions must be visible for owned companions');
+const growthActions=training.slice(growthStart,growthEnd);
+assert(growthActions.includes('<View style={s.growthPair}>'),'Bond and Abilities must share a dedicated horizontal row');
+assert(growthActions.includes("['Bond',t('Bond')")&&growthActions.includes("['Skills',t('Abilities & Techniques')"),'Bond and Abilities must remain equally sized actions');
+assert(growthActions.includes('s.growthTile,s.growthHalfTile'),'The first-row buttons must use equal flex widths');
+assert(growthActions.includes('s.growthTile,s.growthTileWide'),'Materials & Ascension needs its own full-width button');
+assert(growthActions.includes("setTab('Materials')")&&growthActions.includes('setTab(key)'),'All three actions must retain working modal navigation');
+assert(growthActions.includes('accessibilityRole="button"')&&growthActions.includes("accessibilityLabel={t('Materials & Ascension')"),'Growth buttons must retain accessible names and button semantics');
+assert(training.includes("growthPair:{flexDirection:'row',alignItems:'stretch',gap:8}")&&training.includes('growthHalfTile:{flex:1,minWidth:0}'),'First row must be 50/50 with an 8px gap and avoid forced minimum widths');
+assert(training.includes("growthTileWide:{width:'100%',minHeight:56"),'Ascension action must occupy 100% width below the pair');
+assert(training.includes('growthTitle:{fontSize:12,lineHeight:17')&&training.includes('flexShrink:1'),'Long translated labels must wrap without forcing tiles to overflow');
+assert(!training.includes("flexBasis:'28%'")&&!training.includes("flexBasis:'38%'"),'Legacy three-column flex basis must not compete for narrow phone width');
+
 for(const title of ['Mission Board','Prepare Expedition','Prepare Team','Expedition Supplies'])assert(expedition.includes(title),'Missing expedition section '+title);
 assert(expedition.includes("activeCompanionMissions(now)"),'Mission board must use the active weekly rotation');
 assert(expedition.includes('companionExpeditionPenCapacity(pens)'),'Expedition slots must reflect sanctuary upgrades');

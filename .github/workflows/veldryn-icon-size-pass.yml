@@ -76,7 +76,19 @@ jobs:
             exit 0
           fi
           git commit -m 'perf(mobile): losslessly optimize Trial, Guild and resource icons'
-          git push origin HEAD:main
+          # Main can advance while the lossless image verification runs.
+          # Never force-push: replay the image-only changes on top of current main,
+          # and fail closed if any newer gameplay edits conflict.
+          for attempt in 1 2 3; do
+            git fetch origin main
+            git rebase origin/main
+            if git push origin HEAD:main; then
+              exit 0
+            fi
+            echo "Main advanced during push (attempt $attempt); retrying safely."
+          done
+          echo 'Main continued changing; icon commit was not pushed.' >&2
+          exit 1
       - name: Publish optimization results
         run: |
           python3 - <<'PY' >> "$GITHUB_STEP_SUMMARY"

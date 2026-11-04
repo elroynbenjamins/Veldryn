@@ -44,7 +44,7 @@ assert.equal(ct('tr','browse.regionProgress',{available:2,total:5}),'Açık: 2/5
 assert.equal(clt('ru','missing_tank_capability'),'Требуются навыки удержания угрозы и защиты.');
 assert.equal(clt('tr','verification_pending'),'Sunucu doğrulaması devam ediyor.');
 assert.equal(dungeonText('ru','Find Party'),'Найти группу');
-assert.equal(dungeonText('tr','Prepare expedition'),'Sefere hazırlan');
+assert.equal(dungeonText('tr','Prepare expedition'),'Seferi hazırla');
 assert.equal(dungeonText('de','Start Dungeon'),'Dungeon starten','Preserve existing German copy');
 assert.equal(dungeonText('nl','Recommended power'),'Aanbevolen kracht','Preserve existing Dutch copy');
 assert.equal(coopPolicyText('ru','durationValue'),'6–8 минут');

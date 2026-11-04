@@ -45,6 +45,8 @@ export interface CharacterState {
   /** One character-bound gathering tool per skill. Equipped tools are removed from Inventory. */
   equippedToolIds?:Partial<Record<GatheringSkillId,string>>;
   equippedFoodId?:string;
+  /** Character-bound boss healing potion; selected in the HP menu, consumed only in eligible boss battles. */
+  equippedHealingPotionId?:string;
   bodyPresentation?:BodyPresentation;
   craftedNoviceItemIds?:string[]; profileTitle?:string; profileBackgroundId?:string; profileBorderId?:string; selectedCosmeticPetId?:string;
   /** Permanently collected pets that provide permanent boosts. */

@@ -14,6 +14,7 @@ import {normalizeMonsterMastery} from './monster-mastery';
 import {normalizeClassSkills,normalizeTrainingFocus,normalizeClassDrills} from './class-skills';
 import {normalizeFaith} from './faith';
 import {normalizeAlchemyBatch} from './alchemy';
+import {potionDef} from '../content/alchemy';
 import {normalizeProcessingBatch} from './processing';
 import {normalizeMealBuff} from './meal-buffs';
 import {normalizeCollectionPreferences} from './collection-preferences';
@@ -106,7 +107,8 @@ export function normalizeSave(input:any):GameState{
     ownedBoostIds:legacyPetOwnership?undefined:Array.isArray(input.character.ownedBoostIds)?[...new Set(input.character.ownedBoostIds.filter((id:unknown)=>typeof id==='string'))]:[],
     gearEnhancements,
     currentHp:Math.max(1,Number(input.character.currentHp ?? input.character.hp ?? classDef?.hp ?? 100)),
-    equippedFoodId:input.character.equippedFoodId
+    equippedFoodId:input.character.equippedFoodId,
+    equippedHealingPotionId:potionDef(input.character.equippedHealingPotionId)?.effect.kind==='healing'?input.character.equippedHealingPotionId:undefined
     ,profileTitle:typeof input.character.profileTitle==='string'&&input.character.profileTitle.trim()?input.character.profileTitle.trim():'New Adventurer'
     ,profileBackgroundId:typeof input.character.profileBackgroundId==='string'&&input.character.profileBackgroundId.trim()?input.character.profileBackgroundId:'asterfall-night'
     ,profileBorderId:typeof input.character.profileBorderId==='string'&&input.character.profileBorderId.trim()?input.character.profileBorderId:undefined

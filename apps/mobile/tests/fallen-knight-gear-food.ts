@@ -2,7 +2,7 @@ import {assert} from './test-assert';
 import {CLASSES} from '../src/content/classes';
 import {effectiveStats,fallenKnightGearReadiness,previewFallenKnightBattle} from '../src/core/game';
 import {REGIONAL_COMBAT_FIXTURES,regionalCombatFixture} from '../src/core/regional-combat-fixtures';
-import {FALLEN_KNIGHT_MAX_FOOD_UNITS} from '../src/core/story-boss';
+import {FALLEN_KNIGHT_MAX_POTION_UNITS} from '../src/core/story-boss';
 import {characterTotalXpAtLevel} from '../src/core/progression';
 import type {GameState} from '../src/core/types';
 
@@ -13,15 +13,16 @@ function at25(state:GameState):GameState{
  next.character.currentHp=effectiveStats(next).hp;
  return next;
 }
-const report:Record<string,{fullT2Won:boolean;fullT1Won:boolean;fullT2Food:number;fullT1Food:number;fullT2BossHp:number;fullT1BossHp:number;t2WinsOf12:number;t1WinsOf12:number}>={};
+const report:Record<string,{fullT2Won:boolean;fullT1Won:boolean;fullT2Potions:number;fullT1Potions:number;fullT2BossHp:number;fullT1BossHp:number;t2WinsOf12:number;t1WinsOf12:number}>={};
 for(const cls of CLASSES){
  const fullT2=at25(regionalCombatFixture(road,'prepared',cls.id));
  const fullT1=at25(regionalCombatFixture(road,'underprepared',cls.id));
  const oneItem=at25({...fullT2,character:{...fullT2.character!,equipment:{weapon:fullT2.character!.equipment.weapon}}});
  const empty=at25({...fullT2,character:{...fullT2.character!,equipment:{}}});
  for(const state of [fullT2,fullT1,oneItem,empty]){
-  state.inventory.stacks=[{itemId:road.foodId,quantity:500}];
+  state.inventory.stacks=[{itemId:road.foodId,quantity:500},{itemId:'RIVERHEART_DRAUGHT',quantity:12}];
   state.character!.equippedFoodId=road.foodId;
+  state.character!.equippedHealingPotionId='RIVERHEART_DRAUGHT';
  }
  const ready=fallenKnightGearReadiness(fullT2);
  const weak=fallenKnightGearReadiness(fullT1);
@@ -43,13 +44,14 @@ for(const cls of CLASSES){
  const t1=previewFallenKnightBattle(fullT1,nowMs,'story');
  const rematch=previewFallenKnightBattle(fullT2,nowMs,'rematch');
  for(const b of [t2,t1,rematch]){
-  assert.ok(b.foodConsumed<=FALLEN_KNIGHT_MAX_FOOD_UNITS,label+' no unlimited food during boss');
-  assert.ok(b.foodConsumed<=b.events.filter(e=>e.type==='boss_hit').length,label+' at most one meal per boss hit');
+  assert.equal(b.foodConsumed,0,label+' boss never consumes food');
+  assert.ok(b.potionConsumed<=FALLEN_KNIGHT_MAX_POTION_UNITS,label+' capped boss potions');
+  assert.ok(b.potionConsumed<=b.events.filter(e=>e.type==='boss_hit').length,label+' at most one potion per boss hit');
   assert.ok(b.durationMs<=100_000,label+' boss duration is bounded');
   assert.ok(b.bossMaxHp>0&&b.playerMaxHp>0);
  }
- const foodless=at25({...fullT2,inventory:{...fullT2.inventory,stacks:[]}});
- assert.equal(previewFallenKnightBattle(foodless,nowMs,'story').foodConsumed,0,label+' no phantom food');
+ const potionless=at25({...fullT2,inventory:{...fullT2.inventory,stacks:[{itemId:road.foodId,quantity:500}]}});
+ assert.equal(previewFallenKnightBattle(potionless,nowMs,'story').potionConsumed,0,label+' food does not substitute for boss potions');
  assert.ok(t2.player.attackIntervalMs<=t1.player.attackIntervalMs,label+' T2 attack interval is no slower');
  // Vary deterministic encounter seeds so one favorable animation/RNG
  // sequence does not conceal an impossible checkpoint for a particular class.
@@ -58,7 +60,7 @@ for(const cls of CLASSES){
  const t1WinsOf12=seeds.filter(time=>previewFallenKnightBattle(fullT1,time,'story').won).length;
  assert.ok(t2WinsOf12>=9,label+' attainable T2 should win at least 9 of 12 reproducible encounters');
  assert.ok(t1WinsOf12<=2,label+' basic T1 must not trivialize first boss');
- report[label]={fullT2Won:t2.won,fullT1Won:t1.won,fullT2Food:t2.foodConsumed,fullT1Food:t1.foodConsumed,fullT2BossHp:t2.finalBossHp,fullT1BossHp:t1.finalBossHp,t2WinsOf12,t1WinsOf12};
+ report[label]={fullT2Won:t2.won,fullT1Won:t1.won,fullT2Potions:t2.potionConsumed,fullT1Potions:t1.potionConsumed,fullT2BossHp:t2.finalBossHp,fullT1BossHp:t1.finalBossHp,t2WinsOf12,t1WinsOf12};
 }
-console.log('PASS Fallen Knight T2 readiness, nine classes, one-food-per-hit and finite food budget');
+console.log('PASS Fallen Knight T2 readiness, nine classes, no boss food and bounded potion healing');
 console.log(JSON.stringify(report));

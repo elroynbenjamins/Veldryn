@@ -12,9 +12,9 @@ export interface AlchemyRecipe {
 // One start reserves a full AFK run, bounded by resources, Gold and the AFK cap.
 export const MAX_ALCHEMY_BATCHES=10_000;
 export const POTIONS:readonly PotionDefinition[]=[
-  {id:'DEWLEAF_DRAUGHT',name:'Dewleaf Draught',effect:{kind:'healing',maxHpFraction:.25},description:'Restore 25% of maximum HP outside a hunt. No effect at full health.'},
-  {id:'RIVERHEART_DRAUGHT',name:'Riverheart Draught',effect:{kind:'healing',maxHpFraction:.45},description:'Restore 45% of maximum HP outside a hunt. No effect at full health.'},
-  {id:'OATHBLOOM_DRAUGHT',name:'Oathbloom Draught',effect:{kind:'healing',maxHpFraction:.65},description:'Restore 65% of maximum HP outside a hunt. No effect at full health.'},
+  {id:'DEWLEAF_DRAUGHT',name:'Dewleaf Draught',effect:{kind:'healing',maxHpFraction:.25},description:'Restore 25% maximum HP automatically during boss fights. Select below Food in the HP menu; not for ordinary hunts.'},
+  {id:'RIVERHEART_DRAUGHT',name:'Riverheart Draught',effect:{kind:'healing',maxHpFraction:.45},description:'Restore 45% maximum HP automatically during boss fights. Select below Food in the HP menu; not for ordinary hunts.'},
+  {id:'OATHBLOOM_DRAUGHT',name:'Oathbloom Draught',effect:{kind:'healing',maxHpFraction:.65},description:'Restore 65% maximum HP automatically during boss fights. Select below Food in the HP menu; not for ordinary hunts.'},
   {id:'VIGOR_TONIC',name:'Vigor Tonic',effect:{kind:'preparation',attackFraction:.04,damageReductionFraction:0,encounters:30},description:'+4% attack for 30 resolved ordinary encounters.'},
   {id:'GREATER_VIGOR_TONIC',name:'Greater Vigor Tonic',effect:{kind:'preparation',attackFraction:.06,damageReductionFraction:0,encounters:45},description:'+6% attack for 45 resolved ordinary encounters.'},
   {id:'OATH_VIGOR_TONIC',name:'Oath Vigor Tonic',effect:{kind:'preparation',attackFraction:.08,damageReductionFraction:0,encounters:60},description:'+8% attack for 60 resolved ordinary encounters.'},

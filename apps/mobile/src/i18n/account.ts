@@ -1582,9 +1582,9 @@ export const accountTranslationRows = {
 } as const satisfies Record<string,readonly [string,string,string,string,string,string]>;
 
 export type AccountKey=keyof typeof accountTranslationRows;
-const languages:readonly Language[]=['en','de','es','nl','it','fr'];
+const languages:readonly Language[]=['en','de','es','nl','it','fr','ru','tr'];
 export const accountCatalogs=Object.fromEntries(languages.map((language,index)=>[
-  language,Object.fromEntries(Object.entries(accountTranslationRows).map(([key,row])=>[key,row[index]])),
+  language,Object.fromEntries(Object.entries(accountTranslationRows).map(([key,row])=>[key,row[index]??row[0]])),
 ])) as Record<Language,Record<AccountKey,string>>;
 export const accountT=createTranslator<AccountKey>(accountCatalogs);
 
@@ -1627,8 +1627,8 @@ export function accountError(language:Language,error:unknown,fallback:AccountKey
 
 export function accountDuration(language:Language,seconds:number):string{
   const total=Math.max(0,Math.floor(seconds)),hours=Math.floor(total/3600),minutes=Math.floor(total%3600/60),rest=total%60;
-  const hour={en:'h',de:'Std.',es:'h',nl:'u',it:'h',fr:'h'}[language];
-  const minute={en:'m',de:'Min.',es:'min',nl:'min',it:'min',fr:'min'}[language];
-  const second={en:'s',de:'Sek.',es:'s',nl:'s',it:'s',fr:'s'}[language];
+  const hour={en:'h',de:'Std.',es:'h',nl:'u',it:'h',fr:'h',ru:'ч',tr:'sa'}[language];
+  const minute={en:'m',de:'Min.',es:'min',nl:'min',it:'min',fr:'min',ru:'мин',tr:'dk'}[language];
+  const second={en:'s',de:'Sek.',es:'s',nl:'s',it:'s',fr:'s',ru:'с',tr:'sn'}[language];
   return hours?`${hours} ${hour} ${minutes} ${minute}`:minutes?`${minutes} ${minute} ${rest} ${second}`:`${rest} ${second}`;
 }

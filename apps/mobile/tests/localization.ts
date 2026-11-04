@@ -4,13 +4,16 @@ import {LANGUAGE_NAMES,MESSAGE_COUNT,OPERATIONAL_MESSAGE_COUNT,SUPPORTED_LANGUAG
 
 function ok(value:boolean,message:string){if(!value)throw new Error(message)}
 
-ok(SUPPORTED_LANGUAGES.join(',')==='en,de,es,nl,it,fr','Release languages are missing or out of order');
-ok(new Set(SUPPORTED_LANGUAGES.map(language=>LANGUAGE_NAMES[language])).size===6,'Language names must be unique');
+ok(SUPPORTED_LANGUAGES.join(',')==='en,de,es,nl,it,fr,ru,tr','Release languages are missing or out of order');
+ok(new Set(SUPPORTED_LANGUAGES.map(language=>LANGUAGE_NAMES[language])).size===8,'Language names must be unique');
 for(const language of SUPPORTED_LANGUAGES){
   ok(translatedMessageCount(language)===MESSAGE_COUNT,`${language} shared catalog is incomplete`);
   const saved={...newGame(1_000),settings:{...newGame(1_000).settings,language}};
   ok(normalizeSave(saved).settings.language===language,`${language} was not preserved by save normalization`);
 }
+ok(t('ru','nav.home')==='Главная','Russian navigation starter translation unavailable');
+ok(t('tr','settings.language')==='Dil','Turkish settings starter translation unavailable');
+ok(ot('tr','save.retry')==='Yüklemeyi yeniden dene','Turkish recovery starter translation unavailable');
 ok(t('es','nav.home')==='Inicio','Spanish navigation translation is unavailable');
 ok(t('fr','common.back')==='Retour','French back translation is unavailable');
 ok(ot('es','save.retry')==='Reintentar carga','Spanish recovery translation is unavailable');

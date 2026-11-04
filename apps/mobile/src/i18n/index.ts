@@ -1,4 +1,5 @@
 import {Language} from './languages';
+import {earlyLocaleText} from './early-locales';
 export {LANGUAGE_NAMES,SUPPORTED_LANGUAGES,isSupportedLanguage} from './languages';
 export type {Language} from './languages';
 export {OPERATIONAL_MESSAGE_COUNT,ot} from './operational';
@@ -33,6 +34,8 @@ const en={
 
 export type MessageKey=keyof typeof en;
 type Catalog=Record<MessageKey,string>;
+
+const earlyCatalog=(language:Language):Catalog=>Object.fromEntries(Object.entries(en).map(([key,value])=>[key,earlyLocaleText(language,value)??value])) as Catalog;
 
 const catalogs:Record<Language,Catalog>={
   en,
@@ -124,6 +127,8 @@ const catalogs:Record<Language,Catalog>={
     'more.intro':'Destinations de progression et de compte qui ne nécessitent pas une place permanente dans la navigation.','more.quests':'Quêtes','more.skills':'Compétences','more.events':'Événements','more.friends':'Amis','more.guild':'Guilde','more.settings':'Paramètres',
     'more.questsDescription':'Objectifs, contrats et récompenses à récupérer','more.skillsDescription':'Récolte, fabrication et équipement de novice','more.eventsDescription':'Activités temporaires, jalons et collections','more.friendsDescription':'Recherche, demandes, amis et joueurs bloqués','more.guildDescription':'Profil, projets et chat de guilde','more.settingsDescription':'Compte, accessibilité, chat et outils de test',
   },
+  ru:earlyCatalog('ru'),
+  tr:earlyCatalog('tr'),
 };
 
 export function t(language:Language,key:MessageKey):string{

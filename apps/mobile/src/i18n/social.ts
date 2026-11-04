@@ -6765,7 +6765,7 @@ export const socialTranslationRows = {
 } as const satisfies Record<string,readonly [string,string,string,string,string]>;
 export type SocialMessageKey=keyof typeof socialTranslationRows;
 export const socialCatalogs=Object.fromEntries(SUPPORTED_LANGUAGES.map((language,index)=>[
- language,Object.fromEntries(Object.entries(socialTranslationRows).map(([key,values])=>[key,index===0?key:values[index-1]])),
+ language,Object.fromEntries(Object.entries(socialTranslationRows).map(([key,values])=>[key,index===0?key:values[index-1]??key])),
 ])) as Record<Language,Record<SocialMessageKey,string>>;
 export const socialText=createTranslator(socialCatalogs);
 export function useSocialText(preferredLanguage?:Language){

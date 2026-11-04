@@ -39,5 +39,5 @@ export const eventRewardRows={
  'Companion Essence':['Companion Essence','Begleiteressenz','Esencia de compañero','Metgezelessentie','Essenza compagno','Essence de compagnon'],
 } as const satisfies Record<string,readonly [string,string,string,string,string,string]>;
 export type EventRewardMessage=keyof typeof eventRewardRows;
-export const eventRewardCatalogs=Object.fromEntries(SUPPORTED_LANGUAGES.map((language,index)=>[language,Object.fromEntries(Object.entries(eventRewardRows).map(([key,row])=>[key,row[index]]))])) as Record<Language,Record<EventRewardMessage,string>>;
+export const eventRewardCatalogs=Object.fromEntries(SUPPORTED_LANGUAGES.map((language,index)=>[language,Object.fromEntries(Object.entries(eventRewardRows).map(([key,row])=>[key,row[index]??row[0]]))])) as Record<Language,Record<EventRewardMessage,string>>;
 export const eventRewardText=createTranslator(eventRewardCatalogs);

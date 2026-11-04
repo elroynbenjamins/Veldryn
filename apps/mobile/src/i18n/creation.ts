@@ -205,7 +205,7 @@ export const creationTranslationRows = {
 } as const satisfies Record<string,readonly [string,string,string,string,string]>;
 export type CreationKey = keyof typeof creationTranslationRows;
 export const creationCatalogs = Object.fromEntries(SUPPORTED_LANGUAGES.map((language,index)=>[
-  language,Object.fromEntries(Object.entries(creationTranslationRows).map(([key,values])=>[key,index===0?key:values[index-1]])),
+  language,Object.fromEntries(Object.entries(creationTranslationRows).map(([key,values])=>[key,index===0?key:values[index-1]??key])),
 ])) as Record<Language,Record<CreationKey,string>>;
 export const creationT = createTranslator(creationCatalogs);
 

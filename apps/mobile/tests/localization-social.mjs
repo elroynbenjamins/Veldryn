@@ -22,7 +22,7 @@ const {SUPPORTED_LANGUAGES}=load('languages');
 const {GameLanguageProvider}=load('GameLanguageProvider');
 const keys=Object.keys(socialTranslationRows).sort();
 const placeholders=text=>[...text.matchAll(/\{([a-zA-Z][a-zA-Z0-9_]*)\}/g)].map(match=>match[1]).sort();
-const bossNames={en:'Rootbound Colossus',de:'Wurzelkoloss',es:'Coloso arraigado',nl:'Wortelkolos',it:'Colosso radicato',fr:'Colosse enraciné'};
+const bossNames={en:'Rootbound Colossus',de:'Wurzelkoloss',es:'Coloso arraigado',nl:'Wortelkolos',it:'Colosso radicato',fr:'Colosse enraciné',ru:'Rootbound Colossus',tr:'Rootbound Colossus'};
 for(const language of SUPPORTED_LANGUAGES){
  assert.deepEqual(Object.keys(socialCatalogs[language]).sort(),keys);
  for(const key of keys){

@@ -14,7 +14,7 @@ import {formatGameNumber} from '../src/core/number-format';
 
 const placeholders=(text:string)=>[...new Set([...text.matchAll(/\{([A-Za-z][A-Za-z0-9_]*)\}/g)].map(match=>match[1]))].sort().join(',');
 for(const [source,translations] of Object.entries({...APP_SHELL_MESSAGES,...NAVIGATION_MESSAGES,...BATTLE_MESSAGES,...VISUAL_MESSAGES})){
- assert.equal(translations.length,SUPPORTED_LANGUAGES.length-1);
+ assert.equal(translations.length,5); // Legacy catalogs stay at five translations; RU/TR are intentionally partial.
  for(const translation of translations){assert.ok(translation.trim().length>0);assert.equal(placeholders(translation),placeholders(source),source);}
 }
 for(const monster of MONSTERS){
@@ -23,6 +23,10 @@ for(const monster of MONSTERS){
 }
 for(const style of Object.values(CLASS_COMBAT_STYLES))assert.ok(Object.hasOwn(BATTLE_MESSAGES,style.description));
 assert.equal(appText('nl','Cannot travel'),'Reizen niet mogelijk');
+assert.equal(appText('ru','Account'),'Аккаунт');
+assert.equal(appText('tr','Guild'),'Lonca');
+assert.equal(appText('ru','Cannot travel'),'Cannot travel');
+assert.equal(appText('tr','{name} is ready.',{name:'Ironwarden'}),'Ironwarden is ready.');
 assert.equal(appText('fr','{name} is ready.',{name:'Ironwarden'}),'Ironwarden est prêt.');
 assert.equal(appText('nl','Player text stays exactly like this'),'Player text stays exactly like this');
 assert.equal(appText('de','constructor'),'constructor');
@@ -40,4 +44,4 @@ assert.ok(formatLocalizedDate('de',new Date('2026-09-27T12:00:00Z'),{timeZone:'U
 const state=newGame(1000);state.settings.language='nl';state.overflow.stacks=[{itemId:'TRAVEL_RATION',quantity:2}];
 const overflow=systemNotifications(state,1000).find(row=>row.id==='overflow');
 assert.equal(overflow?.title,'Opslag vraagt aandacht');assert.ok(overflow?.body.includes('2'));
-console.log('PASS localization foundation: six-language completeness, placeholders, name preservation, locale formatting and system notices');
+console.log('PASS localization foundation: six complete legacy catalogs plus two starter languages, placeholders, name preservation, locale formatting and system notices');

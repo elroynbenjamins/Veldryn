@@ -48,7 +48,7 @@ for(const guide of EQUIPMENT_LOADOUT_GUIDES)for(const field of ['useCase','weapo
 const preservedFocusNames=new Set(['Rootbound Vault','Lanternwatch','Oathglass','Fallen Procession','Ironback','Briar','Drowned Pilgrim','Echo Bat']);
 for(const set of equipment.sets){
   for(const part of set['Build Focus'].split(/\s+\/\s+|\s+—\s+/))if(!preservedFocusNames.has(part))hasProfile(part);
-  for(const language of SUPPORTED_LANGUAGES.filter(l=>l!=='en')){
+  for(const language of SUPPORTED_LANGUAGES.filter(l=>['de','es','nl','it','fr'].includes(l))){
     const result=profile.profileSourceText(language,set.Region+' · '+set['Build Focus']);
     assert.ok(result.startsWith(set.Region+' · '),'world name preserved');
     assert.notEqual(result,set.Region+' · '+set['Build Focus'],'set description translated');
@@ -97,5 +97,5 @@ assert.ok(source('components/ProfileAudiencePreviewModal.tsx').includes('{profil
 assert.ok(source('components/PublicProfileScene.tsx').includes('{profile.title}'));
 assert.ok(source('components/ProfileShowcaseSection.tsx').includes("grid:{flexDirection:'row',flexWrap:'wrap'"));
 assert.ok(source('components/ProfileFavoriteHighlights.tsx').includes('minWidth:220'));
-console.log('PASS creation/profile localization: six complete catalogs, placeholders, class/tutorial descriptions, equipment fragments, name preservation and technical-prop boundaries');
+console.log('PASS creation/profile localization: six legacy catalogs with RU/TR fallback, placeholders, class/tutorial descriptions, equipment fragments, name preservation and technical-prop boundaries');
 

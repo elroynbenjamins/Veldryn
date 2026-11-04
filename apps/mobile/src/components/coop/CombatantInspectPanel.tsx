@@ -35,12 +35,12 @@ function roleLabel(role:CombatantInspectTarget['role']){
  return role==='tank'?'Tank':role==='support'?'Support':role==='damage'?'Damage':undefined;
 }
 
-function effectKind(status:PlaybackCombatStatus){
- if(status.source==='gem')return 'Effect Gem';
- if(status.kind==='dot')return 'Damage over time';
- if(status.kind==='hot')return 'Healing over time';
- if(status.kind==='debuff')return 'Debuff';
- return 'Buff';
+function effectKind(status:PlaybackCombatStatus,st:ReturnType<typeof useSocialText>){
+ if(status.source==='gem')return st('Effect Gem');
+ if(status.kind==='dot')return st('Damage over time');
+ if(status.kind==='hot')return st('Healing over time');
+ if(status.kind==='debuff')return st('Debuff');
+ return st('Buff');
 }
 
 function remaining(value:number){
@@ -51,9 +51,9 @@ function remaining(value:number){
 export function CombatantInspectPanel({target,onClose}:{target:CombatantInspectTarget;onClose:()=>void}){
  const st=useSocialText();
  const C=useGameTheme(),s=makeStyles(C),avatar=target.classId?dungeonCombatAvatar(target.classId):undefined,companion=target.companionId?combatCompanionDef(target.companionId):undefined;
- const subtitle=target.kind==='enemy'?(target.boss?'Final Boss':'Dungeon Enemy'):[roleLabel(target.role),avatar?.label??target.classId].filter(Boolean).join(' · ');
+ const subtitle=target.kind==='enemy'?(target.boss?st('Final Boss'):st('Dungeon Enemy')):[roleLabel(target.role),avatar?.label??target.classId].filter(Boolean).join(' · ');
  const hpKnown=target.currentHp!==undefined&&target.maximumHp!==undefined&&target.maximumHp>0;
- return <View style={s.panel} accessibilityLabel={`Combat details for ${target.name}`}>
+ return <View style={s.panel} accessibilityLabel={st("Combat details for {name}",{name:target.name})}>
   <View style={s.header}>
    {target.kind==='party'?<IdentityArtwork name={target.name} profileIconId={target.profileIconId} className={target.iconClassId??target.classId} size={40}/>:null}
    <View style={s.headerCopy}><Text style={s.kicker}>{st("COMBAT INSPECT")}</Text><Text numberOfLines={1} style={s.name}>{target.name}</Text>{subtitle?<Text numberOfLines={1} style={s.subtitle}>{subtitle}</Text>:null}</View>
@@ -65,12 +65,12 @@ export function CombatantInspectPanel({target,onClose}:{target:CombatantInspectT
    {target.phaseLabel?<View style={s.summaryItemWide}><Text style={s.summaryLabel}>{st("PHASE")}</Text><Text numberOfLines={1} style={s.summaryValue}>{target.phaseLabel}</Text></View>:null}
    {companion?<View style={s.summaryItemWide}><Text style={s.summaryLabel}>{st("COMPANION")}</Text><Text numberOfLines={1} style={s.summaryValue}>{companion.name}</Text></View>:null}
   </View>
-  {target.cast?<View style={[s.castBox,target.cast.interruptible&&s.castInterruptible]}><View style={s.castHead}><Text style={[s.castLabel,target.cast.interruptible&&{color:C.info}]}>{target.cast.interruptible?st("INTERRUPTIBLE CAST"):st("ACTIVE CAST")}</Text><Text style={s.castTime}>{(Math.max(0,target.cast.durationMs)/1000).toFixed(1)}s</Text></View><Text style={s.castName}>{target.cast.label}</Text>{target.cast.targetLabel?<Text style={s.castTarget}>Focus → {target.cast.targetLabel}</Text>:null}</View>:null}
+  {target.cast?<View style={[s.castBox,target.cast.interruptible&&s.castInterruptible]}><View style={s.castHead}><Text style={[s.castLabel,target.cast.interruptible&&{color:C.info}]}>{target.cast.interruptible?st("INTERRUPTIBLE CAST"):st("ACTIVE CAST")}</Text><Text style={s.castTime}>{(Math.max(0,target.cast.durationMs)/1000).toFixed(1)}s</Text></View><Text style={s.castName}>{target.cast.label}</Text>{target.cast.targetLabel?<Text style={s.castTarget}>{st('Focus → {name}',{name:target.cast.targetLabel})}</Text>:null}</View>:null}
   <View style={s.effectsHead}><Text style={s.effectsTitle}>{st("ACTIVE EFFECTS")}</Text><Text style={s.effectsCount}>{target.statuses.length}</Text></View>
   {target.statuses.length?<View style={s.effects}>{target.statuses.slice(0,8).map((status,index)=>{const harmful=status.kind==='dot'||status.kind==='debuff',gem=status.source==='gem';return <View key={`${status.kind}:${status.tag}:${status.abilityId??status.label}:${index}`} style={s.effectRow}>
     <View style={[s.effectDot,{backgroundColor:harmful?C.bad:gem?C.special:C.good}]}/>
-    <View style={s.effectCopy}><Text numberOfLines={1} style={s.effectName}>{status.label}{status.stacks>1?` ×${status.stacks}`:''}</Text><Text numberOfLines={1} style={s.effectMeta}>{effectKind(status)} · {remaining(status.remainingMs)}</Text></View>
-   </View>})}{target.statuses.length>8?<Text style={s.moreEffects}>+{target.statuses.length-8} more active effects</Text>:null}</View>:<Text style={s.empty}>{st("No active timed effects at this replay moment.")}</Text>}
+    <View style={s.effectCopy}><Text numberOfLines={1} style={s.effectName}>{status.label}{status.stacks>1?` ×${status.stacks}`:''}</Text><Text numberOfLines={1} style={s.effectMeta}>{effectKind(status,st)} · {remaining(status.remainingMs)}</Text></View>
+   </View>})}{target.statuses.length>8?<Text style={s.moreEffects}>{st('+{count} more active effects',{count:target.statuses.length-8})}</Text>:null}</View>:<Text style={s.empty}>{st("No active timed effects at this replay moment.")}</Text>}
  </View>;
 }
 

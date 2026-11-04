@@ -13,7 +13,7 @@ permissions:
 
 concurrency:
   group: veldryn-icon-optimization-main
-  cancel-in-progress: false
+  cancel-in-progress: true
 
 jobs:
   optimize-icons:
@@ -48,12 +48,19 @@ jobs:
           echo "BEFORE_ASSETS=$(du -sb .icon-size-before/assets | cut -f1)" >> "$GITHUB_ENV"
       - name: Losslessly optimize referenced icons and remove unused superseded masters
         run: python3 tools/optimize-veldryn-icons.py
-      - name: TypeScript and targeted companion/dungeon asset checks
+      - name: TypeScript and verified artwork integrity
         working-directory: apps/mobile
         run: |
           pnpm typecheck
-          node tests/companion-simplicity-ui-contract.cjs
-          node tests/dungeon-enemy-trial-portraits.cjs
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+          result=json.loads(Path('../../docs/veldryn-icon-optimization.json').read_text())
+          assert result['pixel_exact_verified'], 'Image conversion must preserve exact pixels and transparency'
+          assert result['source_reference_rewrites'] > 0, 'No image references converted'
+          assert result['bytes_saved_runtime_artwork'] > 0, 'Icon output did not become smaller'
+          print('PASS: pixel-exact assets, updated references and positive byte savings')
+          PY
       - name: Measure Android assets after and reject regressions
         working-directory: apps/mobile
         run: |

@@ -109,6 +109,38 @@ export function GuildHallSummary({onOpenMuster,onOpenShop,onRewardsChanged,compa
  const weeklyPct=shop&&shop.weeklyCap>0?Math.max(0,Math.min(100,Math.round(shop.earnedThisWeek/shop.weeklyCap*100))):0;
  const treasury=shop?.treasuryBonusBps?Math.round(shop.treasuryBonusBps/100):0;
  const busyAll=busy==='all';
+ const dailyRewards=(['attendance','contribution'] as const).map(kind=>({
+  kind,
+  status:loading?'unavailable' as const:guildDailyTokenClaimStatus(shop,muster,kind),
+  title:kind==='attendance'?'Check-in':'Activity',
+  tokens:Math.min(Math.max(0,(shop?.weeklyCap??0)-(shop?.earnedThisWeek??0)),Math.ceil(10*(10000+(shop?.treasuryBonusBps??0))/10000)),
+ }));
+ const dailyActions=<View style={s.dailySection}>
+  <View style={s.dailyHead}>
+   <Text style={s.dailyHeading}>DAILY TOKEN REWARDS</Text>
+   <Pressable accessibilityRole="button" accessibilityLabel="Refresh daily Guild Token eligibility" disabled={loading||!!busy}
+    accessibilityState={{disabled:loading||!!busy}} onPress={()=>void load()} style={s.refresh}>
+    <Text style={[s.refreshText,{color:loading||!!busy?C.muted:C.accent}]}>{loading?'Checking…':'Refresh ↻'}</Text>
+   </Pressable>
+  </View>
+  <View style={s.dailyPair}>
+   {dailyRewards.map(reward=>{
+    const ready=reward.status==='ready',claimed=reward.status==='claimed',blocked=reward.status==='locked';
+    const enabled=ready&&!busy&&!loading;
+    const foreground=ready?C.good:blocked?C.bad:C.muted;
+    const stateText=busy==='daily:'+reward.kind?'Claiming…':ready?'Claim now':claimed?'Claimed today':reward.status==='capped'?'Weekly cap reached':blocked?(reward.kind==='attendance'?'Muster check-in needed':'Combat or Skilling needed'):'Status unavailable';
+    return <Pressable key={reward.kind} accessibilityRole="button" accessibilityLabel={reward.title+', up to '+reward.tokens+' Guild Tokens, '+stateText}
+     accessibilityState={{disabled:!enabled,busy:busy==='daily:'+reward.kind}} disabled={!enabled}
+     onPress={()=>void claimDaily(reward.kind)}
+     style={({pressed})=>[s.dailyTile,{borderColor:ready?C.good:blocked?C.bad:C.line,backgroundColor:ready?C.goodSurface:blocked?C.badSurface:C.panel2},pressed&&s.dailyTilePressed]}>
+     <Text style={[s.dailyTitle,{color:C.text}]}>{reward.title}</Text>
+     <Text style={[s.dailyAmount,{color:foreground}]}>Up to +{reward.tokens} Tokens</Text>
+     <Text style={[s.dailyState,{color:foreground}]}>{stateText}</Text>
+    </Pressable>;
+   })}
+  </View>
+  <Text style={s.dailyFootnote}>Activity requires verified Combat or Skilling today · Resets at 00:00 UTC</Text>
+ </View>;
 
  if(compact)return <View style={s.stack}>
   <Panel style={s.compactPanel}>

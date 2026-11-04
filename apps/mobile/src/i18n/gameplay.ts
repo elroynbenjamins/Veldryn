@@ -7,6 +7,13 @@ import {useMemo} from 'react';
 // Every row is complete, in en/de/es/nl/it/fr order. English phrases are typed keys.
 type TranslationRow=readonly [string,string,string,string,string,string];
 const common={
+ // Per-character dungeon Alchemy healing, en/de/es/nl/it/fr.
+ "DUNGEON HEALING":["DUNGEON HEALING","DUNGEON-HEILUNG","CURACIÓN EN MAZMORRA","GENEZING IN KERKERS","CURA NEI DUNGEON","SOINS EN DONJON"],
+ "Select a healing potion in the HP menu.":["Select a healing potion in the HP menu.","Wähle einen Heiltrank im LP-Menü.","Selecciona una poción curativa en el menú de salud.","Kies een heeldrankje in het HP-menu.","Seleziona una pozione curativa nel menu PV.","Choisissez une potion de soin dans le menu PV."],
+ "Food is disabled. Healing potions can be used between dungeon rooms only.":["Food is disabled. Healing potions can be used between dungeon rooms only.","Essen ist deaktiviert. Heiltränke können nur zwischen Dungeonräumen genutzt werden.","La comida está desactivada. Las pociones curativas solo pueden usarse entre salas.","Eten is uitgeschakeld. Heeldrankjes kunnen alleen tussen kerkerkamers worden gebruikt.","Il cibo è disattivato. Le pozioni si usano solo tra una stanza e l'altra.","La nourriture est désactivée. Les potions s'utilisent uniquement entre les salles."],
+ "Use 1 healing potion":["Use 1 healing potion","1 Heiltrank verwenden","Usar 1 poción curativa","Gebruik 1 heeldrankje","Usa 1 pozione curativa","Utiliser 1 potion de soin"],
+ "No potion charges left":["No potion charges left","Keine Trankladungen übrig","Sin cargas de poción","Geen drankjesladingen meer","Nessuna carica rimasta","Plus aucune charge de potion"],
+
  "Equipment Pouch":["Equipment Pouch","Ausrüstungsbeutel","Bolsa de equipo","Uitrustingszak","Sacca equipaggiamento","Sac d’équipement"],
  // Equipment swap mobile UI: English / German / Spanish / Dutch / Italian / French.
  "Compare & Swap":["Compare & Swap","Vergleichen & wechseln","Comparar y cambiar","Vergelijken en wisselen","Confronta e sostituisci","Comparer et remplacer"],

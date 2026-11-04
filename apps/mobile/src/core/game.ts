@@ -30,7 +30,7 @@ import {DEFAULT_QUICK_NAV_DESTINATIONS} from './quick-navigation';
 import {unlockedCharacterSlots} from './account-roster';
 import {accountEntitlementBenefits,entitlementStorageCapacity} from './account-entitlements';
 import {isGemPouchItemId,tryStoreGemInPouch} from './gem-pouch';
-import {isEquipmentPouchItemId,tryStoreEquipmentInPouch} from './equipment-pouch';
+import {isEquipmentPouchItemId,tryStoreEquipmentInPouch,moveLegacyEquipmentPouchStack} from './equipment-pouch';
 import {gatheringPacing} from './gathering-tools';
 import {gatheringToolDef} from '../content/gathering-tools';
 import {currentRegionId} from './combat-region';
@@ -928,6 +928,11 @@ export function stopActivity(state:GameState,nowMs=Date.now()):GameState{
     return {...state,...routed,character:state.character?{...state.character,gold:state.character.gold+refund.gold}:null,activity:null,outOfCombatSinceMs:nowMs};
   }
   return {...state,activity:null,outOfCombatSinceMs:nowMs,character:state.character?{...state.character,classTraining:undefined}:null}
+}
+/** Equip legacy/non-unique gear from this character's pouch without a separate manual transfer. */
+export function equipItemFromEquipmentPouch(state:GameState,itemId:string):GameState{
+  const staged=moveLegacyEquipmentPouchStack(state,itemId,1,'equipment_pouch','inventory');
+  return equipItem(staged,itemId);
 }
 export function equipItem(state:GameState,itemId:string):GameState{
   if(!state.character)throw new Error('No character');const d=itemDef(itemId);if(d.type!=='gear'||!d.slot)throw new Error('Not gear');

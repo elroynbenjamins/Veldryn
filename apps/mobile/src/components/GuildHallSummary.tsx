@@ -63,25 +63,45 @@ export function GuildHallSummary({onOpenMuster,onOpenShop,onRewardsChanged,compa
  const claims=readyClaims(shop);
 
  const claim=async(row:ClaimRow)=>{
-  setBusy(row.id);setNotice('');
+  if(claimPending.current)return;
+  claimPending.current=true;setBusy(row.id);setNotice('');setNoticeError(false);
   try{
    const credited=await row.run();
    setNotice(credited?`+${credited} Guild Tokens`:'Already claimed, or weekly cap reached.');
-   await onRewardsChanged?.();
+   try{await onRewardsChanged?.();}catch{/* credited reward must remain successful */}
    await load();
-  }catch(reason){setNotice(reason instanceof Error?reason.message:'Could not claim right now.');}
-  finally{if(mounted.current)setBusy('');}
+  }catch(reason){
+   setNoticeError(true);setNotice(reason instanceof Error?reason.message:'Could not claim right now.');
+   await load();
+  }finally{claimPending.current=false;if(mounted.current)setBusy('');}
  };
  const claimAll=async()=>{
-  setBusy('all');setNotice('');
-  let total=0,failed=0;
-  for(const row of claims){
-   try{total+=await row.run();}catch{failed++;}
+  if(claimPending.current)return;
+  claimPending.current=true;setBusy('all');setNotice('');setNoticeError(false);
+  try{
+   let total=0,failed=0;
+   for(const row of claims){try{total+=await row.run();}catch{failed++;}}
+   setNoticeError(failed>0);
+   setNotice((total?`+${total} Guild Tokens claimed`:'No rewards claimed')+(failed?` · ${failed} claim${failed===1?'':'s'} failed. Retry remaining rewards.`:''));
+   try{await onRewardsChanged?.();}catch{/* non-fatal */}
+   await load();
+  }finally{claimPending.current=false;if(mounted.current)setBusy('');}
+ };
+ const claimDaily=async(kind:GuildDailyTokenKind)=>{
+  if(claimPending.current||busy||loading||guildDailyTokenClaimStatus(shop,muster,kind)!=='ready')return;
+  claimPending.current=true;setBusy('daily:'+kind);setNotice('');setNoticeError(false);
+  try{
+   const credited=await claimOnlineGuildDailyTokens(kind);
+   setNotice(credited?`+${credited} Guild Tokens claimed`:'Already claimed or weekly cap reached.');
+   try{await onRewardsChanged?.();}catch{/* credited reward must remain successful */}
+  }catch(reason){
+   setNoticeError(true);
+   setNotice(reason instanceof Error?reason.message:'Could not claim Guild Tokens. Refresh and try again.');
+  }finally{
+   await load();
+   claimPending.current=false;
+   if(mounted.current)setBusy('');
   }
-  setNotice((total?`+${total} Guild Tokens claimed`:'No rewards claimed')+(failed?` · ${failed} claim${failed===1?'':'s'} failed. Retry remaining rewards.`:''));
-  try{await onRewardsChanged?.();}catch{/* non-fatal */}
-  await load();
-  if(mounted.current)setBusy('');
  };
 
  const checkedIn=muster?.checkedIn===true;

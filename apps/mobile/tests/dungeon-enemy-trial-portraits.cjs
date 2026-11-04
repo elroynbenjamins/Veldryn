@@ -68,10 +68,10 @@ assert(art.includes("key.endsWith(' echo')"),'Event Echo adds no new art assets,
 assert(card.includes('dungeonEnemyRegionalPortraitCell(name)')&&card.includes('regionalMonsterPortraitAtlas'),'The combat scene must render actual crops of the original atlas');
 assert(card.includes('left:-enemyAtlasCell.column*enemyAtlasSize')&&card.includes('top:-enemyAtlasCell.row*enemyAtlasSize'),'Atlas must crop to the correct individual creature cell');
 assert(art.includes('The two Sphinx encounters intentionally await Sphinx art'),'A Sphinx must not be passed off as an unrelated humanoid or beast');
-assert(sunscar.includes("'Glassbound Sentinel'],'fire'")||sunscar.includes("'Glassbound Sentinel'"),'Renamed Wellbound elite must use the canonical Sunscar species name');
-assert(sunscar.includes("name==='Glassbound Sentinel'"),'Reused Sunscar guardian must preserve its barrier combat archetype');
-assert(regional.includes("'Blackglass Mireling'].includes(name)"),'Renamed Ashlands swarm must retain swarm mechanics');
-assert(regional.includes("'Cinder Titan'].includes(name)"),'Renamed Ashlands guardian must retain guard mechanics');
-assert(regional.includes("'Fen Reaver','Ashen Revenant'"),'Renamed Scoria executioner must retain execute mechanics');
+assert(sunscar.includes("'Wellbound Colossus'"),'Canonical Sunscar boss and elite naming must remain unchanged');
+assert(sunscar.includes("name==='Orrery Warden'||name==='Glasshide Warder'||name==='Wellbound Colossus'"),'Sunscar guardian keeps its original barrier combat archetype');
+assert(regional.includes("'Cinder Mireling'].includes(name)"),'Ashlands swarm keeps its original identity and mechanics');
+assert(regional.includes("'Ashen Colossus'].includes(name)"),'Ashlands guardian keeps its original identity and mechanics');
+assert(regional.includes("'Fen Reaver','Prime Scoria'"),'Scoria executioner retains its original execute mechanics');
 
 console.log('PASS dungeon Trial/monster atlas artwork reuse, legacy names, zero asset duplication and preserved enemy roles');

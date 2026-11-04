@@ -91,7 +91,7 @@ export function ForgeOddsGuide({itemId}:{itemId:string}){
       <Text style={[s.explain,{color:C.muted}]}>{gt('Chance')}</Text>
       <Text style={[s.explain,{color:C.muted}]}>{gt('Stats')}</Text>
     </View>
-    <Text style={[s.explain,{color:C.muted}]}>{gt('Stats are compared with this item’s normal stats.')}</Text>
+    <Text style={[s.explain,{color:C.muted}]}>{gt('Compared with normal item stats.')}</Text>
     <View style={[s.rule,{backgroundColor:C.line}]}/>
     <View style={s.sectionHead}>
       <Text style={[s.sectionTitle,{color:C.text}]}>{gt('Quality preview')}</Text>
@@ -161,10 +161,10 @@ export function ForgeOddsGuide({itemId}:{itemId:string}){
        <Text style={[s.value,{color:C.text}]}>{chanceLabel(craftedGearQualityChanceAtLeast(quality))}</Text>
       </View>
     </View>
-    <Text style={[s.explain,{color:C.muted}]}>{gt('Lower quality means weaker stats; higher quality means stronger stats. Rarity and quality combine.')}</Text>
-    <Text style={[s.explain,{color:C.muted}]}>{gt('Odds depend on the selected recipe’s base rarity.')}</Text>
-    <Text style={[s.legacy,{color:C.muted}]}>{gt('Preview only. Rarity and quality are rolled when claimed.')}</Text>
-    <Text style={[s.legacy,{color:C.muted}]}>{gt('Older Forge gear without a quality roll counts as Q50.')}</Text>
+    <Text style={[s.explain,{color:C.muted}]}>{gt('Rarity and quality both affect stats.')}</Text>
+    <Text style={[s.explain,{color:C.muted}]}>{gt('Odds depend on the recipe.')}</Text>
+    <Text style={[s.legacy,{color:C.muted}]}>{gt('Rarity and quality roll on claim.')}</Text>
+    <Text style={[s.legacy,{color:C.muted}]}>{gt('Older gear defaults to Q50.')}</Text>
    </View>:null}
  </View>;
 }

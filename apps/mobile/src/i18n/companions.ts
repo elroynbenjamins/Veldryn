@@ -3,6 +3,15 @@ import {createTranslator} from './translator';
 
 // Each row supplies German, Spanish, Dutch, Italian and French; its key is English.
 export const companionTranslationRows={
+ "Spend Gold and Essence to level up.": ["Mit Gold und Essenz aufleveln.","Sube de nivel con oro y esencia.","Level omhoog met goud en essentie.","Aumenta il livello con oro ed essenza.","Augmentez le niveau avec de l'or et de l'essence."],
+ "Unavailable requirements remain locked.": ["Nicht verfügbare Voraussetzungen bleiben gesperrt.","Los requisitos no disponibles siguen bloqueados.","Niet-beschikbare vereisten blijven vergrendeld.","I requisiti non disponibili restano bloccati.","Les conditions indisponibles restent verrouillées."],
+ "Max level reached.": ["Maximallevel erreicht.","Nivel máximo alcanzado.","Maximumniveau bereikt.","Livello massimo raggiunto.","Niveau maximal atteint."],
+ "Send companions on missions.": ["Schicke Gefährten auf Missionen.","Envía compañeros a misiones.","Stuur metgezellen op missies.","Invia compagni in missione.","Envoyez des compagnons en mission."],
+ "No active expeditions.": ["Keine aktiven Expeditionen.","No hay expediciones activas.","Geen actieve expedities.","Nessuna spedizione attiva.","Aucune expédition active."],
+ "Choose a mission.": ["Wähle eine Mission.","Elige una misión.","Kies een missie.","Scegli una missione.","Choisissez une mission."],
+ "Meet requirements to see grade": ["Erfülle die Anforderungen für die Wertung","Cumple los requisitos para ver la calificación","Voldoe aan vereisten om de beoordeling te zien","Soddisfa i requisiti per vedere il grado","Remplissez les conditions pour voir le rang"],
+ "Unlock a companion to begin.": ["Schalte zuerst einen Gefährten frei.","Desbloquea un compañero para empezar.","Ontgrendel een metgezel om te beginnen.","Sblocca un compagno per iniziare.","Débloquez un compagnon pour commencer."],
+ "Food from Inventory or Bank · Extra stamina gives no bonus.": ["Nahrung aus Inventar oder Bank · Zusätzliche Ausdauer gibt keinen Bonus.","Comida del inventario o banco · La resistencia extra no da bonificación.","Voedsel uit inventaris of bank · Extra uithoudingsvermogen geeft geen bonus.","Cibo da inventario o banca · La stamina extra non dà bonus.","Nourriture de l'inventaire ou de la banque · L'endurance supplémentaire n'offre aucun bonus."],
  "Ascending…":["Aufstieg läuft…","Ascendiendo…","Verheffen…","Ascensione in corso…","Ascension en cours…"],
  "Mastery Chamber is required for Ascension III.":["Für Aufstieg III wird die Meisterschaftskammer benötigt.","La Cámara de Maestría es necesaria para la Ascensión III.","Voor Ascensie III is de Meesterschapskamer vereist.","La Camera della Maestria è necessaria per l'Ascensione III.","La Chambre de maîtrise est requise pour l'Ascension III."],
  "DISCOVERED":["ENTDECKT","DESCUBIERTOS","ONTDEKT","SCOPERTI","DÉCOUVERTS"],
@@ -986,10 +995,13 @@ export const companionCatalogs:Record<Language,Record<CompanionMessageKey,string
  en:{} as Record<CompanionMessageKey,string>,de:{} as Record<CompanionMessageKey,string>,
  es:{} as Record<CompanionMessageKey,string>,nl:{} as Record<CompanionMessageKey,string>,
  it:{} as Record<CompanionMessageKey,string>,fr:{} as Record<CompanionMessageKey,string>,
+ ru:{} as Record<CompanionMessageKey,string>,tr:{} as Record<CompanionMessageKey,string>,
 };
 for(const key of Object.keys(companionTranslationRows) as CompanionMessageKey[]){
  companionCatalogs.en[key]=key;
  (['de','es','nl','it','fr'] as const).forEach((language,index)=>{companionCatalogs[language][key]=companionTranslationRows[key][index];});
+ companionCatalogs.ru[key]=key;
+ companionCatalogs.tr[key]=key;
 }
 export const translateCompanion=createTranslator(companionCatalogs);
 export const companionTranslator=(language:Language)=>(key:CompanionMessageKey,params?:Record<string,string|number>)=>translateCompanion(language,key,params);

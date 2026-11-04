@@ -65,7 +65,7 @@ ok(onlineProjects.includes("import {LoadingState} from './LoadingState'"),'Live 
 ok(onlineProjects.includes("import {StatusPill} from './StatusPill'"),'Live Projects must use shared semantic status pills');
 ok(onlineProjects.includes('<StatusPill label="SHARED" tone="good"/>'),'Live Projects must expose semantic shared-project status');
 ok(onlineProjects.includes('Your contribution'),'Live Projects must surface personal contribution');
-ok(onlineProjects.includes('meaningful contributors'),'Live Projects must surface anti-leech contributor progress');
+ok(onlineProjects.includes('contributors</Text>'),'Live Projects must surface anti-leech contributor progress');
 ok(onlineProjects.includes('<GuildActivityFeedPanel entries={snapshot.activity}/>'),'Live Projects must surface recent Guild activity');
 ok(onlineProjects.includes("project.status==='completed'"),'Live Project cards must distinguish completed state');
 ok(projectTransport.includes("v_role not in('leader','guild_master','co_leader','officer','quartermaster')"),'Server must enforce start-project role permissions');

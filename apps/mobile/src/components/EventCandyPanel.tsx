@@ -21,7 +21,7 @@ export function EventCandyPanel({state,definition,eventActive,busy=false,pending
  const {width,fontScale}=useWindowDimensions(),twoColumns=width>=410&&fontScale<1.35;
  useEffect(()=>{const id=setInterval(()=>setNow(Date.now()),30_000);return()=>clearInterval(id);},[]);
  return <Panel>
-  <View style={s.heading}><View style={s.flex}><Text style={[s.kicker,{color:C.accent}]}>EVENT CANDY</Text><Text style={[s.title,{color:C.text}]}>Festival boosts</Text><Text style={[s.copy,{color:C.muted}]}>Candy is stored on your account. Timed boosts continue while you are away and end when this event closes.</Text></View>{visuals.candyIcon?<Image accessible={false} source={visuals.candyIcon} resizeMode="contain" style={s.heroCandy}/>:null}</View>
+  <View style={s.heading}><View style={s.flex}><Text style={[s.kicker,{color:C.accent}]}>EVENT CANDY</Text><Text style={[s.title,{color:C.text}]}>Festival boosts</Text><Text style={[s.copy,{color:C.muted}]}>Boosts run offline and expire when the event ends.</Text></View>{visuals.candyIcon?<Image accessible={false} source={visuals.candyIcon} resizeMode="contain" style={s.heroCandy}/>:null}</View>
   <View style={[s.list,twoColumns&&s.listTwo]}>{candies.map(candy=>{
    const owned=state.account.eventCandyChargesById?.[candy.id]??0,status=eventCandyStatus(state,now,candy.kind),timed=candy.kind!=='companion',durationFull=timed&&status.remainingSeconds>=candy.maxSeconds-1;
    const disabled=busy||!eventActive||owned<1||durationFull;

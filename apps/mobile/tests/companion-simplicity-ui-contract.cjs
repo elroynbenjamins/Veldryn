@@ -6,6 +6,20 @@ const screen=file('screens/CompanionsScreen.tsx');
 const panel=file('components/CombatCompanionPanel.tsx');
 const expeditions=file('components/CompanionExpeditionsV50Panel.tsx');
 const tour=file('components/CompanionTutorial.tsx');
+const resourceAssets=file('theme/resource-assets.ts');
+const resourceIcon=file('components/ResourceIcon.tsx');
+const itemArtwork=file('components/ItemArtwork.tsx');
+for(const [id,name] of [
+ ['essence','companion_essence'],
+ ['bondstones','bondstones'],
+ ['SUPPLIES','sanctuary_supplies'],
+ ['TRIAL_SANCTUARY_MATERIAL','trial_sanctuary_material'],
+]){
+ assert.ok(resourceAssets.includes(id+":require('../../assets/companion-resources/"+name+".webp')"),id+' needs a registered resource icon');
+ assert.ok(fs.existsSync(path.join(__dirname,'../assets/companion-resources',name+'.webp')),name+' icon asset must exist');
+}
+assert.ok(resourceIcon.includes('resourceIconSource(resourceId)')&&resourceIcon.includes('<Image source={artwork}'), 'Shared resource amounts must use artwork rather than symbol placeholders');
+assert.ok(itemArtwork.indexOf('if(hasResourceArtwork(itemId))')<itemArtwork.indexOf('const item=itemDef(itemId)'), 'Special companion materials must render without requiring a regular item definition');
 assert.ok(panel.includes("const sections=['Collection','Trials','Expeditions','Sanctuary']"),'four meaningful destinations retained');
 assert.ok(!panel.includes("section==='Training'"),'no separate Training tab');
 assert.ok(screen.includes('labels[0]')&&screen.includes("labels.join(' · ')"),'one compact attention preview retains full accessibility detail');

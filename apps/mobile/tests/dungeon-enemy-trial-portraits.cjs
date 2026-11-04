@@ -27,7 +27,9 @@ for(const [oldName,trialName] of [
  ['permafrost warden','Rimeplate Guard'],['crucible warden','Forgeplate Custodian'],
  ['fen pyrecaller','Cinder Channeler']
 ])assert.equal(aliases.get(oldName),trialName,'Old saved runs must still render correct portraits');
-assert(art.includes("DUNGEON_ENEMY_ART[key]??TRIAL_ART_BY_KEY[key]"),'Bespoke boss art takes priority over reused Trial artwork');
+assert(art.includes('DUNGEON_ENEMY_ART[key]??DUNGEON_ENEMY_ART[base]'),'Bespoke dungeon art must win over all shared assets');
+assert(art.includes('??monsterImageForKey(key)??monsterImageForKey(base)'),'Reused overworld portraits must precede unrelated humanoid Trial fallbacks');
+assert(art.includes('??TRIAL_ART_BY_KEY[key]??TRIAL_ART_BY_KEY[base]'),'Missing monsters must still resolve named Trial NPCs when appropriate');
 assert(art.includes("Object.entries(TRIAL_ENEMY_PORTRAITS)"),'Trial images are indexed once, not resolved by repeated iteration each combat frame');
 assert(card.includes('dungeonEnemyPortraitSource(name)'),'Every combat enemy card uses the shared registry');
 assert(asterfall.includes("enemy('ROOT_WARDEN','Runebound Bulwark'"),'Root elite uses matching NPC identity');
@@ -36,5 +38,52 @@ assert(regional.includes("'Rimehorn Alpha','Choirbreaker','Rimeplate Guard'"),'F
 assert(regional.includes("'Cinder Channeler','Blackglass Devourer','Forgeplate Custodian'"),'Ash elites matched');
 assert(regional.includes("name==='Rimeplate Guard'||name==='Forgeplate Custodian'"),'Renamed elites retain existing defensive ability profile');
 assert(regional.includes("name==='Choirbreaker'||name==='Cinder Channeler'"),'Renamed caster keeps its existing combat archetype');
-assert(!art.includes("'the buried heliarch':"),'Unrelated boss should not be assigned a generic NPC portrait');
-console.log('PASS dungeon normal/elite NPC portrait mappings, preserved old aliases, creature safeguards and gameplay IDs');
+assert(art.includes("'the buried heliarch':'GLASSBOUND_SENTINEL'"),'Buried Heliarch must use the already bundled Sunscar guardian sprite, not a new asset or unrelated NPC');
+
+const monsters=read('apps/mobile/src/theme/monster-assets.ts');
+const monsterDefs=read('apps/mobile/src/content/monsters.ts');
+const reused=art.split('DUNGEON_MONSTER_PORTRAIT_ALIASES:')[1]?.split('});')[0]??'';
+const mapped=new Map([...reused.matchAll(/'([^']+)':'([^']+)'/g)].map(match=>[match[1],match[2]]));
+const direct=new Set([...monsters.matchAll(/([A-Z_]+):require\('\.\.\/\.\.\/assets\/monsters\/([^']+)\.webp'\)/g)].map(match=>match[1]));
+const atlas=new Set([...monsters.matchAll(/([A-Z_]+):\{column:\d+,row:\d+\}/g)].map(match=>match[1]));
+assert(direct.size>=23,'Existing overworld monster portraits must be referenced, not copied');
+assert.equal(atlas.size,9,'The shared 3x3 regional atlas already supplies nine independent sprites');
+for(const [name,id] of mapped){
+ assert(direct.has(id)||atlas.has(id),name+' must point to an existing monster or existing atlas cell');
+ assert(name===name.toLowerCase(),name+' must use a normalized lookup key');
+}
+for(const [enemy,monsterId] of [
+ ['sporeling','GLOAM_MITE'],['strangling vine','THORNLING'],['briar hound','IRONWOOD_WOLF'],
+ ['orrery scarab','SUNSCAR_SCORPION'],['the buried heliarch','GLASSBOUND_SENTINEL'],
+ ['rimewolf','FROSTWOLF'],['icefang hound','FROSTWOLF'],['choir wisp','BELLWRAITH'],
+ ['blackglass beetle','GLOAM_MITE'],['the blackglass fen prime','BLACKGLASS_MIRELING'],
+ ['the crucible prime','CINDER_TITAN'],['the thornheart ancient','ANCIENT_TREANT']
+])assert.equal(mapped.get(enemy),monsterId,enemy+' must reuse the intended canonical source');
+for(const exact of ['briar husk','thornling','echo bat','lantern wretch','drowned pilgrim','banner shade']){
+ assert(monsterDefs.includes("name:'"+exact.replace(/\b\w/g,letter=>letter.toUpperCase())+"'")||exact==='echo bat','Existing monster names must resolve directly from canonical IDs: '+exact);
+}
+const eventAliases=art.split('DUNGEON_EVENT_TRIAL_PORTRAIT_ALIASES:')[1]?.split('});')[0]??'';
+assert(eventAliases.includes("'aureon, first champion':'Runebound Colossus'"),'Event champions must reuse an existing suitable Trial boss sprite');
+assert(art.includes("key.endsWith(' echo')"),'Event Echo adds no new art assets, reusing the named original portrait');
+assert(card.includes('dungeonEnemyRegionalPortraitCell(name)')&&card.includes('regionalMonsterPortraitAtlas'),'The combat scene must render actual crops of the original atlas');
+assert(card.includes('left:-enemyAtlasCell.column*enemyAtlasSize')&&card.includes('top:-enemyAtlasCell.row*enemyAtlasSize'),'Atlas must crop to the correct individual creature cell');
+assert.equal(mapped.get('dune sphinx'),'DUNE_ORACLE','Mirage Well elite must reuse existing Dune Oracle atlas sprite');
+assert.equal(mapped.get('the veiled sphinx'),'DUNE_ORACLE','Mirage Well boss must reuse the same existing Dune Oracle atlas sprite');
+assert.equal(mapped.get('the veiled oracle'),'DUNE_ORACLE','The new displayed boss name must resolve the same atlas cell');
+assert(atlas.has('DUNE_ORACLE'),'Dune Oracle must exist in the current shared regional atlas');
+const display=read('apps/mobile/src/core/dungeon-enemy-display.ts');
+const runOverview=read('apps/mobile/src/components/coop/CoopRunOverview.tsx');
+const stage=read('apps/mobile/src/components/coop/DungeonCombatStage.tsx');
+const playback=read('apps/mobile/src/core/dungeon-combat-playback.ts');
+assert(display.includes("'dune sphinx':'Dune Oracle'")&&display.includes("'the veiled sphinx':'The Veiled Oracle'"),'Old Sphinx names must be translated to the existing Dune Oracle creature identity');
+assert(runOverview.includes('dungeonEnemyDisplayName(run.bossMechanic?.telegraph?.bossName'), 'The active dungeon boss title must show the renamed Oracle');
+assert(stage.includes('name:dungeonEnemyDisplayName(inspectedEnemy.name)')&&stage.includes('name:dungeonEnemyDisplayName(fallbackEnemyName)'), 'Current and historical enemy inspection views must show Oracle names');
+assert(playback.includes('dungeonEnemyDisplayName(cue.actorName.trim())')&&playback.includes('dungeonEnemyAbilityDisplayName(cue.abilityName.trim())'), 'Combat log must use player-facing Oracle name and ability labels');
+assert(!display.includes('require(')&&!display.includes('react-native'),'Player-facing display changes cannot bundle duplicate image files or depend on React Native');
+assert(sunscar.includes("'Wellbound Colossus'"),'Canonical Sunscar boss and elite naming must remain unchanged');
+assert(sunscar.includes("name==='Orrery Warden'||name==='Glasshide Warder'||name==='Wellbound Colossus'"),'Sunscar guardian keeps its original barrier combat archetype');
+assert(regional.includes("'Cinder Mireling'].includes(name)"),'Ashlands swarm keeps its original identity and mechanics');
+assert(regional.includes("'Ashen Colossus'].includes(name)"),'Ashlands guardian keeps its original identity and mechanics');
+assert(regional.includes("'Fen Reaver','Prime Scoria'"),'Scoria executioner retains its original execute mechanics');
+
+console.log('PASS dungeon Trial/monster atlas artwork reuse, legacy names, zero asset duplication and preserved enemy roles');

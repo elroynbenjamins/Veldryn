@@ -1,4 +1,4 @@
-export const SUPPORTED_LANGUAGES=['en','de','es','nl','it','fr'] as const;
+export const SUPPORTED_LANGUAGES=['en','de','es','nl','it','fr','ru','tr'] as const;
 
 export type Language=typeof SUPPORTED_LANGUAGES[number];
 
@@ -9,6 +9,8 @@ export const LANGUAGE_NAMES:Record<Language,string>={
   nl:'Nederlands',
   it:'Italiano',
   fr:'Français',
+  ru:'Русский',
+  tr:'Türkçe',
 };
 
 export function isSupportedLanguage(value:unknown):value is Language{

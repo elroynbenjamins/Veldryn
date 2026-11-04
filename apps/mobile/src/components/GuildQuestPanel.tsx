@@ -46,9 +46,9 @@ export function GuildQuestBoard({quests}:{quests:OnlineGuildQuest[]}){
  return <QuestBoard style={s.board}>
   <View style={s.head}><View style={s.flex}><Text accessibilityRole="header" style={s.title}>{st('Guild Quests')}</Text><Text style={s.copy}>{completed} / {quests.length} completed · +{totalActivity} {st('ACTIVITY EARNED')}</Text></View>{quests.length?<StatusPill label={remaining<=1?st('ENDS SOON'):remaining+'D LEFT'} tone={remaining<=1?'warning':'info'}/>:null}</View>
   {transition?<ActivityTransition quest={transition}/>:null}
-  {!quests.length?<Text style={s.copy}>No weekly Guild Quests are posted. Join a Guild or check back after the board refreshes.</Text>:null}
+  {!quests.length?<Text style={s.copy}>No quests available. Check back later.</Text>:null}
   {ordered.map(q=><Quest key={`${q.boardSlot}:${q.questKey}`} quest={q}/>)}
-  {quests.length?<Text style={s.foot}>Five quests are fixed for the week. Completed quests stay visible until the weekly reset; there are no rerolls.</Text>:null}
+  {quests.length?<Text style={s.foot}>5 quests per week · No rerolls.</Text>:null}
  </QuestBoard>;
 }
 function ActivityTransition({quest:q}:{quest:OnlineGuildQuest}){
@@ -64,7 +64,7 @@ function Quest({quest:q}:{quest:OnlineGuildQuest}){
   {q.completed?<StatusPill label={st('COMPLETE')} tone="good"/>:null}
   <Text style={s.copy}>{q.description}</Text>
   <StatBar rounded label="Shared guild progress" current={Math.min(q.progress,q.target)} max={q.target}/>
-  <View style={s.personal}><Text style={s.personalLabel}>{st('YOUR CONTRIBUTION')}</Text>{q.personalProgress.length?q.personalProgress.map(o=><Text key={o.key} style={s.copy}>{objectiveLabel(o.key)}: {Math.min(o.progress,o.target).toLocaleString()} / {o.target.toLocaleString()}</Text>):<Text style={s.copy}>No contribution recorded yet.</Text>}<Text style={s.foot}>{q.contributorCount} contributor{q.contributorCount===1?'':'s'} this week · personal daily credit is capped</Text></View>
+  <View style={s.personal}><Text style={s.personalLabel}>{st('YOUR CONTRIBUTION')}</Text>{q.personalProgress.length?q.personalProgress.map(o=><Text key={o.key} style={s.copy}>{objectiveLabel(o.key)}: {Math.min(o.progress,o.target).toLocaleString()} / {o.target.toLocaleString()}</Text>):<Text style={s.copy}>No contribution recorded yet.</Text>}<Text style={s.foot}>{q.contributorCount} contributor{q.contributorCount===1?'':'s'} · daily contribution capped</Text></View>
   <Text style={s.reward}>+{q.activityReward} {q.completed?'Guild Activity secured':'Guild Activity on completion'}</Text>
   {q.objectiveProgress.length?<><Pressable accessibilityRole="button" aria-expanded={expanded} accessibilityState={{expanded}} accessibilityLabel={`Objective breakdown · ${q.title}`} onPress={()=>setExpanded(value=>!value)} style={s.disclosure}><Text style={s.disclosureText}>Objective breakdown</Text><Text style={s.disclosureText}>{expanded?'−':'+'}</Text></Pressable>{expanded?q.objectiveProgress.map(o=><Text key={o.key} style={s.copy}>{objectiveLabel(o.key)}: {Math.min(o.progress,o.target).toLocaleString()} / {o.target.toLocaleString()}</Text>):null}</>:null}
  </QuestPosting>;

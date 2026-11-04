@@ -92,12 +92,12 @@ export function OnlineGuildConstructionPanel({
  return <Panel>
   <Text style={s.kicker}>GUILD CONSTRUCTION</Text>
   <Text style={s.title}>Build something together</Text>
-  <Text style={s.copy}>Choose a building to see its permanent bonuses, upgrade tiers and material requirements.</Text>
+  <Text style={s.copy}>Choose a building to view upgrades and costs.</Text>
   <View style={s.buildingGrid}>{BUILDINGS.map(building=><Pressable key={building.id} accessibilityRole="button" accessibilityLabel={'View '+building.title+' upgrades'} accessibilityState={{selected:selectedBuilding===building.id}} onPress={()=>{setSelectedBuilding(building.id);setSelected(null)}} style={({pressed})=>[s.building,{borderColor:selectedBuilding===building.id?C.selectionLine:C.lineStrong,backgroundColor:selectedBuilding===building.id?C.selection:C.panel2},pressed&&s.pressed]}><Image source={guildFacilityArtwork(building.art)} style={s.buildingArt} resizeMode="contain" accessible={false}/><Text style={[s.buildingName,{color:selectedBuilding===building.id?C.text:C.muted}]}>{building.title}</Text></Pressable>)}</View>
-  <Text style={s.note}>Only released upgrades accept funding. Deposit supplies into the Guild Bank first, then allocate them here.</Text>
+  <Text style={s.note}>Deposit materials in the Guild Bank to fund upgrades.</Text>
   {snapshot.unavailableSections?.includes('constructionCosts')
    ?<Text style={s.error}>Current Guild Construction prices are unavailable. Refresh before funding.</Text>
-   :<Text style={s.copy}>Guild size: {snapshot.constructionMemberCount??1} · Each member after the first adds 20% to base costs, rounded up to 20. A project's requirements lock when funding begins.</Text>}
+   :null}
   {error?<Text accessibilityRole="alert" style={s.error}>{error}</Text>:null}
   {notice?<Text accessibilityLiveRegion="polite" style={s.notice}>{notice}</Text>:null}
   {pending?<View style={s.pending}>
@@ -125,7 +125,7 @@ export function OnlineGuildConstructionPanel({
     <View style={s.head}><View style={s.flex}>
      <Text style={s.projectName}>{resourceName(template.id)}</Text>
      <Text style={s.projectMeta}>Guild Level {template.guildLevel} · {row?.completed?'Completed':!unlocked?'Guild level locked':template.enabled?'Donations open':'Coming soon'}</Text>
-     {template.costMemberCount?<Text style={s.projectMeta}>Requirements based on {template.costMemberCount} {template.costMemberCount===1?'member':'members'}</Text>:null}
+     {template.costMemberCount?<Text style={s.projectMeta}>Costs for {template.costMemberCount} {template.costMemberCount===1?'member':'members'}</Text>:null}
     </View><Text style={s.percent}>{Math.round(completion*100)}%</Text></View>
     {requirements.map(res=>{
      const amount=Math.max(0,row?.resources[res.key]??0),pct=res.required?Math.min(100,Math.round(amount/res.required*100)):100;
@@ -144,7 +144,7 @@ export function OnlineGuildConstructionPanel({
      </Pressable>;
     })}
     {canDonate&&selectedHere&&chosen&&remaining>0?<View style={s.donationControls}>
-     <Text style={s.projectMeta}>Fund with {resourceName(chosen.key)} · {remaining.toLocaleString()} still needed · Bank: {bankAmount.toLocaleString()}</Text>
+     <Text style={s.projectMeta}>{resourceName(chosen.key)} · Need {remaining.toLocaleString()} · Bank {bankAmount.toLocaleString()}</Text>
      <View style={s.actions}>
       <TextInput accessibilityLabel="Donation amount" value={quantity} onChangeText={setQuantity}
        keyboardType="number-pad" maxLength={7} selectTextOnFocus style={s.input}/>
@@ -160,7 +160,7 @@ export function OnlineGuildConstructionPanel({
    </View>;
   })}
   <Text style={s.kicker}>UPGRADE ROADMAP</Text>
-  {GUILD_CONSTRUCTION_BLUEPRINTS.filter(plan=>plan.id.startsWith('construction_'+selectedBuilding+'_')&&!snapshot.constructionTemplates.some(template=>template.id===plan.id&&template.enabled)).map(plan=><View key={plan.id} style={s.lockedTier}><View style={s.head}><Text style={s.projectName}>{plan.name}</Text><Text style={s.projectMeta}>Guild Lv {plan.requiredGuildLevel}</Text></View><Text style={s.unlock}>{plan.benefit}</Text><Text style={s.projectMeta}>Not released for funding</Text></View>)}
+  {GUILD_CONSTRUCTION_BLUEPRINTS.filter(plan=>plan.id.startsWith('construction_'+selectedBuilding+'_')&&!snapshot.constructionTemplates.some(template=>template.id===plan.id&&template.enabled)).map(plan=><View key={plan.id} style={s.lockedTier}><View style={s.head}><Text style={s.projectName}>{plan.name}</Text><Text style={s.projectMeta}>Guild Lv {plan.requiredGuildLevel}</Text></View><Text style={s.unlock}>{plan.benefit}</Text><Text style={s.projectMeta}>Coming soon</Text></View>)}
  </Panel>;
 }
 function styles(C:ThemeColors){return StyleSheet.create({

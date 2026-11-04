@@ -83,7 +83,8 @@ const offline=await gate(build(),{connected:false}).fetchAppVersionGate();
 assert.deepEqual(offline,{currentVersion:appConfig.expo.version,policy:null,updateRequired:false,updateAvailable:false,maintenanceMode:false,verificationFailed:true});
 console.log('PASS legacy release-channel policies and unavailable online configuration');
 
-const translator=load('apps/mobile/src/i18n/translator.ts',{});
+const earlyLocales=load('apps/mobile/src/i18n/early-locales.ts',{});
+const translator=load('apps/mobile/src/i18n/translator.ts',{'./early-locales':earlyLocales});
 const {SUPPORTED_LANGUAGES}=load('apps/mobile/src/i18n/languages.ts',{});
 const {appBuildCatalogs,appBuildText}=load('apps/mobile/src/i18n/app-build.ts',{'./translator':translator});
 const fingerprint=build({}, {}, appConfig,{BUILD_SOURCE_COMMIT:'abcdef1234567890',BUILD_SOURCE_BUILD_ID:'eas-build-1'});
@@ -97,4 +98,4 @@ for(const language of SUPPORTED_LANGUAGES){
     assert.ok(!/\{[^}]+\}/.test(text));
   }
 }
-console.log('PASS build diagnostics are localized in all six supported languages');
+console.log('PASS build diagnostics are localized across all supported languages, including early RU/TR fallback');

@@ -24,15 +24,15 @@ ok(!homeActions.includes('Open Muster')&&!homeActions.includes('DAILY GUILD PART
 ok(hallSummary.includes('title="View Muster & Rally"')&&screen.includes('<GuildHallSummary compact onOpenMuster={onNavigateMuster}'),'Primary Guild Hall summary Muster shortcut must remain functional');
 ok(screen.includes("activityView==='Muster'?")&&screen.includes('<OnlineGuildMusterPanel/>'),'Guild Activities Muster destination must remain available');
 ok(panel.includes('GUILD MUSTER'),'Muster must have a clear player-facing identity');
-ok(panel.includes('not a consecutive login streak'),'Muster must explicitly avoid punitive consecutive streaks');
+ok(panel.includes('No daily streak required.'),'Muster must explicitly avoid punitive consecutive streaks');
 ok(panel.includes('35% / 70% / 100%'),'Rally tier milestones must be visible');
 ok(panel.includes('+5% / +10% / +15% Hall Progress'),'Rally rewards must stay tied to communal Hall progression');
-ok(panel.includes('there is no manual point button to spam'),'Muster must explain that contribution is automatic and verified');
+ok(panel.includes('Combat and Skilling add progress automatically.'),'Muster must explain that contribution is automatic and verified');
 ok(panel.includes('Refresh Muster'),'Muster needs explicit refresh feedback');
 ok(panel.includes('ACTIVE GUILD')&&panel.includes('Guild Activity'),'Guild Activities must surface the persistent Active Guild meter');
-ok(panel.includes('Guild Quests, Muster and completed shared Projects'),'Active Guild meter must explain its cooperative sources');
-ok(panel.includes('There is no weekly hard reset.'),'Active Guild meter must explain the non-punitive persistence model');
-ok(panel.includes('relative rare materials'),'100% activity reward must be visible');
+ok(panel.includes('Guild Quests, Muster and Projects'),'Active Guild meter must explain its cooperative sources');
+ok(panel.includes('Stay active to avoid losing progress.'),'Active Guild meter must explain the non-punitive persistence model');
+ok(panel.includes('% Rare Materials.'),'100% activity reward must be visible');
 
 ok(client.includes("db.rpc('guild_muster_state_v1')"),'Muster summary must come from a membership-gated server RPC');
 ok(client.includes("db.rpc('guild_muster_roster_v1')"),'Muster roster must come from a membership-gated server RPC');

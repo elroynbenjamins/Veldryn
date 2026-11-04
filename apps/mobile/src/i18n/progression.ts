@@ -3,6 +3,8 @@ import {createTranslator} from './translator';
 
 // English source copy is the key. Proper names and player-authored text are never keys.
 export const progressionTranslationRows = {
+ "Practice skills as you play. No extra claims.": ["Übe Fertigkeiten beim Spielen. Keine zusätzlichen Belohnungen abholen.","Practica habilidades mientras juegas. Sin recompensas adicionales que reclamar.","Oefen vaardigheden tijdens het spelen. Geen extra beloningen om te claimen.","Allenati nelle abilità giocando. Nessuna ricompensa extra da riscattare.","Entraînez vos compétences en jouant. Aucune récompense supplémentaire à récupérer."],
+ "Completed lessons remain available.": ["Abgeschlossene Lektionen bleiben verfügbar.","Las lecciones completadas siguen disponibles.","Voltooide lessen blijven beschikbaar.","Le lezioni completate restano disponibili.","Les leçons terminées restent disponibles."],
  // Read-only Journal milestone and bounded Mastery record lists.
  "Next milestone: {title}":["Nächster Meilenstein: {title}","Siguiente hito: {title}","Volgende mijlpaal: {title}","Prossimo traguardo: {title}","Prochain jalon : {title}"],
  "Rewards are cosmetic titles rather than power.":["Die Belohnungen sind kosmetische Titel, keine Kampfkraft.","Las recompensas son títulos cosméticos, no poder.","Beloningen zijn cosmetische titels, geen extra kracht.","Le ricompense sono titoli estetici, non potenza.","Les récompenses sont des titres cosmétiques, pas de la puissance."],
@@ -930,7 +932,7 @@ export type ProgressionCatalog = Record<ProgressionKey,string>;
 
 // Every row supplies all five translations; English comes from the source key.
 export const progressionCatalogs = Object.fromEntries(SUPPORTED_LANGUAGES.map((language,index)=>[
-  language,Object.fromEntries(Object.entries(progressionTranslationRows).map(([key,row])=>[key,index===0?key:row[index-1]])),
+  language,Object.fromEntries(Object.entries(progressionTranslationRows).map(([key,row])=>[key,index===0?key:row[index-1]??key])),
 ])) as Record<Language,ProgressionCatalog>;
 export const progressionT = createTranslator<ProgressionKey>(progressionCatalogs);
 

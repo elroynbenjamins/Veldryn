@@ -6,7 +6,7 @@ import {LoadingState} from './LoadingState';
 import {Panel} from './Panel';
 import {StatusPill} from './StatusPill';
 import {guildMusterDailyPercent,guildMusterRallyPercent} from '../core/guild-muster';
-import {GUILD_ACTIVITY_DAILY_DECAY_PERCENT,GUILD_ACTIVITY_MILESTONE_DEFS,guildActivityNextMilestone} from '../core/guild-activity';
+import {GUILD_ACTIVITY_MILESTONE_DEFS,guildActivityNextMilestone} from '../core/guild-activity';
 import {loadOnlineGuildMuster,type OnlineGuildMusterMember,type OnlineGuildMusterState} from '../online/guild-muster';
 import {radii,typography,type ThemeColors} from '../theme/theme';
 import {useGameTheme} from '../theme/ThemeContext';
@@ -28,8 +28,8 @@ export function OnlineGuildMusterPanel(){
  const visibleMembers=members.slice(0,6);
  return <View style={s.root}>
   <Panel>
-   <View style={s.head}><View style={s.flex}><Text style={s.kicker}>{st("GUILD MUSTER")}</Text><Text style={s.title}>{st("Show up. Play normally. Help together.")}</Text></View><StatusPill label={state.checkedIn?st("CHECKED IN"):st("NOT CHECKED IN")} tone={state.checkedIn?'good':'muted'}/></View>
-   <Text style={s.copy}>Your first authenticated session records today’s attendance. Verified Combat and Skilling then add capped Muster contribution automatically—there is no manual point button to spam.</Text>
+   <View style={s.head}><View style={s.flex}><Text style={s.kicker}>{st("GUILD MUSTER")}</Text><Text style={s.title}>{st("Play together. Earn rewards.")}</Text></View><StatusPill label={state.checkedIn?st("CHECKED IN"):st("NOT CHECKED IN")} tone={state.checkedIn?'good':'muted'}/></View>
+   <Text style={s.copy}>Check in by playing. Combat and Skilling add progress automatically.</Text>
   </Panel>
 
   <Panel>
@@ -40,12 +40,12 @@ export function OnlineGuildMusterPanel(){
     <Metric label={st("COMBAT")} value={String(state.combatPoints)} C={C}/>
     <Metric label={st("SKILLING")} value={String(state.skillingPoints)} C={C}/>
    </View>
-   <Text style={s.note}>Reach {state.rallyMarkThreshold}/{state.dailyCap} today to earn one Rally Mark. Extra play can fill your daily contribution, but never creates more than one Mark per day.</Text>
+   <Text style={s.note}>Earn 1 Rally Mark at {state.rallyMarkThreshold} points today.</Text>
   </Panel>
 
   <Panel>
-   <View style={s.head}><View style={s.flex}><Text style={s.sectionTitle}>{st("Your weekly cadence")}</Text><Text style={s.meta}>{state.personalQualifyingDays}/{state.personalWeeklyGoal} Rally days · {state.personalWeeklyPoints} points</Text></View><StatusPill label={state.personalQualifyingDays>=state.personalWeeklyGoal?st("READY"):st("4 OF 7")} tone={state.personalQualifyingDays>=state.personalWeeklyGoal?'good':'info'}/></View>
-   <Text style={s.copy}>This is intentionally not a consecutive login streak. Four meaningful days in a week is enough, so missing a day does not reset anything.</Text>
+   <View style={s.head}><View style={s.flex}><Text style={s.sectionTitle}>{st("Your week")}</Text><Text style={s.meta}>{state.personalQualifyingDays}/{state.personalWeeklyGoal} Rally days · {state.personalWeeklyPoints} points</Text></View><StatusPill label={state.personalQualifyingDays>=state.personalWeeklyGoal?st("READY"):st("4 OF 7")} tone={state.personalQualifyingDays>=state.personalWeeklyGoal?'good':'info'}/></View>
+   <Text style={s.copy}>Play on {state.personalWeeklyGoal} days this week. No daily streak required.</Text>
   </Panel>
 
   <Panel>
@@ -56,17 +56,16 @@ export function OnlineGuildMusterPanel(){
     <Metric label={st("MARK TODAY")} value={String(state.qualifiedMembersToday)} C={C}/>
     <Metric label={st("HALL BONUS")} value={hallBonus?'+'+hallBonus+'%':'—'} C={C}/>
    </View>
-   <Text style={s.copy}>Rally I / II / III unlock at 35% / 70% / 100% of the weekly target. They add +5% / +10% / +15% Hall Progress when a Guild Project completes that week. No new currency, no loot race, and no single member can carry the Rally alone.</Text>
-   <Text style={s.note}>The target scales to roughly 60% of the current roster completing four meaningful days, so launch-size Guilds are not balanced around a full 20-player roster.</Text>
+   <Text style={s.copy}>Rally tiers: 35% / 70% / 100%. Guild Projects earn +5% / +10% / +15% Hall Progress.</Text>
   </Panel>
 
   <Panel>
    <View style={s.head}><View style={s.flex}><Text style={s.kicker}>{st("ACTIVE GUILD")}</Text><Text style={s.sectionTitle}>{activityPct}% Guild Activity</Text></View><StatusPill label={activityPct>=100?st("MAX ACTIVITY"):nextActivity?nextActivity.threshold+'% NEXT':st("ACTIVE")} tone={activityPct>=60?'good':'info'}/></View>
    <Progress value={activityPct} C={C}/>
-   <Text style={s.copy}>Guild Activity is sustained through Guild Quests, Muster and completed shared Projects. Its requirement scales from members active in the trailing 14 days, so dormant roster slots do not permanently inflate the target.</Text>
+   <Text style={s.copy}>Complete Guild Quests, Muster and Projects to raise activity.</Text>
    <View style={s.activityMilestones}>{GUILD_ACTIVITY_MILESTONE_DEFS.map(row=><View key={row.threshold} style={[s.activityMilestone,activityPct>=row.threshold&&s.activityMilestoneOn]}><Text style={[s.activityPct,activityPct>=row.threshold&&s.activityPctOn]}>{row.threshold}%</Text><View style={s.flex}><Text style={s.activityName}>{row.name}</Text><Text style={s.note}>{row.description}</Text></View></View>)}</View>
-   <Text style={s.note}>{state.activityDecayMode==='protected'?'Today is protected: enough Guild activity has been recorded to avoid decay.':state.activityDecayMode==='partial'?'Some activity is recorded today: if the day ends here, the meter loses only '+state.activityPartialDecayPercent+' percentage points.':'No meaningful Guild activity is recorded today yet: an inactive day loses '+(state.activityDailyDecayPercent||GUILD_ACTIVITY_DAILY_DECAY_PERCENT)+' percentage points.'} There is no weekly hard reset.</Text>
-   <Text style={s.note}>Current unlocked effects: +{state.gatheringSpeedBps/100}% gathering · +{state.productionSpeedBps/100}% production · +{state.activitySkillXpBps/100}% Skill XP · +{state.masteryXpBps/100}% Mastery XP · +{state.rareMaterialRelativeBps/100}% relative rare materials. Today: {state.activityTodayUnits}/{state.activityTargetUnits} activity units from {state.activityActiveMemberCount} recently active member{state.activityActiveMemberCount===1?'':'s'}.</Text>
+   <Text style={s.note}>{state.activityDecayMode==='protected'?'Activity secured today.':state.activityDecayMode==='partial'?'More activity helps prevent a drop.':'Stay active to avoid losing progress.'}</Text>
+   <Text style={s.note}>Bonuses: +{state.gatheringSpeedBps/100}% Gathering · +{state.productionSpeedBps/100}% Production · +{state.activitySkillXpBps/100}% Skill XP · +{state.masteryXpBps/100}% Mastery XP · +{state.rareMaterialRelativeBps/100}% Rare Materials.</Text>
   </Panel>
 
   <Panel>
@@ -75,7 +74,7 @@ export function OnlineGuildMusterPanel(){
     <Text style={s.rank}>#{index+1}</Text><View style={s.flex}><Text numberOfLines={1} style={s.memberName}>{member.displayName}</Text><Text style={s.meta}>{roleLabel(member.role)} · {member.qualifyingDays}/{state.personalWeeklyGoal} Rally days</Text></View>
     <View style={s.memberNumbers}><Text style={s.memberPoints}>{member.weeklyPoints}</Text><Text style={s.memberToday}>today {member.todayPoints}</Text></View>
    </View>)}
-   {members.length>visibleMembers.length?<Text style={s.note}>+{members.length-visibleMembers.length} more members contribute to the Rally.</Text>:null}
+   {members.length>visibleMembers.length?<Text style={s.note}>+{members.length-visibleMembers.length} more contributors</Text>:null}
   </Panel>
   <GameButton compact title={loading?st("Refreshing…"):st("Refresh Muster")} tone="secondary" disabled={loading} onPress={()=>load()}/>
   {!!error&&<Text style={s.error}>{error}</Text>}

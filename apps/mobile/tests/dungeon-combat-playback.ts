@@ -1,5 +1,6 @@
 import {playbackAdvanceDelayMs,playbackBossCombatant,playbackCastDisplayMs,playbackCombatantState,playbackCombatantStatuses,playbackEnemyCombatants,playbackCueDelayMs,playbackCueLabel,playbackCueTone,playbackProgress,playbackRecentCues,playbackVisualDurationMs} from '../src/core/dungeon-combat-playback';
 import {validateCoopRunView,type CoopCombatReplayView} from '../src/core/coop-presentation';
+import {dungeonEnemyAbilityDisplayName,dungeonEnemyDisplayName} from '../src/core/dungeon-enemy-display';
 
 function assert(value:unknown,message:string){if(!value)throw new Error(message);}
 function equal(actual:unknown,expected:unknown,message='values differ'){if(JSON.stringify(actual)!==JSON.stringify(expected))throw new Error(`${message}: ${JSON.stringify(actual)} !== ${JSON.stringify(expected)}`);}
@@ -30,6 +31,16 @@ const replay:CoopCombatReplayView={nodeId:'boss',reason:'victory',durationMs:200
  {atMs:9000,type:'down',targetId:'p2',targetName:'Ravager',states:[{id:'p0',hp:1050,shield:0},{id:'p1',hp:900,shield:0},{id:'p2',hp:0,shield:0},{id:'p3',hp:850,shield:0},{id:'boss',hp:2100,shield:0}]},
  {atMs:20000,type:'victory',states:[{id:'p0',hp:1050,shield:0},{id:'p1',hp:760,shield:0},{id:'p2',hp:0,shield:0},{id:'p3',hp:850,shield:0},{id:'boss',hp:0,shield:0}]},
 ]};
+equal(dungeonEnemyDisplayName('Dune Sphinx'),'Dune Oracle','Elite uses existing Sunscar creature name');
+equal(dungeonEnemyDisplayName('The Veiled Sphinx'),'The Veiled Oracle','Boss uses a recognizable Oracle variant');
+equal(dungeonEnemyDisplayName('  the  VEILED   sphinx  '),'The Veiled Oracle','Historical and oddly spaced names remain supported');
+equal(dungeonEnemyDisplayName('The Hollow Regent'),'The Hollow Regent','Unrelated boss names remain unchanged');
+equal(dungeonEnemyAbilityDisplayName('Sphinx Pursuit'),'Oracle Pursuit','Boss cast names match the renamed creature');
+equal(dungeonEnemyAbilityDisplayName('Sphinx Riddleburst'),'Oracle Riddleburst','Elite ability names match the renamed creature');
+equal(dungeonEnemyAbilityDisplayName('Basic Attack'),'Basic Attack','Other ability names remain unchanged');
+equal(playbackCueLabel({atMs:100,type:'cast',actorId:'BOSS_EXP_SPHINX',actorName:'The Veiled Sphinx',abilityName:'Sphinx Pursuit'}),'The Veiled Oracle begins Oracle Pursuit','Stored boss replay shows new name and cast without changing ids');
+equal(playbackCueLabel({atMs:100,type:'action',actorId:'SUN_MIRAGE_ELITE_1',actorName:'Dune Sphinx',targetId:'p0',targetName:'Tank',actionKind:'damage',abilityName:'Sphinx Riddleburst',amount:100}),'Dune Oracle uses Oracle Riddleburst on Tank · 100','Elite combat log shows creature-compatible name');
+
 equal(playbackCueTone(replay.cues[0]),'selected');
 equal(playbackCueLabel(replay.cues[0]),'Wayfinder attacks The Hollow Regent · 87');
 equal(playbackCueTone(replay.cues[2]),'warning');

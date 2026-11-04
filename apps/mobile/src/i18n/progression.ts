@@ -930,7 +930,7 @@ export type ProgressionCatalog = Record<ProgressionKey,string>;
 
 // Every row supplies all five translations; English comes from the source key.
 export const progressionCatalogs = Object.fromEntries(SUPPORTED_LANGUAGES.map((language,index)=>[
-  language,Object.fromEntries(Object.entries(progressionTranslationRows).map(([key,row])=>[key,index===0?key:row[index-1]])),
+  language,Object.fromEntries(Object.entries(progressionTranslationRows).map(([key,row])=>[key,index===0?key:row[index-1]??key])),
 ])) as Record<Language,ProgressionCatalog>;
 export const progressionT = createTranslator<ProgressionKey>(progressionCatalogs);
 

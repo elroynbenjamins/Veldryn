@@ -32,6 +32,9 @@ jobs:
       - name: Install shared mobile engine dependencies
         working-directory: apps/mobile
         run: pnpm install --frozen-lockfile
+      - name: Verify Merchant purchase retries and server-authored outcome
+        working-directory: backend
+        run: pnpm test:qmode-merchant
       - name: Validate Q-Mode pressure and 9600 full Echo runs
         working-directory: backend
         run: pnpm test:qmode-pressure

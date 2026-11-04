@@ -77,6 +77,20 @@ export class OnlineQModeRuntime{
   const run=pending.run,last=run.lastResolution!,final=settlement(run,loaded.stateVersion+1);
   return this.services.rpc('finalize_online_qmode_node_server_v1',{p_account_id:accountId,p_run_id:runId,p_expected_version:loaded.stateVersion,p_private_state:{run,seed:loaded.privateState.seed},p_client_projection:final.projection,p_node_id:last.nodeId,p_result:last.result,p_start_state_hash:pending.startStateHash,p_enhanced_marks:final.enhancedMarks,p_assistance_marks:final.assistanceMarks});
  }
+ async purchaseMerchant(accountId:string,runId:string,request:{requestId:string;expectedVersion:number;offerId:string}){
+  const hash=digest(request),operation='qmode_merchant_purchase_v1';
+  const prior=await this.receipt(accountId,operation,runId,request.requestId,hash);if(prior)return prior.response;
+  const loaded=await this.services.rpc<Loaded>('load_online_qmode_server_v1',{p_account_id:accountId,p_run_id:runId});
+  if(loaded.privateState.pending)throw new GameplayError('node_resolving',409);
+  if(loaded.stateVersion!==request.expectedVersion){const replay=await this.receipt(accountId,operation,runId,request.requestId,hash);if(replay)return replay.response;throw new GameplayError('stale_state',409);}
+  const {run:before,seed}=loaded.privateState;
+  if(before.phase!=='awaiting_choice')throw new GameplayError('run_not_awaiting_choice',409);
+  const repository=new MemoryQModeRunRepository();repository.save(before);
+  const actorId=before.players[0]?.id;if(!actorId)throw new GameplayError('invalid_merchant_actor');
+  const next=new QModeService(repository,seed).purchaseMerchant({runId,controllerAccountId:accountId,actorId,offerId:request.offerId});
+  const client=projection(next,loaded.stateVersion+1);
+  return this.services.rpc('purchase_online_qmode_merchant_server_v1',{p_account_id:accountId,p_run_id:runId,p_expected_version:loaded.stateVersion,p_request_id:request.requestId,p_request_hash:hash,p_offer_id:request.offerId,p_actor_id:actorId,p_private_state:{run:next,seed},p_client_projection:client});
+ }
  async choose(accountId:string,runId:string,request:CoopDecisionCommand){
   const hash=digest(request),prior=await this.receipt(accountId,'qmode_choose_v1',runId,request.requestId,hash);if(prior)return prior.response;
   const loaded=await this.services.rpc<Loaded>('load_online_qmode_server_v1',{p_account_id:accountId,p_run_id:runId});

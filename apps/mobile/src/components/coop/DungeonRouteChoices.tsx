@@ -23,22 +23,23 @@ export function DungeonRouteChoices({options,mode,phase,busy=false,onChoose,myVo
    const canPress=canChoose&&!option.hidden;
    const votedHere=live&&myVotedNodeId===option.nodeId;
    const room=dungeonRoomPresentation(option.kind);
+   const title=room&&(option.title.trim().toLowerCase()===option.kind.trim().toLowerCase()||(option.kind==='boss'&&option.title.trim().toLowerCase()==='final boss'))?st(room.name):option.title;
    const preview=option.encounterPreview?.summary??(room?st(room.description):undefined);
    const riskBaseline=/^risk\s+1(?:\.0+)?$/i.test(option.risk.trim());
    const redundantReward=option.reward.trim().toLowerCase().replace(/[\s_-]+/g,'')===option.kind.trim().toLowerCase().replace(/[\s_-]+/g,'');
    return <Pressable
     key={option.nodeId}
     accessibilityRole="button"
-    accessibilityLabel={`${option.title}. ${option.risk}. ${option.reward}. ${live?`${option.votes??0} of ${totalVotes} votes. `:''}${votedHere?'Your vote. ':''}${canPress?action:st('Unavailable')}`}
+    accessibilityLabel={`${title}. ${option.risk}. ${option.reward}. ${live?`${option.votes??0} of ${totalVotes} votes. `:''}${votedHere?'Your vote. ':''}${canPress?action:st('Unavailable')}`}
     accessibilityState={{disabled:!canPress}}
     disabled={!canPress}
     onPress={()=>onChoose?.(option.nodeId)}
     style={({pressed})=>[s.card,option.kind==='boss'&&s.bossCard,votedHere&&s.myChoice,option.hidden&&s.hiddenCard,pressed&&canPress&&s.pressed]}
    >
-    <CoopImageSlot assetId={room?.art??'node_event'} size="thumbnail" accessibilityLabel={option.title}/>
+    <CoopImageSlot assetId={room?.art??'node_event'} size="thumbnail" accessibilityLabel={title}/>
     <View style={s.content}>
      <View style={s.heading}>
-      <Text style={s.title} numberOfLines={2}>{option.title}</Text>
+      <Text style={s.title} numberOfLines={2}>{title}</Text>
       <Text style={s.roomNumber}>{String(index+1).padStart(2,'0')}</Text>
      </View>
      {(!riskBaseline||!redundantReward)?<View style={s.tags}>

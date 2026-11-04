@@ -1,5 +1,5 @@
 import {useEffect,useMemo,useState} from 'react';
-import {ActivityIndicator,Pressable,ScrollView,StyleSheet,Text,View} from 'react-native';
+import {ActivityIndicator,ScrollView,StyleSheet,Text,View} from 'react-native';
 import {GameModalHeader,GameModalSurface} from './GameModalSurface';
 import {GameTextInput} from './GameTextInput';
 import {GameButton} from './GameButton';
@@ -39,9 +39,9 @@ export function PartyFriendInviteSheet({visible,partyId,openSpots,pendingAccount
   setError('');setBusyId(friend.account_id);
   try{
    const capability=(await socialInviteCapabilities(friend.account_id)).party;
-   if(capability.partyId!==partyId)throw new Error('Your Party changed. Reopen the invitation list.');
    if(capability.pending){setSentIds(current=>[...current,friend.account_id]);return;}
    if(!capability.available)throw new Error(issueMessage(capability.reason));
+   if(capability.partyId!==partyId)throw new Error('Your Party changed. Reopen the invitation list.');
    const result=await sendPartyInvitation(friend.account_id);
    if(result.status==='sent'||result.status==='already_pending'){
     setSentIds(current=>[...current,friend.account_id]);
@@ -80,5 +80,5 @@ function makeStyles(C:ThemeColors){return StyleSheet.create({
  friendRow:{minHeight:62,flexDirection:'row',alignItems:'center',gap:8,borderBottomWidth:StyleSheet.hairlineWidth,borderColor:C.line,paddingVertical:6},
  identity:{flex:1,minWidth:0},
  loading:{minHeight:65,flexDirection:'row',alignItems:'center',gap:10},
- error:{color:C.danger,fontSize:11,lineHeight:16,paddingVertical:5},
+ error:{color:C.bad,fontSize:11,lineHeight:16,paddingVertical:5},
  });}

@@ -4,6 +4,7 @@ function ok(value:boolean,message:string){if(!value)throw new Error(message)}
 const read=(path:string)=>fs.readFileSync(path,'utf8');
 const character=read('src/screens/CharacterScreen.tsx');
 const preview=read('src/components/EquipmentPreview.tsx');
+const comparison=read('src/core/equipment-comparison.ts');
 const setPanel=read('src/components/EquipmentSetProgressPanel.tsx');
 const decision=read('src/core/equipment-decision.ts');
 
@@ -34,7 +35,7 @@ ok(preview.includes('useGameTheme'),'Equipment comparison must use the active th
 ok(preview.includes('GameModalSurface'),'Equipment comparison must use the shared modal surface');
 ok(!preview.includes("import {C,")&&!preview.includes('equipmentColors}'),'Equipment comparison must not use the legacy static palette');
 ok(preview.includes('SET PROGRESS')&&preview.includes('sets.some(row=>row.after!==row.before)'),'Equipment comparison must surface authoritative set-piece progress changes');
-ok(preview.includes('equippedSetPieceCount'),'Equipment comparison must compute set counts from the preview state');
+ok(preview.includes('equipmentComparison')&&comparison.includes('equippedSetPieceCount')&&comparison.includes('equipmentSetDef'),'Both equipment views must derive set counts and effects from their projected runtime state');
 ok(preview.includes('previewEquipment'),'Comparison copy must not imply unimplemented V33 set effects are active');
 
 ok(setPanel.includes('useGameTheme'),'V33 set-progress presentation must be theme-aware');

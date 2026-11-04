@@ -24,8 +24,9 @@ assert.ok(chat.includes('style={s.channelMeta}')&&chat.includes('languageMenuOpe
 assert.ok(chat.includes('setWorldChannel(index);setLanguageMenuOpen(false);'),'World language switching retained');
 assert.ok(chat.includes('onRequestClose={()=>{if(languageMenuOpen)setLanguageMenuOpen(false);else closeChat();}}'),'Android back dismisses language menu first');
 assert.ok(chat.includes('Keyboard.addListener(')&&chat.includes("'keyboardDidShow'")&&chat.includes("'keyboardDidHide'"),'keyboard visibility lifecycle');
-assert.ok(chat.includes("behavior={Platform.OS==='ios'?'padding':'height'}"),'platform-specific keyboard avoidance');
-assert.ok(chat.includes('keyboardVisible?4:Math.max(insets.bottom,8)'),'navigation safe area freed when typing');
+assert.ok(chat.includes("behavior={Platform.OS==='ios'?'padding':undefined}"),'Android handles IME clearance without double-shrinking the modal');
+assert.ok(chat.includes('measureInWindow')&&chat.includes('keyboardTopRef')&&chat.includes('onLayout={measureKeyboardOverlap}'),'Android measures actual modal occlusion on keyboard and layout changes');
+assert.ok(chat.includes("keyboardVisible?4+(Platform.OS==='android'?keyboardOverlap:0):Math.max(insets.bottom,8)"),'keyboard occlusion plus navigation safe area clearance');
 assert.ok(chat.includes('window:{width:\'100%\',flex:1,minHeight:0'),'chat uses available viewport');
 assert.ok(chat.includes('<GuildChat embedded')&&chat.includes('onTitleChange={setGuildTitle}'),'Guild embedded and identified in header');
 assert.ok(chat.includes('<OnlinePartyChat expanded')&&chat.includes('<SystemNoticeLog expanded'),'Party and System fill viewport');

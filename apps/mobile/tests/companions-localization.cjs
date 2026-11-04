@@ -23,6 +23,33 @@ const {SUPPORTED_LANGUAGES}=require('../src/i18n/languages.ts');
 const placeholders=value=>[...value.matchAll(/\{([a-zA-Z][a-zA-Z0-9_]*)\}/g)].map(match=>match[1]).sort();
 const keys=Object.keys(companionTranslationRows).sort();
 const knownGaps=require('./companions-localization-gaps.json');
+assert.equal(companionContent('de','Defeat 250 Old Mines enemies'),'Besiege 250 Gegner in den Old Mines');
+assert.equal(companionContent('es','Reach Fishing 16'),'Alcanza Pesca 16');
+assert.equal(companionContent('nl','Rare discovery while mapping Silverbrook'),'Zeldzame ontdekking bij het in kaart brengen van Silverbrook');
+assert.equal(companionContent('it','vulnerability'),'vulnerabilità');
+assert.equal(companionContent('fr','below 50% HP'),'sous 50 % des PV');
+assert.equal(companionContent('ru','Rare discovery while following the Frostmarch bells'),'Редкая находка по следам колоколов Frostmarch');
+assert.equal(companionContent('tr','defensive stance'),'savunma duruşu');
+assert.equal(companionContent('en','Rare discovery while mapping Silverbrook'),'Rare discovery while mapping Silverbrook');
+const starterScreen=fs.readFileSync(path.join(root,'apps/mobile/src/screens/CompanionsScreen.tsx'),'utf8');
+assert.ok(starterScreen.includes("t('FIRST COMPANION')")&&starterScreen.includes("t('Choose your combat partner')"),'Starter Companion onboarding must localize its visible heading');
+assert.ok(starterScreen.includes("companionContent(language,choice.description)")&&starterScreen.includes("companionLabel(language,choice.role)"),'Starter choices must localize authored descriptions and role labels, not IDs or player text');
+assert.ok(starterScreen.includes("t('Choose {name}, {role}'")&&starterScreen.includes("t('Recruiting…')"),'Starter choice action and accessibility label must use translated text');
+assert.equal(companionContent('de','FIRST COMPANION'),'ERSTER BEGLEITER');
+assert.equal(companionContent('ru','FIRST COMPANION'),'ПЕРВЫЙ СПУТНИК');
+assert.equal(companionContent('tr','Choose your combat partner'),'Savaş yoldaşını seç');
+const bondNotice='BOND REWARD CLAIMED · Ironwood Wolf · Bond 4 · 35 Essence.';
+assert.equal(companionMessage('de',bondNotice),'BINDUNGSBELOHNUNG ABGEHOLT · Ironwood Wolf · Bindung 4 · 35 × Essenz.');
+assert.equal(companionMessage('nl',bondNotice),'BANDBELONING GECLAIMD · Ironwood Wolf · Band 4 · 35 × Essentie.');
+assert.equal(companionMessage('ru',bondNotice),'НАГРАДА ЗА СВЯЗЬ ПОЛУЧЕНА · Ironwood Wolf · Связь 4 · 35 × Эссенция.');
+assert.equal(companionMessage('tr',bondNotice),'BAĞ ÖDÜLÜ ALINDI · Ironwood Wolf · Bağ 4 · 35 × Öz.');
+const oldCompanionPanel=fs.readFileSync(path.join(root,'apps/mobile/src/components/CombatCompanionPanel.tsx'),'utf8');
+const newCompanionTraining=fs.readFileSync(path.join(root,'apps/mobile/src/components/CompanionTrainingV50Panel.tsx'),'utf8');
+assert.ok(oldCompanionPanel.includes('COMPANION_BOND_ESSENCE_REWARDS')&&newCompanionTraining.includes('COMPANION_BOND_ESSENCE_REWARDS'),'Both companion flows must use the same authoritative Bond Essence reward map');
+assert.ok(!oldCompanionPanel.includes("'35 Essence + portrait'")&&!oldCompanionPanel.includes("'80 Essence + title'")&&!oldCompanionPanel.includes("'55 Essence + Bond Resonance'"),'No current Bond claim confirmation may promise obsolete portrait, title or Resonance rewards');
+
+assert.ok(!Object.values(knownGaps.untranslatedCatalogStrings).flat().includes('Defeat 250 Old Mines enemies'),'Completed companion unlock translations must not remain incorrectly marked as gaps');
+
 for(const values of Object.values(knownGaps.untranslatedCatalogStrings))for(const value of values){
  assert.equal(companionContent('de',value),value,'Update the documented coverage gap after translating: '+value);
 }
@@ -65,10 +92,11 @@ function commandContract(source,file){
  };visit(sf);return calls.sort();
 }
 const baseline={
-  "apps/mobile/src/screens/CompanionsScreen.tsx": [],
+  "apps/mobile/src/screens/CompanionsScreen.tsx": [
+    "onCommand({ type: 'companion_starter', args: { id: choice.id } })"
+  ],
   "apps/mobile/src/screens/CollectionsScreen.tsx": [
-    "selectCollectible(state,'pet',row.id)",
-    "selectCollectible(state,kind,row.id)"
+    "selectCollectible(state,row.kind,row.id)"
   ],
   "apps/mobile/src/screens/PetBonusOverviewScreen.tsx": [
     "choose(row.id)",
@@ -80,43 +108,46 @@ const baseline={
   ],
   "apps/mobile/src/screens/BestiaryScreen.tsx": [
     "setStatus('all')",
+    "setStatus('all')",
     "setStatus(value)",
+    "setZone('all')",
     "setZone('all')",
     "setZone(value)"
   ],
   "apps/mobile/src/components/CombatCompanionPanel.tsx": [
+    "act('companion_essence')",
     "act('companion_housing_upgrade',{ id: model.def.id })",
+    "act('companion_training')",
+    "act('companion_trial_start',{ ids: safeTeam, floor: 1 })",
+    "act('companion_unequip')",
     "act(type,args)",
-    "btn('companion_boss_rematch',undefined,!state.defeatedBossIds.includes('FALLEN_KNIGHT') || fallenKnightWeekly.remaining <= 0)",
     "btn('companion_codex',{ id: m.id },m.claimed || !m.complete)",
     "btn('companion_equip',{ id: selection },!model.compatible || !idle(selection))",
-    "btn('companion_essence',undefined,!(state.account.companionSanctuary?.essenceBasinLevel))",
     "btn('companion_monthly',{ id },claimed || !view.trial.progress.season.monthlyChallengeCompletion[id])",
     "btn('companion_showcase',{ id, ids: view.codex.showcaseCompanionIds },view.codex.favoriteCompanionId === id)",
     "btn('companion_showcase',{ id: view.codex.favoriteCompanionId, ids: view.codex.showcaseCompanionIds.includes(id) ? view.codex.showcaseCompanionIds.filter(x => x !== id) : [...view.codex.showcaseCompanionIds, id] },!view.codex.showcaseCompanionIds.includes(id) && view.codex.showcaseCompanionIds.length >= view.codex.showcaseSlotsUnlocked)",
     "btn('companion_special',{ id: c.id, ids: safeTeam },!valid.ok || completed)",
-    "btn('companion_supplies',undefined,e.gold < 250 || !(state.account.companionSanctuary?.expeditionPensLevel))",
-    "btn('companion_training',undefined,!(state.account.companionSanctuary?.trainingGroundLevel))",
+    "btn('companion_supplies',undefined,e.gold < 250 || !(sanctuary?.expeditionPensLevel))",
     "btn('companion_trial_abandon',{ id: run.runId })",
     "btn('companion_trial_floor',{ id: run.runId, floor: run.currentFloor },recovery > 0)",
-    "btn('companion_trial_start',{ ids: safeTeam },!trialTeamValid)",
-    "btn('companion_trial_start',{ ids: safeTeam, floor: 1 },!trialTeamValid)",
-    "btn('companion_unequip')",
+    "btn('companion_trial_start',{ ids: safeTeam })",
     "btn('companion_upgrade',{ id },!cost || !affordability(cost))",
     "btn('companion_weekly',{ id: d.id },!view.proving.state.completedIds.includes(d.id) || view.proving.state.claimedIds.includes(d.id))",
     "onCommand({ type, args })",
     "setSection('Codex')",
+    "setSection('Codex')",
     "setSection('Collection')",
     "setSection('Collection')",
+    "setSection('Collection')",
+    "setSection('Sanctuary')",
+    "setSection('Training')",
     "setSection('Training')",
     "setSection(source.section)",
     "setSection(source.section)",
     "setSection(tab)"
   ],
   "apps/mobile/src/components/CompanionExpeditionsV50Panel.tsx": [
-    "onCommand(command)",
-    "runCommand({ type: 'companion_assignment_claim', args: { id: row.assignmentId } })",
-    "runCommand({ type: 'companion_assignment_start', args: { id: mission.id, ids: safeTeam, food: foodSelection } })"
+    "onCommand(command)"
   ],
   "apps/mobile/src/components/CompanionTrainingV50Panel.tsx": [
     "act('companion_ascend',{ id: selection })",
@@ -127,7 +158,13 @@ const baseline={
     "act('companion_technique',{ id: selection, technique: technique.id })",
     "act('companion_unequip')",
     "onCommand({ type, args })",
-    "setTab(value)"
+    "setTab('Materials')",
+    "setTab('Roster')",
+    "setTab(key)",
+    "setTab(null)",
+    "setTab(null)",
+    "setTab(null)",
+    "setTab(null)"
   ],
   "apps/mobile/src/components/CompanionTrialStage.tsx": [],
   "apps/mobile/src/components/CompanionProgressMoment.tsx": [],
@@ -135,18 +172,21 @@ const baseline={
   "apps/mobile/src/components/MonsterMasteryPanel.tsx": [],
   "apps/mobile/src/components/RareDiscoveriesPanel.tsx": []
 };
+const contractDrift=[],untranslatedNodes=[];
 for(const file of owned){
  const source=fs.readFileSync(path.join(root,file),'utf8');
  const sf=ts.createSourceFile(file,source,ts.ScriptTarget.Latest,true,ts.ScriptKind.TSX);
  assert.equal(sf.parseDiagnostics.length,0,file+' syntax');
- assert.deepEqual(commandContract(source,file),baseline[file],file+' gameplay commands/filters changed');
+ const actualCommands=commandContract(source,file);
+ if(JSON.stringify(actualCommands)!==JSON.stringify(baseline[file]))contractDrift.push({file,expected:baseline[file],actual:actualCommands});
  assert.ok(source.includes('useGameLanguage()'),file+' language hook');
  const walk=node=>{
   if(ts.isJsxAttribute(node)&&['key','testID','accessibilityRole','accessibilityLiveRegion','keyboardShouldPersistTaps','resizeMode','animationType','tone'].includes(node.name.getText(sf))){
    assert.ok(!/\b(?:t|label|companionContent|translateCompanion)\(/.test(node.initializer?.getText(sf)??''),file+' translated technical prop');
   }
-  if(ts.isJsxText(node))assert.ok(!/[A-Za-z]/.test(node.text),file+' untranslated JSX text: '+node.text);
+  if(ts.isJsxText(node)&&/[A-Za-z]/.test(node.text))untranslatedNodes.push({file,text:node.text.trim()});
   ts.forEachChild(node,walk);
  };walk(sf);
 }
+assert.deepEqual({contractDrift,untranslatedNodes},{contractDrift:[],untranslatedNodes:[]},'Companion localization source contracts changed');
 console.log('Companion localization passed: '+keys.length+' keys × 6 languages; placeholders, names, errors, JSX, and gameplay command/filter contracts.');

@@ -2181,6 +2181,170 @@ export const EARLY_LOCALE_ROWS={
   "Your verified character + three eligible Echo recruits": [
     "Ваш подтверждённый персонаж и три подходящих Эхо",
     "Doğrulanmış karakterin ve üç uygun Yankı üyesi"
+  ],
+  "Defeat 250 Old Mines enemies": [
+    "Победите 250 врагов в Old Mines",
+    "Old Mines bölgesinde 250 düşman yen"
+  ],
+  "Defeat the Fallen Knight 3 times": [
+    "Победите Fallen Knight 3 раза",
+    "Fallen Knight'ı 3 kez yen"
+  ],
+  "Reach Faith 30": [
+    "Достигните 30-го уровня Веры",
+    "İnanç becerisini 30. seviyeye çıkar"
+  ],
+  "Reach Fishing 16": [
+    "Достигните 16-го уровня Рыбалки",
+    "Balıkçılık becerisini 16. seviyeye çıkar"
+  ],
+  "Reach Smithing 30": [
+    "Достигните 30-го уровня Кузнечного дела",
+    "Demircilik becerisini 30. seviyeye çıkar"
+  ],
+  "Rare discovery while charting the Sunscar glasslands": [
+    "Редкая находка при исследовании стеклянных равнин Sunscar",
+    "Sunscar cam düzlüklerini haritalarken nadir keşif"
+  ],
+  "Rare discovery while following the Frostmarch bells": [
+    "Редкая находка по следам колоколов Frostmarch",
+    "Frostmarch çanlarını takip ederken nadir keşif"
+  ],
+  "Rare discovery while mapping Silverbrook": [
+    "Редкая находка при составлении карты Silverbrook",
+    "Silverbrook haritasını çıkarırken nadir keşif"
+  ],
+  "Rare discovery while reading the Ashlands smoke": [
+    "Редкая находка по следам дыма Ashlands",
+    "Ashlands dumanını izlerken nadir keşif"
+  ],
+  "Rare discovery while scouting the Greenfields": [
+    "Редкая находка при разведке Greenfields",
+    "Greenfields bölgesini keşfederken nadir buluş"
+  ],
+  "Rare discovery while surveying the King's Road": [
+    "Редкая находка при изучении King's Road",
+    "King's Road bölgesini araştırırken nadir keşif"
+  ],
+  "Rare discovery while surveying the Old Mines": [
+    "Редкая находка при разведке Old Mines",
+    "Old Mines bölgesini araştırırken nadir keşif"
+  ],
+  "Rare discovery while tracing Ironwood paths": [
+    "Редкая находка при исследовании троп Ironwood",
+    "Ironwood patikalarını takip ederken nadir keşif"
+  ],
+  "below 50% HP": [
+    "меньше 50% здоровья",
+    "can %50'nin altındayken"
+  ],
+  "damage boost": [
+    "усиление урона",
+    "hasar artışı"
+  ],
+  "defensive brace": [
+    "защитная подготовка",
+    "savunma hazırlığı"
+  ],
+  "focused damage": [
+    "сосредоточенный урон",
+    "odaklı hasar"
+  ],
+  "team damage": [
+    "урон группы",
+    "takım hasarı"
+  ],
+  "vulnerability": [
+    "уязвимость",
+    "savunmasızlık"
+  ],
+  "burst damage": [
+    "взрывной урон",
+    "ani yüksek hasar"
+  ],
+  "defensive stance": [
+    "оборонительная стойка",
+    "savunma duruşu"
+  ],
+  "Essence": [
+    "Эссенция",
+    "Öz"
+  ],
+  "BOND REWARD CLAIMED": [
+    "НАГРАДА ЗА СВЯЗЬ ПОЛУЧЕНА",
+    "BAĞ ÖDÜLÜ ALINDI"
+  ],
+  "TRAINING COMPLETE": [
+    "ТРЕНИРОВКА ЗАВЕРШЕНА",
+    "EĞİTİM TAMAMLANDI"
+  ],
+  "ASCENSION COMPLETE": [
+    "ВОЗВЫШЕНИЕ ЗАВЕРШЕНО",
+    "YÜKSELİŞ TAMAMLANDI"
+  ],
+  "PRESTIGE MASTERY COMPLETE": [
+    "ВЫСШЕЕ МАСТЕРСТВО ДОСТИГНУТО",
+    "PRESTİJ USTALIĞI TAMAMLANDI"
+  ],
+  "TECHNIQUE UPDATED": [
+    "ПРИЁМ ОБНОВЛЁН",
+    "TEKNİK GÜNCELLENDİ"
+  ],
+  "{name} · Bond {level} · {reward}.": [
+    "{name} · Связь {level} · {reward}.",
+    "{name} · Bağ {level} · {reward}."
+  ],
+  "{name} reached Level {level}.": [
+    "{name}: достигнут уровень {level}.",
+    "{name}, seviye {level} düzeyine ulaştı."
+  ],
+  "{name} reached Tier {tier}.": [
+    "{name}: достигнут ранг {tier}.",
+    "{name}, kademe {tier} düzeyine ulaştı."
+  ],
+  "{name} reached its final mastery milestone.": [
+    "{name}: достигнута последняя ступень мастерства.",
+    "{name}, son ustalık aşamasına ulaştı."
+  ],
+  "{name}'s combat choice is ready.": [
+    "Боевой приём спутника {name} готов.",
+    "{name} için savaş seçimi hazır."
+  ],
+  "Companion progress saved.": [
+    "Прогресс спутника сохранён.",
+    "Yoldaş ilerlemesi kaydedildi."
+  ],
+  "Bond reward": [
+    "Награда за связь",
+    "Bağ ödülü"
+  ],
+  "Companion": [
+    "Спутник",
+    "Yoldaş"
+  ],
+  "FIRST COMPANION": [
+    "ПЕРВЫЙ СПУТНИК",
+    "İLK YOLDAŞ"
+  ],
+  "Choose your combat partner": [
+    "Выберите боевого спутника",
+    "Savaş yoldaşını seç"
+  ],
+  "Choose a companion outside your class role. Your other two starter roles will join through Silverbrook and Old Mines progress.": [
+    "Выберите спутника с ролью, отличной от вашей. Два других стартовых спутника откроются по мере продвижения в Silverbrook и Old Mines.",
+    "Sınıfının rolünden farklı bir yoldaş seç. Diğer iki başlangıç rolü Silverbrook ve Old Mines ilerlemesiyle açılacak."
+  ],
+  "Choose {name}, {role}": [
+    "Выбрать {name}, роль: {role}",
+    "{name} seç, rol: {role}"
+  ],
+  "Recruiting…": [
+    "Приглашение…",
+    "Katılıyor…"
+  ],
+  "Choose companion": [
+    "Выбрать спутника",
+    "Yoldaş seç"
   ]
 } satisfies Record<string,readonly [string,string]>;
 

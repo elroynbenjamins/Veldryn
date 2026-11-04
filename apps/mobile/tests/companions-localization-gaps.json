@@ -1,17 +1,10 @@
 {
-  "status": "Stable stopping point requested during parent QA; localization is not complete.",
+  "status": "Current localization QA backlog. Companion unlock requirements, collectible discovery clues and short Trial effect labels were aligned with the latest UI; remaining entries still require translation and native-speaker review.",
   "unchangedByDesign": [
     "Gameplay IDs, command payloads, filter values, and player-entered content.",
     "World, class, item, companion, creature, ability, mission, challenge, season and collection-set proper names."
   ],
   "untranslatedCatalogStrings": {
-    "apps/mobile/src/content/combat-companions.ts": [
-      "Defeat 250 Old Mines enemies",
-      "Defeat the Fallen Knight 3 times",
-      "Reach Faith 30",
-      "Reach Fishing 16",
-      "Reach Smithing 30"
-    ],
     "backend/src/server/companions/content.ts": [
       "As a Damage character, complete content using a Tank Companion.",
       "Clear Companion Trials with one Standard, one Rare and one Elite/Prestige.",
@@ -55,30 +48,6 @@
       "Resonant bonding: +30% Bond XP with the regional bonus team.",
       "Salvage expertise: +30% base material yield with the regional bonus team.",
       "Veteran bond: +35% Bond XP when the full Asterfall Standard trio qualifies."
-    ],
-    "apps/mobile/src/content/collectibles.ts (source fields)": [
-      "Rare discovery while charting the Sunscar glasslands",
-      "Rare discovery while following the Frostmarch bells",
-      "Rare discovery while mapping Silverbrook",
-      "Rare discovery while reading the Ashlands smoke",
-      "Rare discovery while scouting the Greenfields",
-      "Rare discovery while surveying the King's Road",
-      "Rare discovery while surveying the Old Mines",
-      "Rare discovery while tracing Ironwood paths"
-    ],
-    "backend/src/server/companions/trials.ts (boss effects/conditions)": [
-      "below 50% HP",
-      "damage boost",
-      "defensive brace",
-      "focused damage",
-      "team damage",
-      "vulnerability"
-    ],
-    "backend/src/server/companions/trials.ts (phase effects)": [
-      "burst damage",
-      "damage boost",
-      "defensive stance",
-      "vulnerability"
     ]
   },
   "partiallyTranslatedCatalogStrings": [

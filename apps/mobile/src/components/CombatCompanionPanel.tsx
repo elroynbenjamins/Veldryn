@@ -9,7 +9,7 @@ import {Image,Pressable,ScrollView,StyleSheet,Text,View,useWindowDimensions} fro
 import type {GameState} from '../core/types';
 import type {GameCommand} from '../core/game-commands';
 import type {CompanionSanctuaryUpgrade} from '../core/combat-companion-types';
-import {COMBAT_COMPANIONS,COMPANION_RARITY_CONFIG,COMPANION_SANCTUARY_CONFIG,COMPANION_STAGE_CAPS} from '../content/combat-companions';
+import {COMBAT_COMPANIONS,COMPANION_BOND_ESSENCE_REWARDS,COMPANION_RARITY_CONFIG,COMPANION_SANCTUARY_CONFIG,COMPANION_STAGE_CAPS} from '../content/combat-companions';
 import {combatCompanionUiModel,companionXpToNextLevel,companionSanctuaryUpgradeCost,companionCombatContribution} from '../core/combat-companions';
 import {companionAvailability,companionView,companionEconomy,assertCompanionIdle,companionUnlockFacts,recommendedCompanionMissionTeam,recommendedCompanionTrialTeam,recommendedCompanionTrialStageTeam} from '../core/companion-runtime';
 import {challengeBoard} from '../core/companion-challenge-board';
@@ -116,7 +116,7 @@ export function CombatCompanionPanel({state,now,onCommand,onNavigateSource,initi
     if(type==='companion_level'&&target?.progress)return `TRAINING COMPLETE · ${name} reached Level ${Math.min(target.maxLevel,target.progress.level+1)}.`;
     if(type==='companion_ascend'&&target?.nextAscensionTier){const cap=COMPANION_STAGE_CAPS[target.def.rarity][target.nextAscensionTier];return `ASCENSION COMPLETE · ${name} reached Tier ${target.nextAscensionTier}. Level cap ${cap} is now available.`;}
     if(type==='companion_master')return `PRESTIGE MASTERY COMPLETE · ${name} reached its final mastery milestone.`;
-    if(type==='companion_bond_reward'){const level=Number(args?.level??0),reward={2:'20 Essence',4:'35 Essence + portrait',6:'55 Essence + Bond Resonance',8:'80 Essence + title'}[level as 2|4|6|8]??'Bond reward';return `BOND REWARD CLAIMED · ${name} · Bond ${level} · ${reward}.`;}
+    if(type==='companion_bond_reward'){const level=Number(args?.level??0),essence=COMPANION_BOND_ESSENCE_REWARDS[level as keyof typeof COMPANION_BOND_ESSENCE_REWARDS],reward=essence===undefined?'Bond reward':essence+' Essence';return `BOND REWARD CLAIMED · ${name} · Bond ${level} · ${reward}.`;}
     if(type==='companion_technique')return `TECHNIQUE UPDATED · ${name}'s combat choice is ready.`;
     if(type==='companion_boss_rematch')return 'FALLEN KNIGHT REMATCH · Weekly boss rewards and progression updated.';
     return 'Companion progress saved.';
@@ -301,7 +301,7 @@ const selectedIndex=Math.max(0,COMBAT_COMPANIONS.findIndex(def=>def.id===selecti
             <Text style={s.name}>{companionContent(language,'MONTHLY HAZARD')} · {trialHazard.name}</Text>
             <Text style={s.body}>{companionContent(language,trialHazard.threat)}</Text>
             <Text style={s.body}>{companionContent(language,trialHazard.counter)}</Text>
-            <Text style={s.name}>{companionContent(language,'Stage affinity')} · {trialMatchup.matchup.id} · Floor {trialPreviewFloor}</Text>
+            <Text style={s.name}>{companionContent(language,'Stage affinity')} · {trialMatchup.matchup.id} · {t('Floor {value0}',{value0:trialPreviewFloor})}</Text>
             <Text style={s.body}>{companionContent(language,trialMatchup.matchup.threat)}</Text>
             <Text style={s.body}>{trialMatchup.offense?'✓':'○'} {companionContent(language,'Offense affinity')} · {trialMatchup.guard?'✓':'○'} {companionContent(language,'Guard affinity')}</Text>
             {!run&&trialStageSuggestion.ready?<GameButton compact tone="secondary" title={companionContent(language,'Use stage-fit team')} disabled={busy} onPress={()=>{setTeam(trialStageSuggestion.ids);setTrialSheet(null);}}/>:null}

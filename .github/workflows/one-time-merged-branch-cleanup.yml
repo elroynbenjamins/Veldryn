@@ -116,7 +116,8 @@ jobs:
               }
               eligible.push({ name, sha: branch.commit.sha, pr: merged.number });
             }
-            if (eligible.length > 110) throw new Error('Unsafe deletion volume');
+            // Keep repeat cleanups bounded even if the repository accumulates more stale refs.
+            if (eligible.length > 60) throw new Error('Unsafe deletion volume');
             core.info('Eligible: ' + eligible.map(x => x.name).join(', '));
             const deleted = [];
             const failed = [];

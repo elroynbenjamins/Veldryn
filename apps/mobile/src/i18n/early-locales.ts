@@ -2045,6 +2045,22 @@ export const EARLY_LOCALE_ROWS={
   "A volatile Ashlands elixir for capstone equipment.": [
     "Нестабильный эликсир Эшлендса для лучшего снаряжения.",
     "Üst seviye ekipmanlar için uçucu Ashlands iksiri."
+  ],
+  "Requires {skill} level {level}.": [
+    "Требуется уровень навыка «{skill}»: {level}.",
+    "{skill} becerisi için seviye {level} gerekli."
+  ],
+  "Requires character level {level}.": [
+    "Требуется уровень персонажа {level}.",
+    "Karakter seviyesi {level} gerekli."
+  ],
+  "Show how to unlock or obtain materials for this recipe": [
+    "Показать, как открыть рецепт или получить материалы",
+    "Bu tarifin nasıl açılacağını veya malzemelerin nereden alınacağını göster"
+  ],
+  "See requirements and where to get materials": [
+    "Посмотреть условия и источники материалов",
+    "Gereksinimleri ve malzemelerin nereden alınacağını gör"
   ]
 } satisfies Record<string,readonly [string,string]>;
 

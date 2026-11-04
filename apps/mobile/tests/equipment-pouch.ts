@@ -54,7 +54,7 @@ const multi:GameState={...base,otherCharacters:[{character:inactive,inventory:{s
 const placed=tryStoreEquipmentInPouch(multi,{itemId:output,quantity:1},inactive.id)!;
 ok(!!placed&&equipmentPouch(placed).stacks.length===0&&placed.otherCharacters?.[0].character.equipmentPouch?.stacks.length===1,'Inactive character rewards must not leak into current character storage');
 function prepareForge(){
- let state=createCharacter(newGame(0),recipe.classId,'Forge Owner');
+ let state=createCharacter(newGame(0),recipe.classId,'Pouch Tester');
  state={...state,character:{...state.character!,level:Math.max(recipe.characterLevel,50),gold:500000},
   skills:state.skills.map(row=>row.skillId===recipe.skillId?{...row,level:Math.max(recipe.level,50),xp:500000}:row),
   inventory:{...state.inventory,capacity:80,stacks:recipe.inputs.map(input=>({itemId:input.itemId,quantity:input.quantity*3}))}};

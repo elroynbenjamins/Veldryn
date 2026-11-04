@@ -131,6 +131,7 @@ export function PartyHubPanel(props: PartyHubPanelProps){
     {openSpots>0?<Pressable accessibilityRole="button" accessibilityLabel={st('Find members')} onPress={()=>{if(props.dedicated){props.onOpenRecruitment?.();}else{setBrowseMode('players');setSection('find');}}} style={({pressed})=>[s.emptySlots,pressed&&s.pressed]}>
      <Text style={s.emptyPlus}>+</Text><Text style={[s.muted,s.flex]}>{st('{count} available party slots',{count:openSpots})}</Text><Text style={s.link}>{st('Recruit')} ›</Text>
     </Pressable>:null}
+    {canManageParty&&openSpots>0&&props.onInviteFriends?<GameButton compact tone="secondary" title="Invite friends privately" onPress={()=>props.onInviteFriends?.()}/>:null}
    </View>:null}
    {(!props.dedicated||props.activeView==='Contracts')?<View style={s.panel}>
     <View style={s.between}><View style={s.flex}><Text style={s.sectionTitle}>{st('PARTY CONTRACTS')}</Text><Text style={s.muted}>{st('Weekly progress and claimable rewards')}</Text></View><Text style={s.metaCount}>{props.contracts.length}</Text></View>
@@ -171,7 +172,7 @@ export function PartyHubPanel(props: PartyHubPanelProps){
     <View style={s.optionSummary}><Text style={s.sectionTitle}>{socialLabel(language,props.party?.focus??'mixed')} {st('Party')}</Text><Text style={s.muted}>{props.party?.members.length??0}/4 {st('Members')} · {openSpots} {st('open spots')}</Text><Text style={s.muted}>{partyActivityLabel(preferences.activityLevel)} · {languageLabel}{preferences.minimumLevel?' · Lv. '+preferences.minimumLevel+'+':''}</Text></View>
     {(props.invitationCount??0)>0?props.partyInvitations:<Text style={s.muted}>{st('No pending invitations.')}</Text>}
     {canManageParty&&openSpots>0?<GameButton compact tone="secondary" title={st('Find members')} onPress={()=>{setShowSettings(false);if(props.dedicated)props.onOpenRecruitment?.();else{setBrowseMode('players');setSection('find');}}}/>:null}
-    {canManageParty&&openSpots>0&&props.onInviteFriends?<GameButton compact title="Invite friends" onPress={()=>{setShowSettings(false);props.onInviteFriends?.();}}/>:null}
+
     {canManageParty&&props.onEditPreferences?<GameButton compact tone="secondary" title="Edit Party preferences" onPress={()=>{setShowSettings(false);props.onEditPreferences?.()}}/>:null}
     <View style={s.divider}/><Text style={s.eyebrow}>{st('PARTY MANAGEMENT')}</Text>
     <GameButton tone="secondary" title={st('Leave Party')} disabled={!props.onLeaveParty} onPress={()=>{setShowSettings(false);props.onLeaveParty?.();}}/>

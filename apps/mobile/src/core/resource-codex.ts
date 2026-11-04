@@ -102,6 +102,7 @@ export function resourceCodexUse(entry:ResourceCodexEntry){
   const uses=[...(companionUses.get(entry.id)??[])];
   return uses.length?uses.slice(0,5).join(' · ')+(uses.length>5?` · +${uses.length-5} more`:''):'Companion ascensions, Sanctuary upgrades or expedition provisions. Check the companion screen for exact costs.';
  }
+ if(entry.id==='ASTERFALL_MINERAL_ESSENCE')return 'Rare Mining find used for +1 to +4 enchanting improvements on Tier 1 and Tier 2 equipment. Verdant Binding Resin is reserved for forging the equipment.';
  if(entry.category==='Gems')return 'Equipment gem sockets and gem progression.';
  return 'Crafting, equipment upgrades, recipes or other progression.';
 }

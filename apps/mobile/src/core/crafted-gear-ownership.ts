@@ -118,7 +118,7 @@ export function moveCraftedGearInstance(state:GameState,instanceId:string,to:'in
   if(from!=='inventory'&&from!=='bank'&&from!=='equipment_pouch')throw new Error('Only stored equipment can be transferred');
   if(from===to)return state;
   if(from!=='bank'&&location.holderCharacterId!==state.character.id)throw new Error('Another character is carrying this equipment');
-  if(to==='equipment_pouch'&&record.ownerCharacterId!==state.character.id)throw new Error('Equipment Pouch belongs to the original crafting character');
+  // A character can receive a Bank copy crafted by another character; the pouch holder remains explicit.
   const source=from==='equipment_pouch'?equipmentPouch(state):state[from];
   const target=to==='equipment_pouch'?equipmentPouch(state):state[to];
   const capacity=to==='equipment_pouch'?target.capacity:entitlementStorageCapacity(state,to);
@@ -166,7 +166,7 @@ export function linkLegacyCraftedGearInstance(state:GameState,instanceId:string,
   const record=craftedGearInstances(state).find(row=>row.id===instanceId);
   if(!record)throw new Error('Unknown Forge quality record');
   if(!audit.unlocatedInstanceIds.includes(instanceId))throw new Error('Forge quality record already linked to an equipment copy');
-  const physical=[state.inventory.stacks,state.bank.stacks,state.overflow.stacks,...(state.otherCharacters??[]).flatMap(row=>[row.inventory.stacks,row.overflow.stacks])].reduce((sum,stacks)=>sum+stacks.reduce((n,row)=>n+(row.itemId===record.itemId?row.quantity:0),0),0)
+  const physical=[state.inventory.stacks,state.character.equipmentPouch?.stacks??[],state.bank.stacks,state.overflow.stacks,...(state.otherCharacters??[]).flatMap(row=>[row.inventory.stacks,row.character.equipmentPouch?.stacks??[],row.overflow.stacks])].reduce((sum,stacks)=>sum+stacks.reduce((n,row)=>n+(row.itemId===record.itemId?row.quantity:0),0),0)
     +[state.character,...(state.otherCharacters??[]).map(row=>row.character)].reduce((n,character)=>n+Object.values(character?.equipment??{}).filter(id=>id===record.itemId).length,0);
   const recorded=craftedGearInstances(state).filter(row=>row.itemId===record.itemId).length;
   if(physical!==recorded)throw new Error('Legacy equipment count mismatch; inspect unmatched gear before associating Forge quality');

@@ -1,3 +1,4 @@
+import {createHash} from 'node:crypto';
 import {coopEntryHandler} from './coop-entry';
 import {OnlineQModeRuntime} from './qmode-runtime';
 import {OnlineLiveQueue} from './live-queue';
@@ -126,7 +127,44 @@ export function coopHandler(services:GameplayServices){
     return json(await liveRuntime.chat(accountId,chat[1],row.requestId,row.text));
    }
 
-   const start=path.endsWith('/coop/qmode'),run=path.match(new RegExp('/coop/runs/('+uuid+')(?:/(choose|vote|merchant))?$'));
+   const start=path.endsWith('/coop/qmode'),run=path.match(new RegExp('/coop/runs/('+uuid+')(?:/(choose|vote|merchant|potion))?
+   if(!mutation){
+    try{return json(await liveRuntime.load(accountId,run![1]));}
+    catch(error){if(error instanceof GameplayError&&error.message==='not_live_run')return json(await runtime.load(accountId,run![1]));throw error;}
+   }
+   const raw=await request.text();if(raw.length>4096)return json({error:'request_too_large'},413);
+   let body:unknown;try{body=JSON.parse(raw);}catch{throw new GameplayError('invalid_json');}
+   if(!body||typeof body!=='object'||Array.isArray(body))throw new GameplayError('invalid_request');
+   const allowed=start?['requestId','dungeonId','tier','characterId','loadoutId','loadoutRevision']:run?.[2]==='merchant'?['requestId','expectedVersion','offerId']:run?.[2]==='potion'?['requestId']:['requestId','decisionId','decisionRevision','optionId'];
+   if(Object.keys(body).some(key=>!allowed.includes(key)))throw new GameplayError('invalid_request');
+   if(start)return json(await runtime.start(accountId,parseCoopRunRequest(body,'qmode')));
+    if(run?.[2]==='potion'){
+     const row=body as Record<string,unknown>;
+     if(typeof row.requestId!=='string'||!/^[a-zA-Z0-9_-]{8,128}$/.test(row.requestId))throw new GameplayError('invalid_potion_request');
+     // Never trust a client-provided potion ID, target, heal amount or charge count.
+     const requestHash=createHash('sha256').update(JSON.stringify({runId:run![1],requestId:row.requestId})).digest('hex');
+     return json(await services.rpc('consume_online_coop_healing_potion_server_v1',{
+       p_account_id:accountId,p_run_id:run![1],p_request_id:row.requestId,p_request_hash:requestHash
+     }));
+    }
+    if(run?.[2]==='merchant'){
+     const row=body as Record<string,unknown>;
+     if(typeof row.requestId!=='string'||!/^[a-zA-Z0-9_-]{8,128}$/.test(row.requestId)||!Number.isSafeInteger(row.expectedVersion)||(row.expectedVersion as number)<1||typeof row.offerId!=='string'||!/^[A-Z0-9_]{1,100}:(boon|artifact|salve)$/.test(row.offerId))throw new GameplayError('invalid_merchant_request');
+     return json(await runtime.purchaseMerchant(accountId,run[1],{requestId:row.requestId,expectedVersion:row.expectedVersion as number,offerId:row.offerId}));
+    }
+   try{return json(run?.[2]==='vote'?await liveRuntime.vote(accountId,run![1],parseCoopDecisionCommand(body)):await liveRuntime.choose(accountId,run![1],parseCoopDecisionCommand(body)));}
+   catch(error){if(error instanceof GameplayError&&error.message==='not_live_run')return json(await runtime.choose(accountId,run![1],parseCoopDecisionCommand(body)));throw error;}
+  }catch(error){
+   const message=error instanceof Error?error.message:'server_error',code=message.toLowerCase();
+   const status=/^(stale_|idempotency_|node_resolving|potion_charges_exhausted|insufficient_run_resources|merchant_offer_already_purchased|account_already_participating|rematch_closed|rematch_vote_locked|rematch_loadout_changed|echo_no_longer_eligible|ticket_not_queued|ready_check_closed|loadout_changed_since_queue|reservation_conflict|event_not_live|event_claim_closed|event_daily_clear_limit)/.test(code)?409:
+    /^(not_participant|loadout_not_owned|ticket_not_owned|not_ready_member)/.test(code)?403:
+    /^(invalid_|healing_potion_not_selected|healing_potion_not_carried|potion_cannot_revive|health_full|not_a_merchant_node|merchant_not_resolved|rematch_unavailable|rematch_roster_unavailable|unknown_expedition|unknown_event_expedition|dungeon_|character_|role_not_ready|illegal_equipment|echo_pool_unavailable|run_not_awaiting_choice|event_level_requirement|event_reward_not_ready|event_run_not_awaiting_choice|event_run_not_found)/.test(code)?400:error instanceof GameplayError?error.status:503;
+   if(status===503)console.error('coop_unexpected_error',request.method,code);
+   return json({error:status===503?(request.method==='GET'?'Dungeons are temporarily unavailable. Try again.':'Could not confirm the co-op action. Retry it.'):code},status);
+  }
+ };
+}
+));
    if(!start&&!run)return json({error:'not_found'},404);
    const mutation=start||Boolean(run?.[2]);
    if(request.method!==(mutation?'POST':'GET'))return json({error:'method_not_allowed'},405);

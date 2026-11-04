@@ -3,7 +3,7 @@ import {Pressable,StyleSheet,Text,View} from 'react-native';
 import {useCoopStyles} from '../../theme/useCoopStyles';
 import {useSocialText} from '../../i18n/social';
 import type {CoopRunBossMechanicView,CoopRunBossRecapView} from '../../core/coop-presentation';
-import {type CoopColors,coopSpacing,coopTypography} from '../../theme/coop-ui-theme';
+import {type CoopColors,coopSpacing} from '../../theme/coop-ui-theme';
 import {FantasyPanel} from './CoopVisualKit';
 
 /**

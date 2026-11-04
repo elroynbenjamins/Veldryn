@@ -845,6 +845,154 @@ const EARLY_LOCALE_ROWS={
   "Event approaching": [
     "Скоро событие",
     "Etkinlik yaklaşıyor"
+  ],
+  "ROLE": [
+    "РОЛЬ",
+    "ROL"
+  ],
+  "Choose your class, name your character, and begin your journey through Asterfall.": [
+    "Выберите класс и имя персонажа, чтобы начать путешествие по Астерфоллу.",
+    "Sınıfını ve karakterinin adını seçerek Asterfall yolculuğuna başla."
+  ],
+  "Nine unique classes with different combat styles.": [
+    "Девять классов с разными стилями боя.",
+    "Farklı savaş tarzlarına sahip dokuz sınıf."
+  ],
+  "Create a name and choose your interface theme.": [
+    "Выберите имя и тему интерфейса.",
+    "Bir ad ve arayüz teması seç."
+  ],
+  "Select one of nine classes to see its strengths.": [
+    "Выберите один из девяти классов, чтобы увидеть его сильные стороны.",
+    "Güçlü yönlerini görmek için dokuz sınıftan birini seç."
+  ],
+  "Choose your character name and interface theme.": [
+    "Выберите имя персонажа и тему интерфейса.",
+    "Karakter adını ve arayüz temasını seç."
+  ],
+  "2–20 characters · Name required": [
+    "2–20 символов · Имя обязательно",
+    "2–20 karakter · Ad gerekli"
+  ],
+  "INTERFACE THEME": [
+    "ТЕМА ИНТЕРФЕЙСА",
+    "ARAYÜZ TEMASI"
+  ],
+  "{name} interface theme": [
+    "Тема интерфейса: {name}",
+    "{name} arayüz teması"
+  ],
+  "Review your choices before entering Asterfall.": [
+    "Проверьте выбор перед входом в Астерфолл.",
+    "Asterfall'a girmeden önce seçimlerini gözden geçir."
+  ],
+  "Plan your next goal": [
+    "Выбрать следующую цель",
+    "Sonraki hedefini planla"
+  ],
+  "Working Toward and Daily Supplies are now available.": [
+    "Теперь доступны цели и ежедневные припасы.",
+    "Hedeflerim ve Günlük Malzemeler artık kullanılabilir."
+  ],
+  "Choose a goal": [
+    "Выбрать цель",
+    "Hedef seç"
+  ],
+  "Open Asterfall Journal": [
+    "Открыть дневник Астерфолла",
+    "Asterfall Günlüğünü aç"
+  ],
+  "Already played VELDRYN? Sign in to your existing account": [
+    "Уже играли в VELDRYN? Войдите в свой аккаунт",
+    "VELDRYN'i daha önce oynadın mı? Hesabına giriş yap"
+  ],
+  "PLAY STYLE": [
+    "СТИЛЬ ИГРЫ",
+    "OYUN TARZI"
+  ],
+  "Lv. {level}": [
+    "Ур. {level}",
+    "Sv. {level}"
+  ],
+  "Adventurer": [
+    "Искатель приключений",
+    "Maceracı"
+  ],
+  "WHAT HAPPENS NEXT": [
+    "ЧТО ДАЛЬШЕ",
+    "SONRA NE OLACAK"
+  ],
+  "CHARACTER SAVE FAILED": [
+    "ОШИБКА СОХРАНЕНИЯ ПЕРСОНАЖА",
+    "KARAKTER KAYDEDİLEMEDİ"
+  ],
+  "Your character could not be saved. Your choices are still here; please try again.": [
+    "Не удалось сохранить персонажа. Ваш выбор не потерян. Повторите попытку.",
+    "Karakterin kaydedilemedi. Seçimlerin korunuyor, lütfen yeniden dene."
+  ],
+  "Saving character…": [
+    "Сохранение персонажа…",
+    "Karakter kaydediliyor…"
+  ],
+  "Enter Asterfall": [
+    "Войти в Астерфолл",
+    "Asterfall'a gir"
+  ],
+  "Create {name}?": [
+    "Создать персонажа {name}?",
+    "{name} oluşturulsun mu?"
+  ],
+  "Use at least 2 characters.": [
+    "Введите не менее 2 символов.",
+    "En az 2 karakter kullan."
+  ],
+  "Use no more than 20 characters.": [
+    "Введите не более 20 символов.",
+    "En fazla 20 karakter kullan."
+  ],
+  "Use Latin letters, single spaces, apostrophes, or hyphens for character names.": [
+    "Для имени используйте латинские буквы, одиночные пробелы, апострофы и дефисы.",
+    "Karakter adlarında Latin harfleri, tek boşluk, kesme işareti veya kısa çizgi kullan."
+  ],
+  "Previous class": [
+    "Предыдущий класс",
+    "Önceki sınıf"
+  ],
+  "Next class": [
+    "Следующий класс",
+    "Sonraki sınıf"
+  ],
+  "Select {name}": [
+    "Выбрать {name}",
+    "{name} seç"
+  ],
+  "Encounter abilities": [
+    "Боевые умения",
+    "Karşılaşma yetenekleri"
+  ],
+  "Automatic": [
+    "Автоматически",
+    "Otomatik"
+  ],
+  "Ability details": [
+    "Описание умения",
+    "Yetenek ayrıntıları"
+  ],
+  "Hide ability details": [
+    "Скрыть описание умений",
+    "Yetenek ayrıntılarını gizle"
+  ],
+  "Idle hunting": [
+    "Охота без участия",
+    "Boşta avlanma"
+  ],
+  "Hunt speed": [
+    "Скорость охоты",
+    "Av hızı"
+  ],
+  "Damage taken": [
+    "Полученный урон",
+    "Alınan hasar"
   ]
 } satisfies Record<string,readonly [string,string]>;
 

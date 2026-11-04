@@ -116,7 +116,7 @@ export function CompanionExpeditionsV50Panel({state,now,onCommand}:{state:GameSt
  </View>;
  return <View style={s.root}>
   <View style={s.headingRow}>
-   <View style={s.flex}><Text style={s.eyebrow}>{t('COMPANION SANCTUARY')}</Text><Text accessibilityRole="header" style={s.title}>{t('Expeditions')}</Text><Text style={s.meta}>{t('Send your available companions on timed missions.')}</Text></View>
+   <View style={s.flex}><Text style={s.eyebrow}>{t('COMPANION SANCTUARY')}</Text><Text accessibilityRole="header" style={s.title}>{t('Expeditions')}</Text><Text style={s.meta}>{t('Send companions on missions.')}</Text></View>
    <View style={s.headerIcon}><Text style={s.headerGlyph}>✦</Text></View>
   </View>
   <View style={s.stats}>
@@ -136,8 +136,8 @@ export function CompanionExpeditionsV50Panel({state,now,onCommand}:{state:GameSt
      {completed?<Text style={s.meta}>{t('Ready to claim')}</Text>:<><View style={s.progress}><View style={[s.progressFill,{width:(percentage+'%') as any}]}/></View><Text numberOfLines={1} style={s.meta}>{row.companionIds.map(id=>COMBAT_COMPANIONS.find(d=>d.id===id)?.name??id).join(' · ')}</Text></>}
     </View>;
    })}
-  </View>:<View style={s.quiet}><Text style={s.meta}>{t('No companions are currently away on an expedition.')}</Text></View>}
-  <View style={s.headingRow}><View style={s.flex}><Text style={s.sectionTitle}>{t('Mission Board')}</Text><Text style={s.meta}>{t('Choose a mission for your spare companions.')}</Text></View><Text style={s.meta}>{t('Weekly Missions')}</Text></View>
+  </View>:<View style={s.quiet}><Text style={s.meta}>{t('No active expeditions.')}</Text></View>}
+  <View style={s.headingRow}><View style={s.flex}><Text style={s.sectionTitle}>{t('Mission Board')}</Text><Text style={s.meta}>{t('Choose a mission.')}</Text></View><Text style={s.meta}>{t('Weekly Missions')}</Text></View>
   <View style={s.filters}>{([{id:'all',title:t('All')},{id:'short',title:t('Short')+' · 2–4h'},{id:'long',title:t('Long')+' · 6h+'}] as const).map(option=><Pressable key={option.id} accessibilityRole="button" accessibilityState={{selected:filter===option.id}} onPress={()=>setFilter(option.id)} style={({pressed})=>[s.filter,filter===option.id&&s.filterSelected,pressed&&s.pressed]}><Text style={[s.filterText,filter===option.id&&s.filterTextSelected]}>{option.title}</Text></Pressable>)}</View>
   <View style={s.missionList}>{visible.map(row=>{
    const selected=row.id===mission?.id,locked=pens<(row.minimumPenLevel??1);
@@ -162,7 +162,7 @@ export function CompanionExpeditionsV50Panel({state,now,onCommand}:{state:GameSt
     <View style={s.divider}/>
     <View style={s.between}><Text style={s.fieldTitle}>{t('EXPEDITION TEAM FIT')}</Text><Text style={[s.value,power>=mission.recommendedPower?s.good:s.warning]}>{fmt(power)} / {fmt(mission.recommendedPower)}</Text></View>
     <View style={s.progress}><View style={[s.progressFill,{width:(Math.min(100,power/Math.max(1,mission.recommendedPower)*100)+'%') as any}]}/></View>
-    <View style={s.between}><Text style={s.meta}>{check.ok&&'grade' in check?t('Projected grade {value0}',{value0:check.grade}):t('Meet the requirements to preview your grade')}</Text><Text style={[s.meta,check.ok&&'bonusRequirementMet' in check&&check.bonusRequirementMet?s.good:s.warning]}>{check.ok&&'bonusRequirementMet' in check&&check.bonusRequirementMet?t('✓ Bonus active'):t('○ Bonus not active')}</Text></View>
+    <View style={s.between}><Text style={s.meta}>{check.ok&&'grade' in check?t('Projected grade {value0}',{value0:check.grade}):t('Meet requirements to see grade')}</Text><Text style={[s.meta,check.ok&&'bonusRequirementMet' in check&&check.bonusRequirementMet?s.good:s.warning]}>{check.ok&&'bonusRequirementMet' in check&&check.bonusRequirementMet?t('✓ Bonus active'):t('○ Bonus not active')}</Text></View>
     <View style={s.divider}/>
     <View style={s.between}><View style={s.flex}><Text style={s.fieldTitle}>{t('Expedition Supplies')}</Text><Text style={[s.meta,foodReady?s.good:s.warning]}>{Math.min(staminaTotal,requiredStamina).toFixed(1)} / {requiredStamina} {t('Stamina')}</Text></View><GameButton compact tone="secondary" title={t('Edit Food')} disabled={busy} onPress={()=>setFoodOpen(true)}/></View>
     {!foodReady?<GameButton compact tone="secondary" title={t('Auto Select Food')} disabled={busy} onPress={()=>setFoodSelection(companionAutoStaminaSelection(state,requiredStamina).selection)}/>:null}
@@ -187,13 +187,13 @@ export function CompanionExpeditionsV50Panel({state,now,onCommand}:{state:GameSt
        <Image source={companionArtSource(id)} resizeMode="contain" style={[s.companionPortrait,{borderColor:companionRarityBorder(def.rarity,C.dark)}]}/>
        <View style={s.flex}><Text style={s.itemTitle}>{def.name}</Text><Text style={s.meta}>{label(def.role)} · {t('Lv {value0}',{value0:view.owned[id].level})}{!available?' · '+(id===equipped?t('Equipped'):t('Busy')):''}</Text></View><Text style={selected?s.good:s.meta}>{selected?'✓':'+'}</Text>
       </Pressable>;
-    })}{!ownedIds.length?<Text style={s.meta}>{t('Unlock companions before sending expeditions.')}</Text>:null}
+    })}{!ownedIds.length?<Text style={s.meta}>{t('Unlock a companion to begin.')}</Text>:null}
    </ScrollView><Text style={[s.meta,check.ok?s.good:s.warning]}>{check.ok?t('Team ready'):companionError(language,check.reason)}</Text><View style={s.modalActions}><GameButton compact tone="secondary" title={t('Use suggested team')} disabled={busy||!suggestion?.ready} onPress={()=>suggestion?.ready&&setTeam(suggestion.ids)}/><GameButton title={t('Done')} disabled={busy} onPress={()=>setTeamPickerOpen(false)}/></View></View>
   </GameModalSurface>
   <GameModalSurface visible={foodOpen} onClose={()=>setFoodOpen(false)} reduceMotion={state.settings.reduceMotion} surfaceStyle={{maxHeight:windowHeight*.82}}>
    <GameModalHeader title={t('Expedition Supplies')} onClose={()=>setFoodOpen(false)}/>
    <View style={s.modalContent}><View style={s.between}><Text style={s.fieldTitle}>{t('COMPANION STAMINA')}</Text><Text style={foodReady?s.good:s.warning}>{Math.min(staminaTotal,requiredStamina).toFixed(1)} / {requiredStamina}</Text></View>
-    <Text style={s.meta}>{t('Food from inventory and bank. Extra stamina does not increase rewards.')}</Text>
+    <Text style={s.meta}>{t('Food from Inventory or Bank · Extra stamina gives no bonus.')}</Text>
     <ScrollView style={{flexShrink:1}} showsVerticalScrollIndicator={false} showsHorizontalScrollIndicator={false} contentContainerStyle={s.modalScroll}>
       {foodOptions.map(option=>{const quantity=foodSelection.find(item=>item.itemId===option.itemId)?.quantity??0;return <View key={option.itemId} style={s.foodRow}><View style={s.flex}><Text style={s.itemTitle}>{option.name}</Text><Text style={s.meta}>{option.stamina} {t('Stamina')} · {option.owned} {t('owned')}</Text></View><View style={s.stepper}><Pressable accessibilityRole="button" accessibilityLabel={t('Remove')+' '+option.name} accessibilityState={{disabled:quantity===0}} disabled={quantity===0} onPress={()=>setFoodQuantity(option.itemId,quantity-1)} style={s.stepperButton}><Text style={s.stepperText}>−</Text></Pressable><Text style={s.stepperNumber}>{quantity}</Text><Pressable accessibilityRole="button" accessibilityLabel={t('Add')+' '+option.name} accessibilityState={{disabled:quantity>=option.owned}} disabled={quantity>=option.owned} onPress={()=>setFoodQuantity(option.itemId,quantity+1)} style={s.stepperButton}><Text style={s.stepperText}>+</Text></Pressable></View></View>})}
       {!foodOptions.length?<Text style={s.warning}>{t('No available food. Cook food before starting an expedition.')}</Text>:null}

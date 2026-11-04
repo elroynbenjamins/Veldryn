@@ -63,6 +63,13 @@ begin
  if r.coop_mode not in ('qmode','live') or r.status <> 'active'
     or r.phase <> 'awaiting_choice' then raise exception 'potion_only_between_rooms'; end if;
  if r.state_version is distinct from p_expected_version then raise exception 'stale_state'; end if;
+ -- A running Live route vote belongs to an exact decision revision. Potion use
+ -- may refresh an unvoted decision, but must never erase votes already cast.
+ if r.coop_mode='live' and exists(
+   select 1 from public.coop_decisions d
+   join public.coop_decision_votes v on v.decision_id=d.id
+   where d.run_id=p_run_id and d.revision=r.state_version
+ ) then raise exception 'potion_after_vote_not_allowed'; end if;
  select m.character_id::text into v_actor_id from public.expedition_run_members m
  join public.coop_run_access_memberships a on a.run_id=m.run_id and a.account_id=v_account and a.active
  where m.run_id=p_run_id and m.member_kind='human'
@@ -120,6 +127,9 @@ begin
  v_public:=jsonb_set(v_public,'{potionCharges}',jsonb_build_object(
    'used',v_used+1,'max',v_capacity,'remaining',v_capacity-v_used-1),true);
  v_public:=jsonb_set(v_public,'{stateVersion}',to_jsonb(r.state_version+1),true);
+ -- Q-Mode uses the node and stateVersion as its next decision. Live refresh
+ -- creates a new server-authoritative revision before accepting new votes.
+ v_public:=jsonb_set(v_public,'{decisionRevision}',to_jsonb(r.state_version+1),true);
  v_runtime_commit:=public.commit_coop_runtime_server_v1(
    p_run_id,v_account,r.state_version,r.phase,r.current_node_id,r.cleared_pre_boss_count,
    v_private,v_public,c.event_cursor+1,'dungeon_potion_used',v_public,

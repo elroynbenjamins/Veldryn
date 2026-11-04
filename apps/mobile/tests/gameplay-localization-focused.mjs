@@ -24,7 +24,13 @@ function load(filename){
   return module.exports;
 }
 const {gameplayCatalogs,gameplayDomains,gameplayTranslate,localizeGameplay,useGameplayText}=load(path.join(root,'src/i18n/gameplay.ts'));
-const languages=['en','de','es','nl','it','fr'];
+const languages=['en','de','es','nl','it','fr']; // Fully populated legacy rows; RU/TR use English fallback.
+assert.equal(gameplayTranslate('ru','BOSS HEALING POTIONS'),'ЛЕЧЕБНЫЕ ЗЕЛЬЯ ДЛЯ БОССОВ');
+assert.equal(gameplayTranslate('tr','Select for bosses'),'Bosslar için seç');
+assert.equal(gameplayTranslate('ru','No healing potions carried. Brew them in Alchemy or withdraw from Bank.'),'При себе нет лечебных зелий. Создайте их в Алхимии или возьмите из банка.');
+assert.equal(gameplayTranslate('tr','Health is full'),'Can dolu');
+assert.equal(gameplayTranslate('ru','No recipes ready. Show locked to see requirements.'),'No recipes ready. Show locked to see requirements.');
+
 const {itemDetailRows,itemDetailText,itemDetailContent}=load(path.join(root,'src/i18n/item-details.ts'));
 const {craftingDetailRows,craftingDetailText,craftingDetailContent}=load(path.join(root,'src/i18n/crafting-details.ts'));
 for(const language of languages){

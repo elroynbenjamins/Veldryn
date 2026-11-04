@@ -10,6 +10,7 @@ import {MONSTERS} from '../content/monsters';
 import {itemDef} from '../content/items';
 import {GATHERING,recipeDef} from '../content/skills';
 import {HERB_NODES,HERBALISM_ESSENCE_BY_ZONE,herbalismInsightMultiplier,herbalismMethod} from '../content/herbalism';
+import {MINING_ESSENCE_BY_ZONE} from '../content/mining-essence';
 import {explorationRoute} from '../content/exploration';
 import {QUESTS} from '../content/quests';
 import {GameState,ClassId,RewardBundle,ItemStack,GearSlot,BodyPresentation,GatheringSkillId,CombatTacticId} from './types';
@@ -555,6 +556,16 @@ function previewStandardActivityRewardRaw(state:GameState,effectiveNowMs:number)
     const gain=settleAffinitySkillXp(actions*g.xp*effect.xpMultiplier*(method?.xpMultiplier??1)*multipliers.skillXpMultiplier*mastery.xp*affinity.xpMultiplier*candyXpMultiplier,state.rewardRemainders?.[xpKey],totalXpAtLevel(100)-(skill?.xp??0));
     const xp=gain.xp;
     const items:ItemStack[]=quantity?[{itemId:g.itemId,quantity}]:[];
+    if(g.skillId==='mining'){
+      const essence=MINING_ESSENCE_BY_ZONE[g.zoneId];
+      if(essence&&actions>0){
+        const rareChance=Math.min(1,essence.baseChance*effect.dropChanceMultiplier*multipliers.dropChanceMultiplier);
+        const rareSeed=`${state.character.id}:${state.activity.lastClaimAtMs}:${g.id}:mineral-essence`;
+        let rareQuantity=0;
+        for(let i=0;i<actions;i++)if(random01(rareSeed,i)<rareChance)rareQuantity++;
+        if(rareQuantity)items.push({itemId:essence.itemId,quantity:rareQuantity});
+      }
+    }
     if(g.skillId==='herbalism'){
       const essence=HERBALISM_ESSENCE_BY_ZONE[g.zoneId];
       if(essence&&actions>0){

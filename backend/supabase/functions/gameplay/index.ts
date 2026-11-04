@@ -43204,10 +43204,16 @@ function companionXpToNextLevel(rarity, level) {
   if (level >= COMPANION_RARITY_CONFIG[rarity].maxLevel) return 0;
   return Math.max(1, Math.round(COMPANION_LEVEL_CURVE.baseXp * Math.pow(COMPANION_LEVEL_CURVE.xpGrowth, Math.max(0, level - 1)) * COMPANION_RARITY_CONFIG[rarity].xpRequiredMultiplier));
 }
+var COMPANION_LEVEL_GOLD_MULTIPLIER = 2;
+var COMPANION_ASCENSION_GOLD_MULTIPLIER = 5;
+var roundGoldUp = (value, increment) => Math.ceil(value / increment) * increment;
+function baseCompanionLevelGold(rarity, level) {
+  return Math.round(COMPANION_LEVEL_CURVE.goldBase * Math.pow(COMPANION_LEVEL_CURVE.goldGrowth, Math.max(1, level) - 1) * COMPANION_RARITY_CONFIG[rarity].levelCostMultiplier);
+}
 function companionLevelCost(rarity, level) {
   const cfg = COMPANION_RARITY_CONFIG[rarity], l = Math.max(1, level);
   return {
-    gold: Math.round(COMPANION_LEVEL_CURVE.goldBase * Math.pow(COMPANION_LEVEL_CURVE.goldGrowth, l - 1) * cfg.levelCostMultiplier),
+    gold: roundGoldUp(baseCompanionLevelGold(rarity, l) * COMPANION_LEVEL_GOLD_MULTIPLIER, 10),
     companionEssence: Math.max(1, Math.round(COMPANION_LEVEL_CURVE.essenceBase * Math.pow(COMPANION_LEVEL_CURVE.essenceGrowth, l - 1) * cfg.levelCostMultiplier))
   };
 }
@@ -43215,7 +43221,8 @@ function companionRemainingLevelCost(def, progress) {
   const full = companionLevelCost(def.rarity, progress.level), needed = companionXpToNextLevel(def.rarity, progress.level);
   if (needed <= 0) return full;
   const remaining = Math.max(1, needed - Math.max(0, progress.xp)), ratio = Math.min(1, remaining / needed);
-  return { gold: Math.max(1, Math.ceil(full.gold * ratio)), companionEssence: Math.max(1, Math.ceil(full.companionEssence * ratio)) };
+  const baseRemainingGold = Math.max(1, Math.ceil(baseCompanionLevelGold(def.rarity, progress.level) * ratio));
+  return { gold: roundGoldUp(baseRemainingGold * COMPANION_LEVEL_GOLD_MULTIPLIER, 10), companionEssence: Math.max(1, Math.ceil(full.companionEssence * ratio)) };
 }
 function companionCurrentLevelCap(def, progress) {
   return Math.min(COMPANION_RARITY_CONFIG[def.rarity].maxLevel, COMPANION_STAGE_CAPS[def.rarity][Math.max(0, Math.min(3, progress.ascensionTier))]);
@@ -43462,7 +43469,7 @@ function purchaseCompanionLevel(state, id) {
 function companionAscensionCost(def, tier) {
   const base = COMPANION_ASCENSION_BASE_COST[tier], mult = COMPANION_RARITY_CONFIG[def.rarity].levelCostMultiplier;
   const override = def.ascensionMaterialCosts?.find((entry2) => entry2.tier === tier);
-  return { gold: Math.round(base.gold * mult), companionEssence: Math.round(base.companionEssence * mult), bondstones: Math.max(1, Math.round(base.bondstones * Math.sqrt(mult))), materialId: override?.itemId ?? def.ascensionMaterialId, materialQuantity: override?.quantity ?? base.materialQuantity };
+  return { gold: roundGoldUp(Math.round(base.gold * mult) * COMPANION_ASCENSION_GOLD_MULTIPLIER, 100), companionEssence: Math.round(base.companionEssence * mult), bondstones: Math.max(1, Math.round(base.bondstones * Math.sqrt(mult))), materialId: override?.itemId ?? def.ascensionMaterialId, materialQuantity: override?.quantity ?? base.materialQuantity };
 }
 function ascendCombatCompanion(state, id) {
   let clean2 = sanitizeCombatCompanionState(state);
@@ -52631,7 +52638,7 @@ function transitionActivity(state, nowMs, next) {
 }
 
 // ../apps/mobile/src/i18n/languages.ts
-var SUPPORTED_LANGUAGES = ["en", "de", "es", "nl", "it", "fr"];
+var SUPPORTED_LANGUAGES = ["en", "de", "es", "nl", "it", "fr", "ru", "tr"];
 
 // ../apps/mobile/src/core/game-commands.ts
 init_faith2();

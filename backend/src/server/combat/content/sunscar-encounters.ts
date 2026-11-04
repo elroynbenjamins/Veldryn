@@ -6,8 +6,8 @@ const strike=(id:string,name:string,coeff:number,damageType:'physical'|'fire'|'a
 const enemy=(id:string,name:string,hp:number,ap:number,def:number,ability:AbilityDefinition,archetype:PveArchetype='bruiser',mechanics:PveMechanicId[]=['heavy_hit']):CombatantDefinition=>withPveIdentity({id,name,team:'enemies',role:'enemy',level:45,stats:stats(hp,ap,def),basicAttackMs:2800,basicAttackCoeff:.72,abilities:[ability]},archetype,mechanics);
 
 const pairs:Array<[string,string,string,'physical'|'fire'|'arcane',number]>=[
- ['SUN_OBS_BATTLE_01','Sunstone Custodian','Amberglass Scribe','fire',0],['SUN_OBS_BATTLE_02','Sunscar Scorpion','Solar Watcher','arcane',1],['SUN_OBS_BATTLE_03','Dustbound Scholar','Field Wisp','fire',2],
- ['SUN_MIRAGE_BATTLE_01','Mirage Jackal','Glassscale Stalker','physical',0],['SUN_MIRAGE_BATTLE_02','Dune Oracle','Well Guardian','arcane',1],['SUN_MIRAGE_BATTLE_03','Sunscored Prowler','Sunscar Scorpion','fire',2],
+ ['SUN_OBS_BATTLE_01','Sunstone Custodian','Amberglass Scribe','fire',0],['SUN_OBS_BATTLE_02','Orrery Scarab','Solar Watcher','arcane',1],['SUN_OBS_BATTLE_03','Dustbound Scholar','Heliolith Drone','fire',2],
+ ['SUN_MIRAGE_BATTLE_01','Mirage Jackal','Glassscale Stalker','physical',0],['SUN_MIRAGE_BATTLE_02','Dune Phantom','Well Guardian','arcane',1],['SUN_MIRAGE_BATTLE_03','Sunscored Prowler','Amberglass Asp','fire',2],
 ];
 
 export const SUNSCAR_ENCOUNTERS:Record<string,()=>CombatantDefinition[]>={};
@@ -17,7 +17,7 @@ for(const [id,first,second,type,index] of pairs)SUNSCAR_ENCOUNTERS[id]=()=>[
 ];
 
 function eliteIdentity(name:string):{archetype:PveArchetype;mechanics:PveMechanicId[]}{
- if(name==='Orrery Warden'||name==='Glasshide Warder'||name==='Glassbound Sentinel')return{archetype:'guardian',mechanics:['heavy_hit','barrier']};
+ if(name==='Orrery Warden'||name==='Glasshide Warder'||name==='Wellbound Colossus')return{archetype:'guardian',mechanics:['heavy_hit','barrier']};
  if(name==='Solar Archivist')return{archetype:'caster',mechanics:['interrupt','aoe']};
  if(name==='Dune Sphinx')return{archetype:'hexer',mechanics:['vulnerability','dot']};
  if(name==='Veiled Huntmaster')return{archetype:'assassin',mechanics:['focus','execute']};
@@ -33,7 +33,7 @@ function elite(id:string,name:string,type:'physical'|'fire'|'arcane',index:numbe
 }
 for(const [prefix,names,type] of [
  ['SUN_OBS',['Orrery Warden','Solar Archivist','Glasshide Warder'],'arcane'],
- ['SUN_MIRAGE',['Dune Sphinx','Veiled Huntmaster','Glassbound Sentinel'],'fire'],
+ ['SUN_MIRAGE',['Dune Sphinx','Veiled Huntmaster','Wellbound Colossus'],'fire'],
 ] as const)names.forEach((name,index)=>{SUNSCAR_ENCOUNTERS[`${prefix}_ELITE_0${index+1}`]=()=>elite(`${prefix}_ELITE_${index+1}`,name,type,index)});
 
 function boss(id:string,name:string,type:'fire'|'arcane',attackPower=3_900):CombatantDefinition[]{

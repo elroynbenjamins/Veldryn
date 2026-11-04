@@ -26,7 +26,8 @@ const width=(icon[16]*2**24+icon[17]*2**16+icon[18]*256+icon[19]);
 const height=(icon[20]*2**24+icon[21]*2**16+icon[22]*256+icon[23]);
 ok(width===256&&height===256,'Mineral resource icon must use the 256×256 export size');
 const colorType=icon[25];
-ok(colorType===6||(colorType===3&&Buffer.from(icon).includes(Buffer.from('tRNS'))),
+const hasTransparencyChunk=icon.some((byte,index)=>byte===116&&icon[index+1]===82&&icon[index+2]===78&&icon[index+3]===83);
+ok(colorType===6||(colorType===3&&hasTransparencyChunk),
   'Approved mineral icon must contain transparency');
 ok(artwork.includes('const source=resourceIconSource(itemId)'),
   'Mining drop, item inventory, Codex and material cost views must share resource artwork');

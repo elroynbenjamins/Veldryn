@@ -37,8 +37,8 @@ export const ASTERFALL_ENCOUNTERS:Record<string,()=>CombatantDefinition[]>={
 const rootBattleIds=['ROOT_SCOUTS','ROOT_GUARDIANS','ROOT_VINES','ROOT_STALKERS','ROOT_SENTINELS'];
 for(const [index,id] of rootBattleIds.entries()){
  ASTERFALL_ENCOUNTERS[id]=()=>[
-  enemy(`${id}_A`,['Briar Scout','Root Guardian','Thornling','Moss Stalker','Grove Sentinel'][index],4_800+index*350,310+index*14,560+index*35,.95+index*.04),
-  enemy(`${id}_B`,['Gloam Mite','Thornling','Briar Husk','Ironwood Wolf','Ancient Treant'][index],4_100+index*300,300+index*12,520+index*30,.92+index*.04),
+  enemy(`${id}_A`,['Briar Scout','Root Guardian','Strangling Vine','Moss Stalker','Grove Sentinel'][index],4_800+index*350,310+index*14,560+index*35,.95+index*.04),
+  enemy(`${id}_B`,['Sporeling','Thornling','Sap Husk','Briar Hound','Rootbound Husk'][index],4_100+index*300,300+index*12,520+index*30,.92+index*.04),
  ];
 }
 for(const id of ['ROOT_ELITE_BRAMBLE','ROOT_ELITE_WARDEN','ROOT_ELITE_MYCELIUM'])ASTERFALL_ENCOUNTERS[id]=()=>[rootWarden()];

@@ -1,5 +1,5 @@
 export const DUNGEON_FOOD_ALLOWED=false;
-/** Shared run potion budget. Higher tiers gain only a small preparation allowance; healing remains encounter-limited. */
+/** Per-character, per-run crafted potion allowance. Food remains disabled; only authoritative Inventory can fund healing. */
 export const DUNGEON_POTION_CHARGES_BY_TIER={1:3,2:3,3:4,4:4,5:5} as const;
 export type DungeonTier=keyof typeof DUNGEON_POTION_CHARGES_BY_TIER;
 export function dungeonConsumablePolicy(tier:number){

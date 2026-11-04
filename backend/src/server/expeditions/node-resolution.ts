@@ -8,6 +8,8 @@ import { COOP_CLASS_ABILITY_MULTIPLIERS,ROOTBOUND_COOP_BALANCE_V2, type Rootboun
 
 export interface PersistentRunState {
   actors:Record<string,PersistentActorState>;
+  /** Authoritative per-character Alchemy healing potion usage (never Echo or NPC inventory). */
+  healingPotionUsesByActor?:Record<string,number>;
   resources:number;
   boons:string[];
   artifacts:string[];

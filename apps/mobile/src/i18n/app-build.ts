@@ -10,6 +10,8 @@ export const appBuildCatalogs:Record<Language,Catalog>={
   nl:{version:'Versie {version}',build:'Build {build}',channel:'Releasekanaal: {channel}',source:'Bron: {source}'},
   it:{version:'Versione {version}',build:'Build {build}',channel:'Canale di rilascio: {channel}',source:'Sorgente: {source}'},
   fr:{version:'Version {version}',build:'Compilation {build}',channel:'Canal de diffusion : {channel}',source:'Source : {source}'},
+  ru:{version:'Версия {version}',build:'Сборка {build}',channel:'Канал выпуска: {channel}',source:'Источник: {source}'},
+  tr:{version:'Sürüm {version}',build:'Derleme {build}',channel:'Yayın kanalı: {channel}',source:'Kaynak: {source}'},
 };
 
 export const appBuildText=createTranslator(appBuildCatalogs);

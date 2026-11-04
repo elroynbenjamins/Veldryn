@@ -43,7 +43,7 @@ ok(overlay.includes('lines={state.settings.chatDockLines??1}')&&overlay.includes
 ok(overlay.includes('if(!chatEnabled&&visible)onClose();'),'Turning off chat must close an already-open overlay instead of leaving it hidden in the background');
 ok(overlay.includes('trayIds={state.settings.chatEmoteTrayIds}'),'All overlay chat channels must receive the saved quick tray');
 ok(overlay.includes('onTrayChange={onEmoteTrayChange}'),'All overlay chat channels must be able to persist edited tray choices');
-ok(overlay.includes('useSafeAreaInsets')&&overlay.includes('keyboardVisible?4:Math.max(insets.bottom,8)'),'Expanded chat must use real safe-area offsets and release extra padding while typing');
+ok(overlay.includes('useSafeAreaInsets')&&overlay.includes("keyboardVisible?4+(Platform.OS==='android'?keyboardOverlap:0):Math.max(insets.bottom,8)")&&overlay.includes('measureInWindow'),'Expanded chat must preserve safe-area spacing and measure actual Android keyboard occlusion');
 ok(overlay.includes('keyboardVerticalOffset={0}')&&overlay.includes('paddingTop:Math.max(insets.top,8)+4'),'Full-screen modal must account for top safe area without double-offsetting the keyboard');
 ok(!overlay.includes("paddingBottom:Platform.OS==='android'?76:88"),'Expanded chat must not regress to fixed device-specific bottom offsets');
 ok(overlay.includes('useWindowDimensions')&&overlay.includes('compactTabs=width<360||fontScale>=1.25'),'Expanded chat must adapt channel controls on narrow phones and large text');

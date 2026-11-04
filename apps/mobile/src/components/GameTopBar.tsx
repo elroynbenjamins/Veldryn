@@ -15,6 +15,7 @@ import {EnvironmentArtwork} from './EnvironmentArtwork';
 import {EnvironmentDetailsModal} from './EnvironmentDetailsModal';
 import {ActiveActivityBar} from './ActiveActivityBar';
 import {GameButton} from './GameButton';
+import {GoldIcon} from './GoldIcon';
 import {GameModalHeader,GameModalSurface} from './GameModalSurface';
 import type {NavigationBadge} from '../core/navigation-notifications';
 import {onlineConfigured} from '../online/supabase';
@@ -85,7 +86,7 @@ export function GameTopBar({state,nowMs,reward,labelForDestination,onNavigate,on
         <View style={styles.hpHeading}><Text style={[styles.hpLabel,{color:hpColor}]}>{tr("HP")}</Text><View style={styles.hpHeadingRight}><Text style={styles.hpAuto}>AUTO {state.settings.autoEatThresholdPct}%</Text><Text style={styles.hpValue}>{displayStat(Math.floor(currentHp))}/{displayStat(Math.floor(maxHp))}</Text></View></View>
         <View style={styles.hpTrack}><View style={[styles.hpFill,{width:hpPercent,backgroundColor:hpColor}]}/></View>
       </Pressable>
-      <View accessible accessibilityRole="text" accessibilityLabel={(online?tr('Online')+' · ':'')+tr('{amount} gold',{amount:formatGameNumber(state.character?.gold??0,state.settings.numberMode,state.settings.language)})} style={styles.goldBlock}><Text style={styles.goldLabel}>{tr("GOLD")}</Text><View style={styles.goldValueRow}>{online?<View accessible={false} style={styles.onlineDot}/>:null}<Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={.78} style={styles.goldValue}>{formatGameNumber(state.character?.gold??0,state.settings.numberMode,state.settings.language)}</Text></View></View>
+      <View accessible accessibilityRole="text" accessibilityLabel={(online?tr('Online')+' · ':'')+tr('{amount} gold',{amount:formatGameNumber(state.character?.gold??0,state.settings.numberMode,state.settings.language)})} style={styles.goldBlock}><Text style={styles.goldLabel}>{tr("GOLD")}</Text><View style={styles.goldValueRow}>{online?<View accessible={false} style={styles.onlineDot}/>:null}<GoldIcon size={14}/><Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={.78} style={styles.goldValue}>{formatGameNumber(state.character?.gold??0,state.settings.numberMode,state.settings.language)}</Text></View></View>
       <Pressable accessibilityRole="button" accessibilityLabel={attentionTotal?tr('Open quick navigation, {count} need attention',{count:attentionTotal}):tr('Open quick navigation')} accessibilityHint={tr("Opens five customizable navigation shortcuts")} onPress={()=>setOpen(true)} style={({pressed})=>[styles.menuButton,pressed&&styles.pressed]}>
         <View style={styles.menuLine}/><View style={styles.menuLine}/><View style={styles.menuLine}/>{attentionTotal>0?<View style={styles.menuBadge}><Text style={styles.menuBadgeText}>{attentionTotal>9?'9+':attentionTotal}</Text></View>:null}
       </Pressable>

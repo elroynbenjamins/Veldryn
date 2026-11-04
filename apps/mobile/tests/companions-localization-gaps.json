@@ -1,5 +1,5 @@
 {
-  "status": "Companion objectives (42), fixed guidance (29), and dynamic presentation/status/ownership labels (38) have seven-language coverage. Equipment metadata, proper names, other data-driven labels, and native-speaker review remain outstanding.",
+  "status": "Companion objective, guidance and dynamic templates now covered in seven target languages; Equipment 2.0 tier metadata is localized across all eight UI languages. Authored names, other data-driven text and linguistic review remain outstanding.",
   "unchangedByDesign": [
     "Gameplay IDs, command payloads, filter values, and player-entered content.",
     "World, class, item, companion, creature, ability, mission, challenge, season and collection-set proper names."
@@ -9,9 +9,7 @@
   "untranslatedDynamicTemplates": {
     "apps/mobile/src/core/companion-presentation.ts": [],
     "apps/mobile/src/core/companion-runtime.ts": [],
-    "apps/mobile/src/core/equipment-loot-v33.ts": [
-      "EQUIPMENT 2.0 · {tiers} MATERIAL"
-    ]
+    "apps/mobile/src/core/equipment-loot-v33.ts": []
   },
   "otherDataDrivenGaps": [
     "RareDiscoveriesPanel: row.reward.label is passed through companionContent; reward labels absent from the catalog remain English. Discovery pools are currently disabled.",
@@ -139,5 +137,8 @@
     "Own 3 Prestige Combat Companions.",
     "Own 5 annual Event Companions.",
     "Own 3 companions earned from special Companion challenges."
+  ],
+  "completedEquipmentMetadata": [
+    "EQUIPMENT 2.0 · {tiers} MATERIAL"
   ]
 }

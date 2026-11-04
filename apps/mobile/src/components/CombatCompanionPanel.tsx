@@ -301,7 +301,7 @@ const selectedIndex=Math.max(0,COMBAT_COMPANIONS.findIndex(def=>def.id===selecti
             <Text style={s.name}>{companionContent(language,'MONTHLY HAZARD')} · {trialHazard.name}</Text>
             <Text style={s.body}>{companionContent(language,trialHazard.threat)}</Text>
             <Text style={s.body}>{companionContent(language,trialHazard.counter)}</Text>
-            <Text style={s.name}>{companionContent(language,'Stage affinity')} · {trialMatchup.matchup.id} · Floor {trialPreviewFloor}</Text>
+            <Text style={s.name}>{companionContent(language,'Stage affinity')} · {trialMatchup.matchup.id} · {t('Floor {value0}',{value0:trialPreviewFloor})}</Text>
             <Text style={s.body}>{companionContent(language,trialMatchup.matchup.threat)}</Text>
             <Text style={s.body}>{trialMatchup.offense?'✓':'○'} {companionContent(language,'Offense affinity')} · {trialMatchup.guard?'✓':'○'} {companionContent(language,'Guard affinity')}</Text>
             {!run&&trialStageSuggestion.ready?<GameButton compact tone="secondary" title={companionContent(language,'Use stage-fit team')} disabled={busy} onPress={()=>{setTeam(trialStageSuggestion.ids);setTrialSheet(null);}}/>:null}

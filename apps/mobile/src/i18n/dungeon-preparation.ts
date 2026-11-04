@@ -1,5 +1,6 @@
 import {accountText} from './account';
 import {earlyLocaleText} from './early-locales';
+import {dungeonPreparationEarlyText} from './dungeon-preparation-early-locales';
 import type {Language} from './languages';
 const rows:Record<string,readonly [string,string,string,string,string]>={
  "NPC or Echo allies fill the missing roles":["NPCs oder Echos füllen fehlende Rollen.","Los PNJ o Ecos cubren los roles que faltan.","NPC's of Echo's vullen ontbrekende rollen.","PNG o Echi coprono i ruoli mancanti.","Des PNJ ou des Échos complètent les rôles manquants."],
@@ -37,5 +38,5 @@ export function dungeonText(language:Language,text:string){
  const index=['de','es','nl','it','fr'].indexOf(language);
  // The five legacy columns are complete. Starter RU/TR must look up their
  // own dictionary rather than silently routing through Account's fallback.
- return (index>=0?rows[text]?.[index]:earlyLocaleText(language,text))??accountText(language,text);
+ return (index>=0?rows[text]?.[index]:dungeonPreparationEarlyText(language,text)??earlyLocaleText(language,text))??accountText(language,text);
 }

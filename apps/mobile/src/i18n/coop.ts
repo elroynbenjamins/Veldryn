@@ -1,4 +1,5 @@
 import type {Language} from './languages';
+import {coopEarlyCatalog} from './coop-early-locales';
 
 const en={
   'browse.kicker':'WORLD · EXPEDITIONS','browse.title':'Co-op Expeditions','browse.subtitle':'Choose an authorized expedition. Party setup follows after mode selection.','browse.all':'All','browse.available':'Available','browse.loading':'Loading authoritative expeditions…','browse.retry':'Retry','browse.empty':'No expeditions were returned.','browse.noResults':'No available expeditions match this filter.','browse.levels':'Minimum {min} · Recommended {recommended}','browse.requiresLevel':'Requires level {level}','browse.inDevelopment':'Encounters in development','browse.open':'Open expedition','browse.locked':'Locked','browse.resumeTitle':'Expedition in progress','browse.resumeBody':'An authenticated run is available to resume.','browse.resume':'Resume run','browse.regionProgress':'{available}/{total} open',
@@ -46,7 +47,7 @@ const fr:Catalog={
   'fixture.rootbound':'Descendez sous Asterfall parmi les racines vivantes et les salles gardées.','fixture.lantern':'Suivez les anciennes lanternes de garde vers une descente scellée d’Asterfall.','fixture.observatory':'Explorez un observatoire enfoui de Sunscar marqué par la chaleur et les instruments oubliés.','fixture.mirage':'Entrez dans un puits changeant de Sunscar dont la route visible peut tromper.','fixture.shiverlake':'Traversez les salles gelées sous Frostmarch et préparez-vous au grand froid.','fixture.choir':'Suivez le chœur gelé dans les cavernes résonnantes sous Frostmarch.','fixture.blackglass':'Parcourez le marais sombre d’Ashlands et ses fragiles pousses de verre.','fixture.crucible':'Descendez dans le creuset d’Ashlands à la limite de la progression initiale.',
 };
 
-const catalogs:Record<Language,Catalog>={en,de,es,nl,it,fr,ru:en,tr:en};
+const catalogs:Record<Language,Catalog>={en,de,es,nl,it,fr,ru:coopEarlyCatalog(0),tr:coopEarlyCatalog(1)};
 const legacyPolicyCopy:Record<Exclude<Language,'ru'|'tr'>,{duration:string;durationValue:string;rewardCadence:string;fellowshipLabel:string;fellowshipCopy:string}>={
   en:{duration:'Run time',durationValue:'6–8 minutes',rewardCadence:'3 enhanced charges · +1 every 8 hours · 12 each week · unlimited runs',fellowshipLabel:'Live Fellowship',fellowshipCopy:'First 3 successful Live clears each UTC week award +25% of the run’s full Expedition Mark value.'},
   de:{duration:'Laufzeit',durationValue:'6–8 Minuten',rewardCadence:'3 verstärkte Belohnungen · +1 alle 8 Stunden · 12 pro Woche · unbegrenzte Läufe',fellowshipLabel:'Live-Gemeinschaft',fellowshipCopy:'Die ersten 3 erfolgreichen Live-Abschlüsse jeder UTC-Woche gewähren +25 % des vollen Expeditionsmarken-Werts.'},

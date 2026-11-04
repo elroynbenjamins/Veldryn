@@ -14,6 +14,9 @@ export interface PersistentRunState {
   curses:string[];
   personalEffects:Record<string,{boons:string[];artifacts:string[];purchases:string[]}>;
   visitedNodeIds:string[];
+  /** Shared dungeon budget; receipts make retries idempotent. Persist atomically with character inventory. */
+  dungeonPotionChargesUsed?:number;
+  dungeonPotionReceipts?:Record<string,{requestId:string;actorId:string;itemId:string;healedHp:number;chargesUsed:number}>;
 }
 export interface NodeResolutionResult {success:boolean;state:PersistentRunState;summary:Record<string,unknown>}
 export interface MerchantOffer {id:string;label:string;cost:number;kind:'boon'|'artifact'|'salve'}

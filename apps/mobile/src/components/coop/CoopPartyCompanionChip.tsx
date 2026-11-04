@@ -6,19 +6,19 @@ import {useSocialText} from '../../i18n/social';
 import {useCoopStyles} from '../../theme/useCoopStyles';
 import type {CoopColors} from '../../theme/coop-ui-theme';
 
-export function CoopPartyCompanionChip({companionId,expanded,onPress}:{companionId:string;expanded:boolean;onPress:()=>void}){
+export function CoopPartyCompanionChip({companionId,echo=false,expanded,onPress}:{companionId:string;echo?:boolean;expanded:boolean;onPress:()=>void}){
  const {styles:s}=useCoopStyles(makeStyles),st=useSocialText();
  const companion=combatCompanionDef(companionId),art=companionArtSource(companionId);
  if(!companion)return null;
  return <Pressable accessibilityRole="button"
-  accessibilityLabel={st('Tap to view companion')+': '+companion.name}
+  accessibilityLabel={(echo?st('Frozen Echo companion'):st('Tap to view companion'))+': '+companion.name}
   accessibilityState={{expanded}}
   onPress={onPress}
   style={({pressed})=>[s.chip,expanded&&s.expanded,pressed&&s.pressed]}>
   <View style={s.icon}>{art?<Image source={art} resizeMode="contain" style={s.image}/>:<UiIcon name="companions" size={24}/>}</View>
   <View style={s.textArea}>
    <Text numberOfLines={1} style={s.name}>{companion.name}</Text>
-   <Text numberOfLines={1} style={s.subtitle}>{st('Companion assist')}</Text>
+   <Text numberOfLines={1} style={s.subtitle}>{st(echo?'Frozen Echo companion':'Companion assist')}</Text>
   </View>
   <Text style={s.chevron}>{expanded?'−':'›'}</Text>
  </Pressable>;

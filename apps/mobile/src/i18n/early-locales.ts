@@ -1030,6 +1030,22 @@ export const EARLY_LOCALE_ROWS={
     "Элитный бой",
     "Seçkin oda"
   ],
+  "Face the final encounter.": [
+    "Сразитесь с финальным противником.",
+    "Son karşılaşmaya hazırlan."
+  ],
+  "Restore your party's health.": [
+    "Восстановите здоровье группы.",
+    "Grubunun sağlığını yenile."
+  ],
+  "Gain resources, but take a curse.": [
+    "Получите ресурсы, но примите проклятие.",
+    "Kaynak kazan ama bir lanet al."
+  ],
+  "Earn resources for your run.": [
+    "Получите ресурсы для текущей экспедиции.",
+    "Seferin için kaynak kazan."
+  ],
   "Boss room": [
     "Комната босса",
     "Boss odası"

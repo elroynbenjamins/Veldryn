@@ -14,7 +14,7 @@ assert(choices.includes("mode==='qmode'?st('Choose room'):st('Vote')"),'Solo and
 assert(choices.includes("option.votes??0"),'Server-owned Live vote counts remain visible even before voting begins');
 assert(choices.includes('IdentityArtwork name={selfVoter.name}'),'The player icon marks only the route they actually voted for');
 assert(choices.includes('myVotedNodeId===option.nodeId'),'Voted-route highlight depends on a confirmed vote for this route');
-assert(choices.includes("option.encounterPreview?.summary"),'Existing encounter preview remains readable');
+assert(choices.includes('option.encounterPreview?localizedDungeonEncounterPreview(language,option.encounterPreview).summary:')&&choices.includes('(room?st(room.description):undefined)'),'Authoritative encounter preview remains readable and falls back to the friendly room description when absent');
 assert(choices.includes("size=\"thumbnail\"")&&choices.includes("minHeight:88"),'Room cards use compact thumbnails and one-tap targets');
 assert(!choices.includes('<GameButton'),'No duplicate Choose/Vote button is rendered under each room');
 const model=read('src/core/coop-qmode.ts');

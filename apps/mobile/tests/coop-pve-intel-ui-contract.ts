@@ -7,7 +7,7 @@ const presentation=fs.readFileSync('src/core/coop-presentation.ts','utf8');
 const qmode=fs.readFileSync('src/core/coop-qmode.ts','utf8');
 const events=fs.readFileSync('src/core/coop-event-expeditions.ts','utf8');
 
-ok(overview.includes('DungeonRouteChoices')&&choices.includes('option.encounterPreview?.summary'),'Route choices must show authoritative PvE intel in the shared route card');
+ok(overview.includes('DungeonRouteChoices')&&choices.includes('option.encounterPreview?localizedDungeonEncounterPreview(language,option.encounterPreview).summary:')&&choices.includes('(room?st(room.description):undefined)'),'Route choices must show server-verified translated PvE intel before the generic room fallback');
 ok(choices.includes('numberOfLines={2}')&&choices.includes('s.preview'),'PvE intel must stay a compact limited-lines route hint');
 ok(!choices.includes('option.encounterPreview.mechanics.map'),'Route list must not expand every mechanic into tutorial clutter');
 ok(presentation.includes('rawArchetypes.length>2')&&presentation.includes('rawMechanics.length>4'),'Mobile preview parser must enforce compact payload limits');

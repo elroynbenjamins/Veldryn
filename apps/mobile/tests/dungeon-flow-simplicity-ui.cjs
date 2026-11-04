@@ -46,7 +46,7 @@ for(const kind of ['battle','elite','boss','camp','shrine','forge','treasure','s
 assert(roomPresentation.includes("Restore your party's health.")&&roomPresentation.includes("Gain resources, but take a curse."),'Room previews describe actual resolver effects without promising drops');
 assert(route.includes('const redundantReward=')&&route.includes('!redundantReward?'),'Backend rewardTag duplicates are hidden rather than rendered as pointless labels');
 assert(route.includes('const riskBaseline=')&&route.includes('!riskBaseline?'),'Default 1.0 risk does not produce unnecessary tags');
-assert(route.includes('const preview=option.encounterPreview?.summary??'),'Authoritative combat previews take precedence over friendly room descriptions');
+assert(route.includes('const preview=option.encounterPreview?localizedDungeonEncounterPreview(language,option.encounterPreview).summary:')&&route.includes('(room?st(room.description):undefined)'),'Authoritative combat previews take precedence over friendly room descriptions and use verified locale copy');
 assert(run.includes("<DungeonRoomResolution kind={run.selectedNodeKind} reduceMotion={reduceMotion}/>"),'Utility rooms use room-specific visuals instead of a generic resolving card');
 assert(roomResolution.includes('dungeonRoomPresentation(kind)')&&roomResolution.includes('ActivityIndicator'),'Utility rooms show the correct art and a non-blocking sync state');
 assert(roomResolution.includes('!reduceMotion?<ActivityIndicator'),'Room resolving respects reduced-motion preference');

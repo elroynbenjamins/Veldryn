@@ -128,3 +128,15 @@ assert.throws(()=>planDungeonPotionUse({...args,requestId:'no-stock',persistentS
 assert.throws(()=>planDungeonPotionUse({...args,requestId:'food-not-potion',persistentState:initialRun,characterState:{...dungeonCharacter,character:{...dungeonCharacter.character,equippedHealingPotionId:'MOSS_RAT_MEAT'}}}),/not_selected/);
 assert.equal(dungeonCharacter.inventory.stacks.find(x=>x.itemId==='VIGOR_TONIC')?.quantity,8,'non-healing tonics are untouched');
 console.log('dungeon potion transaction plan: stock, healing, tier caps, idempotency and security guards passed');
+
+/** Guard the cross-package source of truth without importing React Native into backend TypeScript. */
+import {HEALING_POTION_MAX_HP_FRACTIONS} from '../../../shared/healing-potion-catalog';
+import {readFileSync} from 'node:fs';
+const alchemySource=readFileSync('../apps/mobile/src/content/alchemy.ts','utf8');
+for(const [id,fraction] of Object.entries(HEALING_POTION_MAX_HP_FRACTIONS)){
+ const potionLine=alchemySource.split('\n').find(line=>line.includes(`id:'${id}'`)&&line.includes('maxHpFraction:'));
+ assert.ok(potionLine,`mobile Alchemy catalog missing ${id}`);
+ const matched=potionLine!.match(/maxHpFraction:(0?\\.\\d+)/);
+ assert.ok(matched&&Number(matched[1])===fraction,`dungeon heal amount must match brewed ${id}`);
+}
+console.log('Draught heal values remain consistent across mobile and backend');

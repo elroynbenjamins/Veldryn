@@ -1,7 +1,6 @@
 import type {ItemDef} from './items';
 import type {ItemStack} from '../core/types';
 import {increasedCraftingGoldCost} from './crafting-gold-cost';
-import {HEALING_POTION_MAX_HP_FRACTIONS} from '../../../../backend/src/shared/healing-potion-catalog';
 
 export type PotionEffect = {kind:'healing';maxHpFraction:number} |
   {kind:'preparation';attackFraction:number;damageReductionFraction:number;encounters:number};
@@ -16,9 +15,9 @@ export const MAX_ALCHEMY_BATCHES=10_000;
 export const HEALING_POTION_CRAFT_COST_MULTIPLIER=5;
 export const HEALING_POTION_XP_MULTIPLIER=3;
 export const POTIONS:readonly PotionDefinition[]=[
-  {id:'DEWLEAF_DRAUGHT',name:'Dewleaf Draught',effect:{kind:'healing',maxHpFraction:HEALING_POTION_MAX_HP_FRACTIONS.DEWLEAF_DRAUGHT},description:'Restore 20% maximum HP during boss fights and dungeons. Select below Food in the HP menu; not for ordinary hunts.'},
-  {id:'RIVERHEART_DRAUGHT',name:'Riverheart Draught',effect:{kind:'healing',maxHpFraction:HEALING_POTION_MAX_HP_FRACTIONS.RIVERHEART_DRAUGHT},description:'Restore 35% maximum HP during boss fights and dungeons. Select below Food in the HP menu; not for ordinary hunts.'},
-  {id:'OATHBLOOM_DRAUGHT',name:'Oathbloom Draught',effect:{kind:'healing',maxHpFraction:HEALING_POTION_MAX_HP_FRACTIONS.OATHBLOOM_DRAUGHT},description:'Restore 50% maximum HP during boss fights and dungeons. Select below Food in the HP menu; not for ordinary hunts.'},
+  {id:'DEWLEAF_DRAUGHT',name:'Dewleaf Draught',effect:{kind:'healing',maxHpFraction:.20},description:'Restore 20% maximum HP during boss fights and dungeons. Select below Food in the HP menu; not for ordinary hunts.'},
+  {id:'RIVERHEART_DRAUGHT',name:'Riverheart Draught',effect:{kind:'healing',maxHpFraction:.35},description:'Restore 35% maximum HP during boss fights and dungeons. Select below Food in the HP menu; not for ordinary hunts.'},
+  {id:'OATHBLOOM_DRAUGHT',name:'Oathbloom Draught',effect:{kind:'healing',maxHpFraction:.50},description:'Restore 50% maximum HP during boss fights and dungeons. Select below Food in the HP menu; not for ordinary hunts.'},
   {id:'VIGOR_TONIC',name:'Vigor Tonic',effect:{kind:'preparation',attackFraction:.04,damageReductionFraction:0,encounters:30},description:'+4% attack for 30 resolved ordinary encounters.'},
   {id:'GREATER_VIGOR_TONIC',name:'Greater Vigor Tonic',effect:{kind:'preparation',attackFraction:.06,damageReductionFraction:0,encounters:45},description:'+6% attack for 45 resolved ordinary encounters.'},
   {id:'OATH_VIGOR_TONIC',name:'Oath Vigor Tonic',effect:{kind:'preparation',attackFraction:.08,damageReductionFraction:0,encounters:60},description:'+8% attack for 60 resolved ordinary encounters.'},

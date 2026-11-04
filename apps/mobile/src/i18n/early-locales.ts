@@ -533,6 +533,318 @@ const EARLY_LOCALE_ROWS={
   "Update VELDRYN": [
     "Обновить VELDRYN",
     "VELDRYN'i güncelle"
+  ],
+  "Unable to check for updates": [
+    "Не удалось проверить обновления",
+    "Güncellemeler denetlenemedi"
+  ],
+  "Connect to the internet and retry to verify this version of VELDRYN.": [
+    "Подключитесь к интернету и повторите проверку версии VELDRYN.",
+    "VELDRYN sürümünü doğrulamak için internete bağlanıp yeniden deneyin."
+  ],
+  "Cancel confirmation": [
+    "Отменить подтверждение",
+    "Onayı iptal et"
+  ],
+  "SERVICE STATUS": [
+    "СОСТОЯНИЕ СЕРВИСА",
+    "HİZMET DURUMU"
+  ],
+  "Installed": [
+    "Установлено",
+    "Yüklü"
+  ],
+  "Required": [
+    "Требуется",
+    "Gerekli"
+  ],
+  "The game will continue normally after the supported version is installed.": [
+    "После установки поддерживаемой версии игра продолжится как обычно.",
+    "Desteklenen sürüm yüklendiğinde oyuna normal şekilde devam edebilirsiniz."
+  ],
+  "Try again after maintenance has finished.": [
+    "Повторите попытку после завершения обслуживания.",
+    "Bakım bittikten sonra tekrar deneyin."
+  ],
+  "The local save could not be read.": [
+    "Не удалось прочитать локальное сохранение.",
+    "Yerel kayıt okunamadı."
+  ],
+  "No readable save state was returned.": [
+    "Не найдено доступное сохранение.",
+    "Okunabilir bir kayıt bulunamadı."
+  ],
+  "Working Toward": [
+    "Текущая цель",
+    "Hedeflerim"
+  ],
+  "Daily Supplies": [
+    "Ежедневные припасы",
+    "Günlük Malzemeler"
+  ],
+  "Account Bonuses": [
+    "Бонусы аккаунта",
+    "Hesap Bonusları"
+  ],
+  "Mastery Hall": [
+    "Зал мастерства",
+    "Ustalık Salonu"
+  ],
+  "Empty": [
+    "Пусто",
+    "Boş"
+  ],
+  "Social": [
+    "Общение",
+    "Sosyal"
+  ],
+  "Customize Profile": [
+    "Настроить профиль",
+    "Profili özelleştir"
+  ],
+  "Discard profile changes?": [
+    "Отменить изменения профиля?",
+    "Profil değişiklikleri silinsin mi?"
+  ],
+  "Keep editing": [
+    "Продолжить редактирование",
+    "Düzenlemeye devam et"
+  ],
+  "Discard changes": [
+    "Отменить изменения",
+    "Değişiklikleri sil"
+  ],
+  "Locked for now": [
+    "Пока недоступно",
+    "Şimdilik kilitli"
+  ],
+  "Save upgrade pending": [
+    "Обновление сохранения ожидает записи",
+    "Kayıt güncellemesi bekliyor"
+  ],
+  "Save pending": [
+    "Сохранение ожидает записи",
+    "Kayıt bekliyor"
+  ],
+  "Online action": [
+    "Сетевое действие",
+    "Çevrimiçi işlem"
+  ],
+  "Please retry.": [
+    "Повторите попытку.",
+    "Lütfen yeniden deneyin."
+  ],
+  "Please try again.": [
+    "Пожалуйста, попробуйте снова.",
+    "Lütfen tekrar deneyin."
+  ],
+  "Save imported": [
+    "Сохранение импортировано",
+    "Kayıt içe aktarıldı"
+  ],
+  "Action queue": [
+    "Очередь действий",
+    "İşlem kuyruğu"
+  ],
+  "Idle Rules": [
+    "Правила бездействия",
+    "Boşta Kalma Kuralları"
+  ],
+  "VELDRYN maintenance": [
+    "Обслуживание VELDRYN",
+    "VELDRYN bakımı"
+  ],
+  "Retry connection": [
+    "Повторить подключение",
+    "Bağlantıyı yeniden dene"
+  ],
+  "Connecting…": [
+    "Подключение…",
+    "Bağlanılıyor…"
+  ],
+  "Start fresh": [
+    "Начать заново",
+    "Baştan başla"
+  ],
+  "Retry pending action": [
+    "Повторить действие",
+    "Bekleyen işlemi yeniden dene"
+  ],
+  "Cannot travel": [
+    "Переход недоступен",
+    "Yolculuk yapılamıyor"
+  ],
+  "Cannot claim contract": [
+    "Нельзя получить награду задания",
+    "Sözleşme ödülü alınamıyor"
+  ],
+  "Cancel forge job?": [
+    "Отменить работу кузницы?",
+    "Demirhane işi iptal edilsin mi?"
+  ],
+  "Keep crafting": [
+    "Продолжить создание",
+    "Üretime devam et"
+  ],
+  "Cancel craft": [
+    "Отменить создание",
+    "Üretimi iptal et"
+  ],
+  "Forge complete": [
+    "Ковка завершена",
+    "Demirhane işi tamamlandı"
+  ],
+  "Gem combined": [
+    "Самоцветы объединены",
+    "Mücevherler birleştirildi"
+  ],
+  "Cannot claim forge job": [
+    "Не удалось получить изделие",
+    "Üretilen eşya alınamıyor"
+  ],
+  "Gem combines ready": [
+    "Объединённые самоцветы готовы",
+    "Birleştirilmiş mücevherler hazır"
+  ],
+  "Cannot equip tool": [
+    "Нельзя экипировать инструмент",
+    "Alet kuşanılamıyor"
+  ],
+  "Forge updated": [
+    "Кузница обновлена",
+    "Demirhane güncellendi"
+  ],
+  "Added to forge backlog": [
+    "Добавлено в очередь кузницы",
+    "Demirhane sırasına eklendi"
+  ],
+  "Crafting started": [
+    "Создание началось",
+    "Üretim başladı"
+  ],
+  "View character": [
+    "Открыть персонажа",
+    "Karakteri görüntüle"
+  ],
+  "Cannot upgrade": [
+    "Нельзя улучшить",
+    "Yükseltme yapılamıyor"
+  ],
+  "Cannot socket gem": [
+    "Нельзя вставить самоцвет",
+    "Mücevher yerleştirilemiyor"
+  ],
+  "Cannot replace gem": [
+    "Нельзя заменить самоцвет",
+    "Mücevher değiştirilemiyor"
+  ],
+  "Cannot extract gem": [
+    "Нельзя извлечь самоцвет",
+    "Mücevher çıkarılamıyor"
+  ],
+  "Cannot refine gem": [
+    "Нельзя улучшить самоцвет",
+    "Mücevher geliştirilemiyor"
+  ],
+  "Cannot combine gems": [
+    "Нельзя объединить самоцветы",
+    "Mücevherler birleştirilemiyor"
+  ],
+  "Cannot dismantle gem": [
+    "Нельзя разобрать самоцвет",
+    "Mücevher parçalanamıyor"
+  ],
+  "Online save": [
+    "Облачное сохранение",
+    "Çevrimiçi kayıt"
+  ],
+  "Reset local save?": [
+    "Сбросить локальное сохранение?",
+    "Yerel kayıt sıfırlansın mı?"
+  ],
+  "Reset": [
+    "Сбросить",
+    "Sıfırla"
+  ],
+  "{name} is ready.": [
+    "{name} готов.",
+    "{name} hazır."
+  ],
+  "Gem combines ready: {count}": [
+    "Готовых объединений самоцветов: {count}",
+    "Hazır mücevher birleşimi: {count}"
+  ],
+  "new activity": [
+    "новое действие",
+    "yeni etkinlik"
+  ],
+  "HP": [
+    "ЗД",
+    "CAN"
+  ],
+  "Open quick navigation": [
+    "Открыть быстрый переход",
+    "Hızlı gezinmeyi aç"
+  ],
+  "Open quick navigation, {count} need attention": [
+    "Открыть быстрый переход, требуют внимания: {count}",
+    "Hızlı gezinmeyi aç, {count} bildirim var"
+  ],
+  "Close quick navigation": [
+    "Закрыть быстрый переход",
+    "Hızlı gezinmeyi kapat"
+  ],
+  "PLAYER SHORTCUTS": [
+    "БЫСТРЫЕ ПЕРЕХОДЫ",
+    "OYUNCU KISAYOLLARI"
+  ],
+  "Choose five destinations": [
+    "Выберите пять разделов",
+    "Beş hedef seç"
+  ],
+  "Quick navigation": [
+    "Быстрый переход",
+    "Hızlı gezinme"
+  ],
+  "{count}/5 selected": [
+    "Выбрано: {count}/5",
+    "{count}/5 seçildi"
+  ],
+  "Save five": [
+    "Сохранить пять",
+    "Beşini kaydet"
+  ],
+  "NEEDS ATTENTION": [
+    "ТРЕБУЕТ ВНИМАНИЯ",
+    "İLGİ GEREKİYOR"
+  ],
+  "Customize shortcuts": [
+    "Настроить ярлыки",
+    "Kısayolları düzenle"
+  ],
+  "No system notices right now.": [
+    "Системных уведомлений пока нет.",
+    "Şu anda sistem bildirimi yok."
+  ],
+  "Forge ready": [
+    "Кузница готова",
+    "Demirhane hazır"
+  ],
+  "Weekly rewards ready": [
+    "Недельные награды готовы",
+    "Haftalık ödüller hazır"
+  ],
+  "Storage attention": [
+    "Проверьте хранилище",
+    "Depoyu kontrol et"
+  ],
+  "Event rewards remain": [
+    "Остались награды события",
+    "Etkinlik ödülleri bekliyor"
+  ],
+  "Event approaching": [
+    "Скоро событие",
+    "Etkinlik yaklaşıyor"
   ]
 } satisfies Record<string,readonly [string,string]>;
 

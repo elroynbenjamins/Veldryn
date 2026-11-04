@@ -47,3 +47,5 @@ jobs:
             git commit -m "build: regenerate gameplay and co-op Edge bundles for Alchemy dungeon potions"
             git push origin HEAD:feat/alchemy-tiered-role-potions-106
           fi
+
+# One-shot refresh after merging current main into the Alchemy integration branch.

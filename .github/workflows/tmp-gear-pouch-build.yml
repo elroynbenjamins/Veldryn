@@ -40,6 +40,10 @@ jobs:
           node .core-build/apps/mobile/tests/gem-pouch.js
           node .core-build/apps/mobile/tests/character-delete-management.js
           node tests/storage-dungeon-refinement-ui.cjs
+      - name: Refresh latest branch after tests, before generating the bundle
+        run: |
+          git fetch origin feat/character-equipment-pouch-automatic-rewards
+          git reset --hard origin/feat/character-equipment-pouch-automatic-rewards
       - name: Generate authoritative gameplay bundle from shared engine
         run: node tools/build-online.mjs
       - name: Verify generated gameplay parity

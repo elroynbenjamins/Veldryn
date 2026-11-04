@@ -1,7 +1,7 @@
 import type {GameState} from './types';
 import type {OwnedCompanionProgress,CompanionSanctuaryState,CompanionPhase2ProfileState,CompanionAvailabilityStatus,CombatCompanionRole} from './combat-companion-types';
 import {defaultCompanionSanctuary,reconcileCombatCompanionUnlocks,classCompanionRole} from './combat-companions';
-import {COMBAT_COMPANIONS,COMPANION_SANCTUARY_TRAINING_XP_PER_DAY} from '../content/combat-companions';
+import {COMBAT_COMPANIONS,COMPANION_BOND_ESSENCE_REWARDS,COMPANION_SANCTUARY_TRAINING_XP_PER_DAY} from '../content/combat-companions';
 import {MONSTERS} from '../content/monsters';
 import {WORLD_ZONES} from '../content/world-map';
 import {GATHERING} from '../content/skills';
@@ -303,14 +303,14 @@ export function executeCompanionActivity(input:GameState,type:string,a:Record<st
     }
     case 'companion_bond_reward':{
       const id=stringArg(a,'id'),progress=owned[id];if(!progress)throw new Error('Companion is locked.');
-      const rewards:Record<number,number>={2:20,4:35,6:55,8:80},claims=state.account.companionBondRewardClaims??[];
+      const rewards:Record<number,number>=COMPANION_BOND_ESSENCE_REWARDS,claims=state.account.companionBondRewardClaims??[];
       const requested=a.level===undefined?[8,6,4,2].find(level=>progress.bondLevel>=level&&!claims.includes(`${id}:${level}`)):Number(a.level);
       if(!requested||!rewards[requested])throw new Error('No Bond milestone reward is available.');
       if(progress.bondLevel<requested)throw new Error(`Reach Bond ${requested} first.`);
       const key=`${id}:${requested}`;if(claims.includes(key))throw new Error('Bond reward already claimed.');
       state=reward(state,{companionEssence:rewards[requested]});
-      const profileRewards=requested===4?[`COMPANION_PORTRAIT_${id}`]:requested===8?[`COMPANION_TITLE_${id}`]:[];
-      if(profileRewards.length){const current=state.account.companionPhase2Profile??{showcaseCompanionIds:[],showcaseSlotsUnlocked:1};state.account.companionPhase2Profile={...current,codexRewardIds:[...new Set([...(current.codexRewardIds??[]),...profileRewards])]};}
+      // Bond milestones grant Essence only. Keep any old codexRewardIds in saves for backward compatibility,
+      // but never mint the retired portrait/title entitlements on new claims.
       state.account.companionBondRewardClaims=[...claims,key];break;
     }
     case 'companion_trial_start':{

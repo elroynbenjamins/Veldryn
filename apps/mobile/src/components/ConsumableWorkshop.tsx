@@ -1,5 +1,5 @@
 import {useMemo,useRef,useState} from 'react';
-import {Pressable,StyleSheet,Text,View,useWindowDimensions} from 'react-native';
+import {Pressable,ScrollView,StyleSheet,Text,View,useWindowDimensions} from 'react-native';
 import type {GameState} from '../core/types';
 import {RECIPES,type Recipe} from '../content/skills';
 import {itemDef} from '../content/items';
@@ -13,6 +13,7 @@ import {useGameTheme} from '../theme/ThemeContext';
 import {useGameplayText} from '../i18n/gameplay';
 import {ItemArtwork} from './ItemArtwork';
 import {IngredientList} from './IngredientList';
+import {GameModalHeader,GameModalSurface} from './GameModalSurface';
 
 type Skill='cooking'|'alchemy';
 type Props={state:GameState;skillId:Skill;preferredRecipeId?:string;onStart:(id:string)=>Promise<unknown>};
@@ -78,7 +79,7 @@ export function ConsumableWorkshop({state,skillId,preferredRecipeId,onStart}:Pro
  const start=(recipe:Recipe)=>{
   if(busyRef.current||recipe.id===activeId)return;
   setError('');
-  if(activity){setPendingId(recipe.id);return;}
+  if(activity){setDetailId(null);setPendingId(recipe.id);return;}
   if(count(recipe)<1){setDetailId(recipe.id);return;}
   void submit(recipe.id);
  };
@@ -108,15 +109,21 @@ export function ConsumableWorkshop({state,skillId,preferredRecipeId,onStart}:Pro
    })}
   </View>
   {!recipes.length?<Text style={[s.caption,{color:C.muted}]}>{gt('No recipes available.')}</Text>:null}
-  {detail?<View style={[s.detail,{borderColor:C.line,backgroundColor:C.panel}]}>
-    <View style={s.line}><Text style={[s.title,{color:C.text,flex:1}]}>{itemDef(detail.output.itemId).name}</Text><Pressable accessibilityRole="button" accessibilityLabel={gt('Close')} onPress={()=>setDetailId(null)}><Text style={[s.name,{color:C.muted}]}>✕</Text></Pressable></View>
-    <Text style={[s.caption,{color:C.good}]}>{benefit(detail)}</Text>
-    {mealBonusDef(detail.output.itemId)?<Text style={[s.buff,{color:C.good}]}>{mealBonusDef(detail.output.itemId)!.label} · {mealBonusDef(detail.output.itemId)!.durationHours}h · {gt('Eat for Bonus in Inventory')}</Text>:null}
-    <Text style={[s.caption,{color:C.muted}]}>{gt('Per batch')}: {detail.output.quantity} {gt('items')} · {detail.gold} Gold · {timeLabel(professionActionPace(state,detail,'batch').cycleSeconds)}</Text>
-    <Text style={[s.caption,{color:C.muted}]}>{gt('Maximum production')}: {count(detail)} {gt('batches')} · {count(detail)*detail.output.quantity} {gt('items')} · {count(detail)*detail.gold} Gold</Text>
-    <IngredientList inputs={detail.inputs.map(r=>({...r,inventory:state.inventory.stacks.filter(s=>s.itemId===r.itemId).reduce((n,s)=>n+s.quantity,0),bank:state.bank.stacks.filter(s=>s.itemId===r.itemId).reduce((n,s)=>n+s.quantity,0)}))} numberMode={state.settings.numberMode} showStorage/>
-    <Pressable accessibilityRole="button" accessibilityState={{disabled:busy||count(detail)<1||activeId===detail.id}} disabled={busy||count(detail)<1||activeId===detail.id} onPress={()=>start(detail)} style={[s.primary,{backgroundColor:C.accent,opacity:busy||count(detail)<1?.5:1}]}><Text style={[s.bold,{color:C.panel}]}>{activeId===detail.id?gt('Active'):skillId==='cooking'?gt('Start Cooking'):gt('Start Brewing')}</Text></Pressable>
-  </View>:null}
+  <GameModalSurface visible={!!detail} reduceMotion={state.settings.reduceMotion} onClose={()=>setDetailId(null)} surfaceStyle={s.detailModal}>
+    {detail?<>
+      <GameModalHeader title={itemDef(detail.output.itemId).name} onClose={()=>setDetailId(null)} closeDisabled={busy}/>
+      <ScrollView style={s.detailScroll} contentContainerStyle={s.detailContent} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false} showsHorizontalScrollIndicator={false}>
+        <View style={s.line}><ItemArtwork itemId={detail.output.itemId} size={52}/><Text style={[s.caption,{color:C.good,flex:1}]}>{benefit(detail)}</Text></View>
+        {mealBonusDef(detail.output.itemId)?<Text style={[s.buff,{color:C.good}]}>{mealBonusDef(detail.output.itemId)!.label} · {mealBonusDef(detail.output.itemId)!.durationHours}h · {gt('Eat for Bonus in Inventory')}</Text>:null}
+        <Text style={[s.caption,{color:C.muted}]}>{gt('Per batch')}: {detail.output.quantity} {gt('items')} · {detail.gold} Gold · {timeLabel(professionActionPace(state,detail,'batch').cycleSeconds)}</Text>
+        <Text style={[s.caption,{color:C.muted}]}>{gt('Maximum production')}: {count(detail)} {gt('batches')} · {count(detail)*detail.output.quantity} {gt('items')} · {count(detail)*detail.gold} Gold</Text>
+        <IngredientList inputs={detail.inputs.map(r=>({...r,inventory:state.inventory.stacks.filter(s=>s.itemId===r.itemId).reduce((n,s)=>n+s.quantity,0),bank:state.bank.stacks.filter(s=>s.itemId===r.itemId).reduce((n,s)=>n+s.quantity,0)}))} numberMode={state.settings.numberMode} showStorage/>
+        {skillId==='alchemy'&&potionDef(detail.output.itemId)?.effect.kind==='healing'?<Text style={[s.caption,{color:C.info}]}>{gt('Healing potions are for boss fights. Select one in the HP menu; food cannot heal during bosses or dungeons.')}</Text>:null}
+      </ScrollView>
+      <Pressable accessibilityRole="button" accessibilityState={{disabled:busy||count(detail)<1||activeId===detail.id}} disabled={busy||count(detail)<1||activeId===detail.id} onPress={()=>start(detail)} style={[s.primary,{backgroundColor:C.accent,opacity:busy||count(detail)<1?.5:1}]}><Text style={[s.bold,{color:C.panel}]}>{activeId===detail.id?gt('Active'):skillId==='cooking'?gt('Start Cooking'):gt('Start Brewing')}</Text></Pressable>
+      {error?<Text accessibilityRole="alert" style={[s.caption,{color:C.bad}]}>{error}</Text>:null}
+    </>:null}
+  </GameModalSurface>
   {selected?<View style={[s.detail,{borderColor:C.warning,backgroundColor:C.panel2}]}>
     <Text style={[s.title,{color:C.text}]}>{gt('Switch activity?')}</Text>
     <Text style={[s.caption,{color:C.muted}]}>{gt('Starting a new activity settles the current one and safely refunds any unfinished reserved batches.')}</Text>
@@ -131,6 +138,6 @@ export function ConsumableWorkshop({state,skillId,preferredRecipeId,onStart}:Pro
 const s=StyleSheet.create({
  root:{gap:12},line:{flexDirection:'row',alignItems:'center',justifyContent:'space-between',gap:8},title:{fontSize:17,fontWeight:'800',lineHeight:22},name:{fontSize:13,fontWeight:'800',lineHeight:18},bold:{fontSize:12,fontWeight:'800'},caption:{fontSize:11,lineHeight:16},tier:{fontSize:11,fontWeight:'800'},ready:{fontSize:11,fontWeight:'800',marginTop:4},buff:{fontSize:11,fontWeight:'800',lineHeight:16},toggle:{borderWidth:1,borderRadius:8,paddingHorizontal:10,minHeight:38,justifyContent:'center'},
  categories:{flexDirection:'row',gap:6},category:{flex:1,minWidth:0,minHeight:44,borderWidth:1,borderRadius:8,justifyContent:'center',alignItems:'center',paddingHorizontal:4},categoryText:{fontSize:11,fontWeight:'800'},
- grid:{flexDirection:'row',flexWrap:'wrap',justifyContent:'space-between',gap:8},tile:{borderWidth:1,borderRadius:11,overflow:'hidden'},tileTap:{minHeight:160,padding:11,gap:5},info:{minHeight:38,borderTopWidth:1,justifyContent:'center',alignItems:'center'},detail:{borderWidth:1,borderRadius:11,padding:12,gap:10},primary:{minHeight:48,alignItems:'center',justifyContent:'center',borderRadius:8},
+ grid:{flexDirection:'row',flexWrap:'wrap',justifyContent:'space-between',gap:8},tile:{borderWidth:1,borderRadius:11,overflow:'hidden'},tileTap:{minHeight:160,padding:11,gap:5},info:{minHeight:38,borderTopWidth:1,justifyContent:'center',alignItems:'center'},detail:{borderWidth:1,borderRadius:11,padding:12,gap:10},detailModal:{maxHeight:'86%'},detailScroll:{flexGrow:0,flexShrink:1},detailContent:{gap:10,paddingBottom:8},primary:{minHeight:48,alignItems:'center',justifyContent:'center',borderRadius:8},
  secondary:{minHeight:44,flex:1,alignItems:'center',justifyContent:'center',borderWidth:1,borderRadius:8},active:{borderWidth:1,borderRadius:11,padding:12,gap:5}
 });

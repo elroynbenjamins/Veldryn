@@ -4,7 +4,7 @@ import {companionCurrentLevelCap,companionMaxLevel,companionUnlockRequirementMet
 import {MONSTERS} from '../content/monsters';
 import {GATHERING,RECIPES} from '../content/skills';
 import {ITEMS} from '../content/items';
-import {COMBAT_COMPANIONS,COMPANION_STAGE_CAPS} from '../content/combat-companions';
+import {COMBAT_COMPANIONS,COMPANION_BOND_ESSENCE_REWARDS,COMPANION_STAGE_CAPS} from '../content/combat-companions';
 import {characterClassSkills} from './class-skills';
 import {monsterMastery} from './monster-mastery';
 
@@ -160,10 +160,10 @@ export function companionProgressionRoadmap(state:GameState,id:string){
   power.push({id:'prestige-mastery',label:'Prestige Mastery',detail:'Reach Level 35 after Ascension III',reward:'Final Prestige mastery marker',status:complete?'complete':ready?'ready':current?'current':'future'});
  }
  const bondRewards:Record<number,{reward:string;detail:string}>={
-  2:{reward:'20 Essence',detail:'First Bond reward'},
-  4:{reward:'35 Essence + portrait',detail:'Profile identity reward'},
-  6:{reward:'55 Essence + Bond Resonance',detail:'Passive improvement milestone'},
-  8:{reward:'80 Essence + title',detail:'Profile title milestone'},
+  2:{reward:`${COMPANION_BOND_ESSENCE_REWARDS[2]} Essence`,detail:'Companion Essence milestone'},
+  4:{reward:`${COMPANION_BOND_ESSENCE_REWARDS[4]} Essence`,detail:'Companion Essence milestone'},
+  6:{reward:`${COMPANION_BOND_ESSENCE_REWARDS[6]} Essence`,detail:'Companion Essence milestone'},
+  8:{reward:`${COMPANION_BOND_ESSENCE_REWARDS[8]} Essence`,detail:'Companion Essence milestone'},
   10:{reward:`Bond Trait · ${def.bondTrait.name}`,detail:def.bondTrait.description},
  };
  const bondLevels=[2,4,6,8,10] as const,nextBond=bondLevels.find(level=>progress.bondLevel<level);

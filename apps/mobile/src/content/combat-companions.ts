@@ -26,11 +26,14 @@ export const COMPANION_STAGE_CAPS:Record<CombatCompanionRarity,readonly [number,
 };
 
 export const COMPANION_LEVEL_CURVE={baseXp:65,xpGrowth:1.16,goldBase:38,goldGrowth:1.21,essenceBase:4,essenceGrowth:1.16} as const;
+/** Claimable Bond milestone rewards. Bond 10 unlocks the companion's combat trait instead. */
+export const COMPANION_BOND_ESSENCE_REWARDS={2:20,4:35,6:55,8:80} as const;
+
 export const COMPANION_BOND_CONFIG={
   maxLevel:10,
   // cumulative XP required for Bond Levels 1-10
   xpThresholds:[0,90,210,370,580,840,1160,1540,1990,2520] as const,
-  rewards:{2:'Small progression reward',4:'Companion profile icon',6:'Passive improvement',8:'Companion title/profile reward',10:'Bond Trait'} as Record<number,string>,
+  rewards:{2:'20 Essence',4:'35 Essence',6:'55 Essence',8:'80 Essence',10:'Bond Trait'} as Record<number,string>,
   sourceXp:{battle:4,boss:60,dungeon:32,companion_objective:45,future_activity:12} as const,
 } as const;
 

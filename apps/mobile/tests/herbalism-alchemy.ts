@@ -5,7 +5,7 @@ import {ALCHEMY_EQUIPMENT_INFUSIONS,ALCHEMY_RECIPES,POTIONS,MAX_ALCHEMY_BATCHES,
 import {CLASSES} from '../src/content/classes';
 import {ITEMS,itemDef} from '../src/content/items';
 import {WORLD_ZONES} from '../src/content/world-map';
-import {createCharacter,newGame,startGathering,claimActivity,previewActivityReward,stopActivity,craftRecipe,usePotion,discardPreparation,effectiveStats,startCombat,startClassTraining} from '../src/core/game';
+import {createCharacter,newGame,startGathering,claimActivity,previewActivityReward,stopActivity,craftRecipe,usePotion,selectHealingPotion,discardPreparation,effectiveStats,startCombat,startClassTraining} from '../src/core/game';
 import {alchemyAvailability,startAlchemyBatch,storedQuantity,normalizeAlchemyBatch,normalizePreparation,preparationEffects} from '../src/core/alchemy';
 import {gatheringPacing} from '../src/core/gathering-tools';
 import {activityCycleSeconds,activityRate} from '../src/core/dashboard';
@@ -77,3 +77,13 @@ test('skill screens give usable sources, gates, inventory counts and authentic r
 test('later-region profession views use the normalized current region and expose source zones',()=>{let s=skilled(fresh(),'herbalism',46);s={...s,character:{...s.character!,level:50},currentRegionId:'FROSTMARCH'};const view=professionSkillView(s,'herbalism',T);ok(view.nodes.some(node=>node.id==='FROSTBELL_FLOWER'&&node.ready),'Frostmarch node ready');const recipe=alchemyRecipeView(s,'BREW_OATH_VIGOR_TONIC_FROSTMARCH');ok(recipe.sources[0].nodes.some(node=>node.zoneId==='FROSTMARCH'),'regional source zone');});
 test('mastery view shows no fictitious next level; brewing still works at cap',()=>{const s=legacyAlchemyBatch(skilled(supplied(),'alchemy',100),R,1,T),r=claimActivity(s,T+60000);equal(r.reward.xp,0,'cap');equal(qty(r.state,'DEWLEAF_DRAUGHT'),1,'product');equal(professionSkillView(r.state,'alchemy',T+60000).nextUnlock,undefined,'no unlock');});
 test('displayed brewing cycle, XP and material requirements match reserved state',()=>{const s=legacyAlchemyBatch(supplied(),R,5,T),recipe=alchemyRecipeDef(R)!;equal(activityCycleSeconds(s),recipe.seconds,'cycle');equal(activityRate(s).xpPerHour,recipe.xp*3600/recipe.seconds,'rate');equal(alchemyAvailability(s,R,1).maxBatches,5,'unreserved balance supports the remaining continuous run');});
+
+test('healing potions cannot be drunk during ordinary hunts, and boss selection survives save normalization',()=>{
+ const s=fresh();s.inventory.stacks.push({itemId:'DEWLEAF_DRAUGHT',quantity:2});
+ throws(()=>usePotion(s,'DEWLEAF_DRAUGHT'),'boss-only healing');
+ const selected=selectHealingPotion(s,'DEWLEAF_DRAUGHT');
+ equal(selected.inventory.stacks,s.inventory.stacks,'selection must not consume any potion');
+ equal(migrateSave(selected).character?.equippedHealingPotionId,'DEWLEAF_DRAUGHT','selection persists');
+ equal(selectHealingPotion(selected,'none').character?.equippedHealingPotionId,undefined,'choice clears');
+ throws(()=>selectHealingPotion(s,'WARD_TONIC'),'preparation tonic cannot be equipped as healing');
+});

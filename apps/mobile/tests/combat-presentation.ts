@@ -2,12 +2,13 @@ import {MONSTERS} from '../src/content/monsters';
 import {combatPresentation,combatReadiness} from '../src/core/combat-presentation';
 import {combatMotionProfile} from '../src/core/combat-motion';
 import {encounterIdentity,encounterProfileCoverage} from '../src/core/encounter-identity';
-import {createCharacter,newGame,startCombat} from '../src/core/game';
+import {createCharacter,newGame,startCombat,effectiveStats} from '../src/core/game';
 import {COMBAT_TACTICS} from '../src/core/combat-tactics';
 import {itemRarity} from '../src/core/item-rarity';
 import {itemDef} from '../src/content/items';
 import {simulateFallenKnightStoryBattle} from '../src/core/story-boss';
 import {challengeFallenKnight} from '../src/core/game';
+import {characterTotalXpAtLevel} from '../src/core/progression';
 import {regionalEnemySecondaryStats,regionalSecondaryExchange} from '../src/core/regional-enemy-stats';
 import {V33_EQUIPMENT_RECIPES} from '../src/content/equipment-recipes-v33';
 const state=createCharacter(newGame(0),'BASTION','Tester');
@@ -34,17 +35,17 @@ if(!(stalkerExchange.playerOutputMultiplier<bulwarkExchange.playerOutputMultipli
 if(!(bruteExchange.enemyCritExpected>bulwarkExchange.enemyCritExpected))throw new Error('Brute crit profile must create higher expected crit pressure');
 const epicGearId=V33_EQUIPMENT_RECIPES.find(row=>row.v33EquipmentTier==='T5')!.output.itemId;
 if(itemRarity(itemDef('MOSS_FIBER'))!=='common'||itemRarity(itemDef(epicGearId))!=='epic')throw new Error('Rarity classification failed');
-const strongBoss=simulateFallenKnightStoryBattle({name:'Prepared',classId:'WAYFINDER',maxHp:900,currentHp:900,attack:95,defense:95,power:760,accuracy:.96,evasion:.18,critChance:.28,critMultiplier:1.75,haste:.20,damageMultiplier:1.25,actionSpeedMultiplier:1.2,incomingDamageMultiplier:.72,foodHeal:120,foodQuantity:8,autoEatThresholdPct:45},'strong-boss');
+const strongBoss=simulateFallenKnightStoryBattle({name:'Prepared',classId:'WAYFINDER',maxHp:900,currentHp:900,attack:95,defense:95,power:760,accuracy:.96,evasion:.18,critChance:.28,critMultiplier:1.75,haste:.20,damageMultiplier:1.25,actionSpeedMultiplier:1.2,incomingDamageMultiplier:.72,potionHeal:120,potionQuantity:8,autoEatThresholdPct:45},'strong-boss');
 if(!strongBoss.won||!strongBoss.phasesReached.includes(2)||!strongBoss.phasesReached.includes(3))throw new Error('Prepared story boss build must visibly reach both phases and win');
 if(!strongBoss.events.some(event=>event.type==='telegraph')||!strongBoss.events.some(event=>event.type==='player_hit'&&event.amount&&event.amount>0))throw new Error('Story boss battle must emit telegraphs and damage events for playback');
-const oneShotBoss=simulateFallenKnightStoryBattle({name:'Overpowered',classId:'RAVAGER',maxHp:5000,currentHp:5000,attack:5000,defense:1200,power:12000,accuracy:.99,evasion:.35,critChance:.75,critMultiplier:2.2,haste:.45,damageMultiplier:1.8,actionSpeedMultiplier:1.5,incomingDamageMultiplier:.4,foodHeal:0,foodQuantity:0,autoEatThresholdPct:40},'one-shot-boss','rematch');
+const oneShotBoss=simulateFallenKnightStoryBattle({name:'Overpowered',classId:'RAVAGER',maxHp:5000,currentHp:5000,attack:5000,defense:1200,power:12000,accuracy:.99,evasion:.35,critChance:.75,critMultiplier:2.2,haste:.45,damageMultiplier:1.8,actionSpeedMultiplier:1.5,incomingDamageMultiplier:.4,potionHeal:0,potionQuantity:0,autoEatThresholdPct:40},'one-shot-boss','rematch');
 if(!oneShotBoss.won||oneShotBoss.events.filter(event=>event.type==='player_hit').length!==1||oneShotBoss.phasesReached.length!==1)throw new Error('Sufficiently strong rematch players must be allowed to one-shot the Fallen Knight without phase HP locks');
-const weakBoss=simulateFallenKnightStoryBattle({name:'Unprepared',classId:'WAYFINDER',maxHp:105,currentHp:105,attack:18,defense:8,power:95,accuracy:.80,evasion:.02,critChance:.03,critMultiplier:1.5,haste:0,damageMultiplier:.85,actionSpeedMultiplier:.9,incomingDamageMultiplier:1.2,foodHeal:0,foodQuantity:0,autoEatThresholdPct:40},'weak-boss');
+const weakBoss=simulateFallenKnightStoryBattle({name:'Unprepared',classId:'WAYFINDER',maxHp:105,currentHp:105,attack:18,defense:8,power:95,accuracy:.80,evasion:.02,critChance:.03,critMultiplier:1.5,haste:0,damageMultiplier:.85,actionSpeedMultiplier:.9,incomingDamageMultiplier:1.2,potionHeal:0,potionQuantity:0,autoEatThresholdPct:40},'weak-boss');
 if(weakBoss.won||weakBoss.finalPlayerHp>0)throw new Error('Unprepared story boss build must be able to lose through combat rather than a readiness roll');
 const storyState={...state,character:{...state.character!,level:25,currentHp:state.character!.hp},quests:state.quests.map(q=>q.questId==='QST_014'?{...q,status:'active' as const}:q)};
 const storyAttempt=challengeFallenKnight(storyState,123456);
 if(!storyAttempt.battle||storyAttempt.won!==storyAttempt.battle.won)throw new Error('Fallen Knight story command must return the deterministic battle it settled');
-const storyWinState={...storyState,character:{...storyState.character!,level:100,hp:50000,currentHp:50000,attack:50000,defense:12000}};
+const storyWinState={...storyState,character:{...storyState.character!,level:100,xp:characterTotalXpAtLevel(100),hp:50000,currentHp:50000,attack:30000,defense:15000}};
 const storyWin=challengeFallenKnight(storyWinState,222222);
 if(!storyWin.won||!storyWin.battle||storyWin.battle.mode!=='story')throw new Error('Prepared first story clear must settle through cinematic battle playback');
 if(!storyWin.state.inventory.stacks.some(row=>row.itemId==='FALLEN_KNIGHT_SIGIL'&&row.quantity>=1))throw new Error('First Fallen Knight clear must settle the guaranteed story Sigil from the boss drop table');
@@ -52,12 +53,11 @@ const repeatReady={...storyWin.state,character:{...storyWin.state.character!,lev
 const repeat=challengeFallenKnight(repeatReady,222223);
 if(!repeat.won||!repeat.battle||repeat.battle.mode!=='rematch'||!repeat.battle.events.some(event=>event.type==='victory'))throw new Error('Weekly Fallen Knight rematches must return the full victory battle timeline');
 if(repeat.state.inventory.stacks.filter(row=>row.itemId==='FALLEN_KNIGHT_SIGIL').reduce((sum,row)=>sum+row.quantity,0)!==1)throw new Error('Weekly rematches must not repeat the unique story Sigil');
-const healedRepeat={...repeat.state,character:{...repeat.state.character!,level:100,currentHp:repeat.state.character!.hp}};
-const repeat2=challengeFallenKnight(healedRepeat,222224);
-const healedAgain={...repeat2.state,character:{...repeat2.state.character!,level:100,currentHp:repeat2.state.character!.hp}};
-const repeat3=challengeFallenKnight(healedAgain,222225);
-if(!repeat2.won||!repeat2.battle||!repeat3.won||!repeat3.battle||repeat3.state.account.fallenKnightWeekly?.rewardedClears!==3)throw new Error('All three weekly victories must retain battle playback and consume exactly three weekly clears: '+JSON.stringify({wins:[repeat.won,repeat2.won,repeat3.won],battles:[!!repeat.battle,!!repeat2.battle,!!repeat3.battle],clears:repeat3.state.account.fallenKnightWeekly?.rewardedClears,remainingHp:[repeat.state.character?.currentHp,repeat2.state.character?.currentHp,repeat3.state.character?.currentHp]}));
-let capped=false;try{challengeFallenKnight({...repeat3.state,character:{...repeat3.state.character!,level:100}},222226)}catch(error){capped=error instanceof Error&&error.message.includes('weekly rematches are complete');}
+// Each rematch may leave the player injured; recover between attempts to test the weekly reward cap independently.
+const recoverForRematch=(s:typeof repeat.state)=>({...s,character:{...s.character!,currentHp:effectiveStats(s).hp}});
+const repeat2=challengeFallenKnight(recoverForRematch(repeat.state),222224),repeat3=challengeFallenKnight(recoverForRematch(repeat2.state),222225);
+if(!repeat2.won||!repeat2.battle||!repeat3.won||!repeat3.battle||repeat3.state.account.fallenKnightWeekly?.rewardedClears!==3)throw new Error(`All three weekly victories must retain battle playback and consume exactly three weekly clears (repeat2=${repeat2.won}, repeat3=${repeat3.won}, clears=${repeat3.state.account.fallenKnightWeekly?.rewardedClears}, hp2=${repeat2.battle?.finalPlayerHp}, hp3=${repeat3.battle?.finalPlayerHp})`);
+let capped=false;try{challengeFallenKnight(repeat3.state,222226)}catch(error){capped=error instanceof Error&&error.message.includes('weekly rematches are complete');}
 if(!capped)throw new Error('Three weekly rematch victories must enforce the existing weekly cap');
 const fs=require('fs') as {readFileSync:(path:string,encoding:string)=>string};
 const bossModalSource=fs.readFileSync('src/components/StoryBossBattleModal.tsx','utf8');

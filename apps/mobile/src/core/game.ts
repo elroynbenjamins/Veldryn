@@ -963,7 +963,22 @@ export function equipItem(state:GameState,itemId:string):GameState{
 }
 export function equipFood(state:GameState,itemId:string):GameState{if(!state.character)throw new Error('No character');const d=itemDef(itemId);if(d.type!=='food')throw new Error('Not food');if(stackQty(state.inventory.stacks,itemId)<=0)throw new Error('No food available');return {...state,character:{...state.character,equippedFoodId:itemId}}}
 export function eatFood(state:GameState,itemId?:string):GameState{if(!state.character)return state;const id=itemId||state.character.equippedFoodId;if(!id)return state;const d=itemDef(id);if(d.type!=='food'||!d.heal)throw new Error('Not food');const maxHp=effectiveStats(state).hp,heal=Math.max(1,Math.ceil(d.heal*characterPermanentMultipliers(state).healingEffectivenessMultiplier));return {...state,inventory:{...state.inventory,stacks:consume(state.inventory.stacks,id,1)},character:{...state.character,currentHp:Math.min(maxHp,state.character.currentHp+heal)}}}
-export function usePotion(state:GameState,itemId:string):GameState{if(!state.character)throw new Error('Create a character first.');const potion=potionDef(itemId);if(!potion)throw new Error('Unknown potion.');if(state.activity?.kind==='combat')throw new Error('Potions cannot be used during a hunt.');const stacks=consume(state.inventory.stacks,itemId,1);if(potion.effect.kind==='healing'){const max=effectiveStats(state).hp,healing=characterPermanentMultipliers(state).healingEffectivenessMultiplier;return {...state,inventory:{...state.inventory,stacks},character:{...state.character,currentHp:Math.min(max,state.character.currentHp+Math.ceil(max*potion.effect.maxHpFraction*healing))}};}return {...state,inventory:{...state.inventory,stacks},character:{...state.character,preparation:{itemId,remainingEncounters:potion.effect.encounters}}};}
+export function selectHealingPotion(state:GameState,itemId:string):GameState{
+ if(!state.character)throw new Error('Create a character first.');
+ if(itemId==='none')return {...state,character:{...state.character,equippedHealingPotionId:undefined}};
+ const potion=potionDef(itemId);
+ if(!potion||potion.effect.kind!=='healing')throw new Error('Select an Alchemy healing potion.');
+ if(stackQty(state.inventory.stacks,itemId)<1)throw new Error('Carry a healing potion to select it.');
+ return {...state,character:{...state.character,equippedHealingPotionId:itemId}};
+}
+export function usePotion(state:GameState,itemId:string):GameState{
+ if(!state.character)throw new Error('Create a character first.');
+ const potion=potionDef(itemId);if(!potion)throw new Error('Unknown potion.');
+ if(potion.effect.kind==='healing')throw new Error('Healing potions are reserved for boss encounters. Select one under the HP bar; ordinary hunts use food.');
+ if(state.activity?.kind==='combat')throw new Error('Tonics cannot be used during a hunt.');
+ const stacks=consume(state.inventory.stacks,itemId,1);
+ return {...state,inventory:{...state.inventory,stacks},character:{...state.character,preparation:{itemId,remainingEncounters:potion.effect.encounters}}};
+}
 export function discardPreparation(state:GameState):GameState{return state.character?.preparation?{...state,character:{...state.character,preparation:undefined}}:state;}
 export function unequipItem(state:GameState,slot:GearSlot):GameState{if(!state.character)return state;const old=state.character.equipment[slot];if(!old)return state;if(state.character.equipmentInstanceIds?.[slot])throw new Error('Choose the exact equipped copy before unequipping uniquely identified gear');const eq={...state.character.equipment};delete eq[slot];const next={...state,inventory:{...state.inventory,stacks:stackItems(state.inventory.stacks,[{itemId:old,quantity:1}])},character:{...state.character,equipment:eq}} as GameState;next.character!.currentHp=Math.min(effectiveStats(next).hp,next.character!.currentHp);return next}
 export function sellItem(state:GameState,itemId:string,quantity=1):GameState{
@@ -1201,7 +1216,7 @@ function fallenKnightPlayerSnapshot(state:GameState):FallenKnightPlayerSnapshot{
   const character=state.character;if(!character)throw new Error('No character');
   const stats=effectiveStats(state),multipliers=characterPermanentMultipliers(state),companion=companionCombatContribution(state),style=classCombatStyle(character.classId);
   const effectGems=equippedEffectGemBonuses(state),baseCritChance=CLASSES.find(def=>def.id===character.classId)?.role==='Damage'?.10:.05,setCombat=equipmentSetCombatModifiers(state,baseCritChance,.84);
-  const foodId=character.equippedFoodId,food=foodId?itemDef(foodId):undefined,foodQuantity=stackQty(state.inventory.stacks,foodId);
+  const potionId=character.equippedHealingPotionId,potion=potionDef(potionId),potionQuantity=potion?.effect.kind==='healing'?stackQty(state.inventory.stacks,potionId):0;
   const prep=character.preparation?preparationEffects(character.preparation):undefined,gear=fallenKnightGearReadiness(state);
   return {
     name:character.name,classId:character.classId,maxHp:stats.hp,currentHp:Math.max(1,Math.min(stats.hp,character.currentHp||stats.hp)),
@@ -1209,7 +1224,7 @@ function fallenKnightPlayerSnapshot(state:GameState):FallenKnightPlayerSnapshot{
     damageMultiplier:Math.max(.7,(1+effectGems.boss_power)*setCombat.penetrationMultiplier)*gear.outgoingDamageMultiplier,
     actionSpeedMultiplier:Math.max(.65,style.speedMultiplier*multipliers.combatSpeedMultiplier*companion.outputMultiplier*(1+effectGems.combat_speed)*setCombat.speedMultiplier)*gear.actionSpeedMultiplier,
     incomingDamageMultiplier:Math.max(.45,style.damageTakenMultiplier*multipliers.incomingDamageMultiplier*companion.incomingDamageMultiplier*(1-effectGems.damage_reduction)*Math.max(.5,1-setCombat.stats.ward)*(prep?.damage??1))*gear.incomingDamageMultiplier,
-    foodHeal:food?.heal??0,foodQuantity,autoEatThresholdPct:state.settings.autoEatThresholdPct,
+    potionHeal:potion?.effect.kind==='healing'?Math.ceil(stats.hp*potion.effect.maxHpFraction*multipliers.healingEffectivenessMultiplier):0,potionQuantity,autoEatThresholdPct:state.settings.autoEatThresholdPct,
   };
 }
 
@@ -1238,9 +1253,9 @@ export function challengeFallenKnightRematch(state:GameState,nowMs:number):{stat
   if(!state.character)throw new Error('No character');
   const weekly=fallenKnightWeeklyStatus(state,nowMs);
   if(weekly.remaining<=0)throw new Error('Fallen Knight weekly rematches are complete. Rewards reset with the next UTC week.');
-  const battle=previewFallenKnightBattle(state,nowMs,'rematch'),foodId=state.character.equippedFoodId,stats=effectiveStats(state);
+  const battle=previewFallenKnightBattle(state,nowMs,'rematch'),potionId=state.character.equippedHealingPotionId,stats=effectiveStats(state);
   let inventory=state.inventory.stacks;
-  if(battle.foodConsumed&&foodId)inventory=consume(inventory,foodId,battle.foodConsumed);
+  if(battle.potionConsumed&&potionId)inventory=consume(inventory,potionId,battle.potionConsumed);
   const postFightCharacter={...state.character,currentHp:Math.max(1,Math.min(stats.hp,battle.finalPlayerHp||1))};
   const attemptMetrics={...(state.account.longTermMetrics??{})};
   attemptMetrics['companions.fallen_knight_rematch_attempts']=(attemptMetrics['companions.fallen_knight_rematch_attempts']??0)+1;
@@ -1279,13 +1294,13 @@ export function challengeFallenKnight(state:GameState,nowMs=Date.now()):{state:G
   if(state.character.level<25)return {state,won:false,message:'Reach level 25 first.'};
   if(state.defeatedBossIds.includes('FALLEN_KNIGHT'))return challengeFallenKnightRematch(state,nowMs);
   const q14=state.quests.find(q=>q.questId==='QST_014');if(q14 && q14.status==='locked')return {state,won:false,message:'Advance the Asterfall questline before challenging the Fallen Knight.'};
-  const battle=previewFallenKnightBattle(state,nowMs),foodId=state.character.equippedFoodId;
+  const battle=previewFallenKnightBattle(state,nowMs),potionId=state.character.equippedHealingPotionId;
   let inventory=state.inventory.stacks;
-  if(battle.foodConsumed&&foodId)inventory=consume(inventory,foodId,battle.foodConsumed);
+  if(battle.potionConsumed&&potionId)inventory=consume(inventory,potionId,battle.potionConsumed);
   const postFightCharacter={...state.character,currentHp:Math.max(1,Math.min(effectiveStats(state).hp,battle.finalPlayerHp||1))};
   if(!battle.won){
     const next={...state,inventory:{...state.inventory,stacks:inventory},character:postFightCharacter,activity:null,outOfCombatSinceMs:nowMs} as GameState;
-    return {state:next,won:false,battle,message:`Fallen Knight repelled you after ${Math.max(1,Math.round(battle.durationMs/1000))}s. ${battle.foodConsumed?battle.foodConsumed+' food used. ':''}Upgrade gear, improve class progression or bring stronger food before the next attempt.`};
+    return {state:next,won:false,battle,message:`Fallen Knight repelled you after ${Math.max(1,Math.round(battle.durationMs/1000))}s. ${battle.potionConsumed?battle.potionConsumed+' healing potions used. ':''}Upgrade gear, improve class progression or select stronger healing potions before the next attempt.`};
   }
   const xp=state.character.xp+3000;
   const storyDrops=fallenKnightDropRoll(state,`${state.character.id}:FALLEN_KNIGHT_STORY_DROP:${nowMs}`,true);

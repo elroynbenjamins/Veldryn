@@ -68,7 +68,7 @@ export function StoryBossBattleModal({state,battle,message,onClose}:{state:GameS
   const eventText=(event:StoryBossEvent)=>{
     if(event.type==='player_hit')return `${event.critical?'CRIT · ':''}You hit for ${event.amount?.toLocaleString()??0}`;
     if(event.type==='boss_hit')return `${event.critical?'CRIT · ':''}${event.label} hits for ${event.amount?.toLocaleString()??0}`;
-    if(event.type==='heal')return `Auto-eat restores ${event.amount?.toLocaleString()??0} HP`;
+    if(event.type==='heal')return `Healing potion restores ${event.amount?.toLocaleString()??0} HP`;
     if(event.type==='phase'||event.type==='telegraph')return event.label;
     if(event.type==='player_miss'||event.type==='boss_miss')return event.label;
     if(event.type==='victory'||event.type==='defeat')return event.label;
@@ -118,7 +118,7 @@ export function StoryBossBattleModal({state,battle,message,onClose}:{state:GameS
         </View>
 
         <View style={s.log}>
-          <View style={s.logHead}><Text style={s.logTitle}>{gt("COMBAT FEED")}</Text><Text style={s.logMeta}>{battle.foodConsumed} food used · {battle.phasesReached.length}/3 phases</Text></View>
+          <View style={s.logHead}><Text style={s.logTitle}>{gt("COMBAT FEED")}</Text><Text style={s.logMeta}>{battle.potionConsumed} potions used · {battle.phasesReached.length}/3 phases</Text></View>
           {recent.length?recent.map((event,index)=><View key={event.atMs+':'+event.type+':'+index} style={s.logRow}><Text style={s.logTime}>{timeLabel(event.atMs)}</Text><Text numberOfLines={1} style={[s.logText,event.type==='telegraph'&&s.warn,event.type==='phase'&&s.phaseLog,event.critical&&s.critLog]}>{gl(eventText(event))}</Text></View>):<Text style={s.sub}>{gt("The duel begins…")}</Text>}
         </View>
 

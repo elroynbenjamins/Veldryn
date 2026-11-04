@@ -96,8 +96,7 @@ const baseline={
     "onCommand({ type: 'companion_starter', args: { id: choice.id } })"
   ],
   "apps/mobile/src/screens/CollectionsScreen.tsx": [
-    "selectCollectible(state,'pet',row.id)",
-    "selectCollectible(state,kind,row.id)"
+    "selectCollectible(state,row.kind,row.id)"
   ],
   "apps/mobile/src/screens/PetBonusOverviewScreen.tsx": [
     "choose(row.id)",
@@ -109,43 +108,46 @@ const baseline={
   ],
   "apps/mobile/src/screens/BestiaryScreen.tsx": [
     "setStatus('all')",
+    "setStatus('all')",
     "setStatus(value)",
+    "setZone('all')",
     "setZone('all')",
     "setZone(value)"
   ],
   "apps/mobile/src/components/CombatCompanionPanel.tsx": [
+    "act('companion_essence')",
     "act('companion_housing_upgrade',{ id: model.def.id })",
+    "act('companion_training')",
+    "act('companion_trial_start',{ ids: safeTeam, floor: 1 })",
+    "act('companion_unequip')",
     "act(type,args)",
-    "btn('companion_boss_rematch',undefined,!state.defeatedBossIds.includes('FALLEN_KNIGHT') || fallenKnightWeekly.remaining <= 0)",
     "btn('companion_codex',{ id: m.id },m.claimed || !m.complete)",
     "btn('companion_equip',{ id: selection },!model.compatible || !idle(selection))",
-    "btn('companion_essence',undefined,!(state.account.companionSanctuary?.essenceBasinLevel))",
     "btn('companion_monthly',{ id },claimed || !view.trial.progress.season.monthlyChallengeCompletion[id])",
     "btn('companion_showcase',{ id, ids: view.codex.showcaseCompanionIds },view.codex.favoriteCompanionId === id)",
     "btn('companion_showcase',{ id: view.codex.favoriteCompanionId, ids: view.codex.showcaseCompanionIds.includes(id) ? view.codex.showcaseCompanionIds.filter(x => x !== id) : [...view.codex.showcaseCompanionIds, id] },!view.codex.showcaseCompanionIds.includes(id) && view.codex.showcaseCompanionIds.length >= view.codex.showcaseSlotsUnlocked)",
     "btn('companion_special',{ id: c.id, ids: safeTeam },!valid.ok || completed)",
-    "btn('companion_supplies',undefined,e.gold < 250 || !(state.account.companionSanctuary?.expeditionPensLevel))",
-    "btn('companion_training',undefined,!(state.account.companionSanctuary?.trainingGroundLevel))",
+    "btn('companion_supplies',undefined,e.gold < 250 || !(sanctuary?.expeditionPensLevel))",
     "btn('companion_trial_abandon',{ id: run.runId })",
     "btn('companion_trial_floor',{ id: run.runId, floor: run.currentFloor },recovery > 0)",
-    "btn('companion_trial_start',{ ids: safeTeam },!trialTeamValid)",
-    "btn('companion_trial_start',{ ids: safeTeam, floor: 1 },!trialTeamValid)",
-    "btn('companion_unequip')",
+    "btn('companion_trial_start',{ ids: safeTeam })",
     "btn('companion_upgrade',{ id },!cost || !affordability(cost))",
     "btn('companion_weekly',{ id: d.id },!view.proving.state.completedIds.includes(d.id) || view.proving.state.claimedIds.includes(d.id))",
     "onCommand({ type, args })",
     "setSection('Codex')",
+    "setSection('Codex')",
     "setSection('Collection')",
     "setSection('Collection')",
+    "setSection('Collection')",
+    "setSection('Sanctuary')",
+    "setSection('Training')",
     "setSection('Training')",
     "setSection(source.section)",
     "setSection(source.section)",
     "setSection(tab)"
   ],
   "apps/mobile/src/components/CompanionExpeditionsV50Panel.tsx": [
-    "onCommand(command)",
-    "runCommand({ type: 'companion_assignment_claim', args: { id: row.assignmentId } })",
-    "runCommand({ type: 'companion_assignment_start', args: { id: mission.id, ids: safeTeam, food: foodSelection } })"
+    "onCommand(command)"
   ],
   "apps/mobile/src/components/CompanionTrainingV50Panel.tsx": [
     "act('companion_ascend',{ id: selection })",
@@ -156,7 +158,13 @@ const baseline={
     "act('companion_technique',{ id: selection, technique: technique.id })",
     "act('companion_unequip')",
     "onCommand({ type, args })",
-    "setTab(value)"
+    "setTab('Materials')",
+    "setTab('Roster')",
+    "setTab(key)",
+    "setTab(null)",
+    "setTab(null)",
+    "setTab(null)",
+    "setTab(null)"
   ],
   "apps/mobile/src/components/CompanionTrialStage.tsx": [],
   "apps/mobile/src/components/CompanionProgressMoment.tsx": [],

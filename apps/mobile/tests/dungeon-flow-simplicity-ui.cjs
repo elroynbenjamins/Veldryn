@@ -8,6 +8,9 @@ const screen=read('screens/CoopExpeditionScreen.tsx');
 const run=read('components/coop/CoopRunOverview.tsx');
 const route=read('components/coop/DungeonRouteChoices.tsx');
 const stage=read('components/coop/DungeonCombatStage.tsx');
+const roomPresentation=read('components/coop/dungeon-room-presentation.ts');
+const roomResolution=read('components/coop/DungeonRoomResolution.tsx');
+const lobby=read('components/coop/CoopLobbyPresentation.tsx');
 const bossPanel=read('components/coop/SeasonalBossTelegraphPanel.tsx');
 const board=read('components/coop/CoopLiveRecruitmentBoard.tsx');
 const live=fs.readFileSync(path.join(root,'../../backend/online/live-runtime.ts'),'utf8');
@@ -37,4 +40,18 @@ assert(bossPanel.includes('accessibilityState={{expanded:detailsOpen}}')&&bossPa
 assert(bossPanel.includes('priorityCast')&&bossPanel.includes('priorityPhase'),'Only priority interrupt and phase threshold are shown at a glance');
 assert(bossPanel.includes('telegraph.castAbilities.map')&&bossPanel.includes('telegraph.phases.map')&&bossPanel.includes('telegraph.suppressedAbilities.map'),'All authoritative mechanics remain available in the expanded view');
 assert(bossPanel.includes('accessibilityState={{expanded:recapOpen}}')&&bossPanel.includes('recap.abilitiesCast.length'),'The boss recap is optional but complete');
+for(const kind of ['battle','elite','boss','camp','shrine','forge','treasure','secret','merchant','echo','risk','event']){
+ assert(roomPresentation.includes(kind+':{name:'),'Every dungeon kind, including non-combat and seasonal rooms, has a presentation: '+kind);
+}
+assert(roomPresentation.includes("Restore your party's health.")&&roomPresentation.includes("Gain resources, but take a curse."),'Room previews describe actual resolver effects without promising drops');
+assert(route.includes('const redundantReward=')&&route.includes('!redundantReward?'),'Backend rewardTag duplicates are hidden rather than rendered as pointless labels');
+assert(route.includes('const riskBaseline=')&&route.includes('!riskBaseline?'),'Default 1.0 risk does not produce unnecessary tags');
+assert(route.includes('const preview=option.encounterPreview?.summary??'),'Authoritative combat previews take precedence over friendly room descriptions');
+assert(run.includes("<DungeonRoomResolution kind={run.selectedNodeKind}/>"),'Utility rooms use room-specific visuals instead of a generic resolving card');
+assert(roomResolution.includes('dungeonRoomPresentation(kind)')&&roomResolution.includes('ActivityIndicator'),'Utility rooms show the correct art and a non-blocking sync state');
+assert(!roomResolution.includes('setTheaterOpen')&&!roomResolution.includes('onChoose'),'Non-combat room presentation never mutates combat or server decisions');
+assert(run.includes("run.phase==='awaiting_choice'&&run.options.length"),'Stale decisions are hidden while the selected room is resolving');
+assert(run.includes('initiallyOpen={run.presenceSummary.safetyAiCount>0}'),'Live party connection only expands when intervention is useful');
+assert(lobby.includes('Math.max(148,Math.min(208,height*.23))'),'Live lobby artwork stays compact on small phones');
+
 console.log('PASS dungeon flows: navigation, Live voting, NPC clarity, cinematic combat and advanced disclosures');

@@ -1,4 +1,6 @@
 import {useSocialText} from '../../i18n/social';
+import {useGameLanguage} from '../../i18n/GameLanguageProvider';
+import {localizedDungeonEffectLabel} from '../../i18n/dungeon-effect-copy';
 import {Pressable,StyleSheet,Text,View} from 'react-native';
 import type {PlaybackCombatStatus} from '../../core/dungeon-combat-playback';
 import {combatCompanionDef} from '../../content/combat-companions';
@@ -49,7 +51,7 @@ function remaining(value:number){
 }
 
 export function CombatantInspectPanel({target,onClose}:{target:CombatantInspectTarget;onClose:()=>void}){
- const st=useSocialText();
+ const st=useSocialText(),language=useGameLanguage();
  const C=useGameTheme(),s=makeStyles(C),avatar=target.classId?dungeonCombatAvatar(target.classId):undefined,companion=target.companionId?combatCompanionDef(target.companionId):undefined;
  const subtitle=target.kind==='enemy'?(target.boss?st('Final Boss'):st('Dungeon Enemy')):[roleLabel(target.role),avatar?.label??target.classId].filter(Boolean).join(' · ');
  const hpKnown=target.currentHp!==undefined&&target.maximumHp!==undefined&&target.maximumHp>0;
@@ -69,7 +71,7 @@ export function CombatantInspectPanel({target,onClose}:{target:CombatantInspectT
   <View style={s.effectsHead}><Text style={s.effectsTitle}>{st("ACTIVE EFFECTS")}</Text><Text style={s.effectsCount}>{target.statuses.length}</Text></View>
   {target.statuses.length?<View style={s.effects}>{target.statuses.slice(0,8).map((status,index)=>{const harmful=status.kind==='dot'||status.kind==='debuff',gem=status.source==='gem';return <View key={`${status.kind}:${status.tag}:${status.abilityId??status.label}:${index}`} style={s.effectRow}>
     <View style={[s.effectDot,{backgroundColor:harmful?C.bad:gem?C.special:C.good}]}/>
-    <View style={s.effectCopy}><Text numberOfLines={1} style={s.effectName}>{status.label}{status.stacks>1?` ×${status.stacks}`:''}</Text><Text numberOfLines={1} style={s.effectMeta}>{effectKind(status,st)} · {remaining(status.remainingMs)}</Text></View>
+    <View style={s.effectCopy}><Text numberOfLines={1} style={s.effectName}>{localizedDungeonEffectLabel(language,status)}{status.stacks>1?` ×${status.stacks}`:''}</Text><Text numberOfLines={1} style={s.effectMeta}>{effectKind(status,st)} · {remaining(status.remainingMs)}</Text></View>
    </View>})}{target.statuses.length>8?<Text style={s.moreEffects}>{st('+{count} more active effects',{count:target.statuses.length-8})}</Text>:null}</View>:<Text style={s.empty}>{st("No active timed effects at this replay moment.")}</Text>}
  </View>;
 }

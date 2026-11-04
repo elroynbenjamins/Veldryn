@@ -88,6 +88,7 @@ export function itemInspectModel(state:GameState,itemId:string){
   const bankQuantity=state.bank.stacks.find(stack=>stack.itemId===itemId)?.quantity??0;
   const pouchQuantity=isGemPouchItemId(itemId)?gemPouch(state).stacks.find(stack=>stack.itemId===itemId)?.quantity??0:0;
   const effectLines:string[]=[];
+  if(itemId==='ASTERFALL_MINERAL_ESSENCE')effectLines.push('Rare Mining find · improves T1/T2 equipment (+1 to +4). Verdant Binding Resin remains a Forge material.');
   let upgrade:undefined|{rank:number;nextRank:number;successChance:number;dust:number;cores:number;gold:number;materials:{itemId:string;name:string;quantity:number}[];maxed:boolean;failures:number;equipped:boolean};
   let sockets:undefined|{filled:number;capacity:number;statGemName?:string;effectGemName?:string};
   let stats:undefined|{attack:number;defense:number;hp:number};

@@ -72,7 +72,7 @@ export function OnlineGuildMusterPanel(){
   <Panel>
    <View style={s.head}><Text style={s.sectionTitle}>{st("This week’s contributors")}</Text><Text style={s.meta}>{st('{count} members',{count:members.length})}</Text></View>
    {visibleMembers.map((member,index)=><View key={member.accountId} style={s.member}>
-    <Text style={s.rank}>#{index+1}</Text><View style={s.flex}><Text numberOfLines={1} style={s.memberName}>{member.displayName}</Text><Text style={s.meta}>{st('{role} · {days}/{goal} Rally days',{role:roleLabel(member.role),days:member.qualifyingDays,goal:state.personalWeeklyGoal})}</Text></View>
+    <Text style={s.rank}>#{index+1}</Text><View style={s.flex}><Text numberOfLines={1} style={s.memberName}>{member.displayName}</Text><Text style={s.meta}>{st('{role} · {days}/{goal} Rally days',{role:socialLabel(language,roleLabel(member.role)),days:member.qualifyingDays,goal:state.personalWeeklyGoal})}</Text></View>
     <View style={s.memberNumbers}><Text style={s.memberPoints}>{member.weeklyPoints}</Text><Text style={s.memberToday}>{st('today {count}',{count:member.todayPoints})}</Text></View>
    </View>)}
    {members.length>visibleMembers.length?<Text style={s.note}>{st('+{count} more contributors',{count:members.length-visibleMembers.length})}</Text>:null}

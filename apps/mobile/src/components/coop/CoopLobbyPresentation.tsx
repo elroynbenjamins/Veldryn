@@ -8,14 +8,16 @@ import {useCoopStyles} from '../../theme/useCoopStyles';
 import type {CoopColors} from '../../theme/coop-ui-theme';
 import {FantasyPanel,PrimaryAction} from './CoopVisualKit';
 import {IdentityArtwork} from '../SocialIdentity';
+import {CoopCombatSetupPanel} from './CoopCombatSetupPanel';
+import type {GameState} from '../../core/types';
 
-export type LobbyIdentity={dungeons?:CoopDungeonView[];selfPortrait?:ImageSourcePropType};
+export type LobbyIdentity={dungeons?:CoopDungeonView[];selfPortrait?:ImageSourcePropType;setupState?:GameState};
 type Props=LobbyIdentity&{queue?:LiveQueueView;ready?:LiveReadyView;notice?:string;busy?:boolean;pending?:boolean;loading?:boolean;onBack:()=>void;onRetry:()=>void;onRetryPending:()=>void;onCancel:()=>void;onAccept:()=>void;onDecline:()=>void};
 const roles={tank:'Tank',damage:'Damage',support:'Support'} as const;
 const roleArt={tank:coopUiAssets.role_tank,damage:coopUiAssets.role_damage,support:coopUiAssets.role_support};
 
 /** Actual server roster only; undisclosed player identities use role emblems. */
-export function CoopLiveLobbyView({dungeons=[],selfPortrait,queue,ready,notice='',busy=false,pending=false,loading=false,onBack,onRetry,onRetryPending,onCancel,onAccept,onDecline}:Props){
+export function CoopLiveLobbyView({dungeons=[],selfPortrait,setupState,queue,ready,notice='',busy=false,pending=false,loading=false,onBack,onRetry,onRetryPending,onCancel,onAccept,onDecline}:Props){
  const {colors:C,styles:s}=useCoopStyles(makeStyles),st=useSocialText(),{height}=useWindowDimensions();
  const [elapsed,setElapsed]=useState(0);
  // Cosmetic refreshes may replace the roster view without advancing server time.
@@ -55,6 +57,7 @@ export function CoopLiveLobbyView({dungeons=[],selfPortrait,queue,ready,notice='
       <Text style={[s.memberStatus,slot.accepted?s.accepted:slot.self&&open?s.attention:null]}>{slot.accepted?'✓ ':''}{st(label)}</Text>
      </View>;
     })}</View>:!ended?<View style={s.wait}>{loading||status==='reserved'||status==='matched'?<ActivityIndicator color={C.cyan}/>:null}<Text style={s.copy}>{st(status==='reserved'||status==='matched'?'Match found. Preparing your party…':loading?'Restoring your matchmaking session…':'No active search. Choose a dungeon to find a party.')}</Text></View>:null}
+    {setupState?.character&&!ended?<CoopCombatSetupPanel state={setupState} compact/>:null}
    </View>
   </ScrollView>
   <View style={s.footer}>

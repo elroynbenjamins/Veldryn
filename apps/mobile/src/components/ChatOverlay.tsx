@@ -1,6 +1,6 @@
 import {socialLabel,useSocialText} from '../i18n/social';
 import {ChatChannelIcon} from './ChatChannelIcon';
-import {useEffect,useMemo,useRef,useState} from 'react';
+import {useCallback,useEffect,useMemo,useRef,useState,type ElementRef} from 'react';
 import {AppState,Keyboard,KeyboardAvoidingView,Modal,Platform,Pressable,ScrollView,StyleSheet,Text,View,useWindowDimensions} from 'react-native';
 import type {GameState} from '../core/types';
 import {onlineConfigured} from '../online/supabase';
@@ -29,13 +29,27 @@ export function ChatOverlay(props:ChatOverlayProps){
 
 function AccountChatOverlay({state,initialChannel='world',visible,onOpen,onClose,onEmoteTrayChange,onManageEmotes,guildUnread=0,guildMentions=0,guildFirstUnreadMessageId,partyUnread=0,partyMentions=0,partyFirstUnreadMessageId,onChatRead}:ChatOverlayProps){
  const st=useSocialText();
- const C=useGameTheme(),s=useMemo(()=>makeStyles(C),[C]),insets=useSafeAreaInsets(),{width,fontScale}=useWindowDimensions();
+ const C=useGameTheme(),s=useMemo(()=>makeStyles(C),[C]),insets=useSafeAreaInsets(),{width,height,fontScale}=useWindowDimensions();
  const compactTabs=width<360||fontScale>=1.25;
  const [channel,setChannel]=useState<Channel>('world');
  const [visitedChannels,setVisitedChannels]=useState<Channel[]>(['world']);
  const [worldChannel,setWorldChannel]=useState(Math.max(0,Math.min(WORLD_CHANNELS.length-1,(state.settings.defaultWorldChat??1)-1)));
  const [languageMenuOpen,setLanguageMenuOpen]=useState(false);
  const [keyboardVisible,setKeyboardVisible]=useState(false);
+ const [keyboardOverlap,setKeyboardOverlap]=useState(0);
+ const modalRootRef=useRef<ElementRef<typeof View>>(null),keyboardTopRef=useRef<number|null>(null);
+ // Android translucent Modals do not consistently resize with adjustResize.
+ // Measure the actual modal window against the IME rather than letting
+ // KeyboardAvoidingView subtract its height a second time (or collapse).
+ const measureKeyboardOverlap=useCallback(()=>{
+  if(Platform.OS!=='android'||keyboardTopRef.current===null)return;
+  const keyboardTop=keyboardTopRef.current;
+  modalRootRef.current?.measureInWindow((_x,y,_width,viewHeight)=>{
+   if(keyboardTopRef.current!==keyboardTop)return;
+   const overlap=Math.max(0,Math.ceil(y+viewHeight-keyboardTop));
+   setKeyboardOverlap(previous=>previous===overlap?previous:overlap);
+  });
+ },[]);
  const [guildTitle,setGuildTitle]=useState('');
  const pendingGuildChannel=useRef(false);
  const [onlineGuildAvailable,setOnlineGuildAvailable]=useState(state.account.guildMember);
@@ -83,20 +97,31 @@ function AccountChatOverlay({state,initialChannel='world',visible,onOpen,onClose
  },[visible,initialChannel,state.settings.defaultWorldChat,guildAvailable]);
  useEffect(()=>{if(visible&&guildAvailable&&pendingGuildChannel.current)selectChannel('guild');},[visible,guildAvailable]);
  useEffect(()=>{
-  if(!visible){setKeyboardVisible(false);return;}
-  const showing=Keyboard.addListener('keyboardDidShow',()=>{setKeyboardVisible(true);setLanguageMenuOpen(false);});
-  const hiding=Keyboard.addListener('keyboardDidHide',()=>setKeyboardVisible(false));
+  if(!visible){keyboardTopRef.current=null;setKeyboardVisible(false);setKeyboardOverlap(0);return;}
+  const showing=Keyboard.addListener('keyboardDidShow',event=>{
+   const top=event.endCoordinates?.screenY;
+   keyboardTopRef.current=typeof top==='number'&&Number.isFinite(top)?top:null;
+   setKeyboardVisible(true);
+   setLanguageMenuOpen(false);
+   measureKeyboardOverlap();
+  });
+  const hiding=Keyboard.addListener('keyboardDidHide',()=>{
+   keyboardTopRef.current=null;
+   setKeyboardVisible(false);
+   setKeyboardOverlap(0);
+  });
   return()=>{showing.remove();hiding.remove();};
- },[visible]);
+ },[visible,measureKeyboardOverlap]);
+ useEffect(()=>{if(visible&&keyboardVisible)measureKeyboardOverlap();},[visible,keyboardVisible,width,height,measureKeyboardOverlap]);
  const closeChat=()=>{Keyboard.dismiss();pendingGuildChannel.current=false;setLanguageMenuOpen(false);onChatRead?.();onClose();};
  const activeLabel=channel==='world'?st("Global chat"):channel==='guild'?(guildTitle||st("Guild members")):channel==='party'?st("Your party"):st("Game notifications");
 
  return <>
   {!visible&&chatEnabled&&<ChatDock enabled={onlineConfigured} onOpen={onOpen} lines={state.settings.chatDockLines??1} selectedChannel={state.settings.defaultWorldChat??1} unreadCount={guildUnread+partyUnread} mentionCount={guildMentions+partyMentions}/>}
   <Modal visible={visible&&chatEnabled} transparent statusBarTranslucent animationType={state.settings.reduceMotion?'none':'fade'} onRequestClose={()=>{if(languageMenuOpen)setLanguageMenuOpen(false);else closeChat();}}>
-   <View style={[s.modalRoot,{paddingTop:Math.max(insets.top,8)+4,paddingBottom:keyboardVisible?4:Math.max(insets.bottom,8)}]}>
+   <View ref={modalRootRef} onLayout={measureKeyboardOverlap} style={[s.modalRoot,{paddingTop:Math.max(insets.top,8)+4,paddingBottom:keyboardVisible?4+(Platform.OS==='android'?keyboardOverlap:0):Math.max(insets.bottom,8)}]}>
     <Pressable accessible={false} accessibilityElementsHidden importantForAccessibility="no-hide-descendants" onPress={closeChat} style={StyleSheet.absoluteFill}/>
-    <KeyboardAvoidingView behavior={Platform.OS==='ios'?'padding':'height'} keyboardVerticalOffset={0} style={s.keyboard}>
+    <KeyboardAvoidingView behavior={Platform.OS==='ios'?'padding':undefined} keyboardVerticalOffset={0} style={s.keyboard}>
      <View accessibilityViewIsModal onAccessibilityEscape={()=>{if(languageMenuOpen)setLanguageMenuOpen(false);else closeChat();}} style={s.window}>
       <View style={s.header}>
        <View style={s.brandBlock}>

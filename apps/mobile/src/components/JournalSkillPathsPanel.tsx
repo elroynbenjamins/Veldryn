@@ -30,7 +30,7 @@ export function JournalSkillPathsPanel({state,onNavigate}:{state:GameState;onNav
    <View style={styles.fill}>
     <Text style={styles.eyebrow}>{p('YOUR TRAINING JOURNAL')}</Text>
     <Text style={styles.title}>{p('Learn the skills of Asterfall')}</Text>
-    <Text style={styles.description}>{p('Optional practice alongside the story. Progress follows your collected skill XP; no extra quest claims or rewards.')}</Text>
+    <Text style={styles.description}>{p('Practice skills as you play. No extra claims.')}</Text>
    </View>
    <View style={styles.counter}><Text style={styles.counterValue}>{summary.practiced}/{summary.total}</Text><Text style={styles.counterLabel}>{p('PRACTICED')}</Text></View>
   </View>
@@ -55,7 +55,7 @@ export function JournalSkillPathsPanel({state,onNavigate}:{state:GameState;onNav
      <Text style={styles.chevron}>{open?'−':'+'}</Text>
     </Pressable>
     {open?<View style={styles.details}>
-     {row.status==='preview'?<Text style={styles.lockHint}>{p(lesson.unlockHint??'Continue the story to introduce this skill.')}{' '}{p('You can revisit this lesson later.')}</Text>:null}
+     {row.status==='preview'?<Text style={styles.lockHint}>{p(lesson.unlockHint??'Continue the story to introduce this skill.')}{' '}{p('')}</Text>:null}
      <View style={styles.step}>
       <Text style={[styles.stepTitle,{color:row.starterComplete?C.good:C.text}]}>{row.starterComplete?'✓ ':''}{p('1 · First steps — level 2')}</Text>
       <Text style={styles.stepCopy}>{p(lesson.introduction)}</Text>
@@ -69,7 +69,7 @@ export function JournalSkillPathsPanel({state,onNavigate}:{state:GameState;onNav
     </View>:null}
    </View>;
   })}
-  <Text style={styles.footer}>{p('Your main story chapters and their rewards stay unchanged. Finished skill lessons remain available for reference.')}</Text>
+  <Text style={styles.footer}>{p('Completed lessons remain available.')}</Text>
  </View>;
 }
 

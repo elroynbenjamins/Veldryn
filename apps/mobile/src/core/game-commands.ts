@@ -328,7 +328,7 @@ export function executeGameCommand(previous:GameState,value:unknown,now:number,o
   case 'gear_autosell':{if(typeof a.enabled!=='boolean')throw new Error('invalid_autosell_preference');state={...state,account:{...state.account,craftedGearAutoSellMode:a.enabled?'keep_best_seven':'off'}};message=a.enabled?'Keep Best 7 enabled — only verified, unprotected copies can be sold':'Automatic equipment selling disabled';break;}
   case 'gear_equip':state=equipCraftedGearInstance(state,text(a,'instanceId',180));message='Equipment copy equipped';break;
   case 'gear_unequip':state=unequipCraftedGearInstance(state,text(a,'instanceId',180));message='Equipment copy unequipped';break;
-  case 'gear_move':state=moveCraftedGearInstance(state,text(a,'instanceId',180),oneOf(a.to,['inventory','bank']));message='Equipment copy transferred';break;
+  case 'gear_move':state=moveCraftedGearInstance(state,text(a,'instanceId',180),oneOf(a.to,['inventory','bank','equipment_pouch']));message='Equipment copy transferred';break;
   case 'gear_lock':{if(typeof a.locked!=='boolean')throw new Error('invalid_locked');state=setCraftedGearInstanceLock(state,text(a,'instanceId',180),a.locked);message=a.locked?'Equipment copy locked':'Equipment copy unlocked';break;}
   case 'gear_sell':state=disposeCraftedGearInstance(state,text(a,'instanceId',180),'sell');message='Equipment copy sold';break;
   case 'gear_salvage':state=disposeCraftedGearInstance(state,text(a,'instanceId',180),'salvage');message='Equipment copy salvaged';break;

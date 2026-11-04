@@ -23,6 +23,8 @@ const {SUPPORTED_LANGUAGES}=require('../src/i18n/languages.ts');
 const placeholders=value=>[...value.matchAll(/\{([a-zA-Z][a-zA-Z0-9_]*)\}/g)].map(match=>match[1]).sort();
 const keys=Object.keys(companionTranslationRows).sort();
 const knownGaps=require('./companions-localization-gaps.json');
+const {companionObjectiveRows,companionObjectiveText}=require('../src/i18n/companion-objectives.ts');
+const {companionGuidanceRows,companionGuidanceText}=require('../src/i18n/companion-guidance.ts');
 assert.equal(companionContent('de','Defeat 250 Old Mines enemies'),'Besiege 250 Gegner in den Old Mines');
 assert.equal(companionContent('es','Reach Fishing 16'),'Alcanza Pesca 16');
 assert.equal(companionContent('nl','Rare discovery while mapping Silverbrook'),'Zeldzame ontdekking bij het in kaart brengen van Silverbrook');
@@ -50,9 +52,36 @@ assert.ok(!oldCompanionPanel.includes("'35 Essence + portrait'")&&!oldCompanionP
 
 assert.ok(!Object.values(knownGaps.untranslatedCatalogStrings).flat().includes('Defeat 250 Old Mines enemies'),'Completed companion unlock translations must not remain incorrectly marked as gaps');
 
-for(const values of Object.values(knownGaps.untranslatedCatalogStrings))for(const value of values){
- assert.equal(companionContent('de',value),value,'Update the documented coverage gap after translating: '+value);
+const objectiveKeys=Object.keys(companionObjectiveRows).sort();
+assert.equal(objectiveKeys.length,42,'All 42 authored Companion objective and bonus descriptions must be translated');
+assert.deepEqual(objectiveKeys,[...knownGaps.completedObjectiveDescriptions].sort(),'Objective QA snapshot must match implemented translations');
+assert.deepEqual(knownGaps.untranslatedCatalogStrings,{},'Remove translated objectives from the outstanding backlog');
+const backendObjectiveSource=fs.readFileSync(path.join(root,'backend/src/server/companions/content.ts'),'utf8');
+for(const key of objectiveKeys){
+ assert.ok(backendObjectiveSource.includes(key),'Translation no longer matches authored backend content: '+key);
+ assert.equal(companionObjectiveText('en',key),key);
+ for(const language of SUPPORTED_LANGUAGES.filter(l=>l!=='en')){
+  const translated=companionContent(language,key);
+  assert.ok(translated&&translated!==key,language+' objective untranslated: '+key);
+  assert.equal(translated,companionObjectiveText(language,key),language+' objective routing: '+key);
+  assert.deepEqual(placeholders(translated),placeholders(key),language+' objective placeholders: '+key);
+  if(key.startsWith('Complete '))assert.equal(companionUnlockRequirement(language,key),translated,language+' objective must not be mistaken for a quest title');
+ }
 }
+const guidanceKeys=Object.keys(companionGuidanceRows).sort();
+assert.equal(guidanceKeys.length,29,'Current Companion guidance and material-source coverage');
+assert.deepEqual(guidanceKeys,[...knownGaps.completedGuidanceDescriptions].sort(),'Guidance QA coverage snapshot must match its catalog');
+for(const key of guidanceKeys){
+ assert.ok(!Object.values(knownGaps.untranslatedDynamicTemplates).flat().includes(key),'Translated guidance must not remain in the gap list: '+key);
+ assert.equal(companionGuidanceText('en',key),key);
+ for(const language of SUPPORTED_LANGUAGES.filter(l=>l!=='en')){
+  const translated=companionContent(language,key);
+  assert.ok(translated&&translated!==key,language+' guidance untranslated: '+key);
+  assert.deepEqual(placeholders(translated),placeholders(key),language+' guidance placeholders: '+key);
+  if(key.startsWith('Complete '))assert.equal(companionUnlockRequirement(language,key),translated,'Guidance must not be misclassified as a quest title');
+ }
+}
+assert.equal(companionContent('de','Custom player text'),'Custom player text','Unknown player text must not be translated');
 for(const language of SUPPORTED_LANGUAGES){
  assert.deepEqual(Object.keys(companionCatalogs[language]).sort(),keys);
  for(const key of keys){

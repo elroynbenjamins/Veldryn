@@ -41,6 +41,7 @@ export interface CoopEventRunServerProjection{
   bossMechanic?:{profileId:string;label:string;summary:string;tone:'benefit'|'mixed'|'danger';telegraph?:{bossName:string;phases:Array<{id:string;label:string;hpPct:number;objectiveSensitive:boolean}>;castAbilities:Array<{id:string;label:string;castMs:number;cooldownMs:number;interruptible:boolean;objectiveSensitive:boolean}>;suppressedAbilities:Array<{id:string;label:string}>}};
   bossRecap?:{durationMs:number;downs:number;phasesTriggered:string[];abilitiesCast:string[]};
   lastCombat?:CoopCombatReplayView;
+  lastRoomOutcome?:CoopRoomOutcomeView;
   settlement:{status:'pending'|'claimed';rewardMarks?:number};
 }
 
@@ -120,6 +121,7 @@ export function presentEventExpeditionRun(projection:CoopEventRunServerProjectio
     bossMechanic:projection.bossMechanic?{label:projection.bossMechanic.label,summary:projection.bossMechanic.summary,tone:projection.bossMechanic.tone,telegraph:projection.bossMechanic.telegraph}:undefined,
     bossRecap:projection.bossRecap,
     lastCombat:projection.lastCombat,
+    lastRoomOutcome:projection.lastRoomOutcome,
     stateVersion:projection.stateVersion,
     decisionId:projection.decisionId,
     decisionRevision:projection.decisionRevision,

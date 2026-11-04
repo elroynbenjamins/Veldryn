@@ -8,6 +8,7 @@ declare
  c uuid:=gen_random_uuid();
  d uuid:=gen_random_uuid();
  rid uuid:=gen_random_uuid();
+ vote_id uuid;
  st jsonb; private_state jsonb; view_state jsonb;
  result jsonb; replay jsonb;
 begin
@@ -79,7 +80,20 @@ begin
   raise exception 'stale run version accepted';
  exception when raise_exception then if sqlerrm<>'stale_state' then raise;end if;
  end;
- perform set_config('request.jwt.claim.sub',b::text,true);
+ -- A Live route vote cannot be invalidated by a last-second potion action.
+ update public.expedition_runs set coop_mode='live' where id=rid;
+ insert into public.coop_decisions(run_id,revision,kind,option_ids,eligible_account_ids,status,tie_key)
+ values(rid,2,'route',array['path-a','path-b'],array[a],'open','potion-vote-regression')
+ returning id into vote_id;
+ insert into public.coop_decision_votes(decision_id,account_id,option_id,request_id)
+ values(vote_id,a,'path-a','potion-vote-test');
+ begin
+  perform public.use_online_dungeon_potion_v1(rid,'DEWLEAF_DRAUGHT',2,'testpot-vote');
+  raise exception 'accepted a potion after Live voting began';
+ exception when raise_exception then if sqlerrm<>'potion_after_vote_not_allowed' then raise;end if;
+ end;
+ update public.expedition_runs set coop_mode='qmode' where id=rid;
+  perform set_config('request.jwt.claim.sub',b::text,true);
  begin
   perform public.use_online_dungeon_potion_v1(rid,'DEWLEAF_DRAUGHT',2,'testpot004');
   raise exception 'foreign account used dungeon potion';

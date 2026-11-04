@@ -227,7 +227,7 @@ export function InventoryScreen({state,viewMemory,foodRequest=0,onEquip,onFood,o
       </View>:null}
     </View>:null}
   </View>:null;
-  if(equipmentPouchOpen)return <ScrollView style={{flex:1,backgroundColor:C.bg}} contentContainerStyle={s.root} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
+  if(equipmentPouchOpen)return <ScrollView style={{flex:1,backgroundColor:C.bg}} contentContainerStyle={s.root} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false} showsHorizontalScrollIndicator={false}>
     <Text accessibilityRole="header" style={s.h}>{gt("Inventory")}</Text>
     <Text style={s.sub}>Equipment stored only for {state.character?.name??'this character'}.</Text>
     <View style={s.storageRow}>{(["inventory","bank"] as const).map(value=><StorageChip key={value} label={value==='inventory'?gt("Inventory"):gt("Bank")} selected={!pouchOpen&&!equipmentPouchOpen&&location===value} status={value==='inventory'?inventoryCapacity:bankCapacity} onPress={()=>changeLocation(value)}/>)}<StorageChip label={accountText(language,'Gems')} selected={pouchOpen} status={storageCapacityStatus(gemPouch(state).stacks,gemPouch(state).capacity)} onPress={openPouch}/><StorageChip label="Gear" selected={equipmentPouchOpen} status={storageCapacityStatus(equipmentPouch(state).stacks,equipmentPouch(state).capacity)} onPress={openEquipmentPouch}/></View>

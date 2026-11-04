@@ -9,6 +9,7 @@ import {accountText} from '../../i18n/account';
 import {type CoopColors,coopSpacing,coopTypography} from '../../theme/coop-ui-theme';
 import {ExpeditionScreenShell,FantasyPanel,RoleBadge,StateChip} from './CoopVisualKit';
 import {DungeonRouteChoices} from './DungeonRouteChoices';
+import {DungeonRoomResolution} from './DungeonRoomResolution';
 import {GameButton} from '../GameButton';
 import {IdentityArtwork} from '../SocialIdentity';
 import {SeasonalBossTelegraphPanel} from './SeasonalBossTelegraphPanel';
@@ -40,7 +41,7 @@ export function CoopRunOverview({language,run,myVotedNodeId,selfVoter,onBack,onC
  const {styles:s}=useCoopStyles(makeStyles);
  const st=useSocialText(),a=(value:string)=>accountText(language,value);
   validateCoopRunView(run);
-  const modeLabel=run.modeLabel??(run.mode==='qmode'?ct(language,'details.qmode'):ct(language,'details.live')),bossNext=run.options.some(option=>option.kind==='boss');
+  const modeLabel=run.modeLabel??(run.mode==='qmode'?ct(language,'details.qmode'):ct(language,'details.live')),bossNext=run.phase==='awaiting_choice'&&run.options.some(option=>option.kind==='boss');
   const terminal=run.phase==='completed'||run.phase==='failed',unclaimedRewards=rewards.filter(reward=>!reward.claimed_at),rewardSurfaceReady=rewards.length>0||Boolean(terminalAction),rewardsSecured=terminal&&rewardSurfaceReady&&!unclaimedRewards.length&&(!terminalAction||terminalAction.claimed===true);
   const inCombat=isCoopBattleResolving(run);
   const replayCues=run.lastCombat?.cues??[];
@@ -104,9 +105,9 @@ export function CoopRunOverview({language,run,myVotedNodeId,selfVoter,onBack,onC
       <View style={s.grow}><Text style={s.title}>{run.phase==='resolving_node'?st('Battle in progress'):run.lastCombat?.reason==='victory'?st('Encounter cleared'):run.lastCombat?.reason==='wipe'?st('Party defeated'):st('Battle complete')}</Text><Text style={s.copy}>{combatName}</Text></View>
       <GameButton compact title={st('View battle')} onPress={()=>setTheaterOpen(true)}/>
      </View></FantasyPanel>:null}
-    {run.phase==='resolving_node'&&!inCombat?<FantasyPanel variant="selected"><Text style={s.title}>{st('Room in progress')}</Text><Text style={s.copy}>{run.selectedNodeKind?st('Resolving')+' '+run.selectedNodeKind.charAt(0).toUpperCase()+run.selectedNodeKind.slice(1):st('Resolving the selected room')}</Text></FantasyPanel>:null}
+    {run.phase==='resolving_node'&&!inCombat?<DungeonRoomResolution kind={run.selectedNodeKind}/>:null}
     {!!syncError&&<FantasyPanel variant="danger"><Text accessibilityRole="alert" style={s.title}>{a('Connection interrupted')}</Text><Text style={s.copy}>{a('Showing the last saved expedition progress. Reconnecting automatically.')}</Text><Text style={s.copy} numberOfLines={2}>{syncError}</Text>{onRefresh?<GameButton compact title={a('Retry connection')} tone="secondary" disabled={busy} onPress={onRefresh}/>:null}</FantasyPanel>}
-    {run.options.length?<View style={s.actionArea}>
+    {run.phase==='awaiting_choice'&&run.options.length?<View style={s.actionArea}>
       <Text style={s.section}>{run.mode==='live'?st('Vote for the next path'):st('Choose the next room')}</Text>
       {run.mode==='live'?<Text style={s.copy}>{st('The route with the most votes will be selected.')}{secondsRemaining!==undefined?` · ${st('Vote ends in {seconds}s',{seconds:secondsRemaining})}`:''}</Text>:null}
       <DungeonRouteChoices options={run.options} mode={run.mode} phase={run.phase} busy={busy} onChoose={onChoose?chooseRoom:undefined} myVotedNodeId={myVotedNodeId} selfVoter={selfVoter}/>
@@ -116,7 +117,10 @@ export function CoopRunOverview({language,run,myVotedNodeId,selfVoter,onBack,onC
     <Text style={s.section}>{ct(language,'details.party')}</Text>
     <View style={s.party}>{run.roleSlots.map((slot,index)=>{const avatar=dungeonCombatAvatar(slot.classId);return <FantasyPanel key={`${slot.role}-${index}`} variant={slot.ready===false?'danger':'default'} style={s.member}><RoleBadge role={slot.role} label={t(language,`coopUi.${slot.role}`)}/><View style={s.summary}><IdentityArtwork name={slot.name} profileIconId={slot.profileIconId} className={slot.iconClassId??slot.classId} size={36}/><View style={s.grow}><Text numberOfLines={2} style={s.name}>{slot.name}</Text>{avatar?<Text style={s.className}>{avatar.label}</Text>:null}</View></View><View style={s.memberMeta}><StateChip label={slot.npc?st('NPC'):slot.echo?'Echo':modeLabel} tone={slot.echo||slot.npc?'selected':'neutral'}/>{slot.ready!==undefined?<StateChip label={slot.ready?t(language,'coopUi.ready'):t(language,'coopUi.searching')} tone={slot.ready?'success':'warning'}/>:null}</View></FantasyPanel>})}</View>
     </DungeonDisclosure>:null}
-    {run.mode==='live'&&run.presenceSummary?<FantasyPanel variant={run.presenceSummary.safetyAiCount>0?'selected':'default'}><View style={s.summary}><View style={s.grow}><Text style={s.title}>{st("LIVE LINK")}</Text><Text style={s.copy}>{run.presenceSummary.connectedCount}/{run.presenceSummary.activeCount} connected · server presence is authoritative</Text></View><StateChip label={run.presenceSummary.safetyAiCount>0?st("SAFETY AI"):st("ALL CONNECTED")} tone={run.presenceSummary.safetyAiCount>0?'warning':'success'}/></View>{run.presenceSummary.safetyAiCount>0?<Text style={s.copy}>A disconnected party member is being piloted with basic attacks and safe defensive abilities while reconnect is available.</Text>:null}</FantasyPanel>:null}
+    {run.mode==='live'&&run.presenceSummary?<DungeonDisclosure title={`${st('LIVE LINK')} · ${run.presenceSummary.connectedCount}/${run.presenceSummary.activeCount}`} initiallyOpen={run.presenceSummary.safetyAiCount>0}>
+      <View style={s.summary}><Text style={[s.copy,s.grow]}>{run.presenceSummary.safetyAiCount>0?st('SAFETY AI'):st('ALL CONNECTED')}</Text></View>
+      {run.presenceSummary.safetyAiCount>0?<Text style={s.copy}>A disconnected party member is being piloted with basic attacks and safe defensive abilities while reconnect is available.</Text>:null}
+    </DungeonDisclosure>:null}
     {run.mechanic||run.objective?<DungeonDisclosure title={st('Objectives & mechanics')}>
     {run.mechanic?<FantasyPanel variant={run.mechanic.status==='critical'?'danger':run.mechanic.status==='strong'?'success':'selected'}><View style={s.mechanicHead}><View style={s.grow}><Text style={s.title}>{run.mechanic.label}</Text><Text style={s.copy}>{run.mechanic.description}</Text></View><StateChip label={`${Math.round(run.mechanic.value)}/${Math.round(run.mechanic.maxValue)}`} tone={run.mechanic.status==='critical'?'danger':run.mechanic.status==='strong'?'success':'warning'}/></View><View style={s.meterTrack}><View style={[s.meterFill,{width:`${Math.round((run.mechanic.value/run.mechanic.maxValue)*100)}%` as `${number}%`}]} /></View><Text style={s.copy}>{run.mechanic.bossEffect}</Text></FantasyPanel>:null}
     {run.objective?<FantasyPanel variant={run.objective.completed?'success':'selected'}><View style={s.mechanicHead}><View style={s.grow}><Text style={s.title}>{run.objective.label}</Text><Text style={s.copy}>{run.objective.description}</Text></View><StateChip label={`${run.objective.count}/${run.objective.maxCount}`} tone={run.objective.completed?'success':'selected'}/></View><Text style={s.copy}>{run.objective.effectText}</Text></FantasyPanel>:null}
@@ -124,7 +128,6 @@ export function CoopRunOverview({language,run,myVotedNodeId,selfVoter,onBack,onC
     <SeasonalBossTelegraphPanel mechanic={run.bossMechanic} recap={run.bossRecap} showPlan={bossNext}/>
     {run.mode==='live'&&onChatSend?<DungeonDisclosure title={st('Party Chat')}><CoopPartyChat messages={chatMessages} busy={busy} onSend={onChatSend}/></DungeonDisclosure>:null}
     {!!notice&&<Text accessibilityRole="alert" style={s.copy}>{notice}</Text>}
-    {run.phase==='resolving_node'&&<FantasyPanel><Text style={s.copy}>{inCombat?st('Battle in progress · Results are saved online.'):st('Resolving room · Progress is saved online.')}</Text></FantasyPanel>}
 
     {run.rewardText?<FantasyPanel variant="success"><Text style={s.title}>{ct(language,'details.reward')}</Text><Text style={s.copy}>{run.rewardText}</Text></FantasyPanel>:null}
     {terminal?<GameButton title={st('View rewards')} tone="secondary" disabled={busy} onPress={()=>setRewardOpen(true)}/>:null}

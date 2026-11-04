@@ -24,6 +24,7 @@ assert.equal(summary.healing?.name,'Riverheart Draught','display only selected H
 assert.equal(summary.healing?.percent,35,'use potion catalog percent, not invented potencies');
 assert.equal(summary.healing?.carried,3,'exclude other draughts and uncarried stock');
 assert.equal(summary.tonicCount,3,'sum only owned preparation tonics');
+assert.equal(summary.tonicPreviewId,'VIGOR_TONIC','preview the real carried potion atlas');
 assert.equal(JSON.stringify(state),original,'preview cannot spend or equip items');
 assert.equal(coopCombatSetup({...state,inventory:{...state.inventory,stacks:[]}}).healing?.carried,0,'selected but empty is not falsely ready');
 assert.equal(coopCombatSetup({...state,character:{...c,equippedHealingPotionId:'WARD_TONIC'}}).healing,undefined,'tonic is not healing');

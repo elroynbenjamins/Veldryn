@@ -14,8 +14,18 @@ begin
  if (select count(*) from pg_proc where pronamespace='public'::regnamespace and proname in ('read_online_coop_receipt_server_v1','load_online_qmode_server_v1','online_coop_entry_state_server_v1','start_online_qmode_server_v1','queue_online_qmode_node_server_v1','finalize_online_qmode_node_server_v1','process_online_qmode_jobs_server_v1'))<>7 then raise exception 'Missing runtime RPC';end if;
  begin perform public.process_online_qmode_jobs_server_v1(0);raise exception 'Unbounded worker accepted';exception when raise_exception then if sqlerrm<>'invalid_worker_limit' then raise;end if;end;
  begin perform public.process_online_qmode_jobs_server_v1(null);raise exception 'Null worker limit accepted';exception when raise_exception then if sqlerrm<>'invalid_worker_limit' then raise;end if;end;
+ -- Q-Mode runs through the unified online tick (10s in production, 30s in staging),
+ -- alongside the Live readiness/worker/presence consumers. The old dedicated
+ -- veldryn-online-qmode job was intentionally retired.
+ if position('process_online_qmode_jobs_server_v1' in pg_get_functiondef('public.process_online_tick_server_v1(integer)'::regprocedure))=0 then
+  raise exception 'QMode worker missing from unified online tick';
+ end if;
  if exists(select 1 from pg_extension where extname='pg_cron') then
-  if (select count(*) from cron.job where jobname='veldryn-online-qmode' and active and schedule='10 seconds')<>1 then raise exception 'Missing or duplicate QMode scheduler';end if;
+  if (select count(*) from cron.job where jobname='veldryn-online-tick'
+    and active and schedule in ('10 seconds','30 seconds')
+    and position('process_online_tick_server_v1(16)' in command)>0)<>1 then
+    raise exception 'Missing or duplicate unified QMode scheduler';
+  end if;
  end if;
 end $$;
 select 'PASS: private runtime grants, bounded worker and unique scheduler' as result;

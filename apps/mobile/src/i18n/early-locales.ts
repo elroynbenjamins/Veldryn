@@ -1853,6 +1853,134 @@ export const EARLY_LOCALE_ROWS={
   "Invite": [
     "Пригласить",
     "Davet et"
+  ],
+  "Join a Guild to take part in daily Muster and the shared weekly Rally.": [
+    "Вступите в гильдию для участия в ежедневном сборе и недельном состязании.",
+    "Günlük yoklama ve haftalık rallide yer almak için bir loncaya katıl."
+  ],
+  "Check in by playing. Combat and Skilling add progress automatically.": [
+    "Играйте, чтобы отмечаться. Бой и навыки учитываются автоматически.",
+    "Oynayarak katıl. Savaş ve beceri etkinlikleri otomatik sayılır."
+  ],
+  "{current}/{max} contribution": [
+    "Вклад: {current}/{max}",
+    "Katkı: {current}/{max}"
+  ],
+  "Earn 1 Rally Mark at {count} points today.": [
+    "Сегодня 1 знак ралли за {count} очков.",
+    "Bugün {count} puanda 1 Ralli İşareti kazan."
+  ],
+  "{current}/{max} Rally days · {points} points": [
+    "Дней ралли: {current}/{max} · Очки: {points}",
+    "Ralli günü: {current}/{max} · {points} puan"
+  ],
+  "Play on {days} days this week. No daily streak required.": [
+    "Играйте {days} дней на этой неделе. Серия не нужна.",
+    "Bu hafta {days} gün oyna. Günlük seri gerekmez."
+  ],
+  "{current} OF {goal}": [
+    "{current} ИЗ {goal}",
+    "{current} / {goal}"
+  ],
+  "Rally tiers: 35% / 70% / 100%. Guild Projects earn +5% / +10% / +15% Hall Progress.": [
+    "Этапы ралли: 35% / 70% / 100%. Проекты дают +5% / +10% / +15% прогресса зала.",
+    "Ralli kademeleri: %35 / %70 / %100. Projeler salon ilerlemesine +%5 / +%10 / +%15 verir."
+  ],
+  "{percent}% Guild Activity": [
+    "Активность гильдии: {percent}%",
+    "Lonca etkinliği: %{percent}"
+  ],
+  "{percent}% NEXT": [
+    "ДАЛЕЕ: {percent}%",
+    "SONRAKİ: %{percent}"
+  ],
+  "Complete Guild Quests, Muster and Projects to raise activity.": [
+    "Выполняйте задания, сборы и проекты гильдии для роста активности.",
+    "Etkinliği artırmak için lonca görevlerini, yoklamayı ve projeleri tamamla."
+  ],
+  "Activity secured today.": [
+    "Активность сегодня сохранена.",
+    "Bugünkü etkinlik korundu."
+  ],
+  "More activity helps prevent a drop.": [
+    "Больше активности предотвратит спад.",
+    "Daha fazla etkinlik düşüşü önler."
+  ],
+  "Stay active to avoid losing progress.": [
+    "Оставайтесь активны, чтобы не терять прогресс.",
+    "İlerleme kaybetmemek için etkin kal."
+  ],
+  "{count} members": [
+    "Участников: {count}",
+    "{count} üye"
+  ],
+  "{role} · {days}/{goal} Rally days": [
+    "{role} · Дней ралли: {days}/{goal}",
+    "{role} · Ralli günü: {days}/{goal}"
+  ],
+  "today {count}": [
+    "сегодня {count}",
+    "bugün {count}"
+  ],
+  "+{count} more contributors": [
+    "Ещё участников: {count}",
+    "+{count} katkıda bulunan"
+  ],
+  "RALLY I": [
+    "РАЛЛИ I",
+    "RALLİ I"
+  ],
+  "RALLY II": [
+    "РАЛЛИ II",
+    "RALLİ II"
+  ],
+  "RALLY III": [
+    "РАЛЛИ III",
+    "RALLİ III"
+  ],
+  "Gathering Momentum": [
+    "Импульс сбора",
+    "Toplama İvmesi"
+  ],
+  "Workshop Momentum": [
+    "Импульс мастерской",
+    "Atölye İvmesi"
+  ],
+  "Learning Momentum": [
+    "Импульс обучения",
+    "Öğrenme İvmesi"
+  ],
+  "Mastery Momentum": [
+    "Импульс мастерства",
+    "Ustalık İvmesi"
+  ],
+  "Guild Momentum": [
+    "Импульс гильдии",
+    "Lonca İvmesi"
+  ],
+  "+5% gathering speed while the Guild remains active.": [
+    "+5% к скорости сбора, пока гильдия активна.",
+    "Lonca etkinken toplama hızı +%5."
+  ],
+  "+5% crafting and processing speed.": [
+    "+5% к скорости создания и обработки.",
+    "Üretim ve işleme hızı +%5."
+  ],
+  "+5% non-combat Skill XP.": [
+    "+5% к опыту мирных навыков.",
+    "Savaş dışı beceri TP'si +%5."
+  ],
+  "+5% non-combat Mastery XP.": [
+    "+5% к опыту мирного мастерства.",
+    "Savaş dışı ustalık TP'si +%5."
+  ],
+  "+5% relative rare-material chance from eligible non-combat activities.": [
+    "+5% относительного шанса редких материалов в мирных занятиях.",
+    "Uygun savaş dışı etkinliklerde nadir malzeme şansına göreli +%5."
+  ],
+  "Bonuses: +{gather}% Gathering · +{production}% Production · +{skill}% Skill XP · +{mastery}% Mastery XP · +{rare}% Rare Materials.": [
+    "Бонусы: сбор +{gather}% · производство +{production}% · опыт навыков +{skill}% · мастерство +{mastery}% · редкие материалы +{rare}%.",
+    "Bonuslar: Toplama +%{gather} · Üretim +%{production} · Beceri TP +%{skill} · Ustalık TP +%{mastery} · Nadir Malzeme +%{rare}."
   ]
 } satisfies Record<string,readonly [string,string]>;
 

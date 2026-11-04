@@ -5,6 +5,7 @@ import {EventExpeditionService,MemoryEventRunRepository,eventBossMechanicProject
 import {resolveAndFreezeLoadout,type AuthoritativeLoadoutRecord,type FrozenLoadoutSnapshot} from '../src/server/coop/loadout-snapshots';
 import {recruitEligibleEchoes,type PublishedEcho} from '../src/server/coop/echo-recruitment';
 import {projectCombatReplay} from '../src/server/coop/combat-replay-projection';
+import {publicCoopRoomOutcome} from '../src/server/coop/qmode-public-projection';
 import {combatantFromVerifiedSnapshot} from '../src/server/combat/snapshot-adapter';
 import {expeditionEncounterPreview} from '../src/server/combat/expedition-combat-service';
 import type {CoopDecisionCommand,CoopRole} from '../src/shared/coop-types';
@@ -43,7 +44,7 @@ export function projectOnlineEventRun(run:EventRun,version:number,liveEventId:st
   runId:run.id,eventExpeditionId:run.eventId,liveEventId,eventName:definition.eventName,dungeonName:definition.name,phase:run.phase,
   stateVersion:version,decisionId:run.currentNodeId,decisionRevision:version,
   team:run.players.map((member,index)=>{const state=run.persistentState.actors[member.id],companionId=(member.tags??[]).find(tag=>tag.startsWith('companion:'))?.slice('companion:'.length),bodyTag=(member.tags??[]).find(tag=>tag.startsWith('body:'))?.slice('body:'.length),bodyPresentation=bodyTag==='female'?'female' as const:bodyTag==='male'?'male' as const:undefined;return{memberId:member.id,displayName:member.name,role:role(member.role),classId:member.classId??'',bodyPresentation,companionId,kind:index===0?'controller' as const:'echo' as const,effectiveLevel:member.level,currentHp:state?.hp??member.stats.maxHp,maximumHp:member.stats.maxHp,downed:state?.downed??false};}),
-  options,mechanic,objective,bossMechanic,bossRecap,lastCombat:projectCombatReplay(run.lastResolution),settlement:{status:run.settlement,rewardMarks:run.rewardMarks??promotedEventCurrency(liveEventId,definition.rewardMarks+mechanic.rewardBonus+objective.rewardBonus,serverNow)},
+  options,mechanic,objective,bossMechanic,bossRecap,lastCombat:projectCombatReplay(run.lastResolution),lastRoomOutcome:publicCoopRoomOutcome(run.lastResolution?.nodeId,run.lastResolution?.result.summary),settlement:{status:run.settlement,rewardMarks:run.rewardMarks??promotedEventCurrency(liveEventId,definition.rewardMarks+mechanic.rewardBonus+objective.rewardBonus,serverNow)},
  };
 }
 

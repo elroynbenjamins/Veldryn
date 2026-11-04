@@ -91,7 +91,7 @@ export function OnlineGuildProjectsPanel({onRewardsChanged,onNavigateActivity}:{
      onNavigateActivity={onNavigateActivity}
      expanded={expanded===project.id}
      onToggle={()=>setExpanded(old=>old===project.id?null:project.id)}
-   />):<View style={s.empty}><Text style={s.emptyTitle}>No active Guild Project</Text><Text style={s.copy}>No project is currently active. Check the candidates below to vote; Guild Officers or Leaders can start an eligible project.</Text></View>}
+   />):<View style={s.empty}><Text style={s.emptyTitle}>No active Guild Project</Text><Text style={s.copy}>Vote below to choose the next project.</Text></View>}
   </QuestBoard>
   {snapshot.candidates.length?<Panel>
    <View style={s.sectionHead}><Text style={s.sectionTitle}>Next weekly project</Text><Text style={s.meta}>One vote per member</Text></View>
@@ -158,7 +158,7 @@ export function GuildProjectPosting({project,expanded,compact=false,onToggle,onC
    </View>
    <View style={s.progressHead}><Text style={s.percent}>{pct}%</Text><View style={s.progressNumbers}><Text style={s.progressAmount}>{project.kind==='development'?'Resource goals':`${project.completionPoints.toLocaleString()} / ${project.targetPoints.toLocaleString()}`}</Text><Text style={s.meta}>Guild progress</Text></View></View>
    <View style={s.track}><View style={[s.fill,{width:`${Math.min(100,pct)}%` as any}]}/></View>
-   <View style={s.sectionHead}><Text style={[s.meta,s.flex]}>{project.meaningfulContributors} / {project.minimumMeaningfulContributors} meaningful contributors</Text><Text style={s.expandHint}>{expanded?'Hide details ▴':'Details ▾'}</Text></View>
+   <View style={s.sectionHead}><Text style={[s.meta,s.flex]}>{project.meaningfulContributors} / {project.minimumMeaningfulContributors} contributors</Text><Text style={s.expandHint}>{expanded?'Hide details ▴':'Details ▾'}</Text></View>
    {weekly&&project.status==='active'?<Text style={s.meta}>Weekly reset: Monday at 00:00 UTC</Text>:null}
   </Pressable>
   {!compact?<View style={s.personal}>
@@ -184,7 +184,7 @@ export function GuildProjectPosting({project,expanded,compact=false,onToggle,onC
     <Text style={s.activityName}>{a.title}</Text>
     <Text numberOfLines={2} style={s.activityRule}>{a.rule}</Text>
    </Pressable>)}</View>
-   <Text style={s.meta}>Combat and Gathering earn 20 effort per active minute; Crafting earns 5 per verified item.</Text>
+   <Text style={s.meta}>Combat/Gathering: 20 effort/min · Crafting: 5/item.</Text>
   </View>:null}
   {readyToClaim?<GameButton title={busy?'Claiming…':'Claim 500 Gold'} disabled={busy} onPress={onClaim}/>:null}
   {project.status==='completed'&&weekly&&!readyToClaim&&!compact?<Text style={s.meta}>{project.completionRewardClaimed?'Reward claimed':!qualifying?'Personal contribution threshold not met':'Reward claim period ended'}</Text>:null}
@@ -196,10 +196,10 @@ export function GuildProjectPosting({project,expanded,compact=false,onToggle,onC
     {guildUpgradeComponentArtwork(goal.resourceId)?<Image source={guildUpgradeComponentArtwork(goal.resourceId)} style={s.resourceIcon} resizeMode="contain" accessible={false}/>:null}
     <Text style={[s.copy,s.flex]}>{goal.label}</Text><Text style={s.resourceAmount}>{goal.current.toLocaleString()} / {goal.target.toLocaleString()}</Text>
    </View>)}
-   {weekly?<View style={s.detailsRules}><Text style={s.meta}>Daily maximum: 2,400 effort per earned UTC day. In guilds with 2 or more members, one member can fill at most 50% of the goal. Contribute 300 effort for the 500 Gold reward; claim within 7 days after the week ends.</Text></View>:null}
+   {weekly?<View style={s.detailsRules}><Text style={s.meta}>Daily cap: 2,400 effort · Max 50% per member (Guilds of 2+) · 300 effort for 500 Gold · Claim within 7 days.</Text></View>:null}
    {project.endsAt?<Text style={s.meta}>Ends {new Date(project.endsAt).toLocaleString()}</Text>:null}
   </View>:null}
-  {compact&&weekly&&project.status==='completed'&&!project.completionRewardClaimed?<Text style={s.meta}>Open details to check your reward eligibility.</Text>:null}
+  {compact&&weekly&&project.status==='completed'&&!project.completionRewardClaimed?<Text style={s.meta}>View reward eligibility.</Text>:null}
  </View>;
 }
 function makeStyles(C:ThemeColors){return StyleSheet.create({

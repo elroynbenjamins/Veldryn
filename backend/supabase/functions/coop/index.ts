@@ -48512,18 +48512,23 @@ function recruitQModeAllies(input) {
 }
 
 // backend/src/server/coop/potion-modifiers.ts
+var DUNGEON_ROLE_TONIC_MODIFIERS = {
+  VIGOR_TONIC: { outgoing: 1.05, incoming: 1, healing: 1, shielding: 1 },
+  GREATER_VIGOR_TONIC: { outgoing: 1.1, incoming: 1, healing: 1, shielding: 1 },
+  OATH_VIGOR_TONIC: { outgoing: 1.15, incoming: 1, healing: 1, shielding: 1 },
+  WARD_TONIC: { outgoing: 1, incoming: 0.95, healing: 1, shielding: 1 },
+  GREATER_WARD_TONIC: { outgoing: 1, incoming: 0.9, healing: 1, shielding: 1 },
+  OATH_WARD_TONIC: { outgoing: 1, incoming: 0.85, healing: 1, shielding: 1 },
+  HARMONY_TONIC: { outgoing: 1.02, incoming: 1, healing: 1.05, shielding: 1.05 },
+  GREATER_HARMONY_TONIC: { outgoing: 1.04, incoming: 1, healing: 1.1, shielding: 1.1 },
+  OATH_HARMONY_TONIC: { outgoing: 1.06, incoming: 1, healing: 1.15, shielding: 1.15 }
+};
 function frozenAlchemyPotionCombatant(player2, potionId) {
   if (!potionId) return player2;
   if (player2.team !== "players") throw new Error("alchemy_potion_non_player");
-  const potion = potionDef(potionId);
-  if (!potion || potion.effect.kind !== "preparation") throw new Error("invalid_alchemy_preparation");
-  const effect2 = potion.effect;
-  return { ...player2, alchemyModifiers: {
-    outgoing: 1 + effect2.damageDealtFraction,
-    incoming: 1 - effect2.damageReductionFraction,
-    healing: 1 + effect2.healingStrengthFraction,
-    shielding: 1 + effect2.shieldStrengthFraction
-  } };
+  const effect2 = DUNGEON_ROLE_TONIC_MODIFIERS[potionId];
+  if (!effect2) throw new Error("invalid_alchemy_preparation");
+  return { ...player2, alchemyModifiers: { ...effect2 } };
 }
 function preparedCoopCombatants(players, preparedByActor) {
   return players.map((player2) => frozenAlchemyPotionCombatant(player2, preparedByActor?.[player2.id]));

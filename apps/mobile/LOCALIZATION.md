@@ -17,6 +17,7 @@ Russian and Turkish are starter-only languages. English remains the fallback for
 ## Current 1.0.6 redesign alignment
 
 - The redesigned Party creation/preferences sheet, Party recruitment editor, Recruitment board, and private friend-invitation sheet use the shared typed social translation catalog rather than English-only buttons and helper text.
+- The Cooking/Alchemy workshop now derives player-facing potion effects from current recipe/potion data, and recipe lock/source-help text uses the typed gameplay translation catalog. Dungeon preparation now resolves Russian/Turkish starter phrases through the correct catalog rather than returning English for translated controls.
 - The five established translations (DE, ES, NL, IT, FR) have authored copy for these active flows. RU and TR have starter coverage for the same important actions; untranslated material continues to fall back to English.
 - All eight UI languages can be selected as Party *communication preferences*. These preferences must not restrict joining a Party. The corresponding database change is in `backend/supabase/migrations/20261104121600_party_language_preferences_eight_locales.sql` and requires database deployment for backend acceptance.
 - Existing catalog entries for legacy Social/Party flows are retained where they may still be referenced by history, saved shortcuts, tests or server-provided state. Do not delete by name alone; verify active call sites before pruning.

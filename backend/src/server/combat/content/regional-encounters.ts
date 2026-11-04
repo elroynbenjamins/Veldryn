@@ -8,9 +8,9 @@ function normalIdentity(name:string):{archetype:PveArchetype;mechanics:PveMechan
  if(['Choir Wisp','Ember Wraith','Crucible Imp'].includes(name))return{archetype:'caster',mechanics:['interrupt','aoe']};
  if(['Rime Cantor','Bellbound Shade','Charred Adept'].includes(name))return{archetype:'hexer',mechanics:['vulnerability','healing_reduction']};
  if(['Frozen Pilgrim','Glacial Acolyte','Molten Pilgrim'].includes(name))return{archetype:'support',mechanics:['sustain']};
- if(['Choir Sentinel','Cinderbound Guard','Ashen Colossus'].includes(name))return{archetype:'guardian',mechanics:['heavy_hit','barrier']};
- if(['Cinder Mireling'].includes(name))return{archetype:'swarm',mechanics:['aoe','dot']};
- if(['Fen Reaver','Prime Scoria'].includes(name))return{archetype:'executioner',mechanics:['heavy_hit','execute']};
+ if(['Choir Sentinel','Cinderbound Guard','Cinder Titan'].includes(name))return{archetype:'guardian',mechanics:['heavy_hit','barrier']};
+ if(['Blackglass Mireling'].includes(name))return{archetype:'swarm',mechanics:['aoe','dot']};
+ if(['Fen Reaver','Ashen Revenant'].includes(name))return{archetype:'executioner',mechanics:['heavy_hit','execute']};
  return{archetype:'bruiser',mechanics:['heavy_hit']};
 }
 function normalAbilities(id:string,name:string,type:DamageType,index:number,identity:ReturnType<typeof normalIdentity>):AbilityDefinition[]{
@@ -112,7 +112,7 @@ function boss(id:string,name:string,level:number,type:DamageType,baseHp:number,b
 }
 
 export const FROSTMARCH_ENCOUNTERS:Record<string,()=>CombatantDefinition[]>={};
-const frostBattleNames:[string,string][][]=[[['Rimewolf','Shiverling']],[['Glacier Stalker','Frostbound Scout']],[['Lake Warden','Icefang Hound']]];
+const frostBattleNames:[string,string][][]=[[['Frostwolf','Bellwraith']],[['Glacier Stalker','Frostbound Scout']],[['Lake Warden','Icefang Hound']]];
 for(const [index,id] of ['FROST_LAKE_BATTLE_01','FROST_LAKE_BATTLE_02','FROST_LAKE_BATTLE_03'].entries())FROSTMARCH_ENCOUNTERS[id]=()=>battle(id,70,index,'ice',frostBattleNames[index][0] as [string,string],13_500,5_000,1_450);
 const frostChoirNames:[string,string][][]=[[['Choir Wisp','Rime Cantor']],[['Frozen Pilgrim','Bellbound Shade']],[['Choir Sentinel','Glacial Acolyte']]];
 for(const [index,id] of ['FROST_CHOIR_BATTLE_01','FROST_CHOIR_BATTLE_02','FROST_CHOIR_BATTLE_03'].entries())FROSTMARCH_ENCOUNTERS[id]=()=>battle(id,70,index,'ice',frostChoirNames[index][0] as [string,string],13_900,5_100,1_500);
@@ -124,7 +124,7 @@ FROSTMARCH_ENCOUNTERS.BOSS_EXP_BELLBEAST=()=>boss('BOSS_EXP_BELLBEAST','The Bell
 FROSTMARCH_ENCOUNTERS.BOSS_EXP_CANTOR=()=>boss('BOSS_EXP_CANTOR','The Frozen Cantor',70,'ice',116_000,6_650,2_550);
 
 export const ASHLANDS_ENCOUNTERS:Record<string,()=>CombatantDefinition[]>={};
-const ashBattleNames:[string,string][][]=[[['Cinder Mireling','Blackglass Beetle']],[['Ember Wraith','Ashen Marauder']],[['Fen Reaver','Glassbone Hound']],[['Crucible Imp','Charred Adept']],[['Molten Pilgrim','Cinderbound Guard']],[['Prime Scoria','Ashen Colossus']]];
+const ashBattleNames:[string,string][][]=[[['Blackglass Mireling','Gloam Mite']],[['Ember Wraith','Ashen Marauder']],[['Fen Reaver','Glassbone Hound']],[['Crucible Imp','Charred Adept']],[['Molten Pilgrim','Cinderbound Guard']],[['Ashen Revenant','Cinder Titan']]];
 const ashIds=['ASH_FEN_BATTLE_01','ASH_FEN_BATTLE_02','ASH_FEN_BATTLE_03','ASH_CRUCIBLE_BATTLE_01','ASH_CRUCIBLE_BATTLE_02','ASH_CRUCIBLE_BATTLE_03'];
 for(const [index,id] of ashIds.entries())ASHLANDS_ENCOUNTERS[id]=()=>battle(id,94,index%3,'fire',ashBattleNames[index][0] as [string,string],15_500,6_300,1_850);
 for(const [index,name] of ['Cinder Channeler','Blackglass Devourer','Forgeplate Custodian'].entries()){

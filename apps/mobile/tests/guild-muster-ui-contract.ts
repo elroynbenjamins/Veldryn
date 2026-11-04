@@ -24,6 +24,9 @@ ok(!homeActions.includes('Open Muster')&&!homeActions.includes('DAILY GUILD PART
 ok(hallSummary.includes('title="View Muster & Rally"')&&screen.includes('<GuildHallSummary compact onOpenMuster={onNavigateMuster}'),'Primary Guild Hall summary Muster shortcut must remain functional');
 ok(screen.includes("activityView==='Muster'?")&&screen.includes('<OnlineGuildMusterPanel/>'),'Guild Activities Muster destination must remain available');
 ok(panel.includes('GUILD MUSTER'),'Muster must have a clear player-facing identity');
+ok(panel.includes('useSocialText()')&&panel.includes('socialLabel(language,row.name)')&&panel.includes('socialLabel(language,row.description)'),'Muster must localize current authored Activity milestone names and benefits');
+ok(panel.includes("st('{current} OF {goal}'")&&!panel.includes('st("4 OF 7")'),'Weekly progress status must display actual localized day count, not a constant');
+ok(panel.includes("st('{count} members'")&&panel.includes("st('today {count}'")&&panel.includes("st('+{count} more contributors'"),'Muster contribution and roster labels must be localized with dynamic counters');
 ok(panel.includes('No daily streak required.'),'Muster must explicitly avoid punitive consecutive streaks');
 ok(panel.includes('35% / 70% / 100%'),'Rally tier milestones must be visible');
 ok(panel.includes('+5% / +10% / +15% Hall Progress'),'Rally rewards must stay tied to communal Hall progression');

@@ -1,4 +1,5 @@
 import type {CoopCombatReplayCombatantView,CoopCombatReplayCueView,CoopCombatReplayGemSnapshotView,CoopCombatReplayStateView,CoopCombatReplayStatusView,CoopCombatReplayView} from './coop-presentation';
+import {dungeonEnemyAbilityDisplayName,dungeonEnemyDisplayName} from './dungeon-enemy-display';
 
 export const DUNGEON_COMBAT_PLAYBACK=Object.freeze({
   timeScale:.12,
@@ -31,7 +32,7 @@ export function playbackCueTone(cue:CoopCombatReplayCueView):DungeonPlaybackTone
 }
 
 export function playbackCueLabel(cue:CoopCombatReplayCueView):string{
-  const actor=cue.actorName?.trim(),target=cue.targetName?.trim(),ability=cue.abilityName?.trim(),amount=cue.amount===undefined?'':` · ${Math.round(cue.amount)}`;
+  const actor=cue.actorName?dungeonEnemyDisplayName(cue.actorName.trim()):undefined,target=cue.targetName?dungeonEnemyDisplayName(cue.targetName.trim()):undefined,ability=cue.abilityName?dungeonEnemyAbilityDisplayName(cue.abilityName.trim()):undefined,amount=cue.amount===undefined?'':` · ${Math.round(cue.amount)}`;
   switch(cue.type){
     case 'action': {
       const suffix=`${cue.outcome==='critical'?' · CRIT':''}${cue.outcome==='miss'?' · MISS':''}${cue.absorbed&&cue.absorbed>0?` · ${Math.round(cue.absorbed)} absorbed`:''}${cue.gemProc?' · GEM PROC':''}`;

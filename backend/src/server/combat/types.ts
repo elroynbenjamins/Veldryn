@@ -81,6 +81,8 @@ export interface CombatantDefinition {
   phases?: BossPhaseDefinition[];
   /** Server-derived only. Never accept raw client gem payloads. */
   effectGems?: readonly CombatGemEffect[];
+  /** Frozen from a server-validated, consumed Alchemy preparation; not accepted from a client payload. */
+  alchemyModifiers?:{outgoing:number;incoming:number;healing:number;shielding:number};
 }
 
 export interface ActivePeriodicEffect {

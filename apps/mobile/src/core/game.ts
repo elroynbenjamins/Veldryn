@@ -30,6 +30,7 @@ import {DEFAULT_QUICK_NAV_DESTINATIONS} from './quick-navigation';
 import {unlockedCharacterSlots} from './account-roster';
 import {accountEntitlementBenefits,entitlementStorageCapacity} from './account-entitlements';
 import {isGemPouchItemId,tryStoreGemInPouch} from './gem-pouch';
+import {isEquipmentPouchItemId,tryStoreEquipmentInPouch} from './equipment-pouch';
 import {gatheringPacing} from './gathering-tools';
 import {gatheringToolDef} from '../content/gathering-tools';
 import {currentRegionId} from './combat-region';
@@ -353,13 +354,37 @@ function addBounded(stacks:ItemStack[],capacity:number,incoming:ItemStack[]){
   return {stacks:next,overflow};
 }
 function routeRewards(state:GameState,incoming:ItemStack[],nowMs:number){
-  const inv=addBounded(state.inventory.stacks,entitlementStorageCapacity(state,'inventory'),incoming);
-  const bank=addBounded(state.bank.stacks,entitlementStorageCapacity(state,'bank'),inv.overflow);
-  const overflow=stackItems(state.overflow.stacks,bank.overflow);
+  // Pouches are first-class destinations at reward settlement, not just manual deposit targets.
+  // Keep every displaced reward in the old Inventory -> Bank -> Overflow path if a pouch is full.
+  let stored=state;
+  const remaining:ItemStack[]=[];
+  for(const reward of incoming){
+    if(!reward||!Number.isSafeInteger(reward.quantity)||reward.quantity<1){remaining.push(reward);continue;}
+    if(!reward.instanceId&&isGemPouchItemId(reward.itemId)){
+      const placed=tryStoreGemInPouch(stored,reward.itemId,reward.quantity);
+      if(placed){stored=placed;continue;}
+    }
+    if(isEquipmentPouchItemId(reward.itemId)){
+      let left=reward.quantity;
+      while(left>0){
+        const placed=tryStoreEquipmentInPouch(stored,{itemId:reward.itemId,quantity:1,...(reward.instanceId?{instanceId:reward.instanceId}:{})});
+        if(!placed)break;
+        stored=placed;left--;
+      }
+      if(left>0)remaining.push({...reward,quantity:left});
+      continue;
+    }
+    remaining.push(reward);
+  }
+  const inv=addBounded(stored.inventory.stacks,entitlementStorageCapacity(stored,'inventory'),remaining);
+  const bank=addBounded(stored.bank.stacks,entitlementStorageCapacity(stored,'bank'),inv.overflow);
+  const overflow=stackItems(stored.overflow.stacks,bank.overflow);
   return {
-    inventory:{...state.inventory,stacks:inv.stacks},
-    bank:{...state.bank,stacks:bank.stacks},
-    overflow:{stacks:overflow,expiresAtMs:overflow.length?Math.max(state.overflow.expiresAtMs||0,nowMs+72*60*60*1000):null}
+    inventory:{...stored.inventory,stacks:inv.stacks},
+    bank:{...stored.bank,stacks:bank.stacks},
+    overflow:{stacks:overflow,expiresAtMs:overflow.length?Math.max(stored.overflow.expiresAtMs||0,nowMs+72*60*60*1000):null},
+    ...(stored.account!==state.account?{account:stored.account}:{}),
+    ...(stored.character!==state.character?{character:stored.character}:{}),
   };
 }
 
@@ -691,7 +716,7 @@ export function claimSeasonalContract(state:GameState,period:SeasonalPeriod,cont
   const xp=state.character.xp+contract.rewardXp,level=characterLevelFromXp(xp);
   const routed=routeRewards(state,[{itemId:contract.rewardItemId,quantity:contract.rewardItemQty}],nowMs);
   const claimed=[...(state.account.seasonalContractClaimIds??[]),contract.id].slice(-120);
-  return applyLocalBalanceSnapshot(refreshQuests({...state,...routed,character:{...state.character,xp,level,gold:state.character.gold+contract.rewardGold},account:{...state.account,seasonalContractClaimIds:claimed}} as GameState),nowMs);
+  return applyLocalBalanceSnapshot(refreshQuests({...state,...routed,character:{...state.character,...(routed.character??{}),xp,level,gold:state.character.gold+contract.rewardGold},account:{...state.account,...(routed.account??{}),seasonalContractClaimIds:claimed}} as GameState),nowMs);
 }
 
 /** Finite reservations hand off at the cycle boundary, not at the later login. */
@@ -853,7 +878,7 @@ function claimActivitySegmentRaw(state:GameState,nowMs:number){
     const nextXp=Math.min(totalXpAtLevel(100),skill.xp+(reward.explorationXp??0));
     return {...skill,xp:nextXp,level:levelFromXp(nextXp)};
   });
-  const nextBase={...state,skills,...routed,outOfCombatSinceMs:shouldStop?combatStoppedAtMs:undefined,character:{...state.character,xp,level,gold:state.character.gold+reward.gold,currentHp:reward.endHp??state.character.currentHp},activity:shouldStop?null:{...state.activity,lastClaimAtMs:settledAtMs,progressFraction:reward.nextProgressFraction,sessionKills:(state.activity.sessionKills??0)+reward.kills,sessionChampions:(state.activity.sessionChampions??0)+(reward.championEncounters?.count??0)},unlockedMonsterIds:[...new Set([...state.unlockedMonsterIds,...unlocked])]} as GameState;
+  const nextBase={...state,skills,...routed,outOfCombatSinceMs:shouldStop?combatStoppedAtMs:undefined,character:{...state.character,...(routed.character??{}),xp,level,gold:state.character.gold+reward.gold,currentHp:reward.endHp??state.character.currentHp},activity:shouldStop?null:{...state.activity,lastClaimAtMs:settledAtMs,progressFraction:reward.nextProgressFraction,sessionKills:(state.activity.sessionKills??0)+reward.kills,sessionChampions:(state.activity.sessionChampions??0)+(reward.championEncounters?.count??0)},unlockedMonsterIds:[...new Set([...state.unlockedMonsterIds,...unlocked])]} as GameState;
   let next=commitDailySupplyTimedBoost(nextBase,supply);
   next.character={...next.character!,classSkills:trained.classSkills,classSkillRemainders:trained.classSkillRemainders,masteryMaterialRemainders:reward.masteryMaterialRemainders};
   if(next.character.preparation&&(reward.preparationEncounters??reward.kills)>0){let prep=next.character.preparation;for(let i=0;i<(reward.preparationEncounters??reward.kills);i++)prep=spendPreparationEncounter(prep,prep?.itemId) as typeof prep;next.character={...next.character,preparation:prep};}
@@ -1211,7 +1236,7 @@ export function challengeFallenKnightRematch(state:GameState,nowMs:number):{stat
   const items=stackItems([],bossDrops.concat(fixedItems));
   const rewardGold=clearReward.gold+(bountyReward?.gold??0),rewardXp=clearReward.xp+(bountyReward?.xp??0),rewardEssence=clearReward.essence+(bountyReward?.essence??0);
   const routed=routeRewards(next,items,nowMs),xp=next.character!.xp+rewardXp;
-  next={...next,...routed,character:{...next.character!,xp,level:characterLevelFromXp(xp),gold:next.character!.gold+rewardGold}};
+  next={...next,...routed,character:{...next.character!,...(routed.character??{}),xp,level:characterLevelFromXp(xp),gold:next.character!.gold+rewardGold}};
   next=grantCompanionEssence(next,rewardEssence);
   if(stone.reward)next=grantBondstones(next,stone.reward);
   const winMetrics={...(next.account.longTermMetrics??{})};
@@ -1243,7 +1268,7 @@ export function challengeFallenKnight(state:GameState,nowMs=Date.now()):{state:G
   const xp=state.character.xp+3000;
   const storyDrops=fallenKnightDropRoll(state,`${state.character.id}:FALLEN_KNIGHT_STORY_DROP:${nowMs}`,true);
   const rewardRouted=routeRewards({...state,inventory:{...state.inventory,stacks:inventory}} as GameState,storyDrops,nowMs);
-  let next={...state,...rewardRouted,defeatedBossIds:[...state.defeatedBossIds,'FALLEN_KNIGHT'],character:{...postFightCharacter,gold:state.character.gold+900,xp,level:characterLevelFromXp(xp)},activity:null,outOfCombatSinceMs:nowMs} as GameState;
+  let next={...state,...rewardRouted,defeatedBossIds:[...state.defeatedBossIds,'FALLEN_KNIGHT'],character:{...postFightCharacter,...(rewardRouted.character??{}),gold:state.character.gold+900,xp,level:characterLevelFromXp(xp)},activity:null,outOfCombatSinceMs:nowMs} as GameState;
   next.character=awardClassSkillXp(next.character!,3000*characterPermanentMultipliers(state).skillXpMultiplier).character;
   next=recordCompanionActivity(grantBondstones(grantCompanionEssence(refreshQuests(grantEventActivity(next,'boss',nowMs)),40),1),'boss','FALLEN_KNIGHT',1,nowMs);
   next=applyTrustedLongTermProgression(next,[{kind:'boss',contentId:'FALLEN_KNIGHT',units:1,weeklyEligible:false}],undefined,nowMs,{accountId:longTermAccountScope(next),eventId:`boss-story:${state.character.id}:FALLEN_KNIGHT`}).state;

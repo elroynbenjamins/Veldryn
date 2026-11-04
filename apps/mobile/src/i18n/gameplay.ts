@@ -2,6 +2,7 @@ import {SUPPORTED_LANGUAGES,type Language} from './languages';
 import {createTranslator} from './translator';
 import {useGameLanguage} from './GameLanguageProvider';
 import {battleText} from './battle';
+import {equipmentMaterialMetadataText} from './equipment-metadata';
 import {useMemo} from 'react';
 
 // Every row is complete, in en/de/es/nl/it/fr order. English phrases are typed keys.
@@ -1223,6 +1224,8 @@ const templates=(Object.keys(rows) as GameplayKey[]).filter(key=>key.includes('{
 // Only call this for authored game presentation, never player-entered text or names.
 export function localizeGameplay(language:Language,value:string|undefined):string{
   if(!value)return value??'';
+  const equipmentMetadata=equipmentMaterialMetadataText(language,value);
+  if(equipmentMetadata!==undefined)return equipmentMetadata;
   if(Object.prototype.hasOwnProperty.call(rows,value))return gameplayTranslate(language,value as GameplayKey);
   const key=(Object.keys(rows) as GameplayKey[]).find(entry=>!entry.includes('{')&&entry.toLowerCase()===value.toLowerCase());
   if(key){const translated=gameplayTranslate(language,key);return value===value.toUpperCase()?translated.toLocaleUpperCase(language):translated;}

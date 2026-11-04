@@ -630,11 +630,10 @@ function projectedIdleContext(state:GameState,reward:RewardBundle,settleAtMs:num
   }
   const foodRemaining=Math.max(0,stackQty(state.inventory.stacks,state.character?.equippedFoodId)-(reward.foodConsumed??0));
   const routed=routeRewards(state,reward.items,settleAtMs);
-  const resultingGearPouch=routed.character?.equipmentPouch??equipmentPouch(state),resultingGemPouch=routed.account?.gemPouch??gemPouch(state);
   const beforeOverflow=state.overflow.stacks.reduce((sum,row)=>sum+row.quantity,0),afterOverflow=routed.overflow.stacks.reduce((sum,row)=>sum+row.quantity,0);
   return {
     itemQuantities:projectedStoredQuantities(state,reward),skillLevels,monsterKills,sessionKills:(activity.sessionKills??0)+(activity.kind==='combat'?reward.kills:0),championDefeats:(activity.sessionChampions??0)+(activity.kind==='combat'?(reward.championEncounters?.count??0):0),weeklyOrderProgress,foodRemaining,
-    freeStorageSlots:Math.max(0,entitlementStorageCapacity(state,'inventory')-usedSlots(routed.inventory.stacks))+Math.max(0,entitlementStorageCapacity(state,'bank')-usedSlots(routed.bank.stacks))+Math.max(0,resultingGearPouch.capacity-usedSlots(resultingGearPouch.stacks))+Math.max(0,resultingGemPouch.capacity-usedSlots(resultingGemPouch.stacks)),
+    freeStorageSlots:Math.max(0,entitlementStorageCapacity(state,'inventory')-usedSlots(routed.inventory.stacks))+Math.max(0,entitlementStorageCapacity(state,'bank')-usedSlots(routed.bank.stacks)),
     elapsedSeconds:Math.max(0,Math.floor((settleAtMs-activity.startedAtMs)/1000)),projectedRewardFits:afterOverflow<=beforeOverflow
   };
 }

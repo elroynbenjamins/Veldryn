@@ -99,7 +99,7 @@ ok(stage.includes('<CombatantInspectPanel')&&stage.includes('onClose={()=>setIns
 ok(inspect.includes('COMBAT INSPECT')&&inspect.includes('ACTIVE EFFECTS'),'Inspection panel must clearly separate combat identity and effect details');
 ok(inspect.includes('close:{minWidth:touchTargetMin,minHeight:touchTargetMin'),'Combat inspection must have a full-size close touch target');
 ok(inspect.includes('status.label')&&inspect.includes('status.stacks>1')&&inspect.includes('remaining(status.remainingMs)'),'Inspection panel must show full effect name, stacks and remaining duration rather than only compact codes');
-ok(inspect.includes("status.source==='gem'")&&inspect.includes("return 'Effect Gem'")&&inspect.includes("return 'Damage over time'")&&inspect.includes("return 'Healing over time'"),'Inspection panel must explain Effect Gem and timed-effect sources in player-facing terms');
+ok(inspect.includes("status.source==='gem'")&&inspect.includes("return st('Effect Gem')")&&inspect.includes("return st('Damage over time')")&&inspect.includes("return st('Healing over time')"),'Inspection panel must explain translated Effect Gem and timed-effect sources in player-facing terms');
 ok(inspect.includes('BARRIER')&&inspect.includes('COMPANION')&&inspect.includes('PHASE'),'Inspection panel must surface combat barrier, companion and boss phase context when available');
 ok(inspect.includes('INTERRUPTIBLE CAST')&&inspect.includes('Focus →'),'Boss inspection must retain cast interruptibility and authoritative focus target context');
 // Automatic combat inspection remains read-only and never changes the server cue timeline.

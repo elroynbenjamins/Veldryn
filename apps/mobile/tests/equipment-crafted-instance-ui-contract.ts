@@ -60,8 +60,8 @@ ok(oddsGuide.includes('craftedGearQualityMultiplier(quality)')&&oddsGuide.includ
  'Preview must multiply actual rarity and quality effects, never add them');
 ok(oddsGuide.includes('craftedGearQualityChanceAtLeast(quality)')&&oddsGuide.includes('onAccessibilityAction'),
  'Quality control must expose real weighted chances and accessible adjustments');
-ok(oddsGuide.includes('Preview only. Rarity and quality are rolled when claimed.'),
- 'Rarity/quality inspection must be explicitly non-purchasing and non-deterministic');
+ok(oddsGuide.includes("gt('Rarity and quality roll on claim.')")&&oddsGuide.includes("gt('Odds depend on the recipe.')"),
+ 'Rarity/quality preview must explain recipe-dependent odds and claim-time randomness without a purchasing action');
 
 ok(oddsGuide.includes('style={s.chanceGrid}')&&oddsGuide.includes('s.chanceTile')&&oddsGuide.includes("const stacked=width<320||fontScale>=1.45"),
  'Forge odds must use space-efficient two-column tiles that expand for accessibility or narrow screens');

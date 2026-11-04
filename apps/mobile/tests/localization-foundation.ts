@@ -38,8 +38,8 @@ assert.equal(appText('ru','Account'),'Аккаунт');
 assert.equal(appText('tr','Guild'),'Lonca');
 assert.equal(appText('ru','Cannot travel'),'Переход недоступен');
 assert.equal(appText('tr','Cannot reorder backlog'),'Cannot reorder backlog');
-assert.equal(appText('tr','{name} is ready.',{name:'Ironwarden'}),'Ironwarden hazır.');
 assert.equal(appText('ru','{name} is ready.',{name:'Ironwarden'}),'Ironwarden готов.');
+assert.equal(appText('tr','{name} is ready.',{name:'Ironwarden'}),'Ironwarden hazır.');
 assert.equal(appBuildText('ru','version',{version:'1.0.6'}),'Version 1.0.6');
 assert.equal(appBuildText('tr','channel',{channel:'production'}),'Release channel: production');
 assert.equal(navigationText('ru','{count} notifications',{count:3}),'Уведомления: 3');
@@ -63,7 +63,6 @@ assert.equal(formatLocalizedNumber('nl',12345.6),'12.345,6');
 assert.equal(formatLocalizedNumber('en',12345.6),'12,345.6');
 assert.equal(formatLocalizedNumber('tr',12345.6),'12.345,6');
 assert.ok(formatLocalizedNumber('ru',12345.6).endsWith(',6'));
-
 assert.equal(formatGameNumber(12345,'exact','nl'),'12.345');
 assert.equal(formatGameNumber(12500,'abbreviated','de'),'12,5K');
 assert.ok(formatLocalizedDate('de',new Date('2026-09-27T12:00:00Z'),{timeZone:'UTC',year:'numeric',month:'2-digit',day:'2-digit'}).includes('27.09.2026'));

@@ -6,6 +6,7 @@ import {createTranslator,type TranslationParams} from './translator';
 
 // Columns are German, Spanish, Dutch, Italian and French; keys are the English catalog.
 export const socialTranslationRows = {
+ "Your week": ["Deine Woche","Tu semana","Jouw week","La tua settimana","Votre semaine"],
  "Play together. Earn rewards.": ["Spielt zusammen. Verdient Belohnungen.","Juega en equipo. Gana recompensas.","Speel samen. Verdien beloningen.","Giocate insieme. Ottenete ricompense.","Jouez ensemble. Gagnez des récompenses."],
  "Progress and rewards": ["Fortschritt und Belohnungen","Progreso y recompensas","Voortgang en beloningen","Progressi e ricompense","Progression et récompenses"],
  "Choose activity, language and minimum level.": ["Wähle Aktivität, Sprache und Mindestlevel.","Elige actividad, idioma y nivel mínimo.","Kies activiteit, taal en minimumniveau.","Scegli attività, lingua e livello minimo.","Choisissez une activité, une langue et un niveau minimum."],

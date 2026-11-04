@@ -87,3 +87,25 @@ export function planDungeonPotionUse(input:DungeonPotionTransaction):DungeonPoti
  const nextCharacter:GameState={...characterState,inventory:{...characterState.inventory,stacks}};
  return {persistentState:nextState,characterState:nextCharacter,receipt,replayed:false,remainingCharges:cap-used-1};
 }
+
+/** Only the authenticated run and an idempotency key may cross the public boundary.
+ * The backing store MUST load trusted membership, both JSON states and the real
+ * actor's max HP under the same database transaction / row locks, call apply(),
+ * and commit BOTH changes or neither. */
+export interface DungeonPotionAtomicStore{
+ transact(
+  request:{runId:string;accountId:string;requestId:string},
+  apply:(verified:Omit<DungeonPotionTransaction,'requestId'>)=>DungeonPotionTransactionResult
+ ):Promise<DungeonPotionTransactionResult>;
+}
+export async function consumeAuthoritativeDungeonPotion(
+ store:DungeonPotionAtomicStore,
+ request:{runId:string;accountId:string;requestId:string}
+):Promise<{receipt:DungeonPotionReceipt;replayed:boolean;remainingCharges:number}>{
+ if(!request.accountId.trim()||!request.runId.trim())throw new Error('dungeon_potion_auth_required');
+ const result=await store.transact(request,verified=>{
+  if(verified.runId!==request.runId)throw new Error('dungeon_potion_run_mismatch');
+  return planDungeonPotionUse({...verified,requestId:request.requestId});
+ });
+ return {receipt:result.receipt,replayed:result.replayed,remainingCharges:result.remainingCharges};
+}

@@ -1,5 +1,6 @@
 import type {Language} from './languages';
 import {GUILD_TUTORIAL_STEPS} from '../core/guild-tutorial';
+import {guildTutorialEarlyText} from './guild-tutorial-early-locales';
 const steps:Partial<Record<Language,readonly (readonly [string,string,string,string])[]>>={
  de:[
   ['Willkommen in deiner Gilde','Lies am Schwarzen Brett, was deine Gilde plant. Ist es leer, schau im Gildenchat nach Prioritäten.','Erkunde jeden Bereich. Du kannst den Guide pausieren und später fortsetzen.','Gildenstartseite zeigen'],
@@ -73,6 +74,7 @@ const rows:Record<string,readonly string[]>={
  'Review facilities and available funds before upgrading. Purchases are not part of this guide.':['Prüfe Einrichtungen und Mittel vor Upgrades. Käufe gehören nicht zu diesem Guide.','Revisa instalaciones y fondos antes de mejorar. La guía no requiere compras.','Bekijk faciliteiten en beschikbare middelen vóór upgrades. Aankopen horen niet bij deze gids.','Controlla strutture e fondi prima di migliorare. La guida non richiede acquisti.','Vérifiez installations et fonds avant les améliorations. Ce guide ne demande aucun achat.'],
 };
 export function guildTutorialText(language:Language,source:string){
+ if(language==='ru'||language==='tr')return guildTutorialEarlyText(language,source)??source;
  const index=['de','es','nl','it','fr'].indexOf(language);if(index<0)return source;
  if(rows[source])return rows[source][index];
  for(let i=0;i<GUILD_TUTORIAL_STEPS.length;i++){

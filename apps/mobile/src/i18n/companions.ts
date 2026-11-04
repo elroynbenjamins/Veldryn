@@ -3,6 +3,29 @@ import {createTranslator} from './translator';
 
 // Each row supplies German, Spanish, Dutch, Italian and French; its key is English.
 export const companionTranslationRows={
+ // Active companion unlock goals, discovery clues and Trial effect labels.
+ "Defeat 250 Old Mines enemies":["Besiege 250 Gegner in den Old Mines","Derrota a 250 enemigos en Old Mines","Versla 250 vijanden in Old Mines","Sconfiggi 250 nemici nelle Old Mines","Vaincre 250 ennemis dans Old Mines"],
+ "Defeat the Fallen Knight 3 times":["Besiege den Fallen Knight 3-mal","Derrota al Fallen Knight 3 veces","Versla de Fallen Knight 3 keer","Sconfiggi il Fallen Knight 3 volte","Vaincre le Fallen Knight 3 fois"],
+ "Reach Faith 30":["Erreiche Glaube 30","Alcanza Fe 30","Bereik Geloof 30","Raggiungi Fede 30","Atteindre Foi 30"],
+ "Reach Fishing 16":["Erreiche Angeln 16","Alcanza Pesca 16","Bereik Vissen 16","Raggiungi Pesca 16","Atteindre Pêche 16"],
+ "Reach Smithing 30":["Erreiche Schmieden 30","Alcanza Herrería 30","Bereik Smeden 30","Raggiungi Forgiatura 30","Atteindre Forge 30"],
+ "Rare discovery while charting the Sunscar glasslands":["Seltene Entdeckung bei der Kartierung der Glaslande von Sunscar","Descubrimiento raro al cartografiar las tierras de cristal de Sunscar","Zeldzame ontdekking bij het in kaart brengen van de glaslanden van Sunscar","Scoperta rara esplorando le distese di vetro di Sunscar","Découverte rare en cartographiant les plaines de verre de Sunscar"],
+ "Rare discovery while following the Frostmarch bells":["Seltene Entdeckung beim Folgen der Glocken von Frostmarch","Descubrimiento raro al seguir las campanas de Frostmarch","Zeldzame ontdekking tijdens het volgen van de klokken van Frostmarch","Scoperta rara seguendo le campane di Frostmarch","Découverte rare en suivant les cloches de Frostmarch"],
+ "Rare discovery while mapping Silverbrook":["Seltene Entdeckung beim Kartieren von Silverbrook","Descubrimiento raro al cartografiar Silverbrook","Zeldzame ontdekking bij het in kaart brengen van Silverbrook","Scoperta rara mappando Silverbrook","Découverte rare en cartographiant Silverbrook"],
+ "Rare discovery while reading the Ashlands smoke":["Seltene Entdeckung beim Deuten des Rauchs von Ashlands","Descubrimiento raro al interpretar el humo de Ashlands","Zeldzame ontdekking bij het lezen van de rook van Ashlands","Scoperta rara interpretando il fumo di Ashlands","Découverte rare en lisant les fumées d'Ashlands"],
+ "Rare discovery while scouting the Greenfields":["Seltene Entdeckung beim Erkunden der Greenfields","Descubrimiento raro al explorar Greenfields","Zeldzame ontdekking bij het verkennen van Greenfields","Scoperta rara perlustrando Greenfields","Découverte rare en explorant Greenfields"],
+ "Rare discovery while surveying the King's Road":["Seltene Entdeckung bei der Erkundung der King's Road","Descubrimiento raro al explorar King's Road","Zeldzame ontdekking bij het verkennen van King's Road","Scoperta rara esplorando King's Road","Découverte rare en parcourant King's Road"],
+ "Rare discovery while surveying the Old Mines":["Seltene Entdeckung bei der Erkundung der Old Mines","Descubrimiento raro al explorar Old Mines","Zeldzame ontdekking bij het verkennen van Old Mines","Scoperta rara esplorando Old Mines","Découverte rare en parcourant Old Mines"],
+ "Rare discovery while tracing Ironwood paths":["Seltene Entdeckung beim Folgen der Ironwood-Pfade","Descubrimiento raro al seguir los senderos de Ironwood","Zeldzame ontdekking bij het volgen van de paden van Ironwood","Scoperta rara seguendo i sentieri di Ironwood","Découverte rare en suivant les sentiers d'Ironwood"],
+ "below 50% HP":["unter 50 % LP","por debajo del 50 % de PV","onder 50% HP","sotto il 50% dei PV","sous 50 % des PV"],
+ "damage boost":["Schadensbonus","bonificación de daño","schadebonus","bonus ai danni","bonus de dégâts"],
+ "defensive brace":["Abwehrhaltung","posición defensiva","verdedigingshouding","posizione di guardia","posture de protection"],
+ "focused damage":["Gezielter Schaden","daño concentrado","gerichte schade","danni concentrati","dégâts ciblés"],
+ "team damage":["Gruppenschaden","daño del equipo","groepsschade","danni della squadra","dégâts de l'équipe"],
+ "vulnerability":["Verwundbarkeit","vulnerabilidad","kwetsbaarheid","vulnerabilità","vulnérabilité"],
+ "burst damage":["Explosiver Schaden","daño explosivo","explosieve schade","danni esplosivi","dégâts explosifs"],
+ "defensive stance":["Verteidigungsstellung","postura defensiva","verdedigende houding","posizione difensiva","posture défensive"],
+
  "Spend Gold and Essence to level up.": ["Mit Gold und Essenz aufleveln.","Sube de nivel con oro y esencia.","Level omhoog met goud en essentie.","Aumenta il livello con oro ed essenza.","Augmentez le niveau avec de l'or et de l'essence."],
  "Unavailable requirements remain locked.": ["Nicht verfügbare Voraussetzungen bleiben gesperrt.","Los requisitos no disponibles siguen bloqueados.","Niet-beschikbare vereisten blijven vergrendeld.","I requisiti non disponibili restano bloccati.","Les conditions indisponibles restent verrouillées."],
  "Max level reached.": ["Maximallevel erreicht.","Nivel máximo alcanzado.","Maximumniveau bereikt.","Livello massimo raggiunto.","Niveau maximal atteint."],

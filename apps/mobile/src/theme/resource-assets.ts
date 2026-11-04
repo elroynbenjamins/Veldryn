@@ -18,6 +18,7 @@ export const resourceIconSourceById:Readonly<Partial<Record<string,ImageSourcePr
   ...ingredientIcons,
   TRAVEL_RATION:require('../../assets/food-v2/travel_ration.png'),
   COPPER_ORE:require('../../assets/items/resources/copper_ore.webp'),
+  ASTERFALL_MINERAL_ESSENCE:require('../../assets/items/resources/asterfall_mineral_essence.png'),
   ASTER_IRON_ORE:require('../../assets/items/resources/aster_iron_ore.webp'),
   OATHSTONE_ORE:require('../../assets/items/resources/oathstone_ore.webp'),
   ECHO_QUARTZ:require('../../assets/items/resources/echo_quartz.webp'),

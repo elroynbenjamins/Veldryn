@@ -112,10 +112,10 @@ export interface RegionalProgressState { storyCompleted?:number; sideQuestsCompl
 export interface LiveEventRuntime{eventId:string;enabled:boolean;startsAtMs:number;endsAtMs:number;graceEndsAtMs?:number;priority?:number;modules?:string[];}
 export interface ResonanceCacheStateV1{weekKey:string;liveClears:number;claimed:boolean;effectChoices?:string[];dustReward?:number;regionalCatalysts?:number;radiantCatalysts?:number;}
 export interface GameState {
-  version:6|11; createdAtMs:number; character:CharacterState|null; inventory:InventoryState; bank:BankState; overflow:OverflowState; activity:ActiveActivity|null;
+  version:6|11; createdAtMs:number; character:CharacterState|null; inventory:InventoryState; equipmentPouch?:InventoryState; bank:BankState; overflow:OverflowState; activity:ActiveActivity|null;
   /** Timestamp from which passive HP recovery may accrue while no activity is running. */
   outOfCombatSinceMs?:number;
-  otherCharacters?:Array<{character:CharacterState;inventory:InventoryState;overflow:OverflowState;activity:ActiveActivity|null;skills:SkillState[];quests:QuestState[];currentRegionId:string}>;
+  otherCharacters?:Array<{character:CharacterState;inventory:InventoryState;equipmentPouch?:InventoryState;overflow:OverflowState;activity:ActiveActivity|null;skills:SkillState[];quests:QuestState[];currentRegionId:string}>;
   rewardRemainders?:Record<string,number>;
   /** Persisted player location. Region-scoped activities may only start here. */
   currentRegionId:string;

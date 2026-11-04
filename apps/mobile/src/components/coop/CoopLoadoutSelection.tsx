@@ -2,6 +2,7 @@ import {useCoopStyles} from '../../theme/useCoopStyles';
 import {useMemo,useState} from 'react';
 import {Pressable,StyleSheet,Text,View} from 'react-native';
 import {CharacterPortrait} from '../CharacterVisual';
+import {CoopCombatSetupPanel} from './CoopCombatSetupPanel';
 import type {GameState} from '../../core/types';
 import {buildCoopLoadoutIntent,presentCoopLoadout,type CoopEffectiveStats,type CoopLoadoutIntent,type CoopLoadoutProjection} from '../../core/coop-loadout-presentation';
 import type {CoopMode} from '../../core/coop-presentation';
@@ -27,6 +28,7 @@ export function CoopLoadoutSelection({state,language,dungeonId,dungeonName,tier,
   const cta=mode==='live'?clt(language,'liveCta'):clt(language,'qmodeCta');
   return <ExpeditionScreenShell compactHeader eyebrow={clt(language,'kicker')} title={clt(language,'title')} onBack={onBack} backLabel={clt(language,'back')} stickyAction={<View style={s.sticky}>{notice?<Text accessibilityRole="alert" style={s.notice}>{notice}</Text>:null}<PrimaryAction label={selected?.selectable?cta:clt(language,'refresh')} loading={refreshing} disabled={refreshing} onPress={()=>selected?.selectable?onIntent(buildCoopLoadoutIntent({mode,dungeonId,tier,loadout:selected})):onRefresh()}/></View>}>
     <FantasyPanel variant="selected"><View style={s.hero}><CharacterPortrait state={state} compact style={s.portrait}/><View style={s.heroCopy}><Text style={s.character}>{state.character!.name}</Text><Text style={s.copy}>{mode==='live'?`${dungeonName} · ${clt(language,'liveAuto')} · ${clt(language,'level')} ${tier}`:`${dungeonName} · ${clt(language,'level')} ${tier}`}</Text>{selected?<RoleBadge role={selected.role} label={t(language,`coopUi.${selected.role}`)}/>:null}</View></View></FantasyPanel>
+    <CoopCombatSetupPanel state={state}/>
     {!views.length?<FantasyPanel variant="danger"><Text style={s.copy}>{clt(language,'empty')}</Text></FantasyPanel>:null}
     {views.length>1&&views.map(loadout=>{const stateLabel=status(loadout,language),wrongCharacter=loadout.characterId!==state.character!.id;return <Pressable key={loadout.id} accessibilityRole="button" accessibilityState={{selected:selected?.id===loadout.id,disabled:wrongCharacter}} disabled={wrongCharacter} onPress={()=>{setSelectedId(loadout.id);setShowDetails(false)}} style={({pressed})=>pressed&&s.pressed}><FantasyPanel variant={selected?.id===loadout.id?'selected':loadout.selectable?'default':'disabled'}><View style={s.cardHead}><View style={s.grow}><Text style={s.loadout}>{loadout.name}</Text><Text style={s.copy}>{loadout.className} · {loadout.characterName}</Text></View><StateChip label={stateLabel.label} tone={stateLabel.tone}/></View></FantasyPanel></Pressable>})}
     {selected?<>

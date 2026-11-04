@@ -13,22 +13,20 @@ ok(resolver.includes('hasAsterfallOreArtwork(itemId)'),'Shared resolver must rec
 const oreIndex=artwork.indexOf('const asterfallOre=asterfallOreCell(itemId)');
 const sourceIndex=artwork.indexOf('const source=resourceIconSource(itemId)');
 ok(sourceIndex>=0&&oreIndex>sourceIndex,'Bundled resource PNGs must render first, with ore atlas fallback');
-// The approved Asterfall Mineral Essence must use a real transparent PNG, not
-// the generic fallback icon or an incomplete resource atlas entry.
+// The approved Asterfall Mineral Essence is now stored as a compact, transparent
+// 256×256 WebP instead of its larger PNG. Verify real bytes, not just a path.
 const fsBinary=require('fs') as {readFileSync:(path:string)=>Uint8Array};
-const mineralIconPath='assets/items/resources/asterfall_mineral_essence.png';
+const mineralIconPath='assets/items/resources/asterfall_mineral_essence.webp';
 ok(resolver.includes("ASTERFALL_MINERAL_ESSENCE:require('../../"+mineralIconPath+"')"),
-  'Asterfall Mineral Essence must resolve the actual approved direct icon');
+  'Asterfall Mineral Essence must resolve the approved direct WebP icon');
 const icon=fsBinary.readFileSync(mineralIconPath);
-ok(icon.length>1000&&icon[0]===137&&icon[1]===80&&icon[2]===78&&icon[3]===71,
-  'Approved mineral icon must be a nonempty PNG');
-const width=(icon[16]*2**24+icon[17]*2**16+icon[18]*256+icon[19]);
-const height=(icon[20]*2**24+icon[21]*2**16+icon[22]*256+icon[23]);
-ok(width===256&&height===256,'Mineral resource icon must use the 256×256 export size');
-const colorType=icon[25];
-const hasTransparencyChunk=icon.some((byte,index)=>byte===116&&icon[index+1]===82&&icon[index+2]===78&&icon[index+3]===83);
-ok(colorType===6||(colorType===3&&hasTransparencyChunk),
-  'Approved mineral icon must contain transparency');
+const ascii=(from:number,to:number)=>String.fromCharCode(...icon.slice(from,to));
+ok(icon.length>1000&&ascii(0,4)==='RIFF'&&ascii(8,12)==='WEBP'&&ascii(12,16)==='VP8L',
+  'Approved mineral icon must be a real lossless WebP image');
+const pixels=(icon[21]|(icon[22]<<8)|(icon[23]<<16)|(icon[24]<<24))>>>0;
+const width=(pixels&0x3fff)+1,height=((pixels>>>14)&0x3fff)+1;
+ok(width===256&&height===256,'Mineral resource icon must retain the 256×256 export size');
+ok(((pixels>>>28)&1)===1,'Approved mineral icon must contain an alpha channel');
 ok(artwork.includes('const source=resourceIconSource(itemId)'),
   'Mining drop, item inventory, Codex and material cost views must share resource artwork');
 console.log('PASS: unified Asterfall ore visuals override older standalone resource artwork');

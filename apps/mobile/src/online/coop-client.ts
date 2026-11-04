@@ -80,6 +80,14 @@ export const coopClient={
  start:(mode:CoopMode,body:CoopStartBody)=>mutate<CoopRunView|CoopQModeServerProjection|{ticketId:string;status:string}>(mode==='qmode'?'/coop/qmode':'/coop/queue',body),
  startEvent:(body:CoopEventStartBody)=>mutate<CoopEventRunServerProjection>('/coop/event-expeditions',body),
  run:(runId:string)=>request<CoopRunView|CoopQModeServerProjection>(`/coop/runs/${runId}`),
+ useHealingPotion:async(runId:string,itemId:string,expectedVersion:number)=>{
+  if(!supabase)throw new Error('Sign in first.');
+  const {data,error}=await supabase.rpc('use_online_dungeon_potion_v1',{
+   p_run_id:runId,p_item_id:itemId,p_expected_version:expectedVersion,p_request_id:coopRequestId(),
+  });
+  if(error)throw new Error(error.message);
+  return data as {runId:string;stateVersion:number;gameVersion:number;healedHp:number;potionId:string;chargesRemaining:number;chargesMax:number};
+ },
  eventRun:(runId:string)=>request<CoopEventRunServerProjection>(`/coop/event-runs/${runId}`),
  choose:(runId:string,body:CoopDecisionBody)=>mutate<CoopQModeServerProjection>(`/coop/runs/${runId}/choose`,body),
  chooseEvent:(runId:string,body:CoopDecisionBody)=>mutate<CoopEventRunServerProjection>(`/coop/event-runs/${runId}/choose`,body),

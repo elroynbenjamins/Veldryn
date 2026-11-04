@@ -6,6 +6,7 @@ import {createTranslator,type TranslationParams} from './translator';
 
 // Columns are German, Spanish, Dutch, Italian and French; keys are the English catalog.
 export const socialTranslationRows = {
+ "Syncing": ["Synchronisierung läuft","Sincronizando","Synchroniseren","Sincronizzazione","Synchronisation"],
  "Choose a room": ["Raum wählen","Elegir sala","Kies een kamer","Scegli una stanza","Choisir une salle"],
  "Vote on a route": ["Über Route abstimmen","Votar por una ruta","Stem op een route","Vota un percorso","Voter pour un itinéraire"],
  "BOSS OUTLOOK": ["BOSSAUSBLICK","PRÓXIMO JEFE","BOSSVOORUITZICHT","ANTEPRIMA BOSS","APERÇU DU BOSS"],

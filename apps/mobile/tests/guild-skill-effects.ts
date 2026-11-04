@@ -23,6 +23,29 @@ assert.equal(guildSkillMemberCapacityExtra({memberCapacityExtra:99}),3,'membersh
 assert.ok(near(guildSkillVanguardMultipliers({guildBossDamageBps:600}).damageMultiplier,1.06),'vanguard boss damage');
 assert.ok(near(guildSkillFellowshipMultipliers({guildQuestRewardBps:400}).questRewardMultiplier,1.04),'fellowship quest rewards');
 
+assert.deepEqual(guildSkillVanguardMultipliers(undefined),{
+ damageMultiplier:1,defenceMultiplier:1,supportMultiplier:1,
+},'Guild Boss, Defensive Doctrine and Battle Support are inert without a server projection');
+{
+ const m=guildSkillVanguardMultipliers({
+  guildBossDamageBps:200,guildDefenceBps:400,guildSupportBps:600,
+ });
+ assert.ok(near(m.damageMultiplier,1.02)&&near(m.defenceMultiplier,1.04)
+  &&near(m.supportMultiplier,1.06),
+  'Vanguard ranks project separate Guild Boss, Defence and Support multipliers');
+}
+assert.deepEqual(guildSkillFellowshipMultipliers(undefined),{
+ questRewardMultiplier:1,projectEfficiencyMultiplier:1,
+},'Fellowship quest/project rewards do not change when server bonuses are absent');
+{
+ const m=guildSkillFellowshipMultipliers({
+  guildQuestRewardBps:600,guildProjectEfficiencyBps:400,
+ });
+ assert.ok(near(m.questRewardMultiplier,1.06)&&near(m.projectEfficiencyMultiplier,1.04),
+  'Fellowship quest and project multipliers match authoritative rank percentages');
+}
+
+
 // --- Integration: characterPermanentMultipliers merges Professions effects and no-ops when absent ---
 const base:GameState=createCharacter(newGame(NOW),'IRONWARDEN','Skill Tester');
 const without=characterPermanentMultipliers(base);

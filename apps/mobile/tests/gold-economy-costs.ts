@@ -55,10 +55,10 @@ ok(increasedCraftingGoldCost(4)===5&&increasedCraftingGoldCost(18)===22&&increas
 for(const [id,expected] of [
  ['SMELT_COPPER_INGOT',36],['COOK_MEADOW_PERCH',42],
  ['ENCHANT_REGIONAL_CATALYST',14400],['FORGE_REINFORCED_FITTING',60],
- ['BREW_DEWLEAF_DRAUGHT',5],['BREW_VERDANT_BINDING_RESIN',22],
+ ['BREW_DEWLEAF_DRAUGHT',25],['BREW_VERDANT_BINDING_RESIN',22],
  ['GUILD_FORGE_TIMBER',36],['CRAFT_COPPER_PICKAXE',144],
-] as const)ok(recipeDef(id)?.gold===expected,id+' Gold must increase 20% in the authoritative recipe catalog');
-ok(alchemyRecipeDef('BREW_DEWLEAF_DRAUGHT')?.gold===5,'Alchemy standalone preview matches the recipe catalog');
+] as const)ok(recipeDef(id)?.gold===expected,id+' Gold must match the authoritative recipe catalog');
+ok(alchemyRecipeDef('BREW_DEWLEAF_DRAUGHT')?.gold===25,'Alchemy standalone preview matches the recipe catalog');
 ok(ALCHEMY_RECIPES.every(recipe=>RECIPES.find(entry=>entry.id===recipe.id)?.gold===recipe.gold),'All Alchemy recipes share exact client/server Gold');
 ok(GUILD_COMPONENT_RECIPES.every(recipe=>RECIPES.find(entry=>entry.id===recipe.id)?.gold===recipe.gold),'Guild materials must not be charged twice');
 ok(TOOL_RECIPES.every(recipe=>RECIPES.find(entry=>entry.id===recipe.id)?.gold===recipe.gold),'Tool recipes must match their preview costs');
@@ -68,4 +68,4 @@ ok(V33_EQUIPMENT_RECIPES.every(recipe=>RECIPES.find(entry=>entry.id===recipe.id)
 ok(EQUIPMENT_FORGE_GOLD_MULTIPLIER===3,'The base triple forge multiplier remains intact');
 ok(GEM_REFINE_COSTS_V1[1].gold===90&&GEM_REFINE_COSTS_V1[5].gold===9600,'Gem refinement fees increase 20%');
 ok(GEM_COMBINE_COSTS_V1[1].gold===1800&&GEM_COMBINE_COSTS_V1[4].gold===72000,'Gem combination fees increase 20%');
-console.log('PASS: 2× Inventory/Sanctuary, +20% all craft fees, exact previews, bank unchanged, atomic charges');
+console.log('PASS: 2× Inventory/Sanctuary, +20% base craft fees plus 5× healing draught costs, exact previews, bank unchanged, atomic charges');

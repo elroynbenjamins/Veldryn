@@ -57,7 +57,7 @@ export function EquipmentPouchPanel({state,busy=false,onAction}:{state:GameState
     <GameButton compact title={upgrade?'Upgrade':'Maxed'} tone="secondary" disabled={!canUpgrade||!onAction} onPress={()=>onAction?.({type:'equipment_pouch_upgrade'})}/></View>
   <GameModalSurface visible={!!selected} reduceMotion={state.settings.reduceMotion} onClose={()=>setSelectedIndex(null)} backdropLabel="Close Equipment Pouch details" surfaceStyle={s.modal}>
    <GameModalHeader eyebrow="EQUIPMENT · CHARACTER STORAGE" title={item?.name??'Equipment'} onClose={()=>setSelectedIndex(null)}/>
-   {selected&&item?<ScrollView contentContainerStyle={s.details} showsVerticalScrollIndicator={false}>
+   {selected&&item?<ScrollView contentContainerStyle={s.details} showsVerticalScrollIndicator={false} showsHorizontalScrollIndicator={false}>
     <View style={s.hero}><View style={[s.art,{borderColor:rarity?.color??C.line}]}><ItemArtwork itemId={item.id} size={74}/></View>
      <View style={s.flex}><Text style={[s.itemName,{color:rarity?.color??C.text}]}>{rarity?.label??'Equipment'}{record?' · Q'+craftedGearDisplayQuality(record):''}</Text>
       <Text style={s.meta}>Stored on {state.character?.name??'this character'} · {item.slot??'Gear'}</Text>

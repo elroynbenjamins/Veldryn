@@ -31,6 +31,6 @@ ok(starterWeapon.includes("frame:{overflow:'hidden'}"),'Atlas crops must stay cl
 ok(classCreation.includes('classEmblemArtwork[selected.id]')&&!classCreation.includes('StarterWeaponArtwork'),'Creation uses class emblems without displaying starting equipment');
 ok(equipment.includes('<StarterWeaponArtwork itemId={item.id} size={size}/>'),'Equipped items use the same fitted starter weapon rendering');
 ok(inventoryArtwork.includes('<EquipmentArtwork item={item} compact framed={false}/>'),'Inventory thumbnails reuse the shared starter weapon artwork');
-ok(equipmentPreview.includes('<EquipmentArtwork item={item} size={112} framed={false}/>'),'Large equipment previews reuse the same safe crop');
+ok(equipmentPreview.includes('<EquipmentArtwork item={item} rarity={rarity.id} size={gearSize} framed={false}/>')&&equipmentPreview.includes('const gearSize='),'Responsive equipment previews reuse the same safe crop while sizing artwork for smaller phones');
 
 console.log('PASS: authored equipment sheets resolve every current catalogue piece, including Thornmaw Assault');

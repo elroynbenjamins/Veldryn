@@ -2061,6 +2061,126 @@ export const EARLY_LOCALE_ROWS={
   "See requirements and where to get materials": [
     "Посмотреть условия и источники материалов",
     "Gereksinimleri ve malzemelerin nereden alınacağını gör"
+  ],
+  "NPC or Echo allies fill the missing roles": [
+    "Недостающие роли заполнят НИП или союзники-Эхо.",
+    "Eksik roller NPC veya Yankı müttefikleriyle doldurulur."
+  ],
+  "Find an eligible party automatically": [
+    "Автоматически найти подходящую группу",
+    "Uygun bir grubu otomatik bul"
+  ],
+  "Group finder & options": [
+    "Поиск группы и настройки",
+    "Grup bulma ve seçenekler"
+  ],
+  "My Echo & sharing": [
+    "Моё Эхо и публикация",
+    "Yankım ve paylaşım"
+  ],
+  "Solo": [
+    "В одиночку",
+    "Tek başına"
+  ],
+  "Live": [
+    "Живой режим",
+    "Canlı"
+  ],
+  "Play with three other players": [
+    "Играть с тремя другими игроками",
+    "Üç başka oyuncuyla oyna"
+  ],
+  "Play with three Echo allies": [
+    "Играть с тремя союзниками-Эхо",
+    "Üç Yankı müttefikiyle oyna"
+  ],
+  "Locked dungeons": [
+    "Недоступные подземелья",
+    "Kilitli zindanlar"
+  ],
+  "Hide locked dungeons": [
+    "Скрыть недоступные подземелья",
+    "Kilitli zindanları gizle"
+  ],
+  "Find Party": [
+    "Найти группу",
+    "Grup bul"
+  ],
+  "Start Dungeon": [
+    "Начать подземелье",
+    "Zindanı başlat"
+  ],
+  "Prepare Loadout": [
+    "Подготовить снаряжение",
+    "Ekipmanı hazırla"
+  ],
+  "More information": [
+    "Подробнее",
+    "Daha fazla bilgi"
+  ],
+  "Recommended power": [
+    "Рекомендуемая сила",
+    "Önerilen güç"
+  ],
+  "rooms before the boss": [
+    "комнат до босса",
+    "bosstan önceki odalar"
+  ],
+  "Prepare expedition": [
+    "Подготовить поход",
+    "Seferi hazırla"
+  ],
+  "View expedition": [
+    "Посмотреть поход",
+    "Seferi görüntüle"
+  ],
+  "Base completion reward": [
+    "Базовая награда за прохождение",
+    "Temel tamamlama ödülü"
+  ],
+  "Expedition preparation": [
+    "Подготовка к походу",
+    "Sefer hazırlığı"
+  ],
+  "Mechanics & objectives": [
+    "Механики и задачи",
+    "Mekanikler ve hedefler"
+  ],
+  "Rewards & entry rules": [
+    "Награды и условия входа",
+    "Ödüller ve giriş kuralları"
+  ],
+  "Reward rules": [
+    "Правила наград",
+    "Ödül kuralları"
+  ],
+  "Route & encounters": [
+    "Маршрут и встречи",
+    "Rota ve karşılaşmalar"
+  ],
+  "Expedition Marks": [
+    "Знаки похода",
+    "Sefer İşaretleri"
+  ],
+  "Enhanced rewards · unlimited runs": [
+    "Усиленные награды · Неограниченные походы",
+    "Geliştirilmiş ödüller · Sınırsız sefer"
+  ],
+  "Choose a difficulty to continue.": [
+    "Выберите сложность для продолжения.",
+    "Devam etmek için zorluk seç."
+  ],
+  "themed stages + final boss": [
+    "тематические этапы и финальный босс",
+    "temalı aşamalar ve son boss"
+  ],
+  "non-boss rooms · final boss follows": [
+    "комнаты без босса · Далее финальный босс",
+    "boss olmayan odalar · Sonra final bossu"
+  ],
+  "Your verified character + three eligible Echo recruits": [
+    "Ваш подтверждённый персонаж и три подходящих Эхо",
+    "Doğrulanmış karakterin ve üç uygun Yankı üyesi"
   ]
 } satisfies Record<string,readonly [string,string]>;
 

@@ -1,4 +1,5 @@
 import {Language} from './languages';
+import {earlyLocaleText} from './early-locales';
 
 const en={
   'save.recoveryKicker':'SAVE RECOVERY','save.recoveryTitle':'VELDRYN could not open the local save','save.recoveryBody':'The existing data has not been deleted. Retry first if device storage was temporarily unavailable.','save.retry':'Retry loading','save.startFresh':'Start fresh…',
@@ -9,6 +10,8 @@ const en={
 } as const;
 export type OperationalKey=keyof typeof en;
 type OperationalCatalog=Record<OperationalKey,string>;
+
+const earlyCatalog=(language:Language):OperationalCatalog=>Object.fromEntries(Object.entries(en).map(([key,value])=>[key,earlyLocaleText(language,value)??value])) as OperationalCatalog;
 
 const catalogs:Record<Language,OperationalCatalog>={en,
   de:{
@@ -41,6 +44,8 @@ const catalogs:Record<Language,OperationalCatalog>={en,
     'overflow.title':'Coffre de surplus','overflow.body':'Le stockage normal était plein. Libérez de la place dans la Banque pour récupérer ces objets.','overflow.move':'Déplacer {count} objets vers la Banque','overflow.remain':'{count} objets resteraient ; libérez plus de place dans la Banque.',
     'chat.world':'Chat mondial','chat.closed':'Le chat est fermé afin de réduire les coûts du service.','chat.open':'Ouvrir le chat mondial','chat.tap':'Touchez le nom d’un joueur pour afficher son profil.','chat.placeholder':'Message à ce monde…','chat.send':'Envoyer','chat.close':'Fermer le chat','chat.guild':'Chat de guilde','chat.preview':'Aperçu local · le chat en temps réel sera connecté aux services en ligne.','chat.none':'Aucun message pour le moment.','chat.refresh':'Actualiser',
   },
+  ru:earlyCatalog('ru'),
+  tr:earlyCatalog('tr'),
 };
 
 export function ot(language:Language,key:OperationalKey,values:Record<string,string|number>={}):string{

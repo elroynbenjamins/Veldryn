@@ -42835,10 +42835,12 @@ var HERB_ITEMS = [
 
 // ../apps/mobile/src/content/alchemy.ts
 var MAX_ALCHEMY_BATCHES = 1e4;
+var HEALING_POTION_CRAFT_COST_MULTIPLIER = 5;
+var HEALING_POTION_XP_MULTIPLIER = 3;
 var POTIONS = [
-  { id: "DEWLEAF_DRAUGHT", name: "Dewleaf Draught", effect: { kind: "healing", maxHpFraction: 0.25 }, description: "Restore 25% maximum HP automatically during boss fights. Select below Food in the HP menu; not for ordinary hunts." },
-  { id: "RIVERHEART_DRAUGHT", name: "Riverheart Draught", effect: { kind: "healing", maxHpFraction: 0.45 }, description: "Restore 45% maximum HP automatically during boss fights. Select below Food in the HP menu; not for ordinary hunts." },
-  { id: "OATHBLOOM_DRAUGHT", name: "Oathbloom Draught", effect: { kind: "healing", maxHpFraction: 0.65 }, description: "Restore 65% maximum HP automatically during boss fights. Select below Food in the HP menu; not for ordinary hunts." },
+  { id: "DEWLEAF_DRAUGHT", name: "Dewleaf Draught", effect: { kind: "healing", maxHpFraction: 0.2 }, description: "Restore 20% maximum HP during boss fights and dungeons. Select below Food in the HP menu; not for ordinary hunts." },
+  { id: "RIVERHEART_DRAUGHT", name: "Riverheart Draught", effect: { kind: "healing", maxHpFraction: 0.35 }, description: "Restore 35% maximum HP during boss fights and dungeons. Select below Food in the HP menu; not for ordinary hunts." },
+  { id: "OATHBLOOM_DRAUGHT", name: "Oathbloom Draught", effect: { kind: "healing", maxHpFraction: 0.5 }, description: "Restore 50% maximum HP during boss fights and dungeons. Select below Food in the HP menu; not for ordinary hunts." },
   { id: "VIGOR_TONIC", name: "Vigor Tonic", effect: { kind: "preparation", attackFraction: 0.04, damageReductionFraction: 0, encounters: 30 }, description: "+4% attack for 30 resolved ordinary encounters." },
   { id: "GREATER_VIGOR_TONIC", name: "Greater Vigor Tonic", effect: { kind: "preparation", attackFraction: 0.06, damageReductionFraction: 0, encounters: 45 }, description: "+6% attack for 45 resolved ordinary encounters." },
   { id: "OATH_VIGOR_TONIC", name: "Oath Vigor Tonic", effect: { kind: "preparation", attackFraction: 0.08, damageReductionFraction: 0, encounters: 60 }, description: "+8% attack for 60 resolved ordinary encounters." },
@@ -42882,7 +42884,16 @@ var ALCHEMY_RECIPES = [
   { id: "BREW_SUNFUSED_FIXATIVE", name: "Sunfused Fixative", skillId: "alchemy", level: 49, seconds: 165, xp: 950, gold: 110, inputs: [{ itemId: "SUNSCALE", quantity: 3 }, { itemId: "AMBERGLASS", quantity: 2 }, { itemId: "SCORPION_VENOM", quantity: 2 }], output: { itemId: "SUNFUSED_FIXATIVE", quantity: 1 } },
   { id: "BREW_RIMEWARD_DISTILLATE", name: "Rimeward Distillate", skillId: "alchemy", level: 76, seconds: 195, xp: 1750, gold: 220, inputs: [{ itemId: "WINTERMINT", quantity: 3 }, { itemId: "RIMEGLASS", quantity: 2 }, { itemId: "RIME_RESIN", quantity: 3 }], output: { itemId: "RIMEWARD_DISTILLATE", quantity: 1 } },
   { id: "BREW_CINDERHEART_ELIXIR", name: "Cinderheart Elixir", skillId: "alchemy", level: 96, seconds: 225, xp: 3e3, gold: 420, inputs: [{ itemId: "ASHEN_MYRRH", quantity: 4 }, { itemId: "BLACKGLASS_CORE", quantity: 2 }, { itemId: "CINDER_HEART", quantity: 1 }], output: { itemId: "CINDERHEART_ELIXIR", quantity: 1 } }
-].map((recipe2) => ({ ...recipe2, gold: increasedCraftingGoldCost(recipe2.gold) }));
+].map((recipe2) => {
+  const healing = POTIONS.some((potion) => potion.id === recipe2.output.itemId && potion.effect.kind === "healing");
+  const costMultiplier = healing ? HEALING_POTION_CRAFT_COST_MULTIPLIER : 1;
+  return {
+    ...recipe2,
+    xp: recipe2.xp * (healing ? HEALING_POTION_XP_MULTIPLIER : 1),
+    gold: increasedCraftingGoldCost(recipe2.gold) * costMultiplier,
+    inputs: recipe2.inputs.map((input) => ({ ...input, quantity: input.quantity * costMultiplier }))
+  };
+});
 var POTION_ITEMS = POTIONS.map((potion) => ({
   id: potion.id,
   name: potion.name,

@@ -7,6 +7,8 @@ import {CompactPlayerIdentity} from './CompactPlayerIdentity';
 import {friends,sendPartyInvitation,socialInviteCapabilities,type FriendEntry} from '../online/social';
 import {radii,spacing,type ThemeColors} from '../theme/theme';
 import {useGameTheme} from '../theme/ThemeContext';
+import {useGameLanguage} from '../i18n/GameLanguageProvider';
+import {socialLabel,useSocialText} from '../i18n/social';
 
 const invitationIssue:Record<string,string>={
  no_party:'You are no longer in a Party.',
@@ -23,7 +25,7 @@ export function PartyFriendInviteSheet({visible,partyId,openSpots,pendingAccount
  visible:boolean;partyId?:string;openSpots:number;pendingAccountIds?:readonly string[];
  onClose:()=>void;onInvited?:()=>void;
 }){
- const C=useGameTheme(),s=useMemo(()=>makeStyles(C),[C]);
+ const C=useGameTheme(),s=useMemo(()=>makeStyles(C),[C]),language=useGameLanguage(),st=useSocialText();
  const [rows,setRows]=useState<FriendEntry[]>([]),[loading,setLoading]=useState(false),[busyId,setBusyId]=useState<string|null>(null);
  const [error,setError]=useState(''),[search,setSearch]=useState(''),[sentIds,setSentIds]=useState<string[]>([]);
  useEffect(()=>{
@@ -51,24 +53,24 @@ export function PartyFriendInviteSheet({visible,partyId,openSpots,pendingAccount
   finally{setBusyId(null);}
  };
  return <GameModalSurface visible={visible} presentation="sheet" onClose={onClose} dismissOnBackdrop={!busyId}>
-  <GameModalHeader eyebrow="PRIVATE PARTY INVITATIONS" title="Invite friends" onClose={onClose} closeDisabled={!!busyId}/>
-  <Text style={s.hint}>Choose a friend to send a Party invitation. It appears with their Party invites, not in public chat. Expires after 24 hours.</Text>
-  <Text style={s.status}>{openSpots} {openSpots===1?'open slot':'open slots'} · Party leader only</Text>
-  {loading?<View style={s.loading}><ActivityIndicator color={C.accent}/><Text style={s.hint}>Loading friends…</Text></View>:null}
-  {!loading&&rows.length>0?<GameTextInput accessibilityLabel="Search friends for Party invites" placeholder="Search friends" placeholderTextColor={C.muted} value={search} onChangeText={setSearch} style={s.search}/>:null}
-  {!!error?<Text accessibilityRole="alert" style={s.error}>{error}</Text>:null}
+  <GameModalHeader eyebrow={st('PRIVATE PARTY INVITATIONS')} title={st('Invite friends')} onClose={onClose} closeDisabled={!!busyId}/>
+  <Text style={s.hint}>{st('Choose a friend to send a Party invitation. It appears with their Party invites, not in public chat. Expires after 24 hours.')}</Text>
+  <Text style={s.status}>{openSpots===1?st('{count} open slot',{count:openSpots}):st('{count} open slots',{count:openSpots})} · {st('Party leader only')}</Text>
+  {loading?<View style={s.loading}><ActivityIndicator color={C.accent}/><Text style={s.hint}>{st('Loading friends…')}</Text></View>:null}
+  {!loading&&rows.length>0?<GameTextInput accessibilityLabel={st('Search friends for Party invites')} placeholder={st('Search friends')} placeholderTextColor={C.muted} value={search} onChangeText={setSearch} style={s.search}/>:null}
+  {!!error?<Text accessibilityRole="alert" style={s.error}>{socialLabel(language,error)}</Text>:null}
   <ScrollView style={s.list} contentContainerStyle={s.listContent} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false} showsHorizontalScrollIndicator={false}>
-   {!loading&&!rows.length?<Text style={s.hint}>No friends yet. Add friends through the Friends screen to invite them privately.</Text>:null}
-   {!loading&&rows.length>0&&!shown.length?<Text style={s.hint}>No matching friends.</Text>:null}
+   {!loading&&!rows.length?<Text style={s.hint}>{st('No friends yet. Add friends through the Friends screen to invite them privately.')}</Text>:null}
+   {!loading&&rows.length>0&&!shown.length?<Text style={s.hint}>{st('No matching friends.')}</Text>:null}
    {shown.map(friend=>{
     const invited=sentIds.includes(friend.account_id)||pendingAccountIds.includes(friend.account_id);
     return <View key={friend.account_id} style={s.friendRow}>
       <View style={s.identity}><CompactPlayerIdentity accountId={friend.account_id} name={friend.display_name} characterName={friend.character_name} className={friend.class_id} badges={friend.player_badges} guildTag={friend.guild_tag} guildTagColorId={friend.guild_tag_color_id} avatarSize={38}/></View>
-      <GameButton compact title={invited?'Invited':'Invite'} tone={invited?'secondary':undefined} disabled={!!busyId||invited||openSpots<1||!partyId} loading={busyId===friend.account_id} onPress={()=>void send(friend)}/>
+      <GameButton compact title={invited?st('Invited'):st('Invite')} tone={invited?'secondary':undefined} disabled={!!busyId||invited||openSpots<1||!partyId} loading={busyId===friend.account_id} onPress={()=>void send(friend)}/>
      </View>;
    })}
   </ScrollView>
-  <GameButton compact title="Done" tone="secondary" disabled={!!busyId} onPress={onClose}/>
+  <GameButton compact title={st('Done')} tone="secondary" disabled={!!busyId} onPress={onClose}/>
  </GameModalSurface>;
 }
 function makeStyles(C:ThemeColors){return StyleSheet.create({

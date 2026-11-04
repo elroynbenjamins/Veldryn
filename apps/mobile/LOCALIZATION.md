@@ -14,6 +14,14 @@ Russian and Turkish are starter-only languages. English remains the fallback for
 - Save migration and normalization preserve all eight supported language codes.
 - Legacy-catalog validation and save-roundtrip coverage for all selectable languages.
 
+## Current 1.0.6 redesign alignment
+
+- The redesigned Party creation/preferences sheet, Party recruitment editor, Recruitment board, and private friend-invitation sheet use the shared typed social translation catalog rather than English-only buttons and helper text.
+- The five established translations (DE, ES, NL, IT, FR) have authored copy for these active flows. RU and TR have starter coverage for the same important actions; untranslated material continues to fall back to English.
+- All eight UI languages can be selected as Party *communication preferences*. These preferences must not restrict joining a Party. The corresponding database change is in `backend/supabase/migrations/20261104121600_party_language_preferences_eight_locales.sql` and requires database deployment for backend acceptance.
+- Existing catalog entries for legacy Social/Party flows are retained where they may still be referenced by history, saved shortcuts, tests or server-provided state. Do not delete by name alone; verify active call sites before pruning.
+- Chat channel choices (for example English, Spanish and global rooms) are separate from the UI language and should not be changed simply because new interface locales were added.
+
 ## Still required before localization is release-complete
 
 - Translate gameplay screens, content descriptions, item/class/quest data, dialogs, validation messages, online/chat surfaces, and accessibility hints.

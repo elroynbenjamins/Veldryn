@@ -6,6 +6,7 @@ import {GameTextInput} from './GameTextInput';
 import {useGameTheme} from '../theme/ThemeContext';
 import {spacing,typography,type ThemeColors} from '../theme/theme';
 import {PARTY_LANGUAGES,partyActivityLabel,type PartyActivityLevel,type PartyLanguage} from '../core/party-social';
+import {useSocialText} from '../i18n/social';
 
 const choices:readonly {id:PartyActivityLevel;subtitle:string;glyph:string}[]=[
  {id:'casual',subtitle:'Play whenever you like',glyph:'☕'},
@@ -16,40 +17,40 @@ export function PartyCreateSheet({visible,busy,activityLevel,language,minimumLev
  visible:boolean;busy:boolean;editing?:boolean;activityLevel:PartyActivityLevel;language:PartyLanguage;minimumLevel:number;error?:string;
  onActivityLevel:(value:PartyActivityLevel)=>void;onLanguage:(value:PartyLanguage)=>void;onMinimumLevel:(value:number)=>void;onClose:()=>void;onCreate:()=>void;
 }){
- const C=useGameTheme(),s=useMemo(()=>styles(C),[C]);
+ const C=useGameTheme(),s=useMemo(()=>styles(C),[C]),st=useSocialText();
  const [languageExpanded,setLanguageExpanded]=useState(false);
- const languageLabel=PARTY_LANGUAGES.find(row=>row.id===language)?.label??'Any language';
+ const languageLabel=language==='any'?st('Any language'):PARTY_LANGUAGES.find(row=>row.id===language)?.label??st('Any language');
  return <GameModalSurface visible={visible} presentation="sheet" onClose={()=>{if(!busy)onClose()}} dismissOnBackdrop={!busy}>
-  <GameModalHeader eyebrow={editing?'PARTY SETTINGS':'NEW PARTY'} title={editing?'Party preferences':'Create a Party'} onClose={onClose} closeDisabled={busy}/>
+  <GameModalHeader eyebrow={editing?st('PARTY SETTINGS'):st('NEW PARTY')} title={editing?st('Party preferences'):st('Create a Party')} onClose={onClose} closeDisabled={busy}/>
   <ScrollView keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false} showsHorizontalScrollIndicator={false} contentContainerStyle={s.content}>
-   <Text style={s.subtitle}>{editing?'Change how other players discover your Party. Existing members stay.':'Choose the kind of teammates you want to play with.'}</Text>
+   <Text style={s.subtitle}>{editing?st('Change how other players discover your Party. Existing members stay.'):st('Choose the kind of teammates you want to play with.')}</Text>
    <View style={s.section}>
-    <Text style={s.label}>Activity level</Text>
+    <Text style={s.label}>{st('Activity level')}</Text>
     <View accessibilityRole="radiogroup" style={s.options}>
      {choices.map(option=><Pressable key={option.id} disabled={busy} accessibilityRole="radio" accessibilityState={{checked:activityLevel===option.id,disabled:busy}} onPress={()=>onActivityLevel(option.id)} style={[s.choice,activityLevel===option.id&&s.selected]}>
       <View style={s.glyph}><Text style={s.glyphText}>{option.glyph}</Text></View>
-      <View style={s.copy}><Text style={s.optionTitle}>{partyActivityLabel(option.id)}</Text><Text style={s.hint}>{option.subtitle}</Text></View>
+      <View style={s.copy}><Text style={s.optionTitle}>{st(partyActivityLabel(option.id)==='Casual'?'Casual':partyActivityLabel(option.id)==='Active'?'Active play':'Tryhard')}</Text><Text style={s.hint}>{st(option.subtitle==='Play whenever you like'?'Play whenever you like':option.subtitle==='Regular play and group activities'?'Regular play and group activities':'Push progression and efficiency')}</Text></View>
       <Text style={[s.indicator,activityLevel===option.id&&s.indicatorSelected]}>{activityLevel===option.id?'●':'○'}</Text>
      </Pressable>)}
     </View>
    </View>
    <View style={s.section}>
-    <Text style={s.label}>Preferred language</Text>
+    <Text style={s.label}>{st('Preferred language')}</Text>
     <Pressable accessibilityRole="button" accessibilityState={{expanded:languageExpanded}} disabled={busy} onPress={()=>setLanguageExpanded(current=>!current)} style={s.select}>
      <Text style={s.optionTitle}>{languageLabel}</Text><Text style={s.chevron}>{languageExpanded?'⌃':'⌄'}</Text>
     </Pressable>
-    {languageExpanded?<View style={s.languageList}>{PARTY_LANGUAGES.map(option=><Pressable key={option.id} accessibilityRole="radio" accessibilityState={{checked:language===option.id}} onPress={()=>{onLanguage(option.id);setLanguageExpanded(false)}} style={[s.languageItem,language===option.id&&s.selected]}><Text style={s.optionTitle}>{option.label}</Text>{language===option.id?<Text style={s.check}>✓</Text>:null}</Pressable>)}</View>:null}
-    <Text style={s.hint}>For discovery and communication only. Players are not blocked by language.</Text>
+    {languageExpanded?<View style={s.languageList}>{PARTY_LANGUAGES.map(option=><Pressable key={option.id} accessibilityRole="radio" accessibilityState={{checked:language===option.id}} onPress={()=>{onLanguage(option.id);setLanguageExpanded(false)}} style={[s.languageItem,language===option.id&&s.selected]}><Text style={s.optionTitle}>{option.id==='any'?st('Any language'):option.label}</Text>{language===option.id?<Text style={s.check}>✓</Text>:null}</Pressable>)}</View>:null}
+    <Text style={s.hint}>{st('For discovery and communication only. Players are not blocked by language.')}</Text>
    </View>
    <View style={s.section}>
     <Pressable accessibilityRole="checkbox" accessibilityState={{checked:minimumLevel>0}} onPress={()=>onMinimumLevel(minimumLevel>0?0:10)} disabled={busy} style={s.toggleRow}>
-     <Text style={s.checkbox}>{minimumLevel>0?'☑':'☐'}</Text><View style={s.copy}><Text style={s.optionTitle}>Minimum combat level</Text><Text style={s.hint}>Optional · all levels welcome by default</Text></View>
+     <Text style={s.checkbox}>{minimumLevel>0?'☑':'☐'}</Text><View style={s.copy}><Text style={s.optionTitle}>{st('Minimum combat level')}</Text><Text style={s.hint}>{st('Optional · all levels welcome by default')}</Text></View>
     </Pressable>
-    {minimumLevel>0?<View style={s.levelRow}><Text style={s.hint}>Required level</Text><GameTextInput accessibilityLabel="Minimum combat level" keyboardType="number-pad" value={String(minimumLevel)} maxLength={4} onChangeText={value=>onMinimumLevel(Math.min(2000,Math.max(0,Number.parseInt(value.replace(/\D/g,''),10)||0)))} style={s.levelInput}/></View>:null}
+    {minimumLevel>0?<View style={s.levelRow}><Text style={s.hint}>{st('Required level')}</Text><GameTextInput accessibilityLabel={st('Minimum combat level')} keyboardType="number-pad" value={String(minimumLevel)} maxLength={4} onChangeText={value=>onMinimumLevel(Math.min(2000,Math.max(0,Number.parseInt(value.replace(/\D/g,''),10)||0)))} style={s.levelInput}/></View>:null}
    </View>
-   <View style={s.footer}><Text style={s.footerNote}>Up to 4 players · All classes welcome</Text></View>
+   <View style={s.footer}><Text style={s.footerNote}>{st('Up to 4 players · All classes welcome')}</Text></View>
    {error?<Text accessibilityRole="alert" style={s.error}>{error}</Text>:null}
-   <GameButton title={editing?'Save preferences':'Create Party'} loading={busy} disabled={busy} onPress={onCreate}/>
+   <GameButton title={editing?st('Save preferences'):st('Create Party')} loading={busy} disabled={busy} onPress={onCreate}/>
   </ScrollView>
  </GameModalSurface>;
 }

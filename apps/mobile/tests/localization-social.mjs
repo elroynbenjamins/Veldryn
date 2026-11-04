@@ -34,6 +34,21 @@ assert.equal(socialText('ru','A verified Live-ready loadout is required.'),'Ну
 assert.equal(socialText('tr','Update Echo from current gear'),'Yankıyı mevcut ekipmanla güncelle');
 assert.equal(socialText('ru','Boss room'),socialLabel('ru','Boss room'));
 assert.equal(socialText('tr','Room cleared'),'Oda tamamlandı');
+assert.equal(socialText('de','Activity level'),'Aktivitätsniveau');
+assert.equal(socialText('es','How active are you?'),'¿Cuánto juegas?');
+assert.equal(socialText('nl','Preferred language'),'Voorkeurstaal');
+assert.equal(socialText('it','Tryhard'),'Competitivo');
+assert.equal(socialText('fr','{count} open',{count:3}),'3 places');
+assert.equal(socialText('ru','Preferred language'),'Предпочитаемый язык');
+assert.equal(socialText('tr','My Posts'),'İlanlarım');
+assert.equal(socialText('ru','{count} results',{count:4}),'Результатов: 4');
+assert.equal(socialText('tr','{count} compatible recruitment adverts',{count:2}),'2 uygun ilan');
+assert.equal(socialText('de','Only the Party leader can invite friends.'),'Nur der Gruppenleiter kann Freunde einladen.');
+assert.equal(socialText('fr','No matching friends.'),'Aucun ami correspondant.');
+assert.equal(socialText('ru','{count} open slots',{count:2}),'Свободно мест: 2');
+assert.equal(socialText('tr','PRIVATE PARTY INVITATIONS'),'ÖZEL GRUP DAVETLERİ');
+assert.equal(socialLabel('nl','Your Party is full.'),'Je groep zit vol.');
+assert.equal(socialLabel('nl','Unrecognized server error'),'Unrecognized server error');
 const bossNames={en:'Rootbound Colossus',de:'Wurzelkoloss',es:'Coloso arraigado',nl:'Wortelkolos',it:'Colosso radicato',fr:'Colosse enraciné',ru:'Rootbound Colossus',tr:'Rootbound Colossus'};
 for(const language of SUPPORTED_LANGUAGES){
  assert.deepEqual(Object.keys(socialCatalogs[language]).sort(),keys);

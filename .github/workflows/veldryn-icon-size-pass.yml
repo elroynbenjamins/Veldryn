@@ -1,0 +1,95 @@
+name: Veldryn Trial and Guild icon optimization
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'tools/optimize-veldryn-icons.py'
+      - '.github/workflows/veldryn-icon-size-pass.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: veldryn-icon-optimization-main
+  cancel-in-progress: false
+
+jobs:
+  optimize-icons:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+          cache-dependency-path: apps/mobile/pnpm-lock.yaml
+      - name: Install exact-image codecs and verification
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y webp
+          python3 -m pip install --break-system-packages pillow
+      - name: Install app and backend dependencies
+        run: |
+          pnpm --dir apps/mobile install --frozen-lockfile
+          pnpm --dir backend install --frozen-lockfile
+      - name: Measure Android assets before
+        working-directory: apps/mobile
+        run: |
+          pnpm exec expo export --platform android --output-dir .icon-size-before --clear
+          echo "BEFORE_ASSETS=$(du -sb .icon-size-before/assets | cut -f1)" >> "$GITHUB_ENV"
+      - name: Losslessly optimize referenced icons and remove unused superseded masters
+        run: python3 tools/optimize-veldryn-icons.py
+      - name: TypeScript and guild/companion UI regression tests
+        working-directory: apps/mobile
+        run: |
+          pnpm typecheck
+          pnpm test:guild-ui
+          pnpm test:companions
+      - name: Measure Android assets after and reject regressions
+        working-directory: apps/mobile
+        run: |
+          pnpm exec expo export --platform android --output-dir .icon-size-after --clear
+          echo "AFTER_ASSETS=$(du -sb .icon-size-after/assets | cut -f1)" >> "$GITHUB_ENV"
+          if [ "$(du -sb .icon-size-after/assets | cut -f1)" -gt "$BEFORE_ASSETS" ]; then
+            echo 'Android export asset size increased. Refusing commit.' >&2
+            exit 1
+          fi
+      - name: Remove temporary exports
+        if: always()
+        run: rm -rf apps/mobile/.icon-size-before apps/mobile/.icon-size-after
+      - name: Commit verified optimization onto main
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add apps/mobile/assets apps/mobile/src apps/mobile/tests docs/veldryn-icon-optimization.json
+          if git diff --cached --quiet; then
+            echo 'No size-reducing changes found.'
+            exit 0
+          fi
+          git commit -m 'perf(mobile): losslessly optimize Trial, Guild and resource icons'
+          git push origin HEAD:main
+      - name: Publish optimization results
+        run: |
+          python3 - <<'PY' >> "$GITHUB_STEP_SUMMARY"
+          import json,os
+          from pathlib import Path
+          r=json.loads(Path('docs/veldryn-icon-optimization.json').read_text())
+          print('## Veldryn icon optimization')
+          print(f"- PNG families converted losslessly: **{r['converted_families']}**")
+          print(f"- Pixels and transparency: **exactly verified**")
+          print(f"- Replaced source references: **{r['source_reference_rewrites']}**")
+          print(f"- Verified unused obsolete images removed: **{len(r['removed_superseded_sources'])}**")
+          print(f"- Converted artwork bytes saved: **{r['bytes_saved_runtime_artwork']/1024/1024:.2f} MiB**")
+          print(f"- Removed source-only PNG bytes: **{r['bytes_removed_superseded_sources']/1024/1024:.2f} MiB**")
+          print(f"- Android export assets before: **{int(os.environ['BEFORE_ASSETS'])/1024/1024:.2f} MiB**")
+          print(f"- Android export assets after: **{int(os.environ['AFTER_ASSETS'])/1024/1024:.2f} MiB**")
+          PY

@@ -3,7 +3,7 @@ import type {Language} from './languages';
 /** Dungeon preparation labels for Russian and Turkish, matching the five established locale keys. */
 export const dungeonPreparationEarlyRows={
   "NPC or Echo allies fill the missing roles": [
-    "Недостающие роли займут NPC или союзники-Эхо",
+    "Недостающие роли заполнят НИП или союзники-Эхо.",
     "Eksik rolleri NPC veya Yankı müttefikleri doldurur"
   ],
   "Find an eligible party automatically": [
@@ -15,7 +15,7 @@ export const dungeonPreparationEarlyRows={
     "Grup arama ve seçenekler"
   ],
   "My Echo & sharing": [
-    "Моё Эхо и доступ",
+    "Моё Эхо и публикация",
     "Yankım ve paylaşım"
   ],
   "Solo": [
@@ -68,7 +68,7 @@ export const dungeonPreparationEarlyRows={
   ],
   "Prepare expedition": [
     "Подготовить экспедицию",
-    "Sefere hazırlan"
+    "Seferi hazırla"
   ],
   "View expedition": [
     "Посмотреть экспедицию",

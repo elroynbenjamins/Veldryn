@@ -21,6 +21,7 @@ for(const [region,mine,wood,smelt] of [
  const mineItem=gather(mine)!.itemId,woodItem=gather(wood)!.itemId;
  ok(r!.inputs.some(x=>x.itemId===mineItem)&&r!.inputs.some(x=>x.itemId===woodItem),region+' smelting must consume its ore and wood fuel');
 }
+ok(gather('GREENFIELDS_COPPER_OUTCROP')?.zoneId==='GREENFIELDS'&&gather('GREENFIELDS_COPPER_OUTCROP')?.unlockLevel===1,'Starting region must provide accessible Mining before Old Mines unlocks');
 ok(gather('OASIS_CARP_POOL')?.zoneId==='SUNSCAR'&&gather('GLASSFIN_POOL')?.zoneId==='SUNSCAR','Sunscar Fishing must have regional progression');
 ok(gather('ICEFISH_POOL')?.zoneId==='FROSTMARCH','Frostmarch Fishing must have regional progression');
 ok(recipe('COOK_OASIS_CARP')?.inputs.some(x=>x.itemId==='OASIS_CARP'),'Sunscar Fishing must feed Cooking');

@@ -63,10 +63,10 @@ ok(projectClient.includes("client().rpc('claim_guild_project_reward_v2'")&&onlin
 ok(onlineProjects.includes('Start project'),'Authorized roles must get the supported server-validated start action');
 ok(onlineProjects.includes("import {LoadingState} from './LoadingState'"),'Live Projects must use the shared loading state');
 ok(onlineProjects.includes("import {StatusPill} from './StatusPill'"),'Live Projects must use shared semantic status pills');
-ok(onlineProjects.includes('<StatusPill label="SHARED" tone="good"/>'),'Live Projects must expose semantic shared-project status');
+ok(onlineProjects.includes('<StatusPill label={ui("SHARED")} tone="good"/>'),'Live Projects must expose semantic shared-project status');
 ok(onlineProjects.includes('Your contribution'),'Live Projects must surface personal contribution');
-ok(onlineProjects.includes('contributors</Text>'),'Live Projects must surface anti-leech contributor progress');
-ok(onlineProjects.includes('Member contribution')&&onlineProjects.includes('Gather ${member.gatheringPoints.toLocaleString()}'),'Live Projects must expose per-member gathering contribution');
+ok(onlineProjects.includes("ui('{count}/{minimum} contributors'"),'Live Projects must surface anti-leech contributor progress');
+ok(onlineProjects.includes("ui('Member contribution')")&&onlineProjects.includes("ui('Gather {count}',{count:member.gatheringPoints.toLocaleString()})"),'Live Projects must expose per-member gathering contribution');
 ok(onlineProjects.includes("'Contribution ▾'")&&projectClient.includes("db.rpc('guild_roster'"),'Project contribution affordance must load the Guild member roster');
 ok(onlineProjects.includes('<GuildActivityFeedPanel entries={snapshot.activity}/>'),'Live Projects must surface recent Guild activity');
 ok(onlineProjects.includes("project.status==='completed'"),'Live Project cards must distinguish completed state');

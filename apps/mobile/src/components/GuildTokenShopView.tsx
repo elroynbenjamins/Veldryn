@@ -1,4 +1,5 @@
 import {useState} from 'react';
+import {useGuildTokenShopUiText} from '../i18n/guild-token-shop-ui';
 import {ActivityIndicator,Image,Pressable,StyleSheet,Text,View} from 'react-native';
 import type {GuildTokenShopCard,GuildTokenShopSnapshot,GuildWeeklyRewardKind} from '../online/guild-token-shop';
 import {useGameTheme} from '../theme/ThemeContext';
@@ -35,7 +36,7 @@ export interface GuildTokenShopViewProps{
 }
 /** Presentation-only. The authenticated server settles every claim and purchase. */
 export function GuildTokenShopView({snapshot,loading,pending,error,notice,onRefresh,onBuy,onWeekly,onEvent,onOpenConstruction}:GuildTokenShopViewProps){
- const C=useGameTheme(),[section,setSection]=useState<Section>('Browse'),[category,setCategory]=useState<Category>('all');
+ const ui=useGuildTokenShopUiText(),C=useGameTheme(),[section,setSection]=useState<Section>('Browse'),[category,setCategory]=useState<Category>('all');
  const [selected,setSelected]=useState<string|null>(null),[affordable,setAffordable]=useState(false),[hideOwned,setHideOwned]=useState(false);
  const refreshBusy=loading||pending!==null,busy=refreshBusy||!!error,spendBlocked=busy,capReached=!!snapshot&&snapshot.earnedThisWeek>=snapshot.weeklyCap;
  const eligible=(card:GuildTokenShopCard)=>card.released&&card.status==='eligible';
@@ -48,16 +49,16 @@ export function GuildTokenShopView({snapshot,loading,pending,error,notice,onRefr
  return <View style={s.stack}>
   <View style={[s.wallet,{backgroundColor:C.panel,borderColor:C.line}]}>
    <Image accessible={false} source={guildTokenIcon} style={s.token}/>
-   <View style={s.flex}><Text style={[s.walletAmount,text]}>{snapshot?snapshot.balance.toLocaleString():'—'} Guild Tokens</Text><Text style={[s.meta,muted]}>{snapshot?`${snapshot.earnedThisWeek} / ${snapshot.weeklyCap} earned this week${bonus?` · Treasury +${bonus/100}%`:''}`:'Permanent account rewards'}</Text><View style={[s.track,{backgroundColor:C.panel2}]}><View style={{height:4,width:`${snapshot?Math.min(100,snapshot.earnedThisWeek/Math.max(1,snapshot.weeklyCap)*100):0}%`,backgroundColor:C.good}}/></View></View>
-   {loading?<ActivityIndicator color={C.accent}/>:<Pressable accessibilityRole="button" accessibilityLabel="Refresh Guild Token Shop" accessibilityState={{disabled:refreshBusy}} disabled={refreshBusy} onPress={()=>void onRefresh()} style={s.refresh}><Text style={[s.copy,{color:C.accent}]}>↻</Text></Pressable>}
+   <View style={s.flex}><Text style={[s.walletAmount,text]}>{snapshot?ui('{amount} Guild Tokens',{amount:snapshot.balance.toLocaleString()}):'—'}</Text><Text style={[s.meta,muted]}>{snapshot?ui('{earned} / {cap} earned this week',{earned:snapshot.earnedThisWeek,cap:snapshot.weeklyCap})+(bonus?' · '+ui('Treasury +{percent}%',{percent:bonus/100}):''):ui('Permanent account rewards')}</Text><View style={[s.track,{backgroundColor:C.panel2}]}><View style={{height:4,width:`${snapshot?Math.min(100,snapshot.earnedThisWeek/Math.max(1,snapshot.weeklyCap)*100):0}%`,backgroundColor:C.good}}/></View></View>
+   {loading?<ActivityIndicator color={C.accent}/>:<Pressable accessibilityRole="button" accessibilityLabel={ui("Refresh Guild Token Shop")} accessibilityState={{disabled:refreshBusy}} disabled={refreshBusy} onPress={()=>void onRefresh()} style={s.refresh}><Text style={[s.copy,{color:C.accent}]}>↻</Text></Pressable>}
   </View>
-  <BoardTabs compact label="Guild Token Shop sections" items={(['Browse','Earn'] as const).map(id=>({id,label:id}))} value={section} onChange={value=>{setSection(value);setSelected(null)}}/>
+  <BoardTabs compact label={ui("Guild Token Shop sections")} items={(['Browse','Earn'] as const).map(id=>({id,label:ui(id)}))} value={section} onChange={value=>{setSection(value);setSelected(null)}}/>
   {!!notice&&<Text accessibilityLiveRegion="polite" style={[s.feedback,{color:C.good,backgroundColor:C.goodSurface}]}>{notice}</Text>}
-  {!!error&&<View style={[s.feedback,{backgroundColor:C.badSurface}]}><Text accessibilityRole="alert" style={[s.copy,{color:C.bad}]}>{error}</Text><GameButton compact tone="secondary" title="Retry refresh" disabled={refreshBusy} onPress={onRefresh}/></View>}
-  {!snapshot&&!loading&&!error?<Panel><Text style={[s.title,text]}>Join a guild to browse its rewards</Text><Text style={[s.copy,muted]}>Your Guild Tokens and purchased rewards stay with your account when you change guilds.</Text></Panel>:null}
+  {!!error&&<View style={[s.feedback,{backgroundColor:C.badSurface}]}><Text accessibilityRole="alert" style={[s.copy,{color:C.bad}]}>{error}</Text><GameButton compact tone="secondary" title={ui("Retry refresh")} disabled={refreshBusy} onPress={onRefresh}/></View>}
+  {!snapshot&&!loading&&!error?<Panel><Text style={[s.title,text]}>{ui('Join a guild to browse its rewards')}</Text><Text style={[s.copy,muted]}>{ui('Your Guild Tokens and purchased rewards stay with your account when you change guilds.')}</Text></Panel>:null}
   {section==='Browse'&&snapshot?<>
-   <BoardTabs compact label="Guild reward categories" items={CATEGORIES} value={category} onChange={value=>{setCategory(value);setSelected(null)}}/>
-   <View style={s.toolbar}><Text accessibilityLiveRegion="polite" style={[s.meta,muted]}>{visible.length} rewards</Text><View style={s.toggles}>{[{label:'Can afford',value:affordable,toggle:()=>setAffordable(!affordable)},{label:'Hide owned',value:hideOwned,toggle:()=>setHideOwned(!hideOwned)}].map(toggle=><Pressable key={toggle.label} accessibilityRole="checkbox" aria-checked={toggle.value} accessibilityState={{checked:toggle.value}} onPress={()=>{toggle.toggle();setSelected(null)}} style={[s.toggle,{borderColor:toggle.value?C.selectionLine:C.line,backgroundColor:toggle.value?C.selection:C.panel}]}><Text style={[s.meta,toggle.value?text:muted]}>{toggle.value?'✓ ':''}{toggle.label}</Text></Pressable>)}</View></View>
+   <BoardTabs compact label={ui("Guild reward categories")} items={CATEGORIES.map(item=>({...item,label:ui(item.label)}))} value={category} onChange={value=>{setCategory(value);setSelected(null)}}/>
+   <View style={s.toolbar}><Text accessibilityLiveRegion="polite" style={[s.meta,muted]}>{ui('{count} rewards',{count:visible.length})}</Text><View style={s.toggles}>{([{label:'Can afford',value:affordable,toggle:()=>setAffordable(!affordable)},{label:'Hide owned',value:hideOwned,toggle:()=>setHideOwned(!hideOwned)}] as const).map(toggle=><Pressable key={toggle.label} accessibilityRole="checkbox" aria-checked={toggle.value} accessibilityState={{checked:toggle.value}} onPress={()=>{toggle.toggle();setSelected(null)}} style={[s.toggle,{borderColor:toggle.value?C.selectionLine:C.line,backgroundColor:toggle.value?C.selection:C.panel}]}><Text style={[s.meta,toggle.value?text:muted]}>{toggle.value?'✓ ':''}{ui(toggle.label)}</Text></Pressable>)}</View></View>
    {visible.map(card=>{
     const reward=details(card),art=guildTokenShopOfferArt(card.id),expanded=selected===card.id,owned=card.status==='owned',shortfall=Math.max(0,card.price-snapshot.balance);
     const lock=owned?'Owned':!card.released?'Coming soon':card.status==='guild_level_locked'?`Guild Level ${card.requiredGuildLevel} required`:card.status==='guild_shop_quality_locked'?`Unlock ${qualityLabel(card)} offers through Guild Hall`:shortfall?`Need ${shortfall.toLocaleString()} more Guild Tokens`:null;

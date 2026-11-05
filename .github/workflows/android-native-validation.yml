@@ -53,7 +53,7 @@ jobs:
         run: pnpm install --frozen-lockfile
       - name: Verify Android application version metadata
         run: |
-          node -e "const app=require('./app.json').expo;const pkg=require('./package.json');if(app.version!==pkg.version)throw new Error('Expo and package versions differ');if(!/^\\d+\\.\\d+\\.\\d+$/.test(app.version))throw new Error('Invalid release version');console.log('Android native CI validation for '+app.version)"
+          node -e "const app=require('./app.json').expo;const pkg=require('./package.json');if(app.version!==pkg.version)throw new Error('Expo and package versions differ');if(!(app.version.split('.').length===3&&app.version.split('.').every(x=>x.length>0&&Number.isSafeInteger(Number(x))&&String(Number(x))===x)))throw new Error('Invalid release version');console.log('Android native CI validation for '+app.version)"
       - name: Validate Expo SDK compatibility
         run: npx -y expo-doctor
       - name: Validate shared runtime sources

@@ -19,6 +19,7 @@ import {GameButton} from '../GameButton';
 import {IdentityArtwork} from '../SocialIdentity';
 import {SeasonalBossTelegraphPanel} from './SeasonalBossTelegraphPanel';
 import {localizedSeasonalDungeonMechanic,localizedSeasonalDungeonObjective} from '../../i18n/seasonal-dungeon-effects';
+import {dungeonDynamicUiText} from '../../i18n/dungeon-dynamic-ui';
 import {dungeonCombatAvatar} from '../../core/dungeon-combat-avatars';
 import {dungeonEnemyDisplayName} from '../../core/dungeon-enemy-display';
 import {DungeonCombatStage} from './DungeonCombatStage';
@@ -119,7 +120,7 @@ export function CoopRunOverview({language,run,myVotedNodeId,selfVoter,onBack,onC
   // Never play the previous room's lastCombat while the new fight is pending.
   const awaitingCombatPlayback=inCombat&&(run.mode==='qmode'?!!run.selectedNodeId&&run.lastCombat?.nodeId!==run.selectedNodeId:!run.pendingCombat?.cues.length);
   const combatName=dungeonEnemyDisplayName(run.bossMechanic?.telegraph?.bossName??(run.pendingCombat??run.lastCombat)?.combatants?.find(member=>member.boss)?.name??st('DUNGEON COMBAT'));
-  return <><ExpeditionScreenShell hideHeader compactHeader={inCombat} eyebrow={ct(language,'browse.resumeTitle')} title={inCombat?combatName:ct(language,'browse.resume')} banner={inCombat?undefined:<View style={s.banner}><Text style={s.modeText}>{modeLabel}</Text><Text style={s.bannerDot}>·</Text><Text style={s.phase}>{run.phase==='awaiting_choice'?(run.mode==='qmode'?st('Choose a room'):st('Vote on a route')):run.phase.replaceAll('_',' ').replace(/^./,letter=>letter.toUpperCase())}</Text></View>}>
+  return <><ExpeditionScreenShell hideHeader compactHeader={inCombat} eyebrow={ct(language,'browse.resumeTitle')} title={inCombat?combatName:ct(language,'browse.resume')} banner={inCombat?undefined:<View style={s.banner}><Text style={s.modeText}>{modeLabel}</Text><Text style={s.bannerDot}>·</Text><Text style={s.phase}>{run.phase==='awaiting_choice'?dungeonDynamicUiText(language,run.mode==='qmode'?'Choose a room':'Vote on a route'):run.phase==='resolving_node'?dungeonDynamicUiText(language,'Resolving room'):run.phase==='completed'?dungeonDynamicUiText(language,'Expedition completed'):run.phase==='failed'?dungeonDynamicUiText(language,'Expedition failed'):run.phase.replaceAll('_',' ').replace(/^./,letter=>letter.toUpperCase())}</Text></View>}>
     {inCombat?<FantasyPanel variant="selected"><View style={s.summary}>
       <View style={s.grow}><Text style={s.title}>{run.phase==='resolving_node'?st('Battle in progress'):run.lastCombat?.reason==='victory'?st('Encounter cleared'):run.lastCombat?.reason==='wipe'?st('Party defeated'):st('Battle complete')}</Text><Text style={s.copy}>{combatName}</Text></View>
       <GameButton compact title={st('View battle')} onPress={()=>setTheaterOpen(true)}/>

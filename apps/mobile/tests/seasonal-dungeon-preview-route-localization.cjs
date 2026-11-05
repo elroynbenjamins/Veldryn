@@ -53,7 +53,7 @@ for(const marker of [
 for(const marker of [
  'localizedSeasonalDungeonRouteRisk(language,option.risk)',
  'localizedSeasonalDungeonRouteReward(language,option.reward)',
- '${translatedRisk}. ${translatedReward}',
+ "ui('Route {title}: {risk}; {reward}. {extra}{action}'",
  '>{translatedRisk}</Text>','>{translatedReward}</Text>',
 ])assert.ok(routes.includes(marker),'Missing route UI / accessibility wiring: '+marker);
 console.log('PASS: 16 authoritative seasonal preview entries x 8 languages, numeric route risk/reward parity, strict fallbacks and UI/a11y wiring');

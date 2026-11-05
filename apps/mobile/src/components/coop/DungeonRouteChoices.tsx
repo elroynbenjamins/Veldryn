@@ -4,6 +4,7 @@ import {type CoopColors,coopSpacing,coopTypography} from '../../theme/coop-ui-th
 import {useCoopStyles} from '../../theme/useCoopStyles';
 import {useSocialText} from '../../i18n/social';
 import {useGameLanguage} from '../../i18n/GameLanguageProvider';
+import {useDungeonDynamicUiText} from '../../i18n/dungeon-dynamic-ui';
 import {localizedDungeonEncounterPreview} from '../../i18n/dungeon-encounter-preview';
 import {seasonalDungeonRoomTitle} from '../../i18n/seasonal-dungeon-copy';
 import {localizedSeasonalDungeonRouteRisk,localizedSeasonalDungeonRouteReward} from '../../i18n/seasonal-dungeon-effects';
@@ -19,8 +20,8 @@ export function DungeonRouteChoices({options,mode,phase,busy=false,onChoose,myVo
  options:CoopRouteOptionView[];mode:CoopMode;phase:string;busy?:boolean;onChoose?:(nodeId:string)=>void;myVotedNodeId?:string;selfVoter?:{name:string;profileIconId?:string|null;className?:string|null};
 }){
  const {styles:s}=useCoopStyles(makeStyles);
- const st=useSocialText(),language=useGameLanguage(),canChoose=Boolean(onChoose)&&phase==='awaiting_choice'&&!busy;
- const action=mode==='qmode'?st('Choose room'):st('Vote');
+ const st=useSocialText(),ui=useDungeonDynamicUiText(),language=useGameLanguage(),canChoose=Boolean(onChoose)&&phase==='awaiting_choice'&&!busy;
+ const action=mode==='qmode'?ui('Choose room'):ui('Vote');
  const live=mode==='live',totalVotes=live?options.reduce((total,option)=>total+(option.votes??0),0):0;
  return <View style={s.list}>
   {options.map((option,index)=>{
@@ -36,7 +37,7 @@ export function DungeonRouteChoices({options,mode,phase,busy=false,onChoose,myVo
    return <Pressable
     key={option.nodeId}
     accessibilityRole="button"
-    accessibilityLabel={`${title}. ${translatedRisk}. ${translatedReward}. ${live?`${option.votes??0} of ${totalVotes} votes. `:''}${votedHere?'Your vote. ':''}${canPress?action:st('Unavailable')}`}
+    accessibilityLabel={ui('Route {title}: {risk}; {reward}. {extra}{action}',{title,risk:translatedRisk,reward:translatedReward,extra:live?ui('{votes} of {total} votes. ',{votes:option.votes??0,total:totalVotes})+(votedHere?ui('Your vote. '):''):'',action:canPress?action:ui('Unavailable')})}
     accessibilityState={{disabled:!canPress}}
     disabled={!canPress}
     onPress={()=>onChoose?.(option.nodeId)}
@@ -55,11 +56,11 @@ export function DungeonRouteChoices({options,mode,phase,busy=false,onChoose,myVo
      {preview?<Text numberOfLines={2} style={s.preview}>{preview}</Text>:null}
      <View style={s.footer}>
       {live?<View style={s.voteLine}>
-       <Text style={s.votes}>{option.votes??0}/4 {st('votes')}</Text>
+       <Text style={s.votes}>{ui('{votes}/4 votes',{votes:option.votes??0})}</Text>
        {votedHere&&selfVoter?<View style={s.myVote}><IdentityArtwork name={selfVoter.name} profileIconId={selfVoter.profileIconId} className={selfVoter.className} size={22}/><Text style={s.myVoteText}>{st('You')}</Text></View>:null}
       </View>:<View style={s.grow}/>}
       <View style={[s.action,!canPress&&s.actionDisabled]}>
-       <Text style={[s.actionText,!canPress&&s.actionTextDisabled]}>{votedHere?st('Your vote'):canPress?action:st('Awaiting choice')}</Text>
+       <Text style={[s.actionText,!canPress&&s.actionTextDisabled]}>{votedHere?ui('Your vote'):canPress?action:ui('Awaiting choice')}</Text>
        <Text style={[s.chevron,!canPress&&s.actionTextDisabled]}>›</Text>
       </View>
      </View>

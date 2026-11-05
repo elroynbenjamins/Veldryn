@@ -256,20 +256,20 @@ export function OnlineGuildBankPanel({snapshot,onReload,focusResourceId,onFocusH
   </View>:null}
   <GameModalSurface visible={!!selected} presentation="sheet" surfaceStyle={{maxHeight:windowHeight*.86}}
    dismissOnBackdrop={!busy} onClose={close}>
-   <GameModalHeader eyebrow={confirming?"CONFIRM DONATION":"GUILD BANK · DONATE"} title={confirming?"Donate to Guild Bank?":selected?resourceTitle(selected):'Guild Bank'}
+   <GameModalHeader eyebrow={ui(confirming?"CONFIRM DONATION":"GUILD BANK · DONATE")} title={confirming?ui("Donate to Guild Bank?"):selected?resourceTitle(selected):ui("Guild Bank")}
     closeDisabled={busy} onClose={close}/>
    {selected?(confirming?<View style={s.confirmBody}>
     <View style={s.modalSummary}>
      <View style={s.modalArt}>{selected==='gold'?<Text style={s.goldGlyph}>G</Text>:<ResourceArtwork itemId={selected} size={56} framed={false}/>}</View>
      <View style={s.flex}><Text style={s.name}>{resourceTitle(selected)}</Text>
-      <Text style={s.help}>{amount.toLocaleString()} from your inventory into the shared Guild Bank</Text>
-      <Text style={s.meta}>{balance(selected).toLocaleString()} currently stored</Text>
+      <Text style={s.help}>{ui('{amount} from your inventory into the shared Guild Bank',{amount:amount.toLocaleString()})}</Text>
+      <Text style={s.meta}>{ui('{count} currently stored',{count:balance(selected).toLocaleString()})}</Text>
      </View>
     </View>
-    <View style={s.warningCard}><Text style={s.help}>This donation is permanent and cannot be withdrawn. Guild Construction or Guild Skills can spend it separately.</Text></View>
+    <View style={s.warningCard}><Text style={s.help}>{ui('This donation is permanent and cannot be withdrawn. Guild Construction or Guild Skills can spend it separately.')}</Text></View>
     <View style={s.actions}>
-     <View style={s.flex}><GameButton tone="secondary" title="Back" disabled={busy} onPress={()=>setConfirming(false)}/></View>
-     <View style={s.flex}><GameButton title="Confirm donation" disabled={!valid||depositDisabled} loading={busy}
+     <View style={s.flex}><GameButton tone="secondary" title={ui("Back")} disabled={busy} onPress={()=>setConfirming(false)}/></View>
+     <View style={s.flex}><GameButton title={ui("Confirm donation")} disabled={!valid||depositDisabled} loading={busy}
       onPress={()=>void deposit({resourceId:selected,amount})}/></View>
     </View>
    </View>:<ScrollView keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}
@@ -277,31 +277,31 @@ export function OnlineGuildBankPanel({snapshot,onReload,focusResourceId,onFocusH
     <View style={s.modalSummary}>
      <View style={s.modalArt}>{selected==='gold'?<Text style={s.goldGlyph}>G</Text>:<ResourceArtwork itemId={selected} size={56} framed={false}/>}</View>
      <View style={s.flex}><Text style={s.name}>{resourceTitle(selected)}</Text>
-      <Text style={s.help}>{balance(selected).toLocaleString()} stored in the shared Bank</Text>
-      <Text style={s.meta}>Only published Construction and released Skill materials can be deposited</Text>
+      <Text style={s.help}>{ui('{count} stored in the shared Bank',{count:balance(selected).toLocaleString()})}</Text>
+      <Text style={s.meta}>{ui('Only published Construction and released Skill materials can be deposited')}</Text>
      </View>
     </View>
     <View style={s.modalStats}>
-     <View style={s.modalStat}><Text style={s.statLabel}>GUILD OWNS</Text><Text style={s.modalNumber}>{balance(selected).toLocaleString()}</Text></View>
+     <View style={s.modalStat}><Text style={s.statLabel}>{ui('GUILD OWNS')}</Text><Text style={s.modalNumber}>{balance(selected).toLocaleString()}</Text></View>
      <View style={s.modalStat}><Text style={s.statLabel}>{ui('NEEDED NOW')}</Text><Text style={s.modalNumber}>{((needs.get(selected)?.current??0)+(needs.get(selected)?.skills??0)).toLocaleString()}</Text></View>
-     <View style={s.modalStat}><Text style={s.statLabel}>BANK LIMIT</Text><Text style={s.modalNumber}>{maxAmount.toLocaleString()}</Text></View>
+     <View style={s.modalStat}><Text style={s.statLabel}>{ui('BANK LIMIT')}</Text><Text style={s.modalNumber}>{maxAmount.toLocaleString()}</Text></View>
     </View>
-    <Text style={s.name}>Donation amount</Text>
+    <Text style={s.name}>{ui('Donation amount')}</Text>
     <TextInput value={quantity} onChangeText={setQuantity} selectTextOnFocus keyboardType="number-pad"
-     maxLength={7} accessibilityLabel="Guild Bank donation amount" style={s.input}
+     maxLength={7} accessibilityLabel={ui("Guild Bank donation amount")} style={s.input}
      editable={canDonateSelected}/>
     <View style={s.presetRow}>{[1,10,'Half' as const,'Max' as const].map(preset=><Pressable key={preset}
-     accessibilityRole="button" accessibilityLabel={'Donate quantity '+preset} disabled={!canDonateSelected}
+     accessibilityRole="button" accessibilityLabel={ui('Donate quantity {amount}',{amount:typeof preset==='number'?preset:ui(preset)})} disabled={!canDonateSelected}
      onPress={()=>setQuantity(String(preset==='Max'?maxAmount:preset==='Half'?Math.max(1,Math.floor(maxAmount/2)):Math.min(maxAmount,preset)))}
      style={({pressed})=>[s.preset,pressed&&s.pressed]}>
-     <Text style={s.presetText}>{preset}</Text>
+     <Text style={s.presetText}>{typeof preset==='number'?preset:ui(preset)}</Text>
     </Pressable>)}</View>
-    {maxAmount<=0?<Text style={s.success}>The Guild Bank already holds enough for all published requirements.</Text>:
-     !valid?<Text style={s.warning}>Enter a whole number between 1 and {maxAmount.toLocaleString()}.</Text>:
-     <Text style={s.meta}>Up to {maxAmount.toLocaleString()} more can be deposited. The server checks your available unlocked items or Gold when you confirm.</Text>}
-    <View style={s.warningCard}><Text style={s.help}>Deposits are permanent. Only Guild systems may allocate these supplies; members cannot withdraw or transfer them.</Text></View>
-    <View style={s.actions}><View style={s.flex}><GameButton tone="secondary" title="Cancel" disabled={busy} onPress={close}/></View>
-     <View style={s.flex}><GameButton title="Review donation" disabled={!valid||depositDisabled} loading={busy} onPress={confirmDeposit}/></View></View>
+    {maxAmount<=0?<Text style={s.success}>{ui('The Guild Bank already holds enough for all published requirements.')}</Text>:
+     !valid?<Text style={s.warning}>{ui('Enter a whole number between 1 and {max}.',{max:maxAmount.toLocaleString()})}</Text>:
+     <Text style={s.meta}>{ui('Up to {max} more can be deposited. The server checks your available unlocked items or Gold when you confirm.',{max:maxAmount.toLocaleString()})}</Text>}
+    <View style={s.warningCard}><Text style={s.help}>{ui('Deposits are permanent. Only Guild systems may allocate these supplies; members cannot withdraw or transfer them.')}</Text></View>
+    <View style={s.actions}><View style={s.flex}><GameButton tone="secondary" title={ui("Cancel")} disabled={busy} onPress={close}/></View>
+     <View style={s.flex}><GameButton title={ui("Review donation")} disabled={!valid||depositDisabled} loading={busy} onPress={confirmDeposit}/></View></View>
    </ScrollView>):null}
   </GameModalSurface>
  </Panel>;

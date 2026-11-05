@@ -28,6 +28,17 @@ function details(card:GuildTokenShopCard){
  const companion=GUILD_COMBAT_COMPANIONS.find(row=>row.id===ids[card.id]);
  return companion?{name:companion.name,description:companion.description,kind:`Elite companion · ${companion.role.charAt(0).toUpperCase()+companion.role.slice(1)}`,ability:companion.activeAbility.name}:{...(DETAILS[card.id]??{name:card.title,description:'Permanent account reward.'}),kind:{pet:'Pet',companion:'Companion',border:'Profile border',profile_icon:'Profile icon',emote_set:'5 emotes'}[card.category],ability:undefined};
 }
+/** Only matching fixed reward descriptions are localized. Companion-authored copy stays unchanged. */
+const reviewedDescriptions=[
+ 'Permanent account reward.',
+ 'A permanent guild pet. Equip it from your Pet collection.',
+ 'A silver profile border. Equip it in profile customization.',
+ 'A verdant profile border. Equip it in profile customization.',
+ 'A royal profile border. Equip it in profile customization.',
+ 'A permanent profile icon celebrating guild fellowship.',
+ 'Five permanent emotes. Use them in the chat emote picker.',
+] as const;
+
 export interface GuildTokenShopViewProps{
  snapshot:GuildTokenShopSnapshot|null;loading:boolean;pending:string|null;error:string;notice:string;
  onRefresh:()=>Promise<unknown>;onBuy:(id:string)=>Promise<unknown>;
@@ -37,6 +48,22 @@ export interface GuildTokenShopViewProps{
 /** Presentation-only. The authenticated server settles every claim and purchase. */
 export function GuildTokenShopView({snapshot,loading,pending,error,notice,onRefresh,onBuy,onWeekly,onEvent,onOpenConstruction}:GuildTokenShopViewProps){
  const ui=useGuildTokenShopUiText(),C=useGameTheme(),[section,setSection]=useState<Section>('Browse'),[category,setCategory]=useState<Category>('all');
+ const translatedDescription=(source:string)=>{const match=reviewedDescriptions.find(text=>text===source);return match?ui(match):source;};
+ const translatedKind=(kind:string)=>{
+  if(kind.startsWith('Elite companion · ')){
+   const role=kind.slice('Elite companion · '.length);
+   if(role==='Tank'||role==='Damage'||role==='Support')return ui('Elite companion · {role}',{role:ui(role)});
+  }
+  switch(kind){
+   case 'Pet':return ui('Pet');
+   case 'Companion':return ui('Companion');
+   case 'Profile border':return ui('Profile border');
+   case 'Profile icon':return ui('Profile icon');
+   case '5 emotes':return ui('5 emotes');
+   default:return kind;
+  }
+ };
+
  const [selected,setSelected]=useState<string|null>(null),[affordable,setAffordable]=useState(false),[hideOwned,setHideOwned]=useState(false);
  const refreshBusy=loading||pending!==null,busy=refreshBusy||!!error,spendBlocked=busy,capReached=!!snapshot&&snapshot.earnedThisWeek>=snapshot.weeklyCap;
  const eligible=(card:GuildTokenShopCard)=>card.released&&card.status==='eligible';
@@ -61,13 +88,13 @@ export function GuildTokenShopView({snapshot,loading,pending,error,notice,onRefr
    <View style={s.toolbar}><Text accessibilityLiveRegion="polite" style={[s.meta,muted]}>{ui('{count} rewards',{count:visible.length})}</Text><View style={s.toggles}>{([{label:'Can afford',value:affordable,toggle:()=>setAffordable(!affordable)},{label:'Hide owned',value:hideOwned,toggle:()=>setHideOwned(!hideOwned)}] as const).map(toggle=><Pressable key={toggle.label} accessibilityRole="checkbox" aria-checked={toggle.value} accessibilityState={{checked:toggle.value}} onPress={()=>{toggle.toggle();setSelected(null)}} style={[s.toggle,{borderColor:toggle.value?C.selectionLine:C.line,backgroundColor:toggle.value?C.selection:C.panel}]}><Text style={[s.meta,toggle.value?text:muted]}>{toggle.value?'✓ ':''}{ui(toggle.label)}</Text></Pressable>)}</View></View>
    {visible.map(card=>{
     const reward=details(card),art=guildTokenShopOfferArt(card.id),expanded=selected===card.id,owned=card.status==='owned',shortfall=Math.max(0,card.price-snapshot.balance);
-    const lock=owned?'Owned':!card.released?'Coming soon':card.status==='guild_level_locked'?`Guild Level ${card.requiredGuildLevel} required`:card.status==='guild_shop_quality_locked'?`Unlock ${qualityLabel(card)} offers through Guild Hall`:shortfall?`Need ${shortfall.toLocaleString()} more Guild Tokens`:null;
+    const lock=owned?ui('Owned'):!card.released?ui('Coming soon'):card.status==='guild_level_locked'?ui('Guild Level {level} required',{level:card.requiredGuildLevel}):card.status==='guild_shop_quality_locked'?ui('Unlock {quality} offers through Guild Hall',{quality:qualityLabel(card)}):shortfall?ui('Need {amount} more Guild Tokens',{amount:shortfall.toLocaleString()}):null;
     return <View key={card.id} style={[s.offer,{backgroundColor:C.panel,borderColor:expanded?C.selectionLine:C.line}]}>
-     <Pressable accessibilityRole="button" accessibilityLabel={`${expanded?'Close':'Inspect'} ${reward.name}`} accessibilityState={{expanded}} aria-expanded={expanded} onPress={()=>setSelected(expanded?null:card.id)} style={s.rewardRow}>
-      <View style={[s.art,{backgroundColor:C.panel2,borderColor:C.line}]}>{art?<Image accessible={false} source={art} resizeMode="contain" style={s.rewardArt}/>:null}</View><View style={s.flex}><Text style={[s.title,text]}>{reward.name}</Text><Text style={[s.meta,muted]}>{reward.kind} · {qualityLabel(card)} · Guild Lv {card.requiredGuildLevel}</Text><View style={s.price}><Image accessible={false} source={guildTokenIcon} style={s.coin}/><Text style={[s.copy,text]}>{card.price.toLocaleString()} Guild Tokens</Text></View></View><Text style={[s.inspect,muted]}>{expanded?'Close':'Inspect'}</Text>
+     <Pressable accessibilityRole="button" accessibilityLabel={ui(expanded?'Close {name}':'Inspect {name}',{name:reward.name})} accessibilityState={{expanded}} aria-expanded={expanded} onPress={()=>setSelected(expanded?null:card.id)} style={s.rewardRow}>
+      <View style={[s.art,{backgroundColor:C.panel2,borderColor:C.line}]}>{art?<Image accessible={false} source={art} resizeMode="contain" style={s.rewardArt}/>:null}</View><View style={s.flex}><Text style={[s.title,text]}>{reward.name}</Text><Text style={[s.meta,muted]}{translatedKind(reward.kind)} · {qualityLabel(card)} · {ui('Guild Lv {level}',{level:card.requiredGuildLevel})}</Text><View style={s.price}><Image accessible={false} source={guildTokenIcon} style={s.coin}/><Text style={[s.copy,text]}>{ui('{amount} Guild Tokens',{amount:card.price.toLocaleString()})}</Text></View></View><Text style={[s.inspect,muted]}>{ui(expanded?'Close':'Inspect')}</Text>
      </Pressable>
-     {!!lock&&<Text style={[s.availability,{color:owned?C.good:C.warning}]}>{owned?'✓ ':''}{lock}{card.requiredGuildLevel>10&&!owned?' · Future guild progression':''}</Text>}
-     {expanded?<View style={[s.review,{borderTopColor:C.line}]}><Text style={[s.copy,text]}>{reward.description}</Text>{reward.ability?<Text style={[s.meta,{color:C.info}]}>Signature · {reward.ability}</Text>:null}<Text style={[s.meta,muted]}>Permanent account unlock · One purchase</Text>
+     {!!lock&&<Text style={[s.availability,{color:owned?C.good:C.warning}]}>{owned?'✓ ':''}{lock}{card.requiredGuildLevel>10&&!owned?' · '+ui('Future guild progression'):''}</Text>}
+     {expanded?<View style={[s.review,{borderTopColor:C.line}]}><Text style={[s.copy,text]}>{translatedDescription(reward.description)}</Text>{reward.ability?<Text style={[s.meta,{color:C.info}]}>{ui('Signature · {ability}',{ability:reward.ability})}</Text>:null}<Text style={[s.meta,muted]}>{ui('Permanent account unlock · One purchase')}</Text>
       {!owned?<><View style={[s.numbers,{backgroundColor:C.panel2}]}>{[{label:'Balance',amount:snapshot.balance},{label:'Cost',amount:card.price},{label:shortfall?'Missing':'After',amount:shortfall||snapshot.balance-card.price}].map((item,index)=><View key={item.label} style={s.flex}><Text style={[s.meta,muted]}>{item.label}</Text><Text style={[s.amount,{color:index===2?(shortfall?C.warning:C.good):C.text}]}>{item.amount.toLocaleString()}</Text></View>)}</View><GameButton title={pending===card.id?'Purchasing…':lock??`Unlock for ${card.price.toLocaleString()} Guild Tokens`} disabled={spendBlocked||!eligible(card)} loading={pending===card.id} onPress={()=>onBuy(card.id)}/></>:<Text style={[s.copy,{color:C.good}]}>Unlocked for your account. No further purchase needed.</Text>}
      </View>:null}
     </View>;

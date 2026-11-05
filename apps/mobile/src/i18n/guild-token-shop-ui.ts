@@ -85,6 +85,10 @@ export const guildTokenShopUiRows={
  "Already claimed or weekly cap reached.": ["Bereits abgeholt oder Wochenlimit erreicht.","Ya reclamado o se alcanzó el límite semanal.","Al geclaimd of weeklimiet bereikt.","Già riscattato o limite settimanale raggiunto.","Déjà récupéré ou plafond hebdomadaire atteint.","Уже получено или достигнут недельный лимит.","Zaten alındı veya haftalık sınıra ulaşıldı."],
  "+{amount} bonus Guild Tokens earned!": ["+{amount} Bonus-Gildentoken verdient!","¡Ganaste +{amount} fichas extra!","+{amount} bonusgildetokens verdiend!","+{amount} gettoni bonus guadagnati !","+{amount} jetons bonus gagnés !","Получено бонусных жетонов: {amount}!","+{amount} bonus Lonca Jetonu kazanıldı!"],
  "This milestone was already claimed.": ["Diese Meilensteinbelohnung wurde bereits abgeholt.","Este hito ya fue reclamado.","Deze mijlpaal is al geclaimd.","Traguardo già riscattato.","Ce palier a déjà été récupéré.","Награда за этап уже получена.","Bu hedef ödülü zaten alındı."],
+ "Elite companion · {role}": ["Elite-Begleiter · {role}","Compañero élite · {role}","Elite metgezel · {role}","Compagno élite · {role}","Compagnon d'élite · {role}","Элитный спутник · {role}","Seçkin yoldaş · {role}"],
+ "Tank": ["Tank","Tanque","Tank","Tank","Tank","Танк","Tank"],
+ "Damage": ["Schaden","Daño","Schade","Danni","Dégâts","Урон","Hasar"],
+ "Support": ["Unterstützung","Apoyo","Steun","Supporto","Soutien","Поддержка","Destek"],
 } as const satisfies Record<string,readonly [string,string,string,string,string,string,string]>;
 export type GuildTokenShopUiKey=keyof typeof guildTokenShopUiRows;
 const idx:Partial<Record<Language,number>>={de:0,es:1,nl:2,it:3,fr:4,ru:5,tr:6};

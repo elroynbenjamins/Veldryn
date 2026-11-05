@@ -36,6 +36,7 @@ if(checkedIn!==rebuilt){
 
 const coopOutput=path.join(root,'backend/supabase/functions/coop/index.ts');
 const coopBuilt=await build({
+ absWorkingDir:backendRoot,
  entryPoints:[path.join(root,'backend/online/coop-edge.ts')],
  outfile:coopOutput,
  bundle:true,format:'esm',platform:'neutral',external:['node:crypto'],

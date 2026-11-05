@@ -143,19 +143,19 @@ export function GuildHallView({projection,loading=false,error='',onRefresh,activ
     onOpenConstruction={()=>{setBankFocus(null);navigate('Construction')}}/>:null}
   </View>:null}
   {section==='Shop'?(previewMode?shopFallback():<OnlineGuildTokenShopPanel onRewardsChanged={onTokenRewardsChanged} onOpenConstruction={()=>navigate('Construction')}/>):null}
-  {section==='Legacy'?<View style={s.root}>{renderHallProgress()}<Text style={s.headingText}>{ui('Hall facilities')}</Text><Text style={s.copy}>Facilities advance automatically through Guild Projects. Construction and Guild Skills grant their own separate benefits.</Text>
+  {section==='Legacy'?<View style={s.root}>{renderHallProgress()}<Text style={s.headingText}>{ui('Hall facilities')}</Text><Text style={s.copy}>{ui('Facilities advance automatically through Guild Projects. Construction and Guild Skills grant their own separate benefits.')}</Text>
    {GUILD_HALL_FACILITIES.map(def=>{const facility=state.facilities[def.id],tier=facility.tier,threshold=DEFAULT_GUILD_HALL_POLICY.facilityProgressThresholds[tier],requiredLevel=def.tierHallLevels[tier];return <View key={def.id} style={s.facility}>
     <Image source={guildFacilityArtwork(def.id)} resizeMode="contain" style={s.facilityImage} accessible={false}/>
     <View style={s.flex}><View style={s.between}><Text style={s.priorityTitle}>{def.name}</Text><Text style={s.tileTier}>T{tier}/5</Text></View><Text style={s.note}>{def.description}</Text>
-    {tier<5?<><StatBar rounded label="Facility progress" current={Math.min(facility.progress,threshold)} max={Math.max(1,threshold)}/><Text style={[s.note,{color:level<requiredLevel?C.warning:C.muted}]}>{level<requiredLevel?'Hall Level '+requiredLevel+' required · ':''}+{Math.max(0,threshold-facility.progress).toLocaleString()} project progress needed</Text></>:null}
+    {tier<5?<><StatBar rounded label={ui("Facility progress")} current={Math.min(facility.progress,threshold)} max={Math.max(1,threshold)}/><Text style={[s.note,{color:level<requiredLevel?C.warning:C.muted}]}>{level<requiredLevel?ui('Hall Level {level} required · ',{level:requiredLevel}):''}{ui('+{count} project progress needed',{count:Math.max(0,threshold-facility.progress).toLocaleString()})}</Text></>:null}
     </View></View>})}
-   <QuestBoard><View style={s.between}><Text style={s.headingText}>Trophy Room</Text><Text style={s.note}>{state.trophies.length} recorded</Text></View>
-    <Text style={s.copy}>Future Guild Legacy will preserve major trophies and season records permanently.</Text>
+   <QuestBoard><View style={s.between}><Text style={s.headingText}>{ui('Trophy Room')}</Text><Text style={s.note}>{ui('{count} recorded',{count:state.trophies.length})}</Text></View>
+    <Text style={s.copy}>{ui('Future Guild Legacy will preserve major trophies and season records permanently.')}</Text>
     {state.trophies.slice(0,10).map(trophy=><View key={trophy.trophyKey} style={s.trophy}><Text style={s.priorityTitle}>{trophy.label}</Text><Text style={s.copy}>{trophy.description||trophy.sourceKind}</Text><Text style={s.note}>{new Date(trophy.earnedAtMs).toLocaleDateString()}</Text></View>)}
-    {!state.trophies.length?<Text style={s.note}>No recorded trophies yet.</Text>:null}
+    {!state.trophies.length?<Text style={s.note}>{ui('No recorded trophies yet.')}</Text>:null}
    </QuestBoard>
   </View>:null}
-  {!!shopError&&shop?<Text accessibilityRole="alert" style={s.error}>Showing previously loaded supplies. Refresh failed: {shopError}</Text>:null}
+  {!!shopError&&shop?<Text accessibilityRole="alert" style={s.error}>{ui('Showing previously loaded supplies. Refresh failed: {error}',{error:shopError})}</Text>:null}
   {!!error&&<Text accessibilityRole="alert" style={s.error}>{error}</Text>}
  </View>;
 }

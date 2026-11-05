@@ -49,7 +49,8 @@ export interface GuildTokenShopViewProps{
 export function GuildTokenShopView({snapshot,loading,pending,error,notice,onRefresh,onBuy,onWeekly,onEvent,onOpenConstruction}:GuildTokenShopViewProps){
  const ui=useGuildTokenShopUiText(),C=useGameTheme(),[section,setSection]=useState<Section>('Browse'),[category,setCategory]=useState<Category>('all');
  const translatedDescription=(source:string)=>{const match=reviewedDescriptions.find(text=>text===source);return match?ui(match):source;};
- const translatedKind=(kind:string)=>{
+ const translatedKind=(kind:string|undefined)=>{
+  if(!kind)return '';
   if(kind.startsWith('Elite companion · ')){
    const role=kind.slice('Elite companion · '.length);
    if(role==='Tank'||role==='Damage'||role==='Support')return ui('Elite companion · {role}',{role:ui(role)});
@@ -69,7 +70,7 @@ export function GuildTokenShopView({snapshot,loading,pending,error,notice,onRefr
  const eligible=(card:GuildTokenShopCard)=>card.released&&card.status==='eligible';
  const bonus=snapshot?.treasuryBonusBps??0;
  const boosted=(base:number)=>Math.ceil(base*(10000+bonus)/10000);
- const qualityLabel=(card:GuildTokenShopCard)=>(card.quality??'standard').replace(/^./,letter=>letter.toUpperCase());
+ const qualityLabel=(card:GuildTokenShopCard)=>ui(({standard:'Standard',rare:'Rare',epic:'Epic',prestige:'Prestige'} as const)[card.quality??'standard']);
  const categoryCards=snapshot?.cards.filter(card=>category==='all'||category==='identity'&&!['pet','companion'].includes(card.category)||card.category===category)??[];
  const visible=categoryCards.filter(card=>(!affordable||eligible(card))&&(!hideOwned||card.status!=='owned'));
  const text={color:C.text},muted={color:C.muted};

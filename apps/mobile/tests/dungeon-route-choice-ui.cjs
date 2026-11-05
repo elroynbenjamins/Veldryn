@@ -10,7 +10,7 @@ assert(!overview.includes('run.options.map(option=><FantasyPanel'),'Old per-room
 assert(choices.includes('onPress={()=>onChoose?.(option.nodeId)}'),'Room tap uses the existing authoritative choose/vote callback');
 assert(choices.includes("phase==='awaiting_choice'&&!busy"),'Busy and non-choice phases cannot submit votes');
 assert(choices.includes("canChoose&&!option.hidden"),'Hidden rooms cannot be picked');
-assert(choices.includes("mode==='qmode'?st('Choose room'):st('Vote')"),'Solo and Live use the correct action');
+assert(choices.includes("mode==='qmode'?ui('Choose room'):ui('Vote')"),'Solo and Live use the correct action');
 assert(choices.includes("option.votes??0"),'Server-owned Live vote counts remain visible even before voting begins');
 assert(choices.includes('IdentityArtwork name={selfVoter.name}'),'The player icon marks only the route they actually voted for');
 assert(choices.includes('myVotedNodeId===option.nodeId'),'Voted-route highlight depends on a confirmed vote for this route');

@@ -1,8 +1,11 @@
 import fs from 'node:fs';
+import {spawnSync} from 'node:child_process';
 import path from 'node:path';
 
 const root=path.resolve(import.meta.dirname,'..');
 const smoke=fs.readFileSync(path.join(root,'tools','online-staging-smoke.mjs'),'utf8');
+const syntax=spawnSync(process.execPath,['--check',path.join(root,'tools','online-staging-smoke.mjs')],{encoding:'utf8'});
+if(syntax.status!==0)throw new Error(`Staging smoke script syntax check failed: ${syntax.stderr||syntax.error||'unknown error'}`);
 const mobilePackage=JSON.parse(fs.readFileSync(path.join(root,'apps','mobile','package.json'),'utf8'));
 function need(value,label){if(!smoke.includes(value))throw new Error(`online staging smoke contract missing ${label}: ${value}`);}
 

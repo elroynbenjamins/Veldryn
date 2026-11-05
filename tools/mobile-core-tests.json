@@ -44,6 +44,7 @@
   "tests/dungeon-encounter-preview-localization.cjs",
   "tests/seasonal-dungeon-localization.cjs",
   "tests/seasonal-dungeon-effects-localization.cjs",
+  "tests/seasonal-dungeon-preview-route-localization.cjs",
   "tests/equipment-metadata-localization.cjs",
   ".core-build/apps/mobile/tests/class-selection.js",
   ".core-build/apps/mobile/tests/character-creation-onboarding.js",

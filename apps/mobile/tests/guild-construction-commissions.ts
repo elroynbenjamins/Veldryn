@@ -9,6 +9,28 @@ const ids=new Set(GUILD_COMPONENT_ITEMS.map(x=>x.id));
 check(ids.size===8,'Eight illustrated guild component IDs required');
 check(GUILD_COMPONENT_RECIPES.length===8,'Exactly eight authored guild profession recipes');
 check(GUILD_COMPONENT_CRAFTING_RELEASED,'Guild components should be craftable now that released Guild Construction needs them');
+// Guild-only Smithing/Tailoring recipes use five times the original ingredient
+// and Gold costs, and twice the original XP. Gold includes the existing 20%
+// crafting surcharge; crafting duration and output quantity stay unchanged.
+const expectedGuildCraftingBalance:Record<string,{xp:number;gold:number;inputs:number[];seconds:number}>={
+ GUILD_FORGE_TIMBER:{xp:220,gold:180,inputs:[15,10],seconds:75},
+ GUILD_FORGE_KEYSTONE:{xp:560,gold:570,inputs:[10,15],seconds:140},
+ GUILD_FORGE_RIVETS:{xp:1120,gold:1740,inputs:[10,5],seconds:260},
+ GUILD_FORGE_HINGES:{xp:2900,gold:6000,inputs:[10,10],seconds:570},
+ GUILD_TAILOR_BANNERWEAVE:{xp:200,gold:150,inputs:[25,10],seconds:75},
+ GUILD_TAILOR_DYE:{xp:550,gold:540,inputs:[15,5],seconds:140},
+ GUILD_TAILOR_WAX:{xp:1130,gold:1800,inputs:[5,10],seconds:260},
+ GUILD_TAILOR_BEACON_OIL:{xp:2840,gold:5700,inputs:[10,10],seconds:570},
+};
+for(const recipe of GUILD_COMPONENT_RECIPES){
+ const expected=expectedGuildCraftingBalance[recipe.id];
+ check(!!expected,'Unexpected guild component recipe '+recipe.id);
+ check(recipe.xp===expected.xp&&recipe.gold===expected.gold,'Guild component XP/Gold balance mismatch: '+recipe.id);
+ check(recipe.inputs.map(input=>input.quantity).join(',')===expected.inputs.join(','),'Guild component ingredient cost mismatch: '+recipe.id);
+ check(recipe.seconds===expected.seconds&&recipe.output.quantity===1,'Guild component time/output should remain unchanged: '+recipe.id);
+}
+check(Object.keys(expectedGuildCraftingBalance).length===GUILD_COMPONENT_RECIPES.length,'Guild crafting balance must cover all recipes');
+
 const icons=fs.readFileSync('src/theme/guild-upgrade-component-art.ts','utf8');
 const resourceIcons=fs.readFileSync('src/theme/resource-assets.ts','utf8');
 const resourceRenderer=fs.readFileSync('src/components/ResourceArtwork.tsx','utf8');

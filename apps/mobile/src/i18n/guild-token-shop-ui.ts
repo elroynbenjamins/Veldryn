@@ -89,6 +89,10 @@ export const guildTokenShopUiRows={
  "Tank": ["Tank","Tanque","Tank","Tank","Tank","Танк","Tank"],
  "Damage": ["Schaden","Daño","Schade","Danni","Dégâts","Урон","Hasar"],
  "Support": ["Unterstützung","Apoyo","Steun","Supporto","Soutien","Поддержка","Destek"],
+ "Standard": ["Standard","Estándar","Standaard","Standard","Standard","Обычный","Standart"],
+ "Rare": ["Selten","Raro","Zeldzaam","Raro","Rare","Редкий","Nadir"],
+ "Epic": ["Episch","Épico","Episch","Epico","Épique","Эпический","Destansı"],
+ "Prestige": ["Prestige","Prestigio","Prestige","Prestigio","Prestige","Престиж","Prestij"],
 } as const satisfies Record<string,readonly [string,string,string,string,string,string,string]>;
 export type GuildTokenShopUiKey=keyof typeof guildTokenShopUiRows;
 const idx:Partial<Record<Language,number>>={de:0,es:1,nl:2,it:3,fr:4,ru:5,tr:6};

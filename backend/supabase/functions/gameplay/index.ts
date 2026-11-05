@@ -47732,7 +47732,7 @@ var explorationRoute = (id) => EXPLORATION_ROUTES.find((route) => route.id === i
 var QUESTS = [
   { id: "QST_001", name: "A Name in the Ledger", description: "Defeat 5 Moss Rats.", kind: "kills", targetId: "MOSS_RAT", required: 5, rewardGold: 40, rewardItemId: "MOSS_FIBER", rewardItemQty: 5, act: 1, location: "Greenfields", story: "The local ledger has more missing names than living ones. A simple rat cull is hardly heroic, but it is the first chance to prove you can return from the road." },
   { id: "QST_002", name: "First Blood, First Skill", description: "Reach level 2 in any guided gathering skill.", kind: "skillLevel", required: 2, rewardGold: 60, rewardItemId: "COPPER_ORE", rewardItemQty: 4, act: 1, location: "Greenfields Camp", story: "Steel alone will not carry you through Asterfall. The camp quartermaster sends you to learn the land, gather what it gives, and stop depending on supplies brought from safer places." },
-  { id: "QST_003", name: "A Hound's Trail", description: "Complete Trace Ironwood paths to discover the Ironwood Wolf encounter.", kind: "exploration", targetId: "SCOUT_IRONWOOD", skillId: "exploration", required: 1, rewardGold: 90, rewardItemId: "IRONWOOD_LOG", rewardItemQty: 4, act: 1, location: "Ironwood Verge", story: "The wardens have found wolf tracks along the Ironwood verge, but no reliable path to the pack. Trace the old forest trails first, reveal where the wolves are hunting, and open the road for future expeditions." },
+  { id: "QST_003", name: "A Hound's Trail", description: "Travel to Ironwood Forest, then trace its paths to discover the Ironwood Wolf encounter.", kind: "exploration", targetId: "SCOUT_IRONWOOD", skillId: "exploration", required: 1, requiredCharacterLevel: 7, rewardGold: 90, rewardItemId: "IRONWOOD_LOG", rewardItemQty: 4, act: 1, location: "Ironwood Verge", story: "The wardens have found wolf tracks along the Ironwood verge, but no reliable path to the pack. Travel to the forest first, then trace its old trails to reveal where the wolves are hunting and open the road for future expeditions." },
   { id: "QST_004", name: "Tools of the Trade", description: "Equip at least 2 pieces of gear.", kind: "equip", required: 2, rewardGold: 110, rewardItemId: "GREENWOOD_LOG", rewardItemQty: 6, act: 1, location: "Asterfall Workshop", story: "The smith laughs at the state of your equipment and refuses to call luck a fighting style. If you intend to push deeper, you will need a kit built for more than field vermin." },
   { id: "QST_005", name: "Into Ironwood", description: "Reach character level 10.", kind: "level", required: 10, rewardGold: 160, rewardItemId: "IRONWOOD_LOG", rewardItemQty: 4, act: 1, location: "Ironwood Gate", story: "Rumours from the forest no longer sound like frightened farmers exaggerating. Something beneath the roots is stirring, and the wardens will only open the deeper paths to adventurers who have survived long enough to matter." },
   { id: "QST_006", name: "Thorn Beneath", description: "Defeat 8 Thornlings.", kind: "kills", targetId: "THORNLING", required: 8, rewardGold: 210, rewardItemId: "THORN_SAP", rewardItemQty: 5, act: 2, location: "Ironwood Deep", story: "Thornlings are gathering around trees marked with old oath-runes. Their growth is too deliberate to be natural, as if the forest is remembering a command nobody living can hear." },
@@ -51924,7 +51924,14 @@ function previewActivityReward(state, nowMs) {
   return idleWindow.shouldStop && !reward2.stoppedReason ? { ...reward2, stoppedReason: idleWindow.reason } : reward2;
 }
 function refreshQuests(state, lastCombatTarget, lastKills = 0) {
-  let quests = state.quests.map((q2) => ({ ...q2 }));
+  const characterLevel = state.character?.level ?? 0;
+  let quests = state.quests.map((quest, index) => {
+    const definition = QUESTS[index], previous = index > 0 ? state.quests[index - 1] : void 0;
+    const eligible = (!previous || previous.status === "claimed") && (!definition?.requiredCharacterLevel || characterLevel >= definition.requiredCharacterLevel);
+    if (quest.status === "locked" && eligible) return { ...quest, status: "active" };
+    if (quest.status === "active" && !eligible) return { ...quest, status: "locked" };
+    return { ...quest };
+  });
   if (lastCombatTarget && lastKills > 0) {
     quests = quests.map((q2) => {
       const d = QUESTS.find((x) => x.id === q2.questId);
@@ -51949,8 +51956,6 @@ function claimQuest(state, questId, nowMs = Date.now()) {
   const q2 = state.quests.find((x) => x.questId === questId), d = QUESTS.find((x) => x.id === questId);
   if (!q2 || !d || q2.status !== "complete" || !state.character) throw new Error("Quest not claimable");
   let next = { ...state, character: { ...state.character, gold: state.character.gold + d.rewardGold }, inventory: { ...state.inventory, stacks: d.rewardItemId ? stackItems(state.inventory.stacks, [{ itemId: d.rewardItemId, quantity: d.rewardItemQty || 1 }]) : state.inventory.stacks }, quests: state.quests.map((x) => x.questId === questId ? { ...x, status: "claimed" } : x) };
-  const idx = QUESTS.findIndex((x) => x.id === questId), nextDef = QUESTS[idx + 1];
-  if (nextDef) next = { ...next, quests: next.quests.map((x) => x.questId === nextDef.id && x.status === "locked" ? { ...x, status: "active" } : x) };
   return applyLocalBalanceSnapshot(reconcileCombatCompanionUnlocks(refreshQuests(next), nowMs), nowMs);
 }
 function claimSeasonalContract(state, period, contractId2, nowMs = Date.now()) {

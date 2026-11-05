@@ -29,7 +29,7 @@
     "Seasonal expedition detail previews now translate exact authoritative mechanic/objective source pairs and recognized route-highlight titles; unfamiliar server text keeps the English original.",
     "Reviewed Guild Hub, Project detail, Decree and member metadata now translate across all seven non-English locales; freeform Guild notices/names and unrecognized backend-generated project/decree descriptions stay verbatim.",
     "The active Online Guild Projects board and retained Live Dungeon queue/ready-check/route panels now use reviewed, typed DE/ES/NL/IT/FR/RU/TR strings for 84 fixed messages and preserved server values. Unverified Guild event logs, notice prose, route reward hints and server validation errors remain verbatim.",
-    "Guild Hall navigation, Construction funding confirmations and benefit headings now use 119 reviewed messages in seven target locales. Guild Notice Board metadata is localized; Guild Bank, unknown facility/trophy copy and player notices remain verbatim."
+    "Guild Hall navigation, Construction funding confirmations and benefit headings now use 120 reviewed messages in seven target locales. Guild Notice Board metadata is localized; Guild Bank, unknown facility/trophy copy and player notices remain verbatim."
   ],
   "files": {
     "src/components/ArenaBattleStage.tsx": 2,

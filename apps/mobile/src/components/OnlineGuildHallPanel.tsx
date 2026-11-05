@@ -61,7 +61,8 @@ export function GuildHallView({projection,loading=false,error='',onRefresh,activ
  const [bankFocus,setBankFocus]=useState<string|null>(null);
  const [returnBuilding,setReturnBuilding]=useState<string|undefined>(undefined);
  const [returnSelection,setReturnSelection]=useState<{templateId:string;resourceId:string}|undefined>(undefined);
- const section=(activeSection??localSection)==='Skills'?'Overview':activeSection??localSection;
+ const requestedSection=activeSection??localSection;
+ const section=requestedSection==='Skills'?'Overview':requestedSection;
  // On a narrow phone the Hall tabs scroll horizontally; always reveal the selected tab.
  useEffect(()=>{
   const index=DESTINATIONS.indexOf(section);

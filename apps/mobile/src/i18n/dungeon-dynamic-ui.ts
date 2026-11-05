@@ -65,6 +65,8 @@ export const dungeonDynamicUiRows={
  "Resolving room": ["Raum wird abgewickelt","Resolviendo sala","Kamer wordt afgerond","Risoluzione stanza","Résolution de la salle","Завершение комнаты","Oda çözülüyor"],
  "Expedition completed": ["Expedition abgeschlossen","Expedición completada","Expeditie voltooid","Spedizione completata","Expédition terminée","Экспедиция завершена","Sefer tamamlandı"],
  "Expedition failed": ["Expedition gescheitert","Expedición fallida","Expeditie mislukt","Spedizione fallita","Expédition échouée","Экспедиция провалена","Sefer başarısız"],
+ "an ability": ["eine Fähigkeit","una habilidad","een vaardigheid","un'abilità","une capacité","способность","bir yetenek"],
+ "Party member": ["Gruppenmitglied","Miembro del grupo","Groepslid","Membro del gruppo","Membre du groupe","Участник отряда","Grup üyesi"],
 } as const satisfies Record<string,readonly [string,string,string,string,string,string,string]>;
 export type DungeonDynamicUiKey=keyof typeof dungeonDynamicUiRows;
 const indexes:Partial<Record<Language,number>>={de:0,es:1,nl:2,it:3,fr:4,ru:5,tr:6};
@@ -97,12 +99,12 @@ export function localizedDungeonPlaybackCue(language:Language,cue:CoopCombatRepl
    if(cue.actionKind==='shield')return named('{actor} shields {target}',{actor:actor??render(language,'Support'),target:target??render(language,'ally')})+amount+extras;
    if(cue.outcome==='miss')return named('{actor} misses {target}',{actor:actor??render(language,'Combatant'),target:target??render(language,'target')})+extras;
    if(dungeonEnemyAbilityDisplayName(cue.abilityName?.trim()??'')==='Basic Attack')return named('{actor} attacks {target}',{actor:actor??render(language,'Combatant'),target:target??render(language,'target')})+amount+extras;
-   return named(target?'{actor} uses {ability} on {target}':'{actor} uses {ability}',{actor:actor??render(language,'Combatant'),ability:ability??'an ability',...(target?{target}:{})})+amount+extras;
+   return named(target?'{actor} uses {ability} on {target}':'{actor} uses {ability}',{actor:actor??render(language,'Combatant'),ability:ability??render(language,'an ability'),...(target?{target}:{})})+amount+extras;
   case 'phase':return ability?named('{actor} enters {ability}',{actor:actor??render(language,'Boss'),ability}):named('{actor} changes phase',{actor:actor??render(language,'Boss')});
   case 'cast':return ability?named('{actor} begins {ability}',{actor:actor??render(language,'Boss'),ability}):named('{actor} begins a cast',{actor:actor??render(language,'Boss')});
   case 'interrupt':return ability?named('{actor} interrupts with {ability}',{actor:actor??render(language,'Party'),ability}):named('{actor} interrupts the cast',{actor:actor??render(language,'Party')});
   case 'assist':return ability??named('{actor} assist',{actor:actor??render(language,'Companion')});
-  case 'down':return named('{target} is downed',{target:target??actor??'Party member'});
+  case 'down':return named('{target} is downed',{target:target??actor??render(language,'Party member')});
   case 'victory':return render(language,'Encounter cleared');
   case 'wipe':return render(language,'Party defeated');
   case 'timeout':return render(language,'Encounter timed out');

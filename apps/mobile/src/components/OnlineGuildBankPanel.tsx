@@ -1,4 +1,6 @@
 import {useEffect,useMemo,useState} from 'react';
+import {useGuildBankUiText} from '../i18n/guild-bank-ui';
+import {useGameLanguage} from '../i18n/GameLanguageProvider';
 import {Keyboard,Pressable,ScrollView,StyleSheet,Text,TextInput,View,useWindowDimensions} from 'react-native';
 import {Panel} from './Panel';
 import {GameButton} from './GameButton';
@@ -49,7 +51,7 @@ export function OnlineGuildBankPanel({snapshot,onReload,focusResourceId,onFocusH
  snapshot:GuildTokenShopSnapshot;onReload:()=>Promise<unknown>;
  focusResourceId?:string|null;onFocusHandled?:()=>void;onOpenConstruction?:()=>void;
 }){
- const C=useGameTheme(),s=useMemo(()=>styles(C),[C]),{height:windowHeight,width:windowWidth,fontScale}=useWindowDimensions();
+ const ui=useGuildBankUiText(),language=useGameLanguage(),C=useGameTheme(),s=useMemo(()=>styles(C),[C]),{height:windowHeight,width:windowWidth,fontScale}=useWindowDimensions();
  // Preserve readable touch targets when accessibility fonts are significantly enlarged.
  const accessibleGrid=windowWidth<330||fontScale>=1.35;
  const [selection,setSelection]=useState<string|null>(null),[quantity,setQuantity]=useState('1');
@@ -108,8 +110,8 @@ export function OnlineGuildBankPanel({snapshot,onReload,focusResourceId,onFocusH
  const compactQuantity=(value:number)=>value>=10000?(Math.round(value/100)/10).toLocaleString()+'k':value.toLocaleString();
  const activityTime=(iso:string)=>{
   const date=new Date(iso);
-  if(!Number.isFinite(date.getTime()))return 'Recent';
-  return date.toLocaleDateString(undefined,{month:'short',day:'numeric'})+' · '+date.toLocaleTimeString(undefined,{hour:'2-digit',minute:'2-digit'});
+  if(!Number.isFinite(date.getTime()))return ui('Recent');
+  return date.toLocaleDateString(language,{month:'short',day:'numeric'})+' · '+date.toLocaleTimeString(language,{hour:'2-digit',minute:'2-digit'});
  };
  const selected=selection&&ids.includes(selection)?selection:null;
  const amount=Number(quantity);
@@ -120,12 +122,12 @@ export function OnlineGuildBankPanel({snapshot,onReload,focusResourceId,onFocusH
   try{
    const response=await depositOnlineGuildBank(input);
    setPending(null);setConfirming(false);setSelection(null);
-   setNotice(response.alreadyProcessed?'Saved deposit confirmed. No additional resources were deducted.':
-    input.amount.toLocaleString()+' '+resourceTitle(input.resourceId)+' deposited into the Guild Bank.');
-   try{await onReload();setSkillRefresh(x=>x+1)}catch{setNotice('Deposit confirmed. Bank refresh is unavailable; reopen the Bank to update balances.');}
+   setNotice(response.alreadyProcessed?ui('Saved deposit confirmed. No additional resources were deducted.'):
+    ui('{amount} {resource} deposited into the Guild Bank.',{amount:input.amount.toLocaleString(),resource:resourceTitle(input.resourceId)}));
+   try{await onReload();setSkillRefresh(x=>x+1)}catch{setNotice(ui('Deposit confirmed. Bank refresh is unavailable; reopen the Bank to update balances.'));}
   }catch(reason){
    setConfirming(false);setSelection(null);
-   setError(reason instanceof Error?reason.message:'Unable to confirm Guild Bank deposit.');
+   setError(reason instanceof Error?reason.message:ui('Unable to confirm Guild Bank deposit.'));
    try{setPending(await pendingGuildBankDeposit())}catch{/* Keep original error. */}
   }finally{setBusy(false)}
  };
@@ -133,9 +135,9 @@ export function OnlineGuildBankPanel({snapshot,onReload,focusResourceId,onFocusH
   if(!selected||!valid||pending||busy||snapshot.bank===null)return;
   Keyboard.dismiss();setConfirming(true);
  };
- const discard=()=>gameAlert.alert('Discard saved deposit?',
-  'Only discard after checking the Guild Bank. If the original request was completed, donating again spends resources again.',
-  [{text:'Keep receipt',style:'cancel'},{text:'Discard local retry',style:'destructive',
+ const discard=()=>gameAlert.alert(ui('Discard saved deposit?'),
+  ui('Only discard after checking the Guild Bank. If the original request was completed, donating again spends resources again.'),
+  [{text:ui('Keep receipt'),style:'cancel'},{text:ui('Discard local retry'),style:'destructive',
    onPress:()=>void discardPendingGuildBankDeposit().then(()=>setPending(null)).catch(reason=>setError(String(reason)))}]);
  const choose=(id:string)=>{
   if(busy||pending||snapshot.bank===null)return;

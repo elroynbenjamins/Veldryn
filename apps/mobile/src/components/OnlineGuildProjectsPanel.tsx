@@ -154,33 +154,33 @@ export function GuildProjectPosting({project,expanded,compact=false,onToggle,onC
  const projectArtwork=guildProjectArtwork(project.templateId);
  const readyToClaim=weekly&&claimOpen;
  return <View style={[s.project,project.status==='completed'&&s.complete]}>
-  <Pressable accessibilityRole="button" accessibilityLabel={`Project contributions: ${authored.name}`} accessibilityHint="Show or hide contributions from Guild members" accessibilityState={{expanded}}
+  <Pressable accessibilityRole="button" accessibilityLabel={ui('Project contributions: {name}',{name:authored.name})} accessibilityHint={ui('Show or hide contributions from Guild members')} accessibilityState={{expanded}}
    onPress={onToggle} style={({pressed})=>[s.projectPress,pressed&&s.pressed]}>
    <View style={s.sectionHead}>
     {projectArtwork?<Image source={projectArtwork} resizeMode="contain" style={s.projectIcon}/>:<ActivityArtwork id="combat" size={42}/>}
-    <View style={s.flex}><Text numberOfLines={2} style={s.projectTitle}>{authored.name}</Text><Text style={s.meta}>{projectFocusLabel(project.focus)} · {weekly?'Weekly':project.kind==='development'?'Development':'Event'}</Text></View>
-    <StatusPill label={project.status==='completed'?'DONE':'ACTIVE'} tone={project.status==='completed'?'good':'info'}/>
+    <View style={s.flex}><Text numberOfLines={2} style={s.projectTitle}>{authored.name}</Text><Text style={s.meta}>{guildFlowFocusText(language,project.focus)} · {ui(weekly?'Weekly':project.kind==='development'?'Development':'Event')}</Text></View>
+    <StatusPill label={ui(project.status==='completed'?'DONE':'ACTIVE')} tone={project.status==='completed'?'good':'info'}/>
    </View>
-   <View style={s.progressHead}><Text style={s.percent}>{pct}%</Text><View style={s.progressNumbers}><Text style={s.progressAmount}>{project.kind==='development'?'Resource goals':`${project.completionPoints.toLocaleString()} / ${project.targetPoints.toLocaleString()}`}</Text><Text style={s.meta}>Guild progress</Text></View></View>
+   <View style={s.progressHead}><Text style={s.percent}>{pct}%</Text><View style={s.progressNumbers}><Text style={s.progressAmount}>{project.kind==='development'?ui('Resource goals'):`${project.completionPoints.toLocaleString()} / ${project.targetPoints.toLocaleString()}`}</Text><Text style={s.meta}>{ui('Guild progress')}</Text></View></View>
    <View style={s.track}><View style={[s.fill,{width:`${Math.min(100,pct)}%` as any}]}/></View>
-   <View style={s.sectionHead}><Text style={[s.meta,s.flex]}>{project.meaningfulContributors} / {project.minimumMeaningfulContributors} contributors</Text><Text style={s.expandHint}>{expanded?'Hide contribution ▴':'Contribution ▾'}</Text></View>
-   {weekly&&project.status==='active'?<Text style={s.meta}>Weekly reset: Monday at 00:00 UTC</Text>:null}
+   <View style={s.sectionHead}><Text style={[s.meta,s.flex]}>{ui('{count}/{minimum} contributors',{count:project.meaningfulContributors,minimum:project.minimumMeaningfulContributors})}</Text><Text style={s.expandHint}>{ui(expanded?'Hide contribution ▴':'Contribution ▾')}</Text></View>
+   {weekly&&project.status==='active'?<Text style={s.meta}>{ui('Weekly reset: Monday at 00:00 UTC')}</Text>:null}
   </Pressable>
   {!compact?<View style={s.personal}>
-   <View style={s.sectionHead}><Text style={s.sectionTitle}>Your contribution</Text>
-    {qualifying&&project.personalRewardThreshold>0?<StatusPill label="QUALIFIED" tone="good"/>:null}
+   <View style={s.sectionHead}><Text style={s.sectionTitle}>{ui('Your contribution')}</Text>
+    {qualifying&&project.personalRewardThreshold>0?<StatusPill label={ui("QUALIFIED")} tone="good"/>:null}
    </View>
    <View style={s.sectionHead}><Text style={s.personalPoints}>{project.personalPoints.toLocaleString()}</Text>
-    <Text style={s.meta}>{project.personalRewardThreshold>0?`/ ${project.personalRewardThreshold.toLocaleString()} needed`:'Shared contribution'}</Text></View>
+    <Text style={s.meta}>{project.personalRewardThreshold>0?ui('/ {count} needed',{count:project.personalRewardThreshold.toLocaleString()}):ui('Shared contribution')}</Text></View>
    {project.personalRewardThreshold>0?<View style={s.smallTrack}><View style={[s.fill,{width:`${Math.min(100,project.personalPoints/project.personalRewardThreshold*100)}%` as any}]}/></View>:null}
    {weekly?<View style={s.reward}>
     <Text style={s.rewardIcon}>🪙</Text>
-    <View style={s.flex}><Text style={s.rewardTitle}>500 Gold · Personal reward</Text><Text style={s.meta}>{project.completionRewardClaimed?'Already claimed':project.status==='completed'?'Ready if eligible':'Available after Guild completion'}</Text></View>
+    <View style={s.flex}><Text style={s.rewardTitle}>{ui('500 Gold · Personal reward')}</Text><Text style={s.meta}>{ui(project.completionRewardClaimed?'Already claimed':project.status==='completed'?'Ready if eligible':'Available after Guild completion')}</Text></View>
    </View>:null}
-   {weekly?<View style={s.sectionHead}><Text style={s.meta}>Guild receives</Text><Text style={s.hallReward}>200 Hall progress</Text></View>:null}
+   {weekly?<View style={s.sectionHead}><Text style={s.meta}>{ui('Guild receives')}</Text><Text style={s.hallReward}>{ui('200 Hall progress')}</Text></View>:null}
   </View>:null}
   {weekly&&project.status==='active'&&!compact?<View style={s.activities}>
-   <View style={s.sectionHead}><Text style={s.sectionTitle}>Contribute now</Text><StatusPill label="ANY ACTIVITY" tone="info"/></View>
+   <View style={s.sectionHead}><Text style={s.sectionTitle}>{ui('Contribute now')}</Text><StatusPill label={ui("ANY ACTIVITY")} tone="info"/></View>
    <View style={s.activityGrid}>{effortActivities.map(a=><Pressable key={a.source}
     accessibilityRole="button" accessibilityLabel={`Open ${a.title} to contribute`}
     disabled={!onNavigateActivity} onPress={()=>onNavigateActivity?.(a.source)}

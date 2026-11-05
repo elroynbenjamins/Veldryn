@@ -1,5 +1,8 @@
 import {gameAlert} from '../core/game-alerts';
 import {useSocialText} from '../i18n/social';
+import {useGameLanguage} from '../i18n/GameLanguageProvider';
+import {useGuildHallUiText} from '../i18n/guild-hall-ui';
+import type {Language} from '../i18n/languages';
 import {useEffect,useMemo,useState} from 'react';
 import {StyleSheet,Text,View} from 'react-native';
 import {GameButton} from './GameButton';
@@ -12,14 +15,14 @@ import {radii,typography,type ThemeColors} from '../theme/theme';
 import {useGameTheme} from '../theme/ThemeContext';
 
 function normalized(value:string){return value.trim().slice(0,280)}
-function updatedLabel(value?:string|null){
- if(!value)return 'No notice posted yet';
+function updatedLabel(value:string|null|undefined,language:Language,ui:ReturnType<typeof useGuildHallUiText>){
+ if(!value)return ui('No notice posted yet');
  const date=new Date(value);
- return Number.isFinite(date.getTime())?'Updated '+date.toLocaleString():'Updated recently';
+ return Number.isFinite(date.getTime())?ui('Updated {date}',{date:date.toLocaleString(language)}):ui('Updated recently');
 }
 
 export function OnlineGuildNoticeBoardPanel({compact=false}:{compact?:boolean}={}){
- const st=useSocialText();
+ const st=useSocialText(),ui=useGuildHallUiText(),language=useGameLanguage();
  const C=useGameTheme(),s=useMemo(()=>makeStyles(C),[C]);
  const [board,setBoard]=useState<GuildNoticeBoardState|null>(null),[draft,setDraft]=useState(''),[editing,setEditing]=useState(false),[loading,setLoading]=useState(true),[busy,setBusy]=useState(false),[error,setError]=useState('');
  const load=async()=>{setLoading(true);setError('');try{const next=await guildNoticeBoardState();setBoard(next);setDraft(next?.body??'');setEditing(false)}catch(reason){setError(reason instanceof Error?reason.message:st("Unable to load the Guild Notice Board."))}finally{setLoading(false)}};
@@ -28,10 +31,10 @@ export function OnlineGuildNoticeBoardPanel({compact=false}:{compact?:boolean}={
  const save=async()=>{if(!board?.canEdit||busy||!dirty)return;setBusy(true);setError('');try{const next=await updateGuildNoticeBoard(clean);setBoard(next);setDraft(next.body);setEditing(false)}catch(reason){const message=reason instanceof Error?reason.message:st("Unable to update the Guild Notice Board.");setError(message);gameAlert.alert(st("Guild Notice Board"),message)}finally{setBusy(false)}};
 
  if(loading&&!board)return <LoadingState label={st("Loading Guild Notice Board…")} detail={st("Syncing the private member bulletin.")} compact/>;
- if(!board)return <Panel><Text style={s.title}>{st("Guild Notice Board")}</Text><Text style={s.copy}>{error||'Join a Guild to view its member-only Notice Board.'}</Text><GameButton compact title={st("Retry")} tone="secondary" onPress={()=>load()}/></Panel>;
+ if(!board)return <Panel><Text style={s.title}>{st("Guild Notice Board")}</Text><Text style={s.copy}>{error||ui('Join a Guild to view its member-only Notice Board.')}</Text><GameButton compact title={st("Retry")} tone="secondary" onPress={()=>load()}/></Panel>;
 
  return <Panel style={compact&&!editing?s.compactPanel:undefined}>
-  <View style={s.head}><View style={s.flex}><Text style={s.kicker}>{st("MEMBER NOTICE BOARD")}</Text>{!compact?<><Text style={s.title}>{st("Guild Notice Board")}</Text><Text style={s.meta}>{updatedLabel(board.updatedAt)}</Text></>:null}</View>{!compact?<StatusPill label={st("MEMBERS ONLY")} tone="good"/>:null}</View>
+  <View style={s.head}><View style={s.flex}><Text style={s.kicker}>{st("MEMBER NOTICE BOARD")}</Text>{!compact?<><Text style={s.title}>{st("Guild Notice Board")}</Text><Text style={s.meta}>{updatedLabel(board.updatedAt,language,ui)}</Text></>:null}</View>{!compact?<StatusPill label={st("MEMBERS ONLY")} tone="good"/>:null}</View>
   {!editing?<View style={[s.notice,!board.body&&s.noticeEmpty,compact&&s.compactNotice]}>{board.body?<Text style={s.noticeText}>{board.body}</Text>:<><Text style={s.emptyTitle}>{st("No notice posted")}</Text>{!compact?<Text style={s.copy}>{st("Guild leadership can post a short member-only notice here.")}</Text>:null}</>}</View>:<View style={s.editor}>
    <GameTextInput accessibilityLabel={st("Guild Notice Board text")} multiline value={draft} onChangeText={value=>setDraft(value.slice(0,280))} maxLength={280} placeholder={st("Raid notes, weekly priorities, Guild reminders…")} placeholderTextColor={C.muted} style={s.input}/>
    <View style={s.editorMeta}><Text style={s.hint}>{st("Visible to Guild members only · blank text clears the notice.")}</Text><Text style={[s.counter,draft.length>=260&&s.counterWarn]}>{draft.length}/280</Text></View>

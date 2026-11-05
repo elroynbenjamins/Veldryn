@@ -17,6 +17,13 @@ for(const [value,label] of [
  ['expectedVersion:before.version','optimistic version contract'],
  ['Dedicated smoke account must be idle','idle staging-account guard'],
  ['Repeated gameplay receipt was not idempotent','idempotent retry assertion'],
+ ["new URL('../apps/mobile/eas.json'",'configured staging origin verification'],
+ ["configuredUrl.origin!==expectedStagingUrl.origin",'production URL rejection'],
+ ["'x-app-version':appVersion",'version header for mandatory-update gate'],
+ ["'x-app-platform':'android'",'Android platform header for mandatory-update gate'],
+ ["new URL('../apps/mobile/app.json'",'version sourced from mobile build metadata'],
+ ["edge('coop/entry','GET')",'authenticated co-op dungeon entry read'],
+ ["Array.isArray(entry.dungeons)",'co-op dungeon projection verification'],
 ])need(value,label);
 if(mobilePackage.scripts?.['test:online-staging-smoke']!=='node ../../tools/online-staging-smoke.mjs')throw new Error('mobile package must expose the staging smoke command');
 console.log('PASS: opt-in staging gameplay smoke contract');

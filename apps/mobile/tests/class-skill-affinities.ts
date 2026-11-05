@@ -136,9 +136,9 @@ check('legacy forge jobs receive no retroactive affinity',()=>{
  const result=claimForgeJob(s,job.id,job.completesAtMs+1,.9).state;
  assert.equal(result.skills.find(row=>row.skillId==='enchanting')!.xp-base.skills.find(row=>row.skillId==='enchanting')!.xp,refine.xp);
 });
-check('active cancellation still refunds materials and 90% Gold',()=>{
+check('active cancellation returns materials and no Gold',()=>{
  const base=funded('HEXWEAVER',refine.inputs),started=startGemRefinement(base,refine.id,NOW),cancelled=cancelEquipmentCraft(started.state,started.job.id,NOW+1000).state;
- assert.equal(cancelled.character!.gold,base.character!.gold-refine.gold+Math.floor(refine.gold*.9));
+ assert.equal(cancelled.character!.gold,base.character!.gold-refine.gold);
  for(const i of refine.inputs)assert.equal(cancelled.inventory.stacks.find(row=>row.itemId===i.itemId)!.quantity,base.inventory.stacks.find(row=>row.itemId===i.itemId)!.quantity);
 });
 check('gem combination follows the same formula',()=>{

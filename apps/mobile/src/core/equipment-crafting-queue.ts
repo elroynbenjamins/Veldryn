@@ -418,7 +418,7 @@ export function claimAllReadyEquipmentCrafts(state:GameState,nowMs:number,truste
   return {state:next,claimed,results,gemClaims,blocked};
 }
 
-export const EQUIPMENT_CRAFT_CANCEL_GOLD_REFUND=.90;
+export const EQUIPMENT_CRAFT_CANCEL_GOLD_REFUND=0;
 
 function addStackable(stacks:ItemStack[],capacity:number,itemId:string,quantityToAdd:number){
   const existing=stacks.find(row=>row.itemId===itemId);
@@ -456,8 +456,8 @@ export function cancelEquipmentCraft(state:GameState,jobId:string,nowMs:number){
   if(job.completesAtMs<=nowMs)throw new Error('Finished equipment must be claimed instead of cancelled');
   const recipe=timedEquipmentRecipe(job.recipeId)??gemCombineRecipeV1(job.recipeId)??gemRefineRecipeV1(job.recipeId);if(!recipe)throw new Error('Crafting recipe is no longer available');
   const reservedInputs=job.reservedInputs?.length?job.reservedInputs:recipe.inputs,reservedGold=job.reservedGold??recipe.gold;
-  const waiting=job.startedAtMs>nowMs,refundRate=waiting?1:EQUIPMENT_CRAFT_CANCEL_GOLD_REFUND;
-  const refundGold=Math.floor(reservedGold*refundRate);
+  const waiting=job.startedAtMs>nowMs;
+  const refundGold=Math.floor(reservedGold*EQUIPMENT_CRAFT_CANCEL_GOLD_REFUND);
   let next=refundOwnerGold(projected,job.ownerCharacterId,refundGold);
   for(const input of reservedInputs)next=refundMaterialToOwner(next,job.ownerCharacterId,input);
   const remaining=queue.filter(row=>row.id!==jobId);

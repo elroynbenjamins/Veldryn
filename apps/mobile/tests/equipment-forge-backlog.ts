@@ -41,8 +41,8 @@ const reservedGold=equipmentCraftingQueue(state).find(job=>job.id===waitingBefor
 const ownerGoldBefore=state.character!.gold;
 const materialBefore=Object.fromEntries((equipmentCraftingQueue(state).find(job=>job.id===waitingBeforeCancel.id)!.reservedInputs??[]).map(input=>[input.itemId,qty(state,input.itemId)]));
 const cancelledWaiting=cancelEquipmentCraft(state,waitingBeforeCancel.id,1020);
-ok(cancelledWaiting.waiting&&cancelledWaiting.feeGold===0&&cancelledWaiting.refundGold===reservedGold,'Waiting cancellation must refund 100% Gold with no setup fee');
-ok(cancelledWaiting.state.character!.gold===ownerGoldBefore+reservedGold,'Waiting cancellation must restore all reserved Gold');
+ok(cancelledWaiting.waiting&&cancelledWaiting.feeGold===reservedGold&&cancelledWaiting.refundGold===0,'Waiting cancellation must retain the Gold cost');
+ok(cancelledWaiting.state.character!.gold===ownerGoldBefore,'Waiting cancellation must not restore Gold');
 for(const input of cancelledWaiting.refundedInputs)ok(qty(cancelledWaiting.state,input.itemId)===materialBefore[input.itemId]+input.quantity,'Waiting cancellation must restore all reserved '+input.itemId);
 
 // Crafts queued before the Gold rebalance retain their original reserved value.
@@ -50,7 +50,7 @@ const legacyJob=equipmentCraftingQueue(state).find(job=>job.startedAtMs<=1020)!;
 const oldGold=Math.floor(legacyJob.reservedGold!/3);
 const legacyState={...state,account:{...state.account,equipmentCraftingQueue:equipmentCraftingQueue(state).map(job=>job.id===legacyJob.id?{...job,reservedGold:oldGold}:job)}};
 const legacyCancelled=cancelEquipmentCraft(legacyState,legacyJob.id,1020);
-ok(legacyCancelled.refundGold===Math.floor(oldGold*.9)&&legacyCancelled.feeGold===oldGold-Math.floor(oldGold*.9),'Canceling a legacy active forge job must refund its original reserved Gold, not the tripled current recipe price');
+ok(legacyCancelled.refundGold===0&&legacyCancelled.feeGold===oldGold,'Canceling a legacy active forge job must retain its original reserved Gold cost');
 
 let full=cancelledWaiting.state;
 while(equipmentCraftQueueModel(full,1020).waiting<MAX_WAITING_EQUIPMENT_CRAFTS){

@@ -42,7 +42,7 @@ export function EquipmentCraftQueuePanel({state,onClaim,onClaimAll,onCancel,onMo
 
     {!model.jobs.length?<Text style={s.empty}>{gt("No equipment is being crafted. Start a gear recipe below to use a forge slot.")}</Text>:null}
     {model.ready>1?<GameButton title={'Claim all finished · '+model.ready} onPress={onClaimAll}/>:null}
-    <Text style={s.cancelNote}>{gt("Waiting cancellation: 100% materials + Gold. Active cancellation: 100% materials + 90% Gold.")}</Text>
+    <Text style={s.cancelNote}>Cancelling returns all reserved materials and no Gold.</Text>
 
     <Pressable accessibilityRole="button" accessibilityState={{expanded:showUnlocks}} onPress={()=>setShowUnlocks(value=>!value)} style={s.unlockToggle}><View style={s.flex}><Text style={s.unlockTitle}>Forge capacity · {model.slotInfo.capacity}/{model.slotInfo.max} active + {model.waitingCapacity} waiting</Text><Text style={s.meta}>{earnedBonus?earnedBonus+' bonus source'+(earnedBonus===1?'':'s')+' active':'3 base slots active'}</Text></View><Text style={s.chevron}>{showUnlocks?'−':'+'}</Text></Pressable>
     {showUnlocks&&<View style={s.sources}>{model.slotInfo.sources.map(row=><View key={row.id} style={s.source}><Text style={[s.sourceMark,row.earned?s.earned:s.locked]}>{row.earned?'✓':'○'}</Text><View style={s.flex}><Text style={s.sourceName}>{row.label}</Text><Text style={s.meta}>{row.id==='base'?'+3 base slots':'+1 active slot'+(model.slotInfo.capacity>=model.slotInfo.max&&row.earned?' · active cap reached':'')}</Text></View></View>)}<Text style={s.capNote}>{gt("Active slot bonuses stack to a maximum of 5. The separate waiting backlog always holds up to 5 reserved equipment crafts.")}</Text></View>}

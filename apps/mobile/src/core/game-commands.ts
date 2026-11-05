@@ -314,7 +314,7 @@ export function executeGameCommand(previous:GameState,value:unknown,now:number,o
    break;
   }
   case 'craft_cancel':{
-   const result=cancelEquipmentCraft(state,text(a,'id',160),now);state=result.state;message=`Craft cancelled · ${result.refundGold} Gold refunded`;break;
+   const result=cancelEquipmentCraft(state,text(a,'id',160),now);state=result.state;message=`Materials returned: ${result.refundedInputs.map(row=>`${row.quantity}× ${itemDef(row.itemId).name}`).join(', ') || 'none'} · 0 Gold returned`;break;
   }
   case 'craft_move':{
    state=moveWaitingEquipmentCraft(state,text(a,'id',160),oneOf(a.direction,['up','down']),now);message='Forge backlog priority updated';break;

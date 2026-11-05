@@ -12,7 +12,7 @@ const commands=read('src/core/game-commands.ts');
 const notifications=read('src/core/navigation-notifications.ts');
 const app=read('App.tsx');
 
-ok(queue.includes('EQUIPMENT_CRAFT_CANCEL_GOLD_REFUND=.90'),'Cancellation economy must refund 90% Gold');
+ok(queue.includes('EQUIPMENT_CRAFT_CANCEL_GOLD_REFUND=0'),'Cancellation economy must refund no Gold');
 ok(queue.includes('reservedInputs')&&queue.includes('reservedGold'),'Cancellation must use reservation snapshots rather than mutable recipe balance');
 ok(queue.includes('Finished equipment must be claimed instead of cancelled'),'Finished forge jobs must not be cancel-refunded');
 ok(queue.includes('Free Inventory or Bank space before cancelling'),'Cancellation must fail safely rather than delete refunded materials');
@@ -22,7 +22,7 @@ ok(prereq.includes("itemDef(recipe.output.itemId).type==='material'"),'Auto-prer
 ok(prereq.includes('structuredClone(state)'),'Prerequisite processing must be atomic from the caller state');
 ok(prereq.includes('gathering, combat or another external source'),'Prerequisite processing must stop at external acquisition requirements');
 
-ok(panel.includes('Cancel')&&panel.includes('Active cancellation: 100% materials + 90% Gold'),'Forge UI must expose the active-craft cancellation rule');
+ok(panel.includes('Cancel')&&panel.includes('Cancelling returns all reserved materials and no Gold.'),'Forge UI must expose the cancellation rule');
 ok(card.includes('Craft prerequisites'),'Equipment recipes must expose prerequisite processing when useful');
 ok(skills.includes('onCancelCraft')&&skills.includes('onCraftPrerequisites'),'Skills must wire both management actions');
 ok(commands.includes("case 'craft_cancel'")&&commands.includes("case 'craft_prerequisites'"),'Online-authoritative commands must support both management actions');

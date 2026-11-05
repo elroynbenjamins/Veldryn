@@ -20,8 +20,8 @@ const job=equipmentCraftingQueue(started.state)[0];
 ok(job.reservedGold===t1.gold&&JSON.stringify(job.reservedInputs)===JSON.stringify(t1.inputs),'Forge jobs must snapshot reserved Gold and material inputs');
 const cancelled=cancelEquipmentCraft(started.state,job.id,1001);
 ok(equipmentCraftingQueue(cancelled.state).length===0,'Cancelling must remove the active forge job');
-ok(cancelled.refundGold===Math.floor(t1.gold*EQUIPMENT_CRAFT_CANCEL_GOLD_REFUND),'Cancellation must refund exactly 90% of reserved Gold');
-ok(cancelled.state.character!.gold===initialGold-cancelled.feeGold,'Cancellation should leave only the 10% forge setup fee spent');
+ok(cancelled.refundGold===0&&EQUIPMENT_CRAFT_CANCEL_GOLD_REFUND===0,'Cancellation must refund no Gold');
+ok(cancelled.state.character!.gold===initialGold-t1.gold,'Cancellation must retain the full Gold cost');
 for(const input of t1.inputs)ok(qty(cancelled.state,input.itemId)===initialMaterials[input.itemId],'Cancellation must return all reserved '+input.itemId);
 
 let finishedCancelBlocked=false;
@@ -58,6 +58,6 @@ const startedCommand=executeGameCommand(commandState,{type:'craft',args:{id:t1.i
 const commandJob=equipmentCraftingQueue(startedCommand.state)[0];
 const cancelledCommand=executeGameCommand(startedCommand.state,{type:'craft_cancel',args:{id:commandJob.id}},7001);
 ok(equipmentCraftingQueue(cancelledCommand.state).length===0,'Authoritative craft_cancel command must remove the forge job');
-ok(cancelledCommand.message?.includes('Gold refunded'),'Authoritative cancel should return player-facing refund information');
+ok(cancelledCommand.message?.includes('Materials returned:')&&cancelledCommand.message.includes('0 Gold returned'),'Authoritative cancel should list returned materials and no Gold');
 
-console.log('PASS: forge cancellation refunds materials/90% Gold, prerequisite processing is atomic, and gathering/combat remain manual');
+console.log('PASS: forge cancellation refunds all materials and no Gold, prerequisite processing is atomic, and gathering/combat remain manual');

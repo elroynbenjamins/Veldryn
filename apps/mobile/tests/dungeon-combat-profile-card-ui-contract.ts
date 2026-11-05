@@ -33,7 +33,7 @@ ok(enemyArt.includes("'bell-warden':'Oathglass Sentinel'")&&enemyArt.includes("'
 // available through tap-to-inspect and the existing accessibility label.
 ok(!card.includes('s.enemyPlate')&&!card.includes('s.enemyBossPlate'),'Enemy portraits must not be covered by an encounter/name plate');
 ok(!card.includes('st("ENCOUNTER")')&&!card.includes('st("FINAL BOSS")'),'Enemy and boss combat cards must omit redundant name headers');
-ok(card.includes('accessibilityLabel={`${boss?')&&card.includes('Dungeon enemy'),'Enemy identity must remain available for screen readers');
+ok(card.includes("accessibilityLabel={ui(boss?'Boss {name}':'Dungeon enemy {name}'")&&card.includes('dungeonEnemyDisplayName(name)'),'Enemy identity must remain available for screen readers');
 ok(card.includes('enemyHpHead')&&card.includes('enemyHpTrack'),'Enemy HP counters and progress bars must remain visible');
 ok(card.includes("boss?'♛':'◆'"),'Unknown enemies must retain a safe visual fallback');
 ok(card.includes('bossPhaseLabel')&&card.includes('PHASE'),'Boss card must keep the latest authoritative phase visible');
@@ -91,8 +91,8 @@ ok(stage.includes('layout.contributionIdentityMinWidth')&&stage.includes('layout
 ok(read('src/theme/theme.ts').includes('touchTargetMin=44'),'The shared minimum touch target must stay at least 44px');
 ok(!stage.includes('replayButton:{')&&!stage.includes('Replay combat recap'),'Dungeon combat must not have replay controls after completion');
 ok(stage.includes('layout.contributionIdentityMinWidth')&&stage.includes('layout.contributionIdentityWidthPct'),'Contribution recap identity width must adapt on narrow phones');
-ok(card.includes('selectedForInspect')&&card.includes('Inspect ${slot.name} combat details'),'Party combat cards must expose tap-to-inspect interaction without adding a permanent button row');
-ok(card.includes('Inspect ${dungeonEnemyDisplayName(name)} combat details')&&card.includes('inspectSelected'),'Boss/enemy combat cards must support the same inspect interaction and selected state');
+ok(card.includes('selectedForInspect')&&card.includes("accessibilityLabel={ui('Inspect {name} combat details',{name:slot.name})}"),'Party combat cards must expose tap-to-inspect interaction without adding a permanent button row');
+ok(card.includes("accessibilityLabel={ui('Inspect {name} combat details',{name:dungeonEnemyDisplayName(name)})}")&&card.includes('inspectSelected'),'Boss/enemy combat cards must support the same inspect interaction and selected state');
 ok(stage.includes('inspectKey')&&stage.includes('enemyInspectKey(enemy.id)')&&stage.includes('slotInspectKey(slot)'),'Battlefield must track inspection by authoritative id for every enemy and all four party cards');
 ok(stage.includes('const toggleInspect=(key:string)=>setInspectKey('),'Combatant inspection must never pause automatic combat playback');
 ok(stage.includes('<CombatantInspectPanel')&&stage.includes('onClose={()=>setInspectKey(undefined)}'),'Selected combatant must render a closable compact inspection panel');

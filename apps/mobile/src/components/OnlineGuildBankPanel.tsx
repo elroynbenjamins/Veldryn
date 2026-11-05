@@ -147,8 +147,8 @@ export function OnlineGuildBankPanel({snapshot,onReload,focusResourceId,onFocusH
  const inventoryCard=(id:string)=>{
   const onHand=balance(id),remaining=depositCapacity(id),state=status(id);
   return <Pressable key={id} accessibilityRole="button"
-   accessibilityLabel={resourceTitle(id)+', '+onHand.toLocaleString()+' in Guild Bank. '+remaining.toLocaleString()+' more can be donated.'}
-   accessibilityHint="Opens material details and donation options"
+   accessibilityLabel={ui('{resource}, {stored} in Guild Bank. {more} more can be donated.',{resource:resourceTitle(id),stored:onHand.toLocaleString(),more:remaining.toLocaleString()})}
+   accessibilityHint={ui("Opens material details and donation options")}
    disabled={depositDisabled} onPress={()=>choose(id)}
    style={({pressed})=>[s.bankSlot,accessibleGrid&&s.accessibleSlot,state==='Covered'&&s.fundedSlot,
     state==='Needed now'?s.nowSlot:state==='Upcoming'?s.futureSlot:null,pressed&&s.pressed]}>
@@ -159,7 +159,7 @@ export function OnlineGuildBankPanel({snapshot,onReload,focusResourceId,onFocusH
    </View>
    <Text numberOfLines={2} style={s.slotName}>{shortName(id)}</Text>
    <Text numberOfLines={1} style={[s.slotNeed,state==='Needed now'?s.nowText:state==='Upcoming'?s.futureText:null]}>
-    {remaining>0?'+'+compactQuantity(remaining)+' needed':'✓ Covered'}
+    {remaining>0?ui('+{count} needed',{count:compactQuantity(remaining)}):ui('✓ Covered')}
    </Text>
   </Pressable>;
  };
@@ -168,45 +168,45 @@ export function OnlineGuildBankPanel({snapshot,onReload,focusResourceId,onFocusH
   return <View key={(upcoming?'later-':'now-')+id} style={s.neededRow}>
    <View style={s.neededArt}>{id==='gold'?<Text style={s.goldGlyph}>G</Text>:<ResourceArtwork itemId={id} size={34} framed={false}/>}</View>
    <View style={s.flex}><Text numberOfLines={2} style={s.name}>{resourceTitle(id)}</Text>
-    <Text style={s.meta}>{balance(id).toLocaleString()} stored · {shortage.toLocaleString()} more to deposit{!upcoming&&(needs.get(id)?.skills??0)>0?' · Guild Skills':''}</Text>
+    <Text style={s.meta}>{ui('{stored} stored · {more} more to deposit',{stored:balance(id).toLocaleString(),more:shortage.toLocaleString()})}{!upcoming&&(needs.get(id)?.skills??0)>0?' · '+ui('Guild Skills'):''}</Text>
    </View>
-   {shortage>0?<GameButton compact tone="secondary" title="Donate" disabled={depositDisabled} onPress={()=>choose(id)}/>:
-    <Text style={[s.meta,s.nowText]}>In bank</Text>}
+   {shortage>0?<GameButton compact tone="secondary" title={ui("Donate")} disabled={depositDisabled} onPress={()=>choose(id)}/>:
+    <Text style={[s.meta,s.nowText]}>{ui('In bank')}</Text>}
   </View>;
  };
  const canDonateSelected=!!selected&&!depositDisabled&&depositCapacity(selected)>0;
  const maxAmount=selected?Math.min(1000000,depositCapacity(selected)):0;
  return <Panel>
   <View style={s.headingRow}>
-   <View style={s.flex}><Text style={s.kicker}>SHARED STORAGE</Text>
-    <Text accessibilityRole="header" style={s.heading}>Guild Bank</Text>
-    <Text style={s.meta}>Deposit only · Construction & Guild Skills</Text>
+   <View style={s.flex}><Text style={s.kicker}>{ui('SHARED STORAGE')}</Text>
+    <Text accessibilityRole="header" style={s.heading}>{ui("Guild Bank")}</Text>
+    <Text style={s.meta}>{ui('Deposit only · Construction & Guild Skills')}</Text>
    </View>
    <View style={s.vaultMark}><Text style={s.vaultGlyph}>▣</Text></View>
   </View>
   <View style={s.stats}>
-   <View style={s.stat}><Text style={s.statLabel}>STORED MATERIALS</Text><Text style={s.statValue}>{snapshot.bank?storedTypes:'—'}<Text style={s.statSuffix}> types</Text></Text></View>
+   <View style={s.stat}><Text style={s.statLabel}>{ui('STORED MATERIALS')}</Text><Text style={s.statValue}>{snapshot.bank?storedTypes:'—'}<Text style={s.statSuffix}>{' '+ui('types')}</Text></Text></View>
    <View style={s.statDivider}/>
-   <View style={s.stat}><Text style={s.statLabel}>STILL TO DEPOSIT</Text><Text style={s.statValue}>{snapshot.bank?remainingTotal.toLocaleString():'—'}<Text style={s.statSuffix}> units</Text></Text></View>
+   <View style={s.stat}><Text style={s.statLabel}>{ui('STILL TO DEPOSIT')}</Text><Text style={s.statValue}>{snapshot.bank?remainingTotal.toLocaleString():'—'}<Text style={s.statSuffix}>{' '+ui('units')}</Text></Text></View>
   </View>
-  {snapshot.bank===null?<Text accessibilityRole="alert" style={s.warning}>Bank balances are unavailable. Donations are paused until a refresh succeeds.</Text>:null}
-  {skillLoading?<Text style={s.meta}>Checking released Guild Skill requirements…</Text>:null}
+  {snapshot.bank===null?<Text accessibilityRole="alert" style={s.warning}>{ui('Bank balances are unavailable. Donations are paused until a refresh succeeds.')}</Text>:null}
+  {skillLoading?<Text style={s.meta}>{ui('Checking released Guild Skill requirements…')}</Text>:null}
   {skillError?<View style={s.actions}>
-   <Text accessibilityRole="alert" style={[s.warning,s.flex]}>Guild Skill requirements could not load. Construction deposits remain available.</Text>
-   <GameButton compact tone="secondary" title="Retry" onPress={()=>setSkillRefresh(v=>v+1)}/>
+   <Text accessibilityRole="alert" style={[s.warning,s.flex]}>{ui('Guild Skill requirements could not load. Construction deposits remain available.')}</Text>
+   <GameButton compact tone="secondary" title={ui("Retry")} onPress={()=>setSkillRefresh(v=>v+1)}/>
   </View>:null}
   {!!error&&<Text accessibilityRole="alert" style={s.error}>{error}</Text>}
   {!!notice&&<Text accessibilityLiveRegion="polite" style={s.success}>{notice}</Text>}
   {pending?<View style={s.pending}>
-   <Text style={s.name}>Deposit needs confirmation</Text>
-   <Text style={s.help}>{pending.amount.toLocaleString()} {resourceTitle(pending.resourceId)} · Retry the saved receipt. Do not create a second donation.</Text>
+   <Text style={s.name}>{ui('Deposit needs confirmation')}</Text>
+   <Text style={s.help}>{ui('{amount} {resource} · Retry the saved receipt. Do not create a second donation.',{amount:pending.amount.toLocaleString(),resource:resourceTitle(pending.resourceId)})}</Text>
    <View style={s.actions}>
-    <GameButton compact title="Retry saved deposit" disabled={busy} loading={busy} onPress={()=>deposit(pending)}/>
-    <GameButton compact tone="secondary" title="Discard local retry" disabled={busy} onPress={discard}/>
+    <GameButton compact title={ui("Retry saved deposit")} disabled={busy} loading={busy} onPress={()=>deposit(pending)}/>
+    <GameButton compact tone="secondary" title={ui("Discard local retry")} disabled={busy} onPress={discard}/>
    </View>
   </View>:null}
   <View style={s.tabs} accessibilityRole="tablist">
-   {([{id:'inventory',label:'▦  Inventory'},{id:'needed',label:'◎  Needed'},{id:'activity',label:'◷  Activity'}] as const).map(tab=><Pressable key={tab.id} accessibilityRole="tab"
+   {([{id:'inventory',label:'▦  '+ui('Inventory')},{id:'needed',label:'◎  '+ui('Needed')},{id:'activity',label:'◷  '+ui('Activity')}] as const).map(tab=><Pressable key={tab.id} accessibilityRole="tab"
     accessibilityState={{selected:view===tab.id}} onPress={()=>{setView(tab.id);setNotice('')}}
     style={({pressed})=>[s.tab,view===tab.id&&s.activeTab,pressed&&s.pressed]}>
     <Text numberOfLines={1} style={[s.tabText,view===tab.id&&s.activeTabText]}>{tab.label}</Text>

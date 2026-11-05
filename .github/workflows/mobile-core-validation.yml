@@ -46,6 +46,8 @@ jobs:
         run: pnpm --dir ../../backend test:coop-composition
       - name: Typecheck backend online Q-Mode runtime
         run: pnpm --dir ../../backend typecheck:online
+      - name: Validate Q-Mode merchant, dungeon healing and tonic runtime contracts
+        run: pnpm --dir ../../backend test:qmode-merchant
       - name: Verify Live room pacing and progressive battle simulation
         run: pnpm --dir ../../backend test:live-pacing
       - name: Verify dungeon tier difficulty and reward parity

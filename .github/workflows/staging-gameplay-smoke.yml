@@ -1,0 +1,43 @@
+name: Staging gameplay and dungeon smoke (manual)
+
+# This workflow is intentionally never triggered on push or pull_request:
+# it authenticates a disposable QA player and performs a no-op settings write.
+on:
+  workflow_dispatch:
+    inputs:
+      confirmation:
+        description: Type I_UNDERSTAND_STAGING_WRITES to authorize the disposable-account write
+        type: string
+        required: true
+
+permissions:
+  contents: read
+
+jobs:
+  staging-smoke:
+    runs-on: ubuntu-latest
+    environment: supabase-staging
+    env:
+      ONLINE_SMOKE_EMAIL: ${{ secrets.ONLINE_SMOKE_EMAIL }}
+      ONLINE_SMOKE_PASSWORD: ${{ secrets.ONLINE_SMOKE_PASSWORD }}
+      ONLINE_SMOKE_CONFIRM: ${{ inputs.confirmation }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Require explicit staging-write authorization
+        run: |
+          if [ "$ONLINE_SMOKE_CONFIRM" != "I_UNDERSTAND_STAGING_WRITES" ]; then
+            echo "::error::Confirmation must be I_UNDERSTAND_STAGING_WRITES."
+            exit 1
+          fi
+      - name: Select only the configured staging Supabase project
+        run: |
+          node <<'NODE' >> "$GITHUB_ENV"
+          const config = require('./apps/mobile/eas.json').build.staging.env;
+          process.stdout.write('ONLINE_SMOKE_SUPABASE_URL=' + config.EXPO_PUBLIC_SUPABASE_URL + '\n');
+          process.stdout.write('ONLINE_SMOKE_SUPABASE_ANON_KEY=' + config.EXPO_PUBLIC_SUPABASE_ANON_KEY + '\n');
+          NODE
+      - name: Verify authenticated gameplay and co-op staging routes
+        run: node tools/online-staging-smoke.mjs

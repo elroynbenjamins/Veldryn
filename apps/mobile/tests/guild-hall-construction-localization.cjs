@@ -13,7 +13,7 @@ const {guildConstructionUiRows,guildConstructionUiText}=require('../src/i18n/gui
 const locales=['de','es','nl','it','fr','ru','tr'];
 assert.deepEqual([...SUPPORTED_LANGUAGES],['en',...locales]);
 const placeholders=value=>[...value.matchAll(/\{(\w+)\}/g)].map(m=>m[1]).sort();
-for(const [catalog,translate,expected] of [[guildHallUiRows,guildHallUiText,70],[guildConstructionUiRows,guildConstructionUiText,49]]){
+for(const [catalog,translate,expected] of [[guildHallUiRows,guildHallUiText,71],[guildConstructionUiRows,guildConstructionUiText,49]]){
  assert.equal(Object.keys(catalog).length,expected,'review translation catalog when labels change');
  for(const [en,translations] of Object.entries(catalog)){
   assert.equal(translations.length,7);
@@ -39,4 +39,4 @@ for(const token of ["useGuildHallUiText()","ui('Guild Hall sections')","ui('Guil
 for(const token of ["useGuildConstructionUiText()","ui('Allocate Guild Bank materials?')","ui('Allocate {amount} {resource} to {upgrade}? This Guild Bank allocation cannot be reversed.'","ui('Discard pending donation?')","ui('Donation amount')","ui('Set funding amount to {amount}'","ui('Donate {resource} to {upgrade}'","donateOnlineGuildConstruction(input)","Number.isSafeInteger(donationAmount)","donationAmount<=remaining","donationAmount<=bankAmount"])assert.ok(construction.includes(token),'Construction safety or translation missing: '+token);
 for(const token of ["updatedLabel(board.updatedAt,language,ui)","ui('Updated {date}'","error||ui('Join a Guild to view its member-only Notice Board.')","{board.body}","updateGuildNoticeBoard(clean)"])assert.ok(notice.includes(token),'Notice missing: '+token);
 assert.ok(hall.includes('{trophy.label}')&&hall.includes('>{def.name}</Text>'),'Unreviewed names must remain verbatim');
-console.log('PASS: 70 Hall and 49 Construction keys in seven locales, safe placeholders and existing donation authorization');
+console.log('PASS: 71 Hall and 49 Construction keys in seven locales, safe placeholders and existing donation authorization');

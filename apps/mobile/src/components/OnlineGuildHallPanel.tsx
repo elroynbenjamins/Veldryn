@@ -87,12 +87,12 @@ export function GuildHallView({projection,loading=false,error='',onRefresh,activ
  const funded=needs.reduce((total,requirement)=>total+Math.min(requirement.amount,Math.max(0,funding?.resources[requirement.key]??0)),0);
  const required=needs.reduce((total,requirement)=>total+requirement.amount,0);
  const benefitsList=[
-  ...(benefits.canChangeGuildColors?[{name:'Guild color editing',detail:'Only previously unlocked colors can be selected'}]:[]),
-  ...(benefits.smithingTailoringSpeedBps?[{name:'Smithing & Tailoring',detail:'+'+(benefits.smithingTailoringSpeedBps/100)+'% processing speed'}]:[]),
-  ...(benefits.nonCombatXpBps?[{name:'Non-combat skill XP',detail:'+'+(benefits.nonCombatXpBps/100)+'%'}]:[]),
-  ...(benefits.guildTokenBonusBps?[{name:'Guild Token earnings',detail:'+'+(benefits.guildTokenBonusBps/100)+'% · weekly cap '+benefits.guildTokenWeeklyCap}]:[]),
-  ...(benefits.guildBossDamageBps?[{name:'Guild Boss damage',detail:'+'+(benefits.guildBossDamageBps/100)+'%'}]:[]),
-  ...(benefits.guildQuestGoldBps?[{name:'Guild Quest Gold',detail:'+'+(benefits.guildQuestGoldBps/100)+'%'}]:[]),
+  ...(benefits.canChangeGuildColors?[{name:ui('Guild color editing'),detail:ui('Only previously unlocked colors can be selected')}]:[]),
+  ...(benefits.smithingTailoringSpeedBps?[{name:ui('Smithing & Tailoring'),detail:ui('+{percent}% processing speed',{percent:benefits.smithingTailoringSpeedBps/100})}]:[]),
+  ...(benefits.nonCombatXpBps?[{name:ui('Non-combat skill XP'),detail:'+'+(benefits.nonCombatXpBps/100)+'%'}]:[]),
+  ...(benefits.guildTokenBonusBps?[{name:ui('Guild Token earnings'),detail:ui('+{percent}% · weekly cap {cap}',{percent:benefits.guildTokenBonusBps/100,cap:benefits.guildTokenWeeklyCap})}]:[]),
+  ...(benefits.guildBossDamageBps?[{name:ui('Guild Boss damage'),detail:'+'+(benefits.guildBossDamageBps/100)+'%'}]:[]),
+  ...(benefits.guildQuestGoldBps?[{name:ui('Guild Quest Gold'),detail:'+'+(benefits.guildQuestGoldBps/100)+'%'}]:[]),
  ];
  const renderHallProgress=()=> <Panel style={s.hero}>
   <View style={s.between}><View style={s.flex}><Text style={s.kicker}>{ui('AUTOMATIC HALL PROGRESSION')}</Text><Text style={s.heroTitle}>{stage}</Text><Text style={s.note}>{ui('{count} completed Guild Projects',{count:state.lifetimeProjectsCompleted})}</Text></View><View style={s.levelBadge}><Text style={s.level}>Lv {level}</Text><Text style={s.note}>/ 10</Text></View></View>

@@ -1,4 +1,5 @@
 import {useCallback,useEffect,useMemo,useRef,useState,type ReactNode} from 'react';
+import {useGuildHallUiText} from '../i18n/guild-hall-ui';
 import {ActivityIndicator,Image,Pressable,ScrollView,StyleSheet,Text,View,type ScrollViewInstance} from 'react-native';
 import {GameButton} from './GameButton';
 import {Panel} from './Panel';
@@ -26,32 +27,32 @@ interface HallNavigation {
  onTokenRewardsChanged?:()=>void|Promise<unknown>;
  headerHelp?:ReactNode;
 }
-const DESTINATIONS:readonly HeadquartersSection[]=['Overview','Construction','Bank','Shop','Legacy'];
+const DESTINATIONS=['Overview','Construction','Bank','Shop','Legacy'] as const satisfies readonly HeadquartersSection[];
 const SHORTCUTS=[
  {id:'Construction' as const,title:'Construction',detail:'Build together',art:'workshop' as const},
  {id:'Bank' as const,title:'Guild Bank',detail:'Donate supplies',art:'banner_gallery' as const},
  {id:'Shop' as const,title:'Token Shop',detail:'Spend Guild Tokens',art:'training_room' as const},
  {id:'Legacy' as const,title:'Hall & trophies',detail:'Facilities and history',art:'trophy_room' as const},
-];
+] as const;
 
 export function OnlineGuildHallPanel(navigation:HallNavigation){
- const C=useGameTheme(),s=useMemo(()=>styles(C),[C]);
+ const ui=useGuildHallUiText(),C=useGameTheme(),s=useMemo(()=>styles(C),[C]);
  const [projection,setProjection]=useState<Projection>(null),[loading,setLoading]=useState(true),[error,setError]=useState('');
  const load=useCallback(async(force=false)=>{
   setLoading(true);setError('');
   try{setProjection(await loadOnlineGuildHallV44(force))}
-  catch(reason){setError(reason instanceof Error?reason.message:'Unable to load Guild Hall.')}
+  catch(reason){setError(reason instanceof Error?reason.message:ui('Unable to load Guild Hall.'))}
   finally{setLoading(false)}
- },[]);
+ },[ui]);
  useEffect(()=>{void load()},[load]);
- if(loading&&!projection)return <Panel><Text style={s.title}>Guild Hall</Text><ActivityIndicator color={C.accent}/></Panel>;
- if(error&&!projection)return <Panel><Text style={s.title}>Guild Hall</Text><Text accessibilityRole="alert" style={s.error}>{error}</Text><GameButton title="Retry Guild Hall" tone="secondary" loading={loading} disabled={loading} onPress={()=>void load(true)}/></Panel>;
- if(!projection)return <Panel><Text style={s.title}>Guild Hall</Text><Text style={s.copy}>Join a Guild to unlock shared Hall progression.</Text></Panel>;
+ if(loading&&!projection)return <Panel><Text style={s.title}>{ui('Guild Hall')}</Text><ActivityIndicator color={C.accent}/></Panel>;
+ if(error&&!projection)return <Panel><Text style={s.title}>{ui('Guild Hall')}</Text><Text accessibilityRole="alert" style={s.error}>{error}</Text><GameButton title={ui("Retry Guild Hall")} tone="secondary" loading={loading} disabled={loading} onPress={()=>void load(true)}/></Panel>;
+ if(!projection)return <Panel><Text style={s.title}>{ui('Guild Hall')}</Text><Text style={s.copy}>{ui('Join a Guild to unlock shared Hall progression.')}</Text></Panel>;
  return <GuildHallView {...navigation} projection={projection} loading={loading} error={error} onRefresh={()=>void load(true)}/>;
 }
 
 export function GuildHallView({projection,loading=false,error='',onRefresh,activeSection,onSectionChange,onTokenRewardsChanged,headerHelp,previewMode=false}:{projection:NonNullable<Projection>;loading?:boolean;error?:string;onRefresh?:()=>void;previewMode?:boolean}&HallNavigation){
- const C=useGameTheme(),s=useMemo(()=>styles(C),[C]);
+ const ui=useGuildHallUiText(),C=useGameTheme(),s=useMemo(()=>styles(C),[C]);
  const [localSection,setLocalSection]=useState<HeadquartersSection>('Overview');
  const hallTabsRef=useRef<ScrollViewInstance>(null);
  const [shop,setShop]=useState<GuildTokenShopSnapshot|null>(null);
@@ -60,7 +61,8 @@ export function GuildHallView({projection,loading=false,error='',onRefresh,activ
  const [bankFocus,setBankFocus]=useState<string|null>(null);
  const [returnBuilding,setReturnBuilding]=useState<string|undefined>(undefined);
  const [returnSelection,setReturnSelection]=useState<{templateId:string;resourceId:string}|undefined>(undefined);
- const section=(activeSection??localSection)==='Skills'?'Overview':activeSection??localSection;
+ const requestedSection=activeSection??localSection;
+ const section=requestedSection==='Skills'?'Overview':requestedSection;
  // On a narrow phone the Hall tabs scroll horizontally; always reveal the selected tab.
  useEffect(()=>{
   const index=DESTINATIONS.indexOf(section);
@@ -70,9 +72,9 @@ export function GuildHallView({projection,loading=false,error='',onRefresh,activ
  const refreshShop=useCallback(async()=>{
   setShopLoading(true);setShopError('');
   try{setShop(await loadOnlineGuildTokenShop())}
-  catch(reason){setShopError(reason instanceof Error?reason.message:'Could not load guild construction and bank balances.')}
+  catch(reason){setShopError(reason instanceof Error?reason.message:ui('Could not load guild construction and bank balances.'))}
   finally{setShopLoading(false)}
- },[]);
+ },[ui]);
  useEffect(()=>{if(previewMode)setShopLoading(false);else void refreshShop()},[previewMode,refreshShop]);
  const {state,level,stage}=projection;
  const next=DEFAULT_GUILD_HALL_POLICY.hallLevelThresholds[level]??DEFAULT_GUILD_HALL_POLICY.hallLevelThresholds[9];
@@ -86,54 +88,54 @@ export function GuildHallView({projection,loading=false,error='',onRefresh,activ
  const funded=needs.reduce((total,requirement)=>total+Math.min(requirement.amount,Math.max(0,funding?.resources[requirement.key]??0)),0);
  const required=needs.reduce((total,requirement)=>total+requirement.amount,0);
  const benefitsList=[
-  ...(benefits.canChangeGuildColors?[{name:'Guild color editing',detail:'Only previously unlocked colors can be selected'}]:[]),
-  ...(benefits.smithingTailoringSpeedBps?[{name:'Smithing & Tailoring',detail:'+'+(benefits.smithingTailoringSpeedBps/100)+'% processing speed'}]:[]),
-  ...(benefits.nonCombatXpBps?[{name:'Non-combat skill XP',detail:'+'+(benefits.nonCombatXpBps/100)+'%'}]:[]),
-  ...(benefits.guildTokenBonusBps?[{name:'Guild Token earnings',detail:'+'+(benefits.guildTokenBonusBps/100)+'% · weekly cap '+benefits.guildTokenWeeklyCap}]:[]),
-  ...(benefits.guildBossDamageBps?[{name:'Guild Boss damage',detail:'+'+(benefits.guildBossDamageBps/100)+'%'}]:[]),
-  ...(benefits.guildQuestGoldBps?[{name:'Guild Quest Gold',detail:'+'+(benefits.guildQuestGoldBps/100)+'%'}]:[]),
+  ...(benefits.canChangeGuildColors?[{name:ui('Guild color editing'),detail:ui('Only previously unlocked colors can be selected')}]:[]),
+  ...(benefits.smithingTailoringSpeedBps?[{name:ui('Smithing & Tailoring'),detail:ui('+{percent}% processing speed',{percent:benefits.smithingTailoringSpeedBps/100})}]:[]),
+  ...(benefits.nonCombatXpBps?[{name:ui('Non-combat skill XP'),detail:'+'+(benefits.nonCombatXpBps/100)+'%'}]:[]),
+  ...(benefits.guildTokenBonusBps?[{name:ui('Guild Token earnings'),detail:ui('+{percent}% · weekly cap {cap}',{percent:benefits.guildTokenBonusBps/100,cap:benefits.guildTokenWeeklyCap})}]:[]),
+  ...(benefits.guildBossDamageBps?[{name:ui('Guild Boss damage'),detail:'+'+(benefits.guildBossDamageBps/100)+'%'}]:[]),
+  ...(benefits.guildQuestGoldBps?[{name:ui('Guild Quest Gold'),detail:'+'+(benefits.guildQuestGoldBps/100)+'%'}]:[]),
  ];
  const renderHallProgress=()=> <Panel style={s.hero}>
-  <View style={s.between}><View style={s.flex}><Text style={s.kicker}>AUTOMATIC HALL PROGRESSION</Text><Text style={s.heroTitle}>{stage}</Text><Text style={s.note}>{state.lifetimeProjectsCompleted} completed Guild Projects</Text></View><View style={s.levelBadge}><Text style={s.level}>Lv {level}</Text><Text style={s.note}>/ 10</Text></View></View>
-  <StatBar rounded label="Hall Progress" current={level>=10?1:Math.max(0,state.hallProgress-previous)} max={level>=10?1:Math.max(1,next-previous)}/>
-  <Text style={s.note}>{level>=10?'Launch Hall level cap reached.':hallRemaining.toLocaleString()+' Hall Progress to Level '+(level+1)}</Text>
+  <View style={s.between}><View style={s.flex}><Text style={s.kicker}>{ui('AUTOMATIC HALL PROGRESSION')}</Text><Text style={s.heroTitle}>{stage}</Text><Text style={s.note}>{ui('{count} completed Guild Projects',{count:state.lifetimeProjectsCompleted})}</Text></View><View style={s.levelBadge}><Text style={s.level}>Lv {level}</Text><Text style={s.note}>/ 10</Text></View></View>
+  <StatBar rounded label={ui("Hall Progress")} current={level>=10?1:Math.max(0,state.hallProgress-previous)} max={level>=10?1:Math.max(1,next-previous)}/>
+  <Text style={s.note}>{level>=10?ui('Launch Hall level cap reached.'):ui('{count} Hall Progress to Level {level}',{count:hallRemaining.toLocaleString(),level:level+1})}</Text>
  </Panel>;
- const shopFallback=()=>previewMode?<Panel><Text style={s.copy}>Construction and bank balances require a connected Guild. This is a memory-only layout preview.</Text></Panel>:shopLoading&&!shop?<Panel><ActivityIndicator color={C.accent}/><Text style={s.copy}>Loading Guild Bank and construction…</Text></Panel>:!shop?<Panel><Text accessibilityRole="alert" style={s.error}>{shopError||'Guild supplies are unavailable.'}</Text><GameButton title="Retry" tone="secondary" loading={shopLoading} disabled={shopLoading} onPress={()=>void refreshShop()}/></Panel>:null;
+ const shopFallback=()=>previewMode?<Panel><Text style={s.copy}>{ui('Construction and bank balances require a connected Guild. This is a memory-only layout preview.')}</Text></Panel>:shopLoading&&!shop?<Panel><ActivityIndicator color={C.accent}/><Text style={s.copy}>{ui('Loading Guild Bank and construction…')}</Text></Panel>:!shop?<Panel><Text accessibilityRole="alert" style={s.error}>{shopError||ui('Guild supplies are unavailable.')}</Text><GameButton title={ui("Retry")} tone="secondary" loading={shopLoading} disabled={shopLoading} onPress={()=>void refreshShop()}/></Panel>:null;
  return <View style={s.root}>
   <View style={s.header}>
    <View style={s.crest}><Image source={guildFacilityArtwork('banner_gallery')} style={s.crestImage} resizeMode="contain" accessible={false}/></View>
-   <View style={s.flex}><Text style={s.kicker}>GUILD HEADQUARTERS</Text><Text accessibilityRole="header" style={s.title}>Guild Hall</Text><Text style={s.note}>Shared progression and lasting benefits</Text></View>
+   <View style={s.flex}><Text style={s.kicker}>{ui('GUILD HEADQUARTERS')}</Text><Text accessibilityRole="header" style={s.title}>{ui("Guild Hall")}</Text><Text style={s.note}>{ui('Shared progression and lasting benefits')}</Text></View>
    {headerHelp?<View style={s.helpWrap}>{headerHelp}</View>:null}
-   {onRefresh?<Pressable accessibilityRole="button" accessibilityLabel="Refresh Guild Hall and supplies" disabled={loading||shopLoading} accessibilityState={{disabled:loading||shopLoading}} onPress={()=>{onRefresh();void refreshShop()}} style={({pressed})=>[s.refresh,pressed&&s.pressed]}><Text style={s.refreshText}>↻</Text></Pressable>:null}
+   {onRefresh?<Pressable accessibilityRole="button" accessibilityLabel={ui("Refresh Guild Hall and supplies")} disabled={loading||shopLoading} accessibilityState={{disabled:loading||shopLoading}} onPress={()=>{onRefresh();void refreshShop()}} style={({pressed})=>[s.refresh,pressed&&s.pressed]}><Text style={s.refreshText}>↻</Text></Pressable>:null}
   </View>
-  <ScrollView ref={hallTabsRef} horizontal showsVerticalScrollIndicator={false} showsHorizontalScrollIndicator={false} accessibilityRole="tablist" accessibilityLabel="Guild Hall sections" contentContainerStyle={s.tabs}>
-   {DESTINATIONS.map(id=><Pressable key={id} accessibilityRole="tab" accessibilityState={{selected:section===id}} onPress={()=>navigate(id)} style={({pressed})=>[s.tab,{backgroundColor:section===id?C.selection:C.panel,borderColor:section===id?C.selectionLine:C.line},pressed&&s.pressed]}><Text style={[s.tabText,{color:section===id?C.text:C.muted}]}>{id==='Legacy'?'Legacy':id}</Text></Pressable>)}
+  <ScrollView ref={hallTabsRef} horizontal showsVerticalScrollIndicator={false} showsHorizontalScrollIndicator={false} accessibilityRole="tablist" accessibilityLabel={ui("Guild Hall sections")} contentContainerStyle={s.tabs}>
+   {DESTINATIONS.map(id=><Pressable key={id} accessibilityRole="tab" accessibilityState={{selected:section===id}} onPress={()=>navigate(id)} style={({pressed})=>[s.tab,{backgroundColor:section===id?C.selection:C.panel,borderColor:section===id?C.selectionLine:C.line},pressed&&s.pressed]}><Text style={[s.tabText,{color:section===id?C.text:C.muted}]}>{ui(id)}</Text></Pressable>)}
   </ScrollView>
   {section==='Overview'?<View style={s.root}>
    {renderHallProgress()}
-   <View style={s.heading}><Text style={s.headingText}>Next guild construction</Text><GameButton compact tone="secondary" title="View all" onPress={()=>navigate('Construction')}/></View>
+   <View style={s.heading}><Text style={s.headingText}>{ui('Next guild construction')}</Text><GameButton compact tone="secondary" title={ui("View all")} onPress={()=>navigate('Construction')}/></View>
    {shopFallback()}
    {nextProject?<Panel style={s.priority}>
-    <View style={s.between}><View style={s.flex}><Text style={s.priorityTitle}>{guildConstructionBlueprint(nextProject.id)?.name??'Guild Construction'}</Text><Text style={s.note}>Guild Lv {nextProject.guildLevel} · {guildConstructionBlueprint(nextProject.id)?.benefit??'Permanent guild upgrade'}</Text></View><Text style={s.percent}>{required?Math.round(100*funded/required):0}%</Text></View>
-    <StatBar rounded label="Materials allocated" current={funded} max={Math.max(1,required)}/>
-    <GameButton compact title="Contribute materials" onPress={()=>navigate('Construction')}/>
-   </Panel>:!shopLoading&&shop?<Panel><Text style={s.copy}>No eligible released construction is currently waiting for supplies.</Text><GameButton compact tone="secondary" title="View roadmap" onPress={()=>navigate('Construction')}/></Panel>:null}
-   <View style={s.heading}><Text style={s.headingText}>Active construction benefits</Text><Text style={s.counter}>{benefitsList.length} unlocked</Text></View>
+    <View style={s.between}><View style={s.flex}><Text style={s.priorityTitle}>{guildConstructionBlueprint(nextProject.id)?.name??ui('Guild Construction')}</Text><Text style={s.note}>{ui('Guild Lv {level} · {benefit}',{level:nextProject.guildLevel,benefit:guildConstructionBlueprint(nextProject.id)?.benefit??ui('Permanent guild upgrade')})}</Text></View><Text style={s.percent}>{required?Math.round(100*funded/required):0}%</Text></View>
+    <StatBar rounded label={ui("Materials allocated")} current={funded} max={Math.max(1,required)}/>
+    <GameButton compact title={ui("Contribute materials")} onPress={()=>navigate('Construction')}/>
+   </Panel>:!shopLoading&&shop?<Panel><Text style={s.copy}>{ui('No eligible released construction is currently waiting for supplies.')}</Text><GameButton compact tone="secondary" title={ui("View roadmap")} onPress={()=>navigate('Construction')}/></Panel>:null}
+   <View style={s.heading}><Text style={s.headingText}>{ui('Active construction benefits')}</Text><Text style={s.counter}>{ui('{count} unlocked',{count:benefitsList.length})}</Text></View>
    <Panel style={s.benefitList}>
-    {benefitsList.length?benefitsList.slice(0,4).map((item,index)=><View key={item.name} style={[s.benefit,index>0&&s.benefitDivider]}><Text style={s.check}>✓</Text><View style={s.flex}><Text style={s.benefitTitle}>{item.name}</Text><Text style={s.note}>{item.detail}</Text></View></View>):<Text style={s.copy}>Complete Guild Construction to unlock permanent shared bonuses.</Text>}
-    <Text style={s.note}>Shop quality unlocked: {benefits.shopQuality.charAt(0).toUpperCase()+benefits.shopQuality.slice(1)}. Construction does not award free items.</Text>
+    {benefitsList.length?benefitsList.slice(0,4).map((item,index)=><View key={item.name} style={[s.benefit,index>0&&s.benefitDivider]}><Text style={s.check}>✓</Text><View style={s.flex}><Text style={s.benefitTitle}>{item.name}</Text><Text style={s.note}>{item.detail}</Text></View></View>):<Text style={s.copy}>{ui('Complete Guild Construction to unlock permanent shared bonuses.')}</Text>}
+    <Text style={s.note}>{ui('Shop quality unlocked: {quality}. Construction does not award free items.',{quality:benefits.shopQuality.charAt(0).toUpperCase()+benefits.shopQuality.slice(1)})}</Text>
    </Panel>
-   <Text style={s.headingText}>Guild Hall destinations</Text>
-   <View style={s.shortcuts}>{SHORTCUTS.map(item=><Pressable key={item.id} accessibilityRole="button" accessibilityLabel={'Open '+item.title} onPress={()=>navigate(item.id)} style={({pressed})=>[s.shortcut,pressed&&s.pressed]}><Image source={item.id==='Shop'?guildTokenIcon:guildFacilityArtwork(item.art)} resizeMode="contain" style={s.shortcutArt} accessible={false}/><View style={s.flex}><Text style={s.shortcutTitle}>{item.title}</Text><Text style={s.note}>{item.detail}</Text></View></Pressable>)}</View>
-   <View style={s.heading}><Text style={s.headingText}>Hall facilities</Text><GameButton compact tone="secondary" title="View details" onPress={()=>navigate('Legacy')}/></View>
-   <View style={s.facilityGrid}>{GUILD_HALL_FACILITIES.slice(0,4).map(def=><View key={def.id} style={s.facilityTile}><Text style={s.tileName}>{def.name}</Text><Text style={s.tileTier}>Tier {state.facilities[def.id].tier}/5</Text></View>)}</View>
+   <Text style={s.headingText}>{ui('Guild Hall destinations')}</Text>
+   <View style={s.shortcuts}>{SHORTCUTS.map(item=><Pressable key={item.id} accessibilityRole="button" accessibilityLabel={ui('Open {title}',{title:ui(item.title)})} onPress={()=>navigate(item.id)} style={({pressed})=>[s.shortcut,pressed&&s.pressed]}><Image source={item.id==='Shop'?guildTokenIcon:guildFacilityArtwork(item.art)} resizeMode="contain" style={s.shortcutArt} accessible={false}/><View style={s.flex}><Text style={s.shortcutTitle}>{ui(item.title)}</Text><Text style={s.note}>{ui(item.detail)}</Text></View></Pressable>)}</View>
+   <View style={s.heading}><Text style={s.headingText}>{ui('Hall facilities')}</Text><GameButton compact tone="secondary" title={ui("View details")} onPress={()=>navigate('Legacy')}/></View>
+   <View style={s.facilityGrid}>{GUILD_HALL_FACILITIES.slice(0,4).map(def=><View key={def.id} style={s.facilityTile}><Text style={s.tileName}>{def.name}</Text><Text style={s.tileTier}>{ui('Tier {tier}/5',{tier:state.facilities[def.id].tier})}</Text></View>)}</View>
   </View>:null}
   {section==='Construction'?<View style={s.root}>
    {shopFallback()}
    {shop?<OnlineGuildConstructionPanel snapshot={shop} onReload={refreshShop}
     initialBuilding={returnBuilding} initialSelection={returnSelection}
     onOpenBank={(resourceId,building,selected)=>{setReturnBuilding(building);setReturnSelection(selected);setBankFocus(resourceId);navigate('Bank');}}/>:null}
-   <GameButton compact tone="secondary" title="Open Guild Bank" onPress={()=>navigate('Bank')}/>
+   <GameButton compact tone="secondary" title={ui("Open Guild Bank")} onPress={()=>navigate('Bank')}/>
   </View>:null}
   {section==='Bank'?<View style={s.root}>
    {shopFallback()}
@@ -142,19 +144,19 @@ export function GuildHallView({projection,loading=false,error='',onRefresh,activ
     onOpenConstruction={()=>{setBankFocus(null);navigate('Construction')}}/>:null}
   </View>:null}
   {section==='Shop'?(previewMode?shopFallback():<OnlineGuildTokenShopPanel onRewardsChanged={onTokenRewardsChanged} onOpenConstruction={()=>navigate('Construction')}/>):null}
-  {section==='Legacy'?<View style={s.root}>{renderHallProgress()}<Text style={s.headingText}>Hall facilities</Text><Text style={s.copy}>Facilities advance automatically through Guild Projects. Construction and Guild Skills grant their own separate benefits.</Text>
+  {section==='Legacy'?<View style={s.root}>{renderHallProgress()}<Text style={s.headingText}>{ui('Hall facilities')}</Text><Text style={s.copy}>{ui('Facilities advance automatically through Guild Projects. Construction and Guild Skills grant their own separate benefits.')}</Text>
    {GUILD_HALL_FACILITIES.map(def=>{const facility=state.facilities[def.id],tier=facility.tier,threshold=DEFAULT_GUILD_HALL_POLICY.facilityProgressThresholds[tier],requiredLevel=def.tierHallLevels[tier];return <View key={def.id} style={s.facility}>
     <Image source={guildFacilityArtwork(def.id)} resizeMode="contain" style={s.facilityImage} accessible={false}/>
     <View style={s.flex}><View style={s.between}><Text style={s.priorityTitle}>{def.name}</Text><Text style={s.tileTier}>T{tier}/5</Text></View><Text style={s.note}>{def.description}</Text>
-    {tier<5?<><StatBar rounded label="Facility progress" current={Math.min(facility.progress,threshold)} max={Math.max(1,threshold)}/><Text style={[s.note,{color:level<requiredLevel?C.warning:C.muted}]}>{level<requiredLevel?'Hall Level '+requiredLevel+' required · ':''}+{Math.max(0,threshold-facility.progress).toLocaleString()} project progress needed</Text></>:null}
+    {tier<5?<><StatBar rounded label={ui("Facility progress")} current={Math.min(facility.progress,threshold)} max={Math.max(1,threshold)}/><Text style={[s.note,{color:level<requiredLevel?C.warning:C.muted}]}>{level<requiredLevel?ui('Hall Level {level} required · ',{level:requiredLevel}):''}{ui('+{count} project progress needed',{count:Math.max(0,threshold-facility.progress).toLocaleString()})}</Text></>:null}
     </View></View>})}
-   <QuestBoard><View style={s.between}><Text style={s.headingText}>Trophy Room</Text><Text style={s.note}>{state.trophies.length} recorded</Text></View>
-    <Text style={s.copy}>Future Guild Legacy will preserve major trophies and season records permanently.</Text>
+   <QuestBoard><View style={s.between}><Text style={s.headingText}>{ui('Trophy Room')}</Text><Text style={s.note}>{ui('{count} recorded',{count:state.trophies.length})}</Text></View>
+    <Text style={s.copy}>{ui('Future Guild Legacy will preserve major trophies and season records permanently.')}</Text>
     {state.trophies.slice(0,10).map(trophy=><View key={trophy.trophyKey} style={s.trophy}><Text style={s.priorityTitle}>{trophy.label}</Text><Text style={s.copy}>{trophy.description||trophy.sourceKind}</Text><Text style={s.note}>{new Date(trophy.earnedAtMs).toLocaleDateString()}</Text></View>)}
-    {!state.trophies.length?<Text style={s.note}>No recorded trophies yet.</Text>:null}
+    {!state.trophies.length?<Text style={s.note}>{ui('No recorded trophies yet.')}</Text>:null}
    </QuestBoard>
   </View>:null}
-  {!!shopError&&shop?<Text accessibilityRole="alert" style={s.error}>Showing previously loaded supplies. Refresh failed: {shopError}</Text>:null}
+  {!!shopError&&shop?<Text accessibilityRole="alert" style={s.error}>{ui('Showing previously loaded supplies. Refresh failed: {error}',{error:shopError})}</Text>:null}
   {!!error&&<Text accessibilityRole="alert" style={s.error}>{error}</Text>}
  </View>;
 }

@@ -1,4 +1,5 @@
 import {useEffect,useMemo,useState} from 'react';
+import {useGuildConstructionUiText} from '../i18n/guild-construction-ui';
 import {Image,Pressable,StyleSheet,Text,TextInput,View} from 'react-native';
 import {GameButton} from './GameButton';
 import {ResourceArtwork} from './ResourceArtwork';
@@ -39,7 +40,7 @@ export function OnlineGuildConstructionPanel({
  initialSelection?:{templateId:string;resourceId:string};
  onOpenBank?:(resourceId:string,building:string,selection:{templateId:string;resourceId:string})=>void;
 }){
- const C=useGameTheme(),s=useMemo(()=>styles(C),[C]);
+ const ui=useGuildConstructionUiText(),C=useGameTheme(),s=useMemo(()=>styles(C),[C]);
  const [selected,setSelected]=useState<{templateId:string;resourceId:string}|null>(initialSelection??null);
  const [selectedBuilding,setSelectedBuilding]=useState<(typeof BUILDINGS)[number]['id']>(()=>{
   const remembered=BUILDINGS.find(building=>building.id===initialBuilding);
@@ -60,7 +61,7 @@ export function OnlineGuildConstructionPanel({
  useEffect(()=>{
   let active=true;
   void pendingGuildConstructionDonation().then(value=>{if(active)setPending(value);})
-   .catch(reason=>{if(active)setError(reason instanceof Error?reason.message:'Could not restore pending donation.');});
+   .catch(reason=>{if(active)setError(reason instanceof Error?reason.message:ui('Could not restore pending donation.'));});
   return()=>{active=false;};
  },[]);
  const donate=async(input:{templateId:string;resourceId:string;amount:number})=>{
@@ -69,43 +70,43 @@ export function OnlineGuildConstructionPanel({
   try{
    const result=await donateOnlineGuildConstruction(input);
    setPending(null);
-   setNotice(result.alreadyProcessed?'Previous project allocation confirmed. No second deduction.':
-    result.completed?'Guild Bank allocation accepted. Construction complete!':'Guild Bank supplies allocated to construction.');
+   setNotice(result.alreadyProcessed?ui('Previous project allocation confirmed. No second deduction.'):
+    result.completed?ui('Guild Bank allocation accepted. Construction complete!'):ui('Guild Bank supplies allocated to construction.'));
    await onRewardsChanged?.();
    await onReload?.();
   }catch(reason){
-   setError(reason instanceof Error?reason.message:'Donation could not be confirmed. Retry your saved request.');
+   setError(reason instanceof Error?reason.message:ui('Donation could not be confirmed. Retry your saved request.'));
    try{setPending(await pendingGuildConstructionDonation());}catch{/* Retain existing receipt state. */}
   }finally{setBusy(false);}
  };
  const confirmFunding=(templateId:string,resourceId:string,amount:number)=>gameAlert.alert(
-  'Allocate Guild Bank materials?',
-  'Allocate '+amount.toLocaleString()+' '+resourceName(resourceId)+' to '+(guildConstructionBlueprint(templateId)?.name??'this upgrade')+'? This Guild Bank allocation cannot be reversed.',
-  [{text:'Cancel',style:'cancel'},{text:'Allocate',onPress:()=>void donate({templateId,resourceId,amount})}],
+  ui('Allocate Guild Bank materials?'),
+  ui('Allocate {amount} {resource} to {upgrade}? This Guild Bank allocation cannot be reversed.',{amount:amount.toLocaleString(),resource:resourceName(resourceId),upgrade:guildConstructionBlueprint(templateId)?.name??ui('this upgrade')}),
+  [{text:ui('Cancel'),style:'cancel'},{text:ui('Allocate'),onPress:()=>void donate({templateId,resourceId,amount})}],
  );
  const confirmDiscard=()=>gameAlert.alert(
-  'Discard pending donation?',
-  'Only discard after checking Guild Construction and your balances. If the earlier request succeeded, a new request could spend resources again.',
-  [{text:'Keep request',style:'cancel'},
-   {text:'Discard local retry',style:'destructive',onPress:()=>void discardPendingGuildConstructionDonation().then(()=>setPending(null)).catch(reason=>setError(String(reason)))}],
+  ui('Discard pending donation?'),
+  ui('Only discard after checking Guild Construction and your balances. If the earlier request succeeded, a new request could spend resources again.'),
+  [{text:ui('Keep request'),style:'cancel'},
+   {text:ui('Discard local retry'),style:'destructive',onPress:()=>void discardPendingGuildConstructionDonation().then(()=>setPending(null)).catch(reason=>setError(String(reason)))}],
  );
  return <Panel>
-  <Text style={s.kicker}>GUILD CONSTRUCTION</Text>
-  <Text style={s.title}>Build something together</Text>
-  <Text style={s.copy}>Choose a building to view upgrades and costs.</Text>
-  <View style={s.buildingGrid}>{BUILDINGS.map(building=><Pressable key={building.id} accessibilityRole="button" accessibilityLabel={'View '+building.title+' upgrades'} accessibilityState={{selected:selectedBuilding===building.id}} onPress={()=>{setSelectedBuilding(building.id);setSelected(null)}} style={({pressed})=>[s.building,{borderColor:selectedBuilding===building.id?C.selectionLine:C.lineStrong,backgroundColor:selectedBuilding===building.id?C.selection:C.panel2},pressed&&s.pressed]}><Image source={guildFacilityArtwork(building.art)} style={s.buildingArt} resizeMode="contain" accessible={false}/><Text style={[s.buildingName,{color:selectedBuilding===building.id?C.text:C.muted}]}>{building.title}</Text></Pressable>)}</View>
-  <Text style={s.note}>Deposit materials in the Guild Bank to fund upgrades.</Text>
+  <Text style={s.kicker}>{ui('GUILD CONSTRUCTION')}</Text>
+  <Text style={s.title}>{ui('Build something together')}</Text>
+  <Text style={s.copy}>{ui('Choose a building to view upgrades and costs.')}</Text>
+  <View style={s.buildingGrid}>{BUILDINGS.map(building=><Pressable key={building.id} accessibilityRole="button" accessibilityLabel={ui('View {title} upgrades',{title:ui(building.title)})} accessibilityState={{selected:selectedBuilding===building.id}} onPress={()=>{setSelectedBuilding(building.id);setSelected(null)}} style={({pressed})=>[s.building,{borderColor:selectedBuilding===building.id?C.selectionLine:C.lineStrong,backgroundColor:selectedBuilding===building.id?C.selection:C.panel2},pressed&&s.pressed]}><Image source={guildFacilityArtwork(building.art)} style={s.buildingArt} resizeMode="contain" accessible={false}/><Text style={[s.buildingName,{color:selectedBuilding===building.id?C.text:C.muted}]}>{ui(building.title)}</Text></Pressable>)}</View>
+  <Text style={s.note}>{ui('Deposit materials in the Guild Bank to fund upgrades.')}</Text>
   {snapshot.unavailableSections?.includes('constructionCosts')
-   ?<Text style={s.error}>Current Guild Construction prices are unavailable. Refresh before funding.</Text>
+   ?<Text style={s.error}>{ui('Current Guild Construction prices are unavailable. Refresh before funding.')}</Text>
    :null}
   {error?<Text accessibilityRole="alert" style={s.error}>{error}</Text>:null}
   {notice?<Text accessibilityLiveRegion="polite" style={s.notice}>{notice}</Text>:null}
   {pending?<View style={s.pending}>
-   <Text style={s.projectName}>Previous donation needs confirmation</Text>
+   <Text style={s.projectName}>{ui('Previous donation needs confirmation')}</Text>
    <Text style={s.copy}>{pending.amount.toLocaleString()} {resourceName(pending.resourceId)} · {resourceName(pending.templateId)}</Text>
    <View style={s.actions}>
-    <GameButton compact title={busy?'Checking…':'Retry same receipt'} disabled={busy} onPress={()=>donate(pending)}/>
-    <GameButton compact title="Discard local retry" tone="secondary" disabled={busy} onPress={confirmDiscard}/>
+    <GameButton compact title={ui(busy?'Checking…':'Retry same receipt')} disabled={busy} onPress={()=>donate(pending)}/>
+    <GameButton compact title={ui("Discard local retry")} tone="secondary" disabled={busy} onPress={confirmDiscard}/>
    </View>
   </View>:null}
   {snapshot.constructionTemplates.filter(template=>template.id.startsWith('construction_'+selectedBuilding+'_')&&(template.enabled||snapshot.construction.some(row=>row.templateId===template.id&&row.completed))).map(template=>{
@@ -124,15 +125,15 @@ export function OnlineGuildConstructionPanel({
    return <View key={template.id} style={s.project}>
     <View style={s.head}><View style={s.flex}>
      <Text style={s.projectName}>{resourceName(template.id)}</Text>
-     <Text style={s.projectMeta}>Guild Level {template.guildLevel} · {row?.completed?'Completed':!unlocked?'Guild level locked':template.enabled?'Donations open':'Coming soon'}</Text>
-     {template.costMemberCount?<Text style={s.projectMeta}>Costs for {template.costMemberCount} {template.costMemberCount===1?'member':'members'}</Text>:null}
+     <Text style={s.projectMeta}>{ui('Guild Level {level}',{level:template.guildLevel})} · {ui(row?.completed?'Completed':!unlocked?'Guild level locked':template.enabled?'Donations open':'Coming soon')}</Text>
+     {template.costMemberCount?<Text style={s.projectMeta}>{ui(template.costMemberCount===1?'Costs for {count} member':'Costs for {count} members',{count:template.costMemberCount})}</Text>:null}
     </View><Text style={s.percent}>{Math.round(completion*100)}%</Text></View>
     {requirements.map(res=>{
      const amount=Math.max(0,row?.resources[res.key]??0),pct=res.required?Math.min(100,Math.round(amount/res.required*100)):100;
      const active=selectedHere&&selected?.resourceId===res.key;
      return <Pressable key={res.key} disabled={!canDonate||amount>=res.required}
       accessibilityRole="button" accessibilityState={{selected:active,disabled:!canDonate||amount>=res.required}}
-      accessibilityLabel={`Donate ${resourceName(res.key)} to ${resourceName(template.id)}`}
+      accessibilityLabel={ui('Donate {resource} to {upgrade}',{resource:resourceName(res.key),upgrade:resourceName(template.id)})}
       onPress={()=>{setSelected({templateId:template.id,resourceId:res.key});const available=snapshot.bank?.balances.find(item=>item.resourceId===res.key)?.amount??0;setQuantity(String(Math.min(res.key==='gold'?1000:100,res.required-amount,available)));}}
       style={[s.resource,active&&s.resourceSelected]}>
       <View style={s.head}>
@@ -144,23 +145,23 @@ export function OnlineGuildConstructionPanel({
      </Pressable>;
     })}
     {canDonate&&selectedHere&&chosen&&remaining>0?<View style={s.donationControls}>
-     <Text style={s.projectMeta}>{resourceName(chosen.key)} · Need {remaining.toLocaleString()} · Bank {bankAmount.toLocaleString()}</Text>
+     <Text style={s.projectMeta}>{ui('{resource} · Need {needed} · Bank {bank}',{resource:resourceName(chosen.key),needed:remaining.toLocaleString(),bank:bankAmount.toLocaleString()})}</Text>
      <View style={s.actions}>
-      <TextInput accessibilityLabel="Donation amount" value={quantity} onChangeText={setQuantity}
+      <TextInput accessibilityLabel={ui("Donation amount")} value={quantity} onChangeText={setQuantity}
        keyboardType="number-pad" maxLength={7} selectTextOnFocus style={s.input}/>
-      <GameButton compact title={busy?'Funding…':'Fund project'} disabled={busy||!validQuantity}
+      <GameButton compact title={ui(busy?'Funding…':'Fund project')} disabled={busy||!validQuantity}
        onPress={()=>confirmFunding(template.id,chosen.key,donationAmount)}/>
      </View>
-     <View style={s.actions}>{[10,100,'Max' as const].map(value=><Pressable key={value} accessibilityRole="button" accessibilityLabel={'Set funding amount to '+value} disabled={busy} onPress={()=>setQuantity(String(Math.min(value==='Max'?1000000:value,remaining,bankAmount,1000000)))} style={s.preset}><Text style={s.presetText}>{value==='Max'?'Max':value.toLocaleString()}</Text></Pressable>)}</View>
-      {bankAmount<remaining&&onOpenBank?<GameButton compact tone="secondary" title={'Deposit '+resourceName(chosen.key)+' into Guild Bank'} disabled={busy}
+     <View style={s.actions}>{[10,100,'Max' as const].map(value=><Pressable key={value} accessibilityRole="button" accessibilityLabel={ui('Set funding amount to {amount}',{amount:value==='Max'?ui('Max'):value})} disabled={busy} onPress={()=>setQuantity(String(Math.min(value==='Max'?1000000:value,remaining,bankAmount,1000000)))} style={s.preset}><Text style={s.presetText}>{value==='Max'?ui('Max'):value.toLocaleString()}</Text></Pressable>)}</View>
+      {bankAmount<remaining&&onOpenBank?<GameButton compact tone="secondary" title={ui('Deposit {resource} into Guild Bank',{resource:resourceName(chosen.key)})} disabled={busy}
        onPress={()=>onOpenBank(chosen.key,selectedBuilding,{templateId:template.id,resourceId:chosen.key})}/>:null}
     </View>:null}
-    <Text style={s.unlock}>{row?.completed?'Guild upgrade completed':`Reward: ${guildConstructionBlueprint(template.id)?.benefit??resourceName(template.unlockId)}`}</Text>
-    {!template.enabled?<Text style={s.projectMeta}>Awaiting construction release</Text>:null}
+    <Text style={s.unlock}>{row?.completed?ui('Guild upgrade completed'):ui('Reward: {reward}',{reward:guildConstructionBlueprint(template.id)?.benefit??resourceName(template.unlockId)})}</Text>
+    {!template.enabled?<Text style={s.projectMeta}>{ui('Awaiting construction release')}</Text>:null}
    </View>;
   })}
-  <Text style={s.kicker}>UPGRADE ROADMAP</Text>
-  {GUILD_CONSTRUCTION_BLUEPRINTS.filter(plan=>plan.id.startsWith('construction_'+selectedBuilding+'_')&&!snapshot.constructionTemplates.some(template=>template.id===plan.id&&template.enabled)).map(plan=><View key={plan.id} style={s.lockedTier}><View style={s.head}><Text style={s.projectName}>{plan.name}</Text><Text style={s.projectMeta}>Guild Lv {plan.requiredGuildLevel}</Text></View><Text style={s.unlock}>{plan.benefit}</Text><Text style={s.projectMeta}>Coming soon</Text></View>)}
+  <Text style={s.kicker}>{ui('UPGRADE ROADMAP')}</Text>
+  {GUILD_CONSTRUCTION_BLUEPRINTS.filter(plan=>plan.id.startsWith('construction_'+selectedBuilding+'_')&&!snapshot.constructionTemplates.some(template=>template.id===plan.id&&template.enabled)).map(plan=><View key={plan.id} style={s.lockedTier}><View style={s.head}><Text style={s.projectName}>{plan.name}</Text><Text style={s.projectMeta}>{ui('Guild Lv {level}',{level:plan.requiredGuildLevel})}</Text></View><Text style={s.unlock}>{plan.benefit}</Text><Text style={s.projectMeta}>{ui('Coming soon')}</Text></View>)}
  </Panel>;
 }
 function styles(C:ThemeColors){return StyleSheet.create({

@@ -17,14 +17,14 @@ if(missing.length)throw new Error(`Missing staging smoke configuration: ${missin
 const stagingConfig=JSON.parse(readFileSync(new URL('../apps/mobile/eas.json',import.meta.url),'utf8')).build.staging.env;
 const configuredUrl=new URL(process.env.ONLINE_SMOKE_SUPABASE_URL);
 const expectedStagingUrl=new URL(stagingConfig.EXPO_PUBLIC_SUPABASE_URL);
-if(configuredUrl.origin!==expectedStagingUrl.origin||configuredUrl.pathname.replace(/\\/g,'/').replace(/\\/+$/,'')!==''){
+if(configuredUrl.origin!==expectedStagingUrl.origin||configuredUrl.pathname!=='/'||configuredUrl.search||configuredUrl.hash){
   throw new Error('Refusing live smoke: ONLINE_SMOKE_SUPABASE_URL must match the configured staging project origin.');
 }
 const base=configuredUrl.origin;
 const anonKey=process.env.ONLINE_SMOKE_SUPABASE_ANON_KEY;
 const appConfig=JSON.parse(readFileSync(new URL('../apps/mobile/app.json',import.meta.url),'utf8'));
 const appVersion=(process.env.ONLINE_SMOKE_APP_VERSION??appConfig.expo.version).trim();
-if(!/^\\d+\\.\\d+\\.\\d+$/.test(appVersion))throw new Error('Invalid Android version for staging smoke.');
+if(!(appVersion.split('.').length===3&&appVersion.split('.').every(part=>part.length>0&&Number.isSafeInteger(Number(part))&&String(Number(part))===part)))throw new Error('Invalid Android version for staging smoke.');
 const headers={apikey:anonKey,'Content-Type':'application/json'};
 const response=await fetch(`${base}/auth/v1/token?grant_type=password`,{method:'POST',headers,body:JSON.stringify({email:process.env.ONLINE_SMOKE_EMAIL,password:process.env.ONLINE_SMOKE_PASSWORD})});
 const session=await response.json();

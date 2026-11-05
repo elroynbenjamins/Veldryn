@@ -51,6 +51,9 @@ jobs:
           "$SDKMANAGER" "platform-tools" "platforms;android-36" "build-tools;36.0.0"
       - name: Install mobile dependencies
         run: pnpm install --frozen-lockfile
+      - name: Verify Android application version metadata
+        run: |
+          node -e "const app=require('./app.json').expo;const pkg=require('./package.json');if(app.version!==pkg.version)throw new Error('Expo and package versions differ');if(!(app.version.split('.').length===3&&app.version.split('.').every(x=>x.length>0&&Number.isSafeInteger(Number(x))&&String(Number(x))===x)))throw new Error('Invalid release version');console.log('Android native CI validation for '+app.version)"
       - name: Validate Expo SDK compatibility
         run: npx -y expo-doctor
       - name: Validate shared runtime sources
@@ -63,3 +66,16 @@ jobs:
       - name: Build release AAB
         working-directory: apps/mobile/android
         run: ./gradlew :app:bundleRelease --stacktrace --no-daemon
+      - name: Verify native CI AAB exists and record its SHA-256
+        working-directory: apps/mobile/android
+        run: |
+          test -s app/build/outputs/bundle/release/app-release.aab
+          sha256sum app/build/outputs/bundle/release/app-release.aab
+          ls -lh app/build/outputs/bundle/release/app-release.aab
+      - name: Retain native CI AAB for inspection (not a signed EAS release)
+        uses: actions/upload-artifact@v4
+        with:
+          name: veldryn-native-validation-aab-${{ github.sha }}
+          path: apps/mobile/android/app/build/outputs/bundle/release/app-release.aab
+          if-no-files-found: error
+          retention-days: 3

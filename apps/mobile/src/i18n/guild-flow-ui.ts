@@ -56,3 +56,9 @@ export function useGuildFlowUiText(){
  const language=useGameLanguage();
  return useMemo(()=>(key:GuildFlowUiKey,params?:TranslationParams)=>guildFlowUiText(language,key,params),[language]);
 }
+
+/** Focus is a fixed server enum; translate its label, never the project identity. */
+export function guildFlowFocusText(language:Language,focus:'combat'|'skilling'|'mixed'|'development'):string{
+ const key=focus==='combat'?'Combat':focus==='skilling'?'Skilling':focus==='mixed'?'Mixed':'Development';
+ return guildFlowUiText(language,key);
+}

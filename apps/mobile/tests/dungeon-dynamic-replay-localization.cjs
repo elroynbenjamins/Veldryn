@@ -3,9 +3,10 @@ const fs=require('node:fs');
 const path=require('node:path');
 const ts=require('../node_modules/typescript');
 require.extensions['.ts']=function(mod,filename){
- const out=ts.transpileModule(fs.readFileSync(filename,'utf8'),{compilerOptions:{module:ts.ModuleKind.CommonJS,target:ts.ScriptTarget.ES2022,esModuleInterop:true}}).outputText;
+ const out=ts.transpileModule(fs.readFileSync(filename,'utf8'),{compilerOptions:{module:ts.ModuleKind.CommonJS,target:ts.ScriptTarget.ES2022,jsx:ts.JsxEmit.ReactJSX,esModuleInterop:true}}).outputText;
  mod._compile(out,filename);
 };
+require.extensions['.tsx']=require.extensions['.ts'];
 const {SUPPORTED_LANGUAGES}=require('../src/i18n/languages.ts');
 const {playbackCueLabel}=require('../src/core/dungeon-combat-playback.ts');
 const {dungeonDynamicUiRows,dungeonDynamicUiText,localizedDungeonPlaybackCue,localizedDungeonCueType}=require('../src/i18n/dungeon-dynamic-ui.ts');

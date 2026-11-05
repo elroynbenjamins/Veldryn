@@ -495,3 +495,33 @@ export function localizedSeasonalDungeonObjective(language:Language,view:CoopRun
  const template=SEASONAL_OBJECTIVE_EFFECT_TEMPLATES[effect][index];
  return {...view,label:row.labels[index],description:row.descriptions[index],effectText:interpolate(template,values)};
 }
+
+/** Preview screens receive the authored label/description without live counters.
+ * Only an exact verified server pair may be translated; new or changed copy is left intact.
+ */
+export function localizedSeasonalDungeonPreviewCopy<T extends {label:string;description:string}>(language:Language,view:T):T{
+ if(language==='en')return view;
+ const row=rowFor(SEASONAL_MECHANIC_ROWS,view.label,view.description)??rowFor(SEASONAL_OBJECTIVE_ROWS,view.label,view.description);
+ if(!row)return view;
+ const index=LANGUAGE_COLUMN[language];
+ return {...view,label:row.labels[index],description:row.descriptions[index]};
+}
+
+const ROUTE_RISK_LABELS:Record<Language,string>={en:'Risk',de:'Risiko',es:'Riesgo',nl:'Risico',it:'Rischio',fr:'Risque',ru:'Риск',tr:'Risk'};
+/** Keep risk values server-authored. Translate only the exact generated numeric risk format. */
+export function localizedSeasonalDungeonRouteRisk(language:Language,risk:string):string{
+ const match=/^Risk (\d+(?:\.\d+)?)$/.exec(risk);
+ return language==='en'||!match?risk:`${ROUTE_RISK_LABELS[language]} ${match[1]}`;
+}
+/** Route effect chips may contain player-specific events. Only known authored mechanic/objective
+ * name + signed integer fragments are replaced; unknown fragments stay verbatim.
+ */
+export function localizedSeasonalDungeonRouteReward(language:Language,reward:string):string{
+ if(language==='en')return reward;
+ return reward.split(' · ').map(fragment=>{
+  const match=/^(.+) ([+-]\d+)$/.exec(fragment);
+  if(!match)return fragment;
+  const row=Object.values(SEASONAL_MECHANIC_ROWS).find(item=>item.label===match[1])??Object.values(SEASONAL_OBJECTIVE_ROWS).find(item=>item.label===match[1]);
+  return row?`${row.labels[LANGUAGE_COLUMN[language]]} ${match[2]}`:fragment;
+ }).join(' · ');
+}

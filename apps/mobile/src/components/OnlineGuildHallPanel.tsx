@@ -1,4 +1,5 @@
 import {useCallback,useEffect,useMemo,useRef,useState,type ReactNode} from 'react';
+import {useGuildHallUiText} from '../i18n/guild-hall-ui';
 import {ActivityIndicator,Image,Pressable,ScrollView,StyleSheet,Text,View,type ScrollViewInstance} from 'react-native';
 import {GameButton} from './GameButton';
 import {Panel} from './Panel';
@@ -35,23 +36,23 @@ const SHORTCUTS=[
 ];
 
 export function OnlineGuildHallPanel(navigation:HallNavigation){
- const C=useGameTheme(),s=useMemo(()=>styles(C),[C]);
+ const ui=useGuildHallUiText(),C=useGameTheme(),s=useMemo(()=>styles(C),[C]);
  const [projection,setProjection]=useState<Projection>(null),[loading,setLoading]=useState(true),[error,setError]=useState('');
  const load=useCallback(async(force=false)=>{
   setLoading(true);setError('');
   try{setProjection(await loadOnlineGuildHallV44(force))}
-  catch(reason){setError(reason instanceof Error?reason.message:'Unable to load Guild Hall.')}
+  catch(reason){setError(reason instanceof Error?reason.message:ui('Unable to load Guild Hall.'))}
   finally{setLoading(false)}
- },[]);
+ },[ui]);
  useEffect(()=>{void load()},[load]);
- if(loading&&!projection)return <Panel><Text style={s.title}>Guild Hall</Text><ActivityIndicator color={C.accent}/></Panel>;
- if(error&&!projection)return <Panel><Text style={s.title}>Guild Hall</Text><Text accessibilityRole="alert" style={s.error}>{error}</Text><GameButton title="Retry Guild Hall" tone="secondary" loading={loading} disabled={loading} onPress={()=>void load(true)}/></Panel>;
- if(!projection)return <Panel><Text style={s.title}>Guild Hall</Text><Text style={s.copy}>Join a Guild to unlock shared Hall progression.</Text></Panel>;
+ if(loading&&!projection)return <Panel><Text style={s.title}>{ui('Guild Hall')}</Text><ActivityIndicator color={C.accent}/></Panel>;
+ if(error&&!projection)return <Panel><Text style={s.title}>{ui('Guild Hall')}</Text><Text accessibilityRole="alert" style={s.error}>{error}</Text><GameButton title={ui("Retry Guild Hall")} tone="secondary" loading={loading} disabled={loading} onPress={()=>void load(true)}/></Panel>;
+ if(!projection)return <Panel><Text style={s.title}>{ui('Guild Hall')}</Text><Text style={s.copy}>{ui('Join a Guild to unlock shared Hall progression.')}</Text></Panel>;
  return <GuildHallView {...navigation} projection={projection} loading={loading} error={error} onRefresh={()=>void load(true)}/>;
 }
 
 export function GuildHallView({projection,loading=false,error='',onRefresh,activeSection,onSectionChange,onTokenRewardsChanged,headerHelp,previewMode=false}:{projection:NonNullable<Projection>;loading?:boolean;error?:string;onRefresh?:()=>void;previewMode?:boolean}&HallNavigation){
- const C=useGameTheme(),s=useMemo(()=>styles(C),[C]);
+ const ui=useGuildHallUiText(),C=useGameTheme(),s=useMemo(()=>styles(C),[C]);
  const [localSection,setLocalSection]=useState<HeadquartersSection>('Overview');
  const hallTabsRef=useRef<ScrollViewInstance>(null);
  const [shop,setShop]=useState<GuildTokenShopSnapshot|null>(null);
@@ -70,9 +71,9 @@ export function GuildHallView({projection,loading=false,error='',onRefresh,activ
  const refreshShop=useCallback(async()=>{
   setShopLoading(true);setShopError('');
   try{setShop(await loadOnlineGuildTokenShop())}
-  catch(reason){setShopError(reason instanceof Error?reason.message:'Could not load guild construction and bank balances.')}
+  catch(reason){setShopError(reason instanceof Error?reason.message:ui('Could not load guild construction and bank balances.'))}
   finally{setShopLoading(false)}
- },[]);
+ },[ui]);
  useEffect(()=>{if(previewMode)setShopLoading(false);else void refreshShop()},[previewMode,refreshShop]);
  const {state,level,stage}=projection;
  const next=DEFAULT_GUILD_HALL_POLICY.hallLevelThresholds[level]??DEFAULT_GUILD_HALL_POLICY.hallLevelThresholds[9];
@@ -94,11 +95,11 @@ export function GuildHallView({projection,loading=false,error='',onRefresh,activ
   ...(benefits.guildQuestGoldBps?[{name:'Guild Quest Gold',detail:'+'+(benefits.guildQuestGoldBps/100)+'%'}]:[]),
  ];
  const renderHallProgress=()=> <Panel style={s.hero}>
-  <View style={s.between}><View style={s.flex}><Text style={s.kicker}>AUTOMATIC HALL PROGRESSION</Text><Text style={s.heroTitle}>{stage}</Text><Text style={s.note}>{state.lifetimeProjectsCompleted} completed Guild Projects</Text></View><View style={s.levelBadge}><Text style={s.level}>Lv {level}</Text><Text style={s.note}>/ 10</Text></View></View>
-  <StatBar rounded label="Hall Progress" current={level>=10?1:Math.max(0,state.hallProgress-previous)} max={level>=10?1:Math.max(1,next-previous)}/>
-  <Text style={s.note}>{level>=10?'Launch Hall level cap reached.':hallRemaining.toLocaleString()+' Hall Progress to Level '+(level+1)}</Text>
+  <View style={s.between}><View style={s.flex}><Text style={s.kicker}>{ui('AUTOMATIC HALL PROGRESSION')}</Text><Text style={s.heroTitle}>{stage}</Text><Text style={s.note}>{ui('{count} completed Guild Projects',{count:state.lifetimeProjectsCompleted})}</Text></View><View style={s.levelBadge}><Text style={s.level}>Lv {level}</Text><Text style={s.note}>/ 10</Text></View></View>
+  <StatBar rounded label={ui("Hall Progress")} current={level>=10?1:Math.max(0,state.hallProgress-previous)} max={level>=10?1:Math.max(1,next-previous)}/>
+  <Text style={s.note}>{level>=10?ui('Launch Hall level cap reached.'):ui('{count} Hall Progress to Level {level}',{count:hallRemaining.toLocaleString(),level:level+1})}</Text>
  </Panel>;
- const shopFallback=()=>previewMode?<Panel><Text style={s.copy}>Construction and bank balances require a connected Guild. This is a memory-only layout preview.</Text></Panel>:shopLoading&&!shop?<Panel><ActivityIndicator color={C.accent}/><Text style={s.copy}>Loading Guild Bank and construction…</Text></Panel>:!shop?<Panel><Text accessibilityRole="alert" style={s.error}>{shopError||'Guild supplies are unavailable.'}</Text><GameButton title="Retry" tone="secondary" loading={shopLoading} disabled={shopLoading} onPress={()=>void refreshShop()}/></Panel>:null;
+ const shopFallback=()=>previewMode?<Panel><Text style={s.copy}>{ui('Construction and bank balances require a connected Guild. This is a memory-only layout preview.')}</Text></Panel>:shopLoading&&!shop?<Panel><ActivityIndicator color={C.accent}/><Text style={s.copy}>{ui('Loading Guild Bank and construction…')}</Text></Panel>:!shop?<Panel><Text accessibilityRole="alert" style={s.error}>{shopError||ui('Guild supplies are unavailable.')}</Text><GameButton title="Retry" tone="secondary" loading={shopLoading} disabled={shopLoading} onPress={()=>void refreshShop()}/></Panel>:null;
  return <View style={s.root}>
   <View style={s.header}>
    <View style={s.crest}><Image source={guildFacilityArtwork('banner_gallery')} style={s.crestImage} resizeMode="contain" accessible={false}/></View>

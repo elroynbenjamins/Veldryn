@@ -125,15 +125,15 @@ export function OnlineGuildConstructionPanel({
    return <View key={template.id} style={s.project}>
     <View style={s.head}><View style={s.flex}>
      <Text style={s.projectName}>{resourceName(template.id)}</Text>
-     <Text style={s.projectMeta}>Guild Level {template.guildLevel} · {row?.completed?'Completed':!unlocked?'Guild level locked':template.enabled?'Donations open':'Coming soon'}</Text>
-     {template.costMemberCount?<Text style={s.projectMeta}>Costs for {template.costMemberCount} {template.costMemberCount===1?'member':'members'}</Text>:null}
+     <Text style={s.projectMeta}>{ui('Guild Level {level}',{level:template.guildLevel})} · {ui(row?.completed?'Completed':!unlocked?'Guild level locked':template.enabled?'Donations open':'Coming soon')}</Text>
+     {template.costMemberCount?<Text style={s.projectMeta}>{ui(template.costMemberCount===1?'Costs for {count} member':'Costs for {count} members',{count:template.costMemberCount})}</Text>:null}
     </View><Text style={s.percent}>{Math.round(completion*100)}%</Text></View>
     {requirements.map(res=>{
      const amount=Math.max(0,row?.resources[res.key]??0),pct=res.required?Math.min(100,Math.round(amount/res.required*100)):100;
      const active=selectedHere&&selected?.resourceId===res.key;
      return <Pressable key={res.key} disabled={!canDonate||amount>=res.required}
       accessibilityRole="button" accessibilityState={{selected:active,disabled:!canDonate||amount>=res.required}}
-      accessibilityLabel={`Donate ${resourceName(res.key)} to ${resourceName(template.id)}`}
+      accessibilityLabel={ui('Donate {resource} to {upgrade}',{resource:resourceName(res.key),upgrade:resourceName(template.id)})}
       onPress={()=>{setSelected({templateId:template.id,resourceId:res.key});const available=snapshot.bank?.balances.find(item=>item.resourceId===res.key)?.amount??0;setQuantity(String(Math.min(res.key==='gold'?1000:100,res.required-amount,available)));}}
       style={[s.resource,active&&s.resourceSelected]}>
       <View style={s.head}>
@@ -145,23 +145,23 @@ export function OnlineGuildConstructionPanel({
      </Pressable>;
     })}
     {canDonate&&selectedHere&&chosen&&remaining>0?<View style={s.donationControls}>
-     <Text style={s.projectMeta}>{resourceName(chosen.key)} · Need {remaining.toLocaleString()} · Bank {bankAmount.toLocaleString()}</Text>
+     <Text style={s.projectMeta}>{ui('{resource} · Need {needed} · Bank {bank}',{resource:resourceName(chosen.key),needed:remaining.toLocaleString(),bank:bankAmount.toLocaleString()})}</Text>
      <View style={s.actions}>
-      <TextInput accessibilityLabel="Donation amount" value={quantity} onChangeText={setQuantity}
+      <TextInput accessibilityLabel={ui("Donation amount")} value={quantity} onChangeText={setQuantity}
        keyboardType="number-pad" maxLength={7} selectTextOnFocus style={s.input}/>
-      <GameButton compact title={busy?'Funding…':'Fund project'} disabled={busy||!validQuantity}
+      <GameButton compact title={ui(busy?'Funding…':'Fund project')} disabled={busy||!validQuantity}
        onPress={()=>confirmFunding(template.id,chosen.key,donationAmount)}/>
      </View>
-     <View style={s.actions}>{[10,100,'Max' as const].map(value=><Pressable key={value} accessibilityRole="button" accessibilityLabel={'Set funding amount to '+value} disabled={busy} onPress={()=>setQuantity(String(Math.min(value==='Max'?1000000:value,remaining,bankAmount,1000000)))} style={s.preset}><Text style={s.presetText}>{value==='Max'?'Max':value.toLocaleString()}</Text></Pressable>)}</View>
-      {bankAmount<remaining&&onOpenBank?<GameButton compact tone="secondary" title={'Deposit '+resourceName(chosen.key)+' into Guild Bank'} disabled={busy}
+     <View style={s.actions}>{[10,100,'Max' as const].map(value=><Pressable key={value} accessibilityRole="button" accessibilityLabel={ui('Set funding amount to {amount}',{amount:value==='Max'?ui('Max'):value})} disabled={busy} onPress={()=>setQuantity(String(Math.min(value==='Max'?1000000:value,remaining,bankAmount,1000000)))} style={s.preset}><Text style={s.presetText}>{value==='Max'?ui('Max'):value.toLocaleString()}</Text></Pressable>)}</View>
+      {bankAmount<remaining&&onOpenBank?<GameButton compact tone="secondary" title={ui('Deposit {resource} into Guild Bank',{resource:resourceName(chosen.key)})} disabled={busy}
        onPress={()=>onOpenBank(chosen.key,selectedBuilding,{templateId:template.id,resourceId:chosen.key})}/>:null}
     </View>:null}
-    <Text style={s.unlock}>{row?.completed?'Guild upgrade completed':`Reward: ${guildConstructionBlueprint(template.id)?.benefit??resourceName(template.unlockId)}`}</Text>
-    {!template.enabled?<Text style={s.projectMeta}>Awaiting construction release</Text>:null}
+    <Text style={s.unlock}>{row?.completed?ui('Guild upgrade completed'):ui('Reward: {reward}',{reward:guildConstructionBlueprint(template.id)?.benefit??resourceName(template.unlockId)})}</Text>
+    {!template.enabled?<Text style={s.projectMeta}>{ui('Awaiting construction release')}</Text>:null}
    </View>;
   })}
-  <Text style={s.kicker}>UPGRADE ROADMAP</Text>
-  {GUILD_CONSTRUCTION_BLUEPRINTS.filter(plan=>plan.id.startsWith('construction_'+selectedBuilding+'_')&&!snapshot.constructionTemplates.some(template=>template.id===plan.id&&template.enabled)).map(plan=><View key={plan.id} style={s.lockedTier}><View style={s.head}><Text style={s.projectName}>{plan.name}</Text><Text style={s.projectMeta}>Guild Lv {plan.requiredGuildLevel}</Text></View><Text style={s.unlock}>{plan.benefit}</Text><Text style={s.projectMeta}>Coming soon</Text></View>)}
+  <Text style={s.kicker}>{ui('UPGRADE ROADMAP')}</Text>
+  {GUILD_CONSTRUCTION_BLUEPRINTS.filter(plan=>plan.id.startsWith('construction_'+selectedBuilding+'_')&&!snapshot.constructionTemplates.some(template=>template.id===plan.id&&template.enabled)).map(plan=><View key={plan.id} style={s.lockedTier}><View style={s.head}><Text style={s.projectName}>{plan.name}</Text><Text style={s.projectMeta}>{ui('Guild Lv {level}',{level:plan.requiredGuildLevel})}</Text></View><Text style={s.unlock}>{plan.benefit}</Text><Text style={s.projectMeta}>{ui('Coming soon')}</Text></View>)}
  </Panel>;
 }
 function styles(C:ThemeColors){return StyleSheet.create({

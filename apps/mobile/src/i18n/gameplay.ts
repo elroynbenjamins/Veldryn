@@ -8,6 +8,7 @@ import {useMemo} from 'react';
 // Every row is complete, in en/de/es/nl/it/fr order. English phrases are typed keys.
 type TranslationRow=readonly [string,string,string,string,string,string];
 const common={
+ "Manage {skill} tools":["Manage {skill} tools","Werkzeuge für {skill} verwalten","Gestionar herramientas de {skill}","Gereedschap voor {skill} beheren","Gestisci gli strumenti di {skill}","Gérer les outils de {skill}"],
  "Requires {skill} level {level}.":["Requires {skill} level {level}.","Benötigt {skill} auf Stufe {level}.","Requiere {skill} de nivel {level}.","Vereist {skill} op niveau {level}.","Richiede {skill} al livello {level}.","Nécessite {skill} au niveau {level}."],
  "Requires character level {level}.":["Requires character level {level}.","Benötigt Charakterstufe {level}.","Requiere nivel de personaje {level}.","Vereist personageniveau {level}.","Richiede livello personaggio {level}.","Nécessite le niveau de personnage {level}."],
  "Show how to unlock or obtain materials for this recipe":["Show how to unlock or obtain materials for this recipe","Zeigen, wie du das Rezept freischaltest oder Materialien erhältst","Mostrar cómo desbloquear o conseguir materiales para esta receta","Tonen hoe je dit recept vrijspeelt of materialen verkrijgt","Mostra come sbloccare o ottenere materiali per questa ricetta","Afficher comment débloquer ou obtenir des matériaux pour cette recette"],

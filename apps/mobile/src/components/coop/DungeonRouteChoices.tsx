@@ -6,6 +6,7 @@ import {useSocialText} from '../../i18n/social';
 import {useGameLanguage} from '../../i18n/GameLanguageProvider';
 import {localizedDungeonEncounterPreview} from '../../i18n/dungeon-encounter-preview';
 import {seasonalDungeonRoomTitle} from '../../i18n/seasonal-dungeon-copy';
+import {localizedSeasonalDungeonRouteRisk,localizedSeasonalDungeonRouteReward} from '../../i18n/seasonal-dungeon-effects';
 import {CoopImageSlot} from './CoopVisualKit';
 import {IdentityArtwork} from '../SocialIdentity';
 import {dungeonRoomPresentation} from './dungeon-room-presentation';
@@ -30,10 +31,12 @@ export function DungeonRouteChoices({options,mode,phase,busy=false,onChoose,myVo
    const preview=option.encounterPreview?localizedDungeonEncounterPreview(language,option.encounterPreview).summary:(room?st(room.description):undefined);
    const riskBaseline=/^risk\s+1(?:\.0+)?$/i.test(option.risk.trim());
    const redundantReward=option.reward.trim().toLowerCase().replace(/[\s_-]+/g,'')===option.kind.trim().toLowerCase().replace(/[\s_-]+/g,'');
+   const translatedRisk=localizedSeasonalDungeonRouteRisk(language,option.risk);
+   const translatedReward=localizedSeasonalDungeonRouteReward(language,option.reward);
    return <Pressable
     key={option.nodeId}
     accessibilityRole="button"
-    accessibilityLabel={`${title}. ${option.risk}. ${option.reward}. ${live?`${option.votes??0} of ${totalVotes} votes. `:''}${votedHere?'Your vote. ':''}${canPress?action:st('Unavailable')}`}
+    accessibilityLabel={`${title}. ${translatedRisk}. ${translatedReward}. ${live?`${option.votes??0} of ${totalVotes} votes. `:''}${votedHere?'Your vote. ':''}${canPress?action:st('Unavailable')}`}
     accessibilityState={{disabled:!canPress}}
     disabled={!canPress}
     onPress={()=>onChoose?.(option.nodeId)}
@@ -46,8 +49,8 @@ export function DungeonRouteChoices({options,mode,phase,busy=false,onChoose,myVo
       <Text style={s.roomNumber}>{String(index+1).padStart(2,'0')}</Text>
      </View>
      {(!riskBaseline||!redundantReward)?<View style={s.tags}>
-      {!riskBaseline?<View style={s.riskTag}><Text style={s.riskText} numberOfLines={1}>{option.risk}</Text></View>:null}
-      {!redundantReward?<View style={s.rewardTag}><Text style={s.rewardText} numberOfLines={1}>{option.reward}</Text></View>:null}
+      {!riskBaseline?<View style={s.riskTag}><Text style={s.riskText} numberOfLines={1}>{translatedRisk}</Text></View>:null}
+      {!redundantReward?<View style={s.rewardTag}><Text style={s.rewardText} numberOfLines={1}>{translatedReward}</Text></View>:null}
      </View>:null}
      {preview?<Text numberOfLines={2} style={s.preview}>{preview}</Text>:null}
      <View style={s.footer}>

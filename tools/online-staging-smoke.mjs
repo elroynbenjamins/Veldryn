@@ -51,4 +51,4 @@ if(committed.accountId!==session.user.id||committed.version!==before.version+1)t
 if(retried.version!==committed.version||JSON.stringify(retried)!==JSON.stringify(committed))throw new Error('Repeated gameplay receipt was not idempotent.');
 const entry=await edge('coop/entry','GET');
 if(!Number.isSafeInteger(entry.gameVersion)||!Number.isFinite(entry.serverNow)||!Array.isArray(entry.dungeons)||!Array.isArray(entry.loadouts))throw new Error('Co-op entry returned an invalid authenticated dungeon projection.');
-console.log(JSON.stringify({status:'PASS',accountId:session.user.id,initialVersion:before.version,committedVersion:committed.version,checks:['authenticated_read','authoritative_write','idempotent_retry','authenticated_coop_entry','android_version_headers','staging_origin_guard']}));
+console.log(JSON.stringify({status:'PASS',initialVersion:before.version,committedVersion:committed.version,checks:['authenticated_read','authoritative_write','idempotent_retry','authenticated_coop_entry','android_version_headers','staging_origin_guard']}));

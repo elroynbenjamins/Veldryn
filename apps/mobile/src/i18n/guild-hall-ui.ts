@@ -75,6 +75,7 @@ export const guildHallUiRows={
  "+{percent}% · weekly cap {cap}": ["+{percent} % · Wochenlimit {cap}","+{percent}% · límite semanal {cap}","+{percent}% · weeklimiet {cap}","+{percent}% · limite settimanale {cap}","+{percent} % · plafond hebdomadaire {cap}","+{percent}% · недельный лимит {cap}","%{percent}+ · haftalık sınır {cap}"],
  "Guild Boss damage": ["Gildenboss-Schaden","Daño al jefe de gremio","Schade aan gildebaas","Danni al boss di gilda","Dégâts au boss de guilde","Урон по боссу гильдии","Lonca Bossu hasarı"],
  "Guild Quest Gold": ["Gold aus Gildenquests","Oro de misiones de gremio","Goud uit gildeopdrachten","Oro da missioni di gilda","Or des quêtes de guilde","Золото из заданий гильдии","Lonca Görevi Altını"],
+ "Retry": ["Erneut versuchen","Reintentar","Opnieuw proberen","Riprova","Réessayer","Повторить","Yeniden dene"],
 } as const satisfies Record<string,readonly [string,string,string,string,string,string,string]>;
 export type GuildHallUiKey=keyof typeof guildHallUiRows;
 const index:Partial<Record<Language,number>>={de:0,es:1,nl:2,it:3,fr:4,ru:5,tr:6};

@@ -1,6 +1,8 @@
 import {useSocialText} from '../i18n/social';
 import {useGameLanguage} from '../i18n/GameLanguageProvider';
 import {guildProjectAuthoredCopy} from '../i18n/guild-project-authored';
+import {guildFlowFocusText,guildFlowUiText} from '../i18n/guild-flow-ui';
+import {useOnlineGuildProjectUiText} from '../i18n/online-guild-project-ui';
 import {useEffect,useMemo,useRef,useState} from 'react';
 import {AppState,Image,Pressable,StyleSheet,Text,View} from 'react-native';
 import {GameButton} from './GameButton';
@@ -10,7 +12,6 @@ import {GuildActivityFeedPanel} from './GuildActivityFeedPanel';
 import {LoadingState} from './LoadingState';
 import {StatusPill} from './StatusPill';
 import {ActivityArtwork} from './ActivityArtwork';
-import {projectFocusLabel} from '../core/guild-projects-v18';
 import {claimOnlineGuildProjectReward,loadOnlineGuildProjectsV18,startOnlineGuildProjectCandidate,voteOnlineGuildProjectCandidate,type OnlineGuildProjectCandidate,type OnlineGuildProjectSummary,type OnlineGuildProjectsSnapshot} from '../online/guild-projects-v18';
 import {radii,typography,type ThemeColors} from '../theme/theme';
 import {useGameTheme} from '../theme/ThemeContext';
@@ -36,7 +37,7 @@ export function OnlineGuildProjectsPanel({onRewardsChanged,onNavigateActivity}:{
  onRewardsChanged?:()=>void|Promise<unknown>;
  onNavigateActivity?:(activity:Activity)=>void;
 }){
- const st=useSocialText(),C=useGameTheme(),s=useMemo(()=>makeStyles(C),[C]);
+ const st=useSocialText(),ui=useOnlineGuildProjectUiText(),C=useGameTheme(),s=useMemo(()=>makeStyles(C),[C]);
  const [snapshot,setSnapshot]=useState<OnlineGuildProjectsSnapshot|null>(null);
  const [loading,setLoading]=useState(true),[error,setError]=useState('');
  const [expanded,setExpanded]=useState<string|null>(null),[showHistory,setShowHistory]=useState(false),[busy,setBusy]=useState('');
@@ -77,15 +78,15 @@ export function OnlineGuildProjectsPanel({onRewardsChanged,onNavigateActivity}:{
  // eslint-disable-next-line react-hooks/exhaustive-deps
  },[]);
  if(loading&&!snapshot)return <LoadingState label={st('Loading Guild Projects…')} detail={st('Syncing shared Project progress and recent Guild activity.')}/>;
- if(error&&!snapshot)return <Panel><Text style={s.title}>Guild Projects</Text><Text style={s.error}>{error}</Text><GameButton title="Retry" tone="secondary" disabled={loading} loading={loading} onPress={()=>void load(true)}/></Panel>;
- if(!snapshot)return <Panel><Text style={s.title}>Guild Projects</Text><Text style={s.copy}>Join a Guild to view shared weekly progress.</Text></Panel>;
+ if(error&&!snapshot)return <Panel><Text style={s.title}>{ui("Guild Projects")}</Text><Text style={s.error}>{error}</Text><GameButton title={st("Retry")} tone="secondary" disabled={loading} loading={loading} onPress={()=>void load(true)}/></Panel>;
+ if(!snapshot)return <Panel><Text style={s.title}>{ui("Guild Projects")}</Text><Text style={s.copy}>{ui("Join a Guild to view shared weekly progress.")}</Text></Panel>;
  const active=snapshot.projects.filter(row=>row.status==='active');
  const completed=snapshot.projects.filter(row=>row.status==='completed').slice(0,4);
  return <View style={s.root}>
   <QuestBoard>
    <View style={s.sectionHead}>
-    <View style={s.flex}><Text style={s.kicker}>GUILD COOPERATION</Text><Text style={s.title}>Weekly Projects</Text></View>
-    <StatusPill label="SHARED" tone="good"/>
+    <View style={s.flex}><Text style={s.kicker}>{ui("GUILD COOPERATION")}</Text><Text style={s.title}>{ui("Weekly Projects")}</Text></View>
+    <StatusPill label={ui("SHARED")} tone="good"/>
    </View>
    {active.length?active.map(project=><GuildProjectPosting
      key={project.id} project={project} busy={!!busy}
@@ -93,18 +94,18 @@ export function OnlineGuildProjectsPanel({onRewardsChanged,onNavigateActivity}:{
      onNavigateActivity={onNavigateActivity}
      expanded={expanded===project.id}
      onToggle={()=>setExpanded(old=>old===project.id?null:project.id)}
-   />):<View style={s.empty}><Text style={s.emptyTitle}>No active Guild Project</Text><Text style={s.copy}>Vote below to choose the next project.</Text></View>}
+   />):<View style={s.empty}><Text style={s.emptyTitle}>{ui("No active Guild Project")}</Text><Text style={s.copy}>{ui("Vote below to choose the next project.")}</Text></View>}
   </QuestBoard>
   {snapshot.candidates.length?<Panel>
-   <View style={s.sectionHead}><Text style={s.sectionTitle}>Next weekly project</Text><Text style={s.meta}>One vote per member</Text></View>
+   <View style={s.sectionHead}><Text style={s.sectionTitle}>{ui("Next weekly project")}</Text><Text style={s.meta}>{ui("One vote per member")}</Text></View>
    {snapshot.candidates.map(candidate=><CandidateCard key={candidate.id} candidate={candidate} busy={busy}
     onVote={()=>void act('vote',candidate.id)} onStart={()=>void act('start',candidate.id)}/>)}
   </Panel>:null}
   {completed.length||snapshot.activity.length?<Panel>
-   <Pressable accessibilityRole="button" accessibilityLabel="Recent Guild progress" accessibilityState={{expanded:showHistory}}
+   <Pressable accessibilityRole="button" accessibilityLabel={ui("Recent Guild progress")} accessibilityState={{expanded:showHistory}}
     onPress={()=>setShowHistory(v=>!v)} style={({pressed})=>[s.accordion,pressed&&s.pressed]}>
-    <View style={s.flex}><Text style={s.sectionTitle}>Recent Guild activity</Text><Text style={s.copy}>{completed.length} completed · {snapshot.activity.length} events</Text></View>
-    {completed.some(p=>p.launchWeekly&&!p.completionRewardClaimed&&p.personalRewardThreshold>0&&p.personalPoints>=p.personalRewardThreshold&&!!p.endsAt&&Date.now()<Date.parse(p.endsAt)+7*86400000)?<StatusPill label="REWARD" tone="good"/>:null}
+    <View style={s.flex}><Text style={s.sectionTitle}>{ui("Recent Guild activity")}</Text><Text style={s.copy}>{ui("{completed} completed · {events} events",{completed:completed.length,events:snapshot.activity.length})}</Text></View>
+    {completed.some(p=>p.launchWeekly&&!p.completionRewardClaimed&&p.personalRewardThreshold>0&&p.personalPoints>=p.personalRewardThreshold&&!!p.endsAt&&Date.now()<Date.parse(p.endsAt)+7*86400000)?<StatusPill label={ui("REWARD")} tone="good"/>:null}
     <Text style={s.chevron}>{showHistory?'▴':'▾'}</Text>
    </Pressable>
    {showHistory?<View style={s.history}>
@@ -115,7 +116,7 @@ export function OnlineGuildProjectsPanel({onRewardsChanged,onNavigateActivity}:{
     <GuildActivityFeedPanel entries={snapshot.activity}/>
    </View>:null}
   </Panel>:null}
-  <GameButton compact title={loading?'Refreshing…':'Refresh Projects'} tone="secondary" loading={loading} disabled={loading||!!busy} onPress={()=>void load(true)}/>
+  <GameButton compact title={ui(loading?'Refreshing…':'Refresh Projects')} tone="secondary" loading={loading} disabled={loading||!!busy} onPress={()=>void load(true)}/>
   {!!error?<Text accessibilityRole="alert" style={s.error}>{error}</Text>:null}
  </View>;
 }

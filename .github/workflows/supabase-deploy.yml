@@ -15,9 +15,9 @@ on:
         options: [staging, production]
         default: staging
       functions_only:
-        description: Skip migrations (db push), deploy functions only
+        description: Deploy Edge Functions only (recommended while migration histories diverge)
         type: boolean
-        default: false
+        default: true
 
 concurrency:
   group: supabase-deploy-${{ github.event.inputs.environment }}
@@ -34,6 +34,18 @@ jobs:
       PROJECT_REF: ${{ github.event.inputs.environment == 'production' && 'nyjwigipamnvpdvpauuv' || 'iqfmmpvwanvvmxcftfxw' }}
     steps:
       - uses: actions/checkout@v4
+
+      - name: Validate selected deployment credentials
+        run: |
+          if [ -z "${SUPABASE_ACCESS_TOKEN:-}" ]; then
+            echo "::error::SUPABASE_ACCESS_TOKEN is missing in the selected supabase-${{ github.event.inputs.environment }} GitHub Environment."
+            echo "::error::Configure the GitHub Environment secret before dispatching this deployment."
+            exit 1
+          fi
+          if [ "${{ github.event.inputs.functions_only }}" != "true" ] && [ -z "${SUPABASE_DB_PASSWORD:-}" ]; then
+            echo "::error::SUPABASE_DB_PASSWORD is required for the migrations-on deployment path."
+            exit 1
+          fi
 
       - uses: pnpm/action-setup@v4
         with:
@@ -56,7 +68,8 @@ jobs:
       - name: Verify committed gameplay Edge bundle matches the shared engine
         run: node tools/verify-gameplay-edge.mjs
 
-      - name: Link project
+      - name: Link project (only required for migrations)
+        if: ${{ github.event.inputs.functions_only != 'true' }}
         run: supabase link --project-ref "$PROJECT_REF"
         working-directory: backend/supabase
 

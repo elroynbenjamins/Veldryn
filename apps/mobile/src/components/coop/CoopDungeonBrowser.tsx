@@ -1,4 +1,6 @@
 import {seasonalDungeonArtwork} from '../../theme/dungeon-preparation-art';
+import {localizedSeasonalDungeonPreviewCopy} from '../../i18n/seasonal-dungeon-effects';
+import {seasonalDungeonRoomTitle} from '../../i18n/seasonal-dungeon-copy';
 import {DungeonHero,DungeonBossPreview,DungeonDisclosure,DungeonPartyRoles,DungeonReward} from './DungeonPreparation';
 import {coopUiAssets} from '../../theme/coop-ui-assets';
 import {liveEventDef} from '../../content/live-events';
@@ -76,6 +78,8 @@ export function CoopEventExpeditionDetails({language,event,currentLevel,loadoutR
   const available=event.status==='available',meetsLevel=currentLevel===undefined||currentLevel>=event.minLevel,canLaunch=available&&meetsLevel&&loadoutReady;
   const [preparing,setPreparing]=useState(false);
   const identity=seasonalIdentity(event),definition=liveEventDef(event.liveEventId??''),visuals=definition?liveEventVisuals(definition.visualKey):identity?liveEventVisuals('veilbreak'):undefined;
+  const localizedMechanic=event.mechanic?localizedSeasonalDungeonPreviewCopy(language,event.mechanic):undefined;
+  const localizedObjective=event.objective?localizedSeasonalDungeonPreviewCopy(language,event.objective):undefined;
   const a=(text:string)=>accountText(language,text);
   const locked=!available?(event.lockedReason??st("Seasonal expedition unavailable")):!meetsLevel?ct(language,'browse.requiresLevel',{level:event.minLevel}):!loadoutReady?st("No verified expedition-ready loadout is available. Refresh your co-op loadout first."):undefined;
   return <ExpeditionScreenShell compactHeader titleInHero eyebrow={st("SEASONAL EVENT EXPEDITION")} title={event.name} onBack={preparing?()=>setPreparing(false):onBack} backLabel={preparing?a('Back'):ct(language,'details.backList')} stickyAction={<View style={s.stickyStack}>{notice?<Text accessibilityRole="alert" style={s.notice}>{notice}</Text>:null}{locked?<Text accessibilityRole="alert" style={s.lock}>{locked}</Text>:null}<PrimaryAction label={preparing?st("Launch seasonal expedition"):a('Prepare expedition')} loading={busy} disabled={!canLaunch} onPress={preparing?onLaunch:()=>setPreparing(true)}/></View>}>
@@ -85,13 +89,13 @@ export function CoopEventExpeditionDetails({language,event,currentLevel,loadoutR
     {preparing?<FantasyPanel variant="selected"><Text style={s.cardTitle}>{a('Expedition preparation')}</Text><Text style={s.copy}>{a('Your verified character and current expedition-ready loadout will enter with three eligible Echo recruits.')}</Text><DungeonPartyRoles language={language}/></FantasyPanel>:<DungeonDisclosure title={ct(language,'details.party')}><DungeonPartyRoles language={language} note={a('Your verified character + three eligible Echo recruits')}/></DungeonDisclosure>}
     <DungeonDisclosure key={String(preparing)} title={ct(language,'event.route')} initiallyOpen={preparing}>
       {event.routeNodeCount?<Text style={s.copy}>{event.routeNodeCount} {a('themed stages + final boss')}</Text>:null}
-      {event.routeHighlights.map((item,index)=><View key={item} style={s.routeStage}><View style={s.routeNumber}><Text style={s.levels}>{index+1}</Text></View><Text style={[s.copy,s.flex]}>{item}</Text></View>)}
+      {event.routeHighlights.map((item,index)=><View key={item} style={s.routeStage}><View style={s.routeNumber}><Text style={s.levels}>{index+1}</Text></View><Text style={[s.copy,s.flex]}>{seasonalDungeonRoomTitle(language,item)}</Text></View>)}
 
     </DungeonDisclosure>
     <DungeonBossPreview name={event.finalBoss} label={ct(language,'event.finalBoss')}/>
     {event.mechanic||event.objective?<DungeonDisclosure title={a('Mechanics & objectives')}>
-      {event.mechanic?<><Text style={s.eventSignature}>{event.mechanic.label}</Text><Text style={s.copy}>{event.mechanic.description}</Text><StateChip label={event.mechanic.startValue+'/'+event.mechanic.maxValue}/></>:null}
-      {event.objective?<><Text style={s.eventSignature}>{event.objective.label}</Text><Text style={s.copy}>{event.objective.description}</Text><StateChip label={event.objective.startCount+'/'+event.objective.maxCount}/></>:null}
+      {event.mechanic?<><Text style={s.eventSignature}>{localizedMechanic?.label}</Text><Text style={s.copy}>{localizedMechanic?.description}</Text><StateChip label={event.mechanic.startValue+'/'+event.mechanic.maxValue}/></>:null}
+      {event.objective?<><Text style={s.eventSignature}>{localizedObjective?.label}</Text><Text style={s.copy}>{localizedObjective?.description}</Text><StateChip label={event.objective.startCount+'/'+event.objective.maxCount}/></>:null}
     </DungeonDisclosure>:null}
     {identity?<DungeonDisclosure key={`guide-${preparing}`} title="Your first Gloam Breach" initiallyOpen={preparing}><Text style={s.copy}>Reach 80+ Lantern Light before the boss for 250 Veilshards and 250 reputation; otherwise earn 150 of each. Battles drain 6 Light. Lantern and chapel rooms restore it. At 28 Light or less, the boss hits 15% harder.</Text><Text style={s.copy}>Combat level 15+. The lobby syncs everyone to its average level, clamped to 15–35; starter equipment is enough to enter. Two successful clears per account per UTC day. Failed attempts do not consume a clear.</Text><Text style={s.copy}>Light and wards are different: each of the three restored wards removes 5% of the boss’s health. Restore all three to remove Lantern Extinction. Missing wards add Blackout phases; no wards adds Total Blackout.</Text><Text style={s.copy}>At 70% boss health, Lanterns Dim damages the party over time. At 35%, Regent’s Decree threatens wounded allies. Combat plays automatically: prepare through route choices, use camp rooms to recover, and review the boss preview before entering.</Text><Text style={s.copy}>Rare reward: 5% chance per clear for “the Veilbreaker”, a permanent orange title. The roll is the same at either Light reward tier.</Text></DungeonDisclosure>:null}
     <DungeonDisclosure title={a('Rewards & entry rules')}><Text style={s.copy}>{a('Mechanic and signature-objective performance can change the final encounter or payout.')}</Text>

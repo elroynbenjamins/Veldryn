@@ -43,7 +43,7 @@ const bank=fs.readFileSync(path.join(base,'OnlineGuildBankPanel.tsx'),'utf8');
 const shop=fs.readFileSync(path.join(base,'GuildTokenShopView.tsx'),'utf8');
 const shopController=fs.readFileSync(path.join(base,'OnlineGuildTokenShopPanel.tsx'),'utf8');
 for(const token of [
- 'useGuildBankUiText()', "ui('Deposit needs confirmation')", "ui('Retry saved deposit')",
+ 'useGuildBankUiText()', "ui('Deposit needs confirmation')", 'ui("Retry saved deposit")',
  "ui('Only materials required by published Construction or released Guild Skills can be deposited. Donations cannot be withdrawn.')",
  "ui('This donation is permanent and cannot be withdrawn. Guild Construction or Guild Skills can spend it separately.')",
  "ui('Deposits are permanent. Only Guild systems may allocate these supplies; members cannot withdraw or transfer them.')",
@@ -54,7 +54,7 @@ for(const token of [
  'amount<=1000000', 'amount<=depositCapacity(selected)', 'onPress={()=>void deposit({resourceId:selected,amount})}',
 ])assert.ok(bank.includes(token),'Guild Bank lost localized copy or authoritative deposit guard: '+token);
 for(const token of [
- 'useGuildTokenShopUiText()', "ui('Guild Token Shop sections')", "ui('{count} rewards'",
+ 'useGuildTokenShopUiText()', 'ui("Guild Token Shop sections")', "ui('{count} rewards'",
  "ui('Need {amount} more Guild Tokens'", "ui('Unlock for {amount} Guild Tokens'",
  "ui('Permanent account unlock · One purchase')", "ui('Daily and weekly rewards count toward your {cap}-token weekly earning cap.'",
  "ui('+{amount} Guild Tokens · {status}'", "ui('Event bonuses')",

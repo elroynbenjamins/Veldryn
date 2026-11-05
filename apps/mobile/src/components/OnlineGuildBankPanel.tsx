@@ -213,46 +213,46 @@ export function OnlineGuildBankPanel({snapshot,onReload,focusResourceId,onFocusH
    </Pressable>)}
   </View>
   {view==='inventory'?<View style={s.section}>
-   <View style={s.sectionHead}><Text style={s.sectionTitle}>Guild materials</Text><Text style={s.meta}>Tap an item to donate</Text></View>
-   <TextInput value={search} onChangeText={setSearch} placeholder="Search materials"
-    placeholderTextColor={C.muted} accessibilityLabel="Search Guild Bank materials"
+   <View style={s.sectionHead}><Text style={s.sectionTitle}>{ui('Guild materials')}</Text><Text style={s.meta}>{ui('Tap an item to donate')}</Text></View>
+   <TextInput value={search} onChangeText={setSearch} placeholder={ui("Search materials")}
+    placeholderTextColor={C.muted} accessibilityLabel={ui("Search Guild Bank materials")}
     autoCorrect={false} returnKeyType="search" style={s.search}/>
    <View style={s.bankGrid}>{visibleIds.map(inventoryCard)}</View>
-   {!visibleIds.length?<View style={s.empty}><Text style={s.name}>No matching materials</Text>
-    <Text style={s.help}>Try a different search. Only published upgrade materials are accepted.</Text></View>:null}
-   <Text style={s.footerHelp}>Only materials required by published Construction or released Guild Skills can be deposited. Donations cannot be withdrawn.</Text>
-   <GameButton compact tone="secondary" title="View materials needed" onPress={()=>{setView('needed');setNotice('')}}/>
+   {!visibleIds.length?<View style={s.empty}><Text style={s.name}>{ui('No matching materials')}</Text>
+    <Text style={s.help}>{ui('Try a different search. Only published upgrade materials are accepted.')}</Text></View>:null}
+   <Text style={s.footerHelp}>{ui('Only materials required by published Construction or released Guild Skills can be deposited. Donations cannot be withdrawn.')}</Text>
+   <GameButton compact tone="secondary" title={ui("View materials needed")} onPress={()=>{setView('needed');setNotice('')}}/>
   </View>:null}
   {view==='needed'?<View style={s.section}>
-   <View style={s.sectionHead}><Text style={s.sectionTitle}>Guild supply requirements</Text><Text style={s.meta}>{currentIds.length} needed now</Text></View>
-   <GameButton compact tone="secondary" title={skillLoading?'Refreshing Guild Skill needs…':'Refresh requirements'} disabled={skillLoading}
+   <View style={s.sectionHead}><Text style={s.sectionTitle}>{ui('Guild supply requirements')}</Text><Text style={s.meta}>{ui('{count} needed now',{count:currentIds.length})}</Text></View>
+   <GameButton compact tone="secondary" title={ui(skillLoading?'Refreshing Guild Skill needs…':'Refresh requirements')} disabled={skillLoading}
     onPress={()=>{setSkillRefresh(v=>v+1);void onReload()}}/>
-   <Text style={s.help}>Construction and released Guild Skills draw from the same Bank. Donate supplies first; spending is done in the relevant Guild screen.</Text>
-   <Text style={s.groupLabel}>NEEDED NOW</Text>
+   <Text style={s.help}>{ui('Construction and released Guild Skills draw from the same Bank. Donate supplies first; spending is done in the relevant Guild screen.')}</Text>
+   <Text style={s.groupLabel}>{ui('NEEDED NOW')}</Text>
    {currentIds.length?currentIds.map(id=>neededRow(id,false)):
-    <Text style={s.help}>No current construction or released Guild Skill requirements need more materials.</Text>}
-   <Text style={s.groupLabel}>UPCOMING</Text>
+    <Text style={s.help}>{ui('No current construction or released Guild Skill requirements need more materials.')}</Text>}
+   <Text style={s.groupLabel}>{ui('UPCOMING')}</Text>
    {upcomingIds.length?upcomingIds.map(id=>neededRow(id,true)):
-    <Text style={s.help}>No upcoming published material requirements.</Text>}
+    <Text style={s.help}>{ui('No upcoming published material requirements.')}</Text>}
    <View style={s.constructionCard}>
-    <Text style={s.sectionTitle}>Guild Construction</Text>
-    <Text style={s.help}>Use stored resources to fund specific Hall, Forge, Library, Treasury, War Room or Lodge upgrades.</Text>
-    {onOpenConstruction?<GameButton compact tone="secondary" title="Open Construction" onPress={onOpenConstruction}/>:null}
+    <Text style={s.sectionTitle}>{ui('Guild Construction')}</Text>
+    <Text style={s.help}>{ui('Use stored resources to fund specific Hall, Forge, Library, Treasury, War Room or Lodge upgrades.')}</Text>
+    {onOpenConstruction?<GameButton compact tone="secondary" title={ui("Open Construction")} onPress={onOpenConstruction}/>:null}
    </View>
   </View>:null}
   {view==='activity'?<View style={s.section}>
-   <View style={s.sectionHead}><Text style={s.sectionTitle}>Recent guild activity</Text><Text style={s.meta}>Shared ledger</Text></View>
+   <View style={s.sectionHead}><Text style={s.sectionTitle}>{ui('Recent guild activity')}</Text><Text style={s.meta}>{ui('Shared ledger')}</Text></View>
    {snapshot.bank?.activity.length?snapshot.bank.activity.slice(0,20).map((item,index)=><View key={item.createdAt+'-'+item.resourceId+'-'+index} style={s.activityRow}>
     <View style={s.neededArt}>{item.resourceId==='gold'?<Text style={s.goldGlyph}>G</Text>:<ResourceArtwork itemId={item.resourceId} size={30} framed={false}/>}</View>
     <View style={s.flex}>
-     <Text numberOfLines={2} style={s.name}>{item.kind==='deposit'?(item.mine?'You donated':'Member donated'):item.kind==='skill_upgrade'?'Spent on Guild Skill':'Allocated to construction'}</Text>
+     <Text numberOfLines={2} style={s.name}>{ui(item.kind==='deposit'?(item.mine?'You donated':'Member donated'):item.kind==='skill_upgrade'?'Spent on Guild Skill':'Allocated to construction')}</Text>
      <Text numberOfLines={2} style={s.meta}>{resourceTitle(item.resourceId)} · {activityTime(item.createdAt)}</Text>
     </View>
     <Text style={[s.activityAmount,{color:item.kind==='deposit'?C.good:C.info}]}>
      {item.kind==='deposit'?'+':'−'}{item.amount.toLocaleString()}
     </Text>
-   </View>):<View style={s.empty}><Text style={s.name}>No recorded activity yet</Text>
-    <Text style={s.help}>Deposits and project allocations will appear here after they are confirmed.</Text></View>}
+   </View>):<View style={s.empty}><Text style={s.name}>{ui('No recorded activity yet')}</Text>
+    <Text style={s.help}>{ui('Deposits and project allocations will appear here after they are confirmed.')}</Text></View>}
   </View>:null}
   <GameModalSurface visible={!!selected} presentation="sheet" surfaceStyle={{maxHeight:windowHeight*.86}}
    dismissOnBackdrop={!busy} onClose={close}>
@@ -283,7 +283,7 @@ export function OnlineGuildBankPanel({snapshot,onReload,focusResourceId,onFocusH
     </View>
     <View style={s.modalStats}>
      <View style={s.modalStat}><Text style={s.statLabel}>GUILD OWNS</Text><Text style={s.modalNumber}>{balance(selected).toLocaleString()}</Text></View>
-     <View style={s.modalStat}><Text style={s.statLabel}>NEEDED NOW</Text><Text style={s.modalNumber}>{((needs.get(selected)?.current??0)+(needs.get(selected)?.skills??0)).toLocaleString()}</Text></View>
+     <View style={s.modalStat}><Text style={s.statLabel}>{ui('NEEDED NOW')}</Text><Text style={s.modalNumber}>{((needs.get(selected)?.current??0)+(needs.get(selected)?.skills??0)).toLocaleString()}</Text></View>
      <View style={s.modalStat}><Text style={s.statLabel}>BANK LIMIT</Text><Text style={s.modalNumber}>{maxAmount.toLocaleString()}</Text></View>
     </View>
     <Text style={s.name}>Donation amount</Text>

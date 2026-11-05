@@ -122,14 +122,14 @@ export function OnlineGuildProjectsPanel({onRewardsChanged,onNavigateActivity}:{
 }
 
 function CandidateCard({candidate,busy,onVote,onStart}:{candidate:OnlineGuildProjectCandidate;busy:string;onVote:()=>void;onStart:()=>void}){
- const language=useGameLanguage(),C=useGameTheme(),s=useMemo(()=>makeStyles(C),[C]);
+ const language=useGameLanguage(),ui=useOnlineGuildProjectUiText(),C=useGameTheme(),s=useMemo(()=>makeStyles(C),[C]);
  const authored=guildProjectAuthoredCopy(language,candidate.templateId,candidate.name,candidate.description);
  return <View style={s.candidate}>
-  <View style={s.sectionHead}><View style={s.flex}><Text style={s.projectTitle}>{authored.name}</Text><Text style={s.meta}>{projectFocusLabel(candidate.focus)} · {candidate.voteCount} votes</Text></View>{candidate.myVote?<StatusPill label="VOTED" tone="good"/>:null}</View>
+  <View style={s.sectionHead}><View style={s.flex}><Text style={s.projectTitle}>{authored.name}</Text><Text style={s.meta}>{guildFlowFocusText(language,candidate.focus)} · {guildFlowUiText(language,candidate.voteCount===1?'{count} vote':'{count} votes',{count:candidate.voteCount})}</Text></View>{candidate.myVote?<StatusPill label={ui("VOTED")} tone="good"/>:null}</View>
   <Text style={s.copy}>{authored.description}</Text>
-  <Text style={s.meta}>Voting closes {new Date(candidate.expiresAt).toLocaleString()}</Text>
-  <View style={s.actions}><View style={s.flex}><GameButton compact title={candidate.myVote?'Your vote':'Vote'} tone="secondary" disabled={!!busy||candidate.myVote} onPress={onVote}/></View>
-   {candidate.canStart?<View style={s.flex}><GameButton compact title="Start project" disabled={!!busy} onPress={onStart}/></View>:null}
+  <Text style={s.meta}>{ui('Voting closes {date}',{date:new Date(candidate.expiresAt).toLocaleString(language)})}</Text>
+  <View style={s.actions}><View style={s.flex}><GameButton compact title={ui(candidate.myVote?'Your vote':'Vote')} tone="secondary" disabled={!!busy||candidate.myVote} onPress={onVote}/></View>
+   {candidate.canStart?<View style={s.flex}><GameButton compact title={ui("Start project")} disabled={!!busy} onPress={onStart}/></View>:null}
   </View>
  </View>;
 }
@@ -143,7 +143,7 @@ export function GuildProjectPosting({project,expanded,compact=false,onToggle,onC
  compact?:boolean;
  onToggle:()=>void;
 }){
- const language=useGameLanguage(),C=useGameTheme(),s=useMemo(()=>makeStyles(C),[C]);
+ const language=useGameLanguage(),ui=useOnlineGuildProjectUiText(),C=useGameTheme(),s=useMemo(()=>makeStyles(C),[C]);
  const authored=guildProjectAuthoredCopy(language,project.templateId,project.name,project.description);
  const pct=progressPercent(project);
  const weekly=project.launchWeekly===true;

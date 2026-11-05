@@ -1,4 +1,5 @@
 import {useSocialText} from '../i18n/social';
+import {useGuildFlowUiText} from '../i18n/guild-flow-ui';
 import React from 'react';
 import {Pressable,StyleSheet,Text,View} from 'react-native';
 import {formatGuildRole,type GuildMemberRow} from '../core/guild-projects-v18';
@@ -7,12 +8,12 @@ import {radii,type ThemeColors} from '../theme/theme';
 import {useGameTheme} from '../theme/ThemeContext';
 
 export function GuildMemberRosterPanel({members,onOpenMember,onManageRole}:{members:GuildMemberRow[];onOpenMember?:Function;onManageRole?:Function}){
- const st=useSocialText();
+ const st=useSocialText(),ui=useGuildFlowUiText();
  const C=useGameTheme(),s=React.useMemo(()=>makeStyles(C),[C]);
  return <View style={s.panel}>{members.map(m=><View key={m.accountId} style={s.row}>
   <Pressable accessibilityRole="button" disabled={!onOpenMember} onPress={()=>onOpenMember?.(m.accountId)} style={({pressed})=>[s.identity,pressed&&s.pressed]}>
    <CompactPlayerIdentity accountId={m.accountId} name={m.displayName} status={formatGuildRole(m.role).toUpperCase()} statusTone={m.onlineState==='online'?'good':m.onlineState==='recent'?'info':'muted'} hint={onOpenMember?st("VIEW PROFILE ›"):undefined}/>
-   <Text style={s.meta}>{m.contributionThisWeek.toLocaleString()} weekly contribution{m.onlineState?' · '+m.onlineState:''}</Text>
+   <Text style={s.meta}>{ui('{count} weekly contribution',{count:m.contributionThisWeek.toLocaleString()})}{m.onlineState?' · '+ui(m.onlineState):''}</Text>
   </Pressable>
   {onManageRole?<Pressable accessibilityRole="button" style={({pressed})=>[s.manage,pressed&&s.pressed]} onPress={()=>onManageRole?.(m.accountId)}><Text style={s.manageText}>{st("Manage")}</Text></Pressable>:null}
  </View>)}</View>;

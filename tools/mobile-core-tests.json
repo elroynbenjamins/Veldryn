@@ -46,6 +46,7 @@
   "tests/seasonal-dungeon-effects-localization.cjs",
   "tests/seasonal-dungeon-preview-route-localization.cjs",
   "tests/guild-flow-combat-ui-localization.cjs",
+  "tests/live-dungeon-online-guild-localization.cjs",
   "tests/equipment-metadata-localization.cjs",
   ".core-build/apps/mobile/tests/class-selection.js",
   ".core-build/apps/mobile/tests/character-creation-onboarding.js",

@@ -948,6 +948,7 @@ const crafting={
 "In progress":["In progress","In Arbeit","En progreso","In uitvoering","In corso","En cours"],
 "BUILDING":["BUILDING","IM AUFBAU","EN CONSTRUCCIÓN","IN OPBOUW","IN SVILUPPO","EN CONSTRUCTION"],
 "REACHED":["REACHED","ERREICHT","ALCANZADO","BEREIKT","RAGGIUNTO","ATTEINT"],
+"PENDING":["PENDING","AUSSTEHEND","PENDIENTE","NOG NIET","IN ATTESA","EN ATTENTE"],
 "Action failed.":["Action failed.","Aktion fehlgeschlagen.","La acción falló.","Actie mislukt.","Azione fallita.","Échec de l’action."],
 "FAITH PRACTICE":["FAITH PRACTICE","GLAUBENSÜBUNG","PRÁCTICA DE FE","GELOOFSOEFENING","PRATICA DI FEDE","PRATIQUE DE FOI"],
 "Holy Water is reserved when a practice starts. Unused Water is refunded when you stop or mastery ends the session.":["Holy Water is reserved when a practice starts. Unused Water is refunded when you stop or mastery ends the session.","Weihwasser wird beim Übungsbeginn reserviert. Nicht verbrauchtes Wasser wird beim Stoppen oder Meistern erstattet.","El agua bendita se reserva al iniciar la práctica. La no usada se devuelve al parar o dominar la sesión.","Wijwater wordt bij de start gereserveerd. Ongebruikt water wordt teruggegeven bij stoppen of meesterschap.","L’acqua santa è riservata all’avvio. Quella inutilizzata viene restituita quando ti fermi o completi la maestria.","L’eau bénite est réservée au démarrage. L’eau inutilisée est remboursée à l’arrêt ou à la maîtrise."],

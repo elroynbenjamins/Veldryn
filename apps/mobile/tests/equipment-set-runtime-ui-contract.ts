@@ -17,7 +17,7 @@ ok(runtime.includes("sixPieceStatus:pieces>=6?'trigger-hook-pending':'locked'"),
 ok(runtime.includes("'max hp':'maxHp'")&&runtime.includes("'crit damage':'critDamage'"),'Static parser must cover V33 stat language');
 ok(runtime.includes('unsupportedStatic'),'Runtime must expose catalog parsing coverage');
 
-ok(game.includes('activeEquipmentSetRuntime(state),setStats=setRuntime.stats'),'Effective stats must consume equipped V33 set runtime');
+ok(game.includes('const setStats=activeEquipmentBuildStats(state);')&&runtime.includes('const sets=activeEquipmentSetRuntime(state).stats;')&&runtime.includes('equippedCanonicalStatGemBonusesV1(state)'), 'Effective stats must consume both equipped V33 set runtime and canonical Stat Gem bonuses');
 ok(game.includes('hp=Math.ceil(hp*(1+setStats.maxHp))'),'Max HP set bonuses must affect live stats');
 ok(game.includes('defense=Math.ceil(defense*(1+setStats.armor))'),'Armor set bonuses must affect live defense');
 ok(game.includes('basePower*(1+setStats.power)'),'Power set bonuses must affect live Power');
@@ -36,6 +36,6 @@ ok(character.includes('label={profileT(language,"Armor")}')&&character.includes(
 
 ok(inspect.includes("row.runtime==='live'?gt(\"LIVE\"):it('HOOK')"),'Item inspect must distinguish live thresholds from conditional hooks');
 ok(inspect.includes('2/4/8/10 always-on V33 bonuses are live'),'Item inspect must accurately explain runtime coverage');
-ok(setPanel.includes('progress.thresholds.map')&&setPanel.includes('t.active?gt("REACHED"):gt("LOCKED")')&&!setPanel.includes('6pc simulated'),'Set progress must render actual reached/locked status without claiming a simulated 6pc effect');
+ok(setPanel.includes('progress.thresholds.map')&&setPanel.includes('t.pieces===6&&t.active?gt("PENDING")')&&setPanel.includes('t.active?gt("REACHED"):gt("LOCKED")')&&!setPanel.includes('6pc simulated'),'Set progress must show the 6-piece conditional as pending while preserving real 2/4/8/10 milestone states');
 
 console.log('PASS: V33 set runtime is wired through stats/combat and UI accurately distinguishes live bonuses from 6pc hooks');

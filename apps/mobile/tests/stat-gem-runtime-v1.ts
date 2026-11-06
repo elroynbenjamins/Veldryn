@@ -1,4 +1,4 @@
-import {createCharacter,effectiveStats,newGame,previewFallenKnightBattle} from '../src/core/game';
+import {createCharacter,effectiveStats,newGame,previewFallenKnightBattle,fallenKnightPlayerSnapshot} from '../src/core/game';
 import {CANONICAL_STAT_GEM_KEYS_V1,equippedCanonicalStatGemBonusesV1,equippedGemBonuses} from '../src/core/equipment-enhancement';
 import {assertEffectGemEquipAllowedV1,effectFamilyCopiesV1,equippedCanonicalGemIdsV1,resonanceForFamilyV1} from '../src/core/gem-progression-v1';
 import {activeEquipmentBuildStats,equipmentSetCombatModifiers} from '../src/core/equipment-set-runtime';
@@ -123,11 +123,15 @@ close(equipmentSetCombatModifiers(potent).recoveryMultiplier,1.012,'Potent must 
 
 // The boss timer already uses effectiveStats.haste; actionSpeedMultiplier
 // must not apply the same Swift/4-piece Haste bonus again.
+const baseBoss=fallenKnightPlayerSnapshot(base),swiftBoss=fallenKnightPlayerSnapshot(swift);
+close(swiftBoss.haste-baseBoss.haste,.008,
+ 'Fallen Knight must receive the canonical Swift Haste bonus in the combat snapshot');
+close(swiftBoss.actionSpeedMultiplier,baseBoss.actionSpeedMultiplier,
+ 'Swift must not also change the separate action-speed multiplier');
 const intervalBefore=previewFallenKnightBattle(base,1234).player.attackIntervalMs;
 const intervalSwift=previewFallenKnightBattle(swift,1234).player.attackIntervalMs;
-ok(intervalSwift<intervalBefore,'Swift should shorten the Fallen Knight basic-attack interval');
-ok(Math.abs(intervalSwift-Math.round(intervalBefore*1.05/1.058))<=2,
- 'Fallen Knight must apply Swift Haste once, not twice');
+ok(intervalSwift<=intervalBefore,
+ 'Swift cannot slow the Fallen Knight attack interval even if undergear hits its speed floor');
 
 // Socketed gems on uniquely forged copies must affect live stats, collection,
 // Resonance, socket limits, and projected changes; legacy itemId records must

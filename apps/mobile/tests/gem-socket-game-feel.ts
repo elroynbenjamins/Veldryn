@@ -34,9 +34,9 @@ ok(modal.includes('Returned safely to Inventory.'),'extraction result must tell 
 ok(modal.includes('Previous gem returned safely.'),'replacement result must explain that the old gem was preserved');
 ok(modal.includes('gt("Replace gem?")')&&modal.includes('gt("Extract gem?")')&&modal.includes('pendingGemAction'),'gem replacement/extraction must require a clear confirmation step');
 ok(modal.includes('gemUnsocketCostForStateV1')&&modal.includes('fee.gold')&&modal.includes('fee.dust')&&modal.includes('Gem Dust'),'gem confirmation must show the precise extraction/replacement cost');
-ok(modal.includes('canAffordFee')&&modal.includes('disabled={!canAffordFee}'),'unaffordable gem extraction/replacement must not be submitted');
+ok(modal.includes('canAffordFee')&&modal.includes('disabled={!affordable||busy}'),'unaffordable gem extraction/replacement must not be submitted');
 ok(modal.includes('setPendingGemAction(null);setGemPickerOpen(false)'),'successful gem replacement/extraction should dismiss both confirmation and picker');
-ok(modal.includes('gemResultDetail(state,current.id)} → {gemResultDetail(state,next.id)'),'replacement confirmation must compare current and new effects before spending');
+ok(modal.includes('gemResultDetail(state,current.id)} → {gemResultDetail(state,next.id,itemId)'),'replacement confirmation must compare current and projected new effects before spending');
 ok(modal.includes("setPendingGemAction({kind:'replace'"),'replacement buttons must stage confirmation instead of spending immediately');
 ok(modal.includes("setPendingGemAction({kind:'extract'"),'extraction buttons must stage confirmation instead of spending immediately');
 ok(modal.includes('onSocket(selectedGem.id)')&&modal.includes('setGemPickerOpen(false)'),'socketing from an empty slot should use the focused picker then close on success');
@@ -45,4 +45,6 @@ ok(modal.includes('selectedGem.id===equippedGemId')&&modal.includes('disabled={!
 ok(modal.includes('showAllCandidates'),'players must be able to expand the owned gem shortlist');
 ok(modal.includes('reduceMotion'),'gem result motion must respect Reduce Motion');
 
-console.log('PASS gem socket UX distinguishes committed changes and confirms paid replacement/extraction');
+ok(modal.includes('effectFamilyCopiesV1(state,meta.familyId,previewItemId)+1'),'projected Effect Gem Resonance must account for the prospective socket change');
+ok(modal.includes('family?.values[meta.grade]'),'Effect Gem strength must use actual grade values rather than a generic description');
+console.log('PASS gem socket UX distinguishes committed changes, accurate grade values and paid replacement/extraction');

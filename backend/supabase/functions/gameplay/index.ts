@@ -49370,16 +49370,33 @@ function dismantleGemV1(state, itemId, quantityToDismantle = 1) {
 function combinedGemQuantityV1(state, itemId) {
   return gemStorageQuantity(state, itemId);
 }
+function equippedCanonicalSocketsV1(state) {
+  if (!state.character) return [];
+  const instances = craftedGearInstances(state);
+  return Object.entries(state.character.equipment).flatMap(([key, equipmentItemId]) => {
+    if (!equipmentItemId) return [];
+    const instanceId = state.character.equipmentInstanceIds?.[key];
+    const instance = instanceId ? instances.find((copy) => copy.id === instanceId && copy.itemId === equipmentItemId && copy.ownerCharacterId === state.character.id) : void 0;
+    const raw2 = instance?.enhancement ?? state.character.gearEnhancements?.[equipmentItemId];
+    const valid = (id, kind) => {
+      if (!id) return void 0;
+      try {
+        const item = itemDef(id);
+        return item.type === "gem" && (item.gemKind ?? (item.gemEffect ? "effect" : "stat")) === kind ? id : void 0;
+      } catch {
+        return void 0;
+      }
+    };
+    const ids2 = Array.isArray(raw2?.gemIds) ? raw2.gemIds : [];
+    const selectedStat = valid(raw2?.statGemId, "stat") ?? ids2.find((id) => valid(id, "stat"));
+    const selectedEffect = valid(raw2?.effectGemId, "effect") ?? ids2.find((id) => valid(id, "effect"));
+    const statGemId = canonicalGemMetaV1(selectedStat ?? "") ? selectedStat : void 0;
+    const effectGemId = canonicalGemMetaV1(selectedEffect ?? "") ? selectedEffect : void 0;
+    return [{ equipmentItemId, statGemId, effectGemId }];
+  });
+}
 function effectFamilyCopiesV1(state, familyId, excludeEquipmentItemId) {
-  if (!state.character) return 0;
-  let count = 0;
-  for (const equipmentItemId of Object.values(state.character.equipment)) {
-    if (!equipmentItemId || equipmentItemId === excludeEquipmentItemId) continue;
-    const gemId = state.character.gearEnhancements?.[equipmentItemId]?.effectGemId;
-    if (!gemId) continue;
-    if (canonicalGemMetaV1(gemId)?.familyId === familyId) count++;
-  }
-  return count;
+  return equippedCanonicalSocketsV1(state).filter((row) => row.equipmentItemId !== excludeEquipmentItemId && canonicalGemMetaV1(row.effectGemId ?? "")?.familyId === familyId).length;
 }
 function assertEffectGemEquipAllowedV1(state, equipmentItemId, gemId) {
   const meta = canonicalGemMetaV1(gemId);
@@ -49706,6 +49723,38 @@ function enhancedGearStatsAtRank(state, itemId, rank) {
 function enhancedGearStats(state, itemId) {
   return enhancedGearStatsAtRank(state, itemId, gearEnhancement(state, itemId).rank);
 }
+var CANONICAL_STAT_GEM_KEYS_V1 = {
+  stat_might: "power",
+  stat_vitality: "maxHp",
+  stat_iron: "armor",
+  stat_ward: "ward",
+  stat_precision: "accuracy",
+  stat_keen: "critRate",
+  stat_savage: "critDamage",
+  stat_piercing: "penetration",
+  stat_swift: "haste",
+  stat_potent: "potency",
+  stat_elusive: "evasion",
+  stat_resolute: "tenacity"
+};
+function equippedCanonicalStatGemBonusesV1(state) {
+  const statPercent = {};
+  const statPercentagePoints = {};
+  if (!state.character) return { statPercent, statPercentagePoints };
+  for (const itemId of Object.values(state.character.equipment)) {
+    if (!itemId) continue;
+    const gemId = gearEnhancement(state, itemId).statGemId;
+    if (!gemId) continue;
+    const meta = canonicalGemMetaV1(gemId);
+    if (!meta || meta.kind !== "stat") continue;
+    const family = mobileGemFamilyV1(meta.familyId);
+    const key = CANONICAL_STAT_GEM_KEYS_V1[meta.familyId];
+    if (!key || !family || family.kind !== "stat") continue;
+    const target2 = family.unit === "percentage_point" ? statPercentagePoints : statPercent;
+    target2[key] = (target2[key] ?? 0) + family.values[meta.grade];
+  }
+  return { statPercent, statPercentagePoints };
+}
 function equippedGemBonuses(state) {
   const result = { attack: 0, defense: 0, hp: 0 };
   if (!state.character) return result;
@@ -49713,6 +49762,7 @@ function equippedGemBonuses(state) {
     if (!itemId) continue;
     const gemId = gearEnhancement(state, itemId).statGemId;
     if (!gemId) continue;
+    if (canonicalGemMetaV1(gemId)) continue;
     const gem2 = itemDef(gemId);
     if (gem2.type === "gem" && gem2.gemStat) result[gem2.gemStat] += gem2.gemPercent ?? 0;
   }
@@ -49889,8 +49939,28 @@ function activeEquipmentSetRuntime(state) {
   }
   return { stats: total, activeSets: activeSets.sort((a, b) => b.pieces - a.pieces || a.setId.localeCompare(b.setId)) };
 }
+function activeEquipmentBuildStats(state) {
+  const sets = activeEquipmentSetRuntime(state).stats;
+  const gems = equippedCanonicalStatGemBonusesV1(state);
+  const p = gems.statPercent, pp = gems.statPercentagePoints;
+  const multiplied = (bonus, percent) => (1 + bonus) * (1 + (percent ?? 0)) - 1;
+  return {
+    maxHp: multiplied(sets.maxHp, p.maxHp),
+    armor: multiplied(sets.armor, p.armor),
+    ward: multiplied(sets.ward, p.ward),
+    tenacity: multiplied(sets.tenacity, p.tenacity),
+    haste: multiplied(sets.haste, p.haste),
+    power: multiplied(sets.power, p.power),
+    accuracy: sets.accuracy + (pp.accuracy ?? 0),
+    penetration: sets.penetration + (pp.penetration ?? 0),
+    potency: multiplied(sets.potency, p.potency),
+    critRate: sets.critRate + (pp.critRate ?? 0),
+    critDamage: (0.5 + sets.critDamage) * (1 + (p.critDamage ?? 0)) - 0.5,
+    evasion: sets.evasion + (pp.evasion ?? 0)
+  };
+}
 function equipmentSetCombatModifiers(state, baseCritChance = 0.05, baseAccuracy = 0.84) {
-  const stats4 = activeEquipmentSetRuntime(state).stats;
+  const stats4 = activeEquipmentBuildStats(state);
   const baseCritDamage = 0.5;
   const accuracyMultiplier = Math.min(0.99, baseAccuracy + stats4.accuracy) / baseAccuracy;
   const baseCritExpected = 1 + baseCritChance * baseCritDamage;
@@ -51477,7 +51547,7 @@ function effectiveStats(state) {
     attack += novice.setBonus.attack;
     defense += novice.setBonus.defense;
   }
-  const setRuntime = activeEquipmentSetRuntime(state), setStats = setRuntime.stats;
+  const setStats = activeEquipmentBuildStats(state);
   hp = Math.ceil(hp * (1 + setStats.maxHp));
   defense = Math.ceil(defense * (1 + setStats.armor));
   const gems = equippedGemBonuses(state);
@@ -52649,7 +52719,9 @@ function fallenKnightPlayerSnapshot(state) {
     critMultiplier: stats4.critMultiplier,
     haste: stats4.haste,
     damageMultiplier: Math.max(0.7, (1 + effectGems.boss_power) * setCombat.penetrationMultiplier) * gear.outgoingDamageMultiplier * (prep?.outgoing ?? 1),
-    actionSpeedMultiplier: Math.max(0.65, style.speedMultiplier * multipliers.combatSpeedMultiplier * companion.outputMultiplier * (1 + effectGems.combat_speed) * setCombat.speedMultiplier) * gear.actionSpeedMultiplier,
+    // Stat Gem and set Haste are already included in stats.haste, used by the story-boss attack timer.
+    // Do not apply them again through actionSpeedMultiplier.
+    actionSpeedMultiplier: Math.max(0.65, style.speedMultiplier * multipliers.combatSpeedMultiplier * companion.outputMultiplier * (1 + effectGems.combat_speed)) * gear.actionSpeedMultiplier,
     incomingDamageMultiplier: Math.max(0.45, style.damageTakenMultiplier * multipliers.incomingDamageMultiplier * companion.incomingDamageMultiplier * (1 - effectGems.damage_reduction) * Math.max(0.5, 1 - setCombat.stats.ward) * (prep?.damage ?? 1)) * gear.incomingDamageMultiplier,
     potionHeal: potion?.effect.kind === "healing" ? Math.ceil(stats4.hp * potion.effect.maxHpFraction * multipliers.healingEffectivenessMultiplier) : 0,
     potionQuantity,

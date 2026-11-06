@@ -42816,6 +42816,9 @@ var GEM_ITEMS_V1 = MOBILE_GEM_FAMILIES_V1.flatMap((family) => [1, 2, 3, 4, 5].ma
   rarity: GEM_GRADE_RARITY_V1[grade],
   passive: family.description
 })));
+function mobileGemFamilyV1(familyId) {
+  return MOBILE_GEM_FAMILIES_V1.find((row) => row.familyId === familyId);
+}
 function mobileRawGemItemIdV1(familyId, grade) {
   return `raw_gem:${familyId}:g${grade}`;
 }
@@ -45742,6 +45745,18 @@ var GEM_COMBINE_COSTS_V1 = {
   3: { to: 4, copies: 3, dust: 15, gold: 21600, seconds: 45 * 60, level: 40, xp: 1200, catalystId: "REGIONAL_CATALYST" },
   4: { to: 5, copies: 3, dust: 40, gold: 72e3, seconds: 2 * 60 * 60, level: 60, xp: 3200, catalystId: "RADIANT_CATALYST" }
 };
+function canonicalGemMetaV1(itemId) {
+  let item;
+  try {
+    item = itemDef(itemId);
+  } catch {
+    return void 0;
+  }
+  if (item.type !== "gem" || !item.gemFamilyId || !item.gemGrade) return void 0;
+  const family = mobileGemFamilyV1(item.gemFamilyId);
+  if (!family) return void 0;
+  return { familyId: family.familyId, grade: item.gemGrade, kind: family.kind };
+}
 
 // ../apps/mobile/src/core/equipment-enhancement.ts
 var MAX_UPGRADE_RANK = 4;
@@ -45799,6 +45814,38 @@ function enhancedGearStatsAtRank(state, itemId, rank) {
 function enhancedGearStats(state, itemId) {
   return enhancedGearStatsAtRank(state, itemId, gearEnhancement(state, itemId).rank);
 }
+var CANONICAL_STAT_GEM_KEYS_V1 = {
+  stat_might: "power",
+  stat_vitality: "maxHp",
+  stat_iron: "armor",
+  stat_ward: "ward",
+  stat_precision: "accuracy",
+  stat_keen: "critRate",
+  stat_savage: "critDamage",
+  stat_piercing: "penetration",
+  stat_swift: "haste",
+  stat_potent: "potency",
+  stat_elusive: "evasion",
+  stat_resolute: "tenacity"
+};
+function equippedCanonicalStatGemBonusesV1(state) {
+  const statPercent = {};
+  const statPercentagePoints = {};
+  if (!state.character) return { statPercent, statPercentagePoints };
+  for (const itemId of Object.values(state.character.equipment)) {
+    if (!itemId) continue;
+    const gemId = gearEnhancement(state, itemId).statGemId;
+    if (!gemId) continue;
+    const meta = canonicalGemMetaV1(gemId);
+    if (!meta || meta.kind !== "stat") continue;
+    const family = mobileGemFamilyV1(meta.familyId);
+    const key = CANONICAL_STAT_GEM_KEYS_V1[meta.familyId];
+    if (!key || !family || family.kind !== "stat") continue;
+    const target2 = family.unit === "percentage_point" ? statPercentagePoints : statPercent;
+    target2[key] = (target2[key] ?? 0) + family.values[meta.grade];
+  }
+  return { statPercent, statPercentagePoints };
+}
 function equippedGemBonuses(state) {
   const result = { attack: 0, defense: 0, hp: 0 };
   if (!state.character) return result;
@@ -45806,6 +45853,7 @@ function equippedGemBonuses(state) {
     if (!itemId) continue;
     const gemId = gearEnhancement(state, itemId).statGemId;
     if (!gemId) continue;
+    if (canonicalGemMetaV1(gemId)) continue;
     const gem2 = itemDef(gemId);
     if (gem2.type === "gem" && gem2.gemStat) result[gem2.gemStat] += gem2.gemPercent ?? 0;
   }
@@ -45966,6 +46014,26 @@ function activeEquipmentSetRuntime(state) {
   }
   return { stats: total, activeSets: activeSets.sort((a, b) => b.pieces - a.pieces || a.setId.localeCompare(b.setId)) };
 }
+function activeEquipmentBuildStats(state) {
+  const sets = activeEquipmentSetRuntime(state).stats;
+  const gems = equippedCanonicalStatGemBonusesV1(state);
+  const p = gems.statPercent, pp = gems.statPercentagePoints;
+  const multiplied = (bonus, percent) => (1 + bonus) * (1 + (percent ?? 0)) - 1;
+  return {
+    maxHp: multiplied(sets.maxHp, p.maxHp),
+    armor: multiplied(sets.armor, p.armor),
+    ward: multiplied(sets.ward, p.ward),
+    tenacity: multiplied(sets.tenacity, p.tenacity),
+    haste: multiplied(sets.haste, p.haste),
+    power: multiplied(sets.power, p.power),
+    accuracy: sets.accuracy + (pp.accuracy ?? 0),
+    penetration: sets.penetration + (pp.penetration ?? 0),
+    potency: multiplied(sets.potency, p.potency),
+    critRate: sets.critRate + (pp.critRate ?? 0),
+    critDamage: (0.5 + sets.critDamage) * (1 + (p.critDamage ?? 0)) - 0.5,
+    evasion: sets.evasion + (pp.evasion ?? 0)
+  };
+}
 
 // ../apps/mobile/src/core/game.ts
 init_faith2();
@@ -46094,7 +46162,7 @@ function effectiveStats(state) {
     attack += novice.setBonus.attack;
     defense += novice.setBonus.defense;
   }
-  const setRuntime = activeEquipmentSetRuntime(state), setStats = setRuntime.stats;
+  const setStats = activeEquipmentBuildStats(state);
   hp = Math.ceil(hp * (1 + setStats.maxHp));
   defense = Math.ceil(defense * (1 + setStats.armor));
   const gems = equippedGemBonuses(state);
@@ -49512,23 +49580,35 @@ var OnlineCoopLfg = class {
 
 // ../apps/mobile/src/core/combat-power.ts
 var statScore = (stats6, level) => Math.max(0, Math.round(
-  stats6.attack * 18 + stats6.defense * 11 + stats6.hp * 0.7 + (stats6.power ?? 0) * 4 + level * 12 + (stats6.critChance ?? 0) * 220 + (stats6.critMultiplier ?? 1.5) * 18 + (stats6.accuracy ?? 0.84) * 45 + (stats6.evasion ?? 0.04) * 50 + (stats6.haste ?? 0.05) * 150
+  stats6.attack * 18 + stats6.defense * 11 + stats6.hp * 0.7 + (stats6.power ?? 0) * 4 + level * 12 + (stats6.critChance ?? 0) * 220 + (stats6.critMultiplier ?? 1.5) * 18 + (stats6.accuracy ?? 0.84) * 45 + (stats6.evasion ?? 0.04) * 50 + (stats6.haste ?? 0.05) * 150 + (stats6.armor ?? 0) * 110 + (stats6.ward ?? 0) * 140 + (stats6.tenacity ?? 0) * 60 + (stats6.potency ?? 0) * 80 + (stats6.penetration ?? 0) * 135
 ));
 function combatPowerRating(state) {
   const character = state.character;
   if (!character) return { total: 0, player: 0, companion: 0, rows: [] };
   const stats6 = effectiveStats(state), player2 = statScore(stats6, character.level);
-  const base = statScore({ hp: character.hp, attack: character.attack, defense: character.defense }, character.level);
-  const permanent = characterPermanentMultipliers(state);
-  const passive2 = Math.max(0, Math.round(player2 * (1 - 1 / Math.max(1, permanent.combatPowerMultiplier))));
-  const build = Math.max(0, player2 - base - passive2);
+  const role2 = CLASSES.find((def2) => def2.id === character.classId)?.role;
+  const base = statScore({
+    hp: character.hp,
+    attack: character.attack,
+    defense: character.defense,
+    power: Math.round(character.attack * 1.5 + character.defense * 0.8 + character.hp * 0.08 + character.level * 2.5),
+    critChance: role2 === "Damage" ? 0.1 : 0.05,
+    critMultiplier: 1.5,
+    accuracy: 0.84,
+    evasion: role2 === "Damage" ? 0.07 : 0.04,
+    haste: 0.05
+  }, character.level);
+  const unequipped = { ...state, character: { ...character, equipment: {}, equipmentInstanceIds: {} } };
+  const withoutGear = statScore(effectiveStats(unequipped), character.level);
+  const build = player2 - withoutGear;
+  const passive2 = withoutGear - base;
   const id = character.equippedCombatCompanionId, def = id ? combatCompanionDef(id) : void 0, progress = id ? state.account.combatCompanionProgress?.[id] : void 0;
   const contribution = companionCombatContribution(state);
   const companion = def && progress ? Math.round((def.baseStats.power * 18 + def.baseStats.defense * 10 + def.baseStats.hp * 0.3) * (1 + (progress.level - 1) * 0.025 + progress.ascensionTier * 0.1 + progress.bondLevel * 0.01) * COMPANION_RARITY_CONFIG[def.rarity].targetPowerMultiplier + player2 * contribution.contributionPct) : 0;
   const rows2 = [
     { id: "base", label: "Class base", value: base, detail: `Level ${character.level} base stats` },
     { id: "build", label: "Gear, sets & gems", value: build, detail: "Equipped stat gains and build effects" },
-    { id: "passives", label: "Passive bonuses", value: passive2, detail: passive2 ? `Active permanent combat bonuses \xB7 +${Math.round((permanent.combatPowerMultiplier - 1) * 100)}%` : "No direct combat-power passive active" },
+    { id: "passives", label: "Other character bonuses", value: passive2, detail: "Class training, Faith, preparation and permanent boosts" },
     { id: "companion", label: "Combat companion", value: companion, detail: def && progress ? `${def.name} \xB7 Lv. ${progress.level} \xB7 Bond ${progress.bondLevel}` : "No combat companion equipped" }
   ];
   return { total: player2 + companion, player: player2, companion, rows: rows2 };

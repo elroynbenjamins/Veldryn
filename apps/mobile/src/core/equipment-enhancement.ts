@@ -202,7 +202,7 @@ export function gemEffectDescription(gemId:string){
   const gem=itemDef(gemId);if(gem.type!=='gem')return '';
   if(gem.gemFamilyId){const family=mobileGemFamilyV1(gem.gemFamilyId);if(family?.kind==='effect')return family.description;}
   if(!gem.gemEffect)return gem.passive??'';
-  const pct=Math.round((gem.gemEffectValue??0)*100);
+  const pct=Number(((gem.gemEffectValue??0)*100).toFixed(3));
   switch(gem.gemEffect){
     case 'combat_speed':return `+${pct}% combat speed`;
     case 'boss_power':return `+${pct}% combat power against bosses`;

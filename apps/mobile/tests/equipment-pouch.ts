@@ -152,4 +152,4 @@ const fs=require('fs') as {readFileSync:(p:string,e:string)=>string};
 const view=fs.readFileSync('src/screens/InventoryScreen.tsx','utf8'),panel=fs.readFileSync('src/components/EquipmentPouchPanel.tsx','utf8');
 ok(view.includes('<EquipmentPouchPanel')&&view.includes('Equipment')&&panel.includes('To Inventory')&&panel.includes('To Bank')&&panel.includes('Equip'),'Inventory must expose usable Equipment Pouch actions');
 ok(panel.includes('Select safe to sell')&&panel.includes('Sell selected')&&panel.includes("type:'equipment_pouch_sell'")&&panel.includes('Sell selected equipment?'),'Pouch must provide direct sale, safe mass selection and explicit irreversible-sale confirmation');
-console.log('PASS: Equipment Pouch exact/legacy safe sale, Forge ownership, transfers, upgrades and protections');
+console.log('PASS: Equipment Pouch direct sale, safe mass sell, Forge ownership, transfers and protections');

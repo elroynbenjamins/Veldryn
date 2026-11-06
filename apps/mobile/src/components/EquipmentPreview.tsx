@@ -1,7 +1,7 @@
 import {useEffect,useMemo,useState} from 'react';
 import {Pressable,ScrollView,StyleSheet,Text,View,useWindowDimensions} from 'react-native';
 import {itemDef} from '../content/items';
-import {displayStat} from '../core/stat-display';
+import {displayPercent,displayStat} from '../core/stat-display';
 import {gearEnhancement,gemSocketState} from '../core/equipment-enhancement';
 import {previewEquipment} from '../core/equipment-preview';
 import {equipmentComparison} from '../core/equipment-comparison';
@@ -21,7 +21,7 @@ type Props={
  onClose:()=>void;onEquip?:()=>unknown|Promise<unknown>;onInspect?:()=>void;
 };
 
-function percent(value:number){return (value*100).toFixed(1).replace(/\.0$/,'')+'%';}
+const percent=displayPercent;
 function signed(value:number){const n=displayStat(value);return n===0?'—':n>0?'+'+n:String(n);}
 function statColor(C:ThemeColors,delta:number){return delta>0?C.good:delta<0?C.bad:C.muted;}
 

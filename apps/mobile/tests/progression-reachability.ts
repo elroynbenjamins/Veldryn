@@ -69,9 +69,25 @@ ok(ironwoodWolf.drops.some(drop=>drop.itemId==='BOAR_HIDE'&&drop.chance<=.1),'Wo
 ok(forestTroll.drops.some(drop=>drop.itemId==='IRONWOOD_FANG'&&drop.chance<=.06),'Forest Troll fang trophies must not replace focused wolf hunts');
 for(const recipe of gearInTier('T3')){
  const materialIds=recipe.inputs.map(row=>row.itemId);
- ok(!materialIds.some(id=>['TROLL_HIDE','WOLF_PELT','THORN_SAP','CROWNWOOD_LOG'].includes(id)),'T3 gear cannot depend on Ironwood monster farming');
+ ok(!materialIds.some(id=>['TROLL_HIDE','WOLF_PELT','THORN_SAP','CROWNWOOD_LOG','OATHGLASS_SOLVENT'].includes(id)),'T3 gear cannot depend on Asterfall farming');
  ok(materialIds.some(id=>['AMBERGLASS','ASTRAL_SCRIPT'].includes(id)),'T3 gear needs a Sunscar monster material');
  ok(materialIds.some(id=>['DUNEWOOD','SUNSCALE','SUNSTONE_ORE'].includes(id)),'T3 gear needs Sunscar gathering');
+}
+const sunscarTier3Binder=RECIPES.find(recipe=>recipe.id==='BREW_SUNSCAR_DUNE_BINDER')!;
+const sunscarTier4Binder=RECIPES.find(recipe=>recipe.id==='BREW_GLASSBOUND_BINDER')!;
+ok(!!sunscarTier3Binder&&sunscarTier3Binder.level<=20&&sunscarTier3Binder.inputs.every(row=>['DUNEWOOD','SUNSCALE','SUNSTONE_ORE'].includes(row.itemId)),'T3 binder must use only early Sunscar supplies');
+ok(!!sunscarTier4Binder&&sunscarTier4Binder.level<=34&&sunscarTier4Binder.inputs.some(row=>row.itemId==='GLASSBOUND_CORE'),'T4 binder must require late-Sunscar Glassbound Core');
+ok(RECIPES.some(row=>row.id==='REFINE_OATHGLASS_TO_DUNE_BINDER'&&row.output.itemId==='SUNSCAR_DUNE_BINDER')&&RECIPES.some(row=>row.id==='REFINE_OATHGLASS_TO_GLASSBOUND_BINDER'&&row.output.itemId==='GLASSBOUND_BINDER'),'Stored legacy Oathglass Solvent must remain useful through conversion');
+const kingsRoadMonsters=MONSTERS.filter(row=>row.zone==="King's Road"&&!row.boss);
+ok(kingsRoadMonsters.filter(monster=>monster.drops.some(drop=>['WOLF_PELT','THORN_SAP','TROLL_HIDE','IRONWOOD_FANG','IRONWOOD_LOG'].includes(drop.itemId))).length>=5,'King\'s Road should supply T2 materials while preparing for Fallen Knight');
+ok(kingsRoadMonsters.every(monster=>monster.drops.every(drop=>drop.itemId!=='GLASSBOUND_CORE')),'T4 trophy must never drop before Sunscar');
+const glassbound=MONSTERS.find(monster=>monster.id==='GLASSBOUND_SENTINEL')!;
+ok(glassbound.level>=40&&glassbound.drops.some(drop=>drop.itemId==='GLASSBOUND_CORE'),'Late Sunscar must be the source of fourth-tier core');
+ok(MONSTERS.every(monster=>!monster.drops.some(drop=>drop.itemId==='GLASSBOUND_CORE')||monster.zone==='Sunscar'&&monster.unlockLevel>=38),'Glassbound Core must have no early-region source');
+for(const recipe of gearInTier('T4')){
+ const inputs=recipe.inputs.map(row=>row.itemId);
+ ok(inputs.includes('GLASSBOUND_CORE')&&inputs.includes('GLASSBOUND_BINDER'),'All T4 pieces must require late Sunscar monster trophies and binder');
+ ok(!inputs.some(id=>['OATHSTONE_INGOT','OATHGLASS_SHARD','TORN_OATHCLOTH','ECHO_TOUCHED_PELT','ECHO_QUARTZ','OATHGLASS_SOLVENT'].includes(id)),'T4 gear cannot require King\'s Road / Old Mines materials');
 }
 // Characters can earn Sunscar supplies through hunts even before they train the local gathering skill to 26.
 const sunscarScorpion=MONSTERS.find(monster=>monster.id==='SUNSCAR_SCORPION')!;

@@ -129,6 +129,5 @@ async function readGuildProjects(membership:NonNullable<Awaited<ReturnType<typeo
 }
 
 export async function voteOnlineGuildProjectCandidate(candidateId:string){const db=client();const {data,error}=await db.rpc('guild_project_vote_v1',{p_candidate_id:candidateId});if(error)throw error;projectReads.clear();return data as string;}
-export async function startOnlineGuildProjectCandidate(candidateId:string){const db=client();const {data,error}=await db.rpc('guild_project_start_v1',{p_candidate_id:candidateId});if(error)throw error;projectReads.clear();return data as string;}
 
 export async function claimOnlineGuildProjectReward(id:string){const {data,error}=await client().rpc('claim_guild_project_reward_v2',{p_project:id});if(error)throw error;projectReads.clear();return data;}

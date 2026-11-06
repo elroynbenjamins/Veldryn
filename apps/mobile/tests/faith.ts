@@ -61,7 +61,7 @@ test('Gathering Faith bonus applies only while that blessing is equipped',()=>{
  const gathering=selectFaithBlessing(s,'HARVESTS_GRACE'),boost=characterPermanentMultipliers(gathering);
  ok(Math.abs(boost.gatheringSpeedMultiplier/base.gatheringSpeedMultiplier-1.06)<1e-10,'6% gathering speed');
  equal(boost.craftingSpeedMultiplier,base.craftingSpeedMultiplier,'does not boost production');
- const switched=selectFaithBlessing(gathering,'DAWN_COVENANT');
+ const switched=selectFaithBlessing(gathering,'SUNFIRE_VOW');
  equal(characterPermanentMultipliers(switched).gatheringSpeedMultiplier,base.gatheringSpeedMultiplier,'switch removes old buff');
 });
 test('Production Faith affects new timed batches but not outputs or XP',()=>{

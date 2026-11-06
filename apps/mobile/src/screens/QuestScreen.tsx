@@ -1,5 +1,6 @@
 import {useGameLanguage} from '../i18n/GameLanguageProvider';
 import {progressionT,progressionText,progressionError,type ProgressionKey} from '../i18n/progression';
+import {localizedQuestActText,localizedQuestStoryText,questMatchesLocalizedSearch} from '../i18n/quest-story-copy';
 import {ZoneSceneArtwork} from '../components/ZoneSceneArtwork';
 import {QuestReward} from '../components/QuestReward';
 import {QuestPosting} from '../components/QuestPosting';
@@ -85,7 +86,7 @@ export function QuestScreen({state,mode,onModeChange,focusedWeeklyOrderId,onClai
     const chapters=newlyConfirmedIds(previous.quests,next.quests),contracts=newlyConfirmedIds(previous.contracts,next.contracts);
     if(chapters.length){
       const id=chapters[chapters.length-1],def=QUESTS.find(q=>q.id===id);
-      if(def)setClaimMoment({key:'chapter:'+id,kind:'chapter',eyebrow:t("CHAPTER COMPLETE"),title:def.name,detail:t("Rewards secured · the next available story beat is now ready."),gold:def.rewardGold,itemId:def.rewardItemId,quantity:def.rewardItemQty??1});
+      if(def)setClaimMoment({key:'chapter:'+id,kind:'chapter',eyebrow:t("CHAPTER COMPLETE"),title:localizedQuestStoryText(language,def,'name'),detail:t("Rewards secured · the next available story beat is now ready."),gold:def.rewardGold,itemId:def.rewardItemId,quantity:def.rewardItemQty??1});
       setNotice('');setError('');
     }else if(contracts.length){
       const id=contracts[contracts.length-1],contract=(['daily','weekly','monthly'] as const).flatMap(period=>seasonalQuestBoard(state,period)).find(row=>row.id===id);
@@ -93,7 +94,7 @@ export function QuestScreen({state,mode,onModeChange,focusedWeeklyOrderId,onClai
       setNotice('');setError('');
     }
   },[state.quests,state.account.seasonalContractClaimIds,state.character?.id]);
-  const entries=journalEntries(state,filter,query);
+  const entries=journalEntries(state,filter,'').filter(({def})=>questMatchesLocalizedSearch(language,def,query));
   const daily=seasonalQuestBoard(state,'daily'),weekly=seasonalQuestBoard(state,'weekly'),monthly=seasonalQuestBoard(state,'monthly'),contractBoard=weeklyOrderBoardForState(state),pendingBoardRewards=(state.account.weeklyOrderPendingRewards??[]).filter(row=>row.weekKey===contractBoard.weekKey);
   const fallenKnightWeekly=state.defeatedBossIds.includes('FALLEN_KNIGHT')?fallenKnightWeeklyStatus(state,Date.now()):undefined;
   const claimed=QUESTS.filter(def=>state.quests.some(q=>q.questId===def.id&&q.status==='claimed')).length;
@@ -123,8 +124,8 @@ export function QuestScreen({state,mode,onModeChange,focusedWeeklyOrderId,onClai
     {claimMoment&&<ClaimMomentCard moment={claimMoment} reduceMotion={state.settings.reduceMotion}/>} {!!notice&&<ActionFeedback message={notice} compact reduceMotion={state.settings.reduceMotion}/>} {!!error&&<ActionFeedback message={error} tone="error" compact reduceMotion={state.settings.reduceMotion}/>}
     <View style={s.board}>
     {mode==='story'?<>
-    {readyQuest?<Panel accentColor={C.good} accentSurface={C.goodSurface}><View style={s.modeHeroHead}><View style={s.flex}><Text style={[s.modeEyebrow,{color:C.good}]}>{t("REWARD READY")}</Text><Text style={s.title}>{readyQuest.name}</Text><Text style={s.sub}>{t("Objective complete — claim your reward")}</Text></View><StatusPill label={t("{count} ready",{count:ready})} tone="good"/></View><GameButton title={t("Claim chapter rewards")} onPress={()=>claim(readyQuest.id)}/></Panel>:null}
-    <Panel><Text style={s.actEyebrow}>{t("ACT")} {roman(currentAct.act)} · {currentAct.name.toUpperCase()}</Text><Text style={s.title}>{claimed===QUESTS.length?t("Asterfall campaign complete"):currentAct.subtitle}</Text><StatBar reduceMotion={state.settings.reduceMotion} label={t("Chapters claimed")} current={claimed} max={QUESTS.length}/><Text style={s.sub}>{claimed===QUESTS.length?t("Every chapter reward has been claimed. You can revisit the story, hunts, crafting, and equipment upgrades."):t("Rewards ready: {count}. Claim each chapter to unlock the next story beat.",{count:ready})}</Text></Panel>
+    {readyQuest?<Panel accentColor={C.good} accentSurface={C.goodSurface}><View style={s.modeHeroHead}><View style={s.flex}><Text style={[s.modeEyebrow,{color:C.good}]}>{t("REWARD READY")}</Text><Text style={s.title}>{localizedQuestStoryText(language,readyQuest,'name')}</Text><Text style={s.sub}>{t("Objective complete — claim your reward")}</Text></View><StatusPill label={t("{count} ready",{count:ready})} tone="good"/></View><GameButton title={t("Claim chapter rewards")} onPress={()=>claim(readyQuest.id)}/></Panel>:null}
+    <Panel><Text style={s.actEyebrow}>{t("ACT")} {roman(currentAct.act)} · {localizedQuestActText(language,currentAct,'name').toLocaleUpperCase(language)}</Text><Text style={s.title}>{claimed===QUESTS.length?t("Asterfall campaign complete"):localizedQuestActText(language,currentAct,'subtitle')}</Text><StatBar reduceMotion={state.settings.reduceMotion} label={t("Chapters claimed")} current={claimed} max={QUESTS.length}/><Text style={s.sub}>{claimed===QUESTS.length?t("Every chapter reward has been claimed. You can revisit the story, hunts, crafting, and equipment upgrades."):t("Rewards ready: {count}. Claim each chapter to unlock the next story beat.",{count:ready})}</Text></Panel>
     <ScrollView accessibilityRole="tablist" horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={[s.row,s.filterRail]} showsVerticalScrollIndicator={false}>{(['current','all','claimed','locked'] as const).map(value=><FilterChip key={value} label={`${value==='current'?t("Current"):value==='all'?t("All"):value==='claimed'?t("Completed"):t("Locked")} · ${journalCounts[value]}`} selected={filter===value} onPress={()=>setFilter(value)}/>)}</ScrollView>
     <SearchField accessibilityLabel={t("Search quests")} placeholder={t("Search story, locations or objectives…")} placeholderTextColor={C.muted} value={query} onChangeText={setQuery}/>
     </>:null}
@@ -168,10 +169,10 @@ export function QuestScreen({state,mode,onModeChange,focusedWeeklyOrderId,onClai
       const destination=questDestination(def),presentation=questPresentationMeta(def,C),statusColor=quest.status==='complete'?C.good:quest.status==='claimed'?C.muted:undefined,statusSurface=quest.status==='complete'?C.goodSurface:quest.status==='claimed'?C.panel2:undefined;
       return <QuestPosting key={def.id} style={[s.questCard,{borderLeftColor:presentation.color,borderLeftWidth:3},quest.status==='locked'&&s.lockedCard]}>
         <View style={s.questMetaRow}><Text style={s.chapter}>{t("ACT")} {roman(def.act)}  {t("· CHAPTER")} {chapter}</Text><View style={[s.tierBadge,{borderColor:presentation.color,backgroundColor:presentation.surface}]}><Text style={[s.tierBadgeText,{color:presentation.color}]}>{presentation.label.toUpperCase()}</Text></View><View style={[s.statusBadge,statusColor&&{borderColor:statusColor},statusSurface&&{backgroundColor:statusSurface}]}><Text style={[s.statusBadgeText,statusColor&&{color:statusColor}]}>{quest.status==='complete'?t("REWARD READY"):quest.status==='claimed'?t("CLAIMED"):p(quest.status.toUpperCase())}</Text></View></View>
-        <View style={s.postingHead}><View style={s.flex}><Text accessibilityRole="header" style={s.title}>{def.name}</Text><Text style={s.location}>{def.location}</Text></View><QuestObjectiveArtwork quest={def} size={48}/></View>
-        <Pressable accessibilityRole="button" accessibilityLabel={t("STORY")+' · '+def.name} aria-expanded={!!expandedStories[def.id]} accessibilityState={{expanded:!!expandedStories[def.id]}} onPress={()=>setExpandedStories(value=>({...value,[def.id]:!value[def.id]}))} style={s.storyToggle}><UiIcon name="quests" size={18}/><Text style={s.storyToggleText}>{t("STORY")}</Text><Text style={s.storyToggleText}>{expandedStories[def.id]?'−':'+'}</Text></Pressable>
-        {expandedStories[def.id]?<View style={s.storyBlock}><Text style={s.storyText}>{def.story}</Text></View>:null}
-        <Text style={s.objectiveLabel}>{t("OBJECTIVE")}</Text><Text style={s.sub}>{def.description}</Text>
+        <View style={s.postingHead}><View style={s.flex}><Text accessibilityRole="header" style={s.title}>{localizedQuestStoryText(language,def,'name')}</Text><Text style={s.location}>{def.location}</Text></View><QuestObjectiveArtwork quest={def} size={48}/></View>
+        <Pressable accessibilityRole="button" accessibilityLabel={t("STORY")+' · '+localizedQuestStoryText(language,def,'name')} aria-expanded={!!expandedStories[def.id]} accessibilityState={{expanded:!!expandedStories[def.id]}} onPress={()=>setExpandedStories(value=>({...value,[def.id]:!value[def.id]}))} style={s.storyToggle}><UiIcon name="quests" size={18}/><Text style={s.storyToggleText}>{t("STORY")}</Text><Text style={s.storyToggleText}>{expandedStories[def.id]?'−':'+'}</Text></Pressable>
+        {expandedStories[def.id]?<View style={s.storyBlock}><Text style={s.storyText}>{localizedQuestStoryText(language,def,'story')}</Text></View>:null}
+        <Text style={s.objectiveLabel}>{t("OBJECTIVE")}</Text><Text style={s.sub}>{localizedQuestStoryText(language,def,'description')}</Text>
         {quest.status==='locked'?<Text style={s.hint}>{lockedHint??t("Claim “{chapter}” to unlock this objective. Progress is not tracked while locked.",{chapter:previous??t("the previous chapter")})}</Text>:<><StatBar reduceMotion={state.settings.reduceMotion} label={t("Objective progress")} current={Math.min(def.required,quest.progress)} max={def.required}/><Text style={s.hint}>{quest.status==='claimed'?t("Reward already collected"):quest.status==='complete'?t("Objective complete — claim your reward"):t("{count} remaining",{count:remaining})}</Text></>}
         <QuestReward gold={def.rewardGold} itemId={def.rewardItemId} quantity={def.rewardItemQty??1} label={quest.status==='claimed'?t("Rewards collected"):t("Chapter rewards")}/>
         {quest.status==='active'&&<><Text style={s.sub}>{destination.hint}</Text><GameButton title={p(destination.label)} tone="secondary" onPress={()=>onNavigate(destination)}/></>}

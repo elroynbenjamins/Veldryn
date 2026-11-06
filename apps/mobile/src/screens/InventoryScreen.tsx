@@ -71,7 +71,7 @@ export function InventoryScreen({state,viewMemory,foodRequest=0,onEquip,onFood,o
   const {width,fontScale}=useWindowDimensions();
   const stackStorageActions=width<380||fontScale>=1.25;
   const [gridWidth,setGridWidth]=useState(Math.max(280,Math.min(960,width)-32));
-  const gridColumns=gridWidth>=600?8:gridWidth>=440?6:gridWidth>=345?5:4,tileSize=Math.max(50,Math.floor((gridWidth-(gridColumns-1)*5)/gridColumns)),iconSize=Math.min(42,tileSize-12);
+  const gridColumns=gridWidth<300?3:gridWidth>=840?8:gridWidth>=660?6:gridWidth>=480?5:4,tileSize=Math.max(50,Math.floor((gridWidth-(gridColumns-1)*5)/gridColumns)),iconSize=Math.min(42,tileSize-12);
   const memory=useRef(viewMemory??newInventoryScreenState()).current;
   const initial=useRef(foodRequest>memory.foodRequest?openInventoryFood(memory,foodRequest):{...memory}).current;
   const scrollRef=useRef<FlatList<ItemStack|null>>(null),scrollY=useRef(initial.scrollY),restored=useRef<number|null>(null);
@@ -304,7 +304,7 @@ export function InventoryScreen({state,viewMemory,foodRequest=0,onEquip,onFood,o
       </View>
       <View style={s.capacityTrack}><View style={[s.capacityFill,{width:`${activeCapacity.percent}%` as `${number}%`,backgroundColor:activeCapacity.level==='full'?C.bad:activeCapacity.level==='near'?C.warning:equipmentColors.selectedLine}]}/></View>
       <View style={[s.storageUpgradeRow,stackStorageActions&&s.storageUpgradeRowStacked]}>
-        <View style={s.storageUpgradeDetails}>
+        <View style={[s.storageUpgradeDetails,stackStorageActions&&s.storageUpgradeDetailsStacked]}>
           <Text style={s.storageUpgradeTitle}>{activeUpgrade?gt('Next: {count} slots',{count:activeUpgrade.capacity}):gt('Maximum capacity reached')}</Text>
           {activeUpgrade?<Text style={s.storageUpgradeMeta}>{gt('Level {level} · {gold} Gold',{level:activeUpgrade.level,gold:formatGameNumber(activeUpgrade.cost,state.settings.numberMode,state.settings.language)})}</Text>:null}
         </View>
@@ -379,7 +379,7 @@ function makeStyles(C:ThemeColors){const equipmentColors=equipmentTheme(C);retur
   storageUpgradeButton:{width:'100%',minHeight:44},
   chipRow:{flexDirection:'row',flexWrap:'wrap',gap:6},
   storageRow:{flexDirection:'row',gap:5},
-  storageChip:{flex:1,minWidth:0,minHeight:48,gap:7,justifyContent:'center',paddingHorizontal:6,paddingVertical:8,borderWidth:1,borderColor:C.line,borderRadius:12,backgroundColor:C.panel},
+  storageChip:{flex:1,minWidth:0,minHeight:48,gap:6,justifyContent:'center',paddingHorizontal:6,paddingVertical:8,borderWidth:1,borderColor:C.line,borderRadius:10,backgroundColor:C.panel},
   storageChipSelected:{borderColor:equipmentColors.selectedLine,backgroundColor:equipmentColors.selected},
   storageChipFull:{borderColor:C.bad},
   storageChipTop:{flexDirection:'row',alignItems:'center',justifyContent:'space-between',gap:8},

@@ -3,15 +3,13 @@ import React,{useMemo,useState} from 'react';
 import {Pressable,StyleSheet,Text,View,useWindowDimensions} from 'react-native';
 import type {GameState} from '../core/types';
 import type {GameCommand} from '../core/game-commands';
-import {FAITH_TIERS,FAITH_BLESSINGS} from '../content/faith';
+import {FAITH_TIERS,FAITH_BLESSINGS,FAITH_BLESSING_GROUPS,faithBlessingEffectLabel} from '../content/faith';
 import {blessingRows,faithLevel,faithPracticeAvailability,holyWaterAvailable,normalizeFaith} from '../core/faith';
 import {progressWithinLevel} from '../core/progression';
 import {Panel} from './Panel';
 import {GameButton} from './GameButton';
 import {spacing,typography,type ThemeColors} from '../theme/theme';
 import {useGameTheme} from '../theme/ThemeContext';
-
-const familyLabel=(family:string)=>family.charAt(0).toUpperCase()+family.slice(1);
 
 export function FaithPanel({state,onCommand}:{state:GameState;onCommand:(c:GameCommand)=>Promise<void>}){
  const {gt,gl,language}=useGameplayText();
@@ -40,13 +38,25 @@ export function FaithPanel({state,onCommand}:{state:GameState;onCommand:(c:GameC
    </Pressable>})}
   </View>
   <Panel>
-   <View style={s.sectionHeading}><View style={s.flex}><Text style={s.sectionLabel}>{gt("ACTIVE BLESSING")}</Text><Text style={s.selectedBlessing}>{selected?`${selected.name} · +${Math.round(selected.bonus*100)}% ${familyLabel(selected.family)}`:gt("No blessing selected")}</Text></View><View style={s.hideButton}><GameButton compact title={faith.hideWeakerBlessings?gt("Show all"):gt("Hide weaker")} tone="secondary" disabled={busy} onPress={()=>run({type:'faith_hide',args:{enabled:!faith.hideWeakerBlessings}})}/></View></View>
+   <View style={s.sectionHeading}><View style={s.flex}><Text style={s.sectionLabel}>{gt("ACTIVE BLESSING")}</Text><Text style={s.selectedBlessing}>{selected?`${selected.name} · ${faithBlessingEffectLabel(selected)}`:gt("No blessing selected")}</Text></View><View style={s.hideButton}><GameButton compact title={faith.hideWeakerBlessings?gt("Show all"):gt("Hide weaker")} tone="secondary" disabled={busy} onPress={()=>run({type:'faith_hide',args:{enabled:!faith.hideWeakerBlessings}})}/></View></View>
    <Text style={s.body}>{gt("Equip one blessing at a time. Star useful alternatives so they remain visible when weaker blessings are hidden.")}</Text>
-   {visibleBlessings.map(blessing=>{const locked=blessing.level>level,favorite=faith.favoriteBlessingIds.includes(blessing.id),equipped=faith.selectedBlessingId===blessing.id;return <View key={blessing.id} style={[s.blessingRow,equipped&&s.blessingEquipped,locked&&s.blessingLocked]}>
-    <Pressable accessibilityRole="button" accessibilityLabel={favorite?`Remove ${blessing.name} from favorites`:`Favorite ${blessing.name}`} accessibilityState={{selected:favorite,disabled:busy}} disabled={busy} onPress={()=>void run({type:'faith_favorite',args:{id:blessing.id,enabled:!favorite}})} style={({pressed})=>[s.starButton,pressed&&s.pressed]}><Text style={[s.star,favorite&&s.starActive]}>{favorite?'★':'☆'}</Text></Pressable>
-    <View style={s.flex}><View style={s.inline}><Text style={s.blessingName}>{blessing.name}</Text>{equipped?<Text style={s.activeTag}>{gt("Equipped").toLocaleUpperCase(language)}</Text>:locked?<Text style={s.lockTag}>LV {blessing.level}</Text>:null}</View><Text style={s.blessingMeta}>+{Math.round(blessing.bonus*100)}% {familyLabel(blessing.family)} · unlocks at Faith {blessing.level}</Text></View>
-    <View style={[s.blessingAction,stackActions&&s.blessingActionStack]}><GameButton compact title={equipped?'Active':locked?`Lv ${blessing.level}`:gt("Equip")} selected={equipped} disabled={busy||locked||equipped} tone={equipped?'primary':'secondary'} onPress={()=>run({type:'faith_blessing',args:{id:blessing.id}})}/></View>
-   </View>})}
+   {FAITH_BLESSING_GROUPS.map(group=>{
+    // The strongest available choice appears first. Locked options follow as goals.
+    const blessings=visibleBlessings.filter(row=>group.families.includes(row.family)).sort((a,b)=>
+     Number(a.level>level)-Number(b.level>level)||b.level-a.level);
+    if(!blessings.length)return null;
+    return <View key={group.id} style={s.blessingGroup}>
+     <View style={s.blessingGroupHeader}>
+      <Text style={s.blessingGroupTitle}>{gt(group.id==='combat'?'Combat':group.id==='gathering'?'Gathering':group.id==='production'?'Production':'Experience')}</Text>
+      <Text style={s.blessingGroupMeta}>{FAITH_BLESSINGS.filter(row=>group.families.includes(row.family)&&row.level<=level).length} {gt("unlocked")}</Text>
+     </View>
+     {blessings.map(blessing=>{const locked=blessing.level>level,favorite=faith.favoriteBlessingIds.includes(blessing.id),equipped=faith.selectedBlessingId===blessing.id;return <View key={blessing.id} style={[s.blessingRow,equipped&&s.blessingEquipped,locked&&s.blessingLocked]}>
+      <Pressable accessibilityRole="button" accessibilityLabel={favorite?`Remove ${blessing.name} from favorites`:`Favorite ${blessing.name}`} accessibilityState={{selected:favorite,disabled:busy}} disabled={busy} onPress={()=>void run({type:'faith_favorite',args:{id:blessing.id,enabled:!favorite}})} style={({pressed})=>[s.starButton,pressed&&s.pressed]}><Text style={[s.star,favorite&&s.starActive]}>{favorite?'★':'☆'}</Text></Pressable>
+      <View style={s.flex}><View style={s.inline}><Text style={s.blessingName}>{blessing.name}</Text>{equipped?<Text style={s.activeTag}>{gt("Equipped").toLocaleUpperCase(language)}</Text>:locked?<Text style={s.lockTag}>LV {blessing.level}</Text>:null}</View><Text style={s.blessingMeta}>{faithBlessingEffectLabel(blessing)} · {gt("Faith")} {blessing.level}</Text></View>
+      <View style={[s.blessingAction,stackActions&&s.blessingActionStack]}><GameButton compact title={equipped?'Active':locked?`Lv ${blessing.level}`:gt("Equip")} selected={equipped} disabled={busy||locked||equipped} tone={equipped?'primary':'secondary'} onPress={()=>run({type:'faith_blessing',args:{id:blessing.id}})}/></View>
+     </View>})}
+    </View>;
+   })}
    {error?<Text accessibilityLiveRegion="polite" style={s.error}>{error}</Text>:null}
   </Panel>
  </>;
@@ -57,5 +67,5 @@ function makeStyles(C:ThemeColors){return StyleSheet.create({
  activeCard:{gap:6,padding:spacing.sm,borderWidth:1,borderColor:C.special,borderRadius:10,backgroundColor:C.specialSurface},activeLabel:{...typography.caption,color:C.special,fontWeight:'900',letterSpacing:.8},activeName:{...typography.bodyStrong,color:C.text},activeCount:{...typography.title,color:C.special},
  sectionHeading:{flexDirection:'row',alignItems:'center',gap:spacing.sm},sectionLabel:{...typography.caption,color:C.accent,fontWeight:'900',letterSpacing:.9},pressed:{opacity:.72},
  practiceList:{gap:8},practiceInstruction:{fontSize:13,lineHeight:19,color:C.muted,textAlign:'center',fontWeight:'600',paddingBottom:2},practiceCard:{minHeight:64,flexDirection:'row',alignItems:'center',justifyContent:'space-between',gap:8,paddingHorizontal:12,paddingVertical:10,borderWidth:1,borderColor:C.line,borderRadius:12,backgroundColor:C.panel},practiceCardActive:{borderColor:C.good,backgroundColor:C.goodSurface},practiceCardLocked:{opacity:.6},between:{flexDirection:'row',alignItems:'center',justifyContent:'space-between',gap:8},inline:{flexDirection:'row',alignItems:'center',flexWrap:'wrap',gap:6},practiceName:{...typography.bodyStrong,color:C.text},practiceMeta:{...typography.caption,color:C.muted},practiceActiveMeta:{...typography.caption,color:C.good,fontWeight:'800'},practiceXp:{...typography.caption,color:C.accentSoft,fontWeight:'900'},lockTag:{fontSize:9,color:C.warning,fontWeight:'900',letterSpacing:.7},activeTag:{fontSize:9,color:C.good,fontWeight:'900',letterSpacing:.7},
- selectedBlessing:{...typography.bodyStrong,color:C.text},hideButton:{maxWidth:132},blessingRow:{flexDirection:'row',alignItems:'center',gap:8,paddingVertical:8,borderTopWidth:1,borderTopColor:C.line},blessingEquipped:{paddingHorizontal:8,borderWidth:1,borderColor:C.special,borderRadius:10,backgroundColor:C.specialSurface},blessingLocked:{opacity:.72},starButton:{width:40,height:40,alignItems:'center',justifyContent:'center'},star:{fontSize:24,color:C.muted},starActive:{color:C.accent},blessingName:{...typography.bodyStrong,color:C.text},blessingMeta:{...typography.caption,color:C.muted},blessingAction:{width:94},blessingActionStack:{width:86},error:{...typography.body,color:C.bad}
+ blessingGroup:{gap:2,marginTop:8},blessingGroupHeader:{flexDirection:'row',justifyContent:'space-between',alignItems:'center',borderBottomWidth:1,borderBottomColor:C.line,paddingBottom:6},blessingGroupTitle:{...typography.bodyStrong,color:C.special},blessingGroupMeta:{...typography.caption,color:C.muted},selectedBlessing:{...typography.bodyStrong,color:C.text},hideButton:{maxWidth:132},blessingRow:{flexDirection:'row',alignItems:'center',gap:8,paddingVertical:8,borderTopWidth:1,borderTopColor:C.line},blessingEquipped:{paddingHorizontal:8,borderWidth:1,borderColor:C.special,borderRadius:10,backgroundColor:C.specialSurface},blessingLocked:{opacity:.72},starButton:{width:40,height:40,alignItems:'center',justifyContent:'center'},star:{fontSize:24,color:C.muted},starActive:{color:C.accent},blessingName:{...typography.bodyStrong,color:C.text},blessingMeta:{...typography.caption,color:C.muted},blessingAction:{width:94},blessingActionStack:{width:86},error:{...typography.body,color:C.bad}
 });}

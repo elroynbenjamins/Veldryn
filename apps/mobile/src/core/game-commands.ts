@@ -199,7 +199,12 @@ export function executeGameCommand(previous:GameState,value:unknown,now:number,o
    message='Herbalism method set to '+method;break;
   }
   case 'faith_practice':state=reserveFaithPractice(state,text(a,'tierId'),1,now);break;
-  case 'faith_blessing':state=updateFaithPreference(state,'blessing',text(a,'id'));break;
+  case 'faith_blessing':{
+   state=updateFaithPreference(state,'blessing',text(a,'id'));
+   // Switching off an HP blessing may lower maximum HP. Never leave current HP above it.
+   if(state.character)state.character.currentHp=Math.min(state.character.currentHp,game.effectiveStats(state).hp);
+   break;
+  }
   case 'faith_favorite':state=updateFaithPreference(state,'favorite',text(a,'id'),a.enabled===true);break;
   case 'faith_hide':state=updateFaithPreference(state,'hide',undefined,a.enabled===true);break;
   case 'alchemy_start':state=game.beginAlchemyBatch(state,text(a,'id'),now);break;

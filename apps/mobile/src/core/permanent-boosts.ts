@@ -145,7 +145,10 @@ export function characterPermanentMultipliers(state:GameState):PermanentMultipli
   if(blessing){
     if(blessing.family==='attack')result=merge(result,{...BASE,attackMultiplier:1+blessing.bonus,combatPowerMultiplier:1+blessing.bonus});
     if(blessing.family==='defense')result=merge(result,{...BASE,incomingDamageMultiplier:1-blessing.bonus});
-    if(blessing.family==='hp')result=merge(result,{...BASE,characterXpMultiplier:1,combatPowerMultiplier:1+blessing.bonus*.25});
+    // HP blessings modify effectiveStats.hp directly, not combat power.
+    if(blessing.family==='gathering')result=merge(result,{...BASE,gatheringSpeedMultiplier:1+blessing.bonus});
+    if(blessing.family==='production')result=merge(result,{...BASE,craftingSpeedMultiplier:1+blessing.bonus});
+    if(blessing.family==='xp')result=merge(result,{...BASE,skillXpMultiplier:1+blessing.bonus,characterXpMultiplier:1+blessing.bonus});
   }
 
 

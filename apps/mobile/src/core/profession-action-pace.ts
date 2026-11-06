@@ -1,5 +1,6 @@
 import type {GameState,SkillId} from './types';
 import {characterPermanentMultipliers} from './permanent-boosts';
+import {selectedFaithBlessing} from './faith';
 import {professionMasteryMultipliers} from './profession-mastery-v40';
 import {skillAffinityModifiers} from './class-skill-affinities';
 
@@ -12,7 +13,11 @@ export function professionActionPace(state:GameState,recipe:ProfessionActionDefi
  const affinity=skillAffinityModifiers(state.character?.classId,recipe.skillId);
  // Forge keeps its existing XP behavior. Crafting-speed modifiers apply to all timed
  // crafting/processing modes; instant recipes have no duration to reduce.
- const xpPerAction=recipe.xp*mastery.xp*(mode==='forge'?1:permanent.skillXpMultiplier)*affinity.xpMultiplier;
+ // Forging intentionally ignores generic permanent skill XP buffs, but the selected
+ // Faith Experience blessing explicitly covers all professions including timed forging.
+ const faith=selectedFaithBlessing(state);
+ const forgeXp=faith?.family==='xp'?1+faith.bonus:1;
+ const xpPerAction=recipe.xp*mastery.xp*(mode==='forge'?forgeXp:permanent.skillXpMultiplier)*affinity.xpMultiplier;
  const speed=mastery.speed*(mode==='instant'?1:permanent.craftingSpeedMultiplier)*affinity.speedMultiplier;
  const rawSeconds=recipe.seconds/Math.max(.1,speed);
  const cycleSeconds=mode==='instant'?0:mode==='forge'?Math.max(1,Math.ceil(rawSeconds)):Math.max(1,rawSeconds);

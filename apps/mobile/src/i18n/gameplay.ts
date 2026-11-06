@@ -8,6 +8,11 @@ import {useMemo} from 'react';
 // Every row is complete, in en/de/es/nl/it/fr order. English phrases are typed keys.
 type TranslationRow=readonly [string,string,string,string,string,string];
 const common={
+ "Production":["Production","Produktion","Producción","Productie","Produzione","Production"],
+ "Experience":["Experience","Erfahrung","Experiencia","Ervaring","Esperienza","Expérience"],
+ "unlocked":["unlocked","freigeschaltet","desbloqueadas","ontgrendeld","sbloccate","débloquées"],
+ "Reserved · materials returned on cancel; no Gold":["Reserved · materials returned on cancel; no Gold","Reserviert · Materialien bei Abbruch zurück; kein Gold","Reservado · se devuelven los materiales al cancelar; sin oro","Gereserveerd · materialen terug bij annuleren; geen goud","Riservato · materiali restituiti all'annullamento; niente oro","Réservé · matériaux rendus en cas d'annulation ; aucun or"],
+
  "Manage {skill} tools":["Manage {skill} tools","Werkzeuge für {skill} verwalten","Gestionar herramientas de {skill}","Gereedschap voor {skill} beheren","Gestisci gli strumenti di {skill}","Gérer les outils de {skill}"],
  "Requires {skill} level {level}.":["Requires {skill} level {level}.","Benötigt {skill} auf Stufe {level}.","Requiere {skill} de nivel {level}.","Vereist {skill} op niveau {level}.","Richiede {skill} al livello {level}.","Nécessite {skill} au niveau {level}."],
  "Requires character level {level}.":["Requires character level {level}.","Benötigt Charakterstufe {level}.","Requiere nivel de personaje {level}.","Vereist personageniveau {level}.","Richiede livello personaggio {level}.","Nécessite le niveau de personnage {level}."],

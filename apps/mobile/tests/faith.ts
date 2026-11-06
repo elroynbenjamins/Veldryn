@@ -15,7 +15,7 @@ import type {GameState} from '../src/core/types';
 import {equal,ok,test,throws} from './account-test-helpers';
 const T=Date.UTC(2026,8,10,12);
 const fresh=()=>createCharacter(newGame(T),'IRONWARDEN','Pilgrim');
-function faithAt(s:GameState,level:number){return {...s,skills:s.skills.map(k=>k.skillId==='faith'?{...k,level,xp:totalXpAtLevel(level)}:k)};}
+function faithAt(s:GameState,level:number):GameState{const xp=totalXpAtLevel(level);return {...s,skills:s.skills.map(k=>k.skillId==='faith'?{...k,level,xp}:k),character:s.character?{...s.character,faith:{...s.character.faith,xp}}:null};}
 function water(s:GameState,n:number){return {...s,inventory:{...s.inventory,stacks:[...s.inventory.stacks.filter(x=>x.itemId!==HOLY_WATER_ID),{itemId:HOLY_WATER_ID,quantity:n}]}};}
 function qty(s:GameState,id:string){return [...s.inventory.stacks,...s.bank.stacks,...s.overflow.stacks].filter(x=>x.itemId===id).reduce((a,b)=>a+b.quantity,0);}
 
@@ -105,7 +105,6 @@ test('Locked new blessings cannot be equipped and legacy selections survive save
  legacy=migrateSave(JSON.parse(JSON.stringify(legacy)));
  equal(legacy.character!.faith!.selectedBlessingId,'WARD_OF_STONE','old combat selection retained');
  const higher=faithAt(fresh(),95);
- higher.character!.faith!.xp=totalXpAtLevel(95);
  const newSelection=selectFaithBlessing(higher,'ETERNAL_ENLIGHTENMENT');
  equal(migrateSave(JSON.parse(JSON.stringify(newSelection))).character!.faith!.selectedBlessingId,'ETERNAL_ENLIGHTENMENT','new selection retained');
 });

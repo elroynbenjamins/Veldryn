@@ -27,17 +27,17 @@ assert.ok(gameplay.includes('equipmentMaterialMetadataText(language,value)'),'Ga
 
 const {itemDetailRows,itemDetailText,itemDetailContent}=require('../src/i18n/item-details.ts');
 const {EARLY_LOCALE_ROWS,earlyLocaleText}=require('../src/i18n/early-locales.ts');
-const fields=x=>[...x.matchAll(/\\{(\\w+)\\}/g)].map(v=>v[1]).sort();
+const fields=x=>[...x.matchAll(/\{(\w+)\}/g)].map(v=>v[1]).sort();
 assert.equal(Object.keys(itemDetailRows).length,64,'all authored item-inspector source keys');
 for(const key of Object.keys(itemDetailRows)){
  const params=Object.fromEntries(fields(key).map(name=>[name,'TEST_'+name]));
- const expected=key.replace(/\\{(\\w+)\\}/g,(_,name)=>params[name]);
+ const expected=key.replace(/\{(\w+)\}/g,(_,name)=>params[name]);
  assert.equal(itemDetailText('en',key,params),expected,'English item details unchanged');
  for(const language of ['ru','tr']){
   const row=earlyLocaleText(language,key);
   assert.ok(row&&row.trim(),'missing '+language+' item detail: '+key);
   assert.deepEqual(fields(row),fields(key),'placeholder drift '+language+' '+key);
-  assert.equal(itemDetailText(language,key,params),row.replace(/\\{(\\w+)\\}/g,(_,name)=>params[name]),'translated value '+language+' '+key);
+  assert.equal(itemDetailText(language,key,params),row.replace(/\{(\w+)\}/g,(_,name)=>params[name]),'translated value '+language+' '+key);
  }
 }
 assert.equal(itemDetailText('de','gear'),'Ausrüstung','existing German source translation intact');

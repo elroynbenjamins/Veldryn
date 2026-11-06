@@ -79,11 +79,20 @@ function equippedCanonicalSocketsV1(state:GameState){
   const instanceId=state.character!.equipmentInstanceIds?.[key as GearSlot];
   const instance=instanceId?instances.find(copy=>copy.id===instanceId&&copy.itemId===equipmentItemId&&copy.ownerCharacterId===state.character!.id):undefined;
   const raw=instance?.enhancement??state.character!.gearEnhancements?.[equipmentItemId];
-  const valid=(id:string|undefined,kind:'stat'|'effect')=>
-   id&&canonicalGemMetaV1(id)?.kind===kind?id:undefined;
+  // Match normalizeEnhancementGemSlots: a named legacy Stat Gem owns its
+  // socket even if a stale gemIds array also contains a canonical gem.
+  const valid=(id:string|undefined,kind:'stat'|'effect')=>{
+   if(!id)return undefined;
+   try{
+    const item=itemDef(id);
+    return item.type==='gem'&&(item.gemKind??(item.gemEffect?'effect':'stat'))===kind?id:undefined;
+   }catch{return undefined}
+  };
   const ids=Array.isArray(raw?.gemIds)?raw.gemIds:[];
-  const statGemId=valid(raw?.statGemId,'stat')??ids.find(id=>valid(id,'stat'));
-  const effectGemId=valid(raw?.effectGemId,'effect')??ids.find(id=>valid(id,'effect'));
+  const selectedStat=valid(raw?.statGemId,'stat')??ids.find(id=>valid(id,'stat'));
+  const selectedEffect=valid(raw?.effectGemId,'effect')??ids.find(id=>valid(id,'effect'));
+  const statGemId=canonicalGemMetaV1(selectedStat??'')?selectedStat:undefined;
+  const effectGemId=canonicalGemMetaV1(selectedEffect??'')?selectedEffect:undefined;
   return [{equipmentItemId,statGemId,effectGemId}];
  });
 }

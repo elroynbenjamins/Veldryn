@@ -1,4 +1,5 @@
 import {useEffect,useMemo,useRef,useState} from 'react';
+import type {ComponentRef} from 'react';
 import {Pressable,ScrollView,StyleSheet,Text,View,useWindowDimensions} from 'react-native';
 import {itemDef} from '../content/items';
 import {displayPercent,displayStat} from '../core/stat-display';
@@ -34,7 +35,7 @@ export function EquipmentPreview({state,itemId,instanceId,source='inventory',onC
  const C=useGameTheme(),E=equipmentTheme(C),s=useMemo(()=>makeStyles(C),[C]);
  const {height,width,fontScale}=useWindowDimensions();
  const [more,setMore]=useState(false),[busy,setBusy]=useState(false),[error,setError]=useState('');
- const detailsScrollRef=useRef<ScrollView>(null);
+ const detailsScrollRef=useRef<ComponentRef<typeof ScrollView>>(null);
  useEffect(()=>{setMore(false);setBusy(false);setError('');},[itemId,instanceId,source]);
  if(!itemId)return null;
  let projected:GameState;

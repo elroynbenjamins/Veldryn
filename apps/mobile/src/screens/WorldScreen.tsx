@@ -59,7 +59,7 @@ export function WorldScreen({state,onTravel,onOpenCombat,onOpenSkills,onCoop,dun
     return ()=>{mounted=false;};
   },[frostmarch]);
   const sunscarZones=[
-    {id:'ZONE_006',name:'Saffron Gate',levelRange:'Lv 25–29',locked:level<25,identity:t("Caravan gate, spice roads and the first desert settlements."),activities:[t("Patrol combat"),'Dunewood',t("regional contracts")]},
+    {id:'ZONE_006',name:'Saffron Gate',levelRange:'Lv 26–29',locked:level<26,identity:t("Caravan gate, spice roads and the first desert settlements."),activities:[t("Patrol combat"),'Dunewood',t("regional contracts")]},
     {id:'ZONE_007',name:'Scorchwind Flats',levelRange:'Lv 30–35',locked:level<30,identity:t("Open glass-sand flats where exposure and heat alter fights."),activities:['Sunspine Elite','Sunstone Ore','Charbark']},
     {id:'ZONE_008',name:'Mirage Basin',levelRange:'Lv 32–38',locked:level<32,identity:t("Oasis basin where false targets and reflected memories distort combat."),activities:['Mirage Elite',t("Fishing"),t("Herbalism")]},
     {id:'ZONE_009',name:'Buried Observatory',levelRange:'Lv 37–43',locked:level<37,identity:t("Ancient star machinery beneath the desert, rich in lenses and astral script."),activities:['Observatory Elite','Astral Survey','Amberglass']},

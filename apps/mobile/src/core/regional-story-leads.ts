@@ -17,6 +17,7 @@ export interface RegionalStoryLead{
 export interface RegionalStoryLeadView extends RegionalStoryLead{
   monsterName:string;
   masteryRank:number;
+  requiredMasteryRank:number;
   status:'locked'|'available'|'mastered';
 }
 
@@ -37,7 +38,10 @@ export const REGIONAL_STORY_LEADS:readonly RegionalStoryLead[]=[
 export function regionalStoryLeads(regionId:string,state:GameState):RegionalStoryLeadView[]{
   return REGIONAL_STORY_LEADS.filter(lead=>lead.regionId===regionId).map(lead=>{
     const monster=MONSTERS.find(row=>row.id===lead.targetMonsterId),masteryRank=monsterMastery(state,lead.targetMonsterId).rank;
-    return {...lead,monsterName:monster?.name??lead.targetMonsterId,masteryRank,status:state.character!.level<lead.minLevel?'locked':masteryRank>=20?'mastered':'available'};
+    // Sunscar's introductory story should require meaningful hunting, not 500 kills per lead.
+    // Later-region long-form mastery goals remain unchanged.
+    const requiredMasteryRank=lead.regionId==='SUNSCAR'?5:20;
+    return {...lead,monsterName:monster?.name??lead.targetMonsterId,masteryRank,requiredMasteryRank,status:state.character!.level<lead.minLevel?'locked':masteryRank>=requiredMasteryRank?'mastered':'available'};
   });
 }
 export function nextRegionalStoryLead(regionId:string,state:GameState){

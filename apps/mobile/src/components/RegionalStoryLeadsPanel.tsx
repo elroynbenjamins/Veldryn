@@ -25,7 +25,9 @@ export function RegionalStoryLeadsPanel({state,regionId,onOpenCombat}:{state:Gam
     <Text numberOfLines={2} style={s.story}>{lead.lore}</Text>
     <Text style={s.objective}>HUNT · {lead.monsterName}</Text>
     <Text numberOfLines={2} style={s.copy}>{lead.objective}</Text>
-    <View style={s.progress}><Text style={s.progressLabel}>{t("MASTERY")}</Text><Text style={s.progressValue}>{lead.masteryRank} / 20</Text></View>
+    <View style={s.progress}><Text style={s.progressLabel}>{t("MASTERY")}</Text><Text style={s.progressValue}>{Math.min(lead.masteryRank,lead.requiredMasteryRank)} / {lead.requiredMasteryRank}</Text></View>
+    <View accessibilityRole="progressbar" accessibilityLabel={t("MASTERY")} accessibilityValue={{min:0,max:lead.requiredMasteryRank,now:Math.min(lead.masteryRank,lead.requiredMasteryRank)}} style={s.track}><View style={[s.trackFill,{width:`${Math.min(100,lead.masteryRank/lead.requiredMasteryRank*100)}%` as `${number}%`}]}/></View>
+    {lead.regionId==='SUNSCAR'?<Text style={s.milestone}>{t("Rank 5 unlocks +1% damage against this monster.")}</Text>:null}
     {lead.status==='available'&&<GameButton compact title={t("Open hunt")} tone="secondary" onPress={onOpenCombat}/>}
   </View>}
  </View>;
@@ -40,5 +42,5 @@ const s=StyleSheet.create({
  chapter:{...typography.caption,color:C.accent,fontWeight:'900'},name:{...typography.bodyStrong,color:C.text,fontSize:15},
  status:{fontSize:9,lineHeight:12,fontWeight:'900',letterSpacing:.6},statusDone:{color:C.good},statusReady:{color:C.info},statusLocked:{color:C.muted},
  story:{...typography.body,color:C.text,lineHeight:19},objective:{...typography.caption,color:equipmentColors.goldSoft,fontWeight:'900',letterSpacing:.6},
- progress:{flexDirection:'row',justifyContent:'space-between',paddingTop:5,borderTopWidth:1,borderTopColor:C.line},progressLabel:{...typography.caption,color:C.muted,fontWeight:'900'},progressValue:{...typography.caption,color:C.text,fontWeight:'900'},
+ progress:{flexDirection:'row',justifyContent:'space-between',paddingTop:5,borderTopWidth:1,borderTopColor:C.line},track:{height:5,backgroundColor:C.line,borderRadius:8,overflow:'hidden'},trackFill:{height:'100%',backgroundColor:C.info},milestone:{...typography.caption,color:C.good,lineHeight:17},progressLabel:{...typography.caption,color:C.muted,fontWeight:'900'},progressValue:{...typography.caption,color:C.text,fontWeight:'900'},
 });

@@ -1,37 +1,47 @@
 import {useGameLanguage} from '../i18n/GameLanguageProvider';
 import {progressionT,progressionText,type ProgressionKey} from '../i18n/progression';
-import React from 'react';
+import {useMemo} from 'react';
 import {Pressable,StyleSheet,Text,View} from 'react-native';
 import type {SunscarZoneSummaryV20} from '../core/live-dungeon-sunscar-v20';
+import {useGameTheme} from '../theme/ThemeContext';
+import type {ThemeColors} from '../theme/theme';
+
 export function SunscarRegionPanel({zones,onZone}:{zones:readonly SunscarZoneSummaryV20[];onZone?:(id:string)=>void}){
   const contextLanguage=useGameLanguage(),language=contextLanguage;
   const t=(key:ProgressionKey,params?:Record<string,string|number>)=>progressionT(language,key,params);
   const p=(text:string)=>progressionText(language,text);
-
- const firstLocked=zones.findIndex(zone=>zone.locked);
- const visible=firstLocked<0?zones:zones.slice(0,Math.max(1,firstLocked+1));
- const hiddenCount=zones.length-visible.length;
- return <View style={s.wrap}>
-  <View style={s.header}><View style={{flex:1}}><Text style={s.eyebrow}>{t("REGION II · LEVEL 25–45")}</Text><Text style={s.title}>Sunscar Areas</Text></View><Text style={s.headerCount}>{visible.length}/{zones.length}</Text></View>
-  {visible.map(z=><Pressable disabled={z.locked||!onZone} onPress={()=>onZone?.(z.id)} key={z.id} style={[s.zone,z.locked&&s.locked]}>
-   <View style={{flex:1}}><Text style={s.zoneTitle}>{z.name}</Text><Text style={s.level}>{z.levelRange}</Text><Text numberOfLines={1} style={s.identity}>{z.identity}</Text><Text numberOfLines={1} style={s.activities}>{z.activities.slice(0,2).join(' · ')}</Text></View>
-   <Text style={s.arrow}>{z.locked?t("LOCKED"):onZone?'›':''}</Text>
-  </Pressable>)}
-  {hiddenCount>0?<Text style={s.more}>{hiddenCount} more {hiddenCount===1?'area':'areas'} unlock as you progress.</Text>:null}
- </View>;
+  const C=useGameTheme(),s=useMemo(()=>styles(C),[C]);
+  const firstLocked=zones.findIndex(zone=>zone.locked);
+  const visible=firstLocked<0?zones:zones.slice(0,Math.max(1,firstLocked+1));
+  const hiddenCount=zones.length-visible.length;
+  const available=zones.filter(zone=>!zone.locked).length;
+  return <View style={s.wrap}>
+    <View style={s.header}>
+      <View style={s.flex}><Text style={s.eyebrow}>{t('REGION II · LEVEL 26–45')}</Text><Text style={s.title}>{t('Sunscar Areas')}</Text></View>
+      <Text style={s.headerCount}>{available}/{zones.length}</Text>
+    </View>
+    {visible.map(zone=><Pressable accessibilityRole="button" accessibilityState={{disabled:zone.locked}} disabled={zone.locked||!onZone} onPress={()=>onZone?.(zone.id)} key={zone.id} style={[s.zone,zone.locked&&s.locked]}>
+      <View style={s.flex}>
+        <View style={s.zoneHead}><Text style={s.zoneTitle}>{zone.name}</Text><Text style={s.level}>{zone.levelRange}</Text></View>
+        <Text numberOfLines={2} style={s.identity}>{zone.identity}</Text>
+        <Text numberOfLines={1} style={s.activities}>{zone.activities.slice(0,2).join(' · ')}</Text>
+      </View>
+      <Text style={s.arrow}>{zone.locked?t('LOCKED'):onZone?'›':''}</Text>
+    </Pressable>)}
+    {hiddenCount>0?<Text style={s.more}>{t('{count} more areas unlock as you progress.',{count:hiddenCount})}</Text>:null}
+  </View>;
 }
-const s=StyleSheet.create({
- wrap:{padding:11,gap:7,borderWidth:1,borderRadius:11,borderColor:'#65513b',backgroundColor:'#141719'},
- header:{flexDirection:'row',alignItems:'center',gap:10,paddingBottom:4},
- eyebrow:{fontSize:9,fontWeight:'900',color:'#d1a05a',letterSpacing:.7},
- title:{fontSize:18,fontWeight:'900',color:'#f0d397',marginTop:3},
- headerCount:{fontSize:11,fontWeight:'900',color:'#ba9b6d'},
- zone:{flexDirection:'row',alignItems:'center',padding:10,borderRadius:9,borderWidth:1,borderColor:'#65513b',backgroundColor:'#1a1c1c'},
- locked:{opacity:.5},
- zoneTitle:{fontSize:14,fontWeight:'900',color:'#f0ddba'},
- level:{fontSize:9,fontWeight:'900',color:'#cf9e58',marginTop:1},
- identity:{fontSize:10,lineHeight:14,color:'#aeb0a7',marginTop:3},
- activities:{fontSize:9,color:'#8b9a9e',marginTop:4},
- arrow:{fontSize:13,fontWeight:'900',color:'#d0a05c'},
- more:{fontSize:10,lineHeight:15,color:'#aeb0a7',paddingTop:2}
-});
+function styles(C:ThemeColors){return StyleSheet.create({
+  wrap:{padding:12,gap:9,borderWidth:1,borderRadius:12,borderColor:C.line,backgroundColor:C.panel},
+  header:{flexDirection:'row',alignItems:'center',gap:10,paddingBottom:4},flex:{flex:1,minWidth:0},
+  eyebrow:{fontSize:9,fontWeight:'800',color:C.accent,letterSpacing:.7},
+  title:{fontSize:18,fontWeight:'800',color:C.text,marginTop:2},
+  headerCount:{fontSize:12,fontWeight:'800',color:C.info,fontVariant:['tabular-nums']},
+  zone:{minHeight:70,flexDirection:'row',alignItems:'center',gap:8,padding:11,borderRadius:9,borderWidth:1,borderColor:C.line,backgroundColor:C.panel2},
+  locked:{opacity:.55},zoneHead:{flexDirection:'row',alignItems:'center',flexWrap:'wrap',gap:8},
+  zoneTitle:{fontSize:14,fontWeight:'800',color:C.text},level:{fontSize:10,fontWeight:'700',color:C.info},
+  identity:{fontSize:11,lineHeight:16,color:C.muted,marginTop:3},
+  activities:{fontSize:10,lineHeight:14,color:C.muted,marginTop:4},
+  arrow:{fontSize:12,fontWeight:'900',color:C.accent},
+  more:{fontSize:11,lineHeight:16,color:C.muted,paddingTop:2},
+});}

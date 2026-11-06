@@ -18,7 +18,7 @@ export interface RegionalCombatEncounterV1{
 }
 
 export const SUNSCAR_REGIONAL_ENCOUNTERS_V1:readonly RegionalCombatEncounterV1[]=[
- {id:'REGCOM_SUN_006_STANDARD',zoneId:'ZONE_006',kind:'standard',name:'Saffron Gate Patrol',level:25,contentId:'SUNMON_001',summary:'A representative Sunscar patrol encounter using your verified current loadout.',gemGrade:1,gemChance:.0075,cooldownSeconds:30},
+ {id:'REGCOM_SUN_006_STANDARD',zoneId:'ZONE_006',kind:'standard',name:'Saffron Gate Patrol',level:26,contentId:'SUNMON_001',summary:'A representative Sunscar patrol encounter using your verified current loadout.',gemGrade:1,gemChance:.0075,cooldownSeconds:30},
  {id:'REGCOM_SUN_007_ELITE',zoneId:'ZONE_007',kind:'elite',name:'Sunspine Elite',level:32,contentId:'SUNMON_005',summary:'Hunt the Sunspine Scorpion elite. Eligible clears advance the ZONE_007 Gem pity track.',gemGrade:2,gemChance:.015,pityAt:60,cooldownSeconds:90},
  {id:'REGCOM_SUN_008_ELITE',zoneId:'ZONE_008',kind:'elite',name:'Mirage Basin Elite',level:38,contentId:'SUNMON_010',summary:'Challenge the Shimmer Wraith elite and its arcane pressure.',gemGrade:2,gemChance:.015,pityAt:60,cooldownSeconds:90},
  {id:'REGCOM_SUN_009_ELITE',zoneId:'ZONE_009',kind:'elite',name:'Observatory Elite',level:43,contentId:'SUNMON_014',summary:'Face the Void Lens elite beneath the Buried Observatory.',gemGrade:2,gemChance:.015,pityAt:60,cooldownSeconds:90},

@@ -38,7 +38,7 @@ export type QuestRarity='common'|'uncommon'|'rare'|'epic'|'legendary';
 export const QUEST_RARITIES:Record<QuestRarity,{label:string;color:string;multiplier:number;cache:string}>={
   common:{label:'Common',color:'#93a4ba',multiplier:1,cache:'Field cache'},uncommon:{label:'Uncommon',color:'#7fc59b',multiplier:1.3,cache:'Explorer cache'},rare:{label:'Rare',color:'#7bb7df',multiplier:1.7,cache:'Aster cache'},epic:{label:'Epic',color:'#c79cff',multiplier:2.25,cache:'Oathbound cache'},legendary:{label:'Legendary',color:'#f0a24b',multiplier:3,cache:'Crown cache'},
 };
-export interface SeasonalQuest{ id:string;period:SeasonalPeriod;name:string;description:string;required:number;progress:number;rewardGold:number;rewardXp:number;rewardItemId:string;rewardItemQty:number;className:string;tag:ContractTag;rarity:QuestRarity;}
+export interface SeasonalQuest{ id:string;period:SeasonalPeriod;name:string;description:string;required:number;progress:number;rewardGold:number;rewardXp:number;rewardItemId?:string;rewardItemQty?:number;rewardCompanionEssence?:number;className:string;tag:ContractTag;rarity:QuestRarity;}
 type Template=[string,string,number,ContractTag];
 const roleTemplates:Record<'Tank'|'Support'|'Damage',Template[]>={
  Tank:[['Hold the Line','Defeat {n} monsters while staying battle-ready.',24,'combat'],['Iron Ration','Build toward {n} total skill levels for the next expedition.',12,'gathering'],['Marching Vigil','Defeat {n} monsters on patrol.',28,'combat'],['Roadwarden Survey','Unlock {n} monster encounters.',5,'exploration']],
@@ -61,7 +61,26 @@ function rarityFor(period:SeasonalPeriod,key:string,index:number,classId:string)
  if(period==='weekly')return roll<45?'uncommon':roll<87?'rare':'epic';
  return roll<48?'rare':roll<88?'epic':'legendary';
 }
-function cacheFor(rarity:QuestRarity){return rarity==='common'?['MOSS_FIBER',4] as const:rarity==='uncommon'?['COPPER_ORE',5] as const:rarity==='rare'?['ASTER_IRON_ORE',4] as const:rarity==='epic'?['OATHGLASS_SHARD',3] as const:['OATHGLASS_SHARD',7] as const}
+/** Contract rewards are useful progression currency or targeted upgrade materials.
+ * Rarity is selected before this table; claims use the same deterministic projection.
+ * Reward amounts are deliberately modest because there are 2 daily, 3 weekly and 4 monthly challenges.
+ */
+export function seasonalQuestCache(period:SeasonalPeriod,rarity:QuestRarity):Pick<SeasonalQuest,'rewardItemId'|'rewardItemQty'|'rewardCompanionEssence'>{
+ if(period==='daily'){
+  if(rarity==='common')return {rewardCompanionEssence:5};
+  if(rarity==='uncommon')return {rewardCompanionEssence:8};
+  // Rare daily challenges help with the first rank of equipment upgrading.
+  return {rewardItemId:'TEMPERING_DUST',rewardItemQty:8};
+ }
+ if(period==='weekly'){
+  if(rarity==='epic'||rarity==='legendary')return {rewardItemId:'ASTERFALL_MINERAL_ESSENCE',rewardItemQty:1};
+  if(rarity==='rare')return {rewardItemId:'TEMPERING_CORE',rewardItemQty:1};
+  return {rewardCompanionEssence:15};
+ }
+ if(rarity==='legendary')return {rewardItemId:'REGIONAL_CATALYST',rewardItemQty:1};
+ if(rarity==='epic')return {rewardItemId:'TEMPERING_CORE',rewardItemQty:2};
+ return {rewardCompanionEssence:35};
+}
 function contractProgress(state:GameState,tag:ContractTag,period:SeasonalPeriod,key:string){
  if(tag==='equipment')return Object.values(state.character!.equipment).filter(Boolean).length;
  const progress=state.account.seasonalContractProgress?.[period];
@@ -74,9 +93,9 @@ export function seasonalQuestBoard(state:GameState,period:SeasonalPeriod,date=ne
  // Scale actual repeatable action targets: 2× daily, 3× weekly, 4× monthly.
  // No slot-limited equipment objective may appear; equipping is not a repeatable task.
  const volume=period==='daily'?.9:period==='weekly'?3:8;
- return rows.map((row,index)=>{const [name,templateDescription,base,tag]=row,rarity=rarityFor(period,key,index,character.classId),meta=QUEST_RARITIES[rarity],required=Math.min(tag==='equipment'?10:Infinity,Math.max(1,Math.round(base*volume))),progress=Math.min(required,contractProgress(state,tag,period,key)),[rewardItemId,baseQty]=cacheFor(rarity);
+ return rows.map((row,index)=>{const [name,templateDescription,base,tag]=row,rarity=rarityFor(period,key,index,character.classId),meta=QUEST_RARITIES[rarity],required=Math.min(tag==='equipment'?10:Infinity,Math.max(1,Math.round(base*volume))),progress=Math.min(required,contractProgress(state,tag,period,key)),reward=seasonalQuestCache(period,rarity);
    const description=tag==='combat'?'Defeat {n} monsters this period.':tag==='gathering'?'Complete {n} gathering actions this period.':tag==='crafting'?'Complete {n} crafts this period.':tag==='exploration'?'Complete {n} exploration route actions this period.':templateDescription;
    const baseGold=period==='daily'?Math.max(20,base*2):period==='weekly'?base*8:Math.max(300,base*20),baseXp=period==='daily'?Math.max(40,base*4):period==='weekly'?base*15:Math.max(600,base*40);
-   return {id:`${period.toUpperCase()}_${key}_${index}`,period,name:name.replace('{n}',String(required)),description:description.replace('{n}',String(required)),required,progress,rewardGold:Math.round(baseGold*meta.multiplier*1.1),rewardXp:Math.round(baseXp*meta.multiplier*1.1),rewardItemId,rewardItemQty:Math.max(1,Math.round(baseQty*meta.multiplier)),className:classDef.name,tag,rarity};
+   return {id:`${period.toUpperCase()}_${key}_${index}`,period,name:name.replace('{n}',String(required)),description:description.replace('{n}',String(required)),required,progress,rewardGold:Math.round(baseGold*meta.multiplier*1.1),rewardXp:Math.round(baseXp*meta.multiplier*1.1),...reward,className:classDef.name,tag,rarity};
  });
 }

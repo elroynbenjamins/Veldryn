@@ -47,6 +47,7 @@ if(claimed.character!.gold!==complete.character!.gold+ready.rewardGold||claimed.
 if((claimed.account.companionEssence??0)!==sourceEssence+(ready.rewardCompanionEssence??0))throw new Error('Contract must credit exactly the previewed Companion Essence');
 let duplicateRejected=false;try{claimSeasonalContract(claimed,'daily',ready.id,date.getTime())}catch{duplicateRejected=true}if(!duplicateRejected)throw new Error('Contract cache cannot be claimed twice');
 // Find an actual earned Essence reward, then verify exact account credit and claim persistence.
+let verifiedEssenceClaim=false;
 for(let day=1;day<=20;day++){
  const dateWithEssence=new Date(Date.UTC(2026,8,day,12));
  const withProgress=recordSeasonalActivity(state,'combat',1000,dateWithEssence.getTime());
@@ -60,8 +61,10 @@ for(let day=1;day<=20;day++){
   throw new Error('Claim receipt must survive save normalization');
  let rejected=false;try{claimSeasonalContract(credited,'daily',essenceContract.id,dateWithEssence.getTime());}catch{rejected=true}
  if(!rejected)throw new Error('Already-claimed Essence rewards must not be granted again');
+ verifiedEssenceClaim=true;
  break;
 }
+if(!verifiedEssenceClaim)throw new Error('Test must find at least one earned Essence quest to verify actual account settlement');
 const other=seasonalQuestBoard(createCharacter(newGame(0),'WAYFINDER','Scout'),'weekly',date);
 if(JSON.stringify(a.map(q=>q.name))===JSON.stringify(other.map(q=>q.name)))throw new Error('Class layouts should differ');
 console.log('PASS: deterministic class-aligned weekly and monthly quest boards');

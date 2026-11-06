@@ -616,6 +616,8 @@ const skills={
 "{current} / {need} XP to next level":["{current} / {need} XP to next level","{current} / {need} EP bis zur nächsten Stufe","{current} / {need} EXP al siguiente nivel","{current} / {need} XP naar volgend niveau","{current} / {need} PE al prossimo livello","{current} / {need} EXP vers le prochain niveau"],
 } as const satisfies Record<string,TranslationRow>;
 const inventory={
+  "Gear stat gains":["Gear stat gains","Ausrüstungswerte-Zuwachs","Mejoras de estadísticas del equipo","Verbeteringen van uitrustingsstats","Aumenti delle statistiche dell'equipaggiamento","Améliorations des stats d'équipement"],
+  "Choose a specific equipment copy to compare":["Choose a specific equipment copy to compare","Wähle ein bestimmtes Ausrüstungsexemplar zum Vergleichen","Elige una copia concreta del equipo para comparar","Kies een specifiek uitrustingsstuk om te vergelijken","Scegli una copia specifica dell'equipaggiamento da confrontare","Choisissez un exemplaire précis d'équipement à comparer"],
   "{used}/{capacity} slots · {scope}":["{used}/{capacity} slots · {scope}","{used}/{capacity} Plätze · {scope}","{used}/{capacity} espacios · {scope}","{used}/{capacity} vakken · {scope}","{used}/{capacity} spazi · {scope}","{used}/{capacity} emplacements · {scope}"],
   "Shared across characters":["Shared across characters","Charakterübergreifend","Compartido entre personajes","Gedeeld tussen personages","Condiviso tra personaggi","Partagé entre les personnages"],
   "Character storage":["Character storage","Charakterlager","Almacén del personaje","Opslag van personage","Deposito del personaggio","Stockage du personnage"],
@@ -628,6 +630,7 @@ const inventory={
   "{location} storage":["{location} storage","{location}-Lager","Almacén de {location}","Opslag: {location}","Deposito: {location}","Stockage : {location}"],
   "slots":["slots","Plätze","espacios","vakken","spazi","places"],
   "free":["free","frei","libres","vrij","liberi","libres"],
+  "Need {amount} more Gold":["Need {amount} more Gold","Noch {amount} Gold benötigt","Faltan {amount} de oro","Nog {amount} goud nodig","Servono ancora {amount} oro","Il manque {amount} or"],
   "Next: {count} slots":["Next: {count} slots","Nächste Stufe: {count} Plätze","Siguiente: {count} espacios","Volgende: {count} vakken","Prossimo: {count} spazi","Suivant : {count} places"],
   "Maximum capacity reached":["Maximum capacity reached","Maximale Kapazität erreicht","Capacidad máxima alcanzada","Maximale capaciteit bereikt","Capacità massima raggiunta","Capacité maximale atteinte"],
   "Level {level} · {gold} Gold":["Level {level} · {gold} Gold","Stufe {level} · {gold} Gold","Nivel {level} · {gold} de oro","Niveau {level} · {gold} goud","Livello {level} · {gold} oro","Niveau {level} · {gold} or"],

@@ -100,12 +100,12 @@ export function seasonalQuestRewardOptions(state:GameState,period:SeasonalPeriod
   if(rarity==='rare'){item('GEM_DUST',5);add({rewardCompanionEssence:5});}
  }else if(period==='weekly'){
   if(rarity==='uncommon'){item('GEM_DUST',6);item('ASTERFALL_BOTANICAL_ESSENCE',1);}
-  else if(rarity==='rare'){item('GEM_DUST',10);item('ECHO_QUARTZ',2);}
-  else if(rarity==='epic'||rarity==='legendary'){item('ASTERFALL_BOTANICAL_ESSENCE',2);item('OATHGLASS_FRAGMENT',2);}
+  else if(rarity==='rare'){item('GEM_DUST',10);if(level>=16)item('ECHO_QUARTZ',2);else item('ASTERFALL_BOTANICAL_ESSENCE',1);}
+  else if(rarity==='epic'||rarity==='legendary'){item('ASTERFALL_BOTANICAL_ESSENCE',2);if(level>=20)item('OATHGLASS_FRAGMENT',2);else item('GEM_DUST',15);}
  }else if(period==='monthly'){
-  if(rarity==='rare'){item('ECHO_QUARTZ',3);item('RUNEBOUND_CORE',3);}
+  if(rarity==='rare'){if(level>=16)item('ECHO_QUARTZ',3);else item('ASTERFALL_BOTANICAL_ESSENCE',2);if(level>=20)item('RUNEBOUND_CORE',3);else item('GEM_DUST',15);}
   else if(rarity==='epic'){
-   item('OATHGLASS_FRAGMENT',3);
+   if(level>=20)item('OATHGLASS_FRAGMENT',3);else item('GEM_DUST',20);
    if(level>=40&&enchanting>=40)item('REGIONAL_CATALYST',1);
    else item('ASTERFALL_BOTANICAL_ESSENCE',2);
   }else if(rarity==='legendary'){

@@ -6,7 +6,8 @@ require.extensions['.ts']=(mod,file)=>mod._compile(ts.transpileModule(
  fs.readFileSync(file,'utf8'),{compilerOptions:{module:ts.ModuleKind.CommonJS,target:ts.ScriptTarget.ES2022,esModuleInterop:true}}
 ).outputText,file);
 const {itemDef}=require('../src/content/items.ts');
-const {starterItemNames,localizedItemName}=require('../src/i18n/starter-item-names.ts');
+const {NOVICE_ITEMS}=require('../src/content/novice-sets.ts');
+const {starterItemNames,allItemNames,localizedItemName}=require('../src/i18n/starter-item-names.ts');
 const {SUPPORTED_LANGUAGES}=require('../src/i18n/languages.ts');
 const languages=['en','de','es','nl','it','fr','ru','tr'];
 assert.deepEqual([...SUPPORTED_LANGUAGES],languages);
@@ -21,8 +22,10 @@ for(const id of ids){
   assert.equal(localizedItemName(language,id),row[language],id+' must display selected language '+language);
  }
 }
-for(const id of ['OATHSTONE_INGOT','BANNER_ASH','basic_sword','COOKED_MEADOW_PERCH'.replace('COOKED_','BAKED_')].slice(0,3)){
- assert.equal(localizedItemName('tr',id),itemDef(id).name,'non-covered items retain canonical English names '+id);
+const uncovered=NOVICE_ITEMS.find(row=>!Object.hasOwn(allItemNames,row.id));
+assert.ok(uncovered,'an unlocalized unique item must be available for fallback coverage');
+for(const language of ['ru','tr']){
+ assert.equal(localizedItemName(language,uncovered.id),itemDef(uncovered.id).name,'non-base item names must remain canonical English '+uncovered.id);
 }
 const uiFiles={
  'screens/InventoryScreen.tsx':['localizedItemName(language,item.id)','localizedItemName(language,pending.item.id)','localizedItemName(language,stack.itemId)','localizedItemName(language,state.character.activeMealBuff.itemId)'],
@@ -42,4 +45,4 @@ const inventory=fs.readFileSync(path.join(__dirname,'../src/screens/InventoryScr
 assert.ok(inventory.includes('onSell(id,')||inventory.includes('onSell('),'existing canonical ID-based inventory sell callback is retained');
 assert.ok(inventory.includes('onToggleFavorite(item.id)'),'favorite changes continue by canonical ID');
 assert.ok(inventory.includes('onToggleLock(item.id)'),'lock changes continue by canonical ID');
-console.log('PASS: 41 canonical item IDs × 7 translations, English fallback, five item-display surfaces, unchanged inventory identity/commands');
+console.log('PASS: original 41 starter translations remain exact, unique-item English fallback, five item-display surfaces, unchanged inventory identity/commands');

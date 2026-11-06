@@ -1,5 +1,7 @@
 import type {Language} from './languages';
 import {itemDef} from '../content/items';
+import {expandedItemNamesA} from './expanded-item-names-a';
+import {expandedItemNamesB} from './expanded-item-names-b';
 
 /** Source-guarded, ID-based names. These are UI-only, never item identities.
  * Unknown IDs and revised canonical English names retain their source wording. */
@@ -416,8 +418,11 @@ export const starterItemNames={
   }
 } as const satisfies Record<string,Record<Language,string>>;
 
+/** Consolidated presentation registry; the original 41-row export is retained for compatibility. */
+export const allItemNames={...starterItemNames,...expandedItemNamesA,...expandedItemNamesB} as const;
+
 export function localizedItemName(language:Language,itemId:string):string{
  const item=itemDef(itemId);
- const row=Object.prototype.hasOwnProperty.call(starterItemNames,itemId)?starterItemNames[itemId as keyof typeof starterItemNames]:undefined;
+ const row=Object.prototype.hasOwnProperty.call(allItemNames,itemId)?allItemNames[itemId as keyof typeof allItemNames]:undefined;
  return row&&row.en===item.name?row[language]??item.name:item.name;
 }

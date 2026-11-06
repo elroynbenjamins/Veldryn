@@ -16,7 +16,9 @@ import {newlyConfirmedIds} from '../core/visual-feedback';
 import {useGameTheme} from '../theme/ThemeContext';
 import {type ThemeColors,spacing,touchTargetMin} from '../theme/theme';
 import {useGameLanguage} from '../i18n/GameLanguageProvider';
-import {progressionText,progressionT,type ProgressionKey} from '../i18n/progression';
+import {progressionT,type ProgressionKey} from '../i18n/progression';
+import {questJournalText} from '../i18n/quest-journal-ui';
+import type {Language} from '../i18n/languages';
 import {localizedQuestActText,localizedQuestStoryText,questMatchesLocalizedSearch} from '../i18n/quest-story-copy';
 import {QuestModeSwitch,type QuestMode} from '../components/QuestModeSwitch';
 import {GameButton} from '../components/GameButton';
@@ -48,19 +50,20 @@ function ProgressLine({current,max,C}:{current:number;max:number;C:ThemeColors})
 function statusTone(status:Status):'good'|'info'|'muted'|'warning'{
  return status==='ready'?'good':status==='active'?'info':status==='processing'?'warning':'muted';
 }
-function statusText(status:Status){
- return status==='ready'?'REWARD READY':status==='active'?'ACTIVE':status==='locked'?'LOCKED':status==='claimed'?'CLAIMED':'PROCESSING';
+function statusText(status:Status,language:Language){
+ const key=status==='ready'?'REWARD READY':status==='active'?'ACTIVE':status==='locked'?'LOCKED':status==='claimed'?'CLAIMED':'PROCESSING';
+ return questJournalText(language,key);
 }
 
 /** A single large touch target, rather than 2-3 tiny actions inside each posting. */
-function CompactQuestRow({title,subtitle,eyebrow,status,current,max,art,reward,rarity,onPress,C}:{
- title:string;subtitle:string;eyebrow:string;status:Status;current:number;max:number;art:ReactNode;reward?:string;rarity?:string;onPress:()=>void;C:ThemeColors;
+function CompactQuestRow({title,subtitle,eyebrow,status,current,max,art,reward,rarity,onPress,C,language}:{
+ title:string;subtitle:string;eyebrow:string;status:Status;current:number;max:number;art:ReactNode;reward?:string;rarity?:string;onPress:()=>void;C:ThemeColors;language:Language;
 }){
- return <Pressable accessibilityRole="button" accessibilityLabel={title+', '+statusText(status)+', '+current+' of '+max}
+ return <Pressable accessibilityRole="button" accessibilityLabel={questJournalText(language,'{title}, {status}, {current} of {max}',{title,status:statusText(status,language),current,max})}
   onPress={onPress} style={({pressed})=>[styles.questRow,{backgroundColor:C.panelRaised,borderColor:status==='ready'?C.good:C.lineStrong},pressed&&styles.pressed,status==='locked'&&styles.locked]}>
   <View style={[styles.iconBox,{backgroundColor:C.panel2,borderColor:C.line}]}>{art}</View>
   <View style={styles.rowBody}>
-   <View style={styles.rowMeta}><Text numberOfLines={1} style={[styles.eyebrow,{color:C.accent}]}>{eyebrow}</Text><StatusPill label={statusText(status)} tone={statusTone(status)}/></View>
+   <View style={styles.rowMeta}><Text numberOfLines={1} style={[styles.eyebrow,{color:C.accent}]}>{eyebrow}</Text><StatusPill label={statusText(status,language)} tone={statusTone(status)}/></View>
    <Text numberOfLines={2} style={[styles.rowTitle,{color:C.text}]}>{title}</Text>
    <Text numberOfLines={1} style={[styles.rowSubtitle,{color:C.muted}]}>{subtitle}</Text>
    {status!=='locked'?<ProgressLine current={current} max={max} C={C}/>:null}
@@ -97,7 +100,7 @@ export function QuestRefinedScreen({state,mode,onModeChange,focusedWeeklyOrderId
  onOpenWeeklyOrder:(order:WeeklyOrder)=>void;onQueueWeeklyOrder:(order:WeeklyOrder)=>void;onStopWeeklyOrder:(order:WeeklyOrder)=>void;
 }){
  const C=useGameTheme(),contextLanguage=useGameLanguage(),language=state.settings.language??contextLanguage;
- const p=(value:string)=>progressionText(language,value),t=(key:ProgressionKey,params?:Record<string,string|number>)=>progressionT(language,key,params);
+ const p=(value:string)=>questJournalText(language,value),t=(key:ProgressionKey,params?:Record<string,string|number>)=>progressionT(language,key,params);
  const [filter,setFilter]=useState<JournalFilter>('current'),[query,setQuery]=useState('');
  const [challengePeriod,setChallengePeriod]=useState<'all'|'daily'|'weekly'|'monthly'>('all');
  const [selected,setSelected]=useState<Selection|null>(null),[sheetStage,setSheetStage]=useState<SheetStage>('details');
@@ -237,7 +240,7 @@ export function QuestRefinedScreen({state,mode,onModeChange,focusedWeeklyOrderId
     <View style={styles.sectionHead}><Text style={[styles.sectionTitle,{color:C.accent}]}>{p('STORY CHAPTERS')}</Text><Text style={[styles.mini,{color:C.muted}]}>{QUESTS.length} {p('total')}</Text></View>
     <Rail C={C} selected={filter} onChange={setFilter} items={[{id:'current',label:p('Current')+' · '+journalEntries(state,'current','').length},{id:'all',label:p('All')},{id:'claimed',label:p('Completed')},{id:'locked',label:p('Locked')} ]}/>
     <SearchField accessibilityLabel={t('Search quests')} placeholder={p('Search chapters…')} placeholderTextColor={C.muted} value={query} onChangeText={setQuery}/>
-    {storyRows.length?storyRows.map(({def,quest,chapter})=><CompactQuestRow key={def.id} C={C} title={localizedQuestStoryText(language,def,'name')} subtitle={def.location} eyebrow={p('CHAPTER')+' '+chapter} status={quest.status==='complete'?'ready':quest.status==='claimed'?'claimed':quest.status==='locked'?'locked':'active'} current={Math.min(def.required,quest.progress)} max={def.required} art={<StoryArt quest={def}/>} reward={def.rewardGold+' '+t('Gold')} onPress={()=>open('story',def.id)}/>):<View style={styles.empty}><EmptyState title={p('No matching chapters')} message={p('Change the filter or search to see more chapters.')} icon="quests"/><GameButton compact tone="secondary" title={p('Show all chapters')} onPress={()=>{setFilter('all');setQuery('')}}/></View>}
+    {storyRows.length?storyRows.map(({def,quest,chapter})=><CompactQuestRow key={def.id} C={C} title={localizedQuestStoryText(language,def,'name')} subtitle={def.location} eyebrow={p('CHAPTER')+' '+chapter} status={quest.status==='complete'?'ready':quest.status==='claimed'?'claimed':quest.status==='locked'?'locked':'active'} language={language} current={Math.min(def.required,quest.progress)} max={def.required} art={<StoryArt quest={def}/>} reward={def.rewardGold+' '+t('Gold')} onPress={()=>open('story',def.id)}/>):<View style={styles.empty}><EmptyState title={p('No matching chapters')} message={p('Change the filter or search to see more chapters.')} icon="quests"/><GameButton compact tone="secondary" title={p('Show all chapters')} onPress={()=>{setFilter('all');setQuery('')}}/></View>}
    </>:null}
    {mode==='contracts'?<>
     <View style={[styles.hero,{backgroundColor:C.panelRaised,borderColor:C.lineStrong}]}>
@@ -256,7 +259,7 @@ export function QuestRefinedScreen({state,mode,onModeChange,focusedWeeklyOrderId
     {[...board.orders].sort((a,b)=>Number(b.id===focusedWeeklyOrderId)-Number(a.id===focusedWeeklyOrderId)||Number(a.progress>=a.target)-Number(b.progress>=b.target)||a.slot-b.slot).map(order=>{
      const locked=weeklyOrderLockReason(state,order),status:Status=locked?'locked':order.claimed?'claimed':order.progress>=order.target?'processing':'active';
      const zone=WORLD_ZONES.find(z=>z.id===order.regionId);
-     return <CompactQuestRow key={order.id} C={C} title={p(order.title)} subtitle={p(zone?.name??order.source.label)} eyebrow={p(order.kind==='hunt'?'HUNT ORDER':order.kind==='regional'?'REGIONAL PROBLEM':'WORK ORDER')} status={status} current={Math.min(order.progress,order.target)} max={order.target} art={<OrderArt order={order}/>} reward={p(order.reward.label)} onPress={()=>open('contract',order.id)}/>;
+     return <CompactQuestRow key={order.id} C={C} language={language} title={p(order.title)} subtitle={p(zone?.name??order.source.label)} eyebrow={p(order.kind==='hunt'?'HUNT ORDER':order.kind==='regional'?'REGIONAL PROBLEM':'WORK ORDER')} status={status} current={Math.min(order.progress,order.target)} max={order.target} art={<OrderArt order={order}/>} reward={p(order.reward.label)} onPress={()=>open('contract',order.id)}/>;
     })}
     <Text style={[styles.footnote,{color:C.muted}]}>{p('Finish every posting for the full weekly board completion reward. Contract rewards are processed automatically.')}</Text>
     {fallenKnight?<View style={[styles.featured,{backgroundColor:C.panel,borderColor:C.line}]}>
@@ -277,7 +280,7 @@ export function QuestRefinedScreen({state,mode,onModeChange,focusedWeeklyOrderId
      <ProgressLine current={completeChallengeCount} max={allChallenges.length} C={C}/>
     </View>
     {nextReward?<View style={[styles.featured,{backgroundColor:C.goodSurface,borderColor:C.good}]}>
-     <View style={styles.rowMeta}><Text style={[styles.eyebrow,{color:C.good}]}>{p('REWARD READY')}</Text><StatusPill label={QUEST_RARITIES[nextReward.rarity].label.toUpperCase()} tone="special"/></View>
+     <View style={styles.rowMeta}><Text style={[styles.eyebrow,{color:C.good}]}>{p('REWARD READY')}</Text><StatusPill label={p(QUEST_RARITIES[nextReward.rarity].label).toLocaleUpperCase(language)} tone="special"/></View>
      <Text style={[styles.featuredTitle,{color:C.text}]}>{p(nextReward.name)}</Text>
      <Text style={[styles.subtitle,{color:C.muted}]}>{nextReward.period.toUpperCase()} · {p(QUEST_RARITIES[nextReward.rarity].cache)}</Text>
      <GameButton title={p('Claim')+' '+p(QUEST_RARITIES[nextReward.rarity].cache)} onPress={()=>open('challenge',nextReward.id)}/>
@@ -288,7 +291,7 @@ export function QuestRefinedScreen({state,mode,onModeChange,focusedWeeklyOrderId
      const rows=(period==='daily'?daily:period==='weekly'?weekly:monthly).slice().sort((a,b)=>Number(challengeClaimed.has(a.id))-Number(challengeClaimed.has(b.id))||Number(b.progress>=b.required)-Number(a.progress>=a.required));
      return <View key={period} style={styles.challengeGroup}>
       {challengePeriod==='all'?<Text style={[styles.eyebrow,{color:C.accent}]}>{p(period.toUpperCase())}</Text>:null}
-      {rows.map(q=><CompactQuestRow key={q.id} C={C} title={p(q.name)} subtitle={p(q.description)} eyebrow={p(q.tag.toUpperCase())+' · '+p(period.toUpperCase())} status={challengeClaimed.has(q.id)?'claimed':q.progress>=q.required?'ready':'active'} current={Math.min(q.progress,q.required)} max={q.required} art={<ChallengeArt quest={q}/>} rarity={p(QUEST_RARITIES[q.rarity].label)} reward={p(QUEST_RARITIES[q.rarity].cache)} onPress={()=>open('challenge',q.id)}/>)}
+      {rows.map(q=><CompactQuestRow key={q.id} C={C} language={language} title={p(q.name)} subtitle={p(q.description)} eyebrow={p(q.tag.toUpperCase())+' · '+p(period.toUpperCase())} status={challengeClaimed.has(q.id)?'claimed':q.progress>=q.required?'ready':'active'} current={Math.min(q.progress,q.required)} max={q.required} art={<ChallengeArt quest={q}/>} rarity={p(QUEST_RARITIES[q.rarity].label)} reward={p(QUEST_RARITIES[q.rarity].cache)} onPress={()=>open('challenge',q.id)}/>)}
      </View>;
     })}
    </>:null}
@@ -308,7 +311,7 @@ export function QuestRefinedScreen({state,mode,onModeChange,focusedWeeklyOrderId
     </View>:<>
      <View style={[styles.detailIdentity,{backgroundColor:C.panelRaised,borderColor:C.line}]}>
       <View style={[styles.detailArt,{backgroundColor:C.panel2,borderColor:C.line}]}>{chosenStory?<StoryArt quest={chosenStory}/>:chosenOrder?<OrderArt order={chosenOrder}/>:chosenChallenge?<ChallengeArt quest={chosenChallenge}/>:null}</View>
-      <View style={styles.flex}><Text style={[styles.rowSubtitle,{color:C.muted}]}>{chosenStory?p(chosenStory.location):chosenOrder?p(chosenOrder.source.label):chosenChallenge?p(chosenChallenge.period.toUpperCase()):''}</Text><StatusPill label={statusText(selectedStatus)} tone={statusTone(selectedStatus)}/></View>
+      <View style={styles.flex}><Text style={[styles.rowSubtitle,{color:C.muted}]}>{chosenStory?p(chosenStory.location):chosenOrder?p(chosenOrder.source.label):chosenChallenge?p(chosenChallenge.period.toUpperCase()):''}</Text><StatusPill label={statusText(selectedStatus,language)} tone={statusTone(selectedStatus)}/></View>
      </View>
      <View style={[styles.detailBlock,{backgroundColor:C.panel,borderColor:C.line}]}>
       <Text style={[styles.eyebrow,{color:C.accent}]}>{p('OBJECTIVE')}</Text>

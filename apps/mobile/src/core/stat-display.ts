@@ -20,3 +20,9 @@ export function displayStatPrecise(value:number):string{
   if(Number.isInteger(value*DISPLAY_STAT_MULTIPLIER))return String(Math.round(scaled));
   return scaled.toFixed(1);
 }
+
+/** Format percentage-based character stats without losing sub-1% bonuses. */
+export function displayPercent(fraction:number):string{
+  if(!Number.isFinite(fraction))return '0%';
+  return String(Number((fraction*100).toFixed(3)))+'%';
+}

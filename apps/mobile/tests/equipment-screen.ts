@@ -4,6 +4,7 @@ import {equipmentComparison} from '../src/core/equipment-comparison';
 import {itemDef,ITEMS} from '../src/content/items';
 import {previewEquipment} from '../src/core/equipment-preview';
 import {itemInspectModel} from '../src/core/item-inspect';
+import {enhancedGearStats} from '../src/core/equipment-enhancement';
 import {displayPercent,DISPLAY_STAT_MULTIPLIER} from '../src/core/stat-display';
 import {availableEquipmentChoicesForSlot} from '../src/core/equipment-slot-picker';
 import {EQUIPMENT_ITEMS_V33} from '../src/content/equipment-items-v33';
@@ -69,7 +70,7 @@ const equippedLow={...forged,
 
 const equippedInspect=itemInspectModel(equippedLow,forgeWeapon.id);
 if(!equippedInspect.gearDecision?.previewAvailable||equippedInspect.gearDecision.loadoutDelta.attack!==0||
-   equippedInspect.gearDecision.maxLoadoutGain.attack<=0)
+   equippedInspect.gearDecision.maxItemStats.attack<=enhancedGearStats(equippedLow,forgeWeapon.id).attack)
   throw new Error('Inspecting equipped unique Forge gear must show real current stats and meaningful next-rank gains');
 const unselectedInspect=itemInspectModel(forged,forgeWeapon.id);
 if(unselectedInspect.gearDecision?.previewAvailable)

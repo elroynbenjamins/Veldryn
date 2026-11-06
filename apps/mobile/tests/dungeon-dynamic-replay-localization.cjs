@@ -12,7 +12,7 @@ const {playbackCueLabel}=require('../src/core/dungeon-combat-playback.ts');
 const {dungeonDynamicUiRows,dungeonDynamicUiText,localizedDungeonPlaybackCue,localizedDungeonCueType}=require('../src/i18n/dungeon-dynamic-ui.ts');
 const languages=['de','es','nl','it','fr','ru','tr'];
 assert.deepEqual([...SUPPORTED_LANGUAGES],['en',...languages]);
-assert.equal(Object.keys(dungeonDynamicUiRows).length,56);
+assert.equal(Object.keys(dungeonDynamicUiRows).length,65);
 const tokens=x=>[...x.matchAll(/\{(\w+)\}/g)].map(m=>m[1]).sort();
 for(const [en,translations] of Object.entries(dungeonDynamicUiRows)){
  assert.equal(translations.length,7,'language parity '+en);
@@ -59,6 +59,11 @@ assert.equal(localizedDungeonPlaybackCue('nl',{atMs:0,type:'action',actorName:'M
 assert.equal(localizedDungeonPlaybackCue('ru',{atMs:0,type:'cast',actorName:'Boss $&',abilityName:'Unknown Storm'}),'Boss $& начинает Unknown Storm');
 assert.equal(localizedDungeonPlaybackCue('tr',{atMs:0,type:'down',targetName:'Mira'}),'Mira yere düştü');
 assert.equal(localizedDungeonPlaybackCue('de',{atMs:0,type:'action',actorName:'Mira',targetName:'Ari',outcome:'miss'}),'Mira verfehlt Ari · VERFEHLT');
+assert.equal(dungeonDynamicUiText('nl','DMG {amount}',{amount:'1.2k'}),'SCH 1.2k');
+assert.equal(dungeonDynamicUiText('ru','INT {count}',{count:3}),'ПРЕР 3');
+assert.equal(dungeonDynamicUiText('tr','TAKEN {amount}',{amount:71}),'ALIN 71');
+assert.equal(dungeonDynamicUiText('en','HEAL {amount}',{amount:'5k'}),'HEAL 5k');
+assert.ok(dungeonDynamicUiText('de','Boss ability').includes('Boss'));
 assert.equal(localizedDungeonCueType('nl','cast'),'SPREUK');
 assert.equal(localizedDungeonCueType('ru',undefined),'В ПРЯМОМ ЭФИРЕ');
 const root=path.resolve(__dirname,'../src/components/coop');
@@ -71,6 +76,8 @@ for(const marker of [
  "dungeonDynamicUiText(language,'{count} combat events'",
  "dungeonDynamicUiText(language,'{count} recent'",
  'playbackAdvanceDelayMs(current,next,1)','playbackCombatantState(replay,cueIndex',
+  'contributionSummary(language,slot.role,value)','roleShort(language,slot.role)',
+  "dungeonDynamicUiText(language,'Boss ability')",
 ])assert.ok(combat.includes(marker),'Dungeon combat stage lost safety or translation: '+marker);
 assert.ok(!combat.includes('playbackCueLabel(cue)'),'combat log still bypasses localizer');
 for(const marker of [
@@ -86,5 +93,6 @@ for(const marker of [
  "dungeonDynamicUiText(language,'Expedition failed')",
  "run.phase.replaceAll('_',' ').replace(/^./,letter=>letter.toUpperCase())",
  'validateCoopRunView(run)',
+  "dungeonDynamicUiText(language,'A disconnected party member is being piloted",
 ])assert.ok(run.includes(marker),'run status missing safe localization: '+marker);
-console.log('PASS: 56 Dungeon dynamic UI templates x 7 locales, combat cue replay parity, source values, route and status wiring');
+console.log('PASS: 65 Dungeon dynamic UI templates x 7 locales, combat cue replay parity, source values, route and status wiring');

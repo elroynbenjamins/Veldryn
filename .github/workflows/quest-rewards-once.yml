@@ -1,8 +1,12 @@
 name: Quest rewards one-time validation and gameplay bundle sync
 on:
-  push:
+  pull_request:
     branches:
-      - feat/quest-progression-reward-choices-20261106
+      - main
+    types:
+      - opened
+      - synchronize
+      - reopened
     paths:
       - apps/mobile/tests/seasonal-quests.ts
 permissions:
@@ -15,6 +19,7 @@ jobs:
       - uses: actions/checkout@v4
         with:
           persist-credentials: true
+          ref: ${{ github.head_ref }}
       - uses: actions/setup-node@v4
         with:
           node-version: '22'

@@ -55,6 +55,12 @@ for(const id of ['BREW_DEWLEAF_DRAUGHT','BREW_VERDANT_BINDING_RESIN','COOK_IRONW
 }
 const dynamic={id:'a-custom-recipe',name:'Mysterious custom recipe',output:{itemId:'COPPER_INGOT',quantity:1}};
 assert.equal(localizedRecipeName('tr',dynamic),dynamic.name,'unknown dynamic recipe preserved');
+for(const language of languages){
+ const translated=localizedRecipeName(language,byId('SMELT_COPPER_INGOT'));
+ assert.ok(recipeMatchesLocalizedSearch(language,byId('SMELT_COPPER_INGOT'),translated.toLocaleUpperCase(language)),'localized recipe search must ignore case '+language);
+ assert.ok(recipeMatchesLocalizedSearch(language,byId('SMELT_COPPER_INGOT'),'Smelt Copper Ingot'),'English recipe search must remain available '+language);
+ assert.ok(recipeMatchesLocalizedSearch(language,dynamic,'Mysterious custom recipe'),'unknown recipe must remain searchable '+language);
+}
 assert.ok(!recipeMatchesLocalizedSearch('de',byId('SMELT_COPPER_INGOT'),'nonexistent-ingredient'),'non matching search');
 const fileMarkers={
  'components/CraftingRecipeBrowser.tsx':['recipeMatchesLocalizedSearch(language,recipe,q)'],

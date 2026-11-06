@@ -9,10 +9,13 @@ import {GameButton} from './GameButton';
 import {Panel} from './Panel';
 import {QuestBoard} from './QuestBoard';
 import {GuildActivityFeedPanel} from './GuildActivityFeedPanel';
+import {GuildProjectSupplyDonationPanel} from './GuildProjectSupplyDonationPanel';
+import {gameAlert} from '../core/game-alerts';
+import {donateOnlineGuildProjectSupplies,pendingGuildProjectSupplyDonation,discardPendingGuildProjectSupplyDonation,type PendingGuildProjectSupplyDonation} from '../online/guild-project-supply-donations';
 import {LoadingState} from './LoadingState';
 import {StatusPill} from './StatusPill';
 import {ActivityArtwork} from './ActivityArtwork';
-import {claimOnlineGuildProjectReward,loadOnlineGuildProjectsV18,startOnlineGuildProjectCandidate,voteOnlineGuildProjectCandidate,type OnlineGuildProjectCandidate,type OnlineGuildProjectSummary,type OnlineGuildProjectsSnapshot} from '../online/guild-projects-v18';
+import {claimOnlineGuildProjectReward,loadOnlineGuildProjectsV18,voteOnlineGuildProjectCandidate,type OnlineGuildProjectCandidate,type OnlineGuildProjectSummary,type OnlineGuildProjectsSnapshot,type OnlineGuildProjectSupplyItem} from '../online/guild-projects-v18';
 import {radii,typography,type ThemeColors} from '../theme/theme';
 import {useGameTheme} from '../theme/ThemeContext';
 import {guildProjectArtwork} from '../theme/guild-remaster-art';
@@ -41,6 +44,7 @@ export function OnlineGuildProjectsPanel({onRewardsChanged,onNavigateActivity}:{
  const [snapshot,setSnapshot]=useState<OnlineGuildProjectsSnapshot|null>(null);
  const [loading,setLoading]=useState(true),[error,setError]=useState('');
  const [expanded,setExpanded]=useState<string|null>(null),[showHistory,setShowHistory]=useState(false),[busy,setBusy]=useState('');
+ const [pendingDonation,setPendingDonation]=useState<PendingGuildProjectSupplyDonation|null>(null);
  const mounted=useRef(true),readFlight=useRef<Promise<void>|null>(null);
  const load=(force=false):Promise<void>=>{
   if(!mounted.current)return Promise.resolve();
@@ -58,19 +62,37 @@ export function OnlineGuildProjectsPanel({onRewardsChanged,onNavigateActivity}:{
   void request.finally(()=>{if(readFlight.current===request)readFlight.current=null;});
   return request;
  };
- const act=async(kind:'vote'|'start'|'claim',id:string)=>{
+ const act=async(kind:'vote'|'claim',id:string)=>{
   if(busy)return;
   setBusy(kind+':'+id);setError('');
   try{
    if(kind==='vote')await voteOnlineGuildProjectCandidate(id);
-   else if(kind==='start')await startOnlineGuildProjectCandidate(id);
    else{await claimOnlineGuildProjectReward(id);await onRewardsChanged?.();}
    await load(true);
   }catch(reason){if(mounted.current)setError(reason instanceof Error?reason.message:st('Guild Project action failed.'));}
   finally{if(mounted.current)setBusy('');}
  };
+ const donate=async(input:{projectId:string;itemId:string;quantity:number})=>{
+  if(busy)return;
+  setBusy('donate:'+input.itemId);setError('');
+  try{
+   await donateOnlineGuildProjectSupplies(input);
+   setPendingDonation(null);
+   await load(true);
+  }catch(reason){
+   if(mounted.current)setError(reason instanceof Error?reason.message:st('Guild Project action failed.'));
+   try{const pending=await pendingGuildProjectSupplyDonation();if(mounted.current)setPendingDonation(pending)}catch{}
+  }finally{if(mounted.current)setBusy('');}
+ };
+ const discard=()=>gameAlert.alert(ui('Discard saved Guild donation?'),
+  ui('Discard only after checking the project. A new donation may consume additional items.'),
+  [{text:ui('Keep receipt'),style:'cancel'},
+   {text:ui('Discard retry'),style:'destructive',onPress:()=>void discardPendingGuildProjectSupplyDonation()
+    .then(()=>setPendingDonation(null)).catch(reason=>setError(String(reason)))}]);
  useEffect(()=>{
   mounted.current=true;
+  void pendingGuildProjectSupplyDonation().then(value=>{if(mounted.current)setPendingDonation(value)})
+   .catch(reason=>{if(mounted.current)setError(String(reason))});
   if(AppState.currentState!=='background')void load();
   const listener=AppState.addEventListener('change',next=>{if(next==='active')void load();});
   const timer=setInterval(()=>{if(AppState.currentState==='active')void load();},60_000);
@@ -90,16 +112,29 @@ export function OnlineGuildProjectsPanel({onRewardsChanged,onNavigateActivity}:{
    </View>
    {active.length?active.map(project=><GuildProjectPosting
      key={project.id} project={project} busy={!!busy}
+     supplyInventory={snapshot.supplyInventory??[]}
+     onDonate={(itemId,quantity)=>void donate({projectId:project.id,itemId,quantity})}
+     donationBlocked={!!pendingDonation}
      onClaim={()=>void act('claim',project.id)}
      onNavigateActivity={onNavigateActivity}
      expanded={expanded===project.id}
      onToggle={()=>setExpanded(old=>old===project.id?null:project.id)}
    />):<View style={s.empty}><Text style={s.emptyTitle}>{ui("No active Guild Project")}</Text><Text style={s.copy}>{ui('Weekly projects start automatically every Monday. No vote is needed.')}</Text></View>}
   </QuestBoard>
+  {pendingDonation?<Panel>
+   <Text style={s.sectionTitle}>{ui('Saved Guild donation')}</Text>
+   <Text style={s.copy}>{ui('Retry the saved request before donating anything else.')}</Text>
+   <Text style={s.meta}>{pendingDonation.itemId} · {pendingDonation.quantity.toLocaleString()}</Text>
+   <View style={s.actions}>
+    <View style={s.flex}><GameButton compact disabled={!!busy} loading={!!busy} title={ui('Retry saved donation')}
+      onPress={()=>void donate({projectId:pendingDonation.projectId,itemId:pendingDonation.itemId,quantity:pendingDonation.quantity})}/></View>
+    <View style={s.flex}><GameButton compact disabled={!!busy} tone="secondary" title={ui('Discard retry')} onPress={discard}/></View>
+   </View>
+  </Panel>:null}
   {snapshot.candidates.length?<Panel>
-   <View style={s.sectionHead}><Text style={s.sectionTitle}>{ui("Next weekly project")}</Text><Text style={s.meta}>{ui("One vote per member")}</Text></View>
+   <View style={s.sectionHead}><Text style={s.sectionTitle}>{ui("Vote for next week's project")}</Text><Text style={s.meta}>{ui("One vote per member")}</Text></View>
    {snapshot.candidates.map(candidate=><CandidateCard key={candidate.id} candidate={candidate} busy={busy}
-    onVote={()=>void act('vote',candidate.id)} onStart={()=>void act('start',candidate.id)}/>)}
+    onVote={()=>void act('vote',candidate.id)}/>)}
   </Panel>:null}
   {completed.length||snapshot.activity.length?<Panel>
    <Pressable accessibilityRole="button" accessibilityLabel={ui("Recent Guild progress")} accessibilityState={{expanded:showHistory}}
@@ -121,22 +156,25 @@ export function OnlineGuildProjectsPanel({onRewardsChanged,onNavigateActivity}:{
  </View>;
 }
 
-function CandidateCard({candidate,busy,onVote,onStart}:{candidate:OnlineGuildProjectCandidate;busy:string;onVote:()=>void;onStart:()=>void}){
+function CandidateCard({candidate,busy,onVote}:{candidate:OnlineGuildProjectCandidate;busy:string;onVote:()=>void}){
  const language=useGameLanguage(),ui=useOnlineGuildProjectUiText(),C=useGameTheme(),s=useMemo(()=>makeStyles(C),[C]);
  const authored=guildProjectAuthoredCopy(language,candidate.templateId,candidate.name,candidate.description);
  return <View style={s.candidate}>
   <View style={s.sectionHead}><View style={s.flex}><Text style={s.projectTitle}>{authored.name}</Text><Text style={s.meta}>{guildFlowFocusText(language,candidate.focus)} · {guildFlowUiText(language,candidate.voteCount===1?'{count} vote':'{count} votes',{count:candidate.voteCount})}</Text></View>{candidate.myVote?<StatusPill label={ui("VOTED")} tone="good"/>:null}</View>
   <Text style={s.copy}>{authored.description}</Text>
+  <Text style={s.rewardTitle}>{ui('{xp} Guild XP · {gold} Bank Gold per qualifying member',{xp:candidate.guildXpReward.toLocaleString(),gold:candidate.rewardGold.toLocaleString()})}</Text>
   <Text style={s.meta}>{ui('Voting closes {date}',{date:new Date(candidate.expiresAt).toLocaleString(language)})}</Text>
   <View style={s.actions}><View style={s.flex}><GameButton compact title={ui(candidate.myVote?'Your vote':'Vote')} tone="secondary" disabled={!!busy||candidate.myVote} onPress={onVote}/></View>
-   {candidate.canStart?<View style={s.flex}><GameButton compact title={ui("Start project")} disabled={!!busy} onPress={onStart}/></View>:null}
   </View>
  </View>;
 }
 
-export function GuildProjectPosting({project,expanded,compact=false,onToggle,onClaim,onNavigateActivity,busy}:{
+export function GuildProjectPosting({project,expanded,compact=false,onToggle,onClaim,onNavigateActivity,onDonate,supplyInventory=[],donationBlocked=false,busy}:{
  onClaim:()=>void;
  onNavigateActivity?:(activity:Activity)=>void;
+ onDonate?:(itemId:string,quantity:number)=>void;
+ supplyInventory?:OnlineGuildProjectSupplyItem[];
+ donationBlocked?:boolean;
  busy:boolean;
  project:OnlineGuildProjectSummary;
  expanded:boolean;
@@ -177,11 +215,19 @@ export function GuildProjectPosting({project,expanded,compact=false,onToggle,onC
     <Text style={s.rewardIcon}>🪙</Text>
     <View style={s.flex}><Text style={s.rewardTitle}>{project.rewardDestination==='guild_bank'?ui('{amount} Gold · Guild Bank reward',{amount:project.rewardGold.toLocaleString()}):ui('500 Gold · Personal reward')}</Text><Text style={s.meta}>{ui(project.completionRewardClaimed?'Already claimed':project.status==='completed'?'Ready if eligible':'Available after Guild completion')}</Text></View>
    </View>:null}
-   {weekly?<View style={s.sectionHead}><Text style={s.meta}>{ui('Guild receives')}</Text><Text style={s.hallReward}>{ui('200 Hall progress')}</Text></View>:null}
+   {weekly?<View style={s.sectionHead}><Text style={s.meta}>{ui('Guild receives')}</Text>
+     <View style={s.flex}>
+      <Text style={s.hallReward}>{ui('{count} Hall progress',{count:project.hallProgress??200})}</Text>
+      {(project.guildXpReward??0)>0?<Text style={s.hallReward}>{ui('{count} Guild XP',{count:project.guildXpReward??0})}</Text>:null}
+     </View>
+    </View>:null}
   </View>:null}
-  {weekly&&project.status==='active'&&!compact?<View style={s.activities}>
-   <View style={s.sectionHead}><Text style={s.sectionTitle}>{ui('Contribute now')}</Text><StatusPill label={ui("ANY ACTIVITY")} tone="info"/></View>
-   <View style={s.activityGrid}>{effortActivities.map(a=><Pressable key={a.source}
+  {weekly&&project.status==='active'&&!compact&&project.resourceGoals.length>0?
+    <GuildProjectSupplyDonationPanel goals={project.resourceGoals} inventory={supplyInventory}
+     busy={busy||donationBlocked||!onDonate} onDonate={(itemId,quantity)=>onDonate?.(itemId,quantity)}/>:null}
+  {weekly&&project.status==='active'&&!compact&&project.projectMode!=='donation'?<View style={s.activities}>
+   <View style={s.sectionHead}><Text style={s.sectionTitle}>{ui('Contribute now')}</Text><StatusPill label={ui(project.templateId==='guild_weekly_shared_effort'?'ANY ACTIVITY':'Activity requirements')} tone="info"/></View>
+   <View style={s.activityGrid}>{effortActivities.filter(a=>project.focus==='combat'?a.source==='combat':project.focus==='skilling'?a.source!=='combat':true).map(a=><Pressable key={a.source}
     accessibilityRole="button" accessibilityLabel={ui('Open {title} to contribute',{title:ui(a.title)})}
     disabled={!onNavigateActivity} onPress={()=>onNavigateActivity?.(a.source)}
     style={({pressed})=>[s.activityTile,{borderColor:C.line,backgroundColor:C.panelRaised},pressed&&s.pressed,!onNavigateActivity&&s.disabled]}>
@@ -197,14 +243,15 @@ export function GuildProjectPosting({project,expanded,compact=false,onToggle,onC
    <Text style={s.copy}>{authored.description}</Text>
    {project.kind!=='development'?<View style={s.breakdown}>
     <Text style={s.meta}>{ui('Combat: {count}',{count:project.combatPoints.toLocaleString()})}</Text><Text style={s.meta}>{ui('Skilling: {count}',{count:project.skillingPoints.toLocaleString()})}</Text>
-   </View>:project.resourceGoals.map(goal=><View key={goal.resourceKind+':'+goal.resourceId} style={s.resource}>
+   </View>:null}
+   {project.resourceGoals.map(goal=><View key={goal.resourceKind+':'+goal.resourceId} style={s.resource}>
     {guildUpgradeComponentArtwork(goal.resourceId)?<Image source={guildUpgradeComponentArtwork(goal.resourceId)} style={s.resourceIcon} resizeMode="contain" accessible={false}/>:null}
     <Text style={[s.copy,s.flex]}>{goal.label}</Text><Text style={s.resourceAmount}>{goal.current.toLocaleString()} / {goal.target.toLocaleString()}</Text>
    </View>)}
-   {weekly?<View style={s.detailsRules}><Text style={s.meta}>{ui(project.rewardDestination==='guild_bank'?'Daily cap: 2,400 effort · Max 50% per member (Guilds of 2+) · 300 effort for Guild Bank reward · Claim within 7 days.':'Daily cap: 2,400 effort · Max 50% per member (Guilds of 2+) · 300 effort for 500 Gold · Claim within 7 days.')}</Text></View>:null}
+   {weekly?<View style={s.detailsRules}><Text style={s.meta}>{ui(project.projectMode==='donation'?'Donate eligible supplies · Each member may cover up to 50% · Claim within 7 days.':project.rewardDestination==='guild_bank'?'Daily cap: 2,400 effort · Max 50% per member (Guilds of 2+) · 300 effort for Guild Bank reward · Claim within 7 days.':'Daily cap: 2,400 effort · Max 50% per member (Guilds of 2+) · 300 effort for 500 Gold · Claim within 7 days.')}</Text></View>:null}
    <View style={s.contributionHead}><Text style={s.sectionTitle}>{ui('Member contribution')}</Text><Text style={s.meta}>{ui('{count} members',{count:project.memberContributions.length})}</Text></View>
    {project.memberContributions.map((member,index)=>{
-    const sources=[member.combatPoints?ui('Combat: {count}',{count:member.combatPoints.toLocaleString()}):'',member.gatheringPoints?ui('Gather {count}',{count:member.gatheringPoints.toLocaleString()}):'',member.craftingPoints?ui('Craft {count}',{count:member.craftingPoints.toLocaleString()}):''].filter(Boolean).join(' · ');
+    const sources=[member.combatPoints?ui('Combat: {count}',{count:member.combatPoints.toLocaleString()}):'',member.gatheringPoints?ui('Gather {count}',{count:member.gatheringPoints.toLocaleString()}):'',member.craftingPoints?ui('Craft {count}',{count:member.craftingPoints.toLocaleString()}):'',member.donationPoints?ui('Donate {count}',{count:member.donationPoints.toLocaleString()}):''].filter(Boolean).join(' · ');
     return <View key={member.accountId} style={s.member}><Text style={s.memberRank}>#{index+1}</Text><View style={s.flex}><Text numberOfLines={1} style={s.memberName}>{member.displayName}</Text><Text style={s.meta}>{sources||ui('No effort yet')}{member.meaningful?' · '+ui('contributor'):''}</Text></View><Text style={s.memberPoints}>{ui('{count} effort',{count:member.points.toLocaleString()})}</Text></View>;
    })}
    {!project.memberContributions.length?<Text style={s.meta}>{ui('No Guild members found.')}</Text>:null}

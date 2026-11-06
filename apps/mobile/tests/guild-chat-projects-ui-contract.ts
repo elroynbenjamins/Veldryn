@@ -17,6 +17,8 @@ const guides=read('src/components/SectionGuide.tsx');
 const hall=read('src/components/OnlineGuildHallPanel.tsx');
 const projectClient=read('src/online/guild-projects-v18.ts');
 const projectTransport=read('../../backend/supabase/migrations/20261018000165_guild_project_interactions_v1.sql');
+const choiceBoard=read('../../backend/supabase/migrations/20261106100000_guild_choice_board_v1.sql');
+const activeSlots=read('../../backend/supabase/migrations/20261106102000_guild_choice_two_active_slots_v1.sql');
 const activity=read('src/components/GuildActivityFeedPanel.tsx');
 const projects=read('src/components/GuildProjectsPanel.tsx');
 const detail=read('src/components/GuildProjectDetailPanel.tsx');
@@ -55,12 +57,12 @@ ok(projectClient.includes("from('guild_activity_feed')"),'Guild Project client m
 ok(!projectClient.includes('.insert(')&&!projectClient.includes('.update(')&&!projectClient.includes('.delete('),'Guild Project mobile client must never mutate Project tables directly');
 ok(projectClient.includes("db.rpc('prepare_guild_projects_v2')"),"Guild Project board must load through protected transport");
 ok(projectClient.includes("db.rpc('guild_project_vote_v1'"),'Member voting must use a server-authoritative RPC');
-ok(projectClient.includes("db.rpc('guild_project_start_v1'"),'Project starting must use a server-authoritative RPC');
+ok(projectClient.includes("db.rpc('guild_project_choice_ballot_v1'")&&!projectClient.includes("db.rpc('guild_project_start_v1'"),'Voted weekly projects must use the authoritative ballot and must not offer manual starts');
 ok(!projectClient.includes('guild_project_donate_v1')&&!projectClient.includes('guild_project_claim_v1'),'Donation/reward settlement must stay unavailable until atomic authoritative transport exists');
 
 ok(onlineProjects.includes('Weekly Projects')&&onlineProjects.includes('Contribute now')&&onlineProjects.includes("source:'crafting'"),"Live Projects must present compact progress and three verified activity paths");
 ok(projectClient.includes("client().rpc('claim_guild_project_reward_v2'")&&onlineProjects.includes('onRewardsChanged'),"Unsafe donation/reward actions must keep an explicit authority boundary");
-ok(onlineProjects.includes('Start project'),'Authorized roles must get the supported server-validated start action');
+ok(onlineProjects.includes("Vote for next week's project")&&!onlineProjects.includes('onStart={()=>void act('),'Weekly Guild choices must be vote-only in the UI; the server starts the winning project');
 ok(onlineProjects.includes("import {LoadingState} from './LoadingState'"),'Live Projects must use the shared loading state');
 ok(onlineProjects.includes("import {StatusPill} from './StatusPill'"),'Live Projects must use shared semantic status pills');
 ok(onlineProjects.includes('<StatusPill label={ui("SHARED")} tone="good"/>'),'Live Projects must expose semantic shared-project status');
@@ -73,7 +75,8 @@ ok(onlineProjects.includes("project.status==='completed'"),'Live Project cards m
 ok(projectTransport.includes("v_role not in('leader','guild_master','co_leader','officer','quartermaster')"),'Server must enforce start-project role permissions');
 ok(projectTransport.includes("v_slot_cap:=case when v_level<5 then 0 when v_level<10 then 1 else 2 end"),'Server must enforce the launch-era Guild Project slot cap');
 ok(projectTransport.includes('for update'),'Vote/start transport must serialize candidate selection');
-ok(projectTransport.includes('GUILD_WEEKLY_PROJECT_ALREADY_ACTIVE'),'Server must enforce one active weekly Guild Project');
+ok(choiceBoard.includes('GUILD_PROJECT_STARTS_AUTOMATICALLY')&&choiceBoard.includes('guild_project_choice_tick_v1'),'Weekly Guild Project start must be authoritative and automatic');
+ok(activeSlots.includes('DROP INDEX IF EXISTS public.uq_guild_project_one_weekly_active')&&activeSlots.includes('uq_guild_project_active_slot'),'Weekly Guild Projects must allow two separate active slots without duplicating a slot');
 
 // Unified Progress navigation and second-confirmation guard are UI-only.
 ok(progress.includes("id:'Projects',label:st('Projects')")&&progress.includes("id:'Skills',label:st('Skills')"),'Progress must present localized Skills and Projects tabs');

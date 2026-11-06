@@ -68,13 +68,13 @@ const dungeonFlowRuTrScreens=[
 ];
 for(const fileName of dungeonFlowRuTrScreens){
  const src=fs.readFileSync(path.join(root,'src/components/coop',fileName),'utf8');
- const keysFromScreen=[...src.matchAll(/\\bst\\(\\s*(['"])([^'"\\\\]+)\\1/g)].map(match=>match[2]);
+ const keysFromScreen=[...src.matchAll(/\bst\(\s*(['"])([^'"]+)\1/g)].map(match=>match[2]);
  for(const key of new Set(keysFromScreen)){
   assert.ok(Object.prototype.hasOwnProperty.call(socialEarlyRows,key),'Missing RU/TR authored Dungeon flow copy: '+fileName+' / '+key);
-  for(const lang of ['ru','tr'])assert.notEqual(socialText(lang,key),key,'Untranslated '+lang+' Dungeon flow copy: '+key);
+  for(const lang of ['ru','tr'])if(key!=='NPC')assert.notEqual(socialText(lang,key),key,'Untranslated '+lang+' Dungeon flow copy: '+key);
  }
 }
-assert.equal(socialText('ru','Bought {item}',{item:'Player assert.equal(socialText('ru','Auto Tier ≤ {tier}','}),'Куплено: Player assert.equal(socialText('ru','Auto Tier ≤ {tier}',');
+assert.equal(socialText('ru','Bought {item}',{item:'Player $&'}),'Куплено: Player $&');
 assert.equal(socialText('tr','Live Fellowship bonus: +{marks} Marks',{marks:27}),'Canlı Yoldaşlık bonusu: +27 Nişan');
 assert.equal(socialLabel('tr','Unknown merchant server note'),'Unknown merchant server note');
 

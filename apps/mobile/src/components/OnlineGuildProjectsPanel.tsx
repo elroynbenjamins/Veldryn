@@ -112,16 +112,29 @@ export function OnlineGuildProjectsPanel({onRewardsChanged,onNavigateActivity}:{
    </View>
    {active.length?active.map(project=><GuildProjectPosting
      key={project.id} project={project} busy={!!busy}
+     supplyInventory={snapshot.supplyInventory??[]}
+     onDonate={(itemId,quantity)=>void donate({projectId:project.id,itemId,quantity})}
+     donationBlocked={!!pendingDonation}
      onClaim={()=>void act('claim',project.id)}
      onNavigateActivity={onNavigateActivity}
      expanded={expanded===project.id}
      onToggle={()=>setExpanded(old=>old===project.id?null:project.id)}
    />):<View style={s.empty}><Text style={s.emptyTitle}>{ui("No active Guild Project")}</Text><Text style={s.copy}>{ui('Weekly projects start automatically every Monday. No vote is needed.')}</Text></View>}
   </QuestBoard>
+  {pendingDonation?<Panel>
+   <Text style={s.sectionTitle}>{ui('Saved Guild donation')}</Text>
+   <Text style={s.copy}>{ui('Retry the saved request before donating anything else.')}</Text>
+   <Text style={s.meta}>{pendingDonation.itemId} · {pendingDonation.quantity.toLocaleString()}</Text>
+   <View style={s.actions}>
+    <View style={s.flex}><GameButton compact disabled={!!busy} loading={!!busy} title={ui('Retry saved donation')}
+      onPress={()=>void donate({projectId:pendingDonation.projectId,itemId:pendingDonation.itemId,quantity:pendingDonation.quantity})}/></View>
+    <View style={s.flex}><GameButton compact disabled={!!busy} tone="secondary" title={ui('Discard retry')} onPress={discard}/></View>
+   </View>
+  </Panel>:null}
   {snapshot.candidates.length?<Panel>
-   <View style={s.sectionHead}><Text style={s.sectionTitle}>{ui("Next weekly project")}</Text><Text style={s.meta}>{ui("One vote per member")}</Text></View>
+   <View style={s.sectionHead}><Text style={s.sectionTitle}>{ui("Vote for next week's project")}</Text><Text style={s.meta}>{ui("One vote per member")}</Text></View>
    {snapshot.candidates.map(candidate=><CandidateCard key={candidate.id} candidate={candidate} busy={busy}
-    onVote={()=>void act('vote',candidate.id)} onStart={()=>void act('start',candidate.id)}/>)}
+    onVote={()=>void act('vote',candidate.id)}/>)}
   </Panel>:null}
   {completed.length||snapshot.activity.length?<Panel>
    <Pressable accessibilityRole="button" accessibilityLabel={ui("Recent Guild progress")} accessibilityState={{expanded:showHistory}}
@@ -143,15 +156,15 @@ export function OnlineGuildProjectsPanel({onRewardsChanged,onNavigateActivity}:{
  </View>;
 }
 
-function CandidateCard({candidate,busy,onVote,onStart}:{candidate:OnlineGuildProjectCandidate;busy:string;onVote:()=>void;onStart:()=>void}){
+function CandidateCard({candidate,busy,onVote}:{candidate:OnlineGuildProjectCandidate;busy:string;onVote:()=>void}){
  const language=useGameLanguage(),ui=useOnlineGuildProjectUiText(),C=useGameTheme(),s=useMemo(()=>makeStyles(C),[C]);
  const authored=guildProjectAuthoredCopy(language,candidate.templateId,candidate.name,candidate.description);
  return <View style={s.candidate}>
   <View style={s.sectionHead}><View style={s.flex}><Text style={s.projectTitle}>{authored.name}</Text><Text style={s.meta}>{guildFlowFocusText(language,candidate.focus)} · {guildFlowUiText(language,candidate.voteCount===1?'{count} vote':'{count} votes',{count:candidate.voteCount})}</Text></View>{candidate.myVote?<StatusPill label={ui("VOTED")} tone="good"/>:null}</View>
   <Text style={s.copy}>{authored.description}</Text>
+  <Text style={s.rewardTitle}>{ui('{xp} Guild XP · {gold} Bank Gold per qualifying member',{xp:candidate.guildXpReward.toLocaleString(),gold:candidate.rewardGold.toLocaleString()})}</Text>
   <Text style={s.meta}>{ui('Voting closes {date}',{date:new Date(candidate.expiresAt).toLocaleString(language)})}</Text>
   <View style={s.actions}><View style={s.flex}><GameButton compact title={ui(candidate.myVote?'Your vote':'Vote')} tone="secondary" disabled={!!busy||candidate.myVote} onPress={onVote}/></View>
-   {candidate.canStart?<View style={s.flex}><GameButton compact title={ui("Start project")} disabled={!!busy} onPress={onStart}/></View>:null}
   </View>
  </View>;
 }

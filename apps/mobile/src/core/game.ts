@@ -737,9 +737,11 @@ export function claimSeasonalContract(state:GameState,period:SeasonalPeriod,cont
   if((state.account.seasonalContractClaimIds??[]).includes(contract.id))throw new Error('This contract reward was already claimed.');
   if(contract.progress<contract.required)throw new Error('Complete the contract before claiming its cache.');
   const xp=state.character.xp+contract.rewardXp,level=characterLevelFromXp(xp);
-  const routed=routeRewards(state,[{itemId:contract.rewardItemId,quantity:contract.rewardItemQty}],nowMs);
+  const routed=contract.rewardItemId&&contract.rewardItemQty
+    ?routeRewards(state,[{itemId:contract.rewardItemId,quantity:contract.rewardItemQty}],nowMs):state;
   const claimed=[...(state.account.seasonalContractClaimIds??[]),contract.id].slice(-120);
-  return applyLocalBalanceSnapshot(refreshQuests({...state,...routed,character:{...state.character,...(routed.character??{}),xp,level,gold:state.character.gold+contract.rewardGold},account:{...state.account,...(routed.account??{}),seasonalContractClaimIds:claimed}} as GameState),nowMs);
+  const withRewards={...state,...routed,character:{...state.character,...(routed.character??{}),xp,level,gold:state.character.gold+contract.rewardGold},account:{...state.account,...(routed.account??{}),seasonalContractClaimIds:claimed}} as GameState;
+  return applyLocalBalanceSnapshot(refreshQuests(grantCompanionEssence(withRewards,contract.rewardCompanionEssence??0)),nowMs);
 }
 
 /** Finite reservations hand off at the cycle boundary, not at the later login. */

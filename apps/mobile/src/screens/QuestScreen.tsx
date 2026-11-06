@@ -48,6 +48,7 @@ type ClaimMoment={
   xp?:number;
   itemId?:string;
   quantity?:number;
+  essence?:number;
   rarityColor?:string;
 };
 function ClaimMomentCard({moment,reduceMotion}:{moment:ClaimMoment;reduceMotion:boolean}){
@@ -59,7 +60,7 @@ function ClaimMomentCard({moment,reduceMotion}:{moment:ClaimMoment;reduceMotion:
   useEffect(()=>{pulse.stopAnimation();pulse.setValue(1);if(reduceMotion)return;Animated.sequence([Animated.spring(pulse,{toValue:1.025,damping:9,stiffness:230,mass:.6,useNativeDriver:true}),Animated.spring(pulse,{toValue:1,damping:16,stiffness:210,mass:.7,useNativeDriver:true})]).start();return()=>pulse.stopAnimation()},[moment.key,reduceMotion,pulse]);
   return <Animated.View accessibilityLiveRegion="polite" style={[s.claimMoment,{borderColor:accent,transform:[{scale:pulse}]}]}>
     <View style={s.claimMomentHead}><View style={s.flex}><Text style={[s.claimMomentEyebrow,{color:accent}]}>✦ {moment.eyebrow}</Text><Text style={s.claimMomentTitle}>{moment.title}</Text><Text style={s.claimMomentDetail}>{moment.detail}</Text></View><StatusPill label={t("SECURED")} tone="good"/></View>
-    <QuestReward gold={moment.gold} xp={moment.xp} itemId={moment.itemId} quantity={moment.quantity??1} label={t("Rewards secured")} rarityColor={moment.rarityColor}/>
+    <QuestReward gold={moment.gold} xp={moment.xp} itemId={moment.itemId} quantity={moment.quantity??1} essence={moment.essence} label={t("Rewards secured")} rarityColor={moment.rarityColor}/>
   </Animated.View>;
 }
 
@@ -85,7 +86,7 @@ export function QuestScreen({state,mode,onModeChange,focusedWeeklyOrderId,onClai
       setNotice('');setError('');
     }else if(contracts.length){
       const id=contracts[contracts.length-1],contract=(['daily','weekly','monthly'] as const).flatMap(period=>seasonalQuestBoard(state,period)).find(row=>row.id===id);
-      if(contract){const rarity=QUEST_RARITIES[contract.rarity];setClaimMoment({key:'contract:'+id,kind:'contract',eyebrow:rarity.label.toUpperCase()+' CACHE CLAIMED',title:contract.name,detail:t("Challenge reward secured and added to your account."),gold:contract.rewardGold,xp:contract.rewardXp,itemId:contract.rewardItemId,quantity:contract.rewardItemQty,rarityColor:rarity.color});}
+      if(contract){const rarity=QUEST_RARITIES[contract.rarity];setClaimMoment({key:'contract:'+id,kind:'contract',eyebrow:rarity.label.toUpperCase()+' CACHE CLAIMED',title:contract.name,detail:t("Challenge reward secured and added to your account."),gold:contract.rewardGold,xp:contract.rewardXp,itemId:contract.rewardItemId,quantity:contract.rewardItemQty,essence:contract.rewardCompanionEssence,rarityColor:rarity.color});}
       setNotice('');setError('');
     }
   },[state.quests,state.account.seasonalContractClaimIds,state.character?.id]);
@@ -230,7 +231,7 @@ function ContractRows({state,label,quests,onClaim}:{state:GameState;label:string
    <View style={s.contractHead}><Text style={[s.postingCategory,{color:rarityTone}]}>{quest.tag.toUpperCase()} · {quest.period.toUpperCase()}</Text><View style={[s.rarity,{borderColor:rarityTone,backgroundColor:rarityTone+(C.dark?'20':'12'),paddingHorizontal:10,paddingVertical:5}]}><Text style={[s.rarityText,{color:rarityTone,fontSize:12,lineHeight:16,letterSpacing:.6}]}>{rarity.label.toUpperCase()}</Text></View>{claimed?<StatusPill label={t("CLAIMED")} tone="muted"/>:ready?<StatusPill label={t("READY")} tone="good"/>:null}</View>
    <View style={s.postingHead}><View style={s.flex}><Text accessibilityRole="header" style={s.seasonName}>{quest.name}</Text><Text style={s.sub}>{quest.description}</Text></View><View style={s.postingArtwork}><ActivityArtwork id={quest.tag==='boss'?'combat':quest.tag==='equipment'||quest.tag==='crafting'?'smithing':quest.tag==='gathering'?'woodcutting':quest.tag} size={36}/></View></View>
    <View style={s.objectivePanel}><View style={s.objectiveMetrics}><Text style={s.objectivePanelLabel}>{p("CHALLENGE PROGRESS")}</Text><Text style={[s.objectiveRemaining,{color:ready?C.good:rarityTone}]}>{ready?t("Done"):anticipation.remaining.toLocaleString()+' '+p("left")}</Text></View><ContractProgress label={quest.tag.toUpperCase()} current={quest.progress} total={quest.required} personal/></View>
-   <QuestReward gold={quest.rewardGold} xp={quest.rewardXp} itemId={quest.rewardItemId} quantity={quest.rewardItemQty} label={rarity.cache} rarityColor={rarityTone}/>
+   <QuestReward gold={quest.rewardGold} xp={quest.rewardXp} itemId={quest.rewardItemId} quantity={quest.rewardItemQty} essence={quest.rewardCompanionEssence} label={rarity.cache} rarityColor={rarityTone}/>
    {claimed?<Text style={s.claimed}>{t("✓ Cache claimed")}</Text>:ready?<GameButton compact title={`Claim ${rarity.label} cache`} onPress={()=>onClaim(quest.period,quest.id)}/>:<Text style={near?s.contractNear:s.contractHint}>{near?(anticipation.band==='next'?'NEXT PROGRESS COMPLETES IT · ':anticipation.band==='urgent'?'FINAL STRETCH · ':'ALMOST COMPLETE · '):''}{anticipation.remaining} {t("progress remaining")}</Text>}
   </QuestPosting>;
  })}</>;

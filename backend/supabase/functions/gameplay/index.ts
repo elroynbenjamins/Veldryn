@@ -48670,8 +48670,20 @@ function rarityFor(period, key, index, classId) {
   if (period === "weekly") return roll < 45 ? "uncommon" : roll < 87 ? "rare" : "epic";
   return roll < 48 ? "rare" : roll < 88 ? "epic" : "legendary";
 }
-function cacheFor(rarity) {
-  return rarity === "common" ? ["MOSS_FIBER", 4] : rarity === "uncommon" ? ["COPPER_ORE", 5] : rarity === "rare" ? ["ASTER_IRON_ORE", 4] : rarity === "epic" ? ["OATHGLASS_SHARD", 3] : ["OATHGLASS_SHARD", 7];
+function seasonalQuestCache(period, rarity) {
+  if (period === "daily") {
+    if (rarity === "common") return { rewardCompanionEssence: 5 };
+    if (rarity === "uncommon") return { rewardCompanionEssence: 8 };
+    return { rewardItemId: "TEMPERING_DUST", rewardItemQty: 8 };
+  }
+  if (period === "weekly") {
+    if (rarity === "epic" || rarity === "legendary") return { rewardItemId: "ASTERFALL_MINERAL_ESSENCE", rewardItemQty: 1 };
+    if (rarity === "rare") return { rewardItemId: "TEMPERING_CORE", rewardItemQty: 1 };
+    return { rewardCompanionEssence: 15 };
+  }
+  if (rarity === "legendary") return { rewardItemId: "TEMPERING_CORE", rewardItemQty: 4 };
+  if (rarity === "epic") return { rewardItemId: "TEMPERING_CORE", rewardItemQty: 2 };
+  return { rewardCompanionEssence: 35 };
 }
 function contractProgress(state, tag, period, key) {
   if (tag === "equipment") return Object.values(state.character.equipment).filter(Boolean).length;
@@ -48687,10 +48699,10 @@ function seasonalQuestBoard(state, period, date = /* @__PURE__ */ new Date()) {
   const rows2 = [specific, ...Array.from({ length: count }, (_, index) => pick(role, key, index))].slice(0, count);
   const volume = period === "daily" ? 0.9 : period === "weekly" ? 3 : 8;
   return rows2.map((row, index) => {
-    const [name, templateDescription, base, tag] = row, rarity = rarityFor(period, key, index, character.classId), meta = QUEST_RARITIES[rarity], required = Math.min(tag === "equipment" ? 10 : Infinity, Math.max(1, Math.round(base * volume))), progress = Math.min(required, contractProgress(state, tag, period, key)), [rewardItemId, baseQty] = cacheFor(rarity);
+    const [name, templateDescription, base, tag] = row, rarity = rarityFor(period, key, index, character.classId), meta = QUEST_RARITIES[rarity], required = Math.min(tag === "equipment" ? 10 : Infinity, Math.max(1, Math.round(base * volume))), progress = Math.min(required, contractProgress(state, tag, period, key)), reward2 = seasonalQuestCache(period, rarity);
     const description = tag === "combat" ? "Defeat {n} monsters this period." : tag === "gathering" ? "Complete {n} gathering actions this period." : tag === "crafting" ? "Complete {n} crafts this period." : tag === "exploration" ? "Complete {n} exploration route actions this period." : templateDescription;
     const baseGold = period === "daily" ? Math.max(20, base * 2) : period === "weekly" ? base * 8 : Math.max(300, base * 20), baseXp = period === "daily" ? Math.max(40, base * 4) : period === "weekly" ? base * 15 : Math.max(600, base * 40);
-    return { id: `${period.toUpperCase()}_${key}_${index}`, period, name: name.replace("{n}", String(required)), description: description.replace("{n}", String(required)), required, progress, rewardGold: Math.round(baseGold * meta.multiplier * 1.1), rewardXp: Math.round(baseXp * meta.multiplier * 1.1), rewardItemId, rewardItemQty: Math.max(1, Math.round(baseQty * meta.multiplier)), className: classDef.name, tag, rarity };
+    return { id: `${period.toUpperCase()}_${key}_${index}`, period, name: name.replace("{n}", String(required)), description: description.replace("{n}", String(required)), required, progress, rewardGold: Math.round(baseGold * meta.multiplier * 1.1), rewardXp: Math.round(baseXp * meta.multiplier * 1.1), ...reward2, className: classDef.name, tag, rarity };
   });
 }
 
@@ -51983,9 +51995,10 @@ function claimSeasonalContract(state, period, contractId2, nowMs = Date.now()) {
   if ((state.account.seasonalContractClaimIds ?? []).includes(contract.id)) throw new Error("This contract reward was already claimed.");
   if (contract.progress < contract.required) throw new Error("Complete the contract before claiming its cache.");
   const xp = state.character.xp + contract.rewardXp, level = characterLevelFromXp(xp);
-  const routed = routeRewards(state, [{ itemId: contract.rewardItemId, quantity: contract.rewardItemQty }], nowMs);
+  const routed = contract.rewardItemId && contract.rewardItemQty ? routeRewards(state, [{ itemId: contract.rewardItemId, quantity: contract.rewardItemQty }], nowMs) : state;
   const claimed = [...state.account.seasonalContractClaimIds ?? [], contract.id].slice(-120);
-  return applyLocalBalanceSnapshot(refreshQuests({ ...state, ...routed, character: { ...state.character, ...routed.character ?? {}, xp, level, gold: state.character.gold + contract.rewardGold }, account: { ...state.account, ...routed.account ?? {}, seasonalContractClaimIds: claimed } }), nowMs);
+  const withRewards = { ...state, ...routed, character: { ...state.character, ...routed.character ?? {}, xp, level, gold: state.character.gold + contract.rewardGold }, account: { ...state.account, ...routed.account ?? {}, seasonalContractClaimIds: claimed } };
+  return applyLocalBalanceSnapshot(refreshQuests(grantCompanionEssence(withRewards, contract.rewardCompanionEssence ?? 0)), nowMs);
 }
 function queuedReservationEnd(state) {
   const activity = state.activity;

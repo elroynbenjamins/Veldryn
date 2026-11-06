@@ -18,18 +18,21 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
+      - uses: pnpm/action-setup@v4
+        with:
+          version: '10.34.9'
       - name: Install mobile and backend dependencies
         run: |
-          npm install --prefix apps/mobile --no-audit --no-fund
-          npm install --prefix backend --no-audit --no-fund
+          pnpm --dir apps/mobile install --frozen-lockfile
+          pnpm --dir backend install --frozen-lockfile
       - name: Typecheck mobile and shared game engine
         run: |
-          npm run typecheck:core --prefix apps/mobile
-          npm run typecheck --prefix apps/mobile
+          pnpm --dir apps/mobile typecheck:core
+          pnpm --dir apps/mobile typecheck
       - name: Test Quest progression rewards
         run: node tools/run-mobile-tests.mjs seasonal-quests
       - name: Typecheck backend online
-        run: npm run typecheck:online --prefix backend
+        run: pnpm --dir backend typecheck:online
       - name: Generate authoritative gameplay Edge bundle
         run: node tools/build-online.mjs
       - name: Commit regenerated bundle if changed

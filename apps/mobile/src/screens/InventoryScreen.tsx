@@ -226,16 +226,16 @@ export function InventoryScreen({state,viewMemory,foodRequest=0,onEquip,onFood,o
   };
   const inspectQuickActions=inspected?.type==='material'&&inspectStock>0?<View style={s.inspectQuickActions}>
     <View style={s.inspectAmountRow}>
-      <Text style={s.inspectAmountLabel}>{gt('Amount')} · {formatGameNumber(inspectStock,state.settings.numberMode,language)} {gt('available')}</Text>
+      <Text style={s.inspectAmountLabel}>{gt('Amount')} · {formatGameNumber(inspectStock,state.settings.numberMode,language)} {gl('available')}</Text>
       <View style={s.inspectStepper}>
-        <Pressable accessibilityRole="button" accessibilityLabel={gt('Decrease amount')} disabled={inspectAmount<=1} onPress={()=>setInspectQuantity(value=>Math.max(1,value-1))} style={[s.inspectStep,inspectAmount<=1&&s.inspectStepDisabled]}><Text style={s.inspectStepText}>−</Text></Pressable>
+        <Pressable accessibilityRole="button" accessibilityLabel={gl('Decrease amount')} disabled={inspectAmount<=1} onPress={()=>setInspectQuantity(value=>Math.max(1,value-1))} style={[s.inspectStep,inspectAmount<=1&&s.inspectStepDisabled]}><Text style={s.inspectStepText}>−</Text></Pressable>
         <Text style={s.inspectAmountValue}>{formatGameNumber(inspectAmount,state.settings.numberMode,language)}</Text>
-        <Pressable accessibilityRole="button" accessibilityLabel={gt('Increase amount')} disabled={inspectAmount>=inspectStock} onPress={()=>setInspectQuantity(value=>Math.min(inspectStock,value+1))} style={[s.inspectStep,inspectAmount>=inspectStock&&s.inspectStepDisabled]}><Text style={s.inspectStepText}>+</Text></Pressable>
+        <Pressable accessibilityRole="button" accessibilityLabel={gl('Increase amount')} disabled={inspectAmount>=inspectStock} onPress={()=>setInspectQuantity(value=>Math.min(inspectStock,value+1))} style={[s.inspectStep,inspectAmount>=inspectStock&&s.inspectStepDisabled]}><Text style={s.inspectStepText}>+</Text></Pressable>
         <Pressable accessibilityRole="button" accessibilityLabel={gt('All')} onPress={()=>setInspectQuantity(inspectStock)} style={s.inspectStep}><Text style={s.inspectStepAll}>{gt('All')}</Text></Pressable>
       </View>
     </View>
     <View style={s.inspectQuickButtons}>
-      <View style={s.inspectQuickButton}><GameButton compact title={carried?(gemDepositDestination(state,inspected.id)==='gem_pouch'?gt('To Gem Pouch'):gt('To Bank')):gt('Withdraw')} tone="secondary" loading={inventoryBusyLabel!==null} disabled={inventoryBusyLabel!==null} onPress={()=>{const id=inspected.id,amount=inspectAmount;
+      <View style={s.inspectQuickButton}><GameButton compact title={carried?(gemDepositDestination(state,inspected.id)==='gem_pouch'?gl('To Gem Pouch'):gl('To Bank')):gt('Withdraw')} tone="secondary" loading={inventoryBusyLabel!==null} disabled={inventoryBusyLabel!==null} onPress={()=>{const id=inspected.id,amount=inspectAmount;
         if(carried)runInventory({kind:'deposit',itemId:id,quantity:amount},()=>onDeposit(id,amount));
         else runInventory({kind:'withdraw',itemId:id,quantity:amount},()=>onWithdraw(id,amount));
         closeInspect();

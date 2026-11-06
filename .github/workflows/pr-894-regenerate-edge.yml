@@ -38,5 +38,7 @@ jobs:
           git add backend/supabase/functions/gameplay/index.ts backend/supabase/functions/coop/index.ts
           if ! git diff --cached --quiet; then
             git commit -m "Regenerate online Edge bundles for Sunscar T3/T4 material sourcing"
+            git fetch origin feature/asterfall-sunscar-equipment-tier-material-alignment
+            git rebase origin/feature/asterfall-sunscar-equipment-tier-material-alignment
             git push origin HEAD:feature/asterfall-sunscar-equipment-tier-material-alignment
           fi

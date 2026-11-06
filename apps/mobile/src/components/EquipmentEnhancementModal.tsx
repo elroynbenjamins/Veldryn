@@ -76,7 +76,7 @@ export function EquipmentEnhancementModal({visible,state,itemId,onClose,onUpgrad
   const [tab,setTab]=useState<'upgrade'|'gems'>(initialTab),[busy,setBusy]=useState(false),[confirmRisk,setConfirmRisk]=useState(false),[riskApprovedTarget,setRiskApprovedTarget]=useState<number|null>(null),[pendingGemAction,setPendingGemAction]=useState<PendingGemAction|null>(null);
   const [activeSocketKind,setActiveSocketKind]=useState<'stat'|'effect'>('stat'),[showDetails,setShowDetails]=useState(false),[showGemHelp,setShowGemHelp]=useState(false),[showAllCandidates,setShowAllCandidates]=useState(false);
   const [gemPickerOpen,setGemPickerOpen]=useState(false),[selectedGemId,setSelectedGemId]=useState<string|null>(null);
-  const item=itemDef(itemId),enhancement=gearEnhancement(state,itemId),quote=upgradeQuote(state,itemId),capacity=gemSocketCapacity(itemId),socketState=gemSocketState(state,itemId),rarity=rarityMeta(itemRarity(item)),decision=equipmentDecisionModel(state,itemId);
+  const item=itemDef(itemId),enhancement=gearEnhancement(state,itemId),quote=upgradeQuote(state,itemId),capacity=gemSocketCapacity(itemId),socketState=gemSocketState(state,itemId),decision=equipmentDecisionModel(state,itemId),rarity=rarityMeta(decision.rarity);
   const [feedback,setFeedback]=useState<EnhancementFeedbackResult|null>(null),[actionError,setActionError]=useState<string|null>(null);
   const previous=useRef({itemId,rank:enhancement.rank,failures:enhancement.failures,gemIds:enhancement.gemIds,statGemId:enhancement.statGemId,effectGemId:enhancement.effectGemId});
   useEffect(()=>{

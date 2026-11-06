@@ -78,6 +78,10 @@ test('Experience Faith grants combat and profession XP but not Faith practice XP
  ok(Math.abs(boost.skillXpMultiplier/base.skillXpMultiplier-1.06)<1e-10,'profession XP +6%');
  ok(Math.abs(boost.characterXpMultiplier/base.characterXpMultiplier-1.06)<1e-10,'combat XP +6%');
  equal(boost.gatheringSpeedMultiplier,base.gatheringSpeedMultiplier,'no gathering speed bonus');
+ const recipe={id:'FAITH_FORGE_XP_TEST',skillId:'smithing' as const,seconds:100,xp:100};
+ const defaultForge=professionActionPace(s,recipe,'forge');
+ const blessedForge=professionActionPace(blessed,recipe,'forge');
+ ok(Math.abs(blessedForge.xpPerAction/defaultForge.xpPerAction-1.06)<1e-10,'Faith XP covers forge crafting');
  const practicing=startFaithPractice(blessed,'FAITH_QUIET',1,T),r=claimActivity(practicing,T+30_000);
  equal(r.reward.faithXp,120,'Faith practice XP deliberately excluded');
 });
@@ -101,6 +105,7 @@ test('Locked new blessings cannot be equipped and legacy selections survive save
  legacy=migrateSave(JSON.parse(JSON.stringify(legacy)));
  equal(legacy.character!.faith!.selectedBlessingId,'WARD_OF_STONE','old combat selection retained');
  const higher=faithAt(fresh(),95);
+ higher.character!.faith!.xp=totalXpAtLevel(95);
  const newSelection=selectFaithBlessing(higher,'ETERNAL_ENLIGHTENMENT');
  equal(migrateSave(JSON.parse(JSON.stringify(newSelection))).character!.faith!.selectedBlessingId,'ETERNAL_ENLIGHTENMENT','new selection retained');
 });

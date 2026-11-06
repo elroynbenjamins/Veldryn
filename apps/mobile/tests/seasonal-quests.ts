@@ -4,7 +4,7 @@ import {itemDef} from '../src/content/items';
 import {normalizeSave} from '../src/core/save-normalization';
 import {CLASSES} from '../src/content/classes';
 import type {GameState} from '../src/core/types';
-import {executeGameCommand} from '../src/core/game-commands';
+import {executeGameCommand,validateGameCommand} from '../src/core/game-commands';
 const state=createCharacter(newGame(0),'BASTION','Tester');
 const date=new Date('2026-09-05T12:00:00Z'),daily=seasonalQuestBoard(state,'daily',date),a=seasonalQuestBoard(state,'weekly',date),b=seasonalQuestBoard(state,'weekly',date),m=seasonalQuestBoard(state,'monthly',date);
 if(daily.length!==2||a.length!==3||m.length!==4)throw new Error('Seasonal board sizes are incorrect');
@@ -121,6 +121,11 @@ for(const cadence of ['daily','weekly','monthly'] as const)for(const rarity of [
  check(new Set(offers.map(option=>option.id)).size===offers.length,'No duplicate reward choice IDs');
  check(offers.every(option=>Number(option.rewardItemQty??option.rewardCompanionEssence??option.rewardBondstones)>0),'Every published reward must be nonempty');
 }
+const accepted=validateGameCommand({type:'seasonal',args:{period:'daily',id:'SAMPLE',choiceId:'item:GEM_DUST'}});
+check(accepted.args?.choiceId==='item:GEM_DUST','Strict online seasonal command validator must allow a reward choice ID');
+let rejectedUnknownField=false;
+try{validateGameCommand({type:'seasonal',args:{period:'daily',id:'SAMPLE',choiceId:'item:GEM_DUST',rewardItemQty:999}});}catch{rejectedUnknownField=true}
+check(rejectedUnknownField,'Seasonal command validation must reject client-supplied reward quantities');
 const dailyAlternatives=seasonalQuestRewardOptions(state,'daily','rare');
 check(dailyAlternatives[0].id==='item:TEMPERING_DUST','Existing rare daily reward must remain the default');
 check(dailyAlternatives.some(choice=>choice.id==='item:GEM_DUST'&&choice.rewardItemQty===5),'Gem Dust choice must be available on rare daily challenges');

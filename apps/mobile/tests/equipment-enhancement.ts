@@ -1,5 +1,5 @@
 import {createCharacter,effectiveStats,equipItem,newGame,previewActivityReward,salvageItem,sellItem,sellBankItem,startCombat} from '../src/core/game';
-import {attemptEquipmentUpgrade,equippedEffectGemBonuses,gearEnhancement,gearStatsAtRank,gemSocketCapacity,normalizeEnhancementGemSlots,socketGem,unsocketGem,upgradeQuote} from '../src/core/equipment-enhancement';
+import {attemptEquipmentUpgrade,equippedEffectGemBonuses,enhancedGearStats,enhancedGearStatsAtRank,gearEnhancement,gearStatsAtRank,gemSocketCapacity,normalizeEnhancementGemSlots,socketGem,unsocketGem,upgradeQuote} from '../src/core/equipment-enhancement';
 import {V33_EQUIPMENT_RECIPES} from '../src/content/equipment-recipes-v33';
 import {itemDef} from '../src/content/items';
 import {previewEquipment} from '../src/core/equipment-preview';
@@ -18,6 +18,35 @@ ok(ringRecipe.inputs.some(input=>input.itemId==='VERDANT_BINDING_RESIN'),'T1 For
 ok(upgradeQuote(state,ringId).materials.some(input=>input.itemId==='ASTERFALL_MINERAL_ESSENCE'&&input.quantity===1),'Early enchantments use one rare Mining Essence per attempt');
 ok(!upgradeQuote(state,ringId).materials.some(input=>input.itemId==='VERDANT_BINDING_RESIN'),'Early enchantments must never consume Verdant Binding Resin');
 ok(Math.abs(gearStatsAtRank(ringId,1).defense-(itemDef(ringId).defense??0)*1.04)<.000001,'A +4% improvement must preserve fractional item stats until equipped totals are calculated');
+const previewAtOne=enhancedGearStatsAtRank(state,ringId,1);
+const previewAtTwo=enhancedGearStatsAtRank(state,ringId,2);
+const baseDefense=itemDef(ringId).defense??0;
+ok(Math.abs(previewAtTwo.defense-previewAtOne.defense-baseDefense*.04)<1e-8,
+  'An ordinary gear preview must show the same fractional +4% gain as gameplay');
+ok(Math.abs(enhancedGearStats(state,ringId).defense-enhancedGearStatsAtRank(state,ringId,0).defense)<1e-8,
+  'Current preview and authoritative equipped stats must match');
+const previewInstance={
+  id:'gear-preview-1',itemId:ringId,ownerCharacterId:'gear-preview-test',rarity:'mythic' as const,
+  quality:100,locked:false,statRoll:undefined,acquireSource:'craft' as const,
+  sourceReceiptKey:'gear-preview-1',createdAtMs:0,enhancement:{rank:1,failures:0,gemIds:[] as string[]},
+};
+const premiumState={
+  ...state,
+  character:{...state.character!,equipmentInstanceIds:{...(state.character!.equipmentInstanceIds??{}),ring:previewInstance.id}},
+  account:{...state.account,craftedGearInstances:[previewInstance]},
+};
+const premiumOne=enhancedGearStatsAtRank(premiumState,ringId,1),premiumTwo=enhancedGearStatsAtRank(premiumState,ringId,2);
+const rarityMultiplier=(() => {
+  const rarityOrder=['common','uncommon','rare','epic','legendary','mythic'] as const;
+  const rarityStats={common:1,uncommon:1.08,rare:1.16,epic:1.28,legendary:1.45,mythic:2};
+  const baseRarity=(itemDef(ringId).rarity??'common') as keyof typeof rarityStats;
+  return Math.max(1,rarityStats.mythic/rarityStats[baseRarity]);
+})();
+ok(premiumTwo.defense>premiumOne.defense&&premiumTwo.defense-previewAtTwo.defense>0,
+  'Enhanced rarity/quality gear must have a larger absolute rank gain than common gear');
+ok(Math.abs(enhancedGearStats(premiumState,ringId).defense-premiumOne.defense)<1e-8,
+  'Premium gear preview must match the current equipped stat source');
+
 const before=effectiveStats(state);
 const upgraded=attemptEquipmentUpgrade(state,ringId,.1).state;
 ok(gearEnhancement(upgraded,ringId).rank===1,'Successful upgrade should increase rank');

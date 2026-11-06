@@ -3,9 +3,6 @@ name: Gem and dungeon runtime validation
 # Focused tests must still run while the separate release gate detects
 # out-of-date generated Edge bundles. This does not weaken that release gate.
 on:
-  push:
-    branches:
-      - audit/gem-dungeon-validation-20261106
   pull_request:
     paths:
       - 'apps/mobile/src/core/**'
@@ -67,36 +64,3 @@ jobs:
       - name: Verify dungeon potions and Q-mode merchant behavior
         run: pnpm --dir backend test:qmode-merchant
 
-  sync-edge:
-    name: Regenerate Edge bundles on audit branch (never deploy)
-    if: github.event_name == 'push' && github.ref == 'refs/heads/audit/gem-dungeon-validation-20261106'
-    runs-on: ubuntu-latest
-    permissions:
-      contents: write
-    steps:
-      - uses: actions/checkout@v4
-      - uses: pnpm/action-setup@v4
-        with:
-          version: 10
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 22
-          cache: pnpm
-          cache-dependency-path: backend/pnpm-lock.yaml
-      - run: pnpm --dir backend install --frozen-lockfile
-      - run: pnpm --dir apps/mobile install --frozen-lockfile
-      - name: Regenerate both bundles from canonical engine
-        run: pnpm --dir backend build:online
-      - name: Check regenerated bundle integrity
-        run: node tools/verify-gameplay-edge.mjs
-      - name: Commit only regenerated Edge bundles on this audit branch
-        run: |
-          git add backend/supabase/functions/gameplay/index.ts backend/supabase/functions/coop/index.ts
-          if git diff --cached --quiet; then
-            echo 'Both committed Edge bundles are already current.'
-          else
-            git config user.name 'github-actions[bot]'
-            git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-            git commit -m 'Regenerate gameplay and coop Edge bundles from shared engine'
-            git push origin HEAD:audit/gem-dungeon-validation-20261106
-          fi

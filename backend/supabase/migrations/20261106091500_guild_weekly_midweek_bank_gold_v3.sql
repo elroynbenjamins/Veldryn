@@ -27,7 +27,7 @@ begin
  values(p_guild,'guild_weekly_shared_effort',3,d,'shared-effort-bank-v3','weekly_campaign','mixed',1,'weekly:'||to_char(s at time zone 'UTC','YYYY-MM-DD'),s,s+interval '7 days',n,ceil(n*9600*(1-least(0.10,greatest(0,n-5)*0.004)))::bigint,greatest(1,ceil(n*.2)),250,300,case when n=1 then 1 else .5 end,0) returning id into p;
  insert into guild_project_member_progress(project_instance_id,account_id,was_member_at_start,joined_at_snapshot)
  select p,account_id,true,greatest(joined_at,s) from guild_members where guild_id=p_guild;
-end $function$
+end $function$;
 
 CREATE OR REPLACE FUNCTION public.credit_guild_project_effort_v2(p_account uuid, p_guild uuid, p_effort jsonb, p_now timestamp with time zone)
  RETURNS void
@@ -92,9 +92,9 @@ begin
  allowed:=greatest(0,least(points,ceil(p.target_points*p.single_account_completion_share_cap)-m.completion_points));
  update guild_project_member_progress set raw_points=raw_points+points,completion_points=completion_points+allowed,combat_points=combat_points+combat,skilling_points=skilling_points+skills,first_contribution_at=coalesce(first_contribution_at,p_now),last_contribution_at=p_now where project_instance_id=p.id and account_id=p_account;
  update guild_project_instances set completion_points=completion_points+allowed,combat_points=combat_points+combat,skilling_points=skilling_points+skills,meaningful_contributors=(select count(*) from guild_project_member_progress where project_instance_id=p.id and raw_points>=250) where id=p.id;
- update guild_project_instances set status='completed',completed_at=p_now,completion_snapshot=jsonb_build_object('hallProgress',200,'gold',500) where id=p.id and status<>'completed' and completion_points>=target_points and meaningful_contributors>=minimum_meaningful_contributors;
+ update guild_project_instances set status='completed',completed_at=p_now,completion_snapshot=jsonb_build_object('hallProgress',200,'gold',coalesce((p.definition_snapshot->>'goldReward')::integer,500),'rewardDestination',coalesce(p.definition_snapshot->>'rewardDestination','character')) where id=p.id and status<>'completed' and completion_points>=target_points and meaningful_contributors>=minimum_meaningful_contributors;
  end loop;
-end $function$
+end $function$;
 
 CREATE OR REPLACE FUNCTION public.claim_guild_project_reward_v2(p_project uuid)
 RETURNS jsonb LANGUAGE plpgsql SECURITY DEFINER SET search_path=public AS $claim$

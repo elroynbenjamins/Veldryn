@@ -1,0 +1,47 @@
+name: PR 897 temporary gameplay Edge bundle sync
+
+on:
+  push:
+    branches:
+      - feature/compact-equipment-enhancement-and-role-offense
+    paths:
+      - .github/workflows/pr-897-temporary-bundle-sync.yml
+
+permissions:
+  contents: write
+
+jobs:
+  regenerate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: feature/compact-equipment-enhancement-and-role-offense
+          persist-credentials: true
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+          cache-dependency-path: backend/pnpm-lock.yaml
+      - name: Install backend
+        run: pnpm --dir backend install --frozen-lockfile
+      - name: Install shared mobile
+        run: pnpm --dir apps/mobile install --frozen-lockfile
+      - name: Build shared game Edge bundles
+        run: pnpm --dir backend build:online
+      - name: Verify Edge parity
+        run: node tools/verify-gameplay-edge.mjs
+      - name: Commit generated bundles
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add backend/supabase/functions/gameplay/index.ts backend/supabase/functions/coop/index.ts
+          if ! git diff --cached --quiet; then
+            git commit -m "Regenerate co-op/gameplay Edge bundles for role offense conversion"
+            git fetch origin feature/compact-equipment-enhancement-and-role-offense
+            git rebase origin/feature/compact-equipment-enhancement-and-role-offense
+            git push origin HEAD:feature/compact-equipment-enhancement-and-role-offense
+          fi

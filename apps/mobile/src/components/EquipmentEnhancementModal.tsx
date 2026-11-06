@@ -25,7 +25,7 @@ function CostRow({label,owned,needed}:{label:string;owned:number;needed:number})
  const {gt,gl,language}=useGameplayText();const C=useGameTheme(),s=useMemo(()=>makeStyles(C),[C]),enough=owned>=needed;return <View style={s.costRow}><Text style={s.costLabel}>{label}</Text><Text style={[s.costValue,!enough&&s.missing]}>{owned.toLocaleString()} / {needed.toLocaleString()}</Text><Text accessibilityLabel={enough?gt("Available"):gt("Missing")} style={[s.costMark,enough?s.ready:s.missing]}>{enough?'✓':'!'}</Text></View>}
 function StatPreview({label,current,next}:{label:string;current:number;next:number}){const C=useGameTheme(),s=useMemo(()=>makeStyles(C),[C]),format=(value:number)=>Number.isInteger(value)?String(value):value.toFixed(1);if(!current&&!next)return null;return <View style={s.statRow}><Text style={s.statLabel}>{label}</Text><Text style={s.statCurrent}>{format(current)}</Text><Text style={s.arrow}>›</Text><Text style={s.statNext}>{format(next)}</Text></View>}
 /** Keep precision for small regional gains; never round a positive 4% gain to zero. */
-function formatGearStat(value:number){if(!Number.isFinite(value))return '—';const magnitude=Math.abs(value);const digits=magnitude>0&&magnitude<.01?4:magnitude<.1?3:2;return Number(value.toFixed(digits)).toLocaleString('en-US',{maximumFractionDigits:digits});}
+function formatGearStat(value:number,delta=value){if(!Number.isFinite(value))return '—';const magnitude=Math.abs(delta);const digits=magnitude>0&&magnitude<.01?4:magnitude<.1?3:2;return Number(value.toFixed(digits)).toLocaleString('en-US',{maximumFractionDigits:digits});}
 function UpgradeResultMoment({feedback,itemId,state,reduceMotion}:{feedback:EnhancementFeedbackResult;itemId:string;state:GameState;reduceMotion:boolean}){
  const {gt,gl,language}=useGameplayText();
   const C=useGameTheme(),s=useMemo(()=>makeStyles(C),[C]),scale=useRef(new Animated.Value(1)).current,shake=useRef(new Animated.Value(0)).current;
@@ -144,7 +144,7 @@ export function EquipmentEnhancementModal({visible,state,itemId,onClose,onUpgrad
         {quote.maxed?<View style={s.completedPanel}><Text style={s.completedTitle}>{gt("Fully enhanced")}</Text></View>:<>
           <Text style={s.section}>{gt("Gear stat gains")}</Text>
           <View style={s.compactStatGrid}>
-            {([['ATK',currentStats.attack,nextStats.attack],['DEF',currentStats.defense,nextStats.defense],['HP',currentStats.hp,nextStats.hp]] as Array<[string,number,number]>).filter(([,before,after])=>after!==before).map(([name,before,after])=><View key={name} style={s.compactStatTile}><Text style={s.compactStatLabel}>{name}</Text><Text style={s.compactStatValue}>{'+'+formatGearStat(Math.max(0,after-before))}</Text><Text style={s.compactStatRange} numberOfLines={1}>{formatGearStat(before)+' → '+formatGearStat(after)}</Text></View>)}
+            {([['ATK',currentStats.attack,nextStats.attack],['DEF',currentStats.defense,nextStats.defense],['HP',currentStats.hp,nextStats.hp]] as Array<[string,number,number]>).filter(([,before,after])=>after!==before).map(([name,before,after])=><View key={name} style={s.compactStatTile}><Text style={s.compactStatLabel}>{name}</Text><Text style={s.compactStatValue}>{'+'+formatGearStat(Math.max(0,after-before))}</Text><Text style={s.compactStatRange} numberOfLines={1}>{formatGearStat(before,after-before)+' → '+formatGearStat(after,after-before)}</Text></View>)}
           </View>
           <View style={s.compactChance}>
             <Text style={s.compactChancePct}>{totalChancePct+'%'}</Text>

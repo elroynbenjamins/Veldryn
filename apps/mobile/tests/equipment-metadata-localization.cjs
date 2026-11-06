@@ -46,7 +46,7 @@ assert.equal(itemDetailText('fr','gear'),'Équipement','existing French source t
 assert.equal(itemDetailText('tr','Owned · {total} total · {carried} carried · {banked} banked',{total:9,carried:4,banked:5}),'Sahip olunan: 9 · yanında: 4 · bankada: 5');
 assert.equal(itemDetailContent('ru','Restores 35 HP',value=>value),'Восстанавливает 35 ОЗ');
 assert.equal(itemDetailContent('tr','Salvage: 2× Ironwood Log',value=>value),'Geri dönüşüm: 2× Ironwood Log','never translate variable item names');
-assert.ok(itemDetailContent('ru','Effect Gem · Unreviewed console.log('PASS: equipment tier metadata in all eight languages'); skill',value=>value).includes('Unreviewed console.log('PASS: equipment tier metadata in all eight languages'); skill'),'unknown effect name is opaque');
+assert.ok(itemDetailContent('ru','Effect Gem · Unreviewed custom skill',value=>value).includes('Unreviewed custom skill'),'unknown effect name is opaque');
 assert.equal(itemDetailContent('ru','Unreviewed server item name',value=>value),'Unreviewed server item name','unknown server copy remains untouched');
 assert.equal(earlyLocaleText('ru','Attack'),'Атака','preserve existing starter translations');
 assert.equal(earlyLocaleText('tr','HP'),'CAN','preserve existing starter translations');

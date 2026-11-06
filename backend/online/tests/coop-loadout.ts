@@ -38,6 +38,8 @@ for(const definition of CLASSES){
  * gem-effects-v1 engine tests pass. */
 const equipped=createCharacter(newGame(0),'IRONWARDEN','Dungeon Gem Parity');
 equipped.character!.level=25;
+// A valid dungeon publication needs the class's complete readiness kit.
+equipped.character!.equipment=Object.fromEntries(noviceSetFor('IRONWARDEN').slots.map(slot=>[slot,noviceItemId('IRONWARDEN',slot)]));
 const ringId=V33_EQUIPMENT_RECIPES.find(row=>row.classId==='IRONWARDEN'&&row.v33EquipmentTier==='T1'&&itemDef(row.output.itemId).slot==='ring')!.output.itemId;
 const instanceId='gear:dungeon-gem-parity:ring';
 const baseInstance:CraftedGearInstance={

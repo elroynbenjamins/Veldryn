@@ -14,6 +14,8 @@ type Props={
  skillPoints?:number;
  metrics?:Record<string,number>;
  canUpgrade?:boolean;
+ /** Server-authoritative rank costs; provided for live Guild Skills, never guessed from a static preview. */
+ nodeCosts?:Record<string,Array<{rank:number;resourceId:string;amount:number}>>;
  isReleased?:(id:string)=>boolean;
  onSpend?:(id:string)=>void;
  onViewBank?:()=>void;
@@ -22,7 +24,7 @@ type Props={
 /** Permanent guild-wide skill trees. The server alone owns points, ranks,
  * release gates and bank balances; this component only presents a snapshot.
  * All skill upgrades require a second, explicit confirmation. */
-export function GuildSpecializationPaths({guildLevel,skillPoints,metrics,canUpgrade=false,isReleased,onSpend,onViewBank}:Props){
+export function GuildSpecializationPaths({guildLevel,skillPoints,metrics,nodeCosts,canUpgrade=false,isReleased,onSpend,onViewBank}:Props){
  const C=useGameTheme(),s=useMemo(()=>styles(C),[C]);
  const {width:windowWidth,fontScale}=useWindowDimensions();
  const narrow=windowWidth<350||fontScale>=1.25;
@@ -33,11 +35,18 @@ export function GuildSpecializationPaths({guildLevel,skillPoints,metrics,canUpgr
  const nodes=GUILD_SKILL_NODES.filter(n=>n.major===branch);
  const node=nodes.find(n=>n.id===selected)??nodes[0];
  const rank=(id:string)=>Math.min(3,Math.max(0,Math.floor(metrics?.[`guild_skill_${id}`]??0)));
- const level=rank(node.id),cost=node.costs[level]??{};
+ const level=rank(node.id);
+ // The live server snapshot is the only source of payable amounts. The local
+ // catalogue is used solely for offline/demo previews and release planning.
+ const currentPublishedCosts=nodeCosts?.[node.id]?.filter(row=>row.rank===level+1)??[];
+ const cost=nodeCosts
+  ?Object.fromEntries(currentPublishedCosts.map(row=>[row.resourceId,row.amount]))
+  :node.costs[level]??{};
+ const costsKnown=nodeCosts===undefined||currentPublishedCosts.length>0;
  const released=isReleased?.(node.id)??true;
- const affordable=known&&Object.entries(cost).every(([id,n])=>(metrics?.[`guild_bank_${id}`]??0)>=n);
+ const affordable=known&&costsKnown&&Object.entries(cost).length>0&&Object.entries(cost).every(([id,n])=>(metrics?.[`guild_bank_${id}`]??0)>=n);
  const ready=known&&released&&canUpgrade&&!!onSpend&&(skillPoints??0)>0&&level<3&&affordable;
- const reviewable=known&&released&&canUpgrade&&!!onSpend&&(skillPoints??0)>0&&level<3;
+ const reviewable=known&&costsKnown&&released&&canUpgrade&&!!onSpend&&(skillPoints??0)>0&&level<3;
  const bonus=(n:GuildSkillNode,r:number)=>`+${r*n.perTier}${n.id==='fellowship_membership'?' members':'%'}`;
  const active=known?GUILD_SKILL_NODES.filter(n=>rank(n.id)>0):[];
  const changeBranch=(value:typeof GUILD_MAJOR_BRANCHES[number])=>{
@@ -100,16 +109,16 @@ export function GuildSpecializationPaths({guildLevel,skillPoints,metrics,canUpgr
       const owned=Math.max(0,metrics?.[`guild_bank_${id}`]??0),missing=Math.max(0,needed-owned);
       return <View key={id} style={s.material}>
        <ResourceIcon resourceId={id} size={27}/>
-       <View style={s.flex}><Text numberOfLines={1} style={s.materialName}>{itemDef(id).name}</Text><Text style={s.materialOwned}>Bank: {owned.toLocaleString()}</Text></View>
+       <View style={s.flex}><Text numberOfLines={1} style={s.materialName}>{id==='gold'?'Gold':itemDef(id).name}</Text><Text style={s.materialOwned}>Bank: {owned.toLocaleString()}</Text></View>
        <View style={s.materialRight}><Text style={[s.materialAmount,{color:missing?C.warning:C.good}]}>{needed.toLocaleString()}</Text><Text style={[s.materialStatus,{color:missing?C.warning:C.good}]}>{missing?`Missing ${missing.toLocaleString()}`:'Ready'}</Text></View>
       </View>;
     })}</View>
-    {!released?<Text style={[s.warning,{color:C.warning}]}>This bonus has not been released yet. You can review it but cannot upgrade it.</Text>:!canUpgrade?<Text style={s.copy}>Only Guild Officers and Leaders may allocate skill points.</Text>:!(skillPoints??0)?<Text style={s.copy}>Earn Guild XP to receive more skill points.</Text>:!affordable?<Text style={s.copy}>Deposit the missing materials into the Guild Bank before upgrading.</Text>:null}
+    {!costsKnown?<Text style={[s.warning,{color:C.warning}]}>The Guild Bank upgrade costs are unavailable. Refresh Guild Skills before upgrading.</Text>:!released?<Text style={[s.warning,{color:C.warning}]}>This bonus has not been released yet. You can review it but cannot upgrade it.</Text>:!canUpgrade?<Text style={s.copy}>Only Guild Officers and Leaders may allocate skill points.</Text>:!(skillPoints??0)?<Text style={s.copy}>Earn Guild XP to receive more skill points.</Text>:!affordable?<Text style={s.copy}>Deposit the missing materials or Gold into the Guild Bank before upgrading.</Text>:null}
     <GameButton title="Upgrade · Review cost" disabled={!reviewable} onPress={()=>setReview(true)}/>
    </View>:known?<Text style={[s.warning,{color:C.good}]}>Maximum rank reached.</Text>:<Text style={s.copy}>Live skill ranks and bank materials are unavailable in this preview.</Text>}
    {onViewBank?<GameButton compact title="Open Guild Bank" tone="secondary" onPress={onViewBank}/>:null}
   </View>
-  <Text style={s.footer}>Permanent bonuses · Officer/Leader approval · Shared Guild Bank materials</Text>
+  <Text style={s.footer}>Permanent bonuses · Officer/Leader approval · Shared Guild Bank resources and Gold</Text>
 
   <Modal visible={review} transparent animationType="fade" onRequestClose={close} statusBarTranslucent>
    <View style={s.modalShade}>
@@ -125,12 +134,12 @@ export function GuildSpecializationPaths({guildLevel,skillPoints,metrics,canUpgr
        <Text style={s.compareArrow}>→</Text>
        <View style={s.compareCell}><Text style={s.compareLabel}>AFTER</Text><Text style={[s.compareValue,{color:C.good}]}>{bonus(node,level+1)}</Text></View>
       </View>
-      <Text style={s.eyebrow}>BANK MATERIALS · 1 SKILL POINT</Text>
+      <Text style={s.eyebrow}>BANK MATERIALS & GOLD · 1 SKILL POINT</Text>
       {resources.map(([id,needed])=>{const owned=Math.max(0,metrics?.[`guild_bank_${id}`]??0),remaining=owned-needed;return <View key={id} style={s.modalMaterial}>
-       <ResourceIcon resourceId={id} size={26}/><View style={s.flex}><Text style={s.materialName}>{itemDef(id).name}</Text><Text style={s.materialOwned}>Bank {owned.toLocaleString()} · Cost {needed.toLocaleString()}</Text></View>
+       <ResourceIcon resourceId={id} size={26}/><View style={s.flex}><Text style={s.materialName}>{id==='gold'?'Gold':itemDef(id).name}</Text><Text style={s.materialOwned}>Bank {owned.toLocaleString()} · Cost {needed.toLocaleString()}</Text></View>
        <Text style={[s.materialAmount,{color:remaining>=0?C.good:C.warning}]}>{remaining>=0?`${remaining.toLocaleString()} left`:`${Math.abs(remaining).toLocaleString()} short`}</Text>
       </View>})}
-      <Text style={s.copy}>This permanently spends 1 Guild Skill point and the listed shared materials. The server will recheck permissions and balances.</Text>
+      <Text style={s.copy}>This permanently spends 1 Guild Skill point, materials and Guild Bank Gold shown above. The server will recheck permissions and balances.</Text>
      </ScrollView>
      <View style={s.modalActions}>
       <GameButton title="Confirm upgrade" disabled={!ready} onPress={confirm}/>

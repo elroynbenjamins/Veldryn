@@ -94,6 +94,7 @@ export function OnlineGuildSkillsPanel({onViewBank}:{onViewBank?:()=>void}){
    guildLevel={snapshot.guildLevel}
    skillPoints={snapshot.skillPoints}
    metrics={metrics}
+   nodeCosts={Object.fromEntries(snapshot.nodes.map(node=>[node.id,node.costs]))}
    canUpgrade={snapshot.canUpgrade&&!busy&&!loading}
    isReleased={id=>releasedIds.has(id)}
    onSpend={id=>void spend(id)}

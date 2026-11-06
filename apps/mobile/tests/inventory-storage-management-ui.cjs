@@ -17,6 +17,13 @@ assert(src.includes('filter!==\'all\'||query.trim().length>0'),'Filtered searche
 assert(src.includes('data={gridEntries}')&&src.includes('item?renderStack(item):<View accessible={false}'),'Both storage grids render occupied and empty slots');
 assert(footer.includes('gridPages>1&&<View style={s.storagePaging}>')&&footer.includes('setGridPage(page=>Math.max(0,page-1))')&&footer.includes('setGridPage(page=>Math.min(gridPages-1,page+1))'),'Pagination remains accessible in both directions');
 assert(src.includes('gridEntries.filter((stack):stack is ItemStack=>!!stack)'),'Select shown only selects stacks on the visible page');
+assert(src.includes('[...new Set([...selectedIds,...shown])]')&&src.includes('combined.slice(0,100)'),'Selecting the next page preserves earlier selected items while respecting the 100-stack limit');
+assert(src.includes('hasUnselectedShown=gridEntries.some')&&src.includes('disabled={!hasUnselectedShown}'),'Select shown is disabled when every visible stack is already selected');
+assert(src.includes('gridWidth>=600?8:gridWidth>=440?6:gridWidth>=345?5:4'),'Inventory and Bank share the Gem and Gear pouch density breakpoints');
+assert(src.includes('goldActionsStacked:{flexDirection:\'column\'}')&&src.includes('stackStorageActions&&s.goldActionsStacked'),'Bank Gold controls remain readable on narrow devices');
+assert(src.includes("upgradeRequirement=activeUpgrade")&&src.includes("gt('Need {amount} more Gold'")&&src.includes("gt('Requires character level {level}.'"),'Unavailable upgrades explain the exact level or Gold requirement');
+assert(footer.includes('style={s.storageUpgradeRequirement}'),'Upgrade reason remains visible next to the upgrade action');
+assert(src.includes("activeStacks.length===0&&<Text style={s.emptyGridHint}"),'Empty Inventory/Bank grids have a compact explanation');
 assert(footer.includes('activeCapacity.used}/{activeCapacity.capacity}')&&footer.includes('activeCapacity.percent'),'Capacity progress matches the selected storage');
 assert(footer.includes("activeUpgrade?gt('Next: {count} slots'")&&footer.includes("activeUpgrade.cost"),'The active storage shows a next-capacity preview and its cost');
 assert(footer.includes('disabled={!canUpgradeStorage}')&&src.includes('canUpgradeStorage=!!activeUpgrade')&&src.includes('carriedGold>=activeUpgrade.cost'),'Upgrade availability respects level, Gold, and busy state');

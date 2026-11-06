@@ -262,18 +262,22 @@ export function InventoryScreen({state,viewMemory,foodRequest=0,onEquip,onFood,o
    setPreviewId(null);setPreviewInstanceId(null);
  }}
  onInspect={()=>{setSelectedInstanceId(previewInstanceId);setInspectId(previewId);setPreviewId(null);setPreviewInstanceId(null)}}/><ItemQuickInspect state={state} itemId={inspectId} onClose={closeInspect} onNavigate={destination=>{closeInspect();onNavigateInspect(destination)}} actions={inspectActions}/><FlatList key={gridColumns} data={gridEntries} numColumns={gridColumns} keyExtractor={(stack,index)=>stack?`${location}:${stack.itemId}:${stack.instanceId??'legacy'}`:`${location}:empty:${shownGridPage*STORAGE_PAGE_SIZE+index}`} renderItem={({item})=>item?renderStack(item):<View accessible={false} style={[s.itemTile,s.emptySlot,{width:tileSize,height:tileSize}]}><Text style={s.emptySlotMark}>·</Text></View>} columnWrapperStyle={s.itemGrid} initialNumToRender={12} maxToRenderPerBatch={8} windowSize={3} removeClippedSubviews onLayout={event=>setGridWidth(Math.max(1,Math.min(960,event.nativeEvent.layout.width)-32))} ref={scrollRef} onContentSizeChange={()=>{if(restored.current!==gridColumns){restored.current=gridColumns;scrollRef.current?.scrollToOffset({offset:scrollY.current,animated:false});}}} onScroll={event=>{scrollY.current=event.nativeEvent.contentOffset.y;memory.scrollY=scrollY.current;}} scrollEventThrottle={100} contentContainerStyle={s.root} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false} showsHorizontalScrollIndicator={false} ListHeaderComponent={<View style={s.listSection}>
-    <Text accessibilityRole="header" style={s.h}>{gt("Inventory")}</Text>
-    <Text style={s.sub}>{gl("Everything for your next adventure.")}</Text>
+    <Text accessibilityRole="header" style={s.h}>{gt(location==='inventory'?'Inventory':'Bank')}</Text>
+    <Text style={s.sub}>{gt('{used}/{capacity} slots · {scope}',{used:activeCapacity.used,capacity:activeCapacity.capacity,scope:location==='bank'?gt('Shared across characters'):gt('Character storage')})}</Text>
     <View style={s.storageRow}>{(["inventory","bank"] as const).map(value=><StorageChip key={value} label={value==='inventory'?gt("Inventory"):gt("Bank")} selected={!pouchOpen&&!equipmentPouchOpen&&location===value} status={value==='inventory'?inventoryCapacity:bankCapacity} onPress={()=>changeLocation(value)}/>)}<StorageChip label={accountText(language,'Gems')} selected={pouchOpen} status={storageCapacityStatus(gemPouch(state).stacks,gemPouch(state).capacity)} onPress={openPouch}/><StorageChip label="Gear" selected={equipmentPouchOpen} status={storageCapacityStatus(equipmentPouch(state).stacks,equipmentPouch(state).capacity)} onPress={openEquipmentPouch}/></View>
     
     {location==='bank'&&<View style={s.goldStorage}>
-      <View style={s.goldStorageHead}><View><Text style={s.goldStorageTitle}>Gold Storage</Text><Text style={s.goldStorageBalance}>Carried: {formatGameNumber(carriedGold,state.settings.numberMode,state.settings.language)}g · Bank: {formatGameNumber(bankGold,state.settings.numberMode,state.settings.language)}g</Text></View></View>
+      <Pressable accessibilityRole="button" accessibilityLabel={gt('Gold Storage')} accessibilityState={{expanded:showGoldTransfer}} onPress={()=>setShowGoldTransfer(value=>!value)} style={s.goldStorageHead}>
+        <View style={s.storageSummaryMain}><Text style={s.goldStorageTitle}>{gt('Gold Storage')}</Text><Text style={s.goldStorageBalance}>{gt('Bank: {bank}g · Carried: {carried}g',{bank:formatGameNumber(bankGold,state.settings.numberMode,state.settings.language),carried:formatGameNumber(carriedGold,state.settings.numberMode,state.settings.language)})}</Text></View>
+        <Text style={s.goldToggle}>{showGoldTransfer?'−':'+'}</Text>
+      </Pressable>
+      {showGoldTransfer&&<View style={s.goldTransferBody}>
       <View style={s.goldAllActions}><View style={s.goldAction}><GameButton compact title={gt('Deposit all {amount}g',{amount:formatGameNumber(carriedGold,state.settings.numberMode,state.settings.language)})} disabled={inventoryBusyLabel!==null||carriedGold<1} onPress={()=>transferGold('deposit',carriedGold)}/></View><View style={s.goldAction}><GameButton compact title={gt('Withdraw all {amount}g',{amount:formatGameNumber(bankGold,state.settings.numberMode,state.settings.language)})} tone="secondary" disabled={inventoryBusyLabel!==null||bankGold<1} onPress={()=>transferGold('withdraw',bankGold)}/></View></View>
       <View style={s.goldCustomRow}><TextInput accessibilityLabel="Gold transfer amount" keyboardType="number-pad" placeholder={gt('Custom amount')} placeholderTextColor={C.muted} value={bankGoldAmount} onChangeText={value=>setBankGoldAmount(value.replace(/\D/g,''))} style={s.goldCustomInput}/></View>
       <View style={s.goldAllActions}><View style={s.goldAction}><GameButton compact title={gt('Deposit {amount}g',{amount:validCustomGold?formatGameNumber(customGoldAmount,state.settings.numberMode,state.settings.language):'—'})} tone="secondary" disabled={inventoryBusyLabel!==null||!validCustomGold||customGoldAmount>carriedGold} onPress={()=>transferGold('deposit',customGoldAmount)}/></View><View style={s.goldAction}><GameButton compact title={gt('Withdraw {amount}g',{amount:validCustomGold?formatGameNumber(customGoldAmount,state.settings.numberMode,state.settings.language):'—'})} tone="secondary" disabled={inventoryBusyLabel!==null||!validCustomGold||customGoldAmount>bankGold} onPress={()=>transferGold('withdraw',customGoldAmount)}/></View></View>
+      </View>
     </View>}
-    {activeCapacity.level!=='ok'&&<Text accessibilityRole="alert" style={activeCapacity.level==='full'?s.capacityFull:s.warning}>{gt(activeCapacity.level==='full'?'{location} is full. Free a slot or upgrade storage before receiving another unique stack.':'{location} is {percent}% full · {free} slots remain.',{location:gt(location==='inventory'?'Inventory':'Bank'),percent:activeCapacity.percent,free:activeCapacity.free})}</Text>}
-    {location==='bank'&&<Text style={s.sub}>{gt("Bank materials are available for crafting, but food must be withdrawn for combat.")}</Text>}
+    {activeCapacity.level!=='ok'&&<Text accessibilityRole="alert" style={activeCapacity.level==='full'?s.capacityFull:s.warning}>{gt(activeCapacity.level==='full'?'{location} full · Free a slot or upgrade below.':'{location} · {free} slots left.',{location:gt(location==='inventory'?'Inventory':'Bank'),free:activeCapacity.free})}</Text>}
     <SearchField accessibilityLabel={gt("Search stored items")} placeholder={gt("Search items…")} placeholderTextColor={C.muted} value={query} onChangeText={setQuery}/>
 
     {!!error&&<Text accessibilityRole="alert" style={s.errorText}>{gl(error)}</Text>}
@@ -395,8 +399,10 @@ function makeStyles(C:ThemeColors){const equipmentColors=equipmentTheme(C);retur
   storageChipCount:{fontSize:11,fontWeight:'900'},
   capacityTrack:{height:4,overflow:'hidden',borderRadius:99,backgroundColor:C.bg},
   capacityFill:{height:4,borderRadius:99},
-  goldStorage:{gap:10,padding:spacing.md,borderWidth:1,borderColor:C.lineStrong,borderRadius:14,backgroundColor:C.panel},
-  goldStorageHead:{flexDirection:'row',alignItems:'center',justifyContent:'space-between',gap:spacing.sm},
+  goldStorage:{borderWidth:1,borderColor:C.line,borderRadius:12,backgroundColor:C.panel,overflow:'hidden'},
+  goldTransferBody:{gap:8,paddingHorizontal:spacing.sm,paddingBottom:spacing.sm},
+  goldToggle:{color:C.accent,fontSize:20,fontWeight:'800'},
+  goldStorageHead:{minHeight:54,flexDirection:'row',alignItems:'center',justifyContent:'space-between',gap:spacing.sm,paddingHorizontal:spacing.md,paddingVertical:8},
   goldStorageTitle:{...typography.bodyStrong,color:C.text,fontWeight:'900'},
   goldStorageBalance:{...typography.caption,color:C.muted,marginTop:3},
   goldAllActions:{flexDirection:'row',gap:8},

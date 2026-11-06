@@ -25,8 +25,10 @@ ok(enhancement.includes('result.boss_power=Math.min(.15'),'Boss Effect Gem stack
 ok(enhancement.includes('result.damage_reduction=Math.min(.10'),'Damage-reduction Effect Gem stacking must be capped');
 
 ok(modal.includes('one Stat Gem and one Effect Gem'),'Enhancement UI must explain the two named slots');
-ok(modal.includes("activeSocketKind==='stat'")&&modal.includes('statGems.slice(0,4)')&&modal.includes('onSocket(gem.id)'),'Stat candidates must have a dedicated selectable socket and action');
-ok(modal.includes("activeSocketKind==='effect'")&&modal.includes('effectGems.slice(0,4)')&&modal.includes('onSocket(gem.id)'),'Effect candidates must have a dedicated selectable socket and action');
+ok(modal.includes("activeSocketKind==='stat'?statGems:effectGems")&&modal.includes('candidates.slice(0,4)')&&modal.includes('onSocket(selectedGem.id)'),'Stat candidates must appear in a filtered picker and retain a socket action');
+ok(modal.includes('activeSocketKind')&&modal.includes('effectGems')&&modal.includes('selectedBlocked')&&modal.includes('effectFamilyCopiesV1'),'Effect picker must respect family limits and role recommendations');
+ok(modal.includes('compactStatGrid')&&modal.includes('compactCostGrid')&&modal.includes('compactChance'),'Enhancement must reveal gains, owned materials and chance without opening details');
+ok(modal.includes('gemPickerOpen')&&modal.includes('compactSocket')&&modal.includes('compactCandidateSelected'),'Gem management must show sockets before opening the filtered compare picker');
 ok(slots.includes('statGemFilled')&&slots.includes('effectGemFilled'),'Equipment tiles must show separate Stat/Effect pips');
 ok(character.includes('equipmentTool===\'gems\'')&&character.includes('selectedDecision?.sockets.statFilled')&&character.includes('selectedDecision?.sockets.effectFilled')&&character.includes("openEnhancement('gems')"),'Character Gems tool must show named socket status and preserve management access');
 ok(character.includes("accessibilityLabel={profileT(language,'Stat Gem')")&&character.includes("accessibilityLabel={profileT(language,'Effect Gem')")&&character.includes("onPress={()=>openEnhancement('gems')}"),'Named gem socket rows must be directly actionable without an extra management button');

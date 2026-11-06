@@ -23,7 +23,6 @@ import {GameModalHeader,GameModalSurface} from '../components/GameModalSurface';
 import {EmptyState} from '../components/EmptyState';
 import {ActionFeedback} from '../components/ActionFeedback';
 import {GameButton} from '../components/GameButton';
-import {UiIcon} from '../components/UiIcon';
 import {Panel} from '../components/Panel';
 import {spacing,typography,equipmentTheme,type ThemeColors} from '../theme/theme';
 import {useGameTheme} from '../theme/ThemeContext';
@@ -48,6 +47,7 @@ import {mealBonusDef} from '../core/meal-buffs';
 type Pending={kind:'sell'|'salvage'|'deposit';item:ItemDef;quantity:number}|null;
 type BulkAction='transfer'|'sell'|'salvage';
 type BulkPending={kind:BulkAction;ids:string[]}|null;
+const STORAGE_PAGE_SIZE=30;
 const FILTER_OPTIONS:{id:InventoryFilter;label:string}[]=[{id:'all',label:'All'},{id:'new',label:'New'},{id:'favorites',label:'★ Favorites'},{id:'gear',label:'Gear'},{id:'material',label:'Materials'},{id:'gem',label:'Gems'},{id:'food',label:'Food'},{id:'potion',label:'Potions'},{id:'tool',label:'Tools'},{id:'quest',label:'Quest'}];
 const SORT_OPTIONS:{id:InventorySort;label:string}[]=[{id:'name',label:'Name'},{id:'new',label:'New first'},{id:'favorite',label:'Favorites first'},{id:'quantity',label:'Quantity ↓'},{id:'value',label:'Value ↓'}];
 const signed=(value:number)=>value>0?`+${value}`:String(value);
@@ -71,10 +71,10 @@ export function InventoryScreen({state,viewMemory,foodRequest=0,onEquip,onFood,o
   const {width,fontScale}=useWindowDimensions();
   const stackStorageActions=width<380||fontScale>=1.25;
   const [gridWidth,setGridWidth]=useState(Math.max(280,Math.min(960,width)-32));
-  const gridColumns=gridWidth>=720?6:gridWidth>=480?5:gridWidth<300?3:4,tileSize=Math.floor((gridWidth-(gridColumns-1)*10)/gridColumns),iconSize=Math.min(88,tileSize-14);
+  const gridColumns=gridWidth<300?3:gridWidth>=840?8:gridWidth>=660?6:gridWidth>=480?5:4,tileSize=Math.max(50,Math.floor((gridWidth-(gridColumns-1)*5)/gridColumns)),iconSize=Math.min(42,tileSize-12);
   const memory=useRef(viewMemory??newInventoryScreenState()).current;
   const initial=useRef(foodRequest>memory.foodRequest?openInventoryFood(memory,foodRequest):{...memory}).current;
-  const scrollRef=useRef<FlatList<ItemStack>>(null),scrollY=useRef(initial.scrollY),restored=useRef<number|null>(null);
+  const scrollRef=useRef<FlatList<ItemStack|null>>(null),scrollY=useRef(initial.scrollY),restored=useRef<number|null>(null);
   const [bankGoldAmount,setBankGoldAmount]=useState('');const [copyPending,setCopyPending]=useState<{instanceId:string;method:'sell'|'salvage';name:string}|null>(null);const [pending,setPending]=useState<Pending>(null),[location,setLocation]=useState<'inventory'|'bank'>(initial.location);
   const [pouchOpen,setPouchOpen]=useState(initial.pouchOpen===true);
   const [equipmentPouchOpen,setEquipmentPouchOpen]=useState(false);
@@ -85,7 +85,7 @@ export function InventoryScreen({state,viewMemory,foodRequest=0,onEquip,onFood,o
   const [error,setError]=useState('');
   const [previewId,setPreviewId]=useState<string|null>(null),[previewInstanceId,setPreviewInstanceId]=useState<string|null>(null);
   const [inspectId,setInspectId]=useState<string|null>(null),[selectedInstanceId,setSelectedInstanceId]=useState<string|null>(null);
-  const [showStorage,setShowStorage]=useState(false),[filterOpen,setFilterOpen]=useState(false);
+  const [gridPage,setGridPage]=useState(0),[showGoldTransfer,setShowGoldTransfer]=useState(false),[filterOpen,setFilterOpen]=useState(false);
   const [selectMode,setSelectMode]=useState(false),[selectedIds,setSelectedIds]=useState<string[]>([]),[bulkPending,setBulkPending]=useState<BulkPending>(null);
   const equipmentSnapshot=useMemo(()=>equipmentFeedbackSnapshot(state),[state]);
   const [equipMoment,setEquipMoment]=useState<EquipmentChangeFeedback|null>(null),equipmentSnapshotRef=useRef(equipmentSnapshot);
@@ -117,11 +117,20 @@ export function InventoryScreen({state,viewMemory,foodRequest=0,onEquip,onFood,o
     const inventoryLimit=entitlementStorageCapacity(state,'inventory'),bankLimit=entitlementStorageCapacity(state,'bank');
     return {inventory:storageCapacityStatus(state.inventory.stacks,inventoryLimit),bank:storageCapacityStatus(state.bank.stacks,bankLimit)};
   },[state]);
-  const effectiveInventoryCapacity=capacities.inventory.capacity,effectiveBankCapacity=capacities.bank.capacity;
-  const inventoryCapacity=capacities.inventory,bankCapacity=capacities.bank,activeCapacity=location==='inventory'?inventoryCapacity:bankCapacity;
+    const inventoryCapacity=capacities.inventory,bankCapacity=capacities.bank,activeCapacity=location==='inventory'?inventoryCapacity:bankCapacity;
   const activeStacks=state[location].stacks;
    const activeNewCount=useMemo(()=>new Set(activeStacks.filter(stack=>{const item=itemDef(stack.itemId);return stack.quantity>0&&newItemSet.has(stack.itemId)&&(item.type!=='gear'||isReleasedEquipmentItemId(item.id));}).map(stack=>stack.itemId)).size,[activeStacks,newItemSet]);
   const stacks=useMemo(()=>visibleStacks(activeStacks,query,filter,sort,favorites,newItemIds),[activeStacks,query,filter,sort,favorites,newItemIds]);
+   const isFiltered=filter!=='all'||query.trim().length>0;
+   const totalGridSlots=isFiltered?stacks.length:Math.max(activeCapacity.capacity,stacks.length);
+   const gridPages=Math.max(1,Math.ceil(totalGridSlots/STORAGE_PAGE_SIZE));
+   const shownGridPage=Math.min(gridPage,gridPages-1);
+   const gridEntries=useMemo<(ItemStack|null)[]>(()=>{
+     const start=shownGridPage*STORAGE_PAGE_SIZE;
+     const count=Math.min(STORAGE_PAGE_SIZE,Math.max(0,totalGridSlots-start));
+     return Array.from({length:count},(_,index)=>stacks[start+index]??null);
+   },[shownGridPage,totalGridSlots,stacks]);
+   useEffect(()=>{setGridPage(0);scrollY.current=0;scrollRef.current?.scrollToOffset({offset:0,animated:false});},[location,query,filter,sort]);
   // Normalize once per authoritative equipment snapshot; tile rendering must not
   // scan or re-normalize every crafted copy for every visible inventory tile.
   const exactRecords=useMemo(()=>craftedGearInstances(state),[state.account.craftedGearInstances]);
@@ -133,7 +142,7 @@ export function InventoryScreen({state,viewMemory,foodRequest=0,onEquip,onFood,o
   const openPouch=()=>{exitSelection();restored.current=null;setEquipmentPouchOpen(false);setPouchOpen(true);setPreviewId(null);setPreviewInstanceId(null);setInspectId(null);setError('')};
   const openEquipmentPouch=()=>{exitSelection();restored.current=null;setPouchOpen(false);setEquipmentPouchOpen(true);setPreviewId(null);setPreviewInstanceId(null);setInspectId(null);setError('')};
   const toggleSelection=(itemId:string)=>{setSelectedIds(current=>{if(current.includes(itemId))return current.filter(id=>id!==itemId);if(current.length>=100){setError(gt("Select up to 100 item stacks at once."));return current;}setError('');return [...current,itemId]})};
-  const selectShown=()=>{const ids=[...new Set(stacks.map(stack=>stack.itemId))].slice(0,100);setSelectedIds(ids);setError(stacks.length>100?gt("Selected the first 100 matching stacks."):'')};
+  const selectShown=()=>{const ids=[...new Set(gridEntries.filter((stack):stack is ItemStack=>!!stack).map(stack=>stack.itemId))].slice(0,100);setSelectedIds(ids);setError('')};
   const beginSelection=()=>{setSelectMode(true);setSelectedIds([]);setPreviewId(null);setPreviewInstanceId(null);setInspectId(null);setError('')};
   const beginBulk=(kind:BulkAction)=>{const ids=kind==='transfer'?selectionSummary.transferableIds:kind==='sell'?selectionSummary.sellableIds:selectionSummary.salvageableIds;if(ids.length)setBulkPending({kind,ids})};
   const closeInspect=()=>{if(inspectId&&newItemSet.has(inspectId))run(()=>onAcknowledgeItem(inspectId));setInspectId(null);setSelectedInstanceId(null)};
@@ -171,6 +180,8 @@ export function InventoryScreen({state,viewMemory,foodRequest=0,onEquip,onFood,o
   const remaining=useMemo(()=>claimOverflowToBank(state).overflow.stacks.reduce((sum,item)=>sum+item.quantity,0),[state]);
   const overflowCount=state.overflow.stacks.reduce((sum,item)=>sum+item.quantity,0);
   const inventoryUpgrade=useMemo(()=>storageUpgradePreview(state,'inventory'),[state]),bankUpgrade=useMemo(()=>storageUpgradePreview(state,'bank'),[state]);
+   const activeUpgrade=location==='inventory'?inventoryUpgrade:bankUpgrade;
+   const canUpgradeStorage=!!activeUpgrade&&inventoryBusyLabel===null&&(state.character?.level??0)>=activeUpgrade.level&&carriedGold>=activeUpgrade.cost;
   const inspected=inspectId?itemDef(inspectId):undefined,carried=location==='inventory';
 
   const exactCopies=inspected?.type==='gear'?craftedGearCopiesAt(state,inspected.id,location).map(row=>exactRecordsById.get(row.instanceId)!).filter(Boolean):[];
@@ -250,19 +261,23 @@ export function InventoryScreen({state,viewMemory,foodRequest=0,onEquip,onFood,o
    else await onEquip(id);
    setPreviewId(null);setPreviewInstanceId(null);
  }}
- onInspect={()=>{setSelectedInstanceId(previewInstanceId);setInspectId(previewId);setPreviewId(null);setPreviewInstanceId(null)}}/><ItemQuickInspect state={state} itemId={inspectId} onClose={closeInspect} onNavigate={destination=>{closeInspect();onNavigateInspect(destination)}} actions={inspectActions}/><FlatList key={gridColumns} data={stacks} numColumns={gridColumns} keyExtractor={stack=>`${location}:${stack.itemId}:${stack.instanceId??'legacy'}`} renderItem={({item})=>renderStack(item)} columnWrapperStyle={s.itemGrid} initialNumToRender={12} maxToRenderPerBatch={8} windowSize={3} removeClippedSubviews onLayout={event=>setGridWidth(Math.max(1,Math.min(960,event.nativeEvent.layout.width)-32))} ref={scrollRef} onContentSizeChange={()=>{if(restored.current!==gridColumns){restored.current=gridColumns;scrollRef.current?.scrollToOffset({offset:scrollY.current,animated:false});}}} onScroll={event=>{scrollY.current=event.nativeEvent.contentOffset.y;memory.scrollY=scrollY.current;}} scrollEventThrottle={100} contentContainerStyle={s.root} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false} showsHorizontalScrollIndicator={false} ListHeaderComponent={<View style={s.listSection}>
-    <Text accessibilityRole="header" style={s.h}>{gt("Inventory")}</Text>
-    <Text style={s.sub}>{gl("Everything for your next adventure.")}</Text>
+ onInspect={()=>{setSelectedInstanceId(previewInstanceId);setInspectId(previewId);setPreviewId(null);setPreviewInstanceId(null)}}/><ItemQuickInspect state={state} itemId={inspectId} onClose={closeInspect} onNavigate={destination=>{closeInspect();onNavigateInspect(destination)}} actions={inspectActions}/><FlatList key={gridColumns} data={gridEntries} numColumns={gridColumns} keyExtractor={(stack,index)=>stack?`${location}:${stack.itemId}:${stack.instanceId??'legacy'}`:`${location}:empty:${shownGridPage*STORAGE_PAGE_SIZE+index}`} renderItem={({item})=>item?renderStack(item):<View accessible={false} style={[s.itemTile,s.emptySlot,{width:tileSize,height:tileSize}]}><Text style={s.emptySlotMark}>·</Text></View>} columnWrapperStyle={s.itemGrid} initialNumToRender={12} maxToRenderPerBatch={8} windowSize={3} removeClippedSubviews onLayout={event=>setGridWidth(Math.max(1,Math.min(960,event.nativeEvent.layout.width)-32))} ref={scrollRef} onContentSizeChange={()=>{if(restored.current!==gridColumns){restored.current=gridColumns;scrollRef.current?.scrollToOffset({offset:scrollY.current,animated:false});}}} onScroll={event=>{scrollY.current=event.nativeEvent.contentOffset.y;memory.scrollY=scrollY.current;}} scrollEventThrottle={100} contentContainerStyle={s.root} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false} showsHorizontalScrollIndicator={false} ListHeaderComponent={<View style={s.listSection}>
+    <Text accessibilityRole="header" style={s.h}>{gt(location==='inventory'?'Inventory':'Bank')}</Text>
+    <Text style={s.sub}>{gt('{used}/{capacity} slots · {scope}',{used:activeCapacity.used,capacity:activeCapacity.capacity,scope:location==='bank'?gt('Shared across characters'):gt('Character storage')})}</Text>
     <View style={s.storageRow}>{(["inventory","bank"] as const).map(value=><StorageChip key={value} label={value==='inventory'?gt("Inventory"):gt("Bank")} selected={!pouchOpen&&!equipmentPouchOpen&&location===value} status={value==='inventory'?inventoryCapacity:bankCapacity} onPress={()=>changeLocation(value)}/>)}<StorageChip label={accountText(language,'Gems')} selected={pouchOpen} status={storageCapacityStatus(gemPouch(state).stacks,gemPouch(state).capacity)} onPress={openPouch}/><StorageChip label="Gear" selected={equipmentPouchOpen} status={storageCapacityStatus(equipmentPouch(state).stacks,equipmentPouch(state).capacity)} onPress={openEquipmentPouch}/></View>
     
     {location==='bank'&&<View style={s.goldStorage}>
-      <View style={s.goldStorageHead}><View><Text style={s.goldStorageTitle}>Gold Storage</Text><Text style={s.goldStorageBalance}>Carried: {formatGameNumber(carriedGold,state.settings.numberMode,state.settings.language)}g · Bank: {formatGameNumber(bankGold,state.settings.numberMode,state.settings.language)}g</Text></View></View>
+      <Pressable accessibilityRole="button" accessibilityLabel={gt('Gold Storage')} accessibilityState={{expanded:showGoldTransfer}} onPress={()=>setShowGoldTransfer(value=>!value)} style={s.goldStorageHead}>
+        <View style={s.storageSummaryMain}><Text style={s.goldStorageTitle}>{gt('Gold Storage')}</Text><Text style={s.goldStorageBalance}>{gt('Bank: {bank}g · Carried: {carried}g',{bank:formatGameNumber(bankGold,state.settings.numberMode,state.settings.language),carried:formatGameNumber(carriedGold,state.settings.numberMode,state.settings.language)})}</Text></View>
+        <Text style={s.goldToggle}>{showGoldTransfer?'−':'+'}</Text>
+      </Pressable>
+      {showGoldTransfer&&<View style={s.goldTransferBody}>
       <View style={s.goldAllActions}><View style={s.goldAction}><GameButton compact title={gt('Deposit all {amount}g',{amount:formatGameNumber(carriedGold,state.settings.numberMode,state.settings.language)})} disabled={inventoryBusyLabel!==null||carriedGold<1} onPress={()=>transferGold('deposit',carriedGold)}/></View><View style={s.goldAction}><GameButton compact title={gt('Withdraw all {amount}g',{amount:formatGameNumber(bankGold,state.settings.numberMode,state.settings.language)})} tone="secondary" disabled={inventoryBusyLabel!==null||bankGold<1} onPress={()=>transferGold('withdraw',bankGold)}/></View></View>
       <View style={s.goldCustomRow}><TextInput accessibilityLabel="Gold transfer amount" keyboardType="number-pad" placeholder={gt('Custom amount')} placeholderTextColor={C.muted} value={bankGoldAmount} onChangeText={value=>setBankGoldAmount(value.replace(/\D/g,''))} style={s.goldCustomInput}/></View>
       <View style={s.goldAllActions}><View style={s.goldAction}><GameButton compact title={gt('Deposit {amount}g',{amount:validCustomGold?formatGameNumber(customGoldAmount,state.settings.numberMode,state.settings.language):'—'})} tone="secondary" disabled={inventoryBusyLabel!==null||!validCustomGold||customGoldAmount>carriedGold} onPress={()=>transferGold('deposit',customGoldAmount)}/></View><View style={s.goldAction}><GameButton compact title={gt('Withdraw {amount}g',{amount:validCustomGold?formatGameNumber(customGoldAmount,state.settings.numberMode,state.settings.language):'—'})} tone="secondary" disabled={inventoryBusyLabel!==null||!validCustomGold||customGoldAmount>bankGold} onPress={()=>transferGold('withdraw',customGoldAmount)}/></View></View>
+      </View>}
     </View>}
-    {activeCapacity.level!=='ok'&&<Text accessibilityRole="alert" style={activeCapacity.level==='full'?s.capacityFull:s.warning}>{gt(activeCapacity.level==='full'?'{location} is full. Free a slot or upgrade storage before receiving another unique stack.':'{location} is {percent}% full · {free} slots remain.',{location:gt(location==='inventory'?'Inventory':'Bank'),percent:activeCapacity.percent,free:activeCapacity.free})}</Text>}
-    {location==='bank'&&<Text style={s.sub}>{gt("Bank materials are available for crafting, but food must be withdrawn for combat.")}</Text>}
+    {activeCapacity.level!=='ok'&&<Text accessibilityRole="alert" style={activeCapacity.level==='full'?s.capacityFull:s.warning}>{gt(activeCapacity.level==='full'?'{location} full · Free a slot or upgrade below.':'{location} · {free} slots left.',{location:gt(location==='inventory'?'Inventory':'Bank'),free:activeCapacity.free})}</Text>}
     <SearchField accessibilityLabel={gt("Search stored items")} placeholder={gt("Search items…")} placeholderTextColor={C.muted} value={query} onChangeText={setQuery}/>
 
     {!!error&&<Text accessibilityRole="alert" style={s.errorText}>{gl(error)}</Text>}
@@ -276,30 +291,27 @@ export function InventoryScreen({state,viewMemory,foodRequest=0,onEquip,onFood,o
     {selectMode&&selectedIds.length===0&&<View style={s.selectionEmpty}><Text style={s.selectionEmptyText}>{gt("Select item stacks to manage them together.")}</Text><Pressable accessibilityRole="button" onPress={selectShown} style={({pressed})=>[s.selectionQuickButton,pressed&&s.pressed]}><Text style={s.selectionQuickText}>{gt("Select shown")}</Text></Pressable></View>}
     {selectMode&&selectedIds.length>0&&<Panel><View style={s.selectionHead}><View style={s.resultSummary}><Text style={s.selectionTitle}>{gt('BULK MANAGEMENT · {count} SELECTED',{count:selectedIds.length})}</Text><Text style={s.sub}>{gt("Whole stacks only · up to 100 stacks per action")}</Text></View><View style={s.selectionQuick}><Pressable accessibilityRole="button" onPress={selectShown} style={({pressed})=>[s.selectionQuickButton,pressed&&s.pressed]}><Text style={s.selectionQuickText}>{gt("Select shown")}</Text></Pressable><Pressable accessibilityRole="button" onPress={()=>setSelectedIds([])} style={({pressed})=>[s.selectionQuickButton,pressed&&s.pressed]}><Text style={s.selectionQuickText}>{gt("Clear")}</Text></Pressable></View></View><View style={s.bulkActions}><GameButton compact title={`${location==='inventory'?gt("Deposit"):gt("Withdraw")} · ${selectionSummary.transferableStackCount}`} disabled={!selectionSummary.transferableStackCount} tone="secondary" onPress={()=>beginBulk('transfer')}/>{location==='inventory'&&<GameButton compact title={`${gt("Sell")} · ${selectionSummary.sellableStackCount} · ${formatGameNumber(selectionSummary.sellGold,state.settings.numberMode,state.settings.language)}g`} disabled={!selectionSummary.sellableStackCount} tone="secondary" onPress={()=>beginBulk("sell")}/>} {location==='inventory'&&<GameButton compact title={`${gt("Salvage")} · ${selectionSummary.salvageableStackCount}`} disabled={!selectionSummary.salvageableStackCount} tone="danger" onPress={()=>beginBulk("salvage")}/>}</View>{location==='inventory'&&(selectionSummary.sellProtectedCount>0||selectionSummary.transferProtectedCount>0||selectionSummary.goalProtectedCount>0)&&<Text style={s.selectionNote}>{[gt('{count} selected stacks are excluded by protection or sell rules.',{count:selectionSummary.sellProtectedCount}),selectionSummary.goalProtectedCount?gt('{count} Working Toward stacks remain protected.',{count:selectionSummary.goalProtectedCount}):'',selectionSummary.transferProtectedCount?gt('{count} auto-eat stacks stay in Inventory.',{count:selectionSummary.transferProtectedCount}):''].filter(Boolean).join(' ')}</Text>}</Panel>}
     </View>} ListEmptyComponent={<View style={s.listSection}><EmptyState title={gt("No items to show")} message={gt("Try another storage tab or clear the search and category filter.")}/><GameButton title={gt("Clear filters")} tone="secondary" onPress={()=>{setQuery('');setFilter("all")}}/></View>} ListFooterComponent={<View style={s.listSection}>
-<Text style={s.inspectHint}>{gl('Goal items, favorites and enhanced gear are protected from bulk disposal.')}</Text>
+    {gridPages>1&&<View style={s.storagePaging}>
+      <GameButton compact tone="secondary" title={gt('Previous')} disabled={shownGridPage===0} onPress={()=>{setGridPage(page=>Math.max(0,page-1));scrollRef.current?.scrollToOffset({offset:0,animated:false})}}/>
+      <Text style={s.storageUpgradeMeta}>{shownGridPage+1}/{gridPages}</Text>
+      <GameButton compact tone="secondary" title={gt('Next')} disabled={shownGridPage>=gridPages-1} onPress={()=>{setGridPage(page=>Math.min(gridPages-1,page+1));scrollRef.current?.scrollToOffset({offset:0,animated:false})}}/>
+    </View>}
+    {location==='inventory'&&!selectMode&&<GameButton compact style={s.depositMaterialsButton} title={gt('Deposit all materials')} tone="secondary" disabled={inventoryBusyLabel!==null||!state.inventory.stacks.some(entry=>itemDef(entry.itemId).type==='material')} onPress={()=>beginInventorySubmission(gt('Moving materials to Bank…'),onDepositMaterials)}/>}
     <View style={s.storageManagement}>
-      <Pressable accessibilityRole="button" accessibilityLabel={gt("Storage management")} accessibilityState={{expanded:showStorage}} onPress={()=>setShowStorage(value=>!value)} style={({pressed})=>[s.disclosure,showStorage&&s.disclosureExpanded,pressed&&s.pressed]}>
-        <View style={s.flex}><Text style={s.disclosureTitle}>{gt("STORAGE MANAGEMENT")}</Text><Text style={s.disclosureSubtitle}>{gt("Bulk deposit and capacity upgrades")}</Text></View>
-        <View style={[s.disclosureArrow,showStorage&&s.disclosureArrowOpen]}><UiIcon name="next" size={18} muted/></View>
-      </Pressable>
-      {showStorage&&<View style={s.storageManagementContent}>
-        <Text style={s.storageExplanation}>Inventory and Equipment Pouch belong to the selected character. Gem Pouch and Bank are shared. Earned gems and equipment go to their pouches first, with Inventory and Bank as fallbacks.</Text>
-        {location==='inventory'&&!selectMode&&<GameButton compact style={s.depositMaterialsButton} title={gt("Deposit all materials")} tone="secondary" disabled={inventoryBusyLabel!==null||!state.inventory.stacks.some(entry=>itemDef(entry.itemId).type==='material')} onPress={()=>beginInventorySubmission(gt("Moving materials to Bank…"),onDepositMaterials)}/>}
-        <View style={s.storageUpgradeList}>
-          {([
-            {id:'inventory' as const,label:gt("Inventory"),capacity:effectiveInventoryCapacity,base:state.inventory.capacity,upgrade:inventoryUpgrade},
-            {id:'bank' as const,label:gt("Bank"),capacity:effectiveBankCapacity,base:state.bank.capacity,upgrade:bankUpgrade},
-          ]).map(row=><View key={row.id} style={[s.storageUpgradeRow,stackStorageActions&&s.storageUpgradeRowStacked]}>
-            <View style={[s.storageUpgradeDetails,stackStorageActions&&s.storageUpgradeDetailsStacked]}>
-              <Text style={s.storageUpgradeTitle}>{gt('{location} · {count} slots',{location:row.label,count:row.capacity})}{row.capacity>row.base?' · '+gt('{count} base',{count:row.base}):''}</Text>
-              <Text style={s.storageUpgradeMeta}>{row.upgrade?`${gt("Level")} ${row.upgrade.level} · ${formatGameNumber(row.upgrade.cost,state.settings.numberMode,state.settings.language)}g`:gt("Maximum storage capacity reached")}</Text>
-            </View>
-            <View style={[s.storageUpgradeAction,stackStorageActions&&s.storageUpgradeActionStacked]}>
-              <GameButton compact style={s.storageUpgradeButton} title={row.upgrade?gt('Upgrade to {capacity}',{capacity:row.upgrade.capacity}):gt("Maxed")} tone="secondary" disabled={inventoryBusyLabel!==null||!row.upgrade||(state.character?.level??0)<row.upgrade.level||(state.character?.gold??0)<row.upgrade.cost} onPress={()=>beginInventorySubmission(gt(row.id==='inventory'?"Upgrading Inventory…":"Upgrading Bank…"),()=>onUpgradeStorage(row.id))}/>
-            </View>
-          </View>)}
+      <View style={s.storageSummary}>
+        <View style={s.storageSummaryMain}><Text style={s.storageUpgradeTitle}>{gt('{location} storage',{location:gt(location==='inventory'?'Inventory':'Bank')})}</Text><Text style={s.storageUpgradeMeta}>{activeCapacity.used}/{activeCapacity.capacity} {gt('slots')}</Text></View>
+        <Text style={[s.storageUpgradeMeta,activeCapacity.level==='full'&&s.capacityFull]}>{activeCapacity.free} {gt('free')}</Text>
+      </View>
+      <View style={s.capacityTrack}><View style={[s.capacityFill,{width:`${activeCapacity.percent}%` as `${number}%`,backgroundColor:activeCapacity.level==='full'?C.bad:activeCapacity.level==='near'?C.warning:equipmentColors.selectedLine}]}/></View>
+      <View style={[s.storageUpgradeRow,stackStorageActions&&s.storageUpgradeRowStacked]}>
+        <View style={[s.storageUpgradeDetails,stackStorageActions&&s.storageUpgradeDetailsStacked]}>
+          <Text style={s.storageUpgradeTitle}>{activeUpgrade?gt('Next: {count} slots',{count:activeUpgrade.capacity}):gt('Maximum capacity reached')}</Text>
+          {activeUpgrade?<Text style={s.storageUpgradeMeta}>{gt('Level {level} · {gold} Gold',{level:activeUpgrade.level,gold:formatGameNumber(activeUpgrade.cost,state.settings.numberMode,state.settings.language)})}</Text>:null}
         </View>
-      </View>}
+        <View style={[s.storageUpgradeAction,stackStorageActions&&s.storageUpgradeActionStacked]}>
+          <GameButton compact style={s.storageUpgradeButton} title={activeUpgrade?gt('Upgrade'):gt('Maxed')} tone="secondary" disabled={!canUpgradeStorage} onPress={()=>beginInventorySubmission(gt(location==='inventory'?'Upgrading Inventory…':'Upgrading Bank…'),()=>onUpgradeStorage(location))}/>
+        </View>
+      </View>
     </View>
     {overflowCount>0&&<Panel><Text style={s.title}>{ot(state.settings.language,'overflow.title')} · {overflowCount}</Text><Text style={s.warning}>{ot(state.settings.language,'overflow.body')}</Text>{state.overflow.stacks.map((stack,index)=><Text key={`${stack.itemId}:${index}`} style={s.sub}>{stack.quantity}× {localizedItemName(language,stack.itemId)}</Text>)}{state.overflow.expiresAtMs!==null&&<Text style={s.warning}>{gt('Recorded expiry: {date}',{date:new Date(state.overflow.expiresAtMs).toLocaleString(language)})}</Text>}<GameButton title={ot(state.settings.language,'overflow.move',{count:overflowCount-remaining})} disabled={remaining===overflowCount} onPress={()=>beginInventorySubmission(gt("Moving Overflow items…"),onOverflow)}/>{remaining>0&&<Text style={s.sub}>{ot(state.settings.language,'overflow.remain',{count:remaining})}</Text>}</Panel>}
   </View>}/>
@@ -352,29 +364,22 @@ function makeStyles(C:ThemeColors){const equipmentColors=equipmentTheme(C);retur
   capacityFull:{...typography.bodyStrong,color:C.bad},
   errorText:{...typography.body,color:C.bad,padding:spacing.sm,borderWidth:1,borderColor:C.bad,borderRadius:8,backgroundColor:C.badSurface},
   label:{...typography.caption,color:C.accent,fontWeight:'700'},
-  storageManagement:{borderWidth:1,borderColor:C.line,borderRadius:14,backgroundColor:C.panel,overflow:'hidden'},
-  disclosure:{minHeight:60,flexDirection:'row',alignItems:'center',gap:spacing.sm,paddingHorizontal:spacing.md,paddingVertical:10},
-  disclosureExpanded:{borderBottomWidth:1,borderBottomColor:C.line},
-  disclosureTitle:{...typography.caption,color:C.text,fontWeight:'900',letterSpacing:.7},
-  disclosureSubtitle:{...typography.caption,color:C.muted,marginTop:2},
-  disclosureArrow:{width:32,height:32,alignItems:'center',justifyContent:'center',borderRadius:9,backgroundColor:C.panel2,transform:[{rotate:'90deg'}]},
-  disclosureArrowOpen:{transform:[{rotate:'-90deg'}]},
-  storageManagementContent:{gap:10,padding:12},
-  storageExplanation:{...typography.caption,color:C.muted,lineHeight:19},
-  depositMaterialsButton:{width:'100%',minHeight:46},
-  storageUpgradeList:{gap:8},
-  storageUpgradeRow:{minHeight:76,flexDirection:'row',alignItems:'center',gap:12,paddingHorizontal:12,paddingVertical:10,borderWidth:1,borderColor:C.line,borderRadius:11,backgroundColor:C.panel2},
+  storageManagement:{gap:10,padding:12,borderWidth:1,borderColor:C.line,borderRadius:12,backgroundColor:C.panel},
+  storageSummary:{flexDirection:'row',alignItems:'center',gap:8},
+  storageSummaryMain:{flex:1,minWidth:0},
+  depositMaterialsButton:{width:'100%',minHeight:44},
+  storageUpgradeRow:{flexDirection:'row',alignItems:'center',gap:10,paddingTop:8,borderTopWidth:1,borderTopColor:C.line},
   storageUpgradeRowStacked:{alignItems:'stretch',flexDirection:'column',gap:8},
   storageUpgradeDetails:{flex:1,minWidth:0,gap:4},
   storageUpgradeDetailsStacked:{flex:0,width:'100%'},
   storageUpgradeTitle:{...typography.bodyStrong,color:C.text},
   storageUpgradeMeta:{...typography.caption,color:C.muted},
-  storageUpgradeAction:{width:144,flexShrink:0},
+  storageUpgradeAction:{width:116,flexShrink:0},
   storageUpgradeActionStacked:{width:'100%'},
   storageUpgradeButton:{width:'100%',minHeight:44},
   chipRow:{flexDirection:'row',flexWrap:'wrap',gap:6},
   storageRow:{flexDirection:'row',gap:5},
-  storageChip:{flex:1,minWidth:0,minHeight:48,gap:7,justifyContent:'center',paddingHorizontal:6,paddingVertical:8,borderWidth:1,borderColor:C.line,borderRadius:12,backgroundColor:C.panel},
+  storageChip:{flex:1,minWidth:0,minHeight:48,gap:6,justifyContent:'center',paddingHorizontal:6,paddingVertical:8,borderWidth:1,borderColor:C.line,borderRadius:10,backgroundColor:C.panel},
   storageChipSelected:{borderColor:equipmentColors.selectedLine,backgroundColor:equipmentColors.selected},
   storageChipFull:{borderColor:C.bad},
   storageChipTop:{flexDirection:'row',alignItems:'center',justifyContent:'space-between',gap:8},
@@ -384,8 +389,10 @@ function makeStyles(C:ThemeColors){const equipmentColors=equipmentTheme(C);retur
   storageChipCount:{fontSize:11,fontWeight:'900'},
   capacityTrack:{height:4,overflow:'hidden',borderRadius:99,backgroundColor:C.bg},
   capacityFill:{height:4,borderRadius:99},
-  goldStorage:{gap:10,padding:spacing.md,borderWidth:1,borderColor:C.lineStrong,borderRadius:14,backgroundColor:C.panel},
-  goldStorageHead:{flexDirection:'row',alignItems:'center',justifyContent:'space-between',gap:spacing.sm},
+  goldStorage:{borderWidth:1,borderColor:C.line,borderRadius:12,backgroundColor:C.panel,overflow:'hidden'},
+  goldTransferBody:{gap:8,paddingHorizontal:spacing.sm,paddingBottom:spacing.sm},
+  goldToggle:{color:C.accent,fontSize:20,fontWeight:'800'},
+  goldStorageHead:{minHeight:54,flexDirection:'row',alignItems:'center',justifyContent:'space-between',gap:spacing.sm,paddingHorizontal:spacing.md,paddingVertical:8},
   goldStorageTitle:{...typography.bodyStrong,color:C.text,fontWeight:'900'},
   goldStorageBalance:{...typography.caption,color:C.muted,marginTop:3},
   goldAllActions:{flexDirection:'row',gap:8},
@@ -430,7 +437,9 @@ function makeStyles(C:ThemeColors){const equipmentColors=equipmentTheme(C);retur
   utilityRow:{flexDirection:'row',gap:6},
   inspectHint:{...typography.caption,color:C.muted,textAlign:'center'},
   gridHead:{flexDirection:'row',alignItems:'center',justifyContent:'space-between',gap:8,paddingTop:2},gridLabel:{...typography.caption,color:C.accent,fontWeight:'900',letterSpacing:.8},gridMeta:{...typography.caption,color:C.muted},
-  itemGrid:{flexDirection:'row',gap:10},
+  itemGrid:{flexDirection:'row',gap:5},
+   emptySlot:{borderColor:C.line,backgroundColor:C.bg},emptySlotMark:{fontSize:16,color:C.muted,opacity:.45},
+   storagePaging:{flexDirection:'row',alignItems:'center',justifyContent:'space-between',gap:8},
   itemTile:{position:'relative',alignItems:'center',justifyContent:'center',borderWidth:1,borderRadius:10},
   itemOpen:{width:'100%',height:'100%',alignItems:'center',justifyContent:'center'},
   itemCorner:{position:'absolute',top:2,width:26,height:26,alignItems:'center',justifyContent:'center',borderWidth:1,borderRadius:7,borderColor:C.line,backgroundColor:C.panel},

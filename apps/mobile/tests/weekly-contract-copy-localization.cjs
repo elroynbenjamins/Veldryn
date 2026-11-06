@@ -13,7 +13,7 @@ const {weeklyOrderCopyRows,weeklyOrderText,weeklyOrderTitle,weeklyOrderBrief,wee
 const languages=['en','de','es','nl','it','fr','ru','tr'];
 assert.deepEqual([...SUPPORTED_LANGUAGES],languages);
 const keys=Object.keys(weeklyOrderCopyRows);
-assert.equal(keys.length,42,'39 authored and dynamic strings plus three fallbacks');
+assert.equal(keys.length,56,'complete weekly contract authorship: 16 regional stories, generated titles and safe fallbacks');
 const tokens=s=>[...s.matchAll(/\{([a-zA-Z][a-zA-Z0-9_]*)\}/g)].map(x=>x[1]).sort();
 for(const key of keys){
  const row=weeklyOrderCopyRows[key];assert.equal(row.length,7,'seven non-English languages: '+key);
@@ -50,13 +50,20 @@ assert.equal(weeklyOrderDestinationLabel('fr',work,'button'),weeklyOrderText('fr
 assert.equal(weeklyOrderDestinationLabel('tr',work,'detail'),weeklyOrderText('tr','Open the exact {name} activity for this Work Order.',{name:action.name}));
 assert.equal(weeklyOrderText('tr','User generated odd text'),'User generated odd text');
 const regionSrc=fs.readFileSync(path.join(__dirname,'../src/core/launch-readiness-v47.ts'),'utf8');
-const early=regionSrc.slice(regionSrc.indexOf('GREENFIELDS:['),regionSrc.indexOf('SUNSCAR:['));
-const pairs=[...early.matchAll(/\{key:'([^']+)',title:'([^']+)',brief:'([^']+)'\}/g)];
-assert.equal(pairs.length,10,'all first five region seed pairs must be represented');
+const seeds=regionSrc.slice(regionSrc.indexOf('GREENFIELDS:['),regionSrc.indexOf('const regionalProblems='));
+const pairs=[...seeds.matchAll(/\{key:'([^']+)',title:'([^']+)',brief:'([^']+)'\}/g)];
+assert.equal(pairs.length,16,'all eight regions and their sixteen authored problems must be represented');
 for(const [,key,title,brief]of pairs){
  assert.ok(Object.hasOwn(weeklyOrderCopyRows,title),'missing '+key+' title');
  assert.ok(Object.hasOwn(weeklyOrderCopyRows,brief),'missing '+key+' narrative');
 }
+const generic={...template,title:'Trouble in Greenfields',brief:'Local routes through Greenfields need adventurers to keep normal activity moving.'};
+for(const language of languages){
+ assert.equal(weeklyOrderTitle(language,generic),weeklyOrderText(language,'Trouble in {region}',{region:'Greenfields'}),'generic regional title '+language);
+ assert.equal(weeklyOrderBrief(language,generic),weeklyOrderText(language,'Local routes through {region} need adventurers to keep normal activity moving.',{region:'Greenfields'}),'generic regional description '+language);
+}
+assert.equal(weeklyOrderTitle('nl',{...generic,title:'Custom region problem'}),'Custom region problem','unknown regional names stay unchanged');
+assert.equal(weeklyOrderBrief('tr',{...generic,brief:'Custom server details'}),'Custom server details','unknown regional brief stays unchanged');
 for(const file of ['QuestRefinedScreen.tsx','QuestScreen.tsx']){
  const s=fs.readFileSync(path.join(__dirname,'../src/screens',file),'utf8');
  for(const text of ['weeklyOrderTitle(language,','weeklyOrderBrief(language,','weeklyOrderReward(language,','weeklyOrderDestinationLabel(language,'])
@@ -65,4 +72,4 @@ for(const file of ['QuestRefinedScreen.tsx','QuestScreen.tsx']){
  const ast=ts.createSourceFile(file,s,ts.ScriptTarget.Latest,true,ts.ScriptKind.TSX);
  assert.equal(ast.parseDiagnostics.length,0,file+' must parse as JSX');
 }
-console.log('PASS: 42 weekly-contract display templates, 10 regional seed story pairs, dynamic names, canonical destinations and both Quest layouts');
+console.log('PASS: 56 weekly-contract display templates, 16 regional seed story pairs, generic fallback and canonical destinations in both Quest layouts');

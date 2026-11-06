@@ -204,10 +204,12 @@ export function InventoryScreen({state,viewMemory,foodRequest=0,onEquip,onFood,o
   const previewFavorite=!!previewId&&favoriteSet.has(previewId);
   const previewLocked=!!previewId&&(lockedSet.has(previewId)||previewRecord?.locked===true);
   const changeInspectLock=()=>{if(!inspected)return;
+    if(lockedSet.has(inspected.id))return beginInventorySubmission('Updating item lock…',()=>onToggleLock(inspected.id));
     if(selectedCopy&&onCommand)return beginInventorySubmission('Updating equipment lock…',()=>onCommand({type:'gear_lock',args:{instanceId:selectedCopy.id,locked:!selectedCopy.locked}}));
     return beginInventorySubmission('Updating item lock…',()=>onToggleLock(inspected.id));
   };
   const changePreviewLock=()=>{if(!previewId)return;
+    if(lockedSet.has(previewId))return beginInventorySubmission('Updating item lock…',()=>onToggleLock(previewId));
     if(previewRecord&&onCommand)return beginInventorySubmission('Updating equipment lock…',()=>onCommand({type:'gear_lock',args:{instanceId:previewRecord.id,locked:!previewRecord.locked}}));
     return beginInventorySubmission('Updating item lock…',()=>onToggleLock(previewId));
   };
@@ -227,7 +229,7 @@ export function InventoryScreen({state,viewMemory,foodRequest=0,onEquip,onFood,o
         else runInventory({kind:'withdraw',itemId:id,quantity:amount},()=>onWithdraw(id,amount));
         closeInspect();
       }}/></View>
-      {inspected.value>0?<View style={s.inspectQuickButton}><GameButton compact title={gt('Sell {count} · {gold}g',{count:inspectAmount,gold:formatGameNumber(inspected.value*inspectAmount,state.settings.numberMode,language)})} tone="secondary" disabled={inventoryBusyLabel!==null||inspectLocked||inspectFavorite||goalProtection.has(inspected.id)} onPress={()=>{setPending({kind:carried?'sell':'bank_sell',item:inspected,quantity:inspectAmount});closeInspect()}}/></View>:null}
+      {inspected.value>0?<View style={s.inspectQuickButton}><GameButton compact title={gt('Sell')+' · '+formatGameNumber(inspected.value*inspectAmount,state.settings.numberMode,language)+'g'} tone="secondary" disabled={inventoryBusyLabel!==null||inspectLocked||inspectFavorite||goalProtection.has(inspected.id)} onPress={()=>{setPending({kind:carried?'sell':'bank_sell',item:inspected,quantity:inspectAmount});closeInspect()}}/></View>:null}
     </View>
   </View>:null;
   const inspectActions=inspected?<View style={s.inspectActions}>

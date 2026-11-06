@@ -1,5 +1,6 @@
 import type {Language} from './languages';
 import type {QuestActDef,QuestDef} from '../content/quests';
+import {chapterTwoActCopy,chapterTwoQuestCopy} from './quest-story-act-two';
 
 /** Reviewed Chapter I source copy. IDs and exact English wording must both match.
  * Monster and region names stay untouched; unknown or revised text falls back verbatim.
@@ -195,14 +196,17 @@ export const chapterOneQuestCopy={
   }
 } as const satisfies Record<string,Record<StoryField,EightLanguages>>;
 
+const localizedActCopy={1:chapterOneActCopy[1],2:chapterTwoActCopy[2]} as const;
+const localizedQuestCopy:Record<string,Record<StoryField,EightLanguages>>={...chapterOneQuestCopy,...chapterTwoQuestCopy};
+
 export function localizedQuestActText(language:Language,act:QuestActDef,field:'name'|'subtitle'):string{
-  if(act.act!==1)return act[field];
-  const row=chapterOneActCopy[1][field];
+  if(!Object.prototype.hasOwnProperty.call(localizedActCopy,act.act))return act[field];
+  const row=localizedActCopy[act.act as keyof typeof localizedActCopy][field];
   return row[0]===act[field]?row[languageColumn[language]]:act[field];
 }
 export function localizedQuestStoryText(language:Language,quest:Pick<QuestDef,'id'|StoryField>,field:StoryField):string{
-  if(!Object.prototype.hasOwnProperty.call(chapterOneQuestCopy,quest.id))return quest[field];
-  const row=chapterOneQuestCopy[quest.id as keyof typeof chapterOneQuestCopy][field];
+  if(!Object.prototype.hasOwnProperty.call(localizedQuestCopy,quest.id))return quest[field];
+  const row=localizedQuestCopy[quest.id][field];
   return row[0]===quest[field]?row[languageColumn[language]]:quest[field];
 }
 /** Search both the existing English catalog and reviewed localized chapter prose.

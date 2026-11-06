@@ -38,8 +38,10 @@ for(const field of ['name','subtitle']){
 }
 assert.equal(localizedQuestStoryText('de',{...firstAct[0],name:'New server name'},'name'),'New server name','source text must match before translating');
 assert.equal(localizedQuestStoryText('ru',{...firstAct[0],story:'Updated author text'},'story'),'Updated author text','unknown revised lore untouched');
-assert.equal(localizedQuestStoryText('nl',QUESTS[5],'name'),QUESTS[5].name,'Acts II and III intentionally fall back');
-assert.equal(localizedQuestActText('es',QUEST_ACTS[2],'name'),QUEST_ACTS[2].name,'unknown act unchanged');
+assert.notEqual(localizedQuestStoryText('nl',QUESTS[5],'name'),QUESTS[5].name,'Act II should be translated');
+assert.equal(localizedQuestStoryText('nl',QUESTS[10],'name'),QUESTS[10].name,'Act III intentionally falls back pending a later pass');
+assert.notEqual(localizedQuestActText('es',QUEST_ACTS[2],'name'),QUEST_ACTS[2].name,'Act II title translated');
+assert.equal(localizedQuestActText('es',QUEST_ACTS[3],'name'),QUEST_ACTS[3].name,'Act III falls back pending a later pass');
 assert.equal(localizedQuestStoryText('tr',{...firstAct[0],id:'UNRECOGNIZED'},'name'),firstAct[0].name,'unknown quest ID unchanged');
 assert.equal(questMatchesLocalizedSearch('nl',firstAct[3],'gereedschap'),true,'localized title search');
 assert.equal(questMatchesLocalizedSearch('de',firstAct[1],'Quartiermeister'),true,'localized lore search');

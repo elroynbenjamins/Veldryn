@@ -18,7 +18,7 @@ const fields=['name','description','story'];
 const firstAct=QUESTS.filter(q=>q.act===1);
 assert.equal(firstAct.length,5,'current Chapter I quest source count');
 assert.deepEqual(Object.keys(chapterOneQuestCopy).sort(),firstAct.map(x=>x.id).sort(),'exact Chapter I IDs');
-const tokens=x=>[...x.matchAll(/\\{([A-Za-z][A-Za-z0-9_]*)\\}/g)].map(m=>m[1]).sort();
+const tokens=x=>[...x.matchAll(/\{([A-Za-z][A-Za-z0-9_]*)\}/g)].map(m=>m[1]).sort();
 for(const quest of firstAct)for(const field of fields){
  const variants=chapterOneQuestCopy[quest.id][field];
  assert.equal(variants.length,8,quest.id+field+' locale count');

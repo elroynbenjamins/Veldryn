@@ -7,6 +7,7 @@ import {equipmentPouchSaleCandidates,equipmentPouchQuickSellIds,type EquipmentPo
 import {craftedGearDisplayQuality,craftedGearInstances} from '../core/crafted-gear-instances';
 import {itemDef} from '../content/items';
 import {localizedItemName} from '../i18n/starter-item-names';
+import {equipmentPouchText} from '../i18n/equipment-pouch-ui';
 import {useGameLanguage} from '../i18n/GameLanguageProvider';
 import {itemRarity,rarityMeta} from '../core/item-rarity';
 import {ItemArtwork} from './ItemArtwork';
@@ -22,6 +23,7 @@ const PAGE_SIZE=30;
 export function EquipmentPouchPanel({state,busy=false,onAction}:{state:GameState;busy?:boolean;onAction?:(command:GameCommand)=>void|Promise<unknown>}){
  const C=useGameTheme(),s=useMemo(()=>styles(C),[C]);
  const language=useGameLanguage();
+ const p=(text:string,params?:Record<string,string|number>)=>equipmentPouchText(language,text,params);
  const pouch=equipmentPouch(state),upgrade=equipmentPouchUpgradePreview(state);
  const [page,setPage]=useState(0),[selectedIndex,setSelectedIndex]=useState<number|null>(null),[gridWidth,setGridWidth]=useState(300);
  const [previewStack,setPreviewStack]=useState<ItemStack|null>(null);
@@ -77,25 +79,25 @@ export function EquipmentPouchPanel({state,busy=false,onAction}:{state:GameState
  };
  return <View style={s.root}>
   <View style={s.heading}>
-   <View style={s.flex}><Text accessibilityRole="header" style={s.title}>Equipment Pouch</Text>
-    <Text style={s.meta}>{pouch.stacks.length}/{pouch.capacity} slots · {state.character?.name??'Character'} only</Text></View>
+   <View style={s.flex}><Text accessibilityRole="header" style={s.title}{p('Equipment Pouch')}</Text>
+    <Text style={s.meta}>{p('{used}/{capacity} slots · {character} only',{used:pouch.stacks.length,capacity:pouch.capacity,character:state.character?.name??p('Character')})}</Text></View>
   </View>
-  <Text style={s.hint}>New gear arrives here first. Compare, equip, transfer or sell copies directly. The Bank remains shared.</Text>
+  <Text style={s.hint}{p('New gear arrives here first. Compare, equip, transfer or sell copies directly. The Bank remains shared.')}</Text>
   <View style={s.sellToolbar}>
    {selectMode?<>
-    <GameButton compact tone="secondary" title="Select safe" disabled={busy||!onAction} onPress={selectSafe}/>
-    <GameButton compact tone="secondary" title="Clear" disabled={busy||!selectedIds.length} onPress={()=>setSelectedIds([])}/>
-    <GameButton compact tone="secondary" title="Done" disabled={busy} onPress={()=>{setSelectMode(false);setSelectedIds([])}}/>
+    <GameButton compact tone="secondary" title={p('Select safe')} disabled={busy||!onAction} onPress={selectSafe}/>
+    <GameButton compact tone="secondary" title={p('Clear')} disabled={busy||!selectedIds.length} onPress={()=>setSelectedIds([])}/>
+    <GameButton compact tone="secondary" title={p('Done')} disabled={busy} onPress={()=>{setSelectMode(false);setSelectedIds([])}}/>
    </>:<>
-    <GameButton compact tone="secondary" title="Select gear" disabled={busy||!onAction||!pouch.stacks.length} onPress={()=>{setSelectedIndex(null);setSelectMode(true);setSelectedIds([])}}/>
-    <GameButton compact title="Select safe to sell" disabled={busy||!onAction||!equipmentPouchQuickSellIds(saleCandidates).length} onPress={selectSafe}/>
+    <GameButton compact tone="secondary" title={p('Select gear')} disabled={busy||!onAction||!pouch.stacks.length} onPress={()=>{setSelectedIndex(null);setSelectMode(true);setSelectedIds([])}}/>
+    <GameButton compact title={p('Select safe to sell')} disabled={busy||!onAction||!equipmentPouchQuickSellIds(saleCandidates).length} onPress={selectSafe}/>
    </>}
   </View>
   {selectMode?<View style={s.sellSummary}>
-   <Text style={s.meta}>{saleCount} selected · {saleGold.toLocaleString()} Gold{protectedCount?' · '+protectedCount+' protected':''}</Text>
-   <GameButton compact title={saleCount?'Sell selected · '+saleGold.toLocaleString()+'g':'Select gear'} tone="danger"
+   <Text style={s.meta}>{p('{count} selected · {gold} Gold',{count:saleCount,gold:saleGold.toLocaleString(language)})}{protectedCount?p(' · {count} protected',{count:protectedCount}):''}</Text>
+   <GameButton compact title={saleCount?p('Sell selected · {gold}g',{gold:saleGold.toLocaleString(language)}):p('Select gear')} tone="danger"
     disabled={!onAction||busy||!selectionValid} onPress={()=>startSale(selectedIds)}/>
-  </View>:<Text style={s.hint}>Quick-selects only eligible Common, Uncommon and Rare gear. Epic, Legendary and Mythic need manual selection.</Text>}
+  </View>:<Text style={s.hint}{p('Quick-selects only eligible Common, Uncommon and Rare gear. Epic, Legendary and Mythic need manual selection.')}</Text>}
   <View style={s.grid} onLayout={event=>{const width=Math.floor(event.nativeEvent.layout.width);setGridWidth(previous=>previous===width?previous:width)}}>
    {entries.map((stack,index)=>{
     const copy=stack?.instanceId?copyById.get(stack.instanceId):undefined;
@@ -103,51 +105,51 @@ export function EquipmentPouchPanel({state,busy=false,onAction}:{state:GameState
     const descriptor=stack?itemDef(stack.itemId):undefined,rar=descriptor?rarityMeta(copy?.rarity??itemRarity(descriptor)):undefined;
     return <Pressable key={stack?(stack.instanceId??stack.itemId+':'+(start+index)):'empty-'+(start+index)}
       accessibilityRole={selectMode?'checkbox':'button'} accessibilityState={selectMode?{checked}:undefined}
-      accessibilityLabel={descriptor?localizedItemName(language,descriptor.id)+(copy?' · '+rar?.label+', quality '+craftedGearDisplayQuality(copy):'')+(selectMode&&candidate&&!candidate.eligible?' · protected':''):'Empty equipment slot'}
+      accessibilityLabel={descriptor?localizedItemName(language,descriptor.id)+(copy?' · '+p(rar?.label??'Equipment')+', '+p('quality {quality}',{quality:craftedGearDisplayQuality(copy)}):'')+(selectMode&&candidate&&!candidate.eligible?p(' · protected'):''):p('Empty equipment slot')}
       disabled={!stack||busy||(selectMode&&!candidate?.eligible)} onPress={()=>choose(stack,index)}
       style={[s.slot,{width:slotWidth,minHeight:Math.max(62,slotWidth)},stack&&s.filled,rar&&{borderColor:rar.color},checked&&s.slotChecked,selectMode&&!candidate?.eligible&&s.slotProtected]}>
       {stack?<><ItemArtwork itemId={stack.itemId} size={Math.min(42,slotWidth-12)}/><Text style={[s.quantity,{color:rar?.color??C.text}]} numberOfLines={1}>{selectMode?(checked?'✓':candidate?.eligible?'○':'🔒'):copy?'Q'+craftedGearDisplayQuality(copy):'×'+stack.quantity}</Text></>:<Text style={s.empty}>·</Text>}
      </Pressable>;
    })}
   </View>
-  {pages>1?<View style={s.paging}><GameButton compact title="Previous" tone="secondary" disabled={shownPage===0} onPress={()=>{setSelectedIndex(null);setPage(value=>Math.max(0,value-1))}}/><Text style={s.meta}>{shownPage+1}/{pages}</Text><GameButton compact title="Next" tone="secondary" disabled={shownPage>=pages-1} onPress={()=>{setSelectedIndex(null);setPage(value=>Math.min(pages-1,value+1))}}/></View>:null}
-  <View style={s.upgrade}><View style={s.flex}><Text style={s.itemName}>{upgrade?'Next: '+upgrade.capacity+' slots':'Maximum capacity reached'}</Text>{upgrade?<Text style={s.meta}>Level {upgrade.level} · {upgrade.cost.toLocaleString()} Gold</Text>:null}</View>
-    <GameButton compact title={upgrade?'Upgrade':'Maxed'} tone="secondary" disabled={!canUpgrade||!onAction} onPress={()=>onAction?.({type:'equipment_pouch_upgrade'})}/></View>
+  {pages>1?<View style={s.paging}><GameButton compact title={p('Previous')} tone="secondary" disabled={shownPage===0} onPress={()=>{setSelectedIndex(null);setPage(value=>Math.max(0,value-1))}}/><Text style={s.meta}>{shownPage+1}/{pages}</Text><GameButton compact title={p('Next')} tone="secondary" disabled={shownPage>=pages-1} onPress={()=>{setSelectedIndex(null);setPage(value=>Math.min(pages-1,value+1))}}/></View>:null}
+  <View style={s.upgrade}><View style={s.flex}><Text style={s.itemName}>{upgrade?p('Next: {count} slots',{count:upgrade.capacity}):p('Maximum capacity reached')}</Text>{upgrade?<Text style={s.meta}>{p('Level {level} · {gold} Gold',{level:upgrade.level,gold:upgrade.cost.toLocaleString(language)})}</Text>:null}</View>
+    <GameButton compact title={p(upgrade?'Upgrade':'Maxed')} tone="secondary" disabled={!canUpgrade||!onAction} onPress={()=>onAction?.({type:'equipment_pouch_upgrade'})}/></View>
   <GameModalSurface visible={pendingSale!==null} reduceMotion={state.settings.reduceMotion} onClose={()=>{if(!saleInFlight.current&&!busy)setPendingSale(null)}} surfaceStyle={s.modal}>
-   <GameModalHeader eyebrow="EQUIPMENT POUCH · SALE" title="Sell selected equipment?" onClose={()=>{if(!saleInFlight.current&&!busy)setPendingSale(null)}}/>
+   <GameModalHeader eyebrow={p('EQUIPMENT POUCH · SALE')} title={p('Sell selected equipment?')} onClose={()=>{if(!saleInFlight.current&&!busy)setPendingSale(null)}}/>
    <View style={s.details}>
-    <Text style={s.itemName}>{pendingRows.length} {pendingRows.length===1?'copy':'copies'} · {pendingGold.toLocaleString()} Gold</Text>
-    <Text style={s.meta}>This cannot be undone. Locked, favorited, enhanced, socketed, loadout and Working Toward gear stays protected.</Text>
-    {!confirmationValid?<Text style={s.saleWarning}>Selection has changed. Close and review the equipment.</Text>:null}
+    <Text style={s.itemName}>{p(pendingRows.length===1?'{count} copy · {gold} Gold':'{count} copies · {gold} Gold',{count:pendingRows.length,gold:pendingGold.toLocaleString(language)})}</Text>
+    <Text style={s.meta}{p('This cannot be undone. Locked, favorited, enhanced, socketed, loadout and Working Toward gear stays protected.')}</Text>
+    {!confirmationValid?<Text style={s.saleWarning}{p('Selection has changed. Close and review the equipment.')}</Text>:null}
     <View style={s.actions}>
-     <GameButton compact tone="secondary" title="Cancel" disabled={busy} onPress={()=>setPendingSale(null)}/>
-     <GameButton compact tone="danger" title="Confirm sale" disabled={!onAction||busy||!confirmationValid} onPress={confirmSale}/>
+     <GameButton compact tone="secondary" title={p('Cancel')} disabled={busy} onPress={()=>setPendingSale(null)}/>
+     <GameButton compact tone="danger" title={p('Confirm sale')} disabled={!onAction||busy||!confirmationValid} onPress={confirmSale}/>
     </View>
    </View>
   </GameModalSurface>
   <EquipmentPreview state={state} itemId={previewStack?.itemId??null} instanceId={previewStack?.instanceId} source="equipment_pouch" onClose={()=>setPreviewStack(null)} onEquip={async()=>{
-    if(!previewStack||!onAction)throw new Error('Equipment Pouch equip is unavailable');
+    if(!previewStack||!onAction)throw new Error(p('Equipment Pouch equip is unavailable'));
     const result=await onAction(previewStack.instanceId?{type:'gear_equip',args:{instanceId:previewStack.instanceId}}:{type:'equipment_pouch_equip',args:{itemId:previewStack.itemId}});
-    if(result===false)throw new Error('Equipment was not equipped. Please try again.');
+    if(result===false)throw new Error(p('Equipment was not equipped. Please try again.'));
     setPreviewStack(null);
    }}/>
-  <GameModalSurface visible={!!selected} reduceMotion={state.settings.reduceMotion} onClose={()=>setSelectedIndex(null)} backdropLabel="Close Equipment Pouch details" surfaceStyle={s.modal}>
-   <GameModalHeader eyebrow="EQUIPMENT · CHARACTER STORAGE" title={item?localizedItemName(language,item.id):'Equipment'} onClose={()=>setSelectedIndex(null)}/>
+  <GameModalSurface visible={!!selected} reduceMotion={state.settings.reduceMotion} onClose={()=>setSelectedIndex(null)} backdropLabel={p('Close Equipment Pouch details')} surfaceStyle={s.modal}>
+   <GameModalHeader eyebrow={p('EQUIPMENT · CHARACTER STORAGE')} title={item?localizedItemName(language,item.id):p('Equipment')} onClose={()=>setSelectedIndex(null)}/>
    {selected&&item?<ScrollView contentContainerStyle={s.details} showsVerticalScrollIndicator={false} showsHorizontalScrollIndicator={false}>
     <View style={s.hero}><View style={[s.art,{borderColor:rarity?.color??C.line}]}><ItemArtwork itemId={item.id} size={74}/></View>
-     <View style={s.flex}><Text style={[s.itemName,{color:rarity?.color??C.text}]}>{rarity?.label??'Equipment'}{record?' · Q'+craftedGearDisplayQuality(record):''}</Text>
-      <Text style={s.meta}>Stored on {state.character?.name??'this character'} · {item.slot??'Gear'}</Text>
-      {record?<Text style={s.meta}>{record.locked?'Locked · ':''}{record.enhancement.rank>0?'+'+record.enhancement.rank+' enhanced · ':''}Unique forged copy</Text>:<Text style={s.meta}>Standard equipment</Text>}</View>
+     <View style={s.flex}><Text style={[s.itemName,{color:rarity?.color??C.text}]}>{p(rarity?.label??'Equipment')}{record?' · Q'+craftedGearDisplayQuality(record):''}</Text>
+      <Text style={s.meta}>{p('Stored on {character} · {slot}',{character:state.character?.name??p('this character'),slot:p(item.slot??'Gear')})}</Text>
+      {record?<Text style={s.meta}>{record.locked?p('Locked · '):''}{record.enhancement.rank>0?'+'+record.enhancement.rank+p(' enhanced · '):''}{p('Unique forged copy')}</Text>:<Text style={s.meta}{p('Standard equipment')}</Text>}</View>
     </View>
     <View style={s.actions}>
-     <GameButton compact title="Compare & Equip" disabled={!onAction||busy} onPress={()=>{setPreviewStack(selected);setSelectedIndex(null)}}/>
-     <GameButton compact tone="secondary" title="To Inventory" disabled={!onAction||busy} onPress={()=>move('inventory')}/>
-     <GameButton compact tone="secondary" title="To Bank" disabled={!onAction||busy} onPress={()=>move('bank')}/>
-     {record?<GameButton compact tone="secondary" title={record.locked?'Unlock':'Lock'} disabled={!onAction||busy} onPress={()=>send({type:'gear_lock',args:{instanceId:record.id,locked:!record.locked}})}/>:<GameButton compact tone="secondary" title={state.settings.lockedItemIds?.includes(item.id)?'Unlock':'Lock'} disabled={!onAction||busy} onPress={()=>send({type:'inventory_preference',args:{id:item.id,kind:'lock',enabled:!state.settings.lockedItemIds?.includes(item.id)}})}/>}
-     <GameButton compact tone="secondary" title={state.settings.favoriteItemIds?.includes(item.id)?'Remove favorite':'Favorite'} disabled={!onAction||busy} onPress={()=>send({type:'inventory_preference',args:{id:item.id,kind:'favorite',enabled:!state.settings.favoriteItemIds?.includes(item.id)}})}/>
-     <GameButton compact tone="danger" title={saleCandidate?.eligible?'Sell · '+saleCandidate.gold.toLocaleString()+'g':'Protected'} disabled={!onAction||busy||!saleCandidate?.eligible} onPress={()=>{if(saleCandidate)startSale([saleCandidate.id])}}/>
+     <GameButton compact title={p('Compare & Equip')} disabled={!onAction||busy} onPress={()=>{setPreviewStack(selected);setSelectedIndex(null)}}/>
+     <GameButton compact tone="secondary" title={p('To Inventory')} disabled={!onAction||busy} onPress={()=>move('inventory')}/>
+     <GameButton compact tone="secondary" title={p('To Bank')} disabled={!onAction||busy} onPress={()=>move('bank')}/>
+     {record?<GameButton compact tone="secondary" title={p(record.locked?'Unlock':'Lock')} disabled={!onAction||busy} onPress={()=>send({type:'gear_lock',args:{instanceId:record.id,locked:!record.locked}})}/>:<GameButton compact tone="secondary" title={p(state.settings.lockedItemIds?.includes(item.id)?'Unlock':'Lock')} disabled={!onAction||busy} onPress={()=>send({type:'inventory_preference',args:{id:item.id,kind:'lock',enabled:!state.settings.lockedItemIds?.includes(item.id)}})}/>}
+     <GameButton compact tone="secondary" title={p(state.settings.favoriteItemIds?.includes(item.id)?'Remove favorite':'Favorite')} disabled={!onAction||busy} onPress={()=>send({type:'inventory_preference',args:{id:item.id,kind:'favorite',enabled:!state.settings.favoriteItemIds?.includes(item.id)}})}/>
+     <GameButton compact tone="danger" title={saleCandidate?.eligible?p('Sell · {gold}g',{gold:saleCandidate.gold.toLocaleString(language)}):p('Protected')} disabled={!onAction||busy||!saleCandidate?.eligible} onPress={()=>{if(saleCandidate)startSale([saleCandidate.id])}}/>
     </View>
-    <Text style={s.meta}>{saleCandidate?.eligible?'Selling this copy adds Gold to this character.':saleCandidate?.reason??'This equipment is protected.'} Enhanced, socketed and loadout gear cannot be sold.</Text>
+    <Text style={s.meta}>{p(saleCandidate?.eligible?'Selling this copy adds Gold to this character.':saleCandidate?.reason??'This equipment is protected.')} {p('Enhanced, socketed and loadout gear cannot be sold.')}</Text>
    </ScrollView>:null}
   </GameModalSurface>
  </View>;

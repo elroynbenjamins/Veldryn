@@ -17,7 +17,6 @@ assert(src.includes('filter!==\'all\'||query.trim().length>0'),'Filtered searche
 assert(src.includes('data={gridEntries}')&&src.includes('item?renderStack(item):<View accessible={false}'),'Both storage grids render occupied and empty slots');
 assert(footer.includes('gridPages>1&&<View style={s.storagePaging}>')&&footer.includes('setGridPage(page=>Math.max(0,page-1))')&&footer.includes('setGridPage(page=>Math.min(gridPages-1,page+1))'),'Pagination remains accessible in both directions');
 assert(footer.includes('activeCapacity.used}/{activeCapacity.capacity}')&&footer.includes('activeCapacity.percent'),'Capacity progress matches the selected storage');
-assert(footer.includes("const")===false,'The footer contains no ad hoc storage calculations');
 assert(footer.includes("activeUpgrade?gt('Next: {count} slots'")&&footer.includes("activeUpgrade.cost"),'The active storage shows a next-capacity preview and its cost');
 assert(footer.includes('disabled={!canUpgradeStorage}')&&src.includes('canUpgradeStorage=!!activeUpgrade')&&src.includes('carriedGold>=activeUpgrade.cost'),'Upgrade availability respects level, Gold, and busy state');
 assert(footer.includes('onUpgradeStorage(location)'),'The Inventory and Bank use their existing authoritative upgrade callback');

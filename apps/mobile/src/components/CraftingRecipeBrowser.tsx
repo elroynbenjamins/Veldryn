@@ -4,6 +4,7 @@ import {Pressable,StyleSheet,Text,View} from 'react-native';
 import type {GameState,SkillId} from '../core/types';
 import {RECIPES} from '../content/skills';
 import {itemDef} from '../content/items';
+import {recipeMatchesLocalizedSearch} from '../i18n/crafting-recipe-names';
 import {recipeAvailability} from '../core/playability';
 import {alchemyAvailability} from '../core/alchemy';
 import {isTimedProcessingRecipe,processingAvailability} from '../core/processing';
@@ -46,9 +47,9 @@ export function CraftingRecipeBrowser({state,skillId,initialQuery='',preferredRe
     const isTool=itemDef(recipe.output.itemId).type==='tool';
     if(category==='tools'?!isTool:isTool||!!recipe.v33SetId)return false;
    }
-   return !q||(recipe.name+' '+itemDef(recipe.output.itemId).name).toLowerCase().includes(q);
+   return recipeMatchesLocalizedSearch(language,recipe,q);
   }catch(error){console.warn('[CraftingRecipeBrowser] Invalid recipe output',recipe.id,error);return false}
- }),[recipes,category,q,guildMaterialsOnly]);
+ }),[recipes,category,q,guildMaterialsOnly,language]);
  const matching:Row[]=useMemo(()=>visibleRecipes.map(recipe=>{
   try{
    if(recipe.level>skillLevel||(recipe.characterLevel??1)>characterLevel)return {recipe,status:{ready:false,reason:recipe.level>skillLevel?gt('Requires {skill} level {level}.',{skill:gl(recipe.skillId),level:recipe.level}):gt('Requires character level {level}.',{level:recipe.characterLevel??1}),inputs:recipe.inputs.map(input=>({...input,inventory:stored.inventory.get(input.itemId)??0,bank:stored.bank.get(input.itemId)??0}))}};

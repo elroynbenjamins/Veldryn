@@ -1,5 +1,5 @@
 import {claimActivity,claimSeasonalContract,createCharacter,newGame,startCombat,startGathering,startExploration,craftRecipe} from '../src/core/game';
-import {QUEST_RARITIES,seasonalQuestBoard,seasonalQuestCache,recordSeasonalActivity,normalizeSeasonalProgress} from '../src/core/seasonal-quests';
+import {QUEST_RARITIES,seasonalQuestBoard,seasonalQuestCache,recordSeasonalActivity,normalizeSeasonalProgress,seasonalQuestRewardOptions} from '../src/core/seasonal-quests';
 import {itemDef} from '../src/content/items';
 import {normalizeSave} from '../src/core/save-normalization';
 import {CLASSES} from '../src/content/classes';
@@ -113,4 +113,46 @@ check(monthlyReady.progress>=monthlyReady.required,'Monthly challenge should req
 const unlocked:GameState={...monthlyEarned,character:{...monthlyEarned.character!,equipment:state.character!.equipment},quests:monthlyEarned.quests.map(q=>q.questId==='QST_005'?{...q,status:'claimed'}:q)};
 const monthlyClaim=executeGameCommand(unlocked,{type:'seasonal',args:{period:'monthly',id:monthlyReady.id}},t).state;
 check(monthlyClaim.account.seasonalContractClaimIds?.includes(monthlyReady.id),'Monthly claims must work through the command dispatcher');
-console.log('PASS: seasonal action accounting, UTC rollovers, equipment limits, claims and save round trips');
+
+/** Additional reward paths must never mint multiple caches or bypass content gates. */
+const dailyAlternatives=seasonalQuestRewardOptions(state,'daily','rare');
+check(dailyAlternatives[0].id==='item:TEMPERING_DUST','Existing rare daily reward must remain the default');
+check(dailyAlternatives.some(choice=>choice.id==='item:GEM_DUST'&&choice.rewardItemQty===5),'Gem Dust choice must be available on rare daily challenges');
+check(dailyAlternatives.some(choice=>choice.id==='essence'&&choice.rewardCompanionEssence===5),'Companion Essence remains a selectable early-game reward');
+const weeklyAlternatives=seasonalQuestRewardOptions(state,'weekly','epic');
+check(weeklyAlternatives.some(choice=>choice.id==='item:ASTERFALL_BOTANICAL_ESSENCE'&&choice.rewardItemQty===2),'Weekly Epic needs a rare botanical reward');
+check(weeklyAlternatives.some(choice=>choice.id==='item:OATHGLASS_FRAGMENT'&&choice.rewardItemQty===2),'Weekly Epic needs a companion/gem fragment reward');
+const monthlyAlternatives=seasonalQuestRewardOptions(state,'monthly','rare');
+check(monthlyAlternatives.some(choice=>choice.id==='item:RUNEBOUND_CORE'&&choice.rewardItemQty===3),'Monthly Rare needs a Sanctuary material');
+check(monthlyAlternatives.some(choice=>choice.id==='item:ECHO_QUARTZ'&&choice.rewardItemQty===3),'Monthly Rare needs an Echo Quartz material');
+check(!seasonalQuestRewardOptions(state,'monthly','epic').some(choice=>choice.id==='item:REGIONAL_CATALYST'),'Locked endgame catalyst must not appear to early accounts');
+check(!seasonalQuestRewardOptions(state,'monthly','legendary').some(choice=>choice.id==='item:ASTRAL_SCRIPT'),'Late-region reagents must remain locked before region access');
+const highState:GameState={...state,character:{...state.character!,level:70},currentRegionId:'SUNSCAR',skills:state.skills.map(row=>row.skillId==='enchanting'?{...row,level:45}:row)};
+check(seasonalQuestRewardOptions(highState,'monthly','epic').some(choice=>choice.id==='item:REGIONAL_CATALYST'),'Qualified Enchanting accounts can select a catalyst');
+check(seasonalQuestRewardOptions(highState,'monthly','legendary').some(choice=>choice.id==='item:ASTRAL_SCRIPT'),'Unlocked region grants targeted late-game material choice');
+check(!seasonalQuestRewardOptions(highState,'monthly','legendary').some(choice=>choice.id==='item:RADIANT_CATALYST'||choice.id==='item:REGENT_SIGIL'||choice.id==='item:TRIAL_SANCTUARY_MATERIAL'),'Exclusive resources must remain unavailable from quests');
+check(seasonalQuestRewardOptions(state,'monthly','legendary').some(choice=>choice.id==='bondstones'&&choice.rewardBondstones===1),'Monthly Legendary must allow one Bondstone');
+// Locate a real deterministic Legendary contract (rather than manufacturing an unattainable rarity).
+let verifiedBondstoneClaim=false;
+for(let month=0;month<48&&!verifiedBondstoneClaim;month++){
+ const monthDate=new Date(Date.UTC(2027+Math.floor(month/12),month%12,12,12));
+ let earnedForMonth=createCharacter(newGame(0),'BASTION','Reward Choice Tester');
+ for(const tag of ['combat','gathering','crafting','exploration','boss'] as const)earnedForMonth=recordSeasonalActivity(earnedForMonth,tag,100000,monthDate.getTime());
+ const legendary=seasonalQuestBoard(earnedForMonth,'monthly',monthDate).find(q=>q.rarity==='legendary'&&q.progress>=q.required);
+ if(!legendary)continue;
+ const beforeStones=earnedForMonth.account.bondstones??0;
+ const beforeDust=earnedForMonth.inventory.stacks.filter(row=>row.itemId==='TEMPERING_CORE').reduce((sum,row)=>sum+row.quantity,0);
+ const got=executeGameCommand(earnedForMonth,{type:'seasonal',args:{period:'monthly',id:legendary.id,choiceId:'bondstones'}},monthDate.getTime()).state;
+ check((got.account.bondstones??0)===beforeStones+1,'Online command must credit the selected Bondstone exactly once');
+ check((got.account.seasonalContractRewardChoices??{})[legendary.id]==='bondstones','Chosen reward ID must persist for accurate receipts');
+ check(got.inventory.stacks.filter(row=>row.itemId==='TEMPERING_CORE').reduce((sum,row)=>sum+row.quantity,0)===beforeDust,'Choosing Bondstones must not silently grant default Tempering Cores');
+ check(normalizeSave(got).account.seasonalContractRewardChoices?.[legendary.id]==='bondstones','Choice receipt must survive save normalization');
+ let rejected=false;try{executeGameCommand(got,{type:'seasonal',args:{period:'monthly',id:legendary.id,choiceId:'item:TEMPERING_CORE'}},monthDate.getTime());}catch{rejected=true}
+ check(rejected,'One contract must not grant a second selected reward');
+ let forged=false;try{executeGameCommand(earnedForMonth,{type:'seasonal',args:{period:'monthly',id:legendary.id,choiceId:'item:RADIANT_CATALYST'}},monthDate.getTime());}catch{forged=true}
+ check(forged,'Forged/locked reward IDs must be rejected without paying out');
+ verifiedBondstoneClaim=true;
+}
+check(verifiedBondstoneClaim,'Find and settle a real Monthly Legendary choice through the command dispatcher');
+
+console.log('PASS: seasonal action accounting, UTC rollovers, equipment limits, claims and reward choices and save round trips');

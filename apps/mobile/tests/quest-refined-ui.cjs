@@ -54,4 +54,4 @@ assert.ok(lessonPanel.includes('accessibilityRole="button"')&&lessonPanel.includ
 assert.ok(lessonPanel.includes('journalSkillLessonProgress(state)')&&lessonModel.includes('status:practiceComplete?'),'Milestones follow the live skill state');
 assert.ok(app.includes("destination.skillId==='faith'?'faith'")&&app.includes("?'gathering':'crafting'"),'Quest deep links route to the correct skill mode');
 
-console.log('PASS: Quest redesign structure, modal safety, authoritative rewards and weekly controls');
+console.log('PASS: Quest redesign structure, reward choice confirmation, authoritative rewards and weekly controls');

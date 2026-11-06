@@ -1251,6 +1251,12 @@ const enhancement={
 const rows={...common,...combat,...queue,...skills,...inventory,...rewards,...crafting,...details,...enhancement};
 export type GameplayKey=keyof typeof rows;
 export const gameplayCatalogs=catalogsFor(rows);
+// Russian and Turkish support for recently added enhancement-popup controls.
+const enhancementPopupEarlyLocales={"Equipment enhancement":["Улучшение снаряжения","Ekipman geliştirme"],"Confirm below to apply this change.":["Подтвердите ниже, чтобы применить изменение.","Değişikliği uygulamak için aşağıdan onayla."],"Confirm replacement":["Подтвердить замену","Değiştirmeyi onayla"],"Confirm extraction":["Подтвердить извлечение","Çıkarmayı onayla"]} as const;
+for(const [english,pair] of Object.entries(enhancementPopupEarlyLocales)){
+ gameplayCatalogs.ru[english as GameplayKey]=pair[0];
+ gameplayCatalogs.tr[english as GameplayKey]=pair[1];
+}
 export const gameplayTranslate=createTranslator<GameplayKey>(gameplayCatalogs);
 
 const templates=(Object.keys(rows) as GameplayKey[]).filter(key=>key.includes('{')).map(key=>{

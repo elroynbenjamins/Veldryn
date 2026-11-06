@@ -45789,12 +45789,15 @@ function gearStatsAtRank(itemId, rank) {
   const item = itemDef(itemId), m = 1 + Math.max(0, Math.min(MAX_UPGRADE_RANK, rank)) * UPGRADE_STAT_PER_RANK, scale = (value) => value * m;
   return { hp: scale(item.hp ?? 0), attack: scale(item.attack ?? 0), defense: scale(item.defense ?? 0) };
 }
-function enhancedGearStats(state, itemId) {
-  const instance = equippedCraftedInstance(state, itemId), stats6 = gearStatsAtRank(itemId, gearEnhancement(state, itemId).rank);
+function enhancedGearStatsAtRank(state, itemId, rank) {
+  const instance = equippedCraftedInstance(state, itemId), stats6 = gearStatsAtRank(itemId, rank);
   const rarity = instance?.rarity ?? effectiveOwnedGearRarity(state, itemId);
   const quality = instance?.quality === void 0 ? 1 : craftedGearQualityMultiplier(instance.quality);
   const m = craftedRarityStatMultiplier(itemId, rarity) * quality, scale = (value) => value * m;
   return { hp: scale(stats6.hp), attack: scale(stats6.attack), defense: scale(stats6.defense) };
+}
+function enhancedGearStats(state, itemId) {
+  return enhancedGearStatsAtRank(state, itemId, gearEnhancement(state, itemId).rank);
 }
 function equippedGemBonuses(state) {
   const result = { attack: 0, defense: 0, hp: 0 };

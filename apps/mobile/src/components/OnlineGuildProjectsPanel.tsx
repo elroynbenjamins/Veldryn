@@ -169,9 +169,12 @@ function CandidateCard({candidate,busy,onVote}:{candidate:OnlineGuildProjectCand
  </View>;
 }
 
-export function GuildProjectPosting({project,expanded,compact=false,onToggle,onClaim,onNavigateActivity,busy}:{
+export function GuildProjectPosting({project,expanded,compact=false,onToggle,onClaim,onNavigateActivity,onDonate,supplyInventory=[],donationBlocked=false,busy}:{
  onClaim:()=>void;
  onNavigateActivity?:(activity:Activity)=>void;
+ onDonate?:(itemId:string,quantity:number)=>void;
+ supplyInventory?:OnlineGuildProjectSupplyItem[];
+ donationBlocked?:boolean;
  busy:boolean;
  project:OnlineGuildProjectSummary;
  expanded:boolean;
@@ -212,11 +215,19 @@ export function GuildProjectPosting({project,expanded,compact=false,onToggle,onC
     <Text style={s.rewardIcon}>🪙</Text>
     <View style={s.flex}><Text style={s.rewardTitle}>{project.rewardDestination==='guild_bank'?ui('{amount} Gold · Guild Bank reward',{amount:project.rewardGold.toLocaleString()}):ui('500 Gold · Personal reward')}</Text><Text style={s.meta}>{ui(project.completionRewardClaimed?'Already claimed':project.status==='completed'?'Ready if eligible':'Available after Guild completion')}</Text></View>
    </View>:null}
-   {weekly?<View style={s.sectionHead}><Text style={s.meta}>{ui('Guild receives')}</Text><Text style={s.hallReward}>{ui('200 Hall progress')}</Text></View>:null}
+   {weekly?<View style={s.sectionHead}><Text style={s.meta}>{ui('Guild receives')}</Text>
+     <View style={s.flex}>
+      <Text style={s.hallReward}>{ui('{count} Hall progress',{count:project.hallProgress??200})}</Text>
+      {(project.guildXpReward??0)>0?<Text style={s.hallReward}>{ui('{count} Guild XP',{count:project.guildXpReward??0})}</Text>:null}
+     </View>
+    </View>:null}
   </View>:null}
-  {weekly&&project.status==='active'&&!compact?<View style={s.activities}>
-   <View style={s.sectionHead}><Text style={s.sectionTitle}>{ui('Contribute now')}</Text><StatusPill label={ui("ANY ACTIVITY")} tone="info"/></View>
-   <View style={s.activityGrid}>{effortActivities.map(a=><Pressable key={a.source}
+  {weekly&&project.status==='active'&&!compact&&project.resourceGoals.length>0?
+    <GuildProjectSupplyDonationPanel goals={project.resourceGoals} inventory={supplyInventory}
+     busy={busy||donationBlocked||!onDonate} onDonate={(itemId,quantity)=>onDonate?.(itemId,quantity)}/>:null}
+  {weekly&&project.status==='active'&&!compact&&project.projectMode!=='donation'?<View style={s.activities}>
+   <View style={s.sectionHead}><Text style={s.sectionTitle}>{ui('Contribute now')}</Text><StatusPill label={ui(project.templateId==='guild_weekly_shared_effort'?'ANY ACTIVITY':'Activity requirements')} tone="info"/></View>
+   <View style={s.activityGrid}>{effortActivities.filter(a=>project.focus==='combat'?a.source==='combat':project.focus==='skilling'?a.source!=='combat':true).map(a=><Pressable key={a.source}
     accessibilityRole="button" accessibilityLabel={ui('Open {title} to contribute',{title:ui(a.title)})}
     disabled={!onNavigateActivity} onPress={()=>onNavigateActivity?.(a.source)}
     style={({pressed})=>[s.activityTile,{borderColor:C.line,backgroundColor:C.panelRaised},pressed&&s.pressed,!onNavigateActivity&&s.disabled]}>

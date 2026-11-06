@@ -171,5 +171,6 @@ for(let day=0;day<90&&!verifiedGemDustClaim;day++){
  verifiedGemDustClaim=true;
 }
 check(verifiedGemDustClaim,'Find and settle a real Daily Rare Gem Dust alternative');
+// Every real reward-choice assertion above runs against the shared authoritative command path.
 
 console.log('PASS: seasonal action accounting, UTC rollovers, equipment limits, claims and reward choices and save round trips');

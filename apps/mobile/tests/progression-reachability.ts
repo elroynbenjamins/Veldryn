@@ -1,5 +1,7 @@
 import {ITEMS} from '../src/content/items';
 import {V33_EQUIPMENT_RECIPES} from '../src/content/equipment-recipes-v33';
+import {regionalStoryLeads} from '../src/core/regional-story-leads';
+import type {GameState} from '../src/core/types';
 import {GATHERING,RECIPES} from '../src/content/skills';
 import {HERB_NODES,HERBALISM_ESSENCE_BY_ZONE} from '../src/content/herbalism';
 import {MONSTERS} from '../src/content/monsters';
@@ -58,4 +60,10 @@ for(const recipe of gearInTier('T3')){
 const sunscarScorpion=MONSTERS.find(monster=>monster.id==='SUNSCAR_SCORPION')!;
 ok(sunscarScorpion.drops.some(drop=>drop.itemId==='DUNEWOOD'),'Sunscar entry hunts should offer an alternative to level-26 woodcutting');
 ok(sunscarScorpion.drops.some(drop=>drop.itemId==='SUNSCALE'),'Sunscar entry hunts should offer an alternative to level-26 herbalism');
+// Sunscar story leads resolve at the existing Rank-5 damage milestone, not 500 kills.
+const leadState=(points:number)=>({character:{level:40,monsterMasteryPoints:{SUNSCAR_SCORPION:points}}}) as unknown as GameState;
+const before=regionalStoryLeads('SUNSCAR',leadState(124));
+const after=regionalStoryLeads('SUNSCAR',leadState(125));
+ok(before[0].requiredMasteryRank===5&&before[0].status==='available','Sunscar first story lead remains active below 125 kills');
+ok(after[0].status==='mastered'&&after[1].status==='available','Sunscar story advances on the Rank-5 milestone');
 console.log(JSON.stringify({status:'PASS',directSources:direct.size,reachableItems:reachable.size,requiredRecipeInputs:requiredInputs.size,recipes:RECIPES.length,equipmentTiers:9},null,2));

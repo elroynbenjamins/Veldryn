@@ -8,7 +8,7 @@ const run=read('src/components/coop/CoopRunOverview.tsx');
 const coop=read('src/screens/CoopExpeditionScreen.tsx');
 
 ok(quests.includes('CHAPTER COMPLETE'),'claimed story chapters need a clear completion moment');
-ok(quests.includes("rarity.label.toUpperCase()+' CACHE CLAIMED'"),'personal contracts must identify the rarity of the claimed cache');
+ok(quests.includes("seasonalChallengeText(language,rarity.label).toLocaleUpperCase(language)+' '+seasonalChallengeText(language,'CACHE CLAIMED')"),'personal contracts must identify the rarity of the claimed cache');
 ok(quests.includes('label={t("Rewards secured")}')&&quests.includes('gold={moment.gold} xp={moment.xp} itemId={moment.itemId} quantity={moment.quantity??1}'),'quest completion feedback must localize the label and repeat the exact secured reward bundle');
 ok(quests.includes('detail:t("Rewards secured · the next available story beat is now ready.")'),'chapter claim must localize the next-step handoff');
 ok(quests.includes('newlyConfirmedIds'),'claim celebration must derive from committed claim state rather than the button press');

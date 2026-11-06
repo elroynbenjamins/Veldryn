@@ -1,7 +1,7 @@
 import {FAITH_BLESSINGS,FAITH_BLESSING_GROUPS,FAITH_TIERS,HOLY_WATER_ID,HOLY_WATER_SOURCES,faithBlessingDef,faithBlessingEffectLabel} from '../src/content/faith';
 import {MONSTERS} from '../src/content/monsters';
 import {createCharacter,newGame,claimActivity,previewActivityReward,stopActivity,sellItem,startCombat,effectiveStats} from '../src/core/game';
-import {faithPracticeAvailability,startFaithPractice} from '../src/core/faith';
+import {faithPracticeAvailability,startFaithPractice,normalizeFaith} from '../src/core/faith';
 import {blessingRows,faithLevel,selectFaithBlessing,setFaithFavorite,setFaithHideWeaker} from '../src/core/faith-effects';
 import {accountSkillLevel} from '../src/core/account-roster';
 import {totalXpAtLevel} from '../src/core/progression';
@@ -15,7 +15,7 @@ import type {GameState} from '../src/core/types';
 import {equal,ok,test,throws} from './account-test-helpers';
 const T=Date.UTC(2026,8,10,12);
 const fresh=()=>createCharacter(newGame(T),'IRONWARDEN','Pilgrim');
-function faithAt(s:GameState,level:number):GameState{const xp=totalXpAtLevel(level);return {...s,skills:s.skills.map(k=>k.skillId==='faith'?{...k,level,xp}:k),character:s.character?{...s.character,faith:{...s.character.faith,xp}}:null};}
+function faithAt(s:GameState,level:number):GameState{const xp=totalXpAtLevel(level);return {...s,skills:s.skills.map(k=>k.skillId==='faith'?{...k,level,xp}:k),character:s.character?{...s.character,faith:{...normalizeFaith(s.character.faith),xp}}:null};}
 function water(s:GameState,n:number){return {...s,inventory:{...s.inventory,stacks:[...s.inventory.stacks.filter(x=>x.itemId!==HOLY_WATER_ID),{itemId:HOLY_WATER_ID,quantity:n}]}};}
 function qty(s:GameState,id:string){return [...s.inventory.stacks,...s.bank.stacks,...s.overflow.stacks].filter(x=>x.itemId===id).reduce((a,b)=>a+b.quantity,0);}
 

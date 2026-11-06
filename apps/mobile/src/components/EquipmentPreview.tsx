@@ -1,4 +1,4 @@
-import {useEffect,useMemo,useState} from 'react';
+import {useEffect,useMemo,useRef,useState} from 'react';
 import {Pressable,ScrollView,StyleSheet,Text,View,useWindowDimensions} from 'react-native';
 import {itemDef} from '../content/items';
 import {displayStat} from '../core/stat-display';
@@ -34,6 +34,7 @@ export function EquipmentPreview({state,itemId,instanceId,source='inventory',onC
  const C=useGameTheme(),E=equipmentTheme(C),s=useMemo(()=>makeStyles(C),[C]);
  const {height,width,fontScale}=useWindowDimensions();
  const [more,setMore]=useState(false),[busy,setBusy]=useState(false),[error,setError]=useState('');
+ const detailsScrollRef=useRef<ScrollView>(null);
  useEffect(()=>{setMore(false);setBusy(false);setError('');},[itemId,instanceId,source]);
  if(!itemId)return null;
  let projected:GameState;
@@ -80,10 +81,11 @@ export function EquipmentPreview({state,itemId,instanceId,source='inventory',onC
   backdropLabel={gl('Close equipment comparison')}
   surfaceStyle={[s.surface,{height:Math.min(height*.89,shortScreen?620:710)}]}>
   <View style={s.compactHeader}>
-    <View style={s.headerCopy}><Text style={s.headerEyebrow}>{gl('EQUIPMENT PREVIEW')}</Text><Text style={s.headerTitle}>{gl('Compare & Swap')}</Text></View>
-    <InventoryItemHeaderControls favorite={favorite} locked={locked} onFavorite={onToggleFavorite} onLock={onToggleLock} onClose={onClose} disabled={busy}/>
+    <View style={s.headerCopy}><Text style={s.headerEyebrow}>{gl('EQUIPMENT PREVIEW')}</Text><Text numberOfLines={1} style={[s.headerTitle,(width<355||fontScale>=1.25)&&{fontSize:16}]}>{gl('Compare & Swap')}</Text></View>
+    <InventoryItemHeaderControls favorite={favorite} locked={locked} onFavorite={onToggleFavorite} onLock={onToggleLock} onClose={onClose} disabled={busy} closeLabel={gl('Close equipment comparison')}/>
    </View>
-  <ScrollView style={s.scroll} contentContainerStyle={s.body} showsVerticalScrollIndicator={false} showsHorizontalScrollIndicator={false}>
+  <ScrollView ref={detailsScrollRef} style={s.scroll} contentContainerStyle={s.body} showsVerticalScrollIndicator={false} showsHorizontalScrollIndicator={false}
+    onContentSizeChange={()=>{if(more)detailsScrollRef.current?.scrollToEnd({animated:!state.settings.reduceMotion})}}>
    <View style={s.pair}>
     <View style={s.gearCard}>
      <Text style={s.kicker}>{gl('CURRENTLY EQUIPPED')}</Text>
@@ -103,7 +105,7 @@ export function EquipmentPreview({state,itemId,instanceId,source='inventory',onC
      <Text style={[s.impactTitle,{color:trade.grade==='improvement'?C.good:trade.grade==='downgrade'?C.bad:trade.grade==='tradeoff'?C.warning:C.muted}]}>{combatOnly?gl('Other combat bonuses changed'):gl(trade.title)}</Text>
      <Text style={[s.impactPower,{color:statColor(C,after.power-before.power)}]}>{gl('Power')} {signed(after.power-before.power)}</Text>
     </View>
-    <Text style={s.impactText}>{stats.slice(0,3).filter(row=>displayStat(row.after-row.before)!==0).map(row=>row.label+' '+signed(row.after-row.before)).join(' · ')||gl('No visible Attack, Defense or Health change.')}</Text>
+    {stats.slice(0,3).every(row=>displayStat(row.after-row.before)===0)?<Text style={s.impactText}>{gl('No visible Attack, Defense or Health change.')}</Text>:null}
     {oldSockets?.effectGemId!==sockets.effectGemId?<Text style={s.impactText}>{gl('Effect gem')}: {oldSockets?.effectGemId?itemDef(oldSockets.effectGemId).name:gl('Empty')} → {sockets.effectGemId?itemDef(sockets.effectGemId).name:gl('Empty')}</Text>:null}
    </View>
    <View style={s.statChips}>

@@ -136,13 +136,19 @@ export function InventoryScreen({state,viewMemory,foodRequest=0,onEquip,onFood,o
   const exactRecords=useMemo(()=>craftedGearInstances(state),[state.account.craftedGearInstances]);
   const exactRecordsById=useMemo(()=>indexInventoryGearCopies(exactRecords),[exactRecords]);
   const selectedSet=useMemo(()=>new Set(selectedIds),[selectedIds]);
+   const hasUnselectedShown=gridEntries.some(stack=>stack!==null&&!selectedSet.has(stack.itemId));
    const selectionSummary=useMemo(()=>bulkSelectionSummary(state,selectedIds,location),[state,selectedIds,location]);
   const exitSelection=()=>{setSelectMode(false);setSelectedIds([]);setBulkPending(null)};
   const changeLocation=(value:BulkStorageLocation)=>{if(value===location&&!pouchOpen&&!equipmentPouchOpen)return;exitSelection();setPouchOpen(false);setEquipmentPouchOpen(false);setLocation(value);setError('')};
   const openPouch=()=>{exitSelection();restored.current=null;setEquipmentPouchOpen(false);setPouchOpen(true);setPreviewId(null);setPreviewInstanceId(null);setInspectId(null);setError('')};
   const openEquipmentPouch=()=>{exitSelection();restored.current=null;setPouchOpen(false);setEquipmentPouchOpen(true);setPreviewId(null);setPreviewInstanceId(null);setInspectId(null);setError('')};
   const toggleSelection=(itemId:string)=>{setSelectedIds(current=>{if(current.includes(itemId))return current.filter(id=>id!==itemId);if(current.length>=100){setError(gt("Select up to 100 item stacks at once."));return current;}setError('');return [...current,itemId]})};
-  const selectShown=()=>{const ids=[...new Set(gridEntries.filter((stack):stack is ItemStack=>!!stack).map(stack=>stack.itemId))].slice(0,100);setSelectedIds(ids);setError('')};
+  const selectShown=()=>{
+     const shown=gridEntries.filter((stack):stack is ItemStack=>!!stack).map(stack=>stack.itemId);
+     const combined=[...new Set([...selectedIds,...shown])];
+     setSelectedIds(combined.slice(0,100));
+     setError(combined.length>100?gt('Select up to 100 item stacks at once.'):'');
+   };
   const beginSelection=()=>{setSelectMode(true);setSelectedIds([]);setPreviewId(null);setPreviewInstanceId(null);setInspectId(null);setError('')};
   const beginBulk=(kind:BulkAction)=>{const ids=kind==='transfer'?selectionSummary.transferableIds:kind==='sell'?selectionSummary.sellableIds:selectionSummary.salvageableIds;if(ids.length)setBulkPending({kind,ids})};
   const closeInspect=()=>{if(inspectId&&newItemSet.has(inspectId))run(()=>onAcknowledgeItem(inspectId));setInspectId(null);setSelectedInstanceId(null)};
@@ -182,6 +188,11 @@ export function InventoryScreen({state,viewMemory,foodRequest=0,onEquip,onFood,o
   const inventoryUpgrade=useMemo(()=>storageUpgradePreview(state,'inventory'),[state]),bankUpgrade=useMemo(()=>storageUpgradePreview(state,'bank'),[state]);
    const activeUpgrade=location==='inventory'?inventoryUpgrade:bankUpgrade;
    const canUpgradeStorage=!!activeUpgrade&&inventoryBusyLabel===null&&(state.character?.level??0)>=activeUpgrade.level&&carriedGold>=activeUpgrade.cost;
+   const upgradeRequirement=activeUpgrade&&inventoryBusyLabel===null&&!canUpgradeStorage
+     ?(state.character?.level??0)<activeUpgrade.level
+       ?gt('Requires character level {level}.',{level:activeUpgrade.level})
+       :gt('Need {amount} more Gold',{amount:formatGameNumber(Math.max(0,activeUpgrade.cost-carriedGold),state.settings.numberMode,language)})
+     :null;
   const inspected=inspectId?itemDef(inspectId):undefined,carried=location==='inventory';
 
   const exactCopies=inspected?.type==='gear'?craftedGearCopiesAt(state,inspected.id,location).map(row=>exactRecordsById.get(row.instanceId)!).filter(Boolean):[];
@@ -288,8 +299,9 @@ export function InventoryScreen({state,viewMemory,foodRequest=0,onEquip,onFood,o
       {stacks.length>0&&<Pressable accessibilityRole="button" accessibilityLabel={selectMode?gt("Finish selecting items"):gt("Select multiple items")} onPress={selectMode?exitSelection:beginSelection} style={s.textAction}><Text style={s.sortValue}>{selectMode?gt("Done"):gt("Select")}</Text></Pressable>}
     </View>
 
-    {selectMode&&selectedIds.length===0&&<View style={s.selectionEmpty}><Text style={s.selectionEmptyText}>{gt("Select item stacks to manage them together.")}</Text><Pressable accessibilityRole="button" onPress={selectShown} style={({pressed})=>[s.selectionQuickButton,pressed&&s.pressed]}><Text style={s.selectionQuickText}>{gt("Select shown")}</Text></Pressable></View>}
-    {selectMode&&selectedIds.length>0&&<Panel><View style={s.selectionHead}><View style={s.resultSummary}><Text style={s.selectionTitle}>{gt('BULK MANAGEMENT · {count} SELECTED',{count:selectedIds.length})}</Text><Text style={s.sub}>{gt("Whole stacks only · up to 100 stacks per action")}</Text></View><View style={s.selectionQuick}><Pressable accessibilityRole="button" onPress={selectShown} style={({pressed})=>[s.selectionQuickButton,pressed&&s.pressed]}><Text style={s.selectionQuickText}>{gt("Select shown")}</Text></Pressable><Pressable accessibilityRole="button" onPress={()=>setSelectedIds([])} style={({pressed})=>[s.selectionQuickButton,pressed&&s.pressed]}><Text style={s.selectionQuickText}>{gt("Clear")}</Text></Pressable></View></View><View style={s.bulkActions}><GameButton compact title={`${location==='inventory'?gt("Deposit"):gt("Withdraw")} · ${selectionSummary.transferableStackCount}`} disabled={!selectionSummary.transferableStackCount} tone="secondary" onPress={()=>beginBulk('transfer')}/>{location==='inventory'&&<GameButton compact title={`${gt("Sell")} · ${selectionSummary.sellableStackCount} · ${formatGameNumber(selectionSummary.sellGold,state.settings.numberMode,state.settings.language)}g`} disabled={!selectionSummary.sellableStackCount} tone="secondary" onPress={()=>beginBulk("sell")}/>} {location==='inventory'&&<GameButton compact title={`${gt("Salvage")} · ${selectionSummary.salvageableStackCount}`} disabled={!selectionSummary.salvageableStackCount} tone="danger" onPress={()=>beginBulk("salvage")}/>}</View>{location==='inventory'&&(selectionSummary.sellProtectedCount>0||selectionSummary.transferProtectedCount>0||selectionSummary.goalProtectedCount>0)&&<Text style={s.selectionNote}>{[gt('{count} selected stacks are excluded by protection or sell rules.',{count:selectionSummary.sellProtectedCount}),selectionSummary.goalProtectedCount?gt('{count} Working Toward stacks remain protected.',{count:selectionSummary.goalProtectedCount}):'',selectionSummary.transferProtectedCount?gt('{count} auto-eat stacks stay in Inventory.',{count:selectionSummary.transferProtectedCount}):''].filter(Boolean).join(' ')}</Text>}</Panel>}
+    {!isFiltered&&activeStacks.length===0&&<Text style={s.emptyGridHint}>{gt('No items to show')}</Text>}
+     {selectMode&&selectedIds.length===0&&<View style={s.selectionEmpty}><Text style={s.selectionEmptyText}>{gt("Select item stacks to manage them together.")}</Text><Pressable accessibilityRole="button" accessibilityState={{disabled:!hasUnselectedShown}} disabled={!hasUnselectedShown} onPress={selectShown} style={({pressed})=>[s.selectionQuickButton,!hasUnselectedShown&&s.selectionQuickDisabled,pressed&&s.pressed]}><Text style={s.selectionQuickText}>{gt("Select shown")}</Text></Pressable></View>}
+    {selectMode&&selectedIds.length>0&&<Panel><View style={s.selectionHead}><View style={s.resultSummary}><Text style={s.selectionTitle}>{gt('BULK MANAGEMENT · {count} SELECTED',{count:selectedIds.length})}</Text><Text style={s.sub}>{gt("Whole stacks only · up to 100 stacks per action")}</Text></View><View style={s.selectionQuick}><Pressable accessibilityRole="button" accessibilityState={{disabled:!hasUnselectedShown}} disabled={!hasUnselectedShown} onPress={selectShown} style={({pressed})=>[s.selectionQuickButton,!hasUnselectedShown&&s.selectionQuickDisabled,pressed&&s.pressed]}><Text style={s.selectionQuickText}>{gt("Select shown")}</Text></Pressable><Pressable accessibilityRole="button" onPress={()=>setSelectedIds([])} style={({pressed})=>[s.selectionQuickButton,pressed&&s.pressed]}><Text style={s.selectionQuickText}>{gt("Clear")}</Text></Pressable></View></View><View style={s.bulkActions}><GameButton compact title={`${location==='inventory'?gt("Deposit"):gt("Withdraw")} · ${selectionSummary.transferableStackCount}`} disabled={!selectionSummary.transferableStackCount} tone="secondary" onPress={()=>beginBulk('transfer')}/>{location==='inventory'&&<GameButton compact title={`${gt("Sell")} · ${selectionSummary.sellableStackCount} · ${formatGameNumber(selectionSummary.sellGold,state.settings.numberMode,state.settings.language)}g`} disabled={!selectionSummary.sellableStackCount} tone="secondary" onPress={()=>beginBulk("sell")}/>} {location==='inventory'&&<GameButton compact title={`${gt("Salvage")} · ${selectionSummary.salvageableStackCount}`} disabled={!selectionSummary.salvageableStackCount} tone="danger" onPress={()=>beginBulk("salvage")}/>}</View>{location==='inventory'&&(selectionSummary.sellProtectedCount>0||selectionSummary.transferProtectedCount>0||selectionSummary.goalProtectedCount>0)&&<Text style={s.selectionNote}>{[gt('{count} selected stacks are excluded by protection or sell rules.',{count:selectionSummary.sellProtectedCount}),selectionSummary.goalProtectedCount?gt('{count} Working Toward stacks remain protected.',{count:selectionSummary.goalProtectedCount}):'',selectionSummary.transferProtectedCount?gt('{count} auto-eat stacks stay in Inventory.',{count:selectionSummary.transferProtectedCount}):''].filter(Boolean).join(' ')}</Text>}</Panel>}
     </View>} ListEmptyComponent={<View style={s.listSection}><EmptyState title={gt("No items to show")} message={gt("Try another storage tab or clear the search and category filter.")}/><GameButton title={gt("Clear filters")} tone="secondary" onPress={()=>{setQuery('');setFilter("all")}}/></View>} ListFooterComponent={<View style={s.listSection}>
     {gridPages>1&&<View style={s.storagePaging}>
       <GameButton compact tone="secondary" title={gt('Previous')} disabled={shownGridPage===0} onPress={()=>{setGridPage(page=>Math.max(0,page-1));scrollRef.current?.scrollToOffset({offset:0,animated:false})}}/>
@@ -307,6 +319,7 @@ export function InventoryScreen({state,viewMemory,foodRequest=0,onEquip,onFood,o
         <View style={[s.storageUpgradeDetails,stackStorageActions&&s.storageUpgradeDetailsStacked]}>
           <Text style={s.storageUpgradeTitle}>{activeUpgrade?gt('Next: {count} slots',{count:activeUpgrade.capacity}):gt('Maximum capacity reached')}</Text>
           {activeUpgrade?<Text style={s.storageUpgradeMeta}>{gt('Level {level} · {gold} Gold',{level:activeUpgrade.level,gold:formatGameNumber(activeUpgrade.cost,state.settings.numberMode,state.settings.language)})}</Text>:null}
+           {upgradeRequirement?<Text style={s.storageUpgradeRequirement}>{upgradeRequirement}</Text>:null}
         </View>
         <View style={[s.storageUpgradeAction,stackStorageActions&&s.storageUpgradeActionStacked]}>
           <GameButton compact style={s.storageUpgradeButton} title={activeUpgrade?gt('Upgrade'):gt('Maxed')} tone="secondary" disabled={!canUpgradeStorage} onPress={()=>beginInventorySubmission(gt(location==='inventory'?'Upgrading Inventory…':'Upgrading Bank…'),()=>onUpgradeStorage(location))}/>
@@ -374,6 +387,7 @@ function makeStyles(C:ThemeColors){const equipmentColors=equipmentTheme(C);retur
   storageUpgradeDetailsStacked:{flex:0,width:'100%'},
   storageUpgradeTitle:{...typography.bodyStrong,color:C.text},
   storageUpgradeMeta:{...typography.caption,color:C.muted},
+  storageUpgradeRequirement:{...typography.caption,color:C.warning,fontWeight:'700'},
   storageUpgradeAction:{width:116,flexShrink:0},
   storageUpgradeActionStacked:{width:'100%'},
   storageUpgradeButton:{width:'100%',minHeight:44},
@@ -439,6 +453,7 @@ function makeStyles(C:ThemeColors){const equipmentColors=equipmentTheme(C);retur
   inspectHint:{...typography.caption,color:C.muted,textAlign:'center'},
   gridHead:{flexDirection:'row',alignItems:'center',justifyContent:'space-between',gap:8,paddingTop:2},gridLabel:{...typography.caption,color:C.accent,fontWeight:'900',letterSpacing:.8},gridMeta:{...typography.caption,color:C.muted},
   itemGrid:{flexDirection:'row',gap:5},
+   emptyGridHint:{...typography.caption,color:C.muted,textAlign:'center',paddingVertical:2},
    emptySlot:{borderColor:C.line,backgroundColor:C.bg},emptySlotMark:{fontSize:16,color:C.muted,opacity:.45},
    storagePaging:{flexDirection:'row',alignItems:'center',justifyContent:'space-between',gap:8},
   itemTile:{position:'relative',alignItems:'center',justifyContent:'center',borderWidth:1,borderRadius:8},

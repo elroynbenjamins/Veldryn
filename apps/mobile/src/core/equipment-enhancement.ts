@@ -180,7 +180,41 @@ export function enhancedGearStatsAtRank(state:GameState,itemId:string,rank:numbe
 export function enhancedGearStats(state:GameState,itemId:string){
   return enhancedGearStatsAtRank(state,itemId,gearEnhancement(state,itemId).rank);
 }
-export function equippedGemBonuses(state:GameState):Record<GemStat,number>{const result={attack:0,defense:0,hp:0};if(!state.character)return result;for(const itemId of Object.values(state.character.equipment)){if(!itemId)continue;const gemId=gearEnhancement(state,itemId).statGemId;if(!gemId)continue;const gem=itemDef(gemId);if(gem.type==='gem'&&gem.gemStat)result[gem.gemStat]+=gem.gemPercent??0;}return result;}
+/**
+ * Canonical Stat Gems use the same 12 keys, percent/percentage-point units
+ * and per-grade values as the server gem catalog. Their effects are distinct
+ * from the three legacy Stat Gem types handled by equippedGemBonuses.
+ */
+export const CANONICAL_STAT_GEM_KEYS_V1={
+  stat_might:'power',stat_vitality:'maxHp',stat_iron:'armor',stat_ward:'ward',
+  stat_precision:'accuracy',stat_keen:'critRate',stat_savage:'critDamage',
+  stat_piercing:'penetration',stat_swift:'haste',stat_potent:'potency',
+  stat_elusive:'evasion',stat_resolute:'tenacity',
+} as const;
+export type CanonicalStatGemKeyV1=typeof CANONICAL_STAT_GEM_KEYS_V1[keyof typeof CANONICAL_STAT_GEM_KEYS_V1];
+export function equippedCanonicalStatGemBonusesV1(state:GameState){
+  const statPercent:Partial<Record<CanonicalStatGemKeyV1,number>>={};
+  const statPercentagePoints:Partial<Record<CanonicalStatGemKeyV1,number>>={};
+  if(!state.character)return {statPercent,statPercentagePoints};
+  for(const itemId of Object.values(state.character.equipment)){
+    if(!itemId)continue;
+    const gemId=gearEnhancement(state,itemId).statGemId;
+    if(!gemId)continue;
+    const meta=canonicalGemMetaV1(gemId);
+    if(!meta||meta.kind!=='stat')continue;
+    const family=mobileGemFamilyV1(meta.familyId);
+    const key=CANONICAL_STAT_GEM_KEYS_V1[meta.familyId as keyof typeof CANONICAL_STAT_GEM_KEYS_V1];
+    if(!key||!family||family.kind!=='stat')continue;
+    const target=family.unit==='percentage_point'?statPercentagePoints:statPercent;
+    target[key]=(target[key]??0)+family.values[meta.grade];
+  }
+  return {statPercent,statPercentagePoints};
+}
+
+/** Older gems continue to affect their original Attack/Defense/HP stats.
+ * Canonical gems are excluded so no bonus can be applied twice.
+ */
+export function equippedGemBonuses(state:GameState):Record<GemStat,number>{const result={attack:0,defense:0,hp:0};if(!state.character)return result;for(const itemId of Object.values(state.character.equipment)){if(!itemId)continue;const gemId=gearEnhancement(state,itemId).statGemId;if(!gemId)continue;if(canonicalGemMetaV1(gemId))continue;const gem=itemDef(gemId);if(gem.type==='gem'&&gem.gemStat)result[gem.gemStat]+=gem.gemPercent??0;}return result;}
 
 export type EquippedEffectGemBonuses=Record<GemEffectId,number>;
 export function equippedEffectGemBonuses(state:GameState):EquippedEffectGemBonuses{

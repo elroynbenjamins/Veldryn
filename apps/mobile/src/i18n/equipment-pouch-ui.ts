@@ -511,6 +511,12 @@ export const equipmentPouchUiRows={
     "Снаряжение для текущей цели защищено",
     "Etkin hedef için gereken ekipman korunur"
   ]
+  "Common": ["Gewöhnlich","Común","Gewoon","Comune","Commun","Обычный","Yaygın"],
+  "Uncommon": ["Ungewöhnlich","Poco común","Ongewoon","Non comune","Peu commun","Необычный","Sıradışı"],
+  "Rare": ["Selten","Raro","Zeldzaam","Raro","Rare","Редкий","Nadir"],
+  "Epic": ["Episch","Épico","Episch","Epico","Épique","Эпический","Destansı"],
+  "Legendary": ["Legendär","Legendario","Legendarisch","Leggendario","Légendaire","Легендарный","Efsanevi"],
+  "Mythic": ["Mythisch","Mítico","Mythisch","Mitico","Mythique","Мифический","Mitik"],
 } as const satisfies Record<string,SevenLanguages>;
 
 export function equipmentPouchText(language:Language,source:string,params:TranslationParams={}):string{

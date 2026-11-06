@@ -8,6 +8,7 @@ import {QuestObjectiveArtwork} from '../components/QuestObjectiveArtwork';
 import {MonsterPortraitFrame} from '../components/MonsterPortraitFrame';
 import {ActivityArtwork} from '../components/ActivityArtwork';
 import {ItemArtwork} from '../components/ItemArtwork';
+import {itemDef} from '../content/items';
 import {MONSTERS} from '../content/monsters';
 import {StatusPill} from '../components/StatusPill';
 import {UiIcon} from '../components/UiIcon';
@@ -235,12 +236,12 @@ function ContractRows({state,label,quests,onClaim,selectedById,onSelectChoice}:{
    <View style={s.contractHead}><Text style={[s.postingCategory,{color:rarityTone}]}>{quest.tag.toUpperCase()} · {quest.period.toUpperCase()}</Text><View style={[s.rarity,{borderColor:rarityTone,backgroundColor:rarityTone+(C.dark?'20':'12'),paddingHorizontal:10,paddingVertical:5}]}><Text style={[s.rarityText,{color:rarityTone,fontSize:12,lineHeight:16,letterSpacing:.6}]}>{rarity.label.toUpperCase()}</Text></View>{claimed?<StatusPill label={t("CLAIMED")} tone="muted"/>:ready?<StatusPill label={t("READY")} tone="good"/>:null}</View>
    <View style={s.postingHead}><View style={s.flex}><Text accessibilityRole="header" style={s.seasonName}>{quest.name}</Text><Text style={s.sub}>{quest.description}</Text></View><View style={s.postingArtwork}><ActivityArtwork id={quest.tag==='boss'?'combat':quest.tag==='equipment'||quest.tag==='crafting'?'smithing':quest.tag==='gathering'?'woodcutting':quest.tag} size={36}/></View></View>
    <View style={s.objectivePanel}><View style={s.objectiveMetrics}><Text style={s.objectivePanelLabel}>{p("CHALLENGE PROGRESS")}</Text><Text style={[s.objectiveRemaining,{color:ready?C.good:rarityTone}]}>{ready?t("Done"):anticipation.remaining.toLocaleString()+' '+p("left")}</Text></View><ContractProgress label={quest.tag.toUpperCase()} current={quest.progress} total={quest.required} personal/></View>
-   {!claimed&&quest.rewardOptions.length>1?<View style={{gap:6}}>
+   {ready&&!claimed&&quest.rewardOptions.length>1?<View style={{gap:6}}>
     <Text style={s.objectivePanelLabel}>{p('CHOOSE ONE REWARD')}</Text>
     <View style={{flexDirection:'row',flexWrap:'wrap',gap:7}}>
      {quest.rewardOptions.map((choice:SeasonalQuestReward)=>{
       const active=choice.id===chosenReward.id;
-      const name=choice.rewardItemId?p(choice.rewardItemId.replace(/_/g,' ')):choice.rewardBondstones?p('Bondstones'):p('Companion Essence');
+      const name=choice.rewardItemId?p(itemDef(choice.rewardItemId).name):choice.rewardBondstones?p('Bondstones'):p('Companion Essence');
       const amount=choice.rewardItemQty??choice.rewardBondstones??choice.rewardCompanionEssence??0;
       return <Pressable key={choice.id} accessibilityRole="radio" accessibilityState={{checked:active}} accessibilityLabel={amount+' '+name} onPress={()=>onSelectChoice(quest.id,choice.id)}
        style={{minHeight:44,paddingHorizontal:10,paddingVertical:7,borderWidth:1,borderColor:active?C.accent:C.line,borderRadius:9,backgroundColor:active?C.panel2:C.panel,justifyContent:'center'}}>

@@ -80,7 +80,7 @@ const pathMaterial:Record<string,Record<string,string>>={
 };
 const tailoringPathMaterial:Record<string,Record<string,string>>={
   T1:{Foundation:'BOAR_HIDE',Alternate:'WISP_DUST'},
-  T2:{Foundation:'THORN_SAP',Alternate:'IRONWOOD_FANG'},
+  T2:{Foundation:'THORN_SAP',Alternate:'TROLL_HIDE'},
   T4:{Foundation:'TORN_OATHCLOTH',Alternate:'ECHO_TOUCHED_PELT'},
 };
 

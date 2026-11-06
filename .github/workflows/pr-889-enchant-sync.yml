@@ -1,0 +1,42 @@
+name: PR 889 final shared enchant bundle parity
+
+on:
+  push:
+    branches:
+      - feature/ironwood-t2-binding-resin-and-alternate-drops
+    paths:
+      - .github/workflows/pr-889-enchant-sync.yml
+
+permissions:
+  contents: write
+
+jobs:
+  regenerate:
+    if: github.repository == 'elroynbenjamins/Veldryn'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: feature/ironwood-t2-binding-resin-and-alternate-drops
+          persist-credentials: true
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+          cache-dependency-path: backend/pnpm-lock.yaml
+      - run: pnpm --dir backend install --frozen-lockfile
+      - run: pnpm --dir apps/mobile install --frozen-lockfile
+      - run: pnpm --dir backend build:online
+      - run: node tools/verify-gameplay-edge.mjs
+      - name: Commit synchronized bundles
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add backend/supabase/functions/gameplay/index.ts backend/supabase/functions/coop/index.ts
+          if ! git diff --cached --quiet; then
+            git commit -m "Rebuild Edge bundles for T2 Mineral Essence enchantment"
+            git push origin HEAD:feature/ironwood-t2-binding-resin-and-alternate-drops
+          fi

@@ -1228,6 +1228,7 @@ const details={
 } as const satisfies Record<string,TranslationRow>;
 export const gameplayDomains={common,combat,queue,skills,inventory,rewards,crafting,details};
 const enhancement={
+  "Gear stat gains":["Gear stat gains","Ausrüstungswerte","Mejoras de atributos del equipo","Uitrustingsbonussen","Bonus statistiche equipaggiamento","Bonus des caractéristiques de l’équipement"],
   "Your stat gains":["Your stat gains","Deine Attributsboni","Tus mejoras de atributos","Je statistiekbonussen","I tuoi bonus alle statistiche","Vos gains de caractéristiques"],
   "Success chance":["Success chance","Erfolgschance","Probabilidad de éxito","Slaagkans","Probabilità di successo","Chances de réussite"],
   "Rank protected on failure":["Rank protected on failure","Rang bleibt bei Fehlschlag erhalten","El rango se conserva al fallar","Rang blijft behouden bij mislukking","Grado protetto in caso di fallimento","Rang conservé en cas d’échec"],
@@ -1251,6 +1252,12 @@ const enhancement={
 const rows={...common,...combat,...queue,...skills,...inventory,...rewards,...crafting,...details,...enhancement};
 export type GameplayKey=keyof typeof rows;
 export const gameplayCatalogs=catalogsFor(rows);
+// Russian and Turkish support for recently added enhancement-popup controls.
+const enhancementPopupEarlyLocales={"Equipment enhancement":["Улучшение снаряжения","Ekipman geliştirme"],"Confirm below to apply this change.":["Подтвердите ниже, чтобы применить изменение.","Değişikliği uygulamak için aşağıdan onayla."],"Confirm replacement":["Подтвердить замену","Değiştirmeyi onayla"],"Confirm extraction":["Подтвердить извлечение","Çıkarmayı onayla"],"Gear stat gains":["Прирост характеристик снаряжения","Ekipman özellik artışları"]} as const;
+for(const [english,pair] of Object.entries(enhancementPopupEarlyLocales)){
+ gameplayCatalogs.ru[english as GameplayKey]=pair[0];
+ gameplayCatalogs.tr[english as GameplayKey]=pair[1];
+}
 export const gameplayTranslate=createTranslator<GameplayKey>(gameplayCatalogs);
 
 const templates=(Object.keys(rows) as GameplayKey[]).filter(key=>key.includes('{')).map(key=>{

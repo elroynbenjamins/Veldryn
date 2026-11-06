@@ -2,6 +2,7 @@ import type {Language} from './languages';
 import {itemDef} from '../content/items';
 import {expandedItemNamesA} from './expanded-item-names-a';
 import {expandedItemNamesB} from './expanded-item-names-b';
+import {alchemyItemNames} from './alchemy-item-names';
 
 /** Source-guarded, ID-based names. These are UI-only, never item identities.
  * Unknown IDs and revised canonical English names retain their source wording. */
@@ -419,7 +420,7 @@ export const starterItemNames={
 } as const satisfies Record<string,Record<Language,string>>;
 
 /** Consolidated presentation registry; the original 41-row export is retained for compatibility. */
-export const allItemNames={...starterItemNames,...expandedItemNamesA,...expandedItemNamesB} as const;
+export const allItemNames={...starterItemNames,...expandedItemNamesA,...expandedItemNamesB,...alchemyItemNames} as const;
 
 export function localizedItemName(language:Language,itemId:string):string{
  const item=itemDef(itemId);

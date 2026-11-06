@@ -31,6 +31,12 @@ const modal=fs.readFileSync('src/components/EquipmentEnhancementModal.tsx','utf8
 ok(modal.includes('UPGRADE SUCCESS'),'enhancement modal must celebrate a committed success');
 ok(modal.includes("'Enhancement rank '+enhancement.rank+' of '+MAX_UPGRADE_RANK")&&modal.includes('rankStepFilled')&&modal.includes('rankStepNext'),'compact enhancement UI must show all four regional improvement ranks');
 ok(modal.includes('quote.materials.map')&&modal.includes('compactCostGrid')&&modal.includes('compactStatGrid')&&modal.includes('compactChance'),'enhancement UI must show resources, stats and success odds without a disclosure');
+ok(modal.includes('enhancedGearStatsAtRank(state,itemId,enhancement.rank)')&&modal.includes('enhancedGearStatsAtRank(state,itemId,Math.min(MAX_UPGRADE_RANK,enhancement.rank+1))'),
+  'Stats must preview the exact same crafted-rarity/quality-scaled equipment values used by gameplay');
+ok(modal.includes('formatGearStat(Math.max(0,after-before))')&&modal.includes('formatGearStat(before,after-before)'),
+  'Stat gains and before/after values must display consistent fractional precision');
+ok(modal.includes('rarityMeta(decision.rarity)'),
+  'Enhancement header must show the actual crafted rarity, not the default item rarity');
 ok(modal.includes('A failed tempering consumes its cost')&&modal.includes('Try again ·'),'regional tempering must make its protected failure loop clear');
 ok(modal.includes('riskApprovedTarget'),'the final improvement should require an intentional confirmation');
 ok(modal.includes('Animated.sequence'),'upgrade outcomes must have a brief motion response when reduced motion is disabled');

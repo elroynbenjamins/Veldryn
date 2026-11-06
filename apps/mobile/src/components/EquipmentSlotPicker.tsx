@@ -7,7 +7,7 @@ import {effectiveStats} from '../core/game';
 import {equipmentTradeOff} from '../core/equipment-trade-off';
 import {craftedGearDisplayQuality,craftedGearInstances,equippedCraftedGearRarity} from '../core/crafted-gear-instances';
 import {gearEnhancement,gemSocketState} from '../core/equipment-enhancement';
-import {displayStat} from '../core/stat-display';
+import {displayPercent,displayStat} from '../core/stat-display';
 import {EQUIPMENT_SLOT_LABELS} from '../core/equipment-screen';
 import {profileError,profileText} from '../i18n/profile';
 import {useGameLanguage} from '../i18n/GameLanguageProvider';
@@ -28,7 +28,7 @@ type Props={
  onEquipPouch?:(itemId:string)=>Promise<void>|void;
  onClose:()=>void;onInventory?:()=>void;
 };
-const percent=(value:number)=>(value*100).toFixed(1).replace(/\.0$/,'')+'%';
+const percent=displayPercent;
 const delta=(value:number)=>{const n=displayStat(value);return n===0?'—':n>0?'+'+n:String(n)};
 const changeColor=(C:ThemeColors,value:number)=>value>0?C.good:value<0?C.bad:C.muted;
 

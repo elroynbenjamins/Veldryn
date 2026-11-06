@@ -82,15 +82,24 @@ var init_faith = __esm({
       { id: "FAITH_ASCENDANT", name: "Ascendant prayer", level: 80, water: 32, xp: 5440, seconds: 30 }
     ];
     FAITH_BLESSINGS = [
-      { id: "EMBER_VOW", name: "Ember Vow", level: 1, family: "attack", bonus: 0.02 },
-      { id: "WARD_OF_STONE", name: "Ward of Stone", level: 10, family: "defense", bonus: 0.03 },
-      { id: "WELLSPRING", name: "Wellspring", level: 15, family: "hp", bonus: 0.04 },
-      { id: "SUNFIRE_VOW", name: "Sunfire Vow", level: 40, family: "attack", bonus: 0.04 },
-      { id: "IRON_SANCTUARY", name: "Iron Sanctuary", level: 45, family: "defense", bonus: 0.06 },
-      { id: "LIVING_GRACE", name: "Living Grace", level: 50, family: "hp", bonus: 0.08 },
-      { id: "DAWN_COVENANT", name: "Dawn Covenant", level: 80, family: "attack", bonus: 0.06 },
-      { id: "ETERNAL_BASTION", name: "Eternal Bastion", level: 85, family: "defense", bonus: 0.09 },
-      { id: "UNDYING_LIGHT", name: "Undying Light", level: 90, family: "hp", bonus: 0.12 }
+      { id: "EMBER_VOW", name: "Ember Vow", level: 1, family: "attack", bonus: 2 / 100 },
+      { id: "VERDANT_WHISPER", name: "Verdant Whisper", level: 5, family: "gathering", bonus: 2 / 100 },
+      { id: "WARD_OF_STONE", name: "Ward of Stone", level: 10, family: "defense", bonus: 3 / 100 },
+      { id: "ARTISANS_PRAYER", name: "Artisan's Prayer", level: 12, family: "production", bonus: 2 / 100 },
+      { id: "WELLSPRING", name: "Wellspring", level: 15, family: "hp", bonus: 4 / 100 },
+      { id: "LANTERN_OF_WISDOM", name: "Lantern of Wisdom", level: 20, family: "xp", bonus: 2 / 100 },
+      { id: "NATURES_COVENANT", name: "Nature's Covenant", level: 35, family: "gathering", bonus: 4 / 100 },
+      { id: "SUNFIRE_VOW", name: "Sunfire Vow", level: 40, family: "attack", bonus: 4 / 100 },
+      { id: "IRON_SANCTUARY", name: "Iron Sanctuary", level: 45, family: "defense", bonus: 6 / 100 },
+      { id: "FORGES_FAVOR", name: "Forge's Favor", level: 48, family: "production", bonus: 4 / 100 },
+      { id: "LIVING_GRACE", name: "Living Grace", level: 50, family: "hp", bonus: 8 / 100 },
+      { id: "SCHOLARS_DEVOTION", name: "Scholar's Devotion", level: 55, family: "xp", bonus: 4 / 100 },
+      { id: "HARVESTS_GRACE", name: "Harvest's Grace", level: 70, family: "gathering", bonus: 6 / 100 },
+      { id: "MASTERS_BENEDICTION", name: "Master's Benediction", level: 75, family: "production", bonus: 6 / 100 },
+      { id: "DAWN_COVENANT", name: "Dawn Covenant", level: 80, family: "attack", bonus: 6 / 100 },
+      { id: "ETERNAL_BASTION", name: "Eternal Bastion", level: 85, family: "defense", bonus: 9 / 100 },
+      { id: "UNDYING_LIGHT", name: "Undying Light", level: 90, family: "hp", bonus: 12 / 100 },
+      { id: "ETERNAL_ENLIGHTENMENT", name: "Eternal Enlightenment", level: 95, family: "xp", bonus: 6 / 100 }
     ];
     HOLY_WATER_SOURCES = [
       { monsterId: "FIELD_WISP", chance: 0.2, min: 1, max: 2 },
@@ -45470,7 +45479,9 @@ function characterPermanentMultipliers(state) {
   if (blessing) {
     if (blessing.family === "attack") result = merge(result, { ...BASE, attackMultiplier: 1 + blessing.bonus, combatPowerMultiplier: 1 + blessing.bonus });
     if (blessing.family === "defense") result = merge(result, { ...BASE, incomingDamageMultiplier: 1 - blessing.bonus });
-    if (blessing.family === "hp") result = merge(result, { ...BASE, characterXpMultiplier: 1, combatPowerMultiplier: 1 + blessing.bonus * 0.25 });
+    if (blessing.family === "gathering") result = merge(result, { ...BASE, gatheringSpeedMultiplier: 1 + blessing.bonus });
+    if (blessing.family === "production") result = merge(result, { ...BASE, craftingSpeedMultiplier: 1 + blessing.bonus });
+    if (blessing.family === "xp") result = merge(result, { ...BASE, skillXpMultiplier: 1 + blessing.bonus, characterXpMultiplier: 1 + blessing.bonus });
   }
   for (const row of collectionBonusBreakdown(state)) {
     if (row.appliedBps > 0) result = merge(result, collectibleTargetMultipliers(row.target, row.appliedBps));
@@ -45499,6 +45510,9 @@ function characterPermanentMultipliers(state) {
   }
   return result;
 }
+
+// ../apps/mobile/src/core/profession-action-pace.ts
+init_faith2();
 
 // ../apps/mobile/src/core/class-skill-affinities.ts
 var CLASS_SKILL_AFFINITIES = Object.freeze({
@@ -46071,6 +46085,8 @@ function effectiveStats(state) {
   defense = Math.ceil(defense * mastery.defense);
   const permanent = characterPermanentMultipliers(state);
   attack = Math.ceil(attack * permanent.combatPowerMultiplier);
+  const faithBlessing = selectedFaithBlessing(state);
+  if (faithBlessing?.family === "hp") hp = Math.ceil(hp * (1 + faithBlessing.bonus));
   const prep = c.preparation ? preparationEffects(c.preparation) : void 0;
   if (prep) attack = Math.ceil(attack * prep.attack);
   const role2 = CLASSES.find((def) => def.id === c.classId)?.role, baseCritChance = role2 === "Damage" ? 0.1 : 0.05, baseEvasion = role2 === "Damage" ? 0.07 : 0.04;

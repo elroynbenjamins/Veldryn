@@ -3,6 +3,8 @@ import {equipCraftedGearInstance} from '../src/core/crafted-gear-ownership';
 import {equipmentComparison} from '../src/core/equipment-comparison';
 import {itemDef,ITEMS} from '../src/content/items';
 import {previewEquipment} from '../src/core/equipment-preview';
+import {itemInspectModel} from '../src/core/item-inspect';
+import {displayPercent,DISPLAY_STAT_MULTIPLIER} from '../src/core/stat-display';
 import {availableEquipmentChoicesForSlot} from '../src/core/equipment-slot-picker';
 import {EQUIPMENT_ITEMS_V33} from '../src/content/equipment-items-v33';
 import type {CraftedGearInstance} from '../src/core/types';
@@ -15,6 +17,11 @@ if(EQUIPMENT_SLOT_ORDER.length!==10||new Set(EQUIPMENT_SLOT_ORDER).size!==10)thr
 if(model.slots.length!==10||model.equippedCount!==1)throw new Error('Equipment screen model does not reflect live equipment state');
 if(model.slots.find(slot=>slot.slot==='weapon')?.itemId!=='basic_sword')throw new Error('Equipment screen did not read the equipped weapon');
 if(model.stats.maxHp!==155||model.stats.attack!==19||model.stats.defense!==19)throw new Error('Equipment screen stats must come from effectiveStats');
+const overMax={...state,character:{...state.character!,currentHp:99999}};
+if(equipmentScreenModel(overMax).stats.currentHp!==effectiveStats(overMax).hp)
+  throw new Error('Character current health display must not exceed computed Max HP after gear changes');
+if(displayPercent(.0125)!=='1.25%'||displayPercent(.0035)!=='0.35%'||DISPLAY_STAT_MULTIPLIER!==10)
+  throw new Error('Character stats must preserve fractional percentages and the agreed ×10 display scale');
 if(model.loadouts.map(loadout=>loadout.id).join(',')!=='LOAD_001,LOAD_002,LOAD_003')throw new Error('Ironwarden loadout guides must follow canonical order');
 if(focus.equippedCount!==1||focus.emptySlots!==9||focus.next.kind!=='fill-slots'||focus.next.action!=='inventory')throw new Error('Loadout focus must guide a fresh character toward filling empty slots before secondary optimization');
 if(focus.openSockets>focus.totalSockets)throw new Error('Loadout focus socket summary cannot report more open sockets than total sockets');
@@ -59,6 +66,14 @@ const equippedLow={...forged,
   equipmentInstanceIds:{weapon:'COPY_LOW'}},
  inventory:{...forged.inventory,stacks:forged.inventory.stacks.filter(stack=>stack.instanceId!=='COPY_LOW')},
 };
+
+const equippedInspect=itemInspectModel(equippedLow,forgeWeapon.id);
+if(!equippedInspect.gearDecision?.previewAvailable||equippedInspect.gearDecision.loadoutDelta.attack!==0||
+   equippedInspect.gearDecision.maxLoadoutGain.attack<=0)
+  throw new Error('Inspecting equipped unique Forge gear must show real current stats and meaningful next-rank gains');
+const unselectedInspect=itemInspectModel(forged,forgeWeapon.id);
+if(unselectedInspect.gearDecision?.previewAvailable)
+  throw new Error('Inspect cannot guess a unique Forge copy when multiple distinct qualities exist');
 const upgradedPreview=previewEquipment(equippedLow,forgeWeapon.id,'COPY_HIGH');
 if(upgradedPreview.character?.equipmentInstanceIds?.weapon!=='COPY_HIGH'
  ||equippedLow.character.equipmentInstanceIds.weapon!=='COPY_LOW'

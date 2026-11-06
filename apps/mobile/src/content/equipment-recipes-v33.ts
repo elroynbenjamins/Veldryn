@@ -43,7 +43,7 @@ const tierGold:Record<string,number>={T1:120,T2:420,T3:900,T4:1800,T5:3500,T6:10
 // lowering level gates, reducing costs, or speeding up late-tier training.
 const tierXp:Record<string,number>={T1:165,T2:290,T3:450,T4:700,T5:1100,T6:1600,T7:2200,T8:2900,T9:3800};
 const infusionByTier:Record<string,{itemId:string;quantity:number}>={
-  T1:{itemId:'VERDANT_BINDING_RESIN',quantity:1},T2:{itemId:'VERDANT_BINDING_RESIN',quantity:1},
+  T1:{itemId:'VERDANT_BINDING_RESIN',quantity:1},T2:{itemId:'IRONWOOD_BINDING_RESIN',quantity:1},
   T3:{itemId:'OATHGLASS_SOLVENT',quantity:1},T4:{itemId:'OATHGLASS_SOLVENT',quantity:2},
   T5:{itemId:'SUNFUSED_FIXATIVE',quantity:1},T6:{itemId:'SUNFUSED_FIXATIVE',quantity:2},
   T7:{itemId:'RIMEWARD_DISTILLATE',quantity:1},T8:{itemId:'RIMEWARD_DISTILLATE',quantity:2},

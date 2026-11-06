@@ -49,7 +49,24 @@ for(const tier of ['T1','T2','T3','T4','T5','T6','T7','T8','T9']){
 // Early recipes must not require repeated hunts in substantially outdated zones.
 const gearInTier=(tier:string)=>V33_EQUIPMENT_RECIPES.filter(recipe=>recipe.v33EquipmentTier===tier);
 for(const recipe of gearInTier('T1'))ok(!recipe.inputs.some(row=>row.itemId==='THORN_SAP'),'T1 alternate gear must not require level-8 Thorn Sap');
-for(const recipe of gearInTier('T2'))ok(!recipe.inputs.some(row=>row.itemId==='BOAR_HIDE'),'T2 gear should not demand level-4 Boar Hide');
+for(const recipe of gearInTier('T2')){
+ ok(!recipe.inputs.some(row=>row.itemId==='BOAR_HIDE'),'T2 gear should not demand level-4 Boar Hide');
+ ok(recipe.inputs.some(row=>row.itemId==='IRONWOOD_BINDING_RESIN'),'T2 gear must require its Ironwood-specific Alchemy resin');
+ ok(!recipe.inputs.some(row=>row.itemId==='VERDANT_BINDING_RESIN'),'T2 equipment must not demand a starter-region infusion');
+}
+for(const recipe of gearInTier('T1'))ok(recipe.inputs.some(row=>row.itemId==='VERDANT_BINDING_RESIN'),'T1 gear must continue using Verdant resin');
+const ironwoodResin=RECIPES.find(row=>row.id==='BREW_IRONWOOD_BINDING_RESIN')!;
+ok(!!ironwoodResin&&ironwoodResin.level<=8,'T2 resin must unlock by Alchemy 8');
+ok(ironwoodResin.inputs.length>=3&&ironwoodResin.inputs.every(input=>['IRONWOOD_LOG','THORN_SAP','WOLF_PELT'].includes(input.itemId)),'T2 resin must use exclusively obtainable Ironwood materials');
+const materialDropLevels=(id:string)=>MONSTERS.filter(monster=>monster.drops.some(drop=>drop.itemId===id)).map(monster=>monster.level);
+for(const [id,lower,higher] of [['MOSS_FIBER',1,8],['WISP_DUST',2,5],['BOAR_HIDE',4,7],['WOLF_PELT',7,14],['IRONWOOD_FANG',7,14],['THORN_SAP',8,10],['TROLL_HIDE',14,22]] as const){
+ const levels=materialDropLevels(id);
+ ok(levels.includes(lower)&&levels.includes(higher),id+' needs both original and higher-level monster drop sources');
+}
+const ironwoodWolf=MONSTERS.find(row=>row.id==='IRONWOOD_WOLF')!;
+const forestTroll=MONSTERS.find(row=>row.id==='FOREST_TROLL')!;
+ok(ironwoodWolf.drops.some(drop=>drop.itemId==='BOAR_HIDE'&&drop.chance<=.1),'Wolf boar-hide scavenging must remain a low-frequency secondary source');
+ok(forestTroll.drops.some(drop=>drop.itemId==='IRONWOOD_FANG'&&drop.chance<=.06),'Forest Troll fang trophies must not replace focused wolf hunts');
 for(const recipe of gearInTier('T3')){
  const materialIds=recipe.inputs.map(row=>row.itemId);
  ok(!materialIds.some(id=>['TROLL_HIDE','WOLF_PELT','THORN_SAP','CROWNWOOD_LOG'].includes(id)),'T3 gear cannot depend on Ironwood monster farming');

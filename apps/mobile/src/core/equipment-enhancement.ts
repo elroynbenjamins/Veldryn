@@ -88,11 +88,11 @@ export function canDisposeLegacyEquipment(state:GameState,itemId:string,location
 export function gemSocketCapacity(itemId:string){const item=itemDef(itemId);return item.type==='gear'?EQUIPMENT_GEM_SOCKET_COUNT:0;}
 export function gemSocketState(state:GameState,itemId:string){const enhancement=gearEnhancement(state,itemId);return {statGemId:enhancement.statGemId,effectGemId:enhancement.effectGemId,filled:Number(Boolean(enhancement.statGemId))+Number(Boolean(enhancement.effectGemId)),capacity:gemSocketCapacity(itemId)};}
 export type UpgradeMaterialCost={itemId:string;quantity:number};
-/** Use regional recipe inputs, except T1/T2 Verdant infusion: keep Verdant for Forge crafting and require a Mining rare find for enchanting instead. */
+/** Forging uses each tier's own resin; T1/T2 enchanting uses rare Mining Essence instead of consuming either binding resin. */
 export function upgradeMaterialCosts(itemId:string,targetRank:number):UpgradeMaterialCost[]{
   const recipe=v33EquipmentRecipeForItem(itemId);if(!recipe)return [];
   const ratio=targetRank===1?.12:targetRank===2?.18:targetRank===3?.27:targetRank===4?.38:0;
-  return recipe.inputs.map(input=>({itemId:input.itemId==='VERDANT_BINDING_RESIN'?ASTERFALL_MINERAL_ESSENCE_ID:input.itemId,quantity:Math.max(1,Math.ceil(input.quantity*ratio))}));
+  return recipe.inputs.map(input=>({itemId:(input.itemId==='VERDANT_BINDING_RESIN'||input.itemId==='IRONWOOD_BINDING_RESIN')?ASTERFALL_MINERAL_ESSENCE_ID:input.itemId,quantity:Math.max(1,Math.ceil(input.quantity*ratio))}));
 }
 export function upgradeQuote(state:GameState,itemId:string){
   const item=itemDef(itemId);if(item.type!=='gear')throw new Error('Only equipment can be upgraded');

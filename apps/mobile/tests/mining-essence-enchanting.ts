@@ -38,14 +38,15 @@ ok(acquired===found&&acquired>0,'Offline Mining rewards must reach storage witho
 const allEarly=V33_EQUIPMENT_RECIPES.filter(row=>row.v33EquipmentTier==='T1'||row.v33EquipmentTier==='T2');
 ok(allEarly.length>0,'Expected early forged equipment');
 for(const recipe of allEarly){
- ok(recipe.inputs.some(input=>input.itemId==='VERDANT_BINDING_RESIN'),
-  'Forging recipe must continue to use Verdant Binding Resin for '+recipe.id);
+ const resinId=recipe.v33EquipmentTier==='T1'?'VERDANT_BINDING_RESIN':'IRONWOOD_BINDING_RESIN';
+ ok(recipe.inputs.some(input=>input.itemId===resinId),
+  'Forging recipe must use the correct tier-specific resin for '+recipe.id);
  for(const rank of [1,2,3,4]){
   const costs=upgradeMaterialCosts(recipe.output.itemId,rank);
   ok(costs.some(row=>row.itemId===id&&row.quantity===1),
    'Early enchant attempt requires one Mineral Essence: '+recipe.id+' rank '+rank);
-  ok(!costs.some(row=>row.itemId==='VERDANT_BINDING_RESIN'),
-   'Early enchanting may never consume Verdant: '+recipe.id+' rank '+rank);
+  ok(!costs.some(row=>['VERDANT_BINDING_RESIN','IRONWOOD_BINDING_RESIN'].includes(row.itemId)),
+   'Early enchanting must use Mineral Essence rather than either forging resin: '+recipe.id+' rank '+rank);
  }
 }
 const later=V33_EQUIPMENT_RECIPES.find(row=>row.v33EquipmentTier==='T3')!;

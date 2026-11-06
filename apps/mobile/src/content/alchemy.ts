@@ -34,7 +34,8 @@ export const POTIONS:readonly PotionDefinition[]=[
  * loop. They are consumed for initial assembly and naturally reappear in the
  * existing regional-upgrade costs through the equipment recipe itself. */
 export const ALCHEMY_EQUIPMENT_INFUSIONS=Object.freeze([
-  {id:'VERDANT_BINDING_RESIN',name:'Verdant Binding Resin',rarity:'rare' as const,value:70,description:'A dewleaf resin that binds early regional gear.'},
+  {id:'VERDANT_BINDING_RESIN',name:'Verdant Binding Resin',rarity:'rare' as const,value:70,description:'A dewleaf resin that binds first-tier gear.'},
+  {id:'IRONWOOD_BINDING_RESIN',name:'Ironwood Binding Resin',rarity:'rare' as const,value:115,description:'A thorn-infused resin made with Ironwood resources for second-tier gear.'},
   {id:'OATHGLASS_SOLVENT',name:'Oathglass Solvent',rarity:'rare' as const,value:310,description:'A crystalline solvent for Oathstone-era gear.'},
   {id:'SUNFUSED_FIXATIVE',name:'Sunfused Fixative',rarity:'epic' as const,value:720,description:'A heat-stable fixative for Sunscar equipment.'},
   {id:'RIMEWARD_DISTILLATE',name:'Rimeward Distillate',rarity:'epic' as const,value:1320,description:'A frostbound distillate for Frostmarch equipment.'},
@@ -60,6 +61,8 @@ export const ALCHEMY_RECIPES:readonly AlchemyRecipe[]=([
   recipe('OATH_VIGOR_TONIC',60,174,1700,98,[{itemId:'WINTERMINT',quantity:2},{itemId:'OATHBLOSSOM',quantity:2}],'_FROSTMARCH'),
   recipe('OATH_WARD_TONIC',60,190,2150,128,[{itemId:'ASHEN_MYRRH',quantity:2},{itemId:'FROSTBLOOM',quantity:2}],'_ASHLANDS'),
   {id:'BREW_VERDANT_BINDING_RESIN',name:'Verdant Binding Resin',skillId:'alchemy',level:1,seconds:90,xp:95,gold:18,inputs:[{itemId:'DEWLEAF',quantity:5},{itemId:'MOSS_FIBER',quantity:12},{itemId:'WISP_DUST',quantity:3},{itemId:'ASTERFALL_BOTANICAL_ESSENCE',quantity:1}],output:{itemId:'VERDANT_BINDING_RESIN',quantity:1}},
+  // Available at the start of T2: all inputs come from Ironwood hunts or woodcutting, without backtracking to Greenfields.
+  {id:'BREW_IRONWOOD_BINDING_RESIN',name:'Ironwood Binding Resin',skillId:'alchemy',level:8,seconds:115,xp:180,gold:35,inputs:[{itemId:'IRONWOOD_LOG',quantity:6},{itemId:'THORN_SAP',quantity:4},{itemId:'WOLF_PELT',quantity:2}],output:{itemId:'IRONWOOD_BINDING_RESIN',quantity:1}},
   {id:'BREW_OATHGLASS_SOLVENT',name:'Oathglass Solvent',skillId:'alchemy',level:20,seconds:135,xp:420,gold:55,inputs:[{itemId:'IRONBLOOM',quantity:4},{itemId:'OATHGLASS_SHARD',quantity:4},{itemId:'ECHO_QUARTZ',quantity:2},{itemId:'ASTERFALL_BOTANICAL_ESSENCE',quantity:1}],output:{itemId:'OATHGLASS_SOLVENT',quantity:1}},
   {id:'BREW_SUNFUSED_FIXATIVE',name:'Sunfused Fixative',skillId:'alchemy',level:49,seconds:165,xp:950,gold:110,inputs:[{itemId:'SUNSCALE',quantity:3},{itemId:'AMBERGLASS',quantity:2},{itemId:'SCORPION_VENOM',quantity:2}],output:{itemId:'SUNFUSED_FIXATIVE',quantity:1}},
   {id:'BREW_RIMEWARD_DISTILLATE',name:'Rimeward Distillate',skillId:'alchemy',level:76,seconds:195,xp:1750,gold:220,inputs:[{itemId:'WINTERMINT',quantity:3},{itemId:'RIMEGLASS',quantity:2},{itemId:'RIME_RESIN',quantity:3}],output:{itemId:'RIMEWARD_DISTILLATE',quantity:1}},

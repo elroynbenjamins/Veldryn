@@ -130,7 +130,7 @@ export function EquipmentEnhancementModal({visible,state,itemId,onClose,onUpgrad
       <Pressable accessibilityRole="tab" accessibilityState={{selected:tab==='upgrade'}} onPress={()=>setTab('upgrade')} style={[s.tab,tab==='upgrade'&&s.tabOn]}><Text style={[s.tabText,tab==='upgrade'&&s.tabTextOn]}>{gt("Enhance")}</Text></Pressable>
       <Pressable accessibilityRole="tab" accessibilityState={{selected:tab==='gems'}} onPress={()=>setTab('gems')} style={[s.tab,tab==='gems'&&s.tabOn]}><Text style={[s.tabText,tab==='gems'&&s.tabTextOn]}>{gt("Gems")+' · '+socketState.filled+'/'+capacity}</Text></Pressable>
     </View>
-    <ScrollView style={s.scroll} contentContainerStyle={s.compactBody} showsVerticalScrollIndicator={false}>
+    <ScrollView style={s.scroll} contentContainerStyle={s.compactBody} showsVerticalScrollIndicator={false} showsHorizontalScrollIndicator={false}>
       {actionError?<ActionFeedback message={actionError} tone="error" reduceMotion={state.settings.reduceMotion}/>:null}
       {feedback?.kind==='sockets'&&tab==='gems'&&!gemPickerOpen?<GemSocketResultMoment feedback={feedback} state={state} reduceMotion={state.settings.reduceMotion}/>:null}
       {tab==='upgrade'?<>
@@ -211,7 +211,7 @@ export function EquipmentEnhancementModal({visible,state,itemId,onClose,onUpgrad
       </>}
     </ScrollView>
     {tab==='upgrade'&&!quote.maxed?<View style={s.actionFooter}>
-      <GameButton title={confirmRisk?gt("Confirm attempt"):gt("Enhance to")+' +'+quote.targetRank} loading={busy} disabled={!canUpgrade} onPress={attempt}/>
+      <GameButton title={confirmRisk?gt("Confirm attempt"):feedback?.kind==='upgrade_failure'?gt("Try again · ")+totalChancePct+'%':gt("Enhance to")+' +'+quote.targetRank} loading={busy} disabled={!canUpgrade} onPress={attempt}/>
       {!canUpgrade?<Text accessibilityLiveRegion="polite" style={s.reason}>{unavailable}</Text>:<Text style={s.compactFooterHint}>{gt("Rank protected on failure")}</Text>}
     </View>:null}
     {tab==='gems'&&gemPickerOpen&&!pendingGemAction?<View style={s.actionFooter}>

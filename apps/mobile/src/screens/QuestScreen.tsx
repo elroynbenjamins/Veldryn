@@ -25,7 +25,7 @@ import {GameButton} from '../components/GameButton';
 import {StatBar} from '../components/StatBar';
 import {spacing,typography,equipmentTheme,type ThemeColors} from '../theme/theme';
 import {useGameTheme} from '../theme/ThemeContext';
-import {QUEST_RARITIES,SeasonalPeriod,SeasonalQuest,seasonalQuestBoard} from '../core/seasonal-quests';
+import {QUEST_RARITIES,SeasonalPeriod,SeasonalQuest,seasonalQuestBoard,type SeasonalQuestReward} from '../core/seasonal-quests';
 import {weeklyOrderBoardForState} from '../core/long-term-progression-runtime';
 import type {WeeklyOrder} from '../core/weekly-orders-v41';
 import {weeklyOrderDestination,weeklyOrderIdleRuleId,weeklyOrderQueueActivity} from '../core/weekly-order-integrations-v41';
@@ -49,6 +49,7 @@ type ClaimMoment={
   itemId?:string;
   quantity?:number;
   essence?:number;
+  bondstones?:number;
   rarityColor?:string;
 };
 function ClaimMomentCard({moment,reduceMotion}:{moment:ClaimMoment;reduceMotion:boolean}){
@@ -60,11 +61,11 @@ function ClaimMomentCard({moment,reduceMotion}:{moment:ClaimMoment;reduceMotion:
   useEffect(()=>{pulse.stopAnimation();pulse.setValue(1);if(reduceMotion)return;Animated.sequence([Animated.spring(pulse,{toValue:1.025,damping:9,stiffness:230,mass:.6,useNativeDriver:true}),Animated.spring(pulse,{toValue:1,damping:16,stiffness:210,mass:.7,useNativeDriver:true})]).start();return()=>pulse.stopAnimation()},[moment.key,reduceMotion,pulse]);
   return <Animated.View accessibilityLiveRegion="polite" style={[s.claimMoment,{borderColor:accent,transform:[{scale:pulse}]}]}>
     <View style={s.claimMomentHead}><View style={s.flex}><Text style={[s.claimMomentEyebrow,{color:accent}]}>✦ {moment.eyebrow}</Text><Text style={s.claimMomentTitle}>{moment.title}</Text><Text style={s.claimMomentDetail}>{moment.detail}</Text></View><StatusPill label={t("SECURED")} tone="good"/></View>
-    <QuestReward gold={moment.gold} xp={moment.xp} itemId={moment.itemId} quantity={moment.quantity??1} essence={moment.essence} label={t("Rewards secured")} rarityColor={moment.rarityColor}/>
+    <QuestReward gold={moment.gold} xp={moment.xp} itemId={moment.itemId} quantity={moment.quantity??1} essence={moment.essence} bondstones={moment.bondstones} label={t("Rewards secured")} rarityColor={moment.rarityColor}/>
   </Animated.View>;
 }
 
-export function QuestScreen({state,mode,onModeChange,focusedWeeklyOrderId,onClaim,onClaimContract,onNavigate,onOpenWeeklyBoss,onOpenWeeklyOrder,onQueueWeeklyOrder,onStopWeeklyOrder}:{state:GameState;mode:QuestMode;onModeChange:(mode:QuestMode)=>void;focusedWeeklyOrderId?:string;onClaim:(id:string)=>void;onClaimContract:(period:SeasonalPeriod,id:string)=>void;onNavigate:(destination:QuestDestination)=>void;onOpenWeeklyBoss:()=>void;onOpenWeeklyOrder:(order:WeeklyOrder)=>void;onQueueWeeklyOrder:(order:WeeklyOrder)=>void;onStopWeeklyOrder:(order:WeeklyOrder)=>void}){
+export function QuestScreen({state,mode,onModeChange,focusedWeeklyOrderId,onClaim,onClaimContract,onNavigate,onOpenWeeklyBoss,onOpenWeeklyOrder,onQueueWeeklyOrder,onStopWeeklyOrder}:{state:GameState;mode:QuestMode;onModeChange:(mode:QuestMode)=>void;focusedWeeklyOrderId?:string;onClaim:(id:string)=>void;onClaimContract:(period:SeasonalPeriod,id:string,choiceId?:string)=>void;onNavigate:(destination:QuestDestination)=>void;onOpenWeeklyBoss:()=>void;onOpenWeeklyOrder:(order:WeeklyOrder)=>void;onQueueWeeklyOrder:(order:WeeklyOrder)=>void;onStopWeeklyOrder:(order:WeeklyOrder)=>void}){
   const contextLanguage=useGameLanguage(),language=state.settings.language??contextLanguage;
   const t=(key:ProgressionKey,params?:Record<string,string|number>)=>progressionT(language,key,params);
   const p=(text:string)=>progressionText(language,text);
@@ -74,6 +75,7 @@ export function QuestScreen({state,mode,onModeChange,focusedWeeklyOrderId,onClai
   const [expandedStories,setExpandedStories]=useState<Record<string,boolean>>({});
   const [boardDetails,setBoardDetails]=useState(false);
   const [notice,setNotice]=useState(''),[error,setError]=useState(''),[claimMoment,setClaimMoment]=useState<ClaimMoment|null>(null);
+  const [rewardChoiceByQuest,setRewardChoiceByQuest]=useState<Record<string,string>>({});
   const confirmed=useRef({characterId:state.character?.id,quests:state.quests.filter(q=>q.status==='claimed').map(q=>q.questId),contracts:state.account.seasonalContractClaimIds??[]});
   useEffect(()=>{
     const next={characterId:state.character?.id,quests:state.quests.filter(q=>q.status==='claimed').map(q=>q.questId),contracts:state.account.seasonalContractClaimIds??[]};
@@ -86,7 +88,7 @@ export function QuestScreen({state,mode,onModeChange,focusedWeeklyOrderId,onClai
       setNotice('');setError('');
     }else if(contracts.length){
       const id=contracts[contracts.length-1],contract=(['daily','weekly','monthly'] as const).flatMap(period=>seasonalQuestBoard(state,period)).find(row=>row.id===id);
-      if(contract){const rarity=QUEST_RARITIES[contract.rarity];setClaimMoment({key:'contract:'+id,kind:'contract',eyebrow:rarity.label.toUpperCase()+' CACHE CLAIMED',title:contract.name,detail:t("Challenge reward secured and added to your account."),gold:contract.rewardGold,xp:contract.rewardXp,itemId:contract.rewardItemId,quantity:contract.rewardItemQty,essence:contract.rewardCompanionEssence,rarityColor:rarity.color});}
+      if(contract){const rarity=QUEST_RARITIES[contract.rarity],choice=contract.rewardOptions.find(option=>option.id===state.account.seasonalContractRewardChoices?.[contract.id])??contract.rewardOptions[0];setClaimMoment({key:'contract:'+id,kind:'contract',eyebrow:rarity.label.toUpperCase()+' CACHE CLAIMED',title:contract.name,detail:t("Challenge reward secured and added to your account."),gold:contract.rewardGold,xp:contract.rewardXp,itemId:choice.rewardItemId,quantity:choice.rewardItemQty,essence:choice.rewardCompanionEssence,bondstones:choice.rewardBondstones,rarityColor:rarity.color});}
       setNotice('');setError('');
     }
   },[state.quests,state.account.seasonalContractClaimIds,state.character?.id]);
@@ -110,8 +112,8 @@ export function QuestScreen({state,mode,onModeChange,focusedWeeklyOrderId,onClai
     try{setClaimMoment(null);setNotice('');setError('');onClaim(id)}
     catch(e){setError(progressionError(language,e,"Unable to claim this quest."));setNotice('')}
   }
-  function claimContract(period:SeasonalPeriod,id:string){
-    try{setClaimMoment(null);setNotice('');setError('');onClaimContract(period,id)}
+  function claimContract(period:SeasonalPeriod,id:string,choiceId?:string){
+    try{setClaimMoment(null);setNotice('');setError('');onClaimContract(period,id,choiceId)}
     catch(e){setError(progressionError(language,e,"Unable to claim this contract."));setNotice('')}
   }
   return <ScrollView contentContainerStyle={s.root} keyboardShouldPersistTaps="handled" keyboardDismissMode="on-drag" showsVerticalScrollIndicator={false} showsHorizontalScrollIndicator={false}>
@@ -154,9 +156,9 @@ export function QuestScreen({state,mode,onModeChange,focusedWeeklyOrderId,onClai
       </Panel>
       <ScrollView accessibilityRole="tablist" horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={[s.row,s.filterRail]} showsVerticalScrollIndicator={false}>{(['all','daily','weekly','monthly'] as const).map(value=><FilterChip key={value} label={(value==='all'?t("All"):p(value.charAt(0).toUpperCase()+value.slice(1)))+' · '+(value==='all'?allChallenges.length:value==='daily'?daily.length:value==='weekly'?weekly.length:monthly.length)} selected={challengePeriod===value} onPress={()=>setChallengePeriod(value)}/>)}</ScrollView>
       <View style={s.postingStack}>
-        {challengePeriod==='all'||challengePeriod==='daily'?<ContractRows state={state} label={'DAILY · '+(daily[0]?.className??'')} quests={daily} onClaim={claimContract}/>:null}
-        {challengePeriod==='all'||challengePeriod==='weekly'?<ContractRows state={state} label={t("WEEKLY")} quests={weekly} onClaim={claimContract}/>:null}
-        {challengePeriod==='all'||challengePeriod==='monthly'?<ContractRows state={state} label={t("MONTHLY")} quests={monthly} onClaim={claimContract}/>:null}
+        {challengePeriod==='all'||challengePeriod==='daily'?<ContractRows state={state} label={'DAILY · '+(daily[0]?.className??'')} quests={daily} onClaim={claimContract} selectedById={rewardChoiceByQuest} onSelectChoice={(id,choiceId)=>setRewardChoiceByQuest(current=>({...current,[id]:choiceId}))}/>:null}
+        {challengePeriod==='all'||challengePeriod==='weekly'?<ContractRows state={state} label={t("WEEKLY")} quests={weekly} onClaim={claimContract} selectedById={rewardChoiceByQuest} onSelectChoice={(id,choiceId)=>setRewardChoiceByQuest(current=>({...current,[id]:choiceId}))}/>:null}
+        {challengePeriod==='all'||challengePeriod==='monthly'?<ContractRows state={state} label={t("MONTHLY")} quests={monthly} onClaim={claimContract} selectedById={rewardChoiceByQuest} onSelectChoice={(id,choiceId)=>setRewardChoiceByQuest(current=>({...current,[id]:choiceId}))}/>:null}
       </View>
     </>:null}
     {mode==='story'?<>
@@ -217,7 +219,7 @@ function WeeklyOrderRows({state,orders,reduceMotion,focusedOrderId,onOpenOrder,o
     </QuestPosting>
  })}</>;
 }
-function ContractRows({state,label,quests,onClaim}:{state:GameState;label:string;quests:SeasonalQuest[];onClaim:(period:SeasonalPeriod,id:string)=>void}){
+function ContractRows({state,label,quests,onClaim,selectedById,onSelectChoice}:{state:GameState;label:string;quests:SeasonalQuest[];onClaim:(period:SeasonalPeriod,id:string,choiceId?:string)=>void;selectedById:Record<string,string>;onSelectChoice:(id:string,choiceId:string)=>void}){
   const contextLanguage=useGameLanguage(),language=state.settings.language??contextLanguage;
   const t=(key:ProgressionKey,params?:Record<string,string|number>)=>progressionT(language,key,params);
   const p=(text:string)=>progressionText(language,text);
@@ -227,12 +229,28 @@ function ContractRows({state,label,quests,onClaim}:{state:GameState;label:string
  return <><View style={s.cadenceHeader}><Text style={s.seasonLabel}>{label}</Text><Text style={s.contractHint}>{readyCount} {p("ready")} · {quests.length} {p("objectives")}</Text></View>{ordered.map(quest=>{
   const rarity=QUEST_RARITIES[quest.rarity],rarityTone=C.dark?rarity.color:({common:'#526174',uncommon:'#267047',rare:'#216896',epic:'#7542ad',legendary:'#96520d'}[quest.rarity]);
   const claimed=claimedIds.has(quest.id),ready=quest.progress>=quest.required,anticipation=contractAnticipation(quest.progress,quest.required),near=!claimed&&!ready&&anticipation.band!=='none';
+   const currentChoiceId=claimed?state.account.seasonalContractRewardChoices?.[quest.id]:selectedById[quest.id];
+   const chosenReward=quest.rewardOptions.find(option=>option.id===currentChoiceId)??quest.rewardOptions[0];
   return <QuestPosting key={quest.id} style={[s.seasonQuest,{borderLeftColor:rarityTone,borderLeftWidth:3}]}>
    <View style={s.contractHead}><Text style={[s.postingCategory,{color:rarityTone}]}>{quest.tag.toUpperCase()} · {quest.period.toUpperCase()}</Text><View style={[s.rarity,{borderColor:rarityTone,backgroundColor:rarityTone+(C.dark?'20':'12'),paddingHorizontal:10,paddingVertical:5}]}><Text style={[s.rarityText,{color:rarityTone,fontSize:12,lineHeight:16,letterSpacing:.6}]}>{rarity.label.toUpperCase()}</Text></View>{claimed?<StatusPill label={t("CLAIMED")} tone="muted"/>:ready?<StatusPill label={t("READY")} tone="good"/>:null}</View>
    <View style={s.postingHead}><View style={s.flex}><Text accessibilityRole="header" style={s.seasonName}>{quest.name}</Text><Text style={s.sub}>{quest.description}</Text></View><View style={s.postingArtwork}><ActivityArtwork id={quest.tag==='boss'?'combat':quest.tag==='equipment'||quest.tag==='crafting'?'smithing':quest.tag==='gathering'?'woodcutting':quest.tag} size={36}/></View></View>
    <View style={s.objectivePanel}><View style={s.objectiveMetrics}><Text style={s.objectivePanelLabel}>{p("CHALLENGE PROGRESS")}</Text><Text style={[s.objectiveRemaining,{color:ready?C.good:rarityTone}]}>{ready?t("Done"):anticipation.remaining.toLocaleString()+' '+p("left")}</Text></View><ContractProgress label={quest.tag.toUpperCase()} current={quest.progress} total={quest.required} personal/></View>
-   <QuestReward gold={quest.rewardGold} xp={quest.rewardXp} itemId={quest.rewardItemId} quantity={quest.rewardItemQty} essence={quest.rewardCompanionEssence} label={rarity.cache} rarityColor={rarityTone}/>
-   {claimed?<Text style={s.claimed}>{t("✓ Cache claimed")}</Text>:ready?<GameButton compact title={`Claim ${rarity.label} cache`} onPress={()=>onClaim(quest.period,quest.id)}/>:<Text style={near?s.contractNear:s.contractHint}>{near?(anticipation.band==='next'?'NEXT PROGRESS COMPLETES IT · ':anticipation.band==='urgent'?'FINAL STRETCH · ':'ALMOST COMPLETE · '):''}{anticipation.remaining} {t("progress remaining")}</Text>}
+   {!claimed&&quest.rewardOptions.length>1?<View style={{gap:6}}>
+    <Text style={s.objectivePanelLabel}>{p('CHOOSE ONE REWARD')}</Text>
+    <View style={{flexDirection:'row',flexWrap:'wrap',gap:7}}>
+     {quest.rewardOptions.map((choice:SeasonalQuestReward)=>{
+      const active=choice.id===chosenReward.id;
+      const name=choice.rewardItemId?p(choice.rewardItemId.replace(/_/g,' ')):choice.rewardBondstones?p('Bondstones'):p('Companion Essence');
+      const amount=choice.rewardItemQty??choice.rewardBondstones??choice.rewardCompanionEssence??0;
+      return <Pressable key={choice.id} accessibilityRole="radio" accessibilityState={{checked:active}} accessibilityLabel={amount+' '+name} onPress={()=>onSelectChoice(quest.id,choice.id)}
+       style={{minHeight:44,paddingHorizontal:10,paddingVertical:7,borderWidth:1,borderColor:active?C.accent:C.line,borderRadius:9,backgroundColor:active?C.panel2:C.panel,justifyContent:'center'}}>
+       <Text style={{fontSize:12,fontWeight:active?'800':'600',color:active?C.accent:C.text}}>{active?'✓ ':''}{amount}× {name}</Text>
+      </Pressable>;
+     })}
+    </View>
+   </View>:null}
+   <QuestReward gold={quest.rewardGold} xp={quest.rewardXp} itemId={chosenReward.rewardItemId} quantity={chosenReward.rewardItemQty} essence={chosenReward.rewardCompanionEssence} bondstones={chosenReward.rewardBondstones} label={rarity.cache} rarityColor={rarityTone}/>
+   {claimed?<Text style={s.claimed}>{t("✓ Cache claimed")}</Text>:ready?<GameButton compact title={p('Claim selected reward')} onPress={()=>onClaim(quest.period,quest.id,chosenReward.id)}/>:<Text style={near?s.contractNear:s.contractHint}>{near?(anticipation.band==='next'?'NEXT PROGRESS COMPLETES IT · ':anticipation.band==='urgent'?'FINAL STRETCH · ':'ALMOST COMPLETE · '):''}{anticipation.remaining} {t("progress remaining")}</Text>}
   </QuestPosting>;
  })}</>;
 }

@@ -480,8 +480,49 @@ export const AUTHORED_GUILD_PROJECT_COPY={
   }
 } as const satisfies Record<string,Record<Language,readonly [string,string]>>;
 
+const WEEKLY_BANK_REWARD_COPY={
+  "en": [
+    "United for Veldryn",
+    "Fight, gather or craft together. Each qualifying member can claim 2,500 Gold for the Guild Bank after completion. Guild Hall earns 200 progress."
+  ],
+  "de": [
+    "Gemeinsam für Veldryn",
+    "Kämpft, sammelt oder stellt gemeinsam Gegenstände her. Berechtigte Mitglieder können nach Abschluss 2.500 Gold für die Gildenbank beanspruchen. Die Gildenhalle erhält 200 Fortschritt."
+  ],
+  "es": [
+    "Unidos por Veldryn",
+    "Luchad, recolectad o cread juntos. Cada miembro apto puede reclamar 2500 de oro para el banco del gremio al completar el proyecto. La sala del gremio gana 200 de progreso."
+  ],
+  "nl": [
+    "Samen voor Veldryn",
+    "Vecht, verzamel of maak samen voorwerpen. Elk deelnemend lid dat voldoet aan de eisen kan na voltooiing 2.500 goud voor de gildebank claimen. De gildehal krijgt 200 voortgang."
+  ],
+  "it": [
+    "Uniti per Veldryn",
+    "Combattete, raccogliete o create oggetti insieme. Ogni membro idoneo può riscattare 2.500 oro per la banca di gilda al completamento. La Sala della Gilda ottiene 200 progressi."
+  ],
+  "fr": [
+    "Unis pour Veldryn",
+    "Combattez, récoltez ou fabriquez ensemble. Chaque membre admissible peut réclamer 2 500 pièces d'or pour la banque de guilde après l'achèvement. La salle de guilde gagne 200 points de progression."
+  ],
+  "ru": [
+    "Вместе ради Велдрина",
+    "Сражайтесь, собирайте ресурсы или создавайте предметы вместе. После завершения каждый подходящий участник может получить 2 500 золота для банка гильдии. Зал гильдии получает 200 очков прогресса."
+  ],
+  "tr": [
+    "Veldryn için Birlikte",
+    "Birlikte savaşın, kaynak toplayın veya eşya üretin. Uygun üyeler tamamlandıktan sonra Lonca Bankası için 2.500 Altın alabilir. Lonca Salonu 200 ilerleme kazanır."
+  ]
+} as const satisfies Record<Language,readonly [string,string]>;
+
 /** Preserve unknown IDs, changed definition versions and unreviewed descriptions verbatim. */
 export function guildProjectAuthoredCopy(language:Language,templateId:string,name:string,description:string):{name:string;description:string}{
+ if(templateId==='guild_weekly_shared_effort'
+  &&name===WEEKLY_BANK_REWARD_COPY.en[0]
+  &&description===WEEKLY_BANK_REWARD_COPY.en[1]){
+  const localized=WEEKLY_BANK_REWARD_COPY[language];
+  return {name:localized[0],description:localized[1]};
+ }
  const row=Object.prototype.hasOwnProperty.call(AUTHORED_GUILD_PROJECT_COPY,templateId)
   ?AUTHORED_GUILD_PROJECT_COPY[templateId as keyof typeof AUTHORED_GUILD_PROJECT_COPY]:undefined;
  if(!row||row.en[0]!==name||row.en[1]!==description)return {name,description};

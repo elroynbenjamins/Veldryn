@@ -67,6 +67,15 @@ export const dungeonDynamicUiRows={
  "Expedition failed": ["Expedition gescheitert","Expedición fallida","Expeditie mislukt","Spedizione fallita","Expédition échouée","Экспедиция провалена","Sefer başarısız"],
  "an ability": ["eine Fähigkeit","una habilidad","een vaardigheid","un'abilità","une capacité","способность","bir yetenek"],
  "Party member": ["Gruppenmitglied","Miembro del grupo","Groepslid","Membro del gruppo","Membre du groupe","Участник отряда","Grup üyesi"],
+ "DMG {amount}": ["SCH {amount}","DAÑO {amount}","SCH {amount}","DAN {amount}","DÉG {amount}","УРОН {amount}","HSR {amount}"],
+ "HEAL {amount}": ["HEIL {amount}","CURA {amount}","GEN {amount}","CURE {amount}","SOIN {amount}","ЛЕЧ {amount}","İYİL {amount}"],
+ "TAKEN {amount}": ["ERL {amount}","REC {amount}","INC {amount}","SUB {amount}","SUBI {amount}","ПОЛ {amount}","ALIN {amount}"],
+ "INT {count}": ["UNT {count}","INT {count}","OND {count}","INT {count}","INT {count}","ПРЕР {count}","KES {count}"],
+ "TANK": ["TANK","TANQ","TANK","TANK","TANK","ТАНК","TANK"],
+ "SUP": ["SUP","APO","STEUN","SUP","SOUT","ПОД","DST"],
+ "DPS": ["DPS","DPS","DPS","DPS","DPS","DPS","DPS"],
+ "Boss ability": ["Bossfähigkeit","Habilidad del jefe","Baasvaardigheid","Abilità del boss","Capacité du boss","Умение босса","Boss yeteneği"],
+ "A disconnected party member is being piloted with basic attacks and safe defensive abilities while reconnect is available.": ["Ein getrenntes Gruppenmitglied kämpft vorübergehend mit einfachen Angriffen und sicheren Abwehrfähigkeiten, bis es sich wieder verbindet.","Si un miembro del grupo se desconecta, la IA usa ataques básicos y defensas seguras hasta que vuelva a conectarse.","Een groepslid zonder verbinding gebruikt tijdelijk basisaanvallen en veilige verdedigingsvaardigheden totdat het weer verbinding heeft.","Un membro del gruppo disconnesso usa temporaneamente attacchi base e abilità difensive sicure finché non si riconnette.","Un membre du groupe déconnecté utilise temporairement des attaques de base et des défenses sûres en attendant de se reconnecter.","Пока участник группы отключён, ИИ использует обычные атаки и безопасные защитные умения до его возвращения.","Bağlantısı kesilen grup üyesi geri dönene kadar yapay zekâ temel saldırılar ve güvenli savunma yetenekleri kullanır."],
 } as const satisfies Record<string,readonly [string,string,string,string,string,string,string]>;
 export type DungeonDynamicUiKey=keyof typeof dungeonDynamicUiRows;
 const indexes:Partial<Record<Language,number>>={de:0,es:1,nl:2,it:3,fr:4,ru:5,tr:6};

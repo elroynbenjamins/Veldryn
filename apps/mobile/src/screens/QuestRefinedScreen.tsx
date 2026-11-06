@@ -17,6 +17,7 @@ import {useGameTheme} from '../theme/ThemeContext';
 import {type ThemeColors,spacing,touchTargetMin} from '../theme/theme';
 import {useGameLanguage} from '../i18n/GameLanguageProvider';
 import {progressionText,progressionT,type ProgressionKey} from '../i18n/progression';
+import {localizedQuestActText,localizedQuestStoryText,questMatchesLocalizedSearch} from '../i18n/quest-story-copy';
 import {QuestModeSwitch,type QuestMode} from '../components/QuestModeSwitch';
 import {GameButton} from '../components/GameButton';
 import {GameModalHeader,GameModalSurface} from '../components/GameModalSurface';
@@ -126,7 +127,7 @@ export function QuestRefinedScreen({state,mode,onModeChange,focusedWeeklyOrderId
  const nextChapter=QUESTS.find(def=>state.quests.some(q=>q.questId===def.id&&q.status!=='claimed'))??QUESTS[QUESTS.length-1];
  const chapterProgress=state.quests.find(q=>q.questId===nextChapter.id);
  const act=QUEST_ACTS[nextChapter.act];
- const storyRows=journalEntries(state,filter,query);
+ const storyRows=journalEntries(state,filter,'').filter(({def})=>questMatchesLocalizedSearch(language,def,query));
  const currentSelection=selected?.kind==='story'?QUESTS.find(q=>q.id===selected.id):selected?.kind==='contract'?board.orders.find(q=>q.id===selected.id):selected?.kind==='challenge'?allChallenges.find(q=>q.id===selected.id):undefined;
  const chosenStory=selected?.kind==='story'?currentSelection as QuestDef|undefined:undefined;
  const chosenOrder=selected?.kind==='contract'?currentSelection as WeeklyOrder|undefined:undefined;
@@ -154,7 +155,7 @@ export function QuestRefinedScreen({state,mode,onModeChange,focusedWeeklyOrderId
   if(newStory.length){
    const def=QUESTS.find(q=>q.id===newStory[newStory.length-1]);
    if(def){
-    setMoment({id:def.id,source:'story',title:def.name,gold:def.rewardGold,itemId:def.rewardItemId,quantity:def.rewardItemQty??1});
+    setMoment({id:def.id,source:'story',title:localizedQuestStoryText(language,def,'name'),gold:def.rewardGold,itemId:def.rewardItemId,quantity:def.rewardItemQty??1});
     if((selected?.kind==='story'&&selected.id===def.id)||(pendingClaim.current?.kind==='story'&&pendingClaim.current.id===def.id)){pendingClaim.current=null;setSheetStage('success');}
    }
   }else if(newChallenge.length){
@@ -197,7 +198,7 @@ export function QuestRefinedScreen({state,mode,onModeChange,focusedWeeklyOrderId
  const fallenKnight=state.defeatedBossIds.includes('FALLEN_KNIGHT')?fallenKnightWeeklyStatus(state,Date.now()):undefined;
  const selectedGoal=chosenStory?chosenStory.required:chosenOrder?chosenOrder.target:chosenChallenge?.required??1;
  const selectedValue=chosenStory?Math.min(selectedGoal,selectedProgress?.progress??0):chosenOrder?Math.min(selectedGoal,chosenOrder.progress):chosenChallenge?Math.min(selectedGoal,chosenChallenge.progress):0;
- const selectedTitle=chosenStory?.name??chosenOrder?.title??chosenChallenge?.name??'';
+ const selectedTitle=chosenStory?localizedQuestStoryText(language,chosenStory,'name'):chosenOrder?.title??chosenChallenge?.name??'';
  const chosenDestination=chosenOrder?weeklyOrderDestination(chosenOrder):undefined;
  const chosenQueueable=chosenOrder?weeklyOrderQueueActivity(chosenOrder):undefined;
  const queueFull=(state.character?.activityQueue?.length??0)>=activityQueueCapacity(state);
@@ -219,15 +220,15 @@ export function QuestRefinedScreen({state,mode,onModeChange,focusedWeeklyOrderId
    {moment?.source===mode&&!sheetOpen?<View style={[styles.moment,{borderColor:C.good,backgroundColor:C.goodSurface}]}><View style={styles.rowMeta}><Text style={[styles.eyebrow,{color:C.good}]}>{p('REWARDS SECURED')}</Text><StatusPill label={p('CLAIMED')} tone="good"/></View><Text style={[styles.rowTitle,{color:C.text}]}>{moment.title}</Text><QuestReward gold={moment.gold} xp={moment.xp} itemId={moment.itemId} quantity={moment.quantity} essence={moment.essence} bondstones={moment.bondstones} rarityColor={moment.rarityColor} label={p('Rewards collected')}/></View>:null}
    {mode==='story'?<>
     <View style={[styles.hero,{backgroundColor:C.panelRaised,borderColor:C.lineStrong}]}>
-     <View style={styles.rowMeta}><Text style={[styles.eyebrow,{color:C.accent}]}>{p('ACT')+' '+(act.act===1?'I':act.act===2?'II':'III')+' · '+p(act.name.toUpperCase())}</Text><Text style={[styles.mini,{color:C.muted}]}>{storyClaimed}/{QUESTS.length}</Text></View>
+     <View style={styles.rowMeta}><Text style={[styles.eyebrow,{color:C.accent}]}>{p('ACT')+' '+(act.act===1?'I':act.act===2?'II':'III')+' · '+localizedQuestActText(language,act,'name').toLocaleUpperCase(language)}</Text><Text style={[styles.mini,{color:C.muted}]}>{storyClaimed}/{QUESTS.length}</Text></View>
      <Text style={[styles.heroTitle,{color:C.text}]}>{p('The story continues')}</Text>
-     <Text style={[styles.subtitle,{color:C.muted}]}>{p(act.subtitle)}</Text>
+     <Text style={[styles.subtitle,{color:C.muted}]}>{localizedQuestActText(language,act,'subtitle')}</Text>
      <ProgressLine current={storyClaimed} max={QUESTS.length} C={C}/>
     </View>
     {chapterProgress?.status!=='claimed'?<View style={[styles.featured,{backgroundColor:C.goodSurface,borderColor:C.good}]}>
       <View style={styles.rowMeta}><Text style={[styles.eyebrow,{color:C.good}]}>{chapterProgress?.status==='complete'?p('REWARD READY'):p('CURRENT OBJECTIVE')}</Text><StatusPill label={chapterProgress?.status==='complete'?p('READY'):p('ACTIVE')} tone={chapterProgress?.status==='complete'?'good':'info'}/></View>
-      <Text style={[styles.featuredTitle,{color:C.text}]}>{p(nextChapter.name)}</Text>
-      <Text style={[styles.subtitle,{color:C.muted}]}>{p(nextChapter.description)}</Text>
+      <Text style={[styles.featuredTitle,{color:C.text}]}>{localizedQuestStoryText(language,nextChapter,'name')}</Text>
+      <Text style={[styles.subtitle,{color:C.muted}]}>{localizedQuestStoryText(language,nextChapter,'description')}</Text>
       <ProgressLine current={Math.min(nextChapter.required,chapterProgress?.progress??0)} max={nextChapter.required} C={C}/>
       <Text style={[styles.rewardHint,{color:C.accent}]}>{nextChapter.rewardGold} {t('Gold')}{nextChapter.rewardItemId?' · '+(nextChapter.rewardItemQty??1)+'× '+nextChapter.rewardItemId.replace(/_/g,' '):''}</Text>
       <GameButton title={chapterProgress?.status==='complete'?p('Claim rewards'):p('View objective')} onPress={()=>chapterProgress?.status==='complete'?submitClaimFor('story',nextChapter.id):open('story',nextChapter.id)}/>
@@ -236,7 +237,7 @@ export function QuestRefinedScreen({state,mode,onModeChange,focusedWeeklyOrderId
     <View style={styles.sectionHead}><Text style={[styles.sectionTitle,{color:C.accent}]}>{p('STORY CHAPTERS')}</Text><Text style={[styles.mini,{color:C.muted}]}>{QUESTS.length} {p('total')}</Text></View>
     <Rail C={C} selected={filter} onChange={setFilter} items={[{id:'current',label:p('Current')+' · '+journalEntries(state,'current','').length},{id:'all',label:p('All')},{id:'claimed',label:p('Completed')},{id:'locked',label:p('Locked')} ]}/>
     <SearchField accessibilityLabel={t('Search quests')} placeholder={p('Search chapters…')} placeholderTextColor={C.muted} value={query} onChangeText={setQuery}/>
-    {storyRows.length?storyRows.map(({def,quest,chapter})=><CompactQuestRow key={def.id} C={C} title={p(def.name)} subtitle={p(def.location)} eyebrow={p('CHAPTER')+' '+chapter} status={quest.status==='complete'?'ready':quest.status==='claimed'?'claimed':quest.status==='locked'?'locked':'active'} current={Math.min(def.required,quest.progress)} max={def.required} art={<StoryArt quest={def}/>} reward={def.rewardGold+' '+t('Gold')} onPress={()=>open('story',def.id)}/>):<View style={styles.empty}><EmptyState title={p('No matching chapters')} message={p('Change the filter or search to see more chapters.')} icon="quests"/><GameButton compact tone="secondary" title={p('Show all chapters')} onPress={()=>{setFilter('all');setQuery('')}}/></View>}
+    {storyRows.length?storyRows.map(({def,quest,chapter})=><CompactQuestRow key={def.id} C={C} title={localizedQuestStoryText(language,def,'name')} subtitle={def.location} eyebrow={p('CHAPTER')+' '+chapter} status={quest.status==='complete'?'ready':quest.status==='claimed'?'claimed':quest.status==='locked'?'locked':'active'} current={Math.min(def.required,quest.progress)} max={def.required} art={<StoryArt quest={def}/>} reward={def.rewardGold+' '+t('Gold')} onPress={()=>open('story',def.id)}/>):<View style={styles.empty}><EmptyState title={p('No matching chapters')} message={p('Change the filter or search to see more chapters.')} icon="quests"/><GameButton compact tone="secondary" title={p('Show all chapters')} onPress={()=>{setFilter('all');setQuery('')}}/></View>}
    </>:null}
    {mode==='contracts'?<>
     <View style={[styles.hero,{backgroundColor:C.panelRaised,borderColor:C.lineStrong}]}>
@@ -311,14 +312,14 @@ export function QuestRefinedScreen({state,mode,onModeChange,focusedWeeklyOrderId
      </View>
      <View style={[styles.detailBlock,{backgroundColor:C.panel,borderColor:C.line}]}>
       <Text style={[styles.eyebrow,{color:C.accent}]}>{p('OBJECTIVE')}</Text>
-      <Text style={[styles.detailText,{color:C.text}]}>{chosenStory?p(chosenStory.description):chosenOrder?p(chosenOrder.brief??chosenDestination?.detail??''):chosenChallenge?p(chosenChallenge.description):''}</Text>
+      <Text style={[styles.detailText,{color:C.text}]}>{chosenStory?localizedQuestStoryText(language,chosenStory,'description'):chosenOrder?p(chosenOrder.brief??chosenDestination?.detail??''):chosenChallenge?p(chosenChallenge.description):''}</Text>
       {selectedStatus==='locked'?<Text style={[styles.footnote,{color:C.warning}]}>{chosenOrder?p(selectedLocked??''):chosenStory?p(questLockHint(state,chosenStory)):''}</Text>:<><View style={styles.rowMeta}><Text style={[styles.mini,{color:C.muted}]}>{p('Progress')}</Text><Text style={[styles.mini,{color:C.text}]}>{selectedValue}/{selectedGoal}</Text></View><ProgressLine current={selectedValue} max={selectedGoal} C={C}/></>}
      </View>
      {chosenStory?<View style={styles.storyDisclosure}>
       <Pressable accessibilityRole="button" accessibilityState={{expanded:storyExpanded}} onPress={()=>setStoryExpanded(v=>!v)} style={[styles.disclosure,{borderColor:C.line}]}>
        <Text style={[styles.detailText,{color:C.text}]}>{p('Read chapter story')}</Text><Text style={[styles.chevron,{color:C.accent}]}>{storyExpanded?'−':'+'}</Text>
       </Pressable>
-      {storyExpanded?<View style={[styles.storyText,{backgroundColor:C.panel2,borderColor:C.info}]}><Text style={[styles.detailText,{color:C.text}]}>{p(chosenStory.story)}</Text></View>:null}
+      {storyExpanded?<View style={[styles.storyText,{backgroundColor:C.panel2,borderColor:C.info}]}><Text style={[styles.detailText,{color:C.text}]}>{localizedQuestStoryText(language,chosenStory,'story')}</Text></View>:null}
      </View>:null}
      <View style={[styles.detailBlock,{backgroundColor:C.panel,borderColor:C.line}]}>
       <Text style={[styles.eyebrow,{color:C.accent}]}>{p('REWARDS')}</Text>

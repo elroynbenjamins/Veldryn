@@ -29,6 +29,8 @@ jobs:
           cache-dependency-path: backend/pnpm-lock.yaml
       - name: Install backend build dependencies
         run: pnpm --dir backend install --frozen-lockfile
+      - name: Install mobile dependencies imported by the shared runtime
+        run: pnpm --dir apps/mobile install --frozen-lockfile
       - name: Build both shared-engine Edge bundles
         run: pnpm --dir backend build:online
       - name: Verify bundle parity

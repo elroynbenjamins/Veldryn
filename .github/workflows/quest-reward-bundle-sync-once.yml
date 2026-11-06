@@ -1,0 +1,37 @@
+name: Quest reward bundle one-time sync
+on:
+  pull_request:
+    branches: [main]
+    types: [opened, synchronize, reopened]
+    paths:
+      - apps/mobile/tests/quest-refined-ui.cjs
+permissions:
+  contents: write
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.head_ref }}
+          persist-credentials: true
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - uses: pnpm/action-setup@v4
+        with:
+          version: '10.34.9'
+      - run: |
+          pnpm --dir apps/mobile install --frozen-lockfile
+          pnpm --dir backend install --frozen-lockfile
+          node apps/mobile/tests/quest-refined-ui.cjs
+          node tools/build-online.mjs
+          node tools/verify-gameplay-edge.mjs
+      - run: |
+          git config user.name "veldryn-ci"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add backend/supabase/functions/gameplay/index.ts backend/supabase/functions/coop/index.ts
+          if ! git diff --cached --quiet; then
+            git commit -m "build(edge): regenerate Quest-compatible gameplay and co-op bundles"
+            git push origin HEAD:feat/quest-progression-reward-choices-20261106
+          fi

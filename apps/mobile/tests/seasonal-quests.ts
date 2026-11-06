@@ -23,7 +23,7 @@ for(const q of [...daily,...a,...m])if(q.rewardItemId&&itemDef(q.rewardItemId).t
 const expectedCaches=[
  ['daily','common',5,undefined,undefined],['daily','uncommon',8,undefined,undefined],['daily','rare',undefined,'TEMPERING_DUST',8],
  ['weekly','uncommon',15,undefined,undefined],['weekly','rare',undefined,'TEMPERING_CORE',1],['weekly','epic',undefined,'ASTERFALL_MINERAL_ESSENCE',1],
- ['monthly','rare',35,undefined,undefined],['monthly','epic',undefined,'TEMPERING_CORE',2],['monthly','legendary',undefined,'REGIONAL_CATALYST',1],
+ ['monthly','rare',35,undefined,undefined],['monthly','epic',undefined,'TEMPERING_CORE',2],['monthly','legendary',undefined,'TEMPERING_CORE',4],
 ] as const;
 for(const [period,rarity,essence,itemId,qty] of expectedCaches){
  const reward=seasonalQuestCache(period,rarity);

@@ -35,13 +35,13 @@ ok(modal.includes('Previous gem returned safely.'),'replacement result must expl
 ok(modal.includes('gt("Replace gem?")')&&modal.includes('gt("Extract gem?")')&&modal.includes('pendingGemAction'),'gem replacement/extraction must require a clear confirmation step');
 ok(modal.includes('gemUnsocketCostForStateV1')&&modal.includes('fee.gold')&&modal.includes('fee.dust')&&modal.includes('Gem Dust'),'gem confirmation must show the precise extraction/replacement cost');
 ok(modal.includes('canAffordFee')&&modal.includes('disabled={!canAffordFee}'),'unaffordable gem extraction/replacement must not be submitted');
-ok(modal.includes('setPendingGemAction(null)})'),'successful gem replacement/extraction should dismiss its confirmation');
+ok(modal.includes('setPendingGemAction(null);setGemPickerOpen(false)'),'successful gem replacement/extraction should dismiss both confirmation and picker');
 ok(modal.includes('gemResultDetail(state,current.id)} → {gemResultDetail(state,next.id)'),'replacement confirmation must compare current and new effects before spending');
 ok(modal.includes("setPendingGemAction({kind:'replace'"),'replacement buttons must stage confirmation instead of spending immediately');
 ok(modal.includes("setPendingGemAction({kind:'extract'"),'extraction buttons must stage confirmation instead of spending immediately');
-ok(modal.includes(":void run(()=>onSocket(gem.id))"),'socketing into an empty slot should remain a fast one-tap action');
-ok(modal.includes('style={s.socketSelect}')&&modal.includes('socketSelectionMark'),'socket selection must use a distinct selectable surface from the extract button');
-ok(modal.includes('socketState.statGemId===gem.id')&&modal.includes('socketState.effectGemId===gem.id'),'already equipped gem variants should not create redundant replacements');
+ok(modal.includes('onSocket(selectedGem.id)')&&modal.includes('setGemPickerOpen(false)'),'socketing from an empty slot should use the focused picker then close on success');
+ok(modal.includes('style={s.compactSocketSelect}')&&modal.includes('compactExtract'),'socket selection must remain distinct from the extract action');
+ok(modal.includes('selectedGem.id===equippedGemId')&&modal.includes('disabled={!selectedGem'),'already equipped gem variants must be blocked in the picker footer');
 ok(modal.includes('showAllCandidates'),'players must be able to expand the owned gem shortlist');
 ok(modal.includes('reduceMotion'),'gem result motion must respect Reduce Motion');
 

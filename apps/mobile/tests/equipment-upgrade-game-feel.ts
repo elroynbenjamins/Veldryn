@@ -29,8 +29,8 @@ equal(failure?.pityAfterPct,4,'failure result must expose improved pity');
 
 const modal=fs.readFileSync('src/components/EquipmentEnhancementModal.tsx','utf8');
 ok(modal.includes('UPGRADE SUCCESS'),'enhancement modal must celebrate a committed success');
-ok(modal.includes('Regional improvement ${enhancement.rank} of ${MAX_UPGRADE_RANK}')&&modal.includes('rankStepFilled')&&modal.includes('rankStepNext'),'enhancement UI must show the four regional improvement ranks');
-ok(modal.includes('quote.materials.map'),'enhancement UI must show the item-specific regional material costs');
+ok(modal.includes("'Enhancement rank '+enhancement.rank+' of '+MAX_UPGRADE_RANK")&&modal.includes('rankStepFilled')&&modal.includes('rankStepNext'),'compact enhancement UI must show all four regional improvement ranks');
+ok(modal.includes('quote.materials.map')&&modal.includes('compactCostGrid')&&modal.includes('compactStatGrid')&&modal.includes('compactChance'),'enhancement UI must show resources, stats and success odds without a disclosure');
 ok(modal.includes('A failed tempering consumes its cost')&&modal.includes('Try again ·'),'regional tempering must make its protected failure loop clear');
 ok(modal.includes('riskApprovedTarget'),'the final improvement should require an intentional confirmation');
 ok(modal.includes('Animated.sequence'),'upgrade outcomes must have a brief motion response when reduced motion is disabled');

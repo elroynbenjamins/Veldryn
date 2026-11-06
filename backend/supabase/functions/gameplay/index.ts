@@ -43715,6 +43715,12 @@ var COMBAT_LIMITS = {
 
 // src/server/combat/calculations.ts
 var clamp2 = (v, min, max) => Math.max(min, Math.min(max, v));
+function roleAdjustedAttackPower(input) {
+  const attack = Math.max(0, input.attackPower);
+  if (input.team !== "players" || input.role === "damage" || input.role === "enemy") return attack;
+  const bonus = input.role === "tank" ? Math.min(attack * 0.1, Math.max(0, input.defense) * 0.014 + Math.max(0, input.maxHp) * 14e-4) : Math.min(attack * 0.1, Math.max(0, input.healingPower) * 0.035);
+  return attack + bonus;
+}
 function defenseMitigation(defense, mitigationConstant) {
   const raw2 = defense / Math.max(1, defense + mitigationConstant);
   return clamp2(raw2, COMBAT_LIMITS.mitigationMin, COMBAT_LIMITS.mitigationMax);
@@ -44599,7 +44605,8 @@ function simulateCombat(input) {
     const varianceRoll = rng.next(`${now}:${abilityId}:var`);
     const variance = qmodeStrike ? 0.925 + varianceRoll * 0.2 : 0.95 + varianceRoll * 0.1;
     const heavyHit = qmodeStrike && !crit && rng.next(`${now}:${source.definition.id}:${target2.definition.id}:${abilityId}:heavy`) * 2 < 0.04;
-    let raw2 = damageAfterMitigation(source.definition.stats.attackPower, effect2.coeff ?? 0, mit, variance, crit, source.definition.stats.critMultiplier) + (effect2.flat ?? 0);
+    const roleAttack = roleAdjustedAttackPower({ team: source.definition.team, role: source.definition.role, attackPower: source.definition.stats.attackPower, defense: source.definition.stats.defense, maxHp: source.definition.stats.maxHp, healingPower: source.definition.stats.healingPower });
+    let raw2 = damageAfterMitigation(roleAttack, effect2.coeff ?? 0, mit, variance, crit, source.definition.stats.critMultiplier) + (effect2.flat ?? 0);
     if (heavyHit) raw2 *= 1.1;
     raw2 *= source.definition.alchemyModifiers?.outgoing ?? 1;
     raw2 *= target2.definition.alchemyModifiers?.incoming ?? 1;

@@ -1208,6 +1208,19 @@ const details={
 } as const satisfies Record<string,TranslationRow>;
 export const gameplayDomains={common,combat,queue,skills,inventory,rewards,crafting,details};
 const enhancement={
+  "Your stat gains":["Your stat gains","Deine Attributsboni","Tus mejoras de atributos","Je statistiekbonussen","I tuoi bonus alle statistiche","Vos gains de caractéristiques"],
+  "Success chance":["Success chance","Erfolgschance","Probabilidad de éxito","Slaagkans","Probabilità di successo","Chances de réussite"],
+  "Rank protected on failure":["Rank protected on failure","Rang bleibt bei Fehlschlag erhalten","El rango se conserva al fallar","Rang blijft behouden bij mislukking","Grado protetto in caso di fallimento","Rang conservé en cas d’échec"],
+  "Required materials":["Required materials","Benötigte Materialien","Materiales necesarios","Benodigde materialen","Materiali necessari","Matériaux nécessaires"],
+  "Missing materials":["Missing materials","Materialien fehlen","Faltan materiales","Materialen ontbreken","Materiali mancanti","Matériaux manquants"],
+  "Full cost & odds":["Full cost & odds","Kosten & Chancen","Coste y probabilidad","Kosten en kansen","Costi e probabilità","Coûts et chances"],
+  "Confirm spending these materials at {percent}% success.":["Confirm spending these materials at {percent}% success.","Materialien für {percent} % Erfolgschance ausgeben?","¿Gastar los materiales con un {percent} % de éxito?","Materialen uitgeven met {percent}% slagingskans?","Spendere i materiali con il {percent}% di riuscita?","Dépenser les matériaux avec {percent} % de chances de réussite ?"],
+  "Back to sockets":["Back to sockets","Zurück zu Fassungen","Volver a las ranuras","Terug naar sockets","Torna agli incastri","Retour aux emplacements"],
+  "Change preview":["Change preview","Änderungsvorschau","Vista previa del cambio","Voorbeeld wijziging","Anteprima modifica","Aperçu de la modification"],
+  "Gem sockets":["Gem sockets","Edelsteinfassungen","Ranuras de gemas","Edelsteensockets","Incastonature gemme","Emplacements de gemmes"],
+  "Add gem":["Add gem","Edelstein einsetzen","Insertar gema","Edelsteen plaatsen","Inserisci gemma","Ajouter une gemme"],
+  "Replace gem":["Replace gem","Edelstein ersetzen","Sustituir gema","Edelsteen vervangen","Sostituisci gemma","Remplacer la gemme"],
+  "Socket gem":["Socket gem","Edelstein einsetzen","Engarzar gema","Edelsteen plaatsen","Incastona gemma","Sertir la gemme"],
   "All regional improvements are complete":["All regional improvements are complete","Alle regionalen Verbesserungen sind abgeschlossen","Todas las mejoras regionales están completas","Alle regionale verbeteringen zijn voltooid","Tutti i miglioramenti regionali sono completi","Toutes les améliorations régionales sont terminées"],
   "REGIONAL MATERIALS":["REGIONAL MATERIALS","REGIONALE MATERIALIEN","MATERIALES REGIONALES","REGIONALE MATERIALEN","MATERIALI REGIONALI","MATÉRIAUX RÉGIONAUX"],
   "Base gear is enough for normal progression. Improve it for bosses, faster clears, and safer AFK combat.":["Base gear is enough for normal progression. Improve it for bosses, faster clears, and safer AFK combat.","Grundausrüstung reicht für den normalen Fortschritt. Verbessere sie für Bosse, schnellere Abschlüsse und sicherere AFK-Kämpfe.","El equipo base basta para la progresión normal. Mejoralo para jefes, combates más rápidos y AFK más seguro.","Basisuitrusting is genoeg voor normale voortgang. Verbeter die voor bazen, snellere gevechten en veiligere AFK-gevechten.","L’equipaggiamento base basta per la progressione normale. Miglioralo per boss, scontri più rapidi e combattimento AFK più sicuro.","L’équipement de base suffit à la progression normale. Améliorez-le pour les boss, des combats plus rapides et un AFK plus sûr."],

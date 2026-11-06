@@ -97,5 +97,5 @@ const fs=require('fs') as {readFileSync:(path:string,encoding:string)=>string};
 const questUi=fs.readFileSync('src/screens/QuestScreen.tsx','utf8');
 ok(questUi.includes('<ContractProgress label={t("Weekly completion")}')||questUi.includes('<ContractProgress label={p("Weekly completion")}'),'Weekly Contract Board should show clear completion progress');
 ok(questUi.includes('s.objectivePanel')&&questUi.includes('s.contractRewardStrip')&&questUi.includes('Stop at done'),'Contract cards must retain objective, reward and safe queue/stop actions');
-ok(questUi.includes('<ContractProgress label={quest.tag.toUpperCase()}')&&questUi.includes('s.cadenceRail'),'Challenges need a progress-first card and cadence header');
+ok(questUi.includes('<ContractProgress label={seasonalChallengeText(language,quest.tag.toUpperCase())}')&&questUi.includes('s.cadenceRail'),'Challenges need a progress-first card and cadence header');
 console.log('PASS: doubled sustainable Contract Board targets and redesigned weekly/class challenge surfaces');

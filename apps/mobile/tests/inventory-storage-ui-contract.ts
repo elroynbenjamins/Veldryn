@@ -53,7 +53,7 @@ ok(inspect.includes('availabilityDetail'),'Quick Inspect must show blocker or tr
 ok(inspectModel.includes('workingTowardDestinationAvailability'),'Quick Inspect availability must reuse the shared progression availability rules');
 ok(inspect.includes('GEAR CHECK')&&inspect.includes('DeltaStat')&&inspect.includes('TO +'),'Quick Inspect gear must expose compact loadout deltas and +10 potential');
 ok(inspect.includes('2/4/8/10 always-on V33 bonuses are live')&&inspect.includes("row.runtime==='live'?gt(\"LIVE\"):it('HOOK')")&&inspect.includes('POTENTIAL'),'Gear Check must distinguish live set stat thresholds, conditional hooks and upgrade potential');
-ok(inspectModel.includes('previewEquipment')&&inspectModel.includes('effectiveStats')&&inspectModel.includes('gearStatsAtRank'),'Gear Check must use real preview/effective-stat and enhancement math');
+ok(inspectModel.includes('previewEquipment')&&inspectModel.includes('effectiveStats')&&inspectModel.includes('enhancedGearStatsAtRank'),'Gear Check must use real preview/effective-stat and enhancement math');
 ok(inspectModel.includes('equippedSetPieceCount')&&inspectModel.includes('MAX_UPGRADE_RANK'),'Gear Check must derive set movement and max-rank potential from authoritative systems');
 ok(screenSource.includes('StorageChip')&&screenSource.includes('storageCapacityStatus'),'Inventory and Bank must show compact capacity feedback');
 const headerControls=fs.readFileSync('src/components/InventoryItemHeaderControls.tsx','utf8');

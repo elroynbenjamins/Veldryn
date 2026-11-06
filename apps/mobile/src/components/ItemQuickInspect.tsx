@@ -59,7 +59,7 @@ export function ItemQuickInspect({state,itemId,onClose,onNavigate,actions,quickA
           <View style={s.heroCopy}>
             <Text style={[s.rarity,{color:rarity.color}]}>{rarity.symbol+' '+contentText(rarity.label).toLocaleUpperCase(language)+' · '+contentText(item.type).toLocaleUpperCase(language)}</Text>
             <Text numberOfLines={2} style={[s.name,{color:nameColor}]}>{localizedItemName(language,item.id)+(upgrade?.rank?' +'+upgrade.rank:'')}</Text>
-            <Text numberOfLines={2} style={s.owned}>{gt('Carried')} {formatGameNumber(model.inventoryQuantity,state.settings.numberMode,language)} · {gt('Bank')} {formatGameNumber(model.bankQuantity,state.settings.numberMode,language)}{model.pouchQuantity?' · '+formatGameNumber(model.pouchQuantity,state.settings.numberMode,language)+' '+gt('Gems'):''}</Text>
+            <Text numberOfLines={2} style={s.owned}>{gl('Carried')} {formatGameNumber(model.inventoryQuantity,state.settings.numberMode,language)} · {gt('Bank')} {formatGameNumber(model.bankQuantity,state.settings.numberMode,language)}{model.pouchQuantity?' · '+formatGameNumber(model.pouchQuantity,state.settings.numberMode,language)+' '+gt('Gems'):''}</Text>
           </View>
           <InventoryItemHeaderControls favorite={favorite} locked={locked} onFavorite={onToggleFavorite} onLock={onToggleLock} onClose={onClose}/>
         </View>

@@ -77,7 +77,7 @@ export function seasonalQuestCache(period:SeasonalPeriod,rarity:QuestRarity):Pic
   if(rarity==='rare')return {rewardItemId:'TEMPERING_CORE',rewardItemQty:1};
   return {rewardCompanionEssence:15};
  }
- if(rarity==='legendary')return {rewardItemId:'REGIONAL_CATALYST',rewardItemQty:1};
+ if(rarity==='legendary')return {rewardItemId:'TEMPERING_CORE',rewardItemQty:4};
  if(rarity==='epic')return {rewardItemId:'TEMPERING_CORE',rewardItemQty:2};
  return {rewardCompanionEssence:35};
 }

@@ -17,7 +17,7 @@ ok(runtime.includes("sixPieceStatus:pieces>=6?'trigger-hook-pending':'locked'"),
 ok(runtime.includes("'max hp':'maxHp'")&&runtime.includes("'crit damage':'critDamage'"),'Static parser must cover V33 stat language');
 ok(runtime.includes('unsupportedStatic'),'Runtime must expose catalog parsing coverage');
 
-ok(game.includes('activeEquipmentSetRuntime(state),setStats=setRuntime.stats'),'Effective stats must consume equipped V33 set runtime');
+ok(game.includes('const setStats=activeEquipmentBuildStats(state);')&&runtime.includes('const sets=activeEquipmentSetRuntime(state).stats;')&&runtime.includes('equippedCanonicalStatGemBonusesV1(state)'), 'Effective stats must consume both equipped V33 set runtime and canonical Stat Gem bonuses');
 ok(game.includes('hp=Math.ceil(hp*(1+setStats.maxHp))'),'Max HP set bonuses must affect live stats');
 ok(game.includes('defense=Math.ceil(defense*(1+setStats.armor))'),'Armor set bonuses must affect live defense');
 ok(game.includes('basePower*(1+setStats.power)'),'Power set bonuses must affect live Power');

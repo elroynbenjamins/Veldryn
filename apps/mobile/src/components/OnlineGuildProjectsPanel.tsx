@@ -9,10 +9,13 @@ import {GameButton} from './GameButton';
 import {Panel} from './Panel';
 import {QuestBoard} from './QuestBoard';
 import {GuildActivityFeedPanel} from './GuildActivityFeedPanel';
+import {GuildProjectSupplyDonationPanel} from './GuildProjectSupplyDonationPanel';
+import {gameAlert} from '../core/game-alerts';
+import {donateOnlineGuildProjectSupplies,pendingGuildProjectSupplyDonation,discardPendingGuildProjectSupplyDonation,type PendingGuildProjectSupplyDonation} from '../online/guild-project-supply-donations';
 import {LoadingState} from './LoadingState';
 import {StatusPill} from './StatusPill';
 import {ActivityArtwork} from './ActivityArtwork';
-import {claimOnlineGuildProjectReward,loadOnlineGuildProjectsV18,startOnlineGuildProjectCandidate,voteOnlineGuildProjectCandidate,type OnlineGuildProjectCandidate,type OnlineGuildProjectSummary,type OnlineGuildProjectsSnapshot} from '../online/guild-projects-v18';
+import {claimOnlineGuildProjectReward,loadOnlineGuildProjectsV18,voteOnlineGuildProjectCandidate,type OnlineGuildProjectCandidate,type OnlineGuildProjectSummary,type OnlineGuildProjectsSnapshot,type OnlineGuildProjectSupplyItem} from '../online/guild-projects-v18';
 import {radii,typography,type ThemeColors} from '../theme/theme';
 import {useGameTheme} from '../theme/ThemeContext';
 import {guildProjectArtwork} from '../theme/guild-remaster-art';
@@ -41,6 +44,7 @@ export function OnlineGuildProjectsPanel({onRewardsChanged,onNavigateActivity}:{
  const [snapshot,setSnapshot]=useState<OnlineGuildProjectsSnapshot|null>(null);
  const [loading,setLoading]=useState(true),[error,setError]=useState('');
  const [expanded,setExpanded]=useState<string|null>(null),[showHistory,setShowHistory]=useState(false),[busy,setBusy]=useState('');
+ const [pendingDonation,setPendingDonation]=useState<PendingGuildProjectSupplyDonation|null>(null);
  const mounted=useRef(true),readFlight=useRef<Promise<void>|null>(null);
  const load=(force=false):Promise<void>=>{
   if(!mounted.current)return Promise.resolve();
@@ -58,19 +62,37 @@ export function OnlineGuildProjectsPanel({onRewardsChanged,onNavigateActivity}:{
   void request.finally(()=>{if(readFlight.current===request)readFlight.current=null;});
   return request;
  };
- const act=async(kind:'vote'|'start'|'claim',id:string)=>{
+ const act=async(kind:'vote'|'claim',id:string)=>{
   if(busy)return;
   setBusy(kind+':'+id);setError('');
   try{
    if(kind==='vote')await voteOnlineGuildProjectCandidate(id);
-   else if(kind==='start')await startOnlineGuildProjectCandidate(id);
    else{await claimOnlineGuildProjectReward(id);await onRewardsChanged?.();}
    await load(true);
   }catch(reason){if(mounted.current)setError(reason instanceof Error?reason.message:st('Guild Project action failed.'));}
   finally{if(mounted.current)setBusy('');}
  };
+ const donate=async(input:{projectId:string;itemId:string;quantity:number})=>{
+  if(busy)return;
+  setBusy('donate:'+input.itemId);setError('');
+  try{
+   await donateOnlineGuildProjectSupplies(input);
+   setPendingDonation(null);
+   await load(true);
+  }catch(reason){
+   if(mounted.current)setError(reason instanceof Error?reason.message:st('Guild Project action failed.'));
+   try{const pending=await pendingGuildProjectSupplyDonation();if(mounted.current)setPendingDonation(pending)}catch{}
+  }finally{if(mounted.current)setBusy('');}
+ };
+ const discard=()=>gameAlert.alert(ui('Discard saved Guild donation?'),
+  ui('Discard only after checking the project. A new donation may consume additional items.'),
+  [{text:ui('Keep receipt'),style:'cancel'},
+   {text:ui('Discard retry'),style:'destructive',onPress:()=>void discardPendingGuildProjectSupplyDonation()
+    .then(()=>setPendingDonation(null)).catch(reason=>setError(String(reason)))}]);
  useEffect(()=>{
   mounted.current=true;
+  void pendingGuildProjectSupplyDonation().then(value=>{if(mounted.current)setPendingDonation(value)})
+   .catch(reason=>{if(mounted.current)setError(String(reason))});
   if(AppState.currentState!=='background')void load();
   const listener=AppState.addEventListener('change',next=>{if(next==='active')void load();});
   const timer=setInterval(()=>{if(AppState.currentState==='active')void load();},60_000);

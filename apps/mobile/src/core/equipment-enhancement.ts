@@ -63,11 +63,11 @@ export function hasEnhancement(state:GameState,itemId:string){const enhancement=
  * When the legacy owner is unequipped we retain at least one unmarked copy
  * across the active character's Inventory, Bank and Overflow.
  */
-export function canDisposeLegacyEquipment(state:GameState,itemId:string,location:'inventory'|'bank',quantity:number):boolean{
+export function canDisposeLegacyEquipment(state:GameState,itemId:string,location:'inventory'|'bank'|'equipment_pouch',quantity:number):boolean{
   if(!Number.isSafeInteger(quantity)||quantity<=0)return false;
   const unmarked=(stacks:readonly ItemStack[])=>stacks.reduce((sum,row)=>
     sum+(row.itemId===itemId&&row.instanceId===undefined&&Number.isSafeInteger(row.quantity)&&row.quantity>0?row.quantity:0),0);
-  if(unmarked(state[location].stacks)<quantity)return false;
+  if(unmarked(location==='equipment_pouch'?state.character?.equipmentPouch?.stacks??[]:state[location].stacks)<quantity)return false;
   const allCharacters=[state.character,...(state.otherCharacters??[]).map(entry=>entry.character)].filter(
     (character):character is NonNullable<GameState['character']>=>!!character);
   // A legacy enchantment belongs to a character and definition, not to all
@@ -80,8 +80,8 @@ export function canDisposeLegacyEquipment(state:GameState,itemId:string,location
     return protectedUpgrade&&!Object.values(character.equipment??{}).includes(itemId);
   }).length;
   if(!reserved)return true;
-  const stored=unmarked(state.inventory.stacks)+unmarked(state.bank.stacks)+unmarked(state.overflow.stacks)
-    +(state.otherCharacters??[]).reduce((count,entry)=>count+unmarked(entry.inventory.stacks)+unmarked(entry.overflow.stacks),0);
+  const stored=unmarked(state.inventory.stacks)+unmarked(state.bank.stacks)+unmarked(state.overflow.stacks)+unmarked(state.character?.equipmentPouch?.stacks??[])
+    +(state.otherCharacters??[]).reduce((count,entry)=>count+unmarked(entry.inventory.stacks)+unmarked(entry.overflow.stacks)+unmarked(entry.character.equipmentPouch?.stacks??[]),0);
   return stored-quantity>=reserved;
 }
 

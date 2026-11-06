@@ -49548,7 +49548,7 @@ function gearEnhancement(state, itemId) {
 function canDisposeLegacyEquipment(state, itemId, location, quantity2) {
   if (!Number.isSafeInteger(quantity2) || quantity2 <= 0) return false;
   const unmarked = (stacks) => stacks.reduce((sum, row) => sum + (row.itemId === itemId && row.instanceId === void 0 && Number.isSafeInteger(row.quantity) && row.quantity > 0 ? row.quantity : 0), 0);
-  if (unmarked(state[location].stacks) < quantity2) return false;
+  if (unmarked(location === "equipment_pouch" ? state.character?.equipmentPouch?.stacks ?? [] : state[location].stacks) < quantity2) return false;
   const allCharacters = [state.character, ...(state.otherCharacters ?? []).map((entry2) => entry2.character)].filter(
     (character) => !!character
   );
@@ -49558,7 +49558,7 @@ function canDisposeLegacyEquipment(state, itemId, location, quantity2) {
     return protectedUpgrade && !Object.values(character.equipment ?? {}).includes(itemId);
   }).length;
   if (!reserved) return true;
-  const stored = unmarked(state.inventory.stacks) + unmarked(state.bank.stacks) + unmarked(state.overflow.stacks) + (state.otherCharacters ?? []).reduce((count, entry2) => count + unmarked(entry2.inventory.stacks) + unmarked(entry2.overflow.stacks), 0);
+  const stored = unmarked(state.inventory.stacks) + unmarked(state.bank.stacks) + unmarked(state.overflow.stacks) + unmarked(state.character?.equipmentPouch?.stacks ?? []) + (state.otherCharacters ?? []).reduce((count, entry2) => count + unmarked(entry2.inventory.stacks) + unmarked(entry2.overflow.stacks) + unmarked(entry2.character.equipmentPouch?.stacks ?? []), 0);
   return stored - quantity2 >= reserved;
 }
 function upgradeMaterialCosts(itemId, targetRank) {
@@ -55469,6 +55469,60 @@ function normalizeChatEmoteTrayIds(value) {
   return [...new Set(value.filter((id) => typeof id === "string" && known.has(id)))].slice(0, CHAT_EMOTE_TRAY_SIZE);
 }
 
+// ../apps/mobile/src/core/equipment-pouch-selling.ts
+function equipmentPouchSaleId(stack, index) {
+  return stack.instanceId ? "copy:" + stack.instanceId : "legacy:" + index + ":" + stack.itemId;
+}
+function sellLegacySlot(state, index, itemId) {
+  if (!state.character) throw new Error("Choose a character before selling equipment");
+  const pouch = equipmentPouch(state), stack = pouch.stacks[index];
+  if (!stack || stack.instanceId !== void 0 || stack.itemId !== itemId || !Number.isSafeInteger(stack.quantity) || stack.quantity < 1)
+    throw new Error("Equipment Pouch changed; review your selection");
+  const item = itemDef(itemId);
+  if (item.type !== "gear" || item.guildOnly || item.knowledgeUnlockId || !Number.isSafeInteger(item.value) || item.value <= 0)
+    throw new Error("This equipment cannot be sold");
+  if (state.settings.favoriteItemIds?.includes(itemId) || state.settings.lockedItemIds?.includes(itemId))
+    throw new Error("Favorite and locked equipment stays protected");
+  if (!canDisposeLegacyEquipment(state, itemId, "equipment_pouch", 1))
+    throw new Error("Keep the last copy reserved for legacy enhancements");
+  const characters = [state.character, ...(state.otherCharacters ?? []).map((row) => row.character)];
+  if (characters.some((character) => character.savedLoadouts?.some((loadout) => Object.entries(loadout.equipment).some(([slot, id]) => id === itemId && !loadout.equipmentInstanceIds?.[slot]))))
+    throw new Error("Saved loadouts protect this equipment");
+  const gold = state.character.gold + item.value;
+  if (!Number.isSafeInteger(gold)) throw new Error("Character Gold overflow");
+  const stacks = pouch.stacks.slice();
+  if (stack.quantity === 1) stacks.splice(index, 1);
+  else stacks[index] = { ...stack, quantity: stack.quantity - 1 };
+  return { ...state, character: { ...state.character, gold, equipmentPouch: { ...pouch, stacks } } };
+}
+function sellEquipmentPouchSelected(state, ids2) {
+  if (!state.character) throw new Error("Choose a character before selling equipment");
+  if (!Array.isArray(ids2) || ids2.length < 1 || ids2.length > 100 || new Set(ids2).size !== ids2.length || ids2.some((id) => typeof id !== "string" || !id || id.length > 120))
+    throw new Error("Select 1\u2013100 equipment copies");
+  const original = equipmentPouch(state).stacks;
+  const byId = new Map(original.map((stack, index) => [equipmentPouchSaleId(stack, index), { index, stack }]));
+  const selected2 = ids2.map((id) => {
+    const row = byId.get(id);
+    if (!row) throw new Error("Equipment Pouch changed; review your selection");
+    return { ...row, id };
+  }).sort((a, b) => b.index - a.index);
+  const goalProtected = workingTowardInventoryProtectionMap(state);
+  let next = state;
+  for (const { index, stack, id } of selected2) {
+    const current = equipmentPouch(next).stacks[index];
+    if (!current || equipmentPouchSaleId(current, index) !== id)
+      throw new Error("Equipment Pouch changed; review your selection");
+    if (goalProtected.has(stack.itemId)) throw new Error("Equipment needed for a Working Toward goal is protected");
+    const item = itemDef(stack.itemId);
+    if (item.type !== "gear" || item.value <= 0 || item.guildOnly || item.knowledgeUnlockId)
+      throw new Error("This equipment cannot be sold");
+    if (state.settings.lockedItemIds?.includes(stack.itemId) || state.settings.favoriteItemIds?.includes(stack.itemId))
+      throw new Error("Favorite and locked equipment stays protected");
+    next = stack.instanceId ? disposeCraftedGearInstance(next, stack.instanceId, "sell") : sellLegacySlot(next, index, stack.itemId);
+  }
+  return next;
+}
+
 // ../apps/mobile/src/core/equipment-crafting-prerequisites.ts
 function quantity(state, itemId) {
   return (state.inventory.stacks.find((row) => row.itemId === itemId)?.quantity ?? 0) + (state.bank.stacks.find((row) => row.itemId === itemId)?.quantity ?? 0);
@@ -55753,6 +55807,7 @@ var fields = {
   equipment_pouch_move: ["itemId", "quantity", "from", "to"],
   equipment_pouch_equip: ["itemId"],
   equipment_pouch_upgrade: [],
+  equipment_pouch_sell: ["ids"],
   gear_lock: ["instanceId", "locked"],
   gear_sell: ["instanceId"],
   gear_salvage: ["instanceId"],
@@ -56270,6 +56325,12 @@ function executeGameCommand(previous, value, now, options = {}) {
       state = upgradeEquipmentPouch(state);
       message = "Equipment Pouch capacity upgraded";
       break;
+    case "equipment_pouch_sell": {
+      const ids2 = stringArray(a, "ids");
+      state = sellEquipmentPouchSelected(state, ids2);
+      message = `Sold ${ids2.length} equipment ${ids2.length === 1 ? "copy" : "copies"} from Equipment Pouch`;
+      break;
+    }
     case "gear_lock": {
       if (typeof a.locked !== "boolean") throw new Error("invalid_locked");
       state = setCraftedGearInstanceLock(state, text(a, "instanceId", 180), a.locked);

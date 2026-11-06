@@ -412,7 +412,7 @@ export function executeGameCommand(previous:GameState,value:unknown,now:number,o
    const type=oneOf(a.type,DAILY_SUPPLY_BOOST_TYPES);state=activateDailySupplyBoost(state,type);message=`+10% ${dailySupplyBoostLabel(type)} active for 2 hours of qualifying activity.`;break;
   }
   case 'quest':state=game.claimQuest(state,text(a,'id'));break;
-  case 'seasonal':state=game.claimSeasonalContract(state,oneOf(a.period,['daily','weekly','monthly']),text(a,'id'),now);break;
+  case 'seasonal':state=game.claimSeasonalContract(state,oneOf(a.period,['daily','weekly','monthly']),text(a,'id'),now,a.choiceId===undefined?undefined:text(a,'choiceId',100));break;
   case 'settings':state={...state,settings:validateGameSettings(a.settings)};break;
   case 'inventory_preference':{
     // Only the requested preference changes; legacy settings cannot break locks.

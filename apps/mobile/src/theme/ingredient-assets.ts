@@ -53,6 +53,10 @@ export const ingredientIcons={
  // Reuse the production-ready resin icon until bespoke Ironwood art is approved; no missing inventory icon.
  IRONWOOD_BINDING_RESIN:require('../../assets/ingredient-icons-v1/equipment-infusions/verdant_binding_resin.webp'),
  OATHGLASS_SOLVENT:require('../../assets/ingredient-icons-v1/equipment-infusions/oathglass_solvent.webp'),
+ // Temporary reuse of existing Sunscar/Oathglass art keeps every new material visible; no new asset weight.
+ SUNSCAR_DUNE_BINDER:require('../../assets/ingredient-icons-v1/equipment-infusions/sunfused_fixative.webp'),
+ GLASSBOUND_BINDER:require('../../assets/ingredient-icons-v1/equipment-infusions/oathglass_solvent.webp'),
+ GLASSBOUND_CORE:require('../../assets/ingredient-icons-v1/blackglass_core.webp'),
  SUNFUSED_FIXATIVE:require('../../assets/ingredient-icons-v1/equipment-infusions/sunfused_fixative.webp'),
  RIMEWARD_DISTILLATE:require('../../assets/ingredient-icons-v1/equipment-infusions/rimeward_distillate.webp'),
  CINDERHEART_ELIXIR:require('../../assets/ingredient-icons-v1/equipment-infusions/cinderheart_elixir.webp'),

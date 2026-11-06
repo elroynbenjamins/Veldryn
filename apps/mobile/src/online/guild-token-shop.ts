@@ -23,7 +23,7 @@ export interface GuildTokenWeeklyReward{
 }
 export interface GuildBankSnapshot{
  balances:Array<{resourceId:string;amount:number}>;
- activity:Array<{kind:'deposit'|'construction'|'skill_upgrade';resourceId:string;amount:number;templateId?:string|null;mine:boolean;createdAt:string}>;
+ activity:Array<{kind:'deposit'|'construction'|'skill_upgrade'|'project_reward';resourceId:string;amount:number;templateId?:string|null;mine:boolean;createdAt:string}>;
 }
 export interface GuildTokenShopSnapshot{
  guildLevel:number;constructionMemberCount?:number|null;balance:number;earnedThisWeek:number;weeklyCap:number;cards:GuildTokenShopCard[];treasuryBonusBps?:number;
@@ -81,7 +81,7 @@ function validateSnapshot(value:unknown):GuildTokenShopSnapshot{
   const b=o.bank as GuildBankSnapshot;
   if(typeof b!=='object'||!Array.isArray(b.balances)||!Array.isArray(b.activity)
    ||b.balances.some(v=>typeof v.resourceId!=='string'||!Number.isSafeInteger(v.amount)||v.amount<0)
-   ||b.activity.some(v=>!['deposit','construction','skill_upgrade'].includes(v.kind)||typeof v.resourceId!=='string'
+   ||b.activity.some(v=>!['deposit','construction','skill_upgrade','project_reward'].includes(v.kind)||typeof v.resourceId!=='string'
     ||!Number.isSafeInteger(v.amount)||v.amount<1||typeof v.mine!=='boolean'||typeof v.createdAt!=='string'))
    throw new Error('Invalid Guild Bank snapshot.');
   bank=b;

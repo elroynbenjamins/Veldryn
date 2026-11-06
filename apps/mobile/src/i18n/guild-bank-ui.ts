@@ -46,6 +46,7 @@ export const guildBankUiRows={
  "Shared ledger": ["Gemeinsames Protokoll","Registro compartido","Gedeeld overzicht","Registro condiviso","Journal partagé","Общий журнал","Ortak kayıt"],
  "You donated": ["Du hast gespendet","Has donado","Jij hebt gedoneerd","Hai donato","Vous avez donné","Вы внесли","Bağış yaptın"],
  "Member donated": ["Mitglied spendete","Un miembro donó","Lid heeft gedoneerd","Un membro ha donato","Un membre a donné","Участник внёс","Bir üye bağışladı"],
+ "Guild Project reward": ["Gildenprojekt-Belohnung","Recompensa de proyecto del gremio","Gildeprojectbeloning","Ricompensa del progetto di gilda","Récompense de projet de guilde","Награда за проект гильдии","Lonca Projesi ödülü"],
  "Spent on Guild Skill": ["Für Gildenfertigkeit ausgegeben","Gastado en habilidad del gremio","Besteed aan gildevaardigheid","Speso per abilità di gilda","Dépensé en compétence de guilde","Потрачено на навык гильдии","Lonca Becerisine harcandı"],
  "Allocated to construction": ["Dem Bau zugewiesen","Asignado a construcción","Toegewezen aan bouw","Assegnato alla costruzione","Attribué à la construction","Выделено на строительство","İnşaata ayrıldı"],
  "No recorded activity yet": ["Noch keine Aktivitäten","Sin actividad registrada","Nog geen activiteit vastgelegd","Nessuna attività registrata","Aucune activité enregistrée","Активность пока не зарегистрирована","Henüz etkinlik kaydı yok"],

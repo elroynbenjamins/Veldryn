@@ -245,11 +245,11 @@ export function OnlineGuildBankPanel({snapshot,onReload,focusResourceId,onFocusH
    {snapshot.bank?.activity.length?snapshot.bank.activity.slice(0,20).map((item,index)=><View key={item.createdAt+'-'+item.resourceId+'-'+index} style={s.activityRow}>
     <View style={s.neededArt}>{item.resourceId==='gold'?<Text style={s.goldGlyph}>G</Text>:<ResourceArtwork itemId={item.resourceId} size={30} framed={false}/>}</View>
     <View style={s.flex}>
-     <Text numberOfLines={2} style={s.name}>{ui(item.kind==='deposit'?(item.mine?'You donated':'Member donated'):item.kind==='skill_upgrade'?'Spent on Guild Skill':'Allocated to construction')}</Text>
+     <Text numberOfLines={2} style={s.name}>{ui(item.kind==='project_reward'?'Guild Project reward':item.kind==='deposit'?(item.mine?'You donated':'Member donated'):item.kind==='skill_upgrade'?'Spent on Guild Skill':'Allocated to construction')}</Text>
      <Text numberOfLines={2} style={s.meta}>{resourceTitle(item.resourceId)} · {activityTime(item.createdAt)}</Text>
     </View>
-    <Text style={[s.activityAmount,{color:item.kind==='deposit'?C.good:C.info}]}>
-     {item.kind==='deposit'?'+':'−'}{item.amount.toLocaleString()}
+    <Text style={[s.activityAmount,{color:item.kind==='deposit'||item.kind==='project_reward'?C.good:C.info}]}>
+     {item.kind==='deposit'||item.kind==='project_reward'?'+':'−'}{item.amount.toLocaleString()}
     </Text>
    </View>):<View style={s.empty}><Text style={s.name}>{ui('No recorded activity yet')}</Text>
     <Text style={s.help}>{ui('Deposits and project allocations will appear here after they are confirmed.')}</Text></View>}

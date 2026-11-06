@@ -16,7 +16,7 @@ assert.deepEqual([...SUPPORTED_LANGUAGES],['en',...locales]);
 const placeholders=text=>[...text.matchAll(/\{([a-zA-Z][a-zA-Z0-9_]*)\}/g)].map(m=>m[1]).sort();
 for(const [name,rows,translate,count] of [
  ['Live Dungeon',liveDungeonUiRows,liveDungeonUiText,14],
- ['Online Guild Projects',onlineGuildProjectUiRows,onlineGuildProjectUiText,70],
+ ['Online Guild Projects',onlineGuildProjectUiRows,onlineGuildProjectUiText,74],
 ]){
  assert.equal(Object.keys(rows).length,count,name+': reviewed key count changed');
  for(const [key,values] of Object.entries(rows)){
@@ -54,9 +54,9 @@ for(const [source,checks] of [
  [queue,["liveDungeonRoleText(language,queue.role)","ui('Team: 1 Tank · 2 Damage · 1 Support. Loadout locks at ready check.')","{queue.contentName}","formatWait(queue.waitSeconds)"]],
  [ready,["ui('READY CHECK · {seconds}s'","ui('{ready}/4 ready'","liveDungeonRoleText(language,m.role)","{m.displayName}","readyCount(check)"]],
  [run,["ui('LIVE EXPEDITION · NODE {current}/{total}'","ui('CHOOSE NEXT ROUTE · {seconds}s'","liveDungeonRiskText(language,o.risk)","ui('Route option {name}, {risk}, {votes} votes'","{o.rewardHint}","{o.name}","{run.connectionWarning}","{run.bossName}"]],
- [guild,["guildProjectAuthoredCopy(language,candidate.templateId,candidate.name,candidate.description)","guildProjectAuthoredCopy(language,project.templateId,project.name,project.description)","ui('Project contributions: {name}'","ui('Voting closes {date}'","guildFlowFocusText(language,project.focus)","ui('Daily cap: 2,400 effort · Max 50% per member (Guilds of 2+) · 300 effort for 500 Gold · Claim within 7 days.')","{member.displayName}","{goal.label}","project.personalRewardThreshold>0","claimOpen"]]
+ [guild,["guildProjectAuthoredCopy(language,candidate.templateId,candidate.name,candidate.description)","guildProjectAuthoredCopy(language,project.templateId,project.name,project.description)","ui('Project contributions: {name}'","ui('Voting closes {date}'","guildFlowFocusText(language,project.focus)","project.rewardDestination==='guild_bank'","300 effort for Guild Bank reward · Claim within 7 days.","300 effort for 500 Gold · Claim within 7 days.","{member.displayName}","{goal.label}","project.personalRewardThreshold>0","claimOpen"]]
 ])for(const marker of checks)assert.ok(source.includes(marker),'Missing localized wiring or original server fields: '+marker);
 assert.ok(!run.includes('Run state is checkpointed between nodes so a server restart'),'The verbose internal-server note should be replaced with concise localized copy');
 assert.ok(!guild.includes('Project contributions: ${authored.name}'),'Accessibility label should no longer hardcode English.');
 assert.ok(guild.includes('Date.now()<claimDeadline')&&guild.includes("project.status==='completed'"),'Claim eligibility rules must remain intact');
-console.log('PASS: 14 Live Dungeon and 70 Online Guild Project keys in seven target languages, with strict interpolation and preserved gameplay/identity fields');
+console.log('PASS: 14 Live Dungeon and 74 Online Guild Project keys in seven target languages, with strict interpolation and preserved gameplay/identity fields');

@@ -2,7 +2,7 @@ import {useGameplayText} from '../i18n/gameplay';
 import React,{useEffect,useMemo,useRef,useState} from 'react';
 import {Animated,Pressable,ScrollView,StyleSheet,Text,View} from 'react-native';
 import {ITEMS,itemDef} from '../content/items';
-import {combinedQuantity,gearEnhancement,gearStatsAtRank,gemEffectDescription,gemSocketCapacity,gemSocketKind,gemSocketState,MAX_UPGRADE_RANK,upgradeQuote} from '../core/equipment-enhancement';
+import {combinedQuantity,enhancedGearStatsAtRank,gearEnhancement,gemEffectDescription,gemSocketCapacity,gemSocketKind,gemSocketState,MAX_UPGRADE_RANK,upgradeQuote} from '../core/equipment-enhancement';
 import {equipmentDecisionModel} from '../core/equipment-decision';
 import {GameState} from '../core/types';
 import {itemRarity,rarityMeta} from '../core/item-rarity';
@@ -24,7 +24,9 @@ type PendingGemAction={kind:'replace';gemId:string;currentGemId:string}|{kind:'e
 function CostRow({label,owned,needed}:{label:string;owned:number;needed:number}){
  const {gt,gl,language}=useGameplayText();const C=useGameTheme(),s=useMemo(()=>makeStyles(C),[C]),enough=owned>=needed;return <View style={s.costRow}><Text style={s.costLabel}>{label}</Text><Text style={[s.costValue,!enough&&s.missing]}>{owned.toLocaleString()} / {needed.toLocaleString()}</Text><Text accessibilityLabel={enough?gt("Available"):gt("Missing")} style={[s.costMark,enough?s.ready:s.missing]}>{enough?'✓':'!'}</Text></View>}
 function StatPreview({label,current,next}:{label:string;current:number;next:number}){const C=useGameTheme(),s=useMemo(()=>makeStyles(C),[C]),format=(value:number)=>Number.isInteger(value)?String(value):value.toFixed(1);if(!current&&!next)return null;return <View style={s.statRow}><Text style={s.statLabel}>{label}</Text><Text style={s.statCurrent}>{format(current)}</Text><Text style={s.arrow}>›</Text><Text style={s.statNext}>{format(next)}</Text></View>}
-function UpgradeResultMoment({feedback,itemId,reduceMotion}:{feedback:EnhancementFeedbackResult;itemId:string;reduceMotion:boolean}){
+/** Keep precision for small regional gains; never round a positive 4% gain to zero. */
+function formatGearStat(value:number){if(!Number.isFinite(value))return '—';const magnitude=Math.abs(value);const digits=magnitude>0&&magnitude<.01?4:magnitude<.1?3:2;return Number(value.toFixed(digits)).toLocaleString('en-US',{maximumFractionDigits:digits});}
+function UpgradeResultMoment({feedback,itemId,state,reduceMotion}:{feedback:EnhancementFeedbackResult;itemId:string;state:GameState;reduceMotion:boolean}){
  const {gt,gl,language}=useGameplayText();
   const C=useGameTheme(),s=useMemo(()=>makeStyles(C),[C]),scale=useRef(new Animated.Value(1)).current,shake=useRef(new Animated.Value(0)).current;
   const upgrade=feedback.kind==='upgrade_success'||feedback.kind==='upgrade_failure',success=feedback.kind==='upgrade_success';
@@ -35,21 +37,21 @@ function UpgradeResultMoment({feedback,itemId,reduceMotion}:{feedback:Enhancemen
     else Animated.sequence([-5,5,-3,3,0].map(value=>Animated.timing(shake,{toValue:value,duration:55,useNativeDriver:true}))).start();
   },[feedback,reduceMotion,scale,shake,success,upgrade]);
   if(!upgrade)return null;
-  const before=gearStatsAtRank(itemId,feedback.previousRank),after=gearStatsAtRank(itemId,feedback.rank),deltas=[['ATK',after.attack-before.attack],['DEF',after.defense-before.defense],['HP',after.hp-before.hp]].filter(([,value])=>(value as number)>0);
+  const before=enhancedGearStatsAtRank(state,itemId,feedback.previousRank),after=enhancedGearStatsAtRank(state,itemId,feedback.rank),deltas=[['ATK',after.attack-before.attack],['DEF',after.defense-before.defense],['HP',after.hp-before.hp]].filter(([,value])=>(value as number)>0);
   const color=success?C.good:C.warning,surface=success?C.goodSurface:C.warningSurface;
   return <Animated.View accessibilityLiveRegion="polite" style={[s.resultMoment,{borderColor:color,backgroundColor:surface,transform:[{translateX:shake},{scale}]}]}>
     <View style={s.resultTop}><Text style={[s.resultTitle,{color}]}>{success?gt("UPGRADE SUCCESS"):gt("TEMPERING FAILED")}</Text><Text style={[s.resultRank,{color}]}>{success?`+${feedback.previousRank} → +${feedback.rank}`:`+${feedback.rank} PROTECTED`}</Text></View>
-    {success?<Text style={s.resultCopy}>{deltas.length?deltas.map(([label,value])=>`${label} +${value}`).join(' · '):gt("Rank increased successfully.")}</Text>:<Text style={s.resultCopy}>{gt("Rank protected")} · +{Math.max(0,feedback.pityAfterPct-feedback.pityBeforePct)}% {gt("next attempt")}</Text>}
+    {success?<Text style={s.resultCopy}>{deltas.length?deltas.map(([label,value])=>`${label} +${formatGearStat(value as number)}`).join(' · '):gt("Rank increased successfully.")}</Text>:<Text style={s.resultCopy}>{gt("Rank protected")} · +{Math.max(0,feedback.pityAfterPct-feedback.pityBeforePct)}% {gt("next attempt")}</Text>}
   </Animated.View>;
 }
 
-function gemResultDetail(state:GameState,gemId:string){
+function gemResultDetail(state:GameState,gemId:string,previewItemId?:string){
   const gem=itemDef(gemId),meta=canonicalGemMetaV1(gem.id);
   if(meta){
     const family=mobileGemFamilyV1(meta.familyId);
     return gemSocketKind(gem.id)==='stat'
       ?`${GEM_GRADE_LABEL_V1[meta.grade]} · ${formatGemValueV1(meta.familyId,meta.grade)} · ${family?.description??'Stat Gem'}`
-      :`${gemEffectDescription(gem.id)} · Resonance ${resonanceForFamilyV1(state,meta.familyId).resonance}/III`;
+      :`${Number(((family?.values[meta.grade]??0)*100).toFixed(3))}% · ${gemEffectDescription(gem.id)} · Resonance ${previewItemId?Math.min(3,effectFamilyCopiesV1(state,meta.familyId,previewItemId)+1):resonanceForFamilyV1(state,meta.familyId).resonance}/III`;
   }
   return gemSocketKind(gem.id)==='stat'&&gem.gemStat?`+${Math.round((gem.gemPercent??0)*100)}% ${gem.gemStat}`:gemEffectDescription(gem.id);
 }
@@ -84,7 +86,7 @@ export function EquipmentEnhancementModal({visible,state,itemId,onClose,onUpgrad
   },[itemId,enhancement.rank,enhancement.failures,enhancement.gemIds,enhancement.statGemId,enhancement.effectGemId,visible]);
   useEffect(()=>{setFeedback(null);if(visible)setTab(initialTab)},[itemId,visible,initialTab]);
   useEffect(()=>{if(!visible)return;const sockets=gemSocketState(state,itemId);setActiveSocketKind(sockets.statGemId&&!sockets.effectGemId?'effect':'stat');setShowDetails(false);setShowGemHelp(false);setShowAllCandidates(false);setGemPickerOpen(false);setSelectedGemId(null)},[itemId,visible]);
-  const currentStats=gearStatsAtRank(itemId,enhancement.rank),nextStats=gearStatsAtRank(itemId,Math.min(MAX_UPGRADE_RANK,enhancement.rank+1));
+  const currentStats=enhancedGearStatsAtRank(state,itemId,enhancement.rank),nextStats=enhancedGearStatsAtRank(state,itemId,Math.min(MAX_UPGRADE_RANK,enhancement.rank+1));
   const dust=combinedQuantity(state,'TEMPERING_DUST'),cores=combinedQuantity(state,'TEMPERING_CORE'),gold=state.character!.gold;
   const missingMaterial=quote.materials.find(material=>combinedQuantity(state,material.itemId)<material.quantity);
   const canUpgrade=!quote.maxed&&gold>=quote.gold&&dust>=quote.dust&&cores>=quote.cores&&!missingMaterial;
@@ -138,11 +140,11 @@ export function EquipmentEnhancementModal({visible,state,itemId,onClose,onUpgrad
           <View style={s.compactRankRow}><Text style={s.compactRankText}>{'+'+enhancement.rank+'  →  '+(quote.maxed?'MAX':'+'+quote.targetRank)}</Text><Text style={s.compactRankAside}>{enhancement.rank+' / '+MAX_UPGRADE_RANK}</Text></View>
           <View accessibilityLabel={'Enhancement rank '+enhancement.rank+' of '+MAX_UPGRADE_RANK} accessibilityRole="progressbar" style={s.rankSteps}>{Array.from({length:MAX_UPGRADE_RANK},(_,index)=>{const rank=index+1;return <View key={rank} style={[s.rankStep,rank<=enhancement.rank&&s.rankStepFilled,rank===quote.targetRank&&!quote.maxed&&s.rankStepNext]}/>})}</View>
         </View>
-        {feedback&&<UpgradeResultMoment feedback={feedback} itemId={itemId} reduceMotion={state.settings.reduceMotion}/>}
+        {feedback&&<UpgradeResultMoment feedback={feedback} itemId={itemId} state={state} reduceMotion={state.settings.reduceMotion}/>}
         {quote.maxed?<View style={s.completedPanel}><Text style={s.completedTitle}>{gt("Fully enhanced")}</Text></View>:<>
-          <Text style={s.section}>{gt("Your stat gains")}</Text>
+          <Text style={s.section}>{gt("Gear stat gains")}</Text>
           <View style={s.compactStatGrid}>
-            {([['ATK',currentStats.attack,nextStats.attack],['DEF',currentStats.defense,nextStats.defense],['HP',currentStats.hp,nextStats.hp]] as Array<[string,number,number]>).filter(([,before,after])=>after!==before).map(([name,before,after])=><View key={name} style={s.compactStatTile}><Text style={s.compactStatLabel}>{name}</Text><Text style={s.compactStatValue}>{'+'+Math.max(0,after-before)}</Text></View>)}
+            {([['ATK',currentStats.attack,nextStats.attack],['DEF',currentStats.defense,nextStats.defense],['HP',currentStats.hp,nextStats.hp]] as Array<[string,number,number]>).filter(([,before,after])=>after!==before).map(([name,before,after])=><View key={name} style={s.compactStatTile}><Text style={s.compactStatLabel}>{name}</Text><Text style={s.compactStatValue}>{'+'+formatGearStat(Math.max(0,after-before))}</Text><Text style={s.compactStatRange} numberOfLines={1}>{formatGearStat(before)+' → '+formatGearStat(after)}</Text></View>)}
           </View>
           <View style={s.compactChance}>
             <Text style={s.compactChancePct}>{totalChancePct+'%'}</Text>
@@ -171,7 +173,7 @@ export function EquipmentEnhancementModal({visible,state,itemId,onClose,onUpgrad
           const blocked=Boolean(meta&&activeSocketKind==='effect'&&effectFamilyCopiesV1(state,meta.familyId,itemId)>=3);
           return <Pressable key={gem.id} accessibilityRole="button" accessibilityState={{selected:selectedGemId===gem.id,disabled:blocked||busy}} onPress={()=>{setSelectedGemId(gem.id);setPendingGemAction(null)}} disabled={blocked||busy} style={[s.compactCandidate,selectedGemId===gem.id&&s.compactCandidateSelected]}>
             <GemArtwork itemId={gem.id} size={44} framed={false}/>
-            <View style={s.flex}><Text numberOfLines={1} style={[s.socketTitle,{color:gemRarity.color}]}>{gem.name}</Text><Text style={s.compactCandidateMeta} numberOfLines={2}>{(meta?GEM_GRADE_LABEL_V1[meta.grade]+' · ':'')+(activeSocketKind==='stat'&&meta?formatGemValueV1(meta.familyId,meta.grade):gemEffectDescription(gem.id))+' · ×'+combinedQuantity(state,gem.id)}</Text>{rec?<Text style={s.compactRecommended}>{'★ '+gt("Recommended")}</Text>:null}{gem.id===equippedGemId?<Text style={s.compactRecommended}>{gt("Equipped")}</Text>:null}{blocked?<Text style={s.missing}>{gt("Limit")}</Text>:null}</View>
+            <View style={s.flex}><Text numberOfLines={1} style={[s.socketTitle,{color:gemRarity.color}]}>{gem.name}</Text><Text style={s.compactCandidateMeta} numberOfLines={2}>{(meta?GEM_GRADE_LABEL_V1[meta.grade]+' · ':'')+(activeSocketKind==='stat'&&meta?formatGemValueV1(meta.familyId,meta.grade):gemResultDetail(state,gem.id,itemId))+' · ×'+combinedQuantity(state,gem.id)}</Text>{rec?<Text style={s.compactRecommended}>{'★ '+gt("Recommended")}</Text>:null}{gem.id===equippedGemId?<Text style={s.compactRecommended}>{gt("Equipped")}</Text>:null}{blocked?<Text style={s.missing}>{gt("Limit")}</Text>:null}</View>
             <Text style={s.compactChooseMark}>{gem.id===equippedGemId?'✓':selectedGemId===gem.id?'●':'○'}</Text>
           </Pressable>
         })}
@@ -179,7 +181,7 @@ export function EquipmentEnhancementModal({visible,state,itemId,onClose,onUpgrad
         {candidates.length>4?<Pressable accessibilityRole="button" accessibilityState={{expanded:showAllCandidates}} onPress={()=>setShowAllCandidates(v=>!v)} style={s.detailToggle}><Text style={s.detailToggleText}>{showAllCandidates?gt("Show fewer gems"):gt("See all owned gems")}</Text><Text style={s.detailToggleMark}>{showAllCandidates?'−':'+'}</Text></Pressable>:null}
         {selectedGem&&!pendingGemAction?<View style={s.compactPreview}><Text style={s.section}>{gt("Change preview")}</Text>
           <View style={s.compactPreviewRow}><Text style={s.compactPreviewBefore} numberOfLines={2}>{equippedGemId?itemDef(equippedGemId).name:gt("Empty socket")}</Text><Text style={s.arrow}>→</Text><Text style={s.compactPreviewAfter} numberOfLines={2}>{selectedGem.name}</Text></View>
-          <Text style={s.meta}>{gemResultDetail(state,selectedGem.id)}</Text>
+          <Text style={s.meta}>{gemResultDetail(state,selectedGem.id,itemId)}</Text>
           {equippedGemId&&equippedGemId!==selectedGem.id?<Text style={s.rule}>{gt("Old gem returns to Gem Pouch or available storage.")}</Text>:null}
         </View>:null}
         {pendingGemAction&&(()=>{
@@ -187,7 +189,7 @@ export function EquipmentEnhancementModal({visible,state,itemId,onClose,onUpgrad
           return <View style={s.gemConfirm}>
             <Text style={s.gemConfirmTitle}>{pendingGemAction.kind==='replace'?gt("Replace gem?"):gt("Extract gem?")}</Text>
             <View style={s.gemCompareArt}><GemArtwork itemId={current.id} size={44} framed={false}/>{next?<><Text style={s.gemCompareArrow}>→</Text><GemArtwork itemId={next.id} size={44} framed={false}/></>:null}<View style={s.flex}><Text style={s.gemConfirmText} numberOfLines={2}>{next?current.name+' → '+next.name:current.name}</Text><Text style={s.rule}>{gt("Old gem returns to Gem Pouch or available storage.")}</Text></View></View>
-            {next?<Text style={s.gemConfirmCompare}>{gemResultDetail(state,current.id)} → {gemResultDetail(state,next.id)}</Text>:null}
+            {next?<Text style={s.gemConfirmCompare}>{gemResultDetail(state,current.id)} → {gemResultDetail(state,next.id,itemId)}</Text>:null}
             <Text style={[s.gemConfirmCost,!canAffordFee&&s.missing]}>{gt("Cost")+' · '+(fee.gold?fee.gold.toLocaleString()+' '+gt("Gold"):gt("Free"))+(fee.dust?' + '+fee.dust+' '+gt("Gem Dust"):'')}</Text>
             {!canAffordFee?<Text style={s.reason}>{gt("Not enough materials for this change.")}</Text>:null}
             <Text style={s.compactHint}>{gt("Confirm below to apply this change.")}</Text>
@@ -200,7 +202,7 @@ export function EquipmentEnhancementModal({visible,state,itemId,onClose,onUpgrad
           return <View key={slot.kind} style={s.compactSocket}>
             <Pressable accessibilityRole="button" style={s.compactSocketSelect} onPress={()=>openGemSelection(slot.kind)} disabled={busy}>
               {gem?<GemArtwork itemId={gem.id} size={46} framed={false}/>:<View style={s.compactEmptyGem}><Text style={s.compactEmptyMark}>+</Text></View>}
-              <View style={s.flex}><Text style={s.slotEyebrow}>{slot.label}</Text><Text numberOfLines={1} style={s.socketTitle}>{gem?.name??gt("Empty socket")}</Text><Text numberOfLines={2} style={s.compactCandidateMeta}>{gem?(slot.kind==='stat'&&canonicalGemMetaV1(gem.id)?formatGemValueV1(canonicalGemMetaV1(gem.id)!.familyId,canonicalGemMetaV1(gem.id)!.grade):gemEffectDescription(gem.id)):slot.kind==='stat'?gt("Adds a stat bonus"):gt("Adds a combat effect")}</Text></View>
+              <View style={s.flex}><Text style={s.slotEyebrow}>{slot.label}</Text><Text numberOfLines={1} style={s.socketTitle}>{gem?.name??gt("Empty socket")}</Text><Text numberOfLines={2} style={s.compactCandidateMeta}>{gem?gemResultDetail(state,gem.id):slot.kind==='stat'?gt("Adds a stat bonus"):gt("Adds a combat effect")}</Text></View>
             </Pressable>
             <GameButton compact title={gem?gt("Change"):gt("Add gem")} disabled={busy} onPress={()=>openGemSelection(slot.kind)}/>
             {gem?<Pressable accessibilityRole="button" onPress={()=>{openGemSelection(slot.kind);setPendingGemAction({kind:'extract',index:slot.index,currentGemId:gem.id})}} style={s.compactExtract}><Text style={s.compactExtractText}>{gt("Extract")}</Text></Pressable>:null}
@@ -228,7 +230,7 @@ compactRankPanel:{padding:spacing.sm,borderWidth:1,borderColor:equipmentColors.l
 compactRankRow:{flexDirection:'row',justifyContent:'space-between',alignItems:'center',gap:8},
 compactRankText:{fontSize:25,fontWeight:'900',color:equipmentColors.goldSoft},compactRankAside:{...typography.caption,color:C.muted},
 compactStatGrid:{flexDirection:'row',gap:spacing.sm},compactStatTile:{flex:1,minWidth:0,borderWidth:1,borderColor:C.line,borderRadius:radii.sm,backgroundColor:C.panel2,alignItems:'center',paddingVertical:spacing.sm,gap:2},
-compactStatLabel:{...typography.caption,color:C.muted,fontWeight:'900'},compactStatValue:{...typography.title,color:C.good,fontWeight:'900'},
+compactStatLabel:{...typography.caption,color:C.muted,fontWeight:'900'},compactStatValue:{...typography.title,color:C.good,fontWeight:'900'},compactStatRange:{fontSize:10,color:C.muted,textAlign:'center'},
 compactChance:{flexDirection:'row',alignItems:'center',gap:spacing.md,borderWidth:1,borderColor:C.good,borderRadius:radii.sm,backgroundColor:C.goodSurface,padding:spacing.sm},
 compactChancePct:{fontSize:26,fontWeight:'900',color:C.good},compactChanceTitle:{...typography.bodyStrong,color:C.text},compactChanceNote:{...typography.caption,color:C.muted},
 compactSectionRow:{flexDirection:'row',justifyContent:'space-between',alignItems:'center',gap:8},compactStatus:{...typography.caption,fontWeight:'800'},

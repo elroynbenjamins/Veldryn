@@ -6,6 +6,8 @@ import {equipmentPouch,equipmentPouchUpgradePreview} from '../core/equipment-pou
 import {equipmentPouchSaleCandidates,equipmentPouchQuickSellIds,type EquipmentPouchSaleCandidate} from '../core/equipment-pouch-selling';
 import {craftedGearDisplayQuality,craftedGearInstances} from '../core/crafted-gear-instances';
 import {itemDef} from '../content/items';
+import {localizedItemName} from '../i18n/starter-item-names';
+import {useGameLanguage} from '../i18n/GameLanguageProvider';
 import {itemRarity,rarityMeta} from '../core/item-rarity';
 import {ItemArtwork} from './ItemArtwork';
 import {GameButton} from './GameButton';
@@ -19,6 +21,7 @@ const PAGE_SIZE=30;
  * rarity and quality, and can be equipped without passing through Inventory. */
 export function EquipmentPouchPanel({state,busy=false,onAction}:{state:GameState;busy?:boolean;onAction?:(command:GameCommand)=>void|Promise<unknown>}){
  const C=useGameTheme(),s=useMemo(()=>styles(C),[C]);
+ const language=useGameLanguage();
  const pouch=equipmentPouch(state),upgrade=equipmentPouchUpgradePreview(state);
  const [page,setPage]=useState(0),[selectedIndex,setSelectedIndex]=useState<number|null>(null),[gridWidth,setGridWidth]=useState(300);
  const [previewStack,setPreviewStack]=useState<ItemStack|null>(null);
@@ -100,7 +103,7 @@ export function EquipmentPouchPanel({state,busy=false,onAction}:{state:GameState
     const descriptor=stack?itemDef(stack.itemId):undefined,rar=descriptor?rarityMeta(copy?.rarity??itemRarity(descriptor)):undefined;
     return <Pressable key={stack?(stack.instanceId??stack.itemId+':'+(start+index)):'empty-'+(start+index)}
       accessibilityRole={selectMode?'checkbox':'button'} accessibilityState={selectMode?{checked}:undefined}
-      accessibilityLabel={descriptor?descriptor.name+(copy?' · '+rar?.label+', quality '+craftedGearDisplayQuality(copy):'')+(selectMode&&candidate&&!candidate.eligible?' · protected':''):'Empty equipment slot'}
+      accessibilityLabel={descriptor?localizedItemName(language,descriptor.id)+(copy?' · '+rar?.label+', quality '+craftedGearDisplayQuality(copy):'')+(selectMode&&candidate&&!candidate.eligible?' · protected':''):'Empty equipment slot'}
       disabled={!stack||busy||(selectMode&&!candidate?.eligible)} onPress={()=>choose(stack,index)}
       style={[s.slot,{width:slotWidth,minHeight:Math.max(62,slotWidth)},stack&&s.filled,rar&&{borderColor:rar.color},checked&&s.slotChecked,selectMode&&!candidate?.eligible&&s.slotProtected]}>
       {stack?<><ItemArtwork itemId={stack.itemId} size={Math.min(42,slotWidth-12)}/><Text style={[s.quantity,{color:rar?.color??C.text}]} numberOfLines={1}>{selectMode?(checked?'✓':candidate?.eligible?'○':'🔒'):copy?'Q'+craftedGearDisplayQuality(copy):'×'+stack.quantity}</Text></>:<Text style={s.empty}>·</Text>}
@@ -129,7 +132,7 @@ export function EquipmentPouchPanel({state,busy=false,onAction}:{state:GameState
     setPreviewStack(null);
    }}/>
   <GameModalSurface visible={!!selected} reduceMotion={state.settings.reduceMotion} onClose={()=>setSelectedIndex(null)} backdropLabel="Close Equipment Pouch details" surfaceStyle={s.modal}>
-   <GameModalHeader eyebrow="EQUIPMENT · CHARACTER STORAGE" title={item?.name??'Equipment'} onClose={()=>setSelectedIndex(null)}/>
+   <GameModalHeader eyebrow="EQUIPMENT · CHARACTER STORAGE" title={item?localizedItemName(language,item.id):'Equipment'} onClose={()=>setSelectedIndex(null)}/>
    {selected&&item?<ScrollView contentContainerStyle={s.details} showsVerticalScrollIndicator={false} showsHorizontalScrollIndicator={false}>
     <View style={s.hero}><View style={[s.art,{borderColor:rarity?.color??C.line}]}><ItemArtwork itemId={item.id} size={74}/></View>
      <View style={s.flex}><Text style={[s.itemName,{color:rarity?.color??C.text}]}>{rarity?.label??'Equipment'}{record?' · Q'+craftedGearDisplayQuality(record):''}</Text>

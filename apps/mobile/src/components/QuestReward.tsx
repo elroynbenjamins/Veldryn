@@ -1,7 +1,7 @@
 import {useGameLanguage} from '../i18n/GameLanguageProvider';
 import {progressionT,progressionText,type ProgressionKey} from '../i18n/progression';
 import {StyleSheet,Text,View} from 'react-native';
-import {itemDef} from '../content/items';
+import {localizedItemName} from '../i18n/starter-item-names';
 import {radii,typography,type ThemeColors} from '../theme/theme';
 import {useGameTheme} from '../theme/ThemeContext';
 import {useMemo} from 'react';
@@ -18,7 +18,7 @@ export function QuestReward({gold,xp,itemId,quantity=1,essence=0,bondstones=0,la
   return <View style={[s.root,rarityColor?{borderColor:rarityColor,borderLeftWidth:3}:undefined]}>
     <Text style={s.label}>{p(label)}</Text>
     <View style={s.currencies}><Text style={s.gold}>{gold} {t("Gold")}</Text>{xp!==undefined&&<Text style={s.xp}>{xp} XP</Text>}</View>
-    {itemId&&<View style={s.item}><View accessible={false} importantForAccessibility="no-hide-descendants"><ItemArtwork itemId={itemId} size={40}/></View><Text style={s.name}>{quantity}× {itemDef(itemId).name}</Text></View>}
+    {itemId&&<View style={s.item}><View accessible={false} importantForAccessibility="no-hide-descendants"><ItemArtwork itemId={itemId} size={40}/></View><Text style={s.name}>{quantity}× {localizedItemName(language,itemId)}</Text></View>}
     {essence>0&&<View style={s.item}><ResourceIcon resourceId="essence" size={32}/><Text style={s.name}>{essence}× {p('Companion Essence')}</Text></View>}
     {bondstones>0&&<View style={s.item}><ResourceIcon resourceId="bondstones" size={32}/><Text style={s.name}>{bondstones}× {p('Bondstones')}</Text></View>}
   </View>;

@@ -50,6 +50,8 @@ export const ingredientIcons={
  TEMPERING_DUST:require('../../assets/ingredient-icons-v1/tempering_dust.webp'),
  TEMPERING_CORE:require('../../assets/ingredient-icons-v1/tempering_core.webp'),
  VERDANT_BINDING_RESIN:require('../../assets/ingredient-icons-v1/equipment-infusions/verdant_binding_resin.webp'),
+ // Reuse the production-ready resin icon until bespoke Ironwood art is approved; no missing inventory icon.
+ IRONWOOD_BINDING_RESIN:require('../../assets/ingredient-icons-v1/equipment-infusions/verdant_binding_resin.webp'),
  OATHGLASS_SOLVENT:require('../../assets/ingredient-icons-v1/equipment-infusions/oathglass_solvent.webp'),
  SUNFUSED_FIXATIVE:require('../../assets/ingredient-icons-v1/equipment-infusions/sunfused_fixative.webp'),
  RIMEWARD_DISTILLATE:require('../../assets/ingredient-icons-v1/equipment-infusions/rimeward_distillate.webp'),

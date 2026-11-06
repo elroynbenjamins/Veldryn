@@ -142,7 +142,7 @@ export function InventoryScreen({state,viewMemory,foodRequest=0,onEquip,onFood,o
   const openPouch=()=>{exitSelection();restored.current=null;setEquipmentPouchOpen(false);setPouchOpen(true);setPreviewId(null);setPreviewInstanceId(null);setInspectId(null);setError('')};
   const openEquipmentPouch=()=>{exitSelection();restored.current=null;setPouchOpen(false);setEquipmentPouchOpen(true);setPreviewId(null);setPreviewInstanceId(null);setInspectId(null);setError('')};
   const toggleSelection=(itemId:string)=>{setSelectedIds(current=>{if(current.includes(itemId))return current.filter(id=>id!==itemId);if(current.length>=100){setError(gt("Select up to 100 item stacks at once."));return current;}setError('');return [...current,itemId]})};
-  const selectShown=()=>{const ids=[...new Set(stacks.map(stack=>stack.itemId))].slice(0,100);setSelectedIds(ids);setError(stacks.length>100?gt("Selected the first 100 matching stacks."):'')};
+  const selectShown=()=>{const ids=[...new Set(gridEntries.filter((stack):stack is ItemStack=>!!stack).map(stack=>stack.itemId))].slice(0,100);setSelectedIds(ids);setError('')};
   const beginSelection=()=>{setSelectMode(true);setSelectedIds([]);setPreviewId(null);setPreviewInstanceId(null);setInspectId(null);setError('')};
   const beginBulk=(kind:BulkAction)=>{const ids=kind==='transfer'?selectionSummary.transferableIds:kind==='sell'?selectionSummary.sellableIds:selectionSummary.salvageableIds;if(ids.length)setBulkPending({kind,ids})};
   const closeInspect=()=>{if(inspectId&&newItemSet.has(inspectId))run(()=>onAcknowledgeItem(inspectId));setInspectId(null);setSelectedInstanceId(null)};

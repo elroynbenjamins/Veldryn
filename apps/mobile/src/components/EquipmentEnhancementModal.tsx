@@ -53,7 +53,7 @@ function gemResultDetail(state:GameState,gemId:string,previewItemId?:string){
       ?`${GEM_GRADE_LABEL_V1[meta.grade]} · ${formatGemValueV1(meta.familyId,meta.grade)} · ${family?.description??'Stat Gem'}`
       :`${Number(((family?.values[meta.grade]??0)*100).toFixed(3))}% · ${gemEffectDescription(gem.id)} · Resonance ${previewItemId?Math.min(3,effectFamilyCopiesV1(state,meta.familyId,previewItemId)+1):resonanceForFamilyV1(state,meta.familyId).resonance}/III`;
   }
-  return gemSocketKind(gem.id)==='stat'&&gem.gemStat?`+${Math.round((gem.gemPercent??0)*100)}% ${gem.gemStat}`:gemEffectDescription(gem.id);
+  return gemSocketKind(gem.id)==='stat'&&gem.gemStat?`+${Number(((gem.gemPercent??0)*100).toFixed(3))}% ${gem.gemStat}`:gemEffectDescription(gem.id);
 }
 function GemSocketResultMoment({feedback,state,reduceMotion}:{feedback:EnhancementFeedbackResult;state:GameState;reduceMotion:boolean}){
  const {gt,gl,language}=useGameplayText();

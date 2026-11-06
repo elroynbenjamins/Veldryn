@@ -15,6 +15,7 @@ import {previewEquipment} from './equipment-preview';
 import {rarityMeta} from './item-rarity';
 import {craftedGearInstances,craftedInstancesForItem,effectiveOwnedGearRarity} from './crafted-gear-instances';
 import {acquisitionEstimateLabel,acquisitionProjectionForDestination} from './balance-projection';
+import {displayStat} from './stat-display';
 import {materialAcquisitionPlanForDestination,materialAcquisitionPlanSummary} from './material-acquisition-plan';
 
 export type ItemInspectSourceKind='gathering'|'crafting'|'combat'|'dungeon'|'starting';
@@ -149,7 +150,7 @@ export function itemInspectModel(state:GameState,itemId:string){
     if(item.readiness)effectLines.push(`Readiness +${item.readiness}`);
     if(item.passive)effectLines.push(item.passive);
   }else if(item.type==='food'){
-    effectLines.push(`Restores ${item.heal??0} HP`);
+    effectLines.push(`Restores ${displayStat(item.heal??0)} HP`);
     if(item.readiness)effectLines.push(`Readiness +${item.readiness}`);
   }else if(item.type==='tool'){
     effectLines.push(`${title(item.toolSkillId??'gathering')} tool · Tier ${item.toolTier??1}`);

@@ -1,6 +1,7 @@
 import {useMemo} from 'react';
-import {Image,Pressable,StyleSheet,Text,View} from 'react-native';
+import {Pressable,StyleSheet,Text,View} from 'react-native';
 import type {CommerceProductId} from '../content/commerce-products';
+import {CommerceProductBadge} from './CommerceProductBadge';
 import {useGameTheme} from '../theme/ThemeContext';
 import {radii,type ThemeColors} from '../theme/theme';
 
@@ -25,7 +26,7 @@ export function CommerceProductRow({productId,price,owned=false,confirmed,compac
   <View pointerEvents="none" style={[s.glow,{backgroundColor:color}]}/>
   <View style={[s.leading,compact&&s.compactLeading]}>
    <View style={[s.symbolPlate,{borderColor:color,backgroundColor:C.panel}]}>
-    {supporter?<Image source={require('../../assets/player-badges-v1/supporter.webp')} style={s.badgeImage} resizeMode="contain" accessible={false}/>:<Text style={[s.symbol,{color}]}>{plus?'✦':'♜'}</Text>}
+    <CommerceProductBadge productId={productId} size={34}/>
    </View>
    <View style={s.topCopy}>
     <Text style={[s.name,{color:C.text}]}>{name}</Text>
@@ -46,8 +47,6 @@ function styles(C:ThemeColors){return StyleSheet.create({
  leading:{flexDirection:'row',alignItems:'center',gap:9,minWidth:0},
  compactLeading:{flexDirection:'column',alignItems:'flex-start',gap:5},
  symbolPlate:{width:42,height:42,alignItems:'center',justifyContent:'center',borderWidth:1,borderRadius:8},
- symbol:{fontSize:28,fontWeight:'900',lineHeight:34},
- badgeImage:{width:34,height:34},
  topCopy:{minWidth:0,flex:1,gap:3},
  name:{fontSize:18,lineHeight:22,fontWeight:'800'},
  type:{fontSize:9,lineHeight:13,letterSpacing:.6,fontWeight:'900'},

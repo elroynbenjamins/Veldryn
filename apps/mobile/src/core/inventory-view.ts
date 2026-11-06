@@ -51,4 +51,5 @@ export function transferError(state:GameState,id:string,quantity:number,from:'in
   try{(from==='inventory'?depositToBank:withdrawFromBank)(state,id,quantity);return ''}
   catch(error){return error instanceof Error?error.message:'Cannot transfer'}
 }
-export function recoveryAmount(state:GameState,id:string){const base=itemDef(id).heal??0,boost=characterPermanentMultipliers(state).healingEffectivenessMultiplier;return Math.max(0,Math.min(Math.ceil(base*boost),effectiveStats(state).hp-(state.character?.currentHp??0)))}
+export function foodHealingAmount(state:GameState,id:string){const base=itemDef(id).heal??0,boost=characterPermanentMultipliers(state).healingEffectivenessMultiplier;return Math.max(0,Math.ceil(base*boost))}
+export function recoveryAmount(state:GameState,id:string){return Math.max(0,Math.min(foodHealingAmount(state,id),effectiveStats(state).hp-(state.character?.currentHp??0)))}

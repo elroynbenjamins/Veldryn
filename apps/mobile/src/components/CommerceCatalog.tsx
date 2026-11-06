@@ -1,9 +1,10 @@
 import {useMemo,useState} from 'react';
-import {Image,ScrollView,StyleSheet,Text,View,useWindowDimensions} from 'react-native';
+import {ScrollView,StyleSheet,Text,View,useWindowDimensions} from 'react-native';
 import {accountText} from '../i18n/account';
 import type {Language} from '../i18n/languages';
 import {useGameLanguage} from '../i18n/GameLanguageProvider';
 import {CommerceProductRow} from './CommerceProductRow';
+import {CommerceProductBadge} from './CommerceProductBadge';
 import {GameButton} from './GameButton';
 import {GameModalHeader,GameModalSurface} from './GameModalSurface';
 import {COMMERCE_PRODUCT_BONUSES,commerceProduct,type CommerceProductId} from '../content/commerce-products';
@@ -58,8 +59,8 @@ export function CommerceCatalog({language:languageOverride,owned,checking=false,
     <GameModalHeader eyebrow={definition.billing==='subscription'?'MONTHLY SUBSCRIPTION':'ONE-TIME UPGRADE'} title={definition.name} onClose={()=>setSelected(null)}/>
     <ScrollView style={{maxHeight:Math.max(180,height*.46)}} contentContainerStyle={s.modalBody} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false} showsHorizontalScrollIndicator={false}>
      <View style={[s.modalHero,{borderColor:C.lineStrong,backgroundColor:C.panelRaised}]}>
-      <View style={[s.modalIcon,{borderColor:C.warning,backgroundColor:C.panel2}]}>
-       {current.id==='supporter_monthly'?<Image source={require('../../assets/player-badges-v1/supporter.webp')} style={s.supporterIcon} resizeMode="contain" accessible={false}/>:<Text style={[s.modalSymbol,{color:C.accent}]}>{current.id==='vip'?'♜':'✦'}</Text>}
+      <View style={[s.modalIcon,{borderColor:current.id==='supporter_monthly'?C.warning:current.id==='vip_plus'?C.special:C.info,backgroundColor:C.panel2}]}>
+       <CommerceProductBadge productId={current.id} size={52}/>
       </View>
       <View style={s.flex}><Text style={s.modalTitle}>{definition.name}</Text><Text style={s.copy}>{definition.description}</Text></View>
      </View>
@@ -100,7 +101,6 @@ function styles(C:ThemeColors){return StyleSheet.create({
  modalBody:{gap:10,paddingBottom:12},
  modalHero:{flexDirection:'row',alignItems:'center',gap:10,padding:11,borderWidth:1,borderRadius:radii.md},
  modalIcon:{width:62,height:62,borderWidth:1,borderRadius:radii.md,alignItems:'center',justifyContent:'center'},
- supporterIcon:{width:52,height:52},modalSymbol:{fontSize:37,fontWeight:'800'},
  modalTitle:{fontSize:17,lineHeight:23,fontWeight:'800',color:C.text},
  modalHeading:{fontSize:13,lineHeight:19,fontWeight:'900',color:C.text},
  benefit:{flexDirection:'row',alignItems:'flex-start',gap:8,minHeight:29,paddingVertical:6,borderBottomWidth:StyleSheet.hairlineWidth,borderBottomColor:C.line},

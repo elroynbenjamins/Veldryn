@@ -1,11 +1,12 @@
 import {createCharacter,newGame,effectiveStats,salvageItem,sellItem,sellBankItem} from '../src/core/game';
 import {indexInventoryGearCopies} from '../src/core/inventory-gear-lookup';
-import {acknowledgeAllInventoryItems,acknowledgeInventoryItem,inventoryFavoriteIds,inventoryLockedIds,inventoryNewItemIds,recoveryAmount,storageCapacityStatus,toggleInventoryFavorite,toggleInventoryLock,transferAmount,transferError,visibleStacks} from '../src/core/inventory-view';
+import {acknowledgeAllInventoryItems,acknowledgeInventoryItem,foodHealingAmount,inventoryFavoriteIds,inventoryLockedIds,inventoryNewItemIds,recoveryAmount,storageCapacityStatus,toggleInventoryFavorite,toggleInventoryLock,transferAmount,transferError,visibleStacks} from '../src/core/inventory-view';
 import {validateGameCommand,validateGameSettings,settingsForOnlineCommand} from '../src/core/game-commands';
 import {bulkSelectionSummary,bulkSellSelected,bulkSalvageSelected,bulkTransferSelected} from '../src/core/inventory-bulk';
 import {itemInspectModel} from '../src/core/item-inspect';
 import {workingTowardDestinationAvailability} from '../src/core/working-toward';
 import {normalizeSave} from '../src/core/save-normalization';
+import {displayStat} from '../src/core/stat-display';
 import {V33_EQUIPMENT_RECIPES} from '../src/content/equipment-recipes-v33';
 import {itemDef} from '../src/content/items';
 function ok(value:boolean,message:string){if(!value)throw new Error(message)}
@@ -155,6 +156,8 @@ ok(JSON.stringify(stacks)===original,'Sorting does not mutate save stacks');
 ok(transferAmount(3,10)===3,'Quantity clamps to owned count');
 ok(transferAmount(25,'all')===25,'All transfer');
 ok(transferAmount(25,1)===1,'Single transfer');
+ok(foodHealingAmount(state,'COOKED_SILVERFIN')===22,'Food potency is independent of the current HP deficit');
+ok(displayStat(foodHealingAmount(state,'COOKED_SILVERFIN'))===220,'Silverfin healing reflects the 40 displayed HP fish reduction');
 ok(recoveryAmount(state,'TRAVEL_RATION')===0,'No healing at full HP');
 ok(recoveryAmount({...state,character:{...state.character!,currentHp:effectiveStats(state).hp-2}},'TRAVEL_RATION')===2,'Healing clamps to missing HP');
 ok(transferError(state,'TRAVEL_RATION',5,'inventory')==='','Valid transfer');

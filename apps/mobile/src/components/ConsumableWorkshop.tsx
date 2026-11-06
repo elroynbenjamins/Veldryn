@@ -10,6 +10,7 @@ import {offlineCapSeconds} from '../core/game';
 import {professionActionPace} from '../core/profession-action-pace';
 import {potionDef,POTION_TIER_UNLOCK_LEVELS} from '../content/alchemy';
 import {mealBonusDef} from '../core/meal-buffs';
+import {displayStat} from '../core/stat-display';
 import {useGameTheme} from '../theme/ThemeContext';
 import {useGameplayText} from '../i18n/gameplay';
 import {ItemArtwork} from './ItemArtwork';
@@ -45,7 +46,7 @@ export function ConsumableWorkshop({state,skillId,preferredRecipeId,onStart}:Pro
  const itemName=(itemId:string)=>localizedItemName(language,itemId);
  const benefit=(recipe:Recipe):string=>{
   const output=itemDef(recipe.output.itemId);
-  if(recipe.skillId==='cooking')return gt('Restores {hp} HP per food',{hp:output.heal??0});
+  if(recipe.skillId==='cooking')return gt('Restores {hp} HP per food',{hp:displayStat(output.heal??0)});
   const potion=potionDef(recipe.output.itemId);
   if(!potion)return gl(output.passive??'Equipment infusion material');
   const effect=potion.effect;

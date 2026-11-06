@@ -48,7 +48,7 @@ export function FaithPanel({state,onCommand}:{state:GameState;onCommand:(c:GameC
     return <View key={group.id} style={s.blessingGroup}>
      <View style={s.blessingGroupHeader}>
       <Text style={s.blessingGroupTitle}>{gt(group.id==='combat'?'Combat':group.id==='gathering'?'Gathering':group.id==='production'?'Production':'Experience')}</Text>
-      <Text style={s.blessingGroupMeta}>{blessings.filter(row=>row.level<=level).length} {gt("unlocked")}</Text>
+      <Text style={s.blessingGroupMeta}>{FAITH_BLESSINGS.filter(row=>group.families.includes(row.family)&&row.level<=level).length} {gt("unlocked")}</Text>
      </View>
      {blessings.map(blessing=>{const locked=blessing.level>level,favorite=faith.favoriteBlessingIds.includes(blessing.id),equipped=faith.selectedBlessingId===blessing.id;return <View key={blessing.id} style={[s.blessingRow,equipped&&s.blessingEquipped,locked&&s.blessingLocked]}>
       <Pressable accessibilityRole="button" accessibilityLabel={favorite?`Remove ${blessing.name} from favorites`:`Favorite ${blessing.name}`} accessibilityState={{selected:favorite,disabled:busy}} disabled={busy} onPress={()=>void run({type:'faith_favorite',args:{id:blessing.id,enabled:!favorite}})} style={({pressed})=>[s.starButton,pressed&&s.pressed]}><Text style={[s.star,favorite&&s.starActive]}>{favorite?'★':'☆'}</Text></Pressable>

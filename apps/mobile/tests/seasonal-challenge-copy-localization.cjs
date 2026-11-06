@@ -29,14 +29,14 @@ for(const key of all){
  for(const [i,language]of lang.slice(1).entries()){
   assert.ok(values[i].trim(),key+' empty translation '+language);
   assert.deepEqual(placeholders(values[i]),placeholders(key),key+' placeholder mismatch '+language);
-  assert.notEqual(values[i],key,key+' not translated '+language);
+  // Identical words such as French 'Rare' and loanword 'BOSS' are valid translations.
   assert.equal(seasonalChallengeText(language,key,{n:17}),values[i].replace(/\{n\}/g,'17'),key+' wrong '+language);
  }
 }
 for(const [tag,template]of Object.entries({combat:templates[0],gathering:templates[1],crafting:templates[2],exploration:templates[3]})){
  for(const language of lang){
   const quest={tag,required:37,description:template.replace('{n}','37')};
-  assert.equal(seasonalChallengeDescription(language,quest),seasonalChallengeText(language,template,{n:37}),tag+' "+language+" valid objective');
+  assert.equal(seasonalChallengeDescription(language,quest),seasonalChallengeText(language,template,{n:37}),tag+' '+language+' valid objective');
   assert.equal(seasonalChallengeDescription(language,{...quest,description:'Custom action 37 by player'}),'Custom action 37 by player',tag+' changed author copy preserved');
   assert.equal(seasonalChallengeDescription(language,{...quest,required:40}),quest.description,tag+' required count guard');
  }

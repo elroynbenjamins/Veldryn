@@ -1,6 +1,7 @@
 import {useCoopStyles} from '../../theme/useCoopStyles';
 import {useSocialText} from '../../i18n/social';
 import {useGameLanguage} from '../../i18n/GameLanguageProvider';
+import type {Language} from '../../i18n/languages';
 import {seasonalBossDisplayName} from '../../i18n/seasonal-boss-copy';
 import {dungeonDynamicUiText,localizedDungeonCueType,localizedDungeonPlaybackCue} from '../../i18n/dungeon-dynamic-ui';
 import {useEffect,useLayoutEffect,useMemo,useRef,useState} from 'react';
@@ -41,13 +42,16 @@ function compactMetric(value:number){
  if(safe>=1000)return `${(safe/1000).toFixed(safe>=10_000?0:1)}k`;
  return `${Math.round(safe)}`;
 }
-function contributionSummary(role:Slot['role'],value:Contribution){
- const dmg=`DMG ${compactMetric(value.damage)}`,heal=`HEAL ${compactMetric(value.healing)}`,taken=`TAKEN ${compactMetric(value.damageTaken)}`,interrupts=`INT ${value.interrupts}`;
- if(role==='tank')return `${taken} · ${dmg} · ${interrupts}`;
- if(role==='support')return `${heal} · ${dmg} · ${interrupts}`;
- return `${dmg} · ${interrupts}${value.healing>0?` · ${heal}`:''}`;
+function contributionSummary(language:Language,role:Slot['role'],value:Contribution){
+  const dmg=dungeonDynamicUiText(language,'DMG {amount}',{amount:compactMetric(value.damage)});
+  const heal=dungeonDynamicUiText(language,'HEAL {amount}',{amount:compactMetric(value.healing)});
+  const taken=dungeonDynamicUiText(language,'TAKEN {amount}',{amount:compactMetric(value.damageTaken)});
+  const interrupts=dungeonDynamicUiText(language,'INT {count}',{count:value.interrupts});
+  if(role==='tank')return `${taken} · ${dmg} · ${interrupts}`;
+  if(role==='support')return `${heal} · ${dmg} · ${interrupts}`;
+  return `${dmg} · ${interrupts}${value.healing>0?` · ${heal}`:''}`;
 }
-function roleShort(role:Slot['role']){return role==='tank'?'TANK':role==='support'?'SUP':'DPS';}
+function roleShort(language:Language,role:Slot['role']){return dungeonDynamicUiText(language,role==='tank'?'TANK':role==='support'?'SUP':'DPS');}
 function slotInspectKey(slot:Slot){return `party:${slot.memberId??slot.name}`;}
 function enemyInspectKey(id:string){return `enemy:${id}`;}
 
@@ -192,7 +196,7 @@ export function DungeonCombatStage({run,enemyLabel,boss=false,seasonal=false,eve
   {scale:targetAnim.interpolate({inputRange:[0,.48,1],outputRange:[1,fx.targetMotion==='pulse'?1.055:fx.targetMotion==='brace'?1.035:1,1]})},
  ]}:undefined;
  const feedbackStyle=currentCue?.type==='action'&&!reduceMotion?{opacity:feedbackAnim.interpolate({inputRange:[0,.12,.72,1],outputRange:[0,1,1,0]}),transform:[{translateY:feedbackAnim.interpolate({inputRange:[0,1],outputRange:[6,-12]})},{scale:feedbackAnim.interpolate({inputRange:[0,.18,1],outputRange:[.9,1.08,1]})}]}:undefined;
- const bossCast=currentBossCast?{label:currentBossCast.abilityName?seasonalBossDisplayName(language,dungeonEnemyAbilityDisplayName(currentBossCast.abilityName)):'Boss ability',durationMs:currentBossCast.durationMs??0,interruptible:bossCastDef?.interruptible??false,targetLabel:currentBossCast.targetName?.trim(),progressStyle:{width:reduceMotion?'100%' as const:castAnim.interpolate({inputRange:[0,1],outputRange:['0%','100%']})}}:undefined;
+ const bossCast=currentBossCast?{label:currentBossCast.abilityName?seasonalBossDisplayName(language,dungeonEnemyAbilityDisplayName(currentBossCast.abilityName)):dungeonDynamicUiText(language,'Boss ability'),durationMs:currentBossCast.durationMs??0,interruptible:bossCastDef?.interruptible??false,targetLabel:currentBossCast.targetName?.trim(),progressStyle:{width:reduceMotion?'100%' as const:castAnim.interpolate({inputRange:[0,1],outputRange:['0%','100%']})}}:undefined;
  const toggleInspect=(key:string)=>setInspectKey(current=>current===key?undefined:key);
   const inspectedSlot=inspectKey?.startsWith('party:')?ordered.find(slot=>slotInspectKey(slot)===inspectKey):undefined;
  const inspectedEnemy=inspectKey?.startsWith('enemy:')?visibleEnemies.find(enemy=>enemyInspectKey(enemy.id)===inspectKey):undefined;
@@ -220,7 +224,7 @@ export function DungeonCombatStage({run,enemyLabel,boss=false,seasonal=false,eve
    {complete?<CombatOutcomeMoment outcome={replay.reason==='victory'?'victory':replay.reason==='wipe'?'defeat':'timeout'} title={replay.reason==='victory'?st('Encounter cleared'):replay.reason==='wipe'?st('Party defeated'):st('Encounter timed out')} detail={dungeonDynamicUiText(language,'{count} combat events',{count:replay.cues.length})} reduceMotion={reduceMotion}/>:null}
    <View style={s.replayHead}><View style={s.grow}><Text style={s.replayKicker}>{complete?st("ENCOUNTER RECAP"):st("LIVE COMBAT")}</Text><Text accessibilityLiveRegion="polite" style={s.replayCurrent}>{currentCue?localizedDungeonPlaybackCue(language,currentCue):pending?st("Battle in progress"):replay.reason==='victory'?st("Encounter cleared"):replay.reason==='wipe'?st("Party defeated"):st("Encounter timed out")}</Text></View><StateChip label={localizedDungeonCueType(language,currentCue?.type??(pending?undefined:replay.reason))} tone={currentCue?playbackCueTone(currentCue):pending?'selected':replay.reason==='victory'?'success':replay.reason==='wipe'?'danger':'warning'}/></View>
    
-   {contributionRows.length?<View style={s.contributionPanel}><View style={s.contributionHead}><Text style={s.contributionKicker}>{st("PARTY CONTRIBUTION")}</Text><Text style={s.contributionHint}>{st("Encounter totals")}</Text></View>{contributionRows.map(({slot,value})=><View key={slot.memberId??slot.name} style={s.contributionRow}><View style={[s.contributionIdentity,{width:`${layout.contributionIdentityWidthPct}%` as `${number}%`,minWidth:layout.contributionIdentityMinWidth}]}><Text style={s.contributionRole}>{roleShort(slot.role)}</Text><Text numberOfLines={1} style={s.contributionName}>{slot.name}</Text></View><Text style={s.contributionStats}>{contributionSummary(slot.role,value)}</Text></View>)}</View>:null}
+   {contributionRows.length?<View style={s.contributionPanel}><View style={s.contributionHead}><Text style={s.contributionKicker}>{st("PARTY CONTRIBUTION")}</Text><Text style={s.contributionHint}>{st("Encounter totals")}</Text></View>{contributionRows.map(({slot,value})=><View key={slot.memberId??slot.name} style={s.contributionRow}><View style={[s.contributionIdentity,{width:`${layout.contributionIdentityWidthPct}%` as `${number}%`,minWidth:layout.contributionIdentityMinWidth}]}><Text style={s.contributionRole}>{roleShort(language,slot.role)}</Text><Text numberOfLines={1} style={s.contributionName}>{slot.name}</Text></View><Text style={s.contributionStats}>{contributionSummary(language,slot.role,value)}</Text></View>)}</View>:null}
    {complete&&recent.length?<Pressable accessibilityRole="button" accessibilityLabel={showLog?st("Hide combat battle log"):st("Show combat battle log")} accessibilityState={{expanded:showLog}} onPress={()=>setShowLog(value=>!value)} style={({pressed})=>[s.logToggle,pressed&&s.controlPressed]}><Text style={s.logToggleText}>{showLog?st("Hide battle log"):st("Battle log")}</Text><Text style={s.logToggleMeta}>{showLog?'▲':dungeonDynamicUiText(language,'{count} recent',{count:recent.length})+' ▼'}</Text></Pressable>:null}
    {recent.length&&(!complete||showLog)?<View style={s.log}>{recent.map((cue,index)=><View key={`${cue.atMs}-${cue.type}-${index}`} style={s.logRow}><Text style={s.logTime}>{seconds(cue.atMs)}</Text><Text numberOfLines={2} style={s.logCopy}>{localizedDungeonPlaybackCue(language,cue)}</Text></View>)}</View>:!recent.length?<Text style={s.note}>{pending?st("Battle in progress"):st("No event details were saved for this encounter.")}</Text>:null}
      </View>:anticipation?null:<Text accessibilityLiveRegion="polite" style={s.note}>{st("Your party is resolving this room. Progress is saved online.")}</Text>}

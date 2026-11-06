@@ -4,6 +4,8 @@ import {GEM_GRADE_LABEL_V1,MOBILE_GEM_FAMILIES_V1,mobileGemFamilyV1,mobileGemIte
 import type {ClassId,GameState,ItemStack} from './types';
 import {levelFromXp,totalXpAtLevel} from './progression';
 import {consumeGemFromStorage,gemStorageQuantity,isGemPouchItemId,storePouchGem} from './gem-pouch';
+import {craftedGearInstances} from './crafted-gear-instances';
+import type {GearSlot} from './types';
 
 // New gem refining and combining fees are 20% higher. Previously queued jobs
 // keep their original reserved Gold snapshots for cancellation/refunds.
@@ -63,24 +65,35 @@ export function dismantleGemV1(state:GameState,itemId:string,quantityToDismantle
 }
 
 export function combinedGemQuantityV1(state:GameState,itemId:string){return gemStorageQuantity(state,itemId);}
+/**
+ * Resolve the active physical copy in each equipped slot. A forged item keeps
+ * its gems on its unique instance, not in legacy character.gearEnhancements.
+ * Preserve legacy gemIds fallbacks for older saves, without double-counting a
+ * named slot.
+ */
+function equippedCanonicalSocketsV1(state:GameState){
+ if(!state.character)return [] as Array<{equipmentItemId:string;statGemId?:string;effectGemId?:string}>;
+ const instances=craftedGearInstances(state);
+ return Object.entries(state.character.equipment).flatMap(([key,equipmentItemId])=>{
+  if(!equipmentItemId)return [];
+  const instanceId=state.character!.equipmentInstanceIds?.[key as GearSlot];
+  const instance=instanceId?instances.find(copy=>copy.id===instanceId&&copy.itemId===equipmentItemId&&copy.ownerCharacterId===state.character!.id):undefined;
+  const raw=instance?.enhancement??state.character!.gearEnhancements?.[equipmentItemId];
+  const valid=(id:string|undefined,kind:'stat'|'effect')=>
+   id&&canonicalGemMetaV1(id)?.kind===kind?id:undefined;
+  const ids=Array.isArray(raw?.gemIds)?raw.gemIds:[];
+  const statGemId=valid(raw?.statGemId,'stat')??ids.find(id=>valid(id,'stat'));
+  const effectGemId=valid(raw?.effectGemId,'effect')??ids.find(id=>valid(id,'effect'));
+  return [{equipmentItemId,statGemId,effectGemId}];
+ });
+}
 export function equippedCanonicalGemIdsV1(state:GameState){
- if(!state.character)return [] as string[];
- const out:string[]=[];
- for(const itemId of Object.values(state.character.equipment)){
-  if(!itemId)continue;const enhancement=state.character.gearEnhancements?.[itemId];
-  if(enhancement?.statGemId&&canonicalGemMetaV1(enhancement.statGemId))out.push(enhancement.statGemId);
-  if(enhancement?.effectGemId&&canonicalGemMetaV1(enhancement.effectGemId))out.push(enhancement.effectGemId);
- }
- return out;
+ return equippedCanonicalSocketsV1(state).flatMap(row=>[row.statGemId,row.effectGemId].filter((id):id is string=>Boolean(id)));
 }
 export function effectFamilyCopiesV1(state:GameState,familyId:string,excludeEquipmentItemId?:string){
- if(!state.character)return 0;let count=0;
- for(const equipmentItemId of Object.values(state.character.equipment)){
-  if(!equipmentItemId||equipmentItemId===excludeEquipmentItemId)continue;
-  const gemId=state.character.gearEnhancements?.[equipmentItemId]?.effectGemId;if(!gemId)continue;
-  if(canonicalGemMetaV1(gemId)?.familyId===familyId)count++;
- }
- return count;
+ return equippedCanonicalSocketsV1(state).filter(row=>
+  row.equipmentItemId!==excludeEquipmentItemId
+  &&canonicalGemMetaV1(row.effectGemId??'')?.familyId===familyId).length;
 }
 export function assertEffectGemEquipAllowedV1(state:GameState,equipmentItemId:string,gemId:string){
  const meta=canonicalGemMetaV1(gemId);if(!meta||meta.kind!=='effect')return;
@@ -88,11 +101,10 @@ export function assertEffectGemEquipAllowedV1(state:GameState,equipmentItemId:st
  if(copies>=GEM_EFFECT_RESONANCE_CAP_V1)throw new Error('This Effect Gem family is already at Resonance III (3/3)');
 }
 export function resonanceForFamilyV1(state:GameState,familyId:string){
- const grades:MobileGemGradeV1[]=[];
- if(state.character)for(const equipmentItemId of Object.values(state.character.equipment)){
-  if(!equipmentItemId)continue;const gemId=state.character.gearEnhancements?.[equipmentItemId]?.effectGemId;if(!gemId)continue;
-  const meta=canonicalGemMetaV1(gemId);if(meta?.familyId===familyId)grades.push(meta.grade);
- }
+ const grades=equippedCanonicalSocketsV1(state).flatMap(row=>{
+  const meta=canonicalGemMetaV1(row.effectGemId??'');
+  return meta?.familyId===familyId?[meta.grade]:[];
+ });
  const family=mobileGemFamilyV1(familyId),totalValue=family?grades.reduce((sum,grade)=>sum+family.values[grade],0):0;
  return {familyId,copies:grades.length,resonance:Math.min(3,grades.length) as 0|1|2|3,grades,totalValue};
 }

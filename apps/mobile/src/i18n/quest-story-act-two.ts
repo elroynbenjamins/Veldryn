@@ -51,7 +51,7 @@ export const chapterTwoQuestCopy={
     ],
     "story": [
       "Thornlings are gathering around trees marked with old oath-runes. Their growth is too deliberate to be natural, as if the forest is remembering a command nobody living can hear.",
-      "Thornlings sammeln sich um Bäume, die mit alten Eidrune markiert sind. Ihr Wachstum wirkt zu gezielt, um natürlich zu sein, als würde sich der Wald an einen Befehl erinnern, den kein Lebender mehr hören kann.",
+      "Thornlings sammeln sich um Bäume, die mit alten Eidrunen markiert sind. Ihr Wachstum wirkt zu gezielt, um natürlich zu sein, als würde sich der Wald an einen Befehl erinnern, den kein Lebender mehr hören kann.",
       "Los Thornlings se reúnen alrededor de árboles marcados con antiguas runas de juramento. Su crecimiento es demasiado deliberado para ser natural, como si el bosque recordara una orden que ya nadie vivo puede oír.",
       "Thornlings verzamelen zich rond bomen met oude eedrunen. Ze groeien te doelgericht om natuurlijk te zijn, alsof het bos zich een bevel herinnert dat niemand die nog leeft kan horen.",
       "I Thornlings si radunano attorno ad alberi segnati da antiche rune del giuramento. La loro crescita è troppo ordinata per essere naturale, come se la foresta ricordasse un comando che nessun vivente può più udire.",

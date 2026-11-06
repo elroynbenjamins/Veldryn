@@ -143,7 +143,7 @@ export function InventoryScreen({state,viewMemory,foodRequest=0,onEquip,onFood,o
       <Pressable accessibilityRole={selectMode?'checkbox':'button'} accessibilityLabel={selectMode?gt(selected?'Deselect {label}':'Select {label}',{label}):label} accessibilityHint={selectMode?gt("Select this stack for bulk management"):item.type==='gear'&&location==='inventory'?gl("Preview the equipment swap before equipping"):gt("Open item details, sources and crafting uses")} accessibilityState={selectMode?{checked:selected}:undefined} onPress={()=>{if(selectMode){toggleSelection(item.id);return;}if(item.type==='gear'&&location==='inventory'){setPreviewInstanceId(stack.instanceId??null);setPreviewId(item.id);return;}setSelectedInstanceId(stack.instanceId??null);setInspectId(item.id)}} style={({pressed})=>[s.itemOpen,pressed&&s.pressed]}>
         <ItemArtwork itemId={item.id} size={iconSize}/>
         <Text accessible={false} style={[s.itemQuantity,{color:rarity.color}]}>{exactRecord?`Q${craftedGearDisplayQuality(exactRecord)}`:`×${formatGameNumber(stack.quantity,state.settings.numberMode,state.settings.language)}`}</Text>
-        {newItem?<View accessible={false} style={[s.itemNew,selectMode&&s.itemNewTop]}><Text style={s.itemNewText}>{gt("New").toLocaleUpperCase(language)}</Text></View>:null}
+        {newItem?<View accessible={false} style={[s.itemNew,selectMode?s.itemNewTop:s.itemNewBottom]}><Text numberOfLines={1} style={s.itemNewText}>{gt("New").toLocaleUpperCase(language)}</Text></View>:null}
         {autoEat&&!selectMode?<Text accessible={false} style={s.itemAuto}>{gt("EAT")}</Text>:null}
         {selectMode?<View accessible={false} style={[s.itemSelected,selected&&s.itemSelectedOn]}><Text style={s.itemSelectedText}>{selected?'✓':'○'}</Text></View>:null}
       </Pressable>
@@ -436,7 +436,7 @@ function makeStyles(C:ThemeColors){const equipmentColors=equipmentTheme(C);retur
   itemCornerActive:{borderColor:C.warning},itemLockCorner:{left:2},itemFavoriteCorner:{right:2},
   itemStar:{fontSize:18,lineHeight:22,fontWeight:'900',color:C.muted},itemStarOn:{color:C.warning},
   itemQuantity:{position:'absolute',right:3,bottom:3,paddingHorizontal:4,borderRadius:7,overflow:'hidden',fontSize:9,lineHeight:14,fontWeight:'900',backgroundColor:C.panel},
-  itemNew:{position:'absolute',left:3,bottom:16,paddingHorizontal:3,paddingVertical:1,borderRadius:3,backgroundColor:C.info},itemNewTop:{bottom:undefined,top:3},itemNewText:{fontSize:9,color:C.panel,fontWeight:'900',letterSpacing:.3},
+  itemNew:{position:'absolute',left:3,height:16,maxHeight:16,alignSelf:'flex-start',flexGrow:0,flexShrink:0,alignItems:'center',justifyContent:'center',paddingHorizontal:4,borderRadius:3,backgroundColor:C.info},itemNewBottom:{bottom:16},itemNewTop:{top:3},itemNewText:{fontSize:9,lineHeight:11,includeFontPadding:false,color:C.panel,fontWeight:'900',letterSpacing:.3},
   itemAuto:{position:'absolute',left:3,bottom:3,paddingHorizontal:3,paddingVertical:1,borderRadius:3,overflow:'hidden',fontSize:6,lineHeight:8,color:C.panel,fontWeight:'900',letterSpacing:.35,backgroundColor:C.good},
   itemSelected:{position:'absolute',left:3,bottom:3,width:17,height:17,alignItems:'center',justifyContent:'center',borderWidth:1,borderColor:C.line,borderRadius:9,backgroundColor:C.panel},itemSelectedOn:{borderColor:C.selectionLine,backgroundColor:C.selection},itemSelectedText:{fontSize:10,color:C.text,fontWeight:'900'},
   inspectActions:{gap:spacing.xs},

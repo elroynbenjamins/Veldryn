@@ -3,6 +3,10 @@ import {createTranslator} from './translator';
 
 // English source copy is the key. Proper names and player-authored text are never keys.
 export const progressionTranslationRows = {
+ "CHOOSE ONE REWARD": ["EINE BELOHNUNG WÄHLEN","ELIGE UNA RECOMPENSA","KIES ÉÉN BELONING","SCEGLI UNA RICOMPENSA","CHOISISSEZ UNE RÉCOMPENSE"],
+ "Claim selected reward": ["Gewählte Belohnung abholen","Reclamar recompensa elegida","Gekozen beloning claimen","Riscatta la ricompensa scelta","Récupérer la récompense choisie"],
+ "Bondstones": ["Bindungssteine","Piedras de vínculo","Bandstenen","Pietre del legame","Pierres de lien"],
+ "Companion Essence": ["Gefährtenessenz","Esencia de compañero","Metgezelessentie","Essenza del compagno","Essence de compagnon"],
  "Practice skills as you play. No extra claims.": ["Übe Fertigkeiten beim Spielen. Keine zusätzlichen Belohnungen abholen.","Practica habilidades mientras juegas. Sin recompensas adicionales que reclamar.","Oefen vaardigheden tijdens het spelen. Geen extra beloningen om te claimen.","Allenati nelle abilità giocando. Nessuna ricompensa extra da riscattare.","Entraînez vos compétences en jouant. Aucune récompense supplémentaire à récupérer."],
  "Completed lessons remain available.": ["Abgeschlossene Lektionen bleiben verfügbar.","Las lecciones completadas siguen disponibles.","Voltooide lessen blijven beschikbaar.","Le lezioni completate restano disponibili.","Les leçons terminées restent disponibles."],
  // Read-only Journal milestone and bounded Mastery record lists.

@@ -115,6 +115,12 @@ const monthlyClaim=executeGameCommand(unlocked,{type:'seasonal',args:{period:'mo
 check(monthlyClaim.account.seasonalContractClaimIds?.includes(monthlyReady.id),'Monthly claims must work through the command dispatcher');
 
 /** Choice verification: a completed Quest grants exactly one server-approved path, never a combined cache. */
+for(const cadence of ['daily','weekly','monthly'] as const)for(const rarity of ['common','uncommon','rare','epic','legendary'] as const){
+ const offers=seasonalQuestRewardOptions(state,cadence,rarity);
+ check(offers.length>=1&&offers.length<=3,'Reward menu must stay compact for '+cadence+' '+rarity);
+ check(new Set(offers.map(option=>option.id)).size===offers.length,'No duplicate reward choice IDs');
+ check(offers.every(option=>Number(option.rewardItemQty??option.rewardCompanionEssence??option.rewardBondstones)>0),'Every published reward must be nonempty');
+}
 const dailyAlternatives=seasonalQuestRewardOptions(state,'daily','rare');
 check(dailyAlternatives[0].id==='item:TEMPERING_DUST','Existing rare daily reward must remain the default');
 check(dailyAlternatives.some(choice=>choice.id==='item:GEM_DUST'&&choice.rewardItemQty===5),'Gem Dust choice must be available on rare daily challenges');

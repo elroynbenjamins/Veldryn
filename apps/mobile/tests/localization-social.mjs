@@ -46,7 +46,7 @@ const sourceAdditions=[
   "Final encounter cleared. Your reward entitlement is being prepared.",
   "This expedition has ended. Review any available rewards before returning."
 ];
-assert.equal(Object.keys(socialEarlyRows).length,95,'The active RU/TR core coverage is 95 authored messages');
+assert.equal(Object.keys(socialEarlyRows).length,165,'The active RU/TR core coverage is 95 authored messages');
 assert.equal(sourceAdditions.length,20,'Live Dungeon, combat inspect and terminal states require 20 new messages');
 for(const [key,values] of Object.entries(socialEarlyRows)){
  assert.ok(Object.prototype.hasOwnProperty.call(socialTranslationRows,key),'RU/TR overlay key must exist in base Social catalog: '+key);
@@ -61,6 +61,23 @@ for(const key of sourceAdditions){
  assert.ok(Object.prototype.hasOwnProperty.call(socialTranslationRows,key),'Missing localized Dungeon display string: '+key);
  assert.ok(Object.prototype.hasOwnProperty.call(socialEarlyRows,key),'Missing RU/TR Dungeon display string: '+key);
 }
+
+const dungeonFlowRuTrScreens=[
+  'DungeonRoomResolution.tsx','DungeonRoomOutcomeBanner.tsx','DungeonMerchantPanel.tsx',
+  'CoopRunOverview.tsx','SeasonalBossTelegraphPanel.tsx',
+];
+for(const fileName of dungeonFlowRuTrScreens){
+ const src=fs.readFileSync(path.join(root,'src/components/coop',fileName),'utf8');
+ const keysFromScreen=[...src.matchAll(/\bst\(\s*(['"])([^'"]+)\1/g)].map(match=>match[2]);
+ for(const key of new Set(keysFromScreen)){
+  assert.ok(Object.prototype.hasOwnProperty.call(socialEarlyRows,key),'Missing RU/TR authored Dungeon flow copy: '+fileName+' / '+key);
+  for(const lang of ['ru','tr'])if(key!=='NPC')assert.notEqual(socialText(lang,key),key,'Untranslated '+lang+' Dungeon flow copy: '+key);
+ }
+}
+assert.equal(socialText('ru','Bought {item}',{item:'Player $&'}),'Куплено: Player $&');
+assert.equal(socialText('tr','Live Fellowship bonus: +{marks} Marks',{marks:27}),'Canlı Yoldaşlık bonusu: +27 Nişan');
+assert.equal(socialLabel('tr','Unknown merchant server note'),'Unknown merchant server note');
+
 assert.equal(socialText('ru','Auto Tier ≤ {tier}',{tier:3}),'Автоуровень ≤ 3');
 assert.equal(socialText('tr','{count}/140 · expires 30 minutes after posting',{count:15}),'15/140 · yayımlandıktan 30 dakika sonra sona erer');
 assert.equal(socialText('nl','Your post · {name} · {time}',{name:'Ironwood Wolf',time:'5m'}),'Jouw oproep · Ironwood Wolf · 5m');

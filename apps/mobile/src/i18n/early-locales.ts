@@ -2361,7 +2361,7 @@ export const EARLY_LOCALE_ROWS={
   "Choose companion": [
     "Выбрать спутника",
     "Yoldaş seç"
-  ]
+  ],
   // Item inspector: source-matched RU/TR copy (item IDs and names are never translated).
   "gear": ["Снаряжение","Ekipman"],
   "tool": ["Инструмент","Alet"],

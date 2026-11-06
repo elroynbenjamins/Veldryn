@@ -730,18 +730,24 @@ export function claimQuest(state:GameState,questId:string,nowMs=Date.now()):Game
   return applyLocalBalanceSnapshot(reconcileCombatCompanionUnlocks(refreshQuests(next),nowMs),nowMs)
 }
 /** Offline contract claims are deterministic; online mode can replace this with the same server-authoritative contract ID. */
-export function claimSeasonalContract(state:GameState,period:SeasonalPeriod,contractId:string,nowMs=Date.now()):GameState{
+export function claimSeasonalContract(state:GameState,period:SeasonalPeriod,contractId:string,nowMs=Date.now(),choiceId?:string):GameState{
   if(!state.character)throw new Error('Create a character first');
   const contract=seasonalQuestBoard(state,period,new Date(nowMs)).find(entry=>entry.id===contractId);
   if(!contract)throw new Error('This contract has expired.');
   if((state.account.seasonalContractClaimIds??[]).includes(contract.id))throw new Error('This contract reward was already claimed.');
   if(contract.progress<contract.required)throw new Error('Complete the contract before claiming its cache.');
+  // Recompute the allowed rewards from authoritative character progression; never trust client amounts.
+  const chosen=choiceId===undefined?contract.rewardOptions[0]:contract.rewardOptions.find(reward=>reward.id===choiceId);
+  if(!chosen)throw new Error('Invalid or unavailable Quest reward choice.');
   const xp=state.character.xp+contract.rewardXp,level=characterLevelFromXp(xp);
-  const routed=contract.rewardItemId&&contract.rewardItemQty
-    ?routeRewards(state,[{itemId:contract.rewardItemId,quantity:contract.rewardItemQty}],nowMs):state;
+  const routed=chosen.rewardItemId&&chosen.rewardItemQty
+    ?routeRewards(state,[{itemId:chosen.rewardItemId,quantity:chosen.rewardItemQty}],nowMs):state;
   const claimed=[...(state.account.seasonalContractClaimIds??[]),contract.id].slice(-120);
-  const withRewards={...state,...routed,character:{...state.character,...(routed.character??{}),xp,level,gold:state.character.gold+contract.rewardGold},account:{...state.account,...(routed.account??{}),seasonalContractClaimIds:claimed}} as GameState;
-  return applyLocalBalanceSnapshot(refreshQuests(grantCompanionEssence(withRewards,contract.rewardCompanionEssence??0)),nowMs);
+  const previousChoices=state.account.seasonalContractRewardChoices??{};
+  const recordedChoices=Object.fromEntries([...Object.entries(previousChoices),[contract.id,chosen.id]].filter(([id])=>claimed.includes(id)));
+  const withRewards={...state,...routed,character:{...state.character,...(routed.character??{}),xp,level,gold:state.character.gold+contract.rewardGold},account:{...state.account,...(routed.account??{}),seasonalContractClaimIds:claimed,seasonalContractRewardChoices:recordedChoices}} as GameState;
+  const withEssence=grantCompanionEssence(withRewards,chosen.rewardCompanionEssence??0);
+  return applyLocalBalanceSnapshot(refreshQuests(grantBondstones(withEssence,chosen.rewardBondstones??0)),nowMs);
 }
 
 /** Finite reservations hand off at the cycle boundary, not at the later login. */

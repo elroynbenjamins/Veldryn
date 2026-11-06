@@ -8,6 +8,8 @@ import {equipmentSetDef,equippedSetPieceCount} from '../content/equipment-sets';
 import {GameState,SkillId} from './types';
 import {workingTowardDestinationAvailability,workingTowardItemSourceEntries,type WorkingTowardDestination,type WorkingTowardDestinationAvailability} from './working-toward';
 import {enhancedGearStats,enhancedGearStatsAtRank,equippedCraftedInstance,gearEnhancement,gemEffectDescription,gemSocketCapacity,gemSocketKind,gemSocketState,MAX_UPGRADE_RANK,upgradeQuote} from './equipment-enhancement';
+import {canonicalGemMetaV1,formatGemValueV1} from './gem-progression-v1';
+import {mobileGemFamilyV1} from '../content/gems-v1';
 import {effectiveStats} from './game';
 import {previewEquipment} from './equipment-preview';
 import {rarityMeta} from './item-rarity';
@@ -103,7 +105,15 @@ export function itemInspectModel(state:GameState,itemId:string){
     if(state.character&&item.slot){
       const compatible=(!item.classRestriction||item.classRestriction===state.character.classId)&&state.character.level>=(item.requiredLevel??1);
       const before=effectiveStats(state),currentId=state.character.equipment[item.slot],currentItem=currentId?itemDef(currentId):undefined,currentRank=currentId?gearEnhancement(state,currentId).rank:0;
-      const gems=enhancement.gemIds.map(id=>{const gem=itemDef(id),kind=gemSocketKind(id);return {id,name:gem.name,kind,detail:kind==='stat'?`+${Number(((gem.gemPercent??0)*100).toFixed(3))}% ${title(gem.gemStat??'stat')}`:gemEffectDescription(id),stat:kind==='stat'?title(gem.gemStat??'stat'):'Effect',percent:kind==='stat'?(gem.gemPercent??0):(gem.gemEffectValue??0)};});
+      const gems=enhancement.gemIds.map(id=>{
+         const gem=itemDef(id),kind=gemSocketKind(id),meta=canonicalGemMetaV1(id);
+         const family=meta?mobileGemFamilyV1(meta.familyId):undefined;
+         const value=meta&&family?family.values[meta.grade]:(kind==='stat'?gem.gemPercent:gem.gemEffectValue)??0;
+         const detail=kind==='stat'
+           ?meta?formatGemValueV1(meta.familyId,meta.grade):`+${Number((value*100).toFixed(3))}% ${title(gem.gemStat??'stat')}`
+           :meta?`${Number((value*100).toFixed(3))}% · ${gemEffectDescription(id)}`:gemEffectDescription(id);
+         return {id,name:gem.name,kind,detail,stat:kind==='stat'?family?.name??title(gem.gemStat??'stat'):'Effect',percent:value};
+       });
       let after=before,maxAfter=before,previewState=state,previewAvailable=false;
       let maxItemStats=enhancedGearStatsAtRank(state,itemId,MAX_UPGRADE_RANK);
       if(compatible){

@@ -13,12 +13,14 @@ import {equipmentTheme,radii,spacing,typography,type ThemeColors} from '../theme
 import {useGameTheme} from '../theme/ThemeContext';
 import {useGameplayText} from '../i18n/gameplay';
 import {EquipmentArtwork} from './EquipmentArtwork';
+import {InventoryItemHeaderControls} from './InventoryItemHeaderControls';
 import {GameButton} from './GameButton';
 import {GameModalHeader,GameModalSurface} from './GameModalSurface';
 
 type Props={
  state:GameState;itemId:string|null;instanceId?:string|null;source?:'inventory'|'equipment_pouch';
  onClose:()=>void;onEquip?:()=>unknown|Promise<unknown>;onInspect?:()=>void;
+ favorite?:boolean;locked?:boolean;onToggleFavorite?:()=>void|Promise<unknown>;onToggleLock?:()=>void|Promise<unknown>;
 };
 
 function percent(value:number){return (value*100).toFixed(1).replace(/\.0$/,'')+'%';}
@@ -27,7 +29,7 @@ function statColor(C:ThemeColors,delta:number){return delta>0?C.good:delta<0?C.b
 
 /** Inventory's single, authoritative compare-before-equipping surface.
  * The footer deliberately stays outside the scroll area on small devices. */
-export function EquipmentPreview({state,itemId,instanceId,source='inventory',onClose,onEquip,onInspect}:Props){
+export function EquipmentPreview({state,itemId,instanceId,source='inventory',onClose,onEquip,onInspect,favorite,locked,onToggleFavorite,onToggleLock}:Props){
  const {gt,gl}=useGameplayText();
  const C=useGameTheme(),E=equipmentTheme(C),s=useMemo(()=>makeStyles(C),[C]);
  const {height,width,fontScale}=useWindowDimensions();
@@ -77,7 +79,10 @@ export function EquipmentPreview({state,itemId,instanceId,source='inventory',onC
  return <GameModalSurface visible onClose={busy?()=>{}:onClose} dismissOnBackdrop={!busy} reduceMotion={state.settings.reduceMotion}
   backdropLabel={gl('Close equipment comparison')}
   surfaceStyle={[s.surface,{height:Math.min(height*.89,shortScreen?620:710)}]}>
-  <GameModalHeader eyebrow={gl('EQUIPMENT PREVIEW')} title={gl('Compare & Swap')} onClose={onClose} closeDisabled={busy}/>
+  <View style={s.compactHeader}>
+    <View style={s.headerCopy}><Text style={s.headerEyebrow}>{gl('EQUIPMENT PREVIEW')}</Text><Text style={s.headerTitle}>{gl('Compare & Swap')}</Text></View>
+    <InventoryItemHeaderControls favorite={favorite} locked={locked} onFavorite={onToggleFavorite} onLock={onToggleLock} onClose={onClose} disabled={busy}/>
+   </View>
   <ScrollView style={s.scroll} contentContainerStyle={s.body} showsVerticalScrollIndicator={false} showsHorizontalScrollIndicator={false}>
    <View style={s.pair}>
     <View style={s.gearCard}>
@@ -107,6 +112,15 @@ export function EquipmentPreview({state,itemId,instanceId,source='inventory',onC
      <Text style={[s.chipValue,{color:statColor(C,row.after-row.before)}]}>{signed(row.after-row.before)}</Text>
     </View>)}
    </View>
+   {sets.some(row=>row.after!==row.before)?<View style={s.setAlert}>
+    <Text style={s.sectionTitle}>{gl('SET PROGRESS')}</Text>
+    {sets.filter(row=>row.before!==row.after).map(row=><Text key={row.id} style={[s.setLine,{color:row.after<row.before?C.warning:C.good}]}>{row.tier} · {row.name}: {row.before} → {row.after}/10{row.milestones.map(m=>m.threshold===6?' · '+gl('6-piece trigger not active'):' · '+m.threshold+'pc '+(m.direction==='gained'?gl('bonus active'):gl('bonus lost'))).join('')}</Text>)}
+   </View>:null}
+   <Pressable accessibilityRole="button" accessibilityState={{expanded:more}} accessibilityLabel={more?gl('Hide equipment details'):gl('Show equipment details')}
+    onPress={()=>setMore(v=>!v)} style={s.disclosure}>
+    <Text style={s.disclosureTitle}>{gl('Full stats, gems & upgrades')}</Text><Text style={s.disclosureIcon}>{more?'−':'+'}</Text>
+   </Pressable>
+   {more?<View style={s.extra}>
    <View style={s.statPanel}>
     <View style={s.sectionHeader}><Text style={s.sectionTitle}>{gl('TOTAL LOADOUT')}</Text><Text style={s.legend}>{gl('Current → New')}</Text></View>
     {stats.map(row=><View key={row.id} style={s.statRow}>
@@ -117,15 +131,7 @@ export function EquipmentPreview({state,itemId,instanceId,source='inventory',onC
      <Text style={[s.statDelta,{color:statColor(C,row.after-row.before)}]}>{signed(row.after-row.before)}</Text>
     </View>)}
    </View>
-   {sets.some(row=>row.after!==row.before)?<View style={s.setAlert}>
-    <Text style={s.sectionTitle}>{gl('SET PROGRESS')}</Text>
-    {sets.filter(row=>row.before!==row.after).map(row=><Text key={row.id} style={[s.setLine,{color:row.after<row.before?C.warning:C.good}]}>{row.tier} · {row.name}: {row.before} → {row.after}/10{row.milestones.map(m=>m.threshold===6?' · '+gl('6-piece trigger not active'):' · '+m.threshold+'pc '+(m.direction==='gained'?gl('bonus active'):gl('bonus lost'))).join('')}</Text>)}
-   </View>:null}
-   <Pressable accessibilityRole="button" accessibilityState={{expanded:more}} accessibilityLabel={more?gl('Hide equipment details'):gl('Show equipment details')}
-    onPress={()=>setMore(v=>!v)} style={s.disclosure}>
-    <Text style={s.disclosureTitle}>{gl('Gems, upgrades & set details')}</Text><Text style={s.disclosureIcon}>{more?'−':'+'}</Text>
-   </Pressable>
-   {more?<View style={s.extra}>
+   
     <Text style={s.note}>{gl('Includes upgrades, socketed gems and set bonuses. Equip to apply.')}</Text>
     <Text style={s.detail}>{gl('Enhancement')} +{enhancement.rank} · {gl('Stat gem')} {sockets.statGemId?itemDef(sockets.statGemId).name:gl('Empty')} · {gl('Effect gem')} {sockets.effectGemId?itemDef(sockets.effectGemId).name:gl('Empty')}</Text>
     {sets.map(row=><Text key={row.id} style={s.detail}>{row.tier} · {row.name} · {row.before} → {row.after}/10 {gl('pieces')}</Text>)}
@@ -137,9 +143,11 @@ export function EquipmentPreview({state,itemId,instanceId,source='inventory',onC
   <View style={s.footer}>
    {!!error?<Text accessibilityRole="alert" style={s.error}>{gl(error)}</Text>:null}
    {!!blocked?<Text style={s.warning}>{blocked}</Text>:null}
-   {onEquip?<GameButton title={alreadyEquipped?gl('Currently equipped'):busy?gl('Equipping…'):old?gl('Swap Equipment'):gt('Equip {slot}',{slot:gl(slot)})}
-     loading={busy} disabled={alreadyEquipped||!!blocked||busy} onPress={()=>void submit()}/>:null}
-   <Text style={s.footerNote}>{gl('Preview only · your equipment is unchanged until you equip.')}</Text>
+   <View style={s.footerActions}>
+      <View style={s.footerSecondary}><GameButton title={more?gl('Hide details'):gl('Full stats')} tone="secondary" disabled={busy} onPress={()=>setMore(value=>!value)}/></View>
+      {onEquip?<View style={s.footerPrimary}><GameButton title={alreadyEquipped?gl('Currently equipped'):busy?gl('Equipping…'):old?gl('Swap Equipment'):gt('Equip {slot}',{slot:gl(slot)})}
+        loading={busy} disabled={alreadyEquipped||!!blocked||busy} onPress={()=>void submit()}/></View>:null}
+    </View>
   </View>
  </GameModalSurface>;
 }
@@ -148,10 +156,12 @@ function makeStyles(C:ThemeColors){
  const E=equipmentTheme(C);
  return StyleSheet.create({
   surface:{maxWidth:560,backgroundColor:E.panel,borderColor:C.lineStrong},
+  compactHeader:{minHeight:62,flexDirection:'row',alignItems:'center',gap:6,paddingHorizontal:10,paddingVertical:8,borderBottomWidth:1,borderBottomColor:C.line},
+  headerCopy:{flex:1,minWidth:0,gap:2},headerEyebrow:{...typography.caption,fontSize:9,color:E.goldSoft,fontWeight:'900',letterSpacing:.6},headerTitle:{...typography.title,color:C.text,fontWeight:'800'},
   scroll:{flex:1,minHeight:0},
   body:{paddingTop:spacing.sm,paddingBottom:spacing.md,gap:spacing.sm},
   pair:{flexDirection:'row',gap:8},
-  gearCard:{flex:1,minWidth:0,alignItems:'center',gap:5,minHeight:164,padding:9,borderRadius:radii.md,borderWidth:1,borderColor:C.line,backgroundColor:C.panel2},
+  gearCard:{flex:1,minWidth:0,alignItems:'center',gap:4,minHeight:144,padding:8,borderRadius:radii.md,borderWidth:1,borderColor:C.line,backgroundColor:C.panel2},
   newGearCard:{borderColor:E.selectedLine,backgroundColor:E.stage},
   kicker:{...typography.caption,fontSize:9,fontWeight:'900',color:C.muted,letterSpacing:.6,textAlign:'center'},
   gearName:{...typography.bodyStrong,color:C.text,textAlign:'center',minHeight:31},
@@ -189,6 +199,7 @@ function makeStyles(C:ThemeColors){
   note:{...typography.caption,color:C.muted,lineHeight:17},
   detail:{...typography.caption,color:C.text,lineHeight:18},
   footer:{borderTopWidth:1,borderTopColor:C.lineStrong,paddingTop:10,paddingBottom:3,gap:7,backgroundColor:E.panel},
+  footerActions:{flexDirection:'row',gap:8,alignItems:'stretch'},footerSecondary:{flex:1,minWidth:0},footerPrimary:{flex:1.45,minWidth:0},
   footerNote:{...typography.caption,fontSize:10,color:C.muted,textAlign:'center'},
   errorBox:{paddingVertical:12,gap:12},
   error:{...typography.caption,color:C.bad},

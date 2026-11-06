@@ -243,14 +243,15 @@ export function GuildProjectPosting({project,expanded,compact=false,onToggle,onC
    <Text style={s.copy}>{authored.description}</Text>
    {project.kind!=='development'?<View style={s.breakdown}>
     <Text style={s.meta}>{ui('Combat: {count}',{count:project.combatPoints.toLocaleString()})}</Text><Text style={s.meta}>{ui('Skilling: {count}',{count:project.skillingPoints.toLocaleString()})}</Text>
-   </View>:project.resourceGoals.map(goal=><View key={goal.resourceKind+':'+goal.resourceId} style={s.resource}>
+   </View>:null}
+   {project.resourceGoals.map(goal=><View key={goal.resourceKind+':'+goal.resourceId} style={s.resource}>
     {guildUpgradeComponentArtwork(goal.resourceId)?<Image source={guildUpgradeComponentArtwork(goal.resourceId)} style={s.resourceIcon} resizeMode="contain" accessible={false}/>:null}
     <Text style={[s.copy,s.flex]}>{goal.label}</Text><Text style={s.resourceAmount}>{goal.current.toLocaleString()} / {goal.target.toLocaleString()}</Text>
    </View>)}
-   {weekly?<View style={s.detailsRules}><Text style={s.meta}>{ui(project.rewardDestination==='guild_bank'?'Daily cap: 2,400 effort · Max 50% per member (Guilds of 2+) · 300 effort for Guild Bank reward · Claim within 7 days.':'Daily cap: 2,400 effort · Max 50% per member (Guilds of 2+) · 300 effort for 500 Gold · Claim within 7 days.')}</Text></View>:null}
+   {weekly?<View style={s.detailsRules}><Text style={s.meta}>{ui(project.projectMode==='donation'?'Donate eligible supplies · Each member may cover up to 50% · Claim within 7 days.':project.rewardDestination==='guild_bank'?'Daily cap: 2,400 effort · Max 50% per member (Guilds of 2+) · 300 effort for Guild Bank reward · Claim within 7 days.':'Daily cap: 2,400 effort · Max 50% per member (Guilds of 2+) · 300 effort for 500 Gold · Claim within 7 days.')}</Text></View>:null}
    <View style={s.contributionHead}><Text style={s.sectionTitle}>{ui('Member contribution')}</Text><Text style={s.meta}>{ui('{count} members',{count:project.memberContributions.length})}</Text></View>
    {project.memberContributions.map((member,index)=>{
-    const sources=[member.combatPoints?ui('Combat: {count}',{count:member.combatPoints.toLocaleString()}):'',member.gatheringPoints?ui('Gather {count}',{count:member.gatheringPoints.toLocaleString()}):'',member.craftingPoints?ui('Craft {count}',{count:member.craftingPoints.toLocaleString()}):''].filter(Boolean).join(' · ');
+    const sources=[member.combatPoints?ui('Combat: {count}',{count:member.combatPoints.toLocaleString()}):'',member.gatheringPoints?ui('Gather {count}',{count:member.gatheringPoints.toLocaleString()}):'',member.craftingPoints?ui('Craft {count}',{count:member.craftingPoints.toLocaleString()}):'',member.donationPoints?ui('Donate {count}',{count:member.donationPoints.toLocaleString()}):''].filter(Boolean).join(' · ');
     return <View key={member.accountId} style={s.member}><Text style={s.memberRank}>#{index+1}</Text><View style={s.flex}><Text numberOfLines={1} style={s.memberName}>{member.displayName}</Text><Text style={s.meta}>{sources||ui('No effort yet')}{member.meaningful?' · '+ui('contributor'):''}</Text></View><Text style={s.memberPoints}>{ui('{count} effort',{count:member.points.toLocaleString()})}</Text></View>;
    })}
    {!project.memberContributions.length?<Text style={s.meta}>{ui('No Guild members found.')}</Text>:null}

@@ -28,6 +28,10 @@ ok(screenSource.includes("{id:'favorites',label:'★ Favorites'}")&&screenSource
 ok(screenSource.includes("{id:'new',label:'New'}")&&screenSource.includes("{id:'new',label:'New first'}"),'New item filter and sort must remain available');
 ok(card.includes('newItem&&<View style={s.newBadge}')&&card.includes('gt("New").toLocaleUpperCase(language)'),'New stored items must show a compact NEW badge');
 ok(screenSource.includes('Mark all seen')&&screenSource.includes('onAcknowledgeItem'),'New item acknowledgement controls must remain available');
+ok(screenSource.includes('style={[s.itemNew,selectMode?s.itemNewTop:s.itemNewBottom]}')&&screenSource.includes('itemNewBottom:{bottom:16}')&&screenSource.includes('itemNewTop:{top:3}'),
+  'NEW badge must have mutually exclusive top/bottom anchors when switching to bulk selection');
+ok(screenSource.includes("itemNew:{position:'absolute',left:3,height:16,maxHeight:16")&&screenSource.includes('<Text numberOfLines={1} style={s.itemNewText}')&&!screenSource.includes('bottom:undefined'),
+  'NEW badge must remain single-line and height-bounded instead of stretching along the item icon');
 ok(screenSource.includes('BULK MANAGEMENT')&&screenSource.includes('Select shown')&&screenSource.includes('onBulkAction')&&screenSource.includes('Select item stacks to manage them together.'),'Bulk management must stay temporary, player-invoked, and compact before items are selected');
 ok(screenSource.includes('beginInventorySubmission')&&screenSource.includes('inventoryBusyRef.current'),'Inventory mutations must synchronously lock duplicate submissions');
 ok(screenSource.includes('<Modal transparent visible={inventoryBusyLabel!==null}')&&screenSource.includes('<ActivityIndicator size="large" color={C.accent}/>'),'Inventory mutations must show a blocking progress indicator while awaiting confirmation');

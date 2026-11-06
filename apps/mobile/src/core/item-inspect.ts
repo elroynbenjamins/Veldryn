@@ -7,11 +7,11 @@ import {WORLD_ZONES} from '../content/world-map';
 import {equipmentSetDef,equippedSetPieceCount} from '../content/equipment-sets';
 import {GameState,SkillId} from './types';
 import {workingTowardDestinationAvailability,workingTowardItemSourceEntries,type WorkingTowardDestination,type WorkingTowardDestinationAvailability} from './working-toward';
-import {enhancedGearStats,gearEnhancement,gemEffectDescription,gemSocketCapacity,gemSocketKind,gemSocketState,gearStatsAtRank,MAX_UPGRADE_RANK,upgradeQuote} from './equipment-enhancement';
+import {enhancedGearStats,enhancedGearStatsAtRank,equippedCraftedInstance,gearEnhancement,gemEffectDescription,gemSocketCapacity,gemSocketKind,gemSocketState,MAX_UPGRADE_RANK,upgradeQuote} from './equipment-enhancement';
 import {effectiveStats} from './game';
 import {previewEquipment} from './equipment-preview';
 import {rarityMeta} from './item-rarity';
-import {craftedInstancesForItem,effectiveOwnedGearRarity} from './crafted-gear-instances';
+import {craftedGearInstances,craftedInstancesForItem,effectiveOwnedGearRarity} from './crafted-gear-instances';
 import {acquisitionEstimateLabel,acquisitionProjectionForDestination} from './balance-projection';
 import {materialAcquisitionPlanForDestination,materialAcquisitionPlanSummary} from './material-acquisition-plan';
 
@@ -19,7 +19,7 @@ export type ItemInspectSourceKind='gathering'|'crafting'|'combat'|'dungeon'|'sta
 export interface ItemInspectSource{kind:ItemInspectSourceKind;typeLabel?:string;title:string;detail:string;navigation?:WorkingTowardDestination;availability?:WorkingTowardDestinationAvailability;estimatedSeconds?:number;estimateLabel?:string;chainLabel?:string;chainBlockedReason?:string;}
 export interface ItemRecipeUse{recipeId:string;name:string;outputItemId:string;outputName:string;skill:string;level:number;quantity:number;isRecipeUnlock:boolean;navigation:WorkingTowardDestination;availability:WorkingTowardDestinationAvailability;}
 export interface ItemGearDecision{
- compatible:boolean;alreadyEquipped:boolean;replaces?:{itemId:string;name:string;rank:number};
+ compatible:boolean;previewAvailable:boolean;alreadyEquipped:boolean;replaces?:{itemId:string;name:string;rank:number};
  loadoutBefore:{attack:number;defense:number;hp:number;power:number};loadoutAfter:{attack:number;defense:number;hp:number;power:number};loadoutDelta:{attack:number;defense:number;hp:number;power:number};
  maxRank:number;maxItemStats:{attack:number;defense:number;hp:number};maxLoadoutGain:{attack:number;defense:number;hp:number;power:number};
  gems:Array<{id:string;name:string;kind:'stat'|'effect';detail:string;stat?:string;percent?:number}>;
@@ -103,9 +103,26 @@ export function itemInspectModel(state:GameState,itemId:string){
     if(state.character&&item.slot){
       const compatible=(!item.classRestriction||item.classRestriction===state.character.classId)&&state.character.level>=(item.requiredLevel??1);
       const before=effectiveStats(state),currentId=state.character.equipment[item.slot],currentItem=currentId?itemDef(currentId):undefined,currentRank=currentId?gearEnhancement(state,currentId).rank:0;
-      const gems=enhancement.gemIds.map(id=>{const gem=itemDef(id),kind=gemSocketKind(id);return {id,name:gem.name,kind,detail:kind==='stat'?`+${Math.round((gem.gemPercent??0)*100)}% ${title(gem.gemStat??'stat')}`:gemEffectDescription(id),stat:kind==='stat'?title(gem.gemStat??'stat'):'Effect',percent:kind==='stat'?(gem.gemPercent??0):(gem.gemEffectValue??0)};});
-      let after=before,maxAfter=before,previewState=state;
-      if(compatible){try{previewState=previewEquipment(state,itemId);after=effectiveStats(previewState);const maxState:GameState={...state,character:{...state.character,gearEnhancements:{...(state.character.gearEnhancements??{}),[itemId]:{...enhancement,rank:MAX_UPGRADE_RANK}}}};maxAfter=effectiveStats(previewEquipment(maxState,itemId));}catch{}}
+      const gems=enhancement.gemIds.map(id=>{const gem=itemDef(id),kind=gemSocketKind(id);return {id,name:gem.name,kind,detail:kind==='stat'?`+${Number(((gem.gemPercent??0)*100).toFixed(3))}% ${title(gem.gemStat??'stat')}`:gemEffectDescription(id),stat:kind==='stat'?title(gem.gemStat??'stat'):'Effect',percent:kind==='stat'?(gem.gemPercent??0):(gem.gemEffectValue??0)};});
+      let after=before,maxAfter=before,previewState=state,previewAvailable=false;
+      let maxItemStats=enhancedGearStatsAtRank(state,itemId,MAX_UPGRADE_RANK);
+      if(compatible){
+        try{
+          previewState=previewEquipment(state,itemId);
+          after=effectiveStats(previewState);previewAvailable=true;
+          // Project the real selected Forge copy, rather than a legacy itemId
+          // enhancement which has no effect on that instance.
+          const instance=equippedCraftedInstance(previewState,itemId);
+          const maxState:GameState=instance
+            ?{...previewState,account:{...previewState.account,craftedGearInstances:craftedGearInstances(previewState).map(copy=>copy.id===instance.id?{...copy,enhancement:{...copy.enhancement,rank:MAX_UPGRADE_RANK}}:copy)}}
+            :{...previewState,character:{...previewState.character!,gearEnhancements:{...(previewState.character!.gearEnhancements??{}),[itemId]:{...gearEnhancement(previewState,itemId),rank:MAX_UPGRADE_RANK}}}};
+          maxAfter=effectiveStats(maxState);
+          maxItemStats=enhancedGearStatsAtRank(previewState,itemId,MAX_UPGRADE_RANK);
+        }catch{
+          // An item-ID-only inspector must not pretend an unspecified unique
+          // Forge copy can be safely or accurately equipped.
+        }
+      }
       const set=equipmentSetDef(item.equipmentSetId);
       let setDecision:ItemGearDecision['set'];
       if(set){
@@ -113,9 +130,9 @@ export function itemInspectModel(state:GameState,itemId:string){
         const milestones=[{pieces:2,bonus:set.twoPiece},{pieces:4,bonus:set.fourPiece},{pieces:6,bonus:set.sixPiece},{pieces:8,bonus:set.eightPiece},{pieces:10,bonus:set.tenPiece}];
         setDecision={name:set.name,currentPieces,previewPieces,required:10,reached:[...milestones].reverse().find(row=>row.pieces<=previewPieces),next:milestones.find(row=>row.pieces>previewPieces),active:milestones.filter(row=>row.pieces<=previewPieces).map(row=>({...row,runtime:row.pieces===6?'trigger-hook-pending':'live'} as const))};
       }
-      gearDecision={compatible,alreadyEquipped:currentId===itemId,replaces:currentItem?{itemId:currentItem.id,name:currentItem.name,rank:currentRank}:undefined,
+      gearDecision={compatible,previewAvailable,alreadyEquipped:currentId===itemId&&previewAvailable,replaces:currentItem?{itemId:currentItem.id,name:currentItem.name,rank:currentRank}:undefined,
         loadoutBefore:{attack:before.attack,defense:before.defense,hp:before.hp,power:before.power},loadoutAfter:{attack:after.attack,defense:after.defense,hp:after.hp,power:after.power},
-        loadoutDelta:{attack:after.attack-before.attack,defense:after.defense-before.defense,hp:after.hp-before.hp,power:after.power-before.power},maxRank:MAX_UPGRADE_RANK,maxItemStats:gearStatsAtRank(itemId,MAX_UPGRADE_RANK),
+        loadoutDelta:{attack:after.attack-before.attack,defense:after.defense-before.defense,hp:after.hp-before.hp,power:after.power-before.power},maxRank:MAX_UPGRADE_RANK,maxItemStats,
         maxLoadoutGain:{attack:maxAfter.attack-after.attack,defense:maxAfter.defense-after.defense,hp:maxAfter.hp-after.hp,power:maxAfter.power-after.power},gems,set:setDecision};
     }
     if(item.requiredLevel&&item.requiredLevel>1)effectLines.push(`Requires character Lv ${item.requiredLevel}`);

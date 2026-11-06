@@ -49568,7 +49568,7 @@ function upgradeMaterialCosts(itemId, targetRank) {
   const recipe2 = v33EquipmentRecipeForItem(itemId);
   if (!recipe2) return [];
   const ratio = targetRank === 1 ? 0.12 : targetRank === 2 ? 0.18 : targetRank === 3 ? 0.27 : targetRank === 4 ? 0.38 : 0;
-  return recipe2.inputs.map((input) => ({ itemId: input.itemId === "VERDANT_BINDING_RESIN" ? ASTERFALL_MINERAL_ESSENCE_ID : input.itemId, quantity: Math.max(1, Math.ceil(input.quantity * ratio)) }));
+  return recipe2.inputs.map((input) => ({ itemId: input.itemId === "VERDANT_BINDING_RESIN" || input.itemId === "IRONWOOD_BINDING_RESIN" ? ASTERFALL_MINERAL_ESSENCE_ID : input.itemId, quantity: Math.max(1, Math.ceil(input.quantity * ratio)) }));
 }
 function upgradeQuote(state, itemId) {
   const item = itemDef(itemId);

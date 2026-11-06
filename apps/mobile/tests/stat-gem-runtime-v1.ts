@@ -1,9 +1,11 @@
-import {createCharacter,effectiveStats,newGame} from '../src/core/game';
+import {createCharacter,effectiveStats,newGame,previewFallenKnightBattle} from '../src/core/game';
 import {CANONICAL_STAT_GEM_KEYS_V1,equippedCanonicalStatGemBonusesV1,equippedGemBonuses} from '../src/core/equipment-enhancement';
+import {assertEffectGemEquipAllowedV1,effectFamilyCopiesV1,equippedCanonicalGemIdsV1,resonanceForFamilyV1} from '../src/core/gem-progression-v1';
 import {activeEquipmentBuildStats,equipmentSetCombatModifiers} from '../src/core/equipment-set-runtime';
 import {combatPowerRating} from '../src/core/combat-power';
 import {EQUIPMENT_SETS} from '../src/content/equipment-sets';
 import {itemDef} from '../src/content/items';
+import type {CraftedGearInstance,GearSlot} from '../src/core/types';
 import {MOBILE_GEM_FAMILIES_V1} from '../src/content/gems-v1';
 import {formatGemValueV1} from '../src/core/gem-progression-v1';
 
@@ -109,6 +111,54 @@ close(equipmentSetCombatModifiers(piercing).penetrationMultiplier,1.0075,'Pierci
 close(equipmentSetCombatModifiers(swift).speedMultiplier,1.008,'Swift must feed action-speed modifier');
 close(equipmentSetCombatModifiers(potent).recoveryMultiplier,1.012,'Potent must feed recovery modifier');
 
+// The boss timer already uses effectiveStats.haste; actionSpeedMultiplier
+// must not apply the same Swift/4-piece Haste bonus again.
+const intervalBefore=previewFallenKnightBattle(base,1234).player.attackIntervalMs;
+const intervalSwift=previewFallenKnightBattle(swift,1234).player.attackIntervalMs;
+ok(intervalSwift<intervalBefore,'Swift should shorten the Fallen Knight basic-attack interval');
+ok(Math.abs(intervalSwift-Math.round(intervalBefore*1.05/1.058))<=2,
+ 'Fallen Knight must apply Swift Haste once, not twice');
+
+// Socketed gems on uniquely forged copies must affect live stats, collection,
+// Resonance, socket limits, and projected changes; legacy itemId records must
+// not override them.
+const forgedIds=activeSet.itemIds.slice(0,4);
+const crafted:CraftedGearInstance[]=forgedIds.map((id,index)=>({
+ id:'STAT_GEM_FORGED_'+index,itemId:id,ownerCharacterId:base.character!.id,
+ rarity:'rare',quality:80,acquireSource:'craft',sourceReceiptKey:'STAT_GEM_FORGED_'+index,createdAtMs:0,
+ enhancement:{
+   rank:0,failures:0,
+   statGemId:index===0?'gem:stat_precision:g4':undefined,
+   effectGemId:'gem:effect_bulwark:g1',
+   gemIds:[...(index===0?['gem:stat_precision:g4']:[]),'gem:effect_bulwark:g1'],
+ },
+}));
+const forgedEquipment={...base.character!.equipment};
+const instanceSlots:Partial<Record<GearSlot,string>>={};
+for(let i=0;i<3;i++){
+ const slot=itemDef(forgedIds[i]).slot!;
+ forgedEquipment[slot]=forgedIds[i];
+ instanceSlots[slot]=crafted[i].id;
+}
+const forgedState={...base,character:{...base.character!,equipment:forgedEquipment,
+ equipmentInstanceIds:instanceSlots,gearEnhancements:{
+ [forgedIds[0]]:{rank:0,failures:0,effectGemId:'gem:effect_renewal:g5',gemIds:['gem:effect_renewal:g5']},
+ }},account:{...base.account,craftedGearInstances:crafted}};
+close(effectiveStats(forgedState).accuracy-effectiveStats({
+ ...forgedState,character:{...forgedState.character,gearEnhancements:{},
+ equipmentInstanceIds:{...instanceSlots,[itemDef(forgedIds[0]).slot!]:'NOT_EQUIPPED'}},
+}).accuracy,.0065,'Canonical Stat Gem on a forged equipment copy must affect Accuracy');
+ok(equippedCanonicalGemIdsV1(forgedState).includes('gem:stat_precision:g4'),
+ 'Canonical gem discovery must read forged Stat Gem sockets');
+ok(resonanceForFamilyV1(forgedState,'effect_bulwark').resonance===3,
+ 'Three forged Effect Gems must reach Resonance III');
+ok(resonanceForFamilyV1(forgedState,'effect_renewal').copies===0,
+ 'Stale legacy gem sockets cannot override forged copies');
+ok(effectFamilyCopiesV1(forgedState,'effect_bulwark',forgedIds[0])===2,
+ 'Replacing one forged Effect Gem excludes only its active equipment slot');
+let capRejected=false;
+try{assertEffectGemEquipAllowedV1(forgedState,forgedIds[3],'gem:effect_bulwark:g1')}catch{capRejected=true}
+ok(capRejected,'Fourth matching Effect Gem must be rejected when first three are on Forge instances');
 const rating=combatPowerRating(ward);
 ok(rating.rows.reduce((total,row)=>total+row.value,0)===rating.total,
  'Combat Power source rows must reconcile exactly including Ward gems');

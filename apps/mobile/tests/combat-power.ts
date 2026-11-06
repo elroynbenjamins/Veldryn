@@ -12,4 +12,12 @@ const withCompanion=combatPowerRating(state);
 ok(withCompanion.companion>0,'an equipped companion must contribute to Combat Power');
 ok(withCompanion.total>bare.total,'Combat Power must increase with a combat companion');
 equal(withCompanion.rows.map(row=>row.id).join(','),'base,build,passives,companion','the rating must expose its full breakdown');
+equal(withCompanion.rows.reduce((total,row)=>total+row.value,0),withCompanion.total,
+ 'Combat Power source rows must reconcile without estimating passive percentages');
+const noGear={...state,character:{...state.character!,equipment:{}}};
+const noGearPower=combatPowerRating(noGear);
+ok(withCompanion.player>=noGearPower.player,'Equipped gear must contribute to real player Combat Power');
+equal(noGearPower.rows.find(row=>row.id==='build')?.value,0,
+ 'No equipment means no gear/set/gem build contribution');
+
 console.log('PASS: Combat Power rating is transparent and includes companion strength');

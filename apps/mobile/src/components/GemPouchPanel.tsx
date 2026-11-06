@@ -7,6 +7,8 @@ import {GEM_GRADE_LABEL_V1,GEM_GRADE_RARITY_V1,mobileGemFamilyV1,parseMobileRawG
 import {itemRarity,rarityMeta} from '../core/item-rarity';
 import type {GameCommand} from '../core/game-commands';
 import {itemDef} from '../content/items';
+import {localizedItemName} from '../i18n/starter-item-names';
+import {useGameLanguage} from '../i18n/GameLanguageProvider';
 import {ItemArtwork} from './ItemArtwork';
 import {GameButton} from './GameButton';
 import {ConfirmModal} from './ConfirmModal';
@@ -18,6 +20,7 @@ const PAGE_SIZE=30;
 /** Compact, account-wide storage drawer. Empty slots are intentional and never consume normal inventory. */
 export function GemPouchPanel({state,busy=false,standalone=false,onUpgrade,onAction,onFavorite,onLock}:{state:GameState;busy?:boolean;standalone?:boolean;onUpgrade?:()=>void|Promise<unknown>;onAction?:(command:GameCommand)=>void|Promise<unknown>;onFavorite?:(itemId:string)=>void|Promise<unknown>;onLock?:(itemId:string)=>void|Promise<unknown>}){
   const C=useGameTheme(),s=useMemo(()=>styles(C),[C]);
+  const language=useGameLanguage();
   const [drawerOpen,setDrawerOpen]=useState(false),[page,setPage]=useState(0),[selected,setSelected]=useState<string|null>(null);
   const [gridWidth,setGridWidth]=useState(300);
   const expanded=standalone||drawerOpen;
@@ -45,7 +48,7 @@ export function GemPouchPanel({state,busy=false,standalone=false,onUpgrade,onAct
     </Pressable>
     {expanded?<View style={s.body}>
       <Text style={s.hint}>Tap a gem to inspect or manage it. Shared across characters; socketing and Enchanting use stored gems automatically.</Text>
-      <View style={s.grid} onLayout={event=>{const width=Math.floor(event.nativeEvent.layout.width);setGridWidth(previous=>previous===width?previous:width)}}>{entries.map((stack,index)=><Pressable key={stack?.itemId??'empty-'+(start+index)} accessibilityRole="button" accessibilityLabel={stack?itemDef(stack.itemId).name+', '+stack.quantity+' owned. Tap for details and actions':'Empty Gem Pouch slot'} accessibilityHint={stack?'Opens gem details and actions':undefined} accessibilityState={stack?{selected:stack.itemId===selected}:undefined} disabled={!stack} onPress={()=>setSelected(stack?.itemId??null)} style={[s.slot,{width:slotWidth,minHeight:Math.max(slotWidth,62)},stack&&s.filled,stack?.itemId===selected&&s.selected,stack&&{borderColor:rarityMeta(canonicalGemMetaV1(stack.itemId)?.grade?GEM_GRADE_RARITY_V1[canonicalGemMetaV1(stack.itemId)!.grade]:itemRarity(itemDef(stack.itemId))).color}]}>
+      <View style={s.grid} onLayout={event=>{const width=Math.floor(event.nativeEvent.layout.width);setGridWidth(previous=>previous===width?previous:width)}}>{entries.map((stack,index)=><Pressable key={stack?.itemId??'empty-'+(start+index)} accessibilityRole="button" accessibilityLabel={stack?localizedItemName(language,stack.itemId)+', '+stack.quantity+' owned. Tap for details and actions':'Empty Gem Pouch slot'} accessibilityHint={stack?'Opens gem details and actions':undefined} accessibilityState={stack?{selected:stack.itemId===selected}:undefined} disabled={!stack} onPress={()=>setSelected(stack?.itemId??null)} style={[s.slot,{width:slotWidth,minHeight:Math.max(slotWidth,62)},stack&&s.filled,stack?.itemId===selected&&s.selected,stack&&{borderColor:rarityMeta(canonicalGemMetaV1(stack.itemId)?.grade?GEM_GRADE_RARITY_V1[canonicalGemMetaV1(stack.itemId)!.grade]:itemRarity(itemDef(stack.itemId))).color}]}>
         {stack?<><ItemArtwork itemId={stack.itemId} size={Math.min(42,slotWidth-12)}/><Text numberOfLines={1} style={s.quantity}>×{stack.quantity}</Text></>:<Text style={s.emptyMark}>·</Text>}
       </Pressable>)}</View>
       {pages>1?<View style={s.paging}><GameButton compact tone="secondary" title="Previous" disabled={shownPage===0} onPress={()=>{setSelected(null);setPage(p=>Math.max(0,p-1))}}/><Text style={s.meta}>{shownPage+1}/{pages}</Text><GameButton compact tone="secondary" title="Next" disabled={shownPage===pages-1} onPress={()=>{setSelected(null);setPage(p=>Math.min(pages-1,p+1))}}/></View>:null}
@@ -54,13 +57,13 @@ export function GemPouchPanel({state,busy=false,standalone=false,onUpgrade,onAct
     </View>:null}
     <GameModalSurface visible={!!selectedStack} reduceMotion={state.settings.reduceMotion} onClose={()=>setSelected(null)}
       backdropLabel="Close Gem Pouch item details" surfaceStyle={s.sheet}>
-      <GameModalHeader eyebrow="GEM POUCH · ACCOUNT STORAGE" title={selectedItem?.name??'Gem details'} onClose={()=>setSelected(null)}/>
+      <GameModalHeader eyebrow="GEM POUCH · ACCOUNT STORAGE" title={selectedItem?localizedItemName(language,selectedItem.id):'Gem details'} onClose={()=>setSelected(null)}/>
       {selectedStack&&selectedItem?<ScrollView style={s.sheetScroll} contentContainerStyle={s.sheetBody} showsVerticalScrollIndicator={false} showsHorizontalScrollIndicator={false}>
         <View style={s.gemHero}>
           <View style={[s.largeArt,{borderColor:selectedRarity?.color??C.lineStrong}]}><ItemArtwork itemId={selectedStack.itemId} size={76}/></View>
           <View style={s.flex}>
             <Text style={[s.gemGrade,{color:selectedRarity?.color??C.accent}]}>{selectedRaw?'UNREFINED':selectedMeta?.kind==='stat'?'STAT GEM':selectedMeta?.kind==='effect'?'EFFECT GEM':'GEM'}{grade?' · G'+grade:''}</Text>
-            <Text style={s.itemName}>{family?.name??selectedItem.name}{grade?' · '+(selectedRaw?'Raw':GEM_GRADE_LABEL_V1[grade]):''}</Text>
+            <Text style={s.itemName}>{family?.name??localizedItemName(language,selectedItem.id)}{grade?' · '+(selectedRaw?'Raw':GEM_GRADE_LABEL_V1[grade]):''}</Text>
             <Text style={s.meta}>{selectedStack.quantity} in Gem Pouch · Account-wide</Text>
           </View>
         </View>
@@ -77,7 +80,7 @@ export function GemPouchPanel({state,busy=false,standalone=false,onUpgrade,onAct
         </View>
         {selectedRaw&&refinement?<View style={s.refinement}>
           <Text style={s.itemName}>Enchanting · Grade {selectedRaw.grade}</Text>
-          <Text style={s.meta}>Requires Lv {refinement.recipe.level} · {refinement.recipe.gold.toLocaleString()} Gold · {refinement.recipe.inputs.map(input=>input.quantity+'× '+itemDef(input.itemId).name).join(', ')}</Text>
+          <Text style={s.meta}>Requires Lv {refinement.recipe.level} · {refinement.recipe.gold.toLocaleString()} Gold · {refinement.recipe.inputs.map(input=>input.quantity+'× '+localizedItemName(language,input.itemId)).join(', ')}</Text>
           <GameButton compact title={refinement.ready?'Refine 1 gem':'Refinement unavailable'} disabled={!onAction||busy||!refinement.ready} onPress={()=>{setSelected(null);return onAction?.({type:'gem_refine',args:{familyId:selectedRaw.familyId,grade:selectedRaw.grade}})}}/>
         </View>:null}
         <View style={s.actions}>
@@ -88,8 +91,8 @@ export function GemPouchPanel({state,busy=false,standalone=false,onUpgrade,onAct
         <Text style={s.meta}>Gems remain available for equipment socketing and crafting directly from shared storage.</Text>
       </ScrollView>:null}
     </GameModalSurface>
-    <ConfirmModal visible={!!pendingSell} title="Sell gems from Gem Pouch?" message={pendingSell?`${pendingSell.quantity}× ${itemDef(pendingSell.itemId).name} · ${ (pendingSell.quantity*itemDef(pendingSell.itemId).value).toLocaleString() } Gold. This cannot be undone.`:''} confirmLabel="Sell gems" danger reduceMotion={state.settings.reduceMotion} onConfirm={()=>{const pending=pendingSell;setPendingSell(null);if(pending)void onAction?.({type:'gem_pouch_sell',args:pending})}} onCancel={()=>setPendingSell(null)}/>
-    <ConfirmModal visible={!!pendingDismantle} title="Dismantle this gem?" message={pendingDismantle?`Convert 1× ${itemDef(pendingDismantle).name} into Gem Dust? This cannot be undone.`:''} confirmLabel="Dismantle" danger reduceMotion={state.settings.reduceMotion} onConfirm={()=>{const id=pendingDismantle;setPendingDismantle(null);if(id)void onAction?.({type:'gem_dismantle',args:{gemId:id,quantity:1}})}} onCancel={()=>setPendingDismantle(null)}/>
+    <ConfirmModal visible={!!pendingSell} title="Sell gems from Gem Pouch?" message={pendingSell?`${pendingSell.quantity}× ${localizedItemName(language,pendingSell.itemId)} · ${ (pendingSell.quantity*itemDef(pendingSell.itemId).value).toLocaleString() } Gold. This cannot be undone.`:''} confirmLabel="Sell gems" danger reduceMotion={state.settings.reduceMotion} onConfirm={()=>{const pending=pendingSell;setPendingSell(null);if(pending)void onAction?.({type:'gem_pouch_sell',args:pending})}} onCancel={()=>setPendingSell(null)}/>
+    <ConfirmModal visible={!!pendingDismantle} title="Dismantle this gem?" message={pendingDismantle?`Convert 1× ${localizedItemName(language,pendingDismantle)} into Gem Dust? This cannot be undone.`:''} confirmLabel="Dismantle" danger reduceMotion={state.settings.reduceMotion} onConfirm={()=>{const id=pendingDismantle;setPendingDismantle(null);if(id)void onAction?.({type:'gem_dismantle',args:{gemId:id,quantity:1}})}} onCancel={()=>setPendingDismantle(null)}/>
   </View>;
 }
 function styles(C:ThemeColors){return StyleSheet.create({

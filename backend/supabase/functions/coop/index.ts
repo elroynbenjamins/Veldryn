@@ -42355,7 +42355,7 @@ var infusionByTier = {
   T8: { itemId: "RIMEWARD_DISTILLATE", quantity: 2 },
   T9: { itemId: "CINDERHEART_ELIXIR", quantity: 3 }
 };
-var TIER_MATERIAL_MULTIPLIER = { T1: 3, T2: 2.5, T3: 2.25, T4: 2, T5: 1, T6: 0.8, T7: 0.8, T8: 0.75, T9: 0.75 };
+var TIER_MATERIAL_MULTIPLIER = { T1: 3, T2: 2.5, T3: 1.35, T4: 2, T5: 1, T6: 0.8, T7: 0.8, T8: 0.75, T9: 0.75 };
 var TIER_CHARACTER_LEVEL_FLOOR = { T1: 2, T2: 12, T3: 26, T4: 40, T5: 55, T6: 70, T7: 82, T8: 92, T9: 100 };
 var TIER_CRAFTING_LEVEL_FLOOR = { T1: 1, T2: 8, T3: 20, T4: 34, T5: 49, T6: 64, T7: 76, T8: 89, T9: 97 };
 var EQUIPMENT_CRAFT_SKILL_BY_CLASS = {
@@ -42372,13 +42372,11 @@ var EQUIPMENT_CRAFT_SKILL_BY_CLASS = {
 var pathMaterial = {
   T1: { Foundation: "MOSS_FIBER", Alternate: "BOAR_HIDE" },
   T2: { Foundation: "WOLF_PELT", Alternate: "IRONWOOD_FANG" },
-  T3: { Foundation: "TROLL_HIDE", Alternate: "WOLF_PELT" },
   T4: { Foundation: "TORN_OATHCLOTH", Alternate: "ECHO_QUARTZ" }
 };
 var tailoringPathMaterial = {
-  T1: { Foundation: "BOAR_HIDE", Alternate: "THORN_SAP" },
-  T2: { Foundation: "BOAR_HIDE", Alternate: "IRONWOOD_FANG" },
-  T3: { Foundation: "TROLL_HIDE", Alternate: "WOLF_PELT" },
+  T1: { Foundation: "BOAR_HIDE", Alternate: "WISP_DUST" },
+  T2: { Foundation: "THORN_SAP", Alternate: "TROLL_HIDE" },
   T4: { Foundation: "TORN_OATHCLOTH", Alternate: "ECHO_TOUCHED_PELT" }
 };
 function q(base, multiplier) {
@@ -42401,8 +42399,10 @@ function ingredients(tier, path, multiplier, skillId) {
         return mergeInputs([{ itemId: "MOSS_FIBER", quantity: q(22, multiplier) }, { itemId: accent ?? "BOAR_HIDE", quantity: q(7, multiplier) }]);
       case "T2":
         return mergeInputs([{ itemId: "WOLF_PELT", quantity: q(22, multiplier) }, { itemId: accent ?? "BOAR_HIDE", quantity: q(9, multiplier) }]);
+      // First Sunscar gear uses local gathering and monster sources, not level 7–14 enemies.
+      // Foundation is available at the entry scorpion; Alternate can chase Astral Script at level 31+.
       case "T3":
-        return mergeInputs([{ itemId: "TROLL_HIDE", quantity: q(18, multiplier) }, { itemId: accent ?? "WOLF_PELT", quantity: q(10, multiplier) }, { itemId: "THORN_SAP", quantity: q(5, multiplier) }]);
+        return mergeInputs([{ itemId: "SUNSCALE", quantity: q(18, multiplier) }, { itemId: "DUNEWOOD", quantity: q(10, multiplier) }, { itemId: path === "Alternate" ? "ASTRAL_SCRIPT" : "AMBERGLASS", quantity: q(path === "Alternate" ? 1 : 2, multiplier) }]);
       case "T4":
         return mergeInputs([{ itemId: "TORN_OATHCLOTH", quantity: q(18, multiplier) }, { itemId: "ECHO_TOUCHED_PELT", quantity: q(7, multiplier) }, { itemId: accent ?? "OATHGLASS_SHARD", quantity: q(5, multiplier) }]);
       case "T5":
@@ -42426,7 +42426,7 @@ function ingredients(tier, path, multiplier, skillId) {
     case "T2":
       return [{ itemId: "IRONWOOD_LOG", quantity: q(34, multiplier) }, { itemId: pathItem ?? "WOLF_PELT", quantity: q(10, multiplier) }];
     case "T3":
-      return [{ itemId: "CROWNWOOD_LOG", quantity: q(32, multiplier) }, { itemId: pathItem ?? "TROLL_HIDE", quantity: q(12, multiplier) }, { itemId: "THORN_SAP", quantity: q(6, multiplier) }];
+      return mergeInputs([{ itemId: "DUNEWOOD", quantity: q(22, multiplier) }, { itemId: "SUNSTONE_ORE", quantity: q(14, multiplier) }, { itemId: path === "Alternate" ? "ASTRAL_SCRIPT" : "AMBERGLASS", quantity: q(path === "Alternate" ? 1 : 2, multiplier) }]);
     case "T4":
       return [{ itemId: "OATHSTONE_INGOT", quantity: q(18, multiplier) }, { itemId: "OATHGLASS_SHARD", quantity: q(7, multiplier) }, { itemId: pathItem ?? "TORN_OATHCLOTH", quantity: q(5, multiplier) }];
     case "T5":
@@ -43446,8 +43446,8 @@ var MONSTERS_RAW = [
   { id: "BANNER_SHADE", name: "Banner Shade", level: 23, hp: 435, attack: 39, defense: 22, xp: 258, gold: 15, secondsPerKill: 26, unlockLevel: 23, zone: "King's Road", drops: [{ itemId: "OATHGLASS_SHARD", chance: 0.22, min: 1, max: 1 }, { itemId: "TORN_OATHCLOTH", chance: 0.28, min: 1, max: 1 }, { itemId: "BANNER_ASH", chance: 0.28, min: 1, max: 2 }, { itemId: "LANTERNSTEEL_SHARD", chance: 0.1, min: 1, max: 1 }, { itemId: "GLOAM_DUST", chance: 0.18, min: 1, max: 1 }] },
   { id: "FALLEN_SENTINEL", name: "Fallen Sentinel", level: 24, hp: 475, attack: 42, defense: 25, xp: 282, gold: 17, secondsPerKill: 28, unlockLevel: 24, zone: "King's Road", drops: [{ itemId: "OATHGLASS_SHARD", chance: 0.28, min: 1, max: 1 }, { itemId: "ECHO_TOUCHED_PELT", chance: 0.12, min: 1, max: 1 }, { itemId: "TORN_OATHCLOTH", chance: 0.32, min: 1, max: 2 }, { itemId: "LANTERNSTEEL_SHARD", chance: 0.18, min: 1, max: 1 }, { itemId: "FALLEN_RIVET", chance: 0.28, min: 1, max: 2 }, { itemId: "RUNEBOUND_CORE", chance: 0.12, min: 1, max: 1 }] },
   { id: "OATHGLASS_REVENANT", name: "Oathglass Revenant", level: 25, hp: 540, attack: 45, defense: 28, xp: 315, gold: 18, secondsPerKill: 30, unlockLevel: 25, zone: "King's Road", drops: [{ itemId: "OATHGLASS_SHARD", chance: 0.34, min: 1, max: 2 }, { itemId: "OATHGLASS_FRAGMENT", chance: 0.2, min: 1, max: 1 }, { itemId: "ECHO_QUARTZ", chance: 0.15, min: 1, max: 1 }, { itemId: "ECHO_TOUCHED_PELT", chance: 0.18, min: 1, max: 1 }, { itemId: "TORN_OATHCLOTH", chance: 0.35, min: 1, max: 2 }] },
-  { id: "SUNSCAR_SCORPION", name: "Sunscar Scorpion", level: 28, hp: 610, attack: 52, defense: 31, xp: 350, gold: 21, secondsPerKill: 31, unlockLevel: 26, zone: "Sunscar", drops: [{ itemId: "SUNSTONE_ORE", chance: 0.42, min: 1, max: 2 }, { itemId: "AMBERGLASS", chance: 0.08, min: 1, max: 1 }, { itemId: "SCORPION_VENOM", chance: 0.06, min: 1, max: 1 }] },
-  { id: "DUNE_ORACLE", name: "Dune Oracle", level: 33, hp: 760, attack: 61, defense: 36, xp: 438, gold: 27, secondsPerKill: 35, unlockLevel: 31, zone: "Sunscar", drops: [{ itemId: "AMBERGLASS", chance: 0.36, min: 1, max: 2 }, { itemId: "ASTRAL_SCRIPT", chance: 0.08, min: 1, max: 1 }, { itemId: "SWIFT_SIGIL", chance: 3e-3, min: 1, max: 1 }] },
+  { id: "SUNSCAR_SCORPION", name: "Sunscar Scorpion", level: 28, hp: 610, attack: 52, defense: 31, xp: 350, gold: 21, secondsPerKill: 31, unlockLevel: 26, zone: "Sunscar", drops: [{ itemId: "SUNSTONE_ORE", chance: 0.42, min: 1, max: 2 }, { itemId: "DUNEWOOD", chance: 0.36, min: 1, max: 2 }, { itemId: "SUNSCALE", chance: 0.24, min: 1, max: 1 }, { itemId: "AMBERGLASS", chance: 0.08, min: 1, max: 1 }, { itemId: "SCORPION_VENOM", chance: 0.06, min: 1, max: 1 }] },
+  { id: "DUNE_ORACLE", name: "Dune Oracle", level: 33, hp: 760, attack: 61, defense: 36, xp: 438, gold: 27, secondsPerKill: 35, unlockLevel: 31, zone: "Sunscar", drops: [{ itemId: "DUNEWOOD", chance: 0.28, min: 1, max: 2 }, { itemId: "SUNSCALE", chance: 0.3, min: 1, max: 1 }, { itemId: "AMBERGLASS", chance: 0.36, min: 1, max: 2 }, { itemId: "ASTRAL_SCRIPT", chance: 0.08, min: 1, max: 1 }, { itemId: "SWIFT_SIGIL", chance: 3e-3, min: 1, max: 1 }] },
   { id: "GLASSBOUND_SENTINEL", name: "Glassbound Sentinel", level: 40, hp: 980, attack: 74, defense: 45, xp: 560, gold: 35, secondsPerKill: 40, unlockLevel: 38, zone: "Sunscar", drops: [{ itemId: "SUNSTONE_ORE", chance: 0.5, min: 1, max: 2 }, { itemId: "AMBERGLASS", chance: 0.28, min: 1, max: 1 }, { itemId: "ASTRAL_SCRIPT", chance: 0.12, min: 1, max: 1 }] },
   { id: "FROSTWOLF", name: "Frostwolf", level: 48, hp: 1220, attack: 88, defense: 55, xp: 710, gold: 43, secondsPerKill: 44, unlockLevel: 46, zone: "Frostmarch", drops: [{ itemId: "FROSTIRON", chance: 0.42, min: 1, max: 2 }, { itemId: "RIMEGLASS", chance: 0.08, min: 1, max: 1 }, { itemId: "RIME_RESIN", chance: 0.06, min: 1, max: 1 }, { itemId: "BP_FROSTIRON_HATCHET", chance: 0.01, min: 1, max: 1 }] },
   { id: "BELLWRAITH", name: "Bellwraith", level: 56, hp: 1580, attack: 106, defense: 68, xp: 920, gold: 55, secondsPerKill: 50, unlockLevel: 53, zone: "Frostmarch", drops: [{ itemId: "RIMEGLASS", chance: 0.36, min: 1, max: 2 }, { itemId: "CHOIR_BLOOM", chance: 0.1, min: 1, max: 1 }, { itemId: "BP_FROSTIRON_PICKAXE", chance: 0.01, min: 1, max: 1 }] },

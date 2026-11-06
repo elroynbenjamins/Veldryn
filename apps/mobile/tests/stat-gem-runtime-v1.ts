@@ -5,6 +5,7 @@ import {combatPowerRating} from '../src/core/combat-power';
 import {EQUIPMENT_SETS} from '../src/content/equipment-sets';
 import {itemDef} from '../src/content/items';
 import {MOBILE_GEM_FAMILIES_V1} from '../src/content/gems-v1';
+import {formatGemValueV1} from '../src/core/gem-progression-v1';
 
 const fs=require('fs') as {readFileSync:(path:string,encoding:string)=>string};
 function ok(value:unknown,label:string){if(!value)throw new Error(label)}
@@ -13,6 +14,10 @@ function close(actual:number,expected:number,label:string){
 }
 
 const backend=fs.readFileSync('../../backend/src/server/equipment/gems/gem-catalog-v1.ts','utf8');
+ok(formatGemValueV1('stat_might',5).includes('Power')&&!formatGemValueV1('stat_might',5).includes('Attack'),
+ 'Canonical Might description must match its real Power bonus');
+ok(formatGemValueV1('stat_iron',4).includes('Armor'),
+ 'Canonical Iron description must match its Armor bonus');
 const keys=Object.keys(CANONICAL_STAT_GEM_KEYS_V1);
 ok(keys.length===12,'All twelve server Stat Gem families must be mapped');
 for(const familyId of keys){

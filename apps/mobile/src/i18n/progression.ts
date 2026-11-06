@@ -3,6 +3,11 @@ import {createTranslator} from './translator';
 
 // English source copy is the key. Proper names and player-authored text are never keys.
 export const progressionTranslationRows = {
+  "{count} more areas unlock as you progress.": ["{count} weitere Gebiete werden im Verlauf freigeschaltet.","Se desbloquean {count} zonas más al progresar.","Je ontgrendelt nog {count} gebieden naarmate je verder komt.","Avanzando sbloccherai altre {count} aree.","{count} autres zones se débloquent au fil de ta progression."],
+  "Sunscar Areas": ["Sunscar-Gebiete","Zonas de Sunscar","Sunscar-gebieden","Aree di Sunscar","Zones de Sunscar"],
+  "REGION II · LEVEL 26–45": ["REGION II · STUFE 26–45","REGIÓN II · NIVEL 26–45","REGIO II · NIVEAU 26–45","REGIONE II · LIVELLO 26–45","RÉGION II · NIVEAU 26–45"],
+ "Weekly rewards complete":["Wochenbelohnungen abgeschlossen","Recompensas semanales completadas","Wekelijkse beloningen voltooid","Ricompense settimanali completate","Récompenses hebdomadaires terminées"],
+ "Weekly rematches complete":["Wöchentliche Rückkämpfe abgeschlossen","Revancha semanal completada","Wekelijkse herkansingen voltooid","Rivincite settimanali completate","Revanche hebdomadaire terminée"],
  "CHOOSE ONE REWARD": ["EINE BELOHNUNG WÄHLEN","ELIGE UNA RECOMPENSA","KIES ÉÉN BELONING","SCEGLI UNA RICOMPENSA","CHOISISSEZ UNE RÉCOMPENSE"],
  "Claim selected reward": ["Gewählte Belohnung abholen","Reclamar recompensa elegida","Gekozen beloning claimen","Riscatta la ricompensa scelta","Récupérer la récompense choisie"],
  "Bondstones": ["Bindungssteine","Piedras de vínculo","Bandstenen","Pietre del legame","Pierres de lien"],

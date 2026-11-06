@@ -59,7 +59,7 @@ const infusionByTier:Record<string,{itemId:string;quantity:number}>={
  * This curve keeps early tiers meaningful while allowing late regional
  * materials to stay usable after standard combat drops were reduced.
  */
-const TIER_MATERIAL_MULTIPLIER:Record<string,number>={T1:3,T2:2.5,T3:2.25,T4:2,T5:1,T6:.8,T7:.8,T8:.75,T9:.75};
+const TIER_MATERIAL_MULTIPLIER:Record<string,number>={T1:3,T2:2.5,T3:1.35,T4:2,T5:1,T6:.8,T7:.8,T8:.75,T9:.75};
 /**
  * Tier pacing deliberately leaves room for a player to finish a meaningful
  * Fieldborn kit before the next rarity appears.  The old floors put T2/T3
@@ -76,13 +76,11 @@ export const EQUIPMENT_CRAFT_SKILL_BY_CLASS:Record<ClassId,'smithing'|'tailoring
 const pathMaterial:Record<string,Record<string,string>>={
   T1:{Foundation:'MOSS_FIBER',Alternate:'BOAR_HIDE'},
   T2:{Foundation:'WOLF_PELT',Alternate:'IRONWOOD_FANG'},
-  T3:{Foundation:'TROLL_HIDE',Alternate:'WOLF_PELT'},
   T4:{Foundation:'TORN_OATHCLOTH',Alternate:'ECHO_QUARTZ'},
 };
 const tailoringPathMaterial:Record<string,Record<string,string>>={
-  T1:{Foundation:'BOAR_HIDE',Alternate:'THORN_SAP'},
-  T2:{Foundation:'BOAR_HIDE',Alternate:'IRONWOOD_FANG'},
-  T3:{Foundation:'TROLL_HIDE',Alternate:'WOLF_PELT'},
+  T1:{Foundation:'BOAR_HIDE',Alternate:'WISP_DUST'},
+  T2:{Foundation:'THORN_SAP',Alternate:'IRONWOOD_FANG'},
   T4:{Foundation:'TORN_OATHCLOTH',Alternate:'ECHO_TOUCHED_PELT'},
 };
 
@@ -99,7 +97,9 @@ function ingredients(tier:string,path:string,multiplier:number,skillId:'smithing
     switch(tier){
       case 'T1':return mergeInputs([{itemId:'MOSS_FIBER',quantity:q(22,multiplier)},{itemId:accent??'BOAR_HIDE',quantity:q(7,multiplier)}]);
       case 'T2':return mergeInputs([{itemId:'WOLF_PELT',quantity:q(22,multiplier)},{itemId:accent??'BOAR_HIDE',quantity:q(9,multiplier)}]);
-      case 'T3':return mergeInputs([{itemId:'TROLL_HIDE',quantity:q(18,multiplier)},{itemId:accent??'WOLF_PELT',quantity:q(10,multiplier)},{itemId:'THORN_SAP',quantity:q(5,multiplier)}]);
+      // First Sunscar gear uses local gathering and monster sources, not level 7–14 enemies.
+      // Foundation is available at the entry scorpion; Alternate can chase Astral Script at level 31+.
+      case 'T3':return mergeInputs([{itemId:'SUNSCALE',quantity:q(18,multiplier)},{itemId:'DUNEWOOD',quantity:q(10,multiplier)},{itemId:path==='Alternate'?'ASTRAL_SCRIPT':'AMBERGLASS',quantity:q(path==='Alternate'?1:2,multiplier)}]);
       case 'T4':return mergeInputs([{itemId:'TORN_OATHCLOTH',quantity:q(18,multiplier)},{itemId:'ECHO_TOUCHED_PELT',quantity:q(7,multiplier)},{itemId:accent??'OATHGLASS_SHARD',quantity:q(5,multiplier)}]);
       case 'T5':return [{itemId:'SUNSCALE',quantity:q(25,multiplier)},{itemId:'AMBERGLASS',quantity:q(8,multiplier)}];
       case 'T6':return [{itemId:'SUNSCALE',quantity:q(30,multiplier)},{itemId:'AMBERGLASS',quantity:q(10,multiplier)},{itemId:'ASTRAL_SCRIPT',quantity:q(1,multiplier)}];
@@ -113,7 +113,7 @@ function ingredients(tier:string,path:string,multiplier:number,skillId:'smithing
   switch(tier){
     case 'T1':return [{itemId:'GREENWOOD_LOG',quantity:q(28,multiplier)},{itemId:pathItem??'MOSS_FIBER',quantity:q(8,multiplier)}];
     case 'T2':return [{itemId:'IRONWOOD_LOG',quantity:q(34,multiplier)},{itemId:pathItem??'WOLF_PELT',quantity:q(10,multiplier)}];
-    case 'T3':return [{itemId:'CROWNWOOD_LOG',quantity:q(32,multiplier)},{itemId:pathItem??'TROLL_HIDE',quantity:q(12,multiplier)},{itemId:'THORN_SAP',quantity:q(6,multiplier)}];
+    case 'T3':return mergeInputs([{itemId:'DUNEWOOD',quantity:q(22,multiplier)},{itemId:'SUNSTONE_ORE',quantity:q(14,multiplier)},{itemId:path==='Alternate'?'ASTRAL_SCRIPT':'AMBERGLASS',quantity:q(path==='Alternate'?1:2,multiplier)}]);
     case 'T4':return [{itemId:'OATHSTONE_INGOT',quantity:q(18,multiplier)},{itemId:'OATHGLASS_SHARD',quantity:q(7,multiplier)},{itemId:pathItem??'TORN_OATHCLOTH',quantity:q(5,multiplier)}];
     case 'T5':return [{itemId:'SUNSTONE_INGOT',quantity:q(11,multiplier)},{itemId:'AMBERGLASS',quantity:q(7,multiplier)}];
     case 'T6':return [{itemId:'SUNSTONE_INGOT',quantity:q(15,multiplier)},{itemId:'AMBERGLASS',quantity:q(10,multiplier)},{itemId:'ASTRAL_SCRIPT',quantity:q(1,multiplier)}];

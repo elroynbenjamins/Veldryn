@@ -1,4 +1,5 @@
 import {ITEMS} from '../src/content/items';
+import {V33_EQUIPMENT_RECIPES} from '../src/content/equipment-recipes-v33';
 import {GATHERING,RECIPES} from '../src/content/skills';
 import {HERB_NODES,HERBALISM_ESSENCE_BY_ZONE} from '../src/content/herbalism';
 import {MONSTERS} from '../src/content/monsters';
@@ -43,4 +44,18 @@ for(const tier of ['T1','T2','T3','T4','T5','T6','T7','T8','T9']){
  ok(recipes.every(recipe=>recipe.inputs.every(input=>reachable.has(input.itemId))),tier+' equipment has an unreachable material chain');
 }
 
+// Early recipes must not require repeated hunts in substantially outdated zones.
+const gearInTier=(tier:string)=>V33_EQUIPMENT_RECIPES.filter(recipe=>recipe.v33EquipmentTier===tier);
+for(const recipe of gearInTier('T1'))ok(!recipe.inputs.some(row=>row.itemId==='THORN_SAP'),'T1 alternate gear must not require level-8 Thorn Sap');
+for(const recipe of gearInTier('T2'))ok(!recipe.inputs.some(row=>row.itemId==='BOAR_HIDE'),'T2 gear should not demand level-4 Boar Hide');
+for(const recipe of gearInTier('T3')){
+ const materialIds=recipe.inputs.map(row=>row.itemId);
+ ok(!materialIds.some(id=>['TROLL_HIDE','WOLF_PELT','THORN_SAP','CROWNWOOD_LOG'].includes(id)),'T3 gear cannot depend on Ironwood monster farming');
+ ok(materialIds.some(id=>['AMBERGLASS','ASTRAL_SCRIPT'].includes(id)),'T3 gear needs a Sunscar monster material');
+ ok(materialIds.some(id=>['DUNEWOOD','SUNSCALE','SUNSTONE_ORE'].includes(id)),'T3 gear needs Sunscar gathering');
+}
+// Characters can earn Sunscar supplies through hunts even before they train the local gathering skill to 26.
+const sunscarScorpion=MONSTERS.find(monster=>monster.id==='SUNSCAR_SCORPION')!;
+ok(sunscarScorpion.drops.some(drop=>drop.itemId==='DUNEWOOD'),'Sunscar entry hunts should offer an alternative to level-26 woodcutting');
+ok(sunscarScorpion.drops.some(drop=>drop.itemId==='SUNSCALE'),'Sunscar entry hunts should offer an alternative to level-26 herbalism');
 console.log(JSON.stringify({status:'PASS',directSources:direct.size,reachableItems:reachable.size,requiredRecipeInputs:requiredInputs.size,recipes:RECIPES.length,equipmentTiers:9},null,2));

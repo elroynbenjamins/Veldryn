@@ -6,6 +6,14 @@ import {companionDynamicText} from './companion-dynamic';
 
 // Each row supplies German, Spanish, Dutch, Italian and French; its key is English.
 export const companionTranslationRows={
+ "WEEKLY BOSS REWARDS":["WÖCHENTLICHE BOSS-BELOHNUNGEN","RECOMPENSAS SEMANALES DEL JEFE","WEKELIJKSE BAASBELONINGEN","RICOMPENSE SETTIMANALI DEL BOSS","RÉCOMPENSES HEBDOMADAIRES DU BOSS"],
+ "Fallen Knight rematches":["Fallen-Knight-Rückkämpfe","Revancha contra el Fallen Knight","Fallen Knight-herkansingen","Rivincite contro il Fallen Knight","Revanche contre le Fallen Knight"],
+ "Weekly rewarded victories":["Wöchentlich belohnte Siege","Victorias semanales con recompensa","Wekelijks beloonde overwinningen","Vittorie settimanali premiate","Victoires hebdomadaires récompensées"],
+ "Oathglass Bounty":["Oathglass-Kopfgeld","Recompensa de Oathglass","Oathglass-premie","Taglia di Oathglass","Prime d'Oathglass"],
+ "Bonus on first victory":["Bonus für den ersten Sieg","Bonus en la primera victoria","Bonus bij eerste overwinning","Bonus alla prima vittoria","Bonus à la première victoire"],
+ "All weekly boss rewards collected.":["Alle wöchentlichen Boss-Belohnungen eingesammelt.","Todas las recompensas semanales del jefe obtenidas.","Alle wekelijkse baasbeloningen verzameld.","Tutte le ricompense settimanali del boss ottenute.","Toutes les récompenses hebdomadaires du boss ont été récupérées."],
+ "Resets every Monday · 00:00 UTC":["Zurücksetzung montags · 00:00 UTC","Se reinicia los lunes · 00:00 UTC","Reset elke maandag · 00:00 UTC","Si azzera ogni lunedì · 00:00 UTC","Réinitialisation chaque lundi · 00:00 UTC"],
+
  // Starter Companion onboarding flow (current 1.0.6 redesign).
  "FIRST COMPANION":["ERSTER BEGLEITER","PRIMER COMPAÑERO","EERSTE METGEZEL","PRIMO COMPAGNO","PREMIER COMPAGNON"],
  "Choose your combat partner":["Wähle deinen Kampfgefährten","Elige a tu compañero de combate","Kies je gevechtsmetgezel","Scegli il tuo compagno di battaglia","Choisis ton compagnon de combat"],

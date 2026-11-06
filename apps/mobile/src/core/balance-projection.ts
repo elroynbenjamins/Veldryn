@@ -1,4 +1,5 @@
 import {skillAffinityModifiers,activeSkillAffinity} from './class-skill-affinities';
+import {characterCombatXpScale} from './combat-progression-pacing';
 import type {GameState,GatheringSkillId,SkillId} from './types';
 import type {GatherDef,Recipe} from '../content/skills';
 import type {MonsterDef} from '../content/monsters';
@@ -154,7 +155,7 @@ export function craftingPaceProjection(state:GameState,recipe:Recipe,cycleSecond
 
 export function combatBaselineProjection(monster:MonsterDef):CombatBaselineProjection{
   const cycleSeconds=Math.max(.1,monster.secondsPerKill*COMBAT_TIME_SCALE),killsPerHour=3600/cycleSeconds;
-  return {cycleSeconds,killsPerHour,xpPerHour:killsPerHour*monster.xp,goldPerHour:killsPerHour*monster.gold};
+  return {cycleSeconds,killsPerHour,xpPerHour:killsPerHour*monster.xp*characterCombatXpScale(monster.level,!!monster.boss),goldPerHour:killsPerHour*monster.gold};
 }
 
 export function dropExpectation(chance:number,min:number,max:number,killsPerHour:number):DropExpectation{

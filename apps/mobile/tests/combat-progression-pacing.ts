@@ -44,6 +44,9 @@ for(const cls of CLASSES){
  assert.equal(settled.state.inventory.stacks.find(row=>row.itemId==='ROASTED_ROOTSTREAM_TROUT')!.quantity,200-(settled.reward.foodConsumed??0));
  rows.push({classId:cls.id,foodPerHour:Number(combatSustainProjection(state,monster.id)!.foodPerHour.toFixed(2)),foodUsed4h:reward.foodConsumed,xp4h:reward.xp,priorXpSameKills:oldXpForSameKills});
 }
+const sunscar=MONSTERS.find(row=>row.id==='SUNSCAR_SCORPION')!;
+const sunscarBaseline=combatBaselineProjection(sunscar);
+assert.ok(Math.abs(sunscarBaseline.xpPerHour/sunscarBaseline.killsPerHour-sunscar.xp*.6)<1e-6,'Sunscar encounter XP estimates must reflect actual settled character XP');
 const baseline=combatBaselineProjection(monster);
 assert.ok(Math.abs(baseline.xpPerHour/baseline.killsPerHour-monster.xp*.6)<1e-6,'base target estimates include the character-XP pace');
 console.log(JSON.stringify({status:'PASS',rows},null,2));

@@ -14,7 +14,8 @@ const statScore=(stats:{hp:number;attack:number;defense:number;power?:number;cri
   (stats.potency??0)*80+(stats.penetration??0)*135,
 ));
 
-/** A readable build comparison score, not a replacement for encounter damage simulation.\n * Breakdown rows are exact marginal projections, not estimated source percentages. */
+/** A readable build comparison score, not a replacement for encounter damage simulation.
+ * Breakdown rows are exact marginal projections, not estimated source percentages. */
 export function combatPowerRating(state:GameState){
   const character=state.character;
   if(!character)return {total:0,player:0,companion:0,rows:[] as CombatPowerBreakdownRow[]};

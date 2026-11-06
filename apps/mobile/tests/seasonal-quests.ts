@@ -119,10 +119,12 @@ const dailyAlternatives=seasonalQuestRewardOptions(state,'daily','rare');
 check(dailyAlternatives[0].id==='item:TEMPERING_DUST','Existing rare daily reward must remain the default');
 check(dailyAlternatives.some(choice=>choice.id==='item:GEM_DUST'&&choice.rewardItemQty===5),'Gem Dust choice must be available on rare daily challenges');
 check(dailyAlternatives.some(choice=>choice.id==='essence'&&choice.rewardCompanionEssence===5),'Companion Essence remains a selectable early-game reward');
-const weeklyAlternatives=seasonalQuestRewardOptions(state,'weekly','epic');
+const midState:GameState={...state,character:{...state.character!,level:25}};
+check(!seasonalQuestRewardOptions(state,'weekly','epic').some(choice=>choice.id==='item:OATHGLASS_FRAGMENT'),'Early characters cannot skip regional progression via fragments');
+const weeklyAlternatives=seasonalQuestRewardOptions(midState,'weekly','epic');
 check(weeklyAlternatives.some(choice=>choice.id==='item:ASTERFALL_BOTANICAL_ESSENCE'&&choice.rewardItemQty===2),'Weekly Epic needs a rare botanical reward');
 check(weeklyAlternatives.some(choice=>choice.id==='item:OATHGLASS_FRAGMENT'&&choice.rewardItemQty===2),'Weekly Epic needs a companion/gem fragment reward');
-const monthlyAlternatives=seasonalQuestRewardOptions(state,'monthly','rare');
+const monthlyAlternatives=seasonalQuestRewardOptions(midState,'monthly','rare');
 check(monthlyAlternatives.some(choice=>choice.id==='item:RUNEBOUND_CORE'&&choice.rewardItemQty===3),'Monthly Rare needs a Sanctuary material');
 check(monthlyAlternatives.some(choice=>choice.id==='item:ECHO_QUARTZ'&&choice.rewardItemQty===3),'Monthly Rare needs an Echo Quartz material');
 check(!seasonalQuestRewardOptions(state,'monthly','epic').some(choice=>choice.id==='item:REGIONAL_CATALYST'),'Locked endgame catalyst must not appear to early accounts');
@@ -154,5 +156,20 @@ for(let month=0;month<48&&!verifiedBondstoneClaim;month++){
  verifiedBondstoneClaim=true;
 }
 check(verifiedBondstoneClaim,'Find and settle a real Monthly Legendary choice through the command dispatcher');
+let verifiedGemDustClaim=false;
+for(let day=0;day<90&&!verifiedGemDustClaim;day++){
+ const dayDate=new Date(Date.UTC(2027,0,1+day,12));
+ let withActions=createCharacter(newGame(0),'BASTION','Gem Choice Tester');
+ for(const tag of ['combat','gathering','crafting','exploration','boss'] as const)withActions=recordSeasonalActivity(withActions,tag,10000,dayDate.getTime());
+ const rare=seasonalQuestBoard(withActions,'daily',dayDate).find(q=>q.rarity==='rare'&&q.progress>=q.required);
+ if(!rare)continue;
+ const count=(s:GameState,id:string)=>[...s.inventory.stacks,...s.bank.stacks,...s.overflow.stacks].filter(row=>row.itemId===id).reduce((sum,row)=>sum+row.quantity,0);
+ const priorDust=count(withActions,'GEM_DUST'),priorTempering=count(withActions,'TEMPERING_DUST');
+ const result=executeGameCommand(withActions,{type:'seasonal',args:{period:'daily',id:rare.id,choiceId:'item:GEM_DUST'}},dayDate.getTime()).state;
+ check(count(result,'GEM_DUST')===priorDust+5,'Selected Gem Dust must route into player storage');
+ check(count(result,'TEMPERING_DUST')===priorTempering,'Alternative Gem Dust claim must not also award Tempering Dust');
+ verifiedGemDustClaim=true;
+}
+check(verifiedGemDustClaim,'Find and settle a real Daily Rare Gem Dust alternative');
 
 console.log('PASS: seasonal action accounting, UTC rollovers, equipment limits, claims and reward choices and save round trips');

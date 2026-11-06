@@ -23,7 +23,6 @@ import {GameModalHeader,GameModalSurface} from '../components/GameModalSurface';
 import {EmptyState} from '../components/EmptyState';
 import {ActionFeedback} from '../components/ActionFeedback';
 import {GameButton} from '../components/GameButton';
-import {UiIcon} from '../components/UiIcon';
 import {Panel} from '../components/Panel';
 import {spacing,typography,equipmentTheme,type ThemeColors} from '../theme/theme';
 import {useGameTheme} from '../theme/ThemeContext';
@@ -48,6 +47,7 @@ import {mealBonusDef} from '../core/meal-buffs';
 type Pending={kind:'sell'|'salvage'|'deposit';item:ItemDef;quantity:number}|null;
 type BulkAction='transfer'|'sell'|'salvage';
 type BulkPending={kind:BulkAction;ids:string[]}|null;
+const STORAGE_PAGE_SIZE=30;
 const FILTER_OPTIONS:{id:InventoryFilter;label:string}[]=[{id:'all',label:'All'},{id:'new',label:'New'},{id:'favorites',label:'★ Favorites'},{id:'gear',label:'Gear'},{id:'material',label:'Materials'},{id:'gem',label:'Gems'},{id:'food',label:'Food'},{id:'potion',label:'Potions'},{id:'tool',label:'Tools'},{id:'quest',label:'Quest'}];
 const SORT_OPTIONS:{id:InventorySort;label:string}[]=[{id:'name',label:'Name'},{id:'new',label:'New first'},{id:'favorite',label:'Favorites first'},{id:'quantity',label:'Quantity ↓'},{id:'value',label:'Value ↓'}];
 const signed=(value:number)=>value>0?`+${value}`:String(value);
@@ -71,10 +71,10 @@ export function InventoryScreen({state,viewMemory,foodRequest=0,onEquip,onFood,o
   const {width,fontScale}=useWindowDimensions();
   const stackStorageActions=width<380||fontScale>=1.25;
   const [gridWidth,setGridWidth]=useState(Math.max(280,Math.min(960,width)-32));
-  const gridColumns=gridWidth>=720?6:gridWidth>=480?5:gridWidth<300?3:4,tileSize=Math.floor((gridWidth-(gridColumns-1)*10)/gridColumns),iconSize=Math.min(88,tileSize-14);
+  const gridColumns=gridWidth>=600?8:gridWidth>=440?6:gridWidth>=345?5:4,tileSize=Math.max(50,Math.floor((gridWidth-(gridColumns-1)*5)/gridColumns)),iconSize=Math.min(42,tileSize-12);
   const memory=useRef(viewMemory??newInventoryScreenState()).current;
   const initial=useRef(foodRequest>memory.foodRequest?openInventoryFood(memory,foodRequest):{...memory}).current;
-  const scrollRef=useRef<FlatList<ItemStack>>(null),scrollY=useRef(initial.scrollY),restored=useRef<number|null>(null);
+  const scrollRef=useRef<FlatList<ItemStack|null>>(null),scrollY=useRef(initial.scrollY),restored=useRef<number|null>(null);
   const [bankGoldAmount,setBankGoldAmount]=useState('');const [copyPending,setCopyPending]=useState<{instanceId:string;method:'sell'|'salvage';name:string}|null>(null);const [pending,setPending]=useState<Pending>(null),[location,setLocation]=useState<'inventory'|'bank'>(initial.location);
   const [pouchOpen,setPouchOpen]=useState(initial.pouchOpen===true);
   const [equipmentPouchOpen,setEquipmentPouchOpen]=useState(false);
@@ -85,7 +85,7 @@ export function InventoryScreen({state,viewMemory,foodRequest=0,onEquip,onFood,o
   const [error,setError]=useState('');
   const [previewId,setPreviewId]=useState<string|null>(null),[previewInstanceId,setPreviewInstanceId]=useState<string|null>(null);
   const [inspectId,setInspectId]=useState<string|null>(null),[selectedInstanceId,setSelectedInstanceId]=useState<string|null>(null);
-  const [showStorage,setShowStorage]=useState(false),[filterOpen,setFilterOpen]=useState(false);
+  const [gridPage,setGridPage]=useState(0),[showGoldTransfer,setShowGoldTransfer]=useState(false),[filterOpen,setFilterOpen]=useState(false);
   const [selectMode,setSelectMode]=useState(false),[selectedIds,setSelectedIds]=useState<string[]>([]),[bulkPending,setBulkPending]=useState<BulkPending>(null);
   const equipmentSnapshot=useMemo(()=>equipmentFeedbackSnapshot(state),[state]);
   const [equipMoment,setEquipMoment]=useState<EquipmentChangeFeedback|null>(null),equipmentSnapshotRef=useRef(equipmentSnapshot);
@@ -117,11 +117,20 @@ export function InventoryScreen({state,viewMemory,foodRequest=0,onEquip,onFood,o
     const inventoryLimit=entitlementStorageCapacity(state,'inventory'),bankLimit=entitlementStorageCapacity(state,'bank');
     return {inventory:storageCapacityStatus(state.inventory.stacks,inventoryLimit),bank:storageCapacityStatus(state.bank.stacks,bankLimit)};
   },[state]);
-  const effectiveInventoryCapacity=capacities.inventory.capacity,effectiveBankCapacity=capacities.bank.capacity;
-  const inventoryCapacity=capacities.inventory,bankCapacity=capacities.bank,activeCapacity=location==='inventory'?inventoryCapacity:bankCapacity;
+    const inventoryCapacity=capacities.inventory,bankCapacity=capacities.bank,activeCapacity=location==='inventory'?inventoryCapacity:bankCapacity;
   const activeStacks=state[location].stacks;
    const activeNewCount=useMemo(()=>new Set(activeStacks.filter(stack=>{const item=itemDef(stack.itemId);return stack.quantity>0&&newItemSet.has(stack.itemId)&&(item.type!=='gear'||isReleasedEquipmentItemId(item.id));}).map(stack=>stack.itemId)).size,[activeStacks,newItemSet]);
   const stacks=useMemo(()=>visibleStacks(activeStacks,query,filter,sort,favorites,newItemIds),[activeStacks,query,filter,sort,favorites,newItemIds]);
+   const isFiltered=filter!=='all'||query.trim().length>0;
+   const totalGridSlots=isFiltered?stacks.length:Math.max(activeCapacity.capacity,stacks.length);
+   const gridPages=Math.max(1,Math.ceil(totalGridSlots/STORAGE_PAGE_SIZE));
+   const shownGridPage=Math.min(gridPage,gridPages-1);
+   const gridEntries=useMemo<(ItemStack|null)[]>(()=>{
+     const start=shownGridPage*STORAGE_PAGE_SIZE;
+     const count=Math.min(STORAGE_PAGE_SIZE,Math.max(0,totalGridSlots-start));
+     return Array.from({length:count},(_,index)=>stacks[start+index]??null);
+   },[shownGridPage,totalGridSlots,stacks]);
+   useEffect(()=>{setGridPage(0);scrollY.current=0;scrollRef.current?.scrollToOffset({offset:0,animated:false});},[location,query,filter,sort]);
   // Normalize once per authoritative equipment snapshot; tile rendering must not
   // scan or re-normalize every crafted copy for every visible inventory tile.
   const exactRecords=useMemo(()=>craftedGearInstances(state),[state.account.craftedGearInstances]);
@@ -171,6 +180,8 @@ export function InventoryScreen({state,viewMemory,foodRequest=0,onEquip,onFood,o
   const remaining=useMemo(()=>claimOverflowToBank(state).overflow.stacks.reduce((sum,item)=>sum+item.quantity,0),[state]);
   const overflowCount=state.overflow.stacks.reduce((sum,item)=>sum+item.quantity,0);
   const inventoryUpgrade=useMemo(()=>storageUpgradePreview(state,'inventory'),[state]),bankUpgrade=useMemo(()=>storageUpgradePreview(state,'bank'),[state]);
+   const activeUpgrade=location==='inventory'?inventoryUpgrade:bankUpgrade;
+   const canUpgradeStorage=!!activeUpgrade&&inventoryBusyLabel===null&&(state.character?.level??0)>=activeUpgrade.level&&carriedGold>=activeUpgrade.cost;
   const inspected=inspectId?itemDef(inspectId):undefined,carried=location==='inventory';
 
   const exactCopies=inspected?.type==='gear'?craftedGearCopiesAt(state,inspected.id,location).map(row=>exactRecordsById.get(row.instanceId)!).filter(Boolean):[];
@@ -250,7 +261,7 @@ export function InventoryScreen({state,viewMemory,foodRequest=0,onEquip,onFood,o
    else await onEquip(id);
    setPreviewId(null);setPreviewInstanceId(null);
  }}
- onInspect={()=>{setSelectedInstanceId(previewInstanceId);setInspectId(previewId);setPreviewId(null);setPreviewInstanceId(null)}}/><ItemQuickInspect state={state} itemId={inspectId} onClose={closeInspect} onNavigate={destination=>{closeInspect();onNavigateInspect(destination)}} actions={inspectActions}/><FlatList key={gridColumns} data={stacks} numColumns={gridColumns} keyExtractor={stack=>`${location}:${stack.itemId}:${stack.instanceId??'legacy'}`} renderItem={({item})=>renderStack(item)} columnWrapperStyle={s.itemGrid} initialNumToRender={12} maxToRenderPerBatch={8} windowSize={3} removeClippedSubviews onLayout={event=>setGridWidth(Math.max(1,Math.min(960,event.nativeEvent.layout.width)-32))} ref={scrollRef} onContentSizeChange={()=>{if(restored.current!==gridColumns){restored.current=gridColumns;scrollRef.current?.scrollToOffset({offset:scrollY.current,animated:false});}}} onScroll={event=>{scrollY.current=event.nativeEvent.contentOffset.y;memory.scrollY=scrollY.current;}} scrollEventThrottle={100} contentContainerStyle={s.root} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false} showsHorizontalScrollIndicator={false} ListHeaderComponent={<View style={s.listSection}>
+ onInspect={()=>{setSelectedInstanceId(previewInstanceId);setInspectId(previewId);setPreviewId(null);setPreviewInstanceId(null)}}/><ItemQuickInspect state={state} itemId={inspectId} onClose={closeInspect} onNavigate={destination=>{closeInspect();onNavigateInspect(destination)}} actions={inspectActions}/><FlatList key={gridColumns} data={gridEntries} numColumns={gridColumns} keyExtractor={(stack,index)=>stack?`${location}:${stack.itemId}:${stack.instanceId??'legacy'}`:`${location}:empty:${shownGridPage*STORAGE_PAGE_SIZE+index}`} renderItem={({item})=>item?renderStack(item):<View accessible={false} style={[s.itemTile,s.emptySlot,{width:tileSize,height:tileSize}]}><Text style={s.emptySlotMark}>·</Text></View>} columnWrapperStyle={s.itemGrid} initialNumToRender={12} maxToRenderPerBatch={8} windowSize={3} removeClippedSubviews onLayout={event=>setGridWidth(Math.max(1,Math.min(960,event.nativeEvent.layout.width)-32))} ref={scrollRef} onContentSizeChange={()=>{if(restored.current!==gridColumns){restored.current=gridColumns;scrollRef.current?.scrollToOffset({offset:scrollY.current,animated:false});}}} onScroll={event=>{scrollY.current=event.nativeEvent.contentOffset.y;memory.scrollY=scrollY.current;}} scrollEventThrottle={100} contentContainerStyle={s.root} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false} showsHorizontalScrollIndicator={false} ListHeaderComponent={<View style={s.listSection}>
     <Text accessibilityRole="header" style={s.h}>{gt("Inventory")}</Text>
     <Text style={s.sub}>{gl("Everything for your next adventure.")}</Text>
     <View style={s.storageRow}>{(["inventory","bank"] as const).map(value=><StorageChip key={value} label={value==='inventory'?gt("Inventory"):gt("Bank")} selected={!pouchOpen&&!equipmentPouchOpen&&location===value} status={value==='inventory'?inventoryCapacity:bankCapacity} onPress={()=>changeLocation(value)}/>)}<StorageChip label={accountText(language,'Gems')} selected={pouchOpen} status={storageCapacityStatus(gemPouch(state).stacks,gemPouch(state).capacity)} onPress={openPouch}/><StorageChip label="Gear" selected={equipmentPouchOpen} status={storageCapacityStatus(equipmentPouch(state).stacks,equipmentPouch(state).capacity)} onPress={openEquipmentPouch}/></View>
@@ -430,7 +441,9 @@ function makeStyles(C:ThemeColors){const equipmentColors=equipmentTheme(C);retur
   utilityRow:{flexDirection:'row',gap:6},
   inspectHint:{...typography.caption,color:C.muted,textAlign:'center'},
   gridHead:{flexDirection:'row',alignItems:'center',justifyContent:'space-between',gap:8,paddingTop:2},gridLabel:{...typography.caption,color:C.accent,fontWeight:'900',letterSpacing:.8},gridMeta:{...typography.caption,color:C.muted},
-  itemGrid:{flexDirection:'row',gap:10},
+  itemGrid:{flexDirection:'row',gap:5},
+   emptySlot:{borderColor:C.line,backgroundColor:C.bg},emptySlotMark:{fontSize:16,color:C.muted,opacity:.45},
+   storagePaging:{flexDirection:'row',alignItems:'center',justifyContent:'space-between',gap:8},
   itemTile:{position:'relative',alignItems:'center',justifyContent:'center',borderWidth:1,borderRadius:10},
   itemOpen:{width:'100%',height:'100%',alignItems:'center',justifyContent:'center'},
   itemCorner:{position:'absolute',top:2,width:26,height:26,alignItems:'center',justifyContent:'center',borderWidth:1,borderRadius:7,borderColor:C.line,backgroundColor:C.panel},

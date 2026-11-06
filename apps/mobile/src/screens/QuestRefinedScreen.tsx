@@ -2,7 +2,8 @@ import {useCallback,useEffect,useRef,useState,type ReactNode} from 'react';
 import {Pressable,ScrollView,StyleSheet,Text,View} from 'react-native';
 import type {GameState} from '../core/types';
 import {QUESTS,QUEST_ACTS,type QuestDef} from '../content/quests';
-import {journalEntries,questDestination,questLockHint,type JournalFilter,type QuestDestination} from '../core/quest-journal';
+import {journalEntries,questDestination,type JournalFilter,type QuestDestination} from '../core/quest-journal';
+import {localizedQuestLockHint,localizedQuestDestinationText,localizedWeeklyOrderLockReason} from '../i18n/quest-unlock-copy';
 import {seasonalQuestBoard,QUEST_RARITIES,type SeasonalPeriod,type SeasonalQuest} from '../core/seasonal-quests';
 import {weeklyOrderBoardForState} from '../core/long-term-progression-runtime';
 import type {WeeklyOrder} from '../core/weekly-orders-v41';
@@ -318,7 +319,7 @@ export function QuestRefinedScreen({state,mode,onModeChange,focusedWeeklyOrderId
      <View style={[styles.detailBlock,{backgroundColor:C.panel,borderColor:C.line}]}>
       <Text style={[styles.eyebrow,{color:C.accent}]}>{p('OBJECTIVE')}</Text>
       <Text style={[styles.detailText,{color:C.text}]}>{chosenStory?localizedQuestStoryText(language,chosenStory,'description'):chosenOrder?(weeklyOrderBrief(language,chosenOrder)??weeklyOrderDestinationLabel(language,chosenOrder,'detail')):chosenChallenge?seasonalChallengeDescription(language,chosenChallenge):''}</Text>
-      {selectedStatus==='locked'?<Text style={[styles.footnote,{color:C.warning}]}>{chosenOrder?p(selectedLocked??''):chosenStory?p(questLockHint(state,chosenStory)):''}</Text>:<><View style={styles.rowMeta}><Text style={[styles.mini,{color:C.muted}]}>{p('Progress')}</Text><Text style={[styles.mini,{color:C.text}]}>{selectedValue}/{selectedGoal}</Text></View><ProgressLine current={selectedValue} max={selectedGoal} C={C}/></>}
+      {selectedStatus==='locked'?<Text style={[styles.footnote,{color:C.warning}]}>{chosenOrder?(localizedWeeklyOrderLockReason(language,state,chosenOrder)??selectedLocked??''):chosenStory?localizedQuestLockHint(language,state,chosenStory):''}</Text>:<><View style={styles.rowMeta}><Text style={[styles.mini,{color:C.muted}]}>{p('Progress')}</Text><Text style={[styles.mini,{color:C.text}]}>{selectedValue}/{selectedGoal}</Text></View><ProgressLine current={selectedValue} max={selectedGoal} C={C}/></>}
      </View>
      {chosenStory?<View style={styles.storyDisclosure}>
       <Pressable accessibilityRole="button" accessibilityState={{expanded:storyExpanded}} onPress={()=>setStoryExpanded(v=>!v)} style={[styles.disclosure,{borderColor:C.line}]}>
@@ -349,7 +350,7 @@ export function QuestRefinedScreen({state,mode,onModeChange,focusedWeeklyOrderId
     </>}
    </ScrollView>
    <View style={[styles.sheetFooter,{borderColor:C.line}]}>
-    {sheetStage==='success'?<GameButton title={p('Continue')} onPress={closeSheet}/>:sheetStage==='claiming'?<GameButton title={p('Waiting for server confirmation…')} loading disabled onPress={()=>{}}/>:hasClaim?<GameButton title={p('Claim rewards')} onPress={submitClaim}/>:chosenStory&&selectedStatus==='active'?<GameButton title={p(questDestination(chosenStory).label)} onPress={()=>{const target=questDestination(chosenStory);closeSheet();onNavigate(target)}}/>:chosenOrder&&selectedStatus==='active'?<>
+    {sheetStage==='success'?<GameButton title={p('Continue')} onPress={closeSheet}/>:sheetStage==='claiming'?<GameButton title={p('Waiting for server confirmation…')} loading disabled onPress={()=>{}}/>:hasClaim?<GameButton title={p('Claim rewards')} onPress={submitClaim}/>:chosenStory&&selectedStatus==='active'?<GameButton title={localizedQuestDestinationText(language,chosenStory,'label')} onPress={()=>{const target=questDestination(chosenStory);closeSheet();onNavigate(target)}}/>:chosenOrder&&selectedStatus==='active'?<>
      <GameButton title={weeklyOrderDestinationLabel(language,chosenOrder,'button')} onPress={()=>{closeSheet();onOpenWeeklyOrder(chosenOrder)}}/>
      {chosenQueueable?<View style={styles.actionPair}>
       <View style={styles.flex}><GameButton compact tone="secondary" title={queueFull?p('Queue full'):p('Queue')} disabled={queueFull} onPress={()=>{onQueueWeeklyOrder(chosenOrder);closeSheet()}}/></View>

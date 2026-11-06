@@ -1,5 +1,6 @@
 import {claimActivity,claimSeasonalContract,createCharacter,newGame,startCombat,startGathering,startExploration,craftRecipe} from '../src/core/game';
-import {QUEST_RARITIES,seasonalQuestBoard,recordSeasonalActivity,normalizeSeasonalProgress} from '../src/core/seasonal-quests';
+import {QUEST_RARITIES,seasonalQuestBoard,seasonalQuestCache,recordSeasonalActivity,normalizeSeasonalProgress} from '../src/core/seasonal-quests';
+import {itemDef} from '../src/content/items';
 import {normalizeSave} from '../src/core/save-normalization';
 import {CLASSES} from '../src/content/classes';
 import type {GameState} from '../src/core/types';
@@ -13,7 +14,21 @@ if(daily[0].rewardGold<60||a[0].rewardGold<260||m[0].rewardGold<660)throw new Er
 if(JSON.stringify(a)!==JSON.stringify(b))throw new Error('Same seasonal period must be deterministic');
 if(a.some(q=>q.className!=='Bastion'||!q.id.startsWith('WEEKLY_')))throw new Error('Class-aligned weekly quests missing');
 if(m.some(q=>q.rewardGold<=a[0].rewardGold))throw new Error('Monthly rewards should exceed weekly rewards');
-if([...daily,...a,...m].some(q=>!QUEST_RARITIES[q.rarity]||q.rewardGold<=0||q.rewardXp<=0||q.rewardItemQty<=0||!q.rewardItemId))throw new Error('Contracts require a valid rarity reward structure');
+if([...daily,...a,...m].some(q=>{
+ const item=!!q.rewardItemId&&Number.isSafeInteger(q.rewardItemQty)&&q.rewardItemQty!>0;
+ const essence=!q.rewardItemId&&Number.isSafeInteger(q.rewardCompanionEssence)&&q.rewardCompanionEssence!>0;
+ return !QUEST_RARITIES[q.rarity]||q.rewardGold<=0||q.rewardXp<=0||!(item!==essence);
+}))throw new Error('Contracts must award exactly one valid progression reward (Essence or equipment material)');
+for(const q of [...daily,...a,...m])if(q.rewardItemId&&itemDef(q.rewardItemId).type!=='material')throw new Error('Contract reward must be an existing crafting or upgrade material');
+const expectedCaches=[
+ ['daily','common',5,undefined,undefined],['daily','uncommon',8,undefined,undefined],['daily','rare',undefined,'TEMPERING_DUST',8],
+ ['weekly','uncommon',15,undefined,undefined],['weekly','rare',undefined,'TEMPERING_CORE',1],['weekly','epic',undefined,'ASTERFALL_MINERAL_ESSENCE',1],
+ ['monthly','rare',35,undefined,undefined],['monthly','epic',undefined,'TEMPERING_CORE',2],['monthly','legendary',undefined,'REGIONAL_CATALYST',1],
+] as const;
+for(const [period,rarity,essence,itemId,qty] of expectedCaches){
+ const reward=seasonalQuestCache(period,rarity);
+ if(reward.rewardCompanionEssence!==essence||reward.rewardItemId!==itemId||reward.rewardItemQty!==qty)throw new Error('Unexpected quest reward balance: '+period+' '+rarity);
+}
 if(daily.some(q=>q.rarity==='epic'||q.rarity==='legendary')||m.some(q=>q.rarity==='common'||q.rarity==='uncommon'))throw new Error('Period rarity pools are incorrect');
 const complete={...state,character:{...state.character!,xp:100000,equipment:{weapon:'basic_sword',helmet:'ASTER_IRON_HELM',chest:'ASTER_IRON_CHEST',legs:'ASTER_IRON_LEGS',boots:'ASTER_IRON_BOOTS',gloves:'ASTER_IRON_GLOVES'},craftedNoviceItemIds:['a','b','c','d','e','f','g']},skills:state.skills.map(skill=>({...skill,xp:10000,level:20})),unlockedMonsterIds:['MOSS_RAT','FIELD_WISP','ROADSIDE_BOAR','SILVERFIN_SWARM','IRONWOOD_WOLF','VENOM_WEAVER','THORNLING']};
 if(seasonalQuestBoard(complete,'daily',date)[0].progress!==0)throw new Error('Lifetime XP must not complete a new combat contract');
@@ -26,9 +41,27 @@ if(!earlyWeekly.account.seasonalContractClaimIds?.includes(levelOneWeekly.id)||e
 let secondWeeklyRejected=false;try{executeGameCommand(earlyWeekly,{type:'seasonal',args:{period:'weekly',id:levelOneWeekly.id}},date.getTime())}catch(e){secondWeeklyRejected=e instanceof Error&&e.message==='This contract reward was already claimed.'}
 if(!secondWeeklyRejected)throw new Error('Online command must reject duplicate early weekly cache claims');
 const ready=seasonalQuestBoard(earned,'daily',date)[0];
+const sourceEssence=earned.account.companionEssence??0;
 const claimed=claimSeasonalContract(earned,'daily',ready.id,date.getTime());
 if(claimed.character!.gold!==complete.character!.gold+ready.rewardGold||claimed.character!.xp!==complete.character!.xp+ready.rewardXp||!claimed.account.seasonalContractClaimIds?.includes(ready.id))throw new Error('Contract claim must award and persist exactly once');
+if((claimed.account.companionEssence??0)!==sourceEssence+(ready.rewardCompanionEssence??0))throw new Error('Contract must credit exactly the previewed Companion Essence');
 let duplicateRejected=false;try{claimSeasonalContract(claimed,'daily',ready.id,date.getTime())}catch{duplicateRejected=true}if(!duplicateRejected)throw new Error('Contract cache cannot be claimed twice');
+// Find an actual earned Essence reward, then verify exact account credit and claim persistence.
+for(let day=1;day<=20;day++){
+ const dateWithEssence=new Date(Date.UTC(2026,8,day,12));
+ const withProgress=recordSeasonalActivity(state,'combat',1000,dateWithEssence.getTime());
+ const essenceContract=seasonalQuestBoard(withProgress,'daily',dateWithEssence).find(q=>!!q.rewardCompanionEssence&&q.progress>=q.required);
+ if(!essenceContract)continue;
+ const before=withProgress.account.companionEssence??0;
+ const credited=claimSeasonalContract(withProgress,'daily',essenceContract.id,dateWithEssence.getTime());
+ if((credited.account.companionEssence??0)!==before+essenceContract.rewardCompanionEssence!)
+  throw new Error('Essence-only quest rewards must reach the account rather than inventory');
+ if(!normalizeSave(credited).account.seasonalContractClaimIds?.includes(essenceContract.id))
+  throw new Error('Claim receipt must survive save normalization');
+ let rejected=false;try{claimSeasonalContract(credited,'daily',essenceContract.id,dateWithEssence.getTime());}catch{rejected=true}
+ if(!rejected)throw new Error('Already-claimed Essence rewards must not be granted again');
+ break;
+}
 const other=seasonalQuestBoard(createCharacter(newGame(0),'WAYFINDER','Scout'),'weekly',date);
 if(JSON.stringify(a.map(q=>q.name))===JSON.stringify(other.map(q=>q.name)))throw new Error('Class layouts should differ');
 console.log('PASS: deterministic class-aligned weekly and monthly quest boards');

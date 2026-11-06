@@ -18,6 +18,7 @@ import {type ThemeColors,spacing,touchTargetMin} from '../theme/theme';
 import {useGameLanguage} from '../i18n/GameLanguageProvider';
 import {progressionT,type ProgressionKey} from '../i18n/progression';
 import {questJournalText} from '../i18n/quest-journal-ui';
+import {weeklyOrderTitle,weeklyOrderBrief,weeklyOrderReward,weeklyOrderDestinationLabel} from '../i18n/weekly-order-copy';
 import {seasonalChallengeName,seasonalChallengeDescription,seasonalChallengeText} from '../i18n/seasonal-challenge-copy';
 import type {Language} from '../i18n/languages';
 import {localizedQuestActText,localizedQuestStoryText,questMatchesLocalizedSearch} from '../i18n/quest-story-copy';
@@ -202,7 +203,7 @@ export function QuestRefinedScreen({state,mode,onModeChange,focusedWeeklyOrderId
  const fallenKnight=state.defeatedBossIds.includes('FALLEN_KNIGHT')?fallenKnightWeeklyStatus(state,Date.now()):undefined;
  const selectedGoal=chosenStory?chosenStory.required:chosenOrder?chosenOrder.target:chosenChallenge?.required??1;
  const selectedValue=chosenStory?Math.min(selectedGoal,selectedProgress?.progress??0):chosenOrder?Math.min(selectedGoal,chosenOrder.progress):chosenChallenge?Math.min(selectedGoal,chosenChallenge.progress):0;
- const selectedTitle=chosenStory?localizedQuestStoryText(language,chosenStory,'name'):chosenChallenge?seasonalChallengeName(language,chosenChallenge):chosenOrder?.title??'';
+ const selectedTitle=chosenStory?localizedQuestStoryText(language,chosenStory,'name'):chosenChallenge?seasonalChallengeName(language,chosenChallenge):chosenOrder?weeklyOrderTitle(language,chosenOrder):'';
  const chosenDestination=chosenOrder?weeklyOrderDestination(chosenOrder):undefined;
  const chosenQueueable=chosenOrder?weeklyOrderQueueActivity(chosenOrder):undefined;
  const queueFull=(state.character?.activityQueue?.length??0)>=activityQueueCapacity(state);
@@ -253,14 +254,14 @@ export function QuestRefinedScreen({state,mode,onModeChange,focusedWeeklyOrderId
     {focusedWeeklyOrderId&&!board.orders.some(q=>q.id===focusedWeeklyOrderId)?<ActionFeedback compact tone="info" message={p('Your focused weekly job expired. Showing the latest board.')} reduceMotion={state.settings.reduceMotion}/>:null}
     {nextOrder?<Pressable accessibilityRole="button" onPress={()=>open('contract',nextOrder.id)} style={({pressed})=>[styles.featured,{backgroundColor:C.infoSurface,borderColor:C.info},pressed&&styles.pressed]}>
       <Text style={[styles.eyebrow,{color:C.info}]}>{p('RECOMMENDED NEXT')}</Text>
-      <View style={styles.rowMeta}><Text style={[styles.featuredTitle,{color:C.text,flex:1}]}>{p(nextOrder.title)}</Text><Text style={[styles.openHint,{color:C.info}]}>{p('View job')} ›</Text></View>
-      <Text style={[styles.subtitle,{color:C.muted}]}>{nextOrder.progress}/{nextOrder.target} · {p(weeklyOrderDestination(nextOrder).detail)}</Text>
+      <View style={styles.rowMeta}><Text style={[styles.featuredTitle,{color:C.text,flex:1}]}>{weeklyOrderTitle(language,nextOrder)}</Text><Text style={[styles.openHint,{color:C.info}]}>{p('View job')} ›</Text></View>
+      <Text style={[styles.subtitle,{color:C.muted}]}>{nextOrder.progress}/{nextOrder.target} · {weeklyOrderDestinationLabel(language,nextOrder,'detail')}</Text>
      </Pressable>:null}
     <View style={styles.sectionHead}><Text style={[styles.sectionTitle,{color:C.accent}]}>{p('WEEKLY ASSIGNMENTS')}</Text><Text style={[styles.mini,{color:C.muted}]}>{p('Automatic rewards')}</Text></View>
     {[...board.orders].sort((a,b)=>Number(b.id===focusedWeeklyOrderId)-Number(a.id===focusedWeeklyOrderId)||Number(a.progress>=a.target)-Number(b.progress>=b.target)||a.slot-b.slot).map(order=>{
      const locked=weeklyOrderLockReason(state,order),status:Status=locked?'locked':order.claimed?'claimed':order.progress>=order.target?'processing':'active';
      const zone=WORLD_ZONES.find(z=>z.id===order.regionId);
-     return <CompactQuestRow key={order.id} C={C} language={language} title={p(order.title)} subtitle={p(zone?.name??order.source.label)} eyebrow={p(order.kind==='hunt'?'HUNT ORDER':order.kind==='regional'?'REGIONAL PROBLEM':'WORK ORDER')} status={status} current={Math.min(order.progress,order.target)} max={order.target} art={<OrderArt order={order}/>} reward={p(order.reward.label)} onPress={()=>open('contract',order.id)}/>;
+     return <CompactQuestRow key={order.id} C={C} language={language} title={weeklyOrderTitle(language,order)} subtitle={p(zone?.name??order.source.label)} eyebrow={p(order.kind==='hunt'?'HUNT ORDER':order.kind==='regional'?'REGIONAL PROBLEM':'WORK ORDER')} status={status} current={Math.min(order.progress,order.target)} max={order.target} art={<OrderArt order={order}/>} reward={weeklyOrderReward(language,order)} onPress={()=>open('contract',order.id)}/>;
     })}
     <Text style={[styles.footnote,{color:C.muted}]}>{p('Finish every posting for the full weekly board completion reward. Contract rewards are processed automatically.')}</Text>
     {fallenKnight?<View style={[styles.featured,{backgroundColor:C.panel,borderColor:C.line}]}>
@@ -316,7 +317,7 @@ export function QuestRefinedScreen({state,mode,onModeChange,focusedWeeklyOrderId
      </View>
      <View style={[styles.detailBlock,{backgroundColor:C.panel,borderColor:C.line}]}>
       <Text style={[styles.eyebrow,{color:C.accent}]}>{p('OBJECTIVE')}</Text>
-      <Text style={[styles.detailText,{color:C.text}]}>{chosenStory?localizedQuestStoryText(language,chosenStory,'description'):chosenOrder?p(chosenOrder.brief??chosenDestination?.detail??''):chosenChallenge?seasonalChallengeDescription(language,chosenChallenge):''}</Text>
+      <Text style={[styles.detailText,{color:C.text}]}>{chosenStory?localizedQuestStoryText(language,chosenStory,'description'):chosenOrder?(weeklyOrderBrief(language,chosenOrder)??weeklyOrderDestinationLabel(language,chosenOrder,'detail')):chosenChallenge?seasonalChallengeDescription(language,chosenChallenge):''}</Text>
       {selectedStatus==='locked'?<Text style={[styles.footnote,{color:C.warning}]}>{chosenOrder?p(selectedLocked??''):chosenStory?p(questLockHint(state,chosenStory)):''}</Text>:<><View style={styles.rowMeta}><Text style={[styles.mini,{color:C.muted}]}>{p('Progress')}</Text><Text style={[styles.mini,{color:C.text}]}>{selectedValue}/{selectedGoal}</Text></View><ProgressLine current={selectedValue} max={selectedGoal} C={C}/></>}
      </View>
      {chosenStory?<View style={styles.storyDisclosure}>
@@ -340,16 +341,16 @@ export function QuestRefinedScreen({state,mode,onModeChange,focusedWeeklyOrderId
         </Pressable>;
        })}
       </View>:null}
-      {chosenOrder?<><Text style={[styles.detailText,{color:C.text}]}>{p(chosenOrder.reward.label)}</Text><Text style={[styles.footnote,{color:C.muted}]}>{p('Rewards process automatically once the server confirms completion; no claim button is needed.')}</Text></>:selectedRewards?<QuestReward gold={selectedRewards.gold} xp={'xp' in selectedRewards?selectedRewards.xp:undefined} itemId={selectedRewards.itemId} quantity={selectedRewards.quantity} essence={selectedRewards.essence} bondstones={selectedRewards.bondstones} rarityColor={'color' in selectedRewards?selectedRewards.color:undefined} label={p('Reward preview')}/>:null}
+      {chosenOrder?<><Text style={[styles.detailText,{color:C.text}]}>{weeklyOrderReward(language,chosenOrder)}</Text><Text style={[styles.footnote,{color:C.muted}]}>{p('Rewards process automatically once the server confirms completion; no claim button is needed.')}</Text></>:selectedRewards?<QuestReward gold={selectedRewards.gold} xp={'xp' in selectedRewards?selectedRewards.xp:undefined} itemId={selectedRewards.itemId} quantity={selectedRewards.quantity} essence={selectedRewards.essence} bondstones={selectedRewards.bondstones} rarityColor={'color' in selectedRewards?selectedRewards.color:undefined} label={p('Reward preview')}/>:null}
      </View>
      {selectedStatus==='claimed'?<Text style={[styles.footnote,{color:C.good}]}>{p('✓ Reward already collected')}</Text>:null}
      {selectedStatus==='processing'?<Text style={[styles.footnote,{color:C.good}]}>{p('✓ Objective complete · reward processing automatically')}</Text>:null}
-     {chosenOrder&&selectedStatus==='active'?<Text style={[styles.footnote,{color:C.info}]}>{p(chosenDestination?.detail??'')}</Text>:null}
+     {chosenOrder&&selectedStatus==='active'?<Text style={[styles.footnote,{color:C.info}]}>{weeklyOrderDestinationLabel(language,chosenOrder,'detail')}</Text>:null}
     </>}
    </ScrollView>
    <View style={[styles.sheetFooter,{borderColor:C.line}]}>
     {sheetStage==='success'?<GameButton title={p('Continue')} onPress={closeSheet}/>:sheetStage==='claiming'?<GameButton title={p('Waiting for server confirmation…')} loading disabled onPress={()=>{}}/>:hasClaim?<GameButton title={p('Claim rewards')} onPress={submitClaim}/>:chosenStory&&selectedStatus==='active'?<GameButton title={p(questDestination(chosenStory).label)} onPress={()=>{const target=questDestination(chosenStory);closeSheet();onNavigate(target)}}/>:chosenOrder&&selectedStatus==='active'?<>
-     <GameButton title={p(chosenDestination?.button??'Open activity')} onPress={()=>{closeSheet();onOpenWeeklyOrder(chosenOrder)}}/>
+     <GameButton title={weeklyOrderDestinationLabel(language,chosenOrder,'button')} onPress={()=>{closeSheet();onOpenWeeklyOrder(chosenOrder)}}/>
      {chosenQueueable?<View style={styles.actionPair}>
       <View style={styles.flex}><GameButton compact tone="secondary" title={queueFull?p('Queue full'):p('Queue')} disabled={queueFull} onPress={()=>{onQueueWeeklyOrder(chosenOrder);closeSheet()}}/></View>
       <View style={styles.flex}><GameButton compact tone="secondary" selected={stopActive} title={stopActive?p('Stop ✓'):p('Stop at done')} onPress={()=>{onStopWeeklyOrder(chosenOrder);closeSheet()}}/></View>

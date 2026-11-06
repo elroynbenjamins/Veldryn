@@ -40,7 +40,7 @@ for(const source of ["onStart(id)","alchemyAvailability(state,r.id)","processing
 const parsed=ts.createSourceFile('ConsumableWorkshop.tsx',screen,ts.ScriptTarget.Latest,true,ts.ScriptKind.TSX);
 assert.equal(parsed.parseDiagnostics.length,0,'workshop JSX must parse');
 const gameplay=fs.readFileSync(path.join(__dirname,'../src/i18n/gameplay.ts'),'utf8');
-const popupStrings=['Equipment enhancement','Confirm below to apply this change.','Confirm replacement','Confirm extraction'];
+const popupStrings=['Equipment enhancement','Confirm below to apply this change.','Confirm replacement','Confirm extraction','Gear stat gains'];
 for(const source of popupStrings){
  assert.ok(gameplay.includes(JSON.stringify(source)+':['),'typed enhancement popup label missing: '+source);
  assert.ok(gameplay.includes(JSON.stringify(source)+':['),'RU/TR popup locale missing: '+source);

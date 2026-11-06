@@ -49,7 +49,7 @@ for(const field of ['name','subtitle']){
 assert.equal(localizedQuestStoryText('nl',{...chapter[1],name:'Updated game text'},'name'),'Updated game text','source-match guard');
 assert.equal(localizedQuestStoryText('es',{...chapter[0],id:'QST_FAKE'},'name'),chapter[0].name,'unknown ID guard');
 assert.equal(localizedQuestActText('tr',{...act,subtitle:'Updated subtitle'},'subtitle'),'Updated subtitle','changed act copy guard');
-assert.equal(localizedQuestStoryText('ru',QUESTS[10],'description'),QUESTS[10].description,'Act III not yet localized');
+assert.notEqual(localizedQuestStoryText('ru',QUESTS[10],'description'),QUESTS[10].description,'Act III should be translated');
 assert.equal(questMatchesLocalizedSearch('de',chapter[0],'Dornen unter den'),true,'translated title searchable');
 assert.equal(questMatchesLocalizedSearch('fr',chapter[1],'passeurs de Silverbrook'),true,'localized lore searchable');
 assert.equal(questMatchesLocalizedSearch('tr',chapter[4],'Sisteki Fenerler'),true,'Turkish story title searchable');

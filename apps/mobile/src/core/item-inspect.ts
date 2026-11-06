@@ -108,7 +108,7 @@ export function itemInspectModel(state:GameState,itemId:string){
       let maxItemStats=enhancedGearStatsAtRank(state,itemId,MAX_UPGRADE_RANK);
       if(compatible){
         try{
-          previewState=previewEquipment(state,itemId);
+          previewState=currentId===itemId?state:previewEquipment(state,itemId);
           after=effectiveStats(previewState);previewAvailable=true;
           // Project the real selected Forge copy, rather than a legacy itemId
           // enhancement which has no effect on that instance.

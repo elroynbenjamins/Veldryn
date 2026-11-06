@@ -94,7 +94,7 @@ export function OnlineGuildProjectsPanel({onRewardsChanged,onNavigateActivity}:{
      onNavigateActivity={onNavigateActivity}
      expanded={expanded===project.id}
      onToggle={()=>setExpanded(old=>old===project.id?null:project.id)}
-   />):<View style={s.empty}><Text style={s.emptyTitle}>{ui("No active Guild Project")}</Text><Text style={s.copy}>{ui("Vote below to choose the next project.")}</Text></View>}
+   />):<View style={s.empty}><Text style={s.emptyTitle}>{ui("No active Guild Project")}</Text><Text style={s.copy}>{ui('Weekly projects start automatically every Monday. No vote is needed.')}</Text></View>}
   </QuestBoard>
   {snapshot.candidates.length?<Panel>
    <View style={s.sectionHead}><Text style={s.sectionTitle}>{ui("Next weekly project")}</Text><Text style={s.meta}>{ui("One vote per member")}</Text></View>

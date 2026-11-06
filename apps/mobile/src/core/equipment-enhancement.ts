@@ -169,12 +169,16 @@ export function replaceGem(state:GameState,itemId:string,gemId:string){
  * effectiveStats. Rounding each low-stat item separately turns a stated 4%
  * improvement into an accidental 25–100% jump. */
 export function gearStatsAtRank(itemId:string,rank:number){const item=itemDef(itemId),m=1+Math.max(0,Math.min(MAX_UPGRADE_RANK,rank))*UPGRADE_STAT_PER_RANK,scale=(value:number)=>value*m;return {hp:scale(item.hp??0),attack:scale(item.attack??0),defense:scale(item.defense??0)};}
-export function enhancedGearStats(state:GameState,itemId:string){
-  const instance=equippedCraftedInstance(state,itemId),stats=gearStatsAtRank(itemId,gearEnhancement(state,itemId).rank);
+/** Preview any enhancement rank using the same rarity and quality scaling as equipped gear. */
+export function enhancedGearStatsAtRank(state:GameState,itemId:string,rank:number){
+  const instance=equippedCraftedInstance(state,itemId),stats=gearStatsAtRank(itemId,rank);
   const rarity=instance?.rarity??effectiveOwnedGearRarity(state,itemId);
   const quality=instance?.quality===undefined?1:craftedGearQualityMultiplier(instance.quality);
   const m=craftedRarityStatMultiplier(itemId,rarity)*quality,scale=(value:number)=>value*m;
   return {hp:scale(stats.hp),attack:scale(stats.attack),defense:scale(stats.defense)};
+}
+export function enhancedGearStats(state:GameState,itemId:string){
+  return enhancedGearStatsAtRank(state,itemId,gearEnhancement(state,itemId).rank);
 }
 export function equippedGemBonuses(state:GameState):Record<GemStat,number>{const result={attack:0,defense:0,hp:0};if(!state.character)return result;for(const itemId of Object.values(state.character.equipment)){if(!itemId)continue;const gemId=gearEnhancement(state,itemId).statGemId;if(!gemId)continue;const gem=itemDef(gemId);if(gem.type==='gem'&&gem.gemStat)result[gem.gemStat]+=gem.gemPercent??0;}return result;}
 

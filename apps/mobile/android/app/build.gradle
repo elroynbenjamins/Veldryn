@@ -91,8 +91,8 @@ android {
         applicationId 'com.elroybenjamins.veldryn'
         minSdk = rootProject.ext.minSdkVersion
         targetSdk = rootProject.ext.targetSdkVersion
-        versionCode 56
-        versionName "1.0.6"
+        versionCode 57
+        versionName "1.0.7"
 
         buildConfigField "String", "REACT_NATIVE_RELEASE_LEVEL", "\"${findProperty('reactNativeReleaseLevel') ?: 'stable'}\""
     }

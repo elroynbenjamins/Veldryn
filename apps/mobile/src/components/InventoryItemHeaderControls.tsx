@@ -5,10 +5,10 @@ import {useGameTheme} from '../theme/ThemeContext';
 import type {ThemeColors} from '../theme/theme';
 
 /** Shared one-row modal controls; no separate lock/favorite action row. */
-export function InventoryItemHeaderControls({favorite=false,locked=false,onFavorite,onLock,onClose,disabled=false}:{
+export function InventoryItemHeaderControls({favorite=false,locked=false,onFavorite,onLock,onClose,disabled=false,closeLabel}:{
   favorite?:boolean;locked?:boolean;
   onFavorite?:()=>void|Promise<unknown>;onLock?:()=>void|Promise<unknown>;
-  onClose:()=>void;disabled?:boolean;
+  onClose:()=>void;disabled?:boolean;closeLabel?:string;
 }){
   const {gt}=useGameplayText();
   const C=useGameTheme(),s=useMemo(()=>makeStyles(C),[C]);
@@ -26,14 +26,14 @@ export function InventoryItemHeaderControls({favorite=false,locked=false,onFavor
       onPress={()=>{void onFavorite()}} style={({pressed})=>[s.button,favorite&&s.protectedButton,pressed&&s.pressed]}>
       <Text accessible={false} style={[s.star,favorite&&s.starOn]}>{favorite?'★':'☆'}</Text>
     </Pressable>:null}
-    <Pressable accessibilityRole="button" accessibilityLabel={gt('Close item quick inspect')} hitSlop={5}
+    <Pressable accessibilityRole="button" accessibilityLabel={closeLabel??gt('Close item quick inspect')} hitSlop={5}
       disabled={disabled} onPress={onClose} style={({pressed})=>[s.button,pressed&&s.pressed]}>
       <Text accessible={false} style={s.close}>×</Text>
     </Pressable>
   </View>;
 }
 function makeStyles(C:ThemeColors){return StyleSheet.create({
-  row:{flexDirection:'row',alignItems:'center',gap:5,flexShrink:0},
+  row:{flexDirection:'row',alignItems:'center',gap:4,flexShrink:0},
   button:{width:36,height:40,alignItems:'center',justifyContent:'center',borderRadius:10,borderWidth:1,borderColor:C.line,backgroundColor:C.panel2},
   protectedButton:{borderColor:C.warning,backgroundColor:C.warningSurface},
   pressed:{opacity:.65},

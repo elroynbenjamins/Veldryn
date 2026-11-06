@@ -3,6 +3,9 @@ import {CLASSES} from '../../apps/mobile/src/content/classes';
 import {itemDef} from '../../apps/mobile/src/content/items';
 import {noviceItemId,noviceSetFor} from '../../apps/mobile/src/content/novice-sets';
 import {createCharacter,effectiveStats,newGame} from '../../apps/mobile/src/core/game';
+import {activeEquipmentBuildStats} from '../../apps/mobile/src/core/equipment-set-runtime';
+import {canonicalGemMetaV1,equippedCanonicalGemIdsV1} from '../../apps/mobile/src/core/gem-progression-v1';
+import {summarizeGemLoadoutV1} from '../src/server/equipment/gems/gem-runtime-v1';
 import type {GameState,ClassId} from '../../apps/mobile/src/core/types';
 import {launchPlayer} from '../src/server/combat/content/launch-combat';
 import type {AuthoritativeLoadoutRecord} from '../src/server/coop/loadout-snapshots';
@@ -32,6 +35,16 @@ export function deriveOnlineCoopLoadout(accountId:string,state:GameState,version
  const definition=CLASSES.find(row=>row.id===character.classId);if(!definition)throw new Error('unknown_class');
  const role=deriveRole(character.classId);
  const kit=launchPlayer(definition.name,25),reference=referenceStats(character.classId),actual=effectiveStats(state),levelScale=character.level/25;
+ const bonus=activeEquipmentBuildStats(state);
+ // These gems come from the server-loaded character's *equipped* sockets,
+ // including unique forged copies. Never accept client-supplied gem effects.
+ const sockets=equippedCanonicalGemIdsV1(state).map((gemId,index)=>{
+  const meta=canonicalGemMetaV1(gemId);
+  if(!meta)throw new Error('invalid_equipped_gem');
+  const gem={familyId:meta.familyId,grade:meta.grade};
+  return {equipmentItemId:'equipped_'+index,sockets:meta.kind==='stat'?{stat:gem}:{effect:gem}};
+ });
+ const effectGems=summarizeGemLoadoutV1(sockets).effects;
  const legalEquipment=Boolean(character.equipment.weapon)&&Object.entries(character.equipment).every(([slot,id])=>{
   if(!id)return true;const item=itemDef(id);return item.type==='gear'&&item.slot===slot&&(!item.classRestriction||item.classRestriction===character.classId);
  });
@@ -47,11 +60,15 @@ export function deriveOnlineCoopLoadout(accountId:string,state:GameState,version
    characterId:character.id,classId:character.classId,displayName:character.name,bodyPresentation:character.bodyPresentation??'male',level:character.level,
    ...(combatCompanion?{combatCompanion:structuredClone(combatCompanion)}:{}),
    maxHp:kit.stats.maxHp*actual.hp/reference.hp*levelScale,
-   attackPower:kit.stats.attackPower*actual.attack/reference.attack*levelScale,
-   healingPower:kit.stats.healingPower*actual.attack/reference.attack*levelScale,
+   attackPower:kit.stats.attackPower*actual.attack/reference.attack*levelScale*(1+bonus.power),
+   healingPower:kit.stats.healingPower*actual.attack/reference.attack*levelScale*(1+bonus.potency),
    defense:kit.stats.defense*actual.defense/reference.defense*levelScale,
-   accuracy:kit.stats.accuracy*levelScale,evasion:kit.stats.evasion*levelScale,
-   critChance:kit.stats.critChance,haste:kit.stats.haste,
+   accuracy:kit.stats.accuracy*actual.accuracy/reference.accuracy*levelScale,
+   evasion:kit.stats.evasion*actual.evasion/reference.evasion*levelScale,
+   critChance:kit.stats.critChance+(actual.critChance-reference.critChance),
+   haste:kit.stats.haste+(actual.haste-reference.haste),
+   ...(actual.critMultiplier!==reference.critMultiplier?{critMultiplier:kit.stats.critMultiplier+(actual.critMultiplier-reference.critMultiplier)}:{}),
+   ...(effectGems.length?{effectGems}:{}),
   }};
 }
 export function onlineCoopLoadoutHash(record:AuthoritativeLoadoutRecord):string{

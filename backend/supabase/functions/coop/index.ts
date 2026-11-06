@@ -42816,6 +42816,9 @@ var GEM_ITEMS_V1 = MOBILE_GEM_FAMILIES_V1.flatMap((family) => [1, 2, 3, 4, 5].ma
   rarity: GEM_GRADE_RARITY_V1[grade],
   passive: family.description
 })));
+function mobileGemFamilyV1(familyId) {
+  return MOBILE_GEM_FAMILIES_V1.find((row) => row.familyId === familyId);
+}
 function mobileRawGemItemIdV1(familyId, grade) {
   return `raw_gem:${familyId}:g${grade}`;
 }
@@ -45742,6 +45745,46 @@ var GEM_COMBINE_COSTS_V1 = {
   3: { to: 4, copies: 3, dust: 15, gold: 21600, seconds: 45 * 60, level: 40, xp: 1200, catalystId: "REGIONAL_CATALYST" },
   4: { to: 5, copies: 3, dust: 40, gold: 72e3, seconds: 2 * 60 * 60, level: 60, xp: 3200, catalystId: "RADIANT_CATALYST" }
 };
+function canonicalGemMetaV1(itemId) {
+  let item;
+  try {
+    item = itemDef(itemId);
+  } catch {
+    return void 0;
+  }
+  if (item.type !== "gem" || !item.gemFamilyId || !item.gemGrade) return void 0;
+  const family = mobileGemFamilyV1(item.gemFamilyId);
+  if (!family) return void 0;
+  return { familyId: family.familyId, grade: item.gemGrade, kind: family.kind };
+}
+function equippedCanonicalSocketsV1(state) {
+  if (!state.character) return [];
+  const instances = craftedGearInstances(state);
+  return Object.entries(state.character.equipment).flatMap(([key, equipmentItemId]) => {
+    if (!equipmentItemId) return [];
+    const instanceId = state.character.equipmentInstanceIds?.[key];
+    const instance = instanceId ? instances.find((copy) => copy.id === instanceId && copy.itemId === equipmentItemId && copy.ownerCharacterId === state.character.id) : void 0;
+    const raw2 = instance?.enhancement ?? state.character.gearEnhancements?.[equipmentItemId];
+    const valid = (id, kind) => {
+      if (!id) return void 0;
+      try {
+        const item = itemDef(id);
+        return item.type === "gem" && (item.gemKind ?? (item.gemEffect ? "effect" : "stat")) === kind ? id : void 0;
+      } catch {
+        return void 0;
+      }
+    };
+    const ids2 = Array.isArray(raw2?.gemIds) ? raw2.gemIds : [];
+    const selectedStat = valid(raw2?.statGemId, "stat") ?? ids2.find((id) => valid(id, "stat"));
+    const selectedEffect = valid(raw2?.effectGemId, "effect") ?? ids2.find((id) => valid(id, "effect"));
+    const statGemId = canonicalGemMetaV1(selectedStat ?? "") ? selectedStat : void 0;
+    const effectGemId = canonicalGemMetaV1(selectedEffect ?? "") ? selectedEffect : void 0;
+    return [{ equipmentItemId, statGemId, effectGemId }];
+  });
+}
+function equippedCanonicalGemIdsV1(state) {
+  return equippedCanonicalSocketsV1(state).flatMap((row) => [row.statGemId, row.effectGemId].filter((id) => Boolean(id)));
+}
 
 // ../apps/mobile/src/core/equipment-enhancement.ts
 var MAX_UPGRADE_RANK = 4;
@@ -45799,6 +45842,38 @@ function enhancedGearStatsAtRank(state, itemId, rank) {
 function enhancedGearStats(state, itemId) {
   return enhancedGearStatsAtRank(state, itemId, gearEnhancement(state, itemId).rank);
 }
+var CANONICAL_STAT_GEM_KEYS_V1 = {
+  stat_might: "power",
+  stat_vitality: "maxHp",
+  stat_iron: "armor",
+  stat_ward: "ward",
+  stat_precision: "accuracy",
+  stat_keen: "critRate",
+  stat_savage: "critDamage",
+  stat_piercing: "penetration",
+  stat_swift: "haste",
+  stat_potent: "potency",
+  stat_elusive: "evasion",
+  stat_resolute: "tenacity"
+};
+function equippedCanonicalStatGemBonusesV1(state) {
+  const statPercent = {};
+  const statPercentagePoints = {};
+  if (!state.character) return { statPercent, statPercentagePoints };
+  for (const itemId of Object.values(state.character.equipment)) {
+    if (!itemId) continue;
+    const gemId = gearEnhancement(state, itemId).statGemId;
+    if (!gemId) continue;
+    const meta = canonicalGemMetaV1(gemId);
+    if (!meta || meta.kind !== "stat") continue;
+    const family = mobileGemFamilyV1(meta.familyId);
+    const key = CANONICAL_STAT_GEM_KEYS_V1[meta.familyId];
+    if (!key || !family || family.kind !== "stat") continue;
+    const target2 = family.unit === "percentage_point" ? statPercentagePoints : statPercent;
+    target2[key] = (target2[key] ?? 0) + family.values[meta.grade];
+  }
+  return { statPercent, statPercentagePoints };
+}
 function equippedGemBonuses(state) {
   const result = { attack: 0, defense: 0, hp: 0 };
   if (!state.character) return result;
@@ -45806,6 +45881,7 @@ function equippedGemBonuses(state) {
     if (!itemId) continue;
     const gemId = gearEnhancement(state, itemId).statGemId;
     if (!gemId) continue;
+    if (canonicalGemMetaV1(gemId)) continue;
     const gem2 = itemDef(gemId);
     if (gem2.type === "gem" && gem2.gemStat) result[gem2.gemStat] += gem2.gemPercent ?? 0;
   }
@@ -45966,6 +46042,26 @@ function activeEquipmentSetRuntime(state) {
   }
   return { stats: total, activeSets: activeSets.sort((a, b) => b.pieces - a.pieces || a.setId.localeCompare(b.setId)) };
 }
+function activeEquipmentBuildStats(state) {
+  const sets = activeEquipmentSetRuntime(state).stats;
+  const gems = equippedCanonicalStatGemBonusesV1(state);
+  const p = gems.statPercent, pp = gems.statPercentagePoints;
+  const multiplied = (bonus, percent) => (1 + bonus) * (1 + (percent ?? 0)) - 1;
+  return {
+    maxHp: multiplied(sets.maxHp, p.maxHp),
+    armor: multiplied(sets.armor, p.armor),
+    ward: multiplied(sets.ward, p.ward),
+    tenacity: multiplied(sets.tenacity, p.tenacity),
+    haste: multiplied(sets.haste, p.haste),
+    power: multiplied(sets.power, p.power),
+    accuracy: sets.accuracy + (pp.accuracy ?? 0),
+    penetration: sets.penetration + (pp.penetration ?? 0),
+    potency: multiplied(sets.potency, p.potency),
+    critRate: sets.critRate + (pp.critRate ?? 0),
+    critDamage: (0.5 + sets.critDamage) * (1 + (p.critDamage ?? 0)) - 0.5,
+    evasion: sets.evasion + (pp.evasion ?? 0)
+  };
+}
 
 // ../apps/mobile/src/core/game.ts
 init_faith2();
@@ -46094,7 +46190,7 @@ function effectiveStats(state) {
     attack += novice.setBonus.attack;
     defense += novice.setBonus.defense;
   }
-  const setRuntime = activeEquipmentSetRuntime(state), setStats = setRuntime.stats;
+  const setStats = activeEquipmentBuildStats(state);
   hp = Math.ceil(hp * (1 + setStats.maxHp));
   defense = Math.ceil(defense * (1 + setStats.armor));
   const gems = equippedGemBonuses(state);
@@ -46129,6 +46225,78 @@ function effectiveStats(state) {
     potency: setStats.potency,
     penetration: setStats.penetration
   };
+}
+
+// src/server/equipment/gems/gem-catalog-v1.ts
+var vals2 = (a, b, c, d, e) => ({ 1: a, 2: b, 3: c, 4: d, 5: e });
+var STAT_GEMS_V1 = [
+  { familyId: "stat_might", name: "Might", stat: "power", unit: "percent", values: vals2(4e-3, 5e-3, 65e-4, 8e-3, 0.01) },
+  { familyId: "stat_vitality", name: "Vitality", stat: "maxHp", unit: "percent", values: vals2(6e-3, 8e-3, 0.01, 0.0125, 0.015) },
+  { familyId: "stat_iron", name: "Iron", stat: "armor", unit: "percent", values: vals2(5e-3, 65e-4, 8e-3, 0.01, 0.0125) },
+  { familyId: "stat_ward", name: "Ward", stat: "ward", unit: "percent", values: vals2(5e-3, 65e-4, 8e-3, 0.01, 0.0125) },
+  { familyId: "stat_precision", name: "Precision", stat: "accuracy", unit: "percentage_point", values: vals2(3e-3, 4e-3, 5e-3, 65e-4, 8e-3) },
+  { familyId: "stat_keen", name: "Keen", stat: "critRate", unit: "percentage_point", values: vals2(2e-3, 3e-3, 4e-3, 5e-3, 6e-3) },
+  { familyId: "stat_savage", name: "Savage", stat: "critDamage", unit: "percent", values: vals2(0.01, 0.013, 0.016, 0.02, 0.025) },
+  { familyId: "stat_piercing", name: "Piercing", stat: "penetration", unit: "percentage_point", values: vals2(25e-4, 35e-4, 45e-4, 6e-3, 75e-4) },
+  { familyId: "stat_swift", name: "Swift", stat: "haste", unit: "percent", values: vals2(35e-4, 45e-4, 55e-4, 65e-4, 8e-3) },
+  { familyId: "stat_potent", name: "Potent", stat: "potency", unit: "percent", values: vals2(5e-3, 65e-4, 8e-3, 0.01, 0.012) },
+  { familyId: "stat_elusive", name: "Elusive", stat: "evasion", unit: "percentage_point", values: vals2(2e-3, 25e-4, 3e-3, 4e-3, 5e-3) },
+  { familyId: "stat_resolute", name: "Resolute", stat: "tenacity", unit: "percent", values: vals2(4e-3, 5e-3, 6e-3, 75e-4, 9e-3) }
+];
+var EFFECT_GEMS_V1 = [
+  { familyId: "effect_momentum", name: "Momentum", category: "damage", values: vals2(18e-4, 22e-4, 26e-4, 31e-4, 36e-4), maxEquippedCopies: 3, baseDescription: "Successful direct attacks build stacking damage for 4s; max 5.", resonance2: "Maximum stacks becomes 6.", resonance3: "Stacks decay one at a time after expiry.", triggerCooldownMs: 500, durationMs: 4e3 },
+  { familyId: "effect_execution", name: "Execution", category: "damage", values: vals2(8e-3, 0.01, 0.012, 0.015, 0.018), maxEquippedCopies: 3, baseDescription: "Increases direct and periodic damage to targets below 30% HP.", resonance2: "Activation threshold becomes 35% HP.", resonance3: "Total Execution bonus is 25% stronger below 15% HP." },
+  { familyId: "effect_opening_strike", name: "Opening Strike", category: "damage", values: vals2(7e-3, 9e-3, 0.011, 0.013, 0.015), maxEquippedCopies: 3, baseDescription: "Increases damage for the first 8s of combat.", resonance2: "Duration becomes 10s.", resonance3: "Refreshes once on a flagged boss phase change.", durationMs: 8e3 },
+  { familyId: "effect_predator", name: "Predator", category: "damage", values: vals2(8e-3, 0.01, 0.012, 0.014, 0.016), maxEquippedCopies: 3, baseDescription: "Increases damage against Elite and Boss enemies.", resonance2: "Also affects minibosses and Champions.", resonance3: "First hit grants +25% Predator effectiveness for 8s." },
+  { familyId: "effect_critical_surge", name: "Critical Surge", category: "damage", values: vals2(2e-3, 25e-4, 3e-3, 35e-4, 4e-3), maxEquippedCopies: 3, baseDescription: "Critical direct hits grant stacking Haste for 5s; max 3.", resonance2: "Maximum stacks becomes 4.", resonance3: "At max stacks, critical hits refresh the oldest stack.", triggerCooldownMs: 750, durationMs: 5e3 },
+  { familyId: "effect_ruin", name: "Ruin", category: "damage", values: vals2(25e-4, 3e-3, 35e-4, 4e-3, 5e-3), maxEquippedCopies: 3, baseDescription: "Increases damage per different qualifying negative effect; max 2.", resonance2: "Counts up to 3 effects.", resonance3: "A fresh player Mark counts as two effects for 4s." },
+  { familyId: "effect_bulwark", name: "Bulwark", category: "defense", values: vals2(6e-3, 75e-4, 9e-3, 0.0105, 0.012), maxEquippedCopies: 3, baseDescription: "Block or qualifying defensive ability grants damage reduction for 4s.", resonance2: "Duration becomes 5s.", resonance3: "Successful blocks refresh duration.", durationMs: 4e3 },
+  { familyId: "effect_aegis", name: "Aegis", category: "defense", values: vals2(0.01, 0.0125, 0.015, 0.0175, 0.02), maxEquippedCopies: 3, baseDescription: "Increases barriers generated by the player.", resonance2: "Naturally expired barriers heal 5% of unused value.", resonance3: "Maximum barrier cap increases by 5%." },
+  { familyId: "effect_last_stand", name: "Last Stand", category: "defense", values: vals2(0.015, 0.019, 0.023, 0.027, 0.032), maxEquippedCopies: 3, baseDescription: "Once per combat, dropping below 30% HP grants DR for 6s.", resonance2: "Threshold becomes 35% HP.", resonance3: "Duration becomes 8s.", durationMs: 6e3 },
+  { familyId: "effect_retaliation", name: "Retaliation", category: "defense", values: vals2(0.015, 0.019, 0.023, 0.027, 0.032), maxEquippedCopies: 3, baseDescription: "A hit of at least 12% Max HP empowers the next damaging ability.", resonance2: "Trigger threshold becomes 10% Max HP.", resonance3: "Consuming Retaliation restores 1% Max HP.", triggerCooldownMs: 8e3 },
+  { familyId: "effect_unyielding", name: "Unyielding", category: "defense", values: vals2(15e-4, 2e-3, 25e-4, 3e-3, 35e-4), maxEquippedCopies: 3, baseDescription: "Taking damage grants stacking Armor and Ward for 5s; max 4.", resonance2: "Maximum stacks becomes 5.", resonance3: "Stacks last 7s.", triggerCooldownMs: 750, durationMs: 5e3 },
+  { familyId: "effect_mercy", name: "Mercy", category: "support", values: vals2(0.04, 0.05, 0.06, 0.07, 0.08), maxEquippedCopies: 3, baseDescription: "A percentage of effective overhealing becomes an 8s barrier; cap 3% target Max HP.", resonance2: "Barrier cap becomes 4% Max HP.", resonance3: "Barrier duration becomes 10s.", durationMs: 8e3 },
+  { familyId: "effect_benediction", name: "Benediction", category: "support", values: vals2(8e-3, 0.01, 0.012, 0.014, 0.016), maxEquippedCopies: 3, baseDescription: "Support abilities grant a 10s charge empowering the next direct heal or barrier.", resonance2: "May hold 2 charges.", resonance3: "Consuming a charge grants 2% Haste for 4s.", durationMs: 1e4 },
+  { familyId: "effect_guardians_gift", name: "Guardian's Gift", category: "support", values: vals2(25e-4, 35e-4, 45e-4, 55e-4, 65e-4), maxEquippedCopies: 3, baseDescription: "Barrier applied to another player grants them DR for 4s.", resonance2: "Duration becomes 6s.", resonance3: "Caster receives 50% of the DR.", durationMs: 4e3 },
+  { familyId: "effect_renewal", name: "Renewal", category: "support", values: vals2(0.01, 0.0125, 0.015, 0.0175, 0.02), maxEquippedCopies: 3, baseDescription: "Direct healing leaves additional healing over 4s.", resonance2: "Duration becomes 6s and total Renewal healing +20%.", resonance3: "Up to 2 Renewals may coexist per target.", durationMs: 4e3 },
+  { familyId: "effect_shared_resolve", name: "Shared Resolve", category: "support", values: vals2(25e-4, 3e-3, 35e-4, 4e-3, 5e-3), maxEquippedCopies: 3, baseDescription: "Buffing or shielding another player grants Potency for 6s; max 2.", resonance2: "Duration becomes 8s.", resonance3: "Maximum stacks becomes 3.", durationMs: 6e3 },
+  { familyId: "effect_sustenance", name: "Sustenance", category: "hybrid", values: vals2(15e-4, 2e-3, 25e-4, 3e-3, 35e-4), maxEquippedCopies: 3, baseDescription: "Defeating an enemy restores Max HP.", resonance2: "Elite/Champion kills restore 3x.", resonance3: "25% of overheal becomes a barrier capped at 2% Max HP.", triggerCooldownMs: 3e3 },
+  { familyId: "effect_battle_rhythm", name: "Battle Rhythm", category: "hybrid", values: vals2(5e-3, 65e-4, 8e-3, 95e-4, 0.011), maxEquippedCopies: 3, baseDescription: "Alternating offensive and defensive/support abilities empowers the next opposite-category ability.", resonance2: "Alternation window becomes 12s.", resonance3: "Successful alternation grants 2% Haste for 4s.", triggerCooldownMs: 6e3 },
+  { familyId: "effect_flow", name: "Flow", category: "hybrid", values: vals2(1e-3, 15e-4, 2e-3, 25e-4, 3e-3), maxEquippedCopies: 3, baseDescription: "Different consecutive abilities build Haste for 6s; max 3.", resonance2: "Maximum stacks becomes 4.", resonance3: "Stacks decay one at a time after expiry.", durationMs: 6e3 },
+  { familyId: "effect_opportunist", name: "Opportunist", category: "hybrid", values: vals2(7e-3, 9e-3, 0.011, 0.013, 0.015), maxEquippedCopies: 3, baseDescription: "Applying a new Mark/debuff/exposed/control state empowers the next direct hit within 4s.", resonance2: "Per-target cooldown becomes 3s.", resonance3: "A critical empowered hit extends the triggering effect by 1s once.", triggerCooldownMs: 4e3 }
+];
+function findStatGem(familyId) {
+  return STAT_GEMS_V1.find((v) => v.familyId === familyId);
+}
+function findEffectGem(familyId) {
+  return EFFECT_GEMS_V1.find((v) => v.familyId === familyId);
+}
+
+// src/server/equipment/gems/gem-runtime-v1.ts
+function summarizeGemLoadoutV1(entries) {
+  const statPercent = {}, statPercentagePoints = {}, groups = /* @__PURE__ */ new Map();
+  for (const entry2 of entries) {
+    if (entry2.sockets.stat) {
+      const d = findStatGem(entry2.sockets.stat.familyId);
+      if (!d) throw new Error("unknown_stat_gem");
+      const target2 = d.unit === "percent" ? statPercent : statPercentagePoints;
+      target2[d.stat] = (target2[d.stat] ?? 0) + d.values[entry2.sockets.stat.grade];
+    }
+    if (entry2.sockets.effect) {
+      const g = entry2.sockets.effect;
+      const d = findEffectGem(g.familyId);
+      if (!d) throw new Error("unknown_effect_gem");
+      const grades = groups.get(g.familyId) ?? [];
+      if (grades.length >= d.maxEquippedCopies) throw new Error("effect_gem_resonance_cap");
+      grades.push(g.grade);
+      groups.set(g.familyId, grades);
+    }
+  }
+  const effects = [...groups.entries()].map(([familyId, grades]) => {
+    const d = findEffectGem(familyId);
+    return { familyId, copies: grades.length, resonance: Math.min(3, grades.length), totalValue: Number(grades.reduce((s2, g) => s2 + d.values[g], 0).toFixed(6)), grades: [...grades].sort() };
+  });
+  return { statPercent, statPercentagePoints, effects };
 }
 
 // src/server/combat/content/launch-combat.ts
@@ -46323,6 +46491,14 @@ function deriveOnlineCoopLoadout(accountId, state, version) {
   if (!definition) throw new Error("unknown_class");
   const role2 = deriveRole(character.classId);
   const kit = launchPlayer(definition.name, 25), reference = referenceStats(character.classId), actual = effectiveStats(state), levelScale = character.level / 25;
+  const bonus = activeEquipmentBuildStats(state);
+  const sockets = equippedCanonicalGemIdsV1(state).map((gemId, index) => {
+    const meta = canonicalGemMetaV1(gemId);
+    if (!meta) throw new Error("invalid_equipped_gem");
+    const gem2 = { familyId: meta.familyId, grade: meta.grade };
+    return { equipmentItemId: "equipped_" + index, sockets: meta.kind === "stat" ? { stat: gem2 } : { effect: gem2 } };
+  });
+  const effectGems = summarizeGemLoadoutV1(sockets).effects;
   const legalEquipment = Boolean(character.equipment.weapon) && Object.entries(character.equipment).every(([slot, id]) => {
     if (!id) return true;
     const item = itemDef(id);
@@ -46354,13 +46530,15 @@ function deriveOnlineCoopLoadout(accountId, state, version) {
       level: character.level,
       ...combatCompanion ? { combatCompanion: structuredClone(combatCompanion) } : {},
       maxHp: kit.stats.maxHp * actual.hp / reference.hp * levelScale,
-      attackPower: kit.stats.attackPower * actual.attack / reference.attack * levelScale,
-      healingPower: kit.stats.healingPower * actual.attack / reference.attack * levelScale,
+      attackPower: kit.stats.attackPower * actual.attack / reference.attack * levelScale * (1 + bonus.power),
+      healingPower: kit.stats.healingPower * actual.attack / reference.attack * levelScale * (1 + bonus.potency),
       defense: kit.stats.defense * actual.defense / reference.defense * levelScale,
-      accuracy: kit.stats.accuracy * levelScale,
-      evasion: kit.stats.evasion * levelScale,
-      critChance: kit.stats.critChance,
-      haste: kit.stats.haste
+      accuracy: kit.stats.accuracy * actual.accuracy / reference.accuracy * levelScale,
+      evasion: kit.stats.evasion * actual.evasion / reference.evasion * levelScale,
+      critChance: kit.stats.critChance + (actual.critChance - reference.critChance),
+      haste: kit.stats.haste + (actual.haste - reference.haste),
+      ...actual.critMultiplier !== reference.critMultiplier ? { critMultiplier: kit.stats.critMultiplier + (actual.critMultiplier - reference.critMultiplier) } : {},
+      ...effectGems.length ? { effectGems } : {}
     }
   };
 }
@@ -47398,7 +47576,7 @@ function applyCharacterCompanionAssist(owner, progress) {
 // src/server/combat/snapshot-adapter.ts
 function combatantFromVerifiedSnapshot(s2, abilities) {
   if (!Number.isInteger(s2.level) || s2.level < 1 || s2.level > 100) throw new Error("invalid_snapshot_level");
-  if ([s2.maxHp, s2.attackPower, s2.healingPower, s2.defense, s2.accuracy, s2.evasion, s2.critChance, s2.haste].some((value) => !Number.isFinite(value)) || s2.maxHp <= 0 || [s2.attackPower, s2.healingPower, s2.defense, s2.accuracy, s2.evasion].some((value) => value < 0)) throw new Error("invalid_snapshot_stats");
+  if ([s2.maxHp, s2.attackPower, s2.healingPower, s2.defense, s2.accuracy, s2.evasion, s2.critChance, s2.haste, s2.critMultiplier ?? COMBAT_LIMITS.defaultCritMultiplier].some((value) => !Number.isFinite(value)) || s2.maxHp <= 0 || [s2.attackPower, s2.healingPower, s2.defense, s2.accuracy, s2.evasion].some((value) => value < 0)) throw new Error("invalid_snapshot_stats");
   return applyCharacterCompanionAssist({
     id: s2.characterId,
     classId: s2.classId,
@@ -47406,7 +47584,7 @@ function combatantFromVerifiedSnapshot(s2, abilities) {
     team: "players",
     role: s2.role,
     level: s2.level,
-    stats: { maxHp: s2.maxHp, attackPower: s2.attackPower, healingPower: s2.healingPower, defense: s2.defense, accuracy: s2.accuracy, evasion: s2.evasion, critChance: Math.max(0, Math.min(COMBAT_LIMITS.critChanceCap, s2.critChance)), critMultiplier: COMBAT_LIMITS.defaultCritMultiplier, haste: Math.max(-0.25, Math.min(0.75, s2.haste)) },
+    stats: { maxHp: s2.maxHp, attackPower: s2.attackPower, healingPower: s2.healingPower, defense: s2.defense, accuracy: s2.accuracy, evasion: s2.evasion, critChance: Math.max(0, Math.min(COMBAT_LIMITS.critChanceCap, s2.critChance)), critMultiplier: Math.max(1, Math.min(3, s2.critMultiplier ?? COMBAT_LIMITS.defaultCritMultiplier)), haste: Math.max(-0.25, Math.min(0.75, s2.haste)) },
     basicAttackMs: 2400,
     basicAttackCoeff: 0.7,
     abilities,
@@ -49512,23 +49690,35 @@ var OnlineCoopLfg = class {
 
 // ../apps/mobile/src/core/combat-power.ts
 var statScore = (stats6, level) => Math.max(0, Math.round(
-  stats6.attack * 18 + stats6.defense * 11 + stats6.hp * 0.7 + (stats6.power ?? 0) * 4 + level * 12 + (stats6.critChance ?? 0) * 220 + (stats6.critMultiplier ?? 1.5) * 18 + (stats6.accuracy ?? 0.84) * 45 + (stats6.evasion ?? 0.04) * 50 + (stats6.haste ?? 0.05) * 150
+  stats6.attack * 18 + stats6.defense * 11 + stats6.hp * 0.7 + (stats6.power ?? 0) * 4 + level * 12 + (stats6.critChance ?? 0) * 220 + (stats6.critMultiplier ?? 1.5) * 18 + (stats6.accuracy ?? 0.84) * 45 + (stats6.evasion ?? 0.04) * 50 + (stats6.haste ?? 0.05) * 150 + (stats6.armor ?? 0) * 110 + (stats6.ward ?? 0) * 140 + (stats6.tenacity ?? 0) * 60 + (stats6.potency ?? 0) * 80 + (stats6.penetration ?? 0) * 135
 ));
 function combatPowerRating(state) {
   const character = state.character;
   if (!character) return { total: 0, player: 0, companion: 0, rows: [] };
   const stats6 = effectiveStats(state), player2 = statScore(stats6, character.level);
-  const base = statScore({ hp: character.hp, attack: character.attack, defense: character.defense }, character.level);
-  const permanent = characterPermanentMultipliers(state);
-  const passive2 = Math.max(0, Math.round(player2 * (1 - 1 / Math.max(1, permanent.combatPowerMultiplier))));
-  const build = Math.max(0, player2 - base - passive2);
+  const role2 = CLASSES.find((def2) => def2.id === character.classId)?.role;
+  const base = statScore({
+    hp: character.hp,
+    attack: character.attack,
+    defense: character.defense,
+    power: Math.round(character.attack * 1.5 + character.defense * 0.8 + character.hp * 0.08 + character.level * 2.5),
+    critChance: role2 === "Damage" ? 0.1 : 0.05,
+    critMultiplier: 1.5,
+    accuracy: 0.84,
+    evasion: role2 === "Damage" ? 0.07 : 0.04,
+    haste: 0.05
+  }, character.level);
+  const unequipped = { ...state, character: { ...character, equipment: {}, equipmentInstanceIds: {} } };
+  const withoutGear = statScore(effectiveStats(unequipped), character.level);
+  const build = player2 - withoutGear;
+  const passive2 = withoutGear - base;
   const id = character.equippedCombatCompanionId, def = id ? combatCompanionDef(id) : void 0, progress = id ? state.account.combatCompanionProgress?.[id] : void 0;
   const contribution = companionCombatContribution(state);
   const companion = def && progress ? Math.round((def.baseStats.power * 18 + def.baseStats.defense * 10 + def.baseStats.hp * 0.3) * (1 + (progress.level - 1) * 0.025 + progress.ascensionTier * 0.1 + progress.bondLevel * 0.01) * COMPANION_RARITY_CONFIG[def.rarity].targetPowerMultiplier + player2 * contribution.contributionPct) : 0;
   const rows2 = [
     { id: "base", label: "Class base", value: base, detail: `Level ${character.level} base stats` },
     { id: "build", label: "Gear, sets & gems", value: build, detail: "Equipped stat gains and build effects" },
-    { id: "passives", label: "Passive bonuses", value: passive2, detail: passive2 ? `Active permanent combat bonuses \xB7 +${Math.round((permanent.combatPowerMultiplier - 1) * 100)}%` : "No direct combat-power passive active" },
+    { id: "passives", label: "Other character bonuses", value: passive2, detail: "Class training, Faith, preparation and permanent boosts" },
     { id: "companion", label: "Combat companion", value: companion, detail: def && progress ? `${def.name} \xB7 Lv. ${progress.level} \xB7 Bond ${progress.bondLevel}` : "No combat companion equipped" }
   ];
   return { total: player2 + companion, player: player2, companion, rows: rows2 };

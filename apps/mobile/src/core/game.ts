@@ -1255,7 +1255,9 @@ function fallenKnightPlayerSnapshot(state:GameState):FallenKnightPlayerSnapshot{
     name:character.name,classId:character.classId,maxHp:stats.hp,currentHp:Math.max(1,Math.min(stats.hp,character.currentHp||stats.hp)),
     attack:stats.attack,defense:stats.defense,power:stats.power,accuracy:stats.accuracy,evasion:stats.evasion,critChance:stats.critChance,critMultiplier:stats.critMultiplier,haste:stats.haste,
     damageMultiplier:Math.max(.7,(1+effectGems.boss_power)*setCombat.penetrationMultiplier)*gear.outgoingDamageMultiplier*(prep?.outgoing??1),
-    actionSpeedMultiplier:Math.max(.65,style.speedMultiplier*multipliers.combatSpeedMultiplier*companion.outputMultiplier*(1+effectGems.combat_speed)*setCombat.speedMultiplier)*gear.actionSpeedMultiplier,
+    // Stat Gem and set Haste are already included in stats.haste, used by the story-boss attack timer.
+    // Do not apply them again through actionSpeedMultiplier.
+    actionSpeedMultiplier:Math.max(.65,style.speedMultiplier*multipliers.combatSpeedMultiplier*companion.outputMultiplier*(1+effectGems.combat_speed))*gear.actionSpeedMultiplier,
     incomingDamageMultiplier:Math.max(.45,style.damageTakenMultiplier*multipliers.incomingDamageMultiplier*companion.incomingDamageMultiplier*(1-effectGems.damage_reduction)*Math.max(.5,1-setCombat.stats.ward)*(prep?.damage??1))*gear.incomingDamageMultiplier,
     potionHeal:potion?.effect.kind==='healing'?Math.ceil(stats.hp*potion.effect.maxHpFraction*multipliers.healingEffectivenessMultiplier):0,potionQuantity,autoEatThresholdPct:state.settings.autoEatThresholdPct,
   };

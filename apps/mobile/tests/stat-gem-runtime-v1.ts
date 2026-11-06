@@ -66,6 +66,12 @@ ok(iron.defense>without.defense&&iron.armor>without.armor,'Iron must increase ef
 const savage=effectiveStats(withGem('stat_savage'));
 close(savage.critMultiplier,1.5+.5*.025,'Savage applies to the actual base critical-damage bonus');
 
+const unequippedWard=withGem('stat_ward');
+const noSocketedGear={...unequippedWard,character:{...unequippedWard.character,equipment:{}}};
+close(effectiveStats(noSocketedGear).ward,0,
+ 'Unequipping a socketed item must remove its Ward bonus from Character and combat stats');
+close(equipmentSetCombatModifiers(noSocketedGear).stats.ward,0,
+ 'Unequipped Ward gem cannot mitigate combat damage');
 const emptyCanonical=equippedCanonicalStatGemBonusesV1(base);
 ok(Object.keys(emptyCanonical.statPercent).length===0&&Object.keys(emptyCanonical.statPercentagePoints).length===0,
   'Unsocketed canonical gems cannot grant bonuses');

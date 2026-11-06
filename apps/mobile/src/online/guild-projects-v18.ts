@@ -21,7 +21,7 @@ export interface OnlineGuildProjectMemberContribution{
 export interface OnlineGuildProjectSummary{
  id:string;templateId:string;name:string;description:string;kind:GuildProjectKind;focus:GuildProjectFocus;slotIndex:number;status:'active'|'completed'|'expired'|'cancelled';
  targetPoints:number;completionPoints:number;combatPoints:number;skillingPoints:number;meaningfulContributors:number;minimumMeaningfulContributors:number;
- completionRewardClaimed?:boolean;launchWeekly?:boolean;activityTotals:Record<'combat'|'gathering'|'crafting',number>;personalPoints:number;personalRewardThreshold:number;endsAt?:string;startedAt:string;resourceGoals:OnlineGuildProjectResourceGoal[];memberContributions:OnlineGuildProjectMemberContribution[];
+ completionRewardClaimed?:boolean;launchWeekly?:boolean;rewardGold:number;rewardDestination:'character'|'guild_bank';activityTotals:Record<'combat'|'gathering'|'crafting',number>;personalPoints:number;personalRewardThreshold:number;endsAt?:string;startedAt:string;resourceGoals:OnlineGuildProjectResourceGoal[];memberContributions:OnlineGuildProjectMemberContribution[];
 }
 export interface OnlineGuildProjectCandidate{id:string;cycleKey:string;templateId:string;name:string;description:string;focus:'combat'|'skilling'|'mixed';expiresAt:string;voteCount:number;myVote:boolean;canStart:boolean}
 export interface OnlineGuildProjectsSnapshot{guildId:string;projects:OnlineGuildProjectSummary[];candidates:OnlineGuildProjectCandidate[];activity:GuildActivityView[]}
@@ -94,6 +94,7 @@ async function readGuildProjects(membership:NonNullable<Awaited<ReturnType<typeo
   return {
    id:row.id,templateId:row.template_id,launchWeekly:row.template_id==='guild_weekly_shared_effort',completionRewardClaimed:claimed.has(row.id),
    name:definitionText(snapshot,'name',humanize(row.template_id)),activityTotals,
+   rewardGold:num(snapshot.goldReward)||500,rewardDestination:snapshot.rewardDestination==='guild_bank'?'guild_bank':'character',
    description:definitionText(snapshot,'description','Shared Guild project.'),
    kind:row.kind,focus:row.focus,slotIndex:row.slot_index,status:row.status,
    targetPoints:num(row.target_points),completionPoints:num(row.completion_points),combatPoints:num(row.combat_points),skillingPoints:num(row.skilling_points),

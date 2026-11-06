@@ -1,6 +1,7 @@
 import type {Language} from './languages';
 import type {QuestActDef,QuestDef} from '../content/quests';
 import {chapterTwoActCopy,chapterTwoQuestCopy} from './quest-story-act-two';
+import {chapterThreeActCopy,chapterThreeQuestCopy} from './quest-story-act-three';
 
 /** Reviewed Chapter I source copy. IDs and exact English wording must both match.
  * Monster and region names stay untouched; unknown or revised text falls back verbatim.
@@ -196,8 +197,8 @@ export const chapterOneQuestCopy={
   }
 } as const satisfies Record<string,Record<StoryField,EightLanguages>>;
 
-const localizedActCopy={1:chapterOneActCopy[1],2:chapterTwoActCopy[2]} as const;
-const localizedQuestCopy:Record<string,Record<StoryField,EightLanguages>>={...chapterOneQuestCopy,...chapterTwoQuestCopy};
+const localizedActCopy={1:chapterOneActCopy[1],2:chapterTwoActCopy[2],3:chapterThreeActCopy[3]} as const;
+const localizedQuestCopy:Record<string,Record<StoryField,EightLanguages>>={...chapterOneQuestCopy,...chapterTwoQuestCopy,...chapterThreeQuestCopy};
 
 export function localizedQuestActText(language:Language,act:QuestActDef,field:'name'|'subtitle'):string{
   if(!Object.prototype.hasOwnProperty.call(localizedActCopy,act.act))return act[field];

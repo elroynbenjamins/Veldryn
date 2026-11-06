@@ -14,6 +14,28 @@ export function attackPower(classAttackBase: number, weaponPower: number, primar
   return classAttackBase + weaponPower + primaryStat * classPrimaryCoeff;
 }
 
+/**
+ * Player-only role offense conversion. Defensive/support builds gain a modest
+ * amount of direct and periodic damage without displacing dedicated DPS roles.
+ * The cap is relative to Attack Power so high-HP/shield builds cannot scale
+ * offensive damage without also investing in a weapon.
+ *
+ * The combat engine uses healingPower for both healing and shielding. This
+ * function never changes actual healing/shielding strength or enemy damage.
+ */
+export function roleAdjustedAttackPower(input:{
+  team:'players'|'enemies';
+  role:'tank'|'damage'|'support'|'enemy';
+  attackPower:number;defense:number;maxHp:number;healingPower:number;
+}):number{
+  const attack=Math.max(0,input.attackPower);
+  if(input.team!=='players'||input.role==='damage'||input.role==='enemy')return attack;
+  const bonus=input.role==='tank'
+    ?Math.min(attack*.10,Math.max(0,input.defense)*.014+Math.max(0,input.maxHp)*.0014)
+    :Math.min(attack*.10,Math.max(0,input.healingPower)*.035);
+  return attack+bonus;
+}
+
 export function defenseMitigation(defense: number, mitigationConstant: number): number {
   const raw = defense / Math.max(1, defense + mitigationConstant);
   return clamp(raw, COMBAT_LIMITS.mitigationMin, COMBAT_LIMITS.mitigationMax);

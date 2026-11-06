@@ -160,7 +160,7 @@ export function EquipmentEnhancementModal({visible,state,itemId,onClose,onUpgrad
             <Text style={s.rule}>{gt("A failed tempering consumes its cost but never lowers your rank. Each miss improves the next chance, up to +10%.")}</Text>
             {decision.set?<Text style={s.rule}>{decision.set.tier+' · '+decision.set.name+' · '+decision.set.equippedPieces+'/'+decision.set.totalPieces+' '+gt("equipped")}</Text>:null}
           </View>:null}
-          {confirmRisk?<View style={s.risk}><Text style={s.riskTitle}>{gt("FINAL IMPROVEMENT")}</Text><Text style={s.riskText}>{gt("Confirm spending these materials at ")+totalChancePct+'% '+gt("success.")}</Text></View>:null}
+          {confirmRisk?<View style={s.risk}><Text style={s.riskTitle}>{gt("FINAL IMPROVEMENT")}</Text><Text style={s.riskText}>{gt("Confirm spending these materials at {percent}% success.",{percent:totalChancePct})}</Text></View>:null}
         </>}
       </>:gemPickerOpen?<>
         <Pressable accessibilityRole="button" onPress={()=>{setGemPickerOpen(false);setSelectedGemId(null);setPendingGemAction(null)}} style={s.compactBack}><Text style={s.compactBackText}>{'‹  '+gt("Back to sockets")}</Text></Pressable>

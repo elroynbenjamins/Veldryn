@@ -381,7 +381,7 @@ export const socialEarlyRows={
   "This expedition has ended. Review any available rewards before returning.": [
     "Экспедиция завершена. Перед возвращением проверьте доступные награды.",
     "Sefer sona erdi. Dönmeden önce alınabilecek ödülleri kontrol et."
-  ]
+  ],
   "Room in progress": ["Комната проходится","Oda devam ediyor"],
   "Resolving the selected room": ["Выбранная комната завершается","Seçilen oda tamamlanıyor"],
   "Saving room progress": ["Сохранение прогресса комнаты","Oda ilerlemesi kaydediliyor"],

@@ -180,6 +180,9 @@ export const weeklyOrderCopyRows={
     "Награда за все еженедельные задания",
     "Haftalık Görevleri Tamamlama Ödülü"
   ],
+  "Resolve mounting trouble across {region} through normal regional activity.": ["Bekämpfe die wachsenden Probleme in {region} durch gewöhnliche Aktivitäten vor Ort.","Resuelve los problemas crecientes de {region} con actividades regionales normales.","Pak de toenemende problemen in {region} aan via gewone regionale activiteiten.","Affronta i crescenti problemi di {region} svolgendo le normali attività regionali.","Résolvez les troubles croissants de {region} grâce aux activités régionales habituelles.","Устраняйте растущие проблемы в {region} обычными действиями в регионе.","{region} bölgesindeki artan sorunları normal bölge etkinlikleriyle çöz."],
+  "Bring down {name} for the posted hunt.": ["Besiege {name} für den ausgeschriebenen Jagdauftrag.","Derrota a {name} para completar la cacería.","Versla {name} voor de geplaatste jachtopdracht.","Sconfiggi {name} per completare la caccia.","Vainquez {name} pour terminer la chasse.","Победите {name} для выполнения охотничьего заказа.","İlan edilen av için {name} yen."],
+  "Complete the posted work order: {name}.": ["Erledige den ausgeschriebenen Arbeitsauftrag: {name}.","Completa el encargo publicado: {name}.","Voltooi de geplaatste werkopdracht: {name}.","Completa l'incarico pubblicato: {name}.","Terminez l'ordre de travail affiché : {name}.","Выполните опубликованный рабочий заказ: {name}.","İlan edilen iş emrini tamamla: {name}."],
   "Broken Wardstones": [
     "Zerbrochene Schutzsteine",
     "Piedras protectoras rotas",

@@ -62,6 +62,8 @@ jobs:
         run: pnpm --dir backend test:dungeon-tier-balance
       - name: Verify Live dungeon battle pacing
         run: pnpm --dir backend test:live-pacing
+      - name: Prove equipped gems persist through frozen dungeon snapshots
+        run: node backend/dist/online/backend/online/tests/coop-loadout.js
       - name: Verify dungeon potions and Q-mode merchant behavior
         run: pnpm --dir backend test:qmode-merchant
 

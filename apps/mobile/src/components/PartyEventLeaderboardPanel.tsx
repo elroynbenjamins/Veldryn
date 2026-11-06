@@ -1,4 +1,6 @@
 import {useSocialText} from '../i18n/social';
+import {useGameLanguage} from '../i18n/GameLanguageProvider';
+import {partyProgressNumber,usePartyProgressUiText} from '../i18n/party-progress-ui';
 import React, { useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import type { PartyEventLeaderboardView } from '../core/party-social';
@@ -10,7 +12,8 @@ export interface PartyEventLeaderboardPanelProps {
 }
 
 export function PartyEventLeaderboardPanel({ boards, onAudienceChange }: PartyEventLeaderboardPanelProps) {
- const st=useSocialText();
+ const st=useSocialText(),ui=usePartyProgressUiText(),language=useGameLanguage();
+ const number=(value:number)=>partyProgressNumber(language,value);
   const [audience, setAudience] = useState<Audience>('global');
   const board = boards[audience] ?? boards.global;
   const select = (next: Audience) => { setAudience(next); onAudienceChange?.(next); };
@@ -18,19 +21,19 @@ export function PartyEventLeaderboardPanel({ boards, onAudienceChange }: PartyEv
     <View style={styles.panel}>
       <Text style={styles.eyebrow}>{st("PARTY LEADERBOARD")}</Text>
       <View style={styles.tabs}>
-        {(['global','friends','guild'] as Audience[]).map((item) => <Pressable key={item} style={[styles.tab,audience===item&&styles.active]} onPress={()=>select(item)}><Text style={styles.tabText}>{item}</Text></Pressable>)}
+        {(['global','friends','guild'] as Audience[]).map((item) => <Pressable key={item} style={[styles.tab,audience===item&&styles.active]} onPress={()=>select(item)}><Text style={styles.tabText} >{ui(item)}</Text></Pressable>)}
       </View>
-      {board?.ownParty && <View style={styles.own}><Text style={styles.ownText}>Your Party · #{board.ownParty.rank}</Text><Text style={styles.ownScore}>{board.ownParty.score.toLocaleString()}</Text></View>}
+      {board?.ownParty && <View style={styles.own}><Text style={styles.ownText}>{ui('Your Party · #{rank}',{rank:board.ownParty.rank})}</Text><Text style={styles.ownScore}>{number(board.ownParty.score)}</Text></View>}
       <ScrollView style={styles.list} nestedScrollEnabled showsVerticalScrollIndicator={false} showsHorizontalScrollIndicator={false}>
         {(board?.entries ?? []).map((entry) => (
           <View key={entry.partyId} style={[styles.row,entry.isOwnParty&&styles.ownRow]}>
             <Text style={styles.rank}>#{entry.rank}</Text>
-            <View style={styles.flex}><Text numberOfLines={1} style={styles.name}>{entry.partyName}</Text><Text style={styles.meta}>{entry.meaningfulContributors} contributors · top {Math.max(1,Math.ceil(entry.percentile))}%</Text></View>
-            <Text style={styles.score}>{entry.score.toLocaleString()}</Text>
+            <View style={styles.flex}><Text numberOfLines={1} style={styles.name}>{entry.partyName}</Text><Text style={styles.meta}>{ui('{count} contributors · top {percent}%',{count:number(entry.meaningfulContributors),percent:number(Math.max(1,Math.ceil(entry.percentile)))})}</Text></View>
+            <Text style={styles.score}>{number(entry.score)}</Text>
           </View>
         ))}
       </ScrollView>
-      <Text style={styles.hint}>Rank rewards are prestige-heavy. Friends and Guild views preserve the same global rank instead of creating easier private reward ladders.</Text>
+      <Text style={styles.hint}>{ui('Rank rewards are prestige-heavy. Friends and Guild views preserve the same global rank instead of creating easier private reward ladders.')}</Text>
     </View>
   );
 }

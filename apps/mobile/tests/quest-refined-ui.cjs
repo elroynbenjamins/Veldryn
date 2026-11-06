@@ -11,7 +11,7 @@ assert.equal(syntax.filter(d=>d.category===ts.DiagnosticCategory.Error).length,0
   'refined quest layout must parse as TypeScript/JSX');
 
 assert.ok(app.includes("QuestRefinedScreen as QuestScreen"),'App must mount the redesigned quests screen');
-assert.ok(screen.includes('journalEntries(state,filter,query)'),'story filtering/search must use real journal state');
+assert.ok(screen.includes("journalEntries(state,filter,'').filter(({def})=>questMatchesLocalizedSearch(language,def,query))"),'story filtering must use real journal state and preserve English/localized search');
 assert.ok(screen.includes('seasonalQuestBoard(state'),'challenge cards must preserve class/period projections');
 assert.ok(screen.includes('weeklyOrderBoardForState(state)'),'contracts must use real current weekly board');
 assert.ok(screen.includes('GameModalSurface')&&screen.includes('GameModalHeader'),

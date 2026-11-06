@@ -2371,7 +2371,7 @@ export const EARLY_LOCALE_ROWS={
   "weapon": ["Оружие","Silah"],
   "equipment": ["Снаряжение","Ekipman"],
   "common": ["Обычный","Yaygın"],
-  "uncommon": ["Необычный","Nadir olmayan"],
+  "uncommon": ["Необычный","Sıradışı"],
   "rare": ["Редкий","Nadir"],
   "epic": ["Эпический","Destansı"],
   "legendary": ["Легендарный","Efsanevi"],

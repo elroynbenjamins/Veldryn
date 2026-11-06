@@ -79,10 +79,10 @@ export function EquipmentPouchPanel({state,busy=false,onAction}:{state:GameState
  };
  return <View style={s.root}>
   <View style={s.heading}>
-   <View style={s.flex}><Text accessibilityRole="header" style={s.title}{p('Equipment Pouch')}</Text>
+   <View style={s.flex}><Text accessibilityRole="header" style={s.title}>{p('Equipment Pouch')}</Text>
     <Text style={s.meta}>{p('{used}/{capacity} slots · {character} only',{used:pouch.stacks.length,capacity:pouch.capacity,character:state.character?.name??p('Character')})}</Text></View>
   </View>
-  <Text style={s.hint}{p('New gear arrives here first. Compare, equip, transfer or sell copies directly. The Bank remains shared.')}</Text>
+  <Text style={s.hint}>{p('New gear arrives here first. Compare, equip, transfer or sell copies directly. The Bank remains shared.')}</Text>
   <View style={s.sellToolbar}>
    {selectMode?<>
     <GameButton compact tone="secondary" title={p('Select safe')} disabled={busy||!onAction} onPress={selectSafe}/>
@@ -97,7 +97,7 @@ export function EquipmentPouchPanel({state,busy=false,onAction}:{state:GameState
    <Text style={s.meta}>{p('{count} selected · {gold} Gold',{count:saleCount,gold:saleGold.toLocaleString(language)})}{protectedCount?p(' · {count} protected',{count:protectedCount}):''}</Text>
    <GameButton compact title={saleCount?p('Sell selected · {gold}g',{gold:saleGold.toLocaleString(language)}):p('Select gear')} tone="danger"
     disabled={!onAction||busy||!selectionValid} onPress={()=>startSale(selectedIds)}/>
-  </View>:<Text style={s.hint}{p('Quick-selects only eligible Common, Uncommon and Rare gear. Epic, Legendary and Mythic need manual selection.')}</Text>}
+  </View>:<Text style={s.hint}>{p('Quick-selects only eligible Common, Uncommon and Rare gear. Epic, Legendary and Mythic need manual selection.')}</Text>}
   <View style={s.grid} onLayout={event=>{const width=Math.floor(event.nativeEvent.layout.width);setGridWidth(previous=>previous===width?previous:width)}}>
    {entries.map((stack,index)=>{
     const copy=stack?.instanceId?copyById.get(stack.instanceId):undefined;
@@ -119,8 +119,8 @@ export function EquipmentPouchPanel({state,busy=false,onAction}:{state:GameState
    <GameModalHeader eyebrow={p('EQUIPMENT POUCH · SALE')} title={p('Sell selected equipment?')} onClose={()=>{if(!saleInFlight.current&&!busy)setPendingSale(null)}}/>
    <View style={s.details}>
     <Text style={s.itemName}>{p(pendingRows.length===1?'{count} copy · {gold} Gold':'{count} copies · {gold} Gold',{count:pendingRows.length,gold:pendingGold.toLocaleString(language)})}</Text>
-    <Text style={s.meta}{p('This cannot be undone. Locked, favorited, enhanced, socketed, loadout and Working Toward gear stays protected.')}</Text>
-    {!confirmationValid?<Text style={s.saleWarning}{p('Selection has changed. Close and review the equipment.')}</Text>:null}
+    <Text style={s.meta}>{p('This cannot be undone. Locked, favorited, enhanced, socketed, loadout and Working Toward gear stays protected.')}</Text>
+    {!confirmationValid?<Text style={s.saleWarning}>{p('Selection has changed. Close and review the equipment.')}</Text>:null}
     <View style={s.actions}>
      <GameButton compact tone="secondary" title={p('Cancel')} disabled={busy} onPress={()=>setPendingSale(null)}/>
      <GameButton compact tone="danger" title={p('Confirm sale')} disabled={!onAction||busy||!confirmationValid} onPress={confirmSale}/>
@@ -139,7 +139,7 @@ export function EquipmentPouchPanel({state,busy=false,onAction}:{state:GameState
     <View style={s.hero}><View style={[s.art,{borderColor:rarity?.color??C.line}]}><ItemArtwork itemId={item.id} size={74}/></View>
      <View style={s.flex}><Text style={[s.itemName,{color:rarity?.color??C.text}]}>{p(rarity?.label??'Equipment')}{record?' · Q'+craftedGearDisplayQuality(record):''}</Text>
       <Text style={s.meta}>{p('Stored on {character} · {slot}',{character:state.character?.name??p('this character'),slot:p(item.slot??'Gear')})}</Text>
-      {record?<Text style={s.meta}>{record.locked?p('Locked · '):''}{record.enhancement.rank>0?'+'+record.enhancement.rank+p(' enhanced · '):''}{p('Unique forged copy')}</Text>:<Text style={s.meta}{p('Standard equipment')}</Text>}</View>
+      {record?<Text style={s.meta}>{record.locked?p('Locked · '):''}{record.enhancement.rank>0?'+'+record.enhancement.rank+p(' enhanced · '):''}{p('Unique forged copy')}</Text>:<Text style={s.meta}>{p('Standard equipment')}</Text>}</View>
     </View>
     <View style={s.actions}>
      <GameButton compact title={p('Compare & Equip')} disabled={!onAction||busy} onPress={()=>{setPreviewStack(selected);setSelectedIndex(null)}}/>

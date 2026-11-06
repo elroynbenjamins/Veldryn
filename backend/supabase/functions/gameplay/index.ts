@@ -49370,16 +49370,36 @@ function dismantleGemV1(state, itemId, quantityToDismantle = 1) {
 function combinedGemQuantityV1(state, itemId) {
   return gemStorageQuantity(state, itemId);
 }
+function equippedCanonicalSocketsV1(state) {
+  if (!state.character) return [];
+  const instances = craftedGearInstances(state);
+  return Object.entries(state.character.equipment).flatMap(([key, equipmentItemId]) => {
+    if (!equipmentItemId) return [];
+    const instanceId = state.character.equipmentInstanceIds?.[key];
+    const instance = instanceId ? instances.find((copy) => copy.id === instanceId && copy.itemId === equipmentItemId && copy.ownerCharacterId === state.character.id) : void 0;
+    const raw2 = instance?.enhancement ?? state.character.gearEnhancements?.[equipmentItemId];
+    const valid = (id, kind) => {
+      if (!id) return void 0;
+      try {
+        const item = itemDef(id);
+        return item.type === "gem" && (item.gemKind ?? (item.gemEffect ? "effect" : "stat")) === kind ? id : void 0;
+      } catch {
+        return void 0;
+      }
+    };
+    const ids2 = Array.isArray(raw2?.gemIds) ? raw2.gemIds : [];
+    const selectedStat = valid(raw2?.statGemId, "stat") ?? ids2.find((id) => valid(id, "stat"));
+    const selectedEffect = valid(raw2?.effectGemId, "effect") ?? ids2.find((id) => valid(id, "effect"));
+    const statGemId = canonicalGemMetaV1(selectedStat ?? "") ? selectedStat : void 0;
+    const effectGemId = canonicalGemMetaV1(selectedEffect ?? "") ? selectedEffect : void 0;
+    return [{ equipmentItemId, statGemId, effectGemId }];
+  });
+}
+function equippedCanonicalGemIdsV1(state) {
+  return equippedCanonicalSocketsV1(state).flatMap((row) => [row.statGemId, row.effectGemId].filter((id) => Boolean(id)));
+}
 function effectFamilyCopiesV1(state, familyId, excludeEquipmentItemId) {
-  if (!state.character) return 0;
-  let count = 0;
-  for (const equipmentItemId of Object.values(state.character.equipment)) {
-    if (!equipmentItemId || equipmentItemId === excludeEquipmentItemId) continue;
-    const gemId = state.character.gearEnhancements?.[equipmentItemId]?.effectGemId;
-    if (!gemId) continue;
-    if (canonicalGemMetaV1(gemId)?.familyId === familyId) count++;
-  }
-  return count;
+  return equippedCanonicalSocketsV1(state).filter((row) => row.equipmentItemId !== excludeEquipmentItemId && canonicalGemMetaV1(row.effectGemId ?? "")?.familyId === familyId).length;
 }
 function assertEffectGemEquipAllowedV1(state, equipmentItemId, gemId) {
   const meta = canonicalGemMetaV1(gemId);
@@ -49706,6 +49726,38 @@ function enhancedGearStatsAtRank(state, itemId, rank) {
 function enhancedGearStats(state, itemId) {
   return enhancedGearStatsAtRank(state, itemId, gearEnhancement(state, itemId).rank);
 }
+var CANONICAL_STAT_GEM_KEYS_V1 = {
+  stat_might: "power",
+  stat_vitality: "maxHp",
+  stat_iron: "armor",
+  stat_ward: "ward",
+  stat_precision: "accuracy",
+  stat_keen: "critRate",
+  stat_savage: "critDamage",
+  stat_piercing: "penetration",
+  stat_swift: "haste",
+  stat_potent: "potency",
+  stat_elusive: "evasion",
+  stat_resolute: "tenacity"
+};
+function equippedCanonicalStatGemBonusesV1(state) {
+  const statPercent = {};
+  const statPercentagePoints = {};
+  if (!state.character) return { statPercent, statPercentagePoints };
+  for (const itemId of Object.values(state.character.equipment)) {
+    if (!itemId) continue;
+    const gemId = gearEnhancement(state, itemId).statGemId;
+    if (!gemId) continue;
+    const meta = canonicalGemMetaV1(gemId);
+    if (!meta || meta.kind !== "stat") continue;
+    const family = mobileGemFamilyV1(meta.familyId);
+    const key = CANONICAL_STAT_GEM_KEYS_V1[meta.familyId];
+    if (!key || !family || family.kind !== "stat") continue;
+    const target2 = family.unit === "percentage_point" ? statPercentagePoints : statPercent;
+    target2[key] = (target2[key] ?? 0) + family.values[meta.grade];
+  }
+  return { statPercent, statPercentagePoints };
+}
 function equippedGemBonuses(state) {
   const result = { attack: 0, defense: 0, hp: 0 };
   if (!state.character) return result;
@@ -49713,6 +49765,7 @@ function equippedGemBonuses(state) {
     if (!itemId) continue;
     const gemId = gearEnhancement(state, itemId).statGemId;
     if (!gemId) continue;
+    if (canonicalGemMetaV1(gemId)) continue;
     const gem2 = itemDef(gemId);
     if (gem2.type === "gem" && gem2.gemStat) result[gem2.gemStat] += gem2.gemPercent ?? 0;
   }
@@ -49889,8 +49942,28 @@ function activeEquipmentSetRuntime(state) {
   }
   return { stats: total, activeSets: activeSets.sort((a, b) => b.pieces - a.pieces || a.setId.localeCompare(b.setId)) };
 }
+function activeEquipmentBuildStats(state) {
+  const sets = activeEquipmentSetRuntime(state).stats;
+  const gems = equippedCanonicalStatGemBonusesV1(state);
+  const p = gems.statPercent, pp = gems.statPercentagePoints;
+  const multiplied = (bonus, percent) => (1 + bonus) * (1 + (percent ?? 0)) - 1;
+  return {
+    maxHp: multiplied(sets.maxHp, p.maxHp),
+    armor: multiplied(sets.armor, p.armor),
+    ward: multiplied(sets.ward, p.ward),
+    tenacity: multiplied(sets.tenacity, p.tenacity),
+    haste: multiplied(sets.haste, p.haste),
+    power: multiplied(sets.power, p.power),
+    accuracy: sets.accuracy + (pp.accuracy ?? 0),
+    penetration: sets.penetration + (pp.penetration ?? 0),
+    potency: multiplied(sets.potency, p.potency),
+    critRate: sets.critRate + (pp.critRate ?? 0),
+    critDamage: (0.5 + sets.critDamage) * (1 + (p.critDamage ?? 0)) - 0.5,
+    evasion: sets.evasion + (pp.evasion ?? 0)
+  };
+}
 function equipmentSetCombatModifiers(state, baseCritChance = 0.05, baseAccuracy = 0.84) {
-  const stats4 = activeEquipmentSetRuntime(state).stats;
+  const stats4 = activeEquipmentBuildStats(state);
   const baseCritDamage = 0.5;
   const accuracyMultiplier = Math.min(0.99, baseAccuracy + stats4.accuracy) / baseAccuracy;
   const baseCritExpected = 1 + baseCritChance * baseCritDamage;
@@ -51477,7 +51550,7 @@ function effectiveStats(state) {
     attack += novice.setBonus.attack;
     defense += novice.setBonus.defense;
   }
-  const setRuntime = activeEquipmentSetRuntime(state), setStats = setRuntime.stats;
+  const setStats = activeEquipmentBuildStats(state);
   hp = Math.ceil(hp * (1 + setStats.maxHp));
   defense = Math.ceil(defense * (1 + setStats.armor));
   const gems = equippedGemBonuses(state);
@@ -52649,7 +52722,9 @@ function fallenKnightPlayerSnapshot(state) {
     critMultiplier: stats4.critMultiplier,
     haste: stats4.haste,
     damageMultiplier: Math.max(0.7, (1 + effectGems.boss_power) * setCombat.penetrationMultiplier) * gear.outgoingDamageMultiplier * (prep?.outgoing ?? 1),
-    actionSpeedMultiplier: Math.max(0.65, style.speedMultiplier * multipliers.combatSpeedMultiplier * companion.outputMultiplier * (1 + effectGems.combat_speed) * setCombat.speedMultiplier) * gear.actionSpeedMultiplier,
+    // Stat Gem and set Haste are already included in stats.haste, used by the story-boss attack timer.
+    // Do not apply them again through actionSpeedMultiplier.
+    actionSpeedMultiplier: Math.max(0.65, style.speedMultiplier * multipliers.combatSpeedMultiplier * companion.outputMultiplier * (1 + effectGems.combat_speed)) * gear.actionSpeedMultiplier,
     incomingDamageMultiplier: Math.max(0.45, style.damageTakenMultiplier * multipliers.incomingDamageMultiplier * companion.incomingDamageMultiplier * (1 - effectGems.damage_reduction) * Math.max(0.5, 1 - setCombat.stats.ward) * (prep?.damage ?? 1)) * gear.incomingDamageMultiplier,
     potionHeal: potion?.effect.kind === "healing" ? Math.ceil(stats4.hp * potion.effect.maxHpFraction * multipliers.healingEffectivenessMultiplier) : 0,
     potionQuantity,
@@ -56855,7 +56930,7 @@ function applyCharacterCompanionAssist(owner, progress) {
 // src/server/combat/snapshot-adapter.ts
 function combatantFromVerifiedSnapshot(s, abilities) {
   if (!Number.isInteger(s.level) || s.level < 1 || s.level > 100) throw new Error("invalid_snapshot_level");
-  if ([s.maxHp, s.attackPower, s.healingPower, s.defense, s.accuracy, s.evasion, s.critChance, s.haste].some((value) => !Number.isFinite(value)) || s.maxHp <= 0 || [s.attackPower, s.healingPower, s.defense, s.accuracy, s.evasion].some((value) => value < 0)) throw new Error("invalid_snapshot_stats");
+  if ([s.maxHp, s.attackPower, s.healingPower, s.defense, s.accuracy, s.evasion, s.critChance, s.haste, s.critMultiplier ?? COMBAT_LIMITS.defaultCritMultiplier].some((value) => !Number.isFinite(value)) || s.maxHp <= 0 || [s.attackPower, s.healingPower, s.defense, s.accuracy, s.evasion].some((value) => value < 0)) throw new Error("invalid_snapshot_stats");
   return applyCharacterCompanionAssist({
     id: s.characterId,
     classId: s.classId,
@@ -56863,7 +56938,7 @@ function combatantFromVerifiedSnapshot(s, abilities) {
     team: "players",
     role: s.role,
     level: s.level,
-    stats: { maxHp: s.maxHp, attackPower: s.attackPower, healingPower: s.healingPower, defense: s.defense, accuracy: s.accuracy, evasion: s.evasion, critChance: Math.max(0, Math.min(COMBAT_LIMITS.critChanceCap, s.critChance)), critMultiplier: COMBAT_LIMITS.defaultCritMultiplier, haste: Math.max(-0.25, Math.min(0.75, s.haste)) },
+    stats: { maxHp: s.maxHp, attackPower: s.attackPower, healingPower: s.healingPower, defense: s.defense, accuracy: s.accuracy, evasion: s.evasion, critChance: Math.max(0, Math.min(COMBAT_LIMITS.critChanceCap, s.critChance)), critMultiplier: Math.max(1, Math.min(3, s.critMultiplier ?? COMBAT_LIMITS.defaultCritMultiplier)), haste: Math.max(-0.25, Math.min(0.75, s.haste)) },
     basicAttackMs: 2400,
     basicAttackCoeff: 0.7,
     abilities,
@@ -56976,6 +57051,12 @@ var EFFECT_GEMS_V1 = [
   { familyId: "effect_flow", name: "Flow", category: "hybrid", values: vals2(1e-3, 15e-4, 2e-3, 25e-4, 3e-3), maxEquippedCopies: 3, baseDescription: "Different consecutive abilities build Haste for 6s; max 3.", resonance2: "Maximum stacks becomes 4.", resonance3: "Stacks decay one at a time after expiry.", durationMs: 6e3 },
   { familyId: "effect_opportunist", name: "Opportunist", category: "hybrid", values: vals2(7e-3, 9e-3, 0.011, 0.013, 0.015), maxEquippedCopies: 3, baseDescription: "Applying a new Mark/debuff/exposed/control state empowers the next direct hit within 4s.", resonance2: "Per-target cooldown becomes 3s.", resonance3: "A critical empowered hit extends the triggering effect by 1s once.", triggerCooldownMs: 4e3 }
 ];
+function findStatGem(familyId) {
+  return STAT_GEMS_V1.find((v) => v.familyId === familyId);
+}
+function findEffectGem(familyId) {
+  return EFFECT_GEMS_V1.find((v) => v.familyId === familyId);
+}
 
 // src/server/equipment/gems/gem-acquisition-v1.ts
 var GEM_SOURCE_POOLS_V1 = [
@@ -57184,6 +57265,33 @@ async function resolveRegionalCombatV1(deps, input) {
 // online/coop-loadout.ts
 import { createHash as createHash2 } from "node:crypto";
 
+// src/server/equipment/gems/gem-runtime-v1.ts
+function summarizeGemLoadoutV1(entries) {
+  const statPercent = {}, statPercentagePoints = {}, groups = /* @__PURE__ */ new Map();
+  for (const entry2 of entries) {
+    if (entry2.sockets.stat) {
+      const d = findStatGem(entry2.sockets.stat.familyId);
+      if (!d) throw new Error("unknown_stat_gem");
+      const target2 = d.unit === "percent" ? statPercent : statPercentagePoints;
+      target2[d.stat] = (target2[d.stat] ?? 0) + d.values[entry2.sockets.stat.grade];
+    }
+    if (entry2.sockets.effect) {
+      const g = entry2.sockets.effect;
+      const d = findEffectGem(g.familyId);
+      if (!d) throw new Error("unknown_effect_gem");
+      const grades = groups.get(g.familyId) ?? [];
+      if (grades.length >= d.maxEquippedCopies) throw new Error("effect_gem_resonance_cap");
+      grades.push(g.grade);
+      groups.set(g.familyId, grades);
+    }
+  }
+  const effects = [...groups.entries()].map(([familyId, grades]) => {
+    const d = findEffectGem(familyId);
+    return { familyId, copies: grades.length, resonance: Math.min(3, grades.length), totalValue: Number(grades.reduce((s, g) => s + d.values[g], 0).toFixed(6)), grades: [...grades].sort() };
+  });
+  return { statPercent, statPercentagePoints, effects };
+}
+
 // src/server/combat/content/launch-combat.ts
 var stats3 = (maxHp, attackPower, healingPower, defense, accuracy, evasion, critChance = 0.08, haste = 0.05) => ({ maxHp, attackPower, healingPower, defense, accuracy, evasion, critChance, critMultiplier: 1.5, haste });
 var dmg = (id, name, coeff, cooldownMs, priority, extra = {}) => ({ id, name, cooldownMs, castTimeMs: 0, target: "current_target", priority, effects: [{ kind: "damage", coeff, damageType: "physical" }], ...extra });
@@ -57291,6 +57399,14 @@ function deriveOnlineCoopLoadout(accountId, state, version) {
   if (!definition) throw new Error("unknown_class");
   const role = deriveRole(character.classId);
   const kit = launchPlayer(definition.name, 25), reference = referenceStats(character.classId), actual = effectiveStats(state), levelScale = character.level / 25;
+  const bonus = activeEquipmentBuildStats(state);
+  const sockets = equippedCanonicalGemIdsV1(state).map((gemId, index) => {
+    const meta = canonicalGemMetaV1(gemId);
+    if (!meta) throw new Error("invalid_equipped_gem");
+    const gem2 = { familyId: meta.familyId, grade: meta.grade };
+    return { equipmentItemId: "equipped_" + index, sockets: meta.kind === "stat" ? { stat: gem2 } : { effect: gem2 } };
+  });
+  const effectGems = summarizeGemLoadoutV1(sockets).effects;
   const legalEquipment = Boolean(character.equipment.weapon) && Object.entries(character.equipment).every(([slot, id]) => {
     if (!id) return true;
     const item = itemDef(id);
@@ -57322,13 +57438,15 @@ function deriveOnlineCoopLoadout(accountId, state, version) {
       level: character.level,
       ...combatCompanion ? { combatCompanion: structuredClone(combatCompanion) } : {},
       maxHp: kit.stats.maxHp * actual.hp / reference.hp * levelScale,
-      attackPower: kit.stats.attackPower * actual.attack / reference.attack * levelScale,
-      healingPower: kit.stats.healingPower * actual.attack / reference.attack * levelScale,
+      attackPower: kit.stats.attackPower * actual.attack / reference.attack * levelScale * (1 + bonus.power),
+      healingPower: kit.stats.healingPower * actual.attack / reference.attack * levelScale * (1 + bonus.potency),
       defense: kit.stats.defense * actual.defense / reference.defense * levelScale,
-      accuracy: kit.stats.accuracy * levelScale,
-      evasion: kit.stats.evasion * levelScale,
-      critChance: kit.stats.critChance,
-      haste: kit.stats.haste
+      accuracy: kit.stats.accuracy * actual.accuracy / reference.accuracy * levelScale,
+      evasion: kit.stats.evasion * actual.evasion / reference.evasion * levelScale,
+      critChance: kit.stats.critChance + (actual.critChance - reference.critChance),
+      haste: kit.stats.haste + (actual.haste - reference.haste),
+      ...actual.critMultiplier !== reference.critMultiplier ? { critMultiplier: kit.stats.critMultiplier + (actual.critMultiplier - reference.critMultiplier) } : {},
+      ...effectGems.length ? { effectGems } : {}
     }
   };
 }

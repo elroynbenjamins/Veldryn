@@ -109,8 +109,8 @@ export function assertEffectGemEquipAllowedV1(state:GameState,equipmentItemId:st
  const copies=effectFamilyCopiesV1(state,meta.familyId,equipmentItemId);
  if(copies>=GEM_EFFECT_RESONANCE_CAP_V1)throw new Error('This Effect Gem family is already at Resonance III (3/3)');
 }
-export function resonanceForFamilyV1(state:GameState,familyId:string){
- const grades=equippedCanonicalSocketsV1(state).flatMap(row=>{
+function resonanceFromSocketsV1(sockets:ReturnType<typeof equippedCanonicalSocketsV1>,familyId:string){
+ const grades=sockets.flatMap(row=>{
   const meta=canonicalGemMetaV1(row.effectGemId??'');
   return meta?.familyId===familyId?[meta.grade]:[];
  });
@@ -118,9 +118,14 @@ export function resonanceForFamilyV1(state:GameState,familyId:string){
  return {familyId,copies:grades.length,resonance:Math.min(3,grades.length) as 0|1|2|3,grades,totalValue};
 }
 
+export function resonanceForFamilyV1(state:GameState,familyId:string){
+ return resonanceFromSocketsV1(equippedCanonicalSocketsV1(state),familyId);
+}
+
 export function recommendedEffectFamiliesV1(state:GameState,classId:ClassId){
+ const sockets=equippedCanonicalSocketsV1(state);
  const rows=MOBILE_GEM_FAMILIES_V1.filter(f=>f.kind==='effect').map(family=>{
-   const resonance=resonanceForFamilyV1(state,family.familyId),classFit=family.recommendedClasses?.includes(classId)??false;
+   const resonance=resonanceFromSocketsV1(sockets,family.familyId),classFit=family.recommendedClasses?.includes(classId)??false;
    const score=(classFit?100:0)+(resonance.resonance===2?55:resonance.resonance===1?25:0)+(resonance.resonance>=3?-80:0);
    const reason=resonance.resonance===2?'Completes Resonance III':classFit?'Strong class synergy':resonance.resonance===1?'Builds current Resonance':'Alternative build option';
    return {family,score,reason,resonance};
@@ -132,10 +137,16 @@ export function gemFamilyRecipeIdV1(familyId:string){return 'recipe_gem_'+family
 export function isGemFamilyRecipeUnlockedV1(state:GameState,familyId:string){const family=mobileGemFamilyV1(familyId);return Boolean(family&&(family.kind==='stat'||(state.account.unlockedKnowledgeIds??[]).includes(gemFamilyRecipeIdV1(familyId))));}
 
 export function gemCodexRowsV1(state:GameState){
+ // Snapshot the active gem sockets only once for the whole Codex.
+ const equippedCounts=new Map<string,number>();
+ for(const id of equippedCanonicalGemIdsV1(state)){
+  const familyId=canonicalGemMetaV1(id)?.familyId;
+  if(familyId)equippedCounts.set(familyId,(equippedCounts.get(familyId)??0)+1);
+ }
  return MOBILE_GEM_FAMILIES_V1.map(family=>{
   const raw=([1,2,3,4,5] as MobileGemGradeV1[]).map(grade=>({grade,quantity:combinedGemQuantityV1(state,mobileRawGemItemIdV1(family.familyId,grade))}));
   const owned=([1,2,3,4,5] as MobileGemGradeV1[]).map(grade=>({grade,quantity:combinedGemQuantityV1(state,mobileGemItemIdV1(family.familyId,grade))}));
-  const equipped=family.kind==='effect'?resonanceForFamilyV1(state,family.familyId).copies:equippedCanonicalGemIdsV1(state).filter(id=>canonicalGemMetaV1(id)?.familyId===family.familyId).length;
+  const equipped=equippedCounts.get(family.familyId)??0;
   const highestOwned=[...owned].reverse().find(row=>row.quantity>0)?.grade;
   const recipeId=gemFamilyRecipeIdV1(family.familyId);
   return {family,raw,owned,equipped,highestOwned,recipeId,recipeUnlocked:isGemFamilyRecipeUnlockedV1(state,family.familyId)};

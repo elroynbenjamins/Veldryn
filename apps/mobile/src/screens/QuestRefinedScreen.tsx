@@ -18,6 +18,7 @@ import {type ThemeColors,spacing,touchTargetMin} from '../theme/theme';
 import {useGameLanguage} from '../i18n/GameLanguageProvider';
 import {progressionT,type ProgressionKey} from '../i18n/progression';
 import {questJournalText} from '../i18n/quest-journal-ui';
+import {seasonalChallengeName,seasonalChallengeDescription,seasonalChallengeText} from '../i18n/seasonal-challenge-copy';
 import type {Language} from '../i18n/languages';
 import {localizedQuestActText,localizedQuestStoryText,questMatchesLocalizedSearch} from '../i18n/quest-story-copy';
 import {QuestModeSwitch,type QuestMode} from '../components/QuestModeSwitch';
@@ -67,7 +68,7 @@ function CompactQuestRow({title,subtitle,eyebrow,status,current,max,art,reward,r
    <Text numberOfLines={2} style={[styles.rowTitle,{color:C.text}]}>{title}</Text>
    <Text numberOfLines={1} style={[styles.rowSubtitle,{color:C.muted}]}>{subtitle}</Text>
    {status!=='locked'?<ProgressLine current={current} max={max} C={C}/>:null}
-   {reward||rarity?<Text numberOfLines={1} style={[styles.rewardHint,{color:status==='ready'?C.good:C.accent}]}>{rarity?rarity.toUpperCase()+' · ':''}{reward??''}</Text>:null}
+   {reward||rarity?<Text numberOfLines={1} style={[styles.rewardHint,{color:status==='ready'?C.good:C.accent}]}>{rarity?rarity.toLocaleUpperCase(language)+' · ':''}{reward??''}</Text>:null}
   </View>
   <Text accessible={false} style={[styles.chevron,{color:C.accent}]}>›</Text>
  </Pressable>;
@@ -165,7 +166,7 @@ export function QuestRefinedScreen({state,mode,onModeChange,focusedWeeklyOrderId
    const def=allChallenges.find(q=>q.id===newChallenge[newChallenge.length-1]);
    if(def){
     const choice=def.rewardOptions.find(option=>option.id===state.account.seasonalContractRewardChoices?.[def.id])??def.rewardOptions[0];
-     setMoment({id:def.id,source:'challenges',title:def.name,gold:def.rewardGold,xp:def.rewardXp,itemId:choice.rewardItemId,quantity:choice.rewardItemQty,essence:choice.rewardCompanionEssence,bondstones:choice.rewardBondstones,rarityColor:QUEST_RARITIES[def.rarity].color});
+     setMoment({id:def.id,source:'challenges',title:seasonalChallengeName(language,def),gold:def.rewardGold,xp:def.rewardXp,itemId:choice.rewardItemId,quantity:choice.rewardItemQty,essence:choice.rewardCompanionEssence,bondstones:choice.rewardBondstones,rarityColor:QUEST_RARITIES[def.rarity].color});
     if((selected?.kind==='challenge'&&selected.id===def.id)||(pendingClaim.current?.kind==='challenge'&&pendingClaim.current.id===def.id)){pendingClaim.current=null;setSheetStage('success');}
    }
   }
@@ -201,7 +202,7 @@ export function QuestRefinedScreen({state,mode,onModeChange,focusedWeeklyOrderId
  const fallenKnight=state.defeatedBossIds.includes('FALLEN_KNIGHT')?fallenKnightWeeklyStatus(state,Date.now()):undefined;
  const selectedGoal=chosenStory?chosenStory.required:chosenOrder?chosenOrder.target:chosenChallenge?.required??1;
  const selectedValue=chosenStory?Math.min(selectedGoal,selectedProgress?.progress??0):chosenOrder?Math.min(selectedGoal,chosenOrder.progress):chosenChallenge?Math.min(selectedGoal,chosenChallenge.progress):0;
- const selectedTitle=chosenStory?localizedQuestStoryText(language,chosenStory,'name'):chosenOrder?.title??chosenChallenge?.name??'';
+ const selectedTitle=chosenStory?localizedQuestStoryText(language,chosenStory,'name'):chosenChallenge?seasonalChallengeName(language,chosenChallenge):chosenOrder?.title??'';
  const chosenDestination=chosenOrder?weeklyOrderDestination(chosenOrder):undefined;
  const chosenQueueable=chosenOrder?weeklyOrderQueueActivity(chosenOrder):undefined;
  const queueFull=(state.character?.activityQueue?.length??0)>=activityQueueCapacity(state);
@@ -280,10 +281,10 @@ export function QuestRefinedScreen({state,mode,onModeChange,focusedWeeklyOrderId
      <ProgressLine current={completeChallengeCount} max={allChallenges.length} C={C}/>
     </View>
     {nextReward?<View style={[styles.featured,{backgroundColor:C.goodSurface,borderColor:C.good}]}>
-     <View style={styles.rowMeta}><Text style={[styles.eyebrow,{color:C.good}]}>{p('REWARD READY')}</Text><StatusPill label={p(QUEST_RARITIES[nextReward.rarity].label).toLocaleUpperCase(language)} tone="special"/></View>
-     <Text style={[styles.featuredTitle,{color:C.text}]}>{p(nextReward.name)}</Text>
-     <Text style={[styles.subtitle,{color:C.muted}]}>{nextReward.period.toUpperCase()} · {p(QUEST_RARITIES[nextReward.rarity].cache)}</Text>
-     <GameButton title={p('Claim')+' '+p(QUEST_RARITIES[nextReward.rarity].cache)} onPress={()=>open('challenge',nextReward.id)}/>
+     <View style={styles.rowMeta}><Text style={[styles.eyebrow,{color:C.good}]}>{p('REWARD READY')}</Text><StatusPill label={seasonalChallengeText(language,QUEST_RARITIES[nextReward.rarity].label).toLocaleUpperCase(language)} tone="special"/></View>
+     <Text style={[styles.featuredTitle,{color:C.text}]}>{seasonalChallengeName(language,nextReward)}</Text>
+     <Text style={[styles.subtitle,{color:C.muted}]}>{nextReward.period.toUpperCase()} · {seasonalChallengeText(language,QUEST_RARITIES[nextReward.rarity].cache)}</Text>
+     <GameButton title={p('Claim')+' '+seasonalChallengeText(language,QUEST_RARITIES[nextReward.rarity].cache)} onPress={()=>open('challenge',nextReward.id)}/>
     </View>:null}
     <View style={styles.sectionHead}><Text style={[styles.sectionTitle,{color:C.accent}]}>{p('CHALLENGE LIST')}</Text><Text style={[styles.mini,{color:C.muted}]}>{daily.length} {p('daily')} · {weekly.length} {p('weekly')} · {monthly.length} {p('monthly')}</Text></View>
     <Rail C={C} selected={challengePeriod} onChange={setChallengePeriod} items={[{id:'all',label:p('All')},{id:'daily',label:p('Daily')},{id:'weekly',label:p('Weekly')},{id:'monthly',label:p('Monthly')}]}/>
@@ -291,7 +292,7 @@ export function QuestRefinedScreen({state,mode,onModeChange,focusedWeeklyOrderId
      const rows=(period==='daily'?daily:period==='weekly'?weekly:monthly).slice().sort((a,b)=>Number(challengeClaimed.has(a.id))-Number(challengeClaimed.has(b.id))||Number(b.progress>=b.required)-Number(a.progress>=a.required));
      return <View key={period} style={styles.challengeGroup}>
       {challengePeriod==='all'?<Text style={[styles.eyebrow,{color:C.accent}]}>{p(period.toUpperCase())}</Text>:null}
-      {rows.map(q=><CompactQuestRow key={q.id} C={C} language={language} title={p(q.name)} subtitle={p(q.description)} eyebrow={p(q.tag.toUpperCase())+' · '+p(period.toUpperCase())} status={challengeClaimed.has(q.id)?'claimed':q.progress>=q.required?'ready':'active'} current={Math.min(q.progress,q.required)} max={q.required} art={<ChallengeArt quest={q}/>} rarity={p(QUEST_RARITIES[q.rarity].label)} reward={p(QUEST_RARITIES[q.rarity].cache)} onPress={()=>open('challenge',q.id)}/>)}
+      {rows.map(q=><CompactQuestRow key={q.id} C={C} language={language} title={seasonalChallengeName(language,q)} subtitle={seasonalChallengeDescription(language,q)} eyebrow={seasonalChallengeText(language,q.tag.toUpperCase())+' · '+p(period.toUpperCase())} status={challengeClaimed.has(q.id)?'claimed':q.progress>=q.required?'ready':'active'} current={Math.min(q.progress,q.required)} max={q.required} art={<ChallengeArt quest={q}/>} rarity={seasonalChallengeText(language,QUEST_RARITIES[q.rarity].label)} reward={seasonalChallengeText(language,QUEST_RARITIES[q.rarity].cache)} onPress={()=>open('challenge',q.id)}/>)}
      </View>;
     })}
    </>:null}
@@ -315,7 +316,7 @@ export function QuestRefinedScreen({state,mode,onModeChange,focusedWeeklyOrderId
      </View>
      <View style={[styles.detailBlock,{backgroundColor:C.panel,borderColor:C.line}]}>
       <Text style={[styles.eyebrow,{color:C.accent}]}>{p('OBJECTIVE')}</Text>
-      <Text style={[styles.detailText,{color:C.text}]}>{chosenStory?localizedQuestStoryText(language,chosenStory,'description'):chosenOrder?p(chosenOrder.brief??chosenDestination?.detail??''):chosenChallenge?p(chosenChallenge.description):''}</Text>
+      <Text style={[styles.detailText,{color:C.text}]}>{chosenStory?localizedQuestStoryText(language,chosenStory,'description'):chosenOrder?p(chosenOrder.brief??chosenDestination?.detail??''):chosenChallenge?seasonalChallengeDescription(language,chosenChallenge):''}</Text>
       {selectedStatus==='locked'?<Text style={[styles.footnote,{color:C.warning}]}>{chosenOrder?p(selectedLocked??''):chosenStory?p(questLockHint(state,chosenStory)):''}</Text>:<><View style={styles.rowMeta}><Text style={[styles.mini,{color:C.muted}]}>{p('Progress')}</Text><Text style={[styles.mini,{color:C.text}]}>{selectedValue}/{selectedGoal}</Text></View><ProgressLine current={selectedValue} max={selectedGoal} C={C}/></>}
      </View>
      {chosenStory?<View style={styles.storyDisclosure}>

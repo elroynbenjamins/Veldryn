@@ -1,0 +1,412 @@
+import type {Language} from './languages';
+import {SUPPORTED_LANGUAGES} from './languages';
+import type {SeasonalQuest} from '../core/seasonal-quests';
+import {interpolateTranslation,type TranslationParams} from './translator';
+
+/** Only authored class challenge names, rarity/cache labels and exact objective templates.
+ * Unknown server/custom text stays unchanged. DE/ES/NL/IT/FR/RU/TR columns. */
+type SevenLanguages=readonly [string,string,string,string,string,string,string];
+export const seasonalChallengeRows={
+  "Hold the Line": [
+    "Die Stellung halten",
+    "Mantener la línea",
+    "Houd de linie",
+    "Tenere la linea",
+    "Tenir la ligne",
+    "Держать строй",
+    "Hattı Koru"
+  ],
+  "Iron Ration": [
+    "Eiserne Ration",
+    "Ración de hierro",
+    "IJzeren rantsoen",
+    "Razione di ferro",
+    "Ration de fer",
+    "Железный паёк",
+    "Demir Tayın"
+  ],
+  "Marching Vigil": [
+    "Wache auf dem Marsch",
+    "Vigilia en marcha",
+    "Wacht tijdens de mars",
+    "Veglia in marcia",
+    "Veille en marche",
+    "Походный дозор",
+    "Yürüyüş Nöbeti"
+  ],
+  "Roadwarden Survey": [
+    "Straßenwächter-Erkundung",
+    "Exploración del guardián del camino",
+    "Verkenning van de wegwachter",
+    "Ricognizione del guardiano della strada",
+    "Reconnaissance du garde-route",
+    "Разведка дорожного стража",
+    "Yol Muhafızı Keşfi"
+  ],
+  "Light the Way": [
+    "Den Weg erleuchten",
+    "Iluminar el camino",
+    "Verlicht de weg",
+    "Illuminare la via",
+    "Éclairer la voie",
+    "Осветить путь",
+    "Yolu Aydınlat"
+  ],
+  "Mercy in Motion": [
+    "Gnade in Bewegung",
+    "Misericordia en marcha",
+    "Genade in beweging",
+    "Misericordia in movimento",
+    "Miséricorde en marche",
+    "Милосердие в движении",
+    "Hareket Halinde Merhamet"
+  ],
+  "Dawn Patrol": [
+    "Morgenpatrouille",
+    "Patrulla del alba",
+    "Dageraadpatrouille",
+    "Pattuglia dell'alba",
+    "Patrouille de l'aube",
+    "Рассветный дозор",
+    "Şafak Devriyesi"
+  ],
+  "Safe Passage": [
+    "Sicherer Durchgang",
+    "Paso seguro",
+    "Veilige doorgang",
+    "Passaggio sicuro",
+    "Passage sûr",
+    "Безопасный проход",
+    "Güvenli Geçiş"
+  ],
+  "Predator’s Circuit": [
+    "Jagdroute des Räubers",
+    "Ruta del depredador",
+    "Jachtroute van de rover",
+    "Percorso del predatore",
+    "Circuit du prédateur",
+    "Путь хищника",
+    "Avcının Rotası"
+  ],
+  "Edge of Mastery": [
+    "An der Schwelle zur Meisterschaft",
+    "Al borde de la maestría",
+    "Op de grens van meesterschap",
+    "Sul filo della maestria",
+    "Au seuil de la maîtrise",
+    "На грани мастерства",
+    "Ustalığın Eşiğinde"
+  ],
+  "The Long Hunt": [
+    "Die lange Jagd",
+    "La larga cacería",
+    "De lange jacht",
+    "La lunga caccia",
+    "La longue chasse",
+    "Долгая охота",
+    "Uzun Av"
+  ],
+  "Forward Scout": [
+    "Vorhut-Erkundung",
+    "Explorador de vanguardia",
+    "Voorhoedeverkenner",
+    "Ricognitore d'avanguardia",
+    "Éclaireur d'avant-garde",
+    "Разведчик авангарда",
+    "Öncü Gözcü"
+  ],
+  "Steel Discipline": [
+    "Stählerne Disziplin",
+    "Disciplina de acero",
+    "Stalen discipline",
+    "Disciplina d'acciaio",
+    "Discipline d'acier",
+    "Стальная дисциплина",
+    "Çelik Disiplini"
+  ],
+  "Unbroken Wall": [
+    "Ungebrochene Mauer",
+    "Muro inquebrantable",
+    "Ongebroken muur",
+    "Muro incrollabile",
+    "Mur inébranlable",
+    "Несокрушимая стена",
+    "Yıkılmaz Duvar"
+  ],
+  "Chain of Command": [
+    "Befehlskette",
+    "Cadena de mando",
+    "Bevelsketen",
+    "Catena di comando",
+    "Chaîne de commandement",
+    "Цепь командования",
+    "Komuta Zinciri"
+  ],
+  "Sunlamp Offering": [
+    "Opfergabe der Sonnenlaterne",
+    "Ofrenda de la lámpara solar",
+    "Offer van de zonnelamp",
+    "Offerta della lampada solare",
+    "Offrande de la lampe solaire",
+    "Дар солнечному светильнику",
+    "Güneş Lambasına Sunu"
+  ],
+  "Cartographer’s Eye": [
+    "Auge des Kartografen",
+    "Ojo del cartógrafo",
+    "Oog van de cartograaf",
+    "Occhio del cartografo",
+    "Œil du cartographe",
+    "Глаз картографа",
+    "Haritacının Gözü"
+  ],
+  "Break Their Line": [
+    "Ihre Reihen durchbrechen",
+    "Romper sus filas",
+    "Doorbreek hun linie",
+    "Spezzare le loro file",
+    "Briser leurs rangs",
+    "Прорвать их строй",
+    "Saflarını Kır"
+  ],
+  "Runic Survey": [
+    "Runen-Erkundung",
+    "Reconocimiento rúnico",
+    "Runenverkenning",
+    "Ricognizione runica",
+    "Reconnaissance runique",
+    "Рунная разведка",
+    "Rünik Keşif"
+  ],
+  "Steps Unseen": [
+    "Unsichtbare Schritte",
+    "Pasos invisibles",
+    "Ongeziene stappen",
+    "Passi invisibili",
+    "Pas invisibles",
+    "Незримые шаги",
+    "Görünmeyen Adımlar"
+  ],
+  "Stone and Storm": [
+    "Stein und Sturm",
+    "Piedra y tormenta",
+    "Steen en storm",
+    "Pietra e tempesta",
+    "Pierre et tempête",
+    "Камень и буря",
+    "Taş ve Fırtına"
+  ],
+  "Defeat {n} monsters this period.": [
+    "Besiege in diesem Zeitraum {n} Monster.",
+    "Derrota a {n} monstruos durante este período.",
+    "Versla in deze periode {n} monsters.",
+    "Sconfiggi {n} mostri in questo periodo.",
+    "Vainquez {n} monstres pendant cette période.",
+    "Победите {n} монстров за этот период.",
+    "Bu dönemde {n} canavar yen."
+  ],
+  "Complete {n} gathering actions this period.": [
+    "Schließe in diesem Zeitraum {n} Sammelaktionen ab.",
+    "Completa {n} acciones de recolección durante este período.",
+    "Voltooi in deze periode {n} verzamelacties.",
+    "Completa {n} azioni di raccolta in questo periodo.",
+    "Effectuez {n} actions de récolte pendant cette période.",
+    "Выполните {n} действий по сбору за этот период.",
+    "Bu dönemde {n} toplama işlemi tamamla."
+  ],
+  "Complete {n} crafts this period.": [
+    "Stelle in diesem Zeitraum {n} Gegenstände her.",
+    "Realiza {n} fabricaciones durante este período.",
+    "Voltooi in deze periode {n} vervaardigingen.",
+    "Completa {n} creazioni in questo periodo.",
+    "Réalisez {n} fabrications pendant cette période.",
+    "Создайте {n} предметов за этот период.",
+    "Bu dönemde {n} üretim tamamla."
+  ],
+  "Complete {n} exploration route actions this period.": [
+    "Schließe in diesem Zeitraum {n} Erkundungsaktionen ab.",
+    "Completa {n} acciones de ruta de exploración durante este período.",
+    "Voltooi in deze periode {n} verkenningsrouteacties.",
+    "Completa {n} azioni sui percorsi di esplorazione in questo periodo.",
+    "Effectuez {n} actions d'itinéraire d'exploration pendant cette période.",
+    "Выполните {n} действий на маршрутах разведки за этот период.",
+    "Bu dönemde {n} keşif rotası işlemi tamamla."
+  ],
+  "Field cache": [
+    "Feldvorrat",
+    "Alijo de campo",
+    "Veldvoorraad",
+    "Scorta da campo",
+    "Cache de terrain",
+    "Полевой тайник",
+    "Arazi Zulası"
+  ],
+  "Explorer cache": [
+    "Entdeckervorrat",
+    "Alijo del explorador",
+    "Verkennersvoorraad",
+    "Scorta dell'esploratore",
+    "Cache d'explorateur",
+    "Тайник разведчика",
+    "Kâşif Zulası"
+  ],
+  "Aster cache": [
+    "Aster-Vorrat",
+    "Alijo de Aster",
+    "Astervoorraad",
+    "Scorta di Aster",
+    "Cache d'Aster",
+    "Тайник Астера",
+    "Aster Zulası"
+  ],
+  "Oathbound cache": [
+    "Eidgebundener Vorrat",
+    "Alijo de los juramentados",
+    "Eedgebonden voorraad",
+    "Scorta del giuramento",
+    "Cache des assermentés",
+    "Тайник клятвенных",
+    "Yemine Bağlı Zula"
+  ],
+  "Crown cache": [
+    "Kronenvorrat",
+    "Alijo de la corona",
+    "Kroonvoorraad",
+    "Scorta della corona",
+    "Cache de la couronne",
+    "Королевский тайник",
+    "Taç Zulası"
+  ],
+  "Common": [
+    "Gewöhnlich",
+    "Común",
+    "Gewoon",
+    "Comune",
+    "Commun",
+    "Обычный",
+    "Yaygın"
+  ],
+  "Uncommon": [
+    "Ungewöhnlich",
+    "Poco común",
+    "Ongewoon",
+    "Non comune",
+    "Peu commun",
+    "Необычный",
+    "Sıradışı"
+  ],
+  "Rare": [
+    "Selten",
+    "Raro",
+    "Zeldzaam",
+    "Raro",
+    "Rare",
+    "Редкий",
+    "Nadir"
+  ],
+  "Epic": [
+    "Episch",
+    "Épico",
+    "Episch",
+    "Epico",
+    "Épique",
+    "Эпический",
+    "Destansı"
+  ],
+  "Legendary": [
+    "Legendär",
+    "Legendario",
+    "Legendarisch",
+    "Leggendario",
+    "Légendaire",
+    "Легендарный",
+    "Efsanevi"
+  ],
+  "COMBAT": [
+    "KAMPF",
+    "COMBATE",
+    "GEVECHT",
+    "COMBATTIMENTO",
+    "COMBAT",
+    "БОЙ",
+    "SAVAŞ"
+  ],
+  "GATHERING": [
+    "SAMMELN",
+    "RECOLECCIÓN",
+    "VERZAMELEN",
+    "RACCOLTA",
+    "RÉCOLTE",
+    "СБОР",
+    "TOPLAMA"
+  ],
+  "CRAFTING": [
+    "HERSTELLUNG",
+    "FABRICACIÓN",
+    "VERVAARDIGEN",
+    "CREAZIONE",
+    "FABRICATION",
+    "СОЗДАНИЕ",
+    "ÜRETİM"
+  ],
+  "EXPLORATION": [
+    "ERKUNDUNG",
+    "EXPLORACIÓN",
+    "VERKENNING",
+    "ESPLORAZIONE",
+    "EXPLORATION",
+    "РАЗВЕДКА",
+    "KEŞİF"
+  ],
+  "EQUIPMENT": [
+    "AUSRÜSTUNG",
+    "EQUIPO",
+    "UITRUSTING",
+    "EQUIPAGGIAMENTO",
+    "ÉQUIPEMENT",
+    "СНАРЯЖЕНИЕ",
+    "EKİPMAN"
+  ],
+  "BOSS": [
+    "BOSS",
+    "JEFE",
+    "BAAS",
+    "BOSS",
+    "BOSS",
+    "БОСС",
+    "BOSS"
+  ],
+  "CACHE CLAIMED": [
+    "VORRAT ABGEHOLT",
+    "ALIJO RECOGIDO",
+    "VOORRAAD GECLAIMD",
+    "SCORTA RISCATTATA",
+    "CACHE RÉCUPÉRÉE",
+    "ТАЙНИК ПОЛУЧЕН",
+    "ZULA ALINDI"
+  ]
+} as const satisfies Record<string,SevenLanguages>;
+
+export function seasonalChallengeText(language:Language,source:string,params:TranslationParams={}):string{
+ const index=SUPPORTED_LANGUAGES.indexOf(language)-1;
+ const row=Object.prototype.hasOwnProperty.call(seasonalChallengeRows,source)
+  ?seasonalChallengeRows[source as keyof typeof seasonalChallengeRows]:undefined;
+ return interpolateTranslation(index>=0&&row?row[index]:source,params);
+}
+export function seasonalChallengeName(language:Language,quest:Pick<SeasonalQuest,'name'>):string{
+ return seasonalChallengeText(language,quest.name);
+}
+const objectiveTemplate:Partial<Record<SeasonalQuest['tag'],string>>={
+ combat:'Defeat {n} monsters this period.',
+ gathering:'Complete {n} gathering actions this period.',
+ crafting:'Complete {n} crafts this period.',
+ exploration:'Complete {n} exploration route actions this period.',
+};
+export function seasonalChallengeDescription(language:Language,quest:Pick<SeasonalQuest,'description'|'required'|'tag'>):string{
+ const template=objectiveTemplate[quest.tag];
+ // Only translate the live deterministic generator's exact text. Preserve changed
+ // authored/server descriptions, counts, monster names and unknown tags verbatim.
+ return template&&quest.description===template.replace('{n}',String(quest.required))
+  ?seasonalChallengeText(language,template,{n:quest.required})
+  :quest.description;
+}

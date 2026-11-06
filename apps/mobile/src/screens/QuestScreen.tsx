@@ -1,6 +1,7 @@
 import {useGameLanguage} from '../i18n/GameLanguageProvider';
 import {progressionT,progressionText,progressionError,type ProgressionKey} from '../i18n/progression';
 import {localizedQuestActText,localizedQuestStoryText,questMatchesLocalizedSearch} from '../i18n/quest-story-copy';
+import {seasonalChallengeName,seasonalChallengeDescription,seasonalChallengeText} from '../i18n/seasonal-challenge-copy';
 import {ZoneSceneArtwork} from '../components/ZoneSceneArtwork';
 import {QuestReward} from '../components/QuestReward';
 import {QuestPosting} from '../components/QuestPosting';
@@ -90,7 +91,7 @@ export function QuestScreen({state,mode,onModeChange,focusedWeeklyOrderId,onClai
       setNotice('');setError('');
     }else if(contracts.length){
       const id=contracts[contracts.length-1],contract=(['daily','weekly','monthly'] as const).flatMap(period=>seasonalQuestBoard(state,period)).find(row=>row.id===id);
-      if(contract){const rarity=QUEST_RARITIES[contract.rarity],choice=contract.rewardOptions.find(option=>option.id===state.account.seasonalContractRewardChoices?.[contract.id])??contract.rewardOptions[0];setClaimMoment({key:'contract:'+id,kind:'contract',eyebrow:rarity.label.toUpperCase()+' CACHE CLAIMED',title:contract.name,detail:t("Challenge reward secured and added to your account."),gold:contract.rewardGold,xp:contract.rewardXp,itemId:choice.rewardItemId,quantity:choice.rewardItemQty,essence:choice.rewardCompanionEssence,bondstones:choice.rewardBondstones,rarityColor:rarity.color});}
+      if(contract){const rarity=QUEST_RARITIES[contract.rarity],choice=contract.rewardOptions.find(option=>option.id===state.account.seasonalContractRewardChoices?.[contract.id])??contract.rewardOptions[0];setClaimMoment({key:'contract:'+id,kind:'contract',eyebrow:seasonalChallengeText(language,rarity.label).toLocaleUpperCase(language)+' '+seasonalChallengeText(language,'CACHE CLAIMED'),title:seasonalChallengeName(language,contract),detail:t("Challenge reward secured and added to your account."),gold:contract.rewardGold,xp:contract.rewardXp,itemId:choice.rewardItemId,quantity:choice.rewardItemQty,essence:choice.rewardCompanionEssence,bondstones:choice.rewardBondstones,rarityColor:rarity.color});}
       setNotice('');setError('');
     }
   },[state.quests,state.account.seasonalContractClaimIds,state.character?.id]);
@@ -150,11 +151,11 @@ export function QuestScreen({state,mode,onModeChange,focusedWeeklyOrderId,onClai
     </>:null}
     {mode==='challenges'?<>
       <Panel accentColor={C.special}>
-        <View style={s.modeHeroHead}><View style={s.flex}><Text style={s.modeEyebrow}>{t("PERSONAL OBJECTIVES")}</Text><Text style={s.title}>{challengeReadyCount>0?t("{count} ready",{count:challengeReadyCount}):nextChallenge?t("Next · {name}",{name:nextChallenge.name}):t("All current challenges claimed")}</Text></View>{challengeReadyCount>0?<StatusPill label={t("READY")} tone="good"/>:<StatusPill label={t("CLASS")} tone="special"/>}</View>
+        <View style={s.modeHeroHead}><View style={s.flex}><Text style={s.modeEyebrow}>{t("PERSONAL OBJECTIVES")}</Text><Text style={s.title}>{challengeReadyCount>0?t("{count} ready",{count:challengeReadyCount}):nextChallenge?t("Next · {name}",{name:seasonalChallengeName(language,nextChallenge)}):t("All current challenges claimed")}</Text></View>{challengeReadyCount>0?<StatusPill label={t("READY")} tone="good"/>:<StatusPill label={t("CLASS")} tone="special"/>}</View>
         <ContractProgress label={p("Challenges completed")} current={allChallenges.filter(row=>row.progress>=row.required).length} total={allChallenges.length} personal/>
         <View style={s.modeStats}><View style={s.modeStat}><Text style={s.modeStatValue}>{allChallenges.length}</Text><Text style={s.modeStatLabel}>{t("TOTAL")}</Text></View><View style={s.modeStat}><Text style={[s.modeStatValue,{color:challengeReadyCount?C.good:C.text}]}>{challengeReadyCount}</Text><Text style={s.modeStatLabel}>{t("READY")}</Text></View><View style={s.modeStat}><Text style={s.modeStatValue}>{challengeClaimedCount}</Text><Text style={s.modeStatLabel}>{t("CLAIMED")}</Text></View></View>
         <View style={s.cadenceRail}><Text style={s.cadenceTag}>{p("DAILY")} · 2×</Text><Text style={s.cadenceTag}>{t("WEEKLY")} · 3×</Text><Text style={s.cadenceTag}>{t("MONTHLY")} · 4×</Text></View>
-        <Text style={s.sub}>{challengeReadyCount>0?t("Claim completed objectives, then continue the next cadence target."):nextChallenge?(Math.max(0,nextChallenge.required-nextChallenge.progress)+' progress remaining · '+QUEST_RARITIES[nextChallenge.rarity].cache):p("Class-aligned challenges refresh daily, weekly and monthly, with progressively stronger rarity caches.")}</Text>
+        <Text style={s.sub}>{challengeReadyCount>0?t("Claim completed objectives, then continue the next cadence target."):nextChallenge?(Math.max(0,nextChallenge.required-nextChallenge.progress)+' progress remaining · '+seasonalChallengeText(language,QUEST_RARITIES[nextChallenge.rarity].cache)):p("Class-aligned challenges refresh daily, weekly and monthly, with progressively stronger rarity caches.")}</Text>
       </Panel>
       <ScrollView accessibilityRole="tablist" horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={[s.row,s.filterRail]} showsVerticalScrollIndicator={false}>{(['all','daily','weekly','monthly'] as const).map(value=><FilterChip key={value} label={(value==='all'?t("All"):p(value.charAt(0).toUpperCase()+value.slice(1)))+' · '+(value==='all'?allChallenges.length:value==='daily'?daily.length:value==='weekly'?weekly.length:monthly.length)} selected={challengePeriod===value} onPress={()=>setChallengePeriod(value)}/>)}</ScrollView>
       <View style={s.postingStack}>
@@ -234,9 +235,9 @@ function ContractRows({state,label,quests,onClaim,selectedById,onSelectChoice}:{
    const currentChoiceId=claimed?state.account.seasonalContractRewardChoices?.[quest.id]:selectedById[quest.id];
    const chosenReward=quest.rewardOptions.find(option=>option.id===currentChoiceId)??quest.rewardOptions[0];
   return <QuestPosting key={quest.id} style={[s.seasonQuest,{borderLeftColor:rarityTone,borderLeftWidth:3}]}>
-   <View style={s.contractHead}><Text style={[s.postingCategory,{color:rarityTone}]}>{quest.tag.toUpperCase()} · {quest.period.toUpperCase()}</Text><View style={[s.rarity,{borderColor:rarityTone,backgroundColor:rarityTone+(C.dark?'20':'12'),paddingHorizontal:10,paddingVertical:5}]}><Text style={[s.rarityText,{color:rarityTone,fontSize:12,lineHeight:16,letterSpacing:.6}]}>{rarity.label.toUpperCase()}</Text></View>{claimed?<StatusPill label={t("CLAIMED")} tone="muted"/>:ready?<StatusPill label={t("READY")} tone="good"/>:null}</View>
-   <View style={s.postingHead}><View style={s.flex}><Text accessibilityRole="header" style={s.seasonName}>{quest.name}</Text><Text style={s.sub}>{quest.description}</Text></View><View style={s.postingArtwork}><ActivityArtwork id={quest.tag==='boss'?'combat':quest.tag==='equipment'||quest.tag==='crafting'?'smithing':quest.tag==='gathering'?'woodcutting':quest.tag} size={36}/></View></View>
-   <View style={s.objectivePanel}><View style={s.objectiveMetrics}><Text style={s.objectivePanelLabel}>{p("CHALLENGE PROGRESS")}</Text><Text style={[s.objectiveRemaining,{color:ready?C.good:rarityTone}]}>{ready?t("Done"):anticipation.remaining.toLocaleString()+' '+p("left")}</Text></View><ContractProgress label={quest.tag.toUpperCase()} current={quest.progress} total={quest.required} personal/></View>
+   <View style={s.contractHead}><Text style={[s.postingCategory,{color:rarityTone}]}>{seasonalChallengeText(language,quest.tag.toUpperCase())} · {quest.period.toUpperCase()}</Text><View style={[s.rarity,{borderColor:rarityTone,backgroundColor:rarityTone+(C.dark?'20':'12'),paddingHorizontal:10,paddingVertical:5}]}><Text style={[s.rarityText,{color:rarityTone,fontSize:12,lineHeight:16,letterSpacing:.6}]}>{seasonalChallengeText(language,rarity.label).toLocaleUpperCase(language)}</Text></View>{claimed?<StatusPill label={t("CLAIMED")} tone="muted"/>:ready?<StatusPill label={t("READY")} tone="good"/>:null}</View>
+   <View style={s.postingHead}><View style={s.flex}><Text accessibilityRole="header" style={s.seasonName}>{seasonalChallengeName(language,quest)}</Text><Text style={s.sub}>{seasonalChallengeDescription(language,quest)}</Text></View><View style={s.postingArtwork}><ActivityArtwork id={quest.tag==='boss'?'combat':quest.tag==='equipment'||quest.tag==='crafting'?'smithing':quest.tag==='gathering'?'woodcutting':quest.tag} size={36}/></View></View>
+   <View style={s.objectivePanel}><View style={s.objectiveMetrics}><Text style={s.objectivePanelLabel}>{p("CHALLENGE PROGRESS")}</Text><Text style={[s.objectiveRemaining,{color:ready?C.good:rarityTone}]}>{ready?t("Done"):anticipation.remaining.toLocaleString()+' '+p("left")}</Text></View><ContractProgress label={seasonalChallengeText(language,quest.tag.toUpperCase())} current={quest.progress} total={quest.required} personal/></View>
    {ready&&!claimed&&quest.rewardOptions.length>1?<View style={{gap:6}}>
     <Text style={s.objectivePanelLabel}>{p('CHOOSE ONE REWARD')}</Text>
     <View style={{flexDirection:'row',flexWrap:'wrap',gap:7}}>
@@ -251,7 +252,7 @@ function ContractRows({state,label,quests,onClaim,selectedById,onSelectChoice}:{
      })}
     </View>
    </View>:null}
-   <QuestReward gold={quest.rewardGold} xp={quest.rewardXp} itemId={chosenReward.rewardItemId} quantity={chosenReward.rewardItemQty} essence={chosenReward.rewardCompanionEssence} bondstones={chosenReward.rewardBondstones} label={rarity.cache} rarityColor={rarityTone}/>
+   <QuestReward gold={quest.rewardGold} xp={quest.rewardXp} itemId={chosenReward.rewardItemId} quantity={chosenReward.rewardItemQty} essence={chosenReward.rewardCompanionEssence} bondstones={chosenReward.rewardBondstones} label={seasonalChallengeText(language,rarity.cache)} rarityColor={rarityTone}/>
    {claimed?<Text style={s.claimed}>{t("✓ Cache claimed")}</Text>:ready?<GameButton compact title={p('Claim selected reward')} onPress={()=>onClaim(quest.period,quest.id,chosenReward.id)}/>:<Text style={near?s.contractNear:s.contractHint}>{near?(anticipation.band==='next'?'NEXT PROGRESS COMPLETES IT · ':anticipation.band==='urgent'?'FINAL STRETCH · ':'ALMOST COMPLETE · '):''}{anticipation.remaining} {t("progress remaining")}</Text>}
   </QuestPosting>;
  })}</>;

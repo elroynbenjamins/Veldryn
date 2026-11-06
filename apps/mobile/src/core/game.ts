@@ -1245,7 +1245,7 @@ export function fallenKnightGearReadiness(state:GameState){
   incomingDamageMultiplier:1+tierGap*.25,
  };
 }
-function fallenKnightPlayerSnapshot(state:GameState):FallenKnightPlayerSnapshot{
+export function fallenKnightPlayerSnapshot(state:GameState):FallenKnightPlayerSnapshot{
   const character=state.character;if(!character)throw new Error('No character');
   const stats=effectiveStats(state),multipliers=characterPermanentMultipliers(state),companion=companionCombatContribution(state),style=classCombatStyle(character.classId);
   const effectGems=equippedEffectGemBonuses(state),baseCritChance=CLASSES.find(def=>def.id===character.classId)?.role==='Damage'?.10:.05,setCombat=equipmentSetCombatModifiers(state,baseCritChance,.84);

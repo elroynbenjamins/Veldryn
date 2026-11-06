@@ -42531,8 +42531,8 @@ var tierXp = { T1: 165, T2: 290, T3: 450, T4: 700, T5: 1100, T6: 1600, T7: 2200,
 var infusionByTier = {
   T1: { itemId: "VERDANT_BINDING_RESIN", quantity: 1 },
   T2: { itemId: "IRONWOOD_BINDING_RESIN", quantity: 1 },
-  T3: { itemId: "OATHGLASS_SOLVENT", quantity: 1 },
-  T4: { itemId: "OATHGLASS_SOLVENT", quantity: 2 },
+  T3: { itemId: "SUNSCAR_DUNE_BINDER", quantity: 1 },
+  T4: { itemId: "GLASSBOUND_BINDER", quantity: 2 },
   T5: { itemId: "SUNFUSED_FIXATIVE", quantity: 1 },
   T6: { itemId: "SUNFUSED_FIXATIVE", quantity: 2 },
   T7: { itemId: "RIMEWARD_DISTILLATE", quantity: 1 },
@@ -42555,13 +42555,11 @@ var EQUIPMENT_CRAFT_SKILL_BY_CLASS = {
 };
 var pathMaterial = {
   T1: { Foundation: "MOSS_FIBER", Alternate: "BOAR_HIDE" },
-  T2: { Foundation: "WOLF_PELT", Alternate: "IRONWOOD_FANG" },
-  T4: { Foundation: "TORN_OATHCLOTH", Alternate: "ECHO_QUARTZ" }
+  T2: { Foundation: "WOLF_PELT", Alternate: "IRONWOOD_FANG" }
 };
 var tailoringPathMaterial = {
   T1: { Foundation: "BOAR_HIDE", Alternate: "WISP_DUST" },
-  T2: { Foundation: "THORN_SAP", Alternate: "TROLL_HIDE" },
-  T4: { Foundation: "TORN_OATHCLOTH", Alternate: "ECHO_TOUCHED_PELT" }
+  T2: { Foundation: "THORN_SAP", Alternate: "TROLL_HIDE" }
 };
 function q(base, multiplier) {
   return Math.max(1, Math.round(base * multiplier));
@@ -42587,8 +42585,9 @@ function ingredients(tier, path, multiplier, skillId) {
       // Foundation is available at the entry scorpion; Alternate can chase Astral Script at level 31+.
       case "T3":
         return mergeInputs([{ itemId: "SUNSCALE", quantity: q(18, multiplier) }, { itemId: "DUNEWOOD", quantity: q(10, multiplier) }, { itemId: path === "Alternate" ? "ASTRAL_SCRIPT" : "AMBERGLASS", quantity: q(path === "Alternate" ? 1 : 2, multiplier) }]);
+      // Level-40 gear is built from Sunscar supplies, gated by Glassbound Sentinel trophies (level 40).
       case "T4":
-        return mergeInputs([{ itemId: "TORN_OATHCLOTH", quantity: q(18, multiplier) }, { itemId: "ECHO_TOUCHED_PELT", quantity: q(7, multiplier) }, { itemId: accent ?? "OATHGLASS_SHARD", quantity: q(5, multiplier) }]);
+        return mergeInputs([{ itemId: "SUNSCALE", quantity: q(19, multiplier) }, { itemId: "GLASSBOUND_CORE", quantity: q(1, multiplier) }, { itemId: path === "Alternate" ? "ASTRAL_SCRIPT" : "AMBERGLASS", quantity: q(path === "Alternate" ? 2 : 5, multiplier) }]);
       case "T5":
         return [{ itemId: "SUNSCALE", quantity: q(25, multiplier) }, { itemId: "AMBERGLASS", quantity: q(8, multiplier) }];
       case "T6":
@@ -42612,7 +42611,7 @@ function ingredients(tier, path, multiplier, skillId) {
     case "T3":
       return mergeInputs([{ itemId: "DUNEWOOD", quantity: q(22, multiplier) }, { itemId: "SUNSTONE_ORE", quantity: q(14, multiplier) }, { itemId: path === "Alternate" ? "ASTRAL_SCRIPT" : "AMBERGLASS", quantity: q(path === "Alternate" ? 1 : 2, multiplier) }]);
     case "T4":
-      return [{ itemId: "OATHSTONE_INGOT", quantity: q(18, multiplier) }, { itemId: "OATHGLASS_SHARD", quantity: q(7, multiplier) }, { itemId: pathItem ?? "TORN_OATHCLOTH", quantity: q(5, multiplier) }];
+      return mergeInputs([{ itemId: "SUNSTONE_INGOT", quantity: q(9, multiplier) }, { itemId: "GLASSBOUND_CORE", quantity: q(1, multiplier) }, { itemId: path === "Alternate" ? "AMBERGLASS" : "ASTRAL_SCRIPT", quantity: q(path === "Alternate" ? 5 : 2, multiplier) }]);
     case "T5":
       return [{ itemId: "SUNSTONE_INGOT", quantity: q(11, multiplier) }, { itemId: "AMBERGLASS", quantity: q(7, multiplier) }];
     case "T6":
@@ -42863,7 +42862,9 @@ var POTIONS = [
 var ALCHEMY_EQUIPMENT_INFUSIONS = Object.freeze([
   { id: "VERDANT_BINDING_RESIN", name: "Verdant Binding Resin", rarity: "rare", value: 70, description: "A dewleaf resin that binds first-tier gear." },
   { id: "IRONWOOD_BINDING_RESIN", name: "Ironwood Binding Resin", rarity: "rare", value: 115, description: "A thorn-infused resin made with Ironwood resources for second-tier gear." },
-  { id: "OATHGLASS_SOLVENT", name: "Oathglass Solvent", rarity: "rare", value: 310, description: "A crystalline solvent for Oathstone-era gear." },
+  { id: "OATHGLASS_SOLVENT", name: "Oathglass Solvent", rarity: "rare", value: 310, description: "An Asterfall solvent that can be refined into Sunscar binders." },
+  { id: "SUNSCAR_DUNE_BINDER", name: "Dune Binding Resin", rarity: "rare", value: 350, description: "An early Sunscar resin used in third-tier equipment." },
+  { id: "GLASSBOUND_BINDER", name: "Glassbound Binding Resin", rarity: "epic", value: 640, description: "A reinforced resin made from late-Sunscar Glassbound cores for fourth-tier equipment." },
   { id: "SUNFUSED_FIXATIVE", name: "Sunfused Fixative", rarity: "epic", value: 720, description: "A heat-stable fixative for Sunscar equipment." },
   { id: "RIMEWARD_DISTILLATE", name: "Rimeward Distillate", rarity: "epic", value: 1320, description: "A frostbound distillate for Frostmarch equipment." },
   { id: "CINDERHEART_ELIXIR", name: "Cinderheart Elixir", rarity: "legendary", value: 1600, description: "A volatile Ashlands elixir for capstone equipment." }
@@ -42899,6 +42900,13 @@ var ALCHEMY_RECIPES = [
   // Available at the start of T2: all inputs come from Ironwood hunts or woodcutting, without backtracking to Greenfields.
   { id: "BREW_IRONWOOD_BINDING_RESIN", name: "Ironwood Binding Resin", skillId: "alchemy", level: 8, seconds: 115, xp: 180, gold: 35, inputs: [{ itemId: "IRONWOOD_LOG", quantity: 6 }, { itemId: "THORN_SAP", quantity: 4 }, { itemId: "WOLF_PELT", quantity: 2 }], output: { itemId: "IRONWOOD_BINDING_RESIN", quantity: 1 } },
   { id: "BREW_OATHGLASS_SOLVENT", name: "Oathglass Solvent", skillId: "alchemy", level: 20, seconds: 135, xp: 420, gold: 55, inputs: [{ itemId: "IRONBLOOM", quantity: 4 }, { itemId: "OATHGLASS_SHARD", quantity: 4 }, { itemId: "ECHO_QUARTZ", quantity: 2 }, { itemId: "ASTERFALL_BOTANICAL_ESSENCE", quantity: 1 }], output: { itemId: "OATHGLASS_SOLVENT", quantity: 1 } },
+  // T3 can be assembled entirely from the first Sunscar monster and local gathering.
+  { id: "BREW_SUNSCAR_DUNE_BINDER", name: "Dune Binding Resin", skillId: "alchemy", level: 20, seconds: 135, xp: 360, gold: 60, inputs: [{ itemId: "DUNEWOOD", quantity: 4 }, { itemId: "SUNSCALE", quantity: 2 }, { itemId: "SUNSTONE_ORE", quantity: 3 }], output: { itemId: "SUNSCAR_DUNE_BINDER", quantity: 1 } },
+  // T4 needs the level-40 Glassbound Sentinel; no King's Road trophies are mandatory.
+  { id: "BREW_GLASSBOUND_BINDER", name: "Glassbound Binding Resin", skillId: "alchemy", level: 34, seconds: 160, xp: 700, gold: 95, inputs: [{ itemId: "SUNSTONE_ORE", quantity: 4 }, { itemId: "ASTRAL_SCRIPT", quantity: 1 }, { itemId: "GLASSBOUND_CORE", quantity: 1 }], output: { itemId: "GLASSBOUND_BINDER", quantity: 1 } },
+  // Legacy Oathglass Solvent remains valuable without being mandatory for T3 or T4.
+  { id: "REFINE_OATHGLASS_TO_DUNE_BINDER", name: "Refine Oathglass into Dune Binder", skillId: "alchemy", level: 20, seconds: 140, xp: 360, gold: 60, inputs: [{ itemId: "OATHGLASS_SOLVENT", quantity: 1 }, { itemId: "DUNEWOOD", quantity: 3 }, { itemId: "AMBERGLASS", quantity: 1 }], output: { itemId: "SUNSCAR_DUNE_BINDER", quantity: 1 } },
+  { id: "REFINE_OATHGLASS_TO_GLASSBOUND_BINDER", name: "Refine Oathglass into Glassbound Binder", skillId: "alchemy", level: 34, seconds: 160, xp: 700, gold: 95, inputs: [{ itemId: "OATHGLASS_SOLVENT", quantity: 1 }, { itemId: "SUNSTONE_ORE", quantity: 4 }, { itemId: "GLASSBOUND_CORE", quantity: 1 }], output: { itemId: "GLASSBOUND_BINDER", quantity: 1 } },
   { id: "BREW_SUNFUSED_FIXATIVE", name: "Sunfused Fixative", skillId: "alchemy", level: 49, seconds: 165, xp: 950, gold: 110, inputs: [{ itemId: "SUNSCALE", quantity: 3 }, { itemId: "AMBERGLASS", quantity: 2 }, { itemId: "SCORPION_VENOM", quantity: 2 }], output: { itemId: "SUNFUSED_FIXATIVE", quantity: 1 } },
   { id: "BREW_RIMEWARD_DISTILLATE", name: "Rimeward Distillate", skillId: "alchemy", level: 76, seconds: 195, xp: 1750, gold: 220, inputs: [{ itemId: "WINTERMINT", quantity: 3 }, { itemId: "RIMEGLASS", quantity: 2 }, { itemId: "RIME_RESIN", quantity: 3 }], output: { itemId: "RIMEWARD_DISTILLATE", quantity: 1 } },
   { id: "BREW_CINDERHEART_ELIXIR", name: "Cinderheart Elixir", skillId: "alchemy", level: 96, seconds: 225, xp: 3e3, gold: 420, inputs: [{ itemId: "ASHEN_MYRRH", quantity: 4 }, { itemId: "BLACKGLASS_CORE", quantity: 2 }, { itemId: "CINDER_HEART", quantity: 1 }], output: { itemId: "CINDERHEART_ELIXIR", quantity: 1 } }
@@ -43020,6 +43028,7 @@ var BASE_ITEMS = [
   { id: "SUNSTONE_ORE", name: "Sunstone Ore", type: "material", value: 65 },
   { id: "AMBERGLASS", name: "Amberglass", type: "material", value: 180, rarity: "uncommon" },
   { id: "ASTRAL_SCRIPT", name: "Astral Script", type: "material", value: 420, rarity: "rare" },
+  { id: "GLASSBOUND_CORE", name: "Glassbound Core", type: "material", value: 540, rarity: "rare", passive: "A crystalline heart recovered from late-Sunscar Glassbound Sentinels." },
   { id: "FROSTIRON", name: "Frostiron", type: "material", value: 150 },
   { id: "BLACKGLASS_ORE", name: "Blackglass Ore", type: "material", value: 240, rarity: "rare" },
   { id: "RIMEGLASS", name: "Rimeglass", type: "material", value: 430, rarity: "rare" },
@@ -43110,15 +43119,15 @@ var MONSTERS_RAW = [
   { id: "ECHO_BAT", name: "Echo Bat", level: 18, hp: 290, attack: 29, defense: 14, xp: 170, gold: 10, secondsPerKill: 21, unlockLevel: 18, zone: "Old Mines", drops: [{ itemId: "WISP_DUST", chance: 0.35, min: 1, max: 2 }, { itemId: "OATHGLASS_SHARD", chance: 0.05, min: 1, max: 1 }, { itemId: "ECHO_BAT_WING", chance: 0.28, min: 1, max: 2 }] },
   { id: "RUNEBOUND_MINER", name: "Runebound Miner", level: 19, hp: 320, attack: 31, defense: 18, xp: 185, gold: 11, secondsPerKill: 22, unlockLevel: 19, zone: "Old Mines", drops: [{ itemId: "ASTER_IRON_ORE", chance: 0.42, min: 1, max: 2 }, { itemId: "OATHGLASS_SHARD", chance: 0.08, min: 1, max: 1 }, { itemId: "ECHO_QUARTZ", chance: 0.12, min: 1, max: 1 }, { itemId: "RUNEBOUND_CORE", chance: 0.08, min: 1, max: 1 }, { itemId: "BP_OATHSTONE_PICKAXE", chance: 0.02, min: 1, max: 1 }] },
   { id: "GLOAM_MITE", name: "Gloam Mite", level: 20, hp: 335, attack: 33, defense: 18, xp: 198, gold: 12, secondsPerKill: 23, unlockLevel: 20, zone: "Greenfields", drops: [{ itemId: "WISP_DUST", chance: 0.32, min: 1, max: 2 }, { itemId: "MOSS_FIBER", chance: 0.28, min: 1, max: 2 }, { itemId: "GLOAM_DUST", chance: 0.24, min: 1, max: 1 }] },
-  { id: "LANTERN_WRETCH", name: "Lantern Wretch", level: 21, hp: 365, attack: 35, defense: 19, xp: 216, gold: 13, secondsPerKill: 24, unlockLevel: 20, zone: "King's Road", drops: [{ itemId: "WISP_DUST", chance: 0.4, min: 1, max: 2 }, { itemId: "OATHGLASS_SHARD", chance: 0.1, min: 1, max: 1 }, { itemId: "LANTERNSTEEL_SHARD", chance: 0.18, min: 1, max: 1 }] },
+  { id: "LANTERN_WRETCH", name: "Lantern Wretch", level: 21, hp: 365, attack: 35, defense: 19, xp: 216, gold: 13, secondsPerKill: 24, unlockLevel: 20, zone: "King's Road", drops: [{ itemId: "WISP_DUST", chance: 0.4, min: 1, max: 2 }, { itemId: "OATHGLASS_SHARD", chance: 0.1, min: 1, max: 1 }, { itemId: "LANTERNSTEEL_SHARD", chance: 0.18, min: 1, max: 1 }, { itemId: "THORN_SAP", chance: 0.16, min: 1, max: 1 }, { itemId: "IRONWOOD_LOG", chance: 0.3, min: 1, max: 2 }] },
   { id: "DROWNED_PILGRIM", name: "Drowned Pilgrim", level: 22, hp: 390, attack: 36, defense: 21, xp: 232, gold: 14, secondsPerKill: 25, unlockLevel: 22, zone: "Silverbrook", drops: [{ itemId: "RIVER_EEL", chance: 0.28, min: 1, max: 1 }, { itemId: "OATHGLASS_SHARD", chance: 0.12, min: 1, max: 1 }, { itemId: "BP_OATHSCALE_ROD", chance: 0.02, min: 1, max: 1 }] },
-  { id: "OATHBOUND_SQUIRE", name: "Oathbound Squire", level: 22, hp: 405, attack: 37, defense: 22, xp: 240, gold: 14, secondsPerKill: 25, unlockLevel: 22, zone: "King's Road", drops: [{ itemId: "OATHGLASS_SHARD", chance: 0.18, min: 1, max: 1 }, { itemId: "TORN_OATHCLOTH", chance: 0.2, min: 1, max: 1 }, { itemId: "FALLEN_RIVET", chance: 0.2, min: 1, max: 1 }, { itemId: "TROLL_HIDE", chance: 0.18, min: 1, max: 1 }] },
-  { id: "BANNER_SHADE", name: "Banner Shade", level: 23, hp: 435, attack: 39, defense: 22, xp: 258, gold: 15, secondsPerKill: 26, unlockLevel: 23, zone: "King's Road", drops: [{ itemId: "OATHGLASS_SHARD", chance: 0.22, min: 1, max: 1 }, { itemId: "TORN_OATHCLOTH", chance: 0.28, min: 1, max: 1 }, { itemId: "BANNER_ASH", chance: 0.28, min: 1, max: 2 }, { itemId: "LANTERNSTEEL_SHARD", chance: 0.1, min: 1, max: 1 }, { itemId: "GLOAM_DUST", chance: 0.18, min: 1, max: 1 }] },
-  { id: "FALLEN_SENTINEL", name: "Fallen Sentinel", level: 24, hp: 475, attack: 42, defense: 25, xp: 282, gold: 17, secondsPerKill: 28, unlockLevel: 24, zone: "King's Road", drops: [{ itemId: "OATHGLASS_SHARD", chance: 0.28, min: 1, max: 1 }, { itemId: "ECHO_TOUCHED_PELT", chance: 0.12, min: 1, max: 1 }, { itemId: "TORN_OATHCLOTH", chance: 0.32, min: 1, max: 2 }, { itemId: "LANTERNSTEEL_SHARD", chance: 0.18, min: 1, max: 1 }, { itemId: "FALLEN_RIVET", chance: 0.28, min: 1, max: 2 }, { itemId: "RUNEBOUND_CORE", chance: 0.12, min: 1, max: 1 }] },
-  { id: "OATHGLASS_REVENANT", name: "Oathglass Revenant", level: 25, hp: 540, attack: 45, defense: 28, xp: 315, gold: 18, secondsPerKill: 30, unlockLevel: 25, zone: "King's Road", drops: [{ itemId: "OATHGLASS_SHARD", chance: 0.34, min: 1, max: 2 }, { itemId: "OATHGLASS_FRAGMENT", chance: 0.2, min: 1, max: 1 }, { itemId: "ECHO_QUARTZ", chance: 0.15, min: 1, max: 1 }, { itemId: "ECHO_TOUCHED_PELT", chance: 0.18, min: 1, max: 1 }, { itemId: "TORN_OATHCLOTH", chance: 0.35, min: 1, max: 2 }] },
+  { id: "OATHBOUND_SQUIRE", name: "Oathbound Squire", level: 22, hp: 405, attack: 37, defense: 22, xp: 240, gold: 14, secondsPerKill: 25, unlockLevel: 22, zone: "King's Road", drops: [{ itemId: "OATHGLASS_SHARD", chance: 0.18, min: 1, max: 1 }, { itemId: "TORN_OATHCLOTH", chance: 0.2, min: 1, max: 1 }, { itemId: "FALLEN_RIVET", chance: 0.2, min: 1, max: 1 }, { itemId: "TROLL_HIDE", chance: 0.18, min: 1, max: 1 }, { itemId: "IRONWOOD_FANG", chance: 0.18, min: 1, max: 1 }] },
+  { id: "BANNER_SHADE", name: "Banner Shade", level: 23, hp: 435, attack: 39, defense: 22, xp: 258, gold: 15, secondsPerKill: 26, unlockLevel: 23, zone: "King's Road", drops: [{ itemId: "OATHGLASS_SHARD", chance: 0.22, min: 1, max: 1 }, { itemId: "TORN_OATHCLOTH", chance: 0.28, min: 1, max: 1 }, { itemId: "BANNER_ASH", chance: 0.28, min: 1, max: 2 }, { itemId: "LANTERNSTEEL_SHARD", chance: 0.1, min: 1, max: 1 }, { itemId: "GLOAM_DUST", chance: 0.18, min: 1, max: 1 }, { itemId: "WOLF_PELT", chance: 0.28, min: 1, max: 1 }, { itemId: "THORN_SAP", chance: 0.24, min: 1, max: 1 }] },
+  { id: "FALLEN_SENTINEL", name: "Fallen Sentinel", level: 24, hp: 475, attack: 42, defense: 25, xp: 282, gold: 17, secondsPerKill: 28, unlockLevel: 24, zone: "King's Road", drops: [{ itemId: "OATHGLASS_SHARD", chance: 0.28, min: 1, max: 1 }, { itemId: "ECHO_TOUCHED_PELT", chance: 0.12, min: 1, max: 1 }, { itemId: "TORN_OATHCLOTH", chance: 0.32, min: 1, max: 2 }, { itemId: "LANTERNSTEEL_SHARD", chance: 0.18, min: 1, max: 1 }, { itemId: "FALLEN_RIVET", chance: 0.28, min: 1, max: 2 }, { itemId: "RUNEBOUND_CORE", chance: 0.12, min: 1, max: 1 }, { itemId: "TROLL_HIDE", chance: 0.2, min: 1, max: 1 }, { itemId: "IRONWOOD_LOG", chance: 0.32, min: 1, max: 2 }] },
+  { id: "OATHGLASS_REVENANT", name: "Oathglass Revenant", level: 25, hp: 540, attack: 45, defense: 28, xp: 315, gold: 18, secondsPerKill: 30, unlockLevel: 25, zone: "King's Road", drops: [{ itemId: "OATHGLASS_SHARD", chance: 0.34, min: 1, max: 2 }, { itemId: "OATHGLASS_FRAGMENT", chance: 0.2, min: 1, max: 1 }, { itemId: "ECHO_QUARTZ", chance: 0.15, min: 1, max: 1 }, { itemId: "ECHO_TOUCHED_PELT", chance: 0.18, min: 1, max: 1 }, { itemId: "TORN_OATHCLOTH", chance: 0.35, min: 1, max: 2 }, { itemId: "WOLF_PELT", chance: 0.25, min: 1, max: 1 }, { itemId: "IRONWOOD_FANG", chance: 0.16, min: 1, max: 1 }] },
   { id: "SUNSCAR_SCORPION", name: "Sunscar Scorpion", level: 28, hp: 610, attack: 52, defense: 31, xp: 350, gold: 21, secondsPerKill: 31, unlockLevel: 26, zone: "Sunscar", drops: [{ itemId: "SUNSTONE_ORE", chance: 0.42, min: 1, max: 2 }, { itemId: "DUNEWOOD", chance: 0.36, min: 1, max: 2 }, { itemId: "SUNSCALE", chance: 0.24, min: 1, max: 1 }, { itemId: "AMBERGLASS", chance: 0.08, min: 1, max: 1 }, { itemId: "SCORPION_VENOM", chance: 0.06, min: 1, max: 1 }] },
   { id: "DUNE_ORACLE", name: "Dune Oracle", level: 33, hp: 760, attack: 61, defense: 36, xp: 438, gold: 27, secondsPerKill: 35, unlockLevel: 31, zone: "Sunscar", drops: [{ itemId: "DUNEWOOD", chance: 0.28, min: 1, max: 2 }, { itemId: "SUNSCALE", chance: 0.3, min: 1, max: 1 }, { itemId: "AMBERGLASS", chance: 0.36, min: 1, max: 2 }, { itemId: "ASTRAL_SCRIPT", chance: 0.08, min: 1, max: 1 }, { itemId: "SWIFT_SIGIL", chance: 3e-3, min: 1, max: 1 }] },
-  { id: "GLASSBOUND_SENTINEL", name: "Glassbound Sentinel", level: 40, hp: 980, attack: 74, defense: 45, xp: 560, gold: 35, secondsPerKill: 40, unlockLevel: 38, zone: "Sunscar", drops: [{ itemId: "SUNSTONE_ORE", chance: 0.5, min: 1, max: 2 }, { itemId: "AMBERGLASS", chance: 0.28, min: 1, max: 1 }, { itemId: "ASTRAL_SCRIPT", chance: 0.12, min: 1, max: 1 }] },
+  { id: "GLASSBOUND_SENTINEL", name: "Glassbound Sentinel", level: 40, hp: 980, attack: 74, defense: 45, xp: 560, gold: 35, secondsPerKill: 40, unlockLevel: 38, zone: "Sunscar", drops: [{ itemId: "SUNSTONE_ORE", chance: 0.5, min: 1, max: 2 }, { itemId: "AMBERGLASS", chance: 0.28, min: 1, max: 1 }, { itemId: "ASTRAL_SCRIPT", chance: 0.12, min: 1, max: 1 }, { itemId: "GLASSBOUND_CORE", chance: 0.38, min: 1, max: 1 }] },
   { id: "FROSTWOLF", name: "Frostwolf", level: 48, hp: 1220, attack: 88, defense: 55, xp: 710, gold: 43, secondsPerKill: 44, unlockLevel: 46, zone: "Frostmarch", drops: [{ itemId: "FROSTIRON", chance: 0.42, min: 1, max: 2 }, { itemId: "RIMEGLASS", chance: 0.08, min: 1, max: 1 }, { itemId: "RIME_RESIN", chance: 0.06, min: 1, max: 1 }, { itemId: "BP_FROSTIRON_HATCHET", chance: 0.01, min: 1, max: 1 }] },
   { id: "BELLWRAITH", name: "Bellwraith", level: 56, hp: 1580, attack: 106, defense: 68, xp: 920, gold: 55, secondsPerKill: 50, unlockLevel: 53, zone: "Frostmarch", drops: [{ itemId: "RIMEGLASS", chance: 0.36, min: 1, max: 2 }, { itemId: "CHOIR_BLOOM", chance: 0.1, min: 1, max: 1 }, { itemId: "BP_FROSTIRON_PICKAXE", chance: 0.01, min: 1, max: 1 }] },
   { id: "CHOIR_HUNTER", name: "Choir Hunter", level: 66, hp: 2050, attack: 132, defense: 82, xp: 1180, gold: 70, secondsPerKill: 58, unlockLevel: 63, zone: "Frostmarch", drops: [{ itemId: "FROSTIRON", chance: 0.5, min: 1, max: 2 }, { itemId: "RIMEGLASS", chance: 0.28, min: 1, max: 1 }, { itemId: "CHOIR_BLOOM", chance: 0.12, min: 1, max: 1 }, { itemId: "BULWARK_SIGIL", chance: 3e-3, min: 1, max: 1 }, { itemId: "BP_RIMEGLASS_ROD", chance: 0.01, min: 1, max: 1 }] },

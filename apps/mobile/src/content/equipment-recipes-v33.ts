@@ -44,7 +44,7 @@ const tierGold:Record<string,number>={T1:120,T2:420,T3:900,T4:1800,T5:3500,T6:10
 const tierXp:Record<string,number>={T1:165,T2:290,T3:450,T4:700,T5:1100,T6:1600,T7:2200,T8:2900,T9:3800};
 const infusionByTier:Record<string,{itemId:string;quantity:number}>={
   T1:{itemId:'VERDANT_BINDING_RESIN',quantity:1},T2:{itemId:'IRONWOOD_BINDING_RESIN',quantity:1},
-  T3:{itemId:'OATHGLASS_SOLVENT',quantity:1},T4:{itemId:'OATHGLASS_SOLVENT',quantity:2},
+  T3:{itemId:'SUNSCAR_DUNE_BINDER',quantity:1},T4:{itemId:'GLASSBOUND_BINDER',quantity:2},
   T5:{itemId:'SUNFUSED_FIXATIVE',quantity:1},T6:{itemId:'SUNFUSED_FIXATIVE',quantity:2},
   T7:{itemId:'RIMEWARD_DISTILLATE',quantity:1},T8:{itemId:'RIMEWARD_DISTILLATE',quantity:2},
   T9:{itemId:'CINDERHEART_ELIXIR',quantity:3},
@@ -76,12 +76,10 @@ export const EQUIPMENT_CRAFT_SKILL_BY_CLASS:Record<ClassId,'smithing'|'tailoring
 const pathMaterial:Record<string,Record<string,string>>={
   T1:{Foundation:'MOSS_FIBER',Alternate:'BOAR_HIDE'},
   T2:{Foundation:'WOLF_PELT',Alternate:'IRONWOOD_FANG'},
-  T4:{Foundation:'TORN_OATHCLOTH',Alternate:'ECHO_QUARTZ'},
 };
 const tailoringPathMaterial:Record<string,Record<string,string>>={
   T1:{Foundation:'BOAR_HIDE',Alternate:'WISP_DUST'},
   T2:{Foundation:'THORN_SAP',Alternate:'TROLL_HIDE'},
-  T4:{Foundation:'TORN_OATHCLOTH',Alternate:'ECHO_TOUCHED_PELT'},
 };
 
 function q(base:number,multiplier:number){return Math.max(1,Math.round(base*multiplier));}
@@ -100,7 +98,8 @@ function ingredients(tier:string,path:string,multiplier:number,skillId:'smithing
       // First Sunscar gear uses local gathering and monster sources, not level 7–14 enemies.
       // Foundation is available at the entry scorpion; Alternate can chase Astral Script at level 31+.
       case 'T3':return mergeInputs([{itemId:'SUNSCALE',quantity:q(18,multiplier)},{itemId:'DUNEWOOD',quantity:q(10,multiplier)},{itemId:path==='Alternate'?'ASTRAL_SCRIPT':'AMBERGLASS',quantity:q(path==='Alternate'?1:2,multiplier)}]);
-      case 'T4':return mergeInputs([{itemId:'TORN_OATHCLOTH',quantity:q(18,multiplier)},{itemId:'ECHO_TOUCHED_PELT',quantity:q(7,multiplier)},{itemId:accent??'OATHGLASS_SHARD',quantity:q(5,multiplier)}]);
+      // Level-40 gear is built from Sunscar supplies, gated by Glassbound Sentinel trophies (level 40).
+      case 'T4':return mergeInputs([{itemId:'SUNSCALE',quantity:q(19,multiplier)},{itemId:'GLASSBOUND_CORE',quantity:q(1,multiplier)},{itemId:path==='Alternate'?'ASTRAL_SCRIPT':'AMBERGLASS',quantity:q(path==='Alternate'?2:5,multiplier)}]);
       case 'T5':return [{itemId:'SUNSCALE',quantity:q(25,multiplier)},{itemId:'AMBERGLASS',quantity:q(8,multiplier)}];
       case 'T6':return [{itemId:'SUNSCALE',quantity:q(30,multiplier)},{itemId:'AMBERGLASS',quantity:q(10,multiplier)},{itemId:'ASTRAL_SCRIPT',quantity:q(1,multiplier)}];
       case 'T7':return [{itemId:'FROSTBLOOM',quantity:q(32,multiplier)},{itemId:'RIMEGLASS',quantity:Math.max(5,q(8,multiplier))}];
@@ -114,7 +113,7 @@ function ingredients(tier:string,path:string,multiplier:number,skillId:'smithing
     case 'T1':return [{itemId:'GREENWOOD_LOG',quantity:q(28,multiplier)},{itemId:pathItem??'MOSS_FIBER',quantity:q(8,multiplier)}];
     case 'T2':return [{itemId:'IRONWOOD_LOG',quantity:q(34,multiplier)},{itemId:pathItem??'WOLF_PELT',quantity:q(10,multiplier)}];
     case 'T3':return mergeInputs([{itemId:'DUNEWOOD',quantity:q(22,multiplier)},{itemId:'SUNSTONE_ORE',quantity:q(14,multiplier)},{itemId:path==='Alternate'?'ASTRAL_SCRIPT':'AMBERGLASS',quantity:q(path==='Alternate'?1:2,multiplier)}]);
-    case 'T4':return [{itemId:'OATHSTONE_INGOT',quantity:q(18,multiplier)},{itemId:'OATHGLASS_SHARD',quantity:q(7,multiplier)},{itemId:pathItem??'TORN_OATHCLOTH',quantity:q(5,multiplier)}];
+    case 'T4':return mergeInputs([{itemId:'SUNSTONE_INGOT',quantity:q(9,multiplier)},{itemId:'GLASSBOUND_CORE',quantity:q(1,multiplier)},{itemId:path==='Alternate'?'AMBERGLASS':'ASTRAL_SCRIPT',quantity:q(path==='Alternate'?5:2,multiplier)}]);
     case 'T5':return [{itemId:'SUNSTONE_INGOT',quantity:q(11,multiplier)},{itemId:'AMBERGLASS',quantity:q(7,multiplier)}];
     case 'T6':return [{itemId:'SUNSTONE_INGOT',quantity:q(15,multiplier)},{itemId:'AMBERGLASS',quantity:q(10,multiplier)},{itemId:'ASTRAL_SCRIPT',quantity:q(1,multiplier)}];
     case 'T7':return [{itemId:'FROSTIRON_INGOT',quantity:q(16,multiplier)},{itemId:'RIMEGLASS',quantity:Math.max(5,q(8,multiplier))}];

@@ -83,6 +83,7 @@ const BASE_ITEMS:ItemDef[]=[
 {id:'SUNSTONE_ORE',name:'Sunstone Ore',type:'material',value:65},
 {id:'AMBERGLASS',name:'Amberglass',type:'material',value:180,rarity:'uncommon'},
 {id:'ASTRAL_SCRIPT',name:'Astral Script',type:'material',value:420,rarity:'rare'},
+{id:'GLASSBOUND_CORE',name:'Glassbound Core',type:'material',value:540,rarity:'rare',passive:'A crystalline heart recovered from late-Sunscar Glassbound Sentinels.'},
 {id:'FROSTIRON',name:'Frostiron',type:'material',value:150},
 {id:'BLACKGLASS_ORE',name:'Blackglass Ore',type:'material',value:240,rarity:'rare'},
 {id:'RIMEGLASS',name:'Rimeglass',type:'material',value:430,rarity:'rare'},

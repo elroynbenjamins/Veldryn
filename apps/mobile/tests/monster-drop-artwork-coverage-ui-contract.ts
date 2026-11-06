@@ -7,6 +7,7 @@ const monsters=read('src/content/monsters.ts');
 const items=read('src/content/items.ts');
 const artSources=[
   read('src/theme/resource-assets.ts'),
+  read('src/theme/ingredient-assets.ts'),
   read('src/theme/regional-resource-assets.ts'),
   read('src/theme/misc-item-assets.ts'),
   read('src/theme/asterfall-ingredient-assets.ts'),

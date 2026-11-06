@@ -36,7 +36,9 @@ export const POTIONS:readonly PotionDefinition[]=[
 export const ALCHEMY_EQUIPMENT_INFUSIONS=Object.freeze([
   {id:'VERDANT_BINDING_RESIN',name:'Verdant Binding Resin',rarity:'rare' as const,value:70,description:'A dewleaf resin that binds first-tier gear.'},
   {id:'IRONWOOD_BINDING_RESIN',name:'Ironwood Binding Resin',rarity:'rare' as const,value:115,description:'A thorn-infused resin made with Ironwood resources for second-tier gear.'},
-  {id:'OATHGLASS_SOLVENT',name:'Oathglass Solvent',rarity:'rare' as const,value:310,description:'A crystalline solvent for Oathstone-era gear.'},
+  {id:'OATHGLASS_SOLVENT',name:'Oathglass Solvent',rarity:'rare' as const,value:310,description:'An Asterfall solvent that can be refined into Sunscar binders.'},
+  {id:'SUNSCAR_DUNE_BINDER',name:'Dune Binding Resin',rarity:'rare' as const,value:350,description:'An early Sunscar resin used in third-tier equipment.'},
+  {id:'GLASSBOUND_BINDER',name:'Glassbound Binding Resin',rarity:'epic' as const,value:640,description:'A reinforced resin made from late-Sunscar Glassbound cores for fourth-tier equipment.'},
   {id:'SUNFUSED_FIXATIVE',name:'Sunfused Fixative',rarity:'epic' as const,value:720,description:'A heat-stable fixative for Sunscar equipment.'},
   {id:'RIMEWARD_DISTILLATE',name:'Rimeward Distillate',rarity:'epic' as const,value:1320,description:'A frostbound distillate for Frostmarch equipment.'},
   {id:'CINDERHEART_ELIXIR',name:'Cinderheart Elixir',rarity:'legendary' as const,value:1600,description:'A volatile Ashlands elixir for capstone equipment.'},
@@ -64,6 +66,13 @@ export const ALCHEMY_RECIPES:readonly AlchemyRecipe[]=([
   // Available at the start of T2: all inputs come from Ironwood hunts or woodcutting, without backtracking to Greenfields.
   {id:'BREW_IRONWOOD_BINDING_RESIN',name:'Ironwood Binding Resin',skillId:'alchemy',level:8,seconds:115,xp:180,gold:35,inputs:[{itemId:'IRONWOOD_LOG',quantity:6},{itemId:'THORN_SAP',quantity:4},{itemId:'WOLF_PELT',quantity:2}],output:{itemId:'IRONWOOD_BINDING_RESIN',quantity:1}},
   {id:'BREW_OATHGLASS_SOLVENT',name:'Oathglass Solvent',skillId:'alchemy',level:20,seconds:135,xp:420,gold:55,inputs:[{itemId:'IRONBLOOM',quantity:4},{itemId:'OATHGLASS_SHARD',quantity:4},{itemId:'ECHO_QUARTZ',quantity:2},{itemId:'ASTERFALL_BOTANICAL_ESSENCE',quantity:1}],output:{itemId:'OATHGLASS_SOLVENT',quantity:1}},
+  // T3 can be assembled entirely from the first Sunscar monster and local gathering.
+  {id:'BREW_SUNSCAR_DUNE_BINDER',name:'Dune Binding Resin',skillId:'alchemy',level:20,seconds:135,xp:360,gold:60,inputs:[{itemId:'DUNEWOOD',quantity:4},{itemId:'SUNSCALE',quantity:2},{itemId:'SUNSTONE_ORE',quantity:3}],output:{itemId:'SUNSCAR_DUNE_BINDER',quantity:1}},
+  // T4 needs the level-40 Glassbound Sentinel; no King's Road trophies are mandatory.
+  {id:'BREW_GLASSBOUND_BINDER',name:'Glassbound Binding Resin',skillId:'alchemy',level:34,seconds:160,xp:700,gold:95,inputs:[{itemId:'SUNSTONE_ORE',quantity:4},{itemId:'ASTRAL_SCRIPT',quantity:1},{itemId:'GLASSBOUND_CORE',quantity:1}],output:{itemId:'GLASSBOUND_BINDER',quantity:1}},
+  // Legacy Oathglass Solvent remains valuable without being mandatory for T3 or T4.
+  {id:'REFINE_OATHGLASS_TO_DUNE_BINDER',name:'Refine Oathglass into Dune Binder',skillId:'alchemy',level:20,seconds:140,xp:360,gold:60,inputs:[{itemId:'OATHGLASS_SOLVENT',quantity:1},{itemId:'DUNEWOOD',quantity:3},{itemId:'AMBERGLASS',quantity:1}],output:{itemId:'SUNSCAR_DUNE_BINDER',quantity:1}},
+  {id:'REFINE_OATHGLASS_TO_GLASSBOUND_BINDER',name:'Refine Oathglass into Glassbound Binder',skillId:'alchemy',level:34,seconds:160,xp:700,gold:95,inputs:[{itemId:'OATHGLASS_SOLVENT',quantity:1},{itemId:'SUNSTONE_ORE',quantity:4},{itemId:'GLASSBOUND_CORE',quantity:1}],output:{itemId:'GLASSBOUND_BINDER',quantity:1}},
   {id:'BREW_SUNFUSED_FIXATIVE',name:'Sunfused Fixative',skillId:'alchemy',level:49,seconds:165,xp:950,gold:110,inputs:[{itemId:'SUNSCALE',quantity:3},{itemId:'AMBERGLASS',quantity:2},{itemId:'SCORPION_VENOM',quantity:2}],output:{itemId:'SUNFUSED_FIXATIVE',quantity:1}},
   {id:'BREW_RIMEWARD_DISTILLATE',name:'Rimeward Distillate',skillId:'alchemy',level:76,seconds:195,xp:1750,gold:220,inputs:[{itemId:'WINTERMINT',quantity:3},{itemId:'RIMEGLASS',quantity:2},{itemId:'RIME_RESIN',quantity:3}],output:{itemId:'RIMEWARD_DISTILLATE',quantity:1}},
   {id:'BREW_CINDERHEART_ELIXIR',name:'Cinderheart Elixir',skillId:'alchemy',level:96,seconds:225,xp:3000,gold:420,inputs:[{itemId:'ASHEN_MYRRH',quantity:4},{itemId:'BLACKGLASS_CORE',quantity:2},{itemId:'CINDER_HEART',quantity:1}],output:{itemId:'CINDERHEART_ELIXIR',quantity:1}},

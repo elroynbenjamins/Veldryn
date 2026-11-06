@@ -38,7 +38,7 @@ import {currentRegionId} from './combat-region';
 import {regionTravelAvailability,regionTravelLockReason} from './world-navigation';
 import {WORLD_ZONES,worldZoneInDevelopment} from '../content/world-map';
 import {enhancedGearStats,equippedEffectGemBonuses,equippedGemBonuses,canDisposeLegacyEquipment} from './equipment-enhancement';
-import {activeEquipmentSetRuntime,equipmentSetCombatModifiers} from './equipment-set-runtime';
+import {activeEquipmentBuildStats,equipmentSetCombatModifiers} from './equipment-set-runtime';
 import {companionCombatContribution,reconcileCombatCompanionUnlocks,grantCompanionEssence,grantBondstones} from './combat-companions';
 import {awardCompanionRematchBondstone,companionRematchBondstoneStatus,recordCompanionActivity} from './companion-runtime';
 import {monsterMastery,recordMonsterMastery} from './monster-mastery';
@@ -164,9 +164,11 @@ export function effectiveStats(state:GameState){
   for(const id of Object.values(c.equipment)){if(!id)continue;const stats=enhancedGearStats(state,id);hp+=stats.hp;attack+=stats.attack;defense+=stats.defense;}
   const novice=noviceSetFor(c.classId),noviceComplete=novice.slots.every(slot=>c.equipment[slot]===noviceItemId(c.classId,slot));
   if(noviceComplete){hp+=novice.setBonus.hp;attack+=novice.setBonus.attack;defense+=novice.setBonus.defense;}
-  const setRuntime=activeEquipmentSetRuntime(state),setStats=setRuntime.stats;
+  const setStats=activeEquipmentBuildStats(state);
   hp=Math.ceil(hp*(1+setStats.maxHp));
   defense=Math.ceil(defense*(1+setStats.armor));
+  // Legacy gems keep their original primary-stat behavior; canonical Stat Gems
+  // are already included in activeEquipmentBuildStats above.
   const gems=equippedGemBonuses(state);hp=Math.ceil(hp*(1+gems.hp));attack=Math.ceil(attack*(1+gems.attack));defense=Math.ceil(defense*(1+gems.defense));
   const mastery=characterClassEffects(c);hp=Math.ceil(hp*mastery.hp);attack=Math.ceil(attack*mastery.attack);defense=Math.ceil(defense*mastery.defense);
   const permanent=characterPermanentMultipliers(state);attack=Math.ceil(attack*permanent.combatPowerMultiplier);

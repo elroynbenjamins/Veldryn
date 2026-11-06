@@ -2,6 +2,8 @@ import {createCharacter,effectiveStats,equipItem,newGame,previewActivityReward,s
 import {attemptEquipmentUpgrade,equippedEffectGemBonuses,enhancedGearStats,enhancedGearStatsAtRank,gearEnhancement,gearStatsAtRank,gemSocketCapacity,normalizeEnhancementGemSlots,socketGem,unsocketGem,upgradeQuote} from '../src/core/equipment-enhancement';
 import {V33_EQUIPMENT_RECIPES} from '../src/content/equipment-recipes-v33';
 import {itemDef} from '../src/content/items';
+import {craftedRarityStatMultiplier} from '../src/core/crafted-gear-rarity';
+import {craftedGearQualityMultiplier} from '../src/core/crafted-gear-instances';
 import {previewEquipment} from '../src/core/equipment-preview';
 import {bulkSelectionSummary,bulkSellSelected,bulkSalvageSelected} from '../src/core/inventory-bulk';
 import {gemPouch,gemStorageQuantity} from '../src/core/gem-pouch';
@@ -36,12 +38,9 @@ const premiumState={
   account:{...state.account,craftedGearInstances:[previewInstance]},
 };
 const premiumOne=enhancedGearStatsAtRank(premiumState,ringId,1),premiumTwo=enhancedGearStatsAtRank(premiumState,ringId,2);
-const rarityMultiplier=(() => {
-  const rarityOrder=['common','uncommon','rare','epic','legendary','mythic'] as const;
-  const rarityStats={common:1,uncommon:1.08,rare:1.16,epic:1.28,legendary:1.45,mythic:2};
-  const baseRarity=(itemDef(ringId).rarity??'common') as keyof typeof rarityStats;
-  return Math.max(1,rarityStats.mythic/rarityStats[baseRarity]);
-})();
+const expectedPremiumGain=baseDefense*.04*craftedRarityStatMultiplier(ringId,'mythic')*craftedGearQualityMultiplier(100);
+ok(Math.abs((premiumTwo.defense-premiumOne.defense)-expectedPremiumGain)<1e-8,
+  'Premium enhancement preview must include the exact rarity and quality multipliers');
 ok(premiumTwo.defense>premiumOne.defense&&premiumTwo.defense-previewAtTwo.defense>0,
   'Enhanced rarity/quality gear must have a larger absolute rank gain than common gear');
 ok(Math.abs(enhancedGearStats(premiumState,ringId).defense-premiumOne.defense)<1e-8,

@@ -35,7 +35,7 @@ export type {QuestMode} from '../components/QuestModeSwitch';
 type Selection={kind:'story'|'contract'|'challenge';id:string};
 type SheetStage='details'|'claiming'|'success';
 type Status='ready'|'active'|'locked'|'claimed'|'processing';
-type RewardMoment={id:string;source:'story'|'challenges';title:string;gold:number;xp?:number;itemId?:string;quantity?:number;rarityColor?:string};
+type RewardMoment={id:string;source:'story'|'challenges';title:string;gold:number;xp?:number;itemId?:string;quantity?:number;essence?:number;rarityColor?:string};
 
 function ProgressLine({current,max,C}:{current:number;max:number;C:ThemeColors}){
  const percentage=Math.max(0,Math.min(100,Math.round(current/Math.max(1,max)*100)));
@@ -158,7 +158,7 @@ export function QuestRefinedScreen({state,mode,onModeChange,focusedWeeklyOrderId
   }else if(newChallenge.length){
    const def=allChallenges.find(q=>q.id===newChallenge[newChallenge.length-1]);
    if(def){
-    setMoment({id:def.id,source:'challenges',title:def.name,gold:def.rewardGold,xp:def.rewardXp,itemId:def.rewardItemId,quantity:def.rewardItemQty,rarityColor:QUEST_RARITIES[def.rarity].color});
+    setMoment({id:def.id,source:'challenges',title:def.name,gold:def.rewardGold,xp:def.rewardXp,itemId:def.rewardItemId,quantity:def.rewardItemQty,essence:def.rewardCompanionEssence,rarityColor:QUEST_RARITIES[def.rarity].color});
     if((selected?.kind==='challenge'&&selected.id===def.id)||(pendingClaim.current?.kind==='challenge'&&pendingClaim.current.id===def.id)){pendingClaim.current=null;setSheetStage('success');}
    }
   }
@@ -199,7 +199,7 @@ export function QuestRefinedScreen({state,mode,onModeChange,focusedWeeklyOrderId
  const chosenQueueable=chosenOrder?weeklyOrderQueueActivity(chosenOrder):undefined;
  const queueFull=(state.character?.activityQueue?.length??0)>=activityQueueCapacity(state);
  const stopActive=chosenOrder?state.character?.activeIdleRuleIdV40===weeklyOrderIdleRuleId(chosenOrder):false;
- const selectedRewards=chosenStory?{gold:chosenStory.rewardGold,itemId:chosenStory.rewardItemId,quantity:chosenStory.rewardItemQty??1}:chosenChallenge?{gold:chosenChallenge.rewardGold,xp:chosenChallenge.rewardXp,itemId:chosenChallenge.rewardItemId,quantity:chosenChallenge.rewardItemQty,color:QUEST_RARITIES[chosenChallenge.rarity].color}:undefined;
+ const selectedRewards=chosenStory?{gold:chosenStory.rewardGold,itemId:chosenStory.rewardItemId,quantity:chosenStory.rewardItemQty??1,essence:0}:chosenChallenge?{gold:chosenChallenge.rewardGold,xp:chosenChallenge.rewardXp,itemId:chosenChallenge.rewardItemId,quantity:chosenChallenge.rewardItemQty,essence:chosenChallenge.rewardCompanionEssence??0,color:QUEST_RARITIES[chosenChallenge.rarity].color}:undefined;
  const hasClaim=selectedStatus==='ready'&&(!!chosenStory||!!chosenChallenge);
  return <View style={styles.screen}>
   <ScrollView contentContainerStyle={styles.root} keyboardShouldPersistTaps="handled" keyboardDismissMode="on-drag" showsVerticalScrollIndicator={false} showsHorizontalScrollIndicator={false}>
@@ -212,7 +212,7 @@ export function QuestRefinedScreen({state,mode,onModeChange,focusedWeeklyOrderId
     challengeMeta={challengeReady.length?t('{count} ready',{count:challengeReady.length}):t('{current}/{total} claimed',{current:challengeClaimed.size,total:allChallenges.length})}
     storyAttention={storyReady} contractAttention={boardPending.length} challengeAttention={challengeReady.length}/>
    {notice?<ActionFeedback compact tone="error" message={notice} reduceMotion={state.settings.reduceMotion} actionLabel={p('Dismiss')} onAction={()=>setNotice('')}/>:null}
-   {moment?.source===mode&&!sheetOpen?<View style={[styles.moment,{borderColor:C.good,backgroundColor:C.goodSurface}]}><View style={styles.rowMeta}><Text style={[styles.eyebrow,{color:C.good}]}>{p('REWARDS SECURED')}</Text><StatusPill label={p('CLAIMED')} tone="good"/></View><Text style={[styles.rowTitle,{color:C.text}]}>{moment.title}</Text><QuestReward gold={moment.gold} xp={moment.xp} itemId={moment.itemId} quantity={moment.quantity} rarityColor={moment.rarityColor} label={p('Rewards collected')}/></View>:null}
+   {moment?.source===mode&&!sheetOpen?<View style={[styles.moment,{borderColor:C.good,backgroundColor:C.goodSurface}]}><View style={styles.rowMeta}><Text style={[styles.eyebrow,{color:C.good}]}>{p('REWARDS SECURED')}</Text><StatusPill label={p('CLAIMED')} tone="good"/></View><Text style={[styles.rowTitle,{color:C.text}]}>{moment.title}</Text><QuestReward gold={moment.gold} xp={moment.xp} itemId={moment.itemId} quantity={moment.quantity} essence={moment.essence} rarityColor={moment.rarityColor} label={p('Rewards collected')}/></View>:null}
    {mode==='story'?<>
     <View style={[styles.hero,{backgroundColor:C.panelRaised,borderColor:C.lineStrong}]}>
      <View style={styles.rowMeta}><Text style={[styles.eyebrow,{color:C.accent}]}>{p('ACT')+' '+(act.act===1?'I':act.act===2?'II':'III')+' · '+p(act.name.toUpperCase())}</Text><Text style={[styles.mini,{color:C.muted}]}>{storyClaimed}/{QUESTS.length}</Text></View>
@@ -294,11 +294,11 @@ export function QuestRefinedScreen({state,mode,onModeChange,focusedWeeklyOrderId
     {sheetStage==='success'&&moment!==null&&moment.id===selected?.id?<View style={[styles.success,{backgroundColor:C.goodSurface,borderColor:C.good}]}>
      <Text style={[styles.successMark,{color:C.good}]}>✦ ✓</Text><Text style={[styles.featuredTitle,{color:C.text}]}>{p('Rewards secured')}</Text>
      <Text style={[styles.subtitle,{color:C.muted}]}>{p('Reward collected · the next objective is ready when unlocked.')}</Text>
-     <QuestReward gold={moment.gold} xp={moment.xp} itemId={moment.itemId} quantity={moment.quantity} rarityColor={moment.rarityColor} label={p('Rewards collected')}/>
+     <QuestReward gold={moment.gold} xp={moment.xp} itemId={moment.itemId} quantity={moment.quantity} essence={moment.essence} rarityColor={moment.rarityColor} label={p('Rewards collected')}/>
     </View>:sheetStage==='claiming'?<View style={[styles.featured,{backgroundColor:C.panelRaised,borderColor:C.lineStrong}]}>
      <Text style={[styles.rowTitle,{color:C.text}]}>{selectedTitle}</Text>
      <Text style={[styles.subtitle,{color:C.muted}]}>{p('The server will verify your progress before granting this reward.')}</Text>
-     {selectedRewards?<QuestReward gold={selectedRewards.gold} xp={'xp' in selectedRewards?selectedRewards.xp:undefined} itemId={selectedRewards.itemId} quantity={selectedRewards.quantity} rarityColor={'color' in selectedRewards?selectedRewards.color:undefined} label={p('Rewards')}/>:null}
+     {selectedRewards?<QuestReward gold={selectedRewards.gold} xp={'xp' in selectedRewards?selectedRewards.xp:undefined} itemId={selectedRewards.itemId} quantity={selectedRewards.quantity} essence={selectedRewards.essence} rarityColor={'color' in selectedRewards?selectedRewards.color:undefined} label={p('Rewards')}/>:null}
      {sheetStage==='claiming'?<Text accessibilityLiveRegion="polite" style={[styles.footnote,{color:C.info}]}>{p('Claim submitted · waiting for confirmation…')}</Text>:null}
     </View>:<>
      <View style={[styles.detailIdentity,{backgroundColor:C.panelRaised,borderColor:C.line}]}>
@@ -318,7 +318,7 @@ export function QuestRefinedScreen({state,mode,onModeChange,focusedWeeklyOrderId
      </View>:null}
      <View style={[styles.detailBlock,{backgroundColor:C.panel,borderColor:C.line}]}>
       <Text style={[styles.eyebrow,{color:C.accent}]}>{p('REWARDS')}</Text>
-      {chosenOrder?<><Text style={[styles.detailText,{color:C.text}]}>{p(chosenOrder.reward.label)}</Text><Text style={[styles.footnote,{color:C.muted}]}>{p('Rewards process automatically once the server confirms completion; no claim button is needed.')}</Text></>:selectedRewards?<QuestReward gold={selectedRewards.gold} xp={'xp' in selectedRewards?selectedRewards.xp:undefined} itemId={selectedRewards.itemId} quantity={selectedRewards.quantity} rarityColor={'color' in selectedRewards?selectedRewards.color:undefined} label={p('Reward preview')}/>:null}
+      {chosenOrder?<><Text style={[styles.detailText,{color:C.text}]}>{p(chosenOrder.reward.label)}</Text><Text style={[styles.footnote,{color:C.muted}]}>{p('Rewards process automatically once the server confirms completion; no claim button is needed.')}</Text></>:selectedRewards?<QuestReward gold={selectedRewards.gold} xp={'xp' in selectedRewards?selectedRewards.xp:undefined} itemId={selectedRewards.itemId} quantity={selectedRewards.quantity} essence={selectedRewards.essence} rarityColor={'color' in selectedRewards?selectedRewards.color:undefined} label={p('Reward preview')}/>:null}
      </View>
      {selectedStatus==='claimed'?<Text style={[styles.footnote,{color:C.good}]}>{p('✓ Reward already collected')}</Text>:null}
      {selectedStatus==='processing'?<Text style={[styles.footnote,{color:C.good}]}>{p('✓ Objective complete · reward processing automatically')}</Text>:null}

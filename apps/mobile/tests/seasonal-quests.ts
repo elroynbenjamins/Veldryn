@@ -114,7 +114,7 @@ const unlocked:GameState={...monthlyEarned,character:{...monthlyEarned.character
 const monthlyClaim=executeGameCommand(unlocked,{type:'seasonal',args:{period:'monthly',id:monthlyReady.id}},t).state;
 check(monthlyClaim.account.seasonalContractClaimIds?.includes(monthlyReady.id),'Monthly claims must work through the command dispatcher');
 
-/** Additional reward paths must never mint multiple caches or bypass content gates. */
+/** Choice verification: a completed Quest grants exactly one server-approved path, never a combined cache. */
 const dailyAlternatives=seasonalQuestRewardOptions(state,'daily','rare');
 check(dailyAlternatives[0].id==='item:TEMPERING_DUST','Existing rare daily reward must remain the default');
 check(dailyAlternatives.some(choice=>choice.id==='item:GEM_DUST'&&choice.rewardItemQty===5),'Gem Dust choice must be available on rare daily challenges');

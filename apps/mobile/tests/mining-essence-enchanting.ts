@@ -50,9 +50,9 @@ for(const recipe of allEarly){
  }
 }
 const later=V33_EQUIPMENT_RECIPES.find(row=>row.v33EquipmentTier==='T3')!;
-ok(upgradeMaterialCosts(later.output.itemId,1).some(row=>row.itemId==='OATHGLASS_SOLVENT')
+ok(upgradeMaterialCosts(later.output.itemId,1).some(row=>row.itemId==='SUNSCAR_DUNE_BINDER')
  &&!upgradeMaterialCosts(later.output.itemId,1).some(row=>row.itemId===id),
- 'Later-tier enchantment materials remain unchanged');
+ 'T3 enchanting must use Sunscar materials rather than Asterfall Mineral Essence');
 const ring=allEarly.find(row=>row.classId==='IRONWARDEN'&&itemDef(row.output.itemId).slot==='ring')!;
 const costs=upgradeMaterialCosts(ring.output.itemId,1);
 const prepared={...base,character:{...base.character!,gold:100000,equipment:{...base.character!.equipment,ring:ring.output.itemId}},

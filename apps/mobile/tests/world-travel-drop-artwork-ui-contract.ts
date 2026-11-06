@@ -16,6 +16,7 @@ ok(scenes.includes('regionScenes[regionId]')&&scenes.includes('resizeMode="cover
 
 const coverageFiles=[
  'src/theme/resource-assets.ts',
+ 'src/theme/ingredient-assets.ts',
  'src/theme/misc-item-assets.ts',
  'src/theme/asterfall-ingredient-assets.ts',
  'src/theme/asterfall-ore-assets.ts',

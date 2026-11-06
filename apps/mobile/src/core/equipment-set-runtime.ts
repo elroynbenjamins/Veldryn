@@ -1,5 +1,6 @@
 import {EQUIPMENT_SETS,equipmentSetDef,equippedSetPieceCount,type EquipmentSetDef} from '../content/equipment-sets';
 import {itemDef} from '../content/items';
+import {equippedCanonicalStatGemBonusesV1} from './equipment-enhancement';
 import type {GameState} from './types';
 
 export type EquipmentSetStatKey=
@@ -93,12 +94,44 @@ export function equipmentSetBonusCoverage(){
 }
 
 /**
+ * Full always-on secondary-stat bonuses from sets and equipped canonical
+ * Stat Gems. The server's gem catalog defines which values are percent
+ * multipliers vs. additive percentage points. The mobile character model
+ * represents most of those stats as bonus ratios (base = 0), so percent
+ * multipliers apply to 1 + existing bonus; otherwise gems on a character
+ * without a matching set would incorrectly have no effect.
+ *
+ * Critical Damage is special: its underlying base is the 0.50 critical
+ * damage bonus above a 1.0 normal hit (displayed as a 1.5x crit).
+ */
+export function activeEquipmentBuildStats(state:GameState):EquipmentSetStats{
+  const sets=activeEquipmentSetRuntime(state).stats;
+  const gems=equippedCanonicalStatGemBonusesV1(state);
+  const p=gems.statPercent,pp=gems.statPercentagePoints;
+  const multiplied=(bonus:number,percent:number|undefined)=>(1+bonus)*(1+(percent??0))-1;
+  return {
+    maxHp:multiplied(sets.maxHp,p.maxHp),
+    armor:multiplied(sets.armor,p.armor),
+    ward:multiplied(sets.ward,p.ward),
+    tenacity:multiplied(sets.tenacity,p.tenacity),
+    haste:multiplied(sets.haste,p.haste),
+    power:multiplied(sets.power,p.power),
+    accuracy:sets.accuracy+(pp.accuracy??0),
+    penetration:sets.penetration+(pp.penetration??0),
+    potency:multiplied(sets.potency,p.potency),
+    critRate:sets.critRate+(pp.critRate??0),
+    critDamage:(.5+sets.critDamage)*(1+(p.critDamage??0))-.5,
+    evasion:sets.evasion+(pp.evasion??0),
+  };
+}
+
+/**
  * Maps authored always-on V33 stats into the current idle combat simulator.
  * This does not invent 6pc trigger behavior: those remain explicit trigger hooks
  * until the active-skill/ally/barrier event model can fire them faithfully.
  */
 export function equipmentSetCombatModifiers(state:GameState,baseCritChance=.05,baseAccuracy=.84){
-  const stats=activeEquipmentSetRuntime(state).stats;
+  const stats=activeEquipmentBuildStats(state);
   const baseCritDamage=0.50;
   const accuracyMultiplier=Math.min(.99,baseAccuracy+stats.accuracy)/baseAccuracy;
   const baseCritExpected=1+baseCritChance*baseCritDamage;

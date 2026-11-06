@@ -123,7 +123,7 @@ export function EquipmentEnhancementModal({visible,state,itemId,onClose,onUpgrad
   return <GameModalSurface visible={visible} reduceMotion={state.settings.reduceMotion} onClose={close} backdropLabel={gt("Close equipment enhancement")} surfaceStyle={[s.card,{borderColor:rarity.color}]}>
     <GameModalHeader eyebrow={rarity.label+' · '+item.slot} title={item.name} onClose={close} closeDisabled={busy} leading={leading}/>
     <View style={s.compactContext}>
-      <Text style={s.compactContextText}>{'T'+((itemId.match(/T([1-9])P_/)??[])[1]??'')+' · '+gt("Enhancement")}</Text>
+      <Text style={s.compactContextText}>{gt("Equipment enhancement")}</Text>
       <Text style={s.compactRankBadge}>{'+'+enhancement.rank+' / '+MAX_UPGRADE_RANK}</Text>
     </View>
     <View accessibilityRole="tablist" style={s.tabs}>
@@ -142,7 +142,7 @@ export function EquipmentEnhancementModal({visible,state,itemId,onClose,onUpgrad
         {quote.maxed?<View style={s.completedPanel}><Text style={s.completedTitle}>{gt("Fully enhanced")}</Text></View>:<>
           <Text style={s.section}>{gt("Your stat gains")}</Text>
           <View style={s.compactStatGrid}>
-            {([['ATK',currentStats.attack,nextStats.attack],['DEF',currentStats.defense,nextStats.defense],['HP',currentStats.hp,nextStats.hp]] as Array<[string,number,number]>).map(([name,before,after])=><View key={name} style={s.compactStatTile}><Text style={s.compactStatLabel}>{name}</Text><Text style={s.compactStatValue}>{'+'+Math.max(0,after-before)}</Text></View>)}
+            {([['ATK',currentStats.attack,nextStats.attack],['DEF',currentStats.defense,nextStats.defense],['HP',currentStats.hp,nextStats.hp]] as Array<[string,number,number]>).filter(([,before,after])=>after!==before).map(([name,before,after])=><View key={name} style={s.compactStatTile}><Text style={s.compactStatLabel}>{name}</Text><Text style={s.compactStatValue}>{'+'+Math.max(0,after-before)}</Text></View>)}
           </View>
           <View style={s.compactChance}>
             <Text style={s.compactChancePct}>{totalChancePct+'%'}</Text>
@@ -171,13 +171,13 @@ export function EquipmentEnhancementModal({visible,state,itemId,onClose,onUpgrad
           const blocked=Boolean(meta&&activeSocketKind==='effect'&&effectFamilyCopiesV1(state,meta.familyId,itemId)>=3);
           return <Pressable key={gem.id} accessibilityRole="button" accessibilityState={{selected:selectedGemId===gem.id,disabled:blocked||busy}} onPress={()=>{setSelectedGemId(gem.id);setPendingGemAction(null)}} disabled={blocked||busy} style={[s.compactCandidate,selectedGemId===gem.id&&s.compactCandidateSelected]}>
             <GemArtwork itemId={gem.id} size={44} framed={false}/>
-            <View style={s.flex}><Text numberOfLines={1} style={[s.socketTitle,{color:gemRarity.color}]}>{gem.name}</Text><Text style={s.compactCandidateMeta} numberOfLines={2}>{(meta?GEM_GRADE_LABEL_V1[meta.grade]+' · ':'')+(activeSocketKind==='stat'&&meta?formatGemValueV1(meta.familyId,meta.grade):gemEffectDescription(gem.id))+' · ×'+combinedQuantity(state,gem.id)}</Text>{rec?<Text style={s.compactRecommended}>{'★ '+gt("Recommended")}</Text>:null}{blocked?<Text style={s.missing}>{gt("Limit")}</Text>:null}</View>
-            <Text style={s.compactChooseMark}>{selectedGemId===gem.id?'●':'○'}</Text>
+            <View style={s.flex}><Text numberOfLines={1} style={[s.socketTitle,{color:gemRarity.color}]}>{gem.name}</Text><Text style={s.compactCandidateMeta} numberOfLines={2}>{(meta?GEM_GRADE_LABEL_V1[meta.grade]+' · ':'')+(activeSocketKind==='stat'&&meta?formatGemValueV1(meta.familyId,meta.grade):gemEffectDescription(gem.id))+' · ×'+combinedQuantity(state,gem.id)}</Text>{rec?<Text style={s.compactRecommended}>{'★ '+gt("Recommended")}</Text>:null}{gem.id===equippedGemId?<Text style={s.compactRecommended}>{gt("Equipped")}</Text>:null}{blocked?<Text style={s.missing}>{gt("Limit")}</Text>:null}</View>
+            <Text style={s.compactChooseMark}>{gem.id===equippedGemId?'✓':selectedGemId===gem.id?'●':'○'}</Text>
           </Pressable>
         })}
         {candidates.length===0?<Text style={s.reason}>{activeSocketKind==='stat'?gt("No Stat Gems owned."):gt("No Effect Gems owned. Visit the Codex to find more.")}</Text>:null}
         {candidates.length>4?<Pressable accessibilityRole="button" accessibilityState={{expanded:showAllCandidates}} onPress={()=>setShowAllCandidates(v=>!v)} style={s.detailToggle}><Text style={s.detailToggleText}>{showAllCandidates?gt("Show fewer gems"):gt("See all owned gems")}</Text><Text style={s.detailToggleMark}>{showAllCandidates?'−':'+'}</Text></Pressable>:null}
-        {selectedGem?<View style={s.compactPreview}><Text style={s.section}>{gt("Change preview")}</Text>
+        {selectedGem&&!pendingGemAction?<View style={s.compactPreview}><Text style={s.section}>{gt("Change preview")}</Text>
           <View style={s.compactPreviewRow}><Text style={s.compactPreviewBefore} numberOfLines={2}>{equippedGemId?itemDef(equippedGemId).name:gt("Empty socket")}</Text><Text style={s.arrow}>→</Text><Text style={s.compactPreviewAfter} numberOfLines={2}>{selectedGem.name}</Text></View>
           <Text style={s.meta}>{gemResultDetail(state,selectedGem.id)}</Text>
           {equippedGemId&&equippedGemId!==selectedGem.id?<Text style={s.rule}>{gt("Old gem returns to Gem Pouch or available storage.")}</Text>:null}

@@ -41,6 +41,7 @@
   "tests/guild-activity-ui-localization.cjs",
   "tests/guild-quest-authored-localization.cjs",
   "tests/guild-project-authored-localization.cjs",
+  "tests/guild-weekly-bank-economy.cjs",
   "tests/dungeon-encounter-preview-localization.cjs",
   "tests/seasonal-dungeon-localization.cjs",
   "tests/seasonal-dungeon-effects-localization.cjs",

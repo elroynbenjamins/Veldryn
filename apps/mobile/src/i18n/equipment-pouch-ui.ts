@@ -510,7 +510,7 @@ export const equipmentPouchUiRows={
     "L'équipement nécessaire à un objectif en cours reste protégé",
     "Снаряжение для текущей цели защищено",
     "Etkin hedef için gereken ekipman korunur"
-  ]
+  ],
   "Common": ["Gewöhnlich","Común","Gewoon","Comune","Commun","Обычный","Yaygın"],
   "Uncommon": ["Ungewöhnlich","Poco común","Ongewoon","Non comune","Peu commun","Необычный","Sıradışı"],
   "Rare": ["Selten","Raro","Zeldzaam","Raro","Rare","Редкий","Nadir"],

@@ -175,7 +175,7 @@ export function GuildProjectPosting({project,expanded,compact=false,onToggle,onC
    {project.personalRewardThreshold>0?<View style={s.smallTrack}><View style={[s.fill,{width:`${Math.min(100,project.personalPoints/project.personalRewardThreshold*100)}%` as any}]}/></View>:null}
    {weekly?<View style={s.reward}>
     <Text style={s.rewardIcon}>🪙</Text>
-    <View style={s.flex}><Text style={s.rewardTitle}>{ui('500 Gold · Personal reward')}</Text><Text style={s.meta}>{ui(project.completionRewardClaimed?'Already claimed':project.status==='completed'?'Ready if eligible':'Available after Guild completion')}</Text></View>
+    <View style={s.flex}><Text style={s.rewardTitle}>{project.rewardDestination==='guild_bank'?ui('{amount} Gold · Guild Bank reward',{amount:project.rewardGold.toLocaleString()}):ui('500 Gold · Personal reward')}</Text><Text style={s.meta}>{ui(project.completionRewardClaimed?'Already claimed':project.status==='completed'?'Ready if eligible':'Available after Guild completion')}</Text></View>
    </View>:null}
    {weekly?<View style={s.sectionHead}><Text style={s.meta}>{ui('Guild receives')}</Text><Text style={s.hallReward}>{ui('200 Hall progress')}</Text></View>:null}
   </View>:null}
@@ -191,7 +191,7 @@ export function GuildProjectPosting({project,expanded,compact=false,onToggle,onC
    </Pressable>)}</View>
    <Text style={s.meta}>{ui('Combat/Gathering: 20 effort/min · Crafting: 5/item.')}</Text>
   </View>:null}
-  {readyToClaim?<GameButton title={ui(busy?'Claiming…':'Claim 500 Gold')} disabled={busy} onPress={onClaim}/>:null}
+  {readyToClaim?<GameButton title={ui(busy?'Claiming…':project.rewardDestination==='guild_bank'?'Claim Guild Bank Gold':'Claim 500 Gold')} disabled={busy} onPress={onClaim}/>:null}
   {project.status==='completed'&&weekly&&!readyToClaim&&!compact?<Text style={s.meta}>{ui(project.completionRewardClaimed?'Reward claimed':!qualifying?'Personal contribution threshold not met':'Reward claim period ended')}</Text>:null}
   {expanded?<View style={s.details}>
    <Text style={s.copy}>{authored.description}</Text>
@@ -201,7 +201,7 @@ export function GuildProjectPosting({project,expanded,compact=false,onToggle,onC
     {guildUpgradeComponentArtwork(goal.resourceId)?<Image source={guildUpgradeComponentArtwork(goal.resourceId)} style={s.resourceIcon} resizeMode="contain" accessible={false}/>:null}
     <Text style={[s.copy,s.flex]}>{goal.label}</Text><Text style={s.resourceAmount}>{goal.current.toLocaleString()} / {goal.target.toLocaleString()}</Text>
    </View>)}
-   {weekly?<View style={s.detailsRules}><Text style={s.meta}>{ui('Daily cap: 2,400 effort · Max 50% per member (Guilds of 2+) · 300 effort for 500 Gold · Claim within 7 days.')}</Text></View>:null}
+   {weekly?<View style={s.detailsRules}><Text style={s.meta}>{ui(project.rewardDestination==='guild_bank'?'Daily cap: 2,400 effort · Max 50% per member (Guilds of 2+) · 300 effort for Guild Bank reward · Claim within 7 days.':'Daily cap: 2,400 effort · Max 50% per member (Guilds of 2+) · 300 effort for 500 Gold · Claim within 7 days.')}</Text></View>:null}
    <View style={s.contributionHead}><Text style={s.sectionTitle}>{ui('Member contribution')}</Text><Text style={s.meta}>{ui('{count} members',{count:project.memberContributions.length})}</Text></View>
    {project.memberContributions.map((member,index)=>{
     const sources=[member.combatPoints?ui('Combat: {count}',{count:member.combatPoints.toLocaleString()}):'',member.gatheringPoints?ui('Gather {count}',{count:member.gatheringPoints.toLocaleString()}):'',member.craftingPoints?ui('Craft {count}',{count:member.craftingPoints.toLocaleString()}):''].filter(Boolean).join(' · ');

@@ -85,6 +85,16 @@ ok(Object.keys(equippedCanonicalStatGemBonusesV1(oldGem).statPercent).length===0
  'Older gems must not enter canonical totals');
 close(equippedGemBonuses(withGem('stat_iron')).defense,0,'Canonical Iron must not be counted twice as legacy Defense');
 
+// A named legacy Stat Gem occupies the slot even if an old saved gemIds
+// array erroneously contains a second canonical Stat Gem.
+const legacySlotPrecedence={...base,character:{...base.character!,gearEnhancements:{
+ basic_sword:{rank:0,failures:0,statGemId:'WARD_SHARD',
+  gemIds:['WARD_SHARD','gem:stat_precision:g5']},
+}}};
+ok(!equippedCanonicalGemIdsV1(legacySlotPrecedence).includes('gem:stat_precision:g5'),
+ 'Stale gemIds must never fabricate a second Stat Gem in a legacy named socket');
+close(effectiveStats(legacySlotPrecedence).accuracy,without.accuracy,
+ 'Named legacy socket must not create phantom canonical Accuracy');
 const activeSet=EQUIPMENT_SETS.find(row=>row.id==='T1_001')!;
 ok(activeSet&&activeSet.itemIds.length>=4,'Expected the 10-piece Oathbound set');
 const equipment={...base.character!.equipment};

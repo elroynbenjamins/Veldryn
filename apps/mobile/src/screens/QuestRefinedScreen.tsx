@@ -21,6 +21,7 @@ import {QuestModeSwitch,type QuestMode} from '../components/QuestModeSwitch';
 import {GameButton} from '../components/GameButton';
 import {GameModalHeader,GameModalSurface} from '../components/GameModalSurface';
 import {QuestReward} from '../components/QuestReward';
+import {itemDef} from '../content/items';
 import {QuestObjectiveArtwork} from '../components/QuestObjectiveArtwork';
 import {MonsterPortraitFrame} from '../components/MonsterPortraitFrame';
 import {ActivityArtwork} from '../components/ActivityArtwork';
@@ -321,11 +322,11 @@ export function QuestRefinedScreen({state,mode,onModeChange,focusedWeeklyOrderId
      </View>:null}
      <View style={[styles.detailBlock,{backgroundColor:C.panel,borderColor:C.line}]}>
       <Text style={[styles.eyebrow,{color:C.accent}]}>{p('REWARDS')}</Text>
-      {chosenChallenge&&selectedStatus!=='claimed'&&chosenChallenge.rewardOptions.length>1?<View style={{gap:8}}>
+      {chosenChallenge&&selectedStatus==='ready'&&chosenChallenge.rewardOptions.length>1?<View style={{gap:8}}>
        <Text style={[styles.eyebrow,{color:C.accent}]}>{p('CHOOSE ONE REWARD')}</Text>
        {chosenChallenge.rewardOptions.map(choice=>{
         const active=choice.id===chosenReward?.id;
-        const name=choice.rewardItemId?p(choice.rewardItemId.replace(/_/g,' ')):choice.rewardBondstones?p('Bondstones'):p('Companion Essence');
+        const name=choice.rewardItemId?p(itemDef(choice.rewardItemId).name):choice.rewardBondstones?p('Bondstones'):p('Companion Essence');
         const amount=choice.rewardItemQty??choice.rewardBondstones??choice.rewardCompanionEssence??0;
         return <Pressable key={choice.id} accessibilityRole="radio" accessibilityState={{checked:active}} accessibilityLabel={amount+' '+name}
          onPress={()=>setRewardChoiceByQuest(previous=>({...previous,[chosenChallenge.id]:choice.id}))}

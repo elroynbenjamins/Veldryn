@@ -9,6 +9,7 @@ import {classSkillsFor} from '../content/class-skills';
 import {MONSTERS} from '../content/monsters';
 import {REGIONAL_AREAS} from '../content/regional-areas';
 import {itemDef} from '../content/items';
+import {equipmentSalvageReward} from './equipment-salvage';
 import {GATHERING,recipeDef} from '../content/skills';
 import {HERB_NODES,HERBALISM_ESSENCE_BY_ZONE,herbalismInsightMultiplier,herbalismMethod} from '../content/herbalism';
 import {MINING_ESSENCE_BY_ZONE} from '../content/mining-essence';
@@ -1034,10 +1035,14 @@ export function sellItem(state:GameState,itemId:string,quantity=1):GameState{
 export function salvageItem(state:GameState,itemId:string):GameState{
   if(state.settings.favoriteItemIds?.includes(itemId))throw new Error('Favorite item is protected. Remove it from Favorites before salvaging.');
   if(state.settings.lockedItemIds?.includes(itemId))throw new Error('Locked item is protected. Unlock it before salvaging.');
-  const d=itemDef(itemId);if(d.type!=='gear'||!d.salvage)throw new Error('Cannot salvage');
+  const d=itemDef(itemId),reward=equipmentSalvageReward(itemId);if(d.type!=='gear'||!reward)throw new Error('Cannot salvage');
   if(state.inventory.stacks.some(row=>row.itemId===itemId&&row.instanceId===undefined&&row.quantity>0)&&!canDisposeLegacyEquipment(state,itemId,'inventory',1))
     throw new Error('Enhanced equipment is protected. Keep the upgraded copy or extract its gems before disposal.');
-  let next:GameState={...state,inventory:{...state.inventory,stacks:stackItems(consume(state.inventory.stacks,itemId,1),[d.salvage])}};
+  const remaining=consume(state.inventory.stacks,itemId,1);
+  const existing=remaining.find(row=>row.itemId===reward.itemId&&row.instanceId===undefined);
+  if(!existing&&remaining.length>=entitlementStorageCapacity(state,'inventory'))throw new Error('Inventory is full; make space for salvage');
+  if(!Number.isSafeInteger((existing?.quantity??0)+reward.quantity))throw new Error('Salvage material quantity overflow');
+  let next:GameState={...state,inventory:{...state.inventory,stacks:stackItems(remaining,[reward])}};
   return next;
 }
 

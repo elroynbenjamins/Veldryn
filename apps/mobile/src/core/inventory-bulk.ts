@@ -1,4 +1,5 @@
 import {itemDef} from '../content/items';
+import {equipmentSalvageReward} from './equipment-salvage';
 import {HOLY_WATER_ID} from '../content/faith';
 import type {GameState,ItemStack} from './types';
 import {disposeCraftedGearInstance} from './crafted-gear-ownership';
@@ -48,7 +49,7 @@ export function bulkSelectionSummary(state:GameState,itemIds:readonly string[],l
   }):[];
   const salvageable=location==='inventory'?stacks.filter(stack=>{
     const item=itemDef(stack.itemId);
-    if(item.type!=='gear'||!item.salvage||goalProtectedIds.has(stack.itemId))return false;
+    if(item.type!=='gear'||!equipmentSalvageReward(stack.itemId)||goalProtectedIds.has(stack.itemId))return false;
     if(stack.instanceId){
       if(state.settings.lockedItemIds?.includes(stack.itemId))return false;
       try{disposeCraftedGearInstance(state,stack.instanceId,'salvage');return true;}catch{return false;}

@@ -45577,6 +45577,15 @@ var CLASS_AFFINITY_SPEED_MULTIPLIER = 1.03;
 var NEUTRAL = Object.freeze({ xpMultiplier: 1, speedMultiplier: 1 });
 var MATCHED = Object.freeze({ xpMultiplier: CLASS_AFFINITY_XP_MULTIPLIER, speedMultiplier: CLASS_AFFINITY_SPEED_MULTIPLIER });
 
+// ../apps/mobile/src/core/equipment-salvage.ts
+var MATERIAL_ID = "TEMPERING_DUST";
+var tieredRewards = /* @__PURE__ */ new Map();
+for (const item of EQUIPMENT_ITEMS_V33) {
+  const match = /^T([1-9])[A-Z]*_/.exec(item.id);
+  if (!match) continue;
+  tieredRewards.set(item.id, { itemId: MATERIAL_ID, quantity: Math.max(1, Math.ceil(Number(match[1]) / 2)) });
+}
+
 // ../apps/mobile/src/content/quests.ts
 var QUESTS = [
   { id: "QST_001", name: "A Name in the Ledger", description: "Defeat 5 Moss Rats.", kind: "kills", targetId: "MOSS_RAT", required: 5, rewardGold: 40, rewardItemId: "MOSS_FIBER", rewardItemQty: 5, act: 1, location: "Greenfields", story: "The local ledger has more missing names than living ones. A simple rat cull is hardly heroic, but it is the first chance to prove you can return from the road." },

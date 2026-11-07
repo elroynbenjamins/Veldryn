@@ -66,7 +66,7 @@ export function WorldScreen({state,onTravel,onOpenCombat,onOpenSkills,onCoop,dun
   </View>;
 
   return <ScrollView contentContainerStyle={s.root} showsVerticalScrollIndicator={false} showsHorizontalScrollIndicator={false}>
-    <Text accessibilityRole="header" style={s.heading}>{t('World Regions')}</Text>
+    <Text accessibilityRole="header" style={s.heading}>{p('World')}</Text>
     <View accessibilityRole="tablist" style={s.topTabs}>
       <Pressable accessibilityRole="tab" accessibilityState={{selected:topTab==='region'}}
         style={[s.topTab,topTab==='region'&&s.topTabActive]} onPress={()=>setTopTab('region')}>
@@ -88,7 +88,7 @@ export function WorldScreen({state,onTravel,onOpenCombat,onOpenSkills,onCoop,dun
       <WorldChapterNavigator
         state={state} currentRegionId={currentId} goalRegionId={goalRegionId}
         onTravel={onTravel} onOpenCombat={onOpenCombat} onOpenSkills={onOpenSkills}
-      />
+      >
       {extraContent?<View style={s.extraWrap}>
         <Pressable accessibilityRole="button" accessibilityState={{expanded:expandedProgress}}
           onPress={()=>setExpandedProgress(open=>!open)} style={({pressed})=>[s.extraToggle,pressed&&s.pressed]}>
@@ -114,6 +114,7 @@ export function WorldScreen({state,onTravel,onOpenCombat,onOpenSkills,onCoop,dun
           </View>:null}
         </View>:null}
       </View>:null}
+      </WorldChapterNavigator>
     </>}
   </ScrollView>;
 }

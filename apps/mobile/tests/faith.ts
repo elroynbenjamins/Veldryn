@@ -62,6 +62,26 @@ test('Holy Water source strength scales with regional Faith progression',()=>{
 test('practice reserves Inventory before Bank and grants no free XP at start',()=>{let s=water(fresh(),1);s.bank.stacks=[{itemId:HOLY_WATER_ID,quantity:9}];const n=startFaithPractice(s,'FAITH_QUIET',5,T);equal(qty(n,HOLY_WATER_ID),5,'five reserved');equal(n.activity!.kind,'faith','activity');equal(n.skills,s.skills,'no xp');equal(n.activity!.faithPractice!.remainingPractices,5,'five');});
 test('practice tiers are level gated and finite',()=>{const s=water(fresh(),100);equal(faithPracticeAvailability(s,'FAITH_CANDLE',1).ready,false,'locked');equal(faithPracticeAvailability(faithAt(s,10),'FAITH_CANDLE',1).ready,true,'unlocked');throws(()=>startFaithPractice(s,'FAITH_QUIET',1001,T),'1–1000');});
 test('partial practice consumes no water and awards no XP',()=>{const s=startFaithPractice(water(fresh(),10),'FAITH_QUIET',10,T);const r=previewActivityReward(s,T+29_999);equal(r.faithActions,0,'none');equal(r.xp,0,'xp');equal(r.holyWaterConsumed,0,'water');});
+test('Faith progress survives frequent claims and the activity bar receives its updated fraction',()=>{
+ let s=startFaithPractice(water(fresh(),3),'FAITH_QUIET',3,T);
+ s=claimActivity(s,T+12_000).state;
+ equal(s.activity!.faithPractice!.progressFraction,12/30,'first claim keeps 12 seconds');
+ equal(s.character!.faith!.practice!.progressMs,12_000,'authoritative practice progress');
+ s=claimActivity(s,T+22_000).state;
+ equal(s.activity!.faithPractice!.progressFraction,22/30,'second claim keeps cumulative progress');
+ const completed=claimActivity(s,T+32_000);
+ equal(completed.reward.faithActions,1,'one complete 30-second practice');
+ equal(completed.state.activity!.faithPractice!.progressFraction,2/30,'next cycle shows two seconds, not one');
+ equal(completed.state.activity!.faithPractice!.remainingPractices,2,'two practices remain');
+});
+test('legacy Faith reservations use the authored 30-second cycle, not a fixed 60 seconds',()=>{
+ let s=startFaithPractice(water(fresh(),2),'FAITH_QUIET',2,T);
+ s={...s,activity:{...s.activity!,faithPractice:{...s.activity!.faithPractice!,progressFraction:.5}}};
+ equal(previewActivityReward(s,T+1_000).faithActions,0,'half a cycle must not instantly complete');
+ const claimed=claimActivity(s,T+15_000);
+ equal(claimed.reward.faithActions,1,'half-cycle plus 15 seconds completes exactly one practice');
+ equal(claimed.state.activity!.faithPractice!.remainingPractices,1,'remaining reservation is preserved');
+});
 test('completed practices consume reserved water and award Faith XP only',()=>{const s=startFaithPractice(water(fresh(),4),'FAITH_QUIET',4,T);const r=claimActivity(s,T+60_000);equal(r.reward.faithActions,2,'rites');equal(r.reward.holyWaterConsumed,2,'water');equal(r.reward.xp,240,'faith xp');equal(r.state.character!.xp,0,'no combat');equal(r.state.skills.find(x=>x.skillId==='faith')!.xp,240,'skill');equal(qty(r.state,HOLY_WATER_ID),0,'remaining two stay escrowed');});
 test('stopping returns unfinished and partial-practice water exactly once',()=>{const s=startFaithPractice(water(fresh(),5),'FAITH_QUIET',5,T);const settled=claimActivity(s,T+75_000).state;const stopped=stopActivity(settled);equal(qty(stopped,HOLY_WATER_ID),3,'three unfinished returned');equal(stopActivity(stopped),stopped,'no second');});
 test('account transition settles another activity before reserving Faith water',()=>{let s=water(fresh(),10);s=startCombat(s,'MOSS_RAT',T);const n=transitionAccountFaithPractice(s,T+60_000,'FAITH_QUIET',2).state;equal(n.activity!.kind,'faith','switched');equal(n.activity!.faithPractice!.remainingPractices,2,'reservation');});

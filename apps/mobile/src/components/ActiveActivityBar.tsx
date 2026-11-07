@@ -16,6 +16,8 @@ import {activityStopPresentation} from '../core/activity-stop-presentation';
 import {unclaimedCombatKillCount} from '../core/activity-rewards';
 import {explorationRoute} from '../content/exploration';
 import {FAITH_TIERS} from '../content/faith';
+import {normalizeFaith} from '../core/faith';
+import {mealSpeedFactor} from '../core/meal-buffs';
 import {activityTargetLabel} from '../core/activity-target-label';
 
 const labels:Record<string,string>={combat:'HUNTING',mining:'MINING',woodcutting:'WOODCUTTING',fishing:'FISHING',herbalism:'HERBALISM',alchemy:'ALCHEMY',processing:'PROCESSING',faith:'FAITH',training:'TRAINING',hunting:'HUNTING',exploration:'EXPLORATION'};
@@ -56,12 +58,19 @@ function RunningActivityBar({state,nowMs,onOpen,combatKills}:ActiveActivityBarPr
  const gatherRuntime=useMemo(()=>!combat?activeGatheringRuntimeProjection(state):undefined,[combat,state]);
  const name=gl(activityTargetLabel(activity));
  const cycleSeconds=Math.max(1,combatRuntime?.killCycleSeconds??route?.seconds??faithTier?.seconds??gatherRuntime?.cycleSeconds??activity.processing?.cycleSeconds??activity.brew?.cycleSeconds??gathering?.seconds??crafting?.seconds??(activity.kind==='training'?60:1));
- const cycleElapsedSeconds=Math.max(0,(displayNowMs-activity.lastClaimAtMs)/1000),cycleProgressSeconds=(activity.kind==='faith'?activity.faithPractice?.progressFraction??0:activity.progressFraction??0)*cycleSeconds+cycleElapsedSeconds;
- const completedCycles=Math.floor(cycleProgressSeconds/cycleSeconds),progressPct=Math.round((cycleProgressSeconds%cycleSeconds)/cycleSeconds*100),progress=`${progressPct}%` as `${number}%`;
+ // Faith progress is settled in character.faith.practice; the activity reservation is a fallback for older saves.
+ const faithPractice=activity.kind==='faith'?normalizeFaith(state.character?.faith).practice:undefined;
+ const progressAnchorMs=activity.kind==='faith'?(faithPractice?.lastClaimAtMs??activity.faithPractice?.lastClaimAtMs??activity.lastClaimAtMs):activity.lastClaimAtMs;
+ const cycleElapsedSeconds=Math.max(0,(displayNowMs-progressAnchorMs)/1000)*(activity.kind==='faith'?mealSpeedFactor(state.character,'noncombat'):1);
+ const bankedProgressSeconds=activity.kind==='faith'?(faithPractice?faithPractice.progressMs/1000:(activity.faithPractice?.progressFraction??0)*cycleSeconds):(activity.progressFraction??0)*cycleSeconds;
+ const cycleProgressSeconds=bankedProgressSeconds+cycleElapsedSeconds;
+ const faithRemaining=faithPractice?.remaining??activity.faithPractice?.remainingPractices??0;
+ const faithFinishing=activity.kind==='faith'&&faithRemaining>0&&cycleProgressSeconds>=cycleSeconds*faithRemaining;
+ const completedCycles=Math.floor(cycleProgressSeconds/cycleSeconds),progressPct=faithFinishing?100:Math.round((cycleProgressSeconds%cycleSeconds)/cycleSeconds*100),progress=`${progressPct}%` as `${number}%`;
  const progressKind=combat?'combat':activity.kind==='alchemy'||activity.kind==='processing'?'crafting':activity.kind==='faith'?'faith':activity.kind==='training'?'training':activity.kind==='exploration'?'exploration':'gathering',phase=activityProgressFeedback(progressKind,progressPct/100),cycleRemaining=Math.max(1,Math.ceil(cycleSeconds-(cycleProgressSeconds%cycleSeconds)));
  // The bar resets after a successful claim; persistent hunt progress stays in activity.sessionKills.
  const unclaimedKills=combat?unclaimedCombatKillCount(combatKills,completedCycles):0;
- const cycleCopy=combat?gt('Next kill {seconds}s',{seconds:cycleRemaining}):`${gl(phase).replace('…','').toLocaleUpperCase(language)} · ${cycleRemaining}s`;
+ const cycleCopy=faithFinishing?gl(phase).replace('…','').toLocaleUpperCase(language):combat?gt('Next kill {seconds}s',{seconds:cycleRemaining}):`${gl(phase).replace('…','').toLocaleUpperCase(language)} · ${cycleRemaining}s`;
  if(combat)return <Pressable accessibilityRole="button" accessibilityLabel={gt('{kind} {name}, active for {duration}',{kind:gl(labels[activity.kind]),name,duration:elapsed(activity.startedAtMs,displayNowMs)})} accessibilityHint={gt("Opens the active activity")} onPress={onOpen} style={({pressed})=>[s.root,s.combat,pressed&&s.pressed]}>
   <View style={[s.art,s.combatArt]}>{monster?<MonsterPortraitFrame monster={monster} size={28} framed={false} reduceMotion={state.settings.reduceMotion}/>:<ActivityArtwork id="combat" size={28}/>}</View>
   <View style={s.copy}><Text numberOfLines={1} style={s.combatName}>{name}</Text><Text numberOfLines={1} style={s.combatMeta}>{cycleCopy} · {gt('{count} kills',{count:unclaimedKills})}</Text></View>

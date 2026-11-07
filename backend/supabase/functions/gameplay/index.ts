@@ -54591,12 +54591,15 @@ function workingTowardInventoryProtectionMap(state) {
 }
 
 // ../apps/mobile/src/core/inventory-bulk.ts
+function inventoryBulkSelectionId(stack) {
+  return stack.instanceId ? `copy:${stack.instanceId}` : stack.itemId;
+}
 function uniqueIds(itemIds2) {
   return [...new Set(itemIds2.filter(Boolean))].slice(0, 100);
 }
 function selectedStacks(state, itemIds2, location) {
   const ids2 = new Set(uniqueIds(itemIds2));
-  return state[location].stacks.filter((stack) => stack.quantity > 0 && stack.instanceId === void 0 && ids2.has(stack.itemId));
+  return state[location].stacks.filter((stack) => stack.quantity > 0 && ids2.has(inventoryBulkSelectionId(stack)));
 }
 function protectedFromDisposal(state, itemId, goalProtectedIds, quantity2, location) {
   const item = itemDef(itemId);
@@ -54624,29 +54627,49 @@ function bulkSelectionSummary(state, itemIds2, location) {
   };
   const autoEatId = state.character?.equippedFoodId, goalProtection = workingTowardInventoryProtectionMap(state), goalProtectedIds = new Set(goalProtection.keys());
   const goalProtected = stacks.filter((stack) => goalProtectedIds.has(stack.itemId));
-  const transferable = stacks.filter((stack) => location === "bank" || stack.itemId !== autoEatId);
+  const transferable = stacks.filter((stack) => !stack.instanceId && (location === "bank" || stack.itemId !== autoEatId));
   const sellable = location === "inventory" ? stacks.filter((stack) => {
     const item = itemDef(stack.itemId);
-    return stack.itemId !== autoEatId && stack.itemId !== HOLY_WATER_ID && item.value > 0 && !protectedFromDisposal(state, stack.itemId, goalProtectedIds, stack.quantity, location);
+    if (stack.itemId === autoEatId || stack.itemId === HOLY_WATER_ID || item.value <= 0 || item.guildOnly || item.knowledgeUnlockId || goalProtectedIds.has(stack.itemId)) return false;
+    if (stack.instanceId) {
+      if (state.settings.lockedItemIds?.includes(stack.itemId)) return false;
+      try {
+        disposeCraftedGearInstance(state, stack.instanceId, "sell");
+        return true;
+      } catch {
+        return false;
+      }
+    }
+    return !protectedFromDisposal(state, stack.itemId, goalProtectedIds, stack.quantity, location);
   }) : [];
   const salvageable = location === "inventory" ? stacks.filter((stack) => {
     const item = itemDef(stack.itemId);
-    return item.type === "gear" && !!item.salvage && !protectedFromDisposal(state, stack.itemId, goalProtectedIds, stack.quantity, location);
+    if (item.type !== "gear" || !item.salvage || goalProtectedIds.has(stack.itemId)) return false;
+    if (stack.instanceId) {
+      if (state.settings.lockedItemIds?.includes(stack.itemId)) return false;
+      try {
+        disposeCraftedGearInstance(state, stack.instanceId, "salvage");
+        return true;
+      } catch {
+        return false;
+      }
+    }
+    return !protectedFromDisposal(state, stack.itemId, goalProtectedIds, stack.quantity, location);
   }) : [];
   return {
     selectedStackCount: stacks.length,
     selectedUnitCount: stacks.reduce((sum, stack) => sum + stack.quantity, 0),
     goalProtectedCount: goalProtected.length,
-    transferableIds: transferable.map((stack) => stack.itemId),
+    transferableIds: transferable.map(inventoryBulkSelectionId),
     transferableStackCount: transferable.length,
     transferableUnitCount: transferable.reduce((sum, stack) => sum + stack.quantity, 0),
     transferProtectedCount: stacks.length - transferable.length,
-    sellableIds: sellable.map((stack) => stack.itemId),
+    sellableIds: sellable.map(inventoryBulkSelectionId),
     sellableStackCount: sellable.length,
     sellableUnitCount: sellable.reduce((sum, stack) => sum + stack.quantity, 0),
     sellGold: sellable.reduce((sum, stack) => sum + itemDef(stack.itemId).value * stack.quantity, 0),
     sellProtectedCount: stacks.length - sellable.length,
-    salvageableIds: salvageable.map((stack) => stack.itemId),
+    salvageableIds: salvageable.map(inventoryBulkSelectionId),
     salvageableStackCount: salvageable.length,
     salvageableUnitCount: salvageable.reduce((sum, stack) => sum + stack.quantity, 0),
     salvageProtectedCount: stacks.length - salvageable.length
@@ -54668,9 +54691,13 @@ function bulkSellSelected(state, itemIds2) {
   const summary = bulkSelectionSummary(state, itemIds2, "inventory");
   if (!summary.sellableIds.length) throw new Error("No selected items can be sold. Working Toward items, favorites, locked items, enhanced gear, auto-eat food, Holy Water and zero-value items stay protected.");
   let next = state;
-  for (const itemId of summary.sellableIds) {
-    const quantity2 = next.inventory.stacks.find((stack) => stack.itemId === itemId)?.quantity ?? 0;
-    if (quantity2 > 0) next = sellItem(next, itemId, quantity2);
+  for (const id of summary.sellableIds) {
+    if (id.startsWith("copy:")) {
+      next = disposeCraftedGearInstance(next, id.slice(5), "sell");
+      continue;
+    }
+    const quantity2 = next.inventory.stacks.find((stack) => stack.itemId === id && stack.instanceId === void 0)?.quantity ?? 0;
+    if (quantity2 > 0) next = sellItem(next, id, quantity2);
   }
   return next;
 }
@@ -54678,9 +54705,13 @@ function bulkSalvageSelected(state, itemIds2) {
   const summary = bulkSelectionSummary(state, itemIds2, "inventory");
   if (!summary.salvageableIds.length) throw new Error("No selected equipment can be salvaged. Working Toward items, favorites, locked items and enhanced gear stay protected.");
   let next = state;
-  for (const itemId of summary.salvageableIds) {
-    const quantity2 = next.inventory.stacks.find((stack) => stack.itemId === itemId)?.quantity ?? 0;
-    for (let count = 0; count < quantity2; count++) next = salvageItem(next, itemId);
+  for (const id of summary.salvageableIds) {
+    if (id.startsWith("copy:")) {
+      next = disposeCraftedGearInstance(next, id.slice(5), "salvage");
+      continue;
+    }
+    const quantity2 = next.inventory.stacks.find((stack) => stack.itemId === id && stack.instanceId === void 0)?.quantity ?? 0;
+    for (let count = 0; count < quantity2; count++) next = salvageItem(next, id);
   }
   return next;
 }

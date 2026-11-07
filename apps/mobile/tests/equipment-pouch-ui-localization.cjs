@@ -11,7 +11,7 @@ const {gemPouchUiRows,gemPouchText}=require('../src/i18n/gem-pouch-ui.ts');
 const languages=['en','de','es','nl','it','fr','ru','tr'];
 assert.deepEqual([...SUPPORTED_LANGUAGES],languages);
 const keys=Object.keys(equipmentPouchUiRows);
-assert.equal(keys.length,62,'all authored Equipment Pouch copy plus rarity and exact eligibility reasons');
+assert.equal(keys.length,68,'all authored Equipment Pouch copy plus rarity and exact eligibility reasons');
 const params={used:5,capacity:30,character:'PLAYER-NAME',count:7,gold:'15,000',quality:72,slot:'SLOT'};
 const tokens=s=>[...s.matchAll(/\{([A-Za-z][A-Za-z0-9_]*)\}/g)].map(m=>m[1]).sort();
 for(const key of keys){
@@ -58,4 +58,4 @@ for(const marker of [
  ])assert.ok(screen.includes(marker),'canonical sale protection/action removed: '+marker);
 const ast=ts.createSourceFile('EquipmentPouchPanel.tsx',screen,ts.ScriptTarget.Latest,true,ts.ScriptKind.TSX);
 assert.equal(ast.parseDiagnostics.length,0,'Equipment Pouch must parse as TSX');
-console.log('PASS: 62 owned Equipment Pouch templates and shared Gem Pouch keys in eight languages, 9+ sale guards and command wiring');
+console.log('PASS: 68 owned Equipment Pouch templates and shared Gem Pouch keys in eight languages, 9+ sale guards and command wiring');

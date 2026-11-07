@@ -1,4 +1,5 @@
 import {regionAreas} from '../content/regional-areas';
+import {rebasedCombatLevelFromLegacyLevel as rebaseLevel} from './progression';
 export interface RegionZoneCardV21{id:string;name:string;levelRange:string;locked:boolean;identity:string;activities:readonly string[];hazards:readonly string[];}
 export interface RegionProgressV21{storyCompleted:number;storyTotal:number;sideQuestsCompleted:number;sideQuestsTotal:number;echoesCompleted:number;echoesTotal:number;dungeonsCompleted:number;dungeonsTotal:number;collectionEntries:number;collectionTotal:number;bossMasteryTier:number;bossMasteryMax:number;}
 export interface RegionWeatherV21{name:string;endsInSeconds:number;summary:string;}
@@ -20,7 +21,7 @@ export const FROSTMARCH_DUNGEON_DEFINITIONS_V21:readonly Omit<RegionDungeonCardV
  {id:'COP_007',name:'Whitepine Hunt',minLevel:52,modeAvailability:'live_and_q'},
  {id:'COP_008',name:'Shiverlake Descent',minLevel:58,modeAvailability:'live_and_q'},
  {id:'COP_009',name:'Choir Caverns',minLevel:64,modeAvailability:'live_and_q'},
-];
+].map(dungeon=>({...dungeon,minLevel:rebaseLevel(dungeon.minLevel)}));
 export function frostmarchCardsV21(level:number){const safeLevel=Number.isFinite(level)?level:0;return {zones:FROSTMARCH_ZONE_DEFINITIONS_V21.map(zone=>({...zone,locked:safeLevel<Number(zone.levelRange.match(/\d+/)?.[0]??45)})),dungeons:FROSTMARCH_DUNGEON_DEFINITIONS_V21.map(dungeon=>({...dungeon,locked:safeLevel<dungeon.minLevel}))};}
 export function validateFrostmarchCardsV21():string[]{const errors:string[]=[];if(FROSTMARCH_ZONE_DEFINITIONS_V21.length!==4)errors.push('zones');if(FROSTMARCH_DUNGEON_DEFINITIONS_V21.map(v=>v.id).join(',')!=='COP_007,COP_008,COP_009')errors.push('dungeons');if(new Set(FROSTMARCH_ZONE_DEFINITIONS_V21.map(v=>v.id)).size!==FROSTMARCH_ZONE_DEFINITIONS_V21.length)errors.push('duplicate_zone_ids');if(new Set(FROSTMARCH_DUNGEON_DEFINITIONS_V21.map(v=>v.id)).size!==FROSTMARCH_DUNGEON_DEFINITIONS_V21.length)errors.push('duplicate_dungeon_ids');for(const zone of FROSTMARCH_ZONE_DEFINITIONS_V21){if(zone.hazards.length===0||zone.activities.length===0)errors.push(`${zone.id}:metadata`);if(!/^Lv \d+[–-]\d+$/.test(zone.levelRange))errors.push(`${zone.id}:level_range`);}for(const dungeon of FROSTMARCH_DUNGEON_DEFINITIONS_V21){if(!Number.isSafeInteger(dungeon.minLevel)||dungeon.minLevel<1)errors.push(`${dungeon.id}:min_level`);}return errors;}
 export function frostmarchProgressFromState(state:Pick<GameState,'regionalProgressById'|'unlockedMonsterIds'|'defeatedBossIds'>):RegionProgressV21{

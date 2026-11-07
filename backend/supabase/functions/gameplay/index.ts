@@ -42965,6 +42965,8 @@ var EQUIPMENT_ITEMS_V33 = equipment_catalog_t1_t9_v33_default.pieces.map((piece)
     hp: weight.hp * scale,
     readiness: Math.max(1, Math.ceil(level / 4)),
     value: Math.max(10, level * scale * 12),
+    // Salvage returns a small, tier-scaled amount of upgrade material, never the full craft cost.
+    salvage: { itemId: "TEMPERING_DUST", quantity: Math.max(1, Math.ceil(scale / 2)) },
     rarity: rarityByTier[tier] ?? "common",
     classRestriction: classIdByName2[String(piece.Class)],
     requiredLevel: level,
@@ -55769,6 +55771,63 @@ function sellEquipmentPouchSelected(state, ids2) {
   }
   return next;
 }
+function salvageLegacySlot(state, index, itemId) {
+  if (!state.character) throw new Error("Choose a character before salvaging equipment");
+  const pouch = equipmentPouch(state), stack = pouch.stacks[index], item = itemDef(itemId);
+  if (!stack || stack.instanceId !== void 0 || stack.itemId !== itemId || !Number.isSafeInteger(stack.quantity) || stack.quantity < 1)
+    throw new Error("Equipment Pouch changed; review your selection");
+  if (item.type !== "gear" || item.guildOnly || item.knowledgeUnlockId || !item.salvage)
+    throw new Error("This equipment cannot be salvaged");
+  if (state.settings.favoriteItemIds?.includes(itemId) || state.settings.lockedItemIds?.includes(itemId))
+    throw new Error("Favorite and locked equipment stays protected");
+  if (!canDisposeLegacyEquipment(state, itemId, "equipment_pouch", 1))
+    throw new Error("Keep the last copy reserved for legacy enhancements");
+  const characters = [state.character, ...(state.otherCharacters ?? []).map((row) => row.character)];
+  if (characters.some((character) => character.savedLoadouts?.some((loadout) => Object.entries(loadout.equipment).some(([slot, id]) => id === itemId && !loadout.equipmentInstanceIds?.[slot]))))
+    throw new Error("Saved loadouts protect this equipment");
+  const reward2 = item.salvage;
+  const existing = state.inventory.stacks.find((row) => row.itemId === reward2.itemId && row.instanceId === void 0);
+  if (!existing && state.inventory.stacks.filter((row) => row.quantity > 0).length >= entitlementStorageCapacity(state, "inventory"))
+    throw new Error("Inventory is full; make space for salvage");
+  if (!Number.isSafeInteger((existing?.quantity ?? 0) + reward2.quantity))
+    throw new Error("Salvage material quantity overflow");
+  const inventoryStacks = existing ? state.inventory.stacks.map((row) => row === existing ? { ...row, quantity: row.quantity + reward2.quantity } : row) : [...state.inventory.stacks, { ...reward2 }];
+  const pouchStacks = pouch.stacks.slice();
+  if (stack.quantity === 1) pouchStacks.splice(index, 1);
+  else pouchStacks[index] = { ...stack, quantity: stack.quantity - 1 };
+  return {
+    ...state,
+    inventory: { ...state.inventory, stacks: inventoryStacks },
+    character: { ...state.character, equipmentPouch: { ...pouch, stacks: pouchStacks } }
+  };
+}
+function salvageEquipmentPouchSelected(state, ids2) {
+  if (!state.character) throw new Error("Choose a character before salvaging equipment");
+  if (!Array.isArray(ids2) || ids2.length < 1 || ids2.length > 100 || new Set(ids2).size !== ids2.length || ids2.some((id) => typeof id !== "string" || !id || id.length > 120))
+    throw new Error("Select 1\u2013100 equipment copies");
+  const original = equipmentPouch(state).stacks;
+  const byId = new Map(original.map((stack, index) => [equipmentPouchSaleId(stack, index), { index, stack }]));
+  const selected2 = ids2.map((id) => {
+    const row = byId.get(id);
+    if (!row) throw new Error("Equipment Pouch changed; review your selection");
+    return { ...row, id };
+  }).sort((a, b) => b.index - a.index);
+  const goals = workingTowardInventoryProtectionMap(state);
+  let next = state;
+  for (const { index, stack, id } of selected2) {
+    const current = equipmentPouch(next).stacks[index];
+    if (!current || equipmentPouchSaleId(current, index) !== id)
+      throw new Error("Equipment Pouch changed; review your selection");
+    if (goals.has(stack.itemId)) throw new Error("Equipment needed for a Working Toward goal is protected");
+    const item = itemDef(stack.itemId);
+    if (item.type !== "gear" || item.guildOnly || item.knowledgeUnlockId || !item.salvage)
+      throw new Error("This equipment cannot be salvaged");
+    if (state.settings.lockedItemIds?.includes(stack.itemId) || state.settings.favoriteItemIds?.includes(stack.itemId))
+      throw new Error("Favorite and locked equipment stays protected");
+    next = stack.instanceId ? disposeCraftedGearInstance(next, stack.instanceId, "salvage") : salvageLegacySlot(next, index, stack.itemId);
+  }
+  return next;
+}
 
 // ../apps/mobile/src/core/equipment-crafting-prerequisites.ts
 function quantity(state, itemId) {
@@ -56055,6 +56114,7 @@ var fields = {
   equipment_pouch_equip: ["itemId"],
   equipment_pouch_upgrade: [],
   equipment_pouch_sell: ["ids"],
+  equipment_pouch_salvage: ["ids"],
   gear_lock: ["instanceId", "locked"],
   gear_sell: ["instanceId"],
   gear_salvage: ["instanceId"],
@@ -56576,6 +56636,12 @@ function executeGameCommand(previous, value, now, options = {}) {
       const ids2 = stringArray(a, "ids");
       state = sellEquipmentPouchSelected(state, ids2);
       message = `Sold ${ids2.length} equipment ${ids2.length === 1 ? "copy" : "copies"} from Equipment Pouch`;
+      break;
+    }
+    case "equipment_pouch_salvage": {
+      const ids2 = stringArray(a, "ids");
+      state = salvageEquipmentPouchSelected(state, ids2);
+      message = `Salvaged ${ids2.length} equipment ${ids2.length === 1 ? "copy" : "copies"} from Equipment Pouch`;
       break;
     }
     case "gear_lock": {

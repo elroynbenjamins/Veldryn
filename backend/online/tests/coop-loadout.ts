@@ -1,4 +1,5 @@
 import {legacyCharacterTotalXpAtLevel,rebasedCombatLevelFromLegacyLevel} from '../../../apps/mobile/src/core/progression';
+import {rebaseLegacyCombatLevel} from '../../src/server/coop/config';
 import {strict as assert} from 'node:assert';
 import {CLASSES} from '../../../apps/mobile/src/content/classes';
 import {noviceItemId,noviceSetFor} from '../../../apps/mobile/src/content/novice-sets';
@@ -10,6 +11,7 @@ import {simulateCombat} from '../../src/server/combat/engine';
 import type {CraftedGearInstance} from '../../../apps/mobile/src/core/types';
 import {deriveOnlineCoopLoadout,onlineCoopLoadoutHash} from '../coop-loadout';
 import {resolveAndFreezeLoadout} from '../../src/server/coop/loadout-snapshots';
+for(let oldLevel=1;oldLevel<=100;oldLevel++)assert.equal(rebaseLegacyCombatLevel(oldLevel),rebasedCombatLevelFromLegacyLevel(oldLevel),'backend co-op gates must match the mobile Combat XP curve');
 for(const definition of CLASSES){
  const state=createCharacter(newGame(0),definition.id,'Coop Test');state.character!.level=25;state.character!.xp=legacyCharacterTotalXpAtLevel(25);
  const before=JSON.stringify(state),weak=deriveOnlineCoopLoadout('owner',state,1);

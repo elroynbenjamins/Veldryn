@@ -20,13 +20,13 @@ interface Loaded {stateVersion:number;eventCursor:number;privateState:OnlineQMod
 type Services=Pick<GameplayServices,'rpc'|'randomId'>;
 const digest=(value:unknown)=>createHash('sha256').update(JSON.stringify(value)).digest('hex');
 const content=ONLINE_COOP_BALANCE_VERSION;
-const projection=(run:QModeRun,version:number)=>({...projectQModeRun(run),stateVersion:version,decisionId:run.currentNodeId,decisionRevision:version});
-function settlement(run:QModeRun,version:number){
+const projection=(run:QModeRun,version:number,seed:string)=>({...projectQModeRun(run,'qmode',seed),stateVersion:version,decisionId:run.currentNodeId,decisionRevision:version});
+function settlement(run:QModeRun,version:number,seed:string){
  const definition=EXPEDITIONS[run.expeditionId],last=run.lastResolution!;
  const node=run.graph.nodes.find(row=>row.nodeId===last.nodeId)!;
  const cleared=run.persistentState.visitedNodeIds.filter(id=>id!==run.graph.bossNodeId).length;
  const terminal=run.phase==='completed'||run.phase==='failed';
- return {projection:projection(run,version),enhancedMarks:terminal?marksForRun(definition.baseMarks,run.tier,run.tierScalingVersion===2?dungeonRewardState(run):{cleared:run.phase==='completed',routeProgress:cleared/run.graph.preBossNodeCount,reachedFinalBoss:node.kind==='boss'}):null,assistanceMarks:terminal?Math.max(1,Math.round(definition.baseMarks*.1)):null};
+ return {projection:projection(run,version,seed),enhancedMarks:terminal?marksForRun(definition.baseMarks,run.tier,run.tierScalingVersion===2?dungeonRewardState(run):{cleared:run.phase==='completed',routeProgress:cleared/run.graph.preBossNodeCount,reachedFinalBoss:node.kind==='boss'}):null,assistanceMarks:terminal?Math.max(1,Math.round(definition.baseMarks*.1)):null};
 }
 
 /** Composes the existing Q-Mode domain with transactional persistence. Pending
@@ -68,13 +68,13 @@ export class OnlineQModeRuntime{
    if(!npc)throw new Error('qmode_npc_missing');
    return {memberKind:'npc',snapshot:npc,sourceHash:npc.snapshotHash,profileId:null};
   })];
-  return this.services.rpc('start_online_qmode_server_v1',{p_account_id:accountId,p_game_version:game.version,p_request_id:request.requestId,p_request_hash:hash,p_run_id:id,p_private_state:{run,seed},p_client_projection:projection(run,1),p_members:members,p_seed_hash:digest(seed)});
+  return this.services.rpc('start_online_qmode_server_v1',{p_account_id:accountId,p_game_version:game.version,p_request_id:request.requestId,p_request_hash:hash,p_run_id:id,p_private_state:{run,seed},p_client_projection:projection(run,1,seed),p_members:members,p_seed_hash:digest(seed)});
  }
  async load(accountId:string,runId:string){
   const loaded=await this.services.rpc<Loaded>('load_online_qmode_server_v1',{p_account_id:accountId,p_run_id:runId});
   const pending=loaded.privateState.pending;
   if(!pending||loaded.serverNow<pending.resolvesAtMs)return loaded.clientProjection;
-  const run=pending.run,last=run.lastResolution!,final=settlement(run,loaded.stateVersion+1);
+  const run=pending.run,last=run.lastResolution!,final=settlement(run,loaded.stateVersion+1,loaded.privateState.seed);
   return this.services.rpc('finalize_online_qmode_node_server_v1',{p_account_id:accountId,p_run_id:runId,p_expected_version:loaded.stateVersion,p_private_state:{run,seed:loaded.privateState.seed},p_client_projection:final.projection,p_node_id:last.nodeId,p_result:last.result,p_start_state_hash:pending.startStateHash,p_enhanced_marks:final.enhancedMarks,p_assistance_marks:final.assistanceMarks});
  }
  async purchaseMerchant(accountId:string,runId:string,request:{requestId:string;expectedVersion:number;offerId:string}){
@@ -88,7 +88,7 @@ export class OnlineQModeRuntime{
   const repository=new MemoryQModeRunRepository();repository.save(before);
   const actorId=before.players[0]?.id;if(!actorId)throw new GameplayError('invalid_merchant_actor');
   const next=new QModeService(repository,seed).purchaseMerchant({runId,controllerAccountId:accountId,actorId,offerId:request.offerId});
-  const client=projection(next,loaded.stateVersion+1);
+  const client=projection(next,loaded.stateVersion+1,seed);
   return this.services.rpc('purchase_online_qmode_merchant_server_v1',{p_account_id:accountId,p_run_id:runId,p_expected_version:loaded.stateVersion,p_request_id:request.requestId,p_request_hash:hash,p_offer_id:request.offerId,p_actor_id:actorId,p_private_state:{run:next,seed},p_client_projection:client});
  }
  async choose(accountId:string,runId:string,request:CoopDecisionCommand){
@@ -97,10 +97,10 @@ export class OnlineQModeRuntime{
   if(loaded.privateState.pending){const replay=await this.receipt(accountId,'qmode_choose_v1',runId,request.requestId,hash);if(replay)return replay.response;throw new GameplayError('node_resolving',409);}
   if(request.decisionRevision!==loaded.stateVersion||request.decisionId!==loaded.privateState.run.currentNodeId){const replay=await this.receipt(accountId,'qmode_choose_v1',runId,request.requestId,hash);if(replay)return replay.response;throw new GameplayError('stale_state',409);}
   const {run:before,seed}=loaded.privateState,repository=new MemoryQModeRunRepository();repository.save(before);
-  const domain=new QModeService(repository,seed),run=domain.choose({runId,controllerAccountId:accountId,optionNodeId:request.optionId});
+  const domain=new QModeService(repository,seed),run=domain.choose({runId,controllerAccountId:accountId,optionNodeId:request.optionId,boonId:request.boonId});
   const duration=Math.max(0,Number(run.lastResolution!.result.summary.durationMs??0));
   const resolvesAtMs=loaded.serverNow+duration;
-  const client={...projection(before,loaded.stateVersion+1),phase:'resolving_node',options:[],selectedNodeId:request.optionId,resolvesAtMs};
-  return this.services.rpc('queue_online_qmode_node_server_v1',{p_account_id:accountId,p_run_id:runId,p_expected_version:loaded.stateVersion,p_request_id:request.requestId,p_request_hash:hash,p_private_state:{run:before,seed,pending:{run,resolvesAtMs,startStateHash:digest(before.persistentState),settlement:settlement(run,loaded.stateVersion+2)}},p_client_projection:client});
+  const client={...projection(before,loaded.stateVersion+1,seed),phase:'resolving_node',options:[],selectedNodeId:request.optionId,resolvesAtMs};
+  return this.services.rpc('queue_online_qmode_node_server_v1',{p_account_id:accountId,p_run_id:runId,p_expected_version:loaded.stateVersion,p_request_id:request.requestId,p_request_hash:hash,p_private_state:{run:before,seed,pending:{run,resolvesAtMs,startStateHash:digest(before.persistentState),settlement:settlement(run,loaded.stateVersion+2,seed)}},p_client_projection:client});
  }
 }

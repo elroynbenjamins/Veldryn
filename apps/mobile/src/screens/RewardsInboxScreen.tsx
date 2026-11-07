@@ -26,7 +26,7 @@ export function RewardsInboxScreen({state,online,onRefresh,onEventClaim,preview}
  const run=async(id?:string)=>{if(running.current)return;running.current=true;setBusy(true);setError('');setNotice('');try{
   if(preview){setSnapshot(s=>{const entries=s.entries.map(row=>!id||row.id===id?{...row,claimedAt:new Date().toISOString()}:row);return {...s,entries,pendingCount:entries.filter(row=>!row.claimedAt).length}});setNotice(a('Preview reward claimed.'));return;}
   if(id?.startsWith('event:'))await onEventClaim(id.slice(6));
-  else if(id){const result=await claimInboxReward(id);const reason=result.blocked?result.message??a('Make room in your inventory.'):null;
+  else if(id){const result=await claimInboxReward(id);const reason=result.blocked?result.message?.trim()||a('Make room in your inventory.'):null;
    setBlockedClaims(previous=>{const next={...previous};if(reason)next[id]=reason;else delete next[id];return next;});
    setNotice(reason??a('Reward claimed.'));}
   else{

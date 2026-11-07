@@ -1,3 +1,4 @@
+import {rebasedCombatLevelFromLegacyLevel as rebaseLevel} from '../core/progression';
 /** Region-local playable areas. The region ID remains authoritative for travel,
  * weather, offline activities, save data and server reward accounting.
  * ZONE_009 (Buried Observatory) and ZONE_014 (Choir Caverns) remain accepted
@@ -6,7 +7,7 @@ export interface RegionAreaDef {
   id:string; regionId:'SUNSCAR'|'FROSTMARCH'; name:string; minLevel:number; maxLevel:number;
   identity:string; activities:readonly string[]; hazards:readonly string[];
 }
-export const REGIONAL_AREAS:readonly RegionAreaDef[]=[
+export const REGIONAL_AREAS:readonly RegionAreaDef[]=([
   {id:'ZONE_006',regionId:'SUNSCAR',name:'Saffron Gate',minLevel:26,maxLevel:30,
    identity:'Caravan roads and the first settlements beyond Asterfall.',
    activities:['Sunstone','Dunewood','Oasis fishing'],hazards:['desert wind']},
@@ -31,7 +32,7 @@ export const REGIONAL_AREAS:readonly RegionAreaDef[]=[
   {id:'ZONE_015',regionId:'FROSTMARCH',name:'Wyrmspine',minLevel:64,maxLevel:70,
    identity:'High mountain lair of the Frost Wyrm; Choir Caverns remain a dungeon.',
    activities:['Wyrmspine ore','Highland herbs'],hazards:['ice prison','breath lines']},
-] as const;
+] as const).map(area=>({...area,minLevel:rebaseLevel(area.minLevel),maxLevel:rebaseLevel(area.maxLevel)}));
 const LEGACY_AREA_ALIASES:Readonly<Record<string,string>>={
   ZONE_009:'ZONE_010', // Buried Observatory remains a location in Tyrant's Crown
   ZONE_014:'ZONE_015', // Choir Caverns stays a co-op dungeon

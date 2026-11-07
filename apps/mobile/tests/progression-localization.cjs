@@ -102,6 +102,9 @@ for (const language of languages) {
   assert.ok(boss.includes(progressionT(language,'HEALING')));
 }
 
+const bossUi=fs.readFileSync(path.join(app,'src/components/WorldBossPanel.tsx'),'utf8');
+assert.ok(bossUi.includes("scoredEntry=boss.state==='active'")&&bossUi.includes("echoEntry=boss.state==='defeated'")&&bossUi.includes('canEnter=Boolean(onFight)'),'World Boss action states must distinguish active scored attempts, Echo and unavailable encounters.');
+assert.ok(bossUi.includes('All scored attempts used today.')&&bossUi.includes('Echo is for players who made no scored attempt before the defeat.'),'World Boss must explain daily reset and Echo server-side eligibility.');
 // This verifies catalog completeness, not full content-catalog localization.
 // Quest story/description catalogs, seasonal challenge prose, event definitions,
 // regional authored content, server achievement descriptions and world-feed prose

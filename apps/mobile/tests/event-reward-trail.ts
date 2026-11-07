@@ -43,5 +43,6 @@ ok(screen.includes("compact={tab!=='Overview'}")&&screen.includes('<EventRewardT
 ok(screen.includes('busy={pendingAction!==null}')&&screen.includes('setPendingAction(pendingId)')&&screen.includes('setPendingAction(null)'),'Request loading state must cover the full event action lifetime');
 ok(screen.includes('else await onChange(local())')&&screen.includes('if(!await onCommand(command))throw new Error'),'Local and online failures must not announce unconfirmed claims');
 ok(ui.includes('loading={pending} disabled={busy}')&&ui.includes('onClaim(row.reward.id)'),'Claims must disable repeat submissions and pass the exact authored reward ID');
+ok(ui.includes("claiming?t('Not earned · event ended')")&&ui.includes("next&&!claiming?<Text")&&ui.includes("t('{points} more reputation needed'"),'Expired seasonal milestones must not look like future earning opportunities; active next milestone must show shortfall.');
 ok(art.includes('rewardArt[reward.id]')&&ui.includes('definition={trail.event.definition}'),'Trail and shop must use canonical seasonal reward artwork');
 console.log('PASS event reward trail: authored milestones, personal scope, sorting, thresholds, claims, grace/expiry, completion, artwork, six-language copy and pending authority');

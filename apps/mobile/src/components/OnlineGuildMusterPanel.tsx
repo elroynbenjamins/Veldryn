@@ -1,4 +1,4 @@
-import {socialLabel,useSocialText} from '../i18n/social';
+import {socialLabel,socialText} from '../i18n/social';
 import {useGameLanguage} from '../i18n/GameLanguageProvider';
 import {useEffect,useMemo,useState} from 'react';
 import {Pressable,StyleSheet,Text,View} from 'react-native';
@@ -15,7 +15,7 @@ import {useGameTheme} from '../theme/ThemeContext';
 function tierLabel(tier:0|1|2|3){return tier===3?'RALLY III':tier===2?'RALLY II':tier===1?'RALLY I':'BUILDING';}
 
 export function OnlineGuildMusterPanel(){
- const st=useSocialText(),language=useGameLanguage();
+ const language=useGameLanguage(),st=(key:string,params?:Record<string,string|number>)=>socialText(language,key as never,params);
  const C=useGameTheme(),s=useMemo(()=>makeStyles(C),[C]);
  const [state,setState]=useState<OnlineGuildMusterState|null>(null),[members,setMembers]=useState<OnlineGuildMusterMember[]>([]),[loading,setLoading]=useState(true),[error,setError]=useState('');
  const [rosterView,setRosterView]=useState<'today'|'week'>('today'),[showAllMembers,setShowAllMembers]=useState(false);

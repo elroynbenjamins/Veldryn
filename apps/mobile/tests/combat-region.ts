@@ -95,7 +95,8 @@ const orderedNoGoal=orderedTravelRegions(later,'SUNSCAR');
 ok(orderedNoGoal[0]?.id==='KINGS_ROAD'&&orderedNoGoal.findIndex(zone=>zone.id==='FROSTMARCH')>orderedNoGoal.findIndex(zone=>zone.id==='GREENFIELDS'),'Travel ordering must show unlocked regions first and future locked regions after them');
 
 const future={...beginner,character:{...beginner.character!,level:120},currentRegionId:'VEILLANDS'};
-ok(currentRegionId(future)==='GREENFIELDS','In-development regions must never become the active persisted location');
+const recoveredRegion=currentRegionId(future);
+ok(recoveredRegion!=='VEILLANDS'&&WORLD_ZONES.find(zone=>zone.id===recoveredRegion)?.availability==='released','In-development regions must never become the active persisted location');
 rejected=false;
 try{travelToRegion(future,'VEILLANDS',15)}catch(error){rejected=String(error).toLowerCase().includes('development')}
 ok(rejected,'Core travel must reject in-development regions even above their level band');

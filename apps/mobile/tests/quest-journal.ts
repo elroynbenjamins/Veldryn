@@ -1,3 +1,4 @@
+import {rebasedCombatLevelFromLegacyLevel as rebaseLevel} from '../src/core/progression';
 import {createCharacter,newGame,claimQuest,refreshQuests} from '../src/core/game';
 import {journalEntries,questDestination} from '../src/core/quest-journal';
 import {QUESTS,QUEST_ACTS} from '../src/content/quests';
@@ -34,10 +35,10 @@ ok(journalEntries(claimed,'current','')[0].def.id==='QST_002','Claim advances jo
 ok(journalEntries(claimed,'locked','')[0].previous===QUESTS[1].name,'Locked prerequisite uses source order');
 const secondReady={...claimed,character:{...claimed.character!,level:2},quests:claimed.quests.map(row=>row.questId==='QST_002'?{...row,status:'complete' as const}:row)};
 const trailLocked=claimQuest(secondReady,'QST_002');
-ok(trailLocked.quests.find(row=>row.questId==='QST_003')?.status==='locked','Hound trail stays locked until character level 7');
-ok(journalEntries(trailLocked,'current','')[0]?.lockedHint?.includes('level 7 through Combat')===true,'Locked trail explains the combat level requirement');
-const trailReady=refreshQuests({...trailLocked,character:{...trailLocked.character!,level:7}});
-ok(trailReady.quests.find(row=>row.questId==='QST_003')?.status==='active','Hound trail activates at character level 7');
+ok(trailLocked.quests.find(row=>row.questId==='QST_003')?.status==='locked','Hound trail stays locked until its character-level requirement');
+ok(journalEntries(trailLocked,'current','')[0]?.lockedHint?.includes(`level ${rebaseLevel(7)} through Combat`)===true,'Locked trail explains the combat level requirement');
+const trailReady=refreshQuests({...trailLocked,character:{...trailLocked.character!,level:rebaseLevel(7)}});
+ok(trailReady.quests.find(row=>row.questId==='QST_003')?.status==='active','Hound trail activates at the rebased character-level requirement');
 const finished={...state,quests:state.quests.map(q=>({...q,status:'claimed' as const}))};
 ok(journalEntries(finished,'current','').length===0,'Completed campaign has no current quests');
 ok(journalEntries(finished,'claimed','').length===15,'All chapters remain browsable');

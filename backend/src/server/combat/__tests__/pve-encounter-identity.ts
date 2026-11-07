@@ -5,6 +5,65 @@ import {simulateCombat} from '../engine';
 import {launchPlayer} from '../content/launch-combat';
 import type {CombatantDefinition} from '../types';
 
+// The starter dungeons must teach distinct combat counterplay, not just label
+// otherwise-identical Heavy Strikes as different enemies.
+const asterfallRegular:ReadonlyArray<readonly [string,readonly string[]]>=[
+ ['ROOTBOUND_BATTLE_01',['bruiser','swarm']],
+ ['ROOT_SCOUTS',['assassin','swarm']],
+ ['ROOT_GUARDIANS',['guardian','hexer']],
+ ['ROOT_VINES',['hexer','bruiser']],
+ ['ROOT_STALKERS',['assassin','executioner']],
+ ['ROOT_SENTINELS',['guardian','bruiser']],
+ ['LANTERN_BATTLE_01',['bruiser','caster']],
+ ['LANTERN_BATTLE_02',['hexer','assassin']],
+ ['LANTERN_BATTLE_03',['support','bruiser']],
+];
+for(const [encounterId,expected] of asterfallRegular){
+ const enemies=buildExpeditionEncounter({encounterId}),preview=expeditionEncounterPreview(encounterId)!;
+ assert.equal(enemies.length,2,`${encounterId} must remain a two-enemy encounter`);
+ assert.deepEqual(preview.archetypes.map(item=>item.id),expected,`${encounterId} must publish actual enemy identities`);
+ for(const enemy of enemies){
+  const archetype=(enemy.tags??[]).find(tag=>tag.startsWith('pve:archetype:'))?.slice('pve:archetype:'.length);
+  const abilities=enemy.abilities;
+  switch(archetype){
+   case 'assassin':
+    assert.ok(abilities.some(ability=>ability.target==='random_enemy'&&ability.effects.some(effect=>effect.executeBelowHpPct!==undefined)),`${encounterId}: assassin must focus a vulnerable target`);
+    break;
+   case 'swarm':
+    assert.ok(abilities.some(ability=>ability.target==='all_enemies'&&ability.interruptible&&ability.effects.some(effect=>effect.kind==='dot')),`${encounterId}: swarm must cast an interruptible DoT wave`);
+    break;
+   case 'guardian':
+    assert.ok(abilities.some(ability=>ability.effects.some(effect=>effect.kind==='shield')),`${encounterId}: guardian must create a real barrier`);
+    break;
+   case 'hexer':
+    assert.ok(abilities.some(ability=>ability.effects.some(effect=>effect.kind==='debuff'&&effect.tag==='damage_taken')),`${encounterId}: hexer must apply vulnerability`);
+    break;
+   case 'caster':
+    assert.ok(abilities.some(ability=>ability.interruptible&&ability.target==='all_enemies'),`${encounterId}: caster must expose an interruptible AoE`);
+    break;
+   case 'executioner':
+    assert.ok(abilities.some(ability=>ability.effects.some(effect=>effect.executeBelowHpPct!==undefined)),`${encounterId}: executioner must execute weak targets`);
+    break;
+   case 'support':
+    assert.ok(abilities.some(ability=>ability.target==='lowest_hp_ally'&&ability.effects.some(effect=>effect.kind==='heal')),`${encounterId}: support must heal its ally`);
+    break;
+   case 'bruiser':
+    assert.ok(abilities.some(ability=>ability.effects.some(effect=>effect.kind==='damage')),`${encounterId}: bruiser must retain basic damage`);
+    break;
+   default: throw new Error(`${encounterId}: unexpected archetype ${archetype}`);
+  }
+ }
+}
+const rootboundIntro=buildExpeditionEncounter({encounterId:'ROOTBOUND_BATTLE_01'});
+assert.deepEqual(rootboundIntro.map(enemy=>enemy.id),['ROOT_HUSK_1','ROOT_HUSK_2'],'Existing encounter IDs must remain stable for saved runs and replay');
+assert.equal(rootboundIntro[1].name,'Sporeling','The introductory swarm should use an existing recognizable enemy identity');
+
+// Regular enemy combat budgets and final boss skills remain unchanged.
+assert.deepEqual(buildExpeditionEncounter({encounterId:'ROOTBOUND_BATTLE_01'}).map(enemy=>[enemy.stats.maxHp,enemy.stats.attackPower,enemy.stats.defense]),[[5200,330,620],[5200,330,620]]);
+assert.deepEqual(buildExpeditionEncounter({encounterId:'LANTERN_BATTLE_01'}).map(enemy=>[enemy.stats.maxHp,enemy.stats.attackPower,enemy.stats.defense]),[[4800,350,560],[4800,350,560]]);
+assert.deepEqual(buildExpeditionEncounter({encounterId:'ROOTBOUND_BOSS'})[0].abilities.map(ability=>ability.id),['ROOT_SLAM','BRIAR_PULSE','THORN_RAGE']);
+assert.deepEqual(buildExpeditionEncounter({encounterId:'LANTERN_BOSS'})[0].abilities.map(ability=>ability.id),['BELL_TOLL','WARDEN_STRIKE']);
+
 const veil=buildExpeditionEncounter({encounterId:'EVENT_VEILBREAK_BATTLE_01'});
 const veilPreview=expeditionEncounterPreview('EVENT_VEILBREAK_BATTLE_01')!;
 assert.ok(veilPreview.archetypes.some(item=>item.id==='assassin'));

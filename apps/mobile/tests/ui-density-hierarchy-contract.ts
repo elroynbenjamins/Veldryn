@@ -4,7 +4,10 @@ function ok(value:boolean,message:string){if(!value)throw new Error(message)}
 const read=(path:string)=>fs.readFileSync(path,'utf8');
 
 const home=read('src/screens/HomeScreen.tsx');
-ok(home.includes("alchemyRecipeDef")&&home.includes("explorationRoute")&&home.includes("FAITH_TIERS"),'Home must resolve authored Alchemy, Exploration and Faith activity names');
+const activityTargetNames=read('src/core/activity-target-label.ts');
+ok(home.includes('activityTargetLabel(state.activity)')&&activityTargetNames.includes('RECIPES.find')&&activityTargetNames.includes('EXPLORATION_ROUTES.find')&&activityTargetNames.includes('FAITH_TIERS.find'),'Home must resolve authored Alchemy, Exploration and Faith activity names through the shared resolver');
+const runningActivityBar=read('src/components/ActiveActivityBar.tsx');
+ok(runningActivityBar.includes('gl(activityTargetLabel(activity))')&&runningActivityBar.includes('faithTier?.seconds')&&runningActivityBar.includes('activity.faithPractice?.progressFraction'),'Activity bar must show authored names and accurate Faith practice timing');
 ok(home.includes("kind={state.activity.kind}"),'Home must pass the real activity kind into the shared progress card');
 
 ok(!home.includes('formatGameNumber'),'Home must not duplicate the Gold already visible in the top bar');
@@ -202,7 +205,7 @@ for(const path of [
 
 const activeActivityBar=read('src/components/ActiveActivityBar.tsx');
 ok(activeActivityBar.includes('activityProgressFeedback')&&activeActivityBar.includes("gl(phase).replace('…','').toLocaleUpperCase(language)")&&activeActivityBar.includes('cycleRemaining'),"Collapsed active-activity strip must show the same real cycle phase and next-action countdown as Home");
-ok(activeActivityBar.includes("activity.kind==='exploration'?explorationRoute(activity.targetId)")&&activeActivityBar.includes('route?.seconds??gatherRuntime?.cycleSeconds'),'Active Exploration must render its authored route name and cycle duration instead of a frozen one-second fallback');
+ok(activeActivityBar.includes("activity.kind==='exploration'?explorationRoute(activity.targetId)")&&activeActivityBar.includes('route?.seconds??faithTier?.seconds')&&activityTargetNames.includes('EXPLORATION_ROUTES.find'),'Active Exploration must render its authored route name and cycle duration instead of a frozen one-second fallback');
 
 const encounterLockCards=read('src/components/RegionEncounterList.tsx');
 ok(encounterLockCards.includes('encounterLockRequirement(state,monster)')&&encounterLockCards.includes("lock?.kind==='exploration'?t(\"SCOUT\")+' '+lock.routeName"),'Locked encounter cards must show their actual scouting requirement after the level requirement is met');

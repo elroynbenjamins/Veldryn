@@ -1,5 +1,10 @@
 import {FAITH_BLESSINGS,FAITH_BLESSING_GROUPS,FAITH_TIERS,HOLY_WATER_ID,HOLY_WATER_SOURCES,faithBlessingDef,faithBlessingEffectLabel} from '../src/content/faith';
 import {MONSTERS} from '../src/content/monsters';
+import {GATHERING,RECIPES} from '../src/content/skills';
+import {HERB_NODES} from '../src/content/herbalism';
+import {EXPLORATION_ROUTES} from '../src/content/exploration';
+import {activityTargetLabel} from '../src/core/activity-target-label';
+import {activityQueueLabel} from '../src/core/activity-queue';
 import {createCharacter,newGame,claimActivity,previewActivityReward,stopActivity,sellItem,startCombat,effectiveStats} from '../src/core/game';
 import {faithPracticeAvailability,startFaithPractice,normalizeFaith} from '../src/core/faith';
 import {blessingRows,faithLevel,selectFaithBlessing,setFaithFavorite,setFaithHideWeaker} from '../src/core/faith-effects';
@@ -20,6 +25,30 @@ function water(s:GameState,n:number){return {...s,inventory:{...s.inventory,stac
 function qty(s:GameState,id:string){return [...s.inventory.stacks,...s.bank.stacks,...s.overflow.stacks].filter(x=>x.itemId===id).reduce((a,b)=>a+b.quantity,0);}
 
 test('Faith is a genuine level-one account skill for every new character',()=>{const s=fresh();equal(s.skills.length,11,'eleven professions/skills');equal(faithLevel(s.skills),1,'level');equal(accountSkillLevel(s),13,'11 ordinary + 2 class');});
+test('Activity names use authored catalog names instead of raw IDs across all skills',()=>{
+ for(const tier of FAITH_TIERS){
+  equal(activityTargetLabel({kind:'faith',targetId:tier.id}),tier.name,'Faith tier '+tier.id);
+  equal(activityQueueLabel({kind:'faith',targetId:tier.id}),tier.name,'queued Faith tier '+tier.id);
+ }
+ const monster=MONSTERS[0],herb=HERB_NODES[0],route=EXPLORATION_ROUTES[0];
+ ok(!!monster&&!!herb&&!!route,'activity catalogs are populated');
+ equal(activityTargetLabel({kind:'combat',targetId:monster.id}),monster.name,'combat name');
+ for(const skillId of ['mining','woodcutting','fishing'] as const){
+  const node=GATHERING.find(row=>row.skillId===skillId);
+  ok(!!node,skillId+' node exists');
+  equal(activityTargetLabel({kind:skillId,targetId:node!.id}),node!.name,skillId+' name');
+ }
+ equal(activityTargetLabel({kind:'herbalism',targetId:herb.id}),herb.name,'herbalism name');
+ for(const skillId of ['alchemy','cooking'] as const){
+  const recipe=RECIPES.find(row=>row.skillId===skillId);
+  ok(!!recipe,skillId+' recipe exists');
+  equal(activityTargetLabel({kind:skillId==='cooking'?'processing':'alchemy',targetId:recipe!.id}),recipe!.name,skillId+' name');
+ }
+ equal(activityTargetLabel({kind:'exploration',targetId:route.id}),route.name,'exploration name');
+ equal(activityTargetLabel({kind:'training',targetId:'class_drills'}),'Class drills','class training name');
+ equal(activityTargetLabel({kind:'faith',targetId:'FAITH_UNKNOWN_MODE'}),'Faith Unknown Mode','unknown saved ID is readable');
+});
+
 test('Faith catalog has escalating water tiers and ordered blessings',()=>{equal(FAITH_TIERS.length,6,'tiers');equal(FAITH_BLESSINGS.length,18,'blessings');for(let i=1;i<FAITH_TIERS.length;i++){ok(FAITH_TIERS[i].level>FAITH_TIERS[i-1].level,'tier level');ok(FAITH_TIERS[i].water>FAITH_TIERS[i-1].water,'water');ok(FAITH_TIERS[i].xp/FAITH_TIERS[i].water>=FAITH_TIERS[i-1].xp/FAITH_TIERS[i-1].water,'efficiency');}});
 test('Holy Water has authored enemy sources and cannot be sold',()=>{const s=water(fresh(),2);for(const source of HOLY_WATER_SOURCES){const monster=MONSTERS.find(x=>x.id===source.monsterId)!;ok(!!monster,'monster');ok(monster.drops.some(x=>x.itemId===HOLY_WATER_ID),'drop wired');}throws(()=>sellItem(s,HOLY_WATER_ID,1),'cannot be sold');equal(qty(s,HOLY_WATER_ID),2,'unchanged');});
 test('Holy Water source strength scales with regional Faith progression',()=>{

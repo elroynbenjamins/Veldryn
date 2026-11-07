@@ -4,12 +4,8 @@ import {useState,useMemo} from 'react';
 import {GameState,RewardBundle,SkillId,type QueuedActivity,type ActivityQueueGoal} from '../core/types';
 import {CLASSES} from '../content/classes';
 import {MONSTERS} from '../content/monsters';
-import {GATHERING} from '../content/skills';
+import {activityTargetLabel} from '../core/activity-target-label';
 import {itemDef} from '../content/items';
-import {HERB_NODES} from '../content/herbalism';
-import {alchemyRecipeDef} from '../content/alchemy';
-import {explorationRoute} from '../content/exploration';
-import {FAITH_TIERS} from '../content/faith';
 import {Panel} from '../components/Panel';
 import {GameButton} from '../components/GameButton';
 import {TutorialBeacon} from '../components/TutorialBeacon';
@@ -37,7 +33,6 @@ import {activeActivityLevelPace,activeGatheringRuntimeProjection} from '../core/
 import {effectiveStats} from '../core/game';
 import {earlyFeatureUnlocked} from '../core/feature-unlocks';
 import {HomeAdventureHeader} from '../components/HomeAdventureHeader';
-import {processingRecipeDef} from '../core/processing';
 import {HomeQueueComposer} from '../components/HomeQueueComposer';
 import {HomeCommandDeck} from '../components/HomeCommandDeck';
 import {GuildDashboardCard} from '../components/GuildDashboardCard';
@@ -49,9 +44,7 @@ export function HomeScreen({state,preview,nowMs,onClaim,onStop,onQueueRemove,onQ
   const C=useGameTheme(),s=useMemo(()=>makeStyles(C),[C]);
  const [showAfkSources,setShowAfkSources]=useState(false),[showEncounter,setShowEncounter]=useState(false),[showProgress,setShowProgress]=useState(false),[showLedger,setShowLedger]=useState(false),[queueSheetOpen,setQueueSheetOpen]=useState(false),[queueComposerOpen,setQueueComposerOpen]=useState(false);
  const c=state.character!,p=characterProgressWithinLevel(c.xp,c.level),className=CLASSES.find(x=>x.id===c.classId)?.name??c.classId;
- const activityMonster=MONSTERS.find(x=>x.id===state.activity?.targetId),activityGather=[...GATHERING,...HERB_NODES].find(x=>x.id===state.activity?.targetId),activityAlchemy=state.activity?.kind==='alchemy'?alchemyRecipeDef(state.activity.targetId):undefined,activityRoute=state.activity?.kind==='exploration'?explorationRoute(state.activity.targetId):undefined,activityFaith=state.activity?.kind==='faith'?FAITH_TIERS.find(row=>row.id===state.activity?.targetId):undefined;
- const activityProcessing=state.activity?.kind==='processing'?processingRecipeDef(state.activity.targetId):undefined;
- const activityName=activityMonster&&state.activity?.kind==='combat'?activityMonster.name:activityGather?.name??activityAlchemy?.name??activityProcessing?.name??activityRoute?.name??activityFaith?.name??state.activity?.targetId.replace(/_/g,' ').replace(/\b\w/g,char=>char.toUpperCase());
+ const activityName=state.activity?activityTargetLabel(state.activity):undefined;
  const gatherPace=useMemo(()=>activeGatheringRuntimeProjection(state),[state]);
  const rate=useMemo(()=>{
   const base=activityRate(state);

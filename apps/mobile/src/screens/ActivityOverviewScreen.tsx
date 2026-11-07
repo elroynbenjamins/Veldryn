@@ -5,9 +5,8 @@ import {GameButton} from '../components/GameButton';
 import {GameTextInput} from '../components/GameTextInput';
 import {GameModalHeader,GameModalSurface} from '../components/GameModalSurface';
 import {Panel} from '../components/Panel';
-import {GATHERING} from '../content/skills';
-import {MONSTERS} from '../content/monsters';
 import {characterDeleteBlockReason,characterDeleteConfirmation} from '../core/account-actions';
+import {activityTargetLabel} from '../core/activity-target-label';
 import {accountCharacters,accountSkillLevel,CHARACTER_SLOT_THRESHOLDS,unlockedCharacterSlots} from '../core/account-roster';
 import {equipmentCraftingQueue} from '../core/equipment-crafting-queue';
 import type {ActiveActivity,GameState} from '../core/types';
@@ -15,7 +14,6 @@ import {spacing,typography,equipmentTheme,type ThemeColors} from '../theme/theme
 import {useGameTheme} from '../theme/ThemeContext';
 
 function elapsed(startedAtMs:number,nowMs:number){const total=Math.max(0,Math.floor((nowMs-startedAtMs)/1000)),hours=Math.floor(total/3600),minutes=Math.floor((total%3600)/60),seconds=total%60;return hours?`${hours}h ${minutes}m`:`${minutes}m ${seconds}s`}
-function activityName(activity:ActiveActivity){if(activity.kind==='combat')return MONSTERS.find(item=>item.id===activity.targetId)?.name??activity.targetId.replaceAll('_',' ');return GATHERING.find(item=>item.id===activity.targetId)?.name??activity.targetId.replaceAll('_',' ')}
 function activityLabel(activity:ActiveActivity|null){if(!activity)return 'Idle';return activity.kind==='combat'?'Combat':activity.kind==='training'?'Training':activity.kind==='faith'?'Faith practice':activity.kind.charAt(0).toUpperCase()+activity.kind.slice(1)}
 
 export function ActivityOverviewScreen({state,now,onSwitch,onCreate,onDelete}:{state:GameState;now:number;onSwitch:(id:string)=>void;onCreate?:()=>void;onDelete?:(id:string,confirmation:string)=>Promise<void>|void}){
@@ -60,7 +58,7 @@ export function ActivityOverviewScreen({state,now,onSwitch,onCreate,onDelete}:{s
      <View style={s.copy}><View style={s.nameRow}><Text style={s.name}>{character.name}</Text>{active&&<Text style={s.active}>{a("ACTIVE CHARACTER")}</Text>}</View><Text style={s.meta}>{a('{className} · Level {level}',{className:character.classId,level:character.level})}</Text></View>
      <View style={[s.actions,stackRows&&s.actionsStack]}>{!active&&<GameButton compact title={a("Switch")} tone="secondary" onPress={()=>onSwitch(character.id)}/>}<GameButton compact title={a("Manage")} tone="secondary" onPress={()=>open(character.id)}/></View>
     </View>
-    <View style={s.activityRow}><View style={[s.dot,activity?s.dotOn:s.dotIdle]}/><View style={s.copy}><Text style={activity?[s.activity,activityTone(activity.kind,s)]:s.idle}>{activity?a(activityLabel(activity)):a("Idle")} {activity?`· ${activityName(activity)}`:''}</Text>{activity?<Text style={s.meta}>{a('Running for {time}',{time:accountDuration(language,(now-activity.startedAtMs)/1000)})}</Text>:<Text style={s.meta}>{a("No activity is currently running.")}</Text>}</View></View>
+    <View style={s.activityRow}><View style={[s.dot,activity?s.dotOn:s.dotIdle]}/><View style={s.copy}><Text style={activity?[s.activity,activityTone(activity.kind,s)]:s.idle}>{activity?a(activityLabel(activity)):a("Idle")} {activity?`· ${a(activityTargetLabel(activity))}`:''}</Text>{activity?<Text style={s.meta}>{a('Running for {time}',{time:accountDuration(language,(now-activity.startedAtMs)/1000)})}</Text>:<Text style={s.meta}>{a("No activity is currently running.")}</Text>}</View></View>
    </View>})}
    {onCreate&&entries.length<slots?<GameButton title={a("Create another character")} tone="secondary" onPress={onCreate}/>:null}
   </ScrollView>

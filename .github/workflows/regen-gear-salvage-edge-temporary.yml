@@ -29,9 +29,10 @@ jobs:
         run: node apps/mobile/tests/equipment-pouch-ui-localization.cjs
       - name: Compile mobile core and targeted salvage regressions
         run: |
-          pnpm --dir apps/mobile exec tsc -p tsconfig.core.json --outDir .core-build
-          node apps/mobile/.core-build/apps/mobile/tests/equipment-pouch.js
-          node apps/mobile/.core-build/apps/mobile/tests/inventory-action-game-feel.js
+          cd apps/mobile
+          pnpm exec tsc -p tsconfig.core.json --outDir .core-build
+          node .core-build/apps/mobile/tests/equipment-pouch.js
+          node .core-build/apps/mobile/tests/inventory-action-game-feel.js
       - run: pnpm --dir backend build:online
       - name: Commit generated Edge bundles
         run: |

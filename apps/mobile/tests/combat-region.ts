@@ -1,7 +1,8 @@
 import {rebasedCombatLevelFromLegacyLevel as rebaseLevel} from '../src/core/progression';
 import {claimActivity,createCharacter,newGame,startCombat,startExploration,startGathering,travelToRegion} from '../src/core/game';
 import {currentRegionId} from '../src/core/combat-region';
-import {encounterLockRequirement,encounterUnlocked,nextRegionUnlock,orderedTravelRegions,regionActivitySummary,regionEncounters} from '../src/core/world-navigation';
+import {encounterLockRequirement,encounterUnlocked,nextRegionUnlock,orderedTravelRegions,regionActivitySummary,regionEncounters,regionTravelAvailability,regionTravelPreview} from '../src/core/world-navigation';
+import {WORLD_ZONES} from '../src/content/world-map';
 import {MONSTERS} from '../src/content/monsters';
 
 const ok=(condition:unknown,message:string)=>{if(!condition)throw new Error(message)};
@@ -66,14 +67,22 @@ try{travelToRegion(later,'FROSTMARCH',11)}catch{rejected=true}
 ok(rejected,'Frostmarch must remain locked below its level gate');
 
 const ash={...beginner,defeatedBossIds:['FALLEN_KNIGHT'],character:{...beginner.character!,level:75},exploredRouteIds:['SCOUT_IRONWOOD','SCOUT_OLD_MINES','SCOUT_KINGS_ROAD','SCOUT_SUNSCAR','SCOUT_FROSTMARCH'],skills:beginner.skills.map(skill=>skill.skillId==='exploration'?{...skill,level:40}:skill)};
-const ashlands=travelToRegion(ash,'ASHLANDS',12).state;
-const ashScout=startExploration(ashlands,'SCOUT_ASHLANDS',13);
-const ashMapped=claimActivity(ashScout,373013).state;
-ok(ashMapped.unlockedMonsterIds.includes('BLACKGLASS_MIRELING'),'Ashlands scouting must unlock its first authored encounter');
-ok(startCombat(ashMapped,'BLACKGLASS_MIRELING',373014).activity?.targetId==='BLACKGLASS_MIRELING','Ashlands encounters must use the normal combat activity lane');
-ok(encounterUnlocked(ashMapped,{id:'BLACKGLASS_MIRELING',name:'Blackglass Mireling',level:72,hp:1,attack:1,defense:1,xp:1,gold:1,secondsPerKill:1,unlockLevel:71,zone:'Ashlands',drops:[]}),'Unlocked Ashlands encounter must appear in the world browser');
-ok(regionEncounters(ashMapped,'Ashlands','glass',true).some(monster=>monster.id==='BLACKGLASS_MIRELING'),'Later-region encounter search must include discovered content');
-ok(nextRegionUnlock(30)?.id==='FROSTMARCH'&&nextRegionUnlock(50)?.id==='ASHLANDS','Next-region navigation must include later regions');
+const ashZone=WORLD_ZONES.find(zone=>zone.id==='ASHLANDS')!;
+ok(ashZone.availability==='inDevelopment','Ashlands must show as In Development');
+ok(regionTravelAvailability(ash,ashZone)==='inDevelopment','Ashlands cannot become available through level, story or scouting');
+rejected=false;
+try{travelToRegion(ash,'ASHLANDS',12)}catch(error){rejected=String(error).toLowerCase().includes('development')}
+ok(rejected,'Ashlands travel must be blocked, even for an eligible veteran');
+const preservedAsh={...ash,currentRegionId:'ASHLANDS',unlockedMonsterIds:[...ash.unlockedMonsterIds,'BLACKGLASS_MIRELING']};
+ok(currentRegionId(preservedAsh)==='FROSTMARCH','Legacy Ashlands saves should resolve to the previous available region without erasing unlocks');
+const ashMonster=MONSTERS.find(monster=>monster.id==='BLACKGLASS_MIRELING')!;
+ok(!encounterUnlocked(preservedAsh,ashMonster),'Pre-existing Ashlands encounter unlocks cannot bypass development lock');
+ok(regionEncounters(preservedAsh,'Ashlands','',false).length===0,'Development encounters must be hidden from world browsing');
+const ashPreview=regionTravelPreview(preservedAsh,'ASHLANDS');
+ok(ashPreview.enemies.length===0&&ashPreview.drops.length===0&&ashPreview.activities.length>0,'Ashlands preview shows planned themes, not obtainable loot');
+const ashSummary=regionActivitySummary(preservedAsh,'ASHLANDS');
+ok(!ashSummary.unlocked&&ashSummary.combatReady===0&&ashSummary.gatheringReady===0,'Ashlands must have no playable activities');
+ok(nextRegionUnlock(15)?.id==='FROSTMARCH'&&nextRegionUnlock(50)===undefined,'Development regions must be excluded from the next level unlock');
 const greenfieldsSummary=regionActivitySummary(beginner,'GREENFIELDS');
 ok(greenfieldsSummary.unlocked,'Current starter region must report as unlocked');
 ok(greenfieldsSummary.combatTotal>0&&greenfieldsSummary.gatheringTotal>0,'Region summary must expose real authored combat and gathering counts');

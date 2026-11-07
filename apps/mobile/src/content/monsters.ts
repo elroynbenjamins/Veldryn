@@ -1,3 +1,4 @@
+import {rebasedCombatLevelFromLegacyLevel as rebaseLevel} from '../core/progression';
 import {HOLY_WATER_ID,HOLY_WATER_SOURCES} from './faith';
 import {mobileRawGemItemIdV1} from './gems-v1';
 import {itemDef} from './items';
@@ -76,6 +77,7 @@ export const MONSTERS:MonsterDef[]=MONSTERS_RAW.map(monster=>{
   const holyWater=HOLY_WATER_SOURCES.find(source=>source.monsterId===monster.id);
   const advancedScale=ADVANCED_MONSTER_REGIONS.has(monster.zone)?ADVANCED_REGION_MONSTER_MULTIPLIER:1;
   return {...monster,
+  unlockLevel:rebaseLevel(monster.unlockLevel),
   // Standard-enemy materials are intentionally half as likely from combat.
   // Gathering remains the reliable source; guaranteed boss rewards stay intact.
   drops:[...monster.drops,...(holyWater?[{itemId:HOLY_WATER_ID,chance:holyWater.chance,min:holyWater.min,max:holyWater.max}]:[]),...enhancementDrops(monster)].map(drop=>!monster.boss&&drop.itemId!==HOLY_WATER_ID&&itemDef(drop.itemId).type==='material'?{...drop,chance:drop.chance*.5}:drop),

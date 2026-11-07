@@ -62,7 +62,7 @@ export function WorldChapterNavigator({state,currentRegionId,goalRegionId,onTrav
     const rows=CHAPTER_ROWS.find(group=>group.chapter.id===currentChapter.id)?.rows.filter(row=>row.region.id===current.id)??[];
     return [...rows].reverse().find(row=>level>=row.minLevel)?.id??rows[0]?.id??current.id;
   },[current.id,currentChapter.id,level]);
-  const [openChapter,setOpenChapter]=useState(currentChapter.id);
+  const [openChapter,setOpenChapter]=useState<string>(currentChapter.id);
   const [openRow,setOpenRow]=useState<string|null>(defaultRow);
   useEffect(()=>{
     setOpenChapter(currentChapter.id);

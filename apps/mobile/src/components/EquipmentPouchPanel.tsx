@@ -40,12 +40,12 @@ export function EquipmentPouchPanel({state,busy=false,onAction}:{state:GameState
  const byIndex=useMemo(()=>new Map(saleCandidates.map(row=>[row.index,row])),[saleCandidates]);
  const selectedSet=new Set(selectedIds),selectedSales=saleCandidates.filter(row=>selectedSet.has(row.id));
  const eligibleSales=selectedSales.filter(row=>row.eligible);
- const selectedSalvages=salvageCandidates.filter(row=>selectedSet.has(row.id));
+ const selectedSalvages=useMemo(()=>selectedIds.length?equipmentPouchSalvageCandidates(state,selectedIds):[],[state,selectedIds]);
  const eligibleSalvages=selectedSalvages.filter(row=>row.eligible);
  const salvageCount=eligibleSalvages.length;
  const unlockableSales=selectedSales.filter(row=>{const stack=pouch.stacks[row.index];return !!stack&&(!!(stack.instanceId&&copyById.get(stack.instanceId)?.locked)||!!state.settings.lockedItemIds?.includes(stack.itemId));});
  const pendingSet=new Set(pendingSale??[]),pendingRows=saleCandidates.filter(row=>pendingSet.has(row.id));
- const pendingSalvageSet=new Set(pendingSalvage??[]),pendingSalvageRows=salvageCandidates.filter(row=>pendingSalvageSet.has(row.id));
+ const pendingSalvageRows=useMemo(()=>pendingSalvage?equipmentPouchSalvageCandidates(state,pendingSalvage):[],[state,pendingSalvage]);
  const saleCount=eligibleSales.length,saleGold=eligibleSales.reduce((sum,row)=>sum+row.gold,0);
  const excludedSelected=selectedSales.length-saleCount;
  const pendingGold=pendingRows.reduce((sum,row)=>sum+row.gold,0);
@@ -53,7 +53,7 @@ export function EquipmentPouchPanel({state,busy=false,onAction}:{state:GameState
  const salvageSelectionValid=salvageCount>0&&selectedSalvages.length===selectedIds.length;
  const confirmationValid=pendingRows.length>0&&pendingRows.length===(pendingSale?.length??0)&&pendingRows.every(row=>row.eligible);
  const salvageConfirmationValid=pendingSalvageRows.length>0&&pendingSalvageRows.length===(pendingSalvage?.length??0)&&pendingSalvageRows.every(row=>row.eligible);
- const salvageCandidate=selectedIndex===null?undefined:salvageByIndex.get(selectedIndex);
+ const salvageCandidate=selectedIndex===null?undefined:equipmentPouchSalvageCandidates(state,[salvageByIndex.get(selectedIndex)?.id??''])[0];
  const salvageMaterials=(rows:typeof salvageCandidates)=>{
   const amounts=new Map<string,number>();
   for(const row of rows)if(row.reward)amounts.set(row.reward.itemId,(amounts.get(row.reward.itemId)??0)+row.reward.quantity);

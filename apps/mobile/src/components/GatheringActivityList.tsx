@@ -2,7 +2,7 @@ import {useGameplayText} from '../i18n/gameplay';
 import {useMemo,useState} from 'react';
 import {Image,Pressable,StyleSheet,Text,View} from 'react-native';
 import type {GameState,GatheringSkillId} from '../core/types';
-import {GATHERING} from '../content/skills';
+import {GATHERING,RECIPES} from '../content/skills';
 import {HERB_NODES} from '../content/herbalism';
 import {itemDef} from '../content/items';
 import {currentRegionId} from '../core/combat-region';
@@ -16,6 +16,8 @@ import type {WorkingTowardDestination} from '../core/working-toward';
 import {gatheringBalanceProjection} from '../core/balance-projection';
 import {gatheringDropPercent,gatheringDropPreview,type GatheringDropPreviewRow} from '../core/gathering-drop-preview';
 import {petArtSource} from '../theme/pet-art';
+
+const IRONWOOD_T2_BINDING_RECIPE=RECIPES.find(recipe=>recipe.id==='BREW_IRONWOOD_BINDING_RESIN');
 
 /** A normal gathering skill is deliberately one tap: select a resource and begin. */
 export function GatheringActivityList({state,skillId,skillLevel,preferredActionId,onGather,onNavigate,currentRegionOnly=false,showInstruction=true}:{state:GameState;skillId:GatheringSkillId;skillLevel:number;preferredActionId?:string;onGather:(id:string)=>void;onNavigate?:(destination:WorkingTowardDestination)=>void;currentRegionOnly?:boolean;showInstruction?:boolean}){
@@ -59,6 +61,14 @@ export function GatheringActivityList({state,skillId,skillLevel,preferredActionI
       petLabel={gt('Pet')} ownedLabel={gt('Owned')}/>)}
      {drops.some(drop=>drop.kind==='pet')?<Text style={s.dropHint}>{drops.some(drop=>drop.kind==='pet'&&drop.locked)?gt('Pet drops unlock with the Pet collection.'):gt('Pet chances are per completed gathering action.')}</Text>:null}
      {drops.some(drop=>drop.kind==='essence')?<Text style={s.dropHint}>{gt('Essence chances are base rates; bonuses may change them.')}</Text>:null}
+     {activity.id==='IRONWOOD_TREE'&&IRONWOOD_T2_BINDING_RECIPE?<Pressable accessibilityRole="button" accessibilityLabel={gt('Open Alchemy recipe for {name}',{name:itemDef(IRONWOOD_T2_BINDING_RECIPE.output.itemId).name})} disabled={!onNavigate} onPress={()=>onNavigate?.({kind:'skills',skillId:'alchemy',mode:'crafting',recipeId:IRONWOOD_T2_BINDING_RECIPE.id,button:gt('Open Alchemy'),detail:gt('Craft the T2 equipment binding resin in Alchemy.')})} style={s.relatedCraft}>
+      <ResourceArtwork itemId={IRONWOOD_T2_BINDING_RECIPE.output.itemId} size={24} framed={false}/>
+      <View style={s.copy}>
+       <Text numberOfLines={1} style={s.relatedCraftName}>{gt('T2 equipment')} · {itemDef(IRONWOOD_T2_BINDING_RECIPE.output.itemId).name}</Text>
+       <Text style={s.dropHint}>{gt('Alchemy Lv {level} · Crafted, not a Woodcutting drop',{level:IRONWOOD_T2_BINDING_RECIPE.level})}</Text>
+      </View>
+      {onNavigate?<Text style={s.chevron}>›</Text>:null}
+     </Pressable>:null}
     </View>:null}
    </View>;
   })}
@@ -88,6 +98,8 @@ function makeStyles(C:ThemeColors){return StyleSheet.create({
  dropName:{flex:1,minWidth:0,fontSize:12,lineHeight:17,color:C.text},
  dropRate:{fontSize:11,lineHeight:17,fontWeight:'700',color:C.accentSoft},
  dropHint:{fontSize:10,lineHeight:14,color:C.muted},
+ relatedCraft:{minHeight:48,flexDirection:'row',alignItems:'center',gap:8,borderTopWidth:1,borderTopColor:C.line,marginTop:4,paddingTop:8,paddingBottom:2},
+ relatedCraftName:{fontSize:11,lineHeight:16,fontWeight:'800',color:C.text},
  empty:{fontSize:13,lineHeight:20,color:C.muted,textAlign:'center',padding:12,borderWidth:1,borderColor:C.line,borderRadius:12,backgroundColor:C.panel}
 });}
 

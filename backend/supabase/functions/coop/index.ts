@@ -43304,7 +43304,7 @@ var COMPANION_SANCTUARY_CONFIG = {
   trainingGround: { maxLevel: 3, goldCosts: [3600, 10400, 24e3], essenceCosts: [120, 320, 720], materialId: "ASTER_IRON_INGOT", materialCosts: [8, 16, 28], description: "Provides passive Companion XP on long-timer claims." },
   essenceBasin: { maxLevel: 3, goldCosts: [4400, 13e3, 29e3], essenceCosts: [80, 220, 520], materialId: "ECHO_QUARTZ", materialCosts: [5, 10, 18], description: "Generates a small weekly Companion Essence claim." },
   bondHall: { maxLevel: 3, goldCosts: [5e3, 14400, 32e3], essenceCosts: [160, 420, 900], materialId: "OATHGLASS_SHARD", materialCosts: [6, 12, 20], description: "Increases earned Bond XP by +5%, +10%, then +15%." },
-  expeditionPens: { maxLevel: 3, goldCosts: [17e3, 32e3, 56e3], essenceCosts: [650, 1150, 1900], materialId: "RUNEBOUND_CORE", materialCosts: [6, 12, 20], description: "Unlocks 1, 2, then 3 simultaneous Sanctuary Companion Expeditions." },
+  expeditionPens: { maxLevel: 3, goldCosts: [17e3, 32e3, 56e3], essenceCosts: [350, 1150, 1900], materialId: "RUNEBOUND_CORE", materialCosts: [6, 12, 20], description: "Unlocks 1, 2, then 3 simultaneous Sanctuary Companion Expeditions." },
   masteryChamber: { maxLevel: 1, goldCosts: [36e3], essenceCosts: [1400], materialId: "OATHGLASS_FRAGMENT", materialCosts: [18], description: "Required for Prestige Mastery and highest companion progression." }
 };
 var ability = (id, name, description, cooldownSeconds, target2, kind, baseValue, perLevel, extra = {}) => ({

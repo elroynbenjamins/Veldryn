@@ -1,16 +1,18 @@
 import {legacyCharacterTotalXpAtLevel} from '../src/core/progression';
 import {createCharacter,newGame} from '../src/core/game';
+import {currentRegionId} from '../src/core/combat-region';
 import {formatGameNumber} from '../src/core/number-format';
 import {createSaveBackup,parseSaveBackup} from '../src/core/save-transfer';
 
 function ok(value:boolean,message:string){if(!value)throw new Error(message)}
 
 const base=createCharacter(newGame(1_000),'IRONWARDEN','Backup Tester');
-const state={...base,currentRegionId:'ASHLANDS',character:{...base.character!,level:75,xp:legacyCharacterTotalXpAtLevel(75)},unlockedMonsterIds:[...base.unlockedMonsterIds,'BLACKGLASS_MIRELING']};
+const state={...base,currentRegionId:'ASHLANDS',character:{...base.character!,level:75,xp:legacyCharacterTotalXpAtLevel(75)},defeatedBossIds:['FALLEN_KNIGHT'],exploredRouteIds:['SCOUT_IRONWOOD','SCOUT_OLD_MINES','SCOUT_KINGS_ROAD','SCOUT_SUNSCAR','SCOUT_FROSTMARCH'],unlockedMonsterIds:[...base.unlockedMonsterIds,'BLACKGLASS_MIRELING']};
 const backup=createSaveBackup(state,new Date('2026-09-08T00:00:00.000Z'));
 const restored=parseSaveBackup(backup);
 ok(restored.character?.name==='Backup Tester','A versioned backup must restore the character');
 ok(restored.currentRegionId==='FROSTMARCH'&&restored.unlockedMonsterIds.includes('BLACKGLASS_MIRELING'),'A backup from unreleased Ashlands must return to Frostmarch without losing discovered content');
+ok(currentRegionId(restored)==='FROSTMARCH','An Ashlands veteran must land in the actual accessible Frostmarch region');
 ok(parseSaveBackup(JSON.stringify(state)).version===6,'A raw legacy-style save export must remain importable');
 let invalidRejected=false;
 try{parseSaveBackup('{broken')}catch(error){invalidRejected=error instanceof Error&&error.message.includes('valid JSON')}

@@ -47,11 +47,11 @@ for(const token of [
  "ui('Only materials required by published Construction or released Guild Skills can be deposited. Donations cannot be withdrawn.')",
  "ui('This donation is permanent and cannot be withdrawn. Guild Construction or Guild Skills can spend it separately.')",
  "ui('Deposits are permanent. Only Guild systems may allocate these supplies; members cannot withdraw or transfer them.')",
- "ui('Enter a whole number between 1 and {max}.'", "ui('Up to {max} more can be deposited.",
+ "ui('Enter a whole number between 1 and {max}.'", "ui('Up to {max} can be donated now.",
  "ui('{amount} {resource} · Retry the saved receipt. Do not create a second donation.'",
  "ui('Donate quantity {amount}'",
  'depositOnlineGuildBank(input)', 'discardPendingGuildBankDeposit()', 'Number.isSafeInteger(amount)',
- 'amount<=1000000', 'amount<=depositCapacity(selected)', 'onPress={()=>void deposit({resourceId:selected,amount})}',
+ 'amount<=maxDeposit(selected)', 'maxDeposit=(id:string)', 'onPress={()=>void deposit({resourceId:selected,amount})}',
 ])assert.ok(bank.includes(token),'Guild Bank lost localized copy or authoritative deposit guard: '+token);
 for(const token of [
  'useGuildTokenShopUiText()', 'ui("Guild Token Shop sections")', "ui('{count} rewards'",

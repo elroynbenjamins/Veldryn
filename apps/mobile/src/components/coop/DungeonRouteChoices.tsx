@@ -38,7 +38,8 @@ export function DungeonRouteChoices({options,mode,phase,busy=false,onChoose,myVo
     key={option.nodeId}
     accessibilityRole="button"
     accessibilityLabel={ui('Route {title}: {risk}; {reward}. {extra}{action}',{title,risk:translatedRisk,reward:translatedReward,extra:live?ui('{votes} of {total} votes. ',{votes:option.votes??0,total:totalVotes})+(votedHere?ui('Your vote. '):''):'',action:canPress?action:ui('Unavailable')})}
-    accessibilityState={{disabled:!canPress}}
+    accessibilityHint={preview}
+    accessibilityState={{disabled:!canPress,selected:votedHere}}
     disabled={!canPress}
     onPress={()=>onChoose?.(option.nodeId)}
     style={({pressed})=>[s.card,option.kind==='boss'&&s.bossCard,votedHere&&s.myChoice,option.hidden&&s.hiddenCard,pressed&&canPress&&s.pressed]}

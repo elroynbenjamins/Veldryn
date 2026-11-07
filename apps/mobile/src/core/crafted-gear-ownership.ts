@@ -2,6 +2,7 @@ import type {GameState,GearSlot,ItemStack,CraftedGearInstance} from './types';
 import {craftedGearInstances} from './crafted-gear-instances';
 import {entitlementStorageCapacity} from './account-entitlements';
 import {itemDef} from '../content/items';
+import {equipmentSalvageReward} from './equipment-salvage';
 import {equipmentPouch,equipmentPouchForCharacter} from './equipment-pouch';
 
 export type VerifiedGearPlace='inventory'|'bank'|'equipment_pouch'|'overflow'|'equipped';
@@ -246,7 +247,7 @@ export function disposeCraftedGearInstance(state:GameState,instanceId:string,met
   protectedGear(state,record);
   const def=itemDef(record.itemId);
   if(def.type!=='gear'||def.knowledgeUnlockId)throw new Error('This equipment cannot be disposed');
-  if(method==='salvage'&&!def.salvage)throw new Error('This equipment cannot be salvaged');
+  if(method==='salvage'&&!equipmentSalvageReward(def.id))throw new Error('This equipment cannot be salvaged');
   if(method==='sell'&&(!Number.isSafeInteger(def.value)||def.value<0))throw new Error('Invalid equipment vendor value');
   const source=location.place==='bank'?state.bank.stacks:location.place==='equipment_pouch'?equipmentPouch(state).stacks:state.inventory.stacks;
   const removed=withoutInstance(source,record.id);
@@ -267,7 +268,7 @@ export function disposeCraftedGearInstance(state:GameState,instanceId:string,met
     // Salvage never eats a protected gem; the received material is carried by
     // the active character, independent of whether equipment was in Bank.
     if(!next.character)throw new Error('No active character');
-    const reward=def.salvage!;
+    const reward=equipmentSalvageReward(def.id)!;
     const stack=next.inventory.stacks.find(row=>row.itemId===reward.itemId&&row.instanceId===undefined);
     if(!stack&&next.inventory.stacks.filter(row=>row.quantity>0).length>=entitlementStorageCapacity(next,'inventory'))
       throw new Error('Inventory is full; make space for salvage');

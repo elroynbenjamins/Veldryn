@@ -43,54 +43,43 @@ export function DungeonRouteChoices({options,mode,phase,busy=false,onChoose,myVo
     onPress={()=>onChoose?.(option.nodeId)}
     style={({pressed})=>[s.card,option.kind==='boss'&&s.bossCard,votedHere&&s.myChoice,option.hidden&&s.hiddenCard,pressed&&canPress&&s.pressed]}
    >
-    <CoopImageSlot assetId={room?.art??'node_event'} size="thumbnail" accessibilityLabel={title}/>
+    <CoopImageSlot assetId={room?.art??'node_event'} size="node" accessibilityLabel={title}/>
     <View style={s.content}>
      <View style={s.heading}>
-      <Text style={s.title} numberOfLines={2}>{title}</Text>
-      <Text style={s.roomNumber}>{String(index+1).padStart(2,'0')}</Text>
+      <Text style={s.title} numberOfLines={1}>{title}</Text>
+      {live?<View style={s.voteLine}>
+       <Text style={s.votes}>{ui('{votes}/4 votes',{votes:option.votes??0})}</Text>
+       {votedHere&&selfVoter?<View style={s.myVote}><IdentityArtwork name={selfVoter.name} profileIconId={selfVoter.profileIconId} className={selfVoter.className} size={18}/></View>:null}
+      </View>:null}
+      <Text style={s.chevron}>{'›'}</Text>
      </View>
+     {preview?<Text numberOfLines={1} style={s.preview}>{preview}</Text>:null}
      {(!riskBaseline||!redundantReward)?<View style={s.tags}>
       {!riskBaseline?<View style={s.riskTag}><Text style={s.riskText} numberOfLines={1}>{translatedRisk}</Text></View>:null}
       {!redundantReward?<View style={s.rewardTag}><Text style={s.rewardText} numberOfLines={1}>{translatedReward}</Text></View>:null}
      </View>:null}
-     {preview?<Text numberOfLines={2} style={s.preview}>{preview}</Text>:null}
-     <View style={s.footer}>
-      {live?<View style={s.voteLine}>
-       <Text style={s.votes}>{ui('{votes}/4 votes',{votes:option.votes??0})}</Text>
-       {votedHere&&selfVoter?<View style={s.myVote}><IdentityArtwork name={selfVoter.name} profileIconId={selfVoter.profileIconId} className={selfVoter.className} size={22}/><Text style={s.myVoteText}>{st('You')}</Text></View>:null}
-      </View>:<View style={s.grow}/>}
-      <View style={[s.action,!canPress&&s.actionDisabled]}>
-       <Text style={[s.actionText,!canPress&&s.actionTextDisabled]}>{votedHere?ui('Your vote'):canPress?action:ui('Awaiting choice')}</Text>
-       <Text style={[s.chevron,!canPress&&s.actionTextDisabled]}>›</Text>
-      </View>
-     </View>
     </View>
    </Pressable>;
   })}
  </View>;
 }
 function makeStyles(C:CoopColors){return StyleSheet.create({
- list:{gap:8},
- card:{minHeight:88,flexDirection:'row',alignItems:'center',gap:10,padding:10,borderWidth:1,borderColor:C.line,borderRadius:12,backgroundColor:C.surface,overflow:'hidden'},
+ list:{gap:6},
+ card:{minHeight:62,flexDirection:'row',alignItems:'center',gap:9,paddingHorizontal:9,paddingVertical:7,borderWidth:1,borderColor:C.line,borderRadius:10,backgroundColor:C.surface,overflow:'hidden'},
  bossCard:{borderColor:C.goldDim},myChoice:{borderColor:C.cyan,borderWidth:2,backgroundColor:C.selection},
  hiddenCard:{opacity:.6},
  pressed:{backgroundColor:C.surfaceRaised},
- content:{flex:1,minWidth:0,justifyContent:'center',gap:4},
- heading:{flexDirection:'row',alignItems:'center',gap:6},
- title:{flex:1,minWidth:0,fontSize:16,lineHeight:21,color:C.text,fontWeight:'800'},
- roomNumber:{fontSize:10,lineHeight:14,color:C.textMuted,fontWeight:'700'},
- tags:{flexDirection:'row',flexWrap:'wrap',gap:5},
- riskTag:{borderRadius:5,paddingHorizontal:6,paddingVertical:2,backgroundColor:C.surfaceRaised,maxWidth:'100%'},
- riskText:{fontSize:11,lineHeight:15,color:C.danger,fontWeight:'700'},
- rewardTag:{borderRadius:5,paddingHorizontal:6,paddingVertical:2,backgroundColor:C.surfaceRaised,maxWidth:'100%'},
- rewardText:{fontSize:11,lineHeight:15,color:C.gold,fontWeight:'700'},
- preview:{fontSize:12,lineHeight:16,color:C.textMuted},
- footer:{flexDirection:'row',alignItems:'center',justifyContent:'flex-end',gap:6},
- grow:{flex:1},voteLine:{flex:1,minWidth:0,flexDirection:'row',alignItems:'center',gap:8,flexWrap:'wrap'},myVote:{flexDirection:'row',alignItems:'center',gap:4},myVoteText:{fontSize:11,lineHeight:16,color:C.cyan,fontWeight:'700'},
- votes:{fontSize:12,lineHeight:17,color:C.cyan,fontWeight:'800',flex:1},
- action:{flexDirection:'row',alignItems:'center',gap:5,minHeight:24},
- actionDisabled:{opacity:.55},
- actionText:{fontSize:12,lineHeight:18,color:C.gold,fontWeight:'800'},
- actionTextDisabled:{color:C.textMuted},
- chevron:{fontSize:19,lineHeight:22,color:C.gold,fontWeight:'700'},
+ content:{flex:1,minWidth:0,justifyContent:'center',gap:2},
+ heading:{flexDirection:'row',alignItems:'center',gap:6,minHeight:19},
+ title:{flex:1,minWidth:0,fontSize:14,lineHeight:19,color:C.text,fontWeight:'800'},
+ tags:{flexDirection:'row',alignItems:'center',gap:5},
+ riskTag:{borderRadius:4,paddingHorizontal:5,paddingVertical:1,backgroundColor:C.surfaceRaised,maxWidth:'48%'},
+ riskText:{fontSize:10,lineHeight:13,color:C.danger,fontWeight:'700'},
+ rewardTag:{borderRadius:4,paddingHorizontal:5,paddingVertical:1,backgroundColor:C.surfaceRaised,maxWidth:'48%'},
+ rewardText:{fontSize:10,lineHeight:13,color:C.gold,fontWeight:'700'},
+ preview:{fontSize:11,lineHeight:15,color:C.textMuted},
+ voteLine:{flexDirection:'row',alignItems:'center',gap:4,flexShrink:0},
+ myVote:{alignItems:'center',justifyContent:'center'},
+ votes:{fontSize:11,lineHeight:16,color:C.cyan,fontWeight:'800'},
+ chevron:{fontSize:21,lineHeight:23,color:C.gold,fontWeight:'700',minWidth:12,textAlign:'center'},
  });}

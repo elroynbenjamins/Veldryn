@@ -1,3 +1,4 @@
+import {legacyCharacterTotalXpAtLevel} from '../../../apps/mobile/src/core/progression';
 import assert from 'node:assert/strict';
 import {createCharacter,newGame} from '../../../apps/mobile/src/core/game';
 import {noviceItemId,noviceSetFor} from '../../../apps/mobile/src/content/novice-sets';
@@ -5,7 +6,7 @@ import {coopEntryHandler} from '../coop-entry';
 import {GameplayError} from '../gameplay';
 
 async function main(){
- const state=createCharacter(newGame(1000),'IRONWARDEN','Entry Test');state.character!.level=50;state.character!.equipment=Object.fromEntries(noviceSetFor('IRONWARDEN').slots.map(slot=>[slot,noviceItemId('IRONWARDEN',slot)]));
+ const state=createCharacter(newGame(1000),'IRONWARDEN','Entry Test');state.character!.level=40;state.character!.xp=legacyCharacterTotalXpAtLevel(40);state.character!.equipment=Object.fromEntries(noviceSetFor('IRONWARDEN').slots.map(slot=>[slot,noviceItemId('IRONWARDEN',slot)]));
  const calls:Array<{name:string;args:Record<string,unknown>}>=[];
  let publicationError:string|undefined;
  const handler=coopEntryHandler({authenticate:async token=>token==='valid'?'owned-account':null,rpc:async<T>(name:string,args:Record<string,unknown>):Promise<T>=>{

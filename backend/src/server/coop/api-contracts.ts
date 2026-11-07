@@ -11,7 +11,7 @@ export function parseCoopRunRequest(value:unknown,mode:CoopMode):CoopRunRequest{
 }
 export function parseCoopDecisionCommand(value:unknown):CoopDecisionCommand{
   const row=object(value);rejectClientAuthority(row);
-  return {requestId:text(row,'requestId',8),decisionId:text(row,'decisionId'),decisionRevision:integer(row,'decisionRevision',1,Number.MAX_SAFE_INTEGER),optionId:text(row,'optionId')};
+  return {requestId:text(row,'requestId',8),decisionId:text(row,'decisionId'),decisionRevision:integer(row,'decisionRevision',1,Number.MAX_SAFE_INTEGER),optionId:text(row,'optionId'),...(row.boonId===undefined?{}:{boonId:text(row,'boonId',1,64)})};
 }
 export function parseCoopReadyCommand(value:unknown):CoopReadyCommand{
   const row=object(value);rejectClientAuthority(row);if(typeof row.accept!=='boolean')throw new Error('invalid_accept');

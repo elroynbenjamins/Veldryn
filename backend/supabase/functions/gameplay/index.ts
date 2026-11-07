@@ -42819,9 +42819,12 @@ var HERB_NODES = [
   { id: "CAVELICHEN_COLONY", name: "Cavelichen Colony", itemId: "CAVELICHEN", zoneId: "OLD_MINES", unlockLevel: 30, seconds: 60, xp: 68 },
   { id: "CROWN_SAGE_GROVE", name: "Crown Sage Grove", itemId: "CROWN_SAGE", zoneId: "KINGS_ROAD", unlockLevel: 45, seconds: 70, xp: 110 },
   { id: "OATHBLOSSOM_PATCH", name: "Oathblossom Patch", itemId: "OATHBLOSSOM", zoneId: "KINGS_ROAD", unlockLevel: 60, seconds: 80, xp: 170 },
-  { id: "SUNSCALE_BLOOM", name: "Sunscale Bloom", itemId: "SUNSCALE", zoneId: "SUNSCAR", unlockLevel: 26, seconds: 92, xp: 215 },
-  { id: "FROSTBELL_FLOWER", name: "Frostbell Flower", itemId: "FROSTBLOOM", zoneId: "FROSTMARCH", unlockLevel: 46, seconds: 118, xp: 310 },
-  { id: "WINTERMINT_PATCH", name: "Wintermint Patch", itemId: "WINTERMINT", zoneId: "FROSTMARCH", unlockLevel: 48, seconds: 122, xp: 325 },
+  { id: "SUNSCALE_BLOOM", name: "Sunscale Bloom", itemId: "SUNSCALE", zoneId: "SUNSCAR", areaId: "ZONE_006", unlockLevel: 26, seconds: 92, xp: 215 },
+  { id: "FROSTBELL_FLOWER", name: "Frostbell Flower", itemId: "FROSTBLOOM", zoneId: "FROSTMARCH", areaId: "ZONE_011", unlockLevel: 46, seconds: 118, xp: 310 },
+  { id: "WINTERMINT_PATCH", name: "Wintermint Patch", itemId: "WINTERMINT", zoneId: "FROSTMARCH", areaId: "ZONE_011", unlockLevel: 48, seconds: 122, xp: 325 },
+  { id: "MIRAGE_SALTBLOOM", name: "Mirage Saltbloom", itemId: "SUNSCALE", zoneId: "SUNSCAR", areaId: "ZONE_008", unlockLevel: 36, seconds: 108, xp: 250 },
+  { id: "ASTRAL_SAGE", name: "Observatory Astral Sage", itemId: "ASTRAL_SCRIPT", zoneId: "SUNSCAR", areaId: "ZONE_010", unlockLevel: 43, seconds: 124, xp: 305 },
+  { id: "WHITEPINE_FROSTBELL", name: "Whitepine Frostbell Thicket", itemId: "FROSTBLOOM", zoneId: "FROSTMARCH", areaId: "ZONE_012", unlockLevel: 53, seconds: 132, xp: 340 },
   { id: "ASHEN_MYRRH_GROVE", name: "Ashen Myrrh Grove", itemId: "ASHEN_MYRRH", zoneId: "ASHLANDS", unlockLevel: 71, seconds: 145, xp: 440 },
   { id: "ASHEN_MYRRH_CROWN", name: "Ashen Myrrh Crown", itemId: "ASHEN_MYRRH", zoneId: "ASHLANDS", unlockLevel: 86, seconds: 164, xp: 560 }
 ].map((node) => ({ ...node, skillId: "herbalism", min: 1, max: 1, difficultyMultiplier: 1, recommendedToolTier: 0 }));
@@ -43125,12 +43128,22 @@ var MONSTERS_RAW = [
   { id: "BANNER_SHADE", name: "Banner Shade", level: 23, hp: 435, attack: 39, defense: 22, xp: 258, gold: 15, secondsPerKill: 26, unlockLevel: 23, zone: "King's Road", drops: [{ itemId: "OATHGLASS_SHARD", chance: 0.22, min: 1, max: 1 }, { itemId: "TORN_OATHCLOTH", chance: 0.28, min: 1, max: 1 }, { itemId: "BANNER_ASH", chance: 0.28, min: 1, max: 2 }, { itemId: "LANTERNSTEEL_SHARD", chance: 0.1, min: 1, max: 1 }, { itemId: "GLOAM_DUST", chance: 0.18, min: 1, max: 1 }, { itemId: "WOLF_PELT", chance: 0.28, min: 1, max: 1 }, { itemId: "THORN_SAP", chance: 0.24, min: 1, max: 1 }] },
   { id: "FALLEN_SENTINEL", name: "Fallen Sentinel", level: 24, hp: 475, attack: 42, defense: 25, xp: 282, gold: 17, secondsPerKill: 28, unlockLevel: 24, zone: "King's Road", drops: [{ itemId: "OATHGLASS_SHARD", chance: 0.28, min: 1, max: 1 }, { itemId: "ECHO_TOUCHED_PELT", chance: 0.12, min: 1, max: 1 }, { itemId: "TORN_OATHCLOTH", chance: 0.32, min: 1, max: 2 }, { itemId: "LANTERNSTEEL_SHARD", chance: 0.18, min: 1, max: 1 }, { itemId: "FALLEN_RIVET", chance: 0.28, min: 1, max: 2 }, { itemId: "RUNEBOUND_CORE", chance: 0.12, min: 1, max: 1 }, { itemId: "TROLL_HIDE", chance: 0.2, min: 1, max: 1 }, { itemId: "IRONWOOD_LOG", chance: 0.32, min: 1, max: 2 }] },
   { id: "OATHGLASS_REVENANT", name: "Oathglass Revenant", level: 25, hp: 540, attack: 45, defense: 28, xp: 315, gold: 18, secondsPerKill: 30, unlockLevel: 25, zone: "King's Road", drops: [{ itemId: "OATHGLASS_SHARD", chance: 0.34, min: 1, max: 2 }, { itemId: "OATHGLASS_FRAGMENT", chance: 0.2, min: 1, max: 1 }, { itemId: "ECHO_QUARTZ", chance: 0.15, min: 1, max: 1 }, { itemId: "ECHO_TOUCHED_PELT", chance: 0.18, min: 1, max: 1 }, { itemId: "TORN_OATHCLOTH", chance: 0.35, min: 1, max: 2 }, { itemId: "WOLF_PELT", chance: 0.25, min: 1, max: 1 }, { itemId: "IRONWOOD_FANG", chance: 0.16, min: 1, max: 1 }] },
-  { id: "SUNSCAR_SCORPION", name: "Sunscar Scorpion", level: 28, hp: 610, attack: 52, defense: 31, xp: 350, gold: 21, secondsPerKill: 31, unlockLevel: 26, zone: "Sunscar", drops: [{ itemId: "SUNSTONE_ORE", chance: 0.42, min: 1, max: 2 }, { itemId: "DUNEWOOD", chance: 0.36, min: 1, max: 2 }, { itemId: "SUNSCALE", chance: 0.24, min: 1, max: 1 }, { itemId: "AMBERGLASS", chance: 0.08, min: 1, max: 1 }, { itemId: "SCORPION_VENOM", chance: 0.06, min: 1, max: 1 }] },
-  { id: "DUNE_ORACLE", name: "Dune Oracle", level: 33, hp: 760, attack: 61, defense: 36, xp: 438, gold: 27, secondsPerKill: 35, unlockLevel: 31, zone: "Sunscar", drops: [{ itemId: "DUNEWOOD", chance: 0.28, min: 1, max: 2 }, { itemId: "SUNSCALE", chance: 0.3, min: 1, max: 1 }, { itemId: "AMBERGLASS", chance: 0.36, min: 1, max: 2 }, { itemId: "ASTRAL_SCRIPT", chance: 0.08, min: 1, max: 1 }, { itemId: "SWIFT_SIGIL", chance: 3e-3, min: 1, max: 1 }] },
-  { id: "GLASSBOUND_SENTINEL", name: "Glassbound Sentinel", level: 40, hp: 980, attack: 74, defense: 45, xp: 560, gold: 35, secondsPerKill: 40, unlockLevel: 38, zone: "Sunscar", drops: [{ itemId: "SUNSTONE_ORE", chance: 0.5, min: 1, max: 2 }, { itemId: "AMBERGLASS", chance: 0.28, min: 1, max: 1 }, { itemId: "ASTRAL_SCRIPT", chance: 0.12, min: 1, max: 1 }, { itemId: "GLASSBOUND_CORE", chance: 0.38, min: 1, max: 1 }] },
-  { id: "FROSTWOLF", name: "Frostwolf", level: 48, hp: 1220, attack: 88, defense: 55, xp: 710, gold: 43, secondsPerKill: 44, unlockLevel: 46, zone: "Frostmarch", drops: [{ itemId: "FROSTIRON", chance: 0.42, min: 1, max: 2 }, { itemId: "RIMEGLASS", chance: 0.08, min: 1, max: 1 }, { itemId: "RIME_RESIN", chance: 0.06, min: 1, max: 1 }, { itemId: "BP_FROSTIRON_HATCHET", chance: 0.01, min: 1, max: 1 }] },
-  { id: "BELLWRAITH", name: "Bellwraith", level: 56, hp: 1580, attack: 106, defense: 68, xp: 920, gold: 55, secondsPerKill: 50, unlockLevel: 53, zone: "Frostmarch", drops: [{ itemId: "RIMEGLASS", chance: 0.36, min: 1, max: 2 }, { itemId: "CHOIR_BLOOM", chance: 0.1, min: 1, max: 1 }, { itemId: "BP_FROSTIRON_PICKAXE", chance: 0.01, min: 1, max: 1 }] },
-  { id: "CHOIR_HUNTER", name: "Choir Hunter", level: 66, hp: 2050, attack: 132, defense: 82, xp: 1180, gold: 70, secondsPerKill: 58, unlockLevel: 63, zone: "Frostmarch", drops: [{ itemId: "FROSTIRON", chance: 0.5, min: 1, max: 2 }, { itemId: "RIMEGLASS", chance: 0.28, min: 1, max: 1 }, { itemId: "CHOIR_BLOOM", chance: 0.12, min: 1, max: 1 }, { itemId: "BULWARK_SIGIL", chance: 3e-3, min: 1, max: 1 }, { itemId: "BP_RIMEGLASS_ROD", chance: 0.01, min: 1, max: 1 }] },
+  { id: "SUNSCAR_SCORPION", name: "Sunscar Scorpion", level: 28, hp: 610, attack: 52, defense: 31, xp: 350, gold: 21, secondsPerKill: 31, unlockLevel: 26, zone: "Sunscar", areaId: "ZONE_006", drops: [{ itemId: "SUNSTONE_ORE", chance: 0.42, min: 1, max: 2 }, { itemId: "DUNEWOOD", chance: 0.36, min: 1, max: 2 }, { itemId: "SUNSCALE", chance: 0.24, min: 1, max: 1 }, { itemId: "AMBERGLASS", chance: 0.08, min: 1, max: 1 }, { itemId: "SCORPION_VENOM", chance: 0.06, min: 1, max: 1 }] },
+  { id: "DUNE_ORACLE", name: "Dune Oracle", level: 33, hp: 760, attack: 61, defense: 36, xp: 438, gold: 27, secondsPerKill: 35, unlockLevel: 31, zone: "Sunscar", areaId: "ZONE_007", drops: [{ itemId: "DUNEWOOD", chance: 0.28, min: 1, max: 2 }, { itemId: "SUNSCALE", chance: 0.3, min: 1, max: 1 }, { itemId: "AMBERGLASS", chance: 0.36, min: 1, max: 2 }, { itemId: "ASTRAL_SCRIPT", chance: 0.08, min: 1, max: 1 }, { itemId: "SWIFT_SIGIL", chance: 3e-3, min: 1, max: 1 }] },
+  { id: "GLASSBOUND_SENTINEL", name: "Glassbound Sentinel", level: 40, hp: 980, attack: 74, defense: 45, xp: 560, gold: 35, secondsPerKill: 40, unlockLevel: 38, zone: "Sunscar", areaId: "ZONE_008", drops: [{ itemId: "SUNSTONE_ORE", chance: 0.5, min: 1, max: 2 }, { itemId: "AMBERGLASS", chance: 0.28, min: 1, max: 1 }, { itemId: "ASTRAL_SCRIPT", chance: 0.12, min: 1, max: 1 }, { itemId: "GLASSBOUND_CORE", chance: 0.38, min: 1, max: 1 }] },
+  { id: "SAFFRON_MARAUDER", name: "Saffron Marauder", level: 30, hp: 670, attack: 56, defense: 33, xp: 388, gold: 23, secondsPerKill: 33, unlockLevel: 29, zone: "Sunscar", areaId: "ZONE_006", regionalAreaAutoUnlock: true, drops: [{ itemId: "DUNEWOOD", chance: 0.42, min: 1, max: 2 }, { itemId: "SUNSCALE", chance: 0.2, min: 1, max: 1 }, { itemId: "AMBERGLASS", chance: 0.08, min: 1, max: 1 }] },
+  { id: "GLASS_DUNE_STRIDER", name: "Glass Dune Strider", level: 35, hp: 815, attack: 66, defense: 38, xp: 474, gold: 29, secondsPerKill: 36, unlockLevel: 34, zone: "Sunscar", areaId: "ZONE_007", regionalAreaAutoUnlock: true, drops: [{ itemId: "SUNSTONE_ORE", chance: 0.45, min: 1, max: 2 }, { itemId: "AMBERGLASS", chance: 0.2, min: 1, max: 1 }, { itemId: "SCORPION_VENOM", chance: 0.05, min: 1, max: 1 }] },
+  { id: "MIRAGE_SHADE", name: "Mirage Shade", level: 38, hp: 905, attack: 72, defense: 41, xp: 521, gold: 32, secondsPerKill: 39, unlockLevel: 36, zone: "Sunscar", areaId: "ZONE_008", regionalAreaAutoUnlock: true, drops: [{ itemId: "AMBERGLASS", chance: 0.34, min: 1, max: 2 }, { itemId: "ASTRAL_SCRIPT", chance: 0.09, min: 1, max: 1 }, { itemId: "SUNSCALE", chance: 0.24, min: 1, max: 1 }] },
+  { id: "OBSERVATORY_KEEPER", name: "Observatory Keeper", level: 42, hp: 1090, attack: 79, defense: 50, xp: 622, gold: 38, secondsPerKill: 43, unlockLevel: 41, zone: "Sunscar", areaId: "ZONE_010", regionalAreaAutoUnlock: true, drops: [{ itemId: "GLASSBOUND_CORE", chance: 0.25, min: 1, max: 1 }, { itemId: "ASTRAL_SCRIPT", chance: 0.18, min: 1, max: 1 }, { itemId: "AMBERGLASS", chance: 0.3, min: 1, max: 1 }] },
+  { id: "ROYAL_SANDGUARD", name: "Royal Sandguard", level: 45, hp: 1240, attack: 87, defense: 58, xp: 705, gold: 43, secondsPerKill: 47, unlockLevel: 44, zone: "Sunscar", areaId: "ZONE_010", regionalAreaAutoUnlock: true, drops: [{ itemId: "SUNSTONE_ORE", chance: 0.45, min: 1, max: 2 }, { itemId: "GLASSBOUND_CORE", chance: 0.3, min: 1, max: 1 }, { itemId: "ASTRAL_SCRIPT", chance: 0.12, min: 1, max: 1 }] },
+  { id: "FROSTWOLF", name: "Frostwolf", level: 48, hp: 1220, attack: 88, defense: 55, xp: 710, gold: 43, secondsPerKill: 44, unlockLevel: 46, zone: "Frostmarch", areaId: "ZONE_011", drops: [{ itemId: "FROSTIRON", chance: 0.42, min: 1, max: 2 }, { itemId: "RIMEGLASS", chance: 0.08, min: 1, max: 1 }, { itemId: "RIME_RESIN", chance: 0.06, min: 1, max: 1 }, { itemId: "BP_FROSTIRON_HATCHET", chance: 0.01, min: 1, max: 1 }] },
+  { id: "BELLWRAITH", name: "Bellwraith", level: 56, hp: 1580, attack: 106, defense: 68, xp: 920, gold: 55, secondsPerKill: 50, unlockLevel: 53, zone: "Frostmarch", areaId: "ZONE_012", drops: [{ itemId: "RIMEGLASS", chance: 0.36, min: 1, max: 2 }, { itemId: "CHOIR_BLOOM", chance: 0.1, min: 1, max: 1 }, { itemId: "BP_FROSTIRON_PICKAXE", chance: 0.01, min: 1, max: 1 }] },
+  { id: "CHOIR_HUNTER", name: "Choir Hunter", level: 66, hp: 2050, attack: 132, defense: 82, xp: 1180, gold: 70, secondsPerKill: 58, unlockLevel: 63, zone: "Frostmarch", areaId: "ZONE_015", drops: [{ itemId: "FROSTIRON", chance: 0.5, min: 1, max: 2 }, { itemId: "RIMEGLASS", chance: 0.28, min: 1, max: 1 }, { itemId: "CHOIR_BLOOM", chance: 0.12, min: 1, max: 1 }, { itemId: "BULWARK_SIGIL", chance: 3e-3, min: 1, max: 1 }, { itemId: "BP_RIMEGLASS_ROD", chance: 0.01, min: 1, max: 1 }] },
+  { id: "ICEBOUND_RAIDER", name: "Icebound Raider", level: 50, hp: 1330, attack: 93, defense: 58, xp: 766, gold: 47, secondsPerKill: 46, unlockLevel: 49, zone: "Frostmarch", areaId: "ZONE_011", regionalAreaAutoUnlock: true, drops: [{ itemId: "FROSTIRON", chance: 0.44, min: 1, max: 2 }, { itemId: "RIME_RESIN", chance: 0.12, min: 1, max: 1 }, { itemId: "RIMEGLASS", chance: 0.08, min: 1, max: 1 }] },
+  { id: "SNOW_TREANT", name: "Snow Treant", level: 53, hp: 1460, attack: 100, defense: 67, xp: 845, gold: 51, secondsPerKill: 48, unlockLevel: 51, zone: "Frostmarch", areaId: "ZONE_012", regionalAreaAutoUnlock: true, drops: [{ itemId: "WHITEPINE_LOG", chance: 0.52, min: 1, max: 2 }, { itemId: "RIME_RESIN", chance: 0.22, min: 1, max: 1 }, { itemId: "FROSTIRON", chance: 0.1, min: 1, max: 1 }] },
+  { id: "RIME_STALKER", name: "Rime Stalker", level: 59, hp: 1770, attack: 112, defense: 71, xp: 995, gold: 60, secondsPerKill: 53, unlockLevel: 57, zone: "Frostmarch", areaId: "ZONE_013", regionalAreaAutoUnlock: true, drops: [{ itemId: "RIMEGLASS", chance: 0.4, min: 1, max: 2 }, { itemId: "CHOIR_BLOOM", chance: 0.11, min: 1, max: 1 }, { itemId: "FROSTIRON", chance: 0.2, min: 1, max: 1 }] },
+  { id: "LAKEBOUND_SPECTER", name: "Lakebound Specter", level: 62, hp: 1880, attack: 124, defense: 76, xp: 1080, gold: 65, secondsPerKill: 55, unlockLevel: 61, zone: "Frostmarch", areaId: "ZONE_013", regionalAreaAutoUnlock: true, drops: [{ itemId: "RIMEGLASS", chance: 0.36, min: 1, max: 2 }, { itemId: "CHOIR_BLOOM", chance: 0.16, min: 1, max: 1 }, { itemId: "RIME_RESIN", chance: 0.09, min: 1, max: 1 }] },
+  { id: "WYRMSPINE_GUARDIAN", name: "Wyrmspine Guardian", level: 69, hp: 2270, attack: 140, defense: 90, xp: 1310, gold: 78, secondsPerKill: 61, unlockLevel: 68, zone: "Frostmarch", areaId: "ZONE_015", regionalAreaAutoUnlock: true, drops: [{ itemId: "FROSTIRON", chance: 0.52, min: 1, max: 2 }, { itemId: "RIMEGLASS", chance: 0.32, min: 1, max: 1 }, { itemId: "CHOIR_BLOOM", chance: 0.14, min: 1, max: 1 }] },
   { id: "BLACKGLASS_MIRELING", name: "Blackglass Mireling", level: 72, hp: 2480, attack: 154, defense: 96, xp: 1450, gold: 86, secondsPerKill: 63, unlockLevel: 71, zone: "Ashlands", drops: [{ itemId: "BANNER_ASH", chance: 0.42, min: 1, max: 2 }, { itemId: "BLACKGLASS_CORE", chance: 0.08, min: 1, max: 1 }, { itemId: "RIMEGLASS", chance: 0.12, min: 1, max: 1 }] },
   { id: "CINDER_TITAN", name: "Cinder Titan", level: 80, hp: 3200, attack: 185, defense: 118, xp: 1840, gold: 108, secondsPerKill: 72, unlockLevel: 78, zone: "Ashlands", drops: [{ itemId: "SUNSTONE_ORE", chance: 0.34, min: 1, max: 2 }, { itemId: "CINDER_HEART", chance: 0.08, min: 1, max: 1 }, { itemId: "ASTRAL_SCRIPT", chance: 0.2, min: 1, max: 1 }, { itemId: "CHOIR_BLOOM", chance: 0.16, min: 1, max: 1 }, { itemId: "BOSSBANE_SIGIL", chance: 25e-4, min: 1, max: 1 }] },
   { id: "ASHEN_REVENANT", name: "Ashen Revenant", level: 88, hp: 4100, attack: 224, defense: 142, xp: 2320, gold: 136, secondsPerKill: 82, unlockLevel: 86, zone: "Ashlands", drops: [{ itemId: "BANNER_ASH", chance: 0.55, min: 1, max: 2 }, { itemId: "CINDER_HEART", chance: 0.1, min: 1, max: 1 }, { itemId: "REGENT_SIGIL", chance: 0.04, min: 1, max: 1 }, { itemId: "ASTRAL_SCRIPT", chance: 0.28, min: 1, max: 1 }, { itemId: "RIMEGLASS", chance: 0.22, min: 1, max: 1 }, { itemId: "RENEWAL_SIGIL", chance: 25e-4, min: 1, max: 1 }] },
@@ -43611,15 +43624,21 @@ var GATHERING = [
   { id: "ASTER_IRON_VEIN", skillId: "mining", name: "Aster-Iron Vein", unlockLevel: 8, seconds: 24, xp: 18, itemId: "ASTER_IRON_ORE", min: 1, max: 2, zoneId: "OLD_MINES" },
   { id: "OATHSTONE_SEAM", skillId: "mining", name: "Oathstone Seam", unlockLevel: 16, seconds: 36, xp: 29, itemId: "OATHSTONE_ORE", min: 1, max: 1, zoneId: "OLD_MINES" },
   { id: "ECHO_QUARTZ_GEODE", skillId: "mining", name: "Echo Quartz Geode", unlockLevel: 20, seconds: 38, xp: 42, itemId: "ECHO_QUARTZ", min: 1, max: 1, zoneId: "OLD_MINES" },
-  { id: "SUNSTONE_OUTCROP", skillId: "mining", name: "Sunstone Outcrop", unlockLevel: 26, seconds: 48, xp: 92, itemId: "SUNSTONE_ORE", min: 1, max: 1, zoneId: "SUNSCAR" },
-  { id: "FROSTIRON_VEIN", skillId: "mining", name: "Frostiron Vein", unlockLevel: 46, seconds: 62, xp: 180, itemId: "FROSTIRON", min: 1, max: 1, zoneId: "FROSTMARCH" },
+  { id: "SUNSTONE_OUTCROP", skillId: "mining", name: "Sunstone Outcrop", unlockLevel: 26, seconds: 48, xp: 92, itemId: "SUNSTONE_ORE", min: 1, max: 1, zoneId: "SUNSCAR", areaId: "ZONE_006" },
+  { id: "SCORCHWIND_SUNSTONE_SEAM", skillId: "mining", name: "Scorchwind Sunstone Seam", unlockLevel: 31, seconds: 53, xp: 109, itemId: "SUNSTONE_ORE", min: 1, max: 1, zoneId: "SUNSCAR", areaId: "ZONE_007" },
+  { id: "OBSERVATORY_AMBERGLASS_SEAM", skillId: "mining", name: "Observatory Amberglass Seam", unlockLevel: 41, seconds: 61, xp: 155, itemId: "AMBERGLASS", min: 1, max: 1, zoneId: "SUNSCAR", areaId: "ZONE_010" },
+  { id: "FROSTIRON_VEIN", skillId: "mining", name: "Frostiron Vein", unlockLevel: 46, seconds: 62, xp: 180, itemId: "FROSTIRON", min: 1, max: 1, zoneId: "FROSTMARCH", areaId: "ZONE_011" },
+  { id: "SHIVERLAKE_RIMEGLASS_SEAM", skillId: "mining", name: "Shiverlake Rimeglass Seam", unlockLevel: 58, seconds: 72, xp: 218, itemId: "RIMEGLASS", min: 1, max: 1, zoneId: "FROSTMARCH", areaId: "ZONE_013" },
+  { id: "WYRMSPINE_FROSTIRON_VEIN", skillId: "mining", name: "Wyrmspine Frostiron Vein", unlockLevel: 65, seconds: 82, xp: 275, itemId: "FROSTIRON", min: 1, max: 1, zoneId: "FROSTMARCH", areaId: "ZONE_015" },
   { id: "BLACKGLASS_VEIN", skillId: "mining", name: "Blackglass Vein", unlockLevel: 68, seconds: 78, xp: 310, itemId: "BLACKGLASS_ORE", min: 1, max: 1, zoneId: "ASHLANDS" },
   { id: "DEEP_BLACKGLASS_VEIN", skillId: "mining", name: "Deep Blackglass Vein", unlockLevel: 86, seconds: 92, xp: 430, itemId: "BLACKGLASS_ORE", min: 1, max: 1, zoneId: "ASHLANDS" },
   { id: "GREENWOOD_TREE", skillId: "woodcutting", name: "Greenwood Tree", unlockLevel: 1, seconds: 14, xp: 8, itemId: "GREENWOOD_LOG", min: 1, max: 2, zoneId: "GREENFIELDS" },
   { id: "IRONWOOD_TREE", skillId: "woodcutting", name: "Ironwood Tree", unlockLevel: 7, seconds: 24, xp: 17, itemId: "IRONWOOD_LOG", min: 1, max: 2, zoneId: "IRONWOOD" },
   { id: "CROWNWOOD_TREE", skillId: "woodcutting", name: "Crownwood Tree", unlockLevel: 15, seconds: 36, xp: 27, itemId: "CROWNWOOD_LOG", min: 1, max: 1, zoneId: "IRONWOOD" },
-  { id: "DUNEWOOD_TREE", skillId: "woodcutting", name: "Dunewood Tree", unlockLevel: 26, seconds: 46, xp: 88, itemId: "DUNEWOOD", min: 1, max: 1, zoneId: "SUNSCAR" },
-  { id: "WHITEPINE_TREE", skillId: "woodcutting", name: "Whitepine Tree", unlockLevel: 46, seconds: 60, xp: 172, itemId: "WHITEPINE_LOG", min: 1, max: 1, zoneId: "FROSTMARCH" },
+  { id: "DUNEWOOD_TREE", skillId: "woodcutting", name: "Dunewood Tree", unlockLevel: 26, seconds: 46, xp: 88, itemId: "DUNEWOOD", min: 1, max: 1, zoneId: "SUNSCAR", areaId: "ZONE_006" },
+  { id: "SCORCHWIND_DUNEWOOD_GROVE", skillId: "woodcutting", name: "Scorchwind Dunewood Grove", unlockLevel: 32, seconds: 51, xp: 102, itemId: "DUNEWOOD", min: 1, max: 1, zoneId: "SUNSCAR", areaId: "ZONE_007" },
+  { id: "WHITEPINE_TREE", skillId: "woodcutting", name: "Whitepine Tree", unlockLevel: 46, seconds: 60, xp: 172, itemId: "WHITEPINE_LOG", min: 1, max: 1, zoneId: "FROSTMARCH", areaId: "ZONE_011" },
+  { id: "WHITEPINE_THICKET", skillId: "woodcutting", name: "Whitepine Thicket", unlockLevel: 51, seconds: 67, xp: 192, itemId: "WHITEPINE_LOG", min: 1, max: 1, zoneId: "FROSTMARCH", areaId: "ZONE_012" },
   { id: "CINDERWOOD_TREE", skillId: "woodcutting", name: "Cinderwood Tree", unlockLevel: 68, seconds: 76, xp: 300, itemId: "CINDERWOOD_LOG", min: 1, max: 1, zoneId: "ASHLANDS" },
   { id: "HEARTFIRE_CINDERWOOD", skillId: "woodcutting", name: "Heartfire Cinderwood", unlockLevel: 86, seconds: 90, xp: 420, itemId: "CINDERWOOD_LOG", min: 1, max: 1, zoneId: "ASHLANDS" },
   { id: "MEADOW_PERCH_POOL", skillId: "fishing", name: "Meadow Perch Pool", unlockLevel: 1, seconds: 16, xp: 8, itemId: "MEADOW_PERCH", min: 1, max: 2, zoneId: "GREENFIELDS" },
@@ -43629,9 +43648,10 @@ var GATHERING = [
   { id: "OATHSCALE_POOL", skillId: "fishing", name: "Oathscale Pool", unlockLevel: 16, seconds: 41, xp: 28, itemId: "OATHSCALE_PIKE", min: 1, max: 1, zoneId: "SILVERBROOK" },
   { id: "CAVE_LOACH_POOL", skillId: "fishing", name: "Cave Loach Pool", unlockLevel: 16, seconds: 39, xp: 27, itemId: "CAVE_LOACH", min: 1, max: 1, zoneId: "OLD_MINES" },
   { id: "CROWN_CARP_POOL", skillId: "fishing", name: "Crown Carp Pool", unlockLevel: 20, seconds: 44, xp: 34, itemId: "CROWN_CARP", min: 1, max: 1, zoneId: "KINGS_ROAD" },
-  { id: "OASIS_CARP_POOL", skillId: "fishing", name: "Oasis Carp Pool", unlockLevel: 26, seconds: 50, xp: 94, itemId: "OASIS_CARP", min: 1, max: 1, zoneId: "SUNSCAR" },
-  { id: "GLASSFIN_POOL", skillId: "fishing", name: "Glassfin Pool", unlockLevel: 36, seconds: 56, xp: 128, itemId: "GLASSFIN", min: 1, max: 1, zoneId: "SUNSCAR" },
-  { id: "ICEFISH_POOL", skillId: "fishing", name: "Icefin Pool", unlockLevel: 46, seconds: 66, xp: 188, itemId: "ICEFIN", min: 1, max: 1, zoneId: "FROSTMARCH" },
+  { id: "OASIS_CARP_POOL", skillId: "fishing", name: "Oasis Carp Pool", unlockLevel: 26, seconds: 50, xp: 94, itemId: "OASIS_CARP", min: 1, max: 1, zoneId: "SUNSCAR", areaId: "ZONE_006" },
+  { id: "GLASSFIN_POOL", skillId: "fishing", name: "Glassfin Pool", unlockLevel: 36, seconds: 56, xp: 128, itemId: "GLASSFIN", min: 1, max: 1, zoneId: "SUNSCAR", areaId: "ZONE_008" },
+  { id: "ICEFISH_POOL", skillId: "fishing", name: "Icefin Pool", unlockLevel: 46, seconds: 66, xp: 188, itemId: "ICEFIN", min: 1, max: 1, zoneId: "FROSTMARCH", areaId: "ZONE_011" },
+  { id: "SHIVERLAKE_ICEFISH_POOL", skillId: "fishing", name: "Shiverlake Icefin Pool", unlockLevel: 59, seconds: 75, xp: 228, itemId: "ICEFIN", min: 1, max: 1, zoneId: "FROSTMARCH", areaId: "ZONE_013" },
   { id: "EMBERFIN_POOL", skillId: "fishing", name: "Emberfin Mire", unlockLevel: 72, seconds: 84, xp: 340, itemId: "EMBERFIN", min: 1, max: 1, zoneId: "ASHLANDS" },
   { id: "EMBERFIN_DEEPWATER", skillId: "fishing", name: "Emberfin Deepwater", unlockLevel: 86, seconds: 98, xp: 470, itemId: "EMBERFIN", min: 1, max: 1, zoneId: "ASHLANDS" }
   // The 24-hour AFK window is generous; each gathering cycle is therefore
@@ -47743,6 +47763,90 @@ var CLASSES = [
   { id: "STONECALLER", name: "Stonecaller", role: "Support", description: "Earth-and-storm support caster using resonance, geomancy and totems.", hp: 120, attack: 20, defense: 12, roleRatings: { tank: 2, damage: 2, support: 5 }, starterEquipment: { weapon: "basic_staff" } }
 ];
 
+// ../apps/mobile/src/content/regional-areas.ts
+var REGIONAL_AREAS = [
+  {
+    id: "ZONE_006",
+    regionId: "SUNSCAR",
+    name: "Saffron Gate",
+    minLevel: 26,
+    maxLevel: 30,
+    identity: "Caravan roads and the first settlements beyond Asterfall.",
+    activities: ["Sunstone", "Dunewood", "Oasis fishing"],
+    hazards: ["desert wind"]
+  },
+  {
+    id: "ZONE_007",
+    regionId: "SUNSCAR",
+    name: "Scorchwind Flats",
+    minLevel: 31,
+    maxLevel: 35,
+    identity: "Open glass-sand plains and fierce exposure.",
+    activities: ["Glass-sand mining", "Heat-scarred timber"],
+    hazards: ["exposure", "heat"]
+  },
+  {
+    id: "ZONE_008",
+    regionId: "SUNSCAR",
+    name: "Mirage Basin",
+    minLevel: 36,
+    maxLevel: 40,
+    identity: "Mirage pools and reflections that mislead travelers.",
+    activities: ["Glassfin", "Mirage botanicals"],
+    hazards: ["false trails"]
+  },
+  {
+    id: "ZONE_010",
+    regionId: "SUNSCAR",
+    name: "Tyrant's Crown",
+    minLevel: 41,
+    maxLevel: 45,
+    identity: "Royal ruins, the buried observatory and the Sand Tyrant.",
+    activities: ["Astral minerals", "Ancient herbs"],
+    hazards: ["glass storms", "sand pillars"]
+  },
+  {
+    id: "ZONE_011",
+    regionId: "FROSTMARCH",
+    name: "Thawgate",
+    minLevel: 45,
+    maxLevel: 50,
+    identity: "Fortified northern gate and the last dependable shelter.",
+    activities: ["Frostiron", "Whitepine", "Icefin"],
+    hazards: ["black ice"]
+  },
+  {
+    id: "ZONE_012",
+    regionId: "FROSTMARCH",
+    name: "Whitepine Reach",
+    minLevel: 51,
+    maxLevel: 56,
+    identity: "Snow forest with false trails and ancient frozen treants.",
+    activities: ["Snowbound timber", "Rime herbs"],
+    hazards: ["whiteout trails"]
+  },
+  {
+    id: "ZONE_013",
+    regionId: "FROSTMARCH",
+    name: "Shiverlake",
+    minLevel: 57,
+    maxLevel: 63,
+    identity: "Frozen lake and the resonant ruins beneath its ice.",
+    activities: ["Under-ice fishing", "Rimeglass"],
+    hazards: ["thin ice"]
+  },
+  {
+    id: "ZONE_015",
+    regionId: "FROSTMARCH",
+    name: "Wyrmspine",
+    minLevel: 64,
+    maxLevel: 70,
+    identity: "High mountain lair of the Frost Wyrm; Choir Caverns remain a dungeon.",
+    activities: ["Wyrmspine ore", "Highland herbs"],
+    hazards: ["ice prison", "breath lines"]
+  }
+];
+
 // ../apps/mobile/src/content/mining-essence.ts
 var ASTERFALL_MINERAL_ESSENCE_ID = "ASTERFALL_MINERAL_ESSENCE";
 var MINING_ESSENCE_BY_ZONE = {
@@ -51604,7 +51708,8 @@ function startCombat(state, monsterId, nowMs, combatTacticId = "balanced", huntG
   const m = MONSTERS.find((x) => x.id === monsterId);
   if (!m) throw new Error("Unknown monster");
   if (state.character.currentHp <= 1) throw new Error("Too injured to fight. Eat food or recover health before starting combat.");
-  if (!state.unlockedMonsterIds.includes(monsterId)) throw new Error("Monster not unlocked");
+  const areaUnlockLevel = m.regionalAreaAutoUnlock ? Math.max(m.unlockLevel, REGIONAL_AREAS.find((area) => area.id === m.areaId)?.minLevel ?? 1) : 0;
+  if (!state.unlockedMonsterIds.includes(monsterId) && !(m.regionalAreaAutoUnlock && state.character.level >= areaUnlockLevel)) throw new Error("Monster not unlocked");
   if (m.boss) throw new Error("Bosses use challengeFallenKnight");
   if (zoneIdForTarget(monsterId) !== currentRegionId(state)) throw new Error(`Travel to ${m.zone} before fighting ${m.name}`);
   return { ...state, outOfCombatSinceMs: void 0, character: { ...state.character, activityQueuePausedReason: void 0 }, activity: { kind: "combat", targetId: monsterId, combatTacticId: normalizeCombatTactic(combatTacticId), ...huntGoalSnapshot(normalizeHuntGoalId(huntGoalId)) ? { huntGoal: huntGoalSnapshot(normalizeHuntGoalId(huntGoalId)) } : {}, sessionKills: 0, sessionChampions: 0, startedAtMs: nowMs, lastClaimAtMs: nowMs, classFocus: normalizeTrainingFocus(state.character.trainingFocus), classTrainingSnapshot: { faithBlessingId: selectedFaithBlessing(state)?.id }, environment: captureActivityEnvironment(monsterId, nowMs) } };

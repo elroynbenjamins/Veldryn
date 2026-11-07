@@ -511,6 +511,20 @@ export const equipmentPouchUiRows={
     "Снаряжение для текущей цели защищено",
     "Etkin hedef için gereken ekipman korunur"
   ],
+  "{count} eligible": ["{count} verkaufbar","{count} aptos","{count} verkoopbaar","{count} vendibili","{count} admissibles","Можно продать: {count}","{count} satılabilir"],
+  "Sell eligible · {gold}g": ["Verkaufbare verkaufen · {gold} G","Vender aptos · {gold} o","Verkoop geschikte · {gold} g","Vendi idonei · {gold} o","Vendre les admissibles · {gold} or","Продать доступное · {gold} з.","Uygunları sat · {gold} a"],
+  "Nothing sellable": ["Nichts verkaufbar","Nada que vender","Niets verkoopbaar","Niente da vendere","Rien à vendre","Нечего продавать","Satılacak eşya yok"],
+  "Unlock selected · {count}": ["Auswahl entsperren · {count}","Desbloquear selección · {count}","Selectie ontgrendelen · {count}","Sblocca selezione · {count}","Déverrouiller la sélection · {count}","Разблокировать выбранное · {count}","Seçilenlerin kilidini aç · {count}"],
+  "Protected copies are excluded from the sale. Unlock locked gear or open a copy to review other protections.": [
+    "Geschützte Stücke werden nicht verkauft. Entsperre gesperrte Ausrüstung oder öffne ein Stück, um weitere Schutzgründe zu prüfen.",
+    "Las piezas protegidas no se venden. Desbloquea el equipo o abre una pieza para ver otras protecciones.",
+    "Beschermde exemplaren worden niet verkocht. Ontgrendel vergrendelde uitrusting of open een exemplaar om andere beveiligingen te bekijken.",
+    "Le copie protette non vengono vendute. Sblocca l'equipaggiamento o apri una copia per verificare le altre protezioni.",
+    "Les exemplaires protégés ne sont pas vendus. Déverrouillez-les ou ouvrez-en un pour voir les autres protections.",
+    "Защищённые экземпляры не продаются. Снимите блокировку или откройте экземпляр, чтобы узнать причину защиты.",
+    "Korumalı kopyalar satılmaz. Kilitleri aç veya diğer korumaları görmek için bir kopyayı aç."
+  ],
+  "Unlock to sell": ["Zum Verkauf entsperren","Desbloquear para vender","Ontgrendel om te verkopen","Sblocca per vendere","Déverrouiller pour vendre","Разблокировать для продажи","Satmak için kilidi aç"],
   "Common": ["Gewöhnlich","Común","Gewoon","Comune","Commun","Обычный","Yaygın"],
   "Uncommon": ["Ungewöhnlich","Poco común","Ongewoon","Non comune","Peu commun","Необычный","Sıradışı"],
   "Rare": ["Selten","Raro","Zeldzaam","Raro","Rare","Редкий","Nadir"],

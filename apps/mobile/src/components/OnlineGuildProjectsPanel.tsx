@@ -192,6 +192,7 @@ export function GuildProjectPosting({project,expanded,compact=false,onToggle,onC
  const projectArtwork=guildProjectArtwork(project.templateId);
  const readyToClaim=weekly&&claimOpen;
  const personalShortfall=Math.max(0,project.personalRewardThreshold-project.personalPoints);
+ const contributorsMissing=Math.max(0,project.minimumMeaningfulContributors-project.meaningfulContributors);
  const rewardStatus=project.completionRewardClaimed?ui('Already claimed')
   :project.status!=='completed'?ui('Available after Guild completion')
   :Number.isFinite(claimDeadline)&&Date.now()>=claimDeadline?ui('Reward claim period ended')
@@ -210,6 +211,7 @@ export function GuildProjectPosting({project,expanded,compact=false,onToggle,onC
    <View style={s.progressHead}><Text style={s.percent}>{pct}%</Text><View style={s.progressNumbers}><Text style={s.progressAmount}>{project.kind==='development'?ui('Resource goals'):`${project.completionPoints.toLocaleString()} / ${project.targetPoints.toLocaleString()}`}</Text><Text style={s.meta}>{ui('Guild progress')}</Text></View></View>
    <View style={s.track}><View style={[s.fill,{width:`${Math.min(100,pct)}%` as any}]}/></View>
    <View style={s.sectionHead}><Text style={[s.meta,s.flex]}>{ui('{count}/{minimum} contributors',{count:project.meaningfulContributors,minimum:project.minimumMeaningfulContributors})}</Text><Text style={s.expandHint}>{ui(expanded?'Hide contribution ▴':'Contribution ▾')}</Text></View>
+   {project.status==='active'&&contributorsMissing>0?<Text style={s.meta}>{ui('{count} more qualifying contributors needed to complete this project',{count:contributorsMissing})}</Text>:null}
    {weekly&&project.status==='active'?<Text style={s.meta}>{ui('Weekly reset: Monday at 00:00 UTC')}</Text>:null}
   </Pressable>
   {!compact?<View style={s.personal}>

@@ -64,7 +64,7 @@ export function GatheringActivityList({state,skillId,skillLevel,preferredActionI
      {activity.id==='IRONWOOD_TREE'&&IRONWOOD_T2_BINDING_RECIPE?<Pressable accessibilityRole="button" accessibilityLabel={`Open Alchemy recipe for ${itemDef(IRONWOOD_T2_BINDING_RECIPE.output.itemId).name}`} disabled={!onNavigate} onPress={()=>onNavigate?.({kind:'skills',skillId:'alchemy',mode:'crafting',recipeId:IRONWOOD_T2_BINDING_RECIPE.id,button:'Open Alchemy',detail:'Craft the T2 equipment binding resin in Alchemy.'})} style={s.relatedCraft}>
       <ResourceArtwork itemId={IRONWOOD_T2_BINDING_RECIPE.output.itemId} size={24} framed={false}/>
       <View style={s.copy}>
-       <Text numberOfLines={1} style={s.relatedCraftName}>{gt('T2 equipment')} · {itemDef(IRONWOOD_T2_BINDING_RECIPE.output.itemId).name}</Text>
+       <Text numberOfLines={1} style={s.relatedCraftName}>{'T2 equipment'} · {itemDef(IRONWOOD_T2_BINDING_RECIPE.output.itemId).name}</Text>
        <Text style={s.dropHint}>{gt('Alchemy Lv {level} · Crafted, not a Woodcutting drop',{level:IRONWOOD_T2_BINDING_RECIPE.level})}</Text>
       </View>
       {onNavigate?<Text style={s.chevron}>›</Text>:null}

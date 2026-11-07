@@ -70,7 +70,7 @@ function ClaimMomentCard({moment,reduceMotion}:{moment:ClaimMoment;reduceMotion:
   </Animated.View>;
 }
 
-export function QuestScreen({state,mode,onModeChange,focusedWeeklyOrderId,onClaim,onClaimContract,onNavigate,onOpenWeeklyBoss,onOpenWeeklyOrder,onQueueWeeklyOrder,onStopWeeklyOrder}:{state:GameState;mode:QuestMode;onModeChange:(mode:QuestMode)=>void;focusedWeeklyOrderId?:string;onClaim:(id:string)=>void;onClaimContract:(period:SeasonalPeriod,id:string,choiceId?:string)=>void;onNavigate:(destination:QuestDestination)=>void;onOpenWeeklyBoss:()=>void;onOpenWeeklyOrder:(order:WeeklyOrder)=>void;onQueueWeeklyOrder:(order:WeeklyOrder)=>void;onStopWeeklyOrder:(order:WeeklyOrder)=>void}){
+export function QuestScreen({state,mode,onModeChange,focusedWeeklyOrderId,onClaim,onClaimContract,onNavigate,onOpenWeeklyBoss,onOpenWeeklyOrder,onQueueWeeklyOrder,onStopWeeklyOrder}:{state:GameState;mode:QuestMode;onModeChange:(mode:QuestMode)=>void;focusedWeeklyOrderId?:string;onClaim:(id:string)=>void;onClaimContract:(period:SeasonalPeriod,id:string,choiceId?:string)=>void|boolean|Promise<void|boolean>;onNavigate:(destination:QuestDestination)=>void;onOpenWeeklyBoss:()=>void;onOpenWeeklyOrder:(order:WeeklyOrder)=>void;onQueueWeeklyOrder:(order:WeeklyOrder)=>void;onStopWeeklyOrder:(order:WeeklyOrder)=>void}){
   const contextLanguage=useGameLanguage(),language=state.settings.language??contextLanguage;
   const t=(key:ProgressionKey,params?:Record<string,string|number>)=>progressionT(language,key,params);
   const p=(text:string)=>progressionText(language,text);
@@ -81,6 +81,7 @@ export function QuestScreen({state,mode,onModeChange,focusedWeeklyOrderId,onClai
   const [boardDetails,setBoardDetails]=useState(false);
   const [notice,setNotice]=useState(''),[error,setError]=useState(''),[claimMoment,setClaimMoment]=useState<ClaimMoment|null>(null);
   const [rewardChoiceByQuest,setRewardChoiceByQuest]=useState<Record<string,string>>({});
+  const [claimingContractId,setClaimingContractId]=useState<string|null>(null);
   const confirmed=useRef({characterId:state.character?.id,quests:state.quests.filter(q=>q.status==='claimed').map(q=>q.questId),contracts:state.account.seasonalContractClaimIds??[]});
   useEffect(()=>{
     const next={characterId:state.character?.id,quests:state.quests.filter(q=>q.status==='claimed').map(q=>q.questId),contracts:state.account.seasonalContractClaimIds??[]};
@@ -117,9 +118,15 @@ export function QuestScreen({state,mode,onModeChange,focusedWeeklyOrderId,onClai
     try{setClaimMoment(null);setNotice('');setError('');onClaim(id)}
     catch(e){setError(progressionError(language,e,"Unable to claim this quest."));setNotice('')}
   }
-  function claimContract(period:SeasonalPeriod,id:string,choiceId?:string){
-    try{setClaimMoment(null);setNotice('');setError('');onClaimContract(period,id,choiceId)}
-    catch(e){setError(progressionError(language,e,"Unable to claim this contract."));setNotice('')}
+  async function claimContract(period:SeasonalPeriod,id:string,choiceId?:string){
+    if(claimingContractId)return;
+    setClaimingContractId(id);
+    try{
+      setClaimMoment(null);setNotice('');setError('');
+      const confirmed=await onClaimContract(period,id,choiceId);
+      if(confirmed===false)setError(progressionError(language,new Error('The server did not confirm this claim. Refresh and try again.'),"Unable to claim this contract."));
+    }catch(e){setError(progressionError(language,e,"Unable to claim this contract."));setNotice('')}
+    finally{setClaimingContractId(null)}
   }
   return <ScrollView contentContainerStyle={s.root} keyboardShouldPersistTaps="handled" keyboardDismissMode="on-drag" showsVerticalScrollIndicator={false} showsHorizontalScrollIndicator={false}>
     <View style={s.scenicHeader}><ZoneSceneArtwork regionId={mode==='contracts'?'KINGS_ROAD':mode==='challenges'?'IRONWOOD':currentAct.act===1?'GREENFIELDS':currentAct.act===2?'IRONWOOD':'KINGS_ROAD'}/><View style={s.scenicShade}/><View style={s.scenicCopy}><Text style={s.scenicEyebrow}>{t("QUESTS & OBJECTIVES")}</Text><Text accessibilityRole="header" style={s.scenicTitle}>{modeTitle}</Text><Text style={s.scenicSubtitle}>{modeSubtitle}</Text></View></View>
@@ -161,9 +168,9 @@ export function QuestScreen({state,mode,onModeChange,focusedWeeklyOrderId,onClai
       </Panel>
       <ScrollView accessibilityRole="tablist" horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={[s.row,s.filterRail]} showsVerticalScrollIndicator={false}>{(['all','daily','weekly','monthly'] as const).map(value=><FilterChip key={value} label={(value==='all'?t("All"):p(value.charAt(0).toUpperCase()+value.slice(1)))+' · '+(value==='all'?allChallenges.length:value==='daily'?daily.length:value==='weekly'?weekly.length:monthly.length)} selected={challengePeriod===value} onPress={()=>setChallengePeriod(value)}/>)}</ScrollView>
       <View style={s.postingStack}>
-        {challengePeriod==='all'||challengePeriod==='daily'?<ContractRows state={state} label={'DAILY · '+(daily[0]?.className??'')} quests={daily} onClaim={claimContract} selectedById={rewardChoiceByQuest} onSelectChoice={(id,choiceId)=>setRewardChoiceByQuest(current=>({...current,[id]:choiceId}))}/>:null}
-        {challengePeriod==='all'||challengePeriod==='weekly'?<ContractRows state={state} label={t("WEEKLY")} quests={weekly} onClaim={claimContract} selectedById={rewardChoiceByQuest} onSelectChoice={(id,choiceId)=>setRewardChoiceByQuest(current=>({...current,[id]:choiceId}))}/>:null}
-        {challengePeriod==='all'||challengePeriod==='monthly'?<ContractRows state={state} label={t("MONTHLY")} quests={monthly} onClaim={claimContract} selectedById={rewardChoiceByQuest} onSelectChoice={(id,choiceId)=>setRewardChoiceByQuest(current=>({...current,[id]:choiceId}))}/>:null}
+        {challengePeriod==='all'||challengePeriod==='daily'?<ContractRows state={state} label={'DAILY · '+(daily[0]?.className??'')} quests={daily} onClaim={claimContract} claimingContractId={claimingContractId} selectedById={rewardChoiceByQuest} onSelectChoice={(id,choiceId)=>setRewardChoiceByQuest(current=>({...current,[id]:choiceId}))}/>:null}
+        {challengePeriod==='all'||challengePeriod==='weekly'?<ContractRows state={state} label={t("WEEKLY")} quests={weekly} onClaim={claimContract} claimingContractId={claimingContractId} selectedById={rewardChoiceByQuest} onSelectChoice={(id,choiceId)=>setRewardChoiceByQuest(current=>({...current,[id]:choiceId}))}/>:null}
+        {challengePeriod==='all'||challengePeriod==='monthly'?<ContractRows state={state} label={t("MONTHLY")} quests={monthly} onClaim={claimContract} claimingContractId={claimingContractId} selectedById={rewardChoiceByQuest} onSelectChoice={(id,choiceId)=>setRewardChoiceByQuest(current=>({...current,[id]:choiceId}))}/>:null}
       </View>
     </>:null}
     {mode==='story'?<>
@@ -224,7 +231,7 @@ function WeeklyOrderRows({state,orders,reduceMotion,focusedOrderId,onOpenOrder,o
     </QuestPosting>
  })}</>;
 }
-function ContractRows({state,label,quests,onClaim,selectedById,onSelectChoice}:{state:GameState;label:string;quests:SeasonalQuest[];onClaim:(period:SeasonalPeriod,id:string,choiceId?:string)=>void;selectedById:Record<string,string>;onSelectChoice:(id:string,choiceId:string)=>void}){
+function ContractRows({state,label,quests,onClaim,claimingContractId,selectedById,onSelectChoice}:{state:GameState;label:string;quests:SeasonalQuest[];onClaim:(period:SeasonalPeriod,id:string,choiceId?:string)=>void|Promise<void>;claimingContractId:string|null;selectedById:Record<string,string>;onSelectChoice:(id:string,choiceId:string)=>void}){
   const contextLanguage=useGameLanguage(),language=state.settings.language??contextLanguage;
   const t=(key:ProgressionKey,params?:Record<string,string|number>)=>progressionT(language,key,params);
   const p=(text:string)=>progressionText(language,text);
@@ -255,7 +262,7 @@ function ContractRows({state,label,quests,onClaim,selectedById,onSelectChoice}:{
     </View>
    </View>:null}
    <QuestReward gold={quest.rewardGold} xp={quest.rewardXp} itemId={chosenReward.rewardItemId} quantity={chosenReward.rewardItemQty} essence={chosenReward.rewardCompanionEssence} bondstones={chosenReward.rewardBondstones} label={seasonalChallengeText(language,rarity.cache)} rarityColor={rarityTone}/>
-   {claimed?<Text style={s.claimed}>{t("✓ Cache claimed")}</Text>:ready?<GameButton compact title={p('Claim selected reward')} onPress={()=>onClaim(quest.period,quest.id,chosenReward.id)}/>:<Text style={near?s.contractNear:s.contractHint}>{near?(anticipation.band==='next'?'NEXT PROGRESS COMPLETES IT · ':anticipation.band==='urgent'?'FINAL STRETCH · ':'ALMOST COMPLETE · '):''}{anticipation.remaining} {t("progress remaining")}</Text>}
+   {claimed?<Text style={s.claimed}>{t("✓ Cache claimed")}</Text>:ready?<GameButton compact title={p('Claim selected reward')} loading={claimingContractId===quest.id} disabled={claimingContractId!==null} onPress={()=>onClaim(quest.period,quest.id,chosenReward.id)}/>:<Text style={near?s.contractNear:s.contractHint}>{near?(anticipation.band==='next'?'NEXT PROGRESS COMPLETES IT · ':anticipation.band==='urgent'?'FINAL STRETCH · ':'ALMOST COMPLETE · '):''}{anticipation.remaining} {t("progress remaining")}</Text>}
   </QuestPosting>;
  })}</>;
 }

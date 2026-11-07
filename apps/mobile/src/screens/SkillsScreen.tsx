@@ -70,7 +70,7 @@ export function SkillsScreen({state,now=Date.now(),onGather,onQueueGather,onQueu
       </View>
       {availableAreas.length>0?<View style={s.areaPicker}>
         <Pressable accessibilityRole="button" accessibilityState={{selected:!selectedArea}} onPress={()=>setSelectedAreaId(undefined)}
-          style={[s.areaChip,!selectedArea&&s.areaChipSelected]}><Text style={[s.areaChipText,!selectedArea&&s.areaChipTextSelected]}>{gt('All')}</Text></Pressable>
+          style={[s.areaChip,!selectedArea&&s.areaChipSelected]}><Text style={[s.areaChipText,!selectedArea&&s.areaChipTextSelected]}>{gl('All')}</Text></Pressable>
         {availableAreas.map(area=><Pressable accessibilityRole="button" key={area.id}
           accessibilityLabel={area.name+' · Lv '+area.minLevel+'+'}
           accessibilityState={{disabled:(state.character?.level??1)<area.minLevel,selected:selectedArea?.id===area.id}}

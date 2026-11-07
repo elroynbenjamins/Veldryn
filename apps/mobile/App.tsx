@@ -24,7 +24,7 @@ import {challengeFallenKnight,claimActivity,claimOverflowToBank,claimQuest,claim
 import {cancelEquipmentCraft,claimAllReadyEquipmentCrafts,claimForgeJob,equipmentCraftQueueModel,moveWaitingEquipmentCraft,startEquipmentCraft,startGemCombine,startGemRefinement,timedEquipmentRecipe} from './src/core/equipment-crafting-queue';
 import {craftEquipmentPrerequisites} from './src/core/equipment-crafting-prerequisites';
 import {migrateGemPouch} from './src/core/gem-pouch';
-import {acknowledgeAllInventoryItems,acknowledgeInventoryItem,toggleInventoryFavorite,toggleInventoryLock} from './src/core/inventory-view';
+import {acknowledgeAllInventoryItems,acknowledgeInventoryItem,shouldAcknowledgeInventoryOnExit,toggleInventoryFavorite,toggleInventoryLock} from './src/core/inventory-view';
 import {bulkSalvageSelected,bulkSellSelected,bulkTransferSelected} from './src/core/inventory-bulk';
 import {ClassSelectScreen} from './src/screens/ClassSelectScreen';
 import {HomeScreen} from './src/screens/HomeScreen';
@@ -237,6 +237,23 @@ function VeldrynApp(){
   const [tutorialDismissedId,setTutorialDismissedId]=useState<FirstSessionTutorialId|undefined>();
   const [mainScreenTourIndex,setMainScreenTourIndex]=useState<number|undefined>();
   const stateRef=useRef<GameState|null>(null);
+  const previousInventoryTab=useRef<Tab>(tab);
+  const inventorySeenAfterExit=useRef<string|null>(null);
+  useEffect(()=>{
+    const previous=previousInventoryTab.current;
+    previousInventoryTab.current=tab;
+    const current=stateRef.current;
+    const scope=current?.character?`${current.createdAtMs}:${current.character.id}`:null;
+    // Wait for an in-flight online action before acknowledging this Inventory visit.
+    // Never let an acknowledgement spill into another character's inventory.
+    if(previous==='Inventory'&&tab!=='Inventory')inventorySeenAfterExit.current=scope;
+    if(!scope||inventorySeenAfterExit.current!==scope){inventorySeenAfterExit.current=null;return;}
+    if(tab==='Inventory'||serverGameplayEnabled&&(online.busy||online.pending))return;
+    inventorySeenAfterExit.current=null;
+    if(!current||!shouldAcknowledgeInventoryOnExit('Inventory',tab,current))return;
+    if(serverGameplayEnabled){void perform({type:'inventory_seen_all'},false);return;}
+    void commit(acknowledgeAllInventoryItems(current));
+  },[tab,online.busy,online.pending,state?.character?.id]);
   const languageRef=useRef<Language>(recoveryLanguage);
   languageRef.current=state?.settings.language??recoveryLanguage;
   function showAlert(...[title,message,buttons,options]:Parameters<typeof gameAlert.alert>){

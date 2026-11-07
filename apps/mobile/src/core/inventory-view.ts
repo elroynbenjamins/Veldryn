@@ -23,6 +23,10 @@ export function inventoryNewItemIds(state:GameState){
   const seen=new Set(inventorySeenItemIds(state)),ids=[...state.inventory.stacks,...state.bank.stacks].filter(stack=>stack.quantity>0).map(stack=>stack.itemId);
   return [...new Set(ids)].filter(id=>!seen.has(id));
 }
+// Keep NEW labels visible during a visit; dismiss them when the player leaves Inventory.
+export function shouldAcknowledgeInventoryOnExit(previousTab:string,nextTab:string,state:GameState):boolean{
+  return previousTab==='Inventory'&&nextTab!=='Inventory'&&inventoryNewItemIds(state).length>0;
+}
 export function acknowledgeInventoryItem(state:GameState,itemId:string):GameState{
   const seen=new Set(inventorySeenItemIds(state));seen.add(itemId);
   return {...state,settings:{...state.settings,seenItemIds:[...seen].slice(-1000)}};

@@ -98,7 +98,11 @@ export class OnlineQModeRuntime{
   if(request.decisionRevision!==loaded.stateVersion||request.decisionId!==loaded.privateState.run.currentNodeId){const replay=await this.receipt(accountId,'qmode_choose_v1',runId,request.requestId,hash);if(replay)return replay.response;throw new GameplayError('stale_state',409);}
   const {run:before,seed}=loaded.privateState,repository=new MemoryQModeRunRepository();repository.save(before);
   const domain=new QModeService(repository,seed),run=domain.choose({runId,controllerAccountId:accountId,optionNodeId:request.optionId,boonId:request.boonId});
-  const duration=Math.max(0,Number(run.lastResolution!.result.summary.durationMs??0));
+  // Simulation is already finished when this response is queued. Echo does
+  // not need to wait through the entire simulated 30–180s battle before
+  // the server commits its result. Live keeps separate synchronized pacing.
+  const chosen=run.graph.nodes.find(node=>node.nodeId===request.optionId);
+  const duration=chosen?.kind==='boss'?1_800:chosen?.kind==='elite'?1_400:chosen?.kind==='battle'?900:0;
   const resolvesAtMs=loaded.serverNow+duration;
   const client={...projection(before,loaded.stateVersion+1,seed),phase:'resolving_node',options:[],selectedNodeId:request.optionId,resolvesAtMs,boonOffers:undefined};
   return this.services.rpc('queue_online_qmode_node_server_v1',{p_account_id:accountId,p_run_id:runId,p_expected_version:loaded.stateVersion,p_request_id:request.requestId,p_request_hash:hash,p_private_state:{run:before,seed,pending:{run,resolvesAtMs,startStateHash:digest(before.persistentState),settlement:settlement(run,loaded.stateVersion+2,seed)}},p_client_projection:client});

@@ -1,4 +1,4 @@
-import {type PropsWithChildren,useEffect,useMemo,useRef} from 'react';
+import {type PropsWithChildren,type ReactNode,useEffect,useMemo,useRef} from 'react';
 import {Animated,Easing,Modal,Pressable,ScrollView,StyleSheet,Text,View} from 'react-native';
 import {useSafeAreaInsets} from 'react-native-safe-area-context';
 import {useGameTheme} from '../theme/ThemeContext';
@@ -8,8 +8,8 @@ import {type ThemeColors} from '../theme/theme';
  * An immersive presentation for authoritative combat replays and raid status.
  * This surface never starts a fight or computes damage/rewards.
  */
-export function CombatTheaterModal({visible,onClose,title,eyebrow,subtitle,tone='dungeon',reduceMotion=false,children}:PropsWithChildren<{
- visible:boolean;onClose:()=>void;title:string;eyebrow:string;subtitle?:string;tone?:'dungeon'|'event'|'guild'|'companion';reduceMotion?:boolean;
+export function CombatTheaterModal({visible,onClose,title,eyebrow,subtitle,tone='dungeon',reduceMotion=false,footer,children}:PropsWithChildren<{
+ visible:boolean;onClose:()=>void;title:string;eyebrow:string;subtitle?:string;tone?:'dungeon'|'event'|'guild'|'companion';reduceMotion?:boolean;footer?:ReactNode;
 }>){
  const C=useGameTheme(),s=useMemo(()=>styles(C),[C]),insets=useSafeAreaInsets();
  const pulse=useRef(new Animated.Value(0)).current;
@@ -42,6 +42,7 @@ export function CombatTheaterModal({visible,onClose,title,eyebrow,subtitle,tone=
    <ScrollView style={s.scroll} contentContainerStyle={[s.content,{paddingBottom:Math.max(insets.bottom+20,32)}]} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false} showsHorizontalScrollIndicator={false}>
     {children}
    </ScrollView>
+   {footer?<View style={[s.footer,{paddingBottom:Math.max(insets.bottom,12)}]}>{footer}</View>:null}
   </View>
  </Modal>;
 }
@@ -56,4 +57,5 @@ function styles(C:ThemeColors){return StyleSheet.create({
  close:{width:46,height:46,alignItems:'center',justifyContent:'center',borderRadius:12,borderWidth:1,borderColor:C.line,backgroundColor:C.panel2},
  closeText:{fontSize:28,lineHeight:34,fontWeight:'400',color:C.text},pressed:{opacity:.7},
  scroll:{flex:1},content:{flexGrow:1,gap:14,paddingHorizontal:12,paddingTop:16},
+ footer:{paddingHorizontal:12,paddingTop:10,borderTopWidth:1,borderColor:C.line,backgroundColor:C.panel},
 });}

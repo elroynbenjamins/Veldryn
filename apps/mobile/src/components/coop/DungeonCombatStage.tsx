@@ -184,7 +184,7 @@ export function DungeonCombatStage({run,enemyLabel,boss=false,seasonal=false,eve
  // Elapsed wall time only, never expose the scheduled server resolution duration.
  const battleClockKey=`${run.runId}:${entryNodeId??run.selectedNodeId??replay?.nodeId??'waiting'}`;
  const completionHandler=useRef(onPresentationComplete);completionHandler.current=onPresentationComplete;
- useEffect(()=>{if(!complete||!completionHandler.current)return;const timer=setTimeout(()=>completionHandler.current?.(),reduceMotion?0:1200);return()=>clearTimeout(timer);},[complete,battleClockKey,reduceMotion]);
+ useEffect(()=>{if(!complete||!completionHandler.current)return;const timer=setTimeout(()=>completionHandler.current?.(),reduceMotion?0:500);return()=>clearTimeout(timer);},[complete,battleClockKey,replayKey,reduceMotion]);
  const recent=cues.slice(Math.max(0,cueIndex-5),cueIndex+1);
  const contributionRows=complete&&replay?(ordered.map(slot=>{const combatant=playbackCombatant(replay,slot.memberId??slot.name),value=(replay.contributions??[]).find(row=>row.id===combatant?.id);return value?{slot,value}:undefined;}).filter((row):row is {slot:Slot;value:Contribution}=>Boolean(row))):[];
  const actorDirection=actorIsParty===false?1:-1,targetDirection=targetIsParty===false?-1:1;

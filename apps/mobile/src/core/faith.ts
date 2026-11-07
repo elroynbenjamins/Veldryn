@@ -44,7 +44,8 @@ export function reserveFaithPractice(state:GameState,tierId:string,count:number,
 }
 export function settleFaithPractice(state:GameState,now:number,capSeconds:number):{state:GameState;reward:RewardBundle;refund:number}{
  const empty:RewardBundle={xp:0,gold:0,kills:0,items:[],elapsedSeconds:0,faithActions:0,faithXp:0,holyWaterConsumed:0};
- const normalized=normalizeFaith(state.character?.faith),skillXp=state.skills.find(s=>s.skillId==='faith')?.xp??0,faith={...normalized,xp:Math.max(normalized.xp,skillXp)},reservation=state.activity?.faithPractice,p=faith.practice??(reservation?{tierId:reservation.tierId,remaining:reservation.remainingPractices,lastClaimAtMs:reservation.lastClaimAtMs,progressMs:Math.floor(reservation.progressFraction*60000)}:undefined),tier=FAITH_TIERS.find(t=>t.id===p?.tierId);
+ const normalized=normalizeFaith(state.character?.faith),skillXp=state.skills.find(s=>s.skillId==='faith')?.xp??0,faith={...normalized,xp:Math.max(normalized.xp,skillXp)},reservation=state.activity?.faithPractice,reservationTier=FAITH_TIERS.find(t=>t.id===reservation?.tierId);
+ const p=faith.practice??(reservation&&reservationTier?{tierId:reservation.tierId,remaining:reservation.remainingPractices,lastClaimAtMs:reservation.lastClaimAtMs,progressMs:Math.floor(Math.max(0,Math.min(.999999,reservation.progressFraction))*reservationTier.seconds*1000)}:undefined),tier=FAITH_TIERS.find(t=>t.id===p?.tierId);
  if(!state.character||!p||!tier||now<p.lastClaimAtMs)return {state,reward:empty,refund:0};
  const elapsed=Math.min(capSeconds*1000,now-p.lastClaimAtMs),speed=mealSpeedFactor(state.character,'noncombat'),total=p.progressMs+elapsed*speed;
  const actions=Math.min(p.remaining,Math.floor(total/(tier.seconds*1000)),Math.ceil((MAX_XP-faith.xp)/tier.xp)),xp=Math.min(MAX_XP-faith.xp,actions*tier.xp);

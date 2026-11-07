@@ -2,6 +2,8 @@ import {SUPPORTED_LANGUAGES,type Language} from './languages';
 import {createTranslator} from './translator';
 
 export const eventRewardRows={
+ "Event earning has ended. Completed weekly rewards remain claimable.":["Event earning has ended. Completed weekly rewards remain claimable.","Die Event-Verdienstphase ist beendet. Abgeschlossene Wochenbelohnungen können noch abgeholt werden.","El periodo de obtención del evento ha terminado. Aún puedes reclamar las recompensas semanales completadas.","Het verdienen tijdens het evenement is voorbij. Voltooide weekbeloningen kun je nog claimen.","La fase di guadagno dell’evento è terminata. Puoi ancora riscattare le ricompense settimanali completate.","La période de gains de l’événement est terminée. Les récompenses hebdomadaires obtenues peuvent encore être récupérées."],
+
  "Additional event rewards":["Additional event rewards","Weitere Eventbelohnungen","Recompensas adicionales del evento","Extra evenementbeloningen","Ricompense evento aggiuntive","Récompenses supplémentaires"],
  "Claim completed discoveries and other earned event rewards here.":["Claim completed discoveries and other earned event rewards here.","Hole hier abgeschlossene Entdeckungen und andere verdiente Eventbelohnungen ab.","Reclama aquí los descubrimientos completados y otras recompensas ganadas.","Claim hier voltooide ontdekkingen en andere verdiende evenementbeloningen.","Riscatta qui le scoperte completate e le altre ricompense ottenute.","Récupérez ici les découvertes terminées et les autres récompenses gagnées."],
  "FOLKLORE DISCOVERIES":["FOLKLORE DISCOVERIES","SAGENENTDECKUNGEN","DESCUBRIMIENTOS DE FOLCLORE","FOLKLORE-ONTDEKKINGEN","SCOPERTE DEL FOLCLORE","DÉCOUVERTES DU FOLKLORE"],

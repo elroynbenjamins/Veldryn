@@ -65,7 +65,7 @@ export function GatheringActivityList({state,skillId,skillLevel,preferredActionI
       <ResourceArtwork itemId={IRONWOOD_T2_BINDING_RECIPE.output.itemId} size={24} framed={false}/>
       <View style={s.copy}>
        <Text numberOfLines={1} style={s.relatedCraftName}>{'T2 equipment'} · {itemDef(IRONWOOD_T2_BINDING_RECIPE.output.itemId).name}</Text>
-       <Text style={s.dropHint}>{gt('Alchemy Lv {level} · Crafted, not a Woodcutting drop',{level:IRONWOOD_T2_BINDING_RECIPE.level})}</Text>
+       <Text style={s.dropHint}>{`Alchemy Lv ${IRONWOOD_T2_BINDING_RECIPE.level} · Crafted, not a Woodcutting drop`}</Text>
       </View>
       {onNavigate?<Text style={s.chevron}>›</Text>:null}
      </Pressable>:null}

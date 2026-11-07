@@ -1,4 +1,5 @@
 import type {GameState} from '../../apps/mobile/src/core/types';
+import {rebasedCombatLevelFromLegacyLevel as rebaseLevel} from '../../apps/mobile/src/core/progression';
 import type {CombatantDefinition} from '../src/server/combat/types';
 import {regionalCombatCatalogEntryV1,resolveRegionalCombatV1,startRegionalCombatV1,SUNSCAR_REGIONAL_COMBAT_CATALOG_V1,type RegionalCombatReservationV1,type RegionalCombatStoreV1,type RegionalCombatStoredResultV1} from '../src/server/combat/regional-combat-runtime-v1';
 import {deriveOnlineCoopLoadout} from './coop-loadout';
@@ -39,7 +40,7 @@ export class OnlineRegionalCombatRuntimeV1{
   if(game.state.character.id!==request.characterId)throw new GameplayError('character_not_owned',403);
   const loadout=deriveOnlineCoopLoadout(accountId,game.state,game.version);
   if(!loadout.legalEquipment)throw new GameplayError('illegal_equipment');
-  const access=await this.services.rpc<AccessResult>('regional_combat_access_server_v1',{p_account_id:accountId,p_character_id:request.characterId,p_zone_id:encounter.zoneId,p_content_id:encounter.contentId,p_required_level:encounter.level});
+  const access=await this.services.rpc<AccessResult>('regional_combat_access_server_v1',{p_account_id:accountId,p_character_id:request.characterId,p_zone_id:encounter.zoneId,p_content_id:encounter.contentId,p_required_level:rebaseLevel(encounter.level)});
   if(!access.allowed)throw new GameplayError(access.reason??'regional_encounter_locked',403);
   const role=deriveRole(loadout.classId),snapshot={...loadout.stats,role};
   const store=new RpcRegionalCombatStore(this.services,accountId);

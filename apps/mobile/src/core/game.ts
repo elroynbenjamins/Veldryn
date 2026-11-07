@@ -766,7 +766,7 @@ function queuedReservationEnd(state:GameState):number|undefined{
  if(activity.kind==='faith'){
   const practice=normalizeFaith(state.character?.faith).practice,reservation=activity.faithPractice,tier=FAITH_TIERS.find(row=>row.id===(practice?.tierId??reservation?.tierId));
   if(!tier)return undefined;
-  const remaining=practice?.remaining??reservation?.remainingPractices??0,progress=practice?.progressMs??Math.floor((reservation?.progressFraction??0)*60000);
+  const remaining=practice?.remaining??reservation?.remainingPractices??0,progress=practice?.progressMs??Math.floor((reservation?.progressFraction??0)*tier.seconds*1000);
   const xp=Math.max(state.character?.faith?.xp??0,state.skills.find(row=>row.skillId==='faith')?.xp??0),toMastery=Math.ceil(Math.max(0,totalXpAtLevel(100)-xp)/tier.xp);
   return (practice?.lastClaimAtMs??reservation?.lastClaimAtMs??activity.lastClaimAtMs)+Math.max(0,Math.min(remaining,toMastery)*tier.seconds*1000-progress);
  }
@@ -850,7 +850,7 @@ function claimActivitySegmentRaw(state:GameState,nowMs:number){
       (state.skills.find(x=>x.skillId==='faith')?.xp??0)+(reward.faithXp??0),
     ));
     const skills=state.skills.map(x=>x.skillId==='faith'?{...x,xp:faithXp,level:levelFromXp(faithXp)}:x);
-    const nextBase={...settled.state,...routed,skills,character:{...settled.state.character!,faith:{...faith,xp:faithXp}},activity:faith?.practice?{...state.activity,lastClaimAtMs:nowMs}:null} as GameState;
+    const nextBase={...settled.state,...routed,skills,character:{...settled.state.character!,faith:{...faith,xp:faithXp}},activity:faith.practice?settled.state.activity:null} as GameState;
     const next=commitDailySupplyTimedBoost(nextBase,boost),reconciled=reconcileCombatCompanionUnlocks(next,nowMs);
     const queuedState=!faith.practice&&(source.queueManaged||state.character?.activityQueue?.length)?startFinishedQueuedActivity(reconciled,nowMs):reconciled;
     return {state:queuedState,reward:withCompanionUnlocks(reward,state,queuedState)};

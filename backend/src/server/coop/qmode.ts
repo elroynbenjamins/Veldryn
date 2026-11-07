@@ -56,8 +56,11 @@ export class QModeService{
   const selected=run.graph.nodes.find(node=>node.nodeId===input.optionNodeId);if(!selected)throw new Error('invalid_option');
   const offers=roomBoonOffers(run,this.serverSecret);
   if(offers.length){
-   if(!input.boonId||!offers.some(offer=>offer.id===input.boonId))throw new Error('invalid_boon_choice');
-   applyRoomBoon(run,input.boonId as RoomBoonId);
+   // Older supported clients cannot submit a boon choice yet. Choose the
+   // first deterministic offer for them instead of blocking existing runs.
+   const selectedBoon=input.boonId??offers[0].id;
+   if(!offers.some(offer=>offer.id===selectedBoon))throw new Error('invalid_boon_choice');
+   applyRoomBoon(run,selectedBoon as RoomBoonId);
   }else if(input.boonId)throw new Error('invalid_boon_choice');
   const isCombat=selected.kind==='battle'||selected.kind==='elite'||selected.kind==='boss';
   const result=resolveCoopNode({runId:run.id,serverSecret:this.serverSecret,node:selected,players:isCombat?preparedCoopCombatants(run.players,run.persistentState.preparedAlchemyPotionIdsByActor):run.players,state:run.persistentState,tier:run.tierScalingVersion===2?run.tier:undefined,enemyAttackMultiplier:run.qmodePressureVersion===1?1.005:undefined,enemyDamageProfile:run.qmodePressureVersion===1?'qmode-v1':undefined,safetyAiPlayerIds:input.safetyAiPlayerIds});

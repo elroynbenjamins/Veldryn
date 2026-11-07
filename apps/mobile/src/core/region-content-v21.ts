@@ -1,3 +1,4 @@
+import {regionAreas} from '../content/regional-areas';
 export interface RegionZoneCardV21{id:string;name:string;levelRange:string;locked:boolean;identity:string;activities:readonly string[];hazards:readonly string[];}
 export interface RegionProgressV21{storyCompleted:number;storyTotal:number;sideQuestsCompleted:number;sideQuestsTotal:number;echoesCompleted:number;echoesTotal:number;dungeonsCompleted:number;dungeonsTotal:number;collectionEntries:number;collectionTotal:number;bossMasteryTier:number;bossMasteryMax:number;}
 export interface RegionWeatherV21{name:string;endsInSeconds:number;summary:string;}
@@ -7,20 +8,21 @@ export function isValidRegionProgressV21(p:RegionProgressV21):boolean{
   return p.storyTotal>0&&p.sideQuestsTotal>0&&p.echoesTotal>0&&p.dungeonsTotal>0&&p.collectionTotal>0&&p.bossMasteryMax>0&&p.storyCompleted<=p.storyTotal&&p.sideQuestsCompleted<=p.sideQuestsTotal&&p.echoesCompleted<=p.echoesTotal&&p.dungeonsCompleted<=p.dungeonsTotal&&p.collectionEntries<=p.collectionTotal&&p.bossMasteryTier<=p.bossMasteryMax;
 }
 export interface RegionDungeonCardV21{id:string;name:string;minLevel:number;locked:boolean;modeAvailability:'live_and_q';}
-export const FROSTMARCH_ZONE_DEFINITIONS_V21:readonly Omit<RegionZoneCardV21,'locked'>[]=[
- {id:'ZONE_011',name:'Thawgate',levelRange:'Lv 45–50',identity:'Fortified northern gate and last dependable shelter.',activities:['Frostiron'],hazards:['black ice']},
- {id:'ZONE_012',name:'Whitepine Reach',levelRange:'Lv 48–56',identity:'Snow forest of false trails and frozen treants.',activities:['Whitepine Log','Rime Resin'],hazards:['whiteout trails']},
- {id:'ZONE_013',name:'Shiverlake',levelRange:'Lv 52–60',identity:'Frozen lake with under-ice ruins and resonant fish.',activities:['Icefin','Bellfin Scale'],hazards:['thin ice']},
- {id:'ZONE_014',name:'Choir Caverns',levelRange:'Lv 57–67',identity:'Singing ice caves where casts must be interrupted in order.',activities:['Rimeglass','Choir Bloom'],hazards:['resonance stacks']},
- {id:'ZONE_015',name:'Wyrmspine',levelRange:'Lv 62–70',identity:'High mountain lair of the Frost Wyrm.',activities:['Wyrm Scale','Frozen Heart'],hazards:['breath lines','ice prison']},
-];
+/** Region journal IDs remain REG_003 and BOSS_003. ZONE_014 is not removed from
+ * historic server progress; Choir Caverns remains COP_009 rather than a fifth
+ * open-world area. */
+export const FROSTMARCH_ZONE_DEFINITIONS_V21:readonly Omit<RegionZoneCardV21,'locked'>[]=
+  regionAreas('FROSTMARCH').map(area=>({
+    id:area.id,name:area.name,levelRange:'Lv '+area.minLevel+'–'+area.maxLevel,
+    identity:area.identity,activities:area.activities,hazards:area.hazards,
+  }));
 export const FROSTMARCH_DUNGEON_DEFINITIONS_V21:readonly Omit<RegionDungeonCardV21,'locked'>[]=[
  {id:'COP_007',name:'Whitepine Hunt',minLevel:52,modeAvailability:'live_and_q'},
  {id:'COP_008',name:'Shiverlake Descent',minLevel:58,modeAvailability:'live_and_q'},
  {id:'COP_009',name:'Choir Caverns',minLevel:64,modeAvailability:'live_and_q'},
 ];
 export function frostmarchCardsV21(level:number){const safeLevel=Number.isFinite(level)?level:0;return {zones:FROSTMARCH_ZONE_DEFINITIONS_V21.map(zone=>({...zone,locked:safeLevel<Number(zone.levelRange.match(/\d+/)?.[0]??45)})),dungeons:FROSTMARCH_DUNGEON_DEFINITIONS_V21.map(dungeon=>({...dungeon,locked:safeLevel<dungeon.minLevel}))};}
-export function validateFrostmarchCardsV21():string[]{const errors:string[]=[];if(FROSTMARCH_ZONE_DEFINITIONS_V21.length!==5)errors.push('zones');if(FROSTMARCH_DUNGEON_DEFINITIONS_V21.map(v=>v.id).join(',')!=='COP_007,COP_008,COP_009')errors.push('dungeons');if(new Set(FROSTMARCH_ZONE_DEFINITIONS_V21.map(v=>v.id)).size!==FROSTMARCH_ZONE_DEFINITIONS_V21.length)errors.push('duplicate_zone_ids');if(new Set(FROSTMARCH_DUNGEON_DEFINITIONS_V21.map(v=>v.id)).size!==FROSTMARCH_DUNGEON_DEFINITIONS_V21.length)errors.push('duplicate_dungeon_ids');for(const zone of FROSTMARCH_ZONE_DEFINITIONS_V21){if(zone.hazards.length===0||zone.activities.length===0)errors.push(`${zone.id}:metadata`);if(!/^Lv \d+[–-]\d+$/.test(zone.levelRange))errors.push(`${zone.id}:level_range`);}for(const dungeon of FROSTMARCH_DUNGEON_DEFINITIONS_V21){if(!Number.isSafeInteger(dungeon.minLevel)||dungeon.minLevel<1)errors.push(`${dungeon.id}:min_level`);}return errors;}
+export function validateFrostmarchCardsV21():string[]{const errors:string[]=[];if(FROSTMARCH_ZONE_DEFINITIONS_V21.length!==4)errors.push('zones');if(FROSTMARCH_DUNGEON_DEFINITIONS_V21.map(v=>v.id).join(',')!=='COP_007,COP_008,COP_009')errors.push('dungeons');if(new Set(FROSTMARCH_ZONE_DEFINITIONS_V21.map(v=>v.id)).size!==FROSTMARCH_ZONE_DEFINITIONS_V21.length)errors.push('duplicate_zone_ids');if(new Set(FROSTMARCH_DUNGEON_DEFINITIONS_V21.map(v=>v.id)).size!==FROSTMARCH_DUNGEON_DEFINITIONS_V21.length)errors.push('duplicate_dungeon_ids');for(const zone of FROSTMARCH_ZONE_DEFINITIONS_V21){if(zone.hazards.length===0||zone.activities.length===0)errors.push(`${zone.id}:metadata`);if(!/^Lv \d+[–-]\d+$/.test(zone.levelRange))errors.push(`${zone.id}:level_range`);}for(const dungeon of FROSTMARCH_DUNGEON_DEFINITIONS_V21){if(!Number.isSafeInteger(dungeon.minLevel)||dungeon.minLevel<1)errors.push(`${dungeon.id}:min_level`);}return errors;}
 export function frostmarchProgressFromState(state:Pick<GameState,'regionalProgressById'|'unlockedMonsterIds'|'defeatedBossIds'>):RegionProgressV21{
  const source=state.regionalProgressById?.REG_003??{};
  const bounded=(value:unknown,max:number)=>{const n=Number(value??0);return Number.isFinite(n)?Math.min(max,Math.max(0,Math.floor(n))):0;};

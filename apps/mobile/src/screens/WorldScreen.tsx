@@ -6,6 +6,7 @@ import {TutorialBeacon} from '../components/TutorialBeacon';
 import {Pressable,ScrollView,StyleSheet,Text,View} from 'react-native';
 import type {GameState} from '../core/types';
 import {WORLD_ZONES} from '../content/world-map';
+import {regionAreas} from '../content/regional-areas';
 import {currentRegionId} from '../core/combat-region';
 import {orderedTravelRegions,regionActivitySummary,regionTravelAvailability,regionTravelLockReason} from '../core/world-navigation';
 import {GameButton} from '../components/GameButton';
@@ -24,7 +25,7 @@ type Props={
   state:GameState;
   onTravel:(regionId:string)=>void;
   onOpenCombat:(zoneId?:string)=>void;
-  onOpenSkills:()=>void;
+  onOpenSkills:(areaId?:string)=>void;
   onCoop?:(dungeonId?:string)=>void;
   dungeonContent?:ReactNode;
   dungeonFlowActive?:boolean;
@@ -58,13 +59,10 @@ export function WorldScreen({state,onTravel,onOpenCombat,onOpenSkills,onCoop,dun
     void Promise.all([loadFrostmarchProgressV21(),loadActiveFrostmarchContentVersionV21()]).then(([progress,version])=>{if(mounted){setServerFrostmarchProgress(version?.startsWith('frostmarch-v21.')?progress:null);setActiveFrostmarchVersion(version);}}).catch(()=>{if(mounted){setServerFrostmarchProgress(null);setActiveFrostmarchVersion(null);}});
     return ()=>{mounted=false;};
   },[frostmarch]);
-  const sunscarZones=[
-    {id:'ZONE_006',name:'Saffron Gate',levelRange:'Lv 26–29',locked:level<26,identity:t("Caravan gate, spice roads and the first desert settlements."),activities:[t("Patrol combat"),'Dunewood',t("regional contracts")]},
-    {id:'ZONE_007',name:'Scorchwind Flats',levelRange:'Lv 30–35',locked:level<30,identity:t("Open glass-sand flats where exposure and heat alter fights."),activities:['Sunspine Elite','Sunstone Ore','Charbark']},
-    {id:'ZONE_008',name:'Mirage Basin',levelRange:'Lv 32–38',locked:level<32,identity:t("Oasis basin where false targets and reflected memories distort combat."),activities:['Mirage Elite',t("Fishing"),t("Herbalism")]},
-    {id:'ZONE_009',name:'Buried Observatory',levelRange:'Lv 37–43',locked:level<37,identity:t("Ancient star machinery beneath the desert, rich in lenses and astral script."),activities:['Observatory Elite','Astral Survey','Amberglass']},
-    {id:'ZONE_010',name:"Tyrant's Crown",levelRange:'Lv 42–45',locked:level<42,identity:t("Royal ruins and sand-pillars surrounding the Sand Tyrant."),activities:['Sand Tyrant','Royal Chitin',t("regional mastery")]},
-  ] as const;
+  const sunscarZones=regionAreas('SUNSCAR').map(area=>({
+    id:area.id,name:area.name,levelRange:'Lv '+area.minLevel+'–'+area.maxLevel,
+    locked:level<area.minLevel,identity:p(area.identity),activities:area.activities.map(p),
+  }));
   const frostmarchCards=frostmarchCardsV21(level),frostmarchZones=frostmarchCards.zones,frostmarchDungeons=frostmarchCards.dungeons;
   const frostmarchProgress=serverFrostmarchProgress??frostmarchProgressFromState(state);
   // Dungeons have their own scrolling and heading; don't nest them in Regions.
@@ -100,9 +98,9 @@ export function WorldScreen({state,onTravel,onOpenCombat,onOpenSkills,onCoop,dun
     {goalTargetRegion&&goalTargetRegion.id!==current.id?<View style={s.goalRoute}><Text style={s.goalRouteLabel}>{t("OBJECTIVE ROUTE")} · {goalTargetRegion.name}</Text><Text style={s.goalRouteHint}>{t("Your current objective continues in {region}. That region is promoted to the top of Travel Elsewhere below.",{region:goalTargetRegion.name})}</Text></View>:null}
 
     {storyRegion&&<RegionalStoryLeadsPanel state={state} regionId={storyRegion} onOpenCombat={()=>onOpenCombat()}/>}
-    {sunscar&&<><SunscarRegionPanel zones={sunscarZones} onZone={zoneId=>onOpenCombat(zoneId)}/>{onRegionalRewardsChanged?<RegionalCombatPanel state={state} onRewardsChanged={onRegionalRewardsChanged}/>:null}</>}
+    {sunscar&&<><SunscarRegionPanel zones={sunscarZones} onZone={areaId=>onOpenCombat(areaId)} onGather={areaId=>onOpenSkills(areaId)}/>{onRegionalRewardsChanged?<RegionalCombatPanel state={state} onRewardsChanged={onRegionalRewardsChanged}/>:null}</>}
     {frostmarch&&<>
-      <FrostmarchRegionPanel zones={frostmarchZones} progress={frostmarchProgress} contentVersion={activeFrostmarchVersion??undefined} dungeons={frostmarchDungeons} onZone={zoneId=>onOpenCombat(zoneId)} onDungeon={onCoop}/>
+      <FrostmarchRegionPanel zones={frostmarchZones} progress={frostmarchProgress} contentVersion={activeFrostmarchVersion??undefined} dungeons={frostmarchDungeons} onZone={areaId=>onOpenCombat(areaId)} onGather={areaId=>onOpenSkills(areaId)} onDungeon={onCoop}/>
       <RegionalJournalPanel name="Frostmarch" progress={frostmarchProgress}/>
     </>}
     </>}

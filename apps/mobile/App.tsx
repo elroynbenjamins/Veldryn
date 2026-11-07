@@ -238,16 +238,22 @@ function VeldrynApp(){
   const [mainScreenTourIndex,setMainScreenTourIndex]=useState<number|undefined>();
   const stateRef=useRef<GameState|null>(null);
   const previousInventoryTab=useRef<Tab>(tab);
+  const inventorySeenAfterExit=useRef<string|null>(null);
   useEffect(()=>{
     const previous=previousInventoryTab.current;
     previousInventoryTab.current=tab;
     const current=stateRef.current;
-    if(!current||!shouldAcknowledgeInventoryOnExit(previous,tab,current))return;
-    // The player has seen this visit's items. Keep them tagged until navigation
-    // finishes, then persist the same acknowledgement used by "Mark all seen".
+    const scope=current?.character?`${current.createdAtMs}:${current.character.id}`:null;
+    // Wait for an in-flight online action before acknowledging this Inventory visit.
+    // Never let an acknowledgement spill into another character's inventory.
+    if(previous==='Inventory'&&tab!=='Inventory')inventorySeenAfterExit.current=scope;
+    if(!scope||inventorySeenAfterExit.current!==scope){inventorySeenAfterExit.current=null;return;}
+    if(tab==='Inventory'||serverGameplayEnabled&&(online.busy||online.pending))return;
+    inventorySeenAfterExit.current=null;
+    if(!current||!shouldAcknowledgeInventoryOnExit('Inventory',tab,current))return;
     if(serverGameplayEnabled){void perform({type:'inventory_seen_all'},false);return;}
     void commit(acknowledgeAllInventoryItems(current));
-  },[tab]);
+  },[tab,online.busy,online.pending,state?.character?.id]);
   const languageRef=useRef<Language>(recoveryLanguage);
   languageRef.current=state?.settings.language??recoveryLanguage;
   function showAlert(...[title,message,buttons,options]:Parameters<typeof gameAlert.alert>){

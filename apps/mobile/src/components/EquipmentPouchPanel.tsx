@@ -3,6 +3,7 @@ import {Pressable,ScrollView,StyleSheet,Text,View} from 'react-native';
 import type {GameState,ItemStack} from '../core/types';
 import type {GameCommand} from '../core/game-commands';
 import {equipmentPouch,equipmentPouchUpgradePreview} from '../core/equipment-pouch';
+import {equipmentSalvageReward} from '../core/equipment-salvage';
 import {equipmentPouchSaleCandidates,equipmentPouchQuickSellIds,equipmentPouchSalvageCandidates,equipmentPouchQuickSalvageIds,type EquipmentPouchSaleCandidate} from '../core/equipment-pouch-selling';
 import {craftedGearDisplayQuality,craftedGearInstances} from '../core/crafted-gear-instances';
 import {itemDef} from '../content/items';
@@ -111,6 +112,7 @@ export function EquipmentPouchPanel({state,busy=false,onAction}:{state:GameState
  const selected=selectedIndex===null?undefined:pouch.stacks[selectedIndex];
  const record=selected?.instanceId?copyById.get(selected.instanceId):undefined;
  const item=selected?itemDef(selected.itemId):undefined;
+ const salvageRecipe=item?equipmentSalvageReward(item.id):null;
  const rarity=selected?rarityMeta(record?.rarity??itemRarity(item!)):undefined;
  const canUpgrade=!!upgrade&&(state.character?.level??0)>=upgrade.level&&(state.character?.gold??0)>=upgrade.cost&&!busy;
  const send=(command:GameCommand)=>{setSelectedIndex(null);return onAction?.(command);};
@@ -216,7 +218,7 @@ export function EquipmentPouchPanel({state,busy=false,onAction}:{state:GameState
      {record?<GameButton compact tone="secondary" title={p(record.locked?'Unlock':'Lock')} disabled={!onAction||busy} onPress={()=>send({type:'gear_lock',args:{instanceId:record.id,locked:!record.locked}})}/>:<GameButton compact tone="secondary" title={p(state.settings.lockedItemIds?.includes(item.id)?'Unlock':'Lock')} disabled={!onAction||busy} onPress={()=>send({type:'inventory_preference',args:{id:item.id,kind:'lock',enabled:!state.settings.lockedItemIds?.includes(item.id)}})}/>}
      <GameButton compact tone="secondary" title={p(state.settings.favoriteItemIds?.includes(item.id)?'Remove favorite':'Favorite')} disabled={!onAction||busy} onPress={()=>send({type:'inventory_preference',args:{id:item.id,kind:'favorite',enabled:!state.settings.favoriteItemIds?.includes(item.id)}})}/>
      <GameButton compact tone="danger" title={saleCandidate?.eligible?p('Sell · {gold}g',{gold:saleCandidate.gold.toLocaleString(language)}):record?.locked||state.settings.lockedItemIds?.includes(item.id)?p('Unlock to sell'):p('Protected')} disabled={!onAction||busy||!saleCandidate?.eligible} onPress={()=>{if(saleCandidate)startSale([saleCandidate.id])}}/>
-     {item.salvage?<GameButton compact tone="secondary" title={salvageCandidate?.eligible?p('Salvage · {count}× {name}',{count:item.salvage.quantity,name:localizedItemName(language,item.salvage.itemId)}):p('Protected')} disabled={!onAction||busy||!salvageCandidate?.eligible} onPress={()=>{if(salvageCandidate)startSalvage([salvageCandidate.id])}}/>:null}
+     {salvageRecipe?<GameButton compact tone="secondary" title={salvageCandidate?.eligible?p('Salvage · {count}× {name}',{count:salvageRecipe.quantity,name:localizedItemName(language,salvageRecipe.itemId)}):p('Protected')} disabled={!onAction||busy||!salvageCandidate?.eligible} onPress={()=>{if(salvageCandidate)startSalvage([salvageCandidate.id])}}/>:null}
     </View>
     <Text style={s.meta}>{p(saleCandidate?.eligible?'Selling this copy adds Gold to this character.':saleCandidate?.reason??'This equipment is protected.')} {p('Enhanced, socketed and loadout gear cannot be sold.')}</Text>
    </ScrollView>:null}

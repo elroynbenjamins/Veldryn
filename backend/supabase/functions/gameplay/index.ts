@@ -212,7 +212,8 @@ function reserveFaithPractice(state, tierId, count, now) {
 }
 function settleFaithPractice(state, now, capSeconds) {
   const empty2 = { xp: 0, gold: 0, kills: 0, items: [], elapsedSeconds: 0, faithActions: 0, faithXp: 0, holyWaterConsumed: 0 };
-  const normalized = normalizeFaith(state.character?.faith), skillXp = state.skills.find((s) => s.skillId === "faith")?.xp ?? 0, faith = { ...normalized, xp: Math.max(normalized.xp, skillXp) }, reservation = state.activity?.faithPractice, p = faith.practice ?? (reservation ? { tierId: reservation.tierId, remaining: reservation.remainingPractices, lastClaimAtMs: reservation.lastClaimAtMs, progressMs: Math.floor(reservation.progressFraction * 6e4) } : void 0), tier = FAITH_TIERS.find((t) => t.id === p?.tierId);
+  const normalized = normalizeFaith(state.character?.faith), skillXp = state.skills.find((s) => s.skillId === "faith")?.xp ?? 0, faith = { ...normalized, xp: Math.max(normalized.xp, skillXp) }, reservation = state.activity?.faithPractice, reservationTier = FAITH_TIERS.find((t) => t.id === reservation?.tierId);
+  const p = faith.practice ?? (reservation && reservationTier ? { tierId: reservation.tierId, remaining: reservation.remainingPractices, lastClaimAtMs: reservation.lastClaimAtMs, progressMs: Math.floor(Math.max(0, Math.min(0.999999, reservation.progressFraction)) * reservationTier.seconds * 1e3) } : void 0), tier = FAITH_TIERS.find((t) => t.id === p?.tierId);
   if (!state.character || !p || !tier || now < p.lastClaimAtMs) return { state, reward: empty2, refund: 0 };
   const elapsed = Math.min(capSeconds * 1e3, now - p.lastClaimAtMs), speed = mealSpeedFactor(state.character, "noncombat"), total = p.progressMs + elapsed * speed;
   const actions = Math.min(p.remaining, Math.floor(total / (tier.seconds * 1e3)), Math.ceil((MAX_XP - faith.xp) / tier.xp)), xp = Math.min(MAX_XP - faith.xp, actions * tier.xp);
@@ -52287,7 +52288,7 @@ function queuedReservationEnd(state) {
   if (activity.kind === "faith") {
     const practice = normalizeFaith(state.character?.faith).practice, reservation = activity.faithPractice, tier = FAITH_TIERS.find((row) => row.id === (practice?.tierId ?? reservation?.tierId));
     if (!tier) return void 0;
-    const remaining = practice?.remaining ?? reservation?.remainingPractices ?? 0, progress = practice?.progressMs ?? Math.floor((reservation?.progressFraction ?? 0) * 6e4);
+    const remaining = practice?.remaining ?? reservation?.remainingPractices ?? 0, progress = practice?.progressMs ?? Math.floor((reservation?.progressFraction ?? 0) * tier.seconds * 1e3);
     const xp = Math.max(state.character?.faith?.xp ?? 0, state.skills.find((row) => row.skillId === "faith")?.xp ?? 0), toMastery = Math.ceil(Math.max(0, totalXpAtLevel(100) - xp) / tier.xp);
     return (practice?.lastClaimAtMs ?? reservation?.lastClaimAtMs ?? activity.lastClaimAtMs) + Math.max(0, Math.min(remaining, toMastery) * tier.seconds * 1e3 - progress);
   }
@@ -52363,7 +52364,7 @@ function claimActivitySegmentRaw(state, nowMs) {
       (state.skills.find((x) => x.skillId === "faith")?.xp ?? 0) + (reward3.faithXp ?? 0)
     ));
     const skills2 = state.skills.map((x) => x.skillId === "faith" ? { ...x, xp: faithXp, level: levelFromXp(faithXp) } : x);
-    const nextBase2 = { ...settled.state, ...routed2, skills: skills2, character: { ...settled.state.character, faith: { ...faith, xp: faithXp } }, activity: faith?.practice ? { ...state.activity, lastClaimAtMs: nowMs } : null };
+    const nextBase2 = { ...settled.state, ...routed2, skills: skills2, character: { ...settled.state.character, faith: { ...faith, xp: faithXp } }, activity: faith.practice ? settled.state.activity : null };
     const next2 = commitDailySupplyTimedBoost(nextBase2, boost), reconciled = reconcileCombatCompanionUnlocks(next2, nowMs);
     const queuedState2 = !faith.practice && (source.queueManaged || state.character?.activityQueue?.length) ? startFinishedQueuedActivity(reconciled, nowMs) : reconciled;
     return { state: queuedState2, reward: withCompanionUnlocks(reward3, state, queuedState2) };

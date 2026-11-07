@@ -2,6 +2,9 @@ import type {SocialMessageKey} from './social';
 
 /** Player-facing Russian/Turkish Social, Guild and Dungeon copy. Unknown keys retain English fallback. */
 export const socialEarlyRows={
+  "Choose a boon": ["Выберите благословение","Bir lütuf seç"],
+  "Select one reward before entering the next room.": ["Выберите одну награду перед переходом в следующую комнату.","Sonraki odaya geçmeden önce bir ödül seç."],
+  "Choose your boon above to continue.": ["Для продолжения выберите благословение выше.","Devam etmek için yukarıdan bir lütuf seç."],
   "Continue dungeon": ["Продолжить подземелье","Zindana devam et"],
   "Opening exchange": ["Начало боя","Çatışma başlangıcı"],
   "Your week": [

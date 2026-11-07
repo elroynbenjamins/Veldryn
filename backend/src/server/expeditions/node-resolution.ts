@@ -74,7 +74,17 @@ export function resolveCoopNode(input:{runId:string;serverSecret:string;node:Coo
  let state={...input.state,visitedNodeIds:[...input.state.visitedNodeIds,input.node.nodeId]};
  if(COMBAT_KINDS.has(input.node.kind)){
   const rootbound=input.node.contentId.startsWith('ROOT')||input.node.contentId==='BOSS_EXP_ROOT',balance=input.rootboundBalance??ROOTBOUND_COOP_BALANCE_V2;
-  const players=input.players.map(player=>{const multipliers=COOP_CLASS_ABILITY_MULTIPLIERS[player.classId?.toUpperCase()??''];if(!multipliers)return player;return{...player,abilities:player.abilities.map(ability=>{const multiplier=multipliers[ability.id];return multiplier?{...ability,effects:ability.effects.map(effect=>(effect.kind==='shield'||effect.kind==='heal')&&effect.coeff!==undefined?{...effect,coeff:effect.coeff*multiplier}:effect)}:ability;})};});
+  // Selected room boons modify the server combatants, not a cosmetic label.
+  // Frozen loadouts remain unchanged; bonuses are reapplied per encounter.
+  const strikes=state.boons.filter(id=>id==='ROOM_BOON_STRIKE').length;
+  const wards=state.boons.filter(id=>id==='ROOM_BOON_WARD').length;
+  const players=input.players.map(player=>{
+   const multipliers=COOP_CLASS_ABILITY_MULTIPLIERS[player.classId?.toUpperCase()??''];
+   return {...player,
+    stats:strikes||wards?{...player.stats,attackPower:player.stats.attackPower*(1+strikes*.05),defense:player.stats.defense*(1+wards*.05)}:player.stats,
+    abilities:multipliers?player.abilities.map(ability=>{const multiplier=multipliers[ability.id];return multiplier?{...ability,effects:ability.effects.map(effect=>(effect.kind==='shield'||effect.kind==='heal')&&effect.coeff!==undefined?{...effect,coeff:effect.coeff*multiplier}:effect)}:ability;}):player.abilities,
+   };
+  });
   const depthMultiplier=input.node.depth>=balance.lateDepthStart?balance.lateDepthAttackMultiplier:1;
   const tierScale=input.tier?coopTierEnemyMultipliers(input.tier):{attack:1,hp:1,defense:1};
   const combat=resolveExpeditionCombat({runId:input.runId,nodeIndex:input.node.depth,encounterId:input.node.contentId,serverSeed:input.serverSecret,players,initialPlayerState:state.actors,safetyAiPlayerIds:input.safetyAiPlayerIds,enemyAttackMultiplier:(rootbound?balance.enemyAttackMultiplier*depthMultiplier:1)*tierScale.attack*(input.enemyAttackMultiplier??1),enemyHpMultiplier:tierScale.hp*(input.enemyHpMultiplier??1),enemyDefenseMultiplier:tierScale.defense*(input.enemyDefenseMultiplier??1),enemyDamageProfile:input.enemyDamageProfile,enemyLevel:input.enemyLevel,bossTuning:input.bossTuning});
@@ -85,7 +95,7 @@ export function resolveCoopNode(input:{runId:string;serverSecret:string;node:Coo
  const roll=deterministicInt(input.serverSecret,1,999,'node-resolution-v1',input.runId,input.node.nodeId,input.node.contentId);
  switch(input.node.kind){
   case 'camp': state=healAtCamp(state,input.players); break;
-  case 'shrine': case 'forge': case 'echo': state={...state,boons:[...state.boons,`${input.node.contentId}:${roll}`]}; break;
+  case 'shrine': case 'forge': case 'echo': if(input.enemyDamageProfile!=='qmode-v1')state={...state,boons:[...state.boons,`${input.node.contentId}:${roll}`]}; break;
   case 'treasure': case 'secret': state={...state,artifacts:[...state.artifacts,`${input.node.contentId}:${roll}`]}; break;
   case 'risk': state={...state,curses:[...state.curses,`${input.node.contentId}:${roll}`],resources:state.resources+2}; break;
   case 'event': state={...state,resources:state.resources+1}; break;

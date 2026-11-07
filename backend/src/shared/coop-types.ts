@@ -75,6 +75,8 @@ export interface CoopDecisionCommand {
   decisionId:string;
   decisionRevision:number;
   optionId:string;
+  /** Optional Q-Mode-only room reward selected before committing the next route. */
+  boonId?:string;
 }
 
 export interface CoopReadyCommand {

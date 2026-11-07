@@ -82,6 +82,11 @@ export function simulateCombat(input: CombatInput): CombatResult {
   const maxMs=input.maxDurationMs ?? 180_000; const tick=input.tickMs ?? 100; const mitigationConstant=input.mitigationConstant ?? 1200; const accuracyScale=input.accuracyScale ?? 1400;
   const players=input.players.map(def=>init(def,input.initialPlayerState?.[def.id])), enemies=input.enemies.map(def=>init(def)), all=[...players,...enemies];
   const rng=new CombatRng(input.seed); const events:CombatEvent[]=[{atMs:0,type:'combat_start'}];
+  // Stable priority and phase ordering are immutable within one fight.
+  // Build them once rather than sorting at every 100ms simulation tick.
+  const abilitiesByActor=new Map(all.map(actor=>[actor,[...actor.definition.abilities].sort((a,b)=>b.priority-a.priority)] as const));
+  const bosses=enemies.filter(actor=>actor.definition.boss);
+  const phasesByBoss=new Map(bosses.map(boss=>[boss,[...(boss.definition.phases??[])].sort((a,b)=>b.hpPct-a.hpPct)] as const));
 
   let lastGemStateKey='[]';
   const visibleGemStates=(now:number):CombatGemStateSnapshot[]=>{
@@ -174,8 +179,9 @@ export function simulateCombat(input: CombatInput): CombatResult {
     if(!living(players).length){events.push({atMs:now,type:'combat_end',detail:'wipe'});return{victory:false,durationMs:now,reason:'wipe',events,players,enemies};}
 
     // Generic HP-threshold boss phases. Data declares the phase; engine applies it once.
-    for(const boss of living(enemies).filter(x=>x.definition.boss)){
-      for(const phase of (boss.definition.phases||[]).sort((a,b)=>b.hpPct-a.hpPct)){
+    for(const boss of bosses){
+      if(!boss.alive)continue;
+      for(const phase of phasesByBoss.get(boss)??[]){
         if(hpPct(boss)<=phase.hpPct && !boss.triggeredPhases.includes(phase.id)){
           boss.triggeredPhases.push(phase.id); events.push({atMs:now,type:'phase',actorId:boss.definition.id,abilityId:phase.id,detail:`hp<=${phase.hpPct}`});gemOnBossPhaseV1(now,players);emitGemState(now);
           for(const fx of phase.effects){ for(const t of targetsFor(phase.target,boss,enemies,players,rng,`${now}:${phase.id}:phase`)) applyEffect(now,boss,t,fx,phase.id); }
@@ -186,8 +192,7 @@ export function simulateCombat(input: CombatInput): CombatResult {
     for(const actor of all){ if(!actor.alive)continue; const allies=actor.definition.team==='players'?players:enemies, foes=actor.definition.team==='players'?enemies:players;
       if(actor.casting && actor.casting.completesAt<=now){ const ab=actor.definition.abilities.find(a=>a.id===actor.casting!.abilityId); const target=all.find(x=>x.definition.id===actor.casting!.targetId); actor.casting=undefined; if(ab&&target?.alive){events.push({atMs:now,type:'cast_complete',actorId:actor.definition.id,targetId:target.definition.id,abilityId:ab.id});gemOnAbilityUsedV1(now,actor,ab);emitGemState(now); for(const fx of ab.effects){ for(const t of targetsFor(ab.target,actor,allies,foes,rng,`${now}:${ab.id}:target`))applyEffect(now,actor,t,fx,ab.id); }} }
       if(actor.casting)continue;
-      const ready=actor.definition.abilities.filter(a=>(actor.cooldownReadyAt[a.id]??0)<=now&&conditionOk(a,actor,allies,foes)).sort((a,b)=>b.priority-a.priority);
-      const ab=ready[0];
+      const ab=abilitiesByActor.get(actor)?.find(a=>(actor.cooldownReadyAt[a.id]??0)<=now&&conditionOk(a,actor,allies,foes));
       if(ab){ const ts=targetsFor(ab.target,actor,allies,foes,rng,`${now}:${ab.id}:select`); const t=ts[0]; if(t){ actor.cooldownReadyAt[ab.id]=now+Math.round(ab.cooldownMs/Math.max(.25,1+gemEffectiveHasteV1(actor,now))); if(ab.castTimeMs>0){actor.casting={abilityId:ab.id,completesAt:now+ab.castTimeMs,targetId:t.definition.id};events.push({atMs:now,type:'cast_start',actorId:actor.definition.id,targetId:t.definition.id,abilityId:ab.id});}else{gemOnAbilityUsedV1(now,actor,ab);emitGemState(now);for(const fx of ab.effects){for(const x of targetsFor(ab.target,actor,allies,foes,rng,`${now}:${ab.id}:instant`))applyEffect(now,actor,x,fx,ab.id);}} continue; } }
       if(actor.nextBasicAt<=now){ const t=chooseEnemy(actor,foes,rng,`${now}:${actor.definition.id}:basic`); if(t){applyDamage(now,actor,t,{kind:'damage',coeff:actor.definition.basicAttackCoeff,damageType:'physical',threatMultiplier:actor.definition.role==='tank'?2.5:1},'BASIC');actor.nextBasicAt=now+Math.round(actor.definition.basicAttackMs/Math.max(.25,1+gemEffectiveHasteV1(actor,now)));} }
     }

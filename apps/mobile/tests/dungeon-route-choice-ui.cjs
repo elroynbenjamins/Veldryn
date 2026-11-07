@@ -5,7 +5,7 @@ const root=path.resolve(__dirname,'..');
 const read=p=>fs.readFileSync(path.join(root,p),'utf8');
 const overview=read('src/components/coop/CoopRunOverview.tsx');
 const choices=read('src/components/coop/DungeonRouteChoices.tsx');
-assert(overview.includes('<DungeonRouteChoices options={run.options} mode={run.mode} phase={run.phase} busy={busy} onChoose={onChoose?chooseRoom:undefined} myVotedNodeId={myVotedNodeId} selfVoter={selfVoter}/>'),'Dungeon run wraps one-tap choices to show a battle-entry transition while retaining player vote identity');
+assert(overview.includes('<DungeonRouteChoices options={run.options} mode={run.mode} phase={run.phase} busy={busy||(needsBoon&&!selectedBoonId)} onChoose={onChoose?chooseRoom:undefined} myVotedNodeId={myVotedNodeId} selfVoter={selfVoter}/>'),'Dungeon run wraps one-tap choices to show a battle-entry transition while retaining player vote identity');
 assert(!overview.includes('run.options.map(option=><FantasyPanel'),'Old per-room text panels are removed');
 assert(choices.includes('onPress={()=>onChoose?.(option.nodeId)}'),'Room tap uses the existing authoritative choose/vote callback');
 assert(choices.includes("phase==='awaiting_choice'&&!busy"),'Busy and non-choice phases cannot submit votes');

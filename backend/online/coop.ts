@@ -138,7 +138,7 @@ export function coopHandler(services:GameplayServices){
    const raw=await request.text();if(raw.length>4096)return json({error:'request_too_large'},413);
    let body:unknown;try{body=JSON.parse(raw);}catch{throw new GameplayError('invalid_json');}
    if(!body||typeof body!=='object'||Array.isArray(body))throw new GameplayError('invalid_request');
-   const allowed=start?['requestId','dungeonId','tier','characterId','loadoutId','loadoutRevision']:run?.[2]==='merchant'?['requestId','expectedVersion','offerId']:run?.[2]==='potion'?['requestId']:run?.[2]==='tonic'?['requestId','potionId']:['requestId','decisionId','decisionRevision','optionId'];
+   const allowed=start?['requestId','dungeonId','tier','characterId','loadoutId','loadoutRevision']:run?.[2]==='merchant'?['requestId','expectedVersion','offerId']:run?.[2]==='potion'?['requestId']:run?.[2]==='tonic'?['requestId','potionId']:run?.[2]==='choose'?['requestId','decisionId','decisionRevision','optionId','boonId']:['requestId','decisionId','decisionRevision','optionId'];
    if(Object.keys(body).some(key=>!allowed.includes(key)))throw new GameplayError('invalid_request');
    if(start)return json(await runtime.start(accountId,parseCoopRunRequest(body,'qmode')));
     if(run?.[2]==='potion'){

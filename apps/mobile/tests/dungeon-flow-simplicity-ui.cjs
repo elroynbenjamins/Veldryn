@@ -60,4 +60,9 @@ assert(run.includes("run.phase==='awaiting_choice'&&run.options.length"),'Stale 
 assert(run.includes('initiallyOpen={run.presenceSummary.safetyAiCount>0}'),'Live party connection only expands when intervention is useful');
 assert(lobby.includes('Math.max(148,Math.min(208,height*.23))'),'Live lobby artwork stays compact on small phones');
 
+assert(run.includes('needsBoon')&&run.includes('selectedBoonId')&&run.includes('run.boonOffers!.map'),'Echo rooms must offer a real three-choice boon selection');
+assert(run.includes('onChoose?.(nodeId,needsBoon?selectedBoonId:undefined)'),'Chosen boon must be submitted together with the next room');
+assert(screen.includes('...(boonId?{boonId}:{})'),'The boon ID must travel through the idempotent server command');
+const boonRuntime=fs.readFileSync(path.join(root,'../../backend/src/server/coop/room-boon-choices.ts'),'utf8');
+assert(boonRuntime.includes('generateBoonOffer(')&&boonRuntime.includes('chosenRoomBoons'),'Server decides offered boons and prevents repeated claims');
 console.log('PASS dungeon flows: navigation, Live voting, NPC clarity, cinematic combat and advanced disclosures');

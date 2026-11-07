@@ -121,7 +121,7 @@ export function ConsumableWorkshop({state,skillId,preferredRecipeId,onStart}:Pro
       </View>
       <View style={s.potionRowSide}>
         <Text style={[s.tier,{color:locked?C.warning:C.muted}]}>{gt('Lv {level}',{level:recipe.level})}</Text>
-        <Text style={[s.caption,{color:available>0&&!isActive?C.good:C.muted}]}>{available>0&&!isActive?'▶ '+gt('Brew'):''}</Text>
+        <Text style={[s.caption,{color:available>0&&!isActive?C.good:C.muted}]}>{available>0&&!isActive?'▶ '+gt('Start Brewing'):''}</Text>
       </View>
     </Pressable>
     <Pressable accessibilityRole="button" accessibilityLabel={itemName(recipe.output.itemId)+' · '+gt('Show recipe details')} accessibilityState={{expanded:isExpanded}} onPress={()=>setDetailId(current=>current===recipe.id?null:recipe.id)} style={[s.potionRowInfo,{borderTopColor:C.line,backgroundColor:isExpanded?C.selection:C.panel2}]}>

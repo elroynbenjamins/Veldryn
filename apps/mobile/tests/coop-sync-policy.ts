@@ -5,6 +5,8 @@ function check(value:boolean,message:string){if(!value)throw new Error(message);
 check(coopSyncIntervalMs('live','decision',true)===3500,'live votes must have a short realtime watchdog');
 check(coopSyncIntervalMs('live','decision',false)===2000,'unavailable realtime must not delay short votes');
 check(coopSyncIntervalMs('event','decision',false)===2000,'event dungeon votes must retain fast fallback');
+check(coopSyncIntervalMs('qmode','combat',false)===1250,'Echo room settlement must recover rapidly when realtime is offline');
+check(coopSyncIntervalMs('qmode','combat',true)===2500,'Echo room settlement must retain a short realtime watchdog');
 check(coopSyncIntervalMs('live','combat',true)===6000,'combat needs a bounded realtime watchdog');
 check(coopSyncIntervalMs('event','combat',false)===2500,'event combat must recover promptly without realtime');
 check(coopSyncIntervalMs('live','idle',true)===12000,'live idle polling must not repeat every 2.5 seconds');

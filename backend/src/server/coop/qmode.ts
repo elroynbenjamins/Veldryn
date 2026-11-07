@@ -10,11 +10,12 @@ import { recruitQModeAllies, type PublishedEcho } from './echo-recruitment';
 import { validateCoopRoster, validateUniqueDamageClasses } from './invariants';
 import {coopRequiredLevel} from './config';
 import {preparedCoopCombatants} from './potion-modifiers';
+import {roomBoonOffers,applyRoomBoon,type RoomBoonId} from './room-boon-choices';
 
 export interface QModeRun {
  id:string; requestId:string; controllerAccountId:string; expeditionId:string; tier:1|2|3|4|5;
  graph:CoopRouteGraph; currentNodeId:string; phase:'awaiting_choice'|'completed'|'failed';
- players:CombatantDefinition[]; persistentState:PersistentRunState; tierScalingVersion?:2; qmodePressureVersion?:1; echoSourceAccountIds:string[]; npcCharacterIds?:string[]; rewardMarks?:number;
+ players:CombatantDefinition[]; persistentState:PersistentRunState; tierScalingVersion?:2; qmodePressureVersion?:1; echoSourceAccountIds:string[]; npcCharacterIds?:string[]; rewardMarks?:number; chosenRoomBoons?:Record<string,RoomBoonId>;
  lastResolution?:{nodeId:string;result:NodeResolutionResult};
 }
 export interface QModeRunRepository {get(runId:string):QModeRun|undefined; getByRequest(accountId:string,requestId:string):QModeRun|undefined; save(run:QModeRun):void;}
@@ -49,11 +50,20 @@ export class QModeService{
   return this.createRun({requestId:input.requestId,runId:input.runId,controllerAccountId:input.controllerAccountId,expeditionId:input.expeditionId,tier:input.tier,contentVersion:input.contentVersion,balanceVersion:input.balanceVersion,players:input.snapshots.map(combatant),echoSourceAccountIds:[]});
  }
  getAuthorized(runId:string,accountId:string):QModeRun{const run=this.repository.get(runId);if(!run)throw new Error('run_not_found');if(run.controllerAccountId!==accountId)throw new Error('not_participant');return run;}
- choose(input:{runId:string;controllerAccountId:string;optionNodeId:string;safetyAiPlayerIds?:readonly string[]}):QModeRun{
+ choose(input:{runId:string;controllerAccountId:string;optionNodeId:string;boonId?:string;safetyAiPlayerIds?:readonly string[]}):QModeRun{
   const run=this.getAuthorized(input.runId,input.controllerAccountId);if(run.phase!=='awaiting_choice')throw new Error('run_not_awaiting_choice');
   const current=run.graph.nodes.find(node=>node.nodeId===run.currentNodeId);if(!current||!current.nextNodeIds.includes(input.optionNodeId))throw new Error('invalid_option');
   const selected=run.graph.nodes.find(node=>node.nodeId===input.optionNodeId);if(!selected)throw new Error('invalid_option');
-  const result=resolveCoopNode({runId:run.id,serverSecret:this.serverSecret,node:selected,players:preparedCoopCombatants(run.players,run.persistentState.preparedAlchemyPotionIdsByActor),state:run.persistentState,tier:run.tierScalingVersion===2?run.tier:undefined,enemyAttackMultiplier:run.qmodePressureVersion===1?1.005:undefined,enemyDamageProfile:run.qmodePressureVersion===1?'qmode-v1':undefined,safetyAiPlayerIds:input.safetyAiPlayerIds});
+  const offers=roomBoonOffers(run,this.serverSecret);
+  if(offers.length){
+   // Older supported clients cannot submit a boon choice yet. Choose the
+   // first deterministic offer for them instead of blocking existing runs.
+   const selectedBoon=input.boonId??offers[0].id;
+   if(!offers.some(offer=>offer.id===selectedBoon))throw new Error('invalid_boon_choice');
+   applyRoomBoon(run,selectedBoon as RoomBoonId);
+  }else if(input.boonId)throw new Error('invalid_boon_choice');
+  const isCombat=selected.kind==='battle'||selected.kind==='elite'||selected.kind==='boss';
+  const result=resolveCoopNode({runId:run.id,serverSecret:this.serverSecret,node:selected,players:isCombat?preparedCoopCombatants(run.players,run.persistentState.preparedAlchemyPotionIdsByActor):run.players,state:run.persistentState,tier:run.tierScalingVersion===2?run.tier:undefined,enemyAttackMultiplier:run.qmodePressureVersion===1?1.005:undefined,enemyDamageProfile:run.qmodePressureVersion===1?'qmode-v1':undefined,safetyAiPlayerIds:input.safetyAiPlayerIds});
   run.lastResolution={nodeId:selected.nodeId,result:structuredClone(result)};
   run.persistentState=result.state;run.currentNodeId=selected.nodeId;
   if(!result.success)run.phase='failed';

@@ -7,6 +7,9 @@ import {socialEarlyText} from './social-early-coverage';
 
 // Columns are German, Spanish, Dutch, Italian and French; keys are the English catalog.
 export const socialTranslationRows = {
+ "Choose a boon": ["Wähle einen Segen","Elige una bendición","Kies een zegen","Scegli un bonus","Choisissez un bonus"],
+ "Select one reward before entering the next room.": ["Wähle eine Belohnung vor dem nächsten Raum.","Elige una recompensa antes de entrar en la siguiente sala.","Kies één beloning voordat je de volgende kamer betreedt.","Scegli una ricompensa prima della prossima stanza.","Choisissez une récompense avant la salle suivante."],
+ "Choose your boon above to continue.": ["Wähle oben einen Segen, um fortzufahren.","Elige una bendición arriba para continuar.","Kies hierboven je zegen om verder te gaan.","Scegli il bonus qui sopra per continuare.","Choisissez votre bonus ci-dessus pour continuer."],
  // Compact dungeon loadout, Live queue and Echo companion details (de/es/nl/it/fr).
 "Your combat setup": ["Deine Kampfausrüstung","Tu preparación de combate","Jouw gevechtsuitrusting","La tua preparazione","Votre équipement de combat"],
  "Current selection": ["Aktuelle Auswahl","Selección actual","Huidige selectie","Selezione attuale","Sélection actuelle"],

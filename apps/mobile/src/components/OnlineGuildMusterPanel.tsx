@@ -73,15 +73,6 @@ export function OnlineGuildMusterPanel(){
   </Panel>
 
   <Panel>
-   <View style={s.head}><View style={s.flex}><Text style={s.kicker}>{st("ACTIVE GUILD")}</Text><Text style={s.sectionTitle}>{st('{percent}% Guild Activity',{percent:activityPct})}</Text></View><StatusPill label={activityPct>=100?st("MAX ACTIVITY"):nextActivity?st('{percent}% NEXT',{percent:nextActivity.threshold}):st("ACTIVE")} tone={activityPct>=60?'good':'info'}/></View>
-   <Progress value={activityPct} C={C}/>
-   <Text style={s.copy}>{st('Complete Guild Quests, Muster and Projects to raise activity.')}</Text>
-   <View style={s.activityMilestones}>{GUILD_ACTIVITY_MILESTONE_DEFS.map(row=><View key={row.threshold} style={[s.activityMilestone,activityPct>=row.threshold&&s.activityMilestoneOn]}><Text style={[s.activityPct,activityPct>=row.threshold&&s.activityPctOn]}>{row.threshold}%</Text><View style={s.flex}><Text style={s.activityName}>{socialLabel(language,row.name)}</Text><Text style={s.note}>{socialLabel(language,row.description)}</Text></View></View>)}</View>
-   <Text style={s.note}>{state.activityDecayMode==='protected'?st('Activity secured today.'):state.activityDecayMode==='partial'?st('More activity helps prevent a drop.'):st('Stay active to avoid losing progress.')}</Text>
-   <Text style={s.note}>{st('Bonuses: +{gather}% Gathering · +{production}% Production · +{skill}% Skill XP · +{mastery}% Mastery XP · +{rare}% Rare Materials.',{gather:state.gatheringSpeedBps/100,production:state.productionSpeedBps/100,skill:state.activitySkillXpBps/100,mastery:state.masteryXpBps/100,rare:state.rareMaterialRelativeBps/100})}</Text>
-  </Panel>
-
-  <Panel>
    <View style={s.head}><View style={s.flex}><Text style={s.sectionTitle}>{st("Member contributions")}</Text><Text style={s.meta}>{st('{count} members',{count:members.length})}</Text></View></View>
    <Text style={s.copy}>{st('See who earned a Rally Mark today, who is still building points, and how many qualifying days each member has this week.')}</Text>
    <View style={s.metrics}>
@@ -116,6 +107,15 @@ export function OnlineGuildMusterPanel(){
      : null}
    <Text style={s.note}>{st('No points means no verified Muster contribution has been recorded today. Playing does not always mean a qualifying receipt was recorded. Refresh to check recent activity.')}</Text>
   </Panel>
+  <Panel>
+   <View style={s.head}><View style={s.flex}><Text style={s.kicker}>{st("ACTIVE GUILD")}</Text><Text style={s.sectionTitle}>{st('{percent}% Guild Activity',{percent:activityPct})}</Text></View><StatusPill label={activityPct>=100?st("MAX ACTIVITY"):nextActivity?st('{percent}% NEXT',{percent:nextActivity.threshold}):st("ACTIVE")} tone={activityPct>=60?'good':'info'}/></View>
+   <Progress value={activityPct} C={C}/>
+   <Text style={s.copy}>{st('Complete Guild Quests, Muster and Projects to raise activity.')}</Text>
+   <View style={s.activityMilestones}>{GUILD_ACTIVITY_MILESTONE_DEFS.map(row=><View key={row.threshold} style={[s.activityMilestone,activityPct>=row.threshold&&s.activityMilestoneOn]}><Text style={[s.activityPct,activityPct>=row.threshold&&s.activityPctOn]}>{row.threshold}%</Text><View style={s.flex}><Text style={s.activityName}>{socialLabel(language,row.name)}</Text><Text style={s.note}>{socialLabel(language,row.description)}</Text></View></View>)}</View>
+   <Text style={s.note}>{state.activityDecayMode==='protected'?st('Activity secured today.'):state.activityDecayMode==='partial'?st('More activity helps prevent a drop.'):st('Stay active to avoid losing progress.')}</Text>
+   <Text style={s.note}>{st('Bonuses: +{gather}% Gathering · +{production}% Production · +{skill}% Skill XP · +{mastery}% Mastery XP · +{rare}% Rare Materials.',{gather:state.gatheringSpeedBps/100,production:state.productionSpeedBps/100,skill:state.activitySkillXpBps/100,mastery:state.masteryXpBps/100,rare:state.rareMaterialRelativeBps/100})}</Text>
+  </Panel>
+
   <GameButton compact title={loading?st("Refreshing…"):st("Refresh Muster")} tone="secondary" disabled={loading} onPress={()=>load()}/>
   {!!error&&<Text style={s.error}>{error}</Text>}
  </View>;

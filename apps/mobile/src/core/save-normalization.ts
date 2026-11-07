@@ -6,7 +6,7 @@ import {normalizeProfileIcon} from './profile-icons';
 import {reconcileAccountCollections} from './account-collections';
 import {isSupportedLanguage} from '../i18n/languages';
 import {normalizeQuickNavDestinations} from './quick-navigation';
-import {WORLD_ZONES} from '../content/world-map';
+import {WORLD_ZONES,worldZoneInDevelopment} from '../content/world-map';
 import {rebaseCombatGameState,rebaseCombatCharacter} from './progression';
 import {ITEMS} from '../content/items';
 import {migrateLegacyCombatCompanionAccount,reconcileCombatCompanionUnlocks} from './combat-companions';
@@ -145,7 +145,15 @@ export function normalizeSave(input:any):GameState{
   }
   const rebasedCharacter=character?rebaseCombatCharacter(character):null;
   const savedRegionId=typeof input.currentRegionId==='string'?input.currentRegionId:environment?.zoneId;
-  const currentRegionId=WORLD_ZONES.some(zone=>zone.id===savedRegionId&&(rebasedCharacter?.level??1)>=zone.minLevel)?savedRegionId:'GREENFIELDS';
+  const savedZone=WORLD_ZONES.find(zone=>zone.id===savedRegionId);
+  const combatLevel=rebasedCharacter?.level??1;
+  // Restore a veteran from a newly unreleased region to the nearest
+  // preceding released one. Existing quests, items and exploration remain.
+  const currentRegionId=savedZone&&!worldZoneInDevelopment(savedZone)&&combatLevel>=savedZone.minLevel
+    ?savedZone.id
+    :savedZone&&worldZoneInDevelopment(savedZone)
+      ?[...WORLD_ZONES].reverse().find(zone=>!worldZoneInDevelopment(zone)&&zone.minLevel<savedZone.minLevel&&combatLevel>=zone.minLevel)?.id??'GREENFIELDS'
+      :'GREENFIELDS';
   const rawLiveEvent=input.account?.liveEvent;
   const skillIds=['mining','woodcutting','fishing','smithing','cooking','herbalism','alchemy','exploration','tailoring','enchanting','faith'];
   const skills=skillIds.map(skillId=>{const raw=(input.skills??[]).find((entry:any)=>entry?.skillId===skillId);const xp=Number.isFinite(Number(raw?.xp))?Math.max(0,Math.floor(Number(raw.xp))):0;return {skillId,xp,level:Math.max(1,Math.min(100,Number.isFinite(Number(raw?.level))?Math.floor(Number(raw.level)):1))};});

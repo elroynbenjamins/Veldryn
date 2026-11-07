@@ -27,7 +27,7 @@ export const REGIONAL_AREAS:readonly RegionAreaDef[]=[
    activities:['Snowbound timber','Rime herbs'],hazards:['whiteout trails']},
   {id:'ZONE_013',regionId:'FROSTMARCH',name:'Shiverlake',minLevel:57,maxLevel:63,
    identity:'Frozen lake and the resonant ruins beneath its ice.',
-   activities:['Under-ice fishing','Rimeglass'],hazards:['thin ice']},
+   activities:['Under-ice fishing','Frostiron'],hazards:['thin ice']},
   {id:'ZONE_015',regionId:'FROSTMARCH',name:'Wyrmspine',minLevel:64,maxLevel:70,
    identity:'High mountain lair of the Frost Wyrm; Choir Caverns remain a dungeon.',
    activities:['Wyrmspine ore','Highland herbs'],hazards:['ice prison','breath lines']},

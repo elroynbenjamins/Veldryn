@@ -4,7 +4,10 @@ function ok(value:boolean,message:string){if(!value)throw new Error(message)}
 const read=(path:string)=>fs.readFileSync(path,'utf8');
 
 const home=read('src/screens/HomeScreen.tsx');
-ok(home.includes("alchemyRecipeDef")&&home.includes("explorationRoute")&&home.includes("FAITH_TIERS"),'Home must resolve authored Alchemy, Exploration and Faith activity names');
+const activityTargetNames=read('src/core/activity-target-label.ts');
+ok(home.includes('activityTargetLabel(state.activity)')&&activityTargetNames.includes('RECIPES.find')&&activityTargetNames.includes('EXPLORATION_ROUTES.find')&&activityTargetNames.includes('FAITH_TIERS.find'),'Home must resolve authored Alchemy, Exploration and Faith activity names through the shared resolver');
+const runningActivityBar=read('src/components/ActiveActivityBar.tsx');
+ok(runningActivityBar.includes('gl(activityTargetLabel(activity))')&&runningActivityBar.includes('faithTier?.seconds')&&runningActivityBar.includes('activity.faithPractice?.progressFraction'),'Activity bar must show authored names and accurate Faith practice timing');
 ok(home.includes("kind={state.activity.kind}"),'Home must pass the real activity kind into the shared progress card');
 
 ok(!home.includes('formatGameNumber'),'Home must not duplicate the Gold already visible in the top bar');

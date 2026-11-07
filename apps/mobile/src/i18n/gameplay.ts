@@ -8,6 +8,12 @@ import {useMemo} from 'react';
 // Every row is complete, in en/de/es/nl/it/fr order. English phrases are typed keys.
 type TranslationRow=readonly [string,string,string,string,string,string];
 const common={
+ "Brew":["Brew","Brauen","Preparar","Brouwen","Prepara","Préparer"],
+ "Open Alchemy recipe for {name}":["Open Alchemy recipe for {name}","Alchemierezept für {name} öffnen","Abrir receta de alquimia de {name}","Alchemierecept voor {name} openen","Apri la ricetta alchemica per {name}","Ouvrir la recette d'alchimie pour {name}"],
+ "Open Alchemy":["Open Alchemy","Alchemie öffnen","Abrir Alquimia","Alchemie openen","Apri Alchimia","Ouvrir l'alchimie"],
+ "Craft the T2 equipment binding resin in Alchemy.":["Craft the T2 equipment binding resin in Alchemy.","Stelle das Bindeharz für T2-Ausrüstung in der Alchemie her.","Fabrica la resina de unión de equipo T2 en Alquimia.","Maak de bindhars voor T2-uitrusting via Alchemie.","Crea la resina legante T2 con Alchimia.","Fabriquez la résine de liaison d'équipement T2 en alchimie."],
+ "T2 equipment":["T2 equipment","T2-Ausrüstung","Equipo T2","T2-uitrusting","Equipaggiamento T2","Équipement T2"],
+ "Alchemy Lv {level} · Crafted, not a Woodcutting drop":["Alchemy Lv {level} · Crafted, not a Woodcutting drop","Alchemie St. {level} · Hergestellt, kein Holzfällerei-Drop","Alquimia Nv {level} · Se fabrica, no cae al talar","Alchemie Lv {level} · Wordt gemaakt, geen Houthakken-drop","Alchimia Lv {level} · Si crea, non si trova tagliando legna","Alchimie niv. {level} · À fabriquer, pas obtenu en bûcheronnage"],
  "Production":["Production","Produktion","Producción","Productie","Produzione","Production"],
  "Experience":["Experience","Erfahrung","Experiencia","Ervaring","Esperienza","Expérience"],
  "unlocked":["unlocked","freigeschaltet","desbloqueadas","ontgrendeld","sbloccate","débloquées"],

@@ -25,6 +25,13 @@ jobs:
           cache-dependency-path: backend/pnpm-lock.yaml
       - run: pnpm --dir backend install --frozen-lockfile
       - run: pnpm --dir apps/mobile install --frozen-lockfile
+      - name: Verify salvage UI translations
+        run: node apps/mobile/tests/equipment-pouch-ui-localization.cjs
+      - name: Compile mobile core and targeted salvage regressions
+        run: |
+          pnpm --dir apps/mobile exec tsc -p tsconfig.core.json --outDir .core-build
+          node apps/mobile/.core-build/apps/mobile/tests/equipment-pouch.js
+          node apps/mobile/.core-build/apps/mobile/tests/inventory-action-game-feel.js
       - run: pnpm --dir backend build:online
       - name: Commit generated Edge bundles
         run: |

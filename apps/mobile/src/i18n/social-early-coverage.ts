@@ -2,6 +2,8 @@ import type {SocialMessageKey} from './social';
 
 /** Player-facing Russian/Turkish Social, Guild and Dungeon copy. Unknown keys retain English fallback. */
 export const socialEarlyRows={
+  "Continue dungeon": ["Продолжить подземелье","Zindana devam et"],
+  "Opening exchange": ["Начало боя","Çatışma başlangıcı"],
   "Your week": [
     "Ваша неделя",
     "Bu hafta"

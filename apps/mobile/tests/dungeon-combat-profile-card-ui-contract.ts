@@ -79,8 +79,8 @@ ok(stage.includes("{assists?<StateChip")&&!stage.includes("'NO ASSISTS'"),'Comba
 ok(stage.includes('useWindowDimensions')&&stage.includes('dungeonCombatLayout(windowWidth)'),'Dungeon battlefield must select a tested layout from the current phone width');
 ok(stage.includes('padding:layout.arenaPadding')&&stage.includes('gap:layout.partyGap'),'Small-phone layout must reclaim arena padding and party-card gap');
 ok(stage.includes('layout.bossWidthPctFinal')&&stage.includes('layout.bossWidthPct'),'Stacked boss/enemy card width must adapt independently from the four-card row');
-ok(stage.includes('playbackEnemyCombatants(replay)')&&stage.includes('visibleEnemies.map(enemy=>'),'Normal combat must render each replay enemy rather than collapse the encounter into one card');
-ok(stage.includes("visibleEnemies=bossEncounter?(bossEnemy?[bossEnemy]:[]):replayEnemies.slice(0,4)"),'Boss combat must remain a singular emphasized card while normal rooms may show multiple enemies');
+ok(stage.includes('playbackEnemyCombatants(replay)')&&stage.includes('visibleEnemies.map((enemy,index)=>'),'Normal combat must render each replay enemy rather than collapse the encounter into one card');
+ok(stage.includes("visibleEnemies=bossEncounter?(bossEnemy?[bossEnemy]:[]):replayEnemies.length?replayEnemies.slice(0,4):previewEnemies"),'Boss combat must remain a singular emphasized card while normal rooms may show multiple enemies');
 ok(stage.includes('enemyGroup')&&stage.includes('enemySlot')&&stage.includes('compact={!bossEncounter&&visibleEnemies.length>1}'),'Multi-enemy rooms must use a compact responsive enemy row');
 ok(card.includes('combatantId?currentCue.targetId===combatantId:currentCue.targetName===name'),'Enemy damage feedback must bind to combatant id so duplicate enemy names do not mirror feedback');
 ok(stage.includes('combatantId={enemy.id}')&&stage.includes('selectedForInspect={inspectKey===key}'),'Each enemy card must bind replay state and inspection to its authoritative combatant id');

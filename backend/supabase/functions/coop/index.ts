@@ -43704,7 +43704,7 @@ var GATHERING = [
   { id: "SCORCHWIND_SUNSTONE_SEAM", skillId: "mining", name: "Scorchwind Sunstone Seam", unlockLevel: 31, seconds: 53, xp: 109, itemId: "SUNSTONE_ORE", min: 1, max: 1, zoneId: "SUNSCAR", areaId: "ZONE_007" },
   { id: "OBSERVATORY_SUNSTONE_GEODE", skillId: "mining", name: "Observatory Sunstone Geode", unlockLevel: 41, seconds: 76, xp: 155, itemId: "SUNSTONE_ORE", min: 1, max: 1, zoneId: "SUNSCAR", areaId: "ZONE_010" },
   { id: "FROSTIRON_VEIN", skillId: "mining", name: "Frostiron Vein", unlockLevel: 46, seconds: 62, xp: 180, itemId: "FROSTIRON", min: 1, max: 1, zoneId: "FROSTMARCH", areaId: "ZONE_011" },
-  { id: "SHIVERLAKE_RIMEGLASS_SEAM", skillId: "mining", name: "Shiverlake Rimeglass Seam", unlockLevel: 58, seconds: 72, xp: 218, itemId: "RIMEGLASS", min: 1, max: 1, zoneId: "FROSTMARCH", areaId: "ZONE_013" },
+  { id: "SHIVERLAKE_FROSTIRON_SEAM", skillId: "mining", name: "Shiverlake Frostiron Seam", unlockLevel: 58, seconds: 72, xp: 218, itemId: "FROSTIRON", min: 1, max: 1, zoneId: "FROSTMARCH", areaId: "ZONE_013" },
   { id: "WYRMSPINE_FROSTIRON_VEIN", skillId: "mining", name: "Wyrmspine Frostiron Vein", unlockLevel: 65, seconds: 82, xp: 275, itemId: "FROSTIRON", min: 1, max: 1, zoneId: "FROSTMARCH", areaId: "ZONE_015" },
   { id: "BLACKGLASS_VEIN", skillId: "mining", name: "Blackglass Vein", unlockLevel: 68, seconds: 78, xp: 310, itemId: "BLACKGLASS_ORE", min: 1, max: 1, zoneId: "ASHLANDS" },
   { id: "DEEP_BLACKGLASS_VEIN", skillId: "mining", name: "Deep Blackglass Vein", unlockLevel: 86, seconds: 92, xp: 430, itemId: "BLACKGLASS_ORE", min: 1, max: 1, zoneId: "ASHLANDS" },

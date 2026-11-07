@@ -44609,6 +44609,9 @@ function simulateCombat(input) {
   const players = input.players.map((def) => init(def, input.initialPlayerState?.[def.id])), enemies = input.enemies.map((def) => init(def)), all = [...players, ...enemies];
   const rng = new CombatRng(input.seed);
   const events = [{ atMs: 0, type: "combat_start" }];
+  const abilitiesByActor = new Map(all.map((actor) => [actor, [...actor.definition.abilities].sort((a, b) => b.priority - a.priority)]));
+  const bosses = enemies.filter((actor) => actor.definition.boss);
+  const phasesByBoss = new Map(bosses.map((boss4) => [boss4, [...boss4.definition.phases ?? []].sort((a, b) => b.hpPct - a.hpPct)]));
   let lastGemStateKey = "[]";
   const visibleGemStates = (now) => {
     const rows2 = [];
@@ -44810,8 +44813,9 @@ function simulateCombat(input) {
       events.push({ atMs: now, type: "combat_end", detail: "wipe" });
       return { victory: false, durationMs: now, reason: "wipe", events, players, enemies };
     }
-    for (const boss4 of living(enemies).filter((x) => x.definition.boss)) {
-      for (const phase2 of (boss4.definition.phases || []).sort((a, b) => b.hpPct - a.hpPct)) {
+    for (const boss4 of bosses) {
+      if (!boss4.alive) continue;
+      for (const phase2 of phasesByBoss.get(boss4) ?? []) {
         if (hpPct(boss4) <= phase2.hpPct && !boss4.triggeredPhases.includes(phase2.id)) {
           boss4.triggeredPhases.push(phase2.id);
           events.push({ atMs: now, type: "phase", actorId: boss4.definition.id, abilityId: phase2.id, detail: `hp<=${phase2.hpPct}` });
@@ -44840,8 +44844,7 @@ function simulateCombat(input) {
         }
       }
       if (actor.casting) continue;
-      const ready = actor.definition.abilities.filter((a) => (actor.cooldownReadyAt[a.id] ?? 0) <= now && conditionOk(a, actor, allies, foes)).sort((a, b) => b.priority - a.priority);
-      const ab = ready[0];
+      const ab = abilitiesByActor.get(actor)?.find((a) => (actor.cooldownReadyAt[a.id] ?? 0) <= now && conditionOk(a, actor, allies, foes));
       if (ab) {
         const ts = targetsFor(ab.target, actor, allies, foes, rng, `${now}:${ab.id}:select`);
         const t = ts[0];
@@ -48449,13 +48452,18 @@ function resolveCoopNode(input) {
   let state = { ...input.state, visitedNodeIds: [...input.state.visitedNodeIds, input.node.nodeId] };
   if (COMBAT_KINDS.has(input.node.kind)) {
     const rootbound = input.node.contentId.startsWith("ROOT") || input.node.contentId === "BOSS_EXP_ROOT", balance = input.rootboundBalance ?? ROOTBOUND_COOP_BALANCE_V2;
+    const strikes = state.boons.filter((id) => id === "ROOM_BOON_STRIKE").length;
+    const wards = state.boons.filter((id) => id === "ROOM_BOON_WARD").length;
     const players = input.players.map((player2) => {
       const multipliers = COOP_CLASS_ABILITY_MULTIPLIERS[player2.classId?.toUpperCase() ?? ""];
-      if (!multipliers) return player2;
-      return { ...player2, abilities: player2.abilities.map((ability3) => {
-        const multiplier = multipliers[ability3.id];
-        return multiplier ? { ...ability3, effects: ability3.effects.map((effect2) => (effect2.kind === "shield" || effect2.kind === "heal") && effect2.coeff !== void 0 ? { ...effect2, coeff: effect2.coeff * multiplier } : effect2) } : ability3;
-      }) };
+      return {
+        ...player2,
+        stats: strikes || wards ? { ...player2.stats, attackPower: player2.stats.attackPower * (1 + strikes * 0.05), defense: player2.stats.defense * (1 + wards * 0.05) } : player2.stats,
+        abilities: multipliers ? player2.abilities.map((ability3) => {
+          const multiplier = multipliers[ability3.id];
+          return multiplier ? { ...ability3, effects: ability3.effects.map((effect2) => (effect2.kind === "shield" || effect2.kind === "heal") && effect2.coeff !== void 0 ? { ...effect2, coeff: effect2.coeff * multiplier } : effect2) } : ability3;
+        }) : player2.abilities
+      };
     });
     const depthMultiplier = input.node.depth >= balance.lateDepthStart ? balance.lateDepthAttackMultiplier : 1;
     const tierScale = input.tier ? coopTierEnemyMultipliers(input.tier) : { attack: 1, hp: 1, defense: 1 };
@@ -48472,7 +48480,7 @@ function resolveCoopNode(input) {
     case "shrine":
     case "forge":
     case "echo":
-      state = { ...state, boons: [...state.boons, `${input.node.contentId}:${roll}`] };
+      if (input.enemyDamageProfile !== "qmode-v1") state = { ...state, boons: [...state.boons, `${input.node.contentId}:${roll}`] };
       break;
     case "treasure":
     case "secret":
@@ -48663,7 +48671,7 @@ function coopRouteClientProjection(graph2, revealedNodeIds = [graph2.entryNodeId
   const byId = new Map(graph2.nodes.map((node) => [node.nodeId, node]));
   const visible = new Set(revealedNodeIds);
   for (const id of revealedNodeIds) for (const next of byId.get(id)?.nextNodeIds ?? []) visible.add(next);
-  return { ...structuredClone(graph2), nodes: graph2.nodes.filter((node) => visible.has(node.nodeId)).map((node) => structuredClone(node)) };
+  return { ...graph2, nodes: graph2.nodes.filter((node) => visible.has(node.nodeId)).map((node) => structuredClone(node)) };
 }
 
 // src/server/coop/echo-recruitment.ts
@@ -48750,6 +48758,50 @@ function preparedCoopCombatants(players, preparedByActor) {
   return players.map((player2) => frozenAlchemyPotionCombatant(player2, preparedByActor?.[player2.id]));
 }
 
+// src/server/expeditions/boon-generation.ts
+function generateBoonOffer(input) {
+  const pool = (input.eligibleBoonIds ?? LAUNCH_BOON_IDS).filter((id) => !input.ownedBoonIds.includes(id));
+  const shuffled = deterministicShuffle(input.secret, pool, input.runId, input.characterId, input.nodeIndex, input.contentVersion, "boon-offer");
+  return shuffled.slice(0, input.choiceCount ?? 3);
+}
+
+// src/server/coop/room-boon-choices.ts
+var ROOM_BOON_CHOICES = [
+  { id: "ROOM_BOON_STRIKE", name: "Battle Focus", description: "+5% party attack power for the remaining run." },
+  { id: "ROOM_BOON_WARD", name: "Stalwart Guard", description: "+5% party defense for the remaining run." },
+  { id: "ROOM_BOON_RECOVERY", name: "Second Wind", description: "Restore 20% max HP to each party member (revives downed allies)." },
+  { id: "ROOM_BOON_SUPPLY", name: "Expedition Cache", description: "Gain 2 supplies to spend at Merchant rooms." }
+];
+var CHOICE_ROOM_KINDS = /* @__PURE__ */ new Set(["shrine", "forge", "echo", "event", "treasure", "secret", "camp"]);
+function roomBoonOffers(run, secret) {
+  if (run.qmodePressureVersion !== 1 || run.phase !== "awaiting_choice") return [];
+  const last = run.lastResolution;
+  if (!last || last.nodeId !== run.currentNodeId || !last.result.success || !CHOICE_ROOM_KINDS.has(String(last.result.summary.kind))) return [];
+  if (run.chosenRoomBoons?.[last.nodeId]) return [];
+  const current = run.graph.nodes.find((node) => node.nodeId === last.nodeId);
+  if (!current) return [];
+  const ids2 = generateBoonOffer({ secret, runId: run.id, characterId: run.players[0].id, nodeIndex: current.depth, contentVersion: run.graph.contentVersion, ownedBoonIds: [], eligibleBoonIds: ROOM_BOON_CHOICES.map((choice) => choice.id), choiceCount: 3 });
+  return ids2.map((id) => ROOM_BOON_CHOICES.find((choice) => choice.id === id)).filter(Boolean);
+}
+function applyRoomBoon(run, boonId) {
+  if (run.chosenRoomBoons?.[run.currentNodeId]) throw new Error("boon_already_chosen");
+  const state = run.persistentState;
+  if (boonId === "ROOM_BOON_RECOVERY") {
+    const actors = { ...state.actors };
+    for (const player2 of run.players) {
+      const actor = actors[player2.id];
+      if (!actor) continue;
+      actors[player2.id] = { ...actor, hp: Math.min(player2.stats.maxHp, actor.hp + player2.stats.maxHp * 0.2), downed: false };
+    }
+    run.persistentState = { ...state, actors };
+  } else if (boonId === "ROOM_BOON_SUPPLY") {
+    run.persistentState = { ...state, resources: state.resources + 2 };
+  } else {
+    run.persistentState = { ...state, boons: [...state.boons, boonId] };
+  }
+  run.chosenRoomBoons = { ...run.chosenRoomBoons ?? {}, [run.currentNodeId]: boonId };
+}
+
 // src/server/coop/qmode.ts
 var MemoryQModeRunRepository = class {
   runs = /* @__PURE__ */ new Map();
@@ -48815,7 +48867,14 @@ var QModeService = class {
     if (!current || !current.nextNodeIds.includes(input.optionNodeId)) throw new Error("invalid_option");
     const selected2 = run.graph.nodes.find((node) => node.nodeId === input.optionNodeId);
     if (!selected2) throw new Error("invalid_option");
-    const result = resolveCoopNode({ runId: run.id, serverSecret: this.serverSecret, node: selected2, players: preparedCoopCombatants(run.players, run.persistentState.preparedAlchemyPotionIdsByActor), state: run.persistentState, tier: run.tierScalingVersion === 2 ? run.tier : void 0, enemyAttackMultiplier: run.qmodePressureVersion === 1 ? 1.005 : void 0, enemyDamageProfile: run.qmodePressureVersion === 1 ? "qmode-v1" : void 0, safetyAiPlayerIds: input.safetyAiPlayerIds });
+    const offers = roomBoonOffers(run, this.serverSecret);
+    if (offers.length) {
+      const selectedBoon = input.boonId ?? offers[0].id;
+      if (!offers.some((offer) => offer.id === selectedBoon)) throw new Error("invalid_boon_choice");
+      applyRoomBoon(run, selectedBoon);
+    } else if (input.boonId) throw new Error("invalid_boon_choice");
+    const isCombat = selected2.kind === "battle" || selected2.kind === "elite" || selected2.kind === "boss";
+    const result = resolveCoopNode({ runId: run.id, serverSecret: this.serverSecret, node: selected2, players: isCombat ? preparedCoopCombatants(run.players, run.persistentState.preparedAlchemyPotionIdsByActor) : run.players, state: run.persistentState, tier: run.tierScalingVersion === 2 ? run.tier : void 0, enemyAttackMultiplier: run.qmodePressureVersion === 1 ? 1.005 : void 0, enemyDamageProfile: run.qmodePressureVersion === 1 ? "qmode-v1" : void 0, safetyAiPlayerIds: input.safetyAiPlayerIds });
     run.lastResolution = { nodeId: selected2.nodeId, result: structuredClone(result) };
     run.persistentState = result.state;
     run.currentNodeId = selected2.nodeId;
@@ -48941,6 +49000,16 @@ function projectCombatReplay(lastResolution) {
 }
 
 // src/server/coop/qmode-public-projection.ts
+var encounterPreviewCache = /* @__PURE__ */ new Map();
+var bossTelegraphCache = /* @__PURE__ */ new Map();
+var cachedEncounterPreview = (id) => {
+  if (!encounterPreviewCache.has(id)) encounterPreviewCache.set(id, expeditionEncounterPreview(id));
+  return encounterPreviewCache.get(id);
+};
+var cachedBossTelegraph = (id) => {
+  if (!bossTelegraphCache.has(id)) bossTelegraphCache.set(id, expeditionBossTelegraph(id));
+  return bossTelegraphCache.get(id);
+};
 function publicCoopRoomOutcome(nodeId, summary) {
   if (!nodeId || !summary) return void 0;
   const kind = summary.kind;
@@ -48949,15 +49018,16 @@ function publicCoopRoomOutcome(nodeId, summary) {
   const delta = typeof summary.resourcesDelta === "number" && Number.isFinite(summary.resourcesDelta) ? summary.resourcesDelta : 0;
   return { nodeId, kind, resourcesDelta: delta, healedHp: count("healedHp"), revivedCount: count("revivedCount"), boonCount: count("boonCount"), artifactCount: count("artifactCount"), curseCount: count("curseCount"), ...kind === "merchant_purchase" && typeof summary.offerKind === "string" ? { offerKind: summary.offerKind } : {} };
 }
-function projectQModeRun(run, mode = "qmode") {
+function projectQModeRun(run, mode = "qmode", serverSecret) {
   const current = run.graph.nodes.find((node) => node.nodeId === run.currentNodeId);
   if (!current) throw new Error("invalid_qmode_current_node");
-  const bossNode = run.graph.nodes.find((node) => node.kind === "boss"), bossTelegraph = bossNode ? expeditionBossTelegraph(bossNode.contentId) : void 0;
+  const bossNode = run.graph.nodes.find((node) => node.kind === "boss"), bossTelegraph = bossNode ? cachedBossTelegraph(bossNode.contentId) : void 0;
   const revealed = [run.graph.entryNodeId, ...run.persistentState.visitedNodeIds, run.currentNodeId];
   const graph2 = coopRouteClientProjection(run.graph, revealed);
   const visible = new Set(graph2.nodes.map((node) => node.nodeId));
-  const options = run.phase === "awaiting_choice" ? current.nextNodeIds.filter((id) => visible.has(id)).map((id) => graph2.nodes.find((node) => node.nodeId === id)).filter(Boolean).map((node) => ({ ...node, ...["battle", "elite", "boss"].includes(node.kind) ? { encounterPreview: expeditionEncounterPreview(node.contentId) } : {} })) : [];
+  const options = run.phase === "awaiting_choice" ? current.nextNodeIds.filter((id) => visible.has(id)).map((id) => graph2.nodes.find((node) => node.nodeId === id)).filter(Boolean).map((node) => ({ ...node, ...["battle", "elite", "boss"].includes(node.kind) ? { encounterPreview: cachedEncounterPreview(node.contentId) } : {} })) : [];
   const lastRoomOutcome = publicCoopRoomOutcome(run.lastResolution?.nodeId, run.lastResolution?.result.summary);
+  const boonOffers = mode === "qmode" && serverSecret ? roomBoonOffers(run, serverSecret) : [];
   const merchantShop = mode === "qmode" && run.phase === "awaiting_choice" && current.kind === "merchant" && run.persistentState.visitedNodeIds.includes(current.nodeId) ? {
     resources: run.persistentState.resources,
     offers: merchantOffers(current.contentId).map((offer) => ({ id: offer.id, kind: offer.kind, cost: offer.cost, purchased: (run.persistentState.personalEffects[run.players[0].id]?.purchases ?? []).includes(offer.id) }))
@@ -48968,7 +49038,7 @@ function projectQModeRun(run, mode = "qmode") {
     const companionId = (player2.tags ?? []).find((tag) => tag.startsWith("companion:"))?.slice("companion:".length), bodyTag = (player2.tags ?? []).find((tag) => tag.startsWith("body:"))?.slice("body:".length), bodyPresentation = bodyTag === "female" ? "female" : bodyTag === "male" ? "male" : void 0;
     return { memberId: player2.id, displayName: player2.name, role: player2.role, classId: player2.classId ?? "", bodyPresentation, companionId, kind: index === 0 ? "controller" : run.npcCharacterIds?.includes(player2.id) ? "npc" : "echo", effectiveLevel: player2.level, currentHp: state.hp, maximumHp: player2.stats.maxHp, downed: state.downed };
   });
-  return { runId: run.id, mode, phase: run.phase, tier: run.tier, expeditionId: run.expeditionId, controller: true, team: mode === "live" ? team.map((member) => ({ ...member, kind: "controller" })) : team, graph: graph2, currentNodeId: run.currentNodeId, options, visitedNodeIds: [...run.persistentState.visitedNodeIds], resources: run.persistentState.resources, boons: [...run.persistentState.boons], artifacts: [...run.persistentState.artifacts], curses: [...run.persistentState.curses], personalEffects: run.persistentState.personalEffects, potionChargeCapacity: [3, 3, 4, 4, 5][run.tier - 1], healingPotionUsesByActor: run.persistentState.healingPotionUsesByActor ?? {}, potionPreparationOpen: run.phase === "awaiting_choice" && !run.persistentState.visitedNodeIds.length, preparedAlchemyPotionIdsByActor: run.persistentState.preparedAlchemyPotionIdsByActor ?? {}, ...bossTelegraph ? { bossMechanic: { label: "Dungeon boss mechanics", summary: "Read the cast telegraphs and interrupt dangerous abilities before the final phase.", tone: "mixed", telegraph: bossTelegraph } } : {}, lastCombat: projectCombatReplay(run.lastResolution), ...lastRoomOutcome ? { lastRoomOutcome } : {}, ...merchantShop ? { merchantShop } : {}, settlement: { status: run.phase === "completed" || run.phase === "failed" ? "pending_entitlement" : "not_ready" } };
+  return { runId: run.id, mode, phase: run.phase, tier: run.tier, expeditionId: run.expeditionId, controller: true, team: mode === "live" ? team.map((member) => ({ ...member, kind: "controller" })) : team, graph: graph2, currentNodeId: run.currentNodeId, options, visitedNodeIds: [...run.persistentState.visitedNodeIds], resources: run.persistentState.resources, boons: [...run.persistentState.boons], artifacts: [...run.persistentState.artifacts], curses: [...run.persistentState.curses], personalEffects: run.persistentState.personalEffects, potionChargeCapacity: [3, 3, 4, 4, 5][run.tier - 1], healingPotionUsesByActor: run.persistentState.healingPotionUsesByActor ?? {}, potionPreparationOpen: run.phase === "awaiting_choice" && !run.persistentState.visitedNodeIds.length, preparedAlchemyPotionIdsByActor: run.persistentState.preparedAlchemyPotionIdsByActor ?? {}, ...bossTelegraph ? { bossMechanic: { label: "Dungeon boss mechanics", summary: "Read the cast telegraphs and interrupt dangerous abilities before the final phase.", tone: "mixed", telegraph: bossTelegraph } } : {}, lastCombat: projectCombatReplay(run.lastResolution), ...boonOffers.length ? { boonOffers } : {}, ...lastRoomOutcome ? { lastRoomOutcome } : {}, ...merchantShop ? { merchantShop } : {}, settlement: { status: run.phase === "completed" || run.phase === "failed" ? "pending_entitlement" : "not_ready" } };
 }
 
 // src/server/coop/loadout-snapshots.ts
@@ -49107,13 +49177,13 @@ function enhancedDungeonMarks(run) {
 // online/qmode-runtime.ts
 var digest = (value) => createHash4("sha256").update(JSON.stringify(value)).digest("hex");
 var content = ONLINE_COOP_BALANCE_VERSION;
-var projection = (run, version) => ({ ...projectQModeRun(run), stateVersion: version, decisionId: run.currentNodeId, decisionRevision: version });
-function settlement(run, version) {
+var projection = (run, version, seed) => ({ ...projectQModeRun(run, "qmode", seed), stateVersion: version, decisionId: run.currentNodeId, decisionRevision: version });
+function settlement(run, version, seed) {
   const definition = EXPEDITIONS[run.expeditionId], last = run.lastResolution;
   const node = run.graph.nodes.find((row) => row.nodeId === last.nodeId);
   const cleared = run.persistentState.visitedNodeIds.filter((id) => id !== run.graph.bossNodeId).length;
   const terminal = run.phase === "completed" || run.phase === "failed";
-  return { projection: projection(run, version), enhancedMarks: terminal ? marksForRun(definition.baseMarks, run.tier, run.tierScalingVersion === 2 ? dungeonRewardState(run) : { cleared: run.phase === "completed", routeProgress: cleared / run.graph.preBossNodeCount, reachedFinalBoss: node.kind === "boss" }) : null, assistanceMarks: terminal ? Math.max(1, Math.round(definition.baseMarks * 0.1)) : null };
+  return { projection: projection(run, version, seed), enhancedMarks: terminal ? marksForRun(definition.baseMarks, run.tier, run.tierScalingVersion === 2 ? dungeonRewardState(run) : { cleared: run.phase === "completed", routeProgress: cleared / run.graph.preBossNodeCount, reachedFinalBoss: node.kind === "boss" }) : null, assistanceMarks: terminal ? Math.max(1, Math.round(definition.baseMarks * 0.1)) : null };
 }
 var OnlineQModeRuntime = class {
   constructor(services) {
@@ -49167,13 +49237,13 @@ var OnlineQModeRuntime = class {
       if (!npc) throw new Error("qmode_npc_missing");
       return { memberKind: "npc", snapshot: npc, sourceHash: npc.snapshotHash, profileId: null };
     })];
-    return this.services.rpc("start_online_qmode_server_v1", { p_account_id: accountId, p_game_version: game.version, p_request_id: request.requestId, p_request_hash: hash, p_run_id: id, p_private_state: { run, seed }, p_client_projection: projection(run, 1), p_members: members, p_seed_hash: digest(seed) });
+    return this.services.rpc("start_online_qmode_server_v1", { p_account_id: accountId, p_game_version: game.version, p_request_id: request.requestId, p_request_hash: hash, p_run_id: id, p_private_state: { run, seed }, p_client_projection: projection(run, 1, seed), p_members: members, p_seed_hash: digest(seed) });
   }
   async load(accountId, runId) {
     const loaded = await this.services.rpc("load_online_qmode_server_v1", { p_account_id: accountId, p_run_id: runId });
     const pending = loaded.privateState.pending;
     if (!pending || loaded.serverNow < pending.resolvesAtMs) return loaded.clientProjection;
-    const run = pending.run, last = run.lastResolution, final = settlement(run, loaded.stateVersion + 1);
+    const run = pending.run, last = run.lastResolution, final = settlement(run, loaded.stateVersion + 1, loaded.privateState.seed);
     return this.services.rpc("finalize_online_qmode_node_server_v1", { p_account_id: accountId, p_run_id: runId, p_expected_version: loaded.stateVersion, p_private_state: { run, seed: loaded.privateState.seed }, p_client_projection: final.projection, p_node_id: last.nodeId, p_result: last.result, p_start_state_hash: pending.startStateHash, p_enhanced_marks: final.enhancedMarks, p_assistance_marks: final.assistanceMarks });
   }
   async purchaseMerchant(accountId, runId, request) {
@@ -49194,7 +49264,7 @@ var OnlineQModeRuntime = class {
     const actorId = before.players[0]?.id;
     if (!actorId) throw new GameplayError("invalid_merchant_actor");
     const next = new QModeService(repository, seed).purchaseMerchant({ runId, controllerAccountId: accountId, actorId, offerId: request.offerId });
-    const client = projection(next, loaded.stateVersion + 1);
+    const client = projection(next, loaded.stateVersion + 1, seed);
     return this.services.rpc("purchase_online_qmode_merchant_server_v1", { p_account_id: accountId, p_run_id: runId, p_expected_version: loaded.stateVersion, p_request_id: request.requestId, p_request_hash: hash, p_offer_id: request.offerId, p_actor_id: actorId, p_private_state: { run: next, seed }, p_client_projection: client });
   }
   async choose(accountId, runId, request) {
@@ -49213,11 +49283,12 @@ var OnlineQModeRuntime = class {
     }
     const { run: before, seed } = loaded.privateState, repository = new MemoryQModeRunRepository();
     repository.save(before);
-    const domain = new QModeService(repository, seed), run = domain.choose({ runId, controllerAccountId: accountId, optionNodeId: request.optionId });
-    const duration = Math.max(0, Number(run.lastResolution.result.summary.durationMs ?? 0));
+    const domain = new QModeService(repository, seed), run = domain.choose({ runId, controllerAccountId: accountId, optionNodeId: request.optionId, boonId: request.boonId });
+    const chosen = run.graph.nodes.find((node) => node.nodeId === request.optionId);
+    const duration = chosen?.kind === "boss" ? 1800 : chosen?.kind === "elite" ? 1400 : chosen?.kind === "battle" ? 900 : 0;
     const resolvesAtMs = loaded.serverNow + duration;
-    const client = { ...projection(before, loaded.stateVersion + 1), phase: "resolving_node", options: [], selectedNodeId: request.optionId, resolvesAtMs };
-    return this.services.rpc("queue_online_qmode_node_server_v1", { p_account_id: accountId, p_run_id: runId, p_expected_version: loaded.stateVersion, p_request_id: request.requestId, p_request_hash: hash, p_private_state: { run: before, seed, pending: { run, resolvesAtMs, startStateHash: digest(before.persistentState), settlement: settlement(run, loaded.stateVersion + 2) } }, p_client_projection: client });
+    const client = { ...projection(before, loaded.stateVersion + 1, seed), phase: "resolving_node", options: [], selectedNodeId: request.optionId, resolvesAtMs, boonOffers: void 0 };
+    return this.services.rpc("queue_online_qmode_node_server_v1", { p_account_id: accountId, p_run_id: runId, p_expected_version: loaded.stateVersion, p_request_id: request.requestId, p_request_hash: hash, p_private_state: { run: before, seed, pending: { run, resolvesAtMs, startStateHash: digest(before.persistentState), settlement: settlement(run, loaded.stateVersion + 2, seed) } }, p_client_projection: client });
   }
 };
 
@@ -50303,7 +50374,7 @@ function parseCoopRunRequest(value, mode) {
 function parseCoopDecisionCommand(value) {
   const row = object(value);
   rejectClientAuthority(row);
-  return { requestId: text2(row, "requestId", 8), decisionId: text2(row, "decisionId"), decisionRevision: integer(row, "decisionRevision", 1, Number.MAX_SAFE_INTEGER), optionId: text2(row, "optionId") };
+  return { requestId: text2(row, "requestId", 8), decisionId: text2(row, "decisionId"), decisionRevision: integer(row, "decisionRevision", 1, Number.MAX_SAFE_INTEGER), optionId: text2(row, "optionId"), ...row.boonId === void 0 ? {} : { boonId: text2(row, "boonId", 1, 64) } };
 }
 function parseCoopReadyCommand(value) {
   const row = object(value);
@@ -50479,7 +50550,7 @@ function coopHandler(services) {
         throw new GameplayError("invalid_json");
       }
       if (!body || typeof body !== "object" || Array.isArray(body)) throw new GameplayError("invalid_request");
-      const allowed2 = start ? ["requestId", "dungeonId", "tier", "characterId", "loadoutId", "loadoutRevision"] : run?.[2] === "merchant" ? ["requestId", "expectedVersion", "offerId"] : run?.[2] === "potion" ? ["requestId"] : run?.[2] === "tonic" ? ["requestId", "potionId"] : ["requestId", "decisionId", "decisionRevision", "optionId"];
+      const allowed2 = start ? ["requestId", "dungeonId", "tier", "characterId", "loadoutId", "loadoutRevision"] : run?.[2] === "merchant" ? ["requestId", "expectedVersion", "offerId"] : run?.[2] === "potion" ? ["requestId"] : run?.[2] === "tonic" ? ["requestId", "potionId"] : run?.[2] === "choose" ? ["requestId", "decisionId", "decisionRevision", "optionId", "boonId"] : ["requestId", "decisionId", "decisionRevision", "optionId"];
       if (Object.keys(body).some((key) => !allowed2.includes(key))) throw new GameplayError("invalid_request");
       if (start) return json2(await runtime.start(accountId, parseCoopRunRequest(body, "qmode")));
       if (run?.[2] === "potion") {

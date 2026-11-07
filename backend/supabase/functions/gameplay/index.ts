@@ -44568,6 +44568,9 @@ function simulateCombat(input) {
   const players = input.players.map((def) => init(def, input.initialPlayerState?.[def.id])), enemies = input.enemies.map((def) => init(def)), all = [...players, ...enemies];
   const rng = new CombatRng(input.seed);
   const events = [{ atMs: 0, type: "combat_start" }];
+  const abilitiesByActor = new Map(all.map((actor) => [actor, [...actor.definition.abilities].sort((a, b) => b.priority - a.priority)]));
+  const bosses = enemies.filter((actor) => actor.definition.boss);
+  const phasesByBoss = new Map(bosses.map((boss2) => [boss2, [...boss2.definition.phases ?? []].sort((a, b) => b.hpPct - a.hpPct)]));
   let lastGemStateKey = "[]";
   const visibleGemStates = (now) => {
     const rows2 = [];
@@ -44769,8 +44772,9 @@ function simulateCombat(input) {
       events.push({ atMs: now, type: "combat_end", detail: "wipe" });
       return { victory: false, durationMs: now, reason: "wipe", events, players, enemies };
     }
-    for (const boss2 of living(enemies).filter((x) => x.definition.boss)) {
-      for (const phase of (boss2.definition.phases || []).sort((a, b) => b.hpPct - a.hpPct)) {
+    for (const boss2 of bosses) {
+      if (!boss2.alive) continue;
+      for (const phase of phasesByBoss.get(boss2) ?? []) {
         if (hpPct(boss2) <= phase.hpPct && !boss2.triggeredPhases.includes(phase.id)) {
           boss2.triggeredPhases.push(phase.id);
           events.push({ atMs: now, type: "phase", actorId: boss2.definition.id, abilityId: phase.id, detail: `hp<=${phase.hpPct}` });
@@ -44799,8 +44803,7 @@ function simulateCombat(input) {
         }
       }
       if (actor.casting) continue;
-      const ready = actor.definition.abilities.filter((a) => (actor.cooldownReadyAt[a.id] ?? 0) <= now && conditionOk(a, actor, allies, foes)).sort((a, b) => b.priority - a.priority);
-      const ab = ready[0];
+      const ab = abilitiesByActor.get(actor)?.find((a) => (actor.cooldownReadyAt[a.id] ?? 0) <= now && conditionOk(a, actor, allies, foes));
       if (ab) {
         const ts = targetsFor(ab.target, actor, allies, foes, rng, `${now}:${ab.id}:select`);
         const t = ts[0];

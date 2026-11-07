@@ -9,6 +9,7 @@ import {ResourceArtwork} from './ResourceArtwork';
 import {guildUpgradeComponentName} from '../theme/guild-upgrade-component-art';
 import {gameAlert} from '../core/game-alerts';
 import {useGameTheme} from '../theme/ThemeContext';
+import type {GameState} from '../core/types';
 import {radii,type ThemeColors} from '../theme/theme';
 import type {GuildTokenShopSnapshot} from '../online/guild-token-shop';
 import {loadOnlineGuildSkills,type GuildSkillsSnapshot} from '../online/guild-skills';
@@ -33,9 +34,8 @@ function projectNeeds(snapshot:GuildTokenShopSnapshot,skillSnapshot:GuildSkillsS
    needed.set(req.resourceId,{...before,[upcoming?'upcoming':'current']:before[upcoming?'upcoming':'current']+remainder});
   }
  }
- // Only released Guild Skills' next-rank costs can be banked, and only
- // while the guild still holds unspent skill points.
- if(skillSnapshot&&skillSnapshot.guildLevel===snapshot.guildLevel&&skillSnapshot.skillPoints>0){
+ // Released Guild Skills' next-rank costs may be banked before points are earned.
+ if(skillSnapshot&&skillSnapshot.guildLevel===snapshot.guildLevel){
   for(const node of skillSnapshot.nodes){
    if(!node.released||node.rank>=node.maxRank)continue;
    for(const cost of node.costs){
@@ -47,8 +47,8 @@ function projectNeeds(snapshot:GuildTokenShopSnapshot,skillSnapshot:GuildSkillsS
  }
  return needed;
 }
-export function OnlineGuildBankPanel({snapshot,onReload,focusResourceId,onFocusHandled,onOpenConstruction}:{
- snapshot:GuildTokenShopSnapshot;onReload:()=>Promise<unknown>;
+export function OnlineGuildBankPanel({snapshot,playerState,onReload,focusResourceId,onFocusHandled,onOpenConstruction}:{
+ snapshot:GuildTokenShopSnapshot;playerState?:GameState;onReload:()=>Promise<unknown>;
  focusResourceId?:string|null;onFocusHandled?:()=>void;onOpenConstruction?:()=>void;
 }){
  const ui=useGuildBankUiText(),language=useGameLanguage(),C=useGameTheme(),s=useMemo(()=>styles(C),[C]),{height:windowHeight,width:windowWidth,fontScale}=useWindowDimensions();
@@ -61,6 +61,10 @@ export function OnlineGuildBankPanel({snapshot,onReload,focusResourceId,onFocusH
  const [skillSnapshot,setSkillSnapshot]=useState<GuildSkillsSnapshot|null>(null);
  const [skillLoading,setSkillLoading]=useState(true),[skillError,setSkillError]=useState(false);
  const [skillRefresh,setSkillRefresh]=useState(0);
+ // The server owns the balance; local deductions keep the displayed stock
+ // accurate until the next authoritative game-state refresh arrives.
+ const [localDeductions,setLocalDeductions]=useState<Record<string,number>>({});
+ useEffect(()=>{setLocalDeductions({})},[playerState?.inventory.stacks,playerState?.character?.gold]);
  useEffect(()=>{
   let active=true;setSkillLoading(true);setSkillError(false);
   void loadOnlineGuildSkills().then(value=>{
@@ -74,13 +78,24 @@ export function OnlineGuildBankPanel({snapshot,onReload,focusResourceId,onFocusH
  const needs=useMemo(()=>projectNeeds(snapshot,skillSnapshot),[snapshot,skillSnapshot]);
  const stored=new Map((snapshot.bank?.balances??[]).map(row=>[row.resourceId,row.amount]));
  const balance=(id:string)=>stored.get(id)??0;
- const totalNeed=(id:string)=>{const row=needs.get(id);return (row?.current??0)+(row?.upcoming??0)+(row?.skills??0)};
- const depositCapacity=(id:string)=>Math.max(0,totalNeed(id)-balance(id));
+ const depositCapacity=(id:string)=>Math.max(0,(needs.get(id)?.current??0)+(needs.get(id)?.skills??0)-balance(id));
+ const lockedIds=new Set((playerState as unknown as {settings?:{lockedItemIds?:string[]}}|undefined)?.settings?.lockedItemIds??[]);
+ const ownedQuantity=(id:string)=>id==='gold'?Math.max(0,Math.floor(playerState?.character?.gold??0)):
+  (playerState?.inventory.stacks??[]).filter(row=>row.itemId===id).reduce((sum,row)=>sum+Math.max(0,Math.floor(row.quantity)),0);
+ const unlockedQuantity=(id:string):number|null=>{
+  if(!playerState)return null;
+  if(id==='gold')return ownedQuantity(id);
+  if(lockedIds.has(id))return 0;
+  return playerState.inventory.stacks.filter(row=>row.itemId===id&&!(row as typeof row&{locked?:boolean}).locked)
+   .reduce((sum,row)=>sum+Math.max(0,Math.floor(row.quantity)),0);
+ };
+ const availableQuantity=(id:string)=>{const stock=unlockedQuantity(id);return stock===null?null:Math.max(0,stock-(localDeductions[id]??0));};
+ const maxDeposit=(id:string)=>Math.max(0,Math.min(1000000,depositCapacity(id),availableQuantity(id)??1000000));
  // The Construction shortcut focuses this material once. Clearing the focus
  // prevents the sheet from reopening after a successful deposit or dismissal.
  useEffect(()=>{
   if(!focusResourceId)return;
-  const capacity=depositCapacity(focusResourceId);
+  const capacity=maxDeposit(focusResourceId);
   if(capacity>0&&!pending&&!busy&&snapshot.bank!==null){
    setView('inventory');setSearch('');setSelection(focusResourceId);setQuantity(String(Math.min(10,capacity,1000000)));
   }
@@ -106,7 +121,7 @@ export function OnlineGuildBankPanel({snapshot,onReload,focusResourceId,onFocusH
   .replace('Fortification Hinge Set','Hinge Set')
   .replace('Heraldic Dye Flask','Heraldic Dye')
   .replace('Beacon Oil Flask','Beacon Oil');
- const status=(id:string)=>depositCapacity(id)<=0?'Covered':shortageNow(id)>0?'Needed now':'Upcoming';
+ const status=(id:string)=>depositCapacity(id)>0?'Needed now':shortageUpcoming(id)>0?'Upcoming':'Covered';
  const compactQuantity=(value:number)=>value>=10000?(Math.round(value/100)/10).toLocaleString()+'k':value.toLocaleString();
  const activityTime=(iso:string)=>{
   const date=new Date(iso);
@@ -115,13 +130,16 @@ export function OnlineGuildBankPanel({snapshot,onReload,focusResourceId,onFocusH
  };
  const selected=selection&&ids.includes(selection)?selection:null;
  const amount=Number(quantity);
- const valid=!!selected&&depositCapacity(selected)>0&&Number.isSafeInteger(amount)&&amount>=1&&amount<=1000000&&amount<=depositCapacity(selected);
+ const valid=!!selected&&Number.isSafeInteger(amount)&&amount>=1&&amount<=maxDeposit(selected);
  const close=()=>{if(!busy){Keyboard.dismiss();setConfirming(false);setSelection(null);setQuantity('1');}};
  const deposit=async(input:{resourceId:string;amount:number})=>{
   if(busy)return;setBusy(true);setError('');setNotice('');
   try{
    const response=await depositOnlineGuildBank(input);
    setPending(null);setConfirming(false);setSelection(null);
+   // A confirmed retry may report alreadyProcessed even when the original request
+   // timed out, so update displayed local stock for either confirmed receipt.
+   setLocalDeductions(previous=>({...previous,[input.resourceId]:(previous[input.resourceId]??0)+input.amount}));
    setNotice(response.alreadyProcessed?ui('Saved deposit confirmed. No additional resources were deducted.'):
     ui('{amount} {resource} deposited into the Guild Bank.',{amount:input.amount.toLocaleString(),resource:resourceTitle(input.resourceId)}));
    try{await onReload();setSkillRefresh(x=>x+1)}catch{setNotice(ui('Deposit confirmed. Bank refresh is unavailable; reopen the Bank to update balances.'));}
@@ -141,11 +159,11 @@ export function OnlineGuildBankPanel({snapshot,onReload,focusResourceId,onFocusH
    onPress:()=>void discardPendingGuildBankDeposit().then(()=>setPending(null)).catch(reason=>setError(String(reason)))}]);
  const choose=(id:string)=>{
   if(busy||pending||snapshot.bank===null)return;
-  setConfirming(false);setSelection(id);setQuantity(String(Math.min(10,1000000,depositCapacity(id))));
+  setConfirming(false);setSelection(id);setQuantity(String(Math.max(1,Math.min(10,maxDeposit(id)))));
  };
  const depositDisabled=busy||!!pending||snapshot.bank===null;
  const inventoryCard=(id:string)=>{
-  const onHand=balance(id),remaining=depositCapacity(id),state=status(id);
+  const onHand=balance(id),remaining=depositCapacity(id),state=status(id),stock=availableQuantity(id);
   return <Pressable key={id} accessibilityRole="button"
    accessibilityLabel={ui('{resource}, {stored} in Guild Bank. {more} more can be donated.',{resource:resourceTitle(id),stored:onHand.toLocaleString(),more:remaining.toLocaleString()})}
    accessibilityHint={ui("Opens material details and donation options")}
@@ -158,6 +176,7 @@ export function OnlineGuildBankPanel({snapshot,onReload,focusResourceId,onFocusH
     <View style={s.stackCount}><Text numberOfLines={1} style={s.stackText}>{compactQuantity(onHand)}</Text></View>
    </View>
    <Text numberOfLines={2} style={s.slotName}>{shortName(id)}</Text>
+   {stock!==null?<Text numberOfLines={1} style={s.slotOwned}>{ui('Owned: {count}',{count:compactQuantity(ownedQuantity(id))})}</Text>:null}
    <Text numberOfLines={1} style={[s.slotNeed,state==='Needed now'?s.nowText:state==='Upcoming'?s.futureText:null]}>
     {remaining>0?ui('+{count} needed',{count:compactQuantity(remaining)}):ui('✓ Covered')}
    </Text>
@@ -169,13 +188,14 @@ export function OnlineGuildBankPanel({snapshot,onReload,focusResourceId,onFocusH
    <View style={s.neededArt}>{id==='gold'?<Text style={s.goldGlyph}>G</Text>:<ResourceArtwork itemId={id} size={34} framed={false}/>}</View>
    <View style={s.flex}><Text numberOfLines={2} style={s.name}>{resourceTitle(id)}</Text>
     <Text style={s.meta}>{ui('{stored} stored · {more} more to deposit',{stored:balance(id).toLocaleString(),more:shortage.toLocaleString()})}{!upcoming&&(needs.get(id)?.skills??0)>0?' · '+ui('Guild Skills'):''}</Text>
+    {playerState?<Text style={s.meta}>{ui('You own {count} · {available} available',{count:ownedQuantity(id).toLocaleString(),available:(availableQuantity(id)??0).toLocaleString()})}</Text>:null}
    </View>
    {shortage>0?<GameButton compact tone="secondary" title={ui("Donate")} disabled={depositDisabled} onPress={()=>choose(id)}/>:
     <Text style={[s.meta,s.nowText]}>{ui('In bank')}</Text>}
   </View>;
  };
- const canDonateSelected=!!selected&&!depositDisabled&&depositCapacity(selected)>0;
- const maxAmount=selected?Math.min(1000000,depositCapacity(selected)):0;
+ const canDonateSelected=!!selected&&!depositDisabled&&maxDeposit(selected)>0;
+ const maxAmount=selected?maxDeposit(selected):0;
  return <Panel>
   <View style={s.headingRow}>
    <View style={s.flex}><Text style={s.kicker}>{ui('SHARED STORAGE')}</Text>
@@ -283,8 +303,8 @@ export function OnlineGuildBankPanel({snapshot,onReload,focusResourceId,onFocusH
     </View>
     <View style={s.modalStats}>
      <View style={s.modalStat}><Text style={s.statLabel}>{ui('GUILD OWNS')}</Text><Text style={s.modalNumber}>{balance(selected).toLocaleString()}</Text></View>
-     <View style={s.modalStat}><Text style={s.statLabel}>{ui('NEEDED NOW')}</Text><Text style={s.modalNumber}>{((needs.get(selected)?.current??0)+(needs.get(selected)?.skills??0)).toLocaleString()}</Text></View>
-     <View style={s.modalStat}><Text style={s.statLabel}>{ui('BANK LIMIT')}</Text><Text style={s.modalNumber}>{maxAmount.toLocaleString()}</Text></View>
+     <View style={s.modalStat}><Text style={s.statLabel}>{ui('YOU OWN')}</Text><Text style={s.modalNumber}>{playerState?ownedQuantity(selected).toLocaleString():'—'}</Text></View>
+     <View style={s.modalStat}><Text style={s.statLabel}>{ui('CAN DONATE')}</Text><Text style={s.modalNumber}>{maxAmount.toLocaleString()}</Text></View>
     </View>
     <Text style={s.name}>{ui('Donation amount')}</Text>
     <TextInput value={quantity} onChangeText={setQuantity} selectTextOnFocus keyboardType="number-pad"
@@ -296,9 +316,10 @@ export function OnlineGuildBankPanel({snapshot,onReload,focusResourceId,onFocusH
      style={({pressed})=>[s.preset,pressed&&s.pressed]}>
      <Text style={s.presetText}>{typeof preset==='number'?preset:ui(preset)}</Text>
     </Pressable>)}</View>
-    {maxAmount<=0?<Text style={s.success}>{ui('The Guild Bank already holds enough for all published requirements.')}</Text>:
+    {playerState?<Text style={s.meta}>{ui('Available unlocked: {count}',{count:(availableQuantity(selected)??0).toLocaleString()})}</Text>:null}
+    {maxAmount<=0?<Text style={s.warning}>{depositCapacity(selected)>0?ui('No unlocked stock available to donate.'):ui('The Guild Bank has enough for current requirements. Upcoming construction unlocks at its required Guild Level.')}</Text>:
      !valid?<Text style={s.warning}>{ui('Enter a whole number between 1 and {max}.',{max:maxAmount.toLocaleString()})}</Text>:
-     <Text style={s.meta}>{ui('Up to {max} more can be deposited. The server checks your available unlocked items or Gold when you confirm.',{max:maxAmount.toLocaleString()})}</Text>}
+     <Text style={s.meta}>{ui('Up to {max} can be donated now. The server rechecks your inventory and Guild requirements.',{max:maxAmount.toLocaleString()})}</Text>}
     <View style={s.warningCard}><Text style={s.help}>{ui('Deposits are permanent. Only Guild systems may allocate these supplies; members cannot withdraw or transfer them.')}</Text></View>
     <View style={s.actions}><View style={s.flex}><GameButton tone="secondary" title={ui("Cancel")} disabled={busy} onPress={close}/></View>
      <View style={s.flex}><GameButton title={ui("Review donation")} disabled={!valid||depositDisabled} loading={busy} onPress={confirmDeposit}/></View></View>
@@ -334,7 +355,7 @@ function styles(C:ThemeColors){return StyleSheet.create({
  activeTabText:{color:C.text},pressed:{opacity:.75},
  search:{minHeight:44,borderWidth:1,borderColor:C.lineStrong,borderRadius:radii.sm,backgroundColor:C.inputBg,color:C.text,paddingHorizontal:12,fontSize:13},
  bankGrid:{flexDirection:'row',flexWrap:'wrap',columnGap:6,rowGap:7},
- bankSlot:{width:'23%',flexGrow:1,maxWidth:'24%',minWidth:0,minHeight:109,gap:4,paddingHorizontal:3,paddingTop:12,paddingBottom:7,alignItems:'center',justifyContent:'space-between',position:'relative',borderWidth:1,borderColor:C.line,borderRadius:radii.sm,backgroundColor:C.panel2},
+ bankSlot:{width:'23%',flexGrow:1,maxWidth:'24%',minWidth:0,minHeight:119,gap:4,paddingHorizontal:3,paddingTop:12,paddingBottom:7,alignItems:'center',justifyContent:'space-between',position:'relative',borderWidth:1,borderColor:C.line,borderRadius:radii.sm,backgroundColor:C.panel2},
  accessibleSlot:{width:'31%',maxWidth:'32%',minHeight:119},
  fundedSlot:{opacity:.75},nowSlot:{borderColor:C.good},futureSlot:{borderColor:C.info},
  statusDot:{position:'absolute',width:6,height:6,borderRadius:4,right:6,top:6},
@@ -344,6 +365,7 @@ function styles(C:ThemeColors){return StyleSheet.create({
  stackCount:{position:'absolute',right:-4,bottom:-1,backgroundColor:C.panelRaised,borderWidth:1,borderColor:C.lineStrong,borderRadius:4,minWidth:19,maxWidth:51,paddingHorizontal:3,alignItems:'center'},
  stackText:{fontSize:10,fontWeight:'900',color:C.text},
  slotName:{fontSize:10,lineHeight:12,color:C.text,textAlign:'center',fontWeight:'800',minHeight:24},
+ slotOwned:{fontSize:9,lineHeight:12,color:C.info,textAlign:'center',fontWeight:'700'},
  slotNeed:{fontSize:9,lineHeight:12,color:C.muted,textAlign:'center'},
  nowText:{color:C.good},futureText:{color:C.info},
  footerHelp:{fontSize:11,lineHeight:16,color:C.muted},

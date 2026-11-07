@@ -16,7 +16,7 @@ const locales=['de','es','nl','it','fr','ru','tr'];
 assert.deepEqual([...SUPPORTED_LANGUAGES],['en',...locales]);
 const placeholders=value=>[...value.matchAll(/\{([a-zA-Z]\w*)\}/g)].map(m=>m[1]).sort();
 for(const [name,rows,translate,expected] of [
- ['Guild Bank',guildBankUiRows,guildBankUiText,89],
+ ['Guild Bank',guildBankUiRows,guildBankUiText,97],
  ['Guild Token Shop',guildTokenShopUiRows,guildTokenShopUiText,89],
 ]){
  assert.equal(Object.keys(rows).length,expected,name+': reviewed key count changed');
@@ -47,11 +47,11 @@ for(const token of [
  "ui('Only materials required by published Construction or released Guild Skills can be deposited. Donations cannot be withdrawn.')",
  "ui('This donation is permanent and cannot be withdrawn. Guild Construction or Guild Skills can spend it separately.')",
  "ui('Deposits are permanent. Only Guild systems may allocate these supplies; members cannot withdraw or transfer them.')",
- "ui('Enter a whole number between 1 and {max}.'", "ui('Up to {max} more can be deposited.",
+ "ui('Enter a whole number between 1 and {max}.'", "ui('Up to {max} can be donated now.",
  "ui('{amount} {resource} · Retry the saved receipt. Do not create a second donation.'",
  "ui('Donate quantity {amount}'",
  'depositOnlineGuildBank(input)', 'discardPendingGuildBankDeposit()', 'Number.isSafeInteger(amount)',
- 'amount<=1000000', 'amount<=depositCapacity(selected)', 'onPress={()=>void deposit({resourceId:selected,amount})}',
+ 'amount<=maxDeposit(selected)', 'maxDeposit=(id:string)', 'onPress={()=>void deposit({resourceId:selected,amount})}',
 ])assert.ok(bank.includes(token),'Guild Bank lost localized copy or authoritative deposit guard: '+token);
 for(const token of [
  'useGuildTokenShopUiText()', 'ui("Guild Token Shop sections")', "ui('{count} rewards'",
@@ -70,4 +70,4 @@ for(const token of [
 ])assert.ok(shopController.includes(token),'Guild Shop client safety or localized result missing: '+token);
 assert.ok(shop.includes('name:companion.name,description:companion.description'),'Unverified companion descriptions must remain source-authored');
 assert.ok(shop.includes('name:card.title'),'Unknown server offer names must remain unchanged');
-console.log('PASS: Guild Bank (89) and Token Shop (89) templates x seven target languages, exact interpolated values and server-validated transactions');
+console.log('PASS: Guild Bank (97) and Token Shop (89) templates x seven target languages, exact interpolated values and server-validated transactions');

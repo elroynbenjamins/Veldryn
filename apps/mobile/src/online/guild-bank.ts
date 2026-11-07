@@ -8,7 +8,8 @@ export interface PendingGuildBankDeposit{
 export type GuildBankDepositReceipt={alreadyProcessed:boolean;amount:number;resourceId:string};
 const allowedCodes:Readonly<Record<string,string>>={
  guild_membership_required:'Join a Guild before donating.',
- guild_bank_resource_unavailable:'This resource is not required by a released Guild project.',
+ guild_bank_resource_unavailable:'This resource is not needed for current Construction or a released Guild Skill rank. Refresh the Bank requirements.',
+ guild_bank_resource_exceeds_active_requirements:'The Guild Bank has enough of this resource for currently available upgrades. Refresh the Bank.',
  guild_bank_item_locked:'Unlock this inventory resource before depositing it.',
  insufficient_gold:'Not enough Gold to deposit.',
  insufficient_construction_materials:'Not enough unlocked material in your inventory.',

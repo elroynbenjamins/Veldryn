@@ -136,8 +136,8 @@ export function GuildScreen({state,onChange,onlineManagement,onlineBoard,onlineP
     {onlineSection==='Progress'?<GuildProgressPanel headerHelp={headerGuide} tab={progressTab} onChange={setProgressTab} projects={onlineProjects} onViewBank={()=>{setHallSection('Bank');setOnlineSection('Hall');guildScroll.current?.scrollTo({y:0,animated:false})}}/>:null}
     {onlineSection==='PvE'?onlinePve:null}
     {onlineSection==='Hall'?<View style={s.sectionStack}>
-      {isValidElement<{activeSection?:'Overview'|'Construction'|'Bank'|'Skills'|'Legacy'|'Shop';onSectionChange?:(section:GuildNavigationState['hallSection'])=>void;onTokenRewardsChanged?:()=>void|Promise<unknown>;headerHelp?:ReactNode}>(onlineHall)
-       ?cloneElement(onlineHall,{activeSection:hallSection,onTokenRewardsChanged,headerHelp:headerGuide,onSectionChange:next=>{if(next==='Skills'){setProgressTab('Skills');setOnlineSection('Progress')}else setHallSection(next);guildScroll.current?.scrollTo({y:0,animated:false})}})
+      {isValidElement<{playerState?:GameState;activeSection?:'Overview'|'Construction'|'Bank'|'Skills'|'Legacy'|'Shop';onSectionChange?:(section:GuildNavigationState['hallSection'])=>void;onTokenRewardsChanged?:()=>void|Promise<unknown>;headerHelp?:ReactNode}>(onlineHall)
+       ?cloneElement(onlineHall,{activeSection:hallSection,playerState:state,onTokenRewardsChanged,headerHelp:headerGuide,onSectionChange:next=>{if(next==='Skills'){setProgressTab('Skills');setOnlineSection('Progress')}else setHallSection(next);guildScroll.current?.scrollTo({y:0,animated:false})}})
        :onlineHall}
     </View>:null}
     {onlineSection==='Chat'?onlineChat:null}

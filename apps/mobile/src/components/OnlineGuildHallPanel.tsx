@@ -17,11 +17,13 @@ import {loadOnlineGuildHallV44} from '../online/guild-hall-v44';
 import {loadOnlineGuildTokenShop,type GuildTokenShopSnapshot} from '../online/guild-token-shop';
 import {type ThemeColors} from '../theme/theme';
 import {useGameTheme} from '../theme/ThemeContext';
+import type {GameState} from '../core/types';
 
 type Projection=Awaited<ReturnType<typeof loadOnlineGuildHallV44>>;
 // 'Skills' remains valid only for migration of older Hall navigation histories.
 export type HeadquartersSection='Overview'|'Construction'|'Bank'|'Shop'|'Legacy'|'Skills';
 interface HallNavigation {
+ playerState?:GameState;
  activeSection?:HeadquartersSection;
  onSectionChange?:(section:HeadquartersSection)=>void;
  onTokenRewardsChanged?:()=>void|Promise<unknown>;
@@ -51,7 +53,7 @@ export function OnlineGuildHallPanel(navigation:HallNavigation){
  return <GuildHallView {...navigation} projection={projection} loading={loading} error={error} onRefresh={()=>void load(true)}/>;
 }
 
-export function GuildHallView({projection,loading=false,error='',onRefresh,activeSection,onSectionChange,onTokenRewardsChanged,headerHelp,previewMode=false}:{projection:NonNullable<Projection>;loading?:boolean;error?:string;onRefresh?:()=>void;previewMode?:boolean}&HallNavigation){
+export function GuildHallView({projection,loading=false,error='',onRefresh,activeSection,onSectionChange,onTokenRewardsChanged,headerHelp,playerState,previewMode=false}:{projection:NonNullable<Projection>;loading?:boolean;error?:string;onRefresh?:()=>void;previewMode?:boolean}&HallNavigation){
  const ui=useGuildHallUiText(),C=useGameTheme(),s=useMemo(()=>styles(C),[C]);
  const [localSection,setLocalSection]=useState<HeadquartersSection>('Overview');
  const hallTabsRef=useRef<ScrollViewInstance>(null);
@@ -139,7 +141,7 @@ export function GuildHallView({projection,loading=false,error='',onRefresh,activ
   </View>:null}
   {section==='Bank'?<View style={s.root}>
    {shopFallback()}
-   {shop?<OnlineGuildBankPanel snapshot={shop} onReload={refreshShop} focusResourceId={bankFocus}
+   {shop?<OnlineGuildBankPanel snapshot={shop} playerState={playerState} onReload={refreshShop} focusResourceId={bankFocus}
     onFocusHandled={()=>setBankFocus(null)}
     onOpenConstruction={()=>{setBankFocus(null);navigate('Construction')}}/>:null}
   </View>:null}

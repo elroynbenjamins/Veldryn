@@ -1,5 +1,20 @@
 import {EXPEDITION} from '../expeditions/constants';
-import {rebasedCombatLevelFromLegacyLevel as rebaseLevel} from '../../../../apps/mobile/src/core/progression';
+/** Server-only mirror of the published Combat XP rebasing curve.
+ * Kept inside backend/src to avoid importing mobile files into the backend
+ * rootDir-only build. Online parity tests compare both implementations. */
+export function rebaseLegacyCombatLevel(level:number):number {
+  const bounded=Math.max(1,Math.min(100,Math.floor(Number.isFinite(level)?level:1)));
+  let earned=0;
+  for(let previous=1;previous<bounded;previous++)earned+=Math.floor(90*Math.pow(previous,1.42)+previous*35)*8;
+  let current=1,spent=0;
+  while(current<100){
+    const need=Math.floor(90*Math.pow(current,2.09)+current*35)*8;
+    if(spent+need>earned)return current;
+    spent+=need;
+    current++;
+  }
+  return 100;
+}
 export const COOP_ROGUELITE_CONFIG = Object.freeze({
   featureFlag: 'coopRogueliteV1',
   enabledByDefault: false,
@@ -26,7 +41,7 @@ export const COOP_ROGUELITE_CONFIG = Object.freeze({
 export type CoopTier=1|2|3|4|5;
 export function coopRequiredLevel(baseMinimumLevel:number,tier:CoopTier):number{
   if(!Number.isInteger(baseMinimumLevel)||baseMinimumLevel<1)throw new Error('invalid_expedition_minimum_level');
-  return rebaseLevel(baseMinimumLevel+COOP_ROGUELITE_CONFIG.tierMinimumLevelOffset[tier]);
+  return rebaseLegacyCombatLevel(baseMinimumLevel+COOP_ROGUELITE_CONFIG.tierMinimumLevelOffset[tier]);
 }
 
 export function highestEligibleCoopTier(baseMinimumLevel:number,characterLevel:number):CoopTier|undefined{

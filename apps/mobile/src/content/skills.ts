@@ -5,7 +5,7 @@ import {TOOL_RECIPES} from './gathering-tools';
 import {ALCHEMY_RECIPES} from './alchemy';
 import {V33_EQUIPMENT_RECIPES} from './equipment-recipes-v33';
 import {increasedCraftingGoldCost} from './crafting-gold-cost';
-export interface GatherDef{id:string;skillId:'mining'|'woodcutting'|'fishing'|'herbalism';name:string;unlockLevel:number;seconds:number;xp:number;itemId:string;min:number;max:number;zoneId:string;difficultyMultiplier:number;recommendedToolTier:number;}
+export interface GatherDef{id:string;skillId:'mining'|'woodcutting'|'fishing'|'herbalism';name:string;unlockLevel:number;seconds:number;xp:number;itemId:string;min:number;max:number;zoneId:string;areaId?:string;difficultyMultiplier:number;recommendedToolTier:number;}
 export const GATHERING:GatherDef[]=([
 // Starting-region mining keeps early enchanting materials accessible before Old Mines unlocks at Character Level 16.
 {id:'GREENFIELDS_COPPER_OUTCROP',skillId:'mining',name:'Copper Outcrop',unlockLevel:1,seconds:15,xp:9,itemId:'COPPER_ORE',min:1,max:2,zoneId:'GREENFIELDS'},
@@ -13,16 +13,22 @@ export const GATHERING:GatherDef[]=([
 {id:'ASTER_IRON_VEIN',skillId:'mining',name:'Aster-Iron Vein',unlockLevel:8,seconds:24,xp:18,itemId:'ASTER_IRON_ORE',min:1,max:2,zoneId:'OLD_MINES'},
 {id:'OATHSTONE_SEAM',skillId:'mining',name:'Oathstone Seam',unlockLevel:16,seconds:36,xp:29,itemId:'OATHSTONE_ORE',min:1,max:1,zoneId:'OLD_MINES'},
 {id:'ECHO_QUARTZ_GEODE',skillId:'mining',name:'Echo Quartz Geode',unlockLevel:20,seconds:38,xp:42,itemId:'ECHO_QUARTZ',min:1,max:1,zoneId:'OLD_MINES'},
-{id:'SUNSTONE_OUTCROP',skillId:'mining',name:'Sunstone Outcrop',unlockLevel:26,seconds:48,xp:92,itemId:'SUNSTONE_ORE',min:1,max:1,zoneId:'SUNSCAR'},
-{id:'FROSTIRON_VEIN',skillId:'mining',name:'Frostiron Vein',unlockLevel:46,seconds:62,xp:180,itemId:'FROSTIRON',min:1,max:1,zoneId:'FROSTMARCH'},
+{id:'SUNSTONE_OUTCROP',skillId:'mining',name:'Sunstone Outcrop',unlockLevel:26,seconds:48,xp:92,itemId:'SUNSTONE_ORE',min:1,max:1,zoneId:'SUNSCAR',areaId:'ZONE_006'},
+{id:'SCORCHWIND_SUNSTONE_SEAM',skillId:'mining',name:'Scorchwind Sunstone Seam',unlockLevel:31,seconds:53,xp:109,itemId:'SUNSTONE_ORE',min:1,max:1,zoneId:'SUNSCAR',areaId:'ZONE_007'},
+{id:'OBSERVATORY_AMBERGLASS_SEAM',skillId:'mining',name:'Observatory Amberglass Seam',unlockLevel:41,seconds:61,xp:155,itemId:'AMBERGLASS',min:1,max:1,zoneId:'SUNSCAR',areaId:'ZONE_010'},
+{id:'FROSTIRON_VEIN',skillId:'mining',name:'Frostiron Vein',unlockLevel:46,seconds:62,xp:180,itemId:'FROSTIRON',min:1,max:1,zoneId:'FROSTMARCH',areaId:'ZONE_011'},
+{id:'SHIVERLAKE_RIMEGLASS_SEAM',skillId:'mining',name:'Shiverlake Rimeglass Seam',unlockLevel:58,seconds:72,xp:218,itemId:'RIMEGLASS',min:1,max:1,zoneId:'FROSTMARCH',areaId:'ZONE_013'},
+{id:'WYRMSPINE_FROSTIRON_VEIN',skillId:'mining',name:'Wyrmspine Frostiron Vein',unlockLevel:65,seconds:82,xp:275,itemId:'FROSTIRON',min:1,max:1,zoneId:'FROSTMARCH',areaId:'ZONE_015'},
 {id:'BLACKGLASS_VEIN',skillId:'mining',name:'Blackglass Vein',unlockLevel:68,seconds:78,xp:310,itemId:'BLACKGLASS_ORE',min:1,max:1,zoneId:'ASHLANDS'},
 {id:'DEEP_BLACKGLASS_VEIN',skillId:'mining',name:'Deep Blackglass Vein',unlockLevel:86,seconds:92,xp:430,itemId:'BLACKGLASS_ORE',min:1,max:1,zoneId:'ASHLANDS'},
 
 {id:'GREENWOOD_TREE',skillId:'woodcutting',name:'Greenwood Tree',unlockLevel:1,seconds:14,xp:8,itemId:'GREENWOOD_LOG',min:1,max:2,zoneId:'GREENFIELDS'},
 {id:'IRONWOOD_TREE',skillId:'woodcutting',name:'Ironwood Tree',unlockLevel:7,seconds:24,xp:17,itemId:'IRONWOOD_LOG',min:1,max:2,zoneId:'IRONWOOD'},
 {id:'CROWNWOOD_TREE',skillId:'woodcutting',name:'Crownwood Tree',unlockLevel:15,seconds:36,xp:27,itemId:'CROWNWOOD_LOG',min:1,max:1,zoneId:'IRONWOOD'},
-{id:'DUNEWOOD_TREE',skillId:'woodcutting',name:'Dunewood Tree',unlockLevel:26,seconds:46,xp:88,itemId:'DUNEWOOD',min:1,max:1,zoneId:'SUNSCAR'},
-{id:'WHITEPINE_TREE',skillId:'woodcutting',name:'Whitepine Tree',unlockLevel:46,seconds:60,xp:172,itemId:'WHITEPINE_LOG',min:1,max:1,zoneId:'FROSTMARCH'},
+{id:'DUNEWOOD_TREE',skillId:'woodcutting',name:'Dunewood Tree',unlockLevel:26,seconds:46,xp:88,itemId:'DUNEWOOD',min:1,max:1,zoneId:'SUNSCAR',areaId:'ZONE_006'},
+{id:'SCORCHWIND_DUNEWOOD_GROVE',skillId:'woodcutting',name:'Scorchwind Dunewood Grove',unlockLevel:32,seconds:51,xp:102,itemId:'DUNEWOOD',min:1,max:1,zoneId:'SUNSCAR',areaId:'ZONE_007'},
+{id:'WHITEPINE_TREE',skillId:'woodcutting',name:'Whitepine Tree',unlockLevel:46,seconds:60,xp:172,itemId:'WHITEPINE_LOG',min:1,max:1,zoneId:'FROSTMARCH',areaId:'ZONE_011'},
+{id:'WHITEPINE_THICKET',skillId:'woodcutting',name:'Whitepine Thicket',unlockLevel:51,seconds:67,xp:192,itemId:'WHITEPINE_LOG',min:1,max:1,zoneId:'FROSTMARCH',areaId:'ZONE_012'},
 {id:'CINDERWOOD_TREE',skillId:'woodcutting',name:'Cinderwood Tree',unlockLevel:68,seconds:76,xp:300,itemId:'CINDERWOOD_LOG',min:1,max:1,zoneId:'ASHLANDS'},
 {id:'HEARTFIRE_CINDERWOOD',skillId:'woodcutting',name:'Heartfire Cinderwood',unlockLevel:86,seconds:90,xp:420,itemId:'CINDERWOOD_LOG',min:1,max:1,zoneId:'ASHLANDS'},
 
@@ -33,9 +39,10 @@ export const GATHERING:GatherDef[]=([
 {id:'OATHSCALE_POOL',skillId:'fishing',name:'Oathscale Pool',unlockLevel:16,seconds:41,xp:28,itemId:'OATHSCALE_PIKE',min:1,max:1,zoneId:'SILVERBROOK'},
 {id:'CAVE_LOACH_POOL',skillId:'fishing',name:'Cave Loach Pool',unlockLevel:16,seconds:39,xp:27,itemId:'CAVE_LOACH',min:1,max:1,zoneId:'OLD_MINES'},
 {id:'CROWN_CARP_POOL',skillId:'fishing',name:'Crown Carp Pool',unlockLevel:20,seconds:44,xp:34,itemId:'CROWN_CARP',min:1,max:1,zoneId:'KINGS_ROAD'},
-{id:'OASIS_CARP_POOL',skillId:'fishing',name:'Oasis Carp Pool',unlockLevel:26,seconds:50,xp:94,itemId:'OASIS_CARP',min:1,max:1,zoneId:'SUNSCAR'},
-{id:'GLASSFIN_POOL',skillId:'fishing',name:'Glassfin Pool',unlockLevel:36,seconds:56,xp:128,itemId:'GLASSFIN',min:1,max:1,zoneId:'SUNSCAR'},
-{id:'ICEFISH_POOL',skillId:'fishing',name:'Icefin Pool',unlockLevel:46,seconds:66,xp:188,itemId:'ICEFIN',min:1,max:1,zoneId:'FROSTMARCH'},
+{id:'OASIS_CARP_POOL',skillId:'fishing',name:'Oasis Carp Pool',unlockLevel:26,seconds:50,xp:94,itemId:'OASIS_CARP',min:1,max:1,zoneId:'SUNSCAR',areaId:'ZONE_006'},
+{id:'GLASSFIN_POOL',skillId:'fishing',name:'Glassfin Pool',unlockLevel:36,seconds:56,xp:128,itemId:'GLASSFIN',min:1,max:1,zoneId:'SUNSCAR',areaId:'ZONE_008'},
+{id:'ICEFISH_POOL',skillId:'fishing',name:'Icefin Pool',unlockLevel:46,seconds:66,xp:188,itemId:'ICEFIN',min:1,max:1,zoneId:'FROSTMARCH',areaId:'ZONE_011'},
+{id:'SHIVERLAKE_ICEFISH_POOL',skillId:'fishing',name:'Shiverlake Icefin Pool',unlockLevel:59,seconds:75,xp:228,itemId:'ICEFIN',min:1,max:1,zoneId:'FROSTMARCH',areaId:'ZONE_013'},
 {id:'EMBERFIN_POOL',skillId:'fishing',name:'Emberfin Mire',unlockLevel:72,seconds:84,xp:340,itemId:'EMBERFIN',min:1,max:1,zoneId:'ASHLANDS'},
 {id:'EMBERFIN_DEEPWATER',skillId:'fishing',name:'Emberfin Deepwater',unlockLevel:86,seconds:98,xp:470,itemId:'EMBERFIN',min:1,max:1,zoneId:'ASHLANDS'},
 // The 24-hour AFK window is generous; each gathering cycle is therefore

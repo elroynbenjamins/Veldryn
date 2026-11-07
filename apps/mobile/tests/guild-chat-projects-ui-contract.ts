@@ -69,6 +69,7 @@ ok(onlineProjects.includes("import {StatusPill} from './StatusPill'"),'Live Proj
 ok(onlineProjects.includes('<StatusPill label={ui("SHARED")} tone="good"/>'),'Live Projects must expose semantic shared-project status');
 ok(onlineProjects.includes('Your contribution'),'Live Projects must surface personal contribution');
 ok(onlineProjects.includes('const personalShortfall=')&&onlineProjects.includes('personal effort short of reward eligibility')&&onlineProjects.includes('Reward claim period ended'),'Live Projects must explain personal reward shortfall and claim expiry separately');
+ok(onlineProjects.includes('const contributorsMissing=')&&onlineProjects.includes('more qualifying contributors needed to complete this project'),'Project cards must explain the missing meaningful contributor requirement');
 ok(onlineProjects.includes('Counts toward contributor minimum')&&onlineProjects.includes('Below contributor minimum'),'Expanded member contribution rows must explain meaningful contributor status');
 ok(projectSupplies.includes('quantityProblem')&&projectSupplies.includes('That exceeds the remaining {count} supply needed.')&&projectSupplies.includes('You only have {count} eligible items available.'),'Project supply donations must explain why invalid amounts cannot be submitted');
 ok(projectSupplies.includes('All supply goals are complete.')&&projectSupplies.includes('personal limit'),'Donation UI must distinguish complete goals from stock limits and retain server authority');

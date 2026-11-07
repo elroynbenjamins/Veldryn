@@ -1,3 +1,4 @@
+import {rebasedCombatLevelFromLegacyLevel as rebaseLevel} from '../core/progression';
 import type {ClassId,GearSlot} from '../core/types';
 import type {ItemDef} from './items';
 import catalog from './equipment_catalog_t1_t9_v33.json';
@@ -19,6 +20,6 @@ export const EQUIPMENT_ITEMS_V33:ItemDef[]=(catalog.pieces as Array<Record<strin
     id:String(piece['Piece ID']),name:String(piece['Item Name']),type:'gear',slot,
     attack:weight.attack*scale,defense:weight.defense*scale,hp:weight.hp*scale,
     readiness:Math.max(1,Math.ceil(level/4)),value:Math.max(10,level*scale*12),
-    rarity:rarityByTier[tier]??'common',classRestriction:classIdByName[String(piece.Class)],requiredLevel:level,equipmentSetId:String(piece['Set ID']),
+    rarity:rarityByTier[tier]??'common',classRestriction:classIdByName[String(piece.Class)],requiredLevel:rebaseLevel(level),equipmentSetId:String(piece['Set ID']),
   };
 });

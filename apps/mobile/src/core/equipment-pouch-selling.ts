@@ -5,6 +5,7 @@ import {craftedGearInstances} from './crafted-gear-instances';
 import {disposeCraftedGearInstance} from './crafted-gear-ownership';
 import {canDisposeLegacyEquipment} from './equipment-enhancement';
 import {equipmentPouch} from './equipment-pouch';
+import {equipmentSalvageReward} from './equipment-salvage';
 import type {GameState,GearSlot,ItemStack} from './types';
 import {workingTowardInventoryProtectionMap} from './working-toward-inventory';
 
@@ -108,7 +109,7 @@ function salvageLegacySlot(state:GameState,index:number,itemId:string):GameState
  const pouch=equipmentPouch(state),stack=pouch.stacks[index],item=itemDef(itemId);
  if(!stack||stack.instanceId!==undefined||stack.itemId!==itemId||!Number.isSafeInteger(stack.quantity)||stack.quantity<1)
    throw new Error('Equipment Pouch changed; review your selection');
- if(item.type!=='gear'||item.guildOnly||item.knowledgeUnlockId||!item.salvage)
+ if(item.type!=='gear'||item.guildOnly||item.knowledgeUnlockId||!equipmentSalvageReward(itemId))
    throw new Error('This equipment cannot be salvaged');
  if(state.settings.favoriteItemIds?.includes(itemId)||state.settings.lockedItemIds?.includes(itemId))
    throw new Error('Favorite and locked equipment stays protected');
@@ -118,7 +119,7 @@ function salvageLegacySlot(state:GameState,index:number,itemId:string):GameState
  if(characters.some(character=>character.savedLoadouts?.some(loadout=>
    Object.entries(loadout.equipment).some(([slot,id])=>id===itemId&&!loadout.equipmentInstanceIds?.[slot as GearSlot]))))
    throw new Error('Saved loadouts protect this equipment');
- const reward=item.salvage;
+ const reward=equipmentSalvageReward(itemId)!;
  const existing=state.inventory.stacks.find(row=>row.itemId===reward.itemId&&row.instanceId===undefined);
  if(!existing&&state.inventory.stacks.filter(row=>row.quantity>0).length>=entitlementStorageCapacity(state,'inventory'))
    throw new Error('Inventory is full; make space for salvage');
@@ -156,7 +157,7 @@ export function salvageEquipmentPouchSelected(state:GameState,ids:readonly strin
      throw new Error('Equipment Pouch changed; review your selection');
    if(goals.has(stack.itemId))throw new Error('Equipment needed for a Working Toward goal is protected');
    const item=itemDef(stack.itemId);
-   if(item.type!=='gear'||item.guildOnly||item.knowledgeUnlockId||!item.salvage)
+   if(item.type!=='gear'||item.guildOnly||item.knowledgeUnlockId||!equipmentSalvageReward(stack.itemId))
      throw new Error('This equipment cannot be salvaged');
    if(state.settings.lockedItemIds?.includes(stack.itemId)||state.settings.favoriteItemIds?.includes(stack.itemId))
      throw new Error('Favorite and locked equipment stays protected');
@@ -179,7 +180,7 @@ export function equipmentPouchSalvageCandidates(state:GameState,onlyIds?:readonl
  const requested=onlyIds?new Set(onlyIds):null;
  let candidateState=state;
  for(let index=original.length-1;index>=0;index--){
-   const stack=original[index],id=equipmentPouchSaleId(stack,index),reward=itemDef(stack.itemId).salvage;
+   const stack=original[index],id=equipmentPouchSaleId(stack,index),reward=equipmentSalvageReward(stack.itemId);
    if(requested&&!requested.has(id))continue;
    try{
      const next=salvageEquipmentPouchSelected(candidateState,[id]);

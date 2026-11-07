@@ -1,0 +1,33 @@
+name: One-off Faith gameplay bundle regeneration
+on:
+  push:
+    branches:
+      - fix/faith-activity-progress-timer-20261107
+    paths:
+      - .github/workflows/faith-gameplay-bundle-sync.yml
+permissions:
+  contents: write
+jobs:
+  regenerate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: true
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: pnpm --dir backend install --frozen-lockfile
+      - run: pnpm --dir backend build:online
+      - name: Commit the regenerated gameplay bundle
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add backend/supabase/functions/gameplay/index.ts
+          if ! git diff --cached --quiet; then
+            git commit -m "build: synchronize Faith timer in gameplay Edge bundle"
+            git push
+          fi

@@ -1038,7 +1038,11 @@ export function salvageItem(state:GameState,itemId:string):GameState{
   const d=itemDef(itemId),reward=equipmentSalvageReward(itemId);if(d.type!=='gear'||!reward)throw new Error('Cannot salvage');
   if(state.inventory.stacks.some(row=>row.itemId===itemId&&row.instanceId===undefined&&row.quantity>0)&&!canDisposeLegacyEquipment(state,itemId,'inventory',1))
     throw new Error('Enhanced equipment is protected. Keep the upgraded copy or extract its gems before disposal.');
-  let next:GameState={...state,inventory:{...state.inventory,stacks:stackItems(consume(state.inventory.stacks,itemId,1),[reward])}};
+  const remaining=consume(state.inventory.stacks,itemId,1);
+  const existing=remaining.find(row=>row.itemId===reward.itemId&&row.instanceId===undefined);
+  if(!existing&&remaining.length>=entitlementStorageCapacity(state,'inventory'))throw new Error('Inventory is full; make space for salvage');
+  if(!Number.isSafeInteger((existing?.quantity??0)+reward.quantity))throw new Error('Salvage material quantity overflow');
+  let next:GameState={...state,inventory:{...state.inventory,stacks:stackItems(remaining,[reward])}};
   return next;
 }
 

@@ -1,3 +1,4 @@
+import {rebasedCombatLevelFromLegacyLevel as rebaseLevel} from '../core/progression';
 import type {GatheringSkillId} from '../core/types';
 import {increasedCraftingGoldCost} from './crafting-gold-cost';
 
@@ -20,7 +21,7 @@ export interface GatheringToolDef{
   rarity:'common'|'uncommon'|'rare'|'epic';value:number;
 }
 
-const tool=(definition:GatheringToolDef):GatheringToolDef=>({...definition,recipe:{...definition.recipe,gold:increasedCraftingGoldCost(definition.recipe.gold)}});
+const tool=(definition:GatheringToolDef):GatheringToolDef=>({...definition,requiredCharacterLevel:rebaseLevel(definition.requiredCharacterLevel),recipe:{...definition.recipe,gold:increasedCraftingGoldCost(definition.recipe.gold)}});
 const blueprint=(itemId:string,knowledgeId:string,sourceMonsterId:string,dropChance:number):GatheringToolBlueprintDef=>({itemId,knowledgeId,sourceMonsterId,dropChance});
 
 export const GATHERING_TOOLS:GatheringToolDef[]=[

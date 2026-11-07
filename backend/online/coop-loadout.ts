@@ -7,6 +7,7 @@ import {activeEquipmentBuildStats} from '../../apps/mobile/src/core/equipment-se
 import {canonicalGemMetaV1,equippedCanonicalGemIdsV1} from '../../apps/mobile/src/core/gem-progression-v1';
 import {summarizeGemLoadoutV1} from '../src/server/equipment/gems/gem-runtime-v1';
 import type {GameState,ClassId} from '../../apps/mobile/src/core/types';
+import {rebaseCombatCharacter,legacyCharacterLevelFromXp} from '../../apps/mobile/src/core/progression';
 import {launchPlayer} from '../src/server/combat/content/launch-combat';
 import type {AuthoritativeLoadoutRecord} from '../src/server/coop/loadout-snapshots';
 import {deriveRole,evaluateRoleReadiness,type CapabilityTag} from '../src/server/coop/role-readiness';
@@ -30,11 +31,11 @@ function referenceStats(classId:ClassId){
 /** Only call with a state loaded from online_game_states by the trusted server.
  * HTTP callers supply a selection/revision, never this state or its stats. */
 export function deriveOnlineCoopLoadout(accountId:string,state:GameState,version:number):AuthoritativeLoadoutRecord{
- const character=state.character;if(!character)throw new Error('character_required');
+ const character=state.character?rebaseCombatCharacter(state.character):null;if(!character)throw new Error('character_required');
  if(!Number.isSafeInteger(version)||version<1)throw new Error('invalid_game_version');
  const definition=CLASSES.find(row=>row.id===character.classId);if(!definition)throw new Error('unknown_class');
  const role=deriveRole(character.classId);
- const kit=launchPlayer(definition.name,25),reference=referenceStats(character.classId),actual=effectiveStats(state),levelScale=character.level/25;
+ const kit=launchPlayer(definition.name,25),reference=referenceStats(character.classId),actual=effectiveStats(state),combatScalingLevel=legacyCharacterLevelFromXp(character.xp),levelScale=combatScalingLevel/25;
  const bonus=activeEquipmentBuildStats(state);
  // These gems come from the server-loaded character's *equipped* sockets,
  // including unique forged copies. Never accept client-supplied gem effects.
@@ -55,7 +56,7 @@ export function deriveOnlineCoopLoadout(accountId:string,state:GameState,version
  if(companionId)assertCompanionIdle(state,companionId);
  const combatCompanion=companionId?companionOwned(state)[companionId]:undefined;
  if(companionId&&!combatCompanion)throw new Error('missing_companion_progress');
- return {accountId,characterId:character.id,classId:character.classId,loadoutId:'current',revision:version,characterLevel:character.level,
+ return {accountId,characterId:character.id,classId:character.classId,loadoutId:'current',revision:version,characterLevel:character.level,combatScalingLevel,
   dungeonUnlocked:true,legalEquipment,capabilities,abilities:structuredClone(kit.abilities),stats:{
    characterId:character.id,classId:character.classId,displayName:character.name,bodyPresentation:character.bodyPresentation??'male',level:character.level,
    ...(combatCompanion?{combatCompanion:structuredClone(combatCompanion)}:{}),
@@ -82,7 +83,7 @@ export function onlineCoopLoadoutHash(record:AuthoritativeLoadoutRecord):string{
  * uses resolveAndFreezeLoadout and checks the selected dungeon and revision. */
 export function assessOnlineCoopLoadout(record:AuthoritativeLoadoutRecord,syncLevel=25){
  const role=deriveRole(record.classId),reference=ROOTBOUND_ROLE_REFERENCES[role];
- const normalized=normalizeCombatInput({...record.stats,role},record.abilities,syncLevel,reference);
+ const normalized=normalizeCombatInput({...record.stats,level:record.combatScalingLevel??record.characterLevel,role},record.abilities,syncLevel,reference);
  const scale=normalized.effectiveLevel/reference.level;
  const primary=(role==='tank'?normalized.snapshot.defense/reference.defense:role==='support'?Math.max(normalized.snapshot.healingPower/reference.healingPower,normalized.snapshot.defense/reference.defense):normalized.snapshot.attackPower/reference.attackPower)/scale;
  const readiness=evaluateRoleReadiness(record.classId,primary,record.capabilities);

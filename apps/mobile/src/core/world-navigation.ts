@@ -39,7 +39,9 @@ export function nextRegionUnlock(level:number){
 }
 export function regionEncounters(state:GameState,zoneName:string,query:string,availableOnly:boolean,areaId?:string){
   const search=query.trim().toLowerCase();
-  const regionId=WORLD_ZONES.find(zone=>zone.name===zoneName)?.id;
+  const zone=WORLD_ZONES.find(zone=>zone.name===zoneName);
+  if(zone&&worldZoneInDevelopment(zone))return [];
+  const regionId=zone?.id;
   const area=regionId?regionalArea(regionId,areaId):undefined;
   return MONSTERS.filter(monster=>monster.zone===zoneName&&(!area||monster.areaId===area.id)&&monster.name.toLowerCase().includes(search)&&(!availableOnly||encounterUnlocked(state,monster)));
 }
@@ -50,6 +52,9 @@ export type EncounterLockRequirement=
   |{kind:'regionProgression'};
 export function encounterLockRequirement(state:GameState,monster:MonsterDef):EncounterLockRequirement|undefined{
   const region=WORLD_ZONES.find(zone=>zone.name===monster.zone),level=state.character?.level??0;
+  // Authored future-region encounters must stay unplayable even when old save
+  // data contains their unlock IDs or the character is above the level gate.
+  if(region&&worldZoneInDevelopment(region))return {kind:'regionProgression'};
   if(level<(region?.minLevel??1))return {kind:'level',level:region?.minLevel??1};
   if(monster.boss){
     if(level<monster.unlockLevel)return {kind:'level',level:monster.unlockLevel};
@@ -124,6 +129,9 @@ export interface RegionTravelPreview{
 export function regionTravelPreview(state:GameState,regionId:string):RegionTravelPreview{
   const region=WORLD_ZONES.find(zone=>zone.id===regionId);
   if(!region)throw new Error('unknown_region');
+  // Preview planned themes only. Never present authored future loot or enemies
+  // as obtainable while a region is in development.
+  if(worldZoneInDevelopment(region))return {enemies:[],drops:[],activities:region.plannedActivities??['Regional content']};
   const monsters=MONSTERS.filter(monster=>monster.zone===region.name);
   const enemies=monsters.slice().sort((a,b)=>Number(a.boss)-Number(b.boss)||a.level-b.level).slice(0,4).map(monster=>({id:monster.id,name:monster.name,boss:!!monster.boss}));
   const drops=[] as RegionTravelPreview['drops'];

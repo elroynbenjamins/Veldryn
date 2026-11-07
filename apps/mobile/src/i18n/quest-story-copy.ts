@@ -175,14 +175,14 @@ export const chapterOneQuestCopy={
       "Ironwood'a Doğru"
     ],
     "description": [
-      "Reach character level 10.",
-      "Erreiche Charakterstufe 10.",
-      "Alcanza el nivel de personaje 10.",
-      "Bereik personageniveau 10.",
-      "Raggiungi il livello personaggio 10.",
-      "Atteignez le niveau de personnage 10.",
-      "Достигните 10-го уровня персонажа.",
-      "Karakter seviyesini 10'a çıkar."
+      "Reach character level 7.",
+      "Erreiche Charakterstufe 7.",
+      "Alcanza el nivel de personaje 7.",
+      "Bereik personageniveau 7.",
+      "Raggiungi il livello personaggio 7.",
+      "Atteignez le niveau de personnage 7.",
+      "Достигните 7-го уровня персонажа.",
+      "Karakter seviyesini 7'a çıkar."
     ],
     "story": [
       "Rumours from the forest no longer sound like frightened farmers exaggerating. Something beneath the roots is stirring, and the wardens will only open the deeper paths to adventurers who have survived long enough to matter.",

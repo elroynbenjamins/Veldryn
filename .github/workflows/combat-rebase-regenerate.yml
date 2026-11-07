@@ -1,0 +1,40 @@
+name: Regenerate Combat XP Edge bundles (one-time draft)
+on:
+  push:
+    branches:
+      - feature/combat-level-xp-rebase-20261107
+    paths:
+      - .github/workflows/combat-rebase-regenerate.yml
+permissions:
+  contents: write
+jobs:
+  regenerate:
+    if: github.repository == 'elroynbenjamins/Veldryn'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: feature/combat-level-xp-rebase-20261107
+          persist-credentials: true
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+          cache-dependency-path: backend/pnpm-lock.yaml
+      - name: Install exact backend dependencies
+        run: pnpm install --frozen-lockfile
+        working-directory: backend
+      - name: Rebuild gameplay and cooperative Edge entrypoints
+        run: node tools/build-online.mjs
+      - name: Commit generated bundles to draft branch only
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add backend/supabase/functions/gameplay/index.ts backend/supabase/functions/coop/index.ts
+          if ! git diff --cached --quiet; then
+            git commit -m "build: regenerate combat rebalance gameplay and coop Edge bundles"
+            git push origin HEAD:feature/combat-level-xp-rebase-20261107
+          fi

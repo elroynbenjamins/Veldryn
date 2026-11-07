@@ -54,14 +54,14 @@ export function WorldScreen({state,onTravel,onOpenCombat,onOpenSkills,onCoop,dun
 
   // Dungeons own their scrolling/navigation. Keep their existing screen untouched.
   if(topTab==='dungeon'&&dungeonContent)return <View style={{flex:1,backgroundColor:C.bg}}>
-    {!dungeonFlowActive?<View style={s.dungeonTabsWrap}><View accessibilityRole="tablist" style={s.topTabs}>
+    {!dungeonFlowActive&&<View style={s.dungeonTabsWrap}><View accessibilityRole="tablist" style={s.topTabs}>
       <Pressable accessibilityRole="tab" accessibilityState={{selected:false}} style={s.topTab} onPress={()=>setTopTab('region')}>
         <Text style={s.topTabText}>{t('Current Region')}</Text>
       </Pressable>
       <Pressable accessibilityRole="tab" accessibilityState={{selected:true}} style={[s.topTab,s.topTabActive]} onPress={()=>setTopTab('dungeon')}>
         <Text style={[s.topTabText,s.topTabTextActive]}>{t('Dungeon')}</Text>
       </Pressable>
-    </View></View>:null}
+    </View></View>}
     <View style={{flex:1,minHeight:0}}>{dungeonContent}</View>
   </View>;
 

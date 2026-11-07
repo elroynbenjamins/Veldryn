@@ -34,8 +34,7 @@ function projectNeeds(snapshot:GuildTokenShopSnapshot,skillSnapshot:GuildSkillsS
    needed.set(req.resourceId,{...before,[upcoming?'upcoming':'current']:before[upcoming?'upcoming':'current']+remainder});
   }
  }
- // Only released Guild Skills' next-rank costs can be banked, and only
- // while the guild still holds unspent skill points.
+ // Released Guild Skills' next-rank costs may be banked before points are earned.
  if(skillSnapshot&&skillSnapshot.guildLevel===snapshot.guildLevel){
   for(const node of skillSnapshot.nodes){
    if(!node.released||node.rank>=node.maxRank)continue;
@@ -79,7 +78,6 @@ export function OnlineGuildBankPanel({snapshot,playerState,onReload,focusResourc
  const needs=useMemo(()=>projectNeeds(snapshot,skillSnapshot),[snapshot,skillSnapshot]);
  const stored=new Map((snapshot.bank?.balances??[]).map(row=>[row.resourceId,row.amount]));
  const balance=(id:string)=>stored.get(id)??0;
- const totalNeed=(id:string)=>{const row=needs.get(id);return (row?.current??0)+(row?.upcoming??0)+(row?.skills??0)};
  const depositCapacity=(id:string)=>Math.max(0,(needs.get(id)?.current??0)+(needs.get(id)?.skills??0)-balance(id));
  const lockedIds=new Set((playerState as unknown as {settings?:{lockedItemIds?:string[]}}|undefined)?.settings?.lockedItemIds??[]);
  const ownedQuantity=(id:string)=>id==='gold'?Math.max(0,Math.floor(playerState?.character?.gold??0)):

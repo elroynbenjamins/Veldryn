@@ -16,6 +16,20 @@ export const regionalMonsterPortraitCells:Readonly<Record<string,{column:number;
  FROSTWOLF:{column:0,row:1},BELLWRAITH:{column:1,row:1},CHOIR_HUNTER:{column:2,row:1},
  BLACKGLASS_MIRELING:{column:0,row:2},CINDER_TITAN:{column:1,row:2},ASHEN_REVENANT:{column:2,row:2},
 };
-export function regionalMonsterPortraitCell(monsterId:string){return regionalMonsterPortraitCells[monsterId];}
-export function monsterPortraitSource(monsterId:string){return monsterPortraits[monsterId];}
+/** Reuse established monster silhouettes instead of shipping new image MB.
+ * Each alias depicts the same creature family (shade, skitter, wolf, knight, treant). */
+const REGIONAL_AREA_ART_ALIASES:Readonly<Record<string,string>>={
+ SAFFRON_MARAUDER:'OATHBOUND_SQUIRE',
+ GLASS_DUNE_STRIDER:'CAVE_SKITTER',
+ MIRAGE_SHADE:'BANNER_SHADE',
+ OBSERVATORY_KEEPER:'GLASSBOUND_SENTINEL',
+ ROYAL_SANDGUARD:'FALLEN_SENTINEL',
+ ICEBOUND_RAIDER:'OATHBOUND_SQUIRE',
+ SNOW_TREANT:'ANCIENT_TREANT',
+ RIME_STALKER:'FROSTWOLF',
+ LAKEBOUND_SPECTER:'BELLWRAITH',
+ WYRMSPINE_GUARDIAN:'CHOIR_HUNTER',
+};
+export function regionalMonsterPortraitCell(monsterId:string){return regionalMonsterPortraitCells[REGIONAL_AREA_ART_ALIASES[monsterId]??monsterId];}
+export function monsterPortraitSource(monsterId:string){return monsterPortraits[REGIONAL_AREA_ART_ALIASES[monsterId]??monsterId];}
 export function hasMonsterPortrait(monsterId:string){return !!monsterPortraitSource(monsterId)||!!regionalMonsterPortraitCell(monsterId);}

@@ -95,7 +95,7 @@ export function resolveCoopNode(input:{runId:string;serverSecret:string;node:Coo
  const roll=deterministicInt(input.serverSecret,1,999,'node-resolution-v1',input.runId,input.node.nodeId,input.node.contentId);
  switch(input.node.kind){
   case 'camp': state=healAtCamp(state,input.players); break;
-  case 'shrine': case 'forge': case 'echo': state={...state,boons:[...state.boons,`${input.node.contentId}:${roll}`]}; break;
+  case 'shrine': case 'forge': case 'echo': if(input.enemyDamageProfile!=='qmode-v1')state={...state,boons:[...state.boons,`${input.node.contentId}:${roll}`]}; break;
   case 'treasure': case 'secret': state={...state,artifacts:[...state.artifacts,`${input.node.contentId}:${roll}`]}; break;
   case 'risk': state={...state,curses:[...state.curses,`${input.node.contentId}:${roll}`],resources:state.resources+2}; break;
   case 'event': state={...state,resources:state.resources+1}; break;

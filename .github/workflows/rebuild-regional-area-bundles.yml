@@ -29,6 +29,8 @@ jobs:
           node-version: 22
       - name: Install pinned backend dependencies
         run: pnpm --dir backend install --frozen-lockfile
+      - name: Install shared mobile type dependencies
+        run: pnpm --dir apps/mobile install --frozen-lockfile
       - name: Build gameplay and co-op Edge entrypoints
         run: pnpm --dir backend build:online
       - name: Commit generated bundles to the feature branch only

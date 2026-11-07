@@ -1,4 +1,4 @@
-import {GATHERING_TOOLS,TOOL_BLUEPRINT_ITEMS} from '../src/content/gathering-tools';
+import {GATHERING_TOOLS,TOOL_BLUEPRINT_ITEMS,TOOL_RECIPES} from '../src/content/gathering-tools';
 import {GATHERING,RECIPES} from '../src/content/skills';
 import {HERB_NODES} from '../src/content/herbalism';
 import {craftRecipe,createCharacter,equipGatheringTool,GATHER_TIME_SCALE,newGame,previewActivityReward,startGathering} from '../src/core/game';
@@ -13,6 +13,7 @@ function ok(condition:unknown,message:string){if(!condition)throw new Error(mess
 let state=createCharacter(newGame(0),'IRONWARDEN','Tool Tester','female');
 const oathstone=GATHERING.find(entry=>entry.id==='OATHSTONE_SEAM')!;
 ok(GATHERING_TOOLS.length===12,'Expected four tool tiers for three gathering skills');
+ok(TOOL_RECIPES.length===12&&TOOL_RECIPES.every(recipe=>recipe.skillId==='smithing'&&recipe.level===1),'All gathering tools must be craftable at Smithing level 1, regardless of tier');
 ok(RECIPES.filter(entry=>entry.output.itemId.endsWith('PICKAXE')||entry.output.itemId.endsWith('HATCHET')||entry.output.itemId.endsWith('ROD')).length===12,'Every gathering tool must be craftable');
 ok(TOOL_BLUEPRINT_ITEMS.length===9,'Tier 2-4 gathering tools should use permanent blueprints while Tier 1 stays directly craftable');
 for(const skillId of ['mining','woodcutting','fishing'] as const){
@@ -61,10 +62,13 @@ earlyTool=craftRecipe(earlyTool,'CRAFT_GREENWOOD_HATCHET');
 ok(earlyTool.inventory.stacks.some(stack=>stack.itemId==='GREENWOOD_HATCHET'),'Level-3 Greenwood Hatchet must be craftable from genuinely early Greenfields materials');
 
 let blueprintCraft=createCharacter(newGame(0),'IRONWARDEN','Blueprint Smith');
-blueprintCraft={...blueprintCraft,character:{...blueprintCraft.character!,level:16,gold:100000},skills:blueprintCraft.skills.map(skill=>skill.skillId==='woodcutting'?{...skill,level:10,xp:totalXpAtLevel(10)}:skill.skillId==='smithing'?{...skill,level:12,xp:totalXpAtLevel(12)}:skill),inventory:{...blueprintCraft.inventory,stacks:[{itemId:'BP_ASTER_IRON_HATCHET',quantity:1},{itemId:'ASTER_IRON_INGOT',quantity:15},{itemId:'IRONWOOD_LOG',quantity:30},{itemId:'REINFORCED_FITTING',quantity:3}]}};
+blueprintCraft={...blueprintCraft,character:{...blueprintCraft.character!,level:16,gold:100000},skills:blueprintCraft.skills.map(skill=>skill.skillId==='woodcutting'?{...skill,level:10,xp:totalXpAtLevel(10)}:skill),inventory:{...blueprintCraft.inventory,stacks:[{itemId:'BP_ASTER_IRON_HATCHET',quantity:1},{itemId:'ASTER_IRON_INGOT',quantity:15},{itemId:'IRONWOOD_LOG',quantity:30},{itemId:'REINFORCED_FITTING',quantity:3}]}};
+ok(blueprintCraft.skills.find(skill=>skill.skillId==='smithing')?.level===1,'Blueprint crafting test must keep Smithing at starting level');
 const noBlueprint={...blueprintCraft,inventory:{...blueprintCraft.inventory,stacks:blueprintCraft.inventory.stacks.filter(stack=>stack.itemId!=='BP_ASTER_IRON_HATCHET')}};
 let blueprintBlocked=false;try{craftRecipe(noBlueprint,'CRAFT_ASTER_IRON_HATCHET')}catch(error){blueprintBlocked=error instanceof Error&&error.message.includes('Blueprint')}
 ok(blueprintBlocked,'Tier 2 tool craft must require its blueprint before the recipe is learned');
+let skillingBlocked=false;try{craftRecipe({...blueprintCraft,skills:blueprintCraft.skills.map(skill=>skill.skillId==='woodcutting'?{...skill,level:1,xp:0}:skill)},'CRAFT_ASTER_IRON_HATCHET')}catch(error){skillingBlocked=error instanceof Error&&error.message.includes('woodcutting level 10')}
+ok(skillingBlocked,'Tool crafting must still enforce the matching gathering skill level');
 blueprintCraft=craftRecipe(blueprintCraft,'CRAFT_ASTER_IRON_HATCHET');
 ok(blueprintCraft.account.unlockedKnowledgeIds?.includes('tool_recipe:ASTER_IRON_HATCHET'),'First successful tool craft permanently learns its blueprint');
 ok(!blueprintCraft.inventory.stacks.some(stack=>stack.itemId==='BP_ASTER_IRON_HATCHET'),'Learning the tool recipe consumes the blueprint item once');
@@ -73,6 +77,11 @@ blueprintCraft=equipGatheringTool(blueprintCraft,'ASTER_IRON_HATCHET');
 blueprintCraft={...blueprintCraft,inventory:{...blueprintCraft.inventory,stacks:[...blueprintCraft.inventory.stacks,{itemId:'ASTER_IRON_INGOT',quantity:15},{itemId:'IRONWOOD_LOG',quantity:30},{itemId:'REINFORCED_FITTING',quantity:3}]}};
 blueprintCraft=craftRecipe(blueprintCraft,'CRAFT_ASTER_IRON_HATCHET');
 ok(blueprintCraft.inventory.stacks.some(stack=>stack.itemId==='ASTER_IRON_HATCHET'),'A learned blueprint allows replacement tools without another blueprint drop');
+
+let frostTool=createCharacter(newGame(0),'IRONWARDEN','Frost Tool Tester');
+frostTool={...frostTool,character:{...frostTool.character!,level:46,gold:100000},skills:frostTool.skills.map(skill=>skill.skillId==='fishing'?{...skill,level:46,xp:totalXpAtLevel(46)}:skill),inventory:{...frostTool.inventory,stacks:[{itemId:'BP_RIMEGLASS_ROD',quantity:1},{itemId:'FROSTIRON',quantity:22},{itemId:'RIMEGLASS',quantity:14},{itemId:'CHOIR_BLOOM',quantity:4}]}};
+frostTool=craftRecipe(frostTool,'CRAFT_RIMEGLASS_ROD');
+ok(frostTool.inventory.stacks.some(stack=>stack.itemId==='RIMEGLASS_ROD'),'Tier 4 blueprint tool must also be craftable with Smithing at level 1');
 
 const dewleaf=HERB_NODES.find(row=>row.id==='DEWLEAF_PATCH')!;
 let herb=createCharacter(newGame(0),'IRONWARDEN','Method Tester','female');

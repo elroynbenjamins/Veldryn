@@ -24,7 +24,7 @@ export function DungeonRouteChoices({options,mode,phase,busy=false,onChoose,myVo
  const action=mode==='qmode'?ui('Choose room'):ui('Vote');
  const live=mode==='live',totalVotes=live?options.reduce((total,option)=>total+(option.votes??0),0):0;
  return <View style={s.list}>
-  {options.map((option,index)=>{
+  {options.map(option=>{
    const canPress=canChoose&&!option.hidden;
    const votedHere=live&&myVotedNodeId===option.nodeId;
    const room=dungeonRoomPresentation(option.kind);

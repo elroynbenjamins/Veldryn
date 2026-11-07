@@ -13,7 +13,6 @@ import {radii,typography,type ThemeColors} from '../theme/theme';
 import {useGameTheme} from '../theme/ThemeContext';
 
 function tierLabel(tier:0|1|2|3){return tier===3?'RALLY III':tier===2?'RALLY II':tier===1?'RALLY I':'BUILDING';}
-function roleLabel(role:string){return role.replace(/_/g,' ').replace(/\b\w/g,value=>value.toUpperCase());}
 
 export function OnlineGuildMusterPanel(){
  const st=useSocialText(),language=useGameLanguage();
@@ -98,7 +97,7 @@ export function OnlineGuildMusterPanel(){
     const earned=member.todayPoints>=state.rallyMarkThreshold;
     const status=rosterView==='today'
      ? earned?st('RALLY MARK'):member.todayPoints>0?st('{points} TO MARK',{points:state.rallyMarkThreshold-member.todayPoints}):st('NO POINTS')
-     : member.qualifyingDays>=state.personalWeeklyGoal?st('4-DAY GOAL MET'):member.qualifyingDays>0?st('{days} DAYS TO GO',{days:state.personalWeeklyGoal-member.qualifyingDays}):st('NO RALLY DAYS');
+     : member.qualifyingDays>=state.personalWeeklyGoal?st('GOAL MET'):member.qualifyingDays>0?st('{days} DAYS TO GO',{days:state.personalWeeklyGoal-member.qualifyingDays}):st('NO RALLY DAYS');
     const positive=rosterView==='today'?earned:member.qualifyingDays>=state.personalWeeklyGoal;
     const pending=rosterView==='today'?member.todayPoints>0:member.qualifyingDays>0;
     return <View key={member.accountId} style={s.member}>

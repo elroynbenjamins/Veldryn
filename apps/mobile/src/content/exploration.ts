@@ -1,3 +1,4 @@
+import {rebasedCombatLevelFromLegacyLevel as rebaseLevel} from '../core/progression';
 export interface ExplorationRoute{ id:string; zoneId:string; name:string; seconds:number; xp:number; unlockMonsterId?:string; unlockZoneId?:string; requiredLevel:number; requiredExplorationLevel:number; }
 export const EXPLORATION_ROUTES:ExplorationRoute[]=[
  {id:'SCOUT_GREENFIELDS',zoneId:'GREENFIELDS',name:'Scout the Greenfields',seconds:48,xp:24,unlockMonsterId:'FIELD_WISP',requiredLevel:1,requiredExplorationLevel:1},
@@ -8,5 +9,5 @@ export const EXPLORATION_ROUTES:ExplorationRoute[]=[
  {id:'SCOUT_SUNSCAR',zoneId:'SUNSCAR',name:'Chart the Sunscar glasslands',seconds:168,xp:250,unlockMonsterId:'SUNSCAR_SCORPION',unlockZoneId:'FROSTMARCH',requiredLevel:26,requiredExplorationLevel:6},
  {id:'SCOUT_FROSTMARCH',zoneId:'FROSTMARCH',name:'Follow the Frostmarch bells',seconds:240,xp:430,unlockMonsterId:'FROSTWOLF',unlockZoneId:'ASHLANDS',requiredLevel:46,requiredExplorationLevel:9},
  {id:'SCOUT_ASHLANDS',zoneId:'ASHLANDS',name:'Read the Ashlands smoke',seconds:288,xp:720,unlockMonsterId:'BLACKGLASS_MIRELING',requiredLevel:71,requiredExplorationLevel:14},
-];
+].map(route=>({...route,requiredLevel:rebaseLevel(route.requiredLevel)}));
 export const explorationRoute=(id:string)=>EXPLORATION_ROUTES.find(route=>route.id===id);

@@ -137,7 +137,9 @@ export function OnlineGuildBankPanel({snapshot,playerState,onReload,focusResourc
   try{
    const response=await depositOnlineGuildBank(input);
    setPending(null);setConfirming(false);setSelection(null);
-   if(!response.alreadyProcessed)setLocalDeductions(previous=>({...previous,[input.resourceId]:(previous[input.resourceId]??0)+input.amount}));
+   // A confirmed retry may report alreadyProcessed even when the original request
+   // timed out, so update displayed local stock for either confirmed receipt.
+   setLocalDeductions(previous=>({...previous,[input.resourceId]:(previous[input.resourceId]??0)+input.amount}));
    setNotice(response.alreadyProcessed?ui('Saved deposit confirmed. No additional resources were deducted.'):
     ui('{amount} {resource} deposited into the Guild Bank.',{amount:input.amount.toLocaleString(),resource:resourceTitle(input.resourceId)}));
    try{await onReload();setSkillRefresh(x=>x+1)}catch{setNotice(ui('Deposit confirmed. Bank refresh is unavailable; reopen the Bank to update balances.'));}

@@ -50,7 +50,7 @@ for(const [encounterId,expected] of asterfallRegular){
    case 'bruiser':
     assert.ok(abilities.some(ability=>ability.effects.some(effect=>effect.kind==='damage')),`${encounterId}: bruiser must retain basic damage`);
     break;
-   default: assert.fail(`${encounterId}: unexpected archetype ${archetype}`);
+   default: throw new Error(`${encounterId}: unexpected archetype ${archetype}`);
   }
  }
 }

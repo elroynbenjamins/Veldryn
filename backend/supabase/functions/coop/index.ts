@@ -42749,8 +42749,6 @@ var EQUIPMENT_ITEMS_V33 = equipment_catalog_t1_t9_v33_default.pieces.map((piece)
     hp: weight.hp * scale,
     readiness: Math.max(1, Math.ceil(level / 4)),
     value: Math.max(10, level * scale * 12),
-    // Salvage returns a small, tier-scaled amount of upgrade material, never the full craft cost.
-    salvage: { itemId: "TEMPERING_DUST", quantity: Math.max(1, Math.ceil(scale / 2)) },
     rarity: rarityByTier[tier] ?? "common",
     classRestriction: classIdByName2[String(piece.Class)],
     requiredLevel: level,
@@ -45578,6 +45576,15 @@ var CLASS_AFFINITY_XP_MULTIPLIER = 1.05;
 var CLASS_AFFINITY_SPEED_MULTIPLIER = 1.03;
 var NEUTRAL = Object.freeze({ xpMultiplier: 1, speedMultiplier: 1 });
 var MATCHED = Object.freeze({ xpMultiplier: CLASS_AFFINITY_XP_MULTIPLIER, speedMultiplier: CLASS_AFFINITY_SPEED_MULTIPLIER });
+
+// ../apps/mobile/src/core/equipment-salvage.ts
+var MATERIAL_ID = "TEMPERING_DUST";
+var tieredRewards = /* @__PURE__ */ new Map();
+for (const item of EQUIPMENT_ITEMS_V33) {
+  const match = /^T([1-9])[A-Z]*_/.exec(item.id);
+  if (!match) continue;
+  tieredRewards.set(item.id, { itemId: MATERIAL_ID, quantity: Math.max(1, Math.ceil(Number(match[1]) / 2)) });
+}
 
 // ../apps/mobile/src/content/quests.ts
 var QUESTS = [

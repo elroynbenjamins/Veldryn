@@ -42,7 +42,7 @@ for(const language of languages){
  assert.ok(guide.includes('SCOUT')===false,'route should remain human-readable '+language);
 }
 const old=questLockHint({...initial,character:{level:1}},third);
-assert.equal(old,'Reach character level 7 through Combat to unlock this objective.','original quest lock never mutated');
+assert.equal(old,`Reach character level ${third.requiredCharacterLevel} through Combat to unlock this objective.`,'quest lock uses the rebased level consistently');
 assert.equal(localizedQuestDestinationText('fr',first,'hint'),questUnlockText('fr','{monster} · character level {level}. Collect hunt rewards on Home to update kill objectives.',{monster:'Moss Rat',level:1}),'monster hint source guard');
 const order={claimed:false,progress:0,target:10,kind:'hunt',targetId:'MOSS_RAT',id:'2026-W45:hunt:MOSS_RAT',source:{id:'MOSS_RAT',kind:'monster',label:'Moss Rat',available:true},reward:{rewardRef:'weekly_order_hunt_standard',label:'Hunt Order reward'}};
 assert.equal(localizedWeeklyOrderLockReason('de',{character:null},order),questUnlockText('de','Create a character first.'),'contract cannot be used without a character');

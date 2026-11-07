@@ -1,4 +1,5 @@
 import {MONSTERS,MonsterDef} from '../content/monsters';
+import {regionalArea} from '../content/regional-areas';
 import {WORLD_ZONES,type WorldZoneDef,worldZoneInDevelopment} from '../content/world-map';
 import {GATHERING} from '../content/skills';
 import {HERB_NODES} from '../content/herbalism';
@@ -36,9 +37,11 @@ export function regionTravelAvailability(state:GameState,zone:WorldZoneDef):Regi
 export function nextRegionUnlock(level:number){
   return WORLD_ZONES.filter(zone=>!worldZoneInDevelopment(zone)&&zone.minLevel>level).sort((a,b)=>a.minLevel-b.minLevel)[0];
 }
-export function regionEncounters(state:GameState,zoneName:string,query:string,availableOnly:boolean){
+export function regionEncounters(state:GameState,zoneName:string,query:string,availableOnly:boolean,areaId?:string){
   const search=query.trim().toLowerCase();
-  return MONSTERS.filter(monster=>monster.zone===zoneName&&monster.name.toLowerCase().includes(search)&&(!availableOnly||encounterUnlocked(state,monster)));
+  const regionId=WORLD_ZONES.find(zone=>zone.name===zoneName)?.id;
+  const area=regionId?regionalArea(regionId,areaId):undefined;
+  return MONSTERS.filter(monster=>monster.zone===zoneName&&(!area||monster.areaId===area.id)&&monster.name.toLowerCase().includes(search)&&(!availableOnly||encounterUnlocked(state,monster)));
 }
 export type EncounterLockRequirement=
   |{kind:'level';level:number}
@@ -51,6 +54,12 @@ export function encounterLockRequirement(state:GameState,monster:MonsterDef):Enc
   if(monster.boss){
     if(level<monster.unlockLevel)return {kind:'level',level:monster.unlockLevel};
     return state.quests.find(q=>q.questId==='QST_014')?.status==='locked'?{kind:'story'}:undefined;
+  }
+  if(monster.regionalAreaAutoUnlock){
+    const area=region?regionalArea(region.id,monster.areaId):undefined;
+    const requiredLevel=Math.max(monster.unlockLevel,area?.minLevel??1);
+    if(level<requiredLevel)return {kind:'level',level:requiredLevel};
+    return region&&regionTravelAvailability(state,region)!=='available'?{kind:'regionProgression'}:undefined;
   }
   if(state.unlockedMonsterIds.includes(monster.id))return undefined;
   if(level<monster.unlockLevel)return {kind:'level',level:monster.unlockLevel};

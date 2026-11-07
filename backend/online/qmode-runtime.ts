@@ -100,7 +100,7 @@ export class OnlineQModeRuntime{
   const domain=new QModeService(repository,seed),run=domain.choose({runId,controllerAccountId:accountId,optionNodeId:request.optionId,boonId:request.boonId});
   const duration=Math.max(0,Number(run.lastResolution!.result.summary.durationMs??0));
   const resolvesAtMs=loaded.serverNow+duration;
-  const client={...projection(before,loaded.stateVersion+1,seed),phase:'resolving_node',options:[],selectedNodeId:request.optionId,resolvesAtMs};
+  const client={...projection(before,loaded.stateVersion+1,seed),phase:'resolving_node',options:[],selectedNodeId:request.optionId,resolvesAtMs,boonOffers:undefined};
   return this.services.rpc('queue_online_qmode_node_server_v1',{p_account_id:accountId,p_run_id:runId,p_expected_version:loaded.stateVersion,p_request_id:request.requestId,p_request_hash:hash,p_private_state:{run:before,seed,pending:{run,resolvesAtMs,startStateHash:digest(before.persistentState),settlement:settlement(run,loaded.stateVersion+2,seed)}},p_client_projection:client});
  }
 }

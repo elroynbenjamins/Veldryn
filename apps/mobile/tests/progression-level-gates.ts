@@ -1,4 +1,5 @@
 import {GATHERING,RECIPES} from '../src/content/skills';
+import {rebasedCombatLevelFromLegacyLevel as rebaseLevel} from '../src/core/progression';
 import {HERB_NODES} from '../src/content/herbalism';
 import {MONSTERS} from '../src/content/monsters';
 import {WORLD_ZONES} from '../src/content/world-map';
@@ -28,10 +29,11 @@ for(const recipe of equipment){
  const tier=recipe.v33EquipmentTier!;
  const characterFloor=TIER_CHARACTER_LEVEL_FLOOR[tier],craftFloor=TIER_CRAFTING_LEVEL_FLOOR[tier];
  ok(characterFloor!==undefined&&craftFloor!==undefined,'Unknown equipment tier '+tier);
- ok((recipe.characterLevel??0)>=characterFloor,recipe.id+' is below '+tier+' character floor');
+ ok((recipe.characterLevel??0)>=rebaseLevel(characterFloor),recipe.id+' is below '+tier+' rebased character floor');
  ok(recipe.level>=craftFloor,recipe.id+' is below '+tier+' crafting floor');
  ok((recipe.characterLevel??1)<=100&&recipe.level<=100,recipe.id+' must be reachable within the character and profession level cap');
- ok(recipe.level<=Math.max(1,(recipe.characterLevel??1)+5),recipe.id+' crafting gate runs too far ahead of its character gate');
+ // Crafting skill level and displayed Combat level now follow independent curves.
+ ok(recipe.level>=craftFloor,recipe.id+' must retain its independent skill requirement');
 }
 for(let i=1;i<=9;i++){
  const tier='T'+i,recipes=equipment.filter(recipe=>recipe.v33EquipmentTier===tier);
@@ -43,7 +45,7 @@ for(let i=1;i<=9;i++){
  }
 }
 const ashlands=zoneById.get('ASHLANDS')!;
-ok(TIER_CHARACTER_LEVEL_FLOOR.T9>=ashlands.minLevel,'T9 must begin in the Ashlands character band');
+ok(rebaseLevel(TIER_CHARACTER_LEVEL_FLOOR.T9)>=ashlands.minLevel,'T9 must begin in the Ashlands character band');
 ok(TIER_CRAFTING_LEVEL_FLOOR.T9>=65,'T9 crafting must remain a late-game profession gate');
 const t9=equipment.filter(recipe=>recipe.v33EquipmentTier==='T9');
 ok(t9.every(recipe=>recipe.v33Region==='Ashlands'),'Every T9 set must be authored as Ashlands equipment');

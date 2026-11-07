@@ -42557,21 +42557,21 @@ var tool = (definition) => ({ ...definition, recipe: { ...definition.recipe, gol
 var blueprint = (itemId, knowledgeId, sourceMonsterId, dropChance) => ({ itemId, knowledgeId, sourceMonsterId, dropChance });
 var GATHERING_TOOLS = [
   // Tier 1 is always learnable, but still requires early investment in the relevant gathering skill.
-  tool({ id: "COPPER_PICKAXE", name: "Copper Pickaxe", skillId: "mining", tier: 1, actionTimeMultiplier: 1, unlockLevel: 3, requiredCharacterLevel: 16, icon: "\u26CF", rarity: "common", value: 120, recipe: { level: 4, xp: 110, gold: 120, seconds: 120, inputs: [{ itemId: "COPPER_INGOT", quantity: 8 }, { itemId: "GREENWOOD_LOG", quantity: 14 }] } }),
-  tool({ id: "GREENWOOD_HATCHET", name: "Greenwood Hatchet", skillId: "woodcutting", tier: 1, actionTimeMultiplier: 1, unlockLevel: 3, requiredCharacterLevel: 3, icon: "\u{1FA93}", rarity: "common", value: 110, recipe: { level: 1, xp: 105, gold: 110, seconds: 114, inputs: [{ itemId: "GREENWOOD_LOG", quantity: 24 }, { itemId: "MOSS_FIBER", quantity: 12 }] } }),
-  tool({ id: "REEDLINE_ROD", name: "Reedline Fishing Rod", skillId: "fishing", tier: 1, actionTimeMultiplier: 1, unlockLevel: 3, requiredCharacterLevel: 3, icon: "\u{1F3A3}", rarity: "common", value: 100, recipe: { level: 1, xp: 100, gold: 100, seconds: 114, inputs: [{ itemId: "GREENWOOD_LOG", quantity: 20 }, { itemId: "MOSS_FIBER", quantity: 10 }] } }),
+  tool({ id: "COPPER_PICKAXE", name: "Copper Pickaxe", skillId: "mining", tier: 1, actionTimeMultiplier: 1, unlockLevel: 3, requiredCharacterLevel: 16, icon: "\u26CF", rarity: "common", value: 120, recipe: { xp: 110, gold: 120, seconds: 120, inputs: [{ itemId: "COPPER_INGOT", quantity: 8 }, { itemId: "GREENWOOD_LOG", quantity: 14 }] } }),
+  tool({ id: "GREENWOOD_HATCHET", name: "Greenwood Hatchet", skillId: "woodcutting", tier: 1, actionTimeMultiplier: 1, unlockLevel: 3, requiredCharacterLevel: 3, icon: "\u{1FA93}", rarity: "common", value: 110, recipe: { xp: 105, gold: 110, seconds: 114, inputs: [{ itemId: "GREENWOOD_LOG", quantity: 24 }, { itemId: "MOSS_FIBER", quantity: 12 }] } }),
+  tool({ id: "REEDLINE_ROD", name: "Reedline Fishing Rod", skillId: "fishing", tier: 1, actionTimeMultiplier: 1, unlockLevel: 3, requiredCharacterLevel: 3, icon: "\u{1F3A3}", rarity: "common", value: 100, recipe: { xp: 100, gold: 100, seconds: 114, inputs: [{ itemId: "GREENWOOD_LOG", quantity: 20 }, { itemId: "MOSS_FIBER", quantity: 10 }] } }),
   // Tier 2 blueprints are approachable regional drops; the tool itself remains a meaningful material craft.
-  tool({ id: "ASTER_IRON_PICKAXE", name: "Aster-Iron Pickaxe", skillId: "mining", tier: 2, actionTimeMultiplier: 0.75, unlockLevel: 10, requiredCharacterLevel: 16, icon: "\u26CF", rarity: "uncommon", value: 440, blueprint: blueprint("BP_ASTER_IRON_PICKAXE", "tool_recipe:ASTER_IRON_PICKAXE", "CAVE_SKITTER", 0.05), recipe: { level: 12, xp: 340, gold: 650, seconds: 240, inputs: [{ itemId: "ASTER_IRON_INGOT", quantity: 16 }, { itemId: "IRONWOOD_LOG", quantity: 26 }, { itemId: "REINFORCED_FITTING", quantity: 3 }] } }),
-  tool({ id: "ASTER_IRON_HATCHET", name: "Aster-Iron Hatchet", skillId: "woodcutting", tier: 2, actionTimeMultiplier: 0.75, unlockLevel: 10, requiredCharacterLevel: 16, icon: "\u{1FA93}", rarity: "uncommon", value: 430, blueprint: blueprint("BP_ASTER_IRON_HATCHET", "tool_recipe:ASTER_IRON_HATCHET", "THORNLING", 0.05), recipe: { level: 12, xp: 330, gold: 620, seconds: 228, inputs: [{ itemId: "ASTER_IRON_INGOT", quantity: 15 }, { itemId: "IRONWOOD_LOG", quantity: 30 }, { itemId: "REINFORCED_FITTING", quantity: 3 }] } }),
-  tool({ id: "IRONWOOD_ROD", name: "Ironwood Fishing Rod", skillId: "fishing", tier: 2, actionTimeMultiplier: 0.75, unlockLevel: 10, requiredCharacterLevel: 16, icon: "\u{1F3A3}", rarity: "uncommon", value: 420, blueprint: blueprint("BP_IRONWOOD_ROD", "tool_recipe:IRONWOOD_ROD", "MIRE_HERON", 0.05), recipe: { level: 12, xp: 320, gold: 600, seconds: 222, inputs: [{ itemId: "IRONWOOD_LOG", quantity: 36 }, { itemId: "ASTER_IRON_INGOT", quantity: 9 }, { itemId: "WISP_DUST", quantity: 10 }] } }),
+  tool({ id: "ASTER_IRON_PICKAXE", name: "Aster-Iron Pickaxe", skillId: "mining", tier: 2, actionTimeMultiplier: 0.75, unlockLevel: 10, requiredCharacterLevel: 16, icon: "\u26CF", rarity: "uncommon", value: 440, blueprint: blueprint("BP_ASTER_IRON_PICKAXE", "tool_recipe:ASTER_IRON_PICKAXE", "CAVE_SKITTER", 0.05), recipe: { xp: 340, gold: 650, seconds: 240, inputs: [{ itemId: "ASTER_IRON_INGOT", quantity: 16 }, { itemId: "IRONWOOD_LOG", quantity: 26 }, { itemId: "REINFORCED_FITTING", quantity: 3 }] } }),
+  tool({ id: "ASTER_IRON_HATCHET", name: "Aster-Iron Hatchet", skillId: "woodcutting", tier: 2, actionTimeMultiplier: 0.75, unlockLevel: 10, requiredCharacterLevel: 16, icon: "\u{1FA93}", rarity: "uncommon", value: 430, blueprint: blueprint("BP_ASTER_IRON_HATCHET", "tool_recipe:ASTER_IRON_HATCHET", "THORNLING", 0.05), recipe: { xp: 330, gold: 620, seconds: 228, inputs: [{ itemId: "ASTER_IRON_INGOT", quantity: 15 }, { itemId: "IRONWOOD_LOG", quantity: 30 }, { itemId: "REINFORCED_FITTING", quantity: 3 }] } }),
+  tool({ id: "IRONWOOD_ROD", name: "Ironwood Fishing Rod", skillId: "fishing", tier: 2, actionTimeMultiplier: 0.75, unlockLevel: 10, requiredCharacterLevel: 16, icon: "\u{1F3A3}", rarity: "uncommon", value: 420, blueprint: blueprint("BP_IRONWOOD_ROD", "tool_recipe:IRONWOOD_ROD", "MIRE_HERON", 0.05), recipe: { xp: 320, gold: 600, seconds: 222, inputs: [{ itemId: "IRONWOOD_LOG", quantity: 36 }, { itemId: "ASTER_IRON_INGOT", quantity: 9 }, { itemId: "WISP_DUST", quantity: 10 }] } }),
   // Tier 3 is a genuine progression chase: higher gathering level, Level 20 and a rarer blueprint.
-  tool({ id: "OATHSTONE_PICKAXE", name: "Oathstone Pickaxe", skillId: "mining", tier: 3, actionTimeMultiplier: 0.5, unlockLevel: 20, requiredCharacterLevel: 20, icon: "\u26CF", rarity: "rare", value: 1180, blueprint: blueprint("BP_OATHSTONE_PICKAXE", "tool_recipe:OATHSTONE_PICKAXE", "RUNEBOUND_MINER", 0.02), recipe: { level: 24, xp: 900, gold: 2400, seconds: 480, inputs: [{ itemId: "OATHSTONE_INGOT", quantity: 22 }, { itemId: "CROWNWOOD_LOG", quantity: 40 }, { itemId: "OATHGLASS_SHARD", quantity: 8 }] } }),
-  tool({ id: "OATHSTONE_HATCHET", name: "Oathstone Hatchet", skillId: "woodcutting", tier: 3, actionTimeMultiplier: 0.5, unlockLevel: 20, requiredCharacterLevel: 20, icon: "\u{1FA93}", rarity: "rare", value: 1160, blueprint: blueprint("BP_OATHSTONE_HATCHET", "tool_recipe:OATHSTONE_HATCHET", "ANCIENT_TREANT", 0.02), recipe: { level: 24, xp: 880, gold: 2300, seconds: 468, inputs: [{ itemId: "OATHSTONE_INGOT", quantity: 20 }, { itemId: "CROWNWOOD_LOG", quantity: 46 }, { itemId: "OATHGLASS_SHARD", quantity: 7 }] } }),
-  tool({ id: "OATHSCALE_ROD", name: "Oathscale Fishing Rod", skillId: "fishing", tier: 3, actionTimeMultiplier: 0.5, unlockLevel: 20, requiredCharacterLevel: 20, icon: "\u{1F3A3}", rarity: "rare", value: 1140, blueprint: blueprint("BP_OATHSCALE_ROD", "tool_recipe:OATHSCALE_ROD", "DROWNED_PILGRIM", 0.02), recipe: { level: 24, xp: 860, gold: 2200, seconds: 456, inputs: [{ itemId: "CROWNWOOD_LOG", quantity: 44 }, { itemId: "OATHSTONE_INGOT", quantity: 14 }, { itemId: "OATHSCALE_PIKE", quantity: 10 }] } }),
+  tool({ id: "OATHSTONE_PICKAXE", name: "Oathstone Pickaxe", skillId: "mining", tier: 3, actionTimeMultiplier: 0.5, unlockLevel: 20, requiredCharacterLevel: 20, icon: "\u26CF", rarity: "rare", value: 1180, blueprint: blueprint("BP_OATHSTONE_PICKAXE", "tool_recipe:OATHSTONE_PICKAXE", "RUNEBOUND_MINER", 0.02), recipe: { xp: 900, gold: 2400, seconds: 480, inputs: [{ itemId: "OATHSTONE_INGOT", quantity: 22 }, { itemId: "CROWNWOOD_LOG", quantity: 40 }, { itemId: "OATHGLASS_SHARD", quantity: 8 }] } }),
+  tool({ id: "OATHSTONE_HATCHET", name: "Oathstone Hatchet", skillId: "woodcutting", tier: 3, actionTimeMultiplier: 0.5, unlockLevel: 20, requiredCharacterLevel: 20, icon: "\u{1FA93}", rarity: "rare", value: 1160, blueprint: blueprint("BP_OATHSTONE_HATCHET", "tool_recipe:OATHSTONE_HATCHET", "ANCIENT_TREANT", 0.02), recipe: { xp: 880, gold: 2300, seconds: 468, inputs: [{ itemId: "OATHSTONE_INGOT", quantity: 20 }, { itemId: "CROWNWOOD_LOG", quantity: 46 }, { itemId: "OATHGLASS_SHARD", quantity: 7 }] } }),
+  tool({ id: "OATHSCALE_ROD", name: "Oathscale Fishing Rod", skillId: "fishing", tier: 3, actionTimeMultiplier: 0.5, unlockLevel: 20, requiredCharacterLevel: 20, icon: "\u{1F3A3}", rarity: "rare", value: 1140, blueprint: blueprint("BP_OATHSCALE_ROD", "tool_recipe:OATHSCALE_ROD", "DROWNED_PILGRIM", 0.02), recipe: { xp: 860, gold: 2200, seconds: 456, inputs: [{ itemId: "CROWNWOOD_LOG", quantity: 44 }, { itemId: "OATHSTONE_INGOT", quantity: 14 }, { itemId: "OATHSCALE_PIKE", quantity: 10 }] } }),
   // Tier 4 belongs to Frostmarch. It is deliberately a long-term efficiency upgrade, not required to enter the region.
-  tool({ id: "FROSTIRON_PICKAXE", name: "Frostiron Pickaxe", skillId: "mining", tier: 4, actionTimeMultiplier: 0.4, unlockLevel: 46, requiredCharacterLevel: 46, icon: "\u26CF", rarity: "epic", value: 3600, blueprint: blueprint("BP_FROSTIRON_PICKAXE", "tool_recipe:FROSTIRON_PICKAXE", "BELLWRAITH", 0.01), recipe: { level: 50, xp: 2400, gold: 8500, seconds: 960, inputs: [{ itemId: "FROSTIRON", quantity: 32 }, { itemId: "RIMEGLASS", quantity: 12 }, { itemId: "REINFORCED_FITTING", quantity: 10 }] } }),
-  tool({ id: "FROSTIRON_HATCHET", name: "Frostiron Hatchet", skillId: "woodcutting", tier: 4, actionTimeMultiplier: 0.4, unlockLevel: 46, requiredCharacterLevel: 46, icon: "\u{1FA93}", rarity: "epic", value: 3550, blueprint: blueprint("BP_FROSTIRON_HATCHET", "tool_recipe:FROSTIRON_HATCHET", "FROSTWOLF", 0.01), recipe: { level: 50, xp: 2350, gold: 8300, seconds: 948, inputs: [{ itemId: "FROSTIRON", quantity: 30 }, { itemId: "RIMEGLASS", quantity: 10 }, { itemId: "CHOIR_BLOOM", quantity: 4 }] } }),
-  tool({ id: "RIMEGLASS_ROD", name: "Rimeglass Fishing Rod", skillId: "fishing", tier: 4, actionTimeMultiplier: 0.4, unlockLevel: 46, requiredCharacterLevel: 46, icon: "\u{1F3A3}", rarity: "epic", value: 3500, blueprint: blueprint("BP_RIMEGLASS_ROD", "tool_recipe:RIMEGLASS_ROD", "CHOIR_HUNTER", 0.01), recipe: { level: 50, xp: 2300, gold: 8100, seconds: 936, inputs: [{ itemId: "FROSTIRON", quantity: 22 }, { itemId: "RIMEGLASS", quantity: 14 }, { itemId: "CHOIR_BLOOM", quantity: 4 }] } })
+  tool({ id: "FROSTIRON_PICKAXE", name: "Frostiron Pickaxe", skillId: "mining", tier: 4, actionTimeMultiplier: 0.4, unlockLevel: 46, requiredCharacterLevel: 46, icon: "\u26CF", rarity: "epic", value: 3600, blueprint: blueprint("BP_FROSTIRON_PICKAXE", "tool_recipe:FROSTIRON_PICKAXE", "BELLWRAITH", 0.01), recipe: { xp: 2400, gold: 8500, seconds: 960, inputs: [{ itemId: "FROSTIRON", quantity: 32 }, { itemId: "RIMEGLASS", quantity: 12 }, { itemId: "REINFORCED_FITTING", quantity: 10 }] } }),
+  tool({ id: "FROSTIRON_HATCHET", name: "Frostiron Hatchet", skillId: "woodcutting", tier: 4, actionTimeMultiplier: 0.4, unlockLevel: 46, requiredCharacterLevel: 46, icon: "\u{1FA93}", rarity: "epic", value: 3550, blueprint: blueprint("BP_FROSTIRON_HATCHET", "tool_recipe:FROSTIRON_HATCHET", "FROSTWOLF", 0.01), recipe: { xp: 2350, gold: 8300, seconds: 948, inputs: [{ itemId: "FROSTIRON", quantity: 30 }, { itemId: "RIMEGLASS", quantity: 10 }, { itemId: "CHOIR_BLOOM", quantity: 4 }] } }),
+  tool({ id: "RIMEGLASS_ROD", name: "Rimeglass Fishing Rod", skillId: "fishing", tier: 4, actionTimeMultiplier: 0.4, unlockLevel: 46, requiredCharacterLevel: 46, icon: "\u{1F3A3}", rarity: "epic", value: 3500, blueprint: blueprint("BP_RIMEGLASS_ROD", "tool_recipe:RIMEGLASS_ROD", "CHOIR_HUNTER", 0.01), recipe: { xp: 2300, gold: 8100, seconds: 936, inputs: [{ itemId: "FROSTIRON", quantity: 22 }, { itemId: "RIMEGLASS", quantity: 14 }, { itemId: "CHOIR_BLOOM", quantity: 4 }] } })
 ];
 var TOOL_ITEMS = GATHERING_TOOLS.map((entry2) => ({ id: entry2.id, name: entry2.name, type: "tool", value: entry2.value, rarity: entry2.rarity, toolSkillId: entry2.skillId, toolTier: entry2.tier, actionTimeMultiplier: entry2.actionTimeMultiplier }));
 var TOOL_BLUEPRINT_ITEMS = GATHERING_TOOLS.flatMap((entry2) => entry2.blueprint ? [{
@@ -42586,7 +42586,8 @@ var TOOL_RECIPES = GATHERING_TOOLS.map((entry2) => ({
   id: `CRAFT_${entry2.id}`,
   name: entry2.name,
   skillId: "smithing",
-  level: entry2.recipe.level,
+  // Tool unlocks are controlled by the gathering skill, character level, and blueprint—not Smithing level.
+  level: 1,
   xp: entry2.recipe.xp,
   gold: entry2.recipe.gold,
   seconds: entry2.recipe.seconds,
@@ -42605,9 +42606,12 @@ var HERB_NODES = [
   { id: "CAVELICHEN_COLONY", name: "Cavelichen Colony", itemId: "CAVELICHEN", zoneId: "OLD_MINES", unlockLevel: 30, seconds: 60, xp: 68 },
   { id: "CROWN_SAGE_GROVE", name: "Crown Sage Grove", itemId: "CROWN_SAGE", zoneId: "KINGS_ROAD", unlockLevel: 45, seconds: 70, xp: 110 },
   { id: "OATHBLOSSOM_PATCH", name: "Oathblossom Patch", itemId: "OATHBLOSSOM", zoneId: "KINGS_ROAD", unlockLevel: 60, seconds: 80, xp: 170 },
-  { id: "SUNSCALE_BLOOM", name: "Sunscale Bloom", itemId: "SUNSCALE", zoneId: "SUNSCAR", unlockLevel: 26, seconds: 92, xp: 215 },
-  { id: "FROSTBELL_FLOWER", name: "Frostbell Flower", itemId: "FROSTBLOOM", zoneId: "FROSTMARCH", unlockLevel: 46, seconds: 118, xp: 310 },
-  { id: "WINTERMINT_PATCH", name: "Wintermint Patch", itemId: "WINTERMINT", zoneId: "FROSTMARCH", unlockLevel: 48, seconds: 122, xp: 325 },
+  { id: "SUNSCALE_BLOOM", name: "Sunscale Bloom", itemId: "SUNSCALE", zoneId: "SUNSCAR", areaId: "ZONE_006", unlockLevel: 26, seconds: 92, xp: 215 },
+  { id: "FROSTBELL_FLOWER", name: "Frostbell Flower", itemId: "FROSTBLOOM", zoneId: "FROSTMARCH", areaId: "ZONE_011", unlockLevel: 46, seconds: 118, xp: 310 },
+  { id: "WINTERMINT_PATCH", name: "Wintermint Patch", itemId: "WINTERMINT", zoneId: "FROSTMARCH", areaId: "ZONE_011", unlockLevel: 48, seconds: 122, xp: 325 },
+  { id: "MIRAGE_SALTBLOOM", name: "Mirage Saltbloom", itemId: "SUNSCALE", zoneId: "SUNSCAR", areaId: "ZONE_008", unlockLevel: 36, seconds: 108, xp: 250 },
+  { id: "ASTRAL_SAGE", name: "Observatory Astral Sage", itemId: "SUNSCALE", zoneId: "SUNSCAR", areaId: "ZONE_010", unlockLevel: 43, seconds: 124, xp: 305 },
+  { id: "WHITEPINE_FROSTBELL", name: "Whitepine Frostbell Thicket", itemId: "FROSTBLOOM", zoneId: "FROSTMARCH", areaId: "ZONE_012", unlockLevel: 53, seconds: 132, xp: 340 },
   { id: "ASHEN_MYRRH_GROVE", name: "Ashen Myrrh Grove", itemId: "ASHEN_MYRRH", zoneId: "ASHLANDS", unlockLevel: 71, seconds: 145, xp: 440 },
   { id: "ASHEN_MYRRH_CROWN", name: "Ashen Myrrh Crown", itemId: "ASHEN_MYRRH", zoneId: "ASHLANDS", unlockLevel: 86, seconds: 164, xp: 560 }
 ].map((node) => ({ ...node, skillId: "herbalism", min: 1, max: 1, difficultyMultiplier: 1, recommendedToolTier: 0 }));
@@ -43461,12 +43465,22 @@ var MONSTERS_RAW = [
   { id: "BANNER_SHADE", name: "Banner Shade", level: 23, hp: 435, attack: 39, defense: 22, xp: 258, gold: 15, secondsPerKill: 26, unlockLevel: 23, zone: "King's Road", drops: [{ itemId: "OATHGLASS_SHARD", chance: 0.22, min: 1, max: 1 }, { itemId: "TORN_OATHCLOTH", chance: 0.28, min: 1, max: 1 }, { itemId: "BANNER_ASH", chance: 0.28, min: 1, max: 2 }, { itemId: "LANTERNSTEEL_SHARD", chance: 0.1, min: 1, max: 1 }, { itemId: "GLOAM_DUST", chance: 0.18, min: 1, max: 1 }, { itemId: "WOLF_PELT", chance: 0.28, min: 1, max: 1 }, { itemId: "THORN_SAP", chance: 0.24, min: 1, max: 1 }] },
   { id: "FALLEN_SENTINEL", name: "Fallen Sentinel", level: 24, hp: 475, attack: 42, defense: 25, xp: 282, gold: 17, secondsPerKill: 28, unlockLevel: 24, zone: "King's Road", drops: [{ itemId: "OATHGLASS_SHARD", chance: 0.28, min: 1, max: 1 }, { itemId: "ECHO_TOUCHED_PELT", chance: 0.12, min: 1, max: 1 }, { itemId: "TORN_OATHCLOTH", chance: 0.32, min: 1, max: 2 }, { itemId: "LANTERNSTEEL_SHARD", chance: 0.18, min: 1, max: 1 }, { itemId: "FALLEN_RIVET", chance: 0.28, min: 1, max: 2 }, { itemId: "RUNEBOUND_CORE", chance: 0.12, min: 1, max: 1 }, { itemId: "TROLL_HIDE", chance: 0.2, min: 1, max: 1 }, { itemId: "IRONWOOD_LOG", chance: 0.32, min: 1, max: 2 }] },
   { id: "OATHGLASS_REVENANT", name: "Oathglass Revenant", level: 25, hp: 540, attack: 45, defense: 28, xp: 315, gold: 18, secondsPerKill: 30, unlockLevel: 25, zone: "King's Road", drops: [{ itemId: "OATHGLASS_SHARD", chance: 0.34, min: 1, max: 2 }, { itemId: "OATHGLASS_FRAGMENT", chance: 0.2, min: 1, max: 1 }, { itemId: "ECHO_QUARTZ", chance: 0.15, min: 1, max: 1 }, { itemId: "ECHO_TOUCHED_PELT", chance: 0.18, min: 1, max: 1 }, { itemId: "TORN_OATHCLOTH", chance: 0.35, min: 1, max: 2 }, { itemId: "WOLF_PELT", chance: 0.25, min: 1, max: 1 }, { itemId: "IRONWOOD_FANG", chance: 0.16, min: 1, max: 1 }] },
-  { id: "SUNSCAR_SCORPION", name: "Sunscar Scorpion", level: 28, hp: 610, attack: 52, defense: 31, xp: 350, gold: 21, secondsPerKill: 31, unlockLevel: 26, zone: "Sunscar", drops: [{ itemId: "SUNSTONE_ORE", chance: 0.42, min: 1, max: 2 }, { itemId: "DUNEWOOD", chance: 0.36, min: 1, max: 2 }, { itemId: "SUNSCALE", chance: 0.24, min: 1, max: 1 }, { itemId: "AMBERGLASS", chance: 0.08, min: 1, max: 1 }, { itemId: "SCORPION_VENOM", chance: 0.06, min: 1, max: 1 }] },
-  { id: "DUNE_ORACLE", name: "Dune Oracle", level: 33, hp: 760, attack: 61, defense: 36, xp: 438, gold: 27, secondsPerKill: 35, unlockLevel: 31, zone: "Sunscar", drops: [{ itemId: "DUNEWOOD", chance: 0.28, min: 1, max: 2 }, { itemId: "SUNSCALE", chance: 0.3, min: 1, max: 1 }, { itemId: "AMBERGLASS", chance: 0.36, min: 1, max: 2 }, { itemId: "ASTRAL_SCRIPT", chance: 0.08, min: 1, max: 1 }, { itemId: "SWIFT_SIGIL", chance: 3e-3, min: 1, max: 1 }] },
-  { id: "GLASSBOUND_SENTINEL", name: "Glassbound Sentinel", level: 40, hp: 980, attack: 74, defense: 45, xp: 560, gold: 35, secondsPerKill: 40, unlockLevel: 38, zone: "Sunscar", drops: [{ itemId: "SUNSTONE_ORE", chance: 0.5, min: 1, max: 2 }, { itemId: "AMBERGLASS", chance: 0.28, min: 1, max: 1 }, { itemId: "ASTRAL_SCRIPT", chance: 0.12, min: 1, max: 1 }, { itemId: "GLASSBOUND_CORE", chance: 0.38, min: 1, max: 1 }] },
-  { id: "FROSTWOLF", name: "Frostwolf", level: 48, hp: 1220, attack: 88, defense: 55, xp: 710, gold: 43, secondsPerKill: 44, unlockLevel: 46, zone: "Frostmarch", drops: [{ itemId: "FROSTIRON", chance: 0.42, min: 1, max: 2 }, { itemId: "RIMEGLASS", chance: 0.08, min: 1, max: 1 }, { itemId: "RIME_RESIN", chance: 0.06, min: 1, max: 1 }, { itemId: "BP_FROSTIRON_HATCHET", chance: 0.01, min: 1, max: 1 }] },
-  { id: "BELLWRAITH", name: "Bellwraith", level: 56, hp: 1580, attack: 106, defense: 68, xp: 920, gold: 55, secondsPerKill: 50, unlockLevel: 53, zone: "Frostmarch", drops: [{ itemId: "RIMEGLASS", chance: 0.36, min: 1, max: 2 }, { itemId: "CHOIR_BLOOM", chance: 0.1, min: 1, max: 1 }, { itemId: "BP_FROSTIRON_PICKAXE", chance: 0.01, min: 1, max: 1 }] },
-  { id: "CHOIR_HUNTER", name: "Choir Hunter", level: 66, hp: 2050, attack: 132, defense: 82, xp: 1180, gold: 70, secondsPerKill: 58, unlockLevel: 63, zone: "Frostmarch", drops: [{ itemId: "FROSTIRON", chance: 0.5, min: 1, max: 2 }, { itemId: "RIMEGLASS", chance: 0.28, min: 1, max: 1 }, { itemId: "CHOIR_BLOOM", chance: 0.12, min: 1, max: 1 }, { itemId: "BULWARK_SIGIL", chance: 3e-3, min: 1, max: 1 }, { itemId: "BP_RIMEGLASS_ROD", chance: 0.01, min: 1, max: 1 }] },
+  { id: "SUNSCAR_SCORPION", name: "Sunscar Scorpion", level: 28, hp: 610, attack: 52, defense: 31, xp: 350, gold: 21, secondsPerKill: 31, unlockLevel: 26, zone: "Sunscar", areaId: "ZONE_006", drops: [{ itemId: "SUNSTONE_ORE", chance: 0.42, min: 1, max: 2 }, { itemId: "DUNEWOOD", chance: 0.36, min: 1, max: 2 }, { itemId: "SUNSCALE", chance: 0.24, min: 1, max: 1 }, { itemId: "AMBERGLASS", chance: 0.08, min: 1, max: 1 }, { itemId: "SCORPION_VENOM", chance: 0.06, min: 1, max: 1 }] },
+  { id: "DUNE_ORACLE", name: "Dune Oracle", level: 33, hp: 760, attack: 61, defense: 36, xp: 438, gold: 27, secondsPerKill: 35, unlockLevel: 31, zone: "Sunscar", areaId: "ZONE_007", drops: [{ itemId: "DUNEWOOD", chance: 0.28, min: 1, max: 2 }, { itemId: "SUNSCALE", chance: 0.3, min: 1, max: 1 }, { itemId: "AMBERGLASS", chance: 0.36, min: 1, max: 2 }, { itemId: "ASTRAL_SCRIPT", chance: 0.08, min: 1, max: 1 }, { itemId: "SWIFT_SIGIL", chance: 3e-3, min: 1, max: 1 }] },
+  { id: "GLASSBOUND_SENTINEL", name: "Glassbound Sentinel", level: 40, hp: 980, attack: 74, defense: 45, xp: 560, gold: 35, secondsPerKill: 40, unlockLevel: 38, zone: "Sunscar", areaId: "ZONE_008", drops: [{ itemId: "SUNSTONE_ORE", chance: 0.5, min: 1, max: 2 }, { itemId: "AMBERGLASS", chance: 0.28, min: 1, max: 1 }, { itemId: "ASTRAL_SCRIPT", chance: 0.12, min: 1, max: 1 }, { itemId: "GLASSBOUND_CORE", chance: 0.38, min: 1, max: 1 }] },
+  { id: "SAFFRON_MARAUDER", name: "Saffron Marauder", level: 30, hp: 670, attack: 56, defense: 33, xp: 388, gold: 23, secondsPerKill: 33, unlockLevel: 29, zone: "Sunscar", areaId: "ZONE_006", regionalAreaAutoUnlock: true, drops: [{ itemId: "DUNEWOOD", chance: 0.42, min: 1, max: 2 }, { itemId: "SUNSCALE", chance: 0.2, min: 1, max: 1 }, { itemId: "AMBERGLASS", chance: 0.08, min: 1, max: 1 }] },
+  { id: "GLASS_DUNE_STRIDER", name: "Glass Dune Strider", level: 35, hp: 815, attack: 66, defense: 38, xp: 474, gold: 29, secondsPerKill: 36, unlockLevel: 34, zone: "Sunscar", areaId: "ZONE_007", regionalAreaAutoUnlock: true, drops: [{ itemId: "SUNSTONE_ORE", chance: 0.45, min: 1, max: 2 }, { itemId: "AMBERGLASS", chance: 0.2, min: 1, max: 1 }, { itemId: "SCORPION_VENOM", chance: 0.05, min: 1, max: 1 }] },
+  { id: "MIRAGE_SHADE", name: "Mirage Shade", level: 38, hp: 905, attack: 72, defense: 41, xp: 521, gold: 32, secondsPerKill: 39, unlockLevel: 36, zone: "Sunscar", areaId: "ZONE_008", regionalAreaAutoUnlock: true, drops: [{ itemId: "AMBERGLASS", chance: 0.34, min: 1, max: 2 }, { itemId: "ASTRAL_SCRIPT", chance: 0.09, min: 1, max: 1 }, { itemId: "SUNSCALE", chance: 0.24, min: 1, max: 1 }] },
+  { id: "OBSERVATORY_KEEPER", name: "Observatory Keeper", level: 42, hp: 1090, attack: 79, defense: 50, xp: 622, gold: 38, secondsPerKill: 43, unlockLevel: 41, zone: "Sunscar", areaId: "ZONE_010", regionalAreaAutoUnlock: true, drops: [{ itemId: "GLASSBOUND_CORE", chance: 0.25, min: 1, max: 1 }, { itemId: "ASTRAL_SCRIPT", chance: 0.18, min: 1, max: 1 }, { itemId: "AMBERGLASS", chance: 0.3, min: 1, max: 1 }] },
+  { id: "ROYAL_SANDGUARD", name: "Royal Sandguard", level: 45, hp: 1240, attack: 87, defense: 58, xp: 705, gold: 43, secondsPerKill: 47, unlockLevel: 44, zone: "Sunscar", areaId: "ZONE_010", regionalAreaAutoUnlock: true, drops: [{ itemId: "SUNSTONE_ORE", chance: 0.45, min: 1, max: 2 }, { itemId: "GLASSBOUND_CORE", chance: 0.3, min: 1, max: 1 }, { itemId: "ASTRAL_SCRIPT", chance: 0.12, min: 1, max: 1 }] },
+  { id: "FROSTWOLF", name: "Frostwolf", level: 48, hp: 1220, attack: 88, defense: 55, xp: 710, gold: 43, secondsPerKill: 44, unlockLevel: 46, zone: "Frostmarch", areaId: "ZONE_011", drops: [{ itemId: "FROSTIRON", chance: 0.42, min: 1, max: 2 }, { itemId: "RIMEGLASS", chance: 0.08, min: 1, max: 1 }, { itemId: "RIME_RESIN", chance: 0.06, min: 1, max: 1 }, { itemId: "BP_FROSTIRON_HATCHET", chance: 0.01, min: 1, max: 1 }] },
+  { id: "BELLWRAITH", name: "Bellwraith", level: 56, hp: 1580, attack: 106, defense: 68, xp: 920, gold: 55, secondsPerKill: 50, unlockLevel: 53, zone: "Frostmarch", areaId: "ZONE_012", drops: [{ itemId: "RIMEGLASS", chance: 0.36, min: 1, max: 2 }, { itemId: "CHOIR_BLOOM", chance: 0.1, min: 1, max: 1 }, { itemId: "BP_FROSTIRON_PICKAXE", chance: 0.01, min: 1, max: 1 }] },
+  { id: "CHOIR_HUNTER", name: "Choir Hunter", level: 66, hp: 2050, attack: 132, defense: 82, xp: 1180, gold: 70, secondsPerKill: 58, unlockLevel: 63, zone: "Frostmarch", areaId: "ZONE_015", drops: [{ itemId: "FROSTIRON", chance: 0.5, min: 1, max: 2 }, { itemId: "RIMEGLASS", chance: 0.28, min: 1, max: 1 }, { itemId: "CHOIR_BLOOM", chance: 0.12, min: 1, max: 1 }, { itemId: "BULWARK_SIGIL", chance: 3e-3, min: 1, max: 1 }, { itemId: "BP_RIMEGLASS_ROD", chance: 0.01, min: 1, max: 1 }] },
+  { id: "ICEBOUND_RAIDER", name: "Icebound Raider", level: 50, hp: 1330, attack: 93, defense: 58, xp: 766, gold: 47, secondsPerKill: 46, unlockLevel: 49, zone: "Frostmarch", areaId: "ZONE_011", regionalAreaAutoUnlock: true, drops: [{ itemId: "FROSTIRON", chance: 0.44, min: 1, max: 2 }, { itemId: "RIME_RESIN", chance: 0.12, min: 1, max: 1 }, { itemId: "RIMEGLASS", chance: 0.08, min: 1, max: 1 }] },
+  { id: "SNOW_TREANT", name: "Snow Treant", level: 53, hp: 1460, attack: 100, defense: 67, xp: 845, gold: 51, secondsPerKill: 48, unlockLevel: 51, zone: "Frostmarch", areaId: "ZONE_012", regionalAreaAutoUnlock: true, drops: [{ itemId: "WHITEPINE_LOG", chance: 0.52, min: 1, max: 2 }, { itemId: "RIME_RESIN", chance: 0.22, min: 1, max: 1 }, { itemId: "FROSTIRON", chance: 0.1, min: 1, max: 1 }] },
+  { id: "RIME_STALKER", name: "Rime Stalker", level: 59, hp: 1770, attack: 112, defense: 71, xp: 995, gold: 60, secondsPerKill: 53, unlockLevel: 57, zone: "Frostmarch", areaId: "ZONE_013", regionalAreaAutoUnlock: true, drops: [{ itemId: "RIMEGLASS", chance: 0.4, min: 1, max: 2 }, { itemId: "CHOIR_BLOOM", chance: 0.11, min: 1, max: 1 }, { itemId: "FROSTIRON", chance: 0.2, min: 1, max: 1 }] },
+  { id: "LAKEBOUND_SPECTER", name: "Lakebound Specter", level: 62, hp: 1880, attack: 124, defense: 76, xp: 1080, gold: 65, secondsPerKill: 55, unlockLevel: 61, zone: "Frostmarch", areaId: "ZONE_013", regionalAreaAutoUnlock: true, drops: [{ itemId: "RIMEGLASS", chance: 0.36, min: 1, max: 2 }, { itemId: "CHOIR_BLOOM", chance: 0.16, min: 1, max: 1 }, { itemId: "RIME_RESIN", chance: 0.09, min: 1, max: 1 }] },
+  { id: "WYRMSPINE_GUARDIAN", name: "Wyrmspine Guardian", level: 69, hp: 2270, attack: 140, defense: 90, xp: 1310, gold: 78, secondsPerKill: 61, unlockLevel: 68, zone: "Frostmarch", areaId: "ZONE_015", regionalAreaAutoUnlock: true, drops: [{ itemId: "FROSTIRON", chance: 0.52, min: 1, max: 2 }, { itemId: "RIMEGLASS", chance: 0.32, min: 1, max: 1 }, { itemId: "CHOIR_BLOOM", chance: 0.14, min: 1, max: 1 }] },
   { id: "BLACKGLASS_MIRELING", name: "Blackglass Mireling", level: 72, hp: 2480, attack: 154, defense: 96, xp: 1450, gold: 86, secondsPerKill: 63, unlockLevel: 71, zone: "Ashlands", drops: [{ itemId: "BANNER_ASH", chance: 0.42, min: 1, max: 2 }, { itemId: "BLACKGLASS_CORE", chance: 0.08, min: 1, max: 1 }, { itemId: "RIMEGLASS", chance: 0.12, min: 1, max: 1 }] },
   { id: "CINDER_TITAN", name: "Cinder Titan", level: 80, hp: 3200, attack: 185, defense: 118, xp: 1840, gold: 108, secondsPerKill: 72, unlockLevel: 78, zone: "Ashlands", drops: [{ itemId: "SUNSTONE_ORE", chance: 0.34, min: 1, max: 2 }, { itemId: "CINDER_HEART", chance: 0.08, min: 1, max: 1 }, { itemId: "ASTRAL_SCRIPT", chance: 0.2, min: 1, max: 1 }, { itemId: "CHOIR_BLOOM", chance: 0.16, min: 1, max: 1 }, { itemId: "BOSSBANE_SIGIL", chance: 25e-4, min: 1, max: 1 }] },
   { id: "ASHEN_REVENANT", name: "Ashen Revenant", level: 88, hp: 4100, attack: 224, defense: 142, xp: 2320, gold: 136, secondsPerKill: 82, unlockLevel: 86, zone: "Ashlands", drops: [{ itemId: "BANNER_ASH", chance: 0.55, min: 1, max: 2 }, { itemId: "CINDER_HEART", chance: 0.1, min: 1, max: 1 }, { itemId: "REGENT_SIGIL", chance: 0.04, min: 1, max: 1 }, { itemId: "ASTRAL_SCRIPT", chance: 0.28, min: 1, max: 1 }, { itemId: "RIMEGLASS", chance: 0.22, min: 1, max: 1 }, { itemId: "RENEWAL_SIGIL", chance: 25e-4, min: 1, max: 1 }] },
@@ -43687,15 +43701,21 @@ var GATHERING = [
   { id: "ASTER_IRON_VEIN", skillId: "mining", name: "Aster-Iron Vein", unlockLevel: 8, seconds: 24, xp: 18, itemId: "ASTER_IRON_ORE", min: 1, max: 2, zoneId: "OLD_MINES" },
   { id: "OATHSTONE_SEAM", skillId: "mining", name: "Oathstone Seam", unlockLevel: 16, seconds: 36, xp: 29, itemId: "OATHSTONE_ORE", min: 1, max: 1, zoneId: "OLD_MINES" },
   { id: "ECHO_QUARTZ_GEODE", skillId: "mining", name: "Echo Quartz Geode", unlockLevel: 20, seconds: 38, xp: 42, itemId: "ECHO_QUARTZ", min: 1, max: 1, zoneId: "OLD_MINES" },
-  { id: "SUNSTONE_OUTCROP", skillId: "mining", name: "Sunstone Outcrop", unlockLevel: 26, seconds: 48, xp: 92, itemId: "SUNSTONE_ORE", min: 1, max: 1, zoneId: "SUNSCAR" },
-  { id: "FROSTIRON_VEIN", skillId: "mining", name: "Frostiron Vein", unlockLevel: 46, seconds: 62, xp: 180, itemId: "FROSTIRON", min: 1, max: 1, zoneId: "FROSTMARCH" },
+  { id: "SUNSTONE_OUTCROP", skillId: "mining", name: "Sunstone Outcrop", unlockLevel: 26, seconds: 48, xp: 92, itemId: "SUNSTONE_ORE", min: 1, max: 1, zoneId: "SUNSCAR", areaId: "ZONE_006" },
+  { id: "SCORCHWIND_SUNSTONE_SEAM", skillId: "mining", name: "Scorchwind Sunstone Seam", unlockLevel: 31, seconds: 53, xp: 109, itemId: "SUNSTONE_ORE", min: 1, max: 1, zoneId: "SUNSCAR", areaId: "ZONE_007" },
+  { id: "OBSERVATORY_SUNSTONE_GEODE", skillId: "mining", name: "Observatory Sunstone Geode", unlockLevel: 41, seconds: 76, xp: 155, itemId: "SUNSTONE_ORE", min: 1, max: 1, zoneId: "SUNSCAR", areaId: "ZONE_010" },
+  { id: "FROSTIRON_VEIN", skillId: "mining", name: "Frostiron Vein", unlockLevel: 46, seconds: 62, xp: 180, itemId: "FROSTIRON", min: 1, max: 1, zoneId: "FROSTMARCH", areaId: "ZONE_011" },
+  { id: "SHIVERLAKE_FROSTIRON_SEAM", skillId: "mining", name: "Shiverlake Frostiron Seam", unlockLevel: 58, seconds: 72, xp: 218, itemId: "FROSTIRON", min: 1, max: 1, zoneId: "FROSTMARCH", areaId: "ZONE_013" },
+  { id: "WYRMSPINE_FROSTIRON_VEIN", skillId: "mining", name: "Wyrmspine Frostiron Vein", unlockLevel: 65, seconds: 82, xp: 275, itemId: "FROSTIRON", min: 1, max: 1, zoneId: "FROSTMARCH", areaId: "ZONE_015" },
   { id: "BLACKGLASS_VEIN", skillId: "mining", name: "Blackglass Vein", unlockLevel: 68, seconds: 78, xp: 310, itemId: "BLACKGLASS_ORE", min: 1, max: 1, zoneId: "ASHLANDS" },
   { id: "DEEP_BLACKGLASS_VEIN", skillId: "mining", name: "Deep Blackglass Vein", unlockLevel: 86, seconds: 92, xp: 430, itemId: "BLACKGLASS_ORE", min: 1, max: 1, zoneId: "ASHLANDS" },
   { id: "GREENWOOD_TREE", skillId: "woodcutting", name: "Greenwood Tree", unlockLevel: 1, seconds: 14, xp: 8, itemId: "GREENWOOD_LOG", min: 1, max: 2, zoneId: "GREENFIELDS" },
   { id: "IRONWOOD_TREE", skillId: "woodcutting", name: "Ironwood Tree", unlockLevel: 7, seconds: 24, xp: 17, itemId: "IRONWOOD_LOG", min: 1, max: 2, zoneId: "IRONWOOD" },
   { id: "CROWNWOOD_TREE", skillId: "woodcutting", name: "Crownwood Tree", unlockLevel: 15, seconds: 36, xp: 27, itemId: "CROWNWOOD_LOG", min: 1, max: 1, zoneId: "IRONWOOD" },
-  { id: "DUNEWOOD_TREE", skillId: "woodcutting", name: "Dunewood Tree", unlockLevel: 26, seconds: 46, xp: 88, itemId: "DUNEWOOD", min: 1, max: 1, zoneId: "SUNSCAR" },
-  { id: "WHITEPINE_TREE", skillId: "woodcutting", name: "Whitepine Tree", unlockLevel: 46, seconds: 60, xp: 172, itemId: "WHITEPINE_LOG", min: 1, max: 1, zoneId: "FROSTMARCH" },
+  { id: "DUNEWOOD_TREE", skillId: "woodcutting", name: "Dunewood Tree", unlockLevel: 26, seconds: 46, xp: 88, itemId: "DUNEWOOD", min: 1, max: 1, zoneId: "SUNSCAR", areaId: "ZONE_006" },
+  { id: "SCORCHWIND_DUNEWOOD_GROVE", skillId: "woodcutting", name: "Scorchwind Dunewood Grove", unlockLevel: 32, seconds: 51, xp: 102, itemId: "DUNEWOOD", min: 1, max: 1, zoneId: "SUNSCAR", areaId: "ZONE_007" },
+  { id: "WHITEPINE_TREE", skillId: "woodcutting", name: "Whitepine Tree", unlockLevel: 46, seconds: 60, xp: 172, itemId: "WHITEPINE_LOG", min: 1, max: 1, zoneId: "FROSTMARCH", areaId: "ZONE_011" },
+  { id: "WHITEPINE_THICKET", skillId: "woodcutting", name: "Whitepine Thicket", unlockLevel: 51, seconds: 67, xp: 192, itemId: "WHITEPINE_LOG", min: 1, max: 1, zoneId: "FROSTMARCH", areaId: "ZONE_012" },
   { id: "CINDERWOOD_TREE", skillId: "woodcutting", name: "Cinderwood Tree", unlockLevel: 68, seconds: 76, xp: 300, itemId: "CINDERWOOD_LOG", min: 1, max: 1, zoneId: "ASHLANDS" },
   { id: "HEARTFIRE_CINDERWOOD", skillId: "woodcutting", name: "Heartfire Cinderwood", unlockLevel: 86, seconds: 90, xp: 420, itemId: "CINDERWOOD_LOG", min: 1, max: 1, zoneId: "ASHLANDS" },
   { id: "MEADOW_PERCH_POOL", skillId: "fishing", name: "Meadow Perch Pool", unlockLevel: 1, seconds: 16, xp: 8, itemId: "MEADOW_PERCH", min: 1, max: 2, zoneId: "GREENFIELDS" },
@@ -43705,9 +43725,10 @@ var GATHERING = [
   { id: "OATHSCALE_POOL", skillId: "fishing", name: "Oathscale Pool", unlockLevel: 16, seconds: 41, xp: 28, itemId: "OATHSCALE_PIKE", min: 1, max: 1, zoneId: "SILVERBROOK" },
   { id: "CAVE_LOACH_POOL", skillId: "fishing", name: "Cave Loach Pool", unlockLevel: 16, seconds: 39, xp: 27, itemId: "CAVE_LOACH", min: 1, max: 1, zoneId: "OLD_MINES" },
   { id: "CROWN_CARP_POOL", skillId: "fishing", name: "Crown Carp Pool", unlockLevel: 20, seconds: 44, xp: 34, itemId: "CROWN_CARP", min: 1, max: 1, zoneId: "KINGS_ROAD" },
-  { id: "OASIS_CARP_POOL", skillId: "fishing", name: "Oasis Carp Pool", unlockLevel: 26, seconds: 50, xp: 94, itemId: "OASIS_CARP", min: 1, max: 1, zoneId: "SUNSCAR" },
-  { id: "GLASSFIN_POOL", skillId: "fishing", name: "Glassfin Pool", unlockLevel: 36, seconds: 56, xp: 128, itemId: "GLASSFIN", min: 1, max: 1, zoneId: "SUNSCAR" },
-  { id: "ICEFISH_POOL", skillId: "fishing", name: "Icefin Pool", unlockLevel: 46, seconds: 66, xp: 188, itemId: "ICEFIN", min: 1, max: 1, zoneId: "FROSTMARCH" },
+  { id: "OASIS_CARP_POOL", skillId: "fishing", name: "Oasis Carp Pool", unlockLevel: 26, seconds: 50, xp: 94, itemId: "OASIS_CARP", min: 1, max: 1, zoneId: "SUNSCAR", areaId: "ZONE_006" },
+  { id: "GLASSFIN_POOL", skillId: "fishing", name: "Glassfin Pool", unlockLevel: 36, seconds: 56, xp: 128, itemId: "GLASSFIN", min: 1, max: 1, zoneId: "SUNSCAR", areaId: "ZONE_008" },
+  { id: "ICEFISH_POOL", skillId: "fishing", name: "Icefin Pool", unlockLevel: 46, seconds: 66, xp: 188, itemId: "ICEFIN", min: 1, max: 1, zoneId: "FROSTMARCH", areaId: "ZONE_011" },
+  { id: "SHIVERLAKE_ICEFISH_POOL", skillId: "fishing", name: "Shiverlake Icefin Pool", unlockLevel: 59, seconds: 75, xp: 228, itemId: "ICEFIN", min: 1, max: 1, zoneId: "FROSTMARCH", areaId: "ZONE_013" },
   { id: "EMBERFIN_POOL", skillId: "fishing", name: "Emberfin Mire", unlockLevel: 72, seconds: 84, xp: 340, itemId: "EMBERFIN", min: 1, max: 1, zoneId: "ASHLANDS" },
   { id: "EMBERFIN_DEEPWATER", skillId: "fishing", name: "Emberfin Deepwater", unlockLevel: 86, seconds: 98, xp: 470, itemId: "EMBERFIN", min: 1, max: 1, zoneId: "ASHLANDS" }
   // The 24-hour AFK window is generous; each gathering cycle is therefore
@@ -44609,9 +44630,6 @@ function simulateCombat(input) {
   const players = input.players.map((def) => init(def, input.initialPlayerState?.[def.id])), enemies = input.enemies.map((def) => init(def)), all = [...players, ...enemies];
   const rng = new CombatRng(input.seed);
   const events = [{ atMs: 0, type: "combat_start" }];
-  const abilitiesByActor = new Map(all.map((actor) => [actor, [...actor.definition.abilities].sort((a, b) => b.priority - a.priority)]));
-  const bosses = enemies.filter((actor) => actor.definition.boss);
-  const phasesByBoss = new Map(bosses.map((boss4) => [boss4, [...boss4.definition.phases ?? []].sort((a, b) => b.hpPct - a.hpPct)]));
   let lastGemStateKey = "[]";
   const visibleGemStates = (now) => {
     const rows2 = [];
@@ -44813,9 +44831,8 @@ function simulateCombat(input) {
       events.push({ atMs: now, type: "combat_end", detail: "wipe" });
       return { victory: false, durationMs: now, reason: "wipe", events, players, enemies };
     }
-    for (const boss4 of bosses) {
-      if (!boss4.alive) continue;
-      for (const phase2 of phasesByBoss.get(boss4) ?? []) {
+    for (const boss4 of living(enemies).filter((x) => x.definition.boss)) {
+      for (const phase2 of (boss4.definition.phases || []).sort((a, b) => b.hpPct - a.hpPct)) {
         if (hpPct(boss4) <= phase2.hpPct && !boss4.triggeredPhases.includes(phase2.id)) {
           boss4.triggeredPhases.push(phase2.id);
           events.push({ atMs: now, type: "phase", actorId: boss4.definition.id, abilityId: phase2.id, detail: `hp<=${phase2.hpPct}` });
@@ -44844,7 +44861,8 @@ function simulateCombat(input) {
         }
       }
       if (actor.casting) continue;
-      const ab = abilitiesByActor.get(actor)?.find((a) => (actor.cooldownReadyAt[a.id] ?? 0) <= now && conditionOk(a, actor, allies, foes));
+      const ready = actor.definition.abilities.filter((a) => (actor.cooldownReadyAt[a.id] ?? 0) <= now && conditionOk(a, actor, allies, foes)).sort((a, b) => b.priority - a.priority);
+      const ab = ready[0];
       if (ab) {
         const ts = targetsFor(ab.target, actor, allies, foes, rng, `${now}:${ab.id}:select`);
         const t = ts[0];
@@ -48452,18 +48470,13 @@ function resolveCoopNode(input) {
   let state = { ...input.state, visitedNodeIds: [...input.state.visitedNodeIds, input.node.nodeId] };
   if (COMBAT_KINDS.has(input.node.kind)) {
     const rootbound = input.node.contentId.startsWith("ROOT") || input.node.contentId === "BOSS_EXP_ROOT", balance = input.rootboundBalance ?? ROOTBOUND_COOP_BALANCE_V2;
-    const strikes = state.boons.filter((id) => id === "ROOM_BOON_STRIKE").length;
-    const wards = state.boons.filter((id) => id === "ROOM_BOON_WARD").length;
     const players = input.players.map((player2) => {
       const multipliers = COOP_CLASS_ABILITY_MULTIPLIERS[player2.classId?.toUpperCase() ?? ""];
-      return {
-        ...player2,
-        stats: strikes || wards ? { ...player2.stats, attackPower: player2.stats.attackPower * (1 + strikes * 0.05), defense: player2.stats.defense * (1 + wards * 0.05) } : player2.stats,
-        abilities: multipliers ? player2.abilities.map((ability3) => {
-          const multiplier = multipliers[ability3.id];
-          return multiplier ? { ...ability3, effects: ability3.effects.map((effect2) => (effect2.kind === "shield" || effect2.kind === "heal") && effect2.coeff !== void 0 ? { ...effect2, coeff: effect2.coeff * multiplier } : effect2) } : ability3;
-        }) : player2.abilities
-      };
+      if (!multipliers) return player2;
+      return { ...player2, abilities: player2.abilities.map((ability3) => {
+        const multiplier = multipliers[ability3.id];
+        return multiplier ? { ...ability3, effects: ability3.effects.map((effect2) => (effect2.kind === "shield" || effect2.kind === "heal") && effect2.coeff !== void 0 ? { ...effect2, coeff: effect2.coeff * multiplier } : effect2) } : ability3;
+      }) };
     });
     const depthMultiplier = input.node.depth >= balance.lateDepthStart ? balance.lateDepthAttackMultiplier : 1;
     const tierScale = input.tier ? coopTierEnemyMultipliers(input.tier) : { attack: 1, hp: 1, defense: 1 };
@@ -48480,7 +48493,7 @@ function resolveCoopNode(input) {
     case "shrine":
     case "forge":
     case "echo":
-      if (input.enemyDamageProfile !== "qmode-v1") state = { ...state, boons: [...state.boons, `${input.node.contentId}:${roll}`] };
+      state = { ...state, boons: [...state.boons, `${input.node.contentId}:${roll}`] };
       break;
     case "treasure":
     case "secret":
@@ -48671,7 +48684,7 @@ function coopRouteClientProjection(graph2, revealedNodeIds = [graph2.entryNodeId
   const byId = new Map(graph2.nodes.map((node) => [node.nodeId, node]));
   const visible = new Set(revealedNodeIds);
   for (const id of revealedNodeIds) for (const next of byId.get(id)?.nextNodeIds ?? []) visible.add(next);
-  return { ...graph2, nodes: graph2.nodes.filter((node) => visible.has(node.nodeId)).map((node) => structuredClone(node)) };
+  return { ...structuredClone(graph2), nodes: graph2.nodes.filter((node) => visible.has(node.nodeId)).map((node) => structuredClone(node)) };
 }
 
 // src/server/coop/echo-recruitment.ts
@@ -48758,50 +48771,6 @@ function preparedCoopCombatants(players, preparedByActor) {
   return players.map((player2) => frozenAlchemyPotionCombatant(player2, preparedByActor?.[player2.id]));
 }
 
-// src/server/expeditions/boon-generation.ts
-function generateBoonOffer(input) {
-  const pool = (input.eligibleBoonIds ?? LAUNCH_BOON_IDS).filter((id) => !input.ownedBoonIds.includes(id));
-  const shuffled = deterministicShuffle(input.secret, pool, input.runId, input.characterId, input.nodeIndex, input.contentVersion, "boon-offer");
-  return shuffled.slice(0, input.choiceCount ?? 3);
-}
-
-// src/server/coop/room-boon-choices.ts
-var ROOM_BOON_CHOICES = [
-  { id: "ROOM_BOON_STRIKE", name: "Battle Focus", description: "+5% party attack power for the remaining run." },
-  { id: "ROOM_BOON_WARD", name: "Stalwart Guard", description: "+5% party defense for the remaining run." },
-  { id: "ROOM_BOON_RECOVERY", name: "Second Wind", description: "Restore 20% max HP to each party member (revives downed allies)." },
-  { id: "ROOM_BOON_SUPPLY", name: "Expedition Cache", description: "Gain 2 supplies to spend at Merchant rooms." }
-];
-var CHOICE_ROOM_KINDS = /* @__PURE__ */ new Set(["shrine", "forge", "echo", "event", "treasure", "secret", "camp"]);
-function roomBoonOffers(run, secret) {
-  if (run.qmodePressureVersion !== 1 || run.phase !== "awaiting_choice") return [];
-  const last = run.lastResolution;
-  if (!last || last.nodeId !== run.currentNodeId || !last.result.success || !CHOICE_ROOM_KINDS.has(String(last.result.summary.kind))) return [];
-  if (run.chosenRoomBoons?.[last.nodeId]) return [];
-  const current = run.graph.nodes.find((node) => node.nodeId === last.nodeId);
-  if (!current) return [];
-  const ids2 = generateBoonOffer({ secret, runId: run.id, characterId: run.players[0].id, nodeIndex: current.depth, contentVersion: run.graph.contentVersion, ownedBoonIds: [], eligibleBoonIds: ROOM_BOON_CHOICES.map((choice) => choice.id), choiceCount: 3 });
-  return ids2.map((id) => ROOM_BOON_CHOICES.find((choice) => choice.id === id)).filter(Boolean);
-}
-function applyRoomBoon(run, boonId) {
-  if (run.chosenRoomBoons?.[run.currentNodeId]) throw new Error("boon_already_chosen");
-  const state = run.persistentState;
-  if (boonId === "ROOM_BOON_RECOVERY") {
-    const actors = { ...state.actors };
-    for (const player2 of run.players) {
-      const actor = actors[player2.id];
-      if (!actor) continue;
-      actors[player2.id] = { ...actor, hp: Math.min(player2.stats.maxHp, actor.hp + player2.stats.maxHp * 0.2), downed: false };
-    }
-    run.persistentState = { ...state, actors };
-  } else if (boonId === "ROOM_BOON_SUPPLY") {
-    run.persistentState = { ...state, resources: state.resources + 2 };
-  } else {
-    run.persistentState = { ...state, boons: [...state.boons, boonId] };
-  }
-  run.chosenRoomBoons = { ...run.chosenRoomBoons ?? {}, [run.currentNodeId]: boonId };
-}
-
 // src/server/coop/qmode.ts
 var MemoryQModeRunRepository = class {
   runs = /* @__PURE__ */ new Map();
@@ -48867,14 +48836,7 @@ var QModeService = class {
     if (!current || !current.nextNodeIds.includes(input.optionNodeId)) throw new Error("invalid_option");
     const selected2 = run.graph.nodes.find((node) => node.nodeId === input.optionNodeId);
     if (!selected2) throw new Error("invalid_option");
-    const offers = roomBoonOffers(run, this.serverSecret);
-    if (offers.length) {
-      const selectedBoon = input.boonId ?? offers[0].id;
-      if (!offers.some((offer) => offer.id === selectedBoon)) throw new Error("invalid_boon_choice");
-      applyRoomBoon(run, selectedBoon);
-    } else if (input.boonId) throw new Error("invalid_boon_choice");
-    const isCombat = selected2.kind === "battle" || selected2.kind === "elite" || selected2.kind === "boss";
-    const result = resolveCoopNode({ runId: run.id, serverSecret: this.serverSecret, node: selected2, players: isCombat ? preparedCoopCombatants(run.players, run.persistentState.preparedAlchemyPotionIdsByActor) : run.players, state: run.persistentState, tier: run.tierScalingVersion === 2 ? run.tier : void 0, enemyAttackMultiplier: run.qmodePressureVersion === 1 ? 1.005 : void 0, enemyDamageProfile: run.qmodePressureVersion === 1 ? "qmode-v1" : void 0, safetyAiPlayerIds: input.safetyAiPlayerIds });
+    const result = resolveCoopNode({ runId: run.id, serverSecret: this.serverSecret, node: selected2, players: preparedCoopCombatants(run.players, run.persistentState.preparedAlchemyPotionIdsByActor), state: run.persistentState, tier: run.tierScalingVersion === 2 ? run.tier : void 0, enemyAttackMultiplier: run.qmodePressureVersion === 1 ? 1.005 : void 0, enemyDamageProfile: run.qmodePressureVersion === 1 ? "qmode-v1" : void 0, safetyAiPlayerIds: input.safetyAiPlayerIds });
     run.lastResolution = { nodeId: selected2.nodeId, result: structuredClone(result) };
     run.persistentState = result.state;
     run.currentNodeId = selected2.nodeId;
@@ -49000,16 +48962,6 @@ function projectCombatReplay(lastResolution) {
 }
 
 // src/server/coop/qmode-public-projection.ts
-var encounterPreviewCache = /* @__PURE__ */ new Map();
-var bossTelegraphCache = /* @__PURE__ */ new Map();
-var cachedEncounterPreview = (id) => {
-  if (!encounterPreviewCache.has(id)) encounterPreviewCache.set(id, expeditionEncounterPreview(id));
-  return encounterPreviewCache.get(id);
-};
-var cachedBossTelegraph = (id) => {
-  if (!bossTelegraphCache.has(id)) bossTelegraphCache.set(id, expeditionBossTelegraph(id));
-  return bossTelegraphCache.get(id);
-};
 function publicCoopRoomOutcome(nodeId, summary) {
   if (!nodeId || !summary) return void 0;
   const kind = summary.kind;
@@ -49018,16 +48970,15 @@ function publicCoopRoomOutcome(nodeId, summary) {
   const delta = typeof summary.resourcesDelta === "number" && Number.isFinite(summary.resourcesDelta) ? summary.resourcesDelta : 0;
   return { nodeId, kind, resourcesDelta: delta, healedHp: count("healedHp"), revivedCount: count("revivedCount"), boonCount: count("boonCount"), artifactCount: count("artifactCount"), curseCount: count("curseCount"), ...kind === "merchant_purchase" && typeof summary.offerKind === "string" ? { offerKind: summary.offerKind } : {} };
 }
-function projectQModeRun(run, mode = "qmode", serverSecret) {
+function projectQModeRun(run, mode = "qmode") {
   const current = run.graph.nodes.find((node) => node.nodeId === run.currentNodeId);
   if (!current) throw new Error("invalid_qmode_current_node");
-  const bossNode = run.graph.nodes.find((node) => node.kind === "boss"), bossTelegraph = bossNode ? cachedBossTelegraph(bossNode.contentId) : void 0;
+  const bossNode = run.graph.nodes.find((node) => node.kind === "boss"), bossTelegraph = bossNode ? expeditionBossTelegraph(bossNode.contentId) : void 0;
   const revealed = [run.graph.entryNodeId, ...run.persistentState.visitedNodeIds, run.currentNodeId];
   const graph2 = coopRouteClientProjection(run.graph, revealed);
   const visible = new Set(graph2.nodes.map((node) => node.nodeId));
-  const options = run.phase === "awaiting_choice" ? current.nextNodeIds.filter((id) => visible.has(id)).map((id) => graph2.nodes.find((node) => node.nodeId === id)).filter(Boolean).map((node) => ({ ...node, ...["battle", "elite", "boss"].includes(node.kind) ? { encounterPreview: cachedEncounterPreview(node.contentId) } : {} })) : [];
+  const options = run.phase === "awaiting_choice" ? current.nextNodeIds.filter((id) => visible.has(id)).map((id) => graph2.nodes.find((node) => node.nodeId === id)).filter(Boolean).map((node) => ({ ...node, ...["battle", "elite", "boss"].includes(node.kind) ? { encounterPreview: expeditionEncounterPreview(node.contentId) } : {} })) : [];
   const lastRoomOutcome = publicCoopRoomOutcome(run.lastResolution?.nodeId, run.lastResolution?.result.summary);
-  const boonOffers = mode === "qmode" && serverSecret ? roomBoonOffers(run, serverSecret) : [];
   const merchantShop = mode === "qmode" && run.phase === "awaiting_choice" && current.kind === "merchant" && run.persistentState.visitedNodeIds.includes(current.nodeId) ? {
     resources: run.persistentState.resources,
     offers: merchantOffers(current.contentId).map((offer) => ({ id: offer.id, kind: offer.kind, cost: offer.cost, purchased: (run.persistentState.personalEffects[run.players[0].id]?.purchases ?? []).includes(offer.id) }))
@@ -49038,7 +48989,7 @@ function projectQModeRun(run, mode = "qmode", serverSecret) {
     const companionId = (player2.tags ?? []).find((tag) => tag.startsWith("companion:"))?.slice("companion:".length), bodyTag = (player2.tags ?? []).find((tag) => tag.startsWith("body:"))?.slice("body:".length), bodyPresentation = bodyTag === "female" ? "female" : bodyTag === "male" ? "male" : void 0;
     return { memberId: player2.id, displayName: player2.name, role: player2.role, classId: player2.classId ?? "", bodyPresentation, companionId, kind: index === 0 ? "controller" : run.npcCharacterIds?.includes(player2.id) ? "npc" : "echo", effectiveLevel: player2.level, currentHp: state.hp, maximumHp: player2.stats.maxHp, downed: state.downed };
   });
-  return { runId: run.id, mode, phase: run.phase, tier: run.tier, expeditionId: run.expeditionId, controller: true, team: mode === "live" ? team.map((member) => ({ ...member, kind: "controller" })) : team, graph: graph2, currentNodeId: run.currentNodeId, options, visitedNodeIds: [...run.persistentState.visitedNodeIds], resources: run.persistentState.resources, boons: [...run.persistentState.boons], artifacts: [...run.persistentState.artifacts], curses: [...run.persistentState.curses], personalEffects: run.persistentState.personalEffects, potionChargeCapacity: [3, 3, 4, 4, 5][run.tier - 1], healingPotionUsesByActor: run.persistentState.healingPotionUsesByActor ?? {}, potionPreparationOpen: run.phase === "awaiting_choice" && !run.persistentState.visitedNodeIds.length, preparedAlchemyPotionIdsByActor: run.persistentState.preparedAlchemyPotionIdsByActor ?? {}, ...bossTelegraph ? { bossMechanic: { label: "Dungeon boss mechanics", summary: "Read the cast telegraphs and interrupt dangerous abilities before the final phase.", tone: "mixed", telegraph: bossTelegraph } } : {}, lastCombat: projectCombatReplay(run.lastResolution), ...boonOffers.length ? { boonOffers } : {}, ...lastRoomOutcome ? { lastRoomOutcome } : {}, ...merchantShop ? { merchantShop } : {}, settlement: { status: run.phase === "completed" || run.phase === "failed" ? "pending_entitlement" : "not_ready" } };
+  return { runId: run.id, mode, phase: run.phase, tier: run.tier, expeditionId: run.expeditionId, controller: true, team: mode === "live" ? team.map((member) => ({ ...member, kind: "controller" })) : team, graph: graph2, currentNodeId: run.currentNodeId, options, visitedNodeIds: [...run.persistentState.visitedNodeIds], resources: run.persistentState.resources, boons: [...run.persistentState.boons], artifacts: [...run.persistentState.artifacts], curses: [...run.persistentState.curses], personalEffects: run.persistentState.personalEffects, potionChargeCapacity: [3, 3, 4, 4, 5][run.tier - 1], healingPotionUsesByActor: run.persistentState.healingPotionUsesByActor ?? {}, potionPreparationOpen: run.phase === "awaiting_choice" && !run.persistentState.visitedNodeIds.length, preparedAlchemyPotionIdsByActor: run.persistentState.preparedAlchemyPotionIdsByActor ?? {}, ...bossTelegraph ? { bossMechanic: { label: "Dungeon boss mechanics", summary: "Read the cast telegraphs and interrupt dangerous abilities before the final phase.", tone: "mixed", telegraph: bossTelegraph } } : {}, lastCombat: projectCombatReplay(run.lastResolution), ...lastRoomOutcome ? { lastRoomOutcome } : {}, ...merchantShop ? { merchantShop } : {}, settlement: { status: run.phase === "completed" || run.phase === "failed" ? "pending_entitlement" : "not_ready" } };
 }
 
 // src/server/coop/loadout-snapshots.ts
@@ -49177,13 +49128,13 @@ function enhancedDungeonMarks(run) {
 // online/qmode-runtime.ts
 var digest = (value) => createHash4("sha256").update(JSON.stringify(value)).digest("hex");
 var content = ONLINE_COOP_BALANCE_VERSION;
-var projection = (run, version, seed) => ({ ...projectQModeRun(run, "qmode", seed), stateVersion: version, decisionId: run.currentNodeId, decisionRevision: version });
-function settlement(run, version, seed) {
+var projection = (run, version) => ({ ...projectQModeRun(run), stateVersion: version, decisionId: run.currentNodeId, decisionRevision: version });
+function settlement(run, version) {
   const definition = EXPEDITIONS[run.expeditionId], last = run.lastResolution;
   const node = run.graph.nodes.find((row) => row.nodeId === last.nodeId);
   const cleared = run.persistentState.visitedNodeIds.filter((id) => id !== run.graph.bossNodeId).length;
   const terminal = run.phase === "completed" || run.phase === "failed";
-  return { projection: projection(run, version, seed), enhancedMarks: terminal ? marksForRun(definition.baseMarks, run.tier, run.tierScalingVersion === 2 ? dungeonRewardState(run) : { cleared: run.phase === "completed", routeProgress: cleared / run.graph.preBossNodeCount, reachedFinalBoss: node.kind === "boss" }) : null, assistanceMarks: terminal ? Math.max(1, Math.round(definition.baseMarks * 0.1)) : null };
+  return { projection: projection(run, version), enhancedMarks: terminal ? marksForRun(definition.baseMarks, run.tier, run.tierScalingVersion === 2 ? dungeonRewardState(run) : { cleared: run.phase === "completed", routeProgress: cleared / run.graph.preBossNodeCount, reachedFinalBoss: node.kind === "boss" }) : null, assistanceMarks: terminal ? Math.max(1, Math.round(definition.baseMarks * 0.1)) : null };
 }
 var OnlineQModeRuntime = class {
   constructor(services) {
@@ -49237,13 +49188,13 @@ var OnlineQModeRuntime = class {
       if (!npc) throw new Error("qmode_npc_missing");
       return { memberKind: "npc", snapshot: npc, sourceHash: npc.snapshotHash, profileId: null };
     })];
-    return this.services.rpc("start_online_qmode_server_v1", { p_account_id: accountId, p_game_version: game.version, p_request_id: request.requestId, p_request_hash: hash, p_run_id: id, p_private_state: { run, seed }, p_client_projection: projection(run, 1, seed), p_members: members, p_seed_hash: digest(seed) });
+    return this.services.rpc("start_online_qmode_server_v1", { p_account_id: accountId, p_game_version: game.version, p_request_id: request.requestId, p_request_hash: hash, p_run_id: id, p_private_state: { run, seed }, p_client_projection: projection(run, 1), p_members: members, p_seed_hash: digest(seed) });
   }
   async load(accountId, runId) {
     const loaded = await this.services.rpc("load_online_qmode_server_v1", { p_account_id: accountId, p_run_id: runId });
     const pending = loaded.privateState.pending;
     if (!pending || loaded.serverNow < pending.resolvesAtMs) return loaded.clientProjection;
-    const run = pending.run, last = run.lastResolution, final = settlement(run, loaded.stateVersion + 1, loaded.privateState.seed);
+    const run = pending.run, last = run.lastResolution, final = settlement(run, loaded.stateVersion + 1);
     return this.services.rpc("finalize_online_qmode_node_server_v1", { p_account_id: accountId, p_run_id: runId, p_expected_version: loaded.stateVersion, p_private_state: { run, seed: loaded.privateState.seed }, p_client_projection: final.projection, p_node_id: last.nodeId, p_result: last.result, p_start_state_hash: pending.startStateHash, p_enhanced_marks: final.enhancedMarks, p_assistance_marks: final.assistanceMarks });
   }
   async purchaseMerchant(accountId, runId, request) {
@@ -49264,7 +49215,7 @@ var OnlineQModeRuntime = class {
     const actorId = before.players[0]?.id;
     if (!actorId) throw new GameplayError("invalid_merchant_actor");
     const next = new QModeService(repository, seed).purchaseMerchant({ runId, controllerAccountId: accountId, actorId, offerId: request.offerId });
-    const client = projection(next, loaded.stateVersion + 1, seed);
+    const client = projection(next, loaded.stateVersion + 1);
     return this.services.rpc("purchase_online_qmode_merchant_server_v1", { p_account_id: accountId, p_run_id: runId, p_expected_version: loaded.stateVersion, p_request_id: request.requestId, p_request_hash: hash, p_offer_id: request.offerId, p_actor_id: actorId, p_private_state: { run: next, seed }, p_client_projection: client });
   }
   async choose(accountId, runId, request) {
@@ -49283,12 +49234,11 @@ var OnlineQModeRuntime = class {
     }
     const { run: before, seed } = loaded.privateState, repository = new MemoryQModeRunRepository();
     repository.save(before);
-    const domain = new QModeService(repository, seed), run = domain.choose({ runId, controllerAccountId: accountId, optionNodeId: request.optionId, boonId: request.boonId });
-    const chosen = run.graph.nodes.find((node) => node.nodeId === request.optionId);
-    const duration = chosen?.kind === "boss" ? 1800 : chosen?.kind === "elite" ? 1400 : chosen?.kind === "battle" ? 900 : 0;
+    const domain = new QModeService(repository, seed), run = domain.choose({ runId, controllerAccountId: accountId, optionNodeId: request.optionId });
+    const duration = Math.max(0, Number(run.lastResolution.result.summary.durationMs ?? 0));
     const resolvesAtMs = loaded.serverNow + duration;
-    const client = { ...projection(before, loaded.stateVersion + 1, seed), phase: "resolving_node", options: [], selectedNodeId: request.optionId, resolvesAtMs, boonOffers: void 0 };
-    return this.services.rpc("queue_online_qmode_node_server_v1", { p_account_id: accountId, p_run_id: runId, p_expected_version: loaded.stateVersion, p_request_id: request.requestId, p_request_hash: hash, p_private_state: { run: before, seed, pending: { run, resolvesAtMs, startStateHash: digest(before.persistentState), settlement: settlement(run, loaded.stateVersion + 2, seed) } }, p_client_projection: client });
+    const client = { ...projection(before, loaded.stateVersion + 1), phase: "resolving_node", options: [], selectedNodeId: request.optionId, resolvesAtMs };
+    return this.services.rpc("queue_online_qmode_node_server_v1", { p_account_id: accountId, p_run_id: runId, p_expected_version: loaded.stateVersion, p_request_id: request.requestId, p_request_hash: hash, p_private_state: { run: before, seed, pending: { run, resolvesAtMs, startStateHash: digest(before.persistentState), settlement: settlement(run, loaded.stateVersion + 2) } }, p_client_projection: client });
   }
 };
 
@@ -50374,7 +50324,7 @@ function parseCoopRunRequest(value, mode) {
 function parseCoopDecisionCommand(value) {
   const row = object(value);
   rejectClientAuthority(row);
-  return { requestId: text2(row, "requestId", 8), decisionId: text2(row, "decisionId"), decisionRevision: integer(row, "decisionRevision", 1, Number.MAX_SAFE_INTEGER), optionId: text2(row, "optionId"), ...row.boonId === void 0 ? {} : { boonId: text2(row, "boonId", 1, 64) } };
+  return { requestId: text2(row, "requestId", 8), decisionId: text2(row, "decisionId"), decisionRevision: integer(row, "decisionRevision", 1, Number.MAX_SAFE_INTEGER), optionId: text2(row, "optionId") };
 }
 function parseCoopReadyCommand(value) {
   const row = object(value);
@@ -50550,7 +50500,7 @@ function coopHandler(services) {
         throw new GameplayError("invalid_json");
       }
       if (!body || typeof body !== "object" || Array.isArray(body)) throw new GameplayError("invalid_request");
-      const allowed2 = start ? ["requestId", "dungeonId", "tier", "characterId", "loadoutId", "loadoutRevision"] : run?.[2] === "merchant" ? ["requestId", "expectedVersion", "offerId"] : run?.[2] === "potion" ? ["requestId"] : run?.[2] === "tonic" ? ["requestId", "potionId"] : run?.[2] === "choose" ? ["requestId", "decisionId", "decisionRevision", "optionId", "boonId"] : ["requestId", "decisionId", "decisionRevision", "optionId"];
+      const allowed2 = start ? ["requestId", "dungeonId", "tier", "characterId", "loadoutId", "loadoutRevision"] : run?.[2] === "merchant" ? ["requestId", "expectedVersion", "offerId"] : run?.[2] === "potion" ? ["requestId"] : run?.[2] === "tonic" ? ["requestId", "potionId"] : ["requestId", "decisionId", "decisionRevision", "optionId"];
       if (Object.keys(body).some((key) => !allowed2.includes(key))) throw new GameplayError("invalid_request");
       if (start) return json2(await runtime.start(accountId, parseCoopRunRequest(body, "qmode")));
       if (run?.[2] === "potion") {

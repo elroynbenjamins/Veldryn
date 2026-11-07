@@ -8,7 +8,8 @@ const qmode=fs.readFileSync('src/core/coop-qmode.ts','utf8');
 const events=fs.readFileSync('src/core/coop-event-expeditions.ts','utf8');
 
 ok(overview.includes('DungeonRouteChoices')&&choices.includes('option.encounterPreview?localizedDungeonEncounterPreview(language,option.encounterPreview).summary:')&&choices.includes('(room?st(room.description):undefined)'),'Route choices must show server-verified translated PvE intel before the generic room fallback');
-ok(choices.includes('numberOfLines={2}')&&choices.includes('s.preview'),'PvE intel must stay a compact limited-lines route hint');
+ok(choices.includes('numberOfLines={1}')&&choices.includes('s.preview'),'PvE intel must stay a compact one-line route hint, with full text available through accessibilityHint');
+ok(choices.includes('accessibilityHint={preview}'),'The compact hint must remain available to assistive technology');
 ok(!choices.includes('option.encounterPreview.mechanics.map'),'Route list must not expand every mechanic into tutorial clutter');
 ok(presentation.includes('rawArchetypes.length>2')&&presentation.includes('rawMechanics.length>4'),'Mobile preview parser must enforce compact payload limits');
 ok(presentation.includes("throw new Error('invalid_encounter_preview')"),'Malformed PvE intel must fail closed');

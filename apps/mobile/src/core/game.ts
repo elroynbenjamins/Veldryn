@@ -7,6 +7,7 @@ import {CLASSES} from '../content/classes';
 import {COMBAT_COMPANIONS} from '../content/combat-companions';
 import {classSkillsFor} from '../content/class-skills';
 import {MONSTERS} from '../content/monsters';
+import {REGIONAL_AREAS} from '../content/regional-areas';
 import {itemDef} from '../content/items';
 import {GATHERING,recipeDef} from '../content/skills';
 import {HERB_NODES,HERBALISM_ESSENCE_BY_ZONE,herbalismInsightMultiplier,herbalismMethod} from '../content/herbalism';
@@ -208,7 +209,10 @@ export function startCombat(state:GameState,monsterId:string,nowMs:number,combat
   if(!state.character)throw new Error('Create a character first');
   const m=MONSTERS.find(x=>x.id===monsterId);if(!m)throw new Error('Unknown monster');
   if(state.character.currentHp<=1)throw new Error('Too injured to fight. Eat food or recover health before starting combat.');
-  if(!state.unlockedMonsterIds.includes(monsterId))throw new Error('Monster not unlocked');
+  // Area encounters added after initial release use region + level progression.
+  // Existing exploration-unlocked monsters retain their original unlock rules.
+  const areaUnlockLevel=m.regionalAreaAutoUnlock?Math.max(m.unlockLevel,REGIONAL_AREAS.find(area=>area.id===m.areaId)?.minLevel??1):0;
+  if(!state.unlockedMonsterIds.includes(monsterId)&&!(m.regionalAreaAutoUnlock&&state.character.level>=areaUnlockLevel))throw new Error('Monster not unlocked');
   if(m.boss)throw new Error('Bosses use challengeFallenKnight');
   if(zoneIdForTarget(monsterId)!==currentRegionId(state))throw new Error(`Travel to ${m.zone} before fighting ${m.name}`);
   return {...state,outOfCombatSinceMs:undefined,character:{...state.character,activityQueuePausedReason:undefined},activity:{kind:'combat',targetId:monsterId,combatTacticId:normalizeCombatTactic(combatTacticId),...(huntGoalSnapshot(normalizeHuntGoalId(huntGoalId))?{huntGoal:huntGoalSnapshot(normalizeHuntGoalId(huntGoalId))}:{}),sessionKills:0,sessionChampions:0,startedAtMs:nowMs,lastClaimAtMs:nowMs,classFocus:normalizeTrainingFocus(state.character.trainingFocus),classTrainingSnapshot:{faithBlessingId:selectedFaithBlessing(state)?.id},environment:captureActivityEnvironment(monsterId,nowMs)}}

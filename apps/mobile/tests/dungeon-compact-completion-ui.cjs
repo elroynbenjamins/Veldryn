@@ -7,7 +7,7 @@ const overview=read('components/coop/CoopRunOverview.tsx');
 const choices=read('components/coop/DungeonRouteChoices.tsx');
 const stage=read('components/coop/DungeonCombatStage.tsx');
 const screen=read('screens/CoopExpeditionScreen.tsx');
-assert(choices.includes('minHeight:88')&&choices.includes('size="thumbnail"'),'Room selections are compact');
+assert(choices.includes('minHeight:62')&&choices.includes('size="node"'),'Room selections are compact rows rather than oversized blocks');
 assert(choices.includes('option.votes??0')&&choices.includes('myVotedNodeId===option.nodeId'),'Live vote counts and identity remain');
 assert(stage.includes('<BattleElapsedSeconds')&&stage.includes('elapsedClock(anchor.current.elapsedMs')&&!stage.includes('seconds(pending.wallDurationMs)'),'Combat time counts upward, without revealing expected duration');
 assert(!stage.includes('Replay combat recap')&&!stage.includes('↻ Replay encounter'),'No combat replay control');

@@ -42,7 +42,7 @@ export function CombatScreen({state,onCommand,onChangeRegion,onStart,onQueue,onQ
     </View>
     {areas.length>0?<View style={s.areaPicker}>
       <Pressable accessibilityRole="button" accessibilityState={{selected:!area}} onPress={()=>setSelectedAreaId(undefined)}
-        style={[s.areaChip,!area&&s.areaChipSelected]}><Text style={[s.areaChipText,!area&&s.areaChipTextSelected]}>{gt('All')}</Text></Pressable>
+        style={[s.areaChip,!area&&s.areaChipSelected]}><Text style={[s.areaChipText,!area&&s.areaChipTextSelected]}>{'All'}</Text></Pressable>
       {areas.map(entry=><Pressable key={entry.id} accessibilityRole="button" accessibilityLabel={entry.name+' · Lv '+entry.minLevel+'+'}
         accessibilityState={{disabled:character.level<entry.minLevel,selected:area?.id===entry.id}}
         disabled={character.level<entry.minLevel} onPress={()=>setSelectedAreaId(entry.id)}

@@ -31,7 +31,7 @@ export class OnlineLiveQueue {
   if(game.state.character.id!==request.characterId||request.loadoutId!=='current')throw new GameplayError('loadout_not_owned',403);
   if(game.version!==request.loadoutRevision){const receipt=await replay();if(receipt)return receipt.response;throw new GameplayError('stale_game_version',409);}
   const record=deriveOnlineCoopLoadout(accountId,game.state,game.version);
-  const maximumTier=highestEligibleCoopTier(definition.minLevel,game.state.character.level);if(!maximumTier||request.tier>maximumTier||request.tier<1)throw new GameplayError('dungeon_level_requirement');
+  const maximumTier=highestEligibleCoopTier(definition.minLevel,record.characterLevel);if(!maximumTier||request.tier>maximumTier||request.tier<1)throw new GameplayError('dungeon_level_requirement');
   const selectedTier=request.tier;
   const snapshot=resolveAndFreezeLoadout({accountId,characterId:request.characterId,loadoutId:'current',expectedRevision:game.version,minLevel:coopRequiredLevel(definition.minLevel,selectedTier),syncLevel:definition.recommendedLevel,repository:{getOwnedLoadout:()=>record}});
   return this.services.rpc('join_online_live_queue_server_v1',{

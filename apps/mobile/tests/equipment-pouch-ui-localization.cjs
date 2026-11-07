@@ -12,7 +12,7 @@ const languages=['en','de','es','nl','it','fr','ru','tr'];
 assert.deepEqual([...SUPPORTED_LANGUAGES],languages);
 const keys=Object.keys(equipmentPouchUiRows);
 assert.equal(keys.length,82,'all authored Equipment Pouch copy plus rarity and exact eligibility reasons');
-const params={used:5,capacity:30,character:'PLAYER-NAME',count:7,gold:'15,000',quality:72,slot:'SLOT'};
+const params={used:5,capacity:30,character:'PLAYER-NAME',count:7,gold:'15,000',quality:72,slot:'SLOT',name:'DUST'};
 const tokens=s=>[...s.matchAll(/\{([A-Za-z][A-Za-z0-9_]*)\}/g)].map(m=>m[1]).sort();
 for(const key of keys){
  assert.equal(equipmentPouchText('en',key),key,'canonical English text preserved '+key);

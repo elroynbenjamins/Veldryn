@@ -15,6 +15,7 @@ import {bucketedMs} from '../core/use-delayed-busy';
 import {activityStopPresentation} from '../core/activity-stop-presentation';
 import {unclaimedCombatKillCount} from '../core/activity-rewards';
 import {explorationRoute} from '../content/exploration';
+import {FAITH_TIERS} from '../content/faith';
 import {activityTargetLabel} from '../core/activity-target-label';
 
 const labels:Record<string,string>={combat:'HUNTING',mining:'MINING',woodcutting:'WOODCUTTING',fishing:'FISHING',herbalism:'HERBALISM',alchemy:'ALCHEMY',processing:'PROCESSING',faith:'FAITH',training:'TRAINING',hunting:'HUNTING',exploration:'EXPLORATION'};
@@ -49,12 +50,13 @@ function RunningActivityBar({state,nowMs,onOpen,combatKills}:ActiveActivityBarPr
  const monster=combat?MONSTERS.find(entry=>entry.id===activity.targetId):undefined;
  const gathering=!combat?[...GATHERING,...HERB_NODES].find(entry=>entry.id===activity.targetId):undefined,crafting=activity.kind==='processing'||activity.kind==='alchemy'?RECIPES.find(entry=>entry.id===activity.targetId):undefined;
  const route=activity.kind==='exploration'?explorationRoute(activity.targetId):undefined;
+ const faithTier=activity.kind==='faith'?FAITH_TIERS.find(tier=>tier.id===activity.targetId):undefined;
  // Runtime projections are cycle-time derivations, not time-dependent — only recompute when state changes.
  const combatRuntime=useMemo(()=>combat?activeCombatRuntimeProjection(state):undefined,[combat,state]);
  const gatherRuntime=useMemo(()=>!combat?activeGatheringRuntimeProjection(state):undefined,[combat,state]);
  const name=gl(activityTargetLabel(activity));
- const cycleSeconds=Math.max(1,combatRuntime?.killCycleSeconds??route?.seconds??gatherRuntime?.cycleSeconds??activity.processing?.cycleSeconds??activity.brew?.cycleSeconds??gathering?.seconds??crafting?.seconds??1);
- const cycleElapsedSeconds=Math.max(0,(displayNowMs-activity.lastClaimAtMs)/1000),cycleProgressSeconds=(activity.progressFraction??0)*cycleSeconds+cycleElapsedSeconds;
+ const cycleSeconds=Math.max(1,combatRuntime?.killCycleSeconds??route?.seconds??faithTier?.seconds??gatherRuntime?.cycleSeconds??activity.processing?.cycleSeconds??activity.brew?.cycleSeconds??gathering?.seconds??crafting?.seconds??(activity.kind==='training'?60:1));
+ const cycleElapsedSeconds=Math.max(0,(displayNowMs-activity.lastClaimAtMs)/1000),cycleProgressSeconds=(activity.kind==='faith'?activity.faithPractice?.progressFraction??0:activity.progressFraction??0)*cycleSeconds+cycleElapsedSeconds;
  const completedCycles=Math.floor(cycleProgressSeconds/cycleSeconds),progressPct=Math.round((cycleProgressSeconds%cycleSeconds)/cycleSeconds*100),progress=`${progressPct}%` as `${number}%`;
  const progressKind=combat?'combat':activity.kind==='alchemy'||activity.kind==='processing'?'crafting':activity.kind==='faith'?'faith':activity.kind==='training'?'training':activity.kind==='exploration'?'exploration':'gathering',phase=activityProgressFeedback(progressKind,progressPct/100),cycleRemaining=Math.max(1,Math.ceil(cycleSeconds-(cycleProgressSeconds%cycleSeconds)));
  // The bar resets after a successful claim; persistent hunt progress stays in activity.sessionKills.

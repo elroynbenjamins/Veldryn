@@ -23,7 +23,7 @@ export class OnlineCoopLfg{
   if(!game.state?.character)throw new GameplayError('character_required');
   const record=deriveOnlineCoopLoadout(accountId,game.state,game.version),{readiness}=assessOnlineCoopLoadout(record);
   if(!readiness.ready)throw new GameplayError('role_not_ready');
-  const maxTier=highestEligibleCoopTier(definition.minLevel,game.state.character.level);if(!maxTier)throw new GameplayError('dungeon_level_requirement');
+  const maxTier=highestEligibleCoopTier(definition.minLevel,record.characterLevel);if(!maxTier)throw new GameplayError('dungeon_level_requirement');
   const hash=createHash('sha256').update(JSON.stringify({dungeonId:definition.id,note})).digest('hex');
   return this.services.rpc<CoopLiveLfgPost>('publish_online_coop_lfg_server_v1',{p_account_id:accountId,p_request_id:request.requestId,p_request_hash:hash,p_character_id:game.state.character.id,p_dungeon_id:definition.id,p_role:readiness.role,p_max_tier:maxTier,p_note:note});
  }

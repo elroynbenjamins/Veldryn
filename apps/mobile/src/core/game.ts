@@ -19,7 +19,7 @@ import {activityQueueCapacity,activityQueueRegion,activityQueueLocationIssue,nor
 import type {ActiveActivity} from './types';
 import {combineActivityRewards} from './activity-rewards';
 import {commitMealActivityTime,mealSpeedFactor,retimeReservedMealCraft} from './meal-buffs';
-import {characterLevelFromXp,levelFromXp,totalXpAtLevel} from './progression';
+import {characterLevelFromXp,legacyCharacterLevelFromXp,rebasedCombatLevelFromLegacyLevel,levelFromXp,totalXpAtLevel} from './progression';
 import {random01} from './rng';
 import {characterNameError,normalizeCharacterName} from './character-creation';
 import {noviceItemId,noviceSetFor} from '../content/novice-sets';
@@ -179,7 +179,7 @@ export function effectiveStats(state:GameState){
   if(faithBlessing?.family==='hp')hp=Math.ceil(hp*(1+faithBlessing.bonus));
   const prep=c.preparation?preparationEffects(c.preparation):undefined;if(prep)attack=Math.ceil(attack*prep.attack);
   const role=CLASSES.find(def=>def.id===c.classId)?.role,baseCritChance=role==='Damage'?.10:.05,baseEvasion=role==='Damage'?.07:.04;
-  const basePower=Math.round(attack*1.5+defense*.8+hp*.08+c.level*2.5);
+  const basePower=Math.round(attack*1.5+defense*.8+hp*.08+legacyCharacterLevelFromXp(c.xp)*2.5);
   return {
     hp,attack,defense,power:Math.round(basePower*(1+setStats.power)),
     critChance:Math.min(.75,baseCritChance+setStats.critRate),
@@ -1227,7 +1227,7 @@ export function equipNoviceSet(state:GameState):GameState{
 
 export function regionalReadiness(state:GameState){
   if(!state.character)return {total:0,level:0,quest:0,equipment:0,food:0,mastery:0,recommended:false};
-  const level=Math.min(30,Math.floor(state.character.level/25*30));
+  const level=Math.min(30,Math.floor(legacyCharacterLevelFromXp(state.character.xp)/25*30));
   const q14=state.quests.find(q=>q.questId==='QST_014');const quest=q14&&q14.status!=='locked'?15:0;
   let equipment=0;for(const id of Object.values(state.character.equipment)){if(id)equipment+=itemDef(id).readiness||0;}equipment=Math.min(35,equipment);
   const foodDef=state.character.equippedFoodId?itemDef(state.character.equippedFoodId):undefined;const foodQty=stackQty(state.inventory.stacks,state.character.equippedFoodId);
@@ -1287,7 +1287,7 @@ export function previewFallenKnightBattle(state:GameState,nowMs=Date.now(),mode:
 export function fallenKnightWinChance(state:GameState){const r=regionalReadiness(state).total;if(r<50)return .10;if(r<60)return .18;if(r<70)return .34;if(r<80)return .48;if(r<90)return .64;if(r<100)return .82;return .90;}
 /** Rewarded rematches stay capped weekly; all valid attempts return the same battle timeline for cinematic playback. */
 export function challengeFallenKnightRematch(state:GameState,nowMs:number):{state:GameState;won:boolean;message:string;battle:FallenKnightBattleResult}{
-  if(!state.character||state.character.level<25||!state.defeatedBossIds.includes('FALLEN_KNIGHT'))throw new Error('Defeat the Fallen Knight in the story first.');
+  if(!state.character||state.character.level<rebasedCombatLevelFromLegacyLevel(25)||!state.defeatedBossIds.includes('FALLEN_KNIGHT'))throw new Error('Defeat the Fallen Knight in the story first.');
   state=settleOutOfCombatRecovery(state,nowMs);
   if(!state.character)throw new Error('No character');
   const weekly=fallenKnightWeeklyStatus(state,nowMs);
@@ -1331,7 +1331,7 @@ export function challengeFallenKnight(state:GameState,nowMs=Date.now()):{state:G
   if(!state.character)throw new Error('No character');
   state=settleOutOfCombatRecovery(state,nowMs);
   if(!state.character)throw new Error('No character');
-  if(state.character.level<25)return {state,won:false,message:'Reach level 25 first.'};
+  if(state.character.level<rebasedCombatLevelFromLegacyLevel(25))return {state,won:false,message:`Reach level ${rebasedCombatLevelFromLegacyLevel(25)} first.`};
   if(state.defeatedBossIds.includes('FALLEN_KNIGHT'))return challengeFallenKnightRematch(state,nowMs);
   const q14=state.quests.find(q=>q.questId==='QST_014');if(q14 && q14.status==='locked')return {state,won:false,message:'Advance the Asterfall questline before challenging the Fallen Knight.'};
   const battle=previewFallenKnightBattle(state,nowMs),potionId=state.character.equippedHealingPotionId;

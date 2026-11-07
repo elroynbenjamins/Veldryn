@@ -18,7 +18,7 @@ const party=stage.indexOf('style={[s.partyFormation',enemies);
 assert(arena>=0&&arena<backdrop&&backdrop<enemies&&enemies<party,'Full arena backdrop, enemy-top, party-bottom ordering');
 assert(stage.includes("const bossEncounter=boss||replayEnemies.some(enemy=>enemy.boss)"),'Bosses are classified from authoritative combatants, not stale route');
 assert(stage.includes("partyFormation:{width:'100%'")&&stage.includes("marginTop:'auto'"),'Party zone remains pinned beneath enemy zone');
-assert(stage.includes('visibleEnemies.map(enemy=>')&&stage.includes('ordered.map((slot,index)=>'),'Multi-enemy and four-role combat retain their actors');
+assert(stage.includes('visibleEnemies.map((enemy,index)=>')&&stage.includes('ordered.map((slot,index)=>'),'Multi-enemy and four-role combat retain their actors');
 assert(overview.includes('visible={rewardOpen&&!theaterOpen}'),'Rewards never layer over a visible theater');
 assert(overview.includes("title={st('View rewards')}"),'Claim modal can be reopened after dismissing rematch');
 assert(overview.includes("rewardsSecured&&run.phase==='completed'&&run.mode==='live'&&onPartyRematch"),'Only claimed Live victories offer same-party rematch');

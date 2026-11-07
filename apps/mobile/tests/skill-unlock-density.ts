@@ -1,3 +1,4 @@
+import {rebasedCombatLevelFromLegacyLevel as rebaseLevel} from '../src/core/progression';
 import {GATHERING,RECIPES} from '../src/content/skills';
 import {HERB_NODES,HERBALISM_METHODS} from '../src/content/herbalism';
 import {ALCHEMY_RECIPES} from '../src/content/alchemy';
@@ -7,7 +8,7 @@ import {V33_EQUIPMENT_RECIPES} from '../src/content/equipment-recipes-v33';
 import {GATHERING_TOOLS} from '../src/content/gathering-tools';
 function ok(value:unknown,message:string){if(!value)throw new Error(message)}
 function levels(values:number[]){return [...new Set(values.filter(v=>v>=1&&v<=100))].sort((a,b)=>a-b)}
-function maxGap(values:number[]){const rows=levels([1,...values,100]);let best={from:1,to:1,gap:0};for(let i=1;i<rows.length;i++){const gap=rows[i]-rows[i-1];if(gap>best.gap)best={from:rows[i-1],to:rows[i],gap};}return best;}
+function maxGap(values:number[],top=100){const rows=levels([1,...values.filter(value=>value<=top),top]);let best={from:1,to:1,gap:0};for(let i=1;i<rows.length;i++){const gap=rows[i]-rows[i-1];if(gap>best.gap)best={from:rows[i-1],to:rows[i],gap};}return best;}
 const ladders:Record<string,number[]>={
  mining:[...GATHERING.filter(x=>x.skillId==='mining').map(x=>x.unlockLevel),...GATHERING_TOOLS.filter(x=>x.skillId==='mining').map(x=>x.unlockLevel)],
  woodcutting:[...GATHERING.filter(x=>x.skillId==='woodcutting').map(x=>x.unlockLevel),...GATHERING_TOOLS.filter(x=>x.skillId==='woodcutting').map(x=>x.unlockLevel)],
@@ -21,9 +22,9 @@ const ladders:Record<string,number[]>={
  faith:[...FAITH_TIERS.map(x=>x.level),...FAITH_BLESSINGS.map(x=>x.level)],
  exploration:EXPLORATION_ROUTES.map(x=>x.requiredLevel),
 };
-const report=Object.fromEntries(Object.entries(ladders).map(([skill,rows])=>[skill,{unlocks:levels(rows),maxGap:maxGap(rows)}]));
+const report=Object.fromEntries(Object.entries(ladders).map(([skill,rows])=>[skill,{unlocks:levels(rows),maxGap:maxGap(rows,skill==='exploration'?rebaseLevel(100):100)}]));
 for(const skill of ['mining','woodcutting','fishing','herbalism','smithing','tailoring','cooking','alchemy','faith','exploration']){
- const gap=maxGap(ladders[skill]),limit=['mining','woodcutting','fishing','smithing','tailoring'].includes(skill)?35:30;
+ const gap=maxGap(ladders[skill],skill==='exploration'?rebaseLevel(100):100),limit=['mining','woodcutting','fishing','smithing','tailoring'].includes(skill)?35:30;
  // Gathering and equipment professions currently end in released Ashlands around
  // the high-60s/low-70s; Veillands 91+ is visible but intentionally in development.
  // Tool milestones count as real skill unlocks, and that terminal released-content

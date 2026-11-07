@@ -1,6 +1,6 @@
 import {createCharacter,newGame,claimActivity,claimQuest,startCombat,previewActivityReward} from '../src/core/game';
 import {executeGameCommand,validateGameCommand} from '../src/core/game-commands';
-import {unlockCombatCompanion,equipCombatCompanion,companionCombatContribution,companionLevelCost,companionRemainingLevelCost,companionAscensionCost,applyCompanionBondXp,claimSanctuaryTraining,claimSanctuaryEssence} from '../src/core/combat-companions';
+import {unlockCombatCompanion,equipCombatCompanion,companionCombatContribution,companionLevelCost,companionRemainingLevelCost,companionAscensionCost,applyCompanionBondXp,claimSanctuaryTraining,claimSanctuaryEssence,companionSanctuaryUpgradeCost} from '../src/core/combat-companions';
 import {companionAvailability,refreshCompanions,companionOwned,companionCombatExecutor,recordCompanionActivity,companionView,companionUnlockFacts,recommendedCompanionMissionTeam,recommendedCompanionTrialTeam} from '../src/core/companion-runtime';
 import {companionAttentionSummary,companionAttentionLabels} from '../src/core/companion-attention';
 import {buildNavigationBadges,buildQuickNavigationBadges} from '../src/core/navigation-notifications';
@@ -30,6 +30,13 @@ const command=(s:GameState,type:string,args?:Record<string,unknown>,time=now)=>{
  const prepared=type==='companion_assignment_start'?{...s,inventory:{...s.inventory,stacks:[...s.inventory.stacks,{itemId:'TRAVEL_RATION',quantity:40}]}}:s;
  return executeGameCommand(prepared,{type,args:normalizedArgs},time).state;
 };
+const pensInitial=companionSanctuaryUpgradeCost(fixture(),'expeditionPens');
+ok(pensInitial?.companionEssence===350,'First Expedition Pens unlock costs exactly 350 Companion Essence');
+ok(pensInitial?.gold===17000&&pensInitial?.materialId==='RUNEBOUND_CORE'&&pensInitial?.materialQuantity===6,'First Pens Gold and materials unchanged');
+const pensTwoState=fixture();pensTwoState.account.companionSanctuary!.expeditionPensLevel=1;
+ok(companionSanctuaryUpgradeCost(pensTwoState,'expeditionPens')?.companionEssence===1150,'Second Pens upgrade remains unchanged');
+pensTwoState.account.companionSanctuary!.expeditionPensLevel=2;
+ok(companionSanctuaryUpgradeCost(pensTwoState,'expeditionPens')?.companionEssence===1900,'Third Pens upgrade remains unchanged');
 const specialRequirement=COMPANION_SPECIAL_CHALLENGES.find(row=>row.id==='CHALLENGE_OATHGLASS_KNIGHTLING')!.requirements[0],specialRequirementProgress=companionUnlockRequirementProgress(specialRequirement,companionUnlockFacts(fixture()));ok(specialRequirementProgress.current===0&&specialRequirementProgress.total===20&&!specialRequirementProgress.complete,'special challenge requirement progress exposes current and target values');
 const suggestedTrialTeam=recommendedCompanionTrialTeam(fixture());ok(suggestedTrialTeam.ready&&suggestedTrialTeam.ids.length===3&&suggestedTrialTeam.power>0,'Trial guidance builds a complete available role team');ok(new Set(suggestedTrialTeam.ids.map(id=>companionServerDefinition(id)?.role)).size===3,'Trial guidance always covers Tank Damage Support');ok(companionAvailability(fixture(),'UNIT_001').status==='available','idle owned companion reports available');
 let expeditionGuide=fixture();for(const id of ids)expeditionGuide.account.combatCompanionProgress![id]={...expeditionGuide.account.combatCompanionProgress![id],level:5};expeditionGuide.account.companionSanctuary!.expeditionPensLevel=1;const suggestedExpedition=recommendedCompanionMissionTeam(expeditionGuide,'MISSION_SCOUT_2H',now);ok(suggestedExpedition.ready&&suggestedExpedition.ids.length>=1&&suggestedExpedition.ids.length<=2&&!!suggestedExpedition.grade,'Expedition guidance finds a valid mission team');ok(suggestedExpedition.bonusRequirementMet,'Expedition guidance prefers a valid bonus-condition team');expeditionGuide=command(expeditionGuide,'companion_equip',{id:'UNIT_001'});const equippedExcluded=recommendedCompanionMissionTeam(expeditionGuide,'MISSION_SCOUT_2H',now);ok(equippedExcluded.ready&&!equippedExcluded.ids.includes('UNIT_001'),'Expedition guidance excludes the currently equipped companion');

@@ -41,6 +41,7 @@ assert.equal(guildTokenShopUiText('tr','+{amount} bonus Guild Tokens earned!',{a
 const base=path.resolve(__dirname,'../src/components');
 const bank=fs.readFileSync(path.join(base,'OnlineGuildBankPanel.tsx'),'utf8');
 const shop=fs.readFileSync(path.join(base,'GuildTokenShopView.tsx'),'utf8');
+assert.ok(bank.includes("state==='Upcoming'")&&bank.includes("ui('{count} needed later'")&&bank.includes("ui('✓ Covered')"),'Future construction shortages must not display as covered');
 const shopController=fs.readFileSync(path.join(base,'OnlineGuildTokenShopPanel.tsx'),'utf8');
 for(const token of [
  'useGuildBankUiText()', "ui('Deposit needs confirmation')", 'ui("Retry saved deposit")',

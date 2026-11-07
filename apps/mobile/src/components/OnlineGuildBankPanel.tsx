@@ -178,7 +178,8 @@ export function OnlineGuildBankPanel({snapshot,playerState,onReload,focusResourc
    <Text numberOfLines={2} style={s.slotName}>{shortName(id)}</Text>
    {stock!==null?<Text numberOfLines={1} style={s.slotOwned}>{ui('Owned: {count}',{count:compactQuantity(ownedQuantity(id))})}</Text>:null}
    <Text numberOfLines={1} style={[s.slotNeed,state==='Needed now'?s.nowText:state==='Upcoming'?s.futureText:null]}>
-    {remaining>0?ui('+{count} needed',{count:compactQuantity(remaining)}):ui('✓ Covered')}
+    {remaining>0?ui('+{count} needed',{count:compactQuantity(remaining)}):state==='Upcoming'
+      ?ui('{count} needed later',{count:compactQuantity(shortageUpcoming(id))}):ui('✓ Covered')}
    </Text>
   </Pressable>;
  };
@@ -233,7 +234,8 @@ export function OnlineGuildBankPanel({snapshot,playerState,onReload,focusResourc
    </Pressable>)}
   </View>
   {view==='inventory'?<View style={s.section}>
-   <View style={s.sectionHead}><Text style={s.sectionTitle}>{ui('Guild materials')}</Text><Text style={s.meta}>{ui('Tap an item to donate')}</Text></View>
+   <View style={s.sectionHead}><Text style={s.sectionTitle}>{ui('Guild materials')}</Text><Text style={s.meta}>{ui('Tap to inspect')}</Text></View>
+   <Text style={s.help}>{ui('Needed now can be funded. Upcoming resources unlock with later construction; Covered resources need no more donations.')}</Text>
    <TextInput value={search} onChangeText={setSearch} placeholder={ui("Search materials")}
     placeholderTextColor={C.muted} accessibilityLabel={ui("Search Guild Bank materials")}
     autoCorrect={false} returnKeyType="search" style={s.search}/>

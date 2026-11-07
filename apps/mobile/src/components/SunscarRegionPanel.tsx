@@ -26,7 +26,7 @@ export function SunscarRegionPanel({zones,onZone,onGather}:{zones:readonly Sunsc
           disabled={zone.locked||!onZone} onPress={()=>onZone?.(zone.id)} style={s.mainAction}>
           <View style={s.zoneHead}><Text style={s.zoneTitle}>{p(zone.name)}</Text><Text style={s.level}>{zone.levelRange}</Text></View>
           <Text numberOfLines={2} style={s.identity}>{p(zone.identity)}</Text>
-          <Text style={s.activities}>{counts.enemies} {t('enemies')} · {counts.gathering} {t('gathering')}</Text>
+          <Text style={s.activities}>{counts.enemies} {p('enemies')} · {counts.gathering} {p('gathering')}</Text>
         </Pressable>
         {zone.locked?<Text style={s.lockedText}>{t('LOCKED')}</Text>:<View style={s.buttons}>
           <Pressable accessibilityRole="button" accessibilityLabel={t('Combat')+' · '+p(zone.name)} onPress={()=>onZone?.(zone.id)}

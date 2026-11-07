@@ -24,7 +24,7 @@ import {challengeFallenKnight,claimActivity,claimOverflowToBank,claimQuest,claim
 import {cancelEquipmentCraft,claimAllReadyEquipmentCrafts,claimForgeJob,equipmentCraftQueueModel,moveWaitingEquipmentCraft,startEquipmentCraft,startGemCombine,startGemRefinement,timedEquipmentRecipe} from './src/core/equipment-crafting-queue';
 import {craftEquipmentPrerequisites} from './src/core/equipment-crafting-prerequisites';
 import {migrateGemPouch} from './src/core/gem-pouch';
-import {acknowledgeAllInventoryItems,acknowledgeInventoryItem,toggleInventoryFavorite,toggleInventoryLock} from './src/core/inventory-view';
+import {acknowledgeAllInventoryItems,acknowledgeInventoryItem,shouldAcknowledgeInventoryOnExit,toggleInventoryFavorite,toggleInventoryLock} from './src/core/inventory-view';
 import {bulkSalvageSelected,bulkSellSelected,bulkTransferSelected} from './src/core/inventory-bulk';
 import {ClassSelectScreen} from './src/screens/ClassSelectScreen';
 import {HomeScreen} from './src/screens/HomeScreen';
@@ -237,6 +237,17 @@ function VeldrynApp(){
   const [tutorialDismissedId,setTutorialDismissedId]=useState<FirstSessionTutorialId|undefined>();
   const [mainScreenTourIndex,setMainScreenTourIndex]=useState<number|undefined>();
   const stateRef=useRef<GameState|null>(null);
+  const previousInventoryTab=useRef<Tab>(tab);
+  useEffect(()=>{
+    const previous=previousInventoryTab.current;
+    previousInventoryTab.current=tab;
+    const current=stateRef.current;
+    if(!current||!shouldAcknowledgeInventoryOnExit(previous,tab,current))return;
+    // The player has seen this visit's items. Keep them tagged until navigation
+    // finishes, then persist the same acknowledgement used by "Mark all seen".
+    if(serverGameplayEnabled){void perform({type:'inventory_seen_all'},false);return;}
+    void commit(acknowledgeAllInventoryItems(current));
+  },[tab]);
   const languageRef=useRef<Language>(recoveryLanguage);
   languageRef.current=state?.settings.language??recoveryLanguage;
   function showAlert(...[title,message,buttons,options]:Parameters<typeof gameAlert.alert>){

@@ -5,10 +5,9 @@
 -- In the same database session FIRST run:
 --   BEGIN;
 --   SET LOCAL veldryn.combat_rebase_approved = 'yes';
--- Then execute this script WITHOUT its BEGIN below, and COMMIT only after review.
--- Alternatively, add that SET LOCAL line directly after BEGIN for an approved run.
+-- Then execute this SQL script; it ends by committing the same transaction.
+-- Executing it without that explicit transaction setting intentionally fails.
 -- No XP, inventory, unlocks, or achievements may be reset by this operation.
-BEGIN;
 DO $guard$
 BEGIN
  IF current_setting('veldryn.combat_rebase_approved', true) IS DISTINCT FROM 'yes' THEN
@@ -122,11 +121,11 @@ BEGIN
    CROSS JOIN LATERAL jsonb_array_elements(
      CASE WHEN jsonb_typeof(g.state->'otherCharacters')='array'
           THEN g.state->'otherCharacters' ELSE '[]'::jsonb END
-   ) parked
-   WHERE jsonb_typeof(parked->'character')='object'
-     AND jsonb_typeof(parked->'character'->'xp')='number'
-     AND (parked->'character'->>'level')::int
-       IS DISTINCT FROM veldryn_ops.combat_level_from_xp_v1((parked->'character'->>'xp')::bigint)
+   ) AS parked(value)
+   WHERE jsonb_typeof(parked.value->'character')='object'
+     AND jsonb_typeof(parked.value->'character'->'xp')='number'
+     AND (parked.value->'character'->>'level')::int
+       IS DISTINCT FROM veldryn_ops.combat_level_from_xp_v1((parked.value->'character'->>'xp')::bigint)
  ) THEN
    RAISE EXCEPTION 'Parked roster level mismatch; no commit';
  END IF;

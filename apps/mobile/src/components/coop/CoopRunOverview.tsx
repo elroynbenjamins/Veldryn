@@ -74,10 +74,13 @@ export function CoopRunOverview({language,run,myVotedNodeId,selfVoter,onBack,onC
   const [theaterOpen,setTheaterOpen]=useState(inCombat);
   const [rewardOpen,setRewardOpen]=useState(terminal);
   const [enteringCombat,setEnteringCombat]=useState(false);
+  const [battlePresentationReady,setBattlePresentationReady]=useState(false);
+  const [entryCombatArchetypes,setEntryCombatArchetypes]=useState<Array<{id:string;label:string}>>([]);
   const [entryCombatNodeId,setEntryCombatNodeId]=useState<string|undefined>();
   const [entryCombatKind,setEntryCombatKind]=useState<string|undefined>();
   const [companionMemberId,setCompanionMemberId]=useState<string|undefined>();
   useEffect(()=>setCompanionMemberId(undefined),[run.runId]);
+  useEffect(()=>{setBattlePresentationReady(false);setEntryCombatArchetypes([]);},[run.runId]);
   const companionSlot=run.roleSlots.find(slot=>(slot.memberId??slot.name)===companionMemberId&&slot.companionId);
   const companionInfo=companionSlot?.companionId?combatCompanionDef(companionSlot.companionId):undefined;
   const companionPortrait=companionSlot?.companionId?companionArtSource(companionSlot.companionId):undefined;
@@ -86,7 +89,7 @@ export function CoopRunOverview({language,run,myVotedNodeId,selfVoter,onBack,onC
    const newCombat=Boolean(run.lastCombat&&lastReplay.current!==replayKey);
    // Present each server-authorized battle once; never expose a replay control.
    if((inCombat&&!wasInCombat.current)||newCombat){
-    setTheaterOpen(true);
+    setTheaterOpen(true);setBattlePresentationReady(false);
     if(terminal)setRewardOpen(false);
    }else if(terminal&&!wasTerminal.current&&!theaterOpen&&!inCombat){
     setRewardOpen(true);
@@ -101,6 +104,8 @@ export function CoopRunOverview({language,run,myVotedNodeId,selfVoter,onBack,onC
     enterFromVersion.current=run.stateVersion;
     enterFromNode.current=run.lastCombat?.nodeId;
     setEntryCombatNodeId(nodeId);setEntryCombatKind(option?.kind);
+    setEntryCombatArchetypes(option?.encounterPreview?.archetypes??[]);
+    setBattlePresentationReady(false);
     setEnteringCombat(true);setTheaterOpen(true);
    }
    onChoose?.(nodeId);
@@ -120,6 +125,8 @@ export function CoopRunOverview({language,run,myVotedNodeId,selfVoter,onBack,onC
   // Never play the previous room's lastCombat while the new fight is pending.
   const awaitingCombatPlayback=inCombat&&(run.mode==='qmode'?!!run.selectedNodeId&&run.lastCombat?.nodeId!==run.selectedNodeId:!run.pendingCombat?.cues.length);
   const combatName=dungeonEnemyDisplayName(run.bossMechanic?.telegraph?.bossName??(run.pendingCombat??run.lastCombat)?.combatants?.find(member=>member.boss)?.name??st('DUNGEON COMBAT'));
+  const closeTheater=()=>{setTheaterOpen(false);if(terminal)setRewardOpen(true);};
+  const showBattleAction=battlePresentationReady&&!inCombat&&Boolean(run.lastCombat);
   return <><ExpeditionScreenShell hideHeader compactHeader={inCombat} eyebrow={ct(language,'browse.resumeTitle')} title={inCombat?combatName:ct(language,'browse.resume')} banner={inCombat?undefined:<View style={s.banner}><Text style={s.modeText}>{modeLabel}</Text><Text style={s.bannerDot}>·</Text><Text style={s.phase}>{run.phase==='awaiting_choice'?dungeonDynamicUiText(language,run.mode==='qmode'?'Choose a room':'Vote on a route'):run.phase==='resolving_node'?dungeonDynamicUiText(language,'Resolving room'):run.phase==='completed'?dungeonDynamicUiText(language,'Expedition completed'):run.phase==='failed'?dungeonDynamicUiText(language,'Expedition failed'):run.phase.replaceAll('_',' ').replace(/^./,letter=>letter.toUpperCase())}</Text></View>}>
     {inCombat?<FantasyPanel variant="selected"><View style={s.summary}>
       <View style={s.grow}><Text style={s.title}>{run.phase==='resolving_node'?st('Battle in progress'):run.lastCombat?.reason==='victory'?st('Encounter cleared'):run.lastCombat?.reason==='wipe'?st('Party defeated'):st('Battle complete')}</Text><Text style={s.copy}>{combatName}</Text></View>
@@ -217,8 +224,8 @@ export function CoopRunOverview({language,run,myVotedNodeId,selfVoter,onBack,onC
      </ScrollView>
     </View>
    </Modal>:null}
-   {theaterOpen?<CombatTheaterModal visible tone={seasonal?'event':'dungeon'} onClose={()=>{setTheaterOpen(false);if(terminal)setRewardOpen(true);}} title={combatName} eyebrow={st('DUNGEON COMBAT')} subtitle={modeLabel} reduceMotion={reduceMotion}>
-    <DungeonCombatStage run={run} anticipation={enteringCombat||awaitingCombatPlayback} entryNodeId={entryCombatNodeId} onPresentationComplete={terminal?()=>{setTheaterOpen(false);setRewardOpen(true);}:undefined} seasonal={seasonal} eventName={eventName} reduceMotionSetting={reduceMotion} boss={enteringCombat||awaitingCombatPlayback?(run.selectedNodeKind??entryCombatKind)==='boss':Boolean((run.pendingCombat??run.lastCombat)?.combatants?.some(member=>member.boss))} enemyLabel={run.selectedNodeKind==='boss'?run.bossMechanic?.telegraph?.bossName:undefined}/>
+   {theaterOpen?<CombatTheaterModal visible tone={seasonal?'event':'dungeon'} onClose={closeTheater} title={combatName} eyebrow={st('DUNGEON COMBAT')} subtitle={modeLabel} reduceMotion={reduceMotion} footer={showBattleAction?<GameButton title={terminal?st('View rewards'):st('Continue dungeon')} onPress={closeTheater}/>:undefined}>
+    <DungeonCombatStage run={run} anticipation={enteringCombat||awaitingCombatPlayback} entryNodeId={entryCombatNodeId} previewArchetypes={entryCombatArchetypes} onPresentationComplete={()=>setBattlePresentationReady(true)} seasonal={seasonal} eventName={eventName} reduceMotionSetting={reduceMotion} boss={enteringCombat||awaitingCombatPlayback?(run.selectedNodeKind??entryCombatKind)==='boss':Boolean((run.pendingCombat??run.lastCombat)?.combatants?.some(member=>member.boss))} enemyLabel={run.selectedNodeKind==='boss'?run.bossMechanic?.telegraph?.bossName:undefined}/>
    </CombatTheaterModal>:null}
   </>;
 }

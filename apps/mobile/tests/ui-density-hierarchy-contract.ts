@@ -205,7 +205,7 @@ for(const path of [
 
 const activeActivityBar=read('src/components/ActiveActivityBar.tsx');
 ok(activeActivityBar.includes('activityProgressFeedback')&&activeActivityBar.includes("gl(phase).replace('…','').toLocaleUpperCase(language)")&&activeActivityBar.includes('cycleRemaining'),"Collapsed active-activity strip must show the same real cycle phase and next-action countdown as Home");
-ok(activeActivityBar.includes("activity.kind==='exploration'?explorationRoute(activity.targetId)")&&activeActivityBar.includes('route?.seconds??gatherRuntime?.cycleSeconds'),'Active Exploration must render its authored route name and cycle duration instead of a frozen one-second fallback');
+ok(activeActivityBar.includes("activity.kind==='exploration'?explorationRoute(activity.targetId)")&&activeActivityBar.includes('route?.seconds??faithTier?.seconds')&&activityTargetNames.includes('EXPLORATION_ROUTES.find'),'Active Exploration must render its authored route name and cycle duration instead of a frozen one-second fallback');
 
 const encounterLockCards=read('src/components/RegionEncounterList.tsx');
 ok(encounterLockCards.includes('encounterLockRequirement(state,monster)')&&encounterLockCards.includes("lock?.kind==='exploration'?t(\"SCOUT\")+' '+lock.routeName"),'Locked encounter cards must show their actual scouting requirement after the level requirement is met');

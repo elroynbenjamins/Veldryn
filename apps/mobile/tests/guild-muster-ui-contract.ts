@@ -29,7 +29,7 @@ ok(panel.includes("st('{current} OF {goal}'")&&!panel.includes('st("4 OF 7")'),'
 ok(panel.includes("st('{count} members'")&&panel.includes("st('Show all {count} members'")&&panel.includes("st('Show fewer members'"),'Muster must show the full Guild roster on demand with localized dynamic counters');
 ok(panel.includes("rosterView==='today'")&&panel.includes("rosterView==='week'")&&panel.includes("b.todayPoints-a.todayPoints"),'Muster must support separate daily and weekly contributor views');
 ok(panel.includes("st('RALLY MARK')")&&panel.includes("st('{points} TO MARK'")&&panel.includes("st('NO POINTS')"),'Muster must distinguish members with a mark, with partial progress, and without recorded points');
-ok(panel.includes("st('4-DAY GOAL MET')")&&panel.includes("st('{days} DAYS TO GO'")&&panel.includes("member.qualifyingDays"),'Muster must explain each member’s weekly Rally-day progress');
+ok(panel.includes("st('GOAL MET')")&&panel.includes("st('{days} DAYS TO GO'")&&panel.includes("member.qualifyingDays"),'Muster must explain each member’s weekly Rally-day progress');
 ok(panel.includes("state.rallyMarkThreshold-member.todayPoints")&&panel.includes("state.personalWeeklyGoal-member.qualifyingDays"),'Remaining day/point requirements must reflect authoritative server thresholds');
 ok(panel.includes('A check-in alone is not enough.')&&panel.includes('Verified Guild boss and project contributions add more.'),'Muster must accurately distinguish attendance from qualifying verified contribution');
 ok(panel.includes('No daily streak required.'),'Muster must explicitly avoid punitive consecutive streaks');

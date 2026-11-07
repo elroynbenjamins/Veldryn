@@ -1,17 +1,22 @@
 import {itemDef} from '../content/items';
 import {HOLY_WATER_ID} from '../content/faith';
-import {GameState} from './types';
+import type {GameState,ItemStack} from './types';
+import {disposeCraftedGearInstance} from './crafted-gear-ownership';
 import {canDisposeLegacyEquipment} from './equipment-enhancement';
 import {depositToBank,salvageItem,sellItem,withdrawFromBank} from './game';
 import {workingTowardInventoryProtectionMap} from './working-toward-inventory';
 
 export type BulkStorageLocation='inventory'|'bank';
 
+/** Item IDs identify ordinary stacks; unique gear must always use its exact copy ID. */
+export function inventoryBulkSelectionId(stack:Pick<ItemStack,'itemId'|'instanceId'>):string{
+  return stack.instanceId?`copy:${stack.instanceId}`:stack.itemId;
+}
 function uniqueIds(itemIds:readonly string[]){return [...new Set(itemIds.filter(Boolean))].slice(0,100)}
 function selectedStacks(state:GameState,itemIds:readonly string[],location:BulkStorageLocation){
   const ids=new Set(uniqueIds(itemIds));
-  // Unique crafted equipment is managed by exact instance ID, never by a bulk item-type selection.
-  return state[location].stacks.filter(stack=>stack.quantity>0&&stack.instanceId===undefined&&ids.has(stack.itemId));
+  // Never collapse different forged copies just because they share an item type.
+  return state[location].stacks.filter(stack=>stack.quantity>0&&ids.has(inventoryBulkSelectionId(stack)));
 }
 function protectedFromDisposal(state:GameState,itemId:string,goalProtectedIds:Set<string>,quantity:number,location:BulkStorageLocation){
   const item=itemDef(itemId);
@@ -31,29 +36,39 @@ export function bulkSelectionSummary(state:GameState,itemIds:readonly string[],l
   };
   const autoEatId=state.character?.equippedFoodId,goalProtection=workingTowardInventoryProtectionMap(state),goalProtectedIds=new Set(goalProtection.keys());
   const goalProtected=stacks.filter(stack=>goalProtectedIds.has(stack.itemId));
-  const transferable=stacks.filter(stack=>location==='bank'||stack.itemId!==autoEatId);
+  const transferable=stacks.filter(stack=>!stack.instanceId&&(location==='bank'||stack.itemId!==autoEatId));
   const sellable=location==='inventory'?stacks.filter(stack=>{
     const item=itemDef(stack.itemId);
-    return stack.itemId!==autoEatId&&stack.itemId!==HOLY_WATER_ID&&item.value>0&&!protectedFromDisposal(state,stack.itemId,goalProtectedIds,stack.quantity,location);
+    if(stack.itemId===autoEatId||stack.itemId===HOLY_WATER_ID||item.value<=0||item.guildOnly||item.knowledgeUnlockId||goalProtectedIds.has(stack.itemId))return false;
+    if(stack.instanceId){
+      if(state.settings.lockedItemIds?.includes(stack.itemId))return false;
+      try{disposeCraftedGearInstance(state,stack.instanceId,'sell');return true;}catch{return false;}
+    }
+    return !protectedFromDisposal(state,stack.itemId,goalProtectedIds,stack.quantity,location);
   }):[];
   const salvageable=location==='inventory'?stacks.filter(stack=>{
     const item=itemDef(stack.itemId);
-    return item.type==='gear'&&!!item.salvage&&!protectedFromDisposal(state,stack.itemId,goalProtectedIds,stack.quantity,location);
+    if(item.type!=='gear'||!item.salvage||goalProtectedIds.has(stack.itemId))return false;
+    if(stack.instanceId){
+      if(state.settings.lockedItemIds?.includes(stack.itemId))return false;
+      try{disposeCraftedGearInstance(state,stack.instanceId,'salvage');return true;}catch{return false;}
+    }
+    return !protectedFromDisposal(state,stack.itemId,goalProtectedIds,stack.quantity,location);
   }):[];
   return {
     selectedStackCount:stacks.length,
     selectedUnitCount:stacks.reduce((sum,stack)=>sum+stack.quantity,0),
     goalProtectedCount:goalProtected.length,
-    transferableIds:transferable.map(stack=>stack.itemId),
+    transferableIds:transferable.map(inventoryBulkSelectionId),
     transferableStackCount:transferable.length,
     transferableUnitCount:transferable.reduce((sum,stack)=>sum+stack.quantity,0),
     transferProtectedCount:stacks.length-transferable.length,
-    sellableIds:sellable.map(stack=>stack.itemId),
+    sellableIds:sellable.map(inventoryBulkSelectionId),
     sellableStackCount:sellable.length,
     sellableUnitCount:sellable.reduce((sum,stack)=>sum+stack.quantity,0),
     sellGold:sellable.reduce((sum,stack)=>sum+itemDef(stack.itemId).value*stack.quantity,0),
     sellProtectedCount:stacks.length-sellable.length,
-    salvageableIds:salvageable.map(stack=>stack.itemId),
+    salvageableIds:salvageable.map(inventoryBulkSelectionId),
     salvageableStackCount:salvageable.length,
     salvageableUnitCount:salvageable.reduce((sum,stack)=>sum+stack.quantity,0),
     salvageProtectedCount:stacks.length-salvageable.length,
@@ -77,9 +92,10 @@ export function bulkSellSelected(state:GameState,itemIds:readonly string[]):Game
   const summary=bulkSelectionSummary(state,itemIds,'inventory');
   if(!summary.sellableIds.length)throw new Error('No selected items can be sold. Working Toward items, favorites, locked items, enhanced gear, auto-eat food, Holy Water and zero-value items stay protected.');
   let next=state;
-  for(const itemId of summary.sellableIds){
-    const quantity=next.inventory.stacks.find(stack=>stack.itemId===itemId)?.quantity??0;
-    if(quantity>0)next=sellItem(next,itemId,quantity);
+  for(const id of summary.sellableIds){
+    if(id.startsWith('copy:')){next=disposeCraftedGearInstance(next,id.slice(5),'sell');continue;}
+    const quantity=next.inventory.stacks.find(stack=>stack.itemId===id&&stack.instanceId===undefined)?.quantity??0;
+    if(quantity>0)next=sellItem(next,id,quantity);
   }
   return next;
 }
@@ -88,9 +104,10 @@ export function bulkSalvageSelected(state:GameState,itemIds:readonly string[]):G
   const summary=bulkSelectionSummary(state,itemIds,'inventory');
   if(!summary.salvageableIds.length)throw new Error('No selected equipment can be salvaged. Working Toward items, favorites, locked items and enhanced gear stay protected.');
   let next=state;
-  for(const itemId of summary.salvageableIds){
-    const quantity=next.inventory.stacks.find(stack=>stack.itemId===itemId)?.quantity??0;
-    for(let count=0;count<quantity;count++)next=salvageItem(next,itemId);
+  for(const id of summary.salvageableIds){
+    if(id.startsWith('copy:')){next=disposeCraftedGearInstance(next,id.slice(5),'salvage');continue;}
+    const quantity=next.inventory.stacks.find(stack=>stack.itemId===id&&stack.instanceId===undefined)?.quantity??0;
+    for(let count=0;count<quantity;count++)next=salvageItem(next,id);
   }
   return next;
 }

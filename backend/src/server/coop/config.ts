@@ -1,4 +1,5 @@
 import {EXPEDITION} from '../expeditions/constants';
+import {rebasedCombatLevelFromLegacyLevel as rebaseLevel} from '../../../../apps/mobile/src/core/progression';
 export const COOP_ROGUELITE_CONFIG = Object.freeze({
   featureFlag: 'coopRogueliteV1',
   enabledByDefault: false,
@@ -25,7 +26,7 @@ export const COOP_ROGUELITE_CONFIG = Object.freeze({
 export type CoopTier=1|2|3|4|5;
 export function coopRequiredLevel(baseMinimumLevel:number,tier:CoopTier):number{
   if(!Number.isInteger(baseMinimumLevel)||baseMinimumLevel<1)throw new Error('invalid_expedition_minimum_level');
-  return baseMinimumLevel+COOP_ROGUELITE_CONFIG.tierMinimumLevelOffset[tier];
+  return rebaseLevel(baseMinimumLevel+COOP_ROGUELITE_CONFIG.tierMinimumLevelOffset[tier]);
 }
 
 export function highestEligibleCoopTier(baseMinimumLevel:number,characterLevel:number):CoopTier|undefined{

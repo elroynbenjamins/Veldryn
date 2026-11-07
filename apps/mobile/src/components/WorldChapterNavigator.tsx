@@ -97,7 +97,7 @@ export function WorldChapterNavigator({state,currentRegionId,goalRegionId,onTrav
 
     <View style={s.sectionHead}>
       <Text style={s.sectionTitle}>{p('EXPLORE REGIONS')}</Text>
-      <Text style={s.sectionHint}>{p('Tap to expand')}</Text>
+      <Text style={s.sectionHint}>{p('Select a chapter')}</Text>
     </View>
     <TutorialBeacon id="world-travel" reduceMotion={state.settings.reduceMotion}>
       <View style={s.groups}>
@@ -133,7 +133,7 @@ export function WorldChapterNavigator({state,currentRegionId,goalRegionId,onTrav
                 const sameRegion=row.region.id===current.id;
                 const access=availability==='available'&&level>=row.minLevel;
                 const selected=openRow===row.id;
-                const label=development?t('In Development'):!access?t('Locked'):sameRegion?p('HERE'):p('Available');
+                const label=development?t('In Development'):!access?t('Locked'):sameRegion&&!row.areaId?p('HERE'):p('Available');
                 const status=development?'development':access?'available':'locked';
                 const counts=row.areaId?regionalAreaActivityCounts(row.region.id,row.areaId):null;
                 const regionCounts=row.areaId?null:regionActivitySummary(state,row.region.id);
@@ -144,7 +144,7 @@ export function WorldChapterNavigator({state,currentRegionId,goalRegionId,onTrav
                 return <View key={row.id} style={[s.location,selected&&s.locationSelected]}>
                   <Pressable
                     accessibilityRole="button"
-                    accessibilityLabel={p(row.name)}
+                    accessibilityLabel={p(row.name)+' · '+t('Levels {min}–{max}',{min:row.minLevel,max:row.maxLevel})}
                     accessibilityState={{expanded:selected}}
                     onPress={()=>setOpenRow(selected?null:row.id)}
                     style={({pressed})=>[s.locationHeader,pressed&&s.pressed]}>

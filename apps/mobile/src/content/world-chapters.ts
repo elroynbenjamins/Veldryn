@@ -11,7 +11,7 @@ export interface WorldChapterGroup {
   description:string;
 }
 export const WORLD_CHAPTER_GROUPS:readonly WorldChapterGroup[]=[
-  {id:'ASTERFALL_HEARTLANDS',name:'Asterfall Heartlands',numeral:'I',artRegionId:'GREENFIELDS',
+  {id:'ASTERFALL_HEARTLANDS',name:'Asterfall Heartlands',numeral:'I',artRegionId:'ASTERFALL_HEARTLANDS',
    regionIds:['GREENFIELDS','SILVERBROOK','IRONWOOD','OLD_MINES','KINGS_ROAD'],
    description:'The first roads, forests, mines and the Fallen Knight.'},
   {id:'SUNSCAR',name:'Sunscar',numeral:'II',artRegionId:'SUNSCAR',

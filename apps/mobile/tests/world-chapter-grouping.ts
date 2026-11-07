@@ -10,13 +10,14 @@ check(new Set(ids).size===ids.length,'No region ID may appear in multiple chapte
 check(WORLD_ZONES.every(zone=>ids.includes(zone.id)),'Existing travel IDs must remain unchanged');
 const [heartlands,sunscar,frostmarch,ashlands,veillands]=WORLD_CHAPTER_GROUPS;
 check(heartlands.name==='Asterfall Heartlands','The opening chapter must be named');
+check(heartlands.artRegionId==='ASTERFALL_HEARTLANDS','Opening chapter must use dedicated artwork');
 check(heartlands.regionIds.join(',')==='GREENFIELDS,SILVERBROOK,IRONWOOD,OLD_MINES,KINGS_ROAD','Opening zones must keep their existing IDs and order');
 check(sunscar.regionIds.join(',')==='SUNSCAR'&&regionAreas('SUNSCAR').length===4,'Sunscar must expose four existing playable areas');
 check(frostmarch.regionIds.join(',')==='FROSTMARCH'&&regionAreas('FROSTMARCH').length===4,'Frostmarch must expose four existing playable areas');
 check(ashlands.regionIds.join(',')==='ASHLANDS','Ashlands must remain an existing travel region without fabricated zones');
 check(veillands.regionIds.join(',')==='VEILLANDS'&&WORLD_ZONES.find(z=>z.id==='VEILLANDS')?.availability==='inDevelopment','Veillands must stay preview-only');
 for(const chapter of WORLD_CHAPTER_GROUPS){
-  check(!!WORLD_ZONES.find(zone=>zone.id===chapter.artRegionId),'Chapter art must resolve to an existing region panorama');
+  check(chapter===heartlands||!!WORLD_ZONES.find(zone=>zone.id===chapter.artRegionId),'Other chapters must retain existing region panoramas');
   for(const id of chapter.regionIds)check(worldChapterForRegionId(id)?.id===chapter.id,'Chapter lookup failed for '+id);
 }
 console.log('PASS: world chapters retain every original travel ID and four real areas per later region');

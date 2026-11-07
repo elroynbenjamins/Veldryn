@@ -159,14 +159,20 @@ export function WorldChapterNavigator({state,currentRegionId,goalRegionId,onTrav
                     <Text style={s.smallChevron}>{selected?'⌃':'⌄'}</Text>
                   </Pressable>
                   {selected?<View style={s.locationDetail}>
-                    <Text style={s.description}>{detail}</Text>
-                    {!development?<Text style={s.activityCount}>
-                      {row.areaId?counts?.enemies+' '+p('enemies')+' · '+counts?.gathering+' '+p('gathering'):
-                        t('Hunts {ready}/{total} · Gather {gatherReady}/{gatherTotal}',{
-                          ready:regionCounts?.combatReady??0,total:regionCounts?.combatTotal??0,
-                          gatherReady:regionCounts?.gatheringReady??0,gatherTotal:regionCounts?.gatheringTotal??0,
-                        })}
-                    </Text>:null}
+                    <View style={s.detailContent}>
+                      {row.areaId&&(row.region.id==='SUNSCAR'||row.region.id==='FROSTMARCH')?
+                        <View style={s.zoneArtwork}><ZoneSceneArtwork regionId={row.areaId} muted={!access}/></View>:null}
+                      <View style={s.flex}>
+                        <Text style={s.description}>{detail}</Text>
+                        {!development?<Text style={s.activityCount}>
+                          {row.areaId?counts?.enemies+' '+p('enemies')+' · '+counts?.gathering+' '+p('gathering'):
+                            t('Hunts {ready}/{total} · Gather {gatherReady}/{gatherTotal}',{
+                              ready:regionCounts?.combatReady??0,total:regionCounts?.combatTotal??0,
+                              gatherReady:regionCounts?.gatheringReady??0,gatherTotal:regionCounts?.gatheringTotal??0,
+                            })}
+                        </Text>:null}
+                      </View>
+                    </View>
                     {access?<View style={s.inlineActions}>
                       {sameRegion?<>
                         <View style={s.flex}><GameButton compact title={t('Combat')} onPress={()=>onOpenCombat(row.areaId)}/></View>
@@ -212,7 +218,7 @@ function styles(C:ThemeColors){
     chapter:{borderWidth:1,borderColor:C.line,borderRadius:11,overflow:'hidden',backgroundColor:C.panel},
     chapterActive:{borderColor:C.selectionLine},goalChapter:{borderColor:C.info},
     chapterHeader:{flexDirection:'row',alignItems:'center',gap:9,padding:9,minHeight:64},
-    chapterArtwork:{width:43,height:45,borderRadius:7,overflow:'hidden',backgroundColor:C.panel2},
+    chapterArtwork:{width:56,height:45,borderRadius:7,overflow:'hidden',backgroundColor:C.panel2},
     chapterName:{fontSize:14,fontWeight:'900',color:C.text},
     chapterMeta:{fontSize:10,color:C.muted,marginTop:2},
     chapterCount:{fontSize:10,color:C.info,marginTop:3,fontWeight:'700'},
@@ -230,6 +236,8 @@ function styles(C:ThemeColors){
     statusMuted:{color:C.muted},statusComing:{color:C.warning},
     smallChevron:{fontSize:13,color:C.muted,width:13,textAlign:'center'},
     locationDetail:{paddingLeft:23,paddingRight:9,paddingBottom:10,borderTopWidth:1,borderTopColor:C.line,paddingTop:8,gap:5},
+    detailContent:{flexDirection:'row',alignItems:'center',gap:8},
+    zoneArtwork:{width:88,height:50,borderRadius:6,overflow:'hidden',backgroundColor:C.panel2},
     description:{fontSize:11,lineHeight:16,color:C.muted},
     activityCount:{fontSize:10,color:C.info,fontWeight:'700'},
     inlineActions:{flexDirection:'row',gap:7,marginTop:3},

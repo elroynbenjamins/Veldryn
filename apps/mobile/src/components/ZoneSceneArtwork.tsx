@@ -10,4 +10,4 @@ export function ZoneSceneArtwork({regionId,muted=false,blurRadius=0}:{regionId:s
   </View>;
 }
 
-const s=StyleSheet.create({crop:{overflow:'hidden'},muted:{opacity:.52}});
+const s=StyleSheet.create({crop:{overflow:'hidden'},muted:{opacity:.7}});

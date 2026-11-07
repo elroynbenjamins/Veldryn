@@ -1,5 +1,5 @@
 name: Rebuild Gear Pouch salvage Edge bundle (temporary)
-# Final regeneration after independent Equipment 2.0 salvage recipes
+# Final regeneration including safe Inventory capacity handling
 on:
   push:
     branches:

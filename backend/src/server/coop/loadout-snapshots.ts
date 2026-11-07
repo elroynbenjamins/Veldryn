@@ -14,6 +14,8 @@ export interface AuthoritativeLoadoutRecord {
   loadoutId: string;
   revision: number;
   characterLevel: number;
+  /** Internal pre-rebase power calibration; unlocks always use the visible characterLevel. */
+  combatScalingLevel?: number;
   dungeonUnlocked: boolean;
   legalEquipment: boolean;
   stats: Omit<VerifiedCombatSnapshot, 'role'>;
@@ -63,7 +65,7 @@ export function resolveAndFreezeLoadout(input: {
   if (!record.dungeonUnlocked) throw new Error('dungeon_locked');
   if (!record.legalEquipment) throw new Error('illegal_equipment');
   const role = deriveRole(record.classId);
-  const source: VerifiedCombatSnapshot = { ...record.stats, role, classId: record.classId, characterId: record.characterId, level: record.characterLevel };
+  const source: VerifiedCombatSnapshot = { ...record.stats, role, classId: record.classId, characterId: record.characterId, level: record.combatScalingLevel ?? record.characterLevel };
   const normalized = normalizeCombatInput(source, record.abilities, input.syncLevel, ROOTBOUND_ROLE_REFERENCES[role]);
   const reference = ROOTBOUND_ROLE_REFERENCES[role];
   // Compare against the same effective-level reference used by normalization.

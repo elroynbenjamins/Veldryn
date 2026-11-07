@@ -1,3 +1,5 @@
+import {legacyCharacterTotalXpAtLevel,rebasedCombatLevelFromLegacyLevel} from '../../../apps/mobile/src/core/progression';
+import {rebaseLegacyCombatLevel} from '../../src/server/coop/config';
 import {strict as assert} from 'node:assert';
 import {CLASSES} from '../../../apps/mobile/src/content/classes';
 import {noviceItemId,noviceSetFor} from '../../../apps/mobile/src/content/novice-sets';
@@ -9,18 +11,19 @@ import {simulateCombat} from '../../src/server/combat/engine';
 import type {CraftedGearInstance} from '../../../apps/mobile/src/core/types';
 import {deriveOnlineCoopLoadout,onlineCoopLoadoutHash} from '../coop-loadout';
 import {resolveAndFreezeLoadout} from '../../src/server/coop/loadout-snapshots';
+for(let oldLevel=1;oldLevel<=100;oldLevel++)assert.equal(rebaseLegacyCombatLevel(oldLevel),rebasedCombatLevelFromLegacyLevel(oldLevel),'backend co-op gates must match the mobile Combat XP curve');
 for(const definition of CLASSES){
- const state=createCharacter(newGame(0),definition.id,'Coop Test');state.character!.level=25;
+ const state=createCharacter(newGame(0),definition.id,'Coop Test');state.character!.level=25;state.character!.xp=legacyCharacterTotalXpAtLevel(25);
  const before=JSON.stringify(state),weak=deriveOnlineCoopLoadout('owner',state,1);
  assert.equal(JSON.stringify(state),before,'publication never grants or changes gear');
  state.character!.equipment=Object.fromEntries(noviceSetFor(definition.id).slots.map(slot=>[slot,noviceItemId(definition.id,slot)]));
  const full=deriveOnlineCoopLoadout('owner',state,2);
  assert.ok(full.stats.maxHp>=weak.stats.maxHp);assert.ok(full.stats.attackPower>=weak.stats.attackPower);assert.ok(full.stats.defense>=weak.stats.defense);
- const frozen=resolveAndFreezeLoadout({accountId:'owner',characterId:full.characterId,loadoutId:'current',expectedRevision:2,minLevel:15,syncLevel:25,repository:{getOwnedLoadout:()=>full}});
+ const frozen=resolveAndFreezeLoadout({accountId:'owner',characterId:full.characterId,loadoutId:'current',expectedRevision:2,minLevel:rebasedCombatLevelFromLegacyLevel(15),syncLevel:25,repository:{getOwnedLoadout:()=>full}});
  assert.equal(frozen.readiness.ready,true);assert.equal(full.legalEquipment,true);
- state.character!.level=100;
+ state.character!.level=100;state.character!.xp=legacyCharacterTotalXpAtLevel(100);
  const veteran=deriveOnlineCoopLoadout('owner',state,3);
- const earlyDungeonEcho=resolveAndFreezeLoadout({accountId:'owner',characterId:veteran.characterId,loadoutId:'current',expectedRevision:3,minLevel:15,syncLevel:25,repository:{getOwnedLoadout:()=>veteran}});
+ const earlyDungeonEcho=resolveAndFreezeLoadout({accountId:'owner',characterId:veteran.characterId,loadoutId:'current',expectedRevision:3,minLevel:rebasedCombatLevelFromLegacyLevel(15),syncLevel:25,repository:{getOwnedLoadout:()=>veteran}});
  assert.equal(earlyDungeonEcho.normalized.before.level,100,'the published Echo may qualify for every dungeon');
  assert.equal(earlyDungeonEcho.normalized.effectiveLevel,25,'early dungeons down-sync a level-100 Echo');
  assert.equal(earlyDungeonEcho.normalized.snapshot.level,25,'combat receives the dungeon sync level');
@@ -37,7 +40,7 @@ for(const definition of CLASSES){
  * This test catches a missing socket-to-combat bridge even when isolated
  * gem-effects-v1 engine tests pass. */
 const equipped=createCharacter(newGame(0),'IRONWARDEN','Dungeon Gem Parity');
-equipped.character!.level=25;
+equipped.character!.level=25;equipped.character!.xp=legacyCharacterTotalXpAtLevel(25);
 // A valid dungeon publication needs the class's complete readiness kit.
 equipped.character!.equipment=Object.fromEntries(noviceSetFor('IRONWARDEN').slots.map(slot=>[slot,noviceItemId('IRONWARDEN',slot)]));
 const ringId=V33_EQUIPMENT_RECIPES.find(row=>row.classId==='IRONWARDEN'&&row.v33EquipmentTier==='T1'&&itemDef(row.output.itemId).slot==='ring')!.output.itemId;
@@ -65,7 +68,7 @@ assert.ok((gemmed.stats.effectGems?.[0]?.totalValue??0)>0);
 assert.notEqual(onlineCoopLoadoutHash(gemmed),onlineCoopLoadoutHash(plain),'Publication hash must change when a forged gem changes');
 const frozenGems=resolveAndFreezeLoadout({
  accountId:'owner',characterId:gemmed.characterId,loadoutId:'current',expectedRevision:8,
- minLevel:15,syncLevel:25,repository:{getOwnedLoadout:()=>gemmed},
+ minLevel:rebasedCombatLevelFromLegacyLevel(15),syncLevel:25,repository:{getOwnedLoadout:()=>gemmed},
 });
 assert.deepEqual(frozenGems.normalized.snapshot.effectGems,gemmed.stats.effectGems,
  'Freeze/normalization must preserve canonical Effect Gem values and Resonance');
@@ -89,7 +92,7 @@ const savage=deriveOnlineCoopLoadout('owner',equipped,9);
 assert.ok((savage.stats.critMultiplier??1.5)>1.5,'Savage must increase the frozen Crit Damage multiplier');
 const frozenSavage=resolveAndFreezeLoadout({
  accountId:'owner',characterId:savage.characterId,loadoutId:'current',expectedRevision:9,
- minLevel:15,syncLevel:25,repository:{getOwnedLoadout:()=>savage},
+ minLevel:rebasedCombatLevelFromLegacyLevel(15),syncLevel:25,repository:{getOwnedLoadout:()=>savage},
 });
 assert.ok(combatantFromVerifiedSnapshot(frozenSavage.normalized.snapshot,frozenSavage.normalized.abilities).stats.critMultiplier>1.5,
  'Authoritative dungeon engine must receive Savage Critical Damage rather than its default multiplier');

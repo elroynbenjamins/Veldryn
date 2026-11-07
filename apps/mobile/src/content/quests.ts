@@ -1,3 +1,4 @@
+import {rebasedCombatLevelFromLegacyLevel as rebaseLevel} from '../core/progression';
 import {SkillId} from '../core/types';
 
 export type QuestKind='kills'|'item'|'equip'|'level'|'skillLevel'|'craft'|'exploration'|'boss';
@@ -14,7 +15,7 @@ export interface QuestDef{
   rewardGold:number;rewardItemId?:string;rewardItemQty?:number;
   act:QuestAct;location:string;story:string;
 }
-export const QUESTS:QuestDef[]=[
+export const QUESTS:QuestDef[]=([
 {id:'QST_001',name:'A Name in the Ledger',description:'Defeat 5 Moss Rats.',kind:'kills',targetId:'MOSS_RAT',required:5,rewardGold:40,rewardItemId:'MOSS_FIBER',rewardItemQty:5,act:1,location:'Greenfields',story:'The local ledger has more missing names than living ones. A simple rat cull is hardly heroic, but it is the first chance to prove you can return from the road.'},
 {id:'QST_002',name:'First Blood, First Skill',description:'Reach level 2 in any guided gathering skill.',kind:'skillLevel',required:2,rewardGold:60,rewardItemId:'COPPER_ORE',rewardItemQty:4,act:1,location:'Greenfields Camp',story:'Steel alone will not carry you through Asterfall. The camp quartermaster sends you to learn the land, gather what it gives, and stop depending on supplies brought from safer places.'},
 {id:'QST_003',name:"A Hound's Trail",description:'Travel to Ironwood Forest, then trace its paths to discover the Ironwood Wolf encounter.',kind:'exploration',targetId:'SCOUT_IRONWOOD',skillId:'exploration',required:1,requiredCharacterLevel:7,rewardGold:90,rewardItemId:'IRONWOOD_LOG',rewardItemQty:4,act:1,location:'Ironwood Verge',story:'The wardens have found wolf tracks along the Ironwood verge, but no reliable path to the pack. Travel to the forest first, then trace its old trails to reveal where the wolves are hunting and open the road for future expeditions.'},
@@ -30,4 +31,9 @@ export const QUESTS:QuestDef[]=[
 {id:'QST_013',name:'Oathglass Road',description:'Defeat 10 Fallen Sentinels.',kind:'kills',targetId:'FALLEN_SENTINEL',required:10,rewardGold:750,rewardItemId:'OATHGLASS_SHARD',rewardItemQty:5,act:3,location:'Oathglass Causeway',story:'Fallen Sentinels guard the causeway in disciplined silence. Beyond them stands the shattered command post where the last royal defense made its final oath and where its commander never truly left.'},
 {id:'QST_014',name:'Fallen Knight',description:'Defeat the Fallen Knight.',kind:'boss',targetId:'FALLEN_KNIGHT',required:1,rewardGold:1000,rewardItemId:'OATHGLASS_SHARD',rewardItemQty:5,act:3,location:'Ruined Oathgate',story:'The echoes finally have a face. The Fallen Knight still holds the gate as though the kingdom behind him survives, bound to an oath that has outlived everyone it was meant to protect.'},
 {id:'QST_015',name:'Beyond the Green',description:'Claim victory over the Fallen Knight and reach level 25.',kind:'level',required:25,rewardGold:1250,rewardItemId:'OATHGLASS_CAPE',rewardItemQty:1,act:3,location:'Eastern Oathgate',story:'With the Knight defeated, the sealed routes beyond Asterfall begin to open. The victory ends one chapter, but the echoes carried on the wind make it clear the broken oath was never confined to the green lands.'},
-];
+] as QuestDef[]).map(quest=>{
+  const required=quest.kind==='level'?rebaseLevel(quest.required):quest.required;
+  const requiredCharacterLevel=quest.requiredCharacterLevel===undefined?undefined:rebaseLevel(quest.requiredCharacterLevel);
+  const description=quest.kind==='level'?quest.description.replace(/level \d+/i,`level ${required}`):quest.description;
+  return {...quest,required,requiredCharacterLevel,description};
+});

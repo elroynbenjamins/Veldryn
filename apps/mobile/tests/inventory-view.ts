@@ -1,3 +1,4 @@
+import {rebasedCombatLevelFromLegacyLevel as rebaseLevel} from '../src/core/progression';
 import {createCharacter,newGame,effectiveStats,salvageItem,sellItem,sellBankItem} from '../src/core/game';
 import {indexInventoryGearCopies} from '../src/core/inventory-gear-lookup';
 import {acknowledgeAllInventoryItems,acknowledgeInventoryItem,foodHealingAmount,inventoryFavoriteIds,inventoryLockedIds,inventoryNewItemIds,shouldAcknowledgeInventoryOnExit,recoveryAmount,storageCapacityStatus,toggleInventoryFavorite,toggleInventoryLock,transferAmount,transferError,visibleStacks} from '../src/core/inventory-view';
@@ -126,7 +127,7 @@ const ingotCraftSource=ingotInspect.sources.find(source=>source.kind==='crafting
 ok(ingotCraftSource?.navigation?.kind==='skills'&&ingotCraftSource.navigation.recipeId==='SMELT_COPPER_INGOT'&&ingotCraftSource.navigation.mode==='crafting','Crafted item source opens the exact recipe');
 const copperUse=copperInspect.usedIn.find(recipe=>recipe.name==='Smelt Copper Ingot');
 ok(copperUse?.navigation.kind==='skills'&&copperUse.navigation.recipeId==='SMELT_COPPER_INGOT','Crafting-use row opens the recipe that consumes the item');
-ok(copperGatherSource?.availability?.status==='locked'&&copperGatherSource.availability.detail.includes('Level 16'),'Quick Inspect shows a locked region requirement before navigation');
+ok(copperGatherSource?.availability?.status==='locked'&&copperGatherSource.availability.detail.includes(`Level ${rebaseLevel(16)}`),'Quick Inspect shows a locked region requirement before navigation');
 const travelReadyState={...state,character:{...state.character!,level:20},skills:state.skills.map(row=>row.skillId==='mining'?{...row,level:20}:row),exploredRouteIds:['SCOUT_IRONWOOD'],currentRegionId:'GREENFIELDS'};
 const travelCopper=itemInspectModel(travelReadyState,'COPPER_ORE').sources.find(source=>source.title==='Copper Vein');
 ok(travelCopper?.availability?.status==='travel'&&travelCopper.availability.detail.includes('Old Mines'),'Unlocked off-region gathering source is marked TRAVEL');

@@ -221,6 +221,7 @@ export function EquipmentPouchPanel({state,busy=false,onAction}:{state:GameState
      {salvageRecipe?<GameButton compact tone="secondary" title={salvageCandidate?.eligible?p('Salvage · {count}× {name}',{count:salvageRecipe.quantity,name:localizedItemName(language,salvageRecipe.itemId)}):p('Protected')} disabled={!onAction||busy||!salvageCandidate?.eligible} onPress={()=>{if(salvageCandidate)startSalvage([salvageCandidate.id])}}/>:null}
     </View>
     <Text style={s.meta}>{p(saleCandidate?.eligible?'Selling this copy adds Gold to this character.':saleCandidate?.reason??'This equipment is protected.')} {p('Enhanced, socketed and loadout gear cannot be sold.')}</Text>
+    {salvageRecipe&&!salvageCandidate?.eligible?<Text style={s.saleWarning}>{p(salvageCandidate?.reason??'This equipment is protected.')}</Text>:null}
    </ScrollView>:null}
   </GameModalSurface>
  </View>;

@@ -63,7 +63,7 @@ const rootBoss=()=>withPveIdentity(rootboundHeartBoss(),'bruiser',['heavy_hit','
 const bellBoss=()=>withPveIdentity(bellWardenBoss(),'caster',['interrupt','aoe','vulnerability']);
 
 export const ASTERFALL_ENCOUNTERS:Record<string,()=>CombatantDefinition[]>={
- ROOTBOUND_BATTLE_01:()=>[enemy('ROOT_HUSK_1','Briar Husk',5200,330,620),variedEnemy(enemy('ROOT_HUSK_2','Briar Husk',5200,330,620),'swarm')],
+ ROOTBOUND_BATTLE_01:()=>[enemy('ROOT_HUSK_1','Briar Husk',5200,330,620),variedEnemy(enemy('ROOT_HUSK_2','Sporeling',5200,330,620),'swarm')],
  ROOTBOUND_ELITE_01:()=>[rootWarden()],
  ROOTBOUND_BOSS:()=>[rootBoss()],
  LANTERN_BATTLE_01:()=>[enemy('LANTERN_WRETCH_1','Lantern Wretch',4800,350,560),variedEnemy(enemy('LANTERN_WRETCH_2','Lantern Wretch',4800,350,560),'caster','shadow')],

@@ -23,5 +23,5 @@ export function activityTargetLabel(activity: {kind:ActivityKind|'gathering';tar
   case 'training':label=targetId==='class_drills'?'Class drills':undefined;break;
  }
  // Old saves or newly introduced content can have an unknown ID. Keep it readable.
- return label??targetId.replace(/[_-]+/g,' ').replace(/\s+/g,' ').trim().toLowerCase().replace(/(^|\s)\S/g,part=>part.toUpperCase())||'Activity';
+ return label??(targetId.replace(/[_-]+/g,' ').replace(/\s+/g,' ').trim().toLowerCase().replace(/(^|\s)\S/g,part=>part.toUpperCase())||'Activity');
 }

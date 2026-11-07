@@ -1,3 +1,4 @@
+import {legacyCharacterTotalXpAtLevel} from '../src/core/progression';
 import {createCharacter,newGame} from '../src/core/game';
 import {formatGameNumber} from '../src/core/number-format';
 import {createSaveBackup,parseSaveBackup} from '../src/core/save-transfer';
@@ -5,7 +6,7 @@ import {createSaveBackup,parseSaveBackup} from '../src/core/save-transfer';
 function ok(value:boolean,message:string){if(!value)throw new Error(message)}
 
 const base=createCharacter(newGame(1_000),'IRONWARDEN','Backup Tester');
-const state={...base,currentRegionId:'ASHLANDS',character:{...base.character!,level:75},unlockedMonsterIds:[...base.unlockedMonsterIds,'BLACKGLASS_MIRELING']};
+const state={...base,currentRegionId:'ASHLANDS',character:{...base.character!,level:75,xp:legacyCharacterTotalXpAtLevel(75)},unlockedMonsterIds:[...base.unlockedMonsterIds,'BLACKGLASS_MIRELING']};
 const backup=createSaveBackup(state,new Date('2026-09-08T00:00:00.000Z'));
 const restored=parseSaveBackup(backup);
 ok(restored.character?.name==='Backup Tester','A versioned backup must restore the character');

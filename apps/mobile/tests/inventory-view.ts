@@ -1,6 +1,6 @@
 import {createCharacter,newGame,effectiveStats,salvageItem,sellItem,sellBankItem} from '../src/core/game';
 import {indexInventoryGearCopies} from '../src/core/inventory-gear-lookup';
-import {acknowledgeAllInventoryItems,acknowledgeInventoryItem,foodHealingAmount,inventoryFavoriteIds,inventoryLockedIds,inventoryNewItemIds,recoveryAmount,storageCapacityStatus,toggleInventoryFavorite,toggleInventoryLock,transferAmount,transferError,visibleStacks} from '../src/core/inventory-view';
+import {acknowledgeAllInventoryItems,acknowledgeInventoryItem,foodHealingAmount,inventoryFavoriteIds,inventoryLockedIds,inventoryNewItemIds,shouldAcknowledgeInventoryOnExit,recoveryAmount,storageCapacityStatus,toggleInventoryFavorite,toggleInventoryLock,transferAmount,transferError,visibleStacks} from '../src/core/inventory-view';
 import {validateGameCommand,validateGameSettings,settingsForOnlineCommand} from '../src/core/game-commands';
 import {bulkSelectionSummary,bulkSellSelected,bulkSalvageSelected,bulkTransferSelected} from '../src/core/inventory-bulk';
 import {itemInspectModel} from '../src/core/item-inspect';
@@ -22,6 +22,11 @@ ok(visibleStacks(stacks,'','all','quantity')[0].quantity===12,'Descending quanti
 ok(state.settings.seenItemIds?.includes('TRAVEL_RATION')===true,'Starter ration begins acknowledged');
 let newItemState={...state,inventory:{...state.inventory,stacks:[...state.inventory.stacks,{itemId:'COPPER_ORE',quantity:2},{itemId:'EMBER_SHARD',quantity:1}]}};
 ok(inventoryNewItemIds(newItemState).includes('COPPER_ORE')&&inventoryNewItemIds(newItemState).includes('EMBER_SHARD'),'First-time stored item types are marked new');
+ok(!shouldAcknowledgeInventoryOnExit('Home','Inventory',newItemState),'Opening Inventory must leave NEW labels visible');
+ok(!shouldAcknowledgeInventoryOnExit('Inventory','Inventory',newItemState),'Remaining in Inventory must leave NEW labels visible');
+ok(shouldAcknowledgeInventoryOnExit('Inventory','Home',newItemState),'Leaving Inventory should acknowledge the current NEW items');
+ok(shouldAcknowledgeInventoryOnExit('Inventory','World',{...newItemState,inventory:{...newItemState.inventory,stacks:[]},bank:{...newItemState.bank,stacks:[{itemId:'COPPER_ORE',quantity:1}]}}),'Leaving Inventory should also acknowledge new items stored only in Bank');
+ok(!shouldAcknowledgeInventoryOnExit('Inventory','Home',state),'Leaving Inventory with no new items should not issue a redundant acknowledgement');
 ok(visibleStacks(stacks,'','new','name',[],['EMBER_SHARD'])[0].itemId==='EMBER_SHARD','New item filter');
 ok(visibleStacks(stacks,'','all','new',[],['EMBER_SHARD'])[0].itemId==='EMBER_SHARD','New-first sort');
 newItemState=acknowledgeInventoryItem(newItemState,'COPPER_ORE');

@@ -7,18 +7,18 @@ import {TIER_CHARACTER_LEVEL_FLOOR,TIER_CRAFTING_LEVEL_FLOOR} from '../src/conte
 
 function ok(value:unknown,message:string){if(!value)throw new Error(message)}
 const released=WORLD_ZONES.filter(zone=>zone.availability==='released');
-const zoneById=new Map(released.map(zone=>[zone.id,zone]));
-const zoneByName=new Map(released.map(zone=>[zone.name,zone]));
+const zoneById=new Map(WORLD_ZONES.map(zone=>[zone.id,zone]));
+const zoneByName=new Map(WORLD_ZONES.map(zone=>[zone.name,zone]));
 
 for(const monster of MONSTERS){
  const zone=zoneByName.get(monster.zone);
- ok(zone,monster.id+' must live in a released zone');
+ ok(zone,monster.id+' must belong to an authored world zone');
  ok(monster.unlockLevel>=zone!.minLevel,monster.id+' unlocks before its region');
  ok(monster.unlockLevel<=zone!.maxLevel+1,monster.id+' unlock is outside the authored region band');
 }
 for(const action of [...GATHERING,...HERB_NODES]){
  const zone=zoneById.get(action.zoneId);
- ok(zone,action.id+' must live in a released zone');
+ ok(zone,action.id+' must belong to an authored world zone');
  // Skill level and character level are separate axes, but a launch node should not demand
  // a skill tier wildly beyond the region in which the player first encounters it.
  ok(action.unlockLevel<=Math.max(100,zone!.maxLevel+20),action.id+' has an implausible skill gate for '+zone!.name);
@@ -45,6 +45,7 @@ for(let i=1;i<=9;i++){
  }
 }
 const ashlands=zoneById.get('ASHLANDS')!;
+ok(ashlands.availability==='inDevelopment','Ashlands content stays authored but the region is not yet playable');
 ok(rebaseLevel(TIER_CHARACTER_LEVEL_FLOOR.T9)>=ashlands.minLevel,'T9 must begin in the Ashlands character band');
 ok(TIER_CRAFTING_LEVEL_FLOOR.T9>=65,'T9 crafting must remain a late-game profession gate');
 const t9=equipment.filter(recipe=>recipe.v33EquipmentTier==='T9');

@@ -42609,7 +42609,7 @@ var HERB_NODES = [
   { id: "FROSTBELL_FLOWER", name: "Frostbell Flower", itemId: "FROSTBLOOM", zoneId: "FROSTMARCH", areaId: "ZONE_011", unlockLevel: 46, seconds: 118, xp: 310 },
   { id: "WINTERMINT_PATCH", name: "Wintermint Patch", itemId: "WINTERMINT", zoneId: "FROSTMARCH", areaId: "ZONE_011", unlockLevel: 48, seconds: 122, xp: 325 },
   { id: "MIRAGE_SALTBLOOM", name: "Mirage Saltbloom", itemId: "SUNSCALE", zoneId: "SUNSCAR", areaId: "ZONE_008", unlockLevel: 36, seconds: 108, xp: 250 },
-  { id: "ASTRAL_SAGE", name: "Observatory Astral Sage", itemId: "ASTRAL_SCRIPT", zoneId: "SUNSCAR", areaId: "ZONE_010", unlockLevel: 43, seconds: 124, xp: 305 },
+  { id: "ASTRAL_SAGE", name: "Observatory Astral Sage", itemId: "SUNSCALE", zoneId: "SUNSCAR", areaId: "ZONE_010", unlockLevel: 43, seconds: 124, xp: 305 },
   { id: "WHITEPINE_FROSTBELL", name: "Whitepine Frostbell Thicket", itemId: "FROSTBLOOM", zoneId: "FROSTMARCH", areaId: "ZONE_012", unlockLevel: 53, seconds: 132, xp: 340 },
   { id: "ASHEN_MYRRH_GROVE", name: "Ashen Myrrh Grove", itemId: "ASHEN_MYRRH", zoneId: "ASHLANDS", unlockLevel: 71, seconds: 145, xp: 440 },
   { id: "ASHEN_MYRRH_CROWN", name: "Ashen Myrrh Crown", itemId: "ASHEN_MYRRH", zoneId: "ASHLANDS", unlockLevel: 86, seconds: 164, xp: 560 }
@@ -43702,7 +43702,7 @@ var GATHERING = [
   { id: "ECHO_QUARTZ_GEODE", skillId: "mining", name: "Echo Quartz Geode", unlockLevel: 20, seconds: 38, xp: 42, itemId: "ECHO_QUARTZ", min: 1, max: 1, zoneId: "OLD_MINES" },
   { id: "SUNSTONE_OUTCROP", skillId: "mining", name: "Sunstone Outcrop", unlockLevel: 26, seconds: 48, xp: 92, itemId: "SUNSTONE_ORE", min: 1, max: 1, zoneId: "SUNSCAR", areaId: "ZONE_006" },
   { id: "SCORCHWIND_SUNSTONE_SEAM", skillId: "mining", name: "Scorchwind Sunstone Seam", unlockLevel: 31, seconds: 53, xp: 109, itemId: "SUNSTONE_ORE", min: 1, max: 1, zoneId: "SUNSCAR", areaId: "ZONE_007" },
-  { id: "OBSERVATORY_AMBERGLASS_SEAM", skillId: "mining", name: "Observatory Amberglass Seam", unlockLevel: 41, seconds: 61, xp: 155, itemId: "AMBERGLASS", min: 1, max: 1, zoneId: "SUNSCAR", areaId: "ZONE_010" },
+  { id: "OBSERVATORY_SUNSTONE_GEODE", skillId: "mining", name: "Observatory Sunstone Geode", unlockLevel: 41, seconds: 76, xp: 155, itemId: "SUNSTONE_ORE", min: 1, max: 1, zoneId: "SUNSCAR", areaId: "ZONE_010" },
   { id: "FROSTIRON_VEIN", skillId: "mining", name: "Frostiron Vein", unlockLevel: 46, seconds: 62, xp: 180, itemId: "FROSTIRON", min: 1, max: 1, zoneId: "FROSTMARCH", areaId: "ZONE_011" },
   { id: "SHIVERLAKE_RIMEGLASS_SEAM", skillId: "mining", name: "Shiverlake Rimeglass Seam", unlockLevel: 58, seconds: 72, xp: 218, itemId: "RIMEGLASS", min: 1, max: 1, zoneId: "FROSTMARCH", areaId: "ZONE_013" },
   { id: "WYRMSPINE_FROSTIRON_VEIN", skillId: "mining", name: "Wyrmspine Frostiron Vein", unlockLevel: 65, seconds: 82, xp: 275, itemId: "FROSTIRON", min: 1, max: 1, zoneId: "FROSTMARCH", areaId: "ZONE_015" },

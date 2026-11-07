@@ -1,5 +1,6 @@
 import type {ClassId,GearSlot} from '../core/types';
 import {increasedCraftingGoldCost} from './crafting-gold-cost';
+import {rebasedCombatLevelFromLegacyLevel as rebaseLevel} from '../core/progression';
 import catalog from './equipment_catalog_t1_t9_v33.json';
 
 export interface V33EquipmentRecipeDef{
@@ -143,7 +144,7 @@ export const V33_EQUIPMENT_RECIPES:V33EquipmentRecipeDef[]=(catalog.pieces as Ar
     inputs:mergeInputs([...ingredients(tier,String(piece.Path),multiplier,skillId),infusionByTier[tier]]),
     output:{itemId:String(piece['Piece ID']),quantity:1},
     classId,
-    characterLevel,
+    characterLevel:rebaseLevel(characterLevel),
     v33EquipmentTier:tier,
     v33Region:tier==='T9'?'Ashlands':String(set.Region),
     v33SetId:setId,

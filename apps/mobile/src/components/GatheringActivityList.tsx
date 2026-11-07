@@ -18,12 +18,12 @@ import {gatheringDropPercent,gatheringDropPreview,type GatheringDropPreviewRow} 
 import {petArtSource} from '../theme/pet-art';
 
 /** A normal gathering skill is deliberately one tap: select a resource and begin. */
-export function GatheringActivityList({state,skillId,skillLevel,preferredActionId,onGather,onNavigate,currentRegionOnly=false,showInstruction=true}:{state:GameState;skillId:GatheringSkillId;skillLevel:number;preferredActionId?:string;onGather:(id:string)=>void;onNavigate?:(destination:WorkingTowardDestination)=>void;currentRegionOnly?:boolean;showInstruction?:boolean}){
+export function GatheringActivityList({state,skillId,skillLevel,preferredActionId,onGather,onNavigate,currentRegionOnly=false,areaId,showInstruction=true}:{state:GameState;skillId:GatheringSkillId;skillLevel:number;preferredActionId?:string;onGather:(id:string)=>void;onNavigate?:(destination:WorkingTowardDestination)=>void;currentRegionOnly?:boolean;areaId?:string;showInstruction?:boolean}){
  const {gt,gl,language}=useGameplayText();
  const C=useGameTheme(),s=useMemo(()=>makeStyles(C),[C]);
  const [expandedDropId,setExpandedDropId]=useState<string|null>(null);
  const regionId=currentRegionId(state),region=WORLD_ZONES.find(row=>row.id===regionId)??WORLD_ZONES[0];
- const nodes=[...GATHERING,...HERB_NODES].filter(row=>row.skillId===skillId&&(!currentRegionOnly||row.zoneId===region.id)).sort((a,b)=>Number(b.zoneId===region.id)-Number(a.zoneId===region.id)||Number(b.id===preferredActionId)-Number(a.id===preferredActionId)||a.unlockLevel-b.unlockLevel);
+ const nodes=[...GATHERING,...HERB_NODES].filter(row=>row.skillId===skillId&&(!currentRegionOnly||row.zoneId===region.id)&&(!areaId||row.zoneId!==region.id||row.areaId===areaId)).sort((a,b)=>Number(b.zoneId===region.id)-Number(a.zoneId===region.id)||Number(b.id===preferredActionId)-Number(a.id===preferredActionId)||a.unlockLevel-b.unlockLevel);
  const stock=(itemId:string)=>[...state.inventory.stacks,...state.bank.stacks].filter(row=>row.itemId===itemId).reduce((total,row)=>total+row.quantity,0);
  return <View style={s.root}>
   {showInstruction?<Text style={s.instruction}>{gt("Tap a resource to begin gathering.")}</Text>:null}

@@ -65,6 +65,13 @@ jobs:
               'feat/dungeon-crafted-healing-potions-106': { legacy: 821, replacement: 829, requireReplacementReference: true },
               'feat/dungeon-alchemy-potion-consumption-106': { legacy: 824, replacement: 829, requireReplacementReference: true },
             };
+            // These two unlinked branch aliases point to commits already
+            // proven identical to, or ancestors of, the tip of a merged PR.
+            // Never infer aliases dynamically from a matching description.
+            const mergedAliases = {
+              'chore/guild-skill-costs-main-sync-20261106': 891,
+              'feat/equipment-pouch-safe-sell-rebase-20261106': 882,
+            };
             const eligible = [];
             const skipped = [];
             for (const branch of branches) {
@@ -86,6 +93,32 @@ jobs:
                 pr.head.repo?.full_name === owner + '/' + repo &&
                 pr.head.sha === branch.commit.sha && pr.merge_commit_sha);
               if (!merged) {
+                const aliasPrNo = mergedAliases[name];
+                if (aliasPrNo) {
+                  const response = await github.rest.pulls.get({
+                    owner, repo, pull_number: aliasPrNo
+                  });
+                  const candidate = response.data;
+                  if (candidate.merged && candidate.merge_commit_sha &&
+                      candidate.base.ref === 'main' &&
+                      candidate.head.repo?.full_name === owner + '/' + repo) {
+                    const [ancestry, included] = await Promise.all([
+                      github.rest.repos.compareCommits({
+                        owner, repo, base: branch.commit.sha, head: candidate.head.sha, per_page: 1
+                      }),
+                      github.rest.repos.compareCommits({
+                        owner, repo, base: candidate.merge_commit_sha, head: 'main', per_page: 1
+                      })
+                    ]);
+                    if (['ahead','identical'].includes(ancestry.data.status) &&
+                        ['ahead','identical'].includes(included.data.status)) {
+                      eligible.push({ name, sha: branch.commit.sha, pr: aliasPrNo });
+                      continue;
+                    }
+                  }
+                  skipped.push({ branch: name, reason: 'alias ancestry or merged PR not verified' });
+                  continue;
+                }
                 const entry = retired[name];
                 const old = entry && prs.find(pr =>
                   pr.number === entry.legacy && pr.state === 'closed' &&

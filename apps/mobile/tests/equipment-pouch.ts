@@ -170,6 +170,8 @@ ok(equipmentPouchSalvageCandidates(lockedGear).every(row=>!row.eligible),'Type-l
 ok(equipmentPouchSalvageCandidates(protectedExact).every(row=>!row.eligible),'Exact-copy locks protect forged gear from salvage');
 const salvageReserved=equipmentPouchSalvageCandidates(reserved);
 ok(salvageReserved.filter(row=>row.eligible).length===1,'Legacy enhanced equipment retains its reserved last copy during salvage');
+ok(equipmentPouchSalvageCandidates(reserved,[saleIds[0]]).every(row=>row.eligible),
+ 'A single legacy copy remains selectable when another copy is left for its enhancement');
 const salvageMixedIds=equipmentPouch(mixed).stacks.map((stack,index)=>equipmentPouchSaleId(stack,index));
 let mixedSalvageRejected=false;try{salvageEquipmentPouchSelected(mixed,salvageMixedIds)}catch{mixedSalvageRejected=true}
 ok(mixedSalvageRejected&&equipmentPouch(mixed).stacks.length===2,'Mixed salvage cannot partially dispose protected gear');

@@ -43801,6 +43801,7 @@ var GATHERING = [
   const xpMultiplier = activity.unlockLevel >= 15 ? 1.45 : activity.unlockLevel >= 7 ? 1.35 : 1;
   return { ...activity, seconds: Math.ceil(activity.seconds * 2), xp: Math.round(activity.xp * xpMultiplier), difficultyMultiplier, recommendedToolTier };
 });
+var REBASED_CHARACTER_LEVEL_RECIPES = new Set([...TOOL_RECIPES, ...V33_EQUIPMENT_RECIPES].map((recipe2) => recipe2.id));
 var RECIPES = [
   ...GUILD_COMPONENT_CRAFTING_RELEASED ? GUILD_COMPONENT_RECIPES : [],
   ...ALCHEMY_RECIPES,
@@ -43833,7 +43834,7 @@ var RECIPES = [
     { id: "COOK_ICEFISH", name: "Frosted Icefin", skillId: "cooking", level: 48, xp: 1100, gold: 900, seconds: 300, repeatableTraining: true, inputs: [{ itemId: "ICEFIN", quantity: 3 }, { itemId: "WINTERMINT", quantity: 1 }, { itemId: "WHITEPINE_LOG", quantity: 1 }], output: { itemId: "FROSTED_ICEFIN", quantity: 3 } },
     { id: "COOK_EMBERFIN", name: "Char Emberfin", skillId: "cooking", level: 74, xp: 1650, gold: 1200, seconds: 420, repeatableTraining: true, inputs: [{ itemId: "EMBERFIN", quantity: 3 }, { itemId: "ASHEN_MYRRH", quantity: 1 }, { itemId: "CINDERWOOD_LOG", quantity: 1 }], output: { itemId: "CHARRED_EMBERFIN", quantity: 3 } }
   ].map((recipe2) => ({ ...recipe2, gold: increasedCraftingGoldCost(recipe2.gold) }))
-].map((recipe2) => recipe2.characterLevel === void 0 || [...TOOL_RECIPES, ...V33_EQUIPMENT_RECIPES].some((source) => source.id === recipe2.id) ? recipe2 : { ...recipe2, characterLevel: rebasedCombatLevelFromLegacyLevel(recipe2.characterLevel) });
+].map((recipe2) => recipe2.characterLevel === void 0 || REBASED_CHARACTER_LEVEL_RECIPES.has(recipe2.id) ? recipe2 : { ...recipe2, characterLevel: rebasedCombatLevelFromLegacyLevel(recipe2.characterLevel) });
 var recipesById = new Map(RECIPES.map((recipe2) => [recipe2.id, recipe2]));
 if (recipesById.size !== RECIPES.length) throw new Error("Duplicate recipe IDs in the recipe catalog");
 

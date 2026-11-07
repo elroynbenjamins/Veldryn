@@ -1,3 +1,4 @@
+import {rebasedCombatLevelFromLegacyLevel as rebaseLevel} from '../src/core/progression';
 import {createCharacter,newGame} from '../src/core/game';
 import {campaignProgressSummary,dashboardRecommendation,homeSessionSummary} from '../src/core/dashboard';
 
@@ -25,7 +26,7 @@ const dailyUnlockedState={...state,quests:state.quests.map(row=>row.questId==='Q
 const dailyUnlockedSession=homeSessionSummary(dailyUnlockedState,Date.UTC(2026,8,22,12));
 ok(dailyUnlockedSession.dailyReady,'Completing QST_002 should expose the Daily Supplies claim immediately');
 equal(dailyUnlockedSession.primaryReady?.kind,'daily','Daily Supplies becomes the primary ready action after its onboarding unlock when no story reward is waiting');
-state={...state,character:{...state.character!,level:7},quests:state.quests.map(row=>row.questId==='QST_002'?{...row,status:'claimed' as const,progress:2}:row.questId==='QST_005'?{...row,status:'active' as const,progress:7}:{...row,status:'locked' as const,progress:0})};
+state={...state,character:{...state.character!,level:rebaseLevel(10)-2},quests:state.quests.map(row=>row.questId==='QST_002'?{...row,status:'claimed' as const,progress:2}:row.questId==='QST_005'?{...row,status:'active' as const,progress:rebaseLevel(10)-2}:{...row,status:'locked' as const,progress:0})};
 const storyReadyState={...state,quests:state.quests.map((row,index)=>index===0?{...row,status:'complete' as const,progress:5}:row)};
 const storySession=homeSessionSummary(storyReadyState,Date.UTC(2026,8,22,12));
 equal(storySession.primaryReady?.kind,'quests','Story rewards outrank Daily Supplies in Home ready-now priority');
@@ -35,14 +36,14 @@ ok(storySession.weeklyRewards>=0&&storySession.forgeReady>=0&&storySession.compa
 
 const levelGuide=dashboardRecommendation(state);
 ok(levelGuide.title.includes('Into Ironwood'),'level-gated chapter is named explicitly');
-ok(levelGuide.detail.includes('level 10'),'level-gated chapter shows target level');
-ok(levelGuide.detail.includes('3 levels remaining'),'level-gated chapter shows remaining levels');
+ok(levelGuide.detail.includes(`level ${rebaseLevel(10)}`),'level-gated chapter shows target level');
+ok(levelGuide.detail.includes('2 levels remaining'),'level-gated chapter shows remaining levels');
 equal(levelGuide.destination,'World','level-gated chapter sends player toward XP activities');
 
 const summary=campaignProgressSummary(state);
 equal(summary.currentTitle,'Into Ironwood','campaign summary shows current chapter');
 equal(summary.chapter,5,'campaign summary exposes chapter number');
-equal(summary.level,7,'campaign summary exposes current level');
+equal(summary.level,rebaseLevel(10)-2,'campaign summary exposes current level');
 equal(summary.bossDefeated,false,'Fallen Knight starts incomplete');
 
 const bossState={...state,defeatedBossIds:['FALLEN_KNIGHT'],character:{...state.character!,level:25},quests:state.quests.map(row=>({...row,status:'claimed' as const}))};

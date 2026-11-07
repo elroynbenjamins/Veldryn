@@ -49221,7 +49221,7 @@ function currentRegionId(state) {
   if (saved) return saved;
   const activityZone = usable(state.activity?.environment?.zoneId);
   if (activityZone) return activityZone;
-  const savedZone = WORLD_ZONES.find((zone) => zone.id === state.currentRegionId && !worldZoneInDevelopment(zone));
+  const savedZone = WORLD_ZONES.find((zone) => zone.id === state.currentRegionId);
   if (savedZone) {
     const previous = [...WORLD_ZONES].reverse().find((zone) => zone.minLevel < savedZone.minLevel && usable(zone.id));
     if (previous) return previous.id;

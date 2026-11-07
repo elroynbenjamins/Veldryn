@@ -5,6 +5,10 @@ on:
       - feature/combat-level-xp-rebase-20261107
     paths:
       - .github/workflows/combat-rebase-regenerate.yml
+      - apps/mobile/src/core/**
+      - apps/mobile/src/content/**
+      - backend/online/**
+      - backend/src/server/coop/**
 permissions:
   contents: write
 jobs:

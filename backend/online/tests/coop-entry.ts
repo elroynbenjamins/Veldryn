@@ -25,6 +25,8 @@ async function main(){
  assert.equal(entry.status,200);assert.equal(projection.gameVersion,7);assert.equal(projection.serverNow,1000);
  assert.equal(projection.loadouts[0].characterId,state.character!.id);assert.equal(projection.loadouts[0].role,'tank');
  assert.equal(projection.dungeons[0].available,true);assert.equal(projection.dungeons[4].available,false);
+ assert.equal(projection.dungeons.find((dungeon:{id:string})=>dungeon.id==='EXP_007')?.available,false,'Ashlands dungeons must remain unavailable');
+ assert.equal(projection.dungeons.find((dungeon:{id:string})=>dungeon.id==='EXP_008')?.lockedReason,'In Development','Ashlands dungeon cards must identify the development state');
  const suncrest=projection.eventExpeditions.find((item:{id:string})=>item.id==='EVENT_SUNCREST_SHATTERED_ISLES'),starfall=projection.eventExpeditions.find((item:{id:string})=>item.id==='EVENT_STARFALL_ASTRAL_RIFT');
  assert.equal(suncrest.status,'available');assert.equal(suncrest.liveEventId,'EVT_ANNUAL_006_2026');assert.equal(starfall.status,'preview');
  assert.equal(calls.length,4);assert.equal(calls[0].name,'record_player_activity_server_v1');assert.equal(calls[0].args.p_account_id,'owned-account');assert.deepEqual(projection.liveRecruitment,[]);

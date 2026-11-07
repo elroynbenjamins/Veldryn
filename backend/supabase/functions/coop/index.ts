@@ -47743,6 +47743,38 @@ var enemy = (id, name, hp, ap, def, abilityCoeff = 1) => withPveIdentity({
   basicAttackCoeff: 0.72,
   abilities: [{ id: `${id}_HEAVY`, name: "Heavy Strike", cooldownMs: 7e3, castTimeMs: 700, target: "current_target", priority: 70, effects: [{ kind: "damage", coeff: abilityCoeff, damageType: "physical" }] }]
 }, "bruiser", ["heavy_hit"]);
+function variedEnemy(base, archetype, damageType = "nature") {
+  if (archetype === "bruiser") return base;
+  const { id, name, stats: stats6 } = base;
+  let abilities, mechanics;
+  switch (archetype) {
+    case "assassin":
+      abilities = [pveFocusStrike(`${id}_HUNT`, `${name} Hunt`, damageType, 0.75, 9e3)];
+      mechanics = ["focus", "execute"];
+      break;
+    case "caster":
+      abilities = [pveInterruptibleWave(`${id}_WAVE`, `${name} Wave`, damageType, 0.37, 11500, 1350)];
+      mechanics = ["interrupt", "aoe"];
+      break;
+    case "guardian":
+      abilities = [pveHeavyStrike(`${id}_CRUSH`, `${name} Crush`, damageType, 0.78, 7800), pveBarrier(`${id}_WARD`, `${name} Ward`, Math.round(stats6.maxHp * 0.07), 14500)];
+      mechanics = ["heavy_hit", "barrier"];
+      break;
+    case "hexer":
+      abilities = [pveHex(`${id}_HEX`, `${name} Hex`, damageType, 0.46, 10500)];
+      mechanics = ["vulnerability"];
+      break;
+    case "swarm":
+      abilities = [pveDotWave(`${id}_SPORES`, `${name} Spores`, damageType, 0.19, 14500)];
+      mechanics = ["interrupt", "aoe", "dot"];
+      break;
+    case "executioner":
+      abilities = [pveExecuteStrike(`${id}_EXECUTE`, `${name} Execute`, damageType, 0.77, 9e3)];
+      mechanics = ["execute"];
+      break;
+  }
+  return withPveIdentity({ ...base, abilities }, archetype, mechanics);
+}
 function rootWarden() {
   const base = enemy("ROOT_WARDEN", "Runebound Bulwark", 13500, 430, 900, 1.25);
   return withPveIdentity({ ...base, boss: false, abilities: [...base.abilities, pveBarrier("ROOT_WARDEN_WARD", "Root Ward", 1250, 12e3)] }, "guardian", ["heavy_hit", "barrier"]);
@@ -47767,23 +47799,35 @@ function bellSentinel(id = "BELL_SENTINEL", name = "Bell Sentinel", hp = 12800, 
 var rootBoss = () => withPveIdentity(rootboundHeartBoss(), "bruiser", ["heavy_hit", "aoe", "interrupt", "dot", "enrage"]);
 var bellBoss = () => withPveIdentity(bellWardenBoss(), "caster", ["interrupt", "aoe", "vulnerability"]);
 var ASTERFALL_ENCOUNTERS = {
-  ROOTBOUND_BATTLE_01: () => [enemy("ROOT_HUSK_1", "Briar Husk", 5200, 330, 620), enemy("ROOT_HUSK_2", "Briar Husk", 5200, 330, 620)],
+  ROOTBOUND_BATTLE_01: () => [enemy("ROOT_HUSK_1", "Briar Husk", 5200, 330, 620), variedEnemy(enemy("ROOT_HUSK_2", "Sporeling", 5200, 330, 620), "swarm")],
   ROOTBOUND_ELITE_01: () => [rootWarden()],
   ROOTBOUND_BOSS: () => [rootBoss()],
-  LANTERN_BATTLE_01: () => [enemy("LANTERN_WRETCH_1", "Lantern Wretch", 4800, 350, 560), enemy("LANTERN_WRETCH_2", "Lantern Wretch", 4800, 350, 560)],
+  LANTERN_BATTLE_01: () => [enemy("LANTERN_WRETCH_1", "Lantern Wretch", 4800, 350, 560), variedEnemy(enemy("LANTERN_WRETCH_2", "Lantern Wretch", 4800, 350, 560), "caster", "shadow")],
   LANTERN_ELITE_01: () => [bellSentinel()],
   LANTERN_BOSS: () => [bellBoss()]
 };
 var rootBattleIds = ["ROOT_SCOUTS", "ROOT_GUARDIANS", "ROOT_VINES", "ROOT_STALKERS", "ROOT_SENTINELS"];
+var rootBattleArchetypes = [
+  ["assassin", "swarm"],
+  // scouts and sporelings: priority targets + spreading spores
+  ["guardian", "hexer"],
+  // a warded guardian protects a thorn hexer
+  ["hexer", "bruiser"],
+  // strangling vines weaken the tank
+  ["assassin", "executioner"],
+  // stalkers pressure vulnerable party members
+  ["guardian", "bruiser"]
+  // a shielded sentinel backs up the frontline
+];
 for (const [index, id] of rootBattleIds.entries()) {
   ASTERFALL_ENCOUNTERS[id] = () => [
-    enemy(`${id}_A`, ["Briar Scout", "Root Guardian", "Strangling Vine", "Moss Stalker", "Grove Sentinel"][index], 4800 + index * 350, 310 + index * 14, 560 + index * 35, 0.95 + index * 0.04),
-    enemy(`${id}_B`, ["Sporeling", "Thornling", "Sap Husk", "Briar Hound", "Rootbound Husk"][index], 4100 + index * 300, 300 + index * 12, 520 + index * 30, 0.92 + index * 0.04)
+    variedEnemy(enemy(`${id}_A`, ["Briar Scout", "Root Guardian", "Strangling Vine", "Moss Stalker", "Grove Sentinel"][index], 4800 + index * 350, 310 + index * 14, 560 + index * 35, 0.95 + index * 0.04), rootBattleArchetypes[index][0]),
+    variedEnemy(enemy(`${id}_B`, ["Sporeling", "Thornling", "Sap Husk", "Briar Hound", "Rootbound Husk"][index], 4100 + index * 300, 300 + index * 12, 520 + index * 30, 0.92 + index * 0.04), rootBattleArchetypes[index][1])
   ];
 }
 for (const id of ["ROOT_ELITE_BRAMBLE", "ROOT_ELITE_WARDEN", "ROOT_ELITE_MYCELIUM"]) ASTERFALL_ENCOUNTERS[id] = () => [rootWarden()];
 ASTERFALL_ENCOUNTERS.BOSS_EXP_ROOT = () => [rootBoss()];
-ASTERFALL_ENCOUNTERS.LANTERN_BATTLE_02 = () => [enemy("LANTERN_SHADE_1", "Banner Shade", 5e3, 360, 590, 1.02), enemy("LANTERN_SHADE_2", "Echo Bat", 4300, 340, 520, 0.94)];
+ASTERFALL_ENCOUNTERS.LANTERN_BATTLE_02 = () => [variedEnemy(enemy("LANTERN_SHADE_1", "Banner Shade", 5e3, 360, 590, 1.02), "hexer", "shadow"), variedEnemy(enemy("LANTERN_SHADE_2", "Echo Bat", 4300, 340, 520, 0.94), "assassin", "physical")];
 ASTERFALL_ENCOUNTERS.LANTERN_BATTLE_03 = () => [lanternPilgrim(), enemy("LANTERN_PILGRIM_2", "Lantern Wretch", 4700, 355, 570, 1)];
 ASTERFALL_ENCOUNTERS.LANTERN_ELITE_02 = () => [bellSentinel("LANTERN_KNIGHT", "Fallen Lantern Knight", 13200, 460, 880)];
 ASTERFALL_ENCOUNTERS.LANTERN_ELITE_03 = () => [bellSentinel()];

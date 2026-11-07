@@ -40,10 +40,10 @@ export function GuildHallSummary({onOpenMuster,onOpenShop,onRewardsChanged,compa
  const [loading,setLoading]=useState(true),[busy,setBusy]=useState(''),[notice,setNotice]=useState(''),[noticeError,setNoticeError]=useState(false);
  const mounted=useRef(true),claimPending=useRef(false),loadGeneration=useRef(0);
 
- const load=async()=>{
+ const load=async(silent=false)=>{
   if(!mounted.current)return;
   const generation=++loadGeneration.current;
-  setLoading(true);
+  if(!silent)setLoading(true);
   const [musterResult,shopResult]=await Promise.allSettled([loadOnlineGuildMuster(),loadOnlineGuildTokenShop()]);
   if(!mounted.current||generation!==loadGeneration.current)return;
   // Missing/failing snapshots must never leave a stale green Claim button.
@@ -56,7 +56,11 @@ export function GuildHallSummary({onOpenMuster,onOpenShop,onRewardsChanged,compa
   mounted.current=true;
   void load();
   const listener=AppState.addEventListener('change',next=>{if(next==='active')void load()});
-  return()=>{mounted.current=false;loadGeneration.current++;listener.remove();};
+  // Completed gameplay can settle while Guild Home is already open.
+  const refreshTimer=setInterval(()=>{
+   if(AppState.currentState==='active'&&!claimPending.current)void load(true);
+  },45_000);
+  return()=>{mounted.current=false;loadGeneration.current++;listener.remove();clearInterval(refreshTimer);};
  // eslint-disable-next-line react-hooks/exhaustive-deps
  },[]);
 
@@ -128,7 +132,7 @@ export function GuildHallSummary({onOpenMuster,onOpenShop,onRewardsChanged,compa
     const ready=reward.status==='ready',claimed=reward.status==='claimed',blocked=reward.status==='locked';
     const enabled=ready&&!busy&&!loading;
     const foreground=ready?C.good:blocked?C.bad:C.muted;
-    const stateText=busy==='daily:'+reward.kind?'Claiming…':ready?'Claim now':claimed?'Claimed today':reward.status==='capped'?'Weekly cap reached':blocked?(reward.kind==='attendance'?'Muster check-in needed':'Combat or Skilling needed'):'Status unavailable';
+    const stateText=busy==='daily:'+reward.kind?'Claiming…':ready?'Claim now':claimed?'Claimed today':reward.status==='capped'?'Weekly cap reached':blocked?(reward.kind==='attendance'?'Muster check-in needed':'Finish a hunt or skill action'):'Status unavailable';
     return <Pressable key={reward.kind} accessibilityRole="button" accessibilityLabel={reward.title+', up to '+reward.tokens+' Guild Tokens, '+stateText}
      accessibilityState={{disabled:!enabled,busy:busy==='daily:'+reward.kind}} disabled={!enabled}
      onPress={()=>void claimDaily(reward.kind)}
@@ -139,7 +143,7 @@ export function GuildHallSummary({onOpenMuster,onOpenShop,onRewardsChanged,compa
     </Pressable>;
    })}
   </View>
-  <Text style={s.dailyFootnote}>Activity requires verified Combat or Skilling today · Resets at 00:00 UTC</Text>
+  <Text style={s.dailyFootnote}>Complete a hunt or skilling reward, then claim · Resets at 00:00 UTC</Text>
  </View>;
 
  if(compact)return <View style={s.stack}>

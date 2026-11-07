@@ -3,7 +3,7 @@ const fs=require('node:fs');
 const path=require('node:path');
 const root=path.resolve(__dirname,'../../..');
 const read=file=>fs.readFileSync(path.join(root,file),'utf8');
-const sql=read('backend/supabase/migrations/20261107010000_guild_daily_tokens_from_verified_gameplay_v1.sql');
+const sql=read('backend/supabase/migrations/20261107003815_guild_daily_tokens_from_verified_gameplay_v1.sql');
 const currentClaim=read('backend/supabase/migrations/20261018091000_guild_shop_daily_verified_rewards.sql');
 const hall=read('apps/mobile/src/components/GuildHallSummary.tsx');
 const eligibility=read('apps/mobile/src/core/guild-token-daily-claim.ts');

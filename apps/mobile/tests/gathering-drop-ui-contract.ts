@@ -14,4 +14,8 @@ check(source.includes('drop.kind===\'essence\'?gt(\'base chance\')'),'Botanical 
 check(source.includes("drop.kind==='event_discovery'?gt('per event minute')"),'Event minutes must not be described as gathering action odds');
 check(source.includes('petArtSource(drop.petId)'),'Pet drops should reuse the compact canonical pet artwork');
 check(source.includes('drop.owned'),'Already-owned pets should have a visible status');
+check(source.includes("recipe.id==='BREW_IRONWOOD_BINDING_RESIN'"),'The Ironwood T2 Alchemy ingredient must be resolved from the canonical recipe');
+check(source.includes("activity.id==='IRONWOOD_TREE'&&IRONWOOD_T2_BINDING_RECIPE"),'Ironwood Trees must explain the related T2 gear ingredient');
+check(source.includes("Crafted, not a Woodcutting drop"),'Crafted T2 equipment material must never be mislabeled as a random Woodcutting drop');
+check(source.includes("recipeId:IRONWOOD_T2_BINDING_RECIPE.id"),'The related material entry must navigate to its actual Alchemy recipe');
 console.log('PASS: compact gathering disclosure preserves original card and action behavior');

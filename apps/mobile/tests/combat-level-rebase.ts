@@ -24,6 +24,10 @@ assert.equal(legacyCharacterTotalXpAtLevel(50),4096288,'legacy calibration must 
 assert.equal(characterTotalXpAtLevel(24),4092920,'new combat level 24 threshold must be stable');
 assert.equal(characterLevelFromXp(legacyCharacterTotalXpAtLevel(50)),24);
 assert.equal(rebasedCombatLevelFromLegacyLevel(50),24);
+for(const [previous,next] of [[60,27],[70,31],[80,34],[90,37],[100,40]] as const){
+ assert.equal(rebasedCombatLevelFromLegacyLevel(previous),next,`legacy Combat level ${previous} must rebase across the full 1–100 curve`);
+ assert.equal(characterLevelFromXp(legacyCharacterTotalXpAtLevel(previous)),next,'stored Combat XP remains the sole level source');
+}
 assert.equal(rebasedCombatLevelFromLegacyLevel(30),16);
 assert.equal(rebasedCombatLevelFromLegacyLevel(10),7);
 assert.equal(rebasedCombatLevelFromLegacyLevel(2),2,'early onboarding retains its first level-up timing');

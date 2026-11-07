@@ -15,7 +15,7 @@ export const GATHERING:GatherDef[]=([
 {id:'ECHO_QUARTZ_GEODE',skillId:'mining',name:'Echo Quartz Geode',unlockLevel:20,seconds:38,xp:42,itemId:'ECHO_QUARTZ',min:1,max:1,zoneId:'OLD_MINES'},
 {id:'SUNSTONE_OUTCROP',skillId:'mining',name:'Sunstone Outcrop',unlockLevel:26,seconds:48,xp:92,itemId:'SUNSTONE_ORE',min:1,max:1,zoneId:'SUNSCAR',areaId:'ZONE_006'},
 {id:'SCORCHWIND_SUNSTONE_SEAM',skillId:'mining',name:'Scorchwind Sunstone Seam',unlockLevel:31,seconds:53,xp:109,itemId:'SUNSTONE_ORE',min:1,max:1,zoneId:'SUNSCAR',areaId:'ZONE_007'},
-{id:'OBSERVATORY_AMBERGLASS_SEAM',skillId:'mining',name:'Observatory Amberglass Seam',unlockLevel:41,seconds:61,xp:155,itemId:'AMBERGLASS',min:1,max:1,zoneId:'SUNSCAR',areaId:'ZONE_010'},
+{id:'OBSERVATORY_SUNSTONE_GEODE',skillId:'mining',name:'Observatory Sunstone Geode',unlockLevel:41,seconds:76,xp:155,itemId:'SUNSTONE_ORE',min:1,max:1,zoneId:'SUNSCAR',areaId:'ZONE_010'},
 {id:'FROSTIRON_VEIN',skillId:'mining',name:'Frostiron Vein',unlockLevel:46,seconds:62,xp:180,itemId:'FROSTIRON',min:1,max:1,zoneId:'FROSTMARCH',areaId:'ZONE_011'},
 {id:'SHIVERLAKE_RIMEGLASS_SEAM',skillId:'mining',name:'Shiverlake Rimeglass Seam',unlockLevel:58,seconds:72,xp:218,itemId:'RIMEGLASS',min:1,max:1,zoneId:'FROSTMARCH',areaId:'ZONE_013'},
 {id:'WYRMSPINE_FROSTIRON_VEIN',skillId:'mining',name:'Wyrmspine Frostiron Vein',unlockLevel:65,seconds:82,xp:275,itemId:'FROSTIRON',min:1,max:1,zoneId:'FROSTMARCH',areaId:'ZONE_015'},

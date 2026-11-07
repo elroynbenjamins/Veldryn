@@ -7,6 +7,7 @@ import {reconcileAccountCollections} from './account-collections';
 import {isSupportedLanguage} from '../i18n/languages';
 import {normalizeQuickNavDestinations} from './quick-navigation';
 import {WORLD_ZONES} from '../content/world-map';
+import {rebaseCombatGameState,rebaseCombatCharacter} from './progression';
 import {ITEMS} from '../content/items';
 import {migrateLegacyCombatCompanionAccount,reconcileCombatCompanionUnlocks} from './combat-companions';
 import {normalizeCompanionRuntimeSave} from './companion-save';
@@ -142,8 +143,9 @@ export function normalizeSave(input:any):GameState{
     activity.queueGoal=activity.queueManaged?normalizeActivityQueueGoal(activity.queueGoal):undefined;
     activity.queueGoalCompletedAtMs=activity.queueManaged&&Number.isSafeInteger(activity.queueGoalCompletedAtMs)&&activity.queueGoalCompletedAtMs<=activity.lastClaimAtMs?activity.queueGoalCompletedAtMs:undefined;
   }
+  const rebasedCharacter=character?rebaseCombatCharacter(character):null;
   const savedRegionId=typeof input.currentRegionId==='string'?input.currentRegionId:environment?.zoneId;
-  const currentRegionId=WORLD_ZONES.some(zone=>zone.id===savedRegionId&&(character?.level??1)>=zone.minLevel)?savedRegionId:'GREENFIELDS';
+  const currentRegionId=WORLD_ZONES.some(zone=>zone.id===savedRegionId&&(rebasedCharacter?.level??1)>=zone.minLevel)?savedRegionId:'GREENFIELDS';
   const rawLiveEvent=input.account?.liveEvent;
   const skillIds=['mining','woodcutting','fishing','smithing','cooking','herbalism','alchemy','exploration','tailoring','enchanting','faith'];
   const skills=skillIds.map(skillId=>{const raw=(input.skills??[]).find((entry:any)=>entry?.skillId===skillId);const xp=Number.isFinite(Number(raw?.xp))?Math.max(0,Math.floor(Number(raw.xp))):0;return {skillId,xp,level:Math.max(1,Math.min(100,Number.isFinite(Number(raw?.level))?Math.floor(Number(raw.level)):1))};});
@@ -180,7 +182,7 @@ export function normalizeSave(input:any):GameState{
   const normalized={
     ...input,
     version:6,
-    character,
+    character:rebasedCharacter,
     activity,
     skills,
     currentRegionId,
@@ -229,5 +231,5 @@ export function normalizeSave(input:any):GameState{
   if(character?.id&&rosterIds.has(character.id))throw new Error('Duplicate active account character.');
   normalized.otherCharacters=roster as GameState['otherCharacters'];
   normalized.account.unlockedCharacterSlots=Math.max(1,Math.min(5,Number(input.account?.unlockedCharacterSlots??1)));
-  return normalizeProfileIcon(reconcileAccountCollections(reconcileCombatCompanionUnlocks(migrateGemPouch(normalized),normalized.createdAtMs)));
+  return rebaseCombatGameState(normalizeProfileIcon(reconcileAccountCollections(reconcileCombatCompanionUnlocks(migrateGemPouch(normalized),normalized.createdAtMs))));
 }

@@ -217,7 +217,9 @@ export function CoopRunOverview({language,run,myVotedNodeId,selfVoter,onBack,onC
     <View style={s.rewardOverlay}>
      <ScrollView style={s.rewardDialog} contentContainerStyle={s.rewardContent} showsVerticalScrollIndicator={false} showsHorizontalScrollIndicator={false}>
       <TerminalRunMoment phase={run.phase} rewardsReady={rewardSurfaceReady} rewardsSecured={rewardsSecured} reduceMotion={reduceMotion}/>
-      {!rewardSurfaceReady?<Text style={s.copy}>{st("Preparing expedition rewards. You can retry if they have not appeared yet.")}</Text>:null}
+      {!rewardSurfaceReady?<Text style={s.copy}>{run.phase==='failed'
+       ?st("No failed-run reward receipt yet. Weekly consolation rewards may be exhausted; refresh to check.")
+       :st("Preparing expedition rewards. You can retry if they have not appeared yet.")}</Text>:null}
       {rewards.map(reward=><View key={reward.id} style={s.rewardRow}>
        <View style={s.summary}><View style={s.rewardCurrencyIcon}><ExpeditionMarkIcon size={32}/></View><View style={s.grow}><Text style={s.rewardRowTitle}>{st("Expedition Marks")}</Text><Text style={s.rewardRowAmount}>+{reward.reward_json.marks??0}</Text>
        {reward.reward_json.live_fellowship_bonus?<Text style={s.copy}>{st("Live Fellowship bonus: +{marks} Marks",{marks:reward.reward_json.live_fellowship_bonus})}</Text>:null}

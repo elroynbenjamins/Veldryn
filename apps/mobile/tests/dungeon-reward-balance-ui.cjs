@@ -8,6 +8,8 @@ const server=read('backend/online/live-runtime.ts');
 const domain=read('backend/src/server/coop/qmode.ts');
 const resolver=read('backend/src/server/expeditions/node-resolution.ts');
 const details=read('apps/mobile/src/components/coop/CoopDungeonBrowser.tsx');
+const run=read('apps/mobile/src/components/coop/CoopRunOverview.tsx');
+const textCatalog=read('apps/mobile/src/i18n/social.ts');
 const screen=read('apps/mobile/src/screens/CoopExpeditionScreen.tsx');
 const browse=read('apps/mobile/src/core/coop-dungeon-browsing.ts');
 const migration=read('backend/supabase/migrations/20261104000011_coop_reward_budget_read_v1.sql');
@@ -20,4 +22,7 @@ assert(details.includes('dungeon.expectedMarksByTier?.[effectiveTier]')&&details
 assert(screen.includes('rewardBudget={entry?.rewardBudget}'),'Screen must receive server-owned reward budget');
 assert(entry.includes('recommendedLiveTier:')&&details.includes('dungeon.recommendedLiveTier'),'Live tier label must follow verified backend gear recommendation');
 assert(browse.includes('estimatedMinutes??{min:6,max:8}')&&details.includes("mode==='live'?'3–5'"),'Live shows shorter wall pacing without misrepresenting Solo estimated time');
-console.log('PASS dungeon reward previews, weekly charge safety, versioned difficulty and Live parity UI');
+assert(details.includes('rewardBudget.weeklyRemaining===0')&&details.includes('rewardBudget.charges===0'),'Dungeon reward preview must distinguish the exhausted weekly cap from empty charges');
+assert(run.includes("run.phase==='failed'")&&run.includes('No failed-run reward receipt yet.'),'Failed runs must not imply a consolation reward is always being prepared');
+assert(textCatalog.includes('Weekly enhanced reward limit reached.')&&textCatalog.includes('No failed-run reward receipt yet.'),'Dungeon eligibility guidance must be localized');
+console.log('PASS dungeon reward previews, weekly charge safety, cap reasons, receipt clarity and Live parity UI');

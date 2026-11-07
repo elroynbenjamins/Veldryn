@@ -129,7 +129,11 @@ export function CoopDungeonDetails({language,dungeon,currentLevel,currentPower=0
     <StateChip label={`${rewardBudget.charges}/${rewardBudget.chargeCapacity} ${st('charges')}`} tone={enhanced?'success':'neutral'}/>
     <StateChip label={`${rewardBudget.weeklyRemaining}/${rewardBudget.weeklyCapacity} ${st('weekly rewards')}`} tone={rewardBudget.weeklyRemaining>0?'selected':'neutral'}/>
    </View>:null}
-   {rewardBudget&&enhanced===false?<Text style={s.copy}>{st('After enhanced rewards: 20% Marks. Unlimited entries.')}</Text>:null}
+   {rewardBudget&&enhanced===false?<View style={s.stickyStack}>
+    <Text style={s.copy}>{st('After enhanced rewards: 20% Marks. Unlimited entries.')}</Text>
+    {rewardBudget.weeklyRemaining===0?<Text style={s.copy}>{st('Weekly enhanced reward limit reached. Runs still grant reduced Marks.')}</Text>
+     :rewardBudget.charges===0?<Text style={s.copy}>{st('No enhanced reward charges available. One charge recovers every 8 hours.')}</Text>:null}
+   </View>:null}
    {rewardBudget&&enhanced&&rewardBudget.charges<rewardBudget.chargeCapacity?<Text style={s.copy}>{st('One reward charge replenishes every 8 hours.')}</Text>:null}
    {mode==='live'?<View style={s.modeHead}><Text style={s.copy}>{coopPolicyText(language,'fellowshipLabel')}{liveBonus>0?` (+${liveBonus})`:''}</Text><StateChip label={Math.max(0,Math.min(3,liveFellowshipRemaining))+'/3'} tone={liveFellowshipRemaining>0?'success':'neutral'}/></View>:null}
   </FantasyPanel>

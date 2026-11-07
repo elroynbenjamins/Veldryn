@@ -10,6 +10,8 @@ import type {PartyWeeklyTier} from '../core/party-weekly-tiers';
  * unknown server eligibility reasons are deliberately not translated.
  */
 export const partyProgressUiRows={
+ "{points} shared points left":["Noch {points} gemeinsame Punkte","Faltan {points} puntos compartidos","Nog {points} gezamenlijke punten nodig","Mancano {points} punti condivisi","Encore {points} points collectifs nécessaires","Осталось {points} общих очков","{points} ortak puan kaldı"],
+
  "WEEKLY PARTY": ["WÖCHENTLICHE GRUPPE","GRUPO SEMANAL","WEKELIJKSE GROEP","GRUPPO SETTIMANALE","GROUPE HEBDOMADAIRE","ЕЖЕНЕДЕЛЬНАЯ ГРУППА","HAFTALIK GRUP"],
  "Week ended": ["Woche beendet","Semana terminada","Week afgelopen","Settimana conclusa","Semaine terminée","Неделя завершена","Hafta sona erdi"],
  "{count}h left": ["Noch {count} Std.","Quedan {count} h","Nog {count} uur","Restano {count} ore","Encore {count} h","Осталось {count} ч","{count} sa kaldı"],

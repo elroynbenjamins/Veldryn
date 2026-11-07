@@ -1,4 +1,4 @@
-import {useEffect,useMemo,useState} from 'react';
+import {useEffect,useMemo,useState,type ReactNode} from 'react';
 import {Pressable,StyleSheet,Text,View} from 'react-native';
 import type {GameState} from '../core/types';
 import {WORLD_ZONES,type WorldZoneDef} from '../content/world-map';
@@ -15,6 +15,7 @@ import {ZoneSceneArtwork} from './ZoneSceneArtwork';
 import {TutorialBeacon} from './TutorialBeacon';
 
 type Props={
+  children?:ReactNode;
   state:GameState;
   currentRegionId:string;
   goalRegionId?:string;
@@ -49,7 +50,7 @@ const CHAPTER_ROWS=WORLD_CHAPTER_GROUPS.map(chapter=>({
   }),
 }));
 /** All grouping lives in this component; travel remains region-based. */
-export function WorldChapterNavigator({state,currentRegionId,goalRegionId,onTravel,onOpenCombat,onOpenSkills}:Props){
+export function WorldChapterNavigator({state,currentRegionId,goalRegionId,onTravel,onOpenCombat,onOpenSkills,children}:Props){
   const contextLanguage=useGameLanguage(),language=state.settings.language??contextLanguage;
   const t=(key:ProgressionKey,params?:Record<string,string|number>)=>progressionT(language,key,params);
   const p=(text:string)=>progressionText(language,text);
@@ -91,6 +92,7 @@ export function WorldChapterNavigator({state,currentRegionId,goalRegionId,onTrav
       <View style={s.flex}><GameButton compact tone="secondary" title={p('Gathering')} onPress={()=>onOpenSkills()}/></View>
     </View>
 
+    {children}
     {currentGoal?<View style={s.goalNotice}>
       <Text style={s.goalText}>{t('OBJECTIVE ROUTE')} · {p(currentGoal.name)}</Text>
     </View>:null}

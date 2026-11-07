@@ -21,8 +21,14 @@ export function GuildProjectSupplyDonationPanel({goals,inventory,busy,onDonate}:
  const selected=available.find(item=>item.itemId===selectedId)??available[0];
  const goal=activeGoals.find(row=>row.resourceId==='supply:'+selected?.category);
  const amount=Number(quantity),units=selected?amount*selected.value:0;
- const valid=!!selected&&!!goal&&Number.isSafeInteger(amount)&&amount>=1&&amount<=10000
-  &&amount<=selected.available&&units<=goal.target-goal.current;
+ const goalRemaining=goal?Math.max(0,goal.target-goal.current):0;
+ const quantityProblem=!selected||!goal?null
+  :!Number.isSafeInteger(amount)||amount<1?ui('Enter a positive whole number of resources.')
+  :amount>10000?ui('You can donate up to 10,000 items at once.')
+  :amount>selected.available?ui('You only have {count} eligible items available.',{count:selected.available.toLocaleString()})
+  :units>goalRemaining?ui('That exceeds the remaining {count} supply needed.',{count:goalRemaining.toLocaleString()})
+  :null;
+ const valid=!!selected&&!!goal&&quantityProblem===null&&amount>=1;
  if(!goals.some(goal=>goal.resourceId.startsWith('supply:')))return null;
  return <View style={s.root}>
   <Text style={s.heading}>{ui('Supply donations')}</Text>
@@ -55,10 +61,13 @@ export function GuildProjectSupplyDonationPanel({goals,inventory,busy,onDonate}:
      accessibilityLabel={ui('Donation quantity')}
      style={s.quantity} placeholderTextColor={C.muted}/>
    </View>
+   {selected&&goal?<Text style={s.muted}>{ui('{remaining} supply still needed · You own {owned} of this resource',{remaining:goalRemaining.toLocaleString(),owned:selected.available.toLocaleString()})}</Text>:null}
    <GameButton title={valid?ui('Donate {value} supply',{value:units.toLocaleString()}):ui('Donate supplies')}
     disabled={busy||!valid} loading={busy} onPress={()=>{if(valid&&selected)onDonate(selected.itemId,amount)}}/>
-   <Text style={s.muted}>{ui('Each member can provide up to half of a supply goal. Other guildmates complete the rest.')}</Text>
-  </View>:activeGoals.length?<Text style={s.muted}>{ui('No eligible common resources are available in your inventory.')}</Text>:null}
+   {quantityProblem?<Text accessibilityRole="alert" style={[s.muted,{color:C.warning}]}>{quantityProblem}</Text>:null}
+   <Text style={s.muted}>{ui('Each member can provide up to half of a supply goal. The server checks your remaining personal limit.')}</Text>
+  </View>:activeGoals.length?<Text style={s.muted}>{ui('No eligible common resources are available for the unfinished supply goals. Check your inventory or gather more.')}</Text>
+    :<Text style={s.muted}>{ui('All supply goals are complete. No further donations are needed.')}</Text>}
  </View>;
 }
 function styles(C:ThemeColors){return StyleSheet.create({

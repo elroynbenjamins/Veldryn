@@ -15,6 +15,7 @@ import {bucketedMs} from '../core/use-delayed-busy';
 import {activityStopPresentation} from '../core/activity-stop-presentation';
 import {unclaimedCombatKillCount} from '../core/activity-rewards';
 import {explorationRoute} from '../content/exploration';
+import {activityTargetLabel} from '../core/activity-target-label';
 
 const labels:Record<string,string>={combat:'HUNTING',mining:'MINING',woodcutting:'WOODCUTTING',fishing:'FISHING',herbalism:'HERBALISM',alchemy:'ALCHEMY',processing:'PROCESSING',faith:'FAITH',training:'TRAINING',hunting:'HUNTING',exploration:'EXPLORATION'};
 function elapsed(startedAtMs:number,nowMs:number){const total=Math.max(0,Math.floor((nowMs-startedAtMs)/1000)),hours=Math.floor(total/3600),minutes=Math.floor(total%3600/60),seconds=total%60;return hours?`${hours}h ${minutes}m`:minutes?`${minutes}m ${seconds}s`:`${seconds}s`;}
@@ -51,7 +52,7 @@ function RunningActivityBar({state,nowMs,onOpen,combatKills}:ActiveActivityBarPr
  // Runtime projections are cycle-time derivations, not time-dependent — only recompute when state changes.
  const combatRuntime=useMemo(()=>combat?activeCombatRuntimeProjection(state):undefined,[combat,state]);
  const gatherRuntime=useMemo(()=>!combat?activeGatheringRuntimeProjection(state):undefined,[combat,state]);
- const name=monster?monster.name:route?.name??crafting?.name??gathering?.name??activity.targetId;
+ const name=gl(activityTargetLabel(activity));
  const cycleSeconds=Math.max(1,combatRuntime?.killCycleSeconds??route?.seconds??gatherRuntime?.cycleSeconds??activity.processing?.cycleSeconds??activity.brew?.cycleSeconds??gathering?.seconds??crafting?.seconds??1);
  const cycleElapsedSeconds=Math.max(0,(displayNowMs-activity.lastClaimAtMs)/1000),cycleProgressSeconds=(activity.progressFraction??0)*cycleSeconds+cycleElapsedSeconds;
  const completedCycles=Math.floor(cycleProgressSeconds/cycleSeconds),progressPct=Math.round((cycleProgressSeconds%cycleSeconds)/cycleSeconds*100),progress=`${progressPct}%` as `${number}%`;

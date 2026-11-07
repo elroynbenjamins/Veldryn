@@ -11,6 +11,9 @@ const catalogue=file('apps/mobile/src/content/guild-skill-paths.ts');
 const skillUi=file('apps/mobile/src/components/GuildSpecializationPaths.tsx');
 const liveUi=file('apps/mobile/src/components/OnlineGuildSkillsPanel.tsx');
 const bankUi=file('apps/mobile/src/components/OnlineGuildBankPanel.tsx');
+const prefunding=file('backend/supabase/migrations/20261107001000_guild_skill_bank_allow_next_rank_prefunding.sql');
+const hallUi=file('apps/mobile/src/components/OnlineGuildHallPanel.tsx');
+const guildUi=file('apps/mobile/src/screens/GuildScreen.tsx');
 const herbs=file('apps/mobile/src/content/herbalism.ts');
 const mining=file('apps/mobile/src/content/skills.ts');
 
@@ -66,4 +69,17 @@ assert.match(skillUi,/id==='gold'\?'Gold':itemDef\(id\)\.name/,'Gold must be ren
 assert.match(skillUi,/ResourceIcon resourceId=\{id\}/,'Upgrade preview must include the shared Gold icon');
 assert.match(skillUi,/costsKnown&&Object\.entries\(cost\)\.length>0/,'No zero-cost upgrade if the server lacks costs');
 assert.match(bankUi,/node\.costs/,'Guild Bank donation needs derive from server-published rank costs');
-console.log('PASS: 9 Guild Skills × 3 ranks × doubled originals + tiered herbs/ores + unchanged server Gold; live bank, safe migration, UI parity');
+assert.match(prefunding,/c\.is_released/, 'Only released Guild Skills may receive pre-funding');
+assert.match(prefunding,/coalesce\(a\.rank,0\)<c\.max_rank/, 'Cannot donate against maxed ranks');
+assert.match(prefunding,/cost\.rank=coalesce\(a\.rank,0\)\+1/, 'Only the next rank may receive stock');
+assert.doesNotMatch(prefunding,/v_level-1>coalesce\(/, 'Guild Skill donations must not require unspent points');
+assert.doesNotMatch(prefunding,/spent\.guild_id=new\.guild_id/, 'Demand cap must not require unspent points');
+assert.match(prefunding,/guild_bank_required_resources_guard_v1/, 'Server demand guard must match deposit eligibility');
+assert.match(bankUi,/if\(skillSnapshot&&skillSnapshot\.guildLevel===snapshot\.guildLevel\)/, 'UI must show next-rank costs regardless of points');
+assert.doesNotMatch(bankUi,/skillSnapshot\.skillPoints>0/, 'UI must not hide next-rank materials at zero points');
+assert.match(bankUi,/availableQuantity\(id\)\?\?1000000/, 'Stock and required amounts must cap donations');
+assert.match(bankUi,/ui\('YOU OWN'\)/, 'Donation sheet must show personal stock');
+assert.match(bankUi,/setLocalDeductions/, 'Confirmed donation should update local stock');
+assert.match(hallUi,/playerState=\{playerState\}/, 'Hall must pass inventory to Bank');
+assert.match(guildUi,/playerState:state/, 'Guild must pass active player state to Hall');
+console.log('PASS: 9 Guild Skills × 3 ranks × repriced materials + unchanged Gold; next-rank prefunding and owned-stock donation guards');

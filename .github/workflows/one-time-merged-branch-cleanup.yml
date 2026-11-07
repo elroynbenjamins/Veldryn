@@ -49,6 +49,13 @@ jobs:
               'fix/guild-guide-and-skills-unavailable-20261103': { legacy: 747, replacement: 762 },
               'fix/inventory-lock-invalid-settings-20261102': { legacy: 703, replacement: null },
               'fix/mobile-core-seven-contracts-20261031': { legacy: 682, replacement: 681 },
+              // November 6 superseded branches: remove only when original PR head
+              // remains untouched and its named replacement is merged into main.
+              'feat/inventory-item-popups-compact-20261106': { legacy: 905, replacement: 906 },
+              'feature/guild-voted-weekly-projects-20261106': { legacy: 907, replacement: 910 },
+              'l10n/crafting-recipe-names-20261106': { legacy: 902, replacement: 909, requireReplacementReference: true },
+              'l10n/quest-unlock-guidance-20261106': { legacy: 892, replacement: 895 },
+              'l10n/quest-unlock-guidance-main-20261106': { legacy: 893, replacement: 895 },
               // Older closed PRs explicitly superseded by merged, schema-compatible replacements.
               'feat/character-equipment-pouch-auto-routing': { legacy: 816, replacement: 810 },
               'feat/dungeon-lobby-combat-setup-polish-106': { legacy: 838, replacement: 843 },

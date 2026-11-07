@@ -8,6 +8,7 @@ const screen=read('screens/CoopExpeditionScreen.tsx');
 const run=read('components/coop/CoopRunOverview.tsx');
 const route=read('components/coop/DungeonRouteChoices.tsx');
 const stage=read('components/coop/DungeonCombatStage.tsx');
+const theater=read('components/CombatTheaterModal.tsx');
 const roomPresentation=read('components/coop/dungeon-room-presentation.ts');
 const roomResolution=read('components/coop/DungeonRoomResolution.tsx');
 const lobby=read('components/coop/CoopLobbyPresentation.tsx');
@@ -30,6 +31,10 @@ assert(run.indexOf('<DungeonRouteChoices')<run.indexOf("Party & formation"),'Cur
 assert(run.includes("Objectives & mechanics")&&run.includes("Party Chat"),'Details and chat remain accessible in disclosures');
 assert(run.includes('<CombatTheaterModal visible')&&run.includes('<DungeonCombatStage run={run}'),'Run must retain cinematic combat for Live and Solo');
 assert(stage.includes('CombatAttackSprite')&&stage.includes('CombatImpactBurst'),'Animated attack and impact effects remain in the Live combat stage');
+assert(theater.includes('{footer?<View style={[s.footer')&&theater.includes('paddingBottom:Math.max(insets.bottom,12)'), 'Combat theater keeps the main action fixed above device safe area');
+assert(run.includes("st('Continue dungeon')")&&run.includes("terminal?st('View rewards')")&&run.includes('onPresentationComplete={()=>setBattlePresentationReady(true)}'), 'Victory and run-end actions are accessible without using the top-right close control');
+assert(stage.includes('previewEnemies=anticipation&&!bossEncounter')&&run.includes('setEntryCombatArchetypes(option?.encounterPreview?.archetypes??[])'), 'Echo opening animations use server-published room archetypes');
+assert(stage.includes('const complete=Boolean(replay&&!pending')&&run.includes('battlePresentationReady&&!inCombat'), 'Preview animations never claim a combat victory or enable continuation before real settlement');
 assert(route.includes('option.votes??0'),'Live vote totals derive from server options');
 assert(route.includes('myVotedNodeId===option.nodeId'),'Player portrait must appear only on their recorded route');
 assert(live.includes('votes:decision.votes[String(node.nodeId)]??0'),'Backend owns displayed Live vote totals');

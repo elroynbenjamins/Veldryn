@@ -9,6 +9,76 @@ var __esm = (fn, res, err) => function __init() {
   }
 };
 
+// ../apps/mobile/src/core/progression.ts
+function baseXpForNextLevel(level) {
+  return Math.floor(90 * Math.pow(level, 1.42) + level * 35);
+}
+function skillXpForNextLevel(level) {
+  return Math.floor(baseXpForNextLevel(level) * SKILL_XP_SCALE);
+}
+function characterXpForNextLevel(level) {
+  return Math.floor(90 * Math.pow(level, CHARACTER_XP_EXPONENT) + level * 35) * CHARACTER_XP_SCALE;
+}
+function legacyCharacterXpForNextLevel(level) {
+  return Math.floor(baseXpForNextLevel(level) * CHARACTER_XP_SCALE);
+}
+function levelFromXpWith(totalXp, need) {
+  let level = 1, spent = 0;
+  while (level < 100) {
+    const n = need(level);
+    if (spent + n > totalXp) return level;
+    spent += n;
+    level++;
+  }
+  return 100;
+}
+function levelFromXp(totalXp) {
+  return levelFromXpWith(totalXp, skillXpForNextLevel);
+}
+function characterLevelFromXp(totalXp) {
+  return levelFromXpWith(totalXp, characterXpForNextLevel);
+}
+function legacyCharacterLevelFromXp(totalXp) {
+  return levelFromXpWith(totalXp, legacyCharacterXpForNextLevel);
+}
+function totalXpAtLevelWith(level, need) {
+  let xp = 0;
+  for (let l = 1; l < level; l++) xp += need(l);
+  return xp;
+}
+function totalXpAtLevel(level) {
+  return totalXpAtLevelWith(level, skillXpForNextLevel);
+}
+function legacyCharacterTotalXpAtLevel(level) {
+  return totalXpAtLevelWith(level, legacyCharacterXpForNextLevel);
+}
+function rebasedCombatLevelFromLegacyLevel(level) {
+  return characterLevelFromXp(legacyCharacterTotalXpAtLevel(level));
+}
+function rebaseCombatCharacter(character) {
+  if (!Number.isSafeInteger(character.xp) || character.xp < 0) return character;
+  const level = characterLevelFromXp(character.xp);
+  return level === character.level ? character : { ...character, level };
+}
+function rebaseCombatGameState(state) {
+  const character = state.character ? rebaseCombatCharacter(state.character) : null;
+  const otherCharacters = state.otherCharacters?.map((entry2) => {
+    const rebased = rebaseCombatCharacter(entry2.character);
+    return rebased === entry2.character ? entry2 : { ...entry2, character: rebased };
+  });
+  if (character === state.character && (!otherCharacters || otherCharacters.every((entry2, index) => entry2 === state.otherCharacters?.[index]))) return state;
+  return { ...state, character, otherCharacters };
+}
+var SKILL_XP_SCALE, CHARACTER_XP_SCALE, CHARACTER_XP_EXPONENT;
+var init_progression = __esm({
+  "../apps/mobile/src/core/progression.ts"() {
+    "use strict";
+    SKILL_XP_SCALE = 1.6;
+    CHARACTER_XP_SCALE = 8;
+    CHARACTER_XP_EXPONENT = 2.09;
+  }
+});
+
 // ../apps/mobile/src/core/meal-buffs.ts
 function mealBonusDef(itemId) {
   return MEAL_BONUSES.find((row) => row.itemId === itemId);
@@ -28,42 +98,6 @@ var init_meal_buffs = __esm({
       { itemId: "CHARRED_EMBERFIN", kind: "combat_xp", percent: 4, durationHours: 4, label: "+4% Combat XP" },
       { itemId: "ASHLANDS_EMBER_STEW", kind: "noncombat_speed", percent: 5, durationHours: 4, label: "+5% Non-combat skill speed" }
     ];
-  }
-});
-
-// ../apps/mobile/src/core/progression.ts
-function baseXpForNextLevel(level) {
-  return Math.floor(90 * Math.pow(level, 1.42) + level * 35);
-}
-function skillXpForNextLevel(level) {
-  return Math.floor(baseXpForNextLevel(level) * SKILL_XP_SCALE);
-}
-function levelFromXpWith(totalXp, need) {
-  let level = 1, spent = 0;
-  while (level < 100) {
-    const n = need(level);
-    if (spent + n > totalXp) return level;
-    spent += n;
-    level++;
-  }
-  return 100;
-}
-function levelFromXp(totalXp) {
-  return levelFromXpWith(totalXp, skillXpForNextLevel);
-}
-function totalXpAtLevelWith(level, need) {
-  let xp = 0;
-  for (let l = 1; l < level; l++) xp += need(l);
-  return xp;
-}
-function totalXpAtLevel(level) {
-  return totalXpAtLevelWith(level, skillXpForNextLevel);
-}
-var SKILL_XP_SCALE;
-var init_progression = __esm({
-  "../apps/mobile/src/core/progression.ts"() {
-    "use strict";
-    SKILL_XP_SCALE = 1.6;
   }
 });
 
@@ -139,6 +173,9 @@ var init_faith2 = __esm({
 // online/coop.ts
 import { createHash as createHash9 } from "node:crypto";
 
+// online/coop-entry.ts
+init_progression();
+
 // ../apps/mobile/src/content/classes.ts
 var CLASSES = [
   { id: "IRONWARDEN", name: "Ironwarden", role: "Tank", description: "Runic defender built around guard, threat and counterplay.", hp: 155, attack: 15, defense: 19, roleRatings: { tank: 5, damage: 2, support: 1 }, starterEquipment: { weapon: "basic_sword" } },
@@ -160,8 +197,8 @@ var EXPEDITIONS = {
   EXP_004: { id: "EXP_004", name: "Mirage Well", region: "Sunscar", minLevel: 32, recommendedLevel: 45, baseMarks: 80, minNodes: 9, maxNodes: 11, bossId: "BOSS_EXP_SPHINX", coopImplemented: true, nodeWeights: { battle: 27, elite: 11, event: 19, camp: 7, treasure: 8, echo: 7, forge: 4, merchant: 5, risk: 9, secret: 3 } },
   EXP_005: { id: "EXP_005", name: "Shiverlake Descent", region: "Frostmarch", minLevel: 52, recommendedLevel: 70, baseMarks: 84, minNodes: 9, maxNodes: 12, bossId: "BOSS_EXP_BELLBEAST", coopImplemented: true, nodeWeights: { battle: 30, elite: 12, event: 15, camp: 12, treasure: 6, echo: 5, forge: 5, merchant: 4, risk: 8, secret: 3 } },
   EXP_006: { id: "EXP_006", name: "Choir Caverns", region: "Frostmarch", minLevel: 57, recommendedLevel: 70, baseMarks: 85, minNodes: 9, maxNodes: 12, bossId: "BOSS_EXP_CANTOR", coopImplemented: true, nodeWeights: { battle: 28, elite: 13, event: 18, camp: 9, treasure: 6, echo: 8, forge: 5, merchant: 3, risk: 7, secret: 3 } },
-  EXP_007: { id: "EXP_007", name: "Blackglass Fen", region: "Ashlands", minLevel: 77, recommendedLevel: 94, baseMarks: 88, minNodes: 9, maxNodes: 12, bossId: "BOSS_EXP_FEN", coopImplemented: true, nodeWeights: { battle: 29, elite: 14, event: 15, camp: 8, treasure: 6, echo: 5, forge: 7, merchant: 4, risk: 9, secret: 3 } },
-  EXP_008: { id: "EXP_008", name: "Crucible Depths", region: "Ashlands", minLevel: 82, recommendedLevel: 100, baseMarks: 90, minNodes: 10, maxNodes: 13, bossId: "BOSS_EXP_PRIME", coopImplemented: true, nodeWeights: { battle: 28, elite: 15, event: 14, camp: 7, treasure: 5, echo: 5, forge: 10, risk: 10, secret: 3 } }
+  EXP_007: { id: "EXP_007", name: "Blackglass Fen", region: "Ashlands", minLevel: 77, recommendedLevel: 94, baseMarks: 88, minNodes: 9, maxNodes: 12, bossId: "BOSS_EXP_FEN", coopImplemented: false, nodeWeights: { battle: 29, elite: 14, event: 15, camp: 8, treasure: 6, echo: 5, forge: 7, merchant: 4, risk: 9, secret: 3 } },
+  EXP_008: { id: "EXP_008", name: "Crucible Depths", region: "Ashlands", minLevel: 82, recommendedLevel: 100, baseMarks: 90, minNodes: 10, maxNodes: 13, bossId: "BOSS_EXP_PRIME", coopImplemented: false, nodeWeights: { battle: 28, elite: 15, event: 14, camp: 7, treasure: 5, echo: 5, forge: 10, risk: 10, secret: 3 } }
 };
 var LAUNCH_BOON_IDS = Array.from({ length: 126 }, (_, i) => `BOON_${String(i + 1).padStart(3, "0")}`);
 
@@ -725,6 +762,19 @@ function eventExpeditionPreviews(nowMs) {
 }
 
 // src/server/coop/config.ts
+function rebaseLegacyCombatLevel(level) {
+  const bounded = Math.max(1, Math.min(100, Math.floor(Number.isFinite(level) ? level : 1)));
+  let earned = 0;
+  for (let previous = 1; previous < bounded; previous++) earned += Math.floor(90 * Math.pow(previous, 1.42) + previous * 35) * 8;
+  let current = 1, spent = 0;
+  while (current < 100) {
+    const need = Math.floor(90 * Math.pow(current, 2.09) + current * 35) * 8;
+    if (spent + need > earned) return current;
+    spent += need;
+    current++;
+  }
+  return 100;
+}
 var COOP_ROGUELITE_CONFIG = Object.freeze({
   featureFlag: "coopRogueliteV1",
   enabledByDefault: false,
@@ -749,7 +799,7 @@ var COOP_ROGUELITE_CONFIG = Object.freeze({
 });
 function coopRequiredLevel(baseMinimumLevel, tier) {
   if (!Number.isInteger(baseMinimumLevel) || baseMinimumLevel < 1) throw new Error("invalid_expedition_minimum_level");
-  return baseMinimumLevel + COOP_ROGUELITE_CONFIG.tierMinimumLevelOffset[tier];
+  return rebaseLegacyCombatLevel(baseMinimumLevel + COOP_ROGUELITE_CONFIG.tierMinimumLevelOffset[tier]);
 }
 function highestEligibleCoopTier(baseMinimumLevel, characterLevel) {
   if (!Number.isInteger(characterLevel) || characterLevel < 1) throw new Error("invalid_character_level");
@@ -778,11 +828,17 @@ var ROOTBOUND_COOP_BALANCE_V2 = Object.freeze({
 // online/coop-loadout.ts
 import { createHash } from "node:crypto";
 
+// ../apps/mobile/src/content/items.ts
+init_progression();
+
 // ../apps/mobile/src/content/crafting-gold-cost.ts
 function increasedCraftingGoldCost(baseGold) {
   if (!Number.isSafeInteger(baseGold) || baseGold < 0) throw new Error("invalid_crafting_gold");
   return Math.ceil(baseGold * 6 / 5);
 }
+
+// ../apps/mobile/src/content/equipment-recipes-v33.ts
+init_progression();
 
 // ../apps/mobile/src/content/equipment_catalog_t1_t9_v33.json
 var equipment_catalog_t1_t9_v33_default = {
@@ -42461,7 +42517,7 @@ var V33_EQUIPMENT_RECIPES = equipment_catalog_t1_t9_v33_default.pieces.map((piec
     inputs: mergeInputs([...ingredients(tier, String(piece.Path), multiplier, skillId), infusionByTier[tier]]),
     output: { itemId: String(piece["Piece ID"]), quantity: 1 },
     classId,
-    characterLevel,
+    characterLevel: rebasedCombatLevelFromLegacyLevel(characterLevel),
     v33EquipmentTier: tier,
     v33Region: tier === "T9" ? "Ashlands" : String(set.Region),
     v33SetId: setId,
@@ -42553,7 +42609,8 @@ var GUILD_COMPONENT_RECIPES = [
 ].map((recipe2) => ({ ...recipe2, gold: increasedCraftingGoldCost(recipe2.gold) }));
 
 // ../apps/mobile/src/content/gathering-tools.ts
-var tool = (definition) => ({ ...definition, recipe: { ...definition.recipe, gold: increasedCraftingGoldCost(definition.recipe.gold) } });
+init_progression();
+var tool = (definition) => ({ ...definition, requiredCharacterLevel: rebasedCombatLevelFromLegacyLevel(definition.requiredCharacterLevel), recipe: { ...definition.recipe, gold: increasedCraftingGoldCost(definition.recipe.gold) } });
 var blueprint = (itemId, knowledgeId, sourceMonsterId, dropChance) => ({ itemId, knowledgeId, sourceMonsterId, dropChance });
 var GATHERING_TOOLS = [
   // Tier 1 is always learnable, but still requires early investment in the relevant gathering skill.
@@ -42721,6 +42778,7 @@ var ALCHEMY_EQUIPMENT_INFUSION_ITEMS = ALCHEMY_EQUIPMENT_INFUSIONS.map((infusion
 var potionDef = (id) => POTIONS.find((p) => p.id === id);
 
 // ../apps/mobile/src/content/equipment-items-v33.ts
+init_progression();
 var classIdByName2 = { Ironwarden: "IRONWARDEN", Bastion: "BASTION", Dreadguard: "DREADGUARD", Dawnkeeper: "DAWNKEEPER", Wayfinder: "WAYFINDER", Ravager: "RAVAGER", Hexweaver: "HEXWEAVER", "Knife Dancer": "KNIFE_DANCER", Stonecaller: "STONECALLER" };
 var slotByName2 = { Helmet: "helmet", Chest: "chest", Gloves: "gloves", Legs: "legs", Boots: "boots", Weapon: "weapon", "Off-hand": "offhand", Cape: "cape", Amulet: "amulet", Ring: "ring" };
 var rarityByTier = { T1: "common", T2: "uncommon", T3: "rare", T4: "rare", T5: "epic", T6: "epic", T7: "legendary", T8: "legendary", T9: "mythic" };
@@ -42751,7 +42809,7 @@ var EQUIPMENT_ITEMS_V33 = equipment_catalog_t1_t9_v33_default.pieces.map((piece)
     value: Math.max(10, level * scale * 12),
     rarity: rarityByTier[tier] ?? "common",
     classRestriction: classIdByName2[String(piece.Class)],
-    requiredLevel: level,
+    requiredLevel: rebasedCombatLevelFromLegacyLevel(level),
     equipmentSetId: String(piece["Set ID"])
   };
 });
@@ -42951,7 +43009,7 @@ var BASE_ITEMS = [
   { id: "ECHO_BAT_WING", name: "Echo Bat Wing", type: "material", value: 80 },
   { id: "FALLEN_KNIGHT_SIGIL", name: "Fallen Knight Sigil", type: "quest", value: 0 }
 ];
-var ITEMS = [...BASE_ITEMS, ...GUILD_COMPONENT_ITEMS, ...EQUIPMENT_ITEMS_V33];
+var ITEMS = [...BASE_ITEMS.map((item) => item.requiredLevel === void 0 ? item : { ...item, requiredLevel: rebasedCombatLevelFromLegacyLevel(item.requiredLevel) }), ...GUILD_COMPONENT_ITEMS, ...EQUIPMENT_ITEMS_V33];
 var itemsById = new Map(ITEMS.map((item) => [item.id, item]));
 if (itemsById.size !== ITEMS.length) throw new Error("Duplicate item IDs in the item catalog");
 function itemDef(id) {
@@ -43441,6 +43499,7 @@ function characterClassEffects(c) {
 }
 
 // ../apps/mobile/src/content/monsters.ts
+init_progression();
 init_faith();
 var MONSTERS_RAW = [
   { id: "MOSS_RAT", name: "Moss Rat", level: 1, hp: 28, attack: 5, defense: 2, xp: 14, gold: 1, secondsPerKill: 7, unlockLevel: 1, zone: "Greenfields", drops: [{ itemId: "MOSS_FIBER", chance: 0.55, min: 1, max: 2 }] },
@@ -43508,6 +43567,7 @@ var MONSTERS = MONSTERS_RAW.map((monster) => {
   const advancedScale = ADVANCED_MONSTER_REGIONS.has(monster.zone) ? ADVANCED_REGION_MONSTER_MULTIPLIER : 1;
   return {
     ...monster,
+    unlockLevel: rebasedCombatLevelFromLegacyLevel(monster.unlockLevel),
     // Standard-enemy materials are intentionally half as likely from combat.
     // Gathering remains the reliable source; guaranteed boss rewards stay intact.
     drops: [...monster.drops, ...holyWater ? [{ itemId: HOLY_WATER_ID, chance: holyWater.chance, min: holyWater.min, max: holyWater.max }] : [], ...enhancementDrops(monster)].map((drop) => !monster.boss && drop.itemId !== HOLY_WATER_ID && itemDef(drop.itemId).type === "material" ? { ...drop, chance: drop.chance * 0.5 } : drop),
@@ -43681,8 +43741,9 @@ function companionCombatContribution(state) {
 var COMBAT_COMPANION_IDS = COMBAT_COMPANIONS.map((entry2) => entry2.id);
 
 // ../apps/mobile/src/content/world-map.ts
+init_progression();
 var WORLD_ZONES = [
-  { availability: "released", id: "GREENFIELDS", name: "Greenfields", subtitle: "First hunts and a level-20 return encounter", minLevel: 1, maxLevel: 20, x: 0.18, y: 0.76, accent: "#79b88a", symbol: "\u2726" },
+  { availability: "released", id: "GREENFIELDS", name: "Greenfields", subtitle: "First hunts and a tougher return encounter", minLevel: 1, maxLevel: 20, x: 0.18, y: 0.76, accent: "#79b88a", symbol: "\u2726" },
   { availability: "released", id: "SILVERBROOK", name: "Silverbrook", subtitle: "River paths and drowned secrets", minLevel: 5, maxLevel: 22, x: 0.56, y: 0.7, accent: "#6aaed6", symbol: "\u2248" },
   { availability: "released", id: "IRONWOOD", name: "Ironwood Forest", subtitle: "Deep timber and ancient roots", minLevel: 7, maxLevel: 15, x: 0.28, y: 0.46, accent: "#4f9868", symbol: "\u2660" },
   { availability: "released", id: "OLD_MINES", name: "Old Mines", subtitle: "Ore veins and runebound tunnels", minLevel: 16, maxLevel: 19, x: 0.68, y: 0.42, accent: "#a68b72", symbol: "\u25C6" },
@@ -43691,9 +43752,10 @@ var WORLD_ZONES = [
   { availability: "released", id: "FROSTMARCH", name: "Frostmarch", subtitle: "Frozen passes where every bell carries through the ice", minLevel: 45, maxLevel: 70, x: 0.42, y: 0.1, accent: "#91c7dc", symbol: "\u2744" },
   { availability: "inDevelopment", id: "ASHLANDS", name: "Ashlands", subtitle: "Blackglass marshes and the crucible at the edge of the known road", minLevel: 71, maxLevel: 90, x: 0.12, y: 0.22, accent: "#a77972", symbol: "\u25C7", developmentNote: "Ashlands is in development. The region is visible as a preview, but travel, enemies, gathering routes and rewards are not yet available.", plannedActivities: ["Blackglass marshes", "Cinderwood gathering", "Crucible expeditions", "High-tier equipment"] },
   { availability: "inDevelopment", id: "VEILLANDS", name: "The Veillands", subtitle: "A reality-thin frontier beyond the known road", minLevel: 91, maxLevel: 110, x: 0.82, y: 0.08, accent: "#8a6bc9", symbol: "\u25C8", developmentNote: "The Veillands is a future high-level region. Its travel preview is visible now, while enemies, gathering routes and progression rewards remain in development.", plannedActivities: ["High-level combat", "Regional gathering", "Elite encounters", "Region progression"] }
-];
+].map((zone) => ({ ...zone, minLevel: rebasedCombatLevelFromLegacyLevel(zone.minLevel), maxLevel: rebasedCombatLevelFromLegacyLevel(zone.maxLevel) }));
 
 // ../apps/mobile/src/content/skills.ts
+init_progression();
 var GATHERING = [
   // Starting-region mining keeps early enchanting materials accessible before Old Mines unlocks at Character Level 16.
   { id: "GREENFIELDS_COPPER_OUTCROP", skillId: "mining", name: "Copper Outcrop", unlockLevel: 1, seconds: 15, xp: 9, itemId: "COPPER_ORE", min: 1, max: 2, zoneId: "GREENFIELDS" },
@@ -43739,6 +43801,7 @@ var GATHERING = [
   const xpMultiplier = activity.unlockLevel >= 15 ? 1.45 : activity.unlockLevel >= 7 ? 1.35 : 1;
   return { ...activity, seconds: Math.ceil(activity.seconds * 2), xp: Math.round(activity.xp * xpMultiplier), difficultyMultiplier, recommendedToolTier };
 });
+var REBASED_CHARACTER_LEVEL_RECIPES = new Set([...TOOL_RECIPES, ...V33_EQUIPMENT_RECIPES].map((recipe2) => recipe2.id));
 var RECIPES = [
   ...GUILD_COMPONENT_CRAFTING_RELEASED ? GUILD_COMPONENT_RECIPES : [],
   ...ALCHEMY_RECIPES,
@@ -43771,7 +43834,7 @@ var RECIPES = [
     { id: "COOK_ICEFISH", name: "Frosted Icefin", skillId: "cooking", level: 48, xp: 1100, gold: 900, seconds: 300, repeatableTraining: true, inputs: [{ itemId: "ICEFIN", quantity: 3 }, { itemId: "WINTERMINT", quantity: 1 }, { itemId: "WHITEPINE_LOG", quantity: 1 }], output: { itemId: "FROSTED_ICEFIN", quantity: 3 } },
     { id: "COOK_EMBERFIN", name: "Char Emberfin", skillId: "cooking", level: 74, xp: 1650, gold: 1200, seconds: 420, repeatableTraining: true, inputs: [{ itemId: "EMBERFIN", quantity: 3 }, { itemId: "ASHEN_MYRRH", quantity: 1 }, { itemId: "CINDERWOOD_LOG", quantity: 1 }], output: { itemId: "CHARRED_EMBERFIN", quantity: 3 } }
   ].map((recipe2) => ({ ...recipe2, gold: increasedCraftingGoldCost(recipe2.gold) }))
-];
+].map((recipe2) => recipe2.characterLevel === void 0 || REBASED_CHARACTER_LEVEL_RECIPES.has(recipe2.id) ? recipe2 : { ...recipe2, characterLevel: rebasedCombatLevelFromLegacyLevel(recipe2.characterLevel) });
 var recipesById = new Map(RECIPES.map((recipe2) => [recipe2.id, recipe2]));
 if (recipesById.size !== RECIPES.length) throw new Error("Duplicate recipe IDs in the recipe catalog");
 
@@ -45019,21 +45082,22 @@ function validateProgressionSnapshot(companionId, input) {
 }
 
 // ../apps/mobile/src/core/feature-unlocks.ts
+init_progression();
 var GUILD_UNLOCK_LEVEL = 7;
-var PARTY_UNLOCK_LEVEL = 20;
+var PARTY_UNLOCK_LEVEL = rebasedCombatLevelFromLegacyLevel(20);
 var EARLY_FEATURE_UNLOCKS = {
   dailySupplies: { questId: "QST_002", title: "Daily Supplies", requirement: "Complete First Blood, First Skill", description: "The daily reward track appears after the player understands basic skilling." },
   events: { questId: "", title: "Events", requirement: "Available from the start", description: "All players can enter live events and earn their general rewards from level 1. Individual event activities may have their own requirements." },
   pets: { questId: "QST_003", title: "Pets", requirement: "Complete A Hound's Trail", description: "Pets unlock after you have learned the basics of combat, gathering and early regional progression." },
   accountBonuses: { questId: "QST_003", title: "Account Bonuses", requirement: "Complete A Hound's Trail", description: "Account-wide bonus summaries appear alongside the first collectible system." },
   friends: { questId: "QST_003", title: "Friends", requirement: "Complete A Hound's Trail", description: "Friends unlock once the first regional combat loop has been completed." },
-  companions: { questId: "QST_005", title: "Companions", requirement: "Complete Into Ironwood", description: "The Companion Sanctuary unlocks after reaching Level 10 and entering deeper Ironwood progression." },
+  companions: { questId: "QST_005", title: "Companions", requirement: "Complete Into Ironwood", description: "The Companion Sanctuary unlocks after Into Ironwood and entering deeper Ironwood progression." },
   social: { questId: "QST_005", title: "Social & Parties", requirement: "Complete Into Ironwood", description: "Party recruitment and cooperative social systems unlock after the core solo loop is understood." },
   contracts: { questId: "QST_005", title: "Contract Board", requirement: "Complete Into Ironwood", description: "Weekly and cooperative contract planning unlocks with deeper regional progression." },
   masteryHall: { questId: "QST_005", title: "Mastery Hall", requirement: "Complete Into Ironwood", description: "Long-term profession mastery records appear once the player has enough skill actions to make the system meaningful." },
   guild: { questId: "QST_005", title: "Guilds", requirement: `Reach Level ${GUILD_UNLOCK_LEVEL}`, description: `Guilds unlock at Level ${GUILD_UNLOCK_LEVEL}, so you can find, join or create a Guild before deeper regional progression.` },
   party: { questId: "QST_011", title: "Parties", requirement: `Reach Level ${PARTY_UNLOCK_LEVEL}`, description: `Persistent parties unlock at Level ${PARTY_UNLOCK_LEVEL}, after the player has had time to learn the solo loop and pick a role.` },
-  rankings: { questId: "QST_011", title: "Rankings", requirement: "Reach Level 20 and complete Place Among Guilds", description: "Prestige rankings unlock later at Level 20, after the player has had time to establish their character and social identity." }
+  rankings: { questId: "QST_011", title: "Rankings", requirement: `Reach Level ${rebasedCombatLevelFromLegacyLevel(20)} and complete Place Among Guilds`, description: `Prestige rankings unlock later at Level ${rebasedCombatLevelFromLegacyLevel(20)}, after the player has had time to establish their character and social identity.` }
 };
 
 // ../apps/mobile/src/core/companion-runtime.ts
@@ -45577,6 +45641,91 @@ var CLASS_AFFINITY_SPEED_MULTIPLIER = 1.03;
 var NEUTRAL = Object.freeze({ xpMultiplier: 1, speedMultiplier: 1 });
 var MATCHED = Object.freeze({ xpMultiplier: CLASS_AFFINITY_XP_MULTIPLIER, speedMultiplier: CLASS_AFFINITY_SPEED_MULTIPLIER });
 
+// ../apps/mobile/src/content/regional-areas.ts
+init_progression();
+var REGIONAL_AREAS = [
+  {
+    id: "ZONE_006",
+    regionId: "SUNSCAR",
+    name: "Saffron Gate",
+    minLevel: 26,
+    maxLevel: 30,
+    identity: "Caravan roads and the first settlements beyond Asterfall.",
+    activities: ["Sunstone", "Dunewood", "Oasis fishing"],
+    hazards: ["desert wind"]
+  },
+  {
+    id: "ZONE_007",
+    regionId: "SUNSCAR",
+    name: "Scorchwind Flats",
+    minLevel: 31,
+    maxLevel: 35,
+    identity: "Open glass-sand plains and fierce exposure.",
+    activities: ["Glass-sand mining", "Heat-scarred timber"],
+    hazards: ["exposure", "heat"]
+  },
+  {
+    id: "ZONE_008",
+    regionId: "SUNSCAR",
+    name: "Mirage Basin",
+    minLevel: 36,
+    maxLevel: 40,
+    identity: "Mirage pools and reflections that mislead travelers.",
+    activities: ["Glassfin", "Mirage botanicals"],
+    hazards: ["false trails"]
+  },
+  {
+    id: "ZONE_010",
+    regionId: "SUNSCAR",
+    name: "Tyrant's Crown",
+    minLevel: 41,
+    maxLevel: 45,
+    identity: "Royal ruins, the buried observatory and the Sand Tyrant.",
+    activities: ["Astral minerals", "Ancient herbs"],
+    hazards: ["glass storms", "sand pillars"]
+  },
+  {
+    id: "ZONE_011",
+    regionId: "FROSTMARCH",
+    name: "Thawgate",
+    minLevel: 45,
+    maxLevel: 50,
+    identity: "Fortified northern gate and the last dependable shelter.",
+    activities: ["Frostiron", "Whitepine", "Icefin"],
+    hazards: ["black ice"]
+  },
+  {
+    id: "ZONE_012",
+    regionId: "FROSTMARCH",
+    name: "Whitepine Reach",
+    minLevel: 51,
+    maxLevel: 56,
+    identity: "Snow forest with false trails and ancient frozen treants.",
+    activities: ["Snowbound timber", "Rime herbs"],
+    hazards: ["whiteout trails"]
+  },
+  {
+    id: "ZONE_013",
+    regionId: "FROSTMARCH",
+    name: "Shiverlake",
+    minLevel: 57,
+    maxLevel: 63,
+    identity: "Frozen lake and the resonant ruins beneath its ice.",
+    activities: ["Under-ice fishing", "Frostiron"],
+    hazards: ["thin ice"]
+  },
+  {
+    id: "ZONE_015",
+    regionId: "FROSTMARCH",
+    name: "Wyrmspine",
+    minLevel: 64,
+    maxLevel: 70,
+    identity: "High mountain lair of the Frost Wyrm; Choir Caverns remain a dungeon.",
+    activities: ["Wyrmspine ore", "Highland herbs"],
+    hazards: ["ice prison", "breath lines"]
+  }
+].map((area) => ({ ...area, minLevel: rebasedCombatLevelFromLegacyLevel(area.minLevel), maxLevel: rebasedCombatLevelFromLegacyLevel(area.maxLevel) }));
+
 // ../apps/mobile/src/core/equipment-salvage.ts
 var MATERIAL_ID = "TEMPERING_DUST";
 var tieredRewards = /* @__PURE__ */ new Map();
@@ -45586,7 +45735,21 @@ for (const item of EQUIPMENT_ITEMS_V33) {
   tieredRewards.set(item.id, { itemId: MATERIAL_ID, quantity: Math.max(1, Math.ceil(Number(match[1]) / 2)) });
 }
 
+// ../apps/mobile/src/content/exploration.ts
+init_progression();
+var EXPLORATION_ROUTES = [
+  { id: "SCOUT_GREENFIELDS", zoneId: "GREENFIELDS", name: "Scout the Greenfields", seconds: 48, xp: 24, unlockMonsterId: "FIELD_WISP", requiredLevel: 1, requiredExplorationLevel: 1 },
+  { id: "SCOUT_SILVERBROOK", zoneId: "SILVERBROOK", name: "Map Silverbrook", seconds: 72, xp: 42, unlockMonsterId: "SILVERFIN_SWARM", requiredLevel: 5, requiredExplorationLevel: 1 },
+  { id: "SCOUT_IRONWOOD", zoneId: "IRONWOOD", name: "Trace Ironwood paths", seconds: 96, xp: 68, unlockMonsterId: "IRONWOOD_WOLF", unlockZoneId: "OLD_MINES", requiredLevel: 7, requiredExplorationLevel: 2 },
+  { id: "SCOUT_OLD_MINES", zoneId: "OLD_MINES", name: "Survey the Old Mines", seconds: 120, xp: 110, unlockMonsterId: "CAVE_SKITTER", unlockZoneId: "KINGS_ROAD", requiredLevel: 16, requiredExplorationLevel: 3 },
+  { id: "SCOUT_KINGS_ROAD", zoneId: "KINGS_ROAD", name: "Survey the King's Road", seconds: 144, xp: 160, unlockMonsterId: "LANTERN_WRETCH", unlockZoneId: "SUNSCAR", requiredLevel: 20, requiredExplorationLevel: 4 },
+  { id: "SCOUT_SUNSCAR", zoneId: "SUNSCAR", name: "Chart the Sunscar glasslands", seconds: 168, xp: 250, unlockMonsterId: "SUNSCAR_SCORPION", unlockZoneId: "FROSTMARCH", requiredLevel: 26, requiredExplorationLevel: 6 },
+  { id: "SCOUT_FROSTMARCH", zoneId: "FROSTMARCH", name: "Follow the Frostmarch bells", seconds: 240, xp: 430, unlockMonsterId: "FROSTWOLF", unlockZoneId: "ASHLANDS", requiredLevel: 46, requiredExplorationLevel: 9 },
+  { id: "SCOUT_ASHLANDS", zoneId: "ASHLANDS", name: "Read the Ashlands smoke", seconds: 288, xp: 720, unlockMonsterId: "BLACKGLASS_MIRELING", requiredLevel: 71, requiredExplorationLevel: 14 }
+].map((route) => ({ ...route, requiredLevel: rebasedCombatLevelFromLegacyLevel(route.requiredLevel) }));
+
 // ../apps/mobile/src/content/quests.ts
+init_progression();
 var QUESTS = [
   { id: "QST_001", name: "A Name in the Ledger", description: "Defeat 5 Moss Rats.", kind: "kills", targetId: "MOSS_RAT", required: 5, rewardGold: 40, rewardItemId: "MOSS_FIBER", rewardItemQty: 5, act: 1, location: "Greenfields", story: "The local ledger has more missing names than living ones. A simple rat cull is hardly heroic, but it is the first chance to prove you can return from the road." },
   { id: "QST_002", name: "First Blood, First Skill", description: "Reach level 2 in any guided gathering skill.", kind: "skillLevel", required: 2, rewardGold: 60, rewardItemId: "COPPER_ORE", rewardItemQty: 4, act: 1, location: "Greenfields Camp", story: "Steel alone will not carry you through Asterfall. The camp quartermaster sends you to learn the land, gather what it gives, and stop depending on supplies brought from safer places." },
@@ -45603,7 +45766,12 @@ var QUESTS = [
   { id: "QST_013", name: "Oathglass Road", description: "Defeat 10 Fallen Sentinels.", kind: "kills", targetId: "FALLEN_SENTINEL", required: 10, rewardGold: 750, rewardItemId: "OATHGLASS_SHARD", rewardItemQty: 5, act: 3, location: "Oathglass Causeway", story: "Fallen Sentinels guard the causeway in disciplined silence. Beyond them stands the shattered command post where the last royal defense made its final oath and where its commander never truly left." },
   { id: "QST_014", name: "Fallen Knight", description: "Defeat the Fallen Knight.", kind: "boss", targetId: "FALLEN_KNIGHT", required: 1, rewardGold: 1e3, rewardItemId: "OATHGLASS_SHARD", rewardItemQty: 5, act: 3, location: "Ruined Oathgate", story: "The echoes finally have a face. The Fallen Knight still holds the gate as though the kingdom behind him survives, bound to an oath that has outlived everyone it was meant to protect." },
   { id: "QST_015", name: "Beyond the Green", description: "Claim victory over the Fallen Knight and reach level 25.", kind: "level", required: 25, rewardGold: 1250, rewardItemId: "OATHGLASS_CAPE", rewardItemQty: 1, act: 3, location: "Eastern Oathgate", story: "With the Knight defeated, the sealed routes beyond Asterfall begin to open. The victory ends one chapter, but the echoes carried on the wind make it clear the broken oath was never confined to the green lands." }
-];
+].map((quest) => {
+  const required = quest.kind === "level" ? rebasedCombatLevelFromLegacyLevel(quest.required) : quest.required;
+  const requiredCharacterLevel = quest.requiredCharacterLevel === void 0 ? void 0 : rebasedCombatLevelFromLegacyLevel(quest.requiredCharacterLevel);
+  const description = quest.kind === "level" ? quest.description.replace(/level \d+/i, `level ${required}`) : quest.description;
+  return { ...quest, required, requiredCharacterLevel, description };
+});
 
 // ../apps/mobile/src/core/activity-queue.ts
 init_faith();
@@ -46241,7 +46409,7 @@ function effectiveStats(state) {
   const prep = c.preparation ? preparationEffects(c.preparation) : void 0;
   if (prep) attack = Math.ceil(attack * prep.attack);
   const role2 = CLASSES.find((def) => def.id === c.classId)?.role, baseCritChance = role2 === "Damage" ? 0.1 : 0.05, baseEvasion = role2 === "Damage" ? 0.07 : 0.04;
-  const basePower = Math.round(attack * 1.5 + defense * 0.8 + hp * 0.08 + c.level * 2.5);
+  const basePower = Math.round(attack * 1.5 + defense * 0.8 + hp * 0.08 + legacyCharacterLevelFromXp(c.xp) * 2.5);
   return {
     hp,
     attack,
@@ -46331,6 +46499,9 @@ function summarizeGemLoadoutV1(entries) {
   });
   return { statPercent, statPercentagePoints, effects };
 }
+
+// online/coop-loadout.ts
+init_progression();
 
 // src/server/combat/content/launch-combat.ts
 var stats2 = (maxHp, attackPower, healingPower, defense, accuracy, evasion, critChance = 0.08, haste = 0.05) => ({ maxHp, attackPower, healingPower, defense, accuracy, evasion, critChance, critMultiplier: 1.5, haste });
@@ -46517,13 +46688,13 @@ function referenceStats(classId) {
   return effectiveStats(reference);
 }
 function deriveOnlineCoopLoadout(accountId, state, version) {
-  const character = state.character;
+  const character = state.character ? rebaseCombatCharacter(state.character) : null;
   if (!character) throw new Error("character_required");
   if (!Number.isSafeInteger(version) || version < 1) throw new Error("invalid_game_version");
   const definition = CLASSES.find((row) => row.id === character.classId);
   if (!definition) throw new Error("unknown_class");
   const role2 = deriveRole(character.classId);
-  const kit = launchPlayer(definition.name, 25), reference = referenceStats(character.classId), actual = effectiveStats(state), levelScale = character.level / 25;
+  const kit = launchPlayer(definition.name, 25), reference = referenceStats(character.classId), actual = effectiveStats(state), combatScalingLevel = legacyCharacterLevelFromXp(character.xp), levelScale = combatScalingLevel / 25;
   const bonus = activeEquipmentBuildStats(state);
   const sockets = equippedCanonicalGemIdsV1(state).map((gemId, index) => {
     const meta = canonicalGemMetaV1(gemId);
@@ -46551,6 +46722,7 @@ function deriveOnlineCoopLoadout(accountId, state, version) {
     loadoutId: "current",
     revision: version,
     characterLevel: character.level,
+    combatScalingLevel,
     dungeonUnlocked: true,
     legalEquipment,
     capabilities,
@@ -46581,7 +46753,7 @@ function onlineCoopLoadoutHash(record) {
 }
 function assessOnlineCoopLoadout(record, syncLevel = 25) {
   const role2 = deriveRole(record.classId), reference = ROOTBOUND_ROLE_REFERENCES[role2];
-  const normalized = normalizeCombatInput({ ...record.stats, role: role2 }, record.abilities, syncLevel, reference);
+  const normalized = normalizeCombatInput({ ...record.stats, level: record.combatScalingLevel ?? record.characterLevel, role: role2 }, record.abilities, syncLevel, reference);
   const scale = normalized.effectiveLevel / reference.level;
   const primary = (role2 === "tank" ? normalized.snapshot.defense / reference.defense : role2 === "support" ? Math.max(normalized.snapshot.healingPower / reference.healingPower, normalized.snapshot.defense / reference.defense) : normalized.snapshot.attackPower / reference.attackPower) / scale;
   const readiness = evaluateRoleReadiness(record.classId, primary, record.capabilities);
@@ -47496,6 +47668,7 @@ var gatherDefs2 = [...GATHERING, ...HERB_NODES];
 init_meal_buffs();
 
 // online/gameplay.ts
+init_progression();
 var GameplayError = class extends Error {
   constructor(message, status = 400) {
     super(message);
@@ -47541,9 +47714,10 @@ function coopEntryHandler(services) {
       }
       const loaded = await services.rpc("load_online_game_server_v1", { p_account_id: accountId });
       if (!loaded.state?.character) throw new GameplayError("character_required");
+      const gameState = rebaseCombatGameState(loaded.state);
       let prepared;
       try {
-        const record = deriveOnlineCoopLoadout(accountId, loaded.state, loaded.version);
+        const record = deriveOnlineCoopLoadout(accountId, gameState, loaded.version);
         prepared = { record, assessment: assessOnlineCoopLoadout(record) };
       } catch (error) {
         console.error("coop_entry_loadout_invalid", error instanceof Error ? error.message : "unknown");
@@ -47554,7 +47728,7 @@ function coopEntryHandler(services) {
         const result = await services.rpc("publish_online_coop_loadout_server_v1", { p_account_id: accountId, p_game_version: body.expectedVersion, p_record: record, p_snapshot_hash: onlineCoopLoadoutHash(record), p_readiness: readiness, p_share_echo: body.share, p_request_id: body.requestId });
         return json(result);
       }
-      const character = loaded.state.character;
+      const character = gameState.character;
       const participation = await services.rpc("online_coop_entry_state_server_v1", { p_account_id: accountId });
       let rewardBudget;
       try {
@@ -47569,10 +47743,10 @@ function coopEntryHandler(services) {
         gameVersion: loaded.version,
         liveRecruitment,
         ...rewardBudget ? { rewardBudget } : {},
-        dungeons: Object.values(EXPEDITIONS).map((def) => ({ id: def.id, name: def.name, region: def.region, baseMarks: def.baseMarks, expectedMarksByTier: Object.fromEntries(tiers.map((tier) => [tier, baseMarks(def.baseMarks, tier)])), minLevel: def.minLevel, recommendedLevel: def.recommendedLevel, recommendedLiveTier: prepared?.assessment.readiness.ready ? readinessEligibleCoopTier(def.minLevel, character.level, prepared.assessment.readiness.normalizedScore) : void 0, recommendedPower: recommendedDungeonPower(def.minLevel), syncLevel: def.recommendedLevel, available: def.coopImplemented && character.level >= def.minLevel, lockedReason: !def.coopImplemented ? "Not yet available" : character.level < def.minLevel ? `Requires level ${def.minLevel}` : void 0, difficulties: tiers, tierMinLevels: Object.fromEntries(tiers.map((tier) => [tier, coopRequiredLevel(def.minLevel, tier)])), preBossRoomMin: 5, preBossRoomMax: 5, estimatedMinutes: { min: 6, max: 8 } })),
+        dungeons: Object.values(EXPEDITIONS).map((def) => ({ id: def.id, name: def.name, region: def.region, baseMarks: def.baseMarks, expectedMarksByTier: Object.fromEntries(tiers.map((tier) => [tier, baseMarks(def.baseMarks, tier)])), minLevel: rebasedCombatLevelFromLegacyLevel(def.minLevel), recommendedLevel: rebasedCombatLevelFromLegacyLevel(def.recommendedLevel), recommendedLiveTier: prepared?.assessment.readiness.ready ? readinessEligibleCoopTier(def.minLevel, character.level, prepared.assessment.readiness.normalizedScore) : void 0, recommendedPower: recommendedDungeonPower(def.minLevel), syncLevel: def.recommendedLevel, available: def.coopImplemented && character.level >= rebasedCombatLevelFromLegacyLevel(def.minLevel), lockedReason: !def.coopImplemented ? def.region === "Ashlands" ? "In Development" : "Not yet available" : character.level < rebasedCombatLevelFromLegacyLevel(def.minLevel) ? `Requires level ${rebasedCombatLevelFromLegacyLevel(def.minLevel)}` : void 0, difficulties: tiers, tierMinLevels: Object.fromEntries(tiers.map((tier) => [tier, coopRequiredLevel(def.minLevel, tier)])), preBossRoomMin: 5, preBossRoomMax: 5, estimatedMinutes: { min: 6, max: 8 } })),
         eventExpeditions: eventExpeditionPreviews(loaded.serverNow).map((def) => {
-          const matches = Boolean(activeLiveEventId && activeLiveEventId.startsWith(`${def.liveEventSeriesId}_`)), levelReady = character.level >= def.minLevel, available = matches && levelReady && prepared?.assessment.readiness.ready === true;
-          return { ...def, status: available ? "available" : "preview", liveEventId: matches ? activeLiveEventId : void 0, lockedReason: available ? void 0 : !matches ? `Available only while ${def.eventName} is active.` : !levelReady ? `Requires level ${def.minLevel}` : "Current co-op loadout is not expedition-ready." };
+          const matches = Boolean(activeLiveEventId && activeLiveEventId.startsWith(`${def.liveEventSeriesId}_`)), levelReady = character.level >= rebasedCombatLevelFromLegacyLevel(def.minLevel), available = matches && levelReady && prepared?.assessment.readiness.ready === true;
+          return { ...def, minLevel: rebasedCombatLevelFromLegacyLevel(def.minLevel), status: available ? "available" : "preview", liveEventId: matches ? activeLiveEventId : void 0, lockedReason: available ? void 0 : !matches ? `Available only while ${def.eventName} is active.` : !levelReady ? `Requires level ${rebasedCombatLevelFromLegacyLevel(def.minLevel)}` : "Current co-op loadout is not expedition-ready." };
         }),
         loadouts: prepared ? [{ id: "current", characterId: character.id, revision: loaded.version, verifiedRevision: loaded.version, name: "Current equipment", characterName: character.name, className: CLASSES.find((row) => row.id === character.classId).name, role: prepared.assessment.readiness.role, status: prepared.assessment.readiness.ready ? "verified" : "ineligible", ready: prepared.assessment.readiness.ready, failures: prepared.assessment.readiness.failures, level: character.level, effectiveLevel: prepared.assessment.normalized.effectiveLevel, beforeStats: prepared.assessment.normalized.before, effectiveStats: prepared.assessment.normalized.snapshot, normalizationVersion: prepared.assessment.normalized.normalizationVersion, verifiedAt: new Date(loaded.serverNow).toISOString(), skills: prepared.record.abilities.map((row) => row.name), equipment: Object.values(character.equipment).filter(Boolean) }] : []
       });
@@ -49130,7 +49304,7 @@ function resolveAndFreezeLoadout(input) {
   if (!record.dungeonUnlocked) throw new Error("dungeon_locked");
   if (!record.legalEquipment) throw new Error("illegal_equipment");
   const role2 = deriveRole(record.classId);
-  const source = { ...record.stats, role: role2, classId: record.classId, characterId: record.characterId, level: record.characterLevel };
+  const source = { ...record.stats, role: role2, classId: record.classId, characterId: record.characterId, level: record.combatScalingLevel ?? record.characterLevel };
   const normalized = normalizeCombatInput(source, record.abilities, input.syncLevel, ROOTBOUND_ROLE_REFERENCES[role2]);
   const reference = ROOTBOUND_ROLE_REFERENCES[role2];
   const referenceScale = normalized.effectiveLevel / reference.level;
@@ -49504,7 +49678,7 @@ var OnlineLiveQueue = class {
       throw new GameplayError("stale_game_version", 409);
     }
     const record = deriveOnlineCoopLoadout(accountId, game.state, game.version);
-    const maximumTier = highestEligibleCoopTier(definition.minLevel, game.state.character.level);
+    const maximumTier = highestEligibleCoopTier(definition.minLevel, record.characterLevel);
     if (!maximumTier || request.tier > maximumTier || request.tier < 1) throw new GameplayError("dungeon_level_requirement");
     const selectedTier = request.tier;
     const snapshot = resolveAndFreezeLoadout({ accountId, characterId: request.characterId, loadoutId: "current", expectedRevision: game.version, minLevel: coopRequiredLevel(definition.minLevel, selectedTier), syncLevel: definition.recommendedLevel, repository: { getOwnedLoadout: () => record } });
@@ -49821,7 +49995,7 @@ var OnlineCoopLfg = class {
     if (!game.state?.character) throw new GameplayError("character_required");
     const record = deriveOnlineCoopLoadout(accountId, game.state, game.version), { readiness } = assessOnlineCoopLoadout(record);
     if (!readiness.ready) throw new GameplayError("role_not_ready");
-    const maxTier = highestEligibleCoopTier(definition.minLevel, game.state.character.level);
+    const maxTier = highestEligibleCoopTier(definition.minLevel, record.characterLevel);
     if (!maxTier) throw new GameplayError("dungeon_level_requirement");
     const hash = createHash7("sha256").update(JSON.stringify({ dungeonId: definition.id, note })).digest("hex");
     return this.services.rpc("publish_online_coop_lfg_server_v1", { p_account_id: accountId, p_request_id: request.requestId, p_request_hash: hash, p_character_id: game.state.character.id, p_dungeon_id: definition.id, p_role: readiness.role, p_max_tier: maxTier, p_note: note });
@@ -49833,28 +50007,33 @@ var OnlineCoopLfg = class {
   }
 };
 
+// online/public-profile-power.ts
+init_progression();
+
 // ../apps/mobile/src/core/combat-power.ts
+init_progression();
 var statScore = (stats6, level) => Math.max(0, Math.round(
   stats6.attack * 18 + stats6.defense * 11 + stats6.hp * 0.7 + (stats6.power ?? 0) * 4 + level * 12 + (stats6.critChance ?? 0) * 220 + (stats6.critMultiplier ?? 1.5) * 18 + (stats6.accuracy ?? 0.84) * 45 + (stats6.evasion ?? 0.04) * 50 + (stats6.haste ?? 0.05) * 150 + (stats6.armor ?? 0) * 110 + (stats6.ward ?? 0) * 140 + (stats6.tenacity ?? 0) * 60 + (stats6.potency ?? 0) * 80 + (stats6.penetration ?? 0) * 135
 ));
 function combatPowerRating(state) {
   const character = state.character;
   if (!character) return { total: 0, player: 0, companion: 0, rows: [] };
-  const stats6 = effectiveStats(state), player2 = statScore(stats6, character.level);
+  const powerLevel = legacyCharacterLevelFromXp(character.xp);
+  const stats6 = effectiveStats(state), player2 = statScore(stats6, powerLevel);
   const role2 = CLASSES.find((def2) => def2.id === character.classId)?.role;
   const base = statScore({
     hp: character.hp,
     attack: character.attack,
     defense: character.defense,
-    power: Math.round(character.attack * 1.5 + character.defense * 0.8 + character.hp * 0.08 + character.level * 2.5),
+    power: Math.round(character.attack * 1.5 + character.defense * 0.8 + character.hp * 0.08 + powerLevel * 2.5),
     critChance: role2 === "Damage" ? 0.1 : 0.05,
     critMultiplier: 1.5,
     accuracy: 0.84,
     evasion: role2 === "Damage" ? 0.07 : 0.04,
     haste: 0.05
-  }, character.level);
+  }, powerLevel);
   const unequipped = { ...state, character: { ...character, equipment: {}, equipmentInstanceIds: {} } };
-  const withoutGear = statScore(effectiveStats(unequipped), character.level);
+  const withoutGear = statScore(effectiveStats(unequipped), powerLevel);
   const build = player2 - withoutGear;
   const passive2 = withoutGear - base;
   const id = character.equippedCombatCompanionId, def = id ? combatCompanionDef(id) : void 0, progress = id ? state.account.combatCompanionProgress?.[id] : void 0;
@@ -49873,7 +50052,7 @@ function combatPowerRating(state) {
 async function publicProfileCombatPower(services, viewerAccountId, targetAccountId) {
   const source = await services.rpc("online_public_profile_state_server_v1", { p_viewer_account_id: viewerAccountId, p_target_account_id: targetAccountId });
   if (!source.state?.character) return null;
-  const state = structuredClone(source.state), selected2 = source.selectedCharacterId;
+  const state = rebaseCombatGameState(structuredClone(source.state)), selected2 = source.selectedCharacterId;
   if (selected2 && selected2 !== state.character.id) {
     const stored = state.otherCharacters?.find((row) => row.character.id === selected2);
     if (!stored) return null;
@@ -49887,6 +50066,7 @@ async function publicProfileCombatPower(services, viewerAccountId, targetAccount
 }
 
 // online/event-expedition-runtime.ts
+init_progression();
 import { createHash as createHash8 } from "node:crypto";
 
 // src/server/expeditions/event-boss-mechanics.ts
@@ -50358,9 +50538,9 @@ var OnlineEventExpeditionRuntime = class {
       if (replay) return replay.response;
       throw new GameplayError("stale_game_version", 409);
     }
-    const freeze = (source, syncLevel = definition.minLevel) => resolveAndFreezeLoadout({ accountId: source.accountId, characterId: source.characterId, loadoutId: source.loadoutId, expectedRevision: source.revision, minLevel: definition.minLevel, syncLevel, repository: { getOwnedLoadout: () => source } });
+    const freeze = (source, syncLevel = definition.minLevel) => resolveAndFreezeLoadout({ accountId: source.accountId, characterId: source.characterId, loadoutId: source.loadoutId, expectedRevision: source.revision, minLevel: rebasedCombatLevelFromLegacyLevel(definition.minLevel), syncLevel, repository: { getOwnedLoadout: () => source } });
     const controllerForRole = freeze(record, definition.minLevel);
-    const raw2 = await this.services.rpc("eligible_online_coop_echoes_server_v1", { p_actor_account_id: accountId, p_min_level: definition.minLevel });
+    const raw2 = await this.services.rpc("eligible_online_coop_echoes_server_v1", { p_actor_account_id: accountId, p_min_level: rebasedCombatLevelFromLegacyLevel(definition.minLevel) });
     const profiles = [];
     for (const echo of raw2) {
       if (echo.record.accountId !== echo.sourceAccountId) continue;
@@ -50373,7 +50553,7 @@ var OnlineEventExpeditionRuntime = class {
     const seed = this.services.randomId() + this.services.randomId();
     const selected2 = recruitEligibleEchoes({ serverSecret: seed, requestId: request.requestId, controllerAccountId: accountId, controllerRole: controllerForRole.readiness.role, controllerClassId: controllerForRole.classId, contentVersion: ONLINE_COOP_BALANCE_VERSION, nowMs: game.serverNow, profiles });
     const selectedSources = selected2.map((echo) => raw2.find((item) => item.profileId === echo.profileId)).filter((value) => Boolean(value));
-    const scaling = definition.levelScaling, averageLobbyLevel = scaling ? Math.max(scaling.minLevel, Math.min(scaling.maxLevel, Math.round([record.characterLevel, ...selectedSources.map((echo) => echo.record.characterLevel)].reduce((sum, level) => sum + level, 0) / (1 + selectedSources.length)))) : definition.minLevel;
+    const scaling = definition.levelScaling, averageLobbyLevel = scaling ? Math.max(scaling.minLevel, Math.min(scaling.maxLevel, Math.round([record.combatScalingLevel ?? record.characterLevel, ...selectedSources.map((echo) => echo.record.combatScalingLevel ?? echo.record.characterLevel)].reduce((sum, level) => sum + level, 0) / (1 + selectedSources.length)))) : definition.minLevel;
     const controller = freeze(record, averageLobbyLevel), snapshots = [controller, ...selectedSources.map((echo) => freeze(echo.record, averageLobbyLevel))], runId = this.services.randomId(), repository = new MemoryEventRunRepository(), domain = new EventExpeditionService(repository, seed);
     const run = domain.start({ requestId: request.requestId, runId, accountId, eventId: definition.id, activeLiveEventId: runtime.eventId, members: snapshots.map((snapshot) => ({ accountId: snapshot.accountId, characterId: snapshot.characterId, role: snapshot.readiness.role })), players: snapshots.map(player), nowMs: game.serverNow });
     const members = snapshots.map((snapshot, index) => {

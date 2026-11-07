@@ -80,6 +80,9 @@ function skillXpForNextLevel(level) {
   return Math.floor(baseXpForNextLevel(level) * SKILL_XP_SCALE);
 }
 function characterXpForNextLevel(level) {
+  return Math.floor(90 * Math.pow(level, CHARACTER_XP_EXPONENT) + level * 35) * CHARACTER_XP_SCALE;
+}
+function legacyCharacterXpForNextLevel(level) {
   return Math.floor(baseXpForNextLevel(level) * CHARACTER_XP_SCALE);
 }
 function levelFromXpWith(totalXp, need) {
@@ -98,6 +101,9 @@ function levelFromXp(totalXp) {
 function characterLevelFromXp(totalXp) {
   return levelFromXpWith(totalXp, characterXpForNextLevel);
 }
+function legacyCharacterLevelFromXp(totalXp) {
+  return levelFromXpWith(totalXp, legacyCharacterXpForNextLevel);
+}
 function totalXpAtLevelWith(level, need) {
   let xp = 0;
   for (let l = 1; l < level; l++) xp += need(l);
@@ -109,16 +115,37 @@ function totalXpAtLevel(level) {
 function characterTotalXpAtLevel(level) {
   return totalXpAtLevelWith(level, characterXpForNextLevel);
 }
+function legacyCharacterTotalXpAtLevel(level) {
+  return totalXpAtLevelWith(level, legacyCharacterXpForNextLevel);
+}
+function rebasedCombatLevelFromLegacyLevel(level) {
+  return characterLevelFromXp(legacyCharacterTotalXpAtLevel(level));
+}
+function rebaseCombatCharacter(character) {
+  if (!Number.isSafeInteger(character.xp) || character.xp < 0) return character;
+  const level = characterLevelFromXp(character.xp);
+  return level === character.level ? character : { ...character, level };
+}
+function rebaseCombatGameState(state) {
+  const character = state.character ? rebaseCombatCharacter(state.character) : null;
+  const otherCharacters = state.otherCharacters?.map((entry2) => {
+    const rebased = rebaseCombatCharacter(entry2.character);
+    return rebased === entry2.character ? entry2 : { ...entry2, character: rebased };
+  });
+  if (character === state.character && (!otherCharacters || otherCharacters.every((entry2, index) => entry2 === state.otherCharacters?.[index]))) return state;
+  return { ...state, character, otherCharacters };
+}
 function progressWithinLevel(totalXp, level) {
   const floor = totalXpAtLevel(level);
   return { current: Math.max(0, totalXp - floor), need: skillXpForNextLevel(level) };
 }
-var SKILL_XP_SCALE, CHARACTER_XP_SCALE;
+var SKILL_XP_SCALE, CHARACTER_XP_SCALE, CHARACTER_XP_EXPONENT;
 var init_progression = __esm({
   "../apps/mobile/src/core/progression.ts"() {
     "use strict";
     SKILL_XP_SCALE = 1.6;
     CHARACTER_XP_SCALE = 8;
+    CHARACTER_XP_EXPONENT = 2.09;
   }
 });
 
@@ -887,6 +914,7 @@ function settleClassDrills(state, now, capSeconds) {
 }
 
 // ../apps/mobile/src/content/monsters.ts
+init_progression();
 init_faith();
 
 // ../apps/mobile/src/content/gems-v1.ts
@@ -963,11 +991,17 @@ function mobileRawGemItemIdV1(familyId, grade) {
   return `raw_gem:${familyId}:g${grade}`;
 }
 
+// ../apps/mobile/src/content/items.ts
+init_progression();
+
 // ../apps/mobile/src/content/crafting-gold-cost.ts
 function increasedCraftingGoldCost(baseGold) {
   if (!Number.isSafeInteger(baseGold) || baseGold < 0) throw new Error("invalid_crafting_gold");
   return Math.ceil(baseGold * 6 / 5);
 }
+
+// ../apps/mobile/src/content/equipment-recipes-v33.ts
+init_progression();
 
 // ../apps/mobile/src/content/equipment_catalog_t1_t9_v33.json
 var equipment_catalog_t1_t9_v33_default = {
@@ -42646,7 +42680,7 @@ var V33_EQUIPMENT_RECIPES = equipment_catalog_t1_t9_v33_default.pieces.map((piec
     inputs: mergeInputs([...ingredients(tier, String(piece.Path), multiplier, skillId), infusionByTier[tier]]),
     output: { itemId: String(piece["Piece ID"]), quantity: 1 },
     classId,
-    characterLevel,
+    characterLevel: rebasedCombatLevelFromLegacyLevel(characterLevel),
     v33EquipmentTier: tier,
     v33Region: tier === "T9" ? "Ashlands" : String(set.Region),
     v33SetId: setId,
@@ -42741,7 +42775,8 @@ var GUILD_COMPONENT_RECIPES = [
 ].map((recipe2) => ({ ...recipe2, gold: increasedCraftingGoldCost(recipe2.gold) }));
 
 // ../apps/mobile/src/content/gathering-tools.ts
-var tool = (definition) => ({ ...definition, recipe: { ...definition.recipe, gold: increasedCraftingGoldCost(definition.recipe.gold) } });
+init_progression();
+var tool = (definition) => ({ ...definition, requiredCharacterLevel: rebasedCombatLevelFromLegacyLevel(definition.requiredCharacterLevel), recipe: { ...definition.recipe, gold: increasedCraftingGoldCost(definition.recipe.gold) } });
 var blueprint = (itemId, knowledgeId, sourceMonsterId, dropChance) => ({ itemId, knowledgeId, sourceMonsterId, dropChance });
 var GATHERING_TOOLS = [
   // Tier 1 is always learnable, but still requires early investment in the relevant gathering skill.
@@ -42938,6 +42973,7 @@ var potionDef = (id) => POTIONS.find((p) => p.id === id);
 var alchemyRecipeDef = (id) => ALCHEMY_RECIPES.find((recipe2) => recipe2.id === id);
 
 // ../apps/mobile/src/content/equipment-items-v33.ts
+init_progression();
 var classIdByName2 = { Ironwarden: "IRONWARDEN", Bastion: "BASTION", Dreadguard: "DREADGUARD", Dawnkeeper: "DAWNKEEPER", Wayfinder: "WAYFINDER", Ravager: "RAVAGER", Hexweaver: "HEXWEAVER", "Knife Dancer": "KNIFE_DANCER", Stonecaller: "STONECALLER" };
 var slotByName2 = { Helmet: "helmet", Chest: "chest", Gloves: "gloves", Legs: "legs", Boots: "boots", Weapon: "weapon", "Off-hand": "offhand", Cape: "cape", Amulet: "amulet", Ring: "ring" };
 var rarityByTier = { T1: "common", T2: "uncommon", T3: "rare", T4: "rare", T5: "epic", T6: "epic", T7: "legendary", T8: "legendary", T9: "mythic" };
@@ -42968,7 +43004,7 @@ var EQUIPMENT_ITEMS_V33 = equipment_catalog_t1_t9_v33_default.pieces.map((piece)
     value: Math.max(10, level * scale * 12),
     rarity: rarityByTier[tier] ?? "common",
     classRestriction: classIdByName2[String(piece.Class)],
-    requiredLevel: level,
+    requiredLevel: rebasedCombatLevelFromLegacyLevel(level),
     equipmentSetId: String(piece["Set ID"])
   };
 });
@@ -43097,7 +43133,7 @@ var BASE_ITEMS = [
   { id: "ECHO_BAT_WING", name: "Echo Bat Wing", type: "material", value: 80 },
   { id: "FALLEN_KNIGHT_SIGIL", name: "Fallen Knight Sigil", type: "quest", value: 0 }
 ];
-var ITEMS = [...BASE_ITEMS, ...GUILD_COMPONENT_ITEMS, ...EQUIPMENT_ITEMS_V33];
+var ITEMS = [...BASE_ITEMS.map((item) => item.requiredLevel === void 0 ? item : { ...item, requiredLevel: rebasedCombatLevelFromLegacyLevel(item.requiredLevel) }), ...GUILD_COMPONENT_ITEMS, ...EQUIPMENT_ITEMS_V33];
 var itemsById = new Map(ITEMS.map((item) => [item.id, item]));
 if (itemsById.size !== ITEMS.length) throw new Error("Duplicate item IDs in the item catalog");
 function itemDef(id) {
@@ -43173,6 +43209,7 @@ var MONSTERS = MONSTERS_RAW.map((monster) => {
   const advancedScale = ADVANCED_MONSTER_REGIONS.has(monster.zone) ? ADVANCED_REGION_MONSTER_MULTIPLIER : 1;
   return {
     ...monster,
+    unlockLevel: rebasedCombatLevelFromLegacyLevel(monster.unlockLevel),
     // Standard-enemy materials are intentionally half as likely from combat.
     // Gathering remains the reliable source; guaranteed boss rewards stay intact.
     drops: [...monster.drops, ...holyWater ? [{ itemId: HOLY_WATER_ID, chance: holyWater.chance, min: holyWater.min, max: holyWater.max }] : [], ...enhancementDrops(monster)].map((drop) => !monster.boss && drop.itemId !== HOLY_WATER_ID && itemDef(drop.itemId).type === "material" ? { ...drop, chance: drop.chance * 0.5 } : drop),
@@ -43603,11 +43640,12 @@ function grantBondstones(state, amount) {
 }
 
 // ../apps/mobile/src/content/world-map.ts
+init_progression();
 function worldZoneInDevelopment(zone) {
   return zone.availability === "inDevelopment";
 }
 var WORLD_ZONES = [
-  { availability: "released", id: "GREENFIELDS", name: "Greenfields", subtitle: "First hunts and a level-20 return encounter", minLevel: 1, maxLevel: 20, x: 0.18, y: 0.76, accent: "#79b88a", symbol: "\u2726" },
+  { availability: "released", id: "GREENFIELDS", name: "Greenfields", subtitle: "First hunts and a tougher return encounter", minLevel: 1, maxLevel: 20, x: 0.18, y: 0.76, accent: "#79b88a", symbol: "\u2726" },
   { availability: "released", id: "SILVERBROOK", name: "Silverbrook", subtitle: "River paths and drowned secrets", minLevel: 5, maxLevel: 22, x: 0.56, y: 0.7, accent: "#6aaed6", symbol: "\u2248" },
   { availability: "released", id: "IRONWOOD", name: "Ironwood Forest", subtitle: "Deep timber and ancient roots", minLevel: 7, maxLevel: 15, x: 0.28, y: 0.46, accent: "#4f9868", symbol: "\u2660" },
   { availability: "released", id: "OLD_MINES", name: "Old Mines", subtitle: "Ore veins and runebound tunnels", minLevel: 16, maxLevel: 19, x: 0.68, y: 0.42, accent: "#a68b72", symbol: "\u25C6" },
@@ -43616,9 +43654,10 @@ var WORLD_ZONES = [
   { availability: "released", id: "FROSTMARCH", name: "Frostmarch", subtitle: "Frozen passes where every bell carries through the ice", minLevel: 45, maxLevel: 70, x: 0.42, y: 0.1, accent: "#91c7dc", symbol: "\u2744" },
   { availability: "inDevelopment", id: "ASHLANDS", name: "Ashlands", subtitle: "Blackglass marshes and the crucible at the edge of the known road", minLevel: 71, maxLevel: 90, x: 0.12, y: 0.22, accent: "#a77972", symbol: "\u25C7", developmentNote: "Ashlands is in development. The region is visible as a preview, but travel, enemies, gathering routes and rewards are not yet available.", plannedActivities: ["Blackglass marshes", "Cinderwood gathering", "Crucible expeditions", "High-tier equipment"] },
   { availability: "inDevelopment", id: "VEILLANDS", name: "The Veillands", subtitle: "A reality-thin frontier beyond the known road", minLevel: 91, maxLevel: 110, x: 0.82, y: 0.08, accent: "#8a6bc9", symbol: "\u25C8", developmentNote: "The Veillands is a future high-level region. Its travel preview is visible now, while enemies, gathering routes and progression rewards remain in development.", plannedActivities: ["High-level combat", "Regional gathering", "Elite encounters", "Region progression"] }
-];
+].map((zone) => ({ ...zone, minLevel: rebasedCombatLevelFromLegacyLevel(zone.minLevel), maxLevel: rebasedCombatLevelFromLegacyLevel(zone.maxLevel) }));
 
 // ../apps/mobile/src/content/skills.ts
+init_progression();
 var GATHERING = [
   // Starting-region mining keeps early enchanting materials accessible before Old Mines unlocks at Character Level 16.
   { id: "GREENFIELDS_COPPER_OUTCROP", skillId: "mining", name: "Copper Outcrop", unlockLevel: 1, seconds: 15, xp: 9, itemId: "COPPER_ORE", min: 1, max: 2, zoneId: "GREENFIELDS" },
@@ -43664,6 +43703,7 @@ var GATHERING = [
   const xpMultiplier = activity.unlockLevel >= 15 ? 1.45 : activity.unlockLevel >= 7 ? 1.35 : 1;
   return { ...activity, seconds: Math.ceil(activity.seconds * 2), xp: Math.round(activity.xp * xpMultiplier), difficultyMultiplier, recommendedToolTier };
 });
+var REBASED_CHARACTER_LEVEL_RECIPES = new Set([...TOOL_RECIPES, ...V33_EQUIPMENT_RECIPES].map((recipe2) => recipe2.id));
 var RECIPES = [
   ...GUILD_COMPONENT_CRAFTING_RELEASED ? GUILD_COMPONENT_RECIPES : [],
   ...ALCHEMY_RECIPES,
@@ -43696,7 +43736,7 @@ var RECIPES = [
     { id: "COOK_ICEFISH", name: "Frosted Icefin", skillId: "cooking", level: 48, xp: 1100, gold: 900, seconds: 300, repeatableTraining: true, inputs: [{ itemId: "ICEFIN", quantity: 3 }, { itemId: "WINTERMINT", quantity: 1 }, { itemId: "WHITEPINE_LOG", quantity: 1 }], output: { itemId: "FROSTED_ICEFIN", quantity: 3 } },
     { id: "COOK_EMBERFIN", name: "Char Emberfin", skillId: "cooking", level: 74, xp: 1650, gold: 1200, seconds: 420, repeatableTraining: true, inputs: [{ itemId: "EMBERFIN", quantity: 3 }, { itemId: "ASHEN_MYRRH", quantity: 1 }, { itemId: "CINDERWOOD_LOG", quantity: 1 }], output: { itemId: "CHARRED_EMBERFIN", quantity: 3 } }
   ].map((recipe2) => ({ ...recipe2, gold: increasedCraftingGoldCost(recipe2.gold) }))
-];
+].map((recipe2) => recipe2.characterLevel === void 0 || REBASED_CHARACTER_LEVEL_RECIPES.has(recipe2.id) ? recipe2 : { ...recipe2, characterLevel: rebasedCombatLevelFromLegacyLevel(recipe2.characterLevel) });
 var recipesById = new Map(RECIPES.map((recipe2) => [recipe2.id, recipe2]));
 if (recipesById.size !== RECIPES.length) throw new Error("Duplicate recipe IDs in the recipe catalog");
 function recipeDef(id) {
@@ -46233,21 +46273,22 @@ function companionExpeditionStaminaCost(durationHours) {
 }
 
 // ../apps/mobile/src/core/feature-unlocks.ts
+init_progression();
 var GUILD_UNLOCK_LEVEL = 7;
-var PARTY_UNLOCK_LEVEL = 20;
+var PARTY_UNLOCK_LEVEL = rebasedCombatLevelFromLegacyLevel(20);
 var EARLY_FEATURE_UNLOCKS = {
   dailySupplies: { questId: "QST_002", title: "Daily Supplies", requirement: "Complete First Blood, First Skill", description: "The daily reward track appears after the player understands basic skilling." },
   events: { questId: "", title: "Events", requirement: "Available from the start", description: "All players can enter live events and earn their general rewards from level 1. Individual event activities may have their own requirements." },
   pets: { questId: "QST_003", title: "Pets", requirement: "Complete A Hound's Trail", description: "Pets unlock after you have learned the basics of combat, gathering and early regional progression." },
   accountBonuses: { questId: "QST_003", title: "Account Bonuses", requirement: "Complete A Hound's Trail", description: "Account-wide bonus summaries appear alongside the first collectible system." },
   friends: { questId: "QST_003", title: "Friends", requirement: "Complete A Hound's Trail", description: "Friends unlock once the first regional combat loop has been completed." },
-  companions: { questId: "QST_005", title: "Companions", requirement: "Complete Into Ironwood", description: "The Companion Sanctuary unlocks after reaching Level 10 and entering deeper Ironwood progression." },
+  companions: { questId: "QST_005", title: "Companions", requirement: "Complete Into Ironwood", description: "The Companion Sanctuary unlocks after Into Ironwood and entering deeper Ironwood progression." },
   social: { questId: "QST_005", title: "Social & Parties", requirement: "Complete Into Ironwood", description: "Party recruitment and cooperative social systems unlock after the core solo loop is understood." },
   contracts: { questId: "QST_005", title: "Contract Board", requirement: "Complete Into Ironwood", description: "Weekly and cooperative contract planning unlocks with deeper regional progression." },
   masteryHall: { questId: "QST_005", title: "Mastery Hall", requirement: "Complete Into Ironwood", description: "Long-term profession mastery records appear once the player has enough skill actions to make the system meaningful." },
   guild: { questId: "QST_005", title: "Guilds", requirement: `Reach Level ${GUILD_UNLOCK_LEVEL}`, description: `Guilds unlock at Level ${GUILD_UNLOCK_LEVEL}, so you can find, join or create a Guild before deeper regional progression.` },
   party: { questId: "QST_011", title: "Parties", requirement: `Reach Level ${PARTY_UNLOCK_LEVEL}`, description: `Persistent parties unlock at Level ${PARTY_UNLOCK_LEVEL}, after the player has had time to learn the solo loop and pick a role.` },
-  rankings: { questId: "QST_011", title: "Rankings", requirement: "Reach Level 20 and complete Place Among Guilds", description: "Prestige rankings unlock later at Level 20, after the player has had time to establish their character and social identity." }
+  rankings: { questId: "QST_011", title: "Rankings", requirement: `Reach Level ${rebasedCombatLevelFromLegacyLevel(20)} and complete Place Among Guilds`, description: `Prestige rankings unlock later at Level ${rebasedCombatLevelFromLegacyLevel(20)}, after the player has had time to establish their character and social identity.` }
 };
 function accountQuestClaimed(state, questId) {
   if (state.quests?.some((row) => row.questId === questId && row.status === "claimed")) return true;
@@ -47769,6 +47810,7 @@ var CLASSES = [
 ];
 
 // ../apps/mobile/src/content/regional-areas.ts
+init_progression();
 var REGIONAL_AREAS = [
   {
     id: "ZONE_006",
@@ -47850,7 +47892,7 @@ var REGIONAL_AREAS = [
     activities: ["Wyrmspine ore", "Highland herbs"],
     hazards: ["ice prison", "breath lines"]
   }
-];
+].map((area) => ({ ...area, minLevel: rebasedCombatLevelFromLegacyLevel(area.minLevel), maxLevel: rebasedCombatLevelFromLegacyLevel(area.maxLevel) }));
 
 // ../apps/mobile/src/core/equipment-salvage.ts
 var MATERIAL_ID = "TEMPERING_DUST";
@@ -47873,6 +47915,7 @@ var MINING_ESSENCE_BY_ZONE = {
 };
 
 // ../apps/mobile/src/content/exploration.ts
+init_progression();
 var EXPLORATION_ROUTES = [
   { id: "SCOUT_GREENFIELDS", zoneId: "GREENFIELDS", name: "Scout the Greenfields", seconds: 48, xp: 24, unlockMonsterId: "FIELD_WISP", requiredLevel: 1, requiredExplorationLevel: 1 },
   { id: "SCOUT_SILVERBROOK", zoneId: "SILVERBROOK", name: "Map Silverbrook", seconds: 72, xp: 42, unlockMonsterId: "SILVERFIN_SWARM", requiredLevel: 5, requiredExplorationLevel: 1 },
@@ -47882,10 +47925,11 @@ var EXPLORATION_ROUTES = [
   { id: "SCOUT_SUNSCAR", zoneId: "SUNSCAR", name: "Chart the Sunscar glasslands", seconds: 168, xp: 250, unlockMonsterId: "SUNSCAR_SCORPION", unlockZoneId: "FROSTMARCH", requiredLevel: 26, requiredExplorationLevel: 6 },
   { id: "SCOUT_FROSTMARCH", zoneId: "FROSTMARCH", name: "Follow the Frostmarch bells", seconds: 240, xp: 430, unlockMonsterId: "FROSTWOLF", unlockZoneId: "ASHLANDS", requiredLevel: 46, requiredExplorationLevel: 9 },
   { id: "SCOUT_ASHLANDS", zoneId: "ASHLANDS", name: "Read the Ashlands smoke", seconds: 288, xp: 720, unlockMonsterId: "BLACKGLASS_MIRELING", requiredLevel: 71, requiredExplorationLevel: 14 }
-];
+].map((route) => ({ ...route, requiredLevel: rebasedCombatLevelFromLegacyLevel(route.requiredLevel) }));
 var explorationRoute = (id) => EXPLORATION_ROUTES.find((route) => route.id === id);
 
 // ../apps/mobile/src/content/quests.ts
+init_progression();
 var QUESTS = [
   { id: "QST_001", name: "A Name in the Ledger", description: "Defeat 5 Moss Rats.", kind: "kills", targetId: "MOSS_RAT", required: 5, rewardGold: 40, rewardItemId: "MOSS_FIBER", rewardItemQty: 5, act: 1, location: "Greenfields", story: "The local ledger has more missing names than living ones. A simple rat cull is hardly heroic, but it is the first chance to prove you can return from the road." },
   { id: "QST_002", name: "First Blood, First Skill", description: "Reach level 2 in any guided gathering skill.", kind: "skillLevel", required: 2, rewardGold: 60, rewardItemId: "COPPER_ORE", rewardItemQty: 4, act: 1, location: "Greenfields Camp", story: "Steel alone will not carry you through Asterfall. The camp quartermaster sends you to learn the land, gather what it gives, and stop depending on supplies brought from safer places." },
@@ -47902,7 +47946,12 @@ var QUESTS = [
   { id: "QST_013", name: "Oathglass Road", description: "Defeat 10 Fallen Sentinels.", kind: "kills", targetId: "FALLEN_SENTINEL", required: 10, rewardGold: 750, rewardItemId: "OATHGLASS_SHARD", rewardItemQty: 5, act: 3, location: "Oathglass Causeway", story: "Fallen Sentinels guard the causeway in disciplined silence. Beyond them stands the shattered command post where the last royal defense made its final oath and where its commander never truly left." },
   { id: "QST_014", name: "Fallen Knight", description: "Defeat the Fallen Knight.", kind: "boss", targetId: "FALLEN_KNIGHT", required: 1, rewardGold: 1e3, rewardItemId: "OATHGLASS_SHARD", rewardItemQty: 5, act: 3, location: "Ruined Oathgate", story: "The echoes finally have a face. The Fallen Knight still holds the gate as though the kingdom behind him survives, bound to an oath that has outlived everyone it was meant to protect." },
   { id: "QST_015", name: "Beyond the Green", description: "Claim victory over the Fallen Knight and reach level 25.", kind: "level", required: 25, rewardGold: 1250, rewardItemId: "OATHGLASS_CAPE", rewardItemQty: 1, act: 3, location: "Eastern Oathgate", story: "With the Knight defeated, the sealed routes beyond Asterfall begin to open. The victory ends one chapter, but the echoes carried on the wind make it clear the broken oath was never confined to the green lands." }
-];
+].map((quest) => {
+  const required = quest.kind === "level" ? rebasedCombatLevelFromLegacyLevel(quest.required) : quest.required;
+  const requiredCharacterLevel = quest.requiredCharacterLevel === void 0 ? void 0 : rebasedCombatLevelFromLegacyLevel(quest.requiredCharacterLevel);
+  const description = quest.kind === "level" ? quest.description.replace(/level \d+/i, `level ${required}`) : quest.description;
+  return { ...quest, required, requiredCharacterLevel, description };
+});
 
 // ../apps/mobile/src/core/combat-tactics.ts
 var COMBAT_TACTIC_IDS = ["assault", "balanced", "guarded"];
@@ -49189,7 +49238,7 @@ function currentRegionId(state) {
   if (saved) return saved;
   const activityZone = usable(state.activity?.environment?.zoneId);
   if (activityZone) return activityZone;
-  const savedZone = WORLD_ZONES.find((zone) => zone.id === state.currentRegionId && !worldZoneInDevelopment(zone));
+  const savedZone = WORLD_ZONES.find((zone) => zone.id === state.currentRegionId);
   if (savedZone) {
     const previous = [...WORLD_ZONES].reverse().find((zone) => zone.minLevel < savedZone.minLevel && usable(zone.id));
     if (previous) return previous.id;
@@ -51700,7 +51749,7 @@ function effectiveStats(state) {
   const prep = c.preparation ? preparationEffects(c.preparation) : void 0;
   if (prep) attack = Math.ceil(attack * prep.attack);
   const role = CLASSES.find((def) => def.id === c.classId)?.role, baseCritChance = role === "Damage" ? 0.1 : 0.05, baseEvasion = role === "Damage" ? 0.07 : 0.04;
-  const basePower = Math.round(attack * 1.5 + defense * 0.8 + hp * 0.08 + c.level * 2.5);
+  const basePower = Math.round(attack * 1.5 + defense * 0.8 + hp * 0.08 + legacyCharacterLevelFromXp(c.xp) * 2.5);
   return {
     hp,
     attack,
@@ -52885,7 +52934,7 @@ function previewFallenKnightBattle(state, nowMs = Date.now(), mode = "story") {
   return simulateFallenKnightStoryBattle(fallenKnightPlayerSnapshot(state), `${state.character.id}:FALLEN_KNIGHT_${mode.toUpperCase()}:${nowMs}`, mode);
 }
 function challengeFallenKnightRematch(state, nowMs) {
-  if (!state.character || state.character.level < 25 || !state.defeatedBossIds.includes("FALLEN_KNIGHT")) throw new Error("Defeat the Fallen Knight in the story first.");
+  if (!state.character || state.character.level < rebasedCombatLevelFromLegacyLevel(25) || !state.defeatedBossIds.includes("FALLEN_KNIGHT")) throw new Error("Defeat the Fallen Knight in the story first.");
   state = settleOutOfCombatRecovery(state, nowMs);
   if (!state.character) throw new Error("No character");
   const weekly = fallenKnightWeeklyStatus(state, nowMs);
@@ -52928,7 +52977,7 @@ function challengeFallenKnight(state, nowMs = Date.now()) {
   if (!state.character) throw new Error("No character");
   state = settleOutOfCombatRecovery(state, nowMs);
   if (!state.character) throw new Error("No character");
-  if (state.character.level < 25) return { state, won: false, message: "Reach level 25 first." };
+  if (state.character.level < rebasedCombatLevelFromLegacyLevel(25)) return { state, won: false, message: `Reach level ${rebasedCombatLevelFromLegacyLevel(25)} first.` };
   if (state.defeatedBossIds.includes("FALLEN_KNIGHT")) return challengeFallenKnightRematch(state, nowMs);
   const q14 = state.quests.find((q2) => q2.questId === "QST_014");
   if (q14 && q14.status === "locked") return { state, won: false, message: "Advance the Asterfall questline before challenging the Fallen Knight." };
@@ -56921,6 +56970,7 @@ function executeGameCommand(previous, value, now, options = {}) {
 }
 
 // online/gameplay.ts
+init_progression();
 var GameplayError = class extends Error {
   constructor(message, status = 400) {
     super(message);
@@ -56993,7 +57043,7 @@ function gameplayHandler(services2) {
         }
       }
       const loaded = await services2.rpc("load_online_game_server_v1", { p_account_id: accountId });
-      const state = loaded.state ?? newGame(loaded.serverNow);
+      const state = rebaseCombatGameState(loaded.state ?? newGame(loaded.serverNow));
       state.account.longTermAccountScopeId = accountId;
       state.account.guildMember = loaded.guildMember;
       const previousEvent = state.account.liveEvent;
@@ -57138,6 +57188,9 @@ function releasePolicyLoader(url2, publicKey) {
     }
   };
 }
+
+// online/regional-combat.ts
+init_progression();
 
 // src/server/combat/regional-combat-runtime-v1.ts
 import { createHash } from "node:crypto";
@@ -57524,6 +57577,9 @@ function summarizeGemLoadoutV1(entries) {
   return { statPercent, statPercentagePoints, effects };
 }
 
+// online/coop-loadout.ts
+init_progression();
+
 // src/server/combat/content/launch-combat.ts
 var stats3 = (maxHp, attackPower, healingPower, defense, accuracy, evasion, critChance = 0.08, haste = 0.05) => ({ maxHp, attackPower, healingPower, defense, accuracy, evasion, critChance, critMultiplier: 1.5, haste });
 var dmg = (id, name, coeff, cooldownMs, priority, extra = {}) => ({ id, name, cooldownMs, castTimeMs: 0, target: "current_target", priority, effects: [{ kind: "damage", coeff, damageType: "physical" }], ...extra });
@@ -57624,13 +57680,13 @@ function referenceStats(classId) {
   return effectiveStats(reference);
 }
 function deriveOnlineCoopLoadout(accountId, state, version) {
-  const character = state.character;
+  const character = state.character ? rebaseCombatCharacter(state.character) : null;
   if (!character) throw new Error("character_required");
   if (!Number.isSafeInteger(version) || version < 1) throw new Error("invalid_game_version");
   const definition = CLASSES.find((row) => row.id === character.classId);
   if (!definition) throw new Error("unknown_class");
   const role = deriveRole(character.classId);
-  const kit = launchPlayer(definition.name, 25), reference = referenceStats(character.classId), actual = effectiveStats(state), levelScale = character.level / 25;
+  const kit = launchPlayer(definition.name, 25), reference = referenceStats(character.classId), actual = effectiveStats(state), combatScalingLevel = legacyCharacterLevelFromXp(character.xp), levelScale = combatScalingLevel / 25;
   const bonus = activeEquipmentBuildStats(state);
   const sockets = equippedCanonicalGemIdsV1(state).map((gemId, index) => {
     const meta = canonicalGemMetaV1(gemId);
@@ -57658,6 +57714,7 @@ function deriveOnlineCoopLoadout(accountId, state, version) {
     loadoutId: "current",
     revision: version,
     characterLevel: character.level,
+    combatScalingLevel,
     dungeonUnlocked: true,
     legalEquipment,
     capabilities,
@@ -57734,7 +57791,7 @@ var OnlineRegionalCombatRuntimeV1 = class {
     if (game.state.character.id !== request.characterId) throw new GameplayError("character_not_owned", 403);
     const loadout = deriveOnlineCoopLoadout(accountId, game.state, game.version);
     if (!loadout.legalEquipment) throw new GameplayError("illegal_equipment");
-    const access = await this.services.rpc("regional_combat_access_server_v1", { p_account_id: accountId, p_character_id: request.characterId, p_zone_id: encounter.zoneId, p_content_id: encounter.contentId, p_required_level: encounter.level });
+    const access = await this.services.rpc("regional_combat_access_server_v1", { p_account_id: accountId, p_character_id: request.characterId, p_zone_id: encounter.zoneId, p_content_id: encounter.contentId, p_required_level: rebasedCombatLevelFromLegacyLevel(encounter.level) });
     if (!access.allowed) throw new GameplayError(access.reason ?? "regional_encounter_locked", 403);
     const role = deriveRole(loadout.classId), snapshot2 = { ...loadout.stats, role };
     const store = new RpcRegionalCombatStore(this.services, accountId);

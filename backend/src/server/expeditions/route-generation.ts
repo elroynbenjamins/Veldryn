@@ -115,5 +115,8 @@ export function validateCoopRouteGraph(graph:CoopRouteGraph,limits?:{preBossNode
 export function coopRouteClientProjection(graph:CoopRouteGraph,revealedNodeIds:readonly string[]=[graph.entryNodeId]):CoopRouteGraph {
   const byId=new Map(graph.nodes.map(node=>[node.nodeId,node]));const visible=new Set(revealedNodeIds);
   for(const id of revealedNodeIds)for(const next of byId.get(id)?.nextNodeIds??[])visible.add(next);
-  return {...structuredClone(graph),nodes:graph.nodes.filter(node=>visible.has(node.nodeId)).map(node=>structuredClone(node))};
+  // Only visible nodes may cross the projection boundary. Copy the public
+  // scalars and revealed nodes once; cloning the full hidden graph first was
+  // redundant and became expensive on each room transition.
+  return {...graph,nodes:graph.nodes.filter(node=>visible.has(node.nodeId)).map(node=>structuredClone(node))};
 }

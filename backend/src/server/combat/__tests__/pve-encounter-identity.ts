@@ -54,6 +54,10 @@ for(const [encounterId,expected] of asterfallRegular){
   }
  }
 }
+const rootboundIntro=buildExpeditionEncounter({encounterId:'ROOTBOUND_BATTLE_01'});
+assert.deepEqual(rootboundIntro.map(enemy=>enemy.id),['ROOT_HUSK_1','ROOT_HUSK_2'],'Existing encounter IDs must remain stable for saved runs and replay');
+assert.equal(rootboundIntro[1].name,'Sporeling','The introductory swarm should use an existing recognizable enemy identity');
+
 // Regular enemy combat budgets and final boss skills remain unchanged.
 assert.deepEqual(buildExpeditionEncounter({encounterId:'ROOTBOUND_BATTLE_01'}).map(enemy=>[enemy.stats.maxHp,enemy.stats.attackPower,enemy.stats.defense]),[[5200,330,620],[5200,330,620]]);
 assert.deepEqual(buildExpeditionEncounter({encounterId:'LANTERN_BATTLE_01'}).map(enemy=>[enemy.stats.maxHp,enemy.stats.attackPower,enemy.stats.defense]),[[4800,350,560],[4800,350,560]]);

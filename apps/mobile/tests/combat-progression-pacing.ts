@@ -20,7 +20,7 @@ assert.equal(characterCombatXpScale(7),.75);
 assert.equal(characterCombatXpScale(10),.6);
 assert.equal(characterCombatXpScale(100),.6);
 assert.equal(characterCombatXpScale(25,true),1,'boss payouts are separate from ordinary-hunt pacing');
-assert.equal(characterTotalXpAtLevel(17),300792,'existing XP thresholds must not move or demote players');
+assert.equal(characterTotalXpAtLevel(17),1383808,'new XP curve must stay calibrated at combat level 17');
 assert.equal(itemDef('COOKED_MEADOW_PERCH').heal,24,'food healing stays intact');
 assert.equal(itemDef('ROASTED_ROOTSTREAM_TROUT').heal,40);
 

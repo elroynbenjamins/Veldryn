@@ -174,11 +174,13 @@ export interface EquipmentPouchSalvageCandidate{
 
 /** Simulate candidates from the highest pouch slot down, matching settlement order.
  * This also checks Inventory room and legacy enhanced-copy reservations. */
-export function equipmentPouchSalvageCandidates(state:GameState):EquipmentPouchSalvageCandidate[]{
+export function equipmentPouchSalvageCandidates(state:GameState,onlyIds?:readonly string[]):EquipmentPouchSalvageCandidate[]{
  const original=equipmentPouch(state).stacks,result:EquipmentPouchSalvageCandidate[]=[];
+ const requested=onlyIds?new Set(onlyIds):null;
  let candidateState=state;
  for(let index=original.length-1;index>=0;index--){
    const stack=original[index],id=equipmentPouchSaleId(stack,index),reward=itemDef(stack.itemId).salvage;
+   if(requested&&!requested.has(id))continue;
    try{
      const next=salvageEquipmentPouchSelected(candidateState,[id]);
      candidateState=next;

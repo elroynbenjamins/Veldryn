@@ -1,5 +1,6 @@
 import {createHash} from 'node:crypto';
 import type {GameState} from '../../apps/mobile/src/core/types';
+import {rebasedCombatLevelFromLegacyLevel as rebaseLevel} from '../../apps/mobile/src/core/progression';
 import {EVENT_EXPEDITIONS} from '../src/server/expeditions/content/event-expeditions';
 import {EventExpeditionService,MemoryEventRunRepository,eventBossMechanicProjection,eventMechanicProjection,eventObjectiveProjection,effectiveEventNode,type EventRun} from '../src/server/expeditions/event-service';
 import {resolveAndFreezeLoadout,type AuthoritativeLoadoutRecord,type FrozenLoadoutSnapshot} from '../src/server/coop/loadout-snapshots';
@@ -68,9 +69,9 @@ export class OnlineEventExpeditionRuntime{
   const record=deriveOnlineCoopLoadout(accountId,game.state,game.version);
   if(record.characterId!==request.characterId||request.loadoutId!=='current')throw new GameplayError('loadout_not_owned',403);
   if(request.loadoutRevision!==record.revision){const replay=await this.receipt(accountId,'event_start_v1',accountId,request.requestId,hash);if(replay)return replay.response;throw new GameplayError('stale_game_version',409);}
-  const freeze=(source:AuthoritativeLoadoutRecord,syncLevel=definition.minLevel)=>resolveAndFreezeLoadout({accountId:source.accountId,characterId:source.characterId,loadoutId:source.loadoutId,expectedRevision:source.revision,minLevel:definition.minLevel,syncLevel,repository:{getOwnedLoadout:()=>source}});
+  const freeze=(source:AuthoritativeLoadoutRecord,syncLevel=definition.minLevel)=>resolveAndFreezeLoadout({accountId:source.accountId,characterId:source.characterId,loadoutId:source.loadoutId,expectedRevision:source.revision,minLevel:rebaseLevel(definition.minLevel),syncLevel,repository:{getOwnedLoadout:()=>source}});
   const controllerForRole=freeze(record,definition.minLevel);
-  const raw=await this.services.rpc<Echo[]>('eligible_online_coop_echoes_server_v1',{p_actor_account_id:accountId,p_min_level:definition.minLevel});
+  const raw=await this.services.rpc<Echo[]>('eligible_online_coop_echoes_server_v1',{p_actor_account_id:accountId,p_min_level:rebaseLevel(definition.minLevel)});
   const profiles:PublishedEcho[]=[];
   for(const echo of raw){
    if(echo.record.accountId!==echo.sourceAccountId)continue;
@@ -79,7 +80,7 @@ export class OnlineEventExpeditionRuntime{
   const seed=this.services.randomId()+this.services.randomId();
   const selected=recruitEligibleEchoes({serverSecret:seed,requestId:request.requestId,controllerAccountId:accountId,controllerRole:controllerForRole.readiness.role,controllerClassId:controllerForRole.classId,contentVersion:ONLINE_COOP_BALANCE_VERSION,nowMs:game.serverNow,profiles});
   const selectedSources=selected.map(echo=>raw.find(item=>item.profileId===echo.profileId)).filter((value):value is Echo=>Boolean(value));
-  const scaling=definition.levelScaling,averageLobbyLevel=scaling?Math.max(scaling.minLevel,Math.min(scaling.maxLevel,Math.round([record.characterLevel,...selectedSources.map(echo=>echo.record.characterLevel)].reduce((sum,level)=>sum+level,0)/(1+selectedSources.length)))):definition.minLevel;
+  const scaling=definition.levelScaling,averageLobbyLevel=scaling?Math.max(scaling.minLevel,Math.min(scaling.maxLevel,Math.round([record.combatScalingLevel??record.characterLevel,...selectedSources.map(echo=>echo.record.combatScalingLevel??echo.record.characterLevel)].reduce((sum,level)=>sum+level,0)/(1+selectedSources.length)))):definition.minLevel;
   const controller=freeze(record,averageLobbyLevel),snapshots=[controller,...selectedSources.map(echo=>freeze(echo.record,averageLobbyLevel))],runId=this.services.randomId(),repository=new MemoryEventRunRepository(),domain=new EventExpeditionService(repository,seed);
   const run=domain.start({requestId:request.requestId,runId,accountId,eventId:definition.id,activeLiveEventId:runtime.eventId,members:snapshots.map(snapshot=>({accountId:snapshot.accountId,characterId:snapshot.characterId,role:snapshot.readiness.role})),players:snapshots.map(player),nowMs:game.serverNow});
   const members=snapshots.map((snapshot,index)=>{

@@ -4,6 +4,8 @@ import {createTranslator,interpolateTranslation} from './translator';
 // Each row contains English, German, Spanish, Dutch, Italian and French.
 // English source keys also let owned views translate core-generated presentation text.
 export const accountTranslationRows = {
+ "CLAIM BLOCKED":["CLAIM BLOCKED","EINLÖSEN BLOCKIERT","RECLAMACIÓN BLOQUEADA","CLAIM GEBLOKKEERD","RISCATTO BLOCCATO","RÉCUPÉRATION BLOQUÉE"],
+
  // Account UX integration and Rewards Inbox localization.
   "Adventurer's Journal": ["Adventurer's Journal","Abenteurertagebuch","Diario del aventurero","Avonturiersdagboek","Diario dell'avventuriero","Journal de l'aventurier"],
   "Bestiary": ["Bestiary","Bestiarium","Bestiario","Bestiarium","Bestiario","Bestiaire"],

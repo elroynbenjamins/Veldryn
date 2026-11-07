@@ -8,12 +8,6 @@ import {useMemo} from 'react';
 // Every row is complete, in en/de/es/nl/it/fr order. English phrases are typed keys.
 type TranslationRow=readonly [string,string,string,string,string,string];
 const common={
- "Brew":["Brew","Brauen","Preparar","Brouwen","Prepara","Préparer"],
- "Open Alchemy recipe for {name}":["Open Alchemy recipe for {name}","Alchemierezept für {name} öffnen","Abrir receta de alquimia de {name}","Alchemierecept voor {name} openen","Apri la ricetta alchemica per {name}","Ouvrir la recette d'alchimie pour {name}"],
- "Open Alchemy":["Open Alchemy","Alchemie öffnen","Abrir Alquimia","Alchemie openen","Apri Alchimia","Ouvrir l'alchimie"],
- "Craft the T2 equipment binding resin in Alchemy.":["Craft the T2 equipment binding resin in Alchemy.","Stelle das Bindeharz für T2-Ausrüstung in der Alchemie her.","Fabrica la resina de unión de equipo T2 en Alquimia.","Maak de bindhars voor T2-uitrusting via Alchemie.","Crea la resina legante T2 con Alchimia.","Fabriquez la résine de liaison d'équipement T2 en alchimie."],
- "T2 equipment":["T2 equipment","T2-Ausrüstung","Equipo T2","T2-uitrusting","Equipaggiamento T2","Équipement T2"],
- "Alchemy Lv {level} · Crafted, not a Woodcutting drop":["Alchemy Lv {level} · Crafted, not a Woodcutting drop","Alchemie St. {level} · Hergestellt, kein Holzfällerei-Drop","Alquimia Nv {level} · Se fabrica, no cae al talar","Alchemie Lv {level} · Wordt gemaakt, geen Houthakken-drop","Alchimia Lv {level} · Si crea, non si trova tagliando legna","Alchimie niv. {level} · À fabriquer, pas obtenu en bûcheronnage"],
  "Production":["Production","Produktion","Producción","Productie","Produzione","Production"],
  "Experience":["Experience","Erfahrung","Experiencia","Ervaring","Esperienza","Expérience"],
  "unlocked":["unlocked","freigeschaltet","desbloqueadas","ontgrendeld","sbloccate","débloquées"],
@@ -24,6 +18,14 @@ const common={
  "Requires character level {level}.":["Requires character level {level}.","Benötigt Charakterstufe {level}.","Requiere nivel de personaje {level}.","Vereist personageniveau {level}.","Richiede livello personaggio {level}.","Nécessite le niveau de personnage {level}."],
  "Show how to unlock or obtain materials for this recipe":["Show how to unlock or obtain materials for this recipe","Zeigen, wie du das Rezept freischaltest oder Materialien erhältst","Mostrar cómo desbloquear o conseguir materiales para esta receta","Tonen hoe je dit recept vrijspeelt of materialen verkrijgt","Mostra come sbloccare o ottenere materiali per questa ricetta","Afficher comment débloquer ou obtenir des matériaux pour cette recette"],
  "See requirements and where to get materials":["See requirements and where to get materials","Anforderungen und Materialquellen ansehen","Ver requisitos y dónde conseguir materiales","Bekijk vereisten en vindplaatsen van materialen","Vedi requisiti e dove trovare i materiali","Voir les conditions et où trouver les matériaux"],
+
+ // Additional Alchemy recipe-navigation strings used by gathering and workshop screens.
+ "Brew":["Brew","Brauen","Elaborar","Brouwen","Prepara","Préparer"],
+ "Open Alchemy recipe for {name}":["Open Alchemy recipe for {name}","Alchemie-Rezept für {name} öffnen","Abrir receta de alquimia para {name}","Open alchemierecept voor {name}","Apri la ricetta di alchimia per {name}","Ouvrir la recette d’alchimie pour {name}"],
+ "Open Alchemy":["Open Alchemy","Alchemie öffnen","Abrir Alquimia","Open Alchemie","Apri Alchimia","Ouvrir l’alchimie"],
+ "Craft the T2 equipment binding resin in Alchemy.":["Craft the T2 equipment binding resin in Alchemy.","Stelle das Bindeharz für T2-Ausrüstung in der Alchemie her.","Elabora la resina de unión para equipo T2 mediante Alquimia.","Maak de bindhars voor T2-uitrusting met Alchemie.","Crea la resina legante per l’equipaggiamento T2 tramite Alchimia.","Fabrique la résine de liaison de l’équipement T2 en alchimie."],
+ "T2 equipment":["T2 equipment","T2-Ausrüstung","Equipo T2","T2-uitrusting","Equipaggiamento T2","Équipement T2"],
+ "Alchemy Lv {level} · Crafted, not a Woodcutting drop":["Alchemy Lv {level} · Crafted, not a Woodcutting drop","Alchemie St. {level} · Hergestellt, kein Holzfällen-Fund","Alquimia niv. {level} · Se fabrica; no se obtiene talando","Alchemie niv. {level} · Gemaakt, geen houthakdrop","Alchimia liv. {level} · Si crea, non si ottiene tagliando","Alchimie niv. {level} · Fabriqué, non obtenu en bûcheronnage"],
 
  // Alchemy workshop: translate displayed effects from authoritative potion properties.
  "Restores {percent}% maximum HP in boss fights or between dungeon rooms.":["Restores {percent}% maximum HP in boss fights or between dungeon rooms.","Stellt {percent} % der maximalen LP im Bosskampf oder zwischen Dungeonräumen wieder her.","Recupera un {percent} % de salud máxima contra jefes o entre salas de mazmorra.","Herstelt {percent}% maximale HP bij bazen of tussen kerkerkamers.","Ripristina il {percent}% dei PV massimi contro i boss o tra le stanze dei dungeon.","Rend {percent} % des PV max. contre les boss ou entre les salles de donjon."],
@@ -587,7 +589,7 @@ const skills={
 "blueprint owned":["blueprint owned","Bauplan vorhanden","plano en posesión","blauwdruk in bezit","progetto posseduto","plan possédé"],
 "blueprint required":["blueprint required","Bauplan erforderlich","requiere plano","blauwdruk vereist","progetto richiesto","plan requis"],
 "Blueprint: {name} · {chance}% drop":["Blueprint: {name} · {chance}% drop","Bauplan: {name} · {chance} % Beutechance","Plano: {name} · {chance}% de botín","Blauwdruk: {name} · {chance}% buitkans","Progetto: {name} · {chance}% rilascio","Plan : {name} · {chance} % de butin"],
-"{percent}% faster · {skill} {level} · Level {character} · Smithing {smithing}":["{percent}% faster · {skill} {level} · Level {character} · Smithing {smithing}","{percent} % schneller · {skill} {level} · Stufe {character} · Schmieden {smithing}","{percent}% más rápido · {skill} {level} · Nivel {character} · Herrería {smithing}","{percent}% sneller · {skill} {level} · Niveau {character} · Smeden {smithing}","{percent}% più veloce · {skill} {level} · Livello {character} · Forgiatura {smithing}","{percent} % plus rapide · {skill} {level} · Niveau {character} · Forge {smithing}"],
+"{percent}% faster · {skill} {level} · Level {character}":["{percent}% faster · {skill} {level} · Level {character}","{percent} % schneller · {skill} {level} · Stufe {character}","{percent}% más rápido · {skill} {level} · Nivel {character}","{percent}% sneller · {skill} {level} · Niveau {character}","{percent}% più veloce · {skill} {level} · Livello {character}","{percent} % plus rapide · {skill} {level} · Niveau {character}"],
 "in Bank":["in Bank","in der Bank","en el banco","in bank","in banca","en banque"],
 "‹ All skills":["‹ All skills","‹ Alle Fertigkeiten","‹ Todas las habilidades","‹ Alle vaardigheden","‹ Tutte le abilità","‹ Toutes les compétences"],
 "FINAL STRETCH":["FINAL STRETCH","ENDSPURT","RECTA FINAL","LAATSTE STUK","TRATTO FINALE","DERNIÈRE LIGNE DROITE"],

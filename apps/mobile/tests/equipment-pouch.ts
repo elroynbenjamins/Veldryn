@@ -4,7 +4,7 @@ import {createCharacter,newGame,routeRewards} from '../src/core/game';
 import {claimEquipmentCraft,startEquipmentCraft,equipmentCraftingQueue} from '../src/core/equipment-crafting-queue';
 import {equipmentPouch,equipmentPouchUpgradePreview,moveLegacyEquipmentPouchStack,tryStoreEquipmentInPouch,upgradeEquipmentPouch} from '../src/core/equipment-pouch';
 import {gemPouch} from '../src/core/gem-pouch';
-import {equipmentPouchSaleCandidates,equipmentPouchSaleId,equipmentPouchQuickSellIds,sellEquipmentPouchSelected} from '../src/core/equipment-pouch-selling';
+import {equipmentPouchSaleCandidates,equipmentPouchSaleId,equipmentPouchQuickSellIds,sellEquipmentPouchSelected,equipmentPouchSalvageCandidates,equipmentPouchQuickSalvageIds,salvageEquipmentPouchSelected} from '../src/core/equipment-pouch-selling';
 import {draftCraftedGearInstance} from '../src/core/crafted-gear-instances';
 import {itemRarity} from '../src/core/item-rarity';
 import {auditCraftedGearOwnership,equipCraftedGearInstance,moveCraftedGearInstance,unequipCraftedGearInstance} from '../src/core/crafted-gear-ownership';
@@ -148,8 +148,46 @@ ok(['common','uncommon','rare'].includes(itemRarity(itemDef(output)))||quick.len
 ok(validateGameCommand({type:'equipment_pouch_upgrade'}).type==='equipment_pouch_upgrade','Server command permits Equipment Pouch upgrade');
 ok(validateGameCommand({type:'equipment_pouch_move',args:{itemId:output,from:'equipment_pouch',to:'inventory',quantity:1}}).type==='equipment_pouch_move','Server command permits validated pouch movement');
 ok(validateGameCommand({type:'equipment_pouch_sell',args:{ids:saleIds}}).type==='equipment_pouch_sell','Server accepts a bounded selection of exact equipment IDs');
+// Salvage uses exact receipts and one server-confirmed material settlement.
+const salvageReward=itemDef(output).salvage!;
+ok(!!salvageReward&&salvageReward.itemId==='TEMPERING_DUST','T1–T9 equipment has a modest authored upgrade-material salvage yield');
+const salvageCandidates=equipmentPouchSalvageCandidates(back);
+ok(salvageCandidates.length===2&&salvageCandidates.every(row=>row.eligible),'Both unenhanced legacy pouch copies are salvageable');
+const salvageIds=salvageCandidates.map(row=>row.id);
+const oldSalvageMaterials=back.inventory.stacks.find(row=>row.itemId===salvageReward.itemId)?.quantity??0;
+const salvagedLegacy=executeGameCommand(back,{type:'equipment_pouch_salvage',args:{ids:salvageIds}},1010).state;
+ok(!equipmentPouch(salvagedLegacy).stacks.length
+ &&(salvagedLegacy.inventory.stacks.find(row=>row.itemId===salvageReward.itemId)?.quantity??0)===oldSalvageMaterials+salvageReward.quantity*2
+ &&salvagedLegacy.character!.gold===back.character!.gold,
+ 'Bulk legacy salvage removes only selected gear, rewards the authored materials once and awards no Gold');
+const salvageExactId=equipmentPouchSalvageCandidates(tagged)[0].id;
+const salvagedExact=executeGameCommand(tagged,{type:'equipment_pouch_salvage',args:{ids:[salvageExactId]}},1011).state;
+ok(!equipmentPouch(salvagedExact).stacks.length&&!salvagedExact.account.craftedGearInstances?.some(row=>row.id===record.id)
+ &&(salvagedExact.inventory.stacks.find(row=>row.itemId===salvageReward.itemId)?.quantity??0)===(tagged.inventory.stacks.find(row=>row.itemId===salvageReward.itemId)?.quantity??0)+salvageReward.quantity
+ &&auditCraftedGearOwnership(salvagedExact).consistent,
+ 'Exact forged-copy salvage preserves ownership and correctly rewards character Inventory');
+ok(equipmentPouchSalvageCandidates(lockedGear).every(row=>!row.eligible),'Type-level locks protect all legacy copies from salvage');
+ok(equipmentPouchSalvageCandidates(protectedExact).every(row=>!row.eligible),'Exact-copy locks protect forged gear from salvage');
+const salvageReserved=equipmentPouchSalvageCandidates(reserved);
+ok(salvageReserved.filter(row=>row.eligible).length===1,'Legacy enhanced equipment retains its reserved last copy during salvage');
+const salvageMixedIds=equipmentPouch(mixed).stacks.map((stack,index)=>equipmentPouchSaleId(stack,index));
+let mixedSalvageRejected=false;try{salvageEquipmentPouchSelected(mixed,salvageMixedIds)}catch{mixedSalvageRejected=true}
+ok(mixedSalvageRejected&&equipmentPouch(mixed).stacks.length===2,'Mixed salvage cannot partially dispose protected gear');
+let duplicateSalvageRejected=false;try{salvageEquipmentPouchSelected(salvagedExact,[salvageExactId])}catch{duplicateSalvageRejected=true}
+ok(duplicateSalvageRejected,'Stale exact-copy salvage command cannot duplicate material rewards');
+const fullInventory:GameState={...tagged,inventory:{...tagged.inventory,capacity:tagged.inventory.stacks.length}};
+const fullSalvage=equipmentPouchSalvageCandidates(fullInventory);
+ok(!fullSalvage[0].eligible,'Full Inventory with no existing material stack must block new salvage rewards');
+let fullRejected=false;try{salvageEquipmentPouchSelected(fullInventory,[salvageExactId])}catch{fullRejected=true}
+ok(fullRejected,'Authoritative salvage rejects full Inventory atomically');
+const quickSalvage=equipmentPouchQuickSalvageIds(tagged,equipmentPouchSalvageCandidates(tagged));
+ok(quickSalvage.every(id=>{const row=equipmentPouchSalvageCandidates(tagged).find(candidate=>candidate.id===id)!;return ['common','uncommon','rare'].includes(itemRarity(itemDef(row.itemId)))}),
+ 'Quick Select Safe Salvage excludes Epic, Legendary and Mythic items');
+let spoofedSalvageRejected=false;try{validateGameCommand({type:'equipment_pouch_salvage',args:{ids:salvageIds,materials:9999}})}catch{spoofedSalvageRejected=true}
+ok(spoofedSalvageRejected,'Salvage command cannot supply its own material rewards');
+ok(validateGameCommand({type:'equipment_pouch_salvage',args:{ids:salvageIds}}).type==='equipment_pouch_salvage','Server accepts bounded exact-copy salvage IDs');
 const fs=require('fs') as {readFileSync:(p:string,e:string)=>string};
 const view=fs.readFileSync('src/screens/InventoryScreen.tsx','utf8'),panel=fs.readFileSync('src/components/EquipmentPouchPanel.tsx','utf8');
 ok(view.includes('<EquipmentPouchPanel')&&view.includes('Equipment')&&panel.includes('To Inventory')&&panel.includes('To Bank')&&panel.includes('Equip'),'Inventory must expose usable Equipment Pouch actions');
 ok(panel.includes('Select safe to sell')&&panel.includes('Sell selected')&&panel.includes("type:'equipment_pouch_sell'")&&panel.includes('Sell selected equipment?'),'Pouch must provide direct sale, safe mass selection and explicit irreversible-sale confirmation');
-console.log('PASS: Equipment Pouch direct sale, safe mass sell, Forge ownership, transfers and protections');
+console.log('PASS: Equipment Pouch bulk sale and salvage, authored materials, Forge ownership, transfers and protections');

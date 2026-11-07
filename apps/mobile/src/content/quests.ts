@@ -1,3 +1,4 @@
+import {rebasedCombatLevelFromLegacyLevel as rebaseLevel} from '../core/progression';
 import {SkillId} from '../core/types';
 
 export type QuestKind='kills'|'item'|'equip'|'level'|'skillLevel'|'craft'|'exploration'|'boss';
@@ -30,4 +31,9 @@ export const QUESTS:QuestDef[]=[
 {id:'QST_013',name:'Oathglass Road',description:'Defeat 10 Fallen Sentinels.',kind:'kills',targetId:'FALLEN_SENTINEL',required:10,rewardGold:750,rewardItemId:'OATHGLASS_SHARD',rewardItemQty:5,act:3,location:'Oathglass Causeway',story:'Fallen Sentinels guard the causeway in disciplined silence. Beyond them stands the shattered command post where the last royal defense made its final oath and where its commander never truly left.'},
 {id:'QST_014',name:'Fallen Knight',description:'Defeat the Fallen Knight.',kind:'boss',targetId:'FALLEN_KNIGHT',required:1,rewardGold:1000,rewardItemId:'OATHGLASS_SHARD',rewardItemQty:5,act:3,location:'Ruined Oathgate',story:'The echoes finally have a face. The Fallen Knight still holds the gate as though the kingdom behind him survives, bound to an oath that has outlived everyone it was meant to protect.'},
 {id:'QST_015',name:'Beyond the Green',description:'Claim victory over the Fallen Knight and reach level 25.',kind:'level',required:25,rewardGold:1250,rewardItemId:'OATHGLASS_CAPE',rewardItemQty:1,act:3,location:'Eastern Oathgate',story:'With the Knight defeated, the sealed routes beyond Asterfall begin to open. The victory ends one chapter, but the echoes carried on the wind make it clear the broken oath was never confined to the green lands.'},
-];
+].map(quest=>{
+  const required=quest.kind==='level'?rebaseLevel(quest.required):quest.required;
+  const requiredCharacterLevel=quest.requiredCharacterLevel===undefined?undefined:rebaseLevel(quest.requiredCharacterLevel);
+  const description=quest.kind==='level'?quest.description.replace(/level \d+/i,`level ${required}`):quest.description;
+  return {...quest,required,requiredCharacterLevel,description};
+});

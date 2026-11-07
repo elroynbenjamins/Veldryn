@@ -1,0 +1,16 @@
+'use strict';
+const assert=require('node:assert/strict');
+const fs=require('node:fs');
+const path=require('node:path');
+const file=path.join(__dirname,'../src/components/ConsumableWorkshop.tsx');
+const source=fs.readFileSync(file,'utf8');
+const potionRows=source.split('const renderPotionRow=(recipe:Recipe)=>{')[1]?.split('return <View style={s.root}>')[0];
+assert.ok(potionRows,'Alchemy potion row renderer must exist');
+assert.match(potionRows,/onPress=\{\(\)=>start\(recipe\)\} style=\{\(\{pressed\}\)=>\[s\.potionRowMain/,'Tapping a potion recipe should start brewing');
+assert.match(potionRows,/disabled=\{busy\|\|isActive\|\|available<1\}/,'Unavailable, active or busy recipes must not start brewing');
+assert.match(potionRows,/onPress=\{\(\)=>setDetailId\(current=>current===recipe\.id\?null:recipe\.id\)\}/,'The lower information strip must toggle details');
+assert.match(potionRows,/\{isExpanded\?renderInlineDetails\(recipe\):null\}/,'Potion details should expand under the recipe');
+assert.match(source,/skillId==='alchemy'&&detailId===recipe\.id\?renderInlineDetails\(recipe\):null/,'Alchemy infusions should also expand details inline');
+assert.match(source,/GameModalSurface visible=\{skillId==='cooking'&&!!detail\}/,'Only cooking should use the old details modal');
+assert.match(source,/if\(activity\)\{setDetailId\(null\);setPendingId\(recipe\.id\);return;\}/,'Brewing must preserve the activity-switch confirmation');
+console.log('PASS: Alchemy recipe tap starts brewing and bottom details expand inline');

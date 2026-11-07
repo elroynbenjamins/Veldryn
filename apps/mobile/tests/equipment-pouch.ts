@@ -3,6 +3,7 @@ import {ITEMS,itemDef} from '../src/content/items';
 import {createCharacter,newGame,routeRewards} from '../src/core/game';
 import {claimEquipmentCraft,startEquipmentCraft,equipmentCraftingQueue} from '../src/core/equipment-crafting-queue';
 import {equipmentPouch,equipmentPouchUpgradePreview,moveLegacyEquipmentPouchStack,tryStoreEquipmentInPouch,upgradeEquipmentPouch} from '../src/core/equipment-pouch';
+import {equipmentSalvageReward} from '../src/core/equipment-salvage';
 import {gemPouch} from '../src/core/gem-pouch';
 import {equipmentPouchSaleCandidates,equipmentPouchSaleId,equipmentPouchQuickSellIds,sellEquipmentPouchSelected,equipmentPouchSalvageCandidates,equipmentPouchQuickSalvageIds,salvageEquipmentPouchSelected} from '../src/core/equipment-pouch-selling';
 import {draftCraftedGearInstance} from '../src/core/crafted-gear-instances';
@@ -149,7 +150,7 @@ ok(validateGameCommand({type:'equipment_pouch_upgrade'}).type==='equipment_pouch
 ok(validateGameCommand({type:'equipment_pouch_move',args:{itemId:output,from:'equipment_pouch',to:'inventory',quantity:1}}).type==='equipment_pouch_move','Server command permits validated pouch movement');
 ok(validateGameCommand({type:'equipment_pouch_sell',args:{ids:saleIds}}).type==='equipment_pouch_sell','Server accepts a bounded selection of exact equipment IDs');
 // Salvage uses exact receipts and one server-confirmed material settlement.
-const salvageReward=itemDef(output).salvage!;
+const salvageReward=equipmentSalvageReward(output)!;
 ok(!!salvageReward&&salvageReward.itemId==='TEMPERING_DUST','T1–T9 equipment has a modest authored upgrade-material salvage yield');
 const salvageCandidates=equipmentPouchSalvageCandidates(back);
 ok(salvageCandidates.length===2&&salvageCandidates.every(row=>row.eligible),'Both unenhanced legacy pouch copies are salvageable');

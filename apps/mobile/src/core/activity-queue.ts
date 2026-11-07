@@ -8,6 +8,7 @@ import {COMBAT_TACTIC_IDS,COMBAT_TACTICS} from './combat-tactics';
 import {HUNT_GOAL_IDS,HUNT_GOALS} from './hunt-goals';
 import {accountEntitlementBenefits} from './account-entitlements';
 import {FAITH_TIERS} from '../content/faith';
+import {activityTargetLabel} from './activity-target-label';
 import {EXPLORATION_ROUTES} from '../content/exploration';
 import {faithLevel,faithPracticeAvailability} from './faith';
 import {alchemyAvailability} from './alchemy';
@@ -188,18 +189,15 @@ export function clearActivityQueue(state:GameState):GameState{
  return {...state,character:{...state.character,activityQueue:[],activityQueuePausedReason:undefined,activityQueueCombatRecovery:undefined}};
 }
 export function activityQueueLabel(activity:QueuedActivity){
+ const name=activityTargetLabel(activity);
  if(activity.kind==='combat'){
-  const monster=MONSTERS.find(row=>row.id===activity.targetId),tactic=activity.combatTacticId?COMBAT_TACTICS[activity.combatTacticId]:undefined,goal=activity.huntGoalId?HUNT_GOALS[activity.huntGoalId]:undefined;
-  return [monster?.name??activity.targetId,tactic&&tactic.id!=='balanced'?tactic.name:undefined,activity.goal?activityQueueGoalLabel(activity.goal):goal&&goal.id!=='open'?goal.label:undefined].filter(Boolean).join(' · ');
+  const tactic=activity.combatTacticId?COMBAT_TACTICS[activity.combatTacticId]:undefined,goal=activity.huntGoalId?HUNT_GOALS[activity.huntGoalId]:undefined;
+  return [name,tactic&&tactic.id!=='balanced'?tactic.name:undefined,activity.goal?activityQueueGoalLabel(activity.goal):goal&&goal.id!=='open'?goal.label:undefined].filter(Boolean).join(' · ');
  }
- if(activity.kind==='faith'){
-  const tier=FAITH_TIERS.find(row=>row.id===activity.targetId);
-  return [tier?.name??activity.targetId,activity.faithPracticeCount?`${activity.faithPracticeCount.toLocaleString()} practices`:undefined].filter(Boolean).join(' · ');
- }
- if(activity.kind==='exploration')return [EXPLORATION_ROUTES.find(row=>row.id===activity.targetId)?.name??activity.targetId,activity.goal?activityQueueGoalLabel(activity.goal):undefined].filter(Boolean).join(' · ');
- if(activity.kind==='alchemy')return alchemyRecipeDef(activity.targetId)?.name??activity.targetId;
- if(activity.kind==='processing')return processingRecipeDef(activity.targetId)?.name??activity.targetId;
- return [[...GATHERING,...HERB_NODES].find(row=>row.id===activity.targetId)?.name??activity.targetId,activity.goal?activityQueueGoalLabel(activity.goal):undefined].filter(Boolean).join(' · ');
+ if(activity.kind==='faith')return [name,activity.faithPracticeCount?`${activity.faithPracticeCount.toLocaleString()} practices`:undefined].filter(Boolean).join(' · ');
+ if(activity.kind==='exploration')return [name,activity.goal?activityQueueGoalLabel(activity.goal):undefined].filter(Boolean).join(' · ');
+ if(activity.kind==='alchemy'||activity.kind==='processing')return name;
+ return [name,activity.goal?activityQueueGoalLabel(activity.goal):undefined].filter(Boolean).join(' · ');
 }
 
 

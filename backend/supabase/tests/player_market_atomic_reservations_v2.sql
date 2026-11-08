@@ -143,6 +143,74 @@ begin
     if sqlerrm<>'market_source_missing' then raise;end if;
   end;
 
+  -- Locked stacks, ongoing recipe goals and reserved brewing ingredients
+  -- are never silently sold just because an item is generally tradable.
+  update public.online_game_states
+  set state=jsonb_set(state,'{settings,lockedItemIds}',
+    jsonb_build_array('COPPER_ORE'),true)
+  where account_id=v_a;
+  begin
+    perform private.market_reserve_stack_v2(
+      v_a,11,'inventory',v_a::text,0,'COPPER_ORE',1,
+      'reserve-test-locked',repeat('5',64));
+    raise exception 'locked resource reservation accepted';
+  exception when raise_exception then
+    if sqlerrm<>'market_item_protected' then raise;end if;
+  end;
+  update public.online_game_states set
+    state=jsonb_set(state,'{settings,lockedItemIds}','[]'::jsonb,true)
+  where account_id=v_a;
+
+  update public.online_game_states set
+    state=jsonb_set(state,'{character,progressionGoals}',
+      jsonb_build_array(jsonb_build_object('kind','recipe_preparation','recipeId','TEST')),
+      true)
+  where account_id=v_a;
+  begin
+    perform private.market_reserve_stack_v2(
+      v_a,11,'inventory',v_a::text,0,'COPPER_ORE',1,
+      'reserve-test-goal',repeat('6',64));
+    raise exception 'unknown recipe preparation inputs were not protected';
+  exception when raise_exception then
+    if sqlerrm<>'market_material_reserved_for_progression' then raise;end if;
+  end;
+  update public.online_game_states set
+    state=jsonb_set(state,'{character,progressionGoals}','[]'::jsonb,true)
+  where account_id=v_a;
+
+  update public.online_game_states set
+    state=jsonb_set(state,'{activity}',jsonb_build_object(
+      'brew',jsonb_build_object('reservedInputs',
+        jsonb_build_array(jsonb_build_object('itemId','COPPER_ORE','quantity',1)))),true)
+  where account_id=v_a;
+  begin
+    perform private.market_reserve_stack_v2(
+      v_a,11,'inventory',v_a::text,0,'COPPER_ORE',1,
+      'reserve-test-brew',repeat('7',64));
+    raise exception 'reserved cooking/brewing inputs were sellable';
+  exception when raise_exception then
+    if sqlerrm<>'market_material_reserved_for_progression' then raise;end if;
+  end;
+  update public.online_game_states set state=state-'activity'
+  where account_id=v_a;
+
+  -- Unknown binding annotations fail closed until a canonical catalog and
+  -- storage bridge can prove that this specific stack is unbound.
+  update public.online_game_states
+  set state=jsonb_set(state,'{bank,stacks,0,bound}','true'::jsonb,true)
+  where account_id=v_b;
+  begin
+    perform private.market_reserve_stack_v2(
+      v_b,20,'bank',null,0,'COPPER_ORE',1,
+      'reserve-test-bound',repeat('8',64));
+    raise exception 'bound resource stack accepted';
+  exception when raise_exception then
+    if sqlerrm<>'market_stack_binding_unverified' then raise;end if;
+  end;
+  update public.online_game_states
+  set state=state#-'{bank,stacks,0,bound}'
+  where account_id=v_b;
+
   -- Gem Pouch and Bank use account storage paths; none can spoof holder IDs.
   v_gem:=private.market_reserve_stack_v2(
     v_a,11,'gem_pouch',null,0,'TEST_GEM',2,
@@ -196,6 +264,14 @@ begin
         where source_hold_id=v_hold)<>1
   then raise exception 'cancellation replay duplicated return entitlement';end if;
 
+  begin
+    perform private.market_cancel_stack_hold_v2(
+      v_a,(v_gem->>'holdId')::uuid,'expire-test-early',repeat('9',64),true);
+    raise exception 'nonexpired hold was released as expired';
+  exception when raise_exception then
+    if sqlerrm<>'market_hold_not_due' then raise;end if;
+  end;
+
   -- Expiry is a server-only queue, not an inventory/Gold mutation.
   update private.market_custody_holds_v1 set expires_at=now()-interval '1 minute'
   where hold_id=v_second_hold;
@@ -216,6 +292,22 @@ begin
     ) values(v_bank_hold,v_a,v_b,v_a,100,3,300,30,271);
     raise exception 'unbalanced Gold split accepted';
   exception when check_violation then null;
+  end;
+  begin
+    insert into private.market_gold_intents_v2(
+      source_hold_id,buyer_account_id,seller_account_id,buyer_character_id,
+      unit_price,quantity,gross_gold,fee_gold,seller_payout_gold
+    ) values(v_bank_hold,v_a,v_a,v_a,100,3,300,30,270);
+    raise exception 'self-trade Gold intent accepted';
+  exception when check_violation then null;
+  end;
+  begin
+    insert into private.market_gold_intents_v2(
+      source_hold_id,buyer_account_id,seller_account_id,buyer_character_id,
+      unit_price,quantity,gross_gold,fee_gold,seller_payout_gold
+    ) values(v_bank_hold,v_b,v_a,v_b,100,3,300,30,270);
+    raise exception 'wrong-seller Gold intent accepted';
+  exception when foreign_key_violation then null;
   end;
   insert into private.market_gold_intents_v2(
     source_hold_id,buyer_account_id,seller_account_id,buyer_character_id,

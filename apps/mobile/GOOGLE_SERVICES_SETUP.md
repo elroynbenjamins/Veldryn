@@ -63,6 +63,28 @@ Existing Play Games profiles can authenticate automatically when the game starts
 
 The Account screen now checks the native Play Games status without triggering sign-in. It reports **connected** (and the player's display name), **disconnected**, **unavailable due to build/platform**, or **temporary error**, separately from the Supabase Google account identity. The user-facing Google UI can be redesigned independently of these headless functions (`inspectPlayGamesConnection` and `inspectGoogleAccountConnection`).
 
+## Temporary account-linking hold (November 2026)
+
+Production Supabase Auth logs show Google ID-token requests failing with
+`invalid request: Passed nonce and nonce in id_token should either both exist or not.`
+The Nitro Google Sign-In Android module generates a nonce inside Credential Manager,
+but `requestNativeGoogleIdentity()` currently does not return the matching raw nonce
+to `signInWithIdToken()` or `linkIdentity()`.
+
+The **Link Google account** action is therefore hidden by default. Only enable
+`EXPO_PUBLIC_GOOGLE_ACCOUNT_LINKING_ENABLED=true` after implementing and validating
+a per-attempt cryptographically random raw nonce, passing its SHA-256 hex digest
+as the native library's `configure({ nonce })` value, and passing the original
+raw nonce to Supabase's `linkIdentity({ provider:'google', token, nonce })`.
+The same nonce handling must be applied to `signInWithIdToken` (Continue with Google).
+Keep Supabase's nonce validation enabled; do not work around this error by skipping
+nonce checks. Validate that the original VELDRYN UUID, characters, and progress
+remain unchanged after linking. A newly signed Android build must be tested before
+re-enabling the feature.
+
+This flag applies only to linking within an existing VELDRYN account. It does not
+change Google Play Games authentication or remove any existing Google identity.
+
 ## 4. Build and test
 
 Both integrations contain native Android code, so Expo Go cannot validate them. Use an Android development build or a Google Play AAB.

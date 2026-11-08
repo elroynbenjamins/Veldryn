@@ -139,7 +139,7 @@ function makeStyles(C:ThemeColors){return StyleSheet.create({
  featureFooter:{flexDirection:'row',justifyContent:'space-between',alignItems:'center'},meta:{fontSize:10,color:C.muted,fontWeight:'800'},
  voteButton:{minHeight:44,minWidth:83,alignItems:'center',justifyContent:'center',paddingHorizontal:10,borderWidth:1,borderColor:C.secondaryButtonBorder,borderRadius:9,backgroundColor:C.secondaryButton},
  voteButtonActive:{backgroundColor:C.accent,borderColor:C.accent},voteButtonDisabled:{opacity:.45},
- voteButtonText:{fontSize:11,fontWeight:'900',color:C.secondaryButtonText},voteButtonTextActive:{color:C.primaryButtonText},
+ voteButtonText:{fontSize:11,fontWeight:'900',color:C.secondaryButtonText},voteButtonTextActive:{color:C.bg},
  empty:{alignItems:'center',padding:22,gap:6,backgroundColor:C.panel,borderWidth:1,borderColor:C.line,borderRadius:radii.md},
  emptyTitle:{...typography.bodyStrong,color:C.text},emptyText:{...typography.caption,color:C.muted,textAlign:'center'},
  loading:{alignItems:'center',gap:10,padding:20},errorCard:{gap:8,padding:12,borderWidth:1,borderColor:C.warning,borderRadius:radii.md,backgroundColor:C.warningSurface},

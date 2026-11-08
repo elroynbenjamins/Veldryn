@@ -112,8 +112,8 @@ export function BattleStage({state,monster,elapsedSeconds,cycleSeconds}:{state:G
   </Animated.View>
   <View style={s.details}><Text style={s.ability}>{view.style.name}</Text><Text style={s.sub}>{tr(view.style.description)}</Text>
    <View style={s.identity}><View style={s.identityHead}><Text style={s.identityLabel}>{tr('ENCOUNTER · {type}',{type:tr(view.encounter.archetype).toUpperCase()})}</Text><Text style={s.pressure}>{tr(view.encounter.pressure).toUpperCase()}</Text></View><Text style={s.sub}>{tr(view.encounter.summary)}</Text><View style={s.mechanics}>{view.encounter.mechanics.map(mechanic=><View key={mechanic} style={s.mechanic}><Text style={s.mechanicText}>{tr(mechanic)}</Text></View>)}</View><Text style={s.tactic}>{tr('Tactic: {tactic}',{tactic:tr(view.encounter.tactic)})}</Text></View>
-   <StatBar label={tr("Current health")} current={displayStat(fight?.playerHp??state.character!.currentHp)} max={displayStat(fight?.playerMaxHp??stats.hp)} reduceMotion={state.settings.reduceMotion}/>
-   <StatBar label={tr(isLive?"Enemy health":"Estimated enemy health")} current={displayStat(fight?.enemyHp??view.enemyHp)} max={displayStat(fight?.enemyMaxHp??view.enemyMaxHp)} reduceMotion={state.settings.reduceMotion}/>
+   <StatBar label={tr("Current health")} current={fight?.playerHp??displayStat(state.character!.currentHp)} max={fight?.playerMaxHp??displayStat(stats.hp)} reduceMotion={state.settings.reduceMotion}/>
+   <StatBar label={tr(isLive?"Enemy health":"Estimated enemy health")} current={fight?.enemyHp??displayStat(view.enemyHp)} max={fight?.enemyMaxHp??displayStat(view.enemyMaxHp)} reduceMotion={state.settings.reduceMotion}/>
    <Text style={s.note}>{isLive?fight?.stoppedReason?tr("Combat stopped"):tr("Damage updates on hit. Rewards are granted on defeat."):tr("HP, damage numbers and combat FX are synchronized presentation estimates. Rewards and settled health remain authoritative when you collect.")}</Text>
   </View>
  </View>;

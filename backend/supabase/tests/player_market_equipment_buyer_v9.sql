@@ -145,6 +145,32 @@ begin
     if sqlerrm<>'market_offer_not_available' then raise;end if;
   end;
 
+  -- A missing account Forge ledger would make a paid purchase unclaimable.
+  -- Reject before charging Gold, rather than leaving a stranded delivery.
+  update public.online_game_states set state=state #- '{account,craftedGearInstances}'
+    where account_id=v_buyer;
+  begin
+    perform private.market_purchase_equipment_offer_v9(
+      v_buyer,v_offer,125,1,7,6,'gear-v9-no-ledger',repeat('a',64));
+    raise exception 'buyer without Forge ledger was charged';
+  exception when raise_exception then
+    if sqlerrm<>'market_equipment_buyer_ledger_unavailable' then raise;end if;
+  end;
+  update public.online_game_states set state=jsonb_set(state,
+    '{account,craftedGearInstances}','[]'::jsonb,true) where account_id=v_buyer;
+  -- A socket gem whose policy was revoked must halt an outstanding sale.
+  update private.market_item_policy_v1 set tradable=false
+    where item_id='gem:stat_might:g2';
+  begin
+    perform private.market_purchase_equipment_offer_v9(
+      v_buyer,v_offer,125,1,7,6,'gear-v9-gem-block',repeat('b',64));
+    raise exception 'revoked socket gem was sold';
+  exception when raise_exception then
+    if sqlerrm<>'market_equipment_socket_policy_changed' then raise;end if;
+  end;
+  update private.market_item_policy_v1 set tradable=true
+    where item_id='gem:stat_might:g2';
+
   -- Buyer already holding the same exact instance ID cannot be charged.
   update public.online_game_states set state=jsonb_set(state,
     '{account,craftedGearInstances}',jsonb_build_array(v_receipt),false)

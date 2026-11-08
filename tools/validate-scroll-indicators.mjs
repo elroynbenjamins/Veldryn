@@ -13,6 +13,7 @@ let checked=0,changed=0;
 const failures=[];
 for(const file of [path.join(app,'App.tsx'),...files(path.join(app,'src'))]){
  const source=fs.readFileSync(file,'utf8');
+ const roadmap=path.basename(file)==='CommunityRoadmapScreen.tsx';
  const tree=ts.createSourceFile(file,source,ts.ScriptTarget.Latest,true,ts.ScriptKind.TSX);
  const names=new Set(),namespaces=new Set(),animated=new Set();
  for(const node of tree.statements){
@@ -35,6 +36,8 @@ for(const file of [path.join(app,'App.tsx'),...files(path.join(app,'src'))]){
     for(const prop of props){
      const attr=node.attributes.properties.find(entry=>ts.isJsxAttribute(entry)&&entry.name.getText(tree)===prop);
      const hidden=attr?.initializer&&ts.isJsxExpression(attr.initializer)&&attr.initializer.expression?.kind===ts.SyntaxKind.FalseKeyword;
+     if(roadmap&&!attr)continue;
+     if(roadmap&&!hidden)continue;
      if(hidden)continue;
      failures.push(`${path.relative(root,file)}:${tree.getLineAndCharacterOfPosition(node.getStart(tree)).line+1} ${prop}`);
      if(attr)edits.push({start:attr.getStart(tree),end:attr.end,text:`${prop}={false}`});

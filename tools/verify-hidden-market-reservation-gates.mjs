@@ -12,6 +12,12 @@ const returnClaim=read('backend/supabase/migrations/20261108174500_market_return
 const purchase=read('backend/supabase/migrations/20261108175500_market_gold_purchase_private_v3.sql');
 const returnTest=read('backend/supabase/tests/player_market_return_claims_v3.sql');
 const purchaseTest=read('backend/supabase/tests/player_market_gold_purchase_v3.sql');
+const purchaseClaim=read('backend/supabase/migrations/20261108181000_market_purchase_claims_private_v4.sql');
+const marketInbox=read('backend/supabase/migrations/20261108181100_market_inbox_projection_private_v4.sql');
+const marketInboxTest=read('backend/supabase/tests/player_market_inbox_and_buyer_claims_v4.sql');
+const marketInboxClient=read('apps/mobile/src/online/market-inbox.ts');
+const marketInboxPanel=read('apps/mobile/src/screens/MarketInboxPanel.tsx');
+const rewardInboxScreen=read('apps/mobile/src/screens/RewardsInboxScreen.tsx');
 const release=read('apps/mobile/src/core/release-flags.ts');
 const roadmap=read('apps/mobile/src/core/community-roadmap-release-visibility.ts');
 
@@ -110,4 +116,48 @@ assert.doesNotMatch(returnClaim,/\bupdate\s+public\.character_wallets\b/i,'resou
 assert.match(purchase,/status text not null default 'pending' check\(status='pending'\)/,
   'buyer item claim remains disabled until audited');
 
-console.log('PASS: hidden market V2/V3 ACLs, atomic claims, wallet settlement and release gates remain private');
+requireMatches(purchaseClaim,[
+  ['runtime hard gate',/where singleton and trading_enabled and snapshot_bridge_ready/],
+  ['buyer account ownership',/buyer_account_id=p_account_id for update/],
+  ['settled seller hold',/v_origin_hold.status<>'settled'/],
+  ['server snapshot lock',/from public\.online_game_states[\s\S]*?for update;/i],
+  ['full storage protection',/raise exception 'market_destination_full'/],
+  ['Gold unchanged during item claim',/update public\.online_game_states[\s\S]*?revision=v_state\.revision\+1/i],
+  ['claim idempotency',/v_receipt\.action<>'claim_purchase'/],
+  ['one-time delivery status',/set status='claimed',claimed_at=now\(\)/],
+  ['buyer-claim RPC revoked',/revoke all on function private\.market_claim_purchase_delivery_v4\([\s\S]*?from public,anon,authenticated,service_role;/i],
+], 'purchase delivery claim');
+requireMatches(marketInbox,[
+  ['market disabled until release',/where singleton and trading_enabled and snapshot_bridge_ready/],
+  ['purchase event',/'purchased'::text as kind/],
+  ['sold event',/'sold'::text as kind/],
+  ['returned event',/'returned'::text as kind/],
+  ['only owner market return records',/r.recipient_account_id=p_account_id/],
+  ['only owner market purchase records',/p.buyer_account_id=p_account_id/],
+  ['only owner sales',/o.seller_account_id=p_account_id/],
+  ['sold Gold already paid',/'credited'::text as status/],
+  ['market inbox RPC revoked',/revoke all on function private\.market_inbox_snapshot_v4\(uuid,boolean,integer\)[\s\S]*?from public,anon,authenticated,service_role;/i],
+], 'private inbox projection');
+requireMatches(marketInboxTest,[
+  ['isolated rollback',/\nrollback;\s*$/i],
+  ['separate seller Gold notification',/seller Gold history notification duplicated or missing/],
+  ['claim exactly once',/purchased item duplicated on replay/],
+  ['full bank protection',/full bank lost purchase or changed Gold/],
+  ['returned listing',/returned lot missing from Market Inbox/],
+], 'market inbox staging tests');
+assert.match(rewardInboxScreen,/PLAYER_MARKET_RELEASED\?<Pressable/,
+  'Market Inbox tab must remain hidden behind the release flag');
+assert.match(rewardInboxScreen,/\{marketTab\?<MarketInboxPanel/,
+  'the Market Inbox panel is only mounted on its future tab');
+assert.match(marketInboxPanel,/if\(!PLAYER_MARKET_RELEASED\)return null;/,
+  'Market Inbox panel must fail closed');
+assert.match(marketInboxClient,/if\(!PLAYER_MARKET_RELEASED\)throw/,
+  'Market Inbox API calls must fail closed');
+assert.doesNotMatch(purchaseClaim,/\bgrant execute\b/i,
+  'buyer claims are not exposed to clients');
+assert.doesNotMatch(marketInbox,/\bgrant execute\b/i,
+  'market inbox snapshot is not exposed to clients');
+assert.doesNotMatch(purchaseClaim,/\bupdate\s+public\.character_wallets\b/i,
+  'claiming a bought item must never move Gold again');
+
+console.log('PASS: hidden V2/V3/V4 market ACLs, buyer claims, Inbox visibility and payment gates stay locked');

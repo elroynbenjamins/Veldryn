@@ -1,3 +1,4 @@
+import {classWeightedGearStats} from './class-stat-identity';
 import {combatTimeline} from './combat-timing';
 import {characterCombatXpScale} from './combat-progression-pacing';
 import {eventCandyWindow} from './live-events';
@@ -163,9 +164,14 @@ export function createCharacter(state:GameState,classId:ClassId,name='Adventurer
 export function effectiveStats(state:GameState){
   const c=state.character;if(!c)return {hp:0,attack:0,defense:0,power:0,critChance:0,critMultiplier:1.5,accuracy:.84,evasion:.04,haste:.05,armor:0,ward:0,tenacity:0,potency:0,penetration:0};
   let hp=c.hp,attack=c.attack,defense=c.defense;
-  for(const id of Object.values(c.equipment)){if(!id)continue;const stats=enhancedGearStats(state,id);hp+=stats.hp;attack+=stats.attack;defense+=stats.defense;}
+  let gearAttack=0,gearDefense=0;
+  for(const id of Object.values(c.equipment)){if(!id)continue;const stats=enhancedGearStats(state,id);hp+=stats.hp;gearAttack+=stats.attack;gearDefense+=stats.defense;}
   const novice=noviceSetFor(c.classId),noviceComplete=novice.slots.every(slot=>c.equipment[slot]===noviceItemId(c.classId,slot));
-  if(noviceComplete){hp+=novice.setBonus.hp;attack+=novice.setBonus.attack;defense+=novice.setBonus.defense;}
+  if(noviceComplete){hp+=novice.setBonus.hp;gearAttack+=novice.setBonus.attack;gearDefense+=novice.setBonus.defense;}
+  // Convert only the shared flat gear budget; player base stats and intentional
+  // gem/set/mastery specializations remain separately meaningful.
+  const classGear=classWeightedGearStats(c.classId,gearAttack,gearDefense);
+  attack+=classGear.attack;defense+=classGear.defense;
   const setStats=activeEquipmentBuildStats(state);
   hp=Math.ceil(hp*(1+setStats.maxHp));
   defense=Math.ceil(defense*(1+setStats.armor));

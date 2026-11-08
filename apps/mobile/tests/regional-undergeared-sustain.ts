@@ -17,6 +17,7 @@ for(const def of REGIONAL_COMBAT_FIXTURES.filter(row=>row.regionName!=='Greenfie
   const oneProjection=combatSustainProjection(oneSlot,def.monsterId)!;
   const emptyProjection=combatSustainProjection(empty,def.monsterId)!;
   const label=def.regionName+' / '+cls.id;
+  if(def.regionId==='SILVERBROOK'&&cls.id==='RAVAGER')console.log('DIAGNOSTIC Ravager Silverbrook',JSON.stringify({full:fullProjection,oneSlot:oneProjection,empty:emptyProjection}));
   assert.ok(fullProjection.netHpLossPerHour>0,label+' prepared hunt must carry food pressure');
   assert.ok(oneProjection.netHpLossPerHour>fullProjection.netHpLossPerHour*1.2,
    label+' missing nine slots must meaningfully increase hourly HP loss');

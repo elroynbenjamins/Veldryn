@@ -39,7 +39,7 @@ jobs:
           cache-dependency-path: apps/mobile/pnpm-lock.yaml
       - run: pnpm install --frozen-lockfile
       - name: Compile isolated Guild Raid domain tests
-        run: node node_modules/typescript/lib/tsc.js --target es2022 --module commonjs --moduleResolution node --skipLibCheck --rootDir . --outDir .guild-raid-build src/core/guild-pve-encounters.ts tests/guild-pve-encounters.ts
+        run: node node_modules/typescript/lib/tsc.js --ignoreConfig --target es2022 --module commonjs --moduleResolution node --skipLibCheck --rootDir . --outDir .guild-raid-build src/core/guild-pve-encounters.ts tests/guild-pve-encounters.ts
       - name: Verify weekly boss lifecycle, rewards and role presentation
         run: node .guild-raid-build/tests/guild-pve-encounters.js
       - name: Verify active-only Guild Raid tab selection

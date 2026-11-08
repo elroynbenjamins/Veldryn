@@ -1,3 +1,4 @@
+import {communityRoadmapFeatureVisible} from '../core/community-roadmap-release-visibility';
 import {supabase} from './supabase';
 
 export type CommunityRoadmapStatus='considering'|'planned'|'in_progress'|'released';
@@ -37,7 +38,7 @@ function parseSnapshot(value:unknown):CommunityRoadmapSnapshot{
      release_version:typeof feature.release_version==='string'?feature.release_version:null,
      votes:Math.max(0,feature.votes),voted:feature.voted,
    };
- });
+ }).filter(feature=>communityRoadmapFeatureVisible(feature.id));
  return {features,votes_used:Math.max(0,row.votes_used),vote_limit:Math.max(0,row.vote_limit)};
 }
 

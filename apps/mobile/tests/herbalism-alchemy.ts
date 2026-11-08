@@ -46,7 +46,7 @@ test('T1 equipment across all nine classes uses Verdant Resin and doubled Asterf
 function supplied(batches=10){let s=fresh();s.character!.gold=10000;s.inventory.stacks=[{itemId:'DEWLEAF',quantity:batches*alchemyRecipeDef(R)!.inputs[0].quantity}];return s;}
 const qty=(s:GameState,id:string)=>storedQuantity([...s.inventory.stacks,...s.bank.stacks,...s.overflow.stacks],id);
 
-test('catalog has eleven regional herb nodes, twelve potions and five regional equipment infusions',()=>{equal(HERB_NODES.length,11,'nodes');equal(POTIONS.length,12,'potions');equal(ALCHEMY_EQUIPMENT_INFUSIONS.length,5,'equipment infusions');equal(ALCHEMY_RECIPES.length,20,'recipes');equal(new Set(ITEMS.map(i=>i.id)).size,ITEMS.length,'item IDs unique');equal(new Set(ALCHEMY_RECIPES.map(r=>r.id)).size,20,'recipeIDs');});
+test('catalog has eleven regional herb nodes, twelve potions and eight equipment infusions',()=>{equal(HERB_NODES.length,11,'nodes');equal(POTIONS.length,12,'potions');equal(ALCHEMY_EQUIPMENT_INFUSIONS.length,8,'equipment infusions');equal(ALCHEMY_RECIPES.length,25,'recipes');equal(new Set(ITEMS.map(i=>i.id)).size,ITEMS.length,'item IDs unique');equal(new Set(ALCHEMY_RECIPES.map(r=>r.id)).size,25,'recipeIDs');});
 test('healing potions have 20/35/50% HP recovery, fivefold crafting costs and triple XP',()=>{
  const expected=[
   {id:'DEWLEAF_DRAUGHT',healing:.20,materials:[{itemId:'DEWLEAF',quantity:10}],gold:25,xp:180},
@@ -63,9 +63,40 @@ test('healing potions have 20/35/50% HP recovery, fivefold crafting costs and tr
   equal(recipe.xp,entry.xp,entry.id+' 3× Alchemy XP');
   equal(recipe.output.quantity,1,entry.id+' single output');
  }
- equal(alchemyRecipeDef('BREW_VIGOR_TONIC')!.gold,10,'tonic costs are unaffected');
- equal(alchemyRecipeDef('BREW_VIGOR_TONIC')!.xp,115,'tonic XP is unchanged');
+ equal(alchemyRecipeDef('BREW_VIGOR_TONIC')!.gold,50,'tonic Gold now uses ×5 premium combat cost');
+ equal(alchemyRecipeDef('BREW_VIGOR_TONIC')!.xp,345,'tonic XP now uses ×3 combat reward');
+ equal(alchemyRecipeDef('BREW_VIGOR_TONIC')!.inputs,[{itemId:'DEWLEAF',quantity:20}],'tonic herbs now cost ×5');
  equal(alchemyRecipeDef('BREW_VERDANT_BINDING_RESIN')!.xp,95,'infusion XP is unchanged');
+});
+test('Ironwood Binding Resin resolves canonical and legacy item-ID aliases without unknown recipe errors',()=>{
+ const id='BREW_IRONWOOD_BINDING_RESIN',recipe=alchemyRecipeDef(id)!;
+ ok(!!recipe&&recipe.output.itemId==='IRONWOOD_BINDING_RESIN','Ironwood resin is an Alchemy recipe');
+ equal(alchemyRecipeDef('IRONWOOD_BINDING_RESIN')?.id,id,'item-ID shortcut resolves canonical brew');
+ let state=skilled(fresh(),'alchemy',8);
+ state.character!.gold=1000;
+ state.inventory.stacks=recipe.inputs.map(input=>({...input}));
+ const status=alchemyAvailability(state,'IRONWOOD_BINDING_RESIN');
+ ok(status.ready,'legacy item-ID shortcut is craftable when materials and level are met');
+ const brewed=startAlchemyBatch(state,'IRONWOOD_BINDING_RESIN',1,T);
+ equal(brewed.activity?.targetId,id,'save canonical recipe target even when shortcut used alias');
+ equal(brewed.activity?.brew?.recipeId,id,'escrow retains canonical recipe ID');
+ equal(normalizeAlchemyBatch(brewed.activity!.brew,id).recipeId,id,'reservation remains loadable');
+});
+test('combat tonic premium balance preserves base infusion economics and old paid reservations',()=>{
+ for(const row of ALCHEMY_RECIPES){
+  if(!POTIONS.some(p=>p.id===row.output.itemId))continue;
+  const source=ALCHEMY_RECIPES.find(r=>r.id===row.id)!;
+  ok(source.inputs.every(i=>i.quantity%5===0),'all combat consumables use ×5 ingredient quantities');
+  ok(source.xp>0&&source.gold>0,'all combat consumables award XP and cost Gold');
+ }
+ for(const id of ['BREW_VIGOR_TONIC','BREW_GREATER_VIGOR_TONIC','BREW_OATH_WARD_TONIC_ASHLANDS']){
+  const current=alchemyRecipeDef(id)!;
+  const legacy={version:1 as const,recipeId:id,totalBatches:2,remainingBatches:2,
+   inputsPerBatch:current.inputs.map(row=>({...row,quantity:row.quantity/5})),
+   goldPerBatch:Math.ceil(current.gold/5),outputPerBatch:{...current.output},cycleSeconds:current.seconds,xpPerBatch:current.xp/3};
+  equal(normalizeAlchemyBatch(legacy,id).inputsPerBatch,legacy.inputsPerBatch,id+' old escrow is preserved');
+ }
+ equal(alchemyRecipeDef('BREW_IRONWOOD_BINDING_RESIN')!.xp,180,'Ironwood binding XP is not tripled');
 });
 test('T1/T2/T3 potions include Damage, Defense, Support and Healing with shared level unlocks',()=>{
  const tiers=[1,2,3] as const;

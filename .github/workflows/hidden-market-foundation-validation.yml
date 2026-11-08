@@ -5,6 +5,9 @@ on:
     paths:
       - 'apps/mobile/src/core/player-market-readiness.ts'
       - 'apps/mobile/src/core/release-flags.ts'
+      - 'apps/mobile/src/online/market-inbox.ts'
+      - 'apps/mobile/src/screens/MarketInboxPanel.tsx'
+      - 'apps/mobile/src/screens/RewardsInboxScreen.tsx'
       - 'apps/mobile/tests/player-market-readiness.ts'
       - 'backend/online/market-custody-readiness.ts'
       - 'backend/online/tests/player-market-custody.ts'
@@ -35,6 +38,8 @@ jobs:
         run: pnpm --dir ../../backend install --frozen-lockfile
       - name: Typecheck core equipment and resource eligibility
         run: pnpm typecheck:core
+      - name: Typecheck hidden Market Inbox presentation
+        run: pnpm typecheck
       - name: Verify read-only market eligibility and source identity
         run: node ../../tools/run-mobile-tests.mjs player-market-readiness
       - name: Verify server-only custody inspection

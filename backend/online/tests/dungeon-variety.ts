@@ -65,7 +65,7 @@ const node=(kind:'risk'|'event'|'treasure',contentId:string)=>({
 const risk=resolveCoopNode({runId:'risk-test',serverSecret:'risk-secret',node:node('risk','ROOT_RISK_OVERGROWTH'),players,state:starting});
 assert(risk.success);assert.equal(risk.state.resources,2);
 assert.equal(risk.state.curses.length,1);
-assert(Number(risk.result?.summary?.damagedHp??risk.summary.damagedHp)>0,'Risk must hurt the party, not only add an unused curse');
+assert(Number(risk.summary.damagedHp)>0,'Risk must hurt the party, not only add an unused curse');
 assert(players.every(player=>(risk.state.actors[player.id]?.hp??Infinity)<player.stats.maxHp),'Real HP loss on risk path');
 const event=resolveCoopNode({runId:'event-test',serverSecret:'event-secret',node:node('event','ROOT_EVENT_WHISPER'),players,state:starting});
 assert.equal(event.state.resources,1);

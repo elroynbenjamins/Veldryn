@@ -1,5 +1,5 @@
-import {Image,Platform,StyleSheet,Text,View} from 'react-native';
-import {useEffect,useMemo,useState} from 'react';
+import {Animated,Easing,Image,Platform,StyleSheet,Text,View} from 'react-native';
+import {useEffect,useMemo,useRef,useState} from 'react';
 import type {GameState} from '../core/types';
 import type {MonsterDef} from '../content/monsters';
 import {combatBaselineProjection} from '../core/balance-projection';
@@ -21,6 +21,16 @@ export function HuntingPreview({state,monster,regionId}:{state:GameState;monster
  useEffect(()=>{if(!active)return;setClock(Date.now());const timer=setInterval(()=>setClock(Date.now()),750);return()=>clearInterval(timer);},[active]);
  const fight=useMemo(()=>active?activeCombatHitProjection(state,clock):undefined,[state,active,clock]);
  const lastHit=fight?.lastHit&&clock-fight.lastHit.atMs<3500?fight.lastHit:undefined;
+ const playerImpact=useRef(new Animated.Value(0)).current,enemyImpact=useRef(new Animated.Value(0)).current;
+ useEffect(()=>{
+  const hit=fight?.lastHit;
+  if(!active||state.settings.reduceMotion||!hit)return;
+  const value=hit.actor==='enemy'?playerImpact:enemyImpact;
+  value.stopAnimation();value.setValue(1);
+  const animation=Animated.timing(value,{toValue:0,duration:680,easing:Easing.out(Easing.quad),useNativeDriver:true});
+  animation.start();
+  return()=>animation.stop();
+ },[active,fight?.lastHit?.atMs,fight?.lastHit?.actor,state.settings.reduceMotion,playerImpact,enemyImpact]);
  const number=(value:number)=>formatGameNumber(Math.round(value),state.settings.numberMode,state.settings.language);
  const font=Platform.OS==='web'?'system-ui':Platform.OS==='android'?'sans-serif':'System';
  const tr=(text:string)=>battleText(state.settings.language,text);
@@ -30,9 +40,9 @@ export function HuntingPreview({state,monster,regionId}:{state:GameState;monster
    <View style={[StyleSheet.absoluteFill,{backgroundColor:'rgba(3,7,10,.35)'}]}/>
    <View style={{position:'absolute',top:10,left:12,right:12,alignItems:'center',gap:2}}><Text style={{fontFamily:font,color:'#ADC8BC',fontSize:10,fontWeight:'700',letterSpacing:1}}>{state.activity?.kind==='combat'&&state.activity.targetId===monster.id?progressionT(state.settings.language,'HUNTING'):tr('Combat preview')}</Text><Text style={{fontFamily:font,color:'#F0F3F4',fontSize:21,fontWeight:'700'}}>{monster.name}</Text><Text style={{fontFamily:font,color:'#BAC3CA',fontSize:12}}>{tr('Combat preview')}</Text></View>
    <View style={{flexDirection:'row',alignItems:'flex-end',justifyContent:'space-around',padding:10,gap:8}}>
-    <View style={{flex:1,alignItems:'center',gap:5}}><View style={{borderWidth:2,borderColor:'#A5B4AA',borderRadius:50,backgroundColor:'rgba(4,9,12,.8)',padding:3}}><CharacterPortrait state={state} style={{width:72,height:72}}/></View><Text style={{fontFamily:font,color:'#E8ECEF',fontSize:11,fontWeight:'700',marginTop:-12,paddingHorizontal:7,paddingVertical:2,borderRadius:5,borderWidth:1,borderColor:'#758D88',backgroundColor:'#111B20'}}>Lv {state.character?.level}</Text></View>
+    <View style={{flex:1,alignItems:'center',gap:5}}><View style={{borderWidth:2,borderColor:'#A5B4AA',borderRadius:50,backgroundColor:'rgba(4,9,12,.8)',padding:3,position:'relative'}}><CharacterPortrait state={state} style={{width:72,height:72}}/><Animated.View pointerEvents="none" style={{position:'absolute',top:9,left:-6,right:-6,alignItems:'center',opacity:playerImpact,transform:[{translateY:playerImpact.interpolate({inputRange:[0,1],outputRange:[-18,0]})}]}}><Text style={{fontSize:16,fontWeight:'900',color:'#FF8995',textShadowColor:'#210809',textShadowRadius:4}}>−{lastHit?.actor==='enemy'?number(lastHit.damage):''}</Text></Animated.View></View><Text style={{fontFamily:font,color:'#E8ECEF',fontSize:11,fontWeight:'700',marginTop:-12,paddingHorizontal:7,paddingVertical:2,borderRadius:5,borderWidth:1,borderColor:'#758D88',backgroundColor:'#111B20'}}>Lv {state.character?.level}</Text></View>
     <Text style={{color:'#C9CED2',fontWeight:'800',alignSelf:'center'}}>VS</Text>
-    <View style={{flex:1,alignItems:'center',gap:5}}><MonsterPortraitFrame monster={monster} size={116} framed={false} reduceMotion={state.settings.reduceMotion}/></View>
+    <View style={{flex:1,alignItems:'center',gap:5,position:'relative'}}><MonsterPortraitFrame monster={monster} size={116} framed={false} reduceMotion={state.settings.reduceMotion}/><Animated.View pointerEvents="none" style={{position:'absolute',top:12,left:-4,right:-4,alignItems:'center',opacity:enemyImpact,transform:[{translateY:enemyImpact.interpolate({inputRange:[0,1],outputRange:[-20,0]})}]}}><Text style={{fontSize:17,fontWeight:'900',color:'#FFDA8F',textShadowColor:'#241306',textShadowRadius:4}}>−{lastHit?.actor==='player'?number(lastHit.damage):''}{lastHit?.critical?'!':''}</Text></Animated.View></View>
    </View>
   </View>
   {fight?<View style={{paddingHorizontal:12,paddingVertical:10,gap:8,borderTopWidth:1,borderColor:C.line,backgroundColor:C.panel}}>

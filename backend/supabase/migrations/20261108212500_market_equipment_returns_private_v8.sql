@@ -173,7 +173,7 @@ declare
 begin
   if p_account_id is null or p_delivery_id is null
     or p_expected_revision is null or p_expected_revision<0
-    or p_location not in ('inventory','bank','equipment_pouch')
+    or p_location is null or p_location not in ('inventory','bank','equipment_pouch')
     or (p_location='bank' and p_holder is not null)
     or (p_location<>'bank' and (p_holder is null or length(p_holder)=0))
     or p_idempotency_key is null

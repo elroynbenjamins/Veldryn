@@ -135,6 +135,136 @@ revoke all on table
   private.market_custody_holds_v1
 from public, anon, authenticated, service_role;
 
+
+-- Read-only probe against the ACTUAL versioned online-game snapshot. This is
+-- identity evidence, never permission to list, reserve, settle or transfer.
+-- Service/client roles have no execute grant. Future escrow must repeat every
+-- check under an online_game_states FOR UPDATE lock within its transaction.
+create or replace function private.market_snapshot_source_probe_v1(
+  p_account_id uuid,p_expected_revision bigint,p_source_location text,
+  p_holder_character_id text,p_stack_index integer,p_item_id text,
+  p_requested_quantity bigint,p_exact_instance_id text default null
+) returns jsonb
+language plpgsql stable security invoker set search_path=''
+as $market_probe$
+declare
+  v_state jsonb;
+  v_revision bigint;
+  v_stacks jsonb;
+  v_stack jsonb;
+  v_entry jsonb;
+  v_receipt jsonb;
+  v_quantity bigint;
+begin
+  if p_account_id is null or p_expected_revision < 0
+    or p_stack_index is null or p_stack_index < 0 or p_stack_index > 10000
+    or p_requested_quantity is null or p_requested_quantity < 1
+    or p_requested_quantity > 2147483647
+    or p_item_id is null or length(p_item_id) not between 1 and 180
+    or p_source_location not in ('inventory','bank','equipment_pouch','gem_pouch')
+  then return pg_catalog.jsonb_build_object('matches',false,'canReserveNow',false,'reason','invalid_request');
+  end if;
+
+  select state,revision into v_state,v_revision
+  from public.online_game_states where account_id=p_account_id;
+  if not found or v_state is null or v_revision is distinct from p_expected_revision
+  then return pg_catalog.jsonb_build_object('matches',false,'canReserveNow',false,'reason','stale_or_missing_state');
+  end if;
+
+  if p_source_location in ('bank','gem_pouch') then
+    if p_holder_character_id is not null
+    then return pg_catalog.jsonb_build_object('matches',false,'canReserveNow',false,'reason','invalid_holder');
+    end if;
+    v_stacks:=case when p_source_location='bank' then v_state#>'{bank,stacks}'
+      else v_state#>'{account,gemPouch,stacks}' end;
+  else
+    if p_holder_character_id is null
+    then return pg_catalog.jsonb_build_object('matches',false,'canReserveNow',false,'reason','missing_holder');
+    end if;
+    if v_state#>>'{character,id}'=p_holder_character_id then
+      v_stacks:=case when p_source_location='inventory' then v_state#>'{inventory,stacks}'
+        else v_state#>'{character,equipmentPouch,stacks}' end;
+    elsif pg_catalog.jsonb_typeof(v_state->'otherCharacters')='array' then
+      for v_entry in select value from pg_catalog.jsonb_array_elements(v_state->'otherCharacters') loop
+        if v_entry#>>'{character,id}'=p_holder_character_id then
+          v_stacks:=case when p_source_location='inventory' then v_entry#>'{inventory,stacks}'
+            else v_entry#>'{character,equipmentPouch,stacks}' end;
+          exit;
+        end if;
+      end loop;
+    end if;
+  end if;
+
+  if pg_catalog.jsonb_typeof(v_stacks)<>'array'
+    or pg_catalog.jsonb_array_length(v_stacks)<=p_stack_index
+  then return pg_catalog.jsonb_build_object('matches',false,'canReserveNow',false,'reason','source_not_found');
+  end if;
+  v_stack:=v_stacks->p_stack_index;
+  if v_stack->>'itemId' is distinct from p_item_id
+    or pg_catalog.jsonb_typeof(v_stack->'quantity')<>'number'
+    or (v_stack->>'quantity') !~ '^[0-9]{1,10}
+-- In particular, historical public.market_orders and public.market_trades
+-- are NOT recreated. No existing inventory or wallet row is touched.
+comment on table private.market_custody_assets_v1 is
+  'Inert reconciliation candidates. NOT a spendable inventory and never a source of truth without exact online snapshot bridging.';
+comment on table private.market_custody_holds_v1 is
+  'Dormant escrow ledger. No live mutation path or exposed RPC until a future reviewed release migration.';
+comment on table private.market_runtime_guard_v1 is
+  'Both release gates are locked false by constraints; enabling requires an explicit future migration.';
+
+commit;
+
+  then return pg_catalog.jsonb_build_object('matches',false,'canReserveNow',false,'reason','source_identity_changed');
+  end if;
+  v_quantity:=(v_stack->>'quantity')::bigint;
+  if v_quantity<1 or v_quantity>2147483647 or v_quantity<p_requested_quantity
+  then return pg_catalog.jsonb_build_object('matches',false,'canReserveNow',false,'reason','insufficient_quantity');
+  end if;
+
+  if p_exact_instance_id is null then
+    -- Legacy equipment has no trustworthy receipt. The probe intentionally
+    -- cannot promote it into verified custody.
+    if v_stack ? 'instanceId' or p_source_location='equipment_pouch'
+      then return pg_catalog.jsonb_build_object('matches',false,'canReserveNow',false,'reason','missing_exact_receipt');
+    end if;
+  else
+    if v_stack->>'instanceId' is distinct from p_exact_instance_id
+      or v_quantity<>1 or p_requested_quantity<>1
+      then return pg_catalog.jsonb_build_object('matches',false,'canReserveNow',false,'reason','copy_identity_changed');
+    end if;
+    if pg_catalog.jsonb_typeof(v_state#>'{account,craftedGearInstances}')='array' then
+      select value into v_receipt
+      from pg_catalog.jsonb_array_elements(v_state#>'{account,craftedGearInstances}')
+      where value->>'id'=p_exact_instance_id limit 1;
+    end if;
+    if v_receipt is null or v_receipt->>'itemId' is distinct from p_item_id
+      or v_receipt->>'locked'='true'
+      or (v_receipt->>'quality') !~ '^[0-9]{1,3}
+-- In particular, historical public.market_orders and public.market_trades
+-- are NOT recreated. No existing inventory or wallet row is touched.
+comment on table private.market_custody_assets_v1 is
+  'Inert reconciliation candidates. NOT a spendable inventory and never a source of truth without exact online snapshot bridging.';
+comment on table private.market_custody_holds_v1 is
+  'Dormant escrow ledger. No live mutation path or exposed RPC until a future reviewed release migration.';
+comment on table private.market_runtime_guard_v1 is
+  'Both release gates are locked false by constraints; enabling requires an explicit future migration.';
+
+commit;
+
+      or (v_receipt->>'quality')::integer not between 0 and 100
+    then return pg_catalog.jsonb_build_object('matches',false,'canReserveNow',false,'reason','unverified_copy');
+    end if;
+  end if;
+
+  return pg_catalog.jsonb_build_object('matches',true,'canReserveNow',false,
+    'reason','snapshot_identity_only','quantity',v_quantity,'revision',v_revision);
+end;
+$market_probe$;
+
+revoke all on function private.market_snapshot_source_probe_v1(
+  uuid,bigint,text,text,integer,text,bigint,text
+) from public,anon,authenticated,service_role;
+
 -- The migration has no player-facing RPCs, triggers, or jobs.
 -- In particular, historical public.market_orders and public.market_trades
 -- are NOT recreated. No existing inventory or wallet row is touched.

@@ -21,8 +21,9 @@ export const CLASS_EQUIPMENT_ATTACK_SHARE:Readonly<Record<ClassId,number>>=Objec
 /**
  * Apply class identity to the equipped Attack + Defense budget without
  * creating or deleting stat points. Unlike enforcing a fixed final ratio,
- * this preserves meaningful offensive/defensive gear choices: all-Attack
- * equipment stays all-Attack and all-Defense stays all-Defense.
+ * this preserves meaningful offensive/defensive gear choices. A portion of
+ * each class's less-favored primary stat turns into its favored stat instead
+ * of enforcing a fixed final ratio or making gear upgrades reduce other stats.
  *
  * Call once on the aggregate flat equipment and novice set bonuses, before
  * gem, set, class-skill or permanent multipliers. Base character stats
@@ -34,10 +35,13 @@ export function classWeightedGearStats(classId:ClassId,attack:number,defense:num
   const total=gearAttack+gearDefense;
   if(total<=0)return {attack:0,defense:0};
   const share=CLASS_EQUIPMENT_ATTACK_SHARE[classId];
-  const weightedAttack=gearAttack*share;
-  const weightedDefense=gearDefense*(1-share);
-  const denominator=weightedAttack+weightedDefense;
-  if(denominator<=0)return {attack:gearAttack,defense:gearDefense};
-  const convertedAttack=total*(weightedAttack/denominator);
+  // An equal Attack/Defense gear budget maps to the target ratio, but each
+  // source stat contributes independently. Equipping an Attack item must
+  // never LOWER Defense (and vice versa), unlike ratio-normalized weighting.
+  // Defensive classes convert a little flat gear Attack into Defense;
+  // offensive classes convert some flat gear Defense into Attack.
+  const convertedAttack=share>=.5
+    ?gearAttack+gearDefense*(2*share-1)
+    :gearAttack*(2*share);
   return {attack:convertedAttack,defense:total-convertedAttack};
 }

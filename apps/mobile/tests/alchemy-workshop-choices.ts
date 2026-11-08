@@ -25,6 +25,10 @@ assert.equal(readyOnly.length,1,'craftable-only hides every potion without a via
 assert.equal(readyOnly[0].recipe.id,alternate,'craftable-only overrides a manually selected unavailable variant');
 const active=alchemyPotionRows(candidates,recipe=>recipe.id===alternate?4:0,60,{manualByOutput:{[outputId]:alternate},activeId:base});
 assert.equal(active.find(row=>row.outputId===outputId)?.recipe.id,base,'running recipe remains visible even when another recipe can be brewed');
+const runningOnly=alchemyPotionRows(candidates,unavailable,60,{activeId:base,readyOnly:true});
+assert.equal(runningOnly.length,1,'running potion remains visible even when reserved materials make it temporarily uncraftable');
+assert.equal(runningOnly[0].recipe.id,base,'craftable-only does not swap away from the running recipe');
+
 const preferred=alchemyPotionRows(candidates,unavailable,60,{preferredId:alternate});
 assert.equal(preferred.find(row=>row.outputId===outputId)?.recipe.id,alternate,'deep links preserve preferred recipe when nothing is craftable');
 console.log('PASS Alchemy potion workshop: 12 unique potion cards, auto/manual source selection, active priority, craftable-only, stable card identity.');

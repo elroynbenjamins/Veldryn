@@ -1,0 +1,38 @@
+# One-time branch-only generated artifact sync; delete after it finishes.
+name: One-time hunt Edge regeneration
+on:
+  push:
+    branches: [feat/hunt-real-hit-timeline-v1]
+    paths: ['.github/workflows/one-time-hunt-edge-regeneration.yml']
+permissions:
+  contents: write
+jobs:
+  regenerate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: true
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+          cache-dependency-path: backend/pnpm-lock.yaml
+      - name: Install backend dependencies
+        run: pnpm --dir backend install --frozen-lockfile
+      - name: Build and verify Edge bundles from shared engine
+        run: |
+          node tools/build-online.mjs
+          node tools/verify-gameplay-edge.mjs
+      - name: Commit generated artifacts on feature branch only
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add backend/supabase/functions/gameplay/index.ts backend/supabase/functions/coop/index.ts
+          if ! git diff --cached --quiet; then
+            git commit -m "chore(edge): sync real hit combat gameplay bundle"
+            git push origin HEAD:feat/hunt-real-hit-timeline-v1
+          fi

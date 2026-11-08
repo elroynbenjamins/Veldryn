@@ -53,7 +53,12 @@ for(const id of Object.keys(COOP_ROOM_MODIFIERS)){
  assert.equal(enemies.length,base.length);
  assert(enemies.every(e=>e.stats.maxHp>0&&e.stats.attackPower>0&&e.stats.defense>0));
  if(id!=='steady')assert.notDeepEqual(enemies,base,`${id} must affect gameplay stats and/or real abilities`);
- if(['thorned','volatile','warded','attrition'].includes(id))assert(enemies[0].abilities.length>base[0].abilities.length,`${id} must add a real simulated ability`);
+ if(['thorned','volatile','warded','attrition'].includes(id)){
+  const eliteBase=buildExpeditionEncounter({encounterId:'ROOT_ELITE_BRAMBLE'});
+  const elite=buildExpeditionEncounter({encounterId:'ROOT_ELITE_BRAMBLE',roomModifierId:id,roomModifierElite:true});
+  assert(elite[0].abilities.length>eliteBase[0].abilities.length,`${id} must add a real simulated elite ability`);
+  assert.equal(enemies[0].abilities.length,base[0].abilities.length,'Mandatory normal rooms never gain compounding extra casts');
+ }
 }
 assert.equal(buildExpeditionEncounter({encounterId:'ROOT_SCOUTS',roomModifierId:'unknown'})[0].abilities.length,base[0].abilities.length,'Old route modifiers fail safely');
 

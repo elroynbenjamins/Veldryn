@@ -30,6 +30,9 @@ alter table private.market_custody_holds_v1
   check(status in ('draft','held','released','settled'));
 
 alter table private.market_custody_holds_v1
+  add constraint market_hold_account_fk_target_v2 unique(hold_id,owner_account_id);
+
+alter table private.market_custody_holds_v1
   add column if not exists expires_at timestamptz not null default (now()+interval '7 days');
 create index if not exists market_hold_due_v2 on private.market_custody_holds_v1(expires_at)
   where status='held';
@@ -56,7 +59,10 @@ create table if not exists private.market_return_deliveries_v2(
   quantity bigint not null check(quantity between 1 and 2147483647),
   stack_payload jsonb not null check(pg_catalog.jsonb_typeof(stack_payload)='object'),
   status text not null default 'pending' check(status='pending'),
-  created_at timestamptz not null default now()
+  created_at timestamptz not null default now(),
+  constraint market_return_correct_owner_v2 foreign key(source_hold_id,recipient_account_id)
+    references private.market_custody_holds_v1(hold_id,owner_account_id)
+    on delete restrict
 );
 create index if not exists market_return_account_pending_v2
   on private.market_return_deliveries_v2(recipient_account_id,created_at)
@@ -78,6 +84,9 @@ create table if not exists private.market_gold_intents_v2(
   status text not null default 'draft' check(status='draft'),
   created_at timestamptz not null default now(),
   check(buyer_account_id<>seller_account_id),
+  constraint market_gold_seller_matches_hold_v2 foreign key(source_hold_id,seller_account_id)
+    references private.market_custody_holds_v1(hold_id,owner_account_id)
+    on delete restrict,
   check(gross_gold::numeric=unit_price::numeric*quantity::numeric),
   check(gross_gold::numeric=fee_gold::numeric+seller_payout_gold::numeric)
 );

@@ -103,7 +103,7 @@ export const REGIONAL_FOOD_SUSTAIN_TARGETS:Readonly<Record<string,{foodPerHourMi
 export const REGIONAL_MIN_ATTRITION_HP_PER_HOUR:Readonly<Record<string,number>>={Greenfields:80,Silverbrook:120,'Ironwood Forest':240,'Old Mines':280,"King's Road":420,Sunscar:780,Frostmarch:1450,Ashlands:2150};
 /** Missing entire gear tiers must increase food use even when encounter damage
  * would otherwise be hidden by the hourly attrition floor. */
-export const MISSING_GEAR_HUNT_ATTRITION_PER_TIER=.72;
+export const MISSING_GEAR_HUNT_ATTRITION_PER_TIER=.62;
 export const MIN_UNHEALED_HP_FRACTION_PER_HOUR=.08;
 /** Slow recovery between activities keeps food valuable while preventing a defeated run from becoming a hard lockout. */
 export const OUT_OF_COMBAT_REGEN_FRACTION_PER_MINUTE=.05;

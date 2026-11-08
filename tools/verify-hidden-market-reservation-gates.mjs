@@ -20,6 +20,10 @@ const marketInboxPanel=read('apps/mobile/src/screens/MarketInboxPanel.tsx');
 const rewardInboxScreen=read('apps/mobile/src/screens/RewardsInboxScreen.tsx');
 const sellerOffers=read('backend/supabase/migrations/20261108183000_market_seller_offer_lifecycle_private_v5.sql');
 const sellerTest=read('backend/supabase/tests/player_market_seller_offers_v5.sql');
+const marketAuth=read('backend/online/market-auth-boundary.ts');
+const marketAuthTest=read('backend/online/tests/market-auth-boundary.ts');
+const gameplayEdge=read('backend/online/edge.ts');
+const concurrencyRunner=read('backend/supabase/tests/run_market_concurrency_ci_v6.sh');
 const release=read('apps/mobile/src/core/release-flags.ts');
 const roadmap=read('apps/mobile/src/core/community-roadmap-release-visibility.ts');
 
@@ -187,4 +191,29 @@ requireMatches(sellerTest,[
 ], 'seller lifecycle regression');
 assert.doesNotMatch(sellerOffers,/\bgrant execute\b/i,'seller list operations must remain private');
 
-console.log('PASS: hidden V2–V5 market ACLs, seller offer lifecycle, Inbox and payment gates remain disabled');
+requireMatches(marketAuth,[
+  ['hard disabled Edge gate',/export const MARKET_EDGE_TRANSPORT_RELEASED = false;/],
+  ['verified account identity',/const actor=await services\.authenticate\(token\)/],
+  ['no body account spoofing',/keys\.every\(k=>fields\.includes\(k\)\)/],
+  ['no network access in unreleased handler',/return new Response\(JSON\.stringify\(\{error:'not_found'\}\)/],
+], 'dormant market auth boundary');
+requireMatches(marketAuthTest,[
+  ['actor binding',/actor must come from authenticated session/],
+  ['unreleased handler blocks Auth',/unreleased route cannot even authenticate or query/],
+  ['spoofed owner test',/sellerAccountId:'someone-else'/],
+  ['spoofed buyer test',/buyerAccountId:actor/],
+], 'market auth boundary test');
+assert.doesNotMatch(gameplayEdge,/market-auth-boundary|marketHiddenHandler|market_inbox|view=market/,
+  'no Player Market transport is mounted in the live gameplay Edge handler');
+requireMatches(concurrencyRunner,[
+  ['disposable local DB name',/veldryn_market_ci/],
+  ['refuse nonlocal execution',/PGHOST.*localhost/],
+  ['two independent buyers',/buy-concurrent-a1[\s\S]*?buy-concurrent-b1/],
+  ['cancel wins race',/cancel-race-a2[\s\S]*?buy-race-b2/],
+  ['purchase wins race',/buy-race-a3[\s\S]*?cancel-race-b3/],
+  ['postrace Gold conservation',/market_concurrent_invariant_failed/],
+], 'real market concurrency runner');
+assert.doesNotMatch(marketAuth,/\.rpc\(|service_role|SUPABASE_SERVICE_ROLE_KEY/,
+  'future auth boundary cannot directly invoke privileged market RPCs');
+
+console.log('PASS: hidden V2–V6 marketplace release gates, auth binding and concurrency fixtures remain private');

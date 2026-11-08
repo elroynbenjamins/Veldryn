@@ -47997,19 +47997,6 @@ function equipmentSalvageReward(itemId) {
   return recipe2 ? { ...recipe2 } : null;
 }
 
-// ../apps/mobile/src/core/equipment-salvage.ts
-var MATERIAL_ID = "TEMPERING_DUST";
-var tieredRewards = /* @__PURE__ */ new Map();
-for (const item of EQUIPMENT_ITEMS_V33) {
-  const match = /^T([1-9])[A-Z]*_/.exec(item.id);
-  if (!match) continue;
-  tieredRewards.set(item.id, { itemId: MATERIAL_ID, quantity: Math.max(1, Math.ceil(Number(match[1]) / 2)) });
-}
-function equipmentSalvageReward(itemId) {
-  const recipe2 = tieredRewards.get(itemId);
-  return recipe2 ? { ...recipe2 } : null;
-}
-
 // ../apps/mobile/src/content/mining-essence.ts
 var ASTERFALL_MINERAL_ESSENCE_ID = "ASTERFALL_MINERAL_ESSENCE";
 var MINING_ESSENCE_BY_ZONE = {

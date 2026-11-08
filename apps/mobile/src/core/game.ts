@@ -483,12 +483,13 @@ function combatEncounterDamage(runtime:ReturnType<typeof combatRuntimeDetails>,c
  // post-kill sustain. It cannot prevent a lethal hit and remains much weaker
  // when nearly all equipment slots are missing. This belongs to the same
  // encounter settlement used by online/idle previews, not UI-only feedback.
- const onKillHealing=stats.attack*(style.onKillAttackHealPct??0);
- const healing=stats.hp*companion.directHealingPctPerHour*killCycleSeconds/3600*(c.preparation?preparationEffects(c.preparation).healing:1)+onKillHealing;
- // The floor is part of actual server-authoritative damage. Missing gear
- // cannot bypass this attrition through defense or longer kill cycles.
+ // Regional minimum attrition must not be erased by offense-based
+ // Bloodrush healing. This also keeps easy-area food use meaningful while
+ // letting aggressive Ravagers counter some real, above-floor enemy hits.
  const floor=Math.max(REGIONAL_MIN_ATTRITION_HP_PER_HOUR[m.zone]??0,stats.hp*MIN_UNHEALED_HP_FRACTION_PER_HOUR)*runtime.gearAttritionMultiplier*killCycleSeconds/3600;
  const incoming=Math.max(floor,damage);
+ const onKillHealing=Math.min(stats.attack*(style.onKillAttackHealPct??0),Math.max(0,incoming-floor));
+ const healing=stats.hp*companion.directHealingPctPerHour*killCycleSeconds/3600*(c.preparation?preparationEffects(c.preparation).healing:1)+onKillHealing;
  return {damage:incoming,healing,onKillHealing,net:incoming-healing};
 }
 

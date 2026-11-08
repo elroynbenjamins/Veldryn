@@ -34,7 +34,7 @@ for(const [enemy,forbidden] of [
 ] as const){
  for(const itemId of forbidden)check(dropChance(enemy,itemId)===undefined,`${enemy} must no longer award ${itemId}`);
 }
-check(dropChance('LANTERN_WRETCH','OATHGLASS_SHARD')!==undefined,'Lantern Wretch retains relevant King's Road drops');
+check(dropChance('LANTERN_WRETCH','OATHGLASS_SHARD')!==undefined,"Lantern Wretch retains relevant King's Road drops");
 check(dropChance('FALLEN_SENTINEL','FALLEN_RIVET')!==undefined,'Fallen Sentinel retains unique drops');
 check(dropChance('CAVE_SKITTER','ASTER_IRON_ORE')!==undefined,'Cave Skitter retains Aster-Iron drops');
 check(MONSTERS.some(m=>m.drops.some(d=>d.itemId==='THORN_SAP')),'Thorn Sap still available elsewhere');

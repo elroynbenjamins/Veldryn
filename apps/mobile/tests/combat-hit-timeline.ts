@@ -1,6 +1,7 @@
 import {assert} from './test-assert';
 import {huntHitEvents,huntHitsBetween,huntEnemyHpAt} from '../src/core/combat-hit-timeline';
 import {activeCombatHitProjection,activeCombatRuntimeProjection,claimActivity,createCharacter,effectiveStats,newGame,previewActivityReward,startCombat} from '../src/core/game';
+import type {ActiveCombatHitCursor} from '../src/core/game';
 
 const events=huntHitEvents({monsterHp:1100,basePlayerHit:240,incomingDamage:52,healingPerEncounter:10,cycleSeconds:12,critChance:.25,seed:'replay-stable'});
 const again=huntHitEvents({monsterHp:1100,basePlayerHit:240,incomingDamage:52,healingPerEncounter:10,cycleSeconds:12,critChance:.25,seed:'replay-stable'});
@@ -43,4 +44,30 @@ assert.ok(Math.abs(second.state.character!.currentHp-unsplit.state.character!.cu
 assert.ok(Math.abs((second.state.activity?.combatEnemyHp??0)-(unsplit.state.activity?.combatEnemyHp??0))<.0001,'enemy HP must not reset or double-deduct after claim');
 assert.equal(first.reward.xp+second.reward.xp,unsplit.reward.xp,'split claims must not change base XP payouts');
 assert.equal(first.reward.gold+second.reward.gold,unsplit.reward.gold,'split claims must not change base gold payouts');
-console.log('PASS real hunt hits, partial HP persistence, deterministic replay, and split-claim parity');
+// Foreground replay advances incrementally. It must remain identical to a
+// full authoritative read-only projection across multi-cycle claims.
+const liveState=structuredClone(state);
+liveState.character!.preparation={itemId:'OATH_WARD_TONIC',remainingEncounters:3};
+let cursor:ActiveCombatHitCursor|undefined;
+const halfSecondSteps=Math.ceil(cycle*8);
+for(let tick=0;tick<=halfSecondSteps;tick++){
+ const at=T+tick*500;
+ const direct=activeCombatHitProjection(liveState,at)!;
+ const incremental=activeCombatHitProjection(liveState,at,cursor)!;
+ assert.ok(Math.abs(direct.playerHp-incremental.playerHp)<1e-5,'incremental combat must keep exact HP parity');
+ assert.ok(Math.abs(direct.enemyHp-incremental.enemyHp)<1e-5,'incremental combat must keep enemy HP parity');
+ assert.equal(direct.stoppedReason,incremental.stoppedReason,'incremental combat stop must remain deterministic');
+ assert.ok(Math.abs(direct.progressFraction-incremental.progressFraction)<1e-7,'incremental combat phase must stay synced');
+ cursor=incremental.cursor;
+}
+assert.equal(liveState.character!.preparation!.remainingEncounters,3,'read-only live replay must not spend actual potion charges');
+assert.equal(liveState.character!.currentHp,state.character!.currentHp,'read-only live replay must not mutate player HP');
+const fs=require('fs') as {readFileSync:(path:string,encoding:string)=>string};
+const homeStage=fs.readFileSync('src/components/BattleStage.tsx','utf8');
+assert.ok(homeStage.includes('activeCombatHitProjection('),'Home encounter preview must use actual hunt events');
+assert.ok(homeStage.includes('!motion.enabled||isLive'),'Home must not play cosmetic hits over live fight events');
+assert.ok(homeStage.includes('fight?.enemyHp??view.enemyHp'),'Home must display projected real enemy HP');
+const combatTab=fs.readFileSync('src/components/HuntingPreview.tsx','utf8');
+assert.ok(combatTab.includes('activeCombatHitProjection('),'Combat tab must use real hit projection');
+assert.ok(combatTab.includes('replayCursor.current'),'Combat tab must reuse incremental projections');
+console.log('PASS real hunt hits, partial HP persistence, incremental replay, UI synchronization and split-claim parity');

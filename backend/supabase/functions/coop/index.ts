@@ -46251,21 +46251,21 @@ function effectiveStats(state) {
   defense += classGear.defense;
   const setStats = activeEquipmentBuildStats(state);
   hp = Math.ceil(hp * (1 + setStats.maxHp));
-  defense = Math.ceil(defense * (1 + setStats.armor));
+  defense *= 1 + setStats.armor;
   const gems = equippedGemBonuses(state);
   hp = Math.ceil(hp * (1 + gems.hp));
-  attack = Math.ceil(attack * (1 + gems.attack));
-  defense = Math.ceil(defense * (1 + gems.defense));
+  attack *= 1 + gems.attack;
+  defense *= 1 + gems.defense;
   const mastery = characterClassEffects(c);
   hp = Math.ceil(hp * mastery.hp);
-  attack = Math.ceil(attack * mastery.attack);
-  defense = Math.ceil(defense * mastery.defense);
+  attack *= mastery.attack;
+  defense *= mastery.defense;
   const permanent = characterPermanentMultipliers(state);
-  attack = Math.ceil(attack * permanent.combatPowerMultiplier);
+  attack *= permanent.combatPowerMultiplier;
   const faithBlessing = selectedFaithBlessing(state);
   if (faithBlessing?.family === "hp") hp = Math.ceil(hp * (1 + faithBlessing.bonus));
   const prep = c.preparation ? preparationEffects(c.preparation) : void 0;
-  if (prep) attack = Math.ceil(attack * prep.attack);
+  if (prep) attack *= prep.attack;
   const role2 = CLASSES.find((def) => def.id === c.classId)?.role, baseCritChance = role2 === "Damage" ? 0.1 : 0.05, baseEvasion = role2 === "Damage" ? 0.07 : 0.04;
   const basePower = Math.round(attack * 1.5 + defense * 0.8 + hp * 0.08 + c.level * 2.5);
   return {

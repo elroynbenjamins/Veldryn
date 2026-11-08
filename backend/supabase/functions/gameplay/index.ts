@@ -48578,9 +48578,9 @@ var CLASS_COMBAT_STYLES = {
   DREADGUARD: { name: "Dread Momentum", description: "Hunts 4% faster while retaining heavy protection.", speedMultiplier: 1.04, damageTakenMultiplier: 0.94, recoveryPct: 0.01 },
   DAWNKEEPER: { name: "Sunlit Guard", description: "Trades stronger protection for a slightly faster, steadier hunt.", speedMultiplier: 1.03, damageTakenMultiplier: 0.94, recoveryPct: 1e-3 },
   WAYFINDER: { name: "Marked Quarry", description: "Hunts 8% faster through careful targeting.", speedMultiplier: 1.08, damageTakenMultiplier: 1, recoveryPct: 0.01 },
-  RAVAGER: { name: "Bloodrush", description: "Hunts 14% faster, takes 9% more damage and restores a little HP after kills.", speedMultiplier: 1.14, damageTakenMultiplier: 1.09, recoveryPct: 8e-3, onKillAttackHealPct: 6e-3 },
+  RAVAGER: { name: "Bloodrush", description: "Hunts 14% faster, takes 9% more damage and restores a little HP after kills.", speedMultiplier: 1.14, damageTakenMultiplier: 1.09, recoveryPct: 8e-3, onKillAttackHealPct: 0.01 },
   HEXWEAVER: { name: "Withering Hex", description: "Hunts 7% faster and weakens incoming attacks.", speedMultiplier: 1.07, damageTakenMultiplier: 0.95, recoveryPct: 0.01 },
-  KNIFE_DANCER: { name: "Blade Rhythm", description: "Hunts 13% faster and avoids 3% of incoming damage.", speedMultiplier: 1.13, damageTakenMultiplier: 0.97, recoveryPct: 0.01 },
+  KNIFE_DANCER: { name: "Blade Rhythm", description: "Hunts 13% faster and avoids 12% of incoming damage.", speedMultiplier: 1.13, damageTakenMultiplier: 0.88, recoveryPct: 0.01 },
   STONECALLER: { name: "Earthen Ward", description: "Strong damage reduction and offense at the cost of a slower hunt.", speedMultiplier: 0.95, damageTakenMultiplier: 0.91, recoveryPct: 1e-3 }
 };
 var classCombatStyle = (id) => CLASS_COMBAT_STYLES[id];
@@ -51710,21 +51710,21 @@ function effectiveStats(state) {
   defense += classGear.defense;
   const setStats = activeEquipmentBuildStats(state);
   hp = Math.ceil(hp * (1 + setStats.maxHp));
-  defense = Math.ceil(defense * (1 + setStats.armor));
+  defense *= 1 + setStats.armor;
   const gems = equippedGemBonuses(state);
   hp = Math.ceil(hp * (1 + gems.hp));
-  attack = Math.ceil(attack * (1 + gems.attack));
-  defense = Math.ceil(defense * (1 + gems.defense));
+  attack *= 1 + gems.attack;
+  defense *= 1 + gems.defense;
   const mastery = characterClassEffects(c);
   hp = Math.ceil(hp * mastery.hp);
-  attack = Math.ceil(attack * mastery.attack);
-  defense = Math.ceil(defense * mastery.defense);
+  attack *= mastery.attack;
+  defense *= mastery.defense;
   const permanent = characterPermanentMultipliers(state);
-  attack = Math.ceil(attack * permanent.combatPowerMultiplier);
+  attack *= permanent.combatPowerMultiplier;
   const faithBlessing = selectedFaithBlessing(state);
   if (faithBlessing?.family === "hp") hp = Math.ceil(hp * (1 + faithBlessing.bonus));
   const prep = c.preparation ? preparationEffects(c.preparation) : void 0;
-  if (prep) attack = Math.ceil(attack * prep.attack);
+  if (prep) attack *= prep.attack;
   const role = CLASSES.find((def) => def.id === c.classId)?.role, baseCritChance = role === "Damage" ? 0.1 : 0.05, baseEvasion = role === "Damage" ? 0.07 : 0.04;
   const basePower = Math.round(attack * 1.5 + defense * 0.8 + hp * 0.08 + c.level * 2.5);
   return {
@@ -51999,10 +51999,10 @@ function combatEncounterDamage(runtime, champion = false) {
   const raw2 = Math.max(1, Math.round(m.attack * COMBAT_MONSTER_DAMAGE_SCALE) - Math.floor(boostedDefense * 0.58));
   const regionalPressure = (REGIONAL_COMBAT_PRESSURE[m.zone] ?? 1) * REGIONAL_MONSTER_PRESSURE_MULTIPLIER[regionalMonsterPressureBand(m.id)];
   const damage = Math.max(0.1, (raw2 * 0.48 + m.level * 0.16) * (REGIONAL_HUNT_DAMAGE_TUNING[m.zone] ?? 1) * regionalPressure * secondary.incomingPressureMultiplier * style.damageTakenMultiplier * tactic.damageTakenMultiplier * (champion ? CHAMPION_DAMAGE_MULTIPLIER : 1) * modifiers.incomingDamageMultiplier * companion.incomingDamageMultiplier * (1 - effectGems.damage_reduction) * Math.max(0.5, 1 - setCombat.stats.ward) * (c.preparation ? preparationEffects(c.preparation).damage : 1) * runtime.progressionDamagePenalty);
-  const onKillHealing = stats4.attack * (style.onKillAttackHealPct ?? 0);
-  const healing = stats4.hp * companion.directHealingPctPerHour * killCycleSeconds / 3600 * (c.preparation ? preparationEffects(c.preparation).healing : 1) + onKillHealing;
   const floor = Math.max(REGIONAL_MIN_ATTRITION_HP_PER_HOUR[m.zone] ?? 0, stats4.hp * MIN_UNHEALED_HP_FRACTION_PER_HOUR) * runtime.gearAttritionMultiplier * killCycleSeconds / 3600;
   const incoming = Math.max(floor, damage);
+  const onKillHealing = Math.min(stats4.attack * (style.onKillAttackHealPct ?? 0), Math.max(0, incoming - floor));
+  const healing = stats4.hp * companion.directHealingPctPerHour * killCycleSeconds / 3600 * (c.preparation ? preparationEffects(c.preparation).healing : 1) + onKillHealing;
   return { damage: incoming, healing, onKillHealing, net: incoming - healing };
 }
 function simulateCombat2(state, monsterId, elapsed, nowMs = Date.now()) {

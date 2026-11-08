@@ -1,4 +1,4 @@
-import type {CharacterState,GameState,ItemStack} from '../../apps/mobile/src/core/types';
+import type {CharacterState,GameState,GearSlot,ItemStack} from '../../apps/mobile/src/core/types';
 import {itemDef} from '../../apps/mobile/src/content/items';
 import {auditCraftedGearOwnership} from '../../apps/mobile/src/core/crafted-gear-ownership';
 import {craftedGearInstances,isValidCraftedGearQuality} from '../../apps/mobile/src/core/crafted-gear-instances';
@@ -67,6 +67,12 @@ export function inspectPlayerMarketCustodySnapshotV1(
   if(audit.unlocatedInstanceIds.length)blocked.ownershipProblems.push('unlocated_forged_copies');
   if(audit.unmarkedPhysicalCopies>0)blocked.ownershipProblems.push('unmarked_legacy_copies');
   const records=new Map(craftedGearInstances(state).map(row=>[row.id,row]));
+  const savedLoadouts=[state.character,...(state.otherCharacters??[]).map(row=>row.character)]
+    .flatMap(character=>character?.savedLoadouts??[]);
+  const heldInLoadout=(itemId:string,instanceId:string)=>
+    savedLoadouts.some(loadout=>Object.entries(loadout.equipment).some(([slot,id])=>
+      id===itemId&&(loadout.equipmentInstanceIds?.[slot as GearSlot]===instanceId
+        ||!loadout.equipmentInstanceIds?.[slot as GearSlot])));
   // Protect all active + inactive characters' goals before projecting resources.
   const goals=new Set<string>();
   for(const character of [state.character,...(state.otherCharacters??[]).map(row=>row.character)]){
@@ -115,6 +121,8 @@ export function inspectPlayerMarketCustodySnapshotV1(
             problems.push('missing_exact_equipment_receipt');
           else{
             if(receipt.locked)problems.push('equipment_locked');
+            if(heldInLoadout(stack.itemId,stack.instanceId))
+              problems.push('saved_loadout_reserved');
             if(!isValidCraftedGearQuality(receipt.quality))
               problems.push('legacy_quality_unverified');
             // This is metadata for an audit, not a transferable item payload.

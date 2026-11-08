@@ -40,6 +40,9 @@ jobs:
           cache-dependency-path: backend/pnpm-lock.yaml
       - run: pnpm install --frozen-lockfile
         working-directory: backend
+      - name: Install mobile workspace types used by shared backend snapshots
+        run: pnpm install --frozen-lockfile
+        working-directory: apps/mobile
       - name: Validate real encounters, room rewards, modifiers, and Live vote authority
         run: pnpm test:dungeon-variety
         working-directory: backend

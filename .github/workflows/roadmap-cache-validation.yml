@@ -29,6 +29,8 @@ jobs:
           cache: pnpm
           cache-dependency-path: apps/mobile/pnpm-lock.yaml
       - run: pnpm install --frozen-lockfile
+      - name: Install shared backend dependencies for mobile TypeScript
+        run: pnpm --dir ../../backend install --frozen-lockfile
       - name: Typecheck Roadmap client and core
         run: pnpm typecheck:core && pnpm typecheck
       - name: Check two-hour caching, votes and roadmap invisibility

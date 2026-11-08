@@ -178,9 +178,6 @@ begin
     pg_catalog.jsonb_build_object('instance',p_instance_id)) as copies;
   if v_stack_count<>1
     or pg_catalog.jsonb_path_exists(v_state.state,
-        '$.**.equipmentInstanceIds.* ? (@ == $instance)',
-        pg_catalog.jsonb_build_object('instance',p_instance_id))
-    or pg_catalog.jsonb_path_exists(v_state.state,
         '$.**.stacks[*] ? (@.itemId == $item && !exists(@.instanceId))',
         pg_catalog.jsonb_build_object('item',p_item_id))
   then raise exception 'market_equipment_identity_ambiguous';end if;
@@ -208,6 +205,13 @@ begin
        case when pg_catalog.jsonb_typeof(v_state.state->'otherCharacters')='array'
          then v_state.state->'otherCharacters' else '[]'::jsonb end) elem
   ) chars loop
+    -- Only ACTUALLY equipped copy markers, not saved-loadout previews,
+    -- represent a second physical claim to the same Forge instance.
+    if pg_catalog.jsonb_typeof(v_char->'equipmentInstanceIds')='object'
+      and exists(select 1 from pg_catalog.jsonb_each_text(
+          v_char->'equipmentInstanceIds') equipped(slot,instance_id)
+        where equipped.instance_id=p_instance_id)
+    then raise exception 'market_equipment_identity_ambiguous';end if;
     if pg_catalog.jsonb_typeof(v_char->'gearEnhancements')='object'
       and v_char->'gearEnhancements' ? p_item_id
       and (

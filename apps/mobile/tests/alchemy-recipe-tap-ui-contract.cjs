@@ -6,6 +6,12 @@ const file=path.join(__dirname,'../src/components/ConsumableWorkshop.tsx');
 const source=fs.readFileSync(file,'utf8');
 const potionRows=source.split('const renderPotionRow=(recipe:Recipe)=>{')[1]?.split('return <View style={s.root}>')[0];
 assert.ok(potionRows,'Alchemy potion row renderer must exist');
+assert.match(source,/alchemy:\['Potions','Infusions'\] as const/,'Alchemy combines healing draughts and role tonics under one Potions tab');
+assert.match(source,/return def\?'Potions':'Infusions'/,'Potion families do not split into independent tabs');
+assert.match(source,/new Map<string,Recipe\[\]>\(\)/,'Duplicate regional tonic recipes are grouped by their resulting item');
+assert.match(source,/options\.find\(r=>r\.level<=skillLevel&&count\(r\)>0\)/,'Auto-select the first craftable base or regional ingredient recipe');
+assert.match(source,/options\.find\(r=>r\.id===activeId\)/,'An already-brewing regional variant remains visible');
+
 assert.match(potionRows,/onPress=\{\(\)=>start\(recipe\)\} style=\{\(\{pressed\}\)=>\[s\.potionRowMain/,'Tapping a potion recipe should start brewing');
 assert.match(potionRows,/disabled=\{busy\|\|isActive\|\|available<1\}/,'Unavailable, active or busy recipes must not start brewing');
 assert.match(potionRows,/onPress=\{\(\)=>setDetailId\(current=>current===recipe\.id\?null:recipe\.id\)\}/,'The lower information strip must toggle details');

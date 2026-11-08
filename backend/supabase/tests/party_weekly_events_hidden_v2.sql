@@ -60,6 +60,12 @@ BEGIN
     OR has_function_privilege('anon','private.party_weekly_event_enroll_v2(uuid,uuid)','EXECUTE')
     OR has_function_privilege('anon','private.party_weekly_event_record_activity_v2(uuid,text)','EXECUTE')
     OR has_function_privilege('anon','private.party_weekly_event_maybe_advance_v2(uuid)','EXECUTE')
+    OR has_function_privilege('authenticated','private.party_weekly_event_open_vote_v2(uuid,smallint,text[],text)','EXECUTE')
+    OR has_function_privilege('authenticated','private.party_weekly_event_cast_vote_v2(uuid,uuid,text)','EXECUTE')
+    OR has_function_privilege('authenticated','private.party_weekly_event_vote_maybe_resolve_v2(uuid)','EXECUTE')
+    OR has_function_privilege('anon','private.party_weekly_event_open_vote_v2(uuid,smallint,text[],text)','EXECUTE')
+    OR has_function_privilege('anon','private.party_weekly_event_cast_vote_v2(uuid,uuid,text)','EXECUTE')
+    OR has_function_privilege('anon','private.party_weekly_event_vote_maybe_resolve_v2(uuid)','EXECUTE')
   THEN
     RAISE EXCEPTION 'weekly progression RPC exposed to clients';
   END IF;

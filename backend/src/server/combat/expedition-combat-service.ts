@@ -81,7 +81,7 @@ export function buildExpeditionEncounter(input:BuildExpeditionEncounterInput):Co
     });
     for(const added of tuning.addAbilities??[])if(!abilities.some(ability=>ability.id===added.id))abilities.push(structuredClone(added));
     const phases=[...(base.phases??[])];for(const added of tuning.addPhases??[])if(!phases.some(phase=>phase.id===added.id))phases.push(structuredClone(added));
-    return applyCoopRoomModifier({...base,abilities,phases},input.roomModifierId,index);
+    return applyCoopRoomModifier({...base,abilities,phases},input.roomModifierId,index,input.roomModifierElite);
   });
 }
 

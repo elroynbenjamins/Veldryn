@@ -50,7 +50,11 @@ async function main(){
  clock+=60000;
  const brewClaim=await request({type:'claim'},'brew-claim-01',7);assert.equal(brewClaim.status,200,'Alchemy settlement persists online');
  const persisted=await brewClaim.json();assert.equal(persisted.state.activity,null,'Completed alchemy batch is cleared');assert.ok(persisted.guildProjectEffort.some((part:{kind:string;units?:number;endsAtMs?:number;startsAtMs?:number})=>part.kind==='crafting'&&((part.units??0)>0||(part.endsAtMs??0)>(part.startsAtMs??0))),'Verified crafted items contribute to weekly guild activity: '+JSON.stringify({reward:persisted.reward,effort:persisted.guildProjectEffort,activityBefore:state?.activity}).slice(0,1200));
- state={...state!,character:{...state!.character!,level:30,xp:totalXpAtLevel(30)},skills:state!.skills.map(skill=>skill.skillId==='herbalism'?{...skill,xp:totalXpAtLevel(26),level:26}:skill.skillId==='alchemy'?{...skill,xp:totalXpAtLevel(35),level:35}:skill.skillId==='exploration'?{...skill,xp:totalXpAtLevel(6),level:6}:skill),inventory:{...state!.inventory,stacks:[...state!.inventory.stacks,{itemId:'SUNSCALE',quantity:2},{itemId:'RIVER_MINT',quantity:2}]}};
+  // Keep the fixture aligned with authoritative potion inputs and Gold after balance changes.
+  const regionalRecipe=alchemyRecipeDef('BREW_GREATER_VIGOR_TONIC_SUNSCAR')!;
+  assert.ok(regionalRecipe,'Regional Alchemy recipe exists');
+  const regionalInputs=new Set(regionalRecipe.inputs.map(input=>input.itemId));
+  state={...state!,character:{...state!.character!,level:30,xp:totalXpAtLevel(30),gold:Math.max(state!.character!.gold,regionalRecipe.gold+100)},skills:state!.skills.map(skill=>skill.skillId==='herbalism'?{...skill,xp:totalXpAtLevel(26),level:26}:skill.skillId==='alchemy'?{...skill,xp:totalXpAtLevel(35),level:35}:skill.skillId==='exploration'?{...skill,xp:totalXpAtLevel(6),level:6}:skill),inventory:{...state!.inventory,stacks:[...state!.inventory.stacks.filter(stack=>!regionalInputs.has(stack.itemId)),...regionalRecipe.inputs.map(input=>({...input}))]}};
  // This later-region fixture must satisfy the same scouting gates as a real character.
  const beforeLockedTravel=commits;
  const lockedTravel=await request({type:'travel',args:{id:'SUNSCAR'}},'sunscar-locked-01',8);

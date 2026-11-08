@@ -73,6 +73,41 @@ assert.equal(event.state.boons.length,1,'Event grants a lasting run boon, not on
 const cache=resolveCoopNode({runId:'cache-test',serverSecret:'cache-secret',node:node('treasure','ROOT_CACHE_BURIED'),players,state:starting});
 assert.equal(cache.state.artifacts.length,1);
 
+
+// Preserve a representative published Sunscar party's viable clear rate when
+// adjusting room modifiers. These deterministic samples are regression checks,
+// not actual player completion data.
+function sunscarPublishedClearRate():number{
+ const {createCharacter,newGame}=require('../../../apps/mobile/src/core/game') as typeof import('../../../apps/mobile/src/core/game');
+ const {noviceItemId,noviceSetFor}=require('../../../apps/mobile/src/content/novice-sets') as typeof import('../../../apps/mobile/src/content/novice-sets');
+ const {deriveOnlineCoopLoadout}=require('../coop-loadout') as typeof import('../coop-loadout');
+ const {resolveAndFreezeLoadout}=require('../../src/server/coop/loadout-snapshots') as typeof import('../../src/server/coop/loadout-snapshots');
+ const {MemoryQModeRunRepository,QModeService}=require('../../src/server/coop/qmode') as typeof import('../../src/server/coop/qmode');
+ const roster=(['IRONWARDEN','WAYFINDER','RAVAGER','DAWNKEEPER'] as const).map((classId,index)=>{
+  const state=createCharacter(newGame(0),classId,`Balance Test ${index}`);
+  state.character!.id=`character-${index}`;state.character!.level=100;
+  state.character!.equipment=Object.fromEntries(noviceSetFor(classId).slots.map(slot=>[slot,noviceItemId(classId,slot)]));
+  const record=deriveOnlineCoopLoadout(`account-${index}`,state,1);
+  return resolveAndFreezeLoadout({accountId:record.accountId,characterId:record.characterId,loadoutId:'current',expectedRevision:1,minLevel:15,syncLevel:45,repository:{getOwnedLoadout:()=>record}});
+ });
+ let clears=0;
+ for(let seed=0;seed<100;seed++){
+  const id=`EXP_003-IRONWARDEN-DAWNKEEPER-WAYFINDER-${seed}`;
+  const service=new QModeService(new MemoryQModeRunRepository(),'published-loadout-balance-v1');
+  let run=service.create({requestId:id,runId:id,controllerAccountId:roster[0].accountId,controllerSnapshot:roster[0],expeditionId:'EXP_003',tier:1,contentVersion:'online-coop-loadout-v1',balanceVersion:'online-coop-loadout-v1',nowMs:1000,profiles:roster.slice(1).map((snapshot,index)=>({profileId:'echo-'+index,sourceAccountId:snapshot.accountId,optedIn:true,publishedAtMs:0,contentVersion:'online-coop-loadout-v1',blockedAccountIds:[],snapshot}))});
+  for(let room=0;room<6&&run.phase==='awaiting_choice';room++){
+   const current=run.graph.nodes.find(node=>node.nodeId===run.currentNodeId)!;
+   const choices=current.nextNodeIds.map(optionId=>run.graph.nodes.find(node=>node.nodeId===optionId)!);
+   run=service.choose({runId:id,controllerAccountId:roster[0].accountId,optionNodeId:(choices.find(node=>node.kind==='camp')??choices[0]).nodeId});
+  }
+  if(run.phase==='completed')clears++;
+ }
+ return clears;
+}
+const sunscarClears=sunscarPublishedClearRate();
+console.log('Sunscar publishable clear-rate guard:',sunscarClears,'of 100');
+assert(sunscarClears>=85,'Real modifiers cannot undercut the published Sunscar clear-rate floor');
+
 async function verifyLiveVoteAuthority(){
 const multiRun={currentNodeId:'entry',graph:{nodes:[{nodeId:'entry',nextNodeIds:['d1-c0','d1-c1','d1-c2']}]}} as unknown as QModeRun;
 const state={stateVersion:4,eventCursor:0,privateState:{run:multiRun,seed:'test'},clientProjection:{mode:'live'},serverNow:1000};

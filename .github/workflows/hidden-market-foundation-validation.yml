@@ -8,8 +8,9 @@ on:
       - 'apps/mobile/tests/player-market-readiness.ts'
       - 'backend/online/market-custody-readiness.ts'
       - 'backend/online/tests/player-market-custody.ts'
-      - 'backend/supabase/migrations/*player_market*'
-      - 'backend/supabase/tests/player_market_custody_foundation.sql'
+      - 'backend/supabase/migrations/*market*'
+      - 'backend/supabase/tests/player_market_*.sql'
+      - 'tools/verify-hidden-market-reservation-gates.mjs'
       - '.github/workflows/hidden-market-foundation-validation.yml'
   workflow_dispatch:
 
@@ -38,3 +39,7 @@ jobs:
         run: node ../../tools/run-mobile-tests.mjs player-market-readiness
       - name: Verify server-only custody inspection
         run: pnpm --dir ../../backend test:market-readiness
+      - name: Validate dormant escrow security and migration contracts
+        run: |
+          node ../../tools/validate-recent-migration-versions.mjs
+          node ../../tools/verify-hidden-market-reservation-gates.mjs

@@ -12,6 +12,9 @@ declare
   v_offer uuid;
   v_second uuid;
   v_third uuid;
+  v_i integer;
+  v_rev bigint;
+  v_test_hold uuid;
   v_old_offer uuid;
   v_res jsonb;
   v_published jsonb;
@@ -31,7 +34,7 @@ begin
     (v_seller,v_sc,5,jsonb_build_object(
       'version',11,'character',jsonb_build_object('id',v_sc::text,'gold',100),
       'inventory',jsonb_build_object('capacity',30,'stacks',jsonb_build_array(
-        jsonb_build_object('itemId','COPPER_ORE','quantity',30))),
+        jsonb_build_object('itemId','COPPER_ORE','quantity',50))),
       'bank',jsonb_build_object('capacity',50,'stacks','[]'::jsonb),
       'settings',jsonb_build_object('lockedItemIds','[]'::jsonb,
         'favoriteItemIds','[]'::jsonb))),
@@ -177,11 +180,46 @@ begin
   if private.market_queue_due_returns_v2(20)<>0
   then raise exception 'expired listing generated duplicate return';end if;
 
+  -- Two guardrails: a previously listed hold cannot be reused and one
+  -- seller cannot flood the market beyond the authored 20-active-offer cap.
+  begin
+    perform private.market_publish_sale_offer_v5(
+      v_seller,v_hold,40,6,'publish-v5-old',repeat('a',64));
+    raise exception 'cancelled hold was re-listed';
+  exception when raise_exception then
+    if sqlerrm<>'market_hold_already_listed' then raise;end if;
+  end;
+  select revision into v_rev from public.online_game_states
+    where account_id=v_seller;
+  for v_i in 1..20 loop
+    v_res:=private.market_reserve_stack_v2(
+      v_seller,v_rev,'inventory',v_sc::text,0,'COPPER_ORE',1,
+      'reserve-cap-'||lpad(v_i::text,2,'0'),repeat('a',64));
+    v_test_hold:=(v_res->>'holdId')::uuid;
+    perform private.market_publish_sale_offer_v5(
+      v_seller,v_test_hold,10,1,'publish-cap-'||lpad(v_i::text,2,'0'),repeat('b',64));
+    v_rev:=v_rev+1;
+  end loop;
+  v_res:=private.market_reserve_stack_v2(
+    v_seller,v_rev,'inventory',v_sc::text,0,'COPPER_ORE',1,
+    'reserve-over-cap',repeat('c',64));
+  v_test_hold:=(v_res->>'holdId')::uuid;
+  begin
+    perform private.market_publish_sale_offer_v5(
+      v_seller,v_test_hold,10,1,'publish-over-cap',repeat('d',64));
+    raise exception 'seller exceeded 20 active listings';
+  exception when raise_exception then
+    if sqlerrm<>'market_seller_listing_cap' then raise;end if;
+  end;
+  if (select count(*) from private.market_sale_offers_v3
+       where seller_account_id=v_seller and status='active')<>20
+  then raise exception 'listing cap did not preserve exact active count';end if;
+
   v_inbox:=private.market_seller_offers_snapshot_v5(v_seller,true,0);
   if (v_inbox->>'total')::integer<>3
     or (select count(*) from private.market_sale_offers_v3 where status='active'
-      and seller_account_id=v_seller)<>0
-  then raise exception 'seller listing history or expiry count inconsistent';end if;
+      and seller_account_id=v_seller)<>20
+  then raise exception 'seller listing history or capped active count inconsistent';end if;
 end
 $seller_lifecycle_test$;
 select 'PASS: disabled seller listing creation, idempotency, safe cancellation, expiry and settled Gold invariants' as result;

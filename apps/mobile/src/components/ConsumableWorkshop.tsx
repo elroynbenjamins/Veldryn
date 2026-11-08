@@ -129,8 +129,9 @@ export function ConsumableWorkshop({state,skillId,preferredRecipeId,onStart}:Pro
       <Text style={[s.caption,{color:C.muted}]}>{gt('Recipe source')}</Text>
       <View style={s.sourceChoices}>
        {([{id:'',label:gt('Auto')},...(potionOptions.get(recipe.output.itemId)??[]).map(option=>({id:option.id,label:regionVariant(option)??gt('Standard')}))]).map(option=>{
-        const selectedSource=manualSourceByPotion[recipe.output.itemId]??'';
-        return <Pressable key={option.id||'auto'} accessibilityRole="button" accessibilityState={{selected:selectedSource===option.id}}
+        const activeVariant=(potionOptions.get(recipe.output.itemId)??[]).some(candidate=>candidate.id===activeId);
+        const selectedSource=readyOnly||activeVariant?'':manualSourceByPotion[recipe.output.itemId]??'';
+        return <Pressable key={option.id||'auto'} accessibilityRole="button" accessibilityState={{selected:selectedSource===option.id,disabled:activeVariant}} disabled={activeVariant}
           onPress={()=>setManualSourceByPotion(current=>{
            const next={...current};if(option.id)next[recipe.output.itemId]=option.id;else delete next[recipe.output.itemId];return next;
           })} style={[s.sourceChip,{borderColor:selectedSource===option.id?C.selectionLine:C.line,backgroundColor:selectedSource===option.id?C.selection:C.panel}]}>
@@ -233,9 +234,9 @@ export function ConsumableWorkshop({state,skillId,preferredRecipeId,onStart}:Pro
 const s=StyleSheet.create({
  root:{gap:12},line:{flexDirection:'row',alignItems:'center',justifyContent:'space-between',gap:8},title:{fontSize:17,fontWeight:'800',lineHeight:22},name:{fontSize:13,fontWeight:'800',lineHeight:18},bold:{fontSize:12,fontWeight:'800'},caption:{fontSize:11,lineHeight:16},tier:{fontSize:11,fontWeight:'800'},ready:{fontSize:11,fontWeight:'800',marginTop:4},buff:{fontSize:11,fontWeight:'800',lineHeight:16},toggle:{borderWidth:1,borderRadius:8,paddingHorizontal:10,minHeight:38,justifyContent:'center'},
  categories:{flexDirection:'row',gap:6},category:{flex:1,minWidth:0,minHeight:44,borderWidth:1,borderRadius:8,justifyContent:'center',alignItems:'center',paddingHorizontal:4},categoryText:{fontSize:11,fontWeight:'800'},
- sourceSelector:{gap:5},sourceChoices:{flexDirection:'row',flexWrap:'wrap',gap:5},sourceChip:{borderRadius:7,borderWidth:1,paddingHorizontal:10,minHeight:34,justifyContent:'center'},
+ sourceSelector:{gap:5},sourceChoices:{flexDirection:'row',flexWrap:'wrap',gap:5},sourceChip:{borderRadius:7,borderWidth:1,paddingHorizontal:10,minHeight:44,justifyContent:'center'},
  potionList:{gap:14},potionTierGroup:{gap:7},potionTierHeading:{minHeight:28,flexDirection:'row',alignItems:'center',gap:8},potionTierTitle:{fontSize:12,fontWeight:'900',letterSpacing:.6},potionTierDivider:{height:1,flex:1},
- potionRow:{borderWidth:1,borderRadius:11,overflow:'hidden'},potionRowMain:{minHeight:72,flexDirection:'row',alignItems:'center',gap:10,padding:10},potionRowCopy:{flex:1,minWidth:0,gap:3},potionRowSide:{minWidth:54,alignItems:'flex-end',alignSelf:'stretch',justifyContent:'space-between'},potionRowInfo:{minHeight:38,borderTopWidth:1,alignItems:'center',justifyContent:'center'},inlineDetails:{gap:9,padding:11,borderTopWidth:1},
+ potionRow:{borderWidth:1,borderRadius:11,overflow:'hidden'},potionRowMain:{minHeight:72,flexDirection:'row',alignItems:'center',gap:10,padding:10},potionRowCopy:{flex:1,minWidth:0,gap:3},potionRowSide:{minWidth:54,alignItems:'flex-end',alignSelf:'stretch',justifyContent:'space-between'},potionRowInfo:{minHeight:44,borderTopWidth:1,alignItems:'center',justifyContent:'center'},inlineDetails:{gap:9,padding:11,borderTopWidth:1},
  grid:{flexDirection:'row',flexWrap:'wrap',justifyContent:'space-between',gap:8},tile:{borderWidth:1,borderRadius:11,overflow:'hidden'},tileTap:{minHeight:160,padding:11,gap:5},alchemyTileTap:{minHeight:108},info:{minHeight:38,borderTopWidth:1,justifyContent:'center',alignItems:'center'},detail:{borderWidth:1,borderRadius:11,padding:12,gap:10},detailModal:{maxHeight:'86%'},detailScroll:{flexGrow:0,flexShrink:1},detailContent:{gap:10,paddingBottom:8},primary:{minHeight:48,alignItems:'center',justifyContent:'center',borderRadius:8},
  secondary:{minHeight:44,flex:1,alignItems:'center',justifyContent:'center',borderWidth:1,borderRadius:8},active:{borderWidth:1,borderRadius:11,padding:12,gap:5}
 });

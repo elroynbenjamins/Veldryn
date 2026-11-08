@@ -24,6 +24,8 @@ const marketAuth=read('backend/online/market-auth-boundary.ts');
 const marketAuthTest=read('backend/online/tests/market-auth-boundary.ts');
 const gameplayEdge=read('backend/online/edge.ts');
 const concurrencyRunner=read('backend/supabase/tests/run_market_concurrency_ci_v6.sh');
+const gearProof=read('backend/online/market-equipment-proof.ts');
+const gearProofTest=read('backend/online/tests/market-equipment-proof.ts');
 const release=read('apps/mobile/src/core/release-flags.ts');
 const roadmap=read('apps/mobile/src/core/community-roadmap-release-visibility.ts');
 
@@ -216,4 +218,33 @@ requireMatches(concurrencyRunner,[
 assert.doesNotMatch(marketAuth,/\.rpc\(|service_role|SUPABASE_SERVICE_ROLE_KEY/,
   'future auth boundary cannot directly invoke privileged market RPCs');
 
-console.log('PASS: hidden V2–V6 marketplace release gates, auth binding and concurrency fixtures remain private');
+requireMatches(gearProof,[
+  ['hard equipment escrow gate',/export const MARKET_EQUIPMENT_ESCROW_RELEASED_V7=false as const/],
+  ['read-only exact ownership audit',/auditCraftedGearOwnership\(state\)/],
+  ['unknown legacy copy denied',/equipment_ownership_audit_not_clean/],
+  ['exact receipt requirement',/exact_receipt_missing_or_duplicate/],
+  ['all socket metadata canonical',/socket_reconciliation_required/],
+  ['saved loadout protection',/saved_loadout_references_copy/],
+  ['active equipment rejection',/equipped_or_overflow_copy_not_tradable/],
+  ['no item-level upgrade leaks',/legacy_item_level_upgrades_unreconciled/],
+  ['server revision captured',/sourceRevision:revision/],
+  ['always escrow disabled',/canEscrowNow:false/],
+  ['always delivery disabled',/canDeliverNow:false/],
+  ['buyer ownership verified',/buyer\.account\.longTermAccountScopeId!==buyerAccountId/],
+  ['duplicate instance refusal',/duplicate_instance_id_in_destination/],
+  ['full pouch refusal',/destination_storage_full_or_unverified/],
+], 'exact equipment proof');
+requireMatches(gearProofTest,[
+  ['never releases escrow',/MARKET_EQUIPMENT_ESCROW_RELEASED_V7,false/],
+  ['socket and rarity persistence',/preserve full serialized per-copy receipt, sockets and upgrades/],
+  ['saved loadout protection',/saved_loadout_references_copy/],
+  ['duplicate buyer copy denial',/duplicate_instance_id_in_destination/],
+  ['pouch capacity refusal',/destination_storage_full_or_unverified/],
+  ['nonmutating read-only inspection',/inspection must not mutate saved equipment/],
+], 'equipment proof regression');
+assert.doesNotMatch(gearProof,/\bupdate\s+public\.|\binsert\s+into\b|\bdelete\s+from\b|\.rpc\(/i,
+  'the equipment transfer proof must not move assets');
+assert.doesNotMatch(gameplayEdge,/market-equipment-proof/,
+  'the equipment proof must not be imported by the live gameplay transport');
+
+console.log('PASS: hidden V2–V7 market security, exact gear metadata and release barriers remain private');

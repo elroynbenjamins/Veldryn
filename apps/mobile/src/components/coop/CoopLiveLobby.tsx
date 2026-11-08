@@ -2,7 +2,7 @@ import {CoopLiveLobbyView,type LobbyIdentity} from './CoopLobbyPresentation';
 export {CoopLiveLobbyView} from './CoopLobbyPresentation';
 import {useEffect,useRef,useState} from 'react';
 import {AppState} from 'react-native';
-import {coopClient,coopRequestId} from '../../online/coop-client';
+import {coopClient,coopErrorMessage,coopRequestId} from '../../online/coop-client';
 import {noCoopProfileIcon,useCoopProfileIcons} from '../../online/coop-profile-icons';
 import {type LiveQueueView,type LiveReadyView} from '../../core/coop-live-lobby';
 
@@ -24,7 +24,7 @@ export function CoopLiveLobby({onBack,onRunReady,dungeons,selfPortrait,setupStat
     const current=next.ticket?.status==='reserved'&&next.ticket.reservationId?await coopClient.liveReady(next.ticket.reservationId):undefined;
     const hasPending=await coopClient.hasPending();if(!stopped){setReady(current);setPending(hasPending);}
     if(current?.runId&&onRunReady)onRunReady(current.runId);
-   }catch(error){if(!stopped)setNotice(error instanceof Error?error.message:String(error));}finally{if(!stopped)setLoading(false);inFlight=false;}
+   }catch(error){if(!stopped)setNotice(coopErrorMessage(error));}finally{if(!stopped)setLoading(false);inFlight=false;}
   };
   refresh.current=update;void update();const timer=setInterval(()=>void update(),2500);
   const listener=AppState.addEventListener('change',status=>{if(status==='active')void update();});
@@ -32,7 +32,7 @@ export function CoopLiveLobby({onBack,onRunReady,dungeons,selfPortrait,setupStat
  },[onRunReady]);
  const act=async(work:()=>Promise<unknown>)=>{
   if(busy)return undefined;setBusy(true);setNotice('');let result:unknown;
-  try{result=await work();await refresh.current();}catch(error){if(mounted.current)setNotice(error instanceof Error?error.message:String(error));}
+  try{result=await work();await refresh.current();}catch(error){if(mounted.current)setNotice(coopErrorMessage(error));}
   finally{if(mounted.current){setBusy(false);setPending(await coopClient.hasPending().catch(()=>false));}}
   return result;
  };

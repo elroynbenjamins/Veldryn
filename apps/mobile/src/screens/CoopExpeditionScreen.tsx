@@ -14,7 +14,7 @@ import {CoopLiveRecruitmentBoard} from '../components/coop/CoopLiveRecruitmentBo
 import {presentCoopDungeon,validateCoopDungeonView,type CoopDungeonView,type CoopTier} from '../core/coop-dungeon-browsing';
 import type {CoopMode,CoopRunView} from '../core/coop-presentation';
 import type {Language} from '../i18n';
-import {coopClient,coopLiveReadyEnabled,coopRequestId,type CoopEntryData,type CoopLiveRematchState} from '../online/coop-client';
+import {coopClient,coopErrorMessage,coopLiveReadyEnabled,coopRequestId,type CoopEntryData,type CoopLiveRematchState} from '../online/coop-client';
 import {presentQModeRun,type CoopQModeServerProjection} from '../core/coop-qmode';
 import {realCoopQModeSource} from '../online/coop-qmode-source';
 import {COOP_CHAT_REFRESH_MS,type CoopSyncUrgency} from '../core/coop-sync-policy';
@@ -90,12 +90,12 @@ export function CoopExpeditionScreen({onClose,language,state,entrySource=realCoo
     const next=await coopClient.eventRun(runId);if(activeEventRunId.current!==runId)return;
     setEventRun(current=>current?.runId===runId&&current.stateVersion<=next.stateVersion?next:current);
   },[]);
-  const action=async(work:()=>Promise<void>)=>{if(busy)return;setBusy(true);setNotice('');try{await work();}catch(reason){setNotice(reason instanceof Error?reason.message:String(reason));}finally{setBusy(false);if(entrySource.kind==='real')setPending(await coopClient.hasPending().catch(()=>false));}};
+  const action=async(work:()=>Promise<void>)=>{if(busy)return;setBusy(true);setNotice('');try{await work();}catch(reason){setNotice(coopErrorMessage(reason));}finally{setBusy(false);if(entrySource.kind==='real')setPending(await coopClient.hasPending().catch(()=>false));}};
   const load=useCallback(async()=>{
     const requestId=++loadRequestId.current;
     setLoading(true);setError('');
     try{const next=await entrySource.load();next.dungeons.forEach(source=>validateCoopDungeonView(presentCoopDungeon(source)));next.eventExpeditions?.forEach(validateCoopEventExpeditionPreview);if(requestId===loadRequestId.current)setEntry(next)}
-    catch(reason){if(requestId===loadRequestId.current)setError(reason instanceof Error?reason.message:String(reason))}
+    catch(reason){if(requestId===loadRequestId.current)setError(coopErrorMessage(reason))}
     finally{if(requestId===loadRequestId.current)setLoading(false)}
   },[entrySource]);
   // Server-owned ready checks are polled only while this modal is open.

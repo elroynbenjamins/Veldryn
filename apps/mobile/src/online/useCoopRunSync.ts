@@ -1,6 +1,7 @@
 import {useEffect} from 'react';
 import {coopSyncIntervalMs,type CoopSyncMode,type CoopSyncUrgency} from '../core/coop-sync-policy';
 import {supabase} from './supabase';
+import {coopErrorMessage} from './coop-client';
 
 /**
  * One single-flight refresh loop per visible run, with realtime as the fast path.
@@ -27,7 +28,7 @@ export function useCoopRunSync({runId,mode,urgency,enabled,refresh,setError}:{
    clearTimer();
    inFlight=true;
    try{await refresh(id);if(!stopped)setError('');}
-   catch(reason){if(!stopped)setError(reason instanceof Error?reason.message:String(reason));}
+   catch(reason){if(!stopped)setError(coopErrorMessage(reason));}
    finally{
     inFlight=false;
     if(!stopped){const repeat=queued;queued=false;schedule(repeat?0:coopSyncIntervalMs(mode,urgency,realtimeConnected));}

@@ -45,4 +45,24 @@ assert.ok(!screen.includes('onStart={()=>void act('),'Do not manually start vote
 assert.match(sink,/AsyncStorage\.setItem\(storageKey/);
 assert.match(sink,/p_request_key:request\.requestKey/);
 assert.match(picker,/activeGoals/);
-console.log('PASS: six rotating Guild choices, auto Monday start, concurrent slots, bank rewards and safe common-material donation contracts');
+const refined=read('backend/supabase/migrations/20261108090000_guild_choice_difficulty_rotation_v2.sql');
+const copy=read('apps/mobile/src/i18n/online-guild-project-ui.ts');
+assert.match(refined,/guild_weekly_shared_effort|one guaranteed standard project/i,'Keep guaranteed standard project alongside voted choice');
+assert.match(refined,/mod\(extract\(epoch from v_next\)::bigint\/604800,2\)/,'Alternating weekly candidates cannot repeat randomly');
+assert.match(refined,/IF v_candidate IS NULL THEN/,'No-vote winner must remain the Medium ballot choice');
+assert.doesNotMatch(refined,/IF v_candidate IS NULL OR v_votes=0/,'Zero votes must not replace Medium with Combat');
+assert.match(refined,/WHERE template_id=CASE WHEN.*guild_weekly_makers_drive.*guild_weekly_provision/,'Missing ballots must still choose a rotating Medium project');
+for(const [focus,tier] of [['borderwatch','easy'],['makers_drive','medium'],['frontier_relief','hard']])
+ assert.match(refined,new RegExp("guild_weekly_"+focus+"','"+tier+"'"),'Missing tier '+tier);
+assert.match(refined,/guild_project_choice_ballot_v1/);
+assert.match(refined,/'difficulty',c.definition_snapshot->>'difficulty'/);
+assert.match(refined,/'effortPerMember',coalesce/);
+assert.match(client,/meaningful_contributor_threshold/,'Honor server-defined meaningful contribution thresholds');
+assert.match(client,/choiceAvailable:!candidateResult.error/,'Do not advertise unavailable voting before deployment');
+assert.match(client,/difficulty:row.difficulty/,'Use authoritative tier when available');
+assert.match(screen,/sort\(\(a,b\)=>a.slotIndex-b.slotIndex\)/,'Standard project must render first');
+assert.match(screen,/candidate.myVote&&s.candidateSelected/,'Current vote must stand out');
+assert.match(screen,/If nobody votes, the Medium project starts automatically/,'Explain no-vote fallback');
+for(const key of ['Standard weekly',"Guild's Choice",'Easy','Medium','Hard','Voting opens Thursday at Guild Level 3.'])
+ assert.ok(copy.includes(JSON.stringify(key)+':'),'Seven-language key missing: '+key);
+console.log('PASS: standard + voted projects, rotating Easy/Medium/Hard options, medium fallback, rewards and localized UI contracts');

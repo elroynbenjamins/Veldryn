@@ -6,9 +6,9 @@ import {socialLabel} from './social';
 
 /** Active Guild Quest board and Guild Activity meter copy, in DE/ES/NL/IT/FR/RU/TR order. */
 export const guildActivityUiRows={
-  "RECORDED": ["ERFASST","REGISTRADO","GEREGISTREERD","REGISTRATO","ENREGISTRÉ","ЗАПИСАНО","KAYDEDİLDİ"],
-  "NOT RECORDED": ["NICHT ERFASST","NO REGISTRADO","NIET GEREGISTREERD","NON REGISTRATO","NON ENREGISTRÉ","НЕ ЗАПИСАНО","KAYDEDİLMEDİ"],
-  "Only matching, verified quest objectives count. Complete the listed activity and refresh to check your progress.": ["Nur passende, bestätigte Questziele zählen. Schließe die angegebene Aktivität ab und aktualisiere den Fortschritt.","Solo cuentan los objetivos de misión verificados que coinciden. Completa la actividad y actualiza para comprobar tu progreso.","Alleen passende, geverifieerde opdrachtdoelen tellen mee. Voltooi de activiteit en vernieuw om je voortgang te controleren.","Contano solo gli obiettivi delle missioni verificati e corrispondenti. Completa l'attività e aggiorna per controllare i progressi.","Seuls les objectifs de quête correspondants et vérifiés comptent. Terminez l'activité indiquée et actualisez la progression.","Учитываются только подтверждённые подходящие цели заданий. Выполните указанное действие и обновите прогресс.","Yalnızca eşleşen ve doğrulanmış görev hedefleri sayılır. Belirtilen etkinliği tamamla ve ilerlemeni yenile."],
+  "RECORDED": ["ERFASST","REGISTRADO","VASTGELEGD","REGISTRATO","ENREGISTRÉ","ЗАПИСАНО","KAYDEDİLDİ"],
+  "NOT RECORDED": ["NICHT ERFASST","NO REGISTRADO","NIET VASTGELEGD","NON REGISTRATO","NON ENREGISTRÉ","НЕ ЗАПИСАНО","KAYDEDİLMEDİ"],
+  "Only matching, verified quest objectives count. Complete the listed activity and refresh to check your progress.": ["Nur passende, bestätigte Questziele zählen. Erledige die Aufgabe und aktualisiere den Fortschritt.","Solo cuentan los objetivos verificados. Completa la actividad y actualiza el progreso.","Alleen passende, gecontroleerde questdoelen tellen. Voltooi de activiteit en vernieuw.","Contano solo gli obiettivi verificati. Completa l'attività e aggiorna i progressi.","Seuls les objectifs vérifiés comptent. Terminez l'activité puis actualisez.","Учитываются только подтверждённые цели. Выполните задание и обновите прогресс.","Yalnızca doğrulanmış görev hedefleri sayılır. Etkinliği tamamlayıp yenile."],
   "{completed}/{total} completed · +{activity} Activity earned": [
     "{completed}/{total} abgeschlossen · +{activity} Aktivität erhalten",
     "{completed}/{total} completadas · +{activity} de actividad",

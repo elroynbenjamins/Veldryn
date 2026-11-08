@@ -55,4 +55,4 @@ assert.ok(board.includes("ui('Objective breakdown · {quest}'")||board.includes(
 assert.ok(board.includes('q.title')&&board.includes('q.description'),'Authoritative quest content must be preserved');
 assert.ok(meter.includes('milestone(row.name)')&&meter.includes('milestone(row.description)'),'Guild Activity milestone names/descriptions must be localized');
 assert.ok(meter.includes('ui("Guild Activity details")'),'Guild Activity accessibility label must be localized');
-console.log('PASS: 30 Guild Quest/Activity labels across seven target languages, 10 milestone strings in RU/TR and safe runtime interpolation');
+console.log('PASS: 33 Guild Quest/Activity labels across seven target languages, 10 milestone strings in RU/TR and safe runtime interpolation');

@@ -77,7 +77,7 @@ begin
       'character',jsonb_build_object('id',v_rival_char::text,'gold',300),
       'account',jsonb_build_object('craftedGearInstances','[]'::jsonb),
       'inventory',jsonb_build_object('capacity',10,'stacks','[]'::jsonb),
-      'bank',jsonb_build_object('capacity',10,'stacks','[]'::jsonb))));
+      'bank',jsonb_build_object('capacity',10,'stacks','[]'::jsonb)));
 
   -- Function ACLs and hard-false gate deny all live operations.
   if has_function_privilege('anon',

@@ -73,7 +73,7 @@ function itemMeta(language:GameState['settings']['language'],id:MoreDestination)
   }
 }
 
-export function MoreScreen({language,character,accountStatus='local',onNavigate,onOpenAdminQa,onOpenUpdates,newReleaseAvailable=false,companionAttention=false,companionUnlocked=true,lockedDestinations={},dailySuppliesAttention=false,friendRequestCount=0,guildAttentionCount=0,socialAttentionCount=0,newUnlockCount=0,storyRewardCount=0}:{language:GameState['settings']['language'];character?:GameState['character'];accountStatus?:'guest'|'pending'|'linked'|'local';onNavigate:(destination:MoreDestination)=>void;onOpenAdminQa?:()=>void;onOpenUpdates?:()=>void;newReleaseAvailable?:boolean;companionAttention?:boolean;companionUnlocked?:boolean;lockedDestinations?:Partial<Record<MoreDestination,string>>;dailySuppliesAttention?:boolean;friendRequestCount?:number;guildAttentionCount?:number;socialAttentionCount?:number;newUnlockCount?:number;storyRewardCount?:number}){
+export function MoreScreen({language,character,accountStatus='local',onNavigate,onOpenAdminQa,onOpenUpdates,onOpenRoadmap,newReleaseAvailable=false,companionAttention=false,companionUnlocked=true,lockedDestinations={},dailySuppliesAttention=false,friendRequestCount=0,guildAttentionCount=0,socialAttentionCount=0,newUnlockCount=0,storyRewardCount=0}:{language:GameState['settings']['language'];character?:GameState['character'];accountStatus?:'guest'|'pending'|'linked'|'local';onNavigate:(destination:MoreDestination)=>void;onOpenAdminQa?:()=>void;onOpenUpdates?:()=>void;onOpenRoadmap?:()=>void;newReleaseAvailable?:boolean;companionAttention?:boolean;companionUnlocked?:boolean;lockedDestinations?:Partial<Record<MoreDestination,string>>;dailySuppliesAttention?:boolean;friendRequestCount?:number;guildAttentionCount?:number;socialAttentionCount?:number;newUnlockCount?:number;storyRewardCount?:number}){
  const a=(text:string,params?:Record<string,string|number>)=>accountText(language,text,params);
 
   const C=useGameTheme(),s=useMemo(()=>makeStyles(C),[C]),{width,fontScale}=useWindowDimensions(),singleColumn=width<350||fontScale>=1.25;
@@ -123,6 +123,9 @@ export function MoreScreen({language,character,accountStatus='local',onNavigate,
      <View style={s.securityIcon}><Text style={s.securityIconText}>◇</Text></View>
      <View style={s.flex}><Text style={s.securityTitle}>{a('Secure your progress')}</Text><Text style={s.securityDescription}>{a(accountStatus==='pending'?'Complete email verification or password setup in Account settings.':'Link an email to protect access to this guest account.')}</Text></View>
      <Text style={s.securityArrow}>›</Text>
+    </Pressable>:null}
+    {onOpenRoadmap?<Pressable accessibilityRole="button" accessibilityLabel={a('Community Roadmap')} accessibilityHint={a('Vote on major future expansions')} onPress={onOpenRoadmap} style={({pressed})=>[s.releaseRow,pressed&&s.pressed]}>
+      <UiIcon name="world" size={22}/><Text style={s.releaseTitle}>{a('Community Roadmap')}</Text><UiIcon name="next" size={18}/>
     </Pressable>:null}
     {onOpenUpdates?<Pressable accessibilityRole="button" accessibilityLabel={a("What's New & Updates")} accessibilityHint={newReleaseAvailable?a("New release information available"):a("Release notes and app versions")} onPress={onOpenUpdates} style={({pressed})=>[s.releaseRow,pressed&&s.pressed]}>
       <UiIcon name="events" size={22}/><Text style={s.releaseTitle}>{a("What's New & Updates")}</Text>{newReleaseAvailable?<AttentionDot label={a("New update available")}/>:null}<UiIcon name="next" size={18}/>

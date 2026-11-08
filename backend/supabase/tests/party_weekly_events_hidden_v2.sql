@@ -53,6 +53,35 @@ BEGIN
     END IF;
   END;
 
+  -- The second pass must not introduce a public RPC.
+  IF has_function_privilege('authenticated','private.party_weekly_event_enroll_v2(uuid,uuid)','EXECUTE')
+    OR has_function_privilege('authenticated','private.party_weekly_event_record_activity_v2(uuid,text)','EXECUTE')
+    OR has_function_privilege('authenticated','private.party_weekly_event_maybe_advance_v2(uuid)','EXECUTE')
+    OR has_function_privilege('anon','private.party_weekly_event_enroll_v2(uuid,uuid)','EXECUTE')
+    OR has_function_privilege('anon','private.party_weekly_event_record_activity_v2(uuid,text)','EXECUTE')
+    OR has_function_privilege('anon','private.party_weekly_event_maybe_advance_v2(uuid)','EXECUTE')
+  THEN
+    RAISE EXCEPTION 'weekly progression RPC exposed to clients';
+  END IF;
+
+  -- Unverified arbitrary source identifiers must not produce EP, even when
+  -- called with service privileges from a trusted worker.
+  BEGIN
+    PERFORM private.party_weekly_event_record_activity_v2(
+      gen_random_uuid(),'no-such-source-01'
+    );
+    RAISE EXCEPTION 'disabled progress accepted';
+  EXCEPTION WHEN OTHERS THEN
+    IF SQLERRM <> 'PARTY_WEEKLY_EVENTS_DISABLED' THEN RAISE; END IF;
+  END;
+
+  BEGIN
+    PERFORM private.party_weekly_event_enroll_v2(gen_random_uuid(),gen_random_uuid());
+    RAISE EXCEPTION 'disabled enrollment accepted';
+  EXCEPTION WHEN OTHERS THEN
+    IF SQLERRM <> 'PARTY_WEEKLY_EVENTS_DISABLED' THEN RAISE; END IF;
+  END;
+
   IF NOT EXISTS (
     SELECT 1 FROM pg_indexes
     WHERE schemaname='private'

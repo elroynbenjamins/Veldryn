@@ -60,6 +60,8 @@ jobs:
         run: node ../../tools/validate-regional-combat-cadence.mjs
       - name: Typecheck core
         run: pnpm typecheck:core
+      - name: Verify hidden Player Market custody and ownership inspection
+        run: pnpm --dir ../../backend test:market-readiness
       - name: Typecheck mobile app
         run: pnpm typecheck
       - name: Verify native Google nonce generation, identity binding, and account safety

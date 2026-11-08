@@ -21,7 +21,7 @@ export const profilePortraitIcons:Record<string,ImageSourcePropType>={
  'starter:traveling-alchemist':require('../../assets/profile-icons-v1/traveling-alchemist.webp'),
  'starter:dawn-priestess':require('../../assets/profile-icons-v1/dawn-priestess.webp'),
  'starter:stonebound-explorer':require('../../assets/profile-icons-v1/stonebound-explorer.webp'),
- 'starter:gilded-duelist':require('../../assets/profile-icons-v1/gilded-duelist.png'),
+ 'starter:gilded-duelist':require('../../assets/profile-icons-v1/gilded-duelist.webp'),
  'starter:runic-scholar':require('../../assets/profile-icons-v1/runic-scholar.webp'),
  'starter:dune-warden':require('../../assets/profile-icons-v1/dune-warden.webp'),
  'creature:MOSS_RAT':require('../../assets/profile-icons-v1/moss-rat.webp'),

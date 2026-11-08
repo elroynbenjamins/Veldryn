@@ -25,7 +25,7 @@ export interface OnlineGuildProjectSummary{
  completionRewardClaimed?:boolean;launchWeekly?:boolean;rewardGold:number;rewardDestination:'character'|'guild_bank';guildXpReward?:number;hallProgress?:number;difficulty?:'easy'|'medium'|'hard';projectMode?:'effort'|'donation'|'hybrid';activityTotals:Record<'combat'|'gathering'|'crafting',number>&{donation?:number};personalPoints:number;personalRewardThreshold:number;endsAt?:string;startedAt:string;resourceGoals:OnlineGuildProjectResourceGoal[];memberContributions:OnlineGuildProjectMemberContribution[];
 }
 export interface OnlineGuildProjectCandidate{id:string;cycleKey:string;templateId:string;name:string;description:string;focus:'combat'|'skilling'|'mixed';expiresAt:string;voteCount:number;myVote:boolean;canStart:boolean;guildXpReward:number;rewardGold:number;mode:'effort'|'donation'|'hybrid';difficulty:'easy'|'medium'|'hard';effortPerMember:number}
-export interface OnlineGuildProjectsSnapshot{guildId:string;projects:OnlineGuildProjectSummary[];candidates:OnlineGuildProjectCandidate[];activity:GuildActivityView[];supplyInventory?:OnlineGuildProjectSupplyItem[]}
+export interface OnlineGuildProjectsSnapshot{guildId:string;projects:OnlineGuildProjectSummary[];candidates:OnlineGuildProjectCandidate[];choiceAvailable:boolean;activity:GuildActivityView[];supplyInventory?:OnlineGuildProjectSupplyItem[]}
 
 function client(){if(!supabase)throw new Error('Online services are not configured in this build.');return supabase;}
 function num(value:unknown){const n=Number(value);return Number.isFinite(n)?Math.max(0,n):0}
@@ -128,7 +128,7 @@ async function readGuildProjects(membership:NonNullable<Awaited<ReturnType<typeo
   .map(row=>({itemId:String(row.itemId),name:String(row.name),category:row.category as 'wood'|'fish'|'ore',
     value:num(row.value),available:num(row.available)}));
  const activity=(activityData??[]).map((row:ActivityRow):GuildActivityView=>({id:row.id,kind:row.kind,title:row.title,body:row.body??undefined,createdAt:row.created_at}));
- return{guildId:membership.guild_id,projects,candidates,activity,supplyInventory};
+ return{guildId:membership.guild_id,projects,candidates,choiceAvailable:!candidateResult.error,activity,supplyInventory};
 }
 
 export async function voteOnlineGuildProjectCandidate(candidateId:string){const db=client();const {data,error}=await db.rpc('guild_project_vote_v1',{p_candidate_id:candidateId});if(error)throw error;projectReads.clear();return data as string;}

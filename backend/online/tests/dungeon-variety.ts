@@ -84,7 +84,7 @@ function sunscarPublishedClearRate():number{
  const {resolveAndFreezeLoadout}=require('../../src/server/coop/loadout-snapshots') as typeof import('../../src/server/coop/loadout-snapshots');
  const {MemoryQModeRunRepository,QModeService}=require('../../src/server/coop/qmode') as typeof import('../../src/server/coop/qmode');
  const roster=(['IRONWARDEN','WAYFINDER','RAVAGER','DAWNKEEPER'] as const).map((classId,index)=>{
-  const state=createCharacter(newGame(0),classId,`Balance Test ${index}`);
+  const state=createCharacter(newGame(0),classId,'Balance Test');
   state.character!.id=`character-${index}`;state.character!.level=100;
   state.character!.equipment=Object.fromEntries(noviceSetFor(classId).slots.map(slot=>[slot,noviceItemId(classId,slot)]));
   const record=deriveOnlineCoopLoadout(`account-${index}`,state,1);

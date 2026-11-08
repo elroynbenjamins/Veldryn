@@ -172,19 +172,21 @@ export function effectiveStats(state:GameState){
   // gem/set/mastery specializations remain separately meaningful.
   const classGear=classWeightedGearStats(c.classId,gearAttack,gearDefense);
   attack+=classGear.attack;defense+=classGear.defense;
+  // Preserve fractional equipment improvements until display/combat use. Rounding
+  // each stage used to erase small upgrades, Iron gem Defense and class scaling.
   const setStats=activeEquipmentBuildStats(state);
   hp=Math.ceil(hp*(1+setStats.maxHp));
-  defense=Math.ceil(defense*(1+setStats.armor));
+  defense*=1+setStats.armor;
   // Legacy gems keep their original primary-stat behavior; canonical Stat Gems
   // are already included in activeEquipmentBuildStats above.
-  const gems=equippedGemBonuses(state);hp=Math.ceil(hp*(1+gems.hp));attack=Math.ceil(attack*(1+gems.attack));defense=Math.ceil(defense*(1+gems.defense));
-  const mastery=characterClassEffects(c);hp=Math.ceil(hp*mastery.hp);attack=Math.ceil(attack*mastery.attack);defense=Math.ceil(defense*mastery.defense);
-  const permanent=characterPermanentMultipliers(state);attack=Math.ceil(attack*permanent.combatPowerMultiplier);
+  const gems=equippedGemBonuses(state);hp=Math.ceil(hp*(1+gems.hp));attack*=1+gems.attack;defense*=1+gems.defense;
+  const mastery=characterClassEffects(c);hp=Math.ceil(hp*mastery.hp);attack*=mastery.attack;defense*=mastery.defense;
+  const permanent=characterPermanentMultipliers(state);attack*=permanent.combatPowerMultiplier;
   // Wellspring and its upgrades increase actual maximum HP, not attack power.
   // This applies consistently to combat, healing caps and character stat displays.
   const faithBlessing=selectedFaithBlessing(state);
   if(faithBlessing?.family==='hp')hp=Math.ceil(hp*(1+faithBlessing.bonus));
-  const prep=c.preparation?preparationEffects(c.preparation):undefined;if(prep)attack=Math.ceil(attack*prep.attack);
+  const prep=c.preparation?preparationEffects(c.preparation):undefined;if(prep)attack*=prep.attack;
   const role=CLASSES.find(def=>def.id===c.classId)?.role,baseCritChance=role==='Damage'?.10:.05,baseEvasion=role==='Damage'?.07:.04;
   const basePower=Math.round(attack*1.5+defense*.8+hp*.08+c.level*2.5);
   return {

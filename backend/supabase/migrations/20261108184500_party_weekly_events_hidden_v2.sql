@@ -4,7 +4,7 @@
 BEGIN;
 
 CREATE SCHEMA IF NOT EXISTS private;
-REVOKE ALL ON SCHEMA private FROM PUBLIC, anon, authenticated;
+-- Do not change existing private-schema grants: other hidden systems use it.
 GRANT USAGE ON SCHEMA private TO service_role;
 
 CREATE TABLE IF NOT EXISTS private.party_weekly_event_gate_v2 (
@@ -93,7 +93,8 @@ CREATE TABLE IF NOT EXISTS private.party_weekly_event_supply_orders_v2 (
     (kind='required' AND preparation IS NULL)
     OR (kind='optional' AND preparation IN ('reinforced','provisions','specialist'))
   ),
-  UNIQUE (event_id, stage, kind, item_id, preparation)
+  CONSTRAINT party_weekly_supply_order_unique_v2
+    UNIQUE NULLS NOT DISTINCT (event_id, stage, kind, item_id, preparation)
 );
 CREATE INDEX IF NOT EXISTS party_weekly_supply_event_v2
   ON private.party_weekly_event_supply_orders_v2(event_id, stage, kind);
@@ -151,6 +152,33 @@ CREATE TABLE IF NOT EXISTS private.party_weekly_event_reward_entitlements_v2 (
   UNIQUE(account_id, week_start),
   UNIQUE(event_id, account_id)
 );
+
+-- Validate member binding at enrollment, not only in application code.
+CREATE OR REPLACE FUNCTION private.party_weekly_event_member_guard_v2()
+RETURNS trigger LANGUAGE plpgsql SECURITY DEFINER SET search_path = '' AS $guard$
+DECLARE v_party uuid; v_starts timestamptz;
+BEGIN
+  SELECT party_id,starts_at INTO v_party,v_starts
+  FROM private.party_weekly_event_instances_v2 WHERE id=NEW.event_id FOR SHARE;
+  IF NOT FOUND OR NEW.week_start IS DISTINCT FROM v_starts THEN
+    RAISE EXCEPTION 'PARTY_EVENT_INVALID_WEEK_BINDING';
+  END IF;
+  IF NOT EXISTS (
+    SELECT 1 FROM public.party_members
+    WHERE party_id=v_party AND account_id=NEW.account_id AND left_at IS NULL
+  ) THEN
+    RAISE EXCEPTION 'PARTY_EVENT_MEMBER_NOT_IN_PARTY';
+  END IF;
+  RETURN NEW;
+END $guard$;
+CREATE TRIGGER party_weekly_event_member_guard_v2
+BEFORE INSERT OR UPDATE OF week_start,event_id,account_id
+ON private.party_weekly_event_members_v2
+FOR EACH ROW EXECUTE FUNCTION private.party_weekly_event_member_guard_v2();
+REVOKE ALL ON FUNCTION private.party_weekly_event_member_guard_v2()
+  FROM PUBLIC,anon,authenticated;
+GRANT EXECUTE ON FUNCTION private.party_weekly_event_member_guard_v2()
+  TO service_role;
 
 -- Private, server-owned tables are inaccessible to the app and do not advertise
 -- an unfinished feature. Future authenticated endpoints require separate review.

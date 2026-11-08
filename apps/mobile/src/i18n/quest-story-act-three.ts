@@ -1,8 +1,11 @@
 import type {QuestActDef} from '../content/quests';
+import {rebasedCombatLevelFromLegacyLevel as rebaseLevel} from '../core/progression';
 
 /** Act III authored copy. English + DE/ES/NL/IT/FR/RU/TR; keep monster names, quest IDs, counts and rewards authoritative. */
 type EightLanguages=readonly [string,string,string,string,string,string,string,string];
 type StoryField='name'|'description'|'story';
+const guildQuestLevel=rebaseLevel(20);
+const beyondTheGreenLevel=rebaseLevel(25);
 export const chapterThreeActCopy={
   "3": {
     "name": [
@@ -40,14 +43,14 @@ export const chapterThreeQuestCopy={
       "Loncalar Arasında Bir Yer"
     ],
     "description": [
-      "Reach character level 11.",
-      "Erreiche Charakterstufe 11.",
-      "Alcanza el nivel de personaje 11.",
-      "Bereik personageniveau 11.",
-      "Raggiungi il livello personaggio 11.",
-      "Atteignez le niveau 11 de personnage.",
-      "Достигните 11-го уровня персонажа.",
-      "Karakter seviyesini 11'ye çıkar."
+      `Reach character level ${guildQuestLevel}.`,
+      `Erreiche Charakterstufe ${guildQuestLevel}.`,
+      `Alcanza el nivel de personaje ${guildQuestLevel}.`,
+      `Bereik personageniveau ${guildQuestLevel}.`,
+      `Raggiungi il livello personaggio ${guildQuestLevel}.`,
+      `Atteignez le niveau ${guildQuestLevel} de personnage.`,
+      `Достигните уровня персонажа ${guildQuestLevel}.`,
+      `${guildQuestLevel}. karakter seviyesine ulaş.`
     ],
     "story": [
       "The guilds stop treating you as a passing sword. Reports from the King’s Road now carry your name, and older adventurers begin speaking openly of the oathbound host gathering beyond the fog.",
@@ -168,14 +171,14 @@ export const chapterThreeQuestCopy={
       "Yeşilliğin Ötesinde"
     ],
     "description": [
-      "Claim victory over the Fallen Knight and reach level 14.",
-      "Besiege den Fallen Knight und erreiche Stufe 14.",
-      "Vence al Fallen Knight y alcanza el nivel 14.",
-      "Versla de Fallen Knight en bereik niveau 14.",
-      "Sconfiggi il Fallen Knight e raggiungi il livello 14.",
-      "Triomphez du Fallen Knight et atteignez le niveau 14.",
-      "Победите Fallen Knight и достигните 14-го уровня.",
-      "Fallen Knight'ı yen ve 14. seviyeye ulaş."
+      `Claim victory over the Fallen Knight and reach level ${beyondTheGreenLevel}.`,
+      `Besiege den Fallen Knight und erreiche Stufe ${beyondTheGreenLevel}.`,
+      `Vence al Fallen Knight y alcanza el nivel ${beyondTheGreenLevel}.`,
+      `Versla de Fallen Knight en bereik niveau ${beyondTheGreenLevel}.`,
+      `Sconfiggi il Fallen Knight e raggiungi il livello ${beyondTheGreenLevel}.`,
+      `Triomphez du Fallen Knight et atteignez le niveau ${beyondTheGreenLevel}.`,
+      `Победите Fallen Knight и достигните уровня ${beyondTheGreenLevel}.`,
+      `Fallen Knight'ı yen ve ${beyondTheGreenLevel}. seviyeye ulaş.`
     ],
     "story": [
       "With the Knight defeated, the sealed routes beyond Asterfall begin to open. The victory ends one chapter, but the echoes carried on the wind make it clear the broken oath was never confined to the green lands.",

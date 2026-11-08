@@ -1,5 +1,6 @@
 import type {Language} from './languages';
 import type {QuestActDef,QuestDef} from '../content/quests';
+import {rebasedCombatLevelFromLegacyLevel as rebaseLevel} from '../core/progression';
 import {chapterTwoActCopy,chapterTwoQuestCopy} from './quest-story-act-two';
 import {chapterThreeActCopy,chapterThreeQuestCopy} from './quest-story-act-three';
 
@@ -9,6 +10,7 @@ import {chapterThreeActCopy,chapterThreeQuestCopy} from './quest-story-act-three
  */
 type EightLanguages=readonly [string,string,string,string,string,string,string,string];
 type StoryField='name'|'description'|'story';
+const intoIronwoodLevel=rebaseLevel(10);
 const languageColumn:Record<Language,number>={en:0,de:1,es:2,nl:3,it:4,fr:5,ru:6,tr:7};
 export const chapterOneActCopy={
   1:{
@@ -175,14 +177,14 @@ export const chapterOneQuestCopy={
       "Ironwood'a Doğru"
     ],
     "description": [
-      "Reach character level 7.",
-      "Erreiche Charakterstufe 7.",
-      "Alcanza el nivel de personaje 7.",
-      "Bereik personageniveau 7.",
-      "Raggiungi il livello personaggio 7.",
-      "Atteignez le niveau de personnage 7.",
-      "Достигните 7-го уровня персонажа.",
-      "Karakter seviyesini 7'a çıkar."
+      `Reach character level ${intoIronwoodLevel}.`,
+      `Erreiche Charakterstufe ${intoIronwoodLevel}.`,
+      `Alcanza el nivel de personaje ${intoIronwoodLevel}.`,
+      `Bereik personageniveau ${intoIronwoodLevel}.`,
+      `Raggiungi il livello personaggio ${intoIronwoodLevel}.`,
+      `Atteignez le niveau de personnage ${intoIronwoodLevel}.`,
+      `Достигните уровня персонажа ${intoIronwoodLevel}.`,
+      `${intoIronwoodLevel}. karakter seviyesine ulaş.`
     ],
     "story": [
       "Rumours from the forest no longer sound like frightened farmers exaggerating. Something beneath the roots is stirring, and the wardens will only open the deeper paths to adventurers who have survived long enough to matter.",

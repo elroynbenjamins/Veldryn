@@ -5,6 +5,7 @@ import { EXPEDITION_ENCOUNTERS } from './content/expedition-encounters';
 import {pveEncounterPreview,type PveEncounterPreview} from './pve-encounter-identity';
 import {buildPveSimulationTelemetry,type PveSimulationTelemetry} from './pve-simulation-telemetry';
 import {pveBossTelegraph,type PveBossTelegraph} from './pve-encounter-identity';
+import {applyCoopRoomModifier} from '../expeditions/coop-room-modifiers';
 
 export interface BuildExpeditionEncounterInput {
   encounterId:string;
@@ -14,6 +15,8 @@ export interface BuildExpeditionEncounterInput {
   bossTuning?:EncounterBossTuning;
   enemyLevel?:number;
   enemyDamageProfile?:'qmode-v1';
+  /** Deterministic, server-selected modifier on a combat route node. */
+  roomModifierId?:string;
 }
 export interface ResolveExpeditionCombatInput extends BuildExpeditionEncounterInput {
   runId:string;
@@ -67,17 +70,17 @@ export function expeditionBossTelegraph(encounterId:string):PveBossTelegraph|und
 export function buildExpeditionEncounter(input:BuildExpeditionEncounterInput):CombatantDefinition[] {
   const factory=EXPEDITION_ENCOUNTERS[input.encounterId]; if(!factory) throw new Error(`unknown_encounter:${input.encounterId}`);
   const tuning=input.bossTuning,removed=new Set(tuning?.removeAbilityIds??[]);
-  return factory().map(enemy=>{
+  return factory().map((enemy,index)=>{
     const levelRatio=input.enemyLevel===undefined?1:Math.max(.65,Math.min(1.2,input.enemyLevel/Math.max(1,enemy.level)));
     const base={...enemy,level:input.enemyLevel??enemy.level,stats:{...enemy.stats,maxHp:enemy.stats.maxHp*levelRatio*(input.enemyHpMultiplier??1),attackPower:enemy.stats.attackPower*levelRatio*(input.enemyAttackMultiplier??1),defense:enemy.stats.defense*levelRatio*(input.enemyDefenseMultiplier??1)}};
-    if(!base.boss||!tuning)return base;
+    if(!base.boss||!tuning)return applyCoopRoomModifier(base,input.roomModifierId,index);
     const abilities=base.abilities.filter(ability=>!removed.has(ability.id)).map(ability=>{
       const damageMultiplier=tuning.abilityDamageMultipliers?.[ability.id]??1,cooldownMultiplier=tuning.abilityCooldownMultipliers?.[ability.id]??1;
       return {...ability,cooldownMs:Math.max(500,Math.round(ability.cooldownMs*cooldownMultiplier)),effects:ability.effects.map(effect=>(effect.kind==='damage'||effect.kind==='dot')&&effect.coeff!==undefined?{...effect,coeff:effect.coeff*damageMultiplier}:effect)};
     });
     for(const added of tuning.addAbilities??[])if(!abilities.some(ability=>ability.id===added.id))abilities.push(structuredClone(added));
     const phases=[...(base.phases??[])];for(const added of tuning.addPhases??[])if(!phases.some(phase=>phase.id===added.id))phases.push(structuredClone(added));
-    return {...base,abilities,phases};
+    return applyCoopRoomModifier({...base,abilities,phases},input.roomModifierId,index);
   });
 }
 

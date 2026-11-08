@@ -73,6 +73,7 @@ function makeHarness({user = null, recovering = false} = {}) {
     ['react-native-safe-area-context', {useSafeAreaInsets: () => ({top: 0, right: 0, bottom: 0, left: 0})}],
     [path.join(app, 'src/online/AuthSessionProvider'), {useAuthSession: () => ({...auth})}],
     [path.join(app, 'src/online/account'), api],
+    // Native Google modules are tested separately; this offline UI harness must not load Expo.
     [path.join(app, 'src/online/google-signin'), {googleSignInConfigured: false, googleAccountLinkingEnabled: false}],
     [path.join(app, 'src/online/play-games'), {inspectPlayGamesConnection: async () => ({status:'unavailable',reason:'configuration',message:'Not configured in test build.'}),signInPlayGames: async () => ({authenticated:false}),playGamesConfigured:false}],
     [path.join(app, 'src/online/supabase'), {onlineConfigured: true}],

@@ -14,7 +14,7 @@ const {guildActivityUiRows,guildActivityUiText,guildMilestoneText}=require('../s
 const {socialTranslationRows}=require('../src/i18n/social.ts');
 const {EARLY_LOCALE_ROWS}=require('../src/i18n/early-locales.ts');
 const {GUILD_ACTIVITY_MILESTONE_DEFS}=require('../src/core/guild-activity.ts');
-const expected=30,legacy=['de','es','nl','it','fr','ru','tr'],placeholders=value=>[...value.matchAll(/\{([a-zA-Z][a-zA-Z0-9_]*)\}/g)].map(match=>match[1]).sort();
+const expected=33,legacy=['de','es','nl','it','fr','ru','tr'],placeholders=value=>[...value.matchAll(/\{([a-zA-Z][a-zA-Z0-9_]*)\}/g)].map(match=>match[1]).sort();
 assert.equal(Object.keys(guildActivityUiRows).length,expected,'All current authored Guild Quest/Activity labels covered');
 assert.deepEqual([...SUPPORTED_LANGUAGES],['en',...legacy]);
 for(const [key,row] of Object.entries(guildActivityUiRows)){

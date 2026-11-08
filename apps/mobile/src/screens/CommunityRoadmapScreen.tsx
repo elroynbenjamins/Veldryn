@@ -93,9 +93,7 @@ export function CommunityRoadmapScreen({language}:{language:Language}){
 
    <View style={s.sectionHead}>
      <Text style={s.sectionTitle}>{a(STATUS_OPTIONS.find(option=>option.id===selected)?.label??'Vote')}</Text>
-     <Pressable accessibilityRole="button" accessibilityLabel={a('Refresh roadmap')} onPress={()=>void load()} disabled={loading||!!pending} style={({pressed})=>[s.refresh,pressed&&s.pressed]}>
-       <Text style={s.refreshText}>{loading?a('Loading…'):a('Refresh')}</Text>
-     </Pressable>
+     <Text style={s.refreshText}>{a('Updates every 2 hours')}</Text>
    </View>
 
    {error?<View accessibilityRole="alert" style={s.errorCard}>
@@ -147,7 +145,7 @@ function makeStyles(C:ThemeColors){return StyleSheet.create({
  tab:{flexGrow:1,minHeight:43,justifyContent:'center',alignItems:'center',paddingHorizontal:10,paddingVertical:8,backgroundColor:C.panel,borderWidth:1,borderColor:C.line,borderRadius:9},
  tabSelected:{backgroundColor:C.selection,borderColor:C.selectionLine},tabLabel:{fontSize:11,fontWeight:'800',color:C.muted},tabLabelActive:{color:C.text},
  sectionHead:{flexDirection:'row',alignItems:'center',justifyContent:'space-between',paddingVertical:4},
- sectionTitle:{...typography.bodyStrong,color:C.text},refresh:{minHeight:40,justifyContent:'center',paddingHorizontal:8},refreshText:{fontSize:11,fontWeight:'800',color:C.accent},
+ sectionTitle:{...typography.bodyStrong,color:C.text},refreshText:{fontSize:11,fontWeight:'700',color:C.muted},
  feature:{padding:13,gap:9,backgroundColor:C.panel,borderWidth:1,borderColor:C.line,borderRadius:radii.md},
  featureSelected:{borderColor:C.selectionLine,backgroundColor:C.panelRaised},
  featureTop:{flexDirection:'row',alignItems:'center',gap:10},featureGlyph:{width:38,height:38,flexShrink:0,alignItems:'center',justifyContent:'center',backgroundColor:C.panelRaised,borderWidth:1,borderColor:C.selectionLine,borderRadius:9},featureTitle:{...typography.bodyStrong,color:C.text,fontSize:15},category:{...typography.caption,color:C.accentSoft,marginTop:4,fontSize:10},

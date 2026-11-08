@@ -4,6 +4,9 @@ declare const process:{env:Record<string,string|undefined>};
 
 const webClientId=process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID?.trim()??'';
 export const googleSignInConfigured=Platform.OS==='android'&&/^[0-9]+-[A-Za-z0-9_-]+\.apps\.googleusercontent\.com$/.test(webClientId);
+// Native Google tokens currently fail server nonce validation. Keep account linking
+// hidden until a nonce-bound Android build passes end-to-end verification.
+export const googleAccountLinkingEnabled=googleSignInConfigured&&process.env.EXPO_PUBLIC_GOOGLE_ACCOUNT_LINKING_ENABLED==='true';
 
 export interface NativeGoogleIdentity {
  idToken:string;

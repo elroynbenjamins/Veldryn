@@ -16,7 +16,7 @@ const locales=['de','es','nl','it','fr','ru','tr'];
 assert.deepEqual([...SUPPORTED_LANGUAGES],['en',...locales]);
 const placeholders=value=>[...value.matchAll(/\{([a-zA-Z]\w*)\}/g)].map(m=>m[1]).sort();
 for(const [name,rows,translate,expected] of [
- ['Guild Bank',guildBankUiRows,guildBankUiText,97],
+ ['Guild Bank',guildBankUiRows,guildBankUiText,100],
  ['Guild Token Shop',guildTokenShopUiRows,guildTokenShopUiText,89],
 ]){
  assert.equal(Object.keys(rows).length,expected,name+': reviewed key count changed');
@@ -71,4 +71,4 @@ for(const token of [
 ])assert.ok(shopController.includes(token),'Guild Shop client safety or localized result missing: '+token);
 assert.ok(shop.includes('name:companion.name,description:companion.description'),'Unverified companion descriptions must remain source-authored');
 assert.ok(shop.includes('name:card.title'),'Unknown server offer names must remain unchanged');
-console.log('PASS: Guild Bank (97) and Token Shop (89) templates x seven target languages, exact interpolated values and server-validated transactions');
+console.log('PASS: Guild Bank (100) and Token Shop (89) templates x seven target languages, exact interpolated values and server-validated transactions');

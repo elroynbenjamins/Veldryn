@@ -3,9 +3,11 @@ import type {CharacterState,GameState} from './types';
 // Fast early skill progression; the long grind comes from later levels, mastery and rare goals.
 const SKILL_XP_SCALE = 1.6;
 // Combat levels use a more long-term curve; earned XP and all profession XP stay unchanged.
-// Old combat level 50's cumulative XP now lands at approximately combat level 24.
+// Old combat level 50's cumulative XP now lands at approximately combat level 37.
+// This deliberately shortens the legacy curve without turning established mid-game
+// characters into early-game characters (legacy level 32 maps to level 25).
 const CHARACTER_XP_SCALE = 8.0;
-const CHARACTER_XP_EXPONENT = 2.09;
+const CHARACTER_XP_EXPONENT = 1.65;
 
 export function baseXpForNextLevel(level:number):number {
   return Math.floor(90 * Math.pow(level, 1.42) + level * 35);

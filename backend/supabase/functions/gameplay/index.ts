@@ -145,7 +145,7 @@ var init_progression = __esm({
     "use strict";
     SKILL_XP_SCALE = 1.6;
     CHARACTER_XP_SCALE = 8;
-    CHARACTER_XP_EXPONENT = 2.09;
+    CHARACTER_XP_EXPONENT = 1.65;
   }
 });
 

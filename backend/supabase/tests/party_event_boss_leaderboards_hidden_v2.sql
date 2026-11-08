@@ -35,7 +35,7 @@ BEGIN
 
   BEGIN
     PERFORM * FROM private.party_event_boss_rankings_v2(
-      '2026-11-09 00:00:00+00'::timestamptz,'standard','damage',2,25
+      '2026-11-09 00:00:00+00'::timestamptz,'standard','damage',2::smallint,25
     );
     RAISE EXCEPTION 'Leaderboard unexpectedly returned before global launch';
   EXCEPTION WHEN OTHERS THEN
@@ -46,7 +46,7 @@ BEGIN
   -- enabling Party Events themselves or granting access to app roles.
   UPDATE private.party_event_leaderboard_gate_v2 SET enabled=true WHERE id=1;
   SELECT count(*) INTO v_entry_count FROM private.party_event_boss_rankings_v2(
-    '2026-11-09 00:00:00+00'::timestamptz,'standard','depth',2,25
+    '2026-11-09 00:00:00+00'::timestamptz,'standard','depth',2::smallint,25
   );
   IF v_entry_count<>0 THEN
     RAISE EXCEPTION 'unexpected historical results from unlaunched Party Events';

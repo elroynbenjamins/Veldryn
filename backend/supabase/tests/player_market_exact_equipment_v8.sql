@@ -11,6 +11,11 @@ declare
  v_bc uuid:=pg_catalog.gen_random_uuid();
  v_instance text:='forge-v8-mythic-001';
  v_item text:='FORGE_T1_BASTION';
+ v_instance2 text:='forge-v8-mythic-002';
+ v_stack2 jsonb;
+ v_receipt2 jsonb;
+ v_hold2 uuid;
+ v_delivery2 uuid;
  v_stack jsonb;
  v_receipt jsonb;
  v_seller_state jsonb;
@@ -329,7 +334,62 @@ begin
     or (select gold from public.characters where id=v_sc)<>100
     or (select gold from public.character_wallets where character_id=v_bc)<>500
   then raise exception 'equipment cycle altered Gold or duplicated custody';end if;
+
+  -- Repeat with a second exact copy in shared Bank and reclaim into the
+  -- character-only Equipment Pouch. This exercises distinct JSON source
+  -- and destination paths without substituting item type for copy identity.
+  v_stack2:=pg_catalog.jsonb_set(v_stack,'{instanceId}',
+    pg_catalog.to_jsonb(v_instance2),false);
+  v_receipt2:=pg_catalog.jsonb_set(
+    pg_catalog.jsonb_set(v_receipt,'{id}',
+      pg_catalog.to_jsonb(v_instance2),false),
+    '{sourceReceiptKey}',pg_catalog.to_jsonb('craft-job-v8-second'::text),false);
+  update public.online_game_states set state=pg_catalog.jsonb_set(
+    pg_catalog.jsonb_set(
+      pg_catalog.jsonb_set(state,'{bank,stacks}',
+        pg_catalog.jsonb_build_array(v_stack2),false),
+      '{account,craftedGearInstances}',
+      (state#>'{account,craftedGearInstances}')||
+        pg_catalog.jsonb_build_array(v_receipt2),false),
+    '{character,equipmentPouch}',pg_catalog.jsonb_build_object(
+      'capacity',30,'stacks','[]'::jsonb),true)
+  where account_id=v_seller;
+
+  v_reserved:=private.market_reserve_exact_equipment_v8(
+    v_seller,7,'bank',null,0,v_item,v_instance2,
+    'gear-res-bank',repeat('6',64));
+  v_hold2:=(v_reserved->>'holdId')::uuid;
+  if v_reserved->>'sourceLocation'<>'bank'
+    or v_reserved->>'revision'<>'8'
+    or (select state#>'{bank,stacks}' from public.online_game_states
+        where account_id=v_seller)<>'[]'::jsonb
+  then raise exception 'bank source escrow failed';end if;
+
+  v_cancelled:=private.market_cancel_exact_equipment_v8(
+    v_seller,v_hold2,'gear-cancel-bank',repeat('7',64),false);
+  v_delivery2:=(v_cancelled->>'deliveryId')::uuid;
+  v_claimed:=private.market_claim_equipment_return_v8(
+    v_seller,v_delivery2,8,'equipment_pouch',v_sc::text,
+    'gear-claim-pouch',repeat('8',64));
+  if v_claimed->>'newRevision'<>'9'
+    or (select state#>'{character,equipmentPouch,stacks,0}'
+        from public.online_game_states where account_id=v_seller)
+        is distinct from v_stack2
+    or (select state#>'{account,craftedGearInstances,1}'
+        from public.online_game_states where account_id=v_seller)
+        is distinct from v_receipt2
+    or (select state#>'{inventory,stacks,1}'
+        from public.online_game_states where account_id=v_seller)
+        is distinct from v_stack
+  then raise exception 'pouch return modified exact receipt or another copy';end if;
+  if (select count(*) from private.market_equipment_return_deliveries_v8
+      where status='claimed')<>2
+    or (select count(*) from private.market_equipment_escrows_v8)<>2
+    or (select gold from public.character_wallets where character_id=v_sc)<>100
+    or (select gold from public.character_wallets where character_id=v_bc)<>500
+  then raise exception 'second escrow cycle duplicated items or changed Gold';end if;
+
 end
 $market_gear_test$;
-select 'PASS: exact Forge copy escrow, protected restrictions, cancellation, full-bank replay-safe return and Gold preservation' as result;
+select 'PASS: exact Forge copy escrow, protected restrictions, cancellation, full-bank, bank-source/pouch-destination, replay-safe returns and Gold preservation' as result;
 rollback;

@@ -97,7 +97,7 @@ function validate(operation:string,method:string,query:URLSearchParams,body:unkn
       destination:fields.destination as 'inventory'|'bank'|'gem_pouch',
       requestKey:fields.requestKey as string};
   }
-  bad();
+  return bad();
 }
 
 /** Testable validation only. No database access and no route registration. */

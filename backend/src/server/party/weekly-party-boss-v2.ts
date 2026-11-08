@@ -48,14 +48,15 @@ export interface PartyBossPreparation {
   maxHpBonus:number;
 }
 /** Only COMPLETE orders count; excess supply or multiple stacks cannot boost buffs. */
-export function deriveVerifiedPartyBossPreparation(orders:readonly VerifiedOrderProgress[]):PartyBossPreparation {
-  const required=[1,2,3].filter(stage=>{
+export function deriveVerifiedPartyBossPreparation(orders:readonly VerifiedOrderProgress[],throughStage:1|2|3=3):PartyBossPreparation {
+  if(![1,2,3].includes(throughStage))throw new Error('party_boss_invalid_stage');
+  const required=[1,2,3].filter(stage=>stage<=throughStage).filter(stage=>{
     const rows=orders.filter(o=>o.kind==='required'&&o.stage===stage);
     return rows.length>0&&rows.every(o=>o.quantity>0&&o.donatedQuantity>=o.quantity);
   });
   const optional:WeeklyPartyPreparation[]=['reinforced','provisions','specialist']
     .filter((key):key is WeeklyPartyPreparation=> {
-      const rows=orders.filter(o=>o.kind==='optional'&&o.preparation===key);
+      const rows=orders.filter(o=>o.kind==='optional'&&o.preparation===key&&o.stage<=throughStage);
       return rows.length>0&&rows.every(o=>o.quantity>0&&o.donatedQuantity>=o.quantity);
     });
   for(const order of orders){
@@ -69,11 +70,11 @@ export function deriveVerifiedPartyBossPreparation(orders:readonly VerifiedOrder
   return {
     completedRequiredStages:complete,
     completedOptionalPreparations:optional,
-    outgoingBonus:.015*complete+(optional.includes('specialist')?.08:0),
-    damageReduction:.015*complete+(optional.includes('reinforced')?.08:0),
-    healingBonus:.015*complete+(optional.includes('provisions')?.12:0),
-    shieldingBonus:.015*complete+(optional.includes('reinforced')?.10:0)+(optional.includes('provisions')?.08:0),
-    maxHpBonus:optional.includes('provisions')?.04:0,
+    outgoingBonus:.015*complete+(optional.includes('specialist') ? .08 : 0),
+    damageReduction:.015*complete+(optional.includes('reinforced') ? .08 : 0),
+    healingBonus:.015*complete+(optional.includes('provisions') ? .12 : 0),
+    shieldingBonus:.015*complete+(optional.includes('reinforced') ? .10 : 0)+(optional.includes('provisions') ? .08 : 0),
+    maxHpBonus:optional.includes('provisions') ? .04 : 0,
   };
 }
 function canonical(value:unknown):string {
@@ -183,6 +184,7 @@ export function resolvePartyEventDayEightBoss(input:{
   family:WeeklyPartyFamily;
   difficulty:WeeklyPartyDifficulty;
   seed:number;
+  eventStartsAtMs:number;
   eventEndsAtMs:number;
   nowMs:number;
   frozen:readonly FrozenPartyBossLoadout[];
@@ -197,9 +199,16 @@ export function resolvePartyEventDayEightBoss(input:{
     new Set(input.frozen.map(x=>x.accountId)).size!==input.frozen.length||
     new Set(input.frozen.map(x=>x.characterId)).size!==input.frozen.length)
     throw new Error('party_boss_invalid_roster');
-  if(input.frozen.some(x=>x.savedAtMs>=input.eventEndsAtMs||x.actor.team!=='players'
-    ||x.actor.id!==x.characterId||x.actor.role==='enemy'))
-    throw new Error('party_boss_invalid_frozen_loadout');
+  if(input.eventEndsAtMs-input.eventStartsAtMs!==7*86_400_000)
+    throw new Error('party_boss_invalid_week');
+  for(const frozen of input.frozen){
+    const {snapshotHash,...payload}=frozen;
+    if(frozen.savedAtMs<input.eventStartsAtMs||frozen.savedAtMs>=input.eventEndsAtMs
+      ||frozen.actor.team!=='players'||frozen.actor.id!==frozen.characterId
+      ||frozen.actor.role==='enemy'
+      ||createHash('sha256').update(canonical(payload)).digest('hex')!==snapshotHash)
+      throw new Error('party_boss_invalid_frozen_loadout');
+  }
   const actors=input.frozen.map(x=>structuredClone(x.actor));
   const levels=actors.map(actor=>actor.level).sort((a,b)=>a-b);
   const medianLevel=levels[Math.floor((levels.length-1)/2)]!;

@@ -5,6 +5,7 @@ on:
   push:
     branches: [main]
     paths:
+      - 'control-center/**'
       - '.github/workflows/deploy-control-center.yml'
 
 permissions:

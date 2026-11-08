@@ -8,3 +8,6 @@ export const ARENA_RELEASED=false;
 
 /** Prestige boards are paused while guild progression is being completed. */
 export const RANKINGS_RELEASED=false;
+
+/** Player Market preparation is read-only. Never expose listings or transfer items until server escrow is audited. */
+export const PLAYER_MARKET_RELEASED=false;

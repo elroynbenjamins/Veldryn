@@ -11,6 +11,7 @@ import {localizedSeasonalDungeonRouteRisk,localizedSeasonalDungeonRouteReward} f
 import {CoopImageSlot} from './CoopVisualKit';
 import {IdentityArtwork} from '../SocialIdentity';
 import {dungeonRoomPresentation} from './dungeon-room-presentation';
+import {localizedDungeonRoomModifier} from '../../i18n/dungeon-room-modifiers';
 
 /**
  * One decision per room card. The whole card is the Choose/Vote target;
@@ -30,6 +31,7 @@ export function DungeonRouteChoices({options,mode,phase,busy=false,onChoose,myVo
    const room=dungeonRoomPresentation(option.kind);
    const title=room&&(option.title.trim().toLowerCase()===option.kind.trim().toLowerCase()||(option.kind==='boss'&&option.title.trim().toLowerCase()==='final boss'))?st(room.name):seasonalDungeonRoomTitle(language,option.title);
    const preview=option.encounterPreview?localizedDungeonEncounterPreview(language,option.encounterPreview).summary:(room?st(room.description):undefined);
+   const modifier=option.kind==='battle'||option.kind==='elite'?localizedDungeonRoomModifier(language,option.modifierId):undefined;
    const riskBaseline=/^risk\s+1(?:\.0+)?$/i.test(option.risk.trim());
    const redundantReward=option.reward.trim().toLowerCase().replace(/[\s_-]+/g,'')===option.kind.trim().toLowerCase().replace(/[\s_-]+/g,'');
    const translatedRisk=localizedSeasonalDungeonRouteRisk(language,option.risk);
@@ -38,7 +40,7 @@ export function DungeonRouteChoices({options,mode,phase,busy=false,onChoose,myVo
     key={option.nodeId}
     accessibilityRole="button"
     accessibilityLabel={ui('Route {title}: {risk}; {reward}. {extra}{action}',{title,risk:translatedRisk,reward:translatedReward,extra:live?ui('{votes} of {total} votes. ',{votes:option.votes??0,total:totalVotes})+(votedHere?ui('Your vote. '):''):'',action:canPress?action:ui('Unavailable')})}
-    accessibilityHint={preview}
+    accessibilityHint={[modifier?.description,preview].filter(Boolean).join(' · ')}
     accessibilityState={{disabled:!canPress,selected:votedHere}}
     disabled={!canPress}
     onPress={()=>onChoose?.(option.nodeId)}
@@ -55,7 +57,8 @@ export function DungeonRouteChoices({options,mode,phase,busy=false,onChoose,myVo
       <Text style={s.chevron}>{'›'}</Text>
      </View>
      {preview?<Text numberOfLines={1} style={s.preview}>{preview}</Text>:null}
-     {(!riskBaseline||!redundantReward)?<View style={s.tags}>
+     {(!riskBaseline||!redundantReward||modifier)?<View style={s.tags}>
+      {modifier?<View style={s.modifierTag}><Text style={s.modifierText} numberOfLines={1}>{modifier.label}</Text></View>:null}
       {!riskBaseline?<View style={s.riskTag}><Text style={s.riskText} numberOfLines={1}>{translatedRisk}</Text></View>:null}
       {!redundantReward?<View style={s.rewardTag}><Text style={s.rewardText} numberOfLines={1}>{translatedReward}</Text></View>:null}
      </View>:null}
@@ -74,6 +77,8 @@ function makeStyles(C:CoopColors){return StyleSheet.create({
  heading:{flexDirection:'row',alignItems:'center',gap:6,minHeight:19},
  title:{flex:1,minWidth:0,fontSize:14,lineHeight:19,color:C.text,fontWeight:'800'},
  tags:{flexDirection:'row',alignItems:'center',gap:5},
+ modifierTag:{borderRadius:4,paddingHorizontal:5,paddingVertical:1,backgroundColor:C.surfaceRaised,maxWidth:'48%'},
+ modifierText:{fontSize:10,lineHeight:13,color:C.cyan,fontWeight:'800'},
  riskTag:{borderRadius:4,paddingHorizontal:5,paddingVertical:1,backgroundColor:C.surfaceRaised,maxWidth:'48%'},
  riskText:{fontSize:10,lineHeight:13,color:C.danger,fontWeight:'700'},
  rewardTag:{borderRadius:4,paddingHorizontal:5,paddingVertical:1,backgroundColor:C.surfaceRaised,maxWidth:'48%'},

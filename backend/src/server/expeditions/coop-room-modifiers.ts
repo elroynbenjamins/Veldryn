@@ -29,26 +29,32 @@ export function applyCoopRoomModifier(enemy:CombatantDefinition,id:string|undefi
  // the modifier mechanic so mixed groups remain readable and balanced.
  switch(id){
   case 'thorned':
-   stats.maxHp*=1.03;
-   if(index===0)abilities.push(pveDotWave(`${enemy.id}_ROOM_THORNS`,'Thorn Barrage','nature',.17,15500));
+   stats.maxHp*=1.01;
+   if(index===0){
+    const thorns=pveDotWave(`${enemy.id}_ROOM_THORNS`,'Thorn Barrage','nature',.10,17000);
+    abilities.push({...thorns,effects:thorns.effects.map(effect=>effect.kind==='dot'?{...effect,coeff:.018}:effect)});
+   }
    break;
   case 'volatile':
-   stats.maxHp*=.93;
-   stats.attackPower*=1.06;
-   if(index===0)abilities.push(pveInterruptibleWave(`${enemy.id}_ROOM_BLAST`,'Unstable Surge','arcane',.27,15000,1300));
+   stats.maxHp*=.97;
+   stats.attackPower*=1.02;
+   if(index===0)abilities.push(pveInterruptibleWave(`${enemy.id}_ROOM_BLAST`,'Unstable Surge','arcane',.13,17000,1300));
    break;
   case 'warded':
-   stats.defense*=1.09;
-   if(index===0)abilities.push(pveBarrier(`${enemy.id}_ROOM_WARD`,'Defensive Ward',Math.round(stats.maxHp*.055),17000));
+   stats.defense*=1.035;
+   if(index===0)abilities.push(pveBarrier(`${enemy.id}_ROOM_WARD`,'Defensive Ward',Math.round(stats.maxHp*.025),18500));
    break;
   case 'swift':
-   stats.maxHp*=.97;
-   stats.haste=Math.min(.5,stats.haste+.045);
-   basicAttackMs=Math.max(1400,Math.round(basicAttackMs*.92));
+   stats.maxHp*=.99;
+   stats.haste=Math.min(.5,stats.haste+.02);
+   basicAttackMs=Math.max(1400,Math.round(basicAttackMs*.96));
    break;
   case 'attrition':
-   stats.maxHp*=1.035;
-   if(index===0)abilities.push(pveHealingPressure(`${enemy.id}_ROOM_WITHER`,'Withering Pressure','shadow',.20,17000));
+   stats.maxHp*=1.015;
+   if(index===0){
+    const wither=pveHealingPressure(`${enemy.id}_ROOM_WITHER`,'Withering Pressure','shadow',.10,19000);
+    abilities.push({...wither,effects:wither.effects.map(effect=>effect.kind==='debuff'?{...effect,value:-.10}:effect)});
+   }
    break;
  }
  return {...enemy,stats,basicAttackMs,abilities};

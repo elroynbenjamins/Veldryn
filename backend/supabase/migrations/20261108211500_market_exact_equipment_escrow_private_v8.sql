@@ -136,9 +136,12 @@ begin
   v_records:=v_state.state#>'{account,craftedGearInstances}';
   if pg_catalog.jsonb_typeof(v_records) is distinct from 'array'
   then raise exception 'market_equipment_receipt_ledger_missing';end if;
-  select count(*),max(value) into v_receipt_count,v_receipt
-    from pg_catalog.jsonb_array_elements(v_records) value
-    where value->>'id'=p_instance_id;
+  select count(*) into v_receipt_count
+    from pg_catalog.jsonb_array_elements(v_records) entry(value)
+    where entry.value->>'id'=p_instance_id;
+  select entry.value into v_receipt
+    from pg_catalog.jsonb_array_elements(v_records) entry(value)
+    where entry.value->>'id'=p_instance_id limit 1;
   if v_receipt_count<>1 or v_receipt->>'itemId' is distinct from p_item_id
     or v_receipt->>'acquireSource' is distinct from 'craft'
     or nullif(v_receipt->>'sourceReceiptKey','') is null

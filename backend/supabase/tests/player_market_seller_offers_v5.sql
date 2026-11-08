@@ -23,8 +23,8 @@ begin
     (v_seller,'v5-seller-'||v_seller||'@example.invalid'),
     (v_buyer,'v5-buyer-'||v_buyer||'@example.invalid');
   insert into public.characters(id,account_id,name,class_id,gold) values
-    (v_sc,v_seller,'V5Seller','BASTION',100),
-    (v_bc,v_buyer,'V5Buyer','BASTION',500);
+    (v_sc,v_seller,'MarketSeller','BASTION',100),
+    (v_bc,v_buyer,'MarketBuyer','BASTION',500);
   insert into public.character_wallets(character_id,gold) values
     (v_sc,100),(v_bc,500);
   insert into public.online_game_states(account_id,character_id,revision,state) values

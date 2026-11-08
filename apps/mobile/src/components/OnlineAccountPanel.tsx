@@ -10,7 +10,7 @@ import {Panel} from './Panel';
 import type {GameState} from '../core/types';
 import {createOnlineAccount,finishGuestAccount,requestPasswordRecovery,resendAccountConfirmation,resendGuestAccountConfirmation,sendMagicLink,signInAsGuest,signInOrLinkGoogle,signInWithPassword,signOut,updateAccountPassword,upgradeGuestAccount,inspectGoogleAccountConnection,type GoogleAccountConnection} from '../online/account';
 import {onlineConfigured} from '../online/supabase';
-import {googleSignInConfigured} from '../online/google-signin';
+import {googleSignInConfigured,googleAccountLinkingEnabled} from '../online/google-signin';
 import {inspectPlayGamesConnection,signInPlayGames,type PlayGamesConnection} from '../online/play-games';
 import {useAuthSession} from '../online/AuthSessionProvider';
 import {serverGameplayEnabled} from '../online/gameplay';
@@ -133,16 +133,15 @@ export function OnlineAccountPanel({state}:{state:GameState}){
     <GameButton title={a("Save account password")} disabled={busy||auth.refreshing} onPress={()=>run(async()=>{await finishGuestAccount(password,accountId);success('Account linked. Your characters and progress are kept.');})}/>
    </>}
    {linkStep==='linked'&&<GameButton title={a("Change password")} tone="secondary" disabled={busy||auth.refreshing} onPress={()=>{if(running.current||!ownsView())return;setPassword('');setPasswordVisible(false);setNotice('');setChangingPassword(true);}}/>}
-   {googleLinked?<Text style={s.googleLinked}>✓ {a("Google account linked")}</Text>:<GoogleBrandButton title={busy?a("Connecting…"):a("Link Google account")} disabled={!googleSignInConfigured||googleConnection.status==='checking'} loading={busy||auth.refreshing} onPress={()=>void run(async()=>{
+   {googleLinked?<Text style={s.googleLinked}>✓ {a("Google account linked")}</Text>:googleAccountLinkingEnabled?<GoogleBrandButton title={busy?a("Connecting…"):a("Link Google account")} disabled={!googleSignInConfigured||googleConnection.status==='checking'} loading={busy||auth.refreshing} onPress={()=>void run(async()=>{
      await signInOrLinkGoogle();
      if(!ownsView())return;
      const status=await inspectGoogleAccountConnection(accountId);
      setGoogleConnection(status);
      if(status.status!=='linked')throw new Error(status.status==='error'?status.message:'Could not verify the Google account link. Please check again before signing out.');
      success('Google account linked. Your characters and progress are kept.');
-   })}/>}
-   {!googleSignInConfigured&&<Text style={s.googleHint}>{a("Google account linking is unavailable in this Android build. Update VELDRYN to use it.")}</Text>}
-   {googleConnection.status==='error'&&<Text style={s.googleHint}>{a(googleConnection.message)}</Text>}
+   })}/>:null}
+   {googleAccountLinkingEnabled&&googleConnection.status==='error'&&<Text style={s.googleHint}>{a(googleConnection.message)}</Text>}
    {playGamesConnection.status==='connected'
     ?<Text style={s.googleLinked}>✓ {a("Google Play Games connected")}{playGamesConnection.displayName?` · ${playGamesConnection.displayName}`:''}</Text>
     :<GoogleBrandButton title={busy?a("Connecting…"):a("Connect Google Play Games")} disabled={playGamesConnection.status!=='disconnected'} loading={busy||auth.refreshing||playGamesConnection.status==='checking'} onPress={()=>void run(async()=>{

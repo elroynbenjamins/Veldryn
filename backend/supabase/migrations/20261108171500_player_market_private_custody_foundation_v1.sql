@@ -138,8 +138,8 @@ from public, anon, authenticated, service_role;
 
 -- Read-only probe against the ACTUAL versioned online-game snapshot. This is
 -- identity evidence, never permission to list, reserve, settle or transfer.
--- Service/client roles have no execute grant. Future escrow must repeat every
--- check under an online_game_states FOR UPDATE lock within its transaction.
+-- Client and service roles have no execute grant. Future escrow must repeat
+-- every check under an online_game_states FOR UPDATE lock in one transaction.
 create or replace function private.market_snapshot_source_probe_v1(
   p_account_id uuid,p_expected_revision bigint,p_source_location text,
   p_holder_character_id text,p_stack_index integer,p_item_id text,
@@ -156,11 +156,12 @@ declare
   v_receipt jsonb;
   v_quantity bigint;
 begin
-  if p_account_id is null or p_expected_revision < 0
+  if p_account_id is null or p_expected_revision is null or p_expected_revision < 0
     or p_stack_index is null or p_stack_index < 0 or p_stack_index > 10000
     or p_requested_quantity is null or p_requested_quantity < 1
     or p_requested_quantity > 2147483647
     or p_item_id is null or length(p_item_id) not between 1 and 180
+    or p_source_location is null
     or p_source_location not in ('inventory','bank','equipment_pouch','gem_pouch')
   then return pg_catalog.jsonb_build_object('matches',false,'canReserveNow',false,'reason','invalid_request');
   end if;
@@ -202,18 +203,7 @@ begin
   v_stack:=v_stacks->p_stack_index;
   if v_stack->>'itemId' is distinct from p_item_id
     or pg_catalog.jsonb_typeof(v_stack->'quantity')<>'number'
-    or (v_stack->>'quantity') !~ '^[0-9]{1,10}
--- In particular, historical public.market_orders and public.market_trades
--- are NOT recreated. No existing inventory or wallet row is touched.
-comment on table private.market_custody_assets_v1 is
-  'Inert reconciliation candidates. NOT a spendable inventory and never a source of truth without exact online snapshot bridging.';
-comment on table private.market_custody_holds_v1 is
-  'Dormant escrow ledger. No live mutation path or exposed RPC until a future reviewed release migration.';
-comment on table private.market_runtime_guard_v1 is
-  'Both release gates are locked false by constraints; enabling requires an explicit future migration.';
-
-commit;
-
+    or coalesce(v_stack->>'quantity','') !~ '^[0-9]{1,10}$'
   then return pg_catalog.jsonb_build_object('matches',false,'canReserveNow',false,'reason','source_identity_changed');
   end if;
   v_quantity:=(v_stack->>'quantity')::bigint;
@@ -222,8 +212,7 @@ commit;
   end if;
 
   if p_exact_instance_id is null then
-    -- Legacy equipment has no trustworthy receipt. The probe intentionally
-    -- cannot promote it into verified custody.
+    -- Gear in a pouch cannot be promoted from an unmarked legacy copy.
     if v_stack ? 'instanceId' or p_source_location='equipment_pouch'
       then return pg_catalog.jsonb_build_object('matches',false,'canReserveNow',false,'reason','missing_exact_receipt');
     end if;
@@ -239,20 +228,14 @@ commit;
     end if;
     if v_receipt is null or v_receipt->>'itemId' is distinct from p_item_id
       or v_receipt->>'locked'='true'
-      or (v_receipt->>'quality') !~ '^[0-9]{1,3}
--- In particular, historical public.market_orders and public.market_trades
--- are NOT recreated. No existing inventory or wallet row is touched.
-comment on table private.market_custody_assets_v1 is
-  'Inert reconciliation candidates. NOT a spendable inventory and never a source of truth without exact online snapshot bridging.';
-comment on table private.market_custody_holds_v1 is
-  'Dormant escrow ledger. No live mutation path or exposed RPC until a future reviewed release migration.';
-comment on table private.market_runtime_guard_v1 is
-  'Both release gates are locked false by constraints; enabling requires an explicit future migration.';
-
-commit;
-
-      or (v_receipt->>'quality')::integer not between 0 and 100
     then return pg_catalog.jsonb_build_object('matches',false,'canReserveNow',false,'reason','unverified_copy');
+    end if;
+    if pg_catalog.jsonb_typeof(v_receipt->'quality')<>'number'
+      or coalesce(v_receipt->>'quality','') !~ '^[0-9]{1,3}$'
+    then return pg_catalog.jsonb_build_object('matches',false,'canReserveNow',false,'reason','unverified_quality');
+    end if;
+    if (v_receipt->>'quality')::integer not between 0 and 100
+    then return pg_catalog.jsonb_build_object('matches',false,'canReserveNow',false,'reason','unverified_quality');
     end if;
   end if;
 

@@ -1,4 +1,5 @@
 import {launchPlayer} from '../../combat/content/launch-combat';
+import {processPartyEventDayEightBosses,type DayEightBossRepository} from '../weekly-party-boss-service-v2';
 import type {AuthoritativeLoadoutRecord, LoadoutRepository} from '../../coop/loadout-snapshots';
 import {
   deriveVerifiedPartyBossPreparation,deriveVerifiedPartyPhaseSupport,freezePartyEventBossLoadout,
@@ -133,3 +134,41 @@ assert(result.totalBossDamage>=withoutBonus.totalBossDamage,
 const two=resolvePartyEventDayEightBoss({...battleInput,frozen:[tank,dealer]});
 assert(two.contributions.length===2,'two-person party is supported');
 console.log('Party boss v2: Day 8, saved loadouts, escalating fights, supply bonuses, replay and anti-tamper validated');
+
+async function verifyDayEightOrchestration(){
+  let count=0;
+  const due=[{eventId:battleInput.eventId,family:battleInput.family,
+    difficulty:battleInput.difficulty,seed:battleInput.seed,
+    startsAtMs:start,endsAtMs:end}];
+  const repo:DayEightBossRepository={
+    listDueEvents:async()=>due,
+    lockRoster:async()=>[tank,dealer,healer,other],
+    loadVerifiedOrders:async()=>allOrders,
+    recordOutcome:async()=>{
+      count++;
+      return count===1?'recorded':'already_recorded';
+    },
+  };
+  const first=await processPartyEventDayEightBosses({
+    gateEnabled:true,nowMs:end+PARTY_EVENT_BOSS_SETTLEMENT_GRACE_MS,
+    repository:repo,
+  });
+  assert(first.resolved===1&&first.failed===0,'first deferred boss settlement succeeds');
+  const replay=await processPartyEventDayEightBosses({
+    gateEnabled:true,nowMs:end+PARTY_EVENT_BOSS_SETTLEMENT_GRACE_MS,
+    repository:repo,
+  });
+  assert(replay.duplicates===1&&count===2,'replays do not create duplicate results');
+  let disabled=false;
+  try {
+    await processPartyEventDayEightBosses({gateEnabled:false,nowMs:end,repository:repo});
+  } catch(error) {disabled=String(error).includes('PARTY_WEEKLY_EVENTS_DISABLED');}
+  assert(disabled,'worker must remain feature-gated');
+  const broken:DayEightBossRepository={...repo,lockRoster:async()=>[tank]};
+  const failed=await processPartyEventDayEightBosses({
+    gateEnabled:true,nowMs:end+PARTY_EVENT_BOSS_SETTLEMENT_GRACE_MS,
+    repository:broken,
+  });
+  assert(failed.failed===1&&failed.resolved===0,'missing loadouts never create rewards');
+}
+void verifyDayEightOrchestration().catch(error=>{console.error(error);process.exitCode=1;});

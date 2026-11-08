@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import {createCharacter,newGame} from '../../../apps/mobile/src/core/game';
 import {draftCraftedGearInstance} from '../../../apps/mobile/src/core/crafted-gear-instances';
 import {V33_EQUIPMENT_RECIPES} from '../../../apps/mobile/src/content/equipment-recipes-v33';
+import {itemDef} from '../../../apps/mobile/src/content/items';
 import type {GameState} from '../../../apps/mobile/src/core/types';
 import {
   inspectPlayerMarketCustodySnapshotV1,
@@ -65,6 +66,18 @@ assert(!forged.problems.includes('equipment_ownership_conflict'));
 const bank=actual.rows.find(row=>row.sourceLocation==='bank')!;
 assert.equal(bank.sourceCharacterId,undefined);
 assert.equal(bank.quantity,25);
+
+const gearSlot=itemDef(gearId).slot!;
+const saved:GameState={...state,character:{...state.character!,savedLoadouts:[{
+  id:'market-loadout',slotIndex:0,name:'Protected',classId:'BASTION',
+  equipment:{[gearSlot]:gearId},
+  equipmentInstanceIds:{[gearSlot]:record.id},
+  createdAtMs:0,updatedAtMs:0,
+}]}};
+const reserved=inspectPlayerMarketCustodySnapshotV1(saved,'custody-test-account',5);
+assert(reserved.rows.find(row=>row.exactInstanceId===record.id)
+  ?.problems.includes('saved_loadout_reserved'),
+  'Server inspection must protect exact gear referenced by saved loadouts');
 
 const duplicate:GameState={...state,bank:{...state.bank,stacks:[
   {itemId:gearId,quantity:1,instanceId:record.id},

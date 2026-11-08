@@ -56,7 +56,7 @@ export function CommunityRoadmapScreen({language}:{language:Language}){
    <View style={s.hero}>
      <Text style={s.kicker}>{a('THE FUTURE OF VELDRYN')}</Text>
      <Text accessibilityRole="header" style={s.heading}>{a('Community Roadmap')}</Text>
-     <Text style={s.subtitle}>{a('Vote on upcoming features and improvements. Your choices help guide Veldryn's development.')}</Text>
+     <Text style={s.subtitle}>{a("Vote on upcoming features and improvements. Your choices help guide Veldryn's development.")}</Text>
    </View>
 
    <View style={s.voteBudget}>

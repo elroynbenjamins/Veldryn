@@ -156,7 +156,7 @@ export async function signInOrLinkGoogle(){
   if(before){
    const latest=await currentSession();
    if(!latest||latest.user.id!==before.user.id)throw new Error('Your signed-in account changed. Reopen Account and try again.');
-   const {error}=await client.auth.linkIdentity({provider:'google',token:identity.idToken});
+   const {error}=await client.auth.linkIdentity({provider:'google',token:identity.idToken,nonce:identity.nonce});
    if(error)accountFailure(error);
    // The link writes to the existing Supabase UUID. Never sign in as another
    // Google user, create a replacement account, or silently merge progress.
@@ -167,7 +167,7 @@ export async function signInOrLinkGoogle(){
     throw new Error('Google link verification could not confirm your original VELDRYN account. Reopen Account and check the connection before signing out.');
    return refreshed.data.user;
   }
-  const {data,error}=await client.auth.signInWithIdToken({provider:'google',token:identity.idToken});
+  const {data,error}=await client.auth.signInWithIdToken({provider:'google',token:identity.idToken,nonce:identity.nonce});
   if(error)accountFailure(error);
   return data.user;
  });

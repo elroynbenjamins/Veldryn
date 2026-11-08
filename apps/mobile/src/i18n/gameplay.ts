@@ -440,7 +440,6 @@ const common={
   'Materials':['Materials','Materialien','Materiales','Materialen','Materiali','Matériaux'],
   'Gems':['Gems','Edelsteine','Gemas','Edelstenen','Gemme','Gemmes'],
   'Food':['Food','Nahrung','Comida','Voedsel','Cibo','Nourriture'],
-  'Potions':['Potions','Tränke','Pociones','Drankjes','Pozioni','Potions'],
   'Tools':['Tools','Werkzeuge','Herramientas','Gereedschap','Attrezzi','Outils'],
   'Quest':['Quest','Auftrag','Misión','Opdracht','Missione','Quête'],
   'Gold':['Gold','Gold','Oro','Goud','Oro','Or'],

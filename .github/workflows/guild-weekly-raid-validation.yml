@@ -8,6 +8,8 @@ on:
       - 'apps/mobile/src/components/GuildRaidEncounter.tsx'
       - 'apps/mobile/tests/guild-pve-encounters.ts'
       - 'apps/mobile/tests/guild-raid-tabs-ui.cjs'
+      - 'apps/mobile/tests/guild-boss-artwork.cjs'
+      - 'apps/mobile/assets/guild-bosses/**'
       - 'backend/supabase/migrations/*guild_three_role_weekly_bosses.sql'
       - '.github/workflows/guild-weekly-raid-validation.yml'
   push:
@@ -18,6 +20,8 @@ on:
       - 'apps/mobile/src/components/GuildRaidEncounter.tsx'
       - 'apps/mobile/tests/guild-pve-encounters.ts'
       - 'apps/mobile/tests/guild-raid-tabs-ui.cjs'
+      - 'apps/mobile/tests/guild-boss-artwork.cjs'
+      - 'apps/mobile/assets/guild-bosses/**'
       - 'backend/supabase/migrations/*guild_three_role_weekly_bosses.sql'
       - '.github/workflows/guild-weekly-raid-validation.yml'
 
@@ -44,3 +48,5 @@ jobs:
         run: node .guild-raid-build/tests/guild-pve-encounters.js
       - name: Verify active-only Guild Raid tab selection
         run: node tests/guild-raid-tabs-ui.cjs
+      - name: Validate dedicated Guild Boss WebPs and stage/theater mapping
+        run: node tests/guild-boss-artwork.cjs

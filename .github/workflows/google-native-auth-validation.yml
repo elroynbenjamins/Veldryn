@@ -1,0 +1,41 @@
+name: Google native authentication validation
+
+on:
+  pull_request:
+    paths:
+      - 'apps/mobile/package.json'
+      - 'apps/mobile/pnpm-lock.yaml'
+      - 'apps/mobile/eas.json'
+      - 'apps/mobile/src/online/google-signin.ts'
+      - 'apps/mobile/src/online/account.ts'
+      - 'apps/mobile/src/components/OnlineAccountPanel.tsx'
+      - 'apps/mobile/tests/google-native-nonce.cjs'
+      - 'apps/mobile/tests/auth-account-link.cjs'
+      - 'apps/mobile/tests/account-auth-refinement-ui.cjs'
+      - '.github/workflows/google-native-auth-validation.yml'
+  workflow_dispatch:
+
+jobs:
+  google-native-auth:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: apps/mobile
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+          cache-dependency-path: apps/mobile/pnpm-lock.yaml
+      - name: Install pinned mobile dependencies
+        run: pnpm install --frozen-lockfile
+      - name: Verify Google nonce, existing-user ownership and sign-in UI
+        run: pnpm test:google-native-auth
+      - name: Install shared backend type dependencies
+        run: pnpm --dir ../../backend install --frozen-lockfile
+      - name: Typecheck mobile auth integration
+        run: pnpm typecheck

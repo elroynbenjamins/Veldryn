@@ -3,7 +3,7 @@ export const COOP_ROGUELITE_CONFIG = Object.freeze({
   featureFlag: 'coopRogueliteV1',
   enabledByDefault: false,
   routeSchemaVersion: 1,
-  routeGeneratorVersion: 'coop-route-v1',
+  routeGeneratorVersion: 'coop-route-v2',
   preBossNodeMin: 5,
   preBossNodeMax: 5,
   choicesPerDepth: 3,

@@ -21,7 +21,7 @@ export function presentQModeRun(projection:CoopQModeServerProjection&{stateVersi
   if(!value||typeof value!=='object')throw new Error('invalid_route_option');const node=value as Record<string,unknown>;
   if(typeof node.nodeId!=='string'||typeof node.kind!=='string'||typeof node.risk!=='number'||!Number.isFinite(node.risk)||typeof node.rewardTag!=='string'||node.previewHidden)throw new Error('invalid_route_option');
   const kind=node.kind,title=kind==='boss'?'Final boss':kind.charAt(0).toUpperCase()+kind.slice(1);
-  const encounterPreview=parseCoopEncounterPreview(node.encounterPreview);return {nodeId:node.nodeId,title,kind,risk:`Risk ${node.risk}`,reward:node.rewardTag.replace(/_/g,' '),...(projection.mode==='live'&&typeof node.votes==='number'?{votes:node.votes}:{}),...(encounterPreview?{encounterPreview}:{})};
+  const encounterPreview=parseCoopEncounterPreview(node.encounterPreview);return {nodeId:node.nodeId,title,kind,risk:`Risk ${node.risk}`,reward:node.rewardTag.replace(/_/g,' '),...(typeof node.modifierId==='string'?{modifierId:node.modifierId}:{}),...(projection.mode==='live'&&typeof node.votes==='number'?{votes:node.votes}:{}),...(encounterPreview?{encounterPreview}:{})};
  });
  // Queued dungeon nodes keep their selected ID in the server projection.
  // Look up its public route kind; resolving_node alone does not imply combat.

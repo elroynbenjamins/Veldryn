@@ -39,11 +39,24 @@ BEGIN
      OR has_function_privilege('authenticated','private.party_event_cadence_v2(timestamptz)','EXECUTE')
      OR has_function_privilege('authenticated','private.party_event_create_with_supplies_v2(uuid,text,bigint,jsonb)','EXECUTE')
      OR has_function_privilege('anon','private.party_event_create_with_supplies_v2(uuid,text,bigint,jsonb)','EXECUTE')
+     OR has_function_privilege('authenticated','private.party_event_process_verified_outbox_v2(integer)','EXECUTE')
+     OR has_function_privilege('anon','private.party_event_process_verified_outbox_v2(integer)','EXECUTE')
   THEN RAISE EXCEPTION 'Party Event event-creation API unexpectedly public'; END IF;
 
   IF has_table_privilege('authenticated','private.party_event_supply_item_policy_v2','SELECT')
      OR has_table_privilege('anon','private.party_event_supply_item_policy_v2','SELECT')
   THEN RAISE EXCEPTION 'private Party Event material policy unexpectedly public'; END IF;
+
+  IF has_table_privilege('authenticated','private.party_event_outbox_rejections_v2','SELECT')
+     OR has_table_privilege('anon','private.party_event_outbox_rejections_v2','SELECT')
+  THEN RAISE EXCEPTION 'private Party Event settlement rejection log unexpectedly public'; END IF;
+
+  BEGIN
+    PERFORM private.party_event_process_verified_outbox_v2(10);
+    RAISE EXCEPTION 'disabled feature allowed outbox processing';
+  EXCEPTION WHEN OTHERS THEN
+    IF SQLERRM<>'PARTY_WEEKLY_EVENTS_DISABLED' THEN RAISE; END IF;
+  END;
 
   IF (SELECT count(*) FROM private.party_event_supply_item_policy_v2 WHERE enabled)<9
      OR NOT EXISTS (SELECT 1 FROM private.party_event_supply_item_policy_v2 WHERE item_id='DEWLEAF')

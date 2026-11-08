@@ -316,5 +316,7 @@
   "../../tools/validate-app-build.mjs",
   "../../tools/validate-guild-component-icons.mjs",
   ".core-build/apps/mobile/tests/dungeon-potion-view.js",
-  ".core-build/apps/mobile/tests/dungeon-tonic-view.js"
+  ".core-build/apps/mobile/tests/dungeon-tonic-view.js",
+  ".core-build/apps/mobile/tests/community-roadmap-read-cache.js",
+  ".core-build/apps/mobile/tests/community-roadmap-release-visibility.js"
 ]

@@ -22,7 +22,7 @@ type Props={state:GameState;skillId:Skill;preferredRecipeId?:string;onStart:(id:
 
 const categories={
  cooking:['Fish','Meals','Special'] as const,
- alchemy:['Healing','Tonics','Infusions'] as const,
+ alchemy:['Potions','Infusions'] as const,
 };
 function categoryOf(recipe:Recipe):string{
  if(recipe.skillId==='cooking'){
@@ -31,7 +31,7 @@ function categoryOf(recipe:Recipe):string{
    return 'Fish';
  }
  const def=potionDef(recipe.output.itemId);
- return !def?'Infusions':def.effect.kind==='healing'?'Healing':'Tonics';
+ return def?'Potions':'Infusions';
 }
 function timeLabel(seconds:number){
  const n=Math.max(0,Math.ceil(seconds));
@@ -80,7 +80,18 @@ export function ConsumableWorkshop({state,skillId,preferredRecipeId,onStart}:Pro
  }),[all,state,skillId,afkCap]);
  const counts=new Map(capacities);
  const count=(recipe:Recipe)=>counts.get(recipe.id)??0;
- const recipes=all.filter(r=>categoryOf(r)===category&&(!readyOnly||(r.level<=skillLevel&&count(r)>0)));
+ const visible=all.filter(r=>categoryOf(r)===category&&(!readyOnly||(r.level<=skillLevel&&count(r)>0)));
+ // Alternate regional brews share the same resulting potion. Show one row per
+ // potion and automatically choose the first craftable recipe (base recipe first).
+ const recipes=skillId==='alchemy'&&category==='Potions'
+  ?[...visible.reduce((groups,recipe)=>{
+   const options=groups.get(recipe.output.itemId)??[];
+   options.push(recipe);groups.set(recipe.output.itemId,options);return groups;
+  },new Map<string,Recipe[]>()).values()].map(options=>options.find(r=>r.id===activeId)
+   ??options.find(r=>r.level<=skillLevel&&count(r)>0)
+   ??options.find(r=>r.id===preferredRecipeId)
+   ??options[0])
+  :visible;
  const detail=all.find(r=>r.id===detailId);
  const submit=async(id:string)=>{
   if(busyRef.current)return;
@@ -100,7 +111,7 @@ export function ConsumableWorkshop({state,skillId,preferredRecipeId,onStart}:Pro
  const regionVariant=(recipe:Recipe)=>recipe.id.endsWith('_SUNSCAR')?'Sunscar':recipe.id.endsWith('_FROSTMARCH')?'Frostmarch':recipe.id.endsWith('_ASHLANDS')?'Ashlands':undefined;
  const mobile=width<360||fontScale>=1.35;
  /** Potion tiers are visual section breaks inside the existing Alchemy categories, not tabs. */
- const potionList=skillId==='alchemy'&&category!=='Infusions';
+ const potionList=skillId==='alchemy'&&category==='Potions';
  const renderInlineDetails=(recipe:Recipe)=>(
   <View style={[s.inlineDetails,{borderTopColor:C.line,backgroundColor:C.panel2}]}>
     <Text style={[s.caption,{color:C.muted}]}>{gt('Per batch')}: {recipe.output.quantity} {gt('items')} · {recipe.gold} {gt('Gold')} · {timeLabel(professionActionPace(state,recipe,'batch').cycleSeconds)}</Text>
@@ -138,7 +149,7 @@ export function ConsumableWorkshop({state,skillId,preferredRecipeId,onStart}:Pro
     <Text style={[s.caption,{color:C.muted}]}>{gt('Use the main Activity bar to stop or claim production.')}</Text>
   </View>:null}
   <View style={s.line}><Text style={[s.title,{color:C.text}]}>{gt('Recipes')}</Text><Pressable accessibilityRole="checkbox" accessibilityState={{checked:readyOnly}} onPress={()=>setReadyOnly(x=>!x)} style={[s.toggle,{borderColor:C.line,backgroundColor:readyOnly?C.selection:C.panel2}]}><Text style={[s.caption,{color:C.text}]}>{readyOnly?'✓ ':''}{gt('Craftable only')}</Text></Pressable></View>
-  <View style={s.categories}>{groups.map(g=><Pressable key={g} accessibilityRole="tab" accessibilityState={{selected:category===g}} onPress={()=>{setCategory(g);setDetailId(null)}} style={[s.category,{borderColor:category===g?C.selectionLine:C.line,backgroundColor:category===g?C.selection:C.panel2}]}><Text style={[s.categoryText,{color:category===g?C.text:C.muted}]}>{gt(g as 'Fish'|'Meals'|'Special'|'Healing'|'Tonics'|'Infusions')}</Text></Pressable>)}</View>
+  <View style={s.categories}>{groups.map(g=><Pressable key={g} accessibilityRole="tab" accessibilityState={{selected:category===g}} onPress={()=>{setCategory(g);setDetailId(null)}} style={[s.category,{borderColor:category===g?C.selectionLine:C.line,backgroundColor:category===g?C.selection:C.panel2}]}><Text style={[s.categoryText,{color:category===g?C.text:C.muted}]}>{gt(g as 'Fish'|'Meals'|'Special'|'Potions'|'Infusions')}</Text></Pressable>)}</View>
   {potionList?<View style={s.potionList}>
     {([1,2,3] as const).map(tier=>{
       const rows=recipes.filter(recipe=>potionDef(recipe.output.itemId)?.tier===tier);

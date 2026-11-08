@@ -13,9 +13,12 @@ export interface AlchemyRecipe {
 }
 // One start reserves a full AFK run, bounded by resources, Gold and the AFK cap.
 export const MAX_ALCHEMY_BATCHES=10_000;
-/** Healing potions are scarce consumables for dungeon and boss encounters. */
-export const HEALING_POTION_CRAFT_COST_MULTIPLIER=5;
-export const HEALING_POTION_XP_MULTIPLIER=3;
+/** All dungeon/boss consumables (heals and preparation tonics) use the same premium crafting economy. */
+export const COMBAT_POTION_CRAFT_COST_MULTIPLIER=5;
+export const COMBAT_POTION_XP_MULTIPLIER=3;
+/** Compatibility exports used by older balancing tests/content. */
+export const HEALING_POTION_CRAFT_COST_MULTIPLIER=COMBAT_POTION_CRAFT_COST_MULTIPLIER;
+export const HEALING_POTION_XP_MULTIPLIER=COMBAT_POTION_XP_MULTIPLIER;
 export const POTIONS:readonly PotionDefinition[]=[
   {id:'DEWLEAF_DRAUGHT',name:'Dewleaf Draught',tier:1,effect:{kind:'healing',maxHpFraction:.20},description:'Restore 20% max HP in boss fights or dungeons. Not usable in ordinary hunts.'},
   {id:'RIVERHEART_DRAUGHT',name:'Riverheart Draught',tier:2,effect:{kind:'healing',maxHpFraction:.35},description:'Restore 35% max HP in boss fights or dungeons. Not usable in ordinary hunts.'},
@@ -77,10 +80,10 @@ export const ALCHEMY_RECIPES:readonly AlchemyRecipe[]=([
   {id:'BREW_RIMEWARD_DISTILLATE',name:'Rimeward Distillate',skillId:'alchemy',level:76,seconds:195,xp:1750,gold:220,inputs:[{itemId:'WINTERMINT',quantity:3},{itemId:'RIMEGLASS',quantity:2},{itemId:'RIME_RESIN',quantity:3}],output:{itemId:'RIMEWARD_DISTILLATE',quantity:1}},
   {id:'BREW_CINDERHEART_ELIXIR',name:'Cinderheart Elixir',skillId:'alchemy',level:96,seconds:225,xp:3000,gold:420,inputs:[{itemId:'ASHEN_MYRRH',quantity:4},{itemId:'BLACKGLASS_CORE',quantity:2},{itemId:'CINDER_HEART',quantity:1}],output:{itemId:'CINDERHEART_ELIXIR',quantity:1}},
 ] as AlchemyRecipe[]).map(recipe=>{
-  const healing=POTIONS.some(potion=>potion.id===recipe.output.itemId&&potion.effect.kind==='healing');
-  const costMultiplier=healing?HEALING_POTION_CRAFT_COST_MULTIPLIER:1;
+  const combatPotion=POTIONS.some(potion=>potion.id===recipe.output.itemId);
+  const costMultiplier=combatPotion?COMBAT_POTION_CRAFT_COST_MULTIPLIER:1;
   return {...recipe,
-    xp:recipe.xp*(healing?HEALING_POTION_XP_MULTIPLIER:1),
+    xp:recipe.xp*(combatPotion?COMBAT_POTION_XP_MULTIPLIER:1),
     gold:increasedCraftingGoldCost(recipe.gold)*costMultiplier,
     inputs:recipe.inputs.map(input=>({...input,quantity:input.quantity*costMultiplier}))};
 });
@@ -91,4 +94,7 @@ export const ALCHEMY_EQUIPMENT_INFUSION_ITEMS:ItemDef[]=ALCHEMY_EQUIPMENT_INFUSI
 export const potionDef=(id:string|undefined)=>POTIONS.find(p=>p.id===id);
 /** Present potions in a single scrolling list with tier separators; never add a tier tab. */
 export const potionTier=(id:string|undefined):PotionTier|undefined=>potionDef(id)?.tier;
-export const alchemyRecipeDef=(id:string)=>ALCHEMY_RECIPES.find(recipe=>recipe.id===id);
+/** Accept both canonical brew IDs and item/output IDs used by older deep links and shortcuts.
+ * Reserve with the canonical recipe ID so claims and save validation stay deterministic. */
+export const alchemyRecipeDef=(id:string)=>ALCHEMY_RECIPES.find(recipe=>recipe.id===id)
+  ??ALCHEMY_RECIPES.find(recipe=>recipe.output.itemId===id);

@@ -15,7 +15,7 @@ DECLARE
 BEGIN
   IF NOT EXISTS (SELECT 1 FROM private.party_weekly_event_gate_v2 WHERE id=1 AND enabled)
     THEN RAISE EXCEPTION 'PARTY_WEEKLY_EVENTS_DISABLED'; END IF;
-  IF p_event_id IS NULL OR p_stage NOT IN (2,3)
+  IF p_event_id IS NULL OR p_stage IS NULL OR p_stage NOT IN (2,3)
     OR p_options IS NULL OR cardinality(p_options) NOT BETWEEN 2 AND 4
     OR p_default_choice IS NULL OR NOT p_default_choice=ANY(p_options)
     OR EXISTS(SELECT 1 FROM unnest(p_options) x WHERE x IS NULL OR length(x) NOT BETWEEN 2 AND 64)

@@ -8,6 +8,14 @@ import {useMemo} from 'react';
 // Every row is complete, in en/de/es/nl/it/fr order. English phrases are typed keys.
 type TranslationRow=readonly [string,string,string,string,string,string];
 const common={
+ "Potions":["Potions","Tränke","Pociones","Drankjes","Pozioni","Potions"],
+ "Recipe source":["Recipe source","Rezeptquelle","Origen de la receta","Receptbron","Fonte della ricetta","Source de la recette"],
+ "Auto":["Auto","Automatisch","Automático","Automatisch","Automatico","Auto"],
+ "Standard":["Standard","Standard","Estándar","Standaard","Standard","Standard"],
+ "Base XP":["Base XP","Basis-EP","EXP base","Basis-XP","PE base","XP de base"],
+ "Need {amount} more {item}":["Need {amount} more {item}","Noch {amount} × {item} benötigt","Faltan {amount} de {item}","Nog {amount} × {item} nodig","Servono altri {amount} × {item}","Il manque {amount} × {item}"],
+ "Not enough AFK time for one batch.":["Not enough AFK time for one batch.","Nicht genug AFK-Zeit für einen Durchgang.","No hay suficiente tiempo AFK para una tanda.","Niet genoeg AFK-tijd voor één productieronde.","Tempo AFK insufficiente per un lotto.","Temps AFK insuffisant pour un lot."],
+
  "Production":["Production","Produktion","Producción","Productie","Produzione","Production"],
  "Experience":["Experience","Erfahrung","Experiencia","Ervaring","Esperienza","Expérience"],
  "unlocked":["unlocked","freigeschaltet","desbloqueadas","ontgrendeld","sbloccate","débloquées"],

@@ -26,7 +26,7 @@ export function HuntingPreview({state,monster,regionId}:{state:GameState;monster
  const playerImpact=useRef(new Animated.Value(0)).current,enemyImpact=useRef(new Animated.Value(0)).current;
  useEffect(()=>{
   const hit=fight?.lastHit;
-  if(!active||state.settings.reduceMotion||!hit)return;
+  if(!active||state.settings.reduceMotion||!hit){playerImpact.setValue(0);enemyImpact.setValue(0);return;}
   const value=hit.actor==='enemy'?playerImpact:enemyImpact;
   value.stopAnimation();value.setValue(1);
   const animation=Animated.timing(value,{toValue:0,duration:680,easing:Easing.out(Easing.quad),useNativeDriver:true});
@@ -34,10 +34,11 @@ export function HuntingPreview({state,monster,regionId}:{state:GameState;monster
   return()=>animation.stop();
  },[active,fight?.lastHit?.atMs,fight?.lastHit?.actor,state.settings.reduceMotion,playerImpact,enemyImpact]);
  const number=(value:number)=>formatGameNumber(Math.round(value),state.settings.numberMode,state.settings.language);
+ const hpText=(value:number)=>value>0&&value<1?value.toFixed(2):number(value);
  // Small real damage ticks must never render as a misleading zero.
  const damageText=(value:number)=>value>0&&value<1?value.toFixed(2):number(value);
  const font=Platform.OS==='web'?'system-ui':Platform.OS==='android'?'sans-serif':'System';
- const tr=(text:string)=>battleText(state.settings.language,text);
+ const tr=(text:string,params?:Record<string,string|number>)=>battleText(state.settings.language,text,params);
  return <View style={{borderWidth:1,borderColor:C.line,borderRadius:16,overflow:'hidden',backgroundColor:C.panel}}>
   <View style={{height:196,justifyContent:'flex-end'}}>
    {regionId==='IRONWOOD'?<Image source={require('../../assets/combat-scenes/ironwood-clearing-v1.jpg')} resizeMode="cover" style={[StyleSheet.absoluteFill,{width:'100%',height:'100%'}]}/>:<RegionArtwork regionId={regionId}/>}
@@ -51,8 +52,8 @@ export function HuntingPreview({state,monster,regionId}:{state:GameState;monster
   </View>
   {fight?<View style={{paddingHorizontal:12,paddingVertical:10,gap:8,borderTopWidth:1,borderColor:C.line,backgroundColor:C.panel}}>
    <View style={{flexDirection:'row',alignItems:'center',justifyContent:'space-between'}}>
-    <Text style={{fontFamily:font,color:C.text,fontSize:12,fontWeight:'800'}}>{fight.stoppedReason?'Combat stopped':'LIVE HUNT · REAL HITS'}</Text>
-    <Text style={{fontFamily:font,color:C.muted,fontSize:11}}>{Math.round(fight.progressFraction*100)}% encounter</Text>
+    <Text style={{fontFamily:font,color:C.text,fontSize:12,fontWeight:'800'}}>{tr(fight.stoppedReason?'Combat stopped':'Live combat')}</Text>
+    <Text style={{fontFamily:font,color:C.muted,fontSize:11}}>{tr('Progress · {percent}%',{percent:Math.round(fight.progressFraction*100)})}</Text>
    </View>
    {([
      {label:state.character?.name??'You',hp:fight.playerHp,max:fight.playerMaxHp,color:C.good},
@@ -60,14 +61,14 @@ export function HuntingPreview({state,monster,regionId}:{state:GameState;monster
    ]).map(row=><View key={row.label} style={{gap:3}}>
     <View style={{flexDirection:'row',justifyContent:'space-between',alignItems:'center',gap:8}}>
      <Text numberOfLines={1} style={{fontFamily:font,color:C.text,fontSize:11,fontWeight:'700',flex:1}}>{row.label}</Text>
-     <Text style={{fontFamily:font,color:C.muted,fontSize:11}}>{number(row.hp)} / {number(row.max)}</Text>
+     <Text style={{fontFamily:font,color:C.muted,fontSize:11}}>{hpText(row.hp)} / {hpText(row.max)}</Text>
     </View>
     <View style={{height:8,borderRadius:8,backgroundColor:C.line,overflow:'hidden'}}>
      <View style={{width:`${Math.max(0,Math.min(100,row.hp/Math.max(1,row.max)*100))}%` as `${number}%`,height:'100%',backgroundColor:row.color,borderRadius:8}}/>
     </View>
    </View>)}
    <Text accessibilityLiveRegion="polite" style={{fontFamily:font,fontSize:12,fontWeight:'700',color:lastHit?.actor==='enemy'?C.bad:C.accent}}>
-    {fight.stoppedReason?fight.stoppedReason:lastHit?`${lastHit.actor==='player'?'Hit':'Taken'} −${damageText(lastHit.damage)}${lastHit.critical?' · CRITICAL!':''}`:'Hits reduce real HP during the encounter'}
+    {fight.stoppedReason?tr('Combat stopped'):lastHit?`${tr(lastHit.actor==='player'?'Hit · {amount}':'Damage taken · {amount}',{amount:damageText(lastHit.damage)})}${lastHit.critical?` · ${tr('CRITICAL!')}`:''}`:tr('Damage updates on hit. Rewards are granted on defeat.')}
    </Text>
   </View>:null}
   {!monster.boss?<View accessibilityLabel={progressionT(state.settings.language,'BASELINE REWARDS')} style={{margin:8,marginTop:0,padding:11,gap:8,borderWidth:1,borderColor:C.lineStrong,borderRadius:8,backgroundColor:C.panel}}>

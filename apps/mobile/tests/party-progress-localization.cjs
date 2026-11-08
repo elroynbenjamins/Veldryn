@@ -15,7 +15,7 @@ const {SUPPORTED_LANGUAGES}=require('../src/i18n/languages.ts');
 const {partyProgressUiRows,partyProgressUiText,partyWeeklyTierText,partyEventStatusText,partyProgressNumber}=require('../src/i18n/party-progress-ui.ts');
 const languages=['de','es','nl','it','fr','ru','tr'];
 assert.deepEqual(SUPPORTED_LANGUAGES,['en',...languages]);
-assert.equal(Object.keys(partyProgressUiRows).length,50,'Maintain 50 reviewed Party progress messages');
+assert.equal(Object.keys(partyProgressUiRows).length,51,'Maintain 51 reviewed Party progress messages');
 const fields=value=>[...value.matchAll(/\{([a-zA-Z][a-zA-Z0-9_]*)\}/g)].map(x=>x[1]).sort();
 for(const [source,translations] of Object.entries(partyProgressUiRows)){
  assert.equal(translations.length,7,'Missing one locale for '+source);
@@ -39,6 +39,9 @@ for(const status of ['scheduled','active','settling','finalized','archived']){
  assert.equal(partyEventStatusText('tr',status),partyProgressUiText('tr',status));
 }
 assert.equal(partyProgressUiText('nl','{count}h left',{count:3}),'Nog 3 uur');
+assert.equal(partyProgressUiText('nl','{points} shared points left',{points:250}),'Nog 250 gezamenlijke punten nodig');
+const ladder=fs.readFileSync(path.join(root,'src/components/PartyWeeklyLadder.tsx'),'utf8');
+assert.ok(ladder.includes('t.targetPoints-contract.totalPoints')&&ladder.includes("st('{points} shared points left'"),'Party tiers must explain the remaining shared target as well as personal qualification');
 assert.equal(partyProgressUiText('ru','Your Party · #{rank}',{rank:12}),'Ваша группа · №12');
 assert.equal(partyProgressUiText('tr','Party ranking qualification: {reasons}',{reasons:'SERVER_RAW_$&'}),'Grup sıralama koşulları: SERVER_RAW_$&');
 assert.equal(partyProgressNumber('nl',12345),'12.345');

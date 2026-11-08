@@ -16,7 +16,7 @@ import {radii,spacing,typography,type ThemeColors} from '../theme/theme';
 export function RewardsInboxScreen({state,online,onRefresh,onEventClaim,preview}:{state:GameState;online:boolean;onRefresh:()=>Promise<unknown>;onEventClaim:(id:string)=>Promise<unknown>;preview?:InboxSnapshot}){
  const language=state.settings.language;
  const a=(text:string,params?:Record<string,string|number>)=>accountText(language,text,params);
- const C=useGameTheme(),s=useMemo(()=>makeStyles(C),[C]),[expandedId,setExpandedId]=useState<string|null>(null),[history,setHistory]=useState(false),[snapshot,setSnapshot]=useState<InboxSnapshot>(preview??{entries:[],pendingCount:0,total:0}),[loading,setLoading]=useState(false),[busy,setBusy]=useState(false),[error,setError]=useState(''),[notice,setNotice]=useState('');
+ const C=useGameTheme(),s=useMemo(()=>makeStyles(C),[C]),[expandedId,setExpandedId]=useState<string|null>(null),[history,setHistory]=useState(false),[snapshot,setSnapshot]=useState<InboxSnapshot>(preview??{entries:[],pendingCount:0,total:0}),[loading,setLoading]=useState(false),[busy,setBusy]=useState(false),[error,setError]=useState(''),[notice,setNotice]=useState(''),[blockedClaims,setBlockedClaims]=useState<Record<string,string>>({});
  const running=useRef(false),generation=useRef(0);
  const load=useCallback(async(append=false)=>{const token=++generation.current;if(preview)return;if(!online){setError(a('Sign in to receive rewards and gifts.'));return;}setLoading(true);try{const next=await loadRewardInbox(history,append?snapshot.entries.length:0);if(token===generation.current){setSnapshot(previous=>({...next,entries:append?[...previous.entries,...next.entries]:next.entries}));setError('');}}catch(e){if(token===generation.current)setError(e instanceof Error?e.message:a('Inbox unavailable.'));}finally{if(token===generation.current)setLoading(false);}},[history,online,preview,snapshot.entries.length]);
  useEffect(()=>{void load();return()=>{generation.current++;};},[history,online,preview]);
@@ -26,7 +26,9 @@ export function RewardsInboxScreen({state,online,onRefresh,onEventClaim,preview}
  const run=async(id?:string)=>{if(running.current)return;running.current=true;setBusy(true);setError('');setNotice('');try{
   if(preview){setSnapshot(s=>{const entries=s.entries.map(row=>!id||row.id===id?{...row,claimedAt:new Date().toISOString()}:row);return {...s,entries,pendingCount:entries.filter(row=>!row.claimedAt).length}});setNotice(a('Preview reward claimed.'));return;}
   if(id?.startsWith('event:'))await onEventClaim(id.slice(6));
-  else if(id){const result=await claimInboxReward(id);setNotice(result.blocked?result.message??a('Make room in your inventory.'):a('Reward claimed.'));}
+  else if(id){const result=await claimInboxReward(id);const reason=result.blocked?result.message?.trim()||a('Make room in your inventory.'):null;
+   setBlockedClaims(previous=>{const next={...previous};if(reason)next[id]=reason;else delete next[id];return next;});
+   setNotice(reason??a('Reward claimed.'));}
   else{
    let claimed=0,blocked=0,result,pages=0;do{result=await claimAllInboxRewards();claimed+=result.claimed;blocked=result.blocked;pages++;}while(result.claimed>0&&result.claimed+result.blocked>=40&&pages<10);
    for(const row of eventRows){await onEventClaim(row.reward.id);claimed++;}
@@ -41,7 +43,7 @@ export function RewardsInboxScreen({state,online,onRefresh,onEventClaim,preview}
     <Text style={s.sub}>{a('Earned rewards and gifts stay safe here until claimed.')}</Text>
   </View>
   <View accessibilityRole="tablist" style={s.tabs}>
-    {[false,true].map(value=><Pressable key={String(value)} accessibilityRole="tab" accessibilityState={{selected:history===value,disabled:busy}} disabled={busy} onPress={()=>{if(!preview)setSnapshot(previous=>({...previous,entries:[],total:0}));setHistory(value);setNotice('');setExpandedId(null);}} style={[s.tab,history===value&&s.tabActive]}>
+    {[false,true].map(value=><Pressable key={String(value)} accessibilityRole="tab" accessibilityState={{selected:history===value,disabled:busy}} disabled={busy} onPress={()=>{if(!preview)setSnapshot(previous=>({...previous,entries:[],total:0}));setHistory(value);setNotice('');setExpandedId(null);setBlockedClaims({});}} style={[s.tab,history===value&&s.tabActive]}>
       <Text style={[s.tabText,history===value&&s.tabTextActive]}>{value?a('Claimed history'):a('Inbox')+(pending?' · '+pending:'')}</Text>
     </Pressable>)}
   </View>
@@ -50,18 +52,19 @@ export function RewardsInboxScreen({state,online,onRefresh,onEventClaim,preview}
   {!!notice?<Text accessibilityRole="alert" style={s.success}>{notice}</Text>:null}
   <View style={s.list}>
     {rows.map(row=>{
-      const expanded=expandedId===row.id,available=row.attachments.slice(0,3),remaining=row.attachments.length-available.length;
+      const expanded=expandedId===row.id,available=row.attachments.slice(0,3),remaining=row.attachments.length-available.length,blockedReason=!row.claimedAt?blockedClaims[row.id]:undefined;
       return <View key={row.id} style={[s.card,!row.claimedAt&&s.cardPending]}>
         <Pressable accessibilityRole="button" accessibilityState={{expanded}} accessibilityLabel={row.title} onPress={()=>setExpandedId(previous=>previous===row.id?null:row.id)} style={({pressed})=>[s.cardHead,pressed&&s.pressed]}>
           <View style={s.sourceIcon}><UiIcon name={row.source==='gift'?'rewards':row.source==='guild'?'guild':row.source==='event'?'events':'quests'} size={24}/></View>
           <View style={s.flex}><Text style={s.source}>{row.source==='gift'?a('GIFT FROM VELDRYN'):a('{source} REWARD',{source:row.source.toUpperCase()})}</Text><Text numberOfLines={2} style={s.cardTitle}>{row.title}</Text></View>
-          <View style={s.cardStatus}><Text style={[s.status,row.claimedAt?s.claimed:s.pending]}>{row.claimedAt?a('CLAIMED'):a('READY')}</Text><Text style={s.chevron}>{expanded?'⌃':'⌄'}</Text></View>
+          <View style={s.cardStatus}><Text style={[s.status,row.claimedAt?s.claimed:s.pending]}>{row.claimedAt?a('CLAIMED'):blockedReason?a('CLAIM BLOCKED'):a('READY')}</Text><Text style={s.chevron}>{expanded?'⌃':'⌄'}</Text></View>
         </Pressable>
         <View style={s.preview}>{available.map((a,index)=><View key={a.resourceId+':'+index} style={s.previewItem}><InboxArtwork attachment={a}/><Text style={s.previewQuantity}>×{a.quantity.toLocaleString()}</Text></View>)}{remaining>0?<Text style={s.moreCount}>{a('+{count} more',{count:remaining})}</Text>:null}{!row.attachments.length?<Text style={s.sub}>{a('Reward details')}</Text>:null}</View>
         {expanded?<View style={s.details}>
           {!!row.body?<Text style={s.body}>{row.body}</Text>:null}
           {row.attachments.map((a,index)=><View key={a.resourceId+':'+index} style={s.attachment}><InboxArtwork attachment={a}/><Text style={s.attachmentName}>{a.name}</Text><Text style={s.attachmentCount}>×{a.quantity.toLocaleString()}</Text></View>)}
         </View>:null}
+        {blockedReason?<Text accessibilityRole="alert" style={s.warning}>{blockedReason}</Text>:null}
         <View style={s.cardFooter}>
           {row.claimedAt?<Text style={s.claimedLabel}>✓ {a('Claimed')}{row.claimedAt!=='claimed'?' · '+new Date(row.claimedAt).toLocaleDateString(language):''}</Text>:<SocialActionButton label={a('Claim reward')} disabled={busy||(!online&&!preview)} onPress={()=>run(row.id)}/>}
         </View>

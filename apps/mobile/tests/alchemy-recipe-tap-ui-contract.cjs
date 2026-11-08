@@ -6,11 +6,25 @@ const file=path.join(__dirname,'../src/components/ConsumableWorkshop.tsx');
 const source=fs.readFileSync(file,'utf8');
 const potionRows=source.split('const renderPotionRow=(recipe:Recipe)=>{')[1]?.split('return <View style={s.root}>')[0];
 assert.ok(potionRows,'Alchemy potion row renderer must exist');
+assert.match(source,/alchemy:\['Potions','Infusions'\] as const/,'Alchemy combines healing draughts and role tonics under one Potions tab');
+assert.match(source,/return def\?'Potions':'Infusions'/,'Potion families do not split into independent tabs');
+assert.match(source,/alchemyPotionRows\(all\.filter\(r=>categoryOf\(r\)==='Potions'\)/,'Potion rows are resolved through the shared one-per-output variant selector');
+assert.match(source,/manualByOutput:manualSourceByPotion,readyOnly/,'Auto selection supports optional explicit regional ingredient source and craftable-only mode');
+assert.match(source,/activeId,preferredId:preferred\?\.id/,'An already-brewing regional variant remains visible');
+
 assert.match(potionRows,/onPress=\{\(\)=>start\(recipe\)\} style=\{\(\{pressed\}\)=>\[s\.potionRowMain/,'Tapping a potion recipe should start brewing');
 assert.match(potionRows,/disabled=\{busy\|\|isActive\|\|available<1\}/,'Unavailable, active or busy recipes must not start brewing');
-assert.match(potionRows,/onPress=\{\(\)=>setDetailId\(current=>current===recipe\.id\?null:recipe\.id\)\}/,'The lower information strip must toggle details');
+assert.match(potionRows,/onPress=\{\(\)=>setDetailId\(current=>current===detailKey\(recipe\)\?null:detailKey\(recipe\)\)\}/,'The lower information strip remains expanded when the auto-selected variant changes');
 assert.match(potionRows,/\{isExpanded\?renderInlineDetails\(recipe\):null\}/,'Potion details should expand under the recipe');
 assert.match(source,/skillId==='alchemy'&&detailId===recipe\.id\?renderInlineDetails\(recipe\):null/,'Alchemy infusions should also expand details inline');
 assert.match(source,/GameModalSurface visible=\{skillId==='cooking'&&!!detail\}/,'Only cooking should use the old details modal');
 assert.match(source,/if\(activity\)\{setDetailId\(null\);setPendingId\(recipe\.id\);return;\}/,'Brewing must preserve the activity-switch confirmation');
+assert.match(source,/key=\{recipe\.output\.itemId\}/,'Potions keep stable visual identity when ingredient source changes');
+assert.match(source,/sourceChoices/,'Alternate brewing sources are selectable inside details without duplicate recipe rows');
+assert.match(source,/goldShortfall>0/,'Alchemy distinguishes missing Gold from missing ingredients');
+assert.match(source,/missing\.quantity-owned/,'Alchemy displays a numeric ingredient shortfall');
+assert.match(source,/missingReason\(recipe\)/,'Alchemy infusion tiles and potion rows share detailed lock guidance');
+assert.match(source,/recipe\.gold\} \{gt\('Gold'\)\}/,'Potion rows display the true per-batch Gold price');
+assert.match(source,/preferred=all\.find\(r=>r\.id===preferredRecipeId\)\?\?all\.find\(r=>r\.output\.itemId===preferredRecipeId\)/,'Item-ID shortcuts still open the correct infusions category');
+
 console.log('PASS: Alchemy recipe tap starts brewing and bottom details expand inline');

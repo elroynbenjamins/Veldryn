@@ -5,6 +5,7 @@ import {RECIPES,type Recipe} from '../content/skills';
 import {itemDef} from '../content/items';
 import {localizedItemName} from '../i18n/starter-item-names';
 import {alchemyAvailability} from '../core/alchemy';
+import {alchemyPotionRows} from '../core/alchemy-workshop-choices';
 import {processingRunCapacity} from '../core/processing';
 import {offlineCapSeconds} from '../core/game';
 import {professionActionPace} from '../core/profession-action-pace';
@@ -22,7 +23,7 @@ type Props={state:GameState;skillId:Skill;preferredRecipeId?:string;onStart:(id:
 
 const categories={
  cooking:['Fish','Meals','Special'] as const,
- alchemy:['Healing','Tonics','Infusions'] as const,
+ alchemy:['Potions','Infusions'] as const,
 };
 function categoryOf(recipe:Recipe):string{
  if(recipe.skillId==='cooking'){
@@ -31,7 +32,7 @@ function categoryOf(recipe:Recipe):string{
    return 'Fish';
  }
  const def=potionDef(recipe.output.itemId);
- return !def?'Infusions':def.effect.kind==='healing'?'Healing':'Tonics';
+ return def?'Potions':'Infusions';
 }
 function timeLabel(seconds:number){
  const n=Math.max(0,Math.ceil(seconds));
@@ -59,9 +60,11 @@ export function ConsumableWorkshop({state,skillId,preferredRecipeId,onStart}:Pro
   return gt('Deals {percent}% more damage for {count} ordinary encounters.',{percent:Math.round(effect.damageDealtFraction*100),count});
  };
  const all=useMemo(()=>RECIPES.filter(r=>r.skillId===skillId&&!r.noviceSetId).sort((a,b)=>a.level-b.level),[skillId]);
- const groups=categories[skillId],preferred=all.find(r=>r.id===preferredRecipeId);
+ const groups=categories[skillId],preferred=all.find(r=>r.id===preferredRecipeId)??all.find(r=>r.output.itemId===preferredRecipeId);
+ const detailKey=(recipe:Recipe)=>recipe.skillId==='alchemy'&&!!potionDef(recipe.output.itemId)?recipe.output.itemId:recipe.id;
  const [category,setCategory]=useState<string>(preferred?categoryOf(preferred):groups[0]);
- const [readyOnly,setReadyOnly]=useState(false),[detailId,setDetailId]=useState<string|null>(preferred?.id??null);
+ const [readyOnly,setReadyOnly]=useState(false),[detailId,setDetailId]=useState<string|null>(preferred?detailKey(preferred):null);
+ const [manualSourceByPotion,setManualSourceByPotion]=useState<Record<string,string>>({});
  const [pendingId,setPendingId]=useState<string|null>(null),[busy,setBusy]=useState(false),[error,setError]=useState('');
  const busyRef=useRef(false);
  const activity=state.activity,activeId=activity?.kind==='alchemy'?activity.targetId:activity?.kind==='processing'&&activity.processing?.skillId==='cooking'?activity.targetId:undefined;
@@ -80,7 +83,26 @@ export function ConsumableWorkshop({state,skillId,preferredRecipeId,onStart}:Pro
  }),[all,state,skillId,afkCap]);
  const counts=new Map(capacities);
  const count=(recipe:Recipe)=>counts.get(recipe.id)??0;
- const recipes=all.filter(r=>categoryOf(r)===category&&(!readyOnly||(r.level<=skillLevel&&count(r)>0)));
+ const visible=all.filter(r=>categoryOf(r)===category&&(!readyOnly||r.id===activeId||(r.level<=skillLevel&&count(r)>0)));
+ const potionRows=skillId==='alchemy'&&category==='Potions'
+  ?alchemyPotionRows(all.filter(r=>categoryOf(r)==='Potions'),count,skillLevel,{
+    activeId,preferredId:preferred?.id,manualByOutput:manualSourceByPotion,readyOnly,
+   }):[];
+ const recipes=skillId==='alchemy'&&category==='Potions'?potionRows.map(row=>row.recipe):visible;
+ const potionOptions=new Map<string,readonly Recipe[]>(potionRows.map(row=>[row.outputId,row.options] as const));
+ const missingReason=(recipe:Recipe):string=>{
+  if(recipe.level>skillLevel)return gt('Requires {skill} level {level}.',{skill:gl('alchemy'),level:recipe.level});
+  const goldShortfall=Math.max(0,recipe.gold-(state.character?.gold??0));
+  if(goldShortfall>0)return gt('Need {amount} more Gold',{amount:goldShortfall});
+  const missing=recipe.inputs.find(input=>state.inventory.stacks.filter(row=>row.itemId===input.itemId).reduce((total,row)=>total+row.quantity,0)
+    +state.bank.stacks.filter(row=>row.itemId===input.itemId).reduce((total,row)=>total+row.quantity,0)<input.quantity);
+  if(missing){
+   const owned=[...state.inventory.stacks,...state.bank.stacks].filter(row=>row.itemId===missing.itemId).reduce((total,row)=>total+row.quantity,0);
+   return gt('Need {amount} more {item}',{amount:missing.quantity-owned,item:itemName(missing.itemId)});
+  }
+  if(professionActionPace(state,recipe,'batch').cycleSeconds>afkCap)return gt('Not enough AFK time for one batch.');
+  return gt('Requirements missing');
+ };
  const detail=all.find(r=>r.id===detailId);
  const submit=async(id:string)=>{
   if(busyRef.current)return;
@@ -100,31 +122,47 @@ export function ConsumableWorkshop({state,skillId,preferredRecipeId,onStart}:Pro
  const regionVariant=(recipe:Recipe)=>recipe.id.endsWith('_SUNSCAR')?'Sunscar':recipe.id.endsWith('_FROSTMARCH')?'Frostmarch':recipe.id.endsWith('_ASHLANDS')?'Ashlands':undefined;
  const mobile=width<360||fontScale>=1.35;
  /** Potion tiers are visual section breaks inside the existing Alchemy categories, not tabs. */
- const potionList=skillId==='alchemy'&&category!=='Infusions';
+ const potionList=skillId==='alchemy'&&category==='Potions';
  const renderInlineDetails=(recipe:Recipe)=>(
   <View style={[s.inlineDetails,{borderTopColor:C.line,backgroundColor:C.panel2}]}>
-    <Text style={[s.caption,{color:C.muted}]}>{gt('Per batch')}: {recipe.output.quantity} {gt('items')} · {recipe.gold} {gt('Gold')} · {timeLabel(professionActionPace(state,recipe,'batch').cycleSeconds)}</Text>
+    {(potionOptions.get(recipe.output.itemId)?.length??0)>1?<View style={s.sourceSelector}>
+      <Text style={[s.caption,{color:C.muted}]}>{gt('Recipe source')}</Text>
+      <View style={s.sourceChoices}>
+       {([{id:'',label:gt('Auto')},...(potionOptions.get(recipe.output.itemId)??[]).map(option=>({id:option.id,label:regionVariant(option)??gt('Standard')}))]).map(option=>{
+        const activeVariant=(potionOptions.get(recipe.output.itemId)??[]).some(candidate=>candidate.id===activeId);
+        const selectedSource=readyOnly||activeVariant?'':manualSourceByPotion[recipe.output.itemId]??'';
+        return <Pressable key={option.id||'auto'} accessibilityRole="button" accessibilityState={{selected:selectedSource===option.id,disabled:activeVariant}} disabled={activeVariant}
+          onPress={()=>setManualSourceByPotion(current=>{
+           const next={...current};if(option.id)next[recipe.output.itemId]=option.id;else delete next[recipe.output.itemId];return next;
+          })} style={[s.sourceChip,{borderColor:selectedSource===option.id?C.selectionLine:C.line,backgroundColor:selectedSource===option.id?C.selection:C.panel}]}>
+          <Text style={[s.caption,{color:selectedSource===option.id?C.text:C.muted}]}>{option.label}</Text>
+        </Pressable>;
+       })}
+      </View>
+    </View>:null}
+    <Text style={[s.caption,{color:C.muted}]}>{gt('Per batch')}: {recipe.output.quantity} {gt('items')} · {recipe.gold} {gt('Gold')} · {timeLabel(professionActionPace(state,recipe,'batch').cycleSeconds)} · +{recipe.xp} {gt('Base XP')}</Text>
     <Text style={[s.caption,{color:C.muted}]}>{gt('Maximum production')}: {count(recipe)} {gt('batches')} · {count(recipe)*recipe.output.quantity} {gt('items')} · {count(recipe)*recipe.gold} {gt('Gold')}</Text>
     <IngredientList inputs={recipe.inputs.map(input=>({...input,inventory:state.inventory.stacks.filter(stack=>stack.itemId===input.itemId).reduce((total,stack)=>total+stack.quantity,0),bank:state.bank.stacks.filter(stack=>stack.itemId===input.itemId).reduce((total,stack)=>total+stack.quantity,0)}))} numberMode={state.settings.numberMode} showStorage/>
     {potionDef(recipe.output.itemId)?.effect.kind==='healing'?<Text style={[s.caption,{color:C.info}]}>{gt('Healing potions work in boss fights and between dungeon rooms. Food is disabled there. Choose a potion from the HP menu.')}</Text>:null}
   </View>
  );
  const renderPotionRow=(recipe:Recipe)=>{
-  const available=count(recipe),isActive=activeId===recipe.id,locked=recipe.level>skillLevel,isExpanded=detailId===recipe.id;
-  return <View key={recipe.id} style={[s.potionRow,{borderColor:isActive?C.good:C.line,backgroundColor:C.panel}]}>
-    <Pressable accessibilityRole="button" accessibilityLabel={itemName(recipe.output.itemId)+'. '+benefit(recipe)+'. '+(isActive?gt('Active'):available>0?gt('Start Brewing'):locked?gt('Locked'):gt('Needs materials'))} accessibilityState={{disabled:busy||isActive||available<1}} disabled={busy||isActive||available<1} onPress={()=>start(recipe)} style={({pressed})=>[s.potionRowMain,pressed&&{opacity:.72}]}>
+  const available=count(recipe),isActive=activeId===recipe.id,locked=recipe.level>skillLevel,isExpanded=detailId===detailKey(recipe),reason=missingReason(recipe);
+  return <View key={recipe.output.itemId} style={[s.potionRow,{borderColor:isActive?C.good:C.line,backgroundColor:C.panel}]}>
+    <Pressable accessibilityRole="button" accessibilityLabel={itemName(recipe.output.itemId)+'. '+benefit(recipe)+'. '+(isActive?gt('Active'):available>0?gt('Start Brewing'):reason)} accessibilityState={{disabled:busy||isActive||available<1}} disabled={busy||isActive||available<1} onPress={()=>start(recipe)} style={({pressed})=>[s.potionRowMain,pressed&&{opacity:.72}]}>
       <ItemArtwork itemId={recipe.output.itemId} size={44}/>
       <View style={s.potionRowCopy}>
         <Text style={[s.name,{color:C.text}]} numberOfLines={1}>{itemName(recipe.output.itemId)}{regionVariant(recipe)?' · '+regionVariant(recipe):''}</Text>
         <Text style={[s.caption,{color:C.muted}]} numberOfLines={2}>{benefit(recipe)}</Text>
-        <Text style={[s.ready,{color:isActive||available?C.good:C.warning}]}>{isActive?'● '+gt('Active'):locked?gt('Locked'):available?available+' '+gt('batches'):gt('Needs materials')}</Text>
+        <Text style={[s.ready,{color:isActive||available?C.good:C.warning}]}>{isActive?'● '+gt('Active'):available?available+' '+gt('batches'):reason}</Text>
       </View>
       <View style={s.potionRowSide}>
         <Text style={[s.tier,{color:locked?C.warning:C.muted}]}>{gt('Lv {level}',{level:recipe.level})}</Text>
+        <Text style={[s.caption,{color:C.muted}]}>{recipe.gold} {gt('Gold')}</Text>
         <Text style={[s.caption,{color:available>0&&!isActive?C.good:C.muted}]}>{available>0&&!isActive?'▶ '+gt('Start Brewing'):''}</Text>
       </View>
     </Pressable>
-    <Pressable accessibilityRole="button" accessibilityLabel={itemName(recipe.output.itemId)+' · '+gt('Show recipe details')} accessibilityState={{expanded:isExpanded}} onPress={()=>setDetailId(current=>current===recipe.id?null:recipe.id)} style={[s.potionRowInfo,{borderTopColor:C.line,backgroundColor:isExpanded?C.selection:C.panel2}]}>
+    <Pressable accessibilityRole="button" accessibilityLabel={itemName(recipe.output.itemId)+' · '+gt('Show recipe details')} accessibilityState={{expanded:isExpanded}} onPress={()=>setDetailId(current=>current===detailKey(recipe)?null:detailKey(recipe))} style={[s.potionRowInfo,{borderTopColor:C.line,backgroundColor:isExpanded?C.selection:C.panel2}]}>
       <Text style={[s.caption,{color:C.info}]}>ⓘ {gt('Details')} {isExpanded?'▴':'▾'}</Text>
     </Pressable>
     {isExpanded?renderInlineDetails(recipe):null}
@@ -138,8 +176,9 @@ export function ConsumableWorkshop({state,skillId,preferredRecipeId,onStart}:Pro
     <Text style={[s.caption,{color:C.muted}]}>{gt('Use the main Activity bar to stop or claim production.')}</Text>
   </View>:null}
   <View style={s.line}><Text style={[s.title,{color:C.text}]}>{gt('Recipes')}</Text><Pressable accessibilityRole="checkbox" accessibilityState={{checked:readyOnly}} onPress={()=>setReadyOnly(x=>!x)} style={[s.toggle,{borderColor:C.line,backgroundColor:readyOnly?C.selection:C.panel2}]}><Text style={[s.caption,{color:C.text}]}>{readyOnly?'✓ ':''}{gt('Craftable only')}</Text></Pressable></View>
-  <View style={s.categories}>{groups.map(g=><Pressable key={g} accessibilityRole="tab" accessibilityState={{selected:category===g}} onPress={()=>{setCategory(g);setDetailId(null)}} style={[s.category,{borderColor:category===g?C.selectionLine:C.line,backgroundColor:category===g?C.selection:C.panel2}]}><Text style={[s.categoryText,{color:category===g?C.text:C.muted}]}>{gt(g as 'Fish'|'Meals'|'Special'|'Healing'|'Tonics'|'Infusions')}</Text></Pressable>)}</View>
+  <View style={s.categories}>{groups.map(g=><Pressable key={g} accessibilityRole="tab" accessibilityState={{selected:category===g}} onPress={()=>{setCategory(g);setDetailId(null)}} style={[s.category,{borderColor:category===g?C.selectionLine:C.line,backgroundColor:category===g?C.selection:C.panel2}]}><Text style={[s.categoryText,{color:category===g?C.text:C.muted}]}>{gt(g as 'Fish'|'Meals'|'Special'|'Potions'|'Infusions')}</Text></Pressable>)}</View>
   {potionList?<View style={s.potionList}>
+    <Text style={[s.caption,{color:C.muted}]}>{gt('Draughts heal in boss fights and dungeons. Tonics prepare dungeon runs and boost ordinary encounters.')}</Text>
     {([1,2,3] as const).map(tier=>{
       const rows=recipes.filter(recipe=>potionDef(recipe.output.itemId)?.tier===tier);
       return rows.length?<View key={tier} style={s.potionTierGroup}>
@@ -154,12 +193,12 @@ export function ConsumableWorkshop({state,skillId,preferredRecipeId,onStart}:Pro
   </View>:  <View style={s.grid}>{recipes.map(recipe=>{
     const available=count(recipe),isActive=activeId===recipe.id,meal=mealBonusDef(recipe.output.itemId);
     return <View key={recipe.id} style={[s.tile,{width:skillId==='alchemy'?'100%':mobile?'100%':'48.7%',borderColor:isActive?C.good:C.line,backgroundColor:C.panel}]}>
-     <Pressable accessibilityRole="button" accessibilityLabel={itemName(recipe.output.itemId)+'. '+benefit(recipe)+'. '+(isActive?gt('Active'):available?gt('Tap to start'):gt('Requirements missing'))} accessibilityState={{disabled:busy||isActive||(skillId==='alchemy'&&available<1)}} disabled={busy||isActive||(skillId==='alchemy'&&available<1)} onPress={()=>start(recipe)} style={({pressed})=>[s.tileTap,skillId==='alchemy'&&s.alchemyTileTap,pressed&&{opacity:.7}]}>
+     <Pressable accessibilityRole="button" accessibilityLabel={itemName(recipe.output.itemId)+'. '+benefit(recipe)+'. '+(isActive?gt('Active'):available?gt('Tap to start'):skillId==='alchemy'?missingReason(recipe):gt('Requirements missing'))} accessibilityState={{disabled:busy||isActive||(skillId==='alchemy'&&available<1)}} disabled={busy||isActive||(skillId==='alchemy'&&available<1)} onPress={()=>start(recipe)} style={({pressed})=>[s.tileTap,skillId==='alchemy'&&s.alchemyTileTap,pressed&&{opacity:.7}]}>
       <View style={s.line}><ItemArtwork itemId={recipe.output.itemId} size={48}/><Text style={[s.tier,{color:recipe.level>skillLevel?C.warning:C.muted}]}>{gt('Lv {level}',{level:recipe.level})}</Text></View>
       <Text style={[s.name,{color:C.text}]} numberOfLines={2}>{itemName(recipe.output.itemId)}</Text>
       <Text style={[s.caption,{color:C.muted}]} numberOfLines={2}>{benefit(recipe)}</Text>
       {meal?<Text style={[s.buff,{color:C.good}]} numberOfLines={2}>{meal.label} · {meal.durationHours}h</Text>:null}
-      <Text style={[s.ready,{color:isActive||available?C.good:C.warning}]}>{isActive?'● '+gt('Active'):available?'▶ '+available+' '+gt('batches'):recipe.level>skillLevel?gt('Locked'):gt('Needs materials')}</Text>
+      <Text style={[s.ready,{color:isActive||available?C.good:C.warning}]}>{isActive?'● '+gt('Active'):available?'▶ '+available+' '+gt('batches'):skillId==='alchemy'?missingReason(recipe):recipe.level>skillLevel?gt('Locked'):gt('Needs materials')}</Text>
      </Pressable>
      <Pressable accessibilityRole="button" accessibilityLabel={gt('Show recipe details')} accessibilityState={skillId==='alchemy'?{expanded:detailId===recipe.id}:undefined} onPress={()=>setDetailId(x=>x===recipe.id?null:recipe.id)} style={[s.info,{borderTopColor:C.line}]}><Text style={[s.caption,{color:C.muted}]}>ⓘ {gt('Details')} {skillId==='alchemy'?(detailId===recipe.id?'▴':'▾'):''}</Text></Pressable>
      {skillId==='alchemy'&&detailId===recipe.id?renderInlineDetails(recipe):null}
@@ -196,8 +235,9 @@ export function ConsumableWorkshop({state,skillId,preferredRecipeId,onStart}:Pro
 const s=StyleSheet.create({
  root:{gap:12},line:{flexDirection:'row',alignItems:'center',justifyContent:'space-between',gap:8},title:{fontSize:17,fontWeight:'800',lineHeight:22},name:{fontSize:13,fontWeight:'800',lineHeight:18},bold:{fontSize:12,fontWeight:'800'},caption:{fontSize:11,lineHeight:16},tier:{fontSize:11,fontWeight:'800'},ready:{fontSize:11,fontWeight:'800',marginTop:4},buff:{fontSize:11,fontWeight:'800',lineHeight:16},toggle:{borderWidth:1,borderRadius:8,paddingHorizontal:10,minHeight:38,justifyContent:'center'},
  categories:{flexDirection:'row',gap:6},category:{flex:1,minWidth:0,minHeight:44,borderWidth:1,borderRadius:8,justifyContent:'center',alignItems:'center',paddingHorizontal:4},categoryText:{fontSize:11,fontWeight:'800'},
+ sourceSelector:{gap:5},sourceChoices:{flexDirection:'row',flexWrap:'wrap',gap:5},sourceChip:{borderRadius:7,borderWidth:1,paddingHorizontal:10,minHeight:44,justifyContent:'center'},
  potionList:{gap:14},potionTierGroup:{gap:7},potionTierHeading:{minHeight:28,flexDirection:'row',alignItems:'center',gap:8},potionTierTitle:{fontSize:12,fontWeight:'900',letterSpacing:.6},potionTierDivider:{height:1,flex:1},
- potionRow:{borderWidth:1,borderRadius:11,overflow:'hidden'},potionRowMain:{minHeight:72,flexDirection:'row',alignItems:'center',gap:10,padding:10},potionRowCopy:{flex:1,minWidth:0,gap:3},potionRowSide:{minWidth:54,alignItems:'flex-end',alignSelf:'stretch',justifyContent:'space-between'},potionRowInfo:{minHeight:38,borderTopWidth:1,alignItems:'center',justifyContent:'center'},inlineDetails:{gap:9,padding:11,borderTopWidth:1},
+ potionRow:{borderWidth:1,borderRadius:11,overflow:'hidden'},potionRowMain:{minHeight:72,flexDirection:'row',alignItems:'center',gap:10,padding:10},potionRowCopy:{flex:1,minWidth:0,gap:3},potionRowSide:{minWidth:54,alignItems:'flex-end',alignSelf:'stretch',justifyContent:'space-between'},potionRowInfo:{minHeight:44,borderTopWidth:1,alignItems:'center',justifyContent:'center'},inlineDetails:{gap:9,padding:11,borderTopWidth:1},
  grid:{flexDirection:'row',flexWrap:'wrap',justifyContent:'space-between',gap:8},tile:{borderWidth:1,borderRadius:11,overflow:'hidden'},tileTap:{minHeight:160,padding:11,gap:5},alchemyTileTap:{minHeight:108},info:{minHeight:38,borderTopWidth:1,justifyContent:'center',alignItems:'center'},detail:{borderWidth:1,borderRadius:11,padding:12,gap:10},detailModal:{maxHeight:'86%'},detailScroll:{flexGrow:0,flexShrink:1},detailContent:{gap:10,paddingBottom:8},primary:{minHeight:48,alignItems:'center',justifyContent:'center',borderRadius:8},
  secondary:{minHeight:44,flex:1,alignItems:'center',justifyContent:'center',borderWidth:1,borderRadius:8},active:{borderWidth:1,borderRadius:11,padding:12,gap:5}
 });

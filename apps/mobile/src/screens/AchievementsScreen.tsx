@@ -99,6 +99,7 @@ export function AchievementsScreen({reduceMotion=false,onProfile}:{reduceMotion?
           {(ready||entry.claimed)?<View style={s.entryActions}>
             {ready?<GameButton compact title={t("Claim")} loading={busy===`claim:${entry.id}`} disabled={busy!==null} onPress={()=>claim(entry.id)}/>:null}
             {entry.claimed?<GameButton compact title={showcase.includes(entry.id)?t("Shown"):t("Show")} selected={showcase.includes(entry.id)} tone="secondary" disabled={busy!==null||(!showcase.includes(entry.id)&&showcase.length>=3)} onPress={()=>toggle(entry.id)}/>:null}
+            {entry.claimed&&!showcase.includes(entry.id)&&showcase.length>=3?<Text style={s.copy}>{t("All 3 showcase slots are full. Unselect another achievement to make room.")}</Text>:null}
           </View>:null}
         </View>;
       })}

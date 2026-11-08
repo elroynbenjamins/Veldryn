@@ -46,5 +46,6 @@ assert.deepEqual(guildQuestAuthoredCopy('fr','guild_custom','Guild Vanguard','Co
 const board=fs.readFileSync(path.join(root,'src/components/GuildQuestPanel.tsx'),'utf8');
 assert.ok(board.includes('guildQuestAuthoredCopy(language,q.questKey,q.title,q.description)'),'Guild Quest display must localize only verified source pairs');
 assert.ok(board.includes('{authored.title}')&&board.includes('{authored.description}'),'Visible Quest title/description must use localized verified content');
+assert.ok(board.includes('hasRecordedContribution')&&board.includes("ui('NOT RECORDED')")&&board.includes('Only matching, verified quest objectives count.'),'Guild Quest cards must distinguish unrecorded personal activity from shared Guild progress');
 assert.ok(board.includes('{quest:authored.title,activity:q.activityReward}')&&board.includes('{quest:authored.title})'),'Completion alerts and accessibility must use localized quest titles');
 console.log('PASS 15 authored Guild Quest pairs (30 source strings x 7 locales = 210 translations), authoritative SQL source parity, strict fallback and view wiring');

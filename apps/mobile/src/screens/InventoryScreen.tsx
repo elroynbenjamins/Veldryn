@@ -11,7 +11,7 @@ import {localizedItemName} from '../i18n/starter-item-names';
 import {isReleasedEquipmentItemId} from '../content/equipment-release';
 import {InventoryFilter,InventorySort,foodHealingAmount,inventoryFavoriteIds,inventoryLockedIds,inventoryNewItemIds,recoveryAmount,storageCapacityStatus,transferAmount,transferError,visibleStacks} from '../core/inventory-view';
 import {entitlementStorageCapacity} from '../core/account-entitlements';
-import {claimOverflowToBank,StorageLocation,storageUpgradePreview} from '../core/game';
+import {claimOverflowToBank,salvageItem,sellItem,StorageLocation,storageUpgradePreview} from '../core/game';
 import {ItemArtwork} from '../components/ItemArtwork';
 import {GemPouchPanel} from '../components/GemPouchPanel';
 import {accountText} from '../i18n/account';
@@ -34,7 +34,8 @@ import {ot} from '../i18n';
 import {itemRarity,rarityMeta} from '../core/item-rarity';
 import {craftedGearInstances,craftedGearDisplayQuality} from '../core/crafted-gear-instances';
 import {indexInventoryGearCopies} from '../core/inventory-gear-lookup';
-import {auditCraftedGearOwnership,craftedGearCopiesAt} from '../core/crafted-gear-ownership';
+import {auditCraftedGearOwnership,craftedGearCopiesAt,disposeCraftedGearInstance} from '../core/crafted-gear-ownership';
+import {canDisposeLegacyEquipment} from '../core/equipment-enhancement';
 import type {GameCommand} from '../core/game-commands';
 import {bulkSelectionSummary,inventoryBulkSelectionId,type BulkStorageLocation} from '../core/inventory-bulk';
 import {equipmentSalvageReward} from '../core/equipment-salvage';
@@ -140,6 +141,32 @@ export function InventoryScreen({state,viewMemory,foodRequest=0,onEquip,onFood,o
   // scan or re-normalize every crafted copy for every visible inventory tile.
   const exactRecords=useMemo(()=>craftedGearInstances(state),[state.account.craftedGearInstances]);
   const exactRecordsById=useMemo(()=>indexInventoryGearCopies(exactRecords),[exactRecords]);
+  // Preview actions always target the NEW Inventory copy, never the equipped slot.
+  // Dry-run the existing disposal reducers so protected and stale copies stay disabled.
+  const previewDisposal=useMemo(()=>{
+    const unavailable={sell:false,salvage:false};
+    if(!previewId||!state.character)return unavailable;
+    const stack=state.inventory.stacks.find(row=>row.itemId===previewId&&row.instanceId===(previewInstanceId??undefined)&&row.quantity>0);
+    if(!stack||goalProtection.has(previewId)||favoriteSet.has(previewId)||lockedSet.has(previewId))return unavailable;
+    const item=itemDef(previewId);
+    if(item.type!=='gear'||item.guildOnly||item.knowledgeUnlockId)return unavailable;
+    const eligible=(method:'sell'|'salvage')=>{
+      if(method==='sell'&&(!Number.isSafeInteger(item.value)||item.value<=0))return false;
+      if(method==='salvage'&&!equipmentSalvageReward(previewId))return false;
+      try{
+        if(previewInstanceId){
+          if(!onCommand)return false;
+          disposeCraftedGearInstance(state,previewInstanceId,method);
+        }else{
+          if(!canDisposeLegacyEquipment(state,previewId,'inventory',1))return false;
+          if(method==='sell')sellItem(state,previewId,1);
+          else salvageItem(state,previewId);
+        }
+        return true;
+      }catch{return false;}
+    };
+    return {sell:eligible('sell'),salvage:eligible('salvage')};
+  },[state,previewId,previewInstanceId,goalProtection,favoriteSet,lockedSet,onCommand]);
   const selectedSet=useMemo(()=>new Set(selectedIds),[selectedIds]);
    const hasUnselectedShown=gridEntries.some(stack=>stack!==null&&!selectedSet.has(inventoryBulkSelectionId(stack)));
    const selectionSummary=useMemo(()=>bulkSelectionSummary(state,selectedIds,location),[state,selectedIds,location]);
@@ -309,6 +336,22 @@ export function InventoryScreen({state,viewMemory,foodRequest=0,onEquip,onFood,o
   return <><ConfirmModal visible={copyPending!==null} title={copyPending?.method==='sell'?'Sell this exact equipment copy?':'Salvage this exact equipment copy?'} message={copyPending?`This affects only the selected ${copyPending.name} with its own rarity and quality. Equipped, locked, upgraded, socketed and loadout-protected copies cannot be destroyed.`:''} confirmLabel={copyPending?.method==='sell'?'Sell this copy':'Salvage this copy'} danger reduceMotion={state.settings.reduceMotion} onConfirm={()=>{const copy=copyPending;setCopyPending(null);if(copy&&onCommand)void beginInventorySubmission('Processing selected equipment…',()=>onCommand({type:copy.method==='sell'?'gear_sell':'gear_salvage',args:{instanceId:copy.instanceId}}))}} onCancel={()=>setCopyPending(null)}/><EquipmentPreview state={state} itemId={previewId} instanceId={previewInstanceId} favorite={previewFavorite} locked={previewLocked}
   onToggleFavorite={previewId?()=>beginInventorySubmission('Updating favorite…',()=>onToggleFavorite(previewId)):undefined}
   onToggleLock={previewId?changePreviewLock:undefined}
+  canSell={previewDisposal.sell&&inventoryBusyLabel===null}
+  canSalvage={previewDisposal.salvage&&inventoryBusyLabel===null}
+  onSell={previewId?()=>{
+    if(!previewDisposal.sell||inventoryBusyLabel!==null)return;
+    const item=itemDef(previewId);
+    if(previewInstanceId)setCopyPending({instanceId:previewInstanceId,method:'sell',name:item.name});
+    else setPending({kind:'sell',item,quantity:1});
+    setPreviewId(null);setPreviewInstanceId(null);
+  }:undefined}
+  onSalvage={previewId?()=>{
+    if(!previewDisposal.salvage||inventoryBusyLabel!==null)return;
+    const item=itemDef(previewId);
+    if(previewInstanceId)setCopyPending({instanceId:previewInstanceId,method:'salvage',name:item.name});
+    else setPending({kind:'salvage',item,quantity:1});
+    setPreviewId(null);setPreviewInstanceId(null);
+  }:undefined}
  onClose={()=>{if(previewId&&newItemSet.has(previewId))run(()=>onAcknowledgeItem(previewId));setPreviewId(null);setPreviewInstanceId(null)}}
  onEquip={async()=>{if(!previewId)return;const id=previewId,instanceId=previewInstanceId;
    if(instanceId){if(!onCommand)throw new Error('Exact equipment equipping is unavailable.');await onCommand({type:'gear_equip',args:{instanceId}});}

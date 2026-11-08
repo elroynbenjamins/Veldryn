@@ -47,6 +47,9 @@ assert.equal(companionMessage('nl',bondNotice),'BANDBELONING GECLAIMD · Ironwoo
 assert.equal(companionMessage('ru',bondNotice),'НАГРАДА ЗА СВЯЗЬ ПОЛУЧЕНА · Ironwood Wolf · Связь 4 · 35 × Эссенция.');
 assert.equal(companionMessage('tr',bondNotice),'BAĞ ÖDÜLÜ ALINDI · Ironwood Wolf · Bağ 4 · 35 × Öz.');
 const oldCompanionPanel=fs.readFileSync(path.join(root,'apps/mobile/src/components/CombatCompanionPanel.tsx'),'utf8');
+assert.ok(oldCompanionPanel.includes('monthlyChallengeCompletion[id]')&&oldCompanionPanel.includes("Clear Floor {floor}+ this month with the required team")&&oldCompanionPanel.includes("Floor reached, but this month's required team conditions"),'Monthly Companion claims must explain why verification has not unlocked the reward');
+assert.ok(oldCompanionPanel.includes('Progress target reached; waiting for verified challenge completion.')&&oldCompanionPanel.includes('{remaining} more progress needed for this weekly reward.'),'Weekly Companion claims must not mistake reached progress for verified completion');
+assert.ok(oldCompanionPanel.includes("trainingLast===undefined?t('Ready to claim')")&&oldCompanionPanel.includes("essenceLast===undefined?t('Ready to claim')"),'First Sanctuary claims must not misleadingly say Start timer');
 const newCompanionTraining=fs.readFileSync(path.join(root,'apps/mobile/src/components/CompanionTrainingV50Panel.tsx'),'utf8');
 assert.ok(oldCompanionPanel.includes('COMPANION_BOND_ESSENCE_REWARDS')&&newCompanionTraining.includes('COMPANION_BOND_ESSENCE_REWARDS'),'Both companion flows must use the same authoritative Bond Essence reward map');
 assert.ok(!oldCompanionPanel.includes("'35 Essence + portrait'")&&!oldCompanionPanel.includes("'80 Essence + title'")&&!oldCompanionPanel.includes("'55 Essence + Bond Resonance'"),'No current Bond claim confirmation may promise obsolete portrait, title or Resonance rewards');

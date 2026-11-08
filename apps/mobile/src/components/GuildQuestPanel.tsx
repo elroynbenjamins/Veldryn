@@ -64,12 +64,20 @@ function Quest({quest:q}:{quest:OnlineGuildQuest}){
  const st=useSocialText(),{ui}=useGuildActivityUiText(),language=useGameLanguage(),C=useGameTheme(),s=useMemo(()=>styles(C),[C]),[expanded,setExpanded]=useState(false),rarity=rarityMeta(q.rarity);
  const authored=guildQuestAuthoredCopy(language,q.questKey,q.title,q.description);
  const duration=q.estimatedMinutes>=60?`${q.estimatedMinutes/60}h`:`${q.estimatedMinutes}m`;
+ const hasRecordedContribution=q.personalProgress.some(row=>row.progress>0);
  return <QuestPosting style={q.completed?s.done:undefined}>
   <View style={s.head}><View style={s.flex}><Text style={s.category}>{q.featured?ui('FEATURED · '):''}{q.category.toUpperCase()} · {rarity.label.toUpperCase()} · ~{duration}</Text><Text accessibilityRole="header" style={s.questTitle}>{authored.title}</Text></View><ActivityArtwork id={q.category==='Combat'?'combat':q.category==='Crafting'?'smithing':q.category==='Skilling'?'herbalism':'exploration'} size={42}/></View>
   {q.completed?<StatusPill label={st('COMPLETE')} tone="good"/>:null}
   <Text style={s.copy}>{authored.description}</Text>
   <StatBar rounded label={ui("Shared guild progress")} current={Math.min(q.progress,q.target)} max={q.target}/>
-  <View style={s.personal}><Text style={s.personalLabel}>{st('YOUR CONTRIBUTION')}</Text>{q.personalProgress.length?q.personalProgress.map(o=><Text key={o.key} style={s.copy}>{objectiveLabel(o.key)}: {Math.min(o.progress,o.target).toLocaleString()} / {o.target.toLocaleString()}</Text>):<Text style={s.copy}>{ui("No contribution recorded yet.")}</Text>}<Text style={s.foot}>{ui(q.contributorCount===1?'{count} contributor · daily contribution capped':'{count} contributors · daily contribution capped',{count:q.contributorCount})}</Text></View>
+  <View style={s.personal}>
+   <View style={s.head}><Text style={[s.personalLabel,s.flex]}>{st('YOUR CONTRIBUTION')}</Text>
+    {!q.completed?<StatusPill label={hasRecordedContribution?ui('RECORDED'):ui('NOT RECORDED')} tone={hasRecordedContribution?'good':'muted'}/>:null}
+   </View>
+   {q.personalProgress.length?q.personalProgress.map(o=><Text key={o.key} style={s.copy}>{objectiveLabel(o.key)}: {Math.min(o.progress,o.target).toLocaleString()} / {o.target.toLocaleString()}</Text>):<Text style={s.copy}>{ui("No contribution recorded yet.")}</Text>}
+   {!hasRecordedContribution&&!q.completed?<Text style={s.foot}>{ui('Only matching, verified quest objectives count. Complete the listed activity and refresh to check your progress.')}</Text>:null}
+   <Text style={s.foot}>{ui(q.contributorCount===1?'{count} contributor · daily contribution capped':'{count} contributors · daily contribution capped',{count:q.contributorCount})}</Text>
+  </View>
   <Text style={s.reward}>{ui(q.completed?'+{activity} Guild Activity secured':'+{activity} Guild Activity on completion',{activity:q.activityReward})}</Text>
   {q.objectiveProgress.length?<><Pressable accessibilityRole="button" aria-expanded={expanded} accessibilityState={{expanded}} accessibilityLabel={ui("Objective breakdown · {quest}",{quest:authored.title})} onPress={()=>setExpanded(value=>!value)} style={s.disclosure}><Text style={s.disclosureText}>{ui("Objective breakdown")}</Text><Text style={s.disclosureText}>{expanded?'−':'+'}</Text></Pressable>{expanded?q.objectiveProgress.map(o=><Text key={o.key} style={s.copy}>{objectiveLabel(o.key)}: {Math.min(o.progress,o.target).toLocaleString()} / {o.target.toLocaleString()}</Text>):null}</>:null}
  </QuestPosting>;

@@ -19,6 +19,7 @@ ok(screen.includes('result.snapshot.score'),'claim feedback must use the committ
 ok(screen.includes('result.idempotentReplay'),'claim feedback must consume the authoritative replay flag');
 ok(screen.includes('Animated.sequence')&&screen.includes('reduceMotion'),'achievement celebration motion must respect Reduce Motion');
 ok(screen.includes('Achievement showcase updated.'),'showcase saves need lightweight committed feedback');
+ok(screen.includes('showcase.length>=3')&&screen.includes('All 3 showcase slots are full. Unselect another achievement to make room.'),'A full showcase must explain why a claimed achievement cannot be added.');
 
 ok(!app.includes('<AchievementsScreen'),'The unfinished online Achievements screen must not be mounted for players');
 ok(app.includes("onProfile={()=>{setProfileCustomizeSection('Identity');setTab('ProfileCustomize')}}"),'Journal title customization must remain reachable from the Mastery Hall');

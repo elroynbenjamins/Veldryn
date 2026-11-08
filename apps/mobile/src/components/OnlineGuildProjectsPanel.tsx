@@ -191,6 +191,15 @@ export function GuildProjectPosting({project,expanded,compact=false,onToggle,onC
   &&Number.isFinite(claimDeadline)&&Date.now()<claimDeadline;
  const projectArtwork=guildProjectArtwork(project.templateId);
  const readyToClaim=weekly&&claimOpen;
+ const personalShortfall=Math.max(0,project.personalRewardThreshold-project.personalPoints);
+ const contributorsMissing=Math.max(0,project.minimumMeaningfulContributors-project.meaningfulContributors);
+ const rewardStatus=project.completionRewardClaimed?ui('Already claimed')
+  :project.status!=='completed'?ui('Available after Guild completion')
+  :Number.isFinite(claimDeadline)&&Date.now()>=claimDeadline?ui('Reward claim period ended')
+  :!Number.isFinite(claimDeadline)?ui('Reward claim timing unavailable')
+  :qualifying?ui('Ready to claim')
+  :project.personalRewardThreshold>0?ui('{count} personal effort short of reward eligibility',{count:personalShortfall.toLocaleString()})
+  :ui('Not eligible for this reward');
  return <View style={[s.project,project.status==='completed'&&s.complete]}>
   <Pressable accessibilityRole="button" accessibilityLabel={ui('Project contributions: {name}',{name:authored.name})} accessibilityHint={ui('Show or hide contributions from Guild members')} accessibilityState={{expanded}}
    onPress={onToggle} style={({pressed})=>[s.projectPress,pressed&&s.pressed]}>
@@ -202,6 +211,7 @@ export function GuildProjectPosting({project,expanded,compact=false,onToggle,onC
    <View style={s.progressHead}><Text style={s.percent}>{pct}%</Text><View style={s.progressNumbers}><Text style={s.progressAmount}>{project.kind==='development'?ui('Resource goals'):`${project.completionPoints.toLocaleString()} / ${project.targetPoints.toLocaleString()}`}</Text><Text style={s.meta}>{ui('Guild progress')}</Text></View></View>
    <View style={s.track}><View style={[s.fill,{width:`${Math.min(100,pct)}%` as any}]}/></View>
    <View style={s.sectionHead}><Text style={[s.meta,s.flex]}>{ui('{count}/{minimum} contributors',{count:project.meaningfulContributors,minimum:project.minimumMeaningfulContributors})}</Text><Text style={s.expandHint}>{ui(expanded?'Hide contribution ▴':'Contribution ▾')}</Text></View>
+   {project.status==='active'&&contributorsMissing>0?<Text style={s.meta}>{ui('{count} more qualifying contributors needed to complete this project',{count:contributorsMissing})}</Text>:null}
    {weekly&&project.status==='active'?<Text style={s.meta}>{ui('Weekly reset: Monday at 00:00 UTC')}</Text>:null}
   </Pressable>
   {!compact?<View style={s.personal}>
@@ -210,10 +220,11 @@ export function GuildProjectPosting({project,expanded,compact=false,onToggle,onC
    </View>
    <View style={s.sectionHead}><Text style={s.personalPoints}>{project.personalPoints.toLocaleString()}</Text>
     <Text style={s.meta}>{project.personalRewardThreshold>0?ui('/ {count} needed',{count:project.personalRewardThreshold.toLocaleString()}):ui('Shared contribution')}</Text></View>
+   {weekly&&project.status==='active'&&personalShortfall>0?<Text style={s.meta}>{ui('{count} more personal effort to qualify for the reward',{count:personalShortfall.toLocaleString()})}</Text>:null}
    {project.personalRewardThreshold>0?<View style={s.smallTrack}><View style={[s.fill,{width:`${Math.min(100,project.personalPoints/project.personalRewardThreshold*100)}%` as any}]}/></View>:null}
    {weekly?<View style={s.reward}>
     <Text style={s.rewardIcon}>🪙</Text>
-    <View style={s.flex}><Text style={s.rewardTitle}>{project.rewardDestination==='guild_bank'?ui('{amount} Gold · Guild Bank reward',{amount:project.rewardGold.toLocaleString()}):ui('500 Gold · Personal reward')}</Text><Text style={s.meta}>{ui(project.completionRewardClaimed?'Already claimed':project.status==='completed'?'Ready if eligible':'Available after Guild completion')}</Text></View>
+    <View style={s.flex}><Text style={s.rewardTitle}>{project.rewardDestination==='guild_bank'?ui('{amount} Gold · Guild Bank reward',{amount:project.rewardGold.toLocaleString()}):ui('500 Gold · Personal reward')}</Text><Text style={s.meta}>{rewardStatus}</Text></View>
    </View>:null}
    {weekly?<View style={s.sectionHead}><Text style={s.meta}>{ui('Guild receives')}</Text>
      <View style={s.flex}>
@@ -238,7 +249,7 @@ export function GuildProjectPosting({project,expanded,compact=false,onToggle,onC
    <Text style={s.meta}>{ui('Combat/Gathering: 20 effort/min · Crafting: 5/item.')}</Text>
   </View>:null}
   {readyToClaim?<GameButton title={ui(busy?'Claiming…':project.rewardDestination==='guild_bank'?'Claim Guild Bank Gold':'Claim 500 Gold')} disabled={busy} onPress={onClaim}/>:null}
-  {project.status==='completed'&&weekly&&!readyToClaim&&!compact?<Text style={s.meta}>{ui(project.completionRewardClaimed?'Reward claimed':!qualifying?'Personal contribution threshold not met':'Reward claim period ended')}</Text>:null}
+  {project.status==='completed'&&weekly&&!readyToClaim&&compact?<Text style={s.meta}>{rewardStatus}</Text>:null}
   {expanded?<View style={s.details}>
    <Text style={s.copy}>{authored.description}</Text>
    {project.kind!=='development'?<View style={s.breakdown}>
@@ -252,12 +263,12 @@ export function GuildProjectPosting({project,expanded,compact=false,onToggle,onC
    <View style={s.contributionHead}><Text style={s.sectionTitle}>{ui('Member contribution')}</Text><Text style={s.meta}>{ui('{count} members',{count:project.memberContributions.length})}</Text></View>
    {project.memberContributions.map((member,index)=>{
     const sources=[member.combatPoints?ui('Combat: {count}',{count:member.combatPoints.toLocaleString()}):'',member.gatheringPoints?ui('Gather {count}',{count:member.gatheringPoints.toLocaleString()}):'',member.craftingPoints?ui('Craft {count}',{count:member.craftingPoints.toLocaleString()}):'',member.donationPoints?ui('Donate {count}',{count:member.donationPoints.toLocaleString()}):''].filter(Boolean).join(' · ');
-    return <View key={member.accountId} style={s.member}><Text style={s.memberRank}>#{index+1}</Text><View style={s.flex}><Text numberOfLines={1} style={s.memberName}>{member.displayName}</Text><Text style={s.meta}>{sources||ui('No effort yet')}{member.meaningful?' · '+ui('contributor'):''}</Text></View><Text style={s.memberPoints}>{ui('{count} effort',{count:member.points.toLocaleString()})}</Text></View>;
+    return <View key={member.accountId} style={s.member}><Text style={s.memberRank}>#{index+1}</Text><View style={s.flex}><Text numberOfLines={1} style={s.memberName}>{member.displayName}</Text><Text style={s.meta}>{sources||ui('No effort yet')}{member.meaningful?' · '+ui('Counts toward contributor minimum'):member.points>0?' · '+ui('Below contributor minimum'):''}</Text></View><Text style={s.memberPoints}>{ui('{count} effort',{count:member.points.toLocaleString()})}</Text></View>;
    })}
    {!project.memberContributions.length?<Text style={s.meta}>{ui('No Guild members found.')}</Text>:null}
    {project.endsAt?<Text style={s.meta}>{ui('Ends {date}',{date:new Date(project.endsAt).toLocaleString(language)})}</Text>:null}
   </View>:null}
-  {compact&&weekly&&project.status==='completed'&&!project.completionRewardClaimed?<Text style={s.meta}>{ui('View reward eligibility.')}</Text>:null}
+
  </View>;
 }
 function makeStyles(C:ThemeColors){return StyleSheet.create({

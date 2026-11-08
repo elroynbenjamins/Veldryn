@@ -1,0 +1,46 @@
+name: Guild weekly raid regression
+
+on:
+  pull_request:
+    paths:
+      - 'apps/mobile/src/core/guild-pve-encounters.ts'
+      - 'apps/mobile/src/components/OnlineGuildPve.tsx'
+      - 'apps/mobile/src/components/GuildRaidEncounter.tsx'
+      - 'apps/mobile/tests/guild-pve-encounters.ts'
+      - 'apps/mobile/tests/guild-raid-tabs-ui.cjs'
+      - 'backend/supabase/migrations/*guild_three_role_weekly_bosses.sql'
+      - '.github/workflows/guild-weekly-raid-validation.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'apps/mobile/src/core/guild-pve-encounters.ts'
+      - 'apps/mobile/src/components/OnlineGuildPve.tsx'
+      - 'apps/mobile/src/components/GuildRaidEncounter.tsx'
+      - 'apps/mobile/tests/guild-pve-encounters.ts'
+      - 'apps/mobile/tests/guild-raid-tabs-ui.cjs'
+      - 'backend/supabase/migrations/*guild_three_role_weekly_bosses.sql'
+      - '.github/workflows/guild-weekly-raid-validation.yml'
+
+jobs:
+  guild-weekly-raid:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: apps/mobile
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+          cache-dependency-path: apps/mobile/pnpm-lock.yaml
+      - run: pnpm install --frozen-lockfile
+      - name: Compile isolated Guild Raid domain tests
+        run: node node_modules/typescript/lib/tsc.js --target es2022 --module commonjs --moduleResolution node --skipLibCheck --rootDir . --outDir .guild-raid-build src/core/guild-pve-encounters.ts tests/guild-pve-encounters.ts
+      - name: Verify weekly boss lifecycle, rewards and role presentation
+        run: node .guild-raid-build/tests/guild-pve-encounters.js
+      - name: Verify active-only Guild Raid tab selection
+        run: node tests/guild-raid-tabs-ui.cjs

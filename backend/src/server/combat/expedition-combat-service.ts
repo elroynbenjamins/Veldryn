@@ -17,6 +17,7 @@ export interface BuildExpeditionEncounterInput {
   enemyDamageProfile?:'qmode-v1';
   /** Deterministic, server-selected modifier on a combat route node. */
   roomModifierId?:string;
+  roomModifierElite?:boolean;
 }
 export interface ResolveExpeditionCombatInput extends BuildExpeditionEncounterInput {
   runId:string;

@@ -7,7 +7,7 @@
  */
 import type {WeeklyPartyDifficulty} from './weekly-party-events-v2';
 
-export const PARTY_EVENT_REWARD_MODEL_VERSION='party-event-rewards-v2';
+export const PARTY_EVENT_REWARD_MODEL_VERSION='party-event-rewards-v2' as const;
 export type PartyEventCacheChoice='warrior'|'artisan'|'companion';
 export type PartyEventRewardKind=PartyEventCacheChoice|'participation';
 export const PARTY_EVENT_CACHE_CHOICES:readonly PartyEventCacheChoice[]=[
@@ -60,7 +60,7 @@ export function partyEventRewardBundle(input:{
   const band=performanceBand as 1|2|3|4|5|6;
   const kind=eligibility==='participation'?'participation':input.choice!;
   const scale=(value:number)=>Math.round(value*multiplier);
-  const empty={
+  const empty:PartyEventRewardBundle={
     version:PARTY_EVENT_REWARD_MODEL_VERSION,kind,performanceBand:band,
     personalPoints,gold:0,combatXp:0,skillXp:0,companionEssence:0,
     bondstones:0,partyRenown:0,materials:{} as Record<string,number>,

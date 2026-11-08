@@ -17,7 +17,9 @@ const focus=equipmentFocusModel(state,'weapon');
 if(EQUIPMENT_SLOT_ORDER.length!==10||new Set(EQUIPMENT_SLOT_ORDER).size!==10)throw new Error('Equipment screen must expose ten unique canonical slots');
 if(model.slots.length!==10||model.equippedCount!==1)throw new Error('Equipment screen model does not reflect live equipment state');
 if(model.slots.find(slot=>slot.slot==='weapon')?.itemId!=='basic_sword')throw new Error('Equipment screen did not read the equipped weapon');
-if(model.stats.maxHp!==155||model.stats.attack!==19||model.stats.defense!==19)throw new Error('Equipment screen stats must come from effectiveStats');
+const actualStats=effectiveStats(state);
+if(model.stats.maxHp!==155||Math.abs(model.stats.attack-actualStats.attack)>1e-9||Math.abs(model.stats.defense-actualStats.defense)>1e-9)
+ throw new Error('Equipment screen must use current class-weighted effective stats, not hardcoded startup values');
 const overMax={...state,character:{...state.character!,currentHp:99999}};
 if(equipmentScreenModel(overMax).stats.currentHp!==effectiveStats(overMax).hp)
   throw new Error('Character current health display must not exceed computed Max HP after gear changes');

@@ -27,6 +27,8 @@ jobs:
           node-version: 22
           cache: pnpm
           cache-dependency-path: backend/pnpm-lock.yaml
+      - name: Install shared mobile dependencies
+        run: pnpm --dir apps/mobile install --frozen-lockfile
       - name: Install backend dependencies
         run: pnpm --dir backend install --frozen-lockfile
       - name: Rebuild server-authored gameplay and co-op Edge bundles

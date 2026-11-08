@@ -68,10 +68,10 @@ begin
   v_rejected:=false;
   begin
     insert into private.market_custody_assets_v1(
-      owner_account_id,source_revision,source_location,source_locator,
-      item_id,asset_kind,exact_instance_id,quantity
+      owner_account_id,source_revision,source_location,source_character_id,
+      source_locator,item_id,asset_kind,exact_instance_id,quantity
     ) values(
-      v_b,6,'equipment_pouch','pouch:0','T1_TEST_EQUIPMENT','equipment',
+      v_b,6,'equipment_pouch',v_b::text,'pouch:0','T1_TEST_EQUIPMENT','equipment',
       'gear:stable-unique-1',1
     );
   exception when unique_violation then v_rejected:=true;
@@ -81,9 +81,9 @@ begin
   v_rejected:=false;
   begin
     insert into private.market_custody_assets_v1(
-      owner_account_id,source_revision,source_location,source_locator,
-      item_id,asset_kind,quantity
-    ) values(v_a,6,'equipment_pouch','pouch:1','T1_TEST_EQUIPMENT','equipment',1);
+      owner_account_id,source_revision,source_location,source_character_id,
+      source_locator,item_id,asset_kind,quantity
+    ) values(v_a,6,'equipment_pouch',v_a::text,'pouch:1','T1_TEST_EQUIPMENT','equipment',1);
   exception when check_violation then v_rejected:=true;
   end;
   if not v_rejected then raise exception 'equipment without an exact receipt accepted'; end if;

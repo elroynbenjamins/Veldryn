@@ -100,4 +100,6 @@ All Control-plane tables enable RLS and revoke anon/authenticated access. Player
 
 ## Current product boundary
 
-The player Market is removed from VELDRYN. Do not restore old trading/listing control surfaces from historical backend references.
+The Player Market is planned but **unreleased**. It must remain hidden from the player-facing roadmap until the real server-authoritative trading system is complete. The Control roadmap edit endpoint rejects attempts to publish it prematurely. Do not restore old trading/listing control surfaces from historical backend references.
+
+The Community Roadmap editor allows only authenticated Control Editors/Owners to change proposals. Every change requires a reason, is audited, and uses the current database revision as a concurrency guard. The server-only Supabase service role can read vote counts but the API never returns voter identities. Anon/authenticated roles retain no direct table grants.

@@ -141,9 +141,9 @@ begin
   -- Existing gameplay commits take a party-account advisory transaction lock.
   -- Strict UUID lexical order prevents A->B / B->A deadlocks for buyers/sellers.
   perform pg_catalog.pg_advisory_xact_lock(pg_catalog.hashtextextended(
-    'party-account:'||pg_catalog.least(p_buyer_account_id::text,v_seller_account_id::text),0));
+    'party-account:'||least(p_buyer_account_id::text,v_seller_account_id::text),0));
   perform pg_catalog.pg_advisory_xact_lock(pg_catalog.hashtextextended(
-    'party-account:'||pg_catalog.greatest(p_buyer_account_id::text,v_seller_account_id::text),0));
+    'party-account:'||greatest(p_buyer_account_id::text,v_seller_account_id::text),0));
 
   select * into v_buyer from public.online_game_states
     where account_id=p_buyer_account_id for update;

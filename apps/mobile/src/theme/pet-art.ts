@@ -21,12 +21,13 @@ export function petArtSource(id:string):ImageSourcePropType|undefined{
 
 /**
  * Portrait-grade sources for expanded Collections detail.
- * Compact surfaces use optimized 256px runtime exports; full 1254px masters
- * are retained in art-review/pet-remaster/masters.
+ * Compact surfaces use optimized runtime exports. Guild pets use the same
+ * packaged assets for detail views because source-only review artwork is not
+ * shipped with the mobile application.
  */
 const guildPetPortraitSourceById=new Map<string,ImageSourcePropType>([
- ['GUILD_PET_001',require('../../art-review/guild-token-shop-v1/GUILD_PET_001-stormwatch-fox-source.png')],
- ['GUILD_PET_002',require('../../art-review/guild-token-shop-v1/GUILD_PET_002-oathwood-wyrmling-source.png')],
+ ['GUILD_PET_001',require('../../assets/guild-token-shop/pets/GUILD_PET_001_Stormwatch_Fox.webp')],
+ ['GUILD_PET_002',require('../../assets/guild-token-shop/pets/GUILD_PET_002_Oathwood_Wyrmling.webp')],
 ]);
 
 const masterPetPortraitSourceById=new Map<string,ImageSourcePropType>([

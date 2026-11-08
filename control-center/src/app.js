@@ -1,9 +1,11 @@
 import { ACTIVITY_KINDS, CHALLENGES, CATEGORIES, normalizeDefinition, validateDefinition } from './liveops.js';
+import {parseRecoveryCallback,recoveryRedirectUrl,validateRecoveryPassword} from './password-recovery.js';
 
 const CONFIG = window.VELDRYN_CONTROL_CONFIG || {};
 const app = document.querySelector('#app');
 const toastRoot = document.querySelector('#toast-root');
 const SESSION_KEY = 'veldryn-control-session-v1';
+const recovery={mode:'login',accessToken:null,expiresAt:0,notice:''};
 
 const state = {
   session: loadSession(),
@@ -124,6 +126,32 @@ async function signIn(email, password) {
   const body = await authFetch('/auth/v1/token?grant_type=password', { method:'POST', body: JSON.stringify({ email, password }) });
   saveSession({ access_token: body.access_token, refresh_token: body.refresh_token, expires_at: Date.now() + Number(body.expires_in || 3600) * 1000 });
 }
+async function requestPasswordRecovery(email) {
+  const redirect=recoveryRedirectUrl(window.location.origin);
+  await authFetch('/auth/v1/recover?redirect_to='+encodeURIComponent(redirect),{
+    method:'POST',body:JSON.stringify({email}),
+  });
+  recovery.mode='sent';
+  renderLogin();
+}
+async function finishPasswordRecovery(password,confirmation) {
+  const validation=validateRecoveryPassword(password,confirmation);
+  if(validation)throw new Error(validation);
+  if(!recovery.accessToken || Date.now()>=recovery.expiresAt)
+    throw new Error('This recovery session has expired. Request a new link.');
+  await authFetch('/auth/v1/user',{
+    method:'PUT',
+    headers:{authorization:'Bearer '+recovery.accessToken},
+    body:JSON.stringify({password}),
+  });
+  recovery.accessToken=null;
+  recovery.expiresAt=0;
+  recovery.mode='login';
+  recovery.notice='Password updated. Sign in with your new password.';
+  saveSession(null);
+  state.me=null;
+  renderLogin();
+}
 async function refreshSession() {
   if (!state.session?.refresh_token) throw new Error('session_expired');
   const body = await authFetch('/auth/v1/token?grant_type=refresh_token', { method:'POST', body: JSON.stringify({ refresh_token: state.session.refresh_token }) });
@@ -172,12 +200,36 @@ function renderLogin(message = '') {
         <div class="login-body">
           ${!configured() ? `<div class="validation-item error" style="margin-bottom:14px">This build has no Supabase public configuration. Set PUBLIC_SUPABASE_URL and PUBLIC_SUPABASE_ANON_KEY, then rebuild.</div>` : ''}
           ${message ? `<div class="validation-item error" style="margin-bottom:14px">${h(message)}</div>` : ''}
+          ${recovery.notice ? `<div class="validation-item" style="margin-bottom:14px">${h(recovery.notice)}</div>`:''}
+          ${recovery.mode==='request'?`
+          <form id="recovery-request-form" class="grid" autocomplete="on">
+            <h2 class="auth-subheading">Reset your password</h2>
+            <p class="small">We'll email a single-use link to your developer account.</p>
+            <div class="field"><label for="recovery-email">Account email</label><input id="recovery-email" name="email" type="email" autocomplete="username" required /></div>
+            <button class="btn btn-primary" type="submit" ${configured()?'':'disabled'}>Send reset link</button>
+          </form>
+          <button type="button" class="btn btn-ghost auth-switch" data-action="back-to-login">Back to sign in</button>`
+          :recovery.mode==='sent'?`
+          <h2 class="auth-subheading">Check your email</h2>
+          <p class="small">If the account exists, a password reset link has been sent. Open the newest email and use the link once.</p>
+          <button type="button" class="btn btn-ghost auth-switch" data-action="back-to-login">Back to sign in</button>`
+          :recovery.mode==='change'?`
+          <form id="recovery-change-form" class="grid" autocomplete="off">
+            <h2 class="auth-subheading">Choose a new password</h2>
+            <p class="small">Your recovery link has been verified. Your new password must be at least 12 characters.</p>
+            <div class="field"><label for="recovery-password">New password</label><input id="recovery-password" name="password" type="password" autocomplete="new-password" minlength="12" maxlength="128" required /></div>
+            <div class="field"><label for="recovery-confirm">Confirm new password</label><input id="recovery-confirm" name="confirmation" type="password" autocomplete="new-password" minlength="12" maxlength="128" required /></div>
+            <button class="btn btn-primary" type="submit">Update password</button>
+          </form>
+          <button type="button" class="btn btn-ghost auth-switch" data-action="back-to-login">Cancel recovery</button>`
+          :`
           <form id="login-form" class="grid" autocomplete="on">
             <div class="field"><label for="login-email">Admin email</label><input id="login-email" name="email" type="email" autocomplete="username" required /></div>
             <div class="field"><label for="login-password">Password</label><input id="login-password" name="password" type="password" autocomplete="current-password" required /></div>
             <button class="btn btn-primary" type="submit" ${configured() ? '' : 'disabled'}>Sign in securely</button>
           </form>
-          <p class="small" style="margin-top:14px">Only accounts explicitly added to <span class="mono">liveops_admin_users</span> can access the API.</p>
+          <button type="button" class="btn btn-ghost auth-switch" data-action="forgot-password">Forgot password?</button>
+          <p class="small" style="margin-top:14px">Only accounts explicitly added to <span class="mono">liveops_admin_users</span> can access the API.</p>`}
         </div>
       </section>
     </main>`;
@@ -1077,6 +1129,32 @@ function render() {
 }
 
 async function initial() {
+  const callback=parseRecoveryCallback(window.location.hash,window.location.search);
+  if(callback.kind!=='none') {
+    // Remove one-time credentials from the URL before any network call or UI render.
+    window.history.replaceState(null,document.title,window.location.pathname);
+    saveSession(null);
+    state.me=null;
+    recovery.notice='';
+    if(callback.kind==='error') {
+      recovery.mode='request';
+      renderLogin(callback.message);
+      return;
+    }
+    recovery.accessToken=callback.accessToken;
+    recovery.expiresAt=Date.now() + callback.expiresIn * 1000;
+    recovery.mode='change';
+    try {
+      if(recovery.expiresAt<=Date.now())throw new Error('This recovery session has expired.');
+      await authFetch('/auth/v1/user',{headers:{authorization:'Bearer '+recovery.accessToken}});
+      renderLogin();
+    } catch(e) {
+      recovery.accessToken=null;
+      recovery.mode='request';
+      renderLogin(errorText(e));
+    }
+    return;
+  }
   if (!state.session) { renderLogin(); return; }
   app.innerHTML = loading();
   try { await loadCore(); render(); }
@@ -1086,6 +1164,20 @@ async function initial() {
 }
 
 app.addEventListener('submit', async (event) => {
+  if (event.target.id === 'recovery-request-form') {
+    event.preventDefault();
+    const email=new FormData(event.target).get('email');
+    try { await requestPasswordRecovery(email); }
+    catch(e) { renderLogin(errorText(e)); }
+    return;
+  }
+  if (event.target.id === 'recovery-change-form') {
+    event.preventDefault();
+    const fd=new FormData(event.target);
+    try { await finishPasswordRecovery(String(fd.get('password')||''),String(fd.get('confirmation')||'')); }
+    catch(e) { renderLogin(errorText(e)); }
+    return;
+  }
   if (event.target.id === 'login-form') {
     event.preventDefault();
     const fd = new FormData(event.target);
@@ -1167,6 +1259,8 @@ app.addEventListener('click', async (event) => {
   if (!el) return;
   const action = el.dataset.action;
   try {
+    if (action === 'forgot-password') { recovery.mode='request'; recovery.notice=''; return renderLogin(); }
+    if (action === 'back-to-login') { recovery.mode='login'; recovery.accessToken=null; recovery.expiresAt=0; recovery.notice=''; return renderLogin(); }
     if (action === 'logout') return signOut();
     if (action === 'refresh-page') return navigate(state.page);
     if (action === 'open-catalog-sync') { state.controlSelectedCommand='system.sync_content_catalog'; return navigate('controls'); }

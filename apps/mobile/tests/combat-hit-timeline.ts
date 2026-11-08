@@ -1,3 +1,4 @@
+// Regression coverage: live hit replay may animate deterministically, but only authoritative claims settle rewards.
 import {assert} from './test-assert';
 import {huntHitEvents,huntHitsBetween,huntEnemyHpAt} from '../src/core/combat-hit-timeline';
 import {activeCombatHitProjection,activeCombatRuntimeProjection,claimActivity,createCharacter,effectiveStats,newGame,previewActivityReward,startCombat} from '../src/core/game';

@@ -1,0 +1,47 @@
+name: Hidden Market exact-equipment PostgreSQL race validation
+
+on:
+  pull_request:
+    paths:
+      - 'backend/supabase/migrations/*market*'
+      - 'backend/supabase/tests/player_market_equipment_concurrency_seed_ci_v9.sql'
+      - 'backend/supabase/tests/run_market_equipment_concurrency_ci_v9.sh'
+      - '.github/workflows/hidden-market-equipment-concurrency-validation.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  market-exact-equipment-races:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: veldryn_market_ci
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d veldryn_market_ci"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      PGHOST: localhost
+      PGPORT: '5432'
+      PGUSER: postgres
+      PGPASSWORD: postgres
+      PGDATABASE: veldryn_market_ci
+    steps:
+      - uses: actions/checkout@v4
+      - name: Ensure PostgreSQL client
+        run: |
+          if ! command -v psql >/dev/null; then
+            sudo apt-get update
+            sudo apt-get install -y postgresql-client
+          fi
+      - name: Verify real concurrent equipment purchases and cancellations in throwaway DB
+        run: bash backend/supabase/tests/run_market_equipment_concurrency_ci_v9.sh

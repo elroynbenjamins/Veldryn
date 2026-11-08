@@ -20,6 +20,23 @@ const marketInboxPanel=read('apps/mobile/src/screens/MarketInboxPanel.tsx');
 const rewardInboxScreen=read('apps/mobile/src/screens/RewardsInboxScreen.tsx');
 const sellerOffers=read('backend/supabase/migrations/20261108183000_market_seller_offer_lifecycle_private_v5.sql');
 const sellerTest=read('backend/supabase/tests/player_market_seller_offers_v5.sql');
+const marketAuth=read('backend/online/market-auth-boundary.ts');
+const marketAuthTest=read('backend/online/tests/market-auth-boundary.ts');
+const gameplayEdge=read('backend/online/edge.ts');
+const concurrencyRunner=read('backend/supabase/tests/run_market_concurrency_ci_v6.sh');
+const gearProof=read('backend/online/market-equipment-proof.ts');
+const gearProofTest=read('backend/online/tests/market-equipment-proof.ts');
+const exactGearEscrow=read('backend/supabase/migrations/20261108211500_market_exact_equipment_escrow_private_v8.sql');
+const exactGearReturns=read('backend/supabase/migrations/20261108212500_market_equipment_returns_private_v8.sql');
+const exactGearTest=read('backend/supabase/tests/player_market_exact_equipment_v8.sql');
+const buyerGearLedger=read('backend/supabase/migrations/20261108222500_market_equipment_buyer_ledger_private_v9.sql');
+const buyerGearOffer=read('backend/supabase/migrations/20261108223000_market_equipment_offer_private_v9.sql');
+const buyerGearPurchase=read('backend/supabase/migrations/20261108223500_market_equipment_purchase_private_v9.sql');
+const buyerGearClaim=read('backend/supabase/migrations/20261108224000_market_equipment_buyer_claim_private_v9.sql');
+const buyerGearCancel=read('backend/supabase/migrations/20261108224500_market_equipment_offer_cancellation_private_v9.sql');
+const buyerGearInbox=read('backend/supabase/migrations/20261108225000_market_equipment_inbox_private_v9.sql');
+const buyerGearTest=read('backend/supabase/tests/player_market_equipment_buyer_v9.sql');
+const buyerGearRace=read('backend/supabase/tests/run_market_equipment_concurrency_ci_v9.sh');
 const release=read('apps/mobile/src/core/release-flags.ts');
 const roadmap=read('apps/mobile/src/core/community-roadmap-release-visibility.ts');
 
@@ -187,4 +204,176 @@ requireMatches(sellerTest,[
 ], 'seller lifecycle regression');
 assert.doesNotMatch(sellerOffers,/\bgrant execute\b/i,'seller list operations must remain private');
 
-console.log('PASS: hidden V2–V5 market ACLs, seller offer lifecycle, Inbox and payment gates remain disabled');
+requireMatches(marketAuth,[
+  ['hard disabled Edge gate',/export const MARKET_EDGE_TRANSPORT_RELEASED = false;/],
+  ['verified account identity',/const actor=await services\.authenticate\(token\)/],
+  ['no body account spoofing',/keys\.every\(k=>fields\.includes\(k\)\)/],
+  ['no network access in unreleased handler',/return new Response\(JSON\.stringify\(\{error:'not_found'\}\)/],
+], 'dormant market auth boundary');
+requireMatches(marketAuthTest,[
+  ['actor binding',/actor must come from authenticated session/],
+  ['unreleased handler blocks Auth',/unreleased route cannot even authenticate or query/],
+  ['spoofed owner test',/sellerAccountId:'someone-else'/],
+  ['spoofed buyer test',/buyerAccountId:actor/],
+], 'market auth boundary test');
+assert.doesNotMatch(gameplayEdge,/market-auth-boundary|marketHiddenHandler|market_inbox|view=market/,
+  'no Player Market transport is mounted in the live gameplay Edge handler');
+requireMatches(concurrencyRunner,[
+  ['disposable local DB name',/veldryn_market_ci/],
+  ['refuse nonlocal execution',/PGHOST.*localhost/],
+  ['two independent buyers',/buy-concurrent-a1[\s\S]*?buy-concurrent-b1/],
+  ['cancel wins race',/cancel-race-a2[\s\S]*?buy-race-b2/],
+  ['purchase wins race',/buy-race-a3[\s\S]*?cancel-race-b3/],
+  ['postrace Gold conservation',/market_concurrent_invariant_failed/],
+], 'real market concurrency runner');
+assert.doesNotMatch(marketAuth,/\.rpc\(|service_role|SUPABASE_SERVICE_ROLE_KEY/,
+  'future auth boundary cannot directly invoke privileged market RPCs');
+
+requireMatches(gearProof,[
+  ['hard equipment escrow gate',/export const MARKET_EQUIPMENT_ESCROW_RELEASED_V7=false as const/],
+  ['read-only exact ownership audit',/auditCraftedGearOwnership\(state\)/],
+  ['unknown legacy copy denied',/equipment_ownership_audit_not_clean/],
+  ['exact receipt requirement',/exact_receipt_missing_or_duplicate/],
+  ['all socket metadata canonical',/socket_reconciliation_required/],
+  ['saved loadout protection',/saved_loadout_references_copy/],
+  ['active equipment rejection',/equipped_or_overflow_copy_not_tradable/],
+  ['no item-level upgrade leaks',/legacy_item_level_upgrades_unreconciled/],
+  ['server revision captured',/sourceRevision:revision/],
+  ['always escrow disabled',/canEscrowNow:false/],
+  ['always delivery disabled',/canDeliverNow:false/],
+  ['buyer ownership verified',/buyer\.account\.longTermAccountScopeId!==buyerAccountId/],
+  ['duplicate instance refusal',/duplicate_instance_id_in_destination/],
+  ['full pouch refusal',/destination_storage_full_or_unverified/],
+], 'exact equipment proof');
+requireMatches(gearProofTest,[
+  ['never releases escrow',/MARKET_EQUIPMENT_ESCROW_RELEASED_V7,false/],
+  ['socket and rarity persistence',/preserve full serialized per-copy receipt, sockets and upgrades/],
+  ['saved loadout protection',/saved_loadout_references_copy/],
+  ['duplicate buyer copy denial',/duplicate_instance_id_in_destination/],
+  ['pouch capacity refusal',/destination_storage_full_or_unverified/],
+  ['nonmutating read-only inspection',/inspection must not mutate saved equipment/],
+], 'equipment proof regression');
+assert.doesNotMatch(gearProof,/\bupdate\s+public\.|\binsert\s+into\b|\bdelete\s+from\b|\.rpc\(/i,
+  'the equipment transfer proof must not move assets');
+assert.doesNotMatch(gameplayEdge,/market-equipment-proof/,
+  'the equipment proof must not be imported by the live gameplay transport');
+
+requireMatches(exactGearEscrow,[
+  ['hard-false independent equipment enable constraint',/equipment_transfers_enabled boolean not null default false[\s\S]*?check\(equipment_transfers_enabled=false\)/],
+  ['custody table RLS',/alter table private\.market_equipment_escrows_v8 enable row level security/],
+  ['account advisory lock',/hashtextextended\('party-account:'\|\|p_account_id::text,0\)/],
+  ['server authoritative revision lock',/select \* into v_state from public\.online_game_states[\s\S]*?for update/],
+  ['unique exact receipt check',/v_receipt_count<>1/],
+  ['unique physical copy check',/v_stack_count<>1/],
+  ['legacy untagged gear fail closed',/market_equipment_identity_ambiguous/],
+  ['protected saved loadouts',/market_equipment_saved_loadout/],
+  ['socket item policy verified',/item_id=v_stat and asset_kind='gem'/],
+  ['source stack + exact receipt removed in one state update',/v_new_state:=pg_catalog\.jsonb_set\(v_state\.state#-v_path,[\s\S]*?'\{account,craftedGearInstances\}',v_remaining_records,false\)/],
+  ['source revision advanced once',/revision=v_state\.revision\+1/],
+  ['receipt copied into custody',/'exactReceipt',v_receipt/],
+  ['reserve execute revoked',/revoke all on function private\.market_reserve_exact_equipment_v8\([\s\S]*?from public,anon,authenticated,service_role;/],
+], 'exact equipment escrow');
+requireMatches(exactGearReturns,[
+  ['private equipment return ledger RLS',/alter table private\.market_equipment_return_deliveries_v8 enable row level security/],
+  ['equipment sale still blocked',/market_equipment_listing_lifecycle_not_ready/],
+  ['exact return receipt comparison',/v_gear\.exact_receipt is distinct from v_delivery\.receipt_payload/],
+  ['full destination cannot consume entitlement',/market_equipment_destination_full/],
+  ['buyer cannot claim return',/market_equipment_delivery_not_owned/],
+  ['duplicate equipment ID prevented',/market_equipment_destination_identity_conflict/],
+  ['exact receipt and stack credited together',/v_next_state:=pg_catalog\.jsonb_set\(v_game\.state,v_stack_path,[\s\S]*?v_records\|\|pg_catalog\.jsonb_build_array\(v_delivery\.receipt_payload\)/],
+  ['single use return claim receipt',/'claim_equipment_return',v_result/],
+  ['claim execute revoked',/revoke all on function private\.market_claim_equipment_return_v8\([\s\S]*?from public,anon,authenticated,service_role;/],
+], 'exact equipment returns');
+requireMatches(exactGearTest,[
+  ['synthetic staging rollback',/\nrollback;\s*$/],
+  ['original Forge metadata preserved',/exact Forge copy escrow did not atomically preserve receipt/],
+  ['full bank cannot consume return',/full bank consumed exact Forge return/],
+  ['socket mismatch rejected',/socket mismatch accepted by equipment escrow/],
+  ['saved loadout rejection',/saved loadout gear accepted by escrow/],
+  ['other account rejected',/non-owner claimed original equipment/],
+  ['duplicate instance rejection',/duplicate Forge copy was restored/],
+  ['bank escrow and equipment pouch restored',/pouch return modified exact receipt or another copy/],
+], 'exact equipment staging tests');
+for(const s of [exactGearEscrow,exactGearReturns]){
+  assert.doesNotMatch(s,/\bgrant\s+(execute|select|insert|update|delete)\b/i,
+    'equipment escrow cannot grant any client or service access');
+  assert.doesNotMatch(s,/\bupdate\s+public\.character_wallets\b/i,
+    'equipment escrow and return cannot modify Gold wallets');
+}
+assert.doesNotMatch(gameplayEdge,/market_reserve_exact_equipment_v8|market_claim_equipment_return_v8/,
+  'no live equipment escrow transport is permitted');
+
+requireMatches(buyerGearLedger,[
+  ['buyer-owned exact equipment delivery ledger',/create table private\.market_equipment_purchase_deliveries_v9/],
+  ['no duplicate source hold delivery',/source_hold_id uuid not null unique/],
+  ['private table row-level security',/alter table private\.market_equipment_purchase_deliveries_v9 enable row level security/],
+  ['delivery must be distinct from seller account',/buyer_account_id<>seller_account_id/],
+], 'V9 gear buyer delivery ledger');
+requireMatches(buyerGearOffer,[
+  ['separate hard-false gear gate',/singleton and equipment_transfers_enabled/],
+  ['whole copy listing only',/p_expected_quantity<>1/],
+  ['exact receipt matched against custody',/immutable_attributes->'exactReceipt' is distinct from v_gear\.exact_receipt/],
+  ['publish equipment does not grant execute',/revoke all on function private\.market_publish_equipment_offer_v9/],
+], 'V9 gear sale listings');
+requireMatches(buyerGearPurchase,[
+  ['dual account lock, deterministic order',/least\(p_buyer_account_id::text,v_seller_account_id::text\)/],
+  ['dual account lock maximum',/greatest\(p_buyer_account_id::text,v_seller_account_id::text\)/],
+  ['equipment separate hard gate',/singleton and equipment_transfers_enabled/],
+  ['no resource purchase',/v_asset\.asset_kind<>'equipment'/],
+  ['buyer identity collision rejects',/market_equipment_buyer_identity_collision/],
+  ['single durable buyer entitlement',/insert into private\.market_equipment_purchase_deliveries_v9/],
+  ['all three Gold surfaces reconciled',/update public\.character_wallets[\s\S]*?update public\.characters[\s\S]*?update public\.online_game_states/],
+  ['hold settles atomically',/set status='settled',closed_at=now\(\)/],
+  ['original exact escrow sold',/update private\.market_equipment_escrows_v8[\s\S]*?set status='sold'/],
+  ['purchase private no external exec',/revoke all on function private\.market_purchase_equipment_offer_v9/],
+], 'V9 gear Gold sale');
+requireMatches(buyerGearClaim,[
+  ['buyer delivery ownership checked',/buyer_account_id=p_account_id for update/],
+  ['seller remains original hold owner',/owner_account_id=v_delivery\.seller_account_id/],
+  ['buyer character strictly owned',/market_equipment_buyer_character_not_owned/],
+  ['receipt bound to chosen buyer character',/v_rebound_receipt:=pg_catalog\.jsonb_set/],
+  ['buyer Forge receipt appended once',/v_records\|\|pg_catalog\.jsonb_build_array\(v_rebound_receipt\)/],
+  ['full capacity denial before claim',/market_equipment_destination_full/],
+  ['claim idempotency',/'claim_equipment_purchase'/],
+  ['buyer claim no client access',/revoke all on function private\.market_claim_equipment_purchase_v9/],
+], 'V9 buyer character receipt delivery');
+requireMatches(buyerGearCancel,[
+  ['cannot release an open listing directly',/status in \('draft','active','sold'\)/],
+  ['equipment cancel releases exact hold',/private\.market_cancel_exact_equipment_v8/],
+  ['cancellation only for held Forge copy',/v_gear\.status<>'held'/],
+  ['equipment seller cancellation no client grant',/revoke all on function private\.market_cancel_equipment_offer_v9/],
+], 'V9 gear seller return');
+requireMatches(buyerGearInbox,[
+  ['purchased gear goes to Market Inbox',/'purchase-equipment:'\|\|p\.delivery_id::text/],
+  ['returned gear goes to Market Inbox',/'return-equipment:'\|\|r\.delivery_id::text/],
+  ['seller payout still exactly once',/'sale:'\|\|o\.offer_id::text/],
+  ['private read model no grants',/revoke all on function private\.market_inbox_snapshot_v4/],
+], 'V9 Market Inbox');
+requireMatches(buyerGearTest,[
+  ['staging rollback only',/\nrollback;\s*$/],
+  ['purchase Gold conservation',/equipment purchase did not conserve Forge receipt and Gold/],
+  ['alternate character owns exact receipt',/buyer claim changed Forge metadata, sockets or Gold/],
+  ['no double claim',/buyer received duplicate Forge gear/],
+  ['full inventory pending',/equipment claim bypassed inventory capacity/],
+  ['sold seller cannot reclaim',/sold Forge copy was returned to seller/],
+  ['gear buyer pending inbox',/bought equipment not queued in Market Inbox/],
+  ['seller return pending inbox',/cancelled equipment missing from Market Inbox/],
+], 'V9 synthetic buyer tests');
+for (const v of [buyerGearLedger,buyerGearOffer,buyerGearPurchase,buyerGearClaim,buyerGearCancel,buyerGearInbox]) {
+  assert.doesNotMatch(v,/\bgrant\s+(execute|select|insert|update|delete)\b/i,
+    'V9 cannot expose a client or service-role grant');
+}
+assert.doesNotMatch(buyerGearClaim,/\bupdate\s+public\.character_wallets\b/i,
+  'claiming equipment must not charge the buyer or pay seller again');
+assert.doesNotMatch(gameplayEdge,/market_purchase_equipment_offer_v9|market_claim_equipment_purchase_v9/,
+  'V9 must remain unmounted in live gameplay Edge');
+
+requireMatches(buyerGearRace,[
+  ['local throwaway PG host',/PGHOST.*localhost/],
+  ['throwaway CI database',/veldryn_market_ci/],
+  ['competing buyer sessions',/buy-concurrent-a1[\s\S]*?buy-concurrent-b1/],
+  ['cancel before purchase',/cancel-race-a2[\s\S]*?buy-race-b2/],
+  ['purchase before cancellation',/buy-race-a3[\s\S]*?cancel-race-b3/],
+  ['Gold and custody invariants',/market_v9_concurrent_invariant_failed/],
+], 'V9 real equipment transaction races');
+console.log('PASS: hidden V2–V9 market security, buyer Forge transfers and unexposed Inbox checks');

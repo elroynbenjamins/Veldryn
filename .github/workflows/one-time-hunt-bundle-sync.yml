@@ -1,0 +1,37 @@
+# Temporary branch-only bundle regeneration; removes itself after completion.
+name: One-time hunt bundle sync
+on:
+  push:
+    branches: [feat/hunt-real-hit-timeline-v1]
+    paths: ['.github/workflows/one-time-hunt-bundle-sync.yml']
+permissions:
+  contents: write
+jobs:
+  rebuild:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: true
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+          cache-dependency-path: backend/pnpm-lock.yaml
+      - name: Install backend
+        run: pnpm --dir backend install --frozen-lockfile
+      - name: Rebuild canonical shared-engine bundles
+        run: |
+          node tools/build-online.mjs
+          node tools/verify-gameplay-edge.mjs
+      - name: Commit bundles and remove this temporary workflow
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add backend/supabase/functions/gameplay/index.ts backend/supabase/functions/coop/index.ts
+          git rm -f .github/workflows/one-time-hunt-bundle-sync.yml
+          git commit -m "chore(edge): regenerate real-hit combat bundles and clean up one-time CI"
+          git push origin HEAD:feat/hunt-real-hit-timeline-v1

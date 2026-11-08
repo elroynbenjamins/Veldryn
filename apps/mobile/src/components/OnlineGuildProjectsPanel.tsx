@@ -165,9 +165,11 @@ function CandidateCard({candidate,busy,onVote}:{candidate:OnlineGuildProjectCand
  const language=useGameLanguage(),ui=useOnlineGuildProjectUiText(),C=useGameTheme(),s=useMemo(()=>makeStyles(C),[C]);
  const authored=guildProjectAuthoredCopy(language,candidate.templateId,candidate.name,candidate.description);
  const tier=ui(candidate.difficulty==='easy'?'Easy':candidate.difficulty==='medium'?'Medium':'Hard');
+ const projectArtwork=guildProjectArtwork(candidate.templateId);
  return <View style={[s.candidate,candidate.myVote&&s.candidateSelected]}>
   <View style={s.sectionHead}>
-   <View style={s.flex}><Text style={s.projectTitle}>{authored.name}</Text><Text style={s.tier}>{tier} · {guildFlowFocusText(language,candidate.focus)}</Text></View>
+   {projectArtwork?<Image source={projectArtwork} resizeMode="contain" style={s.projectIcon}/>:<ActivityArtwork id={candidate.focus==='combat'?'combat':candidate.focus==='skilling'?'herbalism':'crafting'} size={42}/>}
+   <View style={s.flex}><Text numberOfLines={2} style={s.projectTitle}>{authored.name}</Text><Text style={s.tier}>{tier} · {guildFlowFocusText(language,candidate.focus)}</Text></View>
    {candidate.myVote?<StatusPill label={ui("VOTED")} tone="good"/>:null}
   </View>
   <Text style={s.copy}>{authored.description}</Text>
@@ -215,7 +217,7 @@ export function GuildProjectPosting({project,expanded,compact=false,onToggle,onC
   <Pressable accessibilityRole="button" accessibilityLabel={ui('Project contributions: {name}',{name:authored.name})} accessibilityHint={ui('Show or hide contributions from Guild members')} accessibilityState={{expanded}}
    onPress={onToggle} style={({pressed})=>[s.projectPress,pressed&&s.pressed]}>
    <View style={s.sectionHead}>
-    {projectArtwork?<Image source={projectArtwork} resizeMode="contain" style={s.projectIcon}/>:<ActivityArtwork id="combat" size={42}/>}
+    {projectArtwork?<Image source={projectArtwork} resizeMode="contain" style={s.projectIcon}/>:<ActivityArtwork id={project.focus==='combat'?'combat':project.focus==='skilling'?'herbalism':'crafting'} size={42}/>}
     <View style={s.flex}><Text numberOfLines={2} style={s.projectTitle}>{authored.name}</Text><Text style={s.meta}>{weekly?(ui(project.slotIndex===2?"Guild's Choice":'Standard weekly')+(project.difficulty?' · '+ui(project.difficulty==='easy'?'Easy':project.difficulty==='medium'?'Medium':'Hard'):'')+' · '):''}{guildFlowFocusText(language,project.focus)}{weekly?'':' · '+ui(project.kind==='development'?'Development':'Event')}</Text></View>
     <StatusPill label={ui(project.status==='completed'?'DONE':'ACTIVE')} tone={project.status==='completed'?'good':'info'}/>
    </View>

@@ -18,6 +18,7 @@
   ".core-build/apps/mobile/tests/online-snapshot-cache.js",
   ".core-build/apps/mobile/tests/session-pending-store.js",
   ".core-build/apps/mobile/tests/guild-pve-encounters.js",
+  "tests/guild-raid-tabs-ui.cjs",
   ".core-build/apps/mobile/tests/guild-skill-effects.js",
   ".core-build/apps/mobile/tests/inventory-social-efficiency-ui-contract.js",
   ".core-build/apps/mobile/tests/social-list-projection.js",

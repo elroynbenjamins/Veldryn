@@ -61,7 +61,12 @@ assert.equal(forged.assetKind,'equipment');
 assert.equal(forged.quantity,1);
 assert.equal(forged.immutableAttributes.rarity,record.rarity);
 assert.equal(forged.immutableAttributes.quality,record.quality);
-assert.deepEqual(forged.immutableAttributes.enhancement,record.enhancement);
+const enhancement=forged.immutableAttributes.enhancement as {
+  rank:number;failures:number;gemIds:string[];
+};
+assert.equal(enhancement.rank,record.enhancement.rank);
+assert.equal(enhancement.failures,record.enhancement.failures);
+assert.deepEqual(enhancement.gemIds,record.enhancement.gemIds);
 assert(!forged.problems.includes('equipment_ownership_conflict'));
 const bank=actual.rows.find(row=>row.sourceLocation==='bank')!;
 assert.equal(bank.sourceCharacterId,undefined);

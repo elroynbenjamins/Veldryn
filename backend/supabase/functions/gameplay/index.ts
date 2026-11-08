@@ -48578,9 +48578,9 @@ var CLASS_COMBAT_STYLES = {
   DREADGUARD: { name: "Dread Momentum", description: "Hunts 4% faster while retaining heavy protection.", speedMultiplier: 1.04, damageTakenMultiplier: 0.94, recoveryPct: 0.01 },
   DAWNKEEPER: { name: "Sunlit Guard", description: "Trades stronger protection for a slightly faster, steadier hunt.", speedMultiplier: 1.03, damageTakenMultiplier: 0.94, recoveryPct: 1e-3 },
   WAYFINDER: { name: "Marked Quarry", description: "Hunts 8% faster through careful targeting.", speedMultiplier: 1.08, damageTakenMultiplier: 1, recoveryPct: 0.01 },
-  RAVAGER: { name: "Bloodrush", description: "Hunts 14% faster but takes 9% more damage.", speedMultiplier: 1.14, damageTakenMultiplier: 1.09, recoveryPct: 8e-3 },
+  RAVAGER: { name: "Bloodrush", description: "Hunts 14% faster, takes 9% more damage and restores a little HP after kills.", speedMultiplier: 1.14, damageTakenMultiplier: 1.09, recoveryPct: 8e-3, onKillAttackHealPct: 6e-3 },
   HEXWEAVER: { name: "Withering Hex", description: "Hunts 7% faster and weakens incoming attacks.", speedMultiplier: 1.07, damageTakenMultiplier: 0.95, recoveryPct: 0.01 },
-  KNIFE_DANCER: { name: "Blade Rhythm", description: "Hunts 13% faster through rapid strikes.", speedMultiplier: 1.13, damageTakenMultiplier: 1.03, recoveryPct: 0.01 },
+  KNIFE_DANCER: { name: "Blade Rhythm", description: "Hunts 13% faster and avoids 3% of incoming damage.", speedMultiplier: 1.13, damageTakenMultiplier: 0.97, recoveryPct: 0.01 },
   STONECALLER: { name: "Earthen Ward", description: "Strong damage reduction and offense at the cost of a slower hunt.", speedMultiplier: 0.95, damageTakenMultiplier: 0.91, recoveryPct: 1e-3 }
 };
 var classCombatStyle = (id) => CLASS_COMBAT_STYLES[id];
@@ -51999,10 +51999,11 @@ function combatEncounterDamage(runtime, champion = false) {
   const raw2 = Math.max(1, Math.round(m.attack * COMBAT_MONSTER_DAMAGE_SCALE) - Math.floor(boostedDefense * 0.58));
   const regionalPressure = (REGIONAL_COMBAT_PRESSURE[m.zone] ?? 1) * REGIONAL_MONSTER_PRESSURE_MULTIPLIER[regionalMonsterPressureBand(m.id)];
   const damage = Math.max(0.1, (raw2 * 0.48 + m.level * 0.16) * (REGIONAL_HUNT_DAMAGE_TUNING[m.zone] ?? 1) * regionalPressure * secondary.incomingPressureMultiplier * style.damageTakenMultiplier * tactic.damageTakenMultiplier * (champion ? CHAMPION_DAMAGE_MULTIPLIER : 1) * modifiers.incomingDamageMultiplier * companion.incomingDamageMultiplier * (1 - effectGems.damage_reduction) * Math.max(0.5, 1 - setCombat.stats.ward) * (c.preparation ? preparationEffects(c.preparation).damage : 1) * runtime.progressionDamagePenalty);
-  const healing = stats4.hp * companion.directHealingPctPerHour * killCycleSeconds / 3600 * (c.preparation ? preparationEffects(c.preparation).healing : 1);
+  const onKillHealing = stats4.attack * (style.onKillAttackHealPct ?? 0);
+  const healing = stats4.hp * companion.directHealingPctPerHour * killCycleSeconds / 3600 * (c.preparation ? preparationEffects(c.preparation).healing : 1) + onKillHealing;
   const floor = Math.max(REGIONAL_MIN_ATTRITION_HP_PER_HOUR[m.zone] ?? 0, stats4.hp * MIN_UNHEALED_HP_FRACTION_PER_HOUR) * runtime.gearAttritionMultiplier * killCycleSeconds / 3600;
   const incoming = Math.max(floor, damage);
-  return { damage: incoming, healing, net: incoming - healing };
+  return { damage: incoming, healing, onKillHealing, net: incoming - healing };
 }
 function simulateCombat2(state, monsterId, elapsed, nowMs = Date.now()) {
   const c = state.character, startsAtMs = state.activity?.lastClaimAtMs ?? nowMs - elapsed * 1e3;

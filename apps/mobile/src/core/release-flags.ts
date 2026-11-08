@@ -8,3 +8,6 @@ export const ARENA_RELEASED=false;
 
 /** Prestige boards are paused while guild progression is being completed. */
 export const RANKINGS_RELEASED=false;
+
+/** Internal inventory audit only; no market UI, listings or transfers are released. */
+export const PLAYER_MARKET_RELEASED=false;

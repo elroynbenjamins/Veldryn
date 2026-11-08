@@ -77,7 +77,7 @@ assert.equal(cache.state.artifacts.length,1);
 // Preserve a representative published Sunscar party's viable clear rate when
 // adjusting room modifiers. These deterministic samples are regression checks,
 // not actual player completion data.
-function sunscarPublishedClearRate():number{
+function sunscarPublishedClearRate(disableModifiers=false):number{
  const {createCharacter,newGame}=require('../../../apps/mobile/src/core/game') as typeof import('../../../apps/mobile/src/core/game');
  const {noviceItemId,noviceSetFor}=require('../../../apps/mobile/src/content/novice-sets') as typeof import('../../../apps/mobile/src/content/novice-sets');
  const {deriveOnlineCoopLoadout}=require('../coop-loadout') as typeof import('../coop-loadout');
@@ -93,8 +93,13 @@ function sunscarPublishedClearRate():number{
  let clears=0;
  for(let seed=0;seed<100;seed++){
   const id=`EXP_003-IRONWARDEN-DAWNKEEPER-WAYFINDER-${seed}`;
-  const service=new QModeService(new MemoryQModeRunRepository(),'published-loadout-balance-v1');
+  const repository=new MemoryQModeRunRepository();
+  const service=new QModeService(repository,'published-loadout-balance-v1');
   let run=service.create({requestId:id,runId:id,controllerAccountId:roster[0].accountId,controllerSnapshot:roster[0],expeditionId:'EXP_003',tier:1,contentVersion:'online-coop-loadout-v1',balanceVersion:'online-coop-loadout-v1',nowMs:1000,profiles:roster.slice(1).map((snapshot,index)=>({profileId:'echo-'+index,sourceAccountId:snapshot.accountId,optedIn:true,publishedAtMs:0,contentVersion:'online-coop-loadout-v1',blockedAccountIds:[],snapshot}))});
+  if(disableModifiers){
+   repository.save({...run,graph:{...run.graph,nodes:run.graph.nodes.map(node=>({...node,modifierId:'steady'}))}});
+   run=repository.get(run.id)!;
+  }
   for(let room=0;room<6&&run.phase==='awaiting_choice';room++){
    const current=run.graph.nodes.find(node=>node.nodeId===run.currentNodeId)!;
    const choices=current.nextNodeIds.map(optionId=>run.graph.nodes.find(node=>node.nodeId===optionId)!);
@@ -104,8 +109,9 @@ function sunscarPublishedClearRate():number{
  }
  return clears;
 }
-const sunscarClears=sunscarPublishedClearRate();
-console.log('Sunscar publishable clear-rate guard:',sunscarClears,'of 100');
+const sunscarBaselineClears=sunscarPublishedClearRate(true);
+const sunscarClears=sunscarPublishedClearRate(false);
+console.log('Sunscar modifier balance:',JSON.stringify({baseline:sunscarBaselineClears,modified:sunscarClears,samples:100}));
 assert(sunscarClears>=85,'Real modifiers cannot undercut the published Sunscar clear-rate floor');
 
 async function verifyLiveVoteAuthority(){

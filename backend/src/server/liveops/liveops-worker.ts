@@ -1,4 +1,5 @@
 import { eventPhase } from './scheduler';
+import {processPartyEventDayEightBosses,type DayEightBossRepository} from '../party/weekly-party-boss-service-v2';
 import type { ScheduledPartyEvent } from './event-definitions';
 import { finalizePartyEvent, type PartyEventFinalizationRepository } from './party-event-finalization';
 import { processSocialContributionOutboxBatch, type ContributionOutboxRepository } from './contribution-outbox';
@@ -15,6 +16,11 @@ export interface LiveOpsWorkerDependencies {
   finalization: PartyEventFinalizationRepository;
   outbox: ContributionOutboxRepository;
   router: SocialContributionRouterDependencies;
+  /** Completely optional until Party Events v2 and Inbox settlement are ready. */
+  hiddenPartyEventDay8?: {
+    gateEnabled:boolean;
+    repository:DayEightBossRepository;
+  };
 }
 
 /** Intended for the existing server cron/worker runner (recommended about once per minute). */
@@ -36,6 +42,15 @@ export async function runLiveOpsWorkerTick(
       const result = await finalizePartyEvent(deps.finalization, event.instanceId, nowMs);
       if (result.finalized) finalized++;
     }
+  }
+
+  // Explicitly opt-in only. Existing LiveOps runs do not instantiate these
+  // dependencies, so hidden Party Events incur no extra database queries.
+  if(deps.hiddenPartyEventDay8?.gateEnabled){
+    await processPartyEventDayEightBosses({
+      gateEnabled:true,nowMs,repository:deps.hiddenPartyEventDay8.repository,
+      limit:20,
+    });
   }
   return { activated, settling, finalized, outboxProcessed: outbox.processed, outboxRetried: outbox.retried, outboxDeadLettered: outbox.deadLettered };
 }

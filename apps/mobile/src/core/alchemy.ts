@@ -1,6 +1,6 @@
 import {captureSkillAffinity,affinityXpRemainderKey} from './class-skill-affinities';
 import {professionActionPace} from './profession-action-pace';
-import {alchemyRecipeDef,MAX_ALCHEMY_BATCHES,potionDef} from '../content/alchemy';
+import {alchemyRecipeDef,COMBAT_POTION_CRAFT_COST_MULTIPLIER,MAX_ALCHEMY_BATCHES,potionDef} from '../content/alchemy';
 import type {GameState,ItemStack,RewardBundle} from './types';
 import type {ActivePreparation,AlchemyBatchState} from './alchemy-types';
 import {characterPermanentMultipliers} from './permanent-boosts';
@@ -41,12 +41,12 @@ export function startAlchemyBatch(state:GameState,recipeId:string,batches:number
   for(const input of status.inputs){const fromInventory=Math.min(storedQuantity(inventory,input.itemId),input.quantity);
     inventory=take(inventory,input.itemId,fromInventory);bank=take(bank,input.itemId,input.quantity-fromInventory);}
   const bonuses=characterPermanentMultipliers(state),pace=professionActionPace(state,recipe,'batch');
-  const brew:AlchemyBatchState={version:1,recipeId,totalBatches:batches,remainingBatches:batches,
+  const brew:AlchemyBatchState={version:1,recipeId:recipe.id,totalBatches:batches,remainingBatches:batches,
     inputsPerBatch:recipe.inputs.map(input=>({...input})),goldPerBatch:recipe.gold,outputPerBatch:{...recipe.output},
     cycleSeconds:pace.cycleSeconds,xpPerBatch:pace.xpPerAction};
   return {...state,character:{...state.character!,gold:state.character!.gold-status.gold},
     inventory:{...state.inventory,stacks:inventory},bank:{...state.bank,stacks:bank},
-    activity:{kind:'alchemy',targetId:recipeId,startedAtMs:nowMs,lastClaimAtMs:nowMs,progressFraction:0,bonusSnapshot:bonuses,skillAffinity:captureSkillAffinity(state,'alchemy'),brew}};
+    activity:{kind:'alchemy',targetId:recipe.id,startedAtMs:nowMs,lastClaimAtMs:nowMs,progressFraction:0,bonusSnapshot:bonuses,skillAffinity:captureSkillAffinity(state,'alchemy'),brew}};
 }
 
 /** Starts as many brews as resources, Gold and the active AFK window allow. */
@@ -57,7 +57,7 @@ export function startAlchemyUntilLimited(state:GameState,recipeId:string,nowMs:n
  const timeBatches=Math.floor(afkCapSeconds/pace.cycleSeconds);
  const batches=Math.min(status.maxBatches,timeBatches,MAX_ALCHEMY_BATCHES);
  if(batches<1)throw new Error('Not enough AFK time for one brewing cycle.');
- return startAlchemyBatch(state,recipeId,batches,nowMs);
+ return startAlchemyBatch(state,status.recipe!.id,batches,nowMs);
 }
 export function previewAlchemyReward(state:GameState,elapsed:number):RewardBundle {
   const activity=state.activity,brew=activity?.brew;
@@ -91,7 +91,11 @@ const PREVIOUS_TONIC_INPUTS:Record<string,readonly ItemStack[]>={
  'BREW_GREATER_WARD_TONIC':[{itemId:'IRONBLOOM',quantity:3},{itemId:'CROWN_SAGE',quantity:2}],
 };
 function permittedReservationInputs(recipeId:string,current:readonly ItemStack[],saved:readonly ItemStack[]):boolean{
- const allowed=[current,PREVIOUS_TONIC_INPUTS[recipeId]].filter((rows):rows is readonly ItemStack[]=>!!rows);
+ // Preparation tonics were ×1 before the premium balance pass. Keep their paid escrow intact.
+ const recipe=alchemyRecipeDef(recipeId),isTonic=recipe&&potionDef(recipe.output.itemId)?.effect.kind==='preparation';
+ const priorTonicInputs=isTonic&&current.every(row=>row.quantity%COMBAT_POTION_CRAFT_COST_MULTIPLIER===0)
+  ?current.map(row=>({...row,quantity:row.quantity/COMBAT_POTION_CRAFT_COST_MULTIPLIER})):undefined;
+ const allowed=[current,priorTonicInputs,PREVIOUS_TONIC_INPUTS[recipeId]].filter((rows):rows is readonly ItemStack[]=>!!rows);
  return allowed.some(inputs=>inputs.length===saved.length&&inputs.every(input=>
   saved.filter(row=>row.itemId===input.itemId&&row.quantity===input.quantity).length===1));
 }

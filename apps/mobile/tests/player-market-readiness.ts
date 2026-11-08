@@ -32,7 +32,8 @@ const resourceFav={...resource,settings:{...resource.settings,favoriteItemIds:['
 check(previewPlayerMarketListing(resourceFav,'inventory',0,1).blockedBy.includes('favorite_protected'),
   'Favorite resources must not be accidentally listed');
 const protectedGoal={...resource,character:{...resource.character!,progressionGoals:[{
-  id:'goal-1',kind:'item_quantity' as const,itemId:'COPPER_ORE',targetQuantity:25,title:'Save copper',
+  id:'goal-1',characterId:base.character!.id,createdAtMs:0,pinnedAtMs:0,
+  kind:'item_quantity' as const,itemId:'COPPER_ORE',targetQuantity:25,title:'Save copper',
 }]}};
 check(previewPlayerMarketListing(protectedGoal,'inventory',0,1).blockedBy.includes('working_toward_reserved'),
   'Working Toward materials must remain protected');

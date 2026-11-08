@@ -33,7 +33,8 @@ export function huntHitEvents(input:HuntHitInput):HuntHit[]{
   const base=Math.max(1,finite(input.basePlayerHit,1));
   // A stronger attack gives fewer, larger blows. Keep a bounded animation/event
   // count to avoid making offline simulation expensive or altering kill cadence.
-  const playerCount=clamp(Math.ceil(monsterHp/base),3,8);
+  // Low-HP enemies cannot receive more positive-damage attacks than their HP.
+  const playerCount=Math.min(monsterHp,clamp(Math.ceil(monsterHp/base),3,8));
   const enemyCount=clamp(Math.round(Math.max(1,finite(input.cycleSeconds,1))/2.5),2,5);
   const critChance=clamp(finite(input.critChance,0),0,.65);
   const weights:Array<{raw:number;critical:boolean}>=[];

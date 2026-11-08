@@ -8,6 +8,9 @@ const SKILL_XP_SCALE = 1.6;
 // characters into early-game characters (legacy level 32 maps to level 25).
 const CHARACTER_XP_SCALE = 8.0;
 const CHARACTER_XP_EXPONENT = 1.65;
+// Class combat disciplines intentionally use the longer combat-only curve.
+// Their legacy level-50 XP bank starts at class level 24.
+const CLASS_COMBAT_XP_EXPONENT = 2.09;
 
 export function baseXpForNextLevel(level:number):number {
   return Math.floor(90 * Math.pow(level, 1.42) + level * 35);
@@ -17,6 +20,9 @@ export function skillXpForNextLevel(level:number):number {
 }
 export function characterXpForNextLevel(level:number):number {
   return Math.floor(90 * Math.pow(level, CHARACTER_XP_EXPONENT) + level * 35) * CHARACTER_XP_SCALE;
+}
+export function classCombatSkillXpForNextLevel(level:number):number {
+  return Math.floor(Math.floor(90 * Math.pow(level, CLASS_COMBAT_XP_EXPONENT) + level * 35) * SKILL_XP_SCALE);
 }
 /** Reference only: use earned XP to rebase prior combat levels, never overwrite stored XP. */
 export function legacyCharacterXpForNextLevel(level:number):number {
@@ -29,17 +35,25 @@ function levelFromXpWith(totalXp:number, need:(l:number)=>number):number {
 }
 export function levelFromXp(totalXp:number):number { return levelFromXpWith(totalXp,skillXpForNextLevel); }
 export function characterLevelFromXp(totalXp:number):number { return levelFromXpWith(totalXp,characterXpForNextLevel); }
+export function classCombatSkillLevelFromXp(totalXp:number):number { return levelFromXpWith(totalXp,classCombatSkillXpForNextLevel); }
 export function legacyCharacterLevelFromXp(totalXp:number):number { return levelFromXpWith(totalXp,legacyCharacterXpForNextLevel); }
 function totalXpAtLevelWith(level:number,need:(l:number)=>number){let xp=0;for(let l=1;l<level;l++)xp+=need(l);return xp;}
 export function totalXpAtLevel(level:number):number{return totalXpAtLevelWith(level,skillXpForNextLevel);}
 export function characterTotalXpAtLevel(level:number):number{return totalXpAtLevelWith(level,characterXpForNextLevel);}
+export function classCombatSkillTotalXpAtLevel(level:number):number{return totalXpAtLevelWith(level,classCombatSkillXpForNextLevel);}
 export function legacyCharacterTotalXpAtLevel(level:number):number{return totalXpAtLevelWith(level,legacyCharacterXpForNextLevel);}
 export function rebasedCombatLevelFromLegacyLevel(level:number):number{return characterLevelFromXp(legacyCharacterTotalXpAtLevel(level));}
 /** A player's earned combat XP is the source of truth; level is a derived read model. */
 export function rebaseCombatCharacter<T extends CharacterState>(character:T):T{
   if(!Number.isSafeInteger(character.xp)||character.xp<0)return character;
   const level=characterLevelFromXp(character.xp);
-  return level===character.level?character:{...character,level};
+  const classSkills=character.classSkills?.map(skill=>{
+    if(!Number.isSafeInteger(skill.xp)||skill.xp<0)return skill;
+    const skillLevel=classCombatSkillLevelFromXp(skill.xp);
+    return skillLevel===skill.level?skill:{...skill,level:skillLevel};
+  });
+  const classSkillsChanged=classSkills?.some((skill,index)=>skill!==character.classSkills?.[index])??false;
+  return level===character.level&&!classSkillsChanged?character:{...character,level,...(classSkills?{classSkills}: {})};
 }
 /** Idempotently rebase both the equipped character and parked roster characters. */
 export function rebaseCombatGameState(state:GameState):GameState{

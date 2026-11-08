@@ -19,6 +19,9 @@ function skillXpForNextLevel(level) {
 function characterXpForNextLevel(level) {
   return Math.floor(90 * Math.pow(level, CHARACTER_XP_EXPONENT) + level * 35) * CHARACTER_XP_SCALE;
 }
+function classCombatSkillXpForNextLevel(level) {
+  return Math.floor(Math.floor(90 * Math.pow(level, CLASS_COMBAT_XP_EXPONENT) + level * 35) * SKILL_XP_SCALE);
+}
 function legacyCharacterXpForNextLevel(level) {
   return Math.floor(baseXpForNextLevel(level) * CHARACTER_XP_SCALE);
 }
@@ -38,6 +41,9 @@ function levelFromXp(totalXp) {
 function characterLevelFromXp(totalXp) {
   return levelFromXpWith(totalXp, characterXpForNextLevel);
 }
+function classCombatSkillLevelFromXp(totalXp) {
+  return levelFromXpWith(totalXp, classCombatSkillXpForNextLevel);
+}
 function legacyCharacterLevelFromXp(totalXp) {
   return levelFromXpWith(totalXp, legacyCharacterXpForNextLevel);
 }
@@ -49,6 +55,9 @@ function totalXpAtLevelWith(level, need) {
 function totalXpAtLevel(level) {
   return totalXpAtLevelWith(level, skillXpForNextLevel);
 }
+function classCombatSkillTotalXpAtLevel(level) {
+  return totalXpAtLevelWith(level, classCombatSkillXpForNextLevel);
+}
 function legacyCharacterTotalXpAtLevel(level) {
   return totalXpAtLevelWith(level, legacyCharacterXpForNextLevel);
 }
@@ -58,7 +67,13 @@ function rebasedCombatLevelFromLegacyLevel(level) {
 function rebaseCombatCharacter(character) {
   if (!Number.isSafeInteger(character.xp) || character.xp < 0) return character;
   const level = characterLevelFromXp(character.xp);
-  return level === character.level ? character : { ...character, level };
+  const classSkills = character.classSkills?.map((skill2) => {
+    if (!Number.isSafeInteger(skill2.xp) || skill2.xp < 0) return skill2;
+    const skillLevel = classCombatSkillLevelFromXp(skill2.xp);
+    return skillLevel === skill2.level ? skill2 : { ...skill2, level: skillLevel };
+  });
+  const classSkillsChanged = classSkills?.some((skill2, index) => skill2 !== character.classSkills?.[index]) ?? false;
+  return level === character.level && !classSkillsChanged ? character : { ...character, level, ...classSkills ? { classSkills } : {} };
 }
 function rebaseCombatGameState(state) {
   const character = state.character ? rebaseCombatCharacter(state.character) : null;
@@ -69,13 +84,14 @@ function rebaseCombatGameState(state) {
   if (character === state.character && (!otherCharacters || otherCharacters.every((entry2, index) => entry2 === state.otherCharacters?.[index]))) return state;
   return { ...state, character, otherCharacters };
 }
-var SKILL_XP_SCALE, CHARACTER_XP_SCALE, CHARACTER_XP_EXPONENT;
+var SKILL_XP_SCALE, CHARACTER_XP_SCALE, CHARACTER_XP_EXPONENT, CLASS_COMBAT_XP_EXPONENT;
 var init_progression = __esm({
   "../apps/mobile/src/core/progression.ts"() {
     "use strict";
     SKILL_XP_SCALE = 1.6;
     CHARACTER_XP_SCALE = 8;
     CHARACTER_XP_EXPONENT = 1.65;
+    CLASS_COMBAT_XP_EXPONENT = 2.09;
   }
 });
 
@@ -43504,13 +43520,13 @@ var classSkillsFor = (id) => CLASS_SKILLS[id];
 // ../apps/mobile/src/core/class-skills.ts
 init_meal_buffs();
 init_progression();
-var MAX_CLASS_SKILL_XP = totalXpAtLevel(100);
+var MAX_CLASS_SKILL_XP = classCombatSkillTotalXpAtLevel(100);
 function normalizeClassSkills(id, raw2) {
   const rows2 = Array.isArray(raw2) ? raw2 : [];
   return classSkillsFor(id).map((d) => {
     const entry2 = rows2.find((r) => r?.skillId === d.id);
     const xp = typeof entry2?.xp === "number" && Number.isFinite(entry2.xp) ? Math.max(0, Math.min(MAX_CLASS_SKILL_XP, Math.floor(entry2.xp))) : 0;
-    return { skillId: d.id, xp, level: levelFromXp(xp) };
+    return { skillId: d.id, xp, level: classCombatSkillLevelFromXp(xp) };
   });
 }
 var characterClassSkills = (c) => normalizeClassSkills(c.classId, c.classSkills);

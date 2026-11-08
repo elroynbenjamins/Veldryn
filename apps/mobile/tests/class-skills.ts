@@ -3,7 +3,7 @@ import {createCharacter,newGame,startCombat,startClassTraining,claimActivity,eff
 import {characterClassSkills,CLASS_DRILL_BASE_XP,normalizeClassDrills,normalizeClassSkills,MAX_CLASS_SKILL_XP,awardClassSkillXp} from '../src/core/class-skills';
 import {executeGameCommand,validateGameCommand} from '../src/core/game-commands';
 import {classSkillsFor} from '../src/content/class-skills';
-import {totalXpAtLevel} from '../src/core/progression';
+import {classCombatSkillTotalXpAtLevel} from '../src/core/progression';
 import {createSaveBackup,parseSaveBackup} from '../src/core/save-transfer';
 import {settleStartupActivity} from '../src/core/playability';
 import {skillTrainingFocus} from '../src/core/skill-milestones';
@@ -22,7 +22,7 @@ const saved=parseSaveBackup(createSaveBackup(focused));ok(total(saved)===total(f
 ok(!startCombat(train,'MOSS_RAT',now+60000).character!.classTraining,'combat replaces drills');ok(!startGathering(train,'GREENWOOD_TREE',now+60000).character!.classTraining,'gathering replaces drills');
 const gathering=claimActivity(startGathering(fresh(),'GREENWOOD_TREE',now),now+60000).state;ok(total(gathering)===0,'gathering gives no class XP');
 let maximum=fresh();maximum.character!.classSkills=classSkillsFor('IRONWARDEN').map(d=>({skillId:d.id,xp:MAX_CLASS_SKILL_XP-1,level:99}));maximum=claimActivity(startClassTraining(maximum,now),now+60000).state;ok(characterClassSkills(maximum.character!).every(s=>s.level===100)&&!maximum.character!.classTraining,'drills stop at cap');rejects(()=>startClassTraining(maximum,now+60000),'cannot restart maxed');
-let shade=fresh('KNIFE_DANCER');shade.character!.classSkills=classSkillsFor('KNIFE_DANCER').map(d=>({skillId:d.id,xp:totalXpAtLevel(40),level:40}));shade=executeGameCommand(shade,{type:'claim'},now).state;ok(shade.account.unlockedCombatCompanionIds?.includes('UNIT_007'),'actual class total unlocks Shade');
+let shade=fresh('KNIFE_DANCER');shade.character!.classSkills=classSkillsFor('KNIFE_DANCER').map(d=>({skillId:d.id,xp:classCombatSkillTotalXpAtLevel(40),level:40}));shade=executeGameCommand(shade,{type:'claim'},now).state;ok(shade.account.unlockedCombatCompanionIds?.includes('UNIT_007'),'actual class total unlocks Shade');
 const normalized=normalizeClassSkills('IRONWARDEN',[{skillId:'guardcraft',xp:NaN,level:100},{skillId:'spellcraft',xp:MAX_CLASS_SKILL_XP}]);ok(normalized.every(s=>s.level===1),'invalid XP and cross-class skills discarded');
 const legacyDrill=normalizeClassDrills({lastClaimAtMs:now,progressMs:0,focus:'balanced',xpPerDrill:8});ok(legacyDrill?.xpPerDrill===CLASS_DRILL_BASE_XP,'legacy slow drill snapshots upgrade to the current baseline');
 const a=awardClassSkillXp(fresh().character!,14,'primary');const b=awardClassSkillXp(a.character,14,'primary');ok(b.character.classSkills![0].xp===21&&b.character.classSkills![1].xp===7,'fractional focus XP retained');

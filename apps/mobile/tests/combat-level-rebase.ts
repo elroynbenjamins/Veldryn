@@ -2,6 +2,9 @@ import {assert} from './test-assert';
 import {
   characterLevelFromXp,
   characterTotalXpAtLevel,
+  classCombatSkillLevelFromXp,
+  classCombatSkillTotalXpAtLevel,
+  totalXpAtLevel,
   legacyCharacterTotalXpAtLevel,
   rebasedCombatLevelFromLegacyLevel,
   skillXpForNextLevel,
@@ -26,6 +29,8 @@ assert.equal(characterTotalXpAtLevel(37),3936944,'new combat level 37 threshold 
 assert.equal(characterLevelFromXp(legacyCharacterTotalXpAtLevel(50)),37);
 assert.equal(rebasedCombatLevelFromLegacyLevel(50),37);
 assert.equal(rebasedCombatLevelFromLegacyLevel(32),25,'legacy level 32 should become the intended level 25');
+assert.equal(classCombatSkillLevelFromXp(totalXpAtLevel(50)),24,'legacy class combat level 50 should become level 24');
+assert.equal(classCombatSkillTotalXpAtLevel(24),818574,'class combat level 24 threshold must be stable');
 for(const [previous,next] of [[60,44],[70,50],[80,57],[90,64],[100,70]] as const){
  assert.equal(rebasedCombatLevelFromLegacyLevel(previous),next,`legacy Combat level ${previous} must rebase across the full 1–100 curve`);
  assert.equal(characterLevelFromXp(legacyCharacterTotalXpAtLevel(previous)),next,'stored Combat XP remains the sole level source');
@@ -42,11 +47,12 @@ for(let oldLevel=1;oldLevel<=100;oldLevel++){
 
 const old50=legacyCharacterTotalXpAtLevel(50),old30=legacyCharacterTotalXpAtLevel(30);
 const fresh=createCharacter(newGame(1000),'IRONWARDEN','Rebase Test');
-const active={...fresh.character!,level:50,xp:old50};
+const active={...fresh.character!,level:50,xp:old50,classSkills:fresh.character!.classSkills!.map(skill=>({...skill,xp:totalXpAtLevel(50),level:50}))};
 const parked={character:{...fresh.character!,id:'PARKED_2',level:30,xp:old30},inventory:fresh.inventory,overflow:fresh.overflow,activity:null,skills:fresh.skills,quests:fresh.quests,currentRegionId:'KINGS_ROAD'};
 const legacyState={...fresh,character:active,otherCharacters:[parked],currentRegionId:'IRONWOOD'};
 const after=rebaseCombatGameState(legacyState);
 assert.equal(after.character!.level,37);
+assert.equal(after.character!.classSkills!.every(skill=>skill.level===24),true,'class combat skills rebase independently');
 assert.equal(after.otherCharacters![0].character.level,23);
 assert.equal(after.character!.xp,old50,'active earned XP must not change');
 assert.equal(after.otherCharacters![0].character.xp,old30,'parked character XP must not change');

@@ -1,16 +1,16 @@
 import {classSkillsFor} from '../content/class-skills';
 import {mealSpeedFactor} from './meal-buffs';
-import {levelFromXp,totalXpAtLevel} from './progression';
+import {classCombatSkillLevelFromXp,classCombatSkillTotalXpAtLevel} from './progression';
 import type {CharacterState,ClassId,GameState,RewardBundle} from './types';
 export type TrainingFocus='balanced'|'primary'|'secondary';
 export interface ClassSkillState{skillId:string;xp:number;level:number;}
 export interface ClassDrills{lastClaimAtMs:number;progressMs:number;focus:TrainingFocus;xpPerDrill:number;}
-export const MAX_CLASS_SKILL_XP=totalXpAtLevel(100);
+export const MAX_CLASS_SKILL_XP=classCombatSkillTotalXpAtLevel(100);
 export const CLASS_DRILL_BASE_XP=24;
 export const normalizeTrainingFocus=(v:unknown):TrainingFocus=>v==='primary'||v==='secondary'?v:'balanced';
 export function normalizeClassSkills(id:ClassId,raw:unknown):ClassSkillState[]{
  const rows=Array.isArray(raw)?raw:[];
- return classSkillsFor(id).map(d=>{const entry=rows.find(r=>r?.skillId===d.id);const xp=typeof entry?.xp==='number'&&Number.isFinite(entry.xp)?Math.max(0,Math.min(MAX_CLASS_SKILL_XP,Math.floor(entry.xp))):0;return {skillId:d.id,xp,level:levelFromXp(xp)};});
+ return classSkillsFor(id).map(d=>{const entry=rows.find(r=>r?.skillId===d.id);const xp=typeof entry?.xp==='number'&&Number.isFinite(entry.xp)?Math.max(0,Math.min(MAX_CLASS_SKILL_XP,Math.floor(entry.xp))):0;return {skillId:d.id,xp,level:classCombatSkillLevelFromXp(xp)};});
 }
 export const characterClassSkills=(c:CharacterState)=>normalizeClassSkills(c.classId,c.classSkills);
 export function awardCombatClassXp(c:CharacterState,kills:number,perKill:number,firstFocus?:TrainingFocus){
@@ -26,7 +26,7 @@ export function normalizeClassDrills(raw:any):ClassDrills|undefined{
 export function awardClassSkillXp(c:CharacterState,pool:number,focus=normalizeTrainingFocus(c.trainingFocus)){
  const shares=focus==='primary'?[.75,.25]:focus==='secondary'?[.25,.75]:[.5,.5],remainders={...(c.classSkillRemainders??{})};
  const awards:Array<{skillId:string;xp:number}>=[];
- const classSkills=characterClassSkills(c).map((s,i)=>{const prior=Number.isFinite(remainders[s.skillId])?Math.max(0,Math.min(.999999,remainders[s.skillId])):0;const amount=Math.max(0,pool)*shares[i]+prior;const whole=Math.floor(amount+1e-9),gain=Math.min(MAX_CLASS_SKILL_XP-s.xp,whole);remainders[s.skillId]=s.xp+gain>=MAX_CLASS_SKILL_XP?0:Math.max(0,amount-whole);awards.push({skillId:s.skillId,xp:gain});return {...s,xp:s.xp+gain,level:levelFromXp(s.xp+gain)};});
+ const classSkills=characterClassSkills(c).map((s,i)=>{const prior=Number.isFinite(remainders[s.skillId])?Math.max(0,Math.min(.999999,remainders[s.skillId])):0;const amount=Math.max(0,pool)*shares[i]+prior;const whole=Math.floor(amount+1e-9),gain=Math.min(MAX_CLASS_SKILL_XP-s.xp,whole);remainders[s.skillId]=s.xp+gain>=MAX_CLASS_SKILL_XP?0:Math.max(0,amount-whole);awards.push({skillId:s.skillId,xp:gain});return {...s,xp:s.xp+gain,level:classCombatSkillLevelFromXp(s.xp+gain)};});
  return {character:{...c,classSkills,classSkillRemainders:remainders},awards};
 }
 /** Conservative runtime interpretation: at most 10% offense and 12% resilience. */

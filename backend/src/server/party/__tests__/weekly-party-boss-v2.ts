@@ -119,6 +119,10 @@ assert(result.contributions.length===4,'every saved party member participates');
 assert(result.contributions.some(c=>c.role==='support'),'support not excluded');
 assert(result.contributions.every(c=>c.shielding>=0),'shielding recorded as meaningful support contribution');
 assert(result.contributions.some(c=>c.role==='tank'),'tank not excluded');
+const dbRoundtrip=JSON.parse(JSON.stringify(battleInput.frozen));
+const reloaded=resolvePartyEventDayEightBoss({...battleInput,frozen:dbRoundtrip});
+assert(reloaded.totalBossDamage===result.totalBossDamage,
+  'JSONB-persisted loadouts reproduce the same Day 8 fight');
 const repeat=resolvePartyEventDayEightBoss(battleInput);
 assert(repeat.totalBossDamage===result.totalBossDamage
   && repeat.tiersCleared===result.tiersCleared,'deterministic day 8 replay');
@@ -131,6 +135,34 @@ assert(withoutBonus.preparation.outgoingBonus===0,
   'without donations boss receives no imaginary preparation advantage');
 assert(result.totalBossDamage>=withoutBonus.totalBossDamage,
   'completed preparation must not reduce boss damage');
+// Higher gear at the same character level must translate into deeper tiers:
+const boosted=([tank,dealer,healer,other] as const).map(snap=>{
+  const record=structuredClone(records.get(snap.accountId)!);
+  record.stats.attackPower*=2.8;
+  record.stats.maxHp*=1.8;
+  record.stats.defense*=2;
+  record.stats.healingPower*=2;
+  records.set(snap.accountId,record);
+  return load(snap.accountId,snap.characterId);
+});
+const geared=resolvePartyEventDayEightBoss({...battleInput,frozen:boosted});
+assert(geared.tiersCleared>=result.tiersCleared,
+  'a stronger group at the same level must not clear fewer tiers');
+
+// No dungeon unlock or high level should be required for participation.
+const lowLevel=([tank,dealer] as const).map(snap=>{
+  const record=structuredClone(records.get(snap.accountId)!);
+  record.characterLevel=1;
+  record.stats.maxHp=Math.max(1,record.stats.maxHp*.04);
+  record.stats.attackPower=Math.max(1,record.stats.attackPower*.04);
+  record.stats.healingPower=Math.max(1,record.stats.healingPower*.04);
+  record.stats.defense=Math.max(1,record.stats.defense*.04);
+  records.set(snap.accountId,record);
+  return load(snap.accountId,snap.characterId);
+});
+const beginnerBoss=resolvePartyEventDayEightBoss({...battleInput,frozen:lowLevel});
+assert(beginnerBoss.tiers.length>=1&&beginnerBoss.totalBossDamage>0,
+  'low-level duo can participate and earn a damage-based result');
 const two=resolvePartyEventDayEightBoss({...battleInput,frozen:[tank,dealer]});
 assert(two.contributions.length===2,'two-person party is supported');
 console.log('Party boss v2: Day 8, saved loadouts, escalating fights, supply bonuses, replay and anti-tamper validated');

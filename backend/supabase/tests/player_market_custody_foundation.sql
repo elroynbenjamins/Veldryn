@@ -89,10 +89,22 @@ begin
   if not v_rejected then raise exception 'equipment without an exact receipt accepted'; end if;
 
   insert into private.market_custody_assets_v1(
-    owner_account_id,source_revision,source_location,source_locator,
-    item_id,asset_kind,quantity
-  ) values(v_a,6,'inventory','inventory:2','COPPER_ORE','resource',50)
+    owner_account_id,source_revision,source_location,source_character_id,
+    source_locator,item_id,asset_kind,quantity
+  ) values(v_a,6,'inventory',v_a::text,'inventory:2','COPPER_ORE','resource',50)
   returning asset_id into v_resource;
+
+  -- A malicious/stale hold cannot refer to a different seller's asset.
+  v_rejected:=false;
+  begin
+    insert into private.market_custody_holds_v1(
+      asset_id,owner_account_id,request_key,request_hash,held_quantity,source_revision
+    ) values(
+      v_resource,v_b,'market-test-owner',repeat('c',64),1,6
+    );
+  exception when foreign_key_violation then v_rejected:=true;
+  end;
+  if not v_rejected then raise exception 'hold can cross account ownership'; end if;
 
   v_rejected:=false;
   begin

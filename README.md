@@ -21,6 +21,26 @@ Recent production work on main includes:
 - Asset optimization and WebP validation passes to reduce packaged runtime artwork.
 - Performance passes around timers, chat refreshes, profile customization, combat presentation, and repeated UI recalculation.
 
+## Player-voted roadmap — November 2026
+
+The in-game Roadmap/Voting screen highlights larger future features and lets players signal which additions interest them most. **Every item below is planned, not automatically implemented or scheduled.** Votes help guide priorities alongside technical dependencies, balance, security, and release readiness. Delivery is iterative; these waves are a suggested sequence, not fixed dates.
+
+| Wave | Feature | Short implementation phases |
+| --- | --- | --- |
+| Continuous | **Overall refinement** | Audit pain points and performance → polish UX, accessibility, translations, and balance → regression-test on devices and in production-like multiplayer conditions. |
+| 1 — Progression | **Tier 5+ equipment** | Audit existing high-tier definitions, sources, and unlocks → complete recipes, drops, stat curves, upgrade paths, and artwork → test progression pacing, rarity, and economy balance. |
+| 1 — Economy | **Player Market** | Define eligible equipment/resources, binding rules, taxes, and limits → implement server-owned listings, inventory reservations, and atomic purchases → add search/sell/buy UI, fraud safeguards, and a controlled rollout. |
+| 2 — Competition | **Leaderboards** | Choose fair and verifiable metrics → build authoritative seasonal rankings, snapshots, and reset rules → ship ranking screens and carefully balanced rewards. |
+| 2 — Competition | **Arena (PvP)** | Finalize real-time-visible combat-tick presentation and class balance → implement server-verified duels, matchmaking, and rating → add seasons, rewards, and anti-exploit checks. |
+| 3 — Group play | **Party Events** | Define rotating cooperative goals and event templates → add party progress, participation rules, and rewards → validate grouping, expiry, and repeatability before LiveOps release. |
+| 3 — Guild play | **Guild PvE** | Extend existing guild bosses/projects into larger cooperative activities → build role-sensitive contribution, rotations, and shared progression → balance rewards, scaling, and weekly resets. |
+| 3 — Guild play | **Guild PvP** | Choose a fair guild-versus-guild format and eligibility rules → implement server-owned battles, scoring, and defenses → launch seasons, rankings, and non-pay-to-win rewards. |
+| 4 — Shared world | **World Boss** | Design global boss schedules, mechanics, and participation thresholds → implement scalable shared HP/contribution and authoritative settlement → load-test, launch rotating bosses, and monitor reward fairness. |
+
+For each feature, follow the same release discipline: **design and balance → server/database contracts → UI/content integration → tests, staging, and phased release**. Protect progression and trading with authoritative validation, transaction safety, rate limits, and clear rollback paths. No paid combat advantages or paid ranking strength.
+
+This section is a concise view of the current roadmap, not a replacement for implementation passes or the in-game vote results.
+
 ## Game overview
 
 ### Character and progression
@@ -47,7 +67,7 @@ Recent production work on main includes:
 - Monthly Companion Trial foundations and event companion support.
 - Public profile identity is intentionally separate from companion/pet combat art.
 
-Player-to-player trading and the player Market are permanently removed. NPC selling, Event Shops, and the Guild Shop remain supported.
+The **Player Market is planned, not currently available**. Future player-to-player listings will focus on eligible equipment and resources with server-authoritative transfers and economy safeguards. Until then, NPC selling, Event Shops, and the Guild Shop remain supported.
 
 ### Social and multiplayer
 

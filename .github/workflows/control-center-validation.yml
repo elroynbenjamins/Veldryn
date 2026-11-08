@@ -33,3 +33,11 @@ jobs:
             echo "Checking $file"
             node --input-type=module --check < "$file"
           done < <(find control-center -type f -name '*.js' -print0)
+
+      - name: Run Control Center unit tests
+        working-directory: control-center
+        run: npm test
+
+      - name: Build Control Center bundle
+        working-directory: control-center
+        run: npm run build

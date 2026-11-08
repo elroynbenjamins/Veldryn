@@ -3,6 +3,7 @@
   "private": true,
   "version": "2.1",
   "scripts": {
+    "test:market-readiness": "tsc -p tsconfig.online.json && node dist/online/backend/online/tests/player-market-custody.js",
     "test:release-gate": "tsc -p tsconfig.online.json && node dist/online/backend/online/tests/release-gate.js",
     "test:event-currency-promotion": "tsc -p tsconfig.online.json && node dist/online/backend/online/tests/event-currency-promotion.js",
     "typecheck": "tsc --noEmit",

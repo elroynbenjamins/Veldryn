@@ -1,0 +1,58 @@
+name: Hidden Market foundation validation
+
+on:
+  pull_request:
+    paths:
+      - 'apps/mobile/src/core/player-market-readiness.ts'
+      - 'apps/mobile/src/core/release-flags.ts'
+      - 'apps/mobile/src/online/market-inbox.ts'
+      - 'apps/mobile/src/screens/MarketInboxPanel.tsx'
+      - 'apps/mobile/src/screens/RewardsInboxScreen.tsx'
+      - 'apps/mobile/tests/player-market-readiness.ts'
+      - 'backend/online/market-custody-readiness.ts'
+      - 'backend/online/market-equipment-proof.ts'
+      - 'backend/online/tests/market-equipment-proof.ts'
+      - 'backend/online/market-auth-boundary.ts'
+      - 'backend/online/tests/market-auth-boundary.ts'
+      - 'backend/online/tests/player-market-custody.ts'
+      - 'backend/supabase/migrations/*market*'
+      - 'backend/supabase/tests/player_market_*.sql'
+      - 'tools/verify-hidden-market-reservation-gates.mjs'
+      - '.github/workflows/hidden-market-foundation-validation.yml'
+  workflow_dispatch:
+
+jobs:
+  market-internal-safety:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: apps/mobile
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+          cache-dependency-path: apps/mobile/pnpm-lock.yaml
+      - run: pnpm install --frozen-lockfile
+      - name: Install backend dependencies
+        run: pnpm --dir ../../backend install --frozen-lockfile
+      - name: Typecheck core equipment and resource eligibility
+        run: pnpm typecheck:core
+      - name: Typecheck hidden Market Inbox presentation
+        run: pnpm typecheck
+      - name: Verify read-only market eligibility and source identity
+        run: node ../../tools/run-mobile-tests.mjs player-market-readiness
+      - name: Verify server-only custody inspection
+        run: pnpm --dir ../../backend test:market-readiness
+      - name: Verify dormant authenticated Market boundary cannot be impersonated
+        run: node ../../backend/dist/online/backend/online/tests/market-auth-boundary.js
+      - name: Verify exact Forge copy proof, sockets and destination remain inert
+        run: node ../../backend/dist/online/backend/online/tests/market-equipment-proof.js
+      - name: Validate dormant escrow security and migration contracts
+        run: |
+          node ../../tools/validate-recent-migration-versions.mjs
+          node ../../tools/verify-hidden-market-reservation-gates.mjs

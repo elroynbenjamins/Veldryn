@@ -124,7 +124,7 @@ export function MoreScreen({language,character,accountStatus='local',onNavigate,
      <View style={s.flex}><Text style={s.securityTitle}>{a('Secure your progress')}</Text><Text style={s.securityDescription}>{a(accountStatus==='pending'?'Complete email verification or password setup in Account settings.':'Link an email to protect access to this guest account.')}</Text></View>
      <Text style={s.securityArrow}>›</Text>
     </Pressable>:null}
-    {onOpenRoadmap?<Pressable accessibilityRole="button" accessibilityLabel={a('Community Roadmap')} accessibilityHint={a('Vote on major future expansions')} onPress={onOpenRoadmap} style={({pressed})=>[s.releaseRow,pressed&&s.pressed]}>
+    {onOpenRoadmap?<Pressable accessibilityRole="button" accessibilityLabel={a('Community Roadmap')} accessibilityHint={a('Vote on upcoming features and improvements')} onPress={onOpenRoadmap} style={({pressed})=>[s.releaseRow,pressed&&s.pressed]}>
       <UiIcon name="world" size={22}/><Text style={s.releaseTitle}>{a('Community Roadmap')}</Text><UiIcon name="next" size={18}/>
     </Pressable>:null}
     {onOpenUpdates?<Pressable accessibilityRole="button" accessibilityLabel={a("What's New & Updates")} accessibilityHint={newReleaseAvailable?a("New release information available"):a("Release notes and app versions")} onPress={onOpenUpdates} style={({pressed})=>[s.releaseRow,pressed&&s.pressed]}>

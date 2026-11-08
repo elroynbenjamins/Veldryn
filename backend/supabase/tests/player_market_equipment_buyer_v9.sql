@@ -22,6 +22,7 @@ declare
   v_delivery uuid;
   v_rebound jsonb;
   v_claim jsonb;
+  v_inbox jsonb;
   v_other_instance text:='forge-v9-mythic-002';
   v_hold2 uuid;
   v_offer2 uuid;
@@ -144,6 +145,21 @@ begin
     if sqlerrm<>'market_offer_not_available' then raise;end if;
   end;
 
+  -- Buyer already holding the same exact instance ID cannot be charged.
+  update public.online_game_states set state=jsonb_set(state,
+    '{account,craftedGearInstances}',jsonb_build_array(v_receipt),false)
+    where account_id=v_buyer;
+  begin
+    perform private.market_purchase_equipment_offer_v9(
+      v_buyer,v_offer,125,1,7,6,'gear-v9-collision',repeat('b',64));
+    raise exception 'buyer identity collision was charged';
+  exception when raise_exception then
+    if sqlerrm<>'market_equipment_buyer_identity_collision' then raise;end if;
+  end;
+  update public.online_game_states set state=jsonb_set(state,
+    '{account,craftedGearInstances}','[]'::jsonb,false)
+    where account_id=v_buyer;
+
   v_result:=private.market_purchase_equipment_offer_v9(
     v_buyer,v_offer,125,1,7,6,'gear-v9-purchase',repeat('1',64));
   v_delivery:=(v_result->>'deliveryId')::uuid;
@@ -167,6 +183,18 @@ begin
     or (select count(*) from private.market_gold_intents_v2 where status='settled')<>1
     or (select count(*) from private.market_purchase_deliveries_v3)<>0
   then raise exception 'equipment purchase did not conserve Forge receipt and Gold';end if;
+  v_inbox:=private.market_inbox_snapshot_v4(v_buyer,false,0);
+  if (v_inbox->>'pendingCount')::integer<>1
+    or v_inbox#>>'{entries,0,kind}'<>'purchased'
+    or v_inbox#>>'{entries,0,assetKind}'<>'equipment'
+    or v_inbox#>>'{entries,0,deliveryId}'<>v_delivery::text
+    or v_inbox#>>'{entries,0,goldChange}'<>'-125'
+  then raise exception 'bought equipment not queued in Market Inbox';end if;
+  v_inbox:=private.market_inbox_snapshot_v4(v_seller,true,0);
+  if v_inbox#>>'{entries,0,kind}'<>'sold'
+    or v_inbox#>>'{entries,0,status}'<>'credited'
+    or v_inbox#>>'{entries,0,goldChange}'<>'125'
+  then raise exception 'seller sold equipment Gold receipt missing';end if;
   v_retry:=private.market_purchase_equipment_offer_v9(
     v_buyer,v_offer,125,1,7,6,'gear-v9-purchase',repeat('1',64));
   if v_retry->>'replayed'<>'true'
@@ -228,6 +256,14 @@ begin
     or (select gold from public.character_wallets where character_id=v_buyer_main)<>375
     or (select gold from public.character_wallets where character_id=v_seller_char)<>225
   then raise exception 'buyer claim changed Forge metadata, sockets or Gold';end if;
+  v_inbox:=private.market_inbox_snapshot_v4(v_buyer,true,0);
+  if v_inbox#>>'{entries,0,kind}'<>'purchased'
+    or v_inbox#>>'{entries,0,status}'<>'claimed'
+    or v_inbox#>>'{entries,0,assetKind}'<>'equipment'
+  then raise exception 'claimed equipment missing from Market Inbox history';end if;
+  v_inbox:=private.market_inbox_snapshot_v4(v_buyer,false,0);
+  if (v_inbox->>'pendingCount')::integer<>0
+  then raise exception 'equipment claimed twice on Market Inbox';end if;
   v_retry:=private.market_claim_equipment_purchase_v9(
     v_buyer,v_delivery,8,'equipment_pouch',v_buyer_alt::text,
     'gear-v9-claim-alt',repeat('6',64));
@@ -268,11 +304,16 @@ begin
     or (select count(*) from private.market_equipment_purchase_deliveries_v9)<>1
     or (select gold from public.character_wallets where character_id=v_seller_char)<>225
   then raise exception 'seller cancellation after equipment listing did not preserve custody';end if;
+  v_inbox:=private.market_inbox_snapshot_v4(v_seller,false,0);
+  if v_inbox#>>'{entries,0,kind}'<>'returned'
+    or v_inbox#>>'{entries,0,assetKind}'<>'equipment'
+    or v_inbox#>>'{entries,0,deliveryId}'<>v_return_id::text
+  then raise exception 'cancelled equipment missing from Market Inbox';end if;
   v_retry:=private.market_cancel_equipment_offer_v9(
     v_seller,v_offer2,'gear-v9-second-cancel',repeat('a',64));
   if v_retry->>'replayed'<>'true'
   then raise exception 'equipment offer cancellation not idempotent';end if;
 end
 $v9_test$;
-select 'PASS: disabled V9 equipment sale, all Gold views, alternate-character receipt rebind, full storage and seller return' as result;
+select 'PASS: disabled V9 equipment sale, all Gold views, alternate-character receipt rebind, full storage and seller return and Inbox history' as result;
 rollback;

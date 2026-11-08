@@ -305,7 +305,7 @@ function huntBasePlayerHit(attack, defense, outputMultiplier = 1) {
 function huntHitEvents(input) {
   const monsterHp = Math.max(1, Math.round(finite(input.monsterHp, 1)));
   const base = Math.max(1, finite(input.basePlayerHit, 1));
-  const playerCount = clamp(Math.ceil(monsterHp / base), 3, 8);
+  const playerCount = Math.min(monsterHp, clamp(Math.ceil(monsterHp / base), 3, 8));
   const enemyCount = clamp(Math.round(Math.max(1, finite(input.cycleSeconds, 1)) / 2.5), 2, 5);
   const critChance = clamp(finite(input.critChance, 0), 0, 0.65);
   const weights = [];

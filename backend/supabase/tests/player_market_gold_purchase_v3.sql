@@ -200,6 +200,41 @@ begin
     if sqlerrm<>'market_insufficient_gold' then raise;end if;
   end;
 
+  -- Seller near the JavaScript safe-integer limit cannot receive an
+  -- overflowing payout. The buyer and both representations stay consistent
+  -- after the rejected attempt.
+  update public.character_wallets set gold=10000 where character_id=v_bc;
+  update public.characters set gold=10000 where id=v_bc;
+  update public.online_game_states set state=pg_catalog.jsonb_set(
+    state,'{character,gold}','10000'::jsonb,false)
+    where account_id=v_buyer;
+  update public.character_wallets set gold=9007199254740980 where character_id=v_sc;
+  update public.characters set gold=9007199254740980 where id=v_sc;
+  update public.online_game_states set state=pg_catalog.jsonb_set(
+    state,'{character,gold}','9007199254740980'::jsonb,false)
+    where account_id=v_seller;
+  begin
+    perform private.market_purchase_stack_offer_v3(
+      v_buyer,v_offer2,1000,2,9,8,'buy-overcap01',pg_catalog.repeat('6',64));
+    raise exception 'unsafe seller Gold overflow accepted';
+  exception when raise_exception then
+    if sqlerrm<>'market_seller_gold_overflow' then raise;end if;
+  end;
+  if (select gold from public.character_wallets where character_id=v_bc)<>10000
+    or (select gold from public.character_wallets where character_id=v_sc)<>9007199254740980
+    or (select count(*) from private.market_purchase_deliveries_v3)<>1
+  then raise exception 'Gold overflow rejection left partial settlement';end if;
+  update public.character_wallets set gold=260 where character_id=v_bc;
+  update public.characters set gold=260 where id=v_bc;
+  update public.online_game_states set state=pg_catalog.jsonb_set(
+    state,'{character,gold}','260'::jsonb,false)
+    where account_id=v_buyer;
+  update public.character_wallets set gold=340 where character_id=v_sc;
+  update public.characters set gold=340 where id=v_sc;
+  update public.online_game_states set state=pg_catalog.jsonb_set(
+    state,'{character,gold}','340'::jsonb,false)
+    where account_id=v_seller;
+
   if (select status from private.market_sale_offers_v3 where offer_id=v_offer2)<>'active'
     or (select status from private.market_custody_holds_v1
       where hold_id=(v_reservation->>'holdId')::uuid)<>'held'

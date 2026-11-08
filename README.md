@@ -47,7 +47,7 @@ Recent production work on main includes:
 - Monthly Companion Trial foundations and event companion support.
 - Public profile identity is intentionally separate from companion/pet combat art.
 
-Player-to-player trading and the player Market are permanently removed. NPC selling, Event Shops, and the Guild Shop remain supported.
+Player-to-player trading and the Player Market are planned again for a future release. The initial implementation is a disabled, read-only eligibility audit; no player listings, trades, escrow or Gold transfers are live. NPC selling, Event Shops, and the Guild Shop remain supported.
 
 ### Social and multiplayer
 

@@ -573,15 +573,47 @@ function simulateCombat(state:GameState,monsterId:string,elapsed:number,nowMs=Da
  return {kills:completed.length,completed,championKills,foodConsumed,endHp:hp,enemyHp,stoppedReason,qualifyingActivitySeconds,nextProgressFraction:stoppedReason?0:timeline.nextProgressFraction,preparationEncounters,lastHit};
 }
 
-/** A read-only projection from the exact hit events used for settled health.
- * The UI may advance its clock without granting rewards or mutating the save. */
-export function activeCombatHitProjection(state:GameState,nowMs:number){
+/** A UI-only replay cursor. The underlying saved GameState remains unchanged;
+ * callers discard this whenever a new authoritative state arrives. */
+export interface ActiveCombatHitCursor{
+ source:GameState;
+ projected:GameState;
+ atMs:number;
+ stoppedReason:string;
+ lastHit?:{atMs:number;actor:'player'|'enemy';damage:number;critical:boolean};
+}
+/** Exact hit projection, with optional incremental replay so a foreground clock
+ * never recalculates a full 24-hour AFK backlog every animation tick. */
+export function activeCombatHitProjection(state:GameState,nowMs:number,previous?:ActiveCombatHitCursor){
  if(!state.character||state.activity?.kind!=='combat')return undefined;
- const runtime=combatRuntimeDetails(state,state.activity.targetId);
- const elapsed=Math.min(offlineCapSeconds(state),Math.max(0,(nowMs-state.activity.lastClaimAtMs)/1000));
- const current=simulateCombat(state,state.activity.targetId,elapsed,nowMs);
+ const original=state.activity;
+ const maxAtMs=original.lastClaimAtMs+offlineCapSeconds(state)*1000;
+ const atMs=Math.min(maxAtMs,Math.max(original.lastClaimAtMs,nowMs));
+ const usable=previous?.source===state&&atMs>=previous.atMs;
+ const source=usable?previous.projected:state;
+ const runtime=combatRuntimeDetails(state,original.targetId);
+ if(usable&&previous.stoppedReason){
+   return {playerHp:source.character!.currentHp,playerMaxHp:runtime.stats.hp,enemyHp:source.activity!.combatEnemyHp??runtime.m.hp,enemyMaxHp:runtime.m.hp,
+     progressFraction:source.activity!.progressFraction??0,stoppedReason:previous.stoppedReason,lastHit:previous.lastHit,cursor:previous};
+ }
+ const elapsed=Math.max(0,(atMs-source.activity!.lastClaimAtMs)/1000);
+ const current=simulateCombat(source,original.targetId,elapsed,atMs);
+ const lastHit=current.lastHit??(usable?previous.lastHit:undefined);
+ const sourceCharacter=source.character!;
+ let preparation=sourceCharacter.preparation;
+ for(let i=0;i<current.preparationEncounters&&preparation;i++)preparation=spendPreparationEncounter(preparation,preparation.itemId);
+ const inventory=current.foodConsumed&&sourceCharacter.equippedFoodId
+   ?{...source.inventory,stacks:consume(source.inventory.stacks,sourceCharacter.equippedFoodId,current.foodConsumed)}
+   :source.inventory;
+ const projected:GameState={
+   ...source,inventory,
+   character:{...sourceCharacter,currentHp:current.endHp,preparation},
+   activity:{...source.activity!,lastClaimAtMs:atMs,progressFraction:current.nextProgressFraction,
+     combatEnemyHp:current.enemyHp,sessionKills:(source.activity!.sessionKills??0)+current.kills},
+ };
+ const cursor:ActiveCombatHitCursor={source:state,projected,atMs,stoppedReason:current.stoppedReason,lastHit};
  return {playerHp:current.endHp,playerMaxHp:runtime.stats.hp,enemyHp:current.enemyHp,enemyMaxHp:runtime.m.hp,
-   progressFraction:current.nextProgressFraction,stoppedReason:current.stoppedReason,lastHit:current.lastHit};
+   progressFraction:current.nextProgressFraction,stoppedReason:current.stoppedReason,lastHit,cursor};
 }
 
 function previewStandardActivityRewardRaw(state:GameState,effectiveNowMs:number):RewardBundle{

@@ -1,6 +1,6 @@
 import {CommunityRoadmapReadCache,COMMUNITY_ROADMAP_CACHE_TTL_MS} from '../src/core/community-roadmap-read-cache';
 
-function check(value:unknown,message:string):asserts value{if(!value)throw new Error(message);}
+function check(value:unknown,message:string):void{if(!value)throw new Error(message);}
 async function tests(){
  const storage=new Map<string,string>();
  const adapter={

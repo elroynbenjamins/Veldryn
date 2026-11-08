@@ -49,6 +49,27 @@ function rootWarden():CombatantDefinition{
  const base=enemy('ROOT_WARDEN','Runebound Bulwark',13500,430,900,1.25);
  return withPveIdentity({...base,boss:false,abilities:[...base.abilities,pveBarrier('ROOT_WARDEN_WARD','Root Ward',1250,12000)]},'guardian',['heavy_hit','barrier']);
 }
+function rootBrambleElite():CombatantDefinition{
+ const base=enemy('ROOT_ELITE_BRAMBLE','Bramble Reaver',13200,430,850,1.1);
+ return withPveIdentity({...base,abilities:[
+  pveFocusStrike('ROOT_ELITE_BRAMBLE_HUNT','Bramble Hunt','nature',.91,7900),
+  pveDotWave('ROOT_ELITE_BRAMBLE_TANGLE','Tangled Thorns','nature',.30,11900),
+ ]},'assassin',['focus','aoe','dot']);
+}
+function rootMyceliumElite():CombatantDefinition{
+ const base=enemy('ROOT_ELITE_MYCELIUM','Mycelial Oracle',12500,400,810,1.0);
+ return withPveIdentity({...base,abilities:[
+  pveAllyMend('ROOT_ELITE_MYCELIUM_MEND','Fungal Renewal',850,11000),
+  pveDotWave('ROOT_ELITE_MYCELIUM_SPORES','Spore Tempest','nature',.29,12300),
+ ]},'support',['sustain','aoe','dot']);
+}
+function lanternCantor():CombatantDefinition{
+ const base=enemy('LANTERN_ELITE_03','Mourning Cantor',12800,440,790,1.1);
+ return withPveIdentity({...base,abilities:[
+  pveHex('LANTERN_ELITE_03_HEX','Mourning Verse','shadow',.62,9500),
+  pveDotWave('LANTERN_ELITE_03_DIRGE','Shadow Dirge','shadow',.29,13100),
+ ]},'hexer',['vulnerability','dot','aoe']);
+}
 function lanternPilgrim():CombatantDefinition{
  return withPveIdentity({
   id:'LANTERN_PILGRIM_1',name:'Drowned Pilgrim',team:'enemies',role:'enemy',level:25,stats:s(5600,320,620),basicAttackMs:3000,basicAttackCoeff:.58,
@@ -85,10 +106,12 @@ for(const [index,id] of rootBattleIds.entries()){
   variedEnemy(enemy(`${id}_B`,['Sporeling','Thornling','Sap Husk','Briar Hound','Rootbound Husk'][index],4_100+index*300,300+index*12,520+index*30,.92+index*.04),rootBattleArchetypes[index][1]),
  ];
 }
-for(const id of ['ROOT_ELITE_BRAMBLE','ROOT_ELITE_WARDEN','ROOT_ELITE_MYCELIUM'])ASTERFALL_ENCOUNTERS[id]=()=>[rootWarden()];
+ASTERFALL_ENCOUNTERS.ROOT_ELITE_BRAMBLE=()=>[rootBrambleElite()];
+ASTERFALL_ENCOUNTERS.ROOT_ELITE_WARDEN=()=>[rootWarden()];
+ASTERFALL_ENCOUNTERS.ROOT_ELITE_MYCELIUM=()=>[rootMyceliumElite()];
 ASTERFALL_ENCOUNTERS.BOSS_EXP_ROOT=()=>[rootBoss()];
 ASTERFALL_ENCOUNTERS.LANTERN_BATTLE_02=()=>[variedEnemy(enemy('LANTERN_SHADE_1','Banner Shade',5000,360,590,1.02),'hexer','shadow'),variedEnemy(enemy('LANTERN_SHADE_2','Echo Bat',4300,340,520,.94),'assassin','physical')];
 ASTERFALL_ENCOUNTERS.LANTERN_BATTLE_03=()=>[lanternPilgrim(),enemy('LANTERN_PILGRIM_2','Lantern Wretch',4700,355,570,1)];
 ASTERFALL_ENCOUNTERS.LANTERN_ELITE_02=()=>[bellSentinel('LANTERN_KNIGHT','Fallen Lantern Knight',13200,460,880)];
-ASTERFALL_ENCOUNTERS.LANTERN_ELITE_03=()=>[bellSentinel()];
+ASTERFALL_ENCOUNTERS.LANTERN_ELITE_03=()=>[lanternCantor()];
 ASTERFALL_ENCOUNTERS.BOSS_EXP_BELL=()=>[bellBoss()];

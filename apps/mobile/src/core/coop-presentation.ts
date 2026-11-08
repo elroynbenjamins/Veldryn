@@ -5,7 +5,7 @@ export function isCoopCombatNodeKind(kind:string|undefined):boolean{
 }
 
 export interface CoopEncounterPreviewView {archetypes:Array<{id:string;label:string}>;mechanics:Array<{id:string;label:string;description:string}>;summary:string;}
-export interface CoopRouteOptionView {nodeId:string;title:string;kind:string;risk:string;reward:string;votes?:number;hidden?:boolean;encounterPreview?:CoopEncounterPreviewView;}
+export interface CoopRouteOptionView {nodeId:string;title:string;kind:string;risk:string;reward:string;modifierId?:string;votes?:number;hidden?:boolean;encounterPreview?:CoopEncounterPreviewView;}
 export interface CoopRunMechanicView {label:string;description:string;value:number;maxValue:number;status:'critical'|'steady'|'strong';bossEffect:string;}
 export interface CoopRunObjectiveView {label:string;description:string;count:number;maxCount:number;completed:boolean;effectText:string;}
 export interface CoopBossPhaseView {id:string;label:string;hpPct:number;objectiveSensitive:boolean;}
@@ -52,7 +52,7 @@ export interface CoopCombatReplayView{
  cues:CoopCombatReplayCueView[];
 }
 export type CoopPendingCombatView=Omit<CoopCombatReplayView,'reason'|'contributions'>&{elapsedMs:number;wallDurationMs:number};
-export interface CoopRoomOutcomeView {nodeId:string;kind:string;resourcesDelta:number;healedHp:number;revivedCount:number;boonCount:number;artifactCount:number;curseCount:number;offerKind?:string;}
+export interface CoopRoomOutcomeView {nodeId:string;kind:string;resourcesDelta:number;healedHp:number;damagedHp?:number;revivedCount:number;boonCount:number;artifactCount:number;curseCount:number;offerKind?:string;}
 export interface CoopMerchantShopView {resources:number;offers:Array<{id:string;kind:'boon'|'artifact'|'salve';cost:number;purchased:boolean}>;}
 export interface CoopRunBoonOfferView{id:string;name:string;description:string;}
 export interface CoopRunView {runId:string;mode:CoopMode;modeLabel?:string;phase:string;tier?:1|2|3|4|5;potionChargeCapacity?:number;healingPotionUsesByActor?:Record<string,number>;potionPreparationOpen?:boolean;preparedAlchemyPotionIdsByActor?:Record<string,string>;syncedLevel:number;roleSlots:Array<{memberId?:string;role:'tank'|'damage'|'support';name:string;echo:boolean;npc?:boolean;classId?:string;profileIconId?:string|null;iconClassId?:string|null;bodyPresentation?:'male'|'female';companionId?:string;currentHp?:number;maximumHp?:number;ready?:boolean}>;options:CoopRouteOptionView[];selectedNodeId?:string;selectedNodeKind?:string;presenceSummary?:{connectedCount:number;safetyAiCount:number;activeCount:number;safetyAiCharacterIds:string[]};mechanic?:CoopRunMechanicView;objective?:CoopRunObjectiveView;bossMechanic?:CoopRunBossMechanicView;bossRecap?:CoopRunBossRecapView;lastCombat?:CoopCombatReplayView;lastRoomOutcome?:CoopRoomOutcomeView;merchantShop?:CoopMerchantShopView;boonOffers?:CoopRunBoonOfferView[];pendingCombat?:CoopPendingCombatView;serverNow?:number;rewardText?:string;stateVersion?:number;decisionId?:string;decisionRevision?:number;resolvesAtMs?:number;}

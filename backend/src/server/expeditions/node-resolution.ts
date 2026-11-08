@@ -78,16 +78,26 @@ export function resolveCoopNode(input:{runId:string;serverSecret:string;node:Coo
   // Frozen loadouts remain unchanged; bonuses are reapplied per encounter.
   const strikes=state.boons.filter(id=>id==='ROOM_BOON_STRIKE').length;
   const wards=state.boons.filter(id=>id==='ROOM_BOON_WARD').length;
+  // Previously some non-combat rewards and curses were only bookkeeping.
+  // Keep the new boosts small and capped to protect existing tier balance.
+  const roomBlessings=Math.min(5,state.boons.filter(id=>id.includes(':')).length);
+  const sharedArtifacts=Math.min(5,state.artifacts.length);
+  const curses=Math.min(5,state.curses.length);
   const players=input.players.map(player=>{
    const multipliers=COOP_CLASS_ABILITY_MULTIPLIERS[player.classId?.toUpperCase()??''];
+   const personal=state.personalEffects[player.id];
+   const personalBlessings=Math.min(3,personal?.boons.length??0);
+   const personalArtifacts=Math.min(3,personal?.artifacts.length??0);
+   const attackMultiplier=1+strikes*.05+roomBlessings*.012+sharedArtifacts*.018+personalBlessings*.025+personalArtifacts*.024;
+   const defenseMultiplier=Math.max(.8,1+wards*.05+roomBlessings*.008+sharedArtifacts*.012+personalArtifacts*.018-curses*.035);
    return {...player,
-    stats:strikes||wards?{...player.stats,attackPower:player.stats.attackPower*(1+strikes*.05),defense:player.stats.defense*(1+wards*.05)}:player.stats,
+    stats:{...player.stats,attackPower:player.stats.attackPower*attackMultiplier,defense:player.stats.defense*defenseMultiplier},
     abilities:multipliers?player.abilities.map(ability=>{const multiplier=multipliers[ability.id];return multiplier?{...ability,effects:ability.effects.map(effect=>(effect.kind==='shield'||effect.kind==='heal')&&effect.coeff!==undefined?{...effect,coeff:effect.coeff*multiplier}:effect)}:ability;}):player.abilities,
    };
   });
   const depthMultiplier=input.node.depth>=balance.lateDepthStart?balance.lateDepthAttackMultiplier:1;
   const tierScale=input.tier?coopTierEnemyMultipliers(input.tier):{attack:1,hp:1,defense:1};
-  const combat=resolveExpeditionCombat({runId:input.runId,nodeIndex:input.node.depth,encounterId:input.node.contentId,serverSeed:input.serverSecret,players,initialPlayerState:state.actors,safetyAiPlayerIds:input.safetyAiPlayerIds,enemyAttackMultiplier:(rootbound?balance.enemyAttackMultiplier*depthMultiplier:1)*tierScale.attack*(input.enemyAttackMultiplier??1),enemyHpMultiplier:tierScale.hp*(input.enemyHpMultiplier??1),enemyDefenseMultiplier:tierScale.defense*(input.enemyDefenseMultiplier??1),enemyDamageProfile:input.enemyDamageProfile,enemyLevel:input.enemyLevel,bossTuning:input.bossTuning});
+  const combat=resolveExpeditionCombat({runId:input.runId,nodeIndex:input.node.depth,encounterId:input.node.contentId,serverSeed:input.serverSecret,players,initialPlayerState:state.actors,safetyAiPlayerIds:input.safetyAiPlayerIds,enemyAttackMultiplier:(rootbound?balance.enemyAttackMultiplier*depthMultiplier:1)*tierScale.attack*(input.enemyAttackMultiplier??1),enemyHpMultiplier:tierScale.hp*(input.enemyHpMultiplier??1),enemyDefenseMultiplier:tierScale.defense*(input.enemyDefenseMultiplier??1),enemyDamageProfile:input.enemyDamageProfile,enemyLevel:input.enemyLevel,bossTuning:input.bossTuning,roomModifierId:input.node.kind==='elite'?input.node.modifierId:undefined,roomModifierElite:input.node.kind==='elite'});
   state={...state,actors:combat.endingPlayerState};
   return {success:combat.success,state,summary:{kind:'combat',...combat.resultJson,...(input.bossTuning?{bossTuningProfile:input.bossTuning.profileId}: {})}};
  }
@@ -97,15 +107,25 @@ export function resolveCoopNode(input:{runId:string;serverSecret:string;node:Coo
   case 'camp': state=healAtCamp(state,input.players); break;
   case 'shrine': case 'forge': case 'echo': if(input.enemyDamageProfile!=='qmode-v1')state={...state,boons:[...state.boons,`${input.node.contentId}:${roll}`]}; break;
   case 'treasure': case 'secret': state={...state,artifacts:[...state.artifacts,`${input.node.contentId}:${roll}`]}; break;
-  case 'risk': state={...state,curses:[...state.curses,`${input.node.contentId}:${roll}`],resources:state.resources+2}; break;
-  case 'event': state={...state,resources:state.resources+1}; break;
+  case 'risk': {
+   // The +2 supplies have a real drawback: nonlethal party injury plus
+   // stacking defense pressure in later encounters.
+   const actors={...state.actors};
+   for(const player of input.players){const actor=actors[player.id];if(!actor||actor.downed)continue;
+    actors[player.id]={...actor,hp:Math.max(1,actor.hp-player.stats.maxHp*.06)};
+   }
+   state={...state,actors,curses:[...state.curses,`${input.node.contentId}:${roll}`],resources:state.resources+2};
+   break;
+  }
+  case 'event': state={...state,resources:state.resources+1,boons:[...state.boons,`${input.node.contentId}:${roll}`]}; break;
   case 'merchant': state={...state}; break;
  }
  const healedHp=input.players.reduce((total,player)=>total+Math.max(0,(state.actors[player.id]?.hp??0)-(input.state.actors[player.id]?.hp??0)),0);
  const revivedCount=input.players.filter(player=>input.state.actors[player.id]?.downed&&!state.actors[player.id]?.downed).length;
+ const damagedHp=input.players.reduce((total,player)=>total+Math.max(0,(input.state.actors[player.id]?.hp??0)-(state.actors[player.id]?.hp??0)),0);
  return {success:true,state,summary:{kind:input.node.kind,roll,
   resourcesDelta:state.resources-input.state.resources,
-  healedHp,revivedCount,
+  healedHp,revivedCount,damagedHp,
   boonCount:state.boons.length-input.state.boons.length,
   artifactCount:state.artifacts.length-input.state.artifacts.length,
   curseCount:state.curses.length-input.state.curses.length,

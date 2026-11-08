@@ -59,12 +59,19 @@ export function generateCoopRouteGraph(secret:string, expeditionId:string, runId
   nodes.push({nodeId:'entry',depth:0,kind:'entry',contentId:'COOP_ENTRY',modifierId:'none',risk:1,rewardTag:'none',nextNodeIds:idsAt(1)});
   for(let depth=1;depth<=preBossNodeCount;depth++){
     const layerModifierOffset=deterministicInt(secret,0,MODIFIERS.length-1,generatorVersion,runId,expeditionId,contentVersion,balanceVersion,'modifier-layer',depth);
+    // One row of three choices must expose three distinct encounters, not
+    // the same enemy formation wearing three cosmetic modifier labels.
+    const usedContentIds=new Set<string>();
     for(let choice=0;choice<COOP_ROGUELITE_CONFIG.choicesPerDepth;choice++){
       const kind=coopKind(secret,expeditionId,runId,contentVersion,balanceVersion,depth,choice);
       const contentPool=coopContentPool(expeditionId,kind);
-      const contentIndex=deterministicInt(secret,0,contentPool.length-1,generatorVersion,runId,expeditionId,contentVersion,balanceVersion,'content',depth,choice);
+      let contentIndex=deterministicInt(secret,0,contentPool.length-1,generatorVersion,runId,expeditionId,contentVersion,balanceVersion,'content',depth,choice);
+      while(usedContentIds.has(contentPool[contentIndex]))contentIndex=(contentIndex+1)%contentPool.length;
+      const contentId=contentPool[contentIndex];usedContentIds.add(contentId);
       const modifierIndex=(layerModifierOffset+choice)%MODIFIERS.length;
-      nodes.push({nodeId:`d${depth}-c${choice}`,depth,kind,contentId:contentPool[contentIndex],modifierId:MODIFIERS[modifierIndex],risk:kind==='risk'?1.15:kind==='elite'?1.08:1,rewardTag:kind,nextNodeIds:depth===preBossNodeCount?['boss']:idsAt(depth+1)});
+      // Mandatory battle rooms remain balanced via their encounter identities.
+      // Special modifiers belong to the optional elite route only.
+      nodes.push({nodeId:`d${depth}-c${choice}`,depth,kind,contentId,modifierId:kind==='elite'?MODIFIERS[modifierIndex]:'steady',risk:kind==='risk'?1.15:kind==='elite'?1.08:1,rewardTag:kind,nextNodeIds:depth===preBossNodeCount?['boss']:idsAt(depth+1)});
     }
   }
   nodes.push({nodeId:'boss',depth:preBossNodeCount+1,kind:'boss',contentId:def.bossId,modifierId:'final',risk:1.25,rewardTag:'boss',nextNodeIds:[]});

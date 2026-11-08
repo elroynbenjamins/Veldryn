@@ -59,42 +59,43 @@ function validate(operation:string,method:string,query:URLSearchParams,body:unkn
     return {kind:operation,history:history==='true',offset};
   }
   if(method!=='POST'||!object(body))bad();
+  const fields=body as Record<string,unknown>;
   if(params.some(k=>k!=='action'))bad();
   if(operation==='publish'){
-    if(!only(body,['holdId','unitPrice','quantity','requestKey'])
-      ||!id(body.holdId)||!int(body.unitPrice,1,1000000000000)
-      ||!int(body.quantity,1,2147483647)||!requestKey(body.requestKey)
-      ||body.unitPrice*body.quantity>1000000000000000)bad();
-    return {kind:'publish',holdId:body.holdId as string,
-      unitPrice:body.unitPrice as number,quantity:body.quantity as number,
-      requestKey:body.requestKey as string};
+    if(!only(fields,['holdId','unitPrice','quantity','requestKey'])
+      ||!id(fields.holdId)||!int(fields.unitPrice,1,1000000000000)
+      ||!int(fields.quantity,1,2147483647)||!requestKey(fields.requestKey)
+      ||fields.unitPrice*fields.quantity>1000000000000000)bad();
+    return {kind:'publish',holdId:fields.holdId as string,
+      unitPrice:fields.unitPrice as number,quantity:fields.quantity as number,
+      requestKey:fields.requestKey as string};
   }
   if(operation==='cancel'){
-    if(!only(body,['offerId','requestKey'])
-      ||!id(body.offerId)||!requestKey(body.requestKey))bad();
-    return {kind:'cancel',offerId:body.offerId as string,requestKey:body.requestKey as string};
+    if(!only(fields,['offerId','requestKey'])
+      ||!id(fields.offerId)||!requestKey(fields.requestKey))bad();
+    return {kind:'cancel',offerId:fields.offerId as string,requestKey:fields.requestKey as string};
   }
   if(operation==='buy'){
-    if(!only(body,['offerId','unitPrice','quantity','buyerRevision','sellerRevision','requestKey'])
-      ||!id(body.offerId)||!int(body.unitPrice,1,1000000000000)
-      ||!int(body.quantity,1,2147483647)||!int(body.buyerRevision,0,Number.MAX_SAFE_INTEGER)
-      ||!int(body.sellerRevision,0,Number.MAX_SAFE_INTEGER)
-      ||!requestKey(body.requestKey)
-      ||body.unitPrice*body.quantity>1000000000000000)bad();
-    return {kind:'buy',offerId:body.offerId as string,
-      unitPrice:body.unitPrice as number,quantity:body.quantity as number,
-      buyerRevision:body.buyerRevision as number,sellerRevision:body.sellerRevision as number,
-      requestKey:body.requestKey as string};
+    if(!only(fields,['offerId','unitPrice','quantity','buyerRevision','sellerRevision','requestKey'])
+      ||!id(fields.offerId)||!int(fields.unitPrice,1,1000000000000)
+      ||!int(fields.quantity,1,2147483647)||!int(fields.buyerRevision,0,Number.MAX_SAFE_INTEGER)
+      ||!int(fields.sellerRevision,0,Number.MAX_SAFE_INTEGER)
+      ||!requestKey(fields.requestKey)
+      ||fields.unitPrice*fields.quantity>1000000000000000)bad();
+    return {kind:'buy',offerId:fields.offerId as string,
+      unitPrice:fields.unitPrice as number,quantity:fields.quantity as number,
+      buyerRevision:fields.buyerRevision as number,sellerRevision:fields.sellerRevision as number,
+      requestKey:fields.requestKey as string};
   }
   if(operation==='claim'){
-    if(!only(body,['deliveryId','deliveryKind','destination','requestKey'])
-      ||!id(body.deliveryId)||!['purchased','returned'].includes(body.deliveryKind as string)
-      ||!['inventory','bank','gem_pouch'].includes(body.destination as string)
-      ||!requestKey(body.requestKey))bad();
-    return {kind:'claim',deliveryId:body.deliveryId as string,
-      deliveryKind:body.deliveryKind as 'purchased'|'returned',
-      destination:body.destination as 'inventory'|'bank'|'gem_pouch',
-      requestKey:body.requestKey as string};
+    if(!only(fields,['deliveryId','deliveryKind','destination','requestKey'])
+      ||!id(fields.deliveryId)||!['purchased','returned'].includes(fields.deliveryKind as string)
+      ||!['inventory','bank','gem_pouch'].includes(fields.destination as string)
+      ||!requestKey(fields.requestKey))bad();
+    return {kind:'claim',deliveryId:fields.deliveryId as string,
+      deliveryKind:fields.deliveryKind as 'purchased'|'returned',
+      destination:fields.destination as 'inventory'|'bank'|'gem_pouch',
+      requestKey:fields.requestKey as string};
   }
   bad();
 }

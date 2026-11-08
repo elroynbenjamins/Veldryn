@@ -168,6 +168,12 @@ begin
   if v_probe->>'reason'<>'missing_exact_receipt'
   then raise exception 'untagged equipment was promoted to tradable custody';end if;
 
+  v_probe:=private.market_snapshot_source_probe_v1(
+    v_a,7,'gem_pouch',null,0,'COPPER_ORE',1,null
+  );
+  if v_probe->>'reason'<>'source_not_found'
+  then raise exception 'missing gem pouch did not fail safely';end if;
+
   update public.online_game_states
   set state=pg_catalog.jsonb_set(
     state,'{account,craftedGearInstances,0,quality}','null'::jsonb,true

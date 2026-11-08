@@ -18,6 +18,8 @@ const marketInboxTest=read('backend/supabase/tests/player_market_inbox_and_buyer
 const marketInboxClient=read('apps/mobile/src/online/market-inbox.ts');
 const marketInboxPanel=read('apps/mobile/src/screens/MarketInboxPanel.tsx');
 const rewardInboxScreen=read('apps/mobile/src/screens/RewardsInboxScreen.tsx');
+const sellerOffers=read('backend/supabase/migrations/20261108183000_market_seller_offer_lifecycle_private_v5.sql');
+const sellerTest=read('backend/supabase/tests/player_market_seller_offers_v5.sql');
 const release=read('apps/mobile/src/core/release-flags.ts');
 const roadmap=read('apps/mobile/src/core/community-roadmap-release-visibility.ts');
 
@@ -160,4 +162,29 @@ assert.doesNotMatch(marketInbox,/\bgrant execute\b/i,
 assert.doesNotMatch(purchaseClaim,/\bupdate\s+public\.character_wallets\b/i,
   'claiming a bought item must never move Gold again');
 
-console.log('PASS: hidden V2/V3/V4 market ACLs, buyer claims, Inbox visibility and payment gates stay locked');
+requireMatches(sellerOffers,[
+  ['trade runtime gate',/where singleton and trading_enabled and snapshot_bridge_ready/],
+  ['seller advisory lock',/hashtextextended\('party-account:'\|\|p_seller_account_id::text,0\)/],
+  ['ownership lock',/where hold_id=p_hold_id and owner_account_id=p_seller_account_id[\s\S]*?for update;/i],
+  ['verified unsocketed stack only',/v_asset\.asset_kind not in \('resource','gem'\)/],
+  ['exact hold quantity',/v_hold\.held_quantity<>p_expected_quantity/],
+  ['no re-list',/market_hold_already_listed/],
+  ['20 active listings',/market_seller_listing_cap/],
+  ['atomic escrow cancellation',/v_return:=private\.market_cancel_stack_hold_v2\(/],
+  ['direct active-listing guard',/raise exception 'market_active_listing_requires_cancel_offer'/],
+  ['expiry closes matching offer',/update private\.market_sale_offers_v3 set status='cancelled'/],
+  ['seller-owned listing query',/where o\.seller_account_id=p_seller_account_id/],
+  ['publish execute revoked',/revoke all on function private\.market_publish_sale_offer_v5\([\s\S]*?from public,anon,authenticated,service_role;/i],
+  ['cancel execute revoked',/revoke all on function private\.market_cancel_sale_offer_v5\([\s\S]*?from public,anon,authenticated,service_role;/i],
+  ['seller snapshot execute revoked',/revoke all on function private\.market_seller_offers_snapshot_v5\([\s\S]*?from public,anon,authenticated,service_role;/i],
+], 'seller listing lifecycle');
+requireMatches(sellerTest,[
+  ['QA rollback',/\nrollback;\s*$/i],
+  ['active cancel test',/cancelled seller listing did not queue item return atomically/],
+  ['sold cancellation denial',/sold listing generated seller return entitlement/],
+  ['expired auto unlist',/expired listing left ghost offer or lost escrow/],
+  ['active listing cap test',/seller exceeded 20 active listings/],
+], 'seller lifecycle regression');
+assert.doesNotMatch(sellerOffers,/\bgrant execute\b/i,'seller list operations must remain private');
+
+console.log('PASS: hidden V2–V5 market ACLs, seller offer lifecycle, Inbox and payment gates remain disabled');

@@ -81,6 +81,7 @@ assert.ok(Math.abs(bare.foodConsumed!-forecast.projectedFood)<effectiveStats(bas
 for(const earlyRegion of REGIONAL_COMBAT_FIXTURES.slice(0,5))for(const cls of CLASSES){
  const projected=combatSustainProjection(regionalCombatFixture(earlyRegion,'prepared',cls.id),earlyRegion.monsterId)!;
  assert.ok(projected.foodPerHour<=projected.target.foodPerHourMax*1.08,`${earlyRegion.regionName}/${cls.id} food consumption ${projected.foodPerHour.toFixed(2)}/hour exceeds prepared budget ${projected.target.foodPerHourMax.toFixed(2)}`);
+ if(projected.foodPerHour<=0)console.log('DIAGNOSTIC zero-food',earlyRegion.regionName,cls.id,JSON.stringify(projected));
  assert.ok(projected.foodPerHour>0,'prepared builds still need supplies');
 }
 console.log('PASS combat potion charges, timed candy, split encounters, event boundaries and food forecasts');

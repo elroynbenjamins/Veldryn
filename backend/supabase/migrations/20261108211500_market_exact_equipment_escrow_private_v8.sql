@@ -79,7 +79,7 @@ declare
   v_asset_source text;
 begin
   if p_account_id is null or p_expected_revision is null or p_expected_revision<0
-    or p_location not in ('inventory','bank','equipment_pouch')
+    or p_location is null or p_location not in ('inventory','bank','equipment_pouch')
     or p_index is null or p_index<0 or p_index>10000
     or p_item_id is null or length(p_item_id) not between 1 and 180
     or p_instance_id is null or length(p_instance_id) not between 1 and 180
@@ -146,7 +146,7 @@ begin
     or v_receipt->>'acquireSource' is distinct from 'craft'
     or nullif(v_receipt->>'sourceReceiptKey','') is null
     or nullif(v_receipt->>'ownerCharacterId','') is null
-    or v_receipt->>'rarity' not in
+    or coalesce(v_receipt->>'rarity','') not in
        ('common','uncommon','rare','epic','legendary','mythic')
     or v_receipt->>'locked'='true'
     or pg_catalog.jsonb_typeof(v_receipt->'quality') is distinct from 'number'

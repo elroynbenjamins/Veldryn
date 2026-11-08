@@ -45,10 +45,10 @@ const bad=():never=>{throw new MarketRequestError('market_invalid_request',400);
 function validate(operation:string,method:string,query:URLSearchParams,body:unknown):MarketOperation{
   const params:string[]=[];
   query.forEach((_value,key)=>params.push(key));
-  if(params.some(k=>k!=='action'&&k!=='history'&&k!=='offset'))bad();
+  if(params.some(k=>!['view','action','history','offset'].includes(k)))bad();
   if(operation==='inbox'||operation==='my_offers'){
     if(method!=='GET'||body!==null)bad();
-    if(params.some(k=>!['action','history','offset'].includes(k))
+    if(params.some(k=>!['view','action','history','offset'].includes(k))
       ||query.getAll('history').length>1||query.getAll('offset').length>1)bad();
     const history=query.get('history');
     const rawOffset=query.get('offset');
@@ -60,7 +60,7 @@ function validate(operation:string,method:string,query:URLSearchParams,body:unkn
   }
   if(method!=='POST'||!object(body))bad();
   const fields=body as Record<string,unknown>;
-  if(params.some(k=>k!=='action'))bad();
+  if(params.some(k=>k!=='view'&&k!=='action'))bad();
   if(operation==='publish'){
     if(!only(fields,['holdId','unitPrice','quantity','requestKey'])
       ||!id(fields.holdId)||!int(fields.unitPrice,1,1000000000000)
@@ -111,7 +111,9 @@ export async function bindAuthenticatedMarketRequest(
   const actor=await services.authenticate(token);
   if(!actor||!id(actor))throw new MarketRequestError('invalid_session',401);
 
-  if(url.searchParams.getAll('action').length!==1)bad();
+  if(url.searchParams.getAll('view').length!==1
+    ||url.searchParams.get('view')!=='market'
+    ||url.searchParams.getAll('action').length!==1)bad();
   const action=url.searchParams.get('action')??'';
   if(!['inbox','my_offers','publish','cancel','buy','claim'].includes(action))bad();
   let body:unknown=null;

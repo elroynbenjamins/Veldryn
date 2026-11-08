@@ -27,7 +27,7 @@ const earlyLegacy=legacy.nodes.filter(node=>node.depth===2);
 const used=new Set(earlyLegacy.map(node=>node.contentId));
 const replacement=['ROOT_SCOUTS','ROOT_GUARDIANS','ROOT_VINES','ROOT_STALKERS','ROOT_SENTINELS'].find(id=>!used.has(id));
 assert(replacement,'Test fixture should have an unused battle formation');
-legacy.nodes=legacy.nodes.map(node=>node.nodeId==='d2-c2'?{...node,kind:'battle',contentId:replacement}:node);
+legacy.nodes=legacy.nodes.map(node=>node.nodeId==='d2-c2'?{...node,kind:'battle' as const,contentId:replacement}:node);
 validateCoopRouteGraph(legacy); // Historical three-combat openings must remain resumable.
 
 console.log('coop phase4 routes OK',JSON.stringify({seeds:10_000,distinctFirstLayers:prefixes.size}));

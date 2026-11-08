@@ -46,6 +46,10 @@ async function commandBusy(){
  await act(async()=>{request.resolve(snapshot);await saving});assert.equal(latest.busy,false);
  request=deferred();let failure;await act(async()=>{failure=latest.execute({type:'claim'}).catch(error=>error)});
  await act(async()=>{request.reject(Error('offline'));await failure});assert.equal(latest.busy,false);assert.equal(latest.error,'offline');
+ repo.hasPending=async()=>true;
+ await act(async()=>{await assert.rejects(latest.execute({type:'claim'}),/pending_action/)});
+ assert.equal(calls,2,'A stored retry receipt prevents a fresh gameplay command from reaching transport');
+ assert.equal(latest.pending,true,'A stored retry receipt immediately exposes the retry state');
  await act(async()=>renderer.unmount());
 }
 function wiring(){

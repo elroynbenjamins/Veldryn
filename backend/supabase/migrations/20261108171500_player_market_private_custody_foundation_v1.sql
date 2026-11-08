@@ -54,6 +54,9 @@ create table if not exists private.market_custody_assets_v1 (
   quantity bigint not null check(quantity between 1 and 2147483647),
   held_quantity bigint not null default 0
     check(held_quantity >= 0 and held_quantity <= quantity),
+  -- Release migration must explicitly remove this hard lock before any hold.
+  constraint_market_hold_safeguard boolean not null default false
+    check(constraint_market_hold_safeguard = false),
   source_bound boolean not null default true,
   verification_state text not null default 'unverified'
     check(verification_state in ('unverified','verified','rejected')),
@@ -92,7 +95,7 @@ create table if not exists private.market_custody_holds_v1 (
   request_hash text not null check(request_hash ~ '^[a-f0-9]{64}$'),
   held_quantity bigint not null check(held_quantity between 1 and 2147483647),
   status text not null default 'draft'
-    check(status in ('draft','held','released','settled')),
+    check(status = 'draft'),
   source_revision bigint not null check(source_revision >= 0),
   created_at timestamptz not null default now(),
   closed_at timestamptz,

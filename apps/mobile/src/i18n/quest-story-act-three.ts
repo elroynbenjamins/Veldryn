@@ -40,14 +40,14 @@ export const chapterThreeQuestCopy={
       "Loncalar Arasında Bir Yer"
     ],
     "description": [
-      "Reach character level 20.",
-      "Erreiche Charakterstufe 20.",
-      "Alcanza el nivel de personaje 20.",
-      "Bereik personageniveau 20.",
-      "Raggiungi il livello personaggio 20.",
-      "Atteignez le niveau 20 de personnage.",
-      "Достигните 20-го уровня персонажа.",
-      "Karakter seviyesini 20'ye çıkar."
+      "Reach character level 11.",
+      "Erreiche Charakterstufe 11.",
+      "Alcanza el nivel de personaje 11.",
+      "Bereik personageniveau 11.",
+      "Raggiungi il livello personaggio 11.",
+      "Atteignez le niveau 11 de personnage.",
+      "Достигните 11-го уровня персонажа.",
+      "Karakter seviyesini 11'ye çıkar."
     ],
     "story": [
       "The guilds stop treating you as a passing sword. Reports from the King’s Road now carry your name, and older adventurers begin speaking openly of the oathbound host gathering beyond the fog.",
@@ -168,14 +168,14 @@ export const chapterThreeQuestCopy={
       "Yeşilliğin Ötesinde"
     ],
     "description": [
-      "Claim victory over the Fallen Knight and reach level 25.",
-      "Besiege den Fallen Knight und erreiche Stufe 25.",
-      "Vence al Fallen Knight y alcanza el nivel 25.",
-      "Versla de Fallen Knight en bereik niveau 25.",
-      "Sconfiggi il Fallen Knight e raggiungi il livello 25.",
-      "Triomphez du Fallen Knight et atteignez le niveau 25.",
-      "Победите Fallen Knight и достигните 25-го уровня.",
-      "Fallen Knight'ı yen ve 25. seviyeye ulaş."
+      "Claim victory over the Fallen Knight and reach level 14.",
+      "Besiege den Fallen Knight und erreiche Stufe 14.",
+      "Vence al Fallen Knight y alcanza el nivel 14.",
+      "Versla de Fallen Knight en bereik niveau 14.",
+      "Sconfiggi il Fallen Knight e raggiungi il livello 14.",
+      "Triomphez du Fallen Knight et atteignez le niveau 14.",
+      "Победите Fallen Knight и достигните 14-го уровня.",
+      "Fallen Knight'ı yen ve 14. seviyeye ulaş."
     ],
     "story": [
       "With the Knight defeated, the sealed routes beyond Asterfall begin to open. The victory ends one chapter, but the echoes carried on the wind make it clear the broken oath was never confined to the green lands.",

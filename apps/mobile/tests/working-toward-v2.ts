@@ -1,3 +1,4 @@
+import {rebasedCombatLevelFromLegacyLevel as rebaseLevel} from '../src/core/progression';
 import {createCharacter,newGame,startCombat} from '../src/core/game';
 import {progressionGoalContext,progressionGoalDestination,workingTowardDestinationAvailability,workingTowardItemSourceEntries,workingTowardReadyCount,workingTowardTrackableItems} from '../src/core/working-toward';
 import {MASTERY_GOAL_RANKS,masteryGoalForAction,nextMasteryGoalRank,normalizeProgressionGoals,progressionGoalView,type ProgressionGoal} from '../src/core/progression-goals-v40';
@@ -72,7 +73,7 @@ ok(itemGoalProtection.has('OATHSTONE_ORE'),'Pinned item-quantity goals protect t
 
 const copperLockedExecution=workingTowardExecutionPlan(oreState,itemGoal);
 equal(copperLockedExecution.executionState,'blocked','off-region gathered item goal reports the region level gate before offering travel');
-ok(copperLockedExecution.queueBlocker?.includes('Level 16'),'locked item-source execution exposes the Old Mines Level gate');
+ok(copperLockedExecution.queueBlocker?.includes(`Level ${rebaseLevel(16)}`),'locked item-source execution exposes the Old Mines Level gate');
 const copperLevelReadyState={...oreState,character:{...oreState.character!,level:20}};
 const copperScoutBlocked=workingTowardExecutionPlan(copperLevelReadyState,itemGoal);
 equal(copperScoutBlocked.executionState,'blocked','level-ready later-region goals stay blocked until the route is discovered');

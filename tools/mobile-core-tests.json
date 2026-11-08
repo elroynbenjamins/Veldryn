@@ -1,4 +1,5 @@
 [
+  ".core-build/apps/mobile/tests/combat-level-rebase.js",
   "tests/profile-pet-art-assets.cjs",
   "tests/app-version-gate.cjs",
   ".core-build/apps/mobile/tests/resource-codex.js",

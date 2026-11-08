@@ -1,4 +1,5 @@
 import {ITEMS} from '../src/content/items';
+import {rebasedCombatLevelFromLegacyLevel as rebaseLevel} from '../src/core/progression';
 import {V33_EQUIPMENT_RECIPES} from '../src/content/equipment-recipes-v33';
 import {regionalStoryLeads} from '../src/core/regional-story-leads';
 import type {GameState} from '../src/core/types';
@@ -83,7 +84,7 @@ ok(kingsRoadMonsters.filter(monster=>monster.drops.some(drop=>['WOLF_PELT','THOR
 ok(kingsRoadMonsters.every(monster=>monster.drops.every(drop=>drop.itemId!=='GLASSBOUND_CORE')),'T4 trophy must never drop before Sunscar');
 const glassbound=MONSTERS.find(monster=>monster.id==='GLASSBOUND_SENTINEL')!;
 ok(glassbound.level>=40&&glassbound.drops.some(drop=>drop.itemId==='GLASSBOUND_CORE'),'Late Sunscar must be the source of fourth-tier core');
-ok(MONSTERS.every(monster=>!monster.drops.some(drop=>drop.itemId==='GLASSBOUND_CORE')||monster.zone==='Sunscar'&&monster.unlockLevel>=38),'Glassbound Core must have no early-region source');
+ok(MONSTERS.every(monster=>!monster.drops.some(drop=>drop.itemId==='GLASSBOUND_CORE')||monster.zone==='Sunscar'&&monster.unlockLevel>=rebaseLevel(38)),'Glassbound Core must have no early-region source');
 for(const recipe of gearInTier('T4')){
  const inputs=recipe.inputs.map(row=>row.itemId);
  ok(inputs.includes('GLASSBOUND_CORE')&&inputs.includes('GLASSBOUND_BINDER'),'All T4 pieces must require late Sunscar monster trophies and binder');

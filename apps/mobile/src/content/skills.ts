@@ -1,3 +1,4 @@
+import {rebasedCombatLevelFromLegacyLevel as rebaseLevel} from '../core/progression';
 import type {ClassId} from '../core/types';
 import {NOVICE_RECIPES} from './novice-sets';
 import {GUILD_COMPONENT_RECIPES,GUILD_COMPONENT_CRAFTING_RELEASED} from './guild-components';
@@ -55,6 +56,8 @@ export const GATHERING:GatherDef[]=([
 });
 
 export interface Recipe{id:string;name:string;skillId:'smithing'|'cooking'|'alchemy'|'tailoring'|'enchanting';level:number;xp:number;gold:number;seconds:number;repeatableTraining?:boolean;inputs:{itemId:string;quantity:number}[];output:{itemId:string;quantity:number};classId?:ClassId;noviceSetId?:string;characterLevel?:number;requiresCraftedItemId?:string;requiredKnowledgeId?:string;knowledgeItemId?:string;v33EquipmentTier?:string;v33Region?:string;v33SetId?:string;v33Path?:string;}
+/** Tool and forge catalogs already convert their character levels at source. */
+const REBASED_CHARACTER_LEVEL_RECIPES=new Set([...TOOL_RECIPES,...V33_EQUIPMENT_RECIPES].map(recipe=>recipe.id));
 export const RECIPES:Recipe[]=[
 ...(GUILD_COMPONENT_CRAFTING_RELEASED?GUILD_COMPONENT_RECIPES:[]),
 ...ALCHEMY_RECIPES as Recipe[],
@@ -90,7 +93,7 @@ export const RECIPES:Recipe[]=[
 {id:'COOK_ICEFISH',name:'Frosted Icefin',skillId:'cooking',level:48,xp:1100,gold:900,seconds:300,repeatableTraining:true,inputs:[{itemId:'ICEFIN',quantity:3},{itemId:'WINTERMINT',quantity:1},{itemId:'WHITEPINE_LOG',quantity:1}],output:{itemId:'FROSTED_ICEFIN',quantity:3}},
 {id:'COOK_EMBERFIN',name:'Char Emberfin',skillId:'cooking',level:74,xp:1650,gold:1200,seconds:420,repeatableTraining:true,inputs:[{itemId:'EMBERFIN',quantity:3},{itemId:'ASHEN_MYRRH',quantity:1},{itemId:'CINDERWOOD_LOG',quantity:1}],output:{itemId:'CHARRED_EMBERFIN',quantity:3}},
 ] as Recipe[]).map(recipe=>({...recipe,gold:increasedCraftingGoldCost(recipe.gold)})),
-];
+].map(recipe=>recipe.characterLevel===undefined||REBASED_CHARACTER_LEVEL_RECIPES.has(recipe.id)?recipe:{...recipe,characterLevel:rebaseLevel(recipe.characterLevel)});
 const recipesById=new Map(RECIPES.map(recipe=>[recipe.id,recipe]));
 if(recipesById.size!==RECIPES.length)throw new Error('Duplicate recipe IDs in the recipe catalog');
 export function recipeDef(id:string){return recipesById.get(id);}

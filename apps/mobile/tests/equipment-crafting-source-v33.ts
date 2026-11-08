@@ -14,6 +14,7 @@ import {combatBaselineProjection,dropExpectation,gatheringBalanceProjection} fro
 import {isV33EquipmentCraftingMaterial,v33EquipmentMaterialUse} from '../src/core/equipment-loot-v33';
 import {ALCHEMY_EQUIPMENT_INFUSIONS} from '../src/content/alchemy';
 import {increasedCraftingGoldCost} from '../src/content/crafting-gold-cost';
+import {rebasedCombatLevelFromLegacyLevel as rebaseLevel} from '../src/core/progression';
 
 function ok(value:unknown,message:string){if(!value)throw new Error(message)}
 
@@ -46,7 +47,7 @@ ok(V33_EQUIPMENT_RECIPES.every(row=>RECIPES.some(recipe=>recipe.id===row.id&&rec
 ok(V33_EQUIPMENT_RECIPES.every(row=>row.inputs.length>=2&&row.inputs.every(input=>itemDef(input.itemId).type==='material')),'Every V33 recipe needs registered material inputs');
 ok(V33_EQUIPMENT_RECIPES.every(row=>new Set(row.inputs.map(input=>input.itemId)).size===row.inputs.length),'V33 recipes must merge duplicate material rows');
 ok(V33_EQUIPMENT_RECIPES.every(row=>row.skillId===EQUIPMENT_CRAFT_SKILL_BY_CLASS[row.classId]),'Every V33 recipe must use its class primary crafting profession');
-ok(V33_EQUIPMENT_RECIPES.every(row=>row.characterLevel>=(TIER_CHARACTER_LEVEL_FLOOR[row.v33EquipmentTier]??1)),'Every V33 recipe must respect its tier character floor');
+ok(V33_EQUIPMENT_RECIPES.every(row=>row.characterLevel>=rebaseLevel(TIER_CHARACTER_LEVEL_FLOOR[row.v33EquipmentTier]??1)),'Every V33 recipe must respect its tier character floor');
 ok(V33_EQUIPMENT_RECIPES.every(row=>row.level>=(TIER_CRAFTING_LEVEL_FLOOR[row.v33EquipmentTier]??1)),'Every V33 recipe must respect its tier profession floor');
 const infusionByTier={T1:'VERDANT_BINDING_RESIN',T2:'IRONWOOD_BINDING_RESIN',T3:'SUNSCAR_DUNE_BINDER',T4:'GLASSBOUND_BINDER',T5:'SUNFUSED_FIXATIVE',T6:'SUNFUSED_FIXATIVE',T7:'RIMEWARD_DISTILLATE',T8:'RIMEWARD_DISTILLATE',T9:'CINDERHEART_ELIXIR'} as const;
 ok(ALCHEMY_EQUIPMENT_INFUSIONS.every(infusion=>V33_EQUIPMENT_RECIPES.some(recipe=>recipe.inputs.some(input=>input.itemId===infusion.id))||RECIPES.some(refine=>refine.inputs.some(input=>input.itemId===infusion.id)&&V33_EQUIPMENT_RECIPES.some(gear=>gear.inputs.some(input=>input.itemId===refine.output.itemId)))),'Every crafted infusion must feed equipment directly or through a verified conversion');

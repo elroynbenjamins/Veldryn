@@ -3,6 +3,7 @@ import {CLASSES} from '../content/classes';
 import {companionCombatContribution} from './combat-companions';
 import {effectiveStats} from './game';
 import type {GameState} from './types';
+import {legacyCharacterLevelFromXp} from './progression';
 
 export type CombatPowerBreakdownRow={id:'base'|'build'|'passives'|'companion';label:string;value:number;detail:string};
 
@@ -19,19 +20,21 @@ const statScore=(stats:{hp:number;attack:number;defense:number;power?:number;cri
 export function combatPowerRating(state:GameState){
   const character=state.character;
   if(!character)return {total:0,player:0,companion:0,rows:[] as CombatPowerBreakdownRow[]};
-  const stats=effectiveStats(state),player=statScore(stats,character.level);
+  // Combat XP rebasing must not silently reduce an existing player's combat rating.
+  const powerLevel=legacyCharacterLevelFromXp(character.xp);
+  const stats=effectiveStats(state),player=statScore(stats,powerLevel);
   const role=CLASSES.find(def=>def.id===character.classId)?.role;
   const base=statScore({
     hp:character.hp,attack:character.attack,defense:character.defense,
-    power:Math.round(character.attack*1.5+character.defense*.8+character.hp*.08+character.level*2.5),
+    power:Math.round(character.attack*1.5+character.defense*.8+character.hp*.08+powerLevel*2.5),
     critChance:role==='Damage'?.10:.05,critMultiplier:1.5,
     accuracy:.84,evasion:role==='Damage'?.07:.04,haste:.05,
-  },character.level);
+  },powerLevel);
   // Project the same character without equipment. This preserves genuine
   // class/Faith/permanent effects while removing gear, sets and all socket
   // gems. Differences telescope to the exact displayed player rating.
   const unequipped:GameState={...state,character:{...character,equipment:{},equipmentInstanceIds:{}}};
-  const withoutGear=statScore(effectiveStats(unequipped),character.level);
+  const withoutGear=statScore(effectiveStats(unequipped),powerLevel);
   const build=player-withoutGear;
   const passive=withoutGear-base;
   const id=character.equippedCombatCompanionId,def=id?combatCompanionDef(id):undefined,progress=id?state.account.combatCompanionProgress?.[id]:undefined;

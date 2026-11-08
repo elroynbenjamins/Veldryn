@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import {gameplayHandler,GameplayError,type GameplayServices} from '../gameplay';
-import {totalXpAtLevel} from '../../../apps/mobile/src/core/progression';
+import {totalXpAtLevel,legacyCharacterTotalXpAtLevel} from '../../../apps/mobile/src/core/progression';
 import type {GameState} from '../../../apps/mobile/src/core/types';
 import {createCraftedGearInstance} from '../../../apps/mobile/src/core/crafted-gear-instances';
 import {itemDef} from '../../../apps/mobile/src/content/items';
@@ -54,7 +54,7 @@ async function main(){
   const regionalRecipe=alchemyRecipeDef('BREW_GREATER_VIGOR_TONIC_SUNSCAR')!;
   assert.ok(regionalRecipe,'Regional Alchemy recipe exists');
   const regionalInputs=new Set(regionalRecipe.inputs.map(input=>input.itemId));
-  state={...state!,character:{...state!.character!,level:30,xp:totalXpAtLevel(30),gold:Math.max(state!.character!.gold,regionalRecipe.gold+100)},skills:state!.skills.map(skill=>skill.skillId==='herbalism'?{...skill,xp:totalXpAtLevel(26),level:26}:skill.skillId==='alchemy'?{...skill,xp:totalXpAtLevel(35),level:35}:skill.skillId==='exploration'?{...skill,xp:totalXpAtLevel(6),level:6}:skill),inventory:{...state!.inventory,stacks:[...state!.inventory.stacks.filter(stack=>!regionalInputs.has(stack.itemId)),...regionalRecipe.inputs.map(input=>({...input}))]}};
+  state={...state!,character:{...state!.character!,level:30,xp:legacyCharacterTotalXpAtLevel(30),gold:Math.max(state!.character!.gold,regionalRecipe.gold+100)},skills:state!.skills.map(skill=>skill.skillId==='herbalism'?{...skill,xp:totalXpAtLevel(26),level:26}:skill.skillId==='alchemy'?{...skill,xp:totalXpAtLevel(35),level:35}:skill.skillId==='exploration'?{...skill,xp:totalXpAtLevel(6),level:6}:skill),inventory:{...state!.inventory,stacks:[...state!.inventory.stacks.filter(stack=>!regionalInputs.has(stack.itemId)),...regionalRecipe.inputs.map(input=>({...input}))]}};
  // This later-region fixture must satisfy the same scouting gates as a real character.
  const beforeLockedTravel=commits;
  const lockedTravel=await request({type:'travel',args:{id:'SUNSCAR'}},'sunscar-locked-01',8);

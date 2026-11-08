@@ -10,9 +10,9 @@ export function currentRegionId(state:GameState){
   if(saved)return saved;
   const activityZone=usable(state.activity?.environment?.zoneId);
   if(activityZone)return activityZone;
-  // Existing saves may point into a newly story-locked region. Display the nearest
-  // earlier eligible region rather than exposing locked Sunscar content.
-  const savedZone=WORLD_ZONES.find(zone=>zone.id===state.currentRegionId&&!worldZoneInDevelopment(zone));
+  // Existing saves may point into a newly story-locked *or unreleased* region.
+  // Resolve to the nearest earlier playable region without altering stored progress.
+  const savedZone=WORLD_ZONES.find(zone=>zone.id===state.currentRegionId);
   if(savedZone){
     const previous=[...WORLD_ZONES].reverse().find(zone=>zone.minLevel<savedZone.minLevel&&usable(zone.id));
     if(previous)return previous.id;

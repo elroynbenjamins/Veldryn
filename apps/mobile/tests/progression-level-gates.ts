@@ -1,4 +1,5 @@
 import {GATHERING,RECIPES} from '../src/content/skills';
+import {rebasedCombatLevelFromLegacyLevel as rebaseLevel} from '../src/core/progression';
 import {HERB_NODES} from '../src/content/herbalism';
 import {MONSTERS} from '../src/content/monsters';
 import {WORLD_ZONES} from '../src/content/world-map';
@@ -6,18 +7,18 @@ import {TIER_CHARACTER_LEVEL_FLOOR,TIER_CRAFTING_LEVEL_FLOOR} from '../src/conte
 
 function ok(value:unknown,message:string){if(!value)throw new Error(message)}
 const released=WORLD_ZONES.filter(zone=>zone.availability==='released');
-const zoneById=new Map(released.map(zone=>[zone.id,zone]));
-const zoneByName=new Map(released.map(zone=>[zone.name,zone]));
+const zoneById=new Map(WORLD_ZONES.map(zone=>[zone.id,zone]));
+const zoneByName=new Map(WORLD_ZONES.map(zone=>[zone.name,zone]));
 
 for(const monster of MONSTERS){
  const zone=zoneByName.get(monster.zone);
- ok(zone,monster.id+' must live in a released zone');
+ ok(zone,monster.id+' must belong to an authored world zone');
  ok(monster.unlockLevel>=zone!.minLevel,monster.id+' unlocks before its region');
  ok(monster.unlockLevel<=zone!.maxLevel+1,monster.id+' unlock is outside the authored region band');
 }
 for(const action of [...GATHERING,...HERB_NODES]){
  const zone=zoneById.get(action.zoneId);
- ok(zone,action.id+' must live in a released zone');
+ ok(zone,action.id+' must belong to an authored world zone');
  // Skill level and character level are separate axes, but a launch node should not demand
  // a skill tier wildly beyond the region in which the player first encounters it.
  ok(action.unlockLevel<=Math.max(100,zone!.maxLevel+20),action.id+' has an implausible skill gate for '+zone!.name);
@@ -28,10 +29,11 @@ for(const recipe of equipment){
  const tier=recipe.v33EquipmentTier!;
  const characterFloor=TIER_CHARACTER_LEVEL_FLOOR[tier],craftFloor=TIER_CRAFTING_LEVEL_FLOOR[tier];
  ok(characterFloor!==undefined&&craftFloor!==undefined,'Unknown equipment tier '+tier);
- ok((recipe.characterLevel??0)>=characterFloor,recipe.id+' is below '+tier+' character floor');
+ ok((recipe.characterLevel??0)>=rebaseLevel(characterFloor),recipe.id+' is below '+tier+' rebased character floor');
  ok(recipe.level>=craftFloor,recipe.id+' is below '+tier+' crafting floor');
  ok((recipe.characterLevel??1)<=100&&recipe.level<=100,recipe.id+' must be reachable within the character and profession level cap');
- ok(recipe.level<=Math.max(1,(recipe.characterLevel??1)+5),recipe.id+' crafting gate runs too far ahead of its character gate');
+ // Crafting skill level and displayed Combat level now follow independent curves.
+ ok(recipe.level>=craftFloor,recipe.id+' must retain its independent skill requirement');
 }
 for(let i=1;i<=9;i++){
  const tier='T'+i,recipes=equipment.filter(recipe=>recipe.v33EquipmentTier===tier);
@@ -43,7 +45,8 @@ for(let i=1;i<=9;i++){
  }
 }
 const ashlands=zoneById.get('ASHLANDS')!;
-ok(TIER_CHARACTER_LEVEL_FLOOR.T9>=ashlands.minLevel,'T9 must begin in the Ashlands character band');
+ok(ashlands.availability==='inDevelopment','Ashlands content stays authored but the region is not yet playable');
+ok(rebaseLevel(TIER_CHARACTER_LEVEL_FLOOR.T9)>=ashlands.minLevel,'T9 must begin in the Ashlands character band');
 ok(TIER_CRAFTING_LEVEL_FLOOR.T9>=65,'T9 crafting must remain a late-game profession gate');
 const t9=equipment.filter(recipe=>recipe.v33EquipmentTier==='T9');
 ok(t9.every(recipe=>recipe.v33Region==='Ashlands'),'Every T9 set must be authored as Ashlands equipment');

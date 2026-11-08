@@ -1,17 +1,20 @@
+import {rebasedCombatLevelFromLegacyLevel as rebaseLevel} from '../src/core/progression';
 import {claimActivity,createCharacter,newGame,startCombat,startExploration,startGathering,travelToRegion} from '../src/core/game';
 import {currentRegionId} from '../src/core/combat-region';
-import {encounterLockRequirement,encounterUnlocked,nextRegionUnlock,orderedTravelRegions,regionActivitySummary,regionEncounters} from '../src/core/world-navigation';
+import {encounterLockRequirement,encounterUnlocked,nextRegionUnlock,orderedTravelRegions,regionActivitySummary,regionEncounters,regionTravelAvailability,regionTravelPreview} from '../src/core/world-navigation';
+import {WORLD_ZONES} from '../src/content/world-map';
 import {MONSTERS} from '../src/content/monsters';
 
 const ok=(condition:unknown,message:string)=>{if(!condition)throw new Error(message)};
 const beginner=createCharacter(newGame(0),'IRONWARDEN','Region Test');
 ok(currentRegionId(beginner)==='GREENFIELDS','A new character must begin in Greenfields');
 const ironwoodWolf=MONSTERS.find(monster=>monster.id==='IRONWOOD_WOLF')!,venomWeaver=MONSTERS.find(monster=>monster.id==='VENOM_WEAVER')!;
-const levelSevenIronwood={...beginner,character:{...beginner.character!,level:7},currentRegionId:'IRONWOOD'};
+const levelSevenIronwood={...beginner,character:{...beginner.character!,level:rebaseLevel(7)},currentRegionId:'IRONWOOD'};
 const wolfLock=encounterLockRequirement(levelSevenIronwood,ironwoodWolf);
-ok(wolfLock?.kind==='exploration'&&wolfLock.routeName==='Trace Ironwood paths','Level-ready Ironwood Wolf must explain its Exploration unlock instead of repeating Level 7');
-const weaverLock=encounterLockRequirement(levelSevenIronwood,venomWeaver);
-ok(weaverLock?.kind==='level'&&weaverLock.level===8,'A genuinely level-locked encounter must retain its exact level requirement');
+ok(wolfLock?.kind==='exploration'&&wolfLock.routeName==='Trace Ironwood paths','Level-ready Ironwood Wolf must explain its Exploration unlock instead of repeating the Combat level');
+const weaverBelowRequirement={...levelSevenIronwood,character:{...levelSevenIronwood.character!,level:venomWeaver.unlockLevel-1}};
+const weaverLock=encounterLockRequirement(weaverBelowRequirement,venomWeaver);
+ok(weaverLock?.kind==='level'&&weaverLock.level===rebaseLevel(8),'A genuinely level-locked encounter must retain its exact level requirement');
 
 let rejected=false;
 try{startGathering(beginner,'COPPER_VEIN',1)}catch{rejected=true}
@@ -64,14 +67,22 @@ try{travelToRegion(later,'FROSTMARCH',11)}catch{rejected=true}
 ok(rejected,'Frostmarch must remain locked below its level gate');
 
 const ash={...beginner,defeatedBossIds:['FALLEN_KNIGHT'],character:{...beginner.character!,level:75},exploredRouteIds:['SCOUT_IRONWOOD','SCOUT_OLD_MINES','SCOUT_KINGS_ROAD','SCOUT_SUNSCAR','SCOUT_FROSTMARCH'],skills:beginner.skills.map(skill=>skill.skillId==='exploration'?{...skill,level:40}:skill)};
-const ashlands=travelToRegion(ash,'ASHLANDS',12).state;
-const ashScout=startExploration(ashlands,'SCOUT_ASHLANDS',13);
-const ashMapped=claimActivity(ashScout,373013).state;
-ok(ashMapped.unlockedMonsterIds.includes('BLACKGLASS_MIRELING'),'Ashlands scouting must unlock its first authored encounter');
-ok(startCombat(ashMapped,'BLACKGLASS_MIRELING',373014).activity?.targetId==='BLACKGLASS_MIRELING','Ashlands encounters must use the normal combat activity lane');
-ok(encounterUnlocked(ashMapped,{id:'BLACKGLASS_MIRELING',name:'Blackglass Mireling',level:72,hp:1,attack:1,defense:1,xp:1,gold:1,secondsPerKill:1,unlockLevel:71,zone:'Ashlands',drops:[]}),'Unlocked Ashlands encounter must appear in the world browser');
-ok(regionEncounters(ashMapped,'Ashlands','glass',true).some(monster=>monster.id==='BLACKGLASS_MIRELING'),'Later-region encounter search must include discovered content');
-ok(nextRegionUnlock(30)?.id==='FROSTMARCH'&&nextRegionUnlock(50)?.id==='ASHLANDS','Next-region navigation must include later regions');
+const ashZone=WORLD_ZONES.find(zone=>zone.id==='ASHLANDS')!;
+ok(ashZone.availability==='inDevelopment','Ashlands must show as In Development');
+ok(regionTravelAvailability(ash,ashZone)==='inDevelopment','Ashlands cannot become available through level, story or scouting');
+rejected=false;
+try{travelToRegion(ash,'ASHLANDS',12)}catch(error){rejected=String(error).toLowerCase().includes('development')}
+ok(rejected,'Ashlands travel must be blocked, even for an eligible veteran');
+const preservedAsh={...ash,currentRegionId:'ASHLANDS',unlockedMonsterIds:[...ash.unlockedMonsterIds,'BLACKGLASS_MIRELING']};
+ok(currentRegionId(preservedAsh)==='FROSTMARCH','Legacy Ashlands saves should resolve to the previous available region without erasing unlocks');
+const ashMonster=MONSTERS.find(monster=>monster.id==='BLACKGLASS_MIRELING')!;
+ok(!encounterUnlocked(preservedAsh,ashMonster),'Pre-existing Ashlands encounter unlocks cannot bypass development lock');
+ok(regionEncounters(preservedAsh,'Ashlands','',false).length===0,'Development encounters must be hidden from world browsing');
+const ashPreview=regionTravelPreview(preservedAsh,'ASHLANDS');
+ok(ashPreview.enemies.length===0&&ashPreview.drops.length===0&&ashPreview.activities.length>0,'Ashlands preview shows planned themes, not obtainable loot');
+const ashSummary=regionActivitySummary(preservedAsh,'ASHLANDS');
+ok(!ashSummary.unlocked&&ashSummary.combatReady===0&&ashSummary.gatheringReady===0,'Ashlands must have no playable activities');
+ok(nextRegionUnlock(15)?.id==='FROSTMARCH'&&nextRegionUnlock(50)===undefined,'Development regions must be excluded from the next level unlock');
 const greenfieldsSummary=regionActivitySummary(beginner,'GREENFIELDS');
 ok(greenfieldsSummary.unlocked,'Current starter region must report as unlocked');
 ok(greenfieldsSummary.combatTotal>0&&greenfieldsSummary.gatheringTotal>0,'Region summary must expose real authored combat and gathering counts');
@@ -84,7 +95,8 @@ const orderedNoGoal=orderedTravelRegions(later,'SUNSCAR');
 ok(orderedNoGoal[0]?.id==='KINGS_ROAD'&&orderedNoGoal.findIndex(zone=>zone.id==='FROSTMARCH')>orderedNoGoal.findIndex(zone=>zone.id==='GREENFIELDS'),'Travel ordering must show unlocked regions first and future locked regions after them');
 
 const future={...beginner,character:{...beginner.character!,level:120},currentRegionId:'VEILLANDS'};
-ok(currentRegionId(future)==='GREENFIELDS','In-development regions must never become the active persisted location');
+const recoveredRegion=currentRegionId(future);
+ok(recoveredRegion!=='VEILLANDS'&&WORLD_ZONES.find(zone=>zone.id===recoveredRegion)?.availability==='released','In-development regions must never become the active persisted location');
 rejected=false;
 try{travelToRegion(future,'VEILLANDS',15)}catch(error){rejected=String(error).toLowerCase().includes('development')}
 ok(rejected,'Core travel must reject in-development regions even above their level band');

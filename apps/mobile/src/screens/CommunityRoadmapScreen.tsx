@@ -52,7 +52,7 @@ export function CommunityRoadmapScreen({language}:{language:Language}){
    .filter(feature=>feature.status===selected)
    .sort((left,right)=>selected==='considering'?right.votes-left.votes||left.title.localeCompare(right.title):left.title.localeCompare(right.title));
  const used=snapshot?.votes_used??0,limit=snapshot?.vote_limit??3;
- return <ScrollView contentContainerStyle={s.root} showsVerticalScrollIndicator={false} showsHorizontalScrollIndicator={false}>
+ return <ScrollView contentContainerStyle={s.root}>
    <View style={s.hero}>
      <Text style={s.kicker}>{a('THE FUTURE OF VELDRYN')}</Text>
      <Text accessibilityRole="header" style={s.heading}>{a('Community Roadmap')}</Text>

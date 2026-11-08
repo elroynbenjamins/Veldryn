@@ -1,5 +1,6 @@
 import {classWeightedGearStats} from './class-stat-identity';
 import {combatTimeline} from './combat-timing';
+import {huntBasePlayerHit,huntHitEvents,huntHitsBetween,huntEnemyHpAt} from './combat-hit-timeline';
 import {characterCombatXpScale} from './combat-progression-pacing';
 import {eventCandyWindow} from './live-events';
 import {professionActionPace} from './profession-action-pace';
@@ -526,25 +527,107 @@ export function activeCombatRuntimeProjection(state:GameState){
 }
 
 function simulateCombat(state:GameState,monsterId:string,elapsed:number,nowMs=Date.now()){
- const c=state.character!,startsAtMs=state.activity?.lastClaimAtMs??nowMs-elapsed*1000;
+ const c=state.character!,activity=state.activity!,startsAtMs=activity?.lastClaimAtMs??nowMs-elapsed*1000;
  const unprepared={...state,character:{...c,preparation:undefined}},plain=combatRuntimeDetails(unprepared,monsterId,startsAtMs),prepared=combatRuntimeDetails(state,monsterId,startsAtMs);
  const startCandy=eventCandyUtilityMultiplier(state,startsAtMs,'combat');
- const timeline=combatTimeline({startsAtMs,elapsedSeconds:elapsed,progressFraction:state.activity?.progressFraction??0,preparationEncounters:c.preparation?.remainingEncounters??0,cycleSeconds:plain.killCycleSeconds*startCandy,preparedCycleSeconds:prepared.killCycleSeconds*startCandy,candy:eventCandyWindow(state,'combat')});
+ const timeline=combatTimeline({startsAtMs,elapsedSeconds:elapsed,progressFraction:activity?.progressFraction??0,preparationEncounters:c.preparation?.remainingEncounters??0,cycleSeconds:plain.killCycleSeconds*startCandy,preparedCycleSeconds:prepared.killCycleSeconds*startCandy,candy:eventCandyWindow(state,'combat'),trackSegments:true});
  const food=c.equippedFoodId?itemDef(c.equippedFoodId):undefined,threshold=Math.max(10,Math.min(90,state.settings.autoEatThresholdPct))/100;
  let foodLeft=stackQty(state.inventory.stacks,c.equippedFoodId),foodConsumed=0,hp=Math.min(c.currentHp??prepared.stats.hp,prepared.stats.hp),championKills=0,stoppedReason='',preparationEncounters=0,qualifyingActivitySeconds=elapsed;
  const completed:Array<{atMs:number;candy:boolean}>=[];
- if(hp<=1)return {kills:0,completed,championKills:0,foodConsumed:0,endHp:1,stoppedReason:'Too injured',qualifyingActivitySeconds:0,nextProgressFraction:0,preparationEncounters:0};
- for(const encounter of timeline.encounters){
-  const runtime={...(encounter.prepared?prepared:plain),killCycleSeconds:encounter.cycleSeconds};
-  const champion=isChampionEncounter(c.id,state.activity?.lastClaimAtMs??0,monsterId,completed.length),exchange=combatEncounterDamage(runtime,champion);
-  if(encounter.prepared)preparationEncounters++;
-  // A healer can offset incoming pressure, but cannot rescue a lethal hit.
-  hp=hp-exchange.damage<=0?0:Math.min(runtime.stats.hp,hp-exchange.net);
-  while(food?.heal&&foodLeft>0&&hp>0&&hp/runtime.stats.hp<=threshold){hp=Math.min(runtime.stats.hp,hp+Math.max(1,Math.ceil(food.heal*runtime.modifiers.healingEffectivenessMultiplier)));foodLeft--;foodConsumed++;}
-  if(hp<=1){hp=1;stoppedReason=food&&state.settings.stopCombatWhenOutOfFood?'Out of food / too injured':'Too injured';qualifyingActivitySeconds=(encounter.atMs-startsAtMs)/1000;break;}
-  completed.push({atMs:encounter.atMs,candy:encounter.candy});if(champion)championKills++;
+ let activeEncounterIndex=0,enemyHp:number|undefined=activity?.combatEnemyHp;
+ let lastHit:undefined|{atMs:number;actor:'player'|'enemy';damage:number;critical:boolean};
+ const seedFor=(index:number)=>`${c.id}:${activity?.startedAtMs??startsAtMs}:${monsterId}:${(activity?.sessionKills??0)+index}`;
+ const hitsFor=(runtime:ReturnType<typeof combatRuntimeDetails>,index:number,champion:boolean,attackCadenceSeconds=runtime.killCycleSeconds)=>{
+   const exchange=combatEncounterDamage(runtime,champion);
+   return huntHitEvents({monsterHp:runtime.m.hp,basePlayerHit:huntBasePlayerHit(runtime.stats.attack,runtime.m.defense,runtime.secondary.playerOutputMultiplier),incomingDamage:exchange.damage,healingPerEncounter:exchange.healing,cycleSeconds:attackCadenceSeconds,critChance:runtime.stats.critChance,seed:seedFor(index)});
+ };
+ if(enemyHp===undefined||!Number.isFinite(enemyHp)){
+   const champion=isChampionEncounter(c.id,activity?.startedAtMs??startsAtMs,monsterId,activity?.sessionKills??0);
+   enemyHp=huntEnemyHpAt(prepared.m.hp,hitsFor(c.preparation?.remainingEncounters?prepared:plain,0,champion),activity?.progressFraction??0);
  }
- return {kills:completed.length,completed,championKills,foodConsumed,endHp:hp,stoppedReason,qualifyingActivitySeconds,nextProgressFraction:stoppedReason?0:timeline.nextProgressFraction,preparationEncounters};
+ enemyHp=Math.max(0,Math.min(prepared.m.hp,enemyHp));
+ if(hp<=1)return {kills:0,completed,championKills:0,foodConsumed:0,endHp:1,enemyHp,stoppedReason:'Too injured',qualifyingActivitySeconds:0,nextProgressFraction:0,preparationEncounters:0,lastHit};
+ for(const segment of timeline.segments){
+   const runtime={...(segment.prepared?prepared:plain),killCycleSeconds:segment.cycleSeconds};
+   if(segment.encounterIndex!==activeEncounterIndex){enemyHp=runtime.m.hp;activeEncounterIndex=segment.encounterIndex;}
+   const encounterNumber=(activity?.sessionKills??0)+segment.encounterIndex;
+   const champion=isChampionEncounter(c.id,activity?.startedAtMs??startsAtMs,monsterId,encounterNumber);
+   // Candy accelerates the clock, but cannot rearrange attack indices mid-fight.
+   const hits=hitsFor(runtime,segment.encounterIndex,champion,segment.prepared?prepared.killCycleSeconds:plain.killCycleSeconds);
+   for(const hit of huntHitsBetween(hits,segment.fromFraction,segment.toFraction)){
+     const hitAtMs=segment.startsAtMs+(hit.fraction-segment.fromFraction)*segment.cycleSeconds*1000;
+     if(hit.actor==='player'){
+       enemyHp=Math.max(0,enemyHp-hit.damage);
+     }else{
+       // Incoming damage is applied on the strike, not at the kill/claim boundary.
+       // Healing cannot retroactively prevent a lethal hit.
+       hp=hp-hit.damage<=0?0:Math.min(runtime.stats.hp,hp-hit.damage+hit.healing);
+       while(food?.heal&&foodLeft>0&&hp>0&&hp/runtime.stats.hp<=threshold){
+         hp=Math.min(runtime.stats.hp,hp+Math.max(1,Math.ceil(food.heal*runtime.modifiers.healingEffectivenessMultiplier)));
+         foodLeft--;foodConsumed++;
+       }
+     }
+     lastHit={atMs:hitAtMs,actor:hit.actor,damage:hit.damage,critical:hit.critical};
+     if(hp<=1){
+       hp=1;stoppedReason=food&&state.settings.stopCombatWhenOutOfFood?'Out of food / too injured':'Too injured';
+       qualifyingActivitySeconds=Math.max(0,(hitAtMs-startsAtMs)/1000);
+       break;
+     }
+   }
+   if(stoppedReason)break;
+   if(segment.toFraction>=1-1e-9){
+     // The final player strike reaches zero HP; only now do XP/drops accrue.
+     completed.push({atMs:segment.endsAtMs,candy:segment.candy});
+     if(segment.prepared)preparationEncounters++;
+     if(champion)championKills++;
+     enemyHp=runtime.m.hp;
+     activeEncounterIndex=segment.encounterIndex+1;
+   }
+ }
+ return {kills:completed.length,completed,championKills,foodConsumed,endHp:hp,enemyHp,stoppedReason,qualifyingActivitySeconds,nextProgressFraction:stoppedReason?0:timeline.nextProgressFraction,preparationEncounters,lastHit};
+}
+
+/** A UI-only replay cursor. The underlying saved GameState remains unchanged;
+ * callers discard this whenever a new authoritative state arrives. */
+export interface ActiveCombatHitCursor{
+ source:GameState;
+ projected:GameState;
+ atMs:number;
+ stoppedReason:string;
+ lastHit?:{atMs:number;actor:'player'|'enemy';damage:number;critical:boolean};
+}
+/** Exact hit projection, with optional incremental replay so a foreground clock
+ * never recalculates a full 24-hour AFK backlog every animation tick. */
+export function activeCombatHitProjection(state:GameState,nowMs:number,previous?:ActiveCombatHitCursor){
+ if(!state.character||state.activity?.kind!=='combat')return undefined;
+ const original=state.activity;
+ const maxAtMs=original.lastClaimAtMs+offlineCapSeconds(state)*1000;
+ const atMs=Math.min(maxAtMs,Math.max(original.lastClaimAtMs,nowMs));
+ const usable=previous?.source===state&&atMs>=previous.atMs;
+ const source=usable?previous.projected:state;
+ const runtime=combatRuntimeDetails(state,original.targetId);
+ if(usable&&previous.stoppedReason){
+   return {playerHp:source.character!.currentHp,playerMaxHp:runtime.stats.hp,enemyHp:source.activity!.combatEnemyHp??runtime.m.hp,enemyMaxHp:runtime.m.hp,
+     progressFraction:source.activity!.progressFraction??0,stoppedReason:previous.stoppedReason,lastHit:previous.lastHit,cursor:previous};
+ }
+ const elapsed=Math.max(0,(atMs-source.activity!.lastClaimAtMs)/1000);
+ const current=simulateCombat(source,original.targetId,elapsed,atMs);
+ const lastHit=current.lastHit??(usable?previous.lastHit:undefined);
+ const sourceCharacter=source.character!;
+ let preparation=sourceCharacter.preparation;
+ for(let i=0;i<current.preparationEncounters&&preparation;i++)preparation=spendPreparationEncounter(preparation,preparation.itemId);
+ const inventory=current.foodConsumed&&sourceCharacter.equippedFoodId
+   ?{...source.inventory,stacks:consume(source.inventory.stacks,sourceCharacter.equippedFoodId,current.foodConsumed)}
+   :source.inventory;
+ const projected:GameState={
+   ...source,inventory,
+   character:{...sourceCharacter,currentHp:current.endHp,preparation},
+   activity:{...source.activity!,lastClaimAtMs:atMs,progressFraction:current.nextProgressFraction,
+     combatEnemyHp:current.enemyHp,sessionKills:(source.activity!.sessionKills??0)+current.kills},
+ };
+ const cursor:ActiveCombatHitCursor={source:state,projected,atMs,stoppedReason:current.stoppedReason,lastHit};
+ return {playerHp:current.endHp,playerMaxHp:runtime.stats.hp,enemyHp:current.enemyHp,enemyMaxHp:runtime.m.hp,
+   progressFraction:current.nextProgressFraction,stoppedReason:current.stoppedReason,lastHit,cursor};
 }
 
 function previewStandardActivityRewardRaw(state:GameState,effectiveNowMs:number):RewardBundle{
@@ -623,7 +706,7 @@ function previewStandardActivityRewardRaw(state:GameState,effectiveNowMs:number)
   let momentumXp=0;
   for(let start=0;start<sim.completed.length;){let end=start+1;while(end<sim.completed.length&&sim.completed[end].candy===sim.completed[start].candy)end++;momentumXp+=huntMomentumBonus(m.xp*combatXpScale*effect.xpMultiplier*multipliers.characterXpMultiplier*(sim.completed[start].candy?1.1:1),sessionKills+start,end-start);start=end;}
   const momentumGold=huntMomentumBonus(baseGoldPerKill,sessionKills,sim.kills);
-  const reward:RewardBundle={combatEffort:{startsAtMs:state.activity.lastClaimAtMs,endsAtMs:state.activity.lastClaimAtMs+sim.qualifyingActivitySeconds*1000},classSkillXp:classGain.awards,explorationXp,xp:Math.floor(sim.kills*baseXpPerKill)+momentumXp+champion.xp,gold:Math.floor(sim.kills*baseGoldPerKill)+momentumGold+champion.gold,items:rewardItems,kills:sim.kills,elapsedSeconds:elapsed,qualifyingActivitySeconds:sim.qualifyingActivitySeconds,preparationEncounters:sim.preparationEncounters,foodConsumed:sim.foodConsumed,endHp:sim.endHp,stoppedReason:sim.stoppedReason,nextProgressFraction:sim.nextProgressFraction,...(sim.championKills>0?{championEncounters:{count:sim.championKills,bonusXp:champion.xp,bonusGold:champion.gold}}:{})};
+  const reward:RewardBundle={combatEffort:{startsAtMs:state.activity.lastClaimAtMs,endsAtMs:state.activity.lastClaimAtMs+sim.qualifyingActivitySeconds*1000},classSkillXp:classGain.awards,explorationXp,xp:Math.floor(sim.kills*baseXpPerKill)+momentumXp+champion.xp,gold:Math.floor(sim.kills*baseGoldPerKill)+momentumGold+champion.gold,items:rewardItems,kills:sim.kills,elapsedSeconds:elapsed,qualifyingActivitySeconds:sim.qualifyingActivitySeconds,preparationEncounters:sim.preparationEncounters,foodConsumed:sim.foodConsumed,endHp:sim.endHp,nextCombatEnemyHp:sim.enemyHp,stoppedReason:sim.stoppedReason,nextProgressFraction:sim.nextProgressFraction,...(sim.championKills>0?{championEncounters:{count:sim.championKills,bonusXp:champion.xp,bonusGold:champion.gold}}:{})};
   return {...reward,masteryMaterialRemainders:materialRemainders,...timedEventRewards(state,'combat',sim.completed.map(row=>row.atMs))};
 }
 function previewStandardActivityRewardWithSupplies(state:GameState,effectiveNowMs:number){
@@ -930,7 +1013,7 @@ function claimActivitySegmentRaw(state:GameState,nowMs:number){
     const nextXp=Math.min(totalXpAtLevel(100),skill.xp+(reward.explorationXp??0));
     return {...skill,xp:nextXp,level:levelFromXp(nextXp)};
   });
-  const nextBase={...state,skills,...routed,outOfCombatSinceMs:shouldStop?combatStoppedAtMs:undefined,character:{...state.character,...(routed.character??{}),xp,level,gold:state.character.gold+reward.gold,currentHp:reward.endHp??state.character.currentHp},activity:shouldStop?null:{...state.activity,lastClaimAtMs:settledAtMs,progressFraction:reward.nextProgressFraction,sessionKills:(state.activity.sessionKills??0)+reward.kills,sessionChampions:(state.activity.sessionChampions??0)+(reward.championEncounters?.count??0)},unlockedMonsterIds:[...new Set([...state.unlockedMonsterIds,...unlocked])]} as GameState;
+  const nextBase={...state,skills,...routed,outOfCombatSinceMs:shouldStop?combatStoppedAtMs:undefined,character:{...state.character,...(routed.character??{}),xp,level,gold:state.character.gold+reward.gold,currentHp:reward.endHp??state.character.currentHp},activity:shouldStop?null:{...state.activity,lastClaimAtMs:settledAtMs,progressFraction:reward.nextProgressFraction,combatEnemyHp:reward.nextCombatEnemyHp,sessionKills:(state.activity.sessionKills??0)+reward.kills,sessionChampions:(state.activity.sessionChampions??0)+(reward.championEncounters?.count??0)},unlockedMonsterIds:[...new Set([...state.unlockedMonsterIds,...unlocked])]} as GameState;
   let next=commitDailySupplyTimedBoost(nextBase,supply);
   next.character={...next.character!,classSkills:trained.classSkills,classSkillRemainders:trained.classSkillRemainders,masteryMaterialRemainders:reward.masteryMaterialRemainders};
   if(next.character.preparation&&(reward.preparationEncounters??reward.kills)>0){let prep=next.character.preparation;for(let i=0;i<(reward.preparationEncounters??reward.kills);i++)prep=spendPreparationEncounter(prep,prep?.itemId) as typeof prep;next.character={...next.character,preparation:prep};}

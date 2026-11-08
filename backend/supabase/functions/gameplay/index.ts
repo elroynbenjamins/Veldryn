@@ -278,23 +278,86 @@ function combatTimeline(input) {
   const end = input.startsAtMs + Math.max(0, input.elapsedSeconds) * 1e3;
   let at = input.startsAtMs, progress = Math.max(0, Math.min(0.999999999, input.progressFraction)), remaining = Math.max(0, Math.floor(input.preparationEncounters));
   const encounters = [];
+  const segments = [];
   while (at < end) {
     const prepared = remaining > 0, candy = !!input.candy && at >= input.candy.startsAtMs && at < input.candy.endsAtMs;
     const cycleSeconds = (prepared ? input.preparedCycleSeconds : input.cycleSeconds) / (candy ? 1.1 : 1);
     if (!Number.isFinite(cycleSeconds) || cycleSeconds <= 0) throw new Error("Invalid combat cycle");
     const boundary = Math.min(end, ...input.candy ? [input.candy.startsAtMs, input.candy.endsAtMs].filter((t) => t > at) : []);
+    const fromFraction = progress, startsAtMs = at;
     const needed = (1 - progress) * cycleSeconds * 1e3, available = boundary - at;
     if (needed <= available + 1e-6) {
       at = Math.min(boundary, at + needed);
       progress = 0;
+      if (input.trackSegments) segments.push({ startsAtMs, endsAtMs: at, fromFraction, toFraction: 1, prepared, candy, cycleSeconds, encounterIndex: encounters.length });
       encounters.push({ atMs: at, prepared, candy, cycleSeconds });
       if (prepared) remaining--;
     } else {
       progress += available / (cycleSeconds * 1e3);
       at = boundary;
+      if (input.trackSegments) segments.push({ startsAtMs, endsAtMs: at, fromFraction, toFraction: progress, prepared, candy, cycleSeconds, encounterIndex: encounters.length });
     }
   }
-  return { encounters, nextProgressFraction: progress };
+  return { encounters, nextProgressFraction: progress, segments };
+}
+
+// ../apps/mobile/src/core/rng.ts
+function hash32(input) {
+  let h = 2166136261;
+  for (let i = 0; i < input.length; i++) {
+    h ^= input.charCodeAt(i);
+    h = Math.imul(h, 16777619);
+  }
+  return h >>> 0;
+}
+function random01(seed, index) {
+  let x = hash32(seed) + Math.imul(index + 1, 2654435761) >>> 0;
+  x ^= x << 13;
+  x ^= x >>> 17;
+  x ^= x << 5;
+  return (x >>> 0) / 4294967296;
+}
+
+// ../apps/mobile/src/core/combat-hit-timeline.ts
+var clamp = (value, lo, hi) => Math.max(lo, Math.min(hi, value));
+var finite = (value, fallback2) => Number.isFinite(value) ? value : fallback2;
+function huntBasePlayerHit(attack, defense, outputMultiplier = 1) {
+  return Math.max(1, Math.round((Math.max(1, attack) * 1.35 - Math.max(0, defense) * 0.45) * Math.max(0.1, outputMultiplier)));
+}
+function huntHitEvents(input) {
+  const monsterHp = Math.max(1, Math.round(finite(input.monsterHp, 1)));
+  const base = Math.max(1, finite(input.basePlayerHit, 1));
+  const playerCount = Math.min(monsterHp, clamp(Math.ceil(monsterHp / base), 3, 8));
+  const enemyCount = clamp(Math.round(Math.max(1, finite(input.cycleSeconds, 1)) / 2.5), 2, 5);
+  const critChance = clamp(finite(input.critChance, 0), 0, 0.65);
+  const weights = [];
+  for (let i = 0; i < playerCount; i++) {
+    const critical = random01(input.seed + ":critical", i) < critChance;
+    const variance = 0.9 + random01(input.seed + ":variance", i) * 0.2;
+    weights.push({ raw: base * variance * (critical ? 1.5 : 1), critical });
+  }
+  const total = weights.reduce((sum, hit) => sum + hit.raw, 0);
+  let remaining = monsterHp;
+  const hits = [];
+  for (let i = 0; i < playerCount; i++) {
+    const damage = i === playerCount - 1 ? remaining : Math.max(1, Math.min(remaining - (playerCount - i - 1), Math.round(monsterHp * weights[i].raw / total)));
+    remaining -= damage;
+    hits.push({ fraction: (i + 1) / playerCount, actor: "player", damage, healing: 0, critical: weights[i].critical, index: i });
+  }
+  const incoming = Math.max(0, finite(input.incomingDamage, 0));
+  const healing = Math.max(0, finite(input.healingPerEncounter, 0));
+  for (let i = 0; i < enemyCount; i++) {
+    hits.push({ fraction: (i + 0.55) / enemyCount, actor: "enemy", damage: incoming / enemyCount, healing: healing / enemyCount, critical: false, index: i });
+  }
+  return hits.sort((a, b) => a.fraction - b.fraction || (a.actor === "enemy" ? -1 : 1));
+}
+function huntHitsBetween(events, fromFraction, toFraction) {
+  const from = clamp(finite(fromFraction, 0), 0, 1), to = clamp(finite(toFraction, 0), 0, 1);
+  return events.filter((hit) => hit.fraction > from + 1e-9 && hit.fraction <= to + 1e-9);
+}
+function huntEnemyHpAt(monsterHp, events, progressFraction) {
+  const hp = Math.max(1, Math.round(monsterHp));
+  return Math.max(0, hp - events.reduce((sum, hit) => sum + (hit.actor === "player" && hit.fraction <= progressFraction + 1e-9 ? hit.damage : 0), 0));
 }
 
 // ../apps/mobile/src/core/combat-progression-pacing.ts
@@ -562,23 +625,6 @@ function liveEventDef(id) {
   if (!series) return void 0;
   const template = LIVE_EVENT_CATALOG.find((event) => annualEventSeriesId(event.id) === series);
   return template ? { ...template, id } : void 0;
-}
-
-// ../apps/mobile/src/core/rng.ts
-function hash32(input) {
-  let h = 2166136261;
-  for (let i = 0; i < input.length; i++) {
-    h ^= input.charCodeAt(i);
-    h = Math.imul(h, 16777619);
-  }
-  return h >>> 0;
-}
-function random01(seed, index) {
-  let x = hash32(seed) + Math.imul(index + 1, 2654435761) >>> 0;
-  x ^= x << 13;
-  x ^= x >>> 17;
-  x ^= x << 5;
-  return (x >>> 0) / 4294967296;
 }
 
 // ../apps/mobile/src/content/guild-companions-v1.ts
@@ -42587,7 +42633,7 @@ var tailoringPathMaterial = {
 function q(base, multiplier) {
   return Math.max(1, Math.round(base * multiplier));
 }
-function clamp(value, min, max) {
+function clamp2(value, min, max) {
   return Math.max(min, Math.min(max, value));
 }
 function mergeInputs(inputs) {
@@ -42664,7 +42710,7 @@ var V33_EQUIPMENT_RECIPES = equipment_catalog_t1_t9_v33_default.pieces.map((piec
     level,
     xp: q(tierXp[tier] ?? 120, multiplier),
     gold: increasedCraftingGoldCost(q(tierGold[tier] ?? 120, multiplier) * EQUIPMENT_FORGE_GOLD_MULTIPLIER),
-    seconds: clamp(Math.round(range.base * multiplier), range.min, range.max),
+    seconds: clamp2(Math.round(range.base * multiplier), range.min, range.max),
     inputs: mergeInputs([...ingredients(tier, String(piece.Path), multiplier, skillId), infusionByTier[tier]]),
     output: { itemId: String(piece["Piece ID"]), quantity: 1 },
     classId,
@@ -43758,7 +43804,7 @@ var COMBAT_LIMITS = {
 };
 
 // src/server/combat/calculations.ts
-var clamp2 = (v, min, max) => Math.max(min, Math.min(max, v));
+var clamp3 = (v, min, max) => Math.max(min, Math.min(max, v));
 function roleAdjustedAttackPower(input) {
   const attack = Math.max(0, input.attackPower);
   if (input.team !== "players" || input.role === "damage" || input.role === "enemy") return attack;
@@ -43767,13 +43813,13 @@ function roleAdjustedAttackPower(input) {
 }
 function defenseMitigation(defense, mitigationConstant) {
   const raw2 = defense / Math.max(1, defense + mitigationConstant);
-  return clamp2(raw2, COMBAT_LIMITS.mitigationMin, COMBAT_LIMITS.mitigationMax);
+  return clamp3(raw2, COMBAT_LIMITS.mitigationMin, COMBAT_LIMITS.mitigationMax);
 }
 function hitChance(accuracy, evasion, accuracyScale) {
-  return clamp2(0.75 + (accuracy - evasion) / accuracyScale, COMBAT_LIMITS.hitChanceMin, COMBAT_LIMITS.hitChanceMax);
+  return clamp3(0.75 + (accuracy - evasion) / accuracyScale, COMBAT_LIMITS.hitChanceMin, COMBAT_LIMITS.hitChanceMax);
 }
 function damageAfterMitigation(attackPowerValue, abilityCoeff, mitigation2, variance, crit = false, critMultiplier = COMBAT_LIMITS.defaultCritMultiplier) {
-  const varianceClamped = clamp2(variance, COMBAT_LIMITS.damageVarianceMin, COMBAT_LIMITS.damageVarianceMax);
+  const varianceClamped = clamp3(variance, COMBAT_LIMITS.damageVarianceMin, COMBAT_LIMITS.damageVarianceMax);
   const normal = Math.max(1, attackPowerValue * abilityCoeff * varianceClamped * (1 - mitigation2));
   return crit ? normal * critMultiplier : normal;
 }
@@ -44647,7 +44693,7 @@ function simulateCombat(input) {
       return;
     }
     const mit = effect2.damageType === "true" ? 0 : defenseMitigation(gemEffectiveDefenseV1(target2, now), mitigationConstant);
-    const crit = rng.next(`${now}:${source.definition.id}:${abilityId}:crit`) < clamp2(source.definition.stats.critChance + modifier(source, "crit", now), 0, 0.75);
+    const crit = rng.next(`${now}:${source.definition.id}:${abilityId}:crit`) < clamp3(source.definition.stats.critChance + modifier(source, "crit", now), 0, 0.75);
     const qmodeStrike = input.enemyDamageProfile === "qmode-v1" && source.definition.team === "enemies" && target2.definition.team === "players" && eventType === "damage";
     const varianceRoll = rng.next(`${now}:${abilityId}:var`);
     const variance = qmodeStrike ? 0.925 + varianceRoll * 0.2 : 0.95 + varianceRoll * 0.1;
@@ -44661,7 +44707,7 @@ function simulateCombat(input) {
     raw2 *= Math.max(0.1, 1 + modifier(source, "damage_done", now));
     raw2 *= Math.max(0.1, 1 + modifier(target2, "damage_taken", now));
     raw2 *= gemIncomingDamageMultiplierV1(target2, now);
-    if (hpPct(target2) < clamp2(effect2.executeBelowHpPct ?? 0, 0, 1)) raw2 *= 1 + clamp2(effect2.executeBonus ?? 0, 0, 1);
+    if (hpPct(target2) < clamp3(effect2.executeBelowHpPct ?? 0, 0, 1)) raw2 *= 1 + clamp3(effect2.executeBonus ?? 0, 0, 1);
     const bypassShield = eventType === "dot_tick" && effect2.damageType === "true";
     const absorbed = bypassShield ? 0 : Math.min(target2.shield, raw2);
     target2.shield -= absorbed;
@@ -44745,7 +44791,7 @@ function simulateCombat(input) {
     if (effect2.kind === "shield") {
       const amt = Math.max(0, (source.definition.stats.healingPower * (effect2.coeff ?? 0) + (effect2.flat ?? 0)) * gemShieldMultiplierV1(source, now) * (source.definition.alchemyModifiers?.shielding ?? 1));
       target2.shield += amt;
-      if (effect2.shieldReflectPct && amt > 0) (target2.reflectiveShields ??= []).push({ remaining: amt, rate: clamp2(effect2.shieldReflectPct, 0, 0.5), sourceId: source.definition.id });
+      if (effect2.shieldReflectPct && amt > 0) (target2.reflectiveShields ??= []).push({ remaining: amt, rate: clamp3(effect2.shieldReflectPct, 0, 0.5), sourceId: source.definition.id });
       gemOnShieldAppliedV1(now, source, target2);
       gemConsumeSupportChargeV1(now, source);
       emitGemState(now);
@@ -45312,7 +45358,7 @@ function companionTrialSeasonDefinition(seasonKey) {
 
 // src/server/companions/combat-adapter.ts
 var COMMON_MAX_INVESTMENT_MULTIPLIER = 1.5;
-var clamp3 = (value, min, max) => Math.max(min, Math.min(max, value));
+var clamp4 = (value, min, max) => Math.max(min, Math.min(max, value));
 var ROLE_ANCHORS = {
   damage: { hp: 180, power: 22, defense: 12, attackSpeed: 2 },
   tank: { hp: 260, power: 14, defense: 24, attackSpeed: 2.6 },
@@ -45321,16 +45367,16 @@ var ROLE_ANCHORS = {
 function companionBalancedBaseStats(def) {
   const a = ROLE_ANCHORS[def.role], b = def.baseStats;
   return {
-    hp: a.hp * clamp3(b.hp / a.hp, 0.95, 1.05),
-    power: a.power * clamp3(b.power / a.power, 0.95, 1.05),
-    defense: a.defense * clamp3(b.defense / a.defense, 0.95, 1.05),
-    attackSpeed: a.attackSpeed * clamp3(b.attackSpeed / a.attackSpeed, 0.9, 1.1)
+    hp: a.hp * clamp4(b.hp / a.hp, 0.95, 1.05),
+    power: a.power * clamp4(b.power / a.power, 0.95, 1.05),
+    defense: a.defense * clamp4(b.defense / a.defense, 0.95, 1.05),
+    attackSpeed: a.attackSpeed * clamp4(b.attackSpeed / a.attackSpeed, 0.9, 1.1)
   };
 }
 function companionInvestmentMultiplier(def, progress) {
   const max = COMPANION_RARITY_MAX_LEVEL[def.rarity];
   const endpoint = COMMON_MAX_INVESTMENT_MULTIPLIER * COMPANION_RARITY_TARGET[def.rarity];
-  const fraction = max <= 1 ? 1 : clamp3((progress.level - 1) / (max - 1), 0, 1);
+  const fraction = max <= 1 ? 1 : clamp4((progress.level - 1) / (max - 1), 0, 1);
   return 1 + (endpoint - 1) * fraction;
 }
 function identityModifiers(def, progress) {
@@ -45372,13 +45418,13 @@ function engineEffects(def, progress, context) {
       return [{ kind: "buff", value: -Math.max(0.01, levelCoeff * identity.mitigationMultiplier), durationMs: 5e3, tag: "damage_taken" }];
     case "utility":
     default:
-      if (def.role === "support" && context.mode !== "character_assist") return [{ kind: "heal", coeff: clamp3(levelCoeff * 0.18, 0.035, 0.08) * (1 + tHeal) * identity.activeHealMultiplier * identity.utilityMultiplier, tag: "companion_utility" }];
+      if (def.role === "support" && context.mode !== "character_assist") return [{ kind: "heal", coeff: clamp4(levelCoeff * 0.18, 0.035, 0.08) * (1 + tHeal) * identity.activeHealMultiplier * identity.utilityMultiplier, tag: "companion_utility" }];
       return def.role === "support" ? [{ kind: "buff", value: Math.max(0.01, levelCoeff * identity.utilityMultiplier), durationMs: 5e3, tag: "companion_utility" }] : [{ kind: "damage", coeff: Math.max(0.05, levelCoeff * identity.activeDamageMultiplier), tag: "companion_active" }];
   }
 }
 function buildCompanionCombatant(def, progress, context) {
   if (progress.companionId !== def.id) throw new Error("companion_progress_definition_mismatch");
-  const base = companionBalancedBaseStats(def), identity = identityModifiers(def, progress), scale = companionInvestmentMultiplier(def, progress), synergy = clamp3(context.teamSynergyMultiplier ?? 1, 1, 1.06), hasteBonus = clamp3(context.teamHasteBonus ?? 0, 0, 0.06), cooldownChange = effectValue(progress, "cooldown"), target2 = resolvedTarget(def, context);
+  const base = companionBalancedBaseStats(def), identity = identityModifiers(def, progress), scale = companionInvestmentMultiplier(def, progress), synergy = clamp4(context.teamSynergyMultiplier ?? 1, 1, 1.06), hasteBonus = clamp4(context.teamHasteBonus ?? 0, 0, 0.06), cooldownChange = effectValue(progress, "cooldown"), target2 = resolvedTarget(def, context);
   const bond = progress.bondTraitUnlocked ? 1.03 : 1, ascension = 1 + progress.ascensionTier * 6e-3, derived = scale * synergy * bond * ascension;
   const maxHp = Math.round(base.hp * derived), attackPower = Number((base.power * derived).toFixed(2));
   const standalone = context.mode !== "character_assist";
@@ -50521,11 +50567,11 @@ function newJournalState(accountId) {
   if (!accountId) throw new Error("account_required");
   return { schemaVersion: 42, accountId, revision: 0, unlockedAchievements: {}, unlockedTitles: {}, selectedTitleByCharacter: {}, records: {} };
 }
-var clamp4 = (value) => Math.max(0, Math.min(1, value));
+var clamp5 = (value) => Math.max(0, Math.min(1, value));
 function journalAchievementProgress(state, snapshot2) {
   return JOURNAL_ACHIEVEMENTS_V42.map((definition) => {
     const current = Math.max(0, snapshot2.metrics[definition.metricKey] ?? 0);
-    return { definition, current, target: definition.target, progress: clamp4(definition.target ? current / definition.target : 1), complete: current >= definition.target, unlockedAtMs: state.unlockedAchievements[definition.id] };
+    return { definition, current, target: definition.target, progress: clamp5(definition.target ? current / definition.target : 1), complete: current >= definition.target, unlockedAtMs: state.unlockedAchievements[definition.id] };
   });
 }
 function applyJournalSnapshot(state, snapshot2, nowMs) {
@@ -51366,55 +51412,55 @@ var BY_PROFILE = {
   REVENANT: { accuracy: 0.9, evasion: 0.05, critChance: 0.07, critMultiplier: 1.6, haste: 0.03 },
   FALLEN_KNIGHT: { accuracy: 0.93, evasion: 0.05, critChance: 0.1, critMultiplier: 1.75, haste: 0.05 }
 };
-var clamp5 = (value, min, max) => Math.max(min, Math.min(max, value));
-var expectedCrit = (chance, multiplier) => 1 + clamp5(chance, 0, 0.75) * Math.max(0, multiplier - 1);
+var clamp6 = (value, min, max) => Math.max(min, Math.min(max, value));
+var expectedCrit = (chance, multiplier) => 1 + clamp6(chance, 0, 0.75) * Math.max(0, multiplier - 1);
 function regionalEnemySecondaryStats(monster) {
   return BY_PROFILE[encounterIdentity(monster).id] ?? NEUTRAL2;
 }
 function regionalSecondaryExchange(player, monster, basePlayerCritChance = 0.05) {
   const enemy2 = regionalEnemySecondaryStats(monster);
-  const playerHitChance = clamp5(player.accuracy - enemy2.evasion, 0.55, 0.99);
-  const enemyHitChance = clamp5(enemy2.accuracy - player.evasion, 0.55, 0.99);
+  const playerHitChance = clamp6(player.accuracy - enemy2.evasion, 0.55, 0.99);
+  const enemyHitChance = clamp6(enemy2.accuracy - player.evasion, 0.55, 0.99);
   const baselinePlayerHit = 0.84 - NEUTRAL2.evasion;
   const baselineEnemyHit = NEUTRAL2.accuracy - 0.04;
   const playerCritExpected = expectedCrit(player.critChance, player.critMultiplier);
   const enemyCritExpected = expectedCrit(enemy2.critChance, enemy2.critMultiplier);
   const baselinePlayerCritExpected = expectedCrit(basePlayerCritChance, 1.5);
   const baselineEnemyCritExpected = expectedCrit(NEUTRAL2.critChance, NEUTRAL2.critMultiplier);
-  const playerHasteMultiplier = clamp5((1 + player.haste) / 1.05, 0.75, 1.5);
+  const playerHasteMultiplier = clamp6((1 + player.haste) / 1.05, 0.75, 1.5);
   return {
     enemy: enemy2,
     playerHitChance,
     enemyHitChance,
     playerCritExpected,
     enemyCritExpected,
-    playerOutputMultiplier: clamp5(playerHitChance / baselinePlayerHit * (playerCritExpected / baselinePlayerCritExpected) * playerHasteMultiplier, 0.7, 1.45),
-    incomingPressureMultiplier: clamp5(enemyHitChance / baselineEnemyHit * (enemyCritExpected / baselineEnemyCritExpected) * (1 + enemy2.haste), 0.7, 1.45)
+    playerOutputMultiplier: clamp6(playerHitChance / baselinePlayerHit * (playerCritExpected / baselinePlayerCritExpected) * playerHasteMultiplier, 0.7, 1.45),
+    incomingPressureMultiplier: clamp6(enemyHitChance / baselineEnemyHit * (enemyCritExpected / baselineEnemyCritExpected) * (1 + enemy2.haste), 0.7, 1.45)
   };
 }
 
 // ../apps/mobile/src/core/story-boss.ts
-var clamp6 = (value, min, max) => Math.max(min, Math.min(max, value));
+var clamp7 = (value, min, max) => Math.max(min, Math.min(max, value));
 var FALLEN_KNIGHT_MAX_DURATION_MS = 1e5;
 var FALLEN_KNIGHT_MAX_POTION_UNITS = 5;
 function mitigation(defense) {
-  return clamp6(defense / Math.max(1, defense + 110), 0, 0.72);
+  return clamp7(defense / Math.max(1, defense + 110), 0, 0.72);
 }
 function simulateFallenKnightStoryBattle(player, seed, mode = "story") {
   const monster = MONSTERS.find((row) => row.id === "FALLEN_KNIGHT");
   if (!monster) throw new Error("fallen_knight_missing");
   const bossSecondary = regionalEnemySecondaryStats(monster);
   const bossMaxHp = monster.hp, playerMaxHp = Math.max(1, Math.round(player.maxHp));
-  let bossHp = bossMaxHp, playerHp = clamp6(Math.round(player.currentHp || playerMaxHp), 1, playerMaxHp), potionLeft = clamp6(Math.floor(player.potionQuantity), 0, FALLEN_KNIGHT_MAX_POTION_UNITS), potionConsumed = 0;
+  let bossHp = bossMaxHp, playerHp = clamp7(Math.round(player.currentHp || playerMaxHp), 1, playerMaxHp), potionLeft = clamp7(Math.floor(player.potionQuantity), 0, FALLEN_KNIGHT_MAX_POTION_UNITS), potionConsumed = 0;
   let phase = 1, phaseWardUntilMs = 0, rngIndex = 0, bossAttackCount = 0;
   const phasesReached = [1], events = [];
-  const playerHitChance = clamp6(player.accuracy - bossSecondary.evasion, 0.55, 0.99);
-  const playerAttackIntervalMs = clamp6(Math.round(2350 / Math.max(0.65, (1 + player.haste) * player.actionSpeedMultiplier)), 900, 3200);
+  const playerHitChance = clamp7(player.accuracy - bossSecondary.evasion, 0.55, 0.99);
+  const playerAttackIntervalMs = clamp7(Math.round(2350 / Math.max(0.65, (1 + player.haste) * player.actionSpeedMultiplier)), 900, 3200);
   let nextPlayerAt = 650, nextBossAt = 1800;
   const push = (event) => events.push({ ...event, playerHp: Math.max(0, Math.round(playerHp)), bossHp: Math.max(0, Math.round(bossHp)), phase });
   push({ atMs: 0, type: "battle_start", label: "The Fallen Knight raises the oathglass blade." });
   const maybePotion = (atMs) => {
-    const threshold = clamp6(player.autoEatThresholdPct, 10, 90) / 100;
+    const threshold = clamp7(player.autoEatThresholdPct, 10, 90) / 100;
     if (player.potionHeal <= 0) return;
     if (playerHp > 0 && playerHp / playerMaxHp <= threshold && potionLeft > 0) {
       const healed = Math.min(playerMaxHp - playerHp, Math.max(1, Math.round(player.potionHeal)));
@@ -51446,7 +51492,7 @@ function simulateFallenKnightStoryBattle(player, seed, mode = "story") {
       if (!hit) {
         push({ atMs: now, type: "player_miss", label: "Your strike misses.", abilityId: "PLAYER_STRIKE" });
       } else {
-        const critical = random01(seed, rngIndex++) < clamp6(player.critChance, 0, 0.75);
+        const critical = random01(seed, rngIndex++) < clamp7(player.critChance, 0, 0.75);
         const variance = 0.94 + random01(seed, rngIndex++) * 0.12;
         const bossWard = now < phaseWardUntilMs ? 0.86 : 1;
         const base = Math.max(1, player.power * 38 + player.attack * 14 - monster.defense * 15);
@@ -51467,7 +51513,7 @@ function simulateFallenKnightStoryBattle(player, seed, mode = "story") {
     now = nextBossAt;
     bossAttackCount++;
     const phaseHaste = phase === 3 ? 0.18 : phase === 2 ? 0.07 : 0;
-    const attackInterval = clamp6(Math.round(2850 / (1 + bossSecondary.haste + phaseHaste)), 1450, 3400);
+    const attackInterval = clamp7(Math.round(2850 / (1 + bossSecondary.haste + phaseHaste)), 1450, 3400);
     let abilityId = "FALLEN_SLASH", label = "Fallen Slash", coeff = 1, telegraph = 0;
     if (bossAttackCount % 6 === 0) {
       abilityId = "OATHGLASS_COLLAPSE";
@@ -51481,12 +51527,12 @@ function simulateFallenKnightStoryBattle(player, seed, mode = "story") {
       telegraph = 900;
     }
     if (telegraph) push({ atMs: Math.max(0, now - telegraph), type: "telegraph", label: `${label} incoming`, abilityId });
-    const bossAccuracy = clamp6(bossSecondary.accuracy + (phase === 3 ? 0.025 : 0), 0.55, 0.99);
-    const bossHitChance = clamp6(bossAccuracy - player.evasion, 0.55, 0.99);
+    const bossAccuracy = clamp7(bossSecondary.accuracy + (phase === 3 ? 0.025 : 0), 0.55, 0.99);
+    const bossHitChance = clamp7(bossAccuracy - player.evasion, 0.55, 0.99);
     if (random01(seed, rngIndex++) > bossHitChance) {
       push({ atMs: now, type: "boss_miss", label: `${label} misses.`, abilityId });
     } else {
-      const bossCritChance = clamp6(bossSecondary.critChance + (phase === 3 ? 0.08 : 0), 0, 0.55);
+      const bossCritChance = clamp7(bossSecondary.critChance + (phase === 3 ? 0.08 : 0), 0, 0.55);
       const critical = random01(seed, rngIndex++) < bossCritChance;
       const variance = 0.95 + random01(seed, rngIndex++) * 0.1;
       const raw2 = monster.attack * 0.29 + monster.level * 0.14;
@@ -51522,7 +51568,7 @@ function simulateFallenKnightStoryBattle(player, seed, mode = "story") {
     potionConsumed,
     phasesReached,
     events,
-    player: { hitChance: playerHitChance, critChance: clamp6(player.critChance, 0, 0.75), attackIntervalMs: playerAttackIntervalMs },
+    player: { hitChance: playerHitChance, critChance: clamp7(player.critChance, 0, 0.75), attackIntervalMs: playerAttackIntervalMs },
     boss: { accuracy: bossSecondary.accuracy, evasion: bossSecondary.evasion, critChance: bossSecondary.critChance, critMultiplier: bossSecondary.critMultiplier, haste: bossSecondary.haste }
   };
 }
@@ -52006,34 +52052,65 @@ function combatEncounterDamage(runtime, champion = false) {
   return { damage: incoming, healing, onKillHealing, net: incoming - healing };
 }
 function simulateCombat2(state, monsterId, elapsed, nowMs = Date.now()) {
-  const c = state.character, startsAtMs = state.activity?.lastClaimAtMs ?? nowMs - elapsed * 1e3;
+  const c = state.character, activity = state.activity, startsAtMs = activity?.lastClaimAtMs ?? nowMs - elapsed * 1e3;
   const unprepared = { ...state, character: { ...c, preparation: void 0 } }, plain = combatRuntimeDetails(unprepared, monsterId, startsAtMs), prepared = combatRuntimeDetails(state, monsterId, startsAtMs);
   const startCandy = eventCandyUtilityMultiplier(state, startsAtMs, "combat");
-  const timeline = combatTimeline({ startsAtMs, elapsedSeconds: elapsed, progressFraction: state.activity?.progressFraction ?? 0, preparationEncounters: c.preparation?.remainingEncounters ?? 0, cycleSeconds: plain.killCycleSeconds * startCandy, preparedCycleSeconds: prepared.killCycleSeconds * startCandy, candy: eventCandyWindow(state, "combat") });
+  const timeline = combatTimeline({ startsAtMs, elapsedSeconds: elapsed, progressFraction: activity?.progressFraction ?? 0, preparationEncounters: c.preparation?.remainingEncounters ?? 0, cycleSeconds: plain.killCycleSeconds * startCandy, preparedCycleSeconds: prepared.killCycleSeconds * startCandy, candy: eventCandyWindow(state, "combat"), trackSegments: true });
   const food = c.equippedFoodId ? itemDef(c.equippedFoodId) : void 0, threshold = Math.max(10, Math.min(90, state.settings.autoEatThresholdPct)) / 100;
   let foodLeft = stackQty2(state.inventory.stacks, c.equippedFoodId), foodConsumed = 0, hp = Math.min(c.currentHp ?? prepared.stats.hp, prepared.stats.hp), championKills = 0, stoppedReason = "", preparationEncounters = 0, qualifyingActivitySeconds = elapsed;
   const completed = [];
-  if (hp <= 1) return { kills: 0, completed, championKills: 0, foodConsumed: 0, endHp: 1, stoppedReason: "Too injured", qualifyingActivitySeconds: 0, nextProgressFraction: 0, preparationEncounters: 0 };
-  for (const encounter of timeline.encounters) {
-    const runtime = { ...encounter.prepared ? prepared : plain, killCycleSeconds: encounter.cycleSeconds };
-    const champion = isChampionEncounter(c.id, state.activity?.lastClaimAtMs ?? 0, monsterId, completed.length), exchange = combatEncounterDamage(runtime, champion);
-    if (encounter.prepared) preparationEncounters++;
-    hp = hp - exchange.damage <= 0 ? 0 : Math.min(runtime.stats.hp, hp - exchange.net);
-    while (food?.heal && foodLeft > 0 && hp > 0 && hp / runtime.stats.hp <= threshold) {
-      hp = Math.min(runtime.stats.hp, hp + Math.max(1, Math.ceil(food.heal * runtime.modifiers.healingEffectivenessMultiplier)));
-      foodLeft--;
-      foodConsumed++;
-    }
-    if (hp <= 1) {
-      hp = 1;
-      stoppedReason = food && state.settings.stopCombatWhenOutOfFood ? "Out of food / too injured" : "Too injured";
-      qualifyingActivitySeconds = (encounter.atMs - startsAtMs) / 1e3;
-      break;
-    }
-    completed.push({ atMs: encounter.atMs, candy: encounter.candy });
-    if (champion) championKills++;
+  let activeEncounterIndex = 0, enemyHp = activity?.combatEnemyHp;
+  let lastHit;
+  const seedFor = (index) => `${c.id}:${activity?.startedAtMs ?? startsAtMs}:${monsterId}:${(activity?.sessionKills ?? 0) + index}`;
+  const hitsFor = (runtime, index, champion, attackCadenceSeconds = runtime.killCycleSeconds) => {
+    const exchange = combatEncounterDamage(runtime, champion);
+    return huntHitEvents({ monsterHp: runtime.m.hp, basePlayerHit: huntBasePlayerHit(runtime.stats.attack, runtime.m.defense, runtime.secondary.playerOutputMultiplier), incomingDamage: exchange.damage, healingPerEncounter: exchange.healing, cycleSeconds: attackCadenceSeconds, critChance: runtime.stats.critChance, seed: seedFor(index) });
+  };
+  if (enemyHp === void 0 || !Number.isFinite(enemyHp)) {
+    const champion = isChampionEncounter(c.id, activity?.startedAtMs ?? startsAtMs, monsterId, activity?.sessionKills ?? 0);
+    enemyHp = huntEnemyHpAt(prepared.m.hp, hitsFor(c.preparation?.remainingEncounters ? prepared : plain, 0, champion), activity?.progressFraction ?? 0);
   }
-  return { kills: completed.length, completed, championKills, foodConsumed, endHp: hp, stoppedReason, qualifyingActivitySeconds, nextProgressFraction: stoppedReason ? 0 : timeline.nextProgressFraction, preparationEncounters };
+  enemyHp = Math.max(0, Math.min(prepared.m.hp, enemyHp));
+  if (hp <= 1) return { kills: 0, completed, championKills: 0, foodConsumed: 0, endHp: 1, enemyHp, stoppedReason: "Too injured", qualifyingActivitySeconds: 0, nextProgressFraction: 0, preparationEncounters: 0, lastHit };
+  for (const segment of timeline.segments) {
+    const runtime = { ...segment.prepared ? prepared : plain, killCycleSeconds: segment.cycleSeconds };
+    if (segment.encounterIndex !== activeEncounterIndex) {
+      enemyHp = runtime.m.hp;
+      activeEncounterIndex = segment.encounterIndex;
+    }
+    const encounterNumber = (activity?.sessionKills ?? 0) + segment.encounterIndex;
+    const champion = isChampionEncounter(c.id, activity?.startedAtMs ?? startsAtMs, monsterId, encounterNumber);
+    const hits = hitsFor(runtime, segment.encounterIndex, champion, segment.prepared ? prepared.killCycleSeconds : plain.killCycleSeconds);
+    for (const hit of huntHitsBetween(hits, segment.fromFraction, segment.toFraction)) {
+      const hitAtMs = segment.startsAtMs + (hit.fraction - segment.fromFraction) * segment.cycleSeconds * 1e3;
+      if (hit.actor === "player") {
+        enemyHp = Math.max(0, enemyHp - hit.damage);
+      } else {
+        hp = hp - hit.damage <= 0 ? 0 : Math.min(runtime.stats.hp, hp - hit.damage + hit.healing);
+        while (food?.heal && foodLeft > 0 && hp > 0 && hp / runtime.stats.hp <= threshold) {
+          hp = Math.min(runtime.stats.hp, hp + Math.max(1, Math.ceil(food.heal * runtime.modifiers.healingEffectivenessMultiplier)));
+          foodLeft--;
+          foodConsumed++;
+        }
+      }
+      lastHit = { atMs: hitAtMs, actor: hit.actor, damage: hit.damage, critical: hit.critical };
+      if (hp <= 1) {
+        hp = 1;
+        stoppedReason = food && state.settings.stopCombatWhenOutOfFood ? "Out of food / too injured" : "Too injured";
+        qualifyingActivitySeconds = Math.max(0, (hitAtMs - startsAtMs) / 1e3);
+        break;
+      }
+    }
+    if (stoppedReason) break;
+    if (segment.toFraction >= 1 - 1e-9) {
+      completed.push({ atMs: segment.endsAtMs, candy: segment.candy });
+      if (segment.prepared) preparationEncounters++;
+      if (champion) championKills++;
+      enemyHp = runtime.m.hp;
+      activeEncounterIndex = segment.encounterIndex + 1;
+    }
+  }
+  return { kills: completed.length, completed, championKills, foodConsumed, endHp: hp, enemyHp, stoppedReason, qualifyingActivitySeconds, nextProgressFraction: stoppedReason ? 0 : timeline.nextProgressFraction, preparationEncounters, lastHit };
 }
 function previewStandardActivityRewardRaw(state, effectiveNowMs) {
   if (!state.activity || !state.character) return { xp: 0, gold: 0, items: [], kills: 0, elapsedSeconds: 0 };
@@ -52145,7 +52222,7 @@ function previewStandardActivityRewardRaw(state, effectiveNowMs) {
     start = end;
   }
   const momentumGold = huntMomentumBonus(baseGoldPerKill, sessionKills, sim.kills);
-  const reward2 = { combatEffort: { startsAtMs: state.activity.lastClaimAtMs, endsAtMs: state.activity.lastClaimAtMs + sim.qualifyingActivitySeconds * 1e3 }, classSkillXp: classGain.awards, explorationXp, xp: Math.floor(sim.kills * baseXpPerKill) + momentumXp + champion.xp, gold: Math.floor(sim.kills * baseGoldPerKill) + momentumGold + champion.gold, items: rewardItems, kills: sim.kills, elapsedSeconds: elapsed, qualifyingActivitySeconds: sim.qualifyingActivitySeconds, preparationEncounters: sim.preparationEncounters, foodConsumed: sim.foodConsumed, endHp: sim.endHp, stoppedReason: sim.stoppedReason, nextProgressFraction: sim.nextProgressFraction, ...sim.championKills > 0 ? { championEncounters: { count: sim.championKills, bonusXp: champion.xp, bonusGold: champion.gold } } : {} };
+  const reward2 = { combatEffort: { startsAtMs: state.activity.lastClaimAtMs, endsAtMs: state.activity.lastClaimAtMs + sim.qualifyingActivitySeconds * 1e3 }, classSkillXp: classGain.awards, explorationXp, xp: Math.floor(sim.kills * baseXpPerKill) + momentumXp + champion.xp, gold: Math.floor(sim.kills * baseGoldPerKill) + momentumGold + champion.gold, items: rewardItems, kills: sim.kills, elapsedSeconds: elapsed, qualifyingActivitySeconds: sim.qualifyingActivitySeconds, preparationEncounters: sim.preparationEncounters, foodConsumed: sim.foodConsumed, endHp: sim.endHp, nextCombatEnemyHp: sim.enemyHp, stoppedReason: sim.stoppedReason, nextProgressFraction: sim.nextProgressFraction, ...sim.championKills > 0 ? { championEncounters: { count: sim.championKills, bonusXp: champion.xp, bonusGold: champion.gold } } : {} };
   return { ...reward2, masteryMaterialRemainders: materialRemainders, ...timedEventRewards(state, "combat", sim.completed.map((row) => row.atMs)) };
 }
 function previewStandardActivityRewardWithSupplies(state, effectiveNowMs) {
@@ -52463,7 +52540,7 @@ function claimActivitySegmentRaw(state, nowMs) {
     const nextXp = Math.min(totalXpAtLevel(100), skill2.xp + (reward2.explorationXp ?? 0));
     return { ...skill2, xp: nextXp, level: levelFromXp(nextXp) };
   });
-  const nextBase = { ...state, skills, ...routed, outOfCombatSinceMs: shouldStop ? combatStoppedAtMs : void 0, character: { ...state.character, ...routed.character ?? {}, xp, level, gold: state.character.gold + reward2.gold, currentHp: reward2.endHp ?? state.character.currentHp }, activity: shouldStop ? null : { ...state.activity, lastClaimAtMs: settledAtMs, progressFraction: reward2.nextProgressFraction, sessionKills: (state.activity.sessionKills ?? 0) + reward2.kills, sessionChampions: (state.activity.sessionChampions ?? 0) + (reward2.championEncounters?.count ?? 0) }, unlockedMonsterIds: [.../* @__PURE__ */ new Set([...state.unlockedMonsterIds, ...unlocked])] };
+  const nextBase = { ...state, skills, ...routed, outOfCombatSinceMs: shouldStop ? combatStoppedAtMs : void 0, character: { ...state.character, ...routed.character ?? {}, xp, level, gold: state.character.gold + reward2.gold, currentHp: reward2.endHp ?? state.character.currentHp }, activity: shouldStop ? null : { ...state.activity, lastClaimAtMs: settledAtMs, progressFraction: reward2.nextProgressFraction, combatEnemyHp: reward2.nextCombatEnemyHp, sessionKills: (state.activity.sessionKills ?? 0) + reward2.kills, sessionChampions: (state.activity.sessionChampions ?? 0) + (reward2.championEncounters?.count ?? 0) }, unlockedMonsterIds: [.../* @__PURE__ */ new Set([...state.unlockedMonsterIds, ...unlocked])] };
   let next = commitDailySupplyTimedBoost(nextBase, supply);
   next.character = { ...next.character, classSkills: trained.classSkills, classSkillRemainders: trained.classSkillRemainders, masteryMaterialRemainders: reward2.masteryMaterialRemainders };
   if (next.character.preparation && (reward2.preparationEncounters ?? reward2.kills) > 0) {

@@ -17,6 +17,9 @@ assert.ok(auth.includes("entryRecovery?<")&&auth.includes('requestPasswordRecove
 assert.ok(auth.includes("!auth.session?<")&&auth.includes('creating?')&&auth.includes('setCreating(true)')&&auth.includes('setCreating(false)'),'Sign In and Create Account tabs share the real auth state');
 assert.ok(auth.includes('signInWithPassword(email,password)')&&auth.includes('createOnlineAccount(email,password,username)'),'Password entry retains server-backed sign-in and registration');
 assert.ok(auth.includes('googleSignInConfigured')&&auth.includes('signInOrLinkGoogle()'),'Google entry is only shown when configured');
+assert.ok(auth.includes('googleAccountLinkingEnabled?<GoogleBrandButton')&&auth.includes('googleLinked?<Text'),'Unverified Google account linking is hidden by default without hiding already-linked status');
+const googleSignIn=read('src/online/google-signin.ts');
+assert.ok(googleSignIn.includes("process.env.EXPO_PUBLIC_GOOGLE_ACCOUNT_LINKING_ENABLED==='true'"),'Linking requires a deliberate release flag and stays disabled by default');
 assert.ok(auth.includes('signInAsGuest()')&&auth.includes('upgradeGuestAccount(email,username,accountId)'),'Guest entry and guest-owner linking are preserved');
 assert.ok(auth.includes('accountLinkStep(auth.session.user)')&&auth.includes("linkStep==='set_password'"),'Verified account setup uses the authoritative state machine');
 assert.ok(auth.includes('finishGuestAccount(password,accountId)')&&auth.includes('resendGuestAccountConfirmation(accountId)')&&auth.includes('auth.refreshAccount()'),'Resend, verification refresh and password setup stay connected to real auth');

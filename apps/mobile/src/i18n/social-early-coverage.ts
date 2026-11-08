@@ -2,6 +2,7 @@ import type {SocialMessageKey} from './social';
 
 /** Player-facing Russian/Turkish Social, Guild and Dungeon copy. Unknown keys retain English fallback. */
 export const socialEarlyRows={
+  "No failed-run reward receipt yet. Weekly consolation rewards may be exhausted; refresh to check.": ["Пока нет подтверждения награды за неудачный поход. Недельный лимит утешительных наград мог закончиться; обновите данные.","Başarısız sefer ödülü henüz doğrulanmadı. Haftalık teselli ödülleri tükenmiş olabilir; kontrol etmek için yenile."],
   "Choose a boon": ["Выберите благословение","Bir lütuf seç"],
   "Select one reward before entering the next room.": ["Выберите одну награду перед переходом в следующую комнату.","Sonraki odaya geçmeden önce bir ödül seç."],
   "Choose your boon above to continue.": ["Для продолжения выберите благословение выше.","Devam etmek için yukarıdan bir lütuf seç."],

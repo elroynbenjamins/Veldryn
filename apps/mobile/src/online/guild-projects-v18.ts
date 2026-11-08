@@ -5,14 +5,14 @@ import type {GuildActivityView,GuildProjectFocus,GuildProjectKind} from '../core
 
 type ProjectRow={
  id:string;guild_id:string;template_id:string;definition_snapshot:Record<string,unknown>|null;kind:GuildProjectKind;focus:GuildProjectFocus;slot_index:number;status:'active'|'completed'|'expired'|'cancelled';
- target_points:number|string;completion_points:number|string;combat_points:number|string;skilling_points:number|string;cycle_key?:string|null;meaningful_contributors:number;minimum_meaningful_contributors:number;personal_reward_threshold:number;ends_at?:string|null;started_at:string;
+ target_points:number|string;completion_points:number|string;combat_points:number|string;skilling_points:number|string;cycle_key?:string|null;meaningful_contributors:number;minimum_meaningful_contributors:number;meaningful_contributor_threshold:number;personal_reward_threshold:number;ends_at?:string|null;started_at:string;
 };
 type ProgressRow={project_instance_id:string;account_id:string;raw_points:number|string;completion_points:number|string;combat_points:number|string;skilling_points:number|string};
 type ResourceRow={project_instance_id:string;resource_kind:'gold'|'item';resource_id:string;target_amount:number|string;contributed_amount:number|string};
 type ActivityRow={id:string;kind:string;title:string;body?:string|null;created_at:string};
 type EffortSourceRow={project_id:string;account_id:string;source:'combat'|'gathering'|'crafting'|'donation';points:number|string};
 type RosterRow={account_id:string;display_name:string;role:string};
-type CandidateRow={id:string;cycleKey:string;templateId:string;name:string;description:string;focus:'combat'|'skilling'|'mixed';expiresAt:string;guildXp:number|string;goldReward:number|string;mode:string;voteCount:number;myVote:boolean};
+type CandidateRow={id:string;cycleKey:string;templateId:string;name:string;description:string;focus:'combat'|'skilling'|'mixed';expiresAt:string;guildXp:number|string;goldReward:number|string;mode:string;voteCount:number;myVote:boolean;difficulty?:string;effortPerMember?:number|string};
 
 export interface OnlineGuildProjectResourceGoal{resourceKind:'gold'|'item';resourceId:string;label:string;target:number;current:number}
 export interface OnlineGuildProjectMemberContribution{
@@ -22,9 +22,9 @@ export interface OnlineGuildProjectSupplyItem{itemId:string;name:string;category
 export interface OnlineGuildProjectSummary{
  id:string;templateId:string;name:string;description:string;kind:GuildProjectKind;focus:GuildProjectFocus;slotIndex:number;status:'active'|'completed'|'expired'|'cancelled';
  targetPoints:number;completionPoints:number;combatPoints:number;skillingPoints:number;meaningfulContributors:number;minimumMeaningfulContributors:number;
- completionRewardClaimed?:boolean;launchWeekly?:boolean;rewardGold:number;rewardDestination:'character'|'guild_bank';guildXpReward?:number;hallProgress?:number;projectMode?:'effort'|'donation'|'hybrid';activityTotals:Record<'combat'|'gathering'|'crafting',number>&{donation?:number};personalPoints:number;personalRewardThreshold:number;endsAt?:string;startedAt:string;resourceGoals:OnlineGuildProjectResourceGoal[];memberContributions:OnlineGuildProjectMemberContribution[];
+ completionRewardClaimed?:boolean;launchWeekly?:boolean;rewardGold:number;rewardDestination:'character'|'guild_bank';guildXpReward?:number;hallProgress?:number;difficulty?:'easy'|'medium'|'hard';projectMode?:'effort'|'donation'|'hybrid';activityTotals:Record<'combat'|'gathering'|'crafting',number>&{donation?:number};personalPoints:number;personalRewardThreshold:number;endsAt?:string;startedAt:string;resourceGoals:OnlineGuildProjectResourceGoal[];memberContributions:OnlineGuildProjectMemberContribution[];
 }
-export interface OnlineGuildProjectCandidate{id:string;cycleKey:string;templateId:string;name:string;description:string;focus:'combat'|'skilling'|'mixed';expiresAt:string;voteCount:number;myVote:boolean;canStart:boolean;guildXpReward:number;rewardGold:number;mode:'effort'|'donation'|'hybrid'}
+export interface OnlineGuildProjectCandidate{id:string;cycleKey:string;templateId:string;name:string;description:string;focus:'combat'|'skilling'|'mixed';expiresAt:string;voteCount:number;myVote:boolean;canStart:boolean;guildXpReward:number;rewardGold:number;mode:'effort'|'donation'|'hybrid';difficulty:'easy'|'medium'|'hard';effortPerMember:number}
 export interface OnlineGuildProjectsSnapshot{guildId:string;projects:OnlineGuildProjectSummary[];candidates:OnlineGuildProjectCandidate[];activity:GuildActivityView[];supplyInventory?:OnlineGuildProjectSupplyItem[]}
 
 function client(){if(!supabase)throw new Error('Online services are not configured in this build.');return supabase;}
@@ -51,7 +51,7 @@ async function readGuildProjects(membership:NonNullable<Awaited<ReturnType<typeo
  const prepared=await db.rpc('prepare_guild_projects_v2');if(prepared.error)throw prepared.error;
  const [projectResult,candidateResult,rosterResult,supplyResult]=await Promise.all([
   db.from('guild_project_instances')
-   .select('id,guild_id,template_id,definition_snapshot,kind,focus,slot_index,cycle_key,status,target_points,completion_points,combat_points,skilling_points,meaningful_contributors,minimum_meaningful_contributors,personal_reward_threshold,ends_at,started_at')
+   .select('id,guild_id,template_id,definition_snapshot,kind,focus,slot_index,cycle_key,status,target_points,completion_points,combat_points,skilling_points,meaningful_contributors,minimum_meaningful_contributors,meaningful_contributor_threshold,personal_reward_threshold,ends_at,started_at')
    .eq('guild_id',membership.guild_id).in('status',['active','completed']).order('started_at',{ascending:false}).limit(12),
   db.rpc('guild_project_choice_ballot_v1'),
   db.rpc('guild_roster',{p_guild_id:membership.guild_id}),
@@ -97,13 +97,14 @@ async function readGuildProjects(membership:NonNullable<Awaited<ReturnType<typeo
    // During a staged rollout, the source breakdown may not be available yet.
    // Existing skilling points were gathering-only before crafting was added.
    const hasSkillingSource=memberSources.some(source=>source.source==='gathering'||source.source==='crafting');
-   return {accountId:member.account_id,displayName:member.display_name||'Adventurer',role:member.role||'member',points:num(contribution?.raw_points),combatPoints:sources.combat||num(contribution?.combat_points),gatheringPoints:sources.gathering||(hasSkillingSource?0:num(contribution?.skilling_points)),craftingPoints:sources.crafting,donationPoints:sources.donation,meaningful:num(contribution?.raw_points)>=250};
+   return {accountId:member.account_id,displayName:member.display_name||'Adventurer',role:member.role||'member',points:num(contribution?.raw_points),combatPoints:sources.combat||num(contribution?.combat_points),gatheringPoints:sources.gathering||(hasSkillingSource?0:num(contribution?.skilling_points)),craftingPoints:sources.crafting,donationPoints:sources.donation,meaningful:num(contribution?.raw_points)>=num(row.meaningful_contributor_threshold||250)};
   }).sort((a,b)=>b.points-a.points||a.displayName.localeCompare(b.displayName));
   return {
    id:row.id,templateId:row.template_id,launchWeekly:row.template_id==='guild_weekly_shared_effort'||(row.slot_index===2&&row.cycle_key?.startsWith('choice:')===true),completionRewardClaimed:claimed.has(row.id),
    name:definitionText(snapshot,'name',humanize(row.template_id)),activityTotals,
    rewardGold:num(snapshot.goldReward)||500,rewardDestination:snapshot.rewardDestination==='guild_bank'?'guild_bank':'character',
    guildXpReward:num(snapshot.guildXpReward),hallProgress:num(snapshot.guildHallProgress)||200,
+   difficulty:row.slot_index===2?(snapshot.difficulty==='easy'||snapshot.difficulty==='medium'||snapshot.difficulty==='hard'?snapshot.difficulty:row.focus==='combat'?'easy':row.focus==='skilling'?'medium':'hard'):undefined,
    projectMode:snapshot.mode==='donation'?'donation':snapshot.mode==='hybrid'?'hybrid':'effort',
    description:definitionText(snapshot,'description','Shared Guild project.'),
    kind:row.kind,focus:row.focus,slotIndex:row.slot_index,status:row.status,
@@ -119,6 +120,8 @@ async function readGuildProjects(membership:NonNullable<Awaited<ReturnType<typeo
   focus:row.focus,expiresAt:row.expiresAt,voteCount:num(row.voteCount),
   myVote:row.myVote===true,canStart:false,guildXpReward:num(row.guildXp),rewardGold:num(row.goldReward),
   mode:row.mode==='donation'?'donation':row.mode==='hybrid'?'hybrid':'effort',
+  difficulty:row.difficulty==='easy'||row.difficulty==='medium'||row.difficulty==='hard'?row.difficulty:row.focus==='combat'?'easy':row.focus==='skilling'?'medium':'hard',
+  effortPerMember:num(row.effortPerMember),
  } satisfies OnlineGuildProjectCandidate));
  const supplyInventory=(Array.isArray(supplyResult.data)?supplyResult.data as Array<Record<string,unknown>>:[])
   .filter(row=>typeof row.itemId==='string'&&typeof row.name==='string'&&['wood','fish','ore'].includes(String(row.category)))

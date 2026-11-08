@@ -6,9 +6,9 @@ It is designed to merge into the **current local repository**, which the user de
 
 ## Critical current product rule
 
-**There is no player Market in VELDRYN.**
+**The Player Market is a planned feature, not a released system.**
 
-Do not restore old listing/order/trading UI, APIs, telemetry, remote config or support tooling from older reference files. The fresh v17.2 migration bundled here no longer seeds any Market control. Migration 029 contains only an idempotent cleanup for anyone who previously applied the older v17.2 pack.
+Keep Player Market hidden in the in-game roadmap until its trading implementation and economy safeguards are complete. Do not restore obsolete trading/listing APIs or exposed controls from historical reference files. The Control Center roadmap editor enforces this embargo server-side.
 
 ## What v17.3 adds
 
@@ -62,7 +62,13 @@ Owners can create bounded codes tied to an already-validated reward bundle.
 ### 4. Announcements
 Schedule all-player, single-account, Guild or Event-participant messages, with optional push delivery through the trusted notification service.
 
-### 5. Admin access
+### 5. Community Roadmap
+
+A dedicated **Roadmap** screen reads the live voting proposals and aggregate vote totals. Editors and Owners may update descriptions, status (Voting / Planned / In Development / Released), order, release version, and public visibility. Every save requires an audit reason and uses optimistic concurrency checks. Moving a feature out of Voting or hiding it refunds its votes through database triggers. Player Market visibility remains locked off until its release.
+
+The Control site requires the latest roadmap migrations, including the server-only service-role table grants. Player clients still access proposals only through the restricted voting RPCs.
+
+### 6. Admin access
 Owner / Editor / Viewer access is manageable from the site while protecting the last enabled Owner.
 
 ## Previous systems retained

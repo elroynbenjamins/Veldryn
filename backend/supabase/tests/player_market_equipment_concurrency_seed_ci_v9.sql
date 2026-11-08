@@ -76,7 +76,7 @@ begin
        'id','00000000-0000-4000-8000-000000000103','gold',700),
      'account',jsonb_build_object('craftedGearInstances','[]'::jsonb),
      'inventory',jsonb_build_object('capacity',10,'stacks','[]'::jsonb),
-     'bank',jsonb_build_object('capacity',10,'stacks','[]'::jsonb))));
+     'bank',jsonb_build_object('capacity',10,'stacks','[]'::jsonb)));
   response:=private.market_reserve_exact_equipment_v8(
     seller,5,'inventory',sc,0,item,'gear-v9-race-1',
     'reserve-race-1',repeat('a',64));

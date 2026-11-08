@@ -78,6 +78,23 @@ begin
       'private.market_purchase_stack_offer_v3(uuid,uuid,bigint,integer,bigint,bigint,text,text)'::regprocedure,'EXECUTE')
   then raise exception 'purchase function is exposed to Data API roles';end if;
 
+  if pg_catalog.has_function_privilege('anon',
+      'private.market_claim_purchase_delivery_v4(uuid,uuid,bigint,text,text,text,text)'::regprocedure,'EXECUTE')
+    or pg_catalog.has_function_privilege('authenticated',
+      'private.market_claim_purchase_delivery_v4(uuid,uuid,bigint,text,text,text,text)'::regprocedure,'EXECUTE')
+    or pg_catalog.has_function_privilege('service_role',
+      'private.market_claim_purchase_delivery_v4(uuid,uuid,bigint,text,text,text,text)'::regprocedure,'EXECUTE')
+    or pg_catalog.has_function_privilege('authenticated',
+      'private.market_inbox_snapshot_v4(uuid,boolean,integer)'::regprocedure,'EXECUTE')
+  then raise exception 'market inbox or purchase claim exposed to API roles';end if;
+
+  begin
+    perform private.market_inbox_snapshot_v4(v_buyer,false,0);
+    raise exception 'disabled market inbox query was accepted';
+  exception when raise_exception then
+    if sqlerrm<>'market_disabled' then raise;end if;
+  end;
+
   -- QA ONLY: unfreeze otherwise permanently false policy/runtime constraints.
   execute 'alter table private.market_runtime_guard_v1 drop constraint market_runtime_guard_v1_trading_enabled_check';
   execute 'alter table private.market_runtime_guard_v1 drop constraint market_runtime_guard_v1_snapshot_bridge_ready_check';

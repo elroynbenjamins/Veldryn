@@ -38,7 +38,15 @@ export function generateRoute(secret: string, expeditionId: string, runId: strin
 const MODIFIERS = ['steady','thorned','volatile','warded','swift','attrition'] as const;
 
 function coopKind(secret:string, expeditionId:string, runId:string, contentVersion:string, balanceVersion:string, depth:number, choice:number):Exclude<ExpeditionNodeType,'boss'> {
-  if (depth <= 2) return 'battle';
+  // The opening remains a full combat encounter, but the second stage now
+  // offers a genuine utility route alongside two distinct enemy formations.
+  // Keep the first two battle options to preserve dungeon combat pacing.
+  if (depth === 1) return 'battle';
+  if (depth === 2) {
+    if (choice < 2) return 'battle';
+    const utility=['event','treasure','camp','shrine'] as const;
+    return utility[deterministicInt(secret,0,utility.length-1,'coop-route-opening-v2',runId,expeditionId,contentVersion,balanceVersion)];
+  }
   if (choice === 0) return 'battle';
   if (depth === 3 && choice === 1) return 'camp';
   const def=EXPEDITIONS[expeditionId];
@@ -59,12 +67,19 @@ export function generateCoopRouteGraph(secret:string, expeditionId:string, runId
   nodes.push({nodeId:'entry',depth:0,kind:'entry',contentId:'COOP_ENTRY',modifierId:'none',risk:1,rewardTag:'none',nextNodeIds:idsAt(1)});
   for(let depth=1;depth<=preBossNodeCount;depth++){
     const layerModifierOffset=deterministicInt(secret,0,MODIFIERS.length-1,generatorVersion,runId,expeditionId,contentVersion,balanceVersion,'modifier-layer',depth);
+    // One row of three choices must expose three distinct encounters, not
+    // the same enemy formation wearing three cosmetic modifier labels.
+    const usedContentIds=new Set<string>();
     for(let choice=0;choice<COOP_ROGUELITE_CONFIG.choicesPerDepth;choice++){
       const kind=coopKind(secret,expeditionId,runId,contentVersion,balanceVersion,depth,choice);
       const contentPool=coopContentPool(expeditionId,kind);
-      const contentIndex=deterministicInt(secret,0,contentPool.length-1,generatorVersion,runId,expeditionId,contentVersion,balanceVersion,'content',depth,choice);
+      let contentIndex=deterministicInt(secret,0,contentPool.length-1,generatorVersion,runId,expeditionId,contentVersion,balanceVersion,'content',depth,choice);
+      while(usedContentIds.has(contentPool[contentIndex]))contentIndex=(contentIndex+1)%contentPool.length;
+      const contentId=contentPool[contentIndex];usedContentIds.add(contentId);
       const modifierIndex=(layerModifierOffset+choice)%MODIFIERS.length;
-      nodes.push({nodeId:`d${depth}-c${choice}`,depth,kind,contentId:contentPool[contentIndex],modifierId:MODIFIERS[modifierIndex],risk:kind==='risk'?1.15:kind==='elite'?1.08:1,rewardTag:kind,nextNodeIds:depth===preBossNodeCount?['boss']:idsAt(depth+1)});
+      // Mandatory battle rooms remain balanced via their encounter identities.
+      // Special modifiers belong to the optional elite route only.
+      nodes.push({nodeId:`d${depth}-c${choice}`,depth,kind,contentId,modifierId:kind==='elite'?MODIFIERS[modifierIndex]:'steady',risk:kind==='risk'?1.15:kind==='elite'?1.08:1,rewardTag:kind,nextNodeIds:depth===preBossNodeCount?['boss']:idsAt(depth+1)});
     }
   }
   nodes.push({nodeId:'boss',depth:preBossNodeCount+1,kind:'boss',contentId:def.bossId,modifierId:'final',risk:1.25,rewardTag:'boss',nextNodeIds:[]});
@@ -106,7 +121,11 @@ export function validateCoopRouteGraph(graph:CoopRouteGraph,limits?:{preBossNode
   for(let depth=1;depth<=graph.preBossNodeCount;depth++){
     const layer=graph.nodes.filter(node=>node.depth===depth);
     if(layer.length<3)throw new Error('insufficient_route_layer');
-    if(depth<=2&&layer.some(node=>node.kind!=='battle'))throw new Error('mandatory_combat_missing');
+    // Accept historical v1 graphs (three early battles) when resuming a run.
+    // Fresh v2 graphs provide a utility choice at depth two; at least two
+    // combat alternatives remain mandatory for encounter pacing.
+    if(depth===1&&layer.some(node=>node.kind!=='battle'))throw new Error('mandatory_combat_missing');
+    if(depth===2&&layer.filter(node=>node.kind==='battle').length<2)throw new Error('opening_combat_missing');
     if(depth>2&&!layer.some(node=>node.kind==='battle'))throw new Error('combat_option_missing');
   }
   if(!graph.nodes.some(node=>node.kind==='camp'||node.kind==='shrine'))throw new Error('recovery_option_missing');

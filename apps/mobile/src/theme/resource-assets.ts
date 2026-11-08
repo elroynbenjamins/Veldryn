@@ -22,7 +22,7 @@ export const resourceIconSourceById:Readonly<Partial<Record<string,ImageSourcePr
   bondstones:require('../../assets/companion-resources/bondstones.webp'),
   SUPPLIES:require('../../assets/companion-resources/sanctuary_supplies.webp'),
   TRIAL_SANCTUARY_MATERIAL:require('../../assets/companion-resources/trial_sanctuary_material.webp'),
-  TRAVEL_RATION:require('../../assets/food-v2/travel_ration.png'),
+  TRAVEL_RATION:require('../../assets/food-v2/travel_ration.webp'),
   COPPER_ORE:require('../../assets/items/resources/copper_ore.webp'),
   ASTERFALL_MINERAL_ESSENCE:require('../../assets/items/resources/asterfall_mineral_essence.webp'),
   ASTER_IRON_ORE:require('../../assets/items/resources/aster_iron_ore.webp'),

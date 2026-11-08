@@ -251,91 +251,50 @@ var init_faith2 = __esm({
   }
 });
 
+// ../apps/mobile/src/core/class-stat-identity.ts
+var CLASS_EQUIPMENT_ATTACK_SHARE = Object.freeze({
+  IRONWARDEN: 0.45,
+  BASTION: 0.4,
+  DREADGUARD: 0.5,
+  WAYFINDER: 0.6,
+  RAVAGER: 0.65,
+  HEXWEAVER: 0.6,
+  KNIFE_DANCER: 0.65,
+  DAWNKEEPER: 0.45,
+  STONECALLER: 0.55
+});
+function classWeightedGearStats(classId, attack, defense) {
+  const gearAttack = Math.max(0, Number.isFinite(attack) ? attack : 0);
+  const gearDefense = Math.max(0, Number.isFinite(defense) ? defense : 0);
+  const total = gearAttack + gearDefense;
+  if (total <= 0) return { attack: 0, defense: 0 };
+  const share = CLASS_EQUIPMENT_ATTACK_SHARE[classId];
+  const convertedAttack = share >= 0.5 ? gearAttack + gearDefense * (2 * share - 1) : gearAttack * (2 * share);
+  return { attack: convertedAttack, defense: total - convertedAttack };
+}
+
 // ../apps/mobile/src/core/combat-timing.ts
 function combatTimeline(input) {
   const end = input.startsAtMs + Math.max(0, input.elapsedSeconds) * 1e3;
   let at = input.startsAtMs, progress = Math.max(0, Math.min(0.999999999, input.progressFraction)), remaining = Math.max(0, Math.floor(input.preparationEncounters));
   const encounters = [];
-  const segments = [];
   while (at < end) {
     const prepared = remaining > 0, candy = !!input.candy && at >= input.candy.startsAtMs && at < input.candy.endsAtMs;
     const cycleSeconds = (prepared ? input.preparedCycleSeconds : input.cycleSeconds) / (candy ? 1.1 : 1);
     if (!Number.isFinite(cycleSeconds) || cycleSeconds <= 0) throw new Error("Invalid combat cycle");
     const boundary = Math.min(end, ...input.candy ? [input.candy.startsAtMs, input.candy.endsAtMs].filter((t) => t > at) : []);
-    const fromFraction = progress, startsAtMs = at;
     const needed = (1 - progress) * cycleSeconds * 1e3, available = boundary - at;
     if (needed <= available + 1e-6) {
       at = Math.min(boundary, at + needed);
       progress = 0;
-      if (input.trackSegments) segments.push({ startsAtMs, endsAtMs: at, fromFraction, toFraction: 1, prepared, candy, cycleSeconds, encounterIndex: encounters.length });
       encounters.push({ atMs: at, prepared, candy, cycleSeconds });
       if (prepared) remaining--;
     } else {
       progress += available / (cycleSeconds * 1e3);
       at = boundary;
-      if (input.trackSegments) segments.push({ startsAtMs, endsAtMs: at, fromFraction, toFraction: progress, prepared, candy, cycleSeconds, encounterIndex: encounters.length });
     }
   }
-  return { encounters, nextProgressFraction: progress, segments };
-}
-
-// ../apps/mobile/src/core/rng.ts
-function hash32(input) {
-  let h = 2166136261;
-  for (let i = 0; i < input.length; i++) {
-    h ^= input.charCodeAt(i);
-    h = Math.imul(h, 16777619);
-  }
-  return h >>> 0;
-}
-function random01(seed, index) {
-  let x = hash32(seed) + Math.imul(index + 1, 2654435761) >>> 0;
-  x ^= x << 13;
-  x ^= x >>> 17;
-  x ^= x << 5;
-  return (x >>> 0) / 4294967296;
-}
-
-// ../apps/mobile/src/core/combat-hit-timeline.ts
-var clamp = (value, lo, hi) => Math.max(lo, Math.min(hi, value));
-var finite = (value, fallback2) => Number.isFinite(value) ? value : fallback2;
-function huntBasePlayerHit(attack, defense, outputMultiplier = 1) {
-  return Math.max(1, Math.round((Math.max(1, attack) * 1.35 - Math.max(0, defense) * 0.45) * Math.max(0.1, outputMultiplier)));
-}
-function huntHitEvents(input) {
-  const monsterHp = Math.max(1, Math.round(finite(input.monsterHp, 1)));
-  const base = Math.max(1, finite(input.basePlayerHit, 1));
-  const playerCount = Math.min(monsterHp, clamp(Math.ceil(monsterHp / base), 3, 8));
-  const enemyCount = clamp(Math.round(Math.max(1, finite(input.cycleSeconds, 1)) / 2.5), 2, 5);
-  const critChance = clamp(finite(input.critChance, 0), 0, 0.65);
-  const weights = [];
-  for (let i = 0; i < playerCount; i++) {
-    const critical = random01(input.seed + ":critical", i) < critChance;
-    const variance = 0.9 + random01(input.seed + ":variance", i) * 0.2;
-    weights.push({ raw: base * variance * (critical ? 1.5 : 1), critical });
-  }
-  const total = weights.reduce((sum, hit) => sum + hit.raw, 0);
-  let remaining = monsterHp;
-  const hits = [];
-  for (let i = 0; i < playerCount; i++) {
-    const damage = i === playerCount - 1 ? remaining : Math.max(1, Math.min(remaining - (playerCount - i - 1), Math.round(monsterHp * weights[i].raw / total)));
-    remaining -= damage;
-    hits.push({ fraction: (i + 1) / playerCount, actor: "player", damage, healing: 0, critical: weights[i].critical, index: i });
-  }
-  const incoming = Math.max(0, finite(input.incomingDamage, 0));
-  const healing = Math.max(0, finite(input.healingPerEncounter, 0));
-  for (let i = 0; i < enemyCount; i++) {
-    hits.push({ fraction: (i + 0.55) / enemyCount, actor: "enemy", damage: incoming / enemyCount, healing: healing / enemyCount, critical: false, index: i });
-  }
-  return hits.sort((a, b) => a.fraction - b.fraction || (a.actor === "enemy" ? -1 : 1));
-}
-function huntHitsBetween(events, fromFraction, toFraction) {
-  const from = clamp(finite(fromFraction, 0), 0, 1), to = clamp(finite(toFraction, 0), 0, 1);
-  return events.filter((hit) => hit.fraction > from + 1e-9 && hit.fraction <= to + 1e-9);
-}
-function huntEnemyHpAt(monsterHp, events, progressFraction) {
-  const hp = Math.max(1, Math.round(monsterHp));
-  return Math.max(0, hp - events.reduce((sum, hit) => sum + (hit.actor === "player" && hit.fraction <= progressFraction + 1e-9 ? hit.damage : 0), 0));
+  return { encounters, nextProgressFraction: progress };
 }
 
 // ../apps/mobile/src/core/combat-progression-pacing.ts
@@ -603,6 +562,23 @@ function liveEventDef(id) {
   if (!series) return void 0;
   const template = LIVE_EVENT_CATALOG.find((event) => annualEventSeriesId(event.id) === series);
   return template ? { ...template, id } : void 0;
+}
+
+// ../apps/mobile/src/core/rng.ts
+function hash32(input) {
+  let h = 2166136261;
+  for (let i = 0; i < input.length; i++) {
+    h ^= input.charCodeAt(i);
+    h = Math.imul(h, 16777619);
+  }
+  return h >>> 0;
+}
+function random01(seed, index) {
+  let x = hash32(seed) + Math.imul(index + 1, 2654435761) >>> 0;
+  x ^= x << 13;
+  x ^= x >>> 17;
+  x ^= x << 5;
+  return (x >>> 0) / 4294967296;
 }
 
 // ../apps/mobile/src/content/guild-companions-v1.ts
@@ -42611,7 +42587,7 @@ var tailoringPathMaterial = {
 function q(base, multiplier) {
   return Math.max(1, Math.round(base * multiplier));
 }
-function clamp2(value, min, max) {
+function clamp(value, min, max) {
   return Math.max(min, Math.min(max, value));
 }
 function mergeInputs(inputs) {
@@ -42688,7 +42664,7 @@ var V33_EQUIPMENT_RECIPES = equipment_catalog_t1_t9_v33_default.pieces.map((piec
     level,
     xp: q(tierXp[tier] ?? 120, multiplier),
     gold: increasedCraftingGoldCost(q(tierGold[tier] ?? 120, multiplier) * EQUIPMENT_FORGE_GOLD_MULTIPLIER),
-    seconds: clamp2(Math.round(range.base * multiplier), range.min, range.max),
+    seconds: clamp(Math.round(range.base * multiplier), range.min, range.max),
     inputs: mergeInputs([...ingredients(tier, String(piece.Path), multiplier, skillId), infusionByTier[tier]]),
     output: { itemId: String(piece["Piece ID"]), quantity: 1 },
     classId,
@@ -43165,16 +43141,16 @@ var MONSTERS_RAW = [
   { id: "MIRE_HERON", name: "Mire Heron", level: 12, hp: 166, attack: 19, defense: 9, xp: 91, gold: 5, secondsPerKill: 16, unlockLevel: 12, zone: "Silverbrook", drops: [{ itemId: "RIVER_EEL", chance: 0.35, min: 1, max: 1 }, { itemId: "WISP_DUST", chance: 0.22, min: 1, max: 1 }, { itemId: "BP_IRONWOOD_ROD", chance: 0.05, min: 1, max: 1 }] },
   { id: "FOREST_TROLL", name: "Forest Troll", level: 14, hp: 215, attack: 23, defense: 13, xp: 118, gold: 7, secondsPerKill: 19, unlockLevel: 14, zone: "Ironwood Forest", drops: [{ itemId: "TROLL_HIDE", chance: 0.32, min: 1, max: 1 }, { itemId: "WOLF_PELT", chance: 0.24, min: 1, max: 1 }, { itemId: "IRONWOOD_FANG", chance: 0.12, min: 1, max: 1 }] },
   { id: "ANCIENT_TREANT", name: "Ancient Treant", level: 15, hp: 242, attack: 24, defense: 15, xp: 132, gold: 8, secondsPerKill: 20, unlockLevel: 15, zone: "Ironwood Forest", drops: [{ itemId: "IRONWOOD_LOG", chance: 0.52, min: 1, max: 2 }, { itemId: "THORN_SAP", chance: 0.3, min: 1, max: 1 }, { itemId: "BP_OATHSTONE_HATCHET", chance: 0.02, min: 1, max: 1 }] },
-  { id: "CAVE_SKITTER", name: "Cave Skitter", level: 16, hp: 255, attack: 26, defense: 14, xp: 145, gold: 8, secondsPerKill: 20, unlockLevel: 16, zone: "Old Mines", drops: [{ itemId: "COPPER_ORE", chance: 0.44, min: 1, max: 2 }, { itemId: "ASTER_IRON_ORE", chance: 0.16, min: 1, max: 1 }, { itemId: "BP_ASTER_IRON_PICKAXE", chance: 0.05, min: 1, max: 1 }] },
+  { id: "CAVE_SKITTER", name: "Cave Skitter", level: 16, hp: 255, attack: 26, defense: 14, xp: 145, gold: 8, secondsPerKill: 20, unlockLevel: 16, zone: "Old Mines", drops: [{ itemId: "ASTER_IRON_ORE", chance: 0.16, min: 1, max: 1 }, { itemId: "BP_ASTER_IRON_PICKAXE", chance: 0.05, min: 1, max: 1 }] },
   { id: "IRONBACK_MOLE", name: "Ironback Mole", level: 17, hp: 280, attack: 27, defense: 18, xp: 158, gold: 9, secondsPerKill: 21, unlockLevel: 17, zone: "Old Mines", drops: [{ itemId: "ASTER_IRON_ORE", chance: 0.4, min: 1, max: 2 }, { itemId: "COPPER_ORE", chance: 0.3, min: 1, max: 2 }] },
   { id: "ECHO_BAT", name: "Echo Bat", level: 18, hp: 290, attack: 29, defense: 14, xp: 170, gold: 10, secondsPerKill: 21, unlockLevel: 18, zone: "Old Mines", drops: [{ itemId: "WISP_DUST", chance: 0.35, min: 1, max: 2 }, { itemId: "OATHGLASS_SHARD", chance: 0.05, min: 1, max: 1 }, { itemId: "ECHO_BAT_WING", chance: 0.28, min: 1, max: 2 }] },
   { id: "RUNEBOUND_MINER", name: "Runebound Miner", level: 19, hp: 320, attack: 31, defense: 18, xp: 185, gold: 11, secondsPerKill: 22, unlockLevel: 19, zone: "Old Mines", drops: [{ itemId: "ASTER_IRON_ORE", chance: 0.42, min: 1, max: 2 }, { itemId: "OATHGLASS_SHARD", chance: 0.08, min: 1, max: 1 }, { itemId: "ECHO_QUARTZ", chance: 0.12, min: 1, max: 1 }, { itemId: "RUNEBOUND_CORE", chance: 0.08, min: 1, max: 1 }, { itemId: "BP_OATHSTONE_PICKAXE", chance: 0.02, min: 1, max: 1 }] },
   { id: "GLOAM_MITE", name: "Gloam Mite", level: 20, hp: 335, attack: 33, defense: 18, xp: 198, gold: 12, secondsPerKill: 23, unlockLevel: 20, zone: "Greenfields", drops: [{ itemId: "WISP_DUST", chance: 0.32, min: 1, max: 2 }, { itemId: "MOSS_FIBER", chance: 0.28, min: 1, max: 2 }, { itemId: "GLOAM_DUST", chance: 0.24, min: 1, max: 1 }] },
-  { id: "LANTERN_WRETCH", name: "Lantern Wretch", level: 21, hp: 365, attack: 35, defense: 19, xp: 216, gold: 13, secondsPerKill: 24, unlockLevel: 20, zone: "King's Road", drops: [{ itemId: "WISP_DUST", chance: 0.4, min: 1, max: 2 }, { itemId: "OATHGLASS_SHARD", chance: 0.1, min: 1, max: 1 }, { itemId: "LANTERNSTEEL_SHARD", chance: 0.18, min: 1, max: 1 }, { itemId: "THORN_SAP", chance: 0.16, min: 1, max: 1 }, { itemId: "IRONWOOD_LOG", chance: 0.3, min: 1, max: 2 }] },
+  { id: "LANTERN_WRETCH", name: "Lantern Wretch", level: 21, hp: 365, attack: 35, defense: 19, xp: 216, gold: 13, secondsPerKill: 24, unlockLevel: 20, zone: "King's Road", drops: [{ itemId: "WISP_DUST", chance: 0.4, min: 1, max: 2 }, { itemId: "OATHGLASS_SHARD", chance: 0.1, min: 1, max: 1 }, { itemId: "LANTERNSTEEL_SHARD", chance: 0.18, min: 1, max: 1 }] },
   { id: "DROWNED_PILGRIM", name: "Drowned Pilgrim", level: 22, hp: 390, attack: 36, defense: 21, xp: 232, gold: 14, secondsPerKill: 25, unlockLevel: 22, zone: "Silverbrook", drops: [{ itemId: "RIVER_EEL", chance: 0.28, min: 1, max: 1 }, { itemId: "OATHGLASS_SHARD", chance: 0.12, min: 1, max: 1 }, { itemId: "BP_OATHSCALE_ROD", chance: 0.02, min: 1, max: 1 }] },
   { id: "OATHBOUND_SQUIRE", name: "Oathbound Squire", level: 22, hp: 405, attack: 37, defense: 22, xp: 240, gold: 14, secondsPerKill: 25, unlockLevel: 22, zone: "King's Road", drops: [{ itemId: "OATHGLASS_SHARD", chance: 0.18, min: 1, max: 1 }, { itemId: "TORN_OATHCLOTH", chance: 0.2, min: 1, max: 1 }, { itemId: "FALLEN_RIVET", chance: 0.2, min: 1, max: 1 }, { itemId: "TROLL_HIDE", chance: 0.18, min: 1, max: 1 }, { itemId: "IRONWOOD_FANG", chance: 0.18, min: 1, max: 1 }] },
   { id: "BANNER_SHADE", name: "Banner Shade", level: 23, hp: 435, attack: 39, defense: 22, xp: 258, gold: 15, secondsPerKill: 26, unlockLevel: 23, zone: "King's Road", drops: [{ itemId: "OATHGLASS_SHARD", chance: 0.22, min: 1, max: 1 }, { itemId: "TORN_OATHCLOTH", chance: 0.28, min: 1, max: 1 }, { itemId: "BANNER_ASH", chance: 0.28, min: 1, max: 2 }, { itemId: "LANTERNSTEEL_SHARD", chance: 0.1, min: 1, max: 1 }, { itemId: "GLOAM_DUST", chance: 0.18, min: 1, max: 1 }, { itemId: "WOLF_PELT", chance: 0.28, min: 1, max: 1 }, { itemId: "THORN_SAP", chance: 0.24, min: 1, max: 1 }] },
-  { id: "FALLEN_SENTINEL", name: "Fallen Sentinel", level: 24, hp: 475, attack: 42, defense: 25, xp: 282, gold: 17, secondsPerKill: 28, unlockLevel: 24, zone: "King's Road", drops: [{ itemId: "OATHGLASS_SHARD", chance: 0.28, min: 1, max: 1 }, { itemId: "ECHO_TOUCHED_PELT", chance: 0.12, min: 1, max: 1 }, { itemId: "TORN_OATHCLOTH", chance: 0.32, min: 1, max: 2 }, { itemId: "LANTERNSTEEL_SHARD", chance: 0.18, min: 1, max: 1 }, { itemId: "FALLEN_RIVET", chance: 0.28, min: 1, max: 2 }, { itemId: "RUNEBOUND_CORE", chance: 0.12, min: 1, max: 1 }, { itemId: "TROLL_HIDE", chance: 0.2, min: 1, max: 1 }, { itemId: "IRONWOOD_LOG", chance: 0.32, min: 1, max: 2 }] },
+  { id: "FALLEN_SENTINEL", name: "Fallen Sentinel", level: 24, hp: 475, attack: 42, defense: 25, xp: 282, gold: 17, secondsPerKill: 28, unlockLevel: 24, zone: "King's Road", drops: [{ itemId: "OATHGLASS_SHARD", chance: 0.28, min: 1, max: 1 }, { itemId: "ECHO_TOUCHED_PELT", chance: 0.12, min: 1, max: 1 }, { itemId: "TORN_OATHCLOTH", chance: 0.32, min: 1, max: 2 }, { itemId: "LANTERNSTEEL_SHARD", chance: 0.18, min: 1, max: 1 }, { itemId: "FALLEN_RIVET", chance: 0.28, min: 1, max: 2 }, { itemId: "RUNEBOUND_CORE", chance: 0.12, min: 1, max: 1 }, { itemId: "TROLL_HIDE", chance: 0.2, min: 1, max: 1 }] },
   { id: "OATHGLASS_REVENANT", name: "Oathglass Revenant", level: 25, hp: 540, attack: 45, defense: 28, xp: 315, gold: 18, secondsPerKill: 30, unlockLevel: 25, zone: "King's Road", drops: [{ itemId: "OATHGLASS_SHARD", chance: 0.34, min: 1, max: 2 }, { itemId: "OATHGLASS_FRAGMENT", chance: 0.2, min: 1, max: 1 }, { itemId: "ECHO_QUARTZ", chance: 0.15, min: 1, max: 1 }, { itemId: "ECHO_TOUCHED_PELT", chance: 0.18, min: 1, max: 1 }, { itemId: "TORN_OATHCLOTH", chance: 0.35, min: 1, max: 2 }, { itemId: "WOLF_PELT", chance: 0.25, min: 1, max: 1 }, { itemId: "IRONWOOD_FANG", chance: 0.16, min: 1, max: 1 }] },
   { id: "SUNSCAR_SCORPION", name: "Sunscar Scorpion", level: 28, hp: 610, attack: 52, defense: 31, xp: 350, gold: 21, secondsPerKill: 31, unlockLevel: 26, zone: "Sunscar", areaId: "ZONE_006", drops: [{ itemId: "SUNSTONE_ORE", chance: 0.42, min: 1, max: 2 }, { itemId: "DUNEWOOD", chance: 0.36, min: 1, max: 2 }, { itemId: "SUNSCALE", chance: 0.24, min: 1, max: 1 }, { itemId: "AMBERGLASS", chance: 0.08, min: 1, max: 1 }, { itemId: "SCORPION_VENOM", chance: 0.06, min: 1, max: 1 }] },
   { id: "DUNE_ORACLE", name: "Dune Oracle", level: 33, hp: 760, attack: 61, defense: 36, xp: 438, gold: 27, secondsPerKill: 35, unlockLevel: 31, zone: "Sunscar", areaId: "ZONE_007", drops: [{ itemId: "DUNEWOOD", chance: 0.28, min: 1, max: 2 }, { itemId: "SUNSCALE", chance: 0.3, min: 1, max: 1 }, { itemId: "AMBERGLASS", chance: 0.36, min: 1, max: 2 }, { itemId: "ASTRAL_SCRIPT", chance: 0.08, min: 1, max: 1 }, { itemId: "SWIFT_SIGIL", chance: 3e-3, min: 1, max: 1 }] },
@@ -43219,9 +43195,15 @@ var MONSTERS = MONSTERS_RAW.map((monster) => {
   const advancedScale = ADVANCED_MONSTER_REGIONS.has(monster.zone) ? ADVANCED_REGION_MONSTER_MULTIPLIER : 1;
   return {
     ...monster,
-    // Standard-enemy materials are intentionally half as likely from combat.
-    // Gathering remains the reliable source; guaranteed boss rewards stay intact.
-    drops: [...monster.drops, ...holyWater ? [{ itemId: HOLY_WATER_ID, chance: holyWater.chance, min: holyWater.min, max: holyWater.max }] : [], ...enhancementDrops(monster)].map((drop) => !monster.boss && drop.itemId !== HOLY_WATER_ID && itemDef(drop.itemId).type === "material" ? { ...drop, chance: drop.chance * 0.5 } : drop),
+    // Reduce all chance-based combat drops by 5% relative to their existing
+    // chance, including Holy Water, rare equipment and gem materials. Preserve
+    // authored guaranteed boss drops and the existing 50% standard-material rule.
+    // This single normalized table also feeds the player-visible loot preview.
+    drops: [...monster.drops, ...holyWater ? [{ itemId: HOLY_WATER_ID, chance: holyWater.chance, min: holyWater.min, max: holyWater.max }] : [], ...enhancementDrops(monster)].map((drop) => {
+      const ordinaryMaterial = !monster.boss && drop.itemId !== HOLY_WATER_ID && itemDef(drop.itemId).type === "material";
+      const relativeChanceScale = drop.chance < 1 ? 0.95 : 1;
+      return { ...drop, chance: drop.chance * (ordinaryMaterial ? 0.5 : 1) * relativeChanceScale };
+    }),
     // Idle combat uses authored cycle duration rather than HP to calculate kills.
     // Scale both the displayed combat stats and cycle time, so 20% more HP
     // actually costs time; leave XP, loot chances, and early regions untouched.
@@ -43782,7 +43764,7 @@ var COMBAT_LIMITS = {
 };
 
 // src/server/combat/calculations.ts
-var clamp3 = (v, min, max) => Math.max(min, Math.min(max, v));
+var clamp2 = (v, min, max) => Math.max(min, Math.min(max, v));
 function roleAdjustedAttackPower(input) {
   const attack = Math.max(0, input.attackPower);
   if (input.team !== "players" || input.role === "damage" || input.role === "enemy") return attack;
@@ -43791,13 +43773,13 @@ function roleAdjustedAttackPower(input) {
 }
 function defenseMitigation(defense, mitigationConstant) {
   const raw2 = defense / Math.max(1, defense + mitigationConstant);
-  return clamp3(raw2, COMBAT_LIMITS.mitigationMin, COMBAT_LIMITS.mitigationMax);
+  return clamp2(raw2, COMBAT_LIMITS.mitigationMin, COMBAT_LIMITS.mitigationMax);
 }
 function hitChance(accuracy, evasion, accuracyScale) {
-  return clamp3(0.75 + (accuracy - evasion) / accuracyScale, COMBAT_LIMITS.hitChanceMin, COMBAT_LIMITS.hitChanceMax);
+  return clamp2(0.75 + (accuracy - evasion) / accuracyScale, COMBAT_LIMITS.hitChanceMin, COMBAT_LIMITS.hitChanceMax);
 }
 function damageAfterMitigation(attackPowerValue, abilityCoeff, mitigation2, variance, crit = false, critMultiplier = COMBAT_LIMITS.defaultCritMultiplier) {
-  const varianceClamped = clamp3(variance, COMBAT_LIMITS.damageVarianceMin, COMBAT_LIMITS.damageVarianceMax);
+  const varianceClamped = clamp2(variance, COMBAT_LIMITS.damageVarianceMin, COMBAT_LIMITS.damageVarianceMax);
   const normal = Math.max(1, attackPowerValue * abilityCoeff * varianceClamped * (1 - mitigation2));
   return crit ? normal * critMultiplier : normal;
 }
@@ -44671,7 +44653,7 @@ function simulateCombat(input) {
       return;
     }
     const mit = effect2.damageType === "true" ? 0 : defenseMitigation(gemEffectiveDefenseV1(target2, now), mitigationConstant);
-    const crit = rng.next(`${now}:${source.definition.id}:${abilityId}:crit`) < clamp3(source.definition.stats.critChance + modifier(source, "crit", now), 0, 0.75);
+    const crit = rng.next(`${now}:${source.definition.id}:${abilityId}:crit`) < clamp2(source.definition.stats.critChance + modifier(source, "crit", now), 0, 0.75);
     const qmodeStrike = input.enemyDamageProfile === "qmode-v1" && source.definition.team === "enemies" && target2.definition.team === "players" && eventType === "damage";
     const varianceRoll = rng.next(`${now}:${abilityId}:var`);
     const variance = qmodeStrike ? 0.925 + varianceRoll * 0.2 : 0.95 + varianceRoll * 0.1;
@@ -44685,7 +44667,7 @@ function simulateCombat(input) {
     raw2 *= Math.max(0.1, 1 + modifier(source, "damage_done", now));
     raw2 *= Math.max(0.1, 1 + modifier(target2, "damage_taken", now));
     raw2 *= gemIncomingDamageMultiplierV1(target2, now);
-    if (hpPct(target2) < clamp3(effect2.executeBelowHpPct ?? 0, 0, 1)) raw2 *= 1 + clamp3(effect2.executeBonus ?? 0, 0, 1);
+    if (hpPct(target2) < clamp2(effect2.executeBelowHpPct ?? 0, 0, 1)) raw2 *= 1 + clamp2(effect2.executeBonus ?? 0, 0, 1);
     const bypassShield = eventType === "dot_tick" && effect2.damageType === "true";
     const absorbed = bypassShield ? 0 : Math.min(target2.shield, raw2);
     target2.shield -= absorbed;
@@ -44769,7 +44751,7 @@ function simulateCombat(input) {
     if (effect2.kind === "shield") {
       const amt = Math.max(0, (source.definition.stats.healingPower * (effect2.coeff ?? 0) + (effect2.flat ?? 0)) * gemShieldMultiplierV1(source, now) * (source.definition.alchemyModifiers?.shielding ?? 1));
       target2.shield += amt;
-      if (effect2.shieldReflectPct && amt > 0) (target2.reflectiveShields ??= []).push({ remaining: amt, rate: clamp3(effect2.shieldReflectPct, 0, 0.5), sourceId: source.definition.id });
+      if (effect2.shieldReflectPct && amt > 0) (target2.reflectiveShields ??= []).push({ remaining: amt, rate: clamp2(effect2.shieldReflectPct, 0, 0.5), sourceId: source.definition.id });
       gemOnShieldAppliedV1(now, source, target2);
       gemConsumeSupportChargeV1(now, source);
       emitGemState(now);
@@ -45336,7 +45318,7 @@ function companionTrialSeasonDefinition(seasonKey) {
 
 // src/server/companions/combat-adapter.ts
 var COMMON_MAX_INVESTMENT_MULTIPLIER = 1.5;
-var clamp4 = (value, min, max) => Math.max(min, Math.min(max, value));
+var clamp3 = (value, min, max) => Math.max(min, Math.min(max, value));
 var ROLE_ANCHORS = {
   damage: { hp: 180, power: 22, defense: 12, attackSpeed: 2 },
   tank: { hp: 260, power: 14, defense: 24, attackSpeed: 2.6 },
@@ -45345,16 +45327,16 @@ var ROLE_ANCHORS = {
 function companionBalancedBaseStats(def) {
   const a = ROLE_ANCHORS[def.role], b = def.baseStats;
   return {
-    hp: a.hp * clamp4(b.hp / a.hp, 0.95, 1.05),
-    power: a.power * clamp4(b.power / a.power, 0.95, 1.05),
-    defense: a.defense * clamp4(b.defense / a.defense, 0.95, 1.05),
-    attackSpeed: a.attackSpeed * clamp4(b.attackSpeed / a.attackSpeed, 0.9, 1.1)
+    hp: a.hp * clamp3(b.hp / a.hp, 0.95, 1.05),
+    power: a.power * clamp3(b.power / a.power, 0.95, 1.05),
+    defense: a.defense * clamp3(b.defense / a.defense, 0.95, 1.05),
+    attackSpeed: a.attackSpeed * clamp3(b.attackSpeed / a.attackSpeed, 0.9, 1.1)
   };
 }
 function companionInvestmentMultiplier(def, progress) {
   const max = COMPANION_RARITY_MAX_LEVEL[def.rarity];
   const endpoint = COMMON_MAX_INVESTMENT_MULTIPLIER * COMPANION_RARITY_TARGET[def.rarity];
-  const fraction = max <= 1 ? 1 : clamp4((progress.level - 1) / (max - 1), 0, 1);
+  const fraction = max <= 1 ? 1 : clamp3((progress.level - 1) / (max - 1), 0, 1);
   return 1 + (endpoint - 1) * fraction;
 }
 function identityModifiers(def, progress) {
@@ -45396,13 +45378,13 @@ function engineEffects(def, progress, context) {
       return [{ kind: "buff", value: -Math.max(0.01, levelCoeff * identity.mitigationMultiplier), durationMs: 5e3, tag: "damage_taken" }];
     case "utility":
     default:
-      if (def.role === "support" && context.mode !== "character_assist") return [{ kind: "heal", coeff: clamp4(levelCoeff * 0.18, 0.035, 0.08) * (1 + tHeal) * identity.activeHealMultiplier * identity.utilityMultiplier, tag: "companion_utility" }];
+      if (def.role === "support" && context.mode !== "character_assist") return [{ kind: "heal", coeff: clamp3(levelCoeff * 0.18, 0.035, 0.08) * (1 + tHeal) * identity.activeHealMultiplier * identity.utilityMultiplier, tag: "companion_utility" }];
       return def.role === "support" ? [{ kind: "buff", value: Math.max(0.01, levelCoeff * identity.utilityMultiplier), durationMs: 5e3, tag: "companion_utility" }] : [{ kind: "damage", coeff: Math.max(0.05, levelCoeff * identity.activeDamageMultiplier), tag: "companion_active" }];
   }
 }
 function buildCompanionCombatant(def, progress, context) {
   if (progress.companionId !== def.id) throw new Error("companion_progress_definition_mismatch");
-  const base = companionBalancedBaseStats(def), identity = identityModifiers(def, progress), scale = companionInvestmentMultiplier(def, progress), synergy = clamp4(context.teamSynergyMultiplier ?? 1, 1, 1.06), hasteBonus = clamp4(context.teamHasteBonus ?? 0, 0, 0.06), cooldownChange = effectValue(progress, "cooldown"), target2 = resolvedTarget(def, context);
+  const base = companionBalancedBaseStats(def), identity = identityModifiers(def, progress), scale = companionInvestmentMultiplier(def, progress), synergy = clamp3(context.teamSynergyMultiplier ?? 1, 1, 1.06), hasteBonus = clamp3(context.teamHasteBonus ?? 0, 0, 0.06), cooldownChange = effectValue(progress, "cooldown"), target2 = resolvedTarget(def, context);
   const bond = progress.bondTraitUnlocked ? 1.03 : 1, ascension = 1 + progress.ascensionTier * 6e-3, derived = scale * synergy * bond * ascension;
   const maxHp = Math.round(base.hp * derived), attackPower = Number((base.power * derived).toFixed(2));
   const standalone = context.mode !== "character_assist";
@@ -48602,9 +48584,9 @@ var CLASS_COMBAT_STYLES = {
   DREADGUARD: { name: "Dread Momentum", description: "Hunts 4% faster while retaining heavy protection.", speedMultiplier: 1.04, damageTakenMultiplier: 0.94, recoveryPct: 0.01 },
   DAWNKEEPER: { name: "Sunlit Guard", description: "Trades stronger protection for a slightly faster, steadier hunt.", speedMultiplier: 1.03, damageTakenMultiplier: 0.94, recoveryPct: 1e-3 },
   WAYFINDER: { name: "Marked Quarry", description: "Hunts 8% faster through careful targeting.", speedMultiplier: 1.08, damageTakenMultiplier: 1, recoveryPct: 0.01 },
-  RAVAGER: { name: "Bloodrush", description: "Hunts 14% faster but takes 9% more damage.", speedMultiplier: 1.14, damageTakenMultiplier: 1.09, recoveryPct: 8e-3 },
+  RAVAGER: { name: "Bloodrush", description: "Hunts 14% faster, takes 9% more damage and restores a little HP after kills.", speedMultiplier: 1.14, damageTakenMultiplier: 1.09, recoveryPct: 8e-3, onKillAttackHealPct: 0.01 },
   HEXWEAVER: { name: "Withering Hex", description: "Hunts 7% faster and weakens incoming attacks.", speedMultiplier: 1.07, damageTakenMultiplier: 0.95, recoveryPct: 0.01 },
-  KNIFE_DANCER: { name: "Blade Rhythm", description: "Hunts 13% faster through rapid strikes.", speedMultiplier: 1.13, damageTakenMultiplier: 1.03, recoveryPct: 0.01 },
+  KNIFE_DANCER: { name: "Blade Rhythm", description: "Hunts 13% faster and avoids 12% of incoming damage.", speedMultiplier: 1.13, damageTakenMultiplier: 0.88, recoveryPct: 0.01 },
   STONECALLER: { name: "Earthen Ward", description: "Strong damage reduction and offense at the cost of a slower hunt.", speedMultiplier: 0.95, damageTakenMultiplier: 0.91, recoveryPct: 1e-3 }
 };
 var classCombatStyle = (id) => CLASS_COMBAT_STYLES[id];
@@ -50545,11 +50527,11 @@ function newJournalState(accountId) {
   if (!accountId) throw new Error("account_required");
   return { schemaVersion: 42, accountId, revision: 0, unlockedAchievements: {}, unlockedTitles: {}, selectedTitleByCharacter: {}, records: {} };
 }
-var clamp5 = (value) => Math.max(0, Math.min(1, value));
+var clamp4 = (value) => Math.max(0, Math.min(1, value));
 function journalAchievementProgress(state, snapshot2) {
   return JOURNAL_ACHIEVEMENTS_V42.map((definition) => {
     const current = Math.max(0, snapshot2.metrics[definition.metricKey] ?? 0);
-    return { definition, current, target: definition.target, progress: clamp5(definition.target ? current / definition.target : 1), complete: current >= definition.target, unlockedAtMs: state.unlockedAchievements[definition.id] };
+    return { definition, current, target: definition.target, progress: clamp4(definition.target ? current / definition.target : 1), complete: current >= definition.target, unlockedAtMs: state.unlockedAchievements[definition.id] };
   });
 }
 function applyJournalSnapshot(state, snapshot2, nowMs) {
@@ -51390,55 +51372,55 @@ var BY_PROFILE = {
   REVENANT: { accuracy: 0.9, evasion: 0.05, critChance: 0.07, critMultiplier: 1.6, haste: 0.03 },
   FALLEN_KNIGHT: { accuracy: 0.93, evasion: 0.05, critChance: 0.1, critMultiplier: 1.75, haste: 0.05 }
 };
-var clamp6 = (value, min, max) => Math.max(min, Math.min(max, value));
-var expectedCrit = (chance, multiplier) => 1 + clamp6(chance, 0, 0.75) * Math.max(0, multiplier - 1);
+var clamp5 = (value, min, max) => Math.max(min, Math.min(max, value));
+var expectedCrit = (chance, multiplier) => 1 + clamp5(chance, 0, 0.75) * Math.max(0, multiplier - 1);
 function regionalEnemySecondaryStats(monster) {
   return BY_PROFILE[encounterIdentity(monster).id] ?? NEUTRAL2;
 }
 function regionalSecondaryExchange(player, monster, basePlayerCritChance = 0.05) {
   const enemy2 = regionalEnemySecondaryStats(monster);
-  const playerHitChance = clamp6(player.accuracy - enemy2.evasion, 0.55, 0.99);
-  const enemyHitChance = clamp6(enemy2.accuracy - player.evasion, 0.55, 0.99);
+  const playerHitChance = clamp5(player.accuracy - enemy2.evasion, 0.55, 0.99);
+  const enemyHitChance = clamp5(enemy2.accuracy - player.evasion, 0.55, 0.99);
   const baselinePlayerHit = 0.84 - NEUTRAL2.evasion;
   const baselineEnemyHit = NEUTRAL2.accuracy - 0.04;
   const playerCritExpected = expectedCrit(player.critChance, player.critMultiplier);
   const enemyCritExpected = expectedCrit(enemy2.critChance, enemy2.critMultiplier);
   const baselinePlayerCritExpected = expectedCrit(basePlayerCritChance, 1.5);
   const baselineEnemyCritExpected = expectedCrit(NEUTRAL2.critChance, NEUTRAL2.critMultiplier);
-  const playerHasteMultiplier = clamp6((1 + player.haste) / 1.05, 0.75, 1.5);
+  const playerHasteMultiplier = clamp5((1 + player.haste) / 1.05, 0.75, 1.5);
   return {
     enemy: enemy2,
     playerHitChance,
     enemyHitChance,
     playerCritExpected,
     enemyCritExpected,
-    playerOutputMultiplier: clamp6(playerHitChance / baselinePlayerHit * (playerCritExpected / baselinePlayerCritExpected) * playerHasteMultiplier, 0.7, 1.45),
-    incomingPressureMultiplier: clamp6(enemyHitChance / baselineEnemyHit * (enemyCritExpected / baselineEnemyCritExpected) * (1 + enemy2.haste), 0.7, 1.45)
+    playerOutputMultiplier: clamp5(playerHitChance / baselinePlayerHit * (playerCritExpected / baselinePlayerCritExpected) * playerHasteMultiplier, 0.7, 1.45),
+    incomingPressureMultiplier: clamp5(enemyHitChance / baselineEnemyHit * (enemyCritExpected / baselineEnemyCritExpected) * (1 + enemy2.haste), 0.7, 1.45)
   };
 }
 
 // ../apps/mobile/src/core/story-boss.ts
-var clamp7 = (value, min, max) => Math.max(min, Math.min(max, value));
+var clamp6 = (value, min, max) => Math.max(min, Math.min(max, value));
 var FALLEN_KNIGHT_MAX_DURATION_MS = 1e5;
 var FALLEN_KNIGHT_MAX_POTION_UNITS = 5;
 function mitigation(defense) {
-  return clamp7(defense / Math.max(1, defense + 110), 0, 0.72);
+  return clamp6(defense / Math.max(1, defense + 110), 0, 0.72);
 }
 function simulateFallenKnightStoryBattle(player, seed, mode = "story") {
   const monster = MONSTERS.find((row) => row.id === "FALLEN_KNIGHT");
   if (!monster) throw new Error("fallen_knight_missing");
   const bossSecondary = regionalEnemySecondaryStats(monster);
   const bossMaxHp = monster.hp, playerMaxHp = Math.max(1, Math.round(player.maxHp));
-  let bossHp = bossMaxHp, playerHp = clamp7(Math.round(player.currentHp || playerMaxHp), 1, playerMaxHp), potionLeft = clamp7(Math.floor(player.potionQuantity), 0, FALLEN_KNIGHT_MAX_POTION_UNITS), potionConsumed = 0;
+  let bossHp = bossMaxHp, playerHp = clamp6(Math.round(player.currentHp || playerMaxHp), 1, playerMaxHp), potionLeft = clamp6(Math.floor(player.potionQuantity), 0, FALLEN_KNIGHT_MAX_POTION_UNITS), potionConsumed = 0;
   let phase = 1, phaseWardUntilMs = 0, rngIndex = 0, bossAttackCount = 0;
   const phasesReached = [1], events = [];
-  const playerHitChance = clamp7(player.accuracy - bossSecondary.evasion, 0.55, 0.99);
-  const playerAttackIntervalMs = clamp7(Math.round(2350 / Math.max(0.65, (1 + player.haste) * player.actionSpeedMultiplier)), 900, 3200);
+  const playerHitChance = clamp6(player.accuracy - bossSecondary.evasion, 0.55, 0.99);
+  const playerAttackIntervalMs = clamp6(Math.round(2350 / Math.max(0.65, (1 + player.haste) * player.actionSpeedMultiplier)), 900, 3200);
   let nextPlayerAt = 650, nextBossAt = 1800;
   const push = (event) => events.push({ ...event, playerHp: Math.max(0, Math.round(playerHp)), bossHp: Math.max(0, Math.round(bossHp)), phase });
   push({ atMs: 0, type: "battle_start", label: "The Fallen Knight raises the oathglass blade." });
   const maybePotion = (atMs) => {
-    const threshold = clamp7(player.autoEatThresholdPct, 10, 90) / 100;
+    const threshold = clamp6(player.autoEatThresholdPct, 10, 90) / 100;
     if (player.potionHeal <= 0) return;
     if (playerHp > 0 && playerHp / playerMaxHp <= threshold && potionLeft > 0) {
       const healed = Math.min(playerMaxHp - playerHp, Math.max(1, Math.round(player.potionHeal)));
@@ -51470,7 +51452,7 @@ function simulateFallenKnightStoryBattle(player, seed, mode = "story") {
       if (!hit) {
         push({ atMs: now, type: "player_miss", label: "Your strike misses.", abilityId: "PLAYER_STRIKE" });
       } else {
-        const critical = random01(seed, rngIndex++) < clamp7(player.critChance, 0, 0.75);
+        const critical = random01(seed, rngIndex++) < clamp6(player.critChance, 0, 0.75);
         const variance = 0.94 + random01(seed, rngIndex++) * 0.12;
         const bossWard = now < phaseWardUntilMs ? 0.86 : 1;
         const base = Math.max(1, player.power * 38 + player.attack * 14 - monster.defense * 15);
@@ -51491,7 +51473,7 @@ function simulateFallenKnightStoryBattle(player, seed, mode = "story") {
     now = nextBossAt;
     bossAttackCount++;
     const phaseHaste = phase === 3 ? 0.18 : phase === 2 ? 0.07 : 0;
-    const attackInterval = clamp7(Math.round(2850 / (1 + bossSecondary.haste + phaseHaste)), 1450, 3400);
+    const attackInterval = clamp6(Math.round(2850 / (1 + bossSecondary.haste + phaseHaste)), 1450, 3400);
     let abilityId = "FALLEN_SLASH", label = "Fallen Slash", coeff = 1, telegraph = 0;
     if (bossAttackCount % 6 === 0) {
       abilityId = "OATHGLASS_COLLAPSE";
@@ -51505,12 +51487,12 @@ function simulateFallenKnightStoryBattle(player, seed, mode = "story") {
       telegraph = 900;
     }
     if (telegraph) push({ atMs: Math.max(0, now - telegraph), type: "telegraph", label: `${label} incoming`, abilityId });
-    const bossAccuracy = clamp7(bossSecondary.accuracy + (phase === 3 ? 0.025 : 0), 0.55, 0.99);
-    const bossHitChance = clamp7(bossAccuracy - player.evasion, 0.55, 0.99);
+    const bossAccuracy = clamp6(bossSecondary.accuracy + (phase === 3 ? 0.025 : 0), 0.55, 0.99);
+    const bossHitChance = clamp6(bossAccuracy - player.evasion, 0.55, 0.99);
     if (random01(seed, rngIndex++) > bossHitChance) {
       push({ atMs: now, type: "boss_miss", label: `${label} misses.`, abilityId });
     } else {
-      const bossCritChance = clamp7(bossSecondary.critChance + (phase === 3 ? 0.08 : 0), 0, 0.55);
+      const bossCritChance = clamp6(bossSecondary.critChance + (phase === 3 ? 0.08 : 0), 0, 0.55);
       const critical = random01(seed, rngIndex++) < bossCritChance;
       const variance = 0.95 + random01(seed, rngIndex++) * 0.1;
       const raw2 = monster.attack * 0.29 + monster.level * 0.14;
@@ -51546,7 +51528,7 @@ function simulateFallenKnightStoryBattle(player, seed, mode = "story") {
     potionConsumed,
     phasesReached,
     events,
-    player: { hitChance: playerHitChance, critChance: clamp7(player.critChance, 0, 0.75), attackIntervalMs: playerAttackIntervalMs },
+    player: { hitChance: playerHitChance, critChance: clamp6(player.critChance, 0, 0.75), attackIntervalMs: playerAttackIntervalMs },
     boss: { accuracy: bossSecondary.accuracy, evasion: bossSecondary.evasion, critChance: bossSecondary.critChance, critMultiplier: bossSecondary.critMultiplier, haste: bossSecondary.haste }
   };
 }
@@ -51637,7 +51619,7 @@ var REGIONAL_COMBAT_PRESSURE = { Greenfields: 1, Silverbrook: 1.04, "Ironwood Fo
 var REGIONAL_HUNT_DAMAGE_TUNING = { Greenfields: 0.36, Silverbrook: 0.25, "Ironwood Forest": 0.4, "Old Mines": 0.55, "King's Road": 0.42, Ashlands: 0.4 };
 var REGIONAL_MONSTER_PRESSURE_MULTIPLIER = { entry: 0.92, standard: 1, hard: 1.1 };
 var REGIONAL_MIN_ATTRITION_HP_PER_HOUR = { Greenfields: 80, Silverbrook: 120, "Ironwood Forest": 240, "Old Mines": 280, "King's Road": 420, Sunscar: 780, Frostmarch: 1450, Ashlands: 2150 };
-var MISSING_GEAR_HUNT_ATTRITION_PER_TIER = 0.6;
+var MISSING_GEAR_HUNT_ATTRITION_PER_TIER = 0.62;
 var MIN_UNHEALED_HP_FRACTION_PER_HOUR = 0.08;
 var OUT_OF_COMBAT_REGEN_FRACTION_PER_MINUTE = 0.05;
 var GATHER_TIME_SCALE = 1.25;
@@ -51715,36 +51697,40 @@ function effectiveStats(state) {
   const c = state.character;
   if (!c) return { hp: 0, attack: 0, defense: 0, power: 0, critChance: 0, critMultiplier: 1.5, accuracy: 0.84, evasion: 0.04, haste: 0.05, armor: 0, ward: 0, tenacity: 0, potency: 0, penetration: 0 };
   let hp = c.hp, attack = c.attack, defense = c.defense;
+  let gearAttack = 0, gearDefense = 0;
   for (const id of Object.values(c.equipment)) {
     if (!id) continue;
     const stats4 = enhancedGearStats(state, id);
     hp += stats4.hp;
-    attack += stats4.attack;
-    defense += stats4.defense;
+    gearAttack += stats4.attack;
+    gearDefense += stats4.defense;
   }
   const novice = noviceSetFor(c.classId), noviceComplete = novice.slots.every((slot) => c.equipment[slot] === noviceItemId(c.classId, slot));
   if (noviceComplete) {
     hp += novice.setBonus.hp;
-    attack += novice.setBonus.attack;
-    defense += novice.setBonus.defense;
+    gearAttack += novice.setBonus.attack;
+    gearDefense += novice.setBonus.defense;
   }
+  const classGear = classWeightedGearStats(c.classId, gearAttack, gearDefense);
+  attack += classGear.attack;
+  defense += classGear.defense;
   const setStats = activeEquipmentBuildStats(state);
   hp = Math.ceil(hp * (1 + setStats.maxHp));
-  defense = Math.ceil(defense * (1 + setStats.armor));
+  defense *= 1 + setStats.armor;
   const gems = equippedGemBonuses(state);
   hp = Math.ceil(hp * (1 + gems.hp));
-  attack = Math.ceil(attack * (1 + gems.attack));
-  defense = Math.ceil(defense * (1 + gems.defense));
+  attack *= 1 + gems.attack;
+  defense *= 1 + gems.defense;
   const mastery = characterClassEffects(c);
   hp = Math.ceil(hp * mastery.hp);
-  attack = Math.ceil(attack * mastery.attack);
-  defense = Math.ceil(defense * mastery.defense);
+  attack *= mastery.attack;
+  defense *= mastery.defense;
   const permanent = characterPermanentMultipliers(state);
-  attack = Math.ceil(attack * permanent.combatPowerMultiplier);
+  attack *= permanent.combatPowerMultiplier;
   const faithBlessing = selectedFaithBlessing(state);
   if (faithBlessing?.family === "hp") hp = Math.ceil(hp * (1 + faithBlessing.bonus));
   const prep = c.preparation ? preparationEffects(c.preparation) : void 0;
-  if (prep) attack = Math.ceil(attack * prep.attack);
+  if (prep) attack *= prep.attack;
   const role = CLASSES.find((def) => def.id === c.classId)?.role, baseCritChance = role === "Damage" ? 0.1 : 0.05, baseEvasion = role === "Damage" ? 0.07 : 0.04;
   const basePower = Math.round(attack * 1.5 + defense * 0.8 + hp * 0.08 + c.level * 2.5);
   return {
@@ -52019,71 +52005,41 @@ function combatEncounterDamage(runtime, champion = false) {
   const raw2 = Math.max(1, Math.round(m.attack * COMBAT_MONSTER_DAMAGE_SCALE) - Math.floor(boostedDefense * 0.58));
   const regionalPressure = (REGIONAL_COMBAT_PRESSURE[m.zone] ?? 1) * REGIONAL_MONSTER_PRESSURE_MULTIPLIER[regionalMonsterPressureBand(m.id)];
   const damage = Math.max(0.1, (raw2 * 0.48 + m.level * 0.16) * (REGIONAL_HUNT_DAMAGE_TUNING[m.zone] ?? 1) * regionalPressure * secondary.incomingPressureMultiplier * style.damageTakenMultiplier * tactic.damageTakenMultiplier * (champion ? CHAMPION_DAMAGE_MULTIPLIER : 1) * modifiers.incomingDamageMultiplier * companion.incomingDamageMultiplier * (1 - effectGems.damage_reduction) * Math.max(0.5, 1 - setCombat.stats.ward) * (c.preparation ? preparationEffects(c.preparation).damage : 1) * runtime.progressionDamagePenalty);
-  const healing = stats4.hp * companion.directHealingPctPerHour * killCycleSeconds / 3600 * (c.preparation ? preparationEffects(c.preparation).healing : 1);
   const floor = Math.max(REGIONAL_MIN_ATTRITION_HP_PER_HOUR[m.zone] ?? 0, stats4.hp * MIN_UNHEALED_HP_FRACTION_PER_HOUR) * runtime.gearAttritionMultiplier * killCycleSeconds / 3600;
   const incoming = Math.max(floor, damage);
-  return { damage: incoming, healing, net: incoming - healing };
+  const onKillHealing = Math.min(stats4.attack * (style.onKillAttackHealPct ?? 0), Math.max(0, incoming - floor));
+  const healing = stats4.hp * companion.directHealingPctPerHour * killCycleSeconds / 3600 * (c.preparation ? preparationEffects(c.preparation).healing : 1) + onKillHealing;
+  return { damage: incoming, healing, onKillHealing, net: incoming - healing };
 }
 function simulateCombat2(state, monsterId, elapsed, nowMs = Date.now()) {
-  const c = state.character, activity = state.activity, startsAtMs = activity?.lastClaimAtMs ?? nowMs - elapsed * 1e3;
+  const c = state.character, startsAtMs = state.activity?.lastClaimAtMs ?? nowMs - elapsed * 1e3;
   const unprepared = { ...state, character: { ...c, preparation: void 0 } }, plain = combatRuntimeDetails(unprepared, monsterId, startsAtMs), prepared = combatRuntimeDetails(state, monsterId, startsAtMs);
   const startCandy = eventCandyUtilityMultiplier(state, startsAtMs, "combat");
-  const timeline = combatTimeline({ startsAtMs, elapsedSeconds: elapsed, progressFraction: activity?.progressFraction ?? 0, preparationEncounters: c.preparation?.remainingEncounters ?? 0, cycleSeconds: plain.killCycleSeconds * startCandy, preparedCycleSeconds: prepared.killCycleSeconds * startCandy, candy: eventCandyWindow(state, "combat"), trackSegments: true });
+  const timeline = combatTimeline({ startsAtMs, elapsedSeconds: elapsed, progressFraction: state.activity?.progressFraction ?? 0, preparationEncounters: c.preparation?.remainingEncounters ?? 0, cycleSeconds: plain.killCycleSeconds * startCandy, preparedCycleSeconds: prepared.killCycleSeconds * startCandy, candy: eventCandyWindow(state, "combat") });
   const food = c.equippedFoodId ? itemDef(c.equippedFoodId) : void 0, threshold = Math.max(10, Math.min(90, state.settings.autoEatThresholdPct)) / 100;
   let foodLeft = stackQty2(state.inventory.stacks, c.equippedFoodId), foodConsumed = 0, hp = Math.min(c.currentHp ?? prepared.stats.hp, prepared.stats.hp), championKills = 0, stoppedReason = "", preparationEncounters = 0, qualifyingActivitySeconds = elapsed;
   const completed = [];
-  let activeEncounterIndex = 0, enemyHp = activity?.combatEnemyHp;
-  let lastHit;
-  const seedFor = (index) => `${c.id}:${activity?.startedAtMs ?? startsAtMs}:${monsterId}:${(activity?.sessionKills ?? 0) + index}`;
-  const hitsFor = (runtime, index, champion, attackCadenceSeconds = runtime.killCycleSeconds) => {
-    const exchange = combatEncounterDamage(runtime, champion);
-    return huntHitEvents({ monsterHp: runtime.m.hp, basePlayerHit: huntBasePlayerHit(runtime.stats.attack, runtime.m.defense, runtime.secondary.playerOutputMultiplier), incomingDamage: exchange.damage, healingPerEncounter: exchange.healing, cycleSeconds: attackCadenceSeconds, critChance: runtime.stats.critChance, seed: seedFor(index) });
-  };
-  if (enemyHp === void 0 || !Number.isFinite(enemyHp)) {
-    const champion = isChampionEncounter(c.id, activity?.startedAtMs ?? startsAtMs, monsterId, activity?.sessionKills ?? 0);
-    enemyHp = huntEnemyHpAt(prepared.m.hp, hitsFor(c.preparation?.remainingEncounters ? prepared : plain, 0, champion), activity?.progressFraction ?? 0);
+  if (hp <= 1) return { kills: 0, completed, championKills: 0, foodConsumed: 0, endHp: 1, stoppedReason: "Too injured", qualifyingActivitySeconds: 0, nextProgressFraction: 0, preparationEncounters: 0 };
+  for (const encounter of timeline.encounters) {
+    const runtime = { ...encounter.prepared ? prepared : plain, killCycleSeconds: encounter.cycleSeconds };
+    const champion = isChampionEncounter(c.id, state.activity?.lastClaimAtMs ?? 0, monsterId, completed.length), exchange = combatEncounterDamage(runtime, champion);
+    if (encounter.prepared) preparationEncounters++;
+    hp = hp - exchange.damage <= 0 ? 0 : Math.min(runtime.stats.hp, hp - exchange.net);
+    while (food?.heal && foodLeft > 0 && hp > 0 && hp / runtime.stats.hp <= threshold) {
+      hp = Math.min(runtime.stats.hp, hp + Math.max(1, Math.ceil(food.heal * runtime.modifiers.healingEffectivenessMultiplier)));
+      foodLeft--;
+      foodConsumed++;
+    }
+    if (hp <= 1) {
+      hp = 1;
+      stoppedReason = food && state.settings.stopCombatWhenOutOfFood ? "Out of food / too injured" : "Too injured";
+      qualifyingActivitySeconds = (encounter.atMs - startsAtMs) / 1e3;
+      break;
+    }
+    completed.push({ atMs: encounter.atMs, candy: encounter.candy });
+    if (champion) championKills++;
   }
-  enemyHp = Math.max(0, Math.min(prepared.m.hp, enemyHp));
-  if (hp <= 1) return { kills: 0, completed, championKills: 0, foodConsumed: 0, endHp: 1, enemyHp, stoppedReason: "Too injured", qualifyingActivitySeconds: 0, nextProgressFraction: 0, preparationEncounters: 0, lastHit };
-  for (const segment of timeline.segments) {
-    const runtime = { ...segment.prepared ? prepared : plain, killCycleSeconds: segment.cycleSeconds };
-    if (segment.encounterIndex !== activeEncounterIndex) {
-      enemyHp = runtime.m.hp;
-      activeEncounterIndex = segment.encounterIndex;
-    }
-    const encounterNumber = (activity?.sessionKills ?? 0) + segment.encounterIndex;
-    const champion = isChampionEncounter(c.id, activity?.startedAtMs ?? startsAtMs, monsterId, encounterNumber);
-    const hits = hitsFor(runtime, segment.encounterIndex, champion, segment.prepared ? prepared.killCycleSeconds : plain.killCycleSeconds);
-    for (const hit of huntHitsBetween(hits, segment.fromFraction, segment.toFraction)) {
-      const hitAtMs = segment.startsAtMs + (hit.fraction - segment.fromFraction) * segment.cycleSeconds * 1e3;
-      if (hit.actor === "player") {
-        enemyHp = Math.max(0, enemyHp - hit.damage);
-      } else {
-        hp = hp - hit.damage <= 0 ? 0 : Math.min(runtime.stats.hp, hp - hit.damage + hit.healing);
-        while (food?.heal && foodLeft > 0 && hp > 0 && hp / runtime.stats.hp <= threshold) {
-          hp = Math.min(runtime.stats.hp, hp + Math.max(1, Math.ceil(food.heal * runtime.modifiers.healingEffectivenessMultiplier)));
-          foodLeft--;
-          foodConsumed++;
-        }
-      }
-      lastHit = { atMs: hitAtMs, actor: hit.actor, damage: hit.damage, critical: hit.critical };
-      if (hp <= 1) {
-        hp = 1;
-        stoppedReason = food && state.settings.stopCombatWhenOutOfFood ? "Out of food / too injured" : "Too injured";
-        qualifyingActivitySeconds = Math.max(0, (hitAtMs - startsAtMs) / 1e3);
-        break;
-      }
-    }
-    if (stoppedReason) break;
-    if (segment.toFraction >= 1 - 1e-9) {
-      completed.push({ atMs: segment.endsAtMs, candy: segment.candy });
-      if (segment.prepared) preparationEncounters++;
-      if (champion) championKills++;
-      enemyHp = runtime.m.hp;
-      activeEncounterIndex = segment.encounterIndex + 1;
-    }
-  }
-  return { kills: completed.length, completed, championKills, foodConsumed, endHp: hp, enemyHp, stoppedReason, qualifyingActivitySeconds, nextProgressFraction: stoppedReason ? 0 : timeline.nextProgressFraction, preparationEncounters, lastHit };
+  return { kills: completed.length, completed, championKills, foodConsumed, endHp: hp, stoppedReason, qualifyingActivitySeconds, nextProgressFraction: stoppedReason ? 0 : timeline.nextProgressFraction, preparationEncounters };
 }
 function previewStandardActivityRewardRaw(state, effectiveNowMs) {
   if (!state.activity || !state.character) return { xp: 0, gold: 0, items: [], kills: 0, elapsedSeconds: 0 };
@@ -52195,7 +52151,7 @@ function previewStandardActivityRewardRaw(state, effectiveNowMs) {
     start = end;
   }
   const momentumGold = huntMomentumBonus(baseGoldPerKill, sessionKills, sim.kills);
-  const reward2 = { combatEffort: { startsAtMs: state.activity.lastClaimAtMs, endsAtMs: state.activity.lastClaimAtMs + sim.qualifyingActivitySeconds * 1e3 }, classSkillXp: classGain.awards, explorationXp, xp: Math.floor(sim.kills * baseXpPerKill) + momentumXp + champion.xp, gold: Math.floor(sim.kills * baseGoldPerKill) + momentumGold + champion.gold, items: rewardItems, kills: sim.kills, elapsedSeconds: elapsed, qualifyingActivitySeconds: sim.qualifyingActivitySeconds, preparationEncounters: sim.preparationEncounters, foodConsumed: sim.foodConsumed, endHp: sim.endHp, nextCombatEnemyHp: sim.enemyHp, stoppedReason: sim.stoppedReason, nextProgressFraction: sim.nextProgressFraction, ...sim.championKills > 0 ? { championEncounters: { count: sim.championKills, bonusXp: champion.xp, bonusGold: champion.gold } } : {} };
+  const reward2 = { combatEffort: { startsAtMs: state.activity.lastClaimAtMs, endsAtMs: state.activity.lastClaimAtMs + sim.qualifyingActivitySeconds * 1e3 }, classSkillXp: classGain.awards, explorationXp, xp: Math.floor(sim.kills * baseXpPerKill) + momentumXp + champion.xp, gold: Math.floor(sim.kills * baseGoldPerKill) + momentumGold + champion.gold, items: rewardItems, kills: sim.kills, elapsedSeconds: elapsed, qualifyingActivitySeconds: sim.qualifyingActivitySeconds, preparationEncounters: sim.preparationEncounters, foodConsumed: sim.foodConsumed, endHp: sim.endHp, stoppedReason: sim.stoppedReason, nextProgressFraction: sim.nextProgressFraction, ...sim.championKills > 0 ? { championEncounters: { count: sim.championKills, bonusXp: champion.xp, bonusGold: champion.gold } } : {} };
   return { ...reward2, masteryMaterialRemainders: materialRemainders, ...timedEventRewards(state, "combat", sim.completed.map((row) => row.atMs)) };
 }
 function previewStandardActivityRewardWithSupplies(state, effectiveNowMs) {
@@ -52513,7 +52469,7 @@ function claimActivitySegmentRaw(state, nowMs) {
     const nextXp = Math.min(totalXpAtLevel(100), skill2.xp + (reward2.explorationXp ?? 0));
     return { ...skill2, xp: nextXp, level: levelFromXp(nextXp) };
   });
-  const nextBase = { ...state, skills, ...routed, outOfCombatSinceMs: shouldStop ? combatStoppedAtMs : void 0, character: { ...state.character, ...routed.character ?? {}, xp, level, gold: state.character.gold + reward2.gold, currentHp: reward2.endHp ?? state.character.currentHp }, activity: shouldStop ? null : { ...state.activity, lastClaimAtMs: settledAtMs, progressFraction: reward2.nextProgressFraction, combatEnemyHp: reward2.nextCombatEnemyHp, sessionKills: (state.activity.sessionKills ?? 0) + reward2.kills, sessionChampions: (state.activity.sessionChampions ?? 0) + (reward2.championEncounters?.count ?? 0) }, unlockedMonsterIds: [.../* @__PURE__ */ new Set([...state.unlockedMonsterIds, ...unlocked])] };
+  const nextBase = { ...state, skills, ...routed, outOfCombatSinceMs: shouldStop ? combatStoppedAtMs : void 0, character: { ...state.character, ...routed.character ?? {}, xp, level, gold: state.character.gold + reward2.gold, currentHp: reward2.endHp ?? state.character.currentHp }, activity: shouldStop ? null : { ...state.activity, lastClaimAtMs: settledAtMs, progressFraction: reward2.nextProgressFraction, sessionKills: (state.activity.sessionKills ?? 0) + reward2.kills, sessionChampions: (state.activity.sessionChampions ?? 0) + (reward2.championEncounters?.count ?? 0) }, unlockedMonsterIds: [.../* @__PURE__ */ new Set([...state.unlockedMonsterIds, ...unlocked])] };
   let next = commitDailySupplyTimedBoost(nextBase, supply);
   next.character = { ...next.character, classSkills: trained.classSkills, classSkillRemainders: trained.classSkillRemainders, masteryMaterialRemainders: reward2.masteryMaterialRemainders };
   if (next.character.preparation && (reward2.preparationEncounters ?? reward2.kills) > 0) {

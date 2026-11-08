@@ -162,7 +162,7 @@ ok(characterManage.includes('keyboardShouldPersistTaps="handled"')&&characterMan
 
 const settings=read('src/screens/SettingsScreen.tsx');
 const moreScreen=read('src/screens/MoreScreen.tsx');
-ok(moreScreen.includes("https://discord.gg/Db83APvP5y")&&moreScreen.includes("DiscordButton label={a('Join Discord')}")&&moreScreen.indexOf("<DiscordButton label={a('Join Discord')}")<moreScreen.indexOf("<RateAppCard language={language}/>"),"Account must display the official Discord invitation directly above Rate Veldryn");
+ok(moreScreen.includes("https://discord.gg/cnUDHhQ7Qb")&&moreScreen.includes("DiscordButton label={a('Join Discord')}")&&moreScreen.indexOf("<DiscordButton label={a('Join Discord')}")<moreScreen.indexOf("<RateAppCard language={language}/>"),"Account must display the official Discord invitation directly above Rate Veldryn");
 ok(settings.includes("PRIVACY_POLICY_URL='https://elroynbenjamins.github.io/veldryn/privacy/'")&&settings.includes('title={a("Privacy Policy")}')&&settings.includes('onPress={()=>openExternal(PRIVACY_POLICY_URL)}'),"Settings must expose the VELDRYN privacy policy as a bottom action");
 ok(settings.includes('Linking.openURL')&&settings.includes('offlineCapBreakdown(state)'),'Settings external links and AFK reserve summary must be runtime-backed');
 ok(settings.includes("a('{base}h base · up to {free}h through progression · {max}h maximum',{base:afk.baseHours,free:afk.freeMaxHours,max:afk.maxHours})")&&settings.includes('a("Final +6h: VIP +2h · VIP+ +2h extra · Supporter +2h")'),"Settings must explain the runtime-backed 8→24→30 hour AFK reserve progression");

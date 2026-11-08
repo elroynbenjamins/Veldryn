@@ -50,11 +50,15 @@ async function main(){
  clock+=60000;
  const brewClaim=await request({type:'claim'},'brew-claim-01',7);assert.equal(brewClaim.status,200,'Alchemy settlement persists online');
  const persisted=await brewClaim.json();assert.equal(persisted.state.activity,null,'Completed alchemy batch is cleared');assert.ok(persisted.guildProjectEffort.some((part:{kind:string;units?:number;endsAtMs?:number;startsAtMs?:number})=>part.kind==='crafting'&&((part.units??0)>0||(part.endsAtMs??0)>(part.startsAtMs??0))),'Verified crafted items contribute to weekly guild activity: '+JSON.stringify({reward:persisted.reward,effort:persisted.guildProjectEffort,activityBefore:state?.activity}).slice(0,1200));
-  // Keep the fixture aligned with authoritative potion inputs and Gold after balance changes.
-  const regionalRecipe=alchemyRecipeDef('BREW_GREATER_VIGOR_TONIC_SUNSCAR')!;
-  assert.ok(regionalRecipe,'Regional Alchemy recipe exists');
-  const regionalInputs=new Set(regionalRecipe.inputs.map(input=>input.itemId));
-  state={...state!,character:{...state!.character!,level:30,xp:totalXpAtLevel(30),gold:Math.max(state!.character!.gold,regionalRecipe.gold+100)},skills:state!.skills.map(skill=>skill.skillId==='herbalism'?{...skill,xp:totalXpAtLevel(26),level:26}:skill.skillId==='alchemy'?{...skill,xp:totalXpAtLevel(35),level:35}:skill.skillId==='exploration'?{...skill,xp:totalXpAtLevel(6),level:6}:skill),inventory:{...state!.inventory,stacks:[...state!.inventory.stacks.filter(stack=>!regionalInputs.has(stack.itemId)),...regionalRecipe.inputs.map(input=>({...input}))]}};
+ // The Sunscar tonic has an updated material and Gold cost. The fixture must
+ // provision the *current authored recipe*, not the pre-rebalance 2+2 inputs.
+ const sunscarTonic=alchemyRecipeDef('BREW_GREATER_VIGOR_TONIC_SUNSCAR')!;
+ const tonicItems=new Map(state!.inventory.stacks.map(row=>[row.itemId,{...row}]));
+ for(const input of sunscarTonic.inputs){
+  const previous=tonicItems.get(input.itemId);
+  tonicItems.set(input.itemId,{itemId:input.itemId,quantity:Math.max(previous?.quantity??0,input.quantity)});
+ }
+ state={...state!,character:{...state!.character!,level:30,xp:totalXpAtLevel(30),gold:Math.max(state!.character!.gold,sunscarTonic.gold)},skills:state!.skills.map(skill=>skill.skillId==='herbalism'?{...skill,xp:totalXpAtLevel(26),level:26}:skill.skillId==='alchemy'?{...skill,xp:totalXpAtLevel(35),level:35}:skill.skillId==='exploration'?{...skill,xp:totalXpAtLevel(6),level:6}:skill),inventory:{...state!.inventory,stacks:[...tonicItems.values()]}};
  // This later-region fixture must satisfy the same scouting gates as a real character.
  const beforeLockedTravel=commits;
  const lockedTravel=await request({type:'travel',args:{id:'SUNSCAR'}},'sunscar-locked-01',8);

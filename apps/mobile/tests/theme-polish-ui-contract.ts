@@ -34,7 +34,7 @@ const checks:Array<[string,string[],string[]]>= [
   ['src/screens/AchievementsScreen.tsx',['filterTextSelected:{color:C.text}'],["filterTextSelected:{color:'#d9f3ff'}"]],
   ['src/screens/CompanionsScreen.tsx',['useGameTheme'],["backgroundColor:'#332515'"]],
   ['src/screens/DailySuppliesScreen.tsx',['backgroundColor:C.goodSurface','GameModalSurface'],["backgroundColor:'#172b24'","backgroundColor:'#0009'"]],
-  ['src/screens/WorldScreen.tsx',['backgroundColor:C.infoSurface'],["backgroundColor:'#102536'"]],
+  ['src/components/WorldChapterNavigator.tsx',['backgroundColor:C.infoSurface'],["backgroundColor:'#102536'"]],
   ['src/screens/CollectionsScreen.tsx',['backgroundColor:C.selection','backgroundColor:C.stage'],["backgroundColor:'#272417'","backgroundColor:'#101923'"]],
   ['src/screens/ClassSelectScreen.tsx',['backgroundColor:C.badSurface'],["backgroundColor:'#2a1b20'"]],
   ['src/screens/CombatScreen.tsx',['backgroundColor:equipmentColors.panel','backgroundColor:C.panel'],["shade:{...StyleSheet.absoluteFillObject,backgroundColor:'rgba(7,12,20,.8)'"]],

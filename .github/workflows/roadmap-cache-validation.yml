@@ -1,0 +1,37 @@
+name: Community Roadmap cache validation
+
+on:
+  pull_request:
+    paths:
+      - 'apps/mobile/src/core/community-roadmap-read-cache.ts'
+      - 'apps/mobile/src/core/community-roadmap-release-visibility.ts'
+      - 'apps/mobile/src/online/community-roadmap.ts'
+      - 'apps/mobile/src/screens/CommunityRoadmapScreen.tsx'
+      - 'apps/mobile/tests/community-roadmap-read-cache.ts'
+      - 'apps/mobile/tests/community-roadmap-release-visibility.ts'
+      - '.github/workflows/roadmap-cache-validation.yml'
+  workflow_dispatch:
+
+jobs:
+  two-hour-roadmap:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: apps/mobile
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+          cache-dependency-path: apps/mobile/pnpm-lock.yaml
+      - run: pnpm install --frozen-lockfile
+      - name: Install shared backend dependencies for mobile TypeScript
+        run: pnpm --dir ../../backend install --frozen-lockfile
+      - name: Typecheck Roadmap client and core
+        run: pnpm typecheck:core && pnpm typecheck
+      - name: Check two-hour caching, votes and roadmap invisibility
+        run: node ../../tools/run-mobile-tests.mjs community-roadmap-read-cache community-roadmap-release-visibility

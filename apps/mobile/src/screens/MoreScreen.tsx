@@ -124,7 +124,7 @@ export function MoreScreen({language,character,accountStatus='local',onNavigate,
      <View style={s.flex}><Text style={s.securityTitle}>{a('Secure your progress')}</Text><Text style={s.securityDescription}>{a(accountStatus==='pending'?'Complete email verification or password setup in Account settings.':'Link an email to protect access to this guest account.')}</Text></View>
      <Text style={s.securityArrow}>›</Text>
     </Pressable>:null}
-    {onOpenRoadmap?<Pressable accessibilityRole="button" accessibilityLabel={a('Community Roadmap')} accessibilityHint={a('Vote on major future expansions')} onPress={onOpenRoadmap} style={({pressed})=>[s.releaseRow,pressed&&s.pressed]}>
+    {onOpenRoadmap?<Pressable accessibilityRole="button" accessibilityLabel={a('Community Roadmap')} accessibilityHint={a('Vote on upcoming features and improvements')} onPress={onOpenRoadmap} style={({pressed})=>[s.releaseRow,pressed&&s.pressed]}>
       <UiIcon name="world" size={22}/><Text style={s.releaseTitle}>{a('Community Roadmap')}</Text><UiIcon name="next" size={18}/>
     </Pressable>:null}
     {onOpenUpdates?<Pressable accessibilityRole="button" accessibilityLabel={a("What's New & Updates")} accessibilityHint={newReleaseAvailable?a("New release information available"):a("Release notes and app versions")} onPress={onOpenUpdates} style={({pressed})=>[s.releaseRow,pressed&&s.pressed]}>
@@ -146,7 +146,7 @@ export function MoreScreen({language,character,accountStatus='local',onNavigate,
       </Pressable>})}</View>}</View>)}
     {upcomingLocked.length?<View style={s.unlockAhead}><View style={s.unlockAheadHead}><Text style={s.sectionLabel}>{a("UNLOCKS AHEAD")}</Text><Text style={s.lockCountText}>{lockedItems.length}</Text></View>{upcomingLocked.map(id=>{const meta=itemMeta(language,id),reason=lockedReason(id);return <View key={id} style={s.unlockRow}><View style={s.unlockIcon}><MoreIcon id={id} size={23} muted/></View><View style={s.flex}><Text style={s.unlockTitle}>{meta.title}</Text><Text numberOfLines={2} style={s.unlockReason}>{reason}</Text></View></View>})}</View>:null}
     {onOpenAdminQa?<View style={s.section}><Text style={s.sectionLabel}>{a("DEVELOPER")}</Text><Pressable accessibilityRole="button" accessibilityLabel={a("Open Admin QA Console")} onPress={onOpenAdminQa} style={({pressed})=>[s.devCard,pressed&&s.pressed]}><ThemedNavigationIcon destination="Character" size={32}/><View style={s.devCopy}><Text style={s.title}>{a("Admin QA Console")}</Text><Text style={s.description}>{a("Full-content, crafting and dungeon test profile")}</Text></View><UiIcon name="next" size={18}/></Pressable></View>:null}
-    <DiscordButton label={a('Join Discord')} onPress={()=>void Linking.openURL('https://discord.gg/Db83APvP5y')}/>
+    <DiscordButton label={a('Join Discord')} onPress={()=>void Linking.openURL('https://discord.gg/cnUDHhQ7Qb')}/>
     <RateAppCard language={language}/>
   </ScrollView>;
 }

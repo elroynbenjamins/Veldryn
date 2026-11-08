@@ -19,7 +19,10 @@ assert.equal(guildPveView({...row,attemptCap:3,attemptsUsed:1,guildLevel:2,requi
 const weeklyPresentation=guildPvePresentation(row);
 assert.equal(weeklyPresentation.bossName,'Rootbound Colossus');
 assert.deepEqual(weeklyPresentation.activities,['combat']);
-assert.equal(guildPvePresentation({...row,name:'Fallen Oathbreaker'}).visualKey,'fallen_knight');
+assert.equal(guildPvePresentation({...row,name:'Fallen Oathbreaker'}).visualKey,'guild_fallen_oathbreaker');
+assert.equal(guildPvePresentation({...row,name:'Fallen Oathbreaker',startsAt:'2026-11-23T00:00:00Z'}).visualKey,'guild_fallen_oathbreaker');
+assert.equal(guildPvePresentation({...row,name:'Granite Moss Troll',startsAt:'2026-11-09T00:00:00Z'}).visualKey,'guild_granite_moss_troll');
+assert.equal(guildPvePresentation({...row,name:'Veilbound Revenant',startsAt:'2026-11-16T00:00:00Z'}).visualKey,'guild_veilbound_revenant');
 assert.equal(guildPvePresentation({...row,name:'Granite Moss Troll',startsAt:'2026-11-09T00:00:00Z'}).mechanicName,'Shatter the Stone');
 assert.equal(guildPvePresentation({...row,name:'Granite Moss Troll',startsAt:'2026-11-09T00:00:00Z'}).focusRole,'Damage');
 assert.equal(guildPvePresentation({...row,name:'Fallen Oathbreaker',startsAt:'2026-11-23T00:00:00Z'}).focusRole,'Tank');
@@ -27,6 +30,7 @@ assert.equal(guildPvePresentation({...row,name:'Veilbound Revenant',startsAt:'20
 assert.equal(guildPvePresentation({...row,name:'Fallen Oathbreaker'}).mechanicName,'Oathbound Guard');
 const veilPresentation=guildPvePresentation({...row,kind:'event',name:'The Veilbreak',eventId:'EVT_ANNUAL_010_2026'});
 assert.equal(veilPresentation.bossName,'Gloam Riftwarden');
+assert.equal(veilPresentation.visualKey,'veilbreak');
 assert.deepEqual(veilPresentation.activities,['combat']);
 assert.equal(guildPveActivitySummary('event').includes('three attempts per seven days'),true);
 const mixedBosses:GuildPveEncounter[]=[row,{...row,id:'festival-boss',kind:'event',name:'Festival Guardian'}];

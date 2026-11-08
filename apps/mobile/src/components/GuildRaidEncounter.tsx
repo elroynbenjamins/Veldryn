@@ -16,7 +16,8 @@ import type {GameState} from '../core/types';
 import {itemDef} from '../content/items';
 
 const bossArt:Record<ReturnType<typeof guildPvePresentation>['visualKey'],ImageSourcePropType>={
- treant:require('../../assets/monsters/ancient_treant.webp'),fallen_knight:require('../../assets/monsters/fallen_knight.webp'),forest_troll:require('../../assets/monsters/forest_troll.webp'),veilbreak:require('../../assets/monsters/oathglass_revenant.webp'),harvestwake:require('../../assets/events/harvestwake/guardian-master-v2.webp'),merchant_guild:require('../../assets/monsters/oathbound_squire.webp'),default_event:require('../../assets/monsters/oathglass_revenant.webp'),
+ treant:require('../../assets/monsters/ancient_treant.webp'),fallen_knight:require('../../assets/monsters/fallen_knight.webp'),forest_troll:require('../../assets/monsters/forest_troll.webp'),veilbreak:require('../../assets/monsters/oathglass_revenant.webp'),
+ guild_fallen_oathbreaker:require('../../assets/guild-bosses/fallen_oathbreaker.webp'),guild_granite_moss_troll:require('../../assets/guild-bosses/granite_moss_troll.webp'),guild_veilbound_revenant:require('../../assets/guild-bosses/veilbound_revenant.webp'),harvestwake:require('../../assets/events/harvestwake/guardian-master-v2.webp'),merchant_guild:require('../../assets/monsters/oathbound_squire.webp'),default_event:require('../../assets/monsters/oathglass_revenant.webp'),
 };
 const forestStage=require('../../assets/card-backgrounds/forest_sanctum_wide_v2.webp');
 const ruinsStage=require('../../assets/card-backgrounds/veilbreak_wide_v2.webp');
@@ -30,7 +31,7 @@ export function GuildPveEncounterCard({row,state,guildRewards=[],numberMode='abb
  // Only a live attempt needs second-by-second paint; server polling remains with the board.
  useEffect(()=>{setNow(Date.now());const timer=setInterval(()=>setNow(Date.now()),row.pendingAttempts?1000:30000);return()=>clearInterval(timer)},[row.pendingAttempts,row.nextAttemptResolvesAt,row.damage,row.endsAt]);
  const view=guildPveView(row,now),presentation=guildPvePresentation(row),accent=row.kind==='event'?C.special:C.accent;
- const stage=presentation.visualKey==='treant'||presentation.visualKey==='forest_troll'?forestStage:presentation.visualKey==='harvestwake'?harvestStage:presentation.visualKey==='merchant_guild'?caravanStage:ruinsStage;
+ const stage=presentation.visualKey==='treant'||presentation.visualKey==='forest_troll'||presentation.visualKey==='guild_granite_moss_troll'?forestStage:presentation.visualKey==='harvestwake'?harvestStage:presentation.visualKey==='merchant_guild'?caravanStage:ruinsStage;
  const compact=width<360||fontScale>=1.3,n=(value:number)=>formatGameNumber(value,numberMode,language);
  const endDate=new Date(view.open?row.endsAt:row.claimEndsAt).toLocaleDateString(language,{day:'numeric',month:'short'});
  const companionId=state?.character?.equippedCombatCompanionId,companion=companionId?combatCompanionDef(companionId):undefined,companionArt=companionId?companionArtSource(companionId):undefined;

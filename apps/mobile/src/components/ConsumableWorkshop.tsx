@@ -89,7 +89,7 @@ export function ConsumableWorkshop({state,skillId,preferredRecipeId,onStart}:Pro
     activeId,preferredId:preferred?.id,manualByOutput:manualSourceByPotion,readyOnly,
    }):[];
  const recipes=skillId==='alchemy'&&category==='Potions'?potionRows.map(row=>row.recipe):visible;
- const potionOptions=new Map(potionRows.map(row=>[row.outputId,row.options]));
+ const potionOptions=new Map<string,readonly Recipe[]>(potionRows.map(row=>[row.outputId,row.options] as const));
  const missingReason=(recipe:Recipe):string=>{
   if(recipe.level>skillLevel)return gt('Requires {skill} level {level}.',{skill:gl('alchemy'),level:recipe.level});
   const goldShortfall=Math.max(0,recipe.gold-(state.character?.gold??0));

@@ -40,3 +40,4 @@ jobs:
             git commit -m 'Regenerate combat-authoritative Edge bundles after class refinement'
           fi
           git push origin HEAD:refs/heads/balance/class-gear-stat-identity
+# Final candidate: class ratio, dungeon snapshot, fractional stats and localization refinements.

@@ -46,7 +46,8 @@ assert.equal(envelope.sourceCharacterId,base.character!.id);
 assert.equal(envelope.sourceRevision,11);
 assert.equal(envelope.sourceIndex,0);
 assert.equal(envelope.instanceId,receipt.id);
-assert.deepEqual(envelope.exactReceipt,receipt,'preserve full per-copy receipt, sockets and upgrades');
+assert.deepEqual(envelope.exactReceipt,JSON.parse(JSON.stringify(receipt)),
+  'preserve full serialized per-copy receipt, sockets and upgrades');
 assert.notStrictEqual(envelope.exactReceipt,receipt,'no live reference shared with source');
 assert.notStrictEqual(envelope.exactReceipt.enhancement,receipt.enhancement);
 
@@ -126,7 +127,7 @@ const collision=inspectMarketGearDeliveryV7({...recipient,
 assert(collision.problems.includes('duplicate_instance_id_in_destination'));
 const full=inspectMarketGearDeliveryV7({...recipient,
   character:{...recipient.character!,equipmentPouch:{
-    capacity:1,stacks:[{itemId:'COPPER_ORE',quantity:1}],
+    capacity:30,stacks:Array.from({length:30},()=>({itemId:'COPPER_ORE',quantity:1})),
   }},
 },'market-proof-buyer',envelope,recipient.character!.id,'equipment_pouch');
 assert(full.problems.includes('destination_storage_full_or_unverified'));

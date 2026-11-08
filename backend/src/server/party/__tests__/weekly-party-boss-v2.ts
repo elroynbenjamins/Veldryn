@@ -1,7 +1,7 @@
 import {launchPlayer} from '../../combat/content/launch-combat';
 import type {AuthoritativeLoadoutRecord, LoadoutRepository} from '../../coop/loadout-snapshots';
 import {
-  deriveVerifiedPartyBossPreparation,freezePartyEventBossLoadout,
+  deriveVerifiedPartyBossPreparation,deriveVerifiedPartyPhaseSupport,freezePartyEventBossLoadout,
   resolvePartyEventDayEightBoss,PARTY_EVENT_BOSS_SETTLEMENT_GRACE_MS,
 } from '../weekly-party-boss-v2';
 import {buildWeeklyPartySupplyOrders,weeklyPartyBudget,type VerifiedSupplyItem} from '../weekly-party-events-v2';
@@ -79,6 +79,18 @@ assert(full.outgoingBonus>.08&&full.damageReduction>.08&&full.healingBonus>.12,
 const phase1=deriveVerifiedPartyBossPreparation(allOrders,1);
 assert(phase1.completedRequiredStages===1 && phase1.completedOptionalPreparations.length===0,
   'late preparations cannot affect earlier event phases');
+const supportPhase1=deriveVerifiedPartyPhaseSupport(allOrders,1);
+const supportPhase2=deriveVerifiedPartyPhaseSupport(allOrders,2);
+assert(supportPhase1.escortIntegrityMultiplier>1,
+  'early supply donations protect convoy during phase 1');
+assert(supportPhase1.objectiveEffectivenessMultiplier>1,
+  'required supplies boost the current phase modestly');
+assert(supportPhase1.combat.completedOptionalPreparations.length===0,
+  'later optional preparations cannot retroactively boost phase 1');
+assert(supportPhase2.recoveryMultiplier>supportPhase1.recoveryMultiplier,
+  'provisions support later-phase recovery');
+assert(supportPhase2.objectiveEffectivenessMultiplier>supportPhase1.objectiveEffectivenessMultiplier,
+  'specialist tools improve later-phase objectives without minting EP');
 const partial=deriveVerifiedPartyBossPreparation(allOrders.map(order=>({
   ...order,donatedQuantity:order.kind==='optional'&&order.preparation==='specialist'
     ?order.quantity-1:order.quantity,
@@ -104,6 +116,7 @@ assert(result.rewardBand>=1 && result.rewardBand<=6,'shared tiered reward band')
 assert(result.preparation.completedRequiredStages===3,'donations applied at fight time');
 assert(result.contributions.length===4,'every saved party member participates');
 assert(result.contributions.some(c=>c.role==='support'),'support not excluded');
+assert(result.contributions.every(c=>c.shielding>=0),'shielding recorded as meaningful support contribution');
 assert(result.contributions.some(c=>c.role==='tank'),'tank not excluded');
 const repeat=resolvePartyEventDayEightBoss(battleInput);
 assert(repeat.totalBossDamage===result.totalBossDamage

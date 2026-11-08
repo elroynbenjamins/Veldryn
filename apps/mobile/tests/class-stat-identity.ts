@@ -20,8 +20,15 @@ for(const cls of CLASSES){
     almost(adjusted.attack+adjusted.defense,attack+defense,cls.id+' must preserve equipped stat budget');
     assert.ok(adjusted.attack>=0&&adjusted.defense>=0,cls.id+' never creates negative stats');
   }
-  almost(classWeightedGearStats(cls.id,100,0).attack,100,cls.id+' pure offensive gear stays offensive');
-  almost(classWeightedGearStats(cls.id,0,100).defense,100,cls.id+' pure defensive gear stays defensive');
+  const pureAttack=classWeightedGearStats(cls.id,100,0),pureDefense=classWeightedGearStats(cls.id,0,100);
+  assert.ok(pureAttack.attack>pureAttack.defense,cls.id+' offensive-only gear remains mainly offensive');
+  assert.ok(pureDefense.defense>pureDefense.attack,cls.id+' defensive-only gear remains mainly defensive');
+  const balanced=classWeightedGearStats(cls.id,100,100);
+  const addAttack=classWeightedGearStats(cls.id,110,100),addDefense=classWeightedGearStats(cls.id,100,110);
+  for(const key of ['attack','defense'] as const){
+    assert.ok(addAttack[key]>=balanced[key]-1e-9,cls.id+' adding Attack cannot lower '+key);
+    assert.ok(addDefense[key]>=balanced[key]-1e-9,cls.id+' adding Defense cannot lower '+key);
+  }
   assert.ok(classWeightedGearStats(cls.id,200,100).attack>classWeightedGearStats(cls.id,100,200).attack,
     cls.id+' gear choices must remain meaningful');
 

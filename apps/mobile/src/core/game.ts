@@ -477,12 +477,17 @@ function combatEncounterDamage(runtime:ReturnType<typeof combatRuntimeDetails>,c
  const raw=Math.max(1,Math.round(m.attack*COMBAT_MONSTER_DAMAGE_SCALE)-Math.floor(boostedDefense*.58));
  const regionalPressure=(REGIONAL_COMBAT_PRESSURE[m.zone]??1)*REGIONAL_MONSTER_PRESSURE_MULTIPLIER[regionalMonsterPressureBand(m.id)];
  const damage=Math.max(.1,(raw*.48+m.level*.16)*(REGIONAL_HUNT_DAMAGE_TUNING[m.zone]??1)*regionalPressure*secondary.incomingPressureMultiplier*style.damageTakenMultiplier*tactic.damageTakenMultiplier*(champion?CHAMPION_DAMAGE_MULTIPLIER:1)*modifiers.incomingDamageMultiplier*companion.incomingDamageMultiplier*(1-effectGems.damage_reduction)*Math.max(.5,1-setCombat.stats.ward)*(c.preparation?preparationEffects(c.preparation).damage:1)*runtime.progressionDamagePenalty);
- const healing=stats.hp*companion.directHealingPctPerHour*killCycleSeconds/3600*(c.preparation?preparationEffects(c.preparation).healing:1);
+ // Ravager's Bloodrush converts its offensive investment into modest
+ // post-kill sustain. It cannot prevent a lethal hit and remains much weaker
+ // when nearly all equipment slots are missing. This belongs to the same
+ // encounter settlement used by online/idle previews, not UI-only feedback.
+ const onKillHealing=stats.attack*(style.onKillAttackHealPct??0);
+ const healing=stats.hp*companion.directHealingPctPerHour*killCycleSeconds/3600*(c.preparation?preparationEffects(c.preparation).healing:1)+onKillHealing;
  // The floor is part of actual server-authoritative damage. Missing gear
  // cannot bypass this attrition through defense or longer kill cycles.
  const floor=Math.max(REGIONAL_MIN_ATTRITION_HP_PER_HOUR[m.zone]??0,stats.hp*MIN_UNHEALED_HP_FRACTION_PER_HOUR)*runtime.gearAttritionMultiplier*killCycleSeconds/3600;
  const incoming=Math.max(floor,damage);
- return {damage:incoming,healing,net:incoming-healing};
+ return {damage:incoming,healing,onKillHealing,net:incoming-healing};
 }
 
 export function combatSustainProjection(state:GameState,monsterId:string,hours=1){
@@ -490,7 +495,7 @@ export function combatSustainProjection(state:GameState,monsterId:string,hours=1
  const runtime=combatRuntimeDetails(state,monsterId),foodId=state.character.equippedFoodId,food=foodId?itemDef(foodId):undefined;
  const exchange=combatEncounterDamage(runtime),damagePerKill=exchange.damage;
  const killsPerHour=3600/Math.max(.1,runtime.killCycleSeconds),companionHealingPerHour=runtime.stats.hp*runtime.companion.directHealingPctPerHour;
- const recoveryPerKill=0,netDamagePerKill=exchange.net;
+ const recoveryPerKill=exchange.onKillHealing,netDamagePerKill=exchange.net;
  const healingPerFood=food?.heal?Math.max(1,Math.ceil(food.heal*runtime.modifiers.healingEffectivenessMultiplier)):0;
  const netHpLossPerHour=netDamagePerKill*killsPerHour;
  const foodPerHour=healingPerFood>0?Math.max(0,netHpLossPerHour)/healingPerFood:netDamagePerKill>0?Infinity:0;

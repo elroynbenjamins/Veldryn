@@ -1,5 +1,7 @@
 import {
   PARTY_WEEKLY_EVENTS_RELEASED,
+  partyEventCadenceAt,
+  PARTY_EVENT_CADENCE_WEEKS,
   WEEKLY_PARTY_EVENT_FAMILIES,
   buildWeeklyPartySupplyOrders,
   creditVerifiedWeeklyActivity,
@@ -23,10 +25,19 @@ assert(sunday.weekKey === '2026-11-02', 'Sunday belongs to preceding UTC week');
 assert(monday.weekKey === '2026-11-09', 'Monday UTC resets event');
 assert(monday.endsAtMs - monday.startsAtMs === 7 * 86_400_000, 'exactly seven days');
 assert(partyEventWeekWindow(Date.parse('2026-11-12T20:00:00Z')).weekKey === monday.weekKey, 'no daily resets');
-assert(partyEventFamilyForWeek(monday.startsAtMs) === 'broken_caravan', 'first rotation');
-assert(partyEventFamilyForWeek(monday.endsAtMs) === 'nightfall_hunt', 'second rotation');
-assert(partyEventFamilyForWeek(monday.endsAtMs + 7 * 86_400_000) === 'broken_wards', 'third rotation');
-assert(partyEventFamilyForWeek(monday.endsAtMs + 14 * 86_400_000) === 'lost_reliquary', 'fourth rotation');
+assert(PARTY_EVENT_CADENCE_WEEKS === 3, 'one event in every three weeks');
+assert(partyEventFamilyForWeek(monday.startsAtMs) === 'broken_caravan', 'first event rotation');
+assert(partyEventFamilyForWeek(monday.endsAtMs - 1) === 'broken_caravan', 'seven full days of activity');
+assert(partyEventFamilyForWeek(monday.endsAtMs) === null, 'second week is a break');
+assert(partyEventFamilyForWeek(monday.endsAtMs + 7 * 86_400_000) === null, 'third week is a break');
+assert(partyEventFamilyForWeek(monday.endsAtMs + 14 * 86_400_000) === 'nightfall_hunt', 'next event after two rest weeks');
+assert(partyEventFamilyForWeek(monday.endsAtMs + 35 * 86_400_000) === 'broken_wards', 'third event rotates by cycle');
+assert(partyEventFamilyForWeek(monday.endsAtMs + 56 * 86_400_000) === 'lost_reliquary', 'fourth event rotates by cycle');
+const activeCadence = partyEventCadenceAt(monday.startsAtMs);
+assert(activeCadence.active && activeCadence.nextEventStartsAtMs === monday.startsAtMs + 21 * 86_400_000, 'next event in three weeks');
+assert(!partyEventCadenceAt(monday.endsAtMs).active, 'calendar blocks break weeks');
+assert(!partyEventCadenceAt(Date.parse('2026-11-08T12:00:00Z')).active, 'no event before calendar epoch');
+assert(partyEventCadenceAt(Date.parse('2026-12-01T12:00:00Z')).eventStartsAtMs === Date.parse('2026-11-30T00:00:00Z'), 'Monday UTC anchored with no drift');
 assert(selectPartyEventVariation('broken_caravan', 4) === WEEKLY_PARTY_EVENT_FAMILIES.broken_caravan.variations[1],
   'seeded variation is stable');
 

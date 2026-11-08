@@ -56,7 +56,7 @@ export function CommunityRoadmapScreen({language}:{language:Language}){
    <View style={s.hero}>
      <Text style={s.kicker}>{a('THE FUTURE OF VELDRYN')}</Text>
      <Text accessibilityRole="header" style={s.heading}>{a('Community Roadmap')}</Text>
-     <Text style={s.subtitle}>{a('Choose the major expansions you want to see next. Your votes help guide development.')}</Text>
+     <Text style={s.subtitle}>{a("Vote on upcoming features and improvements. Your choices help guide Veldryn's development.")}</Text>
    </View>
 
    <View style={s.voteBudget}>
@@ -98,7 +98,7 @@ export function CommunityRoadmapScreen({language}:{language:Language}){
        <View style={s.featureTop}>
          <View style={s.flex}>
            <Text style={s.featureTitle}>{a(feature.title)}</Text>
-           <Text style={s.category}>{a(feature.category)} · {a(canVote?'Future expansion':STATUS_OPTIONS.find(option=>option.id===feature.status)?.label??'Planned')}</Text>
+           <Text style={s.category}>{a(feature.category)} · {a(canVote?'Roadmap idea':STATUS_OPTIONS.find(option=>option.id===feature.status)?.label??'Planned')}</Text>
          </View>
          {canVote?<Pressable accessibilityRole="button" accessibilityLabel={a(feature.voted?'Remove vote for':'Vote for')+' '+a(feature.title)} accessibilityState={{selected:feature.voted,disabled}} disabled={disabled} onPress={()=>void changeVote(feature.id)} style={({pressed})=>[s.voteButton,feature.voted&&s.voteButtonActive,disabled&&s.voteButtonDisabled,pressed&&s.pressed]}>
            <Text style={[s.voteButtonText,feature.voted&&s.voteButtonTextActive]}>{pending===feature.id?a('Saving…'):feature.voted?'✓ '+a('Voted'):'+ '+a('Vote')}</Text>

@@ -1,4 +1,6 @@
-/** Unreleased features must not be announced by a stale Roadmap response. */
-export function communityRoadmapFeatureVisible(featureId:string):boolean {
-  return featureId!=='player_market';
+/** Roadmap visibility is controlled by the server-side published flag,
+ * independently from whether the underlying gameplay feature has shipped.
+ * The Player Market is a votable proposal, not a released marketplace. */
+export function communityRoadmapFeatureVisible(_featureId:string):boolean {
+  return true;
 }

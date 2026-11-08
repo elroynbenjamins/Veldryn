@@ -45,7 +45,7 @@ function parseSnapshot(value:unknown):CommunityRoadmapSnapshot{
 }
 
 const roadmapReadCache=new CommunityRoadmapReadCache<CommunityRoadmapSnapshot>(
- AsyncStorage,parseSnapshot,'veldryn.community-roadmap.v2',
+ AsyncStorage,parseSnapshot,'veldryn.community-roadmap.v3',
 );
 const roadmapScope=(accountId:string|null)=>`${supabasePublicEndpoint??'not_configured'}:${accountId??'signed_out'}`;
 

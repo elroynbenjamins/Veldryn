@@ -251,6 +251,28 @@ var init_faith2 = __esm({
   }
 });
 
+// ../apps/mobile/src/core/class-stat-identity.ts
+var CLASS_EQUIPMENT_ATTACK_SHARE = Object.freeze({
+  IRONWARDEN: 0.45,
+  BASTION: 0.4,
+  DREADGUARD: 0.5,
+  WAYFINDER: 0.6,
+  RAVAGER: 0.65,
+  HEXWEAVER: 0.6,
+  KNIFE_DANCER: 0.65,
+  DAWNKEEPER: 0.45,
+  STONECALLER: 0.55
+});
+function classWeightedGearStats(classId, attack, defense) {
+  const gearAttack = Math.max(0, Number.isFinite(attack) ? attack : 0);
+  const gearDefense = Math.max(0, Number.isFinite(defense) ? defense : 0);
+  const total = gearAttack + gearDefense;
+  if (total <= 0) return { attack: 0, defense: 0 };
+  const share = CLASS_EQUIPMENT_ATTACK_SHARE[classId];
+  const convertedAttack = share >= 0.5 ? gearAttack + gearDefense * (2 * share - 1) : gearAttack * (2 * share);
+  return { attack: convertedAttack, defense: total - convertedAttack };
+}
+
 // ../apps/mobile/src/core/combat-timing.ts
 function combatTimeline(input) {
   const end = input.startsAtMs + Math.max(0, input.elapsedSeconds) * 1e3;
@@ -42848,8 +42870,8 @@ var HERB_ITEMS = [
 
 // ../apps/mobile/src/content/alchemy.ts
 var MAX_ALCHEMY_BATCHES = 1e4;
-var HEALING_POTION_CRAFT_COST_MULTIPLIER = 5;
-var HEALING_POTION_XP_MULTIPLIER = 3;
+var COMBAT_POTION_CRAFT_COST_MULTIPLIER = 5;
+var COMBAT_POTION_XP_MULTIPLIER = 3;
 var POTIONS = [
   { id: "DEWLEAF_DRAUGHT", name: "Dewleaf Draught", tier: 1, effect: { kind: "healing", maxHpFraction: 0.2 }, description: "Restore 20% max HP in boss fights or dungeons. Not usable in ordinary hunts." },
   { id: "RIVERHEART_DRAUGHT", name: "Riverheart Draught", tier: 2, effect: { kind: "healing", maxHpFraction: 0.35 }, description: "Restore 35% max HP in boss fights or dungeons. Not usable in ordinary hunts." },
@@ -42916,11 +42938,11 @@ var ALCHEMY_RECIPES = [
   { id: "BREW_RIMEWARD_DISTILLATE", name: "Rimeward Distillate", skillId: "alchemy", level: 76, seconds: 195, xp: 1750, gold: 220, inputs: [{ itemId: "WINTERMINT", quantity: 3 }, { itemId: "RIMEGLASS", quantity: 2 }, { itemId: "RIME_RESIN", quantity: 3 }], output: { itemId: "RIMEWARD_DISTILLATE", quantity: 1 } },
   { id: "BREW_CINDERHEART_ELIXIR", name: "Cinderheart Elixir", skillId: "alchemy", level: 96, seconds: 225, xp: 3e3, gold: 420, inputs: [{ itemId: "ASHEN_MYRRH", quantity: 4 }, { itemId: "BLACKGLASS_CORE", quantity: 2 }, { itemId: "CINDER_HEART", quantity: 1 }], output: { itemId: "CINDERHEART_ELIXIR", quantity: 1 } }
 ].map((recipe2) => {
-  const healing = POTIONS.some((potion) => potion.id === recipe2.output.itemId && potion.effect.kind === "healing");
-  const costMultiplier = healing ? HEALING_POTION_CRAFT_COST_MULTIPLIER : 1;
+  const combatPotion = POTIONS.some((potion) => potion.id === recipe2.output.itemId);
+  const costMultiplier = combatPotion ? COMBAT_POTION_CRAFT_COST_MULTIPLIER : 1;
   return {
     ...recipe2,
-    xp: recipe2.xp * (healing ? HEALING_POTION_XP_MULTIPLIER : 1),
+    xp: recipe2.xp * (combatPotion ? COMBAT_POTION_XP_MULTIPLIER : 1),
     gold: increasedCraftingGoldCost(recipe2.gold) * costMultiplier,
     inputs: recipe2.inputs.map((input) => ({ ...input, quantity: input.quantity * costMultiplier }))
   };
@@ -42935,7 +42957,7 @@ var POTION_ITEMS = POTIONS.map((potion) => ({
 }));
 var ALCHEMY_EQUIPMENT_INFUSION_ITEMS = ALCHEMY_EQUIPMENT_INFUSIONS.map((infusion) => ({ id: infusion.id, name: infusion.name, type: "material", value: infusion.value, rarity: infusion.rarity, passive: infusion.description }));
 var potionDef = (id) => POTIONS.find((p) => p.id === id);
-var alchemyRecipeDef = (id) => ALCHEMY_RECIPES.find((recipe2) => recipe2.id === id);
+var alchemyRecipeDef = (id) => ALCHEMY_RECIPES.find((recipe2) => recipe2.id === id) ?? ALCHEMY_RECIPES.find((recipe2) => recipe2.output.itemId === id);
 
 // ../apps/mobile/src/content/equipment-items-v33.ts
 var classIdByName2 = { Ironwarden: "IRONWARDEN", Bastion: "BASTION", Dreadguard: "DREADGUARD", Dawnkeeper: "DAWNKEEPER", Wayfinder: "WAYFINDER", Ravager: "RAVAGER", Hexweaver: "HEXWEAVER", "Knife Dancer": "KNIFE_DANCER", Stonecaller: "STONECALLER" };
@@ -47997,7 +48019,7 @@ function startAlchemyBatch(state, recipeId, batches, nowMs) {
   const bonuses = characterPermanentMultipliers(state), pace = professionActionPace(state, recipe2, "batch");
   const brew = {
     version: 1,
-    recipeId,
+    recipeId: recipe2.id,
     totalBatches: batches,
     remainingBatches: batches,
     inputsPerBatch: recipe2.inputs.map((input) => ({ ...input })),
@@ -48011,7 +48033,7 @@ function startAlchemyBatch(state, recipeId, batches, nowMs) {
     character: { ...state.character, gold: state.character.gold - status.gold },
     inventory: { ...state.inventory, stacks: inventory },
     bank: { ...state.bank, stacks: bank },
-    activity: { kind: "alchemy", targetId: recipeId, startedAtMs: nowMs, lastClaimAtMs: nowMs, progressFraction: 0, bonusSnapshot: bonuses, skillAffinity: captureSkillAffinity(state, "alchemy"), brew }
+    activity: { kind: "alchemy", targetId: recipe2.id, startedAtMs: nowMs, lastClaimAtMs: nowMs, progressFraction: 0, bonusSnapshot: bonuses, skillAffinity: captureSkillAffinity(state, "alchemy"), brew }
   };
 }
 function startAlchemyUntilLimited(state, recipeId, nowMs, afkCapSeconds) {
@@ -48021,7 +48043,7 @@ function startAlchemyUntilLimited(state, recipeId, nowMs, afkCapSeconds) {
   const timeBatches = Math.floor(afkCapSeconds / pace.cycleSeconds);
   const batches = Math.min(status.maxBatches, timeBatches, MAX_ALCHEMY_BATCHES);
   if (batches < 1) throw new Error("Not enough AFK time for one brewing cycle.");
-  return startAlchemyBatch(state, recipeId, batches, nowMs);
+  return startAlchemyBatch(state, status.recipe.id, batches, nowMs);
 }
 function previewAlchemyReward(state, elapsed) {
   const activity = state.activity, brew = activity?.brew;
@@ -51669,19 +51691,23 @@ function effectiveStats(state) {
   const c = state.character;
   if (!c) return { hp: 0, attack: 0, defense: 0, power: 0, critChance: 0, critMultiplier: 1.5, accuracy: 0.84, evasion: 0.04, haste: 0.05, armor: 0, ward: 0, tenacity: 0, potency: 0, penetration: 0 };
   let hp = c.hp, attack = c.attack, defense = c.defense;
+  let gearAttack = 0, gearDefense = 0;
   for (const id of Object.values(c.equipment)) {
     if (!id) continue;
     const stats4 = enhancedGearStats(state, id);
     hp += stats4.hp;
-    attack += stats4.attack;
-    defense += stats4.defense;
+    gearAttack += stats4.attack;
+    gearDefense += stats4.defense;
   }
   const novice = noviceSetFor(c.classId), noviceComplete = novice.slots.every((slot) => c.equipment[slot] === noviceItemId(c.classId, slot));
   if (noviceComplete) {
     hp += novice.setBonus.hp;
-    attack += novice.setBonus.attack;
-    defense += novice.setBonus.defense;
+    gearAttack += novice.setBonus.attack;
+    gearDefense += novice.setBonus.defense;
   }
+  const classGear = classWeightedGearStats(c.classId, gearAttack, gearDefense);
+  attack += classGear.attack;
+  defense += classGear.defense;
   const setStats = activeEquipmentBuildStats(state);
   hp = Math.ceil(hp * (1 + setStats.maxHp));
   defense = Math.ceil(defense * (1 + setStats.armor));

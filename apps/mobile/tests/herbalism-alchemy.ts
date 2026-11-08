@@ -81,6 +81,10 @@ test('Ironwood Binding Resin resolves canonical and legacy item-ID aliases witho
  equal(brewed.activity?.targetId,id,'save canonical recipe target even when shortcut used alias');
  equal(brewed.activity?.brew?.recipeId,id,'escrow retains canonical recipe ID');
  equal(normalizeAlchemyBatch(brewed.activity!.brew,id).recipeId,id,'reservation remains loadable');
+ const viaCommand=executeGameCommand(state,{type:'alchemy_start',args:{id:'IRONWOOD_BINDING_RESIN'}},T).state;
+ equal(viaCommand.activity?.targetId,id,'the Alchemy command accepts an item-ID shortcut and normalizes the target');
+ const canonical=executeGameCommand(state,{type:'alchemy_start',args:{id}},T).state;
+ equal(canonical.activity?.targetId,id,'the canonical Ironwood Resin brew no longer reports an unknown recipe');
 });
 test('combat tonic premium balance preserves base infusion economics and old paid reservations',()=>{
  for(const row of ALCHEMY_RECIPES){

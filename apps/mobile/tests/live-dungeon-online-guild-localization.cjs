@@ -16,7 +16,7 @@ assert.deepEqual([...SUPPORTED_LANGUAGES],['en',...locales]);
 const placeholders=text=>[...text.matchAll(/\{([a-zA-Z][a-zA-Z0-9_]*)\}/g)].map(m=>m[1]).sort();
 for(const [name,rows,translate,count] of [
  ['Live Dungeon',liveDungeonUiRows,liveDungeonUiText,14],
- ['Online Guild Projects',onlineGuildProjectUiRows,onlineGuildProjectUiText,102],
+ ['Online Guild Projects',onlineGuildProjectUiRows,onlineGuildProjectUiText,118],
 ]){
  assert.equal(Object.keys(rows).length,count,name+': reviewed key count changed');
  for(const [key,values] of Object.entries(rows)){

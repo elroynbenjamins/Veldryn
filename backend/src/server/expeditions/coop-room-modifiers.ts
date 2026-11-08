@@ -59,5 +59,16 @@ export function applyCoopRoomModifier(enemy:CombatantDefinition,id:string|undefi
    }
    break;
  }
+ // Normal rooms are lateral tradeoffs, not six straight difficulty buffs.
+ // Elites keep the full mechanics because the player opts into higher risk.
+ if(!eliteAbilities){
+  switch(id){
+   case 'thorned': stats.attackPower*=.94; break;
+   case 'volatile': stats.maxHp*=.90; break;
+   case 'warded': stats.attackPower*=.94; break;
+   case 'swift': stats.maxHp*=.91; break;
+   case 'attrition': stats.attackPower*=.94; break;
+  }
+ }
  return {...enemy,stats,basicAttackMs,abilities};
 }

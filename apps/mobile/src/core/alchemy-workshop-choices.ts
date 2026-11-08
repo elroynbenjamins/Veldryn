@@ -25,7 +25,7 @@ export function alchemyPotionRows(
  for(const [outputId,options] of grouped){
   const craftable=(recipe:Recipe)=>recipe.level<=skillLevel&&capacity(recipe)>0;
   const firstCraftable=options.find(craftable);
-  if(readyOnly&&!firstCraftable)continue;
+  if(readyOnly&&!firstCraftable&&!options.some(recipe=>recipe.id===activeId))continue;
   const selected=options.find(recipe=>recipe.id===activeId)
    ??options.find(recipe=>recipe.id===manualByOutput[outputId]&&(!readyOnly||craftable(recipe)))
    ??firstCraftable

@@ -6,8 +6,10 @@ import {pveBarrier,pveDotWave,pveHealingPressure,pveInterruptibleWave} from '../
  * accepts these values from a client. All effects enter the deterministic
  * combat simulation and therefore affect real health, damage and replays.
  *
- * Keep modest per-room pressure: Q-Mode and Live have the same mechanics,
- * and no existing route reward or tier multiplier is changed.
+ * Normal rooms change their combat stats, while optional elite rooms also
+ * gain one distinct ability. This prevents repeated mandatory normal fights
+ * from compounding into excessive damage across a full dungeon run.
+ * Q-Mode and Live use the same rules, and reward budgets stay unchanged.
  */
 export const COOP_ROOM_MODIFIERS={
  steady:{name:'Steady',description:'Standard encounter. No extra effects.'},
@@ -20,7 +22,7 @@ export const COOP_ROOM_MODIFIERS={
 export type CoopRoomModifierId=keyof typeof COOP_ROOM_MODIFIERS;
 export const isCoopRoomModifier=(value:string):value is CoopRoomModifierId=>Object.prototype.hasOwnProperty.call(COOP_ROOM_MODIFIERS,value);
 
-export function applyCoopRoomModifier(enemy:CombatantDefinition,id:string|undefined,index:number):CombatantDefinition{
+export function applyCoopRoomModifier(enemy:CombatantDefinition,id:string|undefined,index:number,eliteAbilities=false):CombatantDefinition{
  if(!id||!isCoopRoomModifier(id)||id==='steady')return enemy;
  const stats={...enemy.stats};
  let basicAttackMs=enemy.basicAttackMs;
@@ -30,7 +32,7 @@ export function applyCoopRoomModifier(enemy:CombatantDefinition,id:string|undefi
  switch(id){
   case 'thorned':
    stats.maxHp*=1.006;
-   if(index===0){
+   if(index===0&&eliteAbilities){
     const thorns=pveDotWave(`${enemy.id}_ROOM_THORNS`,'Thorn Barrage','nature',.08,19500);
     abilities.push({...thorns,effects:thorns.effects.map(effect=>effect.kind==='dot'?{...effect,coeff:.008}:effect)});
    }
@@ -38,11 +40,11 @@ export function applyCoopRoomModifier(enemy:CombatantDefinition,id:string|undefi
   case 'volatile':
    stats.maxHp*=.985;
    stats.attackPower*=1.012;
-   if(index===0)abilities.push(pveInterruptibleWave(`${enemy.id}_ROOM_BLAST`,'Unstable Surge','arcane',.08,19000,1300));
+   if(index===0&&eliteAbilities)abilities.push(pveInterruptibleWave(`${enemy.id}_ROOM_BLAST`,'Unstable Surge','arcane',.08,19000,1300));
    break;
   case 'warded':
    stats.defense*=1.018;
-   if(index===0)abilities.push(pveBarrier(`${enemy.id}_ROOM_WARD`,'Defensive Ward',Math.round(stats.maxHp*.013),21000));
+   if(index===0&&eliteAbilities)abilities.push(pveBarrier(`${enemy.id}_ROOM_WARD`,'Defensive Ward',Math.round(stats.maxHp*.013),21000));
    break;
   case 'swift':
    stats.maxHp*=.996;
@@ -51,7 +53,7 @@ export function applyCoopRoomModifier(enemy:CombatantDefinition,id:string|undefi
    break;
   case 'attrition':
    stats.maxHp*=1.009;
-   if(index===0){
+   if(index===0&&eliteAbilities){
     const wither=pveHealingPressure(`${enemy.id}_ROOM_WITHER`,'Withering Pressure','shadow',.065,21000);
     abilities.push({...wither,effects:wither.effects.map(effect=>effect.kind==='debuff'?{...effect,value:-.06}:effect)});
    }

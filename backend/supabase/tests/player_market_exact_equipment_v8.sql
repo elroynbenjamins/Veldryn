@@ -125,6 +125,80 @@ begin
     if sqlerrm<>'market_stale_state' then raise;end if;
   end;
 
+
+  -- The source's exact socket configuration cannot be modified or guessed.
+  update public.online_game_states set state=pg_catalog.jsonb_set(
+    state,'{account,craftedGearInstances,0,enhancement,gemIds}',
+    pg_catalog.jsonb_build_array('gem:stat_might:g2'),false)
+    where account_id=v_seller;
+  begin
+    perform private.market_reserve_exact_equipment_v8(
+      v_seller,5,'inventory',v_sc::text,0,v_item,v_instance,
+      'gear-res-gem-mismatch',repeat('a',64));
+    raise exception 'socket mismatch accepted by equipment escrow';
+  exception when raise_exception then
+    if sqlerrm<>'market_equipment_socket_unverified' then raise;end if;
+  end;
+  update public.online_game_states set state=v_seller_state where account_id=v_seller;
+
+  -- A Forge item with no rarity or with an owner character outside the
+  -- account must never be promoted to a tradeable exact copy.
+  update public.online_game_states set state=state #- '{account,craftedGearInstances,0,rarity}'
+    where account_id=v_seller;
+  begin
+    perform private.market_reserve_exact_equipment_v8(
+      v_seller,5,'inventory',v_sc::text,0,v_item,v_instance,
+      'gear-res-missing-rarity',repeat('b',64));
+    raise exception 'missing rarity accepted by escrow';
+  exception when raise_exception then
+    if sqlerrm<>'market_equipment_receipt_unverified' then raise;end if;
+  end;
+  update public.online_game_states set state=v_seller_state where account_id=v_seller;
+  update public.online_game_states set state=pg_catalog.jsonb_set(
+    state,'{account,craftedGearInstances,0,ownerCharacterId}',
+    pg_catalog.to_jsonb(v_buyer::text),false)
+    where account_id=v_seller;
+  begin
+    perform private.market_reserve_exact_equipment_v8(
+      v_seller,5,'inventory',v_sc::text,0,v_item,v_instance,
+      'gear-res-other-owner',repeat('c',64));
+    raise exception 'other account Forge receipt accepted';
+  exception when raise_exception then
+    if sqlerrm<>'market_equipment_original_owner_missing' then raise;end if;
+  end;
+  update public.online_game_states set state=v_seller_state where account_id=v_seller;
+
+  update public.online_game_states set state=pg_catalog.jsonb_set(
+    state,'{character,savedLoadouts}',
+    pg_catalog.jsonb_build_array(pg_catalog.jsonb_build_object(
+      'equipment',pg_catalog.jsonb_build_object('weapon',v_item),
+      'equipmentInstanceIds',pg_catalog.jsonb_build_object('weapon',v_instance))),false)
+    where account_id=v_seller;
+  begin
+    perform private.market_reserve_exact_equipment_v8(
+      v_seller,5,'inventory',v_sc::text,0,v_item,v_instance,
+      'gear-res-loadout',repeat('d',64));
+    raise exception 'saved loadout gear accepted by escrow';
+  exception when raise_exception then
+    if sqlerrm<>'market_equipment_saved_loadout' then raise;end if;
+  end;
+  update public.online_game_states set state=v_seller_state where account_id=v_seller;
+
+  -- Two physical copies bearing the same instance ID can never be escrowed
+  -- as though they were one unique Forge receipt.
+  update public.online_game_states set state=pg_catalog.jsonb_set(
+    state,'{bank,stacks}',pg_catalog.jsonb_build_array(v_stack),false)
+    where account_id=v_seller;
+  begin
+    perform private.market_reserve_exact_equipment_v8(
+      v_seller,5,'inventory',v_sc::text,0,v_item,v_instance,
+      'gear-res-copy-conflict',repeat('e',64));
+    raise exception 'duplicate physical Forge marker was escrowed';
+  exception when raise_exception then
+    if sqlerrm<>'market_equipment_identity_ambiguous' then raise;end if;
+  end;
+  update public.online_game_states set state=v_seller_state where account_id=v_seller;
+
   v_reserved:=private.market_reserve_exact_equipment_v8(
     v_seller,5,'inventory',v_sc::text,0,v_item,v_instance,
     'gear-res-valid',repeat('d',64));
@@ -199,6 +273,28 @@ begin
   exception when raise_exception then
     if sqlerrm<>'market_equipment_delivery_not_owned' then raise;end if;
   end;
+
+
+  -- A forged duplicate physical marker in any storage blocks restoration,
+  -- leaving the sole return entitlement pending and without extra Gold.
+  update public.online_game_states set state=pg_catalog.jsonb_set(
+    state,'{bank,stacks}',pg_catalog.jsonb_build_array(v_stack),false)
+    where account_id=v_seller;
+  begin
+    perform private.market_claim_equipment_return_v8(
+      v_seller,v_delivery,6,'inventory',v_sc::text,
+      'gear-claim-duplicate',repeat('5',64));
+    raise exception 'duplicate Forge copy was restored';
+  exception when raise_exception then
+    if sqlerrm<>'market_equipment_destination_identity_conflict' then raise;end if;
+  end;
+  update public.online_game_states set state=pg_catalog.jsonb_set(
+    state,'{bank,stacks}',pg_catalog.jsonb_build_array(
+      pg_catalog.jsonb_build_object('itemId','COPPER_ORE','quantity',1)),false)
+    where account_id=v_seller;
+  if (select status from private.market_equipment_return_deliveries_v8
+      where delivery_id=v_delivery)<>'pending'
+  then raise exception 'rejected duplicate equipment consumed return';end if;
 
   v_claimed:=private.market_claim_equipment_return_v8(
     v_seller,v_delivery,6,'inventory',v_sc::text,

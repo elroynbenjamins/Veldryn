@@ -1,12 +1,25 @@
 import {useCallback,useEffect,useMemo,useRef,useState} from 'react';
 import {ActivityIndicator,Pressable,ScrollView,StyleSheet,Text,View} from 'react-native';
 import {accountText} from '../i18n/account';
+import {NavigationLinework,navigationLinework} from '../components/NavigationLinework';
 import type {GameState} from '../core/types';
 import {useGameTheme} from '../theme/ThemeContext';
 import {radii,spacing,typography,type ThemeColors} from '../theme/theme';
 import {fetchCommunityRoadmap,toggleCommunityRoadmapVote,type CommunityRoadmapSnapshot,type CommunityRoadmapStatus} from '../online/community-roadmap';
 
 type Language=GameState['settings']['language'];
+// Stable database IDs, not localized display text. Unknown future ideas use a neutral glyph.
+const ROADMAP_GLYPHS:Record<string,keyof typeof navigationLinework>={
+ party_events:'roadmapPartyEvents',
+ guild_pvp:'roadmapGuildPvp',
+ guild_pve:'roadmapGuildPve',
+ arena:'roadmapArena',
+ leaderboards:'roadmapLeaderboards',
+ world_boss:'roadmapWorldBoss',
+ player_market:'roadmapPlayerMarket',
+ tier_5_plus_equipment:'roadmapTier5',
+ overall_refinement:'roadmapRefinement',
+};
 const STATUS_OPTIONS:{id:CommunityRoadmapStatus;label:string}[]=[
  {id:'considering',label:'Vote'},
  {id:'planned',label:'Planned'},
@@ -56,7 +69,7 @@ export function CommunityRoadmapScreen({language}:{language:Language}){
    <View style={s.hero}>
      <Text style={s.kicker}>{a('THE FUTURE OF VELDRYN')}</Text>
      <Text accessibilityRole="header" style={s.heading}>{a('Community Roadmap')}</Text>
-     <Text style={s.subtitle}>{a('Choose the major expansions you want to see next. Your votes help guide development.')}</Text>
+     <Text style={s.subtitle}>{a("Vote on upcoming features and improvements. Your choices help guide Veldryn's development.")}</Text>
    </View>
 
    <View style={s.voteBudget}>
@@ -80,9 +93,7 @@ export function CommunityRoadmapScreen({language}:{language:Language}){
 
    <View style={s.sectionHead}>
      <Text style={s.sectionTitle}>{a(STATUS_OPTIONS.find(option=>option.id===selected)?.label??'Vote')}</Text>
-     <Pressable accessibilityRole="button" accessibilityLabel={a('Refresh roadmap')} onPress={()=>void load()} disabled={loading||!!pending} style={({pressed})=>[s.refresh,pressed&&s.pressed]}>
-       <Text style={s.refreshText}>{loading?a('Loading…'):a('Refresh')}</Text>
-     </Pressable>
+     <Text style={s.refreshText}>{a('Updates every 2 hours')}</Text>
    </View>
 
    {error?<View accessibilityRole="alert" style={s.errorCard}>
@@ -96,9 +107,12 @@ export function CommunityRoadmapScreen({language}:{language:Language}){
      const disabled=!!pending||loading||(!feature.voted&&used>=limit);
      return <View key={feature.id} style={[s.feature,feature.voted&&s.featureSelected]}>
        <View style={s.featureTop}>
+         <View style={s.featureGlyph} accessible={false} pointerEvents="none">
+           <NavigationLinework name={ROADMAP_GLYPHS[feature.id]??'quests'} size={22} color={feature.voted?C.accent:C.accentSoft}/>
+         </View>
          <View style={s.flex}>
            <Text style={s.featureTitle}>{a(feature.title)}</Text>
-           <Text style={s.category}>{a(feature.category)} · {a(canVote?'Future expansion':STATUS_OPTIONS.find(option=>option.id===feature.status)?.label??'Planned')}</Text>
+           <Text style={s.category}>{a(feature.category)} · {a(canVote?'Roadmap idea':STATUS_OPTIONS.find(option=>option.id===feature.status)?.label??'Planned')}</Text>
          </View>
          {canVote?<Pressable accessibilityRole="button" accessibilityLabel={a(feature.voted?'Remove vote for':'Vote for')+' '+a(feature.title)} accessibilityState={{selected:feature.voted,disabled}} disabled={disabled} onPress={()=>void changeVote(feature.id)} style={({pressed})=>[s.voteButton,feature.voted&&s.voteButtonActive,disabled&&s.voteButtonDisabled,pressed&&s.pressed]}>
            <Text style={[s.voteButtonText,feature.voted&&s.voteButtonTextActive]}>{pending===feature.id?a('Saving…'):feature.voted?'✓ '+a('Voted'):'+ '+a('Vote')}</Text>
@@ -131,10 +145,10 @@ function makeStyles(C:ThemeColors){return StyleSheet.create({
  tab:{flexGrow:1,minHeight:43,justifyContent:'center',alignItems:'center',paddingHorizontal:10,paddingVertical:8,backgroundColor:C.panel,borderWidth:1,borderColor:C.line,borderRadius:9},
  tabSelected:{backgroundColor:C.selection,borderColor:C.selectionLine},tabLabel:{fontSize:11,fontWeight:'800',color:C.muted},tabLabelActive:{color:C.text},
  sectionHead:{flexDirection:'row',alignItems:'center',justifyContent:'space-between',paddingVertical:4},
- sectionTitle:{...typography.bodyStrong,color:C.text},refresh:{minHeight:40,justifyContent:'center',paddingHorizontal:8},refreshText:{fontSize:11,fontWeight:'800',color:C.accent},
+ sectionTitle:{...typography.bodyStrong,color:C.text},refreshText:{fontSize:11,fontWeight:'700',color:C.muted},
  feature:{padding:13,gap:9,backgroundColor:C.panel,borderWidth:1,borderColor:C.line,borderRadius:radii.md},
  featureSelected:{borderColor:C.selectionLine,backgroundColor:C.panelRaised},
- featureTop:{flexDirection:'row',alignItems:'center',gap:10},featureTitle:{...typography.bodyStrong,color:C.text,fontSize:15},category:{...typography.caption,color:C.accentSoft,marginTop:4,fontSize:10},
+ featureTop:{flexDirection:'row',alignItems:'center',gap:10},featureGlyph:{width:38,height:38,flexShrink:0,alignItems:'center',justifyContent:'center',backgroundColor:C.panelRaised,borderWidth:1,borderColor:C.selectionLine,borderRadius:9},featureTitle:{...typography.bodyStrong,color:C.text,fontSize:15},category:{...typography.caption,color:C.accentSoft,marginTop:4,fontSize:10},
  description:{...typography.caption,color:C.muted,lineHeight:18},
  featureFooter:{flexDirection:'row',justifyContent:'space-between',alignItems:'center'},meta:{fontSize:10,color:C.muted,fontWeight:'800'},
  voteButton:{minHeight:44,minWidth:83,alignItems:'center',justifyContent:'center',paddingHorizontal:10,borderWidth:1,borderColor:C.secondaryButtonBorder,borderRadius:9,backgroundColor:C.secondaryButton},

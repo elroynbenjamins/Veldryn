@@ -1,9 +1,11 @@
 import { ACTIVITY_KINDS, CHALLENGES, CATEGORIES, normalizeDefinition, validateDefinition } from './liveops.js';
+import {parseRecoveryCallback,recoveryRedirectUrl,validateRecoveryPassword} from './password-recovery.js';
 
 const CONFIG = window.VELDRYN_CONTROL_CONFIG || {};
 const app = document.querySelector('#app');
 const toastRoot = document.querySelector('#toast-root');
 const SESSION_KEY = 'veldryn-control-session-v1';
+const recovery={mode:'login',accessToken:null,expiresAt:0,notice:''};
 
 const state = {
   session: loadSession(),
@@ -42,6 +44,8 @@ const state = {
   leaderboardInstanceId: null,
   leaderboard: null,
   eventStats: null,
+  communityRoadmapData: null,
+  communityRoadmapError: '',
 };
 
 function h(value) {
@@ -122,6 +126,32 @@ async function signIn(email, password) {
   const body = await authFetch('/auth/v1/token?grant_type=password', { method:'POST', body: JSON.stringify({ email, password }) });
   saveSession({ access_token: body.access_token, refresh_token: body.refresh_token, expires_at: Date.now() + Number(body.expires_in || 3600) * 1000 });
 }
+async function requestPasswordRecovery(email) {
+  const redirect=recoveryRedirectUrl(window.location.origin);
+  await authFetch('/auth/v1/recover?redirect_to='+encodeURIComponent(redirect),{
+    method:'POST',body:JSON.stringify({email}),
+  });
+  recovery.mode='sent';
+  renderLogin();
+}
+async function finishPasswordRecovery(password,confirmation) {
+  const validation=validateRecoveryPassword(password,confirmation);
+  if(validation)throw new Error(validation);
+  if(!recovery.accessToken || Date.now()>=recovery.expiresAt)
+    throw new Error('This recovery session has expired. Request a new link.');
+  await authFetch('/auth/v1/user',{
+    method:'PUT',
+    headers:{authorization:'Bearer '+recovery.accessToken},
+    body:JSON.stringify({password}),
+  });
+  recovery.accessToken=null;
+  recovery.expiresAt=0;
+  recovery.mode='login';
+  recovery.notice='Password updated. Sign in with your new password.';
+  saveSession(null);
+  state.me=null;
+  renderLogin();
+}
 async function refreshSession() {
   if (!state.session?.refresh_token) throw new Error('session_expired');
   const body = await authFetch('/auth/v1/token?grant_type=refresh_token', { method:'POST', body: JSON.stringify({ refresh_token: state.session.refresh_token }) });
@@ -170,19 +200,43 @@ function renderLogin(message = '') {
         <div class="login-body">
           ${!configured() ? `<div class="validation-item error" style="margin-bottom:14px">This build has no Supabase public configuration. Set PUBLIC_SUPABASE_URL and PUBLIC_SUPABASE_ANON_KEY, then rebuild.</div>` : ''}
           ${message ? `<div class="validation-item error" style="margin-bottom:14px">${h(message)}</div>` : ''}
+          ${recovery.notice ? `<div class="validation-item" style="margin-bottom:14px">${h(recovery.notice)}</div>`:''}
+          ${recovery.mode==='request'?`
+          <form id="recovery-request-form" class="grid" autocomplete="on">
+            <h2 class="auth-subheading">Reset your password</h2>
+            <p class="small">We'll email a single-use link to your developer account.</p>
+            <div class="field"><label for="recovery-email">Account email</label><input id="recovery-email" name="email" type="email" autocomplete="username" required /></div>
+            <button class="btn btn-primary" type="submit" ${configured()?'':'disabled'}>Send reset link</button>
+          </form>
+          <button type="button" class="btn btn-ghost auth-switch" data-action="back-to-login">Back to sign in</button>`
+          :recovery.mode==='sent'?`
+          <h2 class="auth-subheading">Check your email</h2>
+          <p class="small">If the account exists, a password reset link has been sent. Open the newest email and use the link once.</p>
+          <button type="button" class="btn btn-ghost auth-switch" data-action="back-to-login">Back to sign in</button>`
+          :recovery.mode==='change'?`
+          <form id="recovery-change-form" class="grid" autocomplete="off">
+            <h2 class="auth-subheading">Choose a new password</h2>
+            <p class="small">Your recovery link has been verified. Your new password must be at least 12 characters.</p>
+            <div class="field"><label for="recovery-password">New password</label><input id="recovery-password" name="password" type="password" autocomplete="new-password" minlength="12" maxlength="128" required /></div>
+            <div class="field"><label for="recovery-confirm">Confirm new password</label><input id="recovery-confirm" name="confirmation" type="password" autocomplete="new-password" minlength="12" maxlength="128" required /></div>
+            <button class="btn btn-primary" type="submit">Update password</button>
+          </form>
+          <button type="button" class="btn btn-ghost auth-switch" data-action="back-to-login">Cancel recovery</button>`
+          :`
           <form id="login-form" class="grid" autocomplete="on">
             <div class="field"><label for="login-email">Admin email</label><input id="login-email" name="email" type="email" autocomplete="username" required /></div>
             <div class="field"><label for="login-password">Password</label><input id="login-password" name="password" type="password" autocomplete="current-password" required /></div>
             <button class="btn btn-primary" type="submit" ${configured() ? '' : 'disabled'}>Sign in securely</button>
           </form>
-          <p class="small" style="margin-top:14px">Only accounts explicitly added to <span class="mono">liveops_admin_users</span> can access the API.</p>
+          <button type="button" class="btn btn-ghost auth-switch" data-action="forgot-password">Forgot password?</button>
+          <p class="small" style="margin-top:14px">Only accounts explicitly added to <span class="mono">liveops_admin_users</span> can access the API.</p>`}
         </div>
       </section>
     </main>`;
 }
 
 const NAV = [
-  ['dashboard','◈','Dashboard'],['events','◷','Events'],['builder','✦','Builder'],['templates','▦','Templates'],['rewards','◇','Rewards'],['leaderboards','≋','Leaderboards'],
+  ['dashboard','◈','Dashboard'],['events','◷','Events'],['builder','✦','Builder'],['templates','▦','Templates'],['rewards','◇','Rewards'],['leaderboards','≋','Leaderboards'],['roadmap','⚑','Roadmap'],
   ['controls','⌘','Controls'],['catalog','▥','Catalog'],['codes','#','Codes'],['announcements','✉','Announcements'],['config','⛭','Config'],['health','⌁','Health'],['resets','↻','Resets'],['support','◎','Support'],['operations','⚙','Operations'],['admins','♜','Admins'],['audit','▤','Audit']
 ];
 function shell(content, title) {
@@ -736,6 +790,63 @@ function renderAnnouncements(){ const rows=state.announcements||[]; return shell
   `,'Announcements'); }
 
 
+
+function renderCommunityRoadmap(){
+  const rows=state.communityRoadmapData?.features||[];
+  const published=rows.filter(row=>row.published).length;
+  const votes=rows.reduce((sum,row)=>sum+Number(row.votes||0),0);
+  const statusLabel={considering:'Voting',planned:'Planned',in_progress:'In Development',released:'Released'};
+  return shell(`
+    <div class="page-head"><div><div class="eyebrow">Player-voted feature planning</div>
+      <h2>Community Roadmap</h2>
+      <p>Manage the same features shown on the in-game Roadmap screen. Status changes from Voting refund player votes automatically. Only published ideas appear in-game.</p>
+    </div></div>
+    ${state.communityRoadmapError?`<div class="validation-item error" style="margin-bottom:14px">
+      Roadmap data could not be loaded. The roadmap migrations may still need deploying to this environment.
+      <div class="tiny mono" style="margin-top:5px">${h(state.communityRoadmapError)}</div></div>`:''}
+    <div class="grid grid-3 roadmap-metrics">
+      <div class="card metric"><div class="label">Roadmap ideas</div><div class="value">${rows.length}</div></div>
+      <div class="card metric"><div class="label">Visible to players</div><div class="value">${published}</div></div>
+      <div class="card metric"><div class="label">Active votes</div><div class="value">${fmtNumber(votes)}</div></div>
+    </div>
+    <div class="roadmap-list">
+    ${rows.map(row=>`
+      <section class="card roadmap-feature">
+        <div class="card-head roadmap-feature-head">
+          <div><h3>${h(row.title)}</h3><div class="mono tiny faint">${h(row.id)}</div></div>
+          <div class="actions"><span class="pill">${fmtNumber(row.votes)} votes</span>
+            <span class="pill ${row.published?'good':'warn'}">${row.published?'Visible':'Hidden'}</span>
+            ${statusPill(statusLabel[row.status]||row.status)}
+          </div>
+        </div>
+        <div class="card-body">
+          <form class="form-grid roadmap-form" data-roadmap-id="${attr(row.id)}">
+            <input type="hidden" name="updatedAt" value="${attr(row.updated_at)}"/>
+            <div class="field"><label>Title</label><input name="title" maxlength="90" minlength="3" required value="${attr(row.title)}" ${!roleAtLeast('editor')?'disabled':''}/></div>
+            <div class="field"><label>Category</label><input name="category" maxlength="30" minlength="2" required value="${attr(row.category)}" ${!roleAtLeast('editor')?'disabled':''}/></div>
+            <div class="field"><label>Status</label><select name="status" ${!roleAtLeast('editor')?'disabled':''}>
+              ${Object.entries(statusLabel).map(([value,label])=>`<option value="${value}" ${row.status===value?'selected':''}>${label}</option>`).join('')}
+            </select></div>
+            <div class="field"><label>Order</label><input name="sortOrder" type="number" min="0" max="9999" step="1" value="${attr(row.sort_order)}" required ${!roleAtLeast('editor')?'disabled':''}/></div>
+            <div class="field"><label>Release version (required when Released)</label><input name="releaseVersion" maxlength="40" placeholder="1.1.0" value="${attr(row.release_version||'')}" ${!roleAtLeast('editor')?'disabled':''}/></div>
+            <div class="field"><label>Player visibility</label><label class="roadmap-visibility"><input type="checkbox" name="published" ${row.published?'checked':''}
+              ${row.id==='player_market'||!roleAtLeast('editor')?'disabled':''}/> Published in-game</label>
+              ${row.id==='player_market'?'<span class="tiny muted">Market remains hidden until implementation is complete.</span>':''}
+            </div>
+            <div class="field full"><label>Description</label><textarea name="description" minlength="10" maxlength="320" rows="2" required ${!roleAtLeast('editor')?'disabled':''}>${h(row.description)}</textarea></div>
+            ${roleAtLeast('editor')?`<div class="field full roadmap-save">
+              <div class="field roadmap-reason"><label>Reason for change (audit log)</label><input name="reason" minlength="5" maxlength="250" required placeholder="What changed and why?"/></div>
+              <button type="submit" class="btn btn-primary">Save feature</button>
+            </div>`:''}
+          </form>
+        </div>
+      </section>`).join('')}
+    </div>
+    ${rows.length===0&&!state.communityRoadmapError?empty('No roadmap features have been created yet.'):''}
+    <p class="small muted roadmap-note">Editors can update published ideas. Player Market visibility is locked off until its full release. All saves are checked by the server and audited.</p>
+  `,'Community Roadmap');
+}
+
 function renderAdmins(){ const rows=state.admins||[]; return shell(`
   <div class="page-head"><div><div class="eyebrow">Control-plane access</div><h2>Admin Users</h2><p>The first Owner is bootstrapped manually. After that, Owners can manage Control access here. The last enabled Owner cannot be disabled or demoted.</p></div></div>
   ${roleAtLeast('owner')?`<div class="card" style="margin-bottom:14px"><div class="card-head"><h3>Add / update admin</h3><span class="pill bad">Owner only</span></div><div class="card-body"><form id="admin-user-form" class="form-grid"><div class="field"><label>Supabase Auth account UUID</label><input name="accountId" required placeholder="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"/></div><div class="field"><label>Display name</label><input name="displayName" required maxlength="80" value="VELDRYN Admin"/></div><div class="field"><label>Role</label><select name="role"><option value="viewer">Viewer</option><option value="editor">Editor</option><option value="owner">Owner</option></select></div><div class="field"><label>Status</label><select name="enabled"><option value="true">Enabled</option><option value="false">Disabled</option></select></div><div class="field full"><button class="btn btn-primary" type="submit">Save admin access</button></div></form></div></div>`:''}
@@ -974,6 +1085,10 @@ async function loadPageData(page = state.page) {
     const [templates,defs] = await Promise.all([api('listTemplates'),api('listDefinitions')]); state.templates=templates||[]; state.definitions=defs||[];
   }
   if (page === 'rewards') state.rewards = await api('listRewards') || [];
+  if (page === 'roadmap') {
+    try { state.communityRoadmapData=await api('communityRoadmapAdmin'); state.communityRoadmapError=''; }
+    catch(e) { state.communityRoadmapData=null; state.communityRoadmapError=errorText(e); }
+  }
   if (page === 'leaderboards') {
     state.instances = await api('listInstances') || [];
     if (state.leaderboardInstanceId) await loadLeaderboard(state.leaderboardInstanceId);
@@ -1009,11 +1124,37 @@ function render() {
   if (!state.session) return renderLogin();
   if (!state.me) { app.innerHTML = loading(); return; }
   if (state.loading) return void (app.innerHTML = shell(loading(), NAV.find(x=>x[0]===state.page)?.[2] || 'VELDRYN Control'));
-  const renderers = { dashboard:renderDashboard, events:renderEvents, builder:renderBuilder, templates:renderTemplates, rewards:renderRewards, leaderboards:renderLeaderboards, controls:renderControls, catalog:renderCatalog, codes:renderCodes, announcements:renderAnnouncements, admins:renderAdmins, config:renderConfig, health:renderHealth, resets:renderResets, support:renderSupport, operations:renderOperations, audit:renderAudit };
+  const renderers = { dashboard:renderDashboard, events:renderEvents, builder:renderBuilder, templates:renderTemplates, rewards:renderRewards, leaderboards:renderLeaderboards, roadmap:renderCommunityRoadmap, controls:renderControls, catalog:renderCatalog, codes:renderCodes, announcements:renderAnnouncements, admins:renderAdmins, config:renderConfig, health:renderHealth, resets:renderResets, support:renderSupport, operations:renderOperations, audit:renderAudit };
   app.innerHTML = (renderers[state.page] || renderDashboard)();
 }
 
 async function initial() {
+  const callback=parseRecoveryCallback(window.location.hash,window.location.search);
+  if(callback.kind!=='none') {
+    // Remove one-time credentials from the URL before any network call or UI render.
+    window.history.replaceState(null,document.title,window.location.pathname);
+    saveSession(null);
+    state.me=null;
+    recovery.notice='';
+    if(callback.kind==='error') {
+      recovery.mode='request';
+      renderLogin(callback.message);
+      return;
+    }
+    recovery.accessToken=callback.accessToken;
+    recovery.expiresAt=Date.now() + callback.expiresIn * 1000;
+    recovery.mode='change';
+    try {
+      if(recovery.expiresAt<=Date.now())throw new Error('This recovery session has expired.');
+      await authFetch('/auth/v1/user',{headers:{authorization:'Bearer '+recovery.accessToken}});
+      renderLogin();
+    } catch(e) {
+      recovery.accessToken=null;
+      recovery.mode='request';
+      renderLogin(errorText(e));
+    }
+    return;
+  }
   if (!state.session) { renderLogin(); return; }
   app.innerHTML = loading();
   try { await loadCore(); render(); }
@@ -1023,11 +1164,43 @@ async function initial() {
 }
 
 app.addEventListener('submit', async (event) => {
+  if (event.target.id === 'recovery-request-form') {
+    event.preventDefault();
+    const email=new FormData(event.target).get('email');
+    try { await requestPasswordRecovery(email); }
+    catch(e) { renderLogin(errorText(e)); }
+    return;
+  }
+  if (event.target.id === 'recovery-change-form') {
+    event.preventDefault();
+    const fd=new FormData(event.target);
+    try { await finishPasswordRecovery(String(fd.get('password')||''),String(fd.get('confirmation')||'')); }
+    catch(e) { renderLogin(errorText(e)); }
+    return;
+  }
   if (event.target.id === 'login-form') {
     event.preventDefault();
     const fd = new FormData(event.target);
     try { await signIn(fd.get('email'),fd.get('password')); app.innerHTML=loading(); await loadCore(); render(); toast('Signed in.','success'); }
     catch(e) { saveSession(null); renderLogin(errorText(e)); }
+  }
+  if (event.target.matches('.roadmap-form')) {
+    event.preventDefault();
+    if(!roleAtLeast('editor')) return;
+    const form=event.target,fd=new FormData(form);
+    const id=form.dataset.roadmapId;
+    try {
+      await api('saveCommunityRoadmapFeature',{
+        id,title:fd.get('title'),category:fd.get('category'),
+        description:fd.get('description'),status:fd.get('status'),
+        sortOrder:Number(fd.get('sortOrder')),published:fd.has('published'),
+        releaseVersion:fd.get('releaseVersion'),updatedAt:fd.get('updatedAt'),
+        reason:fd.get('reason'),
+      });
+      toast('Roadmap feature updated.','success');
+      await navigate('roadmap');
+    }catch(e){toast(errorText(e),'error');}
+    return;
   }
   if (event.target.id === 'reward-form') {
     event.preventDefault();
@@ -1086,6 +1259,8 @@ app.addEventListener('click', async (event) => {
   if (!el) return;
   const action = el.dataset.action;
   try {
+    if (action === 'forgot-password') { recovery.mode='request'; recovery.notice=''; return renderLogin(); }
+    if (action === 'back-to-login') { recovery.mode='login'; recovery.accessToken=null; recovery.expiresAt=0; recovery.notice=''; return renderLogin(); }
     if (action === 'logout') return signOut();
     if (action === 'refresh-page') return navigate(state.page);
     if (action === 'open-catalog-sync') { state.controlSelectedCommand='system.sync_content_catalog'; return navigate('controls'); }

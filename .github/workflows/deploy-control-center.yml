@@ -1,0 +1,72 @@
+name: Deploy VELDRYN Control to Cloudflare Pages
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - 'control-center/**'
+      - '.github/workflows/deploy-control-center.yml'
+
+permissions:
+  contents: read
+  deployments: write
+
+concurrency:
+  group: deploy-veldryn-control-production
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      PUBLIC_SUPABASE_URL: https://nyjwigipamnvpdvpauuv.supabase.co
+      PUBLIC_SUPABASE_ANON_KEY: sb_publishable_EBP2NTN1cNnwDFFg3idkwg_DiNu5zRo
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Setup Node 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Verify Cloudflare deployment credentials
+        env:
+          CF_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CF_ACCOUNT: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        shell: bash
+        run: |
+          if [[ -z "$CF_TOKEN" || -z "$CF_ACCOUNT" ]]; then
+            echo '::error::Cloudflare deployment needs GitHub Actions secrets CLOUDFLARE_API_TOKEN and CLOUDFLARE_ACCOUNT_ID.'
+            exit 1
+          fi
+      - name: Test Control Center
+        working-directory: control-center
+        run: npm test
+      - name: Build Control Center
+        working-directory: control-center
+        run: npm run build
+      - name: Verify compiled public configuration
+        working-directory: control-center
+        run: |
+          if grep -q 'REPLACE_WITH_' dist/config.js; then
+            echo '::error::The Control Center build contains placeholder configuration.'
+            exit 1
+          fi
+      - name: Deploy production Cloudflare Pages project
+        id: deploy
+        uses: cloudflare/wrangler-action@v4
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          workingDirectory: control-center
+          command: pages deploy dist --project-name=veldryn-control --branch=main
+          gitHubToken: ${{ secrets.GITHUB_TOKEN }}
+      - name: Report deployment
+        env:
+          DEPLOYMENT_URL: ${{ steps.deploy.outputs.deployment-url }}
+        run: |
+          echo "Deployment: $DEPLOYMENT_URL" >> "$GITHUB_STEP_SUMMARY"
+          if [[ -z "$DEPLOYMENT_URL" ]]; then
+            echo '::warning::Wrangler did not provide a deployment URL; review previous output.'
+          fi

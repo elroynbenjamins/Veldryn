@@ -78,9 +78,9 @@ const expected=dropExpectation(rareMaterial.chance,rareMaterial.min,rareMaterial
 close(expected.oneIn,1/rareMaterial.chance,.001,'Drop odds must be the reciprocal of per-kill chance');
 ok(expected.averageFindSeconds>echoPace.cycleSeconds,'Rare material average find time must exceed one kill cycle');
 const mossMaterial=rat.drops.find(drop=>drop.itemId==='MOSS_FIBER')!,mossExpected=dropExpectation(mossMaterial.chance,mossMaterial.min,mossMaterial.max,combat.killsPerHour);
-close(mossMaterial.chance,.275,.000001,'Ordinary monster material drop chance must be halved');
+close(mossMaterial.chance,.275*.95,.000001,'Ordinary monster material chance is halved and then reduced by 5%');
 const blueprintMonster=MONSTERS.find(row=>row.id==='THORNLING')!,hatchetBlueprint=blueprintMonster.drops.find(drop=>drop.itemId==='BP_ASTER_IRON_HATCHET')!;
-close(hatchetBlueprint.chance,.05,.000001,'Blueprint drop chance must not be reduced with material drops');
+close(hatchetBlueprint.chance,.05*.95,.000001,'Blueprint drop chance gets the 5% relative reduction, but not the material-specific half rate');
 ok(mossExpected.averageFindSeconds<5*60,'Starter required materials should arrive frequently rather than carrying the grind');
 ok(MONSTERS.every(monster=>monster.drops.every(drop=>itemDef(drop.itemId).type!=='gear')),'Monster loot must not bypass Equipment 2.0 crafting with finished gear drops');
 const oracle=MONSTERS.find(row=>row.id==='DUNE_ORACLE')!,oraclePace=combatBaselineProjection(oracle),sigil=oracle.drops.find(drop=>drop.itemId==='SWIFT_SIGIL')!,sigilExpected=dropExpectation(sigil.chance,sigil.min,sigil.max,oraclePace.killsPerHour);

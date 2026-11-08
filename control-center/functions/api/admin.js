@@ -9,7 +9,7 @@ const MUTATING_ACTIONS = new Set([
   'publishDraft','scheduleDefinition','rescheduleInstance','cancelInstance','archiveInstance','clonePlayerEventSeason','applySeasonalCalendarPreset','schedulePlayerEvent','setPlayerEventEnabled','goLivePlayerEvent','endPlayerEventNow','saveReward','retryDeadLetter',
   'saveRemoteConfig','updateAlert','saveResetDefinition','retryResetRun','createSupportCase','updateSupportCase','addSupportNote',
   'queueAdminCommand','approveAdminCommand','cancelAdminCommand','retryAdminCommand','reverseAdminCommand','saveAnnouncement','cancelAnnouncement','saveAdminUser',
-  'createRedeemCode','setRedeemCodeEnabled','createCommerceRedeemCode','setCommerceRedeemCodeEnabled'
+  'createRedeemCode','setRedeemCodeEnabled','createCommerceRedeemCode','setCommerceRedeemCodeEnabled','saveCommunityRoadmapFeature'
 ]);
 
 const COMMERCE_GRANT_LABELS = {
@@ -1365,6 +1365,64 @@ async function saveAnnouncement(env,actor,payload){
 }
 async function cancelAnnouncement(env,actor,payload){ requireRole(actor,'editor'); const row=await single(env,'ops_admin_announcements',`id=eq.${encodeEq(payload.id)}`); if(!row) throw new Error('announcement_not_found'); if(row.severity==='critical'||row.push_enabled) requireRole(actor,'owner'); const reason=String(payload.reason||'').trim(); if(reason.length<5) throw new Error('announcement_cancel_reason_too_short'); const now=new Date().toISOString(); const rows=await supabaseFetch(env,'/rest/v1/ops_admin_announcements',{method:'PATCH',query:`id=eq.${encodeEq(row.id)}`,body:{status:'cancelled',cancelled_by:actor.user.id,cancelled_at:now,updated_by:actor.user.id,updated_at:now},prefer:'return=representation'}); await audit(env,actor,'announcement.cancel','announcement',row.id,{reason,title:row.title}); return rows?.[0]; }
 
+
+const COMMUNITY_ROADMAP_STATUSES = new Set(['considering','planned','in_progress','released']);
+
+/** Private admin read includes unpublished ideas, but never exposes voter identities. */
+async function communityRoadmapAdmin(env) {
+  const rows = await list(env,'community_roadmap_features',
+    'select=id,title,description,category,status,sort_order,published,release_version,updated_at&order=sort_order.asc,id.asc&limit=100');
+  const counts = await Promise.all((rows||[]).map(row =>
+    countRows(env,'community_roadmap_votes',`feature_id=eq.${encodeEq(row.id)}`)));
+  return { features:(rows||[]).map((row,index)=>({...row,votes:counts[index]})) };
+}
+
+/** Existing proposals only. No client-supplied SQL, identities, votes or arbitrary IDs. */
+async function saveCommunityRoadmapFeature(env,actor,payload) {
+  requireRole(actor,'editor');
+  const id=String(payload.id??'').trim();
+  if(!/^[a-z][a-z0-9_]{2,48}$/.test(id))throw new Error('roadmap_id_invalid');
+  const reason=String(payload.reason??'').trim();
+  if(reason.length<5||reason.length>250)throw new Error('roadmap_reason_invalid');
+  const title=String(payload.title??'').trim();
+  const description=String(payload.description??'').trim();
+  const category=String(payload.category??'').trim();
+  const status=String(payload.status??'');
+  const sortOrder=Number(payload.sortOrder);
+  const published=payload.published;
+  const releaseVersion=String(payload.releaseVersion??'').trim();
+  const expectedUpdatedAt=String(payload.updatedAt??'');
+  if(title.length<3||title.length>90||description.length<10||description.length>320||
+      category.length<2||category.length>30||!COMMUNITY_ROADMAP_STATUSES.has(status)||
+      !Number.isInteger(sortOrder)||sortOrder<0||sortOrder>9999||
+      typeof published!=='boolean'||releaseVersion.length>40)throw new Error('roadmap_fields_invalid');
+  if(status==='released'&&!releaseVersion)throw new Error('roadmap_release_version_required');
+  if(!expectedUpdatedAt||Number.isNaN(Date.parse(expectedUpdatedAt)))throw new Error('roadmap_revision_required');
+  // The Market remains completely hidden until its full launch passes review.
+  if(id==='player_market'&&published)throw new Error('roadmap_market_not_released');
+  const prior=await single(env,'community_roadmap_features',`id=eq.${encodeEq(id)}`);
+  if(!prior)throw new Error('roadmap_not_found');
+  if(prior.updated_at!==expectedUpdatedAt)throw new Error('roadmap_conflict');
+  const changes={title,description,category,status,sort_order:sortOrder,published,
+    release_version:status==='released'?releaseVersion:null,updated_at:new Date().toISOString()};
+  const rows=await supabaseFetch(env,'/rest/v1/community_roadmap_features',{
+    method:'PATCH',
+    query:`id=eq.${encodeEq(id)}&updated_at=eq.${encodeEq(expectedUpdatedAt)}`,
+    body:changes,prefer:'return=representation',
+  });
+  const updated=rows?.[0];
+  if(!updated)throw new Error('roadmap_conflict');
+  await audit(env,actor,'roadmap.update','community_roadmap_feature',id,{
+    reason,from:{status:prior.status,published:prior.published,sort_order:prior.sort_order,
+      release_version:prior.release_version,title:prior.title,description:prior.description,
+      category:prior.category},
+    to:{status:updated.status,published:updated.published,sort_order:updated.sort_order,
+      release_version:updated.release_version,title:updated.title,description:updated.description,
+      category:updated.category},
+  });
+  return updated;
+}
+
 async function routeAction(env, actor, action, payload) {
   switch (action) {
     case 'me': return { user: { id: actor.user.id, email: actor.user.email }, admin: actor.admin };
@@ -1445,6 +1503,8 @@ async function routeAction(env, actor, action, payload) {
     case 'cancelAdminCommand': return await cancelAdminCommand(env, actor, payload);
     case 'retryAdminCommand': return await retryAdminCommand(env, actor, payload);
     case 'reverseAdminCommand': return await reverseAdminCommand(env, actor, payload);
+    case 'communityRoadmapAdmin': return await communityRoadmapAdmin(env);
+    case 'saveCommunityRoadmapFeature': return await saveCommunityRoadmapFeature(env, actor, payload);
     case 'listAdmins': return await listAdmins(env);
     case 'saveAdminUser': return await saveAdminUser(env, actor, payload);
     case 'listAnnouncements': return await listAnnouncements(env);

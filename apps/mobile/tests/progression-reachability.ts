@@ -80,7 +80,7 @@ ok(!!sunscarTier3Binder&&sunscarTier3Binder.level<=20&&sunscarTier3Binder.inputs
 ok(!!sunscarTier4Binder&&sunscarTier4Binder.level<=34&&sunscarTier4Binder.inputs.some(row=>row.itemId==='GLASSBOUND_CORE'),'T4 binder must require late-Sunscar Glassbound Core');
 ok(RECIPES.some(row=>row.id==='REFINE_OATHGLASS_TO_DUNE_BINDER'&&row.output.itemId==='SUNSCAR_DUNE_BINDER')&&RECIPES.some(row=>row.id==='REFINE_OATHGLASS_TO_GLASSBOUND_BINDER'&&row.output.itemId==='GLASSBOUND_BINDER'),'Stored legacy Oathglass Solvent must remain useful through conversion');
 const kingsRoadMonsters=MONSTERS.filter(row=>row.zone==="King's Road"&&!row.boss);
-ok(kingsRoadMonsters.filter(monster=>monster.drops.some(drop=>['WOLF_PELT','THORN_SAP','TROLL_HIDE','IRONWOOD_FANG','IRONWOOD_LOG'].includes(drop.itemId))).length>=5,'King\'s Road should supply T2 materials while preparing for Fallen Knight');
+ok(kingsRoadMonsters.filter(monster=>monster.drops.some(drop=>['WOLF_PELT','THORN_SAP','TROLL_HIDE','IRONWOOD_FANG','IRONWOOD_LOG'].includes(drop.itemId))).length>=4,'King\'s Road retains four T2 material trophy sources while preparing for Fallen Knight');
 ok(kingsRoadMonsters.every(monster=>monster.drops.every(drop=>drop.itemId!=='GLASSBOUND_CORE')),'T4 trophy must never drop before Sunscar');
 const glassbound=MONSTERS.find(monster=>monster.id==='GLASSBOUND_SENTINEL')!;
 ok(glassbound.level>=40&&glassbound.drops.some(drop=>drop.itemId==='GLASSBOUND_CORE'),'Late Sunscar must be the source of fourth-tier core');

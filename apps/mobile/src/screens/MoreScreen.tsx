@@ -146,7 +146,7 @@ export function MoreScreen({language,character,accountStatus='local',onNavigate,
       </Pressable>})}</View>}</View>)}
     {upcomingLocked.length?<View style={s.unlockAhead}><View style={s.unlockAheadHead}><Text style={s.sectionLabel}>{a("UNLOCKS AHEAD")}</Text><Text style={s.lockCountText}>{lockedItems.length}</Text></View>{upcomingLocked.map(id=>{const meta=itemMeta(language,id),reason=lockedReason(id);return <View key={id} style={s.unlockRow}><View style={s.unlockIcon}><MoreIcon id={id} size={23} muted/></View><View style={s.flex}><Text style={s.unlockTitle}>{meta.title}</Text><Text numberOfLines={2} style={s.unlockReason}>{reason}</Text></View></View>})}</View>:null}
     {onOpenAdminQa?<View style={s.section}><Text style={s.sectionLabel}>{a("DEVELOPER")}</Text><Pressable accessibilityRole="button" accessibilityLabel={a("Open Admin QA Console")} onPress={onOpenAdminQa} style={({pressed})=>[s.devCard,pressed&&s.pressed]}><ThemedNavigationIcon destination="Character" size={32}/><View style={s.devCopy}><Text style={s.title}>{a("Admin QA Console")}</Text><Text style={s.description}>{a("Full-content, crafting and dungeon test profile")}</Text></View><UiIcon name="next" size={18}/></Pressable></View>:null}
-    <DiscordButton label={a('Join Discord')} onPress={()=>void Linking.openURL('https://discord.gg/Db83APvP5y')}/>
+    <DiscordButton label={a('Join Discord')} onPress={()=>void Linking.openURL('https://discord.gg/cnUDHhQ7Qb')}/>
     <RateAppCard language={language}/>
   </ScrollView>;
 }

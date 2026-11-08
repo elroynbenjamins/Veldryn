@@ -73,6 +73,7 @@ assert.equal(event.state.boons.length,1,'Event grants a lasting run boon, not on
 const cache=resolveCoopNode({runId:'cache-test',serverSecret:'cache-secret',node:node('treasure','ROOT_CACHE_BURIED'),players,state:starting});
 assert.equal(cache.state.artifacts.length,1);
 
+async function verifyLiveVoteAuthority(){
 const multiRun={currentNodeId:'entry',graph:{nodes:[{nodeId:'entry',nextNodeIds:['d1-c0','d1-c1','d1-c2']}]}} as unknown as QModeRun;
 const state={stateVersion:4,eventCursor:0,privateState:{run:multiRun,seed:'test'},clientProjection:{mode:'live'},serverNow:1000};
 const request={requestId:'vote-bypass-attempt',decisionId:'entry',decisionRevision:4,optionId:'d1-c0'};
@@ -98,4 +99,5 @@ const singleRuntime=new OnlineLiveRuntime({
  },
 } as unknown as ConstructorParameters<typeof OnlineLiveRuntime>[0]);
 await assert.rejects(singleRuntime.choose('account','run',request),/invalid_option/,'Single boss option must exactly match server route');
-console.log('PASS dungeon route diversity, elite roles, real modifiers and fail-closed Live voting');
+}
+void verifyLiveVoteAuthority().then(()=>console.log('PASS dungeon route diversity, elite roles, real modifiers and fail-closed Live voting')).catch(error=>{console.error(error);process.exitCode=1;});

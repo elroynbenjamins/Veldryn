@@ -7,6 +7,13 @@ const again=huntHitEvents({monsterHp:1100,basePlayerHit:240,incomingDamage:52,he
 assert.equal(JSON.stringify(events),JSON.stringify(again),'hit events must replay deterministically');
 assert.equal(huntEnemyHpAt(1100,events,0),1100);
 assert.equal(huntEnemyHpAt(1100,events,1),0,'only attack events remove the full enemy HP');
+for(const tinyHp of [1,2]){
+ const tiny=huntHitEvents({monsterHp:tinyHp,basePlayerHit:100,incomingDamage:1,healingPerEncounter:0,cycleSeconds:1,critChance:0,seed:'tiny'});
+ const playerHits=tiny.filter(row=>row.actor==='player');
+ assert.ok(playerHits.length<=tinyHp,'a low-HP monster cannot receive extra fake attacks');
+ assert.ok(playerHits.every(row=>row.damage>0),'each blow must inflict positive damage');
+ assert.equal(playerHits.reduce((total,row)=>total+row.damage,0),tinyHp,'the final strike must kill the monster');
+}
 const atThird=huntEnemyHpAt(1100,events,.34);
 assert.ok(atThird>0&&atThird<1100,'actual hits, not smooth timer progress, determine HP');
 const early=huntHitsBetween(events,0,.5),late=huntHitsBetween(events,.5,1);

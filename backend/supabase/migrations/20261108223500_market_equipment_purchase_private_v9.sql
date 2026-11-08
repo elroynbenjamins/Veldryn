@@ -140,6 +140,24 @@ begin
     or v_gear.exact_receipt->>'ownerCharacterId'
        is distinct from v_gear.original_owner_character_id
   then raise exception 'market_equipment_payload_invalid';end if;
+  -- Do not take Gold if the buyer's account receipt ledger cannot hold
+  -- the exact purchased copy, even when no duplicate instance ID exists.
+  if pg_catalog.jsonb_typeof(v_buyer.state#>'{account,craftedGearInstances}')
+       is distinct from 'array'
+    or pg_catalog.jsonb_array_length(v_buyer.state#>'{account,craftedGearInstances}')>=500
+  then raise exception 'market_equipment_buyer_ledger_unavailable';end if;
+  -- Recheck every socket against the current curated policy at settlement;
+  -- a policy revoked while an offer waits must halt the sale.
+  if (v_gear.exact_receipt#>>'{enhancement,statGemId}' is not null
+      and not exists(select 1 from private.market_item_policy_v1
+        where item_id=v_gear.exact_receipt#>>'{enhancement,statGemId}'
+          and asset_kind='gem' and tradable and binding_policy='unbound'))
+    or (v_gear.exact_receipt#>>'{enhancement,effectGemId}' is not null
+      and not exists(select 1 from private.market_item_policy_v1
+        where item_id=v_gear.exact_receipt#>>'{enhancement,effectGemId}'
+          and asset_kind='gem' and tradable and binding_policy='unbound'))
+  then raise exception 'market_equipment_socket_policy_changed';end if;
+
   -- Reject known account-wide collisions before charging Gold.
   if pg_catalog.jsonb_path_exists(v_buyer.state,
         '$.**.stacks[*] ? (@.instanceId == $id)',

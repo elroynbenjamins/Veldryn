@@ -87,7 +87,7 @@ export function resolveCoopNode(input:{runId:string;serverSecret:string;node:Coo
   });
   const depthMultiplier=input.node.depth>=balance.lateDepthStart?balance.lateDepthAttackMultiplier:1;
   const tierScale=input.tier?coopTierEnemyMultipliers(input.tier):{attack:1,hp:1,defense:1};
-  const combat=resolveExpeditionCombat({runId:input.runId,nodeIndex:input.node.depth,encounterId:input.node.contentId,serverSeed:input.serverSecret,players,initialPlayerState:state.actors,safetyAiPlayerIds:input.safetyAiPlayerIds,enemyAttackMultiplier:(rootbound?balance.enemyAttackMultiplier*depthMultiplier:1)*tierScale.attack*(input.enemyAttackMultiplier??1),enemyHpMultiplier:tierScale.hp*(input.enemyHpMultiplier??1),enemyDefenseMultiplier:tierScale.defense*(input.enemyDefenseMultiplier??1),enemyDamageProfile:input.enemyDamageProfile,enemyLevel:input.enemyLevel,bossTuning:input.bossTuning});
+  const combat=resolveExpeditionCombat({runId:input.runId,nodeIndex:input.node.depth,encounterId:input.node.contentId,serverSeed:input.serverSecret,players,initialPlayerState:state.actors,safetyAiPlayerIds:input.safetyAiPlayerIds,enemyAttackMultiplier:(rootbound?balance.enemyAttackMultiplier*depthMultiplier:1)*tierScale.attack*(input.enemyAttackMultiplier??1),enemyHpMultiplier:tierScale.hp*(input.enemyHpMultiplier??1),enemyDefenseMultiplier:tierScale.defense*(input.enemyDefenseMultiplier??1),enemyDamageProfile:input.enemyDamageProfile,enemyLevel:input.enemyLevel,bossTuning:input.bossTuning,roomModifierId:input.node.modifierId});
   state={...state,actors:combat.endingPlayerState};
   return {success:combat.success,state,summary:{kind:'combat',...combat.resultJson,...(input.bossTuning?{bossTuningProfile:input.bossTuning.profileId}: {})}};
  }

@@ -1,8 +1,9 @@
 import {Image,Platform,StyleSheet,Text,View} from 'react-native';
+import {useEffect,useMemo,useState} from 'react';
 import type {GameState} from '../core/types';
 import type {MonsterDef} from '../content/monsters';
 import {combatBaselineProjection} from '../core/balance-projection';
-import {combatSustainProjection} from '../core/game';
+import {activeCombatHitProjection,combatSustainProjection} from '../core/game';
 import {itemDef} from '../content/items';
 import {formatGameNumber} from '../core/number-format';
 import {useGameTheme} from '../theme/ThemeContext';
@@ -15,6 +16,11 @@ import {RegionArtwork} from './RegionArtwork';
 /** An encounter preview; reward projections are deliberately labeled as baseline estimates. */
 export function HuntingPreview({state,monster,regionId}:{state:GameState;monster:MonsterDef;regionId:string}){
  const C=useGameTheme(),pace=combatBaselineProjection(monster),sustain=monster.boss?undefined:combatSustainProjection(state,monster.id);
+ const active=state.activity?.kind==='combat'&&state.activity.targetId===monster.id;
+ const [clock,setClock]=useState(Date.now());
+ useEffect(()=>{if(!active)return;setClock(Date.now());const timer=setInterval(()=>setClock(Date.now()),750);return()=>clearInterval(timer);},[active]);
+ const fight=useMemo(()=>active?activeCombatHitProjection(state,clock):undefined,[state,active,clock]);
+ const lastHit=fight?.lastHit&&clock-fight.lastHit.atMs<3500?fight.lastHit:undefined;
  const number=(value:number)=>formatGameNumber(Math.round(value),state.settings.numberMode,state.settings.language);
  const font=Platform.OS==='web'?'system-ui':Platform.OS==='android'?'sans-serif':'System';
  const tr=(text:string)=>battleText(state.settings.language,text);
@@ -29,6 +35,27 @@ export function HuntingPreview({state,monster,regionId}:{state:GameState;monster
     <View style={{flex:1,alignItems:'center',gap:5}}><MonsterPortraitFrame monster={monster} size={116} framed={false} reduceMotion={state.settings.reduceMotion}/></View>
    </View>
   </View>
+  {fight?<View style={{paddingHorizontal:12,paddingVertical:10,gap:8,borderTopWidth:1,borderColor:C.line,backgroundColor:C.panel}}>
+   <View style={{flexDirection:'row',alignItems:'center',justifyContent:'space-between'}}>
+    <Text style={{fontFamily:font,color:C.text,fontSize:12,fontWeight:'800'}}>{fight.stoppedReason?'Combat stopped':'LIVE HUNT · REAL HITS'}</Text>
+    <Text style={{fontFamily:font,color:C.muted,fontSize:11}}>{Math.round(fight.progressFraction*100)}% encounter</Text>
+   </View>
+   {([
+     {label:state.character?.name??'You',hp:fight.playerHp,max:fight.playerMaxHp,color:C.good},
+     {label:monster.name,hp:fight.enemyHp,max:fight.enemyMaxHp,color:C.bad},
+   ]).map(row=><View key={row.label} style={{gap:3}}>
+    <View style={{flexDirection:'row',justifyContent:'space-between',alignItems:'center',gap:8}}>
+     <Text numberOfLines={1} style={{fontFamily:font,color:C.text,fontSize:11,fontWeight:'700',flex:1}}>{row.label}</Text>
+     <Text style={{fontFamily:font,color:C.muted,fontSize:11}}>{number(row.hp)} / {number(row.max)}</Text>
+    </View>
+    <View style={{height:8,borderRadius:8,backgroundColor:C.line,overflow:'hidden'}}>
+     <View style={{width:`${Math.max(0,Math.min(100,row.hp/Math.max(1,row.max)*100))}%` as `${number}%`,height:'100%',backgroundColor:row.color,borderRadius:8}}/>
+    </View>
+   </View>)}
+   <Text accessibilityLiveRegion="polite" style={{fontFamily:font,fontSize:12,fontWeight:'700',color:lastHit?.actor==='enemy'?C.bad:C.accent}}>
+    {fight.stoppedReason?fight.stoppedReason:lastHit?`${lastHit.actor==='player'?'Hit':'Taken'} −${number(lastHit.damage)}${lastHit.critical?' · CRITICAL!':''}`:'Hits reduce real HP during the encounter'}
+   </Text>
+  </View>:null}
   {!monster.boss?<View accessibilityLabel={progressionT(state.settings.language,'BASELINE REWARDS')} style={{margin:8,marginTop:0,padding:11,gap:8,borderWidth:1,borderColor:C.lineStrong,borderRadius:8,backgroundColor:C.panel}}>
    <View style={{flexDirection:'row',flexWrap:'wrap',justifyContent:'center',gap:6}}>{[[pace.killsPerHour,'kills/hr'],[pace.xpPerHour,'XP/hr'],[pace.goldPerHour,'Gold/hr']].map(([value,label],index)=><Text key={label} style={{fontFamily:font,color:C.text,fontWeight:'600',fontSize:13}}>{index?'·  ':''}~{number(value as number)} {label}</Text>)}</View>
    <Text style={{fontFamily:font,color:C.muted,fontSize:11,lineHeight:15,textAlign:'center'}}>{sustain?.foodId?`${itemDef(sustain.foodId).name} · ~${sustain.foodPerHour.toFixed(1)} food/hr`:progressionT(state.settings.language,'Equip cooked food for sustained hunts.')}</Text>

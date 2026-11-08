@@ -6,9 +6,9 @@ import {pveBarrier,pveDotWave,pveHealingPressure,pveInterruptibleWave} from '../
  * accepts these values from a client. All effects enter the deterministic
  * combat simulation and therefore affect real health, damage and replays.
  *
- * Normal rooms change their combat stats, while optional elite rooms also
- * gain one distinct ability. This prevents repeated mandatory normal fights
- * from compounding into excessive damage across a full dungeon run.
+ * Optional elite rooms receive unique mechanics and small stat adjustments.
+ * Mandatory normal fights retain their original balance and instead vary by
+ * different enemy combinations. Existing saved normal routes fail safely.
  * Q-Mode and Live use the same rules, and reward budgets stay unchanged.
  */
 export const COOP_ROOM_MODIFIERS={
@@ -23,7 +23,7 @@ export type CoopRoomModifierId=keyof typeof COOP_ROOM_MODIFIERS;
 export const isCoopRoomModifier=(value:string):value is CoopRoomModifierId=>Object.prototype.hasOwnProperty.call(COOP_ROOM_MODIFIERS,value);
 
 export function applyCoopRoomModifier(enemy:CombatantDefinition,id:string|undefined,index:number,eliteAbilities=false):CombatantDefinition{
- if(!id||!isCoopRoomModifier(id)||id==='steady')return enemy;
+ if(!eliteAbilities||!id||!isCoopRoomModifier(id)||id==='steady')return enemy;
  const stats={...enemy.stats};
  let basicAttackMs=enemy.basicAttackMs;
  const abilities=[...enemy.abilities];
@@ -59,16 +59,6 @@ export function applyCoopRoomModifier(enemy:CombatantDefinition,id:string|undefi
    }
    break;
  }
- // Normal rooms are lateral tradeoffs, not six straight difficulty buffs.
- // Elites keep the full mechanics because the player opts into higher risk.
- if(!eliteAbilities){
-  switch(id){
-   case 'thorned': stats.attackPower*=.94; break;
-   case 'volatile': stats.maxHp*=.90; break;
-   case 'warded': stats.attackPower*=.94; break;
-   case 'swift': stats.maxHp*=.91; break;
-   case 'attrition': stats.attackPower*=.94; break;
-  }
- }
+
  return {...enemy,stats,basicAttackMs,abilities};
 }

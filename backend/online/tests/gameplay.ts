@@ -54,8 +54,12 @@ async function main(){
   // Keep the fixture aligned with authoritative potion inputs and Gold after balance changes.
   const regionalRecipe=alchemyRecipeDef('BREW_GREATER_VIGOR_TONIC_SUNSCAR')!;
   assert.ok(regionalRecipe,'Regional Alchemy recipe exists');
-  const regionalInputs=new Set(regionalRecipe.inputs.map(input=>input.itemId));
-  state={...state!,character:{...state!.character!,level:30,xp:legacyCharacterTotalXpAtLevel(30),gold:Math.max(state!.character!.gold,regionalRecipe.gold+100)},skills:state!.skills.map(skill=>skill.skillId==='herbalism'?{...skill,xp:totalXpAtLevel(26),level:26}:skill.skillId==='alchemy'?{...skill,xp:totalXpAtLevel(35),level:35}:skill.skillId==='exploration'?{...skill,xp:totalXpAtLevel(6),level:6}:skill),inventory:{...state!.inventory,stacks:[...state!.inventory.stacks.filter(stack=>!regionalInputs.has(stack.itemId)),...regionalRecipe.inputs.map(input=>({...input}))]}};
+  const tonicItems=new Map(state!.inventory.stacks.map(row=>[row.itemId,{...row}]));
+  for(const input of regionalRecipe.inputs){
+  const previous=tonicItems.get(input.itemId);
+  tonicItems.set(input.itemId,{itemId:input.itemId,quantity:Math.max(previous?.quantity??0,input.quantity)});
+ }
+  state={...state!,character:{...state!.character!,level:30,xp:legacyCharacterTotalXpAtLevel(30),gold:Math.max(state!.character!.gold,regionalRecipe.gold)},skills:state!.skills.map(skill=>skill.skillId==='herbalism'?{...skill,xp:totalXpAtLevel(26),level:26}:skill.skillId==='alchemy'?{...skill,xp:totalXpAtLevel(35),level:35}:skill.skillId==='exploration'?{...skill,xp:totalXpAtLevel(6),level:6}:skill),inventory:{...state!.inventory,stacks:[...tonicItems.values()]}};
  // This later-region fixture must satisfy the same scouting gates as a real character.
  const beforeLockedTravel=commits;
  const lockedTravel=await request({type:'travel',args:{id:'SUNSCAR'}},'sunscar-locked-01',8);

@@ -122,7 +122,7 @@ const BOSS_NAMES:Record<WeeklyPartyFamily,string>={
   lost_reliquary:'Reliquary Sentinel',
 };
 
-function applyPreparation(actor:CombatantDefinition,prep:PartyBossPreparation):CombatantDefinition {
+export function applyVerifiedPartyPreparation(actor:CombatantDefinition,prep:PartyBossPreparation):CombatantDefinition {
   return {
     ...actor,
     stats:{...actor.stats,maxHp:actor.stats.maxHp*(1+prep.maxHpBonus)},
@@ -159,9 +159,34 @@ function tierBoss(family:WeeklyPartyFamily,partySize:number,medianLevel:number,t
       effects:[{kind:'buff',tag:'damage_done',value:Math.min(.35,.07+.015*tier),durationMs:90_000}]}],
   };
 }
+/**
+ * During phases 1–3, only support from completed orders at that point is
+ * available. The same multipliers power stage encounters and the Day 8 boss.
+ * Objective support is separate from EP: supplies NEVER mint extra weekly EP.
+ */
+export function deriveVerifiedPartyPhaseSupport(orders:readonly VerifiedOrderProgress[],
+  stage:1|2|3):{
+    combat:PartyBossPreparation;
+    escortIntegrityMultiplier:number;
+    recoveryMultiplier:number;
+    objectiveEffectivenessMultiplier:number;
+  }{
+  const combat=deriveVerifiedPartyBossPreparation(orders,stage);
+  const active=new Set(combat.completedOptionalPreparations);
+  return {
+    combat,
+    escortIntegrityMultiplier:1+.02*combat.completedRequiredStages
+      +(active.has('reinforced') ? .10 : 0),
+    recoveryMultiplier:1+.015*combat.completedRequiredStages
+      +(active.has('provisions') ? .10 : 0),
+    objectiveEffectivenessMultiplier:1+.01*combat.completedRequiredStages
+      +(active.has('specialist') ? .08 : 0),
+  };
+}
+
 export interface PartyBossContribution {
   accountId:string;characterId:string;role:'tank'|'damage'|'support';
-  damage:number;healing:number;absorbedDamage:number;damageTaken:number;interrupts:number;
+  damage:number;healing:number;shielding:number;absorbedDamage:number;damageTaken:number;interrupts:number;
   /** Capped balanced contribution indicator, not a DPS-only loot multiplier. */
   meaningfulContribution:boolean;
 }
@@ -213,10 +238,10 @@ export function resolvePartyEventDayEightBoss(input:{
   const levels=actors.map(actor=>actor.level).sort((a,b)=>a-b);
   const medianLevel=levels[Math.floor((levels.length-1)/2)]!;
   const preparation=deriveVerifiedPartyBossPreparation(input.orders);
-  const players=actors.map(actor=>applyPreparation(actor,preparation));
+  const players=actors.map(actor=>applyVerifiedPartyPreparation(actor,preparation));
   const aggregate=new Map(input.frozen.map(x=>[x.characterId,{
     accountId:x.accountId,characterId:x.characterId,role:x.actor.role as 'tank'|'damage'|'support',
-    damage:0,healing:0,absorbedDamage:0,damageTaken:0,interrupts:0,
+    damage:0,healing:0,shielding:0,absorbedDamage:0,damageTaken:0,interrupts:0,
     meaningfulContribution:false,
   }]));
   const tiers:PartyBossTierResult[]=[];
@@ -239,6 +264,10 @@ export function resolvePartyEventDayEightBoss(input:{
     }
     // Actual shield absorption comes from authoritative combat events.
     for(const event of result.events){
+      if(event.type==='shield'&&event.actorId&&event.amount&&event.amount>0){
+        const caster=aggregate.get(event.actorId);
+        if(caster)caster.shielding+=event.amount;
+      }
       if(event.type==='damage'&&event.targetId&&event.absorbed&&event.absorbed>0){
         const row=aggregate.get(event.targetId);
         if(row)row.absorbedDamage+=event.absorbed;
@@ -249,9 +278,9 @@ export function resolvePartyEventDayEightBoss(input:{
   }
   const contributions=[...aggregate.values()].map(c=>({
     ...c,
-    damage:Math.round(c.damage),healing:Math.round(c.healing),
+    damage:Math.round(c.damage),healing:Math.round(c.healing),shielding:Math.round(c.shielding),
     damageTaken:Math.round(c.damageTaken),absorbedDamage:Math.round(c.absorbedDamage),
-    meaningfulContribution:c.damage+c.healing+c.absorbedDamage+c.damageTaken+c.interrupts*100>0,
+    meaningfulContribution:c.damage+c.healing+c.shielding+c.absorbedDamage+c.damageTaken+c.interrupts*100>0,
   }));
   // Shared rewards reward how far the entire party fought. Each member also
   // needs to meet the existing personal EP eligibility rules to claim.

@@ -1,0 +1,43 @@
+name: One-shot PvE combat Edge bundle reconciliation
+
+on:
+  push:
+    branches:
+      - feat/hunt-real-hit-timeline-v1
+    paths:
+      - .github/workflows/one-shot-combat-consolidation.yml
+
+permissions:
+  contents: write
+
+jobs:
+  regenerate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: true
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+          cache-dependency-path: apps/mobile/pnpm-lock.yaml
+      - name: Install mobile dependencies
+        run: pnpm --dir apps/mobile install --frozen-lockfile
+      - name: Install backend dependencies
+        run: pnpm --dir backend install --frozen-lockfile
+      - name: Regenerate deterministic Gameplay and Co-op Edge bundles
+        run: pnpm --dir backend build:online
+      - name: Verify generated artifacts
+        run: node tools/verify-gameplay-edge.mjs
+      - name: Commit regenerated bundles and retire one-shot workflow
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add backend/supabase/functions/gameplay/index.ts backend/supabase/functions/coop/index.ts
+          git rm .github/workflows/one-shot-combat-consolidation.yml
+          git commit -m "chore: regenerate PvE combat Gameplay and Co-op Edge bundles"
+          git push origin HEAD:feat/hunt-real-hit-timeline-v1

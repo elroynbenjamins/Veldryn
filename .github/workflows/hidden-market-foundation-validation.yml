@@ -10,6 +10,8 @@ on:
       - 'apps/mobile/src/screens/RewardsInboxScreen.tsx'
       - 'apps/mobile/tests/player-market-readiness.ts'
       - 'backend/online/market-custody-readiness.ts'
+      - 'backend/online/market-equipment-proof.ts'
+      - 'backend/online/tests/market-equipment-proof.ts'
       - 'backend/online/market-auth-boundary.ts'
       - 'backend/online/tests/market-auth-boundary.ts'
       - 'backend/online/tests/player-market-custody.ts'
@@ -48,6 +50,8 @@ jobs:
         run: pnpm --dir ../../backend test:market-readiness
       - name: Verify dormant authenticated Market boundary cannot be impersonated
         run: node ../../backend/dist/online/backend/online/tests/market-auth-boundary.js
+      - name: Verify exact Forge copy proof, sockets and destination remain inert
+        run: node ../../backend/dist/online/backend/online/tests/market-equipment-proof.js
       - name: Validate dormant escrow security and migration contracts
         run: |
           node ../../tools/validate-recent-migration-versions.mjs

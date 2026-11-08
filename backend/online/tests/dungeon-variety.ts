@@ -31,6 +31,8 @@ for(const dungeon of available){
    const options=graph.nodes.filter(node=>node.depth===depth);
    assert.equal(options.length,3,'Each tier has three real route choices');
    assert.equal(new Set(options.map(item=>`${item.contentId}:${item.modifierId}`)).size,3,'No duplicate route presentations');
+   assert.equal(new Set(options.map(item=>item.contentId)).size,3,'Each choice must have distinct actual content');
+   assert(options.filter(item=>item.kind!=='elite').every(item=>item.modifierId==='steady'),'Non-elite options cannot silently increase dungeon pressure');
   }
  }
 }
@@ -49,15 +51,14 @@ const base=buildExpeditionEncounter({encounterId:'ROOT_SCOUTS'});
 assert(base.length>=2);
 assert.equal(buildExpeditionEncounter({encounterId:'ROOT_SCOUTS',roomModifierId:'steady'})[0].abilities.length,base[0].abilities.length);
 for(const id of Object.keys(COOP_ROOM_MODIFIERS)){
- const enemies=buildExpeditionEncounter({encounterId:'ROOT_SCOUTS',roomModifierId:id});
- assert.equal(enemies.length,base.length);
- assert(enemies.every(e=>e.stats.maxHp>0&&e.stats.attackPower>0&&e.stats.defense>0));
- if(id!=='steady')assert.notDeepEqual(enemies,base,`${id} must affect gameplay stats and/or real abilities`);
+ const normal=buildExpeditionEncounter({encounterId:'ROOT_SCOUTS',roomModifierId:id});
+ assert.deepEqual(normal,base,'Mandatory normal rooms do not receive extra modifier pressure, even on saved routes');
+ const eliteBase=buildExpeditionEncounter({encounterId:'ROOT_ELITE_BRAMBLE'});
+ const elite=buildExpeditionEncounter({encounterId:'ROOT_ELITE_BRAMBLE',roomModifierId:id,roomModifierElite:true});
+ assert(elite.every(e=>e.stats.maxHp>0&&e.stats.attackPower>0&&e.stats.defense>0));
+ if(id!=='steady')assert.notDeepEqual(elite,eliteBase,`${id} must affect elite combat stats or abilities`);
  if(['thorned','volatile','warded','attrition'].includes(id)){
-  const eliteBase=buildExpeditionEncounter({encounterId:'ROOT_ELITE_BRAMBLE'});
-  const elite=buildExpeditionEncounter({encounterId:'ROOT_ELITE_BRAMBLE',roomModifierId:id,roomModifierElite:true});
   assert(elite[0].abilities.length>eliteBase[0].abilities.length,`${id} must add a real simulated elite ability`);
-  assert.equal(enemies[0].abilities.length,base[0].abilities.length,'Mandatory normal rooms never gain compounding extra casts');
  }
 }
 assert.equal(buildExpeditionEncounter({encounterId:'ROOT_SCOUTS',roomModifierId:'unknown'})[0].abilities.length,base[0].abilities.length,'Old route modifiers fail safely');

@@ -83,7 +83,7 @@ export function ConsumableWorkshop({state,skillId,preferredRecipeId,onStart}:Pro
  }),[all,state,skillId,afkCap]);
  const counts=new Map(capacities);
  const count=(recipe:Recipe)=>counts.get(recipe.id)??0;
- const visible=all.filter(r=>categoryOf(r)===category&&(!readyOnly||(r.level<=skillLevel&&count(r)>0)));
+ const visible=all.filter(r=>categoryOf(r)===category&&(!readyOnly||r.id===activeId||(r.level<=skillLevel&&count(r)>0)));
  const potionRows=skillId==='alchemy'&&category==='Potions'
   ?alchemyPotionRows(all.filter(r=>categoryOf(r)==='Potions'),count,skillLevel,{
     activeId,preferredId:preferred?.id,manualByOutput:manualSourceByPotion,readyOnly,

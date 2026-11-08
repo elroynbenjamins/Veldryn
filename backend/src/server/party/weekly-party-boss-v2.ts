@@ -112,7 +112,7 @@ export function freezePartyEventBossLoadout(input:{
   const payload={accountId:record.accountId,characterId:record.characterId,
     classId:record.classId,loadoutId:record.loadoutId,revision:record.revision,
     actor,savedAtMs:nowMs};
-  return {...payload,snapshotHash:createHash('sha256').update(canonical(payload)).digest('hex')};
+  return {...payload,snapshotHash:createHash('sha256').update(canonical(JSON.parse(JSON.stringify(payload)))).digest('hex')};
 }
 
 const BOSS_NAMES:Record<WeeklyPartyFamily,string>={
@@ -231,7 +231,7 @@ export function resolvePartyEventDayEightBoss(input:{
     if(frozen.savedAtMs<input.eventStartsAtMs||frozen.savedAtMs>=input.eventEndsAtMs
       ||frozen.actor.team!=='players'||frozen.actor.id!==frozen.characterId
       ||frozen.actor.role==='enemy'
-      ||createHash('sha256').update(canonical(payload)).digest('hex')!==snapshotHash)
+      ||createHash('sha256').update(canonical(JSON.parse(JSON.stringify(payload)))).digest('hex')!==snapshotHash)
       throw new Error('party_boss_invalid_frozen_loadout');
   }
   const actors=input.frozen.map(x=>structuredClone(x.actor));

@@ -20,6 +20,7 @@ export function DungeonRoomOutcomeBanner({outcome}:{outcome?:CoopRoomOutcomeView
   const item=outcome.offerKind==='boon'?st('Sealed boon'):outcome.offerKind==='artifact'?st('Run artifact'):st('Restorative salve');
   detail.push(st('Bought {item}',{item}));
  }
+ if((outcome.damagedHp??0)>0)detail.push(`−${Math.round(outcome.damagedHp??0)} HP`);
  if(outcome.healedHp>0)detail.push(st('Restored {amount} HP',{amount:Math.round(outcome.healedHp)}));
  if(outcome.revivedCount>0)detail.push(st('Revived {count}',{count:outcome.revivedCount}));
  if(outcome.boonCount>0)detail.push(st('{count} boon gained',{count:outcome.boonCount}));

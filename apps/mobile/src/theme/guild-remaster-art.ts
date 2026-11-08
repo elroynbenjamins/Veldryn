@@ -27,6 +27,7 @@ const projectArtwork=new Map<string,ImageSourcePropType>([
  ['guild_weekly_elite_suppression',require('../../assets/guild-remaster/projects/guild_weekly_elite_suppression.webp')],
  ['guild_weekly_road_relief',require('../../assets/guild-remaster/projects/guild_weekly_road_relief.webp')],
  ['guild_weekly_makers_drive',require('../../assets/guild-remaster/projects/guild_weekly_makers_drive.webp')],
+ ['guild_weekly_provision',require('../../assets/guild-remaster/projects/guild_weekly_provision.webp')],
  ['guild_weekly_reconstruction',require('../../assets/guild-remaster/projects/guild_weekly_reconstruction.webp')],
  ['guild_weekly_rift_containment',require('../../assets/guild-remaster/projects/guild_weekly_rift_containment.webp')],
  ['guild_weekly_frontier_relief',require('../../assets/guild-remaster/projects/guild_weekly_frontier_relief.webp')],

@@ -42632,8 +42632,8 @@ var HERB_ITEMS = [
 ];
 
 // ../apps/mobile/src/content/alchemy.ts
-var HEALING_POTION_CRAFT_COST_MULTIPLIER = 5;
-var HEALING_POTION_XP_MULTIPLIER = 3;
+var COMBAT_POTION_CRAFT_COST_MULTIPLIER = 5;
+var COMBAT_POTION_XP_MULTIPLIER = 3;
 var POTIONS = [
   { id: "DEWLEAF_DRAUGHT", name: "Dewleaf Draught", tier: 1, effect: { kind: "healing", maxHpFraction: 0.2 }, description: "Restore 20% max HP in boss fights or dungeons. Not usable in ordinary hunts." },
   { id: "RIVERHEART_DRAUGHT", name: "Riverheart Draught", tier: 2, effect: { kind: "healing", maxHpFraction: 0.35 }, description: "Restore 35% max HP in boss fights or dungeons. Not usable in ordinary hunts." },
@@ -42700,11 +42700,11 @@ var ALCHEMY_RECIPES = [
   { id: "BREW_RIMEWARD_DISTILLATE", name: "Rimeward Distillate", skillId: "alchemy", level: 76, seconds: 195, xp: 1750, gold: 220, inputs: [{ itemId: "WINTERMINT", quantity: 3 }, { itemId: "RIMEGLASS", quantity: 2 }, { itemId: "RIME_RESIN", quantity: 3 }], output: { itemId: "RIMEWARD_DISTILLATE", quantity: 1 } },
   { id: "BREW_CINDERHEART_ELIXIR", name: "Cinderheart Elixir", skillId: "alchemy", level: 96, seconds: 225, xp: 3e3, gold: 420, inputs: [{ itemId: "ASHEN_MYRRH", quantity: 4 }, { itemId: "BLACKGLASS_CORE", quantity: 2 }, { itemId: "CINDER_HEART", quantity: 1 }], output: { itemId: "CINDERHEART_ELIXIR", quantity: 1 } }
 ].map((recipe2) => {
-  const healing = POTIONS.some((potion) => potion.id === recipe2.output.itemId && potion.effect.kind === "healing");
-  const costMultiplier = healing ? HEALING_POTION_CRAFT_COST_MULTIPLIER : 1;
+  const combatPotion = POTIONS.some((potion) => potion.id === recipe2.output.itemId);
+  const costMultiplier = combatPotion ? COMBAT_POTION_CRAFT_COST_MULTIPLIER : 1;
   return {
     ...recipe2,
-    xp: recipe2.xp * (healing ? HEALING_POTION_XP_MULTIPLIER : 1),
+    xp: recipe2.xp * (combatPotion ? COMBAT_POTION_XP_MULTIPLIER : 1),
     gold: increasedCraftingGoldCost(recipe2.gold) * costMultiplier,
     inputs: recipe2.inputs.map((input) => ({ ...input, quantity: input.quantity * costMultiplier }))
   };
@@ -42958,6 +42958,28 @@ function itemDef(id) {
   const x = itemsById.get(id);
   if (!x) throw new Error(`Unknown item ${id}`);
   return x;
+}
+
+// ../apps/mobile/src/core/class-stat-identity.ts
+var CLASS_EQUIPMENT_ATTACK_SHARE = Object.freeze({
+  IRONWARDEN: 0.45,
+  BASTION: 0.4,
+  DREADGUARD: 0.5,
+  WAYFINDER: 0.6,
+  RAVAGER: 0.65,
+  HEXWEAVER: 0.6,
+  KNIFE_DANCER: 0.65,
+  DAWNKEEPER: 0.45,
+  STONECALLER: 0.55
+});
+function classWeightedGearStats(classId, attack, defense) {
+  const gearAttack = Math.max(0, Number.isFinite(attack) ? attack : 0);
+  const gearDefense = Math.max(0, Number.isFinite(defense) ? defense : 0);
+  const total = gearAttack + gearDefense;
+  if (total <= 0) return { attack: 0, defense: 0 };
+  const share = CLASS_EQUIPMENT_ATTACK_SHARE[classId];
+  const convertedAttack = share >= 0.5 ? gearAttack + gearDefense * (2 * share - 1) : gearAttack * (2 * share);
+  return { attack: convertedAttack, defense: total - convertedAttack };
 }
 
 // ../apps/mobile/src/content/event-companions-v2.ts
@@ -46210,36 +46232,40 @@ function effectiveStats(state) {
   const c = state.character;
   if (!c) return { hp: 0, attack: 0, defense: 0, power: 0, critChance: 0, critMultiplier: 1.5, accuracy: 0.84, evasion: 0.04, haste: 0.05, armor: 0, ward: 0, tenacity: 0, potency: 0, penetration: 0 };
   let hp = c.hp, attack = c.attack, defense = c.defense;
+  let gearAttack = 0, gearDefense = 0;
   for (const id of Object.values(c.equipment)) {
     if (!id) continue;
     const stats6 = enhancedGearStats(state, id);
     hp += stats6.hp;
-    attack += stats6.attack;
-    defense += stats6.defense;
+    gearAttack += stats6.attack;
+    gearDefense += stats6.defense;
   }
   const novice = noviceSetFor(c.classId), noviceComplete = novice.slots.every((slot) => c.equipment[slot] === noviceItemId(c.classId, slot));
   if (noviceComplete) {
     hp += novice.setBonus.hp;
-    attack += novice.setBonus.attack;
-    defense += novice.setBonus.defense;
+    gearAttack += novice.setBonus.attack;
+    gearDefense += novice.setBonus.defense;
   }
+  const classGear = classWeightedGearStats(c.classId, gearAttack, gearDefense);
+  attack += classGear.attack;
+  defense += classGear.defense;
   const setStats = activeEquipmentBuildStats(state);
   hp = Math.ceil(hp * (1 + setStats.maxHp));
-  defense = Math.ceil(defense * (1 + setStats.armor));
+  defense *= 1 + setStats.armor;
   const gems = equippedGemBonuses(state);
   hp = Math.ceil(hp * (1 + gems.hp));
-  attack = Math.ceil(attack * (1 + gems.attack));
-  defense = Math.ceil(defense * (1 + gems.defense));
+  attack *= 1 + gems.attack;
+  defense *= 1 + gems.defense;
   const mastery = characterClassEffects(c);
   hp = Math.ceil(hp * mastery.hp);
-  attack = Math.ceil(attack * mastery.attack);
-  defense = Math.ceil(defense * mastery.defense);
+  attack *= mastery.attack;
+  defense *= mastery.defense;
   const permanent = characterPermanentMultipliers(state);
-  attack = Math.ceil(attack * permanent.combatPowerMultiplier);
+  attack *= permanent.combatPowerMultiplier;
   const faithBlessing = selectedFaithBlessing(state);
   if (faithBlessing?.family === "hp") hp = Math.ceil(hp * (1 + faithBlessing.bonus));
   const prep = c.preparation ? preparationEffects(c.preparation) : void 0;
-  if (prep) attack = Math.ceil(attack * prep.attack);
+  if (prep) attack *= prep.attack;
   const role2 = CLASSES.find((def) => def.id === c.classId)?.role, baseCritChance = role2 === "Damage" ? 0.1 : 0.05, baseEvasion = role2 === "Damage" ? 0.07 : 0.04;
   const basePower = Math.round(attack * 1.5 + defense * 0.8 + hp * 0.08 + c.level * 2.5);
   return {

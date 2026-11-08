@@ -99,9 +99,14 @@ export class OnlineLiveRuntime{
   const loaded=await this.services.rpc<Loaded>('load_coop_runtime_server_v1',{p_run_id:runId,p_actor_account_id:accountId});
   if((loaded.clientProjection as {mode?:string})?.mode!=='live')throw new GameplayError('not_live_run',404);
   if(loaded.privateState.pending)throw new GameplayError('node_resolving',409);
+  // /choose is exclusively for the single final boss route. Multi-option
+  // Live decisions must be committed by the vote RPC, never by a client pick.
+  const current=loaded.privateState.run.graph.nodes.find(node=>node.nodeId===loaded.privateState.run.currentNodeId);
+  if(!current||current.nextNodeIds.length!==1)throw new GameplayError('live_vote_required',409);
+  if(request.optionId!==current.nextNodeIds[0])throw new GameplayError('invalid_option',409);
   if(request.decisionRevision!==loaded.stateVersion||request.decisionId!==loaded.privateState.run.currentNodeId)throw new GameplayError('stale_state',409);
   const presence=await this.touch(accountId,runId,loaded);
-  return this.queueSelected(accountId,runId,request,loaded,request.optionId,hash,presence.safetyAiCharacterIds);
+  return this.queueSelected(accountId,runId,request,loaded,current.nextNodeIds[0],hash,presence.safetyAiCharacterIds);
  }
  async vote(accountId:string,runId:string,request:CoopDecisionCommand){
   const hash=hashRequest(request);const prior=await this.services.rpc<{requestHash:string;response:unknown}|null>('read_online_coop_receipt_server_v1',{p_account_id:accountId,p_operation:'live_vote_v1',p_resource_id:runId,p_request_id:request.requestId});
@@ -114,7 +119,8 @@ export class OnlineLiveRuntime{
   if(!decision||decision.decisionId!==request.decisionId||decision.revision!==request.decisionRevision)throw new GameplayError('stale_decision',409);
   const result=await this.services.rpc<DecisionState>('record_online_live_vote_server_v1',{p_run_id:runId,p_account_id:accountId,p_decision_id:request.decisionId,p_revision:request.decisionRevision,p_option_id:request.optionId,p_request_id:request.requestId,p_request_hash:hash});
   if(result.status!=='resolved')return this.withPresence(this.decorate(loaded.clientProjection,result),presence);
-  return this.queueSelected(accountId,runId,request,loaded,result.selectedOptionId??request.optionId,hash,presence.safetyAiCharacterIds);
+  if(!result.selectedOptionId)throw new GameplayError('decision_missing_selection',409);
+  return this.queueSelected(accountId,runId,request,loaded,result.selectedOptionId,hash,presence.safetyAiCharacterIds);
  }
  async chat(accountId:string,runId:string,requestId:string,body?:string){
   return this.services.rpc('online_live_party_chat_server_v1',{p_run_id:runId,p_account_id:accountId,p_request_id:body===undefined?null:requestId,p_body:body===undefined?null:body});

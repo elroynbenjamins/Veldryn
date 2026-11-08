@@ -251,6 +251,28 @@ var init_faith2 = __esm({
   }
 });
 
+// ../apps/mobile/src/core/class-stat-identity.ts
+var CLASS_EQUIPMENT_ATTACK_SHARE = Object.freeze({
+  IRONWARDEN: 0.45,
+  BASTION: 0.4,
+  DREADGUARD: 0.5,
+  WAYFINDER: 0.6,
+  RAVAGER: 0.65,
+  HEXWEAVER: 0.6,
+  KNIFE_DANCER: 0.65,
+  DAWNKEEPER: 0.45,
+  STONECALLER: 0.55
+});
+function classWeightedGearStats(classId, attack, defense) {
+  const gearAttack = Math.max(0, Number.isFinite(attack) ? attack : 0);
+  const gearDefense = Math.max(0, Number.isFinite(defense) ? defense : 0);
+  const total = gearAttack + gearDefense;
+  if (total <= 0) return { attack: 0, defense: 0 };
+  const share = CLASS_EQUIPMENT_ATTACK_SHARE[classId];
+  const convertedAttack = share >= 0.5 ? gearAttack + gearDefense * (2 * share - 1) : gearAttack * (2 * share);
+  return { attack: convertedAttack, defense: total - convertedAttack };
+}
+
 // ../apps/mobile/src/core/combat-timing.ts
 function combatTimeline(input) {
   const end = input.startsAtMs + Math.max(0, input.elapsedSeconds) * 1e3;
@@ -42848,8 +42870,8 @@ var HERB_ITEMS = [
 
 // ../apps/mobile/src/content/alchemy.ts
 var MAX_ALCHEMY_BATCHES = 1e4;
-var HEALING_POTION_CRAFT_COST_MULTIPLIER = 5;
-var HEALING_POTION_XP_MULTIPLIER = 3;
+var COMBAT_POTION_CRAFT_COST_MULTIPLIER = 5;
+var COMBAT_POTION_XP_MULTIPLIER = 3;
 var POTIONS = [
   { id: "DEWLEAF_DRAUGHT", name: "Dewleaf Draught", tier: 1, effect: { kind: "healing", maxHpFraction: 0.2 }, description: "Restore 20% max HP in boss fights or dungeons. Not usable in ordinary hunts." },
   { id: "RIVERHEART_DRAUGHT", name: "Riverheart Draught", tier: 2, effect: { kind: "healing", maxHpFraction: 0.35 }, description: "Restore 35% max HP in boss fights or dungeons. Not usable in ordinary hunts." },
@@ -42916,11 +42938,11 @@ var ALCHEMY_RECIPES = [
   { id: "BREW_RIMEWARD_DISTILLATE", name: "Rimeward Distillate", skillId: "alchemy", level: 76, seconds: 195, xp: 1750, gold: 220, inputs: [{ itemId: "WINTERMINT", quantity: 3 }, { itemId: "RIMEGLASS", quantity: 2 }, { itemId: "RIME_RESIN", quantity: 3 }], output: { itemId: "RIMEWARD_DISTILLATE", quantity: 1 } },
   { id: "BREW_CINDERHEART_ELIXIR", name: "Cinderheart Elixir", skillId: "alchemy", level: 96, seconds: 225, xp: 3e3, gold: 420, inputs: [{ itemId: "ASHEN_MYRRH", quantity: 4 }, { itemId: "BLACKGLASS_CORE", quantity: 2 }, { itemId: "CINDER_HEART", quantity: 1 }], output: { itemId: "CINDERHEART_ELIXIR", quantity: 1 } }
 ].map((recipe2) => {
-  const healing = POTIONS.some((potion) => potion.id === recipe2.output.itemId && potion.effect.kind === "healing");
-  const costMultiplier = healing ? HEALING_POTION_CRAFT_COST_MULTIPLIER : 1;
+  const combatPotion = POTIONS.some((potion) => potion.id === recipe2.output.itemId);
+  const costMultiplier = combatPotion ? COMBAT_POTION_CRAFT_COST_MULTIPLIER : 1;
   return {
     ...recipe2,
-    xp: recipe2.xp * (healing ? HEALING_POTION_XP_MULTIPLIER : 1),
+    xp: recipe2.xp * (combatPotion ? COMBAT_POTION_XP_MULTIPLIER : 1),
     gold: increasedCraftingGoldCost(recipe2.gold) * costMultiplier,
     inputs: recipe2.inputs.map((input) => ({ ...input, quantity: input.quantity * costMultiplier }))
   };
@@ -42935,7 +42957,7 @@ var POTION_ITEMS = POTIONS.map((potion) => ({
 }));
 var ALCHEMY_EQUIPMENT_INFUSION_ITEMS = ALCHEMY_EQUIPMENT_INFUSIONS.map((infusion) => ({ id: infusion.id, name: infusion.name, type: "material", value: infusion.value, rarity: infusion.rarity, passive: infusion.description }));
 var potionDef = (id) => POTIONS.find((p) => p.id === id);
-var alchemyRecipeDef = (id) => ALCHEMY_RECIPES.find((recipe2) => recipe2.id === id);
+var alchemyRecipeDef = (id) => ALCHEMY_RECIPES.find((recipe2) => recipe2.id === id) ?? ALCHEMY_RECIPES.find((recipe2) => recipe2.output.itemId === id);
 
 // ../apps/mobile/src/content/equipment-items-v33.ts
 var classIdByName2 = { Ironwarden: "IRONWARDEN", Bastion: "BASTION", Dreadguard: "DREADGUARD", Dawnkeeper: "DAWNKEEPER", Wayfinder: "WAYFINDER", Ravager: "RAVAGER", Hexweaver: "HEXWEAVER", "Knife Dancer": "KNIFE_DANCER", Stonecaller: "STONECALLER" };
@@ -47997,7 +48019,7 @@ function startAlchemyBatch(state, recipeId, batches, nowMs) {
   const bonuses = characterPermanentMultipliers(state), pace = professionActionPace(state, recipe2, "batch");
   const brew = {
     version: 1,
-    recipeId,
+    recipeId: recipe2.id,
     totalBatches: batches,
     remainingBatches: batches,
     inputsPerBatch: recipe2.inputs.map((input) => ({ ...input })),
@@ -48011,7 +48033,7 @@ function startAlchemyBatch(state, recipeId, batches, nowMs) {
     character: { ...state.character, gold: state.character.gold - status.gold },
     inventory: { ...state.inventory, stacks: inventory },
     bank: { ...state.bank, stacks: bank },
-    activity: { kind: "alchemy", targetId: recipeId, startedAtMs: nowMs, lastClaimAtMs: nowMs, progressFraction: 0, bonusSnapshot: bonuses, skillAffinity: captureSkillAffinity(state, "alchemy"), brew }
+    activity: { kind: "alchemy", targetId: recipe2.id, startedAtMs: nowMs, lastClaimAtMs: nowMs, progressFraction: 0, bonusSnapshot: bonuses, skillAffinity: captureSkillAffinity(state, "alchemy"), brew }
   };
 }
 function startAlchemyUntilLimited(state, recipeId, nowMs, afkCapSeconds) {
@@ -48021,7 +48043,7 @@ function startAlchemyUntilLimited(state, recipeId, nowMs, afkCapSeconds) {
   const timeBatches = Math.floor(afkCapSeconds / pace.cycleSeconds);
   const batches = Math.min(status.maxBatches, timeBatches, MAX_ALCHEMY_BATCHES);
   if (batches < 1) throw new Error("Not enough AFK time for one brewing cycle.");
-  return startAlchemyBatch(state, recipeId, batches, nowMs);
+  return startAlchemyBatch(state, status.recipe.id, batches, nowMs);
 }
 function previewAlchemyReward(state, elapsed) {
   const activity = state.activity, brew = activity?.brew;
@@ -48556,9 +48578,9 @@ var CLASS_COMBAT_STYLES = {
   DREADGUARD: { name: "Dread Momentum", description: "Hunts 4% faster while retaining heavy protection.", speedMultiplier: 1.04, damageTakenMultiplier: 0.94, recoveryPct: 0.01 },
   DAWNKEEPER: { name: "Sunlit Guard", description: "Trades stronger protection for a slightly faster, steadier hunt.", speedMultiplier: 1.03, damageTakenMultiplier: 0.94, recoveryPct: 1e-3 },
   WAYFINDER: { name: "Marked Quarry", description: "Hunts 8% faster through careful targeting.", speedMultiplier: 1.08, damageTakenMultiplier: 1, recoveryPct: 0.01 },
-  RAVAGER: { name: "Bloodrush", description: "Hunts 14% faster but takes 9% more damage.", speedMultiplier: 1.14, damageTakenMultiplier: 1.09, recoveryPct: 8e-3 },
+  RAVAGER: { name: "Bloodrush", description: "Hunts 14% faster, takes 9% more damage and restores a little HP after kills.", speedMultiplier: 1.14, damageTakenMultiplier: 1.09, recoveryPct: 8e-3, onKillAttackHealPct: 0.01 },
   HEXWEAVER: { name: "Withering Hex", description: "Hunts 7% faster and weakens incoming attacks.", speedMultiplier: 1.07, damageTakenMultiplier: 0.95, recoveryPct: 0.01 },
-  KNIFE_DANCER: { name: "Blade Rhythm", description: "Hunts 13% faster through rapid strikes.", speedMultiplier: 1.13, damageTakenMultiplier: 1.03, recoveryPct: 0.01 },
+  KNIFE_DANCER: { name: "Blade Rhythm", description: "Hunts 13% faster and avoids 12% of incoming damage.", speedMultiplier: 1.13, damageTakenMultiplier: 0.88, recoveryPct: 0.01 },
   STONECALLER: { name: "Earthen Ward", description: "Strong damage reduction and offense at the cost of a slower hunt.", speedMultiplier: 0.95, damageTakenMultiplier: 0.91, recoveryPct: 1e-3 }
 };
 var classCombatStyle = (id) => CLASS_COMBAT_STYLES[id];
@@ -51591,7 +51613,7 @@ var REGIONAL_COMBAT_PRESSURE = { Greenfields: 1, Silverbrook: 1.04, "Ironwood Fo
 var REGIONAL_HUNT_DAMAGE_TUNING = { Greenfields: 0.36, Silverbrook: 0.25, "Ironwood Forest": 0.4, "Old Mines": 0.55, "King's Road": 0.42, Ashlands: 0.4 };
 var REGIONAL_MONSTER_PRESSURE_MULTIPLIER = { entry: 0.92, standard: 1, hard: 1.1 };
 var REGIONAL_MIN_ATTRITION_HP_PER_HOUR = { Greenfields: 80, Silverbrook: 120, "Ironwood Forest": 240, "Old Mines": 280, "King's Road": 420, Sunscar: 780, Frostmarch: 1450, Ashlands: 2150 };
-var MISSING_GEAR_HUNT_ATTRITION_PER_TIER = 0.6;
+var MISSING_GEAR_HUNT_ATTRITION_PER_TIER = 0.62;
 var MIN_UNHEALED_HP_FRACTION_PER_HOUR = 0.08;
 var OUT_OF_COMBAT_REGEN_FRACTION_PER_MINUTE = 0.05;
 var GATHER_TIME_SCALE = 1.25;
@@ -51669,36 +51691,40 @@ function effectiveStats(state) {
   const c = state.character;
   if (!c) return { hp: 0, attack: 0, defense: 0, power: 0, critChance: 0, critMultiplier: 1.5, accuracy: 0.84, evasion: 0.04, haste: 0.05, armor: 0, ward: 0, tenacity: 0, potency: 0, penetration: 0 };
   let hp = c.hp, attack = c.attack, defense = c.defense;
+  let gearAttack = 0, gearDefense = 0;
   for (const id of Object.values(c.equipment)) {
     if (!id) continue;
     const stats4 = enhancedGearStats(state, id);
     hp += stats4.hp;
-    attack += stats4.attack;
-    defense += stats4.defense;
+    gearAttack += stats4.attack;
+    gearDefense += stats4.defense;
   }
   const novice = noviceSetFor(c.classId), noviceComplete = novice.slots.every((slot) => c.equipment[slot] === noviceItemId(c.classId, slot));
   if (noviceComplete) {
     hp += novice.setBonus.hp;
-    attack += novice.setBonus.attack;
-    defense += novice.setBonus.defense;
+    gearAttack += novice.setBonus.attack;
+    gearDefense += novice.setBonus.defense;
   }
+  const classGear = classWeightedGearStats(c.classId, gearAttack, gearDefense);
+  attack += classGear.attack;
+  defense += classGear.defense;
   const setStats = activeEquipmentBuildStats(state);
   hp = Math.ceil(hp * (1 + setStats.maxHp));
-  defense = Math.ceil(defense * (1 + setStats.armor));
+  defense *= 1 + setStats.armor;
   const gems = equippedGemBonuses(state);
   hp = Math.ceil(hp * (1 + gems.hp));
-  attack = Math.ceil(attack * (1 + gems.attack));
-  defense = Math.ceil(defense * (1 + gems.defense));
+  attack *= 1 + gems.attack;
+  defense *= 1 + gems.defense;
   const mastery = characterClassEffects(c);
   hp = Math.ceil(hp * mastery.hp);
-  attack = Math.ceil(attack * mastery.attack);
-  defense = Math.ceil(defense * mastery.defense);
+  attack *= mastery.attack;
+  defense *= mastery.defense;
   const permanent = characterPermanentMultipliers(state);
-  attack = Math.ceil(attack * permanent.combatPowerMultiplier);
+  attack *= permanent.combatPowerMultiplier;
   const faithBlessing = selectedFaithBlessing(state);
   if (faithBlessing?.family === "hp") hp = Math.ceil(hp * (1 + faithBlessing.bonus));
   const prep = c.preparation ? preparationEffects(c.preparation) : void 0;
-  if (prep) attack = Math.ceil(attack * prep.attack);
+  if (prep) attack *= prep.attack;
   const role = CLASSES.find((def) => def.id === c.classId)?.role, baseCritChance = role === "Damage" ? 0.1 : 0.05, baseEvasion = role === "Damage" ? 0.07 : 0.04;
   const basePower = Math.round(attack * 1.5 + defense * 0.8 + hp * 0.08 + c.level * 2.5);
   return {
@@ -51973,10 +51999,11 @@ function combatEncounterDamage(runtime, champion = false) {
   const raw2 = Math.max(1, Math.round(m.attack * COMBAT_MONSTER_DAMAGE_SCALE) - Math.floor(boostedDefense * 0.58));
   const regionalPressure = (REGIONAL_COMBAT_PRESSURE[m.zone] ?? 1) * REGIONAL_MONSTER_PRESSURE_MULTIPLIER[regionalMonsterPressureBand(m.id)];
   const damage = Math.max(0.1, (raw2 * 0.48 + m.level * 0.16) * (REGIONAL_HUNT_DAMAGE_TUNING[m.zone] ?? 1) * regionalPressure * secondary.incomingPressureMultiplier * style.damageTakenMultiplier * tactic.damageTakenMultiplier * (champion ? CHAMPION_DAMAGE_MULTIPLIER : 1) * modifiers.incomingDamageMultiplier * companion.incomingDamageMultiplier * (1 - effectGems.damage_reduction) * Math.max(0.5, 1 - setCombat.stats.ward) * (c.preparation ? preparationEffects(c.preparation).damage : 1) * runtime.progressionDamagePenalty);
-  const healing = stats4.hp * companion.directHealingPctPerHour * killCycleSeconds / 3600 * (c.preparation ? preparationEffects(c.preparation).healing : 1);
   const floor = Math.max(REGIONAL_MIN_ATTRITION_HP_PER_HOUR[m.zone] ?? 0, stats4.hp * MIN_UNHEALED_HP_FRACTION_PER_HOUR) * runtime.gearAttritionMultiplier * killCycleSeconds / 3600;
   const incoming = Math.max(floor, damage);
-  return { damage: incoming, healing, net: incoming - healing };
+  const onKillHealing = Math.min(stats4.attack * (style.onKillAttackHealPct ?? 0), Math.max(0, incoming - floor));
+  const healing = stats4.hp * companion.directHealingPctPerHour * killCycleSeconds / 3600 * (c.preparation ? preparationEffects(c.preparation).healing : 1) + onKillHealing;
+  return { damage: incoming, healing, onKillHealing, net: incoming - healing };
 }
 function simulateCombat2(state, monsterId, elapsed, nowMs = Date.now()) {
   const c = state.character, startsAtMs = state.activity?.lastClaimAtMs ?? nowMs - elapsed * 1e3;

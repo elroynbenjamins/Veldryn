@@ -63,6 +63,43 @@ Existing Play Games profiles can authenticate automatically when the game starts
 
 The Account screen now checks the native Play Games status without triggering sign-in. It reports **connected** (and the player's display name), **disconnected**, **unavailable due to build/platform**, or **temporary error**, separately from the Supabase Google account identity. The user-facing Google UI can be redesigned independently of these headless functions (`inspectPlayGamesConnection` and `inspectGoogleAccountConnection`).
 
+## Google nonce validation fix (November 2026)
+
+Production Supabase Auth logs showed:
+`invalid request: Passed nonce and nonce in id_token should either both exist or not.`
+
+The Nitro Google Sign-In Android module uses an automatically generated hash when
+`configure({ nonce })` is omitted. VELDRYN now generates a **fresh 32-byte secure
+random value** for every attempt using Expo Crypto, hex-encodes that raw nonce,
+and supplies its SHA-256 hexadecimal digest as
+`GoogleOneTapSignIn.configure({ nonce: hashedNonce })`. The **unhashed** nonce
+is supplied to Supabase for both:
+- `linkIdentity({ provider: 'google', token: identity.idToken, nonce: identity.nonce })`
+- `signInWithIdToken({ provider: 'google', token: identity.idToken, nonce: identity.nonce })`
+
+Supabase validates that the Google token claim matches the hash. Do not disable
+nonce checking or switch to unverified identity linking.
+
+**Rollout:** `EXPO_PUBLIC_GOOGLE_ACCOUNT_LINKING_ENABLED` is off by default
+(including production), hiding both the existing-account linking button and the
+signed-out Google sign-in button. The internal `preview` EAS build sets it to
+`true` for QA, while successful existing Google links remain visible regardless
+of the flag. After internal device tests, explicitly enable the flag on production
+and create a new **signed** Android build. An OTA-only update cannot add the new
+`expo-crypto` native module to a previously installed build.
+
+QA checklist (use a secured test account; do not risk an unrecoverable guest):
+1. Confirm Google OAuth Android package and SHA-1 are configured for the preview
+   signing certificate and the hosted Supabase Google provider has Manual Linking.
+2. Build/install a fresh preview AAB/APK containing Nitro and Expo Crypto.
+3. Link Google from a test email/password account; inspect its Supabase identities
+   and verify the same user UUID and all character progress.
+4. Sign out on a second device, Continue with Google, and verify recovery.
+5. Verify Google Play Games stays independent; check cancellation, changing the
+   current account mid-picker, and an identity already linked elsewhere.
+6. Confirm Supabase Auth logs show no nonce mismatch; only then enable production
+   flag and publish a newly signed AAB.
+
 ## 4. Build and test
 
 Both integrations contain native Android code, so Expo Go cannot validate them. Use an Android development build or a Google Play AAB.

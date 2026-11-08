@@ -11,7 +11,7 @@ const verified=()=>({...guest(),email:'aster@example.test',is_anonymous:false,em
 const token=user=>`header.${Buffer.from(JSON.stringify({is_anonymous:Boolean(user.is_anonymous),email:user.email||''})).toString('base64url')}.signature`;
 const sessionFor=user=>({access_token:token(user),refresh_token:'test-refresh',user:copy(user)});
 function fixture(initial=guest()){
- const f={server:copy(initial),session:sessionFor(initial),writes:[],refreshes:0,resends:0,signups:0,exchanges:0,googleLinks:0,googlePickerCalls:0,identityReads:0,identityFailure:null,linkFailure:null,onGoogleIdentity:null,readFailure:null,writeFailure:null,refreshFailure:null};
+ const f={server:copy(initial),session:sessionFor(initial),writes:[],refreshes:0,resends:0,signups:0,exchanges:0,googleLinks:0,googleTokenSignIns:0,googlePickerCalls:0,identityReads:0,identityFailure:null,linkFailure:null,onGoogleIdentity:null,readFailure:null,writeFailure:null,refreshFailure:null};
  const auth={
   getSession:async()=>({data:{session:f.session},error:null}),
   getUser:async()=>({data:{user:copy(f.server)},error:f.readFailure}),
@@ -28,11 +28,11 @@ function fixture(initial=guest()){
   signUp:async()=>{f.signups++;throw Error('Unexpected account creation');},
   exchangeCodeForSession:async()=>{f.exchanges++;return {error:null};},
   getUserIdentities:async()=>{f.identityReads++;return {data:{identities:copy(f.server.identities??[])},error:f.identityFailure};},
-  linkIdentity:async credentials=>{f.googleLinks++;if(f.linkFailure)return {data:{user:null},error:f.linkFailure};assert.equal(credentials.provider,'google');assert.ok(credentials.token);f.server={...f.server,is_anonymous:false,email:'google@example.test',email_confirmed_at:'2026-10-06T08:00:00Z',identities:[{provider:'google'}]};f.session=sessionFor(f.server);return {data:{user:copy(f.server)},error:null};},
-  signInWithIdToken:async()=>{throw Error('Existing guest must link rather than replace its identity');},
+  linkIdentity:async credentials=>{f.googleLinks++;assert.equal(credentials.provider,'google');assert.equal(credentials.nonce,'fixture-raw-google-nonce');assert.ok(credentials.token);if(f.linkFailure)return {data:{user:null},error:f.linkFailure};f.server={...f.server,is_anonymous:false,email:'google@example.test',email_confirmed_at:'2026-10-06T08:00:00Z',identities:[{provider:'google'}]};f.session=sessionFor(f.server);return {data:{user:copy(f.server)},error:null};},
+  signInWithIdToken:async credentials=>{f.googleTokenSignIns++;assert.equal(credentials.provider,'google');assert.equal(credentials.token,'google-id-token');assert.equal(credentials.nonce,'fixture-raw-google-nonce');if(f.session)throw Error('Existing guest must link rather than replace its identity');f.server={...verified(),id:'new-google-user',email:'google@example.test',identities:[{provider:'google'}]};f.session=sessionFor(f.server);return {data:{user:copy(f.server)},error:null};},
  };
  const client={auth,from:()=>{throw Error('Account linking must not depend on a profile write');}};
- f.api=load('online/account.ts',{'expo-linking':{createURL:()=> 'veldryn://auth'},'./supabase':{supabase:client},'./google-signin':{requestNativeGoogleIdentity:async()=>{f.googlePickerCalls++;if(f.onGoogleIdentity)await f.onGoogleIdentity();return {idToken:'google-id-token',email:'google@example.test',displayName:'Google Aster'};}},'../core/auth-callback':callback,'../core/auth-account-link':link});
+ f.api=load('online/account.ts',{'expo-linking':{createURL:()=> 'veldryn://auth'},'./supabase':{supabase:client},'./google-signin':{requestNativeGoogleIdentity:async()=>{f.googlePickerCalls++;if(f.onGoogleIdentity)await f.onGoogleIdentity();return {idToken:'google-id-token',nonce:'fixture-raw-google-nonce',email:'google@example.test',displayName:'Google Aster'};}},'../core/auth-callback':callback,'../core/auth-account-link':link});
  return f;
 }
 function deferred(){let resolve,reject;const promise=new Promise((yes,no)=>{resolve=yes;reject=no;});return {promise,resolve,reject};}
@@ -132,6 +132,12 @@ function deferred(){let resolve,reject;const promise=new Promise((yes,no)=>{reso
  assert.equal(callback.authCallbackCode('veldryn://auth?code=confirmed','veldryn://auth'),'confirmed');
  assert.throws(()=>callback.authCallbackCode('veldryn://auth#error_code=otp_expired&error_description=Use%20the%20latest%20email','veldryn://auth'),/latest email/);
  assert.throws(()=>callback.authCallbackCode('veldryn://auth?error=access_denied','veldryn://auth'),/could not be verified/);checks++;
+
+ const googleSignedOut=fixture();googleSignedOut.session=null;
+ const googleSignedOutUser=await googleSignedOut.api.signInOrLinkGoogle();
+ assert.equal(googleSignedOutUser.id,'new-google-user');
+ assert.equal(googleSignedOut.googleTokenSignIns,1,'Signed-out Google login uses the nonce-bound ID token');
+ assert.equal(googleSignedOut.googleLinks,0,'Signed-out Google login does not link to an old account');checks++;
 
  const googleGuest=fixture();
  const googleUser=await googleGuest.api.signInOrLinkGoogle();

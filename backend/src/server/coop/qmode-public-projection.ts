@@ -20,7 +20,7 @@ export function publicCoopRoomOutcome(nodeId:string|undefined,summary:Record<str
  if(typeof kind!=='string'||!['camp','shrine','forge','treasure','secret','event','risk','echo','merchant','merchant_purchase'].includes(kind))return undefined;
  const count=(key:string)=>typeof summary[key]==='number'&&Number.isFinite(summary[key])?Math.max(0,summary[key] as number):0;
  const delta=typeof summary.resourcesDelta==='number'&&Number.isFinite(summary.resourcesDelta)?summary.resourcesDelta:0;
- return {nodeId,kind,resourcesDelta:delta,healedHp:count('healedHp'),revivedCount:count('revivedCount'),boonCount:count('boonCount'),artifactCount:count('artifactCount'),curseCount:count('curseCount'),...(kind==='merchant_purchase'&&typeof summary.offerKind==='string'?{offerKind:summary.offerKind}: {})};
+ return {nodeId,kind,resourcesDelta:delta,healedHp:count('healedHp'),damagedHp:count('damagedHp'),revivedCount:count('revivedCount'),boonCount:count('boonCount'),artifactCount:count('artifactCount'),curseCount:count('curseCount'),...(kind==='merchant_purchase'&&typeof summary.offerKind==='string'?{offerKind:summary.offerKind}: {})};
 }
 
 

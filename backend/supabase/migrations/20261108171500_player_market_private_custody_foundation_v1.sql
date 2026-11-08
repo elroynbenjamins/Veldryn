@@ -69,6 +69,15 @@ create table if not exists private.market_custody_assets_v1 (
   ),
   constraint market_custody_unique_source_v1 unique(
     owner_account_id,source_revision,source_location,source_locator
+  ),
+  constraint market_custody_asset_owner_key_v1 unique(asset_id,owner_account_id),
+  constraint market_custody_source_holder_v1 check (
+    (source_location in ('inventory','equipment_pouch') and source_character_id is not null)
+    or (source_location in ('bank','gem_pouch') and source_character_id is null)
+  ),
+  constraint market_custody_storage_kind_v1 check (
+    (source_location <> 'equipment_pouch' or asset_kind = 'equipment')
+    and (source_location <> 'gem_pouch' or asset_kind = 'gem')
   )
 );
 
@@ -84,8 +93,7 @@ create index if not exists market_custody_owner_revision_v1
 -- A hold row alone is not custody; listing code must enforce the bridge.
 create table if not exists private.market_custody_holds_v1 (
   hold_id uuid primary key default gen_random_uuid(),
-  asset_id uuid not null references private.market_custody_assets_v1(asset_id)
-    on delete restrict,
+  asset_id uuid not null,
   owner_account_id uuid not null references public.online_game_states(account_id)
     on delete restrict,
   request_key text not null check(length(request_key) between 8 and 128),
@@ -96,6 +104,10 @@ create table if not exists private.market_custody_holds_v1 (
   source_revision bigint not null check(source_revision >= 0),
   created_at timestamptz not null default now(),
   closed_at timestamptz,
+  constraint market_custody_hold_exact_owner_v1
+    foreign key(asset_id,owner_account_id)
+    references private.market_custody_assets_v1(asset_id,owner_account_id)
+    on delete restrict,
   constraint market_custody_request_once_v1 unique(owner_account_id,request_key),
   constraint market_custody_closed_state_v1 check(
     (status in ('draft','held') and closed_at is null)

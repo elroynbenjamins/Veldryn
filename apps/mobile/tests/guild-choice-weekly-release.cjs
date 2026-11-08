@@ -10,6 +10,7 @@ const guard=read('backend/supabase/migrations/20261106101500_guild_choice_main_s
 const slots=read('backend/supabase/migrations/20261106102000_guild_choice_two_active_slots_v1.sql');
 const client=read('apps/mobile/src/online/guild-projects-v18.ts');
 const screen=read('apps/mobile/src/components/OnlineGuildProjectsPanel.tsx');
+const art=read('apps/mobile/src/theme/guild-remaster-art.ts');
 const sink=read('apps/mobile/src/online/guild-project-supply-donations.ts');
 const picker=read('apps/mobile/src/components/GuildProjectSupplyDonationPanel.tsx');
 assert.match(board,/v_week\+interval '3 days'/,'Ballot opens Thursday');
@@ -40,6 +41,10 @@ assert.match(client,/guild_project_choice_ballot_v1/);
 assert.match(client,/guild_project_supply_inventory_v1/);
 assert.match(client,/launchWeekly:row\.template_id==='guild_weekly_shared_effort'\|\|/);
 assert.match(screen,/GuildProjectSupplyDonationPanel/);
+assert.match(art,/guild_weekly_provision\.webp/,'Voted supply project must have its own guild artwork');
+assert.ok(fs.existsSync(path.join(root,'apps/mobile/assets/guild-remaster/projects/guild_weekly_provision.webp')),'Supply artwork must exist as a real bundled file');
+assert.match(screen,/const projectArtwork=guildProjectArtwork\(candidate\.templateId\)/,'Voting choices must display project art');
+assert.match(screen,/project\.focus==='combat'\?'combat':project\.focus==='skilling'\?'herbalism':'crafting'/,'Fallback must respect project focus, not always Combat');
 assert.match(screen,/Vote for next week's project/);
 assert.ok(!screen.includes('onStart={()=>void act('),'Do not manually start voted projects');
 assert.match(sink,/AsyncStorage\.setItem\(storageKey/);

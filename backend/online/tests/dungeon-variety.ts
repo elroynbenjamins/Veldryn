@@ -32,6 +32,11 @@ for(const dungeon of available){
    assert.equal(options.length,3,'Each tier has three real route choices');
    assert.equal(new Set(options.map(item=>`${item.contentId}:${item.modifierId}`)).size,3,'No duplicate route presentations');
    assert.equal(new Set(options.map(item=>item.contentId)).size,3,'Each choice must have distinct actual content');
+   if(depth===1)assert(options.every(item=>item.kind==='battle'),'First room remains a recognizable combat opener');
+   if(depth===2){
+    assert.equal(options.filter(item=>item.kind==='battle').length,2,'Second room retains two combat paths');
+    assert(['event','treasure','camp','shrine'].includes(String(options[2].kind)),'Third path is a real low-pressure utility encounter');
+   }
    assert(options.filter(item=>item.kind!=='elite').every(item=>item.modifierId==='steady'),'Non-elite options cannot silently increase dungeon pressure');
   }
  }

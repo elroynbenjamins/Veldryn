@@ -95,9 +95,9 @@ export function resolveCoopNode(input:{runId:string;serverSecret:string;node:Coo
     abilities:multipliers?player.abilities.map(ability=>{const multiplier=multipliers[ability.id];return multiplier?{...ability,effects:ability.effects.map(effect=>(effect.kind==='shield'||effect.kind==='heal')&&effect.coeff!==undefined?{...effect,coeff:effect.coeff*multiplier}:effect)}:ability;}):player.abilities,
    };
   });
-    const depthMultiplier=input.node.depth>=balance.lateDepthStart?balance.lateDepthAttackMultiplier:1;
+  const depthMultiplier=input.node.depth>=balance.lateDepthStart?balance.lateDepthAttackMultiplier:1;
   const tierScale=input.tier?coopTierEnemyMultipliers(input.tier):{attack:1,hp:1,defense:1};
-  const combat=resolveExpeditionCombat({runId:input.runId,nodeIndex:input.node.depth,encounterId:input.node.contentId,serverSeed:input.serverSecret,players,initialPlayerState:state.actors,safetyAiPlayerIds:input.safetyAiPlayerIds,enemyAttackMultiplier:(rootbound?balance.enemyAttackMultiplier*depthMultiplier:1)*tierScale.attack*(input.enemyAttackMultiplier??1),enemyHpMultiplier:tierScale.hp*(input.enemyHpMultiplier??1),enemyDefenseMultiplier:tierScale.defense*(input.enemyDefenseMultiplier??1),enemyDamageProfile:input.enemyDamageProfile,enemyLevel:input.enemyLevel,bossTuning:input.bossTuning,roomModifierId:input.node.modifierId,roomModifierElite:input.node.kind==='elite'});
+  const combat=resolveExpeditionCombat({runId:input.runId,nodeIndex:input.node.depth,encounterId:input.node.contentId,serverSeed:input.serverSecret,players,initialPlayerState:state.actors,safetyAiPlayerIds:input.safetyAiPlayerIds,enemyAttackMultiplier:(rootbound?balance.enemyAttackMultiplier*depthMultiplier:1)*tierScale.attack*(input.enemyAttackMultiplier??1),enemyHpMultiplier:tierScale.hp*(input.enemyHpMultiplier??1),enemyDefenseMultiplier:tierScale.defense*(input.enemyDefenseMultiplier??1),enemyDamageProfile:input.enemyDamageProfile,enemyLevel:input.enemyLevel,bossTuning:input.bossTuning,roomModifierId:input.node.kind==='elite'?input.node.modifierId:undefined,roomModifierElite:input.node.kind==='elite'});
   state={...state,actors:combat.endingPlayerState};
   return {success:combat.success,state,summary:{kind:'combat',...combat.resultJson,...(input.bossTuning?{bossTuningProfile:input.bossTuning.profileId}: {})}};
  }

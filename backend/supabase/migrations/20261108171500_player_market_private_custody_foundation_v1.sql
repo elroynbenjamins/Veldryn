@@ -196,8 +196,10 @@ begin
     end if;
   end if;
 
-  if pg_catalog.jsonb_typeof(v_stacks)<>'array'
-    or pg_catalog.jsonb_array_length(v_stacks)<=p_stack_index
+  if pg_catalog.jsonb_typeof(v_stacks) is distinct from 'array'
+  then return pg_catalog.jsonb_build_object('matches',false,'canReserveNow',false,'reason','source_not_found');
+  end if;
+  if pg_catalog.jsonb_array_length(v_stacks)<=p_stack_index
   then return pg_catalog.jsonb_build_object('matches',false,'canReserveNow',false,'reason','source_not_found');
   end if;
   v_stack:=v_stacks->p_stack_index;

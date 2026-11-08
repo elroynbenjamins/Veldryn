@@ -19,7 +19,9 @@ export function HuntingPreview({state,monster,regionId}:{state:GameState;monster
  const active=state.activity?.kind==='combat'&&state.activity.targetId===monster.id;
  const [clock,setClock]=useState(Date.now());
  useEffect(()=>{if(!active)return;setClock(Date.now());const timer=setInterval(()=>setClock(Date.now()),750);return()=>clearInterval(timer);},[active]);
- const fight=useMemo(()=>active?activeCombatHitProjection(state,clock):undefined,[state,active,clock]);
+ const replayCursor=useRef<import('../core/game').ActiveCombatHitCursor|undefined>(undefined);
+ const fight=useMemo(()=>active?activeCombatHitProjection(state,clock,replayCursor.current):undefined,[state,active,clock]);
+ useEffect(()=>{replayCursor.current=fight?.cursor;},[fight?.cursor]);
  const lastHit=fight?.lastHit&&clock-fight.lastHit.atMs<3500?fight.lastHit:undefined;
  const playerImpact=useRef(new Animated.Value(0)).current,enemyImpact=useRef(new Animated.Value(0)).current;
  useEffect(()=>{

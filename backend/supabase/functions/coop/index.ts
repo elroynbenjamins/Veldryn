@@ -729,7 +729,7 @@ var COOP_ROGUELITE_CONFIG = Object.freeze({
   featureFlag: "coopRogueliteV1",
   enabledByDefault: false,
   routeSchemaVersion: 1,
-  routeGeneratorVersion: "coop-route-v1",
+  routeGeneratorVersion: "coop-route-v2",
   preBossNodeMin: 5,
   preBossNodeMax: 5,
   choicesPerDepth: 3,
@@ -43476,16 +43476,16 @@ var MONSTERS_RAW = [
   { id: "MIRE_HERON", name: "Mire Heron", level: 12, hp: 166, attack: 19, defense: 9, xp: 91, gold: 5, secondsPerKill: 16, unlockLevel: 12, zone: "Silverbrook", drops: [{ itemId: "RIVER_EEL", chance: 0.35, min: 1, max: 1 }, { itemId: "WISP_DUST", chance: 0.22, min: 1, max: 1 }, { itemId: "BP_IRONWOOD_ROD", chance: 0.05, min: 1, max: 1 }] },
   { id: "FOREST_TROLL", name: "Forest Troll", level: 14, hp: 215, attack: 23, defense: 13, xp: 118, gold: 7, secondsPerKill: 19, unlockLevel: 14, zone: "Ironwood Forest", drops: [{ itemId: "TROLL_HIDE", chance: 0.32, min: 1, max: 1 }, { itemId: "WOLF_PELT", chance: 0.24, min: 1, max: 1 }, { itemId: "IRONWOOD_FANG", chance: 0.12, min: 1, max: 1 }] },
   { id: "ANCIENT_TREANT", name: "Ancient Treant", level: 15, hp: 242, attack: 24, defense: 15, xp: 132, gold: 8, secondsPerKill: 20, unlockLevel: 15, zone: "Ironwood Forest", drops: [{ itemId: "IRONWOOD_LOG", chance: 0.52, min: 1, max: 2 }, { itemId: "THORN_SAP", chance: 0.3, min: 1, max: 1 }, { itemId: "BP_OATHSTONE_HATCHET", chance: 0.02, min: 1, max: 1 }] },
-  { id: "CAVE_SKITTER", name: "Cave Skitter", level: 16, hp: 255, attack: 26, defense: 14, xp: 145, gold: 8, secondsPerKill: 20, unlockLevel: 16, zone: "Old Mines", drops: [{ itemId: "COPPER_ORE", chance: 0.44, min: 1, max: 2 }, { itemId: "ASTER_IRON_ORE", chance: 0.16, min: 1, max: 1 }, { itemId: "BP_ASTER_IRON_PICKAXE", chance: 0.05, min: 1, max: 1 }] },
+  { id: "CAVE_SKITTER", name: "Cave Skitter", level: 16, hp: 255, attack: 26, defense: 14, xp: 145, gold: 8, secondsPerKill: 20, unlockLevel: 16, zone: "Old Mines", drops: [{ itemId: "ASTER_IRON_ORE", chance: 0.16, min: 1, max: 1 }, { itemId: "BP_ASTER_IRON_PICKAXE", chance: 0.05, min: 1, max: 1 }] },
   { id: "IRONBACK_MOLE", name: "Ironback Mole", level: 17, hp: 280, attack: 27, defense: 18, xp: 158, gold: 9, secondsPerKill: 21, unlockLevel: 17, zone: "Old Mines", drops: [{ itemId: "ASTER_IRON_ORE", chance: 0.4, min: 1, max: 2 }, { itemId: "COPPER_ORE", chance: 0.3, min: 1, max: 2 }] },
   { id: "ECHO_BAT", name: "Echo Bat", level: 18, hp: 290, attack: 29, defense: 14, xp: 170, gold: 10, secondsPerKill: 21, unlockLevel: 18, zone: "Old Mines", drops: [{ itemId: "WISP_DUST", chance: 0.35, min: 1, max: 2 }, { itemId: "OATHGLASS_SHARD", chance: 0.05, min: 1, max: 1 }, { itemId: "ECHO_BAT_WING", chance: 0.28, min: 1, max: 2 }] },
   { id: "RUNEBOUND_MINER", name: "Runebound Miner", level: 19, hp: 320, attack: 31, defense: 18, xp: 185, gold: 11, secondsPerKill: 22, unlockLevel: 19, zone: "Old Mines", drops: [{ itemId: "ASTER_IRON_ORE", chance: 0.42, min: 1, max: 2 }, { itemId: "OATHGLASS_SHARD", chance: 0.08, min: 1, max: 1 }, { itemId: "ECHO_QUARTZ", chance: 0.12, min: 1, max: 1 }, { itemId: "RUNEBOUND_CORE", chance: 0.08, min: 1, max: 1 }, { itemId: "BP_OATHSTONE_PICKAXE", chance: 0.02, min: 1, max: 1 }] },
   { id: "GLOAM_MITE", name: "Gloam Mite", level: 20, hp: 335, attack: 33, defense: 18, xp: 198, gold: 12, secondsPerKill: 23, unlockLevel: 20, zone: "Greenfields", drops: [{ itemId: "WISP_DUST", chance: 0.32, min: 1, max: 2 }, { itemId: "MOSS_FIBER", chance: 0.28, min: 1, max: 2 }, { itemId: "GLOAM_DUST", chance: 0.24, min: 1, max: 1 }] },
-  { id: "LANTERN_WRETCH", name: "Lantern Wretch", level: 21, hp: 365, attack: 35, defense: 19, xp: 216, gold: 13, secondsPerKill: 24, unlockLevel: 20, zone: "King's Road", drops: [{ itemId: "WISP_DUST", chance: 0.4, min: 1, max: 2 }, { itemId: "OATHGLASS_SHARD", chance: 0.1, min: 1, max: 1 }, { itemId: "LANTERNSTEEL_SHARD", chance: 0.18, min: 1, max: 1 }, { itemId: "THORN_SAP", chance: 0.16, min: 1, max: 1 }, { itemId: "IRONWOOD_LOG", chance: 0.3, min: 1, max: 2 }] },
+  { id: "LANTERN_WRETCH", name: "Lantern Wretch", level: 21, hp: 365, attack: 35, defense: 19, xp: 216, gold: 13, secondsPerKill: 24, unlockLevel: 20, zone: "King's Road", drops: [{ itemId: "WISP_DUST", chance: 0.4, min: 1, max: 2 }, { itemId: "OATHGLASS_SHARD", chance: 0.1, min: 1, max: 1 }, { itemId: "LANTERNSTEEL_SHARD", chance: 0.18, min: 1, max: 1 }] },
   { id: "DROWNED_PILGRIM", name: "Drowned Pilgrim", level: 22, hp: 390, attack: 36, defense: 21, xp: 232, gold: 14, secondsPerKill: 25, unlockLevel: 22, zone: "Silverbrook", drops: [{ itemId: "RIVER_EEL", chance: 0.28, min: 1, max: 1 }, { itemId: "OATHGLASS_SHARD", chance: 0.12, min: 1, max: 1 }, { itemId: "BP_OATHSCALE_ROD", chance: 0.02, min: 1, max: 1 }] },
   { id: "OATHBOUND_SQUIRE", name: "Oathbound Squire", level: 22, hp: 405, attack: 37, defense: 22, xp: 240, gold: 14, secondsPerKill: 25, unlockLevel: 22, zone: "King's Road", drops: [{ itemId: "OATHGLASS_SHARD", chance: 0.18, min: 1, max: 1 }, { itemId: "TORN_OATHCLOTH", chance: 0.2, min: 1, max: 1 }, { itemId: "FALLEN_RIVET", chance: 0.2, min: 1, max: 1 }, { itemId: "TROLL_HIDE", chance: 0.18, min: 1, max: 1 }, { itemId: "IRONWOOD_FANG", chance: 0.18, min: 1, max: 1 }] },
   { id: "BANNER_SHADE", name: "Banner Shade", level: 23, hp: 435, attack: 39, defense: 22, xp: 258, gold: 15, secondsPerKill: 26, unlockLevel: 23, zone: "King's Road", drops: [{ itemId: "OATHGLASS_SHARD", chance: 0.22, min: 1, max: 1 }, { itemId: "TORN_OATHCLOTH", chance: 0.28, min: 1, max: 1 }, { itemId: "BANNER_ASH", chance: 0.28, min: 1, max: 2 }, { itemId: "LANTERNSTEEL_SHARD", chance: 0.1, min: 1, max: 1 }, { itemId: "GLOAM_DUST", chance: 0.18, min: 1, max: 1 }, { itemId: "WOLF_PELT", chance: 0.28, min: 1, max: 1 }, { itemId: "THORN_SAP", chance: 0.24, min: 1, max: 1 }] },
-  { id: "FALLEN_SENTINEL", name: "Fallen Sentinel", level: 24, hp: 475, attack: 42, defense: 25, xp: 282, gold: 17, secondsPerKill: 28, unlockLevel: 24, zone: "King's Road", drops: [{ itemId: "OATHGLASS_SHARD", chance: 0.28, min: 1, max: 1 }, { itemId: "ECHO_TOUCHED_PELT", chance: 0.12, min: 1, max: 1 }, { itemId: "TORN_OATHCLOTH", chance: 0.32, min: 1, max: 2 }, { itemId: "LANTERNSTEEL_SHARD", chance: 0.18, min: 1, max: 1 }, { itemId: "FALLEN_RIVET", chance: 0.28, min: 1, max: 2 }, { itemId: "RUNEBOUND_CORE", chance: 0.12, min: 1, max: 1 }, { itemId: "TROLL_HIDE", chance: 0.2, min: 1, max: 1 }, { itemId: "IRONWOOD_LOG", chance: 0.32, min: 1, max: 2 }] },
+  { id: "FALLEN_SENTINEL", name: "Fallen Sentinel", level: 24, hp: 475, attack: 42, defense: 25, xp: 282, gold: 17, secondsPerKill: 28, unlockLevel: 24, zone: "King's Road", drops: [{ itemId: "OATHGLASS_SHARD", chance: 0.28, min: 1, max: 1 }, { itemId: "ECHO_TOUCHED_PELT", chance: 0.12, min: 1, max: 1 }, { itemId: "TORN_OATHCLOTH", chance: 0.32, min: 1, max: 2 }, { itemId: "LANTERNSTEEL_SHARD", chance: 0.18, min: 1, max: 1 }, { itemId: "FALLEN_RIVET", chance: 0.28, min: 1, max: 2 }, { itemId: "RUNEBOUND_CORE", chance: 0.12, min: 1, max: 1 }, { itemId: "TROLL_HIDE", chance: 0.2, min: 1, max: 1 }] },
   { id: "OATHGLASS_REVENANT", name: "Oathglass Revenant", level: 25, hp: 540, attack: 45, defense: 28, xp: 315, gold: 18, secondsPerKill: 30, unlockLevel: 25, zone: "King's Road", drops: [{ itemId: "OATHGLASS_SHARD", chance: 0.34, min: 1, max: 2 }, { itemId: "OATHGLASS_FRAGMENT", chance: 0.2, min: 1, max: 1 }, { itemId: "ECHO_QUARTZ", chance: 0.15, min: 1, max: 1 }, { itemId: "ECHO_TOUCHED_PELT", chance: 0.18, min: 1, max: 1 }, { itemId: "TORN_OATHCLOTH", chance: 0.35, min: 1, max: 2 }, { itemId: "WOLF_PELT", chance: 0.25, min: 1, max: 1 }, { itemId: "IRONWOOD_FANG", chance: 0.16, min: 1, max: 1 }] },
   { id: "SUNSCAR_SCORPION", name: "Sunscar Scorpion", level: 28, hp: 610, attack: 52, defense: 31, xp: 350, gold: 21, secondsPerKill: 31, unlockLevel: 26, zone: "Sunscar", areaId: "ZONE_006", drops: [{ itemId: "SUNSTONE_ORE", chance: 0.42, min: 1, max: 2 }, { itemId: "DUNEWOOD", chance: 0.36, min: 1, max: 2 }, { itemId: "SUNSCALE", chance: 0.24, min: 1, max: 1 }, { itemId: "AMBERGLASS", chance: 0.08, min: 1, max: 1 }, { itemId: "SCORPION_VENOM", chance: 0.06, min: 1, max: 1 }] },
   { id: "DUNE_ORACLE", name: "Dune Oracle", level: 33, hp: 760, attack: 61, defense: 36, xp: 438, gold: 27, secondsPerKill: 35, unlockLevel: 31, zone: "Sunscar", areaId: "ZONE_007", drops: [{ itemId: "DUNEWOOD", chance: 0.28, min: 1, max: 2 }, { itemId: "SUNSCALE", chance: 0.3, min: 1, max: 1 }, { itemId: "AMBERGLASS", chance: 0.36, min: 1, max: 2 }, { itemId: "ASTRAL_SCRIPT", chance: 0.08, min: 1, max: 1 }, { itemId: "SWIFT_SIGIL", chance: 3e-3, min: 1, max: 1 }] },
@@ -43530,9 +43530,15 @@ var MONSTERS = MONSTERS_RAW.map((monster) => {
   const advancedScale = ADVANCED_MONSTER_REGIONS.has(monster.zone) ? ADVANCED_REGION_MONSTER_MULTIPLIER : 1;
   return {
     ...monster,
-    // Standard-enemy materials are intentionally half as likely from combat.
-    // Gathering remains the reliable source; guaranteed boss rewards stay intact.
-    drops: [...monster.drops, ...holyWater ? [{ itemId: HOLY_WATER_ID, chance: holyWater.chance, min: holyWater.min, max: holyWater.max }] : [], ...enhancementDrops(monster)].map((drop) => !monster.boss && drop.itemId !== HOLY_WATER_ID && itemDef(drop.itemId).type === "material" ? { ...drop, chance: drop.chance * 0.5 } : drop),
+    // Reduce all chance-based combat drops by 5% relative to their existing
+    // chance, including Holy Water, rare equipment and gem materials. Preserve
+    // authored guaranteed boss drops and the existing 50% standard-material rule.
+    // This single normalized table also feeds the player-visible loot preview.
+    drops: [...monster.drops, ...holyWater ? [{ itemId: HOLY_WATER_ID, chance: holyWater.chance, min: holyWater.min, max: holyWater.max }] : [], ...enhancementDrops(monster)].map((drop) => {
+      const ordinaryMaterial = !monster.boss && drop.itemId !== HOLY_WATER_ID && itemDef(drop.itemId).type === "material";
+      const relativeChanceScale = drop.chance < 1 ? 0.95 : 1;
+      return { ...drop, chance: drop.chance * (ordinaryMaterial ? 0.5 : 1) * relativeChanceScale };
+    }),
     // Idle combat uses authored cycle duration rather than HP to calculate kills.
     // Scale both the displayed combat stats and cycle time, so 20% more HP
     // actually costs time; leave XP, loot chances, and early regions untouched.
@@ -47814,6 +47820,27 @@ function rootWarden() {
   const base = enemy("ROOT_WARDEN", "Runebound Bulwark", 13500, 430, 900, 1.25);
   return withPveIdentity({ ...base, boss: false, abilities: [...base.abilities, pveBarrier("ROOT_WARDEN_WARD", "Root Ward", 1250, 12e3)] }, "guardian", ["heavy_hit", "barrier"]);
 }
+function rootBrambleElite() {
+  const base = enemy("ROOT_ELITE_BRAMBLE", "Bramble Reaver", 13200, 430, 850, 1.1);
+  return withPveIdentity({ ...base, abilities: [
+    pveFocusStrike("ROOT_ELITE_BRAMBLE_HUNT", "Bramble Hunt", "nature", 0.91, 7900),
+    pveDotWave("ROOT_ELITE_BRAMBLE_TANGLE", "Tangled Thorns", "nature", 0.3, 11900)
+  ] }, "assassin", ["focus", "aoe", "dot"]);
+}
+function rootMyceliumElite() {
+  const base = enemy("ROOT_ELITE_MYCELIUM", "Mycelial Oracle", 12500, 400, 810, 1);
+  return withPveIdentity({ ...base, abilities: [
+    pveAllyMend("ROOT_ELITE_MYCELIUM_MEND", "Fungal Renewal", 850, 11e3),
+    pveDotWave("ROOT_ELITE_MYCELIUM_SPORES", "Spore Tempest", "nature", 0.29, 12300)
+  ] }, "support", ["sustain", "aoe", "dot"]);
+}
+function lanternCantor() {
+  const base = enemy("LANTERN_ELITE_03", "Mourning Cantor", 12800, 440, 790, 1.1);
+  return withPveIdentity({ ...base, abilities: [
+    pveHex("LANTERN_ELITE_03_HEX", "Mourning Verse", "shadow", 0.62, 9500),
+    pveDotWave("LANTERN_ELITE_03_DIRGE", "Shadow Dirge", "shadow", 0.29, 13100)
+  ] }, "hexer", ["vulnerability", "dot", "aoe"]);
+}
 function lanternPilgrim() {
   return withPveIdentity({
     id: "LANTERN_PILGRIM_1",
@@ -47860,12 +47887,14 @@ for (const [index, id] of rootBattleIds.entries()) {
     variedEnemy(enemy(`${id}_B`, ["Sporeling", "Thornling", "Sap Husk", "Briar Hound", "Rootbound Husk"][index], 4100 + index * 300, 300 + index * 12, 520 + index * 30, 0.92 + index * 0.04), rootBattleArchetypes[index][1])
   ];
 }
-for (const id of ["ROOT_ELITE_BRAMBLE", "ROOT_ELITE_WARDEN", "ROOT_ELITE_MYCELIUM"]) ASTERFALL_ENCOUNTERS[id] = () => [rootWarden()];
+ASTERFALL_ENCOUNTERS.ROOT_ELITE_BRAMBLE = () => [rootBrambleElite()];
+ASTERFALL_ENCOUNTERS.ROOT_ELITE_WARDEN = () => [rootWarden()];
+ASTERFALL_ENCOUNTERS.ROOT_ELITE_MYCELIUM = () => [rootMyceliumElite()];
 ASTERFALL_ENCOUNTERS.BOSS_EXP_ROOT = () => [rootBoss()];
 ASTERFALL_ENCOUNTERS.LANTERN_BATTLE_02 = () => [variedEnemy(enemy("LANTERN_SHADE_1", "Banner Shade", 5e3, 360, 590, 1.02), "hexer", "shadow"), variedEnemy(enemy("LANTERN_SHADE_2", "Echo Bat", 4300, 340, 520, 0.94), "assassin", "physical")];
 ASTERFALL_ENCOUNTERS.LANTERN_BATTLE_03 = () => [lanternPilgrim(), enemy("LANTERN_PILGRIM_2", "Lantern Wretch", 4700, 355, 570, 1)];
 ASTERFALL_ENCOUNTERS.LANTERN_ELITE_02 = () => [bellSentinel("LANTERN_KNIGHT", "Fallen Lantern Knight", 13200, 460, 880)];
-ASTERFALL_ENCOUNTERS.LANTERN_ELITE_03 = () => [bellSentinel()];
+ASTERFALL_ENCOUNTERS.LANTERN_ELITE_03 = () => [lanternCantor()];
 ASTERFALL_ENCOUNTERS.BOSS_EXP_BELL = () => [bellBoss()];
 
 // src/server/combat/content/sunscar-encounters.ts
@@ -48326,6 +48355,54 @@ function buildPveSimulationTelemetry(result, encounterId) {
   };
 }
 
+// src/server/expeditions/coop-room-modifiers.ts
+var COOP_ROOM_MODIFIERS = {
+  steady: { name: "Steady", description: "Standard encounter. No extra effects." },
+  thorned: { name: "Thorned", description: "Enemies spread damaging thorns over time." },
+  volatile: { name: "Volatile", description: "More aggressive enemies with lower health and an interruptible blast." },
+  warded: { name: "Warded", description: "Enemies have stronger defenses and can raise a barrier." },
+  swift: { name: "Swift", description: "Enemies attack more quickly but have slightly less health." },
+  attrition: { name: "Attrition", description: "Enemies endure longer and can reduce incoming healing." }
+};
+var isCoopRoomModifier = (value) => Object.prototype.hasOwnProperty.call(COOP_ROOM_MODIFIERS, value);
+function applyCoopRoomModifier(enemy4, id, index, eliteAbilities = false) {
+  if (!eliteAbilities || !id || !isCoopRoomModifier(id) || id === "steady") return enemy4;
+  const stats6 = { ...enemy4.stats };
+  let basicAttackMs = enemy4.basicAttackMs;
+  const abilities = [...enemy4.abilities];
+  switch (id) {
+    case "thorned":
+      stats6.maxHp *= 1.006;
+      if (index === 0 && eliteAbilities) {
+        const thorns = pveDotWave(`${enemy4.id}_ROOM_THORNS`, "Thorn Barrage", "nature", 0.08, 19500);
+        abilities.push({ ...thorns, effects: thorns.effects.map((effect2) => effect2.kind === "dot" ? { ...effect2, coeff: 8e-3 } : effect2) });
+      }
+      break;
+    case "volatile":
+      stats6.maxHp *= 0.985;
+      stats6.attackPower *= 1.012;
+      if (index === 0 && eliteAbilities) abilities.push(pveInterruptibleWave(`${enemy4.id}_ROOM_BLAST`, "Unstable Surge", "arcane", 0.08, 19e3, 1300));
+      break;
+    case "warded":
+      stats6.defense *= 1.018;
+      if (index === 0 && eliteAbilities) abilities.push(pveBarrier(`${enemy4.id}_ROOM_WARD`, "Defensive Ward", Math.round(stats6.maxHp * 0.013), 21e3));
+      break;
+    case "swift":
+      stats6.maxHp *= 0.996;
+      stats6.haste = Math.min(0.5, stats6.haste + 0.012);
+      basicAttackMs = Math.max(1400, Math.round(basicAttackMs * 0.98));
+      break;
+    case "attrition":
+      stats6.maxHp *= 1.009;
+      if (index === 0 && eliteAbilities) {
+        const wither = pveHealingPressure(`${enemy4.id}_ROOM_WITHER`, "Withering Pressure", "shadow", 0.065, 21e3);
+        abilities.push({ ...wither, effects: wither.effects.map((effect2) => effect2.kind === "debuff" ? { ...effect2, value: -0.06 } : effect2) });
+      }
+      break;
+  }
+  return { ...enemy4, stats: stats6, basicAttackMs, abilities };
+}
+
 // src/server/combat/expedition-combat-service.ts
 function expeditionEncounterPreview(encounterId) {
   const factory = EXPEDITION_ENCOUNTERS[encounterId];
@@ -48339,10 +48416,10 @@ function buildExpeditionEncounter(input) {
   const factory = EXPEDITION_ENCOUNTERS[input.encounterId];
   if (!factory) throw new Error(`unknown_encounter:${input.encounterId}`);
   const tuning = input.bossTuning, removed = new Set(tuning?.removeAbilityIds ?? []);
-  return factory().map((enemy4) => {
+  return factory().map((enemy4, index) => {
     const levelRatio = input.enemyLevel === void 0 ? 1 : Math.max(0.65, Math.min(1.2, input.enemyLevel / Math.max(1, enemy4.level)));
     const base = { ...enemy4, level: input.enemyLevel ?? enemy4.level, stats: { ...enemy4.stats, maxHp: enemy4.stats.maxHp * levelRatio * (input.enemyHpMultiplier ?? 1), attackPower: enemy4.stats.attackPower * levelRatio * (input.enemyAttackMultiplier ?? 1), defense: enemy4.stats.defense * levelRatio * (input.enemyDefenseMultiplier ?? 1) } };
-    if (!base.boss || !tuning) return base;
+    if (!base.boss || !tuning) return applyCoopRoomModifier(base, input.roomModifierId, index, input.roomModifierElite);
     const abilities = base.abilities.filter((ability3) => !removed.has(ability3.id)).map((ability3) => {
       const damageMultiplier = tuning.abilityDamageMultipliers?.[ability3.id] ?? 1, cooldownMultiplier = tuning.abilityCooldownMultipliers?.[ability3.id] ?? 1;
       return { ...ability3, cooldownMs: Math.max(500, Math.round(ability3.cooldownMs * cooldownMultiplier)), effects: ability3.effects.map((effect2) => (effect2.kind === "damage" || effect2.kind === "dot") && effect2.coeff !== void 0 ? { ...effect2, coeff: effect2.coeff * damageMultiplier } : effect2) };
@@ -48350,7 +48427,7 @@ function buildExpeditionEncounter(input) {
     for (const added of tuning.addAbilities ?? []) if (!abilities.some((ability3) => ability3.id === added.id)) abilities.push(structuredClone(added));
     const phases = [...base.phases ?? []];
     for (const added of tuning.addPhases ?? []) if (!phases.some((phase2) => phase2.id === added.id)) phases.push(structuredClone(added));
-    return { ...base, abilities, phases };
+    return applyCoopRoomModifier({ ...base, abilities, phases }, input.roomModifierId, index, input.roomModifierElite);
   });
 }
 function publicReplay(result, initialPlayerState) {
@@ -48554,11 +48631,19 @@ function resolveCoopNode(input) {
     const rootbound = input.node.contentId.startsWith("ROOT") || input.node.contentId === "BOSS_EXP_ROOT", balance = input.rootboundBalance ?? ROOTBOUND_COOP_BALANCE_V2;
     const strikes = state.boons.filter((id) => id === "ROOM_BOON_STRIKE").length;
     const wards = state.boons.filter((id) => id === "ROOM_BOON_WARD").length;
+    const roomBlessings = Math.min(5, state.boons.filter((id) => id.includes(":")).length);
+    const sharedArtifacts = Math.min(5, state.artifacts.length);
+    const curses = Math.min(5, state.curses.length);
     const players = input.players.map((player2) => {
       const multipliers = COOP_CLASS_ABILITY_MULTIPLIERS[player2.classId?.toUpperCase() ?? ""];
+      const personal = state.personalEffects[player2.id];
+      const personalBlessings = Math.min(3, personal?.boons.length ?? 0);
+      const personalArtifacts = Math.min(3, personal?.artifacts.length ?? 0);
+      const attackMultiplier = 1 + strikes * 0.05 + roomBlessings * 0.012 + sharedArtifacts * 0.018 + personalBlessings * 0.025 + personalArtifacts * 0.024;
+      const defenseMultiplier = Math.max(0.8, 1 + wards * 0.05 + roomBlessings * 8e-3 + sharedArtifacts * 0.012 + personalArtifacts * 0.018 - curses * 0.035);
       return {
         ...player2,
-        stats: strikes || wards ? { ...player2.stats, attackPower: player2.stats.attackPower * (1 + strikes * 0.05), defense: player2.stats.defense * (1 + wards * 0.05) } : player2.stats,
+        stats: { ...player2.stats, attackPower: player2.stats.attackPower * attackMultiplier, defense: player2.stats.defense * defenseMultiplier },
         abilities: multipliers ? player2.abilities.map((ability3) => {
           const multiplier = multipliers[ability3.id];
           return multiplier ? { ...ability3, effects: ability3.effects.map((effect2) => (effect2.kind === "shield" || effect2.kind === "heal") && effect2.coeff !== void 0 ? { ...effect2, coeff: effect2.coeff * multiplier } : effect2) } : ability3;
@@ -48567,7 +48652,7 @@ function resolveCoopNode(input) {
     });
     const depthMultiplier = input.node.depth >= balance.lateDepthStart ? balance.lateDepthAttackMultiplier : 1;
     const tierScale = input.tier ? coopTierEnemyMultipliers(input.tier) : { attack: 1, hp: 1, defense: 1 };
-    const combat = resolveExpeditionCombat({ runId: input.runId, nodeIndex: input.node.depth, encounterId: input.node.contentId, serverSeed: input.serverSecret, players, initialPlayerState: state.actors, safetyAiPlayerIds: input.safetyAiPlayerIds, enemyAttackMultiplier: (rootbound ? balance.enemyAttackMultiplier * depthMultiplier : 1) * tierScale.attack * (input.enemyAttackMultiplier ?? 1), enemyHpMultiplier: tierScale.hp * (input.enemyHpMultiplier ?? 1), enemyDefenseMultiplier: tierScale.defense * (input.enemyDefenseMultiplier ?? 1), enemyDamageProfile: input.enemyDamageProfile, enemyLevel: input.enemyLevel, bossTuning: input.bossTuning });
+    const combat = resolveExpeditionCombat({ runId: input.runId, nodeIndex: input.node.depth, encounterId: input.node.contentId, serverSeed: input.serverSecret, players, initialPlayerState: state.actors, safetyAiPlayerIds: input.safetyAiPlayerIds, enemyAttackMultiplier: (rootbound ? balance.enemyAttackMultiplier * depthMultiplier : 1) * tierScale.attack * (input.enemyAttackMultiplier ?? 1), enemyHpMultiplier: tierScale.hp * (input.enemyHpMultiplier ?? 1), enemyDefenseMultiplier: tierScale.defense * (input.enemyDefenseMultiplier ?? 1), enemyDamageProfile: input.enemyDamageProfile, enemyLevel: input.enemyLevel, bossTuning: input.bossTuning, roomModifierId: input.node.kind === "elite" ? input.node.modifierId : void 0, roomModifierElite: input.node.kind === "elite" });
     state = { ...state, actors: combat.endingPlayerState };
     return { success: combat.success, state, summary: { kind: "combat", ...combat.resultJson, ...input.bossTuning ? { bossTuningProfile: input.bossTuning.profileId } : {} } };
   }
@@ -48586,11 +48671,18 @@ function resolveCoopNode(input) {
     case "secret":
       state = { ...state, artifacts: [...state.artifacts, `${input.node.contentId}:${roll}`] };
       break;
-    case "risk":
-      state = { ...state, curses: [...state.curses, `${input.node.contentId}:${roll}`], resources: state.resources + 2 };
+    case "risk": {
+      const actors = { ...state.actors };
+      for (const player2 of input.players) {
+        const actor = actors[player2.id];
+        if (!actor || actor.downed) continue;
+        actors[player2.id] = { ...actor, hp: Math.max(1, actor.hp - player2.stats.maxHp * 0.06) };
+      }
+      state = { ...state, actors, curses: [...state.curses, `${input.node.contentId}:${roll}`], resources: state.resources + 2 };
       break;
+    }
     case "event":
-      state = { ...state, resources: state.resources + 1 };
+      state = { ...state, resources: state.resources + 1, boons: [...state.boons, `${input.node.contentId}:${roll}`] };
       break;
     case "merchant":
       state = { ...state };
@@ -48598,12 +48690,14 @@ function resolveCoopNode(input) {
   }
   const healedHp = input.players.reduce((total, player2) => total + Math.max(0, (state.actors[player2.id]?.hp ?? 0) - (input.state.actors[player2.id]?.hp ?? 0)), 0);
   const revivedCount = input.players.filter((player2) => input.state.actors[player2.id]?.downed && !state.actors[player2.id]?.downed).length;
+  const damagedHp = input.players.reduce((total, player2) => total + Math.max(0, (input.state.actors[player2.id]?.hp ?? 0) - (state.actors[player2.id]?.hp ?? 0)), 0);
   return { success: true, state, summary: {
     kind: input.node.kind,
     roll,
     resourcesDelta: state.resources - input.state.resources,
     healedHp,
     revivedCount,
+    damagedHp,
     boonCount: state.boons.length - input.state.boons.length,
     artifactCount: state.artifacts.length - input.state.artifacts.length,
     curseCount: state.curses.length - input.state.curses.length,
@@ -48685,7 +48779,12 @@ function coopContentPool(expeditionId, kind) {
 // src/server/expeditions/route-generation.ts
 var MODIFIERS = ["steady", "thorned", "volatile", "warded", "swift", "attrition"];
 function coopKind(secret, expeditionId, runId, contentVersion, balanceVersion, depth, choice) {
-  if (depth <= 2) return "battle";
+  if (depth === 1) return "battle";
+  if (depth === 2) {
+    if (choice < 2) return "battle";
+    const utility = ["event", "treasure", "camp", "shrine"];
+    return utility[deterministicInt(secret, 0, utility.length - 1, "coop-route-opening-v2", runId, expeditionId, contentVersion, balanceVersion)];
+  }
   if (choice === 0) return "battle";
   if (depth === 3 && choice === 1) return "camp";
   const def = EXPEDITIONS[expeditionId];
@@ -48709,12 +48808,16 @@ function generateCoopRouteGraph(secret, expeditionId, runId, contentVersion, bal
   nodes.push({ nodeId: "entry", depth: 0, kind: "entry", contentId: "COOP_ENTRY", modifierId: "none", risk: 1, rewardTag: "none", nextNodeIds: idsAt(1) });
   for (let depth = 1; depth <= preBossNodeCount; depth++) {
     const layerModifierOffset = deterministicInt(secret, 0, MODIFIERS.length - 1, generatorVersion, runId, expeditionId, contentVersion, balanceVersion, "modifier-layer", depth);
+    const usedContentIds = /* @__PURE__ */ new Set();
     for (let choice = 0; choice < COOP_ROGUELITE_CONFIG.choicesPerDepth; choice++) {
       const kind = coopKind(secret, expeditionId, runId, contentVersion, balanceVersion, depth, choice);
       const contentPool = coopContentPool(expeditionId, kind);
-      const contentIndex = deterministicInt(secret, 0, contentPool.length - 1, generatorVersion, runId, expeditionId, contentVersion, balanceVersion, "content", depth, choice);
+      let contentIndex = deterministicInt(secret, 0, contentPool.length - 1, generatorVersion, runId, expeditionId, contentVersion, balanceVersion, "content", depth, choice);
+      while (usedContentIds.has(contentPool[contentIndex])) contentIndex = (contentIndex + 1) % contentPool.length;
+      const contentId = contentPool[contentIndex];
+      usedContentIds.add(contentId);
       const modifierIndex = (layerModifierOffset + choice) % MODIFIERS.length;
-      nodes.push({ nodeId: `d${depth}-c${choice}`, depth, kind, contentId: contentPool[contentIndex], modifierId: MODIFIERS[modifierIndex], risk: kind === "risk" ? 1.15 : kind === "elite" ? 1.08 : 1, rewardTag: kind, nextNodeIds: depth === preBossNodeCount ? ["boss"] : idsAt(depth + 1) });
+      nodes.push({ nodeId: `d${depth}-c${choice}`, depth, kind, contentId, modifierId: kind === "elite" ? MODIFIERS[modifierIndex] : "steady", risk: kind === "risk" ? 1.15 : kind === "elite" ? 1.08 : 1, rewardTag: kind, nextNodeIds: depth === preBossNodeCount ? ["boss"] : idsAt(depth + 1) });
     }
   }
   nodes.push({ nodeId: "boss", depth: preBossNodeCount + 1, kind: "boss", contentId: def.bossId, modifierId: "final", risk: 1.25, rewardTag: "boss", nextNodeIds: [] });
@@ -48762,7 +48865,8 @@ function validateCoopRouteGraph(graph2, limits) {
   for (let depth = 1; depth <= graph2.preBossNodeCount; depth++) {
     const layer = graph2.nodes.filter((node) => node.depth === depth);
     if (layer.length < 3) throw new Error("insufficient_route_layer");
-    if (depth <= 2 && layer.some((node) => node.kind !== "battle")) throw new Error("mandatory_combat_missing");
+    if (depth === 1 && layer.some((node) => node.kind !== "battle")) throw new Error("mandatory_combat_missing");
+    if (depth === 2 && layer.filter((node) => node.kind === "battle").length < 2) throw new Error("opening_combat_missing");
     if (depth > 2 && !layer.some((node) => node.kind === "battle")) throw new Error("combat_option_missing");
   }
   if (!graph2.nodes.some((node) => node.kind === "camp" || node.kind === "shrine")) throw new Error("recovery_option_missing");
@@ -49116,7 +49220,7 @@ function publicCoopRoomOutcome(nodeId, summary) {
   if (typeof kind !== "string" || !["camp", "shrine", "forge", "treasure", "secret", "event", "risk", "echo", "merchant", "merchant_purchase"].includes(kind)) return void 0;
   const count = (key) => typeof summary[key] === "number" && Number.isFinite(summary[key]) ? Math.max(0, summary[key]) : 0;
   const delta = typeof summary.resourcesDelta === "number" && Number.isFinite(summary.resourcesDelta) ? summary.resourcesDelta : 0;
-  return { nodeId, kind, resourcesDelta: delta, healedHp: count("healedHp"), revivedCount: count("revivedCount"), boonCount: count("boonCount"), artifactCount: count("artifactCount"), curseCount: count("curseCount"), ...kind === "merchant_purchase" && typeof summary.offerKind === "string" ? { offerKind: summary.offerKind } : {} };
+  return { nodeId, kind, resourcesDelta: delta, healedHp: count("healedHp"), damagedHp: count("damagedHp"), revivedCount: count("revivedCount"), boonCount: count("boonCount"), artifactCount: count("artifactCount"), curseCount: count("curseCount"), ...kind === "merchant_purchase" && typeof summary.offerKind === "string" ? { offerKind: summary.offerKind } : {} };
 }
 function projectQModeRun(run, mode = "qmode", serverSecret) {
   const current = run.graph.nodes.find((node) => node.nodeId === run.currentNodeId);
@@ -49753,9 +49857,12 @@ var OnlineLiveRuntime = class {
     const loaded = await this.services.rpc("load_coop_runtime_server_v1", { p_run_id: runId, p_actor_account_id: accountId });
     if (loaded.clientProjection?.mode !== "live") throw new GameplayError("not_live_run", 404);
     if (loaded.privateState.pending) throw new GameplayError("node_resolving", 409);
+    const current = loaded.privateState.run.graph.nodes.find((node) => node.nodeId === loaded.privateState.run.currentNodeId);
+    if (!current || current.nextNodeIds.length !== 1) throw new GameplayError("live_vote_required", 409);
+    if (request.optionId !== current.nextNodeIds[0]) throw new GameplayError("invalid_option", 409);
     if (request.decisionRevision !== loaded.stateVersion || request.decisionId !== loaded.privateState.run.currentNodeId) throw new GameplayError("stale_state", 409);
     const presence = await this.touch(accountId, runId, loaded);
-    return this.queueSelected(accountId, runId, request, loaded, request.optionId, hash, presence.safetyAiCharacterIds);
+    return this.queueSelected(accountId, runId, request, loaded, current.nextNodeIds[0], hash, presence.safetyAiCharacterIds);
   }
   async vote(accountId, runId, request) {
     const hash = hashRequest(request);
@@ -49772,7 +49879,8 @@ var OnlineLiveRuntime = class {
     if (!decision || decision.decisionId !== request.decisionId || decision.revision !== request.decisionRevision) throw new GameplayError("stale_decision", 409);
     const result = await this.services.rpc("record_online_live_vote_server_v1", { p_run_id: runId, p_account_id: accountId, p_decision_id: request.decisionId, p_revision: request.decisionRevision, p_option_id: request.optionId, p_request_id: request.requestId, p_request_hash: hash });
     if (result.status !== "resolved") return this.withPresence(this.decorate(loaded.clientProjection, result), presence);
-    return this.queueSelected(accountId, runId, request, loaded, result.selectedOptionId ?? request.optionId, hash, presence.safetyAiCharacterIds);
+    if (!result.selectedOptionId) throw new GameplayError("decision_missing_selection", 409);
+    return this.queueSelected(accountId, runId, request, loaded, result.selectedOptionId, hash, presence.safetyAiCharacterIds);
   }
   async chat(accountId, runId, requestId, body) {
     return this.services.rpc("online_live_party_chat_server_v1", { p_run_id: runId, p_account_id: accountId, p_request_id: body === void 0 ? null : requestId, p_body: body === void 0 ? null : body });

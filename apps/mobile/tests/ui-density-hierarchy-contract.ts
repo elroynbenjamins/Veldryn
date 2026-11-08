@@ -260,14 +260,15 @@ ok(dungeonDeepLinkScreen.includes('dungeons.find(item=>item.id===initialDungeonI
 ok(dungeonDeepLinkScreen.includes('That dungeon source is not currently available in the dungeon catalog.'),'Invalid or stale dungeon deep links must fail visibly instead of silently dropping the player on a generic list');
 
 const world=read('src/screens/WorldScreen.tsx');
-ok(world.includes('currentCard:{minHeight:184')&&world.includes('<ZoneSceneArtwork regionId={current.id}/>'),"World current-region card must use the dedicated wide hero artwork");
-ok(world.includes('destination:{minHeight:92'),'World destination cards must remain compact');
+const worldNavigator=read('src/components/WorldChapterNavigator.tsx');
+ok(worldNavigator.includes('current:{flexDirection')&&worldNavigator.includes('<ZoneSceneArtwork regionId={current.id}/>'),"World current-region card must use the dedicated region artwork");
+ok(worldNavigator.includes('chapterHeader:{flexDirection')&&worldNavigator.includes('locationHeader:{flexDirection'),'World chapter and location rows must remain compact');
 ok(!world.includes('CURRENT REGION CONTENT')&&!world.includes('What can I do in {current.name}?'),'World must not show the redundant current-region action panel');
-ok(world.indexOf('{sunscar&&')<world.indexOf('TRAVEL ELSEWHERE')&&world.indexOf('{frostmarch&&')<world.indexOf('TRAVEL ELSEWHERE'),'Region-specific Sunscar/Frostmarch content must appear before the travel-away list');
-ok(world.includes('NEXT REGION UNLOCK')&&world.includes("unlockTrack:{height:5"),'World travel section must show compact next-region level progress');
-ok(world.includes('orderedTravelRegions(state,current.id,goalRegionId)'),'World travel ordering must reuse the core goal-aware unlocked-first ordering helper');
-ok(world.includes('OBJECTIVE ROUTE')&&world.includes('Your current objective continues in'),'World route guidance must remain truthful for both Working Toward and Journal region deep links');
-ok(world.includes("destinationContent:{fontSize:10"),'Travel destinations must preview authored content without making cards excessively tall');
+ok(world.includes('<WorldChapterNavigator')&&world.includes('extraContent?<View'),'Region-specific content must stay within the World navigator before chapter exploration');
+ok(worldNavigator.includes('NEXT REGION UNLOCK')&&worldNavigator.includes('track:{height:4'),'World travel section must show compact next-region level progress');
+ok(worldNavigator.includes('WORLD_CHAPTER_GROUPS')&&worldNavigator.includes('CHAPTER_ROWS'),'World travel must group authored regions into chapters');
+ok(worldNavigator.includes('OBJECTIVE ROUTE')&&worldNavigator.includes('currentGoal'),'World route guidance must remain truthful for Working Toward region deep links');
+ok(worldNavigator.includes('description:{fontSize:11')&&worldNavigator.includes('activityCount:{fontSize:10'),'Travel locations must preview authored content without making rows excessively tall');
 ok(!world.includes('Open Co-op Expeditions'),'World must not keep a duplicate standalone co-op panel after adding co-op to current-region quick actions');
 
 const character=read('src/screens/CharacterScreen.tsx');
@@ -410,9 +411,9 @@ ok(friends.includes('<GameButton compact title={st("Decline")} tone="secondary"'
 const characterPolish=read('src/screens/CharacterScreen.tsx');
 ok(characterPolish.includes('<GameButton compact title={selectedDecision.upgrade.canAfford?')&&characterPolish.includes('selectedDecision.upgrade.successChance')&&characterPolish.includes("openEnhancement('upgrade')"),"Selected equipment actions must remain compact even when the enhancement chance is surfaced");
 
-const worldPolish=read('src/screens/WorldScreen.tsx');
-ok(worldPolish.includes("backgroundColor:C.dark?'rgba(5,12,20,.64)':'rgba(255,255,255,.68)'"),'World artwork overlay must preserve text contrast in dark and light themes');
-ok(worldPolish.includes("backgroundColor:C.dark?'rgba(8,17,29,.80)':'rgba(255,255,255,.90)'"),'World locked-region overlay must be theme-safe');
+const worldPolish=read('src/components/WorldChapterNavigator.tsx');
+ok(worldPolish.includes('currentArtwork:{width:72')&&worldPolish.includes('current:{flexDirection')&&worldPolish.includes('backgroundColor:C.panel'),'World current-location artwork must remain separate from theme-safe text content');
+ok(worldPolish.includes('locationSelected:{borderColor:C.selectionLine,backgroundColor:C.panel}')&&worldPolish.includes('statusMuted:{color:C.muted}'),'World locked-region states must remain theme-safe');
 
 const encounterList=read('src/components/RegionEncounterList.tsx');
 ok(encounterList.includes('BASELINE REWARDS')&&encounterList.includes('rewardValue')&&encounterList.includes('readiness.safety'),'Expanded encounters must expose compact reward and readiness context');

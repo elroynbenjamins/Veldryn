@@ -6997,7 +6997,7 @@ export const socialCatalogs=Object.fromEntries(SUPPORTED_LANGUAGES.map((language
 export const socialText=createTranslator(socialCatalogs);
 export function useSocialText(preferredLanguage?:Language){
  const contextLanguage=useGameLanguage(),language=preferredLanguage??contextLanguage;
- return useMemo(()=>(key:SocialMessageKey,params?:TranslationParams)=>socialText(language,key,params),[language]);
+ return useMemo(()=>(key:string,params?:TranslationParams)=>socialText(language,key as SocialMessageKey,params),[language]);
 }
 
 // Only for labels from controlled UI/content definitions, never player-authored text.

@@ -5,13 +5,14 @@ const read=(path:string)=>fs.readFileSync(path,'utf8');
 
 const worldMap=read('src/content/world-map.ts');
 const world=read('src/screens/WorldScreen.tsx');
+const chapters=read('src/components/WorldChapterNavigator.tsx');
 const scenes=read('src/components/ZoneSceneArtwork.tsx');
 const monsters=read('src/content/monsters.ts');
 
 ok(worldMap.includes("availability:'inDevelopment'")&&worldMap.includes("id:'VEILLANDS'"),'Future region must remain represented as In Development');
-ok(world.includes('title={unlocked?t("Travel"):inDevelopment?t("In development"):t("Locked")}'),'Travel cards must distinguish localized Available, Locked and In Development states');
-ok(!world.includes('TravelRegionModal'),'World travel must not render a destination modal');
-ok(world.includes('inDevelopment?t("In Development")'),'World destination cards must visibly label future regions in the selected language');
+ok(chapters.includes("development?t('In Development')")&&chapters.includes("!access?t('Locked')")&&chapters.includes("title={t('Travel')}"),'Inline destination rows must distinguish Available, Locked and In Development states');
+ok(!world.includes('TravelRegionModal')&&!chapters.includes('TravelRegionModal'),'World travel must not render a destination modal');
+ok(chapters.includes("development?t('In Development')"),'World chapters must visibly label future regions in the selected language');
 ok(scenes.includes('regionScenes[regionId]')&&scenes.includes('resizeMode="cover"'),"Travel cards must use dedicated full-card panoramas");
 
 const coverageFiles=[

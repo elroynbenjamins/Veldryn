@@ -30,6 +30,7 @@ export const companionPortraits=new Map<string,ImageSourcePropType>([
 
 /** Veillands artwork is a preview; availability remains controlled by world content. */
 export const regionScenes:Readonly<Record<string,ImageSourcePropType>>={
+  ASTERFALL_HEARTLANDS:require('../../assets/world/chapters-v1/asterfall-heartlands-pixel-v1.webp'),
   GREENFIELDS:require('../../assets/world/regions-v2/greenfields-pixel-v2.jpg'),
   SILVERBROOK:require('../../assets/world/regions-v2/silverbrook-pixel-v1.jpg'),
   IRONWOOD:require('../../assets/world/regions-v2/ironwood-forest-pixel-v1.jpg'),
@@ -39,4 +40,14 @@ export const regionScenes:Readonly<Record<string,ImageSourcePropType>>={
   FROSTMARCH:require('../../assets/world/regions-v2/frostmarch-pixel-v1.jpg'),
   ASHLANDS:require('../../assets/world/regions-v2/ashlands-pixel-v1.jpg'),
   VEILLANDS:require('../../assets/world/regions-v2/veillands-pixel-v1.jpg'),
+  ZONE_006:require('../../assets/world/chapters-v1/saffron-gate-pixel-v1.webp'),
+  ZONE_007:require('../../assets/world/chapters-v1/scorchwind-flats-pixel-v1.webp'),
+  ZONE_008:require('../../assets/world/chapters-v1/mirage-basin-pixel-v1.webp'),
+  ZONE_009:require('../../assets/world/chapters-v1/tyrants-crown-pixel-v1.webp'),
+  ZONE_010:require('../../assets/world/chapters-v1/tyrants-crown-pixel-v1.webp'),
+  ZONE_011:require('../../assets/world/chapters-v1/thawgate-pixel-v1.webp'),
+  ZONE_012:require('../../assets/world/chapters-v1/whitepine-reach-pixel-v1.webp'),
+  ZONE_013:require('../../assets/world/chapters-v1/shiverlake-pixel-v1.webp'),
+  ZONE_014:require('../../assets/world/chapters-v1/wyrmspine-pixel-v1.webp'),
+  ZONE_015:require('../../assets/world/chapters-v1/wyrmspine-pixel-v1.webp'),
 };

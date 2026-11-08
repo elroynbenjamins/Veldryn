@@ -93,7 +93,11 @@ const STAGE_SUPPLY_SHARES: readonly [number, number, number] = [0.4, 0.4, 0.2];
 const CATEGORIES: readonly ResourceCategory[] = ['wood', 'ore', 'herb'];
 const TIERS: readonly ResourceTier[] = ['common', 'uncommon', 'advanced'];
 const MS_PER_WEEK = 7 * 24 * 60 * 60 * 1000;
-const ROTATION_EPOCH_MONDAY = Date.UTC(2026, 10, 9);
+/** One 7-day event, then 14 days without any Party Event. */
+export const PARTY_EVENT_CADENCE_WEEKS = 3;
+export const PARTY_EVENT_ACTIVE_WEEKS = 1;
+/** Calendar anchor only, NOT a launch date. Live feature gate remains disabled. */
+export const PARTY_EVENT_CALENDAR_EPOCH_MS = Date.UTC(2026, 10, 9);
 
 /** UTC week boundary, independent of player timezone and daylight-saving time. */
 export function partyEventWeekWindow(atMs: number): { startsAtMs: number; endsAtMs: number; weekKey: string } {
@@ -104,10 +108,45 @@ export function partyEventWeekWindow(atMs: number): { startsAtMs: number; endsAt
   return { startsAtMs: monday, endsAtMs: monday + MS_PER_WEEK, weekKey: new Date(monday).toISOString().slice(0, 10) };
 }
 
-export function partyEventFamilyForWeek(atMs: number): WeeklyPartyFamily {
-  const { startsAtMs } = partyEventWeekWindow(atMs);
-  const week = Math.floor((startsAtMs - ROTATION_EPOCH_MONDAY) / MS_PER_WEEK);
-  return FAMILIES[((week % FAMILIES.length) + FAMILIES.length) % FAMILIES.length]!;
+export interface PartyEventCadence {
+  active: boolean;
+  /** UTC Monday of the current three-week cycle's event. */
+  eventStartsAtMs: number;
+  eventEndsAtMs: number;
+  nextEventStartsAtMs: number;
+  /** Increments only after each three-week cycle, not every week. */
+  cycleIndex: number;
+  family: WeeklyPartyFamily;
+}
+
+/**
+ * Three-week cycle: 7 days active, 14 days off. Calendar alone never exposes
+ * or launches the event; the private server gate must also authorize it.
+ */
+export function partyEventCadenceAt(atMs: number): PartyEventCadence {
+  if (!Number.isFinite(atMs)) throw new Error('invalid_party_event_time');
+  const week = partyEventWeekWindow(atMs);
+  const weeksSinceEpoch = Math.floor((week.startsAtMs - PARTY_EVENT_CALENDAR_EPOCH_MS) / MS_PER_WEEK);
+  // The initial anchor is a calendar example, not an obligation to launch in 2026.
+  const cycleIndex = Math.floor(weeksSinceEpoch / PARTY_EVENT_CADENCE_WEEKS);
+  const eventStartsAtMs = PARTY_EVENT_CALENDAR_EPOCH_MS
+    + cycleIndex * PARTY_EVENT_CADENCE_WEEKS * MS_PER_WEEK;
+  const eventEndsAtMs = eventStartsAtMs + MS_PER_WEEK;
+  const active = cycleIndex >= 0 && atMs >= eventStartsAtMs && atMs < eventEndsAtMs;
+  const upcoming = cycleIndex < 0 ? PARTY_EVENT_CALENDAR_EPOCH_MS
+    : eventStartsAtMs + PARTY_EVENT_CADENCE_WEEKS * MS_PER_WEEK;
+  const family = FAMILIES[((Math.max(0,cycleIndex) % FAMILIES.length)
+    + FAMILIES.length) % FAMILIES.length]!;
+  return {
+    active, eventStartsAtMs, eventEndsAtMs,
+    nextEventStartsAtMs: upcoming, cycleIndex, family,
+  };
+}
+
+/** Never return a live event template during a scheduled rest week. */
+export function partyEventFamilyForWeek(atMs: number): WeeklyPartyFamily | null {
+  const cadence = partyEventCadenceAt(atMs);
+  return cadence.active ? cadence.family : null;
 }
 
 /** Stable seed should be generated server-side for each party/week and stored immutably. */

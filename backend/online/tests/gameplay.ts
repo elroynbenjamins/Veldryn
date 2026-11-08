@@ -11,6 +11,7 @@ import {alchemyRecipeDef} from '../../../apps/mobile/src/content/alchemy';
 import {effectiveStats} from '../../../apps/mobile/src/core/game';
 import {unlockCombatCompanion} from '../../../apps/mobile/src/core/combat-companions';
 import {setLocalEventEnabled} from '../../../apps/mobile/src/core/live-events';
+import {gemRefineRecipeIdV1,gemRefineRecipeV1} from '../../../apps/mobile/src/core/gem-progression-v1';
 async function main(){
  let state:GameState|null=null,version=0,commits=0,clock=1700000000000,transportFailure=false,suppressLiveEvent=false,generatedIds=0,blockedDeleteCharacterId:string|null=null,deletedCommitCharacterId:string|null=null;
  const commandMetrics:Record<string,unknown>[]=[];
@@ -239,6 +240,23 @@ async function main(){
  assert.equal((await request({type:'bank_gold_deposit',args:{amount:500}},'bank-deposit-retry-1',failedBankVersion)).status,200,'retry reuses the original Gold deposit receipt');
  assert.equal(commits,bankCommitted,'retry cannot debit carried Gold twice');
  assert.equal(confirmedBankTotal,bankInitialTotal,'all online Gold movements conserve account value');
+ // Gem refinements create dynamic Forge recipe ids. Their finished claims must
+ // be accepted by the online contribution projection and delivered to Gem Pouch.
+ const gemRecipe=gemRefineRecipeV1(gemRefineRecipeIdV1('stat_might',1))!;
+ state={...state!,activity:null,character:{...state!.character!,level:100,gold:100000},
+  skills:state!.skills.map(skill=>skill.skillId==='enchanting'?{...skill,level:100,xp:totalXpAtLevel(100)}:skill),
+  inventory:{...state!.inventory,stacks:gemRecipe.inputs.map(input=>({...input}))},
+  bank:{...state!.bank,stacks:[]}};
+ const refineVersion=version;
+ const refine=await request({type:'gem_refine',args:{familyId:'stat_might',grade:1}},'gem-refine-online-1',refineVersion);
+ assert.equal(refine.status,200,'online gem refinement starts');
+ const refinePayload=await refine.json(),gemJob=refinePayload.state.account.equipmentCraftingQueue.find((job:{recipeId:string})=>job.recipeId===gemRecipe.id);
+ assert.ok(gemJob,'online gem refinement persists a Forge job');
+ clock=gemJob.completesAtMs;
+ const claim=await request({type:'craft_claim',args:{id:gemJob.id}},'gem-claim-online-1',version);
+ assert.equal(claim.status,200,'online gem Forge claim settles');
+ const claimPayload=await claim.json();
+ assert.ok(claimPayload.state.account.gemPouch.stacks.some((stack:{itemId:string;quantity:number})=>stack.itemId===gemRecipe.output.itemId&&stack.quantity>=1),'online gem Forge claim delivers to Gem Pouch');
  console.log('PASS authenticated gameplay HTTP, input authority, Admin QA authorization, canonical replay, stale version, lost-response recovery and aggregate command telemetry');
 }
 void main().catch(error=>{console.error(error);process.exitCode=1;});

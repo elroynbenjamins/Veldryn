@@ -5,6 +5,7 @@ import {rebaseCombatGameState} from '../../apps/mobile/src/core/progression';
 import {GATHERING,RECIPES} from '../../apps/mobile/src/content/skills';
 import {HERB_NODES} from '../../apps/mobile/src/content/herbalism';
 import {MONSTERS} from '../../apps/mobile/src/content/monsters';
+import {gemCombineRecipeV1,gemRefineRecipeV1} from '../../apps/mobile/src/core/gem-progression-v1';
 
 export interface GameplayServices{
  authenticate(token:string):Promise<string|null>;
@@ -79,7 +80,15 @@ export function gameplayHandler(services:GameplayServices){return async(request:
   const contributions=(adminQa?[]:result.contributions).map(event=>{
    let metric='',units=event.units;
    if(event.kind==='gathering'){const target=[...GATHERING,...HERB_NODES].find(row=>row.id===event.contentId);if(!target)throw new Error('unknown_gathering');metric='verified_weighted_gather_actions';return {...event,metric,units:units*target.seconds/22,skillId:target.skillId,questUnits:event.units};}
-   else if(event.kind==='crafting'){metric='verified_weighted_crafts';const recipe=RECIPES.find(row=>row.id===event.contentId);if(!recipe)throw new Error('unknown_recipe');return {...event,metric,units,skillId:recipe.skillId,questUnits:event.units};}
+   else if(event.kind==='crafting'){
+    metric='verified_weighted_crafts';
+    // Timed gem jobs share the Forge lane, but their dynamic recipe ids are not
+    // listed in RECIPES. They still need to reach the authoritative contribution
+    // projection after a successful claim.
+    const recipe=RECIPES.find(row=>row.id===event.contentId)??gemRefineRecipeV1(event.contentId)??gemCombineRecipeV1(event.contentId);
+    if(!recipe)throw new Error('unknown_recipe');
+    return {...event,metric,units,skillId:recipe.skillId,questUnits:event.units};
+   }
    else if(event.kind==='boss')metric='verified_regional_boss_kills';
    else {const monster=MONSTERS.find(row=>row.id===event.contentId);if(!monster)throw new Error('unknown_monster');metric=monster.boss?'verified_regional_boss_kills':'verified_standard_enemy_kills';}
    return {...event,metric,units};

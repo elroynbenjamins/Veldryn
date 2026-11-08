@@ -181,7 +181,7 @@ requireMatches(sellerOffers,[
 requireMatches(sellerTest,[
   ['QA rollback',/\nrollback;\s*$/i],
   ['active cancel test',/cancelled seller listing did not queue item return atomically/],
-  ['sold cancellation denial',/sold listing generated seller return entitlement/],
+  ['sold cancellation denial',/sold lot generated seller return entitlement/],
   ['expired auto unlist',/expired listing left ghost offer or lost escrow/],
   ['active listing cap test',/seller exceeded 20 active listings/],
 ], 'seller lifecycle regression');

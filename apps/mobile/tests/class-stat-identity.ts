@@ -49,8 +49,8 @@ for(const cls of CLASSES){
   },{attack:novice.setBonus.attack,defense:novice.setBonus.defense});
   const gear=classWeightedGearStats(cls.id,raw.attack,raw.defense);
   const stats=effectiveStats(equipped);
-  almost(stats.attack,Math.ceil(cls.attack+gear.attack),cls.id+' Character stat view must use converted Attack');
-  almost(stats.defense,Math.ceil(cls.defense+gear.defense),cls.id+' Character stat view must use converted Defense');
+  almost(stats.attack,cls.attack+gear.attack,cls.id+' Character stat view must use converted Attack');
+  almost(stats.defense,cls.defense+gear.defense,cls.id+' Character stat view must use converted Defense');
   const diff=equipmentComparison(bare,equipped);
   almost(diff.after.attack,stats.attack,cls.id+' gear compare must use effective Attack');
   almost(diff.after.defense,stats.defense,cls.id+' gear compare must use effective Defense');

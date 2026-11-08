@@ -1,6 +1,8 @@
 import {useCallback,useEffect,useMemo,useRef,useState} from 'react';
 import {Image,Pressable,ScrollView,StyleSheet,Text,View} from 'react-native';
 import type {GameState} from '../core/types';
+import {PLAYER_MARKET_RELEASED} from '../core/release-flags';
+import {MarketInboxPanel} from './MarketInboxPanel';
 import {eventInboxRewards} from '../core/live-events';
 import {liveEventDef} from '../content/live-events';
 import {liveEventVisuals} from '../ui/live-event-visuals-active';
@@ -16,7 +18,7 @@ import {radii,spacing,typography,type ThemeColors} from '../theme/theme';
 export function RewardsInboxScreen({state,online,onRefresh,onEventClaim,preview}:{state:GameState;online:boolean;onRefresh:()=>Promise<unknown>;onEventClaim:(id:string)=>Promise<unknown>;preview?:InboxSnapshot}){
  const language=state.settings.language;
  const a=(text:string,params?:Record<string,string|number>)=>accountText(language,text,params);
- const C=useGameTheme(),s=useMemo(()=>makeStyles(C),[C]),[expandedId,setExpandedId]=useState<string|null>(null),[history,setHistory]=useState(false),[snapshot,setSnapshot]=useState<InboxSnapshot>(preview??{entries:[],pendingCount:0,total:0}),[loading,setLoading]=useState(false),[busy,setBusy]=useState(false),[error,setError]=useState(''),[notice,setNotice]=useState(''),[blockedClaims,setBlockedClaims]=useState<Record<string,string>>({});
+ const C=useGameTheme(),s=useMemo(()=>makeStyles(C),[C]),[expandedId,setExpandedId]=useState<string|null>(null),[history,setHistory]=useState(false),[marketTab,setMarketTab]=useState(false),[snapshot,setSnapshot]=useState<InboxSnapshot>(preview??{entries:[],pendingCount:0,total:0}),[loading,setLoading]=useState(false),[busy,setBusy]=useState(false),[error,setError]=useState(''),[notice,setNotice]=useState(''),[blockedClaims,setBlockedClaims]=useState<Record<string,string>>({});
  const running=useRef(false),generation=useRef(0);
  const load=useCallback(async(append=false)=>{const token=++generation.current;if(preview)return;if(!online){setError(a('Sign in to receive rewards and gifts.'));return;}setLoading(true);try{const next=await loadRewardInbox(history,append?snapshot.entries.length:0);if(token===generation.current){setSnapshot(previous=>({...next,entries:append?[...previous.entries,...next.entries]:next.entries}));setError('');}}catch(e){if(token===generation.current)setError(e instanceof Error?e.message:a('Inbox unavailable.'));}finally{if(token===generation.current)setLoading(false);}},[history,online,preview,snapshot.entries.length]);
  useEffect(()=>{void load();return()=>{generation.current++;};},[history,online,preview]);
@@ -43,10 +45,16 @@ export function RewardsInboxScreen({state,online,onRefresh,onEventClaim,preview}
     <Text style={s.sub}>{a('Earned rewards and gifts stay safe here until claimed.')}</Text>
   </View>
   <View accessibilityRole="tablist" style={s.tabs}>
-    {[false,true].map(value=><Pressable key={String(value)} accessibilityRole="tab" accessibilityState={{selected:history===value,disabled:busy}} disabled={busy} onPress={()=>{if(!preview)setSnapshot(previous=>({...previous,entries:[],total:0}));setHistory(value);setNotice('');setExpandedId(null);setBlockedClaims({});}} style={[s.tab,history===value&&s.tabActive]}>
+    {[false,true].map(value=><Pressable key={String(value)} accessibilityRole="tab" accessibilityState={{selected:history===value&&!marketTab,disabled:busy}} disabled={busy} onPress={()=>{if(!preview)setSnapshot(previous=>({...previous,entries:[],total:0}));setMarketTab(false);setHistory(value);setNotice('');setExpandedId(null);setBlockedClaims({});}} style={[s.tab,history===value&&!marketTab&&s.tabActive]}>
       <Text style={[s.tabText,history===value&&s.tabTextActive]}>{value?a('Claimed history'):a('Inbox')+(pending?' · '+pending:'')}</Text>
     </Pressable>)}
+    {PLAYER_MARKET_RELEASED?<Pressable accessibilityRole="tab" accessibilityLabel={a('Market')} accessibilityState={{selected:marketTab,disabled:busy}}
+      disabled={busy} onPress={()=>{setMarketTab(true);setNotice('');setExpandedId(null);}}
+      style={[s.tab,marketTab&&s.tabActive]}>
+      <Text style={[s.tabText,marketTab&&s.tabTextActive]}>{a('Market')}</Text>
+    </Pressable>:null}
   </View>
+  {marketTab?<MarketInboxPanel state={state} online={online} onRefresh={onRefresh}/>:<>
   {!history&&pending>0?<View style={s.bulkAction}><View style={s.flex}><Text style={s.bulkTitle}>{a('{count} rewards waiting',{count:pending})}</Text><Text style={s.sub}>{a('Claim everything that fits in your inventory.')}</Text></View><SocialActionButton primary label={a('Claim all')} busy={busy} disabled={!online&&!preview} onPress={()=>run()}/></View>:null}
   {!!error?<View accessibilityRole="alert" style={s.feedback}><Text style={s.warning}>{error}</Text><SocialActionButton label={a('Retry')} disabled={busy} onPress={()=>load()}/></View>:null}
   {!!notice?<Text accessibilityRole="alert" style={s.success}>{notice}</Text>:null}
@@ -74,6 +82,7 @@ export function RewardsInboxScreen({state,online,onRefresh,onEventClaim,preview}
   {loading?<LoadingState compact label={a('Loading rewards…')}/>:null}
   {!loading&&!rows.length&&!error?<View style={s.empty}><UiIcon name="rewards" size={42}/><Text style={s.emptyTitle}>{history?a('No claimed rewards yet'):a('You’re all caught up')}</Text><Text style={s.sub}>{history?a('Your reward history will appear here.'):a('New rewards will appear when earned.')}</Text></View>:null}
   {snapshot.entries.length<snapshot.total?<SocialActionButton label={a('Load more')} disabled={loading||busy} onPress={()=>load(true)}/>:null}
+  </>}
  </ScrollView>;
 }
 function InboxArtwork({attachment:a}:{attachment:InboxAttachment}){

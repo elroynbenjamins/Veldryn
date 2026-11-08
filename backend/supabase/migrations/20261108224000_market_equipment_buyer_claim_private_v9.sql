@@ -60,7 +60,7 @@ begin
   if v_game.revision<>p_expected_revision
   then raise exception 'market_stale_state';end if;
   select * into v_delivery from private.market_equipment_purchase_deliveries_v9
-    where delivery_id=p_delivery_id and recipient_account_id=p_account_id for update;
+    where delivery_id=p_delivery_id and buyer_account_id=p_account_id for update;
   if not found then raise exception 'market_equipment_delivery_not_owned';end if;
   if v_delivery.status<>'pending'
   then raise exception 'market_equipment_delivery_already_claimed';end if;
@@ -147,7 +147,7 @@ begin
   update private.market_equipment_purchase_deliveries_v9
     set status='claimed',claimed_at=now(),destination_location=p_location,
       destination_character_id=p_holder,destination_revision=v_game.revision+1
-    where delivery_id=p_delivery_id and recipient_account_id=p_account_id
+    where delivery_id=p_delivery_id and buyer_account_id=p_account_id
       and status='pending';
   if not found then raise exception 'market_equipment_delivery_already_claimed';end if;
   v_result:=pg_catalog.jsonb_build_object(

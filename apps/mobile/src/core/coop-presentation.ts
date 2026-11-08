@@ -5,7 +5,7 @@ export function isCoopCombatNodeKind(kind:string|undefined):boolean{
 }
 
 export interface CoopEncounterPreviewView {archetypes:Array<{id:string;label:string}>;mechanics:Array<{id:string;label:string;description:string}>;summary:string;}
-export interface CoopRouteOptionView {nodeId:string;title:string;kind:string;risk:string;reward:string;votes?:number;hidden?:boolean;encounterPreview?:CoopEncounterPreviewView;}
+export interface CoopRouteOptionView {nodeId:string;title:string;kind:string;risk:string;reward:string;modifierId?:string;votes?:number;hidden?:boolean;encounterPreview?:CoopEncounterPreviewView;}
 export interface CoopRunMechanicView {label:string;description:string;value:number;maxValue:number;status:'critical'|'steady'|'strong';bossEffect:string;}
 export interface CoopRunObjectiveView {label:string;description:string;count:number;maxCount:number;completed:boolean;effectText:string;}
 export interface CoopBossPhaseView {id:string;label:string;hpPct:number;objectiveSensitive:boolean;}

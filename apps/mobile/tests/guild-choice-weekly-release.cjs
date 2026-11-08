@@ -44,7 +44,7 @@ assert.match(screen,/GuildProjectSupplyDonationPanel/);
 assert.match(art,/guild_weekly_provision\.webp/,'Voted supply project must have its own guild artwork');
 assert.ok(fs.existsSync(path.join(root,'apps/mobile/assets/guild-remaster/projects/guild_weekly_provision.webp')),'Supply artwork must exist as a real bundled file');
 assert.match(screen,/const projectArtwork=guildProjectArtwork\(candidate\.templateId\)/,'Voting choices must display project art');
-assert.match(screen,/project\.focus==='combat'\?'combat':project\.focus==='skilling'\?'herbalism':'crafting'/,'Fallback must respect project focus, not always Combat');
+assert.match(screen,/project\.focus==='combat'\?'combat':project\.focus==='skilling'\?'herbalism':'smithing'/,'Fallback must respect project focus, not always Combat');
 assert.match(screen,/Vote for next week's project/);
 assert.ok(!screen.includes('onStart={()=>void act('),'Do not manually start voted projects');
 assert.match(sink,/AsyncStorage\.setItem\(storageKey/);

@@ -1,6 +1,7 @@
 import {useEffect,useMemo,useState,type ComponentProps} from 'react';
 import {Pressable,StyleSheet,Text,View,useWindowDimensions} from 'react-native';
 import {EQUIPMENT_SETS} from '../content/equipment-sets';
+import {isReleasedEquipmentTier} from '../content/equipment-release';
 import {RECIPES} from '../content/skills';
 import {alchemyRecipeDef} from '../content/alchemy';
 import {itemDef} from '../content/items';
@@ -10,6 +11,7 @@ import {useGameTheme} from '../theme/ThemeContext';
 import {useGameplayText} from '../i18n/gameplay';
 import {profileSourceText} from '../i18n/profile';
 import {ItemArtwork} from './ItemArtwork';
+import {hasEquipmentArtwork} from './EquipmentArtwork';
 import {RecipeCard} from './RecipeCard';
 import {localizedItemName} from '../i18n/starter-item-names';
 import {CraftingRecipeBrowser} from './CraftingRecipeBrowser';
@@ -34,10 +36,10 @@ export const SmithingHeader=EquipmentCraftingHeader;
 /** Collection browsing is presentation only; existing forge commands own all costs and gates. */
 export function SmithingCollection(props:Props){
  const {state,preferredRecipeId,onCraft,queueProps,skillId='smithing'}=props,C=useGameTheme(),{gl,gt,language}=useGameplayText(),{fontScale}=useWindowDimensions();
- const recipes=useMemo(()=>RECIPES.filter(r=>r.skillId===skillId&&!r.noviceSetId&&(!r.classId||r.classId===state.character?.classId)),[state.character?.classId,skillId]);
+ const recipes=useMemo(()=>RECIPES.filter(r=>r.skillId===skillId&&!r.noviceSetId&&(!r.classId||r.classId===state.character?.classId)&&(!r.v33EquipmentTier||isReleasedEquipmentTier(r.v33EquipmentTier))),[state.character?.classId,skillId]);
  const preferred=recipes.find(r=>r.id===preferredRecipeId);
  const [tab,setTab]=useState<'equipment'|'materials'|'tools'>(preferred&&!preferred.v33SetId?(itemDef(preferred.output.itemId).type==='tool'?'tools':'materials'):'equipment');
- const sets=useMemo(()=>EQUIPMENT_SETS.filter(set=>recipes.some(r=>r.v33SetId===set.id)),[recipes]);
+ const sets=useMemo(()=>EQUIPMENT_SETS.filter(set=>recipes.some(r=>r.v33SetId===set.id)&&set.itemIds.every(id=>hasEquipmentArtwork(itemDef(id)))),[recipes]);
  const [setId,setSetId]=useState<string|undefined>(preferred?.v33SetId??sets[0]?.id),[itemId,setItemId]=useState(preferred?.output.itemId),[bonusesOpen,setBonusesOpen]=useState(false),[detailsOpen,setDetailsOpen]=useState(false),[queueOpen,setQueueOpen]=useState(false),[width,setWidth]=useState(400),[now,setNow]=useState(Date.now()),[error,setError]=useState('');
  useEffect(()=>{const timer=setInterval(()=>setNow(Date.now()),1000);return()=>clearInterval(timer)},[]);
  useEffect(()=>{if(!preferred)return;setTab(preferred.v33SetId?'equipment':itemDef(preferred.output.itemId).type==='tool'?'tools':'materials');setSetId(preferred.v33SetId);setItemId(preferred.output.itemId);setDetailsOpen(false)},[preferredRecipeId]);

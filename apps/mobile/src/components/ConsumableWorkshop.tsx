@@ -178,6 +178,7 @@ export function ConsumableWorkshop({state,skillId,preferredRecipeId,onStart}:Pro
   <View style={s.line}><Text style={[s.title,{color:C.text}]}>{gt('Recipes')}</Text><Pressable accessibilityRole="checkbox" accessibilityState={{checked:readyOnly}} onPress={()=>setReadyOnly(x=>!x)} style={[s.toggle,{borderColor:C.line,backgroundColor:readyOnly?C.selection:C.panel2}]}><Text style={[s.caption,{color:C.text}]}>{readyOnly?'✓ ':''}{gt('Craftable only')}</Text></Pressable></View>
   <View style={s.categories}>{groups.map(g=><Pressable key={g} accessibilityRole="tab" accessibilityState={{selected:category===g}} onPress={()=>{setCategory(g);setDetailId(null)}} style={[s.category,{borderColor:category===g?C.selectionLine:C.line,backgroundColor:category===g?C.selection:C.panel2}]}><Text style={[s.categoryText,{color:category===g?C.text:C.muted}]}>{gt(g as 'Fish'|'Meals'|'Special'|'Potions'|'Infusions')}</Text></Pressable>)}</View>
   {potionList?<View style={s.potionList}>
+    <Text style={[s.caption,{color:C.muted}]}>{gt('Draughts heal in boss fights and dungeons. Tonics prepare dungeon runs and boost ordinary encounters.')}</Text>
     {([1,2,3] as const).map(tier=>{
       const rows=recipes.filter(recipe=>potionDef(recipe.output.itemId)?.tier===tier);
       return rows.length?<View key={tier} style={s.potionTierGroup}>

@@ -43,7 +43,8 @@ const requestKey=(v:unknown):v is string=>typeof v==='string'&&key.test(v);
 const bad=()=>{throw new MarketRequestError('market_invalid_request',400);};
 
 function validate(operation:string,method:string,query:URLSearchParams,body:unknown):MarketOperation{
-  const params=[...query.keys()];
+  const params:string[]=[];
+  query.forEach((_value,key)=>params.push(key));
   if(params.some(k=>k!=='action'&&k!=='history'&&k!=='offset'))bad();
   if(operation==='inbox'||operation==='my_offers'){
     if(method!=='GET'||body!==null)bad();

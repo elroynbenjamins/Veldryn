@@ -12,6 +12,7 @@ declare
   v_gear uuid;
   v_resource uuid;
   v_rejected boolean;
+  v_probe jsonb;
 begin
   foreach v_table in array array[
     'market_runtime_guard_v1','market_item_policy_v1',
@@ -93,6 +94,90 @@ begin
     source_locator,item_id,asset_kind,quantity
   ) values(v_a,6,'inventory',v_a::text,'inventory:2','COPPER_ORE','resource',50)
   returning asset_id into v_resource;
+
+
+  -- Probe the real authoritative state shape without creating any custody.
+  update public.online_game_states
+  set revision=7,state=pg_catalog.jsonb_build_object(
+    'version',11,
+    'character',pg_catalog.jsonb_build_object(
+      'id',v_a::text,
+      'equipmentPouch',pg_catalog.jsonb_build_object('stacks',pg_catalog.jsonb_build_array(
+        pg_catalog.jsonb_build_object('itemId','T1_TEST_EQUIPMENT','quantity',1,'instanceId','gear:stable-unique-1')
+      ))
+    ),
+    'inventory',pg_catalog.jsonb_build_object('stacks',pg_catalog.jsonb_build_array(
+      pg_catalog.jsonb_build_object('itemId','COPPER_ORE','quantity',50)
+    )),
+    'bank',pg_catalog.jsonb_build_object('stacks','[]'::jsonb),
+    'account',pg_catalog.jsonb_build_object('craftedGearInstances',pg_catalog.jsonb_build_array(
+      pg_catalog.jsonb_build_object(
+        'id','gear:stable-unique-1','itemId','T1_TEST_EQUIPMENT',
+        'quality',71,'locked',false,'ownerCharacterId',v_a::text
+      )
+    ))
+  ) where account_id=v_a;
+
+  if pg_catalog.has_function_privilege(
+    'authenticated',
+    'private.market_snapshot_source_probe_v1(uuid,bigint,text,text,integer,text,bigint,text)'::regprocedure,
+    'EXECUTE'
+  ) or pg_catalog.has_function_privilege(
+    'service_role',
+    'private.market_snapshot_source_probe_v1(uuid,bigint,text,text,integer,text,bigint,text)'::regprocedure,
+    'EXECUTE'
+  ) then raise exception 'market snapshot proof callable by client/service roles';end if;
+
+  v_probe:=private.market_snapshot_source_probe_v1(
+    v_a,7,'inventory',v_a::text,0,'COPPER_ORE',12,null
+  );
+  if v_probe->'matches' is distinct from 'true'::jsonb
+    or v_probe->'canReserveNow' is distinct from 'false'::jsonb
+    or (v_probe->>'quantity')::int<>50
+  then raise exception 'stack proof failed or escrow was enabled';end if;
+
+  v_probe:=private.market_snapshot_source_probe_v1(
+    v_a,6,'inventory',v_a::text,0,'COPPER_ORE',12,null
+  );
+  if v_probe->>'reason'<>'stale_or_missing_state'
+  then raise exception 'stale inventory revision accepted';end if;
+
+  v_probe:=private.market_snapshot_source_probe_v1(
+    v_a,7,'inventory',v_a::text,0,'COPPER_ORE',51,null
+  );
+  if v_probe->>'reason'<>'insufficient_quantity'
+  then raise exception 'partial-stack overdraw accepted';end if;
+
+  v_probe:=private.market_snapshot_source_probe_v1(
+    v_b,7,'inventory',v_a::text,0,'COPPER_ORE',12,null
+  );
+  if v_probe->'matches' is distinct from 'false'::jsonb
+  then raise exception 'cross-account snapshot proof accepted';end if;
+
+  v_probe:=private.market_snapshot_source_probe_v1(
+    v_a,7,'equipment_pouch',v_a::text,0,
+    'T1_TEST_EQUIPMENT',1,'gear:stable-unique-1'
+  );
+  if v_probe->'matches' is distinct from 'true'::jsonb
+    or v_probe->'canReserveNow' is distinct from 'false'::jsonb
+  then raise exception 'exact receipt proof failed or enabled escrow';end if;
+
+  v_probe:=private.market_snapshot_source_probe_v1(
+    v_a,7,'equipment_pouch',v_a::text,0,'T1_TEST_EQUIPMENT',1,null
+  );
+  if v_probe->>'reason'<>'missing_exact_receipt'
+  then raise exception 'untagged equipment was promoted to tradable custody';end if;
+
+  update public.online_game_states
+  set state=pg_catalog.jsonb_set(
+    state,'{account,craftedGearInstances,0,quality}','null'::jsonb,true
+  ) where account_id=v_a;
+  v_probe:=private.market_snapshot_source_probe_v1(
+    v_a,7,'equipment_pouch',v_a::text,0,
+    'T1_TEST_EQUIPMENT',1,'gear:stable-unique-1'
+  );
+  if v_probe->>'reason'<>'unverified_quality'
+  then raise exception 'legacy/missing quality was accepted';end if;
 
   -- A malicious/stale hold cannot refer to a different seller's asset.
   v_rejected:=false;

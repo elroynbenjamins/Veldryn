@@ -1,3 +1,4 @@
+import {classWeightedGearStats} from './class-stat-identity';
 import {combatTimeline} from './combat-timing';
 import {characterCombatXpScale} from './combat-progression-pacing';
 import {eventCandyWindow} from './live-events';
@@ -102,7 +103,7 @@ export const REGIONAL_FOOD_SUSTAIN_TARGETS:Readonly<Record<string,{foodPerHourMi
 export const REGIONAL_MIN_ATTRITION_HP_PER_HOUR:Readonly<Record<string,number>>={Greenfields:80,Silverbrook:120,'Ironwood Forest':240,'Old Mines':280,"King's Road":420,Sunscar:780,Frostmarch:1450,Ashlands:2150};
 /** Missing entire gear tiers must increase food use even when encounter damage
  * would otherwise be hidden by the hourly attrition floor. */
-export const MISSING_GEAR_HUNT_ATTRITION_PER_TIER=.60;
+export const MISSING_GEAR_HUNT_ATTRITION_PER_TIER=.62;
 export const MIN_UNHEALED_HP_FRACTION_PER_HOUR=.08;
 /** Slow recovery between activities keeps food valuable while preventing a defeated run from becoming a hard lockout. */
 export const OUT_OF_COMBAT_REGEN_FRACTION_PER_MINUTE=.05;
@@ -163,22 +164,29 @@ export function createCharacter(state:GameState,classId:ClassId,name='Adventurer
 export function effectiveStats(state:GameState){
   const c=state.character;if(!c)return {hp:0,attack:0,defense:0,power:0,critChance:0,critMultiplier:1.5,accuracy:.84,evasion:.04,haste:.05,armor:0,ward:0,tenacity:0,potency:0,penetration:0};
   let hp=c.hp,attack=c.attack,defense=c.defense;
-  for(const id of Object.values(c.equipment)){if(!id)continue;const stats=enhancedGearStats(state,id);hp+=stats.hp;attack+=stats.attack;defense+=stats.defense;}
+  let gearAttack=0,gearDefense=0;
+  for(const id of Object.values(c.equipment)){if(!id)continue;const stats=enhancedGearStats(state,id);hp+=stats.hp;gearAttack+=stats.attack;gearDefense+=stats.defense;}
   const novice=noviceSetFor(c.classId),noviceComplete=novice.slots.every(slot=>c.equipment[slot]===noviceItemId(c.classId,slot));
-  if(noviceComplete){hp+=novice.setBonus.hp;attack+=novice.setBonus.attack;defense+=novice.setBonus.defense;}
+  if(noviceComplete){hp+=novice.setBonus.hp;gearAttack+=novice.setBonus.attack;gearDefense+=novice.setBonus.defense;}
+  // Convert only the shared flat gear budget; player base stats and intentional
+  // gem/set/mastery specializations remain separately meaningful.
+  const classGear=classWeightedGearStats(c.classId,gearAttack,gearDefense);
+  attack+=classGear.attack;defense+=classGear.defense;
+  // Preserve fractional equipment improvements until display/combat use. Rounding
+  // each stage used to erase small upgrades, Iron gem Defense and class scaling.
   const setStats=activeEquipmentBuildStats(state);
   hp=Math.ceil(hp*(1+setStats.maxHp));
-  defense=Math.ceil(defense*(1+setStats.armor));
+  defense*=1+setStats.armor;
   // Legacy gems keep their original primary-stat behavior; canonical Stat Gems
   // are already included in activeEquipmentBuildStats above.
-  const gems=equippedGemBonuses(state);hp=Math.ceil(hp*(1+gems.hp));attack=Math.ceil(attack*(1+gems.attack));defense=Math.ceil(defense*(1+gems.defense));
-  const mastery=characterClassEffects(c);hp=Math.ceil(hp*mastery.hp);attack=Math.ceil(attack*mastery.attack);defense=Math.ceil(defense*mastery.defense);
-  const permanent=characterPermanentMultipliers(state);attack=Math.ceil(attack*permanent.combatPowerMultiplier);
+  const gems=equippedGemBonuses(state);hp=Math.ceil(hp*(1+gems.hp));attack*=1+gems.attack;defense*=1+gems.defense;
+  const mastery=characterClassEffects(c);hp=Math.ceil(hp*mastery.hp);attack*=mastery.attack;defense*=mastery.defense;
+  const permanent=characterPermanentMultipliers(state);attack*=permanent.combatPowerMultiplier;
   // Wellspring and its upgrades increase actual maximum HP, not attack power.
   // This applies consistently to combat, healing caps and character stat displays.
   const faithBlessing=selectedFaithBlessing(state);
   if(faithBlessing?.family==='hp')hp=Math.ceil(hp*(1+faithBlessing.bonus));
-  const prep=c.preparation?preparationEffects(c.preparation):undefined;if(prep)attack=Math.ceil(attack*prep.attack);
+  const prep=c.preparation?preparationEffects(c.preparation):undefined;if(prep)attack*=prep.attack;
   const role=CLASSES.find(def=>def.id===c.classId)?.role,baseCritChance=role==='Damage'?.10:.05,baseEvasion=role==='Damage'?.07:.04;
   const basePower=Math.round(attack*1.5+defense*.8+hp*.08+c.level*2.5);
   return {
@@ -471,12 +479,18 @@ function combatEncounterDamage(runtime:ReturnType<typeof combatRuntimeDetails>,c
  const raw=Math.max(1,Math.round(m.attack*COMBAT_MONSTER_DAMAGE_SCALE)-Math.floor(boostedDefense*.58));
  const regionalPressure=(REGIONAL_COMBAT_PRESSURE[m.zone]??1)*REGIONAL_MONSTER_PRESSURE_MULTIPLIER[regionalMonsterPressureBand(m.id)];
  const damage=Math.max(.1,(raw*.48+m.level*.16)*(REGIONAL_HUNT_DAMAGE_TUNING[m.zone]??1)*regionalPressure*secondary.incomingPressureMultiplier*style.damageTakenMultiplier*tactic.damageTakenMultiplier*(champion?CHAMPION_DAMAGE_MULTIPLIER:1)*modifiers.incomingDamageMultiplier*companion.incomingDamageMultiplier*(1-effectGems.damage_reduction)*Math.max(.5,1-setCombat.stats.ward)*(c.preparation?preparationEffects(c.preparation).damage:1)*runtime.progressionDamagePenalty);
- const healing=stats.hp*companion.directHealingPctPerHour*killCycleSeconds/3600*(c.preparation?preparationEffects(c.preparation).healing:1);
- // The floor is part of actual server-authoritative damage. Missing gear
- // cannot bypass this attrition through defense or longer kill cycles.
+ // Ravager's Bloodrush converts its offensive investment into modest
+ // post-kill sustain. It cannot prevent a lethal hit and remains much weaker
+ // when nearly all equipment slots are missing. This belongs to the same
+ // encounter settlement used by online/idle previews, not UI-only feedback.
+ // Regional minimum attrition must not be erased by offense-based
+ // Bloodrush healing. This also keeps easy-area food use meaningful while
+ // letting aggressive Ravagers counter some real, above-floor enemy hits.
  const floor=Math.max(REGIONAL_MIN_ATTRITION_HP_PER_HOUR[m.zone]??0,stats.hp*MIN_UNHEALED_HP_FRACTION_PER_HOUR)*runtime.gearAttritionMultiplier*killCycleSeconds/3600;
  const incoming=Math.max(floor,damage);
- return {damage:incoming,healing,net:incoming-healing};
+ const onKillHealing=Math.min(stats.attack*(style.onKillAttackHealPct??0),Math.max(0,incoming-floor));
+ const healing=stats.hp*companion.directHealingPctPerHour*killCycleSeconds/3600*(c.preparation?preparationEffects(c.preparation).healing:1)+onKillHealing;
+ return {damage:incoming,healing,onKillHealing,net:incoming-healing};
 }
 
 export function combatSustainProjection(state:GameState,monsterId:string,hours=1){
@@ -484,7 +498,7 @@ export function combatSustainProjection(state:GameState,monsterId:string,hours=1
  const runtime=combatRuntimeDetails(state,monsterId),foodId=state.character.equippedFoodId,food=foodId?itemDef(foodId):undefined;
  const exchange=combatEncounterDamage(runtime),damagePerKill=exchange.damage;
  const killsPerHour=3600/Math.max(.1,runtime.killCycleSeconds),companionHealingPerHour=runtime.stats.hp*runtime.companion.directHealingPctPerHour;
- const recoveryPerKill=0,netDamagePerKill=exchange.net;
+ const recoveryPerKill=exchange.onKillHealing,netDamagePerKill=exchange.net;
  const healingPerFood=food?.heal?Math.max(1,Math.ceil(food.heal*runtime.modifiers.healingEffectivenessMultiplier)):0;
  const netHpLossPerHour=netDamagePerKill*killsPerHour;
  const foodPerHour=healingPerFood>0?Math.max(0,netHpLossPerHour)/healingPerFood:netDamagePerKill>0?Infinity:0;

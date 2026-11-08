@@ -6,15 +6,25 @@ import {createCharacter,newGame} from '../core/game';
 import {executeGameCommand,type GameCommand} from '../core/game-commands';
 import {ITEMS} from '../content/items';
 import {EQUIPMENT_SETS} from '../content/equipment-sets';
+import {EQUIPMENT_CRAFT_SKILL_BY_CLASS} from '../content/equipment-recipes-v33';
 import {totalXpAtLevel} from '../core/progression';
 import {SkillsScreen} from '../screens/SkillsScreen';
 import {GameThemeProvider} from '../theme/ThemeContext';
 import {resolveTheme,type UiThemeId} from '../theme/theme';
 
-function fixture(missing=false){
- const state=createCharacter(newGame(Date.now()),'IRONWARDEN','Smithing Review');
- state.character!.level=25;state.character!.gold=4500;
- state.skills=state.skills.map(s=>({...s,level:12,xp:totalXpAtLevel(12)+320}));
+/** Endgame level so every authored tier, up to the T7 sets, lists its artwork. */
+const REVIEW_LEVEL=95;
+const CLASS_IDS=['IRONWARDEN','BASTION','DREADGUARD','WAYFINDER','RAVAGER','HEXWEAVER','KNIFE_DANCER','DAWNKEEPER','STONECALLER'] as const;
+type ReviewClass=typeof CLASS_IDS[number];
+const initialClass=():ReviewClass=>{
+ const id=typeof window==='undefined'?null:new URLSearchParams(window.location.search).get('class');
+ return CLASS_IDS.find(value=>value===id?.toUpperCase())??'IRONWARDEN';
+};
+
+function fixture(classId:ReviewClass,missing=false){
+ const state=createCharacter(newGame(Date.now()),classId,'Smithing Review');
+ state.character!.level=REVIEW_LEVEL;state.character!.gold=4500;
+ state.skills=state.skills.map(s=>({...s,level:99,xp:totalXpAtLevel(99)+320}));
  state.inventory.capacity=2000;
  state.inventory.stacks=missing?[]:ITEMS.filter(i=>i.type==='material').map(i=>({itemId:i.id,quantity:100}));
  state.bank.stacks=[];
@@ -23,8 +33,10 @@ function fixture(missing=false){
 }
 const noop=()=>{};
 export default function SmithingReview(){
- const [state,setState]=useState(()=>fixture()),[theme,setTheme]=useState<UiThemeId>('obsidian'),[message,setMessage]=useState('');
+ const [classId,setClassId]=useState<ReviewClass>(initialClass);
+ const [state,setState]=useState(()=>fixture(initialClass())),[theme,setTheme]=useState<UiThemeId>('obsidian'),[message,setMessage]=useState('');
+ const pickClass=(next:ReviewClass)=>{setClassId(next);setState(fixture(next));setMessage('')};
  const C=resolveTheme(theme);
  const command=(cmd:GameCommand)=>{try{setState(s=>executeGameCommand(s,cmd,Date.now(),{randomRoll:.5}).state);setMessage('')}catch(e){setMessage(String(e))}};
- return <SafeAreaProvider><GameThemeProvider themeId={theme}><View style={{flex:1,backgroundColor:C.bg}}><View style={{padding:8,flexDirection:'row',flexWrap:'wrap',gap:8}}>{(['obsidian','ember','ivory'] as const).map(id=><Pressable key={id} accessibilityRole="button" onPress={()=>setTheme(id)}><Text style={{color:C.muted}}>{resolveTheme(id).name}</Text></Pressable>)}<Pressable accessibilityRole="button" onPress={()=>setState(fixture(true))}><Text style={{color:C.muted}}>Missing materials</Text></Pressable><Pressable accessibilityRole="button" onPress={()=>setState(fixture())}><Text style={{color:C.muted}}>Ready fixture</Text></Pressable></View>{message?<Text style={{color:C.bad}}>{message}</Text>:null}<SkillsScreen state={state} initialSkill="smithing" initialMode="crafting" onBackToHub={noop} onCraft={id=>command({type:'craft',args:{id}})} onClaimCraft={id=>command({type:'craft_claim',args:{id}})} onClaimAllCrafts={()=>command({type:'craft_claim_all'})} onCancelCraft={id=>command({type:'craft_cancel',args:{id}})} onMoveCraftWaiting={(id,direction)=>command({type:'craft_move',args:{id,direction}})} onCraftPrerequisites={id=>command({type:'craft_prerequisites',args:{id}})} onGather={noop} onQueueGather={noop} onQueueRemove={noop} onQueueMove={noop} onQueueClear={noop} onQueueStart={noop} onEquipTool={noop} onCharacter={noop} onInventory={noop} onViewToolRecipes={noop} onNavigateCraftingSource={destination=>setMessage(destination.detail)} onCommand={async cmd=>command(cmd)}/></View></GameThemeProvider></SafeAreaProvider>;
+ return <SafeAreaProvider><GameThemeProvider themeId={theme}><View style={{flex:1,backgroundColor:C.bg}}><View style={{padding:8,flexDirection:'row',flexWrap:'wrap',gap:8}}>{(['obsidian','ember','ivory'] as const).map(id=><Pressable key={id} accessibilityRole="button" onPress={()=>setTheme(id)}><Text style={{color:C.muted}}>{resolveTheme(id).name}</Text></Pressable>)}<Pressable accessibilityRole="button" onPress={()=>setState(fixture(classId,true))}><Text style={{color:C.muted}}>Missing materials</Text></Pressable><Pressable accessibilityRole="button" onPress={()=>setState(fixture(classId))}><Text style={{color:C.muted}}>Ready fixture</Text></Pressable></View><View style={{paddingHorizontal:8,paddingBottom:8,flexDirection:'row',flexWrap:'wrap',gap:8}}>{CLASS_IDS.map(id=><Pressable key={id} accessibilityRole="button" accessibilityState={{selected:id===classId}} onPress={()=>pickClass(id)}><Text style={{color:id===classId?C.text:C.muted}}>{id}</Text></Pressable>)}</View>{message?<Text style={{color:C.bad}}>{message}</Text>:null}<SkillsScreen key={classId} state={state} initialSkill={EQUIPMENT_CRAFT_SKILL_BY_CLASS[classId]} initialMode="crafting" onBackToHub={noop} onCraft={id=>command({type:'craft',args:{id}})} onClaimCraft={id=>command({type:'craft_claim',args:{id}})} onClaimAllCrafts={()=>command({type:'craft_claim_all'})} onCancelCraft={id=>command({type:'craft_cancel',args:{id}})} onMoveCraftWaiting={(id,direction)=>command({type:'craft_move',args:{id,direction}})} onCraftPrerequisites={id=>command({type:'craft_prerequisites',args:{id}})} onGather={noop} onQueueGather={noop} onQueueRemove={noop} onQueueMove={noop} onQueueClear={noop} onQueueStart={noop} onEquipTool={noop} onCharacter={noop} onInventory={noop} onViewToolRecipes={noop} onNavigateCraftingSource={destination=>setMessage(destination.detail)} onCommand={async cmd=>command(cmd)}/></View></GameThemeProvider></SafeAreaProvider>;
 }

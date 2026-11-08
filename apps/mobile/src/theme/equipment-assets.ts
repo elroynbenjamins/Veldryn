@@ -73,14 +73,14 @@ export const equipmentSheetBySet:Record<string,ImageSourcePropType>={
   T4_024:require('../../assets/equipment-t4-dawnkeeper/T4_024-pilgrim-ward-icon-sheet.webp'),
   T4_025:require('../../assets/equipment-t4-stonecaller/T4_025-runebound-earthsong-icon-sheet.webp'),
   T4_027:require('../../assets/equipment-t4-stonecaller/T4_027-echo-procession-chorus-icon-sheet.webp'),
-  T5_001:require('../../assets/equipment-t5-ironwarden/T5_001-dunewood-rampart-icon-sheet.png'),
-  T5_003:require('../../assets/equipment-t5-ironwarden/T5_003-mirage-reprisal-icon-sheet.png'),
-  T5_007:require('../../assets/equipment-t5-dreadguard/T5_007-jackalblood-covenant-icon-sheet.png'),
-  T5_009:require('../../assets/equipment-t5-dreadguard/T5_009-glasswind-bastion-icon-sheet.png'),
-  T6_001:require('../../assets/equipment-t6-ironwarden/T6_001-ambergate-rampart-icon-sheet.png'),
-  T6_003:require('../../assets/equipment-t6-ironwarden/T6_003-tyrant-reprisal-icon-sheet.png'),
-  T7_001:require('../../assets/equipment-t7-ironwarden/T7_001-frostiron-rampart-icon-sheet.png'),
-  T7_003:require('../../assets/equipment-t7-ironwarden/T7_003-bellguard-reprisal-icon-sheet.png'),
+  T5_001:require('../../assets/equipment-t5-ironwarden/T5_001-dunewood-rampart-icon-sheet.webp'),
+  T5_003:require('../../assets/equipment-t5-ironwarden/T5_003-mirage-reprisal-icon-sheet.webp'),
+  T5_007:require('../../assets/equipment-t5-dreadguard/T5_007-jackalblood-covenant-icon-sheet.webp'),
+  T5_009:require('../../assets/equipment-t5-dreadguard/T5_009-glasswind-bastion-icon-sheet.webp'),
+  T6_001:require('../../assets/equipment-t6-ironwarden/T6_001-ambergate-rampart-icon-sheet.webp'),
+  T6_003:require('../../assets/equipment-t6-ironwarden/T6_003-tyrant-reprisal-icon-sheet.webp'),
+  T7_001:require('../../assets/equipment-t7-ironwarden/T7_001-frostiron-rampart-icon-sheet.webp'),
+  T7_003:require('../../assets/equipment-t7-ironwarden/T7_003-bellguard-reprisal-icon-sheet.webp'),
 };
 const pieceIdsBySet=(catalog.pieces as Array<Record<string,string|number>>).reduce<Record<string,string[]>>((bySet,piece)=>{
   const setId=String(piece['Set ID']);

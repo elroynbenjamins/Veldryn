@@ -10,6 +10,8 @@ on:
       - 'apps/mobile/src/screens/RewardsInboxScreen.tsx'
       - 'apps/mobile/tests/player-market-readiness.ts'
       - 'backend/online/market-custody-readiness.ts'
+      - 'backend/online/market-auth-boundary.ts'
+      - 'backend/online/tests/market-auth-boundary.ts'
       - 'backend/online/tests/player-market-custody.ts'
       - 'backend/supabase/migrations/*market*'
       - 'backend/supabase/tests/player_market_*.sql'
@@ -44,6 +46,8 @@ jobs:
         run: node ../../tools/run-mobile-tests.mjs player-market-readiness
       - name: Verify server-only custody inspection
         run: pnpm --dir ../../backend test:market-readiness
+      - name: Verify dormant authenticated Market boundary cannot be impersonated
+        run: node ../../backend/dist/online/backend/online/tests/market-auth-boundary.js
       - name: Validate dormant escrow security and migration contracts
         run: |
           node ../../tools/validate-recent-migration-versions.mjs

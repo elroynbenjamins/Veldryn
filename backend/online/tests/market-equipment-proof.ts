@@ -9,7 +9,7 @@ import {
   MARKET_EQUIPMENT_ESCROW_RELEASED_V7,
 } from '../market-equipment-proof';
 
-const base=createCharacter(newGame(0),'BASTION','Exact Equipment Market');
+const base=createCharacter(newGame(0),'BASTION','Exact Market');
 const gearId=V33_EQUIPMENT_RECIPES.find(x=>x.classId==='BASTION'&&x.v33EquipmentTier==='T1')!.output.itemId;
 const statGem='gem:stat_might:g2',effectGem='gem:effect_momentum:g1';
 assert.equal(itemDef(statGem).type,'gem');

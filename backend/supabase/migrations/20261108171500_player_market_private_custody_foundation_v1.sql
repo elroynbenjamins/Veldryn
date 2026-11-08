@@ -52,11 +52,8 @@ create table if not exists private.market_custody_assets_v1 (
   exact_instance_id text,
   source_receipt_key text,
   quantity bigint not null check(quantity between 1 and 2147483647),
-  held_quantity bigint not null default 0
-    check(held_quantity >= 0 and held_quantity <= quantity),
-  -- Release migration must explicitly remove this hard lock before any hold.
-  constraint_market_hold_safeguard boolean not null default false
-    check(constraint_market_hold_safeguard = false),
+  -- Release migration must explicitly relax this constraint before any hold.
+  held_quantity bigint not null default 0 check(held_quantity = 0),
   source_bound boolean not null default true,
   verification_state text not null default 'unverified'
     check(verification_state in ('unverified','verified','rejected')),

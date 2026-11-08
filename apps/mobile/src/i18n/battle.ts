@@ -1,6 +1,12 @@
 import {createSourceTranslator,type TranslationRow} from './source-catalog';
 export const BATTLE_MESSAGES={
  'Combat preview':['Kampfvorschau','Vista previa del combate','Gevechtsvoorbeeld','Anteprima combattimento','Aperçu du combat'],
+
+ 'Live combat':['Laufender Kampf','Combate en curso','Lopend gevecht','Combattimento in corso','Combat en cours'],
+ 'Enemy health':['Gegner-Lebenspunkte','Salud del enemigo','Gezondheid vijand','Salute del nemico','Vie de l’ennemi'],
+ 'Hit · {amount}':['Treffer · {amount}','Golpe · {amount}','Treffer · {amount}','Colpo · {amount}','Coup · {amount}'],
+ 'Combat stopped':['Kampf beendet','Combate detenido','Gevecht gestopt','Combattimento interrotto','Combat arrêté'],
+ 'Damage updates on hit. Rewards are granted on defeat.':['Schaden wird bei jedem Treffer angewendet. Belohnungen gibt es nach dem Sieg.','El daño se aplica con cada golpe. Las recompensas llegan al vencer.','Schade wordt per treffer verwerkt. Beloningen krijg je na de overwinning.','I danni si applicano a ogni colpo. Le ricompense arrivano alla vittoria.','Les dégâts sont appliqués à chaque coup. Les récompenses arrivent après la victoire.'],
  'safe':['sicher','seguro','veilig','sicuro','sûr'],
  'steady':['stabil','estable','stabiel','stabile','stable'],
  'dangerous':['gefährlich','peligroso','gevaarlijk','pericoloso','dangereux'],

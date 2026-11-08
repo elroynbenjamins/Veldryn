@@ -523,9 +523,9 @@ function simulateCombat(state:GameState,monsterId:string,elapsed:number,nowMs=Da
  let activeEncounterIndex=0,enemyHp:number|undefined=activity?.combatEnemyHp;
  let lastHit:undefined|{atMs:number;actor:'player'|'enemy';damage:number;critical:boolean};
  const seedFor=(index:number)=>`${c.id}:${activity?.startedAtMs??startsAtMs}:${monsterId}:${(activity?.sessionKills??0)+index}`;
- const hitsFor=(runtime:ReturnType<typeof combatRuntimeDetails>,index:number,champion:boolean)=>{
+ const hitsFor=(runtime:ReturnType<typeof combatRuntimeDetails>,index:number,champion:boolean,attackCadenceSeconds=runtime.killCycleSeconds)=>{
    const exchange=combatEncounterDamage(runtime,champion);
-   return huntHitEvents({monsterHp:runtime.m.hp,basePlayerHit:huntBasePlayerHit(runtime.stats.attack,runtime.m.defense,runtime.secondary.playerOutputMultiplier),incomingDamage:exchange.damage,healingPerEncounter:exchange.healing,cycleSeconds:runtime.killCycleSeconds,critChance:runtime.stats.critChance,seed:seedFor(index)});
+   return huntHitEvents({monsterHp:runtime.m.hp,basePlayerHit:huntBasePlayerHit(runtime.stats.attack,runtime.m.defense,runtime.secondary.playerOutputMultiplier),incomingDamage:exchange.damage,healingPerEncounter:exchange.healing,cycleSeconds:attackCadenceSeconds,critChance:runtime.stats.critChance,seed:seedFor(index)});
  };
  if(enemyHp===undefined||!Number.isFinite(enemyHp)){
    const champion=isChampionEncounter(c.id,activity?.startedAtMs??startsAtMs,monsterId,activity?.sessionKills??0);
@@ -538,7 +538,8 @@ function simulateCombat(state:GameState,monsterId:string,elapsed:number,nowMs=Da
    if(segment.encounterIndex!==activeEncounterIndex){enemyHp=runtime.m.hp;activeEncounterIndex=segment.encounterIndex;}
    const encounterNumber=(activity?.sessionKills??0)+segment.encounterIndex;
    const champion=isChampionEncounter(c.id,activity?.startedAtMs??startsAtMs,monsterId,encounterNumber);
-   const hits=hitsFor(runtime,segment.encounterIndex,champion);
+   // Candy accelerates the clock, but cannot rearrange attack indices mid-fight.
+   const hits=hitsFor(runtime,segment.encounterIndex,champion,segment.prepared?prepared.killCycleSeconds:plain.killCycleSeconds);
    for(const hit of huntHitsBetween(hits,segment.fromFraction,segment.toFraction)){
      const hitAtMs=segment.startsAtMs+(hit.fraction-segment.fromFraction)*segment.cycleSeconds*1000;
      if(hit.actor==='player'){

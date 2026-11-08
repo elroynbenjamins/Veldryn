@@ -5,6 +5,7 @@ import {RECIPES,type Recipe} from '../content/skills';
 import {itemDef} from '../content/items';
 import {localizedItemName} from '../i18n/starter-item-names';
 import {alchemyAvailability} from '../core/alchemy';
+import {alchemyPotionRows} from '../core/alchemy-workshop-choices';
 import {processingRunCapacity} from '../core/processing';
 import {offlineCapSeconds} from '../core/game';
 import {professionActionPace} from '../core/profession-action-pace';
@@ -59,9 +60,11 @@ export function ConsumableWorkshop({state,skillId,preferredRecipeId,onStart}:Pro
   return gt('Deals {percent}% more damage for {count} ordinary encounters.',{percent:Math.round(effect.damageDealtFraction*100),count});
  };
  const all=useMemo(()=>RECIPES.filter(r=>r.skillId===skillId&&!r.noviceSetId).sort((a,b)=>a.level-b.level),[skillId]);
- const groups=categories[skillId],preferred=all.find(r=>r.id===preferredRecipeId);
+ const groups=categories[skillId],preferred=all.find(r=>r.id===preferredRecipeId)??all.find(r=>r.output.itemId===preferredRecipeId);
+ const detailKey=(recipe:Recipe)=>recipe.skillId==='alchemy'&&!!potionDef(recipe.output.itemId)?recipe.output.itemId:recipe.id;
  const [category,setCategory]=useState<string>(preferred?categoryOf(preferred):groups[0]);
- const [readyOnly,setReadyOnly]=useState(false),[detailId,setDetailId]=useState<string|null>(preferred?.id??null);
+ const [readyOnly,setReadyOnly]=useState(false),[detailId,setDetailId]=useState<string|null>(preferred?detailKey(preferred):null);
+ const [manualSourceByPotion,setManualSourceByPotion]=useState<Record<string,string>>({});
  const [pendingId,setPendingId]=useState<string|null>(null),[busy,setBusy]=useState(false),[error,setError]=useState('');
  const busyRef=useRef(false);
  const activity=state.activity,activeId=activity?.kind==='alchemy'?activity.targetId:activity?.kind==='processing'&&activity.processing?.skillId==='cooking'?activity.targetId:undefined;
@@ -81,17 +84,25 @@ export function ConsumableWorkshop({state,skillId,preferredRecipeId,onStart}:Pro
  const counts=new Map(capacities);
  const count=(recipe:Recipe)=>counts.get(recipe.id)??0;
  const visible=all.filter(r=>categoryOf(r)===category&&(!readyOnly||(r.level<=skillLevel&&count(r)>0)));
- // Alternate regional brews share the same resulting potion. Show one row per
- // potion and automatically choose the first craftable recipe (base recipe first).
- const recipes=skillId==='alchemy'&&category==='Potions'
-  ?[...visible.reduce((groups,recipe)=>{
-   const options=groups.get(recipe.output.itemId)??[];
-   options.push(recipe);groups.set(recipe.output.itemId,options);return groups;
-  },new Map<string,Recipe[]>()).values()].map(options=>options.find(r=>r.id===activeId)
-   ??options.find(r=>r.level<=skillLevel&&count(r)>0)
-   ??options.find(r=>r.id===preferredRecipeId)
-   ??options[0])
-  :visible;
+ const potionRows=skillId==='alchemy'&&category==='Potions'
+  ?alchemyPotionRows(all.filter(r=>categoryOf(r)==='Potions'),count,skillLevel,{
+    activeId,preferredId:preferred?.id,manualByOutput:manualSourceByPotion,readyOnly,
+   }):[];
+ const recipes=skillId==='alchemy'&&category==='Potions'?potionRows.map(row=>row.recipe):visible;
+ const potionOptions=new Map(potionRows.map(row=>[row.outputId,row.options]));
+ const missingReason=(recipe:Recipe):string=>{
+  if(recipe.level>skillLevel)return gt('Requires {skill} level {level}.',{skill:gl('alchemy'),level:recipe.level});
+  const goldShortfall=Math.max(0,recipe.gold-(state.character?.gold??0));
+  if(goldShortfall>0)return gt('Need {amount} more Gold',{amount:goldShortfall});
+  const missing=recipe.inputs.find(input=>state.inventory.stacks.filter(row=>row.itemId===input.itemId).reduce((total,row)=>total+row.quantity,0)
+    +state.bank.stacks.filter(row=>row.itemId===input.itemId).reduce((total,row)=>total+row.quantity,0)<input.quantity);
+  if(missing){
+   const owned=[...state.inventory.stacks,...state.bank.stacks].filter(row=>row.itemId===missing.itemId).reduce((total,row)=>total+row.quantity,0);
+   return gt('Need {amount} more {item}',{amount:missing.quantity-owned,item:itemName(missing.itemId)});
+  }
+  if(professionActionPace(state,recipe,'batch').cycleSeconds>afkCap)return gt('Not enough AFK time for one batch.');
+  return gt('Requirements missing');
+ };
  const detail=all.find(r=>r.id===detailId);
  const submit=async(id:string)=>{
   if(busyRef.current)return;

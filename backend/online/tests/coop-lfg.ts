@@ -1,11 +1,15 @@
 import assert from 'node:assert/strict';
 import {createCharacter,newGame} from '../../../apps/mobile/src/core/game';
+import {legacyCharacterTotalXpAtLevel} from '../../../apps/mobile/src/core/progression';
 import {noviceItemId,noviceSetFor} from '../../../apps/mobile/src/content/novice-sets';
+import {EXPEDITIONS} from '../../src/server/expeditions/content/launch-content';
+import {highestEligibleCoopTier} from '../../src/server/coop/config';
+import {deriveOnlineCoopLoadout} from '../coop-loadout';
 import {coopHandler} from '../coop';
 
 async function main(){
  const account='11111111-1111-4111-8111-111111111111';
- const state=createCharacter(newGame(0),'IRONWARDEN','Board Tank');state.character!.level=25;
+ const state=createCharacter(newGame(0),'IRONWARDEN','Board Tank');state.character!.xp=legacyCharacterTotalXpAtLevel(25);state.character!.level=25;
  state.character!.equipment=Object.fromEntries(noviceSetFor('IRONWARDEN').slots.map(slot=>[slot,noviceItemId('IRONWARDEN',slot)]));
  const calls:Array<{name:string;args:Record<string,unknown>}>=[],post={id:'33333333-3333-4333-8333-333333333333',dungeonId:'EXP_001',ownerName:'Board Tank',role:'tank',maxTier:3,note:'Starting now',createdAtMs:1000,expiresAtMs:1_801_000,mine:true};
  const handler=coopHandler({authenticate:async token=>token==='valid'?account:null,randomId:()=>crypto.randomUUID(),randomRoll:()=>0,
@@ -26,7 +30,7 @@ async function main(){
  assert.equal((await handler(request('lfg',{requestId:'lfg-post-001',dungeonId:'EXP_005'}))).status,400,'under-level dungeon post must fail closed');
  const publish=await handler(request('lfg',{requestId:'lfg-post-001',dungeonId:'EXP_001',note:'Starting now'}));assert.equal(publish.status,200);
  const write=calls.find(row=>row.name==='publish_online_coop_lfg_server_v1')!;
- assert.equal(write.args.p_role,'tank');assert.equal(write.args.p_max_tier,3);assert.equal(write.args.p_note,'Starting now');assert.equal(write.args.p_character_id,state.character!.id);
+ assert.equal(write.args.p_role,'tank');assert.equal(write.args.p_max_tier,highestEligibleCoopTier(EXPEDITIONS.EXP_001.minLevel,deriveOnlineCoopLoadout(account,state,7).characterLevel));assert.equal(write.args.p_note,'Starting now');assert.equal(write.args.p_character_id,state.character!.id);
  const browse=await handler(request('lfg'));assert.equal(browse.status,200);assert.equal((await browse.json())[0].id,post.id);
  const close=await handler(request('lfg/close',{requestId:'lfg-close-001'}));assert.equal(close.status,200);
  console.log('PASS co-op LFG authentication, server-derived role/tier, dungeon gates, browse and close boundaries');

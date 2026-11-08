@@ -1,12 +1,16 @@
 import assert from 'node:assert/strict';
 import {createCharacter,newGame} from '../../../apps/mobile/src/core/game';
+import {legacyCharacterTotalXpAtLevel} from '../../../apps/mobile/src/core/progression';
 import {noviceItemId,noviceSetFor} from '../../../apps/mobile/src/content/novice-sets';
+import {EXPEDITIONS} from '../../src/server/expeditions/content/launch-content';
+import {readinessEligibleCoopTier} from '../../src/server/coop/config';
+import {assessOnlineCoopLoadout,deriveOnlineCoopLoadout} from '../coop-loadout';
 import {coopHandler} from '../coop';
 import {GameplayError} from '../gameplay';
 
 async function main(){
  const account='11111111-1111-4111-8111-111111111111',ticket='22222222-2222-4222-8222-222222222222';
- const state=createCharacter(newGame(0),'IRONWARDEN','Live Tank');state.character!.level=25;
+ const state=createCharacter(newGame(0),'IRONWARDEN','Live Tank');state.character!.xp=legacyCharacterTotalXpAtLevel(25);state.character!.level=1;
  state.character!.equipment=Object.fromEntries(noviceSetFor('IRONWARDEN').slots.map(slot=>[slot,noviceItemId('IRONWARDEN',slot)]));
  const calls:Array<{name:string;args:Record<string,unknown>}>=[];
  let prior:{requestHash:string;response:unknown}|null=null,version=7,receiptOnSecondRead=false,reads=0;
@@ -39,7 +43,8 @@ async function main(){
  const quickResponse=await handler(request('quick-queue',quick));assert.equal(quickResponse.status,200);
  const quickWrite=calls.filter(row=>row.name==='join_online_live_queue_server_v1').at(-1)!;
  assert.equal(quickWrite.args.p_expedition_id,'EXP_001','Quick Match should send the Tank to the nearly complete dungeon pool');
- assert.ok(Number(quickWrite.args.p_tier)>=1&&Number(quickWrite.args.p_tier)<=3,'Quick Match chooses a server-derived, level-eligible tier based on readiness');
+ const quickRecord=deriveOnlineCoopLoadout(account,state,version),quickReadiness=assessOnlineCoopLoadout(quickRecord).readiness;
+ assert.equal(quickWrite.args.p_tier,readinessEligibleCoopTier(EXPEDITIONS.EXP_001.minLevel,quickRecord.characterLevel,quickReadiness.normalizedScore),'Quick Match uses the XP-derived level and verified readiness for its tier');
  prior=null;reads=0;calls.length=0;
  const first=await handler(request('queue',body));assert.equal(first.status,200);
  const write=calls.find(row=>row.name==='join_online_live_queue_server_v1')!;

@@ -1,5 +1,5 @@
 import {useCallback,useEffect,useMemo,useRef,useState} from 'react';
-import {Pressable,ScrollView,StyleSheet,Text,View} from 'react-native';
+import {Pressable,StyleSheet,Text,View} from 'react-native';
 import {PLAYER_MARKET_RELEASED} from '../core/release-flags';
 import {
   loadMarketInbox,claimMarketInboxDelivery,
@@ -85,16 +85,16 @@ export function MarketInboxPanel({state,online,onRefresh}:{
         <View style={s.actions}>
           <SocialActionButton primary label={a('Claim to Inventory')} disabled={busy||!online}
             busy={busy} onPress={()=>void claim(row,'inventory')}/>
-          <SocialActionButton label={a('Bank')} disabled={busy||!online}
+          <SocialActionButton label={a('Bank')} busy={busy} disabled={busy||!online}
             onPress={()=>void claim(row,'bank')}/>
-          {row.assetKind==='gem'?<SocialActionButton label={a('Gem Pouch')}
+          {row.assetKind==='gem'?<SocialActionButton label={a('Gem Pouch')} busy={busy}
             disabled={busy||!online} onPress={()=>void claim(row,'gem_pouch')}/>:null}
         </View>:null}
     </View>)}
     {loading?<LoadingState compact label={a('Loading market inbox…')}/>:null}
     {!loading&&!snapshot.entries.length&&!error?
       <Text style={s.empty}>{history?a('No completed market activity yet.'):a('No market deliveries waiting.')}</Text>:null}
-    {snapshot.entries.length<snapshot.total?<SocialActionButton label={a('Load more')}
+    {snapshot.entries.length<snapshot.total?<SocialActionButton label={a('Load more')} busy={loading||busy}
       disabled={loading||busy} onPress={()=>void load(true)}/>:null}
   </View>;
 }

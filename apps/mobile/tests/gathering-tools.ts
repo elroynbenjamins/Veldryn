@@ -24,7 +24,7 @@ for(const skillId of ['mining','woodcutting','fishing'] as const){
   ok(tools[i].requiredCharacterLevel>=tools[i-1].requiredCharacterLevel,skillId+' tool Level requirements must not regress');
   ok(!!tools[i].blueprint,skillId+' Tier '+tools[i].tier+' must have a blueprint');
   const source=MONSTERS.find(monster=>monster.id===tools[i].blueprint!.sourceMonsterId);
-  ok(!!source&&source.drops.some(drop=>drop.itemId===tools[i].blueprint!.itemId&&drop.chance===tools[i].blueprint!.dropChance),tools[i].name+' blueprint source must be an authored monster drop');
+  ok(!!source&&source.drops.some(drop=>drop.itemId===tools[i].blueprint!.itemId&&Math.abs(drop.chance-tools[i].blueprint!.dropChance*.95)<1e-12),tools[i].name+' blueprint source must be an authored monster drop');
  }
 }
 

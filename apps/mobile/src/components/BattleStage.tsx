@@ -23,7 +23,9 @@ export function BattleStage({state,monster,elapsedSeconds,cycleSeconds}:{state:G
  const stats=useMemo(()=>effectiveStats(state),[state]);
  const isLive=state.activity?.kind==='combat'&&state.activity.targetId===monster.id;
  const effectiveNowMs=(state.activity?.lastClaimAtMs??0)+elapsedSeconds*1000;
- const fight=useMemo(()=>isLive?activeCombatHitProjection(state,effectiveNowMs):undefined,[isLive,state,effectiveNowMs]);
+ const replayCursor=useRef<import('../core/game').ActiveCombatHitCursor|undefined>(undefined);
+ const fight=useMemo(()=>isLive?activeCombatHitProjection(state,effectiveNowMs,replayCursor.current):undefined,[isLive,state,effectiveNowMs]);
+ useEffect(()=>{replayCursor.current=fight?.cursor;},[fight?.cursor]);
  const recentHit=fight?.lastHit&&effectiveNowMs-fight.lastHit.atMs<2600?fight.lastHit:undefined;
  const damageValue=(value:number)=>value>0&&value<1?value.toFixed(2):String(displayStat(value));
  const region=WORLD_ZONES.find(zone=>zone.name===monster.zone),motion=combatMotionProfile(cycleSeconds,state.settings.reduceMotion);

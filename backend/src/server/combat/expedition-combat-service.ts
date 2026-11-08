@@ -74,7 +74,7 @@ export function buildExpeditionEncounter(input:BuildExpeditionEncounterInput):Co
   return factory().map((enemy,index)=>{
     const levelRatio=input.enemyLevel===undefined?1:Math.max(.65,Math.min(1.2,input.enemyLevel/Math.max(1,enemy.level)));
     const base={...enemy,level:input.enemyLevel??enemy.level,stats:{...enemy.stats,maxHp:enemy.stats.maxHp*levelRatio*(input.enemyHpMultiplier??1),attackPower:enemy.stats.attackPower*levelRatio*(input.enemyAttackMultiplier??1),defense:enemy.stats.defense*levelRatio*(input.enemyDefenseMultiplier??1)}};
-    if(!base.boss||!tuning)return applyCoopRoomModifier(base,input.roomModifierId,index);
+    if(!base.boss||!tuning)return applyCoopRoomModifier(base,input.roomModifierId,index,input.roomModifierElite);
     const abilities=base.abilities.filter(ability=>!removed.has(ability.id)).map(ability=>{
       const damageMultiplier=tuning.abilityDamageMultipliers?.[ability.id]??1,cooldownMultiplier=tuning.abilityCooldownMultipliers?.[ability.id]??1;
       return {...ability,cooldownMs:Math.max(500,Math.round(ability.cooldownMs*cooldownMultiplier)),effects:ability.effects.map(effect=>(effect.kind==='damage'||effect.kind==='dot')&&effect.coeff!==undefined?{...effect,coeff:effect.coeff*damageMultiplier}:effect)};

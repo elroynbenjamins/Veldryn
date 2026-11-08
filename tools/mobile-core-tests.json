@@ -149,6 +149,7 @@
   ".core-build/apps/mobile/tests/vip-supporter-entitlements.js",
   ".core-build/apps/mobile/tests/player-name-style-save.js",
   ".core-build/apps/mobile/tests/monster-mastery.js",
+  ".core-build/apps/mobile/tests/monster-drop-balance.js",
   ".core-build/apps/mobile/tests/contract-board-v58.js",
   ".core-build/apps/mobile/tests/quest-journal.js",
   ".core-build/apps/mobile/tests/regional-story-leads.js",

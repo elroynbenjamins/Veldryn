@@ -36,6 +36,7 @@ const buyerGearClaim=read('backend/supabase/migrations/20261108224000_market_equ
 const buyerGearCancel=read('backend/supabase/migrations/20261108224500_market_equipment_offer_cancellation_private_v9.sql');
 const buyerGearInbox=read('backend/supabase/migrations/20261108225000_market_equipment_inbox_private_v9.sql');
 const buyerGearTest=read('backend/supabase/tests/player_market_equipment_buyer_v9.sql');
+const buyerGearRace=read('backend/supabase/tests/run_market_equipment_concurrency_ci_v9.sh');
 const release=read('apps/mobile/src/core/release-flags.ts');
 const roadmap=read('apps/mobile/src/core/community-roadmap-release-visibility.ts');
 
@@ -367,4 +368,12 @@ assert.doesNotMatch(buyerGearClaim,/\bupdate\s+public\.character_wallets\b/i,
 assert.doesNotMatch(gameplayEdge,/market_purchase_equipment_offer_v9|market_claim_equipment_purchase_v9/,
   'V9 must remain unmounted in live gameplay Edge');
 
+requireMatches(buyerGearRace,[
+  ['local throwaway PG host',/PGHOST.*localhost/],
+  ['throwaway CI database',/veldryn_market_ci/],
+  ['competing buyer sessions',/buy-concurrent-a1[\s\S]*?buy-concurrent-b1/],
+  ['cancel before purchase',/cancel-race-a2[\s\S]*?buy-race-b2/],
+  ['purchase before cancellation',/buy-race-a3[\s\S]*?cancel-race-b3/],
+  ['Gold and custody invariants',/market_v9_concurrent_invariant_failed/],
+], 'V9 real equipment transaction races');
 console.log('PASS: hidden V2–V9 market security, buyer Forge transfers and unexposed Inbox checks');

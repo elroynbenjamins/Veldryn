@@ -37,7 +37,7 @@ const vanguardIds=[['RIVER_MINT','ASTER_IRON_ORE'],['IRONBLOOM','OATHSTONE_ORE']
 const nodeLines=catalogue.split('\n').filter(line=>/^\s*\{id:'(?:professions|fellowship|vanguard)_/.test(line));
 assert.equal(nodeLines.length,9,'All 9 existing Guild Skills must retain their authored progression');
 for(const line of nodeLines){
- const match=line.match(/^\s*\{id:'([^']+)'.*\bcosts:\[(.*)\]\},?$/);
+ const match=line.trimEnd().match(/^\s*\{id:'([^']+)'.*\bcosts:\[(.*)\]\},?$/);
  assert.ok(match,'Guild Skill cost declaration is malformed');
  const skill=match[1],vanguard=skill.startsWith('vanguard_');
  const rankBodies=[...match[2].matchAll(/\{([^}]+)\}/g)].map(m=>m[1]);

@@ -40,7 +40,7 @@ const only=(body:Record<string,unknown>,fields:string[])=>{
 };
 const id=(v:unknown):v is string=>typeof v==='string'&&uuid.test(v);
 const requestKey=(v:unknown):v is string=>typeof v==='string'&&key.test(v);
-const bad=()=>{throw new MarketRequestError('market_invalid_request',400);};
+const bad=():never=>{throw new MarketRequestError('market_invalid_request',400);};
 
 function validate(operation:string,method:string,query:URLSearchParams,body:unknown):MarketOperation{
   const params:string[]=[];

@@ -25,7 +25,7 @@ export const EARLY_FEATURE_UNLOCKS={
 
 /** Convert internal gameplay permission failures into actionable player feedback. */
 export function playerFacingGameplayError(message:string){
- return /unknown event-shop offer/i.test(message)?'This Event Shop offer is not supported by the current game server. Your currency was not spent. The gameplay server needs an update.':message==='events_locked'?'Events are temporarily unavailable. Please try again.':message==='contract_board_locked'?EARLY_FEATURE_UNLOCKS.contracts.requirement+' and claim its quest reward to unlock the Contract Board.':message;
+ return /unknown event-shop offer/i.test(message)?'This Event Shop offer is not supported by the current game server. Your currency was not spent. The gameplay server needs an update.':message==='pending_action'?'Your previous action is still waiting to be confirmed. Retry it before starting another action.':message==='events_locked'?'Events are temporarily unavailable. Please try again.':message==='contract_board_locked'?EARLY_FEATURE_UNLOCKS.contracts.requirement+' and claim its quest reward to unlock the Contract Board.':message;
 }
 
 export interface FeatureUnlockHost{character?:{level?:number}|null;quests?:readonly {questId:string;status:string}[];otherCharacters?:readonly {level?:number;quests:readonly {questId:string;status:string}[]}[];account:{guildMember?:boolean};}

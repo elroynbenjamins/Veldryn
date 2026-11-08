@@ -41,6 +41,7 @@ assert.ok(milestoneClaim.account.unlockedEmoteIds?.includes('emote_lantern_watch
 let duplicateGiftError='';try{executeGameCommand(levelOneClaim,{type:'event_daily'},eventNow);}catch(error){duplicateGiftError=error instanceof Error?error.message:'';}
 assert.equal(duplicateGiftError,"Today's festival gift was already claimed.",'Daily gift must still be protected against duplicate claims');
 assert.equal(playerFacingGameplayError('events_locked'),'Events are temporarily unavailable. Please try again.');
+assert.equal(playerFacingGameplayError('pending_action'),'Your previous action is still waiting to be confirmed. Retry it before starting another action.');
 assert.equal(playerFacingGameplayError('event_not_active'),'event_not_active','Unrelated errors must retain their original detail');
 
 state=claimQuest(state,'QST_002',2);

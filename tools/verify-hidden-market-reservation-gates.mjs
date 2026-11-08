@@ -26,6 +26,9 @@ const gameplayEdge=read('backend/online/edge.ts');
 const concurrencyRunner=read('backend/supabase/tests/run_market_concurrency_ci_v6.sh');
 const gearProof=read('backend/online/market-equipment-proof.ts');
 const gearProofTest=read('backend/online/tests/market-equipment-proof.ts');
+const exactGearEscrow=read('backend/supabase/migrations/20261108211500_market_exact_equipment_escrow_private_v8.sql');
+const exactGearReturns=read('backend/supabase/migrations/20261108212500_market_equipment_returns_private_v8.sql');
+const exactGearTest=read('backend/supabase/tests/player_market_exact_equipment_v8.sql');
 const release=read('apps/mobile/src/core/release-flags.ts');
 const roadmap=read('apps/mobile/src/core/community-roadmap-release-visibility.ts');
 
@@ -247,4 +250,49 @@ assert.doesNotMatch(gearProof,/\bupdate\s+public\.|\binsert\s+into\b|\bdelete\s+
 assert.doesNotMatch(gameplayEdge,/market-equipment-proof/,
   'the equipment proof must not be imported by the live gameplay transport');
 
-console.log('PASS: hidden V2–V7 market security, exact gear metadata and release barriers remain private');
+requireMatches(exactGearEscrow,[
+  ['hard-false independent equipment enable constraint',/equipment_transfers_enabled boolean not null default false[\s\S]*?check\(equipment_transfers_enabled=false\)/],
+  ['custody table RLS',/alter table private\.market_equipment_escrows_v8 enable row level security/],
+  ['account advisory lock',/hashtextextended\('party-account:'\|\|p_account_id::text,0\)/],
+  ['server authoritative revision lock',/select \* into v_state from public\.online_game_states[\s\S]*?for update/],
+  ['unique exact receipt check',/v_receipt_count<>1/],
+  ['unique physical copy check',/v_stack_count<>1/],
+  ['legacy untagged gear fail closed',/market_equipment_identity_ambiguous/],
+  ['protected saved loadouts',/market_equipment_saved_loadout/],
+  ['socket item policy verified',/item_id=v_stat and asset_kind='gem'/],
+  ['source stack + exact receipt removed in one state update',/v_new_state:=pg_catalog\.jsonb_set\(v_state\.state#-v_path,[\s\S]*?'\{account,craftedGearInstances\}',v_remaining_records,false\)/],
+  ['source revision advanced once',/revision=v_state\.revision\+1/],
+  ['receipt copied into custody',/'exactReceipt',v_receipt/],
+  ['reserve execute revoked',/revoke all on function private\.market_reserve_exact_equipment_v8\([\s\S]*?from public,anon,authenticated,service_role;/],
+], 'exact equipment escrow');
+requireMatches(exactGearReturns,[
+  ['private equipment return ledger RLS',/alter table private\.market_equipment_return_deliveries_v8 enable row level security/],
+  ['equipment sale still blocked',/market_equipment_listing_lifecycle_not_ready/],
+  ['exact return receipt comparison',/v_gear\.exact_receipt is distinct from v_delivery\.receipt_payload/],
+  ['full destination cannot consume entitlement',/market_equipment_destination_full/],
+  ['buyer cannot claim return',/market_equipment_delivery_not_owned/],
+  ['duplicate equipment ID prevented',/market_equipment_destination_identity_conflict/],
+  ['exact receipt and stack credited together',/v_next_state:=pg_catalog\.jsonb_set\(v_game\.state,v_stack_path,[\s\S]*?v_records\|\|pg_catalog\.jsonb_build_array\(v_delivery\.receipt_payload\)/],
+  ['single use return claim receipt',/'claim_equipment_return',v_result/],
+  ['claim execute revoked',/revoke all on function private\.market_claim_equipment_return_v8\([\s\S]*?from public,anon,authenticated,service_role;/],
+], 'exact equipment returns');
+requireMatches(exactGearTest,[
+  ['synthetic staging rollback',/\nrollback;\s*$/],
+  ['original Forge metadata preserved',/exact Forge copy escrow did not atomically preserve receipt/],
+  ['full bank cannot consume return',/full bank consumed exact Forge return/],
+  ['socket mismatch rejected',/socket mismatch accepted by equipment escrow/],
+  ['saved loadout rejection',/saved loadout gear accepted by escrow/],
+  ['other account rejected',/non-owner claimed original equipment/],
+  ['duplicate instance rejection',/duplicate Forge copy was restored/],
+  ['bank escrow and equipment pouch restored',/pouch return modified exact receipt or another copy/],
+], 'exact equipment staging tests');
+for(const s of [exactGearEscrow,exactGearReturns]){
+  assert.doesNotMatch(s,/\bgrant\s+(execute|select|insert|update|delete)\b/i,
+    'equipment escrow cannot grant any client or service access');
+  assert.doesNotMatch(s,/\bupdate\s+public\.character_wallets\b/i,
+    'equipment escrow and return cannot modify Gold wallets');
+}
+assert.doesNotMatch(gameplayEdge,/market_reserve_exact_equipment_v8|market_claim_equipment_return_v8/,
+  'no live equipment escrow transport is permitted');
+
+console.log('PASS: hidden V2–V8 market exact Forge escrow, replay-safe return and wallet isolation gates verified');

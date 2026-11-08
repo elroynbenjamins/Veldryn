@@ -80,13 +80,9 @@ is supplied to Supabase for both:
 Supabase validates that the Google token claim matches the hash. Do not disable
 nonce checking or switch to unverified identity linking.
 
-**Rollout:** `EXPO_PUBLIC_GOOGLE_ACCOUNT_LINKING_ENABLED` is off by default
-(including production), hiding both the existing-account linking button and the
-signed-out Google sign-in button. The internal `preview` EAS build sets it to
-`true` for QA, while successful existing Google links remain visible regardless
-of the flag. After internal device tests, explicitly enable the flag on production
-and create a new **signed** Android build. An OTA-only update cannot add the new
-`expo-crypto` native module to a previously installed build.
+**Rollout (November 8, 2026):** At the owner's request, `EXPO_PUBLIC_GOOGLE_ACCOUNT_LINKING_ENABLED=true` is now set in the `production` and `preview` EAS build profiles. The flag is *off by default* in other contexts. Both the account linking button and signed-out Google sign-in button appear in a **new build** with this flag. An OTA-only update cannot add the required `expo-crypto` native module to an already installed build. The Google OAuth Android certificate/client and hosted Supabase Google/Manual Linking settings **have not been independently verified**. This is an explicitly risk-accepted release experiment, not evidence that the full end-to-end link has succeeded.
+
+If the button still fails, do not sign out or uninstall an account until another working login method is confirmed. Check production Supabase Auth logs for `nonce` and identity-link errors, validate hosted settings, and consider disabling the flag in a follow-up build. Keep verification and nonce checks enabled.
 
 QA checklist (use a secured test account; do not risk an unrecoverable guest):
 1. Confirm Google OAuth Android package and SHA-1 are configured for the preview

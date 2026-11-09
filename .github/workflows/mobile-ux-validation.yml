@@ -69,6 +69,7 @@ jobs:
         run: |
           pnpm exec tsc -p tsconfig.onboarding.json
           node .onboarding-build/apps/mobile/tests/guild-tour-v2.js
+          node tests/guild-guide-library-ui.cjs
       - name: Verify compact gathering Drops UI and real drop odds
         run: pnpm test:gathering-drops
       - name: Run mobile core tests

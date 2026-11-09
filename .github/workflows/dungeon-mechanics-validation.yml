@@ -46,3 +46,6 @@ jobs:
       - name: Validate real encounters, room rewards, modifiers, and Live vote authority
         run: pnpm test:dungeon-variety
         working-directory: backend
+      - name: Validate new dungeon unlocks, three tiers and authored drops
+        run: pnpm test:coop-live-social
+        working-directory: backend

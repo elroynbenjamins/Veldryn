@@ -1,41 +1,49 @@
-# Veldryn — Roadmap & Design Spreadsheets
+# Veldryn — Roadmap & Feature Design Workbooks
 
-This directory is the version-controlled home for Veldryn's **roadmap and detailed feature-design workbooks**. These are **planning artifacts only**, not live game configuration or migrations.
+**One major game mode or substantial feature per spreadsheet.** This folder is the version-controlled design archive, not the app's live data or production configuration.
 
-## Current workbook
+## Active designs
 
-| Feature | Version | File | Editable Drive copy |
+| Design | Status | Workbook backup in GitHub | Normal Excel file |
 | --- | --- | --- | --- |
-| Guild Expeditions / Guild PvE, with World Boss reference | v3, 2026-11-09 | [PvE design workbook](./Veldryn_PvE_Master_Design_v3_2026-11-09.xlsx.b64) | [Open in Google Drive](https://docs.google.com/spreadsheets/d/1ATx1WV6n9IaSQrI-omI4crbMyrZ_-1Vc/edit?usp=drivesdk&ouid=103493422424761722541&rtpof=true&sd=true) |
-| World Bosses (dedicated detailed mechanics) | v1, 2026-11-09 | [World Boss design spreadsheet (CSV)](./world-bosses-design-v1.csv) | Local eight-sheet Excel workbook created; not yet in Drive |
+| **Guild PvE / Guild Expeditions** | Detailed draft v3 · 2026-11-09 | [Guild PvE XLSX backup](./Veldryn_Guild_PvE_Expeditions_Design_v3_2026-11-09.xlsx.b64) | [Open in Google Drive](https://docs.google.com/spreadsheets/d/14iQJt2zBTN93EoXMBKr-TMNTgBBcCgha/edit?usp=drivesdk) |
+| **World Bosses** | Concept snapshot v1 · 2026-11-09 | [World Boss XLSX backup](./Veldryn_World_Bosses_Design_v1_2026-11-09.xlsx.b64) | [Open in Google Drive](https://docs.google.com/spreadsheets/d/1WH1auLjuEPnTjhTP8YBOuWtyUeV3ehO9/edit?usp=drivesdk) |
 
-The PvE master workbook repository copy is stored as an **exact base64 backup** of its Excel workbook because the currently connected GitHub file-writing interface only supports UTF-8 text files. That PvE master file has not been converted to CSV or otherwise altered. The dedicated World Boss v1 design is additionally available as a standard CSV that opens directly in spreadsheet software.
+The former combined PvE workbook was superseded by these two split files. The prior combined version remains available in Git history, rather than cluttering this active folder.
 
-**Restore the real .xlsx file:**
+## Structure & naming
 
-On macOS/Linux:
+Keep exactly **one workbook per major feature/game mode** rather than expanding a massive all-in-one roadmap spreadsheet. Each workbook may have multiple tabs for concept, requirements, encounters, UI/UX, architecture, formulas, reward economy, QA, and release readiness.
+
+Suggested future standalone workbooks include Party Events, Guild PvP, Arena, Leaderboards, Player Market, World Expansion / Equipment Tier 5+, and Gameplay Refinement. Create only when the corresponding design exists; don't add empty placeholder workbooks.
+
+Use `Veldryn_<Feature>_Design_vN_YYYY-MM-DD.xlsx`. Clearly mark `Draft`, `Reviewed`, `Approved`, or `Implemented` inside the workbook. Maintain the latest active version and preserve significant prior milestones through Git history.
+
+## Working with the GitHub backups
+
+The connected GitHub writing interface currently accepts **UTF-8 text files**, so the exact Excel bytes are checked in as `.xlsx.b64` backups. These are not ordinary spreadsheets until decoded. The Google Drive copies linked above are ordinary Excel files.
+
+Recover a workbook on **macOS/Linux**:
 
 ```bash
-base64 --decode Veldryn_PvE_Master_Design_v3_2026-11-09.xlsx.b64 > Veldryn_PvE_Master_Design_v3_2026-11-09.xlsx
+base64 --decode Veldryn_Guild_PvE_Expeditions_Design_v3_2026-11-09.xlsx.b64 > Veldryn_Guild_PvE_Expeditions_Design_v3_2026-11-09.xlsx
+base64 --decode Veldryn_World_Bosses_Design_v1_2026-11-09.xlsx.b64 > Veldryn_World_Bosses_Design_v1_2026-11-09.xlsx
 ```
 
-On Windows PowerShell:
+Recover any one on **Windows PowerShell**:
 
 ```powershell
-[IO.File]::WriteAllBytes('Veldryn_PvE_Master_Design_v3_2026-11-09.xlsx', [Convert]::FromBase64String([IO.File]::ReadAllText('Veldryn_PvE_Master_Design_v3_2026-11-09.xlsx.b64').Trim()))
+$base='Veldryn_Guild_PvE_Expeditions_Design_v3_2026-11-09.xlsx'
+[IO.File]::WriteAllBytes($base, [Convert]::FromBase64String([IO.File]::ReadAllText("$base.b64").Trim()))
 ```
 
-The decoded file must have **56,721 bytes** and SHA-256:
-`5ed22df5bd0e0a1eaa4877c383c0b2a9dfa2c1868d8d056368a56fac4d81d92c`.
+### Integrity checks
 
-## Future roadmap spreadsheets
+| Design | Decoded bytes | SHA-256 of XLSX |
+| --- | ---: | --- |
+| Guild PvE | 54,572 | `06721d7b3ebf451c8a3cf0a9c9ff7eb4d4cb30af67b2be86326de048cf6a23b3` |
+| World Bosses | 9,502 | `67d55c4acee22c4c34c01d46b9bfbd9121a5f5bf5cd0f97a38c09245d436f4a3` |
 
-Place planning spreadsheets for Party Events, World Bosses, Guild PvE, Guild PvP, Arena, Leaderboards, Player Market, equipment Tier 5+, and overall refinement here as separate versioned artifacts, or use additional tabs in an existing master workbook when concepts overlap.
+## Safety
 
-## Conventions
-
-- Use `Veldryn_<Feature>_Design_vN_YYYY-MM-DD.xlsx` for normal binary files when direct binary upload is available.
-- Keep an index row here with date, version, subject, and canonical reference.
-- Mark **Draft / Reviewed / Approved / Implemented** inside each design.
-- Keep gameplay code, database migrations, credentials and internal deployment artifacts outside this directory.
-- Avoid copying outdated versions indefinitely; keep useful milestones and a link to the latest design.
+These files describe future features; they are **not** production rules, database migrations, backend code, or live game configuration. An `Approved` design does not mean it has been implemented. Keep API credentials and sensitive user data out of design workbooks.

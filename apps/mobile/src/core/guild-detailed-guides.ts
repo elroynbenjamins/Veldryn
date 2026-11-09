@@ -3,6 +3,21 @@ export type GuildGuideTopic={id:string;title:string;body:string};
 export type GuildDetailedGuide={title:string;body:string;detail?:string;topics:readonly GuildGuideTopic[]};
 
 export const GUILD_DETAILED_GUIDES:Readonly<Record<string,GuildDetailedGuide>>={
+ 'Home':{
+  title:'Guild Home',body:'Your Guild dashboard shows shared priorities, participation and ready rewards.',
+  topics:[
+   {id:'notice',title:'Notice Board and Guild identity',body:'Guild Home shows your Guild identity, current level, membership and Notice Board. Read the notice for the latest plans, then open Chat or Members to coordinate with guildmates. Leaders and Officers can maintain Guild notices and manage recruitment.'},
+   {id:'daily',title:'Useful things to check each day',body:'Your daily Muster status, available Guild Tokens and claimable weekly or event rewards are on Guild Home. Ordinary combat and skilling can help shared objectives, even when other members are offline. Open Activities for the full breakdown.'},
+   {id:'tour',title:'Replay and explore the guides',body:'The five-stop Guild tour introduces Home, Muster, Projects, Raid Gate and Hall. You can pause, resume or replay it on Guild Home. The Guide Library has deeper help on every system, without requiring donations, battles or purchases.'},
+  ],
+ },
+ 'Chat':{
+  title:'Guild Chat',body:'Coordinate with your Guildmates without needing to be online at the same time.',
+  topics:[
+   {id:'messages',title:'Members-only messages',body:'Guild Chat is visible to members of the current Guild. Party Chat and World Chat are separate channels. You can read Guild messages without sending anything, and chatting is never required for the onboarding tour.'},
+   {id:'players',title:'Emotes and member profiles',body:'Use the message composer for text and your unlocked emotes. Tap an author to view their player profile or available social actions. If a message fails to send, check the connection and retry rather than repeatedly submitting it.'},
+  ],
+ },
  'Roster':{
   title:'Guild Members',body:'Browse your Guild roster, see roles and use the actions available to your membership.',
   topics:[

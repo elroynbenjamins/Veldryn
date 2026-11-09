@@ -2,7 +2,7 @@ import {useMemo,useState} from 'react';
 import {Pressable,ScrollView,StyleSheet,Text,View} from 'react-native';
 import type {GameState} from '../core/types';
 import {gemPouch,gemPouchUpgradePreview} from '../core/gem-pouch';
-import {availableGemRefinementsV1,canonicalGemMetaV1,formatGemRollRangeV1,formatGemValueV1} from '../core/gem-progression-v1';
+import {availableGemRefinementsV1,canonicalGemMetaV1,formatGemRollRangeV1} from '../core/gem-progression-v1';
 import {GEM_GRADE_LABEL_V1,GEM_GRADE_RARITY_V1,mobileGemFamilyV1,parseMobileRawGemItemIdV1} from '../content/gems-v1';
 import {itemRarity,rarityMeta} from '../core/item-rarity';
 import type {GameCommand} from '../core/game-commands';

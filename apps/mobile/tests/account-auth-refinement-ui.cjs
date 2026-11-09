@@ -32,7 +32,8 @@ assert.ok(!auth.includes('AuthModeChip'),'Legacy pill-style auth control was rem
 assert.ok(account.includes("classEmblemIconArtwork[character.classId]")&&account.includes("character.name")&&account.includes("character.level"),'Account hero shows actual character identity');
 assert.ok(account.includes("accountStatus==='pending'")&&account.includes("accountStatus==='guest'"),'Guest and incomplete secure-account states are distinguished');
 assert.ok(account.includes("onPress={()=>onNavigate('Settings')}"),'Account security action opens existing account settings');
-assert.ok(account.includes("['Activity','ResourceCodex','Store','Settings']"),'Four quick access actions use the existing destinations');
+assert.ok(account.includes("['Dungeon','ResourceCodex','Store','Settings']"),'Four quick access actions open Dungeons, Codex, Store and Settings');
+assert.ok(account.includes("case 'Dungeon':return {title:a('Dungeons')"),'Dedicated Dungeon destination remains available in Account');
 assert.ok(account.includes("accessibilityState={{expanded:!collapsed[section.label]}}")&&account.includes("!collapsed[section.label]&&<View style={s.grid}>"),'Sections collapse and expand accessibly');
 assert.ok(account.includes('lockedDestinations')&&account.includes('attentionPriority')&&account.includes('attentionDestinations.slice(0,3)'),'Unlock gating and attention rail remain intact');
 assert.ok(account.includes('DiscordButton')&&account.includes('RateAppCard'),'Discord and Rate VELDRYN are preserved');

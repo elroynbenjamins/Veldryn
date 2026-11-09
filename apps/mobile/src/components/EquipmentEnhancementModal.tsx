@@ -189,13 +189,13 @@ export function EquipmentEnhancementModal({visible,state,itemId,onClose,onUpgrad
         {selectedGem&&!pendingGemAction?<View style={s.compactPreview}><Text style={s.section}>{gt("Change preview")}</Text>
           <View style={s.compactPreviewRow}><Text style={s.compactPreviewBefore} numberOfLines={2}>{equippedGemId?itemDef(equippedGemId).name:gt("Empty socket")}</Text><Text style={s.arrow}>→</Text><Text style={s.compactPreviewAfter} numberOfLines={2}>{selectedGem.name}</Text></View>
           <Text style={s.meta}>{gemResultDetail(state,selectedGem.id,itemId)}</Text>
-          {equippedGemId&&equippedGemId!==selectedGem.id?<Text style={s.rule}>{gt("Old gem returns to Gem Pouch or available storage.")}</Text>:null}
+          {equippedGemId&&equippedGemId!==selectedGem.id?<Text style={s.rule}>The replaced gem returns to storage without its previous socket roll.</Text>:null}
         </View>:null}
         {pendingGemAction&&(()=>{
           const current=itemDef(pendingGemAction.currentGemId),next=pendingGemAction.kind==='extract'?undefined:itemDef(pendingGemAction.gemId),fee=pendingGemAction.kind==='reroll'?{gold:0,dust:0}:gemUnsocketCostForStateV1(state,current.id),canAffordFee=gold>=fee.gold&&combinedQuantity(state,'GEM_DUST')>=fee.dust;
           return <View style={s.gemConfirm}>
             <Text style={s.gemConfirmTitle}>{pendingGemAction.kind==='reroll'?'Improve gem roll?':pendingGemAction.kind==='replace'?gt("Replace gem?"):gt("Extract gem?")}</Text>
-            <View style={s.gemCompareArt}><GemArtwork itemId={current.id} size={44} framed={false}/>{next?<><Text style={s.gemCompareArrow}>→</Text><GemArtwork itemId={next.id} size={44} framed={false}/></>:null}<View style={s.flex}><Text style={s.gemConfirmText} numberOfLines={2}>{next?current.name+' → '+next.name:current.name}</Text><Text style={s.rule}>{pendingGemAction.kind==='reroll'?'One duplicate gem is consumed; the higher roll is kept.':gt("Old gem returns to Gem Pouch or available storage.")}</Text></View></View>
+            <View style={s.gemCompareArt}><GemArtwork itemId={current.id} size={44} framed={false}/>{next?<><Text style={s.gemCompareArrow}>→</Text><GemArtwork itemId={next.id} size={44} framed={false}/></>:null}<View style={s.flex}><Text style={s.gemConfirmText} numberOfLines={2}>{next?current.name+' → '+next.name:current.name}</Text><Text style={s.rule}>{pendingGemAction.kind==='reroll'?'One duplicate gem is consumed; the higher roll is kept.':'The old gem returns to storage without its socket roll.'}</Text></View></View>
             {next?<Text style={s.gemConfirmCompare}>{gemResultDetail(state,current.id,itemId,true)} → {gemResultDetail(state,next.id,itemId)}</Text>:null}
             <Text style={[s.gemConfirmCost,!canAffordFee&&s.missing]}>{gt("Cost")+' · '+(fee.gold?fee.gold.toLocaleString()+' '+gt("Gold"):gt("Free"))+(fee.dust?' + '+fee.dust+' '+gt("Gem Dust"):'')}</Text>
             {!canAffordFee?<Text style={s.reason}>{gt("Not enough materials for this change.")}</Text>:null}

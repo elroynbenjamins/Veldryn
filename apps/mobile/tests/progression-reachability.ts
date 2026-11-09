@@ -80,6 +80,7 @@ const sunscarTier4Binder=RECIPES.find(recipe=>recipe.id==='BREW_GLASSBOUND_BINDE
 ok(!!sunscarTier3Binder&&sunscarTier3Binder.level<=20&&sunscarTier3Binder.inputs.every(row=>['DUNEWOOD','SUNSCALE','SUNSTONE_ORE'].includes(row.itemId)),'T3 binder must use only early Sunscar supplies');
 ok(!!sunscarTier4Binder&&sunscarTier4Binder.level<=34&&sunscarTier4Binder.inputs.some(row=>row.itemId==='GLASSBOUND_CORE'),'T4 binder must require late-Sunscar Glassbound Core');
 ok(RECIPES.some(row=>row.id==='REFINE_OATHGLASS_TO_DUNE_BINDER'&&row.output.itemId==='SUNSCAR_DUNE_BINDER')&&RECIPES.some(row=>row.id==='REFINE_OATHGLASS_TO_GLASSBOUND_BINDER'&&row.output.itemId==='GLASSBOUND_BINDER'),'Stored legacy Oathglass Solvent must remain useful through conversion');
+ok(RECIPES.filter(row=>row.output.itemId==='GLASSBOUND_BINDER').every(row=>row.inputs.some(input=>input.itemId==='GLASSBOUND_CORE'&&input.quantity===1)),'All Glassbound Binder routes, including Oathglass conversion, must preserve the late-Sunscar Core gate');
 const kingsRoadMonsters=MONSTERS.filter(row=>row.zone==="King's Road"&&!row.boss);
 ok(kingsRoadMonsters.filter(monster=>monster.drops.some(drop=>['WOLF_PELT','THORN_SAP','TROLL_HIDE','IRONWOOD_FANG','IRONWOOD_LOG'].includes(drop.itemId))).length>=4,'King\'s Road retains four T2 material trophy sources while preparing for Fallen Knight');
 ok(kingsRoadMonsters.every(monster=>monster.drops.every(drop=>drop.itemId!=='GLASSBOUND_CORE')),'T4 trophy must never drop before Sunscar');
@@ -88,7 +89,8 @@ ok(glassbound.level>=40&&glassbound.drops.some(drop=>drop.itemId==='GLASSBOUND_C
 ok(MONSTERS.every(monster=>!monster.drops.some(drop=>drop.itemId==='GLASSBOUND_CORE')||monster.zone==='Sunscar'&&monster.unlockLevel>=rebaseLevel(38)),'Glassbound Core must have no early-region source');
 for(const recipe of gearInTier('T4')){
  const inputs=recipe.inputs.map(row=>row.itemId);
- ok(inputs.includes('GLASSBOUND_CORE')&&inputs.includes('GLASSBOUND_BINDER'),'All T4 pieces must require late Sunscar monster trophies and binder');
+ ok(recipe.inputs.find(row=>row.itemId==='GLASSBOUND_BINDER')?.quantity===1,'Each T4 item must use a single Glassbound Binder');
+ ok(!inputs.includes('GLASSBOUND_CORE')&&inputs.includes('GLASSBOUND_BINDER')&&inputs.includes('DUNEWOOD'),'T4 pieces must consume exactly one Core through the Binder and use ordinary Sunscar timber for the remaining cost');
  ok(!inputs.some(id=>['OATHSTONE_INGOT','OATHGLASS_SHARD','TORN_OATHCLOTH','ECHO_TOUCHED_PELT','ECHO_QUARTZ','OATHGLASS_SOLVENT'].includes(id)),'T4 gear cannot require King\'s Road / Old Mines materials');
 }
 // Characters can earn Sunscar supplies through hunts even before they train the local gathering skill to 26.

@@ -38,7 +38,7 @@ async function main(){
  await requestSent;
  ok(sent===1,'The queued caller cannot race the first in-flight save');
  release({...snapshot,version:1,serverNow:2000});await saving;await queued;
- ok(sent===2&&!await slow.hasPending(),'Repository serializes distinct callers; hook-level busy guard prevents UI double taps');
+ ok(Number(sent)===2&&!await slow.hasPending(),'Repository serializes distinct callers; hook-level busy guard prevents UI double taps');
 
  let sends=0;
  const diskFailure=new OnlineGameRepository(snapshot.accountId,{read:async()=>snapshot,send:async()=>{sends++;return snapshot;}},{read:async()=>null,write:async()=>{throw new Error('disk_full');}},()=> 'unsaved-request');

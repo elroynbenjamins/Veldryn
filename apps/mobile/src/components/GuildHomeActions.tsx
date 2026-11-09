@@ -17,6 +17,7 @@ export function GuildHomeActions({activity,board,summary,chatUnread=0,canManage=
   {title:'Members',action:onRoster},
   {title:'Shop',action:onShop},
   ...(canManage?[{title:'Manage',action:onManage}]:[]),
+  ...(onGuide?[{title:guideLabel,action:onGuide}]:[]),
  ];
  const actions=[
   {title:'Guild Quests',detail:'Shared weekly objectives',icon:'quests' as const,action:onQuests},
@@ -29,12 +30,7 @@ export function GuildHomeActions({activity,board,summary,chatUnread=0,canManage=
    </Pressable>)}
   </View>
   {summary}
-  {board?<View style={s.section}><View style={{flexDirection:'row',alignItems:'center',justifyContent:'space-between',gap:8}}>
-   <Text style={[s.kicker,{color:C.muted}]}>GUILD NOTICE</Text>
-   {onGuide?<Pressable accessibilityRole="button" accessibilityLabel={guideLabel} onPress={onGuide} style={{minHeight:44,justifyContent:'center',paddingHorizontal:8}}>
-    <Text style={{color:C.accent,fontSize:12,fontWeight:'800'}}>{guideLabel} ›</Text>
-   </Pressable>:null}
-  </View>{board}</View>:null}
+  {board?<View style={s.section}><Text style={[s.kicker,{color:C.muted}]}>GUILD NOTICE</Text>{board}</View>:null}
   <View style={s.section}>{activity}</View>
   <View style={s.actionGrid}>{actions.map(item=><Pressable key={item.title} accessibilityRole="button" onPress={item.action} style={({pressed})=>[s.action,{borderColor:C.line,backgroundColor:C.panel},pressed&&s.pressed]}>
    <ThemedIcon name={item.icon} size={23}/>

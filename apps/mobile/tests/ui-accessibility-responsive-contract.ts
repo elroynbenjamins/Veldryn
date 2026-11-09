@@ -94,9 +94,9 @@ ok(guildFuture.includes("'Guild vs Guild'")&&guildFuture.includes("'Guild Raids'
 ok(guildFuture.includes("onlineSection==='Future'?<GuildFutureContent/>"),'Guild future content must have a dedicated destination');
 ok(guildFuture.includes('<GuildNavigation value={onlineSection}')&&guildNavigation.includes("GuildPrimarySection='Home'|'PvE'|'Activities'|'Hall'|'Progress'"),'Online Guild navigation must prioritize five primary destinations');
 ok(guildFuture.includes("onlineSection==='Home'?<GuildOnlineHome"),'Online Guild must expose a dedicated overview home');
-ok(guildFuture.includes('<OnlineGuildMusterPanel/>')&&guildFuture.includes('projects={onlineProjects}')&&guildFuture.includes("onlineSection==='Progress'?<GuildProgressPanel")&&guildFuture.includes("onlineSection==='PvE'?onlinePve:null"),"Guild navigation must separate Muster, Progress Projects and PvE");
+ok(guildFuture.includes('<OnlineGuildMusterPanel/>')&&guildFuture.includes('projects={onlineProjects}')&&guildFuture.includes("onlineSection==='Progress'?<GuildProgressPanel")&&guildFuture.includes("onlineSection==='PvE'?(isValidElement")&&guildFuture.includes('cloneElement(onlinePve,{headerHelp:headerGuide})'),"Guild navigation must separate Muster, Progress Projects and PvE");
 ok(guildFuture.includes("onlineSection==='Manage'?<View style={s.sectionStack}")&&guildFuture.includes('{onlineCustomize}')&&!guildFuture.includes('{onlineDirectory}'),'Member-only management must keep customization without displaying guild creation');
-ok(guildFuture.includes('<GuildDiscoveryFlow onJoined={reloadGuildMembership}/>'),'Nonmembers must only see Guild discovery and creation');
+ok(guildFuture.includes('<GuildDiscoveryFlow onJoined=')&&guildFuture.includes('setGuildTourJustJoined(true)'),'Nonmembers must only see Guild discovery and creation');
 ok(guildFuture.includes("homeGrid:{flexDirection:'row',flexWrap:'wrap'"),'Guild Home destination cards must wrap on narrow layouts');
 const guildHall=read('src/components/OnlineGuildHallPanel.tsx');
 ok(guildHall.includes('Future Guild Legacy will preserve major trophies and season records permanently.'),'Guild Hall Trophy Room must explain its future Guild Legacy relationship');

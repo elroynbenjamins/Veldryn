@@ -9,6 +9,8 @@ const hallSummary=read('src/components/GuildHallSummary.tsx');
 const panel=read('src/components/OnlineGuildMusterPanel.tsx');
 const client=read('src/online/guild-muster.ts');
 const core=read('src/core/guild-muster.ts');
+const detailedGuide=read('src/core/guild-detailed-guides.ts');
+const localeResolver=read('src/i18n/guild-detailed-guide-locales.ts');
 const sql=read('../../backend/supabase/migrations/20261018000155_guild_muster_v1.sql');
 const activitySql=read('../../backend/supabase/migrations/20261018000156_active_guild_meter_v1.sql');
 const activitySqlV2=read('../../backend/supabase/migrations/20261018000157_active_guild_meter_v2.sql');
@@ -17,7 +19,7 @@ const activityCore=read('src/core/guild-activity.ts');
 
 ok(screen.includes("'Activities'"),'Consolidated online Guild sections must include Activities');
 ok(screen.includes("onlineSection==='Activities'?<View")&&screen.includes('<OnlineGuildMusterPanel/>'),'Guild Muster must remain reachable inside the Activities destination');
-ok(screen.includes('title={st("Muster & Rally")}')&&screen.includes('copy={st("Daily participation rolls into the shared weekly Rally without adding another currency.")}'),'Activities must explain Muster and Rally with localized copy after consolidation');
+ok(screen.includes('title={st("Muster & Rally")}')&&screen.includes("copy={guildTutorialText(language,'Track your daily effort and weekly Guild Rally progress.')}")&&localeResolver.includes('localizedGuildDetailedGuide'),'Activities must retain the translated Muster heading and expanded localized help');
 ok(screen.includes('<GuildMemberIdentity onRoster=')&&screen.includes('<GuildHomeActions summary=')&&screen.includes('board={onlineBoard}'),'Guild Home must keep member identity and Notice Board together');
 
 ok(!homeActions.includes('Open Muster')&&!homeActions.includes('DAILY GUILD PARTICIPATION'),'Guild Home must not render a second oversized Muster promotion');
@@ -31,15 +33,15 @@ ok(panel.includes("rosterView==='today'")&&panel.includes("rosterView==='week'")
 ok(panel.includes("st('RALLY MARK')")&&panel.includes("st('{points} TO MARK'")&&panel.includes("st('NO POINTS')"),'Muster must distinguish members with a mark, with partial progress, and without recorded points');
 ok(panel.includes("st('GOAL MET')")&&panel.includes("st('{days} DAYS TO GO'")&&panel.includes("member.qualifyingDays"),'Muster must explain each member’s weekly Rally-day progress');
 ok(panel.includes("state.rallyMarkThreshold-member.todayPoints")&&panel.includes("state.personalWeeklyGoal-member.qualifyingDays"),'Remaining day/point requirements must reflect authoritative server thresholds');
-ok(panel.includes('A check-in alone is not enough.')&&panel.includes('Verified Guild boss and project contributions add more.'),'Muster must accurately distinguish attendance from qualifying verified contribution');
+ok(panel.includes('A check-in alone is not enough.')&&detailedGuide.includes('Verified combat, skilling, Guild Project and Guild Boss contributions'),'Muster must distinguish attendance from verified activities in contextual help');
 ok(panel.includes('No daily streak required.'),'Muster must explicitly avoid punitive consecutive streaks');
-ok(panel.includes('35% / 70% / 100%'),'Rally tier milestones must be visible');
-ok(panel.includes('Resets Monday 00:00 UTC.')&&panel.includes('Each member can add 1 Rally Mark per qualifying day.'),'Muster must clarify UTC reset and individual mark contribution limits');
-ok(panel.includes('+5% / +10% / +15% Hall Progress'),'Rally rewards must stay tied to communal Hall progression');
-ok(panel.includes('Recorded activity gives 5 check-in points.')&&panel.includes('No points means no verified Muster contribution'),'Muster must explain automatic verified check-in and non-qualifying member states');
+ok(detailedGuide.includes('35%, 70% and 100%'),'Rally tier milestones must remain in detailed Guild help');
+ok(detailedGuide.includes('Rally resets on Monday at 00:00 UTC.')&&detailedGuide.includes('one Rally Mark to the Guild'),'Muster guide must explain UTC reset and qualifying Rally Marks');
+ok(detailedGuide.includes('improve Hall Progress')&&core.includes('tier===3?1500:tier===2?1000:tier===1?500'),'Rally Hall bonus rules remain visible and server-aligned');
+ok(detailedGuide.includes('first authenticated check-in adds 5 points')&&panel.includes("st('NO POINTS')"),'Muster guide must explain verified check-in and panel must show missing points');
 ok(panel.includes('Refresh Muster'),'Muster needs explicit refresh feedback');
 ok(panel.includes('ACTIVE GUILD')&&panel.includes('Guild Activity'),'Guild Activities must surface the persistent Active Guild meter');
-ok(panel.includes('Guild Quests, Muster and Projects'),'Active Guild meter must explain its cooperative sources');
+ok(detailedGuide.includes('Guild Quests, Muster and completed Projects increase Guild Activity'),'Detailed guide must explain the Guild Activity sources without cluttering the panel');
 ok(panel.includes('Stay active to avoid losing progress.'),'Active Guild meter must explain the non-punitive persistence model');
 ok(panel.includes('% Rare Materials.'),'100% activity reward must be visible');
 

@@ -7,6 +7,7 @@ import {onlineConfigured} from '../online/supabase';
 import {type ThemeColors} from '../theme/theme';
 import {useGameTheme} from '../theme/ThemeContext';
 import {GuildChat} from './GuildChat';
+import {guildGuideDoneText,localizedGuildDetailedGuide} from '../i18n/guild-detailed-guide-locales';
 import {OnlineWorldChat} from './OnlineWorldChat';
 import {WorldChat} from './WorldChat';
 import {OnlinePartyChat} from './OnlinePartyChat';
@@ -117,6 +118,7 @@ function AccountChatOverlay({state,initialChannel='world',visible,onOpen,onClose
  useEffect(()=>{if(visible&&keyboardVisible)measureKeyboardOverlap();},[visible,keyboardVisible,width,height,measureKeyboardOverlap]);
  const closeChat=()=>{Keyboard.dismiss();pendingGuildChannel.current=false;setLanguageMenuOpen(false);setGuildHelpOpen(false);onChatRead?.();onClose();};
  const activeLabel=channel==='world'?st("Global chat"):channel==='guild'?(guildTitle||st("Guild members")):channel==='party'?st("Your party"):st("Game notifications");
+ const guildChatHelp=localizedGuildDetailedGuide(state.settings.language,'Chat');
 
  return <>
   {!visible&&chatEnabled&&<ChatDock enabled={onlineConfigured} onOpen={onOpen} lines={state.settings.chatDockLines??1} selectedChannel={state.settings.defaultWorldChat??1} unreadCount={guildUnread+partyUnread} mentionCount={guildMentions+partyMentions}/>}
@@ -144,16 +146,18 @@ function AccountChatOverlay({state,initialChannel='world',visible,onOpen,onClose
        <ChatChannelIcon channel={channel} color={C.accent}/>
        <Text numberOfLines={1} style={s.channelName}>{activeLabel}</Text>
        <View style={s.headerSpacer}/>
-       {channel==='guild'&&<Pressable accessibilityRole="button" accessibilityLabel="Guild Chat guide" accessibilityState={{expanded:guildHelpOpen}} onPress={()=>{Keyboard.dismiss();setGuildHelpOpen(value=>!value);}} style={[s.languageButton,{width:42,justifyContent:'center'}]}><Text style={s.languageText}>?</Text></Pressable>}
+       {channel==='guild'&&<Pressable accessibilityRole="button" accessibilityLabel={guildChatHelp?.title??st('Guild')} accessibilityState={{expanded:guildHelpOpen}} onPress={()=>{Keyboard.dismiss();setGuildHelpOpen(value=>!value);}} style={[s.languageButton,{minWidth:44,minHeight:44,justifyContent:'center'}]}><Text style={s.languageText}>?</Text></Pressable>}
        {channel==='world'&&<Pressable accessibilityRole="button" accessibilityLabel={st('World language: {language}',{language:WORLD_CHANNELS[worldChannel].name})} accessibilityState={{expanded:languageMenuOpen}} onPress={()=>{Keyboard.dismiss();setLanguageMenuOpen(value=>!value);}} style={({pressed})=>[s.languageButton,pressed&&s.pressed]}>
         <Text numberOfLines={1} style={s.languageText}>{WORLD_CHANNELS[worldChannel].name}</Text>
         <DropdownChevron open={languageMenuOpen} color={C.info}/>
        </Pressable>}
       </View>
-      {channel==='guild'&&guildHelpOpen?<View style={{paddingHorizontal:11,paddingVertical:8,gap:5,backgroundColor:C.panel2,borderWidth:1,borderColor:C.line,borderRadius:8}}>
-       <Text style={{color:C.text,fontSize:13,fontWeight:'800'}}>{socialLabel(state.settings.language,'Guild Chat guide')}</Text>
-       <Text style={{color:C.muted,fontSize:12,lineHeight:18}}>{socialLabel(state.settings.language,'Guild Chat is only for your Guild members. Party Chat is separate. You can read messages without sending one. Use the emote tray or tap a member to view their profile.')}</Text>
-       <Pressable accessibilityRole="button" accessibilityLabel="Close Guild Chat guide" onPress={()=>setGuildHelpOpen(false)} style={{minHeight:32,alignSelf:'flex-end',justifyContent:'center',paddingHorizontal:8}}><Text style={{color:C.accent,fontSize:12,fontWeight:'800'}}>{st('Got it')}</Text></Pressable>
+      {channel==='guild'&&guildHelpOpen?<View style={{paddingHorizontal:11,paddingVertical:8,gap:5,backgroundColor:C.panel2,borderWidth:1,borderColor:C.line,borderRadius:8,maxHeight:180,flexShrink:1}}>
+       <Text accessibilityRole="header" style={{color:C.text,fontSize:13,fontWeight:'800'}}>{guildChatHelp?.title??st('Guild')}</Text>
+       <ScrollView style={{flexShrink:1,minHeight:0}} nestedScrollEnabled showsVerticalScrollIndicator={false} showsHorizontalScrollIndicator={false}>
+        <Text style={{color:C.muted,fontSize:12,lineHeight:18}}>{guildChatHelp?.topics[0]?.body??''}</Text>
+       </ScrollView>
+       <Pressable accessibilityRole="button" accessibilityLabel={guildGuideDoneText(state.settings.language)} onPress={()=>setGuildHelpOpen(false)} style={{minHeight:44,alignSelf:'flex-end',justifyContent:'center',paddingHorizontal:8}}><Text style={{color:C.accent,fontSize:12,fontWeight:'800'}}>{guildGuideDoneText(state.settings.language)}</Text></Pressable>
       </View>:null}
       <View style={s.content} accessibilityElementsHidden={languageMenuOpen} importantForAccessibility={languageMenuOpen?'no-hide-descendants':'auto'}>
        <View style={[s.channelPanel,channel!=='world'&&s.hiddenPanel]} accessibilityElementsHidden={channel!=='world'} importantForAccessibility={channel==='world'?'auto':'no-hide-descendants'}>

@@ -12,7 +12,7 @@ const GuildChat=props=>{React.useEffect(()=>{props.onTitleChange?.('[STW] Stormw
 const deps={
  react:React,'react/jsx-runtime':require('react/jsx-runtime'),
  'react-native':{AppState:{currentState:'active',addEventListener:()=>({remove(){}})},Keyboard:{dismiss:()=>{},addListener:(name,fn)=>{listeners.set(name,fn);return{remove:()=>removed.push(name)}}},Platform:{OS:'android'},View:'View',Text:'Text',Pressable:'Pressable',ScrollView:'ScrollView',Modal:'Modal',KeyboardAvoidingView:'KeyboardAvoidingView',StyleSheet:styles,useWindowDimensions:()=>({width:320,fontScale:1})},
- '../i18n/social':{useSocialText:()=>x=>x,socialLabel:(_,x)=>x},'../theme/ThemeContext':{useGameTheme:()=>({})},'../online/supabase':{onlineConfigured:false},'../online/AuthSessionProvider':{useAuthSession:()=>({session:null})},'../online/PartySocialProvider':{usePartySocial:()=>({party:null,accountId:'self',refresh})},'react-native-safe-area-context':{useSafeAreaInsets:()=>({top:24,bottom:24})},'../online/social':{WORLD_CHANNELS:[{id:'en',name:'English'},{id:'nl',name:'Nederlands'}]},'./GuildChat':{GuildChat}
+ '../i18n/social':{useSocialText:()=>x=>x,socialLabel:(_,x)=>x},'../i18n/guild-detailed-guide-locales':{localizedGuildDetailedGuide:(_language,id)=>id==='Chat'?{title:'Guild Chat',topics:[{body:'Members-only chat for your Guild.'}]}:undefined,guildGuideDoneText:()=>'Got it'},'../theme/ThemeContext':{useGameTheme:()=>({})},'../online/supabase':{onlineConfigured:false},'../online/AuthSessionProvider':{useAuthSession:()=>({session:null})},'../online/PartySocialProvider':{usePartySocial:()=>({party:null,accountId:'self',refresh})},'react-native-safe-area-context':{useSafeAreaInsets:()=>({top:24,bottom:24})},'../online/social':{WORLD_CHANNELS:[{id:'en',name:'English'},{id:'nl',name:'Nederlands'}]},'./GuildChat':{GuildChat}
 };
 for(const name of ['ChatChannelIcon','OnlineWorldChat','WorldChat','OnlinePartyChat','ChatDock','SystemNoticeLog'])deps['./'+name]={[name]:mock(name)};
 deps['./PartyChatGate']={PartyChatGate:({party,children})=>party?children:null};
@@ -49,6 +49,14 @@ vm.runInNewContext(code,sandbox);
  assert.equal(renderer.root.findByType('GuildChat').props.embedded,true);
  assert.equal(renderer.root.findByType('GuildChat').props.active,true);
  assert.ok(renderer.root.findAllByType('Text').some(x=>x.props.children==='[STW] Stormwatch'),'live guild name shown in meta header');
+ const guideTrigger=renderer.root.findAllByType('Pressable').find(x=>x.props.accessibilityLabel==='Guild Chat');
+ assert.ok(guideTrigger,'Guild Chat has a contextual help trigger');
+ await act(async()=>{guideTrigger.props.onPress()});
+ assert.ok(renderer.root.findAllByType('Text').some(x=>x.props.children==='Members-only chat for your Guild.'),'Guild Chat opens translated help body');
+ const dismiss=renderer.root.findAllByType('Pressable').find(x=>x.props.accessibilityLabel==='Got it');
+ assert.ok(dismiss,'Guild Chat help has an accessible dismissal control');
+ await act(async()=>{dismiss.props.onPress()});
+ assert.equal(renderer.root.findAllByType('Text').some(x=>x.props.children==='Members-only chat for your Guild.'),false,'dismissing help clears the inline panel');
  await act(async()=>{tab('World').props.onPress()});
  assert.equal(renderer.root.findByType('GuildChat').props.active,false,'mounted Guild history remains idle while visiting World');
  await act(async()=>renderer.unmount());

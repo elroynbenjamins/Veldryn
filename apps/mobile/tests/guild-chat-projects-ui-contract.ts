@@ -42,12 +42,12 @@ ok(app.includes('onlineChatMentions={notificationCounts.guildChatMentions}'),'Gu
 ok(app.includes('firstUnreadMessageId={notificationCounts.guildFirstUnreadMessageId}'),'Direct Guild Chat must preserve unread divider state');
 
 for(const label of ['Home','PvE','Roster','Activities','Progress','Hall','Chat','Manage'])ok(guildScreen.includes("'"+label+"'"),'Guild destinations must retain '+label);
-ok(guildScreen.includes('projects={onlineProjects}')&&guildScreen.includes('<GuildProgressPanel')&&guildScreen.includes("onlineSection==='PvE'?onlinePve:null"),"Guild navigation must expose live Progress tabs and dedicated PvE");
-ok(guildScreen.includes("onlineSection==='Progress'?<GuildProgressPanel")&&guildScreen.includes("onlineSection==='PvE'?onlinePve:null"),'Progress must be a dedicated primary Guild destination, separate from PvE');
+ok(guildScreen.includes('projects={onlineProjects}')&&guildScreen.includes('<GuildProgressPanel')&&guildScreen.includes("onlineSection==='PvE'?(isValidElement")&&guildScreen.includes('cloneElement(onlinePve,{headerHelp:headerGuide})'),"Guild navigation must expose live Progress tabs and dedicated PvE");
+ok(guildScreen.includes("onlineSection==='Progress'?<GuildProgressPanel")&&guildScreen.includes("onlineSection==='PvE'?(isValidElement")&&guildScreen.includes('cloneElement(onlinePve,{headerHelp:headerGuide})'),'Progress must be a dedicated primary Guild destination, separate from PvE');
 ok(guildScreen.includes("onlineSection==='Chat'?onlineChat:null")&&guildScreen.includes("onChat={()=>onNavigate('Chat')}"),'Guild Home must preserve working chat access');
 ok(guildScreen.includes("onlineSection==='Manage'?<View")&&!guildScreen.includes('{onlineDirectory}')&&guildScreen.includes('{onlineCustomize}'),'Joined-member management must preserve Customize without offering duplicate Guild creation');
 ok(guildScreen.includes('<GuildMemberIdentity onRoster=')&&guildScreen.includes('<GuildHomeActions summary=')&&guildScreen.includes('board={onlineBoard}'),'Guild Home must preserve member identity and the private Notice Board');
-ok(guildScreen.includes('<GuildDiscoveryFlow onJoined={reloadGuildMembership}/>'),'Nonmembers must use the dedicated Guild discovery and creation flow');
+ok(guildScreen.includes('<GuildDiscoveryFlow onJoined=')&&guildScreen.includes('setGuildTourJustJoined(true)'),'Nonmembers must use the dedicated Guild discovery and creation flow');
 ok(navigation.includes("{id:'Progress',label:'Progress',icon:'skills'}")&&!navigation.includes("{id:'Chat',label:'Chat'"),'Guild navigation must replace Chat with Progress');
 ok(guildScreen.includes('chatUnread={onlineChatUnread}')&&guildScreen.includes('onOpenChat()'),'Unread attention and Guild Chat access must remain on Guild Home');
 ok(!guildScreen.includes("activityView==='Projects'?<GuildProgressPanel"),'Projects must not stay nested under Activities');

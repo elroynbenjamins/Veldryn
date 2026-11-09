@@ -3,6 +3,7 @@ import {GUILD_TUTORIAL_STEPS,advanceGuildTutorial,createGuildTutorialStore,norma
 import {guildTutorialText} from '../src/i18n/guild-tutorial';
 import {guildGuideLibraryText,guildGuideSectionTitle} from '../src/i18n/guild-guide-library';
 import {GUILD_DETAILED_GUIDES,guildDetailedGuide} from '../src/core/guild-detailed-guides';
+import {guildDetailedGuideLocaleCoverage,localizedGuildDetailedGuide} from '../src/i18n/guild-detailed-guide-locales';
 
 async function testGuildTour(){
  deepEqual(GUILD_TUTORIAL_STEPS.map(step=>step.destination),['Home','Muster','Projects','PvE','Hall'],'new Guild tour has five reachable destinations');
@@ -53,6 +54,41 @@ async function testGuildTour(){
  equal(guildDetailedGuide('Chat')?.topics.length,2,'Guild Chat has lightweight reference topics');
  equal(guildGuideLibraryText('nl','Guild Guide'),'Gildegids','Guild Guide Home shortcut is localized');
  equal(guildGuideLibraryText('tr','Browse guides'),'Rehberlere göz at','Guide Library supports Turkish navigation');
+ const sourceIds=Object.keys(GUILD_DETAILED_GUIDES);
+ const sourceTopicCount=sourceIds.reduce((sum,id)=>sum+GUILD_DETAILED_GUIDES[id].topics.length,0);
+ equal(sourceIds.length,13,'source guide covers all 13 Guild sections');
+ equal(sourceTopicCount,38,'source guide has 38 detailed Guild topics');
+ for(const lang of ['de','es','nl','it','fr','ru','tr'] as const){
+  const coverage=guildDetailedGuideLocaleCoverage(lang);
+  equal(coverage.complete,true,lang+' covers every Guild Guide topic');
+  equal(coverage.sections,13,lang+' includes all 13 Guild sections');
+  equal(coverage.topics,38,lang+' includes all 38 detailed Guild topics');
+  for(const id of sourceIds){
+   const localized=localizedGuildDetailedGuide(lang,id)!;
+   const original=GUILD_DETAILED_GUIDES[id];
+   equal(localized.body.trim().length>=30,true,lang+' '+id+' has a translated introduction');
+   equal(localized.body!==original.body,true,lang+' '+id+' does not silently use English intro');
+   equal(localized.title.trim().length>=4,true,lang+' '+id+' has a valid localized section title');
+   for(let i=0;i<original.topics.length;i++){
+    const source=original.topics[i],translated=localized.topics[i];
+    equal(translated.id,source.id,lang+' '+id+' preserves stable topic ID');
+    equal(translated.title!==source.title,true,lang+' '+id+' has translated topic title');
+    equal(translated.body!==source.body,true,lang+' '+id+' has translated topic body');
+    equal(translated.body.trim().length>=60,true,lang+' '+id+' topic translation is meaningful');
+   }
+  }
+  const muster=localizedGuildDetailedGuide(lang,'Activities/Muster')!;
+  const musterCopy=muster.topics.map(t=>t.body).join(' ');
+  for(const critical of ['5','25','100','35','70','60','UTC']){
+   equal(musterCopy.includes(critical),true,lang+' preserves Rally mechanic '+critical);
+  }
+  const pve=localizedGuildDetailedGuide(lang,'PvE')!.topics.map(t=>t.body).join(' ');
+  for(const ratio of ['65','35'])equal(pve.includes(ratio),true,lang+' retains Raid Gate role weighting '+ratio);
+  const projects=localizedGuildDetailedGuide(lang,'Progress/Projects')!.topics.map(t=>t.body).join(' ');
+  for(const threshold of ['3','20','5','50','300'])equal(projects.includes(threshold),true,lang+' retains Project threshold '+threshold);
+ }
+ equal(localizedGuildDetailedGuide('en','Hall/Bank')?.body,GUILD_DETAILED_GUIDES['Hall/Bank'].body,'English guide remains source authoritative');
+
 
  deepEqual(normalizeGuildTutorialProgress({step:500,status:'active'}),{step:4,status:'active'},'tour step is bounded');
  deepEqual(advanceGuildTutorial({step:3,status:'active'}),{step:4,status:'active'},'next step is the Hall');

@@ -1,6 +1,6 @@
 import {useEffect,useState} from 'react';
 import {Modal,Pressable,ScrollView,StyleSheet,Text,View} from 'react-native';
-import {guildDetailedGuide} from '../core/guild-detailed-guides';
+import {localizedGuildDetailedGuide} from '../i18n/guild-detailed-guide-locales';
 import {guildGuideLibraryText,guildGuideSectionTitle,type GuildGuideLibraryLabel} from '../i18n/guild-guide-library';
 import {useGameLanguage} from '../i18n/GameLanguageProvider';
 import {useGameTheme} from '../theme/ThemeContext';
@@ -23,7 +23,7 @@ export function GuildGuideLibrary({visible,onClose,role}:{visible:boolean;onClos
  useEffect(()=>{if(!visible){setSection(null);setTopicIndex(0)}},[visible]);
  useEffect(()=>{if(!leadership&&(section==='Manage'||section==='Appearance')){setSection(null);setTopicIndex(0)}},[leadership,section]);
  if(!visible)return null;
- const guide=section?guildDetailedGuide(section):undefined;
+ const guide=section?localizedGuildDetailedGuide(language,section):undefined;
  const topic=guide?.topics[Math.min(topicIndex,guide.topics.length-1)];
  const choose=(id:string)=>{setSection(id);setTopicIndex(0)};
  const back=()=>{setSection(null);setTopicIndex(0)};
@@ -39,12 +39,12 @@ export function GuildGuideLibrary({visible,onClose,role}:{visible:boolean;onClos
      </View>
      <Pressable accessibilityRole="button" accessibilityLabel={t('Close Guild Guide')} onPress={onClose} style={[s.close,{borderColor:C.line}]}><Text style={[s.closeText,{color:C.text}]}>×</Text></Pressable>
     </View>
-    {!guide?<ScrollView style={s.libraryScroll} contentContainerStyle={s.body} showsVerticalScrollIndicator={false}>
+    {!guide?<ScrollView style={s.libraryScroll} contentContainerStyle={s.body} showsVerticalScrollIndicator={false} showsHorizontalScrollIndicator={false}>
      <Text style={[s.intro,{color:C.muted}]}>{t('Choose a Guild topic to learn more.')}</Text>
      {GROUPS.filter(group=>!group.leadership||leadership).map(group=><View key={group.id} style={s.group}>
       <Text style={[s.groupTitle,{color:C.accent}]}>{t(group.id)}</Text>
       <View style={s.tiles}>{group.sections.map(id=>{
-       const item=guildDetailedGuide(id);
+       const item=localizedGuildDetailedGuide(language,id);
        if(!item)return null;
        return <Pressable key={id} accessibilityRole="button" accessibilityLabel={guildGuideSectionTitle(language,id,item.title)} onPress={()=>choose(id)}
         style={({pressed})=>[s.tile,{backgroundColor:C.panel2,borderColor:C.line},pressed&&s.pressed]}>
@@ -56,13 +56,13 @@ export function GuildGuideLibrary({visible,onClose,role}:{visible:boolean;onClos
     </ScrollView>:<View style={s.detail}>
      <Pressable accessibilityRole="button" accessibilityLabel={t('All guides')} onPress={back} style={s.back}><Text style={[s.backText,{color:C.accent}]}>‹ {t('All guides')}</Text></Pressable>
      <Text style={[s.intro,{color:C.muted}]}>{guide.body}</Text>
-     <ScrollView horizontal showsHorizontalScrollIndicator={false} accessibilityRole="tablist" contentContainerStyle={s.topicRow}>
+     <ScrollView horizontal showsHorizontalScrollIndicator={false} showsVerticalScrollIndicator={false} accessibilityRole="tablist" contentContainerStyle={s.topicRow}>
       {guide.topics.map((item,index)=><Pressable key={item.id} accessibilityRole="tab" accessibilityState={{selected:topicIndex===index}} onPress={()=>setTopicIndex(index)}
        style={[s.topicButton,{backgroundColor:topicIndex===index?C.selection:C.panel2,borderColor:topicIndex===index?C.selectionLine:C.line}]}>
        <Text style={[s.topicLabel,{color:topicIndex===index?C.text:C.muted}]}>{item.title}</Text>
       </Pressable>)}
      </ScrollView>
-     <ScrollView style={s.topicScroll} contentContainerStyle={s.topicBody} showsVerticalScrollIndicator={false}>
+     <ScrollView style={s.topicScroll} contentContainerStyle={s.topicBody} showsVerticalScrollIndicator={false} showsHorizontalScrollIndicator={false}>
       {topic?<><Text accessibilityRole="header" style={[s.topicHeading,{color:C.text}]}>{topic.title}</Text><Text style={[s.topicText,{color:C.muted}]}>{topic.body}</Text></>:null}
      </ScrollView>
     </View>}

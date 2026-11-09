@@ -21,11 +21,15 @@ function ok(value:unknown,message:string){if(!value)throw new Error(message)}
 ok(V33_EQUIPMENT_RECIPES.length===1620,'All 1,620 V33 equipment pieces need a recipe');
 ok(EQUIPMENT_FORGE_GOLD_MULTIPLIER===3,'The equipment forge gold multiplier must be exactly 3×');
 const originalTierGold:Record<string,number>={T1:120,T2:420,T3:900,T4:1800,T5:3500,T6:10000,T7:18000,T8:30000,T9:50000};
+const originalTierXp:Record<string,number>={T1:165,T2:290,T3:450,T4:700,T5:1100,T6:1600,T7:2200,T8:2900,T9:3800};
 const originalSlotGold:Record<string,number>={helmet:.85,chest:1.2,gloves:.7,legs:1,boots:.75,weapon:1.35,offhand:1.15,cape:.85,amulet:.65,ring:.55};
 for(const recipe of V33_EQUIPMENT_RECIPES){
   const slot=itemDef(recipe.output.itemId).slot!;
   const previousPrice=Math.max(1,Math.round(originalTierGold[recipe.v33EquipmentTier]*originalSlotGold[slot]));
-  ok(recipe.gold===increasedCraftingGoldCost(previousPrice*3),recipe.id+' must cost 20% above the 3× forge baseline');
+  const t4=recipe.v33EquipmentTier==='T4';
+  ok(recipe.gold===increasedCraftingGoldCost(previousPrice*3)*(t4?2:1),recipe.id+' must use the existing forge baseline plus exactly 2× Gold for T4 only');
+  const baselineXp=Math.max(1,Math.round(originalTierXp[recipe.v33EquipmentTier]*originalSlotGold[slot]));
+  ok(recipe.xp===baselineXp+(t4?20:0),recipe.id+' must add exactly 20 XP on T4 only');
   ok(RECIPES.find(row=>row.id===recipe.id)?.gold===recipe.gold,recipe.id+' registered recipe price must match the forge');
 }
 for(const recipe of NOVICE_RECIPES){
@@ -101,11 +105,20 @@ const t4Materials=new Set(['SUNSTONE_INGOT','SUNSCALE','DUNEWOOD','ASTRAL_SCRIPT
 ok(t3.every(recipe=>recipe.inputs.every(input=>t3Materials.has(input.itemId))),'T3 gear must use early-Sunscar sources only, without Asterfall solvent');
 ok(t4.every(recipe=>recipe.inputs.every(input=>t4Materials.has(input.itemId))),'T4 gear must not require Oathglass, King\'s Road drops, or Asterfall ingots');
 ok(t4.length===180,'Nine classes × two paths × ten slots must retain all 180 T4 equipment recipes');
+for(const recipe of t4){
+  const slot=itemDef(recipe.output.itemId).slot!;
+  const woodBase=recipe.skillId==='tailoring'?7:8;
+  const previousWood=Math.max(1,Math.round(woodBase*2*originalSlotGold[slot]));
+  const wood=recipe.inputs.find(row=>row.itemId==='DUNEWOOD');
+  ok(wood?.quantity===previousWood*3,recipe.id+' must use exactly three times its previous T4 Dunewood cost, after per-slot rounding');
+}
 ok(t4.every(recipe=>recipe.inputs.some(input=>input.itemId==='DUNEWOOD')&&recipe.inputs.some(input=>input.itemId==='GLASSBOUND_BINDER'&&input.quantity===1)&&!recipe.inputs.some(input=>input.itemId==='GLASSBOUND_CORE')),'Each T4 piece must use one Glassbound Binder and ordinary regional timber, never duplicate the rare Core directly');
 for(const classId of Object.keys(EQUIPMENT_CRAFT_SKILL_BY_CLASS)){
   for(const path of ['Foundation','Alternate']){
     const set=t4.filter(recipe=>recipe.classId===classId&&recipe.v33Path===path);
     ok(set.length===10&&set.reduce((total,recipe)=>total+(recipe.inputs.find(input=>input.itemId==='GLASSBOUND_BINDER')?.quantity??0),0)===10,classId+' / '+path+' complete T4 set must cost precisely ten Glassbound Binders');
+    const woodTotal=set.reduce((total,recipe)=>total+(recipe.inputs.find(input=>input.itemId==='DUNEWOOD')?.quantity??0),0);
+    ok(woodTotal===(EQUIPMENT_CRAFT_SKILL_BY_CLASS[classId as keyof typeof EQUIPMENT_CRAFT_SKILL_BY_CLASS]==='smithing'?435:384),classId+' / '+path+' T4 set must have exactly 3× the prior regional Dunewood total');
   }
 }
 const binderRoutes=RECIPES.filter(recipe=>recipe.output.itemId==='GLASSBOUND_BINDER');

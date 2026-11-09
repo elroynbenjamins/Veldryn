@@ -1,5 +1,6 @@
 import {strict as assert} from 'node:assert';
 import {createCharacter,newGame} from '../../../apps/mobile/src/core/game';
+import {legacyCharacterTotalXpAtLevel} from '../../../apps/mobile/src/core/progression';
 import {noviceItemId,noviceSetFor} from '../../../apps/mobile/src/content/novice-sets';
 import type {ClassId} from '../../../apps/mobile/src/core/types';
 import {deriveOnlineCoopLoadout} from '../coop-loadout';
@@ -7,7 +8,7 @@ import {resolveAndFreezeLoadout} from '../../src/server/coop/loadout-snapshots';
 import {MemoryQModeRunRepository,QModeService} from '../../src/server/coop/qmode';
 import {EXPEDITIONS} from '../../src/server/expeditions/content/launch-content';
 function frozen(classId:ClassId,index:number,syncLevel:number,sourceLevel=100){
- const state=createCharacter(newGame(0),classId,'Balance '+String.fromCharCode(65+index));state.character!.id='character-'+index;state.character!.level=sourceLevel;
+ const state=createCharacter(newGame(0),classId,'Balance '+String.fromCharCode(65+index));state.character!.id='character-'+index;state.character!.level=sourceLevel;state.character!.xp=legacyCharacterTotalXpAtLevel(sourceLevel);
  state.character!.equipment=Object.fromEntries(noviceSetFor(classId).slots.map(slot=>[slot,noviceItemId(classId,slot)]));
  const record=deriveOnlineCoopLoadout('account-'+index,state,1);
  return resolveAndFreezeLoadout({accountId:record.accountId,characterId:record.characterId,loadoutId:'current',expectedRevision:1,minLevel:15,syncLevel,repository:{getOwnedLoadout:()=>record}});

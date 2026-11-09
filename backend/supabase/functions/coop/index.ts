@@ -816,20 +816,24 @@ var COOP_ROGUELITE_CONFIG = Object.freeze({
   enhancedRewardWeeklyLimit: 12,
   tierMinimumLevelOffset: Object.freeze({ 1: 0, 2: 5, 3: 10, 4: 15, 5: 20 })
 });
+var NEW_DUNGEON_TIERS = [1, 2, 3];
+function newDungeonTierAllowed(value) {
+  return value === 1 || value === 2 || value === 3;
+}
 function coopRequiredLevel(baseMinimumLevel, tier) {
   if (!Number.isInteger(baseMinimumLevel) || baseMinimumLevel < 1) throw new Error("invalid_expedition_minimum_level");
   return rebaseLegacyCombatLevel(baseMinimumLevel + COOP_ROGUELITE_CONFIG.tierMinimumLevelOffset[tier]);
 }
 function highestEligibleCoopTier(baseMinimumLevel, characterLevel) {
   if (!Number.isInteger(characterLevel) || characterLevel < 1) throw new Error("invalid_character_level");
-  for (const tier of [5, 4, 3, 2, 1]) if (characterLevel >= coopRequiredLevel(baseMinimumLevel, tier)) return tier;
+  for (const tier of [...NEW_DUNGEON_TIERS].reverse()) if (characterLevel >= coopRequiredLevel(baseMinimumLevel, tier)) return tier;
   return void 0;
 }
 function readinessEligibleCoopTier(baseMinimumLevel, characterLevel, normalizedScore) {
   if (!Number.isFinite(normalizedScore) || normalizedScore < COOP_ROGUELITE_CONFIG.normalizedReadinessFloor) return void 0;
   const eligible = highestEligibleCoopTier(baseMinimumLevel, characterLevel);
   if (!eligible) return void 0;
-  for (const tier of [5, 4, 3, 2, 1]) {
+  for (const tier of [...NEW_DUNGEON_TIERS].reverse()) {
     if (tier <= eligible && normalizedScore >= COOP_ROGUELITE_CONFIG.normalizedReadinessFloor * EXPEDITION.difficultyIndex[tier]) return tier;
   }
   return 1;
@@ -865,6 +869,537 @@ function regularDungeonLockedReason(def, state, characterLevel) {
   if (error === "dungeon_unavailable") return def.region === "Ashlands" ? "In Development" : "Not yet available";
   if (error === "dungeon_level_requirement") return `Requires level ${Math.max(DUNGEON_UNLOCK_LEVEL, rebaseLegacyCombatLevel(def.minLevel))}`;
   return "Defeat the Fallen Knight (Chapter I) to unlock Sunscar dungeons.";
+}
+
+// node_modules/.pnpm/@noble+hashes@1.8.0/node_modules/@noble/hashes/esm/utils.js
+function isBytes(a) {
+  return a instanceof Uint8Array || ArrayBuffer.isView(a) && a.constructor.name === "Uint8Array";
+}
+function anumber(n) {
+  if (!Number.isSafeInteger(n) || n < 0)
+    throw new Error("positive integer expected, got " + n);
+}
+function abytes(b, ...lengths) {
+  if (!isBytes(b))
+    throw new Error("Uint8Array expected");
+  if (lengths.length > 0 && !lengths.includes(b.length))
+    throw new Error("Uint8Array expected of length " + lengths + ", got length=" + b.length);
+}
+function ahash(h) {
+  if (typeof h !== "function" || typeof h.create !== "function")
+    throw new Error("Hash should be wrapped by utils.createHasher");
+  anumber(h.outputLen);
+  anumber(h.blockLen);
+}
+function aexists(instance, checkFinished = true) {
+  if (instance.destroyed)
+    throw new Error("Hash instance has been destroyed");
+  if (checkFinished && instance.finished)
+    throw new Error("Hash#digest() has already been called");
+}
+function aoutput(out, instance) {
+  abytes(out);
+  const min = instance.outputLen;
+  if (out.length < min) {
+    throw new Error("digestInto() expects output buffer of length at least " + min);
+  }
+}
+function clean(...arrays) {
+  for (let i = 0; i < arrays.length; i++) {
+    arrays[i].fill(0);
+  }
+}
+function createView(arr) {
+  return new DataView(arr.buffer, arr.byteOffset, arr.byteLength);
+}
+function rotr(word, shift) {
+  return word << 32 - shift | word >>> shift;
+}
+var hasHexBuiltin = /* @__PURE__ */ (() => (
+  // @ts-ignore
+  typeof Uint8Array.from([]).toHex === "function" && typeof Uint8Array.fromHex === "function"
+))();
+var hexes = /* @__PURE__ */ Array.from({ length: 256 }, (_, i) => i.toString(16).padStart(2, "0"));
+function bytesToHex(bytes) {
+  abytes(bytes);
+  if (hasHexBuiltin)
+    return bytes.toHex();
+  let hex = "";
+  for (let i = 0; i < bytes.length; i++) {
+    hex += hexes[bytes[i]];
+  }
+  return hex;
+}
+function utf8ToBytes(str) {
+  if (typeof str !== "string")
+    throw new Error("string expected");
+  return new Uint8Array(new TextEncoder().encode(str));
+}
+function toBytes(data) {
+  if (typeof data === "string")
+    data = utf8ToBytes(data);
+  abytes(data);
+  return data;
+}
+var Hash = class {
+};
+function createHasher(hashCons) {
+  const hashC = (msg) => hashCons().update(toBytes(msg)).digest();
+  const tmp = hashCons();
+  hashC.outputLen = tmp.outputLen;
+  hashC.blockLen = tmp.blockLen;
+  hashC.create = () => hashCons();
+  return hashC;
+}
+
+// node_modules/.pnpm/@noble+hashes@1.8.0/node_modules/@noble/hashes/esm/hmac.js
+var HMAC = class extends Hash {
+  constructor(hash, _key) {
+    super();
+    this.finished = false;
+    this.destroyed = false;
+    ahash(hash);
+    const key = toBytes(_key);
+    this.iHash = hash.create();
+    if (typeof this.iHash.update !== "function")
+      throw new Error("Expected instance of class which extends utils.Hash");
+    this.blockLen = this.iHash.blockLen;
+    this.outputLen = this.iHash.outputLen;
+    const blockLen = this.blockLen;
+    const pad = new Uint8Array(blockLen);
+    pad.set(key.length > blockLen ? hash.create().update(key).digest() : key);
+    for (let i = 0; i < pad.length; i++)
+      pad[i] ^= 54;
+    this.iHash.update(pad);
+    this.oHash = hash.create();
+    for (let i = 0; i < pad.length; i++)
+      pad[i] ^= 54 ^ 92;
+    this.oHash.update(pad);
+    clean(pad);
+  }
+  update(buf) {
+    aexists(this);
+    this.iHash.update(buf);
+    return this;
+  }
+  digestInto(out) {
+    aexists(this);
+    abytes(out, this.outputLen);
+    this.finished = true;
+    this.iHash.digestInto(out);
+    this.oHash.update(out);
+    this.oHash.digestInto(out);
+    this.destroy();
+  }
+  digest() {
+    const out = new Uint8Array(this.oHash.outputLen);
+    this.digestInto(out);
+    return out;
+  }
+  _cloneInto(to) {
+    to || (to = Object.create(Object.getPrototypeOf(this), {}));
+    const { oHash, iHash, finished, destroyed, blockLen, outputLen } = this;
+    to = to;
+    to.finished = finished;
+    to.destroyed = destroyed;
+    to.blockLen = blockLen;
+    to.outputLen = outputLen;
+    to.oHash = oHash._cloneInto(to.oHash);
+    to.iHash = iHash._cloneInto(to.iHash);
+    return to;
+  }
+  clone() {
+    return this._cloneInto();
+  }
+  destroy() {
+    this.destroyed = true;
+    this.oHash.destroy();
+    this.iHash.destroy();
+  }
+};
+var hmac = (hash, key, message) => new HMAC(hash, key).update(message).digest();
+hmac.create = (hash, key) => new HMAC(hash, key);
+
+// node_modules/.pnpm/@noble+hashes@1.8.0/node_modules/@noble/hashes/esm/_md.js
+function setBigUint64(view, byteOffset, value, isLE) {
+  if (typeof view.setBigUint64 === "function")
+    return view.setBigUint64(byteOffset, value, isLE);
+  const _32n = BigInt(32);
+  const _u32_max = BigInt(4294967295);
+  const wh = Number(value >> _32n & _u32_max);
+  const wl = Number(value & _u32_max);
+  const h = isLE ? 4 : 0;
+  const l = isLE ? 0 : 4;
+  view.setUint32(byteOffset + h, wh, isLE);
+  view.setUint32(byteOffset + l, wl, isLE);
+}
+function Chi(a, b, c) {
+  return a & b ^ ~a & c;
+}
+function Maj(a, b, c) {
+  return a & b ^ a & c ^ b & c;
+}
+var HashMD = class extends Hash {
+  constructor(blockLen, outputLen, padOffset, isLE) {
+    super();
+    this.finished = false;
+    this.length = 0;
+    this.pos = 0;
+    this.destroyed = false;
+    this.blockLen = blockLen;
+    this.outputLen = outputLen;
+    this.padOffset = padOffset;
+    this.isLE = isLE;
+    this.buffer = new Uint8Array(blockLen);
+    this.view = createView(this.buffer);
+  }
+  update(data) {
+    aexists(this);
+    data = toBytes(data);
+    abytes(data);
+    const { view, buffer, blockLen } = this;
+    const len = data.length;
+    for (let pos = 0; pos < len; ) {
+      const take = Math.min(blockLen - this.pos, len - pos);
+      if (take === blockLen) {
+        const dataView = createView(data);
+        for (; blockLen <= len - pos; pos += blockLen)
+          this.process(dataView, pos);
+        continue;
+      }
+      buffer.set(data.subarray(pos, pos + take), this.pos);
+      this.pos += take;
+      pos += take;
+      if (this.pos === blockLen) {
+        this.process(view, 0);
+        this.pos = 0;
+      }
+    }
+    this.length += data.length;
+    this.roundClean();
+    return this;
+  }
+  digestInto(out) {
+    aexists(this);
+    aoutput(out, this);
+    this.finished = true;
+    const { buffer, view, blockLen, isLE } = this;
+    let { pos } = this;
+    buffer[pos++] = 128;
+    clean(this.buffer.subarray(pos));
+    if (this.padOffset > blockLen - pos) {
+      this.process(view, 0);
+      pos = 0;
+    }
+    for (let i = pos; i < blockLen; i++)
+      buffer[i] = 0;
+    setBigUint64(view, blockLen - 8, BigInt(this.length * 8), isLE);
+    this.process(view, 0);
+    const oview = createView(out);
+    const len = this.outputLen;
+    if (len % 4)
+      throw new Error("_sha2: outputLen should be aligned to 32bit");
+    const outLen = len / 4;
+    const state = this.get();
+    if (outLen > state.length)
+      throw new Error("_sha2: outputLen bigger than state");
+    for (let i = 0; i < outLen; i++)
+      oview.setUint32(4 * i, state[i], isLE);
+  }
+  digest() {
+    const { buffer, outputLen } = this;
+    this.digestInto(buffer);
+    const res = buffer.slice(0, outputLen);
+    this.destroy();
+    return res;
+  }
+  _cloneInto(to) {
+    to || (to = new this.constructor());
+    to.set(...this.get());
+    const { blockLen, buffer, length, finished, destroyed, pos } = this;
+    to.destroyed = destroyed;
+    to.finished = finished;
+    to.length = length;
+    to.pos = pos;
+    if (length % blockLen)
+      to.buffer.set(buffer);
+    return to;
+  }
+  clone() {
+    return this._cloneInto();
+  }
+};
+var SHA256_IV = /* @__PURE__ */ Uint32Array.from([
+  1779033703,
+  3144134277,
+  1013904242,
+  2773480762,
+  1359893119,
+  2600822924,
+  528734635,
+  1541459225
+]);
+
+// node_modules/.pnpm/@noble+hashes@1.8.0/node_modules/@noble/hashes/esm/sha2.js
+var SHA256_K = /* @__PURE__ */ Uint32Array.from([
+  1116352408,
+  1899447441,
+  3049323471,
+  3921009573,
+  961987163,
+  1508970993,
+  2453635748,
+  2870763221,
+  3624381080,
+  310598401,
+  607225278,
+  1426881987,
+  1925078388,
+  2162078206,
+  2614888103,
+  3248222580,
+  3835390401,
+  4022224774,
+  264347078,
+  604807628,
+  770255983,
+  1249150122,
+  1555081692,
+  1996064986,
+  2554220882,
+  2821834349,
+  2952996808,
+  3210313671,
+  3336571891,
+  3584528711,
+  113926993,
+  338241895,
+  666307205,
+  773529912,
+  1294757372,
+  1396182291,
+  1695183700,
+  1986661051,
+  2177026350,
+  2456956037,
+  2730485921,
+  2820302411,
+  3259730800,
+  3345764771,
+  3516065817,
+  3600352804,
+  4094571909,
+  275423344,
+  430227734,
+  506948616,
+  659060556,
+  883997877,
+  958139571,
+  1322822218,
+  1537002063,
+  1747873779,
+  1955562222,
+  2024104815,
+  2227730452,
+  2361852424,
+  2428436474,
+  2756734187,
+  3204031479,
+  3329325298
+]);
+var SHA256_W = /* @__PURE__ */ new Uint32Array(64);
+var SHA256 = class extends HashMD {
+  constructor(outputLen = 32) {
+    super(64, outputLen, 8, false);
+    this.A = SHA256_IV[0] | 0;
+    this.B = SHA256_IV[1] | 0;
+    this.C = SHA256_IV[2] | 0;
+    this.D = SHA256_IV[3] | 0;
+    this.E = SHA256_IV[4] | 0;
+    this.F = SHA256_IV[5] | 0;
+    this.G = SHA256_IV[6] | 0;
+    this.H = SHA256_IV[7] | 0;
+  }
+  get() {
+    const { A, B, C, D, E, F, G, H } = this;
+    return [A, B, C, D, E, F, G, H];
+  }
+  // prettier-ignore
+  set(A, B, C, D, E, F, G, H) {
+    this.A = A | 0;
+    this.B = B | 0;
+    this.C = C | 0;
+    this.D = D | 0;
+    this.E = E | 0;
+    this.F = F | 0;
+    this.G = G | 0;
+    this.H = H | 0;
+  }
+  process(view, offset) {
+    for (let i = 0; i < 16; i++, offset += 4)
+      SHA256_W[i] = view.getUint32(offset, false);
+    for (let i = 16; i < 64; i++) {
+      const W15 = SHA256_W[i - 15];
+      const W2 = SHA256_W[i - 2];
+      const s0 = rotr(W15, 7) ^ rotr(W15, 18) ^ W15 >>> 3;
+      const s1 = rotr(W2, 17) ^ rotr(W2, 19) ^ W2 >>> 10;
+      SHA256_W[i] = s1 + SHA256_W[i - 7] + s0 + SHA256_W[i - 16] | 0;
+    }
+    let { A, B, C, D, E, F, G, H } = this;
+    for (let i = 0; i < 64; i++) {
+      const sigma1 = rotr(E, 6) ^ rotr(E, 11) ^ rotr(E, 25);
+      const T1 = H + sigma1 + Chi(E, F, G) + SHA256_K[i] + SHA256_W[i] | 0;
+      const sigma0 = rotr(A, 2) ^ rotr(A, 13) ^ rotr(A, 22);
+      const T2 = sigma0 + Maj(A, B, C) | 0;
+      H = G;
+      G = F;
+      F = E;
+      E = D + T1 | 0;
+      D = C;
+      C = B;
+      B = A;
+      A = T1 + T2 | 0;
+    }
+    A = A + this.A | 0;
+    B = B + this.B | 0;
+    C = C + this.C | 0;
+    D = D + this.D | 0;
+    E = E + this.E | 0;
+    F = F + this.F | 0;
+    G = G + this.G | 0;
+    H = H + this.H | 0;
+    this.set(A, B, C, D, E, F, G, H);
+  }
+  roundClean() {
+    clean(SHA256_W);
+  }
+  destroy() {
+    this.set(0, 0, 0, 0, 0, 0, 0, 0);
+    clean(this.buffer);
+  }
+};
+var sha256 = /* @__PURE__ */ createHasher(() => new SHA256());
+
+// node_modules/.pnpm/@noble+hashes@1.8.0/node_modules/@noble/hashes/esm/sha256.js
+var sha2562 = sha256;
+
+// src/server/combat/deterministic-rng.ts
+function utf8(value) {
+  const bytes = [];
+  for (const character of value) {
+    let n = character.codePointAt(0);
+    if (n >= 55296 && n <= 57343) n = 65533;
+    if (n < 128) bytes.push(n);
+    else if (n < 2048) bytes.push(192 | n >> 6, 128 | n & 63);
+    else if (n < 65536) bytes.push(224 | n >> 12, 128 | n >> 6 & 63, 128 | n & 63);
+    else bytes.push(240 | n >> 18, 128 | n >> 12 & 63, 128 | n >> 6 & 63, 128 | n & 63);
+  }
+  return new Uint8Array(bytes);
+}
+var CombatRng = class {
+  cursor = 0;
+  key;
+  constructor(seed) {
+    this.key = utf8(seed);
+  }
+  next(label) {
+    const payload = `${this.cursor++}:${label}`;
+    const hex = bytesToHex(hmac(sha2562, this.key, utf8(payload))).slice(0, 13);
+    return parseInt(hex, 16) / 9007199254740991;
+  }
+  pick(values, label) {
+    if (!values.length) throw new Error("cannot_pick_empty");
+    return values[Math.min(values.length - 1, Math.floor(this.next(label) * values.length))];
+  }
+};
+
+// src/server/equipment/gems/gem-catalog-v1.ts
+var vals = (a, b, c, d, e) => ({ 1: a, 2: b, 3: c, 4: d, 5: e });
+var STAT_GEMS_V1 = [
+  { familyId: "stat_might", name: "Might", stat: "power", unit: "percent", values: vals(4e-3, 5e-3, 65e-4, 8e-3, 0.01) },
+  { familyId: "stat_vitality", name: "Vitality", stat: "maxHp", unit: "percent", values: vals(6e-3, 8e-3, 0.01, 0.0125, 0.015) },
+  { familyId: "stat_iron", name: "Iron", stat: "armor", unit: "percent", values: vals(5e-3, 65e-4, 8e-3, 0.01, 0.0125) },
+  { familyId: "stat_ward", name: "Ward", stat: "ward", unit: "percent", values: vals(5e-3, 65e-4, 8e-3, 0.01, 0.0125) },
+  { familyId: "stat_precision", name: "Precision", stat: "accuracy", unit: "percentage_point", values: vals(3e-3, 4e-3, 5e-3, 65e-4, 8e-3) },
+  { familyId: "stat_keen", name: "Keen", stat: "critRate", unit: "percentage_point", values: vals(2e-3, 3e-3, 4e-3, 5e-3, 6e-3) },
+  { familyId: "stat_savage", name: "Savage", stat: "critDamage", unit: "percent", values: vals(0.01, 0.013, 0.016, 0.02, 0.025) },
+  { familyId: "stat_piercing", name: "Piercing", stat: "penetration", unit: "percentage_point", values: vals(25e-4, 35e-4, 45e-4, 6e-3, 75e-4) },
+  { familyId: "stat_swift", name: "Swift", stat: "haste", unit: "percent", values: vals(35e-4, 45e-4, 55e-4, 65e-4, 8e-3) },
+  { familyId: "stat_potent", name: "Potent", stat: "potency", unit: "percent", values: vals(5e-3, 65e-4, 8e-3, 0.01, 0.012) },
+  { familyId: "stat_elusive", name: "Elusive", stat: "evasion", unit: "percentage_point", values: vals(2e-3, 25e-4, 3e-3, 4e-3, 5e-3) },
+  { familyId: "stat_resolute", name: "Resolute", stat: "tenacity", unit: "percent", values: vals(4e-3, 5e-3, 6e-3, 75e-4, 9e-3) }
+];
+var EFFECT_GEMS_V1 = [
+  { familyId: "effect_momentum", name: "Momentum", category: "damage", values: vals(18e-4, 22e-4, 26e-4, 31e-4, 36e-4), maxEquippedCopies: 3, baseDescription: "Successful direct attacks build stacking damage for 4s; max 5.", resonance2: "Maximum stacks becomes 6.", resonance3: "Stacks decay one at a time after expiry.", triggerCooldownMs: 500, durationMs: 4e3 },
+  { familyId: "effect_execution", name: "Execution", category: "damage", values: vals(8e-3, 0.01, 0.012, 0.015, 0.018), maxEquippedCopies: 3, baseDescription: "Increases direct and periodic damage to targets below 30% HP.", resonance2: "Activation threshold becomes 35% HP.", resonance3: "Total Execution bonus is 25% stronger below 15% HP." },
+  { familyId: "effect_opening_strike", name: "Opening Strike", category: "damage", values: vals(7e-3, 9e-3, 0.011, 0.013, 0.015), maxEquippedCopies: 3, baseDescription: "Increases damage for the first 8s of combat.", resonance2: "Duration becomes 10s.", resonance3: "Refreshes once on a flagged boss phase change.", durationMs: 8e3 },
+  { familyId: "effect_predator", name: "Predator", category: "damage", values: vals(8e-3, 0.01, 0.012, 0.014, 0.016), maxEquippedCopies: 3, baseDescription: "Increases damage against Elite and Boss enemies.", resonance2: "Also affects minibosses and Champions.", resonance3: "First hit grants +25% Predator effectiveness for 8s." },
+  { familyId: "effect_critical_surge", name: "Critical Surge", category: "damage", values: vals(2e-3, 25e-4, 3e-3, 35e-4, 4e-3), maxEquippedCopies: 3, baseDescription: "Critical direct hits grant stacking Haste for 5s; max 3.", resonance2: "Maximum stacks becomes 4.", resonance3: "At max stacks, critical hits refresh the oldest stack.", triggerCooldownMs: 750, durationMs: 5e3 },
+  { familyId: "effect_ruin", name: "Ruin", category: "damage", values: vals(25e-4, 3e-3, 35e-4, 4e-3, 5e-3), maxEquippedCopies: 3, baseDescription: "Increases damage per different qualifying negative effect; max 2.", resonance2: "Counts up to 3 effects.", resonance3: "A fresh player Mark counts as two effects for 4s." },
+  { familyId: "effect_bulwark", name: "Bulwark", category: "defense", values: vals(6e-3, 75e-4, 9e-3, 0.0105, 0.012), maxEquippedCopies: 3, baseDescription: "Block or qualifying defensive ability grants damage reduction for 4s.", resonance2: "Duration becomes 5s.", resonance3: "Successful blocks refresh duration.", durationMs: 4e3 },
+  { familyId: "effect_aegis", name: "Aegis", category: "defense", values: vals(0.01, 0.0125, 0.015, 0.0175, 0.02), maxEquippedCopies: 3, baseDescription: "Increases barriers generated by the player.", resonance2: "Naturally expired barriers heal 5% of unused value.", resonance3: "Maximum barrier cap increases by 5%." },
+  { familyId: "effect_last_stand", name: "Last Stand", category: "defense", values: vals(0.015, 0.019, 0.023, 0.027, 0.032), maxEquippedCopies: 3, baseDescription: "Once per combat, dropping below 30% HP grants DR for 6s.", resonance2: "Threshold becomes 35% HP.", resonance3: "Duration becomes 8s.", durationMs: 6e3 },
+  { familyId: "effect_retaliation", name: "Retaliation", category: "defense", values: vals(0.015, 0.019, 0.023, 0.027, 0.032), maxEquippedCopies: 3, baseDescription: "A hit of at least 12% Max HP empowers the next damaging ability.", resonance2: "Trigger threshold becomes 10% Max HP.", resonance3: "Consuming Retaliation restores 1% Max HP.", triggerCooldownMs: 8e3 },
+  { familyId: "effect_unyielding", name: "Unyielding", category: "defense", values: vals(15e-4, 2e-3, 25e-4, 3e-3, 35e-4), maxEquippedCopies: 3, baseDescription: "Taking damage grants stacking Armor and Ward for 5s; max 4.", resonance2: "Maximum stacks becomes 5.", resonance3: "Stacks last 7s.", triggerCooldownMs: 750, durationMs: 5e3 },
+  { familyId: "effect_mercy", name: "Mercy", category: "support", values: vals(0.04, 0.05, 0.06, 0.07, 0.08), maxEquippedCopies: 3, baseDescription: "A percentage of effective overhealing becomes an 8s barrier; cap 3% target Max HP.", resonance2: "Barrier cap becomes 4% Max HP.", resonance3: "Barrier duration becomes 10s.", durationMs: 8e3 },
+  { familyId: "effect_benediction", name: "Benediction", category: "support", values: vals(8e-3, 0.01, 0.012, 0.014, 0.016), maxEquippedCopies: 3, baseDescription: "Support abilities grant a 10s charge empowering the next direct heal or barrier.", resonance2: "May hold 2 charges.", resonance3: "Consuming a charge grants 2% Haste for 4s.", durationMs: 1e4 },
+  { familyId: "effect_guardians_gift", name: "Guardian's Gift", category: "support", values: vals(25e-4, 35e-4, 45e-4, 55e-4, 65e-4), maxEquippedCopies: 3, baseDescription: "Barrier applied to another player grants them DR for 4s.", resonance2: "Duration becomes 6s.", resonance3: "Caster receives 50% of the DR.", durationMs: 4e3 },
+  { familyId: "effect_renewal", name: "Renewal", category: "support", values: vals(0.01, 0.0125, 0.015, 0.0175, 0.02), maxEquippedCopies: 3, baseDescription: "Direct healing leaves additional healing over 4s.", resonance2: "Duration becomes 6s and total Renewal healing +20%.", resonance3: "Up to 2 Renewals may coexist per target.", durationMs: 4e3 },
+  { familyId: "effect_shared_resolve", name: "Shared Resolve", category: "support", values: vals(25e-4, 3e-3, 35e-4, 4e-3, 5e-3), maxEquippedCopies: 3, baseDescription: "Buffing or shielding another player grants Potency for 6s; max 2.", resonance2: "Duration becomes 8s.", resonance3: "Maximum stacks becomes 3.", durationMs: 6e3 },
+  { familyId: "effect_sustenance", name: "Sustenance", category: "hybrid", values: vals(15e-4, 2e-3, 25e-4, 3e-3, 35e-4), maxEquippedCopies: 3, baseDescription: "Defeating an enemy restores Max HP.", resonance2: "Elite/Champion kills restore 3x.", resonance3: "25% of overheal becomes a barrier capped at 2% Max HP.", triggerCooldownMs: 3e3 },
+  { familyId: "effect_battle_rhythm", name: "Battle Rhythm", category: "hybrid", values: vals(5e-3, 65e-4, 8e-3, 95e-4, 0.011), maxEquippedCopies: 3, baseDescription: "Alternating offensive and defensive/support abilities empowers the next opposite-category ability.", resonance2: "Alternation window becomes 12s.", resonance3: "Successful alternation grants 2% Haste for 4s.", triggerCooldownMs: 6e3 },
+  { familyId: "effect_flow", name: "Flow", category: "hybrid", values: vals(1e-3, 15e-4, 2e-3, 25e-4, 3e-3), maxEquippedCopies: 3, baseDescription: "Different consecutive abilities build Haste for 6s; max 3.", resonance2: "Maximum stacks becomes 4.", resonance3: "Stacks decay one at a time after expiry.", durationMs: 6e3 },
+  { familyId: "effect_opportunist", name: "Opportunist", category: "hybrid", values: vals(7e-3, 9e-3, 0.011, 0.013, 0.015), maxEquippedCopies: 3, baseDescription: "Applying a new Mark/debuff/exposed/control state empowers the next direct hit within 4s.", resonance2: "Per-target cooldown becomes 3s.", resonance3: "A critical empowered hit extends the triggering effect by 1s once.", triggerCooldownMs: 4e3 }
+];
+function findStatGem(familyId) {
+  return STAT_GEMS_V1.find((v) => v.familyId === familyId);
+}
+function findEffectGem(familyId) {
+  return EFFECT_GEMS_V1.find((v) => v.familyId === familyId);
+}
+
+// src/server/equipment/gems/gem-acquisition-v1.ts
+var GEM_SOURCE_POOLS_V1 = [
+  { id: "ZONE_006", kind: "enemy", regionId: "REG_002", families: ["stat_might", "stat_vitality", "effect_opening_strike", "effect_sustenance"], grade: 1, chance: 75e-4 },
+  { id: "ZONE_007", kind: "elite", regionId: "REG_002", families: ["stat_iron", "stat_piercing", "effect_predator", "effect_retaliation"], grade: 2, chance: 0.015, pityAt: 60 },
+  { id: "ZONE_008", kind: "elite", regionId: "REG_002", families: ["stat_precision", "stat_potent", "effect_ruin", "effect_mercy", "effect_opportunist"], grade: 2, chance: 0.015, pityAt: 60 },
+  { id: "ZONE_009", kind: "elite", regionId: "REG_002", families: ["stat_swift", "stat_ward", "effect_flow", "effect_benediction", "effect_aegis"], grade: 2, chance: 0.015, pityAt: 60 },
+  { id: "ZONE_010", kind: "regional_boss", regionId: "REG_002", families: ["effect_execution", "effect_last_stand", "effect_unyielding"], grade: 3, chance: 0.03, pityAt: 25, recipeChance: 0.02, catalystChance: 0.05 },
+  { id: "COP_004", kind: "dungeon_boss", regionId: "REG_002", families: ["effect_bulwark", "effect_retaliation", "effect_predator", "stat_iron"], grade: 3, chance: 0.18, pityAt: 8, recipeChance: 0.08, catalystChance: 0.15 },
+  { id: "COP_005", kind: "dungeon_boss", regionId: "REG_002", families: ["effect_mercy", "effect_ruin", "effect_opportunist", "stat_precision", "stat_potent"], grade: 3, chance: 0.18, pityAt: 8, recipeChance: 0.08, catalystChance: 0.15 },
+  { id: "COP_006", kind: "dungeon_boss", regionId: "REG_002", families: ["effect_flow", "effect_benediction", "effect_critical_surge", "stat_swift", "stat_ward"], grade: 3, chance: 0.18, pityAt: 8, recipeChance: 0.08, catalystChance: 0.15 },
+  { id: "COP_007", kind: "dungeon_boss", regionId: "REG_003", families: ["effect_momentum", "effect_predator", "effect_sustenance", "stat_keen"], grade: 3, chance: 0.18, pityAt: 8, recipeChance: 0.08, catalystChance: 0.15 },
+  { id: "COP_008", kind: "dungeon_boss", regionId: "REG_003", families: ["effect_aegis", "effect_guardians_gift", "effect_unyielding", "stat_vitality", "stat_resolute"], grade: 3, chance: 0.18, pityAt: 8, recipeChance: 0.08, catalystChance: 0.15 },
+  { id: "COP_009", kind: "dungeon_boss", regionId: "REG_003", families: ["effect_execution", "effect_shared_resolve", "effect_battle_rhythm", "effect_renewal", "stat_savage"], grade: 3, chance: 0.18, pityAt: 8, recipeChance: 0.08, catalystChance: 0.15 },
+  { id: "PARTY_CONTRACT_WEEKLY", kind: "party_contract", families: ["effect_momentum", "effect_execution", "effect_bulwark", "effect_mercy", "effect_flow", "effect_opportunist"], grade: 3, chance: 0.25, pityAt: 4, catalystChance: 0.2 },
+  { id: "LIVE_COOP_RESONANCE_CACHE", kind: "live_coop_weekly", families: ["effect_momentum", "effect_execution", "effect_opening_strike", "effect_predator", "effect_critical_surge", "effect_ruin", "effect_bulwark", "effect_aegis", "effect_last_stand", "effect_retaliation", "effect_unyielding", "effect_mercy", "effect_benediction", "effect_guardians_gift", "effect_renewal", "effect_shared_resolve", "effect_sustenance", "effect_battle_rhythm", "effect_flow", "effect_opportunist"], grade: 3, chance: 1 }
+];
+function gemPoolForSourceV1(sourceId) {
+  return GEM_SOURCE_POOLS_V1.find((v) => v.id === sourceId);
+}
+
+// src/server/coop/dungeon-reward-preview.ts
+var SETTLED_GEM_DUNGEONS = /* @__PURE__ */ new Set(["COP_004", "COP_005", "COP_006", "COP_007", "COP_008", "COP_009"]);
+function dungeonRewardPreview(expeditionId) {
+  const pool = SETTLED_GEM_DUNGEONS.has(expeditionId) ? gemPoolForSourceV1(expeditionId) : void 0;
+  if (!pool || pool.kind !== "dungeon_boss") return {
+    guaranteedOnClear: ["Expedition Marks"],
+    potentialDrops: [],
+    dropNotice: "No verified item-drop rates are published for this dungeon yet."
+  };
+  const drops = [{
+    label: "Grade III unrefined gem",
+    chancePercent: pool.chance * 100,
+    ...pool.pityAt ? { pityAt: pool.pityAt } : {},
+    detail: "Random gem family from this boss pool"
+  }];
+  if (pool.recipeChance) drops.push({
+    label: "Gem recipe or duplicate compensation",
+    chancePercent: pool.recipeChance * 100,
+    detail: "A duplicate learned recipe grants Gem Dust instead"
+  });
+  if (pool.catalystChance) drops.push({ label: "Regional Catalyst", chancePercent: pool.catalystChance * 100 });
+  return { guaranteedOnClear: ["Expedition Marks"], potentialDrops: drops, dropNotice: "Rates are per eligible claimed clear, not per room or attempt." };
 }
 
 // online/coop-loadout.ts
@@ -42863,40 +43398,40 @@ var EQUIPMENT_ITEMS_V33 = equipment_catalog_t1_t9_v33_default.pieces.map((piece)
 // ../apps/mobile/src/content/gems-v1.ts
 var GEM_GRADE_LABEL_V1 = { 1: "Cut", 2: "Polished", 3: "Refined", 4: "Flawless", 5: "Radiant" };
 var GEM_GRADE_RARITY_V1 = { 1: "common", 2: "uncommon", 3: "rare", 4: "epic", 5: "mythic" };
-var vals = (a, b, c, d, e) => ({ 1: a, 2: b, 3: c, 4: d, 5: e });
+var vals2 = (a, b, c, d, e) => ({ 1: a, 2: b, 3: c, 4: d, 5: e });
 var MOBILE_GEM_FAMILIES_V1 = [
-  { familyId: "stat_might", name: "Might", kind: "stat", category: "stat", values: vals(4e-3, 5e-3, 65e-4, 8e-3, 0.01), unit: "percent", description: "Increases Power.", legacyStat: "attack", sources: ["Saffron Gate", "Crafting"] },
-  { familyId: "stat_vitality", name: "Vitality", kind: "stat", category: "stat", values: vals(6e-3, 8e-3, 0.01, 0.0125, 0.015), unit: "percent", description: "Increases Max HP.", legacyStat: "hp", sources: ["Saffron Gate", "Shiverlake Descent", "Crafting"] },
-  { familyId: "stat_iron", name: "Iron", kind: "stat", category: "stat", values: vals(5e-3, 65e-4, 8e-3, 0.01, 0.0125), unit: "percent", description: "Increases Armor.", legacyStat: "defense", sources: ["Scorchwind Flats", "Caravan of Glass", "Crafting"] },
-  { familyId: "stat_ward", name: "Ward", kind: "stat", category: "stat", values: vals(5e-3, 65e-4, 8e-3, 0.01, 0.0125), unit: "percent", description: "Increases Ward.", sources: ["Buried Observatory", "Crafting"] },
-  { familyId: "stat_precision", name: "Precision", kind: "stat", category: "stat", values: vals(3e-3, 4e-3, 5e-3, 65e-4, 8e-3), unit: "percentage_point", description: "Increases Accuracy.", sources: ["Mirage Basin", "Mirage Well", "Crafting"] },
-  { familyId: "stat_keen", name: "Keen", kind: "stat", category: "stat", values: vals(2e-3, 3e-3, 4e-3, 5e-3, 6e-3), unit: "percentage_point", description: "Increases Critical Chance.", sources: ["Whitepine Hunt", "Crafting"] },
-  { familyId: "stat_savage", name: "Savage", kind: "stat", category: "stat", values: vals(0.01, 0.013, 0.016, 0.02, 0.025), unit: "percent", description: "Increases Critical Damage.", sources: ["Choir Caverns", "Crafting"] },
-  { familyId: "stat_piercing", name: "Piercing", kind: "stat", category: "stat", values: vals(25e-4, 35e-4, 45e-4, 6e-3, 75e-4), unit: "percentage_point", description: "Increases Penetration.", sources: ["Scorchwind Flats", "Crafting"] },
-  { familyId: "stat_swift", name: "Swift", kind: "stat", category: "stat", values: vals(35e-4, 45e-4, 55e-4, 65e-4, 8e-3), unit: "percent", description: "Increases Haste.", sources: ["Buried Observatory", "Crafting"] },
-  { familyId: "stat_potent", name: "Potent", kind: "stat", category: "stat", values: vals(5e-3, 65e-4, 8e-3, 0.01, 0.012), unit: "percent", description: "Increases Potency.", sources: ["Mirage Basin", "Mirage Well", "Crafting"] },
-  { familyId: "stat_elusive", name: "Elusive", kind: "stat", category: "stat", values: vals(2e-3, 25e-4, 3e-3, 4e-3, 5e-3), unit: "percentage_point", description: "Increases Evasion.", sources: ["Regional enemies", "Crafting"] },
-  { familyId: "stat_resolute", name: "Resolute", kind: "stat", category: "stat", values: vals(4e-3, 5e-3, 6e-3, 75e-4, 9e-3), unit: "percent", description: "Increases Tenacity.", sources: ["Shiverlake Descent", "Crafting"] },
-  { familyId: "effect_momentum", name: "Momentum", kind: "effect", category: "damage", values: vals(18e-4, 22e-4, 26e-4, 31e-4, 36e-4), unit: "effect", description: "Successful direct attacks build stacking damage for 4s.", resonance2: "Maximum Momentum stacks becomes 6.", resonance3: "Momentum decays one stack at a time.", recommendedClasses: ["KNIFE_DANCER", "WAYFINDER", "HEXWEAVER"], sources: ["Whitepine Hunt", "Party Contracts"] },
-  { familyId: "effect_execution", name: "Execution", kind: "effect", category: "damage", values: vals(8e-3, 0.01, 0.012, 0.015, 0.018), unit: "effect", description: "Deal more damage to enemies below 30% HP.", resonance2: "Activation threshold becomes 35% HP.", resonance3: "Execution is 25% stronger below 15% HP.", recommendedClasses: ["RAVAGER", "KNIFE_DANCER", "DREADGUARD"], sources: ["Tyrant's Crown", "Choir Caverns", "Party Contracts"] },
-  { familyId: "effect_opening_strike", name: "Opening Strike", kind: "effect", category: "damage", values: vals(7e-3, 9e-3, 0.011, 0.013, 0.015), unit: "effect", description: "Deal more damage during the opening 8s of combat.", resonance2: "Opening window becomes 10s.", resonance3: "Refreshes once on a flagged boss phase.", recommendedClasses: ["RAVAGER", "WAYFINDER", "KNIFE_DANCER"], sources: ["Saffron Gate", "Resonance Cache"] },
-  { familyId: "effect_predator", name: "Predator", kind: "effect", category: "damage", values: vals(8e-3, 0.01, 0.012, 0.014, 0.016), unit: "effect", description: "Deal more damage to Elite and Boss enemies.", resonance2: "Also affects minibosses and Champions.", resonance3: "First hit temporarily increases Predator effectiveness.", recommendedClasses: ["WAYFINDER", "RAVAGER"], legacyEffect: "boss_power", sources: ["Caravan of Glass", "Whitepine Hunt"] },
-  { familyId: "effect_critical_surge", name: "Critical Surge", kind: "effect", category: "damage", values: vals(2e-3, 25e-4, 3e-3, 35e-4, 4e-3), unit: "effect", description: "Critical hits grant stacking Haste.", resonance2: "Maximum stacks becomes 4.", resonance3: "Critical hits refresh the oldest stack at cap.", recommendedClasses: ["KNIFE_DANCER", "WAYFINDER", "RAVAGER"], sources: ["Buried Observatory"] },
-  { familyId: "effect_ruin", name: "Ruin", kind: "effect", category: "damage", values: vals(25e-4, 3e-3, 35e-4, 4e-3, 5e-3), unit: "effect", description: "Deal more damage per different negative effect on the target.", resonance2: "Counts up to 3 negative effects.", resonance3: "A fresh player Mark counts as two effects briefly.", recommendedClasses: ["HEXWEAVER", "WAYFINDER"], sources: ["Mirage Well", "Mirage Basin"] },
-  { familyId: "effect_bulwark", name: "Bulwark", kind: "effect", category: "defense", values: vals(6e-3, 75e-4, 9e-3, 0.0105, 0.012), unit: "effect", description: "Blocking or defensive abilities grant temporary damage reduction.", resonance2: "Damage-reduction duration increases.", resonance3: "Successful blocks refresh the duration.", recommendedClasses: ["IRONWARDEN", "BASTION"], legacyEffect: "damage_reduction", sources: ["Caravan of Glass", "Party Contracts"] },
-  { familyId: "effect_aegis", name: "Aegis", kind: "effect", category: "defense", values: vals(0.01, 0.0125, 0.015, 0.0175, 0.02), unit: "effect", description: "Increase barriers generated by the player.", resonance2: "Expired barriers return a small amount as healing.", resonance3: "Maximum barrier cap increases by 5%.", recommendedClasses: ["BASTION", "STONECALLER"], sources: ["Buried Observatory", "Shiverlake Descent"] },
-  { familyId: "effect_last_stand", name: "Last Stand", kind: "effect", category: "defense", values: vals(0.015, 0.019, 0.023, 0.027, 0.032), unit: "effect", description: "Once per combat, low HP triggers strong mitigation.", resonance2: "Activation threshold becomes 35% HP.", resonance3: "Last Stand lasts 8s.", recommendedClasses: ["IRONWARDEN", "DREADGUARD"], sources: ["Tyrant's Crown"] },
-  { familyId: "effect_retaliation", name: "Retaliation", kind: "effect", category: "defense", values: vals(0.015, 0.019, 0.023, 0.027, 0.032), unit: "effect", description: "Taking a heavy hit empowers your next damaging ability.", resonance2: "Heavy-hit threshold becomes easier to trigger.", resonance3: "Consuming Retaliation restores a small amount of HP.", recommendedClasses: ["DREADGUARD", "IRONWARDEN"], sources: ["Scorchwind Flats", "Caravan of Glass"] },
-  { familyId: "effect_unyielding", name: "Unyielding", kind: "effect", category: "defense", values: vals(15e-4, 2e-3, 25e-4, 3e-3, 35e-4), unit: "effect", description: "Incoming hits build temporary Armor and Ward.", resonance2: "Maximum defensive stacks becomes 5.", resonance3: "Stacks last longer.", recommendedClasses: ["IRONWARDEN", "BASTION", "DREADGUARD"], sources: ["Tyrant's Crown", "Shiverlake Descent"] },
-  { familyId: "effect_mercy", name: "Mercy", kind: "effect", category: "support", values: vals(0.04, 0.05, 0.06, 0.07, 0.08), unit: "effect", description: "A portion of overhealing becomes a temporary barrier.", resonance2: "Mercy barrier cap increases.", resonance3: "Mercy barriers last longer.", recommendedClasses: ["DAWNKEEPER"], sources: ["Mirage Basin", "Mirage Well", "Party Contracts"] },
-  { familyId: "effect_benediction", name: "Benediction", kind: "effect", category: "support", values: vals(8e-3, 0.01, 0.012, 0.014, 0.016), unit: "effect", description: "Support abilities empower the next direct heal or barrier.", resonance2: "May hold two Benediction charges.", resonance3: "Consuming a charge briefly grants Haste.", recommendedClasses: ["DAWNKEEPER", "STONECALLER"], sources: ["Buried Observatory"] },
-  { familyId: "effect_guardians_gift", name: "Guardian's Gift", kind: "effect", category: "support", values: vals(25e-4, 35e-4, 45e-4, 55e-4, 65e-4), unit: "effect", description: "Barriers placed on allies also grant temporary damage reduction.", resonance2: "The damage reduction lasts longer.", resonance3: "The caster receives half of the mitigation.", recommendedClasses: ["STONECALLER", "BASTION"], sources: ["Shiverlake Descent"] },
-  { familyId: "effect_renewal", name: "Renewal", kind: "effect", category: "support", values: vals(0.01, 0.0125, 0.015, 0.0175, 0.02), unit: "effect", description: "Direct healing leaves a small heal-over-time effect.", resonance2: "Renewal lasts longer and heals more.", resonance3: "Two Renewals may coexist on a target.", recommendedClasses: ["DAWNKEEPER"], sources: ["Choir Caverns"] },
-  { familyId: "effect_shared_resolve", name: "Shared Resolve", kind: "effect", category: "support", values: vals(25e-4, 3e-3, 35e-4, 4e-3, 5e-3), unit: "effect", description: "Buffing or shielding another player grants temporary Potency.", resonance2: "Shared Resolve lasts longer.", resonance3: "Maximum stacks becomes 3.", recommendedClasses: ["DAWNKEEPER", "STONECALLER"], sources: ["Choir Caverns"] },
-  { familyId: "effect_sustenance", name: "Sustenance", kind: "effect", category: "hybrid", values: vals(15e-4, 2e-3, 25e-4, 3e-3, 35e-4), unit: "effect", description: "Defeating enemies restores a small amount of Max HP.", resonance2: "Elite and Champion kills restore triple.", resonance3: "Excess healing becomes a small barrier.", recommendedClasses: ["DREADGUARD"], legacyEffect: "recovery", sources: ["Saffron Gate", "Whitepine Hunt"] },
-  { familyId: "effect_battle_rhythm", name: "Battle Rhythm", kind: "effect", category: "hybrid", values: vals(5e-3, 65e-4, 8e-3, 95e-4, 0.011), unit: "effect", description: "Alternating offensive and defensive/support abilities empowers the next opposite category.", resonance2: "The alternation window becomes longer.", resonance3: "Successful alternation briefly grants Haste.", recommendedClasses: ["IRONWARDEN", "DAWNKEEPER"], sources: ["Choir Caverns"] },
-  { familyId: "effect_flow", name: "Flow", kind: "effect", category: "hybrid", values: vals(1e-3, 15e-4, 2e-3, 25e-4, 3e-3), unit: "effect", description: "Using different abilities consecutively builds Haste.", resonance2: "Maximum Flow stacks becomes 4.", resonance3: "Flow decays one stack at a time.", recommendedClasses: ["HEXWEAVER", "KNIFE_DANCER", "DAWNKEEPER"], legacyEffect: "combat_speed", sources: ["Buried Observatory", "Party Contracts"] },
-  { familyId: "effect_opportunist", name: "Opportunist", kind: "effect", category: "hybrid", values: vals(7e-3, 9e-3, 0.011, 0.013, 0.015), unit: "effect", description: "Applying a new Mark/debuff/control effect empowers the next direct hit.", resonance2: "Per-target cooldown becomes shorter.", resonance3: "A critical empowered hit extends the triggering effect once.", recommendedClasses: ["HEXWEAVER", "WAYFINDER"], sources: ["Mirage Basin", "Mirage Well", "Party Contracts"] }
+  { familyId: "stat_might", name: "Might", kind: "stat", category: "stat", values: vals2(4e-3, 5e-3, 65e-4, 8e-3, 0.01), unit: "percent", description: "Increases Power.", legacyStat: "attack", sources: ["Saffron Gate", "Crafting"] },
+  { familyId: "stat_vitality", name: "Vitality", kind: "stat", category: "stat", values: vals2(6e-3, 8e-3, 0.01, 0.0125, 0.015), unit: "percent", description: "Increases Max HP.", legacyStat: "hp", sources: ["Saffron Gate", "Shiverlake Descent", "Crafting"] },
+  { familyId: "stat_iron", name: "Iron", kind: "stat", category: "stat", values: vals2(5e-3, 65e-4, 8e-3, 0.01, 0.0125), unit: "percent", description: "Increases Armor.", legacyStat: "defense", sources: ["Scorchwind Flats", "Caravan of Glass", "Crafting"] },
+  { familyId: "stat_ward", name: "Ward", kind: "stat", category: "stat", values: vals2(5e-3, 65e-4, 8e-3, 0.01, 0.0125), unit: "percent", description: "Increases Ward.", sources: ["Buried Observatory", "Crafting"] },
+  { familyId: "stat_precision", name: "Precision", kind: "stat", category: "stat", values: vals2(3e-3, 4e-3, 5e-3, 65e-4, 8e-3), unit: "percentage_point", description: "Increases Accuracy.", sources: ["Mirage Basin", "Mirage Well", "Crafting"] },
+  { familyId: "stat_keen", name: "Keen", kind: "stat", category: "stat", values: vals2(2e-3, 3e-3, 4e-3, 5e-3, 6e-3), unit: "percentage_point", description: "Increases Critical Chance.", sources: ["Whitepine Hunt", "Crafting"] },
+  { familyId: "stat_savage", name: "Savage", kind: "stat", category: "stat", values: vals2(0.01, 0.013, 0.016, 0.02, 0.025), unit: "percent", description: "Increases Critical Damage.", sources: ["Choir Caverns", "Crafting"] },
+  { familyId: "stat_piercing", name: "Piercing", kind: "stat", category: "stat", values: vals2(25e-4, 35e-4, 45e-4, 6e-3, 75e-4), unit: "percentage_point", description: "Increases Penetration.", sources: ["Scorchwind Flats", "Crafting"] },
+  { familyId: "stat_swift", name: "Swift", kind: "stat", category: "stat", values: vals2(35e-4, 45e-4, 55e-4, 65e-4, 8e-3), unit: "percent", description: "Increases Haste.", sources: ["Buried Observatory", "Crafting"] },
+  { familyId: "stat_potent", name: "Potent", kind: "stat", category: "stat", values: vals2(5e-3, 65e-4, 8e-3, 0.01, 0.012), unit: "percent", description: "Increases Potency.", sources: ["Mirage Basin", "Mirage Well", "Crafting"] },
+  { familyId: "stat_elusive", name: "Elusive", kind: "stat", category: "stat", values: vals2(2e-3, 25e-4, 3e-3, 4e-3, 5e-3), unit: "percentage_point", description: "Increases Evasion.", sources: ["Regional enemies", "Crafting"] },
+  { familyId: "stat_resolute", name: "Resolute", kind: "stat", category: "stat", values: vals2(4e-3, 5e-3, 6e-3, 75e-4, 9e-3), unit: "percent", description: "Increases Tenacity.", sources: ["Shiverlake Descent", "Crafting"] },
+  { familyId: "effect_momentum", name: "Momentum", kind: "effect", category: "damage", values: vals2(18e-4, 22e-4, 26e-4, 31e-4, 36e-4), unit: "effect", description: "Successful direct attacks build stacking damage for 4s.", resonance2: "Maximum Momentum stacks becomes 6.", resonance3: "Momentum decays one stack at a time.", recommendedClasses: ["KNIFE_DANCER", "WAYFINDER", "HEXWEAVER"], sources: ["Whitepine Hunt", "Party Contracts"] },
+  { familyId: "effect_execution", name: "Execution", kind: "effect", category: "damage", values: vals2(8e-3, 0.01, 0.012, 0.015, 0.018), unit: "effect", description: "Deal more damage to enemies below 30% HP.", resonance2: "Activation threshold becomes 35% HP.", resonance3: "Execution is 25% stronger below 15% HP.", recommendedClasses: ["RAVAGER", "KNIFE_DANCER", "DREADGUARD"], sources: ["Tyrant's Crown", "Choir Caverns", "Party Contracts"] },
+  { familyId: "effect_opening_strike", name: "Opening Strike", kind: "effect", category: "damage", values: vals2(7e-3, 9e-3, 0.011, 0.013, 0.015), unit: "effect", description: "Deal more damage during the opening 8s of combat.", resonance2: "Opening window becomes 10s.", resonance3: "Refreshes once on a flagged boss phase.", recommendedClasses: ["RAVAGER", "WAYFINDER", "KNIFE_DANCER"], sources: ["Saffron Gate", "Resonance Cache"] },
+  { familyId: "effect_predator", name: "Predator", kind: "effect", category: "damage", values: vals2(8e-3, 0.01, 0.012, 0.014, 0.016), unit: "effect", description: "Deal more damage to Elite and Boss enemies.", resonance2: "Also affects minibosses and Champions.", resonance3: "First hit temporarily increases Predator effectiveness.", recommendedClasses: ["WAYFINDER", "RAVAGER"], legacyEffect: "boss_power", sources: ["Caravan of Glass", "Whitepine Hunt"] },
+  { familyId: "effect_critical_surge", name: "Critical Surge", kind: "effect", category: "damage", values: vals2(2e-3, 25e-4, 3e-3, 35e-4, 4e-3), unit: "effect", description: "Critical hits grant stacking Haste.", resonance2: "Maximum stacks becomes 4.", resonance3: "Critical hits refresh the oldest stack at cap.", recommendedClasses: ["KNIFE_DANCER", "WAYFINDER", "RAVAGER"], sources: ["Buried Observatory"] },
+  { familyId: "effect_ruin", name: "Ruin", kind: "effect", category: "damage", values: vals2(25e-4, 3e-3, 35e-4, 4e-3, 5e-3), unit: "effect", description: "Deal more damage per different negative effect on the target.", resonance2: "Counts up to 3 negative effects.", resonance3: "A fresh player Mark counts as two effects briefly.", recommendedClasses: ["HEXWEAVER", "WAYFINDER"], sources: ["Mirage Well", "Mirage Basin"] },
+  { familyId: "effect_bulwark", name: "Bulwark", kind: "effect", category: "defense", values: vals2(6e-3, 75e-4, 9e-3, 0.0105, 0.012), unit: "effect", description: "Blocking or defensive abilities grant temporary damage reduction.", resonance2: "Damage-reduction duration increases.", resonance3: "Successful blocks refresh the duration.", recommendedClasses: ["IRONWARDEN", "BASTION"], legacyEffect: "damage_reduction", sources: ["Caravan of Glass", "Party Contracts"] },
+  { familyId: "effect_aegis", name: "Aegis", kind: "effect", category: "defense", values: vals2(0.01, 0.0125, 0.015, 0.0175, 0.02), unit: "effect", description: "Increase barriers generated by the player.", resonance2: "Expired barriers return a small amount as healing.", resonance3: "Maximum barrier cap increases by 5%.", recommendedClasses: ["BASTION", "STONECALLER"], sources: ["Buried Observatory", "Shiverlake Descent"] },
+  { familyId: "effect_last_stand", name: "Last Stand", kind: "effect", category: "defense", values: vals2(0.015, 0.019, 0.023, 0.027, 0.032), unit: "effect", description: "Once per combat, low HP triggers strong mitigation.", resonance2: "Activation threshold becomes 35% HP.", resonance3: "Last Stand lasts 8s.", recommendedClasses: ["IRONWARDEN", "DREADGUARD"], sources: ["Tyrant's Crown"] },
+  { familyId: "effect_retaliation", name: "Retaliation", kind: "effect", category: "defense", values: vals2(0.015, 0.019, 0.023, 0.027, 0.032), unit: "effect", description: "Taking a heavy hit empowers your next damaging ability.", resonance2: "Heavy-hit threshold becomes easier to trigger.", resonance3: "Consuming Retaliation restores a small amount of HP.", recommendedClasses: ["DREADGUARD", "IRONWARDEN"], sources: ["Scorchwind Flats", "Caravan of Glass"] },
+  { familyId: "effect_unyielding", name: "Unyielding", kind: "effect", category: "defense", values: vals2(15e-4, 2e-3, 25e-4, 3e-3, 35e-4), unit: "effect", description: "Incoming hits build temporary Armor and Ward.", resonance2: "Maximum defensive stacks becomes 5.", resonance3: "Stacks last longer.", recommendedClasses: ["IRONWARDEN", "BASTION", "DREADGUARD"], sources: ["Tyrant's Crown", "Shiverlake Descent"] },
+  { familyId: "effect_mercy", name: "Mercy", kind: "effect", category: "support", values: vals2(0.04, 0.05, 0.06, 0.07, 0.08), unit: "effect", description: "A portion of overhealing becomes a temporary barrier.", resonance2: "Mercy barrier cap increases.", resonance3: "Mercy barriers last longer.", recommendedClasses: ["DAWNKEEPER"], sources: ["Mirage Basin", "Mirage Well", "Party Contracts"] },
+  { familyId: "effect_benediction", name: "Benediction", kind: "effect", category: "support", values: vals2(8e-3, 0.01, 0.012, 0.014, 0.016), unit: "effect", description: "Support abilities empower the next direct heal or barrier.", resonance2: "May hold two Benediction charges.", resonance3: "Consuming a charge briefly grants Haste.", recommendedClasses: ["DAWNKEEPER", "STONECALLER"], sources: ["Buried Observatory"] },
+  { familyId: "effect_guardians_gift", name: "Guardian's Gift", kind: "effect", category: "support", values: vals2(25e-4, 35e-4, 45e-4, 55e-4, 65e-4), unit: "effect", description: "Barriers placed on allies also grant temporary damage reduction.", resonance2: "The damage reduction lasts longer.", resonance3: "The caster receives half of the mitigation.", recommendedClasses: ["STONECALLER", "BASTION"], sources: ["Shiverlake Descent"] },
+  { familyId: "effect_renewal", name: "Renewal", kind: "effect", category: "support", values: vals2(0.01, 0.0125, 0.015, 0.0175, 0.02), unit: "effect", description: "Direct healing leaves a small heal-over-time effect.", resonance2: "Renewal lasts longer and heals more.", resonance3: "Two Renewals may coexist on a target.", recommendedClasses: ["DAWNKEEPER"], sources: ["Choir Caverns"] },
+  { familyId: "effect_shared_resolve", name: "Shared Resolve", kind: "effect", category: "support", values: vals2(25e-4, 3e-3, 35e-4, 4e-3, 5e-3), unit: "effect", description: "Buffing or shielding another player grants temporary Potency.", resonance2: "Shared Resolve lasts longer.", resonance3: "Maximum stacks becomes 3.", recommendedClasses: ["DAWNKEEPER", "STONECALLER"], sources: ["Choir Caverns"] },
+  { familyId: "effect_sustenance", name: "Sustenance", kind: "effect", category: "hybrid", values: vals2(15e-4, 2e-3, 25e-4, 3e-3, 35e-4), unit: "effect", description: "Defeating enemies restores a small amount of Max HP.", resonance2: "Elite and Champion kills restore triple.", resonance3: "Excess healing becomes a small barrier.", recommendedClasses: ["DREADGUARD"], legacyEffect: "recovery", sources: ["Saffron Gate", "Whitepine Hunt"] },
+  { familyId: "effect_battle_rhythm", name: "Battle Rhythm", kind: "effect", category: "hybrid", values: vals2(5e-3, 65e-4, 8e-3, 95e-4, 0.011), unit: "effect", description: "Alternating offensive and defensive/support abilities empowers the next opposite category.", resonance2: "The alternation window becomes longer.", resonance3: "Successful alternation briefly grants Haste.", recommendedClasses: ["IRONWARDEN", "DAWNKEEPER"], sources: ["Choir Caverns"] },
+  { familyId: "effect_flow", name: "Flow", kind: "effect", category: "hybrid", values: vals2(1e-3, 15e-4, 2e-3, 25e-4, 3e-3), unit: "effect", description: "Using different abilities consecutively builds Haste.", resonance2: "Maximum Flow stacks becomes 4.", resonance3: "Flow decays one stack at a time.", recommendedClasses: ["HEXWEAVER", "KNIFE_DANCER", "DAWNKEEPER"], legacyEffect: "combat_speed", sources: ["Buried Observatory", "Party Contracts"] },
+  { familyId: "effect_opportunist", name: "Opportunist", kind: "effect", category: "hybrid", values: vals2(7e-3, 9e-3, 0.011, 0.013, 0.015), unit: "effect", description: "Applying a new Mark/debuff/control effect empowers the next direct hit.", resonance2: "Per-target cooldown becomes shorter.", resonance3: "A critical empowered hit extends the triggering effect once.", recommendedClasses: ["HEXWEAVER", "WAYFINDER"], sources: ["Mirage Basin", "Mirage Well", "Party Contracts"] }
 ];
 var RAW_GEM_ITEMS_V1 = MOBILE_GEM_FAMILIES_V1.flatMap((family) => [1, 2, 3, 4, 5].map((grade) => ({
   id: `raw_gem:${family.familyId}:g${grade}`,
@@ -43932,448 +44467,6 @@ function damageAfterMitigation(attackPowerValue, abilityCoeff, mitigation, varia
   const normal = Math.max(1, attackPowerValue * abilityCoeff * varianceClamped * (1 - mitigation));
   return crit ? normal * critMultiplier : normal;
 }
-
-// node_modules/.pnpm/@noble+hashes@1.8.0/node_modules/@noble/hashes/esm/utils.js
-function isBytes(a) {
-  return a instanceof Uint8Array || ArrayBuffer.isView(a) && a.constructor.name === "Uint8Array";
-}
-function anumber(n) {
-  if (!Number.isSafeInteger(n) || n < 0)
-    throw new Error("positive integer expected, got " + n);
-}
-function abytes(b, ...lengths) {
-  if (!isBytes(b))
-    throw new Error("Uint8Array expected");
-  if (lengths.length > 0 && !lengths.includes(b.length))
-    throw new Error("Uint8Array expected of length " + lengths + ", got length=" + b.length);
-}
-function ahash(h) {
-  if (typeof h !== "function" || typeof h.create !== "function")
-    throw new Error("Hash should be wrapped by utils.createHasher");
-  anumber(h.outputLen);
-  anumber(h.blockLen);
-}
-function aexists(instance, checkFinished = true) {
-  if (instance.destroyed)
-    throw new Error("Hash instance has been destroyed");
-  if (checkFinished && instance.finished)
-    throw new Error("Hash#digest() has already been called");
-}
-function aoutput(out, instance) {
-  abytes(out);
-  const min = instance.outputLen;
-  if (out.length < min) {
-    throw new Error("digestInto() expects output buffer of length at least " + min);
-  }
-}
-function clean(...arrays) {
-  for (let i = 0; i < arrays.length; i++) {
-    arrays[i].fill(0);
-  }
-}
-function createView(arr) {
-  return new DataView(arr.buffer, arr.byteOffset, arr.byteLength);
-}
-function rotr(word, shift) {
-  return word << 32 - shift | word >>> shift;
-}
-var hasHexBuiltin = /* @__PURE__ */ (() => (
-  // @ts-ignore
-  typeof Uint8Array.from([]).toHex === "function" && typeof Uint8Array.fromHex === "function"
-))();
-var hexes = /* @__PURE__ */ Array.from({ length: 256 }, (_, i) => i.toString(16).padStart(2, "0"));
-function bytesToHex(bytes) {
-  abytes(bytes);
-  if (hasHexBuiltin)
-    return bytes.toHex();
-  let hex = "";
-  for (let i = 0; i < bytes.length; i++) {
-    hex += hexes[bytes[i]];
-  }
-  return hex;
-}
-function utf8ToBytes(str) {
-  if (typeof str !== "string")
-    throw new Error("string expected");
-  return new Uint8Array(new TextEncoder().encode(str));
-}
-function toBytes(data) {
-  if (typeof data === "string")
-    data = utf8ToBytes(data);
-  abytes(data);
-  return data;
-}
-var Hash = class {
-};
-function createHasher(hashCons) {
-  const hashC = (msg) => hashCons().update(toBytes(msg)).digest();
-  const tmp = hashCons();
-  hashC.outputLen = tmp.outputLen;
-  hashC.blockLen = tmp.blockLen;
-  hashC.create = () => hashCons();
-  return hashC;
-}
-
-// node_modules/.pnpm/@noble+hashes@1.8.0/node_modules/@noble/hashes/esm/hmac.js
-var HMAC = class extends Hash {
-  constructor(hash, _key) {
-    super();
-    this.finished = false;
-    this.destroyed = false;
-    ahash(hash);
-    const key = toBytes(_key);
-    this.iHash = hash.create();
-    if (typeof this.iHash.update !== "function")
-      throw new Error("Expected instance of class which extends utils.Hash");
-    this.blockLen = this.iHash.blockLen;
-    this.outputLen = this.iHash.outputLen;
-    const blockLen = this.blockLen;
-    const pad = new Uint8Array(blockLen);
-    pad.set(key.length > blockLen ? hash.create().update(key).digest() : key);
-    for (let i = 0; i < pad.length; i++)
-      pad[i] ^= 54;
-    this.iHash.update(pad);
-    this.oHash = hash.create();
-    for (let i = 0; i < pad.length; i++)
-      pad[i] ^= 54 ^ 92;
-    this.oHash.update(pad);
-    clean(pad);
-  }
-  update(buf) {
-    aexists(this);
-    this.iHash.update(buf);
-    return this;
-  }
-  digestInto(out) {
-    aexists(this);
-    abytes(out, this.outputLen);
-    this.finished = true;
-    this.iHash.digestInto(out);
-    this.oHash.update(out);
-    this.oHash.digestInto(out);
-    this.destroy();
-  }
-  digest() {
-    const out = new Uint8Array(this.oHash.outputLen);
-    this.digestInto(out);
-    return out;
-  }
-  _cloneInto(to) {
-    to || (to = Object.create(Object.getPrototypeOf(this), {}));
-    const { oHash, iHash, finished, destroyed, blockLen, outputLen } = this;
-    to = to;
-    to.finished = finished;
-    to.destroyed = destroyed;
-    to.blockLen = blockLen;
-    to.outputLen = outputLen;
-    to.oHash = oHash._cloneInto(to.oHash);
-    to.iHash = iHash._cloneInto(to.iHash);
-    return to;
-  }
-  clone() {
-    return this._cloneInto();
-  }
-  destroy() {
-    this.destroyed = true;
-    this.oHash.destroy();
-    this.iHash.destroy();
-  }
-};
-var hmac = (hash, key, message) => new HMAC(hash, key).update(message).digest();
-hmac.create = (hash, key) => new HMAC(hash, key);
-
-// node_modules/.pnpm/@noble+hashes@1.8.0/node_modules/@noble/hashes/esm/_md.js
-function setBigUint64(view, byteOffset, value, isLE) {
-  if (typeof view.setBigUint64 === "function")
-    return view.setBigUint64(byteOffset, value, isLE);
-  const _32n = BigInt(32);
-  const _u32_max = BigInt(4294967295);
-  const wh = Number(value >> _32n & _u32_max);
-  const wl = Number(value & _u32_max);
-  const h = isLE ? 4 : 0;
-  const l = isLE ? 0 : 4;
-  view.setUint32(byteOffset + h, wh, isLE);
-  view.setUint32(byteOffset + l, wl, isLE);
-}
-function Chi(a, b, c) {
-  return a & b ^ ~a & c;
-}
-function Maj(a, b, c) {
-  return a & b ^ a & c ^ b & c;
-}
-var HashMD = class extends Hash {
-  constructor(blockLen, outputLen, padOffset, isLE) {
-    super();
-    this.finished = false;
-    this.length = 0;
-    this.pos = 0;
-    this.destroyed = false;
-    this.blockLen = blockLen;
-    this.outputLen = outputLen;
-    this.padOffset = padOffset;
-    this.isLE = isLE;
-    this.buffer = new Uint8Array(blockLen);
-    this.view = createView(this.buffer);
-  }
-  update(data) {
-    aexists(this);
-    data = toBytes(data);
-    abytes(data);
-    const { view, buffer, blockLen } = this;
-    const len = data.length;
-    for (let pos = 0; pos < len; ) {
-      const take = Math.min(blockLen - this.pos, len - pos);
-      if (take === blockLen) {
-        const dataView = createView(data);
-        for (; blockLen <= len - pos; pos += blockLen)
-          this.process(dataView, pos);
-        continue;
-      }
-      buffer.set(data.subarray(pos, pos + take), this.pos);
-      this.pos += take;
-      pos += take;
-      if (this.pos === blockLen) {
-        this.process(view, 0);
-        this.pos = 0;
-      }
-    }
-    this.length += data.length;
-    this.roundClean();
-    return this;
-  }
-  digestInto(out) {
-    aexists(this);
-    aoutput(out, this);
-    this.finished = true;
-    const { buffer, view, blockLen, isLE } = this;
-    let { pos } = this;
-    buffer[pos++] = 128;
-    clean(this.buffer.subarray(pos));
-    if (this.padOffset > blockLen - pos) {
-      this.process(view, 0);
-      pos = 0;
-    }
-    for (let i = pos; i < blockLen; i++)
-      buffer[i] = 0;
-    setBigUint64(view, blockLen - 8, BigInt(this.length * 8), isLE);
-    this.process(view, 0);
-    const oview = createView(out);
-    const len = this.outputLen;
-    if (len % 4)
-      throw new Error("_sha2: outputLen should be aligned to 32bit");
-    const outLen = len / 4;
-    const state = this.get();
-    if (outLen > state.length)
-      throw new Error("_sha2: outputLen bigger than state");
-    for (let i = 0; i < outLen; i++)
-      oview.setUint32(4 * i, state[i], isLE);
-  }
-  digest() {
-    const { buffer, outputLen } = this;
-    this.digestInto(buffer);
-    const res = buffer.slice(0, outputLen);
-    this.destroy();
-    return res;
-  }
-  _cloneInto(to) {
-    to || (to = new this.constructor());
-    to.set(...this.get());
-    const { blockLen, buffer, length, finished, destroyed, pos } = this;
-    to.destroyed = destroyed;
-    to.finished = finished;
-    to.length = length;
-    to.pos = pos;
-    if (length % blockLen)
-      to.buffer.set(buffer);
-    return to;
-  }
-  clone() {
-    return this._cloneInto();
-  }
-};
-var SHA256_IV = /* @__PURE__ */ Uint32Array.from([
-  1779033703,
-  3144134277,
-  1013904242,
-  2773480762,
-  1359893119,
-  2600822924,
-  528734635,
-  1541459225
-]);
-
-// node_modules/.pnpm/@noble+hashes@1.8.0/node_modules/@noble/hashes/esm/sha2.js
-var SHA256_K = /* @__PURE__ */ Uint32Array.from([
-  1116352408,
-  1899447441,
-  3049323471,
-  3921009573,
-  961987163,
-  1508970993,
-  2453635748,
-  2870763221,
-  3624381080,
-  310598401,
-  607225278,
-  1426881987,
-  1925078388,
-  2162078206,
-  2614888103,
-  3248222580,
-  3835390401,
-  4022224774,
-  264347078,
-  604807628,
-  770255983,
-  1249150122,
-  1555081692,
-  1996064986,
-  2554220882,
-  2821834349,
-  2952996808,
-  3210313671,
-  3336571891,
-  3584528711,
-  113926993,
-  338241895,
-  666307205,
-  773529912,
-  1294757372,
-  1396182291,
-  1695183700,
-  1986661051,
-  2177026350,
-  2456956037,
-  2730485921,
-  2820302411,
-  3259730800,
-  3345764771,
-  3516065817,
-  3600352804,
-  4094571909,
-  275423344,
-  430227734,
-  506948616,
-  659060556,
-  883997877,
-  958139571,
-  1322822218,
-  1537002063,
-  1747873779,
-  1955562222,
-  2024104815,
-  2227730452,
-  2361852424,
-  2428436474,
-  2756734187,
-  3204031479,
-  3329325298
-]);
-var SHA256_W = /* @__PURE__ */ new Uint32Array(64);
-var SHA256 = class extends HashMD {
-  constructor(outputLen = 32) {
-    super(64, outputLen, 8, false);
-    this.A = SHA256_IV[0] | 0;
-    this.B = SHA256_IV[1] | 0;
-    this.C = SHA256_IV[2] | 0;
-    this.D = SHA256_IV[3] | 0;
-    this.E = SHA256_IV[4] | 0;
-    this.F = SHA256_IV[5] | 0;
-    this.G = SHA256_IV[6] | 0;
-    this.H = SHA256_IV[7] | 0;
-  }
-  get() {
-    const { A, B, C, D, E, F, G, H } = this;
-    return [A, B, C, D, E, F, G, H];
-  }
-  // prettier-ignore
-  set(A, B, C, D, E, F, G, H) {
-    this.A = A | 0;
-    this.B = B | 0;
-    this.C = C | 0;
-    this.D = D | 0;
-    this.E = E | 0;
-    this.F = F | 0;
-    this.G = G | 0;
-    this.H = H | 0;
-  }
-  process(view, offset) {
-    for (let i = 0; i < 16; i++, offset += 4)
-      SHA256_W[i] = view.getUint32(offset, false);
-    for (let i = 16; i < 64; i++) {
-      const W15 = SHA256_W[i - 15];
-      const W2 = SHA256_W[i - 2];
-      const s0 = rotr(W15, 7) ^ rotr(W15, 18) ^ W15 >>> 3;
-      const s1 = rotr(W2, 17) ^ rotr(W2, 19) ^ W2 >>> 10;
-      SHA256_W[i] = s1 + SHA256_W[i - 7] + s0 + SHA256_W[i - 16] | 0;
-    }
-    let { A, B, C, D, E, F, G, H } = this;
-    for (let i = 0; i < 64; i++) {
-      const sigma1 = rotr(E, 6) ^ rotr(E, 11) ^ rotr(E, 25);
-      const T1 = H + sigma1 + Chi(E, F, G) + SHA256_K[i] + SHA256_W[i] | 0;
-      const sigma0 = rotr(A, 2) ^ rotr(A, 13) ^ rotr(A, 22);
-      const T2 = sigma0 + Maj(A, B, C) | 0;
-      H = G;
-      G = F;
-      F = E;
-      E = D + T1 | 0;
-      D = C;
-      C = B;
-      B = A;
-      A = T1 + T2 | 0;
-    }
-    A = A + this.A | 0;
-    B = B + this.B | 0;
-    C = C + this.C | 0;
-    D = D + this.D | 0;
-    E = E + this.E | 0;
-    F = F + this.F | 0;
-    G = G + this.G | 0;
-    H = H + this.H | 0;
-    this.set(A, B, C, D, E, F, G, H);
-  }
-  roundClean() {
-    clean(SHA256_W);
-  }
-  destroy() {
-    this.set(0, 0, 0, 0, 0, 0, 0, 0);
-    clean(this.buffer);
-  }
-};
-var sha256 = /* @__PURE__ */ createHasher(() => new SHA256());
-
-// node_modules/.pnpm/@noble+hashes@1.8.0/node_modules/@noble/hashes/esm/sha256.js
-var sha2562 = sha256;
-
-// src/server/combat/deterministic-rng.ts
-function utf8(value) {
-  const bytes = [];
-  for (const character of value) {
-    let n = character.codePointAt(0);
-    if (n >= 55296 && n <= 57343) n = 65533;
-    if (n < 128) bytes.push(n);
-    else if (n < 2048) bytes.push(192 | n >> 6, 128 | n & 63);
-    else if (n < 65536) bytes.push(224 | n >> 12, 128 | n >> 6 & 63, 128 | n & 63);
-    else bytes.push(240 | n >> 18, 128 | n >> 12 & 63, 128 | n >> 6 & 63, 128 | n & 63);
-  }
-  return new Uint8Array(bytes);
-}
-var CombatRng = class {
-  cursor = 0;
-  key;
-  constructor(seed) {
-    this.key = utf8(seed);
-  }
-  next(label) {
-    const payload = `${this.cursor++}:${label}`;
-    const hex = bytesToHex(hmac(sha2562, this.key, utf8(payload))).slice(0, 13);
-    return parseInt(hex, 16) / 9007199254740991;
-  }
-  pick(values, label) {
-    if (!values.length) throw new Error("cannot_pick_empty");
-    return values[Math.min(values.length - 1, Math.floor(this.next(label) * values.length))];
-  }
-};
 
 // src/server/combat/gem-effects-v1.ts
 var FOREVER = 9e15;
@@ -46517,51 +46610,6 @@ function effectiveStats(state) {
   };
 }
 
-// src/server/equipment/gems/gem-catalog-v1.ts
-var vals2 = (a, b, c, d, e) => ({ 1: a, 2: b, 3: c, 4: d, 5: e });
-var STAT_GEMS_V1 = [
-  { familyId: "stat_might", name: "Might", stat: "power", unit: "percent", values: vals2(4e-3, 5e-3, 65e-4, 8e-3, 0.01) },
-  { familyId: "stat_vitality", name: "Vitality", stat: "maxHp", unit: "percent", values: vals2(6e-3, 8e-3, 0.01, 0.0125, 0.015) },
-  { familyId: "stat_iron", name: "Iron", stat: "armor", unit: "percent", values: vals2(5e-3, 65e-4, 8e-3, 0.01, 0.0125) },
-  { familyId: "stat_ward", name: "Ward", stat: "ward", unit: "percent", values: vals2(5e-3, 65e-4, 8e-3, 0.01, 0.0125) },
-  { familyId: "stat_precision", name: "Precision", stat: "accuracy", unit: "percentage_point", values: vals2(3e-3, 4e-3, 5e-3, 65e-4, 8e-3) },
-  { familyId: "stat_keen", name: "Keen", stat: "critRate", unit: "percentage_point", values: vals2(2e-3, 3e-3, 4e-3, 5e-3, 6e-3) },
-  { familyId: "stat_savage", name: "Savage", stat: "critDamage", unit: "percent", values: vals2(0.01, 0.013, 0.016, 0.02, 0.025) },
-  { familyId: "stat_piercing", name: "Piercing", stat: "penetration", unit: "percentage_point", values: vals2(25e-4, 35e-4, 45e-4, 6e-3, 75e-4) },
-  { familyId: "stat_swift", name: "Swift", stat: "haste", unit: "percent", values: vals2(35e-4, 45e-4, 55e-4, 65e-4, 8e-3) },
-  { familyId: "stat_potent", name: "Potent", stat: "potency", unit: "percent", values: vals2(5e-3, 65e-4, 8e-3, 0.01, 0.012) },
-  { familyId: "stat_elusive", name: "Elusive", stat: "evasion", unit: "percentage_point", values: vals2(2e-3, 25e-4, 3e-3, 4e-3, 5e-3) },
-  { familyId: "stat_resolute", name: "Resolute", stat: "tenacity", unit: "percent", values: vals2(4e-3, 5e-3, 6e-3, 75e-4, 9e-3) }
-];
-var EFFECT_GEMS_V1 = [
-  { familyId: "effect_momentum", name: "Momentum", category: "damage", values: vals2(18e-4, 22e-4, 26e-4, 31e-4, 36e-4), maxEquippedCopies: 3, baseDescription: "Successful direct attacks build stacking damage for 4s; max 5.", resonance2: "Maximum stacks becomes 6.", resonance3: "Stacks decay one at a time after expiry.", triggerCooldownMs: 500, durationMs: 4e3 },
-  { familyId: "effect_execution", name: "Execution", category: "damage", values: vals2(8e-3, 0.01, 0.012, 0.015, 0.018), maxEquippedCopies: 3, baseDescription: "Increases direct and periodic damage to targets below 30% HP.", resonance2: "Activation threshold becomes 35% HP.", resonance3: "Total Execution bonus is 25% stronger below 15% HP." },
-  { familyId: "effect_opening_strike", name: "Opening Strike", category: "damage", values: vals2(7e-3, 9e-3, 0.011, 0.013, 0.015), maxEquippedCopies: 3, baseDescription: "Increases damage for the first 8s of combat.", resonance2: "Duration becomes 10s.", resonance3: "Refreshes once on a flagged boss phase change.", durationMs: 8e3 },
-  { familyId: "effect_predator", name: "Predator", category: "damage", values: vals2(8e-3, 0.01, 0.012, 0.014, 0.016), maxEquippedCopies: 3, baseDescription: "Increases damage against Elite and Boss enemies.", resonance2: "Also affects minibosses and Champions.", resonance3: "First hit grants +25% Predator effectiveness for 8s." },
-  { familyId: "effect_critical_surge", name: "Critical Surge", category: "damage", values: vals2(2e-3, 25e-4, 3e-3, 35e-4, 4e-3), maxEquippedCopies: 3, baseDescription: "Critical direct hits grant stacking Haste for 5s; max 3.", resonance2: "Maximum stacks becomes 4.", resonance3: "At max stacks, critical hits refresh the oldest stack.", triggerCooldownMs: 750, durationMs: 5e3 },
-  { familyId: "effect_ruin", name: "Ruin", category: "damage", values: vals2(25e-4, 3e-3, 35e-4, 4e-3, 5e-3), maxEquippedCopies: 3, baseDescription: "Increases damage per different qualifying negative effect; max 2.", resonance2: "Counts up to 3 effects.", resonance3: "A fresh player Mark counts as two effects for 4s." },
-  { familyId: "effect_bulwark", name: "Bulwark", category: "defense", values: vals2(6e-3, 75e-4, 9e-3, 0.0105, 0.012), maxEquippedCopies: 3, baseDescription: "Block or qualifying defensive ability grants damage reduction for 4s.", resonance2: "Duration becomes 5s.", resonance3: "Successful blocks refresh duration.", durationMs: 4e3 },
-  { familyId: "effect_aegis", name: "Aegis", category: "defense", values: vals2(0.01, 0.0125, 0.015, 0.0175, 0.02), maxEquippedCopies: 3, baseDescription: "Increases barriers generated by the player.", resonance2: "Naturally expired barriers heal 5% of unused value.", resonance3: "Maximum barrier cap increases by 5%." },
-  { familyId: "effect_last_stand", name: "Last Stand", category: "defense", values: vals2(0.015, 0.019, 0.023, 0.027, 0.032), maxEquippedCopies: 3, baseDescription: "Once per combat, dropping below 30% HP grants DR for 6s.", resonance2: "Threshold becomes 35% HP.", resonance3: "Duration becomes 8s.", durationMs: 6e3 },
-  { familyId: "effect_retaliation", name: "Retaliation", category: "defense", values: vals2(0.015, 0.019, 0.023, 0.027, 0.032), maxEquippedCopies: 3, baseDescription: "A hit of at least 12% Max HP empowers the next damaging ability.", resonance2: "Trigger threshold becomes 10% Max HP.", resonance3: "Consuming Retaliation restores 1% Max HP.", triggerCooldownMs: 8e3 },
-  { familyId: "effect_unyielding", name: "Unyielding", category: "defense", values: vals2(15e-4, 2e-3, 25e-4, 3e-3, 35e-4), maxEquippedCopies: 3, baseDescription: "Taking damage grants stacking Armor and Ward for 5s; max 4.", resonance2: "Maximum stacks becomes 5.", resonance3: "Stacks last 7s.", triggerCooldownMs: 750, durationMs: 5e3 },
-  { familyId: "effect_mercy", name: "Mercy", category: "support", values: vals2(0.04, 0.05, 0.06, 0.07, 0.08), maxEquippedCopies: 3, baseDescription: "A percentage of effective overhealing becomes an 8s barrier; cap 3% target Max HP.", resonance2: "Barrier cap becomes 4% Max HP.", resonance3: "Barrier duration becomes 10s.", durationMs: 8e3 },
-  { familyId: "effect_benediction", name: "Benediction", category: "support", values: vals2(8e-3, 0.01, 0.012, 0.014, 0.016), maxEquippedCopies: 3, baseDescription: "Support abilities grant a 10s charge empowering the next direct heal or barrier.", resonance2: "May hold 2 charges.", resonance3: "Consuming a charge grants 2% Haste for 4s.", durationMs: 1e4 },
-  { familyId: "effect_guardians_gift", name: "Guardian's Gift", category: "support", values: vals2(25e-4, 35e-4, 45e-4, 55e-4, 65e-4), maxEquippedCopies: 3, baseDescription: "Barrier applied to another player grants them DR for 4s.", resonance2: "Duration becomes 6s.", resonance3: "Caster receives 50% of the DR.", durationMs: 4e3 },
-  { familyId: "effect_renewal", name: "Renewal", category: "support", values: vals2(0.01, 0.0125, 0.015, 0.0175, 0.02), maxEquippedCopies: 3, baseDescription: "Direct healing leaves additional healing over 4s.", resonance2: "Duration becomes 6s and total Renewal healing +20%.", resonance3: "Up to 2 Renewals may coexist per target.", durationMs: 4e3 },
-  { familyId: "effect_shared_resolve", name: "Shared Resolve", category: "support", values: vals2(25e-4, 3e-3, 35e-4, 4e-3, 5e-3), maxEquippedCopies: 3, baseDescription: "Buffing or shielding another player grants Potency for 6s; max 2.", resonance2: "Duration becomes 8s.", resonance3: "Maximum stacks becomes 3.", durationMs: 6e3 },
-  { familyId: "effect_sustenance", name: "Sustenance", category: "hybrid", values: vals2(15e-4, 2e-3, 25e-4, 3e-3, 35e-4), maxEquippedCopies: 3, baseDescription: "Defeating an enemy restores Max HP.", resonance2: "Elite/Champion kills restore 3x.", resonance3: "25% of overheal becomes a barrier capped at 2% Max HP.", triggerCooldownMs: 3e3 },
-  { familyId: "effect_battle_rhythm", name: "Battle Rhythm", category: "hybrid", values: vals2(5e-3, 65e-4, 8e-3, 95e-4, 0.011), maxEquippedCopies: 3, baseDescription: "Alternating offensive and defensive/support abilities empowers the next opposite-category ability.", resonance2: "Alternation window becomes 12s.", resonance3: "Successful alternation grants 2% Haste for 4s.", triggerCooldownMs: 6e3 },
-  { familyId: "effect_flow", name: "Flow", category: "hybrid", values: vals2(1e-3, 15e-4, 2e-3, 25e-4, 3e-3), maxEquippedCopies: 3, baseDescription: "Different consecutive abilities build Haste for 6s; max 3.", resonance2: "Maximum stacks becomes 4.", resonance3: "Stacks decay one at a time after expiry.", durationMs: 6e3 },
-  { familyId: "effect_opportunist", name: "Opportunist", category: "hybrid", values: vals2(7e-3, 9e-3, 0.011, 0.013, 0.015), maxEquippedCopies: 3, baseDescription: "Applying a new Mark/debuff/exposed/control state empowers the next direct hit within 4s.", resonance2: "Per-target cooldown becomes 3s.", resonance3: "A critical empowered hit extends the triggering effect by 1s once.", triggerCooldownMs: 4e3 }
-];
-function findStatGem(familyId) {
-  return STAT_GEMS_V1.find((v) => v.familyId === familyId);
-}
-function findEffectGem(familyId) {
-  return EFFECT_GEMS_V1.find((v) => v.familyId === familyId);
-}
-
 // src/server/equipment/gems/gem-runtime-v1.ts
 function summarizeGemLoadoutV1(entries) {
   const statPercent = {}, statPercentagePoints = {}, groups = /* @__PURE__ */ new Map();
@@ -47769,7 +47817,7 @@ var GameplayError = class extends Error {
 // online/coop-entry.ts
 var headers = { "Content-Type": "application/json", "Cache-Control": "no-store", "Access-Control-Allow-Origin": "*", "Access-Control-Allow-Headers": "authorization,apikey,content-type,x-client-info", "Access-Control-Allow-Methods": "GET,POST,OPTIONS" };
 var json = (value, status = 200) => new Response(JSON.stringify(value), { status, headers });
-var tiers = [1, 2, 3, 4, 5];
+var tiers = [...NEW_DUNGEON_TIERS];
 function coopEntryHandler(services) {
   return async (request) => {
     if (request.method === "OPTIONS") return new Response(null, { status: 204, headers });
@@ -47832,7 +47880,7 @@ function coopEntryHandler(services) {
         gameVersion: loaded.version,
         liveRecruitment,
         ...rewardBudget ? { rewardBudget } : {},
-        dungeons: Object.values(EXPEDITIONS).filter(publishedRegularDungeon).map((def) => ({ id: def.id, name: def.name, region: def.region, baseMarks: def.baseMarks, expectedMarksByTier: Object.fromEntries(tiers.map((tier) => [tier, baseMarks(def.baseMarks, tier)])), minLevel: rebasedCombatLevelFromLegacyLevel(def.minLevel), recommendedLevel: rebasedCombatLevelFromLegacyLevel(def.recommendedLevel), recommendedLiveTier: !regularDungeonEntryError(def, gameState, character.level) && prepared?.assessment.readiness.ready ? readinessEligibleCoopTier(def.minLevel, character.level, prepared.assessment.readiness.normalizedScore) : void 0, recommendedPower: recommendedDungeonPower(def.minLevel), syncLevel: def.recommendedLevel, available: !regularDungeonEntryError(def, gameState, character.level), lockedReason: regularDungeonLockedReason(def, gameState, character.level), difficulties: tiers, tierMinLevels: Object.fromEntries(tiers.map((tier) => [tier, coopRequiredLevel(def.minLevel, tier)])), preBossRoomMin: 5, preBossRoomMax: 5, estimatedMinutes: { min: 6, max: 8 } })),
+        dungeons: Object.values(EXPEDITIONS).filter(publishedRegularDungeon).sort((a, b) => rebasedCombatLevelFromLegacyLevel(a.minLevel) - rebasedCombatLevelFromLegacyLevel(b.minLevel) || a.name.localeCompare(b.name)).map((def) => ({ id: def.id, name: def.name, region: def.region, rewardPreview: dungeonRewardPreview(def.id), baseMarks: def.baseMarks, expectedMarksByTier: Object.fromEntries(tiers.map((tier) => [tier, baseMarks(def.baseMarks, tier)])), minLevel: rebasedCombatLevelFromLegacyLevel(def.minLevel), recommendedLevel: rebasedCombatLevelFromLegacyLevel(def.recommendedLevel), recommendedLiveTier: !regularDungeonEntryError(def, gameState, character.level) && prepared?.assessment.readiness.ready ? readinessEligibleCoopTier(def.minLevel, character.level, prepared.assessment.readiness.normalizedScore) : void 0, recommendedPower: recommendedDungeonPower(def.minLevel), syncLevel: def.recommendedLevel, available: !regularDungeonEntryError(def, gameState, character.level), lockedReason: regularDungeonLockedReason(def, gameState, character.level), difficulties: tiers, tierMinLevels: Object.fromEntries(tiers.map((tier) => [tier, coopRequiredLevel(def.minLevel, tier)])), preBossRoomMin: 5, preBossRoomMax: 5, estimatedMinutes: { min: 6, max: 8 } })),
         eventExpeditions: eventExpeditionPreviews(loaded.serverNow).map((def) => {
           const matches = Boolean(activeLiveEventId && activeLiveEventId.startsWith(`${def.liveEventSeriesId}_`)), levelReady = character.level >= rebasedCombatLevelFromLegacyLevel(def.minLevel), available = matches && levelReady && prepared?.assessment.readiness.ready === true;
           return { ...def, minLevel: rebasedCombatLevelFromLegacyLevel(def.minLevel), status: available ? "available" : "preview", liveEventId: matches ? activeLiveEventId : void 0, lockedReason: available ? void 0 : !matches ? `Available only while ${def.eventName} is active.` : !levelReady ? `Requires level ${rebasedCombatLevelFromLegacyLevel(def.minLevel)}` : "Current co-op loadout is not expedition-ready." };
@@ -49641,6 +49689,7 @@ var OnlineQModeRuntime = class {
     const record = deriveOnlineCoopLoadout(accountId, game.state, game.version);
     const entryError = regularDungeonEntryError(definition, game.state, record.characterLevel);
     if (entryError) throw new GameplayError(entryError);
+    if (!newDungeonTierAllowed(request.tier)) throw new GameplayError("invalid_dungeon_tier");
     const minimum = coopRequiredLevel(definition.minLevel, request.tier), sync = definition.recommendedLevel;
     const freeze = (source) => resolveAndFreezeLoadout({ accountId: source.accountId, characterId: source.characterId, loadoutId: source.loadoutId, expectedRevision: source.revision, minLevel: minimum, syncLevel: sync, repository: { getOwnedLoadout: () => source } });
     if (record.characterId !== request.characterId || request.loadoutId !== "current") throw new GameplayError("loadout_not_owned");
@@ -49876,6 +49925,7 @@ var OnlineLiveQueue = class {
     const record = deriveOnlineCoopLoadout(accountId, game.state, game.version);
     const entryError = regularDungeonEntryError(definition, game.state, record.characterLevel);
     if (entryError) throw new GameplayError(entryError);
+    if (!newDungeonTierAllowed(request.tier)) throw new GameplayError("invalid_dungeon_tier");
     const maximumTier = highestEligibleCoopTier(definition.minLevel, record.characterLevel);
     if (!maximumTier || request.tier > maximumTier || request.tier < 1) throw new GameplayError("dungeon_level_requirement");
     const selectedTier = request.tier;
@@ -50158,6 +50208,7 @@ var OnlineLiveRematch = class {
       const source = await this.services.rpc("online_live_rematch_sources_server_v1", { p_account_id: accountId, p_run_id: runId });
       const definition = EXPEDITIONS[source.dungeonId];
       if (!definition) throw new GameplayError("dungeon_unavailable");
+      if (!newDungeonTierAllowed(source.tier)) throw new GameplayError("invalid_dungeon_tier");
       const records = source.members.map((member) => deriveOnlineCoopLoadout(member.accountId, member.state, member.version));
       source.members.forEach((member, index) => {
         const issue = regularDungeonEntryError(definition, member.state, records[index].characterLevel);

@@ -24,6 +24,13 @@ async function testGuildTour(){
  equal(guildDetailedGuide('Activities/Muster')?.topics.some(topic=>topic.body.includes('25 points')),true,'Muster explains the daily Rally threshold');
  equal(guildDetailedGuide('PvE')?.topics.some(topic=>topic.body.includes('three minutes')),true,'Raid guide explains asynchronous attempts');
  equal(guildDetailedGuide('Hall/Shop')?.topics.some(topic=>topic.body.includes('Guild Home')),true,'Token Shop guide directs daily claims to Guild Home');
+ for(const section of ['Roster','Manage','Appearance']){
+  const guide=guildDetailedGuide(section);
+  equal(guide?.topics.length,section==='Roster'?2:3,section+' has contextual role guidance');
+  equal(guide?.topics.every(topic=>topic.title.length>0&&topic.body.length>70),true,section+' has actionable help');
+ }
+ equal(guildDetailedGuide('Manage')?.topics.some(topic=>topic.body.includes('disbanding permanently')),true,'leadership guide warns about permanent Guild disbanding');
+ equal(guildDetailedGuide('Appearance')?.topics.some(topic=>topic.body.includes('permanently retires')),true,'appearance guide warns about irreversible tag changes');
 
  deepEqual(normalizeGuildTutorialProgress({step:500,status:'active'}),{step:4,status:'active'},'tour step is bounded');
  deepEqual(advanceGuildTutorial({step:3,status:'active'}),{step:4,status:'active'},'next step is the Hall');

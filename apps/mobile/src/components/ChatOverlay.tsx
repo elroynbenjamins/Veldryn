@@ -32,6 +32,7 @@ function AccountChatOverlay({state,initialChannel='world',visible,onOpen,onClose
  const C=useGameTheme(),s=useMemo(()=>makeStyles(C),[C]),insets=useSafeAreaInsets(),{width,height,fontScale}=useWindowDimensions();
  const compactTabs=width<360||fontScale>=1.25;
  const [channel,setChannel]=useState<Channel>('world');
+ const [guildHelpOpen,setGuildHelpOpen]=useState(false);
  const [visitedChannels,setVisitedChannels]=useState<Channel[]>(['world']);
  const [worldChannel,setWorldChannel]=useState(Math.max(0,Math.min(WORLD_CHANNELS.length-1,(state.settings.defaultWorldChat??1)-1)));
  const [languageMenuOpen,setLanguageMenuOpen]=useState(false);
@@ -61,6 +62,7 @@ function AccountChatOverlay({state,initialChannel='world',visible,onOpen,onClose
   if(next!==channel)Keyboard.dismiss();
   pendingGuildChannel.current=false;
   setLanguageMenuOpen(false);
+  setGuildHelpOpen(false);
   setChannel(next);
   setVisitedChannels(current=>current.includes(next)?current:[...current,next]);
  };
@@ -113,7 +115,7 @@ function AccountChatOverlay({state,initialChannel='world',visible,onOpen,onClose
   return()=>{showing.remove();hiding.remove();};
  },[visible,measureKeyboardOverlap]);
  useEffect(()=>{if(visible&&keyboardVisible)measureKeyboardOverlap();},[visible,keyboardVisible,width,height,measureKeyboardOverlap]);
- const closeChat=()=>{Keyboard.dismiss();pendingGuildChannel.current=false;setLanguageMenuOpen(false);onChatRead?.();onClose();};
+ const closeChat=()=>{Keyboard.dismiss();pendingGuildChannel.current=false;setLanguageMenuOpen(false);setGuildHelpOpen(false);onChatRead?.();onClose();};
  const activeLabel=channel==='world'?st("Global chat"):channel==='guild'?(guildTitle||st("Guild members")):channel==='party'?st("Your party"):st("Game notifications");
 
  return <>
@@ -142,11 +144,17 @@ function AccountChatOverlay({state,initialChannel='world',visible,onOpen,onClose
        <ChatChannelIcon channel={channel} color={C.accent}/>
        <Text numberOfLines={1} style={s.channelName}>{activeLabel}</Text>
        <View style={s.headerSpacer}/>
+       {channel==='guild'&&<Pressable accessibilityRole="button" accessibilityLabel="Guild Chat guide" accessibilityState={{expanded:guildHelpOpen}} onPress={()=>{Keyboard.dismiss();setGuildHelpOpen(value=>!value);}} style={[s.languageButton,{width:42,justifyContent:'center'}]}><Text style={s.languageText}>?</Text></Pressable>}
        {channel==='world'&&<Pressable accessibilityRole="button" accessibilityLabel={st('World language: {language}',{language:WORLD_CHANNELS[worldChannel].name})} accessibilityState={{expanded:languageMenuOpen}} onPress={()=>{Keyboard.dismiss();setLanguageMenuOpen(value=>!value);}} style={({pressed})=>[s.languageButton,pressed&&s.pressed]}>
         <Text numberOfLines={1} style={s.languageText}>{WORLD_CHANNELS[worldChannel].name}</Text>
         <DropdownChevron open={languageMenuOpen} color={C.info}/>
        </Pressable>}
       </View>
+      {channel==='guild'&&guildHelpOpen?<View style={{paddingHorizontal:11,paddingVertical:8,gap:5,backgroundColor:C.panel2,borderWidth:1,borderColor:C.line,borderRadius:8}}>
+       <Text style={{color:C.text,fontSize:13,fontWeight:'800'}}>{socialLabel(state.settings.language,'Guild Chat guide')}</Text>
+       <Text style={{color:C.muted,fontSize:12,lineHeight:18}}>{socialLabel(state.settings.language,'Guild Chat is only for your Guild members. Party Chat is separate. You can read messages without sending one. Use the emote tray or tap a member to view their profile.')}</Text>
+       <Pressable accessibilityRole="button" accessibilityLabel="Close Guild Chat guide" onPress={()=>setGuildHelpOpen(false)} style={{minHeight:32,alignSelf:'flex-end',justifyContent:'center',paddingHorizontal:8}}><Text style={{color:C.accent,fontSize:12,fontWeight:'800'}}>{st('Got it')}</Text></Pressable>
+      </View>:null}
       <View style={s.content} accessibilityElementsHidden={languageMenuOpen} importantForAccessibility={languageMenuOpen?'no-hide-descendants':'auto'}>
        <View style={[s.channelPanel,channel!=='world'&&s.hiddenPanel]} accessibilityElementsHidden={channel!=='world'} importantForAccessibility={channel==='world'?'auto':'no-hide-descendants'}>
         {onlineConfigured?<OnlineWorldChat active={visible&&channel==='world'} selectedChannel={worldChannel} reduceMotion={state.settings.reduceMotion} playerName={state.character?.name??''} language={state.settings.language} unlockedEmoteIds={state.account.unlockedEmoteIds} trayIds={state.settings.chatEmoteTrayIds} bodyPresentation={state.character?.bodyPresentation} onTrayChange={onEmoteTrayChange} onManageEmotes={onManageEmotes} embedded/>:__DEV__?<WorldChat selectedChannel={worldChannel} language={state.settings.language} unlockedEmoteIds={state.account.unlockedEmoteIds} trayIds={state.settings.chatEmoteTrayIds} bodyPresentation={state.character?.bodyPresentation} onTrayChange={onEmoteTrayChange} onManageEmotes={onManageEmotes} embedded/>:<View style={s.chatUnavailable}><Text style={s.chatUnavailableTitle}>{socialLabel(state.settings.language,"Online chat unavailable")}</Text><Text style={s.chatUnavailableText}>{socialLabel(state.settings.language,"This release is missing its online service configuration. Update or reinstall the production build rather than using temporary demo chat.")}</Text></View>}

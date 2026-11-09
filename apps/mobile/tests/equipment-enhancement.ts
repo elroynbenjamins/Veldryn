@@ -15,16 +15,16 @@ const ringId=ringRecipe.output.itemId;
 // Every tier should charge progressively more Gold, while every rarity retains
 // its original price spread. Values below are Gold per attempt at +1/+2/+3/+4.
 const expectedCommonGold:Record<string,number[]>={
- T1:[350,600,1350,2400],T2:[440,750,1690,3000],T3:[530,900,2030,3600],
- T4:[650,1110,2500,4440],T5:[790,1350,3040,5400],T6:[970,1650,3720,6600],
- T7:[1160,1980,4460,7920],T8:[1400,2400,5400,9600],T9:[1750,3000,6750,12000],
+ T1:[350,600,1350,2400],T2:[390,750,1690,3000],T3:[430,900,2030,3600],
+ T4:[480,1110,2500,4440],T5:[540,1350,3040,5400],T6:[620,1650,3720,6600],
+ T7:[700,1980,4460,7920],T8:[800,2400,5400,9600],T9:[950,3000,6750,12000],
 };
 const expectedRareGold:Record<string,number[]>={
- T1:[440,960,2160,3840],T2:[550,1200,2700,4800],T3:[660,1440,3240,5760],
- T4:[820,1780,4000,7110],T5:[990,2160,4860,8640],T6:[1210,2640,5940,10560],
- T7:[1460,3170,7130,12680],T8:[1760,3840,8640,15360],T9:[2200,4800,10800,19200],
+ T1:[440,960,2160,3840],T2:[500,1200,2700,4800],T3:[560,1440,3240,5760],
+ T4:[650,1780,4000,7110],T5:[740,2160,4860,8640],T6:[860,2640,5940,10560],
+ T7:[1000,3170,7130,12680],T8:[1160,3840,8640,15360],T9:[1400,4800,10800,19200],
 };
-ok(FIRST_ENCHANT_GOLD_SURCHARGE===200,'The first enchantment adds 200 Gold before tier scaling');
+ok(FIRST_ENCHANT_GOLD_SURCHARGE===200,'The first enchantment adds exactly 200 Gold at all tiers');
 const allTiers=Object.keys(expectedCommonGold);
 ok(allTiers.length===9&&allTiers.every(tier=>UPGRADE_TIER_GOLD_MULTIPLIER[tier]>0),'All nine tiers have Gold multipliers');
 for(const tier of allTiers){

@@ -25,7 +25,7 @@ export function GuildHomeActions({activity,board,summary,chatUnread=0,canManage=
  ];
  return <View style={s.stack}>
   <View accessibilityRole="group" accessibilityLabel="Guild quick actions" style={s.quickLinks}>
-   {quickLinks.map(item=><Pressable key={item.title} accessibilityRole="button" accessibilityLabel={item.title} onPress={item.action} style={({pressed})=>[s.quickLink,{backgroundColor:C.panel,borderColor:C.lineStrong},pressed&&s.pressed]}>
+   {quickLinks.map(item=><Pressable key={item.title} accessibilityRole="button" accessibilityLabel={item.title} onPress={item.action} style={({pressed})=>[s.quickLink,canManage&&onGuide&&s.quickLinkFive,{backgroundColor:C.panel,borderColor:C.lineStrong},pressed&&s.pressed]}>
     <Text numberOfLines={1} style={[s.quickLinkText,{color:item.title.startsWith('Chat ·')?C.notification:C.text}]}>{item.title}</Text>
    </Pressable>)}
   </View>
@@ -42,6 +42,7 @@ export function GuildHomeActions({activity,board,summary,chatUnread=0,canManage=
 const s=StyleSheet.create({
  stack:{gap:10},section:{gap:5},kicker:{fontSize:10,lineHeight:15,fontWeight:'800',letterSpacing:.6},
  quickLinks:{flexDirection:'row',flexWrap:'wrap',gap:6},quickLink:{minHeight:44,flexGrow:1,flexBasis:'21%',minWidth:66,paddingHorizontal:8,alignItems:'center',justifyContent:'center',borderWidth:1,borderRadius:8},
+ quickLinkFive:{flexBasis:'28%'},
  quickLinkText:{fontSize:12,lineHeight:17,fontWeight:'800',textAlign:'center'},
  actionGrid:{flexDirection:'row',flexWrap:'wrap',gap:8},
  action:{flexGrow:1,flexBasis:'46%',minWidth:135,minHeight:65,flexDirection:'row',alignItems:'center',gap:8,paddingHorizontal:9,paddingVertical:8,borderWidth:1,borderRadius:10},

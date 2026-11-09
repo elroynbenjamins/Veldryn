@@ -22,14 +22,14 @@ const RARITY_COST:Record<ItemRarity,number>={common:1,uncommon:1.2,rare:1.6,epic
 export const UPGRADE_TIER_GOLD_MULTIPLIER:Readonly<Record<string,number>>=Object.freeze({
   T1:1,T2:1.25,T3:1.5,T4:1.85,T5:2.25,T6:2.75,T7:3.3,T8:4,T9:5,
 });
-/** +1 gains a flat 200 Gold surcharge before tier scaling, after rarity pricing. */
+/** +1 gains exactly 200 extra Gold, regardless of tier or rarity. */
 export const FIRST_ENCHANT_GOLD_SURCHARGE=200;
 export function upgradeGoldCost(itemId:string,targetRank:number,rarity:ItemRarity):number{
   if(!Number.isInteger(targetRank)||targetRank<1||targetRank>MAX_UPGRADE_RANK)return 0;
   const tier=v33EquipmentRecipeForItem(itemId)?.v33EquipmentTier??'T1';
   const tierMultiplier=UPGRADE_TIER_GOLD_MULTIPLIER[tier]??1;
   const rarityBase=Math.ceil(150*targetRank*targetRank*RARITY_COST[rarity]/10)*10;
-  return Math.ceil((rarityBase+(targetRank===1?FIRST_ENCHANT_GOLD_SURCHARGE:0))*tierMultiplier/10)*10;
+  return Math.ceil(rarityBase*tierMultiplier/10)*10+(targetRank===1?FIRST_ENCHANT_GOLD_SURCHARGE:0);
 }
 
 function safeGem(id:unknown){

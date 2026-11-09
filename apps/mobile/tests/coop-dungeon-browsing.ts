@@ -5,10 +5,12 @@ import {COOP_MESSAGE_COUNT,SUPPORTED_LANGUAGES,coopPolicyText,translatedCoopMess
 function equal(actual:unknown,expected:unknown,message:string){if(JSON.stringify(actual)!==JSON.stringify(expected))throw new Error(`${message}: ${JSON.stringify(actual)}`)}
 const rootbound=presentCoopDungeon({id:'EXP_001',name:'Rootbound Vault',minLevel:15,recommendedLevel:25,syncLevel:25,available:true,enabledRoomTypes:['battle','elite','camp','boss'],difficulties:[1,2,3,4,5],preBossRoomMin:5,preBossRoomMax:5});
 validateCoopDungeonView(rootbound);
+equal(rootbound.difficulties,[1,2,3],'new dungeon selection must contain three tiers only');
+equal(rootbound.itemDropRates,[],'no fictional item drop odds are shown without server data');
 equal([rootbound.id,rootbound.name,rootbound.minLevel,rootbound.recommendedLevel],['EXP_001','Rootbound Vault',15,25],'canonical EXP_001 changed');
 equal(rootbound.heroArtId,'rootbound_hero','Rootbound hero art mapping changed');
 equal(rootbound.estimatedMinutes,{min:6,max:8},'launch duration target changed');equal(rootbound.tierMinLevels,{1:15,2:20,3:25,4:30,5:35},'tier requirements changed');
-equal(coopTierEligibility(rootbound,3,25),{eligible:true,requiredLevel:25},'eligible tier should open');equal(coopTierEligibility(rootbound,4,25),{eligible:false,requiredLevel:30},'under-level tier should fail closed');
+equal(coopTierEligibility(rootbound,3,25),{eligible:true,requiredLevel:25},'eligible tier should open');equal(coopTierEligibility(rootbound,4,35),{eligible:false,requiredLevel:30},'retired Tier IV cannot be selected even at a high level');
 equal(highestEligibleCoopTier(rootbound,25),3,'live auto tier should choose the highest eligible tier');equal(highestEligibleCoopTier(rootbound,14),undefined,'live auto tier should fail closed below dungeon minimum');
 const unknown=presentCoopDungeon({id:'EXP_UNKNOWN',name:'A deliberately very long authoritative expedition title that must remain live text',minLevel:1,syncLevel:1,available:true,enabledRoomTypes:['battle','forge' as unknown as CoopRoomType],difficulties:[1]});
 equal(unknown.artId,undefined,'unknown art must use fallback');equal(unknown.enabledRoomTypes,['battle'],'unsupported rooms must be hidden');

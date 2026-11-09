@@ -30,7 +30,7 @@ jobs:
       - name: Install backend dependencies
         run: pnpm --dir backend install --frozen-lockfile
       - name: Generate deterministic co-op Edge bundle
-        run: pnpm --dir backend build:online
+        run: node tools/build-online.mjs
       - name: Commit generated bundle to feature branch
         run: |
           git config user.name 'github-actions[bot]'

@@ -98,7 +98,7 @@ function ingredients(tier:string,path:string,multiplier:number,skillId:'smithing
       case 'T2':return mergeInputs([{itemId:'WOLF_PELT',quantity:q(22,multiplier)},{itemId:accent??'BOAR_HIDE',quantity:q(9,multiplier)}]);
       // First Sunscar gear uses local gathering and monster sources, not level 7–14 enemies.
       // Foundation is available at the entry scorpion; Alternate can chase Astral Script at level 31+.
-      case 'T3':return mergeInputs([{itemId:'SUNSCALE',quantity:q(18,multiplier)},{itemId:'DUNEWOOD',quantity:q(10,multiplier)},{itemId:path==='Alternate'?'ASTRAL_SCRIPT':'AMBERGLASS',quantity:q(path==='Alternate'?1:2,multiplier)}]);
+      case 'T3':return mergeInputs([{itemId:'SUNSCALE',quantity:q(18,multiplier)},{itemId:'DUNEWOOD',quantity:q(10,multiplier)*3},{itemId:path==='Alternate'?'ASTRAL_SCRIPT':'AMBERGLASS',quantity:q(path==='Alternate'?1:2,multiplier)}]);
       // Level-40 gear is built from Sunscar supplies, gated by Glassbound Sentinel trophies (level 40).
       case 'T4':return mergeInputs([{itemId:'SUNSCALE',quantity:q(19,multiplier)},{itemId:'DUNEWOOD',quantity:q(7,multiplier)*3},{itemId:path==='Alternate'?'ASTRAL_SCRIPT':'AMBERGLASS',quantity:q(path==='Alternate'?2:5,multiplier)}]);
       case 'T5':return [{itemId:'SUNSCALE',quantity:q(25,multiplier)},{itemId:'AMBERGLASS',quantity:q(8,multiplier)}];
@@ -113,7 +113,7 @@ function ingredients(tier:string,path:string,multiplier:number,skillId:'smithing
   switch(tier){
     case 'T1':return [{itemId:'GREENWOOD_LOG',quantity:q(28,multiplier)},{itemId:pathItem??'MOSS_FIBER',quantity:q(8,multiplier)}];
     case 'T2':return [{itemId:'IRONWOOD_LOG',quantity:q(34,multiplier)},{itemId:pathItem??'WOLF_PELT',quantity:q(10,multiplier)}];
-    case 'T3':return mergeInputs([{itemId:'DUNEWOOD',quantity:q(22,multiplier)},{itemId:'SUNSTONE_ORE',quantity:q(14,multiplier)},{itemId:path==='Alternate'?'ASTRAL_SCRIPT':'AMBERGLASS',quantity:q(path==='Alternate'?1:2,multiplier)}]);
+    case 'T3':return mergeInputs([{itemId:'DUNEWOOD',quantity:q(22,multiplier)*3},{itemId:'SUNSTONE_ORE',quantity:q(14,multiplier)},{itemId:path==='Alternate'?'ASTRAL_SCRIPT':'AMBERGLASS',quantity:q(path==='Alternate'?1:2,multiplier)}]);
     case 'T4':return mergeInputs([{itemId:'SUNSTONE_INGOT',quantity:q(9,multiplier)},{itemId:'DUNEWOOD',quantity:q(8,multiplier)*3},{itemId:path==='Alternate'?'AMBERGLASS':'ASTRAL_SCRIPT',quantity:q(path==='Alternate'?5:2,multiplier)}]);
     case 'T5':return [{itemId:'SUNSTONE_INGOT',quantity:q(11,multiplier)},{itemId:'AMBERGLASS',quantity:q(7,multiplier)}];
     case 'T6':return [{itemId:'SUNSTONE_INGOT',quantity:q(15,multiplier)},{itemId:'AMBERGLASS',quantity:q(10,multiplier)},{itemId:'ASTRAL_SCRIPT',quantity:q(1,multiplier)}];
@@ -138,8 +138,8 @@ export const V33_EQUIPMENT_RECIPES:V33EquipmentRecipeDef[]=(catalog.pieces as Ar
     name:String(piece['Item Name']),
     skillId,
     level,
-    xp:q(tierXp[tier]??120,multiplier)+(tier==='T4'?20:0),
-    gold:increasedCraftingGoldCost(q(tierGold[tier]??120,multiplier)*EQUIPMENT_FORGE_GOLD_MULTIPLIER)*(tier==='T4'?2:1),
+    xp:q(tierXp[tier]??120,multiplier)+(['T3','T4'].includes(tier)?20:0),
+    gold:increasedCraftingGoldCost(q(tierGold[tier]??120,multiplier)*EQUIPMENT_FORGE_GOLD_MULTIPLIER)*(['T3','T4'].includes(tier)?2:1),
     seconds:clamp(Math.round(range.base*multiplier),range.min,range.max),
     inputs:mergeInputs([...ingredients(tier,String(piece.Path),multiplier,skillId),infusionByTier[tier]]),
     output:{itemId:String(piece['Piece ID']),quantity:1},

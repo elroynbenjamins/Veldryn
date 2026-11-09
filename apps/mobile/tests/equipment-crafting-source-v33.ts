@@ -26,10 +26,10 @@ const originalSlotGold:Record<string,number>={helmet:.85,chest:1.2,gloves:.7,leg
 for(const recipe of V33_EQUIPMENT_RECIPES){
   const slot=itemDef(recipe.output.itemId).slot!;
   const previousPrice=Math.max(1,Math.round(originalTierGold[recipe.v33EquipmentTier]*originalSlotGold[slot]));
-  const t4=recipe.v33EquipmentTier==='T4';
-  ok(recipe.gold===increasedCraftingGoldCost(previousPrice*3)*(t4?2:1),recipe.id+' must use the existing forge baseline plus exactly 2× Gold for T4 only');
+  const highSunscar=recipe.v33EquipmentTier==='T3'||recipe.v33EquipmentTier==='T4';
+  ok(recipe.gold===increasedCraftingGoldCost(previousPrice*3)*(highSunscar?2:1),recipe.id+' must use the existing forge baseline plus exactly 2× Gold for T3/T4 only');
   const baselineXp=Math.max(1,Math.round(originalTierXp[recipe.v33EquipmentTier]*originalSlotGold[slot]));
-  ok(recipe.xp===baselineXp+(t4?20:0),recipe.id+' must add exactly 20 XP on T4 only');
+  ok(recipe.xp===baselineXp+(highSunscar?20:0),recipe.id+' must add exactly 20 XP on T3/T4 only');
   ok(RECIPES.find(row=>row.id===recipe.id)?.gold===recipe.gold,recipe.id+' registered recipe price must match the forge');
 }
 for(const recipe of NOVICE_RECIPES){
@@ -103,6 +103,23 @@ const t4=V33_EQUIPMENT_RECIPES.filter(row=>row.v33EquipmentTier==='T4');
 const t3Materials=new Set(['DUNEWOOD','SUNSTONE_ORE','SUNSCALE','AMBERGLASS','ASTRAL_SCRIPT','SUNSCAR_DUNE_BINDER']);
 const t4Materials=new Set(['SUNSTONE_INGOT','SUNSCALE','DUNEWOOD','ASTRAL_SCRIPT','AMBERGLASS','GLASSBOUND_BINDER']);
 ok(t3.every(recipe=>recipe.inputs.every(input=>t3Materials.has(input.itemId))),'T3 gear must use early-Sunscar sources only, without Asterfall solvent');
+ok(t3.length===180,'Nine classes × two paths × ten slots must retain all 180 T3 equipment recipes');
+for(const recipe of t3){
+  const slot=itemDef(recipe.output.itemId).slot!;
+  const woodBase=recipe.skillId==='tailoring'?10:22;
+  const previousWood=Math.max(1,Math.round(woodBase*1.35*originalSlotGold[slot]));
+  const wood=recipe.inputs.find(row=>row.itemId==='DUNEWOOD');
+  ok(wood?.quantity===previousWood*3,recipe.id+' must use exactly three times its old T3 Dunewood input after slot rounding');
+  ok(recipe.inputs.find(row=>row.itemId==='SUNSCAR_DUNE_BINDER')?.quantity===1,recipe.id+' must preserve one Dune Binding Resin');
+}
+for(const classId of Object.keys(EQUIPMENT_CRAFT_SKILL_BY_CLASS)){
+  for(const path of ['Foundation','Alternate']){
+    const set=t3.filter(recipe=>recipe.classId===classId&&recipe.v33Path===path);
+    const woodTotal=set.reduce((total,recipe)=>total+(recipe.inputs.find(input=>input.itemId==='DUNEWOOD')?.quantity??0),0);
+    ok(set.length===10&&woodTotal===(EQUIPMENT_CRAFT_SKILL_BY_CLASS[classId as keyof typeof EQUIPMENT_CRAFT_SKILL_BY_CLASS]==='smithing'?804:363),classId+' / '+path+' T3 set must cost exactly 3× the previous Dunewood total');
+    ok(set.reduce((total,recipe)=>total+(recipe.inputs.find(input=>input.itemId==='SUNSCAR_DUNE_BINDER')?.quantity??0),0)===10,classId+' / '+path+' complete T3 set must still require ten Dune Binders');
+  }
+}
 ok(t4.every(recipe=>recipe.inputs.every(input=>t4Materials.has(input.itemId))),'T4 gear must not require Oathglass, King\'s Road drops, or Asterfall ingots');
 ok(t4.length===180,'Nine classes × two paths × ten slots must retain all 180 T4 equipment recipes');
 for(const recipe of t4){

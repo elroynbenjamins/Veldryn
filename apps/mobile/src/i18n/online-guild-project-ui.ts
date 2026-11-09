@@ -5,6 +5,9 @@ import {interpolateTranslation,type TranslationParams} from './translator';
 
 /** Fixed active Online Guild Projects UI; numbers and server-authored project text remain authoritative. */
 export const onlineGuildProjectUiRows={
+  "Voting closes Monday at 00:00 UTC": ["Abstimmung endet Montag um 00:00 UTC","La votación termina el lunes a las 00:00 UTC","Stemmen sluit maandag om 00:00 UTC","Il voto termina lunedì alle 00:00 UTC","Le vote se termine lundi à 00:00 UTC","Голосование до понедельника, 00:00 UTC","Oylama pazartesi 00:00 UTC'de kapanır"],
+  "Voting opens Thursday.": ["Abstimmung beginnt am Donnerstag.","La votación comienza el jueves.","Stemmen opent donderdag.","Il voto inizia giovedì.","Le vote ouvre jeudi.","Голосование открывается в четверг.","Oylama perşembe günü açılır."],
+  "VOTE": ["ABSTIMMEN","VOTAR","STEM","VOTA","VOTER","ГОЛОС","OY VER"],
   "Member contributions": ["Mitgliederbeiträge","Aportes de miembros","Bijdragen van leden","Contributi dei membri","Contributions des membres","Вклад участников","Üye katkıları"],
   "View member contributions": ["Mitgliederbeiträge ansehen","Ver aportes de los miembros","Bekijk ledenbijdragen","Vedi contributi dei membri","Voir les contributions des membres","Вклад участников","Üye katkılarını görüntüle"],
   "Top 5 contributors": ["Top 5 Mitwirkende","5 principales colaboradores","Top 5 bijdragers","Primi 5 contributori","Top 5 des contributeurs","Топ-5 участников","En çok katkı yapan 5 üye"],

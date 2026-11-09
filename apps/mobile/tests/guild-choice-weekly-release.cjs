@@ -51,6 +51,10 @@ assert.match(sink,/AsyncStorage\.setItem\(storageKey/);
 assert.match(sink,/p_request_key:request\.requestKey/);
 assert.match(picker,/activeGoals/);
 const refined=read('backend/supabase/migrations/20261108090000_guild_choice_difficulty_rotation_v2.sql');
+const live=read('backend/supabase/migrations/20261109110000_guild_choice_live_weekly_rollover_v3.sql');
+const guildScreen=read('apps/mobile/src/screens/GuildScreen.tsx');
+const guildNav=read('apps/mobile/src/components/GuildNavigation.tsx');
+const reminderClient=read('apps/mobile/src/online/guild-projects-v18.ts');
 const copy=read('apps/mobile/src/i18n/online-guild-project-ui.ts');
 assert.match(refined,/guild_weekly_shared_effort|one guaranteed standard project/i,'Keep guaranteed standard project alongside voted choice');
 assert.match(refined,/mod\(extract\(epoch from v_next\)::bigint\/604800,2\)/,'Alternating weekly candidates cannot repeat randomly');
@@ -68,6 +72,17 @@ assert.match(client,/difficulty:row.difficulty/,'Use authoritative tier when ava
 assert.match(screen,/sort\(\(a,b\)=>a.slotIndex-b.slotIndex\)/,'Standard project must render first');
 assert.match(screen,/candidate.myVote&&s.candidateSelected/,'Current vote must stand out');
 assert.match(screen,/If nobody votes, the Medium project starts automatically/,'Explain no-vote fallback');
-for(const key of ['Standard weekly',"Guild's Choice",'Easy','Medium','Hard','Voting opens Thursday at Guild Level 3.'])
+for(const key of ['Standard weekly',"Guild's Choice",'Easy','Medium','Hard','Voting opens Thursday.'])
  assert.ok(copy.includes(JSON.stringify(key)+':'),'Seven-language key missing: '+key);
-console.log('PASS: standard + voted projects, rotating Easy/Medium/Hard options, medium fallback, rewards and localized UI contracts');
+assert.match(live,/IF NOT FOUND THEN RETURN; END IF/,'Even new Level 1 guilds must receive a weekly choice');
+assert.doesNotMatch(live,/v_level<3/,'No level gate may suppress member votes');
+assert.match(live,/v_week='2026-11-09 00:00:00\+00'/,'This week must receive one rotated launch choice per guild');
+assert.match(live,/guild_project_weekly_rollover_v1/,'The weekly rollover needs a privileged idempotent job');
+assert.match(live,/0 0 \* \* 1,4/,'Ballots publish Thursday and projects reset Monday at 00:00 UTC');
+assert.match(live,/COALESCE\(\(SELECT template_id/,'Fallback project identity must match its definition snapshot');
+assert.match(reminderClient,/guildChoiceVoteReminder/);
+assert.match(reminderClient,/voteReminderReads\.clear\(\)/,'A successful vote must clear reminder attention');
+assert.match(guildScreen,/weeklyVotePending/,'Guild Home must show a small actionable vote reminder');
+assert.match(guildNav,/voteReminder/,'Guild Progress must show a small notification dot');
+assert.match(screen,/Voting opens Thursday\./);
+console.log('PASS: rotating Guild choice, automatic UTC rollover, current-week launch, member voting reminder and localized UI contracts');

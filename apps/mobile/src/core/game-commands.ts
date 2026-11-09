@@ -8,7 +8,7 @@ import {SUPPORTED_LANGUAGES} from '../i18n/languages';
 import {QUICK_NAV_DESTINATIONS} from './quick-navigation';
 import * as companions from './combat-companions';
 import {normalizeTrainingFocus} from './class-skills';
-import {reserveFaithPractice,updateFaithPreference} from './faith';
+import {reserveFaithPractice,affordableFaithPracticeCount,updateFaithPreference} from './faith';
 import {executeCompanionActivity,refreshCompanions,assertCompanionIdle,claimCompanionTraining} from './companion-runtime';
 import {createAccountCharacter,deleteAccountCharacter,switchAccountCharacter} from './account-actions';
 import {CLASSES} from '../content/classes';
@@ -199,7 +199,14 @@ export function executeGameCommand(previous:GameState,value:unknown,now:number,o
    state={...state,character:{...state.character,herbalismMethodId:method}};
    message='Herbalism method set to '+method;break;
   }
-  case 'faith_practice':state=reserveFaithPractice(state,text(a,'tierId'),1,now);break;
+  case 'faith_practice':{
+   // Old Android clients send count:1; intentionally treat that as "start a session".
+   // Size escrow from trusted post-settlement stock so Faith keeps practicing
+   // until Holy Water runs out, instead of ending after a single 30s cycle.
+   const tierId=text(a,'tierId');
+   state=reserveFaithPractice(state,tierId,Math.max(1,affordableFaithPracticeCount(state,tierId)),now);
+   break;
+  }
   case 'faith_blessing':{
    state=updateFaithPreference(state,'blessing',text(a,'id'));
    // Switching off an HP blessing may lower maximum HP. Never leave current HP above it.

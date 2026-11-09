@@ -5,9 +5,9 @@ import {ThemedIcon} from './ThemedNavigationIcon';
 
 /** Guild Home is a dashboard, not a second copy of every Guild section.
  * Put communication and unclaimed rewards above supplementary information. */
-export function GuildHomeActions({activity,board,summary,chatUnread=0,canManage=true,onQuests,onShop,onPve,onRoster,onHall,onChat,onManage}:{
+export function GuildHomeActions({activity,board,summary,chatUnread=0,canManage=true,onQuests,onShop,onPve,onRoster,onHall,onChat,onManage,onGuide}:{
  activity:ReactNode;board?:ReactNode;summary?:ReactNode;chatUnread?:number;canManage?:boolean;
- onQuests:()=>void;onShop:()=>void;onPve:()=>void;onRoster:()=>void;onHall:()=>void;onChat:()=>void;onManage:()=>void;
+ onQuests:()=>void;onShop:()=>void;onPve:()=>void;onRoster:()=>void;onHall:()=>void;onChat:()=>void;onManage:()=>void;onGuide?:()=>void;
 }){
  const C=useGameTheme();
  const quickLinks=[
@@ -27,7 +27,12 @@ export function GuildHomeActions({activity,board,summary,chatUnread=0,canManage=
    </Pressable>)}
   </View>
   {summary}
-  {board?<View style={s.section}><Text style={[s.kicker,{color:C.muted}]}>GUILD NOTICE</Text>{board}</View>:null}
+  {board?<View style={s.section}><View style={{flexDirection:'row',alignItems:'center',justifyContent:'space-between',gap:8}}>
+   <Text style={[s.kicker,{color:C.muted}]}>GUILD NOTICE</Text>
+   {onGuide?<Pressable accessibilityRole="button" accessibilityLabel="Guild Guide" onPress={onGuide} style={{minHeight:44,justifyContent:'center',paddingHorizontal:8}}>
+    <Text style={{color:C.accent,fontSize:12,fontWeight:'800'}}>Guild Guide ›</Text>
+   </Pressable>:null}
+  </View>{board}</View>:null}
   <View style={s.section}>{activity}</View>
   <View style={s.actionGrid}>{actions.map(item=><Pressable key={item.title} accessibilityRole="button" onPress={item.action} style={({pressed})=>[s.action,{borderColor:C.line,backgroundColor:C.panel},pressed&&s.pressed]}>
    <ThemedIcon name={item.icon} size={23}/>

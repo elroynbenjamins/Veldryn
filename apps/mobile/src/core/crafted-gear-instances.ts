@@ -2,7 +2,7 @@ import type {CraftedGearInstance,GameState,GearEnhancementState,GearSlot,ItemSta
 import {craftedGearRarity,craftedRarityStatMultiplier,deterministicCraftRarityRoll} from './crafted-gear-rarity';
 import {itemDef} from '../content/items';
 import {itemRarity,type ItemRarity} from './item-rarity';
-import {normalizeGemRollPercentV1} from './gem-progression-v1';
+import {normalizeGemRollPercentV1} from '../content/gems-v1';
 
 export const MAX_CRAFTED_GEAR_INSTANCES=500;
 /** Existing Forge records have no quality roll. Show them at the neutral midpoint without rewriting their receipts or treating them as safe auto-sale candidates. */

@@ -7,7 +7,8 @@ import type {GameState} from '../core/types';
 import {COMBAT_COMPANIONS} from '../content/combat-companions';
 import {assertCompanionIdle,companionView,recommendedCompanionMissionTeam} from '../core/companion-runtime';
 import {COMPANION_MISSIONS} from '../../../../backend/src/server/companions/content';
-import {activeCompanionMissions,companionExpeditionPenCapacity,validateCompanionMissionTeam} from '../../../../backend/src/server/companions/assignments';
+import {activeCompanionMissions,companionExpeditionPenCapacity,companionMissionRequirementSatisfied,validateCompanionMissionTeam} from '../../../../backend/src/server/companions/assignments';
+import type {CompanionMissionDefinition,CompanionMissionRequirement} from '../../../../backend/src/server/companions/domain';
 import {companionTeamPower} from '../../../../backend/src/server/companions/team';
 import {GameButton} from './GameButton';
 import {ResourceIcon} from './ResourceIcon';
@@ -27,18 +28,20 @@ function remaining(end:string,now:number){const sec=Math.max(0,Math.ceil((Date.p
 type ExpeditionFilter='all'|'short'|'long';
 type ClaimedReward={name:string;grade?:string;reward:{companionEssence:number;gold:number;companionXp:number;bondXp:number;bondstones:number;materials:Record<string,number>;bonusRewardGranted?:boolean}};
 const fmt=(n:number)=>n.toLocaleString();
-function missionRequirements(req:any,t:ReturnType<typeof companionTranslator>,label:(value:string)=>string){
+function missionRequirements(req:CompanionMissionRequirement,t:ReturnType<typeof companionTranslator>,label:(value:string)=>string){
  if(req.type==='role_count')return (req.count??1)+'× '+label(String(req.role));
  if(req.type==='affinity_count')return (req.count??1)+'× '+label(String(req.affinity))+' Affinity';
  if(req.type==='affinity_diversity')return (req.count??2)+'+ '+t('different Affinities');
  if(req.type==='affinity_unique')return t('All Affinities unique');
- if(req.type==='min_level')return t('Level {level}+',{level:req.value});
- if(req.type==='min_bond')return t('Bond {level}+',{level:req.value});
- if(req.type==='min_ascension')return (req.count??1)+'× '+t('Ascension')+' '+req.tier+'+';
- if(req.type==='min_rarity')return (req.count??1)+'× '+label(String(req.rarity))+'+';
+ if(req.type==='min_level')return (req.count??t('All'))+'× '+t('Level {level}+',{level:req.value});
+ if(req.type==='min_bond')return (req.count??t('All'))+'× '+t('Bond {level}+',{level:req.value});
+ if(req.type==='min_ascension')return (req.count??t('All'))+'× '+t('Ascension')+' '+req.tier+'+';
+ if(req.type==='min_rarity')return (req.count??t('All'))+'× '+label(String(req.rarity))+'+';
  if(req.type==='max_rarity')return label(String(req.rarity))+' '+t('or lower');
  if(req.type==='origin_count')return (req.count??1)+'× '+({REG_001:'Asterfall',REG_SUNSCAR:'Sunscar',REG_FROSTMARCH:'Frostmarch',REG_ASHLANDS:'Ashlands'} as Record<string,string>)[req.originId];
- if(req.type==='min_team_power')return t('Recommended Power {value0}',{value0:fmt(req.value)});
+ if(req.type==='min_team_power')return t('Power')+' '+fmt(req.value)+'+';
+ if(req.type==='tag_count')return req.count+'× '+label(req.tag);
+ if(req.type==='companion_id')return COMBAT_COMPANIONS.find(d=>d.id===req.companionId)?.name??req.companionId;
  return label(String(req.type));
 }
 export function CompanionExpeditionsV50Panel({state,now,onCommand}:{state:GameState;now:number;onCommand:(command:GameCommand)=>Promise<void>}){
@@ -63,6 +66,27 @@ export function CompanionExpeditionsV50Panel({state,now,onCommand}:{state:GameSt
  const ownedIds=Object.keys(view.owned);
  const isIdle=(id:string)=>{if(id===equipped||trialRun?.teamCompanionIds?.includes(id))return false;try{assertCompanionIdle(state,id);return true;}catch{return false;}};
  const safeTeam=team.filter(id=>!!view.owned[id]);
+ // Mirror the server's strict requirements; recommended power determines a reward grade, not entry.
+ const requirementChecks=(row:CompanionMissionDefinition,ids:readonly string[])=>{
+  const checks:{text:string;met:boolean}[]=[
+   {text:t('Pens Lv {value0}',{value0:row.minimumPenLevel??1}),met:pens>=(row.minimumPenLevel??1)},
+   {text:row.minCompanions===row.maxCompanions?row.minCompanions+' '+t('companions'):row.minCompanions+'–'+row.maxCompanions+' '+t('companions'),met:ids.length>=row.minCompanions&&ids.length<=row.maxCompanions},
+  ];
+  if(row.minimumLevel&&!row.requirements?.some(req=>req.type==='min_level'&&req.value>=row.minimumLevel!))checks.push({text:t('All')+'× '+t('Level {level}+',{level:row.minimumLevel}),met:ids.length>0&&ids.every(id=>(view.owned[id]?.level??0)>=row.minimumLevel!)});
+  if(row.minimumBondLevel&&!row.requirements?.some(req=>req.type==='min_bond'&&req.value>=row.minimumBondLevel!))checks.push({text:t('All')+'× '+t('Bond {level}+',{level:row.minimumBondLevel}),met:ids.length>0&&ids.every(id=>(view.owned[id]?.bondLevel??0)>=row.minimumBondLevel!)});
+  if(row.requiredRarities?.length)checks.push({text:row.requiredRarities.map(id=>label(id)).join(' / '),met:ids.length>0&&ids.every(id=>!!COMBAT_COMPANIONS.find(c=>c.id===id&&row.requiredRarities?.includes(c.rarity)))});
+  if(row.requiredOriginId)checks.push({text:label(row.requiredOriginId),met:ids.length>0&&ids.every(id=>COMBAT_COMPANIONS.find(c=>c.id===id)?.originId===row.requiredOriginId)});
+  for(const [role,count] of Object.entries(row.requiredRoles??{})){
+   if(count&&!row.requirements?.some(req=>req.type==='role_count'&&req.role===role&&req.count>=count)){
+    const req:CompanionMissionRequirement={type:'role_count',role:role as 'tank'|'damage'|'support',count};
+    checks.push({text:missionRequirements(req,t,label),met:companionMissionRequirementSatisfied(req,ids,view.owned)});
+   }
+  }
+  for(const req of row.requirements??[])checks.push({text:missionRequirements(req,t,label),met:ids.length>0&&companionMissionRequirementSatisfied(req,ids,view.owned)});
+  return checks;
+ };
+ const mandatory=mission?requirementChecks(mission,safeTeam):[];
+ const bonusChecks=mission?(mission.bonusRequirements??[]).map(req=>({text:missionRequirements(req,t,label),met:safeTeam.length>0&&companionMissionRequirementSatisfied(req,safeTeam,view.owned)})):[];
  const suggestion=mission?recommendedCompanionMissionTeam(state,mission.id,now):undefined;
  const check=mission?validateCompanionMissionTeam({missionId:mission.id,companionIds:safeTeam,owned:view.owned,assignments:view.assignments,equippedCompanionIds:new Set(equipped?[equipped]:[]),lockedTrialCompanionIds:new Set(trialRun?.teamCompanionIds??[]),expeditionPensLevel:pens}):{ok:false,reason:'NO_MISSION'};
  const power=companionTeamPower(safeTeam,view.owned);
